@@ -1,0 +1,27 @@
+# Słowniczek
+
+- **Kernel** – funkcja uruchamiana równolegle na GPU (lub akceleratorze), liczy jedną operację modelu (matmul, attention, dekwantyzacja…).
+- **Triton** – język/kompilator od OpenAI do pisania kerneli GPU w Pythonie na poziomie „kafelków” (tiles). Łatwiejszy niż CUDA.
+- **Gluon** – niższy poziom w ekosystemie Tritona; jawna kontrola layoutów, pamięci shared, async kopii.
+- **CUDA / CuTeDSL** – niskopoziomowe programowanie GPU NVIDIA (CuTeDSL to pythonowy front do CUTLASS/CuTe).
+- **Metal / MLX** – GPU Apple i framework ML od Apple; `mx.fast.metal_kernel` pozwala pisać własne shadery z Pythona.
+- **SM (Streaming Multiprocessor)** – „rdzeń” GPU NVIDIA. B200 ma 148. Jeśli kernel odpala mniej bloków niż SM-ów, reszta stoi.
+- **CTA / blok / program** – grupa wątków działająca na jednym SM. W Tritonie: jeden „program” (`tl.program_id`).
+- **Launch overhead** – stały koszt uruchomienia kernela (~kilka µs). Przy małych kernelach dominuje → fuzja.
+- **Fuzja (kernel fusion)** – połączenie kilku operacji w jeden kernel, żeby nie zapisywać pośrednich wyników do pamięci i nie płacić za wiele launchy.
+- **Tiling** – dzielenie macierzy na kafelki mieszczące się w szybkiej pamięci (shared/rejestry).
+- **Memory-bound vs compute-bound** – czy limitem jest przepustowość pamięci, czy moc obliczeniowa. Decode (generowanie tokenów) jest zwykle memory-bound.
+- **Prefill vs decode** – prefill: przetwarzanie całego promptu naraz (dużo obliczeń); decode: generowanie po 1 tokenie (czytanie wag i KV cache).
+- **KV cache** – zapamiętane klucze i wartości attention z poprzednich tokenów, żeby ich nie liczyć od nowa.
+- **Paged KV cache** – KV cache podzielony na strony (np. po 64 tokeny), adresowane przez tablicę stron (jak pamięć wirtualna).
+- **Online softmax** – liczenie softmaxa w jednym przejściu, kawałkami, trzymając bieżące maksimum `m` i sumę `l`. Podstawa FlashAttention.
+- **Flash-decoding / split-K** – przy decode dzielimy długą sekwencję KV na kawałki liczone równolegle, potem łączymy (combine) wyniki. Wypełnia GPU, gdy batch jest mały.
+- **LSE (log-sum-exp)** – `m + log(l)`; pozwala poprawnie połączyć częściowe softmaxy.
+- **Top-k** – wybór k największych wartości.
+- **DSA (DeepSeek Sparse Attention)** – attention z DeepSeek-V3.2: indexer wybiera top-2048 pozycji, attention liczy się tylko na nich.
+- **MLA (Multi-head Latent Attention)** – attention z DeepSeek, gdzie KV są kompresowane do wspólnego „latent” wektora.
+- **FP8 / bf16 / fp32** – formaty liczb: 8-, 16-, 32-bitowe. Mniej bitów = mniej pamięci i szybciej, ale gorsza precyzja.
+- **Akumulator** – zmienna sumująca wyniki (np. w matmul); zwykle trzymana w wyższej precyzji (fp32), żeby błędy się nie kumulowały.
+- **TMA** – sprzętowy silnik kopiowania tensorów (Hopper/Blackwell).
+- **num_warps / num_stages** – parametry Tritona: ile warpów (po 32 wątki) na program i ile etapów pipeliningu ładowania pamięci.
+- **A/B benchmark (paired)** – porównanie dwóch wersji na tej samej maszynie, jedna po drugiej, żeby wyeliminować szum między maszynami.
