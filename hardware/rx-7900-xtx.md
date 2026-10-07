@@ -109,9 +109,11 @@ Zasady z auto-gpu-kernel obowiązują od pierwszego dnia: **tylko absolutne czas
 
 Uwaga PCIe: XTX powinien siedzieć w głównym slocie x16 (CPU). Drugi slot na B550/X570 to często x4 z chipsetu – dla podziału warstw to bez znaczenia (płyną tylko aktywacje), ale dla Straty (streaming ekspertów po PCIe) już tak.
 
-## 6. Główny cel: Qwen 27B na 7900 XTX
+## 6. Główny cel: Qwen3.8-27B (też wersja Uncensored od OrcaRouter) na 7900 XTX
 
-Qwen 27B z serii 3.5/3.6 to **architektura hybrydowa** (warstwy Gated DeltaNet + zwykły attention). Konsekwencje:
+Szczegóły modelu: `sources/qwen3.8-27b.md`. Rzeczywiste rozmiary plików: **Q4_K_M 16,8–17,1 GB, Q6_K 20,9–22,9 GB, Q8_0 29 GB** (tabela niżej to wcześniejsze szacunki – bliskie). Wersja Uncensored ma te same kernele i tę samą wydajność.
+
+Qwen3.8-27B to **architektura hybrydowa**: 48 warstw Gated DeltaNet + 16 warstw pełnego attention, z wbudowaną głowicą MTP. Konsekwencje:
 - część warstw nie ma KV cache → długi kontekst jest tańszy w VRAM niż w klasycznym 27B,
 - llama.cpp ma dla nich osobny kernel (`gated_delta_net.comp` w Vulkanie) – kolejny kandydat do profilowania,
 - **unikaj `-ub` w zakresie 65–256** – na tych hybrydach raportowano 40× spadek przepustowości ([#21043](https://github.com/ggml-org/llama.cpp/discussions/21043)).
@@ -163,6 +165,7 @@ GGML_VK_VISIBLE_DEVICES=0 ./build-vk/bin/llama-bench -m $M -ngl 99 -fa 1 \
 
 ## 8. Do zrobienia
 - [ ] Uruchomić `scripts/sysinfo.sh` i wkleić wynik (wersje jądra, Mesa, ROCm, PCIe)
-- [ ] Który dokładnie Qwen 27B (3.5 / 3.6 / 3.8?), jaki kwant i czym go dziś odpalasz (Ollama / llama.cpp / LM Studio)?
+- [x] Model: Qwen3.8-27B (+ OrcaRouter Uncensored)
+- [ ] Czym go dziś odpalasz (Ollama / llama.cpp / LM Studio) i w jakim kwancie?
 - [ ] Etap 0 (Llama 2 7B Q4_0 – porównanie ze scoreboardem)
 - [ ] Etap 0b (Qwen 27B, Vulkan vs ROCm)
