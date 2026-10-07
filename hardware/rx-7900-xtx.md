@@ -97,8 +97,72 @@ Ustawienia systemu do sprawdzenia: Resizable BAR włączony, DPM na `auto` (nie 
 
 Zasady z auto-gpu-kernel obowiązują od pierwszego dnia: **tylko absolutne czasy, jedna zmiana naraz, A/B na tej samej maszynie przy różnicach <5%, logujemy też porażki.**
 
-## 5. Otwarte pytania (do uzupełnienia)
-- [ ] System: Linux (która dystrybucja / jądro / Mesa) czy Windows?
-- [ ] RAM i CPU (ważne dla offloadu MoE i Straty)
-- [ ] Jakich modeli używasz na co dzień?
-- [ ] Wyniki Etapu 0
+## 5. Zestaw
+
+| Element | Wartość | Konsekwencja |
+|---|---|---|
+| GPU 1 | RX 7900 XTX 24 GB | wszystko, co się da, ląduje tutaj |
+| GPU 2 | RTX 5060 Ti 16 GB (PNY OC) | referencja CUDA, draft model, ew. dodatkowa pamięć |
+| CPU | Ryzen 7 5700X (Zen 3, 8C/16T, **AVX2, bez AVX-512**) | kernele CPU w llama.cpp / Stracie lecą ścieżką AVX2 |
+| RAM | 64 GB DDR4, dual channel (~51 GB/s teoretycznie przy 3200 MT/s) | **~19× wolniej niż VRAM XTX** → warstw gęstego modelu nie offloadujemy na CPU |
+| OS | Ubuntu Server (headless) | brak pulpitu = prawie całe 24 GB VRAM wolne; Linux = pełne narzędzia (rocprofv3, RADV, RGP) |
+
+Uwaga PCIe: XTX powinien siedzieć w głównym slocie x16 (CPU). Drugi slot na B550/X570 to często x4 z chipsetu – dla podziału warstw to bez znaczenia (płyną tylko aktywacje), ale dla Straty (streaming ekspertów po PCIe) już tak.
+
+## 6. Główny cel: Qwen 27B na 7900 XTX
+
+Qwen 27B z serii 3.5/3.6 to **architektura hybrydowa** (warstwy Gated DeltaNet + zwykły attention). Konsekwencje:
+- część warstw nie ma KV cache → długi kontekst jest tańszy w VRAM niż w klasycznym 27B,
+- llama.cpp ma dla nich osobny kernel (`gated_delta_net.comp` w Vulkanie) – kolejny kandydat do profilowania,
+- **unikaj `-ub` w zakresie 65–256** – na tych hybrydach raportowano 40× spadek przepustowości ([#21043](https://github.com/ggml-org/llama.cpp/discussions/21043)).
+
+### Które kwanty się mieszczą i jaki jest sufit
+
+Rozmiary przybliżone *(wyliczone dla ~27B parametrów; konkretny GGUF może się różnić o kilka %)*. Sufit = 960 GB/s ÷ rozmiar.
+
+| Kwant | Rozmiar | Mieści się w 24 GB? | Sufit tg | Realnie (~75%) |
+|---|---|---|---|---|
+| IQ4_XS | ~14,3 GB | tak, dużo miejsca na kontekst | ~67 tok/s | ~50 |
+| **Q4_K_M** | ~16,4 GB | tak | ~58 | **~44** |
+| Q5_K_M | ~19,2 GB | tak, mniej kontekstu | ~50 | ~37 |
+| Q6_K | ~22,1 GB | na styk, krótki kontekst | ~43 | ~33 |
+| Q8_0 | ~28,7 GB | **nie** – tylko z 5060 Ti | ~24 *(podział XTX+5060 Ti)* | ~18 |
+
+Wniosek: **Q4_K_M lub Q5_K_M w całości na XTX**. Q8_0 z podziałem na dwie karty jest ~2× wolniejszy (warstwy na 5060 Ti czytają się z 448 GB/s), więc ma sens tylko, jeśli jakość Q8 okaże się wyraźnie lepsza.
+
+Dla porównania: R9700 (640 GB/s) robi na gęstym Qwen 27B ~29–33 tok/s. Przeskalowane przez pasmo XTX daje to ~44–50 – spójne z tabelą.
+
+### Spór do rozstrzygnięcia na Twojej karcie: Vulkan czy ROCm dla gęstego 27B?
+- XDA (2026, 7900 XTX, Qwen3.6-27B): **Vulkan ~30% szybszy w tg**, ROCm lepszy w pp *(tylko snippet, nieprzeczytany)*.
+- runaihome (lipiec 2026, R9700, Qwen3.6-27B, KV q8): **ROCm 42,8 vs Vulkan 29,1 tok/s** (+47% dla ROCm).
+
+Te źródła sobie przeczą → **to pierwszy eksperyment**.
+
+### Etap 0b – pomiar Qwen 27B
+
+```bash
+M=~/models/<Qwen-27B>-Q4_K_M.gguf
+# Vulkan: tylko Radeon (indeks sprawdź w logu ggml_vulkan)
+GGML_VK_VISIBLE_DEVICES=0 ./build-vk/bin/llama-bench -m $M -ngl 99 -fa 1 \
+  -p 512,4096 -n 128 -d 0,16384 -ub 512,2048 -ctk f16,q8_0 -ctv f16,q8_0 -r 3 -o md
+# ROCm (widzi tylko AMD)
+./build-hip/bin/llama-bench -m $M -ngl 99 -fa 1 \
+  -p 512,4096 -n 128 -d 0,16384 -ub 512,2048 -ctk f16,q8_0 -ctv f16,q8_0 -r 3 -o md
+```
+`-d 16384` = pomiar przy już wypełnionym kontekście 16K (realistyczne użycie). Zapisujemy wyniki do `benchmarks/` z datą, commitem llama.cpp, Mesa, ROCm, jądrem.
+
+### Potem (po baseline)
+1. **Speculative decoding:** MTP (jeśli model ma warstwę MTP; na R9700 dało +9,7%) albo mały draft Qwen na 5060 Ti (`--device-draft`).
+2. **Profil per-kernel** (`GGML_VK_PERF_LOGGER=1` / `rocprofv3`) – ile czasu idzie na matmul, a ile na DeltaNet, attention i resztę. To pokaże, który kernel warto ruszyć.
+3. Jeśli ROCm przegrywa decode – to dokładnie problem [#20934](https://github.com/ggml-org/llama.cpp/issues/20934) na Twoim modelu.
+
+## 7. Inne modele na tym zestawie
+- **MoE ~30–35B-A3B w Q4:** mieści się (na styk) w VRAM, generowanie dużo szybsze niż gęste 27B.
+- **Większe MoE (np. ~120B-A10B):** wagi ekspertów w RAM przez `--n-cpu-moe` / `-ot`. 64 GB RAM + 24 GB VRAM to granica dla Q3/Q4 – sprawdzać rozmiar pliku. Tempo ograniczy DDR4.
+- **Strata:** wymaga min. 32 GB RAM (zalecane 64 GB – masz), 7900 XTX jest walidowany, ~80 GB na SSD. CPU liczy eksperci w AVX2 (5700X nie ma AVX-512) – spodziewaj się wyników poniżej tych z README.
+
+## 8. Do zrobienia
+- [ ] Uruchomić `scripts/sysinfo.sh` i wkleić wynik (wersje jądra, Mesa, ROCm, PCIe)
+- [ ] Który dokładnie Qwen 27B (3.5 / 3.6 / 3.8?), jaki kwant i czym go dziś odpalasz (Ollama / llama.cpp / LM Studio)?
+- [ ] Etap 0 (Llama 2 7B Q4_0 – porównanie ze scoreboardem)
+- [ ] Etap 0b (Qwen 27B, Vulkan vs ROCm)
