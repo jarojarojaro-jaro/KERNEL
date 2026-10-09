@@ -11,6 +11,5 @@ Notatki i research o optymalizacji kerneli GPU pod lokalne AI (LLM), ze szczegó
 | [`sources/qwen3.8-27b.md`](sources/qwen3.8-27b.md) | Qwen3.8-27B i wersja Uncensored od OrcaRouter |
 | [`sources/auto-gpu-kernel.md`](sources/auto-gpu-kernel.md) | Analiza repo auto-gpu-kernel (agent piszący kernele, zwycięzca MLSys 2026) |
 | [`research_notes/Optymalizacja kerneli na AMD/`](research_notes/Optymalizacja%20kerneli%20na%20AMD/) | Surowe notatki źródłowe (architektura, ROCm, Vulkan, praktyka, Strata) |
-| [`notes/wynajem-gpu.md`](notes/wynajem-gpu.md) | Gdzie (nie) da się wynająć 7900 XTX online |
 | [`glossary.md`](glossary.md) | Słowniczek pojęć |
 | [`scripts/sysinfo.sh`](scripts/sysinfo.sh) | Zbiera info o systemie przed benchmarkami (tylko odczyt) |
