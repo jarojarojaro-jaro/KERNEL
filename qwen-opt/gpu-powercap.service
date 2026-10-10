@@ -1,10 +1,12 @@
 [Unit]
-Description=RX 7900 XTX power cap (chip power, driver scale; value in microwatts)
+Description=RX 7900 XTX: power cap 285 W (chip power, driver scale) and no runtime suspend
 After=multi-user.target
 
 [Service]
 Type=oneshot
 ExecStart=/bin/sh -c 'for f in /sys/class/drm/card0/device/hwmon/hwmon*/power1_cap; do echo 285000000 > "$$f"; done'
+# Runtime suspend (BACO) evicts all VRAM to system RAM; a loaded model then runs over PCIe at ~4 t/s.
+ExecStart=/bin/sh -c 'echo on > /sys/class/drm/card0/device/power/control'
 
 [Install]
 WantedBy=multi-user.target

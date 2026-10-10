@@ -66,5 +66,16 @@ case $spec in
     *) echo "unknown spec: $spec (mtp|dflash|none)" >&2; exit 2 ;;
 esac
 
-exec "$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja \
+# Runtime suspend (BACO) evicts VRAM to system RAM and the model then runs over PCIe (~4 t/s).
+# The proper fix is power/control=on (gpu-powercap.service); otherwise hold a KFD context for the
+# server's lifetime, which blocks runtime suspend.
+if [ "$(cat /sys/class/drm/card0/device/power/control)" != on ]; then
+    echo "GPU runtime suspend is enabled; holding the GPU awake with gpu-keepawake" >&2
+    LD_LIBRARY_PATH=/opt/rocm/core-10.0/lib "$HOME/qwen-opt/gpu-keepawake/keepawake" >/dev/null &
+    keepawake=$!
+    trap 'kill $keepawake 2>/dev/null' EXIT
+    sleep 2
+fi
+
+"$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja \
     "${think_args[@]}" --host "$host" --port "$port" "${spec_args[@]}"

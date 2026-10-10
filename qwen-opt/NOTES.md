@@ -134,3 +134,9 @@ Cel: np. −20% mocy kosztem ≤5% t/s. Stan karty (2026-10-09):
 - Temperatura 2026-10-09, przy prefillu 196k tokenów: edge 66°C, junction 106°C, VRAM 76°C, wentylatory ~2970 RPM, 281 W.
   Różnica edge–junction ~40°C jest duża (typowo 15–25°C) → podejrzenie pasty / docisku / komory parowej.
   Junction blisko progu 110°C; power cap powinien obniżyć hotspot.
+
+## Runtime suspend wyrzuca model z VRAM (2026-10-10)
+Bez monitora amdgpu usypia kartę po 5 s bezczynności (runtime PM/BACO) i przenosi całą VRAM do RAM (GTT).
+Załadowany model działa wtedy przez PCIe: 4.4 t/s zamiast 92 (vram_used 35 MB, gtt_used 23.8 GB).
+Naprawa: power/control=on (gpu-powercap.service, root). Bez roota run-llm.sh trzyma kontekst KFD (gpu-keepawake), co blokuje usypianie.
+Po naprawie przy limicie 285 W: 94.1 / 90.6 / 94.7 t/s, także po 20 s bezczynności.
