@@ -9,7 +9,8 @@
 #   qwen  dflash       fastest for English/code (~120 t/s) but weak on Polish (PL prose ~40 t/s)
 #   saluki has no MTP head, so it defaults to dflash
 #
-# env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0)
+# env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0),
+#      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)
 set -euo pipefail
 
 model=${1:-qwen}
@@ -21,6 +22,14 @@ ctx=${CTX:-204800}
 port=${PORT:-8080}
 host=${HOST:-127.0.0.1}
 kv=${KV:-q4_0}
+effort=${EFFORT:-low}
+
+# Qwen3.8/Saluki templates accept low|medium|xhigh; off disables thinking entirely
+case $effort in
+    low|medium|xhigh) think_args=(--reasoning-effort "$effort") ;;
+    off) think_args=(--reasoning off) ;;
+    *) echo "unknown EFFORT: $effort (low|medium|xhigh|off)" >&2; exit 2 ;;
+esac
 
 models=$HOME/models
 drafter=$models/draft/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
@@ -58,4 +67,4 @@ case $spec in
 esac
 
 exec "$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja \
-    --host "$host" --port "$port" "${spec_args[@]}"
+    "${think_args[@]}" --host "$host" --port "$port" "${spec_args[@]}"
