@@ -1,0 +1,10 @@
+[Unit]
+Description=RX 7900 XTX power cap (chip power, driver scale; value in microwatts)
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for f in /sys/class/drm/card0/device/hwmon/hwmon*/power1_cap; do echo 300000000 > "$$f"; done'
+
+[Install]
+WantedBy=multi-user.target
