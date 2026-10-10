@@ -1,0 +1,247 @@
+From 3b15c2b6d1c8141d5dbfa843b3dc4750cdb9f7f5 Mon Sep 17 00:00:00 2001
+From: jaro <jaro@localhost>
+Date: Fri, 9 Oct 2026 18:00:32 +0000
+Subject: [PATCH 4/5] MTP: optional reduced-vocabulary draft LM head
+ (--spec-draft-vocab)
+
+---
+ common/arg.cpp         | 15 +++++++++
+ common/common.h        |  4 +++
+ common/speculative.cpp | 18 +++++++++++
+ include/llama.h        |  5 +++
+ src/llama-model.cpp    | 69 ++++++++++++++++++++++++++++++++++++++++++
+ src/llama-model.h      | 10 ++++++
+ src/models/qwen35.cpp  | 16 +++++++++-
+ 7 files changed, 136 insertions(+), 1 deletion(-)
+
+diff --git a/common/arg.cpp b/common/arg.cpp
+index bd5afbdfe..c3026d650 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -4220,6 +4220,21 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             params.speculative.draft.p_min = std::stof(value);
+         }
+     ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_P_MIN"));
++    add_opt(common_arg(
++        {"--spec-draft-vocab"}, "FNAME",
++        "MTP: file of whitespace-separated token ids, most frequent first; the draft LM head then scores only\n"
++        "these tokens (much cheaper drafting, verification unaffected)",
++        [](common_params & params, const std::string & value) {
++            params.speculative.draft.vocab_path = value;
++        }
++    ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_VOCAB"));
++    add_opt(common_arg(
++        {"--spec-draft-vocab-n"}, "N",
++        string_format("MTP: use only the first N ids of --spec-draft-vocab (default: %d = all)", params.speculative.draft.vocab_n),
++        [](common_params & params, int value) {
++            params.speculative.draft.vocab_n = value;
++        }
++    ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_VOCAB_N"));
+     add_opt(common_arg(
+         {"--spec-draft-backend-sampling"},
+         {"--no-spec-draft-backend-sampling"},
+diff --git a/common/common.h b/common/common.h
+index 557518e36..a65125d1f 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -334,6 +334,10 @@ struct common_params_speculative_draft {
+ 
+     bool backend_sampling = true; // offload draft sampling to the backend (default: on)
+ 
++    // MTP: restrict the draft LM head to the first vocab_n token ids listed in vocab_path (0 = all of them)
++    std::string vocab_path;
++    int32_t     vocab_n = 0;
++
+     bool probabilistic = false; // sample the draft and verify by rejection, instead of argmax and match
+ 
+     common_params_model mparams;
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index d9ddf44d2..1066d9929 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -16,6 +16,7 @@
+ #include <cassert>
+ #include <cmath>
+ #include <cstring>
++#include <fstream>
+ #include <iomanip>
+ #include <map>
+ #include <cinttypes>
+@@ -1475,6 +1476,23 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+             }
+         }
+ 
++        // optional reduced-vocabulary draft head (--spec-draft-vocab)
++        if (!this->params.vocab_path.empty()) {
++            std::vector<llama_token> ids;
++            std::ifstream f(this->params.vocab_path);
++            for (llama_token id; f >> id; ) {
++                ids.push_back(id);
++            }
++            if (this->params.vocab_n > 0 && (size_t) this->params.vocab_n < ids.size()) {
++                ids.resize(this->params.vocab_n);
++            }
++            // the MTP head is part of the target model; the draft context only selects the MTP graph
++            auto * model_dft = const_cast<llama_model *>(llama_get_model(ctx_dft));
++            if (ids.empty() || !llama_model_set_draft_head_vocab(model_dft, ids.data(), (int32_t) ids.size())) {
++                SPC_WRN("could not use the draft vocabulary from '%s'\n", this->params.vocab_path.c_str());
++            }
++        }
++
+         llama_set_embeddings_nextn(ctx_tgt, true, /*masked*/ false);
+         llama_set_embeddings_nextn(ctx_dft, true, /*masked*/ true);
+ 
+diff --git a/include/llama.h b/include/llama.h
+index 60329024f..a683bac0a 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -606,6 +606,11 @@ extern "C" {
+     LLAMA_API int32_t llama_model_n_head_kv    (const struct llama_model * model);
+     LLAMA_API int32_t llama_model_n_swa        (const struct llama_model * model);
+ 
++    // Restrict the MTP draft LM head to the given token ids (e.g. the most frequent tokens): drafting then reads
++    // only these rows of the LM head and every other token gets a -inf draft logit. Verification is unaffected.
++    // Must be called before the MTP draft context decodes. Returns false if the model has no supported MTP head.
++    LLAMA_API bool llama_model_set_draft_head_vocab(struct llama_model * model, const llama_token * ids, int32_t n_ids);
++
+     // Get the model's RoPE frequency scaling factor
+     LLAMA_API float llama_model_rope_freq_scale_train(const struct llama_model * model);
+ 
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index 2e86914bc..525bcdf30 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -1226,6 +1226,10 @@ struct llama_model::impl {
+     // contexts where the model tensors metadata is stored as well as the corresponding buffers:
+     std::vector<std::pair<ggml_context_ptr, std::vector<ggml_backend_buffer_ptr>>> ctxs_bufs;
+ 
++    // reduced-vocabulary MTP draft head (set_draft_head_vocab)
++    ggml_context_ptr       draft_head_ctx;
++    ggml_backend_buffer_ptr draft_head_buf;
++
+     buft_list_t cpu_buft_list;
+     std::map<ggml_backend_dev_t, buft_list_t> gpu_buft_list;
+ 
+@@ -3011,6 +3015,71 @@ int32_t llama_model_n_layer_nextn(const llama_model * model) {
+     return model->hparams.n_layer_nextn;
+ }
+ 
++ggml_tensor * llama_model::mtp_lm_head() const {
++    if (hparams.n_layer_nextn > 0) {
++        const auto & layer = layers[hparams.n_layer()];
++        if (layer.nextn.shared_head_head) {
++            return layer.nextn.shared_head_head;
++        }
++    }
++    return output;
++}
++
++bool llama_model::set_draft_head_vocab(const int32_t * ids, int32_t n_ids) {
++    ggml_tensor * head = mtp_lm_head();
++    if (hparams.n_layer_nextn == 0 || head == nullptr || head->buffer == nullptr || n_ids <= 0) {
++        return false;
++    }
++    // scaled (NVFP4) heads and heads without a plain row layout are not supported
++    if (output_s != nullptr || !ggml_is_contiguous(head) || head->ne[2] != 1 || head->ne[3] != 1) {
++        return false;
++    }
++    const int64_t n_vocab_head = head->ne[1];
++    for (int32_t i = 0; i < n_ids; ++i) {
++        if (ids[i] < 0 || ids[i] >= n_vocab_head) {
++            LLAMA_LOG_ERROR("%s: draft vocab id %d out of range [0, %lld)\n", __func__, ids[i], (long long) n_vocab_head);
++            return false;
++        }
++    }
++
++    const size_t row_size = ggml_row_size(head->type, head->ne[0]);
++    std::vector<uint8_t> rows((size_t) n_ids * row_size);
++    {
++        std::vector<uint8_t> all(ggml_nbytes(head));
++        ggml_backend_tensor_get(head, all.data(), 0, all.size());
++        for (int32_t i = 0; i < n_ids; ++i) {
++            memcpy(rows.data() + (size_t) i * row_size, all.data() + (size_t) ids[i] * row_size, row_size);
++        }
++    }
++
++    ggml_init_params ip = { 2*ggml_tensor_overhead(), nullptr, /*no_alloc =*/ true };
++    ggml_context_ptr ctx(ggml_init(ip));
++    ggml_tensor * sub = ggml_new_tensor_2d(ctx.get(), head->type, head->ne[0], n_ids);
++    ggml_tensor * idx = ggml_new_tensor_1d(ctx.get(), GGML_TYPE_I32, n_ids);
++    ggml_set_name(sub, "draft_head");
++    ggml_set_name(idx, "draft_head_ids");
++    ggml_backend_buffer_ptr buf(ggml_backend_alloc_ctx_tensors_from_buft(ctx.get(), ggml_backend_buffer_get_type(head->buffer)));
++    if (!buf) {
++        return false;
++    }
++    ggml_backend_buffer_set_usage(buf.get(), GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
++    ggml_backend_tensor_set(sub, rows.data(), 0, rows.size());
++    ggml_backend_tensor_set(idx, ids, 0, (size_t) n_ids * sizeof(int32_t));
++
++    pimpl->draft_head_ctx = std::move(ctx);
++    pimpl->draft_head_buf = std::move(buf);
++    draft_head     = sub;
++    draft_head_ids = idx;
++
++    LLAMA_LOG_INFO("%s: MTP draft head restricted to %d of %lld tokens (%.1f MiB)\n",
++            __func__, n_ids, (long long) n_vocab_head, ggml_nbytes(sub) / 1024.0 / 1024.0);
++    return true;
++}
++
++bool llama_model_set_draft_head_vocab(llama_model * model, const llama_token * ids, int32_t n_ids) {
++    return model->set_draft_head_vocab(ids, n_ids);
++}
++
+ int32_t llama_model_dflash_selector_top_k(const llama_model * model) {
+     return model->hparams.dflash_selector_top_k;
+ }
+diff --git a/src/llama-model.h b/src/llama-model.h
+index 82124471f..6753b5e78 100644
+--- a/src/llama-model.h
++++ b/src/llama-model.h
+@@ -670,6 +670,16 @@ struct llama_model {
+     struct ggml_tensor * output_s    = nullptr;
+     struct ggml_tensor * output_in_s = nullptr;
+ 
++    // optional reduced-vocabulary LM head for MTP drafting: the rows of the MTP LM head for the token ids in
++    // draft_head_ids. The MTP graph scores only these tokens (all others get -inf), see set_draft_head_vocab()
++    struct ggml_tensor * draft_head     = nullptr;
++    struct ggml_tensor * draft_head_ids = nullptr;
++
++    // the LM head the MTP draft graph uses (nextn.shared_head_head if present, else output)
++    ggml_tensor * mtp_lm_head() const;
++
++    bool set_draft_head_vocab(const int32_t * ids, int32_t n_ids);
++
+     // NextN/MTP model-level projections
+     struct ggml_tensor * nextn_proj_pre  = nullptr;
+     struct ggml_tensor * nextn_proj_post = nullptr;
+diff --git a/src/models/qwen35.cpp b/src/models/qwen35.cpp
+index 350cea808..fb834df97 100644
+--- a/src/models/qwen35.cpp
++++ b/src/models/qwen35.cpp
+@@ -651,7 +651,21 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+     ggml_tensor * head_w = layer.nextn.shared_head_head ? layer.nextn.shared_head_head : model.output;
+     ggml_tensor * head_s = layer.nextn.shared_head_head ? layer.nextn.shared_head_head_s : model.output_s;
+     GGML_ASSERT(head_w && "QWEN35 MTP: missing LM head (nextn.shared_head_head or model.output)");
+-    cur = build_lora_mm(head_w, cur, head_s);
++    if (model.draft_head && cur->ne[1] > 0) {
++        // reduced-vocabulary draft head: score the selected tokens, scatter them into -inf logits
++        const int64_t n_vocab_head = head_w->ne[1];
++        const int64_t n_sub        = model.draft_head->ne[1];
++        const int64_t n_out        = cur->ne[1];
++        ggml_tensor * sub  = ggml_mul_mat(ctx0, model.draft_head, cur);                        // [n_sub, n_out]
++        ggml_tensor * full = ggml_fill(ctx0, ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, n_vocab_head, n_out), -INFINITY);
++        cur = ggml_set_rows(ctx0,
++                ggml_reshape_3d(ctx0, full, 1, n_vocab_head, n_out),
++                ggml_reshape_3d(ctx0, sub,  1, n_sub,        n_out),
++                model.draft_head_ids);
++        cur = ggml_reshape_2d(ctx0, cur, n_vocab_head, n_out);
++    } else {
++        cur = build_lora_mm(head_w, cur, head_s);
++    }
+     cb(cur, "result_output", -1);
+ 
+     res->t_logits = cur;
+-- 
+2.43.0
+

@@ -1,0 +1,386 @@
+From 95a0c83d651ef9fb5385c715b5cf6c8317691191 Mon Sep 17 00:00:00 2001
+From: jaro <jaro@localhost>
+Date: Fri, 9 Oct 2026 15:31:15 +0000
+Subject: [PATCH 1/5] HIP mmvq: multi-column (2-8) vec_dot for RDNA3 with wide
+ contiguous loads (Q4_K/Q5_K/Q6_K/IQ4_XS/IQ4_NL)
+
+---
+ ggml/src/ggml-cuda/mmvq.cu | 313 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 311 insertions(+), 2 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 251577d2f..a4d2281be 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -5,6 +5,26 @@
+ 
+ #include <cstdint>
+ #include <type_traits>
++#if __has_include("mmvq-tune.inc")
++#include "mmvq-tune.inc"
++#endif
++#ifndef MMVQ_R3_NW_MULTI
++#define MMVQ_R3_NW_MULTI 1
++#endif
++#ifndef MMVQ_R3_RPB_N2
++#define MMVQ_R3_RPB_N2 2
++#endif
++#ifndef MMVQ_R3_RPB_N4
++#define MMVQ_R3_RPB_N4 2
++#endif
++#ifndef MMVQ_R3_RPB_N8
++#define MMVQ_R3_RPB_N8 2
++#endif
++
++
++#ifndef MMVQ_MULTI_MIN_NCOLS
++#define MMVQ_MULTI_MIN_NCOLS 2
++#endif
+ 
+ // only enabled on DGX Spark, where it is a gain on every type below. On the higher-bandwidth parts the kernel
+ // has little exposed latency left to hide and the extra requests cost more than they save.
+@@ -93,6 +113,278 @@ static constexpr __host__ __device__ int get_vdr_mmvq(ggml_type type) {
+     }
+ }
+ 
++// Multi-column vec_dot for small batches (ncols_dst > 1, e.g. speculative-decoding verify windows).
++// The weight slices of all rows handled by a thread are loaded and unpacked once, then every column
++// of y is loaded once and dotted against all of them, instead of calling the single-column vec_dot
++// once per (row, column). For Q4_K/Q5_K the min term uses the q8_1 block sums (ds.y) like MMQ does,
++// which halves the dp4a count: each of the 4 threads covering a 32-value sub-block adds a quarter
++// of m*dmin*sum(y).
++static constexpr __host__ __device__ bool mmvq_has_multi(ggml_type type) {
++#ifdef MMVQ_DISABLE_MULTI
++    return false;
++#else
++    switch (type) {
++        case GGML_TYPE_Q4_K:
++        case GGML_TYPE_Q5_K:
++        case GGML_TYPE_Q6_K:
++        case GGML_TYPE_IQ4_XS:
++        case GGML_TYPE_IQ4_NL:
++            return true;
++        default:
++            return false;
++    }
++#endif
++}
++
++static __device__ __forceinline__ void mmvq_unpack_kq_scales(const uint8_t * __restrict__ scales_raw, const int bq8_offset, int (&sc)[2], int (&m)[2]) {
++    const uint16_t * scales = (const uint16_t *) scales_raw;
++    const int j  = bq8_offset/2;
++    const int jm = j & 1;
++
++    const uint32_t s0 = scales[jm + 0];
++    const uint32_t s2 = scales[jm + 2];
++    const uint32_t s4 = scales[jm + 4];
++
++    const uint32_t hi = (uint32_t) -(int32_t) (j >= 2);
++
++    const uint32_t a0 = ((s0 & 0x3f3f) & ~hi) | ((((s4 >> 0) & 0x0f0f) | ((s0 & 0xc0c0) >> 2)) & hi);
++    const uint32_t a1 = ((s2 & 0x3f3f) & ~hi) | ((((s4 >> 4) & 0x0f0f) | ((s2 & 0xc0c0) >> 2)) & hi);
++    sc[0] = a0 & 0xff; sc[1] = (a0 >> 8) & 0xff;
++    m[0]  = a1 & 0xff; m[1]  = (a1 >> 8) & 0xff;
++}
++
++// Q4_K/Q5_K in the multi path: each thread takes MMVQ_KQ_NI contiguous ints (4*NI values) of one
++// 32-value sub-block pair, so weight and activation slices are contiguous (wide loads).
++#ifndef MMVQ_KQ_NI
++#define MMVQ_KQ_NI 4
++#endif
++
++// Q6_K in the multi path: a 256-value block is 16 int positions (2 halves x 8); position p of half n
++// holds 16 values in 4 groups of 4 (q8_1 blocks 4n..4n+3). Each thread takes MMVQ_Q6K_NI contiguous positions.
++#ifndef MMVQ_Q6K_NI
++#define MMVQ_Q6K_NI 4
++#endif
++
++static constexpr __host__ __device__ int get_vdr_mmvq_multi(ggml_type type) {
++    switch (type) {
++        case GGML_TYPE_Q4_K:
++        case GGML_TYPE_Q5_K:
++            return MMVQ_KQ_NI;
++        case GGML_TYPE_Q6_K:
++            return 2*MMVQ_Q6K_NI; // QI6_K = 32 "ints" per block in the kernel's bookkeeping = 16 positions
++        default:
++            return get_vdr_mmvq(type);
++    }
++}
++
++// Unpacked weight slice of one row for one loop iteration of one thread.
++template <ggml_type type> struct mmvq_xs;
++template <> struct mmvq_xs<GGML_TYPE_Q4_K>   { int v[2][MMVQ_KQ_NI]; float sc[2]; float m[2]; };
++template <> struct mmvq_xs<GGML_TYPE_Q5_K>   { int v[2][MMVQ_KQ_NI]; float sc[2]; float m[2]; };
++template <> struct mmvq_xs<GGML_TYPE_Q6_K>   { int v[4][MMVQ_Q6K_NI]; float sc[4]; };
++template <> struct mmvq_xs<GGML_TYPE_IQ4_XS> { int v[8]; float d; };
++template <> struct mmvq_xs<GGML_TYPE_IQ4_NL> { int v[4]; float d; };
++
++template <ggml_type type>
++static __device__ __forceinline__ mmvq_xs<type> mmvq_load_x(const void * __restrict__ vbq, const int kbx, const int iqs) {
++    mmvq_xs<type> x;
++    if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
++        // iqs is in 0,NI..32-NI: sub-block pair = iqs/8 (q8_1 blocks 2*pair, 2*pair+1), ints iqs%8 .. iqs%8+NI-1
++        constexpr int NI = MMVQ_KQ_NI;
++        const int pair = iqs / 8;
++        const int base = iqs % 8;
++        int sc[2], m[2];
++        float2 dm;
++        if constexpr (type == GGML_TYPE_Q4_K) {
++            const block_q4_K * b = (const block_q4_K *) vbq + kbx;
++            const int * q4 = (const int *)(b->qs + 32 * pair) + base;
++#pragma unroll
++            for (int l = 0; l < NI; ++l) {
++                const int v = q4[l];
++                x.v[0][l] = (v >> 0) & 0x0F0F0F0F;
++                x.v[1][l] = (v >> 4) & 0x0F0F0F0F;
++            }
++            mmvq_unpack_kq_scales(b->scales, 2*pair, sc, m);
++            dm = __half22float2(b->dm);
++        } else {
++            const block_q5_K * b = (const block_q5_K *) vbq + kbx;
++            const int * ql = (const int *)(b->qs + 32 * pair) + base;
++            const int * qh = (const int *)(b->qh) + base;
++#pragma unroll
++            for (int l = 0; l < NI; ++l) {
++                const int vl = ql[l];
++                const int vh = qh[l] >> (2*pair);
++                x.v[0][l] = ((vl >> 0) & 0x0F0F0F0F) | ((vh << 4) & 0x10101010);
++                x.v[1][l] = ((vl >> 4) & 0x0F0F0F0F) | ((vh << 3) & 0x10101010);
++            }
++            mmvq_unpack_kq_scales(b->scales, 2*pair, sc, m);
++            dm = __half22float2(b->dm);
++        }
++#pragma unroll
++        for (int i = 0; i < 2; ++i) {
++            x.sc[i] = dm.x * sc[i];
++            x.m[i]  = (NI / 8.0f) * dm.y * m[i];
++        }
++    } else if constexpr (type == GGML_TYPE_Q6_K) {
++        // block_q6_K is 210 bytes, so its ints are only 2-byte aligned
++        const block_q6_K * b = (const block_q6_K *) vbq + kbx;
++        constexpr int NI = MMVQ_Q6K_NI;
++        const int pos  = iqs / 2;     // 0..15, step NI
++        const int n    = pos / 8;     // 128-value half
++        const int p    = pos % 8;     // int position inside the half
++#pragma unroll
++        for (int k = 0; k < NI; ++k) {
++            const int lo = get_int_b2(b->ql, 16*n + p + k);
++            const int hi = get_int_b2(b->ql, 16*n + p + k + 8);
++            const int h  = get_int_b2(b->qh,  8*n + p + k);
++            x.v[0][k] = __vsub4(((lo >> 0) & 0x0F0F0F0F) | (((h >> 0) & 0x03030303) << 4), 0x20202020);
++            x.v[1][k] = __vsub4(((hi >> 0) & 0x0F0F0F0F) | (((h >> 2) & 0x03030303) << 4), 0x20202020);
++            x.v[2][k] = __vsub4(((lo >> 4) & 0x0F0F0F0F) | (((h >> 4) & 0x03030303) << 4), 0x20202020);
++            x.v[3][k] = __vsub4(((hi >> 4) & 0x0F0F0F0F) | (((h >> 6) & 0x03030303) << 4), 0x20202020);
++        }
++        const float d = b->d;
++        const int is = p / 4; // NI <= 4 keeps all positions of a thread inside one 16-value scale group
++#pragma unroll
++        for (int g = 0; g < 4; ++g) {
++            x.sc[g] = d * b->scales[8*n + is + 2*g];
++        }
++    } else if constexpr (type == GGML_TYPE_IQ4_XS) {
++        const block_iq4_xs * b = (const block_iq4_xs *) vbq + kbx;
++#pragma unroll
++        for (int j = 0; j < 4; ++j) {
++            const int2 v = get_int_from_table_16(get_int_b4(b->qs, iqs + j), kvalues_iq4nl);
++            x.v[j + 0] = v.x;
++            x.v[j + 4] = v.y;
++        }
++        const int ls = ((b->scales_l[iqs/8] >> (iqs & 0x04)) & 0x0F) | (((b->scales_h >> (iqs/2)) & 0x03) << 4);
++        x.d = __half2float(b->d) * (ls - 32);
++    } else if constexpr (type == GGML_TYPE_IQ4_NL) {
++        const block_iq4_nl * b = (const block_iq4_nl *) vbq + kbx;
++#pragma unroll
++        for (int l = 0; l < 2; ++l) {
++            const int2 v = get_int_from_table_16(get_int_b2(b->qs, iqs + l), kvalues_iq4nl);
++            x.v[l + 0] = v.x;
++            x.v[l + 2] = v.y;
++        }
++        x.d = __half2float(b->d);
++    } else {
++        static_assert(type == GGML_TYPE_Q4_K, "mmvq_load_x: unsupported type");
++    }
++    return x;
++}
++
++// Activation slice of one column matching mmvq_xs<type>; y points at the q8_1 block for kbx.
++template <ggml_type type> struct mmvq_ys;
++template <> struct mmvq_ys<GGML_TYPE_Q4_K>   { int u[2][MMVQ_KQ_NI]; float2 ds[2]; };
++template <> struct mmvq_ys<GGML_TYPE_Q5_K>   { int u[2][MMVQ_KQ_NI]; float2 ds[2]; };
++template <> struct mmvq_ys<GGML_TYPE_Q6_K>   { int u[4][MMVQ_Q6K_NI]; float d[4]; };
++template <> struct mmvq_ys<GGML_TYPE_IQ4_XS> { int u[8]; float d; };
++template <> struct mmvq_ys<GGML_TYPE_IQ4_NL> { int u[4]; float d; };
++
++template <ggml_type type>
++static __device__ __forceinline__ mmvq_ys<type> mmvq_load_y(const block_q8_1 * __restrict__ y, const int iqs) {
++    mmvq_ys<type> u;
++    if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
++        const int pair = iqs / 8;
++        const int base = iqs % 8;
++#pragma unroll
++        for (int i = 0; i < 2; ++i) {
++            const int * q8 = (const int *) y[2*pair + i].qs + base;
++#pragma unroll
++            for (int l = 0; l < MMVQ_KQ_NI; ++l) {
++                u.u[i][l] = q8[l];
++            }
++            u.ds[i] = __half22float2(y[2*pair + i].ds);
++        }
++    } else if constexpr (type == GGML_TYPE_Q6_K) {
++        const int pos = iqs / 2;
++        const int n   = pos / 8;
++        const int p   = pos % 8;
++#pragma unroll
++        for (int g = 0; g < 4; ++g) {
++            const int * q8 = (const int *) y[4*n + g].qs + p;
++#pragma unroll
++            for (int k = 0; k < MMVQ_Q6K_NI; ++k) {
++                u.u[g][k] = q8[k];
++            }
++            u.d[g] = __low2float(y[4*n + g].ds);
++        }
++    } else if constexpr (type == GGML_TYPE_IQ4_XS) {
++        const block_q8_1 * yb = y + iqs/4;
++#pragma unroll
++        for (int j = 0; j < 8; ++j) {
++            u.u[j] = get_int_b4(yb->qs, j);
++        }
++        u.d = __low2float(yb->ds);
++    } else if constexpr (type == GGML_TYPE_IQ4_NL) {
++        const int * q8 = (const int *) y->qs + iqs;
++#pragma unroll
++        for (int l = 0; l < 2; ++l) {
++            u.u[l + 0] = q8[l + 0];
++            u.u[l + 2] = q8[l + 4];
++        }
++        u.d = __low2float(y->ds);
++    }
++    return u;
++}
++
++template <ggml_type type>
++static __device__ __forceinline__ float mmvq_dot(const mmvq_xs<type> & x, const mmvq_ys<type> & u) {
++    if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
++        float s = 0.0f;
++#pragma unroll
++        for (int i = 0; i < 2; ++i) {
++            int dot = 0;
++#pragma unroll
++            for (int l = 0; l < MMVQ_KQ_NI; ++l) {
++                dot = ggml_cuda_dp4a(x.v[i][l], u.u[i][l], dot);
++            }
++            s += u.ds[i].x * (x.sc[i] * dot) - u.ds[i].y * x.m[i];
++        }
++        return s;
++    } else if constexpr (type == GGML_TYPE_Q6_K) {
++        float s = 0.0f;
++#pragma unroll
++        for (int g = 0; g < 4; ++g) {
++            int dot = 0;
++#pragma unroll
++            for (int k = 0; k < MMVQ_Q6K_NI; ++k) {
++                dot = ggml_cuda_dp4a(x.v[g][k], u.u[g][k], dot);
++            }
++            s += u.d[g] * x.sc[g] * dot;
++        }
++        return s;
++    } else {
++        constexpr int n = sizeof(x.v) / sizeof(int);
++        int sumi = 0;
++#pragma unroll
++        for (int l = 0; l < n; ++l) {
++            sumi = ggml_cuda_dp4a(x.v[l], u.u[l], sumi);
++        }
++        return x.d * u.d * sumi;
++    }
++}
++
++template <ggml_type type, int ncols, int nrows>
++static __device__ __forceinline__ void vec_dot_q_multi(
++        const void * __restrict__ vbq, const block_q8_1 * __restrict__ y, const uint32_t stride_col_y,
++        const int kbx0, const uint32_t stride_row_x, const int iqs, const int last_row, float (&acc)[ncols][nrows]) {
++    mmvq_xs<type> xs[nrows];
++#pragma unroll
++    for (int r = 0; r < nrows; ++r) {
++        // rows past the end of the matrix (last block) re-read a valid row; their results are not stored
++        xs[r] = mmvq_load_x<type>(vbq, kbx0 + min(r, last_row)*stride_row_x, iqs);
++    }
++#pragma unroll
++    for (int j = 0; j < ncols; ++j) {
++        const mmvq_ys<type> u = mmvq_load_y<type>(y + j*stride_col_y, iqs);
++#pragma unroll
++        for (int r = 0; r < nrows; ++r) {
++            acc[j][r] += mmvq_dot<type>(xs[r], u);
++        }
++    }
++}
++
+ enum mmvq_parameter_table_id {
+     MMVQ_PARAMETERS_GENERIC = 0,
+     MMVQ_PARAMETERS_TURING,
+@@ -523,7 +815,7 @@ static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_d
+                     return 1;
+             }
+         }
+-        return 1;
++        return MMVQ_R3_NW_MULTI;
+     }
+     if (table_id == MMVQ_PARAMETERS_TURING) {
+         if (ncols_dst == 1) {
+@@ -593,6 +885,9 @@ static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int
+                 return 1;
+         }
+     }
++    if (table_id == MMVQ_PARAMETERS_RDNA3_0 && ncols_dst > 1) {
++        return ncols_dst <= 2 ? MMVQ_R3_RPB_N2 : ncols_dst <= 4 ? MMVQ_R3_RPB_N4 : MMVQ_R3_RPB_N8;
++    }
+     return 1;
+ }
+ 
+@@ -612,7 +907,8 @@ static __global__ void mul_mat_vec_q(
+ 
+     constexpr int qk  = ggml_cuda_type_traits<type>::qk;
+     constexpr int qi  = ggml_cuda_type_traits<type>::qi;
+-    constexpr int vdr = get_vdr_mmvq(type);
++    constexpr bool use_multi = mmvq_has_multi(type) && ncols_dst >= MMVQ_MULTI_MIN_NCOLS;
++    constexpr int vdr = use_multi ? get_vdr_mmvq_multi(type) : get_vdr_mmvq(type);
+     constexpr mmvq_parameter_table_id table_id = get_device_table_id();
+     constexpr int nwarps = calc_nwarps(type, ncols_dst, table_id, small_k, halve_iters);
+     constexpr int rows_per_cuda_block = calc_rows_per_block(ncols_dst, table_id, small_k, nwarps);
+@@ -717,6 +1013,8 @@ static __global__ void mul_mat_vec_q(
+ 
+     const block_q8_1 * y = ((const block_q8_1 *) vy) + sample_y*stride_sample_y + channel_y*stride_channel_y;
+     const int kbx_offset = sample_x*stride_sample_x + channel_x*stride_channel_x + row0*stride_row_x;
++    // last row of this block that lies inside the matrix (stride_col_dst == number of rows, as in the store guard)
++    [[maybe_unused]] const int last_row = rows_per_cuda_block == 1 ? 0 : min(rows_per_cuda_block, int(stride_col_dst) - row0) - 1;
+ 
+     for (int kbx = tid / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
+         const int kby = kbx * (qk/QK8_1); // y block index that aligns with kbx
+@@ -744,6 +1042,16 @@ static __global__ void mul_mat_vec_q(
+         }
+ #endif
+ 
++        if constexpr (mmvq_has_multi(type) && ncols_dst >= MMVQ_MULTI_MIN_NCOLS) {
++            vec_dot_q_multi<type, ncols_dst, rows_per_cuda_block>(
++                vx, &y[kby], stride_col_y, kbx_offset + kbx, stride_row_x, kqs, last_row, tmp);
++            if constexpr (has_fusion) {
++                if (use_gate) {
++                    vec_dot_q_multi<type, ncols_dst, rows_per_cuda_block>(
++                        vgate, &y[kby], stride_col_y, kbx_offset + kbx, stride_row_x, kqs, last_row, tmp_gate);
++                }
++            }
++        } else {
+ #pragma unroll
+         for (int j = 0; j < ncols_dst; ++j) {
+ #pragma unroll
+@@ -758,6 +1066,7 @@ static __global__ void mul_mat_vec_q(
+                 }
+             }
+         }
++        }
+     }
+ 
+     __shared__ float tmp_shared[nwarps-1 > 0 ? nwarps-1 : 1][ncols_dst][rows_per_cuda_block][warp_size];
+-- 
+2.43.0
+

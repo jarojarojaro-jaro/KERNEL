@@ -1,0 +1,28 @@
+From 8af9de8f85ca688a94f030099d63718dd516c9ff Mon Sep 17 00:00:00 2001
+From: jaro <jaro@localhost>
+Date: Fri, 9 Oct 2026 18:51:10 +0000
+Subject: [PATCH 5/5] mmvq: drop local tuning include
+
+---
+ ggml/src/ggml-cuda/mmvq.cu | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index b9aadf374..a86b25717 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -5,9 +5,8 @@
+ 
+ #include <cstdint>
+ #include <type_traits>
+-#if __has_include("mmvq-tune.inc")
+-#include "mmvq-tune.inc"
+-#endif
++
++// RDNA3 multi-column (2-8) MMVQ tuning, measured on an RX 7900 XTX (see vec_dot_q_multi)
+ #ifndef MMVQ_R3_NW_MULTI
+ #define MMVQ_R3_NW_MULTI 1
+ #endif
+-- 
+2.43.0
+

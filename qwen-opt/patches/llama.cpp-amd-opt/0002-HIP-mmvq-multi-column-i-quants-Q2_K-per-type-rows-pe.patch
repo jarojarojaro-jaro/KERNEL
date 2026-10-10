@@ -1,0 +1,360 @@
+From 72cfa565682390ac7ccf08353e7dd60cf63993fd Mon Sep 17 00:00:00 2001
+From: jaro <jaro@localhost>
+Date: Fri, 9 Oct 2026 16:19:51 +0000
+Subject: [PATCH 2/5] HIP mmvq multi-column: i-quants, Q2_K, per-type rows per
+ block on RDNA3
+
+---
+ ggml/src/ggml-cuda/mmvq.cu | 252 ++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 247 insertions(+), 5 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index a4d2281be..4575e3469 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -18,7 +18,7 @@
+ #define MMVQ_R3_RPB_N4 2
+ #endif
+ #ifndef MMVQ_R3_RPB_N8
+-#define MMVQ_R3_RPB_N8 2
++#define MMVQ_R3_RPB_N8 4
+ #endif
+ 
+ 
+@@ -129,6 +129,14 @@ static constexpr __host__ __device__ bool mmvq_has_multi(ggml_type type) {
+         case GGML_TYPE_Q6_K:
+         case GGML_TYPE_IQ4_XS:
+         case GGML_TYPE_IQ4_NL:
++        case GGML_TYPE_Q2_K:
++        case GGML_TYPE_IQ2_XXS:
++        case GGML_TYPE_IQ2_XS:
++        case GGML_TYPE_IQ2_S:
++        case GGML_TYPE_IQ3_XXS:
++        case GGML_TYPE_IQ3_S:
++        case GGML_TYPE_IQ1_S:
++        case GGML_TYPE_IQ1_M:
+             return true;
+         default:
+             return false;
+@@ -162,7 +170,13 @@ static __device__ __forceinline__ void mmvq_unpack_kq_scales(const uint8_t * __r
+ // Q6_K in the multi path: a 256-value block is 16 int positions (2 halves x 8); position p of half n
+ // holds 16 values in 4 groups of 4 (q8_1 blocks 4n..4n+3). Each thread takes MMVQ_Q6K_NI contiguous positions.
+ #ifndef MMVQ_Q6K_NI
+-#define MMVQ_Q6K_NI 4
++#define MMVQ_Q6K_NI 2
++#endif
++
++// Q2_K in the multi path: 16 int positions per block (2 halves x 8), each holding 4 groups (2 bits each)
++// of 4 values; a thread takes MMVQ_Q2K_NI contiguous positions (NI = 4 covers exactly one 16-value scale group).
++#ifndef MMVQ_Q2K_NI
++#define MMVQ_Q2K_NI 4
+ #endif
+ 
+ static constexpr __host__ __device__ int get_vdr_mmvq_multi(ggml_type type) {
+@@ -172,6 +186,8 @@ static constexpr __host__ __device__ int get_vdr_mmvq_multi(ggml_type type) {
+             return MMVQ_KQ_NI;
+         case GGML_TYPE_Q6_K:
+             return 2*MMVQ_Q6K_NI; // QI6_K = 32 "ints" per block in the kernel's bookkeeping = 16 positions
++        case GGML_TYPE_Q2_K:
++            return MMVQ_Q2K_NI;
+         default:
+             return get_vdr_mmvq(type);
+     }
+@@ -184,6 +200,30 @@ template <> struct mmvq_xs<GGML_TYPE_Q5_K>   { int v[2][MMVQ_KQ_NI]; float sc[2]
+ template <> struct mmvq_xs<GGML_TYPE_Q6_K>   { int v[4][MMVQ_Q6K_NI]; float sc[4]; };
+ template <> struct mmvq_xs<GGML_TYPE_IQ4_XS> { int v[8]; float d; };
+ template <> struct mmvq_xs<GGML_TYPE_IQ4_NL> { int v[4]; float d; };
++template <> struct mmvq_xs<GGML_TYPE_Q2_K>   { int v[4][MMVQ_Q2K_NI]; float sc[4]; float m[4]; };
++// grid-based i-quants: one q8_1 block (32 values) per thread, scale per 16-value half
++struct mmvq_xs_grid { int v[8]; float s[2]; };
++template <> struct mmvq_xs<GGML_TYPE_IQ2_XXS> : mmvq_xs_grid {};
++template <> struct mmvq_xs<GGML_TYPE_IQ2_XS>  : mmvq_xs_grid {};
++template <> struct mmvq_xs<GGML_TYPE_IQ2_S>   : mmvq_xs_grid {};
++template <> struct mmvq_xs<GGML_TYPE_IQ3_XXS> : mmvq_xs_grid {};
++template <> struct mmvq_xs<GGML_TYPE_IQ3_S>   : mmvq_xs_grid {};
++template <> struct mmvq_xs<GGML_TYPE_IQ1_S>   { int v[8]; float s; float a; };
++template <> struct mmvq_xs<GGML_TYPE_IQ1_M>   { int v[8]; float s[2]; float dl[4]; };
++
++static __device__ __forceinline__ void mmvq_apply_signs(const uint2 grid, const uint32_t signs, int & lo, int & hi) {
++    const int s0 = __vcmpne4(signs & 0x08040201, 0);
++    const int s1 = __vcmpne4(signs & 0x80402010, 0);
++    lo = __vsub4(grid.x ^ s0, s0);
++    hi = __vsub4(grid.y ^ s1, s1);
++}
++
++static __device__ __forceinline__ void mmvq_apply_signs8(const int g0, const int g1, const int sp, int & lo, int & hi) {
++    const int s0 = __vcmpne4(((sp & 0x03) << 7) | ((sp & 0x0C) << 21), 0x00000000);
++    const int s1 = __vcmpne4(((sp & 0x30) << 3) | ((sp & 0xC0) << 17), 0x00000000);
++    lo = __vsub4(g0 ^ s0, s0);
++    hi = __vsub4(g1 ^ s1, s1);
++}
+ 
+ template <ggml_type type>
+ static __device__ __forceinline__ mmvq_xs<type> mmvq_load_x(const void * __restrict__ vbq, const int kbx, const int iqs) {
+@@ -267,6 +307,118 @@ static __device__ __forceinline__ mmvq_xs<type> mmvq_load_x(const void * __restr
+             x.v[l + 2] = v.y;
+         }
+         x.d = __half2float(b->d);
++    } else if constexpr (type == GGML_TYPE_Q2_K) {
++        const block_q2_K * b = (const block_q2_K *) vbq + kbx;
++        const int n = iqs / 8;
++        const int p = iqs % 8;
++#pragma unroll
++        for (int k = 0; k < MMVQ_Q2K_NI; ++k) {
++            const int q = get_int_b4(b->qs, 8*n + p + k);
++#pragma unroll
++            for (int g = 0; g < 4; ++g) {
++                x.v[g][k] = (q >> (2*g)) & 0x03030303;
++            }
++        }
++        const float2 dm = __half22float2(b->dm);
++#pragma unroll
++        for (int g = 0; g < 4; ++g) {
++            const int sc = b->scales[8*n + 2*g + p/4];
++            x.sc[g] = dm.x * (sc & 0xF);
++            x.m[g]  = dm.y * (sc >> 4);
++        }
++    } else if constexpr (type == GGML_TYPE_IQ2_XXS) {
++        const block_iq2_xxs * b = (const block_iq2_xxs *) vbq + kbx;
++        const int q2 = get_int_b2(b->qs, iqs);
++        const uint8_t * aux8 = (const uint8_t *) &q2;
++        const uint32_t aux32 = get_int_b2(b->qs, iqs + 1);
++#pragma unroll
++        for (int k = 0; k < 4; ++k) {
++            mmvq_apply_signs(((const uint2 *) iq2xxs_grid)[aux8[k]], unpack_ksigns(aux32 >> (7*k)), x.v[2*k], x.v[2*k + 1]);
++        }
++        x.s[0] = x.s[1] = __half2float(b->d) * (float) (aux32 >> 27 | 1) * 0.125f;
++    } else if constexpr (type == GGML_TYPE_IQ2_XS) {
++        const block_iq2_xs * b = (const block_iq2_xs *) vbq + kbx;
++        const int2 q2_packed = make_int2(get_int_b2(b->qs, iqs + 0), get_int_b2(b->qs, iqs + 1));
++        const uint16_t * q2 = (const uint16_t *) &q2_packed;
++#pragma unroll
++        for (int l = 0; l < 4; ++l) {
++            mmvq_apply_signs(((const uint2 *) iq2xs_grid)[q2[l] & 0x1FF], unpack_ksigns(q2[l] >> 9), x.v[2*l], x.v[2*l + 1]);
++        }
++        const float d = __half2float(b->d) * 0.25f;
++        x.s[0] = d * ((b->scales[iqs/2] & 0x0F) + 0.5f);
++        x.s[1] = d * ((b->scales[iqs/2] >>   4) + 0.5f);
++    } else if constexpr (type == GGML_TYPE_IQ2_S) {
++        const block_iq2_s * b = (const block_iq2_s *) vbq + kbx;
++        const int qs_packed = get_int_b2(b->qs, iqs/2);
++        const uint8_t * qs = (const uint8_t *) &qs_packed;
++        const int qh = b->qh[iqs/2];
++        const int signs_packed_32 = get_int_b2(b->qs, QK_K/32 + iqs/2);
++        const uint8_t * sp = (const uint8_t *) &signs_packed_32;
++#pragma unroll
++        for (int l = 0; l < 4; ++l) {
++            const int * grid = (const int *)(iq2s_grid + (qs[l] | ((qh << (8 - 2*l)) & 0x300)));
++            mmvq_apply_signs8(grid[0], grid[1], sp[l], x.v[2*l], x.v[2*l + 1]);
++        }
++        const float d = __half2float(b->d) * 0.25f;
++        x.s[0] = d * ((b->scales[iqs/2] & 0x0F) + 0.5f);
++        x.s[1] = d * ((b->scales[iqs/2] >>   4) + 0.5f);
++    } else if constexpr (type == GGML_TYPE_IQ3_XXS) {
++        const block_iq3_xxs * b = (const block_iq3_xxs *) vbq + kbx;
++        const int2 q3_packed = make_int2(get_int_b2(b->qs, iqs), get_int_b2(b->qs, iqs + 1));
++        const uint8_t * q3 = (const uint8_t *) &q3_packed;
++        const uint32_t aux32 = get_int_b2(b->qs, QK_K/16 + iqs/2);
++#pragma unroll
++        for (int l = 0; l < 4; ++l) {
++            const uint2 grid = make_uint2(iq3xxs_grid[q3[2*l + 0]], iq3xxs_grid[q3[2*l + 1]]);
++            mmvq_apply_signs(grid, unpack_ksigns(aux32 >> (7*l)), x.v[2*l], x.v[2*l + 1]);
++        }
++        x.s[0] = x.s[1] = __half2float(b->d) * ((aux32 >> 28) + 0.5f) * 0.5f;
++    } else if constexpr (type == GGML_TYPE_IQ3_S) {
++        const block_iq3_s * b = (const block_iq3_s *) vbq + kbx;
++        const int2 qs_packed = make_int2(get_int_b2(b->qs, iqs + 0), get_int_b2(b->qs, iqs + 1));
++        const uint8_t * qs = (const uint8_t *) &qs_packed;
++        const int qh = b->qh[iqs/2];
++        const int signs_packed_32 = get_int_b2(b->signs, iqs/2);
++        const uint8_t * sp = (const uint8_t *) &signs_packed_32;
++#pragma unroll
++        for (int l = 0; l < 4; ++l) {
++            const int g0 = iq3s_grid[qs[2*l + 0] | ((qh << (8 - 2*l)) & 0x100)];
++            const int g1 = iq3s_grid[qs[2*l + 1] | ((qh << (7 - 2*l)) & 0x100)];
++            mmvq_apply_signs8(g0, g1, sp[l], x.v[2*l], x.v[2*l + 1]);
++        }
++        x.s[0] = x.s[1] = __half2float(b->d) * (1 + 2*((b->scales[iqs/4] >> ((iqs << 1) & 0x04)) & 0x0F));
++    } else if constexpr (type == GGML_TYPE_IQ1_S) {
++        const block_iq1_s * b = (const block_iq1_s *) vbq + kbx;
++        const int qs_packed = get_int_b2(b->qs, iqs);
++        const uint8_t * qs = (const uint8_t *) &qs_packed;
++        const int qh = b->qh[iqs];
++#pragma unroll
++        for (int l = 0; l < 4; ++l) {
++            const int grid = iq1s_grid_gpu[qs[l] | (((qh >> 3*l) & 0x07) << 8)];
++            x.v[2*l + 0] = (grid >> 0) & 0x0F0F0F0F;
++            x.v[2*l + 1] = (grid >> 4) & 0x0F0F0F0F;
++        }
++        x.s = __half2float(b->d) * (((qh >> 11) & 0x0E) + 1);
++        x.a = x.s * (-1.0f + IQ1S_DELTA - (qh & 0x8000) * (2.0f*IQ1S_DELTA/0x8000));
++    } else if constexpr (type == GGML_TYPE_IQ1_M) {
++        const block_iq1_m * b = (const block_iq1_m *) vbq + kbx;
++        const int qs_packed = get_int_b4(b->qs, iqs);
++        const uint8_t * qs = (const uint8_t *) &qs_packed;
++#pragma unroll
++        for (int l = 0; l < 4; ++l) {
++            const int qhl = b->qh[2*iqs + l/2] >> (4 * (l % 2));
++            const int grid = iq1s_grid_gpu[qs[l] | ((qhl & 0x07) << 8)];
++            x.v[2*l + 0] = (grid >> 0) & 0x0F0F0F0F;
++            x.v[2*l + 1] = (grid >> 4) & 0x0F0F0F0F;
++            x.dl[l] = -1.0f + IQ1M_DELTA - (qhl & 0x08) * (2.0f*IQ1M_DELTA/0x08);
++        }
++        const uint16_t * sc = (const uint16_t *) b->scales;
++        iq1m_scale_t scale;
++        scale.u16 = (sc[0] >> 12) | ((sc[1] >> 8) & 0x00F0) | ((sc[2] >> 4) & 0x0F00) | (sc[3] & 0xF000);
++        const float d = __half2float(scale.f16);
++        const int tmp = sc[iqs/2] >> (6*(iqs%2));
++        x.s[0] = d * (2*((tmp >> 0) & 0x07) + 1);
++        x.s[1] = d * (2*((tmp >> 3) & 0x07) + 1);
+     } else {
+         static_assert(type == GGML_TYPE_Q4_K, "mmvq_load_x: unsupported type");
+     }
+@@ -280,6 +432,15 @@ template <> struct mmvq_ys<GGML_TYPE_Q5_K>   { int u[2][MMVQ_KQ_NI]; float2 ds[2
+ template <> struct mmvq_ys<GGML_TYPE_Q6_K>   { int u[4][MMVQ_Q6K_NI]; float d[4]; };
+ template <> struct mmvq_ys<GGML_TYPE_IQ4_XS> { int u[8]; float d; };
+ template <> struct mmvq_ys<GGML_TYPE_IQ4_NL> { int u[4]; float d; };
++template <> struct mmvq_ys<GGML_TYPE_Q2_K>   { int u[4][MMVQ_Q2K_NI]; int sy[4]; float d[4]; };
++struct mmvq_ys_grid { int u[8]; float d; };
++template <> struct mmvq_ys<GGML_TYPE_IQ2_XXS> : mmvq_ys_grid {};
++template <> struct mmvq_ys<GGML_TYPE_IQ2_XS>  : mmvq_ys_grid {};
++template <> struct mmvq_ys<GGML_TYPE_IQ2_S>   : mmvq_ys_grid {};
++template <> struct mmvq_ys<GGML_TYPE_IQ3_XXS> : mmvq_ys_grid {};
++template <> struct mmvq_ys<GGML_TYPE_IQ3_S>   : mmvq_ys_grid {};
++template <> struct mmvq_ys<GGML_TYPE_IQ1_S>   { int u[8]; float2 ds; };
++template <> struct mmvq_ys<GGML_TYPE_IQ1_M>   { int u[8]; int sy[4]; float d; };
+ 
+ template <ggml_type type>
+ static __device__ __forceinline__ mmvq_ys<type> mmvq_load_y(const block_q8_1 * __restrict__ y, const int iqs) {
+@@ -324,6 +485,41 @@ static __device__ __forceinline__ mmvq_ys<type> mmvq_load_y(const block_q8_1 * _
+             u.u[l + 2] = q8[l + 4];
+         }
+         u.d = __low2float(y->ds);
++    } else if constexpr (type == GGML_TYPE_Q2_K) {
++        const int n = iqs / 8;
++        const int p = iqs % 8;
++#pragma unroll
++        for (int g = 0; g < 4; ++g) {
++            const int * q8 = (const int *) y[4*n + g].qs + p;
++            int sy = 0;
++#pragma unroll
++            for (int k = 0; k < MMVQ_Q2K_NI; ++k) {
++                u.u[g][k] = q8[k];
++                sy = ggml_cuda_dp4a(q8[k], 0x01010101, sy);
++            }
++            u.sy[g] = sy;
++            u.d[g]  = __low2float(y[4*n + g].ds);
++        }
++    } else {
++        // grid i-quants (vdr 2: q8_1 block iqs/2) and iq1 (vdr 1: q8_1 block iqs): all 8 ints of one block
++        constexpr bool iq1 = type == GGML_TYPE_IQ1_S || type == GGML_TYPE_IQ1_M;
++        const block_q8_1 * yb = y + (iq1 ? iqs : iqs/2);
++        const int * q8 = (const int *) yb->qs;
++#pragma unroll
++        for (int l = 0; l < 8; ++l) {
++            u.u[l] = q8[l];
++        }
++        if constexpr (type == GGML_TYPE_IQ1_S) {
++            u.ds = __half22float2(yb->ds);
++        } else if constexpr (type == GGML_TYPE_IQ1_M) {
++#pragma unroll
++            for (int l = 0; l < 4; ++l) {
++                u.sy[l] = ggml_cuda_dp4a(q8[2*l + 1], 0x01010101, ggml_cuda_dp4a(q8[2*l], 0x01010101, 0));
++            }
++            u.d = __low2float(yb->ds);
++        } else {
++            u.d = __low2float(yb->ds);
++        }
+     }
+     return u;
+ }
+@@ -354,6 +550,46 @@ static __device__ __forceinline__ float mmvq_dot(const mmvq_xs<type> & x, const
+             s += u.d[g] * x.sc[g] * dot;
+         }
+         return s;
++    } else if constexpr (type == GGML_TYPE_Q2_K) {
++        float s = 0.0f;
++#pragma unroll
++        for (int g = 0; g < 4; ++g) {
++            int dot = 0;
++#pragma unroll
++            for (int k = 0; k < MMVQ_Q2K_NI; ++k) {
++                dot = ggml_cuda_dp4a(x.v[g][k], u.u[g][k], dot);
++            }
++            s += u.d[g] * (x.sc[g] * dot - x.m[g] * u.sy[g]);
++        }
++        return s;
++    } else if constexpr (type == GGML_TYPE_IQ1_S) {
++        int sumi = 0;
++#pragma unroll
++        for (int l = 0; l < 8; ++l) {
++            sumi = ggml_cuda_dp4a(x.v[l], u.u[l], sumi);
++        }
++        return x.s * u.ds.x * sumi + x.a * u.ds.y;
++    } else if constexpr (type == GGML_TYPE_IQ1_M) {
++        float s = 0.0f;
++#pragma unroll
++        for (int h = 0; h < 2; ++h) {
++            int sumi = 0;
++#pragma unroll
++            for (int l = 4*h; l < 4*h + 4; ++l) {
++                sumi = ggml_cuda_dp4a(x.v[l], u.u[l], sumi);
++            }
++            s += (sumi + x.dl[2*h] * u.sy[2*h] + x.dl[2*h + 1] * u.sy[2*h + 1]) * x.s[h];
++        }
++        return u.d * s;
++    } else if constexpr (std::is_base_of_v<mmvq_xs_grid, mmvq_xs<type>>) {
++        int sumi0 = 0;
++        int sumi1 = 0;
++#pragma unroll
++        for (int l = 0; l < 4; ++l) {
++            sumi0 = ggml_cuda_dp4a(x.v[l + 0], u.u[l + 0], sumi0);
++            sumi1 = ggml_cuda_dp4a(x.v[l + 4], u.u[l + 4], sumi1);
++        }
++        return u.d * (x.s[0] * sumi0 + x.s[1] * sumi1);
+     } else {
+         constexpr int n = sizeof(x.v) / sizeof(int);
+         int sumi = 0;
+@@ -868,7 +1104,7 @@ static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_d
+     return 1;
+ }
+ 
+-static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int table_id, bool small_k = false, int nwarps = 1) {
++static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int table_id, bool small_k = false, int nwarps = 1, ggml_type type = GGML_TYPE_COUNT) {
+     if (table_id == MMVQ_PARAMETERS_GENERIC || table_id == MMVQ_PARAMETERS_GCN || table_id == MMVQ_PARAMETERS_TURING || table_id == MMVQ_PARAMETERS_GB10) {
+         switch (ncols_dst) {
+             case 1:
+@@ -886,6 +1122,12 @@ static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int
+         }
+     }
+     if (table_id == MMVQ_PARAMETERS_RDNA3_0 && ncols_dst > 1) {
++        if (ncols_dst > 4 && !mmvq_has_multi(type)) {
++            return MMVQ_R3_RPB_N4;
++        }
++        if (ncols_dst > 4 && type == GGML_TYPE_Q2_K) {
++            return 2; // Q2_K keeps 4 groups x 4 ints per row in registers; 4 rows spill occupancy at 8 columns
++        }
+         return ncols_dst <= 2 ? MMVQ_R3_RPB_N2 : ncols_dst <= 4 ? MMVQ_R3_RPB_N4 : MMVQ_R3_RPB_N8;
+     }
+     return 1;
+@@ -911,7 +1153,7 @@ static __global__ void mul_mat_vec_q(
+     constexpr int vdr = use_multi ? get_vdr_mmvq_multi(type) : get_vdr_mmvq(type);
+     constexpr mmvq_parameter_table_id table_id = get_device_table_id();
+     constexpr int nwarps = calc_nwarps(type, ncols_dst, table_id, small_k, halve_iters);
+-    constexpr int rows_per_cuda_block = calc_rows_per_block(ncols_dst, table_id, small_k, nwarps);
++    constexpr int rows_per_cuda_block = calc_rows_per_block(ncols_dst, table_id, small_k, nwarps, type);
+     constexpr int warp_size = ggml_cuda_get_physical_warp_size();
+ 
+     constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
+@@ -1322,7 +1564,7 @@ static std::pair<dim3, dim3> calc_launch_params(
+         const int ncols_dst, const int nrows_x, const int nchannels_dst, const int nsamples_or_ntokens,
+         const int warp_size, const mmvq_parameter_table_id table_id, const bool small_k = false, const bool halve_iters = false) {
+     const int nwarps = calc_nwarps(type, ncols_dst, table_id, small_k, halve_iters);
+-    const int rpb = calc_rows_per_block(ncols_dst, table_id, small_k, nwarps);
++    const int rpb = calc_rows_per_block(ncols_dst, table_id, small_k, nwarps, type);
+     const int64_t nblocks = (nrows_x + rpb - 1) / rpb;
+     const dim3 block_nums(nblocks, nchannels_dst, nsamples_or_ntokens);
+     const dim3 block_dims(warp_size, nwarps, 1);
+-- 
+2.43.0
+
