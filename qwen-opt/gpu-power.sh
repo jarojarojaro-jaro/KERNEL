@@ -5,7 +5,7 @@
 #   gpu-power.sh monitor [FILE]  one line per second (Ctrl+C to stop); optional CSV log
 #   gpu-power.sh cap WATTS       power cap, root (driver range here: 272-350 W, default 303 W)
 #   gpu-power.sh eco             cap 272 W (lowest the driver allows without OverDrive), root
-#   gpu-power.sh maxclk MHZ      max shader clock, root + OverDrive (amdgpu.ppfeaturemask=0xffffffff)
+#   gpu-power.sh maxclk MHZ      max shader clock, root + OverDrive (amdgpu.ppfeaturemask=0xfff7ffff)
 #   gpu-power.sh undervolt MV    shader voltage offset -MV, root + OverDrive
 #   gpu-power.sh reset           driver defaults, root
 #
@@ -27,7 +27,7 @@ status() {
     echo "clocks    : shader $(cur $dev/pp_dpm_sclk) MHz, memory $(cur $dev/pp_dpm_mclk) MHz"
     echo "temps     : edge $(c $hw/temp1_input) C, junction $(c $hw/temp2_input) C (throttle $(c $hw/temp2_crit)), mem $(c $hw/temp3_input) C (throttle $(c $hw/temp3_crit))"
     echo "fan       : $(cat $hw/fan1_input) RPM (max $(cat $hw/fan1_max))"
-    echo "overdrive : $([ -e $od ] && echo enabled || echo 'disabled (amdgpu.ppfeaturemask=0xffffffff to enable)')"
+    echo "overdrive : $([ -e $od ] && echo enabled || echo 'disabled (amdgpu.ppfeaturemask=0xfff7ffff to enable)')"
 }
 
 monitor() {
@@ -44,7 +44,7 @@ monitor() {
 }
 
 need_root() { [ "$(id -u)" = 0 ] || { echo "run with sudo" >&2; exit 1; }; }
-need_od() { [ -e $od ] || { echo "OverDrive disabled: add amdgpu.ppfeaturemask=0xffffffff to the kernel command line and reboot" >&2; exit 1; }; }
+need_od() { [ -e $od ] || { echo "OverDrive disabled: add amdgpu.ppfeaturemask=0xfff7ffff to the kernel command line and reboot" >&2; exit 1; }; }
 
 case ${1:-status} in
     status)    status ;;
