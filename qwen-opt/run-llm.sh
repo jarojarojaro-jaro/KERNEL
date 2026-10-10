@@ -13,6 +13,7 @@
 #      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)
 #      LOG server log file (default ~/qwen-opt/logs/server-<time>.log, newest linked as logs/latest.log)
 #      DRAFT_N max draft tokens (default: backend/drafter specific), P_MIN stop drafting below this draft confidence
+#      DRAFT_SAMPLING greedy (default) | probabilistic (MTP samples drafts, target verifies by rejection sampling)
 set -euo pipefail
 
 model=${1:-qwen}
@@ -71,6 +72,7 @@ case $spec in
     *) echo "unknown spec: $spec (mtp|dflash|none)" >&2; exit 2 ;;
 esac
 [ -n "${P_MIN:-}" ] && spec_args+=(--spec-draft-p-min "$P_MIN")
+[ -n "${DRAFT_SAMPLING:-}" ] && spec_args+=(--spec-draft-sampling "$DRAFT_SAMPLING")
 
 # Runtime suspend (BACO) evicts VRAM to system RAM and the model then runs over PCIe (~4 t/s).
 # The proper fix is power/control=on (gpu-powercap.service); otherwise hold a KFD context for the

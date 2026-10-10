@@ -160,3 +160,17 @@ spec_sweep.sh/spec_sweep.py, 5 promptów (PL proza/tech/kod, EN chat/tech), 2 se
 - Temperatura prawie bez wpływu (rejection sampling przy T>0 działa). Sufitem jest jakość głowicy MTP.
 - Skrócony słownik 64k: poza nim 3.5% tokenów polskiej prozy — nie on ogranicza akceptację.
 - GPU przy 285 W w trakcie: 284 W, junction 85-88°C, edge 64-67°C, wentylatory ~1850 RPM.
+
+## DFlash vs MTP na tym samym zestawie (2026-10-10, ctx 204800, 285 W)
+| konfiguracja | T | mediana | pl-proza | pl-tech | en-chat | en-tech | en-code |
+|---|---|---|---|---|---|---|---|
+| MTP n=5 | 0.0 | 86.3 | 71.5 | 82.3 | 64.5 | 90.8 | 90.4 |
+| DFlash n=6 | 0.0 | 90.6 | 64.7 | 95.9 | 60.2 | 99.7 | 90.8 |
+| DFlash n=8 | 0.0 | 86.2 | 65.7 | 88.4 | 59.4 | 99.1 | 96.1 |
+| MTP n=5 | 1.0 | 81.1 | 63.9 | 81.6 | 60.4 | 85.4 | 80.5 |
+| MTP n=5 probabilistic | 1.0 | 81.1 | 65.5 | 85.2 | 61.7 | 84.9 | 77.3 |
+| DFlash n=6 | 1.0 | 71.9 | 54.9 | 82.7 | 58.0 | 71.9 | — |
+
+- DFlash nie daje ogólnie 120 t/s: tamto było na jednym prompcie (EN kod LRU, 256 tok., T=0). Na szerszym zestawie EN: ~równo z MTP przy T=0, gorzej przy T=1 (DFlash nie ma rejection sampling, tylko dopasowanie).
+- --spec-draft-sampling probabilistic dla MTP: bez zysku.
+- Pierwszy przebieg n=8 MTP (47-56 t/s) i MTP po DFlash (5.6 t/s) były zepsute: llama-server z DFlash wisi na SIGTERM, nowy serwer dzielił VRAM ze starym. spec_sweep.sh dobija teraz SIGKILL po 15 s.

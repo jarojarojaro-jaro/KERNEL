@@ -20,6 +20,7 @@ PROMPTS = {
     "pl-kod": "Napisz w Pythonie klasę LRUCache z metodami get i put (O(1)), z type hintami, docstringami i testami w pytest.",
     "en-chat": "Hey! How are you doing today? Tell me a bit about what you like to talk about.",
     "en-tech": "Explain how a B-tree index works in a relational database: node layout, search, insertion with splits, deletion with merges, and why it suits disks. Use a concrete example with numbers.",
+    "en-code": "Write a complete Python module implementing a thread-safe LRU cache with TTL expiry: type hints, docstrings, and a full pytest test suite. Write all the code, no placeholders.",
 }
 
 
