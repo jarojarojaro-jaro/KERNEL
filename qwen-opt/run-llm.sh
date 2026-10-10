@@ -11,6 +11,7 @@
 #
 # env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0),
 #      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)
+#      LOG server log file (default ~/qwen-opt/logs/server-<time>.log, newest linked as logs/latest.log)
 set -euo pipefail
 
 model=${1:-qwen}
@@ -23,6 +24,9 @@ port=${PORT:-8080}
 host=${HOST:-127.0.0.1}
 kv=${KV:-q4_0}
 effort=${EFFORT:-low}
+mkdir -p "$HOME/qwen-opt/logs"
+log=${LOG:-$HOME/qwen-opt/logs/server-$(date +%F_%H%M%S).log}
+ln -sfn "$log" "$HOME/qwen-opt/logs/latest.log"
 
 # Qwen3.8/Saluki templates accept low|medium|xhigh; off disables thinking entirely
 case $effort in
@@ -78,4 +82,4 @@ if [ "$(cat /sys/class/drm/card0/device/power/control)" != on ]; then
 fi
 
 "$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja \
-    "${think_args[@]}" --host "$host" --port "$port" "${spec_args[@]}"
+    "${think_args[@]}" --host "$host" --port "$port" --log-file "$log" "${spec_args[@]}"
