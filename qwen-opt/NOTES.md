@@ -140,3 +140,23 @@ Bez monitora amdgpu usypia kartę po 5 s bezczynności (runtime PM/BACO) i przen
 Załadowany model działa wtedy przez PCIe: 4.4 t/s zamiast 92 (vram_used 35 MB, gtt_used 23.8 GB).
 Naprawa: power/control=on (gpu-powercap.service, root). Bez roota run-llm.sh trzyma kontekst KFD (gpu-keepawake), co blokuje usypianie.
 Po naprawie przy limicie 285 W: 94.1 / 90.6 / 94.7 t/s, także po 20 s bezczynności.
+
+## Draft MTP: długość draftu, p_min, temperatura (2026-10-10, Vulkan, 285 W)
+spec_sweep.sh/spec_sweep.py, 5 promptów (PL proza/tech/kod, EN chat/tech), 2 seedy x 400 tokenów. Mediana t/s (akceptacja):
+
+| konfiguracja | T | mediana | pl-proza | en-chat | pl-kod |
+|---|---|---|---|---|---|
+| n=5 (domyślne) | 1.0 | 80.5 | 64.2 (0.36) | 59.3 (0.32) | 96.0 (0.66) |
+| n=3 | 1.0 | 75.0 | 67.1 (0.49) | 68.6 (0.51) | 84.6 (0.72) |
+| n=5 p_min 0.3 | 1.0 | 80.7 | 62.8 (0.39) | 57.2 (0.33) | 86.5 (0.59) |
+| n=5 p_min 0.5 | 1.0 | 75.0 | 66.0 (0.57) | 61.0 (0.48) | 89.4 (0.68) |
+| n=6 p_min 0.5 | 1.0 | 77.0 | 63.3 (0.47) | 61.2 (0.47) | 94.1 (0.68) |
+| n=8 p_min 0.5 | 1.0 | 47.0 | | | |
+| n=5 | 0.7 | 79.5 | 60.6 (0.34) | 62.2 (0.34) | 85.3 (0.55) |
+| n=5 | 0.0 | 81.9 | 67.8 (0.40) | 64.3 (0.36) | 92.0 (0.62) |
+
+- Procent akceptacji = przyjęte / wszystkie zgadnięte; krótszy draft podnosi procent, nie prędkość. n=5 bez p_min zostaje.
+- n=8: weryfikacja 9 tokenów wypada poza kernele mmvq 2-8 kolumn → 47 t/s.
+- Temperatura prawie bez wpływu (rejection sampling przy T>0 działa). Sufitem jest jakość głowicy MTP.
+- Skrócony słownik 64k: poza nim 3.5% tokenów polskiej prozy — nie on ogranicza akceptację.
+- GPU przy 285 W w trakcie: 284 W, junction 85-88°C, edge 64-67°C, wentylatory ~1850 RPM.

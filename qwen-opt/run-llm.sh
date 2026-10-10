@@ -12,6 +12,7 @@
 # env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0),
 #      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)
 #      LOG server log file (default ~/qwen-opt/logs/server-<time>.log, newest linked as logs/latest.log)
+#      DRAFT_N max draft tokens (default: backend/drafter specific), P_MIN stop drafting below this draft confidence
 set -euo pipefail
 
 model=${1:-qwen}
@@ -61,14 +62,15 @@ esac
 
 case $spec in
     # DFlash2 block drafter: 6 draft tokens (verify batch = 7)
-    dflash) spec_args=(-md "$drafter" -ngld 99 --spec-type draft-dflash --spec-draft-n-max 6) ;;
+    dflash) spec_args=(-md "$drafter" -ngld 99 --spec-type draft-dflash --spec-draft-n-max "${DRAFT_N:-6}") ;;
     # built-in MTP head (Qwen only) with the reduced-vocabulary draft head
     mtp)    [ "$model" = qwen ] || { echo "saluki has no MTP head, use dflash" >&2; exit 2; }
-            spec_args=(--spec-type draft-mtp --spec-draft-n-max "$mtp_n"
+            spec_args=(--spec-type draft-mtp --spec-draft-n-max "${DRAFT_N:-$mtp_n}"
                        --spec-draft-vocab "$draft_vocab" --spec-draft-vocab-n 65536) ;;
     none)   spec_args=() ;;
     *) echo "unknown spec: $spec (mtp|dflash|none)" >&2; exit 2 ;;
 esac
+[ -n "${P_MIN:-}" ] && spec_args+=(--spec-draft-p-min "$P_MIN")
 
 # Runtime suspend (BACO) evicts VRAM to system RAM and the model then runs over PCIe (~4 t/s).
 # The proper fix is power/control=on (gpu-powercap.service); otherwise hold a KFD context for the
