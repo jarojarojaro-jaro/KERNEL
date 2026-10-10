@@ -1,0 +1,8 @@
+# llama-bench, Qwen3.8-27B UD-Q4_K_XL, KV q4_0, FA on, 2026-10-09 (przerwane na prośbę użytkownika)
+== vulkan
+pp512            912.9 | pp2048            896.2 | tg64            38.64
+pp512 @ d32768   497.7 | pp2048 @ d32768   496.5 | tg64 @ d32768   34.59
+pp512 @ d98304   266.1 | pp2048 @ d98304   264.1 | tg64 @ d98304   29.15
+(d196608 nie zmierzone)
+== rocm
+pp512            855.7   (reszta nie zmierzona)

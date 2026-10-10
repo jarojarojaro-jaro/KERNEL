@@ -119,3 +119,18 @@ Testy: `test-backend-ops -o MUL_MAT` 2444/2444, fusion 3709/3709.
 - NI=8 / NI=2 dla Q4_K/Q5_K, RPB=8: gorzej niż NI=4 / RPB=4.
 - Raport `autokernel-amd/reports/15-road-to-65.md` §16 („1075 GB/s, 112% peaku") jest błędny: przy MTP
   jeden przebieg modelu daje ~2.7 tokenu, więc odczyt wag to ~400 GB/s, nie 1075.
+
+## Na później: limit mocy GPU (odłożone na prośbę użytkownika)
+
+Cel: np. −20% mocy kosztem ≤5% t/s. Stan karty (2026-10-09):
+- `power1_cap` = 303 W (domyślny), zakres sterownika 272–350 W (`/sys/class/drm/card0/device/hwmon/hwmon2/power1_cap*`).
+  Najniżej bez OverDrive: 272 W, czyli tylko −10%.
+- Podczas dekodowania karta siedzi na limicie (~305 W, `THROTTLE_STATUS: THROTTLED`).
+- Zapis do `power1_cap` i `power_dpm_force_performance_level` wymaga roota (brak sudo w tej sesji).
+- `pp_od_clk_voltage` nie istnieje → OverDrive wyłączony. Niższy limit sclk / undervolt wymaga parametru jądra
+  `amdgpu.ppfeaturemask=0xffffffff` + restart, potem `echo "s 1 <MHz>"`, `echo "vo -<mV>"`, `echo c` do `pp_od_clk_voltage`.
+- Plan pomiaru: `serve_bench.py --lang all` przy 350/303/290/272 W i obniżonym sclk, odczyt mocy z `amd-smi metric -p`
+  co 0.5 s, wynik w t/s na wat. Dekodowanie jest ograniczone pamięcią, więc spodziewany mały spadek t/s.
+- Temperatura 2026-10-09, przy prefillu 196k tokenów: edge 66°C, junction 106°C, VRAM 76°C, wentylatory ~2970 RPM, 281 W.
+  Różnica edge–junction ~40°C jest duża (typowo 15–25°C) → podejrzenie pasty / docisku / komory parowej.
+  Junction blisko progu 110°C; power cap powinien obniżyć hotspot.
