@@ -194,3 +194,11 @@ spec_sweep.sh/spec_sweep.py, 5 promptów (PL proza/tech/kod, EN chat/tech), 2 se
 | 94k | 666 (142 s) | 43.0 | 397 (237 s) | 43.9 | **165** / 260 s |
 - ROCm domyślny (run-llm.sh). Vulkan szybszy tylko przy krótkich promptach (~11%).
 - Decode przy głębokim kontekście spada ~2x (92 -> 44 przy 94k) na obu backendach: kolejny cel (FA weryfikacji przy długim KV).
+
+## ROCm: krok i uwaga przy długim kontekście (2026-10-12)
+- Serwer, 6 promptów x 3 seedy, T=1: MTP n=4 41.8 ms/krok 74.5 t/s; n=5 44.5 ms 73.8 t/s; n=3 38.4 ms 74.4 t/s. (Vulkan n=5: 41.5 ms, ~80 t/s.)
+- rocprof: GPU bezczynne 15.5% czasu w przerwach <5 us między ~1200 kernelami na krok (rms_norm, quantize_q8_1, cpy, bin_bcast, unary...).
+- FA przy kwantyzowanym KV i 5 tokenach: wybierany kernel tile, który co krok konwertuje cały K/V do F16.
+  llama-bench (ROCm): d2048 n1 39.8 / n5 44.2 ms; d32768 n1 43.4 / n5 56.4 ms.
+  Kernel vec dla 5 kolumn (GGML_CUDA_FA_VEC_MAX_COLS=8): d32768 n5 120.6 ms — dużo gorzej (vec czyta KV osobno dla każdej z 6 głów Q w grupie GQA).
+  => potrzebny kernel FA czytający skwantyzowane KV raz na głowę KV dla wszystkich głów Q i tokenów (GQA 6 x 5 tokenów). Cel: n=1 i n=5 przy długim kontekście.
