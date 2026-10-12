@@ -1,0 +1,37 @@
+From 81e5fb91381713949c58f25f086db9b4df7448a7 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 13:21:06 +0000
+Subject: [PATCH 08/10] vulkan: AMD RDNA uses the integer-dot MMVQ path for
+ Q6_K from four columns on
+
+The float Q6_K matvec reaches ~545 GB/s at n=6 on RX 7900 XTX, the q8_1 MMVQ
+path ~700 GB/s (lm_head 248320x5120 n=6: 1906 -> 1302 us). At n<=3 the float
+path stays faster and is kept.
+
+This changes Q6_K numerics for n>=4 (q8_1 activations, as all other quant types
+already use for n>1): Qwen3.8-27B KL divergence vs the float path at batch 6
+is 0.0042 (same-top-p 96.6%), comparable to batch 6 vs batch 512 of the old
+build (0.0036, 97.3%); PPL 6.2226 -> 6.2099.
+---
+ ggml/src/ggml-vulkan/ggml-vulkan.cpp | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/ggml/src/ggml-vulkan/ggml-vulkan.cpp b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+index a09645e43..883f2f1dc 100644
+--- a/ggml/src/ggml-vulkan/ggml-vulkan.cpp
++++ b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+@@ -6572,8 +6572,9 @@ static bool ggml_vk_should_use_mmvq(const vk_device& device, uint32_t m, uint32_
+     }
+ 
+     // q6_k only has 2-byte alignment which makes it somewhat problematic,
+-    // using MMVQ is only a win on Intel.
+-    bool mmvq_q6 = device->vendor_id == VK_VENDOR_ID_INTEL;
++    // using MMVQ is only a win on Intel and, from four columns on, on AMD RDNA.
++    bool mmvq_q6 = device->vendor_id == VK_VENDOR_ID_INTEL ||
++                   (device->vendor_id == VK_VENDOR_ID_AMD && device->architecture != vk_device_architecture::AMD_GCN && n >= 4);
+     if (src0_type == GGML_TYPE_Q6_K && !mmvq_q6) {
+         return false;
+     }
+-- 
+2.43.0
+

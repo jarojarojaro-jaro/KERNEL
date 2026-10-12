@@ -174,3 +174,13 @@ spec_sweep.sh/spec_sweep.py, 5 promptów (PL proza/tech/kod, EN chat/tech), 2 se
 - DFlash nie daje ogólnie 120 t/s: tamto było na jednym prompcie (EN kod LRU, 256 tok., T=0). Na szerszym zestawie EN: ~równo z MTP przy T=0, gorzej przy T=1 (DFlash nie ma rejection sampling, tylko dopasowanie).
 - --spec-draft-sampling probabilistic dla MTP: bez zysku.
 - Pierwszy przebieg n=8 MTP (47-56 t/s) i MTP po DFlash (5.6 t/s) były zepsute: llama-server z DFlash wisi na SIGTERM, nowy serwer dzielił VRAM ze starym. spec_sweep.sh dobija teraz SIGKILL po 15 s.
+
+## 2026-10-12: krok po kroku (Vulkan, ctx 204800, 285 W, 6 promptów x 3 seedy, T=1, A/B naprzemiennie 2x)
+- Adaptacyjna długość draftu (iloczyn pewności, --spec-draft-p-cum, n_max 7/6): bez zysku (najlepsze 80.5 vs 80.3). Usunięte.
+- Small-M matvec (ssm_alpha/beta q8_0 m=48): 13.6 -> 8.6 us na wywołanie (~0.5 ms/krok). 68e163cf4.
+- MMVQ Vulkan (afbb23886, 81e5fb913, f6e5de112, 6c7801bf6): matvec 6-kol. q5_K 665->699, iq4_xs 579->663, q4_K 614->690 GB/s; Q6_K przez MMVQ (lm_head n=6 1.9->1.3 ms).
+  - ms/krok (serwer): Qwen UD 43.73 -> 41.46 (-5.2%), Uncensored Q4_K_M 41.93 -> 39.92 (-4.8%). Powtarzalne co do 0.3 ms.
+  - Q6_K numerics: KLD 0.0042 vs poprzednia wersja, w granicach szumu batch 6 vs 512 (0.0036). PPL 6.2226 -> 6.2099.
+  - t/s przy 3 seedach zależy bardziej od wylosowanego tekstu (tok/krok) niż od kernela; ms/krok jest miarą wiarygodną.
+- -bs (losowanie celu na GPU): pomiar zepsuty obciążeniem CPU, do powtórki.
+- GPU w trakcie: 284 W, junction 87 (max 90), mem 84, edge 67.

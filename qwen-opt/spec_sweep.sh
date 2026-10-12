@@ -26,5 +26,7 @@ for cfg in "$@"; do
         kill -0 $srv 2>/dev/null || { echo "$cfg: server failed to start (logs/sweep-server.log)"; continue 2; }
         sleep 1
     done
-    .venv/bin/python spec_sweep.py --label "$cfg" --port "$port" --temps "$temps"
+    .venv/bin/python spec_sweep.py --label "$cfg ${RUN_ARGS:-}" --port "$port" --temps "$temps" --seeds "${SEEDS:-1,2}"
+    stop_server
+    sleep "${COOLDOWN:-0}"
 done

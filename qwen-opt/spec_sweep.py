@@ -51,12 +51,16 @@ def main() -> None:
                 runs = [chat(a.port, p, a.tokens, temp, s) for s in map(int, a.seeds.split(","))]
                 n, ms = sum(r["n"] for r in runs), sum(r["ms"] for r in runs)
                 dr, ac = sum(r["draft"] for r in runs), sum(r["accepted"] for r in runs)
-                per[name] = {"tps": 1000 * n / ms, "acc": ac / dr if dr else 0.0}
+                # each verify step emits its accepted drafts plus one target token
+                steps = n - ac
+                per[name] = {"tps": 1000 * n / ms, "acc": ac / dr if dr else 0.0,
+                             "ms_step": ms / steps, "tok_step": n / steps}
             med = statistics.median(r["tps"] for r in per.values())
-            cells = "  ".join(f"{k} {r['tps']:5.1f} ({r['acc']:.2f})" for k, r in per.items())
-            print(f"{a.label} T={temp}: median {med:5.1f} | {cells}", flush=True)
+            ms_step = statistics.median(r["ms_step"] for r in per.values())
+            cells = "  ".join(f"{k} {r['tps']:5.1f} ({r['tok_step']:.2f} tok/step)" for k, r in per.items())
+            print(f"{a.label} T={temp}: median {med:5.1f} t/s, {ms_step:5.2f} ms/step | {cells}", flush=True)
             log.write(json.dumps({"label": a.label, "time": time.time(), "temp": temp, "median_tps": med,
-                                  "prompts": per}) + "\n")
+                                  "median_ms_step": ms_step, "prompts": per}) + "\n")
 
 
 if __name__ == "__main__":

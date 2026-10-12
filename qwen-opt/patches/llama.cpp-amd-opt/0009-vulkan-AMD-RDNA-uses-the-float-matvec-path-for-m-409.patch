@@ -1,0 +1,36 @@
+From f6e5de11294657a6ee8ce584c51bd63305776a5d Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 13:25:34 +0000
+Subject: [PATCH 09/10] vulkan: AMD RDNA uses the float matvec path for m <
+ 4096 above four columns
+
+With 4 rows per workgroup MMVQ leaves the GPU underfilled for small m. RX 7900
+XTX, n=6, k=5120 (us, MMVQ -> float): q6_K m=1024 18.1 -> 9.7, m=2048 22.4 ->
+17.1; q5_K m=1024 14.6 -> 11.0; q8_0 m=1024 14.4 -> 12.7. In Qwen3.8-27B these
+are the attn_k/attn_v projections (32 per 6-token verify).
+---
+ ggml/src/ggml-vulkan/ggml-vulkan.cpp | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/ggml/src/ggml-vulkan/ggml-vulkan.cpp b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+index 883f2f1dc..58fdfd456 100644
+--- a/ggml/src/ggml-vulkan/ggml-vulkan.cpp
++++ b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+@@ -6579,9 +6579,11 @@ static bool ggml_vk_should_use_mmvq(const vk_device& device, uint32_t m, uint32_
+         return false;
+     }
+ 
+-    // AMD RDNA: MMVQ uses 4 rows per workgroup above four columns, which for very few output rows
+-    // (m=48 -> 12 workgroups) cannot fill the GPU; the float path computes one row per workgroup
+-    if (device->vendor_id == VK_VENDOR_ID_AMD && device->architecture != vk_device_architecture::AMD_GCN && m < 512) {
++    // AMD RDNA: MMVQ uses 4 rows per workgroup above four columns, which for few output rows
++    // (m=48 -> 12 workgroups, m=1024 -> 256 workgroups) cannot fill the GPU; the float path
++    // computes one or two rows per workgroup
++    if (device->vendor_id == VK_VENDOR_ID_AMD && device->architecture != vk_device_architecture::AMD_GCN &&
++        (m < 512 || (n > 4 && m < 4096))) {
+         return false;
+     }
+ 
+-- 
+2.43.0
+

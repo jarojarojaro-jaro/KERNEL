@@ -1,0 +1,43 @@
+From 68e163cf43093e2132f4a16b40ec172340a066f0 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 12:18:40 +0000
+Subject: [PATCH 06/10] vulkan: AMD RDNA small-M matvec uses float path with
+ 256-thread workgroups (ssm_alpha/beta 13.6 -> 8.6 us)
+
+---
+ ggml/src/ggml-vulkan/ggml-vulkan.cpp | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/ggml/src/ggml-vulkan/ggml-vulkan.cpp b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+index 42e407ebf..6d94a92fe 100644
+--- a/ggml/src/ggml-vulkan/ggml-vulkan.cpp
++++ b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+@@ -5581,6 +5581,12 @@ static vk_pipeline ggml_vk_get_dequantize_mul_mat_vec(ggml_backend_vk_context *
+ 
+     // heuristic to choose workgroup size
+     uint32_t dmmv_wg = DMMV_WG_SIZE_SUBGROUP;
++    // AMD RDNA: very few output rows (e.g. qwen35 ssm_alpha/ssm_beta, m=48) leave most CUs idle with
++    // 64-thread workgroups; a 256-thread workgroup splits k four ways per row
++    if (ctx->device->vendor_id == VK_VENDOR_ID_AMD && ctx->device->architecture != vk_device_architecture::AMD_GCN &&
++        m < 512 && k >= 1024) {
++        dmmv_wg = DMMV_WG_SIZE_LARGE;
++    }
+     if ((ctx->device->vendor_id == VK_VENDOR_ID_NVIDIA && ctx->device->architecture != vk_device_architecture::NVIDIA_PRE_TURING) || ctx->device->vendor_id == VK_VENDOR_ID_INTEL) {
+         // Prefer larger workgroups when M is small, to spread the work out more
+         // and keep more SMs busy.
+@@ -6571,6 +6577,12 @@ static bool ggml_vk_should_use_mmvq(const vk_device& device, uint32_t m, uint32_
+         return false;
+     }
+ 
++    // AMD RDNA: MMVQ uses 4 rows per workgroup above four columns, which for very few output rows
++    // (m=48 -> 12 workgroups) cannot fill the GPU; the float path computes one row per workgroup
++    if (device->vendor_id == VK_VENDOR_ID_AMD && device->architecture != vk_device_architecture::AMD_GCN && m < 512) {
++        return false;
++    }
++
+     // MMVQ is generally good for batches
+     if (n > 1) {
+         return true;
+-- 
+2.43.0
+

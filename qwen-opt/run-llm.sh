@@ -18,7 +18,7 @@
 set -euo pipefail
 
 model=${1:-qwen}
-extra_args=()
+extra_args=(${EXTRA_ARGS:-})
 default_spec=mtp
 [ "$model" = saluki ] && default_spec=dflash
 spec=${2:-$default_spec}
@@ -54,9 +54,10 @@ esac
 case $backend in
     vulkan)
         # user-space Mesa RADV + LunarG loader (no root install needed)
-        bin=$HOME/llama-opt-vk/bin/llama-server
+        vkbin=${VK_BIN:-$HOME/llama-opt-vk/bin}
+        bin=$vkbin/llama-server
         export VK_ICD_FILENAMES=$HOME/llama-opt-vk/radeon_icd.json
-        export LD_LIBRARY_PATH=$HOME/llama-opt-vk/bin:$HOME/vk/1.4.363.0/x86_64/lib/VulkanLoader/lib:$HOME/vk/root/usr/lib/x86_64-linux-gnu
+        export LD_LIBRARY_PATH=$vkbin:$HOME/vk/1.4.363.0/x86_64/lib/VulkanLoader/lib:$HOME/vk/root/usr/lib/x86_64-linux-gnu
         mtp_n=5 ;;
     rocm)
         bin=$HOME/llama-opt/bin/llama-server

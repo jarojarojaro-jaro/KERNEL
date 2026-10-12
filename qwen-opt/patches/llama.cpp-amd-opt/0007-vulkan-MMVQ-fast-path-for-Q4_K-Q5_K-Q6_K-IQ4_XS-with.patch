@@ -1,0 +1,430 @@
+From afbb238864532be5df730d9fba70606fea85c64c Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 13:15:18 +0000
+Subject: [PATCH 07/10] vulkan: MMVQ fast path for Q4_K/Q5_K/Q6_K/IQ4_XS with
+ hoisted per-thread chunk decoding
+
+Each thread owns a fixed 16-value (K-quants) or 32-value (IQ4_XS) chunk of
+every superblock it visits, so block/scale indices, shifts and masks are loop
+invariant; weights of a row are unpacked once and reused for all columns, and
+the q8_1 activations of a column are loaded once per superblock for all rows.
+The thread->data mapping and per-thread accumulation order are unchanged, so
+results are bit-identical to the previous kernel (checked on model shapes and
+greedy llama-server output). RDNA3/4: IQ4_XS uses 2 rows per workgroup above
+four columns.
+
+RX 7900 XTX (RADV), n=6, chained matvec bench (us):
+  q5_K 17408x5120 88.2->84.6, 5120x17408 90.4->88.4
+  q4_K 17408x5120 80.7->75.6, 5120x17408 70.7->65.0, 10240x5120 49.1->44.8
+  iq4_xs 17408x5120 85.0->77.4, 5120x17408 77.7->64.4
+llama-bench pp6 (d=0): 31.95 -> 30.43 ms
+---
+ ggml/src/ggml-vulkan/ggml-vulkan.cpp          |   5 +-
+ .../vulkan-shaders/mul_mat_vecq.comp          | 166 +++++++++++++++++-
+ .../vulkan-shaders/mul_mat_vecq_funcs.glsl    | 160 -----------------
+ 3 files changed, 167 insertions(+), 164 deletions(-)
+
+diff --git a/ggml/src/ggml-vulkan/ggml-vulkan.cpp b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+index 6d94a92fe..a09645e43 100644
+--- a/ggml/src/ggml-vulkan/ggml-vulkan.cpp
++++ b/ggml/src/ggml-vulkan/ggml-vulkan.cpp
+@@ -2891,7 +2891,8 @@ void ggml_vk_load_shaders(vk_device& device, vk_pipeline requested) {
+     }
+     // RDNA3/4: above four columns, static 4 rows for all types bench faster than the default
+     const bool is_rdna3_or_4 = device->vendor_id == VK_VENDOR_ID_AMD && (device->architecture == AMD_RDNA3 || device->architecture == AMD_RDNA4);
+-    auto const &rm_int_n = [&](uint32_t rows, uint32_t i) { return (is_rdna3_or_4 && i >= 4) ? 4u : rows; };
++    // (IQ4_XS: 2 rows bench faster)
++    auto const &rm_int_n = [&](uint32_t rows, uint32_t i, uint32_t rdna_rows = 4) { return (is_rdna3_or_4 && i >= 4) ? rdna_rows : rows; };
+     // RDNA3/4: Static 4 rows for all types bench faster than the default
+     auto const &rm_id = [&](uint32_t rows) { return is_rdna3_or_4 ? 4u : rows; };
+     uint32_t rm_iq = 2 * rm_kq;
+@@ -3013,7 +3014,7 @@ void ggml_vk_load_shaders(vk_device& device, vk_pipeline requested) {
+ 
+                 ggml_vk_create_pipeline(device, device->pipeline_dequant_mul_mat_vec_q8_1_f32[w][GGML_TYPE_IQ1_S][i], "mul_mat_vec_iq1_s_q8_1_f32", arr_dmmv_iq1_s_q8_1_f32_len[reduc], arr_dmmv_iq1_s_q8_1_f32_data[reduc], "main", mul_mat_vec_num_bindings, sizeof(vk_mat_vec_push_constants), {1*rm_iq_int(i), 1, 1}, {wg_size_subgroup_int, 1*rm_iq_int(i), i+1}, 1, true, use_subgroups, subgroup_size_int);
+                 ggml_vk_create_pipeline(device, device->pipeline_dequant_mul_mat_vec_q8_1_f32[w][GGML_TYPE_IQ1_M][i], "mul_mat_vec_iq1_m_q8_1_f32", arr_dmmv_iq1_m_q8_1_f32_len[reduc], arr_dmmv_iq1_m_q8_1_f32_data[reduc], "main", mul_mat_vec_num_bindings, sizeof(vk_mat_vec_push_constants), {1*rm_iq_int(i), 1, 1}, {wg_size_subgroup_int, 1*rm_iq_int(i), i+1}, 1, true, use_subgroups, subgroup_size_int);
+-                ggml_vk_create_pipeline(device, device->pipeline_dequant_mul_mat_vec_q8_1_f32[w][GGML_TYPE_IQ4_XS][i], "mul_mat_vec_iq4_xs_q8_1_f32", arr_dmmv_iq4_xs_q8_1_f32_len[reduc], arr_dmmv_iq4_xs_q8_1_f32_data[reduc], "main", mul_mat_vec_num_bindings, sizeof(vk_mat_vec_push_constants), {rm_int_n(1*rm_stdq_int, i), 1, 1}, {wg_size_subgroup_int, rm_int_n(1*rm_stdq_int, i), i+1}, 1, true, use_subgroups, subgroup_size_int);
++                ggml_vk_create_pipeline(device, device->pipeline_dequant_mul_mat_vec_q8_1_f32[w][GGML_TYPE_IQ4_XS][i], "mul_mat_vec_iq4_xs_q8_1_f32", arr_dmmv_iq4_xs_q8_1_f32_len[reduc], arr_dmmv_iq4_xs_q8_1_f32_data[reduc], "main", mul_mat_vec_num_bindings, sizeof(vk_mat_vec_push_constants), {rm_int_n(1*rm_stdq_int, i, 2), 1, 1}, {wg_size_subgroup_int, rm_int_n(1*rm_stdq_int, i, 2), i+1}, 1, true, use_subgroups, subgroup_size_int);
+ 
+             }
+ #endif // GGML_VULKAN_INTEGER_DOT_GLSLC_SUPPORT
+diff --git a/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq.comp b/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq.comp
+index 3383aa88e..d66db5a51 100644
+--- a/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq.comp
++++ b/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq.comp
+@@ -12,11 +12,16 @@
+ 
+ layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+ 
+-#if defined(DATA_A_Q2_0) || defined(DATA_A_QUANT_K)
++// values of a 256-value superblock handled per thread per iteration, see compute_outputs below
++#if defined(DATA_A_Q4_K) || defined(DATA_A_Q5_K) || defined(DATA_A_Q6_K)
++#define MMVQ_CHUNK 16
++#elif defined(DATA_A_IQ4_XS)
++#define MMVQ_CHUNK 32
++#elif defined(DATA_A_Q2_0) || defined(DATA_A_QUANT_K)
+ #define K_PER_ITER 16
+ #elif defined(DATA_A_QUANT_LEGACY) || defined(DATA_A_MXFP4)
+ #define K_PER_ITER 8
+-#elif defined(DATA_A_IQ1_S) || defined(DATA_A_IQ1_M) || defined(DATA_A_IQ4_XS)
++#elif defined(DATA_A_IQ1_S) || defined(DATA_A_IQ1_M)
+ #define K_PER_ITER 32
+ #else
+ #error unimplemented
+@@ -24,11 +29,14 @@ layout(local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;
+ 
+ uint a_offset, b_offset, d_offset;
+ 
++#ifndef MMVQ_CHUNK
+ int32_t cache_b_qs[K_PER_ITER / 4];
+ vec2 cache_b_ds;
++#endif
+ 
+ #include "mul_mat_vecq_funcs.glsl"
+ 
++#ifndef MMVQ_CHUNK
+ void iter(inout FLOAT_TYPE temp[NUM_COLS][NUM_ROWS], const uint first_row, const uint num_rows, const uint col, const uint b_qs_idx) {
+     [[unroll]] for (uint j = 0; j < NUM_COLS; ++j) {
+         // Preload data_b block
+@@ -73,7 +81,160 @@ void iter(inout FLOAT_TYPE temp[NUM_COLS][NUM_ROWS], const uint first_row, const
+         }
+     }
+ }
++#endif
++
++#ifdef MMVQ_CHUNK
++// Each thread owns one MMVQ_CHUNK-value chunk of every superblock it visits, so all chunk-dependent
++// indices, shifts and scale positions are loop invariant, and the weights of a row are unpacked once
++// and reused for all NUM_COLS columns. The thread -> data mapping and the per-thread accumulation
++// order match the generic iter() path, so results are bit-identical to it.
++void compute_outputs(const uint32_t first_row, const uint32_t num_rows) {
++    const uint tid = gl_LocalInvocationID.x;
++
++    get_offsets(a_offset, b_offset, d_offset);
++    b_offset /= QUANT_K_Q8_1;
++
++    const uint nb = p.ncols / QUANT_K;
++    const uint chunks_per_block = QUANT_K / MMVQ_CHUNK;
++    const uint chunk = tid % chunks_per_block;
++    const uint sb_step = BLOCK_SIZE / chunks_per_block;
++
++    FLOAT_TYPE temp[NUM_COLS][NUM_ROWS];
++    [[unroll]] for (uint j = 0; j < NUM_COLS; ++j) {
++        [[unroll]] for (uint n = 0; n < NUM_ROWS; ++n) {
++            temp[j][n] = FLOAT_TYPE(0.0f);
++        }
++    }
++
++    // q8_1 block holding this chunk in superblock 0, per column
++    uint b_base[NUM_COLS];
++    [[unroll]] for (uint j = 0; j < NUM_COLS; ++j) {
++        b_base[j] = (j*p.batch_stride_b) / QUANT_K_Q8_1 + b_offset + (chunk * MMVQ_CHUNK) / QUANT_K_Q8_1;
++    }
++    const uint b_qs_off = ((chunk * MMVQ_CHUNK) % QUANT_K_Q8_1) / 4;
++
++#if defined(DATA_A_Q4_K) || defined(DATA_A_Q5_K)
++    const uint is = chunk / 2;                       // 32-value sub-block
++    const uint qs_idx = (is / 2) * 8 + (chunk % 2) * 4;
++    const uint qs_shift = (is % 2) * 4;
++#if defined(DATA_A_Q5_K)
++    const uint qh_idx = (chunk % 2) * 4;
++    // move bit `is` of every qh byte to bit 4
++    const uint qh_rshift = is > 4 ? is - 4 : 0;
++    const uint qh_lshift = is < 4 ? 4 - is : 0;
++#endif
++    // 6-bit scale/min of sub-block `is` (see get_scale_min_k4)
++    const bool sc_lo = is < 4;
++    const uint sc_shift = 8 * (is % 4);
++    const uint sc_bits = sc_lo ? 6 : 4;
++    const uint sc_hi_bits = sc_lo ? 0 : 2;
++    const uint m_shift = sc_lo ? sc_shift : sc_shift + 4;
++#elif defined(DATA_A_Q6_K)
++    const uint g = (chunk % 8) / 2;
++    const uint ql_idx = ((chunk / 8) * 64 + (g % 2) * 32 + (chunk % 2) * 16) / 2;
++    const uint ql_shift = 4 * (g / 2);
++    const uint qh_idx = ((chunk / 8) * 32 + (chunk % 2) * 16) / 2;
++    const uint qh_shift = 2 * g;
++#else // DATA_A_IQ4_XS
++    const uint qs_idx = 4 * chunk;                   // chunk = 32-value sub-block
++#endif
++
++    uint row_base[NUM_ROWS];
++    [[unroll]] for (uint n = 0; n < NUM_ROWS; ++n) {
++        row_base[n] = a_offset + (first_row + n) * nb;
++    }
++
++    for (uint i = tid / chunks_per_block; i < nb; i += sb_step) {
++        ivec4 bq[NUM_COLS][MMVQ_CHUNK / 16];
++        vec2 bds[NUM_COLS];
++        [[unroll]] for (uint j = 0; j < NUM_COLS; ++j) {
++            const uint b_idx = b_base[j] + i * (QUANT_K / QUANT_K_Q8_1);
++            const uint b_outer = b_idx / 4;
++            const uint b_inner = b_idx % 4;
++            bds[j] = vec2(data_b[b_outer].ds[b_inner]);
++#if defined(DATA_A_Q4_K) || defined(DATA_A_Q5_K)
++            // this thread covers half of the 32-value block: half of its sum
++            bds[j].y *= 0.5;
++#endif
++            [[unroll]] for (uint h = 0; h < MMVQ_CHUNK / 16; ++h) {
++                bq[j][h] = ivec4(data_b[b_outer].qs[b_inner * 8 + b_qs_off + 4 * h    ],
++                                 data_b[b_outer].qs[b_inner * 8 + b_qs_off + 4 * h + 1],
++                                 data_b[b_outer].qs[b_inner * 8 + b_qs_off + 4 * h + 2],
++                                 data_b[b_outer].qs[b_inner * 8 + b_qs_off + 4 * h + 3]);
++            }
++        }
++
++        [[unroll]] for (uint n = 0; n < num_rows; ++n) {
++            const uint ib = row_base[n] + i;
++#if defined(DATA_A_Q4_K) || defined(DATA_A_Q5_K)
++            const vec2 dm = vec2(data_a_packed32[ib].dm);
++            const uint s0 = data_a_packed32[ib].scales[0];
++            const uint s1 = data_a_packed32[ib].scales[1];
++            const uint s2 = data_a_packed32[ib].scales[2];
++            const uint sc = bitfieldExtract(sc_lo ? s0 : s2, int(sc_shift), int(sc_bits)) |
++                            (bitfieldExtract(s0, int(sc_shift + 6), int(sc_hi_bits)) << 4);
++            const uint mn = bitfieldExtract(sc_lo ? s1 : s2, int(m_shift), int(sc_bits)) |
++                            (bitfieldExtract(s1, int(sc_shift + 6), int(sc_hi_bits)) << 4);
++            const float dsc = dm.x * float(sc);
++            const float dmn = dm.y * float(mn);
++
++            const uvec4 qs = uvec4(data_a_packed32[ib].qs[qs_idx    ], data_a_packed32[ib].qs[qs_idx + 1],
++                                   data_a_packed32[ib].qs[qs_idx + 2], data_a_packed32[ib].qs[qs_idx + 3]);
++            uvec4 q = (qs >> qs_shift) & 0x0F0F0F0F;
++#if defined(DATA_A_Q5_K)
++            const uvec4 qh = uvec4(data_a_packed32[ib].qh[qh_idx    ], data_a_packed32[ib].qh[qh_idx + 1],
++                                   data_a_packed32[ib].qh[qh_idx + 2], data_a_packed32[ib].qh[qh_idx + 3]);
++            q |= ((qh >> qh_rshift) << qh_lshift) & 0x10101010;
++#endif
++            const ivec4 qa[1] = { ivec4(q) };
++#elif defined(DATA_A_Q6_K)
++            const float dsc = float(data_a[ib].d) * float(data_a[ib].scales[chunk]);
++            const uvec4 ql = uvec4(
++                uint(data_a_packed16[ib].ql[ql_idx    ]) | (uint(data_a_packed16[ib].ql[ql_idx + 1]) << 16),
++                uint(data_a_packed16[ib].ql[ql_idx + 2]) | (uint(data_a_packed16[ib].ql[ql_idx + 3]) << 16),
++                uint(data_a_packed16[ib].ql[ql_idx + 4]) | (uint(data_a_packed16[ib].ql[ql_idx + 5]) << 16),
++                uint(data_a_packed16[ib].ql[ql_idx + 6]) | (uint(data_a_packed16[ib].ql[ql_idx + 7]) << 16));
++            const uvec4 qh = uvec4(
++                uint(data_a_packed16[ib].qh[qh_idx    ]) | (uint(data_a_packed16[ib].qh[qh_idx + 1]) << 16),
++                uint(data_a_packed16[ib].qh[qh_idx + 2]) | (uint(data_a_packed16[ib].qh[qh_idx + 3]) << 16),
++                uint(data_a_packed16[ib].qh[qh_idx + 4]) | (uint(data_a_packed16[ib].qh[qh_idx + 5]) << 16),
++                uint(data_a_packed16[ib].qh[qh_idx + 6]) | (uint(data_a_packed16[ib].qh[qh_idx + 7]) << 16));
++            const uvec4 q = ((ql >> ql_shift) & 0x0F0F0F0F) | (((qh >> qh_shift) & 0x03030303) << 4);
++            // subtract 32 from every byte without borrows between bytes
++            const ivec4 qa[1] = { ivec4(((q ^ 0x80808080) - 0x20202020) ^ 0x80808080) };
++#else // DATA_A_IQ4_XS
++            const uint sl = bitfieldExtract(data_a_packed32[ib].scales_l, int(4 * chunk), 4);
++            const uint sh = bitfieldExtract(uint(data_a_packed32[ib].scales_h), int(2 * chunk), 2);
++            const float dsc = float(data_a_packed32[ib].d) * float(int(sl | (sh << 4)) - 32);
++            // low nibbles are values 0..15, high nibbles values 16..31 of the sub-block
++            ivec4 qa[2];
++            [[unroll]] for (uint l = 0; l < 4; ++l) {
++                const i32vec2 v = iq4nl_to_i8x8(data_a_packed32[ib].qs[qs_idx + l]);
++                qa[0][l] = v.x;
++                qa[1][l] = v.y;
++            }
++#endif
++
++            [[unroll]] for (uint j = 0; j < NUM_COLS; ++j) {
++                int32_t q_sum = 0;
++                [[unroll]] for (uint h = 0; h < MMVQ_CHUNK / 16; ++h) {
++                    q_sum += dotPacked4x8EXT(qa[h].x, bq[j][h].x);
++                    q_sum += dotPacked4x8EXT(qa[h].y, bq[j][h].y);
++                    q_sum += dotPacked4x8EXT(qa[h].z, bq[j][h].z);
++                    q_sum += dotPacked4x8EXT(qa[h].w, bq[j][h].w);
++                }
++#if defined(DATA_A_Q4_K) || defined(DATA_A_Q5_K)
++                temp[j][n] += FLOAT_TYPE(float(q_sum) * (dsc * bds[j].x) - dmn * bds[j].y);
++#else
++                temp[j][n] += FLOAT_TYPE(float(q_sum) * (dsc * bds[j].x));
++#endif
++            }
++        }
++    }
+ 
++    reduce_result(temp, d_offset, first_row, num_rows, tid);
++}
++#else
+ void compute_outputs(const uint32_t first_row, const uint32_t num_rows) {
+     const uint tid = gl_LocalInvocationID.x;
+ 
+@@ -122,6 +283,7 @@ void compute_outputs(const uint32_t first_row, const uint32_t num_rows) {
+ 
+     reduce_result(temp, d_offset, first_row, num_rows, tid);
+ }
++#endif
+ 
+ void main() {
+     const uint first_row = NUM_ROWS * (gl_WorkGroupID.x + gl_NumWorkGroups.x * gl_WorkGroupID.z);
+diff --git a/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq_funcs.glsl b/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq_funcs.glsl
+index 03c348bf9..6db7e399f 100644
+--- a/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq_funcs.glsl
++++ b/ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq_funcs.glsl
+@@ -310,166 +310,6 @@ FLOAT_TYPE mmvq_dot_product(const uint ib_a, const uint iqs) {
+ }
+ #endif
+ 
+-#if defined(DATA_A_Q4_K) || defined(DATA_A_Q5_K)
+-// 4-byte loads for Q4_K blocks (144 bytes) and Q5_K blocks (176 bytes)
+-i32vec4 repack4(uint ib, uint iqs) {
+-    const uint ib_k = ib / 8;
+-    const uint iqs_k = (ib % 8) * 8 + iqs;
+-
+-    const uint qs_idx = (iqs_k / 16) * 8 + (iqs_k % 8);
+-    const uint qs_shift = ((iqs_k % 16) / 8) * 4;
+-
+-#if defined(DATA_A_Q4_K)
+-    const uint32_t vals0 = (data_a_packed32[ib_k].qs[qs_idx    ] >> qs_shift) & 0x0F0F0F0F;
+-    const uint32_t vals1 = (data_a_packed32[ib_k].qs[qs_idx + 1] >> qs_shift) & 0x0F0F0F0F;
+-    const uint32_t vals2 = (data_a_packed32[ib_k].qs[qs_idx + 2] >> qs_shift) & 0x0F0F0F0F;
+-    const uint32_t vals3 = (data_a_packed32[ib_k].qs[qs_idx + 3] >> qs_shift) & 0x0F0F0F0F;
+-
+-    return i32vec4(vals0, vals1, vals2, vals3);
+-#else // defined(DATA_A_Q5_K)
+-    const uint qh_idx = iqs;
+-    const uint qh_shift = iqs_k / 8;
+-
+-    return i32vec4(((data_a_packed32[ib_k].qs[qs_idx    ] >> qs_shift) & 0x0F0F0F0F) |
+-                  (((data_a_packed32[ib_k].qh[qh_idx    ] >> qh_shift) & 0x01010101) << 4),
+-                   ((data_a_packed32[ib_k].qs[qs_idx + 1] >> qs_shift) & 0x0F0F0F0F) |
+-                  (((data_a_packed32[ib_k].qh[qh_idx + 1] >> qh_shift) & 0x01010101) << 4),
+-                   ((data_a_packed32[ib_k].qs[qs_idx + 2] >> qs_shift) & 0x0F0F0F0F) |
+-                  (((data_a_packed32[ib_k].qh[qh_idx + 2] >> qh_shift) & 0x01010101) << 4),
+-                   ((data_a_packed32[ib_k].qs[qs_idx + 3] >> qs_shift) & 0x0F0F0F0F) |
+-                  (((data_a_packed32[ib_k].qh[qh_idx + 3] >> qh_shift) & 0x01010101) << 4));
+-#endif
+-}
+-
+-vec2 get_dm_scale(uint ib, uint iqs) {
+-    const uint ib_k = ib / 8;
+-    const uint iqs_k = (ib % 8) * 8 + iqs;
+-    const uint is = iqs_k / 8;
+-
+-    const uvec3 scales = uvec3(data_a_packed32[ib_k].scales[0],
+-                               data_a_packed32[ib_k].scales[1],
+-                               data_a_packed32[ib_k].scales[2]);
+-    const uint scalesoffs = (is & 3) * 8;
+-
+-    const uint scidx0 = (is < 4) ? 0 : 2;
+-    const uint scidxshift0 = scalesoffs;
+-    const uint scidxshift1 = (is < 4) ? scalesoffs : scalesoffs + 2;
+-    const uint mbidx0 = (is < 4) ? 1 : 2;
+-    const uint mbidxshift0 = (is < 4) ? scalesoffs : scalesoffs + 4;
+-    const uint mbidxshift1 = (is < 4) ? scalesoffs : scalesoffs + 2;
+-
+-    const uint8_t sc    = uint8_t(((scales[scidx0] >> scidxshift0) & 0xF) | ((scales[0] >> scidxshift1) & 0x30));
+-    const uint8_t mbyte = uint8_t(((scales[mbidx0] >> mbidxshift0) & 0xF) | ((scales[1] >> mbidxshift1) & 0x30));
+-    u8vec2 scale_dm = u8vec2(sc, mbyte);
+-
+-    return FLOAT_TYPEV2(data_a_packed32[ib_k].dm) * FLOAT_TYPEV2(scale_dm);
+-}
+-
+-FLOAT_TYPE mmvq_dot_product(const uint ib_a, const uint iqs) {
+-    int32_t q_sum = 0;
+-
+-    const i32vec4 qs_a = repack4(ib_a, iqs * 4);
+-    const vec2 dm_scale = get_dm_scale(ib_a, iqs * 4);
+-
+-    q_sum += dotPacked4x8EXT(qs_a.x, cache_b_qs[0]);
+-    q_sum += dotPacked4x8EXT(qs_a.y, cache_b_qs[1]);
+-    q_sum += dotPacked4x8EXT(qs_a.z, cache_b_qs[2]);
+-    q_sum += dotPacked4x8EXT(qs_a.w, cache_b_qs[3]);
+-
+-    return FLOAT_TYPE(float(cache_b_ds.x) * float(dm_scale.x) * float(q_sum) - float(dm_scale.y) * float(cache_b_ds.y / 2));
+-}
+-#endif
+-
+-#if defined(DATA_A_Q6_K)
+-// 2-byte loads for Q6_K blocks (210 bytes)
+-i32vec4 repack4(uint ib, uint iqs) {
+-    const uint ib_k = ib / 8;
+-    const uint iqs_k = (ib % 8) * 8 + iqs;
+-
+-    const uint ql_idx = (iqs_k / 32) * 16 + iqs_k % 16;
+-    const uint ql_shift = ((iqs_k % 32) / 16) * 4;
+-
+-    const uint qh_idx = (iqs_k / 32) * 8 + iqs;
+-    const uint qh_shift = ((iqs_k % 32) / 8) * 2;
+-
+-    const uvec4 ql = uvec4( uint32_t(data_a_packed16[ib_k].ql[ql_idx * 2    ]) |
+-                           (uint32_t(data_a_packed16[ib_k].ql[ql_idx * 2 + 1]) << 16),
+-                            uint32_t(data_a_packed16[ib_k].ql[ql_idx * 2 + 2]) |
+-                           (uint32_t(data_a_packed16[ib_k].ql[ql_idx * 2 + 3]) << 16),
+-                            uint32_t(data_a_packed16[ib_k].ql[ql_idx * 2 + 4]) |
+-                           (uint32_t(data_a_packed16[ib_k].ql[ql_idx * 2 + 5]) << 16),
+-                            uint32_t(data_a_packed16[ib_k].ql[ql_idx * 2 + 6]) |
+-                           (uint32_t(data_a_packed16[ib_k].ql[ql_idx * 2 + 7]) << 16));
+-
+-    const uvec4 qh = uvec4( uint32_t(data_a_packed16[ib_k].qh[qh_idx * 2    ]) |
+-                           (uint32_t(data_a_packed16[ib_k].qh[qh_idx * 2 + 1]) << 16),
+-                            uint32_t(data_a_packed16[ib_k].qh[qh_idx * 2 + 2]) |
+-                           (uint32_t(data_a_packed16[ib_k].qh[qh_idx * 2 + 3]) << 16),
+-                            uint32_t(data_a_packed16[ib_k].qh[qh_idx * 2 + 4]) |
+-                           (uint32_t(data_a_packed16[ib_k].qh[qh_idx * 2 + 5]) << 16),
+-                            uint32_t(data_a_packed16[ib_k].qh[qh_idx * 2 + 6]) |
+-                           (uint32_t(data_a_packed16[ib_k].qh[qh_idx * 2 + 7]) << 16));
+-
+-    const uint vals0 = (( ql.x >> ql_shift) & 0x0F0F0F0F) |
+-                       (((qh.x >> qh_shift) & 0x03030303) << 4);
+-    const uint vals1 = (( ql.y >> ql_shift) & 0x0F0F0F0F) |
+-                       (((qh.y >> qh_shift) & 0x03030303) << 4);
+-    const uint vals2 = (( ql.z >> ql_shift) & 0x0F0F0F0F) |
+-                       (((qh.z >> qh_shift) & 0x03030303) << 4);
+-    const uint vals3 = (( ql.w >> ql_shift) & 0x0F0F0F0F) |
+-                       (((qh.w >> qh_shift) & 0x03030303) << 4);
+-
+-    // Subtract 32 by twiddling bits rather than using re-packing as mesa
+-    // compiles repacking poorly.
+-    return i32vec4(int32_t(((vals0 ^ 0x80808080) - 0x20202020) ^ 0x80808080),
+-                   int32_t(((vals1 ^ 0x80808080) - 0x20202020) ^ 0x80808080),
+-                   int32_t(((vals2 ^ 0x80808080) - 0x20202020) ^ 0x80808080),
+-                   int32_t(((vals3 ^ 0x80808080) - 0x20202020) ^ 0x80808080));
+-}
+-
+-float get_d_scale(uint ib, uint iqs) {
+-    const uint ib_k = ib / 8;
+-    const uint iqs_k = (ib % 8) * 8 + iqs;
+-    return float(data_a[ib_k].d) * float(data_a[ib_k].scales[iqs_k / 4]);
+-}
+-
+-FLOAT_TYPE mmvq_dot_product(const uint ib_a, const uint iqs) {
+-    int32_t q_sum = 0;
+-
+-    const i32vec4 qs_a = repack4(ib_a, iqs * 4);
+-    const float d_scale = get_d_scale(ib_a, iqs * 4);
+-
+-    q_sum += dotPacked4x8EXT(qs_a.x, cache_b_qs[0]);
+-    q_sum += dotPacked4x8EXT(qs_a.y, cache_b_qs[1]);
+-    q_sum += dotPacked4x8EXT(qs_a.z, cache_b_qs[2]);
+-    q_sum += dotPacked4x8EXT(qs_a.w, cache_b_qs[3]);
+-
+-    return FLOAT_TYPE(float(cache_b_ds.x) * float(d_scale) * float(q_sum));
+-}
+-#endif
+-
+-#if defined(DATA_A_IQ4_XS)
+-FLOAT_TYPE mmvq_dot_product(const uint ib_a, const uint iqs) {
+-    const uint ib = ib_a / 8;
+-    const uint ib32 = ib_a % 8;
+-
+-    int32_t q_sum = 0;
+-    [[unroll]] for (uint j = 0; j < 4; ++j) {
+-        const uint32_t vui = data_a_packed32[ib].qs[4 * ib32 + j];
+-        const i32vec2 qs_a = iq4nl_to_i8x8(vui);
+-
+-        q_sum += dotPacked4x8EXT(qs_a.x, cache_b_qs[j]);
+-        q_sum += dotPacked4x8EXT(qs_a.y, cache_b_qs[j + 4]);
+-    }
+-
+-    const uint sl = (data_a_packed32[ib].scales_l >> (4 * ib32)) & 0xF;
+-    const uint sh = (data_a_packed32[ib].scales_h >> (2 * ib32)) & 3;
+-    const float d = float(data_a[ib].d) * float(int(sl | (sh << 4)) - 32);
+-
+-    return FLOAT_TYPE(float(cache_b_ds.x) * d * float(q_sum));
+-}
+-#endif
+-
+ #if defined(DATA_A_IQ1_S)
+ void repack8(uint ib, uint iqs, out i32vec4 out0, out i32vec4 out1) {
+     const uint ib32 = iqs / 32;
+-- 
+2.43.0
+
