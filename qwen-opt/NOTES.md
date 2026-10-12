@@ -218,3 +218,12 @@ Serwer (long_ctx_bench, MTP n=4, T=0, 256 tok.), decode t/s przed -> po:
 | 94k | 43.0 | **70.9** (+65%) |
 Krótki kontekst (spec_sweep, 3 seedy): Qwen 41.74 ms/krok (było 41.8), Uncensored 39.56 ms/krok, 78.6 t/s — bez regresji.
 -ctkd/-ctvd q4_0 dla draftu: bez zysku (71.6 vs 70.9 przy 94k, w szumie) — nie włączam.
+
+## Cache promptu (2026-10-12, dokument 27k tokenów, ustawienia domyślne serwera)
+| scenariusz | przetworzone tokeny | czas |
+|---|---|---|
+| pierwsze pytanie (zimno) | 27332 | 31.9 s |
+| pytanie uzupełniające w tej samej rozmowie | 24 | 0.7 s |
+| nowa rozmowa, ten sam dokument, inne pytanie | 517 | 1.2 s |
+| inna rozmowa (inny dokument 28k), potem powrót do pierwszej | 536 | 1.4 s |
+Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run-llm.sh: --cache-ram 16384 (więcej długich rozmów w RAM; 62 GB RAM).

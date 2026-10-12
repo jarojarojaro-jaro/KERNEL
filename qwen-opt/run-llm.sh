@@ -90,5 +90,5 @@ if [ "$(cat /sys/class/drm/card0/device/power/control)" != on ]; then
     sleep 2
 fi
 
-"$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja \
+"$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja --cache-ram 16384 \
     "${think_args[@]}" --host "$host" --port "$port" --log-file "$log" "${spec_args[@]}" "${extra_args[@]}"
