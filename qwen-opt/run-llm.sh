@@ -18,7 +18,8 @@
 set -euo pipefail
 
 model=${1:-qwen}
-extra_args=(${EXTRA_ARGS//,/ })
+extra_args_raw=${EXTRA_ARGS:-}
+extra_args=(${extra_args_raw//,/ })
 default_spec=mtp
 [ "$model" = saluki ] && default_spec=dflash
 spec=${2:-$default_spec}

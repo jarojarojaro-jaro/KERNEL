@@ -1,0 +1,570 @@
+From 92b14b8b261801069a368035904967abe0139761 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 18:10:34 +0000
+Subject: [PATCH 14/14] CUDA/HIP: fold the conv-state concat, snapshot copies
+ and gather into SSM_CONV
+
+build_conv_state runs per linear-attention layer a GET_ROWS of the conv
+state, a CONCAT with the transposed new inputs, one CPY per rollback slot
+(the slot order runs against the window order, so no single view covers
+them) and then SSM_CONV(+SILU). For a single sequence and up to 16 tokens a
+fused SSM_CONV now reads both CONCAT sources directly (the conv state
+through the s_copy index from the cache), writes the snapshot windows into
+the cache and convolves, so the CONCAT, the CPYs and the gather are elided:
+qwen35 verify batches lose 7 launches per GDN layer.
+The plan checks that every CONCAT reader is accounted for, that nothing
+between the CONCAT and the SSM_CONV writes its sources or reads the cache
+rows, and that the output does not alias the inputs. Each thread reads its
+channel's inputs before writing a snapshot, so a slot row may be the source
+row. The convolution arithmetic is unchanged (bitwise).
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu | 240 +++++++++++++++++++++++++++++++-
+ ggml/src/ggml-cuda/ssm-conv.cu  | 100 ++++++++++++-
+ ggml/src/ggml-cuda/ssm-conv.cuh |  21 ++-
+ tests/test-backend-ops.cpp      |  80 +++++++++++
+ 4 files changed, 437 insertions(+), 4 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index c15f66532..27412afb1 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -3588,6 +3588,19 @@ static bool ggml_cuda_collect_readers(const ggml_cgraph * cgraph, int ti, int wi
+     return found == ggml_node_get_use_count(cgraph, ti);
+ }
+ 
++static bool ggml_cuda_tensors_overlap(const ggml_tensor * a, const ggml_tensor * b) {
++    const char * a0 = (const char *) a->data;
++    const char * b0 = (const char *) b->data;
++    return a0 < b0 + ggml_nbytes(b) && b0 < a0 + ggml_nbytes(a);
++}
++
++// the GET_ROWS of a single recurrent-state row: (states [n, rows], s_copy[1]) with the gathered row read in place
++static bool ggml_cuda_is_state_row_gather(const ggml_tensor * rows) {
++    return rows->op == GGML_OP_GET_ROWS && rows->type == GGML_TYPE_F32 && rows->src[0]->type == GGML_TYPE_F32 &&
++           rows->src[1]->type == GGML_TYPE_I32 && ggml_nelements(rows->src[1]) == 1 && ggml_is_contiguous(rows->src[0]) &&
++           ggml_is_contiguous(rows) && rows->ne[1] == 1 && rows->ne[2] == 1 && rows->ne[3] == 1;
++}
++
+ // the GET_ROWS gather of the initial recurrent state, when every reader is a GDN that reads the row in place
+ static bool ggml_cuda_gdn_state_gather_elided(const ggml_cgraph * cgraph, int i) {
+     const ggml_tensor * node = cgraph->nodes[i];
+@@ -3606,10 +3619,203 @@ static bool ggml_cuda_gdn_state_gather_elided(const ggml_cgraph * cgraph, int i)
+     return true;
+ }
+ 
++// SSM_CONV over CONCAT(conv_state, transpose(x)) whose conv-state windows are also CPYd into the recurrent cache
++// (build_conv_state): one fused kernel reads the CONCAT sources directly (the conv state through the gather index
++// when it is a single gathered row) and writes the snapshot windows, so the CONCAT, the CPYs and the gather need
++// not run (see ggml_cuda_ssm_conv_fused_src).
++struct ggml_cuda_ssm_conv_plan {
++    int                          concat_idx;
++    int                          n_fused;  // nodes after the SSM_CONV fused into it (SILU, or ADD + SILU)
++    ggml_tensor *                bias_add;
++    ggml_tensor *                silu;
++    const ggml_tensor *          gather;   // GET_ROWS read through its index, or nullptr
++    std::array<int, SSM_CONV_FUSED_MAX_SNAPSHOTS> cpy_idx;
++    ggml_cuda_ssm_conv_fused_src src;
++};
++
++static bool ggml_cuda_ssm_conv_cache_plan(const ggml_cgraph * cgraph, int conv_idx, ggml_cuda_ssm_conv_plan & plan) {
++    const ggml_tensor * conv = cgraph->nodes[conv_idx];
++    if (conv->op != GGML_OP_SSM_CONV || conv->type != GGML_TYPE_F32) {
++        return false;
++    }
++    const ggml_tensor * C = conv->src[0];
++    const ggml_tensor * W = conv->src[1];
++    if (C->op != GGML_OP_CONCAT || ggml_get_op_params_i32(C, 0) != 0 || C->type != GGML_TYPE_F32 ||
++            !ggml_is_contiguous(C) || C->ne[2] != 1 || C->ne[3] != 1) {
++        return false;
++    }
++    const int64_t d_conv = W->ne[0];
++    const int64_t n_st   = d_conv - 1;
++    const int64_t nr     = C->ne[1];
++    const int64_t n_t    = C->ne[0] - n_st;
++    if (!ggml_cuda_ssm_conv_fused_supported(d_conv, nr, n_t) || n_t < 1 || conv->ne[1] != n_t) {
++        return false;
++    }
++
++    plan.bias_add = nullptr;
++    plan.silu     = nullptr;
++    plan.n_fused  = 0;
++    if (ggml_cuda_can_fuse(cgraph, conv_idx, { GGML_OP_SSM_CONV, GGML_OP_ADD, GGML_OP_UNARY }, { GGML_UNARY_OP_SILU })) {
++        plan.bias_add = cgraph->nodes[conv_idx + 1];
++        plan.silu     = cgraph->nodes[conv_idx + 2];
++        plan.n_fused  = 2;
++    } else if (ggml_cuda_can_fuse(cgraph, conv_idx, { GGML_OP_SSM_CONV, GGML_OP_UNARY }, { GGML_UNARY_OP_SILU })) {
++        plan.silu    = cgraph->nodes[conv_idx + 1];
++        plan.n_fused = 1;
++    }
++    const ggml_tensor * out = plan.silu ? plan.silu : conv;
++
++    // sources: the conv state [n_st, nr] and the new inputs, element (t, channel) at x + t*nb0 + channel*nb1
++    const ggml_tensor * S = C->src[0];
++    const ggml_tensor * X = C->src[1];
++    if (S->type != GGML_TYPE_F32 || S->ne[0] != n_st || S->ne[1] != nr || S->ne[2] != 1 || !ggml_is_contiguous(S) ||
++            X->type != GGML_TYPE_F32 || X->ne[0] != n_t || X->ne[1] != nr || X->ne[2] != 1 ||
++            X->nb[1] != sizeof(float) || X->nb[0] % sizeof(float) != 0) {
++        return false;
++    }
++
++    plan.concat_idx = -1;
++    for (int j = conv_idx - 1; j >= std::max(0, conv_idx - 64); --j) {
++        if (cgraph->nodes[j] == C) {
++            plan.concat_idx = j;
++            break;
++        }
++    }
++    if (plan.concat_idx < 0) {
++        return false;
++    }
++
++    // every reader of the CONCAT: this SSM_CONV, and CPYs of [n_st, nr] windows into contiguous cache rows
++    std::vector<ggml_cuda_reader> readers;
++    if (!ggml_cuda_collect_readers(cgraph, plan.concat_idx, conv_idx - plan.concat_idx, readers)) {
++        return false;
++    }
++    ggml_cuda_ssm_conv_fused_src & src = plan.src;
++    src.n_snap = 0;
++    bool conv_found = false;
++    for (const ggml_cuda_reader & r : readers) {
++        const ggml_tensor * n = cgraph->nodes[r.idx];
++        if (r.idx == conv_idx) {
++            conv_found = r.src == 0 && r.via == C;
++            if (!conv_found) {
++                return false;
++            }
++            continue;
++        }
++        const ggml_tensor * v   = r.via;
++        const ggml_tensor * dst = n->src[1];
++        // (readers of the CPY result before the SSM_CONV are rejected by the cache-row check below)
++        if (n->op != GGML_OP_CPY || r.src != 0 || v->op != GGML_OP_VIEW || v->view_src != C ||
++                v->ne[0] != n_st || v->ne[1] != nr || v->ne[2] != 1 || v->ne[3] != 1 || v->nb[1] != C->nb[1] ||
++                v->view_offs % sizeof(float) != 0 || v->view_offs / sizeof(float) + n_st > (size_t) C->ne[0] ||
++                dst->type != GGML_TYPE_F32 || !ggml_is_contiguous(dst) || ggml_nelements(dst) != n_st*nr ||
++                src.n_snap == SSM_CONV_FUSED_MAX_SNAPSHOTS) {
++            return false;
++        }
++        plan.cpy_idx[src.n_snap]  = r.idx;
++        src.snap_t0[src.n_snap]  = (int) (v->view_offs / sizeof(float));
++        src.snap_dst[src.n_snap] = (float *) dst->data;
++        src.n_snap++;
++    }
++    if (!conv_found) {
++        return false;
++    }
++
++    // the conv state is read in place when it is a single gathered row
++    plan.gather = nullptr;
++    if (S->view_src && S->view_offs == 0 && ggml_cuda_is_state_row_gather(S->view_src) &&
++            ggml_nelements(S) == S->view_src->ne[0]) {
++        plan.gather          = S->view_src;
++        src.state            = (const float *) plan.gather->src[0]->data;
++        src.state_idx        = (const int32_t *) plan.gather->src[1]->data;
++        src.state_row_stride = plan.gather->src[0]->nb[1] / sizeof(float);
++    } else {
++        src.state            = (const float *) S->data;
++        src.state_idx        = nullptr;
++        src.state_row_stride = 0;
++    }
++    src.x        = (const float *) X->data;
++    src.x_stride = X->nb[0] / sizeof(float);
++
++    // The sources are now read when the SSM_CONV runs instead of when the CONCAT runs: nothing in between may have
++    // written them (their buffers may have been reused once the CONCAT was done), and nothing in between may read
++    // the cache rows the CPYs would have written already.
++    // The output may take over the buffer of x once the CONCAT is done. That is fine when element (t, channel) of
++    // both is at the same address, since each thread reads its channel's inputs before writing any output.
++    const bool out_aliases_x = out->data == X->data && out->nb[0] == X->nb[1] && out->nb[1] == X->nb[0];
++    if ((!out_aliases_x && ggml_cuda_tensors_overlap(out, X)) || (!plan.gather && ggml_cuda_tensors_overlap(out, S))) {
++        return false;
++    }
++    for (int k = plan.concat_idx + 1; k < conv_idx; ++k) {
++        const ggml_tensor * n = cgraph->nodes[k];
++        if (ggml_cuda_is_view_or_noop(n) || std::find(plan.cpy_idx.begin(), plan.cpy_idx.begin() + src.n_snap, k) !=
++                plan.cpy_idx.begin() + src.n_snap) {
++            continue;
++        }
++        if (!ggml_cuda_gdn_state_gather_elided(cgraph, k) &&
++                (ggml_cuda_tensors_overlap(n, X) || (!plan.gather && ggml_cuda_tensors_overlap(n, S)))) {
++            return false;
++        }
++        for (int s = 0; s < GGML_MAX_SRC && n->src[s]; ++s) {
++            for (int c = 0; c < src.n_snap; ++c) {
++                const ggml_tensor * dst = cgraph->nodes[plan.cpy_idx[c]]->src[1];
++                const ggml_tensor * root_n = n->src[s]->view_src ? n->src[s]->view_src : n->src[s];
++                const ggml_tensor * root_d = dst->view_src ? dst->view_src : dst;
++                if (root_n == root_d) {
++                    return false;
++                }
++            }
++        }
++    }
++    return true;
++}
++
++// the SSM_CONV consumer of a CONCAT among the next nodes, if its cache plan folds the CONCAT
++static bool ggml_cuda_ssm_conv_plan_for_concat(const ggml_cgraph * cgraph, int concat_idx, ggml_cuda_ssm_conv_plan & plan) {
++    const ggml_tensor * C = cgraph->nodes[concat_idx];
++    for (int j = concat_idx + 1; j < std::min(cgraph->n_nodes, concat_idx + 65); ++j) {
++        const ggml_tensor * n = cgraph->nodes[j];
++        if (n->op == GGML_OP_SSM_CONV && n->src[0] == C) {
++            return ggml_cuda_ssm_conv_cache_plan(cgraph, j, plan) && plan.concat_idx == concat_idx;
++        }
++    }
++    return false;
++}
++
++// a GET_ROWS of one recurrent-state row whose readers (GDN initial state, CONCAT of a fused SSM_CONV) all read
++// the row from the cache themselves
++static bool ggml_cuda_state_gather_elided(const ggml_cgraph * cgraph, int i) {
++    const ggml_tensor * node = cgraph->nodes[i];
++    if (!ggml_cuda_is_state_row_gather(node)) {
++        return false;
++    }
++    std::vector<ggml_cuda_reader> readers;
++    if (!ggml_cuda_collect_readers(cgraph, i, 64, readers) || readers.empty()) {
++        return false;
++    }
++    for (const ggml_cuda_reader & r : readers) {
++        const ggml_tensor * n = cgraph->nodes[r.idx];
++        if (n->op == GGML_OP_GATED_DELTA_NET) {
++            if (r.src != 5 || ggml_cuda_gdn_state_gather(n) != node) {
++                return false;
++            }
++        } else if (n->op == GGML_OP_CONCAT) {
++            ggml_cuda_ssm_conv_plan plan;
++            if (r.src != 0 || !ggml_cuda_ssm_conv_plan_for_concat(cgraph, r.idx, plan) || plan.gather != node) {
++                return false;
++            }
++        } else {
++            return false;
++        }
++    }
++    return true;
++}
++
+ // Nodes of the GATED_DELTA_NET prologue whose results the GDN kernel computes or reads itself
+ // (see ggml_cuda_gdn_fuse_l2_norm, ggml_cuda_gdn_state_gather), so they need not run at all:
+ //  - the RMS_NORM and SCALE of build_gdn_l2_norm(q/k) when their only consumer is such a GDN;
+ //  - the GET_ROWS gather of the initial recurrent state when only that GDN reads it.
++//  - the CONCAT, conv-state CPYs and conv-state gather of build_conv_state that a fused SSM_CONV takes over.
+ static bool ggml_cuda_gdn_prologue_elided(const ggml_cgraph * cgraph, int i) {
+     const ggml_tensor * node = cgraph->nodes[i];
+ 
+@@ -3640,7 +3846,26 @@ static bool ggml_cuda_gdn_prologue_elided(const ggml_cgraph * cgraph, int i) {
+     }
+ 
+     if (node->op == GGML_OP_GET_ROWS) {
+-        return ggml_cuda_gdn_state_gather_elided(cgraph, i);
++        return ggml_cuda_state_gather_elided(cgraph, i);
++    }
++
++    if (node->op == GGML_OP_CONCAT) {
++        ggml_cuda_ssm_conv_plan plan;
++        return ggml_cuda_ssm_conv_plan_for_concat(cgraph, i, plan);
++    }
++
++    if (node->op == GGML_OP_CPY && node->src[0]->op == GGML_OP_VIEW && node->src[0]->view_src &&
++            node->src[0]->view_src->op == GGML_OP_CONCAT) {
++        // the plan accounts for every reader of the CONCAT, this CPY included
++        const ggml_tensor * C = node->src[0]->view_src;
++        for (int j = i + 1; j < std::min(cgraph->n_nodes, i + 65); ++j) {
++            const ggml_tensor * n = cgraph->nodes[j];
++            if (n->op == GGML_OP_SSM_CONV && n->src[0] == C) {
++                ggml_cuda_ssm_conv_plan plan;
++                return ggml_cuda_ssm_conv_cache_plan(cgraph, j, plan);
++            }
++        }
++        return false;
+     }
+ 
+     return false;
+@@ -3720,7 +3945,8 @@ static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, con
+     return (int) ops.size() - 1;
+ }
+ 
+-// try and fuse nodes and return the number of nodes to skip; -1: the node is elided (its result is never read)
++// try and fuse nodes and return the number of nodes to skip; -1: this node is done and no other node is skipped
++// (it is elided because its result is never read, or a fusion computed it alone)
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+ 
+     static bool disable_fusion = getenv("GGML_CUDA_DISABLE_FUSION") != nullptr && std::atoi(getenv("GGML_CUDA_DISABLE_FUSION"));
+@@ -4507,6 +4733,14 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         return 1;
+     }
+ 
++    if (node->op == GGML_OP_SSM_CONV) {
++        ggml_cuda_ssm_conv_plan plan;
++        if (ggml_cuda_ssm_conv_cache_plan(cgraph, i, plan)) {
++            ggml_cuda_op_ssm_conv(*cuda_ctx, node, plan.bias_add, plan.silu, &plan.src);
++            return plan.n_fused > 0 ? plan.n_fused : -1;
++        }
++    }
++
+     if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_SSM_CONV, GGML_OP_ADD, GGML_OP_UNARY }, { GGML_UNARY_OP_SILU })) {
+         ggml_cuda_op_ssm_conv(*cuda_ctx, node, cgraph->nodes[i + 1], cgraph->nodes[i + 2]);
+         return 2;
+@@ -4682,6 +4916,8 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+ 
+                 int nodes_to_skip = ggml_cuda_try_fuse(cuda_ctx, cgraph, i);
+                 if (nodes_to_skip < 0) {
++                    // elided, or computed by a fusion that wrote this node only
++                    cuda_ctx->mmvq_q8_cache_invalidate_if_written(node);
+                     continue;
+                 }
+ 
+diff --git a/ggml/src/ggml-cuda/ssm-conv.cu b/ggml/src/ggml-cuda/ssm-conv.cu
+index 1463169cf..79cd82831 100644
+--- a/ggml/src/ggml-cuda/ssm-conv.cu
++++ b/ggml/src/ggml-cuda/ssm-conv.cu
+@@ -123,6 +123,94 @@ static __global__ void ssm_conv_long_token_f32(const float * __restrict__ src0,
+     }
+ }
+ 
++// Single-sequence SSM_CONV that reads its input straight from the two CONCAT sources (conv state, possibly through
++// the gather index, and the new inputs) and also writes the conv-state snapshot windows the replaced CPYs would
++// copy. Each thread owns one channel and reads all of its inputs before writing anything, so a snapshot may
++// overwrite the cache row the state is read from and dst may alias x element for element (hence no __restrict__
++// on dst). The convolution arithmetic is that of ssm_conv_f32.
++template <bool apply_silu, size_t split_d_inner, size_t d_conv>
++static __global__ void ssm_conv_fused_f32(const ggml_cuda_ssm_conv_fused_src src, const float * __restrict__ w_ptr,
++                                          const float * __restrict__ bias, const int w_nb1, float * dst,
++                                          const int dst_nb1, const int n_t) {
++    constexpr int n_state = d_conv - 1;
++    constexpr int L       = n_state + SSM_CONV_FUSED_MAX_TOKENS;
++
++    const int c = blockIdx.y * split_d_inner + threadIdx.x;
++
++    const float * w_row = (const float *) ((const char *) w_ptr + c * w_nb1);
++    float w[d_conv];
++#pragma unroll
++    for (int j = 0; j < (int) d_conv; j++) {
++        w[j] = w_row[j];
++    }
++    const float b = bias != nullptr ? bias[c] : 0.0f;
++
++    const float * s_row = src.state_idx ? src.state + src.state_idx[0] * src.state_row_stride : src.state;
++    float xs[L];
++#pragma unroll
++    for (int k = 0; k < n_state; k++) {
++        xs[k] = s_row[c * n_state + k];
++    }
++#pragma unroll
++    for (int t = 0; t < SSM_CONV_FUSED_MAX_TOKENS; t++) {
++        xs[n_state + t] = t < n_t ? src.x[t * src.x_stride + c] : 0.0f;
++    }
++
++    for (int s = 0; s < src.n_snap; s++) {
++        const int t0 = src.snap_t0[s];
++        float *   d  = src.snap_dst[s] + c * n_state;
++#pragma unroll
++        for (int k = 0; k < n_state; k++) {
++            // register select instead of a dynamic index into xs (which would spill to scratch)
++            float v = 0.0f;
++#pragma unroll
++            for (int tau = 0; tau < L; tau++) {
++                v = tau == t0 + k ? xs[tau] : v;
++            }
++            d[k] = v;
++        }
++    }
++
++    const int stride_y = dst_nb1 / sizeof(float);
++#pragma unroll
++    for (int t = 0; t < SSM_CONV_FUSED_MAX_TOKENS; t++) {
++        if (t < n_t) {
++            float sumf = 0.0f;
++#pragma unroll
++            for (int j = 0; j < (int) d_conv; j++) {
++                sumf += xs[t + j] * w[j];
++            }
++            sumf += b;
++            dst[t * stride_y + c] = apply_silu ? ggml_cuda_op_silu_single(sumf) : sumf;
++        }
++    }
++}
++
++template <bool apply_silu>
++static void ssm_conv_fused_f32_cuda(const ggml_cuda_ssm_conv_fused_src & src, const float * w, const float * bias,
++                                    const int w_nb1, float * dst, const int dst_nb0, const int dst_nb1,
++                                    const int64_t nc, const int64_t nr, const int64_t n_t, cudaStream_t stream) {
++    const int threads = 128;
++    GGML_ASSERT(nr % threads == 0);
++    GGML_ASSERT(dst_nb0 == sizeof(float));
++    GGML_ASSERT(n_t <= SSM_CONV_FUSED_MAX_TOKENS && src.n_snap <= SSM_CONV_FUSED_MAX_SNAPSHOTS);
++    const dim3 blocks(1, nr / threads, 1);
++    auto launch_kernel = [&](auto NC) {
++        constexpr int kNC = decltype(NC)::value;
++        ssm_conv_fused_f32<apply_silu, threads, kNC><<<blocks, threads, 0, stream>>>(src, w, bias, w_nb1, dst, dst_nb1, (int) n_t);
++    };
++    switch (nc) {
++        case 3:  launch_kernel(std::integral_constant<int, 3 >{}); break;
++        case 4:  launch_kernel(std::integral_constant<int, 4 >{}); break;
++        case 5:  launch_kernel(std::integral_constant<int, 5 >{}); break;
++        default: GGML_ABORT("fused ssm_conv supports kernel sizes 3, 4, 5");
++    }
++}
++
++bool ggml_cuda_ssm_conv_fused_supported(const int64_t d_conv, const int64_t nr, const int64_t n_t) {
++    return d_conv >= 3 && d_conv <= 5 && nr % 128 == 0 && n_t <= SSM_CONV_FUSED_MAX_TOKENS;
++}
++
+ template <bool apply_silu>
+ static void ssm_conv_f32_cuda(const float * src0, const float * src1, const float * bias, const int src0_nb0, const int src0_nb1,
+                               const int src0_nb2, const int src1_nb1, float * dst, const int dst_nb0, const int dst_nb1,
+@@ -157,7 +245,8 @@ static void ssm_conv_f32_cuda(const float * src0, const float * src1, const floa
+     }
+ }
+ 
+-void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * bias_add_node, ggml_tensor * silu_dst) {
++void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * bias_add_node, ggml_tensor * silu_dst,
++                           const ggml_cuda_ssm_conv_fused_src * fused) {
+     const struct ggml_tensor * src0 = dst->src[0];  // conv_x
+     const struct ggml_tensor * src1 = dst->src[1];  // conv1d.weight
+     const bool fuse_bias = bias_add_node != nullptr;
+@@ -196,6 +285,15 @@ void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, g
+         GGML_ASSERT(ggml_nelements(bias) == nr);
+     }
+ 
++    if (fused != nullptr) {
++        GGML_ASSERT(n_s == 1 && ggml_cuda_ssm_conv_fused_supported(nc, nr, n_t));
++        if (fuse_silu) {
++            ssm_conv_fused_f32_cuda<true>(*fused, src1_d, bias_d, src1->nb[1], dst_d, out->nb[0], out->nb[1], nc, nr, n_t, stream);
++        } else {
++            ssm_conv_fused_f32_cuda<false>(*fused, src1_d, bias_d, src1->nb[1], dst_d, out->nb[0], out->nb[1], nc, nr, n_t, stream);
++        }
++        return;
++    }
+     if (fuse_silu) {
+         ssm_conv_f32_cuda<true>(src0_d, src1_d, bias_d, src0->nb[0], src0->nb[1], src0->nb[2], src1->nb[1], dst_d, out->nb[0], out->nb[1],
+                           out->nb[2], nc, nr, n_t, n_s, stream);
+diff --git a/ggml/src/ggml-cuda/ssm-conv.cuh b/ggml/src/ggml-cuda/ssm-conv.cuh
+index 8514ca849..e659cdb2c 100644
+--- a/ggml/src/ggml-cuda/ssm-conv.cuh
++++ b/ggml/src/ggml-cuda/ssm-conv.cuh
+@@ -1,3 +1,22 @@
+ #include "common.cuh"
+ 
+-void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * bias_add_node = nullptr, ggml_tensor * silu_dst = nullptr);
++#define SSM_CONV_FUSED_MAX_SNAPSHOTS 8  // max. conv-state snapshot windows written by the fused kernel
++#define SSM_CONV_FUSED_MAX_TOKENS    16 // max. tokens per sequence of the fused kernel
++
++// Sources of a fused SSM_CONV that replaces CONCAT(conv_state, transpose(x)) and the CPYs of conv-state windows
++// into the recurrent cache (see ggml_cuda_ssm_conv_cache_plan). Single sequence; d_conv - 1 = state width.
++struct ggml_cuda_ssm_conv_fused_src {
++    const float *   state;            // conv state [d_conv - 1, nr], or the cache rows it is gathered from
++    const int32_t * state_idx;        // when not null: the state is row state_idx[0] of `state`
++    int64_t         state_row_stride; // in floats, used with state_idx
++    const float *   x;                // new inputs, element (t, channel) at x[t*x_stride + channel]
++    int64_t         x_stride;         // in floats
++    int             n_snap;
++    int             snap_t0[SSM_CONV_FUSED_MAX_SNAPSHOTS];  // first time index of the window in concat(state, x)
++    float *         snap_dst[SSM_CONV_FUSED_MAX_SNAPSHOTS]; // contiguous [d_conv - 1, nr] destination
++};
++
++bool ggml_cuda_ssm_conv_fused_supported(int64_t d_conv, int64_t nr, int64_t n_t);
++
++void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * bias_add_node = nullptr,
++                           ggml_tensor * silu_dst = nullptr, const ggml_cuda_ssm_conv_fused_src * fused = nullptr);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 38619b6d7..9564f593d 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -4958,6 +4958,77 @@ struct test_gated_delta_net_prologue_fusion : public test_case {
+     }
+ };
+ 
++// build_conv_state + SSM_CONV + SILU: CONCAT(conv state gathered from the cache, transpose(x)), the conv-state
++// windows CPYd back into the cache (K rollback slots), then the convolution. The CUDA backend runs all of it as
++// one SSM_CONV kernel. The output carries the CPYd cache rows and the convolution result.
++struct test_ssm_conv_cache_fusion : public test_case {
++    const int64_t d_conv;
++    const int64_t d_inner;
++    const int64_t n_t;
++    const int64_t K; // snapshot slots (1: only the last window)
++
++    std::string vars() override {
++        return VARS_TO_STR4(d_conv, d_inner, n_t, K);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "SSM_CONV_CACHE_FUSION";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    test_ssm_conv_cache_fusion(int64_t d_conv = 4, int64_t d_inner = 256, int64_t n_t = 5, int64_t K = 5)
++        : d_conv(d_conv), d_inner(d_inner), n_t(n_t), K(K) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        const int64_t n_st     = d_conv - 1;
++        const int64_t mem_size = 2;
++        const int64_t head     = 1;
++        const int64_t row      = n_st * d_inner;
++
++        ggml_tensor * cache = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, row, mem_size * K);
++        ggml_tensor * idx   = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 1);
++        ggml_set_name(idx, "idx");
++        ggml_tensor * rows        = ggml_get_rows(ctx, cache, idx);
++        ggml_tensor * conv_states = ggml_reshape_3d(ctx, rows, n_st, d_inner, 1);
++
++        ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, d_inner, n_t);
++        ggml_tensor * conv_input = ggml_concat(ctx, conv_states, ggml_transpose(ctx, x), 0);
++
++        ggml_tensor * w    = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, d_conv, d_inner);
++        ggml_tensor * conv = ggml_silu(ctx, ggml_ssm_conv(ctx, conv_input, w));
++
++        // snapshot windows, as in build_conv_state (slot K - t gets the window ending t tokens before the end).
++        // out = concat(cpy_K, concat(..., concat(cpy_1, conv))) puts every CPY before the SSM_CONV and every reader
++        // of the CPYd rows after it, as in the model graph.
++        ggml_tensor * out = ggml_reshape_1d(ctx, conv, ggml_nelements(conv));
++        for (int64_t t = 1; t <= K; ++t) {
++            const int64_t s_idx  = std::max<int64_t>(0, conv_input->ne[0] - n_st - K + t);
++            const int64_t s_slot = K - t;
++            ggml_tensor * src = ggml_view_3d(ctx, conv_input, n_st, d_inner, 1, conv_input->nb[1], conv_input->nb[2],
++                                             ggml_row_size(conv_input->type, s_idx));
++            ggml_tensor * dst = ggml_view_2d(ctx, cache, row, 1, cache->nb[1], (s_slot * mem_size + head) * cache->nb[1]);
++            ggml_tensor * cpy = ggml_reshape_1d(ctx, ggml_cpy(ctx, src, dst), row);
++            out = ggml_concat(ctx, cpy, out, 0);
++        }
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != nullptr; t = ggml_get_next_tensor(ctx, t)) {
++            if (ggml_is_view_op(t->op)) { continue; }
++            if (strcmp(t->name, "idx") == 0) {
++                const int32_t r = (int32_t) (K > 1 ? 1 * 2 + 1 : 1); // a rollback slot row when there are slots
++                ggml_backend_tensor_set(t, &r, 0, sizeof(r));
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++};
++
+ // GGML_OP_GATED_DELTA_NET + GGML_OP_CPY (recurrent cache fusion)
+ struct test_gated_delta_net_cache_fusion : public test_case {
+     const ggml_type type;
+@@ -11941,6 +12012,15 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_gated_delta_net_cache_fusion(GGML_TYPE_F32, 8, 32,   4, 2, 4));
+     test_cases.emplace_back(new test_gated_delta_net_cache_fusion(GGML_TYPE_F32, 4, 32,   8, 1, 4));
+ 
++    // conv state concat + snapshot cpys + gather folded into ssm_conv
++    for (int64_t n_t : { 1, 2, 5, 6, 16 }) {
++        for (int64_t K : { 1, 5 }) {
++            test_cases.emplace_back(new test_ssm_conv_cache_fusion(4, 256, n_t, K));
++        }
++    }
++    test_cases.emplace_back(new test_ssm_conv_cache_fusion(4, 256, 17, 5)); // too many tokens for the fused kernel
++    test_cases.emplace_back(new test_ssm_conv_cache_fusion(3, 384, 6, 3));
++
+     // gdn prologue: alpha/beta projections, q/k l2 norm and the state gather fused into the GDN path
+     for (ggml_type w : { GGML_TYPE_Q8_0, GGML_TYPE_Q4_K }) {
+         for (int64_t n_tokens : { 1, 4, 6, 8 }) {
+-- 
+2.43.0
+

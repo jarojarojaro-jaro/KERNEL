@@ -233,3 +233,10 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - ROCBLAS_USE_HIPBLASLT=1: pp4096 1050 vs 1040 (d0), 772 vs 768 (d32k) — szum.
 - -ub 1024: +1%, -ub 2048: pp +3% (1073 / 782), ale serwer z ctx 204800 kończy się OOM (24.5 GB VRAM) przy pierwszym długim prompcie. Zostaje ub 512.
 - Governor CPU performance: wymaga sudo, nie testowane.
+
+## ROCm: łączenie kerneli A3-A5 (6da87d000, a180bea04, 92b14b8b2; 2026-10-12)
+- A3 epilog bias/residual w MMVQ wielokolumnowym (bitowo identyczne), A4 prolog GDN (alpha/beta + softplus/sigmoid w jednym MMVQ, l2-norm q/k w kernelu GDN, stan czytany z cache), A5 conv: concat + 5 kopii snapshotów + gather w jednym SSM_CONV.
+- Kernele weryfikacji: 2156 -> 1308; przerwy 6.99 -> 4.30 ms.
+- Serwer (spec_sweep, 3 seedy, T=1, potwierdzone niezależnie): Qwen UD 41.7 -> **37.71 ms/krok, 74.8 -> 83.3 t/s**; Uncensored 39.6 -> **35.83 ms/krok, 78.5 -> 85.3 t/s**.
+- Jakość (A4 nie jest bitowy): llama-perplexity KLD, batch 6: fusion vs baza KLD 0.0067, same-top 96.5%, PPL 6.182 vs 6.191; szum samej bazy batch 512 vs 6: KLD 0.0098. Bez pogorszenia.
+- A6 (kwantyzacja q8_1 w producentach) — szkic w ~/qwen-opt/fusion/a6-wip.patch, do dokończenia.

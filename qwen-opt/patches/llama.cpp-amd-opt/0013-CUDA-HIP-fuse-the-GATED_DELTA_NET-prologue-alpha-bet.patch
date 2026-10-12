@@ -1,0 +1,967 @@
+From a180bea041b53040953c2564020c79fd6b8fd86d Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 17:54:12 +0000
+Subject: [PATCH 13/14] CUDA/HIP: fuse the GATED_DELTA_NET prologue (alpha/beta
+ projections, q/k l2 norm, state gather)
+
+Per GDN layer of qwen35 this removes 8 kernel launches:
+- the alpha/beta projections and their add/softplus/mul/sigmoid tails run
+  as one MMVQ launch on the cached q8_1 activations (idea from upstream
+  PR #29187, here for every MMVQ quant type and up to 8 tokens);
+- the GDN kernel l2-normalizes q and k itself from the RMS_NORM inputs
+  (same per-element arithmetic as rms_norm + scale), so the two
+  RMS_NORM(+SCALE) launches are elided;
+- the GDN kernel reads its initial state through the s_copy index from the
+  recurrent cache, so the GET_ROWS gather of the state is elided
+  (single sequence only; each thread reads its state before writing
+  its snapshots, so slot rows may alias the source row).
+Elided nodes are skipped by ggml_cuda_try_fuse returning -1; the GDN-side
+predicates are used for both the skip decision and the kernel, so an
+unelided prologue still gives the same result.
+---
+ ggml/src/ggml-cuda/gated_delta_net.cu  | 176 +++++++++++++-----
+ ggml/src/ggml-cuda/gated_delta_net.cuh |  15 ++
+ ggml/src/ggml-cuda/ggml-cuda.cu        | 200 +++++++++++++++++++-
+ ggml/src/ggml-cuda/mmvq.cu             | 243 ++++++++++++++++++++-----
+ ggml/src/ggml-cuda/mmvq.cuh            |   6 +
+ tests/test-backend-ops.cpp             |  99 ++++++++++
+ 6 files changed, 652 insertions(+), 87 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
+index b58257067..7aa229bfc 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cu
++++ b/ggml/src/ggml-cuda/gated_delta_net.cu
+@@ -3,7 +3,11 @@
+ 
+ constexpr int gdn_cols_per_warp = 4;
+ 
+-template <int S_v, bool KDA, bool keep_rs_t, int cols_per_warp = gdn_cols_per_warp>
++// l2_qk: q and k arrive un-normalized and are l2-normalized per (head, token) in the kernel, with the arithmetic of
++// the RMS_NORM + SCALE pair it replaces: x * rsqrtf(sum(x^2)/S_v + l2_eps) * l2_scale.
++// state_idx: when not null, the initial state of sequence s is row state_idx[s] of curr_state (row stride
++// state_row_stride), i.e. the GET_ROWS gather of the recurrent states is folded into this read.
++template <int S_v, bool KDA, bool keep_rs_t, bool l2_qk, int cols_per_warp = gdn_cols_per_warp>
+ __global__ void __launch_bounds__((ggml_cuda_get_physical_warp_size() < S_v ? ggml_cuda_get_physical_warp_size() : S_v) * 4, 2)
+ gated_delta_net_cuda(const float * q,
+                                      const float * k,
+@@ -11,6 +15,8 @@ gated_delta_net_cuda(const float * q,
+                                      const float * g,
+                                      const float * beta,
+                                      const float * curr_state,
++                                     const int32_t * state_idx,
++                                     int64_t       state_row_stride,
+                                      float *       dst,
+                                      float *       state,
+                                      int64_t       H,
+@@ -28,6 +34,8 @@ gated_delta_net_cuda(const float * q,
+                                      const uint3   neqk1_magic,
+                                      const uint3   rq3_magic,
+                                      float         scale,
++                                     float         l2_eps,
++                                     float         l2_scale,
+                                      int64_t       state_slot_stride,
+                                      int           K) {
+     const uint32_t h_idx    = blockIdx.x;
+@@ -53,16 +61,18 @@ gated_delta_net_cuda(const float * q,
+ 
+     // input state holds s0 only: [S_v, S_v, H, n_seqs] — seq stride is D = H * S_v * S_v.
+     // output state layout (per-slot D * n_seqs) — same per-(seq,head) offset as before.
+-    const int64_t state_in_offset      = sequence * H * S_v * S_v + h_idx * S_v * S_v;
+     const int64_t state_out_offset     = (sequence * H + h_idx) * S_v * S_v;
+     state += state_out_offset;
++
++    ggml_cuda_pdl_sync();
++    const int64_t state_in_offset = (state_idx ? state_idx[sequence] * state_row_stride : sequence * H * S_v * S_v) +
++                                    h_idx * S_v * S_v;
+     curr_state += state_in_offset + col * S_v;
+     attn_data += (sequence * n_tokens * H + h_idx) * S_v;
+ 
+     float         s_shard[rows_per_lane];
+     // state is stored transposed: M[col][i] = S[i][col], row col is contiguous
+ 
+-    ggml_cuda_pdl_sync();
+ #pragma unroll
+     for (int r = 0; r < rows_per_lane; r++) {
+         const int i = r * lanes_per_col + lane_in_col;
+@@ -89,6 +99,25 @@ gated_delta_net_cuda(const float * q,
+             k_reg[r] = k_t[i];
+             q_reg[r] = q_t[i];
+         }
++        if constexpr (l2_qk) {
++            // each column segment holds all S_v elements of q and k, so a segment reduction gives the full norm
++            float k_sq = 0.0f;
++            float q_sq = 0.0f;
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                k_sq += k_reg[r] * k_reg[r];
++                q_sq += q_reg[r] * q_reg[r];
++            }
++            k_sq = warp_reduce_sum<lanes_per_col>(k_sq);
++            q_sq = warp_reduce_sum<lanes_per_col>(q_sq);
++            const float k_rs = rsqrtf(k_sq / S_v + l2_eps);
++            const float q_rs = rsqrtf(q_sq / S_v + l2_eps);
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                k_reg[r] = l2_scale * (k_rs * k_reg[r]);
++                q_reg[r] = l2_scale * (q_rs * q_reg[r]);
++            }
++        }
+ 
+         if constexpr (!KDA) {
+             const float g_val = expf(*g_t);
+@@ -175,17 +204,24 @@ gated_delta_net_cuda(const float * q,
+     }
+ }
+ 
+-template <bool KDA, bool keep_rs_t>
++// initial-state source of the kernel: s_d directly, or row idx[seq] of s_d when the state gather is folded in
++struct gdn_state_src {
++    const float *   s_d;
++    const int32_t * idx;        // nullptr: s_d is the [S_v, S_v, H, n_seqs] state
++    int64_t         row_stride; // in floats, used with idx
++};
++
++template <bool KDA, bool keep_rs_t, bool l2_qk>
+ static void launch_gated_delta_net(
+         const float * q_d, const float * k_d, const float * v_d,
+-        const float * g_d, const float * b_d, const float * s_d,
++        const float * g_d, const float * b_d, const gdn_state_src s_src,
+         float * dst_d, float * state_d,
+         int64_t S_v,   int64_t H, int64_t n_tokens, int64_t n_seqs,
+         int64_t sq1,   int64_t sq2, int64_t sq3,
+         int64_t sv1,   int64_t sv2, int64_t sv3,
+         int64_t sb1,   int64_t sb2, int64_t sb3,
+         int64_t neqk1, int64_t rq3,
+-        float scale, int64_t state_slot_stride, int K, cudaStream_t stream) {
++        float scale, float l2_eps, float l2_scale, int64_t state_slot_stride, int K, cudaStream_t stream) {
+     //TODO: Add chunked kernel for even faster pre-fill
+     const int warp_size = ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size;
+     // four columns per warp (see the kernel); shrink the CTA when the wider CTA would leave
+@@ -204,37 +240,72 @@ static void launch_gated_delta_net(
+     const uint3 rq3_magic   = init_fastdiv_values(rq3);
+ 
+     const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(grid_dims, block_dims, 0, stream);
++#define GDN_LAUNCH(S)                                                                                         \
++    ggml_cuda_kernel_launch(gated_delta_net_cuda<S, KDA, keep_rs_t, l2_qk>, launch_params,                      \
++        q_d, k_d, v_d, g_d, b_d, s_src.s_d, s_src.idx, s_src.row_stride, dst_d, state_d, H,                     \
++        n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,                                                         \
++        sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, l2_eps, l2_scale, state_slot_stride, K)
+     switch (S_v) {
+-        case 16:
+-            ggml_cuda_kernel_launch(gated_delta_net_cuda<16, KDA, keep_rs_t>, launch_params,
+-                q_d, k_d, v_d, g_d, b_d, s_d, dst_d, state_d, H,
+-                n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, state_slot_stride, K);
+-            break;
+-        case 32:
+-            ggml_cuda_kernel_launch(gated_delta_net_cuda<32, KDA, keep_rs_t>, launch_params,
+-                q_d, k_d, v_d, g_d, b_d, s_d, dst_d, state_d, H,
+-                n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, state_slot_stride, K);
+-            break;
+-        case 64: {
+-            ggml_cuda_kernel_launch(gated_delta_net_cuda<64, KDA, keep_rs_t>, launch_params,
+-                q_d, k_d, v_d, g_d, b_d, s_d, dst_d, state_d, H,
+-                n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, state_slot_stride, K);
+-            break;
+-        }
+-        case 128: {
+-            ggml_cuda_kernel_launch(gated_delta_net_cuda<128, KDA, keep_rs_t>, launch_params,
+-                q_d, k_d, v_d, g_d, b_d, s_d, dst_d, state_d, H,
+-                n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, state_slot_stride, K);
+-            break;
+-        }
++        case 16:  GDN_LAUNCH(16);  break;
++        case 32:  GDN_LAUNCH(32);  break;
++        case 64:  GDN_LAUNCH(64);  break;
++        case 128: GDN_LAUNCH(128); break;
+         default:
+             GGML_ABORT("fatal error");
+             break;
+     }
++#undef GDN_LAUNCH
++}
++
++bool ggml_cuda_gdn_l2_norm_src(const ggml_tensor * t, ggml_cuda_gdn_l2_norm & l2) {
++    // build_gdn_l2_norm: scale(rms_norm(x, eps), s)
++    if (t->op != GGML_OP_SCALE || t->type != GGML_TYPE_F32 || ggml_get_op_params_f32(t, 1) != 0.0f) {
++        return false;
++    }
++    const ggml_tensor * rms = t->src[0];
++    if (rms->op != GGML_OP_RMS_NORM || rms->type != GGML_TYPE_F32) {
++        return false;
++    }
++    const ggml_tensor * x = rms->src[0];
++    if (x->type != GGML_TYPE_F32 || !ggml_are_same_shape(x, t) || !ggml_is_contiguous_rows(x)) {
++        return false;
++    }
++    l2.x     = x;
++    l2.eps   = ggml_get_op_params_f32(rms, 0);
++    l2.scale = ggml_get_op_params_f32(t, 0);
++    return true;
++}
++
++bool ggml_cuda_gdn_fuse_l2_norm(const ggml_tensor * gdn, ggml_cuda_gdn_l2_norm & l2_q, ggml_cuda_gdn_l2_norm & l2_k) {
++    if (gdn->op != GGML_OP_GATED_DELTA_NET ||
++            !ggml_cuda_gdn_l2_norm_src(gdn->src[0], l2_q) || !ggml_cuda_gdn_l2_norm_src(gdn->src[1], l2_k)) {
++        return false;
++    }
++    // one eps/scale pair for both, q and k share their strides, and every (head, token) row is one segment of S_v
++    return l2_q.eps == l2_k.eps && l2_q.scale == l2_k.scale && ggml_are_same_stride(l2_q.x, l2_k.x) &&
++           l2_q.x->ne[0] == gdn->src[2]->ne[0];
++}
++
++const ggml_tensor * ggml_cuda_gdn_state_gather(const ggml_tensor * gdn) {
++    // build_rs: state = reshape(view(get_rows(states, s_copy))) for a single sequence without extra states;
++    // nothing between the gather and the GDN writes to the gathered rows in that case
++    if (gdn->op != GGML_OP_GATED_DELTA_NET) {
++        return nullptr;
++    }
++    const ggml_tensor * state = gdn->src[5];
++    const ggml_tensor * rows  = state->view_src;
++    if (rows == nullptr || rows->op != GGML_OP_GET_ROWS || state->view_offs != 0 || !ggml_is_contiguous(state)) {
++        return nullptr;
++    }
++    const ggml_tensor * states = rows->src[0];
++    const ggml_tensor * idx    = rows->src[1];
++    if (states->type != GGML_TYPE_F32 || rows->type != GGML_TYPE_F32 || idx->type != GGML_TYPE_I32 ||
++            !ggml_is_contiguous(states) || !ggml_is_contiguous(rows) || ggml_nelements(idx) != 1 ||
++            rows->ne[1] != 1 || rows->ne[2] != 1 || rows->ne[3] != 1 || states->ne[2] != 1 || states->ne[3] != 1 ||
++            state->ne[3] != 1 || ggml_nelements(state) != rows->ne[0]) {
++        return nullptr;
++    }
++    return rows;
+ }
+ 
+ static void ggml_cuda_op_gated_delta_net_impl(
+@@ -246,6 +317,16 @@ static void ggml_cuda_op_gated_delta_net_impl(
+     ggml_tensor * src_beta  = dst->src[4];
+     ggml_tensor * src_state = dst->src[5];
+ 
++    // q/k produced by build_gdn_l2_norm are normalized in the kernel from their inputs (the RMS_NORM/SCALE nodes may
++    // have been skipped, see ggml_cuda_try_fuse)
++    ggml_cuda_gdn_l2_norm l2_q;
++    ggml_cuda_gdn_l2_norm l2_k;
++    const bool l2_qk = ggml_cuda_gdn_fuse_l2_norm(dst, l2_q, l2_k);
++    if (l2_qk) {
++        src_q = const_cast<ggml_tensor *>(l2_q.x);
++        src_k = const_cast<ggml_tensor *>(l2_k.x);
++    }
++
+     GGML_TENSOR_LOCALS(int64_t, neq, src_q, ne);
+     GGML_TENSOR_LOCALS(size_t , nbq, src_q, nb);
+     GGML_TENSOR_LOCALS(int64_t, nek, src_k, ne);
+@@ -272,7 +353,13 @@ static void ggml_cuda_op_gated_delta_net_impl(
+     const float * g_d = (const float *) src_g->data;
+     const float * b_d = (const float *) src_beta->data;
+ 
+-    const float * s_d   = (const float *) src_state->data;
++    // the initial state is read straight from the recurrent cache rows the GET_ROWS would gather
++    gdn_state_src s_src = { (const float *) src_state->data, nullptr, 0 };
++    if (const ggml_tensor * rows = ggml_cuda_gdn_state_gather(dst)) {
++        s_src.s_d        = (const float *) rows->src[0]->data;
++        s_src.idx        = (const int32_t *) rows->src[1]->data;
++        s_src.row_stride = rows->src[0]->nb[1] / sizeof(float);
++    }
+     float *       dst_d = (float *) dst->data;
+ 
+     GGML_ASSERT(ggml_is_contiguous_rows(src_q));
+@@ -296,6 +383,8 @@ static void ggml_cuda_op_gated_delta_net_impl(
+     const int64_t sb3 = nbb3 / sizeof(float);
+ 
+     const float scale = 1.0f / sqrtf((float) S_v);
++    const float l2_eps   = l2_qk ? l2_q.eps   : 0.0f;
++    const float l2_scale = l2_qk ? l2_q.scale : 1.0f;
+ 
+     cudaStream_t stream = ctx.stream();
+ 
+@@ -311,27 +400,24 @@ static void ggml_cuda_op_gated_delta_net_impl(
+         state_slot_stride = cache->slot_stride;
+     }
+ 
++#define GDN_DISPATCH(KDA_, KEEP_, L2_)                                                              \
++    launch_gated_delta_net<KDA_, KEEP_, L2_>(q_d, k_d, v_d, g_d, b_d, s_src, dst_d, state_d,         \
++        S_v, H, n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,                                       \
++        sb1, sb2, sb3, neqk1, rq3, scale, l2_eps, l2_scale, state_slot_stride, K, stream)
+     if (kda) {
+         if (keep_rs) {
+-            launch_gated_delta_net<true, true>(q_d, k_d, v_d, g_d, b_d, s_d, dst_d, state_d,
+-                S_v, H, n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1, rq3, scale, state_slot_stride, K, stream);
++            if (l2_qk) { GDN_DISPATCH(true, true, true); } else { GDN_DISPATCH(true, true, false); }
+         } else {
+-            launch_gated_delta_net<true, false>(q_d, k_d, v_d, g_d, b_d, s_d, dst_d, state_d,
+-                S_v, H, n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1, rq3, scale, state_slot_stride, K, stream);
++            if (l2_qk) { GDN_DISPATCH(true, false, true); } else { GDN_DISPATCH(true, false, false); }
+         }
+     } else {
+         if (keep_rs) {
+-            launch_gated_delta_net<false, true>(q_d, k_d, v_d, g_d, b_d, s_d, dst_d, state_d,
+-                S_v, H, n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1, rq3, scale, state_slot_stride, K, stream);
++            if (l2_qk) { GDN_DISPATCH(false, true, true); } else { GDN_DISPATCH(false, true, false); }
+         } else {
+-            launch_gated_delta_net<false, false>(q_d, k_d, v_d, g_d, b_d, s_d, dst_d, state_d,
+-                S_v, H, n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1, rq3, scale, state_slot_stride, K, stream);
++            if (l2_qk) { GDN_DISPATCH(false, false, true); } else { GDN_DISPATCH(false, false, false); }
+         }
+     }
++#undef GDN_DISPATCH
+ }
+ 
+ void ggml_cuda_op_gated_delta_net(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cuh b/ggml/src/ggml-cuda/gated_delta_net.cuh
+index f9bf43706..1b39e7ae6 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cuh
++++ b/ggml/src/ggml-cuda/gated_delta_net.cuh
+@@ -12,3 +12,18 @@ void ggml_cuda_op_gated_delta_net(ggml_backend_cuda_context & ctx, ggml_tensor *
+ // same op, but writes the snapshot(s) into the cache instead of dst (see ggml_cuda_try_gdn_cache_fusion)
+ void ggml_cuda_op_gated_delta_net_fused_cache(ggml_backend_cuda_context & ctx, ggml_tensor * dst,
+                                               ggml_cuda_gated_delta_net_fused_cache cache);
++
++// q/k input of GATED_DELTA_NET built as scale(rms_norm(x, eps), scale) (build_gdn_l2_norm)
++struct ggml_cuda_gdn_l2_norm {
++    const ggml_tensor * x;
++    float               eps;
++    float               scale;
++};
++
++bool ggml_cuda_gdn_l2_norm_src(const ggml_tensor * t, ggml_cuda_gdn_l2_norm & l2);
++
++// whether the kernel normalizes q and k itself, reading the RMS_NORM inputs; the RMS_NORM/SCALE nodes are then unused
++bool ggml_cuda_gdn_fuse_l2_norm(const ggml_tensor * gdn, ggml_cuda_gdn_l2_norm & l2_q, ggml_cuda_gdn_l2_norm & l2_k);
++
++// the GET_ROWS node whose gathered row is the initial state, when the kernel reads that row from the cache itself
++const ggml_tensor * ggml_cuda_gdn_state_gather(const ggml_tensor * gdn);
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index f79753f80..c15f66532 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -3536,7 +3536,191 @@ static bool ggml_cuda_can_fuse(const struct ggml_cgraph *                cgraph,
+     return false;
+ }
+ 
+-// try and fuse nodes and return the number of nodes to skip
++// index of the first of the next 64 nodes after node_idx that reads t, or -1
++static int ggml_cuda_find_consumer(const ggml_cgraph * cgraph, int node_idx, const ggml_tensor * t) {
++    for (int j = node_idx + 1; j < std::min(cgraph->n_nodes, node_idx + 65); ++j) {
++        const ggml_tensor * n = cgraph->nodes[j];
++        for (int s = 0; s < GGML_MAX_SRC; ++s) {
++            if (n->src[s] == t) {
++                return j;
++            }
++        }
++    }
++    return -1;
++}
++
++// a node that reads tensor t (directly, or through a chain of views of t)
++struct ggml_cuda_reader {
++    int                 idx; // node index
++    int                 src; // src slot of the node
++    const ggml_tensor * via; // t or the view of t the node reads
++};
++
++// Collects the computing readers of node ti among the next `window` nodes, following view chains. Empty readers
++// (they compute nothing) are dropped. Returns false when the readers found do not account for every use of the
++// node (or of one of its views) or when the node is a graph output, i.e. when some reader may be elsewhere.
++static bool ggml_cuda_collect_readers(const ggml_cgraph * cgraph, int ti, int window, std::vector<ggml_cuda_reader> & readers) {
++    const ggml_tensor * t = cgraph->nodes[ti];
++    if (t->flags & GGML_TENSOR_FLAG_OUTPUT) {
++        return false;
++    }
++    const int end = std::min(cgraph->n_nodes, ti + 1 + window);
++    int found = 0;
++    for (int j = ti + 1; j < end; ++j) {
++        const ggml_tensor * n = cgraph->nodes[j];
++        for (int s = 0; s < GGML_MAX_SRC; ++s) {
++            if (n->src[s] != t) {
++                continue;
++            }
++            ++found;
++            if (ggml_is_empty(n)) {
++                continue;
++            }
++            if (n->op == GGML_OP_VIEW || n->op == GGML_OP_RESHAPE || n->op == GGML_OP_PERMUTE || n->op == GGML_OP_TRANSPOSE) {
++                if (!ggml_cuda_collect_readers(cgraph, j, end - 1 - j, readers)) {
++                    return false;
++                }
++                continue;
++            }
++            readers.push_back({ j, s, t });
++        }
++    }
++    return found == ggml_node_get_use_count(cgraph, ti);
++}
++
++// the GET_ROWS gather of the initial recurrent state, when every reader is a GDN that reads the row in place
++static bool ggml_cuda_gdn_state_gather_elided(const ggml_cgraph * cgraph, int i) {
++    const ggml_tensor * node = cgraph->nodes[i];
++    if (node->op != GGML_OP_GET_ROWS || node->ne[1] != 1) {
++        return false;
++    }
++    std::vector<ggml_cuda_reader> readers;
++    if (!ggml_cuda_collect_readers(cgraph, i, 64, readers) || readers.empty()) {
++        return false;
++    }
++    for (const ggml_cuda_reader & r : readers) {
++        if (r.src != 5 || ggml_cuda_gdn_state_gather(cgraph->nodes[r.idx]) != node) {
++            return false;
++        }
++    }
++    return true;
++}
++
++// Nodes of the GATED_DELTA_NET prologue whose results the GDN kernel computes or reads itself
++// (see ggml_cuda_gdn_fuse_l2_norm, ggml_cuda_gdn_state_gather), so they need not run at all:
++//  - the RMS_NORM and SCALE of build_gdn_l2_norm(q/k) when their only consumer is such a GDN;
++//  - the GET_ROWS gather of the initial recurrent state when only that GDN reads it.
++static bool ggml_cuda_gdn_prologue_elided(const ggml_cgraph * cgraph, int i) {
++    const ggml_tensor * node = cgraph->nodes[i];
++
++    if (node->op == GGML_OP_RMS_NORM || node->op == GGML_OP_SCALE) {
++        const ggml_tensor * scale = node;
++        int scale_idx = i;
++        if (node->op == GGML_OP_RMS_NORM) {
++            if (i + 1 >= cgraph->n_nodes || cgraph->nodes[i + 1]->op != GGML_OP_SCALE || cgraph->nodes[i + 1]->src[0] != node ||
++                    !ggml_node_has_n_uses(cgraph, i, 1)) {
++                return false;
++            }
++            scale     = cgraph->nodes[i + 1];
++            scale_idx = i + 1;
++        } else if (i == 0 || cgraph->nodes[i - 1] != node->src[0] || !ggml_node_has_n_uses(cgraph, i - 1, 1)) {
++            return false;
++        }
++        if (!ggml_node_has_n_uses(cgraph, scale_idx, 1)) {
++            return false;
++        }
++        const int j = ggml_cuda_find_consumer(cgraph, scale_idx, scale);
++        if (j < 0) {
++            return false;
++        }
++        const ggml_tensor * gdn = cgraph->nodes[j];
++        ggml_cuda_gdn_l2_norm l2_q;
++        ggml_cuda_gdn_l2_norm l2_k;
++        return (gdn->src[0] == scale || gdn->src[1] == scale) && ggml_cuda_gdn_fuse_l2_norm(gdn, l2_q, l2_k);
++    }
++
++    if (node->op == GGML_OP_GET_ROWS) {
++        return ggml_cuda_gdn_state_gather_elided(cgraph, i);
++    }
++
++    return false;
++}
++
++// GATED_DELTA_NET alpha/beta projections and their activation tails:
++//   alpha: mul_mat -> reshape -> add(dt) -> softplus -> mul(ssm_a) -> reshape
++//   beta:  mul_mat -> reshape -> sigmoid
++// all done by one MMVQ launch (ggml_cuda_gdn_ab_mmvq). Returns the number of nodes to skip.
++static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
++    const std::initializer_list<enum ggml_op> ops = {
++        GGML_OP_MUL_MAT, GGML_OP_RESHAPE, GGML_OP_ADD, GGML_OP_UNARY, GGML_OP_MUL, GGML_OP_RESHAPE,
++        GGML_OP_MUL_MAT, GGML_OP_RESHAPE, GGML_OP_UNARY,
++    };
++    if (cuda_ctx->curr_stream_no != 0 || !cuda_ctx->stream_context().concurrent_events.empty() ||
++            !ggml_can_fuse_subgraph(cgraph, i, ops, { i + 5, i + 8 }) ||
++            !ggml_check_edges(cgraph, i, {{1, 0, 0}, {3, 0, 2}, {5, 0, 4}, {7, 0, 6}, {8, 0, 7}})) {
++        return 0;
++    }
++
++    const ggml_tensor * alpha_mm      = cgraph->nodes[i + 0];
++    const ggml_tensor * alpha_reshape = cgraph->nodes[i + 1];
++    const ggml_tensor * alpha_add     = cgraph->nodes[i + 2];
++    const ggml_tensor * alpha_sp      = cgraph->nodes[i + 3];
++    const ggml_tensor * alpha_mul     = cgraph->nodes[i + 4];
++    ggml_tensor *       gate_out      = cgraph->nodes[i + 5];
++    const ggml_tensor * beta_mm       = cgraph->nodes[i + 6];
++    ggml_tensor *       beta_out      = cgraph->nodes[i + 8];
++
++    if (ggml_get_unary_op(alpha_sp) != GGML_UNARY_OP_SOFTPLUS || ggml_get_unary_op(beta_out) != GGML_UNARY_OP_SIGMOID) {
++        return 0;
++    }
++    if ((alpha_add->src[0] != alpha_reshape && alpha_add->src[1] != alpha_reshape) ||
++            (alpha_mul->src[0] != alpha_sp && alpha_mul->src[1] != alpha_sp)) {
++        return 0;
++    }
++    const ggml_tensor * dt    = alpha_add->src[0] == alpha_reshape ? alpha_add->src[1] : alpha_add->src[0];
++    const ggml_tensor * ssm_a = alpha_mul->src[0] == alpha_sp      ? alpha_mul->src[1] : alpha_mul->src[0];
++
++    const ggml_tensor * w_alpha = alpha_mm->src[0];
++    const ggml_tensor * w_beta  = beta_mm->src[0];
++    const ggml_tensor * x       = alpha_mm->src[1];
++
++    const int64_t M = w_alpha->ne[1];
++    const int64_t N = x->ne[1];
++    const int cc = ggml_cuda_info().devices[cuda_ctx->device].cc;
++
++    if (beta_mm->src[1] != x || w_alpha->type != w_beta->type || !ggml_cuda_gdn_ab_mmvq_supported(w_alpha->type) ||
++            !ggml_are_same_shape(w_alpha, w_beta) || w_alpha->nb[1] != w_beta->nb[1] ||
++            !ggml_is_contiguous(w_alpha) || !ggml_is_contiguous(w_beta) || !ggml_is_matrix(w_alpha) ||
++            !ggml_cuda_should_use_mmvq(w_alpha->type, cc, N)) {
++        return 0;
++    }
++    if (x->type != GGML_TYPE_F32 || !ggml_is_contiguous_rows(x) || x->ne[2] != 1 || x->ne[3] != 1 ||
++            N > MMVQ_MAX_BATCH_SIZE) {
++        return 0;
++    }
++    // outputs: [M, N] contiguous, head values of a token next to each other
++    if (gate_out->type != GGML_TYPE_F32 || beta_out->type != GGML_TYPE_F32 ||
++            !ggml_is_contiguous(gate_out) || !ggml_is_contiguous(beta_out) || !ggml_is_contiguous(alpha_mul) ||
++            ggml_nelements(gate_out) != M*N || ggml_nelements(beta_out) != M*N ||
++            alpha_mm->ne[0] != M || alpha_mm->ne[1] != N || beta_mm->ne[0] != M || beta_mm->ne[1] != N ||
++            !ggml_are_same_shape(alpha_reshape, alpha_mul)) {
++        return 0;
++    }
++    // dt and ssm_a broadcast over the tokens: one value per head
++    if (dt->type != GGML_TYPE_F32 || ssm_a->type != GGML_TYPE_F32 || !ggml_is_contiguous(dt) || !ggml_is_contiguous(ssm_a) ||
++            dt->ne[0] != M || ggml_nelements(dt) != M || ssm_a->ne[0] != M || ggml_nelements(ssm_a) != M) {
++        return 0;
++    }
++    const int out_nodes[] = { i + 5, i + 8 };
++    if (!ggml_cuda_check_fusion_memory_ranges(cgraph, i, (int) ops.size(), out_nodes, 2)) {
++        return 0;
++    }
++
++    ggml_cuda_gdn_ab_mmvq(*cuda_ctx, w_alpha, w_beta, x, dt, ssm_a, gate_out, beta_out);
++    return (int) ops.size() - 1;
++}
++
++// try and fuse nodes and return the number of nodes to skip; -1: the node is elided (its result is never read)
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+ 
+     static bool disable_fusion = getenv("GGML_CUDA_DISABLE_FUSION") != nullptr && std::atoi(getenv("GGML_CUDA_DISABLE_FUSION"));
+@@ -3546,6 +3730,17 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+ 
+     ggml_tensor * node = cgraph->nodes[i];
+ 
++    if (ggml_cuda_gdn_prologue_elided(cgraph, i)) {
++        return -1;
++    }
++
++    if (node->op == GGML_OP_MUL_MAT) {
++        const int nodes_to_skip = ggml_cuda_try_gdn_ab_fusion(cuda_ctx, cgraph, i);
++        if (nodes_to_skip > 0) {
++            return nodes_to_skip;
++        }
++    }
++
+     if (node->op == GGML_OP_MUL_MAT_ID && cuda_ctx->stream_context().concurrent_events.empty() &&
+             ggml_cuda_match_shared_expert(cgraph, i, i + 3) &&
+             ggml_cuda_should_fuse_mul_mat_vec_q(cgraph->nodes[i + 2]->src[1])) {
+@@ -4486,6 +4681,9 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+                 }
+ 
+                 int nodes_to_skip = ggml_cuda_try_fuse(cuda_ctx, cgraph, i);
++                if (nodes_to_skip < 0) {
++                    continue;
++                }
+ 
+                 if (nodes_to_skip != 0) {
+ #ifdef GGML_CUDA_DEBUG
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 380a2bf43..56c0c8467 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1994,6 +1994,205 @@ static void mul_mat_vec_q_switch_type(
+     }
+ }
+ 
++// q8_1 activations of an MMVQ src1. Reuses the previous MUL_MAT's activations if it had the same src1
++// (see mmvq_q8_cache_t), else quantizes into the cache (allow_cache) or into storage taken from pool.
++// The cache buffer is allocated once, outside of graph capture, and never reallocated, so captured
++// CUDA graphs can keep pointing at it.
++static const char * mmvq_src1_q8_1(ggml_backend_cuda_context & ctx, const ggml_tensor * src1, const ggml_type type_src0,
++        const bool allow_cache, ggml_cuda_pool_alloc<char> & pool) {
++    GGML_ASSERT(src1->type == GGML_TYPE_F32 && src1->nb[0] == sizeof(float));
++    cudaStream_t stream = ctx.stream();
++
++    const int64_t ne10 = src1->ne[0];
++    const int64_t ne11 = src1->ne[1];
++    const int64_t ne12 = src1->ne[2];
++    const int64_t ne13 = src1->ne[3];
++
++    const int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
++    const size_t  q8_size     = ne13*ne12 * ne11*ne10_padded * sizeof(block_q8_1)/QK8_1;
++
++    constexpr size_t q8_cache_capacity = 4u << 20;
++    auto & qc = ctx.mmvq_q8_cache;
++    const bool cache_usable = allow_cache && ctx.curr_stream_no == 0 && ctx.stream_context().concurrent_events.empty() &&
++                              q8_size <= q8_cache_capacity;
++    if (cache_usable && qc.buf == nullptr) {
++        cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
++        CUDA_CHECK(cudaStreamIsCapturing(stream, &capture_status));
++        if (capture_status == cudaStreamCaptureStatusNone) {
++            CUDA_CHECK(cudaMalloc(&qc.buf, q8_cache_capacity));
++            qc.buf_size = q8_cache_capacity;
++        }
++    }
++    const bool use_cache = cache_usable && qc.buf != nullptr;
++    const bool cache_hit = use_cache && qc.src == src1->data &&
++        qc.ne[0] == ne10 && qc.ne[1] == ne11 && qc.ne[2] == ne12 && qc.ne[3] == ne13 &&
++        qc.nb[1] == src1->nb[1] && qc.nb[2] == src1->nb[2] && qc.nb[3] == src1->nb[3];
++
++    char * src1_q8_1 = use_cache ? (char *) qc.buf : pool.alloc(q8_size);
++    if (!cache_hit) {
++        const int64_t s11 = src1->nb[1] / sizeof(float);
++        const int64_t s12 = src1->nb[2] / sizeof(float);
++        const int64_t s13 = src1->nb[3] / sizeof(float);
++        quantize_row_q8_1_cuda((const float *) src1->data, nullptr, src1_q8_1, type_src0, ne10, s11, s12, s13,
++                               ne10_padded, ne11, ne12, ne13, stream);
++        if (use_cache) {
++            qc.src       = src1->data;
++            qc.src_bytes = ggml_nbytes(src1);
++            for (int k = 0; k < 4; ++k) {
++                qc.ne[k] = src1->ne[k];
++                qc.nb[k] = src1->nb[k];
++            }
++        } else {
++            qc.src = nullptr;
++        }
++    }
++    return src1_q8_1;
++}
++
++// GATED_DELTA_NET alpha/beta projections plus their activation tails in one launch:
++//   gate[t][h] = softplus(W_alpha[h] . x[t] + dt[h]) * ssm_a[h]
++//   beta[t][h] = sigmoid(W_beta[h] . x[t])
++// One block per (head, projection) does the MMVQ dot product of one weight row against all tokens.
++// The per-element math matches the unfused ADD/SOFTPLUS/MUL/SIGMOID kernels; only the order of the
++// partial sums of the dot product differs from the MMVQ kernel.
++template <ggml_type type>
++__launch_bounds__(4*ggml_cuda_get_physical_warp_size(), 1)
++static __global__ void mul_mat_vec_q_gdn_ab(
++        const void * __restrict__ w_alpha, const void * __restrict__ w_beta, const block_q8_1 * __restrict__ y,
++        const float * __restrict__ dt, const float * __restrict__ ssm_a, float * __restrict__ gate, float * __restrict__ beta,
++        const int ncols_x, const int stride_row_x, const int stride_col_y, const int n_heads, const int n_tokens) {
++    constexpr int qk        = ggml_cuda_type_traits<type>::qk;
++    constexpr int qi        = ggml_cuda_type_traits<type>::qi;
++    constexpr int vdr       = get_vdr_mmvq(type);
++    constexpr int nwarps    = 4;
++    constexpr int warp_size = ggml_cuda_get_physical_warp_size();
++    constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
++
++    const int  h       = blockIdx.x;
++    const bool is_beta = blockIdx.y != 0;
++    const void * vx    = is_beta ? w_beta : w_alpha;
++
++    const int tid = warp_size*threadIdx.y + threadIdx.x;
++    const int blocks_per_row_x = ncols_x / qk;
++    constexpr int blocks_per_iter = vdr * nwarps*warp_size / qi;
++
++    float tmp[MMVQ_MAX_BATCH_SIZE] = {0.0f};
++    for (int kbx = tid / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
++        const int kby = kbx * (qk/QK8_1);
++        const int kqs = vdr * (tid % (qi/vdr));
++#pragma unroll
++        for (int j = 0; j < MMVQ_MAX_BATCH_SIZE; ++j) {
++            if (j < n_tokens) {
++                tmp[j] += vec_dot_q_cuda(vx, &y[j*stride_col_y + kby], h*stride_row_x + kbx, kqs);
++            }
++        }
++    }
++
++    __shared__ float tmp_shared[nwarps-1][MMVQ_MAX_BATCH_SIZE][warp_size];
++    if (threadIdx.y > 0) {
++#pragma unroll
++        for (int j = 0; j < MMVQ_MAX_BATCH_SIZE; ++j) {
++            tmp_shared[threadIdx.y-1][j][threadIdx.x] = tmp[j];
++        }
++    }
++    __syncthreads();
++    if (threadIdx.y > 0) {
++        return;
++    }
++
++#pragma unroll
++    for (int j = 0; j < MMVQ_MAX_BATCH_SIZE; ++j) {
++        if (j >= n_tokens) {
++            break;
++        }
++#pragma unroll
++        for (int l = 0; l < nwarps-1; ++l) {
++            tmp[j] += tmp_shared[l][j][threadIdx.x];
++        }
++        const float sum = warp_reduce_sum<warp_size>(tmp[j]);
++        if (threadIdx.x == 0) {
++            const int i = j*n_heads + h;
++            if (is_beta) {
++                beta[i] = 1.0f / (1.0f + expf(-sum));
++            } else {
++                const float a = sum + dt[h];
++                gate[i] = ((a > 20.0f) ? a : logf(1.0f + expf(a))) * ssm_a[h];
++            }
++        }
++    }
++}
++
++bool ggml_cuda_gdn_ab_mmvq_supported(const ggml_type type) {
++    switch (type) {
++        case GGML_TYPE_Q4_0:
++        case GGML_TYPE_Q4_1:
++        case GGML_TYPE_Q5_0:
++        case GGML_TYPE_Q5_1:
++        case GGML_TYPE_Q8_0:
++        case GGML_TYPE_Q2_K:
++        case GGML_TYPE_Q3_K:
++        case GGML_TYPE_Q4_K:
++        case GGML_TYPE_Q5_K:
++        case GGML_TYPE_Q6_K:
++        case GGML_TYPE_IQ4_NL:
++        case GGML_TYPE_IQ4_XS:
++            return true;
++        default:
++            return false;
++    }
++}
++
++template <ggml_type type>
++static void gdn_ab_mmvq_launch(const void * w_alpha, const void * w_beta, const block_q8_1 * y, const float * dt,
++        const float * ssm_a, float * gate, float * beta, int ncols_x, int stride_row_x, int stride_col_y,
++        int n_heads, int n_tokens, cudaStream_t stream) {
++    const dim3 block_nums(n_heads, 2, 1);
++    const dim3 block_dims(ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size, 4, 1);
++    mul_mat_vec_q_gdn_ab<type><<<block_nums, block_dims, 0, stream>>>(
++        w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens);
++}
++
++void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor * w_alpha, const ggml_tensor * w_beta,
++        const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a, ggml_tensor * gate, ggml_tensor * beta) {
++    const ggml_type type = w_alpha->type;
++    GGML_ASSERT(w_beta->type == type && ggml_cuda_gdn_ab_mmvq_supported(type));
++    GGML_ASSERT(ggml_are_same_shape(w_alpha, w_beta) && w_alpha->nb[1] == w_beta->nb[1]);
++    GGML_ASSERT(x->ne[0] == w_alpha->ne[0] && x->ne[1] <= MMVQ_MAX_BATCH_SIZE && x->ne[2] == 1 && x->ne[3] == 1);
++
++    ggml_cuda_pool_alloc<char> pool(ctx.pool());
++    const block_q8_1 * y = (const block_q8_1 *) mmvq_src1_q8_1(ctx, x, type, /*allow_cache =*/ true, pool);
++
++    const int ncols_x      = (int) w_alpha->ne[0];
++    const int n_heads      = (int) w_alpha->ne[1];
++    const int n_tokens     = (int) x->ne[1];
++    const int stride_row_x = (int) (w_alpha->nb[1] / ggml_type_size(type));
++    const int stride_col_y = (int) (GGML_PAD(x->ne[0], MATRIX_ROW_PADDING) / QK8_1);
++
++    const void *  wa = w_alpha->data;
++    const void *  wb = w_beta->data;
++    const float * dd = (const float *) dt->data;
++    const float * ad = (const float *) ssm_a->data;
++    float *       gd = (float *) gate->data;
++    float *       bd = (float *) beta->data;
++    cudaStream_t  stream = ctx.stream();
++
++    switch (type) {
++        case GGML_TYPE_Q4_0:   gdn_ab_mmvq_launch<GGML_TYPE_Q4_0>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q4_1:   gdn_ab_mmvq_launch<GGML_TYPE_Q4_1>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q5_0:   gdn_ab_mmvq_launch<GGML_TYPE_Q5_0>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q5_1:   gdn_ab_mmvq_launch<GGML_TYPE_Q5_1>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q8_0:   gdn_ab_mmvq_launch<GGML_TYPE_Q8_0>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q2_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q2_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q3_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q3_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q4_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q4_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q5_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q5_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q6_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q6_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_IQ4_NL: gdn_ab_mmvq_launch<GGML_TYPE_IQ4_NL>(wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_IQ4_XS: gdn_ab_mmvq_launch<GGML_TYPE_IQ4_XS>(wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        default: GGML_ABORT("unsupported GDN projection type");
++    }
++}
++
+ void ggml_cuda_mul_mat_vec_q(
+         ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, const ggml_tensor * ids, ggml_tensor * dst,
+         const ggml_cuda_mm_fusion_args_host * fusion) {
+@@ -2016,7 +2215,6 @@ void ggml_cuda_mul_mat_vec_q(
+ 
+     GGML_ASSERT(!ids || ne12 <= MMVQ_MAX_BATCH_SIZE);
+ 
+-    const float   * src1_d =       (const float   *) src1->data;
+     const int32_t *  ids_d = ids ? (const int32_t *)  ids->data : nullptr;
+     float         *  dst_d =       (float         *)  dst->data;
+ 
+@@ -2094,47 +2292,10 @@ void ggml_cuda_mul_mat_vec_q(
+         }
+     }
+ 
+-    const int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
+-    const size_t  q8_size     = ne13*ne12 * ne11*ne10_padded * sizeof(block_q8_1)/QK8_1;
+-
+-    // Reuse the q8_1 activations of the previous MUL_MAT if it had the same src1 (see mmvq_q8_cache_t).
+-    // The cache buffer is allocated once, outside of graph capture, and never reallocated, so captured
+-    // CUDA graphs can keep pointing at it.
+-    constexpr size_t q8_cache_capacity = 4u << 20;
+-    auto & qc = ctx.mmvq_q8_cache;
+-    const bool cache_usable = !ids && ctx.curr_stream_no == 0 && ctx.stream_context().concurrent_events.empty() &&
+-                              q8_size <= q8_cache_capacity;
+-    if (cache_usable && qc.buf == nullptr) {
+-        cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
+-        CUDA_CHECK(cudaStreamIsCapturing(stream, &capture_status));
+-        if (capture_status == cudaStreamCaptureStatusNone) {
+-            CUDA_CHECK(cudaMalloc(&qc.buf, q8_cache_capacity));
+-            qc.buf_size = q8_cache_capacity;
+-        }
+-    }
+-    const bool use_cache = cache_usable && qc.buf != nullptr;
+-    const bool cache_hit = use_cache && qc.src == src1->data &&
+-        qc.ne[0] == ne10 && qc.ne[1] == ne11 && qc.ne[2] == ne12 && qc.ne[3] == ne13 &&
+-        qc.nb[1] == src1->nb[1] && qc.nb[2] == src1->nb[2] && qc.nb[3] == src1->nb[3];
+-
+     ggml_cuda_pool_alloc<char> src1_q8_1_pool(ctx.pool());
+-    char * src1_q8_1 = use_cache ? (char *) qc.buf : src1_q8_1_pool.alloc(q8_size);
+-    if (!cache_hit) {
+-        const int64_t s11 = src1->nb[1] / ts_src1;
+-        const int64_t s12 = src1->nb[2] / ts_src1;
+-        const int64_t s13 = src1->nb[3] / ts_src1;
+-        quantize_row_q8_1_cuda(src1_d, nullptr, src1_q8_1, src0->type, ne10, s11, s12, s13, ne10_padded, ne11, ne12, ne13, stream);
+-        if (use_cache) {
+-            qc.src       = src1->data;
+-            qc.src_bytes = ggml_nbytes(src1);
+-            for (int k = 0; k < 4; ++k) {
+-                qc.ne[k] = src1->ne[k];
+-                qc.nb[k] = src1->nb[k];
+-            }
+-        } else {
+-            qc.src = nullptr;
+-        }
+-    }
++    const char * src1_q8_1 = mmvq_src1_q8_1(ctx, src1, src0->type, /*allow_cache =*/ !ids, src1_q8_1_pool);
++
++    const int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
+ 
+     const int64_t s01 = src0->nb[1] / ts_src0;
+     const int64_t s11 = ne10_padded / QK8_1;
+diff --git a/ggml/src/ggml-cuda/mmvq.cuh b/ggml/src/ggml-cuda/mmvq.cuh
+index 5605bf7a4..b042c4474 100644
+--- a/ggml/src/ggml-cuda/mmvq.cuh
++++ b/ggml/src/ggml-cuda/mmvq.cuh
+@@ -16,3 +16,9 @@ void ggml_cuda_op_mul_mat_vec_q(
+     const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst, const char * src0_dd_i, const float * src1_ddf_i,
+     const char * src1_ddq_i, float * dst_dd_i, const int64_t row_low, const int64_t row_high, const int64_t src1_ncols,
+     const int64_t src1_padded_row_size, cudaStream_t stream);
++
++// GATED_DELTA_NET alpha/beta projections and their activation tails in one MMVQ launch (x: F32 [K, n_tokens<=8]):
++//   gate = softplus(w_alpha*x + dt)*ssm_a, beta = sigmoid(w_beta*x), both stored as [n_heads, n_tokens]
++bool ggml_cuda_gdn_ab_mmvq_supported(ggml_type type);
++void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor * w_alpha, const ggml_tensor * w_beta,
++        const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a, ggml_tensor * gate, ggml_tensor * beta);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 7acd0229e..38619b6d7 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -4868,6 +4868,96 @@ struct test_gated_delta_net : public test_case {
+     }
+ };
+ 
++// GATED_DELTA_NET with the qwen35 prologue: alpha/beta projections + activations, l2-normalized q/k
++// (scale(rms_norm)), and the initial state gathered from a recurrent cache (get_rows). The CUDA backend
++// fuses the projections, normalizes q/k in the GDN kernel and reads the state row from the cache.
++struct test_gated_delta_net_prologue_fusion : public test_case {
++    const ggml_type w_type;
++    const int64_t   head_count;
++    const int64_t   head_size;
++    const int64_t   n_tokens;
++    const int64_t   n_embd;
++    const int       K;
++
++    std::string vars() override {
++        return VARS_TO_STR6(w_type, head_count, head_size, n_tokens, n_embd, K);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "GATED_DELTA_NET_PROLOGUE";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    double max_nmse_err() override { return 5e-4; }
++
++    test_gated_delta_net_prologue_fusion(ggml_type w_type, int64_t head_count, int64_t head_size, int64_t n_tokens,
++            int64_t n_embd, int K = 1)
++        : w_type(w_type), head_count(head_count), head_size(head_size), n_tokens(n_tokens), n_embd(n_embd), K(K) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        const int64_t H = head_count;
++        const int64_t S = head_size;
++        const int64_t N = n_tokens;
++
++        ggml_tensor * q_in = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H, N, 1);
++        ggml_tensor * k_in = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H, N, 1);
++        const float eps = 1e-6f;
++        ggml_tensor * q = ggml_scale(ctx, ggml_rms_norm(ctx, q_in, eps/S), 1.0f/sqrtf((float) S));
++        ggml_tensor * k = ggml_scale(ctx, ggml_rms_norm(ctx, k_in, eps/S), 1.0f/sqrtf((float) S));
++        ggml_tensor * v = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H, N, 1);
++        ggml_set_name(v, "v");
++
++        ggml_tensor * x     = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, n_embd, N);
++        ggml_tensor * wa    = ggml_new_tensor_2d(ctx, w_type, n_embd, H);
++        ggml_tensor * wb    = ggml_new_tensor_2d(ctx, w_type, n_embd, H);
++        ggml_tensor * dt    = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, H);
++        ggml_tensor * ssm_a = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, H);
++        ggml_set_name(dt,    "dt");
++        ggml_set_name(ssm_a, "ssm_a");
++
++        ggml_tensor * alpha = ggml_mul_mat(ctx, wa, x);
++        alpha = ggml_reshape_3d(ctx, alpha, H, N, 1);
++        alpha = ggml_add(ctx, alpha, dt);
++        alpha = ggml_softplus(ctx, alpha);
++        alpha = ggml_mul(ctx, alpha, ssm_a);
++        ggml_tensor * g = ggml_reshape_4d(ctx, alpha, 1, H, N, 1);
++
++        ggml_tensor * beta = ggml_mul_mat(ctx, wb, x);
++        beta = ggml_reshape_4d(ctx, beta, 1, H, N, 1);
++        beta = ggml_sigmoid(ctx, beta);
++
++        ggml_tensor * states = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, S*S*H, 3);
++        ggml_tensor * idx    = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 1);
++        ggml_set_name(idx, "idx");
++        ggml_tensor * rows  = ggml_get_rows(ctx, states, idx);
++        ggml_tensor * state = ggml_reshape_4d(ctx, rows, S, S, H, 1);
++
++        ggml_tensor * out = ggml_gated_delta_net(ctx, q, k, v, g, beta, state, K);
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != nullptr; t = ggml_get_next_tensor(ctx, t)) {
++            if (ggml_is_view_op(t->op)) { continue; }
++            if (strcmp(t->name, "idx") == 0) {
++                const int32_t row = 2;
++                ggml_backend_tensor_set(t, &row, 0, sizeof(row));
++            } else if (strcmp(t->name, "ssm_a") == 0) {
++                init_tensor_uniform(t, -4.0f, -0.5f);
++            } else if (strcmp(t->name, "dt") == 0) {
++                init_tensor_uniform(t, -2.0f, 2.0f);
++            } else if (strcmp(t->name, "v") == 0) {
++                init_tensor_uniform(t, -0.3f, 5.0f);
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++};
++
+ // GGML_OP_GATED_DELTA_NET + GGML_OP_CPY (recurrent cache fusion)
+ struct test_gated_delta_net_cache_fusion : public test_case {
+     const ggml_type type;
+@@ -11851,6 +11941,15 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_gated_delta_net_cache_fusion(GGML_TYPE_F32, 8, 32,   4, 2, 4));
+     test_cases.emplace_back(new test_gated_delta_net_cache_fusion(GGML_TYPE_F32, 4, 32,   8, 1, 4));
+ 
++    // gdn prologue: alpha/beta projections, q/k l2 norm and the state gather fused into the GDN path
++    for (ggml_type w : { GGML_TYPE_Q8_0, GGML_TYPE_Q4_K }) {
++        for (int64_t n_tokens : { 1, 4, 6, 8 }) {
++            test_cases.emplace_back(new test_gated_delta_net_prologue_fusion(w, 4, 128, n_tokens, 512));
++        }
++    }
++    test_cases.emplace_back(new test_gated_delta_net_prologue_fusion(GGML_TYPE_Q8_0, 4, 128, 9, 512));
++    test_cases.emplace_back(new test_gated_delta_net_prologue_fusion(GGML_TYPE_Q8_0, 4, 64, 6, 512, 4));
++
+ #if 0
+     // these tests are disabled to save execution time, sbut they can be handy for debugging
+     test_cases.emplace_back(new test_llama(2, true));
+-- 
+2.43.0
+

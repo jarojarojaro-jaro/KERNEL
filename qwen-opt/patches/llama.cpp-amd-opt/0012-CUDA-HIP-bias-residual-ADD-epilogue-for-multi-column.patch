@@ -1,0 +1,241 @@
+From 6da87d000501c88ed0c251817e1481ed997c3987 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 17:52:46 +0000
+Subject: [PATCH 12/14] CUDA/HIP: bias/residual ADD epilogue for multi-column
+ MMVQ
+
+The mul_mat + add fusion was limited to ncols_dst == 1 because the
+fused MMVQ kernel carries the gate/GLU accumulators. A bias_only
+template variant keeps only the x_bias epilogue, so speculative-decoding
+verify batches (2..8 columns) fold the residual ADD into the matvec
+when MMVQ is the kernel the unfused MUL_MAT would use.
+Gate/GLU fusion stays ncols_dst == 1 only (measured slower at ncols > 1).
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu | 38 +++++++++++++++++++++---
+ ggml/src/ggml-cuda/mmvq.cu      | 33 +++++++++++++++------
+ tests/test-backend-ops.cpp      | 51 +++++++++++++++++++++++++++++++++
+ 3 files changed, 110 insertions(+), 12 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index d23ea9ab7..f79753f80 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -1825,7 +1825,10 @@ static bool ggml_cuda_should_fuse_mul_mat_vec_f(const ggml_tensor * tensor) {
+     return use_mul_mat_vec_f;
+ }
+ 
+-static bool ggml_cuda_should_fuse_mul_mat_vec_q(const ggml_tensor * tensor) {
++// bias_only: the caller fuses only a bias/residual ADD. The multi-column kernel supports that epilogue, so the
++// ncols_dst == 1 restriction (which exists for the gate/GLU fusions) does not apply as long as MMVQ is the kernel
++// the unfused MUL_MAT would have used.
++static bool ggml_cuda_should_fuse_mul_mat_vec_q(const ggml_tensor * tensor, const bool bias_only = false) {
+     ggml_tensor *       src0 = tensor->src[0];
+     ggml_tensor *       src1 = tensor->src[1];
+     const ggml_tensor * dst  = tensor;
+@@ -1842,8 +1845,9 @@ static bool ggml_cuda_should_fuse_mul_mat_vec_q(const ggml_tensor * tensor) {
+     if (cc <= GGML_CUDA_CC_PASCAL) {
+         return false;
+     }
+-    //we only support fusion for ncols_dst = 1
+-    if (tensor->op == GGML_OP_MUL_MAT && dst->ne[1] != 1) {
++    //gate/GLU fusion is only supported for ncols_dst = 1
++    if (tensor->op == GGML_OP_MUL_MAT && dst->ne[1] != 1 &&
++            !(bias_only && ggml_cuda_should_use_mmvq(src0->type, cc, src1->ne[1]))) {
+         return false;
+     }
+ 
+@@ -4245,7 +4249,9 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+             break;
+         }
+ 
+-        if (ggml_cuda_should_fuse_mul_mat_vec_q(mm_node)) {
++        // multi-column MMVQ reads the bias with dst's strides
++        const bool bias_layout_ok = ids || bias_node->ne[1] == 1 || ggml_are_same_stride(bias_tensor, bias_node);
++        if (bias_layout_ok && ggml_cuda_should_fuse_mul_mat_vec_q(mm_node, /*bias_only =*/ true)) {
+             ggml_cuda_mul_mat_vec_q(*cuda_ctx, src0, src1, ids, bias_node, &fusion_data);
+             fused_mul_mat_vec = true;
+             fused_node_count  = 2;
+@@ -4257,6 +4263,30 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         return fused_node_count - 1;
+     }
+ 
++    // mul_mat -> reshape -> add: the reshape only changes the view of the contiguous product (e.g. the qwen35
++    // linear-attention output projection before its residual add)
++    if (node->op == GGML_OP_MUL_MAT && i + 2 < cgraph->n_nodes) {
++        ggml_tensor * mm_node   = node;
++        ggml_tensor * reshape   = cgraph->nodes[i + 1];
++        ggml_tensor * bias_node = cgraph->nodes[i + 2];
++        if (reshape->op == GGML_OP_RESHAPE && reshape->src[0] == mm_node && bias_node->op == GGML_OP_ADD &&
++                (bias_node->src[0] == reshape || bias_node->src[1] == reshape) &&
++                ggml_node_has_n_uses(cgraph, i, 1) && ggml_node_get_use_count(cgraph, i + 1) == 1 &&
++                !(reshape->flags & GGML_TENSOR_FLAG_OUTPUT) && (bias_node->flags & GGML_TENSOR_FLAG_COMPUTE) &&
++                ggml_is_contiguous(mm_node) && ggml_is_contiguous(bias_node) &&
++                ggml_are_same_shape(bias_node->src[0], bias_node->src[1]) &&
++                mm_node->ne[0] == bias_node->ne[0] && ggml_nelements(mm_node) == ggml_nelements(bias_node) &&
++                mm_node->ne[2] == 1 && mm_node->ne[3] == 1 && bias_node->ne[2] == 1 && bias_node->ne[3] == 1) {
++            const ggml_tensor * bias_tensor = bias_node->src[0] == reshape ? bias_node->src[1] : bias_node->src[0];
++            if (ggml_are_same_stride(bias_tensor, bias_node) && ggml_cuda_should_fuse_mul_mat_vec_q(mm_node, /*bias_only =*/ true)) {
++                ggml_cuda_mm_fusion_args_host fusion_data{};
++                fusion_data.x_bias = bias_tensor;
++                ggml_cuda_mul_mat_vec_q(*cuda_ctx, mm_node->src[0], mm_node->src[1], nullptr, bias_node, &fusion_data);
++                return 2;
++            }
++        }
++    }
++
+     if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_RMS_NORM, GGML_OP_MUL, GGML_OP_ROPE, GGML_OP_VIEW, GGML_OP_SET_ROWS }, {})) {
+         ggml_cuda_op_rms_norm_mul_rope_fused(*cuda_ctx, node, cgraph->nodes[i + 1], cgraph->nodes[i + 2], cgraph->nodes[i + 4]);
+         return 4;
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index a86b25717..380a2bf43 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1132,7 +1132,9 @@ static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int
+     return 1;
+ }
+ 
+-template <ggml_type type, int ncols_dst, bool has_fusion, bool small_k = false, bool halve_iters = false>
++// bias_only: the fused epilogue only adds x_bias (no gate/GLU, no scales), so multi-column launches don't pay for the
++// gate accumulators. This is what lets ncols_dst > 1 take a residual/bias ADD without the register pressure of gate fusion.
++template <ggml_type type, int ncols_dst, bool has_fusion, bool small_k = false, bool halve_iters = false, bool bias_only = false>
+ __launch_bounds__(calc_nwarps(type, ncols_dst, get_device_table_id(), small_k, halve_iters)*ggml_cuda_get_physical_warp_size(), 1)
+ static __global__ void mul_mat_vec_q(
+         const void * vx_ptr, const void * vy_ptr, const int32_t * ids_ptr, const ggml_cuda_mm_fusion_args_device fusion, float * dst_ptr,
+@@ -1195,16 +1197,17 @@ static __global__ void mul_mat_vec_q(
+     ggml_glu_op active_glu;
+     float glu_limit = 0.0f;
+ 
++    constexpr bool has_gate_fusion = has_fusion && !bias_only;
+     if constexpr (has_fusion) {
+-        use_gate      = fusion.gate      != nullptr;
++        use_gate      = has_gate_fusion && fusion.gate != nullptr;
+         use_bias      = fusion.x_bias    != nullptr;
+-        use_gate_bias = fusion.gate_bias != nullptr && use_gate;
++        use_gate_bias = has_gate_fusion && fusion.gate_bias != nullptr && use_gate;
+         vgate         = shared_expert ? fusion.shared_gate : fusion.gate;
+         x_bias        = (const float *) fusion.x_bias;
+         gate_bias     = (const float *) fusion.gate_bias;
+         active_glu    = fusion.glu_op;
+         glu_limit     = fusion.glu_limit;
+-        if constexpr (type == GGML_TYPE_NVFP4) {
++        if constexpr (type == GGML_TYPE_NVFP4 && !bias_only) {
+             use_scale      = fusion.x_scale    != nullptr;
+             use_gate_scale = fusion.gate_scale != nullptr && use_gate;
+             x_scale        = (const float *) fusion.x_scale;
+@@ -1311,7 +1314,7 @@ static __global__ void mul_mat_vec_q(
+     }
+ 
+     __shared__ float tmp_shared[nwarps-1 > 0 ? nwarps-1 : 1][ncols_dst][rows_per_cuda_block][warp_size];
+-    [[maybe_unused]] __shared__ float tmp_shared_gate[(has_fusion && (nwarps-1 > 0)) ? nwarps-1 : 1][ncols_dst][rows_per_cuda_block][warp_size];
++    [[maybe_unused]] __shared__ float tmp_shared_gate[(has_gate_fusion && (nwarps-1 > 0)) ? nwarps-1 : 1][ncols_dst][rows_per_cuda_block][warp_size];
+ 
+     if (threadIdx.y > 0) {
+ #pragma unroll
+@@ -1591,10 +1594,20 @@ static void mul_mat_vec_q_switch_fusion(
+                  sample_ratio, stride_sample_x, stride_sample_y, stride_sample_dst, ids_stride);
+             return;
+         }
++    } else {
++        if (has_fusion) {
++            GGML_ASSERT(fusion.gate == nullptr && fusion.gate_bias == nullptr && fusion.x_scale == nullptr &&
++                        fusion.gate_scale == nullptr && fusion.shared_up == nullptr &&
++                        "only bias fusion is supported for ncols_dst > 1");
++            const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
++            ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters, true>, launch_params,
++                 vx, vy, ids, fusion, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
++                 channel_ratio, stride_channel_x, stride_channel_y, stride_channel_dst,
++                 sample_ratio, stride_sample_x, stride_sample_y, stride_sample_dst, ids_stride);
++            return;
++        }
+     }
+ 
+-    GGML_ASSERT(!has_fusion && "fusion only supported for ncols_dst=1");
+-
+     const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
+     ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, false, small_k, halve_iters>, launch_params,
+         vx, vy, ids, fusion, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
+@@ -2012,7 +2025,11 @@ void ggml_cuda_mul_mat_vec_q(
+     if (fusion) {
+         const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
+         GGML_ASSERT( !ids || dst->ne[2] <= get_mmvq_mmid_max_batch(src0->type, cc));
+-        GGML_ASSERT(  ids || dst->ne[1] == 1);
++        // ncols_dst > 1 (plain MUL_MAT) only supports the bias epilogue; the bias must be laid out like dst.
++        GGML_ASSERT(ids || dst->ne[1] == 1 || (!fusion->gate && !fusion->gate_bias && !fusion->x_scale &&
++                                               !fusion->gate_scale && !fusion->shared_up && fusion->x_bias &&
++                                               ggml_are_same_shape(fusion->x_bias, dst) &&
++                                               ggml_are_same_stride(fusion->x_bias, dst)));
+         // Scale fusion is only allowed for NVFP4 currently as the cost of checking this at run-time in the prologue is
+         // non-negligible for some models such as gpt-oss-20b
+         GGML_ASSERT((fusion->x_scale == nullptr && fusion->gate_scale == nullptr) || src0->type == GGML_TYPE_NVFP4);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index d2df0a573..7acd0229e 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7622,6 +7622,48 @@ struct test_mul_mat_vec_fusion : public test_case {
+     }
+ };
+ 
++// MUL_MAT followed by a full-shape residual ADD (out = W*x + residual), the epilogue fused by MMVQ for every
++// column count up to MMVQ_MAX_BATCH_SIZE (spec-decoding verify batches).
++struct test_mul_mat_add_residual : public test_case {
++    const ggml_type type;
++    const int64_t m;
++    const int64_t n;
++    const int64_t k;
++    const bool residual_first;
++    const bool reshape; // the product is reshaped between the MUL_MAT and the ADD
++
++    test_mul_mat_add_residual(ggml_type type, int64_t m, int64_t n, int64_t k, bool residual_first, bool reshape = false)
++        : type(type), m(m), n(n), k(k), residual_first(residual_first), reshape(reshape) {}
++
++    std::string vars() override {
++        return VARS_TO_STR6(type, m, n, k, residual_first, reshape);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "MUL_MAT_ADD";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * w   = ggml_new_tensor_2d(ctx, type, k, n);
++        ggml_tensor * x   = reshape ? ggml_new_tensor_3d(ctx, GGML_TYPE_F32, k, m, 1) : ggml_new_tensor_2d(ctx, GGML_TYPE_F32, k, m);
++        ggml_tensor * res = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, n, m);
++        ggml_tensor * mm  = ggml_mul_mat(ctx, w, x);
++        if (reshape) {
++            mm = ggml_reshape_2d(ctx, mm, n, m);
++        }
++        ggml_tensor * out = residual_first ? ggml_add(ctx, res, mm) : ggml_add(ctx, mm, res);
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    double max_nmse_err() override {
++        return 5e-4;
++    }
++};
++
+ // GGML_OP_SUM
+ struct test_sum : public test_case {
+     const ggml_type type;
+@@ -11696,6 +11738,15 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+         }
+     }
+ 
++    for (ggml_type type : { GGML_TYPE_Q4_0, GGML_TYPE_Q8_0, GGML_TYPE_Q4_K, GGML_TYPE_Q5_K, GGML_TYPE_Q6_K, GGML_TYPE_IQ4_XS }) {
++        for (int64_t m : { 1, 2, 3, 4, 5, 6, 7, 8 }) {
++            for (bool residual_first : { false, true }) {
++                test_cases.emplace_back(new test_mul_mat_add_residual(type, m, 67, 512, residual_first));
++                test_cases.emplace_back(new test_mul_mat_add_residual(type, m, 67, 512, residual_first, /*reshape =*/ true));
++            }
++        }
++    }
++
+     for (bool b : {false, true}) {
+         test_cases.emplace_back(new test_mul_mat_vec_fusion(GGML_TYPE_IQ2_S, GGML_GLU_OP_SWIGLU_CLAMP, 1, 32, 256,
+             true, 16, 8, b, false, true, false));
+-- 
+2.43.0
+
