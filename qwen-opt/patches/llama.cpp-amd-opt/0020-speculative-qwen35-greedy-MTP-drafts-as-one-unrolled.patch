@@ -1,0 +1,870 @@
+From c90db29c631a2603c4baa3e443d646c1d54aea65 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 21:40:33 +0000
+Subject: [PATCH] speculative + qwen35: greedy MTP drafts as one unrolled
+ draft-chain graph
+
+draft-mtp with greedy drafting (p_min 0, not probabilistic), one MTP head and a reduced draft vocabulary
+(--spec-draft-vocab) now decodes the n_max draft tokens with a single llama_process: the MTP graph
+unrolls n_max single-token passes, each taking the argmax over the draft head of the previous pass
+(ggml_argmax), its token embedding (get_rows from a device copy of the draft-vocabulary rows of
+token_embd, 180 MiB for 64k Q4_K rows) and its h_nextn, and writes the KV of positions pos0..pos0+n-1.
+Only the n token ids are read back. Every pass is the op sequence of a 1-token decode (same kernels,
+same fusions), so the draft tokens are identical to the per-pass path.
+
+- llama-ext: llama_set_mtp_draft_chain / llama_get_mtp_draft_tokens; cparams.mtp_draft_chain.
+- qwen35 graph_mtp: the pass is a lambda shared by the normal and the chain graph; per pass the
+  attention input points at row j of k_idxs / v_idxs / kq_mask, positions come from a per-token
+  regrouped input (llm_graph_input_pos_chain). These inputs live on the device (the kv-cache input
+  setters upload through a staging buffer when the tensor is not in host memory), otherwise the
+  scheduler copies every row view as a separate split input (16 instead of 4 H2D copies).
+- The chain graph keeps its own graph slot (gf_res_prev[1]), so it no longer alternates with the
+  output-less catch-up graph in one slot.
+- test-backend-ops: bit-exact GET_ROWS cases (f32/f16/q4_K, 5120 columns) - the device embedding
+  must equal the host get_rows (q4_K: d*sc*q is exact in f32, so fma contraction cannot change it).
+
+Per step, Qwen UD: draft phase (host timestamps around common_speculative_draft, median)
+4.75 -> 3.94 ms at short context, 5.35 -> 4.43 ms at 25.5k; rocprofv3: 4 passes of 42 kernels with 5
+input copies each -> one 104-kernel graph (3.63 ms wall, 3.22 ms busy) with 4 copies, step wall
+38.45 -> 37.55 ms under the profiler.
+Server spec_sweep (6 prompts x 3 seeds, T=1, ctx 204800, MTP n=4), interleaved A/B vs b1f8c19ac:
+  Qwen UD:    36.39 / 36.42 -> 35.69 / 35.67 ms/step, 86.4 -> 88.0 t/s
+  Uncensored: 34.57 / 34.56 -> 33.80 / 33.80 ms/step, 88.3 -> 90.4 t/s
+Draft tokens identical to the per-pass path (dumps of 313 + 493 + 494 drafts, incl. a 25.5k-token
+prompt, both models); tokens/step identical in the A/B; greedy MTP output byte-identical to b1f8c19ac.
+---
+ common/arg.cpp             |   3 +-
+ common/speculative.cpp     |  45 +++++++
+ src/llama-context.cpp      |  38 +++++-
+ src/llama-context.h        |   5 +
+ src/llama-cparams.h        |   4 +
+ src/llama-ext.h            |  13 ++
+ src/llama-graph.cpp        |  19 +++
+ src/llama-graph.h          |  19 +++
+ src/llama-kv-cache.cpp     |  40 ++++--
+ src/llama-model.cpp        |  36 ++++++
+ src/llama-model.h          |   3 +
+ src/models/qwen35.cpp      | 253 ++++++++++++++++++++++++++-----------
+ tests/test-backend-ops.cpp |  18 +++
+ 13 files changed, 410 insertions(+), 86 deletions(-)
+
+diff --git a/common/arg.cpp b/common/arg.cpp
+index c3026d650..fb4e5efd0 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -4223,7 +4223,8 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+     add_opt(common_arg(
+         {"--spec-draft-vocab"}, "FNAME",
+         "MTP: file of whitespace-separated token ids, most frequent first; the draft LM head then scores only\n"
+-        "these tokens (much cheaper drafting, verification unaffected)",
++        "these tokens (much cheaper drafting, verification unaffected). Their token embeddings are copied to the\n"
++        "device too, so that greedy drafts (p-min 0) of a single MTP head run as one graph",
+         [](common_params & params, const std::string & value) {
+             params.speculative.draft.vocab_path = value;
+         }
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index 1066d9929..10ae595f5 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -1409,6 +1409,7 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+     int32_t n_mtp_layers  = 1;
+     bool    is_mem_shared = false;   // gemma4
+     bool    chain_heads   = false;   // derived in the ctor: n_mtp_layers > 1 && !is_mem_shared
++    bool    draft_chain   = false;   // greedy single-head drafts as one MTP draft chain graph (llama_set_mtp_draft_chain)
+ 
+     // Per-sequence cross-batch carryover: pair (h_p, x_{p+1}) at MTP pos p+1.
+     // The last h-row of one process() call needs the first token of the NEXT
+@@ -1499,6 +1500,13 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+         is_mem_shared = llama_get_ctx_other(ctx_dft) == ctx_tgt;
+         chain_heads   = n_mtp_layers > 1 && !is_mem_shared;
+ 
++        // greedy drafts of a single sequence run as one MTP draft chain graph (enabled per draft() call)
++        draft_chain = !chain_heads && !is_mem_shared && !this->params.probabilistic && this->params.p_min <= 0.0f &&
++                this->params.n_max > 0 && this->params.n_max <= LLAMA_MTP_DRAFT_CHAIN_MAX &&
++                llama_set_mtp_draft_chain(ctx_dft, true);
++        llama_set_mtp_draft_chain(ctx_dft, false);
++        SPC_TRC("- draft_chain=%d\n", (int) draft_chain);
++
+         if (chain_heads) {
+             this->params.n_max = std::min(this->params.n_max, n_mtp_layers);
+ 
+@@ -1706,6 +1714,15 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+             }
+         }
+ 
++        if (draft_chain && n_drafting == 1) {
++            for (llama_seq_id seq_id = 0; seq_id < (llama_seq_id) n_seq; ++seq_id) {
++                if (drafting[seq_id] && !dparams[seq_id].result_q) {
++                    draft_greedy_chain(seq_id, dparams[seq_id]);
++                    n_drafting = 0;
++                }
++            }
++        }
++
+         int i = 0;
+ 
+         while (n_drafting > 0) {
+@@ -1829,6 +1846,34 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+         }
+     }
+ 
++    // n_max greedy draft tokens in one decode of the MTP draft chain graph: same tokens and draft KV as n_max
++    // single-token passes that each take the argmax of the previous one (p_min <= 0 never stops a greedy draft early)
++    void draft_greedy_chain(llama_seq_id seq_id, common_speculative_draft_params & dp) {
++        auto * ctx_dft = params.ctx_dft;
++
++        batch.clear();
++        for (int32_t j = 0; j < params.n_max; ++j) {
++            // rows j > 0 only carry their position: the graph feeds pass j from pass j-1
++            const int32_t idx = batch.add(dp.id_last, dp.pos0 + j, seq_id, false);
++            batch.set_embd(idx, { pending_h[seq_id].data(), 1, (size_t) n_embd });
++        }
++
++        llama_set_mtp_draft_chain(ctx_dft, true);
++        const int32_t ret = llama_process(ctx_dft, LLAMA_PROCESS_TYPE_DECODE, batch.get());
++        llama_set_mtp_draft_chain(ctx_dft, false);
++
++        if (ret != 0) {
++            SPC_ERR("llama_process (draft chain) returned %d\n", ret);
++            return;
++        }
++
++        int32_t n_out = 0;
++        const llama_token * ids = llama_get_mtp_draft_tokens(ctx_dft, &n_out);
++        GGML_ASSERT(n_out == params.n_max);
++
++        dp.result->insert(dp.result->end(), ids, ids + n_out);
++    }
++
+     void accept(llama_seq_id seq_id, uint16_t n_accepted, bool /*is_other*/) override {
+         if (seq_id < 0 || seq_id >= (llama_seq_id) n_seq) {
+             return;
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 9dcaf05a6..eb3ce66ea 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -1265,6 +1265,21 @@ void llama_context::set_nextn_layer_offset(int32_t offset) {
+     cparams.nextn_layer_offset = offset;
+ }
+ 
++bool llama_context::set_mtp_draft_chain(bool enable) {
++    const bool supported = cparams.ctx_type == LLAMA_CONTEXT_TYPE_MTP && model.arch == LLM_ARCH_QWEN35 &&
++            model.hparams.n_layer_nextn == 1 && model.draft_head != nullptr && model.draft_embd != nullptr;
++
++    cparams.mtp_draft_chain = enable && supported;
++
++    return !enable || supported;
++}
++
++const llama_token * llama_context::get_mtp_draft_tokens(int32_t * n_tokens) const {
++    *n_tokens = (int32_t) mtp_draft_tokens.size();
++
++    return mtp_draft_tokens.empty() ? nullptr : mtp_draft_tokens.data();
++}
++
+ void llama_context::set_causal_attn(bool value) {
+     LLAMA_LOG_DEBUG("%s: value = %d\n", __func__, value);
+ 
+@@ -1816,6 +1831,7 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+ 
+     output_swaps.clear();
+     embd_batch_idxs.clear();
++    mtp_draft_tokens.clear();
+ 
+     sched_reserve();
+ 
+@@ -2055,6 +2071,14 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+             embd_batch_idxs.insert(embd_batch_idxs.end(), batch_idxs.begin(), batch_idxs.end());
+         }
+ 
++        // MTP draft chain: the draft tokens of the ubatch
++        if (ggml_tensor * t_draft = res->get_mtp_draft()) {
++            const size_t n_draft = (size_t) ggml_nelements(t_draft);
++            mtp_draft_tokens.resize(n_draft);
++            ggml_backend_tensor_get_async(ggml_backend_sched_get_tensor_backend(sched.get(), t_draft),
++                    t_draft, mtp_draft_tokens.data(), 0, n_draft*sizeof(llama_token));
++        }
++
+         if (has_samplers) {
+             const auto stride = n_vocab;
+ 
+@@ -2473,7 +2497,9 @@ llm_graph_result * llama_context::get_gf_res_reserve() const {
+ }
+ 
+ llm_graph_result * llama_context::get_gf_res_prev() {
+-    auto & res = gf_res_prev[n_outputs > 0];
++    // the MTP draft chain graph has no outputs but alternates with the output-less MTP catch-up graph, so it keeps
++    // the slot of the output graphs: each keeps its own graph memory (and device graph) across steps
++    auto & res = gf_res_prev[n_outputs > 0 || cparams.mtp_draft_chain];
+     if (!res) {
+         res.reset(new llm_graph_result(gf_res_reserve->get_max_nodes()));
+     }
+@@ -4153,6 +4179,16 @@ void llama_set_nextn_layer_offset(llama_context * ctx, int32_t offset) {
+     ctx->set_nextn_layer_offset(offset);
+ }
+ 
++bool llama_set_mtp_draft_chain(llama_context * ctx, bool enable) {
++    return ctx->set_mtp_draft_chain(enable);
++}
++
++const llama_token * llama_get_mtp_draft_tokens(llama_context * ctx, int32_t * n_tokens) {
++    ctx->synchronize();
++
++    return ctx->get_mtp_draft_tokens(n_tokens);
++}
++
+ llama_memory_t llama_get_memory(const struct llama_context * ctx) {
+     if (!ctx) {
+         return nullptr;
+diff --git a/src/llama-context.h b/src/llama-context.h
+index 69bc01c19..439febcc6 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -121,6 +121,8 @@ struct llama_context {
+     void set_embeddings_nextn(bool value, bool masked);
+     void set_embeddings_layer_inp(uint32_t lid, bool enable);
+     void set_nextn_layer_offset(int32_t offset);
++    bool set_mtp_draft_chain(bool enable);
++    const llama_token * get_mtp_draft_tokens(int32_t * n_tokens) const;
+     void set_causal_attn(bool value);
+     void set_warmup(bool value);
+ 
+@@ -315,6 +317,9 @@ private:
+     // sets llm_graph_result::t_h_nextn
+     buffer_view<float> embd_nextn = {nullptr, 0};
+ 
++    // draft tokens of the last MTP draft chain decode (cparams.mtp_draft_chain)
++    std::vector<llama_token> mtp_draft_tokens;
++
+     // host buffers for output layer input embeddings, per layer
+     // populated when cparams.output_layer_inp[il] is true
+     std::vector<buffer_view<float>> embd_layer_inp;
+diff --git a/src/llama-cparams.h b/src/llama-cparams.h
+index f4eb181a7..08ff9ac5a 100644
+--- a/src/llama-cparams.h
++++ b/src/llama-cparams.h
+@@ -21,6 +21,10 @@ struct llama_cparams {
+ 
+     int32_t  nextn_layer_offset = 0;
+ 
++    // MTP draft context: decode a ubatch of n <= LLAMA_MTP_DRAFT_CHAIN_MAX (llama-ext.h) positions as one graph of n chained greedy
++    // single-token MTP passes (see llama_set_mtp_draft_chain)
++    bool mtp_draft_chain = false;
++
+     float rope_freq_base;
+     float rope_freq_scale;
+ 
+diff --git a/src/llama-ext.h b/src/llama-ext.h
+index fcc78f47e..097ae2dd0 100644
+--- a/src/llama-ext.h
++++ b/src/llama-ext.h
+@@ -100,6 +100,19 @@ LLAMA_API void llama_set_embeddings_nextn(struct llama_context * ctx, bool value
+ // chain multiple trained NextN heads. Default 0 (first head).
+ LLAMA_API void llama_set_nextn_layer_offset(struct llama_context * ctx, int32_t offset);
+ 
++// MTP draft chain (single NextN block with a reduced-vocabulary draft head, see llama_model_set_draft_head_vocab).
++// When enabled on an MTP context, a decode of a single-sequence batch of n <= LLAMA_MTP_DRAFT_CHAIN_MAX consecutive
++// positions pos0..pos0+n-1 runs n chained greedy MTP passes in one graph: pass 0 reads the token and hidden state of
++// batch row 0, pass j > 0 the argmax token and h_nextn of pass j-1 (the other rows only provide the positions). The KV
++// of all n positions is written, no logits or embeddings are output; the n draft tokens are read with
++// llama_get_mtp_draft_tokens().
++// Returns false (and leaves it disabled) if the model does not support it.
++#define LLAMA_MTP_DRAFT_CHAIN_MAX 16
++LLAMA_API bool llama_set_mtp_draft_chain(struct llama_context * ctx, bool enable);
++
++// The draft tokens of the last MTP draft chain decode (synchronizes), nullptr if there are none
++LLAMA_API const llama_token * llama_get_mtp_draft_tokens(struct llama_context * ctx, int32_t * n_tokens);
++
+ // Marks the entries that a joint decision head (clef) reads, the default is 0
+ // See https://github.com/ggml-org/llama.cpp/pull/29831 for details
+ // A run of entries with the same value is one span, spans must be separated by entries with value 0
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 23e4c9091..954030a34 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -188,6 +188,24 @@ bool llm_graph_input_pos::can_reuse(const llm_graph_params & params) {
+     return res;
+ }
+ 
++void llm_graph_input_pos_chain::set_input(const llama_ubatch * ubatch) {
++    if (ubatch->pos && pos) {
++        const int64_t n_tokens = ubatch->n_tokens;
++
++        std::vector<int32_t> data(n_tokens*n_pos_per_embd);
++        for (int64_t i = 0; i < n_tokens; ++i) {
++            for (uint32_t k = 0; k < n_pos_per_embd; ++k) {
++                data[i*n_pos_per_embd + k] = ubatch->pos[k*n_tokens + i];
++            }
++        }
++        ggml_backend_tensor_set(pos, data.data(), 0, data.size()*ggml_element_size(pos));
++    }
++}
++
++bool llm_graph_input_pos_chain::can_reuse(const llm_graph_params & params) {
++    return pos->ne[0] == params.ubatch.n_tokens*n_pos_per_embd;
++}
++
+ void llm_graph_input_attn_temp::set_input(const llama_ubatch * ubatch) {
+     if (ubatch->pos && attn_scale) {
+         const int64_t n_tokens = ubatch->n_tokens;
+@@ -1361,6 +1379,7 @@ void llm_graph_result::reset() {
+     t_embd        = nullptr;
+     t_embd_pooled = nullptr;
+     t_h_nextn     = nullptr;
++    t_mtp_draft   = nullptr;
+ 
+     t_layer_inp.resize(LLAMA_MAX_LAYERS + 1);
+     std::fill(t_layer_inp.begin(), t_layer_inp.end(), nullptr);
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 79e8409ac..8bdbee6cb 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -179,6 +179,22 @@ public:
+     const uint32_t n_pos_per_embd = 1;
+ };
+ 
++// positions of an MTP draft chain, regrouped per token: the n_pos_per_embd positions of token i are contiguous at
++// [i*n_pos_per_embd, (i+1)*n_pos_per_embd), so that every single-token pass of the chain can view its own
++class llm_graph_input_pos_chain : public llm_graph_input_i {
++public:
++    llm_graph_input_pos_chain(uint32_t n_pos_per_embd) : n_pos_per_embd(n_pos_per_embd) {}
++    virtual ~llm_graph_input_pos_chain() = default;
++
++    void set_input(const llama_ubatch * ubatch) override;
++
++    bool can_reuse(const llm_graph_params & params) override;
++
++    ggml_tensor * pos = nullptr; // I32 [n_batch*n_pos_per_embd]
++
++    const uint32_t n_pos_per_embd = 1;
++};
++
+ // temperature tuning, used by llama4
+ class llm_graph_input_attn_temp : public llm_graph_input_i {
+ public:
+@@ -889,6 +905,7 @@ struct llm_graph_params {
+             cparams.embeddings_nextn        == other.cparams.embeddings_nextn        &&
+             cparams.embeddings_nextn_masked == other.cparams.embeddings_nextn_masked &&
+             cparams.causal_attn             == other.cparams.causal_attn             &&
++            cparams.mtp_draft_chain         == other.cparams.mtp_draft_chain         &&
+             arch  == other.arch  &&
+             gtype == other.gtype &&
+             cvec  == other.cvec  &&
+@@ -914,6 +931,7 @@ public:
+     ggml_tensor * get_embd()        const { return t_embd; }
+     ggml_tensor * get_embd_pooled() const { return t_embd_pooled; }
+     ggml_tensor * get_h_nextn()     const { return t_h_nextn; }
++    ggml_tensor * get_mtp_draft()   const { return t_mtp_draft; }
+ 
+     ggml_tensor * get_layer_inp(int il) const { return t_layer_inp[il]; }
+ 
+@@ -949,6 +967,7 @@ public:
+     ggml_tensor * t_embd        = nullptr;
+     ggml_tensor * t_embd_pooled = nullptr;
+     ggml_tensor * t_h_nextn     = nullptr; // [n_embd, n_outputs] hidden state before final output norm
++    ggml_tensor * t_mtp_draft   = nullptr; // I32 [1, n_tokens] draft tokens of an MTP draft chain graph
+ 
+     std::vector<ggml_tensor *> t_layer_inp;
+ 
+diff --git a/src/llama-kv-cache.cpp b/src/llama-kv-cache.cpp
+index 463510caa..1bb60bbd5 100644
+--- a/src/llama-kv-cache.cpp
++++ b/src/llama-kv-cache.cpp
+@@ -1488,12 +1488,30 @@ ggml_tensor * llama_kv_cache::build_input_v_rot(ggml_context * ctx) const {
+     return res;
+ }
+ 
++// inputs are normally host tensors that are written in place; a device-resident input (e.g. the MTP draft chain, which
++// slices the rows of its inputs per pass) is written to a staging buffer and uploaded
++template <typename T>
++static T * input_data(ggml_tensor * dst, std::vector<T> & staging) {
++    if (ggml_backend_buffer_is_host(dst->buffer)) {
++        return (T *) dst->data;
++    }
++    staging.resize(ggml_nbytes(dst)/sizeof(T));
++    return staging.data();
++}
++
++template <typename T>
++static void input_upload(ggml_tensor * dst, const std::vector<T> & staging) {
++    if (!staging.empty()) {
++        ggml_backend_tensor_set(dst, staging.data(), 0, ggml_nbytes(dst));
++    }
++}
++
+ void llama_kv_cache::set_input_k_idxs(ggml_tensor * dst, const llama_ubatch * ubatch, const slot_info & sinfo) const {
+     const uint32_t n_tokens = ubatch->n_tokens;
+     GGML_ASSERT(n_tokens == (int64_t) sinfo.size()*sinfo.n_stream());
+ 
+-    GGML_ASSERT(ggml_backend_buffer_is_host(dst->buffer));
+-    int64_t * data = (int64_t *) dst->data;
++    std::vector<int64_t> staging;
++    int64_t * data = input_data(dst, staging);
+ 
+     for (uint32_t s = 0; s < sinfo.n_stream(); ++s) {
+         const int64_t offs = sinfo.strm[s]*get_size();
+@@ -1502,14 +1520,16 @@ void llama_kv_cache::set_input_k_idxs(ggml_tensor * dst, const llama_ubatch * ub
+             data[s*sinfo.size() + i] = offs + sinfo.idxs[s][i];
+         }
+     }
++
++    input_upload(dst, staging);
+ }
+ 
+ void llama_kv_cache::set_input_v_idxs(ggml_tensor * dst, const llama_ubatch * ubatch, const slot_info & sinfo) const {
+     const uint32_t n_tokens = ubatch->n_tokens;
+     GGML_ASSERT(n_tokens == (int64_t) sinfo.size()*sinfo.n_stream());
+ 
+-    GGML_ASSERT(ggml_backend_buffer_is_host(dst->buffer));
+-    int64_t * data = (int64_t *) dst->data;
++    std::vector<int64_t> staging;
++    int64_t * data = input_data(dst, staging);
+ 
+     if (!v_trans) {
+         for (uint32_t s = 0; s < sinfo.n_stream(); ++s) {
+@@ -1535,6 +1555,8 @@ void llama_kv_cache::set_input_v_idxs(ggml_tensor * dst, const llama_ubatch * ub
+             }
+         }
+     }
++
++    input_upload(dst, staging);
+ }
+ 
+ void llama_kv_cache::set_input_k_shift(ggml_tensor * dst) const {
+@@ -1759,8 +1781,6 @@ static void set_input_kq_mask_impl(const args_set_input_kq_mask & args, T * data
+ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * ubatch, bool causal_attn) const {
+     const uint32_t n_tokens = ubatch->n_tokens;
+ 
+-    GGML_ASSERT(ggml_backend_buffer_is_host(dst->buffer));
+-
+     const int64_t n_kv     = dst->ne[0];
+     const int64_t n_stream = dst->ne[3]; // num streams in the current ubatch
+ 
+@@ -1790,9 +1810,13 @@ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * u
+     };
+ 
+     if (dst->type == GGML_TYPE_F16) {
+-        set_input_kq_mask_impl<ggml_fp16_t>(args, (ggml_fp16_t *) dst->data, causal_attn);
++        std::vector<ggml_fp16_t> staging;
++        set_input_kq_mask_impl<ggml_fp16_t>(args, input_data(dst, staging), causal_attn);
++        input_upload(dst, staging);
+     } else {
+-        set_input_kq_mask_impl<float>(args, (float *) dst->data, causal_attn);
++        std::vector<float> staging;
++        set_input_kq_mask_impl<float>(args, input_data(dst, staging), causal_attn);
++        input_upload(dst, staging);
+     }
+ 
+     //const int64_t t_end = ggml_time_us();
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index 525bcdf30..2a49b04e9 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -1229,6 +1229,8 @@ struct llama_model::impl {
+     // reduced-vocabulary MTP draft head (set_draft_head_vocab)
+     ggml_context_ptr       draft_head_ctx;
+     ggml_backend_buffer_ptr draft_head_buf;
++    ggml_context_ptr       draft_embd_ctx;
++    ggml_backend_buffer_ptr draft_embd_buf;
+ 
+     buft_list_t cpu_buft_list;
+     std::map<ggml_backend_dev_t, buft_list_t> gpu_buft_list;
+@@ -3073,6 +3075,40 @@ bool llama_model::set_draft_head_vocab(const int32_t * ids, int32_t n_ids) {
+ 
+     LLAMA_LOG_INFO("%s: MTP draft head restricted to %d of %lld tokens (%.1f MiB)\n",
+             __func__, n_ids, (long long) n_vocab_head, ggml_nbytes(sub) / 1024.0 / 1024.0);
++
++    // the matching token-embedding rows, on the head's device (MTP draft chain graph)
++    draft_embd = nullptr;
++    pimpl->draft_embd_buf.reset();
++    pimpl->draft_embd_ctx.reset();
++
++    const auto & layer_mtp = layers[hparams.n_layer()];
++    ggml_tensor * emb = layer_mtp.nextn.embed_tokens ? layer_mtp.nextn.embed_tokens : tok_embd;
++    if (emb && emb->buffer && ggml_is_contiguous(emb) && emb->ne[1] >= n_vocab_head) {
++        const size_t emb_row = ggml_row_size(emb->type, emb->ne[0]);
++        std::vector<uint8_t> emb_rows((size_t) n_ids * emb_row);
++        for (int32_t i = 0; i < n_ids; ++i) {
++            ggml_backend_tensor_get(emb, emb_rows.data() + (size_t) i * emb_row, (size_t) ids[i] * emb_row, emb_row);
++        }
++
++        ggml_init_params ipe = { ggml_tensor_overhead(), nullptr, /*no_alloc =*/ true };
++        ggml_context_ptr ctx_e(ggml_init(ipe));
++        ggml_tensor * sub_e = ggml_new_tensor_2d(ctx_e.get(), emb->type, emb->ne[0], n_ids);
++        ggml_set_name(sub_e, "draft_embd");
++        ggml_backend_buffer_ptr buf_e(ggml_backend_alloc_ctx_tensors_from_buft(ctx_e.get(), ggml_backend_buffer_get_type(head->buffer)));
++        if (buf_e) {
++            ggml_backend_buffer_set_usage(buf_e.get(), GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
++            ggml_backend_tensor_set(sub_e, emb_rows.data(), 0, emb_rows.size());
++
++            pimpl->draft_embd_ctx = std::move(ctx_e);
++            pimpl->draft_embd_buf = std::move(buf_e);
++            draft_embd = sub_e;
++
++            LLAMA_LOG_INFO("%s: MTP draft token embeddings for the same %d tokens (%.1f MiB)\n",
++                    __func__, n_ids, ggml_nbytes(sub_e) / 1024.0 / 1024.0);
++        } else {
++            LLAMA_LOG_WARN("%s: could not allocate the MTP draft token embeddings, the draft chain graph is disabled\n", __func__);
++        }
++    }
+     return true;
+ }
+ 
+diff --git a/src/llama-model.h b/src/llama-model.h
+index 6753b5e78..4442d4cfa 100644
+--- a/src/llama-model.h
++++ b/src/llama-model.h
+@@ -674,6 +674,9 @@ struct llama_model {
+     // draft_head_ids. The MTP graph scores only these tokens (all others get -inf), see set_draft_head_vocab()
+     struct ggml_tensor * draft_head     = nullptr;
+     struct ggml_tensor * draft_head_ids = nullptr;
++    // the token-embedding rows of the same ids, next to the head, so that an MTP draft chain graph can embed its own
++    // draft tokens on the device (nullptr if they could not be allocated)
++    struct ggml_tensor * draft_embd     = nullptr;
+ 
+     // the LM head the MTP draft graph uses (nextn.shared_head_head if present, else output)
+     ggml_tensor * mtp_lm_head() const;
+diff --git a/src/models/qwen35.cpp b/src/models/qwen35.cpp
+index 6c7d16faa..d20f5c270 100644
+--- a/src/models/qwen35.cpp
++++ b/src/models/qwen35.cpp
+@@ -1,4 +1,5 @@
+ #include "models.h"
++#include "llama-ext.h"
+ #include "llama-memory-recurrent.h"
+ 
+ void llama_model_qwen35::load_arch_hparams(llama_model_loader & ml) {
+@@ -519,6 +520,13 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+     int sections[4];
+     std::copy(std::begin(hparams.rope_sections), std::begin(hparams.rope_sections) + 4, sections);
+ 
++    // MTP draft chain (cparams.mtp_draft_chain): the ubatch holds n_chain draft positions pos0..pos0+n_chain-1
++    // and only row 0 carries a real token and hidden state. The graph runs n_chain single-token MTP passes,
++    // each feeding its greedy token (argmax over the reduced draft vocabulary) and h_nextn into the next one,
++    // and outputs the n_chain draft token ids. Every pass is the same op sequence as a 1-token decode.
++    const bool chain = cparams.mtp_draft_chain && ubatch.token && model.draft_head && model.draft_embd &&
++            n_tokens <= LLAMA_MTP_DRAFT_CHAIN_MAX;
++
+     // TODO: extract in a common llm_graph_context::build_inp_embd_h()
+     auto inp = std::make_unique<llm_graph_input_embd_h>(hparams.n_embd);
+ 
+@@ -535,7 +543,7 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+     if (ubatch.token) {
+         ggml_tensor * tok_embd_w = layer.nextn.embed_tokens ? layer.nextn.embed_tokens : model.tok_embd;
+ 
+-        tok_embd = ggml_get_rows(ctx0, tok_embd_w, inp->tokens);
++        tok_embd = ggml_get_rows(ctx0, tok_embd_w, chain ? ggml_view_1d(ctx0, inp->tokens, 1, 0) : inp->tokens);
+     } else {
+         tok_embd = inp->embd;
+     }
+@@ -549,103 +557,196 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+ 
+     res->add_input(std::move(inp));
+ 
+-    ggml_tensor * inp_pos     = build_inp_pos();
+-    ggml_tensor * inp_out_ids = build_inp_out_ids();
++    const float kq_scale = hparams.f_attention_scale == 0.0f
++            ? 1.0f / sqrtf(float(n_embd_head)) : hparams.f_attention_scale;
+ 
+-    auto * inp_attn = build_attn_inp_kv();
++    ggml_tensor * head_norm_w = layer.nextn.shared_head_norm
++            ? layer.nextn.shared_head_norm
++            : model.output_norm;
++    GGML_ASSERT(head_norm_w && "QWEN35 MTP: missing both nextn.shared_head_norm and output_norm");
+ 
+-    ggml_tensor * h_norm = build_norm(h_embd, layer.nextn.hnorm, nullptr, LLM_NORM_RMS, il);
+-    cb(h_norm, "mtp_hnorm", il);
++    // one MTP pass over nt tokens: returns the normed hidden state (h_nextn) that feeds the LM head
++    auto build_pass = [&](ggml_tensor * tok_embd, ggml_tensor * h_embd, ggml_tensor * inp_pos,
++            llm_graph_input_attn_kv * inp_attn, int64_t nt) {
++        ggml_tensor * h_norm = build_norm(h_embd, layer.nextn.hnorm, nullptr, LLM_NORM_RMS, il);
++        cb(h_norm, "mtp_hnorm", il);
++
++        ggml_tensor * e_norm = build_norm(tok_embd, layer.nextn.enorm, nullptr, LLM_NORM_RMS, il);
++        cb(e_norm, "mtp_enorm", il);
++
++        ggml_tensor * concat = ggml_concat(ctx0, e_norm, h_norm, /*dim=*/ 0);
++        cb(concat, "mtp_concat", il);
++
++        ggml_tensor * cur = build_lora_mm(layer.nextn.eh_proj, concat, layer.nextn.eh_proj_s);
++        cb(cur, "mtp_eh_proj", il);
++
++        ggml_tensor * inpSA = cur;
++
++        cur = build_norm(cur, layer.attn_norm, nullptr, LLM_NORM_RMS, il);
++        cb(cur, "mtp_attn_norm", il);
++
++        auto [Qcur_full, Kcur, Vcur] = build_qkv(layer, cur,
++                n_embd_head * 2, n_head,
++                n_embd_head,     n_head_kv,
++                n_embd_head,     n_head_kv,
++                il, false);
++        cb(Qcur_full, "mtp_Qcur_full", il);
++
++        ggml_tensor * Qcur = ggml_view_3d(ctx0, Qcur_full,
++                n_embd_head, n_head, nt,
++                ggml_element_size(Qcur_full) * n_embd_head * 2,
++                ggml_element_size(Qcur_full) * n_embd_head * 2 * n_head,
++                0);
++        Qcur = build_norm(Qcur, layer.attn_q_norm, nullptr, LLM_NORM_RMS, il);
++        cb(Qcur, "mtp_Qcur_normed", il);
++
++        ggml_tensor * gate = ggml_view_3d(ctx0, Qcur_full,
++                n_embd_head, n_head, nt,
++                ggml_element_size(Qcur_full) * n_embd_head * 2,
++                ggml_element_size(Qcur_full) * n_embd_head * 2 * n_head,
++                ggml_element_size(Qcur_full) * n_embd_head);
++        cb(gate, "mtp_gate", il);
++
++        Kcur = ggml_reshape_3d(ctx0, Kcur, n_embd_head, n_head_kv, nt);
++        Kcur = build_norm(Kcur, layer.attn_k_norm, nullptr, LLM_NORM_RMS, il);
++        cb(Kcur, "mtp_Kcur_normed", il);
++
++        Vcur = ggml_reshape_3d(ctx0, Vcur, n_embd_head, n_head_kv, nt);
++        cb(Vcur, "mtp_Vcur", il);
++
++        Qcur = ggml_rope_multi(ctx0, Qcur, inp_pos, nullptr,
++                n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
++                ext_factor, attn_factor, beta_fast, beta_slow);
++        Kcur = ggml_rope_multi(ctx0, Kcur, inp_pos, nullptr,
++                n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
++                ext_factor, attn_factor, beta_fast, beta_slow);
++
++        cur = build_attn(inp_attn,
++                nullptr, nullptr, nullptr,
++                Qcur, Kcur, Vcur, nullptr, nullptr, nullptr, kq_scale, il);
++        cb(cur, "mtp_attn_pregate", il);
+ 
+-    ggml_tensor * e_norm = build_norm(tok_embd, layer.nextn.enorm, nullptr, LLM_NORM_RMS, il);
+-    cb(e_norm, "mtp_enorm", il);
++        cur = ggml_reshape_3d(ctx0, cur, n_embd_head, n_head, nt);
++        cur = ggml_mul(ctx0, cur, ggml_sigmoid(ctx0, gate));
++        cur = ggml_reshape_2d(ctx0, cur, n_embd_head * n_head, nt);
++        cur = build_lora_mm(layer.wo, cur, layer.wo_s);
++        cb(cur, "mtp_attn_out", il);
+ 
+-    ggml_tensor * concat = ggml_concat(ctx0, e_norm, h_norm, /*dim=*/ 0);
+-    cb(concat, "mtp_concat", il);
++        cur = ggml_add(ctx0, cur, inpSA);
++        cb(cur, "mtp_attn_residual", il);
+ 
+-    ggml_tensor * cur = build_lora_mm(layer.nextn.eh_proj, concat, layer.nextn.eh_proj_s);
+-    cb(cur, "mtp_eh_proj", il);
++        ggml_tensor * ffn_residual = cur;
++        cur = build_norm(cur, layer.attn_post_norm, nullptr, LLM_NORM_RMS, il);
++        cb(cur, "mtp_attn_post_norm", il);
+ 
+-    ggml_tensor * inpSA = cur;
++        cur = build_ffn(cur,
++                layer.ffn_up,   nullptr, layer.ffn_up_s,
++                layer.ffn_gate, nullptr, layer.ffn_gate_s,
++                layer.ffn_down, nullptr, layer.ffn_down_s,
++                nullptr,
++                LLM_FFN_SILU, LLM_FFN_PAR, il);
++        cb(cur, "mtp_ffn_out", il);
+ 
+-    cur = build_norm(cur, layer.attn_norm, nullptr, LLM_NORM_RMS, il);
+-    cb(cur, "mtp_attn_norm", il);
++        cur = ggml_add(ctx0, cur, ffn_residual);
++        cb(cur, "mtp_post_ffn", il);
+ 
+-    auto [Qcur_full, Kcur, Vcur] = build_qkv(layer, cur,
+-            n_embd_head * 2, n_head,
+-            n_embd_head,     n_head_kv,
+-            n_embd_head,     n_head_kv,
+-            il, false);
+-    cb(Qcur_full, "mtp_Qcur_full", il);
++        cur = build_norm(cur, head_norm_w, nullptr, LLM_NORM_RMS, -1);
++        cb(cur, "h_nextn", -1);
+ 
+-    ggml_tensor * Qcur = ggml_view_3d(ctx0, Qcur_full,
+-            n_embd_head, n_head, n_tokens,
+-            ggml_element_size(Qcur_full) * n_embd_head * 2,
+-            ggml_element_size(Qcur_full) * n_embd_head * 2 * n_head,
+-            0);
+-    Qcur = build_norm(Qcur, layer.attn_q_norm, nullptr, LLM_NORM_RMS, il);
+-    cb(Qcur, "mtp_Qcur_normed", il);
++        return cur;
++    };
+ 
+-    ggml_tensor * gate = ggml_view_3d(ctx0, Qcur_full,
+-            n_embd_head, n_head, n_tokens,
+-            ggml_element_size(Qcur_full) * n_embd_head * 2,
+-            ggml_element_size(Qcur_full) * n_embd_head * 2 * n_head,
+-            ggml_element_size(Qcur_full) * n_embd_head);
+-    cb(gate, "mtp_gate", il);
++    if (chain) {
++        // positions regrouped per pass: rope_multi wants the n_pos_per_embd positions of a token contiguous
++        auto inp_pos_chain = std::make_unique<llm_graph_input_pos_chain>(hparams.n_pos_per_embd());
++        inp_pos_chain->pos = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, n_tokens*hparams.n_pos_per_embd());
++        ggml_set_input(inp_pos_chain->pos);
++        ggml_tensor * pos_chain = inp_pos_chain->pos;
++        res->add_input(std::move(inp_pos_chain));
++
++        auto * inp_attn = build_attn_inp_kv();
++        GGML_ASSERT(inp_attn->self_kq_mask_cnv->ne[3] == 1 && "MTP draft chain: single KV stream only");
++
++        ggml_tensor * k_idxs = inp_attn->self_k_idxs;
++        ggml_tensor * v_idxs = inp_attn->self_v_idxs;
++        ggml_tensor * mask   = inp_attn->self_kq_mask_cnv;
++        GGML_ASSERT(v_idxs->ne[0] == n_tokens && "MTP draft chain: transposed V cache is not supported");
++
++        const int64_t n_sub = model.draft_head->ne[1];
++        const int64_t n_pos = hparams.n_pos_per_embd();
++
++        // the passes read row views of these inputs: allocate them on the head's device, so that each input is
++        // uploaded once instead of the scheduler copying every row view as a separate split input
++        {
++            ggml_backend_dev_t dev = ggml_backend_buft_get_device(ggml_backend_buffer_get_type(model.draft_head->buffer));
++            for (int i = 0; i < ggml_backend_sched_get_n_backends(sched); ++i) {
++                ggml_backend_t backend = ggml_backend_sched_get_backend(sched, i);
++                if (ggml_backend_get_device(backend) == dev) {
++                    for (ggml_tensor * t : { h_embd, pos_chain, k_idxs, v_idxs, mask }) {
++                        ggml_backend_sched_set_tensor_backend(sched, t, backend);
++                    }
++                    break;
++                }
++            }
++        }
+ 
+-    Kcur = ggml_reshape_3d(ctx0, Kcur, n_embd_head, n_head_kv, n_tokens);
+-    Kcur = build_norm(Kcur, layer.attn_k_norm, nullptr, LLM_NORM_RMS, il);
+-    cb(Kcur, "mtp_Kcur_normed", il);
++        ggml_tensor * tok_j = tok_embd;
++        ggml_tensor * h_j   = ggml_view_2d(ctx0, h_embd, h_embd->ne[0], 1, h_embd->nb[1], 0);
++        ggml_tensor * ids   = nullptr; // [j] draft-vocabulary indices of the passes so far
+ 
+-    Vcur = ggml_reshape_3d(ctx0, Vcur, n_embd_head, n_head_kv, n_tokens);
+-    cb(Vcur, "mtp_Vcur", il);
++        ggml_build_forward_expand(gf, h_j);
+ 
+-    Qcur = ggml_rope_multi(ctx0, Qcur, inp_pos, nullptr,
+-            n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
+-            ext_factor, attn_factor, beta_fast, beta_slow);
+-    Kcur = ggml_rope_multi(ctx0, Kcur, inp_pos, nullptr,
+-            n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
+-            ext_factor, attn_factor, beta_fast, beta_slow);
++        for (int64_t j = 0; j < n_tokens; ++j) {
++            // point the attention input at row j: KV slot j and mask row j (causal up to pos0 + j)
++            inp_attn->self_k_idxs      = ggml_view_1d(ctx0, k_idxs, 1, j*k_idxs->nb[0]);
++            inp_attn->self_v_idxs      = ggml_view_1d(ctx0, v_idxs, 1, j*v_idxs->nb[0]);
++            inp_attn->self_kq_mask_cnv = ggml_view_4d(ctx0, mask, mask->ne[0], 1, 1, 1,
++                    mask->nb[1], mask->nb[1], mask->nb[1], j*mask->nb[1]);
+ 
+-    const float kq_scale = hparams.f_attention_scale == 0.0f
+-            ? 1.0f / sqrtf(float(n_embd_head)) : hparams.f_attention_scale;
++            ggml_tensor * pos_j = ggml_view_1d(ctx0, pos_chain, n_pos, j*n_pos*pos_chain->nb[0]);
+ 
+-    cur = build_attn(inp_attn,
+-            nullptr, nullptr, nullptr,
+-            Qcur, Kcur, Vcur, nullptr, nullptr, nullptr, kq_scale, il);
+-    cb(cur, "mtp_attn_pregate", il);
++            // add the row views to the graph up front: a view first reached as a source of the q rope would land
++            // between the norm and the rope and prevent their fusion
++            for (ggml_tensor * t : { inp_attn->self_k_idxs, inp_attn->self_v_idxs, inp_attn->self_kq_mask_cnv, pos_j }) {
++                ggml_build_forward_expand(gf, t);
++            }
+ 
+-    cur = ggml_reshape_3d(ctx0, cur, n_embd_head, n_head, n_tokens);
+-    cur = ggml_mul(ctx0, cur, ggml_sigmoid(ctx0, gate));
+-    cur = ggml_reshape_2d(ctx0, cur, n_embd_head * n_head, n_tokens);
+-    cur = build_lora_mm(layer.wo, cur, layer.wo_s);
+-    cb(cur, "mtp_attn_out", il);
++            ggml_tensor * hn = build_pass(tok_j, h_j, pos_j, inp_attn, 1);
+ 
+-    cur = ggml_add(ctx0, cur, inpSA);
+-    cb(cur, "mtp_attn_residual", il);
++            ggml_tensor * logits = ggml_mul_mat(ctx0, model.draft_head, hn); // [n_sub, 1]
++            cb(logits, "mtp_draft_logits", -1);
+ 
+-    ggml_tensor * ffn_residual = cur;
+-    cur = build_norm(cur, layer.attn_post_norm, nullptr, LLM_NORM_RMS, il);
+-    cb(cur, "mtp_attn_post_norm", il);
++            ggml_tensor * idx = ggml_argmax(ctx0, logits); // [1]
++            ids = ids ? ggml_concat(ctx0, ids, idx, 0) : idx;
+ 
+-    cur = build_ffn(cur,
+-            layer.ffn_up,   nullptr, layer.ffn_up_s,
+-            layer.ffn_gate, nullptr, layer.ffn_gate_s,
+-            layer.ffn_down, nullptr, layer.ffn_down_s,
+-            nullptr,
+-            LLM_FFN_SILU, LLM_FFN_PAR, il);
+-    cb(cur, "mtp_ffn_out", il);
++            if (j + 1 < n_tokens) {
++                tok_j = ggml_get_rows(ctx0, model.draft_embd, idx);
++                cb(tok_j, "mtp_tok_embd", il);
++                h_j = hn;
++            }
++        }
+ 
+-    cur = ggml_add(ctx0, cur, ffn_residual);
+-    cb(cur, "mtp_post_ffn", il);
++        inp_attn->self_k_idxs      = k_idxs;
++        inp_attn->self_v_idxs      = v_idxs;
++        inp_attn->self_kq_mask_cnv = mask;
+ 
+-    ggml_tensor * head_norm_w = layer.nextn.shared_head_norm
+-            ? layer.nextn.shared_head_norm
+-            : model.output_norm;
+-    GGML_ASSERT(head_norm_w && "QWEN35 MTP: missing both nextn.shared_head_norm and output_norm");
+-    cur = build_norm(cur, head_norm_w, nullptr, LLM_NORM_RMS, -1);
++        // draft-vocabulary index -> token id
++        ggml_tensor * out = ggml_get_rows(ctx0, ggml_reshape_2d(ctx0, model.draft_head_ids, 1, n_sub), ids); // [1, n_tokens]
++        cb(out, "mtp_draft_tokens", -1);
++        ggml_set_output(out);
++
++        res->t_mtp_draft = out;
++        ggml_build_forward_expand(gf, out);
++        return;
++    }
++
++    ggml_tensor * inp_pos     = build_inp_pos();
++    ggml_tensor * inp_out_ids = build_inp_out_ids();
++
++    auto * inp_attn = build_attn_inp_kv();
++
++    ggml_tensor * cur = build_pass(tok_embd, h_embd, inp_pos, inp_attn, n_tokens);
+ 
+-    cb(cur, "h_nextn", -1);
+     res->t_h_nextn = cur;
+ 
+     cur = ggml_get_rows(ctx0, cur, inp_out_ids);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index e99ce6b03..cd6d6954f 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -2441,6 +2441,20 @@ struct test_get_rows : public test_case {
+     }
+ };
+ 
++// GGML_OP_GET_ROWS, bit-exact against the CPU: the MTP draft chain embeds its draft tokens on the device and must
++// match the host get_rows of the same token-embedding rows
++struct test_get_rows_exact : public test_get_rows {
++    using test_get_rows::test_get_rows;
++
++    std::string vars() override {
++        return test_get_rows::vars() + ",exact=1";
++    }
++
++    double max_nmse_err() override {
++        return 0.0;
++    }
++};
++
+ // GGML_OP_GET_ROWS_BACK
+ struct test_get_rows_back : public test_case {
+     const ggml_type type;
+@@ -9873,6 +9887,10 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+         }
+     }
+     test_cases.emplace_back(new test_get_rows(GGML_TYPE_F32, 256, 8, 2, 1, 1, false, true, 3));
++    for (ggml_type type : {GGML_TYPE_F32, GGML_TYPE_F16, GGML_TYPE_Q4_K}) {
++        test_cases.emplace_back(new test_get_rows_exact(type, 5120, 64, 1));
++        test_cases.emplace_back(new test_get_rows_exact(type, 5120, 64, 7));
++    }
+ 
+     test_cases.emplace_back(new test_get_rows_back(GGML_TYPE_F32, 1, 8, 2, 1, false));
+     test_cases.emplace_back(new test_get_rows_back(GGML_TYPE_F32, 1, 70000, 4, 1, false)); // row count > CUDA grid-y limit (65535)
+-- 
+2.43.0
+

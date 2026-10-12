@@ -248,3 +248,8 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - DEBUG_HIP_GRAPH_BATCH_SIZE=16: bez zysku (36.44). #29768 pominięte (wymaga VMM).
 - Długość draftu po zmianach: n=3 85.2 t/s (czat 75), n=4 86.4, n=5 87.6 (kod lepiej, czat 68). Zostaje n=4.
 - Długi kontekst (long_ctx_bench, T=0, decode t/s): 1.7k **106.9**, 6.6k **93.4**, 29.5k **85.5**, 94k **77.7** (rano: 78.6 / 75.5 / 62.4 / 43.0).
+
+## ROCm: draft MTP jako jeden graf (c90db29c6, 2026-10-12), bitowo identyczne drafty
+- 4 przebiegi draftu (42 kernele, ~1.19 ms każdy) -> jeden graf 104 kerneli z argmax i get_rows na GPU; +180 MiB VRAM (kopia 64k wierszy token_embd).
+- Catch-up nie złączony: jego praca GPU już chowa się za próbkowaniem na CPU, zysk 0.2 ms za cenę zmiany draftów.
+- Potwierdzone: Qwen UD **35.67 ms/krok, 88.1 t/s**; Uncensored **33.79 ms/krok, 90.4 t/s** (tok/krok bez zmian).
