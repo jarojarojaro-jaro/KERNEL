@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # Start the optimized llama-server on the RX 7900 XTX.
 #
-#   run-llm.sh [qwen|saluki] [mtp|dflash|none] [vulkan|rocm]
+#   run-llm.sh [qwen|uncensored|saluki] [mtp|dflash|none] [vulkan|rocm]
 #
 # Measured at ctx 204800, KV q4_0, EN+PL prompt mix (old build, MTP n=3: 59 t/s):
 #   qwen  mtp  vulkan  ~92 t/s  (default; MTP n=5, 64k-token draft head)
 #   qwen  mtp  rocm    ~86 t/s  (patched HIP kernels; prompt processing ~1.2-1.4x faster than Vulkan)
 #   qwen  dflash       fastest for English/code (~120 t/s) but weak on Polish (PL prose ~40 t/s)
+#   uncensored = orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated, same arch + MTP head); VISION=1 adds mmproj
 #   saluki has no MTP head, so it defaults to dflash
 #
 # env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0),
@@ -17,6 +18,7 @@
 set -euo pipefail
 
 model=${1:-qwen}
+extra_args=()
 default_spec=mtp
 [ "$model" = saluki ] && default_spec=dflash
 spec=${2:-$default_spec}
@@ -42,9 +44,11 @@ drafter=$models/draft/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
 draft_vocab=$models/draft/draft_vocab_qwen38.txt
 
 case $model in
-    qwen)   gguf=$models/Qwen3.8-27B-UD-Q4_K_XL.gguf ;;
-    saluki) gguf=$models/Underdog-Saluki-27B-1.0-IQ2-mix.gguf ;;
-    *) echo "unknown model: $model (qwen|saluki)" >&2; exit 2 ;;
+    qwen)       gguf=$models/Qwen3.8-27B-UD-Q4_K_XL.gguf ;;
+    uncensored) gguf=$models/orca/Qwen3.8-27B-Uncensored-Q4_K_M.gguf
+                [ "${VISION:-0}" = 1 ] && extra_args=(--mmproj "$models/orca/mmproj-Qwen3.8-27B-Uncensored-f16.gguf") ;;
+    saluki)     gguf=$models/Underdog-Saluki-27B-1.0-IQ2-mix.gguf ;;
+    *) echo "unknown model: $model (qwen|uncensored|saluki)" >&2; exit 2 ;;
 esac
 
 case $backend in
@@ -65,7 +69,7 @@ case $spec in
     # DFlash2 block drafter: 6 draft tokens (verify batch = 7)
     dflash) spec_args=(-md "$drafter" -ngld 99 --spec-type draft-dflash --spec-draft-n-max "${DRAFT_N:-6}") ;;
     # built-in MTP head (Qwen only) with the reduced-vocabulary draft head
-    mtp)    [ "$model" = qwen ] || { echo "saluki has no MTP head, use dflash" >&2; exit 2; }
+    mtp)    [ "$model" != saluki ] || { echo "saluki has no MTP head, use dflash" >&2; exit 2; }
             spec_args=(--spec-type draft-mtp --spec-draft-n-max "${DRAFT_N:-$mtp_n}"
                        --spec-draft-vocab "$draft_vocab" --spec-draft-vocab-n 65536) ;;
     none)   spec_args=() ;;
@@ -86,4 +90,4 @@ if [ "$(cat /sys/class/drm/card0/device/power/control)" != on ]; then
 fi
 
 "$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja \
-    "${think_args[@]}" --host "$host" --port "$port" --log-file "$log" "${spec_args[@]}"
+    "${think_args[@]}" --host "$host" --port "$port" --log-file "$log" "${spec_args[@]}" "${extra_args[@]}"
