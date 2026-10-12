@@ -227,3 +227,9 @@ Krótki kontekst (spec_sweep, 3 seedy): Qwen 41.74 ms/krok (było 41.8), Uncenso
 | nowa rozmowa, ten sam dokument, inne pytanie | 517 | 1.2 s |
 | inna rozmowa (inny dokument 28k), potem powrót do pierwszej | 536 | 1.4 s |
 Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run-llm.sh: --cache-ram 16384 (więcej długich rozmów w RAM; 62 GB RAM).
+
+## A7: testy bez zmian w kodzie (ROCm, 2026-10-12)
+- -bs (losowanie celu na GPU): 41.69 vs 41.65 ms/krok — bez efektu.
+- ROCBLAS_USE_HIPBLASLT=1: pp4096 1050 vs 1040 (d0), 772 vs 768 (d32k) — szum.
+- -ub 1024: +1%, -ub 2048: pp +3% (1073 / 782), ale serwer z ctx 204800 kończy się OOM (24.5 GB VRAM) przy pierwszym długim prompcie. Zostaje ub 512.
+- Governor CPU performance: wymaga sudo, nie testowane.
