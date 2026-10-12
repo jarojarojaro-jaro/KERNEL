@@ -202,3 +202,6 @@ spec_sweep.sh/spec_sweep.py, 5 promptów (PL proza/tech/kod, EN chat/tech), 2 se
   llama-bench (ROCm): d2048 n1 39.8 / n5 44.2 ms; d32768 n1 43.4 / n5 56.4 ms.
   Kernel vec dla 5 kolumn (GGML_CUDA_FA_VEC_MAX_COLS=8): d32768 n5 120.6 ms — dużo gorzej (vec czyta KV osobno dla każdej z 6 głów Q w grupie GQA).
   => potrzebny kernel FA czytający skwantyzowane KV raz na głowę KV dla wszystkich głów Q i tokenów (GQA 6 x 5 tokenów). Cel: n=1 i n=5 przy długim kontekście.
+
+## Decyzja (2026-10-12)
+ROCm jest stałym backendem domyślnym. Dalsze optymalizacje robimy pod HIP/ROCm; Vulkan zostaje tylko jako opcja (run-llm.sh ... vulkan).
