@@ -184,3 +184,13 @@ spec_sweep.sh/spec_sweep.py, 5 promptów (PL proza/tech/kod, EN chat/tech), 2 se
   - t/s przy 3 seedach zależy bardziej od wylosowanego tekstu (tok/krok) niż od kernela; ms/krok jest miarą wiarygodną.
 - -bs (losowanie celu na GPU): pomiar zepsuty obciążeniem CPU, do powtórki.
 - GPU w trakcie: 284 W, junction 87 (max 90), mem 84, edge 67.
+
+## ROCm vs Vulkan: cały czas odpowiedzi (2026-10-12, serwer, ctx 204800, KV q4_0, MTP + vocab 64k, T=0, 256 tok.)
+| prompt | ROCm prefill | ROCm decode | Vulkan prefill | Vulkan decode | prompt + 1000 tok. ROCm / Vulkan |
+|---|---|---|---|---|---|
+| 1.7k | 750 t/s (2.3 s) | 78.6 | 683 (2.5 s) | 92.4 | 15.0 / **13.3 s** |
+| 6.6k | 924 (7.1 s) | 75.5 | 746 (8.8 s) | 80.9 | **20.3** / 21.2 s |
+| 29.5k | 863 (34 s) | 62.4 | 624 (47 s) | 66.1 | **50.2** / 62.4 s |
+| 94k | 666 (142 s) | 43.0 | 397 (237 s) | 43.9 | **165** / 260 s |
+- ROCm domyślny (run-llm.sh). Vulkan szybszy tylko przy krótkich promptach (~11%).
+- Decode przy głębokim kontekście spada ~2x (92 -> 44 przy 94k) na obu backendach: kolejny cel (FA weryfikacji przy długim KV).

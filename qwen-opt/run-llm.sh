@@ -4,8 +4,8 @@
 #   run-llm.sh [qwen|uncensored|saluki] [mtp|dflash|none] [vulkan|rocm]
 #
 # Measured at ctx 204800, KV q4_0, EN+PL prompt mix (old build, MTP n=3: 59 t/s):
-#   qwen  mtp  vulkan  ~92 t/s  (default; MTP n=5, 64k-token draft head)
-#   qwen  mtp  rocm    ~86 t/s  (patched HIP kernels; prompt processing ~1.2-1.4x faster than Vulkan)
+#   qwen  mtp  rocm    ~86 t/s  (default; patched HIP kernels, MTP n=4; prompt processing 1.2-1.4x faster than Vulkan)
+#   qwen  mtp  vulkan  ~92 t/s  (MTP n=5; faster decode on short prompts, slower on long prompts)
 #   qwen  dflash       fastest for English/code (~120 t/s) but weak on Polish (PL prose ~40 t/s)
 #   uncensored = orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated, same arch + MTP head); VISION=1 adds mmproj
 #   saluki has no MTP head, so it defaults to dflash
@@ -22,7 +22,7 @@ extra_args=(${EXTRA_ARGS:-})
 default_spec=mtp
 [ "$model" = saluki ] && default_spec=dflash
 spec=${2:-$default_spec}
-backend=${3:-vulkan}
+backend=${3:-rocm}
 ctx=${CTX:-204800}
 port=${PORT:-8080}
 host=${HOST:-127.0.0.1}
