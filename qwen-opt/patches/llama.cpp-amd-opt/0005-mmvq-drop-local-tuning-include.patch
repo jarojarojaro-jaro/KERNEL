@@ -1,7 +1,7 @@
 From 8af9de8f85ca688a94f030099d63718dd516c9ff Mon Sep 17 00:00:00 2001
 From: jaro <jaro@localhost>
 Date: Fri, 9 Oct 2026 18:51:10 +0000
-Subject: [PATCH 5/5] mmvq: drop local tuning include
+Subject: [PATCH 05/20] mmvq: drop local tuning include
 
 ---
  ggml/src/ggml-cuda/mmvq.cu | 5 ++---

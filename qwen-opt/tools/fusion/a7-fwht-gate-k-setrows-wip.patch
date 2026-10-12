@@ -1,0 +1,493 @@
+diff --git a/ggml/src/ggml-cuda/fwht.cuh b/ggml/src/ggml-cuda/fwht.cuh
+index d936874b6..2520fcbc5 100644
+--- a/ggml/src/ggml-cuda/fwht.cuh
++++ b/ggml/src/ggml-cuda/fwht.cuh
+@@ -3,20 +3,14 @@
+ #include "common.cuh"
+ #include "convert.cuh"
+ 
+-// Normalized FWHT of one row of N values by one warp: dst[i] = scale * (H_N src)[i].
+-// Shared by fwht_cuda and kernels that apply the transform to a row they just produced (same arithmetic).
+-template <int N, typename T>
+-static __device__ __forceinline__ void fwht_row_warp(const T * src, float * dst, const float scale, const int lane) {
++// Unnormalized FWHT of one row of N values held by one warp, reg[i] = row[i * warp_size + lane], in place.
++// Shared by fwht_cuda and kernels that apply the transform to values they produce or consume (same arithmetic).
++template <int N>
++static __device__ __forceinline__ void fwht_warp_reg(float (&reg)[N / ggml_cuda_get_physical_warp_size()], const int lane) {
+     constexpr int warp_size = ggml_cuda_get_physical_warp_size();
+     static_assert(N % warp_size == 0, "FWHT row must be a multiple of the warp size");
+ 
+     static constexpr int el_w = N / warp_size;
+-    float reg[el_w];
+-
+-#pragma unroll
+-    for (int i = 0; i < el_w; ++i) {
+-        reg[i] = ggml_cuda_cast<float>(src[i * warp_size + lane]) * scale;
+-    }
+ 
+ #pragma unroll
+     for (int h = 1; h < warp_size; h *= 2) {
+@@ -44,6 +38,21 @@ static __device__ __forceinline__ void fwht_row_warp(const T * src, float * dst,
+             }
+         }
+     }
++}
++
++// Normalized FWHT of one row of N values by one warp: dst[i] = (H_N (scale * src))[i].
++template <int N, typename T>
++static __device__ __forceinline__ void fwht_row_warp(const T * src, float * dst, const float scale, const int lane) {
++    constexpr int warp_size = ggml_cuda_get_physical_warp_size();
++    static constexpr int el_w = N / warp_size;
++    float reg[el_w];
++
++#pragma unroll
++    for (int i = 0; i < el_w; ++i) {
++        reg[i] = ggml_cuda_cast<float>(src[i * warp_size + lane]) * scale;
++    }
++
++    fwht_warp_reg<N>(reg, lane);
+ 
+ #pragma unroll
+     for (int i = 0; i < el_w; ++i) {
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index b42a60a85..11f973310 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4001,6 +4001,51 @@ static block_q8_1 * ggml_cuda_q8_1_producer_target(ggml_backend_cuda_context * c
+     return (block_q8_1 *) qc.buf;
+ }
+ 
++// Hadamard MUL_MAT (the output rotation of a rotated V cache, llama_mul_mat_hadamard) -> RESHAPE(s) -> fused
++// UNARY*MUL gate (qwen35 attention): one launch (ggml_cuda_op_fwht_unary_mul). Returns the number of nodes to skip.
++static int ggml_cuda_try_fwht_unary_mul_fusion(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
++    const ggml_tensor * mm = cgraph->nodes[i];
++    if (!ggml_cuda_op_mul_mat_use_fwht(mm)) {
++        return 0;
++    }
++    constexpr int max_reshapes = 4;
++    int                 idxs[max_reshapes + 3];
++    ggml_op             ops[max_reshapes + 3];
++    int                 count = 0;
++    idxs[count] = i;
++    ops[count++] = GGML_OP_MUL_MAT;
++    const ggml_tensor * other = mm;
++    while (count <= max_reshapes && i + count < cgraph->n_nodes && cgraph->nodes[i + count]->op == GGML_OP_RESHAPE &&
++            cgraph->nodes[i + count]->src[0] == other) {
++        other = cgraph->nodes[i + count];
++        idxs[count] = i + count;
++        ops[count++] = GGML_OP_RESHAPE;
++    }
++    if (count == 1 || i + count + 1 >= cgraph->n_nodes) {
++        return 0;
++    }
++    const ggml_tensor * unary = cgraph->nodes[i + count];
++    ggml_tensor *       mul   = cgraph->nodes[i + count + 1];
++    if (unary->op != GGML_OP_UNARY || mul->op != GGML_OP_MUL ||
++            !((mul->src[0] == unary && mul->src[1] == other) || (mul->src[1] == unary && mul->src[0] == other))) {
++        return 0;
++    }
++    idxs[count] = i + count;
++    ops[count++] = GGML_OP_UNARY;
++    idxs[count] = i + count;
++    ops[count++] = GGML_OP_MUL;
++
++    const int out_nodes[] = { i + count - 1 };
++    if (!ggml_can_fuse_subgraph_ext(cgraph, idxs, count, ops, out_nodes, 1) ||
++            !ggml_cuda_fwht_unary_mul_supported(mm, unary, mul, other) ||
++            !ggml_cuda_check_fusion_memory_ranges(cgraph, i, count, out_nodes, 1)) {
++        return 0;
++    }
++
++    ggml_cuda_op_fwht_unary_mul(*cuda_ctx, mm, unary, mul, ggml_cuda_q8_1_producer_target(cuda_ctx, cgraph, i + count - 1));
++    return count - 1;
++}
++
+ // try and fuse nodes and return the number of nodes to skip; -1: this node is done and no other node is skipped
+ // (it is elided because its result is never read, or a fusion computed it alone)
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+@@ -4017,7 +4062,11 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+     }
+ 
+     if (node->op == GGML_OP_MUL_MAT) {
+-        const int nodes_to_skip = ggml_cuda_try_gdn_ab_fusion(cuda_ctx, cgraph, i);
++        int nodes_to_skip = ggml_cuda_try_gdn_ab_fusion(cuda_ctx, cgraph, i);
++        if (nodes_to_skip > 0) {
++            return nodes_to_skip;
++        }
++        nodes_to_skip = ggml_cuda_try_fwht_unary_mul_fusion(cuda_ctx, cgraph, i);
+         if (nodes_to_skip > 0) {
+             return nodes_to_skip;
+         }
+diff --git a/ggml/src/ggml-cuda/rope.cu b/ggml/src/ggml-cuda/rope.cu
+index 4661104a6..55082b801 100644
+--- a/ggml/src/ggml-cuda/rope.cu
++++ b/ggml/src/ggml-cuda/rope.cu
+@@ -728,7 +728,7 @@ static __global__ void rms_norm_mul_rope_f32(
+         const float * freq_factors,
+         const int64_t * row_indices, const int set_rows_stride,
+         const bool is_neox, const int multi, const mrope_sections sections,
+-        const float fwht_scale) {
++        const float fwht_scale, block_q4_0 * q4_dst, const int64_t q4_row_stride) {
+     static_assert(fwht_n == 0 || (std::is_same_v<D, float> && block_size > WARP_SIZE), "bad FWHT epilogue");
+     ggml_cuda_pdl_lc();
+     const int row = blockIdx.x;
+@@ -832,8 +832,21 @@ static __global__ void rms_norm_mul_rope_f32(
+ 
+             if constexpr (fwht_n > 0) {
+                 __syncthreads();
+-                if (tid < WARP_SIZE) {
+-                    fwht_row_warp<fwht_n>(s_row, dst + idst, fwht_scale, tid);
++                if (q4_dst == nullptr) {
++                    if (tid < WARP_SIZE) {
++                        fwht_row_warp<fwht_n>(s_row, dst + idst, fwht_scale, tid);
++                    }
++                } else {
++                    // SET_ROWS of the transformed rows into a q4_0 cache: FWHT in place in shared memory, then the
++                    // row's q4_0 blocks are quantized as set_rows does (row index of the token from row_indices)
++                    if (tid < WARP_SIZE) {
++                        fwht_row_warp<fwht_n>(s_row, s_row, fwht_scale, tid);
++                    }
++                    __syncthreads();
++                    if (tid < fwht_n / QK4_0) {
++                        quantize_f32_q4_0_block(s_row + tid*QK4_0,
++                            q4_dst + row_indices[channel]*q4_row_stride + row*(fwht_n/QK4_0) + tid);
++                    }
+                 }
+             }
+             if constexpr (block_size > WARP_SIZE) {
+@@ -861,7 +874,7 @@ static void rms_norm_mul_rope_cuda(
+         const float * freq_factors,
+         const int64_t * row_indices, const int set_rows_stride,
+         const bool is_neox, const int multi, const mrope_sections sections,
+-        const int fwht_n, const float fwht_scale, cudaStream_t stream) {
++        const int fwht_n, const float fwht_scale, block_q4_0 * q4_dst, const int64_t q4_row_stride, cudaStream_t stream) {
+     GGML_ASSERT(ncols % 2 == 0);
+ 
+     const dim3 blocks_num(nrows, MIN(nchannels, UINT16_MAX), MIN(nsamples, UINT16_MAX));
+@@ -874,8 +887,8 @@ static void rms_norm_mul_rope_cuda(
+     const uint3 mul_nsamples_packed  = init_fastdiv_values(mul_nsamples);
+ 
+     if (fwht_n != 0) {
+-        // dst is the FWHT output, see rms_norm_mul_rope_f32
+-        GGML_ASSERT(fwht_n == ncols && ncols < 1024 && set_rows_stride == 0);
++        // dst is the FWHT output (or, with q4_dst, the FWHT goes to SET_ROWS rows of a q4_0 tensor), see rms_norm_mul_rope_f32
++        GGML_ASSERT(fwht_n == ncols && ncols < 1024 && set_rows_stride == 0 && (q4_dst == nullptr || row_indices != nullptr));
+         if constexpr (std::is_same_v<D, float>) {
+             const dim3 block_dims(256, 1, 1);
+             const ggml_cuda_kernel_launch_params launch_params = {blocks_num, block_dims, 32*sizeof(float), stream};
+@@ -884,7 +897,7 @@ static void rms_norm_mul_rope_cuda(
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03, \
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,                      \
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,                           \
+-                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, fwht_scale)
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, fwht_scale, q4_dst, q4_row_stride)
+ #define RMS_NORM_ROPE_FWHT_SWITCH(ff)                                    \
+             switch (fwht_n) {                                            \
+                 case 64:  RMS_NORM_ROPE_FWHT_LAUNCH(ff, 64);  break;     \
+@@ -914,13 +927,13 @@ static void rms_norm_mul_rope_cuda(
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,
+-                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, 0.0f);
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, 0.0f, nullptr, 0);
+         } else {
+             ggml_cuda_kernel_launch(rms_norm_mul_rope_f32<256, true, D>, launch_params,
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,
+-                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, 0.0f);
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, 0.0f, nullptr, 0);
+         }
+     } else {
+         const dim3 block_dims(1024, 1, 1);
+@@ -930,13 +943,13 @@ static void rms_norm_mul_rope_cuda(
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,
+-                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, 0.0f);
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, 0.0f, nullptr, 0);
+         } else {
+             ggml_cuda_kernel_launch(rms_norm_mul_rope_f32<1024, true, D>, launch_params,
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,
+-                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, 0.0f);
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, 0.0f, nullptr, 0);
+         }
+     }
+ }
+@@ -959,22 +972,33 @@ void ggml_cuda_op_rms_norm_mul_rope_fused(ggml_backend_cuda_context & ctx,
+     const int64_t * row_indices     = nullptr;
+     int             set_rows_stride = 0;
+ 
+-    if (set_rows != nullptr) {
++    if (set_rows != nullptr && fwht == nullptr) {
+         dst_d           = set_rows->data;
+         dst_type        = set_rows->type;
+         row_indices     = (const int64_t *) set_rows->src[1]->data;
+         set_rows_stride = set_rows->nb[1] / ggml_type_size(set_rows->type);
+     }
+ 
+-    int   fwht_n     = 0;
+-    float fwht_scale = 0.0f;
++    int          fwht_n        = 0;
++    float        fwht_scale    = 0.0f;
++    block_q4_0 * q4_dst        = nullptr;
++    int64_t      q4_row_stride = 0;
+     if (fwht != nullptr) {
+         // the rope output is contiguous, so the row offsets of rope and FWHT output are the same
+-        GGML_ASSERT(set_rows == nullptr && ggml_is_contiguous(rope) && ggml_is_contiguous(fwht) &&
++        GGML_ASSERT(ggml_is_contiguous(rope) && ggml_is_contiguous(fwht) &&
+                     fwht->type == GGML_TYPE_F32 && ggml_nelements(fwht) == ggml_nelements(rope));
+         dst_d      = fwht->data;
+         fwht_n     = rope->ne[0];
+         fwht_scale = 1 / sqrtf(fwht_n); // as ggml_cuda_op_fwht
++        if (set_rows != nullptr) {
++            // SET_ROWS of the FWHT output (one row of rope->ne[0]*rope->ne[1] values per token) into a q4_0 tensor;
++            // the FWHT output itself is not written
++            GGML_ASSERT(set_rows->type == GGML_TYPE_Q4_0 && set_rows->nb[1] % sizeof(block_q4_0) == 0 &&
++                        set_rows->src[1]->type == GGML_TYPE_I64);
++            q4_dst        = (block_q4_0 *) set_rows->data;
++            q4_row_stride = set_rows->nb[1] / sizeof(block_q4_0);
++            row_indices   = (const int64_t *) set_rows->src[1]->data;
++        }
+     }
+ 
+     const int n_dims     = ((const int32_t *) rope->op_params)[1];
+@@ -1034,14 +1058,14 @@ void ggml_cuda_op_rms_norm_mul_rope_fused(ggml_backend_cuda_context & ctx,
+             (const float *) mul_src->data, mul_s01, mul_s02, mul_s03,
+             mul_src->ne[0], mul_src->ne[1], mul_src->ne[2], mul_src->ne[3],
+             n_dims, pos, freq_scale, freq_base, ext_factor, attn_factor, corr_dims,
+-            freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, fwht_n, fwht_scale, stream);
++            freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, fwht_n, fwht_scale, q4_dst, q4_row_stride, stream);
+     } else if (dst_type == GGML_TYPE_F16) {
+         rms_norm_mul_rope_cuda((const float *) x->data, (half *) dst_d,
+             x->ne[0], x->ne[1], x->ne[2], x->ne[3], s01, s02, s03, s1, s2, s3, eps,
+             (const float *) mul_src->data, mul_s01, mul_s02, mul_s03,
+             mul_src->ne[0], mul_src->ne[1], mul_src->ne[2], mul_src->ne[3],
+             n_dims, pos, freq_scale, freq_base, ext_factor, attn_factor, corr_dims,
+-            freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, fwht_n, fwht_scale, stream);
++            freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, fwht_n, fwht_scale, q4_dst, q4_row_stride, stream);
+     } else {
+         GGML_ABORT("fatal error");
+     }
+diff --git a/ggml/src/ggml-cuda/unary.cu b/ggml/src/ggml-cuda/unary.cu
+index f1da2d4d8..6f99f31b0 100644
+--- a/ggml/src/ggml-cuda/unary.cu
++++ b/ggml/src/ggml-cuda/unary.cu
+@@ -1,5 +1,6 @@
+ #include "unary.cuh"
+ #include "convert.cuh"
++#include "fwht.cuh"
+ 
+ static __device__ __forceinline__ float op_abs(float x) {
+     return fabsf(x);
+@@ -780,6 +781,110 @@ void ggml_cuda_op_unary_mul(ggml_backend_cuda_context & ctx, ggml_tensor * unary
+     }
+ }
+ 
++/* fused Hadamard MUL_MAT (FWHT) + unary + mul */
++
++// dst[e] = op(gate[e]) * y[e] with y = the normalized FWHT of x in rows of N (the Hadamard MUL_MAT, see
++// ggml_cuda_op_mul_mat_use_fwht), as fwht_cuda followed by unary_gated_op_kernel compute it. One warp per FWHT row;
++// gate has rows of nc values with row stride s_gate. q8: when not null, the q8_1 copy of dst is written there too.
++template <int N, float (*op)(float)>
++__launch_bounds__(4*ggml_cuda_get_physical_warp_size(), 1)
++static __global__ void fwht_unary_mul_kernel(const float * x, const float * gate, float * dst, const int64_t n_rows,
++                                             const int64_t nc, const int64_t s_gate, const float scale, block_q8_1 * q8) {
++    constexpr int warp_size = ggml_cuda_get_physical_warp_size();
++    constexpr int el_w      = N / warp_size;
++
++    const int64_t r = (int64_t) blockIdx.x * blockDim.y + threadIdx.y;
++    if (r >= n_rows) {
++        return;
++    }
++    const int lane = threadIdx.x;
++
++    ggml_cuda_pdl_sync();
++    float reg[el_w];
++#pragma unroll
++    for (int i = 0; i < el_w; ++i) {
++        reg[i] = x[r * N + i * warp_size + lane] * scale;
++    }
++
++    fwht_warp_reg<N>(reg, lane);
++
++#pragma unroll
++    for (int i = 0; i < el_w; ++i) {
++        const int64_t e = r * N + i * warp_size + lane;
++        const float   v = op(gate[(e / nc) * s_gate + e % nc]) * reg[i];
++        dst[e] = v;
++        if (q8 != nullptr) {
++            quantize_q8_1_group(v, q8 + e / QK8_1, e % QK8_1);
++        }
++    }
++}
++
++template <float (*op)(float)>
++static void fwht_unary_mul_cuda(const float * x, const float * gate, float * dst, const int n, const int64_t n_rows,
++                                const int64_t nc, const int64_t s_gate, block_q8_1 * q8, cudaStream_t stream) {
++    const int     warp_size      = ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size;
++    const int     rows_per_block = 4;
++    const float   scale          = 1 / sqrtf(n); // as ggml_cuda_op_fwht
++    const dim3    grid_dims((n_rows + rows_per_block - 1) / rows_per_block, 1, 1);
++    const dim3    block_dims(warp_size, rows_per_block, 1);
++    const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(grid_dims, block_dims, 0, stream);
++    switch (n) {
++        case 64:
++            ggml_cuda_kernel_launch(fwht_unary_mul_kernel<64, op>, launch_params, x, gate, dst, n_rows, nc, s_gate, scale, q8);
++            break;
++        case 128:
++            ggml_cuda_kernel_launch(fwht_unary_mul_kernel<128, op>, launch_params, x, gate, dst, n_rows, nc, s_gate, scale, q8);
++            break;
++        case 256:
++            ggml_cuda_kernel_launch(fwht_unary_mul_kernel<256, op>, launch_params, x, gate, dst, n_rows, nc, s_gate, scale, q8);
++            break;
++        default:
++            GGML_ABORT("unsupported FWHT size");
++    }
++}
++
++bool ggml_cuda_fwht_unary_mul_supported(const ggml_tensor * fwht, const ggml_tensor * unary_node, const ggml_tensor * mul_node,
++                                        const ggml_tensor * other) {
++    const ggml_tensor * x    = fwht->src[1];
++    const ggml_tensor * gate = unary_node->src[0];
++    const int64_t       n    = x->ne[0];
++    const ggml_unary_op uop  = ggml_get_unary_op(unary_node);
++    return (uop == GGML_UNARY_OP_SILU || uop == GGML_UNARY_OP_SIGMOID || uop == GGML_UNARY_OP_SOFTPLUS) &&
++           (n == 64 || n == 128 || n == 256) && x->type == GGML_TYPE_F32 && ggml_is_contiguous(x) &&
++           ggml_is_contiguous(fwht) && gate->type == GGML_TYPE_F32 && unary_node->type == GGML_TYPE_F32 &&
++           mul_node->type == GGML_TYPE_F32 && ggml_is_contiguous_1(gate) && gate->nb[0] == sizeof(float) &&
++           ggml_are_same_shape(gate, other) && ggml_are_same_shape(other, mul_node) && ggml_is_contiguous(mul_node) &&
++           ggml_nelements(mul_node) == ggml_nelements(fwht);
++}
++
++void ggml_cuda_op_fwht_unary_mul(ggml_backend_cuda_context & ctx, const ggml_tensor * fwht, const ggml_tensor * unary_node,
++                                 ggml_tensor * mul_node, block_q8_1 * q8) {
++    const ggml_tensor * x    = fwht->src[1];
++    const ggml_tensor * gate = unary_node->src[0];
++    const float *       x_d  = (const float *) x->data;
++    const float *       g_d  = (const float *) gate->data;
++    float *             d_d  = (float *) mul_node->data;
++    const int           n    = x->ne[0];
++    const int64_t       rows = ggml_nrows(x);
++    const int64_t       nc   = gate->ne[0];
++    const int64_t       s_g  = gate->nb[1] / sizeof(float);
++    cudaStream_t        stream = ctx.stream();
++
++    switch (ggml_get_unary_op(unary_node)) {
++        case GGML_UNARY_OP_SILU:
++            fwht_unary_mul_cuda<op_silu>(x_d, g_d, d_d, n, rows, nc, s_g, q8, stream);
++            break;
++        case GGML_UNARY_OP_SIGMOID:
++            fwht_unary_mul_cuda<op_sigmoid>(x_d, g_d, d_d, n, rows, nc, s_g, q8, stream);
++            break;
++        case GGML_UNARY_OP_SOFTPLUS:
++            fwht_unary_mul_cuda<op_softplus>(x_d, g_d, d_d, n, rows, nc, s_g, q8, stream);
++            break;
++        default:
++            GGML_ABORT("Unsupported unary op for fused FWHT+unary+mul");
++    }
++}
++
+ /* fused relu + sqr */
+ 
+ void ggml_cuda_op_relu_sqr(ggml_backend_cuda_context & ctx, ggml_tensor * relu_node, ggml_tensor * sqr_node) {
+diff --git a/ggml/src/ggml-cuda/unary.cuh b/ggml/src/ggml-cuda/unary.cuh
+index e60a06121..b9708c161 100644
+--- a/ggml/src/ggml-cuda/unary.cuh
++++ b/ggml/src/ggml-cuda/unary.cuh
+@@ -94,6 +94,13 @@ void ggml_cuda_op_xielu(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
+ 
+ void ggml_cuda_op_unary_mul(ggml_backend_cuda_context & ctx, ggml_tensor * unary_node, ggml_tensor * mul_node, block_q8_1 * q8 = nullptr);
+ 
++// Hadamard MUL_MAT fwht (see ggml_cuda_op_mul_mat_use_fwht) whose result `other` (fwht or a reshape of it) feeds the
++// MUL of a fused UNARY+MUL: mul = op(unary->src[0]) * other in one launch. q8 as for ggml_cuda_op_unary_mul.
++bool ggml_cuda_fwht_unary_mul_supported(const ggml_tensor * fwht, const ggml_tensor * unary_node, const ggml_tensor * mul_node,
++                                        const ggml_tensor * other);
++void ggml_cuda_op_fwht_unary_mul(ggml_backend_cuda_context & ctx, const ggml_tensor * fwht, const ggml_tensor * unary_node,
++                                 ggml_tensor * mul_node, block_q8_1 * q8 = nullptr);
++
+ void ggml_cuda_op_relu_sqr(ggml_backend_cuda_context & ctx, ggml_tensor * relu_node, ggml_tensor * sqr_node);
+ 
+ __device__ __forceinline__ float ggml_cuda_op_silu_single(float x) {
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index e99ce6b03..47f66690d 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -2724,6 +2724,62 @@ struct test_rope_set_rows : public test_case {
+     }
+ };
+ 
++// Hadamard MUL_MAT -> RESHAPE -> MUL with a unary of a strided gate view (the qwen35 attention output gate after
++// the V un-rotation of a rotated KV cache)
++struct test_fwht_unary_mul : public test_case {
++    const int64_t       n;      // Hadamard size
++    const int64_t       nc;     // gate row length
++    const int64_t       nh;     // gate rows per token
++    const int64_t       nt;     // tokens
++    const ggml_unary_op op;
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "FWHT_UNARY_MUL";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    std::string vars() override {
++        return VARS_TO_STR5(n, nc, nh, nt, op);
++    }
++
++    test_fwht_unary_mul(int64_t n = 64, int64_t nc = 256, int64_t nh = 4, int64_t nt = 5, ggml_unary_op op = GGML_UNARY_OP_SIGMOID)
++        : n(n), nc(nc), nh(nh), nt(nt), op(op) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * a = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, nc * nh, nt);
++        ggml_tensor * h = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, n, n);
++        ggml_set_name(h, "hadamard");
++        ggml_tensor * qg = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 2 * nc, nh, nt);
++
++        ggml_tensor * y = ggml_mul_mat(ctx, h, ggml_reshape_2d(ctx, a, n, ggml_nelements(a) / n));
++        ggml_mul_mat_set_hint(y, GGML_HINT_SRC0_IS_HADAMARD);
++        y = ggml_reshape_3d(ctx, y, nc, nh, nt);
++
++        ggml_tensor * gate = ggml_view_3d(ctx, qg, nc, nh, nt, qg->nb[1], qg->nb[2], nc * ggml_element_size(qg));
++        ggml_tensor * out  = ggml_mul(ctx, y, ggml_unary(ctx, gate, op));
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != NULL; t = ggml_get_next_tensor(ctx, t)) {
++            if (strcmp(t->name, "hadamard") == 0) {
++                std::vector<float> data(n * n);
++                for (int64_t r = 0; r < n; r++) {
++                    for (int64_t i = 0; i < n; i++) {
++                        data[r * n + i] = (__builtin_popcountll(r & i) % 2 == 0 ? 1.0f : -1.0f) / sqrtf((float) n);
++                    }
++                }
++                ggml_backend_tensor_set(t, data.data(), 0, ggml_nbytes(t));
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++};
++
+ // GGML_OP_RMS_NORM with optional GGML_OP_MUL, GGML_OP_ROPE, GGML_OP_VIEW and GGML_OP_SET_ROWS, or a Hadamard
+ // GGML_OP_MUL_MAT of the rope output (the q/k rotation of a rotated KV cache)
+ struct test_rms_norm_mul_rope : public test_case {
+@@ -10629,6 +10685,12 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+             }
+         }
+     }
++    for (ggml_unary_op op : {GGML_UNARY_OP_SIGMOID, GGML_UNARY_OP_SILU, GGML_UNARY_OP_SOFTPLUS}) {
++        for (int64_t n : {64, 128, 256}) {
++            test_cases.emplace_back(new test_fwht_unary_mul(n, 256, 4, 5, op));
++        }
++        test_cases.emplace_back(new test_fwht_unary_mul(64, 128, 3, 1, op));
++    }
+     for (int64_t d_conv : {3, 4, 9}) {
+         for (int64_t d_inner: {1024, 1536, 2048}) {
+             test_cases.emplace_back(new test_ssm_conv(GGML_TYPE_F32, {d_conv, d_inner, 1, 1}, {d_conv, d_inner, 1, 1}));

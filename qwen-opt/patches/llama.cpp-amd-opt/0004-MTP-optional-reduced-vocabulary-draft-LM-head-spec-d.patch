@@ -1,7 +1,7 @@
 From 3b15c2b6d1c8141d5dbfa843b3dc4750cdb9f7f5 Mon Sep 17 00:00:00 2001
 From: jaro <jaro@localhost>
 Date: Fri, 9 Oct 2026 18:00:32 +0000
-Subject: [PATCH 4/5] MTP: optional reduced-vocabulary draft LM head
+Subject: [PATCH 04/20] MTP: optional reduced-vocabulary draft LM head
  (--spec-draft-vocab)
 
 ---

@@ -1,0 +1,48 @@
+diff --git a/ggml/src/ggml-cuda/norm.cu b/ggml/src/ggml-cuda/norm.cu
+index bb29d3d6e..464f0b6a7 100644
+--- a/ggml/src/ggml-cuda/norm.cu
++++ b/ggml/src/ggml-cuda/norm.cu
+@@ -156,7 +156,34 @@ static __global__ void rms_norm_f32(const float * x,
+             const float mean = tmp / ncols;
+             const float scale = rsqrtf(mean + eps);
+ 
+-            for (int col = tid; col < ncols; col += block_size) {
++            bool written = false;
++            if constexpr (do_multiply && !do_add) {
++                // q8_1 copy of the contiguous dst for MMVQ (ncols % QK8_1 == 0, see rms_norm_mul_f32_cuda): the thread
++                // computes all its values first, so that the q8_1 group reductions of its columns overlap
++                constexpr int q8_max_iter = 8;
++                if (q8 != nullptr && ncols <= q8_max_iter*block_size) {
++                    float v[q8_max_iter];
++#pragma unroll
++                    for (int k = 0; k < q8_max_iter; ++k) {
++                        const int col = tid + k*block_size;
++                        if (col < ncols) {
++                            v[k] = scale * xc[col] * mulc[fastmodulo(col, mul_ncols_packed)];
++                        }
++                    }
++#pragma unroll
++                    for (int k = 0; k < q8_max_iter; ++k) {
++                        const int col = tid + k*block_size;
++                        if (col < ncols) {
++                            dstc[col] = v[k];
++                            const int64_t i = (dstc - dst) + col;
++                            quantize_q8_1_group(v[k], q8 + i/QK8_1, i % QK8_1);
++                        }
++                    }
++                    written = true;
++                }
++            }
++
++            for (int col = tid; col < ncols && !written; col += block_size) {
+                 if constexpr (do_multiply && do_add) {
+                     const int mul_col = fastmodulo(col, mul_ncols_packed);
+                     const int add_col = fastmodulo(col, add_ncols_packed);
+@@ -166,7 +193,6 @@ static __global__ void rms_norm_f32(const float * x,
+                     const float v     = scale * xc[col] * mulc[mul_col];
+                     dstc[col]         = v;
+                     if (q8 != nullptr) {
+-                        // q8_1 copy of the contiguous dst for MMVQ (ncols % QK8_1 == 0, see rms_norm_mul_f32_cuda)
+                         const int64_t i = (dstc - dst) + col;
+                         quantize_q8_1_group(v, q8 + i/QK8_1, i % QK8_1);
+                     }

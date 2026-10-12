@@ -1,8 +1,8 @@
 From 3a05006a0c667b1008ec36fde32b51ca331dbef8 Mon Sep 17 00:00:00 2001
 From: jaro <jaro@localhost>
 Date: Fri, 9 Oct 2026 17:34:47 +0000
-Subject: [PATCH 3/5] CUDA/HIP mmvq: reuse q8_1 activations across consecutive
- MUL_MATs with the same src1
+Subject: [PATCH 03/20] CUDA/HIP mmvq: reuse q8_1 activations across
+ consecutive MUL_MATs with the same src1
 
 ---
  ggml/src/ggml-cuda/common.cuh    | 27 +++++++++++++++++++++
