@@ -1,0 +1,57 @@
+{"id":"pl_prose_01","lang":"pl","cat":"prose","prompt":"Napisz krótkie opowiadanie (ok. 400 słów) o starym latarniku z Helu, który pewnej nocy dostaje list bez nadawcy."}
+{"id":"pl_prose_02","lang":"pl","cat":"prose","prompt":"Opisz w kilku akapitach, jak wyglądał dzień powszedni w Krakowie w XVI wieku z perspektywy kupca sukienniczego."}
+{"id":"pl_prose_03","lang":"pl","cat":"prose","prompt":"Napisz felieton o tym, dlaczego Polacy tak bardzo lubią narzekać na pogodę, ale z humorem."}
+{"id":"pl_prose_04","lang":"pl","cat":"prose","prompt":"Wyjaśnij przystępnie, czym jest inflacja i dlaczego banki centralne podnoszą stopy procentowe. Użyj przykładów z życia codziennego."}
+{"id":"pl_prose_05","lang":"pl","cat":"prose","prompt":"Streść i omów główne motywy \"Lalki\" Bolesława Prusa dla ucznia przygotowującego się do matury."}
+{"id":"pl_prose_06","lang":"pl","cat":"prose","prompt":"Napisz list motywacyjny na stanowisko młodszego analityka danych w firmie logistycznej we Wrocławiu."}
+{"id":"pl_prose_07","lang":"pl","cat":"prose","prompt":"Opisz historię Wisły od źródeł do ujścia jako przewodnik turystyczny prowadzący wycieczkę."}
+{"id":"pl_prose_08","lang":"pl","cat":"prose","prompt":"Wyjaśnij, jak działa fotosynteza, tak jakbyś tłumaczył to dwunastolatkowi."}
+{"id":"pl_chat_01","lang":"pl","cat":"chat","prompt":"Cześć! Planuję tygodniowy wyjazd w Bieszczady we wrześniu. Co warto zobaczyć, gdzie nocować i na co uważać?"}
+{"id":"pl_chat_02","lang":"pl","cat":"chat","prompt":"Mam 35 lat i chcę zacząć biegać. Ułóż mi plan treningowy na 8 tygodni do pierwszych 5 km."}
+{"id":"pl_chat_03","lang":"pl","cat":"chat","prompt":"Jak przygotować się do rozmowy o podwyżkę? Pracuję jako programista od trzech lat w tej samej firmie."}
+{"id":"pl_chat_04","lang":"pl","cat":"chat","prompt":"Podaj przepis na tradycyjny żurek na zakwasie i wyjaśnij, jak samemu zrobić zakwas."}
+{"id":"pl_chat_05","lang":"pl","cat":"chat","prompt":"Mój kot przestał jeść suchą karmę i śpi więcej niż zwykle. Co może być przyczyną i kiedy iść do weterynarza?"}
+{"id":"pl_chat_06","lang":"pl","cat":"chat","prompt":"Jakie są różnice między umową o pracę, umową zleceniem a B2B w Polsce? Co się bardziej opłaca przy zarobkach 15 tys. brutto?"}
+{"id":"pl_chat_07","lang":"pl","cat":"chat","prompt":"Pomóż mi napisać uprzejmą, ale stanowczą wiadomość do sąsiada, który regularnie parkuje na moim miejscu."}
+{"id":"pl_chat_08","lang":"pl","cat":"chat","prompt":"Czy warto w 2026 roku kupić samochód elektryczny w Polsce? Rozważ koszty, ładowanie i zimę."}
+{"id":"pl_code_01","lang":"pl","cat":"code","prompt":"Napisz w Pythonie skrypt, który czyta plik CSV z transakcjami bankowymi, grupuje wydatki po kategoriach i miesiącach i rysuje wykres w matplotlib. Dodaj komentarze po polsku."}
+{"id":"pl_code_02","lang":"pl","cat":"code","prompt":"Wyjaśnij po polsku, czym różni się async/await od wątków w Pythonie, i pokaż przykład pobierania wielu stron WWW równolegle z aiohttp."}
+{"id":"pl_code_03","lang":"pl","cat":"code","prompt":"Napisz w TypeScript prosty serwer REST w Express do zarządzania listą zadań (CRUD) z walidacją danych. Opisz kod po polsku."}
+{"id":"pl_code_04","lang":"pl","cat":"code","prompt":"Mam zapytanie SQL, które działa wolno: SELECT * FROM zamowienia z JOIN klienci k ON z.klient_id = k.id WHERE k.miasto = 'Poznań' ORDER BY z.data DESC. Jak je zoptymalizować? Wyjaśnij indeksy."}
+{"id":"pl_code_05","lang":"pl","cat":"code","prompt":"Napisz funkcję w Rust, która sprawdza poprawność numeru PESEL (suma kontrolna, data urodzenia) i zwraca płeć. Dodaj testy jednostkowe."}
+{"id":"pl_tech_01","lang":"pl","cat":"tech","prompt":"Wyjaśnij, jak działa protokół TCP: nawiązywanie połączenia, kontrola przepływu i przeciążenia."}
+{"id":"pl_tech_02","lang":"pl","cat":"tech","prompt":"Opisz architekturę transformera w modelach językowych: uwaga, warstwy FFN, normalizacja i kodowanie pozycji."}
+{"id":"pl_tech_03","lang":"pl","cat":"tech","prompt":"Jak skonfigurować kopie zapasowe serwera Linux z użyciem restic i systemd timers? Podaj kompletne pliki konfiguracyjne."}
+{"id":"en_prose_01","lang":"en","cat":"prose","prompt":"Write a short story (about 400 words) about a lighthouse keeper who receives a letter with no sender."}
+{"id":"en_prose_02","lang":"en","cat":"prose","prompt":"Describe the history of the printing press and its effects on European society in a few paragraphs."}
+{"id":"en_prose_03","lang":"en","cat":"prose","prompt":"Write an op-ed arguing for and against a four-day work week, ending with a balanced conclusion."}
+{"id":"en_prose_04","lang":"en","cat":"prose","prompt":"Explain how vaccines train the immune system, for a general audience."}
+{"id":"en_prose_05","lang":"en","cat":"prose","prompt":"Write a travel guide section about Lisbon for a first-time visitor: neighbourhoods, food, and day trips."}
+{"id":"en_prose_06","lang":"en","cat":"prose","prompt":"Summarize the main causes of the First World War and explain which historians emphasize which causes."}
+{"id":"en_prose_07","lang":"en","cat":"prose","prompt":"Write a eulogy-style tribute to an old family dog named Biscuit, warm but not overly sentimental."}
+{"id":"en_prose_08","lang":"en","cat":"prose","prompt":"Explain the theory of plate tectonics and the evidence that supports it."}
+{"id":"en_chat_01","lang":"en","cat":"chat","prompt":"I have a job offer from a startup and one from a big company. How should I think about the decision? I'm 28 and a backend engineer."}
+{"id":"en_chat_02","lang":"en","cat":"chat","prompt":"Can you help me plan a vegetarian meal prep for a week with a shopping list? I have about 45 minutes on Sunday."}
+{"id":"en_chat_03","lang":"en","cat":"chat","prompt":"My houseplants keep getting yellow leaves. I water them twice a week. What am I doing wrong?"}
+{"id":"en_chat_04","lang":"en","cat":"chat","prompt":"What's a good way to learn Polish as an English speaker? I can spend 30 minutes a day."}
+{"id":"en_chat_05","lang":"en","cat":"chat","prompt":"Give me feedback on this opening line for my novel: 'The rain had opinions, and tonight it was sharing all of them.'"}
+{"id":"en_chat_06","lang":"en","cat":"chat","prompt":"How do I tell my manager I'm burned out without sounding like I'm quitting?"}
+{"id":"en_chat_07","lang":"en","cat":"chat","prompt":"Explain the difference between index funds and ETFs, and which makes more sense for a beginner investor in Europe."}
+{"id":"en_chat_08","lang":"en","cat":"chat","prompt":"Plan a 3-day itinerary for Kyoto in autumn, avoiding the worst crowds."}
+{"id":"en_code_01","lang":"en","cat":"code","prompt":"Write a Python class implementing an LRU cache with O(1) get and put, with type hints, docstrings and pytest tests."}
+{"id":"en_code_02","lang":"en","cat":"code","prompt":"Write a Go HTTP server with a rate limiter middleware (token bucket per client IP) and graceful shutdown."}
+{"id":"en_code_03","lang":"en","cat":"code","prompt":"Implement Dijkstra's algorithm in C++ with a priority queue, and explain its complexity. Include a small main() example."}
+{"id":"en_code_04","lang":"en","cat":"code","prompt":"Write a React component in TypeScript for a searchable, paginated table that fetches data from an API, with loading and error states."}
+{"id":"en_code_05","lang":"en","cat":"code","prompt":"Write a bash script that finds the 20 largest files under a directory, excluding .git folders, and prints human-readable sizes. Explain each part."}
+{"id":"en_code_06","lang":"en","cat":"code","prompt":"Refactor this Python into idiomatic code and explain the changes: def f(l):\n  r=[]\n  for i in range(len(l)):\n    if l[i]%2==0:\n      r.append(l[i]*l[i])\n  return r"}
+{"id":"en_code_07","lang":"en","cat":"code","prompt":"Write a SQL schema for a library system (books, members, loans, reservations) and queries for overdue loans and the most borrowed books per month."}
+{"id":"en_code_08","lang":"en","cat":"code","prompt":"Write a Rust CLI that counts word frequencies in a text file using clap and prints the top N words."}
+{"id":"en_tech_01","lang":"en","cat":"tech","prompt":"Explain how speculative decoding works for large language models, including rejection sampling and why it preserves the target distribution."}
+{"id":"en_tech_02","lang":"en","cat":"tech","prompt":"Compare PostgreSQL and MongoDB for an e-commerce backend: data modeling, transactions, scaling, and operations."}
+{"id":"en_tech_03","lang":"en","cat":"tech","prompt":"How does Kubernetes scheduling work? Cover requests/limits, affinity, taints and tolerations, and preemption."}
+{"id":"en_tech_04","lang":"en","cat":"tech","prompt":"Explain how a CPU cache hierarchy works and how to write cache-friendly code, with examples in C."}
+{"id":"en_tech_05","lang":"en","cat":"tech","prompt":"What is the difference between TLS 1.2 and TLS 1.3 handshakes? Explain forward secrecy."}
+{"id":"en_tech_06","lang":"en","cat":"tech","prompt":"Explain gradient descent, momentum, and Adam, with the update equations and intuition."}
+{"id":"pl_chat_09","lang":"pl","cat":"chat","prompt":"Jakie książki polecisz komuś, kto lubił \"Wiedźmina\" Sapkowskiego? Podaj kilka propozycji z krótkim uzasadnieniem."}
+{"id":"pl_prose_09","lang":"pl","cat":"prose","prompt":"Napisz przemówienie na wesele siostry, ciepłe i zabawne, około 300 słów."}
+{"id":"pl_tech_04","lang":"pl","cat":"tech","prompt":"Wyjaśnij różnicę między RAID 1, RAID 5 i RAID 10 oraz kiedy który wybrać do domowego serwera NAS."}
