@@ -14,3 +14,7 @@
 {"label": "e2e-rocm-fattn-dkvq4", "prompt_tokens": 6565, "prefill_tps": 928.2, "prefill_s": 7.1, "decode_tps": 80.94, "gen_tokens": 256, "draft_acceptance": 0.642}
 {"label": "e2e-rocm-fattn-dkvq4", "prompt_tokens": 29510, "prefill_tps": 865.8, "prefill_s": 34.1, "decode_tps": 73.73, "gen_tokens": 256, "draft_acceptance": 0.587}
 {"label": "e2e-rocm-fattn-dkvq4", "prompt_tokens": 94181, "prefill_tps": 668.3, "prefill_s": 140.9, "decode_tps": 71.57, "gen_tokens": 256, "draft_acceptance": 0.638}
+{"label": "e2e-rocm-fusion", "prompt_tokens": 1714, "prefill_tps": 749.4, "prefill_s": 2.3, "decode_tps": 106.92, "gen_tokens": 256, "draft_acceptance": 0.755}
+{"label": "e2e-rocm-fusion", "prompt_tokens": 6565, "prefill_tps": 910.7, "prefill_s": 7.2, "decode_tps": 93.44, "gen_tokens": 256, "draft_acceptance": 0.63}
+{"label": "e2e-rocm-fusion", "prompt_tokens": 29510, "prefill_tps": 850.9, "prefill_s": 34.7, "decode_tps": 85.54, "gen_tokens": 256, "draft_acceptance": 0.597}
+{"label": "e2e-rocm-fusion", "prompt_tokens": 94181, "prefill_tps": 660.7, "prefill_s": 142.5, "decode_tps": 77.71, "gen_tokens": 256, "draft_acceptance": 0.632}

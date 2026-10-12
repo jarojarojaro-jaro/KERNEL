@@ -240,3 +240,11 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Serwer (spec_sweep, 3 seedy, T=1, potwierdzone niezależnie): Qwen UD 41.7 -> **37.71 ms/krok, 74.8 -> 83.3 t/s**; Uncensored 39.6 -> **35.83 ms/krok, 78.5 -> 85.3 t/s**.
 - Jakość (A4 nie jest bitowy): llama-perplexity KLD, batch 6: fusion vs baza KLD 0.0067, same-top 96.5%, PPL 6.182 vs 6.191; szum samej bazy batch 512 vs 6: KLD 0.0098. Bez pogorszenia.
 - A6 (kwantyzacja q8_1 w producentach) — szkic w ~/qwen-opt/fusion/a6-wip.patch, do dokończenia.
+
+## ROCm: fuzje A6 + strojenie (b9db88004..b1f8c19ac, 2026-10-12), wszystkie bitowo identyczne
+- A6 q8_1 pisane przez rms_norm*mul/swiglu/unary*mul; alpha/beta MMVQ szablon po liczbie tokenów (9.05 -> 6.1 us); IMROPE w fuzji RMS_NORM+MUL+ROPE i sigmoid bramki bez cont; FWHT (rotacja KV) w tej samej fuzji; cherry-pick #30103.
+- Kernele weryfikacji 1308 -> 972, przerwy 4.30 -> 3.23 ms.
+- Potwierdzone (spec_sweep, 3 seedy, T=1): Qwen UD **36.38 ms/krok, 86.4 t/s**; Uncensored **34.52 ms/krok, 88.5 t/s**.
+- DEBUG_HIP_GRAPH_BATCH_SIZE=16: bez zysku (36.44). #29768 pominięte (wymaga VMM).
+- Długość draftu po zmianach: n=3 85.2 t/s (czat 75), n=4 86.4, n=5 87.6 (kod lepiej, czat 68). Zostaje n=4.
+- Długi kontekst (long_ctx_bench, T=0, decode t/s): 1.7k **106.9**, 6.6k **93.4**, 29.5k **85.5**, 94k **77.7** (rano: 78.6 / 75.5 / 62.4 / 43.0).

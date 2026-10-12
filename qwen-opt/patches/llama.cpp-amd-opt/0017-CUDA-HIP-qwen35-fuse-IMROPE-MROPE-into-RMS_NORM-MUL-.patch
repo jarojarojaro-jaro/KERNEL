@@ -1,0 +1,232 @@
+From a7e9514977b5c97ce2b37097e2d017ef6f84c1be Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 19:25:51 +0000
+Subject: [PATCH 17/19] CUDA/HIP + qwen35: fuse IMROPE/MROPE into
+ RMS_NORM+MUL+ROPE, drop the attention gate copy
+
+- rms_norm_mul_rope_f32 handles the (interleaved) M-RoPE modes: the position of each rotated pair is
+  picked by its section exactly as in rope_multi (same arithmetic, bitwise identical). Fusion tests
+  extended to MROPE.
+- qwen35 attention (and its MTP layer): the sigmoid gate reads the strided view of Qcur_full in place
+  instead of a ggml_cont copy; the gated MUL runs on 3D views.
+
+Qwen3.8-27B MTP n=4 verify (rocprofv3): 1052 -> 1004 kernels, gap sum 3.50 -> 3.34 ms,
+verify wall 31.53 -> 31.17 ms. Greedy plain/MTP outputs identical.
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu |  5 +--
+ ggml/src/ggml-cuda/rope.cu      | 57 +++++++++++++++++++++++++++------
+ src/models/qwen35.cpp           |  7 ++--
+ tests/test-backend-ops.cpp      |  2 +-
+ 4 files changed, 56 insertions(+), 15 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index aba90c508..95aba0b47 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -2822,9 +2822,10 @@ static bool ggml_cuda_should_fuse_rms_norm_mul_rope(const ggml_tensor * rms_norm
+         return false;
+     }
+ 
+-    // the fused kernel handles the norm/neox rope modes only
++    // the fused kernel handles the norm/neox and (interleaved) M-RoPE modes
+     const int mode = ((const int32_t *) rope->op_params)[2];
+-    if (mode != GGML_ROPE_TYPE_NORMAL && mode != GGML_ROPE_TYPE_NEOX) {
++    if (mode != GGML_ROPE_TYPE_NORMAL && mode != GGML_ROPE_TYPE_NEOX &&
++            mode != GGML_ROPE_TYPE_MROPE && mode != GGML_ROPE_TYPE_IMROPE) {
+         return false;
+     }
+ 
+diff --git a/ggml/src/ggml-cuda/rope.cu b/ggml/src/ggml-cuda/rope.cu
+index b4fca778f..1c814284e 100644
+--- a/ggml/src/ggml-cuda/rope.cu
++++ b/ggml/src/ggml-cuda/rope.cu
+@@ -707,6 +707,8 @@ void ggml_cuda_op_rope_fused(ggml_backend_cuda_context & ctx, ggml_tensor * rope
+ 
+ // fused RMS_NORM + MUL + ROPE (+ VIEW + SET_ROWS)
+ // one block per row: block_reduce gives the norm scale, then each thread applies mul and rope to the elements it owns
++// multi: 0 = norm/neox rope, 1 = M-RoPE, 2 = interleaved M-RoPE (both rotate neox pairs; the position of a pair is
++// chosen by its section exactly as in rope_multi, pos holds 4 positions per token)
+ template <int block_size, bool has_ff, typename D>
+ static __global__ void rms_norm_mul_rope_f32(
+         const float * x, D * dst, const int ncols, const int nchannels, const int nsamples,
+@@ -722,7 +724,7 @@ static __global__ void rms_norm_mul_rope_f32(
+         const rope_corr_dims corr_dims, const float theta_scale,
+         const float * freq_factors,
+         const int64_t * row_indices, const int set_rows_stride,
+-        const bool is_neox) {
++        const bool is_neox, const int multi, const mrope_sections sections) {
+     ggml_cuda_pdl_lc();
+     const int row = blockIdx.x;
+     const int tid = threadIdx.x;
+@@ -778,7 +780,37 @@ static __global__ void rms_norm_mul_rope_f32(
+                     continue;
+                 }
+ 
+-                const float theta_base  = pos[channel]*powf(theta_scale, i0/2.0f);
++                int32_t p = pos[channel];
++                if (multi != 0) {
++                    // section of the pair as in rope_multi (n_offs = 0)
++                    const int sect_dims = sections.v[0] + sections.v[1] + sections.v[2] + sections.v[3];
++                    const int sec_w     = sections.v[1] + sections.v[0];
++                    const int sector    = (i0 / 2) % sect_dims;
++                    int       k         = 0;
++                    if (multi == 2) {
++                        if (sector % 3 == 1 && sector < 3 * sections.v[1]) {
++                            k = 1;
++                        } else if (sector % 3 == 2 && sector < 3 * sections.v[2]) {
++                            k = 2;
++                        } else if (sector % 3 == 0 && sector < 3 * sections.v[0]) {
++                            k = 0;
++                        } else {
++                            k = 3;
++                        }
++                    } else {
++                        if (sector < sections.v[0]) {
++                            k = 0;
++                        } else if (sector < sec_w) {
++                            k = 1;
++                        } else if (sector < sec_w + sections.v[2]) {
++                            k = 2;
++                        } else {
++                            k = 3;
++                        }
++                    }
++                    p = pos[channel + nchannels * k];
++                }
++                const float theta_base  = p*powf(theta_scale, i0/2.0f);
+                 const float freq_factor = has_ff ? freq_factors[i0/2] : 1.0f;
+ 
+                 float cos_theta;
+@@ -813,7 +845,7 @@ static void rms_norm_mul_rope_cuda(
+         const rope_corr_dims corr_dims,
+         const float * freq_factors,
+         const int64_t * row_indices, const int set_rows_stride,
+-        const bool is_neox, cudaStream_t stream) {
++        const bool is_neox, const int multi, const mrope_sections sections, cudaStream_t stream) {
+     GGML_ASSERT(ncols % 2 == 0);
+ 
+     const dim3 blocks_num(nrows, MIN(nchannels, UINT16_MAX), MIN(nsamples, UINT16_MAX));
+@@ -833,13 +865,13 @@ static void rms_norm_mul_rope_cuda(
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,
+-                freq_factors, row_indices, set_rows_stride, is_neox);
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections);
+         } else {
+             ggml_cuda_kernel_launch(rms_norm_mul_rope_f32<256, true, D>, launch_params,
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,
+-                freq_factors, row_indices, set_rows_stride, is_neox);
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections);
+         }
+     } else {
+         const dim3 block_dims(1024, 1, 1);
+@@ -849,13 +881,13 @@ static void rms_norm_mul_rope_cuda(
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,
+-                freq_factors, row_indices, set_rows_stride, is_neox);
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections);
+         } else {
+             ggml_cuda_kernel_launch(rms_norm_mul_rope_f32<1024, true, D>, launch_params,
+                 x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
+                 mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 n_dims, pos, freq_scale, ext_factor, attn_factor, corr_dims, theta_scale,
+-                freq_factors, row_indices, set_rows_stride, is_neox);
++                freq_factors, row_indices, set_rows_stride, is_neox, multi, sections);
+         }
+     }
+ }
+@@ -903,7 +935,12 @@ void ggml_cuda_op_rms_norm_mul_rope_fused(ggml_backend_cuda_context & ctx,
+     memcpy(&beta_fast,   (const int32_t *) rope->op_params +  9, sizeof(float));
+     memcpy(&beta_slow,   (const int32_t *) rope->op_params + 10, sizeof(float));
+ 
+-    const bool is_neox = mode & GGML_ROPE_TYPE_NEOX;
++    // M-RoPE / interleaved M-RoPE rotate neox pairs (see rope_multi)
++    const int multi   = mode == GGML_ROPE_TYPE_IMROPE ? 2 : mode == GGML_ROPE_TYPE_MROPE ? 1 : 0;
++    const bool is_neox = (mode & GGML_ROPE_TYPE_NEOX) || multi != 0;
++
++    mrope_sections sections;
++    memcpy(&sections.v, (const int32_t *) rope->op_params + 11, sizeof(int)*4);
+ 
+     const int32_t * pos = (const int32_t *) rope->src[1]->data;
+ 
+@@ -937,14 +974,14 @@ void ggml_cuda_op_rms_norm_mul_rope_fused(ggml_backend_cuda_context & ctx,
+             (const float *) mul_src->data, mul_s01, mul_s02, mul_s03,
+             mul_src->ne[0], mul_src->ne[1], mul_src->ne[2], mul_src->ne[3],
+             n_dims, pos, freq_scale, freq_base, ext_factor, attn_factor, corr_dims,
+-            freq_factors, row_indices, set_rows_stride, is_neox, stream);
++            freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, stream);
+     } else if (dst_type == GGML_TYPE_F16) {
+         rms_norm_mul_rope_cuda((const float *) x->data, (half *) dst_d,
+             x->ne[0], x->ne[1], x->ne[2], x->ne[3], s01, s02, s03, s1, s2, s3, eps,
+             (const float *) mul_src->data, mul_s01, mul_s02, mul_s03,
+             mul_src->ne[0], mul_src->ne[1], mul_src->ne[2], mul_src->ne[3],
+             n_dims, pos, freq_scale, freq_base, ext_factor, attn_factor, corr_dims,
+-            freq_factors, row_indices, set_rows_stride, is_neox, stream);
++            freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, stream);
+     } else {
+         GGML_ABORT("fatal error");
+     }
+diff --git a/src/models/qwen35.cpp b/src/models/qwen35.cpp
+index fb834df97..6c7d16faa 100644
+--- a/src/models/qwen35.cpp
++++ b/src/models/qwen35.cpp
+@@ -300,11 +300,11 @@ ggml_tensor * llama_model_qwen35::graph::build_layer_attn(
+     Kcur = build_norm(Kcur, model.layers[il].attn_k_norm, nullptr, LLM_NORM_RMS, il);
+     cb(Kcur, "Kcur_normed", il);
+ 
++    // the gate stays a strided view of Qcur_full: the sigmoid reads it in place (rows are contiguous), no copy
+     ggml_tensor * gate = ggml_view_3d(ctx0, Qcur_full, n_embd_head, n_head, n_tokens,
+         ggml_element_size(Qcur_full) * n_embd_head * 2,
+         ggml_element_size(Qcur_full) * n_embd_head * 2 * n_head,
+         ggml_element_size(Qcur_full) * n_embd_head);
+-    gate = ggml_cont_2d(ctx0, gate, n_embd_head * n_head, n_tokens);
+     cb(gate, "gate_reshaped", il);
+ 
+     Vcur = ggml_reshape_3d(ctx0, Vcur, n_embd_head, n_head_kv, n_tokens);
+@@ -337,7 +337,9 @@ ggml_tensor * llama_model_qwen35::graph::build_layer_attn(
+     ggml_tensor * gate_sigmoid = ggml_sigmoid(ctx0, gate);
+     cb(gate_sigmoid, "gate_sigmoid", il);
+ 
++    cur = ggml_reshape_3d(ctx0, cur, n_embd_head, n_head, n_tokens);
+     cur = ggml_mul(ctx0, cur, gate_sigmoid);
++    cur = ggml_reshape_2d(ctx0, cur, n_embd_head * n_head, n_tokens);
+     cb(cur, "attn_gated", il);
+ 
+     cur = build_lora_mm(model.layers[il].wo, cur, model.layers[il].wo_s);
+@@ -589,7 +591,6 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+             ggml_element_size(Qcur_full) * n_embd_head * 2,
+             ggml_element_size(Qcur_full) * n_embd_head * 2 * n_head,
+             ggml_element_size(Qcur_full) * n_embd_head);
+-    gate = ggml_cont_2d(ctx0, gate, n_embd_head * n_head, n_tokens);
+     cb(gate, "mtp_gate", il);
+ 
+     Kcur = ggml_reshape_3d(ctx0, Kcur, n_embd_head, n_head_kv, n_tokens);
+@@ -614,7 +615,9 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+             Qcur, Kcur, Vcur, nullptr, nullptr, nullptr, kq_scale, il);
+     cb(cur, "mtp_attn_pregate", il);
+ 
++    cur = ggml_reshape_3d(ctx0, cur, n_embd_head, n_head, n_tokens);
+     cur = ggml_mul(ctx0, cur, ggml_sigmoid(ctx0, gate));
++    cur = ggml_reshape_2d(ctx0, cur, n_embd_head * n_head, n_tokens);
+     cur = build_lora_mm(layer.wo, cur, layer.wo_s);
+     cb(cur, "mtp_attn_out", il);
+ 
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 9564f593d..c51691957 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -10581,7 +10581,7 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     for (auto multi_add : {false, true}) {
+         for (auto set_rows : {false, true}) {
+             for (auto broadcast : {false, true}) {
+-                for (auto rope : {GGML_ROPE_TYPE_NORMAL, GGML_ROPE_TYPE_NEOX, GGML_ROPE_TYPE_IMROPE}) {
++                for (auto rope : {GGML_ROPE_TYPE_NORMAL, GGML_ROPE_TYPE_NEOX, GGML_ROPE_TYPE_MROPE, GGML_ROPE_TYPE_IMROPE}) {
+                     test_cases.emplace_back(new test_rms_norm_mul_rope({768, 1, 1, 1}, 1e-6f, multi_add, set_rows, broadcast, rope));
+                     test_cases.emplace_back(new test_rms_norm_mul_rope({768, 3, 1, 1}, 1e-6f, multi_add, set_rows, broadcast, rope));
+                     test_cases.emplace_back(new test_rms_norm_mul_rope({768, 3, 5, 1}, 1e-6f, multi_add, set_rows, broadcast, rope));
+-- 
+2.43.0
+
