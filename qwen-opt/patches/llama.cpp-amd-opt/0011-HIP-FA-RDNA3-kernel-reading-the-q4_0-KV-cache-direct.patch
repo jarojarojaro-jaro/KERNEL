@@ -1,0 +1,776 @@
+From 40c9bacdc5a2d780ebfd822b2f8e1fdca601c6c0 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 12 Oct 2026 16:35:04 +0000
+Subject: [PATCH] HIP FA: RDNA3 kernel reading the q4_0 KV cache directly for
+ small batches
+
+For q4_0 K/V and up to 8 tokens, process tokens x GQA heads of a K/V head as
+one flattened set of Q columns (tiles of 16) in a single pass over the compact
+K/V data with WMMA, instead of the vector kernel (one Q head per block, K/V
+re-read per head) or the tile kernel (full-cache f16 conversion every call).
+K is dequantized straight into WMMA A fragments, V into a transposed f16 tile
+in shared memory; the KV sequence is split across blocks and merged with
+flash_attn_combine_results.
+
+Qwen3.8-27B (24 Q / 4 KV heads, D 256), q4_0 KV, per layer at kv 32768:
+n=1 236 -> 60 us, n=5 913 -> 111 us, n=8 914 -> 151 us (test-backend-ops).
+---
+ ggml/src/ggml-cuda/fattn-kvq.cu  | 645 +++++++++++++++++++++++++++++++
+ ggml/src/ggml-cuda/fattn-kvq.cuh |   8 +
+ ggml/src/ggml-cuda/fattn.cu      |  11 +
+ tests/test-backend-ops.cpp       |  16 +
+ 4 files changed, 680 insertions(+)
+ create mode 100644 ggml/src/ggml-cuda/fattn-kvq.cu
+ create mode 100644 ggml/src/ggml-cuda/fattn-kvq.cuh
+
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
+new file mode 100644
+index 000000000..de5c00b21
+--- /dev/null
++++ b/ggml/src/ggml-cuda/fattn-kvq.cu
+@@ -0,0 +1,645 @@
++#include "common.cuh"
++#include "fattn-common.cuh"
++#include "fattn-kvq.cuh"
++
++// FlashAttention for RDNA3 (gfx110x) that reads a q4_0 KV cache directly, intended for small batches (decode and
++// speculative verify). The Q columns of a K/V head - tokens x GQA heads, flattened into one column index - are
++// processed in tiles of 16 columns, each tile in a single pass over the compact K/V data. So the KV cache is neither
++// converted to f16 nor re-read per Q head (e.g. 1-2 tokens with GQA 6 fit a single tile). The KV sequence is split
++// across blocks, partial results are merged by flash_attn_combine_results.
++//
++// Each warp of a block works on its own 16 KV rows at a time:
++//   - it dequantizes the K rows straight into WMMA A fragments and computes KQ with v_wmma_f32_16x16x16_f16,
++//   - applies the online softmax (in the log2 domain),
++//   - dequantizes the V rows into a transposed f16 tile in shared memory and accumulates VKQ^T with WMMA (f32).
++// The results of the warps of a block are combined in shared memory at the end.
++//
++// This relies on how gfx11 executes v_wmma_*_16x16x16_*_w32 (verified on gfx1100): lanes 0-15 compute the even rows
++// of the result and lanes 16-31 the odd rows, each half with its own copy of B. Row m of A is only read from lane m
++// (m even) or lane 16+m (m odd). Therefore:
++//   - the other 16 lanes are free to dequantize different K data, which is moved to the active lanes with
++//     v_permlanex16 for the next WMMA,
++//   - the order of the 16 values of the reduction dimension may differ between the two halves of the wave as long as
++//     A and B agree within each half. This is used to build the B fragment of the softmax result without shuffling
++//     values within a half of the wave.
++
++#if defined(GGML_USE_HIP) && defined(RDNA3_0)
++#define FATTN_KVQ_AVAILABLE
++#endif // defined(GGML_USE_HIP) && defined(RDNA3_0)
++
++static constexpr int   fattn_kvq_ncols = 16; // Q columns per block
++static constexpr int   fattn_kvq_nkv   = 16; // KV rows per warp and iteration == WMMA tile size
++static constexpr float fattn_kvq_log2e = 1.4426950408889634f;
++static constexpr float fattn_kvq_ln2   = 0.6931471805599453f;
++
++// The softmax maximum is only raised once values exceed it by more than this (log2 domain),
++// exp2(KQ - KQ_max) <= 2^(threshold - 3) is fine for the f16 B fragments and the f32 accumulators.
++static constexpr float fattn_kvq_rescale_threshold = 8.0f;
++
++// Transposed V tile per warp: one quantized block of 32 values for each half of the warp, 36 bytes per row.
++// Each warp has 2 of them to overlap writing one with reading the other.
++static constexpr int fattn_kvq_nbytes_VT = 36*2*QK4_0;
++
++static constexpr __host__ __device__ int fattn_kvq_block_bytes(const ggml_type type) {
++    return type == GGML_TYPE_Q4_0 ? (int) sizeof(block_q4_0) : 0;
++}
++
++// Bytes of K or V per row that a single lane loads: half of the quantized blocks of the row.
++template <int D, ggml_type type>
++static constexpr __host__ __device__ int fattn_kvq_lane_bytes() {
++    return (D/QK4_0/2) * fattn_kvq_block_bytes(type);
++}
++
++// Alignment in bytes of the per-lane K/V loads, the K/V data pointers and strides must be multiples of this.
++template <int D, ggml_type type>
++static constexpr __host__ __device__ int fattn_kvq_lane_align() {
++    constexpr int n = fattn_kvq_lane_bytes<D, type>();
++    return n % 16 == 0 ? 16 : (n % 8 == 0 ? 8 : (n % 4 == 0 ? 4 : 2));
++}
++
++template <int D, int nwarps>
++static constexpr __host__ __device__ size_t fattn_kvq_nbytes_shared() {
++    constexpr int ncols = fattn_kvq_ncols;
++    constexpr size_t nbytes_loop = size_t(ncols) * (D + 8) * sizeof(half) + size_t(nwarps) * 2*fattn_kvq_nbytes_VT;
++    constexpr size_t nbytes_comb = size_t(nwarps) * ncols * sizeof(float2) + size_t(ncols) * (D + 1) * sizeof(float);
++    return nbytes_loop > nbytes_comb ? nbytes_loop : nbytes_comb;
++}
++
++#ifdef FATTN_KVQ_AVAILABLE
++typedef _Float16 fattn_kvq_h2  __attribute__((ext_vector_type(2)));
++typedef _Float16 fattn_kvq_h16 __attribute__((ext_vector_type(16)));
++typedef float    fattn_kvq_f8  __attribute__((ext_vector_type(8)));
++typedef uint32_t fattn_kvq_u8  __attribute__((ext_vector_type(8)));
++
++static __device__ __forceinline__ fattn_kvq_f8 fattn_kvq_wmma(const fattn_kvq_u8 & A, const fattn_kvq_u8 & B, const fattn_kvq_f8 & C) {
++    return __builtin_amdgcn_wmma_f32_16x16x16_f16_w32(
++        __builtin_bit_cast(fattn_kvq_h16, A), __builtin_bit_cast(fattn_kvq_h16, B), C);
++}
++
++// f16 accumulator: the result is stored in the low (hi == false) or high halves of the 8 registers of C.
++template <bool hi>
++static __device__ __forceinline__ fattn_kvq_h16 fattn_kvq_wmma(const fattn_kvq_u8 & A, const fattn_kvq_u8 & B, const fattn_kvq_h16 & C) {
++    return __builtin_amdgcn_wmma_f16_16x16x16_f16_w32(
++        __builtin_bit_cast(fattn_kvq_h16, A), __builtin_bit_cast(fattn_kvq_h16, B), C, hi);
++}
++
++// Lane i of one half of the wave gets the value of lane i of the other half.
++static __device__ __forceinline__ uint32_t fattn_kvq_swap_halves(const uint32_t x) {
++    return __builtin_amdgcn_permlanex16(x, x, 0x76543210u, 0xFEDCBA98u, false, false);
++}
++
++static __device__ __forceinline__ float fattn_kvq_swap_halves(const float x) {
++    return __builtin_bit_cast(float, fattn_kvq_swap_halves(__builtin_bit_cast(uint32_t, x)));
++}
++
++// Value of lane ^ 2.
++static __device__ __forceinline__ uint32_t fattn_kvq_xor2(const uint32_t x) {
++    // quad_perm:[2,3,0,1]
++    return __builtin_amdgcn_update_dpp(0, (int) x, 0x4E, 0xF, 0xF, false);
++}
++
++// 32 bit word at byte offset o of w, o is a compile time constant after unrolling.
++static __device__ __forceinline__ uint32_t fattn_kvq_get_u32(const uint32_t * w, const int o) {
++    return o % 4 == 0 ? w[o/4] : __builtin_amdgcn_alignbyte(w[o/4 + 1], w[o/4], o % 4);
++}
++
++static __device__ __forceinline__ uint32_t fattn_kvq_get_u16(const uint32_t * w, const int o) {
++    return (w[o/4] >> (8*(o % 4))) & 0xFFFF;
++}
++
++template <int nbytes, int align>
++static __device__ __forceinline__ void fattn_kvq_load(uint32_t * dst, const char * src) {
++    static_assert(nbytes % align == 0, "bad alignment");
++    if constexpr (align == 16) {
++#pragma unroll
++        for (int i = 0; i < nbytes/16; ++i) {
++            const uint4 tmp = ((const uint4 *) src)[i];
++            dst[4*i + 0] = tmp.x;
++            dst[4*i + 1] = tmp.y;
++            dst[4*i + 2] = tmp.z;
++            dst[4*i + 3] = tmp.w;
++        }
++    } else if constexpr (align == 8) {
++#pragma unroll
++        for (int i = 0; i < nbytes/8; ++i) {
++            const uint2 tmp = ((const uint2 *) src)[i];
++            dst[2*i + 0] = tmp.x;
++            dst[2*i + 1] = tmp.y;
++        }
++    } else if constexpr (align == 4) {
++#pragma unroll
++        for (int i = 0; i < nbytes/4; ++i) {
++            dst[i] = ((const uint32_t *) src)[i];
++        }
++    } else {
++        static_assert(align == 2, "bad alignment");
++#pragma unroll
++        for (int i = 0; i < nbytes/2; ++i) {
++            const uint32_t tmp = ((const uint16_t *) src)[i];
++            dst[i/2] = i % 2 == 0 ? tmp : dst[i/2] | (tmp << 16);
++        }
++    }
++}
++
++// Packed f16 values of 2 nibbles whose bits are at [4, 8) of the bytes of x selected by sel,
++// the magic number 0x6400 turns them into 1024 + 16*q, the offset 1152 = 1024 + 16*8 is subtracted exactly.
++static __device__ __forceinline__ uint32_t fattn_kvq_q4_0_h2(const uint32_t x, const uint32_t sel, const fattn_kvq_h2 d_16) {
++    const fattn_kvq_h2 h = __builtin_bit_cast(fattn_kvq_h2, __builtin_amdgcn_perm(0x64646464u, x, sel));
++    return __builtin_bit_cast(uint32_t, (h - (fattn_kvq_h2){1152.0f16, 1152.0f16}) * d_16);
++}
++
++// Dequantize the q4_0 block at byte offset o into the WMMA A fragments for its first and second 16 values.
++static __device__ __forceinline__ void fattn_kvq_dequant_q4_0(const uint32_t * w, const int o, fattn_kvq_u8 & lo, fattn_kvq_u8 & hi) {
++    const _Float16 d = __builtin_bit_cast(_Float16, (uint16_t) fattn_kvq_get_u16(w, o));
++    const fattn_kvq_h2 d_16 = {d * 0.0625f16, d * 0.0625f16};
++#pragma unroll
++    for (int j = 0; j < 4; ++j) {
++        const uint32_t x  = fattn_kvq_get_u32(w, o + 2 + 4*j);
++        const uint32_t ml = (x << 4) & 0xF0F0F0F0u;
++        const uint32_t mh =  x       & 0xF0F0F0F0u;
++        lo[2*j + 0] = fattn_kvq_q4_0_h2(ml, 0x04010400u, d_16);
++        lo[2*j + 1] = fattn_kvq_q4_0_h2(ml, 0x04030402u, d_16);
++        hi[2*j + 0] = fattn_kvq_q4_0_h2(mh, 0x04010400u, d_16);
++        hi[2*j + 1] = fattn_kvq_q4_0_h2(mh, 0x04030402u, d_16);
++    }
++}
++
++// Byte offset of row i of a transposed V tile (16 KV values per row), padded to avoid bank conflicts on reads.
++static __device__ __forceinline__ int fattn_kvq_vt_offset(const int i) {
++    return 32*i + 16*(i >> 2);
++}
++
++static __device__ __forceinline__ void fattn_kvq_wave_sync() {
++    __builtin_amdgcn_fence(__ATOMIC_RELEASE, "wavefront");
++    __builtin_amdgcn_wave_barrier();
++    __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "wavefront");
++}
++#endif // FATTN_KVQ_AVAILABLE
++
++// A block works on 16 Q columns, VKQ is accumulated as f32.
++template <int D, int nwarps, ggml_type type_KV>
++__launch_bounds__(WARP_SIZE*nwarps, 1)
++static __global__ void flash_attn_ext_kvq(
++        const char * __restrict__ Q,
++        const char * __restrict__ K,
++        const char * __restrict__ V,
++        const char * __restrict__ mask,
++        float      * __restrict__ dst,
++        float2     * __restrict__ dst_meta,
++        const float scale,
++        const int ne01, const int ne02, const int gqa_ratio, const int ne11, const int ne12, const int kv_per_split,
++        const int64_t nb01, const int64_t nb02, const int64_t nb03,
++        const int64_t nb11, const int64_t nb12, const int64_t nb13,
++        const int64_t nb21, const int64_t nb22, const int64_t nb23,
++        const int64_t nb31, const int64_t nb33, const int ne33) {
++#ifdef FATTN_KVQ_AVAILABLE
++    static_assert(type_KV == GGML_TYPE_Q4_0, "unsupported KV type");
++
++    constexpr int ncols       = fattn_kvq_ncols;
++    constexpr int nblocks     = D/QK4_0;            // Quantized blocks per row.
++    constexpr int nblocks_l   = nblocks/2;          // Quantized blocks per row and lane.
++    constexpr int ntiles_D    = D/16;
++    constexpr int block_bytes = fattn_kvq_block_bytes(type_KV);
++    constexpr int lane_bytes  = fattn_kvq_lane_bytes<D, type_KV>();
++    constexpr int lane_align  = fattn_kvq_lane_align<D, type_KV>();
++    constexpr int lane_words  = (lane_bytes + 3)/4;
++    constexpr int stride_Q    = D + 8;              // halves
++    static_assert(nblocks % 2 == 0, "bad D");
++    static_assert(lane_bytes == nblocks_l*block_bytes, "bad lane_bytes");
++
++    extern __shared__ char smem[];
++    half * Q_lds  = (half *) smem;
++    char * VT_lds = smem + ncols*stride_Q*sizeof(half) + threadIdx.y*(2*fattn_kvq_nbytes_VT);
++
++    const int lane = threadIdx.x;
++    const int warp = threadIdx.y;
++    const int r    = lane % 16;
++    const int h    = lane / 16;
++    const bool lane_A = (r & 1) == h; // Whether WMMA reads A from this lane.
++
++    const int sequence    = blockIdx.z / ne12;
++    const int head_kv     = blockIdx.z % ne12;
++    const int col0        = blockIdx.x*ncols;
++    const int ncols_total = ne01*gqa_ratio;
++
++    // The softmax is done in the log2 domain, KQ_max is converted back to the natural domain for combining.
++    const float scale_log2 = scale*fattn_kvq_log2e;
++
++    // Q -> shared memory as f16, pre-scaled:
++    for (int i = warp*WARP_SIZE + lane; i < ncols*(D/4); i += nwarps*WARP_SIZE) {
++        const int c   = i / (D/4);
++        const int d4  = i % (D/4);
++        const int col = col0 + c;
++        float4 q = make_float4(0.0f, 0.0f, 0.0f, 0.0f);
++        if (col < ncols_total) {
++            const int j    = col / gqa_ratio;
++            const int head = head_kv*gqa_ratio + col % gqa_ratio;
++            q = *(const float4 *) (Q + sequence*nb03 + head*nb02 + j*nb01 + d4*sizeof(float4));
++        }
++        half2 * Q_h2 = (half2 *) (Q_lds + c*stride_Q + 4*d4);
++        Q_h2[0] = make_half2(q.x*scale_log2, q.y*scale_log2);
++        Q_h2[1] = make_half2(q.z*scale_log2, q.w*scale_log2);
++    }
++
++    const _Float16 * mask_row = nullptr;
++    if (mask) {
++        const int col = col0 + r;
++        const int j   = col < ncols_total ? col / gqa_ratio : 0;
++        mask_row = (const _Float16 *) (mask + (sequence % ne33)*nb33 + j*nb31);
++    }
++
++    // Lanes that are not read for A by WMMA dequantize the second half of the K blocks of the row:
++    const char * K_row = K + sequence*nb13 + head_kv*nb12 + r*nb11 + (lane_A ? 0 : nblocks_l)*block_bytes;
++    // For V the halves of the wave split the blocks of the row:
++    const char * V_row = V + sequence*nb23 + head_kv*nb22 + r*nb21 + h*nblocks_l*block_bytes;
++
++    // V is written to shared memory transposed, as pairs of rows (r, r+2) in the order [0 2 4 ... 14 | 1 3 5 ... 15].
++    // The lane with (r & 2) == 0 writes the values from the low nibbles, its partner lane ^ 2 those from the high nibbles.
++    const bool     V_row_lo = (r & 2) == 0;
++    const int      V_row_a  = r & ~2;
++    const int      V_slot   = (V_row_a & 1) ? 4 + (V_row_a >> 2) : (V_row_a >> 2);
++    const int      V_shift  = V_row_lo ? 4 : 0;
++    const uint32_t V_sel    = V_row_lo ? 0x0C040C00u : 0x0C000C04u;
++    const int      V_i_nib  = V_row_lo ? 0 : 16;
++    // Row of the transposed V tile read for A by this lane:
++    const int      VT_row   = h ? (r | 1) : (r & ~1);
++
++    fattn_kvq_f8 VKQ[ntiles_D];
++#pragma unroll
++    for (int t = 0; t < ntiles_D; ++t) {
++        VKQ[t] = fattn_kvq_f8{};
++    }
++    float KQ_max = -FLT_MAX/2.0f;
++    float KQ_sum = 0.0f;
++
++    __syncthreads();
++
++    const int kv_begin = blockIdx.y*kv_per_split;
++    const int kv_end   = min(kv_begin + kv_per_split, ne11);
++
++    const int k0_start = kv_begin + warp*fattn_kvq_nkv;
++    uint32_t K_raw[lane_words];
++    uint32_t V_raw[lane_words];
++    if (k0_start < kv_end) {
++        fattn_kvq_load<lane_bytes, lane_align>(K_raw, K_row + k0_start*nb11);
++        fattn_kvq_load<lane_bytes, lane_align>(V_raw, V_row + k0_start*nb21);
++    }
++
++    // Dequantize quantized block ib of V of the lane into the transposed f16 tile in buffer ib % 2:
++    auto V_to_lds = [&](const int ib) {
++        char * VT_dst = VT_lds + (ib % 2)*fattn_kvq_nbytes_VT;
++        const int o = ib*block_bytes;
++        const uint32_t d_self = fattn_kvq_get_u16(V_raw, o);
++        const uint32_t d_pair = fattn_kvq_xor2(d_self);
++        const _Float16 d_a  = __builtin_bit_cast(_Float16, (uint16_t) (V_row_lo ? d_self : d_pair));
++        const _Float16 d_a2 = __builtin_bit_cast(_Float16, (uint16_t) (V_row_lo ? d_pair : d_self));
++        const fattn_kvq_h2 d_16 = {d_a * 0.0625f16, d_a2 * 0.0625f16};
++#pragma unroll
++        for (int j = 0; j < 4; ++j) {
++            const uint32_t x      = fattn_kvq_get_u32(V_raw, o + 2 + 4*j);
++            const uint32_t x_pair = fattn_kvq_xor2(x);
++            const uint32_t m      = (x      << V_shift) & 0xF0F0F0F0u;
++            const uint32_t m_pair = (x_pair << V_shift) & 0xF0F0F0F0u;
++#pragma unroll
++            for (int k = 0; k < 4; ++k) {
++                const fattn_kvq_h2 v = __builtin_bit_cast(fattn_kvq_h2,
++                    __builtin_amdgcn_perm(m_pair, m, V_sel + k*0x00010001u) | 0x64006400u);
++                const uint32_t vd = __builtin_bit_cast(uint32_t, (v - (fattn_kvq_h2){1152.0f16, 1152.0f16}) * d_16);
++                const int i = h*QK4_0 + V_i_nib + 4*j + k;
++                *(uint32_t *) (VT_dst + fattn_kvq_vt_offset(i) + 4*V_slot) = vd;
++            }
++        }
++    };
++
++#pragma unroll 1
++    for (int k0 = k0_start; k0 < kv_end; k0 += nwarps*fattn_kvq_nkv) {
++        // The K/V data for the next iteration is loaded as soon as the registers are free, memory loads complete in order.
++        const int k0_next = k0 + nwarps*fattn_kvq_nkv < kv_end ? k0 + nwarps*fattn_kvq_nkv : k0;
++
++        // Mask values of the KV rows 2*l + h of the lane, packed as f16 pairs:
++        fattn_kvq_h2 mask_h2[4];
++        if (mask) {
++            const _Float16 * m_src = mask_row + k0 + h;
++#pragma unroll
++            for (int l = 0; l < 4; ++l) {
++                mask_h2[l] = (fattn_kvq_h2){m_src[4*l], m_src[4*l + 2]};
++            }
++        }
++
++        // KQ, two accumulators to hide the WMMA latency:
++        fattn_kvq_f8 KQ_part[2] = {fattn_kvq_f8{}, fattn_kvq_f8{}};
++#pragma unroll
++        for (int ib = 0; ib < nblocks_l; ++ib) {
++            fattn_kvq_u8 A[2];
++            fattn_kvq_dequant_q4_0(K_raw, ib*block_bytes, A[0], A[1]);
++#pragma unroll
++            for (int other = 0; other < 2; ++other) {
++                if (other) {
++#pragma unroll
++                    for (int l = 0; l < 8; ++l) {
++                        A[0][l] = fattn_kvq_swap_halves((uint32_t) A[0][l]);
++                        A[1][l] = fattn_kvq_swap_halves((uint32_t) A[1][l]);
++                    }
++                }
++#pragma unroll
++                for (int part = 0; part < 2; ++part) {
++                    const int i0 = ((other ? nblocks_l : 0) + ib)*QK4_0 + 16*part;
++                    const uint4 * Q_src = (const uint4 *) (Q_lds + r*stride_Q + i0);
++                    const uint4 q0 = Q_src[0];
++                    const uint4 q1 = Q_src[1];
++                    const fattn_kvq_u8 B = {q0.x, q0.y, q0.z, q0.w, q1.x, q1.y, q1.z, q1.w};
++                    KQ_part[part] = fattn_kvq_wmma(A[part], B, KQ_part[part]);
++                }
++                // Keep the compiler from front-loading all shared memory loads, which costs too many registers:
++                __builtin_amdgcn_sched_barrier(0);
++            }
++        }
++        fattn_kvq_load<lane_bytes, lane_align>(K_raw, K_row + k0_next*nb11);
++
++        fattn_kvq_f8 KQ = KQ_part[0] + KQ_part[1];
++
++        // Mask + online softmax. The lane holds column r, KV rows 2*l + h.
++        // KQ_max is only raised if the new values exceed it by more than fattn_kvq_rescale_threshold,
++        // larger values of exp2(KQ - KQ_max) are fine for the f32 VKQ accumulators.
++        if (mask) {
++#pragma unroll
++            for (int l = 0; l < 8; ++l) {
++                KQ[l] = fmaf((float) mask_h2[l/2][l % 2], fattn_kvq_log2e, KQ[l]);
++            }
++        }
++        float KQ_max_tile = KQ[0];
++#pragma unroll
++        for (int l = 1; l < 8; ++l) {
++            KQ_max_tile = fmaxf(KQ_max_tile, KQ[l]);
++        }
++        KQ_max_tile = fmaxf(KQ_max_tile, fattn_kvq_swap_halves(KQ_max_tile)) + FATTN_KQ_MAX_OFFSET*fattn_kvq_log2e;
++
++        const bool  raise_max    = KQ_max_tile > KQ_max + fattn_kvq_rescale_threshold;
++        const float KQ_max_new   = raise_max ? KQ_max_tile : KQ_max;
++        const float KQ_max_diff  = KQ_max - KQ_max_new;
++        const float KQ_max_scale = KQ_max_diff >= SOFTMAX_FTZ_THRESHOLD*fattn_kvq_log2e ? __builtin_amdgcn_exp2f(KQ_max_diff) : 0.0f;
++        KQ_max = KQ_max_new;
++
++        float KQ_sum_add = 0.0f;
++#pragma unroll
++        for (int l = 0; l < 8; ++l) {
++            KQ[l] = __builtin_amdgcn_exp2f(KQ[l] - KQ_max);
++            KQ_sum_add += KQ[l];
++        }
++        KQ_sum = KQ_max_scale*KQ_sum + KQ_sum_add;
++
++        if (__any(raise_max)) {
++#pragma unroll
++            for (int t = 0; t < ntiles_D; ++t) {
++                VKQ[t] *= KQ_max_scale;
++            }
++        }
++
++        // B fragment for VKQ: own KV rows first, those of the other half of the wave second.
++        fattn_kvq_u8 B_P;
++#pragma unroll
++        for (int l = 0; l < 4; ++l) {
++            B_P[l]     = __builtin_bit_cast(uint32_t, (fattn_kvq_h2){(_Float16) KQ[2*l], (_Float16) KQ[2*l + 1]});
++            B_P[4 + l] = fattn_kvq_swap_halves((uint32_t) B_P[l]);
++        }
++
++        // VKQ, one quantized block of V per lane at a time: dequantize into a transposed f16 tile in shared memory, then
++        // read the WMMA A fragments for its 4 tiles of 16 values of the head dimension.
++        // The tile of the next block is written to the other buffer before reading the current one.
++        V_to_lds(0);
++#pragma unroll
++        for (int ib = 0; ib < nblocks_l; ++ib) {
++            fattn_kvq_wave_sync();
++            if (ib + 1 < nblocks_l) {
++                V_to_lds(ib + 1);
++            } else {
++                fattn_kvq_load<lane_bytes, lane_align>(V_raw, V_row + k0_next*nb21);
++            }
++
++            const char * VT_src = VT_lds + (ib % 2)*fattn_kvq_nbytes_VT;
++#pragma unroll
++            for (int tt = 0; tt < 4; ++tt) {
++                const int t = ((tt/2)*nblocks_l + ib)*2 + tt % 2; // tile index along the head dimension
++                const char * VT_row_src = VT_src + fattn_kvq_vt_offset(16*tt + VT_row);
++                const uint4 v0 = *(const uint4 *) (VT_row_src + 16*h);
++                const uint4 v1 = *(const uint4 *) (VT_row_src + 16*(1 - h));
++                const fattn_kvq_u8 A = {v0.x, v0.y, v0.z, v0.w, v1.x, v1.y, v1.z, v1.w};
++                VKQ[t] = fattn_kvq_wmma(A, B_P, VKQ[t]);
++            }
++        }
++        fattn_kvq_wave_sync();
++    }
++
++    // Each half of the wave summed up the KQ values of half of the KV rows:
++    KQ_sum += fattn_kvq_swap_halves(KQ_sum);
++
++    // Combine the results of the warps in shared memory:
++    __syncthreads();
++    float2 * meta_lds = (float2 *) smem;                                  // [nwarps][ncols]
++    float  * VKQ_lds  = (float *) (smem + nwarps*ncols*sizeof(float2));  // [ncols][D + 1]
++
++    if (h == 0) {
++        meta_lds[warp*ncols + r] = make_float2(KQ_max, KQ_sum);
++    }
++    __syncthreads();
++
++    float KQ_max_all = -FLT_MAX/2.0f;
++#pragma unroll
++    for (int w = 0; w < nwarps; ++w) {
++        KQ_max_all = fmaxf(KQ_max_all, meta_lds[w*ncols + r].x);
++    }
++    const float VKQ_scale = __builtin_amdgcn_exp2f(KQ_max - KQ_max_all);
++
++#pragma unroll
++    for (int w = 0; w < nwarps; ++w) {
++        if (warp == w) {
++            float * VKQ_dst = VKQ_lds + r*(D + 1) + h;
++#pragma unroll
++            for (int t = 0; t < ntiles_D; ++t) {
++#pragma unroll
++                for (int l = 0; l < 8; ++l) {
++                    const float val = VKQ_scale*VKQ[t][l];
++                    VKQ_dst[16*t + 2*l] = w == 0 ? val : VKQ_dst[16*t + 2*l] + val;
++                }
++            }
++        }
++        __syncthreads();
++    }
++
++    for (int i = warp*WARP_SIZE + lane; i < ncols*D; i += nwarps*WARP_SIZE) {
++        const int c   = i / D;
++        const int d   = i % D;
++        const int col = col0 + c;
++        if (col >= ncols_total) {
++            break;
++        }
++        float KQ_max_c = -FLT_MAX/2.0f;
++#pragma unroll
++        for (int w = 0; w < nwarps; ++w) {
++            KQ_max_c = fmaxf(KQ_max_c, meta_lds[w*ncols + c].x);
++        }
++        float KQ_sum_c = 0.0f;
++#pragma unroll
++        for (int w = 0; w < nwarps; ++w) {
++            const float2 meta = meta_lds[w*ncols + c];
++            KQ_sum_c += __builtin_amdgcn_exp2f(meta.x - KQ_max_c)*meta.y;
++        }
++
++        const int j    = col / gqa_ratio;
++        const int head = head_kv*gqa_ratio + col % gqa_ratio;
++        const int64_t j_dst = (int64_t(sequence)*ne01 + j)*ne02 + head;
++        const float val = VKQ_lds[c*(D + 1) + d];
++        if (gridDim.y == 1) {
++            dst[j_dst*D + d] = val / KQ_sum_c;
++        } else {
++            dst[(j_dst*gridDim.y + blockIdx.y)*D + d] = val;
++            if (d == 0) {
++                dst_meta[j_dst*gridDim.y + blockIdx.y] = make_float2(KQ_max_c*fattn_kvq_ln2, KQ_sum_c);
++            }
++        }
++    }
++#else
++    GGML_UNUSED_VARS(Q, K, V, mask, dst, dst_meta, scale, ne01, ne02, gqa_ratio, ne11, ne12, kv_per_split,
++        nb01, nb02, nb03, nb11, nb12, nb13, nb21, nb22, nb23, nb31, nb33, ne33);
++    NO_DEVICE_CODE;
++#endif // FATTN_KVQ_AVAILABLE
++}
++
++template <int D, int nwarps, ggml_type type_KV>
++static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
++    const ggml_tensor * Q    = dst->src[0];
++    const ggml_tensor * K    = dst->src[1];
++    const ggml_tensor * V    = dst->src[2];
++    const ggml_tensor * mask = dst->src[3];
++
++    GGML_ASSERT(Q->type == GGML_TYPE_F32);
++    GGML_ASSERT(K->type == type_KV && V->type == type_KV);
++    GGML_ASSERT(K->ne[0] == D && V->ne[0] == D);
++    GGML_ASSERT(K->ne[1] % FATTN_KQ_STRIDE == 0);
++
++    float scale;
++    memcpy(&scale, (const float *) dst->op_params + 0, sizeof(float));
++
++    constexpr int    ncols         = fattn_kvq_ncols;
++    constexpr size_t nbytes_shared = fattn_kvq_nbytes_shared<D, nwarps>();
++
++    const int id  = ggml_cuda_get_device();
++    const int nsm = ggml_cuda_info().devices[id].nsm;
++    cudaStream_t stream = ctx.stream();
++
++    const int gqa_ratio   = Q->ne[2] / K->ne[2];
++    const int ncols_total = Q->ne[1] * gqa_ratio;
++    const int ntiles_x    = (ncols_total + ncols - 1) / ncols;
++    const int nblocks_z   = K->ne[2] * Q->ne[3];
++
++    const auto kernel = flash_attn_ext_kvq<D, nwarps, type_KV>;
++
++    // Split the KV sequence so that there are 2 blocks per SM (WGP), fewer longer blocks reduce the overhead of
++    // combining the results:
++    const int kv_unit = nwarps*fattn_kvq_nkv;
++    const int nunits  = K->ne[1] / kv_unit;
++    int nsplit = std::max(1, 2*nsm / (ntiles_x*nblocks_z));
++    nsplit = std::min(nsplit, nunits);
++    const int units_per_split = (nunits + nsplit - 1) / nsplit;
++    nsplit = (nunits + units_per_split - 1) / units_per_split;
++    const int kv_per_split = units_per_split*kv_unit;
++
++    ggml_cuda_pool & pool = ctx.pool();
++    ggml_cuda_pool_alloc<float>  dst_tmp(pool);
++    ggml_cuda_pool_alloc<float2> dst_tmp_meta(pool);
++    if (nsplit > 1) {
++        dst_tmp.alloc(size_t(nsplit)*ggml_nelements(dst));
++        dst_tmp_meta.alloc(size_t(nsplit)*ggml_nrows(dst));
++    }
++
++    const dim3 blocks_num(ntiles_x, nsplit, nblocks_z);
++    const dim3 block_dim(WARP_SIZE, nwarps, 1);
++    ggml_cuda_kernel_launch_params launch_params(blocks_num, block_dim, nbytes_shared, stream);
++    ggml_cuda_kernel_launch(kernel, launch_params,
++        (const char *) Q->data, (const char *) K->data, (const char *) V->data,
++        mask ? (const char *) mask->data : nullptr,
++        nsplit > 1 ? dst_tmp.ptr : (float *) dst->data, dst_tmp_meta.ptr, scale,
++        (int) Q->ne[1], (int) Q->ne[2], gqa_ratio, (int) K->ne[1], (int) K->ne[2], kv_per_split,
++        (int64_t) Q->nb[1], (int64_t) Q->nb[2], (int64_t) Q->nb[3],
++        (int64_t) K->nb[1], (int64_t) K->nb[2], (int64_t) K->nb[3],
++        (int64_t) V->nb[1], (int64_t) V->nb[2], (int64_t) V->nb[3],
++        mask ? (int64_t) mask->nb[1] : 0, mask ? (int64_t) mask->nb[3] : 0, mask ? (int) mask->ne[3] : 1);
++    CUDA_CHECK(cudaGetLastError());
++
++    if (nsplit > 1) {
++        const dim3 block_dim_combine(D, 1, 1);
++        const dim3 blocks_num_combine(Q->ne[1], Q->ne[2], Q->ne[3]);
++        const size_t nbytes_shared_combine = nsplit*sizeof(float2);
++        ggml_cuda_kernel_launch_params launch_params_combine(blocks_num_combine, block_dim_combine, nbytes_shared_combine, stream);
++        ggml_cuda_kernel_launch(flash_attn_combine_results<D>, launch_params_combine,
++            dst_tmp.ptr, dst_tmp_meta.ptr, (float *) dst->data, nsplit);
++        CUDA_CHECK(cudaGetLastError());
++    }
++}
++
++static int ggml_cuda_fattn_kvq_get_lane_align(const int D) {
++    switch (D) {
++        case  64: return fattn_kvq_lane_align< 64, GGML_TYPE_Q4_0>();
++        case 128: return fattn_kvq_lane_align<128, GGML_TYPE_Q4_0>();
++        case 256: return fattn_kvq_lane_align<256, GGML_TYPE_Q4_0>();
++        default:  return 16;
++    }
++}
++
++bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * dst) {
++    const ggml_tensor * Q     = dst->src[0];
++    const ggml_tensor * K     = dst->src[1];
++    const ggml_tensor * V     = dst->src[2];
++    const ggml_tensor * mask  = dst->src[3];
++    const ggml_tensor * sinks = dst->src[4];
++
++    if (!GGML_CUDA_CC_IS_RDNA3_0(cc)) {
++        return false;
++    }
++    if (K->type != GGML_TYPE_Q4_0 || V->type != GGML_TYPE_Q4_0 || Q->type != GGML_TYPE_F32 || dst->type != GGML_TYPE_F32) {
++        return false;
++    }
++    const int64_t D = K->ne[0];
++    if (V->ne[0] != D || (D != 64 && D != 128 && D != 256)) {
++        return false;
++    }
++    if (Q->ne[1] > 8 || K->ne[1] % FATTN_KQ_STRIDE != 0 || sinks) {
++        return false;
++    }
++    if (Q->ne[2] % K->ne[2] != 0 || K->ne[3] != Q->ne[3] || V->ne[3] != Q->ne[3] || V->ne[2] != K->ne[2]) {
++        return false;
++    }
++
++    float max_bias      = 0.0f;
++    float logit_softcap = 0.0f;
++    memcpy(&max_bias,      (const float *) dst->op_params + 1, sizeof(float));
++    memcpy(&logit_softcap, (const float *) dst->op_params + 2, sizeof(float));
++    if (max_bias != 0.0f || logit_softcap != 0.0f) {
++        return false;
++    }
++
++    if ((uintptr_t) Q->data % 16 != 0 || Q->nb[1] % 16 != 0 || Q->nb[2] % 16 != 0 || Q->nb[3] % 16 != 0) {
++        return false;
++    }
++    if (mask && mask->ne[2] != 1) {
++        return false;
++    }
++
++    const size_t align = ggml_cuda_fattn_kvq_get_lane_align(D);
++    for (const ggml_tensor * t : {K, V}) {
++        if ((uintptr_t) t->data % align != 0 || t->nb[1] % align != 0 || t->nb[2] % align != 0 || t->nb[3] % align != 0) {
++            return false;
++        }
++    }
++    return true;
++}
++
++void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
++    constexpr int nwarps = 8;
++    switch (dst->src[1]->ne[0]) {
++        case  64: ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
++        case 128: ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
++        case 256: ggml_cuda_flash_attn_ext_kvq_case<256, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
++        default: GGML_ABORT("fatal error");
++    }
++}
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cuh b/ggml/src/ggml-cuda/fattn-kvq.cuh
+new file mode 100644
+index 000000000..509cbf382
+--- /dev/null
++++ b/ggml/src/ggml-cuda/fattn-kvq.cuh
+@@ -0,0 +1,8 @@
++#pragma once
++
++#include "common.cuh"
++
++// FlashAttention for small batches on RDNA3 that reads a q4_0 KV cache directly, see fattn-kvq.cu.
++bool ggml_cuda_flash_attn_ext_kvq_supported(int cc, const ggml_tensor * dst);
++
++void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
+diff --git a/ggml/src/ggml-cuda/fattn.cu b/ggml/src/ggml-cuda/fattn.cu
+index bb34e01f3..9c4a9363f 100644
+--- a/ggml/src/ggml-cuda/fattn.cu
++++ b/ggml/src/ggml-cuda/fattn.cu
+@@ -1,5 +1,6 @@
+ #include "common.cuh"
+ #include "fattn-common.cuh"
++#include "fattn-kvq.cuh"
+ #include "fattn-mma-f16.cuh"
+ #include "fattn-tile.cuh"
+ #include "fattn-vec.cuh"
+@@ -518,6 +519,7 @@ enum best_fattn_kernel {
+     BEST_FATTN_KERNEL_NONE    =   0,
+     BEST_FATTN_KERNEL_TILE    = 200,
+     BEST_FATTN_KERNEL_VEC     = 100,
++    BEST_FATTN_KERNEL_KVQ     = 300,
+     BEST_FATTN_KERNEL_MMA_F16 = 400,
+ };
+ 
+@@ -630,6 +632,11 @@ static best_fattn_kernel ggml_cuda_get_best_fattn_kernel(const int device, const
+         return BEST_FATTN_KERNEL_NONE;
+     }
+ 
++    // RDNA3, quantized KV cache, small batch: single pass over the quantized K/V data for all Q heads of a K/V head.
++    if (ggml_cuda_flash_attn_ext_kvq_supported(cc, KQV)) {
++        return BEST_FATTN_KERNEL_KVQ;
++    }
++
+     // For small batch sizes the vector kernel may be preferable over the kernels optimized for large batch sizes:
+     // 192 satisfies % 64 == 0 but has no vec instance (DKQ != DV); force it onto the MMA path.
+     const bool can_use_vector_kernel = Q->ne[0] <= 256 && Q->ne[0] % 64 == 0 && Q->ne[0] != 192 && K->ne[1] % FATTN_KQ_STRIDE == 0;
+@@ -745,6 +752,7 @@ size_t ggml_cuda_flash_attn_ext_get_alloc_size(int device, const ggml_tensor * d
+             need_f16_K = K->type == GGML_TYPE_F32 || f16_fallback;
+             need_f16_V = V->type == GGML_TYPE_F32 || f16_fallback;
+         } break;
++        case BEST_FATTN_KERNEL_KVQ:
+         case BEST_FATTN_KERNEL_NONE:
+             break;
+     }
+@@ -769,6 +777,9 @@ void ggml_cuda_flash_attn_ext(ggml_backend_cuda_context & ctx, ggml_tensor * dst
+         case BEST_FATTN_KERNEL_MMA_F16:
+             ggml_cuda_flash_attn_ext_mma_f16(ctx, dst);
+             break;
++        case BEST_FATTN_KERNEL_KVQ:
++            ggml_cuda_flash_attn_ext_kvq(ctx, dst);
++            break;
+     }
+ }
+ 
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 9a8d46bfd..d2df0a573 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -11540,6 +11540,15 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_flash_attn_ext(256, 256, 2, {16, 1},  1025,  64, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 2, 1, 3}));
+     test_cases.emplace_back(new test_flash_attn_ext(256, 256, 2, {16, 1}, 16384,   1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
+ 
++    // q4_0 KV, small batches with GQA (decode and speculative verify), also in the KV cache layout and at multiple sequences:
++    // flattened tokens x GQA heads with 1-3 tiles of 16 Q columns
++    for (int64_t nb : { 1, 2, 3, 5, 6, 8 }) {
++        test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 1024, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
++        test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 4096, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0, {0, 2, 1, 3}));
++        test_cases.emplace_back(new test_flash_attn_ext(128, 128, 2, {8, 2}, 768, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
++        test_cases.emplace_back(new test_flash_attn_ext( 64,  64, 2, {3, 1}, 512, nb, false, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
++    }
++
+     // MLA shape: the V cache is a sub-view of the K cache, with quantized KV
+     test_cases.emplace_back(new test_flash_attn_ext(576, 512, 1, {8, 1},  113,   1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 1, 2, 3}, true, true));
+     test_cases.emplace_back(new test_flash_attn_ext(576, 512, 1, {8, 1}, 1024,   1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 1, 2, 3}, true, true));
+@@ -12136,6 +12145,13 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+     test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 131072, 1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16));
+     test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 131072, 512, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16));
+ 
++    // Qwen3.5/3.6-27B decode and speculative verify on a q4_0 KV cache: GQA 6, small batches, long context
++    for (int64_t kv : { 2048, 32768, 98304 }) {
++        for (int64_t nb : { 1, 2, 5, 8 }) {
++            test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, kv, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
++        }
++    }
++
+     for (int kv : { 4096, 8192, 16384,32768, 65536, }) {
+         for (int hs : { 64, 128, 256, 512, 576, }) {
+             const int  hsv    = hs == 576 ? 512 : hs;
+-- 
+2.43.0
+

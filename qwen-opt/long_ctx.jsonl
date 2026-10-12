@@ -6,3 +6,11 @@
 {"label": "e2e-vulkan", "prompt_tokens": 6565, "prefill_tps": 745.8, "prefill_s": 8.8, "decode_tps": 80.85, "gen_tokens": 256, "draft_acceptance": 0.552}
 {"label": "e2e-vulkan", "prompt_tokens": 29510, "prefill_tps": 623.6, "prefill_s": 47.3, "decode_tps": 66.08, "gen_tokens": 256, "draft_acceptance": 0.558}
 {"label": "e2e-vulkan", "prompt_tokens": 94181, "prefill_tps": 397.3, "prefill_s": 237.0, "decode_tps": 43.85, "gen_tokens": 256, "draft_acceptance": 0.586}
+{"label": "e2e-rocm-fattn", "prompt_tokens": 1714, "prefill_tps": 765.4, "prefill_s": 2.2, "decode_tps": 92.92, "gen_tokens": 256, "draft_acceptance": 0.762}
+{"label": "e2e-rocm-fattn", "prompt_tokens": 6565, "prefill_tps": 924.9, "prefill_s": 7.1, "decode_tps": 81.4, "gen_tokens": 256, "draft_acceptance": 0.642}
+{"label": "e2e-rocm-fattn", "prompt_tokens": 29510, "prefill_tps": 864.9, "prefill_s": 34.1, "decode_tps": 74.42, "gen_tokens": 256, "draft_acceptance": 0.599}
+{"label": "e2e-rocm-fattn", "prompt_tokens": 94181, "prefill_tps": 668.4, "prefill_s": 140.9, "decode_tps": 70.88, "gen_tokens": 256, "draft_acceptance": 0.661}
+{"label": "e2e-rocm-fattn-dkvq4", "prompt_tokens": 1714, "prefill_tps": 756.0, "prefill_s": 2.3, "decode_tps": 91.04, "gen_tokens": 256, "draft_acceptance": 0.749}
+{"label": "e2e-rocm-fattn-dkvq4", "prompt_tokens": 6565, "prefill_tps": 928.2, "prefill_s": 7.1, "decode_tps": 80.94, "gen_tokens": 256, "draft_acceptance": 0.642}
+{"label": "e2e-rocm-fattn-dkvq4", "prompt_tokens": 29510, "prefill_tps": 865.8, "prefill_s": 34.1, "decode_tps": 73.73, "gen_tokens": 256, "draft_acceptance": 0.587}
+{"label": "e2e-rocm-fattn-dkvq4", "prompt_tokens": 94181, "prefill_tps": 668.3, "prefill_s": 140.9, "decode_tps": 71.57, "gen_tokens": 256, "draft_acceptance": 0.638}

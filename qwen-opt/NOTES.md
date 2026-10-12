@@ -205,3 +205,16 @@ spec_sweep.sh/spec_sweep.py, 5 promptów (PL proza/tech/kod, EN chat/tech), 2 se
 
 ## Decyzja (2026-10-12)
 ROCm jest stałym backendem domyślnym. Dalsze optymalizacje robimy pod HIP/ROCm; Vulkan zostaje tylko jako opcja (run-llm.sh ... vulkan).
+
+## ROCm: nowy kernel FA dla KV q4_0 (40c9bacdc, 2026-10-12)
+Kernel fattn-kvq (RDNA3.0, WMMA): czyta q4_0 KV bez konwersji do F16, wszystkie głowy Q grupy GQA i do 8 tokenów w jednym przejściu.
+llama-bench ms/forward: d32768 n1 31.1->28.1, n5 43.3->33.8; d98304 n1 39.4->29.9, n5 68.2->36.7. test-backend-ops FLASH_ATTN_EXT 4017 OK.
+Serwer (long_ctx_bench, MTP n=4, T=0, 256 tok.), decode t/s przed -> po:
+| prompt | przed | po |
+|---|---|---|
+| 1.7k | 78.6 | 92.9 (inna akceptacja: inny tekst greedy) |
+| 6.6k | 75.5 | 81.4 |
+| 29.5k | 62.4 | 74.4 |
+| 94k | 43.0 | **70.9** (+65%) |
+Krótki kontekst (spec_sweep, 3 seedy): Qwen 41.74 ms/krok (było 41.8), Uncensored 39.56 ms/krok, 78.6 t/s — bez regresji.
+-ctkd/-ctvd q4_0 dla draftu: bez zysku (71.6 vs 70.9 przy 94k, w szumie) — nie włączam.
