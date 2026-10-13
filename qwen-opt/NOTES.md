@@ -288,3 +288,10 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Para MMVQ w jednej siatce (qkv + z), szybki rms_norm*mul(+q8_1) z DPP (5.87 -> 4.51 us), argmax z DPP (16.8 -> 4.3 us), fuzja wyjściowej normy GDN z bramką SiLU, SSM_CONV + alpha/beta w jednej siatce.
 - Kernele weryfikacji 972 -> ~831; przerwy 3.18 -> ~2.8 ms.
 - Potwierdzone: Qwen **32.14 ms/krok, 97.8 t/s**; Uncensored **30.68 ms/krok, 99.6 t/s**.
+
+## K3: narzut CPU (2eb088419, 56be15abf, 35d04b446; 2026-10-13), bitowo identyczne, przełączniki LLAMA_*=0
+- Asynchroniczne wysyłanie wejść grafu (było 2 synchronizacje x 16 wejść/krok), osobny scheduler dla łańcucha draftu MTP (bez przebudowy grafów co krok), top-k bez pełnej tablicy 248k kandydatów i bez kopii samplera co krok.
+- Host na krok: sample+accept 645 -> 140 us, post_decode 963 -> 375 us, łącznie ~-1.1 ms.
+- Potwierdzone: Qwen **30.97 ms/krok, 101.5 t/s**; Uncensored **29.46 ms/krok, 103.7 t/s**.
+- Długi kontekst (T=0, decode t/s): 1.7k **126.0**, 6.6k **109.4**, 29.5k **98.8**, 94k **88.3**.
+- Nie zrobione: przyrostowa maska KQ (przy 94k ~0.65 ms/krok, szacunek).

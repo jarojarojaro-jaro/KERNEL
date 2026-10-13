@@ -1,0 +1,174 @@
+From 56be15abf23265e21cfa9a4a327adfb6efa5f3f9 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 15:25:16 +0000
+Subject: [PATCH 30/31] llama: MTP draft chain on its own scheduler
+ (LLAMA_MTP_CHAIN_SCHED)
+
+The MTP draft chain graph and the MTP catch-up graph alternate every step in
+the draft context. Only the last allocated graph of a scheduler can be reused,
+so both were rebuilt and re-allocated every time: build 31 us + split 15 us +
+gallocr re-plan 82 us per graph, ~260 us of host time per step with the GPU
+idle. The draft chain now runs on a second scheduler of the context (its
+compute buffer is allocated on first use and sized for the chain graph only)
+and has its own graph slot, so both graphs are reused.
+
+off: LLAMA_MTP_CHAIN_SCHED=0.
+
+Short ctx, host timers: catch-up launch 190 -> 113 us, draft chain build
+155 -> 3 us; step 31.89 -> 31.59 ms (with the staged chain inputs of the
+previous commit). Greedy md5 (plain + MTP) equal to 849b69978.
+---
+ src/llama-context.cpp | 49 ++++++++++++++++++++++++++++++++++++-------
+ src/llama-context.h   | 13 ++++++++++--
+ 2 files changed, 53 insertions(+), 9 deletions(-)
+
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 86f60f7fd..6036a4b7a 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -296,6 +296,11 @@ llama_context::llama_context(
+         async_inputs = LLAMA_ASYNC_INPUTS ? (atoi(LLAMA_ASYNC_INPUTS) != 0) : async_inputs;
+     }
+ 
++    {
++        const char * LLAMA_MTP_CHAIN_SCHED = getenv("LLAMA_MTP_CHAIN_SCHED");
++        chain_sched = LLAMA_MTP_CHAIN_SCHED ? (atoi(LLAMA_MTP_CHAIN_SCHED) != 0) : chain_sched;
++    }
++
+     // ref: https://github.com/ggml-org/llama.cpp/pull/17046#discussion_r2503085732
+     cparams.n_ctx = GGML_PAD(cparams.n_ctx, 256);
+ 
+@@ -651,7 +656,8 @@ void llama_context::sched_reserve() {
+         res.reset();
+     }
+     gf_res_reserve.reset(new llm_graph_result(max_nodes));
+-    gf_res_prev_active = nullptr;
++    gf_res_prev_active  = nullptr;
++    gf_res_chain_active = nullptr;
+ 
+     sched.reset(ggml_backend_sched_new(backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, cparams.pipeline_parallel, cparams.op_offload));
+     ggml_backend_sched_set_copy_callback(sched.get(), sched_copy_experts, this);
+@@ -831,6 +837,11 @@ ggml_backend_sched_t llama_context::get_sched() const {
+     return sched.get();
+ }
+ 
++void llama_context::swap_chain_sched() {
++    std::swap(sched, sched_chain);
++    std::swap(gf_res_prev_active, gf_res_chain_active);
++}
++
+ uint32_t llama_context::n_ctx() const {
+     return cparams.n_ctx;
+ }
+@@ -895,7 +906,8 @@ bool llama_context::memory_update(bool optimize) {
+                 res->reset();
+             }
+         }
+-        gf_res_prev_active = nullptr;
++        gf_res_prev_active  = nullptr;
++        gf_res_chain_active = nullptr;
+ 
+         if (!mctx->apply()) {
+             LLAMA_LOG_ERROR("%s: failed to apply memory update\n", __func__);
+@@ -1903,6 +1915,27 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+         llama_sampler_backend_begin(entry.second);
+     }
+ 
++    // [LLAMA_MTP_CHAIN_SCHED] process the MTP draft chain on its own scheduler, restored when leaving this scope
++    struct chain_sched_scope {
++        llama_context * lctx;
++        ~chain_sched_scope() {
++            if (lctx) {
++                lctx->swap_chain_sched();
++            }
++        }
++    } chain_scope = { nullptr };
++
++    if (cparams.mtp_draft_chain && chain_sched && !cparams.pipeline_parallel) {
++        if (!sched_chain) {
++            sched_chain.reset(ggml_backend_sched_new(backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(),
++                    gf_res_reserve->get_max_nodes(), false, cparams.op_offload));
++            ggml_backend_sched_set_copy_callback(sched_chain.get(), sched_copy_experts, this);
++            ggml_backend_sched_set_async_inputs(sched_chain.get(), async_inputs);
++        }
++        swap_chain_sched();
++        chain_scope.lctx = this;
++    }
++
+     int64_t n_outputs_prev = 0;
+     int64_t n_tokens_prev  = 0;
+ 
+@@ -2504,9 +2537,9 @@ llm_graph_result * llama_context::get_gf_res_reserve() const {
+ }
+ 
+ llm_graph_result * llama_context::get_gf_res_prev() {
+-    // the MTP draft chain graph has no outputs but alternates with the output-less MTP catch-up graph, so it keeps
+-    // the slot of the output graphs: each keeps its own graph memory (and device graph) across steps
+-    auto & res = gf_res_prev[n_outputs > 0 || cparams.mtp_draft_chain];
++    // the MTP draft chain graph alternates with the output-less MTP catch-up graph, so it has its own slot:
++    // each keeps its own graph memory (and device graph) across steps
++    auto & res = gf_res_prev[cparams.mtp_draft_chain ? 2 : (n_outputs > 0 ? 1 : 0)];
+     if (!res) {
+         res.reset(new llm_graph_result(gf_res_reserve->get_max_nodes()));
+     }
+@@ -2588,7 +2621,8 @@ ggml_cgraph * llama_context::graph_reserve(
+             res->reset();
+         }
+     }
+-    gf_res_prev_active = nullptr;
++    gf_res_prev_active  = nullptr;
++    gf_res_chain_active = nullptr;
+ 
+     // store the n_outputs as it is, and restore it afterwards
+     // TODO: not sure if needed, might simplify in the future by removing this
+@@ -3799,7 +3833,8 @@ void llama_context::opt_epoch_iter(
+             const auto gparams = graph_params(res, ubatch, mctx.get(), ctx_type_to_graph_type(cparams.ctx_type));
+ 
+             // the optimizer graph is allocated outside sched, so the next decode must rebuild
+-            gf_res_prev_active = nullptr;
++            gf_res_prev_active  = nullptr;
++            gf_res_chain_active = nullptr;
+             res->reset();
+ 
+             auto * gf = model.build_graph(gparams);
+diff --git a/src/llama-context.h b/src/llama-context.h
+index 1000bceec..d907379d9 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -365,6 +365,12 @@ private:
+ 
+     ggml_backend_sched_ptr sched;
+ 
++    // the MTP draft chain graph runs on its own scheduler (small compute buffer, allocated on first use), so that
++    // it and the MTP catch-up graph that it alternates with both keep their allocated graphs [LLAMA_MTP_CHAIN_SCHED]
++    ggml_backend_sched_ptr sched_chain;
++    llm_graph_result *     gf_res_chain_active = nullptr; // gf_res_prev_active of the scheduler not in use
++    void swap_chain_sched();
++
+     bool sched_need_reserve = true;
+ 
+     // state of sched_copy_experts, reset before each graph compute
+@@ -401,8 +407,8 @@ private:
+     std::vector<ggml_backend_buffer_type_t> backend_buft;
+     std::vector<size_t>                     backend_buf_exp_size; // expected buffer sizes
+ 
+-    // Separate arenas give batches with and without outputs distinct CUDA graph cache keys.
+-    std::array<llm_graph_result_ptr, 2> gf_res_prev;
++    // Separate arenas give batches with and without outputs (and the MTP draft chain) distinct CUDA graph cache keys.
++    std::array<llm_graph_result_ptr, 3> gf_res_prev;
+     llm_graph_result_ptr gf_res_reserve;
+ 
+     llm_graph_result * gf_res_prev_active = nullptr;
+@@ -421,6 +427,9 @@ private:
+     // env: LLAMA_ASYNC_INPUTS (default on)
+     bool async_inputs = true;
+ 
++    // env: LLAMA_MTP_CHAIN_SCHED (default on)
++    bool chain_sched = true;
++
+     // perf
+     mutable int64_t t_start_us  = 0;
+     mutable int64_t t_load_us   = 0;
+-- 
+2.43.0
+

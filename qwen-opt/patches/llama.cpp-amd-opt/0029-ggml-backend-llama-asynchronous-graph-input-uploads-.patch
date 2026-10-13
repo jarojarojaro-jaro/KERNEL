@@ -1,0 +1,502 @@
+From 2eb0884196b31b2366480be2eb62c78f09433cda Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 15:25:00 +0000
+Subject: [PATCH 29/31] ggml-backend/llama: asynchronous graph input uploads
+ (LLAMA_ASYNC_INPUTS)
+
+Each host-resident split input was copied with a blocking copy: a sync of the
+split backend's stream, then cudaMemcpyAsync + cudaStreamSynchronize on the
+per-thread stream. That is ~22 us of GPU idle per input on gfx1100 and 16
+inputs per speculative step (8 verify, 4 MTP catch-up, 4 MTP draft chain).
+
+- sched: with ggml_backend_sched_set_async_inputs() host inputs are uploaded
+  with set_tensor_async on the split backend's stream (ordered before the
+  split's graph); an event recorded after the uploads is waited for in
+  ggml_backend_sched_wait_inputs() before host input memory is written again
+  (llama: before set_inputs; sched: reset/alloc/compute/free).
+- sched: ggml_backend_sched_set_tensor_async() for device-resident inputs
+  (the MTP draft chain pins its inputs to the GPU): pinned staging memory,
+  async upload; the llama input setters go through llm_graph_input_set().
+- off: LLAMA_ASYNC_INPUTS=0.
+
+Qwen3.8-27B UD-Q4_K_XL, MTP n=4, short ctx (6 EN/PL prompts, T=1), host timers:
+step 32.20 -> 31.89 ms (target launch 592 -> 376 us, catch-up launch 300 ->
+190 us); MTP draft chain set_inputs 193 -> 15 us. Greedy md5 (plain + MTP)
+equal to 849b69978.
+---
+ ggml/include/ggml-backend.h |  11 ++++
+ ggml/src/ggml-backend.cpp   | 123 ++++++++++++++++++++++++++++++++++++
+ src/llama-context.cpp       |  15 +++--
+ src/llama-context.h         |   3 +
+ src/llama-graph.cpp         |  48 +++++++++-----
+ src/llama-graph.h           |  10 +++
+ src/llama-kv-cache.cpp      |   2 +-
+ 7 files changed, 192 insertions(+), 20 deletions(-)
+
+diff --git a/ggml/include/ggml-backend.h b/ggml/include/ggml-backend.h
+index 38197285c..58a7815d0 100644
+--- a/ggml/include/ggml-backend.h
++++ b/ggml/include/ggml-backend.h
+@@ -367,6 +367,17 @@ extern "C" {
+     // Set a callback to be called when the inputs weights of a split are being copied
+     GGML_API void                 ggml_backend_sched_set_copy_callback(ggml_backend_sched_t sched, ggml_backend_sched_copy_callback callback, void * user_data);
+ 
++    // Upload host-resident split inputs with set_tensor_async on the split backend's stream instead of a blocking copy
++    // (two stream synchronizations per input). The input data is read by the device later, so the caller must call
++    // ggml_backend_sched_wait_inputs() before writing input tensors again. Only used without pipeline parallelism.
++    GGML_API void                 ggml_backend_sched_set_async_inputs(ggml_backend_sched_t sched, bool enable);
++    // Wait until the uploads of the last graph_compute have read their host data (no-op if none are pending)
++    GGML_API void                 ggml_backend_sched_wait_inputs(ggml_backend_sched_t sched);
++    // Write input data of a device-resident graph input: with async inputs enabled it is copied to pinned staging
++    // memory of the scheduler and uploaded on the backend's stream (ordered before the next graph_compute),
++    // otherwise this is ggml_backend_tensor_set. The staging memory is reused after ggml_backend_sched_wait_inputs().
++    GGML_API void                 ggml_backend_sched_set_tensor_async(ggml_backend_sched_t sched, struct ggml_tensor * tensor, const void * data, size_t offset, size_t size);
++
+     //
+     // Meta backend
+     //
+diff --git a/ggml/src/ggml-backend.cpp b/ggml/src/ggml-backend.cpp
+index ff3f07998..dde30ab81 100644
+--- a/ggml/src/ggml-backend.cpp
++++ b/ggml/src/ggml-backend.cpp
+@@ -974,6 +974,14 @@ struct ggml_backend_sched {
+ 
+     bool op_offload;
+ 
++    // host inputs uploaded with set_tensor_async [ggml_backend_sched_set_async_inputs]
++    bool async_inputs;
++    ggml_backend_event_t input_events[GGML_SCHED_MAX_BACKENDS]; // recorded after the uploads of a split
++    bool input_pending[GGML_SCHED_MAX_BACKENDS];                // uploads issued, event not yet recorded
++    bool input_recorded[GGML_SCHED_MAX_BACKENDS];               // event recorded, not yet waited for
++    ggml_backend_buffer_t input_staging[GGML_SCHED_MAX_BACKENDS];     // pinned host memory of ggml_backend_sched_set_tensor_async
++    size_t                input_staging_off[GGML_SCHED_MAX_BACKENDS]; // bytes of input_staging in use since the last wait
++
+     int debug;
+ 
+     // used for debugging graph reallocations [GGML_SCHED_DEBUG_REALLOC]
+@@ -1808,12 +1816,34 @@ static bool ggml_backend_sched_is_host_weight(const struct ggml_tensor * t) {
+         ggml_backend_buffer_is_host(t->buffer);
+ }
+ 
++// upload a host-resident input on the split backend's stream without blocking [ggml_backend_sched_set_async_inputs]
++// the stream orders the copy after the previous use of input_cpy and before this split's graph
++static bool ggml_backend_sched_copy_input_async(ggml_backend_sched_t sched, int split_backend_id, struct ggml_tensor * input, struct ggml_tensor * input_cpy) {
++    ggml_backend_t split_backend = sched->backends[split_backend_id];
++    if (!sched->async_inputs || sched->n_copies != 1 || sched->input_events[split_backend_id] == NULL ||
++        split_backend->iface.set_tensor_async == NULL || input->buffer == NULL || !ggml_backend_buffer_is_host(input->buffer) ||
++        ggml_backend_sched_is_host_weight(input) || input_cpy->buffer == NULL || ggml_backend_buffer_is_host(input_cpy->buffer)) {
++        return false;
++    }
++    if (!(input->flags & GGML_TENSOR_FLAG_INPUT)) {
++        // output of a previous split on a host backend
++        ggml_backend_synchronize(ggml_backend_sched_get_tensor_backend(sched, input));
++    }
++    ggml_backend_tensor_set_async(split_backend, input_cpy, input->data, 0, ggml_nbytes(input));
++    sched->input_pending[split_backend_id] = true;
++    return true;
++}
++
+ static void ggml_backend_sched_copy_input(ggml_backend_sched_t sched, struct ggml_backend_sched_split * split, struct ggml_tensor * input) {
+     const int split_backend_id = split->backend_id;
+     ggml_backend_t split_backend = sched->backends[split_backend_id];
+     ggml_backend_t input_backend = ggml_backend_sched_get_tensor_backend(sched, input);
+     struct ggml_tensor * input_cpy = tensor_copy(input, split_backend_id, sched->cur_copy);
+ 
++    if (ggml_backend_sched_copy_input_async(sched, split_backend_id, input, input_cpy)) {
++        return;
++    }
++
+     if (input->flags & GGML_TENSOR_FLAG_INPUT) {
+         // inputs from the user must be copied immediately to prevent the user overwriting the data before the copy is done
+         if (sched->events[split_backend_id][sched->cur_copy] != NULL) {
+@@ -1856,6 +1886,9 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+ 
+     int prev_backend_id = -1;
+ 
++    // host splits below may overwrite host memory that the previous uploads still read
++    ggml_backend_sched_wait_inputs(sched);
++
+     for (int split_id = 0; split_id < sched->n_splits; split_id++) {
+         struct ggml_backend_sched_split * split = &splits[split_id];
+         int split_backend_id = split->backend_id;
+@@ -1883,6 +1916,11 @@ static enum ggml_status ggml_backend_sched_compute_splits(ggml_backend_sched_t s
+                 ggml_backend_sched_copy_input(sched, split, split->inputs[input_id]);
+             }
+         }
++        if (sched->input_pending[split_backend_id]) {
++            ggml_backend_event_record(sched->input_events[split_backend_id], split_backend);
++            sched->input_pending[split_backend_id]  = false;
++            sched->input_recorded[split_backend_id] = true;
++        }
+ 
+         if (!sched->callback_eval) {
+             enum ggml_status ec = ggml_backend_graph_compute_async(split_backend, &split->graph);
+@@ -2010,10 +2048,15 @@ void ggml_backend_sched_free(ggml_backend_sched_t sched) {
+     if (sched == NULL) {
+         return;
+     }
++    ggml_backend_sched_wait_inputs(sched);
+     for (int b = 0; b < sched->n_backends; b++) {
+         for (int c = 0; c < sched->n_copies; c++) {
+             ggml_backend_event_free(sched->events[b][c]);
+         }
++        if (sched->input_events[b] != NULL) {
++            ggml_backend_event_free(sched->input_events[b]);
++        }
++        ggml_backend_buffer_free(sched->input_staging[b]);
+     }
+     ggml_gallocr_free(sched->galloc);
+     ggml_free(sched->ctx);
+@@ -2037,6 +2080,8 @@ void ggml_backend_sched_free(ggml_backend_sched_t sched) {
+ 
+ void ggml_backend_sched_reset(ggml_backend_sched_t sched) {
+     GGML_ASSERT(sched);
++    // the tensors of the next graph may alias host memory that pending uploads still read
++    ggml_backend_sched_wait_inputs(sched);
+     // reset state for the next run
+     if (!sched->is_reset) {
+         ggml_hash_set_reset(&sched->hash_set);
+@@ -2083,6 +2128,8 @@ bool ggml_backend_sched_alloc_graph(ggml_backend_sched_t sched, struct ggml_cgra
+     GGML_ASSERT((int)sched->hash_set.size >= graph->n_nodes + graph->n_leafs);
+     GGML_ASSERT(!sched->is_alloc);
+ 
++    ggml_backend_sched_wait_inputs(sched);
++
+     sched->cur_copy = sched->next_copy;
+     sched->next_copy = (sched->next_copy + 1) % sched->n_copies;
+ 
+@@ -2123,6 +2170,9 @@ void ggml_backend_sched_synchronize(ggml_backend_sched_t sched) {
+     for (int i = 0; i < sched->n_backends; i++) {
+         ggml_backend_synchronize(sched->backends[i]);
+     }
++    for (int i = 0; i < sched->n_backends; i++) {
++        sched->input_recorded[i] = false;
++    }
+     if (!sched->is_alloc) {
+         // if the graph is not already allocated, always use copy 0 after a synchronization
+         // this ensures that during generation the same copy is used every time,
+@@ -2143,6 +2193,79 @@ void ggml_backend_sched_set_copy_callback(ggml_backend_sched_t sched, ggml_backe
+     sched->callback_copy_user_data = user_data;
+ }
+ 
++void ggml_backend_sched_set_async_inputs(ggml_backend_sched_t sched, bool enable) {
++    GGML_ASSERT(sched);
++    ggml_backend_sched_wait_inputs(sched);
++    sched->async_inputs = enable;
++    if (!enable) {
++        return;
++    }
++    for (int b = 0; b < sched->n_backends; b++) {
++        ggml_backend_dev_t dev = ggml_backend_get_device(sched->backends[b]);
++        if (sched->input_events[b] == NULL && sched->backends[b]->iface.set_tensor_async != NULL &&
++            dev != NULL && dev->iface.event_new != NULL) {
++            sched->input_events[b] = ggml_backend_event_new(dev);
++        }
++    }
++}
++
++void ggml_backend_sched_wait_inputs(ggml_backend_sched_t sched) {
++    GGML_ASSERT(sched);
++    for (int b = 0; b < sched->n_backends; b++) {
++        if (sched->input_recorded[b]) {
++            ggml_backend_event_synchronize(sched->input_events[b]);
++            sched->input_recorded[b] = false;
++        }
++        if (!sched->input_pending[b]) {
++            sched->input_staging_off[b] = 0;
++        }
++    }
++}
++
++void ggml_backend_sched_set_tensor_async(ggml_backend_sched_t sched, struct ggml_tensor * tensor, const void * data, size_t offset, size_t size) {
++    GGML_ASSERT(sched);
++    ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;
++    GGML_ASSERT(buf != NULL && "tensor buffer not set");
++
++    int b = -1;
++    if (sched->async_inputs && sched->n_copies == 1 && size > 0 && !ggml_backend_buffer_is_host(buf)) {
++        for (int i = 0; i < sched->n_backends; i++) {
++            if (sched->input_events[i] != NULL && ggml_backend_supports_buft(sched->backends[i], ggml_backend_buffer_get_type(buf))) {
++                b = i;
++                break;
++            }
++        }
++    }
++    if (b < 0) {
++        ggml_backend_tensor_set(tensor, data, offset, size);
++        return;
++    }
++
++    ggml_backend_t backend = sched->backends[b];
++    const size_t need = GGML_PAD(size, 256);
++    const size_t cap  = sched->input_staging[b] ? ggml_backend_buffer_get_size(sched->input_staging[b]) : 0;
++    if (sched->input_staging_off[b] + need > cap) {
++        // grow: staged data of earlier calls may still be in flight, finish it before the buffer is replaced
++        ggml_backend_synchronize(backend);
++        const size_t new_cap = std::max<size_t>(1u << 20, 2*(sched->input_staging_off[b] + need));
++        sched->input_staging_off[b] = 0;
++        ggml_backend_buffer_type_t host_buft = ggml_backend_dev_host_buffer_type(ggml_backend_get_device(backend));
++        ggml_backend_buffer_free(sched->input_staging[b]);
++        sched->input_staging[b] = host_buft ? ggml_backend_buft_alloc_buffer(host_buft, new_cap) : NULL;
++        if (sched->input_staging[b] == NULL) {
++            ggml_backend_tensor_set(tensor, data, offset, size);
++            return;
++        }
++    }
++
++    char * dst = (char *) ggml_backend_buffer_get_base(sched->input_staging[b]) + sched->input_staging_off[b];
++    memcpy(dst, data, size);
++    sched->input_staging_off[b] += need;
++
++    ggml_backend_tensor_set_async(backend, tensor, dst, offset, size);
++    sched->input_pending[b] = true;
++}
++
+ int ggml_backend_sched_get_n_splits(ggml_backend_sched_t sched) {
+     GGML_ASSERT(sched);
+     return sched->n_splits;
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index eb3ce66ea..86f60f7fd 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -290,6 +290,12 @@ llama_context::llama_context(
+         }
+     }
+ 
++    {
++        // upload graph inputs asynchronously on the compute stream (no stream sync per input)
++        const char * LLAMA_ASYNC_INPUTS = getenv("LLAMA_ASYNC_INPUTS");
++        async_inputs = LLAMA_ASYNC_INPUTS ? (atoi(LLAMA_ASYNC_INPUTS) != 0) : async_inputs;
++    }
++
+     // ref: https://github.com/ggml-org/llama.cpp/pull/17046#discussion_r2503085732
+     cparams.n_ctx = GGML_PAD(cparams.n_ctx, 256);
+ 
+@@ -649,6 +655,7 @@ void llama_context::sched_reserve() {
+ 
+     sched.reset(ggml_backend_sched_new(backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, cparams.pipeline_parallel, cparams.op_offload));
+     ggml_backend_sched_set_copy_callback(sched.get(), sched_copy_experts, this);
++    ggml_backend_sched_set_async_inputs(sched.get(), async_inputs);
+ 
+     llama_memory_context_ptr mctx;
+     if (memory) {
+@@ -689,6 +696,7 @@ void llama_context::sched_reserve() {
+                 cparams.pipeline_parallel = false;
+                 sched.reset(ggml_backend_sched_new(backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, false, cparams.op_offload));
+                 ggml_backend_sched_set_copy_callback(sched.get(), sched_copy_experts, this);
++                ggml_backend_sched_set_async_inputs(sched.get(), async_inputs);
+                 gf = graph_reserve(n_tokens, n_seqs, n_outputs_pp, mctx.get());
+             }
+             if (!gf) {
+@@ -1481,12 +1489,11 @@ llm_graph_result * llama_context::process_ubatch(const llama_ubatch & ubatch, ll
+ 
+     // set the input data for the input tensors
+     {
+-        //const auto t_start_us = ggml_time_us();
+-
++        // the previous graph's input uploads may still read the host input tensors [LLAMA_ASYNC_INPUTS]
++        ggml_backend_sched_wait_inputs(sched.get());
++        llm_graph_input_sched_scope input_scope(async_inputs ? sched.get() : nullptr);
+         // FIXME this call causes a crash if any model inputs were not used in the graph and were therefore not allocated
+         res->set_inputs(&ubatch);
+-
+-        //LLAMA_LOG_INFO("graph set inputs time: %.3f ms\n", (ggml_time_us() - t_start_us)/1000.0);
+     }
+ 
+     const auto status = graph_compute(res->get_gf(), ubatch.n_tokens > 1);
+diff --git a/src/llama-context.h b/src/llama-context.h
+index 439febcc6..1000bceec 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -418,6 +418,9 @@ private:
+     // env: LLAMA_GRAPH_REUSE_DISABLE
+     bool graph_reuse_disable = false;
+ 
++    // env: LLAMA_ASYNC_INPUTS (default on)
++    bool async_inputs = true;
++
+     // perf
+     mutable int64_t t_start_us  = 0;
+     mutable int64_t t_load_us   = 0;
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 954030a34..99cab6d9e 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -67,11 +67,29 @@ static bool can_reuse_kq_mask(
+ 
+ // impl
+ 
++static thread_local ggml_backend_sched_t llm_graph_input_sched = nullptr;
++
++llm_graph_input_sched_scope::llm_graph_input_sched_scope(ggml_backend_sched_t sched) {
++    llm_graph_input_sched = sched;
++}
++
++llm_graph_input_sched_scope::~llm_graph_input_sched_scope() {
++    llm_graph_input_sched = nullptr;
++}
++
++void llm_graph_input_set(ggml_tensor * t, const void * data, size_t offset, size_t size) {
++    if (llm_graph_input_sched) {
++        ggml_backend_sched_set_tensor_async(llm_graph_input_sched, t, data, offset, size);
++    } else {
++        ggml_backend_tensor_set(t, data, offset, size);
++    }
++}
++
+ void llm_graph_input_embd::set_input(const llama_ubatch * ubatch) {
+     if (ubatch->token) {
+         const int64_t n_tokens = ubatch->n_tokens;
+ 
+-        ggml_backend_tensor_set(tokens, ubatch->token, 0, n_tokens*ggml_element_size(tokens));
++        llm_graph_input_set(tokens, ubatch->token, 0, n_tokens*ggml_element_size(tokens));
+     }
+ 
+     if (ubatch->embd && embd && !ubatch->is_mixed()) {
+@@ -79,7 +97,7 @@ void llm_graph_input_embd::set_input(const llama_ubatch * ubatch) {
+ 
+         const int64_t n_tokens = ubatch->n_tokens;
+ 
+-        ggml_backend_tensor_set(embd, ubatch->embd, 0, n_tokens*n_embd*ggml_element_size(embd));
++        llm_graph_input_set(embd, ubatch->embd, 0, n_tokens*n_embd*ggml_element_size(embd));
+     }
+ 
+     if (ubatch->is_mixed() && embd) {
+@@ -96,9 +114,9 @@ void llm_graph_input_embd::set_input(const llama_ubatch * ubatch) {
+         GGML_ASSERT((int64_t) ids.size() == mixed_tokens->ne[0]);
+         GGML_ASSERT(n_embd == mixed_embd->ne[0]);
+ 
+-        ggml_backend_tensor_set(mixed_tokens, ids.data(),    0, ggml_nbytes(mixed_tokens));
+-        ggml_backend_tensor_set(mixed_slots,  slots.data(),  0, ggml_nbytes(mixed_slots));
+-        ggml_backend_tensor_set(mixed_embd,   ubatch->embd,  0, ggml_nbytes(mixed_embd));
++        llm_graph_input_set(mixed_tokens, ids.data(),    0, ggml_nbytes(mixed_tokens));
++        llm_graph_input_set(mixed_slots,  slots.data(),  0, ggml_nbytes(mixed_slots));
++        llm_graph_input_set(mixed_embd,   ubatch->embd,  0, ggml_nbytes(mixed_embd));
+     }
+ 
+     if (scale_rows) {
+@@ -109,7 +127,7 @@ void llm_graph_input_embd::set_input(const llama_ubatch * ubatch) {
+             const bool is_embd = !ubatch->token || (ubatch->is_mixed() && ubatch->type[i]);
+             data[i] = is_embd ? 1.0f : scale_tok;
+         }
+-        ggml_backend_tensor_set(scale_rows, data.data(), 0, ggml_nbytes(scale_rows));
++        llm_graph_input_set(scale_rows, data.data(), 0, ggml_nbytes(scale_rows));
+     }
+ }
+ 
+@@ -143,13 +161,13 @@ void llm_graph_input_embd_h::set_input(const llama_ubatch * ubatch) {
+     const int64_t n_tokens = ubatch->n_tokens;
+ 
+     if (ubatch->token) {
+-        ggml_backend_tensor_set(tokens, ubatch->token, 0, n_tokens*ggml_element_size(tokens));
++        llm_graph_input_set(tokens, ubatch->token, 0, n_tokens*ggml_element_size(tokens));
+     } else {
+         // note: mtmd embedding input goes through here
+         GGML_ASSERT(ubatch->embd);
+         GGML_ASSERT(n_embd == embd->ne[0]);
+ 
+-        ggml_backend_tensor_set(embd, ubatch->embd, 0, n_tokens*n_embd*ggml_element_size(h));
++        llm_graph_input_set(embd, ubatch->embd, 0, n_tokens*n_embd*ggml_element_size(h));
+     }
+ 
+     // TODO: extend llama_ubatch to differentiate between token embeddings and hidden states
+@@ -158,7 +176,7 @@ void llm_graph_input_embd_h::set_input(const llama_ubatch * ubatch) {
+     if (ubatch->embd) {
+         GGML_ASSERT(n_embd == h->ne[0]);
+ 
+-        ggml_backend_tensor_set(h, ubatch->embd, 0, n_tokens*n_embd*ggml_element_size(h));
++        llm_graph_input_set(h, ubatch->embd, 0, n_tokens*n_embd*ggml_element_size(h));
+     }
+ }
+ 
+@@ -176,7 +194,7 @@ void llm_graph_input_pos::set_input(const llama_ubatch * ubatch) {
+     if (ubatch->pos && pos) {
+         const int64_t n_tokens = ubatch->n_tokens;
+ 
+-        ggml_backend_tensor_set(pos, ubatch->pos, 0, n_tokens*n_pos_per_embd*ggml_element_size(pos));
++        llm_graph_input_set(pos, ubatch->pos, 0, n_tokens*n_pos_per_embd*ggml_element_size(pos));
+     }
+ }
+ 
+@@ -198,7 +216,7 @@ void llm_graph_input_pos_chain::set_input(const llama_ubatch * ubatch) {
+                 data[i*n_pos_per_embd + k] = ubatch->pos[k*n_tokens + i];
+             }
+         }
+-        ggml_backend_tensor_set(pos, data.data(), 0, data.size()*ggml_element_size(pos));
++        llm_graph_input_set(pos, data.data(), 0, data.size()*ggml_element_size(pos));
+     }
+ }
+ 
+@@ -221,7 +239,7 @@ void llm_graph_input_attn_temp::set_input(const llama_ubatch * ubatch) {
+             ) * f_attn_temp_scale + 1.0;
+         }
+ 
+-        ggml_backend_tensor_set(attn_scale, attn_scale_data.data(), 0, n_tokens*ggml_element_size(attn_scale));
++        llm_graph_input_set(attn_scale, attn_scale_data.data(), 0, n_tokens*ggml_element_size(attn_scale));
+     }
+ }
+ 
+@@ -417,7 +435,7 @@ void llm_graph_input_cross_embd::set_input(const llama_ubatch * ubatch) {
+     if (cross_embd && !cross->v_embd.empty()) {
+         assert(cross_embd->type == GGML_TYPE_F32);
+ 
+-        ggml_backend_tensor_set(cross_embd, cross->v_embd.data(), 0, ggml_nbytes(cross_embd));
++        llm_graph_input_set(cross_embd, cross->v_embd.data(), 0, ggml_nbytes(cross_embd));
+     }
+ }
+ 
+@@ -801,7 +819,7 @@ static void dsv4_set_i64(ggml_tensor * dst, const std::vector<int64_t> & src) {
+     }
+ 
+     GGML_ASSERT(dst->ne[0] == (int64_t) src.size());
+-    ggml_backend_tensor_set(dst, src.data(), 0, src.size()*ggml_element_size(dst));
++    llm_graph_input_set(dst, src.data(), 0, src.size()*ggml_element_size(dst));
+ }
+ 
+ static void dsv4_set_i32(ggml_tensor * dst, const std::vector<int32_t> & src) {
+@@ -810,7 +828,7 @@ static void dsv4_set_i32(ggml_tensor * dst, const std::vector<int32_t> & src) {
+     }
+ 
+     GGML_ASSERT(dst->ne[0] == (int64_t) src.size());
+-    ggml_backend_tensor_set(dst, src.data(), 0, src.size()*ggml_element_size(dst));
++    llm_graph_input_set(dst, src.data(), 0, src.size()*ggml_element_size(dst));
+ }
+ 
+ static void dsv4_set_kq_mask(
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 8bdbee6cb..8b72d5cdb 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -101,6 +101,16 @@ struct llm_graph_params;
+ // llm_graph_input
+ //
+ 
++// write graph input data: host-resident inputs are copied directly, device-resident inputs are uploaded
++// asynchronously through the scheduler of the enclosing llm_graph_input_sched_scope [LLAMA_ASYNC_INPUTS]
++void llm_graph_input_set(ggml_tensor * t, const void * data, size_t offset, size_t size);
++
++// set_inputs() of the current graph run in this scope (nullptr: blocking ggml_backend_tensor_set uploads)
++struct llm_graph_input_sched_scope {
++    explicit llm_graph_input_sched_scope(ggml_backend_sched_t sched);
++    ~llm_graph_input_sched_scope();
++};
++
+ class llm_graph_input_i {
+ public:
+     llm_graph_input_i() {
+diff --git a/src/llama-kv-cache.cpp b/src/llama-kv-cache.cpp
+index 1bb60bbd5..b80c411e0 100644
+--- a/src/llama-kv-cache.cpp
++++ b/src/llama-kv-cache.cpp
+@@ -1502,7 +1502,7 @@ static T * input_data(ggml_tensor * dst, std::vector<T> & staging) {
+ template <typename T>
+ static void input_upload(ggml_tensor * dst, const std::vector<T> & staging) {
+     if (!staging.empty()) {
+-        ggml_backend_tensor_set(dst, staging.data(), 0, ggml_nbytes(dst));
++        llm_graph_input_set(dst, staging.data(), 0, ggml_nbytes(dst));
+     }
+ }
+ 
+-- 
+2.43.0
+
