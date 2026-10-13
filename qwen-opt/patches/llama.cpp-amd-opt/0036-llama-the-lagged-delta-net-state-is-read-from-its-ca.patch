@@ -1,0 +1,137 @@
+From b1a203959e0748c52b708993224fea835f48b847 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 18:23:03 +0000
+Subject: [PATCH 36/36] llama: the lagged delta-net state is read from its
+ cache row (single cell), no gather index input
+
+---
+ ggml/include/ggml.h            |  3 +--
+ src/llama-graph.cpp            | 23 +++++++++++++----------
+ src/llama-graph.h              |  8 ++------
+ src/llama-memory-recurrent.cpp |  6 +++---
+ src/llama-memory-recurrent.h   |  4 ++--
+ 5 files changed, 21 insertions(+), 23 deletions(-)
+
+diff --git a/ggml/include/ggml.h b/ggml/include/ggml.h
+index 16b908d45..afb1642d2 100644
+--- a/ggml/include/ggml.h
++++ b/ggml/include/ggml.h
+@@ -2670,8 +2670,7 @@ extern "C" {
+     //   q, k, v, g, beta, state : as ggml_gated_delta_net (scalar gate only)
+     //   pend  : F32 [>= 2*K*R, n_rows] -- per recurrent-cache row two planes of K pending rows,
+     //           row layout R = H_v*(S_k + S_v + 2): k [H_v][S_k], v [H_v][S_v], g [H_v], beta [H_v]
+-    //   lag   : I32 [n_seqs, 4] -- rows: src row, dst row, n_pend, read plane | write plane << 1 (row 0 can double
+-    //           as the GET_ROWS index that gathers state)
++    //   lag   : I32 [n_seqs, 4] -- rows: src row, dst row, n_pend, read plane | write plane << 1
+     //
+     // Sequence s first replays n_pend rows of plane `read` of pend row `src` into its state, then runs its n_tokens
+     // rows; the last P = min(n_tokens, K) of them are written to plane `write` of pend row `dst` (a side effect of
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index f8c603835..97ad1f33e 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -3709,15 +3709,10 @@ static std::unique_ptr<llm_graph_input_rs> build_rs_inp_impl(
+     inp->s_copy_tail = ggml_view_1d(ctx0, inp->s_copy, n_rs - 1, inp->s_copy->nb[0]);
+ 
+     if (mctx_cur->is_rs_lag()) {
+-        // one upload: the lag info's first row (the source rows) is the delta-net state gather index
+         GGML_ASSERT(n_rs == n_seqs);
+         inp->s_lag = ggml_new_tensor_2d(ctx0, GGML_TYPE_I32, n_seqs, 4);
+         ggml_set_input(inp->s_lag);
+         ggml_set_name(inp->s_lag, "rs_s_lag");
+-
+-        inp->s_copy_s      = ggml_view_1d(ctx0, inp->s_lag, n_rs, 0);
+-        inp->s_copy_s_main = ggml_view_1d(ctx0, inp->s_lag, n_seqs, 0);
+-        inp->s_copy_s_tail = ggml_view_1d(ctx0, inp->s_lag, n_rs - 1, inp->s_lag->nb[0]);
+     }
+ 
+     inp->head = mctx_cur->get_head();
+@@ -3742,14 +3737,22 @@ ggml_tensor * llm_graph_context::build_rs(
+         const llm_graph_get_rows_fn & get_state_rows) const {
+     const auto * kv_state = inp->mctx;
+ 
++    // the lagged delta-net state has a single cell, whose state is its own row: no gather, only the zeroing of a
++    // new sequence's state (see llama_memory_recurrent::set_input_lag)
++    if (inp->s_lag != nullptr && kv_state->is_lag_state(s)) {
++        GGML_ASSERT(!get_state_rows);
++        ggml_tensor * states = ggml_reshape_2d(ctx0, s, state_size, s->ne[1]);
++        const int32_t rs_zero = kv_state->get_rs_z();
++        ggml_tensor * state_zero = ggml_view_1d(ctx0, states, state_size*(rs_zero >= 0), rs_zero*states->nb[1]*(rs_zero >= 0));
++        ggml_build_forward_expand(gf, ggml_scale_inplace(ctx0, state_zero, 0));
++        return ggml_view_2d(ctx0, states, state_size, n_seqs, states->nb[1], kv_state->get_head()*states->nb[1]);
++    }
++
+     // a custom getter reads the states of the ubatch straight from the cache, so the gather skips the first
+     // state: it still holds the n_rs - n_seqs extra states and copies no state of a single sequence ubatch
+-    // the lagged delta-net state has no rollback planes, so it is gathered without their offsets
+-    const bool lag = inp->s_copy_s != nullptr && kv_state->is_lag_state(s);
+-    ggml_tensor * state_copy = get_state_rows ? (lag ? inp->s_copy_s_tail : inp->s_copy_tail) :
+-                                                (lag ? inp->s_copy_s : inp->s_copy);
++    ggml_tensor * state_copy = get_state_rows ? inp->s_copy_tail : inp->s_copy;
+ 
+-    return build_rs(s, state_copy, lag ? inp->s_copy_s_main : inp->s_copy_main, state_size, n_seqs,
++    return build_rs(s, state_copy, inp->s_copy_main, state_size, n_seqs,
+                     kv_state->get_n_rs(), kv_state->get_head(), kv_state->get_size(), kv_state->get_rs_z(),
+                     get_state_rows);
+ }
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 6e2e35776..2b73f27aa 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -310,12 +310,8 @@ public:
+     ggml_tensor * s_copy_main; // I32 [n_seqs]
+     ggml_tensor * s_copy_tail; // I32 [n_rs - 1]
+ 
+-    // rollback by replay (llama_memory_recurrent::rs_lag): the GATED_DELTA_NET_LAG lag info and views of its first
+-    // row, the delta-net state gather index without rollback planes
+-    ggml_tensor * s_lag         = nullptr; // I32 [n_seqs, 4]
+-    ggml_tensor * s_copy_s      = nullptr; // I32 [n_rs] (n_rs == n_seqs)
+-    ggml_tensor * s_copy_s_main = nullptr; // I32 [n_seqs]
+-    ggml_tensor * s_copy_s_tail = nullptr; // I32 [n_rs - 1]
++    // rollback by replay (llama_memory_recurrent::rs_lag): the GATED_DELTA_NET_LAG lag info
++    ggml_tensor * s_lag = nullptr; // I32 [n_seqs, 4]
+ 
+     // fills s_copy and the lag inputs from the memory context of the ubatch being processed
+     void set_input_rs(const llama_memory_recurrent_context * mctx_cur);
+diff --git a/src/llama-memory-recurrent.cpp b/src/llama-memory-recurrent.cpp
+index f1f1027bf..db6093274 100644
+--- a/src/llama-memory-recurrent.cpp
++++ b/src/llama-memory-recurrent.cpp
+@@ -1551,8 +1551,8 @@ void llama_memory_recurrent_context::set_input_lag(int32_t * lag) const {
+ 
+ void llama_memory_recurrent::set_input_lag(int32_t * lag, uint32_t n_rs, const llama_ubatch & ubatch) {
+     GGML_ASSERT(rs_lag);
+-    // a single sequence: no extra states to copy (they would need their pending rows copied too), and the first
+-    // row of the lag info is the state gather index
++    // a single sequence: no extra states to copy (they would need their pending rows copied too), and the state of
++    // a cell is read from its own row (build_rs does not gather it)
+     GGML_ASSERT(n_rs == ubatch.n_seqs);
+ 
+     const uint32_t n_seqs = ubatch.n_seqs;
+@@ -1564,7 +1564,7 @@ void llama_memory_recurrent::set_input_lag(int32_t * lag, uint32_t n_rs, const l
+     for (uint32_t s = 0; s < n_seqs; ++s) {
+         const uint32_t cell = head + s;
+         const int32_t  src  = cells[cell].src0;
+-        GGML_ASSERT(src >= 0 && (uint32_t) src < size);
++        GGML_ASSERT(src == (int32_t) cell);
+         const uint32_t rd = rs_pend_plane[src];
+         const uint32_t wr = 1 - rs_pend_plane[cell];
+         lag[0*n_seqs + s] = src;
+diff --git a/src/llama-memory-recurrent.h b/src/llama-memory-recurrent.h
+index 25574e5e8..9a986419f 100644
+--- a/src/llama-memory-recurrent.h
++++ b/src/llama-memory-recurrent.h
+@@ -88,8 +88,8 @@ public:
+     std::vector<uint32_t> rs_pend_n;     // per cell row
+     std::vector<uint8_t>  rs_pend_plane; // per cell row
+ 
+-    // fills the GATED_DELTA_NET_LAG lag info [n_seqs, 4] of a ubatch placed at head (its first row, the source rows,
+-    // is also the state gather index without rollback planes), then records the ubatch's rows as the new pending rows
++    // fills the GATED_DELTA_NET_LAG lag info [n_seqs, 4] of a ubatch placed at head, then records the ubatch's rows
++    // as the new pending rows
+     void set_input_lag(int32_t * lag, uint32_t n_rs, const llama_ubatch & ubatch);
+ 
+     // computed before each graph build
+-- 
+2.43.0
+

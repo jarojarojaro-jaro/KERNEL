@@ -302,3 +302,10 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Akceptacja spada ~2-3% (pooled 5 seedów: 3.063 -> 3.008 tok/krok), więc zysk netto t/s ~+1-3% (średnia z 6 promptów: Qwen 99.8 -> 100.7, Uncensored 100.6 -> 103.2); czat/proza zyskuje najwięcej (pl-proza 86 -> 92, en-chat 78 -> 85), kod/technika lekko traci.
 - Greedy T=0 różni się od bazy przy remisie (char 308), jak przy każdej zmianie draftów; weryfikacja bez zmian.
 - Draft n=5 vs n=4 po S2: średnio Qwen 103.9 vs 100.7 (kod/technika lepiej, czat gorzej), Uncensored 101.5 vs 103.2. Zostaje n=4 do czasu T2 (długość wyceniana kosztem).
+
+## S4: stan GDN z opóźnieniem + cofanie przez przeliczenie (3f8c8ddff..b1a203959; 2026-10-13), bitowo identyczne, LLAMA_GDN_REPLAY=0 wyłącza
+- Nowy op GATED_DELTA_NET_LAG: cache trzyma zatwierdzony stan + bufory wierszy oczekujących; następna weryfikacja przelicza przyjęte wiersze. Bez 720 MiB zapisów snapshotów na weryfikację.
+- GDN 793 -> 638 us/weryfikację; VRAM stanów rekurencyjnych 748 -> 195 MiB.
+- Potwierdzone: Qwen **29.36 ms/krok, 102.9 t/s**; Uncensored **28.27 ms/krok, 106.1 t/s**. Cache promptu działa bez zmian (follow-up 0.64 s, powrót 1.35 s).
+- Koszt: zapis stanu przy każdym żądaniu +10-15 ms prefillu (48 kopii buforów oczekujących); poprawka w stash na opt-s4.
+- Conv bez zmian (snapshoty conv to 4% bajtów, zysk max ~0.03 ms).

@@ -1,0 +1,60 @@
+From bd22515232acc64676481eb49cb1a5355ece37aa Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 18:23:03 +0000
+Subject: [PATCH 35/36] CUDA/HIP: GATED_DELTA_NET_LAG issues the loads of the
+ next pending row before the recurrence of the current one (GDN 661 -> 638 us
+ per verify)
+
+---
+ ggml/src/ggml-cuda/gated_delta_net.cu | 30 ++++++++++++++++++++++-----
+ 1 file changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
+index 7d9013072..0b60373c0 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cu
++++ b/ggml/src/ggml-cuda/gated_delta_net.cu
+@@ -104,16 +104,36 @@ gated_delta_net_cuda(const float * q,
+         pend_wr = lagp.pend + info[n_seqs] * lagp.pend_row_stride + ((planes >> 1) & 1) * K * R;
+         w       = (int) n_tokens - min((int) n_tokens, K);
+ 
+-        for (int j = 0; j < n_pend; j++) {
++        // the loads of row j + 1 are issued before the recurrence of row j, which they do not depend on
++        float k_next[rows_per_lane];
++        float v_next    = 0.0f;
++        float g_next    = 0.0f;
++        float beta_next = 0.0f;
++        auto load_row = [&](int j) {
+             const float * row = pend_rd + j * R;
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                k_next[r] = row[h_idx * S_v + r * lanes_per_col + lane_in_col];
++            }
++            v_next    = row[H * S_v + h_idx * S_v + col];
++            g_next    = row[2 * H * S_v + h_idx];
++            beta_next = row[2 * H * S_v + H + h_idx];
++        };
++        if (n_pend > 0) {
++            load_row(0);
++        }
++        for (int j = 0; j < n_pend; j++) {
+             float k_reg[rows_per_lane];
+ #pragma unroll
+             for (int r = 0; r < rows_per_lane; r++) {
+-                k_reg[r] = row[h_idx * S_v + r * lanes_per_col + lane_in_col];
++                k_reg[r] = k_next[r];
++            }
++            const float v_col    = v_next;
++            const float g_val    = expf(g_next);
++            const float beta_val = beta_next;
++            if (j + 1 < n_pend) {
++                load_row(j + 1);
+             }
+-            const float v_col    = row[H * S_v + h_idx * S_v + col];
+-            const float g_val    = expf(row[2 * H * S_v + h_idx]);
+-            const float beta_val = row[2 * H * S_v + H + h_idx];
+ 
+             float kv_shard = 0.0f;
+ #pragma unroll
+-- 
+2.43.0
+

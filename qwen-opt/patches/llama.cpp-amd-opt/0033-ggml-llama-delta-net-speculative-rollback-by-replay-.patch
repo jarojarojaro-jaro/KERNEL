@@ -1,0 +1,1496 @@
+From 3f8c8ddffb4dbd49c5a2f26db4f193983ac76859 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 17:59:00 +0000
+Subject: [PATCH 33/36] ggml/llama: delta-net speculative rollback by replay of
+ a lagged state (GATED_DELTA_NET_LAG)
+
+The qwen35 GDN verify wrote a full state snapshot per token (5 x 3 MiB per layer at MTP n=4) so that any prefix
+could be restored. The cache now keeps one state per cell that lags behind the cell position by the rows of the
+previous ubatch: their post-norm k, v, g and beta are kept in a pending buffer (two planes) and the next ubatch's
+GDN kernel replays the still-kept rows with the token loop's arithmetic before running its own rows, then writes
+the state once. A rollback of r tokens is rs_pend_n -= r on the host. The conv state keeps its snapshots.
+
+- ggml: GGML_OP_GATED_DELTA_NET_LAG (CPU reference, CUDA/HIP kernel variant of gated_delta_net_cuda, fusions of
+  the GDN prologue / state gather / cache cpy apply as before); test-backend-ops GATED_DELTA_NET_LAG
+- llama: llama_memory_recurrent rs_lag (single sequence, offloaded states, device support probed), s_l with one
+  row per cell, pend_l per layer, seq_rm rollback, state save/load of the pending rows
+- off-switch LLAMA_GDN_REPLAY=0 (or GGML_HIP_GDN_REPLAY=0)
+---
+ ggml/include/ggml-rpc.h                |   4 +-
+ ggml/include/ggml.h                    |  29 ++++
+ ggml/src/ggml-cpu/ggml-cpu.c           |   6 +-
+ ggml/src/ggml-cpu/ops.cpp              | 119 ++++++++++----
+ ggml/src/ggml-cuda/gated_delta_net.cu  | 140 ++++++++++++++---
+ ggml/src/ggml-cuda/gated_delta_net.cuh |   5 +
+ ggml/src/ggml-cuda/ggml-cuda.cu        |  16 +-
+ ggml/src/ggml.c                        |  41 ++++-
+ src/llama-graph.cpp                    |  75 +++++----
+ src/llama-graph.h                      |  10 ++
+ src/llama-memory-hybrid.cpp            |   6 +-
+ src/llama-memory-hybrid.h              |   4 +-
+ src/llama-memory-recurrent.cpp         | 208 ++++++++++++++++++++++++-
+ src/llama-memory-recurrent.h           |  25 ++-
+ src/llama-model.cpp                    |  16 +-
+ src/models/delta-net-base.cpp          |  25 +++
+ tests/test-backend-ops.cpp             | 137 ++++++++++++++++
+ 17 files changed, 752 insertions(+), 114 deletions(-)
+
+diff --git a/ggml/include/ggml-rpc.h b/ggml/include/ggml-rpc.h
+index 482bd3666..ecf0a3a6d 100644
+--- a/ggml/include/ggml-rpc.h
++++ b/ggml/include/ggml-rpc.h
+@@ -8,10 +8,10 @@ extern "C" {
+ 
+ #define RPC_PROTO_MAJOR_VERSION    8
+ #define RPC_PROTO_MINOR_VERSION    0
+-#define RPC_PROTO_PATCH_VERSION    0
++#define RPC_PROTO_PATCH_VERSION    1
+ 
+ #ifdef  __cplusplus
+-static_assert(GGML_OP_COUNT == 101, "GGML_OP_COUNT has changed - update RPC_PROTO_PATCH_VERSION");
++static_assert(GGML_OP_COUNT == 102, "GGML_OP_COUNT has changed - update RPC_PROTO_PATCH_VERSION");
+ #endif
+ 
+ #define GGML_RPC_MAX_SERVERS       16
+diff --git a/ggml/include/ggml.h b/ggml/include/ggml.h
+index 224bdef92..079bcc1ff 100644
+--- a/ggml/include/ggml.h
++++ b/ggml/include/ggml.h
+@@ -581,6 +581,7 @@ extern "C" {
+         GGML_OP_RWKV_WKV7,
+         GGML_OP_SOLVE_TRI,
+         GGML_OP_GATED_DELTA_NET,
++        GGML_OP_GATED_DELTA_NET_LAG,
+         GGML_OP_LIGHTNING_INDEXER,
+         GGML_OP_DSV4_HC_COMB,
+         GGML_OP_DSV4_HC_PRE,
+@@ -2659,6 +2660,34 @@ extern "C" {
+             struct ggml_tensor  * state,
+             int64_t               K);
+ 
++    // GATED_DELTA_NET with a lagged state for speculative rollback by replay.
++    //
++    // The recurrent state lags behind the sequence: the rows of the previous call whose state is kept are stored
++    // (their post-norm k, v, g and beta) in a pending buffer and replayed into the state at the start of the next
++    // call, with the arithmetic of a sequential pass, so no per-token state snapshots are needed. Rolling back r
++    // tokens of the previous call is replaying r fewer rows.
++    //
++    //   q, k, v, g, beta, state : as ggml_gated_delta_net (scalar gate only)
++    //   pend  : F32 [>= 2*K*R, n_rows] -- per recurrent-cache row two planes of K pending rows,
++    //           row layout R = H_v*(S_k + S_v + 2): k [H_v][S_k], v [H_v][S_v], g [H_v], beta [H_v]
++    //   lag   : I32 [4, n_seqs] -- per sequence { src row, dst row, n_pend, read plane | write plane << 1 }
++    //
++    // Sequence s first replays n_pend rows of plane `read` of pend row `src` into its state, then runs its n_tokens
++    // rows; the last P = min(n_tokens, K) of them are written to plane `write` of pend row `dst` (a side effect of
++    // the op on pend). The output packs the attention scores [S_v, H_v, n_tokens, n_seqs] followed by the state
++    // [S_v, S_v, H_v, n_seqs] after the replay and the first n_tokens - P rows (the committed state).
++    GGML_API struct ggml_tensor * ggml_gated_delta_net_lag(
++            struct ggml_context * ctx,
++            struct ggml_tensor  * q,
++            struct ggml_tensor  * k,
++            struct ggml_tensor  * v,
++            struct ggml_tensor  * g,
++            struct ggml_tensor  * beta,
++            struct ggml_tensor  * state,
++            struct ggml_tensor  * pend,
++            struct ggml_tensor  * lag,
++            int64_t               K);
++
+     // DSA lightning indexer
+     //
+     // q:       [n_embd_idx, n_head_idx, n_batch, ne3 ]
+diff --git a/ggml/src/ggml-cpu/ggml-cpu.c b/ggml/src/ggml-cpu/ggml-cpu.c
+index 7c274c03b..c79b3e68b 100644
+--- a/ggml/src/ggml-cpu/ggml-cpu.c
++++ b/ggml/src/ggml-cpu/ggml-cpu.c
+@@ -2086,6 +2086,7 @@ static void ggml_compute_forward(struct ggml_compute_params * params, struct ggm
+                 ggml_compute_forward_solve_tri(params, tensor);
+             } break;
+         case GGML_OP_GATED_DELTA_NET:
++        case GGML_OP_GATED_DELTA_NET_LAG:
+             {
+                 ggml_compute_forward_gated_delta_net(params, tensor);
+             } break;
+@@ -2285,6 +2286,7 @@ static int ggml_get_n_tasks(struct ggml_tensor * node, int n_threads) {
+         case GGML_OP_COUNT_EQUAL:
+         case GGML_OP_SOLVE_TRI:
+         case GGML_OP_GATED_DELTA_NET:
++        case GGML_OP_GATED_DELTA_NET_LAG:
+         case GGML_OP_DSV4_HC_COMB:
+         case GGML_OP_DSV4_HC_PRE:
+         case GGML_OP_DSV4_HC_POST:
+@@ -3023,10 +3025,12 @@ struct ggml_cplan ggml_graph_plan(
+                         cur = ggml_type_size(node->type)*(n_tasks + node->src[0]->ne[0]*n_tasks);
+                     } break;
+                 case GGML_OP_GATED_DELTA_NET:
++                case GGML_OP_GATED_DELTA_NET_LAG:
+                     {
+                         const int64_t S_v = node->src[2]->ne[0];
+                         const int64_t K   = ggml_get_op_params_i32(node, 0);
+-                        const int64_t per_thread = S_v + (K > 1 ? S_v * S_v : 0);
++                        const bool    lag = node->op == GGML_OP_GATED_DELTA_NET_LAG;
++                        const int64_t per_thread = S_v + (lag || K > 1 ? S_v * S_v : 0);
+                         cur = per_thread * sizeof(float) * n_tasks;
+                     } break;
+                 case GGML_OP_COUNT:
+diff --git a/ggml/src/ggml-cpu/ops.cpp b/ggml/src/ggml-cpu/ops.cpp
+index c7e7c47a7..35568fb3a 100644
+--- a/ggml/src/ggml-cpu/ops.cpp
++++ b/ggml/src/ggml-cpu/ops.cpp
+@@ -11120,6 +11120,36 @@ void ggml_compute_forward_solve_tri(const struct ggml_compute_params * params, s
+ }
+ 
+ // ggml_compute_forward_gated_delta_net
++
++// one recurrence step on the transposed state s (s[j*S_v + i] = S[i][j]): S = g*S + k (x) ((v - S^T k) * beta)
++static inline void ggml_gdn_cpu_update(float * s, float * delta, int64_t S_v, bool kda, const float * g_d,
++        const float * k_d, const float * v_d, float beta_val) {
++    if (kda) {
++        // precompute exp(g) into delta scratch (reused below)
++        for (int64_t i = 0; i < S_v; ++i) {
++            delta[i] = expf(g_d[i]);
++        }
++        // S[i][:] *= exp(g[i]) => for each row j of M: M[j][i] *= exp(g[i])
++        for (int64_t j = 0; j < S_v; ++j) {
++            ggml_vec_mul_f32(S_v, &s[j * S_v], &s[j * S_v], delta);
++        }
++    } else {
++        ggml_vec_scale_f32(S_v * S_v, s, expf(g_d[0]));
++    }
++
++    // delta[j] = sum_i S[i][j] * k[i] = dot(row j of M, k)
++    for (int64_t j = 0; j < S_v; ++j) {
++        float sum = 0.0f;
++        ggml_vec_dot_f32(S_v, &sum, 0, &s[j * S_v], 0, k_d, 0, 1);
++        delta[j] = (v_d[j] - sum) * beta_val;
++    }
++
++    // outer product: S[i][j] += k[i] * delta[j] => M[j][i] += delta[j] * k[i]
++    for (int64_t j = 0; j < S_v; ++j) {
++        ggml_vec_mad_f32(S_v, &s[j * S_v], k_d, delta[j]);
++    }
++}
++
+ static void ggml_compute_forward_gated_delta_net_one_chunk(
+     const ggml_compute_params * params,
+     ggml_tensor * dst,
+@@ -11160,17 +11190,29 @@ static void ggml_compute_forward_gated_delta_net_one_chunk(
+ 
+     const bool kda = (neg0 == S_v);
+ 
+-    // K (snapshot slot count) is an op param; state holds s0 only [S_v, S_v, H, n_seqs].
++    // GATED_DELTA_NET_LAG: K pending rows (see ggml_gated_delta_net_lag), a single output state;
++    // GATED_DELTA_NET: K snapshot slots. state holds s0 only [S_v, S_v, H, n_seqs].
++    const bool lag = dst->op == GGML_OP_GATED_DELTA_NET_LAG;
+     const int64_t K = ggml_get_op_params_i32(dst, 0);
+     GGML_ASSERT(K >= 1);
++    GGML_ASSERT(!lag || !kda);
+     // per-seq stride in floats (seq s starts at state + s * seq_stride)
+     const int64_t state_seq_stride = src_state->nb[3] / sizeof(float);
+ 
+-    const int64_t per_thread = S_v + (K > 1 ? S_v * S_v : 0);
++    // the lagged op stores the state after w of its rows, so it runs in scratch too
++    const bool work_state = lag || K > 1;
++    const int64_t per_thread = S_v + (work_state ? S_v * S_v : 0);
+     const int ith = params->ith;
+ 
+     float * delta       = (float *)params->wdata + ith * per_thread + CACHE_LINE_SIZE_F32;
+-    float * state_work  = K > 1 ? (delta + S_v) : nullptr;
++    float * state_work  = work_state ? (delta + S_v) : nullptr;
++
++    // pending rows: R floats each, k [H][S_k], v [H][S_v], g [H], beta [H]
++    const int64_t S_k   = nek0;
++    const int64_t R     = H * (S_k + S_v + 2);
++    const int64_t off_v = H * S_k;
++    const int64_t off_g = H * (S_k + S_v);
++    const int64_t off_b = off_g + H;
+ 
+     // output layout: [attn_scores | new_states]
+     // attn_scores: S_v * H * n_tokens * n_seqs    floats
+@@ -11202,17 +11244,41 @@ static void ggml_compute_forward_gated_delta_net_one_chunk(
+         const int64_t iq3 = iv3 / rq3;
+         const int64_t ik3 = iv3 / rk3;
+ 
++        // lagged state: replay the pending rows, the committed state is the one after the first w rows
++        const float * pend_rd = nullptr;
++        float *       pend_wr = nullptr;
++        int64_t       n_pend  = 0;
++        int64_t       w       = 0;
++        if (lag) {
++            const int32_t * li = (const int32_t *) ((const char *) dst->src[7]->data + iv3 * dst->src[7]->nb[1]);
++            const ggml_tensor * pend = dst->src[6];
++            pend_rd = (const float *) ((const char *) pend->data + li[0] * pend->nb[1]) + (li[3] & 1) * K * R;
++            pend_wr = (float *) ((char *) pend->data + li[1] * pend->nb[1]) + ((li[3] >> 1) & 1) * K * R;
++            n_pend  = li[2];
++            w       = n_tokens - std::min<int64_t>(n_tokens, K);
++            GGML_ASSERT(n_pend >= 0 && n_pend <= K);
++        }
++
++        float * s_final = state_out_base + (iv3 * H + iv1) * S_v * S_v;
++
+         // For K=1, write directly to the single output slot to avoid an extra memcpy at the end.
+         // For K>1, work in scratch and copy out per-token when the slot is in range.
+-        float * s_out = (K > 1)
+-            ? state_work
+-            : state_out_base + (iv3 * H + iv1) * S_v * S_v;
++        float * s_out = work_state ? state_work : s_final;
+ 
+         // copy input state into the working buffer and operate in-place
+         // state layout [S_v, S_v, H, n_seqs]: seq iv3 starts at iv3 * state_seq_stride.
+         const float * s_in = state_in_base + iv3 * state_seq_stride + iv1 * S_v * S_v;
+         memcpy(s_out, s_in, S_v * S_v * sizeof(float));
+ 
++        for (int64_t j = 0; j < n_pend; ++j) {
++            const float * row = pend_rd + j * R;
++            ggml_gdn_cpu_update(s_out, delta, S_v, false, row + off_g + iv1, row + iv1 * S_k, row + off_v + iv1 * S_v,
++                                row[off_b + iv1]);
++        }
++        if (lag && w == 0) {
++            memcpy(s_final, s_out, S_v * S_v * sizeof(float));
++        }
++
+         // attn output pointer for first token of this (head, seq)
+         float * attn_data = attn_out_base + (iv3 * n_tokens * H + iv1) * S_v;
+ 
+@@ -11224,33 +11290,7 @@ static void ggml_compute_forward_gated_delta_net_one_chunk(
+             const float beta_val = *(const float *)((const char *)src_beta->data + iv3 * nbb3 + t * nbb2 + iv1 * nbb1);
+             const float * g_d    =  (const float *)((const char *)src_g->data    + iv3 * nbg3 + t * nbg2 + iv1 * nbg1);
+ 
+-            // state is stored transposed: s_out[j*S_v + i] = S[i][j]
+-            // so row j of s_out = column j of S (contiguous access)
+-
+-            if (kda) {
+-                // precompute exp(g) into delta scratch (reused below)
+-                for (int64_t i = 0; i < S_v; ++i) {
+-                    delta[i] = expf(g_d[i]);
+-                }
+-                // S[i][:] *= exp(g[i]) => for each row j of M: M[j][i] *= exp(g[i])
+-                for (int64_t j = 0; j < S_v; ++j) {
+-                    ggml_vec_mul_f32(S_v, &s_out[j * S_v], &s_out[j * S_v], delta);
+-                }
+-            } else {
+-                ggml_vec_scale_f32(S_v * S_v, s_out, expf(g_d[0]));
+-            }
+-
+-            // delta[j] = sum_i S[i][j] * k[i] = dot(row j of M, k)
+-            for (int64_t j = 0; j < S_v; ++j) {
+-                float sum = 0.0f;
+-                ggml_vec_dot_f32(S_v, &sum, 0, &s_out[j * S_v], 0, k_d, 0, 1);
+-                delta[j] = (v_d[j] - sum) * beta_val;
+-            }
+-
+-            // outer product: S[i][j] += k[i] * delta[j] => M[j][i] += delta[j] * k[i]
+-            for (int64_t j = 0; j < S_v; ++j) {
+-                ggml_vec_mad_f32(S_v, &s_out[j * S_v], k_d, delta[j]);
+-            }
++            ggml_gdn_cpu_update(s_out, delta, S_v, kda, g_d, k_d, v_d, beta_val);
+ 
+             // attn_out[j] = sum_i S[i][j] * q[i] = dot(row j of M, q)
+             for (int64_t j = 0; j < S_v; ++j) {
+@@ -11261,7 +11301,18 @@ static void ggml_compute_forward_gated_delta_net_one_chunk(
+ 
+             attn_data += S_v * H; // advance to next token
+ 
+-            if (K > 1) {
++            if (lag) {
++                if (t >= w) {
++                    float * row = pend_wr + (t - w) * R;
++                    memcpy(row + iv1 * S_k, k_d, S_k * sizeof(float));
++                    memcpy(row + off_v + iv1 * S_v, v_d, S_v * sizeof(float));
++                    row[off_g + iv1] = g_d[0];
++                    row[off_b + iv1] = beta_val;
++                }
++                if (t == w - 1) {
++                    memcpy(s_final, s_out, S_v * S_v * sizeof(float));
++                }
++            } else if (K > 1) {
+                 const int64_t target_slot = n_tokens - 1 - t;
+                 if (target_slot >= 0 && target_slot < K) {
+                     float * curr_state_o = state_out_base + target_slot * state_size_per_snap +
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
+index 7aa229bfc..b836cb9e8 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cu
++++ b/ggml/src/ggml-cuda/gated_delta_net.cu
+@@ -3,11 +3,21 @@
+ 
+ constexpr int gdn_cols_per_warp = 4;
+ 
++// pending rows of GATED_DELTA_NET_LAG (see ggml_gated_delta_net_lag)
++struct gdn_lag_args {
++    float *         pend;            // [2*K*R, n_rows]
++    int64_t         pend_row_stride; // in floats
++    const int32_t * info;            // [4, n_seqs]: src row, dst row, n_pend, read plane | write plane << 1
++};
++
+ // l2_qk: q and k arrive un-normalized and are l2-normalized per (head, token) in the kernel, with the arithmetic of
+ // the RMS_NORM + SCALE pair it replaces: x * rsqrtf(sum(x^2)/S_v + l2_eps) * l2_scale.
+ // state_idx: when not null, the initial state of sequence s is row state_idx[s] of curr_state (row stride
+ // state_row_stride), i.e. the GET_ROWS gather of the recurrent states is folded into this read.
+-template <int S_v, bool KDA, bool keep_rs_t, bool l2_qk, int cols_per_warp = gdn_cols_per_warp>
++// lag_t: GATED_DELTA_NET_LAG, K is the pending-row capacity; the n_pend pending rows are replayed into the state
++// with the arithmetic of the token loop (bit-identical to having run them in sequence), the state after the first
++// w = n_tokens - min(n_tokens, K) rows is written once and the last min(n_tokens, K) rows become the new pending rows.
++template <int S_v, bool KDA, bool keep_rs_t, bool l2_qk, bool lag_t, int cols_per_warp = gdn_cols_per_warp>
+ __global__ void __launch_bounds__((ggml_cuda_get_physical_warp_size() < S_v ? ggml_cuda_get_physical_warp_size() : S_v) * 4, 2)
+ gated_delta_net_cuda(const float * q,
+                                      const float * k,
+@@ -37,7 +47,9 @@ gated_delta_net_cuda(const float * q,
+                                      float         l2_eps,
+                                      float         l2_scale,
+                                      int64_t       state_slot_stride,
+-                                     int           K) {
++                                     int           K,
++                                     const gdn_lag_args lagp) {
++    static_assert(!lag_t || (!KDA && !keep_rs_t), "the lagged state has a scalar gate and no snapshots");
+     const uint32_t h_idx    = blockIdx.x;
+     const uint32_t sequence = blockIdx.y;
+ 
+@@ -79,6 +91,52 @@ gated_delta_net_cuda(const float * q,
+         s_shard[r]  = curr_state[i];
+     }
+ 
++    // lagged state: replay the pending rows of the previous call (the expressions are those of the token loop below)
++    // and write the state once, after the first w rows of this call
++    [[maybe_unused]] float * pend_wr = nullptr;
++    [[maybe_unused]] int     w       = 0;
++    if constexpr (lag_t) {
++        const int32_t * info   = lagp.info + sequence * 4;
++        const int       n_pend = info[2];
++        const int64_t   R      = H * (2 * S_v + 2);
++        const float *   pend_rd = lagp.pend + info[0] * lagp.pend_row_stride + (info[3] & 1) * K * R;
++        pend_wr = lagp.pend + info[1] * lagp.pend_row_stride + ((info[3] >> 1) & 1) * K * R;
++        w       = (int) n_tokens - min((int) n_tokens, K);
++
++        for (int j = 0; j < n_pend; j++) {
++            const float * row = pend_rd + j * R;
++            float k_reg[rows_per_lane];
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                k_reg[r] = row[h_idx * S_v + r * lanes_per_col + lane_in_col];
++            }
++            const float v_col    = row[H * S_v + h_idx * S_v + col];
++            const float g_val    = expf(row[2 * H * S_v + h_idx]);
++            const float beta_val = row[2 * H * S_v + H + h_idx];
++
++            float kv_shard = 0.0f;
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                kv_shard += s_shard[r] * k_reg[r];
++            }
++            float kv_col = warp_reduce_sum<lanes_per_col>(kv_shard);
++
++            float delta_col = (v_col - g_val * kv_col) * beta_val;
++
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                s_shard[r]  = g_val * s_shard[r] + k_reg[r] * delta_col;
++            }
++        }
++
++        if (w == 0) {
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                state[col * S_v + r * lanes_per_col + lane_in_col] = s_shard[r];
++            }
++        }
++    }
++
+     for (int t = 0; t < n_tokens; t++) {
+         const float * q_t = q + iq3 * sq3 + t * sq2 + iq1 * sq1;
+         const float * k_t = k + iq3 * sq3 + t * sq2 + iq1 * sq1;
+@@ -180,6 +238,34 @@ gated_delta_net_cuda(const float * q,
+ 
+         attn_data += S_v * H;
+ 
++        if constexpr (lag_t) {
++            if (t >= w) {
++                // this row becomes pending: post-norm k (one segment of the first CTA of the head), v, raw g, beta
++                const int64_t R   = H * (2 * S_v + 2);
++                float *       row = pend_wr + (t - w) * R;
++                const bool first_seg = blockIdx.z == 0 && threadIdx.y == 0 && col_in_warp == 0;
++                if (first_seg) {
++#pragma unroll
++                    for (int r = 0; r < rows_per_lane; r++) {
++                        row[h_idx * S_v + r * lanes_per_col + lane_in_col] = k_reg[r];
++                    }
++                    if (lane_in_col == 0) {
++                        row[2 * H * S_v + h_idx]     = *g_t;
++                        row[2 * H * S_v + H + h_idx] = beta_val;
++                    }
++                }
++                if (lane_in_col == 0) {
++                    row[H * S_v + h_idx * S_v + col] = v_t[col];
++                }
++            }
++            if (t == w - 1) {
++#pragma unroll
++                for (int r = 0; r < rows_per_lane; r++) {
++                    state[col * S_v + r * lanes_per_col + lane_in_col] = s_shard[r];
++                }
++            }
++        }
++
+         if constexpr (keep_rs_t) {
+             // snapshot slot mapping: slot 0 = most recent state, slot s = s tokens back.
+             // When n_tokens < K only slots 0..n_tokens-1 are written; older slots are caller-owned.
+@@ -195,7 +281,7 @@ gated_delta_net_cuda(const float * q,
+         }
+     }
+ 
+-    if constexpr (!keep_rs_t) {
++    if constexpr (!keep_rs_t && !lag_t) {
+ #pragma unroll
+         for (int r = 0; r < rows_per_lane; r++) {
+             const int i          = r * lanes_per_col + lane_in_col;
+@@ -211,7 +297,7 @@ struct gdn_state_src {
+     int64_t         row_stride; // in floats, used with idx
+ };
+ 
+-template <bool KDA, bool keep_rs_t, bool l2_qk>
++template <bool KDA, bool keep_rs_t, bool l2_qk, bool lag_t>
+ static void launch_gated_delta_net(
+         const float * q_d, const float * k_d, const float * v_d,
+         const float * g_d, const float * b_d, const gdn_state_src s_src,
+@@ -221,7 +307,8 @@ static void launch_gated_delta_net(
+         int64_t sv1,   int64_t sv2, int64_t sv3,
+         int64_t sb1,   int64_t sb2, int64_t sb3,
+         int64_t neqk1, int64_t rq3,
+-        float scale, float l2_eps, float l2_scale, int64_t state_slot_stride, int K, cudaStream_t stream) {
++        float scale, float l2_eps, float l2_scale, int64_t state_slot_stride, int K, const gdn_lag_args lagp,
++        cudaStream_t stream) {
+     //TODO: Add chunked kernel for even faster pre-fill
+     const int warp_size = ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size;
+     // four columns per warp (see the kernel); shrink the CTA when the wider CTA would leave
+@@ -241,10 +328,10 @@ static void launch_gated_delta_net(
+ 
+     const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(grid_dims, block_dims, 0, stream);
+ #define GDN_LAUNCH(S)                                                                                         \
+-    ggml_cuda_kernel_launch(gated_delta_net_cuda<S, KDA, keep_rs_t, l2_qk>, launch_params,                      \
++    ggml_cuda_kernel_launch(gated_delta_net_cuda<S, KDA, keep_rs_t, l2_qk, lag_t>, launch_params,               \
+         q_d, k_d, v_d, g_d, b_d, s_src.s_d, s_src.idx, s_src.row_stride, dst_d, state_d, H,                     \
+         n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,                                                         \
+-        sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, l2_eps, l2_scale, state_slot_stride, K)
++        sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, l2_eps, l2_scale, state_slot_stride, K, lagp)
+     switch (S_v) {
+         case 16:  GDN_LAUNCH(16);  break;
+         case 32:  GDN_LAUNCH(32);  break;
+@@ -277,7 +364,7 @@ bool ggml_cuda_gdn_l2_norm_src(const ggml_tensor * t, ggml_cuda_gdn_l2_norm & l2
+ }
+ 
+ bool ggml_cuda_gdn_fuse_l2_norm(const ggml_tensor * gdn, ggml_cuda_gdn_l2_norm & l2_q, ggml_cuda_gdn_l2_norm & l2_k) {
+-    if (gdn->op != GGML_OP_GATED_DELTA_NET ||
++    if (!ggml_cuda_is_gdn(gdn) ||
+             !ggml_cuda_gdn_l2_norm_src(gdn->src[0], l2_q) || !ggml_cuda_gdn_l2_norm_src(gdn->src[1], l2_k)) {
+         return false;
+     }
+@@ -289,7 +376,7 @@ bool ggml_cuda_gdn_fuse_l2_norm(const ggml_tensor * gdn, ggml_cuda_gdn_l2_norm &
+ const ggml_tensor * ggml_cuda_gdn_state_gather(const ggml_tensor * gdn) {
+     // build_rs: state = reshape(view(get_rows(states, s_copy))) for a single sequence without extra states;
+     // nothing between the gather and the GDN writes to the gathered rows in that case
+-    if (gdn->op != GGML_OP_GATED_DELTA_NET) {
++    if (!ggml_cuda_is_gdn(gdn)) {
+         return nullptr;
+     }
+     const ggml_tensor * state = gdn->src[5];
+@@ -388,9 +475,20 @@ static void ggml_cuda_op_gated_delta_net_impl(
+ 
+     cudaStream_t stream = ctx.stream();
+ 
+-    // K (snapshot slot count) is an op param; state holds s0 only [S_v, S_v, H, n_seqs].
+-    const int K = ggml_get_op_params_i32(dst, 0);
+-    const bool keep_rs = K > 1;
++    // GATED_DELTA_NET: K (snapshot slot count) is an op param; GATED_DELTA_NET_LAG: K pending rows, one state.
++    // state holds s0 only [S_v, S_v, H, n_seqs].
++    const int  K       = ggml_get_op_params_i32(dst, 0);
++    const bool lag     = dst->op == GGML_OP_GATED_DELTA_NET_LAG;
++    const bool keep_rs = !lag && K > 1;
++
++    gdn_lag_args lagp = { nullptr, 0, nullptr };
++    if (lag) {
++        const ggml_tensor * pend = dst->src[6];
++        GGML_ASSERT(!kda && nek0 == S_v && pend->ne[0] >= 2 * K * H * (2 * S_v + 2));
++        lagp.pend            = (float *) pend->data;
++        lagp.pend_row_stride = pend->nb[1] / sizeof(float);
++        lagp.info            = (const int32_t *) dst->src[7]->data;
++    }
+ 
+     // recurrent state -> gdn_out tail (after attention scores), or the cache when fusing
+     float * state_d           = dst_d + S_v * H * n_tokens * n_seqs;
+@@ -400,21 +498,23 @@ static void ggml_cuda_op_gated_delta_net_impl(
+         state_slot_stride = cache->slot_stride;
+     }
+ 
+-#define GDN_DISPATCH(KDA_, KEEP_, L2_)                                                              \
+-    launch_gated_delta_net<KDA_, KEEP_, L2_>(q_d, k_d, v_d, g_d, b_d, s_src, dst_d, state_d,         \
++#define GDN_DISPATCH(KDA_, KEEP_, L2_, LAG_)                                                        \
++    launch_gated_delta_net<KDA_, KEEP_, L2_, LAG_>(q_d, k_d, v_d, g_d, b_d, s_src, dst_d, state_d,   \
+         S_v, H, n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,                                       \
+-        sb1, sb2, sb3, neqk1, rq3, scale, l2_eps, l2_scale, state_slot_stride, K, stream)
+-    if (kda) {
++        sb1, sb2, sb3, neqk1, rq3, scale, l2_eps, l2_scale, state_slot_stride, K, lagp, stream)
++    if (lag) {
++        if (l2_qk) { GDN_DISPATCH(false, false, true, true); } else { GDN_DISPATCH(false, false, false, true); }
++    } else if (kda) {
+         if (keep_rs) {
+-            if (l2_qk) { GDN_DISPATCH(true, true, true); } else { GDN_DISPATCH(true, true, false); }
++            if (l2_qk) { GDN_DISPATCH(true, true, true, false); } else { GDN_DISPATCH(true, true, false, false); }
+         } else {
+-            if (l2_qk) { GDN_DISPATCH(true, false, true); } else { GDN_DISPATCH(true, false, false); }
++            if (l2_qk) { GDN_DISPATCH(true, false, true, false); } else { GDN_DISPATCH(true, false, false, false); }
+         }
+     } else {
+         if (keep_rs) {
+-            if (l2_qk) { GDN_DISPATCH(false, true, true); } else { GDN_DISPATCH(false, true, false); }
++            if (l2_qk) { GDN_DISPATCH(false, true, true, false); } else { GDN_DISPATCH(false, true, false, false); }
+         } else {
+-            if (l2_qk) { GDN_DISPATCH(false, false, true); } else { GDN_DISPATCH(false, false, false); }
++            if (l2_qk) { GDN_DISPATCH(false, false, true, false); } else { GDN_DISPATCH(false, false, false, false); }
+         }
+     }
+ #undef GDN_DISPATCH
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cuh b/ggml/src/ggml-cuda/gated_delta_net.cuh
+index 1b39e7ae6..fd13a7e7f 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cuh
++++ b/ggml/src/ggml-cuda/gated_delta_net.cuh
+@@ -1,6 +1,11 @@
+ #include "common.cuh"
+ #include "ggml.h"
+ 
++// GATED_DELTA_NET and its lagged-state variant GATED_DELTA_NET_LAG (same kernel, same sources 0-5)
++static inline bool ggml_cuda_is_gdn(const ggml_tensor * t) {
++    return t->op == GGML_OP_GATED_DELTA_NET || t->op == GGML_OP_GATED_DELTA_NET_LAG;
++}
++
+ // fused-kernel recurrent-state output; strides in elements (per-seq stride is always D, set in-kernel)
+ struct ggml_cuda_gated_delta_net_fused_cache {
+     float * data;        // rollback slot 0
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index c0fd9ef4d..5b75e93d4 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -2473,6 +2473,7 @@ static bool ggml_cuda_compute_forward(ggml_backend_cuda_context & ctx, struct gg
+             ggml_cuda_op_gated_linear_attn(ctx, dst);
+             break;
+         case GGML_OP_GATED_DELTA_NET:
++        case GGML_OP_GATED_DELTA_NET_LAG:
+             ggml_cuda_op_gated_delta_net(ctx, dst);
+             break;
+         case GGML_OP_DSV4_HC_COMB:
+@@ -2849,7 +2850,7 @@ static int ggml_cuda_try_gdn_cache_fusion(
+         const ggml_cgraph * cgraph, int node_idx, ggml_cuda_gated_delta_net_fused_cache & fused_state_cpy) {
+     const ggml_tensor * gdn = cgraph->nodes[node_idx];
+     // the kernel skips the snapshot tail, so the gdn output must not be a graph output
+-    if (gdn->op != GGML_OP_GATED_DELTA_NET || gdn->type != GGML_TYPE_F32 ||
++    if (!ggml_cuda_is_gdn(gdn) || gdn->type != GGML_TYPE_F32 ||
+         (gdn->flags & GGML_TENSOR_FLAG_OUTPUT)) {
+         return 0;
+     }
+@@ -2860,7 +2861,8 @@ static int ggml_cuda_try_gdn_cache_fusion(
+     const int64_t       n_tokens  = src_v->ne[2];
+     const int64_t       n_seqs    = src_v->ne[3];
+     const int64_t       D         = S_v * S_v * H;
+-    const int64_t       K         = ggml_get_op_params_i32(gdn, 0); // snapshot slot count
++    // snapshot slot count; the lagged op writes one state
++    const int64_t       K         = gdn->op == GGML_OP_GATED_DELTA_NET_LAG ? 1 : ggml_get_op_params_i32(gdn, 0);
+     const int64_t       n_written = std::min<int64_t>(n_tokens, K); // newest n_written slots are written
+ 
+     // snapshot tail starts right after the attention scores
+@@ -3803,7 +3805,7 @@ static bool ggml_cuda_state_gather_elided(const ggml_cgraph * cgraph, int i) {
+     }
+     for (const ggml_cuda_reader & r : readers) {
+         const ggml_tensor * n = cgraph->nodes[r.idx];
+-        if (n->op == GGML_OP_GATED_DELTA_NET) {
++        if (ggml_cuda_is_gdn(n)) {
+             if (r.src != 5 || ggml_cuda_gdn_state_gather(n) != node) {
+                 return false;
+             }
+@@ -4077,7 +4079,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+     }
+ 
+     // gated_delta_net -> cpy: scatter recurrent-state snapshots into the cache
+-    if (node->op == GGML_OP_GATED_DELTA_NET) {
++    if (ggml_cuda_is_gdn(node)) {
+         ggml_cuda_gated_delta_net_fused_cache fused_state_cpy;
+         const int nodes_to_skip = ggml_cuda_try_gdn_cache_fusion(cgraph, i, fused_state_cpy);
+         if (nodes_to_skip > 0) {
+@@ -6384,6 +6386,12 @@ static bool ggml_backend_cuda_device_supports_op(ggml_backend_dev_t dev, const g
+             return true;
+         case GGML_OP_GATED_DELTA_NET:
+             return true;
++        case GGML_OP_GATED_DELTA_NET_LAG:
++            {
++                const int64_t S_v = op->src[2]->ne[0];
++                return op->src[1]->ne[0] == S_v && op->src[3]->ne[0] == 1 &&
++                    (S_v == 16 || S_v == 32 || S_v == 64 || S_v == 128);
++            }
+         case GGML_OP_DSV4_HC_COMB:
+             return op->src[0]->type == GGML_TYPE_F32 && op->src[1]->type == GGML_TYPE_F32 &&
+                 op->src[2]->type == GGML_TYPE_F32 && op->type == GGML_TYPE_F32;
+diff --git a/ggml/src/ggml.c b/ggml/src/ggml.c
+index 9bcabdbd3..a6d42214c 100644
+--- a/ggml/src/ggml.c
++++ b/ggml/src/ggml.c
+@@ -1080,6 +1080,7 @@ static const char * GGML_OP_NAME[GGML_OP_COUNT] = {
+     "RWKV_WKV7",
+     "SOLVE_TRI",
+     "GATED_DELTA_NET",
++    "GATED_DELTA_NET_LAG",
+     "LIGHTNING_INDEXER",
+     "DSV4_HC_COMB",
+     "DSV4_HC_PRE",
+@@ -1101,7 +1102,7 @@ static const char * GGML_OP_NAME[GGML_OP_COUNT] = {
+     "GLU",
+ };
+ 
+-static_assert(GGML_OP_COUNT == 101, "GGML_OP_COUNT != 101");
++static_assert(GGML_OP_COUNT == 102, "GGML_OP_COUNT != 102");
+ 
+ static const char * GGML_OP_SYMBOL[GGML_OP_COUNT] = {
+     "none",
+@@ -1195,6 +1196,7 @@ static const char * GGML_OP_SYMBOL[GGML_OP_COUNT] = {
+     "rwkv_wkv7(r, w, k, v, a, b, s)",
+     "A X = B, A triangular, solve X",
+     "gated_delta_net(q, k, v, g, beta, s)",
++    "gated_delta_net_lag(q, k, v, g, beta, s, pend, lag)",
+     "lightning_indexer(q, k, weights, mask)",
+     "dsv4_hc_comb(mixes, scale, base)",
+     "dsv4_hc_pre(x, weights)",
+@@ -1216,7 +1218,7 @@ static const char * GGML_OP_SYMBOL[GGML_OP_COUNT] = {
+     "glu(x)",
+ };
+ 
+-static_assert(GGML_OP_COUNT == 101, "GGML_OP_COUNT != 101");
++static_assert(GGML_OP_COUNT == 102, "GGML_OP_COUNT != 102");
+ 
+ static_assert(GGML_OP_POOL_COUNT == 2, "GGML_OP_POOL_COUNT != 2");
+ 
+@@ -6427,6 +6429,41 @@ struct ggml_tensor * ggml_gated_delta_net(
+     return result;
+ }
+ 
++// ggml_gated_delta_net_lag
++
++struct ggml_tensor * ggml_gated_delta_net_lag(
++        struct ggml_context * ctx,
++        struct ggml_tensor  * q,
++        struct ggml_tensor  * k,
++        struct ggml_tensor  * v,
++        struct ggml_tensor  * g,
++        struct ggml_tensor  * beta,
++        struct ggml_tensor  * state,
++        struct ggml_tensor  * pend,
++        struct ggml_tensor  * lag,
++        int64_t               K) {
++    struct ggml_tensor * result = ggml_gated_delta_net(ctx, q, k, v, g, beta, state, 1);
++
++    const int64_t S_k = k->ne[0];
++    const int64_t S_v = v->ne[0];
++    const int64_t H   = v->ne[1];
++
++    GGML_ASSERT(g->ne[0] == 1);
++    GGML_ASSERT(K >= 1);
++    GGML_ASSERT(pend->type == GGML_TYPE_F32 && ggml_is_contiguous(pend));
++    GGML_ASSERT(pend->ne[0] >= 2 * K * H * (S_k + S_v + 2) && pend->ne[2] == 1 && pend->ne[3] == 1);
++    GGML_ASSERT(lag->type == GGML_TYPE_I32 && ggml_is_contiguous(lag));
++    GGML_ASSERT(lag->ne[0] == 4 && lag->ne[1] == v->ne[3]);
++
++    ggml_set_op_params_i32(result, 0, (int32_t) K);
++
++    result->op     = GGML_OP_GATED_DELTA_NET_LAG;
++    result->src[6] = pend;
++    result->src[7] = lag;
++
++    return result;
++}
++
+ // ggml_lightning_indexer
+ 
+ struct ggml_tensor * ggml_lightning_indexer(
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 99cab6d9e..a722aa593 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -396,10 +396,8 @@ void llm_graph_input_cls::set_input(const llama_ubatch * ubatch) {
+     }
+ }
+ 
+-void llm_graph_input_rs::set_input(const llama_ubatch * ubatch) {
+-    GGML_UNUSED(ubatch);
+-
+-    const int64_t n_rs = mctx->get_n_rs();
++void llm_graph_input_rs::set_input_rs(const llama_memory_recurrent_context * mctx_cur) {
++    const int64_t n_rs = mctx_cur->get_n_rs();
+ 
+     if (s_copy) {
+         GGML_ASSERT(ggml_backend_buffer_is_host(s_copy->buffer));
+@@ -407,9 +405,20 @@ void llm_graph_input_rs::set_input(const llama_ubatch * ubatch) {
+ 
+         // assuming copy destinations ALWAYS happen ONLY on the cells between head and head+n
+         for (uint32_t i = 0; i < n_rs; ++i) {
+-            data[i] = mctx->s_copy(i);
++            data[i] = mctx_cur->s_copy(i);
+         }
+     }
++
++    if (s_lag) {
++        GGML_ASSERT(ggml_backend_buffer_is_host(s_copy_s->buffer) && ggml_backend_buffer_is_host(s_lag->buffer));
++        mctx_cur->set_input_lag((int32_t *) s_copy_s->data, (int32_t *) s_lag->data);
++    }
++}
++
++void llm_graph_input_rs::set_input(const llama_ubatch * ubatch) {
++    GGML_UNUSED(ubatch);
++
++    set_input_rs(mctx);
+ }
+ 
+ bool llm_graph_input_rs::can_reuse(const llm_graph_params & params) {
+@@ -1174,17 +1183,7 @@ void llm_graph_input_mem_hybrid::set_input(const llama_ubatch * ubatch) {
+         mctx->get_attn()->set_input_v_rot(inp_attn->self_v_rot);
+     }
+ 
+-    const int64_t n_rs = mctx->get_recr()->get_n_rs();
+-
+-    if (inp_rs->s_copy) {
+-        GGML_ASSERT(ggml_backend_buffer_is_host(inp_rs->s_copy->buffer));
+-        int32_t * data = (int32_t *) inp_rs->s_copy->data;
+-
+-        // assuming copy destinations ALWAYS happen ONLY on the cells between head and head+n
+-        for (uint32_t i = 0; i < n_rs; ++i) {
+-            data[i] = mctx->get_recr()->s_copy(i);
+-        }
+-    }
++    inp_rs->set_input_rs(mctx->get_recr());
+ }
+ 
+ bool llm_graph_input_mem_hybrid::can_reuse(const llm_graph_params & params) {
+@@ -1217,17 +1216,7 @@ void llm_graph_input_mem_hybrid_k::set_input(const llama_ubatch * ubatch) {
+ 
+     mctx->get_attn()->set_input_kq_mask(inp_attn->self_kq_mask, ubatch, cparams.causal_attn);
+ 
+-    const int64_t n_rs = mctx->get_recr()->get_n_rs();
+-
+-    if (inp_rs->s_copy) {
+-        GGML_ASSERT(ggml_backend_buffer_is_host(inp_rs->s_copy->buffer));
+-        int32_t * data = (int32_t *) inp_rs->s_copy->data;
+-
+-        // assuming copy destinations ALWAYS happen ONLY on the cells between head and head+n
+-        for (uint32_t i = 0; i < n_rs; ++i) {
+-            data[i] = mctx->get_recr()->s_copy(i);
+-        }
+-    }
++    inp_rs->set_input_rs(mctx->get_recr());
+ }
+ 
+ bool llm_graph_input_mem_hybrid_k::can_reuse(const llm_graph_params & params) {
+@@ -1290,17 +1279,7 @@ void llm_graph_input_mem_hybrid_iswa::set_input(const llama_ubatch * ubatch) {
+         attn_ctx->get_swa()->set_input_v_rot(inp_attn->self_v_rot_swa);
+     }
+ 
+-    const int64_t n_rs = mctx->get_recr()->get_n_rs();
+-
+-    if (inp_rs->s_copy) {
+-        GGML_ASSERT(ggml_backend_buffer_is_host(inp_rs->s_copy->buffer));
+-        int32_t * data = (int32_t *) inp_rs->s_copy->data;
+-
+-        // assuming copy destinations ALWAYS happen ONLY on the cells between head and head+n
+-        for (uint32_t i = 0; i < n_rs; ++i) {
+-            data[i] = mctx->get_recr()->s_copy(i);
+-        }
+-    }
++    inp_rs->set_input_rs(mctx->get_recr());
+ }
+ 
+ bool llm_graph_input_mem_hybrid_iswa::can_reuse(const llm_graph_params & params) {
+@@ -3729,6 +3708,19 @@ static std::unique_ptr<llm_graph_input_rs> build_rs_inp_impl(
+     inp->s_copy_main = ggml_view_1d(ctx0, inp->s_copy, n_seqs, 0);
+     inp->s_copy_tail = ggml_view_1d(ctx0, inp->s_copy, n_rs - 1, inp->s_copy->nb[0]);
+ 
++    if (mctx_cur->is_rs_lag()) {
++        inp->s_copy_s = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, n_rs);
++        ggml_set_input(inp->s_copy_s);
++        ggml_set_name(inp->s_copy_s, "rs_s_copy_s");
++
++        inp->s_copy_s_main = ggml_view_1d(ctx0, inp->s_copy_s, n_seqs, 0);
++        inp->s_copy_s_tail = ggml_view_1d(ctx0, inp->s_copy_s, n_rs - 1, inp->s_copy_s->nb[0]);
++
++        inp->s_lag = ggml_new_tensor_2d(ctx0, GGML_TYPE_I32, 4, n_seqs);
++        ggml_set_input(inp->s_lag);
++        ggml_set_name(inp->s_lag, "rs_s_lag");
++    }
++
+     inp->head = mctx_cur->get_head();
+     inp->rs_z = mctx_cur->get_rs_z();
+ 
+@@ -3753,9 +3745,12 @@ ggml_tensor * llm_graph_context::build_rs(
+ 
+     // a custom getter reads the states of the ubatch straight from the cache, so the gather skips the first
+     // state: it still holds the n_rs - n_seqs extra states and copies no state of a single sequence ubatch
+-    ggml_tensor * state_copy = get_state_rows ? inp->s_copy_tail : inp->s_copy;
++    // the lagged delta-net state has no rollback planes, so it is gathered without their offsets
++    const bool lag = inp->s_copy_s != nullptr && kv_state->is_lag_state(s);
++    ggml_tensor * state_copy = get_state_rows ? (lag ? inp->s_copy_s_tail : inp->s_copy_tail) :
++                                                (lag ? inp->s_copy_s : inp->s_copy);
+ 
+-    return build_rs(s, state_copy, inp->s_copy_main, state_size, n_seqs,
++    return build_rs(s, state_copy, lag ? inp->s_copy_s_main : inp->s_copy_main, state_size, n_seqs,
+                     kv_state->get_n_rs(), kv_state->get_head(), kv_state->get_size(), kv_state->get_rs_z(),
+                     get_state_rows);
+ }
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 8b72d5cdb..3b60add3d 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -310,6 +310,16 @@ public:
+     ggml_tensor * s_copy_main; // I32 [n_seqs]
+     ggml_tensor * s_copy_tail; // I32 [n_rs - 1]
+ 
++    // rollback by replay (llama_memory_recurrent::rs_lag): the delta-net state gather index without rollback
++    // planes, its views, and the GATED_DELTA_NET_LAG per-sequence lag info
++    ggml_tensor * s_copy_s      = nullptr; // I32 [n_rs]
++    ggml_tensor * s_copy_s_main = nullptr; // I32 [n_seqs]
++    ggml_tensor * s_copy_s_tail = nullptr; // I32 [n_rs - 1]
++    ggml_tensor * s_lag         = nullptr; // I32 [4, n_seqs]
++
++    // fills s_copy and the lag inputs from the memory context of the ubatch being processed
++    void set_input_rs(const llama_memory_recurrent_context * mctx_cur);
++
+     const llama_memory_recurrent_context * mctx;
+ 
+     // used in view offsets, need to match for valid graph reuse
+diff --git a/src/llama-memory-hybrid.cpp b/src/llama-memory-hybrid.cpp
+index 62f12de95..a113348c4 100644
+--- a/src/llama-memory-hybrid.cpp
++++ b/src/llama-memory-hybrid.cpp
+@@ -29,7 +29,8 @@ llama_memory_hybrid::llama_memory_hybrid(
+                      bool   unified,
+                             /* layer filters */
+     const layer_filter_cb & filter_attn,
+-    const layer_filter_cb & filter_recr) :
++    const layer_filter_cb & filter_recr,
++                     bool   rs_lag) :
+     hparams(model.hparams),
+     mem_attn(new llama_kv_cache(
+         model,
+@@ -61,7 +62,8 @@ llama_memory_hybrid::llama_memory_hybrid(
+         n_rs_seq,
+         filter_recr == nullptr ?
+             [&](int32_t il) { return hparams.is_recr(il); }
+-            : filter_recr
++            : filter_recr,
++        rs_lag
+     )) {}
+ 
+ llama_memory_context_ptr llama_memory_hybrid::init_batch(llama_batch_allocr & balloc, uint32_t n_ubatch, bool embd_all) {
+diff --git a/src/llama-memory-hybrid.h b/src/llama-memory-hybrid.h
+index 484eafb74..9eb347571 100644
+--- a/src/llama-memory-hybrid.h
++++ b/src/llama-memory-hybrid.h
+@@ -39,7 +39,9 @@ public:
+                      bool   unified,
+                             /* layer filters */
+     const layer_filter_cb & filter_attn = nullptr,
+-    const layer_filter_cb & filter_recr = nullptr);
++    const layer_filter_cb & filter_recr = nullptr,
++                            /* recurrent rollback by replay (see llama_memory_recurrent) */
++                     bool   rs_lag      = false);
+ 
+     ~llama_memory_hybrid() = default;
+ 
+diff --git a/src/llama-memory-recurrent.cpp b/src/llama-memory-recurrent.cpp
+index 2893d819e..8c691570a 100644
+--- a/src/llama-memory-recurrent.cpp
++++ b/src/llama-memory-recurrent.cpp
+@@ -13,6 +13,52 @@
+ #include <map>
+ #include <stdexcept>
+ 
++// GATED_DELTA_NET_LAG geometry of the delta-net layers (qwen35 convention): H_v value heads of S_v, H_k key heads
++// of S_k == S_v; R floats per pending row (see ggml_gated_delta_net_lag)
++struct llama_gdn_lag_dims {
++    int64_t S;
++    int64_t H_k;
++    int64_t H_v;
++    int64_t R;
++};
++
++static bool llama_gdn_lag_dims_get(const llama_hparams & hparams, llama_gdn_lag_dims & d) {
++    if (hparams.ssm_dt_rank == 0 || hparams.ssm_n_group == 0 || hparams.ssm_d_inner % hparams.ssm_dt_rank != 0) {
++        return false;
++    }
++    d.S   = hparams.ssm_d_state;
++    d.H_k = hparams.ssm_n_group;
++    d.H_v = hparams.ssm_dt_rank;
++    d.R   = d.H_v * (2 * d.S + 2);
++    return hparams.ssm_d_inner / hparams.ssm_dt_rank == d.S && hparams.n_embd_s() == d.S * d.S * d.H_v &&
++           d.H_v % d.H_k == 0;
++}
++
++// whether dev runs GATED_DELTA_NET_LAG for a K-row verify of these dims
++static bool llama_gdn_lag_dev_supported(ggml_backend_dev_t dev, const llama_gdn_lag_dims & d, int64_t K) {
++    ggml_init_params params = {
++        /*.mem_size   =*/ 16 * ggml_tensor_overhead(),
++        /*.mem_buffer =*/ NULL,
++        /*.no_alloc   =*/ true,
++    };
++    ggml_context * ctx = ggml_init(params);
++    if (!ctx) {
++        return false;
++    }
++    ggml_tensor * q    = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, d.S, d.H_k, K, 1);
++    ggml_tensor * k    = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, d.S, d.H_k, K, 1);
++    ggml_tensor * v    = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, d.S, d.H_v, K, 1);
++    ggml_tensor * g    = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, d.H_v, K, 1);
++    ggml_tensor * b    = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, d.H_v, K, 1);
++    ggml_tensor * s    = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, d.S, d.S, d.H_v, 1);
++    ggml_tensor * pend = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 2 * K * d.R, 1);
++    ggml_tensor * lag  = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, 4, 1);
++    ggml_tensor * op   = ggml_gated_delta_net_lag(ctx, q, k, v, g, b, s, pend, lag, K);
++    const bool ok = ggml_backend_dev_supports_op(dev, op);
++    ggml_free(ctx);
++    return ok;
++}
++
+ //
+ // llama_memory_recurrent
+ //
+@@ -25,7 +71,8 @@ llama_memory_recurrent::llama_memory_recurrent(
+                  uint32_t   mem_size,
+                  uint32_t   n_seq_max,
+                  uint32_t   n_rs_seq,
+-    const layer_filter_cb & filter) : hparams(model.hparams), n_seq_max(n_seq_max) {
++    const layer_filter_cb & filter,
++                     bool   rs_lag) : hparams(model.hparams), n_seq_max(n_seq_max) {
+     const int32_t n_layer = hparams.n_layer();
+ 
+     head = 0;
+@@ -38,6 +85,31 @@ llama_memory_recurrent::llama_memory_recurrent(
+     cells.clear();
+     cells.resize(mem_size);
+ 
++    // rollback by replay: one sequence (n_seq_max == 1, so no cell moves within a ubatch), states on the devices
++    // that run the layers (the op writes its pending rows in place) and every such device supports the op
++    llama_gdn_lag_dims lag_dims = {};
++    if (rs_lag && n_rs_seq > 0) {
++        const char * why = nullptr;
++        if (mem_size != 1) {
++            why = "more than one sequence";
++        } else if (!offload) {
++            why = "recurrent states not offloaded";
++        } else if (!llama_gdn_lag_dims_get(hparams, lag_dims)) {
++            why = "unsupported delta-net geometry";
++        } else {
++            for (int i = 0; i < n_layer && why == nullptr; i++) {
++                if ((!filter || filter(i)) && !llama_gdn_lag_dev_supported(model.dev_layer(i), lag_dims, n_rs_seq + 1)) {
++                    why = "GATED_DELTA_NET_LAG not supported by the layer device";
++                }
++            }
++        }
++        this->rs_lag = why == nullptr;
++        LLAMA_LOG_INFO("%s: delta-net rollback by replay: %s%s\n", __func__, this->rs_lag ? "enabled" : "disabled, ",
++                why ? why : "");
++    }
++    rs_pend_n.assign(mem_size, 0);
++    rs_pend_plane.assign(mem_size, 0);
++
+     // define a comparator for the buft -> ctx map to ensure that the order is well-defined:
+     struct ggml_backend_buft_comparator {
+         bool operator()(const ggml_backend_buffer_type_t & lhs, const ggml_backend_buffer_type_t & rhs) const {
+@@ -52,7 +124,8 @@ llama_memory_recurrent::llama_memory_recurrent(
+         if (it == ctx_map.end()) {
+             ggml_init_params params = {
+                 // r and s per layer, plus the separate PLE conv row where the model has one
+-                /*.mem_size   =*/ size_t((hparams.ple_conv_state() > 0 ? 3u : 2u)*n_layer*ggml_tensor_overhead()),
++                /*.mem_size   =*/ size_t((hparams.ple_conv_state() > 0 ? 3u : 2u)*n_layer*ggml_tensor_overhead() +
++                                         (this->rs_lag ? n_layer*ggml_tensor_overhead() : 0)),
+                 /*.mem_buffer =*/ NULL,
+                 /*.no_alloc   =*/ true,
+             };
+@@ -73,6 +146,7 @@ llama_memory_recurrent::llama_memory_recurrent(
+     r_l.resize(n_layer);
+     s_l.resize(n_layer);
+     p_l.resize(n_layer);
++    pend_l.resize(n_layer);
+ 
+     for (int i = 0; i < n_layer; i++) {
+         if (filter && !filter(i)) {
+@@ -100,12 +174,19 @@ llama_memory_recurrent::llama_memory_recurrent(
+ 
+         const uint32_t n_rows = mem_size * (1 + n_rs_seq);
+         ggml_tensor * r = ggml_new_tensor_2d(ctx, type_r, hparams.n_embd_r(), n_rows);
+-        ggml_tensor * s = ggml_new_tensor_2d(ctx, type_s, hparams.n_embd_s(), n_rows);
++        // the lagged state needs no rollback snapshots
++        ggml_tensor * s = ggml_new_tensor_2d(ctx, type_s, hparams.n_embd_s(), this->rs_lag ? mem_size : n_rows);
+         ggml_format_name(r, "cache_r_l%d", i);
+         ggml_format_name(s, "cache_s_l%d", i);
+         r_l[i] = r;
+         s_l[i] = s;
+ 
++        if (this->rs_lag) {
++            ggml_tensor * p = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 2 * (n_rs_seq + 1) * lag_dims.R, mem_size);
++            ggml_format_name(p, "cache_pend_l%d", i);
++            pend_l[i] = p;
++        }
++
+         // the PLE history needs its own row: Meta must mirror it while the delta-net conv state next door stays split
+         if (hparams.ple_conv_state() > 0 && hparams.is_ple(i)) {
+             ggml_tensor * p = ggml_new_tensor_2d(ctx, type_r, hparams.ple_conv_state(), n_rows);
+@@ -130,6 +211,7 @@ llama_memory_recurrent::llama_memory_recurrent(
+             n_rs_seq = 0;
+             LLAMA_LOG_INFO("%s: disabling rollback snapshots because the memory module is empty\n", __func__);
+         }
++        this->rs_lag = false;
+     }
+ 
+     {
+@@ -163,6 +245,7 @@ void llama_memory_recurrent::clear(bool data) {
+     }
+ 
+     std::fill(rs_idx.begin(), rs_idx.end(), 0);
++    std::fill(rs_pend_n.begin(), rs_pend_n.end(), 0);
+ }
+ 
+ bool llama_memory_recurrent::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
+@@ -211,8 +294,14 @@ bool llama_memory_recurrent::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos
+                 const llama_pos rollback = cell.pos - (p0 - 1);
+                 // pending rollback is single-use
+                 const bool pending = rs_idx[seq_id] != 0;
+-                if (!pending && rollback >= 1 && rollback <= (llama_pos) n_rs_seq) {
++                // the lagged delta-net state replays only the rows that are still pending
++                const uint32_t row = cell.src >= 0 ? (uint32_t) cell.src : (uint32_t) tail_id;
++                const bool lag_ok = !rs_lag || rollback <= (llama_pos) rs_pend_n[row];
++                if (!pending && lag_ok && rollback >= 1 && rollback <= (llama_pos) n_rs_seq) {
+                     set_rs_idx(seq_id, (uint32_t) rollback);
++                    if (rs_lag) {
++                        rs_pend_n[row] -= (uint32_t) rollback;
++                    }
+                     cell.pos = p0 - 1;
+                     return true;
+                 }
+@@ -971,11 +1060,37 @@ void llama_memory_recurrent::state_write_data(llama_io_write_i & io, const std::
+             io.write(&s_size_row, sizeof(s_size_row));
+ 
+             // Write each logical cell row range. With pending recurrent rollback,
+-            // the logical current state may live in a rollback snapshot plane.
++            // the logical current state may live in a rollback snapshot plane
++            // (except for the lagged state, which has no planes).
+             for (const auto & range : cell_ranges) {
+                 const size_t range_size = range.second - range.first;
+                 const size_t buf_size = range_size * s_size_row;
+-                io.write_tensor(s_l[il], range.first * s_size_row, buf_size);
++                const size_t row0 = rs_lag ? range.first % size : range.first;
++                io.write_tensor(s_l[il], row0 * s_size_row, buf_size);
++            }
++        }
++
++        // the lagged state is incomplete without its pending rows: per cell the count, then per layer the rows
++        // of the cell's read plane
++        if (rs_lag) {
++            for (const auto & range : cell_ranges) {
++                for (uint32_t r = range.first; r < range.second; ++r) {
++                    const uint32_t n_pend = rs_pend_n[r % size];
++                    io.write(&n_pend, sizeof(n_pend));
++                }
++            }
++            for (uint32_t il = 0; il < n_layer; ++il) {
++                if (pend_l[il] == nullptr) continue;
++
++                const uint64_t plane_size = pend_l[il]->nb[1] / 2;
++                io.write(&plane_size, sizeof(plane_size));
++
++                for (const auto & range : cell_ranges) {
++                    for (uint32_t r = range.first; r < range.second; ++r) {
++                        const uint32_t row = r % size;
++                        io.write_tensor(pend_l[il], row * pend_l[il]->nb[1] + rs_pend_plane[row] * plane_size, plane_size);
++                    }
++                }
+             }
+         }
+     } else {
+@@ -1203,6 +1318,35 @@ bool llama_memory_recurrent::state_read_data(llama_io_read_i & io, uint32_t cell
+                 io.read_tensor(s_l[il], head * s_size_row, cell_count * s_size_row);
+             }
+         }
++
++        // pending rows of the lagged state (see state_write_data), restored into plane 0
++        if (rs_lag) {
++            for (uint32_t i = 0; i < cell_count; ++i) {
++                uint32_t n_pend;
++                io.read(&n_pend, sizeof(n_pend));
++                if (n_pend > n_rs_seq + 1) {
++                    LLAMA_LOG_ERROR("%s: invalid pending row count %u\n", __func__, n_pend);
++                    return false;
++                }
++                rs_pend_n[head + i]     = n_pend;
++                rs_pend_plane[head + i] = 0;
++            }
++            for (uint32_t il = 0; il < n_layer; ++il) {
++                if (pend_l[il] == nullptr) continue;
++
++                uint64_t plane_size_ref;
++                io.read(&plane_size_ref, sizeof(plane_size_ref));
++                const uint64_t plane_size = pend_l[il]->nb[1] / 2;
++                if (plane_size != plane_size_ref) {
++                    LLAMA_LOG_ERROR("%s: mismatched pending row size (%zu != %zu, layer %d)\n", __func__,
++                            (size_t) plane_size, (size_t) plane_size_ref, il);
++                    return false;
++                }
++                for (uint32_t i = 0; i < cell_count; ++i) {
++                    io.read_tensor(pend_l[il], (head + i) * pend_l[il]->nb[1], plane_size);
++                }
++            }
++        }
+     } else {
+         // For each layer, read the values for each cell (transposed)
+         for (uint32_t il = 0; il < n_layer; ++il) {
+@@ -1267,6 +1411,10 @@ void llama_memory_recurrent::state_clear(llama_seq_id seq_id, uint32_t cell_head
+ 
+     const uint32_t n_layer = hparams.n_layer();
+ 
++    for (uint32_t i = cell_head; i < cell_head + cell_count && i < size; ++i) {
++        rs_pend_n[i] = 0;
++    }
++
+     for (uint32_t il = 0; il < n_layer; ++il) {
+         if (r_l[il] != nullptr) {
+             const size_t r_size_row = ggml_row_size(r_l[il]->type, hparams.n_embd_r());
+@@ -1384,3 +1532,51 @@ int32_t llama_memory_recurrent_context::s_copy(int i) const {
+     }
+     return (int32_t)(idx * mem->size) + src0;
+ }
++
++ggml_tensor * llama_memory_recurrent_context::get_pend_l(int32_t il) const {
++    return mem->rs_lag ? mem->pend_l[il] : nullptr;
++}
++
++bool llama_memory_recurrent_context::is_rs_lag() const {
++    return mem->rs_lag;
++}
++
++bool llama_memory_recurrent_context::is_lag_state(const ggml_tensor * s) const {
++    return mem->rs_lag && s != nullptr && std::find(mem->s_l.begin(), mem->s_l.end(), s) != mem->s_l.end();
++}
++
++void llama_memory_recurrent_context::set_input_lag(int32_t * s_copy_s, int32_t * lag) const {
++    mem->set_input_lag(s_copy_s, lag, get_n_rs(), ubatches[i_next]);
++}
++
++void llama_memory_recurrent::set_input_lag(int32_t * s_copy_s, int32_t * lag, uint32_t n_rs, const llama_ubatch & ubatch) {
++    GGML_ASSERT(rs_lag);
++    // a single sequence: no extra states to copy (they would need their pending rows copied too)
++    GGML_ASSERT(n_rs == ubatch.n_seqs);
++
++    const uint32_t K = n_rs_seq + 1;
++    const uint32_t P = std::min(ubatch.n_seq_tokens, K);
++
++    for (uint32_t i = 0; i < n_rs; ++i) {
++        s_copy_s[i] = cells[head + i].src0;
++    }
++
++    // read the pending rows of the source row (none for a zeroed state), write the other plane of the cell's
++    // row, so no sequence overwrites rows another one replays
++    for (uint32_t s = 0; s < ubatch.n_seqs; ++s) {
++        const uint32_t cell = head + s;
++        const int32_t  src  = cells[cell].src0;
++        GGML_ASSERT(src >= 0 && (uint32_t) src < size);
++        const uint32_t rd = rs_pend_plane[src];
++        const uint32_t wr = 1 - rs_pend_plane[cell];
++        lag[4*s + 0] = src;
++        lag[4*s + 1] = (int32_t) cell;
++        lag[4*s + 2] = src == rs_z ? 0 : (int32_t) rs_pend_n[src];
++        lag[4*s + 3] = (int32_t) (rd | (wr << 1));
++    }
++    for (uint32_t s = 0; s < ubatch.n_seqs; ++s) {
++        const uint32_t cell = head + s;
++        rs_pend_n[cell]     = P;
++        rs_pend_plane[cell] = (uint8_t) ((lag[4*s + 3] >> 1) & 1);
++    }
++}
+diff --git a/src/llama-memory-recurrent.h b/src/llama-memory-recurrent.h
+index 08489a4be..b0e4b735f 100644
+--- a/src/llama-memory-recurrent.h
++++ b/src/llama-memory-recurrent.h
+@@ -24,7 +24,8 @@ public:
+                      uint32_t   mem_size,
+                      uint32_t   n_seq_max,
+                      uint32_t   n_rs_seq,
+-        const layer_filter_cb & filter);
++        const layer_filter_cb & filter,
++                         bool   rs_lag = false);
+ 
+     ~llama_memory_recurrent() = default;
+ 
+@@ -78,6 +79,20 @@ public:
+ 
+     void set_rs_idx(llama_seq_id seq_id, uint32_t idx);
+ 
++    // Rollback by replay of the delta-net state (GATED_DELTA_NET_LAG, LLAMA_GDN_REPLAY=0 disables it): s_l holds
++    // one state per cell that lags behind the cell's position by rs_pend_n[cell] tokens, whose GDN inputs are in
++    // plane rs_pend_plane[cell] of the cell's row of pend_l (two planes of n_rs_seq + 1 rows). Rolling back r tokens
++    // is replaying r fewer rows: rs_pend_n[cell] -= r. The conv state keeps its rollback snapshots (rs_idx).
++    bool rs_lag = false;
++
++    std::vector<uint32_t> rs_pend_n;     // per cell row
++    std::vector<uint8_t>  rs_pend_plane; // per cell row
++
++    // fills the GATED_DELTA_NET_LAG inputs of a ubatch placed at head: the state gather index without rollback
++    // planes (s_copy_s, n_rs entries) and the per-sequence lag info (lag, 4 x n_seqs), then records the ubatch's
++    // rows as the new pending rows
++    void set_input_lag(int32_t * s_copy_s, int32_t * lag, uint32_t n_rs, const llama_ubatch & ubatch);
++
+     // computed before each graph build
+     uint32_t n = 0;
+ 
+@@ -113,6 +128,8 @@ public:
+     std::vector<ggml_tensor *> s_l;
+     // a second conv history that must stay replicated across devices, so it cannot share the r row
+     std::vector<ggml_tensor *> p_l;
++    // GATED_DELTA_NET_LAG pending rows (rs_lag)
++    std::vector<ggml_tensor *> pend_l;
+ 
+ private:
+     //const llama_model & model;
+@@ -179,9 +196,15 @@ public:
+     ggml_tensor * get_r_l(int32_t il) const;
+     ggml_tensor * get_s_l(int32_t il) const;
+     ggml_tensor * get_p_l(int32_t il) const;
++    ggml_tensor * get_pend_l(int32_t il) const; // nullptr without rs_lag
++
++    bool is_rs_lag() const;
++    bool is_lag_state(const ggml_tensor * s) const; // s is a delta-net state tensor s_l of a lagged memory
+ 
+     int32_t s_copy(int i) const;
+ 
++    void set_input_lag(int32_t * s_copy_s, int32_t * lag) const;
++
+ private:
+     const llama_memory_status status;
+ 
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index 87035893f..ca9d67fd5 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -2388,6 +2388,18 @@ ggml_tensor * llama_model::get_rope_factors(const llama_cparams & cparams, int i
+     return layers[il].rope_short;
+ }
+ 
++// delta-net speculative rollback by replay of a lagged state instead of per-token state snapshots
++// (llama_memory_recurrent::rs_lag); LLAMA_GDN_REPLAY=0 (or GGML_HIP_GDN_REPLAY=0) selects the snapshots
++static bool llama_gdn_replay_enabled() {
++    for (const char * name : { "LLAMA_GDN_REPLAY", "GGML_HIP_GDN_REPLAY" }) {
++        const char * env = getenv(name);
++        if (env != nullptr && atoi(env) == 0) {
++            return false;
++        }
++    }
++    return true;
++}
++
+ llama_memory_i * llama_model::create_memory(const llama_memory_params & params, const llama_cparams & cparams) const {
+     llama_memory_i * res;
+ 
+@@ -2825,7 +2837,9 @@ llama_memory_i * llama_model::create_memory(const llama_memory_params & params,
+                             /* offload           */ cparams.offload_kqv,
+                             /* unified           */ cparams.kv_unified,
+                             /* filter_attn       */ std::move(filter_attn),
+-                            /* filter_recr       */ std::move(filter_recr));
++                            /* filter_recr       */ std::move(filter_recr),
++                            /* rs_lag            */ (arch == LLM_ARCH_QWEN35 || arch == LLM_ARCH_QWEN35MOE) &&
++                                                    llama_gdn_replay_enabled());
+                     }
+                 } else {
+                     llama_kv_cache::layer_filter_cb filter = nullptr;
+diff --git a/src/models/delta-net-base.cpp b/src/models/delta-net-base.cpp
+index ad6612647..abe0e1c70 100644
+--- a/src/models/delta-net-base.cpp
++++ b/src/models/delta-net-base.cpp
+@@ -563,6 +563,31 @@ ggml_tensor * llm_build_delta_net_base::build_recurrent_attn(
+     const int64_t D = S_v * S_v * H_v;
+     const int64_t K = cparams.n_rs_seq + 1;
+ 
++    // rollback by replay: the op replays the kept rows of the previous ubatch and keeps the last K rows of this one
++    // pending; it outputs one state, committed up to those pending rows, which goes to the cache row
++    if (ggml_tensor * pend = mctx_cur->get_pend_l(il)) {
++        GGML_ASSERT(inp->s_lag != nullptr);
++        ggml_tensor * gdn_out = ggml_gated_delta_net_lag(ctx0, q, k, v, g, b, s, pend, inp->s_lag, K);
++        res->add_fused_node({n_seq_tokens > 1 ? LLM_FUSED_OP_GDN_CH : LLM_FUSED_OP_GDN_AR, gdn_out, il});
++
++        ggml_tensor * output = ggml_view_4d(ctx0, gdn_out,
++            S_v, H_v, n_seq_tokens, n_seqs,
++            ggml_row_size(gdn_out->type, S_v),
++            ggml_row_size(gdn_out->type, S_v * H_v),
++            ggml_row_size(gdn_out->type, S_v * H_v * n_seq_tokens),
++            0);
++        cb(output, "attn_output", il);
++
++        ggml_tensor * new_state = ggml_view_2d(ctx0, gdn_out, D, n_seqs, ggml_row_size(gdn_out->type, D),
++            ggml_row_size(gdn_out->type, S_v * H_v * n_seq_tokens * n_seqs));
++        ggml_build_forward_expand(gf,
++                ggml_cpy(ctx0, new_state,
++                    ggml_view_2d(ctx0, ssm_states_all, D, n_seqs, ssm_states_all->nb[1],
++                        kv_head * ssm_states_all->nb[1])));
++
++        return output;
++    }
++
+     // state s is 4D [S_v, S_v, H_v, n_seqs]; K snapshot slots are written into the output.
+     ggml_tensor * gdn_out = ggml_gated_delta_net(ctx0, q, k, v, g, b, s, K);
+     if (n_seq_tokens > 1) {
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 62ee1b3c9..e53b585fd 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -5181,6 +5181,130 @@ struct test_gated_delta_net_cache_fusion : public test_case {
+     }
+ };
+ 
++// GGML_OP_GATED_DELTA_NET_LAG, two calls chained as in consecutive speculative verifies: the first replays p1 rows
++// of a pending buffer, runs n1 rows and writes its pending rows, whose first p2 the second replays before its n2
++// rows. Call 1 is shaped like the model graph (l2-normalized q/k from scale(rms_norm), the state gathered from a
++// cache, the state CPYd into a cache); call 2 reads that CPYd state and takes plain q/k.
++struct test_gated_delta_net_lag : public test_case {
++    const int64_t head_count;
++    const int64_t head_size;
++    const int     v_repeat;
++    const int64_t n1;
++    const int64_t n2;
++    const int64_t K;
++    const int32_t p1;
++    const int32_t p2;
++
++    std::string vars() override {
++        return VARS_TO_STR8(head_count, head_size, v_repeat, n1, n2, K, p1, p2);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "GATED_DELTA_NET_LAG";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    test_gated_delta_net_lag(int64_t head_count = 4, int64_t head_size = 32, int v_repeat = 1, int64_t n1 = 5,
++            int64_t n2 = 5, int64_t K = 5, int32_t p1 = 2, int32_t p2 = 3)
++        : head_count(head_count), head_size(head_size), v_repeat(v_repeat), n1(n1), n2(n2), K(K), p1(p1), p2(p2) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        const int64_t S   = head_size;
++        const int64_t H_k = head_count;
++        const int64_t H   = head_count * v_repeat;
++        const int64_t D   = S * S * H;
++        const int64_t R   = H * (2 * S + 2);
++
++        ggml_tensor * pend = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, 2 * K * R, 2);
++        ggml_set_name(pend, "pend");
++
++        // call 1
++        const float eps = 1e-6f;
++        ggml_tensor * q1 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H_k, n1, 1);
++        ggml_tensor * k1 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H_k, n1, 1);
++        q1 = ggml_scale(ctx, ggml_rms_norm(ctx, q1, eps/S), 1.0f/sqrtf((float) S));
++        k1 = ggml_scale(ctx, ggml_rms_norm(ctx, k1, eps/S), 1.0f/sqrtf((float) S));
++        ggml_tensor * v1 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H, n1, 1);
++        ggml_tensor * g1 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, H, n1, 1);
++        ggml_tensor * b1 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, H, n1, 1);
++        ggml_set_name(v1, "v");
++        ggml_set_name(g1, "g");
++        ggml_set_name(b1, "beta");
++
++        ggml_tensor * states = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, D, 2);
++        ggml_tensor * idx    = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 1);
++        ggml_set_name(idx, "idx");
++        ggml_tensor * state1 = ggml_reshape_4d(ctx, ggml_get_rows(ctx, states, idx), S, S, H, 1);
++
++        ggml_tensor * lag1 = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, 4, 1);
++        ggml_set_name(lag1, "lag1");
++
++        ggml_tensor * out1 = ggml_gated_delta_net_lag(ctx, q1, k1, v1, g1, b1, state1, pend, lag1, K);
++
++        ggml_tensor * cache = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, D, 1);
++        ggml_set_name(cache, "cache");
++        ggml_tensor * tail1 = ggml_view_2d(ctx, out1, D, 1, ggml_row_size(GGML_TYPE_F32, D),
++                                           ggml_row_size(GGML_TYPE_F32, S * H * n1));
++        ggml_tensor * cpy1  = ggml_cpy(ctx, tail1, ggml_view_2d(ctx, cache, D, 1, cache->nb[1], 0));
++
++        // call 2
++        ggml_tensor * q2 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H_k, n2, 1);
++        ggml_tensor * k2 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H_k, n2, 1);
++        ggml_tensor * v2 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, S, H, n2, 1);
++        ggml_tensor * g2 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, H, n2, 1);
++        ggml_tensor * b2 = ggml_new_tensor_4d(ctx, GGML_TYPE_F32, 1, H, n2, 1);
++        ggml_set_name(q2, "qk2");
++        ggml_set_name(k2, "qk2");
++        ggml_set_name(v2, "v");
++        ggml_set_name(g2, "g");
++        ggml_set_name(b2, "beta");
++        ggml_tensor * lag2 = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, 4, 1);
++        ggml_set_name(lag2, "lag2");
++
++        ggml_tensor * state2 = ggml_reshape_4d(ctx, cpy1, S, S, H, 1);
++        ggml_tensor * out2 = ggml_gated_delta_net_lag(ctx, q2, k2, v2, g2, b2, state2, pend, lag2, K);
++
++        ggml_tensor * attn1 = ggml_view_1d(ctx, out1, S * H * n1, 0);
++        ggml_tensor * out   = ggml_concat(ctx, attn1, ggml_reshape_1d(ctx, out2, ggml_nelements(out2)), 0);
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != nullptr; t = ggml_get_next_tensor(ctx, t)) {
++            if (ggml_is_view_op(t->op)) { continue; }
++            if (strcmp(t->name, "idx") == 0) {
++                const int32_t row = 1;
++                ggml_backend_tensor_set(t, &row, 0, sizeof(row));
++            } else if (strcmp(t->name, "lag1") == 0) {
++                // src row 1, dst row 0, read plane 0, write plane 1
++                const int32_t info[4] = { 1, 0, p1, 0 | (1 << 1) };
++                ggml_backend_tensor_set(t, info, 0, sizeof(info));
++            } else if (strcmp(t->name, "lag2") == 0) {
++                // the rows call 1 wrote: src row 0, read plane 1; dst row 1, write plane 0
++                const int32_t info[4] = { 0, 1, p2, 1 | (0 << 1) };
++                ggml_backend_tensor_set(t, info, 0, sizeof(info));
++            } else if (strcmp(t->name, "pend") == 0) {
++                init_tensor_uniform(t, -0.1f, 0.1f);
++            } else if (strcmp(t->name, "qk2") == 0) {
++                init_tensor_uniform(t, -0.2f, 0.2f);
++            } else if (strcmp(t->name, "g") == 0) {
++                init_tensor_uniform(t, -20.0f, -1e-4f);
++            } else if (strcmp(t->name, "beta") == 0) {
++                init_tensor_uniform(t, 0.0f, 1.0f);
++            } else if (strcmp(t->name, "v") == 0) {
++                init_tensor_uniform(t, -0.3f, 5.0f);
++            } else if (strcmp(t->name, "cache") == 0) {
++                init_tensor_uniform(t, 0.0f, 0.0f);
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++};
++
+ // GGML_OP_GATED_LINEAR_ATTN
+ struct test_gla : public test_case {
+     const ggml_type type;
+@@ -12156,6 +12280,19 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     }
+     test_cases.emplace_back(new test_gated_delta_net_prologue_fusion(GGML_TYPE_Q8_0, 4, 128, 9, 512));
+     test_cases.emplace_back(new test_gated_delta_net_prologue_fusion(GGML_TYPE_Q8_0, 4, 64, 6, 512, 4));
++    // lagged state (speculative verify of 5 rows, K = 5): full / partial / no acceptance, prefill-sized calls
++    // (w > 0), single-token calls, GQA, all kernel head sizes
++    for (int64_t S : { 16, 32, 64, 128 }) {
++        test_cases.emplace_back(new test_gated_delta_net_lag(4, S, 1, 5, 5, 5, 2, 3));
++    }
++    test_cases.emplace_back(new test_gated_delta_net_lag(4, 128, 1, 5, 5, 5, 5, 5));
++    test_cases.emplace_back(new test_gated_delta_net_lag(4, 128, 1, 5, 5, 5, 0, 1));
++    test_cases.emplace_back(new test_gated_delta_net_lag(4, 128, 1, 1, 5, 5, 0, 1));
++    test_cases.emplace_back(new test_gated_delta_net_lag(4, 128, 1, 7, 3, 5, 5, 5));
++    test_cases.emplace_back(new test_gated_delta_net_lag(4, 128, 1, 3, 1, 5, 1, 2));
++    test_cases.emplace_back(new test_gated_delta_net_lag(4, 128, 1, 20, 9, 5, 3, 4));
++    test_cases.emplace_back(new test_gated_delta_net_lag(2, 128, 3, 5, 5, 5, 4, 2));
++    test_cases.emplace_back(new test_gated_delta_net_lag(16, 128, 3, 5, 5, 5, 3, 5));
+ 
+ #if 0
+     // these tests are disabled to save execution time, sbut they can be handy for debugging
+-- 
+2.43.0
+
