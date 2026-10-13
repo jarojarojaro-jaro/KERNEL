@@ -1,0 +1,288 @@
+From 343c2fbbb259ba5d6d3e56d87693fa19a2f15699 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 16:33:38 +0000
+Subject: [PATCH] llama/common: re-quantize the MTP draft head and MTP block at
+ load time (--spec-draft-head-type, --spec-mtp-type)
+
+llama_model_requant_mtp() converts the reduced draft head of llama_model_set_draft_head_vocab and/or the
+matrices of the NextN block (attention, FFN, eh_proj) into new tensors of another quantization type and points
+the MTP graph at them; the main model weights are untouched, so verification is unaffected.
+---
+ common/arg.cpp         |  31 ++++++++++
+ common/common.h        |   3 +
+ common/speculative.cpp |   8 +++
+ include/llama.h        |   7 +++
+ src/llama-model.cpp    | 129 +++++++++++++++++++++++++++++++++++++++++
+ src/llama-model.h      |   2 +
+ 6 files changed, 180 insertions(+)
+
+diff --git a/common/arg.cpp b/common/arg.cpp
+index fb4e5efd0..61ccfe199 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -330,6 +330,21 @@ static std::string get_all_kv_cache_types() {
+     return msg.str();
+ }
+ 
++// a quantized ggml type by its name (case-insensitive, e.g. q4_K, iq4_xs)
++static ggml_type quant_type_from_str(const std::string & s) {
++    auto lower = [](std::string v) {
++        std::transform(v.begin(), v.end(), v.begin(), [](unsigned char c) { return (char) std::tolower(c); });
++        return v;
++    };
++    for (int i = 0; i < GGML_TYPE_COUNT; ++i) {
++        const char * name = ggml_type_name((ggml_type) i);
++        if (name && ggml_is_quantized((ggml_type) i) && lower(name) == lower(s)) {
++            return (ggml_type) i;
++        }
++    }
++    throw std::runtime_error("Unsupported quantization type: " + s);
++}
++
+ static bool parse_bool_value(const std::string & value) {
+     if (is_truthy(value)) {
+         return true;
+@@ -4236,6 +4251,22 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             params.speculative.draft.vocab_n = value;
+         }
+     ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_VOCAB_N"));
++    add_opt(common_arg(
++        {"--spec-draft-head-type"}, "TYPE",
++        "MTP: re-quantize the reduced draft head of --spec-draft-vocab at load time, e.g. q4_K: cheaper draft\n"
++        "passes, verification and the main model weights unaffected (default: keep the head's type)",
++        [](common_params & params, const std::string & value) {
++            params.speculative.draft.head_type = quant_type_from_str(value);
++        }
++    ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_HEAD_TYPE"));
++    add_opt(common_arg(
++        {"--spec-mtp-type"}, "TYPE",
++        "MTP: re-quantize the matrices of the MTP block (attention, FFN, eh_proj) at load time, e.g. q4_K:\n"
++        "cheaper draft passes, verification and the main model weights unaffected (default: keep the file's types)",
++        [](common_params & params, const std::string & value) {
++            params.speculative.draft.mtp_type = quant_type_from_str(value);
++        }
++    ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_MTP_TYPE"));
+     add_opt(common_arg(
+         {"--spec-draft-backend-sampling"},
+         {"--no-spec-draft-backend-sampling"},
+diff --git a/common/common.h b/common/common.h
+index a65125d1f..7d816fe6a 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -337,6 +337,9 @@ struct common_params_speculative_draft {
+     // MTP: restrict the draft LM head to the first vocab_n token ids listed in vocab_path (0 = all of them)
+     std::string vocab_path;
+     int32_t     vocab_n = 0;
++    // MTP: re-quantize the reduced draft head / the MTP block matrices to these types (GGML_TYPE_COUNT = keep)
++    ggml_type head_type = GGML_TYPE_COUNT;
++    ggml_type mtp_type  = GGML_TYPE_COUNT;
+ 
+     bool probabilistic = false; // sample the draft and verify by rejection, instead of argmax and match
+ 
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index 10ae595f5..c3ba80be7 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -1494,6 +1494,14 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+             }
+         }
+ 
++        // optional cheaper (re-quantized) MTP draft weights (--spec-draft-head-type, --spec-mtp-type)
++        if (this->params.head_type != GGML_TYPE_COUNT || this->params.mtp_type != GGML_TYPE_COUNT) {
++            auto * model_dft = const_cast<llama_model *>(llama_get_model(ctx_dft));
++            if (!llama_model_requant_mtp(model_dft, this->params.head_type, this->params.mtp_type)) {
++                SPC_WRN("%s\n", "could not re-quantize the MTP draft weights");
++            }
++        }
++
+         llama_set_embeddings_nextn(ctx_tgt, true, /*masked*/ false);
+         llama_set_embeddings_nextn(ctx_dft, true, /*masked*/ true);
+ 
+diff --git a/include/llama.h b/include/llama.h
+index a683bac0a..eb12310a7 100644
+--- a/include/llama.h
++++ b/include/llama.h
+@@ -611,6 +611,13 @@ extern "C" {
+     // Must be called before the MTP draft context decodes. Returns false if the model has no supported MTP head.
+     LLAMA_API bool llama_model_set_draft_head_vocab(struct llama_model * model, const llama_token * ids, int32_t n_ids);
+ 
++    // Re-quantize the MTP draft weights to another type (e.g. GGML_TYPE_Q4_K) to make each draft pass cheaper:
++    // head_type converts the reduced draft head of llama_model_set_draft_head_vocab (call that first), layer_type
++    // the matrices of the NextN/MTP block (attention, FFN, eh_proj). GGML_TYPE_COUNT keeps a part unchanged.
++    // The main model weights are not touched, so verification and the target output are unaffected.
++    // Must be called before the MTP draft context decodes. Returns false on an unsupported type or missing MTP head.
++    LLAMA_API bool llama_model_requant_mtp(struct llama_model * model, enum ggml_type head_type, enum ggml_type layer_type);
++
+     // Get the model's RoPE frequency scaling factor
+     LLAMA_API float llama_model_rope_freq_scale_train(const struct llama_model * model);
+ 
+diff --git a/src/llama-model.cpp b/src/llama-model.cpp
+index 2a49b04e9..87035893f 100644
+--- a/src/llama-model.cpp
++++ b/src/llama-model.cpp
+@@ -38,6 +38,8 @@
+ #include <sstream>
+ #include <stdexcept>
+ #include <string>
++#include <thread>
++#include <tuple>
+ #include <vector>
+ 
+ static llama_model * llama_model_mapping(llm_arch arch, const llama_model_params & params) {
+@@ -1231,6 +1233,8 @@ struct llama_model::impl {
+     ggml_backend_buffer_ptr draft_head_buf;
+     ggml_context_ptr       draft_embd_ctx;
+     ggml_backend_buffer_ptr draft_embd_buf;
++    // re-quantized MTP draft weights (requant_mtp), one context/buffer per tensor
++    std::vector<std::pair<ggml_context_ptr, ggml_backend_buffer_ptr>> mtp_requant;
+ 
+     buft_list_t cpu_buft_list;
+     std::map<ggml_backend_dev_t, buft_list_t> gpu_buft_list;
+@@ -3116,6 +3120,131 @@ bool llama_model_set_draft_head_vocab(llama_model * model, const llama_token * i
+     return model->set_draft_head_vocab(ids, n_ids);
+ }
+ 
++// a copy of the matrix src converted to type, in a new buffer of the same buffer type (nullptr on failure)
++static ggml_tensor * llama_requant_tensor(const ggml_tensor * src, ggml_type type,
++        std::vector<std::pair<ggml_context_ptr, ggml_backend_buffer_ptr>> & out) {
++    const auto * traits_src = ggml_get_type_traits(src->type);
++    const int64_t n_per_row = src->ne[0];
++    const int64_t n_rows    = ggml_nrows(src);
++    if (!ggml_is_contiguous(src) || traits_src->to_float == nullptr || n_per_row % ggml_blck_size(type) != 0) {
++        return nullptr;
++    }
++
++    ggml_init_params ip = { ggml_tensor_overhead(), nullptr, /*no_alloc =*/ true };
++    ggml_context_ptr ctx(ggml_init(ip));
++    ggml_tensor * dst = ggml_new_tensor(ctx.get(), type, ggml_n_dims(src), src->ne);
++    ggml_set_name(dst, src->name);
++    ggml_backend_buffer_ptr buf(ggml_backend_alloc_ctx_tensors_from_buft(ctx.get(), ggml_backend_buffer_get_type(src->buffer)));
++    if (!buf) {
++        return nullptr;
++    }
++    ggml_backend_buffer_set_usage(buf.get(), GGML_BACKEND_BUFFER_USAGE_WEIGHTS);
++
++    std::vector<uint8_t> data_src(ggml_nbytes(src));
++    std::vector<uint8_t> data_dst(ggml_nbytes(dst));
++    ggml_backend_tensor_get(src, data_src.data(), 0, data_src.size());
++
++    const size_t row_src = ggml_row_size(src->type, n_per_row);
++    const size_t row_dst = ggml_row_size(type,      n_per_row);
++    ggml_quantize_init(type);
++
++    const int     n_threads = std::max(1, std::min(16, (int) std::thread::hardware_concurrency()));
++    const int64_t rows_per  = (n_rows + n_threads - 1) / n_threads;
++    std::vector<std::thread> workers;
++    for (int t = 0; t < n_threads; ++t) {
++        const int64_t r0 = t * rows_per;
++        const int64_t r1 = std::min(n_rows, r0 + rows_per);
++        if (r0 >= r1) {
++            break;
++        }
++        workers.emplace_back([&, r0, r1] {
++            constexpr int64_t rows_blk = 16;
++            std::vector<float> f32(rows_blk * n_per_row);
++            for (int64_t r = r0; r < r1; r += rows_blk) {
++                const int64_t nr = std::min(rows_blk, r1 - r);
++                for (int64_t i = 0; i < nr; ++i) {
++                    traits_src->to_float(data_src.data() + (r + i) * row_src, f32.data() + i * n_per_row, n_per_row);
++                }
++                ggml_quantize_chunk(type, f32.data(), data_dst.data() + r * row_dst, 0, nr, n_per_row, nullptr);
++            }
++        });
++    }
++    for (auto & w : workers) {
++        w.join();
++    }
++    ggml_backend_tensor_set(dst, data_dst.data(), 0, data_dst.size());
++
++    out.emplace_back(std::move(ctx), std::move(buf));
++    return dst;
++}
++
++bool llama_model::requant_mtp(ggml_type head_type, ggml_type layer_type) {
++    if (hparams.n_layer_nextn == 0) {
++        return false;
++    }
++    for (ggml_type type : { head_type, layer_type }) {
++        if (type == GGML_TYPE_COUNT) {
++            continue;
++        }
++        if (type < 0 || type > GGML_TYPE_COUNT || !ggml_is_quantized(type) ||
++                ggml_get_type_traits(type)->from_float_ref == nullptr || ggml_quantize_requires_imatrix(type)) {
++            LLAMA_LOG_ERROR("%s: unsupported MTP weight type %d\n", __func__, (int) type);
++            return false;
++        }
++    }
++
++    // (slot, type, its scale tensor: scaled weights are not converted)
++    std::vector<std::tuple<ggml_tensor **, ggml_type, ggml_tensor *>> slots;
++    if (head_type != GGML_TYPE_COUNT) {
++        if (draft_head == nullptr) {
++            LLAMA_LOG_ERROR("%s: no reduced draft head to convert, set the draft vocabulary first\n", __func__);
++            return false;
++        }
++        slots.emplace_back(&draft_head, head_type, nullptr);
++    }
++    if (layer_type != GGML_TYPE_COUNT) {
++        for (uint32_t il = hparams.n_layer(); il < hparams.n_layer() + hparams.n_layer_nextn; ++il) {
++            auto & l = layers[il];
++            slots.emplace_back(&l.wq,            layer_type, l.wq_s);
++            slots.emplace_back(&l.wk,            layer_type, l.wk_s);
++            slots.emplace_back(&l.wv,            layer_type, l.wv_s);
++            slots.emplace_back(&l.wqkv,          layer_type, l.wqkv_s);
++            slots.emplace_back(&l.wo,            layer_type, l.wo_s);
++            slots.emplace_back(&l.ffn_gate,      layer_type, l.ffn_gate_s);
++            slots.emplace_back(&l.ffn_up,        layer_type, l.ffn_up_s);
++            slots.emplace_back(&l.ffn_down,      layer_type, l.ffn_down_s);
++            slots.emplace_back(&l.nextn.eh_proj, layer_type, l.nextn.eh_proj_s);
++        }
++    }
++
++    size_t size_old = 0;
++    size_t size_new = 0;
++    for (auto & [slot, type, scale] : slots) {
++        ggml_tensor * src = *slot;
++        if (src == nullptr || scale != nullptr || src->buffer == nullptr || src->type == type || ggml_n_dims(src) != 2) {
++            continue;
++        }
++        ggml_tensor * dst = llama_requant_tensor(src, type, pimpl->mtp_requant);
++        if (dst == nullptr) {
++            LLAMA_LOG_WARN("%s: could not convert %s (%s) to %s, kept\n", __func__, src->name, ggml_type_name(src->type), ggml_type_name(type));
++            continue;
++        }
++        LLAMA_LOG_DEBUG("%s: %s %s -> %s\n", __func__, src->name, ggml_type_name(src->type), ggml_type_name(type));
++        size_old += ggml_nbytes(src);
++        size_new += ggml_nbytes(dst);
++        *slot = dst;
++    }
++    LLAMA_LOG_INFO("%s: MTP draft weights re-quantized (head %s, block %s): %.1f MiB -> %.1f MiB\n", __func__,
++            head_type  == GGML_TYPE_COUNT ? "kept" : ggml_type_name(head_type),
++            layer_type == GGML_TYPE_COUNT ? "kept" : ggml_type_name(layer_type),
++            size_old / 1024.0 / 1024.0, size_new / 1024.0 / 1024.0);
++    return true;
++}
++
++bool llama_model_requant_mtp(llama_model * model, ggml_type head_type, ggml_type layer_type) {
++    return model->requant_mtp(head_type, layer_type);
++}
++
+ int32_t llama_model_dflash_selector_top_k(const llama_model * model) {
+     return model->hparams.dflash_selector_top_k;
+ }
+diff --git a/src/llama-model.h b/src/llama-model.h
+index 4442d4cfa..f4674d57d 100644
+--- a/src/llama-model.h
++++ b/src/llama-model.h
+@@ -682,6 +682,8 @@ struct llama_model {
+     ggml_tensor * mtp_lm_head() const;
+ 
+     bool set_draft_head_vocab(const int32_t * ids, int32_t n_ids);
++    // re-quantize the draft head and/or the matrices of the MTP block (GGML_TYPE_COUNT = keep), see llama_model_requant_mtp
++    bool requant_mtp(ggml_type head_type, ggml_type layer_type);
+ 
+     // NextN/MTP model-level projections
+     struct ggml_tensor * nextn_proj_pre  = nullptr;
+-- 
+2.43.0
+

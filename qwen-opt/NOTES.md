@@ -295,3 +295,10 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Potwierdzone: Qwen **30.97 ms/krok, 101.5 t/s**; Uncensored **29.46 ms/krok, 103.7 t/s**.
 - Długi kontekst (T=0, decode t/s): 1.7k **126.0**, 6.6k **109.4**, 29.5k **98.8**, 94k **88.3**.
 - Nie zrobione: przyrostowa maska KQ (przy 94k ~0.65 ms/krok, szacunek).
+
+## S2: draft MTP w IQ4_XS (343c2fbbb; 2026-10-13), domyślnie w run-llm.sh (MTP_TYPE=iq4_xs)
+- Przekwantyzowanie przy ładowaniu: --spec-draft-head-type / --spec-mtp-type. Wagi głównego modelu nietknięte; +0.4 GB VRAM.
+- Draft: 4.82 -> 3.62 ms/krok. ms/krok: Qwen 30.97 -> 29.76, Uncensored 29.46 -> 28.74.
+- Akceptacja spada ~2-3% (pooled 5 seedów: 3.063 -> 3.008 tok/krok), więc zysk netto t/s ~+1-3% (średnia z 6 promptów: Qwen 99.8 -> 100.7, Uncensored 100.6 -> 103.2); czat/proza zyskuje najwięcej (pl-proza 86 -> 92, en-chat 78 -> 85), kod/technika lekko traci.
+- Greedy T=0 różni się od bazy przy remisie (char 308), jak przy każdej zmianie draftów; weryfikacja bez zmian.
+- Draft n=5 vs n=4 po S2: średnio Qwen 103.9 vs 100.7 (kod/technika lepiej, czat gorzej), Uncensored 101.5 vs 103.2. Zostaje n=4 do czasu T2 (długość wyceniana kosztem).

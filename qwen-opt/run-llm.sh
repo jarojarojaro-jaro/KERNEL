@@ -73,7 +73,8 @@ case $spec in
     # built-in MTP head (Qwen only) with the reduced-vocabulary draft head
     mtp)    [ "$model" != saluki ] || { echo "saluki has no MTP head, use dflash" >&2; exit 2; }
             spec_args=(--spec-type draft-mtp --spec-draft-n-max "${DRAFT_N:-$mtp_n}"
-                       --spec-draft-vocab "$draft_vocab" --spec-draft-vocab-n 65536) ;;
+                       --spec-draft-vocab "$draft_vocab" --spec-draft-vocab-n 65536
+                       --spec-draft-head-type "${MTP_TYPE:-iq4_xs}" --spec-mtp-type "${MTP_TYPE:-iq4_xs}") ;;
     none)   spec_args=() ;;
     *) echo "unknown spec: $spec (mtp|dflash|none)" >&2; exit 2 ;;
 esac
