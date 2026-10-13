@@ -1,0 +1,129 @@
+From 9f83f1f8100e51799fd75c1c4d1e311974c483f1 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 12:15:27 +0000
+Subject: [PATCH 22/22] HIP/RDNA3 multi-column MMVQ: stream weight loads past
+ the per-CU caches (GLC|DLC)
+
+In-model rocprofv3 (Qwen3.8-27B UD-Q4_K_XL, MTP n=4 verify): mmvq 22.95 -> 22.08 ms per verify. Bitwise identical.
+---
+ ggml/src/ggml-cuda/mmvq.cu | 48 ++++++++++++++++++++++----------------
+ 1 file changed, 28 insertions(+), 20 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 92d9c6ff2..63cd0a1ab 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -171,22 +171,23 @@ static __device__ __forceinline__ mmvq_src mmvq_make_src(const void * base, cons
+     return s;
+ }
+ 
+-template <typename T, int align>
++// cpol: buffer load cache policy bits (gfx11: 1 = GLC, 2 = SLC, 4 = DLC), ignored by the pointer fallback
++template <typename T, int align, int cpol = 0>
+ static __device__ __forceinline__ T mmvq_ld(const mmvq_src & s, const uint32_t off) {
+     T v;
+ #ifdef MMVQ_BUFFER_LOADS
+     static_assert(sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8 || sizeof(T) == 16, "mmvq_ld: unsupported size");
+     if constexpr (sizeof(T) == 2) {
+-        const auto r = __builtin_amdgcn_raw_buffer_load_b16(s.rsrc, off, s.soff, 0);
++        const auto r = __builtin_amdgcn_raw_buffer_load_b16(s.rsrc, off, s.soff, cpol);
+         __builtin_memcpy(&v, &r, sizeof(T));
+     } else if constexpr (sizeof(T) == 4) {
+-        const auto r = __builtin_amdgcn_raw_buffer_load_b32(s.rsrc, off, s.soff, 0);
++        const auto r = __builtin_amdgcn_raw_buffer_load_b32(s.rsrc, off, s.soff, cpol);
+         __builtin_memcpy(&v, &r, sizeof(T));
+     } else if constexpr (sizeof(T) == 8) {
+-        const auto r = __builtin_amdgcn_raw_buffer_load_b64(s.rsrc, off, s.soff, 0);
++        const auto r = __builtin_amdgcn_raw_buffer_load_b64(s.rsrc, off, s.soff, cpol);
+         __builtin_memcpy(&v, &r, sizeof(T));
+     } else {
+-        const auto r = __builtin_amdgcn_raw_buffer_load_b128(s.rsrc, off, s.soff, 0);
++        const auto r = __builtin_amdgcn_raw_buffer_load_b128(s.rsrc, off, s.soff, cpol);
+         __builtin_memcpy(&v, &r, sizeof(T));
+     }
+ #else
+@@ -195,20 +196,20 @@ static __device__ __forceinline__ T mmvq_ld(const mmvq_src & s, const uint32_t o
+     return v;
+ }
+ 
+-template <int n, int align>
++template <int n, int align, int cpol = 0>
+ static __device__ __forceinline__ void mmvq_ld_ints(const mmvq_src & s, const uint32_t off, int (&v)[n]) {
+ #pragma unroll
+     for (int i = 0; i < n; i += 4) {
+         if (n - i >= 4) {
+-            const int4 t = mmvq_ld<int4, align>(s, off + 4*i);
++            const int4 t = mmvq_ld<int4, align, cpol>(s, off + 4*i);
+             v[i + 0] = t.x; v[i + 1] = t.y; v[i + 2] = t.z; v[i + 3] = t.w;
+         } else if (n - i == 2) {
+-            const int2 t = mmvq_ld<int2, align>(s, off + 4*i);
++            const int2 t = mmvq_ld<int2, align, cpol>(s, off + 4*i);
+             v[i + 0] = t.x; v[i + 1] = t.y;
+         } else {
+ #pragma unroll
+             for (int k = i; k < n; ++k) {
+-                v[k] = mmvq_ld<int, align>(s, off + 4*k);
++                v[k] = mmvq_ld<int, align, cpol>(s, off + 4*k);
+             }
+         }
+     }
+@@ -307,8 +308,15 @@ template <> struct mmvq_xraw<GGML_TYPE_Q6_K>   { int lo[MMVQ_Q6K_NI]; int hi[MMV
+ template <> struct mmvq_xraw<GGML_TYPE_IQ4_XS> { int2 hdr; int q[4]; };
+ 
+ // xb: block-uniform row base, off: byte offset of the block in the row (per thread).
++// Cache policy of the weight loads (GLC|DLC: stream past the per-CU caches). Microbench at 5 columns: +3-6% on the
++// 5120-row launches of Q4_K/Q5_K/IQ4_XS, neutral on 17408 rows, Q6_K -4%; in a real MTP verify (rocprofv3) it is a
++// gain for all four types (mmvq 22.95 -> 22.08 ms per verify; the Q6_K output head alone loses ~0.14 ms).
++#ifndef MMVQ_R3_X_CPOL
++#define MMVQ_R3_X_CPOL 5
++#endif
+ template <ggml_type type>
+ static __device__ __forceinline__ mmvq_xraw<type> mmvq_load_xraw(const mmvq_src & xb, const uint32_t off, const int iqs) {
++    constexpr int cp = MMVQ_R3_X_CPOL;
+     mmvq_xraw<type> w;
+     if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
+         // iqs is in 0,NI..32-NI: sub-block pair = iqs/8 (q8_1 blocks 2*pair, 2*pair+1), ints iqs%8 .. iqs%8+NI-1
+@@ -316,12 +324,12 @@ static __device__ __forceinline__ mmvq_xraw<type> mmvq_load_xraw(const mmvq_src
+         const int pair = iqs / 8;
+         const int base = iqs % 8;
+         // dm + scales[12] are the first 16 bytes of both block types
+-        w.hdr = mmvq_ld<int4, 4>(xb, off);
++        w.hdr = mmvq_ld<int4, 4, cp>(xb, off);
+         if constexpr (type == GGML_TYPE_Q4_K) {
+-            mmvq_ld_ints<NI, 4>(xb, off + offsetof(block_q4_K, qs) + 32*pair + 4*base, w.q);
++            mmvq_ld_ints<NI, 4, cp>(xb, off + offsetof(block_q4_K, qs) + 32*pair + 4*base, w.q);
+         } else {
+-            mmvq_ld_ints<NI, 4>(xb, off + offsetof(block_q5_K, qs) + 32*pair + 4*base, w.ql);
+-            mmvq_ld_ints<NI, 4>(xb, off + offsetof(block_q5_K, qh) + 4*base, w.qh);
++            mmvq_ld_ints<NI, 4, cp>(xb, off + offsetof(block_q5_K, qs) + 32*pair + 4*base, w.ql);
++            mmvq_ld_ints<NI, 4, cp>(xb, off + offsetof(block_q5_K, qh) + 4*base, w.qh);
+         }
+     } else if constexpr (type == GGML_TYPE_Q6_K) {
+         // block_q6_K is 210 bytes, so its ints are only 2-byte aligned
+@@ -329,16 +337,16 @@ static __device__ __forceinline__ mmvq_xraw<type> mmvq_load_xraw(const mmvq_src
+         const int pos  = iqs / 2;     // 0..15, step NI
+         const int n    = pos / 8;     // 128-value half
+         const int p    = pos % 8;     // int position inside the half
+-        mmvq_ld_ints<NI, 2>(xb, off + offsetof(block_q6_K, ql) + 64*n + 4*p,      w.lo);
+-        mmvq_ld_ints<NI, 2>(xb, off + offsetof(block_q6_K, ql) + 64*n + 4*p + 32, w.hi);
+-        mmvq_ld_ints<NI, 2>(xb, off + offsetof(block_q6_K, qh) + 32*n + 4*p,      w.h);
+-        w.d   = mmvq_ld<half, 2>(xb, off + offsetof(block_q6_K, d));
+-        w.scw = mmvq_ld<int2, 2>(xb, off + offsetof(block_q6_K, scales) + 8*n);
++        mmvq_ld_ints<NI, 2, cp>(xb, off + offsetof(block_q6_K, ql) + 64*n + 4*p,      w.lo);
++        mmvq_ld_ints<NI, 2, cp>(xb, off + offsetof(block_q6_K, ql) + 64*n + 4*p + 32, w.hi);
++        mmvq_ld_ints<NI, 2, cp>(xb, off + offsetof(block_q6_K, qh) + 32*n + 4*p,      w.h);
++        w.d   = mmvq_ld<half, 2, cp>(xb, off + offsetof(block_q6_K, d));
++        w.scw = mmvq_ld<int2, 2, cp>(xb, off + offsetof(block_q6_K, scales) + 8*n);
+     } else {
+         static_assert(type == GGML_TYPE_IQ4_XS, "mmvq_load_xraw: unsupported type");
+         // d, scales_h, scales_l[4] are the first 8 bytes
+-        w.hdr = mmvq_ld<int2, 4>(xb, off);
+-        mmvq_ld_ints<4, 4>(xb, off + offsetof(block_iq4_xs, qs) + 4*iqs, w.q);
++        w.hdr = mmvq_ld<int2, 4, cp>(xb, off);
++        mmvq_ld_ints<4, 4, cp>(xb, off + offsetof(block_iq4_xs, qs) + 4*iqs, w.q);
+     }
+     return w;
+ }
+-- 
+2.43.0
+

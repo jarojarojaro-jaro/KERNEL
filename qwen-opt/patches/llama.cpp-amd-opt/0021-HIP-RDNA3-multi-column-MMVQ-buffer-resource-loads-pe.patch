@@ -1,0 +1,705 @@
+From 60ce2a71f748969d519697b147fdb52fed1e2a30 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 11:55:53 +0000
+Subject: [PATCH 21/22] HIP/RDNA3 multi-column MMVQ: buffer-resource loads,
+ per-type occupancy, Q6_K pipelining, transposed DPP reduction
+
+- byte-offset loaders for Q4_K/Q5_K/Q6_K/IQ4_XS: one 16-byte header load for dm+scales (Q4_K/Q5_K), one 8-byte
+  header (IQ4_XS), 8-byte scale word (Q6_K); rows/columns are raw buffer resources in SGPRs, so the loop advances
+  two shared 32-bit offsets instead of a 64-bit VGPR address per load
+- amdgpu_waves_per_eu per (type, ncols) at 5-8 columns (HIP's __launch_bounds__(n, 1) pinned it to the default, which
+  makes the scheduler wait on every load); 2-4 columns and ncols 1 unchanged (n=1 ISA identical)
+- Q6_K at 5 columns: next iteration's raw weights loaded before the current ones are unpacked
+- epilogue: one transposed butterfly (permlanex16 + DPP row_xmask) for all ncols*rows sums, one store per lane
+All bitwise identical to the previous kernels (all multi types, ncols 1-8, full and partial last row block).
+---
+ ggml/src/ggml-cuda/mmvq.cu | 549 +++++++++++++++++++++++++++++++------
+ 1 file changed, 467 insertions(+), 82 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 60311f498..92d9c6ff2 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -143,16 +143,87 @@ static constexpr __host__ __device__ bool mmvq_has_multi(ggml_type type) {
+ #endif
+ }
+ 
+-static __device__ __forceinline__ void mmvq_unpack_kq_scales(const uint8_t * __restrict__ scales_raw, const int bq8_offset, int (&sc)[2], int (&m)[2]) {
+-    const uint16_t * scales = (const uint16_t *) scales_raw;
+-    const int j  = bq8_offset/2;
+-    const int jm = j & 1;
++// Byte-offset loads for the multi path: a block-uniform source (row of x / column of y) plus a 32-bit per-thread
++// byte offset. On RDNA3 the sources are raw buffer resources in SGPRs, so every load is `buffer_load voffset, srsrc,
++// soffset` and the loop only advances the shared 32-bit offsets; with plain pointers the compiler hoists one 64-bit
++// VGPR base per (row, field) and spends a 64-bit add per load. `align` is what the caller can guarantee (RDNA does
++// unaligned loads natively, the pointer fallback honors it).
++#if defined(GGML_USE_HIP) && defined(RDNA3)
++#define MMVQ_BUFFER_LOADS
++#endif
++
++struct mmvq_src {
++    const char * p; // p + soff = base; used by the pointer path and the types without a byte-offset loader
++#ifdef MMVQ_BUFFER_LOADS
++    __amdgpu_buffer_rsrc_t rsrc;
++    uint32_t soff;
++#endif
++};
++
++static __device__ __forceinline__ mmvq_src mmvq_make_src(const void * base, const uint32_t soff = 0) {
++    mmvq_src s;
++    s.p = (const char *) base + soff;
++#ifdef MMVQ_BUFFER_LOADS
++    // raw buffer (stride 0), no effective range limit, RDNA3 dword3 (as in composable_kernel for gfx11)
++    s.rsrc = __builtin_amdgcn_make_buffer_rsrc(const_cast<void *>(base), 0, -1, 0x31004000);
++    s.soff = soff;
++#endif
++    return s;
++}
++
++template <typename T, int align>
++static __device__ __forceinline__ T mmvq_ld(const mmvq_src & s, const uint32_t off) {
++    T v;
++#ifdef MMVQ_BUFFER_LOADS
++    static_assert(sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8 || sizeof(T) == 16, "mmvq_ld: unsupported size");
++    if constexpr (sizeof(T) == 2) {
++        const auto r = __builtin_amdgcn_raw_buffer_load_b16(s.rsrc, off, s.soff, 0);
++        __builtin_memcpy(&v, &r, sizeof(T));
++    } else if constexpr (sizeof(T) == 4) {
++        const auto r = __builtin_amdgcn_raw_buffer_load_b32(s.rsrc, off, s.soff, 0);
++        __builtin_memcpy(&v, &r, sizeof(T));
++    } else if constexpr (sizeof(T) == 8) {
++        const auto r = __builtin_amdgcn_raw_buffer_load_b64(s.rsrc, off, s.soff, 0);
++        __builtin_memcpy(&v, &r, sizeof(T));
++    } else {
++        const auto r = __builtin_amdgcn_raw_buffer_load_b128(s.rsrc, off, s.soff, 0);
++        __builtin_memcpy(&v, &r, sizeof(T));
++    }
++#else
++    __builtin_memcpy(&v, __builtin_assume_aligned(s.p + off, align), sizeof(T));
++#endif
++    return v;
++}
++
++template <int n, int align>
++static __device__ __forceinline__ void mmvq_ld_ints(const mmvq_src & s, const uint32_t off, int (&v)[n]) {
++#pragma unroll
++    for (int i = 0; i < n; i += 4) {
++        if (n - i >= 4) {
++            const int4 t = mmvq_ld<int4, align>(s, off + 4*i);
++            v[i + 0] = t.x; v[i + 1] = t.y; v[i + 2] = t.z; v[i + 3] = t.w;
++        } else if (n - i == 2) {
++            const int2 t = mmvq_ld<int2, align>(s, off + 4*i);
++            v[i + 0] = t.x; v[i + 1] = t.y;
++        } else {
++#pragma unroll
++            for (int k = i; k < n; ++k) {
++                v[k] = mmvq_ld<int, align>(s, off + 4*k);
++            }
++        }
++    }
++}
+ 
+-    const uint32_t s0 = scales[jm + 0];
+-    const uint32_t s2 = scales[jm + 2];
+-    const uint32_t s4 = scales[jm + 4];
++// Scales/mins of q8_1 blocks 2*pair, 2*pair+1 of a Q4_K/Q5_K block from its 16-byte header (dm + scales[12]).
++static __device__ __forceinline__ void mmvq_unpack_kq_scales(const int4 hdr, const int pair, int (&sc)[2], int (&m)[2]) {
++    // 16-bit scale words jm, jm+2, jm+4 (jm = pair & 1) live in the low/high halves of hdr.y, hdr.z, hdr.w
++    const int sh = 16*(pair & 1);
+ 
+-    const uint32_t hi = (uint32_t) -(int32_t) (j >= 2);
++    const uint32_t s0 = (uint32_t) hdr.y >> sh;
++    const uint32_t s2 = (uint32_t) hdr.z >> sh;
++    const uint32_t s4 = (uint32_t) hdr.w >> sh;
++
++    const uint32_t hi = (uint32_t) -(int32_t) (pair >= 2);
+ 
+     const uint32_t a0 = ((s0 & 0x3f3f) & ~hi) | ((((s4 >> 0) & 0x0f0f) | ((s0 & 0xc0c0) >> 2)) & hi);
+     const uint32_t a1 = ((s2 & 0x3f3f) & ~hi) | ((((s4 >> 4) & 0x0f0f) | ((s2 & 0xc0c0) >> 2)) & hi);
+@@ -224,40 +295,79 @@ static __device__ __forceinline__ void mmvq_apply_signs8(const int g0, const int
+     hi = __vsub4(g1 ^ s1, s1);
+ }
+ 
++// Raw (still packed) weight slice of one row for one loop iteration of one thread, for the types whose multi loop
++// loads the next iteration's weights while the current ones are unpacked and dotted (software pipelining).
++static constexpr __host__ __device__ bool mmvq_has_xraw(ggml_type type) {
++    return type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K || type == GGML_TYPE_IQ4_XS;
++}
++template <ggml_type type> struct mmvq_xraw;
++template <> struct mmvq_xraw<GGML_TYPE_Q4_K>   { int4 hdr; int q[MMVQ_KQ_NI]; };
++template <> struct mmvq_xraw<GGML_TYPE_Q5_K>   { int4 hdr; int ql[MMVQ_KQ_NI]; int qh[MMVQ_KQ_NI]; };
++template <> struct mmvq_xraw<GGML_TYPE_Q6_K>   { int lo[MMVQ_Q6K_NI]; int hi[MMVQ_Q6K_NI]; int h[MMVQ_Q6K_NI]; int2 scw; half d; };
++template <> struct mmvq_xraw<GGML_TYPE_IQ4_XS> { int2 hdr; int q[4]; };
++
++// xb: block-uniform row base, off: byte offset of the block in the row (per thread).
+ template <ggml_type type>
+-static __device__ __forceinline__ mmvq_xs<type> mmvq_load_x(const void * __restrict__ vbq, const int kbx, const int iqs) {
+-    mmvq_xs<type> x;
++static __device__ __forceinline__ mmvq_xraw<type> mmvq_load_xraw(const mmvq_src & xb, const uint32_t off, const int iqs) {
++    mmvq_xraw<type> w;
+     if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
+         // iqs is in 0,NI..32-NI: sub-block pair = iqs/8 (q8_1 blocks 2*pair, 2*pair+1), ints iqs%8 .. iqs%8+NI-1
+         constexpr int NI = MMVQ_KQ_NI;
+         const int pair = iqs / 8;
+         const int base = iqs % 8;
++        // dm + scales[12] are the first 16 bytes of both block types
++        w.hdr = mmvq_ld<int4, 4>(xb, off);
++        if constexpr (type == GGML_TYPE_Q4_K) {
++            mmvq_ld_ints<NI, 4>(xb, off + offsetof(block_q4_K, qs) + 32*pair + 4*base, w.q);
++        } else {
++            mmvq_ld_ints<NI, 4>(xb, off + offsetof(block_q5_K, qs) + 32*pair + 4*base, w.ql);
++            mmvq_ld_ints<NI, 4>(xb, off + offsetof(block_q5_K, qh) + 4*base, w.qh);
++        }
++    } else if constexpr (type == GGML_TYPE_Q6_K) {
++        // block_q6_K is 210 bytes, so its ints are only 2-byte aligned
++        constexpr int NI = MMVQ_Q6K_NI;
++        const int pos  = iqs / 2;     // 0..15, step NI
++        const int n    = pos / 8;     // 128-value half
++        const int p    = pos % 8;     // int position inside the half
++        mmvq_ld_ints<NI, 2>(xb, off + offsetof(block_q6_K, ql) + 64*n + 4*p,      w.lo);
++        mmvq_ld_ints<NI, 2>(xb, off + offsetof(block_q6_K, ql) + 64*n + 4*p + 32, w.hi);
++        mmvq_ld_ints<NI, 2>(xb, off + offsetof(block_q6_K, qh) + 32*n + 4*p,      w.h);
++        w.d   = mmvq_ld<half, 2>(xb, off + offsetof(block_q6_K, d));
++        w.scw = mmvq_ld<int2, 2>(xb, off + offsetof(block_q6_K, scales) + 8*n);
++    } else {
++        static_assert(type == GGML_TYPE_IQ4_XS, "mmvq_load_xraw: unsupported type");
++        // d, scales_h, scales_l[4] are the first 8 bytes
++        w.hdr = mmvq_ld<int2, 4>(xb, off);
++        mmvq_ld_ints<4, 4>(xb, off + offsetof(block_iq4_xs, qs) + 4*iqs, w.q);
++    }
++    return w;
++}
++
++template <ggml_type type>
++static __device__ __forceinline__ mmvq_xs<type> mmvq_unpack_x(const mmvq_xraw<type> & w, const int iqs) {
++    mmvq_xs<type> x;
++    if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
++        constexpr int NI = MMVQ_KQ_NI;
++        const int pair = iqs / 8;
+         int sc[2], m[2];
+-        float2 dm;
++        mmvq_unpack_kq_scales(w.hdr, pair, sc, m);
++        half2 dmh;
++        __builtin_memcpy(&dmh, &w.hdr.x, sizeof(dmh));
++        const float2 dm = __half22float2(dmh);
+         if constexpr (type == GGML_TYPE_Q4_K) {
+-            const block_q4_K * b = (const block_q4_K *) vbq + kbx;
+-            const int * q4 = (const int *)(b->qs + 32 * pair) + base;
+ #pragma unroll
+             for (int l = 0; l < NI; ++l) {
+-                const int v = q4[l];
+-                x.v[0][l] = (v >> 0) & 0x0F0F0F0F;
+-                x.v[1][l] = (v >> 4) & 0x0F0F0F0F;
++                x.v[0][l] = (w.q[l] >> 0) & 0x0F0F0F0F;
++                x.v[1][l] = (w.q[l] >> 4) & 0x0F0F0F0F;
+             }
+-            mmvq_unpack_kq_scales(b->scales, 2*pair, sc, m);
+-            dm = __half22float2(b->dm);
+         } else {
+-            const block_q5_K * b = (const block_q5_K *) vbq + kbx;
+-            const int * ql = (const int *)(b->qs + 32 * pair) + base;
+-            const int * qh = (const int *)(b->qh) + base;
+ #pragma unroll
+             for (int l = 0; l < NI; ++l) {
+-                const int vl = ql[l];
+-                const int vh = qh[l] >> (2*pair);
++                const int vl = w.ql[l];
++                const int vh = w.qh[l] >> (2*pair);
+                 x.v[0][l] = ((vl >> 0) & 0x0F0F0F0F) | ((vh << 4) & 0x10101010);
+                 x.v[1][l] = ((vl >> 4) & 0x0F0F0F0F) | ((vh << 3) & 0x10101010);
+             }
+-            mmvq_unpack_kq_scales(b->scales, 2*pair, sc, m);
+-            dm = __half22float2(b->dm);
+         }
+ #pragma unroll
+         for (int i = 0; i < 2; ++i) {
+@@ -265,38 +375,49 @@ static __device__ __forceinline__ mmvq_xs<type> mmvq_load_x(const void * __restr
+             x.m[i]  = (NI / 8.0f) * dm.y * m[i];
+         }
+     } else if constexpr (type == GGML_TYPE_Q6_K) {
+-        // block_q6_K is 210 bytes, so its ints are only 2-byte aligned
+-        const block_q6_K * b = (const block_q6_K *) vbq + kbx;
+         constexpr int NI = MMVQ_Q6K_NI;
+-        const int pos  = iqs / 2;     // 0..15, step NI
+-        const int n    = pos / 8;     // 128-value half
+-        const int p    = pos % 8;     // int position inside the half
++        const int p = (iqs / 2) % 8;
+ #pragma unroll
+         for (int k = 0; k < NI; ++k) {
+-            const int lo = get_int_b2(b->ql, 16*n + p + k);
+-            const int hi = get_int_b2(b->ql, 16*n + p + k + 8);
+-            const int h  = get_int_b2(b->qh,  8*n + p + k);
+-            x.v[0][k] = __vsub4(((lo >> 0) & 0x0F0F0F0F) | (((h >> 0) & 0x03030303) << 4), 0x20202020);
+-            x.v[1][k] = __vsub4(((hi >> 0) & 0x0F0F0F0F) | (((h >> 2) & 0x03030303) << 4), 0x20202020);
+-            x.v[2][k] = __vsub4(((lo >> 4) & 0x0F0F0F0F) | (((h >> 4) & 0x03030303) << 4), 0x20202020);
+-            x.v[3][k] = __vsub4(((hi >> 4) & 0x0F0F0F0F) | (((h >> 6) & 0x03030303) << 4), 0x20202020);
+-        }
+-        const float d = b->d;
++            x.v[0][k] = __vsub4(((w.lo[k] >> 0) & 0x0F0F0F0F) | (((w.h[k] >> 0) & 0x03030303) << 4), 0x20202020);
++            x.v[1][k] = __vsub4(((w.hi[k] >> 0) & 0x0F0F0F0F) | (((w.h[k] >> 2) & 0x03030303) << 4), 0x20202020);
++            x.v[2][k] = __vsub4(((w.lo[k] >> 4) & 0x0F0F0F0F) | (((w.h[k] >> 4) & 0x03030303) << 4), 0x20202020);
++            x.v[3][k] = __vsub4(((w.hi[k] >> 4) & 0x0F0F0F0F) | (((w.h[k] >> 6) & 0x03030303) << 4), 0x20202020);
++        }
++        const float d = w.d;
++        // scales 8n + is + 2g (g = 0..3) are the bytes is, is+2, is+4, is+6 of the 8 bytes at 8n
+         const int is = p / 4; // NI <= 4 keeps all positions of a thread inside one 16-value scale group
+ #pragma unroll
+         for (int g = 0; g < 4; ++g) {
+-            x.sc[g] = d * b->scales[8*n + is + 2*g];
++            const int s = g < 2 ? w.scw.x : w.scw.y;
++            x.sc[g] = d * (int8_t) (s >> (8*is + 16*(g % 2)));
+         }
+-    } else if constexpr (type == GGML_TYPE_IQ4_XS) {
+-        const block_iq4_xs * b = (const block_iq4_xs *) vbq + kbx;
++    } else {
++        static_assert(type == GGML_TYPE_IQ4_XS, "mmvq_unpack_x: unsupported type");
+ #pragma unroll
+         for (int j = 0; j < 4; ++j) {
+-            const int2 v = get_int_from_table_16(get_int_b4(b->qs, iqs + j), kvalues_iq4nl);
++            const int2 v = get_int_from_table_16(w.q[j], kvalues_iq4nl);
+             x.v[j + 0] = v.x;
+             x.v[j + 4] = v.y;
+         }
+-        const int ls = ((b->scales_l[iqs/8] >> (iqs & 0x04)) & 0x0F) | (((b->scales_h >> (iqs/2)) & 0x03) << 4);
+-        x.d = __half2float(b->d) * (ls - 32);
++        const uint32_t scales_h = (uint32_t) w.hdr.x >> 16;
++        const uint32_t scales_l = (uint32_t) w.hdr.y >> (8*(iqs/8));
++        const int ls = ((scales_l >> (iqs & 0x04)) & 0x0F) | (((scales_h >> (iqs/2)) & 0x03) << 4);
++        half dh;
++        __builtin_memcpy(&dh, &w.hdr.x, sizeof(dh));
++        x.d = __half2float(dh) * (ls - 32);
++    }
++    return x;
++}
++
++// xb: block-uniform row base, off: byte offset of the block in the row (per thread).
++template <ggml_type type>
++static __device__ __forceinline__ mmvq_xs<type> mmvq_load_x(const mmvq_src & xb, const uint32_t off, const int iqs) {
++    mmvq_xs<type> x;
++    [[maybe_unused]] const void * vbq = xb.p + off;
++    [[maybe_unused]] constexpr int kbx = 0;
++    if constexpr (mmvq_has_xraw(type)) {
++        x = mmvq_unpack_x<type>(mmvq_load_xraw<type>(xb, off, iqs), iqs);
+     } else if constexpr (type == GGML_TYPE_IQ4_NL) {
+         const block_iq4_nl * b = (const block_iq4_nl *) vbq + kbx;
+ #pragma unroll
+@@ -441,20 +562,20 @@ template <> struct mmvq_ys<GGML_TYPE_IQ3_S>   : mmvq_ys_grid {};
+ template <> struct mmvq_ys<GGML_TYPE_IQ1_S>   { int u[8]; float2 ds; };
+ template <> struct mmvq_ys<GGML_TYPE_IQ1_M>   { int u[8]; int sy[4]; float d; };
+ 
++// yb: block-uniform column base, off: byte offset of the q8_1 block aligned with the x block (per thread).
+ template <ggml_type type>
+-static __device__ __forceinline__ mmvq_ys<type> mmvq_load_y(const block_q8_1 * __restrict__ y, const int iqs) {
++static __device__ __forceinline__ mmvq_ys<type> mmvq_load_y(const mmvq_src & yb, const uint32_t off, const int iqs) {
+     mmvq_ys<type> u;
++    [[maybe_unused]] const block_q8_1 * y = (const block_q8_1 *) (yb.p + off);
++    constexpr int qs8 = offsetof(block_q8_1, qs);
++    constexpr int bs8 = sizeof(block_q8_1);
+     if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
+         const int pair = iqs / 8;
+         const int base = iqs % 8;
+ #pragma unroll
+         for (int i = 0; i < 2; ++i) {
+-            const int * q8 = (const int *) y[2*pair + i].qs + base;
+-#pragma unroll
+-            for (int l = 0; l < MMVQ_KQ_NI; ++l) {
+-                u.u[i][l] = q8[l];
+-            }
+-            u.ds[i] = __half22float2(y[2*pair + i].ds);
++            mmvq_ld_ints<MMVQ_KQ_NI, 4>(yb, off + (2*pair + i)*bs8 + qs8 + 4*base, u.u[i]);
++            u.ds[i] = __half22float2(mmvq_ld<half2, 4>(yb, off + (2*pair + i)*bs8));
+         }
+     } else if constexpr (type == GGML_TYPE_Q6_K) {
+         const int pos = iqs / 2;
+@@ -462,20 +583,12 @@ static __device__ __forceinline__ mmvq_ys<type> mmvq_load_y(const block_q8_1 * _
+         const int p   = pos % 8;
+ #pragma unroll
+         for (int g = 0; g < 4; ++g) {
+-            const int * q8 = (const int *) y[4*n + g].qs + p;
+-#pragma unroll
+-            for (int k = 0; k < MMVQ_Q6K_NI; ++k) {
+-                u.u[g][k] = q8[k];
+-            }
+-            u.d[g] = __low2float(y[4*n + g].ds);
++            mmvq_ld_ints<MMVQ_Q6K_NI, 4>(yb, off + (4*n + g)*bs8 + qs8 + 4*p, u.u[g]);
++            u.d[g] = __half2float(mmvq_ld<half, 4>(yb, off + (4*n + g)*bs8));
+         }
+     } else if constexpr (type == GGML_TYPE_IQ4_XS) {
+-        const block_q8_1 * yb = y + iqs/4;
+-#pragma unroll
+-        for (int j = 0; j < 8; ++j) {
+-            u.u[j] = get_int_b4(yb->qs, j);
+-        }
+-        u.d = __low2float(yb->ds);
++        mmvq_ld_ints<8, 4>(yb, off + (iqs/4)*bs8 + qs8, u.u);
++        u.d = __half2float(mmvq_ld<half, 4>(yb, off + (iqs/4)*bs8));
+     } else if constexpr (type == GGML_TYPE_IQ4_NL) {
+         const int * q8 = (const int *) y->qs + iqs;
+ #pragma unroll
+@@ -600,25 +713,143 @@ static __device__ __forceinline__ float mmvq_dot(const mmvq_xs<type> & x, const
+     }
+ }
+ 
++// Dot the unpacked weight slices xs of nrows rows with ncols columns of y. yc: block-uniform source of each column,
++// yoff: byte offset of the q8_1 block aligned with the x block (shared by all columns).
++template <ggml_type type, int ncols, int nrows>
++static __device__ __forceinline__ void vec_dot_q_multi_xs(
++        const mmvq_xs<type> (&xs)[nrows], const mmvq_src (&yc)[ncols], const uint32_t yoff, const int iqs,
++        float (&acc)[ncols][nrows]) {
++#pragma unroll
++    for (int j = 0; j < ncols; ++j) {
++        const mmvq_ys<type> u = mmvq_load_y<type>(yc[j], yoff, iqs);
++#pragma unroll
++        for (int r = 0; r < nrows; ++r) {
++            acc[j][r] += mmvq_dot<type>(xs[r], u);
++        }
++    }
++}
++
++// xr: block-uniform source of each row (rows past the end of the matrix re-read a valid row; their results are not
++// stored), xoff: byte offset of this thread's x block (shared by all rows).
+ template <ggml_type type, int ncols, int nrows>
+ static __device__ __forceinline__ void vec_dot_q_multi(
+-        const void * __restrict__ vbq, const block_q8_1 * __restrict__ y, const uint32_t stride_col_y,
+-        const int kbx0, const uint32_t stride_row_x, const int iqs, const int last_row, float (&acc)[ncols][nrows]) {
++        const mmvq_src (&xr)[nrows], const uint32_t xoff, const mmvq_src (&yc)[ncols], const uint32_t yoff, const int iqs,
++        float (&acc)[ncols][nrows]) {
+     mmvq_xs<type> xs[nrows];
+ #pragma unroll
+     for (int r = 0; r < nrows; ++r) {
+-        // rows past the end of the matrix (last block) re-read a valid row; their results are not stored
+-        xs[r] = mmvq_load_x<type>(vbq, kbx0 + min(r, last_row)*stride_row_x, iqs);
++        xs[r] = mmvq_load_x<type>(xr[r], xoff, iqs);
+     }
++    vec_dot_q_multi_xs<type, ncols, nrows>(xs, yc, yoff, iqs, acc);
++}
++
++#if defined(GGML_USE_HIP) && defined(RDNA)
++#define MMVQ_DPP_REDUCE
++// x of lane ^ o within a wave32: permlanex16 for o = 16, DPP row_xmask for o < 16 (no LDS round trip)
++template <int o>
++static __device__ __forceinline__ float mmvq_xor_dpp(const float x) {
++    static_assert(o == 16 || o == 8 || o == 4 || o == 2 || o == 1, "mmvq_xor_dpp: bad offset");
++    if constexpr (o == 16) {
++        return __int_as_float(__builtin_amdgcn_permlanex16(__float_as_int(x), __float_as_int(x), 0x76543210, 0xfedcba98, false, false));
++    } else {
++        return __int_as_float(__builtin_amdgcn_update_dpp(0, __float_as_int(x), 0x160 + o, 0xf, 0xf, false));
++    }
++}
++#endif
++
++// warp_reduce_sum<width> with the same xor 16, 8, 4, 2, 1 pairing (hence bitwise identical), but on RDNA wave32 via
++// permlanex16 + DPP row_xmask instead of ds_bpermute round trips through LDS.
++template <int width>
++static __device__ __forceinline__ float mmvq_warp_sum(float x) {
++#ifdef MMVQ_DPP_REDUCE
++    if constexpr (width == 32) {
++        x += mmvq_xor_dpp<16>(x);
++        x += mmvq_xor_dpp<8>(x);
++        x += mmvq_xor_dpp<4>(x);
++        x += mmvq_xor_dpp<2>(x);
++        x += mmvq_xor_dpp<1>(x);
++        return x;
++    }
++#endif
++    return warp_reduce_sum<width>(x);
++}
++
++#ifdef MMVQ_DPP_REDUCE
++// Transposed butterfly: P per-lane partial sums are reduced over a wave32 in P-1 + (5 - log2 P) exchanges instead of
++// 5P. At offset o a lane keeps one half of its list (which half by lane bit o) and adds the partner's copy of that
++// half, so every element still gets the pairings x_l + x_{l^16}, then ^8, ^4, ^2, ^1 of warp_reduce_sum (bitwise
++// identical). An odd middle element stays in both halves (plain butterfly step). In the end v[0] of every lane is the
++// full sum of element mmvq_tsum_map<P>().e[lane]. Requires lane == threadIdx.x (one wave32 per block).
++
++// lane bit o set ? a : b. Inline asm: as plain selects LLVM folds the whole select tree into per-element index
++// compares against every list position.
++template <int o>
++static __device__ __forceinline__ float mmvq_sel_lane_bit(const float a, const float b) {
++    constexpr uint32_t mask = o == 16 ? 0xFFFF0000u : o == 8 ? 0xFF00FF00u : o == 4 ? 0xF0F0F0F0u : o == 2 ? 0xCCCCCCCCu : 0xAAAAAAAAu;
++    float r;
++    asm("v_cndmask_b32_e64 %0, %1, %2, %3" : "=v"(r) : "v"(b), "v"(a), "s"(mask));
++    return r;
++}
++
++template <int n, int o, int P>
++static __device__ __forceinline__ void mmvq_tsum(float (&v)[P]) {
++    if constexpr (o > 0) {
++        constexpr int h = n/2;
+ #pragma unroll
+-    for (int j = 0; j < ncols; ++j) {
+-        const mmvq_ys<type> u = mmvq_load_y<type>(y + j*stride_col_y, iqs);
+-#pragma unroll
+-        for (int r = 0; r < nrows; ++r) {
+-            acc[j][r] += mmvq_dot<type>(xs[r], u);
++        for (int k = 0; k < h; ++k) {
++            const float send = mmvq_sel_lane_bit<o>(v[k],     v[h + k]);
++            const float keep = mmvq_sel_lane_bit<o>(v[h + k], v[k]);
++            v[k] = keep + mmvq_xor_dpp<o>(send);
++        }
++        if constexpr (n % 2 == 1) {
++            v[h] = v[2*h] + mmvq_xor_dpp<o>(v[2*h]);
++        }
++        mmvq_tsum<h + n%2, o/2, P>(v);
++    }
++}
++
++// Per lane: the element it holds after mmvq_tsum<P, 16, P> and whether it is that element's single writer. Only odd
++// middles are duplicated (kept by both partners), so a list slot stays the writer while every middle step it went
++// through had lane bit 0.
++struct mmvq_tsum_lanes { int e[32]; bool writer[32]; };
++template <int P>
++static constexpr __host__ __device__ mmvq_tsum_lanes mmvq_tsum_map() {
++    mmvq_tsum_lanes m = {};
++    for (int lane = 0; lane < 32; ++lane) {
++        int  idx[32] = {};
++        bool w[32]   = {};
++        for (int k = 0; k < P; ++k) {
++            idx[k] = k;
++            w[k]   = true;
++        }
++        int n = P;
++        for (int o = 16; o > 0; o /= 2) {
++            const int  h   = n/2;
++            const bool bit = lane & o;
++            int  next_idx[32] = {};
++            bool next_w[32]   = {};
++            for (int k = 0; k < h; ++k) {
++                next_idx[k] = bit ? idx[h + k] : idx[k];
++                next_w[k]   = bit ? w[h + k]   : w[k];
++            }
++            if (n % 2 == 1) {
++                next_idx[h] = idx[2*h];
++                next_w[h]   = w[2*h] && !bit;
++            }
++            n = h + n%2;
++            for (int k = 0; k < 32; ++k) {
++                idx[k] = next_idx[k];
++                w[k]   = next_w[k];
++            }
+         }
++        m.e[lane]      = idx[0];
++        m.writer[lane] = w[0];
+     }
++    return m;
+ }
++template <int P>
++static __device__ constexpr mmvq_tsum_lanes mmvq_tsum_lane_map = mmvq_tsum_map<P>();
++#endif
+ 
+ enum mmvq_parameter_table_id {
+     MMVQ_PARAMETERS_GENERIC = 0,
+@@ -1132,10 +1363,57 @@ static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int
+     return 1;
+ }
+ 
++// Occupancy the compiler schedules the RDNA3 multi-column kernels for (max waves per SIMD). Left alone (16), at 5+
++// columns it squeezes them into 96 VGPRs by waiting on each load right before its use; a lower target lets it keep an
++// iteration's loads in flight. Too low leaves too few waves resident for the 1280-block (5120-row) launches.
++// 2-4 columns stay at 16. Measured per type with the cache-cold microbench on every Qwen3.8-27B shape.
++#ifndef MMVQ_R3_WAVES_KQ
++#define MMVQ_R3_WAVES_KQ 10    // Q4_K, Q5_K at 5-6 columns
++#endif
++#ifndef MMVQ_R3_WAVES_KQ_N8
++#define MMVQ_R3_WAVES_KQ_N8 8  // Q4_K, Q5_K at 7-8 columns
++#endif
++#ifndef MMVQ_R3_WAVES_Q6K
++#define MMVQ_R3_WAVES_Q6K 6    // Q6_K at 5 columns (pipelined)
++#endif
++#ifndef MMVQ_R3_WAVES_Q6K_N8
++#define MMVQ_R3_WAVES_Q6K_N8 8 // Q6_K at 6-8 columns
++#endif
++#ifndef MMVQ_R3_WAVES_OTHER
++#define MMVQ_R3_WAVES_OTHER 8  // IQ4_XS and the other multi types at 5-8 columns
++#endif
++// Software-pipelined multi loop (next iteration's weights loaded before this one is dotted): a gain for Q6_K at 5
++// columns only (at 6 it spills).
++#ifndef MMVQ_R3_PIPE_Q6K
++#define MMVQ_R3_PIPE_Q6K 1
++#endif
++static constexpr __host__ __device__ int mmvq_max_waves_per_eu(ggml_type type, int ncols_dst, mmvq_parameter_table_id table_id) {
++    if (table_id != MMVQ_PARAMETERS_RDNA3_0 || !mmvq_has_multi(type) || ncols_dst < MMVQ_MULTI_MIN_NCOLS || ncols_dst <= 4) {
++        return 16;
++    }
++    const bool n8 = ncols_dst > 6;
++    switch (type) {
++        case GGML_TYPE_Q4_K:
++        case GGML_TYPE_Q5_K: return n8 ? MMVQ_R3_WAVES_KQ_N8  : MMVQ_R3_WAVES_KQ;
++        case GGML_TYPE_Q6_K: return ncols_dst > 5 ? MMVQ_R3_WAVES_Q6K_N8 : MMVQ_R3_WAVES_Q6K;
++        default:             return MMVQ_R3_WAVES_OTHER;
++    }
++}
++static constexpr __host__ __device__ bool mmvq_r3_pipeline(ggml_type type, int ncols_dst) {
++    return type == GGML_TYPE_Q6_K && ncols_dst == 5 && MMVQ_R3_PIPE_Q6K;
++}
++// HIP's __launch_bounds__(n, 1) already sets amdgpu_waves_per_eu(1), which would take precedence over a second one
++#if defined(GGML_USE_HIP)
++#define MMVQ_LAUNCH_BOUNDS(nthreads, max_waves) __attribute__((amdgpu_flat_work_group_size(1, nthreads), amdgpu_waves_per_eu(1, max_waves)))
++#else
++#define MMVQ_LAUNCH_BOUNDS(nthreads, max_waves) __launch_bounds__(nthreads, 1)
++#endif
++
+ // bias_only: the fused epilogue only adds x_bias (no gate/GLU, no scales), so multi-column launches don't pay for the
+ // gate accumulators. This is what lets ncols_dst > 1 take a residual/bias ADD without the register pressure of gate fusion.
+ template <ggml_type type, int ncols_dst, bool has_fusion, bool small_k = false, bool halve_iters = false, bool bias_only = false>
+-__launch_bounds__(calc_nwarps(type, ncols_dst, get_device_table_id(), small_k, halve_iters)*ggml_cuda_get_physical_warp_size(), 1)
++MMVQ_LAUNCH_BOUNDS(calc_nwarps(type, ncols_dst, get_device_table_id(), small_k, halve_iters)*ggml_cuda_get_physical_warp_size(),
++                   mmvq_max_waves_per_eu(type, ncols_dst, get_device_table_id()))
+ static __global__ void mul_mat_vec_q(
+         const void * vx_ptr, const void * vy_ptr, const int32_t * ids_ptr, const ggml_cuda_mm_fusion_args_device fusion, float * dst_ptr,
+         const uint32_t ncols_x, const uint3 nchannels_y, const uint32_t stride_row_x, const uint32_t stride_col_y,
+@@ -1260,7 +1538,90 @@ static __global__ void mul_mat_vec_q(
+     // last row of this block that lies inside the matrix (stride_col_dst == number of rows, as in the store guard)
+     [[maybe_unused]] const int last_row = rows_per_cuda_block == 1 ? 0 : min(rows_per_cuda_block, int(stride_col_dst) - row0) - 1;
+ 
+-    for (int kbx = tid / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
++    // multi path: block-uniform row/column sources, the loop only advances 32-bit byte offsets
++    [[maybe_unused]] mmvq_src xr[rows_per_cuda_block];
++    [[maybe_unused]] mmvq_src xr_gate[rows_per_cuda_block];
++    [[maybe_unused]] mmvq_src yc[ncols_dst];
++    if constexpr (use_multi) {
++#pragma unroll
++        for (int r = 0; r < rows_per_cuda_block; ++r) {
++            const size_t row_off = size_t(kbx_offset + min(r, last_row)*int(stride_row_x)) * ggml_cuda_type_traits<type>::bs;
++            xr[r] = mmvq_make_src((const char *) vx + row_off);
++            if constexpr (has_gate_fusion) {
++                xr_gate[r] = mmvq_make_src((const char *) vgate + row_off);
++            }
++        }
++#pragma unroll
++        for (int j = 0; j < ncols_dst; ++j) {
++            yc[j] = mmvq_make_src(y, j*stride_col_y*sizeof(block_q8_1));
++        }
++    }
++
++    // multi path on RDNA wave32: one transposed butterfly for all ncols*rows sums, each lane stores one result
++#ifdef MMVQ_DPP_REDUCE
++    constexpr bool use_tsum = use_multi && nwarps == 1 && warp_size == 32 && !has_gate_fusion &&
++                              ncols_dst*rows_per_cuda_block <= 32;
++#else
++    constexpr bool use_tsum = false;
++#endif
++    [[maybe_unused]] int   tsum_e      = 0;
++    [[maybe_unused]] bool  tsum_writer = true;
++    [[maybe_unused]] float tsum_bias   = 0.0f;
++#ifdef MMVQ_DPP_REDUCE
++    if constexpr (use_tsum) {
++        constexpr int P = ncols_dst*rows_per_cuda_block;
++        tsum_e      = mmvq_tsum_lane_map<P>.e[threadIdx.x];
++        tsum_writer = mmvq_tsum_lane_map<P>.writer[threadIdx.x];
++        const int i = tsum_e % rows_per_cuda_block;
++        tsum_writer = tsum_writer && (rows_per_cuda_block == 1 || uint32_t(row0 + i) < stride_col_dst);
++        if constexpr (has_fusion) {
++            // prefetch the bias of this lane's result, as the generic epilogue does for its threads
++            if (use_bias && tsum_writer) {
++                tsum_bias = ((const float *) fusion.x_bias)[sample_dst*stride_sample_dst + channel_dst*stride_channel_dst + row0 +
++                                                            (tsum_e / rows_per_cuda_block)*stride_col_dst + i];
++            }
++        }
++    }
++#endif
++
++    int kbx_start = tid / (qi/vdr);
++
++    // multi path, software pipelined: the next iteration's raw weights are loaded before the current ones are unpacked
++    // and dotted, so the DRAM latency overlaps with this iteration's activation loads and ALU work
++    constexpr bool use_pipeline = use_multi && mmvq_has_xraw(type) && !has_gate_fusion && mmvq_r3_pipeline(type, ncols_dst) &&
++                                  table_id == MMVQ_PARAMETERS_RDNA3_0;
++    if constexpr (use_pipeline) {
++        constexpr int bs = ggml_cuda_type_traits<type>::bs;
++        const int kqs = vdr * (tid % (qi/vdr));
++        const int kbx_last = blocks_per_row_x - 1;
++        mmvq_xraw<type> w[rows_per_cuda_block];
++#pragma unroll
++        for (int r = 0; r < rows_per_cuda_block; ++r) {
++            w[r] = mmvq_load_xraw<type>(xr[r], uint32_t(min(kbx_start, kbx_last)) * bs, kqs);
++        }
++        for (int kbx = kbx_start; kbx < blocks_per_row_x; kbx += blocks_per_iter) {
++            // past the end of the row the prefetch re-reads the row's last block (a cache hit) instead of branching
++            const uint32_t xoff_next = uint32_t(min(kbx + blocks_per_iter, kbx_last)) * bs;
++            mmvq_xraw<type> wn[rows_per_cuda_block];
++#pragma unroll
++            for (int r = 0; r < rows_per_cuda_block; ++r) {
++                wn[r] = mmvq_load_xraw<type>(xr[r], xoff_next, kqs);
++            }
++            mmvq_xs<type> xs[rows_per_cuda_block];
++#pragma unroll
++            for (int r = 0; r < rows_per_cuda_block; ++r) {
++                xs[r] = mmvq_unpack_x<type>(w[r], kqs);
++            }
++            vec_dot_q_multi_xs<type, ncols_dst, rows_per_cuda_block>(xs, yc, uint32_t(kbx * (qk/QK8_1)) * sizeof(block_q8_1), kqs, tmp);
++#pragma unroll
++            for (int r = 0; r < rows_per_cuda_block; ++r) {
++                w[r] = wn[r];
++            }
++        }
++        kbx_start = blocks_per_row_x; // done, skip the generic loop
++    }
++
++    for (int kbx = kbx_start; kbx < blocks_per_row_x; kbx += blocks_per_iter) {
+         const int kby = kbx * (qk/QK8_1); // y block index that aligns with kbx
+ 
+         // x block quant index when casting the quants to int
+@@ -1286,13 +1647,13 @@ static __global__ void mul_mat_vec_q(
+         }
+ #endif
+ 
+-        if constexpr (mmvq_has_multi(type) && ncols_dst >= MMVQ_MULTI_MIN_NCOLS) {
+-            vec_dot_q_multi<type, ncols_dst, rows_per_cuda_block>(
+-                vx, &y[kby], stride_col_y, kbx_offset + kbx, stride_row_x, kqs, last_row, tmp);
+-            if constexpr (has_fusion) {
++        if constexpr (use_multi) {
++            const uint32_t xoff = uint32_t(kbx) * ggml_cuda_type_traits<type>::bs;
++            const uint32_t yoff = uint32_t(kby) * sizeof(block_q8_1);
++            vec_dot_q_multi<type, ncols_dst, rows_per_cuda_block>(xr, xoff, yc, yoff, kqs, tmp);
++            if constexpr (has_gate_fusion) {
+                 if (use_gate) {
+-                    vec_dot_q_multi<type, ncols_dst, rows_per_cuda_block>(
+-                        vgate, &y[kby], stride_col_y, kbx_offset + kbx, stride_row_x, kqs, last_row, tmp_gate);
++                    vec_dot_q_multi<type, ncols_dst, rows_per_cuda_block>(xr_gate, xoff, yc, yoff, kqs, tmp_gate);
+                 }
+             }
+         } else {
+@@ -1313,6 +1674,30 @@ static __global__ void mul_mat_vec_q(
+         }
+     }
+ 
++#ifdef MMVQ_DPP_REDUCE
++    if constexpr (use_tsum) {
++        constexpr int P = ncols_dst*rows_per_cuda_block;
++        float v[P];
++#pragma unroll
++        for (int j = 0; j < ncols_dst; ++j) {
++#pragma unroll
++            for (int i = 0; i < rows_per_cuda_block; ++i) {
++                v[j*rows_per_cuda_block + i] = tmp[j][i];
++            }
++        }
++        mmvq_tsum<P, 16, P>(v);
++        if (tsum_writer) {
++            float result = v[0];
++            if constexpr (has_fusion) {
++                result += tsum_bias; // 0 without bias, as x_biases in the generic epilogue
++            }
++            dst[sample_dst*stride_sample_dst + channel_dst*stride_channel_dst + row0 +
++                (tsum_e / rows_per_cuda_block)*stride_col_dst + tsum_e % rows_per_cuda_block] = result;
++        }
++        return;
++    }
++#endif
++
+     __shared__ float tmp_shared[nwarps-1 > 0 ? nwarps-1 : 1][ncols_dst][rows_per_cuda_block][warp_size];
+     [[maybe_unused]] __shared__ float tmp_shared_gate[(has_gate_fusion && (nwarps-1 > 0)) ? nwarps-1 : 1][ncols_dst][rows_per_cuda_block][warp_size];
+ 
+@@ -1351,7 +1736,7 @@ static __global__ void mul_mat_vec_q(
+                     }
+                 }
+             }
+-            tmp[j][i] = warp_reduce_sum<warp_size>(tmp[j][i]);
++            tmp[j][i] = use_multi ? mmvq_warp_sum<warp_size>(tmp[j][i]) : warp_reduce_sum<warp_size>(tmp[j][i]);
+             if constexpr (has_fusion) {
+                 if (use_gate) {
+                     tmp_gate[j][i] = warp_reduce_sum<warp_size>(tmp_gate[j][i]);
+-- 
+2.43.0
+

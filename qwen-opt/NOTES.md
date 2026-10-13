@@ -253,3 +253,20 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - 4 przebiegi draftu (42 kernele, ~1.19 ms każdy) -> jeden graf 104 kerneli z argmax i get_rows na GPU; +180 MiB VRAM (kopia 64k wierszy token_embd).
 - Catch-up nie złączony: jego praca GPU już chowa się za próbkowaniem na CPU, zysk 0.2 ms za cenę zmiany draftów.
 - Potwierdzone: Qwen UD **35.67 ms/krok, 88.1 t/s**; Uncensored **33.79 ms/krok, 90.4 t/s** (tok/krok bez zmian).
+
+## ROCm: MMVQ wielokolumnowe K1 (gałąź opt-k1, 60ce2a71f + 9f83f1f81, 2026-10-13), bitowo identyczne
+- Ładowanie wag/aktywacji przez buffer resource (SGPR) + 32-bitowe offsety, nagłówki bloków jednym load-em,
+  amdgpu_waves_per_eu per (typ, n) dla 5-8 kolumn (HIP-owe __launch_bounds__(n,1) blokowało to), pipelining Q6_K (n=5),
+  transponowany butterfly DPP w epilogu, wagi z GLC|DLC. n=1 bez zmian (ISA identyczne).
+- rocprofv3 w modelu (Qwen UD): mmvq 24.3 -> 22.1 ms na weryfikację. Serwer (spec_sweep, 2 rundy A/B):
+  Qwen 35.7 -> 33.2 ms/krok (88.0 -> 94.7 t/s), Uncensored 33.8 -> 32.1 (90.3 -> 95.4 t/s).
+- Mikrobench (mmvq-bench/kbench.sh, czasy kerneli z rocprofv3): runs/final_vs_base.txt. Mikrobench myli się co do
+  Q6_K i GLC|DLC (w modelu zysk) -> decyzje z rocprofv3 w modelu (mmvq-bench/verify_mmvq.py).
+- Nie działało: same 32-bitowe offsety bez waves_per_eu (kompilator czeka na każdy load, -5..-40%), pipelining dla
+  Q4_K/Q5_K/IQ4_XS, W=6 (za mało fal dla 1280 bloków), W=16 dla 5+ kolumn, SLC/GLC osobno.
+
+## K1: HIP MMVQ wielokolumnowe (60ce2a71f, 9f83f1f81; 2026-10-13), bitowo identyczne
+- Ładowanie nagłówków bloków jednym odczytem, offsety 32-bit w SGPR, amdgpu_waves_per_eu per (typ, n) (HIP __launch_bounds__ blokował to na domyślnym), pipelining Q6_K n=5, redukcja epilogu jednym transponowanym butterfly, odczyty wag GLC|DLC.
+- MMVQ w weryfikacji: 24.3 -> 22.1 ms; weryfikacja 31.0 -> 28.4 ms.
+- Potwierdzone: Qwen **33.17 ms/krok, 94.7 t/s** (było 35.67/88.1); Uncensored **32.02 ms/krok, 95.4 t/s** (33.79/90.4). n=1 i prefill bez zmian.
+- Nie zadziałało: same offsety 32-bit bez waves_per_eu (-5..-40%), pipelining Q4_K/Q5_K/IQ4_XS, W=6/16, SLC/GLC osobno. Liczniki PMC w rocprofv3 zwracają 0 na tym setupie.
