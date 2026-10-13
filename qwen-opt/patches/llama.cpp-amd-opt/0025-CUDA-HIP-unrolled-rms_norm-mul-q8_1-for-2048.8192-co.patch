@@ -1,0 +1,310 @@
+From 813fa7c34ca904af6fdec79693dd475a98f63ab5 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 13:36:48 +0000
+Subject: [PATCH 25/28] CUDA/HIP: unrolled rms_norm*mul(+q8_1) for
+ 2048..8192-column rows, DPP reductions (GGML_HIP_NORM_FAST)
+
+rms_norm_mul_f32_unrolled<NV>: thread t still owns columns t + 1024k and every sum keeps the order and pairing of
+rms_norm_f32<1024, true>, but the NV loads of x and of the weight are issued up front, the block and q8_1 group
+reductions use permlanex16/DPP row_xmask (warp_reduce_sum_dpp / warp_reduce_max_dpp, moved from mmvq.cu to
+common.cuh) and the NV q8_1 groups of a thread are unrolled. The sum of squares is an explicit fma chain: unrolled,
+tmp += x*x let the backend fuse the first product into the second add instead (1 ulp off in ~4% of rows; found
+with a 2000-row bitwise harness and an in-model check).
+
+rocprofv3 (Qwen3.8-27B, MTP n=4): rms_norm*mul 5.87 -> 4.51 us (128 per verify, 20 per draft chain: 5.63 -> 4.21).
+Greedy md5 (plain and MTP) equal to 9f83f1f81; bitwise harness 2000 rows x 5120 (incl. in-place, zeros, 1e-21,
+3000-scale outliers): 0 f32 and 0 q8_1 differences. test-backend-ops RMS_NORM 53/53, RMS_NORM_MUL_ADD 37/37.
+GGML_HIP_NORM_FAST=0 restores rms_norm_f32<1024, true>.
+---
+ ggml/src/ggml-cuda/common.cuh |  59 ++++++++++++++++-
+ ggml/src/ggml-cuda/mmvq.cu    |  35 ++--------
+ ggml/src/ggml-cuda/norm.cu    | 120 ++++++++++++++++++++++++++++++++++
+ 3 files changed, 180 insertions(+), 34 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index 1758ee35b..cb17cf202 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -533,6 +533,53 @@ static __device__ __forceinline__ float warp_reduce_max(float x) {
+     return x;
+ }
+ 
++#if defined(GGML_USE_HIP) && defined(RDNA)
++#define GGML_CUDA_DPP_REDUCE
++// x of lane ^ o within a wave32: permlanex16 for o = 16, DPP row_xmask for o < 16 (no LDS round trip; hipcc does not
++// turn an xor shuffle into these by itself)
++template <int o>
++static __device__ __forceinline__ float ggml_cuda_xor_dpp(const float x) {
++    static_assert(o == 16 || o == 8 || o == 4 || o == 2 || o == 1, "ggml_cuda_xor_dpp: bad offset");
++    if constexpr (o == 16) {
++        return __int_as_float(__builtin_amdgcn_permlanex16(__float_as_int(x), __float_as_int(x), 0x76543210, 0xfedcba98, false, false));
++    } else {
++        return __int_as_float(__builtin_amdgcn_update_dpp(0, __float_as_int(x), 0x160 + o, 0xf, 0xf, false));
++    }
++}
++#endif // defined(GGML_USE_HIP) && defined(RDNA)
++
++// warp_reduce_sum / warp_reduce_max with the same xor width/2, ..., 1 pairing (and operand order), hence bitwise
++// identical, but on RDNA wave32 via permlanex16 + DPP row_xmask instead of ds_bpermute round trips through LDS.
++template<int width = WARP_SIZE>
++static __device__ __forceinline__ float warp_reduce_sum_dpp(float x) {
++#ifdef GGML_CUDA_DPP_REDUCE
++    if constexpr (width <= 32) {
++        if constexpr (width >= 32) { x += ggml_cuda_xor_dpp<16>(x); }
++        if constexpr (width >= 16) { x += ggml_cuda_xor_dpp< 8>(x); }
++        if constexpr (width >=  8) { x += ggml_cuda_xor_dpp< 4>(x); }
++        if constexpr (width >=  4) { x += ggml_cuda_xor_dpp< 2>(x); }
++        if constexpr (width >=  2) { x += ggml_cuda_xor_dpp< 1>(x); }
++        return x;
++    }
++#endif // GGML_CUDA_DPP_REDUCE
++    return warp_reduce_sum<width>(x);
++}
++
++template<int width = WARP_SIZE>
++static __device__ __forceinline__ float warp_reduce_max_dpp(float x) {
++#ifdef GGML_CUDA_DPP_REDUCE
++    if constexpr (width <= 32) {
++        if constexpr (width >= 32) { x = fmaxf(x, ggml_cuda_xor_dpp<16>(x)); }
++        if constexpr (width >= 16) { x = fmaxf(x, ggml_cuda_xor_dpp< 8>(x)); }
++        if constexpr (width >=  8) { x = fmaxf(x, ggml_cuda_xor_dpp< 4>(x)); }
++        if constexpr (width >=  4) { x = fmaxf(x, ggml_cuda_xor_dpp< 2>(x)); }
++        if constexpr (width >=  2) { x = fmaxf(x, ggml_cuda_xor_dpp< 1>(x)); }
++        return x;
++    }
++#endif // GGML_CUDA_DPP_REDUCE
++    return warp_reduce_max<width>(x);
++}
++
+ // The half2 (d, sum) of a q8_1 block, each clamped to the finite fp16 range. One large activation can push the block
+ // sum (or amax/127) past 65504, the fp16 store becomes inf and inf*0 in the dot products turns into NaN (same defect as
+ // ggml-org/llama.cpp#23606). Bitwise no-op for every value that already converts to a finite half (|v| < 65520 rounds
+@@ -544,13 +591,19 @@ static __device__ __forceinline__ half2 make_q8_1_ds(const float d, const float
+ 
+ // Quantizes a block_q8_1 from 32 consecutive lanes holding its 32 values in order (lane % 32 == iqs), exactly as
+ // the quantize_q8_1 kernel does. Lets an elementwise producer write the q8_1 copy of its output for MMVQ.
+-// All 32 lanes of the group must be active.
++// All 32 lanes of the group must be active. dpp: the exchanges via warp_reduce_*_dpp (same bits).
++template <bool dpp = false>
+ static __device__ __forceinline__ void quantize_q8_1_group(const float xi, block_q8_1 * y, const int iqs) {
+     float amax = fabsf(xi);
+     float sum  = xi;
+ 
+-    amax = warp_reduce_max<QK8_1>(amax);
+-    sum  = warp_reduce_sum<QK8_1>(sum);
++    if constexpr (dpp) {
++        amax = warp_reduce_max_dpp<QK8_1>(amax);
++        sum  = warp_reduce_sum_dpp<QK8_1>(sum);
++    } else {
++        amax = warp_reduce_max<QK8_1>(amax);
++        sum  = warp_reduce_sum<QK8_1>(sum);
++    }
+ 
+     const float  d = amax / 127.0f;
+     const int8_t q = amax == 0.0f ? 0 : roundf(xi / d);
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 1620d9f2c..9794f1361 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -751,37 +751,10 @@ static __device__ __forceinline__ void vec_dot_q_multi(
+     vec_dot_q_multi_xs<type, ncols, nrows>(xs, yc, yoff, iqs, acc);
+ }
+ 
+-#if defined(GGML_USE_HIP) && defined(RDNA)
++#ifdef GGML_CUDA_DPP_REDUCE
+ #define MMVQ_DPP_REDUCE
+-// x of lane ^ o within a wave32: permlanex16 for o = 16, DPP row_xmask for o < 16 (no LDS round trip)
+-template <int o>
+-static __device__ __forceinline__ float mmvq_xor_dpp(const float x) {
+-    static_assert(o == 16 || o == 8 || o == 4 || o == 2 || o == 1, "mmvq_xor_dpp: bad offset");
+-    if constexpr (o == 16) {
+-        return __int_as_float(__builtin_amdgcn_permlanex16(__float_as_int(x), __float_as_int(x), 0x76543210, 0xfedcba98, false, false));
+-    } else {
+-        return __int_as_float(__builtin_amdgcn_update_dpp(0, __float_as_int(x), 0x160 + o, 0xf, 0xf, false));
+-    }
+-}
+ #endif
+ 
+-// warp_reduce_sum<width> with the same xor 16, 8, 4, 2, 1 pairing (hence bitwise identical), but on RDNA wave32 via
+-// permlanex16 + DPP row_xmask instead of ds_bpermute round trips through LDS.
+-template <int width>
+-static __device__ __forceinline__ float mmvq_warp_sum(float x) {
+-#ifdef MMVQ_DPP_REDUCE
+-    if constexpr (width == 32) {
+-        x += mmvq_xor_dpp<16>(x);
+-        x += mmvq_xor_dpp<8>(x);
+-        x += mmvq_xor_dpp<4>(x);
+-        x += mmvq_xor_dpp<2>(x);
+-        x += mmvq_xor_dpp<1>(x);
+-        return x;
+-    }
+-#endif
+-    return warp_reduce_sum<width>(x);
+-}
+-
+ #ifdef MMVQ_DPP_REDUCE
+ // Transposed butterfly: P per-lane partial sums are reduced over a wave32 in P-1 + (5 - log2 P) exchanges instead of
+ // 5P. At offset o a lane keeps one half of its list (which half by lane bit o) and adds the partner's copy of that
+@@ -807,10 +780,10 @@ static __device__ __forceinline__ void mmvq_tsum(float (&v)[P]) {
+         for (int k = 0; k < h; ++k) {
+             const float send = mmvq_sel_lane_bit<o>(v[k],     v[h + k]);
+             const float keep = mmvq_sel_lane_bit<o>(v[h + k], v[k]);
+-            v[k] = keep + mmvq_xor_dpp<o>(send);
++            v[k] = keep + ggml_cuda_xor_dpp<o>(send);
+         }
+         if constexpr (n % 2 == 1) {
+-            v[h] = v[2*h] + mmvq_xor_dpp<o>(v[2*h]);
++            v[h] = v[2*h] + ggml_cuda_xor_dpp<o>(v[2*h]);
+         }
+         mmvq_tsum<h + n%2, o/2, P>(v);
+     }
+@@ -1754,7 +1727,7 @@ static __global__ void mul_mat_vec_q(
+                     }
+                 }
+             }
+-            tmp[j][i] = use_multi ? mmvq_warp_sum<warp_size>(tmp[j][i]) : warp_reduce_sum<warp_size>(tmp[j][i]);
++            tmp[j][i] = use_multi ? warp_reduce_sum_dpp<warp_size>(tmp[j][i]) : warp_reduce_sum<warp_size>(tmp[j][i]);
+             if constexpr (has_fusion) {
+                 if (use_gate) {
+                     tmp_gate[j][i] = warp_reduce_sum<warp_size>(tmp_gate[j][i]);
+diff --git a/ggml/src/ggml-cuda/norm.cu b/ggml/src/ggml-cuda/norm.cu
+index bb29d3d6e..28fe988c7 100644
+--- a/ggml/src/ggml-cuda/norm.cu
++++ b/ggml/src/ggml-cuda/norm.cu
+@@ -185,6 +185,108 @@ static __global__ void rms_norm_f32(const float * x,
+     }
+ }
+ 
++// rms_norm*mul (+ the q8_1 copy) of rows of exactly NV*1024 columns. Thread t owns the columns t + 1024*k and every sum
++// is formed in the same order and pairing as rms_norm_f32<1024, true> (bitwise identical), but the NV loads of x and
++// mul are issued up front, the reductions use DPP exchanges instead of LDS round trips and the NV q8_1 groups of a
++// thread are unrolled so that their exchanges overlap.
++template <int NV>
++__launch_bounds__(1024, 1)
++static __global__ void rms_norm_mul_f32_unrolled(const float * x,
++                                                 float *       dst,
++                                                 const int     ncols,
++                                                 const int     nchannels,
++                                                 const int     nsamples,
++                                                 const int64_t stride_row,
++                                                 const int64_t stride_channel,
++                                                 const int64_t stride_sample,
++                                                 const float   eps,
++                                                 const float * mul,
++                                                 const int64_t mul_stride_row,
++                                                 const int64_t mul_stride_channel,
++                                                 const int64_t mul_stride_sample,
++                                                 const uint3   mul_ncols_packed,
++                                                 const uint3   mul_nrows_packed,
++                                                 const uint3   mul_nchannels_packed,
++                                                 const uint3   mul_nsamples_packed,
++                                                 block_q8_1  * q8) {
++    constexpr int block_size = 1024;
++    ggml_cuda_pdl_lc();
++    const int nrows   = gridDim.x;
++    const int row     = blockIdx.x;
++    const int tid     = threadIdx.x;
++    const int lane_id = tid % WARP_SIZE;
++    const int warp_id = tid / WARP_SIZE;
++
++    __shared__ float s_sum[block_size/WARP_SIZE];
++
++    ggml_cuda_pdl_sync();
++
++    for (int sample = blockIdx.z; sample < nsamples; sample += gridDim.z) {
++        for (int channel = blockIdx.y; channel < nchannels; channel += gridDim.y) {
++            const float * xc   = x   + sample*stride_sample + channel*stride_channel + row*stride_row;
++            float       * dstc = dst + ((sample*nchannels + channel)*nrows + row)*ncols;
++            const float * mulc = mul + fastmodulo(sample,  mul_nsamples_packed)  * mul_stride_sample
++                                     + fastmodulo(channel, mul_nchannels_packed) * mul_stride_channel
++                                     + fastmodulo(row,     mul_nrows_packed)     * mul_stride_row;
++
++            float xv[NV];
++            float mv[NV];
++#pragma unroll
++            for (int k = 0; k < NV; ++k) {
++                xv[k] = xc[tid + k*block_size];
++            }
++#pragma unroll
++            for (int k = 0; k < NV; ++k) {
++                mv[k] = mulc[fastmodulo(tid + k*block_size, mul_ncols_packed)];
++            }
++
++            // explicit fmas: the loop of rms_norm_f32 contracts tmp += xi*xi into one fma per column, in column order;
++            // unrolled, the backend would be free to fuse the first product into the second add instead
++            float tmp = 0.0f;
++#pragma unroll
++            for (int k = 0; k < NV; ++k) {
++                tmp = fmaf(xv[k], xv[k], tmp);
++            }
++
++            // block_reduce<SUM, 1024>: warp sums, then every lane of every warp sums the 32 warp sums
++            tmp = warp_reduce_sum_dpp(tmp);
++            if (lane_id == 0) {
++                s_sum[warp_id] = tmp;
++            }
++            __syncthreads();
++            tmp = warp_reduce_sum_dpp(s_sum[lane_id]);
++
++            const float mean  = tmp / ncols;
++            const float scale = rsqrtf(mean + eps);
++
++            float v[NV];
++#pragma unroll
++            for (int k = 0; k < NV; ++k) {
++                v[k] = scale * xv[k] * mv[k];
++                dstc[tid + k*block_size] = v[k];
++            }
++            if (q8 != nullptr) {
++                const int64_t i0 = (dstc - dst) + tid;
++#pragma unroll
++                for (int k = 0; k < NV; ++k) {
++                    const int64_t i = i0 + k*block_size;
++                    quantize_q8_1_group<true>(v[k], q8 + i/QK8_1, i % QK8_1);
++                }
++            }
++
++            if (gridDim.y < nchannels || gridDim.z < nsamples) {
++                __syncthreads(); // s_sum is reused by the next row
++            }
++        }
++    }
++}
++
++// GGML_HIP_NORM_FAST=0: rms_norm*mul rows of 2048..8192 columns take rms_norm_f32<1024, true> instead
++static bool rms_norm_mul_unrolled_enabled() {
++    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_NORM_FAST");
++    return enabled;
++}
++
+ template <int block_size>
+ static __global__ void rms_norm_back_f32(
+         const float * grad, const float * xf, float * dst, const int ncols, const float eps) {
+@@ -410,6 +512,24 @@ static void rms_norm_mul_f32_cuda(const float *  x,
+                 mul_stride_sample, mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed,
+                 // underlying cudaLaunchKernelEx does not support default params
+             nullptr, 0, 0, 0, make_uint3(0, 0, 0), make_uint3(0, 0, 0), make_uint3(0, 0, 0), make_uint3(0, 0, 0), 1.0f, q8);
++        } else if (rms_norm_mul_unrolled_enabled() && ncols % 1024 == 0 && ncols/1024 >= 2 && ncols/1024 <= 8) {
++            const auto launch = [&](auto nv_tag) {
++                constexpr int NV = decltype(nv_tag)::value;
++                const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params{blocks_num, dim3(1024, 1, 1), 0, stream};
++                ggml_cuda_kernel_launch(rms_norm_mul_f32_unrolled<NV>, launch_params,
++                    x, dst, ncols, nchannels, nsamples, stride_row, stride_channel, stride_sample, eps, mul, mul_stride_row,
++                    mul_stride_channel, mul_stride_sample, mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed,
++                    mul_nsamples_packed, q8);
++            };
++            switch (ncols/1024) {
++                case 2: launch(std::integral_constant<int, 2>{}); break;
++                case 3: launch(std::integral_constant<int, 3>{}); break;
++                case 4: launch(std::integral_constant<int, 4>{}); break;
++                case 5: launch(std::integral_constant<int, 5>{}); break;
++                case 6: launch(std::integral_constant<int, 6>{}); break;
++                case 7: launch(std::integral_constant<int, 7>{}); break;
++                case 8: launch(std::integral_constant<int, 8>{}); break;
++            }
+         } else {
+             const dim3 block_dims(1024, 1, 1);
+             const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params{blocks_num, block_dims, block_dims.x > WARP_SIZE ? 32 * sizeof(float): 0, stream};
+-- 
+2.43.0
+

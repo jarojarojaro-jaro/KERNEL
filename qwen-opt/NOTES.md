@@ -270,3 +270,21 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - MMVQ w weryfikacji: 24.3 -> 22.1 ms; weryfikacja 31.0 -> 28.4 ms.
 - Potwierdzone: Qwen **33.17 ms/krok, 94.7 t/s** (było 35.67/88.1); Uncensored **32.02 ms/krok, 95.4 t/s** (33.79/90.4). n=1 i prefill bez zmian.
 - Nie zadziałało: same offsety 32-bit bez waves_per_eu (-5..-40%), pipelining Q4_K/Q5_K/IQ4_XS, W=6/16, SLC/GLC osobno. Liczniki PMC w rocprofv3 zwracają 0 na tym setupie.
+
+## K2: małe kernele weryfikacji/draftu (gałąź opt-k2, ba90baf3a..849b69978, 2026-10-13), bitowo identyczne
+- S1 (poprawność): (d, sum) każdego bloku q8_1 przycinane do ±65504 (quantize, MMQ DS4, FA Q, producenci A6). Bitowo bez zmian na normalnych danych.
+- Para MMVQ (GGML_HIP_MMVQ_PAIR): dwa MUL_MAT tego samego typu na tym samym src1 jednym gridem (ffn up/gate, GDN qkv/z; qwen35 rozwija qkv i z obok siebie).
+- rms_norm*mul(+q8_1) 5120 kol.: ładowania naraz, redukcje DPP (GGML_HIP_NORM_FAST) 5.87 -> 4.51 us. Uwaga: rozwinięta suma x*x musi być jawnym łańcuchem fmaf, inaczej backend kontraktuje inny iloczyn (1 ulp w ~4% wierszy).
+- argmax: 16 ładowań w locie + DPP (GGML_HIP_ARGMAX_FAST) 16.8 -> 4.3 us (draft).
+- Bramkowana norma GDN silu(z)*(rms_norm(x)*w)+q8_1 jednym kernelem (GGML_HIP_NORM_GATE): 2.68+1.84 us -> 1.87 us.
+- SSM_CONV + alpha/beta GDN jednym gridem (GGML_HIP_GDN_CONV_AB): 4.68+4.90 us -> 5.54 us.
+- Weryfikacja: 972 -> ~815-830 kerneli. Serwer (spec_sweep, 2 rundy A/B naprzemiennie): Qwen 33.17 -> **32.17 ms/krok, 97.7 t/s**
+  (bez CONV_AB 32.50); Uncensored 32.03 -> **30.67 ms/krok, 99.6 t/s**. Greedy md5 (plain + MTP) równe 9f83f1f81 po każdym kroku.
+- Zostało (z rankingu rocprofv3): set_rows K/V q4_0 2x4.6 us/warstwę attn (jedno uruchomienie), fwht V/wyjścia (do set_rows / FA combine),
+  rms_norm_mul_rope 4.4/7.0 us, GDN 17.7 us (snapshoty stanu), unary_gated (swiglu) 2.7 us, małe k/v MMVQ (1024 wiersze, różne typy w UD).
+
+## K2 + S1: opóźnienia małych kerneli (ba90baf3a..849b69978; 2026-10-13), bitowo identyczne, przełączniki GGML_HIP_*=0
+- S1: clamp q8_1 (d, sum) do ±65504 we wszystkich zapisach q8_1 (poprawność).
+- Para MMVQ w jednej siatce (qkv + z), szybki rms_norm*mul(+q8_1) z DPP (5.87 -> 4.51 us), argmax z DPP (16.8 -> 4.3 us), fuzja wyjściowej normy GDN z bramką SiLU, SSM_CONV + alpha/beta w jednej siatce.
+- Kernele weryfikacji 972 -> ~831; przerwy 3.18 -> ~2.8 ms.
+- Potwierdzone: Qwen **32.14 ms/krok, 97.8 t/s**; Uncensored **30.68 ms/krok, 99.6 t/s**.

@@ -1,0 +1,147 @@
+From bc0da48dd27f38ed178a1bd5c6659f5a8114136c Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 13:36:48 +0000
+Subject: [PATCH 26/28] CUDA/HIP: argmax with 16 loads in flight and DPP
+ exchanges (GGML_HIP_ARGMAX_FAST)
+
+Each thread loads 16 of its columns before comparing them in column order (same first maximum per thread), and the
+warp exchanges move value and index with permlanex16/DPP: same candidates, same pairings, same result including
+ties. GGML_HIP_ARGMAX_FAST=0 restores the one-load-at-a-time loop.
+
+rocprofv3 (MTP draft chain, 65536-logit draft head, 4 per step): argmax 16.8 -> 4.3 us. Greedy md5 (MTP) equal.
+---
+ ggml/src/ggml-cuda/argmax.cu | 95 +++++++++++++++++++++++++++---------
+ 1 file changed, 72 insertions(+), 23 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/argmax.cu b/ggml/src/ggml-cuda/argmax.cu
+index 51967c667..02f3b7425 100644
+--- a/ggml/src/ggml-cuda/argmax.cu
++++ b/ggml/src/ggml-cuda/argmax.cu
+@@ -5,6 +5,10 @@
+ #include "common.cuh"
+ #include "sum.cuh"
+ 
++// unrolled: each thread issues 16 loads of its columns before comparing them (in column order, so the same first
++// maximum per thread) and the exchanges use DPP on RDNA: the same candidates and the same pairings as the plain loop,
++// hence the same result, ties included.
++template <bool unrolled>
+ static __global__ void argmax_f32(const float * __restrict__ x, int32_t * __restrict__ dst, const int64_t ncols) {
+     const int64_t row = blockIdx.x;
+ 
+@@ -12,23 +16,70 @@ static __global__ void argmax_f32(const float * __restrict__ x, int32_t * __rest
+     int   argmax = -1;
+     const float * rowx = x + row * ncols;
+ 
+-    for (int32_t col = threadIdx.x; col < ncols; col += blockDim.x) {
+-        const float val = rowx[col];
+-        if (val > maxval) {
+-            maxval = val;
+-            argmax = col;
++    if constexpr (unrolled) {
++        constexpr int nload = 16;
++        const int stride = blockDim.x;
++        int32_t col0 = threadIdx.x;
++        for (; col0 + (nload - 1)*stride < ncols; col0 += nload*stride) {
++            float v[nload];
++#pragma unroll
++            for (int k = 0; k < nload; ++k) {
++                v[k] = rowx[col0 + k*stride];
++            }
++#pragma unroll
++            for (int k = 0; k < nload; ++k) {
++                if (v[k] > maxval) {
++                    maxval = v[k];
++                    argmax = col0 + k*stride;
++                }
++            }
++        }
++        for (int32_t col = col0; col < ncols; col += stride) {
++            const float val = rowx[col];
++            if (val > maxval) {
++                maxval = val;
++                argmax = col;
++            }
++        }
++    } else {
++        for (int32_t col = threadIdx.x; col < ncols; col += blockDim.x) {
++            const float val = rowx[col];
++            if (val > maxval) {
++                maxval = val;
++                argmax = col;
++            }
+         }
+     }
+ 
+-#pragma unroll
+-    for (int offset = WARP_SIZE/2; offset > 0; offset >>= 1) {
+-        const float val = __shfl_xor_sync(0xFFFFFFFF, maxval, offset, WARP_SIZE);
+-        const int   col = __shfl_xor_sync(0xFFFFFFFF, argmax, offset, WARP_SIZE);
+-        if (val > maxval) {
+-            maxval = val;
+-            argmax = col;
++    const auto xor_exchange = [](float & mv, int & am, auto offset_tag) {
++        constexpr int offset = decltype(offset_tag)::value;
++        float val;
++        int   col;
++#ifdef GGML_CUDA_DPP_REDUCE
++        if constexpr (unrolled) {
++            val = ggml_cuda_xor_dpp<offset>(mv);
++            col = __float_as_int(ggml_cuda_xor_dpp<offset>(__int_as_float(am)));
++        } else
++#endif // GGML_CUDA_DPP_REDUCE
++        {
++            val = __shfl_xor_sync(0xFFFFFFFF, mv, offset, WARP_SIZE);
++            col = __shfl_xor_sync(0xFFFFFFFF, am, offset, WARP_SIZE);
+         }
+-    }
++        if (val > mv) {
++            mv = val;
++            am = col;
++        }
++    };
++    const auto warp_argmax = [&](float & mv, int & am) {
++        static_assert(WARP_SIZE == 32, "argmax_f32: wave32 exchanges");
++        xor_exchange(mv, am, std::integral_constant<int, 16>{});
++        xor_exchange(mv, am, std::integral_constant<int,  8>{});
++        xor_exchange(mv, am, std::integral_constant<int,  4>{});
++        xor_exchange(mv, am, std::integral_constant<int,  2>{});
++        xor_exchange(mv, am, std::integral_constant<int,  1>{});
++    };
++
++    warp_argmax(maxval, argmax);
+ 
+     const int n_warps = blockDim.x / WARP_SIZE;
+     const int lane_id = threadIdx.x % WARP_SIZE;
+@@ -49,15 +100,7 @@ static __global__ void argmax_f32(const float * __restrict__ x, int32_t * __rest
+                 maxval = shared_maxval[lane_id];
+                 argmax = shared_argmax[lane_id];
+             }
+-#pragma unroll
+-            for (int offset = WARP_SIZE/2; offset > 0; offset >>= 1) {
+-                const float val = __shfl_xor_sync(0xFFFFFFFF, maxval, offset, WARP_SIZE);
+-                const int   col = __shfl_xor_sync(0xFFFFFFFF, argmax, offset, WARP_SIZE);
+-                if (val > maxval) {
+-                    maxval = val;
+-                    argmax = col;
+-                }
+-            }
++            warp_argmax(maxval, argmax);
+         }
+     }
+ 
+@@ -87,5 +130,11 @@ void ggml_cuda_argmax(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+     const dim3 blocks_dim(num_threads, 1, 1);
+     const dim3 blocks_num(num_blocks, 1, 1);
+ 
+-    argmax_f32<<<blocks_num, blocks_dim, 0, stream>>>(src0_d, dst_d, ne00);
++    // GGML_HIP_ARGMAX_FAST=0: the plain one-load-at-a-time loop and shuffles
++    static const bool fast = ggml_cuda_env_switch("GGML_HIP_ARGMAX_FAST");
++    if (fast) {
++        argmax_f32<true><<<blocks_num, blocks_dim, 0, stream>>>(src0_d, dst_d, ne00);
++    } else {
++        argmax_f32<false><<<blocks_num, blocks_dim, 0, stream>>>(src0_d, dst_d, ne00);
++    }
+ }
+-- 
+2.43.0
+

@@ -1,0 +1,284 @@
+From 15db6f979b0d895eb937e82e040a078c87798131 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 13:36:37 +0000
+Subject: [PATCH 24/28] CUDA/HIP: MMVQ pair launch for two products of the same
+ src1 (GGML_HIP_MMVQ_PAIR)
+
+Two consecutive MUL_MATs with the same weight type and K on the same src1 (2-8 columns) run as one multi-column
+MMVQ grid: the blocks past the first matrix compute the second one (pair_x/pair_dst/pair_nrows in the fusion args,
+bias_only instantiation). Same per-block code, reduction order and q8_1 activations as two launches, so bitwise
+equal; no extra registers (unlike the gate+up accumulator fusion, -8%). Skipped when the second product has its own
+bias/scale epilogue. qwen35 expands the GDN qkv and z products next to each other so they can pair.
+GGML_HIP_MMVQ_PAIR=0 restores two launches. test-backend-ops: MUL_MAT_PAIR (equal and different row counts).
+
+Qwen3.8-27B UD-Q4_K_XL (pairs: ffn up/gate 40, GDN qkv/z 22 of 64/48 layers), rocprofv3 in the server, MTP n=4
+(measured together with the next two commits): verify graph 972 -> 911 kernels, MMVQ 21.96 -> 21.67 ms per verify.
+Greedy md5 (plain and MTP) equal to 9f83f1f81. test-backend-ops MUL_MAT_PAIR 98/98, MUL_MAT_ADD 360/360,
+MUL_MAT 2444/2444 (one flaky q5_0 n=1 NMSE miss in ~10 runs, unrelated path).
+---
+ ggml/src/ggml-cuda/common.cuh   | 13 ++++++++
+ ggml/src/ggml-cuda/ggml-cuda.cu | 32 ++++++++++++++++++++
+ ggml/src/ggml-cuda/mmvq.cu      | 53 +++++++++++++++++++++++++++------
+ src/models/qwen35.cpp           |  7 +++--
+ tests/test-backend-ops.cpp      | 42 ++++++++++++++++++++++++++
+ 5 files changed, 136 insertions(+), 11 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index ff1955761..1758ee35b 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1645,6 +1645,12 @@ struct ggml_backend_cuda_context {
+     }
+ };
+ 
++// Default-on speed switch, read from the environment by the caller once (static): GGML_HIP_<NAME>=0 turns it off for A/B.
++static inline bool ggml_cuda_env_switch(const char * name) {
++    const char * env = getenv(name);
++    return env == nullptr || atoi(env) != 0;
++}
++
+ struct ggml_cuda_mm_fusion_args_host {
+     const ggml_tensor * x_bias = nullptr;
+     const ggml_tensor * gate = nullptr;
+@@ -1656,6 +1662,9 @@ struct ggml_cuda_mm_fusion_args_host {
+     const ggml_tensor * shared_up = nullptr;
+     const ggml_tensor * shared_gate = nullptr;
+     ggml_tensor * shared_dst = nullptr;
++    // pair launch: a second matrix of the same type and K multiplied with the same src1 (grid-concatenated blocks)
++    const ggml_tensor * pair_src0 = nullptr;
++    ggml_tensor * pair_dst = nullptr;
+ };
+ struct ggml_cuda_mm_fusion_args_device {
+     const void * x_bias = nullptr;
+@@ -1669,6 +1678,10 @@ struct ggml_cuda_mm_fusion_args_device {
+     const void * shared_gate = nullptr;
+     float * shared_dst = nullptr;
+     uint32_t shared_stride_col_dst = 0;
++    const void * pair_x = nullptr;   // blocks >= pair_block0 compute pair_x * src1 into pair_dst (pair_nrows rows)
++    float * pair_dst = nullptr;
++    uint32_t pair_nrows = 0;
++    uint32_t pair_block0 = 0;
+ };
+ 
+ struct ggml_cuda_kernel_launch_params {
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index b42a60a85..d9526c8fb 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4677,6 +4677,38 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         return fused_node_count - 1;
+     }
+ 
++    // Pair launch: two consecutive MUL_MATs of the same weight type and K on the same src1 (ffn up/gate, GDN qkv/z) run
++    // as one multi-column MMVQ grid whose blocks past the first matrix compute the second. Same per-block code and order
++    // as two launches (bitwise), one kernel boundary fewer, no extra registers.
++    static const bool mmvq_pair = ggml_cuda_env_switch("GGML_HIP_MMVQ_PAIR");
++    if (mmvq_pair && node->op == GGML_OP_MUL_MAT && i + 1 < cgraph->n_nodes) {
++        ggml_tensor * n1 = cgraph->nodes[i + 1];
++        const ggml_tensor * w0 = node->src[0];
++        const ggml_tensor * w1 = n1->op == GGML_OP_MUL_MAT ? n1->src[0] : nullptr;
++        const ggml_tensor * y  = node->src[1];
++        // a following op that fuses with the second product (bias/scale epilogues) keeps the two launches
++        bool n1_epilogue = false;
++        for (int k = i + 2; k < std::min(i + 4, cgraph->n_nodes); ++k) {
++            const ggml_tensor * c = cgraph->nodes[k];
++            if ((c->op == GGML_OP_ADD || c->op == GGML_OP_MUL || c->op == GGML_OP_RESHAPE) && (c->src[0] == n1 || c->src[1] == n1)) {
++                n1_epilogue = true;
++            }
++        }
++        if (w1 && !n1_epilogue && (n1->flags & GGML_TENSOR_FLAG_COMPUTE) && n1->src[1] == y && n1->src[2] == nullptr &&
++                w0->type == w1->type && ggml_is_quantized(w0->type) && w0->ne[0] == w1->ne[0] && w0->nb[1] == w1->nb[1] &&
++                ggml_is_matrix(w0) && ggml_is_matrix(w1) && ggml_is_contiguous(w0) && ggml_is_contiguous(w1) &&
++                y->type == GGML_TYPE_F32 && ggml_is_contiguous(y) && y->ne[1] >= 2 && y->ne[2] == 1 && y->ne[3] == 1 &&
++                node->type == GGML_TYPE_F32 && n1->type == GGML_TYPE_F32 && ggml_is_contiguous(node) && ggml_is_contiguous(n1) &&
++                ggml_cuda_should_fuse_mul_mat_vec_q(node, /*bias_only =*/ true) &&
++                ggml_cuda_should_fuse_mul_mat_vec_q(n1, /*bias_only =*/ true)) {
++            ggml_cuda_mm_fusion_args_host fusion_data{};
++            fusion_data.pair_src0 = w1;
++            fusion_data.pair_dst  = n1;
++            ggml_cuda_mul_mat_vec_q(*cuda_ctx, w0, y, nullptr, node, &fusion_data);
++            return 1;
++        }
++    }
++
+     // mul_mat + add
+     for (ggml_op op : { GGML_OP_MUL_MAT, GGML_OP_MUL_MAT_ID }) {
+         const ggml_op bias_op = op == GGML_OP_MUL_MAT ? GGML_OP_ADD : GGML_OP_ADD_ID;
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 63cd0a1ab..1620d9f2c 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1446,7 +1446,17 @@ static __global__ void mul_mat_vec_q(
+     constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
+ 
+     const     int tid = warp_size*threadIdx.y + threadIdx.x;
+-    const     int row0 = rows_per_cuda_block*blockIdx.x;
++    int block_x = blockIdx.x;
++    if constexpr (has_fusion) {
++        // pair launch: the blocks past the first matrix compute the second one (same type, K and src1)
++        if (fusion.pair_x != nullptr && uint32_t(block_x) >= fusion.pair_block0) {
++            block_x        -= fusion.pair_block0;
++            vx              = fusion.pair_x;
++            dst             = fusion.pair_dst;
++            stride_col_dst  = fusion.pair_nrows;
++        }
++    }
++    const     int row0 = rows_per_cuda_block*block_x;
+     const     int blocks_per_row_x = ncols_x / qk;
+     constexpr int blocks_per_iter = vdr * nwarps*warp_size / qi;
+ 
+@@ -1977,9 +1987,10 @@ static void mul_mat_vec_q_switch_fusion(
+         const uint32_t ids_stride, cudaStream_t stream) {
+ 
+     const bool has_fusion = fusion.gate != nullptr || fusion.x_bias != nullptr || fusion.gate_bias != nullptr ||
+-                            fusion.x_scale != nullptr || fusion.gate_scale != nullptr;
++                            fusion.x_scale != nullptr || fusion.gate_scale != nullptr || fusion.pair_x != nullptr;
+     if constexpr (c_ncols_dst == 1) {
+         if (has_fusion) {
++            GGML_ASSERT(fusion.pair_x == nullptr && "pair launches are only supported for ncols_dst > 1");
+             const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
+             ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters>, launch_params,
+                  vx, vy, ids, fusion, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
+@@ -1992,9 +2003,20 @@ static void mul_mat_vec_q_switch_fusion(
+             GGML_ASSERT(fusion.gate == nullptr && fusion.gate_bias == nullptr && fusion.x_scale == nullptr &&
+                         fusion.gate_scale == nullptr && fusion.shared_up == nullptr &&
+                         "only bias fusion is supported for ncols_dst > 1");
+-            const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
++            dim3 block_nums_fused = block_nums;
++            ggml_cuda_mm_fusion_args_device fusion_launch = fusion;
++            if (fusion.pair_x != nullptr) {
++                // the second matrix's blocks follow the first matrix's block_nums.x blocks
++                const mmvq_parameter_table_id table_id = get_device_table_id(ggml_cuda_info().devices[ggml_cuda_get_device()].cc);
++                const int rpb = calc_rows_per_block(c_ncols_dst, table_id, small_k,
++                                                    calc_nwarps(type, c_ncols_dst, table_id, small_k, halve_iters), type);
++                GGML_ASSERT(fusion.x_bias == nullptr && block_nums.y == 1 && block_nums.z == 1);
++                fusion_launch.pair_block0 = block_nums.x;
++                block_nums_fused.x += (fusion.pair_nrows + rpb - 1) / rpb;
++            }
++            const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums_fused, block_dims, nbytes_shared, stream);
+             ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters, true>, launch_params,
+-                 vx, vy, ids, fusion, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
++                 vx, vy, ids, fusion_launch, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
+                  channel_ratio, stride_channel_x, stride_channel_y, stride_channel_dst,
+                  sample_ratio, stride_sample_x, stride_sample_y, stride_sample_dst, ids_stride);
+             return;
+@@ -2625,11 +2647,11 @@ void ggml_cuda_mul_mat_vec_q(
+     if (fusion) {
+         const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
+         GGML_ASSERT( !ids || dst->ne[2] <= get_mmvq_mmid_max_batch(src0->type, cc));
+-        // ncols_dst > 1 (plain MUL_MAT) only supports the bias epilogue; the bias must be laid out like dst.
+-        GGML_ASSERT(ids || dst->ne[1] == 1 || (!fusion->gate && !fusion->gate_bias && !fusion->x_scale &&
+-                                               !fusion->gate_scale && !fusion->shared_up && fusion->x_bias &&
+-                                               ggml_are_same_shape(fusion->x_bias, dst) &&
+-                                               ggml_are_same_stride(fusion->x_bias, dst)));
++        // ncols_dst > 1 (plain MUL_MAT) only supports the bias epilogue (the bias must be laid out like dst) or a pair launch.
++        const bool multi_ok = !fusion->gate && !fusion->gate_bias && !fusion->x_scale && !fusion->gate_scale && !fusion->shared_up &&
++            ((fusion->x_bias && ggml_are_same_shape(fusion->x_bias, dst) && ggml_are_same_stride(fusion->x_bias, dst)) ||
++             (fusion->pair_src0 && !fusion->x_bias));
++        GGML_ASSERT(ids || dst->ne[1] == 1 || multi_ok);
+         // Scale fusion is only allowed for NVFP4 currently as the cost of checking this at run-time in the prologue is
+         // non-negligible for some models such as gpt-oss-20b
+         GGML_ASSERT((fusion->x_scale == nullptr && fusion->gate_scale == nullptr) || src0->type == GGML_TYPE_NVFP4);
+@@ -2651,6 +2673,19 @@ void ggml_cuda_mul_mat_vec_q(
+             fusion_local.shared_stride_col_dst = fusion->shared_dst->nb[1] / ts_dst;
+         }
+ 
++        if (fusion->pair_src0) {
++            const ggml_tensor * p0 = fusion->pair_src0;
++            const ggml_tensor * pd = fusion->pair_dst;
++            GGML_ASSERT(!ids && ne11 > 1 && ne12 == 1 && ne13 == 1 && ne02 == 1 && ne03 == 1);
++            GGML_ASSERT(p0->type == src0->type && p0->ne[0] == ne00 && p0->nb[1] == nb01 && ggml_is_matrix(p0) && ggml_is_contiguous(p0));
++            GGML_ASSERT(ggml_is_contiguous(src0) && ggml_is_contiguous(dst) && dst->nb[1] == ne01*ts_dst);
++            GGML_ASSERT(pd->type == GGML_TYPE_F32 && ggml_is_contiguous(pd) && pd->ne[0] == p0->ne[1] && pd->ne[1] == ne11 &&
++                        ggml_nrows(pd) == ne11);
++            fusion_local.pair_x     = p0->data;
++            fusion_local.pair_dst   = (float *) pd->data;
++            fusion_local.pair_nrows = (uint32_t) p0->ne[1];
++        }
++
+         if (fusion->x_bias) {
+             GGML_ASSERT(fusion->x_bias->type == GGML_TYPE_F32);
+             GGML_ASSERT(fusion->x_bias->ne[0] == dst->ne[0]);
+diff --git a/src/models/qwen35.cpp b/src/models/qwen35.cpp
+index d20f5c270..0e9bdb2c1 100644
+--- a/src/models/qwen35.cpp
++++ b/src/models/qwen35.cpp
+@@ -246,10 +246,13 @@ std::pair<ggml_tensor *, ggml_tensor *> llama_model_qwen35::graph::build_qkvz(
+     const int64_t n_seq_tokens = ubatch.n_seq_tokens;
+ 
+     ggml_tensor * qkv_mixed = build_lora_mm(model.layers[il].wqkv, input, model.layers[il].wqkv_s);
++    ggml_tensor * z = build_lora_mm(model.layers[il].wqkv_gate, input, model.layers[il].wqkv_gate_s);
++    // the two products of the same input as adjacent graph nodes (CUDA/HIP launches them as one MMVQ pair grid)
++    ggml_build_forward_expand(gf, qkv_mixed);
++    ggml_build_forward_expand(gf, z);
++
+     qkv_mixed = ggml_reshape_3d(ctx0, qkv_mixed, qkv_mixed->ne[0], n_seq_tokens, n_seqs);
+     cb(qkv_mixed, "linear_attn_qkv_mixed", il);
+-
+-    ggml_tensor * z = build_lora_mm(model.layers[il].wqkv_gate, input, model.layers[il].wqkv_gate_s);
+     cb(z, "z", il);
+ 
+     return { qkv_mixed, z };
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index cd6d6954f..81f3ca6cf 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7633,6 +7633,44 @@ struct test_mul_mat_add : public test_case {
+     }
+ };
+ 
++// two mat-muls of the same src1 with different weights (and row counts), which backends may run as one launch
++struct test_mul_mat_pair : public test_case {
++    const ggml_type type_a;
++    const int64_t m0;
++    const int64_t m1;
++    const int64_t n;
++    const int64_t k;
++
++    test_mul_mat_pair(ggml_type type_a, int64_t m0, int64_t m1, int64_t n, int64_t k)
++        : type_a(type_a), m0(m0), m1(m1), n(n), k(k) {}
++
++    std::string vars() override {
++        return VARS_TO_STR5(type_a, m0, m1, n, k);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "MUL_MAT_PAIR";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    double max_nmse_err() override {
++        return 5e-4;
++    }
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * a0  = ggml_new_tensor_2d(ctx, type_a,        k, m0);
++        ggml_tensor * a1  = ggml_new_tensor_2d(ctx, type_a,        k, m1);
++        ggml_tensor * b   = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, k, n);
++        ggml_tensor * mm0 = ggml_mul_mat(ctx, a0, b);
++        ggml_tensor * mm1 = ggml_mul_mat(ctx, a1, b);
++        ggml_tensor * out = ggml_concat(ctx, mm0, mm1, 0);
++        ggml_set_name(out, "out");
++        return out;
++    }
++};
++
+ struct test_mul_mat_vec_fusion : public test_case {
+     const ggml_type type;
+     const ggml_glu_op glu_op;
+@@ -10852,6 +10890,10 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+             }
+             test_cases.emplace_back(new test_mul_mat_add(type_a, 2048, n, 2048, MUL_MAT_ADD_B_INPLACE));
+         }
++        for (ggml_type type_a : {GGML_TYPE_Q4_0, GGML_TYPE_Q8_0, GGML_TYPE_Q4_K, GGML_TYPE_Q5_K, GGML_TYPE_Q6_K, GGML_TYPE_IQ4_XS, GGML_TYPE_IQ4_NL}) {
++            test_cases.emplace_back(new test_mul_mat_pair(type_a, 1000, 1000, n, 1024));
++            test_cases.emplace_back(new test_mul_mat_pair(type_a, 130,  67,   n, 512));
++        }
+         // the widest tiles with two src1 tiles, and src1 rows padded in memory
+         for (ggml_type type_a : {GGML_TYPE_F16, GGML_TYPE_Q4_0, GGML_TYPE_Q8_0, GGML_TYPE_Q4_K, GGML_TYPE_Q5_K, GGML_TYPE_Q6_K}) {
+             test_cases.emplace_back(new test_mul_mat(type_a, GGML_TYPE_F32, 8192, n, 512,  {1, 1}, {1, 1}));
+-- 
+2.43.0
+

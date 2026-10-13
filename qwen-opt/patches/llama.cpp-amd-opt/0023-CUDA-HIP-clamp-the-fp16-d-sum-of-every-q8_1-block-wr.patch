@@ -1,0 +1,86 @@
+From ba90baf3aafc497e9f35ec527d279f74e15f80c8 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 13:02:23 +0000
+Subject: [PATCH 23/28] CUDA/HIP: clamp the fp16 (d, sum) of every q8_1 block
+ written to +-65504
+
+One large activation can push a q8_1 block's sum (or amax/127) past the fp16 range; the stored inf times 0 in the
+dot products becomes NaN (same defect as ggml-org/llama.cpp#23606, Strata #606). make_q8_1_ds clamps both halves
+to +-65504 in quantize_q8_1, the MMQ DS4 quantizer, the FA vec Q quantizer and the A6 producers (quantize_q8_1_group:
+rms_norm*mul, swiglu, unary*mul). Bitwise no-op for every value that already converts to a finite half; NaN propagates.
+
+Greedy md5 (plain and MTP, 2 prompts x 400 tokens) equal to 9f83f1f81; test-backend-ops MUL_MAT 2444/2444,
+FLASH_ATTN_EXT 4017/4017, RMS_NORM 53/53.
+---
+ ggml/src/ggml-cuda/common.cuh       | 11 ++++++++++-
+ ggml/src/ggml-cuda/fattn-common.cuh |  2 +-
+ ggml/src/ggml-cuda/quantize.cu      |  4 ++--
+ 3 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index c5f79af29..ff1955761 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -533,6 +533,15 @@ static __device__ __forceinline__ float warp_reduce_max(float x) {
+     return x;
+ }
+ 
++// The half2 (d, sum) of a q8_1 block, each clamped to the finite fp16 range. One large activation can push the block
++// sum (or amax/127) past 65504, the fp16 store becomes inf and inf*0 in the dot products turns into NaN (same defect as
++// ggml-org/llama.cpp#23606). Bitwise no-op for every value that already converts to a finite half (|v| < 65520 rounds
++// to at most 65504); NaN still propagates.
++static __device__ __forceinline__ half2 make_q8_1_ds(const float d, const float sum) {
++    constexpr float hmax = 65504.0f;
++    return make_half2(d > hmax ? hmax : d, sum > hmax ? hmax : (sum < -hmax ? -hmax : sum));
++}
++
+ // Quantizes a block_q8_1 from 32 consecutive lanes holding its 32 values in order (lane % 32 == iqs), exactly as
+ // the quantize_q8_1 kernel does. Lets an elementwise producer write the q8_1 copy of its output for MMVQ.
+ // All 32 lanes of the group must be active.
+@@ -548,7 +557,7 @@ static __device__ __forceinline__ void quantize_q8_1_group(const float xi, block
+ 
+     y->qs[iqs] = q;
+     if (iqs == 0) {
+-        y->ds = make_half2(d, sum);
++        y->ds = make_q8_1_ds(d, sum);
+     }
+ }
+ 
+diff --git a/ggml/src/ggml-cuda/fattn-common.cuh b/ggml/src/ggml-cuda/fattn-common.cuh
+index 41d948335..0a27165fc 100644
+--- a/ggml/src/ggml-cuda/fattn-common.cuh
++++ b/ggml/src/ggml-cuda/fattn-common.cuh
+@@ -365,7 +365,7 @@ static __device__ __forceinline__ void quantize_q8_1_to_shared(
+     yq32[threadIdx.x] = q32;
+     if (threadIdx.x % QI8_1 == 0 && (ni == WARP_SIZE || threadIdx.x < ni)) {
+         if (std::is_same<Tds, half2>::value) {
+-            ((half2  *) yds)[threadIdx.x/QI8_1] =  make_half2(d, sum);
++            ((half2  *) yds)[threadIdx.x/QI8_1] =  make_q8_1_ds(d, sum);
+         } else {
+             ((float2 *) yds)[threadIdx.x/QI8_1] = make_float2(d, sum);
+         }
+diff --git a/ggml/src/ggml-cuda/quantize.cu b/ggml/src/ggml-cuda/quantize.cu
+index 935b2bf4b..46a019e07 100644
+--- a/ggml/src/ggml-cuda/quantize.cu
++++ b/ggml/src/ggml-cuda/quantize.cu
+@@ -97,7 +97,7 @@ static __global__ void quantize_q8_1(
+         return;
+     }
+ 
+-    y[ib].ds = make_half2(d, sum);
++    y[ib].ds = make_q8_1_ds(d, sum);
+ }
+ 
+ __device__ __forceinline__ uint8_t compute_e8m0_scale(float amax) {
+@@ -545,7 +545,7 @@ static __global__ void quantize_mmq_q8_1(
+             }
+         } else if (iqs % 32 == 0) {
+             if (ds_layout == MMQ_Q8_1_DS_LAYOUT_DS4) {
+-                y[ib].ds4[iqs/32] = make_half2(d, sum);
++                y[ib].ds4[iqs/32] = make_q8_1_ds(d, sum);
+             } else {
+                 y[ib].d4[iqs/32]  = d;
+             }
+-- 
+2.43.0
+

@@ -1,0 +1,517 @@
+From 849b69978685febf9317f441da0317a20038aa54 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 14:07:22 +0000
+Subject: [PATCH 28/28] CUDA/HIP: GDN fused SSM_CONV and alpha/beta projections
+ in one grid (GGML_HIP_GDN_CONV_AB)
+
+The fused conv (ssm_conv_fused_f32, d_conv 4, +SILU) and the alpha/beta MMVQ (mul_mat_vec_q_gdn_ab) of a GDN layer
+are independent (qkv product vs. the layer input). The SSM_CONV handler now looks past the views and the nodes the
+GDN prologue elides; when the alpha/beta pattern follows, gdn_conv_ab<type, n_tokens> runs both: blocks
+[0, nr/128) are the conv's blocks, the rest the (head, projection) blocks, through shared block bodies
+(ssm_conv_fused_f32_block in ssm-conv.cuh, mul_mat_vec_q_gdn_ab_block) - same per-block code, bitwise equal.
+Skipped when the alpha/beta outputs share memory with the conv's input or output. Types Q8_0/Q4_K/Q5_K/Q6_K.
+
+rocprofv3 (Qwen3.8-27B, MTP n=4, verify): conv 4.68 us + alpha/beta 4.90 us + one boundary -> 5.54 us, 48 per
+verify (-48 kernels). Greedy md5 (plain and MTP) equal to 9f83f1f81. test-backend-ops SSM_CONV 45/45,
+GATED_DELTA_NET 36/36.
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu |  42 +++++++++++-
+ ggml/src/ggml-cuda/mmvq.cu      | 118 +++++++++++++++++++++++++-------
+ ggml/src/ggml-cuda/mmvq.cuh     |   9 ++-
+ ggml/src/ggml-cuda/ssm-conv.cu  |  82 +++++++---------------
+ ggml/src/ggml-cuda/ssm-conv.cuh |  85 +++++++++++++++++++++++
+ 5 files changed, 251 insertions(+), 85 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 9c83f8708..c0fd9ef4d 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -3883,7 +3883,10 @@ static bool ggml_cuda_gdn_prologue_elided(const ggml_cgraph * cgraph, int i) {
+ //   alpha: mul_mat -> reshape -> add(dt) -> softplus -> mul(ssm_a) -> reshape
+ //   beta:  mul_mat -> reshape -> sigmoid
+ // all done by one MMVQ launch (ggml_cuda_gdn_ab_mmvq). Returns the number of nodes to skip.
+-static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
++// conv: when not null, the fused SSM_CONV of the same layer runs in the same launch; 0 is returned when that is not
++// possible (unsupported type, or the alpha/beta outputs share memory with what the conv reads or writes).
++static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i,
++                                       const ggml_cuda_gdn_conv_args * conv = nullptr) {
+     const std::initializer_list<enum ggml_op> ops = {
+         GGML_OP_MUL_MAT, GGML_OP_RESHAPE, GGML_OP_ADD, GGML_OP_UNARY, GGML_OP_MUL, GGML_OP_RESHAPE,
+         GGML_OP_MUL_MAT, GGML_OP_RESHAPE, GGML_OP_UNARY,
+@@ -3949,7 +3952,25 @@ static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, con
+         return 0;
+     }
+ 
+-    ggml_cuda_gdn_ab_mmvq(*cuda_ctx, w_alpha, w_beta, x, dt, ssm_a, gate_out, beta_out);
++    if (conv != nullptr) {
++        if (!ggml_cuda_gdn_conv_ab_supported(w_alpha->type, conv->d_conv, ggml_cuda_info().devices[cuda_ctx->device].warp_size)) {
++            return 0;
++        }
++        const auto overlaps = [](const ggml_tensor * t, const void * p, size_t n) {
++            const char * a = (const char *) t->data;
++            const char * b = (const char *) p;
++            return a < b + n && b < a + ggml_nbytes(t);
++        };
++        const size_t x_bytes   = ((conv->n_t - 1)*conv->src.x_stride + conv->nr)*sizeof(float);
++        const size_t dst_bytes = (size_t) (conv->n_t - 1)*conv->dst_nb1 + conv->nr*sizeof(float);
++        for (const ggml_tensor * t : { (const ggml_tensor *) gate_out, (const ggml_tensor *) beta_out }) {
++            if (overlaps(t, conv->src.x, x_bytes) || overlaps(t, conv->dst, dst_bytes)) {
++                return 0;
++            }
++        }
++    }
++
++    ggml_cuda_gdn_ab_mmvq(*cuda_ctx, w_alpha, w_beta, x, dt, ssm_a, gate_out, beta_out, conv);
+     return (int) ops.size() - 1;
+ }
+ 
+@@ -4876,6 +4897,23 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+     if (node->op == GGML_OP_SSM_CONV) {
+         ggml_cuda_ssm_conv_plan plan;
+         if (ggml_cuda_ssm_conv_cache_plan(cgraph, i, plan)) {
++            // GDN layer: the alpha/beta projections follow after views and nodes the GDN prologue elides; they are
++            // independent of the conv, so both run in one grid (GGML_HIP_GDN_CONV_AB=0: two launches)
++            static const bool conv_ab = ggml_cuda_env_switch("GGML_HIP_GDN_CONV_AB");
++            if (conv_ab && plan.silu != nullptr) {
++                int j = i + 1 + plan.n_fused;
++                while (j < cgraph->n_nodes && j < i + 16 &&
++                       (ggml_cuda_is_view_or_noop(cgraph->nodes[j]) || ggml_cuda_gdn_prologue_elided(cgraph, j))) {
++                    ++j;
++                }
++                if (j < cgraph->n_nodes && cgraph->nodes[j]->op == GGML_OP_MUL_MAT) {
++                    const ggml_cuda_gdn_conv_args conv = ggml_cuda_ssm_conv_fused_args(node, plan.bias_add, plan.silu, plan.src);
++                    const int ab_skip = ggml_cuda_try_gdn_ab_fusion(cuda_ctx, cgraph, j, &conv);
++                    if (ab_skip > 0) {
++                        return j + ab_skip - i;
++                    }
++                }
++            }
+             ggml_cuda_op_ssm_conv(*cuda_ctx, node, plan.bias_add, plan.silu, &plan.src);
+             return plan.n_fused > 0 ? plan.n_fused : -1;
+         }
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 9794f1361..e91ed1db1 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -2444,9 +2444,10 @@ static const char * mmvq_src1_q8_1(ggml_backend_cuda_context & ctx, const ggml_t
+ // The per-element math matches the unfused ADD/SOFTPLUS/MUL/SIGMOID kernels; only the order of the
+ // partial sums of the dot product differs from the MMVQ kernel.
+ // n_tokens is a template parameter so that the loads of all tokens of an iteration are issued together.
++// One block (4 warps; lane and warp passed in) for head h of the alpha (is_beta false) or beta projection.
+ template <ggml_type type, int n_tokens>
+-__launch_bounds__(4*ggml_cuda_get_physical_warp_size(), 1)
+-static __global__ void mul_mat_vec_q_gdn_ab(
++static __device__ __forceinline__ void mul_mat_vec_q_gdn_ab_block(
++        const int h, const bool is_beta, const int lane, const int warp,
+         const void * __restrict__ w_alpha, const void * __restrict__ w_beta, const block_q8_1 * __restrict__ y,
+         const float * __restrict__ dt, const float * __restrict__ ssm_a, float * __restrict__ gate, float * __restrict__ beta,
+         const int ncols_x, const int stride_row_x, const int stride_col_y, const int n_heads) {
+@@ -2457,11 +2458,9 @@ static __global__ void mul_mat_vec_q_gdn_ab(
+     constexpr int warp_size = ggml_cuda_get_physical_warp_size();
+     constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
+ 
+-    const int  h       = blockIdx.x;
+-    const bool is_beta = blockIdx.y != 0;
+     const void * vx    = is_beta ? w_beta : w_alpha;
+ 
+-    const int tid = warp_size*threadIdx.y + threadIdx.x;
++    const int tid = warp_size*warp + lane;
+     const int blocks_per_row_x = ncols_x / qk;
+     constexpr int blocks_per_iter = vdr * nwarps*warp_size / qi;
+ 
+@@ -2476,14 +2475,14 @@ static __global__ void mul_mat_vec_q_gdn_ab(
+     }
+ 
+     __shared__ float tmp_shared[nwarps-1][n_tokens][warp_size];
+-    if (threadIdx.y > 0) {
++    if (warp > 0) {
+ #pragma unroll
+         for (int j = 0; j < n_tokens; ++j) {
+-            tmp_shared[threadIdx.y-1][j][threadIdx.x] = tmp[j];
++            tmp_shared[warp-1][j][lane] = tmp[j];
+         }
+     }
+     __syncthreads();
+-    if (threadIdx.y > 0) {
++    if (warp > 0) {
+         return;
+     }
+ 
+@@ -2491,10 +2490,10 @@ static __global__ void mul_mat_vec_q_gdn_ab(
+     for (int j = 0; j < n_tokens; ++j) {
+ #pragma unroll
+         for (int l = 0; l < nwarps-1; ++l) {
+-            tmp[j] += tmp_shared[l][j][threadIdx.x];
++            tmp[j] += tmp_shared[l][j][lane];
+         }
+         const float sum = warp_reduce_sum<warp_size>(tmp[j]);
+-        if (threadIdx.x == 0) {
++        if (lane == 0) {
+             const int i = j*n_heads + h;
+             if (is_beta) {
+                 beta[i] = 1.0f / (1.0f + expf(-sum));
+@@ -2506,6 +2505,41 @@ static __global__ void mul_mat_vec_q_gdn_ab(
+     }
+ }
+ 
++template <ggml_type type, int n_tokens>
++__launch_bounds__(4*ggml_cuda_get_physical_warp_size(), 1)
++static __global__ void mul_mat_vec_q_gdn_ab(
++        const void * __restrict__ w_alpha, const void * __restrict__ w_beta, const block_q8_1 * __restrict__ y,
++        const float * __restrict__ dt, const float * __restrict__ ssm_a, float * __restrict__ gate, float * __restrict__ beta,
++        const int ncols_x, const int stride_row_x, const int stride_col_y, const int n_heads) {
++    mul_mat_vec_q_gdn_ab_block<type, n_tokens>(blockIdx.x, blockIdx.y != 0, threadIdx.x, threadIdx.y,
++        w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols_x, stride_row_x, stride_col_y, n_heads);
++}
++
++// The fused SSM_CONV (+SILU, d_conv 4, 128 channels a block) of a GDN layer and its alpha/beta projections in one
++// grid: blocks [0, n_conv_blocks) run ssm_conv_fused_f32's blocks, the rest mul_mat_vec_q_gdn_ab's (head, projection)
++// blocks. The two are independent (conv: qkv product; alpha/beta: the layer input). Same per-block code as the two
++// launches, one kernel boundary fewer.
++template <ggml_type type, int n_tokens>
++__launch_bounds__(4*ggml_cuda_get_physical_warp_size(), 1)
++static __global__ void gdn_conv_ab(
++        const ggml_cuda_ssm_conv_fused_src conv_src, const float * __restrict__ conv_w, const float * __restrict__ conv_bias,
++        const int conv_w_nb1, float * conv_dst, const int conv_dst_nb1, const int conv_n_t, const int n_conv_blocks,
++        const void * __restrict__ w_alpha, const void * __restrict__ w_beta, const block_q8_1 * __restrict__ y,
++        const float * __restrict__ dt, const float * __restrict__ ssm_a, float * __restrict__ gate, float * __restrict__ beta,
++        const int ncols_x, const int stride_row_x, const int stride_col_y, const int n_heads) {
++    if constexpr (ggml_cuda_get_physical_warp_size() != 32) {
++        NO_DEVICE_CODE; // the host only launches it with 32-wide warps (128-thread conv blocks = 4 warps)
++    } else {
++        if ((int) blockIdx.x < n_conv_blocks) {
++            ssm_conv_fused_f32_block<true, 128, 4>(blockIdx.x, conv_src, conv_w, conv_bias, conv_w_nb1, conv_dst, conv_dst_nb1, conv_n_t);
++            return;
++        }
++        const int b = blockIdx.x - n_conv_blocks;
++        mul_mat_vec_q_gdn_ab_block<type, n_tokens>(b % n_heads, b >= n_heads, threadIdx.x % 32, threadIdx.x / 32,
++            w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols_x, stride_row_x, stride_col_y, n_heads);
++    }
++}
++
+ bool ggml_cuda_gdn_ab_mmvq_supported(const ggml_type type) {
+     switch (type) {
+         case GGML_TYPE_Q4_0:
+@@ -2526,13 +2560,44 @@ bool ggml_cuda_gdn_ab_mmvq_supported(const ggml_type type) {
+     }
+ }
+ 
++bool ggml_cuda_gdn_conv_ab_supported(const ggml_type type, const int64_t d_conv, const int warp_size) {
++    return warp_size == 32 && d_conv == 4 &&
++           (type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K);
++}
++
+ template <ggml_type type>
+ static void gdn_ab_mmvq_launch(const void * w_alpha, const void * w_beta, const block_q8_1 * y, const float * dt,
+         const float * ssm_a, float * gate, float * beta, int ncols_x, int stride_row_x, int stride_col_y,
+-        int n_heads, int n_tokens, cudaStream_t stream) {
++        int n_heads, int n_tokens, const ggml_cuda_gdn_conv_args * conv, cudaStream_t stream) {
++    static_assert(MMVQ_MAX_BATCH_SIZE == 8, "update the n_tokens dispatch");
++    if (conv != nullptr) {
++        constexpr bool has_conv_ab = type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K;
++        if constexpr (has_conv_ab) {
++            GGML_ASSERT(conv->nr % 128 == 0);
++            const int n_conv_blocks = (int) (conv->nr / 128);
++            const dim3 block_nums(n_conv_blocks + 2*n_heads, 1, 1);
++#define GDN_CONV_AB_LAUNCH(n) gdn_conv_ab<type, n><<<block_nums, 128, 0, stream>>>(                                  \
++        conv->src, conv->w, conv->bias, conv->w_nb1, conv->dst, conv->dst_nb1, conv->n_t, n_conv_blocks,                \
++        w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols_x, stride_row_x, stride_col_y, n_heads)
++            switch (n_tokens) {
++                case 1: GDN_CONV_AB_LAUNCH(1); break;
++                case 2: GDN_CONV_AB_LAUNCH(2); break;
++                case 3: GDN_CONV_AB_LAUNCH(3); break;
++                case 4: GDN_CONV_AB_LAUNCH(4); break;
++                case 5: GDN_CONV_AB_LAUNCH(5); break;
++                case 6: GDN_CONV_AB_LAUNCH(6); break;
++                case 7: GDN_CONV_AB_LAUNCH(7); break;
++                case 8: GDN_CONV_AB_LAUNCH(8); break;
++                default: GGML_ABORT("unsupported GDN token count");
++            }
++#undef GDN_CONV_AB_LAUNCH
++            return;
++        } else {
++            GGML_ABORT("conv + alpha/beta launch not instantiated for this type");
++        }
++    }
+     const dim3 block_nums(n_heads, 2, 1);
+     const dim3 block_dims(ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size, 4, 1);
+-    static_assert(MMVQ_MAX_BATCH_SIZE == 8, "update the n_tokens dispatch");
+ #define GDN_AB_LAUNCH(n) mul_mat_vec_q_gdn_ab<type, n><<<block_nums, block_dims, 0, stream>>>( \
+         w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols_x, stride_row_x, stride_col_y, n_heads)
+     switch (n_tokens) {
+@@ -2550,7 +2615,8 @@ static void gdn_ab_mmvq_launch(const void * w_alpha, const void * w_beta, const
+ }
+ 
+ void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor * w_alpha, const ggml_tensor * w_beta,
+-        const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a, ggml_tensor * gate, ggml_tensor * beta) {
++        const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a, ggml_tensor * gate, ggml_tensor * beta,
++        const ggml_cuda_gdn_conv_args * conv) {
+     const ggml_type type = w_alpha->type;
+     GGML_ASSERT(w_beta->type == type && ggml_cuda_gdn_ab_mmvq_supported(type));
+     GGML_ASSERT(ggml_are_same_shape(w_alpha, w_beta) && w_alpha->nb[1] == w_beta->nb[1]);
+@@ -2573,21 +2639,23 @@ void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor *
+     float *       bd = (float *) beta->data;
+     cudaStream_t  stream = ctx.stream();
+ 
++#define GDN_AB(T) gdn_ab_mmvq_launch<T>(wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, conv, stream)
+     switch (type) {
+-        case GGML_TYPE_Q4_0:   gdn_ab_mmvq_launch<GGML_TYPE_Q4_0>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q4_1:   gdn_ab_mmvq_launch<GGML_TYPE_Q4_1>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q5_0:   gdn_ab_mmvq_launch<GGML_TYPE_Q5_0>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q5_1:   gdn_ab_mmvq_launch<GGML_TYPE_Q5_1>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q8_0:   gdn_ab_mmvq_launch<GGML_TYPE_Q8_0>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q2_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q2_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q3_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q3_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q4_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q4_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q5_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q5_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_Q6_K:   gdn_ab_mmvq_launch<GGML_TYPE_Q6_K>  (wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_IQ4_NL: gdn_ab_mmvq_launch<GGML_TYPE_IQ4_NL>(wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
+-        case GGML_TYPE_IQ4_XS: gdn_ab_mmvq_launch<GGML_TYPE_IQ4_XS>(wa, wb, y, dd, ad, gd, bd, ncols_x, stride_row_x, stride_col_y, n_heads, n_tokens, stream); break;
++        case GGML_TYPE_Q4_0:   GDN_AB(GGML_TYPE_Q4_0);   break;
++        case GGML_TYPE_Q4_1:   GDN_AB(GGML_TYPE_Q4_1);   break;
++        case GGML_TYPE_Q5_0:   GDN_AB(GGML_TYPE_Q5_0);   break;
++        case GGML_TYPE_Q5_1:   GDN_AB(GGML_TYPE_Q5_1);   break;
++        case GGML_TYPE_Q8_0:   GDN_AB(GGML_TYPE_Q8_0);   break;
++        case GGML_TYPE_Q2_K:   GDN_AB(GGML_TYPE_Q2_K);   break;
++        case GGML_TYPE_Q3_K:   GDN_AB(GGML_TYPE_Q3_K);   break;
++        case GGML_TYPE_Q4_K:   GDN_AB(GGML_TYPE_Q4_K);   break;
++        case GGML_TYPE_Q5_K:   GDN_AB(GGML_TYPE_Q5_K);   break;
++        case GGML_TYPE_Q6_K:   GDN_AB(GGML_TYPE_Q6_K);   break;
++        case GGML_TYPE_IQ4_NL: GDN_AB(GGML_TYPE_IQ4_NL); break;
++        case GGML_TYPE_IQ4_XS: GDN_AB(GGML_TYPE_IQ4_XS); break;
+         default: GGML_ABORT("unsupported GDN projection type");
+     }
++#undef GDN_AB
+ }
+ 
+ void ggml_cuda_mul_mat_vec_q(
+diff --git a/ggml/src/ggml-cuda/mmvq.cuh b/ggml/src/ggml-cuda/mmvq.cuh
+index b042c4474..d234c278f 100644
+--- a/ggml/src/ggml-cuda/mmvq.cuh
++++ b/ggml/src/ggml-cuda/mmvq.cuh
+@@ -1,4 +1,7 @@
++#pragma once
++
+ #include "common.cuh"
++#include "ssm-conv.cuh"
+ 
+ #define MMVQ_MAX_BATCH_SIZE 8 // Max. batch size for which to use MMVQ kernels.
+ 
+@@ -19,6 +22,10 @@ void ggml_cuda_op_mul_mat_vec_q(
+ 
+ // GATED_DELTA_NET alpha/beta projections and their activation tails in one MMVQ launch (x: F32 [K, n_tokens<=8]):
+ //   gate = softplus(w_alpha*x + dt)*ssm_a, beta = sigmoid(w_beta*x), both stored as [n_heads, n_tokens]
++// conv: when not null, this fused SSM_CONV+SILU (d_conv 4) runs as extra blocks of the same grid
++// (requires ggml_cuda_gdn_conv_ab_supported).
+ bool ggml_cuda_gdn_ab_mmvq_supported(ggml_type type);
++bool ggml_cuda_gdn_conv_ab_supported(ggml_type type, int64_t d_conv, int warp_size);
+ void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor * w_alpha, const ggml_tensor * w_beta,
+-        const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a, ggml_tensor * gate, ggml_tensor * beta);
++        const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a, ggml_tensor * gate, ggml_tensor * beta,
++        const ggml_cuda_gdn_conv_args * conv = nullptr);
+diff --git a/ggml/src/ggml-cuda/ssm-conv.cu b/ggml/src/ggml-cuda/ssm-conv.cu
+index 79cd82831..c14fd3cb6 100644
+--- a/ggml/src/ggml-cuda/ssm-conv.cu
++++ b/ggml/src/ggml-cuda/ssm-conv.cu
+@@ -123,67 +123,11 @@ static __global__ void ssm_conv_long_token_f32(const float * __restrict__ src0,
+     }
+ }
+ 
+-// Single-sequence SSM_CONV that reads its input straight from the two CONCAT sources (conv state, possibly through
+-// the gather index, and the new inputs) and also writes the conv-state snapshot windows the replaced CPYs would
+-// copy. Each thread owns one channel and reads all of its inputs before writing anything, so a snapshot may
+-// overwrite the cache row the state is read from and dst may alias x element for element (hence no __restrict__
+-// on dst). The convolution arithmetic is that of ssm_conv_f32.
+ template <bool apply_silu, size_t split_d_inner, size_t d_conv>
+ static __global__ void ssm_conv_fused_f32(const ggml_cuda_ssm_conv_fused_src src, const float * __restrict__ w_ptr,
+                                           const float * __restrict__ bias, const int w_nb1, float * dst,
+                                           const int dst_nb1, const int n_t) {
+-    constexpr int n_state = d_conv - 1;
+-    constexpr int L       = n_state + SSM_CONV_FUSED_MAX_TOKENS;
+-
+-    const int c = blockIdx.y * split_d_inner + threadIdx.x;
+-
+-    const float * w_row = (const float *) ((const char *) w_ptr + c * w_nb1);
+-    float w[d_conv];
+-#pragma unroll
+-    for (int j = 0; j < (int) d_conv; j++) {
+-        w[j] = w_row[j];
+-    }
+-    const float b = bias != nullptr ? bias[c] : 0.0f;
+-
+-    const float * s_row = src.state_idx ? src.state + src.state_idx[0] * src.state_row_stride : src.state;
+-    float xs[L];
+-#pragma unroll
+-    for (int k = 0; k < n_state; k++) {
+-        xs[k] = s_row[c * n_state + k];
+-    }
+-#pragma unroll
+-    for (int t = 0; t < SSM_CONV_FUSED_MAX_TOKENS; t++) {
+-        xs[n_state + t] = t < n_t ? src.x[t * src.x_stride + c] : 0.0f;
+-    }
+-
+-    for (int s = 0; s < src.n_snap; s++) {
+-        const int t0 = src.snap_t0[s];
+-        float *   d  = src.snap_dst[s] + c * n_state;
+-#pragma unroll
+-        for (int k = 0; k < n_state; k++) {
+-            // register select instead of a dynamic index into xs (which would spill to scratch)
+-            float v = 0.0f;
+-#pragma unroll
+-            for (int tau = 0; tau < L; tau++) {
+-                v = tau == t0 + k ? xs[tau] : v;
+-            }
+-            d[k] = v;
+-        }
+-    }
+-
+-    const int stride_y = dst_nb1 / sizeof(float);
+-#pragma unroll
+-    for (int t = 0; t < SSM_CONV_FUSED_MAX_TOKENS; t++) {
+-        if (t < n_t) {
+-            float sumf = 0.0f;
+-#pragma unroll
+-            for (int j = 0; j < (int) d_conv; j++) {
+-                sumf += xs[t + j] * w[j];
+-            }
+-            sumf += b;
+-            dst[t * stride_y + c] = apply_silu ? ggml_cuda_op_silu_single(sumf) : sumf;
+-        }
+-    }
++    ssm_conv_fused_f32_block<apply_silu, split_d_inner, d_conv>(blockIdx.y, src, w_ptr, bias, w_nb1, dst, dst_nb1, n_t);
+ }
+ 
+ template <bool apply_silu>
+@@ -302,3 +246,27 @@ void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, g
+                           out->nb[2], nc, nr, n_t, n_s, stream);
+     }
+ }
++
++ggml_cuda_gdn_conv_args ggml_cuda_ssm_conv_fused_args(const ggml_tensor * dst, const ggml_tensor * bias_add_node,
++                                                      const ggml_tensor * silu_dst, const ggml_cuda_ssm_conv_fused_src & fused) {
++    const ggml_tensor * src0 = dst->src[0];
++    const ggml_tensor * src1 = dst->src[1];
++    const ggml_tensor * bias = bias_add_node ? (bias_add_node->src[0] == dst ? bias_add_node->src[1] : bias_add_node->src[0]) : nullptr;
++    const ggml_tensor * out  = silu_dst;
++    GGML_ASSERT(silu_dst != nullptr && out->type == GGML_TYPE_F32 && out->nb[0] == sizeof(float) && out->ne[2] == 1);
++    GGML_ASSERT(src1->nb[0] == sizeof(float) && out->ne[0] == src0->ne[1]);
++    GGML_ASSERT(ggml_cuda_ssm_conv_fused_supported(src1->ne[0], src0->ne[1], out->ne[1]));
++    GGML_ASSERT(bias == nullptr || (bias->type == GGML_TYPE_F32 && ggml_is_contiguous(bias) && ggml_nelements(bias) == src0->ne[1]));
++
++    ggml_cuda_gdn_conv_args args;
++    args.src     = fused;
++    args.w       = (const float *) src1->data;
++    args.bias    = bias ? (const float *) bias->data : nullptr;
++    args.w_nb1   = (int) src1->nb[1];
++    args.dst     = (float *) out->data;
++    args.dst_nb1 = (int) out->nb[1];
++    args.n_t     = (int) out->ne[1];
++    args.nr      = src0->ne[1];
++    args.d_conv  = src1->ne[0];
++    return args;
++}
+diff --git a/ggml/src/ggml-cuda/ssm-conv.cuh b/ggml/src/ggml-cuda/ssm-conv.cuh
+index e659cdb2c..d0856a8be 100644
+--- a/ggml/src/ggml-cuda/ssm-conv.cuh
++++ b/ggml/src/ggml-cuda/ssm-conv.cuh
+@@ -1,4 +1,7 @@
++#pragma once
++
+ #include "common.cuh"
++#include "unary.cuh"
+ 
+ #define SSM_CONV_FUSED_MAX_SNAPSHOTS 8  // max. conv-state snapshot windows written by the fused kernel
+ #define SSM_CONV_FUSED_MAX_TOKENS    16 // max. tokens per sequence of the fused kernel
+@@ -16,7 +19,89 @@ struct ggml_cuda_ssm_conv_fused_src {
+     float *         snap_dst[SSM_CONV_FUSED_MAX_SNAPSHOTS]; // contiguous [d_conv - 1, nr] destination
+ };
+ 
++// One block (split_d_inner channels, block index block_y) of the single-sequence SSM_CONV that reads its input
++// straight from the two CONCAT sources (conv state, possibly through the gather index, and the new inputs) and also
++// writes the conv-state snapshot windows the replaced CPYs would copy. Each thread owns one channel and reads all of
++// its inputs before writing anything, so a snapshot may overwrite the cache row the state is read from and dst may
++// alias x element for element (hence no __restrict__ on dst). The convolution arithmetic is that of ssm_conv_f32.
++// Shared by ssm_conv_fused_f32 and the conv + GDN alpha/beta launch (mmvq.cu).
++template <bool apply_silu, size_t split_d_inner, size_t d_conv>
++static __device__ __forceinline__ void ssm_conv_fused_f32_block(const int block_y, const ggml_cuda_ssm_conv_fused_src & src,
++                                                                const float * __restrict__ w_ptr, const float * __restrict__ bias,
++                                                                const int w_nb1, float * dst, const int dst_nb1, const int n_t) {
++    constexpr int n_state = d_conv - 1;
++    constexpr int L       = n_state + SSM_CONV_FUSED_MAX_TOKENS;
++
++    const int c = block_y * split_d_inner + threadIdx.x;
++
++    const float * w_row = (const float *) ((const char *) w_ptr + c * w_nb1);
++    float w[d_conv];
++#pragma unroll
++    for (int j = 0; j < (int) d_conv; j++) {
++        w[j] = w_row[j];
++    }
++    const float b = bias != nullptr ? bias[c] : 0.0f;
++
++    const float * s_row = src.state_idx ? src.state + src.state_idx[0] * src.state_row_stride : src.state;
++    float xs[L];
++#pragma unroll
++    for (int k = 0; k < n_state; k++) {
++        xs[k] = s_row[c * n_state + k];
++    }
++#pragma unroll
++    for (int t = 0; t < SSM_CONV_FUSED_MAX_TOKENS; t++) {
++        xs[n_state + t] = t < n_t ? src.x[t * src.x_stride + c] : 0.0f;
++    }
++
++    for (int s = 0; s < src.n_snap; s++) {
++        const int t0 = src.snap_t0[s];
++        float *   d  = src.snap_dst[s] + c * n_state;
++#pragma unroll
++        for (int k = 0; k < n_state; k++) {
++            // register select instead of a dynamic index into xs (which would spill to scratch)
++            float v = 0.0f;
++#pragma unroll
++            for (int tau = 0; tau < L; tau++) {
++                v = tau == t0 + k ? xs[tau] : v;
++            }
++            d[k] = v;
++        }
++    }
++
++    const int stride_y = dst_nb1 / sizeof(float);
++#pragma unroll
++    for (int t = 0; t < SSM_CONV_FUSED_MAX_TOKENS; t++) {
++        if (t < n_t) {
++            float sumf = 0.0f;
++#pragma unroll
++            for (int j = 0; j < (int) d_conv; j++) {
++                sumf += xs[t + j] * w[j];
++            }
++            sumf += b;
++            dst[t * stride_y + c] = apply_silu ? ggml_cuda_op_silu_single(sumf) : sumf;
++        }
++    }
++}
++
+ bool ggml_cuda_ssm_conv_fused_supported(int64_t d_conv, int64_t nr, int64_t n_t);
+ 
+ void ggml_cuda_op_ssm_conv(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * bias_add_node = nullptr,
+                            ggml_tensor * silu_dst = nullptr, const ggml_cuda_ssm_conv_fused_src * fused = nullptr);
++
++// Launch arguments of a single-sequence fused SSM_CONV with SILU (ssm_conv_fused_f32_block), for kernels that run it
++// beside other work (the GDN alpha/beta launch in mmvq.cu).
++struct ggml_cuda_gdn_conv_args {
++    ggml_cuda_ssm_conv_fused_src src;
++    const float * w;
++    const float * bias;
++    int           w_nb1;
++    float *       dst;
++    int           dst_nb1;
++    int           n_t;
++    int64_t       nr;     // channels, a multiple of 128
++    int64_t       d_conv;
++};
++
++// The arguments ggml_cuda_op_ssm_conv(ctx, dst, bias_add_node, silu_dst, &fused) would launch the fused kernel with.
++ggml_cuda_gdn_conv_args ggml_cuda_ssm_conv_fused_args(const ggml_tensor * dst, const ggml_tensor * bias_add_node,
++                                                      const ggml_tensor * silu_dst, const ggml_cuda_ssm_conv_fused_src & fused);
+-- 
+2.43.0
+

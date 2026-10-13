@@ -1,0 +1,249 @@
+From 006490a9963e29555b0d50b8dcb81ce6f95c884f Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 13:58:20 +0000
+Subject: [PATCH 27/28] CUDA/HIP: GDN gated output norm silu(z) * (rms_norm(x)
+ * w) + q8_1 in one launch (GGML_HIP_NORM_GATE)
+
+RMS_NORM -> MUL(w) -> [reshape of z] -> UNARY_SILU(z) -> MUL becomes rms_norm_mul_silu_gate_f32<NCOLS>: one thread per
+column (NCOLS 32..256), one block per row, DPP reductions, writes dst and the q8_1 copy for the out projection.
+Bitwise equal to rms_norm_f32<256, true> + unary_gated_op_kernel<op_silu>: the 256-thread kernel sums x^2 of
+threads < NCOLS plus zeros, i.e. the same pairings; products are kept out of fma contraction
+(ggml_cuda_no_contract) where the two-kernel version could not contract them.
+
+rocprofv3 (Qwen3.8-27B, MTP n=4, verify): rms_norm<256> 2.68 us + unary_gated 1.84 us + one boundary -> 1.87 us,
+48 per verify; verify 911 -> 863 kernels, gaps 3.02 -> 2.86 ms, wall 27.79 -> 27.52 ms.
+Greedy md5 (plain and MTP) equal to 9f83f1f81. test-backend-ops RMS_NORM_GATE 15/15 (new: NCOLS 32..512, z through a
+reshape as in qwen35).
+---
+ ggml/src/ggml-cuda/common.cuh   | 11 +++++
+ ggml/src/ggml-cuda/ggml-cuda.cu | 27 ++++++++++++
+ ggml/src/ggml-cuda/norm.cu      | 74 +++++++++++++++++++++++++++++++++
+ ggml/src/ggml-cuda/norm.cuh     |  7 ++++
+ tests/test-backend-ops.cpp      | 36 ++++++++++++++++
+ 5 files changed, 155 insertions(+)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index cb17cf202..0d55d9d74 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -533,6 +533,17 @@ static __device__ __forceinline__ float warp_reduce_max(float x) {
+     return x;
+ }
+ 
++// Returns x unchanged but opaque to the optimizer: a product passed through it cannot be contracted with a later add
++// into an fma. For kernels that must reproduce the rounding of another kernel where that contraction did not happen.
++static __device__ __forceinline__ float ggml_cuda_no_contract(float x) {
++#if defined(GGML_USE_HIP)
++    asm volatile("" : "+v"(x));
++#else
++    asm volatile("" : "+f"(x));
++#endif // defined(GGML_USE_HIP)
++    return x;
++}
++
+ #if defined(GGML_USE_HIP) && defined(RDNA)
+ #define GGML_CUDA_DPP_REDUCE
+ // x of lane ^ o within a wave32: permlanex16 for o = 16, DPP row_xmask for o < 16 (no LDS round trip; hipcc does not
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index d9526c8fb..9c83f8708 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4835,6 +4835,33 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         return 2;
+     }
+ 
++    // gated output norm of a GDN layer: silu(z) * (rms_norm(x) * w) (+ its q8_1 copy) in one launch; the reshape of z
++    // may sit between the MUL and the SILU
++    static const bool norm_gate = ggml_cuda_env_switch("GGML_HIP_NORM_GATE");
++    if (norm_gate && node->op == GGML_OP_RMS_NORM) {
++        int k = i + 2;
++        while (k < cgraph->n_nodes && k < i + 5 && ggml_cuda_is_view_or_noop(cgraph->nodes[k])) {
++            ++k;
++        }
++        const int idxs[4] = { i, i + 1, k, k + 1 };
++        const ggml_op ops[4] = { GGML_OP_RMS_NORM, GGML_OP_MUL, GGML_OP_UNARY, GGML_OP_MUL };
++        const int outs[1] = { k + 1 };
++        if (k + 1 < cgraph->n_nodes && ggml_can_fuse_subgraph_ext(cgraph, idxs, 4, ops, outs, 1)) {
++            const ggml_tensor * mw = cgraph->nodes[i + 1];
++            const ggml_tensor * un = cgraph->nodes[k];
++            ggml_tensor *       gm = cgraph->nodes[k + 1];
++            const ggml_tensor * w  = mw->src[0] == node ? mw->src[1] : mw->src[1] == node ? mw->src[0] : nullptr;
++            if (w && ggml_get_unary_op(un) == GGML_UNARY_OP_SILU &&
++                    ((gm->src[0] == mw && gm->src[1] == un) || (gm->src[0] == un && gm->src[1] == mw)) &&
++                    ggml_are_same_shape(mw, node) &&
++                    ggml_cuda_rms_norm_mul_silu_gate_supported(node, w, un->src[0], gm)) {
++                ggml_cuda_op_rms_norm_mul_silu_gate(*cuda_ctx, node, w, un->src[0], gm,
++                                                    ggml_cuda_q8_1_producer_target(cuda_ctx, cgraph, k + 1));
++                return k + 1 - i;
++            }
++        }
++    }
++
+     if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_RMS_NORM, GGML_OP_MUL }, {})) {
+         block_q8_1 * q8 = node->src[0]->ne[0] % QK8_1 == 0 ? ggml_cuda_q8_1_producer_target(cuda_ctx, cgraph, i + 1) : nullptr;
+         ggml_cuda_op_rms_norm_fused(*cuda_ctx, node, cgraph->nodes[i + 1], q8);
+diff --git a/ggml/src/ggml-cuda/norm.cu b/ggml/src/ggml-cuda/norm.cu
+index 28fe988c7..5b47265f0 100644
+--- a/ggml/src/ggml-cuda/norm.cu
++++ b/ggml/src/ggml-cuda/norm.cu
+@@ -1,4 +1,5 @@
+ #include "norm.cuh"
++#include "unary.cuh"
+ #include <cstdint>
+ 
+ template <int block_size>
+@@ -287,6 +288,79 @@ static bool rms_norm_mul_unrolled_enabled() {
+     return enabled;
+ }
+ 
++// The gated output norm of a GDN layer: dst = silu(z) * (rms_norm(x) * w) over rows of NCOLS (<= 256) columns, with
++// the q8_1 copy of dst. One thread per column, one block per row. Bitwise equal to rms_norm_f32<256, true> followed
++// by unary_gated_op_kernel<op_silu>: the 256-thread kernel sums x^2 of thread t < NCOLS, adds zeros for the rest
++// (warp sums of zeros and zero sentinels in the cross-warp butterfly), which is the same set of pairings.
++template <int NCOLS>
++__launch_bounds__(NCOLS, 1)
++static __global__ void rms_norm_mul_silu_gate_f32(const float * x, const float * w, const float * z, float * dst,
++                                                  const float eps, block_q8_1 * q8) {
++    static_assert(NCOLS % WARP_SIZE == 0 && NCOLS <= 256, "one column per thread, at most the 8 warps of rms_norm_f32<256>");
++    ggml_cuda_pdl_lc();
++    const int     col = threadIdx.x;
++    const int64_t i   = int64_t(blockIdx.x)*NCOLS + col;
++
++    ggml_cuda_pdl_sync();
++    const float xi = x[i];
++    const float wi = w[col];
++    const float zi = z[i];
++
++    // fma(xi, xi, 0) of the rms_norm_f32 loop, kept out of the first add of the reduction
++    float tmp = ggml_cuda_no_contract(xi * xi);
++    tmp = warp_reduce_sum_dpp(tmp);
++    if constexpr (NCOLS > WARP_SIZE) {
++        __shared__ float s_sum[NCOLS/WARP_SIZE];
++        const int lane_id = col % WARP_SIZE;
++        if (lane_id == 0) {
++            s_sum[col / WARP_SIZE] = tmp;
++        }
++        __syncthreads();
++        tmp = warp_reduce_sum_dpp(lane_id < NCOLS/WARP_SIZE ? s_sum[lane_id] : 0.0f);
++    }
++
++    const float mean   = tmp / NCOLS;
++    const float scale  = rsqrtf(mean + eps);
++    const float normed = ggml_cuda_no_contract(scale * xi * wi);
++    const float v      = ggml_cuda_no_contract(ggml_cuda_op_silu_single(zi) * normed);
++    dst[i] = v;
++    if (q8 != nullptr) {
++        quantize_q8_1_group<true>(v, q8 + i/QK8_1, i % QK8_1);
++    }
++}
++
++bool ggml_cuda_rms_norm_mul_silu_gate_supported(const ggml_tensor * rms_norm, const ggml_tensor * w, const ggml_tensor * z,
++                                                const ggml_tensor * dst) {
++    const ggml_tensor * x = rms_norm->src[0];
++    const int64_t ncols = x->ne[0];
++    return (ncols == 32 || ncols == 64 || ncols == 128 || ncols == 256) &&
++           x->type == GGML_TYPE_F32 && w->type == GGML_TYPE_F32 && z->type == GGML_TYPE_F32 && dst->type == GGML_TYPE_F32 &&
++           ggml_is_contiguous(x) && ggml_is_contiguous(z) && ggml_is_contiguous(dst) && ggml_is_contiguous(w) &&
++           ggml_nelements(w) == ncols && ggml_are_same_shape(x, z) && ggml_are_same_shape(x, dst) &&
++           ggml_nrows(x) <= INT32_MAX;
++}
++
++void ggml_cuda_op_rms_norm_mul_silu_gate(ggml_backend_cuda_context & ctx, const ggml_tensor * rms_norm, const ggml_tensor * w,
++                                         const ggml_tensor * z, ggml_tensor * dst, block_q8_1 * q8) {
++    GGML_ASSERT(ggml_cuda_rms_norm_mul_silu_gate_supported(rms_norm, w, z, dst));
++    float eps = 0.0f;
++    memcpy(&eps, rms_norm->op_params, sizeof(float));
++    const ggml_tensor * x = rms_norm->src[0];
++    const dim3 blocks((unsigned) ggml_nrows(x));
++    const float * x_d = (const float *) x->data;
++    const float * w_d = (const float *) w->data;
++    const float * z_d = (const float *) z->data;
++    float       * d_d = (float *) dst->data;
++    cudaStream_t stream = ctx.stream();
++    switch (x->ne[0]) {
++        case  32: rms_norm_mul_silu_gate_f32< 32><<<blocks,  32, 0, stream>>>(x_d, w_d, z_d, d_d, eps, q8); break;
++        case  64: rms_norm_mul_silu_gate_f32< 64><<<blocks,  64, 0, stream>>>(x_d, w_d, z_d, d_d, eps, q8); break;
++        case 128: rms_norm_mul_silu_gate_f32<128><<<blocks, 128, 0, stream>>>(x_d, w_d, z_d, d_d, eps, q8); break;
++        case 256: rms_norm_mul_silu_gate_f32<256><<<blocks, 256, 0, stream>>>(x_d, w_d, z_d, d_d, eps, q8); break;
++        default: GGML_ABORT("fatal error");
++    }
++}
++
+ template <int block_size>
+ static __global__ void rms_norm_back_f32(
+         const float * grad, const float * xf, float * dst, const int ncols, const float eps) {
+diff --git a/ggml/src/ggml-cuda/norm.cuh b/ggml/src/ggml-cuda/norm.cuh
+index 36ab52131..4adf5981c 100644
+--- a/ggml/src/ggml-cuda/norm.cuh
++++ b/ggml/src/ggml-cuda/norm.cuh
+@@ -9,6 +9,13 @@ void ggml_cuda_op_rms_norm(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
+ // q8: when not null, also write the q8_1 copy of the (contiguous) output there, as quantize_q8_1 would
+ void ggml_cuda_op_rms_norm_fused(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * mul_tensor, block_q8_1 * q8 = nullptr);
+ 
++// RMS_NORM -> MUL(w) -> MUL(., UNARY_SILU(z)) in one launch (the gated output norm of a GDN layer), optionally with
++// the q8_1 copy of dst
++bool ggml_cuda_rms_norm_mul_silu_gate_supported(const ggml_tensor * rms_norm, const ggml_tensor * w, const ggml_tensor * z,
++                                                const ggml_tensor * dst);
++void ggml_cuda_op_rms_norm_mul_silu_gate(ggml_backend_cuda_context & ctx, const ggml_tensor * rms_norm, const ggml_tensor * w,
++                                         const ggml_tensor * z, ggml_tensor * dst, block_q8_1 * q8);
++
+ void ggml_cuda_op_rms_norm_scale_fused(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * scale_tensor);
+ 
+ void ggml_cuda_op_rms_norm_fused_add(ggml_backend_cuda_context & ctx,
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 81f3ca6cf..62ee1b3c9 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7671,6 +7671,37 @@ struct test_mul_mat_pair : public test_case {
+     }
+ };
+ 
++// silu(z) * (rms_norm(x) * w): the gated output norm of a delta-net layer, which backends may run as one kernel
++struct test_rms_norm_gate : public test_case {
++    const std::array<int64_t, 4> ne;
++    const bool z_view; // z reaches the SILU through a reshape (as in qwen35)
++    const float eps;
++
++    test_rms_norm_gate(std::array<int64_t, 4> ne, bool z_view = false, float eps = 1e-6f) : ne(ne), z_view(z_view), eps(eps) {}
++
++    std::string vars() override {
++        return VARS_TO_STR3(ne, z_view, eps);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "RMS_NORM_GATE";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * x = ggml_new_tensor(ctx, GGML_TYPE_F32, 4, ne.data());
++        ggml_tensor * z = z_view ? ggml_reshape_4d(ctx, ggml_new_tensor_2d(ctx, GGML_TYPE_F32, ne[0]*ne[1], ne[2]*ne[3]), ne[0], ne[1], ne[2], ne[3])
++                                 : ggml_new_tensor(ctx, GGML_TYPE_F32, 4, ne.data());
++        ggml_tensor * w = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, ne[0]);
++        ggml_tensor * n = ggml_mul(ctx, ggml_rms_norm(ctx, x, eps), w);
++        ggml_tensor * out = ggml_mul(ctx, n, ggml_silu(ctx, z));
++        ggml_set_name(out, "out");
++        return out;
++    }
++};
++
+ struct test_mul_mat_vec_fusion : public test_case {
+     const ggml_type type;
+     const ggml_glu_op glu_op;
+@@ -10652,6 +10683,11 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_rms_norm_mul_add(GGML_TYPE_F32, { 256, 4, 3, 2 }, 1e-6f, false, false, true, false, true));
+     test_cases.emplace_back(new test_rms_norm_mul_add(GGML_TYPE_F32, { 1536, 1, 1, 1 }, 1e-6f, false, false, false, true));
+     test_cases.emplace_back(new test_rms_norm_mul_add(GGML_TYPE_F32, { 256, 4, 1, 1 }, 1e-6f, false, false, false, true));
++    for (int64_t n : { 32, 64, 128, 256, 512 }) {
++        test_cases.emplace_back(new test_rms_norm_gate({ n, 48, 5, 1 }));
++        test_cases.emplace_back(new test_rms_norm_gate({ n, 7, 2, 3 }));
++        test_cases.emplace_back(new test_rms_norm_gate({ n, 48, 5, 1 }, true));
++    }
+ 
+     test_cases.emplace_back(new test_rms_norm_mul_rope({128, 4, 7, 2}));
+     test_cases.emplace_back(new test_rms_norm_mul_rope({128, 4, 7, 2}, 1e-6f, false, true));
+-- 
+2.43.0
+
