@@ -309,3 +309,11 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Potwierdzone: Qwen **29.36 ms/krok, 102.9 t/s**; Uncensored **28.27 ms/krok, 106.1 t/s**. Cache promptu działa bez zmian (follow-up 0.64 s, powrót 1.35 s).
 - Koszt: zapis stanu przy każdym żądaniu +10-15 ms prefillu (48 kopii buforów oczekujących); poprawka w stash na opt-s4.
 - Conv bez zmian (snapshoty conv to 4% bajtów, zysk max ~0.03 ms).
+
+## K4: weryfikacja 9-16 tokenów (d3a0973ae; 2026-10-13)
+- Nowy kernel WMMA iu8 small-N (RDNA3) dla 9-16 kolumn (Q6_K od 7). llama-bench: n=9 49.2 -> 32.1 ms, n=16 51.0 -> 35.0 ms (Qwen); ~0.43 ms na kolumnę. n<=8 bez zmian.
+- Serwer: n=5 105.4 t/s średnio (czat/proza słabiej), n=4 101.7; n>=8 dalej przegrywa: osobny klif poza mnożeniem (SSM_CONV_FUSED_MAX_SNAPSHOTS 8 -> ~470 dodatkowych kerneli cpy/concat na krok). Do naprawy razem z T2.
+- Uncensored po K4: zob. spec_sweep.jsonl (przerwany pomiar; serwer agenta K4 zostawiony na porcie 8097 trzymał VRAM — zabity).
+
+## GPU_MAX_HW_QUEUES (Strata #2305): bez efektu
+- 3 restarty na ramię (domyślnie, 1, 2, 4): 29.30-29.39 ms/krok we wszystkich; brak bimodalności czasu draftu u nas.

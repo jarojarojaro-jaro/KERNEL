@@ -15,6 +15,7 @@
 #      LOG server log file (default ~/qwen-opt/logs/server-<time>.log, newest linked as logs/latest.log)
 #      DRAFT_N max draft tokens (default: backend/drafter specific), P_MIN stop drafting below this draft confidence
 #      DRAFT_SAMPLING greedy (default) | probabilistic (MTP samples drafts, target verifies by rejection sampling)
+#      ROCM_DIR install prefix of the ROCm build (default ~/llama-opt; bin/ and lib/)
 set -euo pipefail
 
 model=${1:-qwen}
@@ -61,8 +62,9 @@ case $backend in
         export LD_LIBRARY_PATH=$vkbin:$HOME/vk/1.4.363.0/x86_64/lib/VulkanLoader/lib:$HOME/vk/root/usr/lib/x86_64-linux-gnu
         mtp_n=5 ;;
     rocm)
-        bin=$HOME/llama-opt/bin/llama-server
-        export LD_LIBRARY_PATH=$HOME/llama-opt/lib:/opt/rocm/core-10.0/lib
+        rocm_dir=${ROCM_DIR:-$HOME/llama-opt}
+        bin=$rocm_dir/bin/llama-server
+        export LD_LIBRARY_PATH=$rocm_dir/lib:/opt/rocm/core-10.0/lib
         mtp_n=4 ;;
     *) echo "unknown backend: $backend (vulkan|rocm)" >&2; exit 2 ;;
 esac

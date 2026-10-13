@@ -1,0 +1,805 @@
+From d3a0973ae7b9de0f97964f414ff1f644e8c69aaf Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 21:45:41 +0000
+Subject: [PATCH] CUDA/HIP: RDNA3 verify batches of 9-16 columns: WMMA small-N
+ MUL_MAT kernel, wide MMVQ dispatch
+
+mul_mat_vec_q_wmma (gfx110x): a wave computes 16 weight rows x 16 src1 columns with
+v_wmma_i32_16x16x16_iu8 on the q8_1 activations of the MMVQ path (each lane holds one half of a 32-value
+sub-block, the second WMMA uses the v_permlanex16-swapped halves), scales per sub-block in float (q8_1
+scales via ds_bpermute), K split over 8 waves per block. Types: Q4_K, Q5_K, Q6_K, IQ4_XS, Q3_K, Q8_0,
+IQ4_NL; bias (residual) epilogue, pair launch and channel/sample broadcast as the MMVQ kernel. Used from
+9 columns (Q6_K from 7). The other multi-column types keep the dp4a kernel up to 10 columns, the rest MMQ.
+GDN alpha/beta kernel and the q4_0-KV FlashAttention kernel accept up to 16 tokens.
+
+Qwen3.8-27B UD-Q4_K_XL verify forward (llama-bench -d 2048, q4_0 KV): 9 columns 49.2 -> 32.1 ms,
+16 columns 51.0 -> 35.0 ms; Uncensored Q4_K_M 53.7 -> 29.8 / 55.5 -> 33.1 ms; n <= 8 unchanged.
+KLD vs b512 (ub 7/9/12/16): 0.0122/0.0128/0.0127/0.0127, base ub 6: 0.0124 +- 0.0006.
+---
+ ggml/src/ggml-cuda/fattn-kvq.cu |   3 +-
+ ggml/src/ggml-cuda/ggml-cuda.cu |   9 +-
+ ggml/src/ggml-cuda/mmvq.cu      | 548 +++++++++++++++++++++++++++++++-
+ ggml/src/ggml-cuda/mmvq.cuh     |   8 +-
+ tests/test-backend-ops.cpp      |  10 +-
+ 5 files changed, 563 insertions(+), 15 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
+index de5c00b21..9334a4574 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cu
++++ b/ggml/src/ggml-cuda/fattn-kvq.cu
+@@ -603,7 +603,8 @@ bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * ds
+     if (V->ne[0] != D || (D != 64 && D != 128 && D != 256)) {
+         return false;
+     }
+-    if (Q->ne[1] > 8 || K->ne[1] % FATTN_KQ_STRIDE != 0 || sinks) {
++    // up to 16 tokens: the speculative verify batches (MMVQ_MAX_BATCH_SIZE_WIDE)
++    if (Q->ne[1] > 16 || K->ne[1] % FATTN_KQ_STRIDE != 0 || sinks) {
+         return false;
+     }
+     if (Q->ne[2] % K->ne[2] != 0 || K->ne[3] != Q->ne[3] || V->ne[3] != Q->ne[3] || V->ne[2] != K->ne[2]) {
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 5b75e93d4..6efb8c958 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -1837,11 +1837,12 @@ static bool ggml_cuda_should_fuse_mul_mat_vec_q(const ggml_tensor * tensor, cons
+                                    ggml_nbytes(src0) != ggml_backend_buffer_get_alloc_size(src0->buffer, src0) &&
+                                    src0->view_src;
+ 
++    const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
++    const int64_t max_ncols = tensor->op == GGML_OP_MUL_MAT ? ggml_cuda_mmvq_max_ncols(cc) : MMVQ_MAX_BATCH_SIZE;
+     bool use_mul_mat_vec_q = ggml_is_quantized(src0->type) && !bad_padding_clear && src1->type == GGML_TYPE_F32 &&
+-                             dst->type == GGML_TYPE_F32 && src1->ne[1] <= MMVQ_MAX_BATCH_SIZE;
++                             dst->type == GGML_TYPE_F32 && src1->ne[1] <= max_ncols;
+ 
+     // fusion is not universally faster on Pascal
+-    const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
+     if (cc <= GGML_CUDA_CC_PASCAL) {
+         return false;
+     }
+@@ -3929,11 +3930,11 @@ static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, con
+     if (beta_mm->src[1] != x || w_alpha->type != w_beta->type || !ggml_cuda_gdn_ab_mmvq_supported(w_alpha->type) ||
+             !ggml_are_same_shape(w_alpha, w_beta) || w_alpha->nb[1] != w_beta->nb[1] ||
+             !ggml_is_contiguous(w_alpha) || !ggml_is_contiguous(w_beta) || !ggml_is_matrix(w_alpha) ||
+-            !ggml_cuda_should_use_mmvq(w_alpha->type, cc, N)) {
++            (N <= MMVQ_MAX_BATCH_SIZE && !ggml_cuda_should_use_mmvq(w_alpha->type, cc, N))) {
+         return 0;
+     }
+     if (x->type != GGML_TYPE_F32 || !ggml_is_contiguous_rows(x) || x->ne[2] != 1 || x->ne[3] != 1 ||
+-            N > MMVQ_MAX_BATCH_SIZE) {
++            N > ggml_cuda_mmvq_max_ncols(cc)) {
+         return 0;
+     }
+     // outputs: [M, N] contiguous, head values of a token next to each other
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index e91ed1db1..3a180e8e1 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -6,7 +6,7 @@
+ #include <cstdint>
+ #include <type_traits>
+ 
+-// RDNA3 multi-column (2-8) MMVQ tuning, measured on an RX 7900 XTX (see vec_dot_q_multi)
++// RDNA3 multi-column (2-16) MMVQ tuning, measured on an RX 7900 XTX (see vec_dot_q_multi)
+ #ifndef MMVQ_R3_NW_MULTI
+ #define MMVQ_R3_NW_MULTI 1
+ #endif
+@@ -19,6 +19,9 @@
+ #ifndef MMVQ_R3_RPB_N8
+ #define MMVQ_R3_RPB_N8 4
+ #endif
++#ifndef MMVQ_R3_RPB_WIDE
++#define MMVQ_R3_RPB_WIDE 4
++#endif
+ 
+ 
+ #ifndef MMVQ_MULTI_MIN_NCOLS
+@@ -143,6 +146,37 @@ static constexpr __host__ __device__ bool mmvq_has_multi(ggml_type type) {
+ #endif
+ }
+ 
++// RDNA3, 9-16 src1 columns: the types with a WMMA kernel (mul_mat_vec_q_wmma) take it from MMVQ_WMMA_MIN_NCOLS
++// columns on; the other multi-column types run the dp4a kernel up to MMVQ_R3_MULTI_MAX_NCOLS columns (beyond that it
++// is ALU-bound and MMQ is faster); everything else uses MMQ above MMVQ_MAX_BATCH_SIZE.
++#ifndef MMVQ_R3_MULTI_MAX_NCOLS
++#define MMVQ_R3_MULTI_MAX_NCOLS 10
++#endif
++#ifndef MMVQ_WMMA_NWAVES
++#define MMVQ_WMMA_NWAVES 8
++#endif
++// from this many columns on the WMMA kernel beats the multi-column dp4a kernel: Q6_K (whose dp4a kernel is the most
++// ALU-bound one) from 7 (at 6 it wins the cache-cold microbench but loses in the Uncensored Q4_K_M forward), the
++// others are within 3% at 8 and slower below
++#ifndef MMVQ_WMMA_MIN_NCOLS
++#define MMVQ_WMMA_MIN_NCOLS 9
++#endif
++#ifndef MMVQ_WMMA_MIN_NCOLS_Q6K
++#define MMVQ_WMMA_MIN_NCOLS_Q6K 7
++#endif
++#ifndef MMVQ_WMMA_MIN_WAVES
++#define MMVQ_WMMA_MIN_WAVES 1 // amdgpu_waves_per_eu lower bound (caps the VGPRs per lane)
++#endif
++
++static constexpr __host__ __device__ bool mmvq_wmma_has_type(const ggml_type type) {
++    return type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K || type == GGML_TYPE_IQ4_XS ||
++           type == GGML_TYPE_Q3_K || type == GGML_TYPE_Q8_0 || type == GGML_TYPE_IQ4_NL;
++}
++
++static constexpr __host__ __device__ int mmvq_wmma_min_ncols(const ggml_type type) {
++    return type == GGML_TYPE_Q6_K ? MMVQ_WMMA_MIN_NCOLS_Q6K : MMVQ_WMMA_MIN_NCOLS;
++}
++
+ // Byte-offset loads for the multi path: a block-uniform source (row of x / column of y) plus a 32-bit per-thread
+ // byte offset. On RDNA3 the sources are raw buffer resources in SGPRs, so every load is `buffer_load voffset, srsrc,
+ // soffset` and the loop only advances the shared 32-bit offsets; with plain pointers the compiler hoists one 64-bit
+@@ -1054,10 +1088,20 @@ int get_mmvq_mmid_max_batch(ggml_type type, int cc) {
+     return MMVQ_MAX_BATCH_SIZE;
+ }
+ 
++int ggml_cuda_mmvq_max_ncols(int cc) {
++    return GGML_CUDA_CC_IS_RDNA3_0(cc) ? MMVQ_MAX_BATCH_SIZE_WIDE : MMVQ_MAX_BATCH_SIZE;
++}
++
+ bool ggml_cuda_should_use_mmvq(enum ggml_type type, int cc, int64_t ne11) {
+     if (!ggml_is_quantized(type)) {
+         return false;
+     }
++    // RDNA3, 9-16 columns: the WMMA kernel and the multi-column kernels (see MMVQ_R3_MULTI_MAX_NCOLS); MMQ is up to
++    // 2x slower there (its 64-row tiles leave the 5120-row matrices with less than one block per CU)
++    if (GGML_CUDA_CC_IS_RDNA3_0(cc) && ne11 > MMVQ_MAX_BATCH_SIZE) {
++        return (mmvq_wmma_has_type(type) && ne11 <= MMVQ_MAX_BATCH_SIZE_WIDE) ||
++               (mmvq_has_multi(type) && ne11 <= MMVQ_R3_MULTI_MAX_NCOLS);
++    }
+     // k-quants cost more to decode and mvq redoes that per column, so MMQ wins sooner.
+     // Only list quant-types MMQ supports, others would fall back to cuBLAS.
+     if (GGML_CUDA_CC_IS_NVIDIA(cc) && cc == GGML_CUDA_CC_ADA_LOVELACE) {
+@@ -1339,6 +1383,9 @@ static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int
+         if (ncols_dst > 4 && type == GGML_TYPE_Q2_K) {
+             return 2; // Q2_K keeps 4 groups x 4 ints per row in registers; 4 rows spill occupancy at 8 columns
+         }
++        if (ncols_dst > 8) {
++            return MMVQ_R3_RPB_WIDE;
++        }
+         return ncols_dst <= 2 ? MMVQ_R3_RPB_N2 : ncols_dst <= 4 ? MMVQ_R3_RPB_N4 : MMVQ_R3_RPB_N8;
+     }
+     return 1;
+@@ -1363,6 +1410,9 @@ static constexpr __host__ __device__ int calc_rows_per_block(int ncols_dst, int
+ #ifndef MMVQ_R3_WAVES_OTHER
+ #define MMVQ_R3_WAVES_OTHER 8  // IQ4_XS and the other multi types at 5-8 columns
+ #endif
++#ifndef MMVQ_R3_WAVES_WIDE
++#define MMVQ_R3_WAVES_WIDE 8   // the multi types without a WMMA kernel at 9-10 columns
++#endif
+ // Software-pipelined multi loop (next iteration's weights loaded before this one is dotted): a gain for Q6_K at 5
+ // columns only (at 6 it spills).
+ #ifndef MMVQ_R3_PIPE_Q6K
+@@ -1372,6 +1422,9 @@ static constexpr __host__ __device__ int mmvq_max_waves_per_eu(ggml_type type, i
+     if (table_id != MMVQ_PARAMETERS_RDNA3_0 || !mmvq_has_multi(type) || ncols_dst < MMVQ_MULTI_MIN_NCOLS || ncols_dst <= 4) {
+         return 16;
+     }
++    if (ncols_dst > 8) {
++        return MMVQ_R3_WAVES_WIDE;
++    }
+     const bool n8 = ncols_dst > 6;
+     switch (type) {
+         case GGML_TYPE_Q4_K:
+@@ -2047,7 +2100,7 @@ static void mul_mat_vec_q_switch_ncols_dst(
+         const int ids_stride, cudaStream_t stream) {
+ 
+     GGML_ASSERT(ncols_x % ggml_blck_size(type) == 0);
+-    GGML_ASSERT(ncols_dst <= MMVQ_MAX_BATCH_SIZE);
++    GGML_ASSERT(ncols_dst <= MMVQ_MAX_BATCH_SIZE_WIDE);
+ 
+     const uint3 nchannels_y_fd   = ids ? init_fastdiv_values(nchannels_y) : make_uint3(0, 0, 0);
+     const uint3 channel_ratio_fd = ids ? make_uint3(0, 0, 0)              : init_fastdiv_values(nchannels_dst / nchannels_x);
+@@ -2136,6 +2189,31 @@ static void mul_mat_vec_q_switch_ncols_dst(
+         return;
+     }
+ 
++    if (ncols_dst > MMVQ_MAX_BATCH_SIZE) {
++        // RDNA3 dense MUL_MAT only (see ggml_cuda_should_use_mmvq): the multi-column types without a WMMA kernel
++        // (mul_mat_vec_q_wmma) up to MMVQ_R3_MULTI_MAX_NCOLS columns
++        GGML_ASSERT(!has_ids);
++#if defined(GGML_USE_HIP)
++        if constexpr (mmvq_has_multi(type) && !mmvq_wmma_has_type(type)) {
++            static_assert(MMVQ_R3_MULTI_MAX_NCOLS == 10, "update the cases below");
++            const auto launch_wide = [&](auto ncols_tag) {
++                constexpr int c_ncols_dst = decltype(ncols_tag)::value;
++                const std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst, warp_size, table_id);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst>(vx, vy, ids, fusion, dst, ncols_x, nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst,
++                     channel_ratio_fd, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio_fd, stride_sample_x, stride_sample_y, stride_sample_dst,
++                     dims.first, dims.second, 0, ids_stride, stream);
++            };
++            switch (ncols_dst) {
++                case  9: launch_wide(std::integral_constant<int,  9>{}); return;
++                case 10: launch_wide(std::integral_constant<int, 10>{}); return;
++                default: break;
++            }
++        }
++#endif // defined(GGML_USE_HIP)
++        GGML_ABORT("fatal error");
++    }
++
+     switch (ncols_dst) {
+         case 1: {
+             // static, else MSVC lambda capture breaks the constexpr uses below
+@@ -2382,6 +2460,428 @@ static void mul_mat_vec_q_switch_type(
+     }
+ }
+ 
++// RDNA3 (gfx110x) WMMA kernel for dense MUL_MAT with few src1 columns (speculative-decoding verify batches).
++//
++// A wave computes a 16 (weight rows) x 16 (src1 columns, zero-padded) tile with v_wmma_i32_16x16x16_iu8 on the q8_1
++// activations of the MMVQ path, so the int8 dot products of all columns cost one WMMA per 16x16x16 instead of one
++// dp4a per 4 values and column. A = activations (row m = column of src1), B = dequantized weights (column n = weight
++// row). gfx11 executes it as two independent halves (see fattn-kvq.cu): lanes 0-15 produce the even rows of D from
++// the A rows of the even lanes 0-14 and their own copy of B, lanes 16-31 the odd rows from the A rows of the odd lanes
++// 17-31 and theirs. Within each half A and B only have to agree on the order of the 16 reduction values. So every
++// lane loads the 16 values of one half (h = lane/16) of a 32-value sub-block of its own row/column (lane%16): the first
++// WMMA of a sub-block takes them as they are (lower half: values 0-15, upper half: 16-31), the second one after a
++// v_permlanex16 swap of the halves. No lane holds a duplicate.
++//
++// D (int32, per sub-block): lane l holds weight row l%16 for src1 columns 2i + l/16 (i = 0..7). It is scaled in
++// float with the per-row sub-block scale/min (lane constants) and the q8_1 scale/sum of the column, which each lane
++// loads for its own column and gets for the 8 columns of its D values with ds_bpermute.
++// The K range of a 16-row tile is split over the waves of a block (super-block interleaved), reduced in shared memory.
++#if defined(GGML_USE_HIP) && defined(RDNA3_0)
++#define MMVQ_WMMA_AVAILABLE
++#endif
++
++static bool mmvq_wmma_use(const ggml_type type, const int cc, const int64_t ncols_dst) {
++    return GGML_CUDA_CC_IS_RDNA3_0(cc) && mmvq_wmma_has_type(type) &&
++           ncols_dst >= mmvq_wmma_min_ncols(type) && ncols_dst <= MMVQ_MAX_BATCH_SIZE_WIDE;
++}
++
++#if defined(GGML_USE_HIP)
++#define MMVQ_WMMA_LAUNCH_BOUNDS(nthreads) \
++    __attribute__((amdgpu_flat_work_group_size(1, nthreads), amdgpu_waves_per_eu(MMVQ_WMMA_MIN_WAVES)))
++#else
++#define MMVQ_WMMA_LAUNCH_BOUNDS(nthreads) __launch_bounds__(nthreads, 1)
++#endif
++
++#ifdef MMVQ_WMMA_AVAILABLE
++typedef int mmvq_wmma_i4 __attribute__((ext_vector_type(4)));
++typedef int mmvq_wmma_i8 __attribute__((ext_vector_type(8)));
++
++static __device__ __forceinline__ int mmvq_wmma_swap_halves(const int x) {
++    return __builtin_amdgcn_permlanex16(x, x, 0x76543210u, 0xFEDCBA98u, false, false);
++}
++
++// D = A_y * B_x over one 32-value sub-block: a/b are this lane's halves, the second WMMA uses the other lane half's.
++static __device__ __forceinline__ mmvq_wmma_i8 mmvq_wmma_sub_block(const mmvq_wmma_i4 a, const mmvq_wmma_i4 b) {
++    mmvq_wmma_i8 d = {0, 0, 0, 0, 0, 0, 0, 0};
++    d = __builtin_amdgcn_wmma_i32_16x16x16_iu8_w32(true, a, true, b, d, false);
++    mmvq_wmma_i4 as;
++    mmvq_wmma_i4 bs;
++#pragma unroll
++    for (int k = 0; k < 4; ++k) {
++        as[k] = mmvq_wmma_swap_halves(a[k]);
++        bs[k] = mmvq_wmma_swap_halves(b[k]);
++    }
++    return __builtin_amdgcn_wmma_i32_16x16x16_iu8_w32(true, as, true, bs, d, false);
++}
++
++// IQ4_NL/IQ4_XS: the 16 values of lane half h of a 32-value block from its 16 qs bytes (low nibbles: values 0-15,
++// high nibbles: 16-31), looked up in kvalues_iq4nl
++static __device__ __forceinline__ mmvq_wmma_i4 mmvq_wmma_iq4_lut(const int4 q4, const int h) {
++    const uint32_t * tab = (const uint32_t *) kvalues_iq4nl;
++    const int q4v[4] = {q4.x, q4.y, q4.z, q4.w};
++    mmvq_wmma_i4 b;
++#pragma unroll
++    for (int k = 0; k < 4; ++k) {
++        const uint32_t qn  = (uint32_t) q4v[k] >> 4*h;
++        const uint32_t idx = qn & 0x07070707;
++        const uint32_t vlo = __builtin_amdgcn_perm(tab[1], tab[0], idx);
++        const uint32_t vhi = __builtin_amdgcn_perm(tab[3], tab[2], idx);
++        b[k] = __builtin_amdgcn_perm(vhi, vlo, 0x03020100 | ((qn & 0x08080808) >> 1));
++    }
++    return b;
++}
++
++// As mmvq_wmma_sub_block, but the two halves of the sub-block in separate results (Q6_K: one scale per 16 values):
++// d1 = this lane half's values, d2 = the other half's.
++static __device__ __forceinline__ void mmvq_wmma_sub_block2(const mmvq_wmma_i4 a, const mmvq_wmma_i4 b,
++                                                            mmvq_wmma_i8 & d1, mmvq_wmma_i8 & d2) {
++    const mmvq_wmma_i8 z = {0, 0, 0, 0, 0, 0, 0, 0};
++    d1 = __builtin_amdgcn_wmma_i32_16x16x16_iu8_w32(true, a, true, b, z, false);
++    mmvq_wmma_i4 as;
++    mmvq_wmma_i4 bs;
++#pragma unroll
++    for (int k = 0; k < 4; ++k) {
++        as[k] = mmvq_wmma_swap_halves(a[k]);
++        bs[k] = mmvq_wmma_swap_halves(b[k]);
++    }
++    d2 = __builtin_amdgcn_wmma_i32_16x16x16_iu8_w32(true, as, true, bs, z, false);
++}
++#endif // MMVQ_WMMA_AVAILABLE
++
++// grid: (16-row tiles of the matrix [+ of the pair matrix], channels of dst, samples of dst), block: (32, nwaves)
++template <ggml_type type, int nwaves>
++MMVQ_WMMA_LAUNCH_BOUNDS(nwaves*32)
++static __global__ void mul_mat_vec_q_wmma(
++        const void * __restrict__ vx, const void * __restrict__ vy, const float * __restrict__ bias, float * __restrict__ dst,
++        const ggml_cuda_mm_fusion_args_device fusion, const int ncols_x, const int nrows_x, const int stride_row_x,
++        const int stride_col_y, const int stride_col_dst, const int ncols_dst,
++        const int channel_ratio, const int stride_channel_x, const int stride_channel_y, const int stride_channel_dst,
++        const int sample_ratio, const int stride_sample_x, const int stride_sample_y, const int stride_sample_dst) {
++#ifdef MMVQ_WMMA_AVAILABLE
++    const int lane = threadIdx.x;
++    const int w    = threadIdx.y;
++    const int r    = lane % 16;
++    const int h    = lane / 16;
++
++    // pair launch: the blocks past the first matrix compute the second one (same type, K and src1)
++    int block_x    = blockIdx.x;
++    int nrows      = nrows_x;
++    int stride_dst = stride_col_dst;
++    if (fusion.pair_x != nullptr && uint32_t(block_x) >= fusion.pair_block0) {
++        block_x   -= fusion.pair_block0;
++        vx         = fusion.pair_x;
++        dst        = fusion.pair_dst;
++        nrows      = fusion.pair_nrows;
++        stride_dst = fusion.pair_nrows;
++    }
++    const int row0 = 16*block_x;
++
++    constexpr int      bs  = ggml_cuda_type_traits<type>::bs;
++    constexpr uint32_t qbs = sizeof(block_q8_1);
++
++    const int channel = blockIdx.y;
++    const int sample  = blockIdx.z;
++    const size_t dst_off = size_t(sample)*stride_sample_dst + size_t(channel)*stride_channel_dst;
++    dst += dst_off;
++    if (bias != nullptr) {
++        bias += dst_off;
++    }
++
++    const mmvq_src xs = mmvq_make_src((const char *) vx +
++        (size_t(sample/sample_ratio)*stride_sample_x + size_t(channel/channel_ratio)*stride_channel_x + size_t(row0)*stride_row_x)*bs);
++    const uint32_t xoff = uint32_t((min(row0 + r, nrows - 1) - row0)*stride_row_x*bs); // rows past the end re-read the last one
++
++    // q8_1 activations: this lane's column (columns past ncols_dst re-read the last one, their results are not stored)
++    const mmvq_src ys = mmvq_make_src((const char *) vy + (size_t(sample)*stride_sample_y + size_t(channel)*stride_channel_y)*qbs);
++    const uint32_t ycol = uint32_t(min(r, ncols_dst - 1)*stride_col_y)*qbs;
++
++    float acc[8] = {0.0f};
++
++    // ds_bpermute byte address of the lane that loaded the q8_1 scale of column 2i + h of the sub-block of parity j
++    const auto ysrc = [h](const int i, const int j) { return 4*(2*i + h + 16*j); };
++
++    // super-blocks of QK_K values; the types with 32-value blocks (Q8_0, IQ4_NL) take 8 blocks per step
++    constexpr int qk  = ggml_cuda_type_traits<type>::qk;
++    constexpr int bpc = QK_K / qk;
++    const int nsb_row = ncols_x / QK8_1;
++    const int nkb     = (nsb_row + 7) / 8;
++    for (int kb = w; kb < nkb; kb += nwaves) {
++        const uint32_t xb = xoff + uint32_t(kb*bpc)*bs;
++
++        // per super-block data of this lane's row
++        [[maybe_unused]] int4   hdr;    // Q4_K/Q5_K: dm + scales[12]
++        [[maybe_unused]] int4   qh;     // Q5_K: high bits of values 16h..16h+15 of all 8 sub-blocks
++        [[maybe_unused]] int4   ql6[4]; // Q6_K: ql bytes 64n + 32k + 16h.. of half n, k (low nibbles: g = k, high: g = k + 2)
++        [[maybe_unused]] int4   qh6[2]; // Q6_K: qh bytes 32n + 16h..
++        [[maybe_unused]] int4   sc6;    // Q6_K: scales[16]
++        [[maybe_unused]] float  d6;     // Q6_K: d
++        [[maybe_unused]] int4   q3s[2]; // Q3_K: qs bytes 32n + 16h.. of half n
++        [[maybe_unused]] int4   q3h;    // Q3_K: hmask bytes 16h..
++        [[maybe_unused]] int    sc3[4]; // Q3_K: the 16 scales (+32), one byte each
++        [[maybe_unused]] float  d3;     // Q3_K: d
++        [[maybe_unused]] int2   hdr4;   // IQ4_XS: d, scales_h, scales_l[4]
++        [[maybe_unused]] float2 dm;
++        if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
++            hdr = mmvq_ld<int4, 4>(xs, xb);
++            dm  = __half22float2(__builtin_bit_cast(half2, hdr.x));
++            if constexpr (type == GGML_TYPE_Q5_K) {
++                qh = mmvq_ld<int4, 4>(xs, xb + offsetof(block_q5_K, qh) + 16*h);
++            }
++        } else if constexpr (type == GGML_TYPE_Q6_K) {
++#pragma unroll
++            for (int n = 0; n < 2; ++n) {
++                ql6[2*n + 0] = mmvq_ld<int4, 2>(xs, xb + offsetof(block_q6_K, ql) + 64*n +  0 + 16*h);
++                ql6[2*n + 1] = mmvq_ld<int4, 2>(xs, xb + offsetof(block_q6_K, ql) + 64*n + 32 + 16*h);
++                qh6[n]       = mmvq_ld<int4, 2>(xs, xb + offsetof(block_q6_K, qh) + 32*n + 16*h);
++            }
++            sc6 = mmvq_ld<int4, 2>(xs, xb + offsetof(block_q6_K, scales));
++            d6  = __half2float(mmvq_ld<half, 2>(xs, xb + offsetof(block_q6_K, d)));
++        } else if constexpr (type == GGML_TYPE_Q3_K) {
++            q3s[0] = mmvq_ld<int4, 2>(xs, xb + offsetof(block_q3_K, qs) +  0 + 16*h);
++            q3s[1] = mmvq_ld<int4, 2>(xs, xb + offsetof(block_q3_K, qs) + 32 + 16*h);
++            q3h    = mmvq_ld<int4, 2>(xs, xb + offsetof(block_q3_K, hmask) + 16*h);
++            // the 16 6-bit scales (as in dequantize_row_q3_K), one byte each
++            const uint32_t a0  = mmvq_ld<int, 2>(xs, xb + offsetof(block_q3_K, scales) + 0);
++            const uint32_t a1  = mmvq_ld<int, 2>(xs, xb + offsetof(block_q3_K, scales) + 4);
++            const uint32_t tmp = mmvq_ld<int, 2>(xs, xb + offsetof(block_q3_K, scales) + 8);
++            sc3[0] = (a0 & 0x0F0F0F0F)        | (((tmp >> 0) & 0x03030303) << 4);
++            sc3[1] = (a1 & 0x0F0F0F0F)        | (((tmp >> 2) & 0x03030303) << 4);
++            sc3[2] = ((a0 >> 4) & 0x0F0F0F0F) | (((tmp >> 4) & 0x03030303) << 4);
++            sc3[3] = ((a1 >> 4) & 0x0F0F0F0F) | (((tmp >> 6) & 0x03030303) << 4);
++            d3 = __half2float(mmvq_ld<half, 2>(xs, xb + offsetof(block_q3_K, d)));
++        } else if constexpr (type == GGML_TYPE_IQ4_XS) {
++            hdr4 = mmvq_ld<int2, 4>(xs, xb);
++        }
++
++#pragma unroll
++        for (int p = 0; p < 4; ++p) {
++            [[maybe_unused]] int4 q;
++            [[maybe_unused]] int  sc[2];
++            [[maybe_unused]] int  m[2];
++            if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
++                // values 16h..16h+15 of sub-blocks 2p (low nibbles) and 2p+1 (high nibbles)
++                q = mmvq_ld<int4, 4>(xs, xb + (type == GGML_TYPE_Q4_K ? offsetof(block_q4_K, qs) : offsetof(block_q5_K, qs)) +
++                                         32*p + 16*h);
++                mmvq_unpack_kq_scales(hdr, p, sc, m);
++            }
++            // IQ4_NL/Q8_0: B halves and scales of blocks 2p, 2p+1, loaded together as aligned dwords (blocks of 18/34
++            // bytes; one 32-value block per sub-block)
++            [[maybe_unused]] mmvq_wmma_i4 bp[2];
++            [[maybe_unused]] float        dp[2];
++            if constexpr (type == GGML_TYPE_IQ4_NL || type == GGML_TYPE_Q8_0) {
++                const int g0 = 8*kb + 2*p; // first block of the pair in the row
++                const uint32_t o = xb + 2*p*bs;
++                if (g0 + 1 < nsb_row) {
++                    if constexpr (type == GGML_TYPE_IQ4_NL) {
++                        // d0 qs0[16] d1 qs1[16]: 9 dwords
++                        const int4 v0 = mmvq_ld<int4, 2>(xs, o);
++                        const int4 v1 = mmvq_ld<int4, 2>(xs, o + 16);
++                        const int  v2 = mmvq_ld<int,  2>(xs, o + 32);
++                        const int4 q0 = {(int) __builtin_amdgcn_alignbyte(v0.y, v0.x, 2), (int) __builtin_amdgcn_alignbyte(v0.z, v0.y, 2),
++                                         (int) __builtin_amdgcn_alignbyte(v0.w, v0.z, 2), (int) __builtin_amdgcn_alignbyte(v1.x, v0.w, 2)};
++                        bp[0] = mmvq_wmma_iq4_lut(q0, h);
++                        bp[1] = mmvq_wmma_iq4_lut(make_int4(v1.y, v1.z, v1.w, v2), h);
++                        dp[0] = __low2float(__builtin_bit_cast(half2, v0.x));
++                        dp[1] = __high2float(__builtin_bit_cast(half2, v1.x));
++                    } else {
++                        // d0 qs0[32] d1 qs1[32]: lane half h takes qs bytes 16h.. of both blocks, dwords 4h..4h+4 (2 bytes
++                        // offset) and 9+4h..12+4h; d0 is dword 0 (lane half 0), d1 the high half of dword 8 (lane half 1)
++                        const int4 u0 = mmvq_ld<int4, 2>(xs, o + 16*h);
++                        const int  u1 = mmvq_ld<int,  2>(xs, o + 16*h + 16);
++                        const int4 u2 = mmvq_ld<int4, 2>(xs, o + 36 + 16*h);
++                        bp[0] = {(int) __builtin_amdgcn_alignbyte(u0.y, u0.x, 2), (int) __builtin_amdgcn_alignbyte(u0.z, u0.y, 2),
++                                 (int) __builtin_amdgcn_alignbyte(u0.w, u0.z, 2), (int) __builtin_amdgcn_alignbyte(u1,   u0.w, 2)};
++                        bp[1] = {u2.x, u2.y, u2.z, u2.w};
++                        const int own = h == 0 ? u0.x : u1;
++                        const int oth = mmvq_wmma_swap_halves(own);
++                        dp[0] = __low2float (__builtin_bit_cast(half2, h == 0 ? own : oth));
++                        dp[1] = __high2float(__builtin_bit_cast(half2, h == 0 ? oth : own));
++                    }
++                } else if (g0 < nsb_row) {
++                    // last block of a row with an odd number of blocks (not a multiple of QK_K)
++                    if constexpr (type == GGML_TYPE_IQ4_NL) {
++                        bp[0] = mmvq_wmma_iq4_lut(mmvq_ld<int4, 2>(xs, o + offsetof(block_iq4_nl, qs)), h);
++                    } else {
++                        const int4 v = mmvq_ld<int4, 2>(xs, o + offsetof(block_q8_0, qs) + 16*h);
++                        bp[0] = {v.x, v.y, v.z, v.w};
++                    }
++                    dp[0] = __half2float(mmvq_ld<half, 2>(xs, o));
++                }
++            }
++
++            const uint32_t yb = ycol + uint32_t(8*kb + 2*p)*qbs;
++            // scale and sum of this lane's column for sub-block 2p + h
++            const float2 yds = __half22float2(mmvq_ld<half2, 4>(ys, yb + h*qbs));
++#pragma unroll
++            for (int j = 0; j < 2; ++j) {
++                const int s = 2*p + j; // sub-block in the super-block
++                if constexpr (qk == QK8_1) {
++                    if (8*kb + s >= nsb_row) {
++                        break; // past the end of a row whose length is not a multiple of QK_K
++                    }
++                }
++                const int4 a4 = mmvq_ld<int4, 4>(ys, yb + j*qbs + 4 + 16*h);
++                const mmvq_wmma_i4 a = {a4.x, a4.y, a4.z, a4.w};
++                mmvq_wmma_i4 b;
++                if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
++                    const int qv[4] = {q.x, q.y, q.z, q.w};
++                    [[maybe_unused]] const int qhv[4] = {qh.x, qh.y, qh.z, qh.w};
++#pragma unroll
++                    for (int k = 0; k < 4; ++k) {
++                        b[k] = (qv[k] >> 4*j) & 0x0F0F0F0F;
++                        if constexpr (type == GGML_TYPE_Q5_K) {
++                            b[k] |= ((qhv[k] >> s) << 4) & 0x10101010;
++                        }
++                    }
++                    const mmvq_wmma_i8 d = mmvq_wmma_sub_block(a, b);
++                    const float xd = dm.x*sc[j];
++                    const float xm = dm.y*m[j];
++#pragma unroll
++                    for (int i = 0; i < 8; ++i) {
++                        const float yd   = __int_as_float(__builtin_amdgcn_ds_bpermute(ysrc(i, j), __float_as_int(yds.x)));
++                        const float ysum = __int_as_float(__builtin_amdgcn_ds_bpermute(ysrc(i, j), __float_as_int(yds.y)));
++                        acc[i] += float(d[i])*(xd*yd) - xm*ysum;
++                    }
++                } else if constexpr (type == GGML_TYPE_Q6_K) {
++                    // sub-block s = 4n + g: q = (ql nibble g/2 of ql6[2n + g%2]) | (qh bits 2g of qh6[n]) << 4, minus 32
++                    const int n = s / 4;
++                    const int g = s % 4;
++                    const int4 lo = ql6[2*n + g%2];
++                    const int4 hi = qh6[n];
++                    const int lov[4] = {lo.x, lo.y, lo.z, lo.w};
++                    const int hiv[4] = {hi.x, hi.y, hi.z, hi.w};
++#pragma unroll
++                    for (int k = 0; k < 4; ++k) {
++                        b[k] = __vsub4(((lov[k] >> 4*(g/2)) & 0x0F0F0F0F) | (((hiv[k] >> 2*g) & 0x03030303) << 4), 0x20202020);
++                    }
++                    // the two WMMAs of the sub-block have their own 16-value scale: values 16h' of scale 8n + 2g + h'
++                    mmvq_wmma_i8 d1;
++                    mmvq_wmma_i8 d2;
++                    mmvq_wmma_sub_block2(a, b, d1, d2);
++                    const int scv[4] = {sc6.x, sc6.y, sc6.z, sc6.w};
++                    const int is1 = 8*n + 2*g + h;     // values of this lane half (first WMMA)
++                    const int is2 = 8*n + 2*g + 1 - h; // the other half (second WMMA)
++                    const int s1 = (int8_t) (scv[is1/4] >> 8*(is1%4));
++                    const int s2 = (int8_t) (scv[is2/4] >> 8*(is2%4));
++#pragma unroll
++                    for (int i = 0; i < 8; ++i) {
++                        const float yd = __int_as_float(__builtin_amdgcn_ds_bpermute(ysrc(i, j), __float_as_int(yds.x)));
++                        acc[i] += float(__mul24(d1[i], s1) + __mul24(d2[i], s2))*(d6*yd);
++                    }
++                } else if constexpr (type == GGML_TYPE_Q3_K) {
++                    // sub-block s = 4n + g: q = (qs bits 2g of q3s[n]) | (hmask bit 4n + g) << 2, minus 4
++                    const int n = s / 4;
++                    const int g = s % 4;
++                    const int4 lo = q3s[n];
++                    const int lov[4] = {lo.x, lo.y, lo.z, lo.w};
++                    const int hmv[4] = {q3h.x, q3h.y, q3h.z, q3h.w};
++#pragma unroll
++                    for (int k = 0; k < 4; ++k) {
++                        b[k] = __vsub4(((lov[k] >> 2*g) & 0x03030303) | (((hmv[k] >> (4*n + g)) & 0x01010101) << 2), 0x04040404);
++                    }
++                    // as Q6_K: one scale per 16 values
++                    mmvq_wmma_i8 d1;
++                    mmvq_wmma_i8 d2;
++                    mmvq_wmma_sub_block2(a, b, d1, d2);
++                    const int is1 = 8*n + 2*g + h;
++                    const int is2 = 8*n + 2*g + 1 - h;
++                    const int s1 = ((sc3[is1/4] >> 8*(is1%4)) & 0xFF) - 32;
++                    const int s2 = ((sc3[is2/4] >> 8*(is2%4)) & 0xFF) - 32;
++#pragma unroll
++                    for (int i = 0; i < 8; ++i) {
++                        const float yd = __int_as_float(__builtin_amdgcn_ds_bpermute(ysrc(i, j), __float_as_int(yds.x)));
++                        acc[i] += float(__mul24(d1[i], s1) + __mul24(d2[i], s2))*(d3*yd);
++                    }
++                } else {
++                    // one float scale per 32 values
++                    float xd;
++                    if constexpr (type == GGML_TYPE_IQ4_XS) {
++                        // sub-block s: qs bytes 16s..16s+15 hold values 0-15 (low nibbles) and 16-31 (high nibbles)
++                        b = mmvq_wmma_iq4_lut(mmvq_ld<int4, 4>(xs, xb + offsetof(block_iq4_xs, qs) + 16*s), h);
++                        const uint32_t scales_h = (uint32_t) hdr4.x >> 16;
++                        const uint32_t scales_l = (uint32_t) hdr4.y >> 4*s; // nibble s of scales_l[4]
++                        const int ls = (scales_l & 0x0F) | (((scales_h >> 2*s) & 0x03) << 4);
++                        xd = __half2float(__builtin_bit_cast(half2, hdr4.x).x) * (ls - 32);
++                    } else {
++                        static_assert(type == GGML_TYPE_IQ4_NL || type == GGML_TYPE_Q8_0, "mul_mat_vec_q_wmma: unsupported type");
++                        b  = bp[j];
++                        xd = dp[j];
++                    }
++                    const mmvq_wmma_i8 d = mmvq_wmma_sub_block(a, b);
++#pragma unroll
++                    for (int i = 0; i < 8; ++i) {
++                        const float yd = __int_as_float(__builtin_amdgcn_ds_bpermute(ysrc(i, j), __float_as_int(yds.x)));
++                        acc[i] += float(d[i])*(xd*yd);
++                    }
++                }
++            }
++        }
++    }
++
++    if constexpr (nwaves > 1) {
++        __shared__ float red[nwaves - 1][8][32];
++        if (w > 0) {
++#pragma unroll
++            for (int i = 0; i < 8; ++i) {
++                red[w - 1][i][lane] = acc[i];
++            }
++        }
++        __syncthreads();
++        if (w > 0) {
++            return;
++        }
++#pragma unroll
++        for (int l = 0; l < nwaves - 1; ++l) {
++#pragma unroll
++            for (int i = 0; i < 8; ++i) {
++                acc[i] += red[l][i][lane];
++            }
++        }
++    }
++
++    const int row = row0 + r;
++    if (row < nrows) {
++#pragma unroll
++        for (int i = 0; i < 8; ++i) {
++            const int c = 2*i + h;
++            if (c < ncols_dst) {
++                float v = acc[i];
++                if (bias != nullptr) {
++                    v += bias[c*stride_dst + row];
++                }
++                dst[c*stride_dst + row] = v;
++            }
++        }
++    }
++#else
++    GGML_UNUSED_VARS(vx, vy, bias, dst, fusion, ncols_x, nrows_x, stride_row_x, stride_col_y, stride_col_dst, ncols_dst,
++                     channel_ratio, stride_channel_x, stride_channel_y, stride_channel_dst,
++                     sample_ratio, stride_sample_x, stride_sample_y, stride_sample_dst);
++    NO_DEVICE_CODE;
++#endif // MMVQ_WMMA_AVAILABLE
++}
++
++template <ggml_type type>
++static void mul_mat_vec_q_wmma_launch(
++        const void * vx, const void * vy, const ggml_cuda_mm_fusion_args_device & fusion, float * dst, const int ncols_x,
++        const int nrows_x, const int stride_row_x, const int stride_col_y, const int stride_col_dst, const int ncols_dst,
++        const int nchannels_x, const int nchannels_dst, const int stride_channel_x, const int stride_channel_y,
++        const int stride_channel_dst, const int nsamples_x, const int nsamples_dst, const int stride_sample_x,
++        const int stride_sample_y, const int stride_sample_dst, cudaStream_t stream) {
++    constexpr int nwaves = MMVQ_WMMA_NWAVES;
++    ggml_cuda_mm_fusion_args_device f = fusion;
++    int nblocks = (nrows_x + 15) / 16;
++    if (f.pair_x != nullptr) {
++        GGML_ASSERT(nchannels_dst == 1 && nsamples_dst == 1);
++        f.pair_block0 = nblocks;
++        nblocks += (f.pair_nrows + 15) / 16;
++    }
++    mul_mat_vec_q_wmma<type, nwaves><<<dim3(nblocks, nchannels_dst, nsamples_dst), dim3(32, nwaves, 1), 0, stream>>>(
++        vx, vy, (const float *) fusion.x_bias, dst, f, ncols_x, nrows_x, stride_row_x, stride_col_y, stride_col_dst, ncols_dst,
++        nchannels_dst / nchannels_x, stride_channel_x, stride_channel_y, stride_channel_dst,
++        nsamples_dst / nsamples_x, stride_sample_x, stride_sample_y, stride_sample_dst);
++}
++
+ // q8_1 activations of an MMVQ src1. Reuses the previous MUL_MAT's activations if it had the same src1
+ // (see mmvq_q8_cache_t), else quantizes into the cache (allow_cache) or into storage taken from pool.
+ // The cache buffer is allocated once, outside of graph capture, and never reallocated, so captured
+@@ -2569,7 +3069,7 @@ template <ggml_type type>
+ static void gdn_ab_mmvq_launch(const void * w_alpha, const void * w_beta, const block_q8_1 * y, const float * dt,
+         const float * ssm_a, float * gate, float * beta, int ncols_x, int stride_row_x, int stride_col_y,
+         int n_heads, int n_tokens, const ggml_cuda_gdn_conv_args * conv, cudaStream_t stream) {
+-    static_assert(MMVQ_MAX_BATCH_SIZE == 8, "update the n_tokens dispatch");
++    static_assert(MMVQ_MAX_BATCH_SIZE == 8 && MMVQ_MAX_BATCH_SIZE_WIDE == 16, "update the n_tokens dispatch");
+     if (conv != nullptr) {
+         constexpr bool has_conv_ab = type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K;
+         if constexpr (has_conv_ab) {
+@@ -2588,6 +3088,16 @@ static void gdn_ab_mmvq_launch(const void * w_alpha, const void * w_beta, const
+                 case 6: GDN_CONV_AB_LAUNCH(6); break;
+                 case 7: GDN_CONV_AB_LAUNCH(7); break;
+                 case 8: GDN_CONV_AB_LAUNCH(8); break;
++#if defined(GGML_USE_HIP)
++                case  9: GDN_CONV_AB_LAUNCH( 9); break;
++                case 10: GDN_CONV_AB_LAUNCH(10); break;
++                case 11: GDN_CONV_AB_LAUNCH(11); break;
++                case 12: GDN_CONV_AB_LAUNCH(12); break;
++                case 13: GDN_CONV_AB_LAUNCH(13); break;
++                case 14: GDN_CONV_AB_LAUNCH(14); break;
++                case 15: GDN_CONV_AB_LAUNCH(15); break;
++                case 16: GDN_CONV_AB_LAUNCH(16); break;
++#endif // defined(GGML_USE_HIP)
+                 default: GGML_ABORT("unsupported GDN token count");
+             }
+ #undef GDN_CONV_AB_LAUNCH
+@@ -2609,6 +3119,16 @@ static void gdn_ab_mmvq_launch(const void * w_alpha, const void * w_beta, const
+         case 6: GDN_AB_LAUNCH(6); break;
+         case 7: GDN_AB_LAUNCH(7); break;
+         case 8: GDN_AB_LAUNCH(8); break;
++#if defined(GGML_USE_HIP)
++        case  9: GDN_AB_LAUNCH( 9); break;
++        case 10: GDN_AB_LAUNCH(10); break;
++        case 11: GDN_AB_LAUNCH(11); break;
++        case 12: GDN_AB_LAUNCH(12); break;
++        case 13: GDN_AB_LAUNCH(13); break;
++        case 14: GDN_AB_LAUNCH(14); break;
++        case 15: GDN_AB_LAUNCH(15); break;
++        case 16: GDN_AB_LAUNCH(16); break;
++#endif // defined(GGML_USE_HIP)
+         default: GGML_ABORT("unsupported GDN token count");
+     }
+ #undef GDN_AB_LAUNCH
+@@ -2620,7 +3140,8 @@ void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor *
+     const ggml_type type = w_alpha->type;
+     GGML_ASSERT(w_beta->type == type && ggml_cuda_gdn_ab_mmvq_supported(type));
+     GGML_ASSERT(ggml_are_same_shape(w_alpha, w_beta) && w_alpha->nb[1] == w_beta->nb[1]);
+-    GGML_ASSERT(x->ne[0] == w_alpha->ne[0] && x->ne[1] <= MMVQ_MAX_BATCH_SIZE && x->ne[2] == 1 && x->ne[3] == 1);
++    GGML_ASSERT(x->ne[0] == w_alpha->ne[0] && x->ne[2] == 1 && x->ne[3] == 1 &&
++                x->ne[1] <= ggml_cuda_mmvq_max_ncols(ggml_cuda_info().devices[ggml_cuda_get_device()].cc));
+ 
+     ggml_cuda_pool_alloc<char> pool(ctx.pool());
+     const block_q8_1 * y = (const block_q8_1 *) mmvq_src1_q8_1(ctx, x, type, /*allow_cache =*/ true, pool);
+@@ -2797,6 +3318,25 @@ void ggml_cuda_mul_mat_vec_q(
+ 
+     const int64_t ids_stride = ids ? ids->nb[1] / ggml_type_size(ids->type) : 0;
+ 
++    if (!ids && mmvq_wmma_use(src0->type, ggml_cuda_info().devices[ctx.device].cc, ncols_dst)) {
++        switch (src0->type) {
++#define MMVQ_WMMA_CASE(T) case T: mul_mat_vec_q_wmma_launch<T>(src0->data, src1_q8_1, fusion_local, dst_d, ne00, ne01, s01, \
++                                      stride_col_y, stride_col_dst, ncols_dst, ne02, nchannels_dst, s02, stride_channel_y, \
++                                      stride_channel_dst, ne03, ne3, s03, s13, s3, stream); break
++            MMVQ_WMMA_CASE(GGML_TYPE_Q4_K);
++            MMVQ_WMMA_CASE(GGML_TYPE_Q5_K);
++            MMVQ_WMMA_CASE(GGML_TYPE_Q6_K);
++            MMVQ_WMMA_CASE(GGML_TYPE_IQ4_XS);
++            MMVQ_WMMA_CASE(GGML_TYPE_Q3_K);
++            MMVQ_WMMA_CASE(GGML_TYPE_Q8_0);
++            MMVQ_WMMA_CASE(GGML_TYPE_IQ4_NL);
++#undef MMVQ_WMMA_CASE
++            default:
++                GGML_ABORT("fatal error");
++        }
++        return;
++    }
++
+     mul_mat_vec_q_switch_type(
+         src0->data, src0->type, src1_q8_1, ids_d, fusion_local, dst_d, ne00,
+         ne01,              ncols_dst,     s01, stride_col_y,     stride_col_dst,
+diff --git a/ggml/src/ggml-cuda/mmvq.cuh b/ggml/src/ggml-cuda/mmvq.cuh
+index d234c278f..5d028ead8 100644
+--- a/ggml/src/ggml-cuda/mmvq.cuh
++++ b/ggml/src/ggml-cuda/mmvq.cuh
+@@ -4,6 +4,11 @@
+ #include "ssm-conv.cuh"
+ 
+ #define MMVQ_MAX_BATCH_SIZE 8 // Max. batch size for which to use MMVQ kernels.
++#define MMVQ_MAX_BATCH_SIZE_WIDE 16 // RDNA3: max. MUL_MAT batch size (speculative-decoding verify batches)
++
++// Max. number of src1 columns a dense MUL_MAT can run through MMVQ on this device: MMVQ_MAX_BATCH_SIZE_WIDE on
++// RDNA3 (gfx110x), MMVQ_MAX_BATCH_SIZE elsewhere. MUL_MAT_ID stays at MMVQ_MAX_BATCH_SIZE.
++int ggml_cuda_mmvq_max_ncols(int cc);
+ 
+ bool ggml_cuda_should_use_mmvq(enum ggml_type type, int cc, int64_t ne11);
+ 
+@@ -20,7 +25,8 @@ void ggml_cuda_op_mul_mat_vec_q(
+     const char * src1_ddq_i, float * dst_dd_i, const int64_t row_low, const int64_t row_high, const int64_t src1_ncols,
+     const int64_t src1_padded_row_size, cudaStream_t stream);
+ 
+-// GATED_DELTA_NET alpha/beta projections and their activation tails in one MMVQ launch (x: F32 [K, n_tokens<=8]):
++// GATED_DELTA_NET alpha/beta projections and their activation tails in one MMVQ launch
++// (x: F32 [K, n_tokens <= ggml_cuda_mmvq_max_ncols]):
+ //   gate = softplus(w_alpha*x + dt)*ssm_a, beta = sigmoid(w_beta*x), both stored as [n_heads, n_tokens]
+ // conv: when not null, this fused SSM_CONV+SILU (d_conv 4) runs as extra blocks of the same grid
+ // (requires ggml_cuda_gdn_conv_ab_supported).
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index a5d6327bc..99c38928c 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -8013,7 +8013,7 @@ struct test_mul_mat_vec_fusion : public test_case {
+ };
+ 
+ // MUL_MAT followed by a full-shape residual ADD (out = W*x + residual), the epilogue fused by MMVQ for every
+-// column count up to MMVQ_MAX_BATCH_SIZE (spec-decoding verify batches).
++// column count it runs (spec-decoding verify batches; up to MMVQ_MAX_BATCH_SIZE_WIDE on RDNA3, incl. the WMMA kernel).
+ struct test_mul_mat_add_residual : public test_case {
+     const ggml_type type;
+     const int64_t m;
+@@ -10991,9 +10991,9 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+         test_cases.emplace_back(new test_mul_mat(type_a,    GGML_TYPE_F32, 16,  8, 16*256, { 1,  1}, {1, 1}));
+     }
+ 
+-    // Multi-column MMVQ coverage for the Q4_K weight-reuse path and a Q5_K control.
++    // Multi-column MMVQ coverage for the Q4_K weight-reuse path and a Q5_K control (9-16: the wide RDNA3 kernels).
+     for (ggml_type type_a : { GGML_TYPE_Q4_K, GGML_TYPE_Q5_K }) {
+-        for (int n = 1; n <= 8; ++n) {
++        for (int n = 1; n <= 16; ++n) {
+             test_cases.emplace_back(new test_mul_mat(type_a, GGML_TYPE_F32, 4096, n, 1024, { 1, 1 }, { 1, 1 }));
+             test_cases.emplace_back(new test_mul_mat(type_a, GGML_TYPE_F32, 1023, n, 4096, { 1, 1 }, { 1, 1 }));
+         }
+@@ -12151,7 +12151,7 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     }
+ 
+     for (ggml_type type : { GGML_TYPE_Q4_0, GGML_TYPE_Q8_0, GGML_TYPE_Q4_K, GGML_TYPE_Q5_K, GGML_TYPE_Q6_K, GGML_TYPE_IQ4_XS }) {
+-        for (int64_t m : { 1, 2, 3, 4, 5, 6, 7, 8 }) {
++        for (int64_t m : { 1, 2, 3, 4, 5, 6, 7, 8, 9, 12, 16 }) {
+             for (bool residual_first : { false, true }) {
+                 test_cases.emplace_back(new test_mul_mat_add_residual(type, m, 67, 512, residual_first));
+                 test_cases.emplace_back(new test_mul_mat_add_residual(type, m, 67, 512, residual_first, /*reshape =*/ true));
+@@ -12274,7 +12274,7 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+ 
+     // gdn prologue: alpha/beta projections, q/k l2 norm and the state gather fused into the GDN path
+     for (ggml_type w : { GGML_TYPE_Q8_0, GGML_TYPE_Q4_K }) {
+-        for (int64_t n_tokens : { 1, 4, 6, 8 }) {
++        for (int64_t n_tokens : { 1, 4, 6, 8, 12, 16 }) {
+             test_cases.emplace_back(new test_gated_delta_net_prologue_fusion(w, 4, 128, n_tokens, 512));
+         }
+     }
+-- 
+2.43.0
+
