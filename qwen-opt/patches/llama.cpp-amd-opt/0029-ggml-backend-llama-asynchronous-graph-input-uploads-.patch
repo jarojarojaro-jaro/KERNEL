@@ -1,7 +1,7 @@
 From 2eb0884196b31b2366480be2eb62c78f09433cda Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 15:25:00 +0000
-Subject: [PATCH 29/31] ggml-backend/llama: asynchronous graph input uploads
+Subject: [PATCH 29/52] ggml-backend/llama: asynchronous graph input uploads
  (LLAMA_ASYNC_INPUTS)
 
 Each host-resident split input was copied with a blocking copy: a sync of the

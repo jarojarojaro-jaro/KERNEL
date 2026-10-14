@@ -1,0 +1,447 @@
+From 862c02136090c61af5cab192743c73238d957f8b Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 13:11:16 +0000
+Subject: [PATCH 51/52] CUDA/HIP: single-token MoE tail (down MUL_MAT_ID,
+ expert weighting, residual ADD) in one MMVQ launch (GGML_HIP_MOE_DOWN_REDUCE)
+
+The decode MoE FFN ended in three launches: the down MUL_MAT_ID (one block per row and
+expert), moe_weighted_reduction and the residual ADD (bin_bcast). A new kernel computes
+for a block of rows the dot products of every used expert (same lanes, blocks per lane,
+warp combine and butterfly as the ncols_dst == 1 MMVQ kernel), weights them as
+moe_weighted_reduction_f32 does (x0*w0, then fma per expert) and adds the residual, so the
+result is bitwise that of the three kernels. The ADD may follow the reduction after views
+or elided nodes (the next layer's state gather): it is written ahead of its position and
+skipped there (ggml_backend_cuda_context::nodes_done_ahead); its output is checked not to
+overlap any other input. New test-backend-ops case MOE_DOWN_REDUCE (Q5_K/Q6_K/Q4_K/Q8_0/
+IQ4_XS, 2-8 experts); the kernel is taken for all of them.
+
+LFM2.5-24B-A2B decode: 595 -> 521 kernels/token (2 per MoE layer).
+llama-bench tg128 -r 5, 3 interleaved rounds, same binary env off/on:
+4.817 -> 4.642 ms/token (207.6 -> 215.4 t/s). Greedy md5 equal (LFM plain);
+test-backend-ops MOE_DOWN_REDUCE, MUL_MAT_ID pass.
+---
+ ggml/src/ggml-cuda/common.cuh   |   5 +
+ ggml/src/ggml-cuda/ggml-cuda.cu |  85 +++++++++++++++++
+ ggml/src/ggml-cuda/mmvq.cu      | 163 ++++++++++++++++++++++++++++++++
+ ggml/src/ggml-cuda/mmvq.cuh     |   7 ++
+ tests/test-backend-ops.cpp      |  78 +++++++++++++++
+ 5 files changed, 338 insertions(+)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index 0d55d9d74..c55bec482 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1629,6 +1629,11 @@ struct ggml_backend_cuda_context {
+         size_t       src_bytes = 0;
+     } mmvq_q8_pending;
+ 
++    // Nodes a fusion already computed ahead of their position in the graph (e.g. the residual ADD folded into the
++    // MoE down projection, GGML_HIP_MOE_DOWN_REDUCE): skipped when the evaluation loop reaches them. Cleared at the
++    // start of every graph evaluation.
++    std::vector<const ggml_tensor *> nodes_done_ahead;
++
+     void mmvq_q8_cache_invalidate() {
+         mmvq_q8_cache.src = nullptr;
+         mmvq_q8_pending.valid = false;
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 8eb0bfbec..df4d2c98e 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4193,6 +4193,75 @@ static block_q8_1 * ggml_cuda_q8_1_producer_target(ggml_backend_cuda_context * c
+     return (block_q8_1 *) qc.buf;
+ }
+ 
++// [GGML_HIP_MOE_DOWN_REDUCE] single-token MoE tail: down MUL_MAT_ID -> weighted reduction (MUL, VIEWs, ADDs) -> the
++// residual ADD (after only views or elided nodes, e.g. the next layer's state gather) in one launch
++// (ggml_cuda_mmvq_moe_down_reduce), which writes the ADD node ahead of its position. Returns the nodes to skip, 0: no.
++static int ggml_cuda_try_moe_down_reduce(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
++    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_MOE_DOWN_REDUCE");
++    const ggml_tensor * mm = cgraph->nodes[i];
++    if (!enabled || mm->op != GGML_OP_MUL_MAT_ID || i + 1 >= cgraph->n_nodes || cuda_ctx->curr_stream_no != 0 ||
++            !cuda_ctx->stream_context().concurrent_events.empty()) {
++        return 0;
++    }
++    const ggml_tensor * src0 = mm->src[0];
++    const ggml_tensor * src1 = mm->src[1];
++    const ggml_tensor * ids  = mm->src[2];
++    if (!ggml_is_quantized(src0->type) || mm->type != GGML_TYPE_F32 || !ggml_is_contiguous(mm) || mm->ne[2] != 1 ||
++            mm->ne[3] != 1 || ids->ne[1] != 1 || src1->type != GGML_TYPE_F32 || src1->ne[2] != 1 || src1->ne[3] != 1 ||
++            src1->nb[0] != sizeof(float) || (src1->ne[1] != 1 && src1->ne[1] != mm->ne[1]) ||
++            !ggml_cuda_mmvq_moe_down_reduce_supported(src0->type, mm->ne[1], src0->ne[1]) ||
++            !ggml_node_has_n_uses(cgraph, i, 1)) {
++        return 0;
++    }
++    ggml_cuda_moe_weighted_reduction_match match;
++    if (!ggml_cuda_match_moe_weighted_reduction(cgraph, i + 1, match) || match.experts != mm || match.expert_scale != nullptr) {
++        return 0;
++    }
++    const int red_out = i + match.node_count;
++    if (!ggml_node_has_n_uses(cgraph, red_out, 1) || (match.dst->flags & GGML_TENSOR_FLAG_OUTPUT)) {
++        return 0;
++    }
++    int add_idx = -1;
++    for (int j = red_out + 1; j < std::min(cgraph->n_nodes, red_out + 33); ++j) {
++        const ggml_tensor * n = cgraph->nodes[j];
++        if (n->op == GGML_OP_ADD && (n->src[0] == match.dst || n->src[1] == match.dst)) {
++            add_idx = j;
++            break;
++        }
++        // no kernel may run in between: the ADD's output is written ahead of them
++        if (!ggml_cuda_is_view_or_noop(n) && (n->flags & GGML_TENSOR_FLAG_COMPUTE) && !ggml_cuda_gdn_prologue_elided(cgraph, j)) {
++            return 0;
++        }
++    }
++    if (add_idx < 0) {
++        return 0;
++    }
++    ggml_tensor *       add = cgraph->nodes[add_idx];
++    const ggml_tensor * res = add->src[0] == match.dst ? add->src[1] : add->src[0];
++    if (res == match.dst || add->type != GGML_TYPE_F32 || res->type != GGML_TYPE_F32 || !ggml_is_contiguous(add) ||
++            !ggml_is_contiguous(res) || !ggml_are_same_shape(add, match.dst) || !ggml_are_same_shape(res, add) ||
++            ggml_nelements(add) != src0->ne[1] || (add->flags & GGML_TENSOR_FLAG_COMPUTE) == 0) {
++        return 0;
++    }
++    // the residual must be computed already
++    for (int j = i + 1; j < add_idx; ++j) {
++        if (cgraph->nodes[j] == res || cgraph->nodes[j] == res->view_src) {
++            return 0;
++        }
++    }
++    // the ADD's output must not overlap the other inputs (a row of the residual is read before the same thread writes
++    // that row, so the residual may be the output itself)
++    if ((add->data != res->data && ggml_cuda_tensors_overlap(add, res)) || ggml_cuda_tensors_overlap(add, ids) ||
++            ggml_cuda_tensors_overlap(add, match.weights) || ggml_cuda_tensors_overlap(add, src1) ||
++            ggml_cuda_tensors_overlap(add, src0)) {
++        return 0;
++    }
++    ggml_cuda_mmvq_moe_down_reduce(*cuda_ctx, src0, src1, ids, match.weights, res, add);
++    cuda_ctx->mmvq_q8_cache_invalidate_if_written(add);
++    cuda_ctx->nodes_done_ahead.push_back(add);
++    return match.node_count;
++}
++
+ // try and fuse nodes and return the number of nodes to skip; -1: this node is done and no other node is skipped
+ // (it is elided because its result is never read, or a fusion computed it alone)
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+@@ -4204,10 +4273,25 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+ 
+     ggml_tensor * node = cgraph->nodes[i];
+ 
++    if (!cuda_ctx->nodes_done_ahead.empty()) {
++        auto it = std::find(cuda_ctx->nodes_done_ahead.begin(), cuda_ctx->nodes_done_ahead.end(), node);
++        if (it != cuda_ctx->nodes_done_ahead.end()) {
++            cuda_ctx->nodes_done_ahead.erase(it);
++            return -1;
++        }
++    }
++
+     if (ggml_cuda_gdn_prologue_elided(cgraph, i)) {
+         return -1;
+     }
+ 
++    if (node->op == GGML_OP_MUL_MAT_ID) {
++        const int nodes_to_skip = ggml_cuda_try_moe_down_reduce(cuda_ctx, cgraph, i);
++        if (nodes_to_skip > 0) {
++            return nodes_to_skip;
++        }
++    }
++
+     if (node->op == GGML_OP_MUL_MAT) {
+         const int nodes_to_skip = ggml_cuda_try_gdn_ab_fusion(cuda_ctx, cgraph, i);
+         if (nodes_to_skip > 0) {
+@@ -5178,6 +5262,7 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+ 
+             // inputs may have been rewritten by the host since the previous evaluation
+             cuda_ctx->mmvq_q8_cache_invalidate();
++            cuda_ctx->nodes_done_ahead.clear();
+ 
+             if (should_launch_concurrent_events) {
+                 // Restore original node order within each concurrent region to enable fusion within streams
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 3e1de5604..f00980773 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -3179,6 +3179,169 @@ void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor *
+ #undef GDN_AB
+ }
+ 
++// [GGML_HIP_MOE_DOWN_REDUCE] Single-token MoE down projection, expert weighting and residual ADD in one launch:
++//   dst[r] = residual[r] + sum_e w[e] * (W_down[ids[e]] . y_e)[r]
++// One block computes rows_per_block rows of every used expert. Each expert row is the dot product of the plain
++// ncols_dst == 1 MMVQ kernel (same lanes, blocks per lane, warp combine and butterfly), the weighting is that of
++// moe_weighted_reduction_f32 (x0*w0, then fma per expert; expert_scale 1) and the ADD is one rounded add, so the
++// result is bitwise that of the MUL_MAT_ID, the weighted reduction and the ADD kernels.
++template <ggml_type type, int n_used, int rows_per_block>
++MMVQ_LAUNCH_BOUNDS(calc_nwarps(type, 1, get_device_table_id())*ggml_cuda_get_physical_warp_size(), 16)
++static __global__ void mul_mat_vec_q_moe_down_reduce(
++        const void * __restrict__ vx, const block_q8_1 * __restrict__ vy, const int32_t * __restrict__ ids,
++        const float * __restrict__ weights, const float * residual, float * dst,
++        const uint32_t ncols_x, const uint32_t stride_row_x, const uint32_t stride_channel_x,
++        const uint32_t stride_channel_y, const uint32_t nchannels_y) {
++    constexpr int qk        = ggml_cuda_type_traits<type>::qk;
++    constexpr int qi        = ggml_cuda_type_traits<type>::qi;
++    constexpr int vdr       = get_vdr_mmvq(type);
++    constexpr int nwarps    = calc_nwarps(type, 1, get_device_table_id());
++    constexpr int warp_size = ggml_cuda_get_physical_warp_size();
++    constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
++
++    const int tid              = warp_size*threadIdx.y + threadIdx.x;
++    const int row0             = rows_per_block*blockIdx.x;
++    const int blocks_per_row_x = ncols_x / qk;
++    constexpr int blocks_per_iter = vdr * nwarps*warp_size / qi;
++
++    int kbx_offset[n_used];
++    const block_q8_1 * y[n_used];
++#pragma unroll
++    for (int e = 0; e < n_used; ++e) {
++        kbx_offset[e] = ids[e]*stride_channel_x + row0*stride_row_x;
++        y[e]          = vy + (e % nchannels_y)*stride_channel_y;
++    }
++
++    float tmp[n_used][rows_per_block] = {{0.0f}};
++    const int kqs = vdr * (tid % (qi/vdr));
++    for (int kbx = tid / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
++        const int kby = kbx * (qk/QK8_1);
++#pragma unroll
++        for (int e = 0; e < n_used; ++e) {
++#pragma unroll
++            for (int i = 0; i < rows_per_block; ++i) {
++                tmp[e][i] += vec_dot_q_cuda(vx, &y[e][kby], kbx_offset[e] + i*stride_row_x + kbx, kqs);
++            }
++        }
++    }
++
++    __shared__ float tmp_shared[nwarps-1 > 0 ? nwarps-1 : 1][n_used][rows_per_block][warp_size];
++    if (threadIdx.y > 0) {
++#pragma unroll
++        for (int e = 0; e < n_used; ++e) {
++#pragma unroll
++            for (int i = 0; i < rows_per_block; ++i) {
++                tmp_shared[threadIdx.y-1][e][i][threadIdx.x] = tmp[e][i];
++            }
++        }
++    }
++    __syncthreads();
++    if (threadIdx.y > 0) {
++        return;
++    }
++
++#pragma unroll
++    for (int e = 0; e < n_used; ++e) {
++#pragma unroll
++        for (int i = 0; i < rows_per_block; ++i) {
++#pragma unroll
++            for (int l = 0; l < nwarps-1; ++l) {
++                tmp[e][i] += tmp_shared[l][e][i][threadIdx.x];
++            }
++            tmp[e][i] = warp_reduce_sum<warp_size>(tmp[e][i]);
++        }
++    }
++
++#pragma unroll
++    for (int i = 0; i < rows_per_block; ++i) {
++        if (threadIdx.x == i) {
++            float sum = __fmul_rn(tmp[0][i], weights[0]);
++#pragma unroll
++            for (int e = 1; e < n_used; ++e) {
++                sum = __fmaf_rn(tmp[e][i], weights[e], sum);
++            }
++            dst[row0 + i] = __fadd_rn(residual[row0 + i], sum);
++        }
++    }
++}
++
++#ifndef MMVQ_MOE_DOWN_RPB
++#define MMVQ_MOE_DOWN_RPB 1
++#endif
++
++bool ggml_cuda_mmvq_moe_down_reduce_supported(const ggml_type type, const int64_t n_used, const int64_t nrows) {
++    switch (type) {
++        case GGML_TYPE_Q4_0: case GGML_TYPE_Q8_0:
++        case GGML_TYPE_Q4_K: case GGML_TYPE_Q5_K: case GGML_TYPE_Q6_K:
++        case GGML_TYPE_IQ4_XS: case GGML_TYPE_IQ4_NL:
++            break;
++        default:
++            return false;
++    }
++    return (n_used == 2 || n_used == 4 || n_used == 6 || n_used == 8) && nrows % MMVQ_MOE_DOWN_RPB == 0;
++}
++
++void ggml_cuda_mmvq_moe_down_reduce(ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1,
++        const ggml_tensor * ids, const ggml_tensor * weights, const ggml_tensor * residual, ggml_tensor * dst) {
++    const int64_t n_used = ids->ne[0];
++    GGML_ASSERT(ggml_cuda_mmvq_moe_down_reduce_supported(src0->type, n_used, src0->ne[1]));
++    GGML_ASSERT(src1->type == GGML_TYPE_F32 && src1->ne[2] == 1 && src1->ne[3] == 1 && src1->nb[0] == sizeof(float));
++    GGML_ASSERT(ids->type == GGML_TYPE_I32 && ids->ne[1] == 1 && ggml_is_contiguous(ids));
++    GGML_ASSERT(src1->ne[1] == 1 || src1->ne[1] == n_used);
++    GGML_ASSERT(weights->type == GGML_TYPE_F32 && ggml_is_contiguous(weights) && ggml_nelements(weights) == n_used);
++    GGML_ASSERT(residual->type == GGML_TYPE_F32 && ggml_is_contiguous(residual) && ggml_nelements(residual) == src0->ne[1]);
++    GGML_ASSERT(dst->type == GGML_TYPE_F32 && ggml_is_contiguous(dst) && ggml_nelements(dst) == src0->ne[1]);
++    GGML_ASSERT(src0->nb[0] == ggml_type_size(src0->type));
++
++    // the q8_1 input as the MMVQ ids path quantizes (and caches) it
++    static const bool q8_ids = ggml_cuda_env_switch("GGML_HIP_Q8_IDS");
++    ggml_cuda_pool_alloc<char> src1_q8_1_pool(ctx.pool());
++    const block_q8_1 * y = (const block_q8_1 *) mmvq_src1_q8_1(ctx, src1, src0->type, q8_ids, src1_q8_1_pool);
++
++    const int64_t ts_src0          = ggml_type_size(src0->type);
++    const uint32_t stride_row_x     = src0->nb[1] / ts_src0;
++    const uint32_t stride_channel_x = src0->nb[2] / ts_src0;
++    const uint32_t stride_channel_y = GGML_PAD(src1->ne[0], MATRIX_ROW_PADDING) / QK8_1;
++    const uint32_t nchannels_y      = src1->ne[1];
++    const int      nrows            = src0->ne[1];
++
++    const int device    = ggml_cuda_get_device();
++    const int warp_size = ggml_cuda_info().devices[device].warp_size;
++    const mmvq_parameter_table_id table_id = get_device_table_id(ggml_cuda_info().devices[device].cc);
++    cudaStream_t stream = ctx.stream();
++
++    const auto launch = [&](auto type_tag, auto n_tag) {
++        constexpr ggml_type type = decltype(type_tag)::value;
++        constexpr int       ne   = decltype(n_tag)::value;
++        const dim3 block_nums(nrows / MMVQ_MOE_DOWN_RPB, 1, 1);
++        const dim3 block_dims(warp_size, calc_nwarps(type, 1, table_id), 1);
++        mul_mat_vec_q_moe_down_reduce<type, ne, MMVQ_MOE_DOWN_RPB><<<block_nums, block_dims, 0, stream>>>(
++            src0->data, y, (const int32_t *) ids->data, (const float *) weights->data, (const float *) residual->data,
++            (float *) dst->data, src0->ne[0], stride_row_x, stride_channel_x, stride_channel_y, nchannels_y);
++    };
++    const auto launch_n = [&](auto type_tag) {
++        switch (n_used) {
++            case 2: launch(type_tag, std::integral_constant<int, 2>{}); break;
++            case 4: launch(type_tag, std::integral_constant<int, 4>{}); break;
++            case 6: launch(type_tag, std::integral_constant<int, 6>{}); break;
++            case 8: launch(type_tag, std::integral_constant<int, 8>{}); break;
++            default: GGML_ABORT("fatal error");
++        }
++    };
++    switch (src0->type) {
++#define MOE_DOWN_CASE(T) case T: launch_n(std::integral_constant<ggml_type, T>{}); break
++        MOE_DOWN_CASE(GGML_TYPE_Q4_0);
++        MOE_DOWN_CASE(GGML_TYPE_Q8_0);
++        MOE_DOWN_CASE(GGML_TYPE_Q4_K);
++        MOE_DOWN_CASE(GGML_TYPE_Q5_K);
++        MOE_DOWN_CASE(GGML_TYPE_Q6_K);
++        MOE_DOWN_CASE(GGML_TYPE_IQ4_XS);
++        MOE_DOWN_CASE(GGML_TYPE_IQ4_NL);
++#undef MOE_DOWN_CASE
++        default: GGML_ABORT("fatal error");
++    }
++}
++
+ void ggml_cuda_mul_mat_vec_q(
+         ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, const ggml_tensor * ids, ggml_tensor * dst,
+         const ggml_cuda_mm_fusion_args_host * fusion) {
+diff --git a/ggml/src/ggml-cuda/mmvq.cuh b/ggml/src/ggml-cuda/mmvq.cuh
+index 5d028ead8..a687fa65d 100644
+--- a/ggml/src/ggml-cuda/mmvq.cuh
++++ b/ggml/src/ggml-cuda/mmvq.cuh
+@@ -35,3 +35,10 @@ bool ggml_cuda_gdn_conv_ab_supported(ggml_type type, int64_t d_conv, int warp_si
+ void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor * w_alpha, const ggml_tensor * w_beta,
+         const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a, ggml_tensor * gate, ggml_tensor * beta,
+         const ggml_cuda_gdn_conv_args * conv = nullptr);
++
++// [GGML_HIP_MOE_DOWN_REDUCE] single-token MoE down MUL_MAT_ID (src0 [K, n, n_expert], src1 F32 [K, 1 or n_used, 1],
++// ids [n_used, 1]) with the expert weighting (weights F32 [n_used]) and the residual ADD in one launch:
++// dst[n] = residual + sum_e weights[e] * (src0[ids[e]] . src1[e]), bitwise as the three separate kernels
++bool ggml_cuda_mmvq_moe_down_reduce_supported(ggml_type type, int64_t n_used, int64_t nrows);
++void ggml_cuda_mmvq_moe_down_reduce(ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1,
++        const ggml_tensor * ids, const ggml_tensor * weights, const ggml_tensor * residual, ggml_tensor * dst);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index ac00e697d..c208f203e 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7731,6 +7731,77 @@ struct test_moe_reduce : public test_case {
+     }
+ };
+ 
++// single-token MoE tail: down MUL_MAT_ID -> weighting MUL -> views + ADDs over the experts -> residual ADD
++// (fused into one MMVQ launch by the HIP backend, GGML_HIP_MOE_DOWN_REDUCE)
++struct test_moe_down_reduce : public test_case {
++    const ggml_type type_a;
++    const int       n_mats;
++    const int       n_used;
++    const int64_t   m;
++    const int64_t   k;
++
++    std::string vars() override {
++        return VARS_TO_STR5(type_a, n_mats, n_used, m, k);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "MOE_DOWN_REDUCE";
++    }
++
++    double max_nmse_err() override {
++        return 5e-4;
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    test_moe_down_reduce(ggml_type type_a = GGML_TYPE_Q5_K, int n_mats = 64, int n_used = 4, int64_t m = 2048, int64_t k = 1536)
++        : type_a(type_a), n_mats(n_mats), n_used(n_used), m(m), k(k) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * as = ggml_new_tensor_3d(ctx, type_a, k, m, n_mats);
++        ggml_set_name(as, "as");
++        ggml_tensor * ids = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, n_mats, 1);
++        ggml_set_name(ids, "ids");
++        ids = ggml_view_2d(ctx, ids, n_used, 1, ids->nb[1], 0);
++        ggml_set_name(ids, "view_of_ids");
++        ggml_tensor * b = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, k, n_used, 1);
++        ggml_set_name(b, "b");
++        ggml_tensor * experts = ggml_mul_mat_id(ctx, as, b, ids);
++        ggml_set_name(experts, "experts");
++        ggml_tensor * weights = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, 1, n_used, 1);
++        ggml_set_name(weights, "weights");
++        ggml_tensor * weighted = ggml_mul(ctx, experts, weights);
++        ggml_set_name(weighted, "weighted");
++
++        std::vector<ggml_tensor *> views(n_used);
++        for (int e = 0; e < n_used; ++e) {
++            views[e] = ggml_view_2d(ctx, weighted, m, 1, weighted->nb[2], e * weighted->nb[1]);
++            if (mode == MODE_TEST) {
++                ggml_build_forward_expand(gf, views[e]);
++            }
++        }
++        ggml_tensor * sum = views[0];
++        for (int e = 1; e < n_used; ++e) {
++            sum = ggml_add(ctx, sum, views[e]);
++            if (mode == MODE_TEST) {
++                ggml_build_forward_expand(gf, sum);
++            }
++        }
++        ggml_set_name(sum, "moe_out");
++
++        ggml_tensor * residual = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, m, 1);
++        ggml_set_name(residual, "residual");
++        ggml_tensor * out = ggml_add(ctx, residual, sum);
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        init_mul_mat_id_tensors(ctx, n_mats, 1.0f);
++    }
++};
++
+ // mul_mat with src1 in [0, 1]: a zero-mean src1 hides errors in the zero point or the min of a quantized src0
+ struct test_mul_mat_pos : public test_mul_mat {
+     using test_mul_mat::test_mul_mat;
+@@ -12280,6 +12351,13 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_moe_reduce(2048, 15, 40, false, true));
+     test_cases.emplace_back(new test_moe_reduce(2048, 16, 32, false, true));
+ 
++    // single-token MoE tail (LFM2 24B-A2B shapes and a few other types / expert counts)
++    test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q5_K, 64, 4, 2048, 1536));
++    test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q6_K, 64, 4, 2048, 1536));
++    test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q4_K, 16, 8, 512, 768));
++    test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q8_0, 8, 2, 64, 256));
++    test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_IQ4_XS, 32, 6, 1024, 512));
++
+     test_cases.emplace_back(new test_gated_delta_net(GGML_TYPE_F32, 32, 128, 1, 1));
+     test_cases.emplace_back(new test_gated_delta_net(GGML_TYPE_F32, 32, 16, 1, 1));
+     test_cases.emplace_back(new test_gated_delta_net(GGML_TYPE_F32, 32, 16, 1, 1, 1, true, true));
+-- 
+2.43.0
+

@@ -1,0 +1,83 @@
+From 605fccd9a8f63e865f9dbfea3893d91cfd3c6568 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 12:54:49 +0000
+Subject: [PATCH 49/52] CUDA/HIP: the FFN norm writes the q8_1 activations of
+ the single-token MoE gate/up MUL_MAT_ID (GGML_HIP_Q8_IDS)
+
+ggml_cuda_q8_1_producer_target only served a plain MUL_MAT whose src1 is the producer's
+output. In a MoE FFN the rms_norm*mul output is read first by the F32 router MUL_MAT and
+then by the gate/up MUL_MAT_ID, whose MMVQ ids path quantized src1 itself (no q8_1 cache).
+Now F32 MUL_MATs are passed over, a single-token MUL_MAT_ID is accepted as the consumer,
+and the single-token MMVQ ids path reads (and fills) the q8_1 cache. Same quantization
+(the producer path is bitwise equal to quantize_q8_1).
+
+LFM2.5-24B-A2B decode: 720 -> 682 kernels/token (one quantize_q8_1 per MoE layer).
+llama-bench tg128 -r 5, 3 interleaved rounds, same binary env off/on:
+5.067 -> 4.979 ms/token (197.3 -> 200.9 t/s). Greedy md5 equal (LFM plain, Qwen plain +
+MTP); test-backend-ops MUL_MAT_ID, RMS_NORM, MUL pass.
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu | 17 ++++++++++++++---
+ ggml/src/ggml-cuda/mmvq.cu      |  6 +++++-
+ 2 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 414082bb8..61ad73bf4 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4035,10 +4035,18 @@ static block_q8_1 * ggml_cuda_q8_1_producer_target(ggml_backend_cuda_context * c
+             out->type != GGML_TYPE_F32 || !ggml_is_contiguous(out) || ggml_nelements(out) % QK8_1 != 0) {
+         return nullptr;
+     }
++    // GGML_HIP_Q8_IDS: the consumer may also be a single-token MUL_MAT_ID (MoE gate/up on the FFN norm); F32 MUL_MATs
++    // reading the same output first (the MoE router) are passed over
++    static const bool q8_ids = ggml_cuda_env_switch("GGML_HIP_Q8_IDS");
+     const ggml_tensor * mm = nullptr;
+     for (int j = out_idx + 1; j < std::min(cgraph->n_nodes, out_idx + 33) && mm == nullptr; ++j) {
+         const ggml_tensor * n = cgraph->nodes[j];
+-        if (n->op == GGML_OP_MUL_MAT && (n->src[1] == out || n->src[1]->view_src == out)) {
++        const bool reads_out = (n->op == GGML_OP_MUL_MAT || (q8_ids && n->op == GGML_OP_MUL_MAT_ID)) &&
++                               (n->src[1] == out || n->src[1]->view_src == out);
++        if (reads_out && q8_ids && n->op == GGML_OP_MUL_MAT && n->src[0]->type == GGML_TYPE_F32) {
++            continue;
++        }
++        if (reads_out) {
+             mm = n;
+         }
+     }
+@@ -4050,11 +4058,14 @@ static block_q8_1 * ggml_cuda_q8_1_producer_target(ggml_backend_cuda_context * c
+     const int cc = ggml_cuda_info().devices[ctx->device].cc;
+     const bool bad_padding_clear = ggml_backend_buffer_get_usage(src0->buffer) == GGML_BACKEND_BUFFER_USAGE_COMPUTE &&
+                                    ggml_nbytes(src0) != ggml_backend_buffer_get_alloc_size(src0->buffer, src0) && src0->view_src;
++    const bool is_id = mm->op == GGML_OP_MUL_MAT_ID;
++    // MUL_MAT_ID: one token (MMVQ ids path, which then reads the q8_1 cache, see mmvq_src1_q8_1)
++    const bool use_mmvq = is_id ? mm->ne[2] == 1 && mm->ne[3] == 1 && src1->ne[2] == 1 && src1->ne[3] == 1 :
++                                  !ggml_cuda_op_mul_mat_use_fwht(mm) && ggml_cuda_should_use_mmvq(src0->type, cc, src1->ne[1]);
+     // the q8_1 rows of src1 must be the flat q8_1 blocks of out: no row padding, same data
+     if (src1->data != out->data || !ggml_is_contiguous(src1) || ggml_nelements(src1) != ggml_nelements(out) ||
+             src1->ne[0] % MATRIX_ROW_PADDING != 0 || !ggml_is_quantized(src0->type) || bad_padding_clear ||
+-            mm->type != GGML_TYPE_F32 || ggml_cuda_op_mul_mat_use_fwht(mm) ||
+-            !ggml_cuda_should_use_mmvq(src0->type, cc, src1->ne[1]) ||
++            mm->type != GGML_TYPE_F32 || !use_mmvq ||
+             ggml_nelements(src1) / QK8_1 * sizeof(block_q8_1) > qc.buf_size) {
+         return nullptr;
+     }
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 3a180e8e1..3e1de5604 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -3292,7 +3292,11 @@ void ggml_cuda_mul_mat_vec_q(
+     }
+ 
+     ggml_cuda_pool_alloc<char> src1_q8_1_pool(ctx.pool());
+-    const char * src1_q8_1 = mmvq_src1_q8_1(ctx, src1, src0->type, /*allow_cache =*/ !ids, src1_q8_1_pool);
++    // GGML_HIP_Q8_IDS: a single-token MUL_MAT_ID may read (and fill) the q8_1 cache too, so that the q8_1 activations a
++    // producer wrote (ggml_cuda_q8_1_producer_target) are used
++    static const bool q8_ids = ggml_cuda_env_switch("GGML_HIP_Q8_IDS");
++    const bool allow_cache = !ids || (q8_ids && ne12 == 1 && ne13 == 1);
++    const char * src1_q8_1 = mmvq_src1_q8_1(ctx, src1, src0->type, allow_cache, src1_q8_1_pool);
+ 
+     const int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
+ 
+-- 
+2.43.0
+

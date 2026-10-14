@@ -339,3 +339,13 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Upstream e60eff95f vs fork (llama-bench, 2 przeplatane rundy, -fa 1, KV q4_0): tg128 169.3 -> **198.3 t/s (+17%)**, pp4096 6107 -> 6180 (+1%), pp512 ~5.6k (stddev duży u obu).
 - Profil rocprofv3 tg (fork): ~721 kerneli/token, zajętość GPU 3.77 ms/token (pod profilerem). mul_mat_vec_q 71% (2.69 ms, ~680 GB/s), rms_norm 5%, quantize_q8_1 3.7%, bin_bcast 3.5%, topk_moe 3.5% (3.5 us x 38), mul_mat_vec_f (router F32) 2.5%, set_rows q4_0 1.9%, ssm_conv 1.8%, FA 1.5%. Przerwy między kernelami ~3.1 us mediana; bez profilera 5.05 ms/token = ~3.8 ms pracy + ~1.3 ms przerw/host.
 - Do optymalizacji: mmvq_id ekspertów (~680 -> 850 GB/s), fuzje małych opów MoE (router F32 + topk + weighted reduction, norm + quantize), mniej przerw (721 kerneli). Spekulacja: brak MTP; weryfikacja k tokenów w MoE czyta do 4k różnych ekspertów na warstwę, więc zysk ograniczony (n-gram dla kodu do sprawdzenia).
+
+## LFM2.5: optymalizacja dekodowania (52 łatki, 0048-0052; 2026-10-14), bitowo identyczne
+- Szczegóły, profil i wyniki negatywne: `research/lfm-decode.md`.
+- 0048 `LLAMA_SAMPLER_FAST_PENALTIES`: szybkie top-k także za samplerem kar (GGUF LFM ma domyślnie repeat_penalty 1.05, który wyłączał szybką ścieżkę na 128k kandydatów): serwer 5.79 -> 5.11 ms/token.
+- 0049 `GGML_HIP_Q8_IDS`: norma FFN zapisuje wejście q8_1 dla gate/up ekspertów (720 -> 682 kerneli/token, 5.067 -> 4.979 ms).
+- 0050 `GGML_HIP_CONV_MUL`: mnożenia b*x i c*conv shortconv w kernelu SSM_CONV, który zapisuje q8_1 dla out_proj (-> 595 kerneli, 4.800 ms).
+- 0051 `GGML_HIP_MOE_DOWN_REDUCE`: down ekspertów + ważenie + residual w jednym kernelu (-> 521 kerneli, 4.817 -> 4.642 ms); nowy test MOE_DOWN_REDUCE.
+- 0052 `GGML_HIP_MMVQ_N1_ROWS`: 1-kolumnowy MMVQ dla K-quantów liczy 2 wiersze na blok (4.610 -> 4.509 ms).
+- Wynik (przeplatane A/B z amd-opt e84abb808): llama-bench tg128 197.4 -> **220.4 t/s** (5.067 -> 4.536 ms); serwer spec_sweep `lfm none` 172.9 -> **218.6 t/s** (+26%, 217-219 na każdym typie promptu); Qwen mtp 29.12 -> 29.17 ms/krok (szum). Greedy md5 bez zmian: LFM plain, Qwen plain + MTP (sprawdzone też na zainstalowanym buildzie).
+- Nie dało nic: Hadamard + quantize wyjścia atencji (4.474 -> 4.490 ms), 4 wiersze na wave, rozwijanie pętli K, `--backend-sampling` (tak szybki jak 0048, ale inny sampler, nie bitowo). Niezrobione (~0.1 ms każde): router + top-k w jednym kernelu, gate+up zapisujące q8_1 dla down.

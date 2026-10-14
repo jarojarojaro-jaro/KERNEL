@@ -7,7 +7,7 @@
 #   qwen        mtp  rocm   ~104 t/s  (default; ~96 t/s with 94k tokens in context)
 #   uncensored  mtp  rocm   ~106 t/s  orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated); VISION=1 adds mmproj
 #   qwen        mtp  vulkan optional backend, slower on long prompts
-#   lfm         none        LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072
+#   lfm         none ~219 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072
 #
 # env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0),
 #      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)

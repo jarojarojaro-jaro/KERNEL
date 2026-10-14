@@ -1,7 +1,7 @@
 From 35d04b44611f52e7c860825fb287dd92544bf9fc Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 15:37:47 +0000
-Subject: [PATCH 31/31] common/server: top-k candidates without the full
+Subject: [PATCH 31/52] common/server: top-k candidates without the full
  candidate array, no sampler copy per spec step
 
 - common_sampler: when the chain starts with top-k (only no-op samplers before

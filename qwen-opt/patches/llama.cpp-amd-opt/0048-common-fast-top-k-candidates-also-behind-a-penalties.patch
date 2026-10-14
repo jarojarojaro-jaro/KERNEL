@@ -1,0 +1,151 @@
+From 41bb3da6a991268df54277e4055e103e1b47ba98 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 12:36:13 +0000
+Subject: [PATCH 48/52] common: fast top-k candidates also behind a penalties
+ sampler that only lowers logits (LLAMA_SAMPLER_FAST_PENALTIES)
+
+The GGUF sampling defaults of LFM2.5 (top_k 50, repeat_penalty 1.05) put a non-trivial
+penalties sampler in front of the top-k sampler, which disabled the LLAMA_SAMPLER_FAST_TOPK
+path: every token filled 128000 candidates, did 128000 unordered_map lookups in the
+penalties sampler and a partial sort of 128000.
+
+A penalties sampler with repeat >= 1, freq >= 0, present >= 0 and a window of n <= 256
+tokens changes at most n logits and only lowers them, so the k + 1 largest penalized
+logits are among the k + 1 + n largest raw logits. Those candidates (raw logits) go
+through the unchanged chain; the fast path is taken only if the k + 1 largest penalized
+logits are distinct (unique partial_sort order), else the full candidate array is used.
+Off: LLAMA_SAMPLER_FAST_PENALTIES=0 (LLAMA_SAMPLER_FAST_TOPK=0 still turns off both).
+
+LFM2.5-24B-A2B server, T=1 with the GGUF defaults, 2 prompts x 2 seeds x 300 tokens, same
+binary env off/on: 5.79 -> 5.11 ms/token (172.7 -> 195.8 t/s). Seeded T=1 and greedy
+outputs (3 prompts) md5-equal off/on and to e84abb808.
+---
+ common/sampling.cpp | 68 +++++++++++++++++++++++++++++++++++++++++----
+ 1 file changed, 62 insertions(+), 6 deletions(-)
+
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index 57d232acb..d87bbcce8 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -240,10 +240,36 @@ struct common_sampler {
+         }
+         const float * logits = llama_get_logits_ith(ctx, idx);
+         const int n_vocab = llama_vocab_n_tokens(llama_model_get_vocab(llama_get_model(ctx)));
+-        if (!logits || !common_top_k_distinct(logits, n_vocab, fast_top_k, cur)) {
++        if (!logits) {
+             return false;
+         }
+-        cur_p = { cur.data(), cur.size(), -1, true };
++        if (fast_pen_n == 0) {
++            if (!common_top_k_distinct(logits, n_vocab, fast_top_k, cur)) {
++                return false;
++            }
++            cur_p = { cur.data(), cur.size(), -1, true };
++            return true;
++        }
++
++        // [LLAMA_SAMPLER_FAST_PENALTIES] a penalties sampler that only lowers logits (repeat >= 1, freq >= 0,
++        // present >= 0) runs before the top-k: it changes at most fast_pen_n tokens (its window), so the top k + 1 of
++        // the penalized logits are among the top k + 1 + fast_pen_n raw logits. Those candidates (raw logits, in no
++        // particular order) go through the chain, whose penalties and top-k samplers then select exactly what they
++        // select from the full array, provided the k + 1 largest penalized logits are distinct (unique order).
++        if (!common_top_k_distinct(logits, n_vocab, fast_top_k + 1 + fast_pen_n, cur)) {
++            return false;
++        }
++        cur_pen = cur;
++        llama_token_data_array pen_p = { cur_pen.data(), cur_pen.size(), -1, false };
++        llama_sampler_apply(llama_sampler_chain_get(chain, fast_pen_idx), &pen_p);
++        std::partial_sort(cur_pen.begin(), cur_pen.begin() + fast_top_k + 1, cur_pen.end(),
++                          [](const llama_token_data & a, const llama_token_data & b) { return a.logit > b.logit; });
++        for (int j = 0; j < fast_top_k; ++j) {
++            if (!(cur_pen[j].logit > cur_pen[j + 1].logit)) {
++                return false;
++            }
++        }
++        cur_p = { cur.data(), cur.size(), -1, false };
+         return true;
+     }
+ 
+@@ -253,8 +279,13 @@ struct common_sampler {
+ 
+     mutable int64_t t_total_us = 0;
+ 
+-    // k of the top-k sampler if only samplers that are no-ops precede it in the chain, else 0
++    // k of the top-k sampler if only samplers that are no-ops (or a penalties sampler that only lowers logits)
++    // precede it in the chain, else 0
+     int32_t fast_top_k = 0;
++    // window of that penalties sampler (0: none) and its index in the chain
++    int32_t fast_pen_n   = 0;
++    int32_t fast_pen_idx = -1;
++    std::vector<llama_token_data> cur_pen = {}; // scratch: the penalized candidates
+ };
+ 
+ std::string common_params_sampling::print() const {
+@@ -532,10 +563,14 @@ struct common_sampler * common_sampler_init(
+ 
+     // [LLAMA_SAMPLER_FAST_TOPK] the chain may start from the top-k candidates if every sampler before the top-k sampler
+     // is a no-op (the same predicates that make llama_sampler_init_* return an empty sampler)
++    // [LLAMA_SAMPLER_FAST_PENALTIES] ... or a penalties sampler with a short window that can only lower logits
+     {
+         const char * env = getenv("LLAMA_SAMPLER_FAST_TOPK");
+         const bool enabled = !env || atoi(env) != 0;
++        const char * env_pen = getenv("LLAMA_SAMPLER_FAST_PENALTIES");
++        const bool enabled_pen = !env_pen || atoi(env_pen) != 0;
+         if (enabled && !grmr && !rbudget && !has_logit_bias && params.mirostat == 0 && params.n_probs == 0) {
++            int32_t idx = 0; // index of cnstr's sampler in the chain (no logit-bias sampler in front of it here)
+             for (const auto & cnstr : params.samplers) {
+                 if (cnstr == COMMON_SAMPLER_TYPE_TOP_K) {
+                     result->fast_top_k = std::max(0, params.top_k);
+@@ -547,9 +582,26 @@ struct common_sampler * common_sampler_init(
+                     (cnstr == COMMON_SAMPLER_TYPE_DRY         && !(params.dry_multiplier != 0.0f && params.dry_base >= 1.0f &&
+                         std::max(params.dry_penalty_last_n, 0) != 0)) ||
+                     (cnstr == COMMON_SAMPLER_TYPE_TOP_N_SIGMA && params.top_n_sigma <= 0.0f);
+-                if (!noop) {
++                const bool lowering_penalties = enabled_pen && !noop && cnstr == COMMON_SAMPLER_TYPE_PENALTIES &&
++                    result->fast_pen_n == 0 && params.penalty_last_n > 0 && params.penalty_last_n <= 256 &&
++                    params.penalty_repeat >= 1.0f && params.penalty_freq >= 0.0f && params.penalty_present >= 0.0f;
++                if (lowering_penalties) {
++                    result->fast_pen_n   = params.penalty_last_n;
++                    result->fast_pen_idx = idx;
++                } else if (!noop) {
+                     break;
+                 }
++                if (cnstr != COMMON_SAMPLER_TYPE_ADAPTIVE_P) {
++                    ++idx;
++                }
++            }
++            if (result->fast_pen_n > 0 &&
++                    strcmp(llama_sampler_name(llama_sampler_chain_get(chain, result->fast_pen_idx)), "penalties") != 0) {
++                result->fast_top_k = 0; // the penalties sampler is not where expected: full candidate array
++            }
++            if (result->fast_top_k == 0) {
++                result->fast_pen_n   = 0;
++                result->fast_pen_idx = -1;
+             }
+         }
+     }
+@@ -637,7 +689,9 @@ struct common_sampler * common_sampler_clone(common_sampler * gsmpl) {
+         /* .cur_p   = */ gsmpl->cur_p,
+         /* .rng     = */ gsmpl->rng,
+     };
+-    result->fast_top_k = gsmpl->fast_top_k;
++    result->fast_top_k   = gsmpl->fast_top_k;
++    result->fast_pen_n   = gsmpl->fast_pen_n;
++    result->fast_pen_idx = gsmpl->fast_pen_idx;
+     return result;
+ }
+ 
+@@ -660,7 +714,9 @@ void common_sampler_copy(const common_sampler * src, common_sampler * dst) {
+     dst->cur_p.data = src->cur_p.data ? dst->cur.data() : nullptr; // re-point to dst's buffer
+     dst->rng        = src->rng;
+     dst->t_total_us = src->t_total_us;
+-    dst->fast_top_k = src->fast_top_k;
++    dst->fast_top_k   = src->fast_top_k;
++    dst->fast_pen_n   = src->fast_pen_n;
++    dst->fast_pen_idx = src->fast_pen_idx;
+ }
+ 
+ void common_perf_print(const struct llama_context * ctx, const struct common_sampler * gsmpl) {
+-- 
+2.43.0
+
