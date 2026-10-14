@@ -1,0 +1,31 @@
+From 01ab59798b8e173d120a92548bfd1407d5b824f3 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 01:58:00 +0000
+Subject: [PATCH 44/45] tests: perf cases for the Qwen3.5/3.8 27B prompt matmul
+ shapes (FFN, GDN qkv, alpha/beta, K/V projections)
+
+---
+ tests/test-backend-ops.cpp | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index c5f7bb535..ac00e697d 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -12615,6 +12615,13 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+         }
+     }
+ 
++    // Qwen3.5/3.8 27B prompt batch: FFN up/gate, FFN down, GDN qkv, GDN alpha/beta and attention K/V projections
++    for (ggml_type type_a : {GGML_TYPE_Q4_K, GGML_TYPE_Q5_K, GGML_TYPE_Q6_K, GGML_TYPE_IQ4_XS, GGML_TYPE_Q8_0}) {
++        for (auto [m, k] : std::vector<std::pair<int64_t, int64_t>>{{17408, 5120}, {5120, 17408}, {10240, 5120}, {48, 5120}, {1024, 5120}}) {
++            test_cases.emplace_back(new test_mul_mat(type_a, GGML_TYPE_F32, m, 512, k, {1, 1}, {1, 1}));
++        }
++    }
++
+     // qwen3-30b-a3b
+     for (int bs : {1, 4, 8, 32, 64, 128, 256, 512}) {
+         for (ggml_type type_a : {GGML_TYPE_F32, GGML_TYPE_F16, GGML_TYPE_Q4_0, GGML_TYPE_Q8_0, GGML_TYPE_Q4_K, GGML_TYPE_Q6_K, GGML_TYPE_IQ2_XS, GGML_TYPE_IQ4_XS}) {
+-- 
+2.43.0
+

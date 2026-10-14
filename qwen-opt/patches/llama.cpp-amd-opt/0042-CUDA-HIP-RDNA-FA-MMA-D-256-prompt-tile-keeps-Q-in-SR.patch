@@ -1,0 +1,51 @@
+From cf397468e78e5196d54b9383855cc290882a2064 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 01:21:36 +0000
+Subject: [PATCH 42/45] CUDA/HIP: RDNA FA MMA D=256 prompt tile keeps Q in SRAM
+ (Q in registers spilled ~1.1 KB per lane)
+
+Q as 16 mirrored WMMA B tiles takes 128 VGPRs per wave; with the 64-column tile the kernel hit the 256 VGPR cap
+and spilled 1116 B/lane (41 scratch loads per KV batch). Q in SRAM with 64-wide K/V batches (Q + K/V + mask fit
+64 KiB) leaves 13 scratch loads per batch. test-backend-ops perf, D 256, GQA 6, 512 tokens (new perf cases):
+q4_0 KV 8k/32k 40.2/38.7 -> 49.0/49.1 TFLOPS, f16 KV 41.5/39.2 -> 51.1/51.3 TFLOPS. Server 32k prefill (UD):
+FA 4.36 s -> 3.42 s (with the MTP prompt-row change).
+---
+ ggml/src/ggml-cuda/fattn-mma-f16.cuh | 4 +++-
+ tests/test-backend-ops.cpp           | 6 ++++++
+ 2 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/ggml/src/ggml-cuda/fattn-mma-f16.cuh b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+index 296aa2b34..e9df9ca35 100644
+--- a/ggml/src/ggml-cuda/fattn-mma-f16.cuh
++++ b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+@@ -161,7 +161,9 @@ static constexpr __host__ __device__ fattn_mma_config ggml_cuda_fattn_mma_get_co
+     GGML_CUDA_FATTN_MMA_CONFIG_CASE(256, 256,  8,  64, 2,  32, 128, 128, 128, 1, true);
+     GGML_CUDA_FATTN_MMA_CONFIG_CASE(256, 256, 16,  64, 2,  32, 128, 128, 128, 1, true);
+     GGML_CUDA_FATTN_MMA_CONFIG_CASE(256, 256, 32, 256, 2,  64, 128, 128,  64, 1, true);
+-    GGML_CUDA_FATTN_MMA_CONFIG_CASE(256, 256, 64, 256, 2,  64, 128, 128,  64, 1, true);
++    // Q in registers (16 mirrored 16x16 B tiles = 128 VGPRs per wave) spilled ~1.1 KB per lane: keep Q in SRAM and
++    // halve the K/V batch so that Q + K/V + mask fit the 64 KiB per block (prompt batches 40 -> 49 TFLOPS)
++    GGML_CUDA_FATTN_MMA_CONFIG_CASE(256, 256, 64, 256, 2,  64,  64,  64,  64, 1, false);
+ 
+     GGML_CUDA_FATTN_MMA_CONFIG_CASE(320, 256, 32, 128, 2,  32, 160, 128, 128, 1, true);
+     GGML_CUDA_FATTN_MMA_CONFIG_CASE(320, 256, 64, 128, 2,  32, 160, 128, 128, 1, true);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index f31d7d4d6..c5f7bb535 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -12679,6 +12679,12 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+     test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {8, 1}, 7680,   1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
+     test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {8, 1}, 7680, 512, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
+ 
++    // Qwen3.5/3.8 27B prompt batch at depth: D 256, 4 KV heads, GQA 6, q4_0 KV (target) and f16 KV (MTP draft)
++    for (int64_t kv : {8192, 32768}) {
++        test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, kv, 512, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
++        test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, kv, 512, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16));
++    }
++
+     // sparse decode at long context
+     test_cases.emplace_back(new test_flash_attn_ext(512, 512, 1, { 8, 1}, 49152, 1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16, {0, 1, 2, 3}, true, false,    0));
+     test_cases.emplace_back(new test_flash_attn_ext(512, 512, 1, { 8, 1}, 49152, 1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16, {0, 1, 2, 3}, true, false, 2048));
+-- 
+2.43.0
+

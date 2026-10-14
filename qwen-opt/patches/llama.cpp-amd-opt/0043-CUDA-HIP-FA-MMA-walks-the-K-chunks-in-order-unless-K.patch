@@ -1,0 +1,33 @@
+From 5a7562bee01638cd279bf6c09f8632f571aeeb01 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 01:25:48 +0000
+Subject: [PATCH 43/45] CUDA/HIP: FA MMA walks the K chunks in order unless K
+ is the V view (MLA)
+
+With nbatch_K2 < DKQ/2 the reverse walk changed the order in which KQ accumulates over DKQ. In order, the RDNA
+D=256 prompt tile of the previous commit gives bit-identical logits (llama-perplexity KLD vs base: identical,
+same top p 100%); before this it was KLD 0.0135. FA tests pass; perf unchanged (49-52 TFLOPS).
+---
+ ggml/src/ggml-cuda/fattn-mma-f16.cuh | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/ggml/src/ggml-cuda/fattn-mma-f16.cuh b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+index e9df9ca35..903fea5e7 100644
+--- a/ggml/src/ggml-cuda/fattn-mma-f16.cuh
++++ b/ggml/src/ggml-cuda/fattn-mma-f16.cuh
+@@ -648,8 +648,11 @@ static __device__ __forceinline__ void flash_attn_ext_f16_iter(
+ 
+     // For MLA K and V have the same data.
+     // Therefore, iterate over K in reverse and later re-use the data if possible.
++    // Otherwise go in order: KQ then accumulates over DKQ in the same order for every nbatch_K2.
++    constexpr int nchunks_K = (DKQ/2 + nbatch_K2 - 1) / nbatch_K2;
+ #pragma unroll
+-    for (int k0_start = (DKQ/2-1) - (DKQ/2-1) % nbatch_K2; k0_start >= 0; k0_start -= nbatch_K2) {
++    for (int ic = 0; ic < nchunks_K; ++ic) {
++        const int k0_start = (V_is_K_view ? nchunks_K - 1 - ic : ic) * nbatch_K2;
+         const int k0_stop = k0_start + nbatch_K2 < DKQ/2 ? k0_start + nbatch_K2 : DKQ/2;
+ 
+         if constexpr (nstages <= 1) {
+-- 
+2.43.0
+

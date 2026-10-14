@@ -1,0 +1,50 @@
+From 6aacfea4975055f04e583b36175d47dcad1aaca4 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 00:47:22 +0000
+Subject: [PATCH 40/45] CUDA/HIP: RDNA3 MMQ picks a narrower tile when the
+ widest one leaves CUs idle (48-row GDN alpha/beta, 1024-row K/V projections)
+
+The widest J gave the 5120x48 ssm_alpha/ssm_beta matmuls 4 tiles at 512 columns (146 us each, compute bound
+on 4 CUs). Take the widest J that still gives every CU a tile. Logits unchanged (KLD vs base identical,
+same top p 100%). llama-bench pp2048 UD-Q4_K_XL: 1059 -> 1080 t/s (+2.0%).
+---
+ ggml/src/ggml-cuda/mmq.cu | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/ggml/src/ggml-cuda/mmq.cu b/ggml/src/ggml-cuda/mmq.cu
+index 91b89999e..9b8af8a44 100644
+--- a/ggml/src/ggml-cuda/mmq.cu
++++ b/ggml/src/ggml-cuda/mmq.cu
+@@ -222,6 +222,29 @@ void ggml_cuda_mul_mat_q(
+                 ntiles_J_best = ntiles_x;
+             }
+         }
++
++        // RDNA3, dense: with few output rows (the 48-row GDN alpha/beta, the 1024-row K/V projections) the widest
++        // tile leaves most CUs idle at prompt batch sizes. Take the widest J that still gives every CU a tile
++        // (or the narrowest J); the per-element reduction over K is the same for every tile shape.
++        if (!ids && GGML_CUDA_CC_IS_RDNA3(cc)) {
++            const int64_t nsm = ggml_cuda_info().devices[id].nsm;
++            auto ntiles = [&](const ggml_cuda_mmq_config & config) {
++                return ((ne01 + config.I - 1) / config.I) * ((ne11 + config.J - 1) / config.J) * ne12 * ne13;
++            };
++            if (ntiles(ggml_cuda_mmq_get_config(src0->type, J_best, fallback, cc, prec_src1)) < nsm) {
++                for (int J = J_best - 8; J >= 8; J -= 8) {
++                    const ggml_cuda_mmq_config config = ggml_cuda_mmq_get_config(src0->type, J, fallback, cc, prec_src1);
++                    if (config.type == GGML_TYPE_COUNT || mmq_get_nbytes_shared(config, cc) > smpbo) {
++                        continue;
++                    }
++                    J_best        = J;
++                    nthreads_best = config.nthreads;
++                    if (ntiles(config) >= nsm) {
++                        break;
++                    }
++                }
++            }
++        }
+     }
+     GGML_ASSERT(J_best > 0);
+ 
+-- 
+2.43.0
+

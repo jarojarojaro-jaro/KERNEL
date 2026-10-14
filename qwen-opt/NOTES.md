@@ -332,3 +332,9 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Adaptacyjna długość draftu wyceniana kosztem (--spec-draft-adaptive, opcjonalna): Qwen średnio 103.6 vs n=4 102.7 (kod/technika lepiej, czat/proza -5 t/s); Uncensored gorzej. Domyślnie wyłączona. Graf per szerokość weryfikacji (zmiana szerokości kosztowała 1.6 ms).
 - Stałe n po naprawie (6 promptów x 2 seedy): Qwen n4 102.7, n5 103.0, n6 103.5, n8 96.7, n12 82.6; Uncensored n4 104.7, n5 108.4 (proza 96.5 -> 89.3). Domyślnie n=4 (czat/proza).
 - Potwierdzone po scaleniu: Qwen 29.36 ms/krok 102.6 t/s; Uncensored 28.28 ms/krok 105.0 t/s.
+
+## K5 + T3: prefill (6aacfea49..575e3d893; 2026-10-14), logity bitowo identyczne
+- Wybór kafla MMQ na RDNA3 (alpha/beta 5120x48 na 4 CU: 932 -> 249 ms przy 32k), warstwa MTP dla wierszy promptu liczy tylko K/V (T3), kafel FA prefillu bez spilli (Q w SRAM, 40 -> 49-52 TFLOPS) + kolejność chunków dla bitowej zgodności, normalizacja q/k GDN raz na (głowa, token).
+- Prefill serwera (przed -> po): UD 6.6k 913 -> 962, 29.5k 870 -> 943, 94k 668 -> 767 (141 -> 123 s); Uncensored 906 -> 956, 867 -> 941, 666 -> 762.
+- Decode bez zmian (Qwen 29.40 ms/krok, Uncensored 28.30). KLD vs baza = 0 (te same logity).
+- Nie zadziałało: prefetch w GDN/FA, inne kafle FA, Q5_K MMQ sweep, dequant+hipBLAS dla wszystkich typów (-15%), -ub 1024. Q6_K przez MMQ i poprawka zapisu stanu S4 nie zrobione.

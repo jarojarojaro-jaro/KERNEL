@@ -1,0 +1,146 @@
+From 575e3d893a331b694dc080e7a7dcdeb412455400 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 02:02:18 +0000
+Subject: [PATCH 45/45] CUDA/HIP: prompt batches of the fused-l2 GDN normalize
+ q/k once per (head, token) in a pre-pass
+
+The l2_qk kernel repeated the q/k l2 normalization in every warp of a head (32 warps per head at S_v 128), about a
+third of its ~340 instructions per token; the kernel is issue bound at 8 waves/SIMD. For n_tokens >= 32 a small
+kernel with the same lane mapping, reduction and arithmetic writes normalized q/k and the GDN kernel runs without
+l2_qk. Logits bit-identical (llama-perplexity KLD vs base identical). llama-bench pp2048 UD: 1082 -> 1108 t/s.
+---
+ ggml/src/ggml-cuda/gated_delta_net.cu | 90 ++++++++++++++++++++++++---
+ 1 file changed, 82 insertions(+), 8 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
+index 0b60373c0..d3e6f0dc7 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cu
++++ b/ggml/src/ggml-cuda/gated_delta_net.cu
+@@ -318,6 +318,50 @@ struct gdn_state_src {
+     int64_t         row_stride; // in floats, used with idx
+ };
+ 
++// The l2 normalization of q and k of the l2_qk kernel, once per (head, token) for prompt batches: the fused kernel
++// repeats it in every warp of a head, which costs about a third of its instructions per token. Same lane mapping,
++// reduction and arithmetic, so the values are bit-identical to the ones the fused kernel computes.
++// qn/kn: [S_v, neqk1, n_tokens, neq3], contiguous. One warp: gdn_cols_per_warp segments, (q, k) of nseg/2 tokens.
++template <int S_v>
++__global__ void gated_delta_net_l2_qk(const float * q, const float * k, float * qn, float * kn,
++        int64_t neqk1, int64_t n_tokens, int64_t sq1, int64_t sq2, int64_t sq3, float l2_eps, float l2_scale) {
++    constexpr int warp_size     = ggml_cuda_get_physical_warp_size() < S_v ? ggml_cuda_get_physical_warp_size() : S_v;
++    constexpr int lanes_per_col = warp_size / gdn_cols_per_warp;
++    constexpr int rows_per_lane = S_v / lanes_per_col;
++    constexpr int nseg          = warp_size / lanes_per_col;
++    static_assert(nseg % 2 == 0, "q and k segments come in pairs");
++
++    const int seg         = threadIdx.x / lanes_per_col;
++    const int lane_in_col = threadIdx.x % lanes_per_col;
++
++    const int64_t h  = blockIdx.x;
++    const int64_t i3 = blockIdx.z;
++    const int64_t t  = (int64_t) blockIdx.y * (nseg/2) + seg/2;
++    const int64_t tc = t < n_tokens ? t : n_tokens - 1; // the reduction stays within a segment, no early exit
++
++    const float * x = (seg % 2 == 0 ? q  : k ) + i3 * sq3 + tc * sq2 + h * sq1;
++    float       * y = (seg % 2 == 0 ? qn : kn) + ((i3 * n_tokens + tc) * neqk1 + h) * S_v;
++
++    float x_reg[rows_per_lane];
++#pragma unroll
++    for (int r = 0; r < rows_per_lane; r++) {
++        x_reg[r] = x[r * lanes_per_col + lane_in_col];
++    }
++    float x_sq = 0.0f;
++#pragma unroll
++    for (int r = 0; r < rows_per_lane; r++) {
++        x_sq += x_reg[r] * x_reg[r];
++    }
++    x_sq = warp_reduce_sum<lanes_per_col>(x_sq);
++    const float x_rs = rsqrtf(x_sq / S_v + l2_eps);
++    if (t < n_tokens) {
++#pragma unroll
++        for (int r = 0; r < rows_per_lane; r++) {
++            y[r * lanes_per_col + lane_in_col] = l2_scale * (x_rs * x_reg[r]);
++        }
++    }
++}
++
+ template <bool KDA, bool keep_rs_t, bool l2_qk, bool lag_t>
+ static void launch_gated_delta_net(
+         const float * q_d, const float * k_d, const float * v_d,
+@@ -480,9 +524,9 @@ static void ggml_cuda_op_gated_delta_net_impl(
+     GGML_ASSERT(ggml_is_contiguous(src_state));
+ 
+     // strides in floats (beta strides used for both g and beta offset computation)
+-    const int64_t sq1 = nbq1 / sizeof(float);
+-    const int64_t sq2 = nbq2 / sizeof(float);
+-    const int64_t sq3 = nbq3 / sizeof(float);
++    int64_t sq1 = nbq1 / sizeof(float);
++    int64_t sq2 = nbq2 / sizeof(float);
++    int64_t sq3 = nbq3 / sizeof(float);
+     const int64_t sv1 = nbv1 / sizeof(float);
+     const int64_t sv2 = nbv2 / sizeof(float);
+     const int64_t sv3 = nbv3 / sizeof(float);
+@@ -496,6 +540,36 @@ static void ggml_cuda_op_gated_delta_net_impl(
+ 
+     cudaStream_t stream = ctx.stream();
+ 
++    // prompt batches: q/k are l2-normalized once per (head, token) by gated_delta_net_l2_qk instead of in every warp
++    // of the fused kernel (bit-identical); short batches (decode, verify) keep the single launch
++    ggml_cuda_pool_alloc<float> qn_alloc(ctx.pool());
++    ggml_cuda_pool_alloc<float> kn_alloc(ctx.pool());
++    bool l2_fused = l2_qk;
++    if (l2_qk && n_tokens >= 32) {
++        GGML_ASSERT(neq0 == S_v && nek0 == S_v);
++        const int64_t n_qk = S_v * neqk1 * n_tokens * neq3;
++        float * qn_d = qn_alloc.alloc(n_qk);
++        float * kn_d = kn_alloc.alloc(n_qk);
++        const int lanes = std::min<int64_t>(ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size, S_v);
++        const int tpb   = gdn_cols_per_warp / 2; // tokens per block: one (q, k) pair of lane segments each
++        const dim3 grid_dims(neqk1, (n_tokens + tpb - 1) / tpb, neq3);
++        const dim3 block_dims(lanes, 1, 1);
++        switch (S_v) {
++            case 16:  gated_delta_net_l2_qk<16> <<<grid_dims, block_dims, 0, stream>>>(q_d, k_d, qn_d, kn_d, neqk1, n_tokens, sq1, sq2, sq3, l2_eps, l2_scale); break;
++            case 32:  gated_delta_net_l2_qk<32> <<<grid_dims, block_dims, 0, stream>>>(q_d, k_d, qn_d, kn_d, neqk1, n_tokens, sq1, sq2, sq3, l2_eps, l2_scale); break;
++            case 64:  gated_delta_net_l2_qk<64> <<<grid_dims, block_dims, 0, stream>>>(q_d, k_d, qn_d, kn_d, neqk1, n_tokens, sq1, sq2, sq3, l2_eps, l2_scale); break;
++            case 128: gated_delta_net_l2_qk<128><<<grid_dims, block_dims, 0, stream>>>(q_d, k_d, qn_d, kn_d, neqk1, n_tokens, sq1, sq2, sq3, l2_eps, l2_scale); break;
++            default: GGML_ABORT("fatal error");
++        }
++        CUDA_CHECK(cudaGetLastError());
++        q_d = qn_d;
++        k_d = kn_d;
++        sq1 = S_v;
++        sq2 = S_v * neqk1;
++        sq3 = S_v * neqk1 * n_tokens;
++        l2_fused = false;
++    }
++
+     // GATED_DELTA_NET: K (snapshot slot count) is an op param; GATED_DELTA_NET_LAG: K pending rows, one state.
+     // state holds s0 only [S_v, S_v, H, n_seqs].
+     const int  K       = ggml_get_op_params_i32(dst, 0);
+@@ -524,18 +598,18 @@ static void ggml_cuda_op_gated_delta_net_impl(
+         S_v, H, n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,                                       \
+         sb1, sb2, sb3, neqk1, rq3, scale, l2_eps, l2_scale, state_slot_stride, K, lagp, stream)
+     if (lag) {
+-        if (l2_qk) { GDN_DISPATCH(false, false, true, true); } else { GDN_DISPATCH(false, false, false, true); }
++        if (l2_fused) { GDN_DISPATCH(false, false, true, true); } else { GDN_DISPATCH(false, false, false, true); }
+     } else if (kda) {
+         if (keep_rs) {
+-            if (l2_qk) { GDN_DISPATCH(true, true, true, false); } else { GDN_DISPATCH(true, true, false, false); }
++            if (l2_fused) { GDN_DISPATCH(true, true, true, false); } else { GDN_DISPATCH(true, true, false, false); }
+         } else {
+-            if (l2_qk) { GDN_DISPATCH(true, false, true, false); } else { GDN_DISPATCH(true, false, false, false); }
++            if (l2_fused) { GDN_DISPATCH(true, false, true, false); } else { GDN_DISPATCH(true, false, false, false); }
+         }
+     } else {
+         if (keep_rs) {
+-            if (l2_qk) { GDN_DISPATCH(false, true, true, false); } else { GDN_DISPATCH(false, true, false, false); }
++            if (l2_fused) { GDN_DISPATCH(false, true, true, false); } else { GDN_DISPATCH(false, true, false, false); }
+         } else {
+-            if (l2_qk) { GDN_DISPATCH(false, false, true, false); } else { GDN_DISPATCH(false, false, false, false); }
++            if (l2_fused) { GDN_DISPATCH(false, false, true, false); } else { GDN_DISPATCH(false, false, false, false); }
+         }
+     }
+ #undef GDN_DISPATCH
+-- 
+2.43.0
+

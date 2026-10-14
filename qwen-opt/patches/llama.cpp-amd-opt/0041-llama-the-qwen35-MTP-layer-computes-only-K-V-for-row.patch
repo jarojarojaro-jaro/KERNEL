@@ -1,0 +1,131 @@
+From 2b910b22f021b0f99a41b59753431a00704f49ce Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 00:47:22 +0000
+Subject: [PATCH 41/45] llama: the qwen35 MTP layer computes only K/V for rows
+ without output (prompt and verify rows of the process() hook)
+
+The speculative process() hook decodes every prompt/verify row through the MTP layer with no outputs; only
+the K/V of those rows is read later (by the draft). Skip Q, attention, wo, FFN and the head norm for them and
+narrow the output rows right after attention otherwise. Draft K/V bit-identical: same draft acceptance.
+Server prefill (UD-Q4_K_XL, MTP n=4, with the MMQ tile change): 6.6k 913 -> 936, 29.5k 870 -> 897 t/s.
+---
+ src/llama-graph.cpp   |  5 +++++
+ src/models/qwen35.cpp | 46 ++++++++++++++++++++++++++++++++++++-------
+ 2 files changed, 44 insertions(+), 7 deletions(-)
+
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 976e39845..bbc05f00a 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -271,6 +271,11 @@ void llm_graph_input_out_ids::set_input(const llama_ubatch * ubatch) {
+ 
+     const int64_t n_tokens = ubatch->n_tokens;
+ 
++    // no rows to select; the graph may not use (or allocate) the tensor at all
++    if (n_outputs == 0) {
++        return;
++    }
++
+     GGML_ASSERT(ggml_backend_buffer_is_host(out_ids->buffer));
+     int32_t * data = (int32_t *) out_ids->data;
+ 
+diff --git a/src/models/qwen35.cpp b/src/models/qwen35.cpp
+index 3d8789ace..423b7a90a 100644
+--- a/src/models/qwen35.cpp
++++ b/src/models/qwen35.cpp
+@@ -1,5 +1,6 @@
+ #include "models.h"
+ #include "llama-ext.h"
++#include "llama-kv-cache.h"
+ #include "llama-memory-recurrent.h"
+ 
+ void llama_model_qwen35::load_arch_hparams(llama_model_loader & ml) {
+@@ -568,9 +569,12 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+             : model.output_norm;
+     GGML_ASSERT(head_norm_w && "QWEN35 MTP: missing both nextn.shared_head_norm and output_norm");
+ 
+-    // one MTP pass over nt tokens: returns the normed hidden state (h_nextn) that feeds the LM head
++    // one MTP pass over nt tokens: returns the normed hidden state (h_nextn) that feeds the LM head.
++    // out_ids (optional): only these rows go past attention (wo, FFN, head norm); every row still writes its K/V.
++    // With out_ids and no output rows (the prompt rows of the speculative process() hook) the pass only stores
++    // K/V and returns nullptr: the next draft attends to them, nothing reads their hidden state.
+     auto build_pass = [&](ggml_tensor * tok_embd, ggml_tensor * h_embd, ggml_tensor * inp_pos,
+-            llm_graph_input_attn_kv * inp_attn, int64_t nt) {
++            llm_graph_input_attn_kv * inp_attn, int64_t nt, ggml_tensor * out_ids) -> ggml_tensor * {
+         ggml_tensor * h_norm = build_norm(h_embd, layer.nextn.hnorm, nullptr, LLM_NORM_RMS, il);
+         cb(h_norm, "mtp_hnorm", il);
+ 
+@@ -617,10 +621,26 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+         Vcur = ggml_reshape_3d(ctx0, Vcur, n_embd_head, n_head_kv, nt);
+         cb(Vcur, "mtp_Vcur", il);
+ 
+-        Qcur = ggml_rope_multi(ctx0, Qcur, inp_pos, nullptr,
++        Kcur = ggml_rope_multi(ctx0, Kcur, inp_pos, nullptr,
+                 n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
+                 ext_factor, attn_factor, beta_fast, beta_slow);
+-        Kcur = ggml_rope_multi(ctx0, Kcur, inp_pos, nullptr,
++
++        if (out_ids && out_ids->ne[0] == 0) {
++            // same K/V values and store order as build_attn (V, then the roped K next to its store)
++            if (inp_attn->self_k_rot) {
++                Kcur = llama_mul_mat_hadamard(ctx0, Kcur, inp_attn->self_k_rot);
++            }
++            if (inp_attn->self_v_rot) {
++                Vcur = llama_mul_mat_hadamard(ctx0, Vcur, inp_attn->self_v_rot);
++            }
++            ggml_build_forward_expand(gf, Vcur);
++            ggml_build_forward_expand(gf, Kcur);
++            ggml_build_forward_expand(gf, inp_attn->mctx->cpy_k(ctx0, Kcur, inp_attn->get_k_idxs(), il));
++            ggml_build_forward_expand(gf, inp_attn->mctx->cpy_v(ctx0, Vcur, inp_attn->get_v_idxs(), il));
++            return nullptr;
++        }
++
++        Qcur = ggml_rope_multi(ctx0, Qcur, inp_pos, nullptr,
+                 n_rot, sections, rope_type, n_ctx_orig, freq_base, freq_scale,
+                 ext_factor, attn_factor, beta_fast, beta_slow);
+ 
+@@ -632,6 +652,10 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+         cur = ggml_reshape_3d(ctx0, cur, n_embd_head, n_head, nt);
+         cur = ggml_mul(ctx0, cur, ggml_sigmoid(ctx0, gate));
+         cur = ggml_reshape_2d(ctx0, cur, n_embd_head * n_head, nt);
++        if (out_ids) {
++            cur   = ggml_get_rows(ctx0, cur,   out_ids);
++            inpSA = ggml_get_rows(ctx0, inpSA, out_ids);
++        }
+         cur = build_lora_mm(layer.wo, cur, layer.wo_s);
+         cb(cur, "mtp_attn_out", il);
+ 
+@@ -715,7 +739,7 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+                 ggml_build_forward_expand(gf, t);
+             }
+ 
+-            ggml_tensor * hn = build_pass(tok_j, h_j, pos_j, inp_attn, 1);
++            ggml_tensor * hn = build_pass(tok_j, h_j, pos_j, inp_attn, 1, nullptr);
+ 
+             ggml_tensor * logits = ggml_mul_mat(ctx0, model.draft_head, hn); // [n_sub, 1]
+             cb(logits, "mtp_draft_logits", -1);
+@@ -767,11 +791,19 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+ 
+     auto * inp_attn = build_attn_inp_kv();
+ 
+-    ggml_tensor * cur = build_pass(tok_embd, h_embd, inp_pos, inp_attn, n_tokens);
++    // masked nextn embeddings are read for the output rows only: narrow to them right after attention
++    const bool crop = crop_before_nextn(inp_out_ids);
++
++    ggml_tensor * cur = build_pass(tok_embd, h_embd, inp_pos, inp_attn, n_tokens, crop ? inp_out_ids : nullptr);
++    if (cur == nullptr) {
++        return; // K/V of the prompt rows only
++    }
+ 
+     res->t_h_nextn = cur;
+ 
+-    cur = ggml_get_rows(ctx0, cur, inp_out_ids);
++    if (!crop) {
++        cur = ggml_get_rows(ctx0, cur, inp_out_ids);
++    }
+     cb(cur, "mtp_shared_head_norm", -1);
+ 
+     ggml_tensor * head_w = layer.nextn.shared_head_head ? layer.nextn.shared_head_head : model.output;
+-- 
+2.43.0
+
