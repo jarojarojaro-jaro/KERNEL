@@ -108,18 +108,6 @@ int main(int argc, char ** argv) {
         {GGML_TYPE_Q3_K,   {s_ffn_up}},
         {GGML_TYPE_IQ3_S,  {s_ffn_down}},
     };
-    if (getenv("SALUKI")) {   // Underdog-Saluki-27B IQ2-mix types
-        items = {
-            {GGML_TYPE_IQ2_XXS, {s_ffn_up, s_ffn_down, s_qkv}},
-            {GGML_TYPE_IQ3_S,   {s_ffn_up, s_ffn_down, s_qkv}},
-            {GGML_TYPE_Q2_K,    {s_ffn_up, s_ffn_down}},
-            {GGML_TYPE_IQ2_S,   {s_ffn_up, s_ffn_down}},
-            {GGML_TYPE_IQ2_XS,  {s_ffn_up, s_ffn_down}},
-            {GGML_TYPE_IQ1_M,   {s_ffn_up, s_ffn_down}},
-            {GGML_TYPE_IQ3_XXS, {s_ffn_up, s_ffn_down}},
-            {GGML_TYPE_IQ1_S,   {s_ffn_up, s_ffn_down}},
-        };
-    }
 
     // bring clocks up before the first measured case
     run_case(backend, GGML_TYPE_Q4_K, s_ffn_up, 1, 1000);

@@ -15,19 +15,6 @@ Wszystkie liczby z tej maszyny. Dekodowanie = `serve_bench.py` (llama-server, ch
 Vulkan dekoduje szybciej (mniejszy narzut uruchomień), ROCm szybciej przetwarza prompt:
 pp4096 1044 vs 850 t/s, pp4096 przy 16k kontekstu 890 vs 622 t/s.
 
-Underdog-Saluki 27B IQ2-mix przy tym samym ustawieniu (brak głowicy MTP):
-
-| Konfiguracja | t/s | kod EN | proza PL | VRAM |
-|---|---|---|---|---|
-| Vulkan, bez spekulacji | 55.6 | 55.7 | 55.7 | 11.4 GB |
-| ROCm, bez spekulacji | 47.8 | 47.9 | 47.5 | 12.5 GB |
-| Vulkan, DFlash2 n=6 | 70.5 | 115.3 | 36.4 | 14.0 GB |
-| ROCm, DFlash2 n=6 | 71.2 | 120.6 | 42.1 | 15.1 GB |
-
-Szybki test jakości (`quick_quality.py`, 10 krótkich pytań EN/PL, greedy, bez thinking): Qwen 8/10,
-Saluki 9/10. Za mało pytań, żeby rozróżnić modele; obie wpadki Qwena to „poszłem" uznane za poprawne
-i ucięta odpowiedź (limit 200 tokenów).
-
 ## Co jest gdzie
 
 | Ścieżka | Co |
@@ -38,7 +25,7 @@ i ucięta odpowiedź (limit 200 tokenów).
 | `~/vk` | Mesa RADV 25.2.8 rozpakowana z .deb + LunarG Vulkan SDK 1.4.363 (bez sudo) |
 | `~/llama-base` | czysty upstream e60eff95f do porównań A/B |
 | `~/models/draft/` | drafter DFlash2 Q4_K_M + `draft_vocab_qwen38.txt` (ranking tokenów dla draftu MTP) |
-| `run-llm.sh` | start serwera: `run-llm.sh [qwen\|saluki] [mtp\|dflash\|none] [vulkan\|rocm]` |
+| `run-llm.sh` | start serwera: `run-llm.sh [qwen\|uncensored\|lfm] [mtp\|dflash\|none] [rocm\|vulkan]` |
 | `serve_bench.py` | pomiar end-to-end (`--lang en\|pl\|all`) |
 | `quick_quality.py` | 10 krótkich pytań EN/PL do szybkiej kontroli jakości |
 | `build_draft_vocab.py` | buduje ranking tokenów dla `--spec-draft-vocab` |
@@ -61,8 +48,6 @@ i ucięta odpowiedź (limit 200 tokenów).
 | upstream Vulkan RADV: bez spekulacji / MTP n=4 / DFlash2 n=6 (kod EN) | 38.8 / 85.6* / 127* |
 
 \* mieszanka EN+PL. Prompty po polsku: MTP n=4 78 t/s, DFlash2 n=6 65 t/s (drafter DFlash słabo zna polski).
-
-Underdog-Saluki 27B IQ2-mix: bez spekulacji 46.5 t/s, DFlash2 n=7 80.6 → 91.2 z naszymi kernelami.
 
 ## Diagnoza
 
@@ -109,7 +94,6 @@ Testy: `test-backend-ops -o MUL_MAT` 2444/2444, fusion 3709/3709.
   w dekodowaniu; wymaga fuzji małych operacji (rms_norm, add, sigmoid, softplus, cpy) albo mniejszej liczby węzłów.
 - Vulkan, forward weryfikacji 6 tokenów (GGML_VK_PERF_LOGGER): `MUL_MAT_VEC q8_0 m=48` (ssm_alpha/beta)
   96 × 13 µs ≈ 1.3 ms z 33.6 ms — za mało grup roboczych przy 48 wierszach; split-K dałby ~3%.
-- Saluki (IQ1/IQ2): przy 1 tokenie kernele stoją na ~450–600 GB/s przez lookupy siatek (grid tables).
 
 ## Wyniki negatywne (nie wracać bez nowego pomysłu)
 

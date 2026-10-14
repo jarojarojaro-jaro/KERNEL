@@ -17,7 +17,7 @@ Qwen przy wypełnionym kontekście (T=0): generowanie 1.7k 130 t/s, 29.5k 105 t/
 | Plik | Co |
 |---|---|
 | `patches/llama.cpp-amd-opt/*.patch` | 47 zmian w llama.cpp (na upstream `e60eff95f`): kernele HIP MMVQ 2–8 kolumn (strojone pod RDNA3), kernel WMMA dla weryfikacji 9–16 tokenów, cache q8_1, kernel FA dla KV q4_0 (RDNA3), fuzje kerneli HIP, stan GDN i conv z opóźnieniem (cofanie przez przeliczenie), draft MTP jednym grafem, przekwantyzowanie draftu (`--spec-draft-head-type`, `--spec-mtp-type`), asynchroniczne wejścia, szybsze top-k, prefill (kafle MMQ/FA, MTP liczy tylko K/V promptu); łatki Vulkan (opcjonalny backend). Zmiany na szybkość mają przełączniki `GGML_HIP_*=0` / `LLAMA_*=0` |
-| `run-llm.sh` | start serwera: `run-llm.sh [qwen\|uncensored\|lfm\|saluki] [mtp\|dflash\|none] [rocm\|vulkan]` (domyślnie qwen, mtp, rocm); env: `CTX`, `PORT`, `HOST`, `EFFORT` (myślenie, domyślnie low), `DRAFT_N`, `MTP_TYPE`, `VISION=1`, `ROCM_DIR`, `EXTRA_ARGS` |
+| `run-llm.sh` | start serwera: `run-llm.sh [qwen\|uncensored\|lfm] [mtp\|dflash\|none] [rocm\|vulkan]` (domyślnie qwen, mtp, rocm); env: `CTX`, `PORT`, `HOST`, `EFFORT` (myślenie, domyślnie low), `DRAFT_N`, `MTP_TYPE`, `VISION=1`, `ROCM_DIR`, `EXTRA_ARGS` |
 | `gpu-power.sh`, `gpu-powercap.service` | status/monitor mocy i temperatur; usługa systemd: limit 285 W + brak usypiania karty (inaczej model ląduje w RAM i działa ~4 t/s) |
 | `gpu-keepawake/` | trzymanie karty wybudzonej bez roota (używane przez `run-llm.sh`) |
 | `spec_sweep.sh`, `spec_sweep.py` | pomiar t/s i ms/krok na 6 promptach PL/EN (restart serwera per konfiguracja) |
