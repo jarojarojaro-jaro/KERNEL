@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # Start the optimized llama-server on the RX 7900 XTX.
 #
-#   run-llm.sh [qwen|uncensored|saluki] [mtp|dflash|none] [vulkan|rocm]
+#   run-llm.sh [qwen|uncensored|lfm|saluki] [mtp|dflash|none] [rocm|vulkan]
 #
-# Measured at ctx 204800, KV q4_0, EN+PL prompt mix (old build, MTP n=3: 59 t/s):
-#   qwen  mtp  rocm    ~86 t/s  (default; patched HIP kernels, MTP n=4; prompt processing 1.2-1.4x faster than Vulkan)
-#   qwen  mtp  vulkan  ~92 t/s  (MTP n=5; faster decode on short prompts, slower on long prompts)
-#   qwen  dflash       fastest for English/code (~120 t/s) but weak on Polish (PL prose ~40 t/s)
-#   uncensored = orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated, same arch + MTP head); VISION=1 adds mmproj
+# Measured 2026-10-14 (ROCm, ctx 204800, KV q4_0, MTP n=4 + 64k draft vocab, IQ4_XS draft, 6 EN/PL prompts, T=1):
+#   qwen        mtp  rocm   ~104 t/s  (default; ~96 t/s with 94k tokens in context)
+#   uncensored  mtp  rocm   ~106 t/s  orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated); VISION=1 adds mmproj
+#   qwen        mtp  vulkan optional backend, slower on long prompts
+#   lfm         none        LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072
 #   saluki has no MTP head, so it defaults to dflash
 #
 # env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0),
@@ -23,9 +23,12 @@ extra_args_raw=${EXTRA_ARGS:-}
 extra_args=(${extra_args_raw//,/ })
 default_spec=mtp
 [ "$model" = saluki ] && default_spec=dflash
+[ "$model" = lfm ] && default_spec=none
 spec=${2:-$default_spec}
 backend=${3:-rocm}
-ctx=${CTX:-204800}
+ctx_default=204800
+[ "$model" = lfm ] && ctx_default=131072
+ctx=${CTX:-$ctx_default}
 port=${PORT:-8080}
 host=${HOST:-127.0.0.1}
 kv=${KV:-q4_0}
@@ -34,12 +37,13 @@ mkdir -p "$HOME/qwen-opt/logs"
 log=${LOG:-$HOME/qwen-opt/logs/server-$(date +%F_%H%M%S).log}
 ln -sfn "$log" "$HOME/qwen-opt/logs/latest.log"
 
-# Qwen3.8/Saluki templates accept low|medium|xhigh; off disables thinking entirely
+# Qwen3.8/Saluki templates accept low|medium|xhigh; off disables thinking entirely. LFM has no effort levels.
 case $effort in
     low|medium|xhigh) think_args=(--reasoning-effort "$effort") ;;
     off) think_args=(--reasoning off) ;;
     *) echo "unknown EFFORT: $effort (low|medium|xhigh|off)" >&2; exit 2 ;;
 esac
+[ "$model" = lfm ] && think_args=()
 
 models=$HOME/models
 drafter=$models/draft/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
@@ -50,7 +54,8 @@ case $model in
     uncensored) gguf=$models/orca/Qwen3.8-27B-Uncensored-Q4_K_M.gguf
                 [ "${VISION:-0}" = 1 ] && extra_args=(--mmproj "$models/orca/mmproj-Qwen3.8-27B-Uncensored-f16.gguf") ;;
     saluki)     gguf=$models/Underdog-Saluki-27B-1.0-IQ2-mix.gguf ;;
-    *) echo "unknown model: $model (qwen|uncensored|saluki)" >&2; exit 2 ;;
+    lfm)        gguf=$models/lfm/LFM2.5-24B-A2B-Q5_K_M.gguf ;;
+    *) echo "unknown model: $model (qwen|uncensored|lfm|saluki)" >&2; exit 2 ;;
 esac
 
 case $backend in
@@ -76,7 +81,8 @@ case $spec in
     mtp)    [ "$model" != saluki ] || { echo "saluki has no MTP head, use dflash" >&2; exit 2; }
             spec_args=(--spec-type draft-mtp --spec-draft-n-max "${DRAFT_N:-$mtp_n}"
                        --spec-draft-vocab "$draft_vocab" --spec-draft-vocab-n 65536
-                       --spec-draft-head-type "${MTP_TYPE:-iq4_xs}" --spec-mtp-type "${MTP_TYPE:-iq4_xs}") ;;
+                       --spec-draft-head-type "${MTP_TYPE:-iq4_xs}" --spec-mtp-type "${MTP_TYPE:-iq4_xs}"
+                       -ctkd "$kv" -ctvd "$kv") ;;
     none)   spec_args=() ;;
     *) echo "unknown spec: $spec (mtp|dflash|none)" >&2; exit 2 ;;
 esac

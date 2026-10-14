@@ -338,3 +338,16 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Prefill serwera (przed -> po): UD 6.6k 913 -> 962, 29.5k 870 -> 943, 94k 668 -> 767 (141 -> 123 s); Uncensored 906 -> 956, 867 -> 941, 666 -> 762.
 - Decode bez zmian (Qwen 29.40 ms/krok, Uncensored 28.30). KLD vs baza = 0 (te same logity).
 - Nie zadziałało: prefetch w GDN/FA, inne kafle FA, Q5_K MMQ sweep, dequant+hipBLAS dla wszystkich typów (-15%), -ub 1024. Q6_K przez MMQ i poprawka zapisu stanu S4 nie zrobione.
+
+## S3 + T1 (0b5b15d17, e84abb808; 2026-10-14)
+- S3 okno uwagi MTP (--spec-mtp-window, domyślnie 0 = wyłączone): negatywne. W=8192: krok krótszy (-0.5 ms przy 27k, -1.6 ms przy 62k), ale akceptacja spada 3.31 -> 2.78 / 2.98 -> 2.46; t/s 105 -> 90 / 83 -> 72. W=32k też gorzej.
+- T1 koszty hosta w pętli spekulacji: seq_rm po indeksie sekwencji zamiast skanu 204800 komórek, szybka maska KQ dla jednej sekwencji, kopia promptu tylko dla n-gram. Rollback+process_token 236 -> 6 us; przy 89k start weryfikacji 305 -> 139 us. Greedy md5 = baza.
+- Potwierdzone: Qwen **28.94 ms/krok, 104.2 t/s**; Uncensored **27.90 ms/krok, 106.5 t/s**.
+- KV draftu q4_0 (-ctkd/-ctvd q4_0): krótki kontekst bez efektu (+0.15 ms, szum akceptacji), długi: 29.5k 104.1 -> 105.2, 94k 97.5 -> 100.6 t/s, akceptacja bez zmian. Włączone domyślnie w run-llm.sh.
+- Długi kontekst, stan końcowy (T=0, decode / prefill): 1.7k 130.2 / 818, 6.6k 118.5 / 985, 29.5k 105.2 / 945, 94k 100.6 / 766 t/s.
+
+## LFM2.5-24B-A2B Q5_K_M (LiquidAI, lfm2moe, ~2B aktywnych; 2026-10-14) — baza
+- Działa na forku bez zmian. ctx 131072, KV q4_0, bez MTP: 17.8 GB VRAM.
+- Czat (6 promptów x 3 seedy, T=1): **173 t/s** równo na wszystkich typach tekstu (5.78 ms/token).
+- llama-bench: tg128 198 t/s, pp4096 6124 t/s. Serwer: prefill 2768 (1.7k), 5805 (6.7k), 5172 (29.7k), 3709 (95k) t/s; decode 174 / 172 / 168 / 153 t/s.
+- Do optymalizacji później (MoE: kernele mmvq_id/expertów, brak głowicy MTP -> ewentualnie n-gram/draft).

@@ -1,22 +1,23 @@
-# qwen-opt — Qwen3.8-27B na RX 7900 XTX (ROCm): 59 → 88 t/s przy 200k kontekstu
+# qwen-opt — Qwen3.8-27B na RX 7900 XTX (ROCm): 59 → 104 t/s przy 200k kontekstu
 
-Wyniki, diagnoza i wyniki negatywne: [`NOTES.md`](NOTES.md). Research i plan dalszych prac: [`research/`](research/) (`research/v2/roadmap.md`).
+Wyniki, diagnoza i wyniki negatywne: [`NOTES.md`](NOTES.md). Research: [`research/`](research/) (`v2/roadmap.md`, `strata/`, `tensorfold/`).
 
-Stan (2026-10-12, ROCm, ctx 204800, KV q4_0, MTP n=4 + słownik draftu 64k, limit mocy 285 W, 6 promptów PL/EN × 3 seedy, T=1):
+Stan (2026-10-14, ROCm, ctx 204800, KV q4_0, MTP n=4 + słownik draftu 64k + draft IQ4_XS + KV draftu q4_0, limit mocy 285 W, 6 promptów PL/EN × 3 seedy, T=1):
 
-| Model | t/s | ms/krok |
-|---|---|---|
-| Qwen3.8-27B UD-Q4_K_XL | 88.1 | 35.7 |
-| Qwen3.8-27B-Uncensored Q4_K_M (orcarouter) | 90.4 | 33.8 |
+| Model | t/s (mediana) | ms/krok | czat EN | proza PL | kod PL |
+|---|---|---|---|---|---|
+| Qwen3.8-27B UD-Q4_K_XL | 104.2 | 28.9 | 87 | 95 | 116 |
+| Qwen3.8-27B-Uncensored Q4_K_M (orcarouter) | 106.5 | 27.9 | 93 | 94 | 117 |
+| LFM2.5-24B-A2B Q5_K_M (LiquidAI, MoE, bez MTP, ctx 131072) | 173 | 5.8 | 173 | 173 | 173 |
 
-Generowanie przy wypełnionym kontekście (Qwen, T=0): 1.7k 106.9 t/s, 29.5k 85.5 t/s, 94k 77.7 t/s. Prefill 750–910 t/s do 30k, 660 t/s przy 94k.
+Qwen przy wypełnionym kontekście (T=0): generowanie 1.7k 130 t/s, 29.5k 105 t/s, 94k 101 t/s; prefill 820–985 t/s do 30k, 766 t/s przy 94k.
 
 ## Zawartość
 
 | Plik | Co |
 |---|---|
-| `patches/llama.cpp-amd-opt/*.patch` | zmiany w llama.cpp (na upstream `e60eff95f`): kernele HIP mmvq 2–8 kolumn, cache q8_1, `--spec-draft-vocab`, kernel FA dla KV q4_0 (RDNA3), fuzje kerneli HIP (MMVQ+residual, prolog GDN, SSM_CONV+snapshoty, q8_1 w producentach, IMROPE/FWHT), draft MTP jednym grafem; łatki Vulkan (opcjonalny backend) |
-| `run-llm.sh` | start serwera: `run-llm.sh [qwen\|uncensored\|saluki] [mtp\|dflash\|none] [rocm\|vulkan]` (domyślnie qwen, mtp, rocm); env: `CTX`, `PORT`, `HOST`, `EFFORT` (myślenie, domyślnie low), `DRAFT_N`, `VISION=1`, `EXTRA_ARGS` |
+| `patches/llama.cpp-amd-opt/*.patch` | 47 zmian w llama.cpp (na upstream `e60eff95f`): kernele HIP MMVQ 2–8 kolumn (strojone pod RDNA3), kernel WMMA dla weryfikacji 9–16 tokenów, cache q8_1, kernel FA dla KV q4_0 (RDNA3), fuzje kerneli HIP, stan GDN i conv z opóźnieniem (cofanie przez przeliczenie), draft MTP jednym grafem, przekwantyzowanie draftu (`--spec-draft-head-type`, `--spec-mtp-type`), asynchroniczne wejścia, szybsze top-k, prefill (kafle MMQ/FA, MTP liczy tylko K/V promptu); łatki Vulkan (opcjonalny backend). Zmiany na szybkość mają przełączniki `GGML_HIP_*=0` / `LLAMA_*=0` |
+| `run-llm.sh` | start serwera: `run-llm.sh [qwen\|uncensored\|lfm\|saluki] [mtp\|dflash\|none] [rocm\|vulkan]` (domyślnie qwen, mtp, rocm); env: `CTX`, `PORT`, `HOST`, `EFFORT` (myślenie, domyślnie low), `DRAFT_N`, `MTP_TYPE`, `VISION=1`, `ROCM_DIR`, `EXTRA_ARGS` |
 | `gpu-power.sh`, `gpu-powercap.service` | status/monitor mocy i temperatur; usługa systemd: limit 285 W + brak usypiania karty (inaczej model ląduje w RAM i działa ~4 t/s) |
 | `gpu-keepawake/` | trzymanie karty wybudzonej bez roota (używane przez `run-llm.sh`) |
 | `spec_sweep.sh`, `spec_sweep.py` | pomiar t/s i ms/krok na 6 promptach PL/EN (restart serwera per konfiguracja) |

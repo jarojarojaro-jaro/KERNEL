@@ -1,0 +1,458 @@
+From 0b5b15d173cd4fb70ff32ec4274a5db5bcb5f0f2 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 02:44:23 +0000
+Subject: [PATCH 46/47] MTP: attention window of the MTP layer
+ (--spec-mtp-window, WIP)
+
+---
+ common/arg.cpp         |  9 +++++
+ common/common.h        |  2 ++
+ common/speculative.cpp |  5 +++
+ src/llama-context.cpp  | 10 ++++++
+ src/llama-ext.h        |  6 ++++
+ src/llama-graph.cpp    |  2 ++
+ src/llama-graph.h      |  3 ++
+ src/llama-kv-cache.cpp | 79 ++++++++++++++++++++++++++++++++----------
+ src/llama-kv-cache.h   | 26 +++++++++++---
+ src/llama-kv-cells.h   | 21 +++++++++++
+ 10 files changed, 141 insertions(+), 22 deletions(-)
+
+diff --git a/common/arg.cpp b/common/arg.cpp
+index 36cc52f31..9ca2fef0d 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -4267,6 +4267,15 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             params.speculative.draft.mtp_type = quant_type_from_str(value);
+         }
+     ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_MTP_TYPE"));
++    add_opt(common_arg(
++        {"--spec-mtp-window"}, "N",
++        string_format("MTP: the MTP layer attends to the last N positions only, so a draft pass reads N cells of its KV\n"
++                      "instead of the whole context: cheaper drafts at long context, verification unaffected (default: %d, 0 = all)",
++                      params.speculative.draft.mtp_window),
++        [](common_params & params, int value) {
++            params.speculative.draft.mtp_window = std::max(0, value);
++        }
++    ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_MTP_WINDOW"));
+     add_opt(common_arg(
+         {"--spec-draft-adaptive"},
+         {"--no-spec-draft-adaptive"},
+diff --git a/common/common.h b/common/common.h
+index 3507c8ed4..f0b00a39d 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -340,6 +340,8 @@ struct common_params_speculative_draft {
+     // MTP: re-quantize the reduced draft head / the MTP block matrices to these types (GGML_TYPE_COUNT = keep)
+     ggml_type head_type = GGML_TYPE_COUNT;
+     ggml_type mtp_type  = GGML_TYPE_COUNT;
++    // MTP: the MTP layer attends to the last mtp_window positions only (0 = the whole context)
++    int32_t mtp_window = 0;
+ 
+     bool probabilistic = false; // sample the draft and verify by rejection, instead of argmax and match
+ 
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index 418de54f5..fd8182d62 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -1709,6 +1709,11 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+             }
+         }
+ 
++        // optional attention window of the MTP layer (--spec-mtp-window): changes the drafts only
++        if (this->params.mtp_window > 0 && !llama_set_attn_window(ctx_dft, (uint32_t) this->params.mtp_window)) {
++            SPC_WRN("%s\n", "the MTP draft context does not support an attention window, attending the whole context");
++        }
++
+         llama_set_embeddings_nextn(ctx_tgt, true, /*masked*/ false);
+         llama_set_embeddings_nextn(ctx_dft, true, /*masked*/ true);
+ 
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 0e0be5c17..f5300e2d7 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -6,6 +6,7 @@
+ #include "llama-impl.h"
+ #include "llama-batch.h"
+ #include "llama-io.h"
++#include "llama-kv-cache.h"
+ #include "llama-memory.h"
+ #include "llama-mmap.h"
+ #include "llama-model.h"
+@@ -4315,6 +4316,15 @@ void llama_set_verify_graph_cache(llama_context * ctx, uint32_t max_tokens) {
+     ctx->set_verify_graph_cache(max_tokens);
+ }
+ 
++bool llama_set_attn_window(llama_context * ctx, uint32_t n_win) {
++    auto * kv = dynamic_cast<llama_kv_cache *>(ctx->get_memory());
++    if (kv == nullptr) {
++        return false;
++    }
++    kv->set_attn_window(n_win);
++    return true;
++}
++
+ void llama_set_mtp_draft_conf(llama_context * ctx, bool enable) {
+     ctx->set_mtp_draft_conf(enable);
+ }
+diff --git a/src/llama-ext.h b/src/llama-ext.h
+index e3ddbd258..e6e087704 100644
+--- a/src/llama-ext.h
++++ b/src/llama-ext.h
+@@ -128,6 +128,12 @@ LLAMA_API void llama_set_verify_graph_cache(struct llama_context * ctx, uint32_t
+ // The h_nextn [n_embd] of the last pass of the last MTP draft chain decode (synchronizes), nullptr if there is none
+ LLAMA_API const float * llama_get_mtp_draft_h(struct llama_context * ctx);
+ 
++// Attention window of the context's KV cache (0 = off, the default): each token attends only to the cells of the last
++// n_win positions, itself included, and the attention reads only the 256-cell blocks that hold them. For the MTP draft
++// context, whose single layer otherwise attends over the whole context in every draft pass. Returns false if the
++// context's memory is not a plain KV cache.
++LLAMA_API bool llama_set_attn_window(struct llama_context * ctx, uint32_t n_win);
++
+ // Marks the entries that a joint decision head (clef) reads, the default is 0
+ // See https://github.com/ggml-org/llama.cpp/pull/29831 for details
+ // A run of entries with the same value is one span, spans must be separated by entries with value 0
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index bbc05f00a..f28e09b1e 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -595,6 +595,7 @@ bool llm_graph_input_attn_kv::can_reuse(const llm_graph_params & params) {
+   //res &= self_v_idxs->ne[0] == params.ubatch.n_tokens; // TODO: need to move this to the unified cache and check there
+ 
+     res &= can_reuse_kq_mask(self_kq_mask, mctx, params.ubatch, params.cparams);
++    res &= kv_beg == mctx->get_kv_beg();
+ 
+     return res;
+ }
+@@ -3005,6 +3006,7 @@ static std::unique_ptr<llm_graph_input_attn_kv> build_attn_inp_kv_impl(
+ 
+         inp->self_kq_mask = build_attn_inp_kq_mask(ctx0, mctx_cur, ubatch, cparams);
+         inp->self_kq_mask_cnv = inp->self_kq_mask;
++        inp->kv_beg = mctx_cur->get_kv_beg();
+     }
+ 
+     inp->self_k_rot = mctx_cur->build_input_k_rot(ctx0);
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 1400e6749..1565e93aa 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -391,6 +391,9 @@ public:
+     ggml_tensor * self_kq_mask     = nullptr; // F32/F16 [n_kv, n_batch/n_stream, 1, n_stream]
+     ggml_tensor * self_kq_mask_cnv = nullptr; //         [n_kv, n_batch/n_stream, 1, n_stream]
+ 
++    // first cell of the K/V views the graph was built with (attention window): a graph is reused only at the same one
++    uint32_t kv_beg = 0;
++
+     // note: assumes v_rot^2 == I
+     ggml_tensor * self_k_rot = nullptr;
+     ggml_tensor * self_v_rot = nullptr;
+diff --git a/src/llama-kv-cache.cpp b/src/llama-kv-cache.cpp
+index b80c411e0..da4dc8b6a 100644
+--- a/src/llama-kv-cache.cpp
++++ b/src/llama-kv-cache.cpp
+@@ -1240,6 +1240,37 @@ bool llama_kv_cache::get_has_shift() const {
+     return result;
+ }
+ 
++void llama_kv_cache::set_attn_window(uint32_t n_win) {
++    this->n_win = n_win;
++}
++
++uint32_t llama_kv_cache::get_attn_window() const {
++    return n_win;
++}
++
++uint32_t llama_kv_cache::get_kv_beg(const slot_info & sinfo, const llama_ubatch & ubatch, uint32_t n_kv) const {
++    if (n_win == 0 || swa_type != LLAMA_SWA_TYPE_NONE || sinfo.n_stream() != 1 || ubatch.n_tokens == 0) {
++        return 0;
++    }
++
++    llama_pos p_min = ubatch.pos[0];
++    for (uint32_t i = 1; i < ubatch.n_tokens; ++i) {
++        p_min = std::min(p_min, ubatch.pos[i]);
++    }
++
++    // a cell at p0 <= thr is outside the window of every token of the ubatch (empty cells hold -1)
++    const llama_pos thr = p_min - (llama_pos) n_win;
++    if (thr < 0) {
++        return 0;
++    }
++
++    // views stay aligned to the 256-cell padding of n_kv, so the graph changes only when a block is crossed
++    const uint32_t blk = 256;
++    const uint32_t res = v_cells[sinfo.strm[0]].first_block_pos_gt(thr, blk, n_kv);
++
++    return res < n_kv ? res : 0;
++}
++
+ ggml_type llama_kv_cache::type_k() const {
+     return layers[0].k->type;
+ }
+@@ -1293,7 +1324,7 @@ uint32_t llama_kv_cache::get_n_kv(const slot_info & sinfo) const {
+     return result;
+ }
+ 
+-ggml_tensor * llama_kv_cache::get_k(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const {
++ggml_tensor * llama_kv_cache::get_k(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo, uint32_t kv_beg) const {
+     const int32_t ikv = map_layer_ids.at(il);
+ 
+     auto * k = layers[ikv].k;
+@@ -1310,10 +1341,10 @@ ggml_tensor * llama_kv_cache::get_k(ggml_context * ctx, int32_t il, uint32_t n_k
+             ggml_row_size(k->type, hparams.n_embd_head_k(il)),
+             ggml_row_size(k->type, n_embd_k_gqa),
+             ggml_row_size(k->type, n_embd_k_gqa*kv_size),
+-            ggml_row_size(k->type, n_embd_k_gqa*kv_size)*sinfo.s0);
++            ggml_row_size(k->type, n_embd_k_gqa*kv_size)*sinfo.s0 + ggml_row_size(k->type, n_embd_k_gqa)*kv_beg);
+ }
+ 
+-ggml_tensor * llama_kv_cache::get_v(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const {
++ggml_tensor * llama_kv_cache::get_v(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo, uint32_t kv_beg) const {
+     const int32_t ikv = map_layer_ids.at(il);
+ 
+     auto * v = layers[ikv].v;
+@@ -1333,7 +1364,7 @@ ggml_tensor * llama_kv_cache::get_v(ggml_context * ctx, int32_t il, uint32_t n_k
+                 ggml_row_size(v->type, hparams.n_embd_head_v(il)),          // v->nb[1]
+                 ggml_row_size(v->type, n_embd_v_gqa),                   // v->nb[2]
+                 ggml_row_size(v->type, n_embd_v_gqa*kv_size),           // v->nb[3]
+-                ggml_row_size(v->type, n_embd_v_gqa*kv_size)*sinfo.s0);
++                ggml_row_size(v->type, n_embd_v_gqa*kv_size)*sinfo.s0 + ggml_row_size(v->type, n_embd_v_gqa)*kv_beg);
+     }
+ 
+     // note: v->nb[1] > v->nb[2]
+@@ -1342,7 +1373,7 @@ ggml_tensor * llama_kv_cache::get_v(ggml_context * ctx, int32_t il, uint32_t n_k
+             ggml_row_size(v->type, kv_size*hparams.n_embd_head_v(il)),  // v->nb[1]
+             ggml_row_size(v->type, kv_size),                        // v->nb[2]
+             ggml_row_size(v->type, kv_size*n_embd_v_gqa),           // v->nb[3]
+-            ggml_row_size(v->type, kv_size*n_embd_v_gqa)*sinfo.s0);
++            ggml_row_size(v->type, kv_size*n_embd_v_gqa)*sinfo.s0 + ggml_row_size(v->type, kv_beg));
+ }
+ 
+ ggml_tensor * llama_kv_cache::cpy_k(ggml_context * ctx, ggml_tensor * k_cur, ggml_tensor * k_idxs, int32_t il, const slot_info & sinfo) const {
+@@ -1583,7 +1614,8 @@ struct args_set_input_kq_mask {
+     uint32_t       n_swa;
+     llama_swa_type swa_type;
+ 
+-    int64_t n_kv;
++    int64_t  n_kv;
++    uint32_t kv_beg; // column j of the mask is cell kv_beg + j
+     int64_t n_stream;
+     int64_t n_tps;
+ };
+@@ -1599,7 +1631,8 @@ static void set_input_kq_mask_impl(const args_set_input_kq_mask & args, T * data
+     const uint32_t       n_swa    = args.n_swa;
+     const llama_swa_type swa_type = args.swa_type;
+ 
+-    const int64_t n_kv     = args.n_kv;
++    const int64_t  n_kv   = args.n_kv;
++    const uint32_t kv_beg = args.kv_beg;
+     const int64_t n_stream = args.n_stream;
+     const int64_t n_tps    = args.n_tps;
+ 
+@@ -1678,16 +1711,16 @@ static void set_input_kq_mask_impl(const args_set_input_kq_mask & args, T * data
+                     }
+                 }
+ 
+-                if (cells.is_empty(j)) {
++                if (cells.is_empty(kv_beg + j)) {
+                     goto skip;
+                 }
+ 
+                 // mask the token if not the same sequence
+-                if (!cells.seq_has(j, seq_id)) {
++                if (!cells.seq_has(kv_beg + j, seq_id)) {
+                     goto skip;
+                 }
+ 
+-                p0 = cells.pos_get(j);
++                p0 = cells.pos_get(kv_beg + j);
+ 
+                 if (!alibi) {
+                     if (!prev) {
+@@ -1707,7 +1740,7 @@ static void set_input_kq_mask_impl(const args_set_input_kq_mask & args, T * data
+                     // M-RoPE causal mask
+                     if (is_2d) {
+                         if (p0 == p1) {
+-                            const auto & p0_ext = cells.ext_get(j);
++                            const auto & p0_ext = cells.ext_get(kv_beg + j);
+ 
+                             if (p0_ext.is_2d_gt(p1_x, p1_y)) {
+                                 goto skip;
+@@ -1778,7 +1811,7 @@ static void set_input_kq_mask_impl(const args_set_input_kq_mask & args, T * data
+     }
+ }
+ 
+-void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * ubatch, bool causal_attn) const {
++void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * ubatch, bool causal_attn, uint32_t kv_beg) const {
+     const uint32_t n_tokens = ubatch->n_tokens;
+ 
+     const int64_t n_kv     = dst->ne[0];
+@@ -1797,14 +1830,18 @@ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * u
+ 
+     //const int64_t t_start = ggml_time_us();
+ 
++    // the attention window masks like a standard SWA of n_win positions (a cache with its own SWA keeps that)
++    const bool win = n_win > 0 && swa_type == LLAMA_SWA_TYPE_NONE;
++
+     const args_set_input_kq_mask args = {
+         /*.hparams          =*/ hparams,
+         /*.ubatch           =*/ ubatch,
+         /*.v_cells          =*/ v_cells,
+         /*.seq_to_stream    =*/ seq_to_stream,
+-        /*.n_swa            =*/ n_swa,
+-        /*.swa_type         =*/ swa_type,
++        /*.n_swa            =*/ win ? n_win : n_swa,
++        /*.swa_type         =*/ win ? LLAMA_SWA_TYPE_STANDARD : swa_type,
+         /*.n_kv             =*/ n_kv,
++        /*.kv_beg           =*/ kv_beg,
+         /*.n_stream         =*/ n_stream,
+         /*.n_tps            =*/ n_tps,
+     };
+@@ -2888,7 +2925,9 @@ bool llama_kv_cache_context::apply() {
+     }
+ 
+     kv->apply_ubatch(sinfos[i_cur], ubatches[i_cur]);
+-    n_kv = kv->get_n_kv(sinfos[i_cur]);
++    n_kv   = kv->get_n_kv(sinfos[i_cur]);
++    kv_beg = kv->get_kv_beg(sinfos[i_cur], ubatches[i_cur], n_kv);
++    n_kv  -= kv_beg;
+ 
+     return true;
+ }
+@@ -2907,6 +2946,10 @@ uint32_t llama_kv_cache_context::get_n_kv() const {
+     return n_kv;
+ }
+ 
++uint32_t llama_kv_cache_context::get_kv_beg() const {
++    return kv_beg;
++}
++
+ ggml_type llama_kv_cache_context::type_k() const {
+     return kv->type_k();
+ }
+@@ -2916,11 +2959,11 @@ ggml_type llama_kv_cache_context::type_v() const {
+ }
+ 
+ ggml_tensor * llama_kv_cache_context::get_k(ggml_context * ctx, int32_t il) const {
+-    return kv->get_k(ctx, il, n_kv, sinfos[i_cur]);
++    return kv->get_k(ctx, il, n_kv, sinfos[i_cur], kv_beg);
+ }
+ 
+ ggml_tensor * llama_kv_cache_context::get_v(ggml_context * ctx, int32_t il) const {
+-    return kv->get_v(ctx, il, n_kv, sinfos[i_cur]);
++    return kv->get_v(ctx, il, n_kv, sinfos[i_cur], kv_beg);
+ }
+ 
+ ggml_tensor * llama_kv_cache_context::cpy_k(ggml_context * ctx, ggml_tensor * k_cur, ggml_tensor * k_idxs, int32_t il) const {
+@@ -2960,7 +3003,7 @@ void llama_kv_cache_context::set_input_v_idxs(ggml_tensor * dst, const llama_uba
+ }
+ 
+ void llama_kv_cache_context::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * ubatch, bool causal_attn) const {
+-    kv->set_input_kq_mask(dst, ubatch, causal_attn);
++    kv->set_input_kq_mask(dst, ubatch, causal_attn, kv_beg);
+ }
+ 
+ void llama_kv_cache_context::set_input_pos_bucket(ggml_tensor * dst, const llama_ubatch * ubatch) const {
+diff --git a/src/llama-kv-cache.h b/src/llama-kv-cache.h
+index 9bfb8f231..11a7708ff 100644
+--- a/src/llama-kv-cache.h
++++ b/src/llama-kv-cache.h
+@@ -161,6 +161,14 @@ public:
+ 
+     bool get_has_shift() const;
+ 
++    // attention window (0 = off): a token attends only to the cells of the last n_win positions (itself included),
++    // and the graph views of K/V start at the first 256-cell block holding such a cell
++    void     set_attn_window(uint32_t n_win);
++    uint32_t get_attn_window() const;
++
++    // first cell (a multiple of 256) of the K/V view of a ubatch under the attention window
++    uint32_t get_kv_beg(const slot_info & sinfo, const llama_ubatch & ubatch, uint32_t n_kv) const;
++
+     ggml_type type_k() const;
+     ggml_type type_v() const;
+ 
+@@ -192,9 +200,9 @@ public:
+ 
+     uint32_t get_n_kv(const slot_info & sinfo) const;
+ 
+-    // get views of the current state of the cache
+-    ggml_tensor * get_k(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const;
+-    ggml_tensor * get_v(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo) const;
++    // get views of the current state of the cache: cells [kv_beg, kv_beg + n_kv)
++    ggml_tensor * get_k(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo, uint32_t kv_beg = 0) const;
++    ggml_tensor * get_v(ggml_context * ctx, int32_t il, uint32_t n_kv, const slot_info & sinfo, uint32_t kv_beg = 0) const;
+ 
+     // store k_cur and v_cur in the cache based on the provided head location
+     ggml_tensor * cpy_k(ggml_context * ctx, ggml_tensor * k_cur, ggml_tensor * k_idxs, int32_t il, const slot_info & sinfo) const;
+@@ -233,7 +241,8 @@ public:
+ 
+     void set_input_k_shift(ggml_tensor * dst) const;
+ 
+-    void set_input_kq_mask   (ggml_tensor * dst, const llama_ubatch * ubatch, bool causal_attn) const;
++    // the mask covers cells [kv_beg, kv_beg + dst->ne[0])
++    void set_input_kq_mask   (ggml_tensor * dst, const llama_ubatch * ubatch, bool causal_attn, uint32_t kv_beg = 0) const;
+     void set_input_pos_bucket(ggml_tensor * dst, const llama_ubatch * ubatch) const;
+ 
+     void set_input_k_rot(ggml_tensor * dst) const;
+@@ -277,6 +286,9 @@ private:
+     // SWA
+     const uint32_t n_swa = 0;
+ 
++    // attention window (set_attn_window), 0 = off
++    uint32_t n_win = 0;
++
+     // env: LLAMA_ATTN_ROT_DISABLE
+     uint32_t n_rot_k = 0;
+     uint32_t n_rot_v = 0;
+@@ -400,6 +412,9 @@ public:
+ 
+     uint32_t get_n_kv() const;
+ 
++    // first cell of the K/V views and of the KQ mask (non-zero only under an attention window)
++    uint32_t get_kv_beg() const;
++
+     ggml_type type_k() const;
+     ggml_type type_v() const;
+ 
+@@ -470,4 +485,7 @@ private:
+     // a heuristic, to avoid attending the full cache if it is not yet utilized
+     // as the cache gets filled, the benefit from this heuristic disappears
+     int32_t n_kv;
++
++    // the views start at this cell: the cells below it are outside the attention window of every token of the ubatch
++    uint32_t kv_beg = 0;
+ };
+diff --git a/src/llama-kv-cells.h b/src/llama-kv-cells.h
+index 9c0d51e4e..bf0fe9443 100644
+--- a/src/llama-kv-cells.h
++++ b/src/llama-kv-cells.h
+@@ -402,6 +402,27 @@ public:
+         return pos[i];
+     }
+ 
++    // the start of the first block of blk cells among the first n cells that holds a cell at a position > thr
++    // (thr >= -1, so empty cells never count); n if there is none
++    uint32_t first_block_pos_gt(llama_pos thr, uint32_t blk, uint32_t n) const {
++        assert(thr >= -1);
++        n = std::min(n, (uint32_t) pos.size());
++
++        for (uint32_t i0 = 0; i0 < n; i0 += blk) {
++            const uint32_t i1 = std::min(n, i0 + blk);
++
++            llama_pos m = -1;
++            for (uint32_t i = i0; i < i1; ++i) {
++                m = std::max(m, pos[i]);
++            }
++            if (m > thr) {
++                return i0;
++            }
++        }
++
++        return n;
++    }
++
+     const llama_kv_cell_ext & ext_get(uint32_t i) const {
+         assert(i < pos.size());
+         assert(pos[i] != -1);
+-- 
+2.43.0
+

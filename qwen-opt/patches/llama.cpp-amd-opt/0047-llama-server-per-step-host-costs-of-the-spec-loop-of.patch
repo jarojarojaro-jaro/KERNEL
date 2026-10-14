@@ -1,0 +1,270 @@
+From e84abb808954f2b91298bbd4ece668e4d229afcc Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 03:14:00 +0000
+Subject: [PATCH 47/47] llama/server: per-step host costs of the spec loop off
+ the critical path
+
+- llama_kv_cache::seq_rm of one sequence walks the sequence's (pos, cell) index instead of all n_ctx cells: the rollback
+  after verify (target) and the draft-region removal (MTP context) each scanned 204800 cells per step
+  [LLAMA_KV_SEQ_RM_SCAN=1: the scan]
+- KQ mask of a ubatch of one sequence that owns every used cell: one vectorizable pass over the cell positions plus the
+  cells at the ubatch's positions from the sequence index; same values [LLAMA_KV_MASK_FAST=0: the generic loop]
+- server: the context tokens are copied into the draft params every step only for the n-gram drafters
+  (common_speculative_needs_prompt)
+
+Host time per step (Qwen, -np 1, ctx 204800, MTP n=4): rollback + process_token 236 -> 6 us, draft-region removal +
+batch build 119 -> 2 us; at 89k context also verify launch 305 -> 139 us (mask) and draft setup 82 -> 4 us (prompt copy).
+Greedy md5 (plain + MTP) equal to 575e3d893.
+---
+ common/speculative.cpp          |  21 +++++
+ common/speculative.h            |   4 +
+ src/llama-kv-cache.cpp          | 131 ++++++++++++++++++++++++++++++--
+ src/llama-kv-cells.h            |   5 ++
+ tools/server/server-context.cpp |   5 +-
+ 5 files changed, 157 insertions(+), 9 deletions(-)
+
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index fd8182d62..caa5fe7a1 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -3304,6 +3304,27 @@ common_speculative_draft_params & common_speculative_get_draft_params(
+     return spec->dparams[seq_id];
+ }
+ 
++bool common_speculative_needs_prompt(const common_speculative * spec) {
++    if (spec == nullptr) {
++        return false;
++    }
++
++    for (const auto & impl : spec->impls) {
++        switch (impl->type) {
++            case COMMON_SPECULATIVE_TYPE_DRAFT_SIMPLE:
++            case COMMON_SPECULATIVE_TYPE_DRAFT_EAGLE3:
++            case COMMON_SPECULATIVE_TYPE_DRAFT_MTP:
++            case COMMON_SPECULATIVE_TYPE_DRAFT_DFLASH:
++            case COMMON_SPECULATIVE_TYPE_DRAFT_DSPARK:
++                break;
++            default:
++                return true;
++        }
++    }
++
++    return false;
++}
++
+ void common_speculative_begin(common_speculative * spec, llama_seq_id seq_id, const llama_tokens & prompt) {
+     if (spec == nullptr) {
+         return;
+diff --git a/common/speculative.h b/common/speculative.h
+index a59846829..0a100d1ba 100644
+--- a/common/speculative.h
++++ b/common/speculative.h
+@@ -83,6 +83,10 @@ struct common_speculative_draft_params {
+ 
+ common_speculative_draft_params & common_speculative_get_draft_params(common_speculative * spec, llama_seq_id seq_id);
+ 
++// whether a drafter reads common_speculative_draft_params::prompt (the n-gram drafters); the model drafters do not,
++// so the caller can skip copying the context tokens every step
++bool common_speculative_needs_prompt(const common_speculative * spec);
++
+ // optionally call once at the beginning of a new generation
+ void common_speculative_begin(common_speculative * spec, llama_seq_id seq_id, const llama_tokens & prompt);
+ 
+diff --git a/src/llama-kv-cache.cpp b/src/llama-kv-cache.cpp
+index da4dc8b6a..efc0f4185 100644
+--- a/src/llama-kv-cache.cpp
++++ b/src/llama-kv-cache.cpp
+@@ -420,14 +420,38 @@ bool llama_kv_cache::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1) {
+ 
+         uint32_t new_head = cells.size();
+ 
+-        for (uint32_t i = 0; i < cells.size(); ++i) {
+-            if (!cells.pos_in(i, p0, p1)) {
+-                continue;
++        // the cells of seq_id at positions [p0, p1), from the sequence's (pos, cell) index instead of a scan of all
++        // cells: a speculative rollback removes a few cells per step from a cache of up to n_ctx cells
++        // [LLAMA_KV_SEQ_RM_SCAN=1: the scan]
++        static const bool rm_scan = [] {
++            const char * env = getenv("LLAMA_KV_SEQ_RM_SCAN");
++            return env && atoi(env) != 0;
++        }();
++
++        if (!rm_scan) {
++            const auto & sp = cells.seq_pos_get(seq_id);
++
++            std::vector<uint32_t> idxs;
++            for (auto it = sp.lower_bound({ p0, 0u }); it != sp.end() && it->first < p1; ++it) {
++                idxs.push_back(it->second);
++            }
++
++            // seq_rm() edits the index: remove after collecting
++            for (const uint32_t i : idxs) {
++                if (cells.seq_rm(i, seq_id)) {
++                    new_head = std::min(new_head, i);
++                }
+             }
++        } else {
++            for (uint32_t i = 0; i < cells.size(); ++i) {
++                if (!cells.pos_in(i, p0, p1)) {
++                    continue;
++                }
+ 
+-            if (cells.seq_has(i, seq_id) && cells.seq_rm(i, seq_id)) {
+-                if (new_head == cells.size()) {
+-                    new_head = i;
++                if (cells.seq_has(i, seq_id) && cells.seq_rm(i, seq_id)) {
++                    if (new_head == cells.size()) {
++                        new_head = i;
++                    }
+                 }
+             }
+         }
+@@ -1811,6 +1835,65 @@ static void set_input_kq_mask_impl(const args_set_input_kq_mask & args, T * data
+     }
+ }
+ 
++// causal mask of a ubatch of one sequence that owns every used cell of its stream (no SWA, no ALiBi): a cell before
++// the first position of the ubatch is visible to all its tokens and an empty cell to none, so one vectorizable pass
++// over the cell positions gives a base row; each row then only revisits the cells at the ubatch's positions, from the
++// sequence's (pos, cell) index. Same values as set_input_kq_mask_impl.
++template<typename T>
++static void set_input_kq_mask_seq(const args_set_input_kq_mask & args, T * data, llama_seq_id seq_id) {
++    const auto & ubatch = *args.ubatch;
++    const auto & cells  = args.v_cells.at(args.seq_to_stream[seq_id]);
++
++    const int64_t  n_kv     = args.n_kv;
++    const uint32_t kv_beg   = args.kv_beg;
++    const uint32_t n_tokens = ubatch.n_tokens;
++    const bool     is_2d    = ubatch.is_pos_2d();
++
++    const T mask_keep = llama_cast<T>(0.0f);
++    const T mask_drop = llama_cast<T>(-INFINITY);
++
++    llama_pos p_lo = ubatch.pos[0];
++    for (uint32_t i = 1; i < n_tokens; ++i) {
++        p_lo = std::min(p_lo, ubatch.pos[i]);
++    }
++
++    const llama_pos * pos = cells.pos_data() + kv_beg;
++    for (int64_t j = 0; j < n_kv; ++j) {
++        data[j] = pos[j] >= 0 && pos[j] < p_lo ? mask_keep : mask_drop;
++    }
++    for (uint32_t i = 1; i < n_tokens; ++i) {
++        std::memcpy(data + n_kv*i, data, n_kv*sizeof(T));
++    }
++
++    const auto & sp  = cells.seq_pos_get(seq_id);
++    const auto   it0 = sp.lower_bound({ p_lo, 0u });
++
++    for (uint32_t i = 0; i < n_tokens; ++i) {
++        T * row = data + n_kv*i;
++
++        const llama_pos p1 = ubatch.pos[i];
++
++        for (auto it = it0; it != sp.end() && it->first <= p1; ++it) {
++            const uint32_t c = it->second;
++            if (c < kv_beg || c >= kv_beg + n_kv) {
++                continue;
++            }
++
++            bool keep = true;
++
++            // M-RoPE causal mask
++            if (is_2d && it->first == p1) {
++                const llama_pos p1_x = ubatch.pos[i + n_tokens*2];
++                const llama_pos p1_y = ubatch.pos[i + n_tokens];
++
++                keep = !cells.ext_get(c).is_2d_gt(p1_x, p1_y);
++            }
++
++            row[c - kv_beg] = keep ? mask_keep : mask_drop;
++        }
++    }
++}
++
+ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * ubatch, bool causal_attn, uint32_t kv_beg) const {
+     const uint32_t n_tokens = ubatch->n_tokens;
+ 
+@@ -1846,13 +1929,45 @@ void llama_kv_cache::set_input_kq_mask(ggml_tensor * dst, const llama_ubatch * u
+         /*.n_tps            =*/ n_tps,
+     };
+ 
++    // one sequence owning every used cell (a single-slot server): the fast path [LLAMA_KV_MASK_FAST=0: the generic loop]
++    static const bool mask_fast = [] {
++        const char * env = getenv("LLAMA_KV_MASK_FAST");
++        return !env || atoi(env) != 0;
++    }();
++
++    llama_seq_id seq_one = -1;
++    if (mask_fast && causal_attn && !hparams.use_alibi && args.swa_type == LLAMA_SWA_TYPE_NONE && n_stream == 1 && n_tokens > 0) {
++        seq_one = ubatch->seq_id[0][0];
++        for (uint32_t i = 0; i < n_tokens && seq_one >= 0; ++i) {
++            if (ubatch->n_seq_id[i] != 1 || ubatch->seq_id[i][0] != seq_one) {
++                seq_one = -1;
++            }
++        }
++        if (seq_one >= 0) {
++            const auto & cells = v_cells.at(seq_to_stream[seq_one]);
++            if (cells.get_used() != cells.seq_pos_get(seq_one).size()) {
++                seq_one = -1;
++            }
++        }
++    }
++
+     if (dst->type == GGML_TYPE_F16) {
+         std::vector<ggml_fp16_t> staging;
+-        set_input_kq_mask_impl<ggml_fp16_t>(args, input_data(dst, staging), causal_attn);
++        ggml_fp16_t * data = input_data(dst, staging);
++        if (seq_one >= 0) {
++            set_input_kq_mask_seq<ggml_fp16_t>(args, data, seq_one);
++        } else {
++            set_input_kq_mask_impl<ggml_fp16_t>(args, data, causal_attn);
++        }
+         input_upload(dst, staging);
+     } else {
+         std::vector<float> staging;
+-        set_input_kq_mask_impl<float>(args, input_data(dst, staging), causal_attn);
++        float * data = input_data(dst, staging);
++        if (seq_one >= 0) {
++            set_input_kq_mask_seq<float>(args, data, seq_one);
++        } else {
++            set_input_kq_mask_impl<float>(args, data, causal_attn);
++        }
+         input_upload(dst, staging);
+     }
+ 
+diff --git a/src/llama-kv-cells.h b/src/llama-kv-cells.h
+index bf0fe9443..5329e27a5 100644
+--- a/src/llama-kv-cells.h
++++ b/src/llama-kv-cells.h
+@@ -402,6 +402,11 @@ public:
+         return pos[i];
+     }
+ 
++    // the positions of all cells (-1: empty)
++    const llama_pos * pos_data() const {
++        return pos.data();
++    }
++
+     // the start of the first block of blk cells among the first n cells that holds a cell at a position > thr
+     // (thr >= -1, so empty cells never count); n if there is none
+     uint32_t first_block_pos_gt(llama_pos thr, uint32_t blk, uint32_t n) const {
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index 074ba432a..7f26d27aa 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -3376,7 +3376,10 @@ private:
+                             slot.spec_ckpt.update_dft(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_PARTIAL_ONLY);
+                         }
+ 
+-                        slot.spec_prompt = slot.prompt.tokens.get_text_tokens();
++                        // the context tokens are copied every step only for the drafters that read them
++                        if (common_speculative_needs_prompt(spec.get())) {
++                            slot.spec_prompt = slot.prompt.tokens.get_text_tokens();
++                        }
+ 
+                         const bool spec_reject = slot.use_spec_rejection();
+ 
+-- 
+2.43.0
+
