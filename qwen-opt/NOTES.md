@@ -334,4 +334,8 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Działa na forku bez zmian. ctx 131072, KV q4_0, bez MTP: 17.8 GB VRAM.
 - Czat (6 promptów x 3 seedy, T=1): **173 t/s** równo na wszystkich typach tekstu (5.78 ms/token).
 - llama-bench: tg128 198 t/s, pp4096 6124 t/s. Serwer: prefill 2768 (1.7k), 5805 (6.7k), 5172 (29.7k), 3709 (95k) t/s; decode 174 / 172 / 168 / 153 t/s.
-- Do optymalizacji później (MoE: kernele mmvq_id/expertów, brak głowicy MTP -> ewentualnie n-gram/draft).
+- Architektura: 40 warstw (30 shortconv + 10 GQA 32/8), 2 pierwsze gęste, potem MoE 64 ekspertów / 4 aktywne (ffn 1536), emb 2048, słownik 128k, głowica związana z `token_embd` (Q6_K 205 MiB). Eksperci Q5_K (gate/up) + Q5_K/Q6_K (down) = 15.1 GiB z ~16 GiB.
+- Bajty na token ≈ 0.97 GiB ekspertów (4/64) + 0.33 shortconv + 0.21 głowica + 0.10 gęste FFN + 0.07 atencja ≈ 1.8 GB -> próg pasma ~1.9 ms (~500 t/s).
+- Upstream e60eff95f vs fork (llama-bench, 2 przeplatane rundy, -fa 1, KV q4_0): tg128 169.3 -> **198.3 t/s (+17%)**, pp4096 6107 -> 6180 (+1%), pp512 ~5.6k (stddev duży u obu).
+- Profil rocprofv3 tg (fork): ~721 kerneli/token, zajętość GPU 3.77 ms/token (pod profilerem). mul_mat_vec_q 71% (2.69 ms, ~680 GB/s), rms_norm 5%, quantize_q8_1 3.7%, bin_bcast 3.5%, topk_moe 3.5% (3.5 us x 38), mul_mat_vec_f (router F32) 2.5%, set_rows q4_0 1.9%, ssm_conv 1.8%, FA 1.5%. Przerwy między kernelami ~3.1 us mediana; bez profilera 5.05 ms/token = ~3.8 ms pracy + ~1.3 ms przerw/host.
+- Do optymalizacji: mmvq_id ekspertów (~680 -> 850 GB/s), fuzje małych opów MoE (router F32 + topk + weighted reduction, norm + quantize), mniej przerw (721 kerneli). Spekulacja: brak MTP; weryfikacja k tokenów w MoE czyta do 4k różnych ekspertów na warstwę, więc zysk ograniczony (n-gram dla kodu do sprawdzenia).
