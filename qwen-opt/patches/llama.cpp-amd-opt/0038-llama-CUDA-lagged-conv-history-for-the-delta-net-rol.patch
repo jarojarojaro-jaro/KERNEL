@@ -1,0 +1,707 @@
+From b9b476c871b20ef4bc7622f58af5d14de2cfafda Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Tue, 13 Oct 2026 23:47:17 +0000
+Subject: [PATCH 38/39] llama/CUDA: lagged conv history for the delta-net
+ rollback by replay, no per-token conv snapshots (LLAMA_CONV_LAG)
+
+With GATED_DELTA_NET_LAG the GDN state already lags behind the cell by its pending rows, but the conv state still
+wrote a [d_conv - 1, nr] snapshot window per possible rollback (K = n_rs_seq + 1 windows). The fused SSM_CONV took at
+most 8 of them, so drafts of 8+ tokens fell back to CONCAT + K CPYs + gather per layer (server verify 832 -> 1391
+kernels at draft 8, 1585 at draft 12).
+
+The conv cache row now holds the history around the pending rows of the last ubatch instead: rows t0 .. t0 + P + 2
+of concat(history, x), channel fastest, where t0 is the first of its P <= K pending tokens. The history after keeping
+n of them is time steps n .. n + 2 of the row, so a rollback is the same rs_pend_n -= r as for the GDN state, and
+the graph reads it with a GET_ROWS of the time steps (rs_conv_idx input: n_keep + k, n_keep from the lag info) and
+writes the new window with one transposed CPY. The fused SSM_CONV folds the gather and the CPY (strided windows
+instead of snapshots), so 9-16 token verifies add no kernels; prompt ubatches run the unfused graph.
+
+- ggml-cuda: ssm_conv fused src with strided state rows and destination windows; the cache plan matches the
+  transposed gather of the history time steps and the transposed window CPY
+- llama: llama_memory_recurrent rs_conv_lag (with rs_lag, single sequence), r_l row of (n_rs_seq + d_conv) time
+  steps, seq_rm without the snapshot index, state save/load of the whole row; build_conv_state_lag
+- test-backend-ops: SSM_CONV_LAG_CACHE_FUSION (n_t 1-17, K 5/9/16, n_keep 0/3/K)
+- off-switch: LLAMA_CONV_LAG=0 (snapshots as before)
+
+Server rocprofv3 (Qwen UD, MTP iq4_xs, 2 prompts x 256 tokens, T=0), verify kernels / verify wall / step wall:
+  draft 7:  832 / 29.58 ms / 35.19 ms -> 832 / 29.51 / 35.08
+  draft 8: 1391 / 34.17 ms / 40.79 ms -> 832 / 30.91 / 37.21  (cpy 428 x 0.89 ms, concat_non_cont 0.59, ssm_conv 0.17,
+                                                              get_rows 0.10 ms gone)
+  draft 12: 1585 / 36.36 ms / 45.67 ms -> 834 / 32.15 / 41.13
+Greedy outputs (plain, MTP 4/8/12, both models, prompt-cache restore) md5-equal to d3a0973ae.
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu | 92 ++++++++++++++++++++++++---------
+ ggml/src/ggml-cuda/ssm-conv.cu  |  2 +-
+ ggml/src/ggml-cuda/ssm-conv.cuh | 49 ++++++++++--------
+ src/llama-graph.cpp             | 12 ++++-
+ src/llama-graph.h               |  5 ++
+ src/llama-memory-recurrent.cpp  | 36 ++++++++++---
+ src/llama-memory-recurrent.h    | 10 +++-
+ src/models/delta-net-base.cpp   | 60 +++++++++++++++++++++
+ src/models/models.h             | 10 ++++
+ tests/test-backend-ops.cpp      | 77 +++++++++++++++++++++++++++
+ 10 files changed, 298 insertions(+), 55 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 6efb8c958..414082bb8 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -3612,6 +3612,17 @@ static bool ggml_cuda_is_state_row_gather(const ggml_tensor * rows) {
+            ggml_is_contiguous(rows) && rows->ne[1] == 1 && rows->ne[2] == 1 && rows->ne[3] == 1;
+ }
+ 
++// the GET_ROWS of the d_conv - 1 time steps [nr, n] of a lagged conv history (llm_build_delta_net_base::build_conv_state_lag)
++// from the time-step rows of the cache row, with the rows read in place
++static bool ggml_cuda_is_conv_hist_gather(const ggml_tensor * rows) {
++    const ggml_tensor * src = rows->src[0];
++    const ggml_tensor * idx = rows->src[1];
++    return rows->op == GGML_OP_GET_ROWS && rows->type == GGML_TYPE_F32 && src->type == GGML_TYPE_F32 &&
++           idx->type == GGML_TYPE_I32 && ggml_is_contiguous(idx) && ggml_nelements(idx) == rows->ne[1] && rows->ne[1] <= 4 &&
++           src->nb[0] == sizeof(float) && src->ne[0] == rows->ne[0] && src->ne[2] == 1 && src->ne[3] == 1 &&
++           ggml_is_contiguous(rows) && rows->ne[2] == 1 && rows->ne[3] == 1;
++}
++
+ // the GET_ROWS gather of the initial recurrent state, when every reader is a GDN that reads the row in place
+ static bool ggml_cuda_gdn_state_gather_elided(const ggml_cgraph * cgraph, int i) {
+     const ggml_tensor * node = cgraph->nodes[i];
+@@ -3632,15 +3643,16 @@ static bool ggml_cuda_gdn_state_gather_elided(const ggml_cgraph * cgraph, int i)
+ 
+ // SSM_CONV over CONCAT(conv_state, transpose(x)) whose conv-state windows are also CPYd into the recurrent cache
+ // (build_conv_state): one fused kernel reads the CONCAT sources directly (the conv state through the gather index
+-// when it is a single gathered row) and writes the snapshot windows, so the CONCAT, the CPYs and the gather need
+-// not run (see ggml_cuda_ssm_conv_fused_src).
++// when it is a single gathered row) and writes the windows, so the CONCAT, the CPYs and the gather need not run
++// (see ggml_cuda_ssm_conv_fused_src). The conv state is either [n_st, nr] (per-token snapshots) or the transposed
++// [nr, n_st] window gathered from the lagged conv history.
+ struct ggml_cuda_ssm_conv_plan {
+     int                          concat_idx;
+     int                          n_fused;  // nodes after the SSM_CONV fused into it (SILU, or ADD + SILU)
+     ggml_tensor *                bias_add;
+     ggml_tensor *                silu;
+     const ggml_tensor *          gather;   // GET_ROWS read through its index, or nullptr
+-    std::array<int, SSM_CONV_FUSED_MAX_SNAPSHOTS> cpy_idx;
++    std::array<int, SSM_CONV_FUSED_MAX_WINDOWS> cpy_idx;
+     ggml_cuda_ssm_conv_fused_src src;
+ };
+ 
+@@ -3679,7 +3691,11 @@ static bool ggml_cuda_ssm_conv_cache_plan(const ggml_cgraph * cgraph, int conv_i
+     // sources: the conv state [n_st, nr] and the new inputs, element (t, channel) at x + t*nb0 + channel*nb1
+     const ggml_tensor * S = C->src[0];
+     const ggml_tensor * X = C->src[1];
+-    if (S->type != GGML_TYPE_F32 || S->ne[0] != n_st || S->ne[1] != nr || S->ne[2] != 1 || !ggml_is_contiguous(S) ||
++    // the lagged conv history: transpose of the GET_ROWS of its n_st time steps [nr, n_st]
++    const bool s_window = S->view_src && S->view_offs == 0 && ggml_cuda_is_conv_hist_gather(S->view_src) &&
++            S->view_src->ne[0] == nr && S->view_src->ne[1] == n_st && S->nb[0] == nr*sizeof(float) && S->nb[1] == sizeof(float);
++    if (S->type != GGML_TYPE_F32 || S->ne[0] != n_st || S->ne[1] != nr || S->ne[2] != 1 ||
++            (!s_window && !ggml_is_contiguous(S)) ||
+             X->type != GGML_TYPE_F32 || X->ne[0] != n_t || X->ne[1] != nr || X->ne[2] != 1 ||
+             X->nb[1] != sizeof(float) || X->nb[0] % sizeof(float) != 0) {
+         return false;
+@@ -3696,13 +3712,14 @@ static bool ggml_cuda_ssm_conv_cache_plan(const ggml_cgraph * cgraph, int conv_i
+         return false;
+     }
+ 
+-    // every reader of the CONCAT: this SSM_CONV, and CPYs of [n_st, nr] windows into contiguous cache rows
++    // every reader of the CONCAT: this SSM_CONV, and CPYs of windows into contiguous cache rows: [n_st, nr] views
++    // (snapshots) or transposed [nr, n] views (the lagged history)
+     std::vector<ggml_cuda_reader> readers;
+     if (!ggml_cuda_collect_readers(cgraph, plan.concat_idx, conv_idx - plan.concat_idx, readers)) {
+         return false;
+     }
+     ggml_cuda_ssm_conv_fused_src & src = plan.src;
+-    src.n_snap = 0;
++    src.n_win = 0;
+     bool conv_found = false;
+     for (const ggml_cuda_reader & r : readers) {
+         const ggml_tensor * n = cgraph->nodes[r.idx];
+@@ -3716,34 +3733,63 @@ static bool ggml_cuda_ssm_conv_cache_plan(const ggml_cgraph * cgraph, int conv_i
+         const ggml_tensor * v   = r.via;
+         const ggml_tensor * dst = n->src[1];
+         // (readers of the CPY result before the SSM_CONV are rejected by the cache-row check below)
+-        if (n->op != GGML_OP_CPY || r.src != 0 || v->op != GGML_OP_VIEW || v->view_src != C ||
+-                v->ne[0] != n_st || v->ne[1] != nr || v->ne[2] != 1 || v->ne[3] != 1 || v->nb[1] != C->nb[1] ||
+-                v->view_offs % sizeof(float) != 0 || v->view_offs / sizeof(float) + n_st > (size_t) C->ne[0] ||
+-                dst->type != GGML_TYPE_F32 || !ggml_is_contiguous(dst) || ggml_nelements(dst) != n_st*nr ||
+-                src.n_snap == SSM_CONV_FUSED_MAX_SNAPSHOTS) {
++        if (n->op != GGML_OP_CPY || r.src != 0 || v->view_src != C || v->ne[2] != 1 || v->ne[3] != 1 ||
++                v->view_offs % sizeof(float) != 0 || dst->type != GGML_TYPE_F32 || !ggml_is_contiguous(dst) ||
++                src.n_win == SSM_CONV_FUSED_MAX_WINDOWS) {
++            return false;
++        }
++        const int t0 = (int) (v->view_offs / sizeof(float));
++        int n_w;
++        if (v->op == GGML_OP_VIEW && v->ne[0] == n_st && v->ne[1] == nr && v->nb[0] == sizeof(float) && v->nb[1] == C->nb[1]) {
++            n_w = (int) n_st;
++            src.win_cs[src.n_win] = (int) n_st;
++            src.win_ts[src.n_win] = 1;
++        } else if (v->op == GGML_OP_TRANSPOSE && v->ne[0] == nr && v->nb[0] == C->nb[1] && v->nb[1] == sizeof(float)) {
++            n_w = (int) v->ne[1];
++            src.win_cs[src.n_win] = 1;
++            src.win_ts[src.n_win] = (int) nr;
++        } else {
+             return false;
+         }
+-        plan.cpy_idx[src.n_snap]  = r.idx;
+-        src.snap_t0[src.n_snap]  = (int) (v->view_offs / sizeof(float));
+-        src.snap_dst[src.n_snap] = (float *) dst->data;
+-        src.n_snap++;
++        if (t0 + n_w > C->ne[0] || ggml_nelements(dst) != n_w*nr) {
++            return false;
++        }
++        plan.cpy_idx[src.n_win] = r.idx;
++        src.win_t0[src.n_win]   = t0;
++        src.win_n[src.n_win]    = n_w;
++        src.win_dst[src.n_win]  = (float *) dst->data;
++        src.n_win++;
+     }
+     if (!conv_found) {
+         return false;
+     }
+ 
+-    // the conv state is read in place when it is a single gathered row
++    // the conv state is read in place when it is gathered from the cache
+     plan.gather = nullptr;
+-    if (S->view_src && S->view_offs == 0 && ggml_cuda_is_state_row_gather(S->view_src) &&
++    if (s_window) {
++        plan.gather          = S->view_src;
++        src.state            = (const float *) plan.gather->src[0]->data;
++        src.state_idx        = (const int32_t *) plan.gather->src[1]->data;
++        src.state_idx_step   = 1;
++        src.state_row_stride = plan.gather->src[0]->nb[1] / sizeof(float);
++        src.state_cs         = 1;
++        src.state_ts         = 0;
++    } else if (S->view_src && S->view_offs == 0 && ggml_cuda_is_state_row_gather(S->view_src) &&
+             ggml_nelements(S) == S->view_src->ne[0]) {
+         plan.gather          = S->view_src;
+         src.state            = (const float *) plan.gather->src[0]->data;
+         src.state_idx        = (const int32_t *) plan.gather->src[1]->data;
++        src.state_idx_step   = 0;
+         src.state_row_stride = plan.gather->src[0]->nb[1] / sizeof(float);
++        src.state_cs         = (int) n_st;
++        src.state_ts         = 1;
+     } else {
+         src.state            = (const float *) S->data;
+         src.state_idx        = nullptr;
++        src.state_idx_step   = 0;
+         src.state_row_stride = 0;
++        src.state_cs         = (int) n_st;
++        src.state_ts         = 1;
+     }
+     src.x        = (const float *) X->data;
+     src.x_stride = X->nb[0] / sizeof(float);
+@@ -3759,8 +3805,8 @@ static bool ggml_cuda_ssm_conv_cache_plan(const ggml_cgraph * cgraph, int conv_i
+     }
+     for (int k = plan.concat_idx + 1; k < conv_idx; ++k) {
+         const ggml_tensor * n = cgraph->nodes[k];
+-        if (ggml_cuda_is_view_or_noop(n) || std::find(plan.cpy_idx.begin(), plan.cpy_idx.begin() + src.n_snap, k) !=
+-                plan.cpy_idx.begin() + src.n_snap) {
++        if (ggml_cuda_is_view_or_noop(n) || std::find(plan.cpy_idx.begin(), plan.cpy_idx.begin() + src.n_win, k) !=
++                plan.cpy_idx.begin() + src.n_win) {
+             continue;
+         }
+         if (!ggml_cuda_gdn_state_gather_elided(cgraph, k) &&
+@@ -3768,7 +3814,7 @@ static bool ggml_cuda_ssm_conv_cache_plan(const ggml_cgraph * cgraph, int conv_i
+             return false;
+         }
+         for (int s = 0; s < GGML_MAX_SRC && n->src[s]; ++s) {
+-            for (int c = 0; c < src.n_snap; ++c) {
++            for (int c = 0; c < src.n_win; ++c) {
+                 const ggml_tensor * dst = cgraph->nodes[plan.cpy_idx[c]]->src[1];
+                 const ggml_tensor * root_n = n->src[s]->view_src ? n->src[s]->view_src : n->src[s];
+                 const ggml_tensor * root_d = dst->view_src ? dst->view_src : dst;
+@@ -3797,7 +3843,7 @@ static bool ggml_cuda_ssm_conv_plan_for_concat(const ggml_cgraph * cgraph, int c
+ // the row from the cache themselves
+ static bool ggml_cuda_state_gather_elided(const ggml_cgraph * cgraph, int i) {
+     const ggml_tensor * node = cgraph->nodes[i];
+-    if (!ggml_cuda_is_state_row_gather(node)) {
++    if (!ggml_cuda_is_state_row_gather(node) && !ggml_cuda_is_conv_hist_gather(node)) {
+         return false;
+     }
+     std::vector<ggml_cuda_reader> readers;
+@@ -3865,8 +3911,8 @@ static bool ggml_cuda_gdn_prologue_elided(const ggml_cgraph * cgraph, int i) {
+         return ggml_cuda_ssm_conv_plan_for_concat(cgraph, i, plan);
+     }
+ 
+-    if (node->op == GGML_OP_CPY && node->src[0]->op == GGML_OP_VIEW && node->src[0]->view_src &&
+-            node->src[0]->view_src->op == GGML_OP_CONCAT) {
++    if (node->op == GGML_OP_CPY && node->src[0]->view_src && node->src[0]->view_src->op == GGML_OP_CONCAT &&
++            (node->src[0]->op == GGML_OP_VIEW || node->src[0]->op == GGML_OP_TRANSPOSE)) {
+         // the plan accounts for every reader of the CONCAT, this CPY included
+         const ggml_tensor * C = node->src[0]->view_src;
+         for (int j = i + 1; j < std::min(cgraph->n_nodes, i + 65); ++j) {
+diff --git a/ggml/src/ggml-cuda/ssm-conv.cu b/ggml/src/ggml-cuda/ssm-conv.cu
+index c14fd3cb6..146a5ac19 100644
+--- a/ggml/src/ggml-cuda/ssm-conv.cu
++++ b/ggml/src/ggml-cuda/ssm-conv.cu
+@@ -137,7 +137,7 @@ static void ssm_conv_fused_f32_cuda(const ggml_cuda_ssm_conv_fused_src & src, co
+     const int threads = 128;
+     GGML_ASSERT(nr % threads == 0);
+     GGML_ASSERT(dst_nb0 == sizeof(float));
+-    GGML_ASSERT(n_t <= SSM_CONV_FUSED_MAX_TOKENS && src.n_snap <= SSM_CONV_FUSED_MAX_SNAPSHOTS);
++    GGML_ASSERT(n_t <= SSM_CONV_FUSED_MAX_TOKENS && src.n_win <= SSM_CONV_FUSED_MAX_WINDOWS);
+     const dim3 blocks(1, nr / threads, 1);
+     auto launch_kernel = [&](auto NC) {
+         constexpr int kNC = decltype(NC)::value;
+diff --git a/ggml/src/ggml-cuda/ssm-conv.cuh b/ggml/src/ggml-cuda/ssm-conv.cuh
+index d0856a8be..0166e6da4 100644
+--- a/ggml/src/ggml-cuda/ssm-conv.cuh
++++ b/ggml/src/ggml-cuda/ssm-conv.cuh
+@@ -3,26 +3,34 @@
+ #include "common.cuh"
+ #include "unary.cuh"
+ 
+-#define SSM_CONV_FUSED_MAX_SNAPSHOTS 8  // max. conv-state snapshot windows written by the fused kernel
+-#define SSM_CONV_FUSED_MAX_TOKENS    16 // max. tokens per sequence of the fused kernel
++#define SSM_CONV_FUSED_MAX_WINDOWS 8  // max. conv-state windows written by the fused kernel
++#define SSM_CONV_FUSED_MAX_TOKENS  16 // max. tokens per sequence of the fused kernel
+ 
+ // Sources of a fused SSM_CONV that replaces CONCAT(conv_state, transpose(x)) and the CPYs of conv-state windows
+ // into the recurrent cache (see ggml_cuda_ssm_conv_cache_plan). Single sequence; d_conv - 1 = state width.
++// The windows are either per-token rollback snapshots ([d_conv - 1, nr] each, time fastest) or the single history
++// window of the lagged conv state (rows t0.. of concat(state, x), channel fastest; llama_memory_recurrent rs_conv_lag).
+ struct ggml_cuda_ssm_conv_fused_src {
+-    const float *   state;            // conv state [d_conv - 1, nr], or the cache rows it is gathered from
+-    const int32_t * state_idx;        // when not null: the state is row state_idx[0] of `state`
++    const float *   state;            // conv state, element (k, channel) at state[r_k*state_row_stride + channel*state_cs + k*state_ts]
++    const int32_t * state_idx;        // r_k = state_idx[k*state_idx_step] (one gathered row, or one row per time step),
++    int             state_idx_step;   // or r_k = 0 when state_idx is null
+     int64_t         state_row_stride; // in floats, used with state_idx
++    int             state_cs;         // in floats
++    int             state_ts;         // in floats
+     const float *   x;                // new inputs, element (t, channel) at x[t*x_stride + channel]
+     int64_t         x_stride;         // in floats
+-    int             n_snap;
+-    int             snap_t0[SSM_CONV_FUSED_MAX_SNAPSHOTS];  // first time index of the window in concat(state, x)
+-    float *         snap_dst[SSM_CONV_FUSED_MAX_SNAPSHOTS]; // contiguous [d_conv - 1, nr] destination
++    int             n_win;
++    int             win_t0[SSM_CONV_FUSED_MAX_WINDOWS];  // first time index of the window in concat(state, x)
++    int             win_n [SSM_CONV_FUSED_MAX_WINDOWS];  // time steps of the window
++    int             win_cs[SSM_CONV_FUSED_MAX_WINDOWS];  // channel stride in the destination, in floats
++    int             win_ts[SSM_CONV_FUSED_MAX_WINDOWS];  // time stride in the destination, in floats
++    float *         win_dst[SSM_CONV_FUSED_MAX_WINDOWS];
+ };
+ 
+ // One block (split_d_inner channels, block index block_y) of the single-sequence SSM_CONV that reads its input
+ // straight from the two CONCAT sources (conv state, possibly through the gather index, and the new inputs) and also
+-// writes the conv-state snapshot windows the replaced CPYs would copy. Each thread owns one channel and reads all of
+-// its inputs before writing anything, so a snapshot may overwrite the cache row the state is read from and dst may
++// writes the conv-state windows the replaced CPYs would copy. Each thread owns one channel and reads all of its
++// inputs before writing anything, so a window may overwrite the cache row the state is read from and dst may
+ // alias x element for element (hence no __restrict__ on dst). The convolution arithmetic is that of ssm_conv_f32.
+ // Shared by ssm_conv_fused_f32 and the conv + GDN alpha/beta launch (mmvq.cu).
+ template <bool apply_silu, size_t split_d_inner, size_t d_conv>
+@@ -42,29 +50,28 @@ static __device__ __forceinline__ void ssm_conv_fused_f32_block(const int block_
+     }
+     const float b = bias != nullptr ? bias[c] : 0.0f;
+ 
+-    const float * s_row = src.state_idx ? src.state + src.state_idx[0] * src.state_row_stride : src.state;
+     float xs[L];
+ #pragma unroll
+     for (int k = 0; k < n_state; k++) {
+-        xs[k] = s_row[c * n_state + k];
++        const int64_t r = src.state_idx ? src.state_idx[k * src.state_idx_step] : 0;
++        xs[k] = src.state[r * src.state_row_stride + c * src.state_cs + k * src.state_ts];
+     }
+ #pragma unroll
+     for (int t = 0; t < SSM_CONV_FUSED_MAX_TOKENS; t++) {
+         xs[n_state + t] = t < n_t ? src.x[t * src.x_stride + c] : 0.0f;
+     }
+ 
+-    for (int s = 0; s < src.n_snap; s++) {
+-        const int t0 = src.snap_t0[s];
+-        float *   d  = src.snap_dst[s] + c * n_state;
++    for (int s = 0; s < src.n_win; s++) {
++        const int t0 = src.win_t0[s];
++        const int t1 = t0 + src.win_n[s];
++        const int ts = src.win_ts[s];
++        float *   d  = src.win_dst[s] + c * src.win_cs[s] - t0 * ts;
++        // uniform predicates over a static index into xs (a dynamic index would spill it to scratch)
+ #pragma unroll
+-        for (int k = 0; k < n_state; k++) {
+-            // register select instead of a dynamic index into xs (which would spill to scratch)
+-            float v = 0.0f;
+-#pragma unroll
+-            for (int tau = 0; tau < L; tau++) {
+-                v = tau == t0 + k ? xs[tau] : v;
++        for (int tau = 0; tau < L; tau++) {
++            if (tau >= t0 && tau < t1) {
++                d[tau * ts] = xs[tau];
+             }
+-            d[k] = v;
+         }
+     }
+ 
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 97ad1f33e..33b2e2244 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -399,7 +399,8 @@ void llm_graph_input_cls::set_input(const llama_ubatch * ubatch) {
+ void llm_graph_input_rs::set_input_rs(const llama_memory_recurrent_context * mctx_cur) {
+     const int64_t n_rs = mctx_cur->get_n_rs();
+ 
+-    if (s_copy) {
++    // (a graph of lagged recurrent states reads no state through s_copy, so it is not allocated)
++    if (s_copy && s_copy->buffer) {
+         GGML_ASSERT(ggml_backend_buffer_is_host(s_copy->buffer));
+         int32_t * data = (int32_t *) s_copy->data;
+ 
+@@ -412,6 +413,15 @@ void llm_graph_input_rs::set_input_rs(const llama_memory_recurrent_context * mct
+     if (s_lag) {
+         GGML_ASSERT(ggml_backend_buffer_is_host(s_lag->buffer));
+         mctx_cur->set_input_lag((int32_t *) s_lag->data);
++
++        if (s_conv_idx) {
++            GGML_ASSERT(ggml_backend_buffer_is_host(s_conv_idx->buffer) && s_lag->ne[0] == 1);
++            const int32_t n_keep = ((const int32_t *) s_lag->data)[2];
++            int32_t * data = (int32_t *) s_conv_idx->data;
++            for (int64_t k = 0; k < s_conv_idx->ne[0]; ++k) {
++                data[k] = n_keep + (int32_t) k;
++            }
++        }
+     }
+ }
+ 
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 2b73f27aa..9f5f6f163 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -313,6 +313,11 @@ public:
+     // rollback by replay (llama_memory_recurrent::rs_lag): the GATED_DELTA_NET_LAG lag info
+     ggml_tensor * s_lag = nullptr; // I32 [n_seqs, 4]
+ 
++    // lagged conv history (llama_memory_recurrent::rs_conv_lag, single sequence): the time steps of the cache row
++    // that are the history, n_keep + k with n_keep the kept pending rows (row 2 of s_lag); created by the first
++    // layer that reads it (llm_build_delta_net_base::build_conv_state_lag)
++    ggml_tensor * s_conv_idx = nullptr; // I32 [d_conv - 1]
++
+     // fills s_copy and the lag inputs from the memory context of the ubatch being processed
+     void set_input_rs(const llama_memory_recurrent_context * mctx_cur);
+ 
+diff --git a/src/llama-memory-recurrent.cpp b/src/llama-memory-recurrent.cpp
+index db6093274..16ade7e44 100644
+--- a/src/llama-memory-recurrent.cpp
++++ b/src/llama-memory-recurrent.cpp
+@@ -106,7 +106,20 @@ llama_memory_recurrent::llama_memory_recurrent(
+         this->rs_lag = why == nullptr;
+         LLAMA_LOG_INFO("%s: delta-net rollback by replay: %s%s\n", __func__, this->rs_lag ? "enabled" : "disabled, ",
+                 why ? why : "");
++
++        // the conv history lags the same way (LLAMA_CONV_LAG=0 keeps its per-token snapshots)
++        const char * env = getenv("LLAMA_CONV_LAG");
++        rs_conv_lag = this->rs_lag && hparams.ssm_d_conv > 1 && hparams.n_embd_r() % (hparams.ssm_d_conv - 1) == 0 &&
++                (env == nullptr || atoi(env) != 0);
++        if (this->rs_lag) {
++            LLAMA_LOG_INFO("%s: conv history %s\n", __func__, rs_conv_lag ? "lagged (no snapshots)" : "with per-token snapshots");
++        }
+     }
++    // a lagged conv row holds rows t0 .. t0 + P + d_conv - 2 of concat(history, x) of the last ubatch, channel fastest,
++    // where t0 is the first of its P <= n_rs_seq + 1 pending tokens: the history after keeping n of them is rows
++    // n .. n + d_conv - 2 of the row, so a rollback is the same rs_pend_n -= r as for the delta-net state
++    n_embd_r_row = rs_conv_lag ? hparams.n_embd_r() / (hparams.ssm_d_conv - 1) * (n_rs_seq + hparams.ssm_d_conv)
++                               : hparams.n_embd_r();
+     rs_pend_n.assign(mem_size, 0);
+     rs_pend_plane.assign(mem_size, 0);
+ 
+@@ -173,7 +186,7 @@ llama_memory_recurrent::llama_memory_recurrent(
+         }
+ 
+         const uint32_t n_rows = mem_size * (1 + n_rs_seq);
+-        ggml_tensor * r = ggml_new_tensor_2d(ctx, type_r, hparams.n_embd_r(), n_rows);
++        ggml_tensor * r = ggml_new_tensor_2d(ctx, type_r, n_embd_r_row, rs_conv_lag ? mem_size : n_rows);
+         // the lagged state needs no rollback snapshots
+         ggml_tensor * s = ggml_new_tensor_2d(ctx, type_s, hparams.n_embd_s(), this->rs_lag ? mem_size : n_rows);
+         ggml_format_name(r, "cache_r_l%d", i);
+@@ -211,7 +224,8 @@ llama_memory_recurrent::llama_memory_recurrent(
+             n_rs_seq = 0;
+             LLAMA_LOG_INFO("%s: disabling rollback snapshots because the memory module is empty\n", __func__);
+         }
+-        this->rs_lag = false;
++        this->rs_lag      = false;
++        this->rs_conv_lag = false;
+     }
+ 
+     {
+@@ -292,13 +306,15 @@ bool llama_memory_recurrent::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos
+                     return true;
+                 }
+                 const llama_pos rollback = cell.pos - (p0 - 1);
+-                // pending rollback is single-use
+-                const bool pending = rs_idx[seq_id] != 0;
++                // pending rollback is single-use (a snapshot index; the lagged states just keep fewer pending rows)
++                const bool pending = !rs_conv_lag && rs_idx[seq_id] != 0;
+                 // the lagged delta-net state replays only the rows that are still pending
+                 const uint32_t row = cell.src >= 0 ? (uint32_t) cell.src : (uint32_t) tail_id;
+                 const bool lag_ok = !rs_lag || rollback <= (llama_pos) rs_pend_n[row];
+                 if (!pending && lag_ok && rollback >= 1 && rollback <= (llama_pos) n_rs_seq) {
+-                    set_rs_idx(seq_id, (uint32_t) rollback);
++                    if (!rs_conv_lag) {
++                        set_rs_idx(seq_id, (uint32_t) rollback);
++                    }
+                     if (rs_lag) {
+                         rs_pend_n[row] -= (uint32_t) rollback;
+                     }
+@@ -1023,7 +1039,7 @@ void llama_memory_recurrent::state_write_data(llama_io_write_i & io, const std::
+         io.write(&r_type_i, sizeof(r_type_i));
+ 
+         // Write row size of R tensor
+-        const uint64_t r_size_row = ggml_row_size(r_l[il]->type, hparams.n_embd_r());
++        const uint64_t r_size_row = ggml_row_size(r_l[il]->type, n_embd_r_row);
+         io.write(&r_size_row, sizeof(r_size_row));
+ 
+         // Write each logical cell row range. With pending recurrent rollback,
+@@ -1263,7 +1279,7 @@ bool llama_memory_recurrent::state_read_data(llama_io_read_i & io, uint32_t cell
+         // Read row size of key
+         uint64_t r_size_row_ref;
+         io.read(&r_size_row_ref, sizeof(r_size_row_ref));
+-        const size_t r_size_row = ggml_row_size(r_l[il]->type, hparams.n_embd_r());
++        const size_t r_size_row = ggml_row_size(r_l[il]->type, n_embd_r_row);
+         if (r_size_row != r_size_row_ref) {
+             LLAMA_LOG_ERROR("%s: mismatched r row size (%zu != %zu, layer %d)\n", __func__, r_size_row, (size_t) r_size_row_ref, il);
+             return false;
+@@ -1417,7 +1433,7 @@ void llama_memory_recurrent::state_clear(llama_seq_id seq_id, uint32_t cell_head
+ 
+     for (uint32_t il = 0; il < n_layer; ++il) {
+         if (r_l[il] != nullptr) {
+-            const size_t r_size_row = ggml_row_size(r_l[il]->type, hparams.n_embd_r());
++            const size_t r_size_row = ggml_row_size(r_l[il]->type, n_embd_r_row);
+             llama_clear_tensor_data(r_l[il], cell_head * r_size_row, cell_count * r_size_row);
+         }
+ 
+@@ -1541,6 +1557,10 @@ bool llama_memory_recurrent_context::is_rs_lag() const {
+     return mem->rs_lag;
+ }
+ 
++bool llama_memory_recurrent_context::is_conv_lag() const {
++    return mem->rs_conv_lag;
++}
++
+ bool llama_memory_recurrent_context::is_lag_state(const ggml_tensor * s) const {
+     return mem->rs_lag && s != nullptr && std::find(mem->s_l.begin(), mem->s_l.end(), s) != mem->s_l.end();
+ }
+diff --git a/src/llama-memory-recurrent.h b/src/llama-memory-recurrent.h
+index 9a986419f..6aa327f4a 100644
+--- a/src/llama-memory-recurrent.h
++++ b/src/llama-memory-recurrent.h
+@@ -82,9 +82,16 @@ public:
+     // Rollback by replay of the delta-net state (GATED_DELTA_NET_LAG, LLAMA_GDN_REPLAY=0 disables it): s_l holds
+     // one state per cell that lags behind the cell's position by rs_pend_n[cell] tokens, whose GDN inputs are in
+     // plane rs_pend_plane[cell] of the cell's row of pend_l (two planes of n_rs_seq + 1 rows). Rolling back r tokens
+-    // is replaying r fewer rows: rs_pend_n[cell] -= r. The conv state keeps its rollback snapshots (rs_idx).
++    // is replaying r fewer rows: rs_pend_n[cell] -= r.
+     bool rs_lag = false;
+ 
++    // with rs_lag, the conv state lags too (LLAMA_CONV_LAG=0 keeps its rollback snapshots, rs_idx): the r_l row of a
++    // cell holds the conv history around the pending rows, which the graph reads at row rs_pend_n (build_conv_state)
++    bool rs_conv_lag = false;
++
++    // elements of an r_l row: n_embd_r, or the lagged conv history of n_rs_seq + d_conv time steps
++    uint32_t n_embd_r_row = 0;
++
+     std::vector<uint32_t> rs_pend_n;     // per cell row
+     std::vector<uint8_t>  rs_pend_plane; // per cell row
+ 
+@@ -198,6 +205,7 @@ public:
+     ggml_tensor * get_pend_l(int32_t il) const; // nullptr without rs_lag
+ 
+     bool is_rs_lag() const;
++    bool is_conv_lag() const; // the conv history lags (llama_memory_recurrent::rs_conv_lag)
+     bool is_lag_state(const ggml_tensor * s) const; // s is a delta-net state tensor s_l of a lagged memory
+ 
+     int32_t s_copy(int i) const;
+diff --git a/src/models/delta-net-base.cpp b/src/models/delta-net-base.cpp
+index abe0e1c70..2ca811e9e 100644
+--- a/src/models/delta-net-base.cpp
++++ b/src/models/delta-net-base.cpp
+@@ -460,6 +460,10 @@ ggml_tensor * llm_build_delta_net_base::build_conv_state(
+ 
+     const int64_t n_seqs = ubatch.n_seqs;
+ 
++    if (mctx_cur->is_conv_lag()) {
++        return build_conv_state_lag(inp, conv_states_all, qkv_mixed, conv_kernel_size, conv_channels, il);
++    }
++
+     ggml_tensor * conv_states = build_rs(inp, conv_states_all, hparams.n_embd_r(), n_seqs);
+     cb(conv_states, "conv_states", il);
+ 
+@@ -524,6 +528,62 @@ ggml_tensor * llm_build_delta_net_base::build_conv_state(
+     return conv_input;
+ }
+ 
++ggml_tensor * llm_build_delta_net_base::build_conv_state_lag(
++        llm_graph_input_rs * inp,
++        ggml_tensor *        conv_states_all,
++        ggml_tensor *        qkv_mixed,
++        int64_t              conv_kernel_size,
++        int64_t              conv_channels,
++        int                  il) {
++    const auto * mctx_cur = inp->mctx;
++
++    const int64_t n_st   = conv_kernel_size - 1;
++    const int64_t n_t    = qkv_mixed->ne[1];
++    const int64_t K      = (int64_t) cparams.n_rs_seq + 1;
++    const size_t  el     = ggml_element_size(conv_states_all);
++    const size_t  row0   = (size_t) mctx_cur->get_head() * conv_states_all->nb[1];
++
++    // one sequence in one cell (rs_lag), whose row holds K + n_st time steps of conv_channels values
++    GGML_ASSERT(ubatch.n_seqs == 1 && inp->s_lag != nullptr);
++    GGML_ASSERT(conv_states_all->ne[0] == (K + n_st) * conv_channels);
++
++    // a new sequence starts from a zero history, read at row 0 (its kept pending row count is 0, see set_input_lag)
++    const int32_t rs_zero = mctx_cur->get_rs_z();
++    ggml_tensor * hist_zero = ggml_view_1d(ctx0, conv_states_all, n_st*conv_channels*(rs_zero >= 0),
++            (size_t) rs_zero*conv_states_all->nb[1]*(rs_zero >= 0));
++    ggml_build_forward_expand(gf, ggml_scale_inplace(ctx0, hist_zero, 0));
++
++    // the history after the n_keep kept pending rows of the previous ubatch: time steps n_keep .. n_keep + n_st - 1
++    // of the row (llm_graph_input_rs::s_conv_idx, from the GATED_DELTA_NET_LAG lag info)
++    if (inp->s_conv_idx == nullptr) {
++        inp->s_conv_idx = ggml_new_tensor_1d(ctx0, GGML_TYPE_I32, n_st);
++        ggml_set_input(inp->s_conv_idx);
++        ggml_set_name(inp->s_conv_idx, "rs_conv_idx");
++    }
++    GGML_ASSERT(inp->s_conv_idx->ne[0] == n_st);
++    ggml_tensor * steps = ggml_view_2d(ctx0, conv_states_all, conv_channels, K + n_st, conv_channels*el, row0);
++    ggml_tensor * conv_states = ggml_get_rows(ctx0, steps, inp->s_conv_idx); // [conv_channels, n_st]
++    conv_states = ggml_transpose(ctx0, ggml_reshape_3d(ctx0, conv_states, conv_channels, n_st, 1));
++    cb(conv_states, "conv_states", il);
++
++    qkv_mixed = ggml_transpose(ctx0, qkv_mixed);
++    cb(qkv_mixed, "qkv_mixed_transposed", il);
++
++    ggml_tensor * conv_input = ggml_concat(ctx0, conv_states, qkv_mixed, 0);
++    cb(conv_input, "conv_input", il);
++
++    // new row: the history before this ubatch's P pending rows, then those rows ([TAG_RECURRENT_ROLLBACK_SPLITS]:
++    // they are the last P tokens of the sequence in the batch)
++    const int64_t P   = std::min(n_t, K);
++    const int64_t n_w = P + n_st;
++    ggml_tensor * hist_new = ggml_view_2d(ctx0, conv_input, n_w, conv_channels, conv_input->nb[1],
++            ggml_row_size(conv_input->type, n_t - P));
++    ggml_tensor * row_new = ggml_view_2d(ctx0, conv_states_all, conv_channels, n_w, conv_channels*el, row0);
++    ggml_build_forward_expand(gf, ggml_cpy(ctx0, ggml_transpose(ctx0, hist_new), row_new));
++
++    return conv_input;
++}
++
+ ggml_tensor * llm_build_delta_net_base::build_recurrent_attn(
+         llm_graph_input_rs * inp,
+         ggml_tensor *        ssm_states_all,
+diff --git a/src/models/models.h b/src/models/models.h
+index d6ddf9d16..52a0d750e 100644
+--- a/src/models/models.h
++++ b/src/models/models.h
+@@ -86,6 +86,16 @@ struct llm_build_delta_net_base : public llm_graph_context {
+             int64_t              conv_channels,
+             int                  il);
+ 
++    // build_conv_state of a lagged conv history (llama_memory_recurrent::rs_conv_lag): the history is the window at
++    // the kept pending rows of the cache row, and the row is rewritten with the window around this ubatch's pending rows
++    ggml_tensor * build_conv_state_lag(
++            llm_graph_input_rs * inp,
++            ggml_tensor *        conv_states_all,
++            ggml_tensor *        qkv_mixed,
++            int64_t              conv_kernel_size,
++            int64_t              conv_channels,
++            int                  il);
++
+     // run delta-net attention and write the new recurrent state(s) back to ssm_states_all
+     // s: (head_v_dim, head_v_dim, num_v_heads, n_seqs); returns output: (head_v_dim, num_v_heads, n_seq_tokens, n_seqs)
+     ggml_tensor * build_recurrent_attn(
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 99c38928c..f31d7d4d6 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -5065,6 +5065,74 @@ struct test_ssm_conv_cache_fusion : public test_case {
+     }
+ };
+ 
++// build_conv_state_lag + SSM_CONV + SILU: the conv history is time steps n_keep .. n_keep + d_conv - 2 of the lagged
++// cache row (GET_ROWS of time-step rows, transposed), CONCAT with transpose(x), and the window around the last
++// P = min(n_t, K) tokens is CPYd back into the row (transposed). The CUDA backend runs all of it as one SSM_CONV kernel.
++struct test_ssm_conv_lag_cache_fusion : public test_case {
++    const int64_t d_conv;
++    const int64_t d_inner;
++    const int64_t n_t;
++    const int64_t K;      // pending rows (n_rs_seq + 1)
++    const int32_t n_keep; // kept pending rows of the previous ubatch
++
++    std::string vars() override {
++        return VARS_TO_STR5(d_conv, d_inner, n_t, K, n_keep);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "SSM_CONV_LAG_CACHE_FUSION";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    test_ssm_conv_lag_cache_fusion(int64_t d_conv = 4, int64_t d_inner = 256, int64_t n_t = 5, int64_t K = 5, int32_t n_keep = 2)
++        : d_conv(d_conv), d_inner(d_inner), n_t(n_t), K(K), n_keep(n_keep) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        const int64_t n_st = d_conv - 1;
++
++        ggml_tensor * cache = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, (K + n_st) * d_inner, 1);
++        ggml_tensor * idx   = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, n_st);
++        ggml_set_name(idx, "idx");
++        ggml_tensor * steps       = ggml_view_2d(ctx, cache, d_inner, K + n_st, d_inner * sizeof(float), 0);
++        ggml_tensor * conv_states = ggml_get_rows(ctx, steps, idx);
++        conv_states = ggml_transpose(ctx, ggml_reshape_3d(ctx, conv_states, d_inner, n_st, 1));
++
++        ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, d_inner, n_t);
++        ggml_tensor * conv_input = ggml_concat(ctx, conv_states, ggml_transpose(ctx, x), 0);
++
++        ggml_tensor * w    = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, d_conv, d_inner);
++        ggml_tensor * conv = ggml_silu(ctx, ggml_ssm_conv(ctx, conv_input, w));
++
++        const int64_t P   = std::min(n_t, K);
++        const int64_t n_w = P + n_st;
++        ggml_tensor * src = ggml_view_2d(ctx, conv_input, n_w, d_inner, conv_input->nb[1], (n_t - P) * sizeof(float));
++        ggml_tensor * dst = ggml_view_2d(ctx, cache, d_inner, n_w, d_inner * sizeof(float), 0);
++        ggml_tensor * cpy = ggml_reshape_1d(ctx, ggml_cpy(ctx, ggml_transpose(ctx, src), dst), n_w * d_inner);
++
++        // the CPY before the SSM_CONV and its reader after it, as in the model graph
++        ggml_tensor * out = ggml_concat(ctx, cpy, ggml_reshape_1d(ctx, conv, ggml_nelements(conv)), 0);
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != nullptr; t = ggml_get_next_tensor(ctx, t)) {
++            if (ggml_is_view_op(t->op)) { continue; }
++            if (strcmp(t->name, "idx") == 0) {
++                std::vector<int32_t> rows(d_conv - 1);
++                for (size_t k = 0; k < rows.size(); ++k) {
++                    rows[k] = n_keep + (int32_t) k;
++                }
++                ggml_backend_tensor_set(t, rows.data(), 0, rows.size() * sizeof(int32_t));
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++};
++
+ // GGML_OP_GATED_DELTA_NET + GGML_OP_CPY (recurrent cache fusion)
+ struct test_gated_delta_net_cache_fusion : public test_case {
+     const ggml_type type;
+@@ -12271,6 +12339,15 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     }
+     test_cases.emplace_back(new test_ssm_conv_cache_fusion(4, 256, 17, 5)); // too many tokens for the fused kernel
+     test_cases.emplace_back(new test_ssm_conv_cache_fusion(3, 384, 6, 3));
++    // lagged conv history: window gather + concat + transposed window cpy folded into ssm_conv
++    for (int64_t n_t : { 1, 2, 5, 9, 13, 16, 17 }) {
++        for (int64_t K : { 5, 9, 16 }) {
++            for (int32_t n_keep : { 0, 3, (int32_t) K }) {
++                test_cases.emplace_back(new test_ssm_conv_lag_cache_fusion(4, 256, n_t, K, n_keep));
++            }
++        }
++    }
++    test_cases.emplace_back(new test_ssm_conv_lag_cache_fusion(3, 384, 6, 7, 4));
+ 
+     // gdn prologue: alpha/beta projections, q/k l2 norm and the state gather fused into the GDN path
+     for (ggml_type w : { GGML_TYPE_Q8_0, GGML_TYPE_Q4_K }) {
+-- 
+2.43.0
+

@@ -1,0 +1,870 @@
+From 7e9c73d8b2d18784347571445f0b4a69d5ef7d19 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 00:15:17 +0000
+Subject: [PATCH 39/39] common/llama: cost-priced adaptive MTP draft depth
+ (--spec-draft-adaptive, opt-in), per-width verify graphs
+
+- MTP draft chain: with llama_set_mtp_draft_conf the chain graph also outputs the draft-head probability of each
+  draft (softmax at the argmax) and the h_nextn of its last pass, so a chain continues in a next decode with the same
+  drafts as one longer chain. The fixed-depth chain graph is unchanged.
+- common_spec_depth_policy: drafts in segments of --spec-draft-seg levels (default 4) up to --spec-draft-n-max;
+  c_k = prod q_j with q_j the acceptance of draft j given the earlier ones, learned live per draft-head probability
+  bin and depth bucket (prior p^2, LLAMA_SPEC_DEPTH_POWER); kept depth maximizes sum c_j - R*v(k+1), one more
+  segment while its extrapolated value exceeds R * segment ms. R = live tokens/ms of whole steps; v(w) timed at
+  startup for every width (fastest of 7 decodes on empty memory), then the live per-width time and a live
+  width-change cost.
+- llama_set_verify_graph_cache: decodes of 2..N tokens that output every token keep a scheduler + graph per width
+  [LLAMA_VERIFY_SCHED], enabled by the adaptive policy (LLAMA_VERIFY_SCHED=0 rebuilds). A width change otherwise
+  costs ~1.6 ms per step (rebuild 1.24 ms + device graph update).
+
+Server, Qwen UD, 6 prompts x 2 seeds, T=1, interleaved: n=4 mean 102.7/102.6 (chat 84.6, prose 93.5), n=5 103.0,
+n=6 103.5, adaptive n-max 8 seg 4 103.6 (chat 79.8, prose 88.8), seg 2 102.4. Not a default: same mean as the best
+fixed depth, chat/prose below n=4.
+---
+ common/arg.cpp         |  18 ++
+ common/common.h        |   4 +
+ common/speculative.cpp | 388 ++++++++++++++++++++++++++++++++++++++++-
+ src/llama-context.cpp  | 100 +++++++++++
+ src/llama-context.h    |  19 ++
+ src/llama-cparams.h    |   3 +
+ src/llama-ext.h        |  15 ++
+ src/llama-graph.cpp    |   2 +
+ src/llama-graph.h      |   5 +
+ src/models/qwen35.cpp  |  19 ++
+ 10 files changed, 572 insertions(+), 1 deletion(-)
+
+diff --git a/common/arg.cpp b/common/arg.cpp
+index 61ccfe199..36cc52f31 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -4267,6 +4267,24 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+             params.speculative.draft.mtp_type = quant_type_from_str(value);
+         }
+     ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_MTP_TYPE"));
++    add_opt(common_arg(
++        {"--spec-draft-adaptive"},
++        {"--no-spec-draft-adaptive"},
++        string_format("MTP: draft depth priced by cost, up to --spec-draft-n-max: verify time of each width timed at startup\n"
++                      "and corrected live, draft-head probabilities calibrated by the accepted counts (default: %s)",
++                      params.speculative.draft.adaptive ? "enabled" : "disabled"),
++        [](common_params & params, bool value) {
++            params.speculative.draft.adaptive = value;
++        }
++    ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_ADAPTIVE"));
++    add_opt(common_arg(
++        {"--spec-draft-seg"}, "N",
++        string_format("MTP with --spec-draft-adaptive: draft levels per draft chain decode, the depth step (default: %d)",
++                      params.speculative.draft.seg),
++        [](common_params & params, int value) {
++            params.speculative.draft.seg = value;
++        }
++    ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_SEG"));
+     add_opt(common_arg(
+         {"--spec-draft-backend-sampling"},
+         {"--no-spec-draft-backend-sampling"},
+diff --git a/common/common.h b/common/common.h
+index 7d816fe6a..3507c8ed4 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -343,6 +343,10 @@ struct common_params_speculative_draft {
+ 
+     bool probabilistic = false; // sample the draft and verify by rejection, instead of argmax and match
+ 
++    // MTP draft chain: draft depth priced by measured cost, up to n_max, in chain segments of seg levels
++    bool    adaptive = false;
++    int32_t seg      = 4;
++
+     common_params_model mparams;
+ 
+     llama_context * ctx_tgt = nullptr;
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index c3ba80be7..418de54f5 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -1388,6 +1388,210 @@ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
+     }
+ };
+ 
++// Cost-priced adaptive depth of the MTP draft chain (--spec-draft-adaptive).
++//
++// The chain drafts in segments of `seg` greedy levels (one chain graph decode each; a segment continues from the last
++// draft token and h_nextn, so the drafts are those of one longer chain) and returns the draft-head probability of every
++// draft. A draft at depth k is worth c_k = P(the first k drafts are accepted) = prod_{j<=k} q_j, where q_j is the
++// acceptance of draft j given the drafts before it were accepted, learned live per bin of its draft-head probability
++// (the head is overconfident) and depth. Time is priced at the current rate R (tokens per ms, live EMA of whole
++// steps): the kept depth k maximizes sum_{j<=k} c_j - R*v(k+1), with v(w) the verify time of w tokens (timed at
++// startup, then the live time of each width, plus a live cost of switching the verify graph to another width), and
++// one more segment is drafted while its extrapolated value exceeds R times the live draft time of a segment.
++struct common_spec_depth_policy {
++    int32_t seg   = 4; // levels per chain segment
++    int32_t n_max = 4; // maximum depth
++    float   power = 2.0f; // prior of the calibration: q = p^power
++
++    std::vector<double> v_tab; // [n_max + 2] startup verify ms per width (fastest of the runs)
++    std::vector<double> v_ema; // live verify ms per width, after a step of the same width (0 = not seen)
++    double v_scale = 1.0;      // EMA of live / startup verify time
++    double sw_ms   = 0.0;      // EMA of the extra verify time after a width change
++    double seg_ms  = 0.0;      // EMA of the draft time of one segment
++    double tok_ema = 3.0;      // EMA of tokens per step
++    double ms_ema  = 30.0;     // EMA of ms per step
++
++    // conditional acceptance by depth bucket (1, 2-4, 5+) and draft-head probability bin: decayed counts
++    static constexpr int n_bins = 10;
++    static constexpr int n_dbk  = 3;
++    double cal_acc[n_dbk][n_bins] = {};
++    double cal_cnt[n_dbk][n_bins] = {};
++
++    // the last step
++    std::vector<double> conf;      // draft-head probabilities of the kept drafts
++    int32_t width      = 0;        // its verify width
++    int32_t width_prev = 0;        // the verify width of the step before
++    int32_t n_tok      = 1;        // tokens it produced
++    int64_t t_beg      = 0;        // draft() start of the last step
++    int64_t t_end      = 0;        // draft() end of the last step (0: no verify pending)
++    bool    step_done  = false;    // the last step's verify and accept() have run
++
++    int64_t n_steps = 0;
++    std::vector<int64_t> n_width;  // histogram of the verify widths
++
++    static constexpr double alpha  = 0.1;  // EMA weight of the live times and rates
++    static constexpr double lambda = 0.99; // decay of a calibration cell per observation
++    static constexpr double prior  = 3.0;  // pseudo-observations of the calibration prior
++
++    void init(int32_t seg_, int32_t n_max_, float power_) {
++        seg   = seg_;
++        n_max = n_max_;
++        power = power_;
++        v_tab.assign(n_max + 2, 0.0);
++        v_ema.assign(n_max + 2, 0.0);
++        n_width.assign(n_max + 2, 0);
++    }
++
++    static int bin(double p) {
++        static const double edges[n_bins - 1] = { 0.3, 0.5, 0.65, 0.75, 0.85, 0.9, 0.95, 0.98, 0.995 };
++        int b = 0;
++        while (b < n_bins - 1 && p >= edges[b]) {
++            ++b;
++        }
++        return b;
++    }
++
++    static int dbk(size_t j) {
++        return j == 0 ? 0 : (j < 4 ? 1 : 2);
++    }
++
++    // P(draft j is accepted | the drafts before it were) for its draft-head probability p
++    double q(size_t j, double p) const {
++        const int d = dbk(j);
++        const int b = bin(p);
++        return (cal_acc[d][b] + prior * std::pow(p, (double) power)) / (cal_cnt[d][b] + prior);
++    }
++
++    double rate() const {
++        return tok_ema / ms_ema;
++    }
++
++    // verify time of width w, without the cost of a width change
++    double verify_ms(int32_t w) const {
++        double v = 0.0;
++        // never cheaper than a narrower width
++        for (int32_t i = 1; i <= w; ++i) {
++            v = std::max(v, v_ema[i] > 0.0 ? v_ema[i] : v_tab[i] * v_scale);
++        }
++        return v;
++    }
++
++    double verify_cost(int32_t w) const {
++        return verify_ms(w) + (width != 0 && w != width ? sw_ms : 0.0);
++    }
++
++    // P(the first k drafts are accepted) for the draft-head probabilities p[0..k)
++    void calibrate(const std::vector<double> & p, std::vector<double> & c) const {
++        c.resize(p.size());
++        double prod = 1.0;
++        for (size_t k = 0; k < p.size(); ++k) {
++            prod *= q(k, p[k]);
++            c[k]  = prod;
++        }
++    }
++
++    // the best number of drafts to keep out of the calibrated c[0..d), and its value sum_{j<=k} c_j - R*v(k+1)
++    double best_keep(const std::vector<double> & c, int32_t d, int32_t & k_best) const {
++        const double R = rate();
++        double s = 0.0;
++        double u_best = -R * verify_cost(1);
++        k_best = 0;
++        for (int32_t k = 1; k <= d; ++k) {
++            s += c[k - 1];
++            const double u = s - R * verify_cost(k + 1);
++            if (u > u_best) {
++                u_best = u;
++                k_best = k;
++            }
++        }
++        return u_best;
++    }
++
++    // after drafting c[0..d) (the last segment from depth d - seg): is one more segment worth its draft time?
++    bool more(const std::vector<double> & c, int32_t d, int32_t n_lim) const {
++        if (d + seg > n_lim) {
++            return false;
++        }
++        int32_t k = 0;
++        const double u_stop = best_keep(c, d, k);
++        const double R  = rate();
++        const double c0 = d > seg ? c[d - seg - 1] : 1.0;
++        const double cd = c[d - 1];
++        if (cd <= 0.0 || c0 <= 0.0) {
++            return false;
++        }
++        // the next levels continue the segment's mean conditional acceptance
++        const double a = std::min(1.0, std::pow(cd / c0, 1.0 / seg));
++        double s = 0.0;
++        for (int32_t j = 0; j < d; ++j) {
++            s += c[j];
++        }
++        double u_more = -1e30;
++        double cj = cd;
++        for (int32_t m = 1; m <= seg; ++m) {
++            cj *= a;
++            s  += cj;
++            u_more = std::max(u_more, s - R * verify_cost(d + m + 1));
++        }
++        return u_more - R * seg_ms > u_stop;
++    }
++
++    // draft() of a new step starts
++    void begin_step(int64_t t) {
++        if (step_done && t_beg > 0) {
++            const double ms = (t - t_beg) / 1000.0;
++            // a longer gap is a new request (or prompt processing), not a step
++            if (ms < 4.0 * ms_ema) {
++                ms_ema  += alpha * (ms - ms_ema);
++                tok_ema += alpha * (n_tok - tok_ema);
++            }
++        }
++        t_beg     = t;
++        t_end     = 0;
++        step_done = false;
++    }
++
++    void end_draft(int64_t t, int32_t k, std::vector<double> && p) {
++        conf       = std::move(p);
++        conf.resize(k);
++        width_prev = width;
++        width      = k + 1;
++        n_tok      = 1;
++        t_end      = t;
++        n_steps++;
++        n_width[width]++;
++    }
++
++    // the verify of the drafts (and the MTP catch-up) is done
++    void end_verify(int64_t t) {
++        if (t_end == 0) {
++            return;
++        }
++        const double ms = (t - t_end) / 1000.0;
++        t_end = 0;
++        if (width_prev == width) {
++            v_ema[width] = v_ema[width] > 0.0 ? v_ema[width] + alpha * (ms - v_ema[width]) : ms;
++            if (v_tab[width] > 0.0) {
++                v_scale += alpha * (ms / v_tab[width] - v_scale);
++            }
++        } else if (width_prev != 0) {
++            sw_ms += alpha * (std::max(0.0, ms - verify_ms(width)) - sw_ms);
++        }
++        step_done = true;
++    }
++
++    void accept(int32_t n_accepted) {
++        n_tok = n_accepted + 1;
++        // draft j is observed when the drafts before it were accepted
++        for (size_t j = 0; j < conf.size() && (int32_t) j <= n_accepted; ++j) {
++            const int d = dbk(j);
++            const int b = bin(conf[j]);
++            cal_acc[d][b] = lambda * cal_acc[d][b] + ((int32_t) j < n_accepted ? 1.0 : 0.0);
++            cal_cnt[d][b] = lambda * cal_cnt[d][b] + 1.0;
++        }
++    }
++};
++
+ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+     common_params_speculative_draft params; // reuses the draft-model params slot (ctx_tgt/ctx_dft)
+ 
+@@ -1410,6 +1614,9 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+     bool    is_mem_shared = false;   // gemma4
+     bool    chain_heads   = false;   // derived in the ctor: n_mtp_layers > 1 && !is_mem_shared
+     bool    draft_chain   = false;   // greedy single-head drafts as one MTP draft chain graph (llama_set_mtp_draft_chain)
++    bool    adaptive      = false;   // cost-priced draft depth (params.adaptive, needs draft_chain)
++
++    common_spec_depth_policy depth;
+ 
+     // Per-sequence cross-batch carryover: pair (h_p, x_{p+1}) at MTP pos p+1.
+     // The last h-row of one process() call needs the first token of the NEXT
+@@ -1533,6 +1740,23 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+ 
+         verify_h.assign(n_seq, {});
+         verify_h_rows.assign(n_seq, 0);
++
++        adaptive = this->params.adaptive && draft_chain && n_seq == 1;
++        if (this->params.adaptive && !adaptive) {
++            SPC_WRN("%s\n", "adaptive draft depth needs the greedy MTP draft chain of a single sequence, using the fixed depth");
++        }
++        if (adaptive) {
++            const char * pow_env = getenv("LLAMA_SPEC_DEPTH_POWER");
++            depth.init(std::clamp(this->params.seg, 1, this->params.n_max), this->params.n_max,
++                    pow_env ? (float) atof(pow_env) : 2.0f);
++            llama_set_mtp_draft_conf(ctx_dft, true);
++            // the verify width changes from step to step: keep a graph per width (LLAMA_VERIFY_SCHED=0: rebuild)
++            const char * vs_env = getenv("LLAMA_VERIFY_SCHED");
++            if (vs_env == nullptr || atoi(vs_env) != 0) {
++                llama_set_verify_graph_cache(ctx_tgt, (uint32_t) this->params.n_max + 1);
++            }
++            time_costs();
++        }
+     }
+ 
+     ~common_speculative_impl_draft_mtp() override {
+@@ -1676,6 +1900,10 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+                     verify_h[seq_id].data() + (size_t) (n_rows - 1) * n_embd, row_bytes);
+         }
+ 
++        if (adaptive) {
++            depth.end_verify(ggml_time_us());
++        }
++
+         return true;
+     }
+ 
+@@ -1725,7 +1953,11 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+         if (draft_chain && n_drafting == 1) {
+             for (llama_seq_id seq_id = 0; seq_id < (llama_seq_id) n_seq; ++seq_id) {
+                 if (drafting[seq_id] && !dparams[seq_id].result_q) {
+-                    draft_greedy_chain(seq_id, dparams[seq_id]);
++                    if (adaptive) {
++                        draft_adaptive(seq_id, dparams[seq_id]);
++                    } else {
++                        draft_greedy_chain(seq_id, dparams[seq_id]);
++                    }
+                     n_drafting = 0;
+                 }
+             }
+@@ -1882,11 +2114,165 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+         dp.result->insert(dp.result->end(), ids, ids + n_out);
+     }
+ 
++    // one decode of the draft chain: n greedy levels from token id with hidden state h at position pos; appends the
++    // drafts and their draft-head probabilities, h_out gets the h_nextn of the last level
++    bool draft_chain_segment(llama_seq_id seq_id, llama_token id, const float * h, llama_pos pos, int32_t n,
++                             std::vector<llama_token> & ids, std::vector<double> & conf, std::vector<float> & h_out) {
++        auto * ctx_dft = params.ctx_dft;
++
++        batch.clear();
++        for (int32_t j = 0; j < n; ++j) {
++            // rows j > 0 only carry their position: the graph feeds pass j from pass j-1
++            const int32_t idx = batch.add(id, pos + j, seq_id, false);
++            batch.set_embd(idx, { h, 1, (size_t) n_embd });
++        }
++
++        llama_set_mtp_draft_chain(ctx_dft, true);
++        const int32_t ret = llama_process(ctx_dft, LLAMA_PROCESS_TYPE_DECODE, batch.get());
++        llama_set_mtp_draft_chain(ctx_dft, false);
++
++        if (ret != 0) {
++            SPC_ERR("llama_process (draft chain) returned %d\n", ret);
++            return false;
++        }
++
++        int32_t n_out  = 0;
++        int32_t n_conf = 0;
++        const llama_token * out = llama_get_mtp_draft_tokens(ctx_dft, &n_out);
++        const float       * p   = llama_get_mtp_draft_conf(ctx_dft, &n_conf);
++        const float       * hl  = llama_get_mtp_draft_h(ctx_dft);
++        GGML_ASSERT(n_out == n && n_conf == n && hl != nullptr);
++
++        ids.insert(ids.end(), out, out + n);
++        conf.insert(conf.end(), p, p + n);
++        h_out.assign(hl, hl + n_embd);
++
++        return true;
++    }
++
++    // greedy chain drafts of a depth priced by cost (see common_spec_depth_policy)
++    void draft_adaptive(llama_seq_id seq_id, common_speculative_draft_params & dp) {
++        depth.begin_step(ggml_time_us());
++
++        const int32_t n_lim = dp.n_max > 0 ? std::min(dp.n_max, depth.n_max) : depth.n_max;
++
++        std::vector<llama_token> ids;
++        std::vector<double>      conf; // draft-head probabilities
++        std::vector<double>      c;    // P(the first k drafts are accepted)
++        std::vector<float>       h = pending_h[seq_id];
++        std::vector<float>       h_next;
++
++        llama_token id = dp.id_last;
++        int32_t     d  = 0;
++        while (d + depth.seg <= n_lim) {
++            const int64_t t0 = ggml_time_us();
++            if (!draft_chain_segment(seq_id, id, h.data(), dp.pos0 + d, depth.seg, ids, conf, h_next)) {
++                break;
++            }
++            // (the first segment also waits for the MTP catch-up of the last verify)
++            if (d > 0) {
++                const double ms = (ggml_time_us() - t0) / 1000.0;
++                depth.seg_ms += common_spec_depth_policy::alpha * (ms - depth.seg_ms);
++            }
++
++            d += depth.seg;
++            depth.calibrate(conf, c);
++
++            if (!depth.more(c, d, n_lim)) {
++                break;
++            }
++            id = ids.back();
++            std::swap(h, h_next);
++        }
++
++        int32_t k = 0;
++        depth.best_keep(c, d, k);
++
++        dp.result->insert(dp.result->end(), ids.begin(), ids.begin() + k);
++        depth.end_draft(ggml_time_us(), k, std::move(conf));
++
++        if (depth.n_steps % 256 == 0) {
++            std::string hist;
++            for (size_t w = 1; w < depth.n_width.size(); ++w) {
++                hist += string_format(" %zu:%" PRId64, w, depth.n_width[w]);
++            }
++            std::string cal;
++            for (int b = 0; b < common_spec_depth_policy::n_bins; ++b) {
++                cal += " |";
++                for (int db = 0; db < common_spec_depth_policy::n_dbk; ++db) {
++                    cal += string_format(" %.2f/%.0f", depth.cal_acc[db][b] / std::max(1e-9, depth.cal_cnt[db][b]), depth.cal_cnt[db][b]);
++                }
++            }
++            SPC_INF("adaptive depth: %.3f tok/ms (%.2f tok, %.2f ms/step), segment %.2f ms, verify scale %.2f, width change %.2f ms, "
++                    "verify widths%s, acceptance by probability bin (depth 1, 2-4, 5+)%s\n", depth.rate(), depth.tok_ema, depth.ms_ema,
++                    depth.seg_ms, depth.v_scale, depth.sw_ms, hist.c_str(), cal.c_str());
++        }
++    }
++
++    // startup: verify time of each width (target decodes of 1 .. n_max + 1 tokens) and of one draft segment, fastest
++    // of the timed runs, on empty memories
++    void time_costs() {
++        auto * ctx_tgt = params.ctx_tgt;
++        auto * ctx_dft = params.ctx_dft;
++
++        const llama_token tok    = 1000;
++        const int         n_runs = 7;
++
++        common_batch b(ctx_tgt);
++        std::string tab;
++        for (int32_t w = 1; w <= depth.n_max + 1; ++w) {
++            double best = 1e30;
++            for (int r = 0; r <= n_runs; ++r) {
++                llama_memory_clear(llama_get_memory(ctx_tgt), true);
++                b.clear();
++                for (int32_t i = 0; i < w; ++i) {
++                    b.add(tok, i, 0, true);
++                }
++                const int64_t t0 = ggml_time_us();
++                if (llama_process(ctx_tgt, LLAMA_PROCESS_TYPE_DECODE, b.get()) != 0) {
++                    SPC_ERR("%s\n", "verify timing decode failed");
++                    break;
++                }
++                llama_synchronize(ctx_tgt);
++                if (r > 0) {
++                    best = std::min(best, (ggml_time_us() - t0) / 1000.0);
++                }
++            }
++            depth.v_tab[w] = best < 1e30 ? best : 0.0;
++            tab += string_format(" %d:%.2f", w, depth.v_tab[w]);
++        }
++        llama_memory_clear(llama_get_memory(ctx_tgt), true);
++
++        std::vector<float>       h(n_embd, 0.0f);
++        std::vector<float>       h_out;
++        std::vector<llama_token> ids;
++        std::vector<double>      conf;
++        double best = 1e30;
++        for (int r = 0; r <= n_runs; ++r) {
++            llama_memory_clear(llama_get_memory(ctx_dft), true);
++            const int64_t t0 = ggml_time_us();
++            if (!draft_chain_segment(0, tok, h.data(), 0, depth.seg, ids, conf, h_out)) {
++                break;
++            }
++            if (r > 0) {
++                best = std::min(best, (ggml_time_us() - t0) / 1000.0);
++            }
++        }
++        llama_memory_clear(llama_get_memory(ctx_dft), true);
++        depth.seg_ms = best < 1e30 ? best : 0.0;
++
++        SPC_INF("adaptive draft depth: segment of %d levels %.2f ms, verify ms by width:%s\n", depth.seg, depth.seg_ms, tab.c_str());
++    }
++
+     void accept(llama_seq_id seq_id, uint16_t n_accepted, bool /*is_other*/) override {
+         if (seq_id < 0 || seq_id >= (llama_seq_id) n_seq) {
+             return;
+         }
+ 
++        if (adaptive) {
++            depth.accept(n_accepted);
++        }
++
+         const int32_t n_rows = verify_h_rows[seq_id];
+         if (n_rows <= 0) {
+             return;
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 6036a4b7a..0e0be5c17 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -658,6 +658,7 @@ void llama_context::sched_reserve() {
+     gf_res_reserve.reset(new llm_graph_result(max_nodes));
+     gf_res_prev_active  = nullptr;
+     gf_res_chain_active = nullptr;
++    reset_verify_scheds(true);
+ 
+     sched.reset(ggml_backend_sched_new(backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, cparams.pipeline_parallel, cparams.op_offload));
+     ggml_backend_sched_set_copy_callback(sched.get(), sched_copy_experts, this);
+@@ -842,6 +843,32 @@ void llama_context::swap_chain_sched() {
+     std::swap(gf_res_prev_active, gf_res_chain_active);
+ }
+ 
++void llama_context::swap_verify_sched(verify_sched_entry & e) {
++    std::swap(sched, e.sched);
++    std::swap(gf_res_prev[1], e.res);
++    std::swap(gf_res_prev_active, e.active);
++}
++
++void llama_context::reset_verify_scheds(bool free) {
++    if (free) {
++        verify_scheds.clear();
++        return;
++    }
++    for (auto & [n, e] : verify_scheds) {
++        if (e.res) {
++            e.res->reset();
++        }
++        e.active = nullptr;
++    }
++}
++
++void llama_context::set_verify_graph_cache(uint32_t max_tokens) {
++    verify_sched_max = max_tokens;
++    if (max_tokens == 0) {
++        reset_verify_scheds(true);
++    }
++}
++
+ uint32_t llama_context::n_ctx() const {
+     return cparams.n_ctx;
+ }
+@@ -908,6 +935,7 @@ bool llama_context::memory_update(bool optimize) {
+         }
+         gf_res_prev_active  = nullptr;
+         gf_res_chain_active = nullptr;
++        reset_verify_scheds(false);
+ 
+         if (!mctx->apply()) {
+             LLAMA_LOG_ERROR("%s: failed to apply memory update\n", __func__);
+@@ -1300,6 +1328,20 @@ const llama_token * llama_context::get_mtp_draft_tokens(int32_t * n_tokens) cons
+     return mtp_draft_tokens.empty() ? nullptr : mtp_draft_tokens.data();
+ }
+ 
++void llama_context::set_mtp_draft_conf(bool enable) {
++    cparams.mtp_draft_conf = enable;
++}
++
++const float * llama_context::get_mtp_draft_conf(int32_t * n_tokens) const {
++    *n_tokens = (int32_t) mtp_draft_conf.size();
++
++    return mtp_draft_conf.empty() ? nullptr : mtp_draft_conf.data();
++}
++
++const float * llama_context::get_mtp_draft_h() const {
++    return mtp_draft_h.empty() ? nullptr : mtp_draft_h.data();
++}
++
+ void llama_context::set_causal_attn(bool value) {
+     LLAMA_LOG_DEBUG("%s: value = %d\n", __func__, value);
+ 
+@@ -1851,6 +1893,8 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+     output_swaps.clear();
+     embd_batch_idxs.clear();
+     mtp_draft_tokens.clear();
++    mtp_draft_conf.clear();
++    mtp_draft_h.clear();
+ 
+     sched_reserve();
+ 
+@@ -1936,6 +1980,30 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+         chain_scope.lctx = this;
+     }
+ 
++    // [LLAMA_VERIFY_SCHED] a speculative verify runs on the scheduler and graph of its width, restored when leaving
++    struct verify_sched_scope {
++        llama_context *      lctx;
++        verify_sched_entry * e;
++        ~verify_sched_scope() {
++            if (e) {
++                lctx->swap_verify_sched(*e);
++            }
++        }
++    } verify_scope = { this, nullptr };
++
++    if (verify_sched_max > 0 && !cparams.mtp_draft_chain && !cparams.pipeline_parallel && n_tokens_all > 1 &&
++            n_tokens_all <= verify_sched_max && n_outputs_all == n_tokens_all && n_tokens_all <= cparams.n_ubatch) {
++        verify_sched_entry & e = verify_scheds[n_tokens_all];
++        if (!e.sched) {
++            e.sched.reset(ggml_backend_sched_new(backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(),
++                    gf_res_reserve->get_max_nodes(), false, cparams.op_offload));
++            ggml_backend_sched_set_copy_callback(e.sched.get(), sched_copy_experts, this);
++            ggml_backend_sched_set_async_inputs(e.sched.get(), async_inputs);
++        }
++        swap_verify_sched(e);
++        verify_scope.e = &e;
++    }
++
+     int64_t n_outputs_prev = 0;
+     int64_t n_tokens_prev  = 0;
+ 
+@@ -2118,6 +2186,16 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+             ggml_backend_tensor_get_async(ggml_backend_sched_get_tensor_backend(sched.get(), t_draft),
+                     t_draft, mtp_draft_tokens.data(), 0, n_draft*sizeof(llama_token));
+         }
++        if (ggml_tensor * t_conf = res->get_mtp_draft_conf()) {
++            mtp_draft_conf.resize((size_t) ggml_nelements(t_conf));
++            ggml_backend_tensor_get_async(ggml_backend_sched_get_tensor_backend(sched.get(), t_conf),
++                    t_conf, mtp_draft_conf.data(), 0, mtp_draft_conf.size()*sizeof(float));
++        }
++        if (ggml_tensor * t_h = res->get_mtp_draft_h()) {
++            mtp_draft_h.resize((size_t) ggml_nelements(t_h));
++            ggml_backend_tensor_get_async(ggml_backend_sched_get_tensor_backend(sched.get(), t_h),
++                    t_h, mtp_draft_h.data(), 0, mtp_draft_h.size()*sizeof(float));
++        }
+ 
+         if (has_samplers) {
+             const auto stride = n_vocab;
+@@ -2623,6 +2701,7 @@ ggml_cgraph * llama_context::graph_reserve(
+     }
+     gf_res_prev_active  = nullptr;
+     gf_res_chain_active = nullptr;
++    reset_verify_scheds(false);
+ 
+     // store the n_outputs as it is, and restore it afterwards
+     // TODO: not sure if needed, might simplify in the future by removing this
+@@ -3835,6 +3914,7 @@ void llama_context::opt_epoch_iter(
+             // the optimizer graph is allocated outside sched, so the next decode must rebuild
+             gf_res_prev_active  = nullptr;
+             gf_res_chain_active = nullptr;
++            reset_verify_scheds(false);
+             res->reset();
+ 
+             auto * gf = model.build_graph(gparams);
+@@ -4231,6 +4311,26 @@ const llama_token * llama_get_mtp_draft_tokens(llama_context * ctx, int32_t * n_
+     return ctx->get_mtp_draft_tokens(n_tokens);
+ }
+ 
++void llama_set_verify_graph_cache(llama_context * ctx, uint32_t max_tokens) {
++    ctx->set_verify_graph_cache(max_tokens);
++}
++
++void llama_set_mtp_draft_conf(llama_context * ctx, bool enable) {
++    ctx->set_mtp_draft_conf(enable);
++}
++
++const float * llama_get_mtp_draft_conf(llama_context * ctx, int32_t * n_tokens) {
++    ctx->synchronize();
++
++    return ctx->get_mtp_draft_conf(n_tokens);
++}
++
++const float * llama_get_mtp_draft_h(llama_context * ctx) {
++    ctx->synchronize();
++
++    return ctx->get_mtp_draft_h();
++}
++
+ llama_memory_t llama_get_memory(const struct llama_context * ctx) {
+     if (!ctx) {
+         return nullptr;
+diff --git a/src/llama-context.h b/src/llama-context.h
+index d907379d9..88116db2a 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -123,6 +123,10 @@ struct llama_context {
+     void set_nextn_layer_offset(int32_t offset);
+     bool set_mtp_draft_chain(bool enable);
+     const llama_token * get_mtp_draft_tokens(int32_t * n_tokens) const;
++    void set_mtp_draft_conf(bool enable);
++    const float * get_mtp_draft_conf(int32_t * n_tokens) const;
++    const float * get_mtp_draft_h() const;
++    void set_verify_graph_cache(uint32_t max_tokens);
+     void set_causal_attn(bool value);
+     void set_warmup(bool value);
+ 
+@@ -319,6 +323,8 @@ private:
+ 
+     // draft tokens of the last MTP draft chain decode (cparams.mtp_draft_chain)
+     std::vector<llama_token> mtp_draft_tokens;
++    std::vector<float>       mtp_draft_conf; // their draft-head probabilities (cparams.mtp_draft_conf)
++    std::vector<float>       mtp_draft_h;    // h_nextn of the last pass of the chain (cparams.mtp_draft_conf)
+ 
+     // host buffers for output layer input embeddings, per layer
+     // populated when cparams.output_layer_inp[il] is true
+@@ -371,6 +377,19 @@ private:
+     llm_graph_result *     gf_res_chain_active = nullptr; // gf_res_prev_active of the scheduler not in use
+     void swap_chain_sched();
+ 
++    // [LLAMA_VERIFY_SCHED] decodes of 2 .. verify_sched_max tokens that output every token (speculative verifies) run
++    // on a scheduler and graph kept per batch size (llama_set_verify_graph_cache), so that a verify whose width changes
++    // from step to step reuses its allocated graph (and device graph) instead of rebuilding it
++    struct verify_sched_entry {
++        ggml_backend_sched_ptr sched;
++        llm_graph_result_ptr   res;              // its gf_res_prev[1]
++        llm_graph_result *     active  = nullptr; // its gf_res_prev_active
++    };
++    std::map<uint32_t, verify_sched_entry> verify_scheds;
++    uint32_t verify_sched_max = 0;
++    void swap_verify_sched(verify_sched_entry & e);
++    void reset_verify_scheds(bool free);
++
+     bool sched_need_reserve = true;
+ 
+     // state of sched_copy_experts, reset before each graph compute
+diff --git a/src/llama-cparams.h b/src/llama-cparams.h
+index 08ff9ac5a..b53e8637e 100644
+--- a/src/llama-cparams.h
++++ b/src/llama-cparams.h
+@@ -24,6 +24,9 @@ struct llama_cparams {
+     // MTP draft context: decode a ubatch of n <= LLAMA_MTP_DRAFT_CHAIN_MAX (llama-ext.h) positions as one graph of n chained greedy
+     // single-token MTP passes (see llama_set_mtp_draft_chain)
+     bool mtp_draft_chain = false;
++    // the MTP draft chain also outputs the draft-head probability of each draft and the h_nextn of its last pass
++    // (see llama_set_mtp_draft_conf)
++    bool mtp_draft_conf = false;
+ 
+     float rope_freq_base;
+     float rope_freq_scale;
+diff --git a/src/llama-ext.h b/src/llama-ext.h
+index 097ae2dd0..e3ddbd258 100644
+--- a/src/llama-ext.h
++++ b/src/llama-ext.h
+@@ -113,6 +113,21 @@ LLAMA_API bool llama_set_mtp_draft_chain(struct llama_context * ctx, bool enable
+ // The draft tokens of the last MTP draft chain decode (synchronizes), nullptr if there are none
+ LLAMA_API const llama_token * llama_get_mtp_draft_tokens(struct llama_context * ctx, int32_t * n_tokens);
+ 
++// When enabled, the MTP draft chain also outputs the draft-head (softmax) probability of each draft token and the
++// h_nextn of its last pass, which together with the last draft token continue the chain in a next decode
++// (bitwise the same drafts as one longer chain). Used by the cost-priced adaptive draft depth.
++LLAMA_API void llama_set_mtp_draft_conf(struct llama_context * ctx, bool enable);
++
++// The draft probabilities of the last MTP draft chain decode (synchronizes), nullptr if there are none
++LLAMA_API const float * llama_get_mtp_draft_conf(struct llama_context * ctx, int32_t * n_tokens);
++
++// Decodes of 2 .. max_tokens tokens that output every token (speculative verifies) keep one scheduler and graph per
++// batch size, so that verifies of changing widths reuse their graphs (0 = off, the default; small compute buffer each)
++LLAMA_API void llama_set_verify_graph_cache(struct llama_context * ctx, uint32_t max_tokens);
++
++// The h_nextn [n_embd] of the last pass of the last MTP draft chain decode (synchronizes), nullptr if there is none
++LLAMA_API const float * llama_get_mtp_draft_h(struct llama_context * ctx);
++
+ // Marks the entries that a joint decision head (clef) reads, the default is 0
+ // See https://github.com/ggml-org/llama.cpp/pull/29831 for details
+ // A run of entries with the same value is one span, spans must be separated by entries with value 0
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index 33b2e2244..976e39845 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -1387,6 +1387,8 @@ void llm_graph_result::reset() {
+     t_embd_pooled = nullptr;
+     t_h_nextn     = nullptr;
+     t_mtp_draft   = nullptr;
++    t_mtp_draft_conf = nullptr;
++    t_mtp_draft_h    = nullptr;
+ 
+     t_layer_inp.resize(LLAMA_MAX_LAYERS + 1);
+     std::fill(t_layer_inp.begin(), t_layer_inp.end(), nullptr);
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 9f5f6f163..1400e6749 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -927,6 +927,7 @@ struct llm_graph_params {
+             cparams.embeddings_nextn_masked == other.cparams.embeddings_nextn_masked &&
+             cparams.causal_attn             == other.cparams.causal_attn             &&
+             cparams.mtp_draft_chain         == other.cparams.mtp_draft_chain         &&
++            cparams.mtp_draft_conf          == other.cparams.mtp_draft_conf          &&
+             arch  == other.arch  &&
+             gtype == other.gtype &&
+             cvec  == other.cvec  &&
+@@ -953,6 +954,8 @@ public:
+     ggml_tensor * get_embd_pooled() const { return t_embd_pooled; }
+     ggml_tensor * get_h_nextn()     const { return t_h_nextn; }
+     ggml_tensor * get_mtp_draft()   const { return t_mtp_draft; }
++    ggml_tensor * get_mtp_draft_conf() const { return t_mtp_draft_conf; }
++    ggml_tensor * get_mtp_draft_h()    const { return t_mtp_draft_h; }
+ 
+     ggml_tensor * get_layer_inp(int il) const { return t_layer_inp[il]; }
+ 
+@@ -989,6 +992,8 @@ public:
+     ggml_tensor * t_embd_pooled = nullptr;
+     ggml_tensor * t_h_nextn     = nullptr; // [n_embd, n_outputs] hidden state before final output norm
+     ggml_tensor * t_mtp_draft   = nullptr; // I32 [1, n_tokens] draft tokens of an MTP draft chain graph
++    ggml_tensor * t_mtp_draft_conf = nullptr; // F32 [n_tokens] their draft-head probabilities (cparams.mtp_draft_conf)
++    ggml_tensor * t_mtp_draft_h    = nullptr; // F32 [n_embd] h_nextn of the last pass (cparams.mtp_draft_conf)
+ 
+     std::vector<ggml_tensor *> t_layer_inp;
+ 
+diff --git a/src/models/qwen35.cpp b/src/models/qwen35.cpp
+index 0e9bdb2c1..3d8789ace 100644
+--- a/src/models/qwen35.cpp
++++ b/src/models/qwen35.cpp
+@@ -696,6 +696,7 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+         ggml_tensor * tok_j = tok_embd;
+         ggml_tensor * h_j   = ggml_view_2d(ctx0, h_embd, h_embd->ne[0], 1, h_embd->nb[1], 0);
+         ggml_tensor * ids   = nullptr; // [j] draft-vocabulary indices of the passes so far
++        ggml_tensor * confs = nullptr; // [j] their probabilities under the draft head (cparams.mtp_draft_conf)
+ 
+         ggml_build_forward_expand(gf, h_j);
+ 
+@@ -722,10 +723,22 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+             ggml_tensor * idx = ggml_argmax(ctx0, logits); // [1]
+             ids = ids ? ggml_concat(ctx0, ids, idx, 0) : idx;
+ 
++            if (cparams.mtp_draft_conf) {
++                // softmax probability of the argmax: the confidence the adaptive draft depth prices
++                ggml_tensor * probs = ggml_reshape_2d(ctx0, ggml_soft_max(ctx0, logits), 1, n_sub);
++                ggml_tensor * conf  = ggml_reshape_1d(ctx0, ggml_get_rows(ctx0, probs, idx), 1);
++                confs = confs ? ggml_concat(ctx0, confs, conf, 0) : conf;
++            }
++
+             if (j + 1 < n_tokens) {
+                 tok_j = ggml_get_rows(ctx0, model.draft_embd, idx);
+                 cb(tok_j, "mtp_tok_embd", il);
+                 h_j = hn;
++            } else if (cparams.mtp_draft_conf) {
++                // the last h_nextn continues the chain in a next decode
++                ggml_set_output(hn);
++                res->t_mtp_draft_h = hn;
++                ggml_build_forward_expand(gf, hn);
+             }
+         }
+ 
+@@ -740,6 +753,12 @@ llama_model_qwen35::graph_mtp::graph_mtp(const llama_model & model, const llm_gr
+ 
+         res->t_mtp_draft = out;
+         ggml_build_forward_expand(gf, out);
++
++        if (confs) {
++            ggml_set_output(confs);
++            res->t_mtp_draft_conf = confs;
++            ggml_build_forward_expand(gf, confs);
++        }
+         return;
+     }
+ 
+-- 
+2.43.0
+

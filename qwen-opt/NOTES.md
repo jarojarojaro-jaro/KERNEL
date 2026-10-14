@@ -317,3 +317,18 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 
 ## GPU_MAX_HW_QUEUES (Strata #2305): bez efektu
 - 3 restarty na ramię (domyślnie, 1, 2, 4): 29.30-29.39 ms/krok we wszystkich; brak bimodalności czasu draftu u nas.
+
+## T1 + T2: historia conv z opóźnieniem, adaptacyjna długość draftu (gałąź opt-t2, b9b476c87, 7e9c73d8b; 2026-10-14)
+- T1 (LLAMA_CONV_LAG=0 wyłącza): wiersz conv w cache trzyma okno wokół wierszy oczekujących (jak stan GDN w S4); historia = GET_ROWS kroków n_keep..n_keep+2, zapis jednym transponowanym CPY, oba złożone w SSM_CONV. Bez snapshotów, bez limitu 8.
+  - rocprof weryfikacji (kernele / wall / krok): draft 8: 1391 / 34.2 / 40.8 ms -> 832 / 30.9 / 37.2; draft 12: 1585 / 36.4 / 45.7 -> 834 / 32.2 / 41.1; draft 7 bez zmian. Greedy md5 = d3a0973ae (plain, n=4/8/12, oba modele, powrót z cache promptu).
+- Po T1 (spec_sweep, T=1, średnia / czat / proza): Qwen n=4 102.7/84.6/93.5, n=5 103.0, n=6 103.5, n=8 96.7, n=12 82.6; Uncensored n=4 104.7/88.4/96.5, n=5 108.4/88.5/89.3, n=6 105.0, n=8 95.9.
+  Głębokość kosztuje ~1.6 ms/poziom (draft ~0.65 + kolumna weryfikacji ~1).
+- T2 (--spec-draft-adaptive, opt-in): segmenty łańcucha z pewnościami głowicy, kalibracja warunkowej akceptacji na żywo (koszyki pewności x głębokość), ceny: tabela weryfikacji mierzona przy starcie + korekta na żywo, rate tok/ms na żywo; graf weryfikacji per szerokość (zmiana szerokości bez cache kosztuje ~1.6 ms/krok: przebudowa 1.24 ms + aktualizacja grafu HIP).
+  - Qwen: 103.6 (czat 79.8, proza 88.8) — równo z najlepszym stałym n, czat/proza gorzej niż n=4. Uncensored: 103.5 < n=4 104.7 < n=5 108.4. Nie włączone; run-llm.sh bez zmian (n=4).
+  - Nie działało: kalibracja mnożnikiem per głębokość (iloczyn pewności, nadmierne draftowanie: 87 t/s), segment 2 (102.4).
+
+## T2 + klif conv (b9b476c87, 7e9c73d8b; 2026-10-14)
+- Historia conv z opóźnieniem jak stan GDN (LLAMA_CONV_LAG=0 wyłącza): bez snapshotów conv; weryfikacja 9-16 tokenów bez dodatkowych kerneli (draft 8: 1391 -> 832 kerneli, 34.2 -> 30.9 ms weryfikacji). Bitowo identyczne.
+- Adaptacyjna długość draftu wyceniana kosztem (--spec-draft-adaptive, opcjonalna): Qwen średnio 103.6 vs n=4 102.7 (kod/technika lepiej, czat/proza -5 t/s); Uncensored gorzej. Domyślnie wyłączona. Graf per szerokość weryfikacji (zmiana szerokości kosztowała 1.6 ms).
+- Stałe n po naprawie (6 promptów x 2 seedy): Qwen n4 102.7, n5 103.0, n6 103.5, n8 96.7, n12 82.6; Uncensored n4 104.7, n5 108.4 (proza 96.5 -> 89.3). Domyślnie n=4 (czat/proza).
+- Potwierdzone po scaleniu: Qwen 29.36 ms/krok 102.6 t/s; Uncensored 28.28 ms/krok 105.0 t/s.
