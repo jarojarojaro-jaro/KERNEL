@@ -1,7 +1,7 @@
 From 9f83f1f8100e51799fd75c1c4d1e311974c483f1 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 12:15:27 +0000
-Subject: [PATCH 22/52] HIP/RDNA3 multi-column MMVQ: stream weight loads past
+Subject: [PATCH 22/54] HIP/RDNA3 multi-column MMVQ: stream weight loads past
  the per-CU caches (GLC|DLC)
 
 In-model rocprofv3 (Qwen3.8-27B UD-Q4_K_XL, MTP n=4 verify): mmvq 22.95 -> 22.08 ms per verify. Bitwise identical.

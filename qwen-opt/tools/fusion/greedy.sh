@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Greedy (T=0) outputs of a build, plain and MTP speculative decode, for equality checks. Run under flock.
-# usage: greedy.sh BIN_DIR LIB_DIR OUT_PREFIX [MODEL]   (MODEL: qwen | unc | lfm; env MODES, default "plain mtp", lfm: MODES=plain)
+# usage: greedy.sh BIN_DIR LIB_DIR OUT_PREFIX [MODEL]   (MODEL: qwen | unc | lfm; env MODES, default "plain mtp", lfm: MODES=plain;
+#        env KV: KV cache type, default q4_0, q8_0 for lfm as in run-llm.sh; env PORT, default 18433)
 set -euo pipefail
 bin=$1; lib=$2; out=$3; model=${4:-qwen}
 case $model in
@@ -8,8 +9,11 @@ case $model in
     unc)  M=$HOME/models/orca/Qwen3.8-27B-Uncensored-Q4_K_M.gguf ;;
     lfm)  M=$HOME/models/lfm/LFM2.5-24B-A2B-Q5_K_M.gguf ;;  # no MTP head: run with MODES=plain
 esac
+kv_default=q4_0
+[ "$model" = lfm ] && kv_default=q8_0
+kv=${KV:-$kv_default}
 export LD_LIBRARY_PATH=$lib:/opt/rocm/core-10.0/lib
-port=18433
+port=${PORT:-18433}
 prompts=('Explain how a hash map works, then implement one in C with open addressing.'
          'Napisz krótkie opowiadanie o latarniku i sztormie.')
 for mode in ${MODES:-plain mtp}; do
@@ -18,7 +22,7 @@ for mode in ${MODES:-plain mtp}; do
         mtp)   extra=(--spec-type draft-mtp --spec-draft-n-max 4 --spec-draft-vocab "$HOME/models/draft/draft_vocab_qwen38.txt" --spec-draft-vocab-n 65536) ;;
     esac
     "$bin/llama-server" --port $port --host 127.0.0.1 -np 1 --no-webui -m "$M" -ngl 999 -fa on \
-        -ctk q4_0 -ctv q4_0 -c 8192 "${extra[@]}" > "$out.$mode.log" 2>&1 &
+        -ctk "$kv" -ctv "$kv" -c 8192 "${extra[@]}" > "$out.$mode.log" 2>&1 &
     pid=$!
     for _ in $(seq 180); do curl -sf http://127.0.0.1:$port/health >/dev/null && break; sleep 1; done
     : > "$out.$mode.txt"

@@ -1,7 +1,7 @@
 From ca4cccedb0bd8f488cb60a63bb951529b10168ea Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 19:19:18 +0000
-Subject: [PATCH 16/52] CUDA/HIP: GDN alpha/beta MMVQ templated on the token
+Subject: [PATCH 16/54] CUDA/HIP: GDN alpha/beta MMVQ templated on the token
  count
 
 All tokens' loads of an iteration are issued together; partial sums keep their order, results are

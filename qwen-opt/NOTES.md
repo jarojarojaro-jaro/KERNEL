@@ -349,3 +349,12 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - 0052 `GGML_HIP_MMVQ_N1_ROWS`: 1-kolumnowy MMVQ dla K-quantów liczy 2 wiersze na blok (4.610 -> 4.509 ms).
 - Wynik (przeplatane A/B z amd-opt e84abb808): llama-bench tg128 197.4 -> **220.4 t/s** (5.067 -> 4.536 ms); serwer spec_sweep `lfm none` 172.9 -> **218.6 t/s** (+26%, 217-219 na każdym typie promptu); Qwen mtp 29.12 -> 29.17 ms/krok (szum). Greedy md5 bez zmian: LFM plain, Qwen plain + MTP (sprawdzone też na zainstalowanym buildzie).
 - Nie dało nic: Hadamard + quantize wyjścia atencji (4.474 -> 4.490 ms), 4 wiersze na wave, rozwijanie pętli K, `--backend-sampling` (tak szybki jak 0048, ale inny sampler, nie bitowo). Niezrobione (~0.1 ms każde): router + top-k w jednym kernelu, gate+up zapisujące q8_1 dla down.
+
+## LFM2.5: runda 2 + KV q8_0 (54 łatki, 0053-0054; 2026-10-14), bitowo identyczne
+- Decyzja użytkownika: LFM używa KV q8_0 (`run-llm.sh lfm`). Koszt vs q4_0 (llama-bench tg128, `research/lfm-kv-q4-vs-q8.md`): głębokość 0 +2.6%, 8k +5.0%, 32k +12.7%, 98k +30.1% (187 -> 144 t/s); VRAM przy 131k 18.6 -> 19.3 GB. Przyczyna przy długim kontekście: q8_0 nie ma kernela `flash_attn_ext_kvq` (tylko q4_0), więc idzie generyczny `flash_attn_ext_vec`, który czyta K/V raz na każdą głowę Q z grupy GQA (4x).
+- 0053 `GGML_HIP_NORM_ROUTER`: norma FFN (z q8_1 dla gate/up) + router F32 + top-k w jednym kernelu (top-k liczy ostatni blok z licznikiem atomowym): 521 -> 445 kerneli, 4.451 -> 4.246 ms.
+- 0054 `GGML_HIP_INPROJ_CONV`: shortconv wewnątrz kernela in_proj (blok, który kończy grupę 32 kanałów, liczy jej konwolucję; drugi slot cache q8_1): 445 -> 416 kerneli, 4.231 -> 4.100 ms.
+- Wynik (KV q8_0, przeplatane A/B z bcdf324d3): llama-bench tg128 221.3 -> **244.1 t/s** (4.519 -> 4.097 ms); serwer spec_sweep `lfm none` 217-223 -> **238-243 t/s**; Qwen mtp bez zmian (29.15 -> 29.14 ms/krok). Greedy md5 bez zmian (LFM q8_0 2c7ee8a2, Qwen plain c4708318, MTP 6f14e814) także na zainstalowanym buildzie; hash pełnych logitów 64 kroków równy przy głębokości 0 i 3000.
+- Koszty uruchomień (pomiar): granica kernela w grafie HIP ~2.53 us (także pustego), bariera siatki w kernelu trwałym 0.5-0.8 us, ogon „ostatni blok” ~1 us, łańcuch dużych faz w jednym kernelu z czekającymi blokami 8-11 us/faza (odpada).
+- Losowe spowolnienie gate+up ekspertów 24.3 -> 27.2 us/wywołanie w części procesów (także na buildzie bez zmian, 4/8 profili): ~0.11 ms/token, przyczyna nieznana.
+- Szczegóły i wszystkie próby: `research/lfm-decode-round2.md`.

@@ -8,7 +8,7 @@ Stan (2026-10-14, ROCm, ctx 204800, KV q4_0, MTP n=4 + słownik draftu 64k + dra
 |---|---|---|---|---|---|
 | Qwen3.8-27B UD-Q4_K_XL | 104.2 | 28.9 | 87 | 95 | 116 |
 | Qwen3.8-27B-Uncensored Q4_K_M (orcarouter) | 106.5 | 27.9 | 93 | 94 | 117 |
-| LFM2.5-24B-A2B Q5_K_M (LiquidAI, MoE, bez MTP, ctx 131072) | 218.6 | 4.58 | 219 | 217 | 218 |
+| LFM2.5-24B-A2B Q5_K_M (LiquidAI, MoE, bez MTP, ctx 131072, KV q8_0) | 240.3 | 4.17 | 240 | 241 | 240 |
 
 Qwen przy wypełnionym kontekście (T=0): generowanie 1.7k 130 t/s, 29.5k 105 t/s, 94k 101 t/s; prefill 820–985 t/s do 30k, 766 t/s przy 94k.
 
@@ -16,7 +16,7 @@ Qwen przy wypełnionym kontekście (T=0): generowanie 1.7k 130 t/s, 29.5k 105 t/
 
 | Plik | Co |
 |---|---|
-| `patches/llama.cpp-amd-opt/*.patch` | 52 zmiany w llama.cpp (na upstream `e60eff95f`): kernele HIP MMVQ 1–8 kolumn (strojone pod RDNA3), kernel WMMA dla weryfikacji 9–16 tokenów, cache q8_1, kernel FA dla KV q4_0 (RDNA3), fuzje kerneli HIP (w tym MoE i shortconv dla LFM2), stan GDN i conv z opóźnieniem (cofanie przez przeliczenie), draft MTP jednym grafem, przekwantyzowanie draftu (`--spec-draft-head-type`, `--spec-mtp-type`), asynchroniczne wejścia, szybsze top-k (także z karą za powtórzenia), prefill (kafle MMQ/FA, MTP liczy tylko K/V promptu); łatki Vulkan (opcjonalny backend). Zmiany na szybkość mają przełączniki `GGML_HIP_*=0` / `LLAMA_*=0` |
+| `patches/llama.cpp-amd-opt/*.patch` | 54 zmiany w llama.cpp (na upstream `e60eff95f`): kernele HIP MMVQ 1–8 kolumn (strojone pod RDNA3), kernel WMMA dla weryfikacji 9–16 tokenów, cache q8_1, kernel FA dla KV q4_0 (RDNA3), fuzje kerneli HIP (w tym MoE i shortconv dla LFM2), stan GDN i conv z opóźnieniem (cofanie przez przeliczenie), draft MTP jednym grafem, przekwantyzowanie draftu (`--spec-draft-head-type`, `--spec-mtp-type`), asynchroniczne wejścia, szybsze top-k (także z karą za powtórzenia), prefill (kafle MMQ/FA, MTP liczy tylko K/V promptu); łatki Vulkan (opcjonalny backend). Zmiany na szybkość mają przełączniki `GGML_HIP_*=0` / `LLAMA_*=0` |
 | `run-llm.sh` | start serwera: `run-llm.sh [qwen\|uncensored\|lfm] [mtp\|dflash\|none] [rocm\|vulkan]` (domyślnie qwen, mtp, rocm); env: `CTX`, `PORT`, `HOST`, `EFFORT` (myślenie, domyślnie low), `DRAFT_N`, `MTP_TYPE`, `VISION=1`, `ROCM_DIR`, `EXTRA_ARGS` |
 | `gpu-power.sh`, `gpu-powercap.service` | status/monitor mocy i temperatur; usługa systemd: limit 285 W + brak usypiania karty (inaczej model ląduje w RAM i działa ~4 t/s) |
 | `gpu-keepawake/` | trzymanie karty wybudzonej bez roota (używane przez `run-llm.sh`) |

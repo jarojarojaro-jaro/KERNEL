@@ -1,0 +1,836 @@
+From c15c84e837214aa98300ea8cbe30781d6f06becc Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 14:54:15 +0000
+Subject: [PATCH 53/54] CUDA/HIP: single-token MoE routing (FFN norm, F32
+ router, topk_moe) in one launch (GGML_HIP_NORM_ROUTER)
+
+RMS_NORM*MUL of the FFN input (F32 output plus the q8_1 copy for the gate/up MUL_MAT_ID), the F32 router MUL_MAT
+and the fused topk_moe nodes run as one kernel (norm_router_topk_f32): one 256-thread block per router row, every
+block forms the norm scale itself (the 32 warp sums of rms_norm_mul_f32_unrolled<2>, 4 per warp, same fmas and DPP
+order), computes its router row as mul_mat_vec_f<float, float, 1, 256> does, block b writes norm values
+32*(b + n_experts*m) + lane (F32 and quantize_q8_1_group), and the block that finishes last (atomic ticket, a new
+zeroed per-context counter buffer that each kernel leaves zeroed) runs the topk_moe body (moved into
+topk_moe_select, shared with topk_moe_cuda) on all logits. Bitwise as rms_norm*mul + mul_mat_vec_f + topk_moe.
+The topk-moe graph matching is moved into ggml_cuda_topk_moe_match_gating (used by both fusions).
+
+GGML_HIP_NORM_ROUTER=0: the three launches.
+
+LFM2.5-24B-A2B Q5_K_M, RX 7900 XTX, KV q8_0: 521 -> 445 kernels/token; the fused kernel 4.9 us vs
+2.7 + 2.4 + 3.5 us plus two launch gaps. llama-bench tg128 -r 5, interleaved, 3 rounds:
+4.451 -> 4.246 ms/token (off/on, same binary; earlier session 4.505 -> 4.234).
+
+Logit hashes of 64 greedy decode steps (q8_0 and q4_0 KV, depth 0 and 3000) equal to bcdf324d3; greedy md5
+LFM plain (q8_0 KV) 2c7ee8a2..., Qwen plain c4708318..., Qwen MTP 6f14e814... unchanged.
+test-backend-ops: NORM_ROUTER_TOPK 5/5 (new), TOPK_MOE 416/416.
+---
+ ggml/src/ggml-cuda/common.cuh   |   6 +
+ ggml/src/ggml-cuda/ggml-cuda.cu | 238 ++++++++++++++++-------
+ ggml/src/ggml-cuda/topk-moe.cu  | 334 ++++++++++++++++++++++++++++----
+ ggml/src/ggml-cuda/topk-moe.cuh |  23 +++
+ tests/test-backend-ops.cpp      | 104 ++++++++++
+ 5 files changed, 595 insertions(+), 110 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index c55bec482..3e3c6df00 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1634,6 +1634,12 @@ struct ggml_backend_cuda_context {
+     // start of every graph evaluation.
+     std::vector<const ggml_tensor *> nodes_done_ahead;
+ 
++    // Zeroed device counters for kernels whose last block to finish (atomic ticket) runs a follow-up step; such a
++    // kernel leaves the counters it used zeroed. n_tickets of them, allocated outside of stream capture
++    // (ggml_cuda_tickets in ggml-cuda.cu).
++    static constexpr int n_tickets = 4096;
++    unsigned int * tickets = nullptr;
++
+     void mmvq_q8_cache_invalidate() {
+         mmvq_q8_cache.src = nullptr;
+         mmvq_q8_pending.valid = false;
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index df4d2c98e..fa4346b81 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -703,6 +703,9 @@ ggml_backend_cuda_context::~ggml_backend_cuda_context() {
+     if (mmvq_q8_cache.buf != nullptr) {
+         CUDA_CHECK(cudaFree(mmvq_q8_cache.buf));
+     }
++    if (tickets != nullptr) {
++        CUDA_CHECK(cudaFree(tickets));
++    }
+     for (int i = 0; i < GGML_CUDA_MAX_DEVICES; ++i) {
+         for (int j = 0; j < GGML_CUDA_MAX_STREAMS; ++j) {
+             if (streams[i][j] != nullptr) {
+@@ -4262,6 +4265,145 @@ static int ggml_cuda_try_moe_down_reduce(ggml_backend_cuda_context * cuda_ctx, c
+     return match.node_count;
+ }
+ 
++// The nodes of one fused topk_moe launch (all variants but the delayed softmax) starting at the gating node i, as the
++// topk-moe fusion of ggml_cuda_try_fuse matches them: n_ops nodes from i, ids and weights at ids_idx / weights_idx.
++struct ggml_cuda_topk_moe_gating_match {
++    int                     n_ops       = 0;
++    int                     ids_idx     = -1;
++    int                     weights_idx = -1;
++    ggml_cuda_topk_moe_args args;
++    const ggml_tensor *     logits  = nullptr;
++    ggml_tensor *           weights = nullptr;
++    ggml_tensor *           ids     = nullptr;
++    const ggml_tensor *     bias    = nullptr;
++    const ggml_tensor *     clamp   = nullptr;
++    const ggml_tensor *     scale   = nullptr;
++};
++
++static bool ggml_cuda_topk_moe_match_gating(const ggml_cgraph * cgraph, int i, ggml_cuda_topk_moe_gating_match & m) {
++    m = {};
++    if (!ggml_cuda_topk_moe_fusion(cgraph, i, m.args) || m.args.delayed_softmax) {
++        return false;
++    }
++    const ggml_tensor * node = cgraph->nodes[i];
++    std::vector<ggml_op> ops;
++    ops.reserve(13);  // max ops; avoids gcc -Wstringop-overflow false positive
++    int out_nodes[2];  // nodes which can't be elided
++
++    m.logits = node->src[0];
++    if (m.args.sigmoid) {
++        ops.insert(ops.end(), { GGML_OP_UNARY });
++    } else if (m.args.sqrt_softplus) {
++        ops.insert(ops.end(), { GGML_OP_UNARY, GGML_OP_SQRT });
++    } else {
++        ops.insert(ops.end(), { GGML_OP_SOFT_MAX });
++    }
++    const int i_probs = i + (int) ops.size() - 1;  // last node of the gating activation
++
++    if (m.args.prob_bias) {
++        m.bias = cgraph->nodes[i_probs + 2]->src[1];
++        ops.insert(ops.end(), { GGML_OP_RESHAPE, GGML_OP_ADD, GGML_OP_ARGSORT, GGML_OP_VIEW,
++                                GGML_OP_GET_ROWS });
++        out_nodes[0] = i_probs + 4;
++    } else {
++        ops.insert(ops.end(), { GGML_OP_RESHAPE, GGML_OP_ARGSORT, GGML_OP_VIEW, GGML_OP_GET_ROWS });
++        out_nodes[0] = i_probs + 3;
++    }
++    m.ids = cgraph->nodes[out_nodes[0]];
++
++    if (m.args.norm) {
++        ops.insert(ops.end(),
++                   { GGML_OP_RESHAPE, GGML_OP_SUM_ROWS, GGML_OP_CLAMP, GGML_OP_DIV, GGML_OP_RESHAPE });
++        m.clamp = cgraph->nodes[i + ops.size() - 3];
++    }
++    if (m.args.scale) {
++        ops.insert(ops.end(), { GGML_OP_SCALE });
++        m.scale = cgraph->nodes[i + ops.size() - 1];
++    }
++
++    m.weights    = cgraph->nodes[i + ops.size() - 1];
++    out_nodes[1] = i + ops.size() - 1;
++
++    if (ggml_can_fuse_subgraph(cgraph, i, ops.size(), ops.data(), out_nodes, 2) &&
++            ggml_cuda_should_use_topk_moe(node, m.logits, m.weights, m.ids) &&
++            ggml_cuda_check_fusion_memory_ranges(cgraph, i, ops.size(), out_nodes, 2, /*is_topk_moe=*/true)) {
++        m.n_ops       = (int) ops.size();
++        m.ids_idx     = out_nodes[0];
++        m.weights_idx = out_nodes[1];
++        return true;
++    }
++    return false;
++}
++
++// The device counters of ggml_backend_cuda_context::tickets, allocated (and zeroed) on first use outside of stream
++// capture; nullptr while capturing before that.
++static unsigned int * ggml_cuda_tickets(ggml_backend_cuda_context * ctx) {
++    if (ctx->tickets == nullptr) {
++        cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
++        CUDA_CHECK(cudaStreamIsCapturing(ctx->stream(), &capture_status));
++        if (capture_status == cudaStreamCaptureStatusNone) {
++            CUDA_CHECK(cudaMalloc(&ctx->tickets, ctx->n_tickets*sizeof(unsigned int)));
++            CUDA_CHECK(cudaMemsetAsync(ctx->tickets, 0, ctx->n_tickets*sizeof(unsigned int), ctx->stream()));
++        }
++    }
++    return ctx->tickets;
++}
++
++// [GGML_HIP_NORM_ROUTER] single-token MoE routing: RMS_NORM, MUL (the FFN norm, which also writes the q8_1 copy for
++// the gate/up MUL_MAT_ID), the F32 router MUL_MAT and the topk_moe nodes in one launch (ggml_cuda_op_norm_router_topk):
++// every router block forms the norm itself, the last one to finish does the top-k. Bitwise as the three launches
++// (rms_norm*mul, mul_mat_vec_f, topk_moe). Returns the nodes to skip, 0: no.
++static int ggml_cuda_try_norm_router_topk(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
++    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_NORM_ROUTER");
++    if (!enabled || cuda_ctx->curr_stream_no != 0 || !cuda_ctx->stream_context().concurrent_events.empty() ||
++            i + 3 >= cgraph->n_nodes || !ggml_cuda_can_fuse(cgraph, i, { GGML_OP_RMS_NORM, GGML_OP_MUL }, {})) {
++        return 0;
++    }
++    const ggml_tensor * norm   = cgraph->nodes[i];
++    ggml_tensor *       mul    = cgraph->nodes[i + 1];
++    ggml_tensor *       router = cgraph->nodes[i + 2];
++    const ggml_tensor * x      = norm->src[0];
++    const ggml_tensor * norm_w = mul->src[0] == norm ? mul->src[1] : mul->src[0];
++    if (router->op != GGML_OP_MUL_MAT || router->src[1] != mul || (router->flags & GGML_TENSOR_FLAG_COMPUTE) == 0) {
++        return 0;
++    }
++    const ggml_tensor * router_w = router->src[0];
++    // the router as the unfused graph runs it: mul_mat_vec_f (see ggml_cuda_mul_mat)
++    const int  cc        = ggml_cuda_info().devices[cuda_ctx->device].cc;
++    const int  warp_size = ggml_cuda_info().devices[cuda_ctx->device].warp_size;
++    const bool bad_padding_clear = ggml_backend_buffer_get_usage(router_w->buffer) == GGML_BACKEND_BUFFER_USAGE_COMPUTE &&
++        ggml_nbytes(router_w) != ggml_backend_buffer_get_alloc_size(router_w->buffer, router_w) && router_w->view_src;
++    if (warp_size != WARP_SIZE || bad_padding_clear || ggml_cuda_op_mul_mat_use_fwht(router) ||
++            !ggml_cuda_should_use_mmvf(router_w->type, cc, warp_size, router_w->ne, router_w->nb, 1) ||
++            !ggml_cuda_norm_router_topk_supported(x, norm_w, mul, router_w, router)) {
++        return 0;
++    }
++    ggml_cuda_topk_moe_gating_match m;
++    if (!ggml_cuda_topk_moe_match_gating(cgraph, i + 3, m) || m.logits != router) {
++        return 0;
++    }
++    // the norm output goes on to the gate/up MUL_MAT_ID, the router output only to the top-k
++    std::vector<ggml_op> ops = { GGML_OP_RMS_NORM, GGML_OP_MUL, GGML_OP_MUL_MAT };
++    for (int j = i + 3; j < i + 3 + m.n_ops; ++j) {
++        ops.push_back(cgraph->nodes[j]->op);
++    }
++    const int outs[4] = { i + 1, m.ids_idx, m.weights_idx, i + 2 };
++    if (!ggml_can_fuse_subgraph(cgraph, i, (int) ops.size(), ops.data(), outs, 3) ||
++            !ggml_cuda_check_fusion_memory_ranges(cgraph, i, (int) ops.size(), outs, 4)) {
++        return 0;
++    }
++    unsigned int * tickets = ggml_cuda_tickets(cuda_ctx);
++    if (tickets == nullptr) {
++        return 0;
++    }
++    float eps;
++    memcpy(&eps, norm->op_params, sizeof(float));
++    block_q8_1 * q8 = ggml_cuda_q8_1_producer_target(cuda_ctx, cgraph, i + 1);
++    ggml_cuda_op_norm_router_topk(*cuda_ctx, x, norm_w, eps, mul, q8, router_w, router, m.weights, m.ids, m.clamp, m.scale,
++                                  m.bias, m.args, tickets);
++    return (int) ops.size() - 1;
++}
++
+ // try and fuse nodes and return the number of nodes to skip; -1: this node is done and no other node is skipped
+ // (it is elided because its result is never read, or a fusion computed it alone)
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+@@ -4292,6 +4434,13 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         }
+     }
+ 
++    if (node->op == GGML_OP_RMS_NORM) {
++        const int nodes_to_skip = ggml_cuda_try_norm_router_topk(cuda_ctx, cgraph, i);
++        if (nodes_to_skip > 0) {
++            return nodes_to_skip;
++        }
++    }
++
+     if (node->op == GGML_OP_MUL_MAT) {
+         const int nodes_to_skip = ggml_cuda_try_gdn_ab_fusion(cuda_ctx, cgraph, i);
+         if (nodes_to_skip > 0) {
+@@ -4348,76 +4497,29 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+     //topk-moe
+     if (cgraph->nodes[i]->op == GGML_OP_UNARY || cgraph->nodes[i]->op == GGML_OP_SOFT_MAX ||
+             cgraph->nodes[i]->op == GGML_OP_ARGSORT) {
++        ggml_cuda_topk_moe_gating_match m;
++        if (ggml_cuda_topk_moe_match_gating(cgraph, i, m)) {
++            ggml_cuda_op_topk_moe(*cuda_ctx, m.logits, m.weights, m.ids, m.clamp, m.scale, m.bias, m.args);
++            return m.n_ops - 1;
++        }
+         ggml_cuda_topk_moe_args args;
+-        const bool              can_fuse = ggml_cuda_topk_moe_fusion(cgraph, i, args);
+-        std::vector<ggml_op>    ops;
+-        ops.reserve(13);  // max ops; avoids gcc -Wstringop-overflow false positive
+-
+-        if (can_fuse) {
++        if (ggml_cuda_topk_moe_fusion(cgraph, i, args) && args.delayed_softmax && !args.norm && !args.prob_bias) {
++            //special case gpt-oss, no norm, no bias.
++            std::vector<ggml_op> ops;
++            ops.reserve(13);  // max ops; avoids gcc -Wstringop-overflow false positive
++            ops.insert(ops.end(), { GGML_OP_ARGSORT, GGML_OP_VIEW, GGML_OP_GET_ROWS, GGML_OP_RESHAPE,
++                                    GGML_OP_SOFT_MAX, GGML_OP_RESHAPE });
+             const ggml_tensor * logits  = node->src[0];
+-            ggml_tensor *       weights = nullptr;
+-            ggml_tensor *       ids     = nullptr;
+-            const ggml_tensor * bias    = nullptr;
+-            const ggml_tensor * clamp   = nullptr;
+-            const ggml_tensor * scale   = nullptr;
+-
+-            if (!args.delayed_softmax) {
+-                int out_nodes[2];  // nodes which can't be elided
+-
+-                if (args.sigmoid) {
+-                    ops.insert(ops.end(), { GGML_OP_UNARY });
+-                } else if (args.sqrt_softplus) {
+-                    ops.insert(ops.end(), { GGML_OP_UNARY, GGML_OP_SQRT });
+-                } else {
+-                    ops.insert(ops.end(), { GGML_OP_SOFT_MAX });
+-                }
+-                const int i_probs = i + (int) ops.size() - 1;  // last node of the gating activation
+-
+-                if (args.prob_bias) {
+-                    bias = cgraph->nodes[i_probs + 2]->src[1];
+-                    ops.insert(ops.end(), { GGML_OP_RESHAPE, GGML_OP_ADD, GGML_OP_ARGSORT, GGML_OP_VIEW,
+-                                            GGML_OP_GET_ROWS });
+-                    out_nodes[0] = i_probs + 4;
+-                } else {
+-                    ops.insert(ops.end(), { GGML_OP_RESHAPE, GGML_OP_ARGSORT, GGML_OP_VIEW, GGML_OP_GET_ROWS });
+-                    out_nodes[0] = i_probs + 3;
+-                }
+-                ids = cgraph->nodes[out_nodes[0]];
+-
+-                if (args.norm) {
+-                    ops.insert(ops.end(),
+-                               { GGML_OP_RESHAPE, GGML_OP_SUM_ROWS, GGML_OP_CLAMP, GGML_OP_DIV, GGML_OP_RESHAPE });
+-                    clamp = cgraph->nodes[i + ops.size() - 3];
+-                }
+-                if (args.scale) {
+-                    ops.insert(ops.end(), { GGML_OP_SCALE });
+-                    scale = cgraph->nodes[i + ops.size() - 1];
+-                }
+-
+-                weights      = cgraph->nodes[i + ops.size() - 1];
+-                out_nodes[1] = i + ops.size() - 1;
+-
+-                if (ggml_can_fuse_subgraph(cgraph, i, ops.size(), ops.data(), out_nodes, 2) &&
+-                        ggml_cuda_should_use_topk_moe(node, logits, weights, ids) &&
+-                        ggml_cuda_check_fusion_memory_ranges(cgraph, i, ops.size(), out_nodes, 2, /*is_topk_moe=*/true)) {
+-                    ggml_cuda_op_topk_moe(*cuda_ctx, logits, weights, ids, clamp, scale, bias, args);
+-                    return ops.size() - 1;
+-                }
+-            } else if (!args.norm && !args.prob_bias) {
+-                //special case gpt-oss, no norm, no bias.
+-                ops.insert(ops.end(), { GGML_OP_ARGSORT, GGML_OP_VIEW, GGML_OP_GET_ROWS, GGML_OP_RESHAPE,
+-                                        GGML_OP_SOFT_MAX, GGML_OP_RESHAPE });
+-                weights                     = cgraph->nodes[i + 5];
+-                ids                         = cgraph->nodes[i + 1];
+-                const ggml_tensor * softmax = cgraph->nodes[i + 4];
+-
+-                int out_nodes[2] = { i + 1, i + 5 };
+-                if (ggml_can_fuse_subgraph(cgraph, i, ops.size(), ops.data(), out_nodes, 2) &&
+-                        ggml_cuda_should_use_topk_moe(softmax, logits, weights, ids) &&
+-                        ggml_cuda_check_fusion_memory_ranges(cgraph, i, ops.size(), out_nodes, 2, /*is_topk_moe=*/true)) {
+-                    ggml_cuda_op_topk_moe(*cuda_ctx, logits, weights, ids, clamp, scale, bias, args);
+-                    return ops.size() - 1;
+-                }
++            ggml_tensor *       weights = cgraph->nodes[i + 5];
++            ggml_tensor *       ids     = cgraph->nodes[i + 1];
++            const ggml_tensor * softmax = cgraph->nodes[i + 4];
++
++            int out_nodes[2] = { i + 1, i + 5 };
++            if (ggml_can_fuse_subgraph(cgraph, i, ops.size(), ops.data(), out_nodes, 2) &&
++                    ggml_cuda_should_use_topk_moe(softmax, logits, weights, ids) &&
++                    ggml_cuda_check_fusion_memory_ranges(cgraph, i, ops.size(), out_nodes, 2, /*is_topk_moe=*/true)) {
++                ggml_cuda_op_topk_moe(*cuda_ctx, logits, weights, ids, nullptr, nullptr, nullptr, args);
++                return ops.size() - 1;
+             }
+         }
+     }
+diff --git a/ggml/src/ggml-cuda/topk-moe.cu b/ggml/src/ggml-cuda/topk-moe.cu
+index ee903bf21..b6be5ff57 100644
+--- a/ggml/src/ggml-cuda/topk-moe.cu
++++ b/ggml/src/ggml-cuda/topk-moe.cu
+@@ -87,51 +87,19 @@ __device__ void sqrt_softplus_warp_inplace(float (&vals)[experts_per_thread], co
+ 
+     It is intended as fusion of softmax->top-k->get_rows pipeline for MoE models
+ */
++// Everything of topk_moe_cuda after the logits of the row are in wt (one warp per row): gating, top-k selection, the
++// weights and ids of the row. Also the tail of the fused single-token routing kernel (norm_router_topk_f32).
+ template <int n_experts, bool has_bias>
+-__launch_bounds__(TOPK_MOE_ROWS_PER_BLOCK * WARP_SIZE, 1)
+-__global__ void topk_moe_cuda(const float *         logits,
+-                              float *               weights,
+-                              int32_t *             ids,
+-                              float *               bias,
+-                              const int             n_rows,
+-                              const int             n_expert_used,
+-                              const float           clamp_val,
+-                              const float           scale_val,
+-                              const topk_moe_config config) {
+-#if defined(GGML_USE_MUSA)
+-    // MUSA: every warp of a partially filled block must reach the barrier below.
+-    const int row = MIN(blockIdx.x * blockDim.y + threadIdx.y, n_rows - 1);
+-#else
+-    const int row = blockIdx.x * blockDim.y + threadIdx.y;
+-#endif // defined(GGML_USE_MUSA)
+-    if (row >= n_rows) {
+-        return;
+-    }
+-
+-    logits += n_experts * row;
+-    weights += n_expert_used * row;
+-    ids += n_experts * row;
+-
++static __device__ __forceinline__ void topk_moe_select(float (&wt)[(n_experts > WARP_SIZE) ? n_experts / WARP_SIZE : 1],
++                                                       float *               weights,
++                                                       int32_t *             ids,
++                                                       const float *         bias,
++                                                       const int             n_expert_used,
++                                                       const float           clamp_val,
++                                                       const float           scale_val,
++                                                       const topk_moe_config config) {
+     constexpr int experts_per_thread = (n_experts > WARP_SIZE) ? n_experts / WARP_SIZE : 1;
+ 
+-    float wt[experts_per_thread];
+-
+-    // Initialize all slots to -INFINITY
+-#pragma unroll
+-    for (int i = 0; i < experts_per_thread; i++) {
+-        wt[i] = -INFINITY;
+-    }
+-
+-    ggml_cuda_pdl_sync();
+-#pragma unroll
+-    for (int i = 0; i < n_experts; i += WARP_SIZE) {
+-        const int expert  = i + threadIdx.x;
+-        wt[i / WARP_SIZE] = (n_experts % WARP_SIZE == 0 || expert < n_experts) ? logits[expert] : -INFINITY;
+-    }
+-
+-    // Weights and IDs can alias logits, so wait until every row in the block reads its logits.
+-    __syncthreads();
+-
+     if (!config.delayed_softmax) {
+         if (config.use_sigmoid) {
+            sigmoid_warp_inplace<experts_per_thread, false>(wt, n_experts, threadIdx.x);
+@@ -277,6 +245,217 @@ __global__ void topk_moe_cuda(const float *         logits,
+     }
+ }
+ 
++template <int n_experts, bool has_bias>
++__launch_bounds__(TOPK_MOE_ROWS_PER_BLOCK * WARP_SIZE, 1)
++__global__ void topk_moe_cuda(const float *         logits,
++                              float *               weights,
++                              int32_t *             ids,
++                              float *               bias,
++                              const int             n_rows,
++                              const int             n_expert_used,
++                              const float           clamp_val,
++                              const float           scale_val,
++                              const topk_moe_config config) {
++#if defined(GGML_USE_MUSA)
++    // MUSA: every warp of a partially filled block must reach the barrier below.
++    const int row = MIN(blockIdx.x * blockDim.y + threadIdx.y, n_rows - 1);
++#else
++    const int row = blockIdx.x * blockDim.y + threadIdx.y;
++#endif // defined(GGML_USE_MUSA)
++    if (row >= n_rows) {
++        return;
++    }
++
++    logits += n_experts * row;
++    weights += n_expert_used * row;
++    ids += n_experts * row;
++
++    constexpr int experts_per_thread = (n_experts > WARP_SIZE) ? n_experts / WARP_SIZE : 1;
++
++    float wt[experts_per_thread];
++
++    // Initialize all slots to -INFINITY
++#pragma unroll
++    for (int i = 0; i < experts_per_thread; i++) {
++        wt[i] = -INFINITY;
++    }
++
++    ggml_cuda_pdl_sync();
++#pragma unroll
++    for (int i = 0; i < n_experts; i += WARP_SIZE) {
++        const int expert  = i + threadIdx.x;
++        wt[i / WARP_SIZE] = (n_experts % WARP_SIZE == 0 || expert < n_experts) ? logits[expert] : -INFINITY;
++    }
++
++    // Weights and IDs can alias logits, so wait until every row in the block reads its logits.
++    __syncthreads();
++
++    topk_moe_select<n_experts, has_bias>(wt, weights, ids, bias, n_expert_used, clamp_val, scale_val, config);
++}
++
++// [GGML_HIP_NORM_ROUTER] Single-token MoE routing in one launch: rms_norm*mul of the FFN input (F32 output plus its
++// q8_1 copy for the gate/up MUL_MAT_ID), the F32 router matvec and topk_moe. One block per router row, each block
++// recomputes the norm scale from x. Every value is formed exactly as by the three kernels it replaces:
++//   - the sum of squares as rms_norm_mul_f32_unrolled<2> (1024 threads x 2 columns, x[t]^2 then x[t + 1024]^2 as fmas,
++//     DPP warp sums, then the DPP sum of the 32 warp sums), the normalized values as scale * x * w,
++//   - the router row as mul_mat_vec_f<float, float, 1, 256> (thread t: float2 columns t + 256*k in order, warp sums,
++//     then the warp sum of the 8 warp sums padded with zeros),
++//   - the top-k as topk_moe_cuda (same code), run by the first warp of the block that finishes last (atomic ticket in
++//     ticket[0], reset by that block).
++// Block b writes the F32 norm output and its q8_1 copy for values 32*(b + n_experts*m) + lane (quantize_q8_1_group as
++// the norm kernel).
++static constexpr int norm_router_ncols      = 2048;
++static constexpr int norm_router_block_size = 256;
++
++template <int n_experts, bool has_bias>
++__launch_bounds__(norm_router_block_size, 1)
++static __global__ void norm_router_topk_f32(const float * __restrict__ x,
++                                            const float * __restrict__ norm_w,
++                                            const float                eps,
++                                            float * __restrict__       y,
++                                            block_q8_1 * __restrict__  y_q8,
++                                            const float * __restrict__ router_w,
++                                            const int64_t              router_stride_row,
++                                            float *                    logits,
++                                            float *                    weights,
++                                            int32_t *                  ids,
++                                            const float * __restrict__ bias,
++                                            const int                  n_expert_used,
++                                            const float                clamp_val,
++                                            const float                scale_val,
++                                            const topk_moe_config      config,
++                                            unsigned int *             ticket) {
++    constexpr int ncols       = norm_router_ncols;
++    constexpr int block_size  = norm_router_block_size;
++    constexpr int nwarps      = block_size / WARP_SIZE;
++    constexpr int nwarps_norm = 1024 / WARP_SIZE;     // warps of rms_norm_mul_f32_unrolled<2>
++    constexpr int nsum        = nwarps_norm / nwarps; // of its warp sums per warp of this block
++    constexpr int niter       = ncols / (2*block_size);
++    static_assert(ncols == 2*1024, "the norm is that of rms_norm_mul_f32_unrolled<2>");
++
++    const int tid  = threadIdx.x;
++    const int lane = tid % WARP_SIZE;
++    const int warp = tid / WARP_SIZE;
++    const int row  = blockIdx.x;
++
++    __shared__ float s_norm[nwarps_norm];
++    __shared__ float buf_iw[WARP_SIZE];
++    __shared__ bool  s_last;
++
++    float xa[nsum];
++    float xb[nsum];
++#pragma unroll
++    for (int j = 0; j < nsum; ++j) {
++        const int t = (warp + nwarps*j)*WARP_SIZE + lane;
++        xa[j] = x[t];
++        xb[j] = x[t + 1024];
++    }
++    const float2 * x2 = (const float2 *) x;
++    const float2 * m2 = (const float2 *) norm_w;
++    const float2 * w2 = (const float2 *) (router_w + row*router_stride_row);
++    float2 xr[niter];
++    float2 mr[niter];
++    float2 wr[niter];
++#pragma unroll
++    for (int k = 0; k < niter; ++k) {
++        xr[k] = x2[tid + k*block_size];
++        mr[k] = m2[tid + k*block_size];
++        wr[k] = w2[tid + k*block_size];
++    }
++    // the norm output (F32 and q8_1): block b writes values 32*(b + n_experts*m) + lane from its first warp, one q8_1
++    // block each (measured faster than whole 128-byte lines from fewer blocks)
++    constexpr int ny = (ncols/WARP_SIZE + n_experts - 1) / n_experts;
++    float yx[ny];
++    float ym[ny];
++    if (warp == 0) {
++#pragma unroll
++        for (int m = 0; m < ny; ++m) {
++            const int i = (row + n_experts*m)*WARP_SIZE + lane;
++            if (i < ncols) {
++                yx[m] = x[i];
++                ym[m] = norm_w[i];
++            }
++        }
++    }
++
++#pragma unroll
++    for (int j = 0; j < nsum; ++j) {
++        float tmp = 0.0f;
++        tmp = fmaf(xa[j], xa[j], tmp);
++        tmp = fmaf(xb[j], xb[j], tmp);
++        tmp = warp_reduce_sum_dpp(tmp);
++        if (lane == 0) {
++            s_norm[warp + nwarps*j] = tmp;
++        }
++    }
++    if (tid < WARP_SIZE) {
++        buf_iw[tid] = 0.0f;
++    }
++    __syncthreads();
++    const float mean  = warp_reduce_sum_dpp(s_norm[lane]) / ncols;
++    const float scale = rsqrtf(mean + eps);
++
++    if (warp == 0) {
++#pragma unroll
++        for (int m = 0; m < ny; ++m) {
++            const int i = (row + n_experts*m)*WARP_SIZE + lane;
++            if (i < ncols) {
++                const float v = scale * yx[m] * ym[m];
++                y[i] = v;
++                if (y_q8 != nullptr) {
++                    quantize_q8_1_group<true>(v, y_q8 + i/QK8_1, lane);
++                }
++            }
++        }
++    }
++
++    float sumf = 0.0f;
++#pragma unroll
++    for (int k = 0; k < niter; ++k) {
++        const float yx = scale * xr[k].x * mr[k].x;
++        const float yy = scale * xr[k].y * mr[k].y;
++        ggml_cuda_mad(sumf, wr[k].x, yx);
++        ggml_cuda_mad(sumf, wr[k].y, yy);
++    }
++    sumf = warp_reduce_sum<WARP_SIZE>(sumf);
++    buf_iw[warp] = sumf;
++    __syncthreads();
++    if (tid < WARP_SIZE) {
++        const float v = warp_reduce_sum<WARP_SIZE>(buf_iw[tid]);
++        if (tid == 0) {
++            logits[row] = v;
++        }
++    }
++
++    // the last block to finish does the top-k over all logits
++    __threadfence();
++    __syncthreads();
++    if (tid == 0) {
++        s_last = atomicAdd(ticket, 1u) == gridDim.x - 1;
++    }
++    __syncthreads();
++    if (!s_last || warp != 0) {
++        return;
++    }
++    if (lane == 0) {
++        *ticket = 0;
++    }
++    __threadfence();
++
++    constexpr int experts_per_thread = (n_experts > WARP_SIZE) ? n_experts / WARP_SIZE : 1;
++    float wt[experts_per_thread];
++#pragma unroll
++    for (int i = 0; i < experts_per_thread; i++) {
++        wt[i] = -INFINITY;
++    }
++#pragma unroll
++    for (int i = 0; i < n_experts; i += WARP_SIZE) {
++        const int expert  = i + lane;
++        wt[i / WARP_SIZE] = (n_experts % WARP_SIZE == 0 || expert < n_experts) ? logits[expert] : -INFINITY;
++    }
++    topk_moe_select<n_experts, has_bias>(wt, weights, ids, bias, n_expert_used, clamp_val, scale_val, config);
++}
++
+ template<bool has_bias>
+ static void launch_topk_moe_cuda(ggml_backend_cuda_context & ctx,
+                                  const float *               logits,
+@@ -445,3 +624,74 @@ bool ggml_cuda_should_use_topk_moe(const ggml_tensor * gating_op,
+ 
+     return true;
+ }
++
++bool ggml_cuda_norm_router_topk_supported(const ggml_tensor * x, const ggml_tensor * norm_w, const ggml_tensor * norm_out,
++                                          const ggml_tensor * router_w, const ggml_tensor * logits) {
++    const int64_t n_expert = router_w->ne[1];
++    const auto aligned = [](const ggml_tensor * t) { return (uintptr_t) t->data % (2*sizeof(float)) == 0; };
++    return x->type == GGML_TYPE_F32 && norm_w->type == GGML_TYPE_F32 && norm_out->type == GGML_TYPE_F32 &&
++           router_w->type == GGML_TYPE_F32 && logits->type == GGML_TYPE_F32 &&
++           x->ne[0] == norm_router_ncols && ggml_nrows(x) == 1 && ggml_is_contiguous(x) &&
++           ggml_are_same_shape(norm_w, x) && ggml_is_contiguous(norm_w) &&
++           ggml_are_same_shape(norm_out, x) && ggml_is_contiguous(norm_out) &&
++           router_w->ne[0] == norm_router_ncols && router_w->ne[2] == 1 && router_w->ne[3] == 1 &&
++           router_w->nb[0] == sizeof(float) && router_w->nb[1] % (2*sizeof(float)) == 0 &&
++           (n_expert == 32 || n_expert == 64 || n_expert == 128 || n_expert == 256) &&
++           logits->ne[0] == n_expert && ggml_nrows(logits) == 1 && ggml_is_contiguous(logits) &&
++           aligned(x) && aligned(norm_w) && aligned(router_w);
++}
++
++void ggml_cuda_op_norm_router_topk(ggml_backend_cuda_context &     ctx,
++                                   const ggml_tensor *             x,
++                                   const ggml_tensor *             norm_w,
++                                   const float                     eps,
++                                   ggml_tensor *                   norm_out,
++                                   block_q8_1 *                    norm_q8,
++                                   const ggml_tensor *             router_w,
++                                   ggml_tensor *                   logits,
++                                   ggml_tensor *                   weights,
++                                   ggml_tensor *                   ids,
++                                   const ggml_tensor *             clamp,
++                                   const ggml_tensor *             scale,
++                                   const ggml_tensor *             bias,
++                                   const ggml_cuda_topk_moe_args & args,
++                                   unsigned int *                  ticket) {
++    GGML_ASSERT(weights->type == GGML_TYPE_F32 && ids->type == GGML_TYPE_I32);
++    const int n_experts     = router_w->ne[1];
++    const int n_expert_used = weights->ne[1];
++    GGML_ASSERT(ids->nb[1] / ggml_type_size(ids->type) == (size_t) n_experts);
++
++    topk_moe_config config;
++    config.use_sigmoid       = args.sigmoid;
++    config.use_sqrt_softplus = args.sqrt_softplus;
++    config.with_norm         = clamp != nullptr;
++    config.delayed_softmax   = args.delayed_softmax;
++    GGML_ASSERT(!config.delayed_softmax);
++    const float clamp_val = clamp ? ggml_get_op_params_f32(clamp, 0) : -INFINITY;
++    const float scale_val = scale ? ggml_get_op_params_f32(scale, 0) : 1.0f;
++
++    const ggml_cuda_kernel_launch_params launch_params(dim3(n_experts, 1, 1), dim3(norm_router_block_size, 1, 1), 0, ctx.stream());
++    const auto launch = [&](auto n_experts_tag, auto has_bias_tag) {
++        constexpr int  ne = decltype(n_experts_tag)::value;
++        constexpr bool hb = decltype(has_bias_tag)::value;
++        ggml_cuda_kernel_launch(norm_router_topk_f32<ne, hb>, launch_params,
++            (const float *) x->data, (const float *) norm_w->data, eps, (float *) norm_out->data, norm_q8,
++            (const float *) router_w->data, (int64_t) (router_w->nb[1] / sizeof(float)), (float *) logits->data,
++            (float *) weights->data, (int32_t *) ids->data, bias ? (const float *) bias->data : nullptr,
++            n_expert_used, clamp_val, scale_val, config, ticket);
++    };
++    const auto launch_bias = [&](auto n_experts_tag) {
++        if (bias) {
++            launch(n_experts_tag, std::true_type{});
++        } else {
++            launch(n_experts_tag, std::false_type{});
++        }
++    };
++    switch (n_experts) {
++        case  32: launch_bias(std::integral_constant<int,  32>{}); break;
++        case  64: launch_bias(std::integral_constant<int,  64>{}); break;
++        case 128: launch_bias(std::integral_constant<int, 128>{}); break;
++        case 256: launch_bias(std::integral_constant<int, 256>{}); break;
++        default: GGML_ABORT("fatal error");
++    }
++}
+diff --git a/ggml/src/ggml-cuda/topk-moe.cuh b/ggml/src/ggml-cuda/topk-moe.cuh
+index 061b37e29..202541ef5 100644
+--- a/ggml/src/ggml-cuda/topk-moe.cuh
++++ b/ggml/src/ggml-cuda/topk-moe.cuh
+@@ -29,3 +29,26 @@ bool ggml_cuda_should_use_topk_moe(const ggml_tensor * gating_op,
+                                    const ggml_tensor * weights,
+                                    const ggml_tensor * logits,
+                                    const ggml_tensor * ids);
++
++// [GGML_HIP_NORM_ROUTER] single-token MoE routing in one launch: rms_norm(x)*norm_w (F32 into norm_out, plus the q8_1
++// copy into norm_q8 when not null), the F32 router matvec router_w x norm_out (into logits, 2048 columns) and the
++// topk_moe of the logits (weights, ids; not the delayed-softmax variant), bitwise as the separate kernels. ticket: one
++// zeroed device counter, left zeroed.
++bool ggml_cuda_norm_router_topk_supported(const ggml_tensor * x, const ggml_tensor * norm_w, const ggml_tensor * norm_out,
++                                          const ggml_tensor * router_w, const ggml_tensor * logits);
++
++void ggml_cuda_op_norm_router_topk(ggml_backend_cuda_context &     ctx,
++                                   const ggml_tensor *             x,
++                                   const ggml_tensor *             norm_w,
++                                   float                           eps,
++                                   ggml_tensor *                   norm_out,
++                                   block_q8_1 *                    norm_q8,
++                                   const ggml_tensor *             router_w,
++                                   ggml_tensor *                   logits,
++                                   ggml_tensor *                   weights,
++                                   ggml_tensor *                   ids,
++                                   const ggml_tensor *             clamp,
++                                   const ggml_tensor *             scale,
++                                   const ggml_tensor *             bias,
++                                   const ggml_cuda_topk_moe_args & args,
++                                   unsigned int *                  ticket);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index c208f203e..8dffa747d 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7802,6 +7802,104 @@ struct test_moe_down_reduce : public test_case {
+     }
+ };
+ 
++// single-token MoE routing: FFN norm (rms_norm * w) -> F32 router -> gating, top-k, normalized weights, the norm
++// output also feeding the expert MUL_MAT_ID (norm, router and top-k fused into one launch by the HIP backend,
++// GGML_HIP_NORM_ROUTER)
++struct test_norm_router_topk : public test_case {
++    const int64_t       n_embd;
++    const int           n_expert;
++    const int           n_expert_used;
++    const bool          bias_probs;
++    const MoeGatingFunc gating_func;
++    ggml_tensor * normed {};
++    ggml_tensor * selected_experts {};
++    ggml_tensor * weights {};
++    ggml_tensor * up {};
++
++    test_norm_router_topk(int64_t n_embd = 2048, int n_expert = 64, int n_expert_used = 4, bool bias_probs = true,
++                          MoeGatingFunc gating_func = GATING_FUNC_SIGMOID)
++        : n_embd(n_embd), n_expert(n_expert), n_expert_used(n_expert_used), bias_probs(bias_probs), gating_func(gating_func) {}
++
++    std::string vars() override { return VARS_TO_STR5(n_embd, n_expert, n_expert_used, bias_probs, gating_func); }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "NORM_ROUTER_TOPK";
++    }
++
++    // the expert matmul runs on q8_1 activations (as in test_moe_down_reduce)
++    double max_nmse_err() override {
++        return 5e-4;
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, n_embd, 1);
++        ggml_set_name(x, "x");
++        ggml_tensor * norm_w = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_embd);
++        ggml_set_name(norm_w, "norm_w");
++        normed = ggml_mul(ctx, ggml_rms_norm(ctx, x, 1e-5f), norm_w);
++        ggml_set_name(normed, "normed");
++
++        ggml_tensor * router = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, n_embd, n_expert);
++        ggml_set_name(router, "router");
++        ggml_tensor * logits = ggml_mul_mat(ctx, router, normed); // [n_expert, 1]
++        ggml_set_name(logits, "logits");
++        ggml_tensor * probs = gating_func == GATING_FUNC_SIGMOID ? ggml_sigmoid(ctx, logits) : ggml_soft_max(ctx, logits);
++        ggml_set_name(probs, "probs");
++        ggml_tensor * selection_probs = probs;
++        if (bias_probs) {
++            ggml_tensor * exp_probs_b = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, n_expert);
++            ggml_set_name(exp_probs_b, "exp_probs_b");
++            selection_probs = ggml_add(ctx, probs, exp_probs_b);
++            ggml_set_name(selection_probs, "selection_probs");
++        }
++        selected_experts = ggml_argsort_top_k(ctx, selection_probs, n_expert_used); // [n_expert_used, 1]
++        ggml_set_name(selected_experts, "selected_experts");
++        weights = ggml_get_rows(ctx, ggml_reshape_3d(ctx, probs, 1, n_expert, 1), selected_experts);
++        weights = ggml_reshape_2d(ctx, weights, n_expert_used, 1);
++        ggml_tensor * weights_sum = ggml_sum_rows(ctx, weights);
++        weights_sum = ggml_clamp(ctx, weights_sum, 6.103515625e-5, INFINITY);
++        weights = ggml_div(ctx, weights, weights_sum);
++        weights = ggml_reshape_3d(ctx, weights, 1, n_expert_used, 1);
++        ggml_set_name(weights, "weights");
++        // the routing nodes first, then the expert matmul, as in a model graph
++        if (mode == MODE_TEST) {
++            ggml_build_forward_expand(gf, weights);
++        }
++
++        ggml_tensor * as = ggml_new_tensor_3d(ctx, GGML_TYPE_Q5_K, n_embd, 256, n_expert);
++        ggml_set_name(as, "as");
++        up = ggml_mul_mat_id(ctx, as, ggml_reshape_3d(ctx, normed, n_embd, 1, 1), selected_experts); // [256, n_used, 1]
++        ggml_set_name(up, "up");
++        ggml_tensor * out = ggml_mul(ctx, up, weights);
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    std::vector<ggml_tensor *> fusion_test_nodes() override { return { normed, selected_experts, weights, up }; }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != nullptr; t = ggml_get_next_tensor(ctx, t)) {
++            if (strcmp(t->name, "router") == 0) {
++                init_tensor_uniform(t, -0.05f, 0.05f); // logits of a few units: no saturated sigmoid ties
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++
++    // the experts in any order (see test_topk_moe)
++    double err(const float * a, const float * b, size_t n) override {
++        std::vector<float> a2(a, a + n);
++        std::vector<float> b2(b, b + n);
++        std::sort(a2.begin(), a2.end());
++        std::sort(b2.begin(), b2.end());
++        return nmse(a2.data(), b2.data(), n);
++    }
++};
++
+ // mul_mat with src1 in [0, 1]: a zero-mean src1 hides errors in the zero point or the min of a quantized src0
+ struct test_mul_mat_pos : public test_mul_mat {
+     using test_mul_mat::test_mul_mat;
+@@ -12357,6 +12455,12 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q4_K, 16, 8, 512, 768));
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q8_0, 8, 2, 64, 256));
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_IQ4_XS, 32, 6, 1024, 512));
++    // single-token MoE routing (LFM2 24B-A2B: 64 experts, 4 used, sigmoid + bias; and other expert counts / gatings)
++    test_cases.emplace_back(new test_norm_router_topk(2048, 64, 4, true, GATING_FUNC_SIGMOID));
++    test_cases.emplace_back(new test_norm_router_topk(2048, 64, 4, false, GATING_FUNC_SOFTMAX));
++    test_cases.emplace_back(new test_norm_router_topk(2048, 32, 2, false, GATING_FUNC_SIGMOID));
++    test_cases.emplace_back(new test_norm_router_topk(2048, 128, 8, true, GATING_FUNC_SIGMOID));
++    test_cases.emplace_back(new test_norm_router_topk(2048, 256, 8, true, GATING_FUNC_SIGMOID));
+ 
+     test_cases.emplace_back(new test_gated_delta_net(GGML_TYPE_F32, 32, 128, 1, 1));
+     test_cases.emplace_back(new test_gated_delta_net(GGML_TYPE_F32, 32, 16, 1, 1));
+-- 
+2.43.0
+

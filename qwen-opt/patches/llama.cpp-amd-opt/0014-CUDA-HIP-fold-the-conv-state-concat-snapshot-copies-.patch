@@ -1,7 +1,7 @@
 From 92b14b8b261801069a368035904967abe0139761 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 18:10:34 +0000
-Subject: [PATCH 14/52] CUDA/HIP: fold the conv-state concat, snapshot copies
+Subject: [PATCH 14/54] CUDA/HIP: fold the conv-state concat, snapshot copies
  and gather into SSM_CONV
 
 build_conv_state runs per linear-attention layer a GET_ROWS of the conv

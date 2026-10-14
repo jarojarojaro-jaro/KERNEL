@@ -1,7 +1,7 @@
 From 7e9c73d8b2d18784347571445f0b4a69d5ef7d19 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 00:15:17 +0000
-Subject: [PATCH 39/52] common/llama: cost-priced adaptive MTP draft depth
+Subject: [PATCH 39/54] common/llama: cost-priced adaptive MTP draft depth
  (--spec-draft-adaptive, opt-in), per-width verify graphs
 
 - MTP draft chain: with llama_set_mtp_draft_conf the chain graph also outputs the draft-head probability of each

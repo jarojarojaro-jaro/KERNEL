@@ -1,0 +1,495 @@
+From 5909da1f1c4b753fd2dc1cab7f0bce164fdf719f Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 15:08:23 +0000
+Subject: [PATCH 54/54] CUDA/HIP: LFM2 shortconv in_proj MMVQ with the fused
+ conv as per-group ticket tails (GGML_HIP_INPROJ_CONV)
+
+One token: the in_proj MUL_MAT (3 sections of nr rows: x, x2 and gate of the conv) and the fused SSM_CONV of its
+output (GGML_HIP_CONV_MUL plan: b*x, conv, c*conv, the q8_1 copy for out_proj, conv-state windows) run as one
+kernel (mul_mat_vec_q_conv): a block computes its rows exactly as the plain ncols_dst == 1 kernel (same lanes,
+blocks per lane, warp combine, rows per block as GGML_HIP_MMVQ_N1_ROWS), counts them into the ticket of their
+32-channel group, and the block that completes a group's 3*32 rows runs ssm_conv_fused_f32_block for those 32
+channels with its first warp and resets the ticket. Only when every node between the MUL_MAT and the folded output
+MUL runs no kernel; RDNA (the plain kernel is the only n = 1 variant there).
+
+The q8_1 cache buffer now has two slots: a producer writes the slot that is not cached (committed after it), so
+the fused kernel can still read the in_proj activations from the cache while its conv tails write the out_proj
+activations. Same data, other address.
+
+GGML_HIP_INPROJ_CONV=0: the MMVQ and conv launches.
+
+LFM2.5-24B-A2B Q5_K_M, RX 7900 XTX, KV q8_0: 445 -> 416 kernels/token; mul_mat_vec_q_conv 15.5 us vs in_proj
+12.8 + conv 4.7 us plus one launch gap. llama-bench tg128 -r 5, interleaved, 3 rounds: 4.231 -> 4.100 ms/token.
+
+Logit hashes of 64 greedy decode steps (q8_0 KV, depth 0 and 3000) equal to bcdf324d3; greedy md5 LFM plain
+(q8_0 KV) 2c7ee8a2..., Qwen plain c4708318..., Qwen MTP 6f14e814... unchanged. test-backend-ops: SHORTCONV 4/4
+(new), SSM_CONV 45/45, MUL_MAT 2476/2476, RMS_NORM 53/53, MUL 142/142, NORM_ROUTER_TOPK 5/5, MOE_DOWN_REDUCE 5/5.
+---
+ ggml/src/ggml-cuda/common.cuh   |  15 ++-
+ ggml/src/ggml-cuda/ggml-cuda.cu |  88 ++++++++++++++++--
+ ggml/src/ggml-cuda/mmvq.cu      | 160 +++++++++++++++++++++++++++++++-
+ ggml/src/ggml-cuda/mmvq.cuh     |   9 ++
+ tests/test-backend-ops.cpp      |  61 ++++++++++++
+ 5 files changed, 321 insertions(+), 12 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index 3e3c6df00..fe6e32a2a 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1614,19 +1614,24 @@ struct ggml_backend_cuda_context {
+         int64_t      ne[4] = {0, 0, 0, 0};
+         size_t       nb[4] = {0, 0, 0, 0};
+         size_t       src_bytes = 0;
+-        void *       buf = nullptr;    // device buffer holding the q8_1 data
++        void *       buf = nullptr;    // device buffer holding the q8_1 data: two slots of buf_size bytes
+         size_t       buf_size = 0;
++        int          slot = 0;         // the slot of the cached activations
++
++        char * slot_ptr(int s) const { return (char *) buf + s*buf_size; }
+     } mmvq_q8_cache;
+ 
+-    // Entry for q8_1 data a producer kernel (norm, GLU, unary*mul) wrote into buf alongside its F32 output for the
+-    // MUL_MAT that consumes it. It becomes the cache entry once the producer's own writes have been accounted for
+-    // by mmvq_q8_cache_invalidate_if_written (see the graph evaluation loop).
++    // Entry for q8_1 data a producer kernel (norm, GLU, unary*mul) wrote into the other slot of buf alongside its F32
++    // output for the MUL_MAT that consumes it (so a fused kernel may still read the cached activations while it
++    // produces new ones). It becomes the cache entry once the producer's own writes have been accounted for by
++    // mmvq_q8_cache_invalidate_if_written (see the graph evaluation loop).
+     struct {
+         bool         valid = false;
+         const void * src = nullptr;
+         int64_t      ne[4] = {0, 0, 0, 0};
+         size_t       nb[4] = {0, 0, 0, 0};
+         size_t       src_bytes = 0;
++        int          slot = 0;
+     } mmvq_q8_pending;
+ 
+     // Nodes a fusion already computed ahead of their position in the graph (e.g. the residual ADD folded into the
+@@ -1642,6 +1647,7 @@ struct ggml_backend_cuda_context {
+ 
+     void mmvq_q8_cache_invalidate() {
+         mmvq_q8_cache.src = nullptr;
++        mmvq_q8_cache.slot = 0;
+         mmvq_q8_pending.valid = false;
+     }
+ 
+@@ -1651,6 +1657,7 @@ struct ggml_backend_cuda_context {
+         }
+         mmvq_q8_cache.src       = mmvq_q8_pending.src;
+         mmvq_q8_cache.src_bytes = mmvq_q8_pending.src_bytes;
++        mmvq_q8_cache.slot      = mmvq_q8_pending.slot;
+         for (int k = 0; k < 4; ++k) {
+             mmvq_q8_cache.ne[k] = mmvq_q8_pending.ne[k];
+             mmvq_q8_cache.nb[k] = mmvq_q8_pending.nb[k];
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index fa4346b81..ef7b347ae 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4139,9 +4139,10 @@ static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, con
+ 
+ // For a producer whose F32 output is node out_idx (an RMS_NORM*MUL, GLU or UNARY*MUL kernel): when a MUL_MAT among
+ // the next nodes reads that output (directly or through a contiguous view at offset 0) as src1 and will run MMVQ on
+-// it, returns the q8_1 cache buffer for the producer to also write the quantized activations into, and records the
+-// cache entry this creates (committed by the graph loop once the producer's own writes are accounted for).
+-// The consumer then skips its quantize_q8_1 launch. Returns nullptr when the producer should only write F32.
++// it, returns the other slot of the q8_1 cache buffer for the producer to also write the quantized activations into,
++// and records the cache entry this creates (committed by the graph loop once the producer's own writes are accounted
++// for). The current entry stays valid until then. The consumer then skips its quantize_q8_1 launch. Returns nullptr
++// when the producer should only write F32.
+ static block_q8_1 * ggml_cuda_q8_1_producer_target(ggml_backend_cuda_context * ctx, const ggml_cgraph * cgraph, int out_idx) {
+     const ggml_tensor * out = cgraph->nodes[out_idx];
+     auto & qc = ctx->mmvq_q8_cache;
+@@ -4184,16 +4185,16 @@ static block_q8_1 * ggml_cuda_q8_1_producer_target(ggml_backend_cuda_context * c
+         return nullptr;
+     }
+ 
+-    qc.src = nullptr; // the producer overwrites the buffer
+     auto & p = ctx->mmvq_q8_pending;
+     p.valid     = true;
+     p.src       = src1->data;
+     p.src_bytes = ggml_nbytes(src1);
++    p.slot      = qc.slot ^ 1;
+     for (int k = 0; k < 4; ++k) {
+         p.ne[k] = src1->ne[k];
+         p.nb[k] = src1->nb[k];
+     }
+-    return (block_q8_1 *) qc.buf;
++    return (block_q8_1 *) qc.slot_ptr(p.slot);
+ }
+ 
+ // [GGML_HIP_MOE_DOWN_REDUCE] single-token MoE tail: down MUL_MAT_ID -> weighted reduction (MUL, VIEWs, ADDs) -> the
+@@ -4404,6 +4405,77 @@ static int ggml_cuda_try_norm_router_topk(ggml_backend_cuda_context * cuda_ctx,
+     return (int) ops.size() - 1;
+ }
+ 
++// [GGML_HIP_INPROJ_CONV] LFM2 shortconv, one token: the in_proj MUL_MAT and the fused SSM_CONV of its output (with
++// both MULs folded, GGML_HIP_CONV_MUL, writing the q8_1 copy for out_proj) in one launch (ggml_cuda_mmvq_conv): the
++// conv of each 32-channel group runs as the tail of the in_proj block that completes the group. Every node between
++// the MUL_MAT and the folded output MUL runs no kernel. Returns the nodes to skip, 0: no.
++static int ggml_cuda_try_inproj_conv(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
++    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_INPROJ_CONV");
++    ggml_tensor * mm = cgraph->nodes[i];
++    if (!enabled || mm->op != GGML_OP_MUL_MAT || cuda_ctx->curr_stream_no != 0 ||
++            !cuda_ctx->stream_context().concurrent_events.empty()) {
++        return 0;
++    }
++    const ggml_tensor * src0 = mm->src[0];
++    const ggml_tensor * src1 = mm->src[1];
++    if (!ggml_is_quantized(src0->type) || src0->ne[2] != 1 || src0->ne[3] != 1 || src1->type != GGML_TYPE_F32 ||
++            ggml_nrows(src1) != 1 || src1->nb[0] != sizeof(float) || mm->type != GGML_TYPE_F32 || !ggml_is_contiguous(mm)) {
++        return 0;
++    }
++    // the MUL_MAT as the unfused graph runs it: plain MMVQ, one column (see ggml_cuda_mul_mat)
++    const int  cc = ggml_cuda_info().devices[cuda_ctx->device].cc;
++    const bool bad_padding_clear = ggml_backend_buffer_get_usage(src0->buffer) == GGML_BACKEND_BUFFER_USAGE_COMPUTE &&
++        ggml_nbytes(src0) != ggml_backend_buffer_get_alloc_size(src0->buffer, src0) && src0->view_src;
++    if (bad_padding_clear || ggml_cuda_op_mul_mat_use_fwht(mm) || !ggml_cuda_should_use_mmvq(src0->type, cc, 1)) {
++        return 0;
++    }
++    int conv_idx = -1;
++    for (int j = i + 1; j < std::min(cgraph->n_nodes, i + 33); ++j) {
++        if (cgraph->nodes[j]->op == GGML_OP_SSM_CONV) {
++            conv_idx = j;
++            break;
++        }
++    }
++    ggml_cuda_ssm_conv_plan plan;
++    if (conv_idx < 0 || !ggml_cuda_ssm_conv_cache_plan(cgraph, conv_idx, plan) || plan.mul_out == nullptr ||
++            plan.silu != nullptr || plan.bias_add != nullptr) {
++        return 0;
++    }
++    const ggml_tensor * conv   = cgraph->nodes[conv_idx];
++    const ggml_tensor * conv_w = conv->src[1];
++    const int64_t       d_conv = conv_w->ne[0];
++    const int64_t       nr     = conv->src[0]->ne[1];
++    const int64_t       n_t    = conv->src[0]->ne[0] - (d_conv - 1);
++    if (n_t != 1 || mm->ne[0] != 3*nr || plan.mul_out->nb[1] != nr*(int64_t) sizeof(float) ||
++            !ggml_cuda_mmvq_conv_supported(src0->type, src0->ne[0], src0->ne[1], nr, d_conv)) {
++        return 0;
++    }
++    // x, x2 and gate of the conv are the three nr-row sections of the MUL_MAT output
++    bool section_used[3] = { false, false, false };
++    for (const float * p : { plan.src.x, plan.src.x2, plan.src.gate }) {
++        const ptrdiff_t off = p - (const float *) mm->data;
++        if (p == nullptr || off < 0 || off % nr != 0 || off / nr >= 3 || section_used[off / nr]) {
++            return 0;
++        }
++        section_used[off / nr] = true;
++    }
++    for (int k = i + 1; k < plan.mul_out_idx; ++k) {
++        const ggml_tensor * n = cgraph->nodes[k];
++        if (k != conv_idx && !ggml_cuda_is_view_or_noop(n) && (n->flags & GGML_TENSOR_FLAG_COMPUTE) &&
++                !ggml_cuda_gdn_prologue_elided(cgraph, k)) {
++            return 0;
++        }
++    }
++    unsigned int * tickets = ggml_cuda_tickets(cuda_ctx);
++    if (tickets == nullptr) {
++        return 0;
++    }
++    plan.src.q8 = ggml_cuda_q8_1_producer_target(cuda_ctx, cgraph, plan.mul_out_idx);
++    ggml_cuda_mmvq_conv(*cuda_ctx, src0, src1, mm, plan.src, (const float *) conv_w->data, (int) conv_w->nb[1], d_conv,
++                        (float *) plan.mul_out->data, (int) plan.mul_out->nb[1], tickets);
++    return plan.mul_out_idx - i;
++}
++
+ // try and fuse nodes and return the number of nodes to skip; -1: this node is done and no other node is skipped
+ // (it is elided because its result is never read, or a fusion computed it alone)
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+@@ -4442,7 +4514,11 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+     }
+ 
+     if (node->op == GGML_OP_MUL_MAT) {
+-        const int nodes_to_skip = ggml_cuda_try_gdn_ab_fusion(cuda_ctx, cgraph, i);
++        int nodes_to_skip = ggml_cuda_try_inproj_conv(cuda_ctx, cgraph, i);
++        if (nodes_to_skip > 0) {
++            return nodes_to_skip;
++        }
++        nodes_to_skip = ggml_cuda_try_gdn_ab_fusion(cuda_ctx, cgraph, i);
+         if (nodes_to_skip > 0) {
+             return nodes_to_skip;
+         }
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 7469c3c5a..0cadc8b62 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -2946,7 +2946,8 @@ static const char * mmvq_src1_q8_1(ggml_backend_cuda_context & ctx, const ggml_t
+         cudaStreamCaptureStatus capture_status = cudaStreamCaptureStatusNone;
+         CUDA_CHECK(cudaStreamIsCapturing(stream, &capture_status));
+         if (capture_status == cudaStreamCaptureStatusNone) {
+-            CUDA_CHECK(cudaMalloc(&qc.buf, q8_cache_capacity));
++            // two slots, see ggml_backend_cuda_context::mmvq_q8_pending
++            CUDA_CHECK(cudaMalloc(&qc.buf, 2*q8_cache_capacity));
+             qc.buf_size = q8_cache_capacity;
+         }
+     }
+@@ -2955,7 +2956,7 @@ static const char * mmvq_src1_q8_1(ggml_backend_cuda_context & ctx, const ggml_t
+         qc.ne[0] == ne10 && qc.ne[1] == ne11 && qc.ne[2] == ne12 && qc.ne[3] == ne13 &&
+         qc.nb[1] == src1->nb[1] && qc.nb[2] == src1->nb[2] && qc.nb[3] == src1->nb[3];
+ 
+-    char * src1_q8_1 = use_cache ? (char *) qc.buf : pool.alloc(q8_size);
++    char * src1_q8_1 = use_cache ? qc.slot_ptr(qc.slot) : pool.alloc(q8_size);
+     if (!cache_hit) {
+         const int64_t s11 = src1->nb[1] / sizeof(float);
+         const int64_t s12 = src1->nb[2] / sizeof(float);
+@@ -3381,6 +3382,161 @@ void ggml_cuda_mmvq_moe_down_reduce(ggml_backend_cuda_context & ctx, const ggml_
+     }
+ }
+ 
++// [GGML_HIP_INPROJ_CONV] LFM2 shortconv, one token: the in_proj MMVQ (dst = 3 sections of nr rows, read by the conv as
++// x, x2 and gate) and the fused SSM_CONV of its output (ssm_conv_fused_f32_block, epi: x*x2, the conv, gate*conv and
++// the q8_1 copy for out_proj) in one launch. A block computes rows_per_block rows exactly as the plain ncols_dst == 1
++// kernel does (same lanes, blocks per lane, warp combine and butterfly; rows_per_block as GGML_HIP_MMVQ_N1_ROWS picks
++// it), then counts its rows into the ticket of their 32-channel group; the block that completes the 3*32 rows of a
++// group runs the conv of those 32 channels with its first warp (per channel and per q8_1 group of 32 channels the same
++// code as the 128-thread conv kernel) and resets the ticket.
++template <ggml_type type, int rows_per_block, int d_conv>
++MMVQ_LAUNCH_BOUNDS(calc_nwarps(type, 1, get_device_table_id())*ggml_cuda_get_physical_warp_size(), 16)
++static __global__ void mul_mat_vec_q_conv(
++        const void * __restrict__ vx, const block_q8_1 * __restrict__ vy, float * dst,
++        const uint32_t ncols_x, const uint32_t stride_row_x, const uint32_t nr,
++        const ggml_cuda_ssm_conv_fused_src conv_src, const float * __restrict__ conv_w, const int conv_w_nb1,
++        float * conv_dst, const int conv_dst_nb1, unsigned int * tickets) {
++    constexpr int qk        = ggml_cuda_type_traits<type>::qk;
++    constexpr int qi        = ggml_cuda_type_traits<type>::qi;
++    constexpr int vdr       = get_vdr_mmvq(type);
++    constexpr int nwarps    = calc_nwarps(type, 1, get_device_table_id());
++    constexpr int warp_size = ggml_cuda_get_physical_warp_size();
++    constexpr vec_dot_q_cuda_t vec_dot_q_cuda = get_vec_dot_q_cuda(type);
++    static_assert(warp_size % rows_per_block == 0, "a block's rows must lie in one 32-channel group");
++
++    const int tid              = warp_size*threadIdx.y + threadIdx.x;
++    const int row0             = rows_per_block*blockIdx.x;
++    const int blocks_per_row_x = ncols_x / qk;
++    constexpr int blocks_per_iter = vdr * nwarps*warp_size / qi;
++
++    const int kbx_offset = row0*stride_row_x;
++    float tmp[rows_per_block] = {0.0f};
++    const int kqs = vdr * (tid % (qi/vdr));
++    for (int kbx = tid / (qi/vdr); kbx < blocks_per_row_x; kbx += blocks_per_iter) {
++        const int kby = kbx * (qk/QK8_1);
++#pragma unroll
++        for (int i = 0; i < rows_per_block; ++i) {
++            tmp[i] += vec_dot_q_cuda(vx, &vy[kby], kbx_offset + i*stride_row_x + kbx, kqs);
++        }
++    }
++
++    __shared__ float tmp_shared[nwarps-1 > 0 ? nwarps-1 : 1][rows_per_block][warp_size];
++    __shared__ bool  s_last;
++    if (threadIdx.y > 0) {
++#pragma unroll
++        for (int i = 0; i < rows_per_block; ++i) {
++            tmp_shared[threadIdx.y-1][i][threadIdx.x] = tmp[i];
++        }
++    }
++    __syncthreads();
++    if (threadIdx.y == 0) {
++#pragma unroll
++        for (int i = 0; i < rows_per_block; ++i) {
++#pragma unroll
++            for (int l = 0; l < nwarps-1; ++l) {
++                tmp[i] += tmp_shared[l][i][threadIdx.x];
++            }
++            tmp[i] = warp_reduce_sum<warp_size>(tmp[i]);
++            if (threadIdx.x == i) {
++                dst[row0 + i] = tmp[i];
++            }
++        }
++    }
++
++    const int group = (row0 % nr) / warp_size;
++    __threadfence();
++    __syncthreads();
++    if (tid == 0) {
++        s_last = atomicAdd(tickets + group, (unsigned int) rows_per_block) == 3*warp_size - rows_per_block;
++        if (s_last) {
++            tickets[group] = 0;
++        }
++    }
++    __syncthreads();
++    if (!s_last || threadIdx.y != 0) {
++        return;
++    }
++    __threadfence();
++    ssm_conv_fused_f32_block<false, warp_size, d_conv, true>(group, conv_src, conv_w, nullptr, conv_w_nb1, conv_dst,
++                                                             conv_dst_nb1, 1);
++}
++
++bool ggml_cuda_mmvq_conv_supported(const ggml_type type, const int64_t ncols, const int64_t nrows, const int64_t nr,
++                                   const int64_t d_conv) {
++    switch (type) {
++        case GGML_TYPE_Q4_0: case GGML_TYPE_Q8_0:
++        case GGML_TYPE_Q4_K: case GGML_TYPE_Q5_K: case GGML_TYPE_Q6_K:
++            break;
++        default:
++            return false;
++    }
++    const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
++    // the plain ncols_dst == 1 kernel is the only n = 1 variant there (no small-K or halved-iteration blocks)
++    return GGML_CUDA_CC_IS_RDNA(cc) && get_device_table_id(cc) != MMVQ_PARAMETERS_GB10 &&
++           ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size == 32 &&
++           d_conv >= 3 && d_conv <= 5 && nr % 32 == 0 && nrows == 3*nr && ncols % ggml_blck_size(type) == 0 &&
++           nr/32 <= ggml_backend_cuda_context::n_tickets;
++}
++
++void ggml_cuda_mmvq_conv(ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst,
++        const ggml_cuda_ssm_conv_fused_src & conv_src, const float * conv_w, const int conv_w_nb1, const int64_t d_conv,
++        float * conv_dst, const int conv_dst_nb1, unsigned int * tickets) {
++    const int64_t nrows = src0->ne[1];
++    const int64_t nr    = nrows / 3;
++    GGML_ASSERT(ggml_cuda_mmvq_conv_supported(src0->type, src0->ne[0], nrows, nr, d_conv));
++    GGML_ASSERT(src1->type == GGML_TYPE_F32 && ggml_nrows(src1) == 1 && src1->nb[0] == sizeof(float));
++    GGML_ASSERT(dst->type == GGML_TYPE_F32 && ggml_is_contiguous(dst) && ggml_nelements(dst) == nrows);
++    GGML_ASSERT(src0->nb[0] == ggml_type_size(src0->type));
++
++    // the q8_1 input as the plain MUL_MAT path gets it (quantized, or from the cache a producer wrote)
++    ggml_cuda_pool_alloc<char> src1_q8_1_pool(ctx.pool());
++    const block_q8_1 * y = (const block_q8_1 *) mmvq_src1_q8_1(ctx, src1, src0->type, /*allow_cache =*/ true, src1_q8_1_pool);
++
++    const uint32_t stride_row_x = src0->nb[1] / ggml_type_size(src0->type);
++    const int      warp_size    = ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size;
++    const mmvq_parameter_table_id table_id = get_device_table_id(ggml_cuda_info().devices[ggml_cuda_get_device()].cc);
++    cudaStream_t stream = ctx.stream();
++
++    const auto launch = [&](auto type_tag, auto rows_tag, auto nc_tag) {
++        constexpr ggml_type t    = decltype(type_tag)::value;
++        constexpr int       rpb  = decltype(rows_tag)::value;
++        constexpr int       c_nc = decltype(nc_tag)::value;
++        const dim3 block_nums(nrows / rpb, 1, 1);
++        const dim3 block_dims(warp_size, calc_nwarps(t, 1, table_id), 1);
++        mul_mat_vec_q_conv<t, rpb, c_nc><<<block_nums, block_dims, 0, stream>>>(
++            src0->data, y, (float *) dst->data, src0->ne[0], stride_row_x, nr, conv_src, conv_w, conv_w_nb1, conv_dst,
++            conv_dst_nb1, tickets);
++    };
++    // the rows per block of the plain launch (GGML_HIP_MMVQ_N1_ROWS on RDNA3, else 1)
++    const auto launch_rows = [&](auto type_tag, auto nc_tag) {
++        constexpr ggml_type t = decltype(type_tag)::value;
++        const int rows = mmvq_n1_rows_type(t) && table_id == MMVQ_PARAMETERS_RDNA3_0 ? mmvq_n1_rows(nrows) : 1;
++        switch (rows) {
++            case 2:  launch(type_tag, std::integral_constant<int, 2>{}, nc_tag); break;
++            case 4:  launch(type_tag, std::integral_constant<int, 4>{}, nc_tag); break;
++            default: launch(type_tag, std::integral_constant<int, 1>{}, nc_tag); break;
++        }
++    };
++    const auto launch_nc = [&](auto type_tag) {
++        switch (d_conv) {
++            case 3:  launch_rows(type_tag, std::integral_constant<int, 3>{}); break;
++            case 4:  launch_rows(type_tag, std::integral_constant<int, 4>{}); break;
++            case 5:  launch_rows(type_tag, std::integral_constant<int, 5>{}); break;
++            default: GGML_ABORT("fatal error");
++        }
++    };
++    switch (src0->type) {
++#define MMVQ_CONV_CASE(T) case T: launch_nc(std::integral_constant<ggml_type, T>{}); break
++        MMVQ_CONV_CASE(GGML_TYPE_Q4_0);
++        MMVQ_CONV_CASE(GGML_TYPE_Q8_0);
++        MMVQ_CONV_CASE(GGML_TYPE_Q4_K);
++        MMVQ_CONV_CASE(GGML_TYPE_Q5_K);
++        MMVQ_CONV_CASE(GGML_TYPE_Q6_K);
++#undef MMVQ_CONV_CASE
++        default: GGML_ABORT("fatal error");
++    }
++}
++
+ void ggml_cuda_mul_mat_vec_q(
+         ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, const ggml_tensor * ids, ggml_tensor * dst,
+         const ggml_cuda_mm_fusion_args_host * fusion) {
+diff --git a/ggml/src/ggml-cuda/mmvq.cuh b/ggml/src/ggml-cuda/mmvq.cuh
+index a687fa65d..2ffbcedbd 100644
+--- a/ggml/src/ggml-cuda/mmvq.cuh
++++ b/ggml/src/ggml-cuda/mmvq.cuh
+@@ -42,3 +42,12 @@ void ggml_cuda_gdn_ab_mmvq(ggml_backend_cuda_context & ctx, const ggml_tensor *
+ bool ggml_cuda_mmvq_moe_down_reduce_supported(ggml_type type, int64_t n_used, int64_t nrows);
+ void ggml_cuda_mmvq_moe_down_reduce(ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1,
+         const ggml_tensor * ids, const ggml_tensor * weights, const ggml_tensor * residual, ggml_tensor * dst);
++
++// [GGML_HIP_INPROJ_CONV] single-token in_proj MUL_MAT (src0 [K, 3*nr], src1 F32 [K, 1]) whose output is the x, x2
++// and gate input of a fused SSM_CONV (conv_src, d_conv 3..5, no SILU / bias, one token): the conv of each 32-channel
++// group runs as the tail of the block that completes the group's rows (tickets: nr/32 zeroed counters, left zeroed).
++// Bitwise as the plain MMVQ launch and the fused conv kernel.
++bool ggml_cuda_mmvq_conv_supported(ggml_type type, int64_t ncols, int64_t nrows, int64_t nr, int64_t d_conv);
++void ggml_cuda_mmvq_conv(ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, ggml_tensor * dst,
++        const ggml_cuda_ssm_conv_fused_src & conv_src, const float * conv_w, int conv_w_nb1, int64_t d_conv,
++        float * conv_dst, int conv_dst_nb1, unsigned int * tickets);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 8dffa747d..795ba8853 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7900,6 +7900,62 @@ struct test_norm_router_topk : public test_case {
+     }
+ };
+ 
++// LFM2 shortconv block, one token: in_proj MUL_MAT -> b, c, x views -> b*x -> transpose -> concat with the conv state
++// -> SSM_CONV -> c*conv -> out_proj MUL_MAT (in_proj and the fused conv in one launch by the HIP backend,
++// GGML_HIP_INPROJ_CONV)
++struct test_shortconv : public test_case {
++    const ggml_type type;
++    const int64_t   n_embd;
++    const int64_t   nr;
++    const int64_t   d_conv;
++
++    std::string vars() override { return VARS_TO_STR4(type, n_embd, nr, d_conv); }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "SHORTCONV";
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    // two chained matmuls on q8_1 activations (random data reaches ~5e-4 with or without the fusion)
++    double max_nmse_err() override {
++        return 1e-3;
++    }
++
++    test_shortconv(ggml_type type = GGML_TYPE_Q5_K, int64_t n_embd = 2048, int64_t nr = 2048, int64_t d_conv = 3)
++        : type(type), n_embd(n_embd), nr(nr), d_conv(d_conv) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, n_embd, 1);
++        ggml_set_name(x, "x");
++        ggml_tensor * in_proj = ggml_new_tensor_2d(ctx, type, n_embd, 3*nr);
++        ggml_set_name(in_proj, "in_proj");
++        ggml_tensor * bcx = ggml_mul_mat(ctx, in_proj, x); // [3*nr, 1]
++        ggml_set_name(bcx, "bcx");
++        ggml_tensor * b  = ggml_view_2d(ctx, bcx, nr, 1, bcx->nb[1], 0);
++        ggml_tensor * c  = ggml_view_2d(ctx, bcx, nr, 1, bcx->nb[1], nr*sizeof(float));
++        ggml_tensor * xv = ggml_view_2d(ctx, bcx, nr, 1, bcx->nb[1], 2*nr*sizeof(float));
++        ggml_tensor * bx = ggml_mul(ctx, b, xv);
++        ggml_set_name(bx, "bx");
++        ggml_tensor * state = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, d_conv - 1, nr);
++        ggml_set_name(state, "conv_state");
++        ggml_tensor * conv_in = ggml_concat(ctx, state, ggml_transpose(ctx, bx), 0); // [d_conv, nr]
++        ggml_set_name(conv_in, "conv_in");
++        ggml_tensor * conv_w = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, d_conv, nr);
++        ggml_set_name(conv_w, "conv_w");
++        ggml_tensor * conv = ggml_ssm_conv(ctx, conv_in, conv_w); // [nr, 1, 1]
++        ggml_set_name(conv, "conv");
++        ggml_tensor * y = ggml_mul(ctx, ggml_reshape_3d(ctx, c, nr, 1, 1), conv);
++        ggml_set_name(y, "y");
++        ggml_tensor * out_proj = ggml_new_tensor_2d(ctx, type, nr, n_embd);
++        ggml_set_name(out_proj, "out_proj");
++        ggml_tensor * out = ggml_mul_mat(ctx, out_proj, ggml_reshape_2d(ctx, y, nr, 1));
++        ggml_set_name(out, "out");
++        return out;
++    }
++};
++
+ // mul_mat with src1 in [0, 1]: a zero-mean src1 hides errors in the zero point or the min of a quantized src0
+ struct test_mul_mat_pos : public test_mul_mat {
+     using test_mul_mat::test_mul_mat;
+@@ -12461,6 +12517,11 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_norm_router_topk(2048, 32, 2, false, GATING_FUNC_SIGMOID));
+     test_cases.emplace_back(new test_norm_router_topk(2048, 128, 8, true, GATING_FUNC_SIGMOID));
+     test_cases.emplace_back(new test_norm_router_topk(2048, 256, 8, true, GATING_FUNC_SIGMOID));
++    // LFM2 shortconv block (24B-A2B shapes, and other types / conv widths)
++    test_cases.emplace_back(new test_shortconv(GGML_TYPE_Q5_K, 2048, 2048, 3));
++    test_cases.emplace_back(new test_shortconv(GGML_TYPE_Q6_K, 1024, 512, 3));
++    test_cases.emplace_back(new test_shortconv(GGML_TYPE_Q4_K, 512, 256, 4));
++    test_cases.emplace_back(new test_shortconv(GGML_TYPE_Q8_0, 256, 128, 5));
+ 
+     test_cases.emplace_back(new test_gated_delta_net(GGML_TYPE_F32, 32, 128, 1, 1));
+     test_cases.emplace_back(new test_gated_delta_net(GGML_TYPE_F32, 32, 16, 1, 1));
+-- 
+2.43.0
+

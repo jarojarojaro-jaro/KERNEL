@@ -1,7 +1,7 @@
 From 919080dca831e360e1b6ec1d4fbdab0d9cf0aa91 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 19:31:21 +0000
-Subject: [PATCH 18/52] CUDA/HIP: fix race in flash_attn_ext_f16_process_tile
+Subject: [PATCH 18/54] CUDA/HIP: fix race in flash_attn_ext_f16_process_tile
  when nbatch_combine != DKQ/2 (cherry-pick of upstream #30103)
 
 (cherry picked from commit 1cc47333a29b81487ea135f2ae473c21d2025e4a)

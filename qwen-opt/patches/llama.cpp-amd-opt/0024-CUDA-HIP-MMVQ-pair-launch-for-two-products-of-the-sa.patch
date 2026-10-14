@@ -1,7 +1,7 @@
 From 15db6f979b0d895eb937e82e040a078c87798131 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 13:36:37 +0000
-Subject: [PATCH 24/52] CUDA/HIP: MMVQ pair launch for two products of the same
+Subject: [PATCH 24/54] CUDA/HIP: MMVQ pair launch for two products of the same
  src1 (GGML_HIP_MMVQ_PAIR)
 
 Two consecutive MUL_MATs with the same weight type and K on the same src1 (2-8 columns) run as one multi-column

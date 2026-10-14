@@ -1,7 +1,7 @@
 From 56be15abf23265e21cfa9a4a327adfb6efa5f3f9 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 15:25:16 +0000
-Subject: [PATCH 30/52] llama: MTP draft chain on its own scheduler
+Subject: [PATCH 30/54] llama: MTP draft chain on its own scheduler
  (LLAMA_MTP_CHAIN_SCHED)
 
 The MTP draft chain graph and the MTP catch-up graph alternate every step in
