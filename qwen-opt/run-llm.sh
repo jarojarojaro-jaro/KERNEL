@@ -7,9 +7,9 @@
 #   qwen        mtp  rocm   ~104 t/s  (default; ~96 t/s with 94k tokens in context)
 #   uncensored  mtp  rocm   ~106 t/s  orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated); VISION=1 adds mmproj
 #   qwen        mtp  vulkan optional backend, slower on long prompts
-#   lfm         none ~219 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072
+#   lfm         none ~219 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072, KV q8_0
 #
-# env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0),
+# env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0; q8_0 for lfm),
 #      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)
 #      LOG server log file (default ~/qwen-opt/logs/server-<time>.log, newest linked as logs/latest.log)
 #      DRAFT_N max draft tokens (default: backend/drafter specific), P_MIN stop drafting below this draft confidence
@@ -29,7 +29,10 @@ ctx_default=204800
 ctx=${CTX:-$ctx_default}
 port=${PORT:-8080}
 host=${HOST:-127.0.0.1}
-kv=${KV:-q4_0}
+# LFM has only 10 attention layers, so a q8_0 KV cache costs ~1.4 GB at 131k and buys accuracy
+kv_default=q4_0
+[ "$model" = lfm ] && kv_default=q8_0
+kv=${KV:-$kv_default}
 effort=${EFFORT:-low}
 mkdir -p "$HOME/qwen-opt/logs"
 log=${LOG:-$HOME/qwen-opt/logs/server-$(date +%F_%H%M%S).log}
