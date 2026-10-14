@@ -1,0 +1,185 @@
+From e5ca00ec48aaad68da7c006d8edbb57d5d318cfa Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 21:22:16 +0000
+Subject: [PATCH 61/64] HIP PM4 replay: GGML_HIP_PM4_DEBUG=2 per-launch timing
+ (GPU timestamps of the tape, host sync/submit, idle between tapes), =3
+ per-dispatch durations (pm4trace lines on stderr)
+
+Diagnostics only; the default tape is unchanged (no timestamp packets unless DEBUG >= 2).
+rocprofv3 does not see PM4 dispatches, so this is the per-kernel view of the replay path.
+---
+ ggml/src/ggml-cuda/hip-pm4.cu | 82 +++++++++++++++++++++++++++++++++--
+ 1 file changed, 78 insertions(+), 4 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/hip-pm4.cu b/ggml/src/ggml-cuda/hip-pm4.cu
+index 94aad9852..b36185d43 100644
+--- a/ggml/src/ggml-cuda/hip-pm4.cu
++++ b/ggml/src/ggml-cuda/hip-pm4.cu
+@@ -6,6 +6,7 @@
+ #include <hsa/hsa_ext_amd.h>
+ #include <hsa/hsa_ven_amd_loader.h>
+ 
++#include <cxxabi.h>
+ #include <chrono>
+ #include <cstdio>
+ #include <cstring>
+@@ -230,6 +231,7 @@ struct pm4_device {
+     hsa_queue_t * queue = nullptr;
+     hsa_signal_t signal{};
+     std::unordered_map<const void *, pm4_kernel> kernels;
++    uint64_t * ts = nullptr;  // GGML_HIP_PM4_DEBUG=2: GPU timestamps of the tape start and end
+ };
+ 
+ static hsa_ven_amd_loader_1_03_pfn_t g_loader;
+@@ -237,8 +239,9 @@ static std::mutex g_mutex;
+ static pm4_device g_dev[GGML_CUDA_MAX_DEVICES];
+ static std::unordered_map<uint64_t, std::unordered_map<std::string, pm4_kernel_meta>> g_co_meta;  // per loaded code object
+ 
+-static bool pm4_debug() {
+-    static const bool d = [] { const char * e = getenv("GGML_HIP_PM4_DEBUG"); return e && atoi(e) != 0; }();
++// 1: log tape builds and fallbacks, 2: also per-launch timing
++static int pm4_debug() {
++    static const int d = [] { const char * e = getenv("GGML_HIP_PM4_DEBUG"); return e ? atoi(e) : 0; }();
+     return d;
+ }
+ 
+@@ -308,6 +311,11 @@ static bool pm4_device_init(int device) {
+         return false;
+     }
+     if (hsa_signal_create(1, 0, nullptr, &d.signal) != HSA_STATUS_SUCCESS) { PM4_LOG("hsa_signal_create failed\n"); return false; }
++    if (pm4_debug() >= 2 && (hsa_amd_memory_pool_allocate(d.host_pool, 1 << 16, 0, (void **) &d.ts) != HSA_STATUS_SUCCESS ||
++                             hsa_amd_agents_allow_access(1, &d.gpu, nullptr, d.ts) != HSA_STATUS_SUCCESS)) {
++        PM4_LOG("timestamp buffer allocation failed\n");
++        return false;
++    }
+     d.ok = true;
+     return true;
+ }
+@@ -443,6 +451,10 @@ struct pm4_stream {
+         dw.insert(dw.end(), {pkt3(OP_ACQUIRE_MEM, 7, false), 0, 0xffffffffu, 0xff, 0, 0, 4,
+                              (1u << 16) | (1u << 15) | (1u << 14) | (1u << 9) | (1u << 8) | (1u << 7) | (1u << 6) | (1u << 5) | (1u << 4) | 1u});
+     }
++    // COPY_DATA: 64-bit GPU timestamp counter -> memory, write confirmed (diagnostics)
++    void timestamp(uint64_t addr) {
++        dw.insert(dw.end(), {pkt3(0x40, 5, false), 9u | (5u << 8) | (1u << 16) | (1u << 20), 0, 0, (uint32_t) addr, (uint32_t) (addr >> 32)});
++    }
+ };
+ 
+ } // namespace
+@@ -453,6 +465,8 @@ struct ggml_hip_pm4_tape {
+     uint32_t ndw = 0;
+     uint32_t * ib = nullptr;       // executable host memory (HSA pool)
+     uint8_t * kernargs = nullptr;  // VRAM
++    uint32_t ts_end = 1;              // debug: timestamp slot of the tape end
++    std::vector<std::string> names;   // debug >= 3: kernel name and grid per dispatch
+ };
+ 
+ void ggml_hip_pm4_free(ggml_hip_pm4_tape * tape) {
+@@ -554,13 +568,33 @@ ggml_hip_pm4_tape * ggml_hip_pm4_build(int device, cudaGraph_t graph) {
+ 
+     pm4_stream s;
+     s.acquire_system();
++    if (pm4_debug() >= 2) {
++        s.timestamp((uint64_t) d.ts);
++    }
+     for (size_t i = 0; i < disp.size(); ++i) {
+         const dispatch & x = disp[i];
+         const pm4_kernel & k = *x.k;
+         if (i > 0) {
+             s.wait_idle();
++            if (pm4_debug() >= 3) {
++                s.timestamp((uint64_t) (d.ts + i));  // end of dispatch i-1
++            }
+             s.acquire_l1();
+         }
++        if (pm4_debug() >= 3) {
++            int st = 0;
++            char * dm = abi::__cxa_demangle(hipKernelNameRefByPtr(x.p.func, nullptr), nullptr, nullptr, &st);
++            std::string nm = dm ? dm : "?";
++            free(dm);
++            // drop the parameter list: the parenthesized group that ends the name
++            int depth = 0;
++            for (size_t c = nm.size(); c-- > 0;) {
++                if (nm[c] == ')') depth++;
++                if (nm[c] == '(' && --depth == 0) { nm.resize(c); break; }
++            }
++            t->names.push_back(nm + " grid " + std::to_string(x.p.gridDim.x) + "x" + std::to_string(x.p.gridDim.y) + "x" +
++                               std::to_string(x.p.gridDim.z));
++        }
+         const uint32_t lds_blocks = (k.meta.group + x.p.sharedMemBytes + 511) / 512;
+         const uint32_t rsrc2 = (k.rsrc2 & ~0x00ff8000u) | (lds_blocks << 15);
+         const uint64_t kaddr = (uint64_t) (t->kernargs + x.ka_off);
+@@ -579,6 +613,10 @@ ggml_hip_pm4_tape * ggml_hip_pm4_build(int device, cudaGraph_t graph) {
+         s.dw.insert(s.dw.end(), {pkt3(OP_DISPATCH_DIRECT, 4, true), x.p.gridDim.x, x.p.gridDim.y, x.p.gridDim.z, initiator});
+     }
+     s.wait_idle();
++    if (pm4_debug() >= 2) {
++        t->ts_end = pm4_debug() >= 3 ? t->n_dispatch : 1;
++        s.timestamp((uint64_t) (d.ts + t->ts_end));
++    }
+     s.acquire_system();
+ 
+     t->ndw = s.dw.size();
+@@ -595,8 +633,10 @@ ggml_hip_pm4_tape * ggml_hip_pm4_build(int device, cudaGraph_t graph) {
+ 
+ void ggml_hip_pm4_launch(ggml_hip_pm4_tape * t, cudaStream_t stream) {
+     pm4_device & d = g_dev[t->device];
++    const auto h0 = std::chrono::steady_clock::now();
+     // the inputs were uploaded on the stream: wait for them on the host
+     CUDA_CHECK(cudaStreamSynchronize(stream));
++    const auto h1 = std::chrono::steady_clock::now();
+ 
+     hsa_signal_store_relaxed(d.signal, 1);
+     const uint64_t w = hsa_queue_add_write_index_relaxed(d.queue, 1);
+@@ -619,12 +659,46 @@ void ggml_hip_pm4_launch(ggml_hip_pm4_tape * t, cudaStream_t stream) {
+     hsa_signal_store_screlease(d.queue->doorbell_signal, w);
+ 
+     // the work after the tape on the stream is ordered by the host: wait for completion (bounded)
+-    const auto t0 = std::chrono::steady_clock::now();
+     while (hsa_signal_wait_scacquire(d.signal, HSA_SIGNAL_CONDITION_LT, 1, 1000000, HSA_WAIT_STATE_ACTIVE) != 0) {
+-        if (std::chrono::steady_clock::now() - t0 > std::chrono::seconds(10)) {
++        if (std::chrono::steady_clock::now() - h1 > std::chrono::seconds(10)) {
+             GGML_ABORT("ggml_hip_pm4: tape of %u dispatches did not complete within 10 s", t->n_dispatch);
+         }
+     }
++    if (pm4_debug() >= 2) {
++        // per 256 launches: host stream sync before the tape, host submit -> completion, GPU tape time (100 MHz
++        // counter), GPU idle between the end of the previous tape and the start of this one
++        const auto h2 = std::chrono::steady_clock::now();
++        static double s_sync = 0, s_wait = 0, s_gpu = 0, s_gap = 0, s_out = 0;
++        static uint64_t prev_end = 0;
++        static std::chrono::steady_clock::time_point prev_ret{};
++        static int cnt = 0, ngap = 0;
++        s_sync += std::chrono::duration<double, std::micro>(h1 - h0).count();
++        s_wait += std::chrono::duration<double, std::micro>(h2 - h1).count();
++        const uint64_t end = d.ts[t->ts_end];
++        s_gpu += (end - d.ts[0]) / 100.0;
++        if (prev_end && d.ts[0] > prev_end && d.ts[0] - prev_end < 100000) {
++            s_gap += (d.ts[0] - prev_end) / 100.0;
++            s_out += std::chrono::duration<double, std::micro>(h0 - prev_ret).count();
++            ngap++;
++        }
++        prev_end = end;
++        if (pm4_debug() >= 3) {
++            // per dispatch: time from the end of the previous dispatch (boundary packets included) to its end
++            static uint64_t launch = 0;
++            for (uint32_t i = 0; i < t->n_dispatch; ++i) {
++                fprintf(stderr, "pm4trace\t%lu\t%u\t%.2f\t%s\n", (unsigned long) launch, i, (d.ts[i + 1] - d.ts[i]) / 100.0, t->names[i].c_str());
++            }
++            launch++;
++        }
++        prev_ret = std::chrono::steady_clock::now();
++        if (++cnt == 256) {
++            fprintf(stderr, "ggml_hip_pm4: %u dispatches: stream sync %.1f us, submit->done %.1f us, tape on GPU %.1f us, "
++                    "GPU idle between tapes %.1f us, host between launches %.1f us\n",
++                    t->n_dispatch, s_sync / cnt, s_wait / cnt, s_gpu / cnt, ngap ? s_gap / ngap : 0.0, ngap ? s_out / ngap : 0.0);
++            s_sync = s_wait = s_gpu = s_gap = s_out = 0;
++            cnt = ngap = 0;
++        }
++    }
+ }
+ 
+ #endif // GGML_HIP_PM4_AVAILABLE
+-- 
+2.43.0
+

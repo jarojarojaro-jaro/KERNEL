@@ -1,0 +1,788 @@
+From 1153adb69b7cf01a72f9563ade2bd7e26e9f2024 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 21:15:16 +0000
+Subject: [PATCH 60/64] HIP/RDNA3: replay a captured decode graph as one PM4
+ indirect buffer on an own ROCr queue (GGML_HIP_PM4)
+
+A HIP graph costs ~2.75 us per kernel boundary on gfx1100: the CP's AQL front end
+processes one packet per kernel (own AQL replay with any fence scope, kernarg in
+VRAM or the barrier bit cleared: >= 2.08 us). The same chain as DISPATCH_DIRECT
+packets in one PM4 IB, separated by CS_PARTIAL_FLUSH + ACQUIRE_MEM (GLK/GLV/GL1
+invalidate), costs 0.46-0.86 us per boundary (microbenchmark, kernargs in VRAM).
+
+After a graph is captured, its kernel nodes (one chain) are turned into a tape:
+kernel descriptors from the HIP-loaded code objects (loader extension), explicit
+kernargs from the node parameters at the offsets of the code-object metadata, the
+hidden arguments as ROCclr fills them; kernargs in VRAM, IB in executable host
+memory. The tape is submitted as one AMD vendor AQL packet (PM4_IB) with
+system-scope acquire/release; ordering with the HIP stream on the host (stream
+sync before, completion signal wait after, bounded). Same kernels and arguments:
+bitwise identical. Graphs with other node types, several streams, scratch or
+other implicit arguments keep cudaGraphLaunch. GGML_HIP_PM4=0 switches it off,
+GGML_HIP_PM4_DEBUG=1 logs tape builds and fallbacks.
+
+LFM2.5-24B-A2B Q5_K_M, KV q8_0, llama-bench tg128 -r 5, 3 rounds interleaved:
+3.887 -> 3.424 ms/token (257.3 -> 292.1 t/s). Logit hashes a7ce25b73f887fed (d0),
+b47452b9380b665b (d3000) unchanged; greedy md5 LFM 894e56e4..., Qwen plain
+c4708318..., Qwen MTP 6f14e814... unchanged (Qwen tapes: 807-919 dispatches).
+---
+ ggml/src/ggml-cuda/common.cuh    |  10 +
+ ggml/src/ggml-cuda/ggml-cuda.cu  |  10 +
+ ggml/src/ggml-cuda/hip-pm4.cu    | 630 +++++++++++++++++++++++++++++++
+ ggml/src/ggml-cuda/hip-pm4.cuh   |  26 ++
+ ggml/src/ggml-hip/CMakeLists.txt |   3 +-
+ 5 files changed, 678 insertions(+), 1 deletion(-)
+ create mode 100644 ggml/src/ggml-cuda/hip-pm4.cu
+ create mode 100644 ggml/src/ggml-cuda/hip-pm4.cuh
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index eb2b699e1..8861b6724 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1350,10 +1350,17 @@ struct ggml_tensor_extra_gpu {
+ #if (defined(GGML_CUDA_USE_GRAPHS) || defined(GGML_HIP_GRAPHS)) || defined(GGML_MUSA_GRAPHS)
+ #define USE_CUDA_GRAPH
+ #endif
++#if defined(GGML_USE_HIP) && defined(USE_CUDA_GRAPH)
++struct ggml_hip_pm4_tape;
++void ggml_hip_pm4_free(ggml_hip_pm4_tape * tape);
++#endif
+ 
+ struct ggml_cuda_graph {
+ #ifdef USE_CUDA_GRAPH
+     ~ggml_cuda_graph() {
++#ifdef GGML_USE_HIP
++        ggml_hip_pm4_free(pm4);
++#endif
+         if (instance != nullptr) {
+             CUDA_CHECK(cudaGraphExecDestroy(instance));
+         }
+@@ -1361,6 +1368,9 @@ struct ggml_cuda_graph {
+             CUDA_CHECK(cudaGraphDestroy(graph));
+         }
+     }
++#ifdef GGML_USE_HIP
++    ggml_hip_pm4_tape * pm4 = nullptr; // GGML_HIP_PM4: the graph's kernels as one PM4 indirect buffer
++#endif
+     cudaGraph_t graph = nullptr;
+     cudaGraphExec_t instance = nullptr;
+     size_t num_nodes = 0;
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 74de5977e..f02b82c03 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -29,6 +29,7 @@
+ #include "ggml-cuda/fwht.cuh"
+ #include "ggml-cuda/getrows.cuh"
+ #include "ggml-cuda/im2col.cuh"
++#include "ggml-cuda/hip-pm4.cuh"
+ #include "ggml-cuda/mmf.cuh"
+ #include "ggml-cuda/mmq.cuh"
+ #include "ggml-cuda/mmvf.cuh"
+@@ -5902,8 +5903,17 @@ static void ggml_cuda_graph_evaluate_and_capture(ggml_backend_cuda_context * cud
+         }
+         if (cuda_graph_update_required) { // Update graph executable
+             ggml_cuda_graph_update_executable(cuda_ctx, graph_key);
++#ifdef GGML_HIP_PM4_AVAILABLE
++            ggml_hip_pm4_free(graph->pm4);
++            graph->pm4 = ggml_hip_pm4_build(cuda_ctx->device, graph->graph);
++#endif
+         }
+         // Launch graph
++#ifdef GGML_HIP_PM4_AVAILABLE
++        if (graph->pm4) {
++            ggml_hip_pm4_launch(graph->pm4, cuda_ctx->stream());
++        } else
++#endif
+         CUDA_CHECK(cudaGraphLaunch(graph->instance, cuda_ctx->stream()));
+ #else
+         GGML_UNUSED(graph_key);
+diff --git a/ggml/src/ggml-cuda/hip-pm4.cu b/ggml/src/ggml-cuda/hip-pm4.cu
+new file mode 100644
+index 000000000..94aad9852
+--- /dev/null
++++ b/ggml/src/ggml-cuda/hip-pm4.cu
+@@ -0,0 +1,630 @@
++#include "hip-pm4.cuh"
++
++#ifdef GGML_HIP_PM4_AVAILABLE
++
++#include <hsa/hsa.h>
++#include <hsa/hsa_ext_amd.h>
++#include <hsa/hsa_ven_amd_loader.h>
++
++#include <chrono>
++#include <cstdio>
++#include <cstring>
++#include <fcntl.h>
++#include <mutex>
++#include <string>
++#include <unistd.h>
++#include <unordered_map>
++#include <vector>
++
++// ---------------------------------------------------------------------------------------------------------------------
++// minimal msgpack reader for the NT_AMDGPU_METADATA note of a code object
++
++namespace {
++
++struct mp_reader {
++    const uint8_t * p;
++    const uint8_t * end;
++    bool ok = true;
++
++    uint8_t u8() {
++        if (p >= end) { ok = false; return 0; }
++        return *p++;
++    }
++    uint64_t be(int n) {
++        uint64_t v = 0;
++        for (int i = 0; i < n; ++i) v = (v << 8) | u8();
++        return v;
++    }
++    // returns the element count of a map/array header, -1 if the next element is not of that kind
++    int64_t map_len() {
++        const uint8_t t = *p;
++        if ((t & 0xf0) == 0x80) { ++p; return t & 0x0f; }
++        if (t == 0xde) { ++p; return be(2); }
++        if (t == 0xdf) { ++p; return be(4); }
++        return -1;
++    }
++    int64_t array_len() {
++        const uint8_t t = *p;
++        if ((t & 0xf0) == 0x90) { ++p; return t & 0x0f; }
++        if (t == 0xdc) { ++p; return be(2); }
++        if (t == 0xdd) { ++p; return be(4); }
++        return -1;
++    }
++    bool str(std::string & s) {
++        const uint8_t t = u8();
++        size_t n;
++        if ((t & 0xe0) == 0xa0) n = t & 0x1f;
++        else if (t == 0xd9) n = be(1);
++        else if (t == 0xda) n = be(2);
++        else if (t == 0xdb) n = be(4);
++        else { ok = false; return false; }
++        if ((size_t) (end - p) < n) { ok = false; return false; }
++        s.assign((const char *) p, n);
++        p += n;
++        return true;
++    }
++    bool uint(uint64_t & v) {
++        const uint8_t t = u8();
++        if (t <= 0x7f) { v = t; return true; }
++        if (t == 0xcc) { v = be(1); return true; }
++        if (t == 0xcd) { v = be(2); return true; }
++        if (t == 0xce) { v = be(4); return true; }
++        if (t == 0xcf) { v = be(8); return true; }
++        if (t >= 0xd0 && t <= 0xd3) { v = be(1 << (t - 0xd0)); return true; }
++        ok = false;
++        return false;
++    }
++    bool boolean(bool & v) {
++        const uint8_t t = u8();
++        if (t == 0xc2 || t == 0xc3) { v = t == 0xc3; return true; }
++        ok = false;
++        return false;
++    }
++    void skip() {
++        if (!ok || p >= end) { ok = false; return; }
++        const uint8_t t = *p;
++        int64_t n;
++        if ((n = map_len()) >= 0) { for (int64_t i = 0; i < 2 * n && ok; ++i) skip(); return; }
++        if ((n = array_len()) >= 0) { for (int64_t i = 0; i < n && ok; ++i) skip(); return; }
++        if ((t & 0xe0) == 0xa0 || t == 0xd9 || t == 0xda || t == 0xdb) { std::string s; str(s); return; }
++        ++p;
++        if (t <= 0x7f || t >= 0xe0 || t == 0xc0 || t == 0xc2 || t == 0xc3) return;
++        switch (t) {
++            case 0xcc: case 0xd0: p += 1; break;
++            case 0xcd: case 0xd1: p += 2; break;
++            case 0xce: case 0xd2: case 0xca: p += 4; break;
++            case 0xcf: case 0xd3: case 0xcb: p += 8; break;
++            case 0xc4: p += be(1); break;
++            case 0xc5: p += be(2); break;
++            case 0xc6: p += be(4); break;
++            default: ok = false;
++        }
++        if (p > end) ok = false;
++    }
++};
++
++enum pm4_arg_kind : uint8_t {
++    ARG_EXPLICIT, ARG_BLOCK_COUNT_X, ARG_BLOCK_COUNT_Y, ARG_BLOCK_COUNT_Z, ARG_GROUP_SIZE_X, ARG_GROUP_SIZE_Y, ARG_GROUP_SIZE_Z,
++    ARG_ZERO, ARG_GRID_DIMS, ARG_DYNAMIC_LDS, ARG_UNSUPPORTED,
++};
++
++struct pm4_arg {
++    uint32_t offset, size;
++    pm4_arg_kind kind;
++};
++
++struct pm4_kernel_meta {
++    std::vector<pm4_arg> args;
++    uint32_t kernarg_size = 0, group = 0, priv = 0;
++    bool dynamic_stack = false;
++    std::string unsupported;  // first unsupported argument kind
++};
++
++static pm4_arg_kind arg_kind(const std::string & k) {
++    if (k == "by_value" || k == "global_buffer") return ARG_EXPLICIT;
++    if (k == "hidden_block_count_x") return ARG_BLOCK_COUNT_X;
++    if (k == "hidden_block_count_y") return ARG_BLOCK_COUNT_Y;
++    if (k == "hidden_block_count_z") return ARG_BLOCK_COUNT_Z;
++    if (k == "hidden_group_size_x") return ARG_GROUP_SIZE_X;
++    if (k == "hidden_group_size_y") return ARG_GROUP_SIZE_Y;
++    if (k == "hidden_group_size_z") return ARG_GROUP_SIZE_Z;
++    if (k == "hidden_remainder_x" || k == "hidden_remainder_y" || k == "hidden_remainder_z" || k == "hidden_global_offset_x" ||
++        k == "hidden_global_offset_y" || k == "hidden_global_offset_z" || k == "hidden_none") return ARG_ZERO;
++    if (k == "hidden_grid_dims") return ARG_GRID_DIMS;
++    if (k == "hidden_dynamic_lds_size") return ARG_DYNAMIC_LDS;
++    return ARG_UNSUPPORTED;
++}
++
++// parse all kernels of the metadata note of an ELF code object image: name -> meta (keyed by .name and .symbol)
++static bool parse_code_object(const uint8_t * elf, size_t size, std::unordered_map<std::string, pm4_kernel_meta> & out) {
++    if (size < 64 || memcmp(elf, "\x7f" "ELF", 4) != 0 || elf[4] != 2) return false;
++    uint64_t phoff; uint16_t phentsize, phnum;
++    memcpy(&phoff, elf + 0x20, 8); memcpy(&phentsize, elf + 0x36, 2); memcpy(&phnum, elf + 0x38, 2);
++    for (int i = 0; i < phnum; ++i) {
++        const uint8_t * ph = elf + phoff + (size_t) i * phentsize;
++        if (ph + 56 > elf + size) return false;
++        uint32_t type; uint64_t off, filesz;
++        memcpy(&type, ph, 4); memcpy(&off, ph + 8, 8); memcpy(&filesz, ph + 32, 8);
++        if (type != 4 /* PT_NOTE */ || off + filesz > size) continue;
++        const uint8_t * n = elf + off, * nend = n + filesz;
++        while (n + 12 <= nend) {
++            uint32_t namesz, descsz, ntype;
++            memcpy(&namesz, n, 4); memcpy(&descsz, n + 4, 4); memcpy(&ntype, n + 8, 4);
++            const uint8_t * name = n + 12;
++            const uint8_t * desc = name + ((namesz + 3) & ~3u);
++            if (desc + descsz > nend) break;
++            if (ntype == 32 && namesz == 7 && memcmp(name, "AMDGPU", 6) == 0) {
++                mp_reader r{desc, desc + descsz};
++                int64_t nm = r.map_len();
++                for (int64_t a = 0; a < nm && r.ok; ++a) {
++                    std::string key;
++                    if (!r.str(key)) return false;
++                    if (key != "amdhsa.kernels") { r.skip(); continue; }
++                    const int64_t nk = r.array_len();
++                    if (nk < 0) return false;
++                    for (int64_t k = 0; k < nk && r.ok; ++k) {
++                        pm4_kernel_meta m;
++                        std::string kname, ksym;
++                        const int64_t nf = r.map_len();
++                        if (nf < 0) return false;
++                        for (int64_t f = 0; f < nf && r.ok; ++f) {
++                            std::string fk;
++                            if (!r.str(fk)) return false;
++                            uint64_t v;
++                            if (fk == ".name") r.str(kname);
++                            else if (fk == ".symbol") r.str(ksym);
++                            else if (fk == ".kernarg_segment_size") { r.uint(v); m.kernarg_size = v; }
++                            else if (fk == ".group_segment_fixed_size") { r.uint(v); m.group = v; }
++                            else if (fk == ".private_segment_fixed_size") { r.uint(v); m.priv = v; }
++                            else if (fk == ".uses_dynamic_stack") r.boolean(m.dynamic_stack);
++                            else if (fk == ".args") {
++                                const int64_t na = r.array_len();
++                                if (na < 0) return false;
++                                for (int64_t q = 0; q < na && r.ok; ++q) {
++                                    pm4_arg arg{0, 0, ARG_UNSUPPORTED};
++                                    std::string vk;
++                                    const int64_t nq = r.map_len();
++                                    if (nq < 0) return false;
++                                    for (int64_t e = 0; e < nq && r.ok; ++e) {
++                                        std::string ak;
++                                        if (!r.str(ak)) return false;
++                                        if (ak == ".offset") { r.uint(v); arg.offset = v; }
++                                        else if (ak == ".size") { r.uint(v); arg.size = v; }
++                                        else if (ak == ".value_kind") r.str(vk);
++                                        else r.skip();
++                                    }
++                                    arg.kind = arg_kind(vk);
++                                    if (arg.kind == ARG_UNSUPPORTED && m.unsupported.empty()) m.unsupported = vk;
++                                    m.args.push_back(arg);
++                                }
++                            } else r.skip();
++                        }
++                        if (!r.ok) return false;
++                        out[kname] = m;
++                        if (!ksym.empty()) out[ksym] = m;
++                    }
++                }
++                return r.ok;
++            }
++            n = desc + ((descsz + 3) & ~3u);
++        }
++    }
++    return false;
++}
++
++// ---------------------------------------------------------------------------------------------------------------------
++
++struct pm4_kernel {
++    bool ok = false;
++    std::string why;
++    uint64_t code_entry = 0;
++    uint32_t rsrc1 = 0, rsrc2 = 0, rsrc3 = 0;
++    uint16_t props = 0;
++    pm4_kernel_meta meta;
++};
++
++struct pm4_device {
++    bool init_done = false, ok = false;
++    hsa_agent_t gpu{}, cpu{};
++    hsa_amd_memory_pool_t host_pool{};
++    hsa_queue_t * queue = nullptr;
++    hsa_signal_t signal{};
++    std::unordered_map<const void *, pm4_kernel> kernels;
++};
++
++static hsa_ven_amd_loader_1_03_pfn_t g_loader;
++static std::mutex g_mutex;
++static pm4_device g_dev[GGML_CUDA_MAX_DEVICES];
++static std::unordered_map<uint64_t, std::unordered_map<std::string, pm4_kernel_meta>> g_co_meta;  // per loaded code object
++
++static bool pm4_debug() {
++    static const bool d = [] { const char * e = getenv("GGML_HIP_PM4_DEBUG"); return e && atoi(e) != 0; }();
++    return d;
++}
++
++#define PM4_LOG(...) do { if (pm4_debug()) { fprintf(stderr, "ggml_hip_pm4: " __VA_ARGS__); } } while (0)
++
++static bool pm4_enabled(int device) {
++    static const bool env_on = [] { const char * e = getenv("GGML_HIP_PM4"); return e == nullptr || atoi(e) != 0; }();
++    return env_on && GGML_CUDA_CC_IS_RDNA3(ggml_cuda_info().devices[device].cc);
++}
++
++static void pm4_queue_error(hsa_status_t status, hsa_queue_t *, void *) {
++    const char * msg = "?";
++    hsa_status_string(status, &msg);
++    GGML_ABORT("ggml_hip_pm4: queue error: %s", msg);
++}
++
++static bool pm4_device_init(int device) {
++    pm4_device & d = g_dev[device];
++    if (d.init_done) return d.ok;
++    d.init_done = true;
++    if (hsa_init() != HSA_STATUS_SUCCESS) { PM4_LOG("hsa_init failed\n"); return false; }
++    if (hsa_system_get_major_extension_table(HSA_EXTENSION_AMD_LOADER, 1, sizeof(g_loader), &g_loader) != HSA_STATUS_SUCCESS) {
++        PM4_LOG("no AMD loader extension 1.03\n");
++        return false;
++    }
++    int bus = 0, dev = 0, dom = 0;
++    CUDA_CHECK(hipDeviceGetAttribute(&bus, hipDeviceAttributePciBusId, device));
++    CUDA_CHECK(hipDeviceGetAttribute(&dev, hipDeviceAttributePciDeviceId, device));
++    CUDA_CHECK(hipDeviceGetAttribute(&dom, hipDeviceAttributePciDomainID, device));
++    struct find_ctx { uint32_t bdf, dom; hsa_agent_t gpu, cpu; bool gpu_found, cpu_found; } fc{};
++    fc.bdf = ((uint32_t) bus << 8) | ((uint32_t) dev << 3);
++    fc.dom = dom;
++    hsa_iterate_agents([](hsa_agent_t a, void * data) {
++        find_ctx & c = *(find_ctx *) data;
++        hsa_device_type_t t;
++        hsa_agent_get_info(a, HSA_AGENT_INFO_DEVICE, &t);
++        if (t == HSA_DEVICE_TYPE_CPU && !c.cpu_found) { c.cpu = a; c.cpu_found = true; }
++        if (t == HSA_DEVICE_TYPE_GPU) {
++            uint32_t bdf = 0, dom = 0;
++            hsa_agent_get_info(a, (hsa_agent_info_t) HSA_AMD_AGENT_INFO_BDFID, &bdf);
++            hsa_agent_get_info(a, (hsa_agent_info_t) HSA_AMD_AGENT_INFO_DOMAIN, &dom);
++            if ((bdf & ~7u) == c.bdf && dom == c.dom) { c.gpu = a; c.gpu_found = true; }
++        }
++        return HSA_STATUS_SUCCESS;
++    }, &fc);
++    if (!fc.gpu_found || !fc.cpu_found) { PM4_LOG("no HSA agent for device %d\n", device); return false; }
++    d.gpu = fc.gpu;
++    d.cpu = fc.cpu;
++    struct pool_ctx { hsa_amd_memory_pool_t pool; bool found; } pc{};
++    hsa_amd_agent_iterate_memory_pools(d.cpu, [](hsa_amd_memory_pool_t p, void * data) {
++        pool_ctx & c = *(pool_ctx *) data;
++        hsa_amd_segment_t seg;
++        hsa_amd_memory_pool_get_info(p, HSA_AMD_MEMORY_POOL_INFO_SEGMENT, &seg);
++        uint32_t fl = 0;
++        hsa_amd_memory_pool_get_info(p, HSA_AMD_MEMORY_POOL_INFO_GLOBAL_FLAGS, &fl);
++        if (seg == HSA_AMD_SEGMENT_GLOBAL && (fl & HSA_AMD_MEMORY_POOL_GLOBAL_FLAG_FINE_GRAINED) &&
++            !(fl & HSA_AMD_MEMORY_POOL_GLOBAL_FLAG_KERNARG_INIT) && !c.found) {
++            c.pool = p;
++            c.found = true;
++        }
++        return HSA_STATUS_SUCCESS;
++    }, &pc);
++    if (!pc.found) { PM4_LOG("no fine-grained host pool\n"); return false; }
++    d.host_pool = pc.pool;
++    if (hsa_queue_create(d.gpu, 64, HSA_QUEUE_TYPE_SINGLE, pm4_queue_error, nullptr, UINT32_MAX, UINT32_MAX, &d.queue) != HSA_STATUS_SUCCESS) {
++        PM4_LOG("hsa_queue_create failed\n");
++        return false;
++    }
++    if (hsa_signal_create(1, 0, nullptr, &d.signal) != HSA_STATUS_SUCCESS) { PM4_LOG("hsa_signal_create failed\n"); return false; }
++    d.ok = true;
++    return true;
++}
++
++// code object image of a loaded code object (memory or file storage)
++static bool lco_metadata(hsa_loaded_code_object_t lco, std::unordered_map<std::string, pm4_kernel_meta> *& out) {
++    auto it = g_co_meta.find(lco.handle);
++    if (it != g_co_meta.end()) { out = &it->second; return true; }
++    std::unordered_map<std::string, pm4_kernel_meta> meta;
++    uint32_t stype = 0;
++    if (g_loader.hsa_ven_amd_loader_loaded_code_object_get_info(lco, HSA_VEN_AMD_LOADER_LOADED_CODE_OBJECT_INFO_CODE_OBJECT_STORAGE_TYPE, &stype) != HSA_STATUS_SUCCESS) {
++        return false;
++    }
++    bool ok = false;
++    if (stype == HSA_VEN_AMD_LOADER_CODE_OBJECT_STORAGE_TYPE_MEMORY) {
++        uint64_t base = 0, size = 0;
++        g_loader.hsa_ven_amd_loader_loaded_code_object_get_info(lco, HSA_VEN_AMD_LOADER_LOADED_CODE_OBJECT_INFO_CODE_OBJECT_STORAGE_MEMORY_BASE, &base);
++        g_loader.hsa_ven_amd_loader_loaded_code_object_get_info(lco, HSA_VEN_AMD_LOADER_LOADED_CODE_OBJECT_INFO_CODE_OBJECT_STORAGE_MEMORY_SIZE, &size);
++        ok = base && parse_code_object((const uint8_t *) base, size, meta);
++    } else if (stype == HSA_VEN_AMD_LOADER_CODE_OBJECT_STORAGE_TYPE_FILE) {
++        // URI: file://<path>#offset=<n>&size=<m>
++        uint32_t ulen = 0;
++        g_loader.hsa_ven_amd_loader_loaded_code_object_get_info(lco, HSA_VEN_AMD_LOADER_LOADED_CODE_OBJECT_INFO_URI_LENGTH, &ulen);
++        std::string uri(ulen, '\0');
++        g_loader.hsa_ven_amd_loader_loaded_code_object_get_info(lco, HSA_VEN_AMD_LOADER_LOADED_CODE_OBJECT_INFO_URI, uri.data());
++        if (uri.rfind("file://", 0) == 0) {
++            std::string path = uri.substr(7);
++            size_t off = 0, sz = 0;
++            const size_t hash = path.find('#');
++            if (hash != std::string::npos) {
++                const std::string q = path.substr(hash + 1);
++                path = path.substr(0, hash);
++                const size_t po = q.find("offset="), ps = q.find("size=");
++                if (po != std::string::npos) off = strtoull(q.c_str() + po + 7, nullptr, 0);
++                if (ps != std::string::npos) sz = strtoull(q.c_str() + ps + 5, nullptr, 0);
++            }
++            const int fd = open(path.c_str(), O_RDONLY);
++            if (fd >= 0) {
++                if (sz == 0) sz = lseek(fd, 0, SEEK_END) - off;
++                std::vector<uint8_t> buf(sz);
++                ok = pread(fd, buf.data(), sz, off) == (ssize_t) sz && parse_code_object(buf.data(), sz, meta);
++                close(fd);
++            }
++        }
++    }
++    if (!ok) return false;
++    out = &(g_co_meta[lco.handle] = std::move(meta));
++    return true;
++}
++
++static const pm4_kernel & pm4_get_kernel(pm4_device & d, const void * func) {
++    auto it = d.kernels.find(func);
++    if (it != d.kernels.end()) return it->second;
++    pm4_kernel & k = d.kernels[func];
++    const char * name = hipKernelNameRefByPtr(func, nullptr);
++    if (!name) { k.why = "no kernel name"; return k; }
++    struct sym_ctx { std::string sym; hsa_agent_t agent; hsa_executable_t exec; hsa_executable_symbol_t s; bool found; } sc{};
++    sc.sym = std::string(name) + ".kd";
++    sc.agent = d.gpu;
++    g_loader.hsa_ven_amd_loader_iterate_executables([](hsa_executable_t e, void * data) {
++        sym_ctx & c = *(sym_ctx *) data;
++        hsa_executable_symbol_t s;
++        if (hsa_executable_get_symbol_by_name(e, c.sym.c_str(), &c.agent, &s) == HSA_STATUS_SUCCESS) {
++            c.exec = e; c.s = s; c.found = true;
++            return HSA_STATUS_INFO_BREAK;
++        }
++        return HSA_STATUS_SUCCESS;
++    }, &sc);
++    if (!sc.found) { k.why = std::string("symbol not loaded: ") + name; return k; }
++    uint64_t object = 0;
++    hsa_executable_symbol_get_info(sc.s, HSA_EXECUTABLE_SYMBOL_INFO_KERNEL_OBJECT, &object);
++    const void * host = nullptr;
++    if (!object || g_loader.hsa_ven_amd_loader_query_host_address((const void *) object, &host) != HSA_STATUS_SUCCESS || !host) {
++        k.why = "no host copy of the kernel descriptor";
++        return k;
++    }
++    const uint8_t * desc = (const uint8_t *) host;
++    int64_t entry_off;
++    memcpy(&entry_off, desc + 16, 8);
++    k.code_entry = object + entry_off;
++    memcpy(&k.rsrc3, desc + 44, 4);
++    memcpy(&k.rsrc1, desc + 48, 4);
++    memcpy(&k.rsrc2, desc + 52, 4);
++    memcpy(&k.props, desc + 56, 2);
++    struct lco_ctx { const std::string * sym; const char * name; pm4_kernel_meta * meta; bool found; } lc{&sc.sym, name, nullptr, false};
++    g_loader.hsa_ven_amd_loader_executable_iterate_loaded_code_objects(sc.exec, [](hsa_executable_t, hsa_loaded_code_object_t lco, void * data) {
++        lco_ctx & c = *(lco_ctx *) data;
++        std::unordered_map<std::string, pm4_kernel_meta> * m = nullptr;
++        if (!lco_metadata(lco, m)) return HSA_STATUS_SUCCESS;
++        auto mit = m->find(*c.sym);
++        if (mit == m->end()) mit = m->find(c.name);
++        if (mit != m->end()) { c.meta = &mit->second; c.found = true; return HSA_STATUS_INFO_BREAK; }
++        return HSA_STATUS_SUCCESS;
++    }, &lc);
++    if (!lc.found) { k.why = std::string("no metadata: ") + name; return k; }
++    k.meta = *lc.meta;
++    // supported: private segment buffer (unused, zero), kernarg segment pointer, wave32; no scratch
++    const uint16_t supported = (1u << 0) | (1u << 3) | (1u << 10);
++    if (k.props & ~supported) { k.why = "kernel code properties " + std::to_string(k.props); return k; }
++    if (k.meta.priv || k.meta.dynamic_stack || (k.rsrc2 & 1u)) { k.why = std::string("scratch: ") + name; return k; }
++    if (!k.meta.unsupported.empty()) { k.why = "argument kind " + k.meta.unsupported + ": " + name; return k; }
++    if (k.code_entry & 0xff) { k.why = "code entry alignment"; return k; }
++    k.ok = true;
++    return k;
++}
++
++// ---------------------------------------------------------------------------------------------------------------------
++// PM4 (gfx10/gfx11 legacy compute register map)
++
++enum : uint32_t {
++    OP_SET_SH_REG = 0x76, OP_DISPATCH_DIRECT = 0x15, OP_EVENT_WRITE = 0x46, OP_ACQUIRE_MEM = 0x58, OP_INDIRECT_BUFFER = 0x3f,
++    R_NUM_THREAD_X = 0x207, R_PGM_LO = 0x20c, R_PGM_RSRC1 = 0x212, R_RESOURCE_LIMITS = 0x215, R_TMPRING_SIZE = 0x218,
++    R_PGM_RSRC3 = 0x228, R_USER_DATA_0 = 0x240,
++};
++
++static uint32_t pkt3(uint32_t op, uint32_t body, bool compute) {
++    return (3u << 30) | ((body - 1) << 16) | (op << 8) | (compute ? 2u : 0u);
++}
++
++struct pm4_stream {
++    std::vector<uint32_t> dw;
++    void sh(uint32_t reg, std::initializer_list<uint32_t> v) {
++        dw.push_back(pkt3(OP_SET_SH_REG, 1 + v.size(), true));
++        dw.push_back(reg);
++        dw.insert(dw.end(), v);
++    }
++    // CS_PARTIAL_FLUSH: wait until the earlier dispatches finished
++    void wait_idle() { dw.insert(dw.end(), {pkt3(OP_EVENT_WRITE, 1, false), 0x407}); }
++    // invalidate K$ (GLK), L0 (GLV) and GL1 before the next dispatch reads what the previous one wrote
++    void acquire_l1() { dw.insert(dw.end(), {pkt3(OP_ACQUIRE_MEM, 7, false), 0, 0xffffffffu, 0x00ffffffu, 0, 0, 10, 0x380}); }
++    // ROCr's gfx10+ system-scope acquire (all caches incl. GL2 writeback + invalidate)
++    void acquire_system() {
++        dw.insert(dw.end(), {pkt3(OP_ACQUIRE_MEM, 7, false), 0, 0xffffffffu, 0xff, 0, 0, 4,
++                             (1u << 16) | (1u << 15) | (1u << 14) | (1u << 9) | (1u << 8) | (1u << 7) | (1u << 6) | (1u << 5) | (1u << 4) | 1u});
++    }
++};
++
++} // namespace
++
++struct ggml_hip_pm4_tape {
++    int device = 0;
++    uint32_t n_dispatch = 0;
++    uint32_t ndw = 0;
++    uint32_t * ib = nullptr;       // executable host memory (HSA pool)
++    uint8_t * kernargs = nullptr;  // VRAM
++};
++
++void ggml_hip_pm4_free(ggml_hip_pm4_tape * tape) {
++    if (!tape) return;
++    if (tape->ib) hsa_amd_memory_pool_free(tape->ib);
++    if (tape->kernargs) CUDA_CHECK(hipFree(tape->kernargs));
++    delete tape;
++}
++
++ggml_hip_pm4_tape * ggml_hip_pm4_build(int device, cudaGraph_t graph) {
++    if (!pm4_enabled(device)) return nullptr;
++    std::lock_guard<std::mutex> lock(g_mutex);
++    if (!pm4_device_init(device)) return nullptr;
++    pm4_device & d = g_dev[device];
++
++    size_t n = 0;
++    CUDA_CHECK(hipGraphGetNodes(graph, nullptr, &n));
++    if (n == 0) return nullptr;
++    std::vector<hipGraphNode_t> nodes(n);
++    CUDA_CHECK(hipGraphGetNodes(graph, nodes.data(), &n));
++    // the nodes must form one chain (one stream): order them by following the single dependent of each node
++    std::unordered_map<hipGraphNode_t, size_t> index;
++    for (size_t i = 0; i < n; ++i) index[nodes[i]] = i;
++    std::vector<int> next(n, -1);
++    std::vector<int> ndeps(n, 0);
++    for (size_t i = 0; i < n; ++i) {
++        size_t nd = 0;
++        CUDA_CHECK(hipGraphNodeGetDependentNodes(nodes[i], nullptr, &nd));
++        if (nd > 1) { PM4_LOG("graph of %zu nodes is not a chain (node with %zu dependents)\n", n, nd); return nullptr; }
++        if (nd == 1) {
++            hipGraphNode_t dep;
++            CUDA_CHECK(hipGraphNodeGetDependentNodes(nodes[i], &dep, &nd));
++            next[i] = (int) index.at(dep);
++            ndeps[next[i]]++;
++        }
++    }
++    int head = -1;
++    for (size_t i = 0; i < n; ++i) {
++        if (ndeps[i] > 1) { PM4_LOG("graph of %zu nodes is not a chain (join)\n", n); return nullptr; }
++        if (ndeps[i] == 0) {
++            if (head >= 0) { PM4_LOG("graph of %zu nodes is not a chain (two roots)\n", n); return nullptr; }
++            head = (int) i;
++        }
++    }
++
++    struct dispatch { const pm4_kernel * k; hipKernelNodeParams p; uint32_t ka_off; };
++    std::vector<dispatch> disp;
++    disp.reserve(n);
++    uint32_t ka_total = 0;
++    size_t visited = 0;
++    for (int i = head; i >= 0; i = next[i], ++visited) {
++        hipGraphNodeType type;
++        CUDA_CHECK(hipGraphNodeGetType(nodes[i], &type));
++        if (type != hipGraphNodeTypeKernel) { PM4_LOG("graph of %zu nodes has a node of type %d\n", n, (int) type); return nullptr; }
++        hipKernelNodeParams p;
++        CUDA_CHECK(hipGraphKernelNodeGetParams(nodes[i], &p));
++        const pm4_kernel & k = pm4_get_kernel(d, p.func);
++        if (!k.ok) { PM4_LOG("graph of %zu nodes: unsupported kernel (%s)\n", n, k.why.c_str()); return nullptr; }
++        if (p.extra) { PM4_LOG("kernel node with extra launch params\n"); return nullptr; }
++        if (k.meta.group + p.sharedMemBytes > 65536) { PM4_LOG("LDS %u\n", k.meta.group + p.sharedMemBytes); return nullptr; }
++        disp.push_back({&k, p, ka_total});
++        ka_total += (k.meta.kernarg_size + 63) & ~63u;
++    }
++    if (visited != n) { PM4_LOG("graph chain covers %zu of %zu nodes\n", visited, n); return nullptr; }
++
++    // kernargs: explicit arguments from the node, hidden arguments as ROCclr fills them for a launch without offsets
++    std::vector<uint8_t> ka(std::max<uint32_t>(ka_total, 64), 0);
++    for (const dispatch & x : disp) {
++        uint8_t * b = ka.data() + x.ka_off;
++        int iexp = 0;
++        const dim3 g = x.p.gridDim, bl = x.p.blockDim;
++        const uint32_t dims = g.z * bl.z > 1 ? 3 : (g.y * bl.y > 1 ? 2 : 1);
++        for (const pm4_arg & a : x.k->meta.args) {
++            uint64_t v = 0;
++            switch (a.kind) {
++                case ARG_EXPLICIT:
++                    if (!x.p.kernelParams || !x.p.kernelParams[iexp]) { PM4_LOG("missing kernel parameter\n"); return nullptr; }
++                    memcpy(b + a.offset, x.p.kernelParams[iexp++], a.size);
++                    continue;
++                case ARG_BLOCK_COUNT_X: v = g.x; break;
++                case ARG_BLOCK_COUNT_Y: v = g.y; break;
++                case ARG_BLOCK_COUNT_Z: v = g.z; break;
++                case ARG_GROUP_SIZE_X: v = bl.x; break;
++                case ARG_GROUP_SIZE_Y: v = bl.y; break;
++                case ARG_GROUP_SIZE_Z: v = bl.z; break;
++                case ARG_GRID_DIMS: v = dims; break;
++                case ARG_DYNAMIC_LDS: v = x.p.sharedMemBytes; break;
++                default: v = 0; break;
++            }
++            memcpy(b + a.offset, &v, std::min<uint32_t>(a.size, 8));
++        }
++    }
++
++    ggml_hip_pm4_tape * t = new ggml_hip_pm4_tape;
++    t->device = device;
++    t->n_dispatch = disp.size();
++    CUDA_CHECK(hipMalloc(&t->kernargs, ka.size()));
++    CUDA_CHECK(hipMemcpy(t->kernargs, ka.data(), ka.size(), hipMemcpyHostToDevice));
++
++    pm4_stream s;
++    s.acquire_system();
++    for (size_t i = 0; i < disp.size(); ++i) {
++        const dispatch & x = disp[i];
++        const pm4_kernel & k = *x.k;
++        if (i > 0) {
++            s.wait_idle();
++            s.acquire_l1();
++        }
++        const uint32_t lds_blocks = (k.meta.group + x.p.sharedMemBytes + 511) / 512;
++        const uint32_t rsrc2 = (k.rsrc2 & ~0x00ff8000u) | (lds_blocks << 15);
++        const uint64_t kaddr = (uint64_t) (t->kernargs + x.ka_off);
++        s.sh(R_PGM_LO, {(uint32_t) (k.code_entry >> 8), (uint32_t) (k.code_entry >> 40)});
++        s.sh(R_PGM_RSRC1, {k.rsrc1, rsrc2});
++        s.sh(R_PGM_RSRC3, {k.rsrc3});
++        s.sh(R_TMPRING_SIZE, {0});
++        s.sh(R_NUM_THREAD_X, {x.p.blockDim.x, x.p.blockDim.y, x.p.blockDim.z});
++        s.sh(R_RESOURCE_LIMITS, {0});
++        if (k.props & 1u) {
++            s.sh(R_USER_DATA_0, {0, 0, 0, 0, (uint32_t) kaddr, (uint32_t) (kaddr >> 32)});
++        } else {
++            s.sh(R_USER_DATA_0, {(uint32_t) kaddr, (uint32_t) (kaddr >> 32)});
++        }
++        const uint32_t initiator = 1u | (1u << 2) | (1u << 3) | ((k.props & (1u << 10)) ? (1u << 15) : 0u);
++        s.dw.insert(s.dw.end(), {pkt3(OP_DISPATCH_DIRECT, 4, true), x.p.gridDim.x, x.p.gridDim.y, x.p.gridDim.z, initiator});
++    }
++    s.wait_idle();
++    s.acquire_system();
++
++    t->ndw = s.dw.size();
++    if (hsa_amd_memory_pool_allocate(d.host_pool, s.dw.size() * 4, HSA_AMD_MEMORY_POOL_EXECUTABLE_FLAG, (void **) &t->ib) != HSA_STATUS_SUCCESS ||
++        hsa_amd_agents_allow_access(1, &d.gpu, nullptr, t->ib) != HSA_STATUS_SUCCESS) {
++        PM4_LOG("IB allocation failed\n");
++        ggml_hip_pm4_free(t);
++        return nullptr;
++    }
++    memcpy(t->ib, s.dw.data(), s.dw.size() * 4);
++    PM4_LOG("tape: %u dispatches, %u dwords, %zu B kernargs\n", t->n_dispatch, t->ndw, ka.size());
++    return t;
++}
++
++void ggml_hip_pm4_launch(ggml_hip_pm4_tape * t, cudaStream_t stream) {
++    pm4_device & d = g_dev[t->device];
++    // the inputs were uploaded on the stream: wait for them on the host
++    CUDA_CHECK(cudaStreamSynchronize(stream));
++
++    hsa_signal_store_relaxed(d.signal, 1);
++    const uint64_t w = hsa_queue_add_write_index_relaxed(d.queue, 1);
++    uint8_t * p = (uint8_t *) d.queue->base_address + 64 * (w & (d.queue->size - 1));
++    const uint32_t body[6] = {
++        pkt3(OP_INDIRECT_BUFFER, 3, false),
++        (uint32_t) (uintptr_t) t->ib & 0xfffffffcu,
++        (uint32_t) ((uint64_t) (uintptr_t) t->ib >> 32),
++        t->ndw | (1u << 23) | (3u << 28),  // size, valid, temporal hint
++        10,                                // dw_cnt_remain of the vendor packet
++        0,
++    };
++    memset(p + 4, 0, 60);
++    memcpy(p + 4, body, sizeof(body) - 4);
++    memcpy(p + 56, &d.signal, 8);
++    const uint16_t header = (HSA_PACKET_TYPE_VENDOR_SPECIFIC << HSA_PACKET_HEADER_TYPE) | (1 << HSA_PACKET_HEADER_BARRIER) |
++                            (HSA_FENCE_SCOPE_SYSTEM << HSA_PACKET_HEADER_SCACQUIRE_FENCE_SCOPE) |
++                            (HSA_FENCE_SCOPE_SYSTEM << HSA_PACKET_HEADER_SCRELEASE_FENCE_SCOPE);
++    __atomic_store_n((uint32_t *) p, (uint32_t) header | (1u << 16) /* AMD_AQL_FORMAT_PM4_IB */, __ATOMIC_RELEASE);
++    hsa_signal_store_screlease(d.queue->doorbell_signal, w);
++
++    // the work after the tape on the stream is ordered by the host: wait for completion (bounded)
++    const auto t0 = std::chrono::steady_clock::now();
++    while (hsa_signal_wait_scacquire(d.signal, HSA_SIGNAL_CONDITION_LT, 1, 1000000, HSA_WAIT_STATE_ACTIVE) != 0) {
++        if (std::chrono::steady_clock::now() - t0 > std::chrono::seconds(10)) {
++            GGML_ABORT("ggml_hip_pm4: tape of %u dispatches did not complete within 10 s", t->n_dispatch);
++        }
++    }
++}
++
++#endif // GGML_HIP_PM4_AVAILABLE
+diff --git a/ggml/src/ggml-cuda/hip-pm4.cuh b/ggml/src/ggml-cuda/hip-pm4.cuh
+new file mode 100644
+index 000000000..0057ba896
+--- /dev/null
++++ b/ggml/src/ggml-cuda/hip-pm4.cuh
+@@ -0,0 +1,26 @@
++#pragma once
++
++// [GGML_HIP_PM4] RDNA3: replay a captured HIP graph as ONE PM4 indirect buffer on an own ROCr queue.
++//
++// A HIP graph launch costs ~2.75 us per kernel boundary on gfx1100 (the CP's AQL front end handles one packet per
++// kernel). The same chain of kernels as DISPATCH_DIRECT packets in one PM4 indirect buffer, separated by
++// CS_PARTIAL_FLUSH + ACQUIRE_MEM (L0/GL1/K$ invalidate), costs ~0.5-0.9 us per boundary. The tape is built once per
++// captured graph from its kernel nodes (kernel descriptors from the HIP-loaded code objects, kernargs incl. the hidden
++// arguments written to VRAM) and submitted as one AMD vendor AQL packet (AMD_AQL_FORMAT_PM4_IB). The kernels and their
++// arguments are exactly those of the graph, so results are bitwise identical. Graphs with non-kernel nodes, more than
++// one stream, scratch or unsupported implicit arguments keep the plain graph launch.
++// GGML_HIP_PM4=0: always launch the HIP graph. GGML_HIP_PM4_DEBUG=1: log tape builds and fallbacks.
++
++#include "common.cuh"
++
++#if defined(GGML_USE_HIP) && defined(USE_CUDA_GRAPH)
++#define GGML_HIP_PM4_AVAILABLE
++
++struct ggml_hip_pm4_tape;
++
++// tape for an instantiated graph, or nullptr (switch off, not RDNA3, unsupported graph)
++ggml_hip_pm4_tape * ggml_hip_pm4_build(int device, cudaGraph_t graph);
++void ggml_hip_pm4_free(ggml_hip_pm4_tape * tape);
++// run the tape ordered after the prior work of stream; the work after it on stream is ordered after the tape
++void ggml_hip_pm4_launch(ggml_hip_pm4_tape * tape, cudaStream_t stream);
++#endif
+diff --git a/ggml/src/ggml-hip/CMakeLists.txt b/ggml/src/ggml-hip/CMakeLists.txt
+index 75d4d60e8..b07cda593 100644
+--- a/ggml/src/ggml-hip/CMakeLists.txt
++++ b/ggml/src/ggml-hip/CMakeLists.txt
+@@ -46,6 +46,7 @@ endif()
+ find_package(hip     REQUIRED)
+ find_package(hipblas REQUIRED)
+ find_package(rocblas REQUIRED)
++find_package(hsa-runtime64 REQUIRED) # GGML_HIP_PM4: own ROCr queue for the PM4 replay of decode graphs
+ 
+ if (GGML_HIP_RCCL)
+     find_package(rccl REQUIRED)
+@@ -141,4 +142,4 @@ if (GGML_HIP_RCCL)
+     target_link_libraries(ggml-hip PRIVATE ggml-base roc::rccl)
+ endif()
+ 
+-target_link_libraries(ggml-hip PRIVATE ggml-base hip::host roc::rocblas roc::hipblas)
++target_link_libraries(ggml-hip PRIVATE ggml-base hip::host roc::rocblas roc::hipblas hsa-runtime64::hsa-runtime64)
+-- 
+2.43.0
+

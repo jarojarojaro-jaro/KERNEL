@@ -1,0 +1,40 @@
+From 2cbcf771af8660127d085ddc4c32e78530a0ef68 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 21:58:25 +0000
+Subject: [PATCH 63/64] CUDA/HIP: GGML_HIP_PM4 and GGML_HIP_CONV_ROWS4 read
+ through ggml_cuda_env_switch (the fork's helper)
+
+---
+ ggml/src/ggml-cuda/hip-pm4.cu | 2 +-
+ ggml/src/ggml-cuda/mmvq.cu    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/hip-pm4.cu b/ggml/src/ggml-cuda/hip-pm4.cu
+index b36185d43..3c7333e9b 100644
+--- a/ggml/src/ggml-cuda/hip-pm4.cu
++++ b/ggml/src/ggml-cuda/hip-pm4.cu
+@@ -248,7 +248,7 @@ static int pm4_debug() {
+ #define PM4_LOG(...) do { if (pm4_debug()) { fprintf(stderr, "ggml_hip_pm4: " __VA_ARGS__); } } while (0)
+ 
+ static bool pm4_enabled(int device) {
+-    static const bool env_on = [] { const char * e = getenv("GGML_HIP_PM4"); return e == nullptr || atoi(e) != 0; }();
++    static const bool env_on = ggml_cuda_env_switch("GGML_HIP_PM4");
+     return env_on && GGML_CUDA_CC_IS_RDNA3(ggml_cuda_info().devices[device].cc);
+ }
+ 
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 236b1beab..487627f7d 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -3537,7 +3537,7 @@ void ggml_cuda_mmvq_conv(ggml_backend_cuda_context & ctx, const ggml_tensor * sr
+     // 16); such grids run 13.6 or 14.6 us per process instead of 12.2 us for the same bytes in 2560 blocks (streaming
+     // read microbenchmark), and the conv kernel took 17.7 instead of 14.4 us in 2 of 3 processes. With 4 rows (1536
+     // blocks) it is 14.5 us in every process. GGML_HIP_CONV_ROWS4=0: rows as the plain launch.
+-    static const bool conv_rows4 = [] { const char * e = getenv("GGML_HIP_CONV_ROWS4"); return e == nullptr || atoi(e) != 0; }();
++    static const bool conv_rows4 = ggml_cuda_env_switch("GGML_HIP_CONV_ROWS4");
+     const auto launch_rows = [&](auto type_tag, auto nc_tag) {
+         constexpr ggml_type t = decltype(type_tag)::value;
+         const bool rdna3_rows = mmvq_n1_rows_type(t) && table_id == MMVQ_PARAMETERS_RDNA3_0;
+-- 
+2.43.0
+

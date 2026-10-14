@@ -1,7 +1,7 @@
 From 60ce2a71f748969d519697b147fdb52fed1e2a30 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 11:55:53 +0000
-Subject: [PATCH 21/59] HIP/RDNA3 multi-column MMVQ: buffer-resource loads,
+Subject: [PATCH 21/64] HIP/RDNA3 multi-column MMVQ: buffer-resource loads,
  per-type occupancy, Q6_K pipelining, transposed DPP reduction
 
 - byte-offset loaders for Q4_K/Q5_K/Q6_K/IQ4_XS: one 16-byte header load for dm+scales (Q4_K/Q5_K), one 8-byte

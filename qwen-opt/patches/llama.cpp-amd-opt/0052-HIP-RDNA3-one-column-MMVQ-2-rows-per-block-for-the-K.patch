@@ -1,7 +1,7 @@
 From bcdf324d362b1f65db1737d81a93550c9a9b6bd2 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 13:17:12 +0000
-Subject: [PATCH 52/59] HIP/RDNA3 one-column MMVQ: 2 rows per block for the
+Subject: [PATCH 52/64] HIP/RDNA3 one-column MMVQ: 2 rows per block for the
  K-quants (GGML_HIP_MMVQ_N1_ROWS)
 
 One wave computes two rows of a ncols_dst == 1 launch of Q4_K/Q5_K/Q6_K, each row with the

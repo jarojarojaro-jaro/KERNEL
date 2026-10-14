@@ -1,0 +1,48 @@
+From 1b43bccae0c657b5e4b749ed8d1f9cfd5a1b7c6a Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 21:40:21 +0000
+Subject: [PATCH 62/64] CUDA/HIP RDNA3: the shortconv in_proj MMVQ runs 4 rows
+ per block (GGML_HIP_CONV_ROWS4)
+
+With 2 rows per block the 6144-row LFM2 in_proj is a grid of 3072 one-wave blocks, exactly
+the wave capacity of a 7900 XTX (192 SIMDs x 16). Grids of that size are slow and bimodal
+per process (streaming-read microbenchmark, same bytes: 2560 blocks 12.2 us in every
+process, 3072 blocks 13.6 or 14.6 us); in the PM4 replay the conv kernel took 17.7 us
+instead of 14.4 us in 8 of 11 processes. 4 rows per block (1536 blocks): 14.40-14.44 us in
+every process. Bitwise (each row is computed as by the 1-row kernel; logit hash
+a7ce25b73f887fed unchanged), test-backend-ops SHORTCONV 4/4.
+GGML_HIP_CONV_ROWS4=0: rows as the plain launch (GGML_HIP_MMVQ_N1_ROWS).
+
+LFM2.5-24B-A2B Q5_K_M, KV q8_0, PM4 replay, llama-bench tg128 -r 5, 4 rounds interleaved:
+3.458 -> 3.402 ms/token (289.2 -> 293.9 t/s); per-process spread 3.386-3.488 -> 3.396-3.407.
+---
+ ggml/src/ggml-cuda/mmvq.cu | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index d8bf75b6f..236b1beab 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -3531,10 +3531,17 @@ void ggml_cuda_mmvq_conv(ggml_backend_cuda_context & ctx, const ggml_tensor * sr
+             src0->data, y, (float *) dst->data, src0->ne[0], stride_row_x, nr, conv_src, conv_w, conv_w_nb1, conv_dst,
+             conv_dst_nb1, tickets);
+     };
+-    // the rows per block of the plain launch (GGML_HIP_MMVQ_N1_ROWS on RDNA3, else 1)
++    // the rows per block of the plain launch (GGML_HIP_MMVQ_N1_ROWS on RDNA3, else 1).
++    // [GGML_HIP_CONV_ROWS4] RDNA3: 4 rows per block (bitwise: every row is computed as by the 1-row kernel). With 2 rows
++    // the 6144-row LFM2 in_proj is a grid of 3072 one-wave blocks = exactly the wave capacity of a 7900 XTX (192 SIMDs x
++    // 16); such grids run 13.6 or 14.6 us per process instead of 12.2 us for the same bytes in 2560 blocks (streaming
++    // read microbenchmark), and the conv kernel took 17.7 instead of 14.4 us in 2 of 3 processes. With 4 rows (1536
++    // blocks) it is 14.5 us in every process. GGML_HIP_CONV_ROWS4=0: rows as the plain launch.
++    static const bool conv_rows4 = [] { const char * e = getenv("GGML_HIP_CONV_ROWS4"); return e == nullptr || atoi(e) != 0; }();
+     const auto launch_rows = [&](auto type_tag, auto nc_tag) {
+         constexpr ggml_type t = decltype(type_tag)::value;
+-        const int rows = mmvq_n1_rows_type(t) && table_id == MMVQ_PARAMETERS_RDNA3_0 ? mmvq_n1_rows(nrows) : 1;
++        const bool rdna3_rows = mmvq_n1_rows_type(t) && table_id == MMVQ_PARAMETERS_RDNA3_0;
++        const int rows = rdna3_rows && conv_rows4 && nrows % 4 == 0 && nr % 32 == 0 ? 4 : rdna3_rows ? mmvq_n1_rows(nrows) : 1;
+         switch (rows) {
+             case 2:  launch(type_tag, std::integral_constant<int, 2>{}, nc_tag); break;
+             case 4:  launch(type_tag, std::integral_constant<int, 4>{}, nc_tag); break;
+-- 
+2.43.0
+

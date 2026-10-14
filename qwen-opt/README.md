@@ -1,4 +1,4 @@
-# qwen-opt — Qwen3.8-27B na RX 7900 XTX (ROCm): 59 → 104 t/s przy 200k kontekstu
+# qwen-opt — Qwen3.8-27B i LFM2.5 na RX 7900 XTX (ROCm): Qwen 59 → 109 t/s przy 200k kontekstu, LFM 173 → 294 t/s
 
 Wyniki, diagnoza i wyniki negatywne: [`NOTES.md`](NOTES.md). Research: [`research/`](research/) (`v2/roadmap.md`, `strata/`, `tensorfold/`).
 
@@ -6,13 +6,16 @@ Stan (2026-10-14, ROCm, ctx 204800, KV q4_0, MTP n=4 + słownik draftu 64k + dra
 
 | Model | t/s (mediana) | ms/krok | czat EN | proza PL | kod PL |
 |---|---|---|---|---|---|
-| Qwen3.8-27B UD-Q4_K_XL | 104.2 | 28.9 | 87 | 95 | 116 |
-| Qwen3.8-27B-Uncensored Q4_K_M (orcarouter) | 106.5 | 27.9 | 93 | 94 | 117 |
-| LFM2.5-24B-A2B Q5_K_M (LiquidAI, MoE, bez MTP, ctx 131072, KV q8_0) | 251.7 | 3.97 | 252 | 253 | 251 |
+| Qwen3.8-27B UD-Q4_K_XL | 108.8 | 27.8 | 88 | 100 | 125 |
+| Qwen3.8-27B-Uncensored Q4_K_M (orcarouter) | 115.3 | 26.7 | 94 | 101 | 128 |
+| LFM2.5-24B-A2B Q5_K_M (LiquidAI, MoE, bez MTP, ctx 131072, KV q8_0) | 293.6 | 3.40 | | | |
+| LFM2.5-24B-A2B-Uncensored AD-Q5_K_M (AtomicChat, więcej tensorów Q8_0) | ~264 | ~3.8 | | | |
 
-LFM2.5 przy wypełnionym kontekście (llama-bench tg128, KV q8_0): 0 → 262 t/s, 32k → 231 t/s, 98k → 191 t/s. KV q8_0 vs f16 KV: KLD 0.044 (q4_0: 0.128).
+Od łatki 0060 (`GGML_HIP_PM4`) każdy przechwycony graf dekodowania jest odtwarzany jako jeden bufor poleceń PM4 na własnej kolejce ROCr zamiast grafu HIP (granica kernela 2.75 → 0.5–0.9 µs): LFM +14%, Qwen MTP +5%. Wyłącznik: `GGML_HIP_PM4=0`.
 
-Qwen przy wypełnionym kontekście (T=0): generowanie 1.7k 130 t/s, 29.5k 105 t/s, 94k 101 t/s; prefill 820–985 t/s do 30k, 766 t/s przy 94k.
+LFM2.5 przy wypełnionym kontekście (llama-bench tg128, KV q8_0): 0 → 295 t/s, 98k → 213 t/s. KV q8_0 vs f16 KV: KLD 0.044 (q4_0: 0.128).
+
+Qwen przy wypełnionym kontekście (T=0, przed PM4): generowanie 1.7k 130 t/s, 29.5k 105 t/s, 94k 101 t/s; prefill 820–985 t/s do 30k, 766 t/s przy 94k.
 
 ## Zawartość
 

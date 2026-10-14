@@ -1,7 +1,7 @@
 From 68e163cf43093e2132f4a16b40ec172340a066f0 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 12:18:40 +0000
-Subject: [PATCH 06/59] vulkan: AMD RDNA small-M matvec uses float path with
+Subject: [PATCH 06/64] vulkan: AMD RDNA small-M matvec uses float path with
  256-thread workgroups (ssm_alpha/beta 13.6 -> 8.6 us)
 
 ---

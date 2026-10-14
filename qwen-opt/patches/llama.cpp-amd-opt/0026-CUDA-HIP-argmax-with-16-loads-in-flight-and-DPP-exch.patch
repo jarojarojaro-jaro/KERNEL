@@ -1,7 +1,7 @@
 From bc0da48dd27f38ed178a1bd5c6659f5a8114136c Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 13:36:48 +0000
-Subject: [PATCH 26/59] CUDA/HIP: argmax with 16 loads in flight and DPP
+Subject: [PATCH 26/64] CUDA/HIP: argmax with 16 loads in flight and DPP
  exchanges (GGML_HIP_ARGMAX_FAST)
 
 Each thread loads 16 of its columns before comparing them in column order (same first maximum per thread), and the

@@ -1,7 +1,7 @@
 From a7e9514977b5c97ce2b37097e2d017ef6f84c1be Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 19:25:51 +0000
-Subject: [PATCH 17/59] CUDA/HIP + qwen35: fuse IMROPE/MROPE into
+Subject: [PATCH 17/64] CUDA/HIP + qwen35: fuse IMROPE/MROPE into
  RMS_NORM+MUL+ROPE, drop the attention gate copy
 
 - rms_norm_mul_rope_f32 handles the (interleaved) M-RoPE modes: the position of each rotated pair is

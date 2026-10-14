@@ -1,0 +1,70 @@
+From e41c2330e33236d13e10973c821c09efafda7aeb Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 21:58:25 +0000
+Subject: [PATCH 64/64] HIP/RDNA3 one-column MMVQ: Q8_0 joins the 2-row path
+ (and the 4-row conv path) (GGML_HIP_MMVQ_N1_Q8_0)
+
+The LFM2.5-24B-A2B 'Uncensored-AD' Q5_K_M quant keeps shortconv in_proj/out_proj, attention,
+dense FFN and the tied head in Q8_0. Q8_0 was left at one row per block (in_proj+conv: 6144
+blocks, 25.5 us = 524 GB/s vs 604 GB/s for the Q5_K in_proj). Each row is still computed with
+the lanes and partial-sum order of the one-row kernel: bitwise (Uncensored logit hash
+f74300e3142a5535 with and without; test-backend-ops MUL_MAT 2476/2476).
+
+Uncensored, KV q8_0, PM4 replay, llama-bench tg128 -r 5, 3 rounds interleaved:
+3.933 -> 3.706 ms/token (254.3 -> 269.9 t/s). The regular LFM2.5 Q5_K_M has no Q8_0 weights
+(unchanged). GGML_HIP_MMVQ_N1_Q8_0=0: Q8_0 keeps one row per block.
+---
+ ggml/src/ggml-cuda/mmvq.cu | 22 ++++++++++++++--------
+ 1 file changed, 14 insertions(+), 8 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 487627f7d..6da5b88e5 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1359,13 +1359,19 @@ static constexpr __host__ __device__ int calc_nwarps(ggml_type type, int ncols_d
+     return 1;
+ }
+ 
+-// [GGML_HIP_MMVQ_N1_ROWS] RDNA3 one-column launches of the K-quants: 2 rows per block (one wave computes two rows, each
+-// with the lanes and partial-sum order of the one-row kernel, so the results are bitwise the same): more weight loads
+-// in flight per wave and the activation loads shared by the two rows. Measured faster than one row per block on every
+-// LFM2.5-24B-A2B launch size in sum (512-row k/v up to the 128000-row head), and than 2 rows only for >= 4096 blocks.
+-// GGML_HIP_MMVQ_N1_ROWS=0: one row per block; =1|2|4: that many (for measurements).
++// [GGML_HIP_MMVQ_N1_ROWS] RDNA3 one-column launches of the K-quants and Q8_0: 2 rows per block (one wave computes two
++// rows, each with the lanes and partial-sum order of the one-row kernel, so the results are bitwise the same): more
++// weight loads in flight per wave and the activation loads shared by the two rows. Measured faster than one row per
++// block on every LFM2.5-24B-A2B launch size in sum (512-row k/v up to the 128000-row head), and than 2 rows only for
++// >= 4096 blocks. Q8_0 (the LFM2.5 "Uncensored" quant mix: in_proj/out_proj/attention/dense/head): 3.933 -> 3.706
++// ms/token. GGML_HIP_MMVQ_N1_ROWS=0: one row per block; =1|2|4: that many (for measurements);
++// GGML_HIP_MMVQ_N1_Q8_0=0: Q8_0 keeps one row per block.
+ static constexpr bool mmvq_n1_rows_type(ggml_type type) {
+-    return type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K;
++    return type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K || type == GGML_TYPE_Q8_0;
++}
++static bool mmvq_n1_rows_on(ggml_type type) {
++    static const bool q8_0 = ggml_cuda_env_switch("GGML_HIP_MMVQ_N1_Q8_0");
++    return type != GGML_TYPE_Q8_0 || q8_0;
+ }
+ static int mmvq_n1_rows(const int64_t nrows_x) {
+     static const int rows = [] {
+@@ -2294,7 +2300,7 @@ static void mul_mat_vec_q_switch_ncols_dst(
+             } else {
+ #if defined(GGML_USE_HIP)
+                 if constexpr (mmvq_n1_rows_type(type)) {
+-                    const int n1_rows = table_id == MMVQ_PARAMETERS_RDNA3_0 && fusion.shared_up == nullptr ?
++                    const int n1_rows = table_id == MMVQ_PARAMETERS_RDNA3_0 && fusion.shared_up == nullptr && mmvq_n1_rows_on(type) ?
+                         mmvq_n1_rows(nrows_x) : 1;
+                     if (n1_rows == 2) {
+                         launch(std::false_type{}, std::false_type{}, std::integral_constant<int, 2>{});
+@@ -3540,7 +3546,7 @@ void ggml_cuda_mmvq_conv(ggml_backend_cuda_context & ctx, const ggml_tensor * sr
+     static const bool conv_rows4 = ggml_cuda_env_switch("GGML_HIP_CONV_ROWS4");
+     const auto launch_rows = [&](auto type_tag, auto nc_tag) {
+         constexpr ggml_type t = decltype(type_tag)::value;
+-        const bool rdna3_rows = mmvq_n1_rows_type(t) && table_id == MMVQ_PARAMETERS_RDNA3_0;
++        const bool rdna3_rows = mmvq_n1_rows_type(t) && mmvq_n1_rows_on(t) && table_id == MMVQ_PARAMETERS_RDNA3_0;
+         const int rows = rdna3_rows && conv_rows4 && nrows % 4 == 0 && nr % 32 == 0 ? 4 : rdna3_rows ? mmvq_n1_rows(nrows) : 1;
+         switch (rows) {
+             case 2:  launch(type_tag, std::integral_constant<int, 2>{}, nc_tag); break;
+-- 
+2.43.0
+

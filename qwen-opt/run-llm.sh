@@ -4,11 +4,11 @@
 #   run-llm.sh [qwen|uncensored|lfm|lfm-uncensored] [mtp|dflash|none] [rocm|vulkan]
 #
 # Measured 2026-10-14 (ROCm, ctx 204800, KV q4_0, MTP n=4 + 64k draft vocab, IQ4_XS draft, 6 EN/PL prompts, T=1):
-#   qwen        mtp  rocm   ~104 t/s  (default; ~96 t/s with 94k tokens in context)
-#   uncensored  mtp  rocm   ~106 t/s  orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated); VISION=1 adds mmproj
+#   qwen        mtp  rocm   ~109 t/s  (default; PM4 replay on, GGML_HIP_PM4=0 turns it off)
+#   uncensored  mtp  rocm   ~115 t/s  orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated); VISION=1 adds mmproj
 #   qwen        mtp  vulkan optional backend, slower on long prompts
-#   lfm         none ~252 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072, KV q8_0
-#   lfm-uncensored    same settings; AtomicChat abliterated LFM2.5-24B-A2B AD-Q5_K_M (refusal edit in blocks 14-39)
+#   lfm         none ~294 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072, KV q8_0
+#   lfm-uncensored    ~264 t/s, same settings; AtomicChat abliterated LFM2.5-24B-A2B AD-Q5_K_M (more Q8_0 tensors)
 #
 # env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0; q8_0 for lfm),
 #      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)

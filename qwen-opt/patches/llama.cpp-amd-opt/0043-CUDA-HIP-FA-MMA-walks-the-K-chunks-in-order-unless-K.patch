@@ -1,7 +1,7 @@
 From 5a7562bee01638cd279bf6c09f8632f571aeeb01 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 01:25:48 +0000
-Subject: [PATCH 43/59] CUDA/HIP: FA MMA walks the K chunks in order unless K
+Subject: [PATCH 43/64] CUDA/HIP: FA MMA walks the K chunks in order unless K
  is the V view (MLA)
 
 With nbatch_K2 < DKQ/2 the reverse walk changed the order in which KQ accumulates over DKQ. In order, the RDNA

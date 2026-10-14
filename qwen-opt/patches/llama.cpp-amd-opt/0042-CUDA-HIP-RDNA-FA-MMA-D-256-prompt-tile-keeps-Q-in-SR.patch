@@ -1,7 +1,7 @@
 From cf397468e78e5196d54b9383855cc290882a2064 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 01:21:36 +0000
-Subject: [PATCH 42/59] CUDA/HIP: RDNA FA MMA D=256 prompt tile keeps Q in SRAM
+Subject: [PATCH 42/64] CUDA/HIP: RDNA FA MMA D=256 prompt tile keeps Q in SRAM
  (Q in registers spilled ~1.1 KB per lane)
 
 Q as 16 mirrored WMMA B tiles takes 128 VGPRs per wave; with the 64-column tile the kernel hit the 256 VGPR cap

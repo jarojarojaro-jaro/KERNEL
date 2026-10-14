@@ -1,7 +1,7 @@
 From 605fccd9a8f63e865f9dbfea3893d91cfd3c6568 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 12:54:49 +0000
-Subject: [PATCH 49/59] CUDA/HIP: the FFN norm writes the q8_1 activations of
+Subject: [PATCH 49/64] CUDA/HIP: the FFN norm writes the q8_1 activations of
  the single-token MoE gate/up MUL_MAT_ID (GGML_HIP_Q8_IDS)
 
 ggml_cuda_q8_1_producer_target only served a plain MUL_MAT whose src1 is the producer's

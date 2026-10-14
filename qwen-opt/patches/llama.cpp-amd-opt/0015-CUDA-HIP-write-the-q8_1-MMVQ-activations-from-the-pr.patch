@@ -1,7 +1,7 @@
 From b9db88004df2a72fd3c36b9d67c4cc3ea640f07e Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 19:04:40 +0000
-Subject: [PATCH 15/59] CUDA/HIP: write the q8_1 MMVQ activations from the
+Subject: [PATCH 15/64] CUDA/HIP: write the q8_1 MMVQ activations from the
  producing norm/GLU/unary*mul kernels
 
 RMS_NORM*MUL, SWIGLU and UNARY*MUL kernels whose output feeds an MMVQ MUL_MAT also write the
