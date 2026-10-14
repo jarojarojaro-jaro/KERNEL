@@ -1,0 +1,252 @@
+From 9d493cf6e5d4636bef34e815adae37b0a9b40ef2 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 17:40:15 +0000
+Subject: [PATCH 59/59] CUDA/HIP: batch the small async input uploads of a
+ graph into one H2D copy + one scatter launch (GGML_HIP_INPUT_BATCH)
+
+A decode step uploaded its 12 graph inputs (LFM2: token embedding row, positions, KQ mask, K/V
+cache row indices, recurrent state copy ids, the two 64x64 Hadamard inputs, out_ids, ...) as 12
+hipMemcpyAsync calls before the graph launch: ~76 us on the GPU timeline under the profiler (32 us
+of copy kernels plus the gaps), all on the critical path between two tokens.
+set_tensor_async now copies non-empty uploads of up to 256 KiB into a pinned staging buffer (two
+2 MiB halves, each reused after the event of its last H2D copy) and records the destinations; the
+next other stream operation of the backend (graph compute - before any capture -, synchronize,
+event record/wait, get/set 2d, get, tensor copies) flushes them as one H2D copy of the staging half
+into a device staging buffer and one scatter kernel (8 KiB chunks per block). 316 -> 305 kernels per
+LFM2 token; head of token t to first graph kernel of token t+1 under the profiler 168.7 -> 112.6 us
+at depth 0, 162.7 -> 153.4 us at 98k (scatter 4.0 us there, the KQ mask is 192 KiB).
+
+Bitwise (exact copies): logit hashes unchanged, greedy md5 LFM plain q8_0 (vec FA) 2c7ee8a2...,
+Qwen plain c4708318..., Qwen MTP 6f14e814....
+llama-bench tg128 -r 5, LFM2.5-24B-A2B, KV q8_0, interleaved: depth 0 (5 rounds) 3.840 -> 3.806
+ms/token, depth 98304 (2 rounds) 5.230 -> 5.198 ms/token.
+GGML_HIP_INPUT_BATCH=0: one hipMemcpyAsync per upload as before.
+---
+ ggml/src/ggml-cuda/common.cuh   |  19 ++++++
+ ggml/src/ggml-cuda/ggml-cuda.cu | 112 +++++++++++++++++++++++++++++++-
+ 2 files changed, 130 insertions(+), 1 deletion(-)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index 3dc88307b..eb2b699e1 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1540,6 +1540,25 @@ struct ggml_backend_cuda_context {
+     std::string name;
+     cudaEvent_t copy_event = nullptr;
+ 
++    // [GGML_HIP_INPUT_BATCH] small set_tensor_async uploads (the graph inputs of a decode step) are staged in pinned host
++    // memory and written by one H2D copy plus one scatter kernel when the next other stream operation is issued
++    // (ggml_cuda_h2d_batch_flush). Two halves, each reused after the event of its last copy.
++    struct h2d_batch_t {
++        static constexpr int    max_segs     = 64;
++        static constexpr size_t max_seg_size = 256*1024;
++        static constexpr size_t half_size    = 2*1024*1024;
++        char *      host     = nullptr; // pinned, 2*half_size
++        char *      dev      = nullptr; // device, 2*half_size
++        cudaEvent_t done[2]  = { nullptr, nullptr };
++        int         half     = 0;
++        cudaStream_t stream  = nullptr; // of the staged uploads
++        size_t      used     = 0;
++        int         n        = 0;
++        char *      dst[max_segs];
++        uint32_t    off[max_segs];
++        uint32_t    size[max_segs];
++    } h2d_batch;
++
+     cudaStream_t streams[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS] = { { nullptr } };
+     cublasHandle_t cublas_handles[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS] = {nullptr};
+     void * cublas_workspaces[GGML_CUDA_MAX_DEVICES][GGML_CUDA_MAX_STREAMS] = {nullptr};
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index e20d69fc2..74de5977e 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -706,6 +706,17 @@ ggml_backend_cuda_context::~ggml_backend_cuda_context() {
+     if (tickets != nullptr) {
+         CUDA_CHECK(cudaFree(tickets));
+     }
++    if (h2d_batch.host != nullptr) {
++        CUDA_CHECK(cudaFreeHost(h2d_batch.host));
++    }
++    if (h2d_batch.dev != nullptr) {
++        CUDA_CHECK(cudaFree(h2d_batch.dev));
++    }
++    for (cudaEvent_t e : h2d_batch.done) {
++        if (e != nullptr) {
++            CUDA_CHECK(cudaEventDestroy(e));
++        }
++    }
+     for (int i = 0; i < GGML_CUDA_MAX_DEVICES; ++i) {
+         for (int j = 0; j < GGML_CUDA_MAX_STREAMS; ++j) {
+             if (streams[i][j] != nullptr) {
+@@ -2540,13 +2551,103 @@ static void ggml_backend_cuda_free(ggml_backend_t backend) {
+     delete backend;
+ }
+ 
++// [GGML_HIP_INPUT_BATCH] the segments of one batch flush: segment s copies size[s] bytes from the device staging
++// buffer at off[s] to dst[s]
++struct ggml_cuda_h2d_scatter_args {
++    char *   dst[ggml_backend_cuda_context::h2d_batch_t::max_segs];
++    uint32_t off[ggml_backend_cuda_context::h2d_batch_t::max_segs];
++    uint32_t size[ggml_backend_cuda_context::h2d_batch_t::max_segs];
++};
++
++// block (s, c) copies chunk c (h2d_scatter_chunk bytes) of segment s
++static constexpr uint32_t ggml_cuda_h2d_scatter_chunk = 8192;
++
++static __global__ void ggml_cuda_h2d_scatter(const char * __restrict__ src, const ggml_cuda_h2d_scatter_args a) {
++    const uint32_t c0  = blockIdx.y*ggml_cuda_h2d_scatter_chunk;
++    const uint32_t n   = a.size[blockIdx.x];
++    if (c0 >= n) {
++        return;
++    }
++    const uint32_t c1  = min(n, c0 + ggml_cuda_h2d_scatter_chunk);
++    char *         dst = a.dst[blockIdx.x];
++    const char *   s   = src + a.off[blockIdx.x];
++    if ((((uintptr_t) dst) | n) % 16 == 0) { // s is 16-byte aligned
++        for (uint32_t i = c0 + 16*threadIdx.x; i < c1; i += 16*blockDim.x) {
++            *(int4 *) (dst + i) = *(const int4 *) (s + i);
++        }
++    } else {
++        for (uint32_t i = c0 + threadIdx.x; i < c1; i += blockDim.x) {
++            dst[i] = s[i];
++        }
++    }
++}
++
++// [GGML_HIP_INPUT_BATCH] issue the staged uploads: one H2D copy of the staging half, one scatter launch
++static void ggml_cuda_h2d_batch_flush(ggml_backend_cuda_context * ctx) {
++    auto & b = ctx->h2d_batch;
++    if (b.n == 0) {
++        return;
++    }
++    using batch_t = ggml_backend_cuda_context::h2d_batch_t;
++    ggml_cuda_set_device(ctx->device);
++    cudaStream_t stream = b.stream;
++    char * host = b.host + b.half*batch_t::half_size;
++    char * dev  = b.dev  + b.half*batch_t::half_size;
++    CUDA_CHECK(cudaMemcpyAsync(dev, host, b.used, cudaMemcpyHostToDevice, stream));
++    CUDA_CHECK(cudaEventRecord(b.done[b.half], stream));
++    ggml_cuda_h2d_scatter_args args;
++    uint32_t max_size = 0;
++    for (int s = 0; s < b.n; ++s) {
++        args.dst[s]  = b.dst[s];
++        args.off[s]  = b.off[s];
++        args.size[s] = b.size[s];
++        max_size     = std::max(max_size, b.size[s]);
++    }
++    const uint32_t nchunks = std::max(1u, (max_size + ggml_cuda_h2d_scatter_chunk - 1) / ggml_cuda_h2d_scatter_chunk);
++    ggml_cuda_h2d_scatter<<<dim3(b.n, nchunks, 1), 256, 0, stream>>>(dev, args);
++    CUDA_CHECK(cudaGetLastError());
++    b.half ^= 1;
++    b.used  = 0;
++    b.n     = 0;
++}
++
+ static void ggml_backend_cuda_set_tensor_async(ggml_backend_t backend, ggml_tensor * tensor, const void * data, size_t offset, size_t size) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
+     ggml_backend_buffer_t buf = tensor->view_src ? tensor->view_src->buffer : tensor->buffer;
+ 
+     GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");
+ 
+-    CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, cuda_ctx->stream()));
++    // [GGML_HIP_INPUT_BATCH] stage small uploads (the host data is copied now, as an async copy would read it later)
++    static const bool input_batch = ggml_cuda_env_switch("GGML_HIP_INPUT_BATCH");
++    using batch_t = ggml_backend_cuda_context::h2d_batch_t;
++    auto & b = cuda_ctx->h2d_batch;
++    cudaStream_t stream = cuda_ctx->stream();
++    if (input_batch && size > 0 && size <= batch_t::max_seg_size) {
++        if (b.n > 0 && (b.stream != stream || b.n == batch_t::max_segs || b.used + size > batch_t::half_size)) {
++            ggml_cuda_h2d_batch_flush(cuda_ctx);
++        }
++        if (b.host == nullptr) {
++            CUDA_CHECK(cudaMallocHost((void **) &b.host, 2*batch_t::half_size));
++            CUDA_CHECK(cudaMalloc((void **) &b.dev, 2*batch_t::half_size));
++            for (cudaEvent_t & e : b.done) {
++                CUDA_CHECK(cudaEventCreateWithFlags(&e, cudaEventDisableTiming));
++            }
++        }
++        if (b.n == 0) {
++            // the previous copy out of this half of the host staging buffer must be done
++            CUDA_CHECK(cudaEventSynchronize(b.done[b.half]));
++            b.stream = stream;
++        }
++        memcpy(b.host + b.half*batch_t::half_size + b.used, data, size);
++        b.dst[b.n]  = (char *) tensor->data + offset;
++        b.off[b.n]  = (uint32_t) b.used;
++        b.size[b.n] = (uint32_t) size;
++        b.n++;
++        b.used = GGML_PAD(b.used + size, 16);
++        return;
++    }
++    ggml_cuda_h2d_batch_flush(cuda_ctx);
++    CUDA_CHECK(cudaMemcpyAsync((char *) tensor->data + offset, data, size, cudaMemcpyHostToDevice, stream));
+ }
+ 
+ static void ggml_backend_cuda_get_tensor_async(ggml_backend_t backend, const ggml_tensor * tensor, void * data, size_t offset, size_t size) {
+@@ -2555,6 +2656,7 @@ static void ggml_backend_cuda_get_tensor_async(ggml_backend_t backend, const ggm
+ 
+     GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");
+ 
++    ggml_cuda_h2d_batch_flush(cuda_ctx);
+     CUDA_CHECK(cudaMemcpyAsync(data, (const char *) tensor->data + offset, size, cudaMemcpyDeviceToHost, cuda_ctx->stream()));
+ }
+ 
+@@ -2565,6 +2667,7 @@ static void ggml_backend_cuda_set_tensor_2d_async(ggml_backend_t backend, struct
+ 
+     GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");
+ 
++    ggml_cuda_h2d_batch_flush(cuda_ctx);
+     CUDA_CHECK(cudaMemcpy2DAsync(
+         (char *) tensor->data + offset, stride_tensor, data, stride_data, size, n_copies, cudaMemcpyHostToDevice, cuda_ctx->stream()));
+ }
+@@ -2576,6 +2679,7 @@ static void ggml_backend_cuda_get_tensor_2d_async(ggml_backend_t backend, const
+ 
+     GGML_ASSERT(buf->buft == ggml_backend_cuda_buffer_type(cuda_ctx->device) && "unsupported buffer type");
+ 
++    ggml_cuda_h2d_batch_flush(cuda_ctx);
+     CUDA_CHECK(cudaMemcpy2DAsync(
+         data, stride_data, (const char *) tensor->data + offset, stride_tensor, size, n_copies, cudaMemcpyDeviceToHost, cuda_ctx->stream()));
+ }
+@@ -2595,6 +2699,8 @@ static bool ggml_backend_cuda_cpy_tensor_async(ggml_backend_t backend_src, ggml_
+     // device -> device copy
+     ggml_backend_cuda_context * cuda_ctx_src = (ggml_backend_cuda_context *) backend_src->context;
+     ggml_backend_cuda_context * cuda_ctx_dst = (ggml_backend_cuda_context *) backend_dst->context;
++    ggml_cuda_h2d_batch_flush(cuda_ctx_src);
++    ggml_cuda_h2d_batch_flush(cuda_ctx_dst);
+ 
+     ggml_backend_cuda_buffer_context * buf_ctx_src = (ggml_backend_cuda_buffer_context *) buf_src->context;
+     ggml_backend_cuda_buffer_context * buf_ctx_dst = (ggml_backend_cuda_buffer_context *) buf_dst->context;
+@@ -2642,6 +2748,7 @@ static bool ggml_backend_cuda_cpy_tensor_async(ggml_backend_t backend_src, ggml_
+ static void ggml_backend_cuda_synchronize(ggml_backend_t backend) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
+ 
++    ggml_cuda_h2d_batch_flush(cuda_ctx);
+     CUDA_CHECK(cudaStreamSynchronize(cuda_ctx->stream()));
+ 
+     GGML_UNUSED(backend);
+@@ -5826,6 +5933,7 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
+ 
+     ggml_cuda_set_device(cuda_ctx->device);
++    ggml_cuda_h2d_batch_flush(cuda_ctx); // the staged input uploads, before any capture
+ 
+     bool use_cuda_graph             = false;
+     bool cuda_graph_update_required = false;
+@@ -5884,12 +5992,14 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+ static void ggml_backend_cuda_event_record(ggml_backend_t backend, ggml_backend_event_t event) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
+ 
++    ggml_cuda_h2d_batch_flush(cuda_ctx);
+     CUDA_CHECK(cudaEventRecord((cudaEvent_t)event->context, cuda_ctx->stream()));
+ }
+ 
+ static void ggml_backend_cuda_event_wait(ggml_backend_t backend, ggml_backend_event_t event) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *)backend->context;
+ 
++    ggml_cuda_h2d_batch_flush(cuda_ctx);
+     if (ggml_backend_is_cuda(backend)) {
+         CUDA_CHECK(cudaStreamWaitEvent(cuda_ctx->stream(), (cudaEvent_t)event->context, 0));
+     } else {
+-- 
+2.43.0
+

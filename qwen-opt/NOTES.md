@@ -358,3 +358,13 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - Koszty uruchomień (pomiar): granica kernela w grafie HIP ~2.53 us (także pustego), bariera siatki w kernelu trwałym 0.5-0.8 us, ogon „ostatni blok” ~1 us, łańcuch dużych faz w jednym kernelu z czekającymi blokami 8-11 us/faza (odpada).
 - Losowe spowolnienie gate+up ekspertów 24.3 -> 27.2 us/wywołanie w części procesów (także na buildzie bez zmian, 4/8 profili): ~0.11 ms/token, przyczyna nieznana.
 - Szczegóły i wszystkie próby: `research/lfm-decode-round2.md`.
+
+## LFM2.5: runda 3 (59 łatek, 0055-0059; 2026-10-14)
+- 0055 `GGML_HIP_KVQ_Q8`: kernel `kvq` (RDNA3, cała grupa GQA w jednym przejściu) czyta też KV q8_0 (head dim 64/128), jeden blok na WGP. ms/token: 0: 4.121 -> 4.099, 8k: 4.290 -> 4.206, 32k: 4.875 -> 4.526, 98k: 6.561 -> 5.462; atencja przy 98k 223.5 -> 128.7 us/warstwę. **Jedyna zmiana numeryki**: KLD vs f16 KV (wikitext-2, 3 x 16k, ub 1): stary kernel q8_0 0.044171 (same top 92.25%, deterministyczny), nowy 0.044196 (92.35%, RMS dp 4.85 vs 5.00%, PPL ratio 1.0026 vs 1.0138) - przyjęty. Dla porównania q4_0: 0.128 (85.2%).
+- 0056 `GGML_HIP_GATE_UP_Q8`: gate+up ekspertów zapisuje wejście q8_1 dla down (4.070 -> 3.973 ms). Bitowo.
+- 0057 `GGML_HIP_ATTN_PREP`: q/k norm+rope+FWHT, FWHT v i oba zapisy KV w jednym kernelu zamiast pięciu (4.043 -> 3.907 ms). Bitowo.
+- 0058 `GGML_HIP_KVQ_FWHT`: combine atencji robi FWHT wyjścia i q8_1 dla o-proj (3.928 -> 3.879 ms). Bitowo.
+- 0059 `GGML_HIP_INPUT_BATCH`: 12 uploadów wejść grafu na token -> jedna kopia H2D + jeden kernel rozrzucający (3.840 -> 3.806 ms). Bitowo; dotyczy też Qwena.
+- Wynik (KV q8_0, przeplatane A/B z 5909da1f1): llama-bench 0: 241.1 -> **262.1 t/s**, 32k: 205.4 -> 231.0, 98k: 152.4 -> **191.4 t/s** (+25.6%); serwer `lfm none` 237-243 -> **251-252 t/s**; Qwen mtp bez zmian. 416 -> 305 kerneli/token. Greedy: LFM ze starym kernelem atencji = baza, z nowym 894e56e4 (oczekiwane); Qwen plain/MTP bez zmian (sprawdzone na zainstalowanym buildzie).
+- Nie wyszło: norma następnej warstwy jako ogon kernela MoE down (13 -> 56 us/wywołanie: duży kod jednej fali z zimnego cache instrukcji); ładowania nontemporal (slc/dlc) dla wag gate+up 12.9 -> 14.4 us (wolniej, także dla pomysłu DLC z research/repos/28); losowe spowolnienie gate+up (25.1 -> 28.1 us w ~1/3 procesów) nie znika po wyrównaniu bufora modelu do 2 MiB (4/12 vs 3/12) - hipoteza: konflikt fizyczny dwóch strumieni wag gate i up.
+- Referencja f16 do KLD (6.3 GB) i narzędzia: `~/wt/lfm3-prof`. Szczegóły: `research/lfm-decode-round3.md`.

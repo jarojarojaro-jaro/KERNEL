@@ -1,7 +1,7 @@
 From 813fa7c34ca904af6fdec79693dd475a98f63ab5 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 13:36:48 +0000
-Subject: [PATCH 25/54] CUDA/HIP: unrolled rms_norm*mul(+q8_1) for
+Subject: [PATCH 25/59] CUDA/HIP: unrolled rms_norm*mul(+q8_1) for
  2048..8192-column rows, DPP reductions (GGML_HIP_NORM_FAST)
 
 rms_norm_mul_f32_unrolled<NV>: thread t still owns columns t + 1024k and every sum keeps the order and pairing of

@@ -1,0 +1,228 @@
+From 04f10413e7cac20d20d86d8df34082148e1f7abf Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 17:05:48 +0000
+Subject: [PATCH 56/59] CUDA/HIP: single-token gate/up(+GLU) MMVQ writes the
+ q8_1 input of the down projection (GGML_HIP_GATE_UP_Q8)
+
+The fused gate/up/GLU matvec of one token (MoE expert MUL_MAT_ID and dense FFN MUL_MAT) also
+writes the q8_1 copy of its output when the next matvec consumes it from the q8_1 cache
+(ggml_cuda_q8_1_producer_target): every block counts its rows into the ticket of its 32-row
+group, the block that completes a group quantizes those 32 values (quantize_q8_1_group, the
+arithmetic of the quantize_q8_1 kernel) and resets the ticket. Removes the quantize_q8_1 launch
+in front of every MoE down projection (38 per LFM2 token) and the dense FFN downs (2).
+
+Bitwise: logit hashes of 64 greedy steps unchanged (KV q8_0 depth 0 / 3000 with the vec FA
+kernel a3c06fe69758819e / 718efee0662e860e, KV q4_0 b81cc99db07e6661).
+llama-bench tg128 -r 5, LFM2.5-24B-A2B, KV q8_0, 3 rounds interleaved: 4.070 -> 3.973 ms/token.
+GGML_HIP_GATE_UP_Q8=0: quantize_q8_1 launches as before. test-backend-ops: FFN_GATE_UP_DOWN
+(new, MUL_MAT_ID and MUL_MAT variants) 5/5.
+---
+ ggml/src/ggml-cuda/common.cuh   |  7 +++
+ ggml/src/ggml-cuda/ggml-cuda.cu | 13 ++++++
+ ggml/src/ggml-cuda/mmvq.cu      | 32 +++++++++++++
+ tests/test-backend-ops.cpp      | 83 +++++++++++++++++++++++++++++++++
+ 4 files changed, 135 insertions(+)
+
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index fe6e32a2a..3dc88307b 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -1747,6 +1747,11 @@ struct ggml_cuda_mm_fusion_args_host {
+     // pair launch: a second matrix of the same type and K multiplied with the same src1 (grid-concatenated blocks)
+     const ggml_tensor * pair_src0 = nullptr;
+     ggml_tensor * pair_dst = nullptr;
++    // [GGML_HIP_GATE_UP_Q8] single-token gate/up MUL_MAT(_ID) with a GLU: also write the q8_1 copy of dst (the input of
++    // the next matvec), each 32-row group quantized by the block that completes it (q8_tickets: zeroed counters, one
++    // per group, left zeroed)
++    block_q8_1 * q8_out = nullptr;
++    unsigned int * q8_tickets = nullptr;
+ };
+ struct ggml_cuda_mm_fusion_args_device {
+     const void * x_bias = nullptr;
+@@ -1764,6 +1769,8 @@ struct ggml_cuda_mm_fusion_args_device {
+     float * pair_dst = nullptr;
+     uint32_t pair_nrows = 0;
+     uint32_t pair_block0 = 0;
++    block_q8_1 * q8_out = nullptr; // see ggml_cuda_mm_fusion_args_host
++    unsigned int * q8_tickets = nullptr;
+ };
+ 
+ struct ggml_cuda_kernel_launch_params {
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index ef7b347ae..78699432f 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -5028,6 +5028,19 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+                 fusion_data.glu_op    = ggml_get_glu_op(glu);
+                 fusion_data.glu_limit = ggml_get_op_params_f32(glu, 3);
+ 
++                // [GGML_HIP_GATE_UP_Q8] one token: the q8_1 copy of the GLU output for the down projection, written by
++                // the blocks that complete its 32-row groups (instead of a quantize_q8_1 launch in front of the down)
++                static const bool gate_up_q8 = ggml_cuda_env_switch("GGML_HIP_GATE_UP_Q8");
++                const bool one_token = op == GGML_OP_MUL_MAT_ID ? src1->ne[2] == 1 && glu->ne[2] == 1 : src1->ne[1] == 1;
++                if (gate_up_q8 && one_token && glu->type == GGML_TYPE_F32 && ggml_is_contiguous(glu) && glu->ne[3] == 1 &&
++                        glu->ne[0] % QK8_1 == 0 && ggml_nelements(glu) / QK8_1 <= ggml_backend_cuda_context::n_tickets &&
++                        ggml_cuda_info().devices[cuda_ctx->device].warp_size == 32) {
++                    unsigned int * tickets = ggml_cuda_tickets(cuda_ctx);
++                    if (tickets != nullptr) {
++                        fusion_data.q8_out = ggml_cuda_q8_1_producer_target(cuda_ctx, cgraph, i + 2);
++                        fusion_data.q8_tickets = fusion_data.q8_out != nullptr ? tickets : nullptr;
++                    }
++                }
+                 ggml_cuda_mul_mat_vec_q(*cuda_ctx, src0, src1, ids, glu, &fusion_data);
+                 fused_mul_mat_vec = true;
+                 fused_node_count  = 3;
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 0cadc8b62..d8bf75b6f 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1847,6 +1847,30 @@ static __global__ void mul_mat_vec_q(
+         }
+     }
+ 
++    if constexpr (has_fusion && ncols_dst == 1) {
++        // [GGML_HIP_GATE_UP_Q8] the q8_1 copy of dst: the block that completes the 32 rows of a group (ticket per
++        // group) quantizes them as the quantize_q8_1 kernel does (dst is [rows, channels] without padding, so q8_1
++        // block g holds the dst values 32*g .. 32*g + 31; warp size 32)
++        if (fusion.q8_out != nullptr) {
++            const uint32_t i0    = sample_dst*stride_sample_dst + channel_dst*stride_channel_dst + row0;
++            const uint32_t group = i0 / QK8_1;
++            __threadfence();
++            unsigned int t = 0;
++            if (threadIdx.x == 0) {
++                t = atomicAdd(fusion.q8_tickets + group, (unsigned int) rows_per_cuda_block);
++            }
++            t = __shfl_sync(0xFFFFFFFF, t, 0, warp_size);
++            if (t == QK8_1 - rows_per_cuda_block) {
++                if (threadIdx.x == 0) {
++                    fusion.q8_tickets[group] = 0;
++                }
++                __threadfence();
++                const float * dst_group = dst - (int64_t) i0 + (int64_t) group*QK8_1; // dst points at row0 here
++                quantize_q8_1_group(dst_group[threadIdx.x], fusion.q8_out + group, threadIdx.x);
++            }
++        }
++    }
++
+     if constexpr (!has_fusion) {
+         GGML_UNUSED_VARS(use_gate, use_bias, use_gate_bias, use_scale, use_gate_scale, active_glu, glu_limit, gate_bias, x_bias, x_scale, gate_scale, tmp_gate);
+     }
+@@ -3636,6 +3660,14 @@ void ggml_cuda_mul_mat_vec_q(
+         }
+         fusion_local.glu_op = fusion->glu_op;
+         fusion_local.glu_limit = fusion->glu_limit;
++        if (fusion->q8_out) {
++            // one token, dst = whole q8_1 groups per channel, no extra blocks in the grid
++            GGML_ASSERT(fusion->q8_tickets && (ids || dst->ne[1] == 1) && dst->ne[2] == 1 && dst->ne[3] == 1 && ggml_is_contiguous(dst) && ne0 % QK8_1 == 0);
++            GGML_ASSERT(!fusion->shared_up && !fusion->pair_src0 && ggml_cuda_info().devices[ctx.device].warp_size == 32);
++            GGML_ASSERT(ggml_nelements(dst) / QK8_1 <= ggml_backend_cuda_context::n_tickets);
++            fusion_local.q8_out     = fusion->q8_out;
++            fusion_local.q8_tickets = fusion->q8_tickets;
++        }
+     }
+ 
+     // If src0 is a temporary compute buffer, clear any potential padding.
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 4f5a29477..4d64634d2 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7802,6 +7802,83 @@ struct test_moe_down_reduce : public test_case {
+     }
+ };
+ 
++// single-token FFN: gate and up matvecs (MUL_MAT_ID with ids, or MUL_MAT) -> SWIGLU -> down matvec; the HIP backend
++// fuses gate/up/SWIGLU into one launch whose blocks also write the q8_1 input of the down (GGML_HIP_GATE_UP_Q8)
++struct test_ffn_gate_up_down : public test_case {
++    const ggml_type type_a;
++    const bool      use_id;
++    const int       n_mats;
++    const int       n_used;
++    const int64_t   k;
++    const int64_t   ff;
++
++    std::string vars() override {
++        return VARS_TO_STR6(type_a, use_id, n_mats, n_used, k, ff);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "FFN_GATE_UP_DOWN";
++    }
++
++    double max_nmse_err() override {
++        return 5e-4;
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    test_ffn_gate_up_down(ggml_type type_a, bool use_id, int n_mats, int n_used, int64_t k, int64_t ff)
++        : type_a(type_a), use_id(use_id), n_mats(n_mats), n_used(n_used), k(k), ff(ff) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        ggml_tensor * x = ggml_new_tensor_3d(ctx, GGML_TYPE_F32, k, 1, 1);
++        ggml_set_name(x, "x");
++        ggml_tensor * gate;
++        ggml_tensor * up;
++        ggml_tensor * ids = nullptr;
++        if (use_id) {
++            ggml_tensor * gate_exps = ggml_new_tensor_3d(ctx, type_a, k, ff, n_mats);
++            ggml_set_name(gate_exps, "gate_exps");
++            ggml_tensor * up_exps = ggml_new_tensor_3d(ctx, type_a, k, ff, n_mats);
++            ggml_set_name(up_exps, "up_exps");
++            ids = ggml_new_tensor_2d(ctx, GGML_TYPE_I32, n_mats, 1);
++            ggml_set_name(ids, "ids");
++            ids = ggml_view_2d(ctx, ids, n_used, 1, ids->nb[1], 0);
++            ggml_set_name(ids, "view_of_ids");
++            gate = ggml_mul_mat_id(ctx, gate_exps, x, ids);
++            up   = ggml_mul_mat_id(ctx, up_exps, x, ids);
++        } else {
++            ggml_tensor * w_gate = ggml_new_tensor_2d(ctx, type_a, k, ff);
++            ggml_set_name(w_gate, "w_gate");
++            ggml_tensor * w_up = ggml_new_tensor_2d(ctx, type_a, k, ff);
++            ggml_set_name(w_up, "w_up");
++            ggml_tensor * x2 = ggml_reshape_2d(ctx, x, k, 1);
++            gate = ggml_mul_mat(ctx, w_gate, x2);
++            up   = ggml_mul_mat(ctx, w_up, x2);
++        }
++        ggml_set_name(gate, "gate");
++        ggml_set_name(up, "up");
++        ggml_tensor * act = ggml_swiglu_split(ctx, gate, up);
++        ggml_set_name(act, "act");
++        ggml_tensor * out;
++        if (use_id) {
++            ggml_tensor * down_exps = ggml_new_tensor_3d(ctx, type_a, ff, k, n_mats);
++            ggml_set_name(down_exps, "down_exps");
++            out = ggml_mul_mat_id(ctx, down_exps, act, ids);
++        } else {
++            ggml_tensor * w_down = ggml_new_tensor_2d(ctx, type_a, ff, k);
++            ggml_set_name(w_down, "w_down");
++            out = ggml_mul_mat(ctx, w_down, act);
++        }
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        init_mul_mat_id_tensors(ctx, n_mats, 1.0f);
++    }
++};
++
+ // single-token MoE routing: FFN norm (rms_norm * w) -> F32 router -> gating, top-k, normalized weights, the norm
+ // output also feeding the expert MUL_MAT_ID (norm, router and top-k fused into one launch by the HIP backend,
+ // GGML_HIP_NORM_ROUTER)
+@@ -12527,6 +12604,12 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q4_K, 16, 8, 512, 768));
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q8_0, 8, 2, 64, 256));
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_IQ4_XS, 32, 6, 1024, 512));
++    // single-token FFN gate/up -> SWIGLU -> down (LFM2 24B-A2B expert and dense shapes)
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q5_K, true, 64, 4, 2048, 1536));
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q6_K, true, 64, 4, 2048, 1536));
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q4_0, true, 16, 8, 512, 256));
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q5_K, false, 1, 1, 2048, 11776));
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q8_0, false, 1, 1, 1024, 2048));
+     // single-token MoE routing (LFM2 24B-A2B: 64 experts, 4 used, sigmoid + bias; and other expert counts / gatings)
+     test_cases.emplace_back(new test_norm_router_topk(2048, 64, 4, true, GATING_FUNC_SIGMOID));
+     test_cases.emplace_back(new test_norm_router_topk(2048, 64, 4, false, GATING_FUNC_SOFTMAX));
+-- 
+2.43.0
+

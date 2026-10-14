@@ -1,7 +1,7 @@
 From b1f8c19ac9145f6912172f2393e715ebfeaedf02 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 19:37:22 +0000
-Subject: [PATCH 19/54] CUDA/HIP: fold the q/k Hadamard rotation of a rotated
+Subject: [PATCH 19/59] CUDA/HIP: fold the q/k Hadamard rotation of a rotated
  KV cache into RMS_NORM+MUL+ROPE
 
 RMS_NORM, MUL, ROPE, RESHAPE and the Hadamard MUL_MAT (llama_mul_mat_hadamard) run as one

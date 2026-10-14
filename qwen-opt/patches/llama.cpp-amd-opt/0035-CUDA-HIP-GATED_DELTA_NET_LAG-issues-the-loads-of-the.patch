@@ -1,7 +1,7 @@
 From bd22515232acc64676481eb49cb1a5355ece37aa Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 18:23:03 +0000
-Subject: [PATCH 35/54] CUDA/HIP: GATED_DELTA_NET_LAG issues the loads of the
+Subject: [PATCH 35/59] CUDA/HIP: GATED_DELTA_NET_LAG issues the loads of the
  next pending row before the recurrence of the current one (GDN 661 -> 638 us
  per verify)
 

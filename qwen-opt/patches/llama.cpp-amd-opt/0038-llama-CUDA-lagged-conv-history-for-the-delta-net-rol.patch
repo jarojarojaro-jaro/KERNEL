@@ -1,7 +1,7 @@
 From b9b476c871b20ef4bc7622f58af5d14de2cfafda Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 23:47:17 +0000
-Subject: [PATCH 38/54] llama/CUDA: lagged conv history for the delta-net
+Subject: [PATCH 38/59] llama/CUDA: lagged conv history for the delta-net
  rollback by replay, no per-token conv snapshots (LLAMA_CONV_LAG)
 
 With GATED_DELTA_NET_LAG the GDN state already lags behind the cell by its pending rows, but the conv state still

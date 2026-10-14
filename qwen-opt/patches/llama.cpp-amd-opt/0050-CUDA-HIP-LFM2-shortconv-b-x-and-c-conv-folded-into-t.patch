@@ -1,7 +1,7 @@
 From be05dc19cb147218faa2e7102fbc036081981b80 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 12:55:07 +0000
-Subject: [PATCH 50/54] CUDA/HIP: LFM2 shortconv: b*x and c*conv folded into
+Subject: [PATCH 50/59] CUDA/HIP: LFM2 shortconv: b*x and c*conv folded into
  the fused SSM_CONV, which writes the q8_1 out_proj input (GGML_HIP_CONV_MUL)
 
 The LFM2 shortconv block ran in_proj -> MUL(b, x) -> fused SSM_CONV -> MUL(c, conv) ->

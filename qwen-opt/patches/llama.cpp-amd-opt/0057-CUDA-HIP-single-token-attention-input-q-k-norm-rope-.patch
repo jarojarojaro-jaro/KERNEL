@@ -1,0 +1,640 @@
+From 7a963bc0c4886e5679a354498ad21af995dc9610 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 17:11:12 +0000
+Subject: [PATCH 57/59] CUDA/HIP: single-token attention input (q/k
+ norm+rope+FWHT, v FWHT, q8_0 SET_ROWS of k and v) in one launch
+ (GGML_HIP_ATTN_PREP)
+
+LFM2 attention layers with a rotated q8_0 KV cache ran, after the q/v/k matvecs, five small
+kernels: rms_norm_mul_rope (q, FWHT folded), fwht (v), rms_norm_mul_rope (k), set_rows K, set_rows
+V. At the q norm+rope+FWHT group, when the graph continues with the V matvec, its Hadamard MUL_MAT,
+the K matvec, the k group and the two SET_ROWS, the V and K matvecs run first (unchanged MMVQ
+launches) and one launch (attn_prep_f32) does the rest: blocks for the q heads and the k heads run
+the code of rms_norm_mul_rope_f32 (refactored into rms_norm_mul_rope_f32_rows, shared), the k
+blocks then quantize their head into the K cache as k_set_rows_quant does, the v blocks run
+fwht_row_warp as fwht_cuda and quantize into the V cache. V, K and the k/v FWHT rows are read only
+inside the region, so they go to pool scratch memory (the allocator may give them memory of
+tensors that are dead at their graph position but read by the combined launch); any other reader
+rules the fusion out. 376 -> 336 kernels per LFM2 token; attn_prep 5.9 us vs 13.1 us of kernels.
+
+Bitwise: logit hashes of 64 greedy steps unchanged (KV q8_0 vec FA depth 0 / 3000
+a3c06fe69758819e / 718efee0662e860e, kvq FA depth 0 a7ce25b73f887fed, depth 3000 b47452b9380b665b
+on and off; KV q4_0 b81cc99db07e6661, q4_0 caches do not take the path).
+llama-bench tg128 -r 5, LFM2.5-24B-A2B, KV q8_0, 3 rounds interleaved: 4.043 -> 3.907 ms/token.
+GGML_HIP_ATTN_PREP=0: the separate launches. test-backend-ops: ATTN_PREP (new: matvecs, norm,
+rope, Hadamard MUL_MATs, SET_ROWS into q8_0 caches, FLASH_ATTN_EXT) 3/3.
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu | 161 ++++++++++++++++++---
+ ggml/src/ggml-cuda/rope.cu      | 239 ++++++++++++++++++++++++++++++--
+ ggml/src/ggml-cuda/rope.cuh     |  12 ++
+ tests/test-backend-ops.cpp      | 113 +++++++++++++++
+ 4 files changed, 495 insertions(+), 30 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 78699432f..e2757745a 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4476,6 +4476,139 @@ static int ggml_cuda_try_inproj_conv(ggml_backend_cuda_context * cuda_ctx, const
+     return plan.mul_out_idx - i;
+ }
+ 
++// RMS_NORM, MUL, ROPE, RESHAPE and the Hadamard MUL_MAT of a rotated KV cache (q/k rotation, see
++// llama_mul_mat_hadamard) at node i that ggml_cuda_op_rms_norm_mul_rope_fused runs as one launch (with fwht = nodes[i + 4])
++static bool ggml_cuda_match_rms_norm_mul_rope_fwht(const ggml_cgraph * cgraph, int i) {
++    if (i + 4 >= cgraph->n_nodes || cgraph->nodes[i]->op != GGML_OP_RMS_NORM) {
++        return false;
++    }
++    const std::initializer_list<enum ggml_op> ops = {
++        GGML_OP_RMS_NORM, GGML_OP_MUL, GGML_OP_ROPE, GGML_OP_RESHAPE, GGML_OP_MUL_MAT };
++    const ggml_tensor * node    = cgraph->nodes[i];
++    const ggml_tensor * mul     = cgraph->nodes[i + 1];
++    const ggml_tensor * rope    = cgraph->nodes[i + 2];
++    const ggml_tensor * reshape = cgraph->nodes[i + 3];
++    const ggml_tensor * mm      = cgraph->nodes[i + 4];
++    const int64_t n             = rope->ne[0];
++    if (ggml_can_fuse_subgraph(cgraph, i, ops, { i + 4 }) &&
++            (mul->src[0] == node || mul->src[1] == node) && reshape->src[0] == rope && mm->src[1] == reshape &&
++            ggml_cuda_should_fuse_rms_norm_mul_rope(node, mul, rope) && ggml_is_contiguous(rope) &&
++            ggml_cuda_op_mul_mat_use_fwht(mm) && mm->src[0]->ne[0] == n &&
++            (n == 64 || n == 128 || n == 256 || n == 512)) {
++        const int out_nodes[] = { i + 4 };
++        // the kernel reads a row of x completely before it writes that row of the output
++        return ggml_cuda_check_fusion_memory_ranges(cgraph, i, (int) ops.size(), out_nodes, 1, false, node->src[0]);
++    }
++    return false;
++}
++
++// [GGML_HIP_ATTN_PREP] single-token attention input of a rotated q8_0 KV cache: at the q norm+rope+FWHT group (node i)
++// the graph continues (views aside) with the V MUL_MAT, its Hadamard MUL_MAT (FWHT), the K MUL_MAT, the k
++// norm+rope+FWHT group and the SET_ROWS of k and v into the cache. The V and K MUL_MATs run first (as at their own
++// position), then one launch does both rope groups, the v FWHT and the two SET_ROWS (ggml_cuda_op_attn_prep); every
++// node after the q group is marked as computed ahead. Returns the nodes to skip, 0: no.
++static int ggml_cuda_try_attn_prep(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
++    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_ATTN_PREP");
++    if (!enabled || cuda_ctx->curr_stream_no != 0 || !cuda_ctx->stream_context().concurrent_events.empty() ||
++            !ggml_cuda_match_rms_norm_mul_rope_fwht(cgraph, i)) {
++        return 0;
++    }
++    // the compute nodes after the q group, in this order
++    int idx[6];
++    int n_found = 0;
++    int j = i + 5;
++    for (; j < cgraph->n_nodes && n_found < 6; ++j) {
++        const ggml_tensor * n = cgraph->nodes[j];
++        if (ggml_cuda_is_view_or_noop(n) || !(n->flags & GGML_TENSOR_FLAG_COMPUTE)) {
++            continue;
++        }
++        idx[n_found++] = j;
++        if (n_found == 4) {
++            // the k group: 5 nodes, the last one is the k FWHT
++            if (!ggml_cuda_match_rms_norm_mul_rope_fwht(cgraph, j)) {
++                return 0;
++            }
++            j += 4;
++        }
++    }
++    if (n_found != 6) {
++        return 0;
++    }
++    ggml_tensor * q_fwht = cgraph->nodes[i + 4];
++    ggml_tensor * v_mm   = cgraph->nodes[idx[0]];
++    ggml_tensor * v_fwht = cgraph->nodes[idx[1]];
++    ggml_tensor * k_mm   = cgraph->nodes[idx[2]];
++    const int     kn     = idx[3];
++    ggml_tensor * k_fwht = cgraph->nodes[kn + 4];
++    ggml_tensor * k_set  = cgraph->nodes[idx[4]];
++    ggml_tensor * v_set  = cgraph->nodes[idx[5]];
++    const ggml_tensor * k_rope = cgraph->nodes[kn + 2];
++    const ggml_tensor * v_src  = v_fwht->src[1];
++    const auto is_view_of = [](const ggml_tensor * t, const ggml_tensor * of) {
++        for (; t != nullptr; t = t->view_src != nullptr ? t->view_src : (ggml_cuda_is_view_or_noop(t) ? t->src[0] : nullptr)) {
++            if (t == of) {
++                return true;
++            }
++        }
++        return false;
++    };
++    // V and K: single-token MMVQ matvecs of the input norm; v FWHT of V; the k group reads K; SET_ROWS of the FWHTs
++    if (v_mm->op != GGML_OP_MUL_MAT || k_mm->op != GGML_OP_MUL_MAT || v_fwht->op != GGML_OP_MUL_MAT ||
++            !ggml_cuda_op_mul_mat_use_fwht(v_fwht) || ggml_cuda_op_mul_mat_use_fwht(v_mm) || ggml_cuda_op_mul_mat_use_fwht(k_mm) ||
++            !is_view_of(v_src, v_mm) || v_src->data != v_mm->data || !is_view_of(cgraph->nodes[kn]->src[0], k_mm) ||
++            k_set->op != GGML_OP_SET_ROWS || v_set->op != GGML_OP_SET_ROWS ||
++            !is_view_of(k_set->src[0], k_fwht) || !is_view_of(v_set->src[0], v_fwht) ||
++            !ggml_cuda_attn_prep_supported(cgraph->nodes[i + 2], k_rope, v_src, k_set, v_set)) {
++        return 0;
++    }
++    // The V/K matvecs now run before the q group and all groups in one launch, while the allocator may have given a
++    // tensor of this region the memory of one that is dead by its position (e.g. K that of V, the k FWHT that of the
++    // q input). So V, K and the k/v FWHT outputs - read only by nodes of this region - go to scratch memory instead of
++    // their graph tensors; the q input and the q FWHT output are read/written row by row by the same block as in the
++    // rope launch. Every other reader of those four tensors (through views) rules the fusion out.
++    const ggml_tensor * internal[4] = { v_mm, k_mm, v_fwht, k_fwht };
++    const int region[] = { idx[1], kn, kn + 1, kn + 2, kn + 4, idx[4], idx[5] };
++    for (const ggml_tensor * t : internal) {
++        if (t->flags & GGML_TENSOR_FLAG_OUTPUT) {
++            return 0;
++        }
++    }
++    for (int n = i; n < cgraph->n_nodes; ++n) {
++        const ggml_tensor * node = cgraph->nodes[n];
++        if (ggml_cuda_is_view_or_noop(node) || std::find(std::begin(region), std::end(region), n) != std::end(region)) {
++            continue;
++        }
++        for (int s = 0; s < GGML_MAX_SRC && node->src[s] != nullptr; ++s) {
++            const ggml_tensor * base = node->src[s]->view_src != nullptr ? node->src[s]->view_src : node->src[s];
++            if (std::find(std::begin(internal), std::end(internal), base) != std::end(internal)) {
++                return 0;
++            }
++        }
++    }
++    ggml_cuda_pool_alloc<float> scratch(cuda_ctx->pool(), ggml_nelements(v_mm) + ggml_nelements(k_mm) +
++                                        ggml_nelements(v_fwht) + ggml_nelements(k_fwht));
++    float * v_mm_d   = scratch.get();
++    float * k_mm_d   = v_mm_d + ggml_nelements(v_mm);
++    float * v_fwht_d = k_mm_d + ggml_nelements(k_mm);
++    float * k_fwht_d = v_fwht_d + ggml_nelements(v_fwht);
++    for (auto [mm, d] : { std::pair<ggml_tensor *, float *>{ v_mm, v_mm_d }, { k_mm, k_mm_d } }) {
++        ggml_tensor tmp = *mm;
++        tmp.data = d;
++        if (!ggml_cuda_compute_forward(*cuda_ctx, &tmp)) {
++            GGML_ABORT("%s: op not supported %s (%s)", __func__, mm->name, ggml_op_name(mm->op));
++        }
++        cuda_ctx->nodes_done_ahead.push_back(mm);
++    }
++    ggml_cuda_op_attn_prep(*cuda_ctx, cgraph->nodes[i], cgraph->nodes[i + 1], cgraph->nodes[i + 2], q_fwht,
++                           cgraph->nodes[kn], cgraph->nodes[kn + 1], k_rope, k_fwht, v_src, v_fwht, k_set, v_set,
++                           k_mm_d, k_fwht_d, v_mm_d, v_fwht_d);
++    // (the RESHAPE of the k group is a view, the evaluation loop passes over it)
++    for (ggml_tensor * t : { v_fwht, cgraph->nodes[kn], cgraph->nodes[kn + 1], cgraph->nodes[kn + 2], k_fwht, k_set, v_set }) {
++        cuda_ctx->nodes_done_ahead.push_back(t);
++    }
++    return 4;
++}
++
+ // try and fuse nodes and return the number of nodes to skip; -1: this node is done and no other node is skipped
+ // (it is elided because its result is never read, or a fusion computed it alone)
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+@@ -5265,25 +5398,15 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+ 
+     // RMS_NORM + MUL + ROPE + the Hadamard MUL_MAT of a rotated KV cache (q/k rotation, see llama_mul_mat_hadamard):
+     // one launch writes the transformed rows
+-    if (node->op == GGML_OP_RMS_NORM && i + 4 < cgraph->n_nodes) {
+-        const std::initializer_list<enum ggml_op> ops = {
+-            GGML_OP_RMS_NORM, GGML_OP_MUL, GGML_OP_ROPE, GGML_OP_RESHAPE, GGML_OP_MUL_MAT };
+-        ggml_tensor * mul     = cgraph->nodes[i + 1];
+-        ggml_tensor * rope    = cgraph->nodes[i + 2];
+-        ggml_tensor * reshape = cgraph->nodes[i + 3];
+-        ggml_tensor * mm      = cgraph->nodes[i + 4];
+-        const int64_t n       = rope->ne[0];
+-        if (ggml_can_fuse_subgraph(cgraph, i, ops, { i + 4 }) &&
+-                (mul->src[0] == node || mul->src[1] == node) && reshape->src[0] == rope && mm->src[1] == reshape &&
+-                ggml_cuda_should_fuse_rms_norm_mul_rope(node, mul, rope) && ggml_is_contiguous(rope) &&
+-                ggml_cuda_op_mul_mat_use_fwht(mm) && mm->src[0]->ne[0] == n &&
+-                (n == 64 || n == 128 || n == 256 || n == 512)) {
+-            const int out_nodes[] = { i + 4 };
+-            // the kernel reads a row of x completely before it writes that row of the output
+-            if (ggml_cuda_check_fusion_memory_ranges(cgraph, i, (int) ops.size(), out_nodes, 1, false, node->src[0])) {
+-                ggml_cuda_op_rms_norm_mul_rope_fused(*cuda_ctx, node, mul, rope, nullptr, mm);
+-                return (int) ops.size() - 1;
+-            }
++    if (node->op == GGML_OP_RMS_NORM) {
++        const int nodes_to_skip = ggml_cuda_try_attn_prep(cuda_ctx, cgraph, i);
++        if (nodes_to_skip > 0) {
++            return nodes_to_skip;
++        }
++        if (ggml_cuda_match_rms_norm_mul_rope_fwht(cgraph, i)) {
++            ggml_cuda_op_rms_norm_mul_rope_fused(*cuda_ctx, node, cgraph->nodes[i + 1], cgraph->nodes[i + 2], nullptr,
++                                                 cgraph->nodes[i + 4]);
++            return 4;
+         }
+     }
+ 
+diff --git a/ggml/src/ggml-cuda/rope.cu b/ggml/src/ggml-cuda/rope.cu
+index 4661104a6..2653e3101 100644
+--- a/ggml/src/ggml-cuda/rope.cu
++++ b/ggml/src/ggml-cuda/rope.cu
+@@ -1,4 +1,5 @@
+ #include "convert.cuh"
++#include "cpy-utils.cuh"
+ #include "fwht.cuh"
+ #include "ggml-cuda/common.cuh"
+ #include "ggml.h"
+@@ -713,7 +714,9 @@ void ggml_cuda_op_rope_fused(ggml_backend_cuda_context & ctx, ggml_tensor * rope
+ // fwht_n > 0 (== ncols): the roped row goes to shared memory and dst receives its normalized FWHT (the following
+ // Hadamard MUL_MAT, see ggml_cuda_op_mul_mat_use_fwht), computed by the first warp as fwht_cuda does
+ template <int block_size, bool has_ff, typename D, int fwht_n = 0>
+-static __global__ void rms_norm_mul_rope_f32(
++static __device__ __forceinline__ void rms_norm_mul_rope_f32_rows(
++        const int row, const int sample0, const int sample_step, const int channel0, const int channel_step,
++        float * s_sum, float * s_row,
+         const float * x, D * dst, const int ncols, const int nchannels, const int nsamples,
+         const int64_t s01, const int64_t s02, const int64_t s03,
+         const int64_t s1, const int64_t s2, const int64_t s3,
+@@ -730,18 +733,10 @@ static __global__ void rms_norm_mul_rope_f32(
+         const bool is_neox, const int multi, const mrope_sections sections,
+         const float fwht_scale) {
+     static_assert(fwht_n == 0 || (std::is_same_v<D, float> && block_size > WARP_SIZE), "bad FWHT epilogue");
+-    ggml_cuda_pdl_lc();
+-    const int row = blockIdx.x;
+     const int tid = threadIdx.x;
+ 
+-    extern __shared__ float s_sum[];
+-    __shared__ float s_row[fwht_n > 0 ? fwht_n : 1];
+-
+-    ggml_cuda_pdl_sync();
+-
+-    // grid.y and grid.z are clamped to the CUDA limit, iterate over the excess channels/samples
+-    for (int sample = blockIdx.z; sample < nsamples; sample += gridDim.z) {
+-        for (int channel = blockIdx.y; channel < nchannels; channel += gridDim.y) {
++    for (int sample = sample0; sample < nsamples; sample += sample_step) {
++        for (int channel = channel0; channel < nchannels; channel += channel_step) {
+             const float * xc = x + sample*s03 + channel*s02 + row*s01;
+ 
+             const uint32_t mul_row     = fastmodulo(row,     mul_nrows_packed);
+@@ -844,6 +839,118 @@ static __global__ void rms_norm_mul_rope_f32(
+     }
+ }
+ 
++template <int block_size, bool has_ff, typename D, int fwht_n = 0>
++static __global__ void rms_norm_mul_rope_f32(
++        const float * x, D * dst, const int ncols, const int nchannels, const int nsamples,
++        const int64_t s01, const int64_t s02, const int64_t s03,
++        const int64_t s1, const int64_t s2, const int64_t s3,
++        const float eps,
++        const float * mul,
++        const int64_t mul_s01, const int64_t mul_s02, const int64_t mul_s03,
++        const uint3 mul_ncols_packed, const uint3 mul_nrows_packed,
++        const uint3 mul_nchannels_packed, const uint3 mul_nsamples_packed,
++        const int n_dims, const int32_t * pos,
++        const float freq_scale, const float ext_factor, const float attn_factor,
++        const rope_corr_dims corr_dims, const float theta_scale,
++        const float * freq_factors,
++        const int64_t * row_indices, const int set_rows_stride,
++        const bool is_neox, const int multi, const mrope_sections sections,
++        const float fwht_scale) {
++    ggml_cuda_pdl_lc();
++    extern __shared__ float s_sum[];
++    __shared__ float s_row[fwht_n > 0 ? fwht_n : 1];
++
++    ggml_cuda_pdl_sync();
++
++    // grid.y and grid.z are clamped to the CUDA limit, iterate over the excess channels/samples
++    rms_norm_mul_rope_f32_rows<block_size, has_ff, D, fwht_n>(blockIdx.x, blockIdx.z, gridDim.z, blockIdx.y, gridDim.y,
++        s_sum, s_row, x, dst, ncols, nchannels, nsamples, s01, s02, s03, s1, s2, s3, eps, mul, mul_s01, mul_s02, mul_s03,
++        mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed, n_dims, pos, freq_scale, ext_factor,
++        attn_factor, corr_dims, theta_scale, freq_factors, row_indices, set_rows_stride, is_neox, multi, sections, fwht_scale);
++}
++
++// [GGML_HIP_ATTN_PREP] the arguments of one rms_norm_mul_rope_f32 launch with the FWHT epilogue (one token)
++struct attn_prep_rope_args {
++    const float *   x;
++    float *         dst;
++    int             ncols;
++    int             nrows;
++    int             nchannels;
++    int             nsamples;
++    int64_t         s01, s02, s03, s1, s2, s3;
++    float           eps;
++    const float *   mul;
++    int64_t         mul_s01, mul_s02, mul_s03;
++    uint3           mul_ncols_packed, mul_nrows_packed, mul_nchannels_packed, mul_nsamples_packed;
++    int             n_dims;
++    const int32_t * pos;
++    float           freq_scale, ext_factor, attn_factor;
++    rope_corr_dims  corr_dims;
++    float           theta_scale;
++    const float *   freq_factors;
++    bool            is_neox;
++    int             multi;
++    mrope_sections  sections;
++    float           fwht_scale;
++};
++
++// [GGML_HIP_ATTN_PREP] a q8_0 SET_ROWS of one token row into the KV cache: dst row idx[0] (row stride nb1 bytes)
++struct attn_prep_set_rows_args {
++    char *          dst;
++    const int64_t * idx;
++    int64_t         nb1;
++};
++
++// The quantized blocks of values [N*head, N*(head + 1)) of the token row src into the cache row, one thread per block
++// as k_set_rows_quant does.
++template <int N>
++static __device__ __forceinline__ void attn_prep_set_rows_q8_0(const float * src, const attn_prep_set_rows_args & a, const int head) {
++    const int t = threadIdx.x;
++    if (t < N/QK8_0) {
++        block_q8_0 * dst_row = (block_q8_0 *) (a.dst + a.idx[0]*a.nb1);
++        quantize_f32_q8_0_block(src + N*head + QK8_0*t, dst_row + (N/QK8_0)*head + t);
++    }
++}
++
++// [GGML_HIP_ATTN_PREP] Single-token attention input preparation in one launch, block b:
++//   b <  q.nrows:                  q head b:  rms_norm*mul, rope and normalized FWHT (rms_norm_mul_rope_f32 with the FWHT
++//                                  epilogue, same code),
++//   b <  q.nrows + k.nrows:        k head:    the same, then the q8_0 SET_ROWS of the head's values into the K cache,
++//   else:                          v head:    the normalized FWHT of the row (fwht_row_warp by the first warp as
++//                                  fwht_cuda), then the q8_0 SET_ROWS into the V cache.
++// Every value is formed by the code of the kernels it replaces (rms_norm_mul_rope_f32 x2, fwht_cuda, k_set_rows_quant x2).
++template <bool has_ff, int N>
++__launch_bounds__(256, 1)
++static __global__ void attn_prep_f32(const attn_prep_rope_args q, const attn_prep_rope_args k,
++        const float * v_src, float * v_dst, const float v_scale,
++        const attn_prep_set_rows_args k_set, const attn_prep_set_rows_args v_set) {
++    extern __shared__ float s_sum[];
++    __shared__ float s_row[N];
++
++    int b = blockIdx.x;
++    if (b < q.nrows + k.nrows) {
++        const bool is_k = b >= q.nrows;
++        const attn_prep_rope_args & a = is_k ? k : q;
++        b -= is_k ? q.nrows : 0;
++        rms_norm_mul_rope_f32_rows<256, has_ff, float, N>(b, 0, 1, 0, 1, s_sum, s_row,
++            a.x, a.dst, a.ncols, a.nchannels, a.nsamples, a.s01, a.s02, a.s03, a.s1, a.s2, a.s3, a.eps, a.mul,
++            a.mul_s01, a.mul_s02, a.mul_s03, a.mul_ncols_packed, a.mul_nrows_packed, a.mul_nchannels_packed,
++            a.mul_nsamples_packed, a.n_dims, a.pos, a.freq_scale, a.ext_factor, a.attn_factor, a.corr_dims,
++            a.theta_scale, a.freq_factors, nullptr, 0, a.is_neox, a.multi, a.sections, a.fwht_scale);
++        if (is_k) {
++            // the FWHT output of the head was written by the first warp, the rows function ends with a barrier
++            attn_prep_set_rows_q8_0<N>(a.dst, k_set, b);
++        }
++        return;
++    }
++    b -= q.nrows + k.nrows;
++    if (threadIdx.x < WARP_SIZE) {
++        fwht_row_warp<N>(v_src + b*N, v_dst + b*N, v_scale, threadIdx.x);
++    }
++    __syncthreads();
++    attn_prep_set_rows_q8_0<N>(v_dst, v_set, b);
++}
++
+ template <typename D>
+ static void rms_norm_mul_rope_cuda(
+         const float * x, D * dst,
+@@ -1046,3 +1153,113 @@ void ggml_cuda_op_rms_norm_mul_rope_fused(ggml_backend_cuda_context & ctx,
+         GGML_ABORT("fatal error");
+     }
+ }
++
++// [GGML_HIP_ATTN_PREP] the arguments ggml_cuda_op_rms_norm_mul_rope_fused derives for its FWHT launch
++static attn_prep_rope_args attn_prep_fill_rope_args(const ggml_tensor * rms_norm, const ggml_tensor * mul,
++                                                    const ggml_tensor * rope, ggml_tensor * fwht) {
++    const ggml_tensor * x       = rms_norm->src[0];
++    const ggml_tensor * mul_src = mul->src[0] == rms_norm ? mul->src[1] : mul->src[0];
++
++    attn_prep_rope_args a;
++    memcpy(&a.eps, rms_norm->op_params, sizeof(float));
++    GGML_ASSERT(a.eps >= 0.0f);
++    GGML_ASSERT(x->type == GGML_TYPE_F32 && mul_src->type == GGML_TYPE_F32 && rope->type == GGML_TYPE_F32);
++    GGML_ASSERT(ggml_is_contiguous(rope) && ggml_is_contiguous(fwht) && fwht->type == GGML_TYPE_F32 &&
++                ggml_nelements(fwht) == ggml_nelements(rope));
++
++    const int n_dims     = ((const int32_t *) rope->op_params)[1];
++    const int mode       = ((const int32_t *) rope->op_params)[2];
++    const int n_ctx_orig = ((const int32_t *) rope->op_params)[4];
++    float freq_base;
++    float beta_fast;
++    float beta_slow;
++    memcpy(&freq_base,     (const int32_t *) rope->op_params +  5, sizeof(float));
++    memcpy(&a.freq_scale,  (const int32_t *) rope->op_params +  6, sizeof(float));
++    memcpy(&a.ext_factor,  (const int32_t *) rope->op_params +  7, sizeof(float));
++    memcpy(&a.attn_factor, (const int32_t *) rope->op_params +  8, sizeof(float));
++    memcpy(&beta_fast,     (const int32_t *) rope->op_params +  9, sizeof(float));
++    memcpy(&beta_slow,     (const int32_t *) rope->op_params + 10, sizeof(float));
++    a.multi   = mode == GGML_ROPE_TYPE_IMROPE ? 2 : mode == GGML_ROPE_TYPE_MROPE ? 1 : 0;
++    a.is_neox = (mode & GGML_ROPE_TYPE_NEOX) || a.multi != 0;
++    memcpy(&a.sections.v, (const int32_t *) rope->op_params + 11, sizeof(int)*4);
++    a.n_dims       = n_dims;
++    a.pos          = (const int32_t *) rope->src[1]->data;
++    a.freq_factors = rope->src[2] != nullptr ? (const float *) rope->src[2]->data : nullptr;
++    ggml_rope_yarn_corr_dims(n_dims, n_ctx_orig, freq_base, beta_fast, beta_slow, a.corr_dims.v);
++    a.theta_scale = powf(freq_base, -2.0f/n_dims);
++
++    const size_t ts0 = ggml_type_size(x->type);
++    GGML_ASSERT(x->nb[0] == ts0);
++    a.x         = (const float *) x->data;
++    a.ncols     = x->ne[0];
++    a.nrows     = x->ne[1];
++    a.nchannels = x->ne[2];
++    a.nsamples  = x->ne[3];
++    a.s01 = x->nb[1] / ts0;
++    a.s02 = x->nb[2] / ts0;
++    a.s03 = x->nb[3] / ts0;
++
++    const size_t ts_mul = ggml_type_size(mul_src->type);
++    GGML_ASSERT(mul_src->nb[0] == ts_mul);
++    a.mul     = (const float *) mul_src->data;
++    a.mul_s01 = mul_src->nb[1] / ts_mul;
++    a.mul_s02 = mul_src->nb[2] / ts_mul;
++    a.mul_s03 = mul_src->nb[3] / ts_mul;
++    a.mul_ncols_packed     = init_fastdiv_values(mul_src->ne[0]);
++    a.mul_nrows_packed     = init_fastdiv_values(mul_src->ne[1]);
++    a.mul_nchannels_packed = init_fastdiv_values(mul_src->ne[2]);
++    a.mul_nsamples_packed  = init_fastdiv_values(mul_src->ne[3]);
++
++    const size_t ts_dst = ggml_type_size(rope->type);
++    a.s1 = rope->nb[1] / ts_dst;
++    a.s2 = rope->nb[2] / ts_dst;
++    a.s3 = rope->nb[3] / ts_dst;
++
++    a.dst        = (float *) fwht->data;
++    a.fwht_scale = 1 / sqrtf(rope->ne[0]); // as ggml_cuda_op_fwht
++    return a;
++}
++
++bool ggml_cuda_attn_prep_supported(const ggml_tensor * q_rope, const ggml_tensor * k_rope, const ggml_tensor * v_src,
++                                   const ggml_tensor * k_set_rows, const ggml_tensor * v_set_rows) {
++    const int64_t n = q_rope->ne[0];
++    // one token (one channel/sample), heads of 64 values, contiguous rows, q8_0 caches with I64 row indices
++    const auto one_token = [&](const ggml_tensor * t) {
++        return t->ne[0] == n && t->ne[2] == 1 && t->ne[3] == 1 && ggml_is_contiguous(t);
++    };
++    return n == 64 && one_token(q_rope) && one_token(k_rope) && one_token(v_src) && v_src->type == GGML_TYPE_F32 &&
++           q_rope->ne[1] + k_rope->ne[1] + v_src->ne[1] <= 1024 &&
++           k_set_rows->type == GGML_TYPE_Q8_0 && v_set_rows->type == GGML_TYPE_Q8_0 &&
++           k_set_rows->src[1]->type == GGML_TYPE_I64 && v_set_rows->src[1]->type == GGML_TYPE_I64 &&
++           ggml_nelements(k_set_rows->src[1]) == 1 && ggml_nelements(v_set_rows->src[1]) == 1 &&
++           k_set_rows->ne[0] == k_rope->ne[0]*k_rope->ne[1] && v_set_rows->ne[0] == v_src->ne[0]*v_src->ne[1] &&
++           ggml_nelements(k_set_rows->src[0]) == k_set_rows->ne[0] && ggml_nelements(v_set_rows->src[0]) == v_set_rows->ne[0];
++}
++
++void ggml_cuda_op_attn_prep(ggml_backend_cuda_context & ctx,
++        const ggml_tensor * q_norm, const ggml_tensor * q_mul, const ggml_tensor * q_rope, ggml_tensor * q_fwht,
++        const ggml_tensor * k_norm, const ggml_tensor * k_mul, const ggml_tensor * k_rope, ggml_tensor * k_fwht,
++        const ggml_tensor * v_src, ggml_tensor * v_fwht, ggml_tensor * k_set_rows, ggml_tensor * v_set_rows,
++        const float * k_x, float * k_out, const float * v_x, float * v_out) {
++    GGML_ASSERT(ggml_cuda_attn_prep_supported(q_rope, k_rope, v_src, k_set_rows, v_set_rows));
++    GGML_ASSERT(v_fwht->type == GGML_TYPE_F32 && ggml_is_contiguous(v_fwht) && ggml_nelements(v_fwht) == ggml_nelements(v_src));
++    const attn_prep_rope_args q = attn_prep_fill_rope_args(q_norm, q_mul, q_rope, q_fwht);
++    attn_prep_rope_args k = attn_prep_fill_rope_args(k_norm, k_mul, k_rope, k_fwht);
++    GGML_ASSERT(q.ncols == 64 && k.ncols == 64 && k.s1 == 64 && q.freq_factors == k.freq_factors);
++    // the SET_ROWS sources are the k / v FWHT outputs (views at offset 0)
++    GGML_ASSERT(k_set_rows->src[0]->data == k_fwht->data && v_set_rows->src[0]->data == v_fwht->data);
++    k.x   = k_x;
++    k.dst = k_out;
++
++    const attn_prep_set_rows_args k_set = { (char *) k_set_rows->data, (const int64_t *) k_set_rows->src[1]->data, (int64_t) k_set_rows->nb[1] };
++    const attn_prep_set_rows_args v_set = { (char *) v_set_rows->data, (const int64_t *) v_set_rows->src[1]->data, (int64_t) v_set_rows->nb[1] };
++
++    const int nblocks = q.nrows + k.nrows + (int) v_src->ne[1];
++    const ggml_cuda_kernel_launch_params launch_params = {dim3(nblocks, 1, 1), dim3(256, 1, 1), 32*sizeof(float), ctx.stream()};
++    const float v_scale = 1 / sqrtf(v_src->ne[0]); // as ggml_cuda_op_fwht
++    if (q.freq_factors == nullptr) {
++        ggml_cuda_kernel_launch(attn_prep_f32<false, 64>, launch_params, q, k, v_x, v_out, v_scale, k_set, v_set);
++    } else {
++        ggml_cuda_kernel_launch(attn_prep_f32<true, 64>, launch_params, q, k, v_x, v_out, v_scale, k_set, v_set);
++    }
++}
+diff --git a/ggml/src/ggml-cuda/rope.cuh b/ggml/src/ggml-cuda/rope.cuh
+index bcfe77b2f..d7490effb 100644
+--- a/ggml/src/ggml-cuda/rope.cuh
++++ b/ggml/src/ggml-cuda/rope.cuh
+@@ -12,3 +12,15 @@ void ggml_cuda_op_rope_fused(ggml_backend_cuda_context & ctx, ggml_tensor * dst,
+ // the rope output (see ggml_cuda_op_mul_mat_use_fwht)
+ void ggml_cuda_op_rms_norm_mul_rope_fused(ggml_backend_cuda_context & ctx, ggml_tensor * rms_norm, ggml_tensor * mul, ggml_tensor * rope,
+                                           ggml_tensor * set_rows, ggml_tensor * fwht = nullptr);
++
++// [GGML_HIP_ATTN_PREP] one token, heads of 64: q and k rms_norm*mul + rope + FWHT (as ggml_cuda_op_rms_norm_mul_rope_fused
++// with fwht), the FWHT of v (as the Hadamard MUL_MAT) and the q8_0 SET_ROWS of the k and v FWHT outputs into the KV
++// cache in one launch, bitwise as those launches. The k input, the v input and the k/v FWHT outputs are read/written at
++// k_x, v_x, k_out and v_out instead of the data of their tensors (contiguous, same layout).
++bool ggml_cuda_attn_prep_supported(const ggml_tensor * q_rope, const ggml_tensor * k_rope, const ggml_tensor * v_src,
++                                   const ggml_tensor * k_set_rows, const ggml_tensor * v_set_rows);
++void ggml_cuda_op_attn_prep(ggml_backend_cuda_context & ctx,
++        const ggml_tensor * q_norm, const ggml_tensor * q_mul, const ggml_tensor * q_rope, ggml_tensor * q_fwht,
++        const ggml_tensor * k_norm, const ggml_tensor * k_mul, const ggml_tensor * k_rope, ggml_tensor * k_fwht,
++        const ggml_tensor * v_src, ggml_tensor * v_fwht, ggml_tensor * k_set_rows, ggml_tensor * v_set_rows,
++        const float * k_x, float * k_out, const float * v_x, float * v_out);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 4d64634d2..b2e8bd532 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7879,6 +7879,115 @@ struct test_ffn_gate_up_down : public test_case {
+     }
+ };
+ 
++// single-token attention input of a rotated q8_0 KV cache (LFM2 attention layer): q, v and k matvecs of the input
++// norm, q/k rms_norm*mul + rope + Hadamard MUL_MAT, the Hadamard MUL_MAT of v, SET_ROWS of k and v into the caches,
++// then FLASH_ATTN_EXT over the caches (the HIP backend runs the v/k matvecs first and the rest up to the SET_ROWS in
++// one launch, GGML_HIP_ATTN_PREP)
++struct test_attn_prep : public test_case {
++    const ggml_type type_w;
++    const int64_t   n_head;
++    const int64_t   n_head_kv;
++    const int64_t   kv;
++    const int       mode;
++
++    std::string vars() override {
++        return VARS_TO_STR5(type_w, n_head, n_head_kv, kv, mode);
++    }
++
++    std::string op_desc(ggml_tensor * t) override {
++        GGML_UNUSED(t);
++        return "ATTN_PREP";
++    }
++
++    double max_nmse_err() override {
++        return 5e-4;
++    }
++
++    bool run_whole_graph() override { return true; }
++
++    test_attn_prep(ggml_type type_w = GGML_TYPE_Q5_K, int64_t n_head = 32, int64_t n_head_kv = 8, int64_t kv = 256, int mode = GGML_ROPE_TYPE_NEOX)
++        : type_w(type_w), n_head(n_head), n_head_kv(n_head_kv), kv(kv), mode(mode) {}
++
++    ggml_tensor * build_graph(ggml_context * ctx) override {
++        const int64_t d      = 64;
++        const int64_t n_embd = d*n_head;
++        ggml_tensor * x = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, n_embd, 1);
++        ggml_set_name(x, "x");
++        ggml_tensor * pos = ggml_new_tensor_1d(ctx, GGML_TYPE_I32, 1);
++        ggml_set_name(pos, "pos");
++        ggml_tensor * h = ggml_new_tensor_2d(ctx, GGML_TYPE_F32, d, d);
++        ggml_set_name(h, "hadamard");
++        const auto hadamard = [&](ggml_tensor * t) {
++            t = ggml_mul_mat(ctx, h, ggml_reshape_2d(ctx, t, d, ggml_nelements(t) / d));
++            ggml_mul_mat_set_hint(t, GGML_HINT_SRC0_IS_HADAMARD);
++            return t;
++        };
++        const auto norm_rope = [&](ggml_tensor * t, int64_t nh, const char * name) {
++            ggml_tensor * w = ggml_new_tensor_1d(ctx, GGML_TYPE_F32, d);
++            ggml_set_name(w, name);
++            t = ggml_mul(ctx, ggml_rms_norm(ctx, ggml_reshape_3d(ctx, t, d, nh, 1), 1e-5f), w);
++            return hadamard(ggml_rope(ctx, t, pos, d, mode));
++        };
++        ggml_tensor * wq = ggml_new_tensor_2d(ctx, type_w, n_embd, n_embd);
++        ggml_tensor * wk = ggml_new_tensor_2d(ctx, type_w, n_embd, d*n_head_kv);
++        ggml_tensor * wv = ggml_new_tensor_2d(ctx, GGML_TYPE_Q6_K, n_embd, d*n_head_kv);
++
++        // graph order as in the model: q group, V, v FWHT, K, k group, SET_ROWS k, SET_ROWS v
++        ggml_tensor * q = norm_rope(ggml_mul_mat(ctx, wq, x), n_head, "q_norm");
++        ggml_build_forward_expand(gf, q);
++        ggml_tensor * v = hadamard(ggml_mul_mat(ctx, wv, x));
++        ggml_build_forward_expand(gf, v);
++        ggml_tensor * k = norm_rope(ggml_mul_mat(ctx, wk, x), n_head_kv, "k_norm");
++        ggml_build_forward_expand(gf, k);
++
++        ggml_tensor * k_cache = ggml_new_tensor_2d(ctx, GGML_TYPE_Q8_0, d*n_head_kv, kv);
++        ggml_set_name(k_cache, "k_cache");
++        ggml_tensor * v_cache = ggml_new_tensor_2d(ctx, GGML_TYPE_Q8_0, d*n_head_kv, kv);
++        ggml_set_name(v_cache, "v_cache");
++        ggml_tensor * k_idx = ggml_new_tensor_1d(ctx, GGML_TYPE_I64, 1);
++        ggml_set_name(k_idx, "k_idx");
++        ggml_tensor * v_idx = ggml_new_tensor_1d(ctx, GGML_TYPE_I64, 1);
++        ggml_set_name(v_idx, "v_idx");
++        ggml_tensor * k_set = ggml_set_rows(ctx, k_cache, ggml_view_2d(ctx, k, d*n_head_kv, 1, k->nb[1]*n_head_kv, 0), k_idx);
++        ggml_build_forward_expand(gf, k_set);
++        ggml_tensor * v_set = ggml_set_rows(ctx, v_cache, ggml_view_2d(ctx, v, d*n_head_kv, 1, v->nb[1]*n_head_kv, 0), v_idx);
++        ggml_build_forward_expand(gf, v_set);
++
++        const size_t row = ggml_row_size(GGML_TYPE_Q8_0, d);
++        ggml_tensor * kf = ggml_permute(ctx, ggml_view_3d(ctx, k_set, d, n_head_kv, kv, row, row*n_head_kv, 0), 0, 2, 1, 3);
++        ggml_tensor * vf = ggml_permute(ctx, ggml_view_3d(ctx, v_set, d, n_head_kv, kv, row, row*n_head_kv, 0), 0, 2, 1, 3);
++        ggml_tensor * qf = ggml_permute(ctx, ggml_reshape_3d(ctx, q, d, n_head, 1), 0, 2, 1, 3);
++        ggml_tensor * m = ggml_new_tensor_4d(ctx, GGML_TYPE_F16, kv, 1, 1, 1);
++        ggml_set_name(m, "m");
++        ggml_tensor * out = ggml_flash_attn_ext(ctx, qf, kf, vf, m, 1.0f/sqrtf(d), 0.0f, 0.0f);
++        ggml_set_name(out, "out");
++        return out;
++    }
++
++    void initialize_tensors(ggml_context * ctx) override {
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx); t != NULL; t = ggml_get_next_tensor(ctx, t)) {
++            if (t->type == GGML_TYPE_I64) {
++                init_set_rows_row_ids(t, kv);
++            } else if (t->type == GGML_TYPE_I32) {
++                const int32_t p = rand() % 4096;
++                ggml_backend_tensor_set(t, &p, 0, sizeof(p));
++            } else if (strcmp(t->name, "m") == 0) {
++                init_tensor_kq_mask(t);
++            } else if (strcmp(t->name, "hadamard") == 0) {
++                std::vector<float> data(t->ne[0]*t->ne[0]);
++                for (int64_t r = 0; r < t->ne[0]; r++) {
++                    for (int64_t i = 0; i < t->ne[0]; i++) {
++                        data[r*t->ne[0] + i] = (__builtin_popcountll(r & i) % 2 == 0 ? 1.0f : -1.0f) / sqrtf((float) t->ne[0]);
++                    }
++                }
++                ggml_backend_tensor_set(t, data.data(), 0, ggml_nbytes(t));
++            } else {
++                init_tensor_uniform(t);
++            }
++        }
++    }
++};
++
+ // single-token MoE routing: FFN norm (rms_norm * w) -> F32 router -> gating, top-k, normalized weights, the norm
+ // output also feeding the expert MUL_MAT_ID (norm, router and top-k fused into one launch by the HIP backend,
+ // GGML_HIP_NORM_ROUTER)
+@@ -12604,6 +12713,10 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q4_K, 16, 8, 512, 768));
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_Q8_0, 8, 2, 64, 256));
+     test_cases.emplace_back(new test_moe_down_reduce(GGML_TYPE_IQ4_XS, 32, 6, 1024, 512));
++    // single-token attention input of a rotated q8_0 KV cache (LFM2 24B-A2B: 32 heads, 8 KV heads, D 64)
++    test_cases.emplace_back(new test_attn_prep(GGML_TYPE_Q5_K, 32, 8, 256, GGML_ROPE_TYPE_NEOX));
++    test_cases.emplace_back(new test_attn_prep(GGML_TYPE_Q5_K, 32, 8, 4096, GGML_ROPE_TYPE_NEOX));
++    test_cases.emplace_back(new test_attn_prep(GGML_TYPE_Q4_K, 16, 4, 512, 0));
+     // single-token FFN gate/up -> SWIGLU -> down (LFM2 24B-A2B expert and dense shapes)
+     test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q5_K, true, 64, 4, 2048, 1536));
+     test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q6_K, true, 64, 4, 2048, 1536));
+-- 
+2.43.0
+

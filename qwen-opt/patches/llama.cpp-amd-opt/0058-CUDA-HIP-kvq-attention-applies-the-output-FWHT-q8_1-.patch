@@ -1,0 +1,393 @@
+From 3a1279f951681bf31574757aedacfc610cfa7385 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 17:24:58 +0000
+Subject: [PATCH 58/59] CUDA/HIP: kvq attention applies the output FWHT (+ q8_1
+ for the o projection) in its combine launch (GGML_HIP_KVQ_FWHT)
+
+With a rotated KV cache the attention output goes through a Hadamard MUL_MAT (FWHT kernel) and,
+for the o projection, quantize_q8_1. When the kvq kernel runs with a KV split, its combine launch
+(flash_attn_kvq_combine_fwht) now also does both: the row as flash_attn_combine_results (body
+refactored into flash_attn_combine_results_value, shared), its FWHT by the first warp with
+fwht_row_warp as fwht_cuda, the q8_1 copy with quantize_q8_1_group into the producer target of the
+q8_1 cache. Both the attention output and the FWHT output are still written. 336 -> 316 kernels
+per LFM2 token; combine+FWHT+q8_1 3.1 us vs 1.7 + 1.1 + 1.8 us.
+
+Bitwise: logit hashes of 64 greedy steps unchanged (KV q8_0 kvq depth 0 / 3000 a7ce25b73f887fed /
+b47452b9380b665b, vec a3c06fe69758819e (not fused), KV q4_0 b81cc99db07e6661 (fused too)).
+llama-bench tg128 -r 5, LFM2.5-24B-A2B, KV q8_0, 3 rounds interleaved: 3.928 -> 3.879 ms/token.
+GGML_HIP_KVQ_FWHT=0: separate launches. test-backend-ops: ATTN_PREP now ends with the output
+rotation and the o projection 3/3 (also with the switch off), FLASH_ATTN_EXT 4060/4060.
+---
+ ggml/src/ggml-cuda/fattn-common.cuh |  56 ++++++++------
+ ggml/src/ggml-cuda/fattn-kvq.cu     | 113 ++++++++++++++++++++++------
+ ggml/src/ggml-cuda/fattn-kvq.cuh    |   7 +-
+ ggml/src/ggml-cuda/fattn.cu         |  11 +++
+ ggml/src/ggml-cuda/fattn.cuh        |   6 ++
+ ggml/src/ggml-cuda/ggml-cuda.cu     |  41 ++++++++++
+ tests/test-backend-ops.cpp          |   6 +-
+ 7 files changed, 191 insertions(+), 49 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/fattn-common.cuh b/ggml/src/ggml-cuda/fattn-common.cuh
+index 0a27165fc..551d864e9 100644
+--- a/ggml/src/ggml-cuda/fattn-common.cuh
++++ b/ggml/src/ggml-cuda/fattn-common.cuh
+@@ -919,6 +919,38 @@ static __global__ void flash_attn_stream_k_fixup_general(
+     *dst = dst_val / rowsum;
+ }
+ 
++// The combined value of thread tid (< D) of row j_dst_unrolled, see flash_attn_combine_results. meta: shared memory
++// for 2*parallel_blocks floats.
++template<int D>
++static __device__ __forceinline__ float flash_attn_combine_results_value(
++        const float * GGML_CUDA_RESTRICT VKQ_parts, const float2 * GGML_CUDA_RESTRICT VKQ_meta, float2 * meta,
++        const int parallel_blocks, const int j_dst_unrolled, const int tid) {
++    VKQ_parts += j_dst_unrolled * parallel_blocks*D;
++    VKQ_meta  += j_dst_unrolled * parallel_blocks;
++
++    for (int i = tid; i < 2*parallel_blocks; i += D) {
++        ((float *) meta)[i] = ((const float *)VKQ_meta) [i];
++    }
++
++    __syncthreads();
++
++    float kqmax = meta[0].x;
++    for (int l = 1; l < parallel_blocks; ++l) {
++        kqmax = max(kqmax, meta[l].x);
++    }
++
++    float VKQ_numerator   = 0.0f;
++    float VKQ_denominator = 0.0f;
++    for (int l = 0; l < parallel_blocks; ++l) {
++        const float KQ_max_scale = expf(meta[l].x - kqmax);
++
++        VKQ_numerator   += KQ_max_scale * VKQ_parts[l*D + tid];
++        VKQ_denominator += KQ_max_scale * meta[l].y;
++    }
++
++    return VKQ_numerator / VKQ_denominator;
++}
++
+ template<int D> // D == head size
+ __launch_bounds__(D, 1)
+ static __global__ void flash_attn_combine_results(
+@@ -945,8 +977,6 @@ static __global__ void flash_attn_combine_results(
+ 
+     const int j_dst_unrolled = (sequence*ne01 + col)*ne02 + head;
+ 
+-    VKQ_parts += j_dst_unrolled * parallel_blocks*D;
+-    VKQ_meta  += j_dst_unrolled * parallel_blocks;
+     dst       += j_dst_unrolled *                 D;
+ 
+     const int tid = threadIdx.x;
+@@ -954,27 +984,7 @@ static __global__ void flash_attn_combine_results(
+ 
+     extern __shared__ float2 meta[];
+     ggml_cuda_pdl_sync();
+-    for (int i = tid; i < 2*parallel_blocks; i += D) {
+-        ((float *) meta)[i] = ((const float *)VKQ_meta) [i];
+-    }
+-
+-    __syncthreads();
+-
+-    float kqmax = meta[0].x;
+-    for (int l = 1; l < parallel_blocks; ++l) {
+-        kqmax = max(kqmax, meta[l].x);
+-    }
+-
+-    float VKQ_numerator   = 0.0f;
+-    float VKQ_denominator = 0.0f;
+-    for (int l = 0; l < parallel_blocks; ++l) {
+-        const float KQ_max_scale = expf(meta[l].x - kqmax);
+-
+-        VKQ_numerator   += KQ_max_scale * VKQ_parts[l*D + tid];
+-        VKQ_denominator += KQ_max_scale * meta[l].y;
+-    }
+-
+-    dst[tid] = VKQ_numerator / VKQ_denominator;
++    dst[tid] = flash_attn_combine_results_value<D>(VKQ_parts, VKQ_meta, meta, parallel_blocks, j_dst_unrolled, tid);
+ }
+ 
+ template <int DV, int ncols1, int ncols2>
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
+index f8e40585e..1476ba4f2 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cu
++++ b/ggml/src/ggml-cuda/fattn-kvq.cu
+@@ -1,6 +1,7 @@
+ #include "common.cuh"
+ #include "fattn-common.cuh"
+ #include "fattn-kvq.cuh"
++#include "fwht.cuh"
+ 
+ // FlashAttention for RDNA3 (gfx110x) that reads a q4_0 or q8_0 KV cache directly, intended for small batches (decode and
+ // speculative verify). The Q columns of a K/V head - tokens x GQA heads, flattened into one column index - are
+@@ -580,8 +581,63 @@ static __global__ void flash_attn_ext_kvq(
+ #endif // FATTN_KVQ_AVAILABLE
+ }
+ 
++// [GGML_HIP_KVQ_FWHT] combine launch that also applies the normalized FWHT to each output row (the Hadamard MUL_MAT of
++// a rotated V cache that follows the attention, see ggml_cuda_op_mul_mat_use_fwht) and writes its q8_1 copy (q8 may
++// be nullptr): the row as flash_attn_combine_results, its FWHT as fwht_cuda (fwht_row_warp by the first warp), the
++// q8_1 blocks as the quantize_q8_1 kernel (quantize_q8_1_group).
++template <int D>
++__launch_bounds__(D, 1)
++static __global__ void flash_attn_kvq_combine_fwht(
++        const float * __restrict__ VKQ_parts, const float2 * __restrict__ VKQ_meta, float * __restrict__ dst,
++        const int parallel_blocks, float * __restrict__ fwht_dst, block_q8_1 * __restrict__ q8, const float fwht_scale) {
++    static_assert(D % WARP_SIZE == 0 && D % QK8_1 == 0, "bad D");
++    const int j   = (blockIdx.z*gridDim.x + blockIdx.x)*gridDim.y + blockIdx.y; // as flash_attn_combine_results
++    const int tid = threadIdx.x;
++
++    extern __shared__ float2 meta[]; // parallel_blocks float2, then the D values of the row
++    float * row = (float *) (meta + parallel_blocks);
++    const float v = flash_attn_combine_results_value<D>(VKQ_parts, VKQ_meta, meta, parallel_blocks, j, tid);
++    dst[j*D + tid] = v;
++    row[tid] = v;
++    __syncthreads();
++    if (tid < WARP_SIZE) {
++        fwht_row_warp<D>(row, fwht_dst + j*D, fwht_scale, tid);
++        if (q8 != nullptr) {
++#pragma unroll
++            for (int i = 0; i < D/WARP_SIZE; ++i) {
++                // the value this lane just wrote
++                quantize_q8_1_group(fwht_dst[j*D + i*WARP_SIZE + tid], q8 + (j*D + i*WARP_SIZE)/QK8_1, tid);
++            }
++        }
++    }
++}
++
++// The number of KV splits (blocks along y) and the KV units (nwarps*16 rows) per split.
++template <int nwarps>
++static int ggml_cuda_fattn_kvq_nsplit(const ggml_tensor * dst, const int nsm, int & units_per_split) {
++    const ggml_tensor * Q = dst->src[0];
++    const ggml_tensor * K = dst->src[1];
++    const int gqa_ratio   = Q->ne[2] / K->ne[2];
++    const int ncols_total = Q->ne[1] * gqa_ratio;
++    const int ntiles_x    = (ncols_total + fattn_kvq_ncols - 1) / fattn_kvq_ncols;
++    const int nblocks_z   = K->ne[2] * Q->ne[3];
++
++    // Split the KV sequence so that there are 2 blocks per SM (WGP), fewer longer blocks reduce the overhead of
++    // combining the results. q8_0: 1 block per WGP, the twice as large K/V rows saturate the memory with fewer streams
++    // (LFM2 decode, D 64, 8 KV heads, in the model: 129 us at 98k context with 1 block per WGP, 147 us with 2 or 3,
++    // 162 us with 8 splits = unbalanced; 32k: 47 vs 53 us).
++    const int kv_unit = nwarps*fattn_kvq_nkv;
++    const int nunits  = K->ne[1] / kv_unit;
++    const int blocks_per_sm = K->type == GGML_TYPE_Q8_0 ? 1 : 2;
++    int nsplit = std::max(1, blocks_per_sm*nsm / (ntiles_x*nblocks_z));
++    nsplit = std::min(nsplit, nunits);
++    units_per_split = (nunits + nsplit - 1) / nsplit;
++    return (nunits + units_per_split - 1) / units_per_split;
++}
++
+ template <int D, int nwarps, ggml_type type_KV>
+-static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
++static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, ggml_tensor * dst,
++                                              float * fwht_dst, block_q8_1 * fwht_q8) {
+     const ggml_tensor * Q    = dst->src[0];
+     const ggml_tensor * K    = dst->src[1];
+     const ggml_tensor * V    = dst->src[2];
+@@ -609,18 +665,10 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+ 
+     const auto kernel = flash_attn_ext_kvq<D, nwarps, type_KV>;
+ 
+-    // Split the KV sequence so that there are 2 blocks per SM (WGP), fewer longer blocks reduce the overhead of
+-    // combining the results. q8_0: 1 block per WGP, the twice as large K/V rows saturate the memory with fewer streams
+-    // (LFM2 decode, D 64, 8 KV heads, in the model: 129 us at 98k context with 1 block per WGP, 147 us with 2 or 3,
+-    // 162 us with 8 splits = unbalanced; 32k: 47 vs 53 us).
+-    const int kv_unit = nwarps*fattn_kvq_nkv;
+-    const int nunits  = K->ne[1] / kv_unit;
+-    const int blocks_per_sm = type_KV == GGML_TYPE_Q8_0 ? 1 : 2;
+-    int nsplit = std::max(1, blocks_per_sm*nsm / (ntiles_x*nblocks_z));
+-    nsplit = std::min(nsplit, nunits);
+-    const int units_per_split = (nunits + nsplit - 1) / nsplit;
+-    nsplit = (nunits + units_per_split - 1) / units_per_split;
+-    const int kv_per_split = units_per_split*kv_unit;
++    int units_per_split;
++    const int nsplit       = ggml_cuda_fattn_kvq_nsplit<nwarps>(dst, nsm, units_per_split);
++    const int kv_per_split = units_per_split*nwarps*fattn_kvq_nkv;
++    GGML_ASSERT(fwht_dst == nullptr || nsplit > 1);
+ 
+     ggml_cuda_pool & pool = ctx.pool();
+     ggml_cuda_pool_alloc<float>  dst_tmp(pool);
+@@ -647,10 +695,18 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+     if (nsplit > 1) {
+         const dim3 block_dim_combine(D, 1, 1);
+         const dim3 blocks_num_combine(Q->ne[1], Q->ne[2], Q->ne[3]);
+-        const size_t nbytes_shared_combine = nsplit*sizeof(float2);
+-        ggml_cuda_kernel_launch_params launch_params_combine(blocks_num_combine, block_dim_combine, nbytes_shared_combine, stream);
+-        ggml_cuda_kernel_launch(flash_attn_combine_results<D>, launch_params_combine,
+-            dst_tmp.ptr, dst_tmp_meta.ptr, (float *) dst->data, nsplit);
++        if (fwht_dst != nullptr) {
++            const size_t nbytes_shared_combine = nsplit*sizeof(float2) + D*sizeof(float);
++            ggml_cuda_kernel_launch_params launch_params_combine(blocks_num_combine, block_dim_combine, nbytes_shared_combine, stream);
++            ggml_cuda_kernel_launch(flash_attn_kvq_combine_fwht<D>, launch_params_combine,
++                (const float *) dst_tmp.ptr, (const float2 *) dst_tmp_meta.ptr, (float *) dst->data, nsplit, fwht_dst, fwht_q8,
++                1 / sqrtf(D)); // as ggml_cuda_op_fwht
++        } else {
++            const size_t nbytes_shared_combine = nsplit*sizeof(float2);
++            ggml_cuda_kernel_launch_params launch_params_combine(blocks_num_combine, block_dim_combine, nbytes_shared_combine, stream);
++            ggml_cuda_kernel_launch(flash_attn_combine_results<D>, launch_params_combine,
++                dst_tmp.ptr, dst_tmp_meta.ptr, (float *) dst->data, nsplit);
++        }
+         CUDA_CHECK(cudaGetLastError());
+     }
+ }
+@@ -722,16 +778,25 @@ bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * ds
+     return true;
+ }
+ 
+-void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+-    constexpr int nwarps = 8;
++static constexpr int fattn_kvq_nwarps = 8;
++
++void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst, float * fwht_dst, block_q8_1 * fwht_q8) {
++    constexpr int nwarps = fattn_kvq_nwarps;
+     const bool q8 = dst->src[1]->type == GGML_TYPE_Q8_0;
+     switch (dst->src[1]->ne[0]) {
+-        case  64: q8 ? ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q8_0>(ctx, dst)
+-                     : ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
+-        case 128: q8 ? ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q8_0>(ctx, dst)
+-                     : ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
++        case  64: q8 ? ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q8_0>(ctx, dst, fwht_dst, fwht_q8)
++                     : ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q4_0>(ctx, dst, fwht_dst, fwht_q8); break;
++        case 128: q8 ? ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q8_0>(ctx, dst, fwht_dst, fwht_q8)
++                     : ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q4_0>(ctx, dst, fwht_dst, fwht_q8); break;
+         case 256: GGML_ASSERT(!q8);
+-                  ggml_cuda_flash_attn_ext_kvq_case<256, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
++                  ggml_cuda_flash_attn_ext_kvq_case<256, nwarps, GGML_TYPE_Q4_0>(ctx, dst, fwht_dst, fwht_q8); break;
+         default: GGML_ABORT("fatal error");
+     }
+ }
++
++bool ggml_cuda_flash_attn_ext_kvq_fwht_supported(const ggml_tensor * dst) {
++    const int nsm = ggml_cuda_info().devices[ggml_cuda_get_device()].nsm;
++    int units_per_split;
++    return dst->src[1]->ne[0] <= 128 && ggml_is_contiguous(dst) &&
++           ggml_cuda_fattn_kvq_nsplit<fattn_kvq_nwarps>(dst, nsm, units_per_split) > 1;
++}
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cuh b/ggml/src/ggml-cuda/fattn-kvq.cuh
+index 259cbdb2a..a4a3f28b1 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cuh
++++ b/ggml/src/ggml-cuda/fattn-kvq.cuh
+@@ -5,4 +5,9 @@
+ // FlashAttention for small batches on RDNA3 that reads a q4_0 or q8_0 KV cache directly, see fattn-kvq.cu.
+ bool ggml_cuda_flash_attn_ext_kvq_supported(int cc, const ggml_tensor * dst);
+ 
+-void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
++// fwht_dst != nullptr [GGML_HIP_KVQ_FWHT]: also the normalized FWHT of every output row of D values into fwht_dst (the
++// Hadamard MUL_MAT of a rotated V cache) and, if fwht_q8 != nullptr, its q8_1 copy; needs
++// ggml_cuda_flash_attn_ext_kvq_fwht_supported (the KV split that runs a combine launch, D <= 128)
++void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst,
++                                  float * fwht_dst = nullptr, block_q8_1 * fwht_q8 = nullptr);
++bool ggml_cuda_flash_attn_ext_kvq_fwht_supported(const ggml_tensor * dst);
+diff --git a/ggml/src/ggml-cuda/fattn.cu b/ggml/src/ggml-cuda/fattn.cu
+index 9c4a9363f..44f096ddd 100644
+--- a/ggml/src/ggml-cuda/fattn.cu
++++ b/ggml/src/ggml-cuda/fattn.cu
+@@ -786,3 +786,14 @@ void ggml_cuda_flash_attn_ext(ggml_backend_cuda_context & ctx, ggml_tensor * dst
+ bool ggml_cuda_flash_attn_ext_supported(int device, const ggml_tensor * dst) {
+     return ggml_cuda_get_best_fattn_kernel(device, dst) != BEST_FATTN_KERNEL_NONE;
+ }
++
++bool ggml_cuda_flash_attn_ext_fwht_supported(int device, const ggml_tensor * dst) {
++    return ggml_cuda_get_best_fattn_kernel(device, dst) == BEST_FATTN_KERNEL_KVQ && ggml_cuda_flash_attn_ext_kvq_fwht_supported(dst);
++}
++
++void ggml_cuda_flash_attn_ext_fwht(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * fwht, block_q8_1 * fwht_q8) {
++    ggml_cuda_set_device(ctx.device);
++    GGML_ASSERT(ggml_cuda_flash_attn_ext_fwht_supported(ggml_cuda_get_device(), dst));
++    GGML_ASSERT(fwht->type == GGML_TYPE_F32 && ggml_is_contiguous(fwht) && ggml_nelements(fwht) == ggml_nelements(dst));
++    ggml_cuda_flash_attn_ext_kvq(ctx, dst, (float *) fwht->data, fwht_q8);
++}
+diff --git a/ggml/src/ggml-cuda/fattn.cuh b/ggml/src/ggml-cuda/fattn.cuh
+index f9a7e15fb..8fc1d26cb 100644
+--- a/ggml/src/ggml-cuda/fattn.cuh
++++ b/ggml/src/ggml-cuda/fattn.cuh
+@@ -5,3 +5,9 @@ void ggml_cuda_flash_attn_ext(ggml_backend_cuda_context & ctx, ggml_tensor * dst
+ bool ggml_cuda_flash_attn_ext_supported(int device, const ggml_tensor * dst);
+ 
+ size_t ggml_cuda_flash_attn_ext_get_alloc_size(int device, const ggml_tensor * dst);
++
++// [GGML_HIP_KVQ_FWHT] the attention (RDNA3 kvq kernel with a KV split) and the normalized FWHT of its output rows (the
++// Hadamard MUL_MAT fwht of a rotated V cache, contiguous) plus the q8_1 copy of that (fwht_q8, may be nullptr) in
++// the combine launch
++bool ggml_cuda_flash_attn_ext_fwht_supported(int device, const ggml_tensor * dst);
++void ggml_cuda_flash_attn_ext_fwht(ggml_backend_cuda_context & ctx, ggml_tensor * dst, ggml_tensor * fwht, block_q8_1 * fwht_q8);
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index e2757745a..e20d69fc2 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4609,6 +4609,40 @@ static int ggml_cuda_try_attn_prep(ggml_backend_cuda_context * cuda_ctx, ggml_cg
+     return 4;
+ }
+ 
++// [GGML_HIP_KVQ_FWHT] FLASH_ATTN_EXT followed (views aside) by the Hadamard MUL_MAT of its output (rotated V cache)
++// that only it reads: the kvq attention applies the FWHT (and writes the q8_1 copy for the next matvec) in its combine
++// launch. Returns the nodes to skip, 0: no.
++static int ggml_cuda_try_fa_fwht(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
++    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_KVQ_FWHT");
++    ggml_tensor * fa = cgraph->nodes[i];
++    if (!enabled || fa->op != GGML_OP_FLASH_ATTN_EXT || cuda_ctx->curr_stream_no != 0 ||
++            !cuda_ctx->stream_context().concurrent_events.empty() || (fa->flags & GGML_TENSOR_FLAG_OUTPUT) ||
++            !ggml_cuda_flash_attn_ext_fwht_supported(cuda_ctx->device, fa)) {
++        return 0;
++    }
++    int j = i + 1;
++    while (j < cgraph->n_nodes && ggml_cuda_is_view_or_noop(cgraph->nodes[j])) {
++        ++j;
++    }
++    if (j >= cgraph->n_nodes) {
++        return 0;
++    }
++    ggml_tensor * fwht = cgraph->nodes[j];
++    if (!ggml_cuda_op_mul_mat_use_fwht(fwht) || fwht->src[1]->data != fa->data || fwht->src[0]->ne[0] != fa->ne[0] ||
++            ggml_nelements(fwht) != ggml_nelements(fa) || fwht->src[1]->type != GGML_TYPE_F32 ||
++            (fwht->src[1]->view_src != nullptr && fwht->src[1]->view_src != fa) ||
++            (fwht->src[1]->view_src == nullptr && fwht->src[1] != fa) || (fwht->flags & GGML_TENSOR_FLAG_COMPUTE) == 0) {
++        return 0;
++    }
++    // the attention output and the FWHT output may not overlap (the combine reads the former while writing the latter)
++    if (ggml_cuda_tensors_overlap(fwht, fa)) {
++        return 0;
++    }
++    block_q8_1 * q8 = ggml_cuda_q8_1_producer_target(cuda_ctx, cgraph, j);
++    ggml_cuda_flash_attn_ext_fwht(*cuda_ctx, fa, fwht, q8);
++    return j - i;
++}
++
+ // try and fuse nodes and return the number of nodes to skip; -1: this node is done and no other node is skipped
+ // (it is elided because its result is never read, or a fusion computed it alone)
+ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+@@ -4632,6 +4666,13 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         return -1;
+     }
+ 
++    if (node->op == GGML_OP_FLASH_ATTN_EXT) {
++        const int nodes_to_skip = ggml_cuda_try_fa_fwht(cuda_ctx, cgraph, i);
++        if (nodes_to_skip > 0) {
++            return nodes_to_skip;
++        }
++    }
++
+     if (node->op == GGML_OP_MUL_MAT_ID) {
+         const int nodes_to_skip = ggml_cuda_try_moe_down_reduce(cuda_ctx, cgraph, i);
+         if (nodes_to_skip > 0) {
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index b2e8bd532..4b96f974e 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -7959,7 +7959,11 @@ struct test_attn_prep : public test_case {
+         ggml_tensor * qf = ggml_permute(ctx, ggml_reshape_3d(ctx, q, d, n_head, 1), 0, 2, 1, 3);
+         ggml_tensor * m = ggml_new_tensor_4d(ctx, GGML_TYPE_F16, kv, 1, 1, 1);
+         ggml_set_name(m, "m");
+-        ggml_tensor * out = ggml_flash_attn_ext(ctx, qf, kf, vf, m, 1.0f/sqrtf(d), 0.0f, 0.0f);
++        ggml_tensor * fa = ggml_flash_attn_ext(ctx, qf, kf, vf, m, 1.0f/sqrtf(d), 0.0f, 0.0f);
++        // the output rotation and the o projection (HIP: the FWHT and its q8_1 copy in the attention's combine
++        // launch, GGML_HIP_KVQ_FWHT)
++        ggml_tensor * wo  = ggml_new_tensor_2d(ctx, type_w, n_embd, n_embd);
++        ggml_tensor * out = ggml_mul_mat(ctx, wo, ggml_reshape_2d(ctx, hadamard(fa), n_embd, 1));
+         ggml_set_name(out, "out");
+         return out;
+     }
+-- 
+2.43.0
+

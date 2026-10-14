@@ -1,7 +1,7 @@
 From f6e5de11294657a6ee8ce584c51bd63305776a5d Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 13:25:34 +0000
-Subject: [PATCH 09/54] vulkan: AMD RDNA uses the float matvec path for m <
+Subject: [PATCH 09/59] vulkan: AMD RDNA uses the float matvec path for m <
  4096 above four columns
 
 With 4 rows per workgroup MMVQ leaves the GPU underfilled for small m. RX 7900

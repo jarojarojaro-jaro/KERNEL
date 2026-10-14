@@ -1,0 +1,396 @@
+From 5f6c03fa94876206e57eebd721e5aa9c318a6439 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 14 Oct 2026 17:05:19 +0000
+Subject: [PATCH 55/59] HIP/RDNA3 FA: the kvq decode kernel also reads a q8_0
+ KV cache (GGML_HIP_KVQ_Q8)
+
+q8_0 K/V used to fall back to flash_attn_ext_vec, which fetches every K/V byte once per Q
+head of a GQA group. The kvq kernel (RDNA3 WMMA, all Q heads of a KV head in one pass) now
+has q8_0 instances for D 64 and 128 (D 256 spills registers there and stays on the vec kernel):
+- K: q8_0 values to f16 via 0x6400|(q^0x80) - 1152 (exact), times d (one f16 rounding as q4_0),
+- V: the same into the transposed f16 tile, the lane pair (r, r^2) exchanging the half blocks,
+- half rows of an odd number of 34-byte blocks (D 64) start 2 bytes into a word: the lanes load
+  whole words from the aligned word and select with a per-lane shift (rows must be 4-byte aligned),
+- 1 block per WGP instead of 2 (in the model at 98k context: 129 us vs 147 us per call; 2 or 3
+  blocks per WGP oversubscribe the memory with streams, unbalanced split counts cost more).
+
+Numerics differ from the vec kernel (f16 Q and WMMA with f32 VKQ accumulators instead of q8_1 Q,
+int8 dot products and f16 VKQ accumulators). KLD gate (LFM2.5-24B-A2B Q5_K_M, llama-perplexity
+--kl-divergence, wikitext-2 test, 3 chunks of 16384 tokens, ubatch 1 = the decode kernels, vs
+f16 KV of the same build): q8_0 vec kernel KLD 0.044171 +- 0.001726, same top p 92.248 %
+(two runs bitwise identical); q8_0 kvq 0.044196 +- 0.001775, same top p 92.345 %, RMS dp 4.848 %
+(vec 4.995 %), PPL ratio 1.0026 (vec 1.0138); q4_0 kvq 0.128359, same top p 85.215 %.
+
+llama-bench tg128 -r 5, LFM2.5-24B-A2B, KV q8_0, 3 rounds interleaved, ms/token (off -> on):
+depth 0 4.121 -> 4.099, 8192 4.290 -> 4.206, 32768 4.875 -> 4.526, 98304 6.561 -> 5.462 (+20 % t/s;
+KV q4_0: 4.130 / 4.158 / 4.348 / 4.989). flash_attn per call at 98k: 223.5 us (vec) -> 129 us.
+GGML_HIP_KVQ_Q8=0: the vec kernel. test-backend-ops: new q8_0 small-batch and LFM2-shape cases,
+FLASH_ATTN_EXT 4060/4060.
+---
+ ggml/src/ggml-cuda/fattn-kvq.cu  | 157 ++++++++++++++++++++++++-------
+ ggml/src/ggml-cuda/fattn-kvq.cuh |   2 +-
+ tests/test-backend-ops.cpp       |  25 +++++
+ 3 files changed, 150 insertions(+), 34 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
+index 9334a4574..f8e40585e 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cu
++++ b/ggml/src/ggml-cuda/fattn-kvq.cu
+@@ -2,7 +2,7 @@
+ #include "fattn-common.cuh"
+ #include "fattn-kvq.cuh"
+ 
+-// FlashAttention for RDNA3 (gfx110x) that reads a q4_0 KV cache directly, intended for small batches (decode and
++// FlashAttention for RDNA3 (gfx110x) that reads a q4_0 or q8_0 KV cache directly, intended for small batches (decode and
+ // speculative verify). The Q columns of a K/V head - tokens x GQA heads, flattened into one column index - are
+ // processed in tiles of 16 columns, each tile in a single pass over the compact K/V data. So the KV cache is neither
+ // converted to f16 nor re-read per Q head (e.g. 1-2 tokens with GQA 6 fit a single tile). The KV sequence is split
+@@ -41,7 +41,7 @@ static constexpr float fattn_kvq_rescale_threshold = 8.0f;
+ static constexpr int fattn_kvq_nbytes_VT = 36*2*QK4_0;
+ 
+ static constexpr __host__ __device__ int fattn_kvq_block_bytes(const ggml_type type) {
+-    return type == GGML_TYPE_Q4_0 ? (int) sizeof(block_q4_0) : 0;
++    return type == GGML_TYPE_Q4_0 ? (int) sizeof(block_q4_0) : (type == GGML_TYPE_Q8_0 ? (int) sizeof(block_q8_0) : 0);
+ }
+ 
+ // Bytes of K or V per row that a single lane loads: half of the quantized blocks of the row.
+@@ -51,12 +51,25 @@ static constexpr __host__ __device__ int fattn_kvq_lane_bytes() {
+ }
+ 
+ // Alignment in bytes of the per-lane K/V loads, the K/V data pointers and strides must be multiples of this.
++// q8_0: the lanes load whole 32 bit words from the 4 byte aligned word that holds their first byte (the second half of
++// a row starts 2 bytes into a word if a half row is an odd number of blocks), so the rows must be 4 byte aligned.
+ template <int D, ggml_type type>
+ static constexpr __host__ __device__ int fattn_kvq_lane_align() {
+     constexpr int n = fattn_kvq_lane_bytes<D, type>();
++    if (type == GGML_TYPE_Q8_0) {
++        return 4;
++    }
+     return n % 16 == 0 ? 16 : (n % 8 == 0 ? 8 : (n % 4 == 0 ? 4 : 2));
+ }
+ 
++// 32 bit words of K or V per row and lane held in registers.
++template <int D, ggml_type type>
++static constexpr __host__ __device__ int fattn_kvq_lane_words() {
++    constexpr int n = fattn_kvq_lane_bytes<D, type>();
++    // q8_0 with a half row that is not a multiple of 4 bytes: the bytes [sh, sh + n) of the loaded words, sh = 0 or 2
++    return type == GGML_TYPE_Q8_0 && n % 4 != 0 ? (n + 2 + 3)/4 : (n + 3)/4;
++}
++
+ template <int D, int nwarps>
+ static constexpr __host__ __device__ size_t fattn_kvq_nbytes_shared() {
+     constexpr int ncols = fattn_kvq_ncols;
+@@ -107,6 +120,15 @@ static __device__ __forceinline__ uint32_t fattn_kvq_get_u16(const uint32_t * w,
+     return (w[o/4] >> (8*(o % 4))) & 0xFFFF;
+ }
+ 
++// As above at byte offset o + (sh ? 2 : 0), sh is per lane (q8_0 half rows that start 2 bytes into a word).
++static __device__ __forceinline__ uint32_t fattn_kvq_get_u32(const uint32_t * w, const int o, const bool sh) {
++    return sh ? fattn_kvq_get_u32(w, o + 2) : fattn_kvq_get_u32(w, o);
++}
++
++static __device__ __forceinline__ uint32_t fattn_kvq_get_u16(const uint32_t * w, const int o, const bool sh) {
++    return sh ? fattn_kvq_get_u16(w, o + 2) : fattn_kvq_get_u16(w, o);
++}
++
+ template <int nbytes, int align>
+ static __device__ __forceinline__ void fattn_kvq_load(uint32_t * dst, const char * src) {
+     static_assert(nbytes % align == 0, "bad alignment");
+@@ -164,6 +186,28 @@ static __device__ __forceinline__ void fattn_kvq_dequant_q4_0(const uint32_t * w
+     }
+ }
+ 
++// Packed f16 values of 2 bytes of xu selected by sel, xu holds q8_0 values with the sign bit flipped (128 + q):
++// the magic number 0x6400 turns them into 1024 + 128 + q, the offset 1152 is subtracted exactly.
++static __device__ __forceinline__ uint32_t fattn_kvq_q8_0_h2(const uint32_t xu, const uint32_t sel, const fattn_kvq_h2 d) {
++    const fattn_kvq_h2 h = __builtin_bit_cast(fattn_kvq_h2, __builtin_amdgcn_perm(0x64646464u, xu, sel));
++    return __builtin_bit_cast(uint32_t, (h - (fattn_kvq_h2){1152.0f16, 1152.0f16}) * d);
++}
++
++// Dequantize the q8_0 block at byte offset o (+ 2 if sh) into the WMMA A fragments for its first and second 16 values.
++static __device__ __forceinline__ void fattn_kvq_dequant_q8_0(const uint32_t * w, const int o, const bool sh, fattn_kvq_u8 & lo, fattn_kvq_u8 & hi) {
++    const _Float16 d = __builtin_bit_cast(_Float16, (uint16_t) fattn_kvq_get_u16(w, o, sh));
++    const fattn_kvq_h2 d2 = {d, d};
++#pragma unroll
++    for (int j = 0; j < 4; ++j) {
++        const uint32_t xl = fattn_kvq_get_u32(w, o +  2 + 4*j, sh) ^ 0x80808080u;
++        const uint32_t xh = fattn_kvq_get_u32(w, o + 18 + 4*j, sh) ^ 0x80808080u;
++        lo[2*j + 0] = fattn_kvq_q8_0_h2(xl, 0x04010400u, d2);
++        lo[2*j + 1] = fattn_kvq_q8_0_h2(xl, 0x04030402u, d2);
++        hi[2*j + 0] = fattn_kvq_q8_0_h2(xh, 0x04010400u, d2);
++        hi[2*j + 1] = fattn_kvq_q8_0_h2(xh, 0x04030402u, d2);
++    }
++}
++
+ // Byte offset of row i of a transposed V tile (16 KV values per row), padded to avoid bank conflicts on reads.
+ static __device__ __forceinline__ int fattn_kvq_vt_offset(const int i) {
+     return 32*i + 16*(i >> 2);
+@@ -193,7 +237,7 @@ static __global__ void flash_attn_ext_kvq(
+         const int64_t nb21, const int64_t nb22, const int64_t nb23,
+         const int64_t nb31, const int64_t nb33, const int ne33) {
+ #ifdef FATTN_KVQ_AVAILABLE
+-    static_assert(type_KV == GGML_TYPE_Q4_0, "unsupported KV type");
++    static_assert(type_KV == GGML_TYPE_Q4_0 || type_KV == GGML_TYPE_Q8_0, "unsupported KV type");
+ 
+     constexpr int ncols       = fattn_kvq_ncols;
+     constexpr int nblocks     = D/QK4_0;            // Quantized blocks per row.
+@@ -202,7 +246,11 @@ static __global__ void flash_attn_ext_kvq(
+     constexpr int block_bytes = fattn_kvq_block_bytes(type_KV);
+     constexpr int lane_bytes  = fattn_kvq_lane_bytes<D, type_KV>();
+     constexpr int lane_align  = fattn_kvq_lane_align<D, type_KV>();
+-    constexpr int lane_words  = (lane_bytes + 3)/4;
++    constexpr int lane_words  = fattn_kvq_lane_words<D, type_KV>();
++    // q4_0: the lane's bytes, q8_0: whole words from the word that holds the first byte
++    constexpr int load_bytes  = type_KV == GGML_TYPE_Q8_0 ? 4*lane_words : lane_bytes;
++    // q8_0 with half rows that are not a multiple of 4 bytes: the second half starts 2 bytes into its first word
++    constexpr bool lane_sh    = type_KV == GGML_TYPE_Q8_0 && lane_bytes % 4 != 0;
+     constexpr int stride_Q    = D + 8;              // halves
+     static_assert(nblocks % 2 == 0, "bad D");
+     static_assert(lane_bytes == nblocks_l*block_bytes, "bad lane_bytes");
+@@ -249,12 +297,15 @@ static __global__ void flash_attn_ext_kvq(
+     }
+ 
+     // Lanes that are not read for A by WMMA dequantize the second half of the K blocks of the row:
+-    const char * K_row = K + sequence*nb13 + head_kv*nb12 + r*nb11 + (lane_A ? 0 : nblocks_l)*block_bytes;
++    const bool   K_sh  = lane_sh && !lane_A;
++    const char * K_row = K + sequence*nb13 + head_kv*nb12 + r*nb11 + (lane_A ? 0 : nblocks_l)*block_bytes - (K_sh ? 2 : 0);
+     // For V the halves of the wave split the blocks of the row:
+-    const char * V_row = V + sequence*nb23 + head_kv*nb22 + r*nb21 + h*nblocks_l*block_bytes;
++    const bool   V_sh  = lane_sh && h;
++    const char * V_row = V + sequence*nb23 + head_kv*nb22 + r*nb21 + h*nblocks_l*block_bytes - (V_sh ? 2 : 0);
+ 
+     // V is written to shared memory transposed, as pairs of rows (r, r+2) in the order [0 2 4 ... 14 | 1 3 5 ... 15].
+-    // The lane with (r & 2) == 0 writes the values from the low nibbles, its partner lane ^ 2 those from the high nibbles.
++    // The lane with (r & 2) == 0 writes the first 16 values of the block (q4_0: low nibbles) for both rows, its partner
++    // lane ^ 2 the last 16 (q4_0: high nibbles).
+     const bool     V_row_lo = (r & 2) == 0;
+     const int      V_row_a  = r & ~2;
+     const int      V_slot   = (V_row_a & 1) ? 4 + (V_row_a >> 2) : (V_row_a >> 2);
+@@ -281,32 +332,52 @@ static __global__ void flash_attn_ext_kvq(
+     uint32_t K_raw[lane_words];
+     uint32_t V_raw[lane_words];
+     if (k0_start < kv_end) {
+-        fattn_kvq_load<lane_bytes, lane_align>(K_raw, K_row + k0_start*nb11);
+-        fattn_kvq_load<lane_bytes, lane_align>(V_raw, V_row + k0_start*nb21);
++        fattn_kvq_load<load_bytes, lane_align>(K_raw, K_row + k0_start*nb11);
++        fattn_kvq_load<load_bytes, lane_align>(V_raw, V_row + k0_start*nb21);
+     }
+ 
+     // Dequantize quantized block ib of V of the lane into the transposed f16 tile in buffer ib % 2:
+     auto V_to_lds = [&](const int ib) {
+         char * VT_dst = VT_lds + (ib % 2)*fattn_kvq_nbytes_VT;
+         const int o = ib*block_bytes;
+-        const uint32_t d_self = fattn_kvq_get_u16(V_raw, o);
++        const uint32_t d_self = type_KV == GGML_TYPE_Q8_0 ? fattn_kvq_get_u16(V_raw, o, V_sh) : fattn_kvq_get_u16(V_raw, o);
+         const uint32_t d_pair = fattn_kvq_xor2(d_self);
+         const _Float16 d_a  = __builtin_bit_cast(_Float16, (uint16_t) (V_row_lo ? d_self : d_pair));
+         const _Float16 d_a2 = __builtin_bit_cast(_Float16, (uint16_t) (V_row_lo ? d_pair : d_self));
+-        const fattn_kvq_h2 d_16 = {d_a * 0.0625f16, d_a2 * 0.0625f16};
++        if constexpr (type_KV == GGML_TYPE_Q4_0) {
++            const fattn_kvq_h2 d_16 = {d_a * 0.0625f16, d_a2 * 0.0625f16};
++#pragma unroll
++            for (int j = 0; j < 4; ++j) {
++                const uint32_t x      = fattn_kvq_get_u32(V_raw, o + 2 + 4*j);
++                const uint32_t x_pair = fattn_kvq_xor2(x);
++                const uint32_t m      = (x      << V_shift) & 0xF0F0F0F0u;
++                const uint32_t m_pair = (x_pair << V_shift) & 0xF0F0F0F0u;
++#pragma unroll
++                for (int k = 0; k < 4; ++k) {
++                    const fattn_kvq_h2 v = __builtin_bit_cast(fattn_kvq_h2,
++                        __builtin_amdgcn_perm(m_pair, m, V_sel + k*0x00010001u) | 0x64006400u);
++                    const uint32_t vd = __builtin_bit_cast(uint32_t, (v - (fattn_kvq_h2){1152.0f16, 1152.0f16}) * d_16);
++                    const int i = h*QK4_0 + V_i_nib + 4*j + k;
++                    *(uint32_t *) (VT_dst + fattn_kvq_vt_offset(i) + 4*V_slot) = vd;
++                }
++            }
++        } else {
++            // q8_0: the lane needs words j (V_row_lo) or 4 + j of the values of both rows, it sends the partner the other.
++            const fattn_kvq_h2 d2 = {d_a, d_a2};
+ #pragma unroll
+-        for (int j = 0; j < 4; ++j) {
+-            const uint32_t x      = fattn_kvq_get_u32(V_raw, o + 2 + 4*j);
+-            const uint32_t x_pair = fattn_kvq_xor2(x);
+-            const uint32_t m      = (x      << V_shift) & 0xF0F0F0F0u;
+-            const uint32_t m_pair = (x_pair << V_shift) & 0xF0F0F0F0u;
++            for (int j = 0; j < 4; ++j) {
++                const uint32_t w_lo   = fattn_kvq_get_u32(V_raw, o +  2 + 4*j, V_sh);
++                const uint32_t w_hi   = fattn_kvq_get_u32(V_raw, o + 18 + 4*j, V_sh);
++                const uint32_t x      = (V_row_lo ? w_lo : w_hi) ^ 0x80808080u;
++                const uint32_t x_pair = fattn_kvq_xor2(V_row_lo ? w_hi : w_lo) ^ 0x80808080u;
+ #pragma unroll
+-            for (int k = 0; k < 4; ++k) {
+-                const fattn_kvq_h2 v = __builtin_bit_cast(fattn_kvq_h2,
+-                    __builtin_amdgcn_perm(m_pair, m, V_sel + k*0x00010001u) | 0x64006400u);
+-                const uint32_t vd = __builtin_bit_cast(uint32_t, (v - (fattn_kvq_h2){1152.0f16, 1152.0f16}) * d_16);
+-                const int i = h*QK4_0 + V_i_nib + 4*j + k;
+-                *(uint32_t *) (VT_dst + fattn_kvq_vt_offset(i) + 4*V_slot) = vd;
++                for (int k = 0; k < 4; ++k) {
++                    const fattn_kvq_h2 v = __builtin_bit_cast(fattn_kvq_h2,
++                        __builtin_amdgcn_perm(x_pair, x, V_sel + k*0x00010001u) | 0x64006400u);
++                    const uint32_t vd = __builtin_bit_cast(uint32_t, (v - (fattn_kvq_h2){1152.0f16, 1152.0f16}) * d2);
++                    const int i = h*QK4_0 + V_i_nib + 4*j + k;
++                    *(uint32_t *) (VT_dst + fattn_kvq_vt_offset(i) + 4*V_slot) = vd;
++                }
+             }
+         }
+     };
+@@ -331,7 +402,11 @@ static __global__ void flash_attn_ext_kvq(
+ #pragma unroll
+         for (int ib = 0; ib < nblocks_l; ++ib) {
+             fattn_kvq_u8 A[2];
+-            fattn_kvq_dequant_q4_0(K_raw, ib*block_bytes, A[0], A[1]);
++            if constexpr (type_KV == GGML_TYPE_Q4_0) {
++                fattn_kvq_dequant_q4_0(K_raw, ib*block_bytes, A[0], A[1]);
++            } else {
++                fattn_kvq_dequant_q8_0(K_raw, ib*block_bytes, K_sh, A[0], A[1]);
++            }
+ #pragma unroll
+             for (int other = 0; other < 2; ++other) {
+                 if (other) {
+@@ -354,7 +429,7 @@ static __global__ void flash_attn_ext_kvq(
+                 __builtin_amdgcn_sched_barrier(0);
+             }
+         }
+-        fattn_kvq_load<lane_bytes, lane_align>(K_raw, K_row + k0_next*nb11);
++        fattn_kvq_load<load_bytes, lane_align>(K_raw, K_row + k0_next*nb11);
+ 
+         fattn_kvq_f8 KQ = KQ_part[0] + KQ_part[1];
+ 
+@@ -413,7 +488,7 @@ static __global__ void flash_attn_ext_kvq(
+             if (ib + 1 < nblocks_l) {
+                 V_to_lds(ib + 1);
+             } else {
+-                fattn_kvq_load<lane_bytes, lane_align>(V_raw, V_row + k0_next*nb21);
++                fattn_kvq_load<load_bytes, lane_align>(V_raw, V_row + k0_next*nb21);
+             }
+ 
+             const char * VT_src = VT_lds + (ib % 2)*fattn_kvq_nbytes_VT;
+@@ -535,10 +610,13 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+     const auto kernel = flash_attn_ext_kvq<D, nwarps, type_KV>;
+ 
+     // Split the KV sequence so that there are 2 blocks per SM (WGP), fewer longer blocks reduce the overhead of
+-    // combining the results:
++    // combining the results. q8_0: 1 block per WGP, the twice as large K/V rows saturate the memory with fewer streams
++    // (LFM2 decode, D 64, 8 KV heads, in the model: 129 us at 98k context with 1 block per WGP, 147 us with 2 or 3,
++    // 162 us with 8 splits = unbalanced; 32k: 47 vs 53 us).
+     const int kv_unit = nwarps*fattn_kvq_nkv;
+     const int nunits  = K->ne[1] / kv_unit;
+-    int nsplit = std::max(1, 2*nsm / (ntiles_x*nblocks_z));
++    const int blocks_per_sm = type_KV == GGML_TYPE_Q8_0 ? 1 : 2;
++    int nsplit = std::max(1, blocks_per_sm*nsm / (ntiles_x*nblocks_z));
+     nsplit = std::min(nsplit, nunits);
+     const int units_per_split = (nunits + nsplit - 1) / nsplit;
+     nsplit = (nunits + units_per_split - 1) / units_per_split;
+@@ -577,7 +655,10 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+     }
+ }
+ 
+-static int ggml_cuda_fattn_kvq_get_lane_align(const int D) {
++static int ggml_cuda_fattn_kvq_get_lane_align(const int D, const ggml_type type) {
++    if (type == GGML_TYPE_Q8_0) {
++        return fattn_kvq_lane_align<64, GGML_TYPE_Q8_0>(); // the same for every D
++    }
+     switch (D) {
+         case  64: return fattn_kvq_lane_align< 64, GGML_TYPE_Q4_0>();
+         case 128: return fattn_kvq_lane_align<128, GGML_TYPE_Q4_0>();
+@@ -596,7 +677,13 @@ bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * ds
+     if (!GGML_CUDA_CC_IS_RDNA3_0(cc)) {
+         return false;
+     }
+-    if (K->type != GGML_TYPE_Q4_0 || V->type != GGML_TYPE_Q4_0 || Q->type != GGML_TYPE_F32 || dst->type != GGML_TYPE_F32) {
++    // [GGML_HIP_KVQ_Q8] q8_0 K/V as well (otherwise the vec kernel); different numerics from the vec kernel (f16 Q and
++    // WMMA instead of q8_1 Q and int8 dot products, f32 instead of f16 VKQ accumulators). Not D 256: the q8_0 kernel
++    // spills registers there.
++    static const bool kvq_q8 = ggml_cuda_env_switch("GGML_HIP_KVQ_Q8");
++    const bool type_ok = (K->type == GGML_TYPE_Q4_0 && V->type == GGML_TYPE_Q4_0) ||
++        (kvq_q8 && K->type == GGML_TYPE_Q8_0 && V->type == GGML_TYPE_Q8_0 && K->ne[0] <= 128);
++    if (!type_ok || Q->type != GGML_TYPE_F32 || dst->type != GGML_TYPE_F32) {
+         return false;
+     }
+     const int64_t D = K->ne[0];
+@@ -626,7 +713,7 @@ bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * ds
+         return false;
+     }
+ 
+-    const size_t align = ggml_cuda_fattn_kvq_get_lane_align(D);
++    const size_t align = ggml_cuda_fattn_kvq_get_lane_align(D, K->type);
+     for (const ggml_tensor * t : {K, V}) {
+         if ((uintptr_t) t->data % align != 0 || t->nb[1] % align != 0 || t->nb[2] % align != 0 || t->nb[3] % align != 0) {
+             return false;
+@@ -637,10 +724,14 @@ bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * ds
+ 
+ void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+     constexpr int nwarps = 8;
++    const bool q8 = dst->src[1]->type == GGML_TYPE_Q8_0;
+     switch (dst->src[1]->ne[0]) {
+-        case  64: ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
+-        case 128: ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
+-        case 256: ggml_cuda_flash_attn_ext_kvq_case<256, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
++        case  64: q8 ? ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q8_0>(ctx, dst)
++                     : ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
++        case 128: q8 ? ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q8_0>(ctx, dst)
++                     : ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
++        case 256: GGML_ASSERT(!q8);
++                  ggml_cuda_flash_attn_ext_kvq_case<256, nwarps, GGML_TYPE_Q4_0>(ctx, dst); break;
+         default: GGML_ABORT("fatal error");
+     }
+ }
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cuh b/ggml/src/ggml-cuda/fattn-kvq.cuh
+index 509cbf382..259cbdb2a 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cuh
++++ b/ggml/src/ggml-cuda/fattn-kvq.cuh
+@@ -2,7 +2,7 @@
+ 
+ #include "common.cuh"
+ 
+-// FlashAttention for small batches on RDNA3 that reads a q4_0 KV cache directly, see fattn-kvq.cu.
++// FlashAttention for small batches on RDNA3 that reads a q4_0 or q8_0 KV cache directly, see fattn-kvq.cu.
+ bool ggml_cuda_flash_attn_ext_kvq_supported(int cc, const ggml_tensor * dst);
+ 
+ void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 795ba8853..4f5a29477 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -12296,6 +12296,22 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+         test_cases.emplace_back(new test_flash_attn_ext( 64,  64, 2, {3, 1}, 512, nb, false, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
+     }
+ 
++    // q8_0 KV, the same small-batch cases (RDNA3: the kvq kernel, GGML_HIP_KVQ_Q8) and the LFM2 decode shape (D 64,
++    // 8 KV heads, GQA 4) up to 16 tokens (one tile of 64 Q columns per KV head), also in the KV cache layout
++    for (int64_t nb : { 1, 2, 3, 5, 6, 8 }) {
++        test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 1024, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
++        test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 4096, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 2, 1, 3}));
++        test_cases.emplace_back(new test_flash_attn_ext(128, 128, 2, {8, 2}, 768, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
++        test_cases.emplace_back(new test_flash_attn_ext( 64,  64, 2, {3, 1}, 512, nb, false, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
++    }
++    for (int64_t kv : { 256, 4096, 32768 }) {
++        for (int64_t nb : { 1, 4, 16 }) {
++            test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {4, 1}, kv, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
++            test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {4, 1}, kv, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 2, 1, 3}));
++        }
++    }
++    test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {4, 1}, 98304, 1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 2, 1, 3}));
++
+     // MLA shape: the V cache is a sub-view of the K cache, with quantized KV
+     test_cases.emplace_back(new test_flash_attn_ext(576, 512, 1, {8, 1},  113,   1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 1, 2, 3}, true, true));
+     test_cases.emplace_back(new test_flash_attn_ext(576, 512, 1, {8, 1}, 1024,   1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 1, 2, 3}, true, true));
+@@ -12979,6 +12995,15 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+         }
+     }
+ 
++    // LFM2.5-24B-A2B decode on a q8_0 / q4_0 KV cache (KV cache layout): D 64, 8 KV heads, GQA 4
++    for (int64_t kv : { 8192, 32768, 98304 }) {
++        for (ggml_type type_KV : { GGML_TYPE_Q8_0, GGML_TYPE_Q4_0 }) {
++            test_cases.emplace_back(new test_flash_attn_ext(64, 64, 8, {4, 1}, kv, 1, true, false, 0, 0, GGML_PREC_F32, type_KV, type_KV, {0, 2, 1, 3}));
++        }
++    }
++    // the same with D 128 (q8_0 decode: kvq kernel vs vec kernel)
++    test_cases.emplace_back(new test_flash_attn_ext(128, 128, 8, {4, 1}, 98304, 1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0, {0, 2, 1, 3}));
++
+     for (int kv : { 4096, 8192, 16384,32768, 65536, }) {
+         for (int hs : { 64, 128, 256, 512, 576, }) {
+             const int  hsv    = hs == 576 ? 512 : hs;
+-- 
+2.43.0
+

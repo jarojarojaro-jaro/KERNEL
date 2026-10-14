@@ -7,7 +7,7 @@
 #   qwen        mtp  rocm   ~104 t/s  (default; ~96 t/s with 94k tokens in context)
 #   uncensored  mtp  rocm   ~106 t/s  orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated); VISION=1 adds mmproj
 #   qwen        mtp  vulkan optional backend, slower on long prompts
-#   lfm         none ~240 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072, KV q8_0
+#   lfm         none ~252 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072, KV q8_0
 #   lfm-uncensored    same settings; AtomicChat abliterated LFM2.5-24B-A2B AD-Q5_K_M (refusal edit in blocks 14-39)
 #
 # env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0; q8_0 for lfm),
