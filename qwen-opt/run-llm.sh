@@ -1,13 +1,14 @@
 #!/usr/bin/env bash
 # Start the optimized llama-server on the RX 7900 XTX.
 #
-#   run-llm.sh [qwen|uncensored|lfm] [mtp|dflash|none] [rocm|vulkan]
+#   run-llm.sh [qwen|uncensored|lfm|lfm-uncensored] [mtp|dflash|none] [rocm|vulkan]
 #
 # Measured 2026-10-14 (ROCm, ctx 204800, KV q4_0, MTP n=4 + 64k draft vocab, IQ4_XS draft, 6 EN/PL prompts, T=1):
 #   qwen        mtp  rocm   ~104 t/s  (default; ~96 t/s with 94k tokens in context)
 #   uncensored  mtp  rocm   ~106 t/s  orcarouter Qwen3.8-27B-Uncensored Q4_K_M (abliterated); VISION=1 adds mmproj
 #   qwen        mtp  vulkan optional backend, slower on long prompts
 #   lfm         none ~240 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072, KV q8_0
+#   lfm-uncensored    same settings; AtomicChat abliterated LFM2.5-24B-A2B AD-Q5_K_M (refusal edit in blocks 14-39)
 #
 # env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0; q8_0 for lfm),
 #      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)
@@ -21,17 +22,17 @@ model=${1:-qwen}
 extra_args_raw=${EXTRA_ARGS:-}
 extra_args=(${extra_args_raw//,/ })
 default_spec=mtp
-[ "$model" = lfm ] && default_spec=none
+case $model in lfm|lfm-uncensored) default_spec=none ;; esac
 spec=${2:-$default_spec}
 backend=${3:-rocm}
 ctx_default=204800
-[ "$model" = lfm ] && ctx_default=131072
+case $model in lfm|lfm-uncensored) ctx_default=131072 ;; esac
 ctx=${CTX:-$ctx_default}
 port=${PORT:-8080}
 host=${HOST:-127.0.0.1}
 # LFM has only 10 attention layers, so a q8_0 KV cache costs ~1.4 GB at 131k and buys accuracy
 kv_default=q4_0
-[ "$model" = lfm ] && kv_default=q8_0
+case $model in lfm|lfm-uncensored) kv_default=q8_0 ;; esac
 kv=${KV:-$kv_default}
 effort=${EFFORT:-low}
 mkdir -p "$HOME/qwen-opt/logs"
@@ -44,7 +45,7 @@ case $effort in
     off) think_args=(--reasoning off) ;;
     *) echo "unknown EFFORT: $effort (low|medium|xhigh|off)" >&2; exit 2 ;;
 esac
-[ "$model" = lfm ] && think_args=()
+case $model in lfm|lfm-uncensored) think_args=() ;; esac
 
 models=$HOME/models
 drafter=$models/draft/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
@@ -55,7 +56,8 @@ case $model in
     uncensored) gguf=$models/orca/Qwen3.8-27B-Uncensored-Q4_K_M.gguf
                 [ "${VISION:-0}" = 1 ] && extra_args=(--mmproj "$models/orca/mmproj-Qwen3.8-27B-Uncensored-f16.gguf") ;;
     lfm)        gguf=$models/lfm/LFM2.5-24B-A2B-Q5_K_M.gguf ;;
-    *) echo "unknown model: $model (qwen|uncensored|lfm)" >&2; exit 2 ;;
+    lfm-uncensored) gguf=$models/lfm/LFM2.5-24B-A2B-Uncensored-AD-Q5_K_M.gguf ;;
+    *) echo "unknown model: $model (qwen|uncensored|lfm|lfm-uncensored)" >&2; exit 2 ;;
 esac
 
 case $backend in
