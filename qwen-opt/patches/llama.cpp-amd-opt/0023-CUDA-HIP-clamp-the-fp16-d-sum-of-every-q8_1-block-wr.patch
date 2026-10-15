@@ -1,7 +1,7 @@
 From ba90baf3aafc497e9f35ec527d279f74e15f80c8 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 13:02:23 +0000
-Subject: [PATCH 23/64] CUDA/HIP: clamp the fp16 (d, sum) of every q8_1 block
+Subject: [PATCH 23/65] CUDA/HIP: clamp the fp16 (d, sum) of every q8_1 block
  written to +-65504
 
 One large activation can push a q8_1 block's sum (or amax/127) past the fp16 range; the stored inf times 0 in the

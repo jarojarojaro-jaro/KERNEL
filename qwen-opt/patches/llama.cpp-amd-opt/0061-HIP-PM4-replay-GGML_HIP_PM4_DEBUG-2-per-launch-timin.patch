@@ -1,7 +1,7 @@
 From e5ca00ec48aaad68da7c006d8edbb57d5d318cfa Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 21:22:16 +0000
-Subject: [PATCH 61/64] HIP PM4 replay: GGML_HIP_PM4_DEBUG=2 per-launch timing
+Subject: [PATCH 61/65] HIP PM4 replay: GGML_HIP_PM4_DEBUG=2 per-launch timing
  (GPU timestamps of the tape, host sync/submit, idle between tapes), =3
  per-dispatch durations (pm4trace lines on stderr)
 

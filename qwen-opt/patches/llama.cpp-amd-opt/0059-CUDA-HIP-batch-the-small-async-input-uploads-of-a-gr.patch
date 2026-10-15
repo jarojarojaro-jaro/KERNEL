@@ -1,7 +1,7 @@
 From 9d493cf6e5d4636bef34e815adae37b0a9b40ef2 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 17:40:15 +0000
-Subject: [PATCH 59/64] CUDA/HIP: batch the small async input uploads of a
+Subject: [PATCH 59/65] CUDA/HIP: batch the small async input uploads of a
  graph into one H2D copy + one scatter launch (GGML_HIP_INPUT_BATCH)
 
 A decode step uploaded its 12 graph inputs (LFM2: token embedding row, positions, KQ mask, K/V

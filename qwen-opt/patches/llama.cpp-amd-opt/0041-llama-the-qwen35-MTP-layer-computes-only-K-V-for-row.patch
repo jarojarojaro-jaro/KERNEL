@@ -1,7 +1,7 @@
 From 2b910b22f021b0f99a41b59753431a00704f49ce Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 00:47:22 +0000
-Subject: [PATCH 41/64] llama: the qwen35 MTP layer computes only K/V for rows
+Subject: [PATCH 41/65] llama: the qwen35 MTP layer computes only K/V for rows
  without output (prompt and verify rows of the process() hook)
 
 The speculative process() hook decodes every prompt/verify row through the MTP layer with no outputs; only

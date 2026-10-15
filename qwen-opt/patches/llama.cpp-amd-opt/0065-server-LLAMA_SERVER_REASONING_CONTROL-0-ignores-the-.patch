@@ -1,0 +1,33 @@
+From e9d3ab559591900dc4733b68f8bf2664d61d2352 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 00:26:45 +0000
+Subject: [PATCH 65/65] server: LLAMA_SERVER_REASONING_CONTROL=0 ignores the
+ client reasoning_control flag (the web UI always sends true, which forces the
+ full-vocabulary sampling path)
+
+---
+ tools/server/server-common.cpp | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/tools/server/server-common.cpp b/tools/server/server-common.cpp
+index d364ba898..64d882e5c 100644
+--- a/tools/server/server-common.cpp
++++ b/tools/server/server-common.cpp
+@@ -1466,7 +1466,13 @@ json oaicompat_chat_params_parse(
+             llama_params["reasoning_budget_start_tag"] = chat_params.thinking_start_tag;
+             llama_params["reasoning_budget_end_tags"] = chat_params.thinking_end_tags;
+             llama_params["reasoning_budget_message"] = json_value(body, "reasoning_budget_message", opt.reasoning_budget_message);
+-            llama_params["reasoning_control"] = json_value(body, "reasoning_control", false);
++            // [LLAMA_SERVER_REASONING_CONTROL=0] ignore the client's reasoning_control: the web UI always sends true,
++            // which arms the reasoning-budget sampler (and with it the full-vocabulary sampling path) on every request
++            static const bool allow_reasoning_control = [] {
++                const char * env = getenv("LLAMA_SERVER_REASONING_CONTROL");
++                return !env || atoi(env) != 0;
++            }();
++            llama_params["reasoning_control"] = allow_reasoning_control && json_value(body, "reasoning_control", false);
+         }
+     }
+ 
+-- 
+2.43.0
+

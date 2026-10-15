@@ -1,7 +1,7 @@
 From 53be90b399a7b04757dd7284b7efd81c64c61ff9 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 18:09:44 +0000
-Subject: [PATCH 34/64] llama/ggml: GATED_DELTA_NET_LAG lag info as [n_seqs,
+Subject: [PATCH 34/65] llama/ggml: GATED_DELTA_NET_LAG lag info as [n_seqs,
  4], its first row is the state gather index (one input upload)
 
 ---

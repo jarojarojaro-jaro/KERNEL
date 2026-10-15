@@ -1,7 +1,7 @@
 From 5909da1f1c4b753fd2dc1cab7f0bce164fdf719f Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 15:08:23 +0000
-Subject: [PATCH 54/64] CUDA/HIP: LFM2 shortconv in_proj MMVQ with the fused
+Subject: [PATCH 54/65] CUDA/HIP: LFM2 shortconv in_proj MMVQ with the fused
  conv as per-group ticket tails (GGML_HIP_INPROJ_CONV)
 
 One token: the in_proj MUL_MAT (3 sections of nr rows: x, x2 and gate of the conv) and the fused SSM_CONV of its

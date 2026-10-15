@@ -1,7 +1,7 @@
 From c90db29c631a2603c4baa3e443d646c1d54aea65 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 21:40:33 +0000
-Subject: [PATCH 20/64] speculative + qwen35: greedy MTP drafts as one unrolled
+Subject: [PATCH 20/65] speculative + qwen35: greedy MTP drafts as one unrolled
  draft-chain graph
 
 draft-mtp with greedy drafting (p_min 0, not probabilistic), one MTP head and a reduced draft vocabulary

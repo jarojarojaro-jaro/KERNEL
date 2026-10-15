@@ -1,7 +1,7 @@
 From 5f6c03fa94876206e57eebd721e5aa9c318a6439 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 17:05:19 +0000
-Subject: [PATCH 55/64] HIP/RDNA3 FA: the kvq decode kernel also reads a q8_0
+Subject: [PATCH 55/65] HIP/RDNA3 FA: the kvq decode kernel also reads a q8_0
  KV cache (GGML_HIP_KVQ_Q8)
 
 q8_0 K/V used to fall back to flash_attn_ext_vec, which fetches every K/V byte once per Q
