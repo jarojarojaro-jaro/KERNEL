@@ -12,7 +12,7 @@ standardowa), surowe sekwencje ANSI: 24-bitowe kolory, znaki braille'a i bloki.
   wentylatora, łącze PCIe, aktualny poziom DPM, procesy trzymające GPU (KFD) z ich VRAM.
 - **CPU**: obciążenie każdego z 16 wątków (animowany „equalizer”), suma, load average,
   temperatura Tctl (k10temp), temperatura NVMe, częstotliwość średnia i maksymalna,
-  RAM i swap.
+  RAM (dużymi cyframi obok TOTAL/TCTL/FREQ, pasek z wykresem i w nagłówku) i swap.
 - **Procesy**: top procesów wg CPU (z RSS).
 - **I/O**: przepustowość dysków (odczyt/zapis) i sieci (pobieranie/wysyłanie).
 - **LLM**: gdy działa `llama-server` – nazwa modelu (z `-m` w linii poleceń albo z logu),

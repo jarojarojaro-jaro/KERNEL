@@ -410,11 +410,16 @@ class App:
         tot = A["c.total"]
         t = A["c.temp"]
         fa, fm = A["c.favg"], A["c.fmax"]
+        mt = c.mem_total / GIB or 1
+        ram = A["c.ram"]
         if hero:
-            C.groups.append(self.hero(sec, iw, [
-                ("TOTAL", "%.0f" % tot, "%", tot / 100),
-                ("TCTL", "%.0f" % t if c.temp is not None else "--", "°C", tfrac(t, 30, 95)),
-                ("FREQ", ("%.2f" if iw >= 54 else "%.1f") % (fa / 1000), "GHz", fa / c.fmax)]))
+            items = [("TOTAL", "%.0f" % tot, "%", tot / 100),
+                     ("TCTL", "%.0f" % t if c.temp is not None else "--", "°C", tfrac(t, 30, 95)),
+                     ("FREQ", "%.1f" % (fa / 1000), "GHz", fa / c.fmax),
+                     ("RAM", "%.0f" % ram, "GiB", ram / mt)]
+            if iw < 50:
+                items = [items[0], items[1], items[3]]
+            C.groups.append(self.hero(sec, iw, items))
         if eq:
             levels = [A["c.t%d" % i] / 100 for i in range(n)]
             peaks = self.peaks if len(self.peaks) == n else levels
@@ -444,8 +449,6 @@ class App:
                     xform=lambda v: v - 30.0)
         C.row("FREQ", fa / c.fmax, [("%4.2f" % (fa / 1000), heat(fa / c.fmax)),
                                     (" max %4.2f GHz" % (fm / 1000), SUB)])
-        mt = c.mem_total / GIB or 1
-        ram = A["c.ram"]
         C.row("RAM", ram / mt, [("%5.1f" % ram, heat(ram / mt)), ("/%4.1f GiB" % mt, SUB)])
         if gram:
             C.graph("ram", gram, c.mem_total or 1, "▲%4.1fG" % (h["ram"].peak() / GIB))
@@ -858,6 +861,10 @@ class App:
         right = Line()
         if self.paused:
             right.t("‖ PAUSED  ", WARN)
+        mem = self.s.cpu
+        mt = mem.mem_total or 1
+        right.t("RAM ", SUB).t("%.1f" % (mem.mem_used / GIB), heat(mem.mem_used / mt))
+        right.t("/%.0fG  " % (mt / GIB), SUB)
         right.t("self ", SUB).t("%4.1f%%" % self.self_cpu, VAL).t(" cpu", SUB)
         right.t("  %d fps  " % self.fps, SUB).t(time.strftime("%H:%M:%S"), VAL).t(" ")
         room = W - right.n - 1
