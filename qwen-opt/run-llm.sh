@@ -100,6 +100,12 @@ if [ "$(cat /sys/class/drm/card0/device/power/control)" != on ]; then
     trap 'kill $keepawake 2>/dev/null' EXIT
     sleep 2
 fi
+# The bundled web UI always sends reasoning_control=true (to allow "stop thinking"), which arms the reasoning-budget
+# sampler and turns off the fast top-k sampling path (~0.5 ms/token on LFM). Default the UI's custom JSON to switch it
+# off; outputs are unchanged, only the stop-thinking button stops working. UI_CONFIG= (empty) keeps the UI default.
+ui_config=${UI_CONFIG-'{"customJson":"{\"reasoning_control\": false}"}'}
+ui_args=()
+[ -n "$ui_config" ] && ui_args=(--ui-config "$ui_config")
 
 "$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja --cache-ram 16384 \
-    "${think_args[@]}" --host "$host" --port "$port" --log-file "$log" "${spec_args[@]}" "${extra_args[@]}"
+    "${think_args[@]}" --host "$host" --port "$port" --log-file "$log" "${spec_args[@]}" "${extra_args[@]}" "${ui_args[@]}"
