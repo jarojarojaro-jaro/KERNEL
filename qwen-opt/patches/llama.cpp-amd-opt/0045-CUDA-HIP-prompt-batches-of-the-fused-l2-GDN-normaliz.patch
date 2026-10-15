@@ -1,7 +1,7 @@
 From 575e3d893a331b694dc080e7a7dcdeb412455400 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 02:02:18 +0000
-Subject: [PATCH 45/69] CUDA/HIP: prompt batches of the fused-l2 GDN normalize
+Subject: [PATCH 45/70] CUDA/HIP: prompt batches of the fused-l2 GDN normalize
  q/k once per (head, token) in a pre-pass
 
 The l2_qk kernel repeated the q/k l2 normalization in every warp of a head (32 warps per head at S_v 128), about a

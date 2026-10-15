@@ -1,7 +1,7 @@
 From 72cfa565682390ac7ccf08353e7dd60cf63993fd Mon Sep 17 00:00:00 2001
 From: jaro <jaro@localhost>
 Date: Fri, 9 Oct 2026 16:19:51 +0000
-Subject: [PATCH 02/69] HIP mmvq multi-column: i-quants, Q2_K, per-type rows
+Subject: [PATCH 02/70] HIP mmvq multi-column: i-quants, Q2_K, per-type rows
  per block on RDNA3
 
 ---

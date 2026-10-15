@@ -1,7 +1,7 @@
 From f4f0deae52acde1fa33dfb84a23fee33a00b0580 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Thu, 15 Oct 2026 00:45:27 +0000
-Subject: [PATCH 69/69] common: fast top-k candidates also with a grammar,
+Subject: [PATCH 69/70] common: fast top-k candidates also with a grammar,
  unless grammar_first (LLAMA_SAMPLER_FAST_GRAMMAR)
 
 Tool-calling requests (e.g. a coding agent) carry a lazy tool-call grammar, so every request had a

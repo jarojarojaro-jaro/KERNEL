@@ -1,7 +1,7 @@
 From c36fd2c87bca9b3bc0fe60557f6b79142c666dbd Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Thu, 15 Oct 2026 00:26:45 +0000
-Subject: [PATCH 65/69] server: LLAMA_SERVER_REASONING_CONTROL=0 ignores the
+Subject: [PATCH 65/70] server: LLAMA_SERVER_REASONING_CONTROL=0 ignores the
  client reasoning_control flag (the web UI always sends true, which forces the
  full-vocabulary sampling path); LFM UI-style request 255 -> 291 t/s
 

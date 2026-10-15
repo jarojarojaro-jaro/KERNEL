@@ -1,7 +1,7 @@
 From 6da87d000501c88ed0c251817e1481ed997c3987 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 17:52:46 +0000
-Subject: [PATCH 12/69] CUDA/HIP: bias/residual ADD epilogue for multi-column
+Subject: [PATCH 12/70] CUDA/HIP: bias/residual ADD epilogue for multi-column
  MMVQ
 
 The mul_mat + add fusion was limited to ncols_dst == 1 because the

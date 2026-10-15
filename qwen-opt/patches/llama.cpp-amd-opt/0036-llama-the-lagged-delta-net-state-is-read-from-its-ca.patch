@@ -1,7 +1,7 @@
 From b1a203959e0748c52b708993224fea835f48b847 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 18:23:03 +0000
-Subject: [PATCH 36/69] llama: the lagged delta-net state is read from its
+Subject: [PATCH 36/70] llama: the lagged delta-net state is read from its
  cache row (single cell), no gather index input
 
 ---

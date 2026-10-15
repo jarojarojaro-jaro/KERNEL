@@ -1,7 +1,7 @@
 From 3f8c8ddffb4dbd49c5a2f26db4f193983ac76859 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 17:59:00 +0000
-Subject: [PATCH 33/69] ggml/llama: delta-net speculative rollback by replay of
+Subject: [PATCH 33/70] ggml/llama: delta-net speculative rollback by replay of
  a lagged state (GATED_DELTA_NET_LAG)
 
 The qwen35 GDN verify wrote a full state snapshot per token (5 x 3 MiB per layer at MTP n=4) so that any prefix

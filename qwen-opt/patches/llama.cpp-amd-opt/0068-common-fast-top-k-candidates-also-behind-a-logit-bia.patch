@@ -1,7 +1,7 @@
 From 658cff0b99a392535e78d0405c0fbaaaf264d90c Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Thu, 15 Oct 2026 00:36:27 +0000
-Subject: [PATCH 68/69] common: fast top-k candidates also behind a logit-bias
+Subject: [PATCH 68/70] common: fast top-k candidates also behind a logit-bias
  sampler (LLAMA_SAMPLER_FAST_LOGIT_BIAS)
 
 A "logit_bias" request (or a vocab with suppress tokens) puts a logit-bias sampler first in the chain,

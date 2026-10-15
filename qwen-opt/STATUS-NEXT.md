@@ -1,16 +1,18 @@
 # Gdzie skończyliśmy (2026-10-15) — od tego zaczynamy po powrocie
 
-GPU: testujemy po kolei (1) samplery — ZROBIONE, (2) GDN opt-gdn6, (3) MMQ opt-mmq6.
+Kolejka GPU z rundy 6 przerobiona: (1) samplery — scalone, (2) GDN opt-gdn6 — bitowy, ale zysk w szumie, nie scalony, (3) MMQ epilog — scalony (+2.2% prefill Qwen).
 
-## Stan zainstalowany (`~/llama-opt`, gałąź `amd-opt` @ f4f0deae5, 69 łatek, na GitHubie)
-| model | t/s (spec_sweep 6x3, T=1) |
-|---|---|
-| Qwen3.8-27B UD-Q4_K_XL, MTP | 108.8 |
-| Qwen3.8-27B Uncensored, MTP | 115.3 |
-| LFM2.5-24B-A2B, KV q8_0 | ~292 (llama-bench 295, 98k: 213) |
-| LFM2.5 Uncensored | ~264 |
+## Stan zainstalowany (`~/llama-opt`, gałąź `amd-opt` @ f61994f58, 70 łatek, na GitHubie)
+Finalny pomiar 2026-10-15 (spec_sweep 6 promptów x 3 seedy, T=1, świeży serwer `run-llm.sh <model>`):
+| model | t/s (mediana) | ms/krok |
+|---|---|---|
+| Qwen3.8-27B UD-Q4_K_XL, MTP | 109.0 | 27.74 |
+| Qwen3.8-27B Uncensored, MTP | 115.5 | 26.68 |
+| LFM2.5-24B-A2B, KV q8_0 | 293.7 | 3.41 |
+| LFM2.5 Uncensored, KV q8_0 | 267.3 | 3.74 |
 
-`run-llm.sh` ustawia `LLAMA_SERVER_REASONING_CONTROL=0` (łatka 0065), więc web UI nie spowalnia przez `reasoning_control`.
+Greedy md5 po instalacji = bazy (Qwen plain c4708318…, MTP 6f14e814…, LFM 894e56e4…).
+`run-llm.sh` ustawia `LLAMA_SERVER_REASONING_CONTROL=0` (łatka 0065); od 0066-0069 web UI z budżetem myślenia i narzędzia omp też idą szybką ścieżką.
 
 ## Kolejka GPU
 
@@ -25,14 +27,14 @@ Zmierzone już w oknie GPU 2026-10-15:
 - DFlash2 szeroki blok (n=15) na greedy EN kod / PL proza: 89.7 / 38.3 vs n=6 104.8 / 44.2 t/s — te same tokeny zaakceptowane, 2.5x więcej draftu → **wolniej**. Wynik hipfire (318 t/s) wymaga ich draftera MQ4V2 + promptu bez myślenia; u nas nie powtórzone.
 Niezrobione: tryb „draft 16, verify k” (`LLAMA_DFLASH_BLOCK`), mniejszy słownik głowicy DFlash (commit bbac7d7ae, niezmierzony), maska w kernelu (szacunek ≤0.3%, odpuszczone), kopia logitów (pomiar P6). Komendy P1-P9 w raporcie.
 
-### 3. Runda 6 (CPU, 2026-10-15) — gotowe do testu na GPU, wszystko UNMEASURED
-Łatki: `patches/pending/<gałąź>/`, raporty: `research/round6/`. Każda gałąź od c36fd2c87, każda zmiana z wyłącznikiem.
+### 3. Runda 6 — ZMIERZONE 2026-10-15: MMQ epilog scalony (0070, Qwen pp4096 +2.2%), GDN bitowy ale w szumie (nie scalony). Zostało na GPU: (4) `loo.py run`, (5) `kld_canary.sh`, (6) Kernel Tuner.
+Raporty z wynikami: `research/round6/`. Opis gałęzi (stan sprzed pomiarów):
 | gałąź / worktree | co | dowód offline | wyłącznik |
 |---|---|---|---|
 | `opt-gdn6` `~/wt/gdn6` (b4e819237, 0d89ce56c) | GDN fast: DPP zamiast ds_bpermute, nakładanie tokenów t/t+1, stan b128 przez LDS | emulator symboliczny ISA (`~/wt/gdn6-isa/gdnemu.py`, `gdncmp.py`): każde wyjście = to samo wyrażenie co baza; stary kernel ISA identyczny; 476→423 instr./token | `GGML_HIP_GDN_FAST=0`, `GGML_HIP_GDN_B128=0` |
 | `opt-mmq6` `~/wt/mmq6` (ae1ef6a97) | epilog MMQ Q4_K/Q5_K J≥48: skale f32 raz na k01, akumulator z biasem 0x4B400000, VOPD | Q4_K J=128 pętla 298→243 instr., VALU 237→178, LDS bez zmian (3 bloki/WGP); dowód bitowy w raporcie; szac. +5% pp4096 | `GGML_HIP_MMQ_EPI=0` |
 | `tools6` + `~/qwen-opt/tools/` (kopia `tools/`) | `loo.py` (leave-one-out: 27 env + 2 CLI + 22 build-time + 14 bez wpływu na prędkość), `kld_canary.sh` (kanarki muszą FAIL/PASS), `kt/` (Kernel Tuner: 39 kształtów MMVQ, MoE, GDN) | dry-run / fake data; 53 warianty kt kompilują się; harness = ISA produkcji | — |
-Kolejność na GPU: (1) samplery opt-samp, (2) gdn6: `test-backend-ops -o GATED_DELTA_NET*` fast on/off + greedy md5 Qwen plain/MTP + A/B, (3) mmq6: `-o MUL_MAT` + KLD = 0 + pp512/pp4096 A/B, (4) `loo.py run`, (5) `kld_canary.sh`, (6) Kernel Tuner. Dokładne komendy: `REPORT.md` w każdym worktree i `tools/README.md`.
+Komendy dla (4)-(6): `tools/README.md`.
 
 ### 4. Prompt cache (pomysły, nic nie zrobione)
 Z logów 9 sesji LFM: cache hit 91% tokenów (tura omp ~99.8%, mediana 25 nowych tokenów), prefill 3.8% czasu GPU; pełne przeliczenia tylko na starcie sesji (7–10k tok., ~1.7 s).

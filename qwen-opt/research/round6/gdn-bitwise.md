@@ -172,3 +172,13 @@ What to expect:
 - P4 is the direct GDN number. The round-5 notes put GDN at about 638 µs per verify over 48 layers, which is about 2%
   of a step, so end-to-end gains in P5/P6 will be small and can sit inside the noise.
 - If b128 does not win in P4, it can stay off with `GGML_HIP_GDN_B128=0`, or commit `0d89ce56c` can be dropped.
+
+## GPU results (2026-10-15, MEASURED)
+- P1 test-backend-ops GATED_DELTA_NET*: 67/67 pass for fast, fast without b128, plain.
+- P2 logits (logits_dump, n_rs 0 and 5): md5 identical across all 3 modes (c4040715… / b74b21ce…).
+- P3 greedy md5 (fresh servers): fast, nob128 and plain all = plain c4708318… and MTP 6f14e814… (baselines).
+- P4 rocprofv3 (PM4 off, logits_dump n_rs=5), avg per call: decode/verify kernel 14.49 -> 14.27 us (-1.5%; nob128 14.73),
+  prompt kernel 153.7 -> 132.1 us (-14%; nob128 136.1). 48 layers -> ~10 us per decode step (~0.04% of a 28 ms MTP step).
+- P5 llama-bench Qwen, 2 interleaved rounds: tg128 43.46/43.38 vs 43.40/43.31 (+0.15%), pp512 1051/1044 vs 1043/1037 (+0.7%, sd ±120).
+- Verdict: bitwise confirmed on hardware, gain inside noise end to end. NOT merged into amd-opt (379 lines for ~0.1%);
+  branch kept for a future GDN-heavy workload (long prefill of hybrid models).

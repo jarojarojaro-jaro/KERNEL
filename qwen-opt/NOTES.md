@@ -390,3 +390,9 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 | budżet myślenia 2048 (UI Low/Medium/High) | 256.9 -> 292.9 | 99.3 -> 107.0 |
 | narzędzia (omp, leniwa gramatyka) | 254.2 -> 294.3 | 104.8 -> 113.2 |
 | `logit_bias` | 257.1 -> 292.6 | 98.9 -> 105.4 |
+
+## Runda 6: epilog MMQ (70 łatek, 0070; 2026-10-15), bitowo identyczne
+- 0070 `GGML_HIP_MMQ_EPI`: Q4_K/Q5_K, J≥48, skale f32 raz na krok k01, akumulator WMMA z biasem 0x4B400000 (konwersja int→float jednym `v_add`), wszystkie operacje epilogu w parach VOPD. Pętla Q4_K J=128: 298 → 243 instrukcji, VALU 237 → 178, LDS bez zmian (3 bloki/WGP).
+- Weryfikacja: test-backend-ops MUL_MAT 2486/2486, MUL_MAT_ID 933/933; logity prefillu (2048 tok., ub 512 i 64) bit w bit dla Qwen i LFM; greedy md5 po instalacji = bazy.
+- Wynik (przeplatane): Qwen pp4096 1099.5 → **1123.2 t/s (+2.2%, każda z 3 rund)**, pp512 +1.9%; LFM pp4096 +0.3%. Szczegóły: `research/round6/mmq-epilogue.md`.
+- GDN fast (`opt-gdn6`): bitowo potwierdzony na GPU (test-backend-ops 67/67, logity, greedy md5), kernel prompt −14%, decode −1.5%, ale end-to-end +0.15% tg / +0.7% pp512 (w szumie) — **nie scalony**. Szczegóły: `research/round6/gdn-bitwise.md`.

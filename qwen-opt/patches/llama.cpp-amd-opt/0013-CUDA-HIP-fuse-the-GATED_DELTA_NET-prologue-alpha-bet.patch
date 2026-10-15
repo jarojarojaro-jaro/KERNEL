@@ -1,7 +1,7 @@
 From a180bea041b53040953c2564020c79fd6b8fd86d Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 17:54:12 +0000
-Subject: [PATCH 13/69] CUDA/HIP: fuse the GATED_DELTA_NET prologue (alpha/beta
+Subject: [PATCH 13/70] CUDA/HIP: fuse the GATED_DELTA_NET prologue (alpha/beta
  projections, q/k l2 norm, state gather)
 
 Per GDN layer of qwen35 this removes 8 kernel launches:

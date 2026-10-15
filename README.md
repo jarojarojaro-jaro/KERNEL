@@ -9,7 +9,7 @@ Notatki i research o optymalizacji kerneli GPU pod lokalne AI (LLM), ze szczegó
 | [`reports/Optymalizacja kerneli na AMD.md`](reports/Optymalizacja%20kerneli%20na%20AMD.md) | **Główny raport**: architektura RDNA, ROCm, Vulkan, benchmarki, Strata, przewodnik i ścieżka nauki |
 | [`hardware/rx-7900-xtx.md`](hardware/rx-7900-xtx.md) | Plan pracy pod nasz sprzęt (7900 XTX + RTX 5060 Ti, Ryzen 7 5700X, 64 GB DDR4, Ubuntu Server) i Qwen3.8-27B |
 | [`benchmarks/2026-10-09-rx7900xtx-qwen38-27b.md`](benchmarks/2026-10-09-rx7900xtx-qwen38-27b.md) | Pierwsze pomiary (9 października, Vulkan): Qwen3.8-27B 59 → 92 t/s na krótkich promptach |
-| [`qwen-opt/`](qwen-opt/) | **Aktualny setup (ROCm)**: łatki llama.cpp, launcher, pomiary, research. Qwen3.8-27B 109 t/s, Uncensored 115 t/s, 101 t/s przy 94k kontekstu; LFM2.5-24B-A2B (KV q8_0) 294 t/s, 213 t/s przy 98k |
+| [`qwen-opt/`](qwen-opt/) | **Aktualny setup (ROCm)**: łatki llama.cpp, launcher, pomiary, research. Qwen3.8-27B 109 t/s, Uncensored 115.5 t/s, 101 t/s przy 94k kontekstu; LFM2.5-24B-A2B (KV q8_0) 294 t/s, 213 t/s przy 98k; LFM2.5 Uncensored 267 t/s |
 | [`sources/qwen3.8-27b.md`](sources/qwen3.8-27b.md) | Qwen3.8-27B i wersja Uncensored od OrcaRouter |
 | [`sources/auto-gpu-kernel.md`](sources/auto-gpu-kernel.md) | Analiza repo auto-gpu-kernel (agent piszący kernele, zwycięzca MLSys 2026) |
 | [`research_notes/Optymalizacja kerneli na AMD/`](research_notes/Optymalizacja%20kerneli%20na%20AMD/) | Surowe notatki źródłowe (architektura, ROCm, Vulkan, praktyka, Strata) |

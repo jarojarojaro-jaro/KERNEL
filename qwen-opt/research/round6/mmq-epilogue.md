@@ -155,3 +155,14 @@ P6 (optional). Per-kernel time A/B. Compare the mul_mat_q<Q4_K,128> totals betwe
 cd ~/wt/mmq6 && for e in 0 1; do eval "$G"; flock /tmp/gpu.lock flock /tmp/quiet.lock env GGML_HIP_PM4=0 GGML_HIP_MMQ_EPI=$e $L \
   rocprofv3 --kernel-trace --stats -d $T/prof_epi$e -o run -- inst/bin/llama-bench -m $Q -p 4096 -n 0 -fa 1 -ctk q4_0 -ctv q4_0 -r 1; sleep 45; done
 ```
+
+## GPU results (2026-10-15, MEASURED) — merged into amd-opt as f61994f58 (patch 0070)
+- P1 test-backend-ops: MUL_MAT 2486/2486, MUL_MAT_ID 933/933, EPI=1 and EPI=0.
+- P2 prefill logits (FNV per row, 2048 wikitext tokens): Qwen ub512, Qwen ub64, LFM ub512, LFM ub64 all BITWISE.
+  (P3 KLD skipped: identical logits rows imply KLD 0.)
+- P4 llama-bench, 3 interleaved rounds (Qwen) / 2 (LFM):
+  - Qwen pp4096: EPI=0 1094.8 / 1104.4 / 1099.3 (mean 1099.5), EPI=1 1116.1 / 1132.0 / 1121.6 (mean 1123.2): +2.2%, every round.
+  - Qwen pp512: 1012.7 -> 1031.6 mean (+1.9%, sd ±150 per run).
+  - LFM pp4096: 6172.3 -> 6193.6 (+0.3%).
+- P5 greedy md5 after install in ~/llama-opt: Qwen plain c4708318…, MTP 6f14e814…, LFM 894e56e4… = baselines.
+- Offline estimate was ~5%; measured 2.2% (the VALU is partly hidden behind WMMA by other waves).
