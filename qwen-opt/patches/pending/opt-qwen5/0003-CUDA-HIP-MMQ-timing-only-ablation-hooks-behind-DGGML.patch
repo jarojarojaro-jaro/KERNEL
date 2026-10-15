@@ -1,0 +1,104 @@
+From 48589fbe781791cd3b2f293a909f8983eee1e79f Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 01:03:27 +0000
+Subject: [PATCH 3/7] CUDA/HIP MMQ: timing-only ablation hooks behind
+ -DGGML_MMQ_ABLATION (GGML_MMQ_ABLATE bits: 1 x tile once, 2 y tile once, 4 no
+ vec_dot, 8 no barriers)
+
+Production builds are unchanged (the ablation mode is a constexpr 0 there; device ISA of mmq-instance-q4_k identical
+to c36fd2c87 except source-line constants). The ablation build passes the mode through the unused tmp_fixup pointer
+of the tiling launch. For the P0 question of round 5: what limits the int8 WMMA MMQ tile loop on RDNA3.
+---
+ ggml/src/ggml-cuda/mmq.cuh | 48 ++++++++++++++++++++++++++++++--------
+ 1 file changed, 38 insertions(+), 10 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmq.cuh b/ggml/src/ggml-cuda/mmq.cuh
+index d3e7b75ea..26d11b171 100644
+--- a/ggml/src/ggml-cuda/mmq.cuh
++++ b/ggml/src/ggml-cuda/mmq.cuh
+@@ -906,9 +906,20 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
+ 
+     constexpr int sz = sizeof(block_q8_1_mmq) / sizeof(int);
+ 
++#ifdef GGML_MMQ_ABLATION
++    // timing-only ablation build (wrong results): GGML_MMQ_ABLATE bits 1 = x tile loaded only in the first iteration,
++    // 2 = y tile loaded only in the first iteration, 4 = no vec_dot, 8 = no barriers; passed in tmp_fixup (tiling path)
++    const int ablate = fixup ? 0 : (int) (intptr_t) tmp_fixup;
++#else
++    constexpr int ablate = 0;
++#endif // GGML_MMQ_ABLATION
++
+     for (int kb0 = kb0_start; kb0 < kb0_stop; kb0 += blocks_per_iter) {
+-        load_tiles(x, tile_x, offset_x + kb0, tile_x_max_i, stride_row_x);
+-        {
++        const bool first = kb0 == kb0_start;
++        if (!(ablate & 1) || first) {
++            load_tiles(x, tile_x, offset_x + kb0, tile_x_max_i, stride_row_x);
++        }
++        if (!(ablate & 2) || first) {
+             const int * by0 = y + ncols_y * (kb0 * qk / ne_block) * sz;
+ #pragma unroll
+             for (int l0 = 0; l0 < J * MMQ_TILE_Y_K; l0 += nwarps * warp_size) {
+@@ -918,13 +929,19 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
+             }
+         }
+ 
+-        __syncthreads();
++        if (!(ablate & 8)) {
++            __syncthreads();
++        }
+ 
+-        vec_dot(tile_x, tile_y, sum, 0);
++        if (!(ablate & 4)) {
++            vec_dot(tile_x, tile_y, sum, 0);
++        }
+ 
+-        __syncthreads();
++        if (!(ablate & 8)) {
++            __syncthreads();
++        }
+ 
+-        {
++        if (!(ablate & 2) || first) {
+             const int * by0 = y + ncols_y * ((kb0 * qk / ne_block) * sz + sz);
+ #pragma unroll
+             for (int l0 = 0; l0 < J * MMQ_TILE_Y_K; l0 += nwarps * warp_size) {
+@@ -934,11 +951,17 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
+             }
+         }
+ 
+-        __syncthreads();
++        if (!(ablate & 8)) {
++            __syncthreads();
++        }
+ 
+-        vec_dot(tile_x, tile_y, sum, MMQ_TILE_NE_K);
++        if (!(ablate & 4)) {
++            vec_dot(tile_x, tile_y, sum, MMQ_TILE_NE_K);
++        }
+ 
+-        __syncthreads();
++        if (!(ablate & 8)) {
++            __syncthreads();
++        }
+     }
+ 
+     if (fixup) {
+@@ -1428,8 +1451,13 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
+     const uint3 sample_ratio_fd    = init_fastdiv_values(sample_ratio);
+ 
+     if (!config.stream_k) {
++        float * tmp_fixup_tiling = nullptr;
++#ifdef GGML_MMQ_ABLATION
++        static const int ablate = getenv("GGML_MMQ_ABLATE") ? atoi(getenv("GGML_MMQ_ABLATE")) : 0;
++        tmp_fixup_tiling = (float *) (intptr_t) ablate;
++#endif // GGML_MMQ_ABLATION
+         mul_mat_q<type, J, fallback, prec_src1><<<block_nums_xy_tiling, block_dims, nbytes_shared, stream>>>
+-            (args.x, args.y, args.ids_dst, args.expert_bounds, args.dst, nullptr, args.y_scale,
++            (args.x, args.y, args.ids_dst, args.expert_bounds, args.dst, tmp_fixup_tiling, args.y_scale,
+              blocks_per_ne00_fd, args.nrows_x, args.ncols_dst, args.stride_row_x, args.ncols_y, args.nrows_dst,
+              channel_ratio_fd, nchannels_y_fd, args.stride_channel_x, args.stride_channel_y, args.stride_channel_dst,
+              sample_ratio_fd, nsamples_y_fd, args.stride_sample_x, args.stride_sample_y, args.stride_sample_dst,
+-- 
+2.43.0
+

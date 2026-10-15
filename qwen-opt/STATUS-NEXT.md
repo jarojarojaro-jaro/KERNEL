@@ -36,10 +36,24 @@ Zmierzone już w oknie GPU 2026-10-15:
 - DFlash2 szeroki blok (n=15) na greedy EN kod / PL proza: 89.7 / 38.3 vs n=6 104.8 / 44.2 t/s — te same tokeny zaakceptowane, 2.5x więcej draftu → **wolniej**. Wynik hipfire (318 t/s) wymaga ich draftera MQ4V2 + promptu bez myślenia; u nas nie powtórzone.
 Niezrobione: tryb „draft 16, verify k” (`LLAMA_DFLASH_BLOCK`), mniejszy słownik głowicy DFlash (commit bbac7d7ae, niezmierzony), maska w kernelu (szacunek ≤0.3%, odpuszczone), kopia logitów (pomiar P6). Komendy P1-P9 w raporcie.
 
-### 3. Pomysły na kolejne rundy (z `research/repos/REPOS-PODSUMOWANIE.md`)
-- LFM: narzut PM4 ~40 us/token (czekanie po stronie GPU), spekulacja n-gram po analizie offline unii ekspertów.
-- Oba: leave-one-out 65 łatek, tablice per kształt (Kernel Tuner), thread trace rocprofv3 (ATT).
-- Qwen: tańszy epilog MMQ (bitowo), stan GDN fp16 (zmienia numerykę → KLD + zgoda użytkownika).
+### 3. Runda 6 (CPU, 2026-10-15) — gotowe do testu na GPU, wszystko UNMEASURED
+Łatki: `patches/pending/<gałąź>/`, raporty: `research/round6/`. Każda gałąź od c36fd2c87, każda zmiana z wyłącznikiem.
+| gałąź / worktree | co | dowód offline | wyłącznik |
+|---|---|---|---|
+| `opt-gdn6` `~/wt/gdn6` (b4e819237, 0d89ce56c) | GDN fast: DPP zamiast ds_bpermute, nakładanie tokenów t/t+1, stan b128 przez LDS | emulator symboliczny ISA (`~/wt/gdn6-isa/gdnemu.py`, `gdncmp.py`): każde wyjście = to samo wyrażenie co baza; stary kernel ISA identyczny; 476→423 instr./token | `GGML_HIP_GDN_FAST=0`, `GGML_HIP_GDN_B128=0` |
+| `opt-mmq6` `~/wt/mmq6` (ae1ef6a97) | epilog MMQ Q4_K/Q5_K J≥48: skale f32 raz na k01, akumulator z biasem 0x4B400000, VOPD | Q4_K J=128 pętla 298→243 instr., VALU 237→178, LDS bez zmian (3 bloki/WGP); dowód bitowy w raporcie; szac. +5% pp4096 | `GGML_HIP_MMQ_EPI=0` |
+| `tools6` + `~/qwen-opt/tools/` (kopia `tools/`) | `loo.py` (leave-one-out: 27 env + 2 CLI + 22 build-time + 14 bez wpływu na prędkość), `kld_canary.sh` (kanarki muszą FAIL/PASS), `kt/` (Kernel Tuner: 39 kształtów MMVQ, MoE, GDN) | dry-run / fake data; 53 warianty kt kompilują się; harness = ISA produkcji | — |
+Kolejność na GPU: (1) samplery opt-samp, (2) gdn6: `test-backend-ops -o GATED_DELTA_NET*` fast on/off + greedy md5 Qwen plain/MTP + A/B, (3) mmq6: `-o MUL_MAT` + KLD = 0 + pp512/pp4096 A/B, (4) `loo.py run`, (5) `kld_canary.sh`, (6) Kernel Tuner. Dokładne komendy: `REPORT.md` w każdym worktree i `tools/README.md`.
+
+### 4. Prompt cache (pomysły, nic nie zrobione)
+Z logów 9 sesji LFM: cache hit 91% tokenów (tura omp ~99.8%, mediana 25 nowych tokenów), prefill 3.8% czasu GPU; pełne przeliczenia tylko na starcie sesji (7–10k tok., ~1.7 s).
+- zapis prefiksu na dysk (`--slot-save-path` + slot save/restore) — przetrwa restart serwera;
+- licznik cache hit w REACTOR (CPU);
+- rozjazd w środku rozmowy na modelach hybrydowych (GDN / conv: stanu nie da się cofnąć) → sprawdzić checkpointy kontekstu (`--ctx-checkpoints`) przy regeneracji / edycji / kompaktowaniu omp / szablonie Qwena wycinającym `<think>`.
+
+### 5. Dalsze pomysły
+- LFM: narzut PM4 ~40 us/token, spekulacja n-gram po analizie offline unii ekspertów.
+- thread trace rocprofv3 (ATT); stan GDN fp16 (zmienia numerykę → KLD + zgoda użytkownika); skale x jako f32 w LDS dla MMQ (~2% pętli).
 
 ## Inne
 - Monitor: `reactor` (`~/KERNEL/monitor/`), jasna wersja, ~3.3% jednego rdzenia.

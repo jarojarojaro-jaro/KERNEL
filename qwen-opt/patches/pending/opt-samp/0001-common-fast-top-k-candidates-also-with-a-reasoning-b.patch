@@ -1,0 +1,70 @@
+From bf32386c9c5af6911e42ec45b1db0143618ba36d Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 00:17:45 +0000
+Subject: [PATCH 1/4] common: fast top-k candidates also with a
+ reasoning-budget sampler (LLAMA_SAMPLER_FAST_RBUDGET)
+
+The web UI sends "reasoning_control": true with every request (and thinking_budget_tokens when a
+budget is set), which creates the reasoning-budget sampler; that disabled the LLAMA_SAMPLER_FAST_TOPK
+path, so every token filled and partial-sorted the full candidate array (128000 on LFM2.5, 248320 on
+Qwen3.8, up to 5 times per MTP verify step).
+
+The budget sampler is applied before the chain. Its apply (common/reasoning-budget.cpp) returns without
+touching the candidates unless the state is FORCING (IDLE, COUNTING, WAITING_UTF8 and DONE are
+passthrough; state changes happen only in accept and in common_reasoning_budget_force). In those states
+the chain sees exactly the input it sees without a budget sampler, so the existing fast path (raw top-k,
+or the penalties variant) gives the same candidates, the same token and the same RNG draws. While FORCING
+(all logits but the forced token -> -inf) the state is checked per sampled token in common_sampler_sample
+and the full candidate array is used, so forced tokens, the runtime force from the control endpoint and
+state changes inside an MTP verify step (common_sampler_sample_and_accept_n samples and accepts token by
+token) all take the unchanged slow path. Grammar (also a lazy one) still disables the fast path.
+Off: LLAMA_SAMPLER_FAST_RBUDGET=0 (LLAMA_SAMPLER_FAST_TOPK=0 still turns everything off).
+
+CPU harness (common_sampler_sample with interposed llama_get_logits_ith, slow = LLAMA_SAMPLER_FAST_TOPK=0
+vs fast, same seed, synthetic logits incl. quantized ties, web UI chain edkypmxt T=0.8 k=40 p=0.95
+min_p=0.05, budgets 0/12/20/30/40, reasoning_control, random runtime forces, partial-UTF-8 tokens, MTP
+accept_n with 4 drafts, penalties 1.1): token ids and post-chain candidates (id, logit, p bitwise) equal
+on every vector, in all five states, for vocab 128000 and 248320.
+
+UNMEASURED: end-to-end server A/B (t/s, seeded md5) pending, GPU not available; verified with the CPU harness only.
+---
+ common/sampling.cpp | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index d87bbcce8..9b1f07f10 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -564,12 +564,17 @@ struct common_sampler * common_sampler_init(
+     // [LLAMA_SAMPLER_FAST_TOPK] the chain may start from the top-k candidates if every sampler before the top-k sampler
+     // is a no-op (the same predicates that make llama_sampler_init_* return an empty sampler)
+     // [LLAMA_SAMPLER_FAST_PENALTIES] ... or a penalties sampler with a short window that can only lower logits
++    // [LLAMA_SAMPLER_FAST_RBUDGET] a reasoning-budget sampler changes logits only in the FORCING state (all but the
++    // forced token -> -inf); in every other state its apply returns without touching the candidates, so the fast path
++    // stays exact. common_sampler_sample uses the full candidate array for the tokens sampled while it is FORCING.
+     {
+         const char * env = getenv("LLAMA_SAMPLER_FAST_TOPK");
+         const bool enabled = !env || atoi(env) != 0;
+         const char * env_pen = getenv("LLAMA_SAMPLER_FAST_PENALTIES");
+         const bool enabled_pen = !env_pen || atoi(env_pen) != 0;
+-        if (enabled && !grmr && !rbudget && !has_logit_bias && params.mirostat == 0 && params.n_probs == 0) {
++        const char * env_rb = getenv("LLAMA_SAMPLER_FAST_RBUDGET");
++        const bool enabled_rb = !env_rb || atoi(env_rb) != 0;
++        if (enabled && !grmr && (!rbudget || enabled_rb) && !has_logit_bias && params.mirostat == 0 && params.n_probs == 0) {
+             int32_t idx = 0; // index of cnstr's sampler in the chain (no logit-bias sampler in front of it here)
+             for (const auto & cnstr : params.samplers) {
+                 if (cnstr == COMMON_SAMPLER_TYPE_TOP_K) {
+@@ -785,7 +790,9 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
+     auto & chain = gsmpl->chain;
+     auto & cur_p = gsmpl->cur_p; // initialized by set_logits
+ 
+-    if (gsmpl->fast_top_k <= 0 || !gsmpl->set_logits_top_k(ctx, idx)) {
++    // [LLAMA_SAMPLER_FAST_RBUDGET] a FORCING reasoning budget sets all but the forced token to -inf: full candidates
++    const bool rbudget_forcing = rbudget && common_reasoning_budget_get_state(rbudget) == REASONING_BUDGET_FORCING;
++    if (gsmpl->fast_top_k <= 0 || rbudget_forcing || !gsmpl->set_logits_top_k(ctx, idx)) {
+         gsmpl->set_logits(ctx, idx);
+     }
+ 
+-- 
+2.43.0
+

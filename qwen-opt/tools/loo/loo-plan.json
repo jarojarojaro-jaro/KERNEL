@@ -1,0 +1,2322 @@
+{
+ "repo": "/home/jaro/llama-master",
+ "base": "e60eff95f",
+ "head": "c36fd2c87",
+ "patches": [
+  {
+   "n": 1,
+   "sha": "95a0c83d6",
+   "subject": "HIP mmvq: multi-column (2-8) vec_dot for RDNA3 with wide contiguous loads (Q4_K/Q5_K/Q6_K/IQ4_XS/IQ4_NL)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "multi-column MMVQ (MTP verify)",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "revert_blockers": [
+    "02",
+    "03",
+    "05",
+    "12",
+    "13",
+    "16",
+    "21",
+    "22",
+    "24",
+    "25",
+    "28",
+    "37",
+    "49",
+    "51",
+    "52",
+    "54",
+    "56",
+    "62",
+    "63",
+    "64"
+   ]
+  },
+  {
+   "n": 2,
+   "sha": "72cfa5656",
+   "subject": "HIP mmvq multi-column: i-quants, Q2_K, per-type rows per block on RDNA3",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "multi-column MMVQ i-quants/Q2_K",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "revert_blockers": [
+    "03",
+    "05",
+    "12",
+    "13",
+    "16",
+    "21",
+    "22",
+    "24",
+    "25",
+    "28",
+    "37",
+    "49",
+    "51",
+    "52",
+    "54",
+    "56",
+    "62",
+    "63",
+    "64"
+   ]
+  },
+  {
+   "n": 3,
+   "sha": "3a05006a0",
+   "subject": "CUDA/HIP mmvq: reuse q8_1 activations across consecutive MUL_MATs with the same src1",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml-cuda/vendors/hip.h"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "q8_1 activation reuse",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "revert_blockers": [
+    "05",
+    "12",
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "19",
+    "21",
+    "22",
+    "23",
+    "24",
+    "25",
+    "27",
+    "28",
+    "33",
+    "37",
+    "38",
+    "49",
+    "50",
+    "51",
+    "52",
+    "53",
+    "54",
+    "56",
+    "57",
+    "58",
+    "59",
+    "60",
+    "62",
+    "63",
+    "64"
+   ]
+  },
+  {
+   "n": 4,
+   "sha": "3b15c2b6d",
+   "subject": "MTP: optional reduced-vocabulary draft LM head (--spec-draft-vocab)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [
+    "LLAMA_ARG_SPEC_DRAFT_VOCAB",
+    "LLAMA_ARG_SPEC_DRAFT_VOCAB_N"
+   ],
+   "files": [
+    "common/arg.cpp",
+    "common/common.h",
+    "common/speculative.cpp",
+    "include/llama.h",
+    "src/llama-model.cpp",
+    "src/llama-model.h",
+    "src/models/qwen35.cpp"
+   ],
+   "cat": "cli",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "cli_drop": [
+    "--spec-draft-vocab",
+    "--spec-draft-vocab-n"
+   ],
+   "why": "reduced-vocabulary draft head; OFF = full-vocabulary draft head",
+   "active": true,
+   "env_unused": []
+  },
+  {
+   "n": 5,
+   "sha": "8af9de8f8",
+   "subject": "mmvq: drop local tuning include",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "nonspeed",
+   "why": "build hygiene (drops a local tuning include)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 6,
+   "sha": "68e163cf4",
+   "subject": "vulkan: AMD RDNA small-M matvec uses float path with 256-thread workgroups (ssm_alpha/beta 13.6 -> 8.6 us)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-vulkan/ggml-vulkan.cpp"
+   ],
+   "cat": "nonspeed",
+   "why": "Vulkan backend only (not in the ROCm path)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 7,
+   "sha": "afbb23886",
+   "subject": "vulkan: MMVQ fast path for Q4_K/Q5_K/Q6_K/IQ4_XS with hoisted per-thread chunk decoding",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-vulkan/ggml-vulkan.cpp",
+    "ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq.comp",
+    "ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq_funcs.glsl"
+   ],
+   "cat": "nonspeed",
+   "why": "Vulkan backend only (not in the ROCm path)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 8,
+   "sha": "81e5fb913",
+   "subject": "vulkan: AMD RDNA uses the integer-dot MMVQ path for Q6_K from four columns on",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-vulkan/ggml-vulkan.cpp"
+   ],
+   "cat": "nonspeed",
+   "why": "Vulkan backend only (not in the ROCm path)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 9,
+   "sha": "f6e5de112",
+   "subject": "vulkan: AMD RDNA uses the float matvec path for m < 4096 above four columns",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-vulkan/ggml-vulkan.cpp"
+   ],
+   "cat": "nonspeed",
+   "why": "Vulkan backend only (not in the ROCm path)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 10,
+   "sha": "6c7801bf6",
+   "subject": "vulkan: RDNA3/4 MMVQ uses 2 rows per workgroup at eight columns",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-vulkan/ggml-vulkan.cpp"
+   ],
+   "cat": "nonspeed",
+   "why": "Vulkan backend only (not in the ROCm path)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 11,
+   "sha": "40c9bacdc",
+   "subject": "HIP FA: RDNA3 kernel reading the q4_0 KV cache directly for small batches",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/fattn-kvq.cu",
+    "ggml/src/ggml-cuda/fattn-kvq.cuh",
+    "ggml/src/ggml-cuda/fattn.cu",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "FA kvq kernel for q4_0 KV (Qwen KV q4_0)",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/fattn-kvq.cu",
+    "ggml/src/ggml-cuda/fattn-kvq.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "revert_blockers": [
+    "12",
+    "13",
+    "14",
+    "17",
+    "19",
+    "20",
+    "24",
+    "27",
+    "33",
+    "34",
+    "37",
+    "38",
+    "42",
+    "44",
+    "51",
+    "53",
+    "54",
+    "55",
+    "56",
+    "57",
+    "58"
+   ]
+  },
+  {
+   "n": 12,
+   "sha": "6da87d000",
+   "subject": "CUDA/HIP: bias/residual ADD epilogue for multi-column MMVQ",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "bias/residual ADD epilogue, multi-column MMVQ",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "tests/test-backend-ops.cpp"
+   ],
+   "revert_blockers": [
+    "13",
+    "14",
+    "15",
+    "16",
+    "17",
+    "19",
+    "20",
+    "21",
+    "22",
+    "24",
+    "25",
+    "27",
+    "28",
+    "33",
+    "34",
+    "37",
+    "38",
+    "42",
+    "44",
+    "49",
+    "50",
+    "51",
+    "52",
+    "53",
+    "54",
+    "55",
+    "56",
+    "57",
+    "58",
+    "59",
+    "60",
+    "62",
+    "63",
+    "64"
+   ]
+  },
+  {
+   "n": 13,
+   "sha": "a180bea04",
+   "subject": "CUDA/HIP: fuse the GATED_DELTA_NET prologue (alpha/beta projections, q/k l2 norm, state gather)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/gated_delta_net.cu",
+    "ggml/src/ggml-cuda/gated_delta_net.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml-cuda/mmvq.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "GDN prologue fusion",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/gated_delta_net.cu",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml-cuda/mmvq.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "revert_blockers": [
+    "14",
+    "15",
+    "16",
+    "17",
+    "19",
+    "20",
+    "21",
+    "22",
+    "24",
+    "25",
+    "27",
+    "28",
+    "33",
+    "34",
+    "35",
+    "37",
+    "38",
+    "42",
+    "44",
+    "45",
+    "49",
+    "50",
+    "51",
+    "52",
+    "53",
+    "54",
+    "55",
+    "56",
+    "57",
+    "58",
+    "59",
+    "60",
+    "62",
+    "63",
+    "64"
+   ]
+  },
+  {
+   "n": 14,
+   "sha": "92b14b8b2",
+   "subject": "CUDA/HIP: fold the conv-state concat, snapshot copies and gather into SSM_CONV",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "conv-state concat/snapshots folded into SSM_CONV",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "revert_blockers": [
+    "15",
+    "17",
+    "19",
+    "20",
+    "24",
+    "27",
+    "28",
+    "33",
+    "34",
+    "37",
+    "38",
+    "42",
+    "44",
+    "49",
+    "50",
+    "51",
+    "53",
+    "54",
+    "55",
+    "56",
+    "57",
+    "58",
+    "59",
+    "60"
+   ]
+  },
+  {
+   "n": 15,
+   "sha": "b9db88004",
+   "subject": "CUDA/HIP: write the q8_1 MMVQ activations from the producing norm/GLU/unary*mul kernels",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/norm.cu",
+    "ggml/src/ggml-cuda/norm.cuh",
+    "ggml/src/ggml-cuda/unary.cu",
+    "ggml/src/ggml-cuda/unary.cuh"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "q8_1 activations written by norm/GLU/unary*mul",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/norm.cu"
+   ],
+   "revert_blockers": [
+    "17",
+    "19",
+    "23",
+    "24",
+    "25",
+    "27",
+    "28",
+    "33",
+    "37",
+    "38",
+    "49",
+    "50",
+    "51",
+    "53",
+    "54",
+    "56",
+    "57",
+    "58",
+    "59",
+    "60"
+   ]
+  },
+  {
+   "n": 16,
+   "sha": "ca4cccedb",
+   "subject": "CUDA/HIP: GDN alpha/beta MMVQ templated on the token count",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "GDN alpha/beta MMVQ templated on token count",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "revert_blockers": [
+    "21",
+    "22",
+    "24",
+    "25",
+    "28",
+    "37",
+    "49",
+    "51",
+    "52",
+    "54",
+    "56",
+    "62",
+    "63",
+    "64"
+   ]
+  },
+  {
+   "n": 17,
+   "sha": "a7e951497",
+   "subject": "CUDA/HIP + qwen35: fuse IMROPE/MROPE into RMS_NORM+MUL+ROPE, drop the attention gate copy",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/rope.cu",
+    "src/models/qwen35.cpp",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "IMROPE fused into RMS_NORM+MUL+ROPE",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/rope.cu",
+    "src/models/qwen35.cpp"
+   ],
+   "revert_blockers": [
+    "19",
+    "20",
+    "24",
+    "39",
+    "41",
+    "57"
+   ]
+  },
+  {
+   "n": 18,
+   "sha": "919080dca",
+   "subject": "CUDA/HIP: fix race in flash_attn_ext_f16_process_tile when nbatch_combine != DKQ/2 (cherry-pick of upstream #30103)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/fattn-mma-f16.cuh"
+   ],
+   "cat": "nonspeed",
+   "why": "correctness fix (FA race, upstream cherry-pick)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 19,
+   "sha": "b1f8c19ac",
+   "subject": "CUDA/HIP: fold the q/k Hadamard rotation of a rotated KV cache into RMS_NORM+MUL+ROPE",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/fwht.cu",
+    "ggml/src/ggml-cuda/fwht.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/rope.cu",
+    "ggml/src/ggml-cuda/rope.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "q/k Hadamard rotation folded into norm+rope",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/rope.cu",
+    "ggml/src/ggml-cuda/rope.cuh"
+   ],
+   "revert_blockers": [
+    "24",
+    "27",
+    "28",
+    "33",
+    "37",
+    "38",
+    "49",
+    "50",
+    "51",
+    "53",
+    "54",
+    "56",
+    "57",
+    "58",
+    "59",
+    "60"
+   ]
+  },
+  {
+   "n": 20,
+   "sha": "c90db29c6",
+   "subject": "speculative + qwen35: greedy MTP drafts as one unrolled draft-chain graph",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "common/arg.cpp",
+    "common/speculative.cpp",
+    "src/llama-context.cpp",
+    "src/llama-context.h",
+    "src/llama-cparams.h",
+    "src/llama-ext.h",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-kv-cache.cpp",
+    "src/llama-model.cpp",
+    "src/llama-model.h",
+    "src/models/qwen35.cpp",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "MTP draft chain graph (no switch; p_min>0 is not equivalent)",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "common/speculative.cpp",
+    "src/llama-context.cpp",
+    "src/llama-context.h",
+    "src/llama-cparams.h",
+    "src/llama-ext.h",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-kv-cache.cpp",
+    "src/llama-model.cpp",
+    "src/models/qwen35.cpp"
+   ],
+   "revert_blockers": [
+    "24",
+    "29",
+    "30",
+    "32",
+    "33",
+    "34",
+    "36",
+    "38",
+    "39",
+    "41",
+    "46",
+    "47"
+   ]
+  },
+  {
+   "n": 21,
+   "sha": "60ce2a71f",
+   "subject": "HIP/RDNA3 multi-column MMVQ: buffer-resource loads, per-type occupancy, Q6_K pipelining, transposed DPP reduction",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "multi-column MMVQ buffer loads/occupancy/DPP",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "revert_blockers": [
+    "22",
+    "24",
+    "25",
+    "28",
+    "37",
+    "49",
+    "51",
+    "52",
+    "54",
+    "56",
+    "62",
+    "63",
+    "64"
+   ]
+  },
+  {
+   "n": 22,
+   "sha": "9f83f1f81",
+   "subject": "HIP/RDNA3 multi-column MMVQ: stream weight loads past the per-CU caches (GLC|DLC)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "multi-column MMVQ GLC|DLC streaming",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": true,
+   "revert_conflicts": []
+  },
+  {
+   "n": 23,
+   "sha": "ba90baf3a",
+   "subject": "CUDA/HIP: clamp the fp16 (d, sum) of every q8_1 block written to +-65504",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/fattn-common.cuh",
+    "ggml/src/ggml-cuda/quantize.cu"
+   ],
+   "cat": "nonspeed",
+   "why": "correctness fix (fp16 clamp of q8_1 d/sum)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 24,
+   "sha": "15db6f979",
+   "subject": "CUDA/HIP: MMVQ pair launch for two products of the same src1 (GGML_HIP_MMVQ_PAIR)",
+   "msg_env": [
+    "GGML_HIP_MMVQ_PAIR"
+   ],
+   "diff_env": [
+    "GGML_HIP_MMVQ_PAIR"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "src/models/qwen35.cpp",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_MMVQ_PAIR": "0"
+   },
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_MMVQ_PAIR": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:5432"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 25,
+   "sha": "813fa7c34",
+   "subject": "CUDA/HIP: unrolled rms_norm*mul(+q8_1) for 2048..8192-column rows, DPP reductions (GGML_HIP_NORM_FAST)",
+   "msg_env": [
+    "GGML_HIP_NORM_FAST"
+   ],
+   "diff_env": [
+    "GGML_HIP_NORM_FAST"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml-cuda/norm.cu"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_NORM_FAST": "0"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_NORM_FAST": [
+     "ggml/src/ggml-cuda/norm.cu:287"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 26,
+   "sha": "bc0da48dd",
+   "subject": "CUDA/HIP: argmax with 16 loads in flight and DPP exchanges (GGML_HIP_ARGMAX_FAST)",
+   "msg_env": [
+    "GGML_HIP_ARGMAX_FAST"
+   ],
+   "diff_env": [
+    "GGML_HIP_ARGMAX_FAST"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/argmax.cu"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_ARGMAX_FAST": "0"
+   },
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "GPU argmax: MTP greedy drafts",
+   "active": true,
+   "env_found": {
+    "GGML_HIP_ARGMAX_FAST": [
+     "ggml/src/ggml-cuda/argmax.cu:134"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 27,
+   "sha": "006490a99",
+   "subject": "CUDA/HIP: GDN gated output norm silu(z) * (rms_norm(x) * w) + q8_1 in one launch (GGML_HIP_NORM_GATE)",
+   "msg_env": [
+    "GGML_HIP_NORM_GATE"
+   ],
+   "diff_env": [
+    "GGML_HIP_NORM_GATE"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/norm.cu",
+    "ggml/src/ggml-cuda/norm.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_NORM_GATE": "0"
+   },
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_NORM_GATE": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:5579"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 28,
+   "sha": "849b69978",
+   "subject": "CUDA/HIP: GDN fused SSM_CONV and alpha/beta projections in one grid (GGML_HIP_GDN_CONV_AB)",
+   "msg_env": [
+    "GGML_HIP_GDN_CONV_AB"
+   ],
+   "diff_env": [
+    "GGML_HIP_GDN_CONV_AB"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml-cuda/mmvq.cuh",
+    "ggml/src/ggml-cuda/ssm-conv.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cuh"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_GDN_CONV_AB": "0"
+   },
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_GDN_CONV_AB": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:5620"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 29,
+   "sha": "2eb088419",
+   "subject": "ggml-backend/llama: asynchronous graph input uploads (LLAMA_ASYNC_INPUTS)",
+   "msg_env": [
+    "LLAMA_ASYNC_INPUTS"
+   ],
+   "diff_env": [
+    "LLAMA_ASYNC_INPUTS"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/include/ggml-backend.h",
+    "ggml/src/ggml-backend.cpp",
+    "src/llama-context.cpp",
+    "src/llama-context.h",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-kv-cache.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "LLAMA_ASYNC_INPUTS": "0"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "LLAMA_ASYNC_INPUTS": [
+     "src/llama-context.cpp:296"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 30,
+   "sha": "56be15abf",
+   "subject": "llama: MTP draft chain on its own scheduler (LLAMA_MTP_CHAIN_SCHED)",
+   "msg_env": [
+    "LLAMA_MTP_CHAIN_SCHED"
+   ],
+   "diff_env": [
+    "LLAMA_MTP_CHAIN_SCHED"
+   ],
+   "cli_env": [],
+   "files": [
+    "src/llama-context.cpp",
+    "src/llama-context.h"
+   ],
+   "cat": "env",
+   "env": {
+    "LLAMA_MTP_CHAIN_SCHED": "0"
+   },
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "LLAMA_MTP_CHAIN_SCHED": [
+     "src/llama-context.cpp:301"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 31,
+   "sha": "35d04b446",
+   "subject": "common/server: top-k candidates without the full candidate array, no sampler copy per spec step",
+   "msg_env": [
+    "LLAMA_SAMPLER_FAST_TOPK",
+    "LLAMA_SPEC_LAZY_SAVE"
+   ],
+   "diff_env": [
+    "LLAMA_SAMPLER_FAST_TOPK",
+    "LLAMA_SPEC_LAZY_SAVE"
+   ],
+   "cli_env": [],
+   "files": [
+    "common/sampling.cpp",
+    "tools/server/server-context.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "LLAMA_SAMPLER_FAST_TOPK": "0",
+    "LLAMA_SPEC_LAZY_SAVE": "0"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "host sampler / server spec loop",
+   "active": true,
+   "env_found": {
+    "LLAMA_SAMPLER_FAST_TOPK": [
+     "common/sampling.cpp:568"
+    ],
+    "LLAMA_SPEC_LAZY_SAVE": [
+     "tools/server/server-context.cpp:4411"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 32,
+   "sha": "343c2fbbb",
+   "subject": "llama/common: re-quantize the MTP draft head and MTP block at load time (--spec-draft-head-type, --spec-mtp-type)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [
+    "LLAMA_ARG_SPEC_DRAFT_HEAD_TYPE",
+    "LLAMA_ARG_SPEC_MTP_TYPE"
+   ],
+   "files": [
+    "common/arg.cpp",
+    "common/common.h",
+    "common/speculative.cpp",
+    "include/llama.h",
+    "src/llama-model.cpp",
+    "src/llama-model.h"
+   ],
+   "cat": "cli",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "cli_drop": [
+    "--spec-draft-head-type",
+    "--spec-mtp-type"
+   ],
+   "why": "re-quantized MTP head/block; OFF = GGUF types (draft numerics differ, output identical)",
+   "active": true,
+   "env_unused": []
+  },
+  {
+   "n": 33,
+   "sha": "3f8c8ddff",
+   "subject": "ggml/llama: delta-net speculative rollback by replay of a lagged state (GATED_DELTA_NET_LAG)",
+   "msg_env": [
+    "GGML_HIP_GDN_REPLAY",
+    "LLAMA_GDN_REPLAY"
+   ],
+   "diff_env": [
+    "GGML_HIP_GDN_REPLAY",
+    "LLAMA_GDN_REPLAY"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/include/ggml-rpc.h",
+    "ggml/include/ggml.h",
+    "ggml/src/ggml-cpu/ggml-cpu.c",
+    "ggml/src/ggml-cpu/ops.cpp",
+    "ggml/src/ggml-cuda/gated_delta_net.cu",
+    "ggml/src/ggml-cuda/gated_delta_net.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml.c",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-memory-hybrid.cpp",
+    "src/llama-memory-hybrid.h",
+    "src/llama-memory-recurrent.cpp",
+    "src/llama-memory-recurrent.h",
+    "src/llama-model.cpp",
+    "src/models/delta-net-base.cpp",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "LLAMA_GDN_REPLAY": "0"
+   },
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "OFF also disables the later lag refinements 34-36, 38",
+   "active": true,
+   "env_found": {
+    "LLAMA_GDN_REPLAY": [
+     "src/llama-model.cpp:2394"
+    ]
+   },
+   "env_unused": [
+    "GGML_HIP_GDN_REPLAY"
+   ]
+  },
+  {
+   "n": 34,
+   "sha": "53be90b39",
+   "subject": "llama/ggml: GATED_DELTA_NET_LAG lag info as [n_seqs, 4], its first row is the state gather index (one input upload)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/include/ggml.h",
+    "ggml/src/ggml-cpu/ops.cpp",
+    "ggml/src/ggml-cuda/gated_delta_net.cu",
+    "ggml/src/ggml.c",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-memory-recurrent.cpp",
+    "src/llama-memory-recurrent.h",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "lag info layout (refines 33)",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": false,
+   "revert_conflicts": [
+    "ggml/include/ggml.h",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-memory-recurrent.cpp",
+    "src/llama-memory-recurrent.h"
+   ],
+   "revert_blockers": [
+    "36",
+    "38",
+    "39",
+    "41",
+    "46"
+   ]
+  },
+  {
+   "n": 35,
+   "sha": "bd2251523",
+   "subject": "CUDA/HIP: GATED_DELTA_NET_LAG issues the loads of the next pending row before the recurrence of the current one (GDN 661 -> 638 us per verify)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/gated_delta_net.cu"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "GDN_LAG load scheduling",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": true,
+   "revert_conflicts": []
+  },
+  {
+   "n": 36,
+   "sha": "b1a203959",
+   "subject": "llama: the lagged delta-net state is read from its cache row (single cell), no gather index input",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/include/ggml.h",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-memory-recurrent.cpp",
+    "src/llama-memory-recurrent.h"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "lagged state read from its cache row (refines 33/34)",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": true,
+   "revert_conflicts": []
+  },
+  {
+   "n": 37,
+   "sha": "d3a0973ae",
+   "subject": "CUDA/HIP: RDNA3 verify batches of 9-16 columns: WMMA small-N MUL_MAT kernel, wide MMVQ dispatch",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/fattn-kvq.cu",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml-cuda/mmvq.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "active": false,
+   "why": "verify batches of 9-16 columns: inactive at MTP n=4 (5 columns)",
+   "env_unused": [],
+   "revert_clean": true,
+   "revert_conflicts": []
+  },
+  {
+   "n": 38,
+   "sha": "b9b476c87",
+   "subject": "llama/CUDA: lagged conv history for the delta-net rollback by replay, no per-token conv snapshots (LLAMA_CONV_LAG)",
+   "msg_env": [
+    "LLAMA_CONV_LAG"
+   ],
+   "diff_env": [
+    "LLAMA_CONV_LAG"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cuh",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-memory-recurrent.cpp",
+    "src/llama-memory-recurrent.h",
+    "src/models/delta-net-base.cpp",
+    "src/models/models.h",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "LLAMA_CONV_LAG": "0"
+   },
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "LLAMA_CONV_LAG": [
+     "src/llama-memory-recurrent.cpp:111"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 39,
+   "sha": "7e9c73d8b",
+   "subject": "common/llama: cost-priced adaptive MTP draft depth (--spec-draft-adaptive, opt-in), per-width verify graphs",
+   "msg_env": [
+    "LLAMA_SPEC_DEPTH_POWER",
+    "LLAMA_VERIFY_SCHED"
+   ],
+   "diff_env": [
+    "LLAMA_SPEC_DEPTH_POWER",
+    "LLAMA_VERIFY_SCHED"
+   ],
+   "cli_env": [
+    "LLAMA_ARG_SPEC_DRAFT_ADAPTIVE",
+    "LLAMA_ARG_SPEC_DRAFT_SEG"
+   ],
+   "files": [
+    "common/arg.cpp",
+    "common/common.h",
+    "common/speculative.cpp",
+    "src/llama-context.cpp",
+    "src/llama-context.h",
+    "src/llama-cparams.h",
+    "src/llama-ext.h",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/models/qwen35.cpp"
+   ],
+   "cat": "nonspeed",
+   "why": "opt-in (--spec-draft-adaptive, not used by run-llm.sh); LLAMA_VERIFY_SCHED only with it",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": [
+    "LLAMA_SPEC_DEPTH_POWER",
+    "LLAMA_VERIFY_SCHED"
+   ]
+  },
+  {
+   "n": 40,
+   "sha": "6aacfea49",
+   "subject": "CUDA/HIP: RDNA3 MMQ picks a narrower tile when the widest one leaves CUs idle (48-row GDN alpha/beta, 1024-row K/V projections)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmq.cu"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "pp"
+   ],
+   "why": "prefill: MMQ narrower tile",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": true,
+   "revert_conflicts": []
+  },
+  {
+   "n": 41,
+   "sha": "2b910b22f",
+   "subject": "llama: the qwen35 MTP layer computes only K/V for rows without output (prompt and verify rows of the process() hook)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "src/llama-graph.cpp",
+    "src/models/qwen35.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "serve",
+    "pp"
+   ],
+   "why": "MTP layer K/V-only rows",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": true,
+   "revert_conflicts": []
+  },
+  {
+   "n": 42,
+   "sha": "cf397468e",
+   "subject": "CUDA/HIP: RDNA FA MMA D=256 prompt tile keeps Q in SRAM (Q in registers spilled ~1.1 KB per lane)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/fattn-mma-f16.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "pp"
+   ],
+   "why": "prefill: FA MMA D=256 tile Q in SRAM",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": true,
+   "revert_conflicts": []
+  },
+  {
+   "n": 43,
+   "sha": "5a7562bee",
+   "subject": "CUDA/HIP: FA MMA walks the K chunks in order unless K is the V view (MLA)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/fattn-mma-f16.cuh"
+   ],
+   "cat": "nonspeed",
+   "why": "numerics fix (bit-identical prompt logits of 42; KLD 0.0135 -> 0)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 44,
+   "sha": "01ab59798",
+   "subject": "tests: perf cases for the Qwen3.5/3.8 27B prompt matmul shapes (FFN, GDN qkv, alpha/beta, K/V projections)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "nonspeed",
+   "why": "tests only",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 45,
+   "sha": "575e3d893",
+   "subject": "CUDA/HIP: prompt batches of the fused-l2 GDN normalize q/k once per (head, token) in a pre-pass",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/gated_delta_net.cu"
+   ],
+   "cat": "build",
+   "models": [
+    "qwen"
+   ],
+   "measures": [
+    "pp"
+   ],
+   "why": "prefill: GDN l2 pre-pass",
+   "active": true,
+   "env_unused": [],
+   "revert_clean": true,
+   "revert_conflicts": []
+  },
+  {
+   "n": 46,
+   "sha": "0b5b15d17",
+   "subject": "MTP: attention window of the MTP layer (--spec-mtp-window, WIP)",
+   "msg_env": [],
+   "diff_env": [],
+   "cli_env": [
+    "LLAMA_ARG_SPEC_MTP_WINDOW"
+   ],
+   "files": [
+    "common/arg.cpp",
+    "common/common.h",
+    "common/speculative.cpp",
+    "src/llama-context.cpp",
+    "src/llama-ext.h",
+    "src/llama-graph.cpp",
+    "src/llama-graph.h",
+    "src/llama-kv-cache.cpp",
+    "src/llama-kv-cache.h",
+    "src/llama-kv-cells.h"
+   ],
+   "cat": "nonspeed",
+   "why": "opt-in WIP (--spec-mtp-window, not used by run-llm.sh)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": []
+  },
+  {
+   "n": 47,
+   "sha": "e84abb808",
+   "subject": "llama/server: per-step host costs of the spec loop off the critical path",
+   "msg_env": [
+    "LLAMA_KV_MASK_FAST",
+    "LLAMA_KV_SEQ_RM_SCAN"
+   ],
+   "diff_env": [
+    "LLAMA_KV_MASK_FAST",
+    "LLAMA_KV_SEQ_RM_SCAN"
+   ],
+   "cli_env": [],
+   "files": [
+    "common/speculative.cpp",
+    "common/speculative.h",
+    "src/llama-kv-cache.cpp",
+    "src/llama-kv-cells.h",
+    "tools/server/server-context.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "LLAMA_KV_MASK_FAST": "0",
+    "LLAMA_KV_SEQ_RM_SCAN": "1"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "why": "partial: the draft prompt-copy skip has no switch",
+   "active": true,
+   "env_found": {
+    "LLAMA_KV_MASK_FAST": [
+     "src/llama-kv-cache.cpp:1934"
+    ],
+    "LLAMA_KV_SEQ_RM_SCAN": [
+     "src/llama-kv-cache.cpp:427"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 48,
+   "sha": "41bb3da6a",
+   "subject": "common: fast top-k candidates also behind a penalties sampler that only lowers logits (LLAMA_SAMPLER_FAST_PENALTIES)",
+   "msg_env": [
+    "LLAMA_SAMPLER_FAST_PENALTIES",
+    "LLAMA_SAMPLER_FAST_TOPK"
+   ],
+   "diff_env": [
+    "LLAMA_SAMPLER_FAST_PENALTIES"
+   ],
+   "cli_env": [],
+   "files": [
+    "common/sampling.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "LLAMA_SAMPLER_FAST_PENALTIES": "0"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "LLAMA_SAMPLER_FAST_PENALTIES": [
+     "common/sampling.cpp:570"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 49,
+   "sha": "605fccd9a",
+   "subject": "CUDA/HIP: the FFN norm writes the q8_1 activations of the single-token MoE gate/up MUL_MAT_ID (GGML_HIP_Q8_IDS)",
+   "msg_env": [
+    "GGML_HIP_Q8_IDS"
+   ],
+   "diff_env": [
+    "GGML_HIP_Q8_IDS"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_Q8_IDS": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_Q8_IDS": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:4263",
+     "ggml/src/ggml-cuda/mmvq.cu:3367",
+     "ggml/src/ggml-cuda/mmvq.cu:3700"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 50,
+   "sha": "be05dc19c",
+   "subject": "CUDA/HIP: LFM2 shortconv: b*x and c*conv folded into the fused SSM_CONV, which writes the q8_1 out_proj input (GGML_HIP_CONV_MUL)",
+   "msg_env": [
+    "GGML_HIP_CONV_MUL"
+   ],
+   "diff_env": [
+    "GGML_HIP_CONV_MUL"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cu",
+    "ggml/src/ggml-cuda/ssm-conv.cuh"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_CONV_MUL": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "OFF also disables 54/62 (they build on it)",
+   "active": true,
+   "env_found": {
+    "GGML_HIP_CONV_MUL": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:3780"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 51,
+   "sha": "862c02136",
+   "subject": "CUDA/HIP: single-token MoE tail (down MUL_MAT_ID, expert weighting, residual ADD) in one MMVQ launch (GGML_HIP_MOE_DOWN_REDUCE)",
+   "msg_env": [
+    "GGML_HIP_MOE_DOWN_REDUCE"
+   ],
+   "diff_env": [
+    "GGML_HIP_MOE_DOWN_REDUCE",
+    "GGML_HIP_Q8_IDS"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml-cuda/mmvq.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_MOE_DOWN_REDUCE": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_MOE_DOWN_REDUCE": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:4312"
+    ]
+   },
+   "env_unused": [
+    "GGML_HIP_Q8_IDS"
+   ]
+  },
+  {
+   "n": 52,
+   "sha": "bcdf324d3",
+   "subject": "HIP/RDNA3 one-column MMVQ: 2 rows per block for the K-quants (GGML_HIP_MMVQ_N1_ROWS)",
+   "msg_env": [
+    "GGML_HIP_MMVQ_N1_ROWS"
+   ],
+   "diff_env": [
+    "GGML_HIP_MMVQ_N1_ROWS"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_MMVQ_N1_ROWS": "1"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "one-column K-quant MMVQ: Qwen plain decode + LFM",
+   "active": true,
+   "env_found": {
+    "GGML_HIP_MMVQ_N1_ROWS": [
+     "ggml/src/ggml-cuda/mmvq.cu:1378"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 53,
+   "sha": "c15c84e83",
+   "subject": "CUDA/HIP: single-token MoE routing (FFN norm, F32 router, topk_moe) in one launch (GGML_HIP_NORM_ROUTER)",
+   "msg_env": [
+    "GGML_HIP_NORM_ROUTER"
+   ],
+   "diff_env": [
+    "GGML_HIP_NORM_ROUTER"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/topk-moe.cu",
+    "ggml/src/ggml-cuda/topk-moe.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_NORM_ROUTER": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_NORM_ROUTER": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:4466"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 54,
+   "sha": "5909da1f1",
+   "subject": "CUDA/HIP: LFM2 shortconv in_proj MMVQ with the fused conv as per-group ticket tails (GGML_HIP_INPROJ_CONV)",
+   "msg_env": [
+    "GGML_HIP_CONV_MUL",
+    "GGML_HIP_INPROJ_CONV",
+    "GGML_HIP_MMVQ_N1_ROWS"
+   ],
+   "diff_env": [
+    "GGML_HIP_INPROJ_CONV"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "ggml/src/ggml-cuda/mmvq.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_INPROJ_CONV": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_INPROJ_CONV": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:4521"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 55,
+   "sha": "5f6c03fa9",
+   "subject": "HIP/RDNA3 FA: the kvq decode kernel also reads a q8_0 KV cache (GGML_HIP_KVQ_Q8)",
+   "msg_env": [
+    "GGML_HIP_KVQ_Q8"
+   ],
+   "diff_env": [
+    "GGML_HIP_KVQ_Q8"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/fattn-kvq.cu",
+    "ggml/src/ggml-cuda/fattn-kvq.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_KVQ_Q8": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "why": "not bitwise (KLD-gated); KV q8_0 only",
+   "active": true,
+   "env_found": {
+    "GGML_HIP_KVQ_Q8": [
+     "ggml/src/ggml-cuda/fattn-kvq.cu:739"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 56,
+   "sha": "04f10413e",
+   "subject": "CUDA/HIP: single-token gate/up(+GLU) MMVQ writes the q8_1 input of the down projection (GGML_HIP_GATE_UP_Q8)",
+   "msg_env": [
+    "GGML_HIP_GATE_UP_Q8"
+   ],
+   "diff_env": [
+    "GGML_HIP_GATE_UP_Q8"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/mmvq.cu",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_GATE_UP_Q8": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_GATE_UP_Q8": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:5315"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 57,
+   "sha": "7a963bc0c",
+   "subject": "CUDA/HIP: single-token attention input (q/k norm+rope+FWHT, v FWHT, q8_0 SET_ROWS of k and v) in one launch (GGML_HIP_ATTN_PREP)",
+   "msg_env": [
+    "GGML_HIP_ATTN_PREP"
+   ],
+   "diff_env": [
+    "GGML_HIP_ATTN_PREP"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/rope.cu",
+    "ggml/src/ggml-cuda/rope.cuh",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_ATTN_PREP": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_ATTN_PREP": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:4619"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 58,
+   "sha": "3a1279f95",
+   "subject": "CUDA/HIP: kvq attention applies the output FWHT (+ q8_1 for the o projection) in its combine launch (GGML_HIP_KVQ_FWHT)",
+   "msg_env": [
+    "GGML_HIP_KVQ_FWHT"
+   ],
+   "diff_env": [
+    "GGML_HIP_KVQ_FWHT"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/fattn-common.cuh",
+    "ggml/src/ggml-cuda/fattn-kvq.cu",
+    "ggml/src/ggml-cuda/fattn-kvq.cuh",
+    "ggml/src/ggml-cuda/fattn.cu",
+    "ggml/src/ggml-cuda/fattn.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "tests/test-backend-ops.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_KVQ_FWHT": "0"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_KVQ_FWHT": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:4724"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 59,
+   "sha": "9d493cf6e",
+   "subject": "CUDA/HIP: batch the small async input uploads of a graph into one H2D copy + one scatter launch (GGML_HIP_INPUT_BATCH)",
+   "msg_env": [
+    "GGML_HIP_INPUT_BATCH"
+   ],
+   "diff_env": [
+    "GGML_HIP_INPUT_BATCH"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_INPUT_BATCH": "0"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_INPUT_BATCH": [
+     "ggml/src/ggml-cuda/ggml-cuda.cu:2622"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 60,
+   "sha": "1153adb69",
+   "subject": "HIP/RDNA3: replay a captured decode graph as one PM4 indirect buffer on an own ROCr queue (GGML_HIP_PM4)",
+   "msg_env": [
+    "GGML_HIP_PM4",
+    "GGML_HIP_PM4_DEBUG"
+   ],
+   "diff_env": [
+    "GGML_HIP_PM4",
+    "GGML_HIP_PM4_DEBUG"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/common.cuh",
+    "ggml/src/ggml-cuda/ggml-cuda.cu",
+    "ggml/src/ggml-cuda/hip-pm4.cu",
+    "ggml/src/ggml-cuda/hip-pm4.cuh",
+    "ggml/src/ggml-hip/CMakeLists.txt"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_PM4": "0"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_PM4": [
+     "ggml/src/ggml-cuda/hip-pm4.cu:251"
+    ]
+   },
+   "env_unused": [
+    "GGML_HIP_PM4_DEBUG"
+   ]
+  },
+  {
+   "n": 61,
+   "sha": "e5ca00ec4",
+   "subject": "HIP PM4 replay: GGML_HIP_PM4_DEBUG=2 per-launch timing (GPU timestamps of the tape, host sync/submit, idle between tapes), =3 per-dispatch durations (pm4trace lines on stderr)",
+   "msg_env": [
+    "GGML_HIP_PM4_DEBUG"
+   ],
+   "diff_env": [
+    "GGML_HIP_PM4_DEBUG"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/hip-pm4.cu"
+   ],
+   "cat": "nonspeed",
+   "why": "tooling (GGML_HIP_PM4_DEBUG=2 timing)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": [
+    "GGML_HIP_PM4_DEBUG"
+   ]
+  },
+  {
+   "n": 62,
+   "sha": "1b43bccae",
+   "subject": "CUDA/HIP RDNA3: the shortconv in_proj MMVQ runs 4 rows per block (GGML_HIP_CONV_ROWS4)",
+   "msg_env": [
+    "GGML_HIP_CONV_ROWS4",
+    "GGML_HIP_MMVQ_N1_ROWS"
+   ],
+   "diff_env": [
+    "GGML_HIP_CONV_ROWS4"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_CONV_ROWS4": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_CONV_ROWS4": [
+     "ggml/src/ggml-cuda/mmvq.cu:3546"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 63,
+   "sha": "2cbcf771a",
+   "subject": "CUDA/HIP: GGML_HIP_PM4 and GGML_HIP_CONV_ROWS4 read through ggml_cuda_env_switch (the fork's helper)",
+   "msg_env": [
+    "GGML_HIP_CONV_ROWS4",
+    "GGML_HIP_PM4"
+   ],
+   "diff_env": [
+    "GGML_HIP_CONV_ROWS4",
+    "GGML_HIP_PM4"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/hip-pm4.cu",
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "nonspeed",
+   "why": "refactor (switches read through ggml_cuda_env_switch)",
+   "models": [],
+   "measures": [],
+   "active": false,
+   "env_unused": [
+    "GGML_HIP_CONV_ROWS4",
+    "GGML_HIP_PM4"
+   ]
+  },
+  {
+   "n": 64,
+   "sha": "e41c2330e",
+   "subject": "HIP/RDNA3 one-column MMVQ: Q8_0 joins the 2-row path (and the 4-row conv path) (GGML_HIP_MMVQ_N1_Q8_0)",
+   "msg_env": [
+    "GGML_HIP_MMVQ_N1_Q8_0"
+   ],
+   "diff_env": [
+    "GGML_HIP_MMVQ_N1_Q8_0"
+   ],
+   "cli_env": [],
+   "files": [
+    "ggml/src/ggml-cuda/mmvq.cu"
+   ],
+   "cat": "env",
+   "env": {
+    "GGML_HIP_MMVQ_N1_Q8_0": "0"
+   },
+   "models": [
+    "lfm"
+   ],
+   "measures": [
+    "tg",
+    "serve"
+   ],
+   "active": true,
+   "env_found": {
+    "GGML_HIP_MMVQ_N1_Q8_0": [
+     "ggml/src/ggml-cuda/mmvq.cu:1373"
+    ]
+   },
+   "env_unused": []
+  },
+  {
+   "n": 65,
+   "sha": "c36fd2c87",
+   "subject": "server: LLAMA_SERVER_REASONING_CONTROL=0 ignores the client reasoning_control flag (the web UI always sends true, which forces the full-vocabulary sampling path); LFM UI-style request 255 -> 291 t/s",
+   "msg_env": [
+    "LLAMA_SERVER_REASONING_CONTROL"
+   ],
+   "diff_env": [
+    "LLAMA_SERVER_REASONING_CONTROL"
+   ],
+   "cli_env": [],
+   "files": [
+    "tools/server/server-context.cpp"
+   ],
+   "cat": "env",
+   "env": {
+    "LLAMA_SERVER_REASONING_CONTROL": "1"
+   },
+   "models": [
+    "qwen",
+    "lfm"
+   ],
+   "measures": [
+    "serve"
+   ],
+   "base_env": {
+    "LLAMA_SERVER_REASONING_CONTROL": "0"
+   },
+   "request_extra": {
+    "reasoning_control": true
+   },
+   "why": "web-UI requests only: measured with reasoning_control=true in the request",
+   "active": true,
+   "env_found": {
+    "LLAMA_SERVER_REASONING_CONTROL": [
+     "tools/server/server-context.cpp:4848"
+    ]
+   },
+   "env_unused": []
+  }
+ ]
+}

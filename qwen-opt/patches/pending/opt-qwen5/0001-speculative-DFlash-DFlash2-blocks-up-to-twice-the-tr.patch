@@ -1,0 +1,109 @@
+From 6cb110bedd42f41e5c417d2de5486f0c4d6c7ff7 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 00:53:07 +0000
+Subject: [PATCH 1/7] speculative: DFlash/DFlash2 blocks up to twice the
+ trained width (LLAMA_DFLASH_WIDE=0: trained cap), LLAMA_DFLASH_BLOCK=N
+ denoises N tokens and keeps n_max drafts
+
+The in-place DFlash drafts were clamped to block_size-1 (7 for the Qwen3.8 DFlash2 drafter trained on block 8).
+Lucebox runs the same drafter at block 16 (acceptance keeps rising past the trained width). The DFlash2 selector
+lattice now has a row for every runtime block position (it had min(tokens_per_block, trained block) rows, which the
+CPU walk would have read past). Unchanged for n_max <= block_size-1 (the lattice shape is the same).
+
+UNMEASURED (no GPU access at commit time): see QWEN5-ROUND5.md for the pending sweep.
+---
+ common/speculative.cpp | 27 ++++++++++++++++++++-------
+ src/models/dflash.cpp  |  4 +++-
+ 2 files changed, 23 insertions(+), 8 deletions(-)
+
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index caa5fe7a1..d4bd50039 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -999,6 +999,7 @@ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
+ 
+     int32_t     block_size    = 0;
+     llama_token mask_token_id = 0;
++    int32_t     n_block_tokens_env = 0; // LLAMA_DFLASH_BLOCK override of the denoised block (0: n_max + 1)
+ 
+     bool    is_dflash2     = false;
+     bool    is_mrope       = false;
+@@ -1072,16 +1073,27 @@ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
+                 block_size, mask_token_id, target_layer_ids_n, sample_from_anchor ? "true" : "false");
+ 
+         // DFlash input is [id_last, <mask> * (block_size-1)]: in-place denoising yields at most
+-        // block_size-1 draft tokens, anchor-first DSpark yields a full block_size draft tokens
+-        const int32_t n_draft_max = is_dspark && sample_from_anchor ? block_size : block_size - 1;
++        // block_size-1 draft tokens, anchor-first DSpark yields a full block_size draft tokens.
++        // In-place DFlash/DFlash2 blocks may run up to twice the trained width (acceptance keeps
++        // rising past the trained block, see Lucebox); LLAMA_DFLASH_WIDE=0 restores the trained cap.
++        const char *  wide_env    = getenv("LLAMA_DFLASH_WIDE");
++        const bool    wide        = !is_dspark && (wide_env == nullptr || atoi(wide_env) != 0);
++        const int32_t n_draft_max = is_dspark && sample_from_anchor ? block_size : (wide ? 2*block_size : block_size) - 1;
+         if (this->params.n_max > n_draft_max || this->params.n_min > n_draft_max) {
+-            LOG_WRN("%s: requested draft size (n_max=%d, n_min=%d) exceeds the trained block size %d -- clamping to %d\n",
+-                    __func__, this->params.n_max, this->params.n_min, block_size, n_draft_max);
++            LOG_WRN("%s: requested draft size (n_max=%d, n_min=%d) exceeds the supported block size %d -- clamping to %d\n",
++                    __func__, this->params.n_max, this->params.n_min, wide ? 2*block_size : block_size, n_draft_max);
+             this->params.n_max = std::min(this->params.n_max, n_draft_max);
+             this->params.n_min = std::min(this->params.n_min, n_draft_max);
+         }
+         this->n_max = this->params.n_max;
+ 
++        // LLAMA_DFLASH_BLOCK=N: denoise a block of N tokens (anchor + N-1 masks) but keep only the first n_max
++        // drafts (the later mask tokens still condition the non-causal block); default n_max + 1
++        if (const char * blk_env = getenv("LLAMA_DFLASH_BLOCK"); blk_env != nullptr && !is_dspark) {
++            n_block_tokens_env = std::clamp(atoi(blk_env), this->params.n_max + 1, n_draft_max + 1);
++            LOG_INF("%s: - denoise block of %d tokens, keep %d drafts\n", __func__, n_block_tokens_env, this->params.n_max);
++        }
++
+         batch        = common_batch(ctx_dft);
+         batch_inject = common_batch(ctx_dft);
+ 
+@@ -1262,7 +1274,8 @@ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
+ 
+             const int32_t n_draft = params.n_max;
+ 
+-            const int32_t n_block_tokens = n_draft + (is_dspark && sample_from_anchor ? 0 : 1);
++            const int32_t n_block_tokens = n_block_tokens_env > 0 ? n_block_tokens_env
++                                         : n_draft + (is_dspark && sample_from_anchor ? 0 : 1);
+             i_block_beg[seq_id] = batch.size();
+             n_block    [seq_id] = n_block_tokens;
+             for (int32_t i = 0; i < n_block_tokens; ++i) {
+@@ -1299,7 +1312,7 @@ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
+                 GGML_ASSERT(lattice && "DFlash2 selector produced no lattice");
+ 
+                 int32_t predecessor = 0;
+-                for (int32_t i = 1; i < n_block_tokens; ++i) {
++                for (int32_t i = 1; i < std::min(n_block_tokens, params.n_max + 1); ++i) {
+                     const float * row = lattice + (size_t) (beg + i) * n_embd_dec;
+                     const float * scores = row + selector_top_k + (size_t) predecessor * selector_top_k;
+ 
+@@ -1354,7 +1367,7 @@ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
+                 }
+             } else {
+                 // greedily read the predicted block at this sequence's noise positions 1..n_block_tokens-1
+-                for (int32_t i = 1; i < n_block_tokens; ++i) {
++                for (int32_t i = 1; i < std::min(n_block_tokens, params.n_max + 1); ++i) {
+                     common_sampler_sample(smpl, ctx_dft, beg + i, true);
+ 
+                     const auto * cur_p = common_sampler_get_candidates(smpl, true);
+diff --git a/src/models/dflash.cpp b/src/models/dflash.cpp
+index b6cb6bfb9..ee2d6069b 100644
+--- a/src/models/dflash.cpp
++++ b/src/models/dflash.cpp
+@@ -487,8 +487,10 @@ static void build_dflash2_selector(llm_graph_context & g, const llama_model & mo
+         return;
+     }
+ 
++    // every block position gets a lattice row: blocks wider than the trained block_size (up to 2x,
++    // common/speculative.cpp) score their extra positions with the same position-free selector
+     const int64_t tokens_per_block = n_tokens / n_blocks;
+-    const int64_t block_size = std::min<int64_t>(tokens_per_block, hparams.dflash_block_size);
++    const int64_t block_size = tokens_per_block;
+     const int64_t row_used   = top_k + top_k * top_k;
+ 
+     ggml_tensor * candidates  = ggml_top_k(ctx0, res->t_logits, top_k);
+-- 
+2.43.0
+

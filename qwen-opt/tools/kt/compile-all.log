@@ -1,0 +1,211 @@
+compiling 53 variants for gfx1100 with -j4 (src /home/jaro/wt/tools6 @ 4db68c6ab)
+  mmvq_Q4_K_nw1_r1: built
+  mmvq_Q4_K_nw1_r2: built
+  mmvq_Q4_K_nw1_r4: built
+  mmvq_Q4_K_nw2_r1: built
+  mmvq_Q4_K_nw2_r2: built
+  mmvq_Q4_K_nw2_r4: built
+  mmvq_Q4_K_nw4_r1: built
+  mmvq_Q4_K_nw4_r2: built
+  mmvq_Q4_K_nw4_r4: built
+  mmvq_Q4_K_nw8_r1: built
+  mmvq_Q4_K_nw8_r2: built
+  mmvq_Q4_K_nw8_r4: built
+  mmvq_Q5_K_nw1_r1: built
+  mmvq_Q5_K_nw1_r2: built
+  mmvq_Q5_K_nw1_r4: built
+  mmvq_Q5_K_nw2_r1: built
+  mmvq_Q5_K_nw2_r2: built
+  mmvq_Q5_K_nw2_r4: built
+  mmvq_Q5_K_nw4_r1: built
+  mmvq_Q5_K_nw4_r2: built
+  mmvq_Q5_K_nw4_r4: built
+  mmvq_Q5_K_nw8_r1: built
+  mmvq_Q5_K_nw8_r2: built
+  mmvq_Q5_K_nw8_r4: built
+  mmvq_Q6_K_nw1_r1: built
+  mmvq_Q6_K_nw1_r2: built
+  mmvq_Q6_K_nw1_r4: built
+  mmvq_Q6_K_nw2_r1: built
+  mmvq_Q6_K_nw2_r2: built
+  mmvq_Q6_K_nw2_r4: built
+  mmvq_Q6_K_nw4_r1: built
+  mmvq_Q6_K_nw4_r2: built
+  mmvq_Q6_K_nw4_r4: built
+  mmvq_Q6_K_nw8_r1: built
+  mmvq_Q6_K_nw8_r2: built
+  mmvq_Q6_K_nw8_r4: built
+  mmvq_Q8_0_nw1_r1: built
+  mmvq_Q8_0_nw1_r2: built
+  mmvq_Q8_0_nw1_r4: built
+  mmvq_Q8_0_nw2_r1: built
+  mmvq_Q8_0_nw2_r2: built
+  mmvq_Q8_0_nw2_r4: built
+  mmvq_Q8_0_nw4_r1: built
+  mmvq_Q8_0_nw4_r2: built
+  mmvq_Q8_0_nw4_r4: built
+  mmvq_Q8_0_nw8_r1: built
+  mmvq_Q8_0_nw8_r2: built
+  mmvq_Q8_0_nw8_r4: built
+  gdn_cpw1: built
+  gdn_cpw2: built
+  gdn_cpw4: built
+  gdn_cpw8: built
+  gdn_cpw16: built
+
+| variant | kernel | VGPRs | SGPRs | scratch B/lane | LDS B/block | occupancy waves/SIMD |
+|---|---|---|---|---|---|---|
+| mmvq_Q4_K_nw1_r1 | mmvq_n1 | 26 | 24 | 0 | 0 | 16 |
+| mmvq_Q4_K_nw1_r1 | moe_down | 82 | 27 | 0 | 0 | 16 |
+| mmvq_Q4_K_nw1_r1 | moe_gate_up | 35 | 58 | 0 | 0 | 16 |
+| mmvq_Q4_K_nw1_r2 | mmvq_n1 | 36 | 24 | 0 | 0 | 16 |
+| mmvq_Q4_K_nw1_r2 | moe_down | 106 | 27 | 0 | 0 | 12 |
+| mmvq_Q4_K_nw1_r2 | moe_gate_up | 40 | 56 | 0 | 0 | 16 |
+| mmvq_Q4_K_nw1_r4 | mmvq_n1 | 49 | 24 | 0 | 0 | 16 |
+| mmvq_Q4_K_nw1_r4 | moe_down | 127 | 28 | 0 | 0 | 10 |
+| mmvq_Q4_K_nw1_r4 | moe_gate_up | 53 | 56 | 0 | 0 | 16 |
+| mmvq_Q4_K_nw2_r1 | mmvq_n1 | 26 | 24 | 0 | 128 | 16 |
+| mmvq_Q4_K_nw2_r1 | moe_down | 82 | 27 | 0 | 512 | 16 |
+| mmvq_Q4_K_nw2_r1 | moe_gate_up | 35 | 58 | 0 | 256 | 16 |
+| mmvq_Q4_K_nw2_r2 | mmvq_n1 | 36 | 24 | 0 | 256 | 16 |
+| mmvq_Q4_K_nw2_r2 | moe_down | 106 | 27 | 0 | 1024 | 12 |
+| mmvq_Q4_K_nw2_r2 | moe_gate_up | 41 | 58 | 0 | 512 | 16 |
+| mmvq_Q4_K_nw2_r4 | mmvq_n1 | 49 | 24 | 0 | 512 | 16 |
+| mmvq_Q4_K_nw2_r4 | moe_down | 127 | 28 | 0 | 2048 | 10 |
+| mmvq_Q4_K_nw2_r4 | moe_gate_up | 54 | 58 | 0 | 1024 | 16 |
+| mmvq_Q4_K_nw4_r1 | mmvq_n1 | 26 | 24 | 0 | 384 | 16 |
+| mmvq_Q4_K_nw4_r1 | moe_down | 82 | 27 | 0 | 1536 | 16 |
+| mmvq_Q4_K_nw4_r1 | moe_gate_up | 35 | 58 | 0 | 768 | 16 |
+| mmvq_Q4_K_nw4_r2 | mmvq_n1 | 36 | 24 | 0 | 768 | 16 |
+| mmvq_Q4_K_nw4_r2 | moe_down | 106 | 27 | 0 | 3072 | 12 |
+| mmvq_Q4_K_nw4_r2 | moe_gate_up | 41 | 58 | 0 | 1536 | 16 |
+| mmvq_Q4_K_nw4_r4 | mmvq_n1 | 49 | 24 | 0 | 1536 | 16 |
+| mmvq_Q4_K_nw4_r4 | moe_down | 127 | 28 | 0 | 6144 | 10 |
+| mmvq_Q4_K_nw4_r4 | moe_gate_up | 54 | 58 | 0 | 3072 | 16 |
+| mmvq_Q4_K_nw8_r1 | mmvq_n1 | 26 | 24 | 0 | 896 | 16 |
+| mmvq_Q4_K_nw8_r1 | moe_down | 82 | 27 | 0 | 3584 | 16 |
+| mmvq_Q4_K_nw8_r1 | moe_gate_up | 35 | 58 | 0 | 1792 | 16 |
+| mmvq_Q4_K_nw8_r2 | mmvq_n1 | 36 | 24 | 0 | 1792 | 16 |
+| mmvq_Q4_K_nw8_r2 | moe_down | 106 | 27 | 0 | 7168 | 12 |
+| mmvq_Q4_K_nw8_r2 | moe_gate_up | 41 | 58 | 0 | 3584 | 16 |
+| mmvq_Q4_K_nw8_r4 | mmvq_n1 | 49 | 24 | 0 | 3584 | 16 |
+| mmvq_Q4_K_nw8_r4 | moe_down | 127 | 28 | 0 | 14336 | 10 |
+| mmvq_Q4_K_nw8_r4 | moe_gate_up | 54 | 58 | 0 | 7168 | 16 |
+| mmvq_Q5_K_nw1_r1 | mmvq_n1 | 31 | 24 | 0 | 0 | 16 |
+| mmvq_Q5_K_nw1_r1 | moe_down | 86 | 27 | 0 | 0 | 16 |
+| mmvq_Q5_K_nw1_r1 | moe_gate_up | 42 | 58 | 0 | 0 | 16 |
+| mmvq_Q5_K_nw1_r2 | mmvq_n1 | 43 | 24 | 0 | 0 | 16 |
+| mmvq_Q5_K_nw1_r2 | moe_down | 117 | 28 | 0 | 0 | 12 |
+| mmvq_Q5_K_nw1_r2 | moe_gate_up | 50 | 56 | 0 | 0 | 16 |
+| mmvq_Q5_K_nw1_r4 | mmvq_n1 | 58 | 24 | 0 | 0 | 16 |
+| mmvq_Q5_K_nw1_r4 | moe_down | 176 | 28 | 0 | 0 | 8 |
+| mmvq_Q5_K_nw1_r4 | moe_gate_up | 67 | 56 | 0 | 0 | 16 |
+| mmvq_Q5_K_nw2_r1 | mmvq_n1 | 31 | 24 | 0 | 128 | 16 |
+| mmvq_Q5_K_nw2_r1 | moe_down | 86 | 27 | 0 | 512 | 16 |
+| mmvq_Q5_K_nw2_r1 | moe_gate_up | 42 | 58 | 0 | 256 | 16 |
+| mmvq_Q5_K_nw2_r2 | mmvq_n1 | 43 | 24 | 0 | 256 | 16 |
+| mmvq_Q5_K_nw2_r2 | moe_down | 117 | 28 | 0 | 1024 | 12 |
+| mmvq_Q5_K_nw2_r2 | moe_gate_up | 51 | 58 | 0 | 512 | 16 |
+| mmvq_Q5_K_nw2_r4 | mmvq_n1 | 58 | 24 | 0 | 512 | 16 |
+| mmvq_Q5_K_nw2_r4 | moe_down | 176 | 28 | 0 | 2048 | 8 |
+| mmvq_Q5_K_nw2_r4 | moe_gate_up | 68 | 58 | 0 | 1024 | 16 |
+| mmvq_Q5_K_nw4_r1 | mmvq_n1 | 31 | 24 | 0 | 384 | 16 |
+| mmvq_Q5_K_nw4_r1 | moe_down | 86 | 27 | 0 | 1536 | 16 |
+| mmvq_Q5_K_nw4_r1 | moe_gate_up | 42 | 58 | 0 | 768 | 16 |
+| mmvq_Q5_K_nw4_r2 | mmvq_n1 | 43 | 24 | 0 | 768 | 16 |
+| mmvq_Q5_K_nw4_r2 | moe_down | 117 | 28 | 0 | 3072 | 12 |
+| mmvq_Q5_K_nw4_r2 | moe_gate_up | 51 | 58 | 0 | 1536 | 16 |
+| mmvq_Q5_K_nw4_r4 | mmvq_n1 | 58 | 24 | 0 | 1536 | 16 |
+| mmvq_Q5_K_nw4_r4 | moe_down | 176 | 28 | 0 | 6144 | 8 |
+| mmvq_Q5_K_nw4_r4 | moe_gate_up | 68 | 58 | 0 | 3072 | 16 |
+| mmvq_Q5_K_nw8_r1 | mmvq_n1 | 31 | 24 | 0 | 896 | 16 |
+| mmvq_Q5_K_nw8_r1 | moe_down | 86 | 27 | 0 | 3584 | 16 |
+| mmvq_Q5_K_nw8_r1 | moe_gate_up | 42 | 58 | 0 | 1792 | 16 |
+| mmvq_Q5_K_nw8_r2 | mmvq_n1 | 43 | 24 | 0 | 1792 | 16 |
+| mmvq_Q5_K_nw8_r2 | moe_down | 117 | 28 | 0 | 7168 | 12 |
+| mmvq_Q5_K_nw8_r2 | moe_gate_up | 51 | 58 | 0 | 3584 | 16 |
+| mmvq_Q5_K_nw8_r4 | mmvq_n1 | 58 | 24 | 0 | 3584 | 16 |
+| mmvq_Q5_K_nw8_r4 | moe_down | 176 | 28 | 0 | 14336 | 8 |
+| mmvq_Q5_K_nw8_r4 | moe_gate_up | 68 | 58 | 0 | 7168 | 16 |
+| mmvq_Q6_K_nw1_r1 | mmvq_n1 | 22 | 25 | 0 | 0 | 16 |
+| mmvq_Q6_K_nw1_r1 | moe_down | 64 | 25 | 0 | 0 | 16 |
+| mmvq_Q6_K_nw1_r1 | moe_gate_up | 31 | 58 | 0 | 0 | 16 |
+| mmvq_Q6_K_nw1_r2 | mmvq_n1 | 30 | 24 | 0 | 0 | 16 |
+| mmvq_Q6_K_nw1_r2 | moe_down | 97 | 26 | 0 | 0 | 12 |
+| mmvq_Q6_K_nw1_r2 | moe_gate_up | 37 | 56 | 0 | 0 | 16 |
+| mmvq_Q6_K_nw1_r4 | mmvq_n1 | 42 | 25 | 0 | 0 | 16 |
+| mmvq_Q6_K_nw1_r4 | moe_down | 141 | 26 | 0 | 0 | 10 |
+| mmvq_Q6_K_nw1_r4 | moe_gate_up | 51 | 56 | 0 | 0 | 16 |
+| mmvq_Q6_K_nw2_r1 | mmvq_n1 | 22 | 25 | 0 | 128 | 16 |
+| mmvq_Q6_K_nw2_r1 | moe_down | 64 | 25 | 0 | 512 | 16 |
+| mmvq_Q6_K_nw2_r1 | moe_gate_up | 31 | 58 | 0 | 256 | 16 |
+| mmvq_Q6_K_nw2_r2 | mmvq_n1 | 30 | 24 | 0 | 256 | 16 |
+| mmvq_Q6_K_nw2_r2 | moe_down | 97 | 26 | 0 | 1024 | 12 |
+| mmvq_Q6_K_nw2_r2 | moe_gate_up | 38 | 58 | 0 | 512 | 16 |
+| mmvq_Q6_K_nw2_r4 | mmvq_n1 | 42 | 25 | 0 | 512 | 16 |
+| mmvq_Q6_K_nw2_r4 | moe_down | 141 | 26 | 0 | 2048 | 10 |
+| mmvq_Q6_K_nw2_r4 | moe_gate_up | 52 | 58 | 0 | 1024 | 16 |
+| mmvq_Q6_K_nw4_r1 | mmvq_n1 | 22 | 25 | 0 | 384 | 16 |
+| mmvq_Q6_K_nw4_r1 | moe_down | 64 | 25 | 0 | 1536 | 16 |
+| mmvq_Q6_K_nw4_r1 | moe_gate_up | 31 | 58 | 0 | 768 | 16 |
+| mmvq_Q6_K_nw4_r2 | mmvq_n1 | 30 | 24 | 0 | 768 | 16 |
+| mmvq_Q6_K_nw4_r2 | moe_down | 97 | 26 | 0 | 3072 | 12 |
+| mmvq_Q6_K_nw4_r2 | moe_gate_up | 38 | 58 | 0 | 1536 | 16 |
+| mmvq_Q6_K_nw4_r4 | mmvq_n1 | 42 | 25 | 0 | 1536 | 16 |
+| mmvq_Q6_K_nw4_r4 | moe_down | 141 | 26 | 0 | 6144 | 10 |
+| mmvq_Q6_K_nw4_r4 | moe_gate_up | 52 | 58 | 0 | 3072 | 16 |
+| mmvq_Q6_K_nw8_r1 | mmvq_n1 | 22 | 25 | 0 | 896 | 16 |
+| mmvq_Q6_K_nw8_r1 | moe_down | 64 | 25 | 0 | 3584 | 16 |
+| mmvq_Q6_K_nw8_r1 | moe_gate_up | 31 | 58 | 0 | 1792 | 16 |
+| mmvq_Q6_K_nw8_r2 | mmvq_n1 | 30 | 24 | 0 | 1792 | 16 |
+| mmvq_Q6_K_nw8_r2 | moe_down | 97 | 26 | 0 | 7168 | 12 |
+| mmvq_Q6_K_nw8_r2 | moe_gate_up | 38 | 58 | 0 | 3584 | 16 |
+| mmvq_Q6_K_nw8_r4 | mmvq_n1 | 42 | 25 | 0 | 3584 | 16 |
+| mmvq_Q6_K_nw8_r4 | moe_down | 141 | 26 | 0 | 14336 | 10 |
+| mmvq_Q6_K_nw8_r4 | moe_gate_up | 52 | 58 | 0 | 7168 | 16 |
+| mmvq_Q8_0_nw1_r1 | mmvq_n1 | 14 | 24 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw1_r1 | moe_down | 43 | 29 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw1_r1 | moe_gate_up | 22 | 58 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw1_r2 | mmvq_n1 | 19 | 26 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw1_r2 | moe_down | 57 | 31 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw1_r2 | moe_gate_up | 27 | 58 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw1_r4 | mmvq_n1 | 26 | 26 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw1_r4 | moe_down | 86 | 30 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw1_r4 | moe_gate_up | 37 | 58 | 0 | 0 | 16 |
+| mmvq_Q8_0_nw2_r1 | mmvq_n1 | 14 | 24 | 0 | 128 | 16 |
+| mmvq_Q8_0_nw2_r1 | moe_down | 43 | 29 | 0 | 512 | 16 |
+| mmvq_Q8_0_nw2_r1 | moe_gate_up | 22 | 58 | 0 | 256 | 16 |
+| mmvq_Q8_0_nw2_r2 | mmvq_n1 | 19 | 26 | 0 | 256 | 16 |
+| mmvq_Q8_0_nw2_r2 | moe_down | 57 | 31 | 0 | 1024 | 16 |
+| mmvq_Q8_0_nw2_r2 | moe_gate_up | 29 | 58 | 0 | 512 | 16 |
+| mmvq_Q8_0_nw2_r4 | mmvq_n1 | 26 | 26 | 0 | 512 | 16 |
+| mmvq_Q8_0_nw2_r4 | moe_down | 86 | 30 | 0 | 2048 | 16 |
+| mmvq_Q8_0_nw2_r4 | moe_gate_up | 39 | 58 | 0 | 1024 | 16 |
+| mmvq_Q8_0_nw4_r1 | mmvq_n1 | 14 | 24 | 0 | 384 | 16 |
+| mmvq_Q8_0_nw4_r1 | moe_down | 43 | 29 | 0 | 1536 | 16 |
+| mmvq_Q8_0_nw4_r1 | moe_gate_up | 22 | 58 | 0 | 768 | 16 |
+| mmvq_Q8_0_nw4_r2 | mmvq_n1 | 19 | 26 | 0 | 768 | 16 |
+| mmvq_Q8_0_nw4_r2 | moe_down | 57 | 31 | 0 | 3072 | 16 |
+| mmvq_Q8_0_nw4_r2 | moe_gate_up | 29 | 58 | 0 | 1536 | 16 |
+| mmvq_Q8_0_nw4_r4 | mmvq_n1 | 26 | 26 | 0 | 1536 | 16 |
+| mmvq_Q8_0_nw4_r4 | moe_down | 86 | 30 | 0 | 6144 | 16 |
+| mmvq_Q8_0_nw4_r4 | moe_gate_up | 39 | 58 | 0 | 3072 | 16 |
+| mmvq_Q8_0_nw8_r1 | mmvq_n1 | 14 | 24 | 0 | 896 | 16 |
+| mmvq_Q8_0_nw8_r1 | moe_down | 43 | 29 | 0 | 3584 | 16 |
+| mmvq_Q8_0_nw8_r1 | moe_gate_up | 22 | 58 | 0 | 1792 | 16 |
+| mmvq_Q8_0_nw8_r2 | mmvq_n1 | 19 | 26 | 0 | 1792 | 16 |
+| mmvq_Q8_0_nw8_r2 | moe_down | 57 | 31 | 0 | 7168 | 16 |
+| mmvq_Q8_0_nw8_r2 | moe_gate_up | 29 | 58 | 0 | 3584 | 16 |
+| mmvq_Q8_0_nw8_r4 | mmvq_n1 | 26 | 26 | 0 | 3584 | 16 |
+| mmvq_Q8_0_nw8_r4 | moe_down | 86 | 30 | 0 | 14336 | 16 |
+| mmvq_Q8_0_nw8_r4 | moe_gate_up | 39 | 58 | 0 | 7168 | 16 |
+| gdn_cpw1 | gdn lag0 | 35 | 58 | 0 | 0 | 16 |
+| gdn_cpw1 | gdn lag1 | 39 | 75 | 0 | 0 | 16 |
+| gdn_cpw2 | gdn lag0 | 46 | 58 | 0 | 0 | 16 |
+| gdn_cpw2 | gdn lag1 | 53 | 75 | 0 | 0 | 16 |
+| gdn_cpw4 | gdn lag0 | 69 | 58 | 0 | 0 | 16 |
+| gdn_cpw4 | gdn lag1 | 84 | 75 | 0 | 0 | 16 |
+| gdn_cpw8 | gdn lag0 | 116 | 58 | 0 | 0 | 12 |
+| gdn_cpw8 | gdn lag1 | 146 | 75 | 0 | 0 | 9 |
+| gdn_cpw16 | gdn lag0 | 211 | 58 | 0 | 0 | 7 |
+| gdn_cpw16 | gdn lag1 | 256 | 75 | 80 | 0 | 5 |

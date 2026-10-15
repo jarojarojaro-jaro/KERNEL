@@ -1,0 +1,206 @@
+From bbac7d7ae1f221d8e00cb476acd7fc5b41b1a383 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 01:09:54 +0000
+Subject: [PATCH 4/7] speculative: --spec-draft-vocab also restricts the
+ DFlash/DFlash2 drafter's LM head (the target's output rows)
+
+The DFlash drafter borrows the target's output matrix (Qwen3.8: Q6_K 248320 x 5120, ~1.04 GB read per draft
+step, all block positions). With --spec-draft-vocab the restricted copy of the target's output rows
+(set_draft_head_vocab, the MTP draft head slot) scores only the listed tokens: DFlash2 runs its top-k selector on
+the restricted logits and maps the candidates back to token ids (no -inf fill); DFlash1 (sampled logits) scatters
+into -inf logits as the MTP head does. Verification unchanged, so lossless; drafts are restricted to the list.
+Default unchanged (no --spec-draft-vocab for DFlash in run-llm.sh).
+
+UNMEASURED (no GPU access at commit time).
+---
+ common/arg.cpp         |  8 ++++----
+ common/common.h        |  2 +-
+ common/speculative.cpp | 34 ++++++++++++++++++++++------------
+ src/models/dflash.cpp  | 39 +++++++++++++++++++++++++++++++++++++--
+ 4 files changed, 64 insertions(+), 19 deletions(-)
+
+diff --git a/common/arg.cpp b/common/arg.cpp
+index 9ca2fef0d..d1bcee48a 100644
+--- a/common/arg.cpp
++++ b/common/arg.cpp
+@@ -4237,16 +4237,16 @@ common_params_context common_params_parser_init(common_params & params, llama_ex
+     ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_P_MIN"));
+     add_opt(common_arg(
+         {"--spec-draft-vocab"}, "FNAME",
+-        "MTP: file of whitespace-separated token ids, most frequent first; the draft LM head then scores only\n"
+-        "these tokens (much cheaper drafting, verification unaffected). Their token embeddings are copied to the\n"
+-        "device too, so that greedy drafts (p-min 0) of a single MTP head run as one graph",
++        "MTP / DFlash: file of whitespace-separated token ids, most frequent first; the draft LM head then scores\n"
++        "only these tokens (much cheaper drafting, verification unaffected). MTP: their token embeddings are copied\n"
++        "to the device too, so that greedy drafts (p-min 0) of a single MTP head run as one graph",
+         [](common_params & params, const std::string & value) {
+             params.speculative.draft.vocab_path = value;
+         }
+     ).set_spec().set_examples({LLAMA_EXAMPLE_SPECULATIVE, LLAMA_EXAMPLE_SERVER, LLAMA_EXAMPLE_CLI}).set_env("LLAMA_ARG_SPEC_DRAFT_VOCAB"));
+     add_opt(common_arg(
+         {"--spec-draft-vocab-n"}, "N",
+-        string_format("MTP: use only the first N ids of --spec-draft-vocab (default: %d = all)", params.speculative.draft.vocab_n),
++        string_format("MTP / DFlash: use only the first N ids of --spec-draft-vocab (default: %d = all)", params.speculative.draft.vocab_n),
+         [](common_params & params, int value) {
+             params.speculative.draft.vocab_n = value;
+         }
+diff --git a/common/common.h b/common/common.h
+index f0b00a39d..7df68eb2e 100644
+--- a/common/common.h
++++ b/common/common.h
+@@ -334,7 +334,7 @@ struct common_params_speculative_draft {
+ 
+     bool backend_sampling = true; // offload draft sampling to the backend (default: on)
+ 
+-    // MTP: restrict the draft LM head to the first vocab_n token ids listed in vocab_path (0 = all of them)
++    // MTP / DFlash: restrict the draft LM head to the first vocab_n token ids listed in vocab_path (0 = all of them)
+     std::string vocab_path;
+     int32_t     vocab_n = 0;
+     // MTP: re-quantize the reduced draft head / the MTP block matrices to these types (GGML_TYPE_COUNT = keep)
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index d4bd50039..3e04595a2 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -979,6 +979,21 @@ struct common_speculative_impl_draft_eagle3 : public common_speculative_impl {
+     }
+ };
+ 
++// --spec-draft-vocab: restrict the draft LM head of model to the first vocab_n ids of vocab_path
++static void common_spec_set_draft_vocab(llama_model * model, const common_params_speculative_draft & params) {
++    std::vector<llama_token> ids;
++    std::ifstream f(params.vocab_path);
++    for (llama_token id; f >> id; ) {
++        ids.push_back(id);
++    }
++    if (params.vocab_n > 0 && (size_t) params.vocab_n < ids.size()) {
++        ids.resize(params.vocab_n);
++    }
++    if (ids.empty() || !llama_model_set_draft_head_vocab(model, ids.data(), (int32_t) ids.size())) {
++        SPC_WRN("could not use the draft vocabulary from '%s'\n", params.vocab_path.c_str());
++    }
++}
++
+ // DFlash: block-diffusion drafting with a draft-side KV cache injection
+ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
+     common_params_speculative_draft params;
+@@ -1133,6 +1148,12 @@ struct common_speculative_impl_draft_dflash : public common_speculative_impl {
+         // DFlash2 reads its selector lattice from h_nextn and never consumes raw logits.
+         llama_set_embeddings_nextn(ctx_dft, true, /*masked*/ !is_dflash2);
+         llama_set_causal_attn(ctx_dft, causal_attn); // DFlash needs non-causal attention unless the model says otherwise
++
++        // optional reduced-vocabulary LM head of the drafter (--spec-draft-vocab): the drafter borrows the target's
++        // output matrix, the restricted copy lives on the target model (the MTP draft head slot, unused here)
++        if (!this->params.vocab_path.empty()) {
++            common_spec_set_draft_vocab(const_cast<llama_model *>(model_tgt), this->params);
++        }
+     }
+ 
+     ~common_speculative_impl_draft_dflash() override {
+@@ -1699,19 +1720,8 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+ 
+         // optional reduced-vocabulary draft head (--spec-draft-vocab)
+         if (!this->params.vocab_path.empty()) {
+-            std::vector<llama_token> ids;
+-            std::ifstream f(this->params.vocab_path);
+-            for (llama_token id; f >> id; ) {
+-                ids.push_back(id);
+-            }
+-            if (this->params.vocab_n > 0 && (size_t) this->params.vocab_n < ids.size()) {
+-                ids.resize(this->params.vocab_n);
+-            }
+             // the MTP head is part of the target model; the draft context only selects the MTP graph
+-            auto * model_dft = const_cast<llama_model *>(llama_get_model(ctx_dft));
+-            if (ids.empty() || !llama_model_set_draft_head_vocab(model_dft, ids.data(), (int32_t) ids.size())) {
+-                SPC_WRN("could not use the draft vocabulary from '%s'\n", this->params.vocab_path.c_str());
+-            }
++            common_spec_set_draft_vocab(const_cast<llama_model *>(llama_get_model(ctx_dft)), this->params);
+         }
+ 
+         // optional cheaper (re-quantized) MTP draft weights (--spec-draft-head-type, --spec-mtp-type)
+diff --git a/src/models/dflash.cpp b/src/models/dflash.cpp
+index ee2d6069b..37c1519e4 100644
+--- a/src/models/dflash.cpp
++++ b/src/models/dflash.cpp
+@@ -470,7 +470,9 @@ static ggml_tensor * build_dflash2_conv(
+ 
+ // DFlash2 selector: top-k candidates per block position plus the pairwise
+ // transition scores, packed into the nextn output slot for the CPU-side walk.
+-static void build_dflash2_selector(llm_graph_context & g, const llama_model & model, ggml_tensor * tokens) {
++// vocab_ids: when not null, the logits cover only these token ids (restricted LM head), the candidates are mapped back
++static void build_dflash2_selector(llm_graph_context & g, const llama_model & model, ggml_tensor * tokens,
++        ggml_tensor * vocab_ids) {
+     ggml_context * ctx0 = g.ctx0;
+     auto         & res  = g.res;
+ 
+@@ -497,6 +499,13 @@ static void build_dflash2_selector(llm_graph_context & g, const llama_model & mo
+     ggml_tensor * logits_rows = ggml_reshape_3d(ctx0, res->t_logits, 1, res->t_logits->ne[0], n_tokens);
+     ggml_tensor * unary       = ggml_reshape_2d(ctx0,
+             ggml_get_rows(ctx0, logits_rows, candidates), top_k, n_tokens);
++    if (vocab_ids) {
++        // restricted-head rows -> token ids
++        candidates = ggml_reshape_2d(ctx0,
++                ggml_get_rows(ctx0, ggml_reshape_2d(ctx0, vocab_ids, 1, vocab_ids->ne[0]),
++                        ggml_reshape_1d(ctx0, candidates, top_k * n_tokens)),
++                top_k, n_tokens);
++    }
+     ggml_tensor * gate        = g.build_lora_mm(model.dflash_selector_hidden, res->t_embd);
+ 
+     // Everything below indexes [.., tokens_per_block, n_blocks]: the block
+@@ -802,12 +811,20 @@ llama_model_dflash::graph<false>::graph(const llama_model & model, const llm_gra
+     // lm_head from the target model (shared via ctx_other)
+     auto * output   = model.output;
+     auto * output_s = model.output_s;
++    // --spec-draft-vocab: the target's restricted copy of its output rows (set_draft_head_vocab) scores only the
++    // listed tokens; the selector picks among them, the sampled path gets -inf for the others
++    ggml_tensor * sub_ids = nullptr;
+     if (output == nullptr) {
+         GGML_ASSERT(cparams.ctx_other != nullptr);
+         const auto * model_other = llama_get_model(cparams.ctx_other);
+         GGML_ASSERT(model_other->output != nullptr && "DFlash decoder requires the target model's output projection");
+         output   = model_other->output;
+         output_s = model_other->output_s;
++        if (model_other->draft_head && model_other->mtp_lm_head() == model_other->output && output_s == nullptr &&
++                model.d2t == nullptr) {
++            output  = model_other->draft_head;
++            sub_ids = model_other->draft_head_ids;
++        }
+     }
+ 
+     cur = build_lora_mm(output, cur, output_s);
+@@ -825,6 +842,24 @@ llama_model_dflash::graph<false>::graph(const llama_model & model, const llm_gra
+         }
+     }
+ 
++    // the DFlash2 selector reads the restricted logits directly when no logits leave the graph
++    ggml_tensor * selector_ids = nullptr;
++    if (sub_ids) {
++        if (model.dflash_selector_hidden && n_outputs == 0) {
++            selector_ids = sub_ids;
++        } else {
++            const int64_t n_sub   = cur->ne[0];
++            const int64_t n_out   = cur->ne[1];
++            const int64_t n_vocab = (int64_t) model.vocab.n_tokens();
++            ggml_tensor * full = ggml_fill(ctx0, ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, n_vocab, n_out), -INFINITY);
++            cur = ggml_set_rows(ctx0,
++                    ggml_reshape_3d(ctx0, full, 1, n_vocab, n_out),
++                    ggml_reshape_3d(ctx0, cur,  1, n_sub,   n_out),
++                    sub_ids);
++            cur = ggml_reshape_2d(ctx0, cur, n_vocab, n_out);
++        }
++    }
++
+     // reduced-draft-vocab exports: scatter the draft logits to the target vocabulary via d2t
+     if (model.d2t) {
+         const int64_t n_draft_vocab = cur->ne[0];
+@@ -851,7 +886,7 @@ llama_model_dflash::graph<false>::graph(const llama_model & model, const llm_gra
+     }
+ 
+     if (model.dflash_selector_hidden) {
+-        build_dflash2_selector(*this, model, inp_tokens);
++        build_dflash2_selector(*this, model, inp_tokens, selector_ids);
+     }
+ }
+ 
+-- 
+2.43.0
+

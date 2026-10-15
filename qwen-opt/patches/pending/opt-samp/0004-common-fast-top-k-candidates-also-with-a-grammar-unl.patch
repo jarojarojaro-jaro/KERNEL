@@ -1,0 +1,74 @@
+From f4f0deae52acde1fa33dfb84a23fee33a00b0580 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 00:45:27 +0000
+Subject: [PATCH 4/4] common: fast top-k candidates also with a grammar, unless
+ grammar_first (LLAMA_SAMPLER_FAST_GRAMMAR)
+
+Tool-calling requests (e.g. a coding agent) carry a lazy tool-call grammar, so every request had a
+grammar sampler and the LLAMA_SAMPLER_FAST_TOPK path was off (~245 vs ~291 t/s on LFM2.5).
+
+In common_sampler_sample the grammar touches the candidates in only two places:
+- grammar_first: applied to the candidate array before the chain. The fast path is not used then
+  (checked per token: grammar_first && grammar_should_apply, which also covers a lazy grammar inhibited
+  while the reasoning budget is active).
+- otherwise (the server's default): the chain samples a token without the grammar, the grammar checks
+  that single token ({id, 1, 0} array), and if it rejects it, the full candidate array is built again
+  with set_logits and sampled with rbudget -> grammar -> chain. The first pass is exactly the
+  grammar-free sampling that the fast path already reproduces (same candidates after the top-k, same
+  token, same RNG draws), the single-token check sees the same id, and the resample path is untouched.
+This holds for every grammar state: a lazy grammar awaiting its trigger (its apply returns immediately,
+so the check always passes), right at the trigger (token or pattern, the grammar changes state only in
+accept), and after it (rejections take the unchanged full resample). The rejection sampler's grammar
+mask is applied to the post-chain candidates, which are the same arrays.
+Off: LLAMA_SAMPLER_FAST_GRAMMAR=0.
+
+CPU harness (slow = LLAMA_SAMPLER_FAST_TOPK=0 vs fast, same seed): lazy grammar with a token trigger
+and with a word (pattern) trigger, steered trigger transitions and grammar-valid / invalid tokens after
+it, with reasoning_control + budget 25 (grammar inhibited while reasoning), MTP accept_n with 4 drafts,
+logit bias + penalties + n_probs, a non-lazy grammar, and grammar_first: token ids and post-chain
+candidates bitwise equal on every vector.
+
+UNMEASURED: end-to-end server A/B (t/s, seeded md5) pending, GPU not available; verified with the CPU harness only.
+---
+ common/sampling.cpp | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index 1d0ae1d02..73d1f145f 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -610,6 +610,9 @@ struct common_sampler * common_sampler_init(
+     // sampler has cut the full array down to the same k candidates) or the raw logits (pre-sampling probs, computed by
+     // the caller from llama_get_logits_ith), neither depends on how the top-k candidates were found
+     // [LLAMA_SAMPLER_FAST_LOGIT_BIAS] ... or a logit-bias sampler on a few distinct tokens (first in the chain)
++    // [LLAMA_SAMPLER_FAST_GRAMMAR] a grammar (lazy or not) is applied to the candidates only with grammar_first; else
++    // the chain samples without it, the grammar checks the one sampled token, and a rejected token is resampled from
++    // the full candidate array (set_logits), as before. common_sampler_sample uses the full array for grammar_first.
+     {
+         const char * env = getenv("LLAMA_SAMPLER_FAST_TOPK");
+         const bool enabled = !env || atoi(env) != 0;
+@@ -621,7 +624,9 @@ struct common_sampler * common_sampler_init(
+         const bool enabled_np = !env_np || atoi(env_np) != 0;
+         const char * env_lb = getenv("LLAMA_SAMPLER_FAST_LOGIT_BIAS");
+         const bool enabled_lb = !env_lb || atoi(env_lb) != 0;
+-        if (enabled && !grmr && (!rbudget || enabled_rb) && (!has_logit_bias || (enabled_lb && bias_fast)) &&
++        const char * env_gr = getenv("LLAMA_SAMPLER_FAST_GRAMMAR");
++        const bool enabled_gr = !env_gr || atoi(env_gr) != 0;
++        if (enabled && (!grmr || enabled_gr) && (!rbudget || enabled_rb) && (!has_logit_bias || (enabled_lb && bias_fast)) &&
+                 params.mirostat == 0 && (params.n_probs == 0 || enabled_np)) {
+             int32_t idx     = has_logit_bias ? 1 : 0; // index of cnstr's sampler in the chain
+             int32_t pen_idx = -1;
+@@ -852,7 +857,9 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
+ 
+     // [LLAMA_SAMPLER_FAST_RBUDGET] a FORCING reasoning budget sets all but the forced token to -inf: full candidates
+     const bool rbudget_forcing = rbudget && common_reasoning_budget_get_state(rbudget) == REASONING_BUDGET_FORCING;
+-    if (gsmpl->fast_top_k <= 0 || rbudget_forcing || !gsmpl->set_logits_top_k(ctx, idx)) {
++    // [LLAMA_SAMPLER_FAST_GRAMMAR] a grammar applied to the candidates before the chain: full candidates
++    const bool grammar_on_candidates = grammar_first && grammar_should_apply(gsmpl);
++    if (gsmpl->fast_top_k <= 0 || rbudget_forcing || grammar_on_candidates || !gsmpl->set_logits_top_k(ctx, idx)) {
+         gsmpl->set_logits(ctx, idx);
+     }
+ 
+-- 
+2.43.0
+

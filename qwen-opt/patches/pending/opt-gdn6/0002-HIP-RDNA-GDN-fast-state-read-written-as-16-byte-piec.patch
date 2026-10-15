@@ -1,0 +1,179 @@
+From 0d89ce56c30409fc13874bf0f2c729fd3b2ad568 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 12:35:49 +0000
+Subject: [PATCH 2/2] HIP/RDNA GDN fast: state read/written as 16-byte pieces
+ of the warp's 4 contiguous columns through LDS (GGML_HIP_GDN_B128=0: per-lane
+ dword accesses)
+
+The fast kernel's state load and final store (and the lagged write after the replay, w == 0) use 4 global_load_b128
+/ global_store_b128 per lane, redistributed to the unchanged element-to-lane mapping through 8.5 KB of LDS per CTA
+(rows padded by 8 floats: conflict-free lane reads), instead of 16 dword accesses per lane that each touch 4 rows.
+The write inside the lagged token loop (t == w - 1, prompt batches) stays per lane so that the staging addresses are
+not live across the loop. Used when the state rows are 16-byte aligned (checked at launch), else the unstaged
+variant. Data movement only, no arithmetic change.
+
+UNMEASURED (no GPU access). Verified offline (tools in ~/wt/gdn6-isa):
+- all 44 plain kernels identical to ~/wt/qwen5-tools/gdn_base.s (isadiff.py);
+- gdncmp.py symbolic emulation (LDS and b128 accesses modelled): every written word of dst / state / pending rows is
+  the same IEEE expression DAG as the plain kernel, staged and unstaged, all four <128, l2_qk, lag> variants,
+  13 / 25 launches each (incl. w > 0 mid-loop state writes and the state gather);
+- per wave, plain decode T=1: 51 -> 33 global loads, 17 -> 1 dword stores + 4 b128 loads / 4 b128 stores, 24 LDS
+  ops, VALU issue 195 -> 231 (unstaged fast; base 230);
+- VGPRs staged 123/121/111/119 (lag+l2, lag, l2, none), no scratch, LDS 8704 B, occupancy 10/10/12/12.
+---
+ ggml/src/ggml-cuda/gated_delta_net.cu | 92 +++++++++++++++++++++++----
+ 1 file changed, 78 insertions(+), 14 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
+index 0cf721072..90d85fc00 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cu
++++ b/ggml/src/ggml-cuda/gated_delta_net.cu
+@@ -324,7 +324,16 @@ gated_delta_net_cuda(const float * q,
+ //  - kv[t+1] = S'k[t+1] is summed right after the update of token t, next to attn[t] = S'q[t], so both segment sums
+ //    overlap; token t+1's loads and l2 norms are issued before token t's update (the last token is peeled, so the
+ //    loop body is one basic block the scheduler can interleave);
+-//  - lagged replay: kv of pending row j+1 is summed in the update pass of row j.
++//  - lagged replay: kv of pending row j+1 is summed in the update pass of row j;
++//  - stage (GGML_HIP_GDN_B128): the state is read and written as 16-byte pieces of the warp's 4 contiguous columns
++//    (4 global_load_b128 / global_store_b128 per lane instead of 16 dword accesses touching 4 rows each) and
++//    redistributed to the lane mapping through LDS.
++static __device__ __forceinline__ void gdn_fast_wave_sync() {
++    __builtin_amdgcn_fence(__ATOMIC_RELEASE, "wavefront");
++    __builtin_amdgcn_wave_barrier();
++    __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "wavefront");
++}
++
+ template <int R>
+ static __device__ __forceinline__ float gdn_fast_dot(const float (&a)[R], const float (&b)[R]) {
+ #pragma clang fp contract(off)
+@@ -391,7 +400,7 @@ static __device__ __forceinline__ void gdn_fast_pingpong(const int n, B & a, B &
+     }
+ }
+ 
+-template <int S_v, bool l2_qk, bool lag_t>
++template <int S_v, bool l2_qk, bool lag_t, bool stage>
+ __global__ void __launch_bounds__(32 * 4, 2)
+ gated_delta_net_fast_cuda(const float * q,
+                                      const float * k,
+@@ -453,16 +462,60 @@ gated_delta_net_fast_cuda(const float * q,
+     curr_state += state_in_offset + col * S_v;
+     attn_data += (sequence * n_tokens * H + h_idx) * S_v;
+ 
++    // stage: the warp's cols_per_warp state columns (contiguous) staged through LDS, rows padded by 8 floats so that
++    // the lane reads (column c, element r*lanes_per_col + lane_in_col) hit distinct banks
++    typedef float f32x4 __attribute__((ext_vector_type(4))); // not float4: its struct copy kept tmp[] in scratch
++    constexpr int lds_row = S_v + 8;
++    constexpr int n4      = cols_per_warp * S_v / (4 * warp_size);
++    __shared__ float lds_state[stage ? 4 * cols_per_warp * lds_row : 1];
++    [[maybe_unused]] float * lds_w = lds_state + (stage ? threadIdx.y * cols_per_warp * lds_row : 0);
++
+     float s_shard[rows_per_lane];
++    if constexpr (stage) {
++        const f32x4 * src = (const f32x4 *) (curr_state - col_in_warp * S_v);
++        f32x4 tmp[n4];
+ #pragma unroll
+-    for (int r = 0; r < rows_per_lane; r++) {
+-        s_shard[r] = curr_state[r * lanes_per_col + lane_in_col];
++        for (int it = 0; it < n4; it++) {
++            tmp[it] = src[it * warp_size + lane];
++        }
++#pragma unroll
++        for (int it = 0; it < n4; it++) {
++            const int e = 4 * (it * warp_size + lane);
++            *(f32x4 *) (lds_w + (e / S_v) * lds_row + e % S_v) = tmp[it];
++        }
++        gdn_fast_wave_sync();
++#pragma unroll
++        for (int r = 0; r < rows_per_lane; r++) {
++            s_shard[r] = lds_w[col_in_warp * lds_row + r * lanes_per_col + lane_in_col];
++        }
++    } else {
++#pragma unroll
++        for (int r = 0; r < rows_per_lane; r++) {
++            s_shard[r] = curr_state[r * lanes_per_col + lane_in_col];
++        }
+     }
+ 
+-    auto write_state = [&]() {
++    // staged: through LDS as 16-byte pieces (stage only); the write inside the lagged token loop (prompt batches,
++    // t == w - 1) stays per lane so the staging addresses are not live across the loop
++    auto write_state = [&](auto staged_c) {
++        if constexpr (decltype(staged_c)::value) {
++            gdn_fast_wave_sync(); // the other lanes' earlier reads of the staging rows come first
+ #pragma unroll
+-        for (int r = 0; r < rows_per_lane; r++) {
+-            state[col * S_v + r * lanes_per_col + lane_in_col] = s_shard[r];
++            for (int r = 0; r < rows_per_lane; r++) {
++                lds_w[col_in_warp * lds_row + r * lanes_per_col + lane_in_col] = s_shard[r];
++            }
++            gdn_fast_wave_sync();
++            f32x4 * out = (f32x4 *) (state + (col - col_in_warp) * S_v);
++#pragma unroll
++            for (int it = 0; it < n4; it++) {
++                const int e = 4 * (it * warp_size + lane);
++                out[it * warp_size + lane] = *(const f32x4 *) (lds_w + (e / S_v) * lds_row + e % S_v);
++            }
++        } else {
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                state[col * S_v + r * lanes_per_col + lane_in_col] = s_shard[r];
++            }
+         }
+     };
+ 
+@@ -514,7 +567,7 @@ gated_delta_net_fast_cuda(const float * q,
+             gdn_fast_pingpong(n_pend, ra, rb, replay);
+         }
+         if (w == 0) {
+-            write_state();
++            write_state(std::bool_constant<stage>{});
+         }
+     }
+ 
+@@ -590,7 +643,7 @@ gated_delta_net_fast_cuda(const float * q,
+                 }
+             }
+             if (t == w - 1) {
+-                write_state();
++                write_state(std::false_type{});
+             }
+         }
+     };
+@@ -607,7 +660,7 @@ gated_delta_net_fast_cuda(const float * q,
+     }
+ 
+     if constexpr (!lag_t) {
+-        write_state();
++        write_state(std::bool_constant<stage>{});
+     }
+ }
+ #endif // defined(GGML_USE_HIP)
+@@ -699,10 +752,21 @@ static void launch_gated_delta_net(
+     if constexpr (!KDA && !keep_rs_t) {
+         if (gdn_fast && S_v == 128 && warp_size == 32 &&
+                 GGML_CUDA_CC_IS_RDNA(ggml_cuda_info().devices[ggml_cuda_get_device()].cc)) {
+-            ggml_cuda_kernel_launch(gated_delta_net_fast_cuda<128, l2_qk, lag_t>, launch_params,
+-                q_d, k_d, v_d, g_d, b_d, s_src.s_d, s_src.idx, s_src.row_stride, dst_d, state_d, H,
+-                n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
+-                sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, l2_eps, l2_scale, state_slot_stride, K, lagp);
++            // GGML_HIP_GDN_B128=0: no LDS staging of the state; staging needs 16-byte aligned state rows
++            static const bool gdn_b128 = ggml_cuda_env_switch("GGML_HIP_GDN_B128");
++            const bool stage = gdn_b128 && (uintptr_t) s_src.s_d % 16 == 0 &&
++                (s_src.idx == nullptr || s_src.row_stride % 4 == 0) && (uintptr_t) state_d % 16 == 0;
++#define GDN_FAST_LAUNCH(STAGE)                                                                                \
++            ggml_cuda_kernel_launch(gated_delta_net_fast_cuda<128, l2_qk, lag_t, STAGE>, launch_params,         \
++                q_d, k_d, v_d, g_d, b_d, s_src.s_d, s_src.idx, s_src.row_stride, dst_d, state_d, H,             \
++                n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,                                                 \
++                sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, l2_eps, l2_scale, state_slot_stride, K, lagp)
++            if (stage) {
++                GDN_FAST_LAUNCH(true);
++            } else {
++                GDN_FAST_LAUNCH(false);
++            }
++#undef GDN_FAST_LAUNCH
+             return;
+         }
+     }
+-- 
+2.43.0
+

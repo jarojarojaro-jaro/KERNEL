@@ -1,0 +1,537 @@
+From 5b1fdbc2f51dc8b26a8dabe37cde16f3e673f9f7 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 01:29:29 +0000
+Subject: [PATCH 6/7] Revert "HIP/RDNA GDN: DPP segment reductions, state
+ staged as 16-byte rows through LDS, next token's kv dot product fused into
+ the output pass (GGML_HIP_GDN_FAST=0: plain kernel)"
+
+This reverts commit 58e578967f6ed75f7581ee54ad85b454cdcd6c63.
+---
+ ggml/src/ggml-cuda/gated_delta_net.cu | 407 +++++++-------------------
+ 1 file changed, 106 insertions(+), 301 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
+index 804445d84..d3e6f0dc7 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cu
++++ b/ggml/src/ggml-cuda/gated_delta_net.cu
+@@ -17,14 +17,7 @@ struct gdn_lag_args {
+ // lag_t: GATED_DELTA_NET_LAG, K is the pending-row capacity; the n_pend pending rows are replayed into the state
+ // with the arithmetic of the token loop (bit-identical to having run them in sequence), the state after the first
+ // w = n_tokens - min(n_tokens, K) rows is written once and the last min(n_tokens, K) rows become the new pending rows.
+-// fast (GGML_HIP_GDN_FAST, RDNA): bit-identical to !fast, same element-to-lane mapping and arithmetic:
+-//  - segment reductions by DPP/permlanex16 instead of ds_bpermute round trips through LDS;
+-//  - the state is read and written as whole 16-byte rows of the warp's columns and redistributed through LDS
+-//    (one dwordx4 per lane per 512 bytes instead of 4 scattered 32-byte pieces per dword load);
+-//  - (scalar gate) the dot product with the next token's k runs in the same pass over the updated state as the
+-//    output dot product of the current token, so both segment reductions overlap; the next token's q/k loads and
+-//    l2 norms are issued before the current token's update. Every sum keeps its order (r ascending, same butterfly).
+-template <int S_v, bool KDA, bool keep_rs_t, bool l2_qk, bool lag_t, bool fast, int cols_per_warp = gdn_cols_per_warp>
++template <int S_v, bool KDA, bool keep_rs_t, bool l2_qk, bool lag_t, int cols_per_warp = gdn_cols_per_warp>
+ __global__ void __launch_bounds__((ggml_cuda_get_physical_warp_size() < S_v ? ggml_cuda_get_physical_warp_size() : S_v) * 4, 2)
+ gated_delta_net_cuda(const float * q,
+                                      const float * k,
+@@ -76,31 +69,6 @@ gated_delta_net_cuda(const float * q,
+     const uint32_t iq1 = fastmodulo(h_idx, neqk1_magic);
+     const uint32_t iq3 = fastdiv(sequence, rq3_magic);
+ 
+-    auto reduce = [](float x) {
+-        if constexpr (fast) {
+-            return warp_reduce_sum_dpp<lanes_per_col>(x);
+-        } else {
+-            return warp_reduce_sum<lanes_per_col>(x);
+-        }
+-    };
+-
+-    // fast: the warp's cols_per_warp state columns (contiguous) staged through LDS, rows padded by 8 floats so that
+-    // the per-lane reads (column c, element r*lanes_per_col + lane_in_col) hit distinct banks
+-    constexpr bool stage   = fast && (cols_per_warp * S_v) % (4 * warp_size) == 0;
+-    constexpr int  lds_row = S_v + 8;
+-    constexpr int  n4      = stage ? cols_per_warp * S_v / (4 * warp_size) : 1;
+-    __shared__ float lds_state[stage ? 4 * cols_per_warp * lds_row : 1];
+-    [[maybe_unused]] float * lds_w = lds_state + (stage ? threadIdx.y * cols_per_warp * lds_row : 0);
+-    [[maybe_unused]] auto wave_sync = []() {
+-#if defined(GGML_USE_HIP)
+-        __builtin_amdgcn_fence(__ATOMIC_RELEASE, "wavefront");
+-        __builtin_amdgcn_wave_barrier();
+-        __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "wavefront");
+-#else
+-        __syncwarp();
+-#endif // defined(GGML_USE_HIP)
+-    };
+-
+     float *       attn_data        = dst;
+ 
+     // input state holds s0 only: [S_v, S_v, H, n_seqs] — seq stride is D = H * S_v * S_v.
+@@ -117,54 +85,12 @@ gated_delta_net_cuda(const float * q,
+     float         s_shard[rows_per_lane];
+     // state is stored transposed: M[col][i] = S[i][col], row col is contiguous
+ 
+-    if constexpr (stage) {
+-        const float4 * src = (const float4 *) (curr_state - col_in_warp * S_v);
+-        float4 tmp[n4];
+-#pragma unroll
+-        for (int it = 0; it < n4; it++) {
+-            tmp[it] = src[it * warp_size + lane];
+-        }
+-#pragma unroll
+-        for (int it = 0; it < n4; it++) {
+-            const int e = 4 * (it * warp_size + lane);
+-            *(float4 *) (lds_w + (e / S_v) * lds_row + e % S_v) = tmp[it];
+-        }
+-        wave_sync();
+-#pragma unroll
+-        for (int r = 0; r < rows_per_lane; r++) {
+-            s_shard[r] = lds_w[col_in_warp * lds_row + r * lanes_per_col + lane_in_col];
+-        }
+-    } else {
+ #pragma unroll
+-        for (int r = 0; r < rows_per_lane; r++) {
+-            const int i = r * lanes_per_col + lane_in_col;
+-            s_shard[r]  = curr_state[i];
+-        }
++    for (int r = 0; r < rows_per_lane; r++) {
++        const int i = r * lanes_per_col + lane_in_col;
++        s_shard[r]  = curr_state[i];
+     }
+ 
+-    // writes s_shard as the state of column col at dst (the column's row of the state), dst = state + col * S_v
+-    auto write_state = [&](float * dst_col) {
+-        if constexpr (stage) {
+-            wave_sync(); // earlier LDS reads of the other lanes come first
+-#pragma unroll
+-            for (int r = 0; r < rows_per_lane; r++) {
+-                lds_w[col_in_warp * lds_row + r * lanes_per_col + lane_in_col] = s_shard[r];
+-            }
+-            wave_sync();
+-            float4 * out = (float4 *) (dst_col - col_in_warp * S_v);
+-#pragma unroll
+-            for (int it = 0; it < n4; it++) {
+-                const int e = 4 * (it * warp_size + lane);
+-                out[it * warp_size + lane] = *(const float4 *) (lds_w + (e / S_v) * lds_row + e % S_v);
+-            }
+-        } else {
+-#pragma unroll
+-            for (int r = 0; r < rows_per_lane; r++) {
+-                dst_col[r * lanes_per_col + lane_in_col] = s_shard[r];
+-            }
+-        }
+-    };
+-
+     // lagged state: replay the pending rows of the previous call (the expressions are those of the token loop below)
+     // and write the state once, after the first w rows of this call
+     [[maybe_unused]] float * pend_wr = nullptr;
+@@ -214,7 +140,7 @@ gated_delta_net_cuda(const float * q,
+             for (int r = 0; r < rows_per_lane; r++) {
+                 kv_shard += s_shard[r] * k_reg[r];
+             }
+-            float kv_col = reduce(kv_shard);
++            float kv_col = warp_reduce_sum<lanes_per_col>(kv_shard);
+ 
+             float delta_col = (v_col - g_val * kv_col) * beta_val;
+ 
+@@ -225,268 +151,163 @@ gated_delta_net_cuda(const float * q,
+         }
+ 
+         if (w == 0) {
+-            write_state(state + col * S_v);
+-        }
+-    }
+-
+-    // after the recurrence of token t: the lagged pending row / state write and the snapshots
+-    [[maybe_unused]] auto after_token = [&](const int t, const float (&k_reg)[rows_per_lane], const float g_raw,
+-                                            const float beta_val, const float v_col) {
+-        if constexpr (lag_t) {
+-            if (t >= w) {
+-                // this row becomes pending: post-norm k (one segment of the first CTA of the head), v, raw g, beta
+-                const int64_t R   = H * (2 * S_v + 2);
+-                float *       row = pend_wr + (t - w) * R;
+-                const bool first_seg = blockIdx.z == 0 && threadIdx.y == 0 && col_in_warp == 0;
+-                if (first_seg) {
+ #pragma unroll
+-                    for (int r = 0; r < rows_per_lane; r++) {
+-                        row[h_idx * S_v + r * lanes_per_col + lane_in_col] = k_reg[r];
+-                    }
+-                    if (lane_in_col == 0) {
+-                        row[2 * H * S_v + h_idx]     = g_raw;
+-                        row[2 * H * S_v + H + h_idx] = beta_val;
+-                    }
+-                }
+-                if (lane_in_col == 0) {
+-                    row[H * S_v + h_idx * S_v + col] = v_col;
+-                }
+-            }
+-            if (t == w - 1) {
+-                write_state(state + col * S_v);
++            for (int r = 0; r < rows_per_lane; r++) {
++                state[col * S_v + r * lanes_per_col + lane_in_col] = s_shard[r];
+             }
+         }
++    }
+ 
+-        if constexpr (keep_rs_t) {
+-            // snapshot slot mapping: slot 0 = most recent state, slot s = s tokens back.
+-            // When n_tokens < K only slots 0..n_tokens-1 are written; older slots are caller-owned.
+-            const int target_slot = (int) n_tokens - 1 - t;
+-            if (target_slot >= 0 && target_slot < K) {
+-                float * curr_state = state + target_slot * state_slot_stride;
++    for (int t = 0; t < n_tokens; t++) {
++        const float * q_t = q + iq3 * sq3 + t * sq2 + iq1 * sq1;
++        const float * k_t = k + iq3 * sq3 + t * sq2 + iq1 * sq1;
++        const float * v_t = v + sequence * sv3 + t * sv2 + h_idx * sv1;
++
++        const int64_t gb_offset = sequence * sb3 + t * sb2 + h_idx * sb1;
++        const float * beta_t = beta + gb_offset;
++        const float * g_t    = g    + gb_offset * (KDA ? S_v : 1);
++
++        const float beta_val = *beta_t;
++
++        // Cache k and q in registers
++        float k_reg[rows_per_lane];
++        float q_reg[rows_per_lane];
+ #pragma unroll
+-                for (int r = 0; r < rows_per_lane; r++) {
+-                    const int i = r * lanes_per_col + lane_in_col;
+-                    curr_state[col * S_v + i] = s_shard[r];
+-                }
+-            }
++        for (int r = 0; r < rows_per_lane; r++) {
++            const int i = r * lanes_per_col + lane_in_col;
++            k_reg[r] = k_t[i];
++            q_reg[r] = q_t[i];
+         }
+-    };
+-
+-    if constexpr (fast && !KDA) {
+-        // q, k (l2-normalized when l2_qk), v[col], beta and raw g of token t
+-        auto load_token = [&](const int t, float (&k_r)[rows_per_lane], float (&q_r)[rows_per_lane], float & v_c,
+-                              float & beta_v, float & g_raw) {
+-            const float * q_t = q + iq3 * sq3 + t * sq2 + iq1 * sq1;
+-            const float * k_t = k + iq3 * sq3 + t * sq2 + iq1 * sq1;
+-            const int64_t gb_offset = sequence * sb3 + t * sb2 + h_idx * sb1;
+-            v_c    = v[sequence * sv3 + t * sv2 + h_idx * sv1 + col];
+-            beta_v = beta[gb_offset];
+-            g_raw  = g[gb_offset];
++        if constexpr (l2_qk) {
++            // each column segment holds all S_v elements of q and k, so a segment reduction gives the full norm
++            float k_sq = 0.0f;
++            float q_sq = 0.0f;
+ #pragma unroll
+             for (int r = 0; r < rows_per_lane; r++) {
+-                const int i = r * lanes_per_col + lane_in_col;
+-                k_r[r] = k_t[i];
+-                q_r[r] = q_t[i];
++                k_sq += k_reg[r] * k_reg[r];
++                q_sq += q_reg[r] * q_reg[r];
+             }
+-            if constexpr (l2_qk) {
+-                float k_sq = 0.0f;
+-                float q_sq = 0.0f;
++            k_sq = warp_reduce_sum<lanes_per_col>(k_sq);
++            q_sq = warp_reduce_sum<lanes_per_col>(q_sq);
++            const float k_rs = rsqrtf(k_sq / S_v + l2_eps);
++            const float q_rs = rsqrtf(q_sq / S_v + l2_eps);
+ #pragma unroll
+-                for (int r = 0; r < rows_per_lane; r++) {
+-                    k_sq += k_r[r] * k_r[r];
+-                    q_sq += q_r[r] * q_r[r];
+-                }
+-                k_sq = reduce(k_sq);
+-                q_sq = reduce(q_sq);
+-                const float k_rs = rsqrtf(k_sq / S_v + l2_eps);
+-                const float q_rs = rsqrtf(q_sq / S_v + l2_eps);
+-#pragma unroll
+-                for (int r = 0; r < rows_per_lane; r++) {
+-                    k_r[r] = l2_scale * (k_rs * k_r[r]);
+-                    q_r[r] = l2_scale * (q_rs * q_r[r]);
+-                }
++            for (int r = 0; r < rows_per_lane; r++) {
++                k_reg[r] = l2_scale * (k_rs * k_reg[r]);
++                q_reg[r] = l2_scale * (q_rs * q_reg[r]);
+             }
+-        };
++        }
+ 
+-        float k_reg[rows_per_lane];
+-        float q_reg[rows_per_lane];
+-        float v_col    = 0.0f;
+-        float beta_val = 0.0f;
+-        float g_raw    = 0.0f;
+-        float kv_col   = 0.0f;
+-        if (n_tokens > 0) {
+-            load_token(0, k_reg, q_reg, v_col, beta_val, g_raw);
++        if constexpr (!KDA) {
++            const float g_val = expf(*g_t);
++
++            // kv[col] = (S^T @ k)[col] = sum_i S[i][col] * k[i]
+             float kv_shard = 0.0f;
+ #pragma unroll
+             for (int r = 0; r < rows_per_lane; r++) {
+                 kv_shard += s_shard[r] * k_reg[r];
+             }
+-            kv_col = reduce(kv_shard);
+-        }
+-
+-        for (int t = 0; t < n_tokens; t++) {
+-            const bool has_next = t + 1 < n_tokens;
+-            float k_nxt[rows_per_lane];
+-            float q_nxt[rows_per_lane];
+-            float v_nxt    = 0.0f;
+-            float beta_nxt = 0.0f;
+-            float g_nxt    = 0.0f;
+-            if (has_next) {
+-                load_token(t + 1, k_nxt, q_nxt, v_nxt, beta_nxt, g_nxt);
+-            } else {
+-#pragma unroll
+-                for (int r = 0; r < rows_per_lane; r++) {
+-                    k_nxt[r] = 0.0f;
+-                    q_nxt[r] = 0.0f;
+-                }
+-            }
+-
+-            const float g_val = expf(g_raw);
++            float kv_col = warp_reduce_sum<lanes_per_col>(kv_shard);
+ 
+             // delta[col] = (v[col] - g * kv[col]) * beta
+-            float delta_col = (v_col - g_val * kv_col) * beta_val;
++            float delta_col = (v_t[col] - g_val * kv_col) * beta_val;
+ 
+-            // S[i][col] = g * S[i][col] + k[i] * delta[col]; attn[col] = sum_i S[i][col] * q[i] and the next token's
+-            // kv[col] = sum_i S[i][col] * k_next[i] over the updated state
++            // fused: S[i][col] = g * S[i][col] + k[i] * delta[col]
++            // attn[col] = (S^T @ q)[col] = sum_i S[i][col] * q[i]
+             float attn_partial = 0.0f;
+ #pragma unroll
+             for (int r = 0; r < rows_per_lane; r++) {
+                 s_shard[r]  = g_val * s_shard[r] + k_reg[r] * delta_col;
+                 attn_partial += s_shard[r] * q_reg[r];
+             }
+-            float kv_shard = 0.0f;
+-#pragma unroll
+-            for (int r = 0; r < rows_per_lane; r++) {
+-                kv_shard += s_shard[r] * k_nxt[r];
+-            }
+ 
+-            const float attn_col = reduce(attn_partial);
+-            kv_col = reduce(kv_shard);
++            float attn_col = warp_reduce_sum<lanes_per_col>(attn_partial);
+ 
+             if (lane_in_col == 0) {
+                 attn_data[col] = attn_col * scale;
+             }
+-            attn_data += S_v * H;
+-
+-            after_token(t, k_reg, g_raw, beta_val, v_col);
+-
++        } else {
++            // kv[col] = sum_i g[i] * S[i][col] * k[i]
++            float kv_shard = 0.0f;
+ #pragma unroll
+             for (int r = 0; r < rows_per_lane; r++) {
+-                k_reg[r] = k_nxt[r];
+-                q_reg[r] = q_nxt[r];
++                const int i = r * lanes_per_col + lane_in_col;
++                kv_shard += expf(g_t[i]) * s_shard[r] * k_reg[r];
+             }
+-            v_col    = v_nxt;
+-            beta_val = beta_nxt;
+-            g_raw    = g_nxt;
+-        }
+-    } else {
+-        for (int t = 0; t < n_tokens; t++) {
+-            const float * q_t = q + iq3 * sq3 + t * sq2 + iq1 * sq1;
+-            const float * k_t = k + iq3 * sq3 + t * sq2 + iq1 * sq1;
+-            const float * v_t = v + sequence * sv3 + t * sv2 + h_idx * sv1;
+ 
+-            const int64_t gb_offset = sequence * sb3 + t * sb2 + h_idx * sb1;
+-            const float * beta_t = beta + gb_offset;
+-            const float * g_t    = g    + gb_offset * (KDA ? S_v : 1);
++            float kv_col = warp_reduce_sum<lanes_per_col>(kv_shard);
+ 
+-            const float beta_val = *beta_t;
++            // delta[col] = (v[col] - kv[col]) * beta
++            float delta_col = (v_t[col] - kv_col) * beta_val;
+ 
+-            // Cache k and q in registers
+-            float k_reg[rows_per_lane];
+-            float q_reg[rows_per_lane];
++            // fused: S[i][col] = g[i] * S[i][col] + k[i] * delta[col]
++            // attn[col] = (S^T @ q)[col] = sum_i S[i][col] * q[i]
++            float attn_partial = 0.0f;
+ #pragma unroll
+             for (int r = 0; r < rows_per_lane; r++) {
+                 const int i = r * lanes_per_col + lane_in_col;
+-                k_reg[r] = k_t[i];
+-                q_reg[r] = q_t[i];
+-            }
+-            if constexpr (l2_qk) {
+-                // each column segment holds all S_v elements of q and k, so a segment reduction gives the full norm
+-                float k_sq = 0.0f;
+-                float q_sq = 0.0f;
+-#pragma unroll
+-                for (int r = 0; r < rows_per_lane; r++) {
+-                    k_sq += k_reg[r] * k_reg[r];
+-                    q_sq += q_reg[r] * q_reg[r];
+-                }
+-                k_sq = reduce(k_sq);
+-                q_sq = reduce(q_sq);
+-                const float k_rs = rsqrtf(k_sq / S_v + l2_eps);
+-                const float q_rs = rsqrtf(q_sq / S_v + l2_eps);
+-#pragma unroll
+-                for (int r = 0; r < rows_per_lane; r++) {
+-                    k_reg[r] = l2_scale * (k_rs * k_reg[r]);
+-                    q_reg[r] = l2_scale * (q_rs * q_reg[r]);
+-                }
++                s_shard[r]  = expf(g_t[i]) * s_shard[r] + k_reg[r] * delta_col;
++                attn_partial += s_shard[r] * q_reg[r];
+             }
+ 
+-            if constexpr (!KDA) {
+-                const float g_val = expf(*g_t);
++            float attn_col = warp_reduce_sum<lanes_per_col>(attn_partial);
+ 
+-                // kv[col] = (S^T @ k)[col] = sum_i S[i][col] * k[i]
+-                float kv_shard = 0.0f;
+-#pragma unroll
+-                for (int r = 0; r < rows_per_lane; r++) {
+-                    kv_shard += s_shard[r] * k_reg[r];
+-                }
+-                float kv_col = reduce(kv_shard);
++            if (lane_in_col == 0) {
++                attn_data[col] = attn_col * scale;
++            }
++        }
+ 
+-                // delta[col] = (v[col] - g * kv[col]) * beta
+-                float delta_col = (v_t[col] - g_val * kv_col) * beta_val;
++        attn_data += S_v * H;
+ 
+-                // fused: S[i][col] = g * S[i][col] + k[i] * delta[col]
+-                // attn[col] = (S^T @ q)[col] = sum_i S[i][col] * q[i]
+-                float attn_partial = 0.0f;
++        if constexpr (lag_t) {
++            if (t >= w) {
++                // this row becomes pending: post-norm k (one segment of the first CTA of the head), v, raw g, beta
++                const int64_t R   = H * (2 * S_v + 2);
++                float *       row = pend_wr + (t - w) * R;
++                const bool first_seg = blockIdx.z == 0 && threadIdx.y == 0 && col_in_warp == 0;
++                if (first_seg) {
+ #pragma unroll
+-                for (int r = 0; r < rows_per_lane; r++) {
+-                    s_shard[r]  = g_val * s_shard[r] + k_reg[r] * delta_col;
+-                    attn_partial += s_shard[r] * q_reg[r];
++                    for (int r = 0; r < rows_per_lane; r++) {
++                        row[h_idx * S_v + r * lanes_per_col + lane_in_col] = k_reg[r];
++                    }
++                    if (lane_in_col == 0) {
++                        row[2 * H * S_v + h_idx]     = *g_t;
++                        row[2 * H * S_v + H + h_idx] = beta_val;
++                    }
+                 }
+-
+-                float attn_col = reduce(attn_partial);
+-
+                 if (lane_in_col == 0) {
+-                    attn_data[col] = attn_col * scale;
++                    row[H * S_v + h_idx * S_v + col] = v_t[col];
+                 }
+-            } else {
+-                // kv[col] = sum_i g[i] * S[i][col] * k[i]
+-                float kv_shard = 0.0f;
++            }
++            if (t == w - 1) {
+ #pragma unroll
+                 for (int r = 0; r < rows_per_lane; r++) {
+-                    const int i = r * lanes_per_col + lane_in_col;
+-                    kv_shard += expf(g_t[i]) * s_shard[r] * k_reg[r];
++                    state[col * S_v + r * lanes_per_col + lane_in_col] = s_shard[r];
+                 }
++            }
++        }
+ 
+-                float kv_col = reduce(kv_shard);
+-
+-                // delta[col] = (v[col] - kv[col]) * beta
+-                float delta_col = (v_t[col] - kv_col) * beta_val;
+-
+-                // fused: S[i][col] = g[i] * S[i][col] + k[i] * delta[col]
+-                // attn[col] = (S^T @ q)[col] = sum_i S[i][col] * q[i]
+-                float attn_partial = 0.0f;
++        if constexpr (keep_rs_t) {
++            // snapshot slot mapping: slot 0 = most recent state, slot s = s tokens back.
++            // When n_tokens < K only slots 0..n_tokens-1 are written; older slots are caller-owned.
++            const int target_slot = (int) n_tokens - 1 - t;
++            if (target_slot >= 0 && target_slot < K) {
++                float * curr_state = state + target_slot * state_slot_stride;
+ #pragma unroll
+                 for (int r = 0; r < rows_per_lane; r++) {
+                     const int i = r * lanes_per_col + lane_in_col;
+-                    s_shard[r]  = expf(g_t[i]) * s_shard[r] + k_reg[r] * delta_col;
+-                    attn_partial += s_shard[r] * q_reg[r];
+-                }
+-
+-                float attn_col = reduce(attn_partial);
+-
+-                if (lane_in_col == 0) {
+-                    attn_data[col] = attn_col * scale;
++                    curr_state[col * S_v + i] = s_shard[r];
+                 }
+             }
+-
+-            attn_data += S_v * H;
+-
+-            after_token(t, k_reg, KDA ? 0.0f : *g_t, beta_val, v_t[col]);
+         }
+     }
+ 
+     if constexpr (!keep_rs_t && !lag_t) {
+-        write_state(state + col * S_v);
++#pragma unroll
++        for (int r = 0; r < rows_per_lane; r++) {
++            const int i          = r * lanes_per_col + lane_in_col;
++            state[col * S_v + i] = s_shard[r];
++        }
+     }
+ }
+ 
+@@ -571,32 +392,16 @@ static void launch_gated_delta_net(
+     const uint3 rq3_magic   = init_fastdiv_values(rq3);
+ 
+     const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(grid_dims, block_dims, 0, stream);
+-
+-    // GGML_HIP_GDN_FAST=0: the plain kernel (bit-identical); the fast one stages the state as 16-byte rows, so the
+-    // state rows must be 16-byte aligned
+-#if defined(GGML_USE_HIP)
+-    static const bool fast_env = ggml_cuda_env_switch("GGML_HIP_GDN_FAST");
+-    const bool fast = fast_env && GGML_CUDA_CC_IS_RDNA(ggml_cuda_info().devices[ggml_cuda_get_device()].cc) &&
+-        (S_v == 64 || S_v == 128) &&
+-        (uintptr_t) s_src.s_d % 16 == 0 && (s_src.idx == nullptr || s_src.row_stride % 4 == 0) &&
+-        (uintptr_t) state_d % 16 == 0;
+-#endif // defined(GGML_USE_HIP)
+-
+-#define GDN_LAUNCH(S, F)                                                                                      \
+-    ggml_cuda_kernel_launch(gated_delta_net_cuda<S, KDA, keep_rs_t, l2_qk, lag_t, F>, launch_params,            \
++#define GDN_LAUNCH(S)                                                                                         \
++    ggml_cuda_kernel_launch(gated_delta_net_cuda<S, KDA, keep_rs_t, l2_qk, lag_t>, launch_params,               \
+         q_d, k_d, v_d, g_d, b_d, s_src.s_d, s_src.idx, s_src.row_stride, dst_d, state_d, H,                     \
+         n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,                                                         \
+         sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, l2_eps, l2_scale, state_slot_stride, K, lagp)
+     switch (S_v) {
+-        case 16:  GDN_LAUNCH(16, false);  break;
+-        case 32:  GDN_LAUNCH(32, false);  break;
+-#if defined(GGML_USE_HIP)
+-        case 64:  if (fast) { GDN_LAUNCH(64,  true); } else { GDN_LAUNCH(64,  false); } break;
+-        case 128: if (fast) { GDN_LAUNCH(128, true); } else { GDN_LAUNCH(128, false); } break;
+-#else
+-        case 64:  GDN_LAUNCH(64,  false); break;
+-        case 128: GDN_LAUNCH(128, false); break;
+-#endif // defined(GGML_USE_HIP)
++        case 16:  GDN_LAUNCH(16);  break;
++        case 32:  GDN_LAUNCH(32);  break;
++        case 64:  GDN_LAUNCH(64);  break;
++        case 128: GDN_LAUNCH(128); break;
+         default:
+             GGML_ABORT("fatal error");
+             break;
+-- 
+2.43.0
+

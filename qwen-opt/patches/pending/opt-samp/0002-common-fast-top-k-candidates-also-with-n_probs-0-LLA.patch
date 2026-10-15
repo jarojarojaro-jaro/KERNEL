@@ -1,0 +1,59 @@
+From 3f737e847042118d0f77e2baf608ae77087ad367 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 00:31:42 +0000
+Subject: [PATCH 2/4] common: fast top-k candidates also with n_probs > 0
+ (LLAMA_SAMPLER_FAST_NPROBS)
+
+"logprobs" / "n_probs" (OpenAI logprobs, completion_probabilities) disabled the LLAMA_SAMPLER_FAST_TOPK
+path, so every token with probabilities filled and partial-sorted the full candidate array.
+
+n_probs does not change the samplers' input or the chain (only greedy -> dist at chain construction,
+unrelated to the candidate source). The probabilities are read in two ways, neither of which depends on
+how the top-k candidates were obtained:
+- post_sampling_probs: the server reads cur_p after the chain (common_sampler_get_candidates). On the
+  slow path the top-k sampler has already cut the full array to its k candidates in descending order, and
+  the fast path is only taken when those k candidates and their order are the unique ones (k+1 largest
+  logits distinct), so cur_p after the chain is the same array (ids, logits, p).
+- pre-sampling probs (default): get_token_probabilities in the server computes a softmax of the raw
+  logits from llama_get_logits_ith, independent of the sampler's candidates.
+The same holds for the other cur_p readers (rejection sampling, speculative draft q).
+Off: LLAMA_SAMPLER_FAST_NPROBS=0.
+
+CPU harness (slow = LLAMA_SAMPLER_FAST_TOPK=0 vs fast, same seed, n_probs 5/10, T=0.8 and greedy, with
+a reasoning budget): token ids and post-chain candidates (id, logit, p bitwise, selected index) equal on
+every vector.
+
+UNMEASURED: end-to-end server A/B (t/s, seeded md5) pending, GPU not available; verified with the CPU harness only.
+---
+ common/sampling.cpp | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index 9b1f07f10..0d5ff88dc 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -567,6 +567,9 @@ struct common_sampler * common_sampler_init(
+     // [LLAMA_SAMPLER_FAST_RBUDGET] a reasoning-budget sampler changes logits only in the FORCING state (all but the
+     // forced token -> -inf); in every other state its apply returns without touching the candidates, so the fast path
+     // stays exact. common_sampler_sample uses the full candidate array for the tokens sampled while it is FORCING.
++    // [LLAMA_SAMPLER_FAST_NPROBS] n_probs > 0 only reads candidates after the chain (post-sampling probs: the top-k
++    // sampler has cut the full array down to the same k candidates) or the raw logits (pre-sampling probs, computed by
++    // the caller from llama_get_logits_ith), neither depends on how the top-k candidates were found
+     {
+         const char * env = getenv("LLAMA_SAMPLER_FAST_TOPK");
+         const bool enabled = !env || atoi(env) != 0;
+@@ -574,7 +577,10 @@ struct common_sampler * common_sampler_init(
+         const bool enabled_pen = !env_pen || atoi(env_pen) != 0;
+         const char * env_rb = getenv("LLAMA_SAMPLER_FAST_RBUDGET");
+         const bool enabled_rb = !env_rb || atoi(env_rb) != 0;
+-        if (enabled && !grmr && (!rbudget || enabled_rb) && !has_logit_bias && params.mirostat == 0 && params.n_probs == 0) {
++        const char * env_np = getenv("LLAMA_SAMPLER_FAST_NPROBS");
++        const bool enabled_np = !env_np || atoi(env_np) != 0;
++        if (enabled && !grmr && (!rbudget || enabled_rb) && !has_logit_bias && params.mirostat == 0 &&
++                (params.n_probs == 0 || enabled_np)) {
+             int32_t idx = 0; // index of cnstr's sampler in the chain (no logit-bias sampler in front of it here)
+             for (const auto & cnstr : params.samplers) {
+                 if (cnstr == COMMON_SAMPLER_TYPE_TOP_K) {
+-- 
+2.43.0
+

@@ -1,0 +1,368 @@
+From b4e8192377b35377170c8d020dc31407bbc3765c Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 12:32:00 +0000
+Subject: [PATCH 1/2] HIP/RDNA GDN: separate bit-identical fast kernel (DPP
+ segment sums, next token's loads, l2 norm and kv overlapped with the current
+ token's update) for S_v=128 scalar gate, GGML_HIP_GDN_FAST=0: plain kernel
+
+gated_delta_net_fast_cuda<128, l2_qk, lag_t> replaces gated_delta_net_cuda for !KDA && !keep_rs (Qwen3.x decode
+and GATED_DELTA_NET_LAG verify) on wave32 RDNA. The plain kernel source is untouched (diff is additions only).
+
+The arithmetic is pinned to the IEEE operation sequence read off the plain kernel's ISA (contraction off, explicit
+fmaf): sum of squares x1*x1 then fma(xr, xr, .) for r = 0, 2..15; dot products fma(a0, b0, 0) then fma chain r = 1..15;
+xor 4/2/1 segment butterfly; rs = rsqrt(fma(sum, 1/128, eps)); x = l2_scale * (rs * x); delta = beta * fma(-g, kv, v);
+s = fma(g, s, k * delta); out = scale * attn. Only data movement and scheduling differ:
+- segment sums with DPP row_xmask moves instead of ds_bpermute (same partner lanes, same order);
+- token t+1's loads, l2 norm and kv = S'k[t+1] are done in token t's iteration after the update, so the kv and attn
+  chains and their butterflies overlap; last token peeled, two row buffers ping-pong (no register copies);
+- lagged replay: kv of pending row j+1 summed right after the update of row j, loads one row ahead.
+
+UNMEASURED (no GPU access). Verified offline (tools in ~/wt/gdn6-isa):
+- all 44 plain kernels (code, descriptor, metadata) identical to ~/wt/qwen5-tools/gdn_base.s (isadiff.py);
+- gdncmp.py, a symbolic wave32 emulator of the compiled ISA: for 13 (AR) / 25 (lag) launches per variant
+  (T = 1..3, n_pend 0..3, state gather, several CTA/wave positions, 2 sequences) every word written to dst, state
+  and the pending rows is the same IEEE expression DAG in base and fast, for all four <128, l2_qk, lag> variants;
+  three deliberately perturbed builds (contraction choice, sumsq order, butterfly order) are reported as different;
+- executed instructions per wave (emulator), lag+l2: T=1 615 -> 554, T=9 3407 -> 3186 (VALU 1821 -> 1672),
+  ds_bpermute 108 -> 0; plain decode T=1 476 -> 423;
+- VGPRs 122/120/106/114 (lag+l2, lag, l2, none), no scratch, occupancy 10/12/12/12 (base 84/82/69/78, 16).
+---
+ ggml/src/ggml-cuda/gated_delta_net.cu | 315 ++++++++++++++++++++++++++
+ 1 file changed, 315 insertions(+)
+
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
+index d3e6f0dc7..0cf721072 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cu
++++ b/ggml/src/ggml-cuda/gated_delta_net.cu
+@@ -311,6 +311,307 @@ gated_delta_net_cuda(const float * q,
+     }
+ }
+ 
++#if defined(GGML_USE_HIP)
++// Fast variant of gated_delta_net_cuda for the scalar gate without snapshots on wave32 RDNA (S_v = 128: decode and
++// GATED_DELTA_NET_LAG verify of Qwen3.x), GGML_HIP_GDN_FAST=0 selects the plain kernel. Bit-identical to the plain
++// kernel: the element-to-lane mapping is the same and every IEEE operation of the plain kernel's ISA is spelled out
++// explicitly below (contraction off, explicit fmaf), with the same operands, operand roles and summation order:
++//   sum of squares x[1]*x[1], then fma(x[r], x[r], .) for r = 0, 2, 3, ...;  dot products fma(a[0], b[0], 0), then
++//   fma(a[r], b[r], .) for r = 1, 2, ...;  segment sums: xor 4, 2, 1 butterfly;  rs = rsqrt(fma(sum, 1/S_v, eps));
++//   x = l2_scale * (rs * x);  delta = beta * fma(-g, kv, v);  s = fma(g, s, k * delta);  out = scale * attn.
++// What differs is data movement and scheduling only:
++//  - segment sums by DPP row_xmask lane moves instead of ds_bpermute round trips through LDS (same partner lanes);
++//  - kv[t+1] = S'k[t+1] is summed right after the update of token t, next to attn[t] = S'q[t], so both segment sums
++//    overlap; token t+1's loads and l2 norms are issued before token t's update (the last token is peeled, so the
++//    loop body is one basic block the scheduler can interleave);
++//  - lagged replay: kv of pending row j+1 is summed in the update pass of row j.
++template <int R>
++static __device__ __forceinline__ float gdn_fast_dot(const float (&a)[R], const float (&b)[R]) {
++#pragma clang fp contract(off)
++    float acc = __builtin_fmaf(a[0], b[0], 0.0f);
++#pragma unroll
++    for (int r = 1; r < R; r++) {
++        acc = __builtin_fmaf(a[r], b[r], acc);
++    }
++    return acc;
++}
++
++template <int R>
++static __device__ __forceinline__ float gdn_fast_sumsq(const float (&x)[R]) {
++#pragma clang fp contract(off)
++    float acc = x[1] * x[1];
++    acc = __builtin_fmaf(x[0], x[0], acc);
++#pragma unroll
++    for (int r = 2; r < R; r++) {
++        acc = __builtin_fmaf(x[r], x[r], acc);
++    }
++    return acc;
++}
++
++// q and k of one token: l2_scale * (rsqrt(sum(x^2)/S_v + eps) * x), sums over the lane's column segment
++template <int S_v, int lanes_per_col, int R>
++static __device__ __forceinline__ void gdn_fast_l2(float (&k_r)[R], float (&q_r)[R], const float l2_eps,
++                                                   const float l2_scale) {
++#pragma clang fp contract(off)
++    const float k_sq = warp_reduce_sum_dpp<lanes_per_col>(gdn_fast_sumsq(k_r));
++    const float q_sq = warp_reduce_sum_dpp<lanes_per_col>(gdn_fast_sumsq(q_r));
++    const float k_rs = rsqrtf(__builtin_fmaf(k_sq, 1.0f / S_v, l2_eps));
++    const float q_rs = rsqrtf(__builtin_fmaf(q_sq, 1.0f / S_v, l2_eps));
++#pragma unroll
++    for (int r = 0; r < R; r++) {
++        k_r[r] = l2_scale * (k_rs * k_r[r]);
++        q_r[r] = l2_scale * (q_rs * q_r[r]);
++    }
++}
++
++// one token (or pending row) of the recurrence as held by a lane
++template <int R>
++struct gdn_fast_row {
++    float k[R];
++    float q[R];
++    float v;
++    float g;
++    float beta;
++};
++
++// step(i, cur, nxt, has_next) for i = 0, ..., n - 1 (n > 0); step i reads cur and, when has_next, loads row i + 1
++// into nxt. The two buffers alternate (loop unrolled by two) instead of being copied back after every step.
++template <typename B, typename F>
++static __device__ __forceinline__ void gdn_fast_pingpong(const int n, B & a, B & b, F & step) {
++    int i = 0;
++    for (; i + 2 < n; i += 2) {
++        step(i,     a, b, std::true_type{});
++        step(i + 1, b, a, std::true_type{});
++    }
++    if (i + 1 < n) {
++        step(i,     a, b, std::true_type{});
++        step(i + 1, b, a, std::false_type{});
++    } else {
++        step(i, a, b, std::false_type{});
++    }
++}
++
++template <int S_v, bool l2_qk, bool lag_t>
++__global__ void __launch_bounds__(32 * 4, 2)
++gated_delta_net_fast_cuda(const float * q,
++                                     const float * k,
++                                     const float * v,
++                                     const float * g,
++                                     const float * beta,
++                                     const float * curr_state,
++                                     const int32_t * state_idx,
++                                     int64_t       state_row_stride,
++                                     float *       dst,
++                                     float *       state,
++                                     int64_t       H,
++                                     int64_t       n_tokens,
++                                     int64_t       n_seqs,
++                                     int64_t       sq1,
++                                     int64_t       sq2,
++                                     int64_t       sq3,
++                                     int64_t       sv1,
++                                     int64_t       sv2,
++                                     int64_t       sv3,
++                                     int64_t       sb1,
++                                     int64_t       sb2,
++                                     int64_t       sb3,
++                                     const uint3   neqk1_magic,
++                                     const uint3   rq3_magic,
++                                     float         scale,
++                                     float         l2_eps,
++                                     float         l2_scale,
++                                     int64_t       state_slot_stride,
++                                     int           K,
++                                     const gdn_lag_args lagp) {
++#pragma clang fp contract(off)
++    GGML_UNUSED(state_slot_stride);
++    constexpr int warp_size     = 32;
++    constexpr int cols_per_warp = gdn_cols_per_warp;
++    constexpr int lanes_per_col = warp_size / cols_per_warp;
++    constexpr int rows_per_lane = S_v / lanes_per_col;
++    static_assert(S_v == 128, "the arithmetic is pinned to the S_v = 128 ISA of gated_delta_net_cuda");
++
++    const uint32_t h_idx    = blockIdx.x;
++    const uint32_t sequence = blockIdx.y;
++
++    const int lane        = threadIdx.x;
++    const int col_in_warp = lane / lanes_per_col;
++    const int lane_in_col = lane - col_in_warp * lanes_per_col;
++    const int col = (blockIdx.z * blockDim.y + threadIdx.y) * cols_per_warp + col_in_warp;
++
++    const uint32_t iq1 = fastmodulo(h_idx, neqk1_magic);
++    const uint32_t iq3 = fastdiv(sequence, rq3_magic);
++
++    float * attn_data = dst;
++
++    const int64_t state_out_offset = (sequence * H + h_idx) * S_v * S_v;
++    state += state_out_offset;
++
++    ggml_cuda_pdl_sync();
++    const int64_t state_in_offset = (state_idx ? state_idx[sequence] * state_row_stride : sequence * H * S_v * S_v) +
++                                    h_idx * S_v * S_v;
++    curr_state += state_in_offset + col * S_v;
++    attn_data += (sequence * n_tokens * H + h_idx) * S_v;
++
++    float s_shard[rows_per_lane];
++#pragma unroll
++    for (int r = 0; r < rows_per_lane; r++) {
++        s_shard[r] = curr_state[r * lanes_per_col + lane_in_col];
++    }
++
++    auto write_state = [&]() {
++#pragma unroll
++        for (int r = 0; r < rows_per_lane; r++) {
++            state[col * S_v + r * lanes_per_col + lane_in_col] = s_shard[r];
++        }
++    };
++
++    [[maybe_unused]] float * pend_wr = nullptr;
++    [[maybe_unused]] int     w       = 0;
++    if constexpr (lag_t) {
++        const int32_t * info    = lagp.info + sequence;
++        const int       n_pend  = info[2 * n_seqs];
++        const int64_t   R       = H * (2 * S_v + 2);
++        const int       planes  = info[3 * n_seqs];
++        const float *   pend_rd = lagp.pend + info[0] * lagp.pend_row_stride + (planes & 1) * K * R;
++        pend_wr = lagp.pend + info[n_seqs] * lagp.pend_row_stride + ((planes >> 1) & 1) * K * R;
++        w       = (int) n_tokens - min((int) n_tokens, K);
++
++        auto load_row = [&](const int j, gdn_fast_row<rows_per_lane> & d) {
++            const float * row = pend_rd + j * R;
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                d.k[r] = row[h_idx * S_v + r * lanes_per_col + lane_in_col];
++            }
++            d.v    = row[H * S_v + h_idx * S_v + col];
++            d.g    = row[2 * H * S_v + h_idx];
++            d.beta = row[2 * H * S_v + H + h_idx];
++        };
++        // pending row j of c (kv_col = S'k[j] summed); has_next: loads row j + 1 into n and sums its kv over the
++        // updated state
++        float kv_col = 0.0f;
++        auto replay = [&](const int j, gdn_fast_row<rows_per_lane> & c, gdn_fast_row<rows_per_lane> & n,
++                          auto has_next_c) {
++            constexpr bool has_next = decltype(has_next_c)::value;
++            if constexpr (has_next) {
++                load_row(j + 1, n);
++            }
++            const float g_val     = expf(c.g);
++            const float delta_col = __builtin_fmaf(-g_val, kv_col, c.v) * c.beta;
++#pragma unroll
++            for (int r = 0; r < rows_per_lane; r++) {
++                s_shard[r] = __builtin_fmaf(g_val, s_shard[r], c.k[r] * delta_col);
++            }
++            if constexpr (has_next) {
++                kv_col = warp_reduce_sum_dpp<lanes_per_col>(gdn_fast_dot(s_shard, n.k));
++            }
++        };
++        if (n_pend > 0) {
++            gdn_fast_row<rows_per_lane> ra;
++            gdn_fast_row<rows_per_lane> rb;
++            load_row(0, ra);
++            kv_col = warp_reduce_sum_dpp<lanes_per_col>(gdn_fast_dot(s_shard, ra.k));
++            gdn_fast_pingpong(n_pend, ra, rb, replay);
++        }
++        if (w == 0) {
++            write_state();
++        }
++    }
++
++    // q, k, v[col], raw g and beta of token t
++    auto load_token = [&](const int t, gdn_fast_row<rows_per_lane> & d) {
++        const float * q_t = q + iq3 * sq3 + t * sq2 + iq1 * sq1;
++        const float * k_t = k + iq3 * sq3 + t * sq2 + iq1 * sq1;
++        const int64_t gb_offset = sequence * sb3 + t * sb2 + h_idx * sb1;
++        d.beta = beta[gb_offset];
++#pragma unroll
++        for (int r = 0; r < rows_per_lane; r++) {
++            const int i = r * lanes_per_col + lane_in_col;
++            d.k[r] = k_t[i];
++            d.q[r] = q_t[i];
++        }
++        d.v = v[sequence * sv3 + t * sv2 + h_idx * sv1 + col];
++        d.g = g[gb_offset];
++    };
++
++    float kv_col = 0.0f;
++
++    // token t of c (q, k normalized, kv_col = S'k[t] summed); has_next: loads token t + 1 into n first, normalizes
++    // it and sums its kv over the updated state
++    auto token = [&](const int t, gdn_fast_row<rows_per_lane> & c, gdn_fast_row<rows_per_lane> & n, auto has_next_c) {
++        constexpr bool has_next = decltype(has_next_c)::value;
++        if constexpr (has_next) {
++            load_token(t + 1, n);
++        }
++
++        const float g_val     = expf(c.g);
++        const float delta_col = __builtin_fmaf(-g_val, kv_col, c.v) * c.beta;
++#pragma unroll
++        for (int r = 0; r < rows_per_lane; r++) {
++            s_shard[r] = __builtin_fmaf(g_val, s_shard[r], c.k[r] * delta_col);
++        }
++        const float attn_partial = gdn_fast_dot(s_shard, c.q);
++
++        [[maybe_unused]] float kv_partial = 0.0f;
++        if constexpr (has_next) {
++            if constexpr (l2_qk) {
++                gdn_fast_l2<S_v, lanes_per_col>(n.k, n.q, l2_eps, l2_scale);
++            }
++            kv_partial = gdn_fast_dot(s_shard, n.k);
++        }
++
++        const float attn_col = warp_reduce_sum_dpp<lanes_per_col>(attn_partial);
++        if constexpr (has_next) {
++            kv_col = warp_reduce_sum_dpp<lanes_per_col>(kv_partial);
++        }
++
++        if (lane_in_col == 0) {
++            attn_data[t * S_v * H + col] = scale * attn_col;
++        }
++
++        if constexpr (lag_t) {
++            if (t >= w) {
++                // this row becomes pending: post-norm k (one segment of the first CTA of the head), v, raw g, beta
++                const int64_t R   = H * (2 * S_v + 2);
++                float *       row = pend_wr + (t - w) * R;
++                const bool first_seg = blockIdx.z == 0 && threadIdx.y == 0 && col_in_warp == 0;
++                if (first_seg) {
++#pragma unroll
++                    for (int r = 0; r < rows_per_lane; r++) {
++                        row[h_idx * S_v + r * lanes_per_col + lane_in_col] = c.k[r];
++                    }
++                    if (lane_in_col == 0) {
++                        row[2 * H * S_v + h_idx]     = c.g;
++                        row[2 * H * S_v + H + h_idx] = c.beta;
++                    }
++                }
++                if (lane_in_col == 0) {
++                    row[H * S_v + h_idx * S_v + col] = c.v;
++                }
++            }
++            if (t == w - 1) {
++                write_state();
++            }
++        }
++    };
++
++    if (n_tokens > 0) {
++        gdn_fast_row<rows_per_lane> ta;
++        gdn_fast_row<rows_per_lane> tb;
++        load_token(0, ta);
++        if constexpr (l2_qk) {
++            gdn_fast_l2<S_v, lanes_per_col>(ta.k, ta.q, l2_eps, l2_scale);
++        }
++        kv_col = warp_reduce_sum_dpp<lanes_per_col>(gdn_fast_dot(s_shard, ta.k));
++        gdn_fast_pingpong((int) n_tokens, ta, tb, token);
++    }
++
++    if constexpr (!lag_t) {
++        write_state();
++    }
++}
++#endif // defined(GGML_USE_HIP)
++
+ // initial-state source of the kernel: s_d directly, or row idx[seq] of s_d when the state gather is folded in
+ struct gdn_state_src {
+     const float *   s_d;
+@@ -392,6 +693,20 @@ static void launch_gated_delta_net(
+     const uint3 rq3_magic   = init_fastdiv_values(rq3);
+ 
+     const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(grid_dims, block_dims, 0, stream);
++#if defined(GGML_USE_HIP)
++    // GGML_HIP_GDN_FAST=0: the plain kernel (bit-identical, see gated_delta_net_fast_cuda)
++    static const bool gdn_fast = ggml_cuda_env_switch("GGML_HIP_GDN_FAST");
++    if constexpr (!KDA && !keep_rs_t) {
++        if (gdn_fast && S_v == 128 && warp_size == 32 &&
++                GGML_CUDA_CC_IS_RDNA(ggml_cuda_info().devices[ggml_cuda_get_device()].cc)) {
++            ggml_cuda_kernel_launch(gated_delta_net_fast_cuda<128, l2_qk, lag_t>, launch_params,
++                q_d, k_d, v_d, g_d, b_d, s_src.s_d, s_src.idx, s_src.row_stride, dst_d, state_d, H,
++                n_tokens, n_seqs, sq1, sq2, sq3, sv1, sv2, sv3,
++                sb1, sb2, sb3, neqk1_magic, rq3_magic, scale, l2_eps, l2_scale, state_slot_stride, K, lagp);
++            return;
++        }
++    }
++#endif // defined(GGML_USE_HIP)
+ #define GDN_LAUNCH(S)                                                                                         \
+     ggml_cuda_kernel_launch(gated_delta_net_cuda<S, KDA, keep_rs_t, l2_qk, lag_t>, launch_params,               \
+         q_d, k_d, v_d, g_d, b_d, s_src.s_d, s_src.idx, s_src.row_stride, dst_d, state_d, H,                     \
+-- 
+2.43.0
+

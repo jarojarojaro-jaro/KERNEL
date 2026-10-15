@@ -1,0 +1,680 @@
+{
+ "mmvq_n1": [
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q4_K",
+   "nrows": 1024,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_k.weight"
+   ],
+   "counts": {
+    "qwen": 1
+   },
+   "note": "",
+   "id": 0
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q4_K",
+   "nrows": 5120,
+   "ncols": 6144,
+   "uses": [
+    "qwen:ssm_out.weight"
+   ],
+   "counts": {
+    "qwen": 1
+   },
+   "note": "",
+   "id": 1
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q4_K",
+   "nrows": 5120,
+   "ncols": 17408,
+   "uses": [
+    "qwen:ffn_down.weight"
+   ],
+   "counts": {
+    "qwen": 5
+   },
+   "note": "",
+   "id": 2
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q4_K",
+   "nrows": 6144,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_gate.weight"
+   ],
+   "counts": {
+    "qwen": 13
+   },
+   "note": "",
+   "id": 3
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q4_K",
+   "nrows": 10240,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_qkv.weight"
+   ],
+   "counts": {
+    "qwen": 23
+   },
+   "note": "",
+   "id": 4
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q4_K",
+   "nrows": 12288,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_q.weight"
+   ],
+   "counts": {
+    "qwen": 6
+   },
+   "note": "",
+   "id": 5
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q4_K",
+   "nrows": 17408,
+   "ncols": 5120,
+   "uses": [
+    "qwen:ffn_gate.weight",
+    "qwen:ffn_up.weight"
+   ],
+   "counts": {
+    "qwen": 19
+   },
+   "note": "dense gate/up GLU fusion",
+   "id": 6
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 512,
+   "ncols": 2048,
+   "uses": [
+    "lfm:attn_k.weight",
+    "lfm:attn_v.weight"
+   ],
+   "counts": {
+    "lfm": 15
+   },
+   "note": "",
+   "id": 7
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 1024,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_v.weight",
+    "qwen:attn_k.weight"
+   ],
+   "counts": {
+    "qwen": 5
+   },
+   "note": "",
+   "id": 8
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 2048,
+   "ncols": 2048,
+   "uses": [
+    "lfm:shortconv.out_proj.weight",
+    "lfm:attn_output.weight",
+    "lfm:attn_q.weight"
+   ],
+   "counts": {
+    "lfm": 50
+   },
+   "note": "",
+   "id": 9
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 5120,
+   "ncols": 6144,
+   "uses": [
+    "qwen:ssm_out.weight",
+    "qwen:attn_output.weight"
+   ],
+   "counts": {
+    "qwen": 40
+   },
+   "note": "",
+   "id": 10
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 5120,
+   "ncols": 17408,
+   "uses": [
+    "qwen:ffn_down.weight"
+   ],
+   "counts": {
+    "qwen": 35
+   },
+   "note": "",
+   "id": 11
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 6144,
+   "ncols": 2048,
+   "uses": [
+    "lfm:shortconv.in_proj.weight"
+   ],
+   "counts": {
+    "lfm": 30
+   },
+   "note": "mmvq_conv (GGML_HIP_INPROJ_CONV)",
+   "id": 12
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 6144,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_gate.weight"
+   ],
+   "counts": {
+    "qwen": 31
+   },
+   "note": "",
+   "id": 13
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 10240,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_qkv.weight"
+   ],
+   "counts": {
+    "qwen": 21
+   },
+   "note": "",
+   "id": 14
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 11776,
+   "ncols": 2048,
+   "uses": [
+    "lfm:ffn_gate.weight",
+    "lfm:ffn_up.weight"
+   ],
+   "counts": {
+    "lfm": 4
+   },
+   "note": "dense gate/up GLU fusion",
+   "id": 15
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 12288,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_q.weight"
+   ],
+   "counts": {
+    "qwen": 8
+   },
+   "note": "",
+   "id": 16
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q5_K",
+   "nrows": 17408,
+   "ncols": 5120,
+   "uses": [
+    "qwen:ffn_up.weight",
+    "qwen:ffn_gate.weight"
+   ],
+   "counts": {
+    "qwen": 51
+   },
+   "note": "dense gate/up GLU fusion",
+   "id": 17
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 512,
+   "ncols": 2048,
+   "uses": [
+    "lfm:attn_v.weight"
+   ],
+   "counts": {
+    "lfm": 5
+   },
+   "note": "",
+   "id": 18
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 1024,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_k.weight",
+    "qwen:attn_v.weight"
+   ],
+   "counts": {
+    "qwen": 15
+   },
+   "note": "",
+   "id": 19
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 2048,
+   "ncols": 11776,
+   "uses": [
+    "lfm:ffn_down.weight"
+   ],
+   "counts": {
+    "lfm": 2
+   },
+   "note": "",
+   "id": 20
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 5120,
+   "ncols": 6144,
+   "uses": [
+    "qwen:ssm_out.weight",
+    "qwen:attn_output.weight"
+   ],
+   "counts": {
+    "qwen": 22
+   },
+   "note": "",
+   "id": 21
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 5120,
+   "ncols": 10240,
+   "uses": [
+    "qwen:nextn.eh_proj.weight"
+   ],
+   "counts": {
+    "qwen": 1
+   },
+   "note": "",
+   "id": 22
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 5120,
+   "ncols": 17408,
+   "uses": [
+    "qwen:ffn_down.weight"
+   ],
+   "counts": {
+    "qwen": 6
+   },
+   "note": "",
+   "id": 23
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 6144,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_gate.weight"
+   ],
+   "counts": {
+    "qwen": 1
+   },
+   "note": "",
+   "id": 24
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 10240,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_qkv.weight"
+   ],
+   "counts": {
+    "qwen": 1
+   },
+   "note": "",
+   "id": 25
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 12288,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_q.weight"
+   ],
+   "counts": {
+    "qwen": 1
+   },
+   "note": "",
+   "id": 26
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 17408,
+   "ncols": 5120,
+   "uses": [
+    "qwen:ffn_gate.weight",
+    "qwen:ffn_up.weight"
+   ],
+   "counts": {
+    "qwen": 8
+   },
+   "note": "dense gate/up GLU fusion",
+   "id": 27
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 128000,
+   "ncols": 2048,
+   "uses": [
+    "lfm:output (tied token_embd)"
+   ],
+   "counts": {
+    "lfm": 1
+   },
+   "note": "",
+   "id": 28
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q6_K",
+   "nrows": 248320,
+   "ncols": 5120,
+   "uses": [
+    "qwen:output.weight"
+   ],
+   "counts": {
+    "qwen": 1
+   },
+   "note": "",
+   "id": 29
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 48,
+   "ncols": 5120,
+   "uses": [
+    "qwen:ssm_alpha.weight",
+    "qwen:ssm_beta.weight"
+   ],
+   "counts": {
+    "qwen": 96
+   },
+   "note": "gdn_ab (fused GDN alpha/beta MMVQ)",
+   "id": 30
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 512,
+   "ncols": 2048,
+   "uses": [
+    "lfm-unc:attn_k.weight",
+    "lfm-unc:attn_v.weight"
+   ],
+   "counts": {
+    "lfm-unc": 20
+   },
+   "note": "",
+   "id": 31
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 1024,
+   "ncols": 5120,
+   "uses": [
+    "qwen:attn_v.weight",
+    "qwen:attn_k.weight"
+   ],
+   "counts": {
+    "qwen": 13
+   },
+   "note": "",
+   "id": 32
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 2048,
+   "ncols": 2048,
+   "uses": [
+    "lfm-unc:shortconv.out_proj.weight",
+    "lfm-unc:attn_output.weight",
+    "lfm-unc:attn_q.weight"
+   ],
+   "counts": {
+    "lfm-unc": 50
+   },
+   "note": "",
+   "id": 33
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 2048,
+   "ncols": 11776,
+   "uses": [
+    "lfm-unc:ffn_down.weight"
+   ],
+   "counts": {
+    "lfm-unc": 2
+   },
+   "note": "",
+   "id": 34
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 5120,
+   "ncols": 6144,
+   "uses": [
+    "qwen:ssm_out.weight"
+   ],
+   "counts": {
+    "qwen": 1
+   },
+   "note": "",
+   "id": 35
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 6144,
+   "ncols": 2048,
+   "uses": [
+    "lfm-unc:shortconv.in_proj.weight"
+   ],
+   "counts": {
+    "lfm-unc": 30
+   },
+   "note": "mmvq_conv (GGML_HIP_INPROJ_CONV)",
+   "id": 36
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 11776,
+   "ncols": 2048,
+   "uses": [
+    "lfm-unc:ffn_gate.weight",
+    "lfm-unc:ffn_up.weight"
+   ],
+   "counts": {
+    "lfm-unc": 4
+   },
+   "note": "dense gate/up GLU fusion",
+   "id": 37
+  },
+  {
+   "kernel": "mmvq_n1",
+   "type": "Q8_0",
+   "nrows": 128000,
+   "ncols": 2048,
+   "uses": [
+    "lfm-unc:output (tied token_embd)"
+   ],
+   "counts": {
+    "lfm-unc": 1
+   },
+   "note": "",
+   "id": 38
+  }
+ ],
+ "moe_gate_up": [
+  {
+   "kernel": "moe_gate_up",
+   "type": "Q5_K",
+   "nrows": 1536,
+   "ncols": 2048,
+   "n_expert": 64,
+   "n_used": 4,
+   "uses": [
+    "lfm:ffn_gate_exps.weight",
+    "lfm:ffn_up_exps.weight",
+    "lfm-unc:ffn_gate_exps.weight",
+    "lfm-unc:ffn_up_exps.weight"
+   ],
+   "counts": {
+    "lfm": 38,
+    "lfm-unc": 33
+   },
+   "with_q8": 1,
+   "id": 0
+  },
+  {
+   "kernel": "moe_gate_up",
+   "type": "Q6_K",
+   "nrows": 1536,
+   "ncols": 2048,
+   "n_expert": 64,
+   "n_used": 4,
+   "uses": [
+    "lfm-unc:ffn_gate_exps.weight",
+    "lfm-unc:ffn_up_exps.weight"
+   ],
+   "counts": {
+    "lfm-unc": 5
+   },
+   "with_q8": 1,
+   "id": 1
+  }
+ ],
+ "moe_down": [
+  {
+   "kernel": "moe_down",
+   "type": "Q5_K",
+   "nrows": 2048,
+   "ncols": 1536,
+   "n_expert": 64,
+   "n_used": 4,
+   "uses": [
+    "lfm:ffn_down_exps.weight",
+    "lfm-unc:ffn_down_exps.weight"
+   ],
+   "counts": {
+    "lfm": 20,
+    "lfm-unc": 33
+   },
+   "id": 0
+  },
+  {
+   "kernel": "moe_down",
+   "type": "Q6_K",
+   "nrows": 2048,
+   "ncols": 1536,
+   "n_expert": 64,
+   "n_used": 4,
+   "uses": [
+    "lfm:ffn_down_exps.weight",
+    "lfm-unc:ffn_down_exps.weight"
+   ],
+   "counts": {
+    "lfm": 18,
+    "lfm-unc": 5
+   },
+   "id": 1
+  }
+ ],
+ "gdn": [
+  {
+   "kernel": "gdn",
+   "mode": "decode",
+   "S_v": 128,
+   "H": 48,
+   "Hk": 16,
+   "n_tokens": 1,
+   "lag": 0,
+   "K": 1,
+   "n_pend": 0,
+   "counts": {
+    "qwen": 48
+   },
+   "uses": [
+    "qwen:GATED_DELTA_NET"
+   ],
+   "id": 0
+  },
+  {
+   "kernel": "gdn",
+   "mode": "mtp_verify_n4",
+   "S_v": 128,
+   "H": 48,
+   "Hk": 16,
+   "n_tokens": 5,
+   "lag": 1,
+   "K": 5,
+   "n_pend": 2,
+   "counts": {
+    "qwen": 48
+   },
+   "uses": [
+    "qwen:GATED_DELTA_NET_LAG"
+   ],
+   "id": 1
+  }
+ ]
+}

@@ -1,0 +1,222 @@
+From 658cff0b99a392535e78d0405c0fbaaaf264d90c Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 00:36:27 +0000
+Subject: [PATCH 3/4] common: fast top-k candidates also behind a logit-bias
+ sampler (LLAMA_SAMPLER_FAST_LOGIT_BIAS)
+
+A "logit_bias" request (or a vocab with suppress tokens) puts a logit-bias sampler first in the chain,
+which disabled the LLAMA_SAMPLER_FAST_TOPK path.
+
+The logit-bias sampler adds a fixed bias to a fixed set B of tokens and leaves every other logit
+unchanged. With a lowering penalties sampler (window n, see LLAMA_SAMPLER_FAST_PENALTIES) in front of
+the top-k as well, the candidates are H = the top k + 1 + n + |B| raw logits plus the tokens of B not in
+H (raw logits, unordered). Every token t outside these has t not in B, final(t) <= raw(t) <= min(H)
+(the heap keeps only strictly larger values), and at least k + 1 tokens of H are neither in B nor in the
+penalty window, so they keep final = raw >= min(H) >= final(t). The samplers in front of the top-k are
+applied to a copy of the candidates; if the k + 1 largest values there are distinct (v_k > v_k+1 >=
+final(t) for every t outside), the top-k sampler selects the same k tokens in the same order from the
+candidates as from the full array, with the same logits (the bias and penalty are per-token float ops on
+the same values), so everything after it is identical. Otherwise the full array is used.
+Conditions: distinct in-range tokens (the sampler adds every entry of a token in the full array but only
+the first entry of a token it has to search for in a subset), no NaN/+inf bias, |B| <= 64 (the sampler
+searches the candidates for each biased token; beyond that the full array is cheaper).
+The penalties-only path now applies all samplers in front of the top-k (no-op samplers included) to the
+copy instead of only the penalties sampler; results unchanged.
+Off: LLAMA_SAMPLER_FAST_LOGIT_BIAS=0.
+
+CPU harness (slow = LLAMA_SAMPLER_FAST_TOPK=0 vs fast, same seed): 5 finite/-inf/+25 biases, 60 and 200
+random tokens with biases in [-8, 8] (+ -inf), duplicate token entries, with and without repeat 1.1 /
+presence 0.5 penalties and n_probs: token ids and post-chain candidates bitwise equal on every vector.
+
+UNMEASURED: end-to-end server A/B (t/s, seeded md5) pending, GPU not available; verified with the CPU harness only.
+---
+ common/sampling.cpp | 96 +++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 75 insertions(+), 21 deletions(-)
+
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index 0d5ff88dc..1d0ae1d02 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -243,7 +243,7 @@ struct common_sampler {
+         if (!logits) {
+             return false;
+         }
+-        if (fast_pen_n == 0) {
++        if (fast_n_pre == 0) {
+             if (!common_top_k_distinct(logits, n_vocab, fast_top_k, cur)) {
+                 return false;
+             }
+@@ -256,12 +256,32 @@ struct common_sampler {
+         // the penalized logits are among the top k + 1 + fast_pen_n raw logits. Those candidates (raw logits, in no
+         // particular order) go through the chain, whose penalties and top-k samplers then select exactly what they
+         // select from the full array, provided the k + 1 largest penalized logits are distinct (unique order).
+-        if (!common_top_k_distinct(logits, n_vocab, fast_top_k + 1 + fast_pen_n, cur)) {
++        // [LLAMA_SAMPLER_FAST_LOGIT_BIAS] a logit-bias sampler changes only the fast_bias tokens (raised or lowered):
++        // those tokens join the candidates, and the other tokens' top k + 1 lie in the top k + 1 + fast_pen_n +
++        // fast_bias.size() raw logits.
++        if (!common_top_k_distinct(logits, n_vocab, fast_top_k + 1 + fast_pen_n + (int) fast_bias.size(), cur)) {
+             return false;
+         }
++        if (!fast_bias.empty()) {
++            fast_bias_in.assign(fast_bias.size(), 0);
++            for (const auto & td : cur) {
++                const auto it = std::lower_bound(fast_bias.begin(), fast_bias.end(), td.id);
++                if (it != fast_bias.end() && *it == td.id) {
++                    fast_bias_in[it - fast_bias.begin()] = 1;
++                }
++            }
++            for (size_t j = 0; j < fast_bias.size(); ++j) {
++                if (!fast_bias_in[j]) {
++                    cur.push_back({ fast_bias[j], logits[fast_bias[j]], 0.0f });
++                }
++            }
++        }
++        // the samplers in front of the top-k sampler (stateless in apply) on a copy: the order the top-k sees
+         cur_pen = cur;
+         llama_token_data_array pen_p = { cur_pen.data(), cur_pen.size(), -1, false };
+-        llama_sampler_apply(llama_sampler_chain_get(chain, fast_pen_idx), &pen_p);
++        for (int32_t i = 0; i < fast_n_pre; ++i) {
++            llama_sampler_apply(llama_sampler_chain_get(chain, i), &pen_p);
++        }
+         std::partial_sort(cur_pen.begin(), cur_pen.begin() + fast_top_k + 1, cur_pen.end(),
+                           [](const llama_token_data & a, const llama_token_data & b) { return a.logit > b.logit; });
+         for (int j = 0; j < fast_top_k; ++j) {
+@@ -279,13 +299,17 @@ struct common_sampler {
+ 
+     mutable int64_t t_total_us = 0;
+ 
+-    // k of the top-k sampler if only samplers that are no-ops (or a penalties sampler that only lowers logits)
+-    // precede it in the chain, else 0
++    // k of the top-k sampler if only samplers that are no-ops (or a penalties sampler that only lowers logits, or a
++    // logit-bias sampler) precede it in the chain, else 0
+     int32_t fast_top_k = 0;
+-    // window of that penalties sampler (0: none) and its index in the chain
+-    int32_t fast_pen_n   = 0;
+-    int32_t fast_pen_idx = -1;
+-    std::vector<llama_token_data> cur_pen = {}; // scratch: the penalized candidates
++    // window of that penalties sampler (0: none)
++    int32_t fast_pen_n = 0;
++    // the distinct tokens of that logit-bias sampler, sorted (empty: none)
++    std::vector<llama_token> fast_bias = {};
++    // chain index of the top-k sampler if a penalties or logit-bias sampler precedes it, else 0 (raw top-k)
++    int32_t fast_n_pre = 0;
++    std::vector<llama_token_data> cur_pen = {}; // scratch: the candidates as the top-k sampler sees them
++    std::vector<uint8_t> fast_bias_in = {};     // scratch: fast_bias tokens already among the candidates
+ };
+ 
+ std::string common_params_sampling::print() const {
+@@ -444,6 +468,8 @@ struct common_sampler * common_sampler_init(
+ 
+     // logit bias: user biases + model suppress tokens (-INFINITY)
+     bool has_logit_bias = false;
++    std::vector<llama_token> bias_tokens; // sorted; for the fast top-k path, valid if bias_fast
++    bool bias_fast = false;
+     {
+         std::vector<llama_logit_bias> merged = params.logit_bias;
+ 
+@@ -456,6 +482,19 @@ struct common_sampler * common_sampler_init(
+         has_logit_bias = !merged.empty();
+         if (!merged.empty()) {
+             samplers.push_back(llama_sampler_init_logit_bias(llama_vocab_n_tokens(vocab), merged.size(), merged.data()));
++
++            // [LLAMA_SAMPLER_FAST_LOGIT_BIAS] the sampler adds every entry of a token to the full array, but only the
++            // first entry of a token it has to search for (a subset): distinct, in-range tokens only. No NaN / +inf
++            // biases (they would break the order checks). At most 64 tokens: the sampler searches the candidates for
++            // each of them (twice), which costs more than the full array beyond that.
++            bias_fast = merged.size() <= 64;
++            for (const auto & lb : merged) {
++                bias_fast = bias_fast && lb.token >= 0 && lb.token < llama_vocab_n_tokens(vocab) &&
++                    !std::isnan(lb.bias) && lb.bias != INFINITY;
++                bias_tokens.push_back(lb.token);
++            }
++            std::sort(bias_tokens.begin(), bias_tokens.end());
++            bias_fast = bias_fast && std::adjacent_find(bias_tokens.begin(), bias_tokens.end()) == bias_tokens.end();
+         }
+     }
+ 
+@@ -570,6 +609,7 @@ struct common_sampler * common_sampler_init(
+     // [LLAMA_SAMPLER_FAST_NPROBS] n_probs > 0 only reads candidates after the chain (post-sampling probs: the top-k
+     // sampler has cut the full array down to the same k candidates) or the raw logits (pre-sampling probs, computed by
+     // the caller from llama_get_logits_ith), neither depends on how the top-k candidates were found
++    // [LLAMA_SAMPLER_FAST_LOGIT_BIAS] ... or a logit-bias sampler on a few distinct tokens (first in the chain)
+     {
+         const char * env = getenv("LLAMA_SAMPLER_FAST_TOPK");
+         const bool enabled = !env || atoi(env) != 0;
+@@ -579,9 +619,12 @@ struct common_sampler * common_sampler_init(
+         const bool enabled_rb = !env_rb || atoi(env_rb) != 0;
+         const char * env_np = getenv("LLAMA_SAMPLER_FAST_NPROBS");
+         const bool enabled_np = !env_np || atoi(env_np) != 0;
+-        if (enabled && !grmr && (!rbudget || enabled_rb) && !has_logit_bias && params.mirostat == 0 &&
+-                (params.n_probs == 0 || enabled_np)) {
+-            int32_t idx = 0; // index of cnstr's sampler in the chain (no logit-bias sampler in front of it here)
++        const char * env_lb = getenv("LLAMA_SAMPLER_FAST_LOGIT_BIAS");
++        const bool enabled_lb = !env_lb || atoi(env_lb) != 0;
++        if (enabled && !grmr && (!rbudget || enabled_rb) && (!has_logit_bias || (enabled_lb && bias_fast)) &&
++                params.mirostat == 0 && (params.n_probs == 0 || enabled_np)) {
++            int32_t idx     = has_logit_bias ? 1 : 0; // index of cnstr's sampler in the chain
++            int32_t pen_idx = -1;
+             for (const auto & cnstr : params.samplers) {
+                 if (cnstr == COMMON_SAMPLER_TYPE_TOP_K) {
+                     result->fast_top_k = std::max(0, params.top_k);
+@@ -597,8 +640,8 @@ struct common_sampler * common_sampler_init(
+                     result->fast_pen_n == 0 && params.penalty_last_n > 0 && params.penalty_last_n <= 256 &&
+                     params.penalty_repeat >= 1.0f && params.penalty_freq >= 0.0f && params.penalty_present >= 0.0f;
+                 if (lowering_penalties) {
+-                    result->fast_pen_n   = params.penalty_last_n;
+-                    result->fast_pen_idx = idx;
++                    result->fast_pen_n = params.penalty_last_n;
++                    pen_idx            = idx;
+                 } else if (!noop) {
+                     break;
+                 }
+@@ -606,13 +649,22 @@ struct common_sampler * common_sampler_init(
+                     ++idx;
+                 }
+             }
+-            if (result->fast_pen_n > 0 &&
+-                    strcmp(llama_sampler_name(llama_sampler_chain_get(chain, result->fast_pen_idx)), "penalties") != 0) {
+-                result->fast_top_k = 0; // the penalties sampler is not where expected: full candidate array
++            if (result->fast_top_k > 0 && (result->fast_pen_n > 0 || has_logit_bias)) {
++                const auto name_at = [&](int32_t i) { return std::string(llama_sampler_name(llama_sampler_chain_get(chain, i))); };
++                // the samplers are not where expected: full candidate array
++                if ((result->fast_pen_n > 0 && name_at(pen_idx) != "penalties") ||
++                        (has_logit_bias && name_at(0) != "logit-bias") || name_at(idx) != "top-k") {
++                    result->fast_top_k = 0;
++                }
++                result->fast_n_pre = idx;
++                if (has_logit_bias) {
++                    result->fast_bias = bias_tokens;
++                }
+             }
+             if (result->fast_top_k == 0) {
+-                result->fast_pen_n   = 0;
+-                result->fast_pen_idx = -1;
++                result->fast_pen_n = 0;
++                result->fast_n_pre = 0;
++                result->fast_bias.clear();
+             }
+         }
+     }
+@@ -702,7 +754,8 @@ struct common_sampler * common_sampler_clone(common_sampler * gsmpl) {
+     };
+     result->fast_top_k   = gsmpl->fast_top_k;
+     result->fast_pen_n   = gsmpl->fast_pen_n;
+-    result->fast_pen_idx = gsmpl->fast_pen_idx;
++    result->fast_n_pre   = gsmpl->fast_n_pre;
++    result->fast_bias    = gsmpl->fast_bias;
+     return result;
+ }
+ 
+@@ -727,7 +780,8 @@ void common_sampler_copy(const common_sampler * src, common_sampler * dst) {
+     dst->t_total_us = src->t_total_us;
+     dst->fast_top_k   = src->fast_top_k;
+     dst->fast_pen_n   = src->fast_pen_n;
+-    dst->fast_pen_idx = src->fast_pen_idx;
++    dst->fast_n_pre   = src->fast_n_pre;
++    dst->fast_bias    = src->fast_bias;
+ }
+ 
+ void common_perf_print(const struct llama_context * ctx, const struct common_sampler * gsmpl) {
+-- 
+2.43.0
+

@@ -1,0 +1,220 @@
+From a6f218d0e60f2fd6c1c985408e3220e4a93b08fe Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 01:17:01 +0000
+Subject: [PATCH 5/7] HIP/RDNA3 MMQ: both y halves of a K iteration in their
+ own LDS buffers, 2 barriers per iteration instead of 4 (GGML_HIP_MMQ_YDB=0
+ off, =1 only where the blocks per WGP stay the same)
+
+The second y half of each 256-K iteration gets a buffer behind the x tile, so it loads together with the x tile and
+the first y half (one load phase and one barrier pair per iteration instead of two). The vec_dot calls and their
+order are unchanged, so the sums are the same. Cost: one more y tile of LDS (Q4_K J=128: 38.9 -> 57.3 KB, 3 -> 2
+blocks per WGP); mode 1 keeps only the configurations whose blocks per WGP do not drop. Q4_K J=128 kernel: 241
+VGPRs (was 239), no spills.
+
+UNMEASURED (no GPU access at commit time): pending llama-bench pp512/pp4096 A/B (modes 0/1/2) and the
+perplexity-KLD bitwise check.
+---
+ ggml/src/ggml-cuda/mmq.cuh | 90 +++++++++++++++++++++++++++-----------
+ 1 file changed, 65 insertions(+), 25 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/mmq.cuh b/ggml/src/ggml-cuda/mmq.cuh
+index 26d11b171..24379a44e 100644
+--- a/ggml/src/ggml-cuda/mmq.cuh
++++ b/ggml/src/ggml-cuda/mmq.cuh
+@@ -876,7 +876,7 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
+         const int * __restrict__ ids_dst, float * __restrict__ dst, float * __restrict__ tmp_fixup,
+         const float * __restrict__ y_scale,
+         const int stride_row_x, const int ncols_y, const int stride_col_dst,
+-        const int tile_x_max_i, const int tile_y_max_j, const int kb0_start, const int kb0_stop) {
++        const int tile_x_max_i, const int tile_y_max_j, const int kb0_start, const int kb0_stop, const bool y_double) {
+ 
+     constexpr int              warp_size  = ggml_cuda_get_physical_warp_size();
+     constexpr int              nwarps     = ggml_cuda_mmq_get_nthreads(type, J, fallback, prec_src1) / warp_size;
+@@ -889,6 +889,15 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
+     extern __shared__ int data_mul_mat_q[];
+     int * tile_y = data_mul_mat_q + J;
+     int * tile_x = tile_y + GGML_PAD(J*MMQ_TILE_Y_K, nwarps*warp_size);
++    // y_double (mmq_get_nbytes_shared): the second y half of an iteration has its own buffer behind the x tile, so
++    // both halves load together with the x tile and an iteration needs 2 barriers instead of 4. Same vec_dot calls
++    // in the same order, so the same sums.
++    int * tile_y1 = tile_y;
++    if constexpr (ggml_cuda_mmq_get_config(type, J, fallback, prec_src1).use_mma_data_layout()) {
++        if (y_double) {
++            tile_y1 = tile_x + I*ggml_cuda_mmq_get_sram_stride(type, J, fallback, prec_src1);
++        }
++    }
+ 
+ #if defined(BLACKWELL_MMA_AVAILABLE)
+     // FP4 tile stores 8 blocks. src1 above Q4 uses the generic
+@@ -914,6 +923,8 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
+     constexpr int ablate = 0;
+ #endif // GGML_MMQ_ABLATION
+ 
++    const bool split_y = tile_y1 != tile_y;
++
+     for (int kb0 = kb0_start; kb0 < kb0_stop; kb0 += blocks_per_iter) {
+         const bool first = kb0 == kb0_start;
+         if (!(ablate & 1) || first) {
+@@ -921,11 +932,22 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
+         }
+         if (!(ablate & 2) || first) {
+             const int * by0 = y + ncols_y * (kb0 * qk / ne_block) * sz;
++            if (split_y) {
++                const int * by1 = by0 + ncols_y * sz;
+ #pragma unroll
+-            for (int l0 = 0; l0 < J * MMQ_TILE_Y_K; l0 += nwarps * warp_size) {
+-                int l = l0 + threadIdx.y*warp_size + threadIdx.x;
++                for (int l0 = 0; l0 < J * MMQ_TILE_Y_K; l0 += nwarps * warp_size) {
++                    int l = l0 + threadIdx.y*warp_size + threadIdx.x;
+ 
+-                tile_y[l] = by0[l];
++                    tile_y[l]  = by0[l];
++                    tile_y1[l] = by1[l];
++                }
++            } else {
++#pragma unroll
++                for (int l0 = 0; l0 < J * MMQ_TILE_Y_K; l0 += nwarps * warp_size) {
++                    int l = l0 + threadIdx.y*warp_size + threadIdx.x;
++
++                    tile_y[l] = by0[l];
++                }
+             }
+         }
+ 
+@@ -937,26 +959,28 @@ static __device__ __forceinline__ void mul_mat_q_process_tile(
+             vec_dot(tile_x, tile_y, sum, 0);
+         }
+ 
+-        if (!(ablate & 8)) {
+-            __syncthreads();
+-        }
++        if (!split_y) {
++            if (!(ablate & 8)) {
++                __syncthreads();
++            }
+ 
+-        if (!(ablate & 2) || first) {
+-            const int * by0 = y + ncols_y * ((kb0 * qk / ne_block) * sz + sz);
++            if (!(ablate & 2) || first) {
++                const int * by0 = y + ncols_y * ((kb0 * qk / ne_block) * sz + sz);
+ #pragma unroll
+-            for (int l0 = 0; l0 < J * MMQ_TILE_Y_K; l0 += nwarps * warp_size) {
+-                int l = l0 + threadIdx.y*warp_size + threadIdx.x;
++                for (int l0 = 0; l0 < J * MMQ_TILE_Y_K; l0 += nwarps * warp_size) {
++                    int l = l0 + threadIdx.y*warp_size + threadIdx.x;
+ 
+-                tile_y[l] = by0[l];
++                    tile_y[l] = by0[l];
++                }
+             }
+-        }
+ 
+-        if (!(ablate & 8)) {
+-            __syncthreads();
++            if (!(ablate & 8)) {
++                __syncthreads();
++            }
+         }
+ 
+         if (!(ablate & 4)) {
+-            vec_dot(tile_x, tile_y, sum, MMQ_TILE_NE_K);
++            vec_dot(tile_x, tile_y1, sum, MMQ_TILE_NE_K);
+         }
+ 
+         if (!(ablate & 8)) {
+@@ -983,7 +1007,7 @@ static __global__ void mul_mat_q(
+         const uint3 blocks_per_ne00, const int nrows_x, const int ncols_dst, const int stride_row_x, const int ncols_y, const int stride_col_dst,
+         const uint3 channel_ratio, const uint3 nchannels_y, const int stride_channel_x, const int stride_channel_y, const int stride_channel_dst,
+         const uint3 sample_ratio, const uint3 nsamples_y, const int stride_sample_x, const int stride_sample_y, const int stride_sample_dst,
+-        const uint3 ntx) {
++        const uint3 ntx, const bool y_double) {
+ 
+     // Skip unused template specializations for faster compilation:
+     if (ggml_cuda_mmq_get_config(type, J, fallback, prec_src1).type == GGML_TYPE_COUNT) {
+@@ -1080,7 +1104,7 @@ static __global__ void mul_mat_q(
+         mul_mat_q_process_tile<type, J, fallback, fixup, prec_src1>
+             (x, offset_x, y + offset_y, ids_dst_shared, dst + offset_dst, tmp_fixup, y_scale_tile,
+              stride_row_x, ncols_y, stride_col_dst,
+-             tile_x_max_i, tile_y_max_j, 0, blocks_per_ne00.z);
++             tile_x_max_i, tile_y_max_j, 0, blocks_per_ne00.z, y_double);
+         return;
+     }
+ 
+@@ -1174,7 +1198,7 @@ static __global__ void mul_mat_q(
+         mul_mat_q_process_tile<type, J, fallback, fixup, prec_src1>
+             (x, offset_x, y + offset_y, ids_dst_shared, dst + offset_dst, tmp_fixup, y_scale_tile,
+              stride_row_x, ncols_y, stride_col_dst,
+-             tile_x_max_i, tile_y_max_j, kb0_start, kb0_stop);
++             tile_x_max_i, tile_y_max_j, kb0_start, kb0_stop, y_double);
+ 
+         kbc += blocks_per_ne00.z;
+         kbc -= fastmodulo(kbc, blocks_per_ne00);
+@@ -1258,7 +1282,7 @@ static __global__ void mul_mat_q(
+     mul_mat_q_process_tile<type, J, fallback, fixup, prec_src1>
+         (x, offset_x, y + offset_y, ids_dst_shared, dst + offset_dst, tmp_fixup, y_scale_tile,
+          stride_row_x, ncols_y, stride_col_dst,
+-         tile_x_max_i, tile_y_max_j, kb0_start, kb0_stop);
++         tile_x_max_i, tile_y_max_j, kb0_start, kb0_stop, y_double);
+ }
+ 
+ template <ggml_type type, int J, bool fallback, ggml_prec prec_src1>
+@@ -1409,11 +1433,12 @@ struct mmq_args {
+     int J_best; // Tile width in ne11(dense)/ne12(MoE) direction to use for optimal performance.
+ };
+ 
+-static size_t mmq_get_nbytes_shared(const ggml_cuda_mmq_config & config, const int cc) {
++// y_double: a second y buffer for the second half of each K iteration (see mul_mat_q_process_tile)
++static size_t mmq_get_nbytes_shared(const ggml_cuda_mmq_config & config, const int cc, const bool y_double = false) {
+     const size_t nbs_ids = config.J*sizeof(int);
+     const size_t nbs_x = ggml_cuda_mmq_get_nbytes_shared_x(config, cc);
+     const size_t nbs_y = config.J * (sizeof(block_q8_1_mmq));
+-    return nbs_ids + nbs_x + GGML_PAD(nbs_y, config.nthreads*sizeof(int));
++    return nbs_ids + nbs_x + (y_double ? 2 : 1) * GGML_PAD(nbs_y, config.nthreads*sizeof(int));
+ }
+ 
+ template <ggml_type type, int J, bool fallback, ggml_prec prec_src1>
+@@ -1426,7 +1451,22 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
+     const ggml_cuda_mmq_config config = ggml_cuda_mmq_get_config(type, J, fallback, cc, prec_src1);
+     GGML_ASSERT(config.nthreads % warp_size == 0);
+     const int nwarps = config.nthreads / warp_size;
+-    const int nbytes_shared = mmq_get_nbytes_shared(config, cc);
++
++    // [GGML_HIP_MMQ_YDB] RDNA3: both y halves of a K iteration in their own buffers, 2 barriers per iteration instead
++    // of 4 (bitwise: same vec_dot calls in the same order). 2 (default): wherever the larger tile fits (Q4_K J=128:
++    // 38.9 -> 57.3 KB, 3 -> 2 blocks per WGP), 1: only where the blocks per WGP (128 KiB LDS) stay the same, 0: off
++    static const int ydb_mode = [] {
++        const char * env = getenv("GGML_HIP_MMQ_YDB");
++        return env ? atoi(env) : 2;
++    }();
++    bool y_double = false;
++    if (ydb_mode > 0 && GGML_CUDA_CC_IS_RDNA3(cc) && config.use_mma_data_layout(cc)) {
++        const size_t nbs_1 = mmq_get_nbytes_shared(config, cc, false);
++        const size_t nbs_2 = mmq_get_nbytes_shared(config, cc, true);
++        constexpr size_t lds_wgp = 128*1024;
++        y_double = nbs_2 <= ggml_cuda_info().devices[id].smpbo && (ydb_mode >= 2 || lds_wgp/nbs_2 >= lds_wgp/nbs_1);
++    }
++    const int nbytes_shared = mmq_get_nbytes_shared(config, cc, y_double);
+ 
+     const dim3 block_dims(warp_size, nwarps, 1);
+ 
+@@ -1461,7 +1501,7 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
+              blocks_per_ne00_fd, args.nrows_x, args.ncols_dst, args.stride_row_x, args.ncols_y, args.nrows_dst,
+              channel_ratio_fd, nchannels_y_fd, args.stride_channel_x, args.stride_channel_y, args.stride_channel_dst,
+              sample_ratio_fd, nsamples_y_fd, args.stride_sample_x, args.stride_sample_y, args.stride_sample_dst,
+-             ntx_fd);
++             ntx_fd, y_double);
+         return;
+     }
+ 
+@@ -1490,7 +1530,7 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
+          blocks_per_ne00_fd, args.nrows_x, args.ncols_dst, args.stride_row_x, args.ncols_y, args.nrows_dst,
+          channel_ratio_fd, nchannels_y_fd, args.stride_channel_x, args.stride_channel_y, args.stride_channel_dst,
+          sample_ratio_fd, nsamples_y_fd, args.stride_sample_x, args.stride_sample_y, args.stride_sample_dst,
+-         ntx_fd);
++         ntx_fd, y_double);
+ 
+     if (!fixup_needed) {
+         return;
+-- 
+2.43.0
+
