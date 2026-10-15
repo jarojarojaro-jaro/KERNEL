@@ -3,13 +3,14 @@
 Kolejka GPU z rundy 6 przerobiona: (1) samplery — scalone, (2) GDN opt-gdn6 — bitowy, ale zysk w szumie, nie scalony, (3) MMQ epilog — scalony (+2.2% prefill Qwen).
 
 ## Stan zainstalowany (`~/llama-opt`, gałąź `amd-opt` @ f61994f58, 70 łatek, na GitHubie)
-Finalny pomiar 2026-10-15 (spec_sweep 6 promptów x 3 seedy, T=1, świeży serwer `run-llm.sh <model>`):
-| model | t/s (mediana) | ms/krok |
-|---|---|---|
-| Qwen3.8-27B UD-Q4_K_XL, MTP | 109.0 | 27.74 |
-| Qwen3.8-27B Uncensored, MTP | 115.5 | 26.68 |
-| LFM2.5-24B-A2B, KV q8_0 | 293.7 | 3.41 |
-| LFM2.5 Uncensored, KV q8_0 | 267.3 | 3.74 |
+Finalny pomiar 2026-10-15. Generowanie: spec_sweep 6 promptów x 3 seedy, T=1, świeży serwer `run-llm.sh <model>`.
+Prefill i tg bez spekulacji: llama-bench `-fa 1 -p 4096 -n 128 -r 2`, KV jak w run-llm.sh.
+| model | generowanie t/s (mediana) | ms/krok | prefill pp4096 t/s | tg128 bez spec. t/s |
+|---|---|---|---|---|
+| Qwen3.8-27B UD-Q4_K_XL, MTP, KV q4_0 | 109.0 | 27.74 | 1115 | 43.2 |
+| Qwen3.8-27B Uncensored Q4_K_M, MTP, KV q4_0 | 115.5 | 26.68 | 1109 | 44.0 |
+| LFM2.5-24B-A2B Q5_K_M, KV q8_0 | 293.7 | 3.41 | 6175 | 289.7 |
+| LFM2.5 Uncensored AD-Q5_K_M, KV q8_0 | 267.3 | 3.74 | 6291 | 264.3 |
 
 Greedy md5 po instalacji = bazy (Qwen plain c4708318…, MTP 6f14e814…, LFM 894e56e4…).
 `run-llm.sh` ustawia `LLAMA_SERVER_REASONING_CONTROL=0` (łatka 0065); od 0066-0069 web UI z budżetem myślenia i narzędzia omp też idą szybką ścieżką.
