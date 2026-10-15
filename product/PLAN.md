@@ -24,10 +24,10 @@ Wszystko oznaczone `[SZACUNEK]` jest wnioskiem, nie pomiarem.
 
    „Zostaw na noc” zostaje, ale robi co innego (§4.3): dostraja *twoją* maszynę, a gdy twojej kombinacji nie znamy, zgłasza ją do fabryki (opt-in). Przepis przychodzi później jako podpisana aktualizacja. To jest wersja Twojego pomysłu „łączy się z providerem i jest optymalizowane”.
 4. **Fosa (to, czego nie da się szybko skopiować):** baza zweryfikowanych profili per (GPU, sterownik, wersja silnika, model, kwant) plus tempo fabryki. Warstwa konfiguracyjna stanie się towarem w 6–12 miesięcy, bo LM Studio, Jan, TurboLLM i Lemonade już idą w tę stronę (raport 01 §3.1).
-5. **Największe ryzyko techniczne, którego raporty nie postawiły wprost: nasz dowód jest z Linuxa.** PM4 i większość zysku LFM to ROCr na Linuksie, a nietechniczni użytkownicy siedzą na Windowsie.
-   - Pierwszy kamień milowy to **zmierzenie, ile naszego zysku przeżywa na Windows**: HIP SDK i Vulkan na tym samym 7900 XTX.
-   - Jeśli mało, MVP startuje na Linux + Windows z mniejszą obietnicą na Windows. Na Windows i tak zostaje warstwa konfiguracyjna i spekulacja.
-6. **Kolejność:** najpierw tani dowód (faza 0, 3–4 tygodnie, prawie bez kosztów), potem silnik + CLI/TUI, potem GUI i noc, potem płatna edycja i macOS. Nie zaczynamy od GUI.
+5. **Platformy: rozwijamy i testujemy na Linuksie, ale każda optymalizacja ma obowiązkowy krok „analiza platformy”** (§4.5). Decyzja z 2026-10-15.
+   - Klienci siedzą głównie na Windowsie, więc ta analiza zawsze odpowiada na pytanie, co się zmienia na Windows i macOS: inne sterowniki, inny runtime, inne pułapki.
+   - Nasz dowód jest z Linuxa. PM4 i część zysku LFM to ROCr, którego na Windows nie ma. Obietnica na Windows to L0 + L1 + przenośne łatki, dopóki nie zmierzymy więcej.
+6. **Kolejność:** najpierw dowód (faza 0, 3–4 tygodnie; koszt to głównie zakup kart z §5.2), potem silnik + CLI/TUI, potem GUI i noc, potem płatna edycja i macOS. Nie zaczynamy od GUI.
 
 ---
 
@@ -113,7 +113,7 @@ flowchart TD
 ```
 
 ### 3.3 Ekrany (MVP)
-1. **Start / Czat:** prosty czat, wybór „mózgu” (Mały / Średni / Duży + Polski), wskaźnik „liczy na GPU ✓”.
+1. **Start / Czat:** prosty czat oparty na **web UI z llama.cpp** (`tools/ui`: SvelteKit 2 + Svelte 5, licencja MIT; wolno go użyć i zmienić, trzeba tylko zachować informację o prawach autorskich ggml). Do tego wybór „mózgu” (Mały / Średni / Duży + Polski) i wskaźnik „liczy na GPU ✓”. Decyzja z 2026-10-15.
 2. **Mój komputer:** GPU, VRAM, RAM, sterownik; ostrzeżenia (np. „karta usypia się — naprawiliśmy”).
 3. **Wynik:** trzy słupki z §2, czas typowych zadań, szczegóły techniczne pod rozwinięciem.
 4. **Optymalizacja nocna:**
@@ -249,18 +249,46 @@ flowchart LR
   - koszt przepisu ($ GPU + $ tokenów);
   - odsetek łatek przechodzących rebase bez ręcznej pracy.
 
+### 4.5 Analiza platformy (obowiązkowy krok każdej optymalizacji)
+Każda łatka, profil i ustawienie dostaje w fabryce rubrykę „gdzie działa i co się zmienia”. Bez niej nie trafia do produktu.
+
+| Temat | Linux | Windows | macOS |
+|---|---|---|---|
+| Sterownik / runtime AMD | amdgpu + ROCm (ROCr/KFD); **PM4 możliwe** | HIP SDK na innym runtime niż ROCr `[SZACUNEK: do potwierdzenia]` → **PM4 i łatki zależne od ROCr nie działają**; Vulkan często najszybszy w decode | brak |
+| Sterownik NVIDIA | CUDA; tryb persistence | CUDA na WDDM; **„Sysmem Fallback”**: po przekroczeniu VRAM po cichu do RAM, 5–30× wolniej → budżet z marginesem i alarm | brak |
+| Limity czasu GPU | brak | **TDR: kernel > 2 s = reset sterownika**, 5 resetów w 60 s = crash → limit czasu kandydatów w nocy | watchdog Metal |
+| Usypianie GPU | **BACO / runtime PM** (u nas 4.4 vs 92 t/s) → keepawake | plany zasilania, „najlepsza wydajność” | App Nap, Low Power Mode |
+| Pamięć | VRAM + GTT; `mmap` stron | VRAM dedykowana + „shared”; Defender skanuje wielogigabajtowe pliki modeli przy wczytaniu | **pamięć zunifikowana**, limit `recommendedMaxWorkingSetSize` |
+| Uprawnienia | grupa `render` / `video` dla `/dev/kfd` | bez admina; podpis każdego .exe/.dll | notaryzacja |
+| Szum pomiaru | mały (serwer) | przeglądarka, gry, nakładki (Discord, Steam) używają GPU → wymagana bezczynność, ABBA | throttling termiczny laptopów |
+| Backend domyślny | ROCm / CUDA / Vulkan wg pomiaru | Vulkan (AMD, Intel), CUDA (NVIDIA) wg pomiaru | Metal, później MLX |
+| Co się przenosi z naszych 70 łatek | wszystko | łatki hostowe, sampler, spekulacja, kernele HIP/CUDA (bez ROCr/PM4), Vulkan | łatki hostowe, sampler, spekulacja |
+
+Wynik analizy zapisujemy w manifeście łatki jako predykat, np. `os: [linux]`, `runtime: rocr`. Daemon włącza łatkę tylko tam, gdzie predykat jest spełniony.
+
 ---
 
 ## 5. Platformy, sprzęt, lab
 
 ### 5.1 Kolejność platform (pogodzenie raportów 01 i 04)
-- **Wolumen** to NVIDIA na Windows (76% Steam). **Wyróżnik i dowód** to AMD. Robimy oba w MVP, bo dla NVIDIA wystarczy na start L0 + L1 (spekulacja i dopasowanie pamięci dają tam największy skok), a dla AMD mamy L3.
-- **MVP:** Windows 11 + Linux; NVIDIA (CUDA, Vulkan jako fallback) + AMD (ROCm na Linuksie; HIP lub Vulkan na Windows, **do decyzji po pomiarze w fazie 0**).
+- **Rozwój i testy: Linux** (nasz serwer + ława testowa). Decyzja z 2026-10-15: nie robimy teraz testów na Windowsie.
+- **Projekt od początku na Win / Linux / macOS**: detekcja, paczki i analiza platformy (§4.5) dla każdej łatki. Windows wchodzi jako platforma wydawnicza, gdy przepisy przejdą bramki na Windowsie (CI na wynajmowanej maszynie z Windowsem albo ława z dual bootem, później).
+- **Wolumen** to NVIDIA (76% Steam), **wyróżnik i dowód** to AMD. Robimy oba: dla NVIDIA na start wystarczy L0 + L1, a dla AMD mamy L3.
 - **Faza 3:** macOS (Metal, potem MLX), Intel Arc (Vulkan), Strix Halo.
 - **Później:** telefon. Prompt MiniCPM pokazał ×3 prefill i ×2 decode, więc playbook przenosi się na ARM.
 
 ### 5.2 Lab (raport 05)
-- **NVIDIA:** wynajem na Vast (kontenery do benchmarków, VM do profilowania), RunPod i Salad jako zapas. A/B tylko w obrębie jednego hosta, bo karty tego samego modelu różnią się średnio o 8%.
+- **NVIDIA: kupujemy najpopularniejsze karty** (decyzja z 2026-10-15: budżet na karty jest), a rzadkie i drogie (3090, 4090, 5090) wynajmujemy na Vast, bo kupno 3090 to ~€1.2k, a godzina wynajmu ~$0.23. A/B tylko w obrębie jednego hosta, bo karty tego samego modelu różnią się średnio o 8%.
+- **Lista zakupów (priorytet):**
+
+  | # | Karta | Arch | VRAM | Dlaczego | Cena (raport 05, do sprawdzenia przy zakupie) |
+  |---|---|---|---|---|---|
+  | 1 | RTX 5060 Ti 16GB | Blackwell sm_120 | 16 | #3 w Steam, najpopularniejsze 16 GB | ~$474–680 nowa |
+  | 2 | RTX 3060 12GB | Ampere sm_86 | 12 | #5 w Steam, najtańsze 12 GB | ~€257 używana |
+  | 3 | RX 9070 XT | RDNA4 gfx1201 | 16 | najpopularniejszy Radeon; RDNA4 wymaga nowych kerneli WMMA | ~€694 używana |
+  | 4 | RTX 5070 | Blackwell sm_120 | 12 | **#1 w Steam** (6.15%) | do sprawdzenia |
+  | 5 | Arc B580 | Xe2 | 12 | jedyny realny Intel, nigdzie do wynajęcia | ~€270 |
+  | — | **ława testowa** (osobny PC: zasilacz 850 W+, PCIe 4.0 x16) | | | serwer z 7900 XTX zostaje na produkcję i AMD; nowe karty w osobnej maszynie | ~€800–1,200 |
 - **AMD:** nasz 7900 XTX (RDNA3), do tego **zakup RX 9070 XT** (RDNA4, ~€694) i wynajem Hostkey R9700 (€0.47/h, root) na kampanie. RDNA2 (6700 XT) w becie.
 - **Intel:** zakup Arc B580 (~€270), bo nie da się go nigdzie wynająć na godziny.
 - **Apple:** Scaleway Mac mini M4 (€0.22/h, minimum 24 h), od bety zakup.
@@ -275,7 +303,7 @@ flowchart LR
 |---|---|---|---|
 | Silnik | llama.cpp, cienka nakładka na tagach semver; paczki per arch; parametry w danych | MLX (Mac, faza 3); turbo-silnik per model (faza 4) | pokrycie „dowolny model i GPU” bez etatu na rebase |
 | Daemon | **Rust**; silnik jako osobny proces potomny | Go (jak Ollama) | jeden język dla daemona, TUI i backendu GUI; bezpieczeństwo parserów GGUF/HTTP; izolacja crashy silnika |
-| GUI | **Tauri 2** + TypeScript (Svelte lub React) | Electron | instalator 3–15 MB, podpisane aktualizacje wbudowane; na Linuksie GUI jako beta (WebKitGTK) |
+| GUI | **Tauri 2** + **web UI z llama.cpp** (SvelteKit 2 / Svelte 5, MIT) jako baza czatu, rozbudowany o nasze ekrany | Electron | instalator 3–15 MB, podpisane aktualizacje wbudowane; gotowy, dojrzały czat zamiast pisania od zera; na Linuksie GUI jako beta (WebKitGTK) |
 | TUI/CLI | **ratatui** (styl REACTOR) | Bubble Tea | wspólny kod z daemonem |
 | API | OpenAI (chat + Responses) + Anthropic Messages + emulacja Ollama `/api`; tylko 127.0.0.1, token, walidacja Host/Origin, własny port | — | standard rynku; lekcje z CVE Ollamy |
 | Paczki | instalator: CPU + Vulkan (Win/Linux) albo Metal; CUDA / HIP-per-rodzina dociągane po detekcji, podpisane, content-addressed | wszystko w instalatorze (1.5 GB jak Ollama) | szybki start; wersja do MS Store ma wszystko w środku |
@@ -332,16 +360,16 @@ flowchart LR
 
 Czasy to szacunki dla nas + agentów. Każda faza kończy się dopiero po spełnieniu kryteriów.
 
-### Faza 0: Dowód (3–4 tygodnie, koszt ~$50–150 + ewentualny zakup 9070 XT)
+### Faza 0: Dowód (3–4 tygodnie; koszt: karty z listy §5.2 + ewentualnie ~$10–20 wynajmu)
 | # | Eksperyment | Pytanie | Kryterium |
 |---|---|---|---|
 | E1 | Ollama + LM Studio z domyślnymi ustawieniami vs nasz build, ten sam harness, ten sam GGUF, nasz 7900 XTX | Jaki jest prawdziwy „przed”? | Zmierzone liczby dla Qwen i LFM |
 | E2 | Tylko L1 (flagi + spekulacja, czysty upstream v0.7.0) vs pełny stack, na 3–5 modelach (Qwen3.8, Gemma 4, gpt-oss-20b, Bielik, LFM) | Ile daje automat bez kerneli? | Tabela zysku per warstwa |
-| E3 | **Windows na naszym 7900 XTX** (drugi dysk / dual boot): HIP SDK i Vulkan, upstream vs nasze łatki | Ile zysku przeżywa poza Linuksem? | Decyzja o backendzie AMD na Windows |
-| E4 | Wynajęta RTX 3090 i 5070 (Vast, ~$10): L1 + nasze ogólne łatki na Qwen3.8 i gpt-oss | Jaki jest zysk na NVIDIA? Czy nasz wspólny kod CUDA działa poprawnie (nigdy nie był uruchomiony)? | md5 OK + tabela zysku |
+| E3 | **Analiza platformy na papierze**: dla każdej z 70 łatek rubryka z §4.5 (Linux / Windows / macOS) + build Windows w CI (kompilacja, bez uruchamiania) | Co z naszego zysku może działać na Windows? | Manifest łatek z predykatami OS/runtime |
+| E4 | Kupione NVIDIA (5060 Ti 16GB, 3060 12GB) na ławie: L1 + nasze ogólne łatki na Qwen3.8 i gpt-oss | Jaki jest zysk na NVIDIA? Czy nasz wspólny kod CUDA działa poprawnie (nigdy nie był uruchomiony)? | md5 OK + tabela zysku |
 | E5 | Kampania L3 na nowym modelu (np. Gemma 4 12B lub gpt-oss-20b) na 7900 XTX, z mierzonym czasem i kosztem | Ile kosztuje przepis? | Godziny agentów i GPU, zysk w % |
 | E6 | Rebase 70 łatek na v0.7.0 + `loo.py run` + `kld_canary.sh` | Ile łatek realnie się opłaca? Czy bramka KLD łapie szkody? | Lista łatek do zachowania / usunięcia |
-| E7 | Prototyp detekcji + estymatora (Rust, CLI) na naszym serwerze i Twoim PC z Windowsem | Czy detekcja jest wiarygodna? | Poprawny raport na obu maszynach |
+| E7 | Prototyp detekcji + estymatora (Rust, CLI) na serwerze i ławie testowej | Czy detekcja jest wiarygodna na AMD i NVIDIA? | Poprawny raport na obu maszynach |
 
 **Wyjście z fazy 0:** decyzja „go / zmiana zakresu” na podstawie E1–E5, opisana w `product/F0-WYNIKI.md`.
 
@@ -403,15 +431,13 @@ Turbo-silnik dla flagowych modeli (wzór hipfire / Lucebox), telefon, edycja Bus
 
 ## 12. Decyzje, które musisz podjąć
 
-1. **Kształt produktu:** własna aplikacja z czatem (pełny produkt dla laika) czy „silnik + optymalizator” pod istniejące nakładki (Open WebUI, LM Studio jako klient)? Rekomendacja: własna, prosta aplikacja z czatem plus lokalne API. Wartością jest optymalizator, a laik potrzebuje jednego okna.
-2. **Kod:** open core (łatki otwarte, baza i orkiestrator zamknięte) / całość otwarta / FSL (otwarta po 2 latach).
-3. **Faza 0 teraz?** Wymaga:
-   - użycia naszego GPU (E1–E3, E5–E6);
-   - **zgody na konto Vast.ai i ~$10–20** (E4);
-   - **Windowsa na serwerze** (E3: drugi dysk albo dual boot) albo Twojego PC z Windowsem: jaka jest w nim karta?
-4. **Zakup RX 9070 XT** (~€700 używany) już teraz czy po fazie 0?
-5. **Spółka:** zakładamy w fazie 1 (potrzebna do podpisu na Windows i Apple), czy później?
-6. **Nazwa** (propozycje z raportu 06: Podkręt, NightShift / Nocna Zmiana, Turbina, Rozpęd, Tuned), do sprawdzenia w EUIPO i domenach.
+1. ~~Kształt produktu~~ **Zdecydowane:** własny czat oparty na web UI z llama.cpp (MIT) + optymalizator + lokalne API.
+2. ~~Kod~~ **Zdecydowane:** open core (łatki silnika otwarte, baza profili i orkiestrator strojenia zamknięte).
+3. ~~Windows~~ **Zdecydowane:** testy teraz tylko na Linuksie; analiza platformy (§4.5) obowiązkowa dla każdej optymalizacji.
+4. **Faza 0 teraz?** Wymaga użycia naszego GPU (E1, E2, E5, E6), zakupu kart z §5.2 i ławy testowej (E4, E7).
+5. **Zakupy:** które karty z listy §5.2 i kiedy; ława testowa jako osobny PC.
+6. **Spółka:** zakładamy w fazie 1 (potrzebna do podpisu na Windows i Apple), czy później?
+7. **Nazwa** (propozycje z raportu 06: Podkręt, NightShift / Nocna Zmiana, Turbina, Rozpęd, Tuned), do sprawdzenia w EUIPO i domenach.
 
 ---
 
