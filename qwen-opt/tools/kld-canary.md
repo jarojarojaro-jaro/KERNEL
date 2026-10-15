@@ -92,7 +92,7 @@ just before its run and deleted after its log is complete, so only one copy exis
 
 ```
 kld_canary.sh --dry-run all            # print every command (prep, GPU runs, gate); nothing runs
-kld_canary.sh prep [VARIANT...]        # CPU only: model copies -> ~/models/lfm/canary (flock -s quiet.lock, nice 10)
+kld_canary.sh prep [VARIANT...]        # CPU only: throwaway copies -> ~/qwen-opt/kld-canary/models (never ~/models; flock -s quiet.lock, nice 10)
 kld_canary.sh run  [VARIANT...]        # GPU; resumes: skips RESULTS/<v>.log that parse; failures -> <v>.err.log
 kld_canary.sh gate [VARIANT...]        # table: variant | expected | mean KLD | dKLD/sd | 99.9% | same top | verdict | OK/UNEXPECTED
 kld_canary.sh all                      # per variant: prep -> run -> delete copy; then gate
