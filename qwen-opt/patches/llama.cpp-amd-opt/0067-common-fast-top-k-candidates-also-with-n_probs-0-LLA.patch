@@ -1,7 +1,7 @@
 From 3f737e847042118d0f77e2baf608ae77087ad367 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Thu, 15 Oct 2026 00:31:42 +0000
-Subject: [PATCH 2/4] common: fast top-k candidates also with n_probs > 0
+Subject: [PATCH 67/69] common: fast top-k candidates also with n_probs > 0
  (LLAMA_SAMPLER_FAST_NPROBS)
 
 "logprobs" / "n_probs" (OpenAI logprobs, completion_probabilities) disabled the LLAMA_SAMPLER_FAST_TOPK

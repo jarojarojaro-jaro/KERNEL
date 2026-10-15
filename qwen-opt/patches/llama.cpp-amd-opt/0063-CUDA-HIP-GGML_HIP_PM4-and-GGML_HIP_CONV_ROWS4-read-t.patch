@@ -1,7 +1,7 @@
 From 2cbcf771af8660127d085ddc4c32e78530a0ef68 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 21:58:25 +0000
-Subject: [PATCH 63/65] CUDA/HIP: GGML_HIP_PM4 and GGML_HIP_CONV_ROWS4 read
+Subject: [PATCH 63/69] CUDA/HIP: GGML_HIP_PM4 and GGML_HIP_CONV_ROWS4 read
  through ggml_cuda_env_switch (the fork's helper)
 
 ---

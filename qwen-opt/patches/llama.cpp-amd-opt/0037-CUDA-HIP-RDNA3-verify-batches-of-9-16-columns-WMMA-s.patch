@@ -1,7 +1,7 @@
 From d3a0973ae7b9de0f97964f414ff1f644e8c69aaf Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 21:45:41 +0000
-Subject: [PATCH 37/65] CUDA/HIP: RDNA3 verify batches of 9-16 columns: WMMA
+Subject: [PATCH 37/69] CUDA/HIP: RDNA3 verify batches of 9-16 columns: WMMA
  small-N MUL_MAT kernel, wide MMVQ dispatch
 
 mul_mat_vec_q_wmma (gfx110x): a wave computes 16 weight rows x 16 src1 columns with

@@ -1,7 +1,7 @@
 From 862c02136090c61af5cab192743c73238d957f8b Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 13:11:16 +0000
-Subject: [PATCH 51/65] CUDA/HIP: single-token MoE tail (down MUL_MAT_ID,
+Subject: [PATCH 51/69] CUDA/HIP: single-token MoE tail (down MUL_MAT_ID,
  expert weighting, residual ADD) in one MMVQ launch (GGML_HIP_MOE_DOWN_REDUCE)
 
 The decode MoE FFN ended in three launches: the down MUL_MAT_ID (one block per row and

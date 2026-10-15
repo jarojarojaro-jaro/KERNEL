@@ -30,7 +30,8 @@ def run(port, extra):
                                  {"Content-Type": "application/json"})
     d = json.load(urllib.request.urlopen(req, timeout=300))
     m = d["choices"][0]["message"]
-    text = (m.get("reasoning_content") or "") + "|" + (m.get("content") or "") + "|" + json.dumps(m.get("tool_calls"))
+    calls = [(c["function"]["name"], c["function"]["arguments"]) for c in m.get("tool_calls") or []]
+    text = (m.get("reasoning_content") or "") + "|" + (m.get("content") or "") + "|" + json.dumps(calls)
     t = d["timings"]
     return t["predicted_per_second"], t["predicted_n"], hashlib.md5(text.encode()).hexdigest()[:10]
 
@@ -38,8 +39,11 @@ def run(port, extra):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, required=True)
+    ap.add_argument("--only", help="run only cases whose name starts with this")
     a = ap.parse_args()
     for name, extra in CASES.items():
+        if a.only and not name.startswith(a.only):
+            continue
         tps, n, h = run(a.port, extra)
         print(f"{name:22s} {tps:6.1f} t/s  {n:4d} tok  md5 {h}", flush=True)
 

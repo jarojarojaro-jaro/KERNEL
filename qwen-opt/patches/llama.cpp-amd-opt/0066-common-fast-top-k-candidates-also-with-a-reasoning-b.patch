@@ -1,7 +1,7 @@
 From bf32386c9c5af6911e42ec45b1db0143618ba36d Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Thu, 15 Oct 2026 00:17:45 +0000
-Subject: [PATCH 1/4] common: fast top-k candidates also with a
+Subject: [PATCH 66/69] common: fast top-k candidates also with a
  reasoning-budget sampler (LLAMA_SAMPLER_FAST_RBUDGET)
 
 The web UI sends "reasoning_control": true with every request (and thinking_budget_tokens when a

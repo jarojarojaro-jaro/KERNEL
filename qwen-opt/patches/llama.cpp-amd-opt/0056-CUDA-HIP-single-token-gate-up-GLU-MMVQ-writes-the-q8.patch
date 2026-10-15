@@ -1,7 +1,7 @@
 From 04f10413e7cac20d20d86d8df34082148e1f7abf Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 17:05:48 +0000
-Subject: [PATCH 56/65] CUDA/HIP: single-token gate/up(+GLU) MMVQ writes the
+Subject: [PATCH 56/69] CUDA/HIP: single-token gate/up(+GLU) MMVQ writes the
  q8_1 input of the down projection (GGML_HIP_GATE_UP_Q8)
 
 The fused gate/up/GLU matvec of one token (MoE expert MUL_MAT_ID and dense FFN MUL_MAT) also

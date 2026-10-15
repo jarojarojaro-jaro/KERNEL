@@ -1,7 +1,7 @@
 From 849b69978685febf9317f441da0317a20038aa54 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 14:07:22 +0000
-Subject: [PATCH 28/65] CUDA/HIP: GDN fused SSM_CONV and alpha/beta projections
+Subject: [PATCH 28/69] CUDA/HIP: GDN fused SSM_CONV and alpha/beta projections
  in one grid (GGML_HIP_GDN_CONV_AB)
 
 The fused conv (ssm_conv_fused_f32, d_conv 4, +SILU) and the alpha/beta MMVQ (mul_mat_vec_q_gdn_ab) of a GDN layer

@@ -1,7 +1,7 @@
 From e41c2330e33236d13e10973c821c09efafda7aeb Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 21:58:25 +0000
-Subject: [PATCH 64/65] HIP/RDNA3 one-column MMVQ: Q8_0 joins the 2-row path
+Subject: [PATCH 64/69] HIP/RDNA3 one-column MMVQ: Q8_0 joins the 2-row path
  (and the 4-row conv path) (GGML_HIP_MMVQ_N1_Q8_0)
 
 The LFM2.5-24B-A2B 'Uncensored-AD' Q5_K_M quant keeps shortconv in_proj/out_proj, attention,

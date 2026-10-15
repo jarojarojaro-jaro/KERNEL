@@ -1,7 +1,7 @@
 From 343c2fbbb259ba5d6d3e56d87693fa19a2f15699 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 16:33:38 +0000
-Subject: [PATCH 32/65] llama/common: re-quantize the MTP draft head and MTP
+Subject: [PATCH 32/69] llama/common: re-quantize the MTP draft head and MTP
  block at load time (--spec-draft-head-type, --spec-mtp-type)
 
 llama_model_requant_mtp() converts the reduced draft head of llama_model_set_draft_head_vocab and/or the

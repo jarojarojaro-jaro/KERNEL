@@ -1,7 +1,7 @@
 From 6c7801bf62c689545c2185a1e0a1366950164e01 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Mon, 12 Oct 2026 13:37:13 +0000
-Subject: [PATCH 10/65] vulkan: RDNA3/4 MMVQ uses 2 rows per workgroup at eight
+Subject: [PATCH 10/69] vulkan: RDNA3/4 MMVQ uses 2 rows per workgroup at eight
  columns
 
 RX 7900 XTX, n=8 (us, 4 -> 2 rows): q5_K 17408x5120 89.5 -> 96.0, 5120x17408

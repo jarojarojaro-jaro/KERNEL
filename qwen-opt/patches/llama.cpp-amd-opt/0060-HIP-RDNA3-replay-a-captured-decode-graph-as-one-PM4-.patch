@@ -1,7 +1,7 @@
 From 1153adb69b7cf01a72f9563ade2bd7e26e9f2024 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 21:15:16 +0000
-Subject: [PATCH 60/65] HIP/RDNA3: replay a captured decode graph as one PM4
+Subject: [PATCH 60/69] HIP/RDNA3: replay a captured decode graph as one PM4
  indirect buffer on an own ROCr queue (GGML_HIP_PM4)
 
 A HIP graph costs ~2.75 us per kernel boundary on gfx1100: the CP's AQL front end

@@ -1,7 +1,7 @@
 From 7a963bc0c4886e5679a354498ad21af995dc9610 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Wed, 14 Oct 2026 17:11:12 +0000
-Subject: [PATCH 57/65] CUDA/HIP: single-token attention input (q/k
+Subject: [PATCH 57/69] CUDA/HIP: single-token attention input (q/k
  norm+rope+FWHT, v FWHT, q8_0 SET_ROWS of k and v) in one launch
  (GGML_HIP_ATTN_PREP)
 

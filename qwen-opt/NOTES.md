@@ -377,3 +377,16 @@ Domyślne --cache-ram 8192 i checkpointy już działają; strojenie zbędne. run
 - **Determinizm w obrębie jednego serwera** (`det_probe.py`): ten sam greedy request bez cache promptu daje inny tekst przy 1. i 2. wywołaniu po starcie serwera (rozjazd po ~270 znakach), identycznie przy PM4=1 i PM4=0, a **upstream e60eff95f zachowuje się tak samo** (nawet częściej). To zachowanie llama.cpp, nie łatek; porównania greedy robimy zawsze na świeżym serwerze.
 - Spowolnienie gate+up per proces: to nie konflikt strumieni gate/up ani rozmieszczenie w VRAM; wyzwalacz to siatki dokładnie 3072 bloków jednej fali (pełna pojemność GPU): 2560 bloków 12.2 us zawsze, 3072 bloki 13.6 lub 14.6 us. Conv naprawiony przez 0062; gate+up nadal 25.5 vs 26.2 us (3 wiersze/blok stabilizuje, ale reszta kerneli traci ~50 us/token).
 - Niezrobione: trwały kernel warstwy MoE (przy granicy 0.5-0.9 us szacunek tylko ~1.4%), leave-one-out łatek; zostaje ~16 us synchronizacji strumienia + 23 us startu/końca taśmy na token. Szczegóły: `research/lfm-decode-round4.md`.
+
+## Sampler: szybkie top-k także z budżetem myślenia, n_probs, logit_bias, gramatyką (69 łatek, 0065-0069; 2026-10-15), te same tokeny
+- 0065 `LLAMA_SERVER_REASONING_CONTROL=0` (serwer ignoruje flagę `reasoning_control` z web UI; `REASONING_CONTROL=1` w run-llm.sh ją przywraca).
+- 0066 `LLAMA_SAMPLER_FAST_RBUDGET`, 0067 `LLAMA_SAMPLER_FAST_NPROBS`, 0068 `LLAMA_SAMPLER_FAST_LOGIT_BIAS` (do 64 tokenów), 0069 `LLAMA_SAMPLER_FAST_GRAMMAR` (także leniwa gramatyka narzędzi omp; nie przy `grammar_first`). Każdy `=0` przywraca pełną ścieżkę 128k/248k kandydatów.
+- Weryfikacja: harness CPU 312k wektorów 0 różnic; serwer (świeży, `samp_ab.py`, seed 11, T=0.8, 800 tok.) md5 tekstu i wywołań narzędzi fast == slow we wszystkich 5 przypadkach, LFM i Qwen MTP (narzędzia LFM 2 x 2 przebiegi).
+
+| przypadek | LFM slow -> fast | Qwen MTP slow -> fast |
+|---|---|---|
+| zwykły | 293.2 -> 293.3 | 104.6 -> 104.6 |
+| `reasoning_control` (web UI) | 256.9 -> 292.9 | 101.6 -> 109.5 |
+| budżet myślenia 2048 (UI Low/Medium/High) | 256.9 -> 292.9 | 99.3 -> 107.0 |
+| narzędzia (omp, leniwa gramatyka) | 254.2 -> 294.3 | 104.8 -> 113.2 |
+| `logit_bias` | 257.1 -> 292.6 | 98.9 -> 105.4 |

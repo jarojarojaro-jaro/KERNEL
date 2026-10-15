@@ -1,7 +1,7 @@
 From 006490a9963e29555b0d50b8dcb81ce6f95c884f Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Tue, 13 Oct 2026 13:58:20 +0000
-Subject: [PATCH 27/65] CUDA/HIP: GDN gated output norm silu(z) * (rms_norm(x)
+Subject: [PATCH 27/69] CUDA/HIP: GDN gated output norm silu(z) * (rms_norm(x)
  * w) + q8_1 in one launch (GGML_HIP_NORM_GATE)
 
 RMS_NORM -> MUL(w) -> [reshape of z] -> UNARY_SILU(z) -> MUL becomes rms_norm_mul_silu_gate_f32<NCOLS>: one thread per

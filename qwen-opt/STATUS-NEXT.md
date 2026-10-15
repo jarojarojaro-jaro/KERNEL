@@ -1,8 +1,8 @@
-# Gdzie skończyliśmy (2026-10-15, ~02:30) — od tego zaczynamy po powrocie
+# Gdzie skończyliśmy (2026-10-15) — od tego zaczynamy po powrocie
 
-GPU: testy wstrzymane na prośbę użytkownika. Żaden llama-server ani benchmark nie działa. Agenty nie pracują.
+GPU: testujemy po kolei (1) samplery — ZROBIONE, (2) GDN opt-gdn6, (3) MMQ opt-mmq6.
 
-## Stan zainstalowany (`~/llama-opt`, gałąź `amd-opt` @ c36fd2c87, 65 łatek, na GitHubie)
+## Stan zainstalowany (`~/llama-opt`, gałąź `amd-opt` @ f4f0deae5, 69 łatek, na GitHubie)
 | model | t/s (spec_sweep 6x3, T=1) |
 |---|---|
 | Qwen3.8-27B UD-Q4_K_XL, MTP | 108.8 |
@@ -12,21 +12,10 @@ GPU: testy wstrzymane na prośbę użytkownika. Żaden llama-server ani benchmar
 
 `run-llm.sh` ustawia `LLAMA_SERVER_REASONING_CONTROL=0` (łatka 0065), więc web UI nie spowalnia przez `reasoning_control`.
 
-## Czeka na GPU (w tej kolejności)
+## Kolejka GPU
 
-### 1. Sampler fast path — gałąź `opt-samp` (4 commity na c36fd2c87), build `~/wt/samp/inst`
-Szybka ścieżka top-k także z budżetem myślenia, `n_probs`, `logit_bias`, gramatyką (narzędzia omp). Harness CPU:
-312k wektorów, 0 różnic. GPU, LFM, build fast (zmierzone 2026-10-15): plain 294.5, reasoning_control 294.5,
-budget 2048 294.0, tools 294.1, logit_bias 293.6 t/s (wcześniej 255/254/~245/255 na wolnej ścieżce).
-**Brakuje:** przebiegu „slow” (te same zapytania z wyłącznikami) do porównania md5 seeded outputs, potem to samo dla
-Qwen MTP. Komenda (ok. 5 min GPU na model):
-```
-cd ~/qwen-opt
-# fast
-flock /tmp/gpu.lock flock /tmp/quiet.lock bash -c 'REASONING_CONTROL=1 ROCM_DIR=$HOME/wt/samp/inst PORT=18470 ./run-llm.sh lfm >/dev/null 2>&1 & until curl -sf localhost:18470/health >/dev/null; do sleep 1; done; .venv/bin/python samp_ab.py --port 18470; pkill -f "llama-server.*18470"'
-# slow: to samo z env LLAMA_SAMPLER_FAST_RBUDGET=0 LLAMA_SAMPLER_FAST_NPROBS=0 LLAMA_SAMPLER_FAST_LOGIT_BIAS=0 LLAMA_SAMPLER_FAST_GRAMMAR=0
-```
-md5 każdej linii fast == slow → merge `opt-samp` do `amd-opt`, `cmake --install` do `~/llama-opt`, eksport łatek.
+### 1. Sampler fast path — ZROBIONE (scalone do amd-opt, zainstalowane, NOTES.md „Sampler: …”)
+Te same tokeny fast == slow (LFM + Qwen MTP, 5 przypadków). Web UI / budżet / narzędzia omp: LFM ~255 -> ~293 t/s, Qwen MTP +6-8%.
 
 ### 2. Qwen runda 5 — gałąź `opt-qwen5` (worktree `~/wt/qwen5`), raport `research/qwen-round5.md`
 Zmierzone już w oknie GPU 2026-10-15:
