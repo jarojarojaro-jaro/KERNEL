@@ -18,15 +18,30 @@ standardowa), surowe sekwencje ANSI: 24-bitowe kolory, znaki braille'a i bloki.
 - **LLM**: gdy działa `llama-server` – nazwa modelu (z `-m` w linii poleceń albo z logu),
   bieżące tokeny/s (z linii `print_timing ... tg_3s` w `~/qwen-opt/logs/latest.log`),
   n_gen, szczyt, ostatnie `eval` / `prompt` tok/s, średnia z 2 minut.
-- **Historia**: każda kluczowa metryka ma wykres braille'owy z ostatnich ~2 minut
-  (próbkowanie 2 Hz), kolorowany od zimnych (niebieski) do gorących (czerwony) wartości.
+- **Duże liczby**: obciążenie GPU %, temperatura junction, moc W, tokeny/s (oraz CPU %,
+  Tctl, częstotliwość) rysowane dużą czcionką blokową, kolor zależny od wartości.
+- **Historia**: każda kluczowa metryka ma wykres z ostatnich ~2 minut (próbkowanie
+  2 Hz), wypełniony gradientem od zimnych (cyjan) do gorących (róż/czerwień) wartości,
+  ze świecącą górną krawędzią.
 - **Rdzeń 3D**: obracający się, cieniowany torus (siatka w znakach braille'a).
   Prędkość obrotu = obciążenie GPU, kolor = temperatura junction, świetlna fala
   biegnąca po pierścieniu i pulsowanie = tokeny/s z llama-server.
 
-Paski i liczby płynnie interpolują między próbkami. Monitor tylko **czyta** pliki
-sysfs/procfs i log – nigdy nie zapisuje do sysfs, nie otwiera `/dev/kfd` ani `/dev/dri`
-i nie wywołuje `rocm-smi`.
+## Wygląd
+
+Każda sekcja to osobna „karta” z zaokrągloną ramką w swoim kolorze (GPU – róż/pomarańcz,
+CPU – cyjan/fiolet, LLM – limonka, I/O – pomarańcz, procesy – fiolet), kolorową
+etykietą z ikoną i lekko zabarwionym tłem. Po górnej krawędzi każdej karty co kilka
+sekund przebiega błysk, a w prawym górnym rogu miga dioda aktywności (szybciej przy
+większym obciążeniu sekcji; pusta ○ = brak llama-server). Paski mają gradient i jasną
+końcówkę, słupki 16 wątków CPU mają opadające znaczniki szczytu, tytuł w nagłówku
+mieni się kolorami. Paski i liczby płynnie interpolują między próbkami.
+
+Jeśli tło terminala jest przezroczyste/akrylowe albo zabarwienie kart nie pasuje do
+motywu, użyj `--no-tint` (lub klawisza `t`) – wtedy widać tło terminala.
+
+Monitor tylko **czyta** pliki sysfs/procfs i log – nigdy nie zapisuje do sysfs, nie
+otwiera `/dev/kfd` ani `/dev/dri` i nie wywołuje `rocm-smi`.
 
 ## Uruchomienie
 
@@ -37,8 +52,8 @@ python3 ~/KERNEL/monitor/reactor.py --fps 10     # inna liczba klatek na sekund�
 python3 ~/KERNEL/monitor/reactor.py --layout 3   # od razu widok „core”
 ```
 
-Opcje: `--fps N` (1–60), `--no-3d`, `--layout {1,2,3}`, `--log ŚCIEŻKA` (inny log
-llama-server), `--duration S` (wyjście po S sekundach – do testów).
+Opcje: `--fps N` (1–60), `--no-3d`, `--no-tint`, `--layout {1,2,3}`, `--log ŚCIEŻKA`
+(inny log llama-server), `--duration S` (wyjście po S sekundach – do testów).
 
 Zalecany rozmiar terminala to co najmniej **100x30** (najlepiej ok. 160x45).
 Przy mniejszym oknie panele chowają wykresy, a poniżej 60x18 pojawia się komunikat.
@@ -64,6 +79,7 @@ ssh -t jaro@serwer "python3 ~/KERNEL/monitor/reactor.py"
 | `1`          | układ „reactor”: rdzeń 3D + LLM, GPU, CPU, I/O, procesy |
 | `2`          | układ „data”: bez 3D, większe wykresy LLM i I/O        |
 | `3`          | układ „core”: duży torus na środku, kluczowe liczby po bokach |
+| `t`          | włącz/wyłącz zabarwione tło kart                       |
 | `r`          | pełne przerysowanie ekranu                             |
 
 ## Obciążenie
@@ -71,12 +87,13 @@ ssh -t jaro@serwer "python3 ~/KERNEL/monitor/reactor.py"
 Rysowanie jest różnicowe (wysyłane są tylko zmienione linie), dane czytane 2 razy
 na sekundę z otwartych deskryptorów (`pread`), lista procesów co 2 s. Własne zużycie
 CPU jest widoczne w nagłówku (`self … cpu`). Zmierzone w terminalu 160x45 przez 20 s:
-ok. 2,5% jednego rdzenia przy domyślnych ustawieniach (15 fps, 3D), ok. 1,3–1,5%
-z `--no-3d`, ok. 4% w układzie 3 (duży torus).
+ok. 3,3–3,6% jednego rdzenia przy domyślnych ustawieniach (15 fps, 3D), ok. 1,8–2,1%
+z `--no-3d`, ok. 4,5% w układzie 3 (duży torus); w oknie 100x30 odpowiednio ok. 2,2%
+i 1,4%. Temperatura NVMe jest czytana co 10 s, bo jej odczyt blokuje ok. 25 ms.
 
 ## Pliki
 
 - `reactor.py` – punkt wejścia: terminal, układy paneli, animacja, klawisze.
 - `sensors.py` – odczyt sysfs/procfs i śledzenie logu llama-server.
-- `gfx.py` – kolory, paski, wykresy braille'owe, duże cyfry.
+- `gfx.py` – paleta, sekcje (karty), paski, wykresy z gradientem, duże cyfry.
 - `core3d.py` – renderer torusa 3D w znakach braille'a.

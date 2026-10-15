@@ -24,7 +24,7 @@ def _shade_table(hue_idx):
     out = []
     for lv in range(LEVELS):
         if lv < 16:
-            k = 0.10 + 0.90 * (lv / 15.0) ** 1.15
+            k = 0.30 + 0.70 * (lv / 15.0) ** 1.1
             out.append(esc_fg(int(r0 * k), int(g0 * k), int(b0 * k)))
         else:
             u = (lv - 15) / 4.0        # blend towards white-hot
@@ -63,6 +63,7 @@ class Torus:
     N_PAR = 4          # rings around the tube (parallels)
     N_MER = 12         # rings around the hole (meridians)
     SPACING = 1.2      # target distance between samples, in braille dots
+    MAX_PTS = 1700     # cap for big viewports (keeps the per-frame cost bounded)
     PHASE = 0.0        # angular offset of the first parallel on the tube
 
     def _geometry(self, d):
@@ -73,6 +74,8 @@ class Torus:
             return
         self._geo_key = key
         unit = key * 8 * 0.5 / (R_MAJOR + R_MINOR)       # dots per world unit
+        length = 2 * math.pi * unit * (self.N_PAR * R_MAJOR + self.N_MER * R_MINOR)
+        spacing = max(self.SPACING, length / self.MAX_PTS)
         pts = []
 
         def add(phi, th):
@@ -86,10 +89,10 @@ class Torus:
         for i in range(self.N_PAR):
             th = 2 * math.pi * i / self.N_PAR + self.PHASE
             rr = R_MAJOR + R_MINOR * math.cos(th)
-            n = max(24, int(2 * math.pi * rr * unit / self.SPACING))
+            n = max(24, int(2 * math.pi * rr * unit / spacing))
             for j in range(n):
                 add(2 * math.pi * j / n, th)
-        n = max(10, int(2 * math.pi * R_MINOR * unit / self.SPACING))
+        n = max(10, int(2 * math.pi * R_MINOR * unit / spacing))
         for i in range(self.N_MER):
             phi = 2 * math.pi * i / self.N_MER
             for j in range(n):
@@ -164,12 +167,12 @@ class Torus:
                 back[ci] |= bit[((ys & 3) << 1) | (xs & 1)]
                 continue
             l = ox * nx + oy * ny + oz * nz
-            v = (0.22 + 0.78 * l if l > 0.0 else 0.22) + wb[bk]
+            v = (0.42 + 0.62 * l if l > 0.0 else 0.42) + wb[bk]
             bits[ci] |= bit[((ys & 3) << 1) | (xs & 1)]
             if v > lum[ci]:
                 lum[ci] = v
         tab = shades(hue)
-        ghost = tab[3]
+        ghost = tab[4]
         rows = []
         top = LEVELS - 1
         for r in range(h):

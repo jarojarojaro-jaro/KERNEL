@@ -1,64 +1,104 @@
-"""Colours, text-line builder and cheap cached widgets (bars, braille graphs, big digits).
+"""Colours, sections, text-line builder and cheap cached widgets
+(glowing gradient bars, gradient-filled graphs, equaliser bars, big digits).
 
-All output uses foreground colours only (24-bit), so lines never need a reset and
-the terminal background (e.g. Windows Terminal acrylic) shows through.
+Every string that is written to the terminal starts with an explicit background
+(panel tint or default), so the diff renderer never depends on leftover SGR state.
 """
 from functools import lru_cache
+
+WHITE = (255, 255, 255)
+BG_OFF = "\x1b[49m"
+RESET = "\x1b[0m"
+
+
+def fg(c):
+    return "\x1b[38;2;%d;%d;%dm" % c
+
+
+def bg(c):
+    return "\x1b[48;2;%d;%d;%dm" % c
 
 
 def esc_fg(r, g, b):
     return "\x1b[38;2;%d;%d;%dm" % (r, g, b)
 
 
-def _lerp(a, b, t):
-    return a + (b - a) * t
+def mix(a, b, t):
+    return (int(a[0] + (b[0] - a[0]) * t), int(a[1] + (b[1] - a[1]) * t),
+            int(a[2] + (b[2] - a[2]) * t))
+
+
+def scale(c, k):
+    return (min(255, int(c[0] * k)), min(255, int(c[1] * k)), min(255, int(c[2] * k)))
 
 
 def _grad(stops, t):
     t = 0.0 if t < 0 else 1.0 if t > 1 else t
     for (t0, c0), (t1, c1) in zip(stops, stops[1:]):
         if t <= t1:
-            u = (t - t0) / (t1 - t0) if t1 > t0 else 0.0
-            return tuple(int(_lerp(c0[i], c1[i], u)) for i in range(3))
+            return mix(c0, c1, (t - t0) / (t1 - t0) if t1 > t0 else 0.0)
     return stops[-1][1]
 
 
-# cool -> hot
-HEAT = [(0.00, (40, 70, 255)), (0.22, (0, 170, 255)), (0.42, (0, 235, 190)),
-        (0.60, (150, 255, 60)), (0.75, (255, 220, 40)), (0.88, (255, 120, 20)),
-        (1.00, (255, 30, 90))]
+# cool -> hot, every stop bright and saturated (readable on black and on tinted cards)
+HEAT = [(0.00, (0, 190, 255)), (0.22, (0, 255, 200)), (0.42, (110, 255, 70)),
+        (0.60, (255, 236, 0)), (0.76, (255, 150, 0)), (0.89, (255, 60, 70)),
+        (1.00, (255, 40, 170))]
 N = 128
 HEAT_RGB = [_grad(HEAT, i / (N - 1)) for i in range(N)]
-HEAT_FG = [esc_fg(*c) for c in HEAT_RGB]
+HEAT_FG = [fg(c) for c in HEAT_RGB]
+GLOW_FG = [fg(mix(c, WHITE, 0.45)) for c in HEAT_RGB]
+BODY_FG = [fg(scale(c, 0.8)) for c in HEAT_RGB]      # graph fill below the glowing edge
+
+
+def _idx(t):
+    if t != t or t <= 0:
+        return 0
+    if t >= 1:
+        return N - 1
+    return int(t * (N - 1))
 
 
 def heat(t):
     """Escape for value fraction t in [0,1] on the cool->hot gradient."""
-    if t != t or t <= 0:
-        return HEAT_FG[0]
-    if t >= 1:
-        return HEAT_FG[-1]
-    return HEAT_FG[int(t * (N - 1))]
+    return HEAT_FG[_idx(t)]
+
+
+def glow(t):
+    """Whitened ("glowing") variant of heat(t)."""
+    return GLOW_FG[_idx(t)]
 
 
 def heat_rgb(t):
-    t = 0.0 if t != t or t < 0 else 1.0 if t > 1 else t
-    return HEAT_RGB[int(t * (N - 1))]
+    return HEAT_RGB[_idx(t)]
 
 
-# fixed palette
-C_BORDER = esc_fg(55, 65, 95)
-C_DIM = esc_fg(80, 90, 115)
-C_GRID = esc_fg(45, 52, 72)
-C_LABEL = esc_fg(130, 145, 175)
-C_TEXT = esc_fg(200, 208, 225)
-C_VAL = esc_fg(240, 244, 255)
-C_ACC = esc_fg(0, 220, 255)
-C_ACC2 = esc_fg(255, 70, 170)
-C_OK = esc_fg(80, 255, 140)
-C_WARN = esc_fg(255, 190, 40)
-C_BAD = esc_fg(255, 60, 80)
-RESET = "\x1b[0m"
+# fixed palette: no dark greys for anything that carries data
+TEXT = fg((230, 236, 250))
+VAL = fg(WHITE)
+SUB = fg((170, 186, 222))          # secondary text, still clearly readable
+FAINT = fg((118, 132, 172))        # captions / grid only
+INK = fg((10, 10, 24))             # dark text on bright chips
+OK = fg((90, 255, 150))
+WARN = fg((255, 205, 40))
+BAD = fg((255, 70, 110))
+CARD_BASE = (10, 11, 20)
+
+
+class Section:
+    """Colour identity of one dashboard card."""
+
+    def __init__(self, title, glyph, accent, accent2):
+        self.title = title
+        self.glyph = glyph
+        self.rgb = accent
+        self.rgb2 = accent2
+        self.A = fg(accent)
+        self.A2 = fg(accent2)
+        self.lab = fg(mix(accent, WHITE, 0.22))         # labels inside the card
+        self.track = fg(scale(accent, 0.45))            # empty part of bars, baselines
+        self.tint_rgb = mix(CARD_BASE, accent, 0.085)   # card background
+        self.chip = bg(accent) + INK                    # title tag
 
 
 class Line:
@@ -128,69 +168,71 @@ class Line:
 EIGHTHS = " ▏▎▍▌▋▊▉"
 
 
-@lru_cache(maxsize=4096)
-def hbar(q, w):
-    """Horizontal gradient bar; q = filled length in 1/8 cells. Returns (str, w)."""
+@lru_cache(maxsize=8192)
+def hbar(q, w, track):
+    """Horizontal gradient bar with a glowing tip; q = filled length in 1/8 cells."""
     full, rem = divmod(max(0, min(q, w * 8)), 8)
     parts = []
     den = max(1, w - 1)
+    tip = full if rem else full - 1
     for i in range(full):
-        parts.append(heat(i / den))
+        parts.append(glow(i / den) if i == tip else heat(i / den))
         parts.append("█")
     if rem and full < w:
-        parts.append(heat(full / den))
+        parts.append(glow(full / den))
         parts.append(EIGHTHS[rem])
         full += 1
     if full < w:
-        parts.append(C_GRID)
-        parts.append("╌" * (w - full))
+        parts.append(track)
+        parts.append("─" * (w - full))
     return "".join(parts)
 
 
-def bar(line, frac, w):
+def bar(line, frac, w, track):
     if w <= 0:
         return line
     if frac != frac:
         frac = 0.0
-    return line.raw(hbar(int(round(max(0.0, min(1.0, frac)) * w * 8)), w), w)
+    return line.raw(hbar(int(round(max(0.0, min(1.0, frac)) * w * 8)), w, track), w)
 
 
 VBLK = " ▁▂▃▄▅▆▇█"
 
 
-def vbars(levels, h, colw, gap):
-    """Vertical equaliser bars. levels in [0,1]. Returns h strings (top first)."""
+def vbars(levels, peaks, h, colw, gap, track):
+    """Vertical equaliser bars (levels in [0,1]) with falling peak-hold caps.
+    Returns h strings (top first)."""
     rows = []
     qs = [int(round(max(0.0, min(1.0, v)) * h * 8)) for v in levels]
+    prow = [min(h - 1, int(max(0.0, min(1.0, p)) * h - 0.15)) if p > 0.02 else -1
+            for p in peaks]
+    pad = " " * gap
     for r in range(h):
         rr = h - 1 - r                       # row index from bottom
         col = heat((rr + 0.5) / h)
+        top = glow((rr + 0.5) / h)
         parts = []
-        for q in qs:
+        last = None
+        for i, q in enumerate(qs):
             k = q - rr * 8
             if k >= 8:
-                ch = "█"
+                c, ch = (top if k == 8 else col), "█"
             elif k > 0:
-                ch = VBLK[k]
-            else:
-                ch = None
-            if ch:
-                parts.append(col)
-                parts.append(ch * colw)
+                c, ch = top, VBLK[k]
+            elif prow[i] == rr:
+                c, ch = VAL, "▔"
             elif rr == 0:
-                parts.append(C_GRID)
-                parts.append("▁" * colw)
+                c, ch = track, "▁"
             else:
-                parts.append(" " * colw)
+                c, ch = None, " "
+            if c is not None and c is not last:
+                parts.append(c)
+                last = c
+            parts.append(ch * colw)
             if gap:
-                parts.append(" " * gap)
+                parts.append(pad)
         rows.append("".join(parts))
     return rows
-
-
-# braille: filled-from-bottom bit masks for left / right dot columns
-_LF = (0, 0x40, 0x44, 0x46, 0x47)
-_RF = (0, 0x80, 0xA0, 0xB0, 0xB8)
 
 
 def resample(vals, n):
@@ -208,46 +250,43 @@ def resample(vals, n):
     return out
 
 
-def bgraph(vals, w, h, vmax, color_max=None):
-    """Filled braille area graph of the history `vals` in w x h cells (2 samples per cell).
-    Cells are coloured by their value on the heat scale (relative to color_max or vmax)."""
+def blockgraph(vals, w, h, vmax, cmax, track):
+    """Area graph of the history in w x h cells, one sample per column, 8 levels per cell.
+    Filled with a vertical cool->hot gradient (by absolute level, relative to cmax) and a
+    glowing top edge."""
     if w <= 0 or h <= 0:
         return []
-    cols = resample(vals, 2 * w)
+    cols = resample(vals, w)
     vmax = vmax or 1.0
-    cmax = color_max or vmax
-    lv = []
-    for v in cols:
-        lv.append(-1 if v is None else int(round(max(0.0, min(1.0, v / vmax)) * 4 * h)))
+    ratio = vmax / (cmax or vmax)
+    qs = [-1 if v is None else int(round(max(0.0, min(1.0, v / vmax)) * h * 8)) for v in cols]
+    tops = [glow(q / (8.0 * h) * ratio) for q in qs]      # glowing edge in the value's colour
     rows = []
     for r in range(h):
         rr = h - 1 - r
-        base = rr * 4
+        body = BODY_FG[_idx((rr + 1) / h * ratio)]
+        base = rr * 8
         parts = []
         last = None
-        for c in range(w):
-            a, b = lv[2 * c], lv[2 * c + 1]
-            fa = 0 if a < 0 else min(4, max(0, a - base))
-            fb = 0 if b < 0 else min(4, max(0, b - base))
-            if fa == 0 and fb == 0:
-                if rr == 0 and (a >= 0 or b >= 0):
-                    col, ch = C_GRID, "⣀"
-                else:
-                    col, ch = None, " "
+        for i, q in enumerate(qs):
+            k = q - base
+            if k >= 8:
+                c, ch = (tops[i] if k == 8 else body), "█"
+            elif k > 0:
+                c, ch = tops[i], VBLK[k]
+            elif rr == 0 and q >= 0:
+                c, ch = track, "▁"
             else:
-                va = cols[2 * c] or 0.0
-                vb = cols[2 * c + 1] or 0.0
-                col = heat(max(va, vb) / cmax)
-                ch = chr(0x2800 | _LF[fa] | _RF[fb])
-            if col is not None and col != last:
-                parts.append(col)
-                last = col
+                c, ch = None, " "
+            if c is not None and c is not last:
+                parts.append(c)
+                last = c
             parts.append(ch)
         rows.append("".join(parts))
     return rows
 
 
-# 3x5 digit font -> 3 text rows using half blocks
+# 3x5 pixel font
 _FONT = {
     "0": ("111", "101", "101", "101", "111"), "1": ("010", "110", "010", "010", "111"),
     "2": ("111", "001", "111", "100", "111"), "3": ("111", "001", "111", "001", "111"),
@@ -258,29 +297,44 @@ _FONT = {
     " ": ("000", "000", "000", "000", "000"),
 }
 _HB = {("1", "1"): "█", ("1", "0"): "▀", ("0", "1"): "▄", ("0", "0"): " "}
+_GLOSS1 = (0.40, 0.12, 0.0)                 # whitening per text row (glossy top)
+_GLOSS2 = (0.50, 0.30, 0.14, 0.0, 0.0)
 
 
-@lru_cache(maxsize=512)
-def big_text(s, t_lo, t_hi):
-    """Render s in the 3x5 font. Returns (rows[3], width). Colour gradient t_lo..t_hi."""
+def big_width(s, size):
+    gl = [_FONT.get(ch, _FONT[" "]) for ch in s]
+    if size == 1:
+        return sum(len(g[0]) + 1 for g in gl) - 1 if gl else 0
+    return sum(2 * len(g[0]) + 2 for g in gl) - 2 if gl else 0
+
+
+@lru_cache(maxsize=1024)
+def big_text(s, frac, size=1):
+    """Render s in the pixel font, coloured by value fraction `frac` with a glossy top.
+    size 1: 3 rows (half blocks); size 2: 5 rows, double-width pixels.
+    Returns (rows, width)."""
     glyphs = [_FONT.get(ch, _FONT[" "]) for ch in s]
-    width = sum(len(g[0]) + 1 for g in glyphs) - 1 if glyphs else 0
+    base = heat_rgb(frac)
     rows = []
-    for pr in range(3):
-        parts = []
-        x = 0
-        for gi, g in enumerate(glyphs):
-            top = g[pr * 2]
-            bot = g[pr * 2 + 1] if pr * 2 + 1 < 5 else "0" * len(top)
-            for i in range(len(top)):
-                parts.append(heat(t_lo + (t_hi - t_lo) * (x / max(1, width - 1))))
-                parts.append(_HB[(top[i], bot[i])])
-                x += 1
-            if gi != len(glyphs) - 1:
-                parts.append(" ")
-                x += 1
-        rows.append("".join(parts))
-    return rows, width
+    if size == 1:
+        for pr in range(3):
+            parts = [fg(mix(base, WHITE, _GLOSS1[pr]))]
+            for gi, g in enumerate(glyphs):
+                top = g[pr * 2]
+                bot = g[pr * 2 + 1] if pr * 2 + 1 < 5 else "0" * len(top)
+                parts.extend(_HB[(top[i], bot[i])] for i in range(len(top)))
+                if gi != len(glyphs) - 1:
+                    parts.append(" ")
+            rows.append("".join(parts))
+    else:
+        for pr in range(5):
+            parts = [fg(mix(base, WHITE, _GLOSS2[pr]))]
+            for gi, g in enumerate(glyphs):
+                parts.extend("██" if p == "1" else "  " for p in g[pr])
+                if gi != len(glyphs) - 1:
+                    parts.append("  ")
+            rows.append("".join(parts))
+    return rows, big_width(s, size)
 
 
 def fmt_bytes(b, unit=True):

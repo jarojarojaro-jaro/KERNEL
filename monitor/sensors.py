@@ -235,6 +235,7 @@ class CPU:
         self.total = 0.0
         self.temp = None
         self.nvme_temp = None
+        self._nvme_n = 0
         self.freq_avg = self.freq_max = 0.0
         self.load = (0.0, 0.0, 0.0)
         self.tasks = ""
@@ -267,8 +268,11 @@ class CPU:
             self.freq_max = max(fr) / 1000.0
         t = self.f_temp.int()
         self.temp = t / 1000.0 if t is not None else None
-        t = self.f_nvme.int()
-        self.nvme_temp = t / 1000.0 if t is not None else None
+        # the NVMe temperature read is an admin command that blocks ~25 ms: read it rarely
+        if self._nvme_n % 20 == 0:
+            t = self.f_nvme.int()
+            self.nvme_temp = t / 1000.0 if t is not None else None
+        self._nvme_n += 1
         la = self.f_load.read().split()
         if len(la) >= 4:
             self.load = (float(la[0]), float(la[1]), float(la[2]))
