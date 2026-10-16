@@ -2,7 +2,7 @@
 typ: research
 tags: [research, determinizm, spekulacja]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/12-bit-exact-spekulacja.md:1-13,82-112,144-197
+zrodlo: ~/KERNEL/product/research/12-bit-exact-spekulacja.md:1-13,82-112,144-197; ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,136-143
 status: aktualne
 ---
 # Raport 12: bitowo identyczna spekulacja
@@ -18,6 +18,8 @@ Data 2026-10-16, gałąź `batch-invariant`.
 - Następny krok: dwie komendy `llama-bx-diff` (< 2 min GPU), czekają na zgodę.
 - Koszt (szacunki): weryfikacja MTP ~0, FA przy 32k ~0.5%, plain bez fuzji GLU ~0.3–1.3%.
 
+Metodyka z tqLLM (raport 15b): test end-to-end na długim prompcie (3.7k tokenów, 512 wyjścia) z przemiataniem `ubatch` ∈ {64, 512, 4096} i kontekstu ∈ {16k, 64k}, bo u nich błąd wychodził tylko przy `-ub 4096` (`8bb1119`, wycofany w `015a14a`); test `memcmp` per kolumna 1..16 dla K4 WMMA jako warunek bitexact dla W > 8.
+
 ## Powiązane
 - [[research/_hub|research]]
 - [[raport-10-post-training]]
@@ -25,3 +27,4 @@ Data 2026-10-16, gałąź `batch-invariant`.
 - [[batch-invariant]]
 - [[2026-10-16-bit-exact]]
 - [[lekcja-bit-exact-attention]]
+- [[tqllm]]

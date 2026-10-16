@@ -14,7 +14,7 @@ Klasy poprawności: *bitowo identyczne* (te same logity / greedy md5) albo *zmia
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (23)
+## Notatki (24)
 
 - [[argmax-dpp|Argmax z DPP (0026)]] — Argmax po słowniku w drafcie MTP: 16 ładowań w locie i wymiana między lane'ami przez DPP zamiast pamięci LDS; 16.8 → 4.3 µs na wywołanie.
 - [[cache-q8-1|Cache q8_1 aktywacji i „producenci” q8_1]] — MMVQ potrzebuje wejścia skwantyzowanego do q8_1; zamiast osobnego kernela kwantyzacji przed każdym matvec, kwantyzujemy raz i najlepiej już w kernelu, który to wejście produkuje.
@@ -39,4 +39,5 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[vulkan-mmvq|Vulkan RDNA: matvec i MMVQ (0006–0010)]] — Pięć łatek backendu Vulkan (RADV) z 2026-10-12, zanim ROCm został stałym backendem; dziś poza domyślną ścieżką.
 - [[attn-prep-fwht|Wejście atencji jednym kernelem i rotacja Hadamarda (0019, 0057, 0058)]] — Przy rotowanym KV (FWHT) przygotowanie q/k/v i zapis do cache robi jeden kernel zamiast pięciu, a rotację wyjścia wykonuje combine atencji.
 - [[wmma-small-n|WMMA small-N: weryfikacja 9–16 tokenów (K4, 0037)]] — Kernel WMMA iu8 (RDNA3) dla weryfikacji 9–16 kolumn, gdzie wielokolumnowe MMVQ (2–8) już nie sięga.
+- [[nemotron-kernele-cuda|Łatki CUDA dla Nemotron 3.5 Bolt: TOPK_MOE_NP2, MMVQ_N1_IQ2, IQ2_LUT]] — Trzy przełączniki z gałęzi `nemotron-3090`: fuzja topk-moe dla nietypowych liczb ekspertów (−280 kerneli/token, zmienia bity), IQ2_XXS w ścieżce 2 wierszy na blok (bitowo neutralna) i LUT siatki IQ2 w pamięci współdzielonej (wynik negatywny).
 <!-- AUTO:END -->

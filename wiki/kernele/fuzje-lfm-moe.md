@@ -2,7 +2,7 @@
 typ: kernel
 tags: [kernele, moe, lfm]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:340-341,346,348,355,364; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:124,126,128,131,178-180; ~/KERNEL/product/research/09-chmura-3090.md:91-104,115; ~/KERNEL/product/research/09-chmura-5060ti.md:95-119; ~/KERNEL/product/research/09-chmura-3060.md:136,145-147
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:340-341,346,348,355,364; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:124,126,128,131,178-180; ~/KERNEL/product/research/09-chmura-3090.md:91-104,115; ~/KERNEL/product/research/09-chmura-5060ti.md:95-119; ~/KERNEL/product/research/09-chmura-3060.md:136,145-147; ~/KERNEL/product/research/15a-monokernel.md:178,198,214; ~/KERNEL/product/research/15c-nowe-silniki.md:98,351,442
 status: aktualne
 ---
 # Fuzje MoE dla LFM2.5 (0049, 0051, 0053, 0056)
@@ -27,6 +27,10 @@ Na NVIDIA (kampania 2026-10-16) dwie z nich szkodzą, bo atomowy ticket i barier
 
 Nie wyszło: norma następnej warstwy jako ogon kernela MoE down (13 → 56 µs/wywołanie).
 
+Ponowna ocena trwałego bloku MoE (raport 15a, 2026-10-16): ponad PM4-PDL dałby już tylko +2…+5% (10–12 osobodni HIP + 8 CUDA); bąbel router → ekspert (38 × 5–6.5 µs ≈ 0.2–0.25 ms/token) jest nieusuwalny, bo LFM nie ma shared expert do prefetchu.
+
+Koszt okna weryfikacji MoE (raport 15c): TensorFold na M5 Ultra mierzy cost(k)/cost(1) = 1.24 / 1.68 / 2.81 / 5.05 dla k = 2/4/8/16 (#868); przy losowym routingu unia ekspertów to 64·(1−(60/64)^k) (rachunek), więc n-gram na LFM opłaca się tylko przy wysokiej akceptacji.
+
 ## Powiązane
 - [[kernele/_hub|Kernele]]
 - [[lfm-shortconv]]
@@ -34,3 +38,4 @@ Nie wyszło: norma następnej warstwy jako ogon kernela MoE down (13 → 56 µs/
 - [[lfm2-5-24b-a2b]]
 - [[lfm-runda-2]]
 - [[latki-na-nvidia]]
+- [[raport-15a-monokernel]]

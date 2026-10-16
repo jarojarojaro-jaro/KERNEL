@@ -14,9 +14,10 @@ ROCm jest domyślnym backendem od 2026-10-12 (Vulkan tylko jako opcja). Kernele 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (14)
+## Notatki (15)
 
 - [[amd-smi|AMD SMI (amd-smi)]] — Narzędzie i biblioteka AMD do telemetrii i sterowania GPU (moc, zegary, perf-level); w ROCm zastąpiło rocm-smi, działa na Linuksie, natywnego Windows brak.
+- [[hip-dyn-data-prefetch|HIP DynDataPrefetch (prefetch L2 przed kernelem)]] — `hipLaunchAttributeExtDynDataPrefetch` (prefetch regionów do L2 przed startem kernela) jest w HIP 7.15 u nas, ale ROCr zwraca 0 regionów dla wszystkiego poniżej gfx12.5, więc na gfx1100 nie działa.
 - [[hip-na-windows|HIP na Windows: PAL zamiast ROCr]] — Na natywnym Windows HIP używa runtime PAL, a nie ROCr; dlatego łatki zależne od ROCr (PM4 replay 0060/0061) i profiler rocprofv3 tam nie działają.
 - [[hip|HIP: jak piszemy kernele pod gfx1100]] — HIP to CUDA-podobny C++ kompilowany przez AMD clang; llama.cpp kompiluje swój backend CUDA jako HIP, a nasze kernele siedzą w tych samych plikach `ggml-cuda/*.cu`.
 - [[hip-graph-narzut|Narzut grafu HIP: ~3 µs na kernel]] — Na gfx1100 każda granica kernela w grafie HIP kosztuje ~3.2–3.4 µs bezczynności GPU, niezależnie od typu kernela; przy ~2000 kerneli na krok to 16–19% czasu.

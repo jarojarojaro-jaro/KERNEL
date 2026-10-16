@@ -2,7 +2,7 @@
 typ: produkt
 tags: [produkt, plan, werdykt]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/PLAN.md:1-30
+zrodlo: ~/KERNEL/product/PLAN.md:1-30; ~/KERNEL/product/research/15c-nowe-silniki.md:395
 status: aktualne
 ---
 # Werdykt planu produktu
@@ -14,6 +14,8 @@ status: aktualne
 - Produkt = aplikacja + fabryka przepisów. Fosa: baza zweryfikowanych profili per (GPU, sterownik, silnik, model, kwant) i tempo fabryki; warstwa konfiguracji stanie się towarem w 6–12 miesięcy.
 - Platformy: rozwój na Linuksie, obowiązkowa analiza platformy dla każdej optymalizacji (decyzja 2026-10-15).
 - Kolejność: dowód (faza 0) → silnik + CLI/TUI → GUI i noc → płatna edycja i macOS. Nie zaczynamy od GUI.
+
+Uwaga (raport 15c, 2026-10-16): „optymalizacja poza flagami” przestała być unikalna (Magnitude); propozycja zawężenia wyróżnika do weryfikacji md5/KLD + przed → po wobec tuned upstream + AMD natywnie czeka na decyzję – [[zawezenie-tezy-produktu]].
 
 ## Powiązane
 - [[produkt/_hub|produkt]]

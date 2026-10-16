@@ -21,3 +21,4 @@ Co z tym zrobiliśmy: mniej kerneli (fuzje: weryfikacja 2156 → ~830) i replay 
 - [[fuzje-weryfikacji]]
 - [[rocm-vs-vulkan]]
 - [[mikrobench-granicy-kernela]]
+- [[hip-dyn-data-prefetch]]

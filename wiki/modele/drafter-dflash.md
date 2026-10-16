@@ -2,7 +2,7 @@
 typ: model
 tags: [modele, dflash, spekulacja]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/research/drafters.md:9-11,28-29,44-57; ~/KERNEL/qwen-opt/NOTES.md:45-50,148-160; ~/KERNEL/qwen-opt/research/qwen-round5.md:26-28; ~/KERNEL/qwen-opt/SPEC-QWEN27B.md:24,74-75; ls ~/models/draft (2026-10-16)
+zrodlo: ~/KERNEL/qwen-opt/research/drafters.md:9-11,28-29,44-57; ~/KERNEL/qwen-opt/NOTES.md:45-50,148-160; ~/KERNEL/qwen-opt/research/qwen-round5.md:26-28; ~/KERNEL/qwen-opt/SPEC-QWEN27B.md:24,74-75; ls ~/models/draft (2026-10-16); ~/KERNEL/product/research/15b-spekulacja-frontier.md:21,113-123
 status: aktualne
 ---
 # Drafter DFlash2 dla Qwen3.8-27B
@@ -18,9 +18,12 @@ status: aktualne
 - Pomysł z drafters.md: probabilistyczny wybór ścieżki + rejection w llama.cpp (~40 linii) — szacunek +20–24% na EN czat T=1, niezrobione.
 - `run-llm.sh qwen dflash` uruchamia wariant DFlash.
 
+DFlash2 n=15 przy T=1 (runda 5, przeliczone w raporcie 15b): akceptacja rośnie na kodzie (pl-kod 4.21 → 5.67 tok/krok), ale spada na prozie (2.59 → 2.43), a krok rośnie 32.9 → 39.1 ms; średnio 97.9 t/s < MTP 108.8. Artykuł DFlash (Tab. 8): drafter trenowany na b8 testowany na b16 ma niższe τ (np. MT-Bench 3.29 → 3.09). DFlash2 NVIDIA to drafter 8 pozycji; blok 16 to ekstrapolacja.
+
 ## Powiązane
 - [[modele/_hub|Modele]]
 - [[glowica-mtp]]
 - [[latki-oczekujace]]
 - [[qwen-runda-5]]
 - hipfire
+- [[raport-15b-spekulacja-frontier]]

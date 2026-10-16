@@ -2,7 +2,7 @@
 typ: metoda
 tags: [metody, poprawnosc, bramka]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:64-70,227-228,262-265; ~/KERNEL/qwen-opt/NOTES.md:357,377; ~/KERNEL/qwen-opt/STATUS-NEXT.md:15; ~/KERNEL/qwen-opt/research/qwen-round5.md:10-16,26-28; ~/KERNEL/product/research/09-chmura-3090.md:74-85; ~/KERNEL/product/research/09-chmura-3060.md:111-127
+zrodlo: ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:64-70,227-228,262-265; ~/KERNEL/qwen-opt/NOTES.md:357,377; ~/KERNEL/qwen-opt/STATUS-NEXT.md:15; ~/KERNEL/qwen-opt/research/qwen-round5.md:10-16,26-28; ~/KERNEL/product/research/09-chmura-3090.md:74-85; ~/KERNEL/product/research/09-chmura-3060.md:111-127; ~/KERNEL/product/research/15c-nowe-silniki.md:147-149,213,287
 status: aktualne
 ---
 # Zgodność bitowa (greedy md5, hash logitów)
@@ -20,6 +20,8 @@ Bazy po instalacji 2026-10-15: Qwen plain `c4708318…`, MTP `6f14e814…`, LFM 
 Porównujemy MTP z bazą MTP, nie z plain: weryfikacja batcha zmienia numerykę (MTP rozjeżdża się z plain po 129 znakach, DFlash po 229; qwen-round5). Klasy z raportu 07: BIT 45 łatek, SAME-TOK 6 (sampler), DIST 3 (zmienia tylko drafty).
 
 Ważne (kampania NVIDIA, 2026-10-16): baza to zawsze **poprzedni build forka**, nie upstream. Fork różni się od upstreamu w greedy przez łatki bez przełącznika (MMVQ multi-kolumna 0001/0002, prolog GDN 0013); dlatego względem upstreamu stosujemy bramkę KLD (na RTX 3060 fork na poziomie szumu), a nie md5.
+
+Uzupełnienia z raportu 15c: (1) metryka „α kroków zaokrąglenia względem kernela domyślnego” `sqrt(Σ(c−d)²/Σ(w²/12))` (Magnitude `comparison.rs:16-19`) jako uzupełnienie referencji FP64 dla niebitowych łatek; (2) świadek subnormalny dla dekodu 4-bit: x = 2^-126 przy pre-scalingu daje 0x0080 → 0x0000 (TensorFold `e9bf19d9`).
 
 Przykład odrzucenia: pierwszy GDN fast (58e578967) dał plain `0b7b073b` zamiast `c4708318`: inna kontrakcja FMA (94 vs 83 FMA w ISA), commit wycofany.
 

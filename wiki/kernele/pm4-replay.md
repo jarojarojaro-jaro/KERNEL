@@ -2,7 +2,7 @@
 typ: kernel
 tags: [kernele, pm4, rocr]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:6-14,18-57,81-99; ~/KERNEL/qwen-opt/NOTES.md:372-376; ~/KERNEL/product/research/08-analiza-platformy-latek.md:14-21; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:135-136,473
+zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:6-14,18-57,81-99; ~/KERNEL/qwen-opt/NOTES.md:372-376; ~/KERNEL/product/research/08-analiza-platformy-latek.md:14-21; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:135-136,473; ~/KERNEL/product/research/15a-monokernel.md:179-183,196,233-242
 status: aktualne
 ---
 # Replay grafu dekodowania jako bufor PM4 (0060, 0061, 0063)
@@ -19,6 +19,9 @@ Wynik (przeplatane):
 Bezpieczeństwo: 20 przebiegów testu, soak `pm4_soak.py` (~4 min na model) bez zawieszeń; pierwsza próba dała odwracalny page fault (IB musi być w pamięci wykonywalnej).
 
 Wyłączniki: `GGML_HIP_PM4=0`; diagnostyka `GGML_HIP_PM4_DEBUG=1/2/3` (0061), bo rocprofv3 nie widzi dispatchy PM4. Ograniczenia: zależy od wnętrzności ROCr; **nie działa na Windows** (HIP na PAL), a bezwarunkowe `find_package(hsa-runtime64)` może łamać tam build.
+
+## Następny krok: PM4-PDL (raport 15a, 2026-10-16)
+Pomysł: taśma PM4 bez pakietów granicy (`CS_PARTIAL_FLUSH` + `ACQUIRE_MEM`) między parą producent → konsument; konsument (MMVQ n=1) najpierw ładuje wagi do VGPR, potem czeka na flagę `gen` ustawianą z release przez ostatni blok producenta (tickety już są w 0051/0053/0054/0056/0057). Zmierzony overlap bez granicy 0.24–0.35 µs (runda 4). Szacunek +5…+15% LFM przy ~1/4 kosztu megakernela, bitowo z definicji; ryzyko zakleszczenia, jeśli dispatcher nie wydaje grup roboczych po kolei – rozstrzyga mikrobench X1 (wymaga zgody na GPU). Zob. [[raport-15a-monokernel]].
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

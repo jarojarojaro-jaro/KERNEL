@@ -2,7 +2,7 @@
 typ: nvidia
 tags: [nvidia, nvfp4, kwantyzacja]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:38,42; ~/KERNEL/product/research/01-konkurencja.md:330; ~/KERNEL/qwen-opt/patches/llama.cpp-amd-opt/0004-*.patch:144, 0012-*.patch:120, 0024-*.patch:179; ~/KERNEL/qwen-opt/research/v2/roadmap.md:246; ~/KERNEL/qwen-opt/research/v2/rr-engines-drafters.md:355; ~/KERNEL/qwen-opt/research/repos/22-lucebox.md:76; ~/KERNEL/product/research/09-chmura-5060ti.md:168-188,258-290
+zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:38,42; ~/KERNEL/product/research/01-konkurencja.md:330; ~/KERNEL/qwen-opt/patches/llama.cpp-amd-opt/0004-*.patch:144, 0012-*.patch:120, 0024-*.patch:179; ~/KERNEL/qwen-opt/research/v2/roadmap.md:246; ~/KERNEL/qwen-opt/research/v2/rr-engines-drafters.md:355; ~/KERNEL/qwen-opt/research/repos/22-lucebox.md:76; ~/KERNEL/product/research/09-chmura-5060ti.md:168-188,258-290; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:41-51,89,186-200,320-332; ~/llama-master/ggml/src/ggml-quants.c:384-417
 status: aktualne
 ---
 # NVFP4 (4-bitowy format NVIDIA)
@@ -22,6 +22,8 @@ Gdzie się pojawia:
 - Oficjalne checkpointy NVFP4 pod vLLM (`nvidia/Qwen3.8-27B-NVFP4` 21.9 GB) nie mieszczą się w 16 GB; `nvidia/` nie publikuje wariantu LFM2.5.
 - Na NVFP4 i Q4_0 nasz fork daje md5 identyczne z upstreamem (niebitowa łatka dotyczy tylko ścieżki K-quantów).
 
+**Raport 15e (2026-10-16):** kwantyzator NVFP4 w ggml nie ma skali globalnej ani imatrix (99.8–100% subnormalnych skal); szczegóły w [[2026-10-16-nvfp4-skala-globalna-sim]]. CSF+QAD NVIDIA dotyczy tylko Flash-Next 96 GiB.
+
 Decyzja techniczna (roadmap v2): zmiana kwantu trunku dla prędkości (IQ4_XS, NVFP4) zmienia model wyjściowy, więc jest poza ograniczeniem „bezstratnie”. Lucebox: megakernel NVFP4 dla RDNA3 „bez sensu” (brak FP4).
 
 ## Powiązane
@@ -31,3 +33,5 @@ Decyzja techniczna (roadmap v2): zmiana kwantu trunku dla prędkości (IQ4_XS, N
 - [[rtx-5060-ti]]
 - [[tensorfold]]
 - [[raport-09-chmura-5060ti]]
+- [[raport-15e-kwantyzacja-nowa]]
+- [[2026-10-16-nvfp4-skala-globalna-sim]]

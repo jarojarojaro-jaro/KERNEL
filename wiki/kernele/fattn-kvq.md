@@ -2,7 +2,7 @@
 typ: kernel
 tags: [kernele, flash-attention, kv]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058)
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058); ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,34-41,107; ~/KERNEL/product/research/15b-spekulacja-frontier.md:20,92,179; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54-55
 status: aktualne
 ---
 # FA `kvq`: atencja dekodowania na skwantyzowanym KV
@@ -24,9 +24,17 @@ Poprawność:
 
 Wyłączniki: 0011 brak (build), `GGML_HIP_KVQ_Q8`, `GGML_HIP_KVQ_FWHT`. Tylko gfx110x; RDNA4 wymaga portu (inny układ WMMA gfx12).
 
+## Luka na CUDA (raporty 15b, 15d; 2026-10-16)
+- Upstream CUDA dla KV q4_0/q8_0: kernel vec czyta KV osobno dla każdej głowy Q (`fattn-vec.cuh:108-111`), a na Ampere przy n ≥ 2 wybiera MMA_F16, które co krok konwertuje cały K/V warstwy do f16 (`fattn.cu:655-670`, `fattn-common.cuh:1041-1090`); na Ada/Blackwell vec do n ≤ 2. Nasz kvq jest dostępny tylko dla RDNA3_0.
+- 3090 tg64 base / fork przy 0 → 64k: Qwen 39.3 → 27.2, LFM 251.9 → 147.7 t/s; model ponownych odczytów GQA zgadza się z pomiarem (LFM +3.05 ms przewidziane vs +2.80 ms zmierzone).
+- Szacunek po porcie kvq na CUDA `[INFERENCE]`: Qwen ~37, LFM ~200 t/s przy 64k (+36%), MTP@64k +30–55%, VRAM −0.27…−0.84 GB. Plan E1 w raporcie 15d (6–10 osobodni + ~$1.5 chmury, wymaga zgody); upstream odrzucił podobne PR-y.
+- Koszt szerokości weryfikacji na XTX: kvq czyta KV raz na kafel 16 wierszy, `ceil(6·W/16)` kafli (W5 = 2, W8 = 3, W16 = 6); kalibracja d32768 n1 28.1 vs n5 33.8 ms. Kandydat: jedno czytanie KV dla ≤ 16 tokenów × 6 głów. HyperQwen (split-KV Triton, 128 wierszy na kafel) mierzy 250/583/1132 µs na warstwę przy 8/16/32 zapytaniach i 25k – do sprawdzenia.
+
 ## Powiązane
 - [[kernele/_hub|Kernele]]
 - [[prefill-mmq-fa]]
 - [[attn-prep-fwht]]
 - [[lfm2-5-24b-a2b]]: KV q8_0 z decyzji użytkownika
 - [[rdna3-gfx1100]]
+- [[fa-kv-kwantyzowane-cuda]]
+- [[raport-15d-prefill-dlugi-kontekst]]

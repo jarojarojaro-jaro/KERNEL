@@ -2,7 +2,7 @@
 typ: produkt
 tags: [produkt, plan, ryzyka]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/PLAN.md:475-487
+zrodlo: ~/KERNEL/product/PLAN.md:475-487; ~/KERNEL/product/research/15c-nowe-silniki.md:389-393
 status: aktualne
 ---
 # Największe ryzyka
@@ -20,6 +20,9 @@ status: aktualne
 | brak popytu na płatną edycję | średnie / średni | fake-door, B2B/OEM |
 | AV/SmartScreen | wysokie / średni | podpis, MS Store |
 | zależność od HF | niskie–średnie / wysoki | pin rewizji, mirror |
+| Magnitude jako „LM Studio z własnymi kernelami” dla agentów (raport 15c) | już jest / wysoki na Mac i NVIDIA, niski na AMD | AMD natywnie, baseline vs tuned upstream i jakość na ekranie wyniku, dowolny GGUF i MoE offload, LocalMaxxing |
+
+Nowe ryzyko z 2026-10-16: Magnitude ma 6.9k★ w 4 miesiące, ale brak HIP, brak bitowej bramki i brak MoE offload (#194).
 
 ## Powiązane
 - [[produkt/_hub|produkt]]
@@ -27,3 +30,5 @@ status: aktualne
 - [[werdykt]]
 - [[raport-06-produkt]]
 - [[wyniki-negatywne]]
+- [[magnitude]]
+- [[zawezenie-tezy-produktu]]

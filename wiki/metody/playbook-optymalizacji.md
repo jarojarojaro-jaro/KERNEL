@@ -2,7 +2,7 @@
 typ: metoda
 tags: [metody, playbook, proces]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:28-35,187-235; ~/KERNEL/product/PLAN.md:224-234
+zrodlo: ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:28-35,187-235; ~/KERNEL/product/PLAN.md:224-234; ~/KERNEL/product/research/15f-agentowa-nauka.md:233-270
 status: aktualne
 ---
 # Playbook optymalizacji
@@ -24,6 +24,8 @@ Dziesięć kroków (PLAN §4.4, raport 07 §2.2):
 Na rundę: osobna gałąź i worktree (25 gałęzi `opt-*`, w `~/wt` 40+ katalogów wg raportu 07). Zmianę scalamy tylko przy realnym zysku: GDN fast był bitowy, ale +0.15% to szum, więc nie trafił do `amd-opt`. Po instalacji: greedy md5 = baza i soak (`pm4_soak.py`).
 
 Ten sam schemat przeniesiono na CPU ARM telefonu (`~/telefon/PROMPT-minicpm-speed.md`, etap 0: sufit pasma i SDOT).
+
+Propozycja uprzemysłowienia playbooka z ledgerem i kaskadą bramek: [[fabryka-v1]] (raport 15f, do sprawdzenia).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

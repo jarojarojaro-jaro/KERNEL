@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (17)
+## Notatki (25)
 
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
 - [[raport-01-konkurencja|Raport 01: konkurencja]] — Detekcja sprzętu i rekomendacja modelu to już standard; żaden produkt konsumencki nie łączy pomiaru, długiej optymalizacji poza flagami, weryfikacji bitowej i raportu przed → po (stan 2026-10-15).
@@ -32,5 +32,13 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-11-mtp-pl-pilot|Raport 11: pilot douczania głowicy MTP]] — Wynik negatywny (2026-10-16, RunPod A40, $2.14): douczona głowica MTP Qwen3.8-27B na 1.7 M tokenów zmienia tok/krok o ±2% (offline +0.2% w najlepszym przebiegu); fabryczna głowica jest już blisko optimum dla tej skali danych.
 - [[raport-12-bit-exact|Raport 12: bitowo identyczna spekulacja]] — Plain greedy (`c4708318`) i MTP (`6f14e814`) dają różne md5, bo ta sama pozycja liczona jest innym kernelem przy N=1 i N=2..6; tryb `LLAMA_SPEC_BITEXACT=1` na GPU wyrównał warstwy 0–6, zostało wyjście atencji `kqv_out-3`, a następne komendy GPU czekają na zgodę.
 - [[raport-13-rocm-10-1|Raport 13: ROCm 10.1]] — ROCm 10.1 nic istotnego nie daje na gfx1100: zostajemy na 10.0, a 10.1 trzymamy obok jako tarball user-local; ważniejsze odkrycia to ATT na gfx1100 i przyczyna PMC = 0.
+- [[raport-14-nemotron-3090|Raport 14: Nemotron 3.5 Bolt 74B-A9B na RTX 3090]] — Nemotron 3.5 Bolt 74B-A9B (IQ2_XXS, 22 GB) mieści się na RTX 3090 z drafterem DFlash; nasz silnik po dwóch nowych łatkach daje 87.2 → 141.1 t/s (×1.62 vs domyślny llama.cpp, ×1.07 vs najlepsze flagi upstream), ale KLD jest niezmierzone.
+- [[raport-15a-monokernel|Raport 15a: megakernele dla decode (vLLM MonoKernel)]] — Trwały kernel *dataflow* z prefetchem wag mógłby dać LFM2.5 na XTX +12…+28% `[SZACUNEK]`, ale trwały kernel z barierami między fazami nie pobije PM4; tańszy pierwszy krok to „PM4-PDL” (+5…+15%, bitowo).
+- [[raport-15b-spekulacja-frontier|Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)]] — Lookup z kontekstu i szeroki blok weryfikacji (HyperQwen) dają nam mało, bo nasza głowica MTP już kopiuje (P(MTP d1 | lookup d1) = 0.968 vs 0.765 bazowo); sens ma tylko doklejanie ogona („EXT”) na edycjach agenta.
+- [[raport-15c-nowe-silniki|Raport 15c: nowe silniki konkurencji (Magnitude, tqLLM, Actual, TensorFold 1.0.12)]] — Strojenie kerneli na komputerze użytkownika przestało być unikalne (Magnitude), a „spekulacja nie zmienia odpowiedzi” robią już tqLLM, Actual i TensorFold; unikalne zostaje AMD natywnie, dowolny GGUF, przed → po wobec tuned upstream i opublikowana bramka md5/KLD.
+- [[raport-15d-prefill-dlugi-kontekst|Raport 15d: prefill i długi kontekst (PFlash v2, KVFlash, cache sesji)]] — Największa bezstratna strata przy długim kontekście na NVIDIA to kernel atencji, nie prefill: port naszego `kvq` na CUDA to top pomysł; PFlash v2 to tryb stratny opt-in, KVFlash odrzucony, dyskowy cache sesji to realny bezstratny brak.
+- [[raport-15e-kwantyzacja-nowa|Raport 15e: nowe formaty niskobitowe dla 27B na 12–16 GB]] — GSQ-RCO jest „SOTA” tylko w wąskiej klasie, Swift 1.5 to fine-tune z niedouczoną głowicą MTP, CSF/QAD (NVFP4) są poza naszymi kartami, a największy zysk na 12 GB to MTP na istniejących 2-bitowych plikach.
+- [[raport-15f-agentowa-nauka|Raport 15f: agentowa nauka (Sakana v3, KernelGuard) a nasza fabryka]] — Z systemów automatycznej nauki warto przenieść dyscyplinę artefaktów (ewaluator poza zasięgiem agenta, ledger, reguły z fixture’ami), ale nie promocję „wynik ściśle większy” bez statystyki; propozycja fabryki v1 za ~8–9 osobodni.
 - [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]] — Trzy raporty rundy 6 (2026-10-15), wszystkie bez GPU: szybki kernel GDN bitowy z konstrukcji, epilog MMQ w VOPD oraz narzędzia LOO / kanarki KLD / Kernel Tuner.
+- [[star-elastic-2605-07182|Star Elastic (arXiv 2605.07182)]] — Praca NVIDIA o zagnieżdżonych podmodelach Nemotron Nano v3 (30B → 23B/12B z jednego post-trainingu) i osobnym podmodelu dla fazy myślenia; nie dotyczy kerneli, dla nas niska istotność.
 <!-- AUTO:END -->

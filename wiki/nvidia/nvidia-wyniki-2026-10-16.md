@@ -2,7 +2,7 @@
 typ: nvidia
 tags: [nvidia, wyniki, chmura]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/09-chmura-3090.md:40-72,201-233; ~/KERNEL/product/research/09-chmura-5060ti.md:59-89,214-256; ~/KERNEL/product/research/09-chmura-3060.md:64-127,233-275; ~/qwen-opt/cloud/results/{3090,5060ti,3060}-20261016/scorecard.json
+zrodlo: ~/KERNEL/product/research/09-chmura-3090.md:40-72,201-233; ~/KERNEL/product/research/09-chmura-5060ti.md:59-89,214-256; ~/KERNEL/product/research/09-chmura-3060.md:64-127,233-275; ~/qwen-opt/cloud/results/{3090,5060ti,3060}-20261016/scorecard.json; ~/KERNEL/product/research/14-nemotron-3090.md:216-231
 status: aktualne
 ---
 # Wyniki NVIDIA z chmury (2026-10-16, finalne)
@@ -19,6 +19,7 @@ Decode t/s (spec_sweep, 6 promptów × 3 seedy, T=1, ABBA; A0 = upstream tylko `
 | 5060 Ti, LFM2.5 Q4_K_M | 147.69 | 144.47 | 207.86 | 1.41 / 1.44 |
 | 3060, Saluki 27B IQ2-mix | 22.1 | 22.3 | 23.4 | 1.05 / 1.05 |
 | 3060, Bonsai 2 27B (Q2_0 repack) | — | 33.1 | 35.5 | +7% vs upstream |
+| 3090 (druga instancja), Nemotron 3.5 Bolt 74B-A9B IQ2_XXS + DFlash | 87.2 | 131.4 | 141.1 | 1.62 / 1.07 |
 
 - Poprawność: test-backend-ops 3090 19253/19253, 5060 Ti 19251/19253 (2 FAIL tolerancji prologu GDN). Greedy md5 forka ≠ upstream na każdym modelu, także z 31 przełącznikami = 0; przyczyny: MMVQ multi-kolumna 0001/0002 (LFM: build bez multi = md5 upstream) i fuzja prologu GDN 0013 (Qwen). KLD fork vs upstream na 3060: na poziomie szumu (PASS). Na Q4_0 i NVFP4 fork = upstream bitowo.
 - Profile: Ampere `GGML_CUDA_MMVQ_N1_ROWS=2` + `GATE_UP_Q8` off; Blackwell `GATE_UP_Q8=0`, `Q8_IDS=0`, bez N1_ROWS.
@@ -34,3 +35,4 @@ Decode t/s (spec_sweep, 6 promptów × 3 seedy, T=1, ABBA; A0 = upstream tylko `
 - [[rtx-3060]]
 - [[raport-09-chmura-3090]]
 - [[lekcja-md5-wzgledem-upstreamu]]
+- [[raport-14-nemotron-3090]]

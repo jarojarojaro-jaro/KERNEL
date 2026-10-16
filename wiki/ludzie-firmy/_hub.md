@@ -14,8 +14,9 @@ Dostawcy chmury są w [[chmura/_hub|Chmurze]], projekty open source w [[repo/_hu
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (23)
+## Notatki (25)
 
+- [[actual-computer|Actual Computer (silnik „e”, relay)]] — Firma z silnikiem „e” (host w asemblerze AArch64 + cubiny sm_103a, tylko DGX Station GB300) i relayem na AWS Nitro; na sprzęcie konsumenckim uruchamia vendored llama.cpp albo silnik „malibu”.
 - [[firma-amd|AMD]] — Producent naszej karty RX 7900 XTX i stosu ROCm; dla produktu raczej kanał dystrybucji niż konkurent.
 - [[conway-research|ConwayResearch (Underdog)]] — Autor Underdog Saluki 27B: IQ2-mix Qwen3.8-27B (7.89 GB) na bazie ISTA GSQ-RCO, strojony pod zachowanie tool callingu.
 - [[ggml-org|ggml-org / llama.cpp]] — Upstream naszego silnika: llama.cpp wydaje ok. 24 buildy dziennie i od 2026-10-15 linię semver (v0.7.0); polityka AI zakazuje automatycznych PR-ów.
@@ -37,6 +38,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[scaleway|Scaleway]] — Francuski dostawca z Mac mini as-a-service (bare metal macOS); nasza droga do testów Metal przed zakupem Maca.
 - [[thinking-machines|Thinking Machines (batch invariance)]] — Laboratorium AI, autor wpisu „Defeating Nondeterminism in LLM Inference” (10.09.2025) o niezależności wyniku od wielkości wsadu (batch invariance).
 - [[turbollm|TurboLLM]] — Flag-tuner dla llama.cpp (285★, FSL-1.1 → Apache-2.0): mierzy przy ładowaniu i dobiera warstwy, MoE offload, KV quant i sampling.
+- [[ukisai|UkisAI (autor Swift)]] — Autor Swift 1.0/1.5 – fine-tune’ów Qwen3.8-27B na krótsze myślenie – z licencją Swift Open License v1.0, która dopuszcza użycie komercyjne tylko poniżej US$1M przychodu rocznie.
 - [[unsloth|Unsloth]] — Autor kwantów GGUF „UD” (Unsloth Dynamic), z których korzystamy (Qwen3.8-27B UD-Q4_K_XL), oraz narzędzi do fine-tune/QLoRA.
 - [[firma-vast-ai|Vast.ai]] — Rynek wynajmu GPU na godziny; nasze główne źródło NVIDIA do testów (kontenery do benchmarków, VM do profilowania).
 <!-- AUTO:END -->

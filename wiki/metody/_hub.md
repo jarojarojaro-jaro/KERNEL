@@ -14,11 +14,12 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (16)
+## Notatki (18)
 
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
 - [[analiza-platformy|Analiza platformy (obowiązkowy krok)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; bez niej nie trafia do produktu (decyzja z 2026-10-15).
 - [[bramka-kld-kanarki|Bramka KLD z kanarkami]] — Zmianę numeryki przepuszczamy tylko, gdy KLD względem referencji f16-KV mieści się w 2σ bazy, a celowo zepsute warianty („kanarki”) bramka musi odrzucić.
+- [[fabryka-v1|Fabryka v1: role, ledger, kaskada bramek (propozycja)]] — Propozycja raportu 15f: fabryka przepisów jako role z rozdzielonymi uprawnieniami, karta twierdzenia zapisywana przed pomiarem, `ledger.jsonl` z łańcuchem hashy pisany tylko przez deterministyczny weryfikator i kaskada bramek G0–G7.
 - [[kernel-tuner|Kernel Tuner: strojenie parametrów kerneli]] — Przeszukujemy parametry prawdziwych kerneli ggml (warpy, wiersze na blok) i przyjmujemy tylko konfiguracje bitowo równe produkcji.
 - [[loo|Leave-one-out łatek (LOO)]] — Wyłączamy po jednej łatce i mierzymy, czy bez niej jest wolniej; łatka bez mierzalnego zysku jest kandydatem do usunięcia.
 - [[mikrobench-granicy-kernela|Mikrobenchmark granicy kernela]] — Zanim zainwestujemy w fuzje albo nowy sposób wysyłania pracy, mierzymy, ile kosztuje sama granica między kernelami na danym stosie.
@@ -31,5 +32,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[emulator-isa|Symboliczny emulator ISA (dowód bitowości offline)]] — Gdy GPU było niedostępne, bitowość nowego kernela GDN udowodniliśmy, emulując symbolicznie skompilowane ISA gfx11 i porównując grafy operacji float z bazą.
 - [[wyniki-negatywne|Wyniki negatywne zapisujemy z liczbami]] — Każda próba, która nie dała zysku, trafia do NOTES z liczbami i powodem, żeby nikt nie wracał do niej bez nowego pomysłu.
 - [[wylacznik-w-kazdej-latce|Wyłącznik w każdej łatce]] — Każda łatka z prędkością ma przełącznik `GGML_HIP_*=0` / `LLAMA_*=0`, który przywraca starą ścieżkę w tej samej binarce, więc A/B nie miesza zmiennej „inny build”.
+- [[zestaw-odlozony|Zestaw odłożony i klątwa zwycięzcy]] — Decyzje konfiguracji spekulacji wybrane na 6 promptach spec_sweep nie przenoszą się na prompt odłożony (przewaga +2.22% → −4.34%, zmiana znaku w 3/5 przypadków), więc twierdzenia o konfiguracji wymagają zapieczętowanego zestawu promptów spoza selekcji.
 - [[zgodnosc-bitowa-md5|Zgodność bitowa (greedy md5, hash logitów)]] — Zmiana „bitowo identyczna” musi dać ten sam tekst greedy (md5) na świeżym serwerze i te same logity co baza w tym samym trybie.
 <!-- AUTO:END -->

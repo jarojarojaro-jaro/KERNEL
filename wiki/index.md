@@ -57,21 +57,21 @@ Audyt liczb: [[AUDYT]].
 ## Kategorie
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (18)
-- [[modele/_hub|modele]] — Modele i kwanty (11)
+- [[modele/_hub|modele]] — Modele i kwanty (13)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
-- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (14)
-- [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (6)
-- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (23)
+- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (15)
+- [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
+- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (24)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (16)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (27)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (30)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (18)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (33)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (39)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (17)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (49)
-- [[research/_hub|research]] — Streszczenia raportów (17)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (22)
-- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (23)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
+- [[research/_hub|research]] — Streszczenia raportów (25)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (24)
+- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (25)
 
 ## Ostatnio aktualizowane
 
@@ -87,9 +87,9 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-16 [[hip|HIP: jak piszemy kernele pod gfx1100]]
 - 2026-10-16 [[hip-na-windows|HIP na Windows: PAL zamiast ROCr]]
 - 2026-10-16 [[hip-graph-narzut|Narzut grafu HIP: ~3 µs na kernel]]
+- 2026-10-16 [[hip-dyn-data-prefetch|HIP DynDataPrefetch (prefetch L2 przed kernelem)]]
 - 2026-10-16 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
 - 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
-- 2026-10-16 [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]]
 
-Razem 297 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
+Razem 340 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

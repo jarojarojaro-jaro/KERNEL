@@ -2,7 +2,7 @@
 typ: nvidia
 tags: [nvidia, latki, wylaczniki]
 aktualizacja: 2026-10-16
-zrodlo: ~/qwen-opt/cloud/CUDA-AUDIT.md:13-18,99-172,248-284; ~/qwen-opt/cloud/PLAN-TESTOW.md:73-83; ~/KERNEL/product/research/09-chmura-3090.md:74-104; ~/KERNEL/product/research/09-chmura-5060ti.md:55,91-119; ~/KERNEL/product/research/09-chmura-3060.md:111-127
+zrodlo: ~/qwen-opt/cloud/CUDA-AUDIT.md:13-18,99-172,248-284; ~/qwen-opt/cloud/PLAN-TESTOW.md:73-83; ~/KERNEL/product/research/09-chmura-3090.md:74-104; ~/KERNEL/product/research/09-chmura-5060ti.md:55,91-119; ~/KERNEL/product/research/09-chmura-3060.md:111-127; ~/KERNEL/product/research/14-nemotron-3090.md:146-150
 status: aktualne
 ---
 # Które łatki działają na NVIDIA
@@ -22,6 +22,8 @@ Bez efektu na NVIDIA (ścieżki RDNA): `GGML_HIP_INPROJ_CONV`, `_CONV_ROWS4`, `_
 - pomagają: `CONV_MUL`, `NORM_ROUTER`, `ATTN_PREP`, `MOE_DOWN_REDUCE`, `NORM_FAST`, `LLAMA_ASYNC_INPUTS` (po ok. 1–2% na LFM);
 - największy zysk w serwerze to sampler (`LLAMA_SAMPLER_FAST_TOPK`/`_PENALTIES`: LFM 165.5 → 207.7 t/s na 5060 Ti), niezależny od GPU;
 - nowy `GGML_CUDA_MMVQ_N1_ROWS=2` tylko na sm_86. Wyłączenie grafów CUDA szkodzi (−6.9% LFM na 3090).
+
+Nemotron 3.5 Bolt na RTX 3090 (2026-10-16): większość fuzji forka (GDN, shortconv, gate+up) tej architektury nie dotyczy; A2 vs A2-safe +1.3% z DFlash. Nowe łatki: `GGML_CUDA_TOPK_MOE_NP2`, `GGML_CUDA_MMVQ_N1_IQ2`, `GGML_CUDA_IQ2_LUT` (opt-in, wolniejsza) – zob. [[nemotron-kernele-cuda]].
 
 ## Powiązane
 - [[nvidia/_hub|NVIDIA]]

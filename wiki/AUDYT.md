@@ -2678,6 +2678,10 @@ Ta sama metoda dla 41 notatek nowych lub zmienionych (raporty 09 ×3, 11, 12; ka
 | [[index]] | 70, f61994f58 | STATUS-NEXT.md:5 | OK |
 | [[index]] | 7900 | 11-mtp-pl-pilot.md:9 | OK |
 
+
+## Aktualizacja: raporty 14 i 15a–15f (2026-10-16)
+Automatyczna kontrola 44 notatek, których `zrodlo` zaczyna się od raportu 14/15: 676 liczb, 675 znalezionych w raportach 14/15, ich katalogach skryptów lub `BENCHMARKI-NVIDIA-2026-10-16.md`; jedna (`02153` w `repo/auto-gpu-kernel`) pochodzi z raportu repo 14-auto-gpu-kernel (OK). Liczby ze źródeł pierwotnych sprawdzone ręcznie: `spec_sweep.jsonl` (incydent 5.618 t/s), `server-context.cpp:5171` (`build_info`), `ggml-quants.c:384` i `llama-graph.cpp:1595-1601` (NVFP4), `hip_runtime_api.h:1670-1700,2110-2116`, 70 plików łatek. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

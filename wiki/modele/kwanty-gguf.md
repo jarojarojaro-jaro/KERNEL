@@ -2,7 +2,7 @@
 typ: model
 tags: [modele, kwanty, kv]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/SPEC-QWEN27B.md:21; stat -c %s ~/models/Qwen3.8-27B-UD-Q4_K_XL.gguf (17559178144 B = 16.35 GiB, 2026-10-16); ~/KERNEL/sources/qwen3.8-27b.md:15-24; ~/KERNEL/qwen-opt/NOTES.md:283-286,330,354,363; ~/KERNEL/qwen-opt/research/lfm-kv-q4-vs-q8.md; ~/KERNEL/reports/Optymalizacja kerneli na AMD.md:86; ~/qwen-opt/cloud/PLAN-TESTOW.md:89-91
+zrodlo: ~/KERNEL/qwen-opt/SPEC-QWEN27B.md:21; stat -c %s ~/models/Qwen3.8-27B-UD-Q4_K_XL.gguf (17559178144 B = 16.35 GiB, 2026-10-16); ~/KERNEL/sources/qwen3.8-27b.md:15-24; ~/KERNEL/qwen-opt/NOTES.md:283-286,330,354,363; ~/KERNEL/qwen-opt/research/lfm-kv-q4-vs-q8.md; ~/KERNEL/reports/Optymalizacja kerneli na AMD.md:86; ~/qwen-opt/cloud/PLAN-TESTOW.md:89-91; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:59-61,219-251
 status: aktualne
 ---
 # Kwanty wag i KV, których używamy
@@ -20,9 +20,13 @@ KV cache:
 - LFM: q8_0 z decyzji użytkownika; koszt vs q4_0 (tg128): głębokość 0 +2.6%, 98k +30.1% przed łatką 0055; KLD vs f16: q8_0 0.044, q4_0 0.128.
 - Raport AMD: na Radeonie najpewniejsze Q4_0, Q4_K i Q8_0; dla KV q4_0 „vastly superior” do q4_1/q5_x/iq4_nl.
 
+Niezależne KLD dla Qwen3.8-27B (raport 15e, protokół agentionai [A]: wiki ctx 2048, 60 chunków, ref BF16; wiki / held-out): UD-Q4_K_XL 0.0122 / 0.0117; UD-Q3_K_XL 0.0337 / 0.0421; AP-Q3_K_XL 0.0352 / 0.0339; UD-IQ3_S 0.0470 / 0.0617; GSQ-RCO IQ3_S 0.0665 / 0.0594. AP-Q3_K_XL to te same bajty co nasz UD-Q3_K_XL (13.15 GB) przy KLD held-out −19.5%. KLD z różnych protokołów nie są porównywalne ([[lekcja-kld-protokoly]]).
+
 ## Powiązane
 - [[modele/_hub|Modele]]
 - [[fattn-kvq]]
 - [[qwen3-8-27b]]
 - [[lfm2-5-24b-a2b]]
 - [[2026-10-14-lfm-kv-q8]]
+- [[raport-15e-kwantyzacja-nowa]]
+- [[swift-1-5]]

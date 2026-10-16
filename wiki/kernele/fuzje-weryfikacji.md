@@ -2,7 +2,7 @@
 typ: kernel
 tags: [kernele, fuzje, qwen]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:221-234; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:87-94,162-163
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:221-234; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:87-94,162-163; ~/KERNEL/product/research/15c-nowe-silniki.md:174-177,197-199
 status: aktualne
 ---
 # Fuzje kroku weryfikacji Qwena (A3–A6)
@@ -19,9 +19,12 @@ status: aktualne
 
 Wyłączniki: brak (build). Kod wspólny CUDA/HIP.
 
+Batch-invariant verify u konkurencji (raport 15c): tqLLM liczy plain jako `verify(n=1)`, kolumny MMA są niezależne, a punkt podziału atencji zależy tylko od pozycji (`tq_split_point`, `kernels/common.cuh:66-72`; naprawione 2026-10-13, `7d7382b`); Actual deklaruje „output bitwise spec off”. U nas to tryb `LLAMA_SPEC_BITEXACT` ([[batch-invariant]]).
+
 ## Powiązane
 - [[kernele/_hub|Kernele]]
 - [[cache-q8-1]]
 - [[gdn-fuzje-k2]]
 - [[qwen3-8-27b]]
 - [[2026-10-12-fuzje-a3-a6]]
+- [[tqllm]]

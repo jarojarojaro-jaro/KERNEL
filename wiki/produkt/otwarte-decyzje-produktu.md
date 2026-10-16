@@ -2,7 +2,7 @@
 typ: produkt
 tags: [produkt, decyzje-otwarte, app]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499
+zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547
 status: aktualne
 ---
 # Otwarte decyzje produktu (po prototypie aplikacji)
@@ -20,6 +20,9 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 | prawo | projekty dokumentów | kancelaria/KRiBSI ws. art. 50(2) AI Act, retencja danych, IOD, zakresy OAuth, platforma ODR, kiedy spółka |
 | port API | 11500 (`BRAND.apiPort`) | zatwierdzić |
 | domena | brak; `SITE_ORIGIN` → build wskazuje `127.0.0.1:18433` | wybrać (ustawia `hreflang` i `canonical`) |
+| teza produktu (PLAN §0.1) | „żaden nie robi naraz…” | zawęzić wyróżnik po Magnitude ([[zawezenie-tezy-produktu]], raport 15c) |
+| tryb stratny PFlash | brak | czy oferować opt-in „szybki odczyt długich dokumentów” ([[tryb-stratny-pflash]], raport 15d) |
+| licencje z progiem przychodu | brak | czy dopuszczamy modele jak Swift 1.5 (komercyjnie tylko < US$1M przychodu, [[swift-1-5]], raport 15e) |
 
 Decyzje już podjęte są w folderze decyzji (np. open core, czat na web UI llama.cpp, konto na początku jako pomysł użytkownika).
 

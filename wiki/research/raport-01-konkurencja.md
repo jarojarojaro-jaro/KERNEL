@@ -2,7 +2,7 @@
 typ: research
 tags: [research, konkurencja, rynek]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/01-konkurencja.md:1,14-72
+zrodlo: ~/KERNEL/product/research/01-konkurencja.md:1,14-72; ~/KERNEL/product/research/15c-nowe-silniki.md:374-396
 status: aktualne
 ---
 # Raport 01: konkurencja
@@ -16,9 +16,13 @@ status: aktualne
 - Najgroźniejszy scenariusz: LM Studio/Ollama/Jan same włączą spekulację. Upstream z ręczną spekulacją na 7900 XTX: 68.6 t/s (MTP, ROCm), 85.6 t/s (MTP, Vulkan), 97.7 t/s (DFlash2); nasze kernele dokładają +10–25%.
 Werdykt: nisza jest, ale wąska i łatwa do skopiowania; bronią nas dane i bramki.
 
+Aktualizacja (raport 15c, 2026-10-16): teza „kernele u konsumenta: nikt” jest nieaktualna – Magnitude stroi kernele na urządzeniu (60 s, bramka α = 8, nie bitowa), a tqLLM wybiera warianty bit-identyczne przy ładowaniu. Nowa teza: nikt nie łączy strojenia z bitową bramką ani z publikowanym KLD. Nowe wiersze: Magnitude (6.9k★ w 4 miesiące), tqLLM, Actual Computer.
+
 ## Powiązane
 - [[research/_hub|research]]
 - [[raport-02-autotuning]]
 - [[raport-06-produkt]]
 - [[turbollm]]
 - [[ollama]]
+- [[raport-15c-nowe-silniki]]
+- [[magnitude]]
