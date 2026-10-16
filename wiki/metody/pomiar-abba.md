@@ -2,7 +2,7 @@
 typ: metoda
 tags: [metody, pomiar, statystyka]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:230-233,271,278; ~/KERNEL/product/research/02-autotuning-i-agenci-kerneli.md:47-52,283-298; ~/KERNEL/qwen-opt/NOTES.md:166-168,359; ~/KERNEL/product/research/15c-nowe-silniki.md:249; ~/KERNEL/product/research/15f-agentowa-nauka.md:178-182
+zrodlo: ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:230-233,271,278; ~/KERNEL/product/research/02-autotuning-i-agenci-kerneli.md:47-52,283-298; ~/KERNEL/qwen-opt/NOTES.md:166-168,359; ~/KERNEL/product/research/15c-nowe-silniki.md:249; ~/KERNEL/product/research/15f-agentowa-nauka.md:178-182; ~/KERNEL/product/research/16h-fabryka-v1.md:68,141-143
 status: aktualne
 ---
 # Pomiar: przeplatane A/B (ABBA) na ms/krok
@@ -20,6 +20,8 @@ Skala szumu z literatury (raport 02): ten sam config 12× jednego dnia: +17.3…
 Uzupełnienia (2026-10-16):
 - Dwie klasy obciążenia zawsze osobno: nowe pisanie (spec_sweep PL/EN, T=1) i kopiowanie/edycje; T=0 i T=1 osobno – benchmarki konkurencji wygrywają doborem promptu (tqLLM: 273 t/s na LocalMaxxing vs 131–155 t/s na WikiText; raport 15c).
 - Próg z A/A (raport 15f): para przebiegów z tym samym labelem w jednej sesji różni się o 0.09% ms/krok (mediana z 15 par); minimalny wykrywalny efekt przy 2–3 rundach ABBA ~0.2–0.3% `[INFERENCE]`. Wybory konfiguracji na 6 promptach wymagają zestawu odłożonego ([[zestaw-odlozony]]).
+
+Fabryka v1 (`fk/stats.py`, 2026-10-16): ABBA/BAAB z parami sąsiednich procesów, A/A z dwóch procesów tej samej binarki w rundzie, MDE = max(próg, 2×|A/A|); progi 0.2/0.3/0.5%.
 
 ## Powiązane
 - [[metody/_hub|Metody]]

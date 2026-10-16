@@ -14,10 +14,11 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (17)
+## Notatki (18)
 
 - [[kld-canary|Bramka KLD i kanarki (kld_gate.py, kld_canary.sh, perturb_gguf.py)]] — Trzy narzędzia: `kld_gate.py` porównuje dwa logi `llama-perplexity --kl-divergence`, `perturb_gguf.py` robi celowo uszkodzone kopie GGUF, a `kld_canary.sh` sprawdza, że bramka łapie prawdziwe szkody.
 - [[det-probe|det_probe.py (sonda determinizmu)]] — Sprawdza, które zdarzenie serwera psuje powtarzalność greedy: wysyła to samo zapytanie bez cache przed i po innych zapytaniach i pokazuje, gdzie wyjścia się rozjeżdżają.
+- [[fabryka-cli|Fabryka v1: CLI `factory`]] — `~/qwen-opt/factory/` (Python stdlib, 2394 linie `fk/` + CLI, 36 reguł w 1141 liniach, 57 testów OK w 29.5 s na CPU) zamraża kartę twierdzenia przed pomiarem, mierzy kaskadą G0–G5 i zapisuje werdykt do `ledger.jsonl` z łańcuchem sha256; zbudowane 2026-10-16 bez GPU.
 - [[gdnemu-isadiff|gdnemu.py i isadiff.py (dowód bitowości z ISA)]] — Symboliczny emulator gfx11 wave32 wykonujący skompilowany ISA kerneli GDN bez GPU oraz `isadiff.py`, który sprawdza, że każdy kernel bazowy jest bajtowo identyczny w nowym buildzie.
 - [[gpu-keepawake|gpu-keepawake (trzymanie GPU w stanie aktywnym)]] — 12-liniowy program HIP, który trzyma kontekst KFD, żeby runtime PM amdgpu nie uśpił karty (BACO); uruchamiany przez `run-llm.sh`, gdy runtime suspend jest włączony.
 - [[greedy-check|greedy.sh / greedy_check.sh — bramka md5]] — Skrypty uruchamiają świeży serwer i zapisują tekst greedy (T=0) w trybie plain i MTP; md5 musi się zgadzać z bazą, żeby łatka była „bitowo identyczna”.
