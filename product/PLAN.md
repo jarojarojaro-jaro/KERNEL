@@ -254,7 +254,8 @@ Każda łatka, profil i ustawienie dostaje w fabryce rubrykę „gdzie działa i
 
 | Temat | Linux | Windows | macOS |
 |---|---|---|---|
-| Sterownik / runtime AMD | amdgpu + ROCm (ROCr/KFD); **PM4 możliwe** | HIP SDK na innym runtime niż ROCr `[SZACUNEK: do potwierdzenia]` → **PM4 i łatki zależne od ROCr nie działają**; Vulkan często najszybszy w decode | brak |
+| Sterownik / runtime AMD | amdgpu + ROCm (ROCr/KFD); **PM4 możliwe** | HIP SDK działa na PAL, nie na ROCr (raport 08 §2; TheRock: ROCr, amdsmi, rocprofiler-sdk, hipFile „Unsupported” na Windows, stan ROCm 10.1) → **PM4 i łatki zależne od ROCr nie działają**; Vulkan często najszybszy w decode | brak |
+| AMD przez WSL2 (ROCm 10.1, tech preview; raport 13 §6) | — | ROCr + `librocdxg` → `/dev/dxg` → sterownik WDDM, bez `/dev/kfd`. **Pakiet PM4 (0060) jest domyślnie cicho pomijany** (`WSLKMT_VENDOR_PACKET`), więc 0060 wyłączać, gdy brak `/dev/kfd`. Brak PMC/ATT/rocprofv3; znany hang na XTX przy asercjach urządzenia; AMD (ROCm CLI) wybiera tu Vulkan. Ścieżka tylko dla entuzjastów | — |
 | Sterownik NVIDIA | CUDA; tryb persistence | CUDA na WDDM; **„Sysmem Fallback”**: po przekroczeniu VRAM po cichu do RAM, 5–30× wolniej → budżet z marginesem i alarm | brak |
 | Limity czasu GPU | brak | **TDR: kernel > 2 s = reset sterownika**, 5 resetów w 60 s = crash → limit czasu kandydatów w nocy | watchdog Metal |
 | Usypianie GPU | **BACO / runtime PM** (u nas 4.4 vs 92 t/s) → keepawake | plany zasilania, „najlepsza wydajność” | App Nap, Low Power Mode |
