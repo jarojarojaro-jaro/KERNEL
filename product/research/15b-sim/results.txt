@@ -1,0 +1,739 @@
+positions 69207 cum@1..4 (MTP realized): 0.779 0.565 0.404 0.293
+lookup proposes (m>=4): 0.106; lookup correct at d1: 0.069
+P(MTP d1 ok | lookup d1 ok) = 0.968  (n=4744)
+P(MTP d1 ok | lookup proposes, wrong) = 0.776  (n=2560)
+P(MTP d1 ok | no lookup) = 0.765  (n=61903)
+P(MTP d2 chain ok | lookup ok to d2) = 0.938 (n=3412); unconditional 0.565
+P(MTP d3 chain ok | lookup ok to d3) = 0.914 (n=2596); unconditional 0.404
+P(MTP d4 chain ok | lookup ok to d4) = 0.899 (n=2055); unconditional 0.293
+long copy runs (m>=6, r>=8): 0.010; MTP full 4-chain ok there: 0.935
+
+-- exact replay with real MTP drafts, att=0.0 ms/tile (tok/step, t/s) --
+ALL                    n= 69207  MTP4-W5 2.78/100.3  HYB-W8 2.76/99.4  HYB-W16 2.76/99.4  HYB-skip-W16 2.76/99.6  HYB-on-W16 2.78/99.7
+gen_p1:en:chat         n=  8760  MTP4-W5 2.53/91.1  HYB-W8 2.52/90.9  HYB-W16 2.52/90.9  HYB-skip-W16 2.52/91.0  HYB-on-W16 2.52/90.8
+gen_p1:en:code         n= 10526  MTP4-W5 3.55/127.9  HYB-W8 3.50/125.8  HYB-W16 3.50/125.6  HYB-skip-W16 3.50/126.2  HYB-on-W16 3.54/126.3
+gen_p1:en:prose        n=  7790  MTP4-W5 2.35/84.6  HYB-W8 2.34/84.5  HYB-W16 2.34/84.5  HYB-skip-W16 2.34/84.5  HYB-on-W16 2.34/84.4
+gen_p1:en:tech         n=  8293  MTP4-W5 3.06/110.4  HYB-W8 3.02/108.5  HYB-W16 3.02/108.3  HYB-skip-W16 3.02/108.8  HYB-on-W16 3.06/109.1
+gen_p1:pl:chat         n= 11282  MTP4-W5 2.73/98.5  HYB-W8 2.70/97.2  HYB-W16 2.70/97.0  HYB-skip-W16 2.70/97.4  HYB-on-W16 2.73/97.5
+gen_p1:pl:code         n=  7000  MTP4-W5 3.28/118.1  HYB-W8 3.26/117.2  HYB-W16 3.27/117.1  HYB-skip-W16 3.27/117.8  HYB-on-W16 3.32/118.4
+gen_p1:pl:prose        n=  9970  MTP4-W5 2.33/84.1  HYB-W8 2.33/84.1  HYB-W16 2.33/84.1  HYB-skip-W16 2.33/84.1  HYB-on-W16 2.33/84.0
+gen_p1:pl:tech         n=  5586  MTP4-W5 2.97/106.9  HYB-W8 2.94/105.7  HYB-W16 2.94/105.7  HYB-skip-W16 2.94/106.1  HYB-on-W16 2.97/106.1
+
+-- exact replay with real MTP drafts, att=3.5 ms/tile (tok/step, t/s) --
+ALL                    n= 69207  MTP4-W5 2.78/100.3  HYB-W8 2.76/99.3  HYB-W16 2.76/98.8  HYB-skip-W16 2.76/99.1  HYB-on-W16 2.78/98.6
+gen_p1:en:chat         n=  8760  MTP4-W5 2.53/91.1  HYB-W8 2.52/90.9  HYB-W16 2.52/90.9  HYB-skip-W16 2.52/91.0  HYB-on-W16 2.52/90.4
+gen_p1:en:code         n= 10526  MTP4-W5 3.55/127.9  HYB-W8 3.50/125.5  HYB-W16 3.50/124.4  HYB-skip-W16 3.50/124.9  HYB-on-W16 3.54/124.1
+gen_p1:en:prose        n=  7790  MTP4-W5 2.35/84.6  HYB-W8 2.34/84.5  HYB-W16 2.34/84.5  HYB-skip-W16 2.34/84.5  HYB-on-W16 2.34/84.3
+gen_p1:en:tech         n=  8293  MTP4-W5 3.06/110.4  HYB-W8 3.02/108.2  HYB-W16 3.02/107.1  HYB-skip-W16 3.02/107.7  HYB-on-W16 3.06/107.0
+gen_p1:pl:chat         n= 11282  MTP4-W5 2.73/98.5  HYB-W8 2.70/96.9  HYB-W16 2.70/96.2  HYB-skip-W16 2.70/96.6  HYB-on-W16 2.73/96.1
+gen_p1:pl:code         n=  7000  MTP4-W5 3.28/118.1  HYB-W8 3.26/116.8  HYB-W16 3.27/115.5  HYB-skip-W16 3.27/116.2  HYB-on-W16 3.32/115.6
+gen_p1:pl:prose        n=  9970  MTP4-W5 2.33/84.1  HYB-W8 2.33/84.1  HYB-W16 2.33/84.1  HYB-skip-W16 2.33/84.1  HYB-on-W16 2.33/83.9
+gen_p1:pl:tech         n=  5586  MTP4-W5 2.97/106.9  HYB-W8 2.94/105.6  HYB-W16 2.94/105.1  HYB-skip-W16 2.94/105.5  HYB-on-W16 2.97/104.6
+
+-- REAL MTP chains (gen_p1), att=0.0: tok/step / t/s (gain vs MTP4) --
+ALL             69207  MTP4-W5 2.78/100.3 (+0.0%)  HYB-W16 2.76/99.4 (-0.9%)  EXT-W8 2.78/100.3 (-0.0%)  EXT-W16 2.79/100.2 (-0.1%)  EXT+CH-W8 2.78/100.3 (+0.0%)  EXT+CH-W16 2.79/100.2 (-0.1%)
+en:chat          8760  MTP4-W5 2.53/91.1 (+0.0%)  HYB-W16 2.52/90.9 (-0.2%)  EXT-W8 2.53/91.1 (+0.0%)  EXT-W16 2.53/91.1 (+0.0%)  EXT+CH-W8 2.53/91.1 (+0.0%)  EXT+CH-W16 2.53/91.1 (+0.0%)
+en:code         10526  MTP4-W5 3.55/127.9 (+0.0%)  HYB-W16 3.50/125.6 (-1.8%)  EXT-W8 3.55/127.8 (-0.0%)  EXT-W16 3.56/127.7 (-0.1%)  EXT+CH-W8 3.55/127.9 (+0.0%)  EXT+CH-W16 3.56/127.8 (-0.1%)
+en:prose         7790  MTP4-W5 2.35/84.6 (+0.0%)  HYB-W16 2.34/84.5 (-0.2%)  EXT-W8 2.35/84.6 (+0.0%)  EXT-W16 2.35/84.6 (+0.0%)  EXT+CH-W8 2.35/84.6 (+0.0%)  EXT+CH-W16 2.35/84.6 (+0.0%)
+en:tech          8293  MTP4-W5 3.06/110.4 (+0.0%)  HYB-W16 3.02/108.3 (-1.9%)  EXT-W8 3.06/110.3 (-0.1%)  EXT-W16 3.07/110.1 (-0.3%)  EXT+CH-W8 3.06/110.3 (-0.1%)  EXT+CH-W16 3.07/110.1 (-0.3%)
+pl:chat         11282  MTP4-W5 2.73/98.5 (+0.0%)  HYB-W16 2.70/97.0 (-1.5%)  EXT-W8 2.73/98.4 (-0.0%)  EXT-W16 2.74/98.3 (-0.2%)  EXT+CH-W8 2.73/98.4 (-0.0%)  EXT+CH-W16 2.74/98.3 (-0.2%)
+pl:code          7000  MTP4-W5 3.28/118.1 (+0.0%)  HYB-W16 3.27/117.1 (-0.8%)  EXT-W8 3.29/118.3 (+0.2%)  EXT-W16 3.31/118.3 (+0.2%)  EXT+CH-W8 3.29/118.4 (+0.3%)  EXT+CH-W16 3.30/118.3 (+0.2%)
+pl:prose         9970  MTP4-W5 2.33/84.1 (+0.0%)  HYB-W16 2.33/84.1 (-0.0%)  EXT-W8 2.33/84.1 (+0.0%)  EXT-W16 2.33/84.1 (+0.0%)  EXT+CH-W8 2.33/84.1 (+0.0%)  EXT+CH-W16 2.33/84.1 (+0.0%)
+pl:tech          5586  MTP4-W5 2.97/106.9 (+0.0%)  HYB-W16 2.94/105.7 (-1.1%)  EXT-W8 2.97/107.0 (+0.0%)  EXT-W16 2.97/107.0 (+0.0%)  EXT+CH-W8 2.97/107.0 (+0.0%)  EXT+CH-W16 2.97/107.0 (+0.0%)
+
+-- REAL MTP chains (gen_p1), att=3.5: tok/step / t/s (gain vs MTP4) --
+ALL             69207  MTP4-W5 2.78/100.3 (+0.0%)  HYB-W16 2.76/98.9 (-1.4%)  EXT-W8 2.78/100.1 (-0.1%)  EXT-W16 2.79/99.7 (-0.5%)  EXT+CH-W8 2.78/100.1 (-0.1%)  EXT+CH-W16 2.79/99.7 (-0.5%)
+en:chat          8760  MTP4-W5 2.53/91.1 (+0.0%)  HYB-W16 2.52/90.9 (-0.2%)  EXT-W8 2.53/91.1 (+0.0%)  EXT-W16 2.53/91.1 (+0.0%)  EXT+CH-W8 2.53/91.1 (+0.0%)  EXT+CH-W16 2.53/91.1 (+0.0%)
+en:code         10526  MTP4-W5 3.55/127.9 (+0.0%)  HYB-W16 3.50/124.4 (-2.7%)  EXT-W8 3.55/127.5 (-0.3%)  EXT-W16 3.56/126.7 (-1.0%)  EXT+CH-W8 3.55/127.6 (-0.2%)  EXT+CH-W16 3.56/126.6 (-1.0%)
+en:prose         7790  MTP4-W5 2.35/84.6 (+0.0%)  HYB-W16 2.34/84.5 (-0.2%)  EXT-W8 2.35/84.6 (+0.0%)  EXT-W16 2.35/84.6 (+0.0%)  EXT+CH-W8 2.35/84.6 (+0.0%)  EXT+CH-W16 2.35/84.6 (+0.0%)
+en:tech          8293  MTP4-W5 3.06/110.4 (+0.0%)  HYB-W16 3.02/107.1 (-3.0%)  EXT-W8 3.06/110.0 (-0.3%)  EXT-W16 3.07/109.2 (-1.1%)  EXT+CH-W8 3.06/110.0 (-0.3%)  EXT+CH-W16 3.07/109.2 (-1.1%)
+pl:chat         11282  MTP4-W5 2.73/98.5 (+0.0%)  HYB-W16 2.70/96.2 (-2.3%)  EXT-W8 2.73/98.2 (-0.3%)  EXT-W16 2.74/97.5 (-1.0%)  EXT+CH-W8 2.73/98.2 (-0.2%)  EXT+CH-W16 2.74/97.5 (-1.0%)
+pl:code          7000  MTP4-W5 3.28/118.1 (+0.0%)  HYB-W16 3.27/115.5 (-2.2%)  EXT-W8 3.29/117.9 (-0.2%)  EXT-W16 3.31/116.8 (-1.1%)  EXT+CH-W8 3.29/118.0 (-0.1%)  EXT+CH-W16 3.30/116.7 (-1.2%)
+pl:prose         9970  MTP4-W5 2.33/84.1 (+0.0%)  HYB-W16 2.33/84.1 (-0.0%)  EXT-W8 2.33/84.1 (+0.0%)  EXT-W16 2.33/84.1 (+0.0%)  EXT+CH-W8 2.33/84.1 (+0.0%)  EXT+CH-W16 2.33/84.1 (+0.0%)
+pl:tech          5586  MTP4-W5 2.97/106.9 (+0.0%)  HYB-W16 2.94/105.2 (-1.7%)  EXT-W8 2.97/106.8 (-0.1%)  EXT-W16 2.97/106.5 (-0.4%)  EXT+CH-W8 2.97/106.8 (-0.1%)  EXT+CH-W16 2.97/106.5 (-0.4%)
+
+-- calibrated MTP model, att=0.0 ms/tile: tok/step / t/s (gain vs MTP4) --
+code-selfoss              26824  MTP4-W5 3.21/115.9 (+0.0%)  HYB-W16 3.21/114.5 (-1.2%)  EXT-W8 3.24/116.2 (+0.3%)  EXT-W16 3.26/116.4 (+0.4%)  EXT+CH-W8 3.24/116.6 (+0.6%)  EXT+CH-W16 3.27/116.6 (+0.6%)
+en-wildchat               30954  MTP4-W5 2.52/90.7 (+0.0%)  HYB-W16 2.50/89.8 (-1.0%)  EXT-W8 2.51/90.5 (-0.3%)  EXT-W16 2.52/90.6 (-0.1%)  EXT+CH-W8 2.52/90.6 (-0.2%)  EXT+CH-W16 2.52/90.5 (-0.2%)
+p1-en-chat                 8760  MTP4-W5 2.45/88.3 (+0.0%)  HYB-W16 2.44/88.0 (-0.3%)  EXT-W8 2.45/88.2 (-0.0%)  EXT-W16 2.45/88.2 (-0.0%)  EXT+CH-W8 2.45/88.2 (-0.0%)  EXT+CH-W16 2.45/88.2 (-0.0%)
+p1-en-code                10526  MTP4-W5 3.13/112.9 (+0.0%)  HYB-W16 3.11/111.4 (-1.3%)  EXT-W8 3.15/113.2 (+0.3%)  EXT-W16 3.15/112.9 (-0.0%)  EXT+CH-W8 3.13/112.7 (-0.2%)  EXT+CH-W16 3.14/112.5 (-0.4%)
+p1-en-prose                7790  MTP4-W5 2.43/87.6 (+0.0%)  HYB-W16 2.43/87.5 (-0.1%)  EXT-W8 2.43/87.6 (+0.0%)  EXT-W16 2.43/87.6 (+0.0%)  EXT+CH-W8 2.43/87.6 (+0.0%)  EXT+CH-W16 2.43/87.6 (+0.0%)
+p1-en-tech                 8293  MTP4-W5 3.09/111.6 (+0.0%)  HYB-W16 3.06/109.8 (-1.6%)  EXT-W8 3.10/111.6 (+0.0%)  EXT-W16 3.10/111.1 (-0.4%)  EXT+CH-W8 3.10/111.4 (-0.1%)  EXT+CH-W16 3.10/111.2 (-0.3%)
+p1-pl-chat                11282  MTP4-W5 2.86/103.0 (+0.0%)  HYB-W16 2.83/101.4 (-1.6%)  EXT-W8 2.86/102.9 (-0.1%)  EXT-W16 2.86/102.6 (-0.4%)  EXT+CH-W8 2.86/102.8 (-0.2%)  EXT+CH-W16 2.86/102.6 (-0.4%)
+p1-pl-code                 7000  MTP4-W5 3.59/129.5 (+0.0%)  HYB-W16 3.57/127.5 (-1.5%)  EXT-W8 3.61/129.7 (+0.1%)  EXT-W16 3.64/130.2 (+0.5%)  EXT+CH-W8 3.63/130.4 (+0.7%)  EXT+CH-W16 3.63/129.8 (+0.2%)
+p1-pl-prose                9970  MTP4-W5 2.78/100.1 (+0.0%)  HYB-W16 2.77/99.9 (-0.2%)  EXT-W8 2.78/100.1 (+0.0%)  EXT-W16 2.78/100.1 (+0.0%)  EXT+CH-W8 2.78/100.1 (+0.0%)  EXT+CH-W16 2.78/100.1 (+0.0%)
+p1-pl-tech                 5586  MTP4-W5 3.38/121.9 (+0.0%)  HYB-W16 3.34/120.2 (-1.3%)  EXT-W8 3.39/122.1 (+0.2%)  EXT-W16 3.40/122.1 (+0.2%)  EXT+CH-W8 3.39/122.1 (+0.2%)  EXT+CH-W16 3.39/122.1 (+0.2%)
+pl-aya                    79958  MTP4-W5 2.87/103.5 (+0.0%)  HYB-W16 2.85/102.4 (-1.1%)  EXT-W8 2.88/103.5 (+0.1%)  EXT-W16 2.88/103.6 (+0.1%)  EXT+CH-W8 2.88/103.6 (+0.1%)  EXT+CH-W16 2.88/103.6 (+0.1%)
+pl-oasst2                119087  MTP4-W5 2.82/101.7 (+0.0%)  HYB-W16 2.80/100.9 (-0.8%)  EXT-W8 2.82/101.7 (+0.0%)  EXT-W16 2.83/101.7 (-0.1%)  EXT+CH-W8 2.82/101.7 (-0.0%)  EXT+CH-W16 2.82/101.7 (-0.1%)
+pl-wildchat              182311  MTP4-W5 2.85/102.9 (+0.0%)  HYB-W16 2.84/102.1 (-0.8%)  EXT-W8 2.86/103.1 (+0.1%)  EXT-W16 2.87/103.0 (+0.1%)  EXT+CH-W8 2.86/103.0 (+0.1%)  EXT+CH-W16 2.87/103.0 (+0.1%)
+spec_sweep-code            6144  MTP4-W5 3.31/119.3 (+0.0%)  HYB-W16 3.27/117.7 (-1.4%)  EXT-W8 3.31/119.4 (+0.1%)  EXT-W16 3.31/119.3 (-0.0%)  EXT+CH-W8 3.31/119.4 (+0.1%)  EXT+CH-W16 3.31/119.3 (-0.0%)
+spec_sweep-en              4114  MTP4-W5 2.87/103.5 (+0.0%)  HYB-W16 2.83/101.4 (-2.0%)  EXT-W8 2.86/102.9 (-0.5%)  EXT-W16 2.89/103.6 (+0.1%)  EXT+CH-W8 2.87/103.4 (-0.0%)  EXT+CH-W16 2.88/103.5 (+0.0%)
+spec_sweep-pl              6144  MTP4-W5 3.08/111.2 (+0.0%)  HYB-W16 3.05/109.8 (-1.2%)  EXT-W8 3.08/111.1 (-0.0%)  EXT-W16 3.08/111.1 (-0.1%)  EXT+CH-W8 3.08/111.1 (-0.0%)  EXT+CH-W16 3.08/111.1 (-0.1%)
+
+-- calibrated MTP model, att=3.5 ms/tile: tok/step / t/s (gain vs MTP4) --
+code-selfoss              26824  MTP4-W5 3.21/115.9 (+0.0%)  HYB-W16 3.21/112.0 (-3.3%)  EXT-W8 3.24/115.5 (-0.3%)  EXT-W16 3.26/113.9 (-1.7%)  EXT+CH-W8 3.24/115.8 (-0.0%)  EXT+CH-W16 3.27/114.1 (-1.5%)
+en-wildchat               30954  MTP4-W5 2.52/90.7 (+0.0%)  HYB-W16 2.50/89.3 (-1.6%)  EXT-W8 2.51/90.4 (-0.4%)  EXT-W16 2.52/90.1 (-0.7%)  EXT+CH-W8 2.52/90.4 (-0.3%)  EXT+CH-W16 2.52/90.0 (-0.8%)
+p1-en-chat                 8760  MTP4-W5 2.45/88.3 (+0.0%)  HYB-W16 2.44/88.0 (-0.3%)  EXT-W8 2.45/88.2 (-0.0%)  EXT-W16 2.45/88.2 (-0.0%)  EXT+CH-W8 2.45/88.2 (-0.0%)  EXT+CH-W16 2.45/88.2 (-0.0%)
+p1-en-code                10526  MTP4-W5 3.13/112.9 (+0.0%)  HYB-W16 3.11/110.4 (-2.2%)  EXT-W8 3.15/113.0 (+0.0%)  EXT-W16 3.15/111.9 (-0.9%)  EXT+CH-W8 3.13/112.4 (-0.4%)  EXT+CH-W16 3.14/111.5 (-1.2%)
+p1-en-prose                7790  MTP4-W5 2.43/87.6 (+0.0%)  HYB-W16 2.43/87.5 (-0.1%)  EXT-W8 2.43/87.6 (+0.0%)  EXT-W16 2.43/87.6 (+0.0%)  EXT+CH-W8 2.43/87.6 (+0.0%)  EXT+CH-W16 2.43/87.6 (+0.0%)
+p1-en-tech                 8293  MTP4-W5 3.09/111.6 (+0.0%)  HYB-W16 3.06/108.7 (-2.6%)  EXT-W8 3.10/111.3 (-0.2%)  EXT-W16 3.10/110.1 (-1.4%)  EXT+CH-W8 3.10/111.2 (-0.4%)  EXT+CH-W16 3.10/110.1 (-1.3%)
+p1-pl-chat                11282  MTP4-W5 2.86/103.0 (+0.0%)  HYB-W16 2.83/100.5 (-2.5%)  EXT-W8 2.86/102.7 (-0.3%)  EXT-W16 2.86/101.8 (-1.2%)  EXT+CH-W8 2.86/102.6 (-0.4%)  EXT+CH-W16 2.86/101.8 (-1.2%)
+p1-pl-code                 7000  MTP4-W5 3.59/129.5 (+0.0%)  HYB-W16 3.57/125.4 (-3.2%)  EXT-W8 3.61/129.1 (-0.3%)  EXT-W16 3.64/128.3 (-0.9%)  EXT+CH-W8 3.63/129.8 (+0.2%)  EXT+CH-W16 3.63/127.8 (-1.4%)
+p1-pl-prose                9970  MTP4-W5 2.78/100.1 (+0.0%)  HYB-W16 2.77/99.9 (-0.2%)  EXT-W8 2.78/100.1 (+0.0%)  EXT-W16 2.78/100.1 (+0.0%)  EXT+CH-W8 2.78/100.1 (+0.0%)  EXT+CH-W16 2.78/100.1 (+0.0%)
+p1-pl-tech                 5586  MTP4-W5 3.38/121.9 (+0.0%)  HYB-W16 3.34/119.6 (-1.8%)  EXT-W8 3.39/121.9 (+0.0%)  EXT-W16 3.40/121.6 (-0.2%)  EXT+CH-W8 3.39/121.9 (+0.0%)  EXT+CH-W16 3.39/121.5 (-0.3%)
+pl-aya                    79958  MTP4-W5 2.87/103.5 (+0.0%)  HYB-W16 2.85/101.5 (-1.9%)  EXT-W8 2.88/103.3 (-0.2%)  EXT-W16 2.88/102.8 (-0.7%)  EXT+CH-W8 2.88/103.4 (-0.1%)  EXT+CH-W16 2.88/102.8 (-0.7%)
+pl-oasst2                119087  MTP4-W5 2.82/101.7 (+0.0%)  HYB-W16 2.80/100.5 (-1.2%)  EXT-W8 2.82/101.6 (-0.1%)  EXT-W16 2.83/101.3 (-0.4%)  EXT+CH-W8 2.82/101.6 (-0.1%)  EXT+CH-W16 2.82/101.3 (-0.4%)
+pl-wildchat              182311  MTP4-W5 2.85/102.9 (+0.0%)  HYB-W16 2.84/101.3 (-1.5%)  EXT-W8 2.86/102.9 (-0.1%)  EXT-W16 2.87/102.3 (-0.6%)  EXT+CH-W8 2.86/102.8 (-0.1%)  EXT+CH-W16 2.87/102.3 (-0.6%)
+spec_sweep-code            6144  MTP4-W5 3.31/119.3 (+0.0%)  HYB-W16 3.27/117.4 (-1.7%)  EXT-W8 3.31/119.3 (+0.0%)  EXT-W16 3.31/119.0 (-0.3%)  EXT+CH-W8 3.31/119.3 (-0.0%)  EXT+CH-W16 3.31/119.0 (-0.3%)
+spec_sweep-en              4114  MTP4-W5 2.87/103.5 (+0.0%)  HYB-W16 2.83/100.4 (-3.0%)  EXT-W8 2.86/102.6 (-0.8%)  EXT-W16 2.89/102.6 (-0.8%)  EXT+CH-W8 2.87/103.1 (-0.3%)  EXT+CH-W16 2.88/102.5 (-1.0%)
+spec_sweep-pl              6144  MTP4-W5 3.08/111.2 (+0.0%)  HYB-W16 3.05/109.6 (-1.4%)  EXT-W8 3.08/111.1 (-0.1%)  EXT-W16 3.08/110.8 (-0.3%)  EXT+CH-W8 3.08/111.1 (-0.1%)  EXT+CH-W16 3.08/110.8 (-0.3%)
+
+-- calibrated MTP model, att=0.0 ms/tile: tok/step / t/s (gain vs MTP4) --
+agent-assistant-text     468222  MTP4-W5 3.32/119.8 (+0.0%)  HYB-W16 3.22/115.2 (-3.8%)  EXT-W8 3.34/120.0 (+0.2%)  EXT-W16 3.35/119.8 (+0.1%)  EXT+CH-W8 3.34/120.1 (+0.2%)  EXT+CH-W16 3.35/119.9 (+0.1%)
+agent-bash              1984643  MTP4-W5 3.74/134.8 (+0.0%)  HYB-W16 3.90/133.0 (-1.3%)  EXT-W8 3.92/138.3 (+2.6%)  EXT-W16 4.08/139.6 (+3.6%)  EXT+CH-W8 3.91/139.0 (+3.1%)  EXT+CH-W16 4.08/140.1 (+3.9%)
+agent-call-other        1412778  MTP4-W5 3.64/131.2 (+0.0%)  HYB-W16 3.69/127.1 (-3.1%)  EXT-W8 3.76/133.2 (+1.5%)  EXT-W16 3.86/133.2 (+1.5%)  EXT+CH-W8 3.75/133.6 (+1.8%)  EXT+CH-W16 3.86/133.5 (+1.7%)
+agent-edit-hashline     1053447  MTP4-W5 3.86/139.1 (+0.0%)  HYB-W16 4.16/140.9 (+1.3%)  EXT-W8 4.13/145.3 (+4.4%)  EXT-W16 4.40/149.4 (+7.4%)  EXT+CH-W8 4.14/147.4 (+6.0%)  EXT+CH-W16 4.41/150.6 (+8.2%)
+agent-edit-strrep         27373  MTP4-W5 3.87/139.5 (+0.0%)  HYB-W16 4.78/162.3 (+16.4%)  EXT-W8 4.37/153.4 (+10.0%)  EXT-W16 4.91/167.2 (+19.9%)  EXT+CH-W8 4.42/158.9 (+14.0%)  EXT+CH-W16 4.98/171.4 (+22.9%)
+agent-write             2259879  MTP4-W5 3.46/124.7 (+0.0%)  HYB-W16 3.41/120.9 (-3.1%)  EXT-W8 3.51/125.6 (+0.7%)  EXT-W16 3.55/125.9 (+1.0%)  EXT+CH-W8 3.51/125.9 (+0.9%)  EXT+CH-W16 3.55/126.2 (+1.2%)
+
+-- calibrated MTP model, att=3.5 ms/tile: tok/step / t/s (gain vs MTP4) --
+agent-assistant-text     468222  MTP4-W5 3.32/119.8 (+0.0%)  HYB-W16 3.22/113.5 (-5.3%)  EXT-W8 3.34/119.6 (-0.1%)  EXT-W16 3.35/118.3 (-1.3%)  EXT+CH-W8 3.34/119.6 (-0.1%)  EXT+CH-W16 3.35/118.4 (-1.2%)
+agent-bash              1984643  MTP4-W5 3.74/134.8 (+0.0%)  HYB-W16 3.90/120.3 (-10.8%)  EXT-W8 3.92/134.4 (-0.3%)  EXT-W16 4.08/126.8 (-5.9%)  EXT+CH-W8 3.91/134.9 (+0.1%)  EXT+CH-W16 4.08/127.1 (-5.7%)
+agent-call-other        1412778  MTP4-W5 3.64/131.2 (+0.0%)  HYB-W16 3.69/116.5 (-11.2%)  EXT-W8 3.76/130.2 (-0.8%)  EXT-W16 3.86/123.0 (-6.2%)  EXT+CH-W8 3.75/130.4 (-0.6%)  EXT+CH-W16 3.86/123.2 (-6.1%)
+agent-edit-hashline     1053447  MTP4-W5 3.86/139.1 (+0.0%)  HYB-W16 4.16/125.9 (-9.5%)  EXT-W8 4.13/140.4 (+0.9%)  EXT-W16 4.40/134.0 (-3.6%)  EXT+CH-W8 4.14/142.4 (+2.3%)  EXT+CH-W16 4.41/135.1 (-2.9%)
+agent-edit-strrep         27373  MTP4-W5 3.87/139.5 (+0.0%)  HYB-W16 4.78/145.7 (+4.5%)  EXT-W8 4.37/147.8 (+6.0%)  EXT-W16 4.91/150.5 (+7.9%)  EXT+CH-W8 4.42/152.8 (+9.5%)  EXT+CH-W16 4.98/153.8 (+10.3%)
+agent-write             2259879  MTP4-W5 3.46/124.7 (+0.0%)  HYB-W16 3.41/117.0 (-6.2%)  EXT-W8 3.51/124.4 (-0.2%)  EXT-W16 3.55/122.1 (-2.1%)  EXT+CH-W8 3.51/124.7 (-0.0%)  EXT+CH-W16 3.55/122.4 (-1.8%)
+
+-- scenario opt: V(32)=40.0 V(64)=50.0 ms --
+agent-assistant-text     468222  MTP4 3.32/119.7 (+0.0%)  EXT16+CH16 3.35/119.8 (+0.1%)  EXT16+CH32 3.35/119.8 (+0.1%)  EXT16+CH64 3.35/119.9 (+0.1%)
+agent-bash              1984643  MTP4 3.73/134.5 (+0.0%)  EXT16+CH16 4.08/139.9 (+4.0%)  EXT16+CH32 4.11/140.2 (+4.2%)  EXT16+CH64 4.12/140.2 (+4.2%)
+agent-call-other        1412778  MTP4 3.63/131.0 (+0.0%)  EXT16+CH16 3.85/133.2 (+1.7%)  EXT16+CH32 3.86/133.3 (+1.8%)  EXT16+CH64 3.87/133.3 (+1.7%)
+agent-edit-hashline     1053447  MTP4 3.86/139.1 (+0.0%)  EXT16+CH16 4.41/150.6 (+8.3%)  EXT16+CH32 4.49/152.1 (+9.3%)  EXT16+CH64 4.53/152.9 (+9.9%)
+agent-edit-strrep         27373  MTP4 3.93/141.7 (+0.0%)  EXT16+CH16 5.01/172.6 (+21.9%)  EXT16+CH32 5.23/177.3 (+25.1%)  EXT16+CH64 5.33/179.6 (+26.8%)
+agent-write             2259879  MTP4 3.45/124.5 (+0.0%)  EXT16+CH16 3.55/125.9 (+1.1%)  EXT16+CH32 3.56/126.2 (+1.3%)  EXT16+CH64 3.56/126.2 (+1.3%)
+ALL (token-weighted) Wc=0: 130.2 (+0.0%)  Wc=16: 134.0 (+2.9%)  Wc=32: 134.3 (+3.2%)  Wc=64: 134.4 (+3.3%)
+
+-- scenario pes: V(32)=48.0 V(64)=65.0 ms --
+agent-assistant-text     468222  MTP4 3.32/119.7 (+0.0%)  EXT16+CH16 3.35/119.8 (+0.1%)  EXT16+CH32 3.35/119.8 (+0.1%)  EXT16+CH64 3.35/119.8 (+0.1%)
+agent-bash              1984643  MTP4 3.73/134.5 (+0.0%)  EXT16+CH16 4.08/139.9 (+4.0%)  EXT16+CH32 4.11/139.6 (+3.8%)  EXT16+CH64 4.12/139.2 (+3.5%)
+agent-call-other        1412778  MTP4 3.63/131.0 (+0.0%)  EXT16+CH16 3.85/133.2 (+1.7%)  EXT16+CH32 3.86/132.9 (+1.4%)  EXT16+CH64 3.87/132.6 (+1.2%)
+agent-edit-hashline     1053447  MTP4 3.86/139.1 (+0.0%)  EXT16+CH16 4.41/150.6 (+8.3%)  EXT16+CH32 4.49/150.8 (+8.4%)  EXT16+CH64 4.53/151.2 (+8.7%)
+agent-edit-strrep         27373  MTP4 3.93/141.7 (+0.0%)  EXT16+CH16 5.01/172.6 (+21.9%)  EXT16+CH32 5.23/174.3 (+23.1%)  EXT16+CH64 5.33/175.8 (+24.1%)
+agent-write             2259879  MTP4 3.45/124.5 (+0.0%)  EXT16+CH16 3.55/125.9 (+1.1%)  EXT16+CH32 3.56/126.0 (+1.2%)  EXT16+CH64 3.56/125.9 (+1.1%)
+ALL (token-weighted) Wc=0: 130.2 (+0.0%)  Wc=16: 134.0 (+2.9%)  Wc=32: 133.8 (+2.8%)  Wc=64: 133.7 (+2.7%)
+
+## code-selfoss  segs=33 tokens=26824 copy1=0.172 copy8=0.054 AL_mtp=3.05 c=0.750
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.19  t/s   50.9  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.20  t/s   50.8  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.05  t/s  109.9  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.24  t/s  116.9  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.14  t/s  112.6  tail-share 0.015
+  HYB-W8/cor/att0.0            tok/step  3.20  t/s  114.9  tail-share 0.014
+  HYB-W16/ind/att0.0           tok/step  3.17  t/s  112.8  tail-share 0.027
+  HYB-W16/cor/att0.0           tok/step  3.23  t/s  115.0  tail-share 0.025
+  HYB-skip-W16/ind/att0.0      tok/step  3.17  t/s  113.7  tail-share 0.027
+  HYB-skip-W16/cor/att0.0      tok/step  3.23  t/s  115.9  tail-share 0.025
+  HYB-on-W16/ind/att0.0        tok/step  3.24  t/s  114.8  tail-share 0.054
+  HYB-on-W16/cor/att0.0        tok/step  3.30  t/s  117.2  tail-share 0.050
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.19  t/s   50.3  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.20  t/s   48.8  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.05  t/s  109.9  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.24  t/s  116.9  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.14  t/s  111.9  tail-share 0.015
+  HYB-W8/cor/att3.5            tok/step  3.20  t/s  114.1  tail-share 0.014
+  HYB-W16/ind/att3.5           tok/step  3.17  t/s  110.1  tail-share 0.027
+  HYB-W16/cor/att3.5           tok/step  3.23  t/s  112.4  tail-share 0.025
+  HYB-skip-W16/ind/att3.5      tok/step  3.17  t/s  111.0  tail-share 0.027
+  HYB-skip-W16/cor/att3.5      tok/step  3.23  t/s  113.2  tail-share 0.025
+  HYB-on-W16/ind/att3.5        tok/step  3.24  t/s  111.2  tail-share 0.054
+  HYB-on-W16/cor/att3.5        tok/step  3.30  t/s  113.9  tail-share 0.050
+
+## en-wildchat  segs=42 tokens=30954 copy1=0.086 copy8=0.016 AL_mtp=2.43 c=0.629
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.09  t/s   46.8  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.09  t/s   46.6  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.44  t/s   87.8  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.54  t/s   91.6  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.47  t/s   89.0  tail-share 0.004
+  HYB-W8/cor/att0.0            tok/step  2.52  t/s   90.8  tail-share 0.003
+  HYB-W16/ind/att0.0           tok/step  2.48  t/s   89.0  tail-share 0.006
+  HYB-W16/cor/att0.0           tok/step  2.53  t/s   90.8  tail-share 0.006
+  HYB-skip-W16/ind/att0.0      tok/step  2.48  t/s   89.3  tail-share 0.006
+  HYB-skip-W16/cor/att0.0      tok/step  2.53  t/s   91.0  tail-share 0.006
+  HYB-on-W16/ind/att0.0        tok/step  2.50  t/s   89.2  tail-share 0.018
+  HYB-on-W16/cor/att0.0        tok/step  2.54  t/s   91.2  tail-share 0.015
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.09  t/s   46.5  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.09  t/s   45.5  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.44  t/s   87.8  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.54  t/s   91.6  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.47  t/s   88.8  tail-share 0.004
+  HYB-W8/cor/att3.5            tok/step  2.52  t/s   90.7  tail-share 0.003
+  HYB-W16/ind/att3.5           tok/step  2.48  t/s   88.3  tail-share 0.006
+  HYB-W16/cor/att3.5           tok/step  2.53  t/s   90.2  tail-share 0.006
+  HYB-skip-W16/ind/att3.5      tok/step  2.48  t/s   88.6  tail-share 0.006
+  HYB-skip-W16/cor/att3.5      tok/step  2.53  t/s   90.4  tail-share 0.006
+  HYB-on-W16/ind/att3.5        tok/step  2.50  t/s   87.8  tail-share 0.018
+  HYB-on-W16/cor/att3.5        tok/step  2.54  t/s   90.1  tail-share 0.015
+
+## p1-en-chat  segs=8 tokens=8760 copy1=0.029 copy8=0.000 AL_mtp=2.43 c=0.629
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.03  t/s   44.2  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.03  t/s   44.0  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.44  t/s   88.1  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.47  t/s   89.0  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.44  t/s   88.0  tail-share 0.000
+  HYB-W8/cor/att0.0            tok/step  2.46  t/s   88.8  tail-share 0.000
+  HYB-W16/ind/att0.0           tok/step  2.44  t/s   88.0  tail-share 0.000
+  HYB-W16/cor/att0.0           tok/step  2.46  t/s   88.8  tail-share 0.000
+  HYB-skip-W16/ind/att0.0      tok/step  2.44  t/s   88.1  tail-share 0.000
+  HYB-skip-W16/cor/att0.0      tok/step  2.46  t/s   88.9  tail-share 0.000
+  HYB-on-W16/ind/att0.0        tok/step  2.45  t/s   87.9  tail-share 0.001
+  HYB-on-W16/cor/att0.0        tok/step  2.47  t/s   88.7  tail-share 0.001
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.03  t/s   44.0  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.03  t/s   43.3  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.44  t/s   88.1  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.47  t/s   89.0  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.44  t/s   88.0  tail-share 0.000
+  HYB-W8/cor/att3.5            tok/step  2.46  t/s   88.8  tail-share 0.000
+  HYB-W16/ind/att3.5           tok/step  2.44  t/s   88.0  tail-share 0.000
+  HYB-W16/cor/att3.5           tok/step  2.46  t/s   88.8  tail-share 0.000
+  HYB-skip-W16/ind/att3.5      tok/step  2.44  t/s   88.1  tail-share 0.000
+  HYB-skip-W16/cor/att3.5      tok/step  2.46  t/s   88.9  tail-share 0.000
+  HYB-on-W16/ind/att3.5        tok/step  2.45  t/s   87.5  tail-share 0.001
+  HYB-on-W16/cor/att3.5        tok/step  2.47  t/s   88.4  tail-share 0.001
+
+## p1-en-code  segs=8 tokens=10526 copy1=0.097 copy8=0.016 AL_mtp=3.05 c=0.750
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.10  t/s   47.2  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.11  t/s   46.9  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.06  t/s  110.2  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.16  t/s  113.9  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.06  t/s  110.2  tail-share 0.003
+  HYB-W8/cor/att0.0            tok/step  3.13  t/s  112.5  tail-share 0.003
+  HYB-W16/ind/att0.0           tok/step  3.07  t/s  110.0  tail-share 0.005
+  HYB-W16/cor/att0.0           tok/step  3.13  t/s  112.4  tail-share 0.005
+  HYB-skip-W16/ind/att0.0      tok/step  3.07  t/s  110.6  tail-share 0.005
+  HYB-skip-W16/cor/att0.0      tok/step  3.13  t/s  112.8  tail-share 0.005
+  HYB-on-W16/ind/att0.0        tok/step  3.10  t/s  110.7  tail-share 0.018
+  HYB-on-W16/cor/att0.0        tok/step  3.16  t/s  113.0  tail-share 0.016
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.10  t/s   46.7  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.11  t/s   45.4  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.06  t/s  110.2  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.16  t/s  113.9  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.06  t/s  109.9  tail-share 0.003
+  HYB-W8/cor/att3.5            tok/step  3.13  t/s  112.2  tail-share 0.003
+  HYB-W16/ind/att3.5           tok/step  3.07  t/s  108.9  tail-share 0.005
+  HYB-W16/cor/att3.5           tok/step  3.13  t/s  111.4  tail-share 0.005
+  HYB-skip-W16/ind/att3.5      tok/step  3.07  t/s  109.5  tail-share 0.005
+  HYB-skip-W16/cor/att3.5      tok/step  3.13  t/s  111.8  tail-share 0.005
+  HYB-on-W16/ind/att3.5        tok/step  3.10  t/s  108.6  tail-share 0.018
+  HYB-on-W16/cor/att3.5        tok/step  3.16  t/s  111.3  tail-share 0.016
+
+## p1-en-prose  segs=8 tokens=7790 copy1=0.013 copy8=0.000 AL_mtp=2.43 c=0.629
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.01  t/s   43.7  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.01  t/s   43.5  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.44  t/s   87.9  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.45  t/s   88.4  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.44  t/s   87.9  tail-share 0.000
+  HYB-W8/cor/att0.0            tok/step  2.45  t/s   88.3  tail-share 0.000
+  HYB-W16/ind/att0.0           tok/step  2.44  t/s   87.9  tail-share 0.000
+  HYB-W16/cor/att0.0           tok/step  2.45  t/s   88.3  tail-share 0.000
+  HYB-skip-W16/ind/att0.0      tok/step  2.44  t/s   87.9  tail-share 0.000
+  HYB-skip-W16/cor/att0.0      tok/step  2.45  t/s   88.3  tail-share 0.000
+  HYB-on-W16/ind/att0.0        tok/step  2.44  t/s   87.8  tail-share 0.001
+  HYB-on-W16/cor/att0.0        tok/step  2.45  t/s   88.3  tail-share 0.000
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.01  t/s   43.6  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.01  t/s   43.1  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.44  t/s   87.9  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.45  t/s   88.4  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.44  t/s   87.9  tail-share 0.000
+  HYB-W8/cor/att3.5            tok/step  2.45  t/s   88.3  tail-share 0.000
+  HYB-W16/ind/att3.5           tok/step  2.44  t/s   87.9  tail-share 0.000
+  HYB-W16/cor/att3.5           tok/step  2.45  t/s   88.3  tail-share 0.000
+  HYB-skip-W16/ind/att3.5      tok/step  2.44  t/s   87.9  tail-share 0.000
+  HYB-skip-W16/cor/att3.5      tok/step  2.45  t/s   88.3  tail-share 0.000
+  HYB-on-W16/ind/att3.5        tok/step  2.44  t/s   87.6  tail-share 0.001
+  HYB-on-W16/cor/att3.5        tok/step  2.45  t/s   88.1  tail-share 0.000
+
+## p1-en-tech  segs=6 tokens=8293 copy1=0.099 copy8=0.015 AL_mtp=3.0 c=0.741
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.10  t/s   47.3  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.11  t/s   47.1  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.01  t/s  108.6  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.12  t/s  112.4  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.03  t/s  109.0  tail-share 0.002
+  HYB-W8/cor/att0.0            tok/step  3.07  t/s  110.6  tail-share 0.002
+  HYB-W16/ind/att0.0           tok/step  3.04  t/s  108.8  tail-share 0.003
+  HYB-W16/cor/att0.0           tok/step  3.07  t/s  110.3  tail-share 0.002
+  HYB-skip-W16/ind/att0.0      tok/step  3.04  t/s  109.4  tail-share 0.003
+  HYB-skip-W16/cor/att0.0      tok/step  3.07  t/s  110.8  tail-share 0.002
+  HYB-on-W16/ind/att0.0        tok/step  3.08  t/s  109.8  tail-share 0.020
+  HYB-on-W16/cor/att0.0        tok/step  3.11  t/s  111.2  tail-share 0.017
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.10  t/s   46.9  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.11  t/s   45.8  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.01  t/s  108.6  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.12  t/s  112.4  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.03  t/s  108.7  tail-share 0.002
+  HYB-W8/cor/att3.5            tok/step  3.07  t/s  110.3  tail-share 0.002
+  HYB-W16/ind/att3.5           tok/step  3.04  t/s  107.5  tail-share 0.003
+  HYB-W16/cor/att3.5           tok/step  3.07  t/s  109.2  tail-share 0.002
+  HYB-skip-W16/ind/att3.5      tok/step  3.04  t/s  108.1  tail-share 0.003
+  HYB-skip-W16/cor/att3.5      tok/step  3.07  t/s  109.8  tail-share 0.002
+  HYB-on-W16/ind/att3.5        tok/step  3.08  t/s  107.4  tail-share 0.020
+  HYB-on-W16/cor/att3.5        tok/step  3.11  t/s  109.1  tail-share 0.017
+
+## p1-pl-chat  segs=9 tokens=11282 copy1=0.086 copy8=0.011 AL_mtp=2.77 c=0.699
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.09  t/s   46.7  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.09  t/s   46.4  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.77  t/s  100.0  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.87  t/s  103.6  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.80  t/s  100.6  tail-share 0.001
+  HYB-W8/cor/att0.0            tok/step  2.84  t/s  102.1  tail-share 0.001
+  HYB-W16/ind/att0.0           tok/step  2.80  t/s  100.4  tail-share 0.001
+  HYB-W16/cor/att0.0           tok/step  2.84  t/s  101.9  tail-share 0.001
+  HYB-skip-W16/ind/att0.0      tok/step  2.80  t/s  100.8  tail-share 0.001
+  HYB-skip-W16/cor/att0.0      tok/step  2.84  t/s  102.2  tail-share 0.001
+  HYB-on-W16/ind/att0.0        tok/step  2.83  t/s  101.1  tail-share 0.016
+  HYB-on-W16/cor/att0.0        tok/step  2.87  t/s  102.6  tail-share 0.013
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.09  t/s   46.4  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.09  t/s   45.2  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.77  t/s  100.0  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.87  t/s  103.6  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.80  t/s  100.4  tail-share 0.001
+  HYB-W8/cor/att3.5            tok/step  2.84  t/s  101.9  tail-share 0.001
+  HYB-W16/ind/att3.5           tok/step  2.80  t/s   99.4  tail-share 0.001
+  HYB-W16/cor/att3.5           tok/step  2.84  t/s  101.0  tail-share 0.001
+  HYB-skip-W16/ind/att3.5      tok/step  2.80  t/s   99.8  tail-share 0.001
+  HYB-skip-W16/cor/att3.5      tok/step  2.84  t/s  101.3  tail-share 0.001
+  HYB-on-W16/ind/att3.5        tok/step  2.83  t/s   99.3  tail-share 0.016
+  HYB-on-W16/cor/att3.5        tok/step  2.87  t/s  101.1  tail-share 0.013
+
+## p1-pl-code  segs=5 tokens=7000 copy1=0.138 copy8=0.031 AL_mtp=3.47 c=0.816
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.15  t/s   49.1  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.16  t/s   48.9  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.47  t/s  125.3  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.61  t/s  130.2  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.51  t/s  126.1  tail-share 0.007
+  HYB-W8/cor/att0.0            tok/step  3.56  t/s  127.8  tail-share 0.007
+  HYB-W16/ind/att0.0           tok/step  3.52  t/s  125.9  tail-share 0.013
+  HYB-W16/cor/att0.0           tok/step  3.57  t/s  127.7  tail-share 0.012
+  HYB-skip-W16/ind/att0.0      tok/step  3.52  t/s  126.9  tail-share 0.013
+  HYB-skip-W16/cor/att0.0      tok/step  3.57  t/s  128.5  tail-share 0.012
+  HYB-on-W16/ind/att0.0        tok/step  3.60  t/s  127.7  tail-share 0.033
+  HYB-on-W16/cor/att0.0        tok/step  3.64  t/s  129.4  tail-share 0.030
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.15  t/s   48.6  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.16  t/s   47.2  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.47  t/s  125.3  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.61  t/s  130.2  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.51  t/s  125.5  tail-share 0.007
+  HYB-W8/cor/att3.5            tok/step  3.56  t/s  127.3  tail-share 0.007
+  HYB-W16/ind/att3.5           tok/step  3.52  t/s  123.8  tail-share 0.013
+  HYB-W16/cor/att3.5           tok/step  3.57  t/s  125.6  tail-share 0.012
+  HYB-skip-W16/ind/att3.5      tok/step  3.52  t/s  124.7  tail-share 0.013
+  HYB-skip-W16/cor/att3.5      tok/step  3.57  t/s  126.4  tail-share 0.012
+  HYB-on-W16/ind/att3.5        tok/step  3.60  t/s  123.9  tail-share 0.033
+  HYB-on-W16/cor/att3.5        tok/step  3.64  t/s  126.1  tail-share 0.030
+
+## p1-pl-prose  segs=9 tokens=9970 copy1=0.014 copy8=0.000 AL_mtp=2.77 c=0.699
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.01  t/s   43.7  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.01  t/s   43.6  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.77  t/s   99.9  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.78  t/s  100.4  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.77  t/s   99.9  tail-share 0.000
+  HYB-W8/cor/att0.0            tok/step  2.78  t/s  100.3  tail-share 0.000
+  HYB-W16/ind/att0.0           tok/step  2.77  t/s   99.9  tail-share 0.000
+  HYB-W16/cor/att0.0           tok/step  2.78  t/s  100.3  tail-share 0.000
+  HYB-skip-W16/ind/att0.0      tok/step  2.77  t/s   99.9  tail-share 0.000
+  HYB-skip-W16/cor/att0.0      tok/step  2.78  t/s  100.3  tail-share 0.000
+  HYB-on-W16/ind/att0.0        tok/step  2.77  t/s   99.8  tail-share 0.000
+  HYB-on-W16/cor/att0.0        tok/step  2.78  t/s  100.2  tail-share 0.000
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.01  t/s   43.6  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.01  t/s   43.2  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.77  t/s   99.9  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.78  t/s  100.4  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.77  t/s   99.9  tail-share 0.000
+  HYB-W8/cor/att3.5            tok/step  2.78  t/s  100.3  tail-share 0.000
+  HYB-W16/ind/att3.5           tok/step  2.77  t/s   99.9  tail-share 0.000
+  HYB-W16/cor/att3.5           tok/step  2.78  t/s  100.3  tail-share 0.000
+  HYB-skip-W16/ind/att3.5      tok/step  2.77  t/s   99.9  tail-share 0.000
+  HYB-skip-W16/cor/att3.5      tok/step  2.78  t/s  100.3  tail-share 0.000
+  HYB-on-W16/ind/att3.5        tok/step  2.77  t/s   99.5  tail-share 0.000
+  HYB-on-W16/cor/att3.5        tok/step  2.78  t/s  100.0  tail-share 0.000
+
+## p1-pl-tech  segs=4 tokens=5586 copy1=0.085 copy8=0.010 AL_mtp=3.29 c=0.789
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.09  t/s   46.7  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.09  t/s   46.5  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.31  t/s  119.2  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.39  t/s  122.0  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.29  t/s  118.6  tail-share 0.002
+  HYB-W8/cor/att0.0            tok/step  3.33  t/s  119.9  tail-share 0.002
+  HYB-W16/ind/att0.0           tok/step  3.30  t/s  118.6  tail-share 0.004
+  HYB-W16/cor/att0.0           tok/step  3.34  t/s  120.0  tail-share 0.004
+  HYB-skip-W16/ind/att0.0      tok/step  3.30  t/s  119.2  tail-share 0.004
+  HYB-skip-W16/cor/att0.0      tok/step  3.34  t/s  120.5  tail-share 0.004
+  HYB-on-W16/ind/att0.0        tok/step  3.33  t/s  118.9  tail-share 0.014
+  HYB-on-W16/cor/att0.0        tok/step  3.36  t/s  120.2  tail-share 0.013
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.09  t/s   46.3  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.09  t/s   45.3  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.31  t/s  119.2  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.39  t/s  122.0  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.29  t/s  118.3  tail-share 0.002
+  HYB-W8/cor/att3.5            tok/step  3.33  t/s  119.7  tail-share 0.002
+  HYB-W16/ind/att3.5           tok/step  3.30  t/s  117.9  tail-share 0.004
+  HYB-W16/cor/att3.5           tok/step  3.34  t/s  119.4  tail-share 0.004
+  HYB-skip-W16/ind/att3.5      tok/step  3.30  t/s  118.4  tail-share 0.004
+  HYB-skip-W16/cor/att3.5      tok/step  3.34  t/s  119.9  tail-share 0.004
+  HYB-on-W16/ind/att3.5        tok/step  3.33  t/s  116.6  tail-share 0.014
+  HYB-on-W16/cor/att3.5        tok/step  3.36  t/s  118.2  tail-share 0.013
+
+## pl-aya  segs=154 tokens=79958 copy1=0.102 copy8=0.021 AL_mtp=2.77 c=0.699
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.11  t/s   47.4  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.11  t/s   47.1  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.77  t/s   99.7  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.88  t/s  103.9  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.80  t/s  100.7  tail-share 0.005
+  HYB-W8/cor/att0.0            tok/step  2.85  t/s  102.6  tail-share 0.005
+  HYB-W16/ind/att0.0           tok/step  2.81  t/s  100.7  tail-share 0.009
+  HYB-W16/cor/att0.0           tok/step  2.86  t/s  102.6  tail-share 0.009
+  HYB-skip-W16/ind/att0.0      tok/step  2.81  t/s  101.2  tail-share 0.009
+  HYB-skip-W16/cor/att0.0      tok/step  2.86  t/s  103.0  tail-share 0.009
+  HYB-on-W16/ind/att0.0        tok/step  2.83  t/s  101.1  tail-share 0.022
+  HYB-on-W16/cor/att0.0        tok/step  2.88  t/s  103.1  tail-share 0.020
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.11  t/s   47.0  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.11  t/s   45.7  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.77  t/s   99.7  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.88  t/s  103.9  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.80  t/s  100.4  tail-share 0.005
+  HYB-W8/cor/att3.5            tok/step  2.85  t/s  102.4  tail-share 0.005
+  HYB-W16/ind/att3.5           tok/step  2.81  t/s   99.8  tail-share 0.009
+  HYB-W16/cor/att3.5           tok/step  2.86  t/s  101.8  tail-share 0.009
+  HYB-skip-W16/ind/att3.5      tok/step  2.81  t/s  100.2  tail-share 0.009
+  HYB-skip-W16/cor/att3.5      tok/step  2.86  t/s  102.2  tail-share 0.009
+  HYB-on-W16/ind/att3.5        tok/step  2.83  t/s   99.1  tail-share 0.022
+  HYB-on-W16/cor/att3.5        tok/step  2.88  t/s  101.5  tail-share 0.020
+
+## pl-oasst2  segs=160 tokens=119087 copy1=0.054 copy8=0.007 AL_mtp=2.77 c=0.699
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.05  t/s   45.3  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.06  t/s   45.1  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.77  t/s   99.8  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.83  t/s  101.9  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.78  t/s  100.0  tail-share 0.001
+  HYB-W8/cor/att0.0            tok/step  2.81  t/s  101.2  tail-share 0.001
+  HYB-W16/ind/att0.0           tok/step  2.78  t/s   99.9  tail-share 0.002
+  HYB-W16/cor/att0.0           tok/step  2.81  t/s  101.1  tail-share 0.002
+  HYB-skip-W16/ind/att0.0      tok/step  2.78  t/s  100.2  tail-share 0.002
+  HYB-skip-W16/cor/att0.0      tok/step  2.81  t/s  101.3  tail-share 0.002
+  HYB-on-W16/ind/att0.0        tok/step  2.79  t/s  100.1  tail-share 0.009
+  HYB-on-W16/cor/att0.0        tok/step  2.82  t/s  101.3  tail-share 0.008
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.05  t/s   45.1  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.06  t/s   44.3  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.77  t/s   99.8  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.83  t/s  101.9  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.78  t/s   99.9  tail-share 0.001
+  HYB-W8/cor/att3.5            tok/step  2.81  t/s  101.1  tail-share 0.001
+  HYB-W16/ind/att3.5           tok/step  2.78  t/s   99.5  tail-share 0.002
+  HYB-W16/cor/att3.5           tok/step  2.81  t/s  100.7  tail-share 0.002
+  HYB-skip-W16/ind/att3.5      tok/step  2.78  t/s   99.8  tail-share 0.002
+  HYB-skip-W16/cor/att3.5      tok/step  2.81  t/s  101.0  tail-share 0.002
+  HYB-on-W16/ind/att3.5        tok/step  2.79  t/s   99.0  tail-share 0.009
+  HYB-on-W16/cor/att3.5        tok/step  2.82  t/s  100.4  tail-share 0.008
+
+## pl-wildchat  segs=233 tokens=182311 copy1=0.086 copy8=0.018 AL_mtp=2.77 c=0.699
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.09  t/s   46.7  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.09  t/s   46.5  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.77  t/s   99.8  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.87  t/s  103.4  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.80  t/s  100.7  tail-share 0.005
+  HYB-W8/cor/att0.0            tok/step  2.84  t/s  102.4  tail-share 0.004
+  HYB-W16/ind/att0.0           tok/step  2.80  t/s  100.7  tail-share 0.008
+  HYB-W16/cor/att0.0           tok/step  2.85  t/s  102.4  tail-share 0.008
+  HYB-skip-W16/ind/att0.0      tok/step  2.80  t/s  101.1  tail-share 0.008
+  HYB-skip-W16/cor/att0.0      tok/step  2.85  t/s  102.7  tail-share 0.008
+  HYB-on-W16/ind/att0.0        tok/step  2.83  t/s  101.1  tail-share 0.019
+  HYB-on-W16/cor/att0.0        tok/step  2.87  t/s  102.9  tail-share 0.017
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.09  t/s   46.4  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.09  t/s   45.4  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.77  t/s   99.8  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.87  t/s  103.4  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.80  t/s  100.5  tail-share 0.005
+  HYB-W8/cor/att3.5            tok/step  2.84  t/s  102.2  tail-share 0.004
+  HYB-W16/ind/att3.5           tok/step  2.80  t/s   99.9  tail-share 0.008
+  HYB-W16/cor/att3.5           tok/step  2.85  t/s  101.7  tail-share 0.008
+  HYB-skip-W16/ind/att3.5      tok/step  2.80  t/s  100.3  tail-share 0.008
+  HYB-skip-W16/cor/att3.5      tok/step  2.85  t/s  102.0  tail-share 0.008
+  HYB-on-W16/ind/att3.5        tok/step  2.83  t/s   99.5  tail-share 0.019
+  HYB-on-W16/cor/att3.5        tok/step  2.87  t/s  101.6  tail-share 0.017
+
+## spec_sweep-code  segs=6 tokens=6144 copy1=0.066 copy8=0.005 AL_mtp=3.26 c=0.784
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.07  t/s   45.8  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.07  t/s   45.5  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.27  t/s  117.7  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.33  t/s  120.1  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.24  t/s  116.9  tail-share 0.001
+  HYB-W8/cor/att0.0            tok/step  3.30  t/s  119.0  tail-share 0.001
+  HYB-W16/ind/att0.0           tok/step  3.25  t/s  116.8  tail-share 0.001
+  HYB-W16/cor/att0.0           tok/step  3.31  t/s  119.0  tail-share 0.001
+  HYB-skip-W16/ind/att0.0      tok/step  3.25  t/s  117.2  tail-share 0.001
+  HYB-skip-W16/cor/att0.0      tok/step  3.31  t/s  119.3  tail-share 0.001
+  HYB-on-W16/ind/att0.0        tok/step  3.26  t/s  116.6  tail-share 0.006
+  HYB-on-W16/cor/att0.0        tok/step  3.32  t/s  118.8  tail-share 0.005
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.07  t/s   45.5  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.07  t/s   44.3  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.27  t/s  117.7  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.33  t/s  120.1  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.24  t/s  116.8  tail-share 0.001
+  HYB-W8/cor/att3.5            tok/step  3.30  t/s  118.9  tail-share 0.001
+  HYB-W16/ind/att3.5           tok/step  3.25  t/s  116.5  tail-share 0.001
+  HYB-W16/cor/att3.5           tok/step  3.31  t/s  118.6  tail-share 0.001
+  HYB-skip-W16/ind/att3.5      tok/step  3.25  t/s  116.9  tail-share 0.001
+  HYB-skip-W16/cor/att3.5      tok/step  3.31  t/s  118.9  tail-share 0.001
+  HYB-on-W16/ind/att3.5        tok/step  3.26  t/s  114.7  tail-share 0.006
+  HYB-on-W16/cor/att3.5        tok/step  3.32  t/s  117.5  tail-share 0.005
+
+## spec_sweep-en  segs=6 tokens=4114 copy1=0.134 copy8=0.029 AL_mtp=2.715 c=0.689
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.15  t/s   49.0  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.15  t/s   48.7  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  2.76  t/s   99.5  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  2.92  t/s  105.2  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  2.81  t/s  101.2  tail-share 0.008
+  HYB-W8/cor/att0.0            tok/step  2.87  t/s  103.4  tail-share 0.008
+  HYB-W16/ind/att0.0           tok/step  2.83  t/s  101.4  tail-share 0.015
+  HYB-W16/cor/att0.0           tok/step  2.89  t/s  103.6  tail-share 0.015
+  HYB-skip-W16/ind/att0.0      tok/step  2.83  t/s  102.1  tail-share 0.015
+  HYB-skip-W16/cor/att0.0      tok/step  2.89  t/s  104.2  tail-share 0.015
+  HYB-on-W16/ind/att0.0        tok/step  2.85  t/s  101.3  tail-share 0.026
+  HYB-on-W16/cor/att0.0        tok/step  2.91  t/s  103.4  tail-share 0.024
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.15  t/s   48.5  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.15  t/s   47.0  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  2.76  t/s   99.5  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  2.92  t/s  105.2  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  2.81  t/s  100.9  tail-share 0.008
+  HYB-W8/cor/att3.5            tok/step  2.87  t/s  103.1  tail-share 0.008
+  HYB-W16/ind/att3.5           tok/step  2.83  t/s  100.4  tail-share 0.015
+  HYB-W16/cor/att3.5           tok/step  2.89  t/s  102.6  tail-share 0.015
+  HYB-skip-W16/ind/att3.5      tok/step  2.83  t/s  101.0  tail-share 0.015
+  HYB-skip-W16/cor/att3.5      tok/step  2.89  t/s  103.2  tail-share 0.015
+  HYB-on-W16/ind/att3.5        tok/step  2.85  t/s   98.3  tail-share 0.026
+  HYB-on-W16/cor/att3.5        tok/step  2.91  t/s  100.8  tail-share 0.024
+
+## spec_sweep-pl  segs=6 tokens=6144 copy1=0.065 copy8=0.002 AL_mtp=3.0300000000000002 c=0.746
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.07  t/s   45.7  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.07  t/s   45.3  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.05  t/s  109.9  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.11  t/s  112.2  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.02  t/s  109.0  tail-share 0.000
+  HYB-W8/cor/att0.0            tok/step  3.08  t/s  111.0  tail-share 0.000
+  HYB-W16/ind/att0.0           tok/step  3.02  t/s  108.9  tail-share 0.000
+  HYB-W16/cor/att0.0           tok/step  3.08  t/s  111.0  tail-share 0.000
+  HYB-skip-W16/ind/att0.0      tok/step  3.02  t/s  109.3  tail-share 0.000
+  HYB-skip-W16/cor/att0.0      tok/step  3.08  t/s  111.2  tail-share 0.000
+  HYB-on-W16/ind/att0.0        tok/step  3.04  t/s  108.8  tail-share 0.004
+  HYB-on-W16/cor/att0.0        tok/step  3.09  t/s  110.9  tail-share 0.003
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.07  t/s   45.3  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.07  t/s   43.7  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.05  t/s  109.9  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.11  t/s  112.2  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.02  t/s  108.9  tail-share 0.000
+  HYB-W8/cor/att3.5            tok/step  3.08  t/s  111.0  tail-share 0.000
+  HYB-W16/ind/att3.5           tok/step  3.02  t/s  108.7  tail-share 0.000
+  HYB-W16/cor/att3.5           tok/step  3.08  t/s  110.7  tail-share 0.000
+  HYB-skip-W16/ind/att3.5      tok/step  3.02  t/s  109.1  tail-share 0.000
+  HYB-skip-W16/cor/att3.5      tok/step  3.08  t/s  111.0  tail-share 0.000
+  HYB-on-W16/ind/att3.5        tok/step  3.04  t/s  107.2  tail-share 0.004
+  HYB-on-W16/cor/att3.5        tok/step  3.09  t/s  109.8  tail-share 0.003
+
+## agent-assistant-text  segs=1721 tokens=468222 copy1=0.161 copy8=0.025 AL_mtp=3.2 c=0.775
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.18  t/s   50.1  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.19  t/s   49.2  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.19  t/s  114.9  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.35  t/s  120.8  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.15  t/s  113.1  tail-share 0.006
+  HYB-W8/cor/att0.0            tok/step  3.22  t/s  115.9  tail-share 0.006
+  HYB-W16/ind/att0.0           tok/step  3.16  t/s  112.9  tail-share 0.010
+  HYB-W16/cor/att0.0           tok/step  3.23  t/s  115.7  tail-share 0.010
+  HYB-skip-W16/ind/att0.0      tok/step  3.16  t/s  114.2  tail-share 0.010
+  HYB-skip-W16/cor/att0.0      tok/step  3.23  t/s  116.9  tail-share 0.010
+  HYB-on-W16/ind/att0.0        tok/step  3.22  t/s  113.1  tail-share 0.030
+  HYB-on-W16/cor/att0.0        tok/step  3.29  t/s  116.0  tail-share 0.028
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.18  t/s   49.2  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.19  t/s   45.9  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.19  t/s  114.9  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.35  t/s  120.8  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.15  t/s  112.6  tail-share 0.006
+  HYB-W8/cor/att3.5            tok/step  3.22  t/s  115.4  tail-share 0.006
+  HYB-W16/ind/att3.5           tok/step  3.16  t/s  111.2  tail-share 0.010
+  HYB-W16/cor/att3.5           tok/step  3.23  t/s  114.1  tail-share 0.010
+  HYB-skip-W16/ind/att3.5      tok/step  3.16  t/s  112.4  tail-share 0.010
+  HYB-skip-W16/cor/att3.5      tok/step  3.23  t/s  115.2  tail-share 0.010
+  HYB-on-W16/ind/att3.5        tok/step  3.22  t/s  107.9  tail-share 0.030
+  HYB-on-W16/cor/att3.5        tok/step  3.29  t/s  111.1  tail-share 0.028
+
+## agent-bash  segs=11167 tokens=1984643 copy1=0.507 copy8=0.198 AL_mtp=3.2 c=0.775
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.88  t/s   77.8  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.97  t/s   78.7  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.17  t/s  114.5  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.83  t/s  137.9  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.62  t/s  127.7  tail-share 0.063
+  HYB-W8/cor/att0.0            tok/step  3.74  t/s  132.0  tail-share 0.062
+  HYB-W16/ind/att0.0           tok/step  3.79  t/s  129.3  tail-share 0.115
+  HYB-W16/cor/att0.0           tok/step  3.92  t/s  133.7  tail-share 0.113
+  HYB-skip-W16/ind/att0.0      tok/step  3.79  t/s  133.5  tail-share 0.115
+  HYB-skip-W16/cor/att0.0      tok/step  3.92  t/s  138.0  tail-share 0.113
+  HYB-on-W16/ind/att0.0        tok/step  4.11  t/s  137.9  tail-share 0.202
+  HYB-on-W16/cor/att0.0        tok/step  4.24  t/s  142.5  tail-share 0.196
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.88  t/s   74.8  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.97  t/s   69.5  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.17  t/s  114.5  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.83  t/s  137.9  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.62  t/s  123.9  tail-share 0.063
+  HYB-W8/cor/att3.5            tok/step  3.74  t/s  128.0  tail-share 0.062
+  HYB-W16/ind/att3.5           tok/step  3.79  t/s  116.9  tail-share 0.115
+  HYB-W16/cor/att3.5           tok/step  3.92  t/s  120.9  tail-share 0.113
+  HYB-skip-W16/ind/att3.5      tok/step  3.79  t/s  120.3  tail-share 0.115
+  HYB-skip-W16/cor/att3.5      tok/step  3.92  t/s  124.3  tail-share 0.113
+  HYB-on-W16/ind/att3.5        tok/step  4.11  t/s  121.4  tail-share 0.202
+  HYB-on-W16/cor/att3.5        tok/step  4.24  t/s  125.8  tail-share 0.196
+
+## agent-call-other  segs=10703 tokens=1412778 copy1=0.442 copy8=0.146 AL_mtp=3.2 c=0.775
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.69  t/s   70.3  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.75  t/s   70.4  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.17  t/s  114.1  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.71  t/s  133.7  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.50  t/s  123.9  tail-share 0.046
+  HYB-W8/cor/att0.0            tok/step  3.60  t/s  127.4  tail-share 0.045
+  HYB-W16/ind/att0.0           tok/step  3.61  t/s  124.1  tail-share 0.081
+  HYB-W16/cor/att0.0           tok/step  3.71  t/s  127.6  tail-share 0.080
+  HYB-skip-W16/ind/att0.0      tok/step  3.61  t/s  127.7  tail-share 0.081
+  HYB-skip-W16/cor/att0.0      tok/step  3.71  t/s  131.3  tail-share 0.080
+  HYB-on-W16/ind/att0.0        tok/step  3.88  t/s  131.2  tail-share 0.159
+  HYB-on-W16/cor/att0.0        tok/step  3.98  t/s  134.8  tail-share 0.154
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.69  t/s   68.0  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.75  t/s   63.0  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.17  t/s  114.1  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.71  t/s  133.7  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.50  t/s  120.8  tail-share 0.046
+  HYB-W8/cor/att3.5            tok/step  3.60  t/s  124.2  tail-share 0.045
+  HYB-W16/ind/att3.5           tok/step  3.61  t/s  113.8  tail-share 0.081
+  HYB-W16/cor/att3.5           tok/step  3.71  t/s  117.0  tail-share 0.080
+  HYB-skip-W16/ind/att3.5      tok/step  3.61  t/s  116.9  tail-share 0.081
+  HYB-skip-W16/cor/att3.5      tok/step  3.71  t/s  120.1  tail-share 0.080
+  HYB-on-W16/ind/att3.5        tok/step  3.88  t/s  117.0  tail-share 0.159
+  HYB-on-W16/cor/att3.5        tok/step  3.98  t/s  120.5  tail-share 0.154
+
+## agent-edit-hashline  segs=2614 tokens=1053447 copy1=0.583 copy8=0.263 AL_mtp=3.2 c=0.775
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  2.16  t/s   88.0  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  2.31  t/s   88.6  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.19  t/s  115.1  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.97  t/s  143.1  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.77  t/s  132.5  tail-share 0.088
+  HYB-W8/cor/att0.0            tok/step  3.93  t/s  138.0  tail-share 0.087
+  HYB-W16/ind/att0.0           tok/step  4.02  t/s  136.1  tail-share 0.160
+  HYB-W16/cor/att0.0           tok/step  4.19  t/s  141.9  tail-share 0.157
+  HYB-skip-W16/ind/att0.0      tok/step  4.02  t/s  141.1  tail-share 0.160
+  HYB-skip-W16/cor/att0.0      tok/step  4.19  t/s  147.1  tail-share 0.157
+  HYB-on-W16/ind/att0.0        tok/step  4.42  t/s  146.8  tail-share 0.251
+  HYB-on-W16/cor/att0.0        tok/step  4.60  t/s  153.3  tail-share 0.243
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  2.16  t/s   83.2  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  2.31  t/s   74.3  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.19  t/s  115.1  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.97  t/s  143.1  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.77  t/s  127.9  tail-share 0.088
+  HYB-W8/cor/att3.5            tok/step  3.93  t/s  133.2  tail-share 0.087
+  HYB-W16/ind/att3.5           tok/step  4.02  t/s  121.7  tail-share 0.160
+  HYB-W16/cor/att3.5           tok/step  4.19  t/s  126.8  tail-share 0.157
+  HYB-skip-W16/ind/att3.5      tok/step  4.02  t/s  125.7  tail-share 0.160
+  HYB-skip-W16/cor/att3.5      tok/step  4.19  t/s  130.9  tail-share 0.157
+  HYB-on-W16/ind/att3.5        tok/step  4.42  t/s  127.2  tail-share 0.251
+  HYB-on-W16/cor/att3.5        tok/step  4.60  t/s  133.2  tail-share 0.243
+
+## agent-edit-strrep  segs=46 tokens=27373 copy1=0.596 copy8=0.384 AL_mtp=3.2 c=0.775
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  2.18  t/s   89.9  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  2.35  t/s   93.2  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.19  t/s  115.2  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  4.02  t/s  145.0  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  4.16  t/s  146.0  tail-share 0.145
+  HYB-W8/cor/att0.0            tok/step  4.28  t/s  149.9  tail-share 0.144
+  HYB-W16/ind/att0.0           tok/step  4.67  t/s  158.9  tail-share 0.267
+  HYB-W16/cor/att0.0           tok/step  4.81  t/s  163.4  tail-share 0.265
+  HYB-skip-W16/ind/att0.0      tok/step  4.67  t/s  164.4  tail-share 0.267
+  HYB-skip-W16/cor/att0.0      tok/step  4.81  t/s  168.9  tail-share 0.265
+  HYB-on-W16/ind/att0.0        tok/step  4.97  t/s  165.7  tail-share 0.319
+  HYB-on-W16/cor/att0.0        tok/step  5.11  t/s  170.7  tail-share 0.316
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  2.18  t/s   86.0  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  2.35  t/s   81.5  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.19  t/s  115.2  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  4.02  t/s  145.0  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  4.16  t/s  140.5  tail-share 0.145
+  HYB-W8/cor/att3.5            tok/step  4.28  t/s  144.2  tail-share 0.144
+  HYB-W16/ind/att3.5           tok/step  4.67  t/s  142.9  tail-share 0.267
+  HYB-W16/cor/att3.5           tok/step  4.81  t/s  146.7  tail-share 0.265
+  HYB-skip-W16/ind/att3.5      tok/step  4.67  t/s  147.3  tail-share 0.267
+  HYB-skip-W16/cor/att3.5      tok/step  4.81  t/s  151.1  tail-share 0.265
+  HYB-on-W16/ind/att3.5        tok/step  4.97  t/s  144.2  tail-share 0.319
+  HYB-on-W16/cor/att3.5        tok/step  5.11  t/s  148.9  tail-share 0.316
+
+## agent-write  segs=1019 tokens=2259879 copy1=0.265 copy8=0.071 AL_mtp=3.2 c=0.775
+  PLAIN-W1/ind/att0.0          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att0.0             tok/step  1.33  t/s   56.1  tail-share 0.000
+  LO-W16/ind/att0.0            tok/step  1.35  t/s   55.3  tail-share 0.000
+  MTP4-W5/ind/att0.0           tok/step  3.20  t/s  115.3  tail-share 0.000
+  MTP4-W5/cor/att0.0           tok/step  3.49  t/s  126.0  tail-share 0.000
+  HYB-W8/ind/att0.0            tok/step  3.28  t/s  117.3  tail-share 0.021
+  HYB-W8/cor/att0.0            tok/step  3.38  t/s  121.0  tail-share 0.021
+  HYB-W16/ind/att0.0           tok/step  3.32  t/s  117.6  tail-share 0.039
+  HYB-W16/cor/att0.0           tok/step  3.42  t/s  121.4  tail-share 0.037
+  HYB-skip-W16/ind/att0.0      tok/step  3.32  t/s  119.5  tail-share 0.039
+  HYB-skip-W16/cor/att0.0      tok/step  3.42  t/s  123.2  tail-share 0.037
+  HYB-on-W16/ind/att0.0        tok/step  3.43  t/s  119.5  tail-share 0.074
+  HYB-on-W16/cor/att0.0        tok/step  3.53  t/s  123.4  tail-share 0.070
+  PLAIN-W1/ind/att3.5          tok/step  1.00  t/s   43.2  tail-share 0.000
+  LO-W8/ind/att3.5             tok/step  1.33  t/s   54.7  tail-share 0.000
+  LO-W16/ind/att3.5            tok/step  1.35  t/s   50.5  tail-share 0.000
+  MTP4-W5/ind/att3.5           tok/step  3.20  t/s  115.3  tail-share 0.000
+  MTP4-W5/cor/att3.5           tok/step  3.49  t/s  126.0  tail-share 0.000
+  HYB-W8/ind/att3.5            tok/step  3.28  t/s  116.1  tail-share 0.021
+  HYB-W8/cor/att3.5            tok/step  3.38  t/s  119.8  tail-share 0.021
+  HYB-W16/ind/att3.5           tok/step  3.32  t/s  113.8  tail-share 0.039
+  HYB-W16/cor/att3.5           tok/step  3.42  t/s  117.5  tail-share 0.037
+  HYB-skip-W16/ind/att3.5      tok/step  3.32  t/s  115.5  tail-share 0.039
+  HYB-skip-W16/cor/att3.5      tok/step  3.42  t/s  119.2  tail-share 0.037
+  HYB-on-W16/ind/att3.5        tok/step  3.43  t/s  112.0  tail-share 0.074
+  HYB-on-W16/cor/att3.5        tok/step  3.53  t/s  116.2  tail-share 0.070
