@@ -229,3 +229,33 @@ Speedupy:
 - A1 → nasz: **×1.07**.
 - Rozkład A0 → nasz: flagi (DFlash) ×1.51, łatki ×1.07.
 - Bez draftera: A1n 86.8 → A2n 90.6 (×1.04) w serwerze; tg128 87 → 96.7 (×1.11) w llama-bench.
+
+## 13. KLD: `TOPK_MOE_NP2` vs upstream (uzupełnienie, 2026-10-16, raport 16d)
+
+Pomiar domyka lukę z §9 i §12 („przed produktem trzeba zmierzyć KLD dla `TOPK_MOE_NP2`”). Metoda jak w raporcie 09 (3060).
+
+- **Sprzęt:** inna instancja RTX 3090 (Vast 56264196: i5-14400, kwota cgroup 15.36 CPU, sterownik 595.84, limit mocy 280 W, PCIe gen1 x16 w spoczynku).
+- **Plik:** ten sam `NVIDIA-Nemotron-3.5-Bolt-74B-A9B-IQ2_XXS.gguf`, sha256 `91d63363…99af75`.
+- **Buildy:** upstream v0.7.0 (`620d222`) oraz `nemotron-3090` @ `e46d34e0e`, CUDA 12.8, sm_86.
+- **Wywołanie:** `llama-perplexity -f wikitext-2-raw/wiki.test.raw -c 512 --chunks 24 -fit off -ngl 999 -fa on -t 15 -b 512`.
+- **Baza:** logity upstreamu przy `-ub 512`.
+- **Szum:** ten sam upstream przy `-ub 256` względem tej bazy.
+
+| przebieg | Mean KLD | 99.9% KLD | Max KLD | Same top p | PPL(Q) |
+|---|---|---|---|---|---|
+| upstream ub 512, powtórka (determinizm) | 0.000000 | 0.000050 | 0.000053 | 100.000% | 5.9218 |
+| **upstream ub 256 (szum batcha)** | **0.002254 ± 0.000069** | 0.0552 | 0.171 | 98.088 ± 0.175% | 5.9249 |
+| **fork `nemotron-3090` (domyślnie NP2=1, N1_IQ2=1)** | **0.002135 ± 0.000066** | 0.0589 | 0.159 | 98.105 ± 0.174% | 5.9248 |
+| fork z `GGML_CUDA_TOPK_MOE_NP2=0` | 0.000000 | 0.000050 | 0.000053 | 100.000% | 5.9218 |
+| fork, ub 256 | 0.002266 ± 0.000082 | 0.0550 | 0.335 | 98.056 ± 0.177% | 5.9242 |
+
+Wnioski:
+- **Bramka KLD: PASS.** Fuzja `TOPK_MOE_NP2` daje KLD 0.00214 wobec upstreamu, czyli poziom jego własnego szumu przy zmianie ubatch (0.00225). Top-1 zgadza się w 98.1% przypadków, tak samo jak przy szumie batcha (98.09%). PPL 5.9248 vs 5.9218 (różnica 0.05%, w granicach ±0.19).
+- **Jedynym źródłem różnicy numerycznej forka w ścieżce prefill jest `TOPK_MOE_NP2`.** Z `NP2=0` logity forka są bit w bit równe upstreamowi: KLD 0, 100% top p, identyczne PPL 5.921825.
+  - Max KLD 5.3e-5 w powtórce samego upstreamu pochodzi z zapisu logitów bazy, nie z niedeterminizmu.
+  - Tłumaczy to też §9: md5 „opt2 bez TOPK” = md5 forka.
+- **Zastrzeżenie:** `llama-perplexity` liczy batch 512, więc nie pokrywa ścieżki dekodu n=1 (`MMVQ_N1_IQ2`). Ta ścieżka jest bitowo neutralna według greedy md5 z §8.
+- Wcześniejsza hipoteza z §5 (`[INFERENCE]`: akceptacja draftu wraca przez zmianę numeryki topk) jest zgodna z tym wynikiem. Fuzja przesuwa wybór ekspertów przy prawie remisach (max KLD 0.16 przy medianie 0.00067), ale średnio nie pogarsza modelu.
+- Rekomendacja §12 zmienia się następująco: `TOPK_MOE_NP2` może wejść do manifestu z predykatem „nemotron_h_moe / IQ2_XXS” jako **łatka niebitowa z KLD na poziomie szumu**. Bez obietnicy „bit w bit jak upstream”.
+
+Surowe dane: `~/qwen-opt/cloud/results/magnitude-vs-3090-20261016/kld/` (`summary.txt`, pełne logi per przebieg). Skrypt: `~/qwen-opt/cloud/runs/magnitude-3090/inst/kld-nemotron.sh`. Koszt: ok. 2 min GPU w ramach instancji raportu 16d.
