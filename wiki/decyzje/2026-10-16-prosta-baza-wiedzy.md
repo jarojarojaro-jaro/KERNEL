@@ -13,5 +13,6 @@ Bez kompilacji tanim modelem, bez bazy danych i pętli w tle; główny agent akt
 
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
+- [[decyzje/2026-10-16-wszystko-do-bazy-wiedzy|twarda zasada: wszystko do bazy]]
 - [[KONWENCJE]]
 - [[log]]
