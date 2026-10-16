@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (17)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (18)
 - [[modele/_hub|modele]] — Modele i kwanty (11)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (14)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
 - 2026-10-16 [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]]
 
-Razem 296 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
+Razem 297 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
