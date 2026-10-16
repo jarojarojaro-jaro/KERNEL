@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (42)
+## Notatki (44)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-pkill-wlasna-powloka|`pkill -f` przez ssh zabija własną powłokę; zadania GPU pod flock]] — W E1 `pkill -f "bench.sh"` wysłane przez ssh dopasowało też własną powłokę zdalną i ją zabiło, a jeden przebieg perf nałożył się na llama-bench i trzeba go było wyrzucić z tabel (`perf/excluded/`) (2026-10-16).
@@ -31,6 +31,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-dowod-poza-commitem|Dowód rozproszony poza commitem]] — Tylko 25/70 commitów łatek ma w treści komplet dowodu (liczba + powtórzenia/przeplot + marker poprawności), 0/70 podaje niepewność, a 25/70 nie ma żadnej liczby – dowody leżą w NOTES.md i `~/wt/*/REPORT.md`, niczym niezwiązane z SHA.
 - [[lekcja-mtp-glowica-optimum|Fabryczna głowica MTP jest już blisko optimum]] — Douczanie głowicy MTP Qwen3.8-27B na 1.7 M tokenów dało ±0.2% tok/krok offline (online ±2%): głowica była trenowana wielokrokowo na dużo większym korpusie, a zapas widoczny u wyroczni (+21–33%) nie jest osiągalny tą drogą.
 - [[lekcja-build-cuda-0057-0070|Fork amd-opt nie budował się dla CUDA (0057, 0070)]] — `amd-opt` nie kompilował się dla CUDA: dwa błędy z łatek 0070 i 0057 psuły 25 jednostek kompilacji; naprawa w `cuda-compat` (4 commity), build 579/579 kroków w 835 s.
+- [[lekcja-drafter-gleboki-vs-mtp|Głęboki drafter vs MTP: kopia vs polski]] — DFlash2 u Magnitude daje 7.3–7.8 tok/krok na kopii i edycji kodu, ale 1.32 na polskiej prozie (27B, 3090), a DFlash na 9B 1.00; nasze MTP n=4 ma sufit 5, za to na pl-proza 1.97 (27B) i 1.71 (9B) (2026-10-16).
 - [[lekcja-kld-protokoly|KLD z różnych protokołów nie wolno mieszać]] — Ten sam plik ISTA GSQ-RCO IQ3_S ma KLD 0.0519 przy ctx 512 i 0.0665 przy ctx 2048 (+28%), a Swift mierzy KLD do własnego BF16 zamiast do Qwena – liczby z różnych kontekstów, referencji i korpusów nie są porównywalne.
 - [[lekcja-kolejnosc-akumulacji-fa|Kolejność akumulacji w FA zmienia KLD]] — Nowy kafel prefillu w Flash Attention zmienił kolejność akumulacji i dał KLD 0.0135; łatka 0043 przywróciła kolejność chunków K i KLD = 0.
 - [[lekcja-limit-cpu-kontenera|Kontener widzi wszystkie rdzenie hosta, a ma limit cgroup]] — W kontenerach Vast i RunPod `nproc` pokazuje wszystkie wątki hosta (64 albo 96), a limit cgroup to ok. 7.7 CPU; llama.cpp bez `-t` bierze za dużo wątków i dławi się na kwocie.
@@ -39,6 +40,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-sondy-en-na-polskim|Małe sondy trenowane po angielsku mylą się na polskim]] — Sonda żądania PFlash (trenowana po angielsku) w 9/10 polskich przypadków wzięła tytuł wklejonego dokumentu za prośbę użytkownika, choć główna głowica Q/K przeniosła się na polski dobrze.
 - [[lekcja-mikrobench-klamie|Mikrobench kłamie]] — Mikrobenchmark dał inną decyzję niż model (Q6_K z GLC|DLC); decyzje o kernelach podejmujemy tylko na rocprofv3 w pełnym modelu.
 - [[lekcja-mtp-juz-kopiuje|MTP już kopiuje: zmierz P(MTP | lookup), zanim dołożysz drafter z kontekstu]] — Na 69 207 pozycjach z prawdziwymi łańcuchami MTP P(draft MTP trafia | lookup trafia) = 0.968 wobec 0.765 bazowo, więc lookup z kontekstu dokłada głównie ogon za pozycją 4, a nadpisywanie draftów MTP lookupem to strata.
+- [[lekcja-sufit-bloku|Na kopii wygrywa sufit bloku, nie kernel]] — Magnitude bije nas na code-edit (157.0 vs 105.7 t/s, pad.cu, 3090) tylko dlatego, że jedno przejście wag daje im 8 tokenów, a nam 5: obie strony przyjmują prawie wszystko (894/897 vs 816/828), a ich krok jest wolniejszy (50.2 vs 46.5 ms) (2026-10-16).
 - [[lekcja-nadpisanie-dzialajacego-skryptu|Nadpisanie działającego skryptu psuje pomiar (2 incydenty)]] — Powłoka czyta skrypt w trakcie wykonania po przesunięciu bajtowym, więc zmiana pliku, który właśnie działa, zmienia dalsze polecenia; zdarzyło się to dwa razy 2026-10-16.
 - [[lekcja-md5-wzgledem-upstreamu|Nasze „bit w bit” było zawsze względem naszego poprzedniego buildu]] — Kampania NVIDIA pokazała, że greedy md5 forka różni się od upstreamu w trybie plain także z 31 przełącznikami = 0, przez łatki bez przełącznika: MMVQ multi-kolumna 0001/0002 i fuzję prologu GDN 0013; nasza bramka „bitowo identyczne” zawsze porównywała z poprzednim buildem forka, nie z upstreamem.
 - [[lekcja-obciazenie-cpu|Obciążenie CPU psuje pomiar]] — Równoległe obciążenie CPU (np. kompilacja) zafałszowało pomiar `-bs`, który trzeba było powtórzyć; pomiary GPU robimy pod `quiet.lock` w osobnym oknie.

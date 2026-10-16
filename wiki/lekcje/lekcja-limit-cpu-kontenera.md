@@ -2,7 +2,7 @@
 typ: lekcja
 tags: [lekcje, chmura, cpu, watki]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/09-chmura-5060ti.md:16,19; ~/KERNEL/product/research/09-chmura-3090.md:18; ~/KERNEL/product/research/11-mtp-pl-pilot.md:171-174
+zrodlo: ~/KERNEL/product/research/09-chmura-5060ti.md:16,19; ~/KERNEL/product/research/09-chmura-3090.md:18; ~/KERNEL/product/research/11-mtp-pl-pilot.md:171-174; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:173
 status: aktualne
 ---
 # Kontener widzi wszystkie rdzenie hosta, a ma limit cgroup
@@ -13,6 +13,8 @@ status: aktualne
 - RTX 3090 (Vast): 8 vCPU, kwota cgroup 7.68.
 - RunPod A40 (pilot MTP): `llama-server` domyślnie bierze `nproc` = 96 wątków przy limicie 7.65 CPU → trzeba `-t 6 -tb 6`; build CUDA trwał tam 30 min.
 Reguła: na wynajętej maszynie odczytać kwotę cgroup (`/sys/fs/cgroup/cpu.max`) i ustawić `-t`/`-tb` według niej, nie według `nproc`. To samo dotyczy produktu w kontenerach i WSL.
+
+Hosty z cgroup v1 nie mają `cpu.max`; kwota jest w `cpu/cpu.cfs_quota_us` (5060 Ti w 16d: 768000/100000 = 7.68 przy `nproc` 64); bootstrap ma fallback (`inst/bootstrap.sh:55-58`).
 
 ## Powiązane
 - [[lekcje/_hub|lekcje]]

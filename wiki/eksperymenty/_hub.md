@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (35)
+## Notatki (37)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -50,5 +50,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-16-pflash-pilot-cpu|2026-10-16: pilot CPU selekcji PFlash v2 po polsku i angielsku]] — Kopia selekcji PFlash v2 na CPU ($0): głowica Q/K przenosi się na polski, ale sonda żądania trenowana po angielsku wskazała pytanie jako top-1 w 1/10 przypadków PL wobec 10/10 EN.
 - [[2026-10-16-mtp-pl-pilot|2026-10-16: pilot douczania głowicy MTP (wynik negatywny)]] — Douczanie wbudowanej głowicy MTP Qwen3.8-27B na naszym Q4 (RunPod A40, 3.50 h, $2.14) nie dało zysku: offline najlepszy przebieg +0.2%, online n=4 PL-proza +2.3% i pozostałe klasy 0 do −1.7%.
 - [[2026-10-16-rebase-v070|2026-10-16: rebase 70 łatek na llama.cpp v0.7.0]] — Łatki przeniesione z `e60eff95f` na tag `v0.7.0` (141 commitów upstreamu później): 69 przeniesionych (60 czysto, 9 z konfliktami), 1 porzucona, bo już jest w upstreamie; build HIP OK, pełna weryfikacja na GPU do zrobienia.
+- [[2026-10-16-magnitude-rozklad-wygranej|2026-10-16: rozkład wygranej Magnitude (tok/krok × ms/krok)]] — We wszystkich czterech przypadkach całą przewagę Magnitude daje tok/krok (×1.45…×2.74), a ich czas kroku działa na ich niekorzyść (×0.57…×0.93); analiza CPU na danych z 16d, jedna runda na silnik.
+- [[2026-10-16-magnitude-vs-fork|2026-10-16: X1 – Magnitude vs nasz fork vs upstream (3090, 5060 Ti)]] — Kill X1 nie zadziałał: bez draftera (LFM) nasz fork bije Magnitude o +40% (3090) i +30% (5060 Ti), na Qwenie przy nowym pisaniu jest remis 65.7 = 65.7 t/s, a na kopii i edycji kodu wygrywa Magnitude drafterem DFlash2 (156.1 vs 105.2 t/s).
 - [[stan-2026-10-15|Stan zainstalowany 2026-10-15 (70 łatek)]] — Pomiar finalny po rundzie 6: Qwen3.8-27B 109.0 t/s, Uncensored 115.5, LFM2.5 293.7, LFM Uncensored 267.3; build `~/llama-opt`, gałąź `amd-opt` @ f61994f58.
 <!-- AUTO:END -->

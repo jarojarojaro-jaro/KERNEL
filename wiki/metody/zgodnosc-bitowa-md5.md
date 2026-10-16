@@ -2,7 +2,7 @@
 typ: metoda
 tags: [metody, poprawnosc, bramka]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:64-70,227-228,262-265; ~/KERNEL/qwen-opt/NOTES.md:357,377; ~/KERNEL/qwen-opt/STATUS-NEXT.md:15; ~/KERNEL/qwen-opt/research/qwen-round5.md:10-16,26-28; ~/KERNEL/product/research/09-chmura-3090.md:74-85; ~/KERNEL/product/research/09-chmura-3060.md:111-127; ~/KERNEL/product/research/15c-nowe-silniki.md:147-149,213,287
+zrodlo: ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:64-70,227-228,262-265; ~/KERNEL/qwen-opt/NOTES.md:357,377; ~/KERNEL/qwen-opt/STATUS-NEXT.md:15; ~/KERNEL/qwen-opt/research/qwen-round5.md:10-16,26-28; ~/KERNEL/product/research/09-chmura-3090.md:74-85; ~/KERNEL/product/research/09-chmura-3060.md:111-127; ~/KERNEL/product/research/15c-nowe-silniki.md:147-149,213,287; ~/KERNEL/product/research/14-nemotron-3090.md:233-258
 status: aktualne
 ---
 # Zgodność bitowa (greedy md5, hash logitów)
@@ -24,6 +24,8 @@ Ważne (kampania NVIDIA, 2026-10-16): baza to zawsze **poprzedni build forka**, 
 Uzupełnienia z raportu 15c: (1) metryka „α kroków zaokrąglenia względem kernela domyślnego” `sqrt(Σ(c−d)²/Σ(w²/12))` (Magnitude `comparison.rs:16-19`) jako uzupełnienie referencji FP64 dla niebitowych łatek; (2) świadek subnormalny dla dekodu 4-bit: x = 2^-126 przy pre-scalingu daje 0x0080 → 0x0000 (TensorFold `e9bf19d9`).
 
 Przykład odrzucenia: pierwszy GDN fast (58e578967) dał plain `0b7b073b` zamiast `c4708318`: inna kontrakcja FMA (94 vs 83 FMA w ISA), commit wycofany.
+
+Przykład z KLD (2026-10-16): Nemotron `TOPK_MOE_NP2` KLD 0.00214 vs szum upstreamu ub256 0.00225 (PASS); z `NP2=0` logity bit w bit równe upstreamowi (PPL 5.921825) ([[2026-10-16-nemotron-3090]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

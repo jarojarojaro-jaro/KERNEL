@@ -2,8 +2,8 @@
 typ: repo
 tags: [repo, konkurencja, autotuning]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15c-nowe-silniki.md:17-22,52-66,108-164,229-254,380
-status: do-sprawdzenia
+zrodlo: ~/KERNEL/product/research/15c-nowe-silniki.md:17-22,52-66,108-164,229-254,380; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:22-28,37,119-129; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,111-118,308-321
+status: aktualne
 ---
 # Magnitude (silnik Seismic z autotunem 60 s)
 
@@ -15,6 +15,12 @@ Repo `magnitudedev/magnitude` @ `1f54d5b7` (2026-10-15), Apache-2.0, 6,944★ (2
 - **Benchmarki:** 2.19× / 2.17× decode vs domyślna Ollama v0.35.1 na zadaniu „powtórz fragment Moby-Dick” przy 64k (Mac M4 Pro / DGX Spark); wycofane porównanie z llama.cpp bez spekulacji: +19% decode na CUDA (Spark, Qwen3.6-35B-A3B, commit `658cb1ec`). Roofline: Qwen3.8-27B 66.7 t/s na Sparku wymaga ≥ 4.8 tok/rundę – możliwe tylko przy kopiowaniu.
 - **AMD:** tylko Vulkan, niekwalifikowany, błędy iGPU/Strix Halo (#151, #154, #157). Brak offloadu MoE do RAM (#194).
 - Wyprzedzają nas: integracje agentów jednym kliknięciem, desktop Mac/Win/Linux.
+
+**Aktualizacja 2026-10-16 (16d, 16i; release 0.2.9 `954d677d`):**
+- Kontroler szerokości draftu domyślnie (`options.rs:280-290`, [[kontroler-szerokosci-draftu]]) i sprzężone próbkowanie (`generation/src/lib.rs:745-779`).
+- Autotune w release: 67/67 domyślnych konfiguracji; gotowość 51.5 s (Qwen) / 62.5 s (LFM), z cache 5–10 s.
+- Kwanty: brak IQ2_S/IQ2_XXS/Q4_1/Q2_K (`weights.rs:2085`) → żaden 27B ≤ 16 GB; Q3_K/IQ3_S → q6k. LFM 64k OOM na 16 GB; „MemoryPressure HostRam” przy 31 GB RAM.
+- AMD tylko przez Vulkan (`docs/compatibility.md:150`). Pomiary: [[2026-10-16-magnitude-vs-fork]].
 
 ## Powiązane
 - [[repo/_hub|repo]]

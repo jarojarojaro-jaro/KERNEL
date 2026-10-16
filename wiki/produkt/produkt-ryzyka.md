@@ -2,7 +2,7 @@
 typ: produkt
 tags: [produkt, plan, ryzyka]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/PLAN.md:475-487; ~/KERNEL/product/research/15c-nowe-silniki.md:389-393
+zrodlo: ~/KERNEL/product/PLAN.md:475-487; ~/KERNEL/product/research/15c-nowe-silniki.md:389-393; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:308-321; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:131-138
 status: aktualne
 ---
 # Największe ryzyka
@@ -23,6 +23,8 @@ status: aktualne
 | Magnitude jako „LM Studio z własnymi kernelami” dla agentów (raport 15c) | już jest / wysoki na Mac i NVIDIA, niski na AMD | AMD natywnie, baseline vs tuned upstream i jakość na ekranie wyniku, dowolny GGUF i MoE offload, LocalMaxxing |
 
 Nowe ryzyko z 2026-10-16: Magnitude ma 6.9k★ w 4 miesiące, ale brak HIP, brak bitowej bramki i brak MoE offload (#194).
+
+Magnitude (2026-10-16): wygrywa code-edit 1.35–1.56×; nasze przewagi: polski (9B sweep 121.0 vs 68.2 t/s), 27B Q3_K_XL na 16 GB (u nich się nie ładuje), LFM 64k na 16 GB (u nich OOM), prefill 27B na 3090 (64k 72.4 vs 86.4 s). Niezmierzone: Magnitude Vulkan na XTX ([[firma-magnitude]]).
 
 ## Powiązane
 - [[produkt/_hub|produkt]]

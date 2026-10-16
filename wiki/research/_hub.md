@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (28)
+## Notatki (30)
 
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
 - [[raport-01-konkurencja|Raport 01: konkurencja]] — Detekcja sprzętu i rekomendacja modelu to już standard; żaden produkt konsumencki nie łączy pomiaru, długiej optymalizacji poza flagami, weryfikacji bitowej i raportu przed → po (stan 2026-10-15).
@@ -41,7 +41,9 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-15e-kwantyzacja-nowa|Raport 15e: nowe formaty niskobitowe dla 27B na 12–16 GB]] — GSQ-RCO jest „SOTA” tylko w wąskiej klasie, Swift 1.5 to fine-tune z niedouczoną głowicą MTP, CSF/QAD (NVFP4) są poza naszymi kartami, a największy zysk na 12 GB to MTP na istniejących 2-bitowych plikach.
 - [[raport-15f-agentowa-nauka|Raport 15f: agentowa nauka (Sakana v3, KernelGuard) a nasza fabryka]] — Z systemów automatycznej nauki warto przenieść dyscyplinę artefaktów (ewaluator poza zasięgiem agenta, ledger, reguły z fixture’ami), ale nie promocję „wynik ściśle większy” bez statystyki; propozycja fabryki v1 za ~8–9 osobodni.
 - [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]] — Agent CudaKvq przeniósł kernel `kvq` na NVIDIA Ampere+ (mma.sync m16n8k16, jedno przejście KV dla całej grupy GQA): +24.6…+36.8% tg przy 64k na 3090 i 5060 Ti, MTP@64k +27.6%, jeden graniczny FAIL KLD.
+- [[raport-16d-magnitude-vs-nasz|Raport 16d: Magnitude vs nasz fork vs upstream (X1 z 15c) + KLD Nemotrona]] — Head-to-head na 3090 i 5060 Ti: przewaga naszych kerneli na NVIDIA bez draftera +30–40% i w prefillu +18–35%, a słabością są głębokie drafty – Magnitude wygrywa kopią/edycją kodu dzięki DFlash2 (7.3–7.8 tok/krok vs sufit 5 MTP n=4).
 - [[raport-16h-fabryka-v1|Raport 16h: fabryka v1 zbudowana]] — Rdzeń fabryki z raportu 15f (działanie nr 1 z syntezy 15) zbudowany na CPU za $0: karta, ledger, weryfikator G0–G5, zestaw zapieczętowany, 36 reguł z fixture'ami z prawdziwych incydentów; brak walidacji na GPU.
+- [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]] — Analiza kodu Magnitude 0.2.9 (`954d677d`) i logów z 16d (tylko CPU): ich przewaga to sufit bloku DFlash2 i kontroler szerokości, nie kernele; najtańsza droga do ich wyniku to ogon z lookupu do 8 wierszy przy MTP4 (projekcja XTX code-edit ×1.4).
 - [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]] — Trzy raporty rundy 6 (2026-10-15), wszystkie bez GPU: szybki kernel GDN bitowy z konstrukcji, epilog MMQ w VOPD oraz narzędzia LOO / kanarki KLD / Kernel Tuner.
 - [[star-elastic-2605-07182|Star Elastic (arXiv 2605.07182)]] — Praca NVIDIA o zagnieżdżonych podmodelach Nemotron Nano v3 (30B → 23B/12B z jednego post-trainingu) i osobnym podmodelu dla fazy myślenia; nie dotyczy kerneli, dla nas niska istotność.
 <!-- AUTO:END -->

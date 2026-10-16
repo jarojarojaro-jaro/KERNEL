@@ -14,7 +14,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (20)
+## Notatki (21)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -24,6 +24,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-15-karty-kupujemy|2026-10-15: popularne karty kupujemy, rzadkie wynajmujemy]] — Budżet na karty jest: najpopularniejsze karty kupujemy, a rzadkie i drogie (3090, 4090, 5090) wynajmujemy na Vast.
 - [[2026-10-15-reasoning-control-off|2026-10-15: reasoning_control wyłączony domyślnie]] — Użytkownik kazał samemu ustawić `reasoning_control` (2026-10-15 00:14 UTC: „NO DOBRA TO USTAW TO REASING CONTROL SAM”); serwer startuje z `{"reasoning_control": false}`, a łatka 0065 ignoruje tę flagę z web UI.
 - [[2026-10-15-linux-i-analiza-platformy|2026-10-15: rozwój na Linuksie, obowiązkowa analiza platformy]] — Rozwijamy i testujemy na Linuksie (bez testów na Windowsie teraz), ale każda optymalizacja ma obowiązkowy krok „analiza platformy” dla Windows i macOS.
+- [[2026-10-16-badamy-magnitude|2026-10-16: badamy podejście Magnitude i przejmujemy, co działa]] — Użytkownik (2026-10-16, 17:22 UTC): „oni coś zrobili dobrze, trzeba to zbadać i zobaczyć, czy możemy wykorzystać” – po wynikach 16d, gdzie Magnitude wygrał code-edit 156.1 vs 105.2 t/s.
 - [[2026-10-16-budzety-chmury|2026-10-16: budżety $5 na Vast i $6 na RunPod]] — Kampania NVIDIA na Vast może wydać łącznie do $5 (z przedłużeniami), a trening głowicy MTP na RunPod do $6 kosztu naszego poda.
 - [[2026-10-16-runpod-drugi-pod|2026-10-16: drugi pod na RunPod należy do użytkownika]] — Drugi działający pod na koncie RunPod (od innego projektu użytkownika) jest jego; nasi agenci go nie dotykają, a nasz limit liczy tylko koszt naszego poda.
 - [[2026-10-16-landing-i-konto|2026-10-16: hero landingu i konto na początku]] — Użytkownik chce pełnoprawnego landingu z hero „same hardware, same model, just faster / ten sam sprzęt, ten sam model, po prostu szybciej” i animacją prędkości, a potem konta zakładanego na początku i trzech dróg: wpisz sprzęt (z komendą skanu), aplikacja desktop, terminal.

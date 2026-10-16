@@ -56,22 +56,22 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (20)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (21)
 - [[modele/_hub|modele]] — Modele i kwanty (13)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (15)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (24)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (18)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (35)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (42)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (20)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (37)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (44)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (18)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (28)
+- [[research/_hub|research]] — Streszczenia raportów (30)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (24)
-- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (25)
+- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
 ## Ostatnio aktualizowane
 
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-16 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
 - 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
 
-Razem 351 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
+Razem 361 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

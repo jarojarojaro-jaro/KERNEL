@@ -2682,6 +2682,9 @@ Ta sama metoda dla 41 notatek nowych lub zmienionych (raporty 09 ×3, 11, 12; ka
 ## Aktualizacja: raporty 14 i 15a–15f (2026-10-16)
 Automatyczna kontrola 44 notatek, których `zrodlo` zaczyna się od raportu 14/15: 676 liczb, 675 znalezionych w raportach 14/15, ich katalogach skryptów lub `BENCHMARKI-NVIDIA-2026-10-16.md`; jedna (`02153` w `repo/auto-gpu-kernel`) pochodzi z raportu repo 14-auto-gpu-kernel (OK). Liczby ze źródeł pierwotnych sprawdzone ręcznie: `spec_sweep.jsonl` (incydent 5.618 t/s), `server-context.cpp:5171` (`build_info`), `ggml-quants.c:384` i `llama-graph.cpp:1595-1601` (NVFP4), `hip_runtime_api.h:1670-1700,2110-2116`, 70 plików łatek. Błędnych: 0.
 
+## Aktualizacja: 12 §13, 16c, 16d, 16h, 16i (2026-10-16)
+Liczby w nowych i zmienionych notatkach przepisane ręcznie z wierszy podanych w `zrodlo` (raporty 12, 14 §13, 16c, 16d, 16h, 16i; `/tmp/bxv/summary.txt:71-103` dla prędkości bit-exact). Rozbieżność źródeł: Magnitude 9B copy 64k 175.8 t/s (16d, mediana) vs 174.8 (16i, suma żądań) – w notatkach obie z opisem; za kanoniczne przyjęto 16d (decyzja Main). Pominięte celowo (repo publiczne): adres IP hosta z 16c §8, ID instancji, kredyt Vast. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

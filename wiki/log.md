@@ -32,6 +32,9 @@ Zaktualizowane: [[2026-10-16-bit-exact]] (run 4: PASS, prędkość na flagach pr
 ## [2026-10-16] ingest | Raport 16h (fabryka v1 zbudowana)
 Nowe: [[fabryka-cli]], [[2026-10-16-backtest-regul-fabryki]], [[raport-16h-fabryka-v1]]. Zaktualizowane: [[fabryka-v1]] (status aktualne), [[zestaw-odlozony]], [[pomiar-abba]], [[lekcja-label-to-nie-binarka]], [[lekcja-pdl-sm120]], [[seria-amd-opt]]. `log.md` zwolniony z limitu słów (dziennik), zmiana w `tools/wiki.py` i [[KONWENCJE]].
 
+## [2026-10-16] ingest | Raporty 16d i 16i (Magnitude) + decyzja „badamy Magnitude”
+Nowe: [[2026-10-16-magnitude-vs-fork]] (z danymi 9B na 5060 Ti), [[2026-10-16-magnitude-rozklad-wygranej]], [[raport-16d-magnitude-vs-nasz]], [[raport-16i-magnitude]], [[firma-magnitude]], [[kontroler-szerokosci-draftu]], [[sprzezone-probkowanie-draftu]], [[lekcja-sufit-bloku]], [[lekcja-drafter-gleboki-vs-mtp]], [[2026-10-16-badamy-magnitude]]. Zaktualizowane: [[magnitude]] (status aktualne), [[drafter-dflash]], [[mmvq-multikolumnowe]], [[produkt-ryzyka]], [[lekcja-limit-cpu-kontenera]], [[lekcja-pkill-wlasna-powloka]], [[zgodnosc-bitowa-md5]], [[2026-10-16-nemotron-3090]] (KLD PASS).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
