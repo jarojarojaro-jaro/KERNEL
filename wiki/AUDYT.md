@@ -7,7 +7,7 @@ status: aktualne
 ---
 # Audyt liczb w wiki
 
-**Każda liczba z każdej notatki (t/s, ms, %, $, GB, md5, commity, daty wyników) porównana z plikiem z jej `zrodlo`: 3875 sprawdzonych, 1 błędna i poprawiona, w 23 notatkach uzupełnione `zrodlo`.**
+**Każda liczba z każdej notatki (t/s, ms, %, $, GB, md5, commity, daty wyników) porównana z plikiem z jej `zrodlo`: 3941 sprawdzonych, 1 błędna i poprawiona, w 23 notatkach uzupełnione `zrodlo`.**
 
 ## Metoda (2026-10-16)
 1. Dla każdej notatki (bez hubów, `index`, `log`) wyciągnięto tokeny liczbowe i hashe (≥ 2 znaki; pojedyncze cyfry pominięte).
@@ -20,11 +20,11 @@ Ograniczenie: automat potwierdza obecność liczby w źródle; kontekst semantyc
 ## Wynik
 | kategoria | liczba |
 |---|---|
-| OK w cytowanych wierszach | 3623 |
+| OK w cytowanych wierszach | 3688 |
 | OK w innym wierszu źródła (przejrzane) | 195 |
-| OK po weryfikacji ręcznej | 56 |
+| OK po weryfikacji ręcznej | 57 |
 | błędne → poprawione | 1 |
-| **razem sprawdzonych** | **3875** |
+| **razem sprawdzonych** | **3941** |
 
 Poprawiona liczba: [[kwanty-gguf]] – rozmiar Qwen3.8-27B UD-Q4_K_XL 16.34 → **16.35 GiB** (`stat`: 17 559 178 144 B; SPEC-QWEN27B.md:21 obcinał).
 
@@ -2018,6 +2018,14 @@ Wnioski z audytu notatek tej sesji, nie liczby: raporty 09 i 11 nie istnieją w 
 | [[rocm/wsl2-rocm]] | 4.5 | 13-rocm-10.1.md:253 | OK |
 | [[rocm/wsl2-rocm]] | 7800, 9070 | 13-rocm-10.1.md:226 | OK |
 | [[rocm/wsl2-rocm]] | 8791 | 13-rocm-10.1.md:224 | OK |
+| [[aplikacja-w-budowie]] | 0,12, 2026, 3090, 47, 5060, 56 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
+| [[aplikacja-w-budowie]] | 9f96ff4 | git log -1 9f96ff4 | OK: commit istnieje |
+| [[app-system-projektowy]] | #07080D, #3B6E00, #3DD6FF, #5BE49B, #C8FF3D, #FF4D8D, #FFB23E, 07080, 110, 270, 32, 4,5 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
+| [[app-landing]] | 100, 109,0, 1280, 2.70, 200, 249, 3090, 38,8, 390, 4.14, 47, 50, 7900, 96, 98 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
+| [[app-onboarding-prototyp]] | 0,31, 0,55, 0,67, 04, 1,5, 2,2, 2.0, 24, 59, 64, 7900, 8628 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
+| [[app-skrypty-skanu]] | 03, 2026, 30, 31, 65521 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
+| [[app-prototyp-desktop]] | 0600, 11500, 13, 256 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
+| [[otwarte-decyzje-produktu]] | 11500, 127.0, 149, 18433, 19, 2026, 299, 39, 50, 79, 8.1 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
 
 ## Powiązane
 - [[index|Strona główna]]

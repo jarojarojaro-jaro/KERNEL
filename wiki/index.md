@@ -34,7 +34,7 @@ Wstępne wyniki z chmury (2026-10-16, w toku, `do-sprawdzenia`; A0 = upstream ty
 
 Szczegóły i testy poprawności: [[nvidia-wyniki-2026-10-16]], [[2026-10-16-kampania-nvidia]].
 
-Teraz trwa (2026-10-16): kampanie Vast na [[rtx-3060]] (Saluki + Bonsai), [[rtx-3090]] i [[rtx-5060-ti]] w ramach [[2026-10-16-budzety-chmury|$5]] (gałęzie: [[cuda-v070]]); trening głowicy MTP na RunPod ([[mtp-train]], limit $6); budowa aplikacji w `~/KERNEL/app` ([[aplikacja-w-budowie]]). Czeka na test na Radeonie, którego teraz nie robimy ([[2026-10-16-bez-lokalnego-gpu]]): poprawka atencji w [[batch-invariant]] i [[amd-opt-v070]]. Lokalna produkcja bez zmian: [[amd-opt]].
+Teraz trwa (2026-10-16): kampanie Vast na [[rtx-3060]] (Saluki + Bonsai), [[rtx-3090]] i [[rtx-5060-ti]] w ramach [[2026-10-16-budzety-chmury|$5]] (gałęzie: [[cuda-v070]]); trening głowicy MTP na RunPod ([[mtp-train]], limit $6). Prototyp aplikacji gotowy lokalnie, niewdrożony ([[aplikacja-w-budowie]]); czeka na [[otwarte-decyzje-produktu]]. Czeka na test na Radeonie, którego teraz nie robimy ([[2026-10-16-bez-lokalnego-gpu]]): poprawka atencji w [[batch-invariant]] i [[amd-opt-v070]]. Lokalna produkcja bez zmian: [[amd-opt]].
 
 Audyt liczb: [[AUDYT]].
 
@@ -60,7 +60,7 @@ Audyt liczb: [[AUDYT]].
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (49)
 - [[research/_hub|research]] — Streszczenia raportów (13)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (16)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (22)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (23)
 
 ## Ostatnio aktualizowane
@@ -81,5 +81,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
 - 2026-10-16 [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]]
 
-Razem 280 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
+Razem 286 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

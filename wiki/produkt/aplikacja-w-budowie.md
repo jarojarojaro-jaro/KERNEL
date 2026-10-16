@@ -2,17 +2,28 @@
 typ: produkt
 tags: [produkt, app, landing]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/app/ (katalogi: design, landing, scan, screens, tui); brak app/REPORT.md na 2026-10-16
-status: do-sprawdzenia
+zrodlo: ~/KERNEL/app/REPORT.md:1-30,48,111-116; git -C ~/KERNEL log -1 9f96ff4
+status: aktualne
 ---
-# Aplikacja (~/KERNEL/app) – w budowie
+# Aplikacja (~/KERNEL/app): stan prototypu
 
-**Katalog `~/KERNEL/app/` jest w trakcie budowy przez agenta AppStudio; brak `REPORT.md`, więc opis dotyczy tylko struktury katalogów.**
+**Pierwsze elementy produktu zbudowane lokalnie przez AppStudio (2026-10-16, commit `9f96ff4`): system projektowy „Tacho”, statyczna strona SvelteKit PL/EN (47 stron), prototyp onboardingu, skrypty skanu, prototyp aplikacji desktop (8 ekranów), makieta TUI i dokument architektury; nic nie jest wdrożone.**
 
-Na 2026-10-16: `design/` (`tokens.css`, `components.css`, `logo/`), `landing/` (SvelteKit + Vite, bun), `scan/` (komenda „skan” z PLAN §8.1.1), `screens/`, `tui/`. Odpowiada to PLAN §3.3 (ekrany MVP) i §8.1 (landing). Po pojawieniu się `app/REPORT.md` notatkę trzeba streścić od nowa.
+Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN.md), [APP-ARCHITECTURE.md](../../app/design/APP-ARCHITECTURE.md).
+
+- Lokalnego GPU nie używano: Chrome do zrzutów z `--disable-gpu`, `strace` potwierdził brak otwarć `/dev/dri` i `/dev/kfd`.
+- Wszystkie liczby wydajności na stronie pochodzą z jednego rejestru `landing/src/lib/data/measurements.ts` (plik i linia źródła); bez mnożników „×” i bez słupka „typowa aplikacja”, dopóki nie zmierzymy Ollamy/LM Studio (E1).
+- Wyniki z chmury wczytuje `scripts/sync-results.ts` z `~/qwen-opt/cloud/results/*/scorecard.json`; na dziś tylko RTX 3090, pokazany jako „wstępne” z md5 `DIFF-BUILD`.
+- Zrzuty ekranu: 56 plików w `app/screens/`.
+- Do zrobienia: `scan.ps1` na prawdziwym Windowsie i `scan-macos.sh` na Macu, przesunięcie układu w EN hero (CLS do 0,12), scorecardy 5060 Ti/3060, pomiar E1.
 
 ## Powiązane
 - [[produkt/_hub|produkt]]
+- [[app-system-projektowy]]
+- [[app-landing]]
+- [[app-onboarding-prototyp]]
+- [[app-skrypty-skanu]]
+- [[app-prototyp-desktop]]
+- [[otwarte-decyzje-produktu]]
 - [[produkt-landing-i-onboarding]]
-- [[produkt-dla-kogo-i-ekrany]]
-- [[ss-zrzut-ekranu]]
+- [[nvidia-wyniki-2026-10-16]]
