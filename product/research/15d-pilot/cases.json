@@ -1,0 +1,190 @@
+[
+ {
+  "id": "pl0",
+  "lang": "pl",
+  "question": "Ile trwało pierwsze pytanie (zimno) do dokumentu o długości 27k tokenów w teście cache promptu?",
+  "evidence": "31.9 s",
+  "occurrences": 1
+ },
+ {
+  "id": "pl1",
+  "lang": "pl",
+  "question": "Jak zmienił się czas llama-bench d98304 n5 po łatce kvq dla KV q4_0?",
+  "evidence": "68.2 → 36.7 ms",
+  "occurrences": 1
+ },
+ {
+  "id": "pl2",
+  "lang": "pl",
+  "question": "Ile TFLOPS osiągnął kafel FA MMA D=256 po przeniesieniu Q do SRAM?",
+  "evidence": "40.2 → 49.0 TFLOPS",
+  "occurrences": 1
+ },
+ {
+  "id": "pl3",
+  "lang": "pl",
+  "question": "Ile t/s dawał LFM w llama-bench przy 98k kontekstu przed i po kernelu kvq dla q8_0?",
+  "evidence": "152.4 → 191.4",
+  "occurrences": 2
+ },
+ {
+  "id": "pl4",
+  "lang": "pl",
+  "question": "Jaki zysk w pp4096 Qwena dał epilog MMQ przepisany na pary VOPD?",
+  "evidence": "+2.2% pp4096",
+  "occurrences": 2
+ },
+ {
+  "id": "pl5",
+  "lang": "pl",
+  "question": "Ile kosztowała za godzinę najtańsza oferta RTX 3090, którą wybrał agent?",
+  "evidence": "$0.201/h",
+  "occurrences": 1
+ },
+ {
+  "id": "pl6",
+  "lang": "pl",
+  "question": "Do ilu mikrosekund skrócił się argmax po słowniku w drafcie MTP po użyciu DPP?",
+  "evidence": "16.8 → 4.3 µs",
+  "occurrences": 2
+ },
+ {
+  "id": "pl7",
+  "lang": "pl",
+  "question": "Ile t/s dawał model, gdy amdgpu uśpił kartę (BACO) i model działał przez PCIe?",
+  "evidence": "4.4 zamiast 92 t/s",
+  "occurrences": 2
+ },
+ {
+  "id": "pl8",
+  "lang": "pl",
+  "question": "Po ilu znakach tekst MTP rozjeżdża się z tekstem plain?",
+  "evidence": "po 129 znakach",
+  "occurrences": 2
+ },
+ {
+  "id": "pl9",
+  "lang": "pl",
+  "question": "Ile t/s dawał upstreamowy serwer z -fit on i MTP na RTX 5060 Ti 16 GB?",
+  "evidence": "7.7 t/s",
+  "occurrences": 2
+ },
+ {
+  "id": "en0",
+  "lang": "en",
+  "question": "What is the q4_0 KV cache size per token summed over all 16 attention layers?",
+  "evidence": "18,432 B",
+  "occurrences": 3
+ },
+ {
+  "id": "en1",
+  "lang": "en",
+  "question": "How long did the server take to prefill the 94,181-token prompt?",
+  "evidence": "141.5 s",
+  "occurrences": 2
+ },
+ {
+  "id": "en2",
+  "lang": "en",
+  "question": "Which upstream pull request removed GGML_HIP_ROCWMMA_FATTN?",
+  "evidence": "#26046",
+  "occurrences": 2
+ },
+ {
+  "id": "en3",
+  "lang": "en",
+  "question": "What speedup did PR #29846 measure at ub2 for qwen35 27B at depth 32768 on the RTX 3090?",
+  "evidence": "ub2 ×1.21",
+  "occurrences": 1
+ },
+ {
+  "id": "en4",
+  "lang": "en",
+  "question": "How large is one context checkpoint of the recurrent state, approximately?",
+  "evidence": "150 MB",
+  "occurrences": 5
+ },
+ {
+  "id": "en5",
+  "lang": "en",
+  "question": "What is the measured GDN kernel cost per token per layer?",
+  "evidence": "0.5-0.75 µs per token per layer",
+  "occurrences": 1
+ },
+ {
+  "id": "en6",
+  "lang": "en",
+  "question": "What is the fixed prompt cost for a 30-token prompt with and without MTP?",
+  "evidence": "| 30 | 150 ms | 230 ms |",
+  "occurrences": 1
+ },
+ {
+  "id": "en7",
+  "lang": "en",
+  "question": "What share of the matmul FLOPs is Q6_K in the Uncensored Q4_K_M model?",
+  "evidence": "4.25 G params (17.5%)",
+  "occurrences": 1
+ },
+ {
+  "id": "en8",
+  "lang": "en",
+  "question": "How much VRAM does the FA f16 scratch take at 204800 context?",
+  "evidence": "839 MB",
+  "occurrences": 3
+ },
+ {
+  "id": "en9",
+  "lang": "en",
+  "question": "What effective FA throughput was derived for the 94k prefill?",
+  "evidence": "~47 TFLOPS effective FA",
+  "occurrences": 1
+ },
+ {
+  "id": "x_plq_en0",
+  "lang": "x-plq",
+  "doc": "en",
+  "question": "Ile wynosi rozmiar KV cache q4_0 na token, zsumowany po wszystkich 16 warstwach atencji?",
+  "evidence": "18,432 B",
+  "occurrences": 3
+ },
+ {
+  "id": "x_plq_en1",
+  "lang": "x-plq",
+  "doc": "en",
+  "question": "Ile czasu serwer potrzebował na prefill promptu o długości 94 181 tokenów?",
+  "evidence": "141.5 s",
+  "occurrences": 2
+ },
+ {
+  "id": "x_plq_en2",
+  "lang": "x-plq",
+  "doc": "en",
+  "question": "Który upstreamowy pull request usunął GGML_HIP_ROCWMMA_FATTN?",
+  "evidence": "#26046",
+  "occurrences": 2
+ },
+ {
+  "id": "x_enq_pl0",
+  "lang": "x-enq",
+  "doc": "pl",
+  "question": "How long did the first (cold) question take for the 27k-token document in the prompt cache test?",
+  "evidence": "31.9 s",
+  "occurrences": 1
+ },
+ {
+  "id": "x_enq_pl2",
+  "lang": "x-enq",
+  "doc": "pl",
+  "question": "How many TFLOPS did the FA MMA D=256 tile reach after moving Q to SRAM?",
+  "evidence": "40.2 → 49.0 TFLOPS",
+  "occurrences": 1
+ },
+ {
+  "id": "x_enq_pl3",
+  "lang": "x-enq",
+  "doc": "pl",
+  "question": "How many t/s did LFM reach in llama-bench at 98k context before and after the kvq kernel for q8_0?",
+  "evidence": "152.4 → 191.4",
+  "occurrences": 2
+ }
+]
