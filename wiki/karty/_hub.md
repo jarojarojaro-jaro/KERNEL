@@ -22,8 +22,8 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[rx-9070-xt|AMD Radeon RX 9070 XT (planowany zakup)]] — Najpopularniejszy Radeon w Steam (RDNA4, gfx1201, 16 GB, 640 GB/s); w planie do kupienia, bo RDNA4 wymaga przepisania naszych kerneli WMMA.
 - [[strix-halo|AMD Strix Halo (Ryzen AI Max, gfx1151)]] — APU RDNA3.5 z pamięcią zunifikowaną do 128 GB; cel na fazę 3 produktu, dziś tylko w danych z raportów.
 - [[arc-b580-i-mac|Intel Arc B580 i Mac mini M4 (platformy spoza AMD/NVIDIA)]] — Dwie platformy z listy MVP, których nie da się wynająć z root na godziny (Arc) albo wynajmuje się je tylko z 24-godzinnym minimum (Mac); w planie zakup.
-- [[rtx-3060|NVIDIA RTX 3060 12 GB (wynajem, shakedown harnessu)]] — Ampere sm_86 z 12 GB — najtańsza karta (~$0.10/h z dyskiem) i #5 w Steam; poszła na pierwszy ogień, żeby przetestować cały harness chmurowy.
-- [[rtx-3090|NVIDIA RTX 3090 (wynajem, Vast)]] — Ampere sm_86 z 24 GB — ulubiona karta entuzjastów LLM; uruchamia ten sam plik Qwen3.8-27B co nasz RX 7900 XTX, więc daje bezpośrednie porównanie.
-- [[rtx-5060-ti|NVIDIA RTX 5060 Ti 16 GB (lokalnie + wynajem)]] — Blackwell sm_120 z 16 GB; druga karta w naszym serwerze (PNY OC) i #3 w Steam — najważniejsza karta NVIDIA dla produktu; jedyna w planie z PDL.
+- [[rtx-3060|NVIDIA RTX 3060 12 GB (wynajem)]] — Ampere sm_86 z 12 GB, najtańsza karta i #5 w Steam; w kampanii 2026-10-16 (decyzja: tylko Saluki i Bonsai) nasz silnik dał jednocyfrowy zysk, bo te modele nie mają MTP.
+- [[rtx-3090|NVIDIA RTX 3090 (wynajem, Vast)]] — Ampere sm_86 z 24 GB uruchamia ten sam plik Qwen3.8-27B co nasz RX 7900 XTX; w kampanii 2026-10-16 nasz silnik dał Qwen 39 → 78 t/s i LFM2.5 180 → 264 t/s.
+- [[rtx-5060-ti|NVIDIA RTX 5060 Ti 16 GB (lokalnie + wynajem)]] — Blackwell sm_120 z 16 GB, #3 w Steam i druga karta w naszym serwerze; w kampanii 2026-10-16 nasz silnik dał Qwen3.8-27B (Q3_K_XL) 28 → 51.7 t/s i LFM2.5 (Q4_K_M) 148 → 208 t/s.
 - [[inne-karty-nvidia|Pozostałe karty NVIDIA w planie (4060 Ti, 4070, 4090, 5070, 5090, A40, L40S)]] — Karty z listy MVP produktu, których jeszcze nie testowaliśmy; dane rynkowe z raportu 05 (2026-10).
 <!-- AUTO:END -->

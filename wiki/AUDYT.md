@@ -30,7 +30,7 @@ Poprawiona liczba: [[kwanty-gguf]] – rozmiar Qwen3.8-27B UD-Q4_K_XL 16.34 → 
 
 Uzupełnione `zrodlo` (liczba była prawdziwa, ale nie w cytowanym pliku): [[modele/kwanty-gguf]], [[nvidia/cuda-stos]], [[nvidia/nvidia-wyniki-2026-10-16]], [[karty/rx-7900-xtx]], [[kernele/clamp-q8-1]], [[narzedzia/gpu-keepawake]], [[narzedzia/gdnemu-isadiff]], [[narzedzia/reactor-monitor]], [[narzedzia/loo-py]], [[repo/mtp-train]], [[repo/opt-gdn6]], [[repo/strata]], [[repo/tools6]], [[lekcje/lekcja-zombie-serwery]], [[lekcje/lekcja-bledny-roofline]], [[ludzie-firmy/firma-nvidia]], [[ludzie-firmy/ggml-org]], [[ludzie-firmy/liquidai]], [[decyzje/2026-10-16-prosta-baza-wiedzy]], [[eksperymenty/2026-10-16-rebase-v070]], [[karty/rtx-3090]], [[karty/rtx-5060-ti]], [[latki/patch-manifest]].
 
-Wnioski z audytu notatek tej sesji, nie liczby: raporty 09 i 11 nie istnieją w `product/research/` (numeracja ma luki), więc nie mają notatek.
+Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je 2026-10-16 rano (sekcja „Aktualizacja: wyniki finalne” niżej).
 
 ## Tabela (notatka, liczby, wiersz źródła, status)
 | notatka | liczby | wiersz źródła | status |
@@ -2026,6 +2026,657 @@ Wnioski z audytu notatek tej sesji, nie liczby: raporty 09 i 11 nie istnieją w 
 | [[app-skrypty-skanu]] | 03, 2026, 30, 31, 65521 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
 | [[app-prototyp-desktop]] | 0600, 11500, 13, 256 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
 | [[otwarte-decyzje-produktu]] | 11500, 127.0, 149, 18433, 19, 2026, 299, 39, 50, 79, 8.1 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
+
+## Aktualizacja: wyniki finalne (raporty 09, 11, 12; 2026-10-16 rano)
+Ta sama metoda dla 41 notatek nowych lub zmienionych (raporty 09 ×3, 11, 12; karty, NVIDIA, eksperymenty, modele, lekcje, kernele, repo, chmura, index): **998 liczb sprawdzonych, 0 błędnych**; 913 w cytowanych wierszach, 77 w innym wierszu tego samego źródła (przejrzane ręcznie), 8 ręcznie. Przy okazji poprawione stare twierdzenie w [[latki-na-nvidia]]: łatka 0043 na NVIDIA nie zmienia bitów (no-op), wbrew wcześniejszemu wpisowi z PLAN-TESTOW. Uzupełniono `zrodlo` w [[rtx-3090]] (czas buildu 787 s z `build/times.jsonl`).
+
+| notatka | liczby | wiersz źródła | status |
+|---|---|---|---|
+| [[raport-09-chmura-3090]] | 0.40 | 09-chmura-3090.md:165 | OK |
+| [[raport-09-chmura-3090]] | 0.90, 1.90 | 09-chmura-3090.md:183 | OK |
+| [[raport-09-chmura-3090]] | 0001 | 09-chmura-3090.md:9 | OK |
+| [[raport-09-chmura-3090]] | 0013 | 09-chmura-3090.md:81 | OK |
+| [[raport-09-chmura-3090]] | 08 | 09-chmura-3090.md:3 | OK |
+| [[raport-09-chmura-3090]] | 09, 2026, 3090 | 09-chmura-3090.md:1 | OK |
+| [[raport-09-chmura-3090]] | 1.23, 2.0 | 09-chmura-3090.md:196 | OK |
+| [[raport-09-chmura-3090]] | 1.4 | 09-chmura-3090.md:108 | OK |
+| [[raport-09-chmura-3090]] | 1.46, 264 | 09-chmura-3090.md:197 | OK |
+| [[raport-09-chmura-3090]] | 132.4, 144.2 | 09-chmura-3090.md:83 | OK |
+| [[raport-09-chmura-3090]] | 176.0 | 09-chmura-3090.md:58 | OK |
+| [[raport-09-chmura-3090]] | 18 | 09-chmura-3090.md:31 | OK |
+| [[raport-09-chmura-3090]] | 180, 180.2 | 09-chmura-3090.md:57 | OK |
+| [[raport-09-chmura-3090]] | 180.5 | 09-chmura-3090.md:172 | OK |
+| [[raport-09-chmura-3090]] | 1956 | 09-chmura-3090.md:137 | OK |
+| [[raport-09-chmura-3090]] | 249.3 | 09-chmura-3090.md:59 | OK |
+| [[raport-09-chmura-3090]] | 256.8 | 09-chmura-3090.md:123 | OK |
+| [[raport-09-chmura-3090]] | 263.9, 284.5 | 09-chmura-3090.md:61 | OK |
+| [[raport-09-chmura-3090]] | 30, 41 | 09-chmura-3090.md:155 | OK |
+| [[raport-09-chmura-3090]] | 300, 350 | 09-chmura-3090.md:16 | OK |
+| [[raport-09-chmura-3090]] | 357 | 09-chmura-3090.md:140 | OK |
+| [[raport-09-chmura-3090]] | 38.4, 78, 78.0 | 09-chmura-3090.md:49 | OK |
+| [[raport-09-chmura-3090]] | 38.9, 39 | 09-chmura-3090.md:46 | OK |
+| [[raport-09-chmura-3090]] | 39.0, 63.3 | 09-chmura-3090.md:47 | OK |
+| [[raport-09-chmura-3090]] | 3da7a02ec | 09-chmura-3090.md:110 | OK |
+| [[raport-09-chmura-3090]] | 40.1 | 09-chmura-3090.md:122 | OK |
+| [[raport-09-chmura-3090]] | 43.0 | 09-chmura-3090.md:51 | OK |
+| [[raport-09-chmura-3090]] | 4589, 4589b2ea, eac36830 | 09-chmura-3090.md:67 | OK |
+| [[raport-09-chmura-3090]] | 6.5 | 09-chmura-3090.md:93 | OK |
+| [[raport-09-chmura-3090]] | 64 | 09-chmura-3090.md:133 | OK |
+| [[raport-09-chmura-3090]] | 69.5 | 09-chmura-3090.md:48 | OK |
+| [[raport-09-chmura-3090]] | 7.2, 8.5 | 09-chmura-3090.md:103 | OK |
+| [[raport-09-chmura-3090]] | 7.68 | 09-chmura-3090.md:18 | OK |
+| [[raport-09-chmura-3090]] | 74.5 | 09-chmura-3090.md:50 | OK |
+| [[raport-09-chmura-3090]] | 795 | 09-chmura-3090.md:138 | OK |
+| [[raport-09-chmura-3090]] | 8.7 | 09-chmura-3090.md:107 | OK |
+| [[raport-09-chmura-3090]] | 80 | 09-chmura-3090.md:13 | OK |
+| [[raport-09-chmura-3090]] | 908 | 09-chmura-3090.md:139 | OK |
+| [[raport-09-chmura-3090]] | 91 | 09-chmura-3090.md:146 | OK |
+| [[raport-09-chmura-3090]] | 949, 949a753b | 09-chmura-3090.md:70 | OK |
+| [[raport-09-chmura-5060ti]] | 0.0265 | 09-chmura-5060ti.md:174 | OK |
+| [[raport-09-chmura-5060ti]] | 0.0865 | 09-chmura-5060ti.md:175 | OK |
+| [[raport-09-chmura-5060ti]] | 0.2029, 226.8 | 09-chmura-5060ti.md:177 | OK |
+| [[raport-09-chmura-5060ti]] | 08 | 09-chmura-5060ti.md:80 | OK |
+| [[raport-09-chmura-5060ti]] | 09, 16, 5060 | 09-chmura-5060ti.md:1 | OK |
+| [[raport-09-chmura-5060ti]] | 1.05, 165.5, 207.7, 65 | 09-chmura-5060ti.md:86 | OK |
+| [[raport-09-chmura-5060ti]] | 1.1826 | 09-chmura-5060ti.md:178 | OK |
+| [[raport-09-chmura-5060ti]] | 1.38, 1.84 | 09-chmura-5060ti.md:200 | OK |
+| [[raport-09-chmura-5060ti]] | 1.41, 148 | 09-chmura-5060ti.md:201 | OK |
+| [[raport-09-chmura-5060ti]] | 1.7, 2.7, 69 | 09-chmura-5060ti.md:124 | OK |
+| [[raport-09-chmura-5060ti]] | 120.9 | 09-chmura-5060ti.md:166 | OK |
+| [[raport-09-chmura-5060ti]] | 180 | 09-chmura-5060ti.md:14 | OK |
+| [[raport-09-chmura-5060ti]] | 19251, 5.0, 5.05, 9.44 | 09-chmura-5060ti.md:35 | OK |
+| [[raport-09-chmura-5060ti]] | 2.48, 48.58 | 09-chmura-5060ti.md:71 | OK |
+| [[raport-09-chmura-5060ti]] | 2.55, 37, 68.36 | 09-chmura-5060ti.md:68 | OK |
+| [[raport-09-chmura-5060ti]] | 2026 | 09-chmura-5060ti.md:3 | OK |
+| [[raport-09-chmura-5060ti]] | 2048, 56 | 09-chmura-5060ti.md:156 | OK |
+| [[raport-09-chmura-5060ti]] | 208 | 09-chmura-5060ti.md:109 | OK |
+| [[raport-09-chmura-5060ti]] | 28, 448 | 09-chmura-5060ti.md:15 | OK |
+| [[raport-09-chmura-5060ti]] | 31 | 09-chmura-5060ti.md:31 | OK |
+| [[raport-09-chmura-5060ti]] | 31.8, 7.7 | 09-chmura-5060ti.md:89 | OK |
+| [[raport-09-chmura-5060ti]] | 435 | 09-chmura-5060ti.md:147 | OK |
+| [[raport-09-chmura-5060ti]] | 5.24 | 09-chmura-5060ti.md:191 | OK |
+| [[raport-09-chmura-5060ti]] | 5.8, 51.7 | 09-chmura-5060ti.md:119 | OK |
+| [[raport-09-chmura-5060ti]] | 52.81 | 09-chmura-5060ti.md:160 | OK |
+| [[raport-09-chmura-5060ti]] | 7.68, 7502 | 09-chmura-5060ti.md:16 | OK |
+| [[raport-09-chmura-5060ti]] | 71 | 09-chmura-5060ti.md:184 | OK |
+| [[raport-09-chmura-5060ti]] | 81 | 09-chmura-5060ti.md:81 | OK |
+| [[raport-09-chmura-5060ti]] | 85 | 09-chmura-5060ti.md:150 | OK |
+| [[raport-09-chmura-5060ti]] | 908 | 09-chmura-5060ti.md:146 | OK |
+| [[raport-09-chmura-5060ti]] | 99 | 09-chmura-5060ti.md:28 | OK |
+| [[raport-09-chmura-3060]] | 0.000206, 0.000323 | 09-chmura-3060.md:125 | OK |
+| [[raport-09-chmura-3060]] | 0.000612, 0.000650, 65 | 09-chmura-3060.md:124 | OK |
+| [[raport-09-chmura-3060]] | 0.82 | 09-chmura-3060.md:229 | OK |
+| [[raport-09-chmura-3060]] | 0001 | 09-chmura-3060.md:5 | OK |
+| [[raport-09-chmura-3060]] | 0013 | 09-chmura-3060.md:12 | OK |
+| [[raport-09-chmura-3060]] | 08 | 09-chmura-3060.md:118 | OK |
+| [[raport-09-chmura-3060]] | 09, 12, 27, 3060 | 09-chmura-3060.md:1 | OK |
+| [[raport-09-chmura-3060]] | 1.5 | 09-chmura-3060.md:27 | OK |
+| [[raport-09-chmura-3060]] | 1024 | 09-chmura-3060.md:32 | OK |
+| [[raport-09-chmura-3060]] | 12.6 | 09-chmura-3060.md:159 | OK |
+| [[raport-09-chmura-3060]] | 16, 2026 | 09-chmura-3060.md:3 | OK |
+| [[raport-09-chmura-3060]] | 170 | 09-chmura-3060.md:14 | OK |
+| [[raport-09-chmura-3060]] | 2.39 | 09-chmura-3060.md:136 | OK |
+| [[raport-09-chmura-3060]] | 21 | 09-chmura-3060.md:36 | OK |
+| [[raport-09-chmura-3060]] | 22.3, 44.75, 6.8 | 09-chmura-3060.md:102 | OK |
+| [[raport-09-chmura-3060]] | 22.5, 9.7 | 09-chmura-3060.md:19 | OK |
+| [[raport-09-chmura-3060]] | 23.4 | 09-chmura-3060.md:62 | OK |
+| [[raport-09-chmura-3060]] | 3.7, 5.7 | 09-chmura-3060.md:154 | OK |
+| [[raport-09-chmura-3060]] | 33.15 | 09-chmura-3060.md:106 | OK |
+| [[raport-09-chmura-3060]] | 35.5 | 09-chmura-3060.md:214 | OK |
+| [[raport-09-chmura-3060]] | 35.51 | 09-chmura-3060.md:107 | OK |
+| [[raport-09-chmura-3060]] | 4.8, 7.1 | 09-chmura-3060.md:182 | OK |
+| [[raport-09-chmura-3060]] | 512 | 09-chmura-3060.md:43 | OK |
+| [[raport-09-chmura-3060]] | 64 | 09-chmura-3060.md:26 | OK |
+| [[raport-09-chmura-3060]] | 7.6665 | 09-chmura-3060.md:47 | OK |
+| [[raport-09-chmura-3060]] | 7b344114d | 09-chmura-3060.md:113 | OK |
+| [[raport-09-chmura-3060]] | 8.6154, 8.6171 | 09-chmura-3060.md:38 | OK |
+| [[raport-11-mtp-pl-pilot]] | 0.02 | 11-mtp-pl-pilot.md:88 | OK |
+| [[raport-11-mtp-pl-pilot]] | 0.1, 0.65, 0.9 | 11-mtp-pl-pilot.md:20 | OK |
+| [[raport-11-mtp-pl-pilot]] | 0.2, 1.7 | 11-mtp-pl-pilot.md:6 | OK |
+| [[raport-11-mtp-pl-pilot]] | 0.21 | 11-mtp-pl-pilot.md:87 | OK |
+| [[raport-11-mtp-pl-pilot]] | 0.39 | 11-mtp-pl-pilot.md:60 | OK |
+| [[raport-11-mtp-pl-pilot]] | 0.45, 3.281 | 11-mtp-pl-pilot.md:80 | OK |
+| [[raport-11-mtp-pl-pilot]] | 1.71, 3.235 | 11-mtp-pl-pilot.md:86 | OK |
+| [[raport-11-mtp-pl-pilot]] | 10, 11, 2026, 27 | 11-mtp-pl-pilot.md:1 | OK |
+| [[raport-11-mtp-pl-pilot]] | 2.14 | 11-mtp-pl-pilot.md:8 | OK |
+| [[raport-11-mtp-pl-pilot]] | 2.3 | 11-mtp-pl-pilot.md:5 | OK |
+| [[raport-11-mtp-pl-pilot]] | 2.65 | 11-mtp-pl-pilot.md:78 | OK |
+| [[raport-11-mtp-pl-pilot]] | 2.71 | 11-mtp-pl-pilot.md:111 | OK |
+| [[raport-11-mtp-pl-pilot]] | 21 | 11-mtp-pl-pilot.md:47 | OK |
+| [[raport-11-mtp-pl-pilot]] | 3.009, 3.812 | 11-mtp-pl-pilot.md:70 | OK |
+| [[raport-11-mtp-pl-pilot]] | 3.266 | 11-mtp-pl-pilot.md:38 | OK |
+| [[raport-11-mtp-pl-pilot]] | 3.960 | 11-mtp-pl-pilot.md:68 | OK |
+| [[raport-11-mtp-pl-pilot]] | 351 008 768 | 11-mtp-pl-pilot.md:28 | OK |
+| [[raport-11-mtp-pl-pilot]] | 7.65 | 11-mtp-pl-pilot.md:171 | OK |
+| [[raport-11-mtp-pl-pilot]] | 7f63dec8 | ręcznie | OK: skrót hasha 7f63dec872e319cb… (11-mtp-pl-pilot.md:129) |
+| [[raport-11-mtp-pl-pilot]] | 96 | 11-mtp-pl-pilot.md:174 | OK |
+| [[raport-12-bit-exact]] | 0.3, 1.3 | 12-bit-exact-spekulacja.md:91 | OK |
+| [[raport-12-bit-exact]] | 0.5, 32 | 12-bit-exact-spekulacja.md:87 | OK |
+| [[raport-12-bit-exact]] | 1.19, 368 | 12-bit-exact-spekulacja.md:156 | OK |
+| [[raport-12-bit-exact]] | 12 | 12-bit-exact-spekulacja.md:1 | OK |
+| [[raport-12-bit-exact]] | 2026 | 12-bit-exact-spekulacja.md:3 | OK |
+| [[raport-12-bit-exact]] | 36 | 12-bit-exact-spekulacja.md:106 | OK |
+| [[raport-12-bit-exact]] | 4c6d328b, 8cca9b70, c09ac6aab | 12-bit-exact-spekulacja.md:146 | OK |
+| [[raport-12-bit-exact]] | 6e261fdb4 | 12-bit-exact-spekulacja.md:182 | OK |
+| [[raport-12-bit-exact]] | 6f14e814, c4708318 | 12-bit-exact-spekulacja.md:8 | OK |
+| [[raport-12-bit-exact]] | 77240, 77240c9b3 | 12-bit-exact-spekulacja.md:163 | OK |
+| [[raport-12-bit-exact]] | 862 | 12-bit-exact-spekulacja.md:98 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 0.40 | 09-chmura-3090.md:165 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvidia-wyniki-2026-10-16]] | 0.82 | 09-chmura-3060.md:229 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvidia-wyniki-2026-10-16]] | 0.90 | 09-chmura-3090.md:183 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvidia-wyniki-2026-10-16]] | 0001 | 09-chmura-3090.md:40 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 0013 | 09-chmura-3090.md:199 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 1.05 | 09-chmura-5060ti.md:86 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 1.23, 2.00 | 09-chmura-3090.md:218 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 1.38, 1.84 | 09-chmura-5060ti.md:234 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 1.4 | 09-chmura-3090.md:108 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvidia-wyniki-2026-10-16]] | 1.41, 1.44 | 09-chmura-5060ti.md:252 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 1.46, 1.50 | 09-chmura-3090.md:233 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 144.47, 147.69, 207.86 | 09-chmura-5060ti.md:240 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 176.0 | 09-chmura-3090.md:58 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 180.2 | 09-chmura-3090.md:57 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 180.5 | 09-chmura-3090.md:224 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 19251 | 09-chmura-5060ti.md:35 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvidia-wyniki-2026-10-16]] | 1956 | 09-chmura-3090.md:137 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvidia-wyniki-2026-10-16]] | 2.0 | 09-chmura-3090.md:196 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvidia-wyniki-2026-10-16]] | 2026 | 09-chmura-3090.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvidia-wyniki-2026-10-16]] | 22.1 | 09-chmura-3090.md:46 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 22.3 | 09-chmura-3060.md:102 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 23.4 | 09-chmura-3060.md:62 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 263.9 | 09-chmura-3090.md:61 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 27 | 09-chmura-3090.md:42 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 28.07, 37.32, 51.66 | 09-chmura-5060ti.md:222 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 3060 | 09-chmura-3060.md:113 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 3090 | 09-chmura-5060ti.md:89 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 3090 192 | ręcznie | OK: artefakt parsera („3090” i „19253” osobno w źródle) |
+| [[nvidia-wyniki-2026-10-16]] | 31, 78.0 | 09-chmura-3090.md:49 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 33.1, 35.5 | 09-chmura-3060.md:258 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 39.0, 63.3 | 09-chmura-3090.md:47 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 5060 | 09-chmura-5060ti.md:216 | OK |
+| [[nvidia-wyniki-2026-10-16]] | 795 | 09-chmura-3090.md:138 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3090]] | 0.23 | 05-chmura-gpu-do-testow.md:15 | OK |
+| [[rtx-3090]] | 0.32, 7900 | 05-chmura-gpu-do-testow.md:305 | OK |
+| [[rtx-3090]] | 0.90 | 09-chmura-3090.md:183 | OK |
+| [[rtx-3090]] | 02, 24 | 09-chmura-3090.md:13 | OK |
+| [[rtx-3090]] | 1,224 | 05-chmura-gpu-do-testow.md:233 | OK |
+| [[rtx-3090]] | 1.23, 39 | 09-chmura-3090.md:196 | OK |
+| [[rtx-3090]] | 1350, 300, 350 | 09-chmura-3090.md:16 | OK |
+| [[rtx-3090]] | 140.8, 147.7 | 09-chmura-3090.md:153 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3090]] | 162 | 05-chmura-gpu-do-testow.md:99 | OK |
+| [[rtx-3090]] | 180, 264 | 09-chmura-3090.md:197 | OK |
+| [[rtx-3090]] | 180.2 | 09-chmura-3090.md:57 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3090]] | 19253 | 09-chmura-3090.md:38 | OK |
+| [[rtx-3090]] | 2026, 3090 | 09-chmura-3090.md:1 | OK |
+| [[rtx-3090]] | 256.8, 284.5 | 09-chmura-3090.md:123 | OK |
+| [[rtx-3090]] | 26.7 | 02-autotuning-i-agenci-kerneli.md:256 | OK |
+| [[rtx-3090]] | 263.9, 78 | 09-chmura-3090.md:125 | OK |
+| [[rtx-3090]] | 27.2 | 09-chmura-3090.md:152 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3090]] | 38.4, 78.0 | 09-chmura-3090.md:49 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3090]] | 38.9 | 09-chmura-3090.md:46 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3090]] | 3da7a02ec | 09-chmura-3090.md:110 | OK |
+| [[rtx-3090]] | 40.1, 43.0 | 09-chmura-3090.md:122 | OK |
+| [[rtx-3090]] | 41.55, 59.8, 66.39 | 02-autotuning-i-agenci-kerneli.md:257 | OK |
+| [[rtx-3090]] | 615.71 | 09-chmura-3090.md:14 | OK |
+| [[rtx-3090]] | 63.3 | 09-chmura-3090.md:47 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3090]] | 64 | 09-chmura-3090.md:133 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3090]] | 7.68 | 09-chmura-3090.md:18 | OK |
+| [[rtx-3090]] | 787 | times.jsonl:2 | OK |
+| [[rtx-5060-ti]] | 0.165 | 05-chmura-gpu-do-testow.md:104 | OK |
+| [[rtx-5060-ti]] | 0053, 0057, 43 | 09-chmura-5060ti.md:69 | OK |
+| [[rtx-5060-ti]] | 1.05, 65 | 09-chmura-5060ti.md:86 | OK |
+| [[rtx-5060-ti]] | 120, 448 | rx-7900-xtx.md:38 | OK |
+| [[rtx-5060-ti]] | 128 | rx-7900-xtx.md:33 | OK |
+| [[rtx-5060-ti]] | 147.69, 207.86 | 09-chmura-5060ti.md:240 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-5060-ti]] | 148 | 09-chmura-5060ti.md:201 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-5060-ti]] | 16, 5060 | rx-7900-xtx.md:36 | OK |
+| [[rtx-5060-ti]] | 180 | 09-chmura-5060ti.md:14 | OK |
+| [[rtx-5060-ti]] | 19251 | 09-chmura-5060ti.md:35 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-5060-ti]] | 2.7 | 09-chmura-5060ti.md:124 | OK |
+| [[rtx-5060-ti]] | 2026 | rx-7900-xtx.md:34 | OK |
+| [[rtx-5060-ti]] | 208 | 09-chmura-5060ti.md:109 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-5060-ti]] | 226.8 | 09-chmura-5060ti.md:177 | OK |
+| [[rtx-5060-ti]] | 28 | 09-chmura-5060ti.md:15 | OK |
+| [[rtx-5060-ti]] | 28.07, 51.66 | 09-chmura-5060ti.md:222 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-5060-ti]] | 4.06 | 05-chmura-gpu-do-testow.md:305 | OK |
+| [[rtx-5060-ti]] | 474, 680 | PLAN.md:287 | OK |
+| [[rtx-5060-ti]] | 5.2 | PLAN.md:30 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-5060-ti]] | 503 | 09-chmura-5060ti.md:23 | OK |
+| [[rtx-5060-ti]] | 51.7 | 09-chmura-5060ti.md:119 | OK |
+| [[rtx-5060-ti]] | 580.173 | 09-chmura-5060ti.md:12 | OK |
+| [[rtx-5060-ti]] | 7.68 | 09-chmura-5060ti.md:16 | OK |
+| [[rtx-5060-ti]] | 7.7 | 09-chmura-5060ti.md:89 | OK |
+| [[rtx-5060-ti]] | 81 | 09-chmura-5060ti.md:81 | OK |
+| [[rtx-3060]] | 0.82 | 09-chmura-3060.md:229 | OK |
+| [[rtx-3060]] | 1024 | 09-chmura-3060.md:77 | OK |
+| [[rtx-3060]] | 1139, 1151, 1157 | 09-chmura-3060.md:17 | OK |
+| [[rtx-3060]] | 12, 27, 3060 | 09-chmura-3060.md:1 | OK |
+| [[rtx-3060]] | 170 | 09-chmura-3060.md:14 | OK |
+| [[rtx-3060]] | 2026 | 09-chmura-3060.md:3 | OK |
+| [[rtx-3060]] | 22.1 | 09-chmura-3060.md:217 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3060]] | 22.5, 9.7 | 09-chmura-3060.md:19 | OK |
+| [[rtx-3060]] | 23.4 | 09-chmura-3060.md:62 | OK |
+| [[rtx-3060]] | 257 | PLAN.md:288 | OK |
+| [[rtx-3060]] | 3.66 | 05-chmura-gpu-do-testow.md:305 | OK |
+| [[rtx-3060]] | 3.7, 5.7 | 09-chmura-3060.md:154 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3060]] | 32 | 09-chmura-3060.md:73 | OK |
+| [[rtx-3060]] | 35.5 | 09-chmura-3060.md:214 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3060]] | 4.8, 7.1 | 09-chmura-3060.md:182 | OK (inny wiersz źródła, sprawdzone) |
+| [[rtx-3060]] | 44.75, 6.8 | 09-chmura-3060.md:102 | OK |
+| [[rtx-3060]] | 595.71 | 09-chmura-3060.md:12 | OK |
+| [[rtx-3060]] | 7.6665 | 09-chmura-3060.md:47 | OK (inny wiersz źródła, sprawdzone) |
+| [[2026-10-16-kampania-nvidia]] | 0.82 | 09-chmura-3060.md:229 | OK |
+| [[2026-10-16-kampania-nvidia]] | 0.90 | 09-chmura-3090.md:183 | OK |
+| [[2026-10-16-kampania-nvidia]] | 0001, 2026 | PLAN-TESTOW.md:3 | OK |
+| [[2026-10-16-kampania-nvidia]] | 0013, 31 | PLAN-TESTOW.md:58 | OK |
+| [[2026-10-16-kampania-nvidia]] | 1.05 | 09-chmura-5060ti.md:191 | OK |
+| [[2026-10-16-kampania-nvidia]] | 1.4 | 09-chmura-3090.md:108 | OK (inny wiersz źródła, sprawdzone) |
+| [[2026-10-16-kampania-nvidia]] | 2.0 | PLAN-TESTOW.md:99 | OK (inny wiersz źródła, sprawdzone) |
+| [[2026-10-16-kampania-nvidia]] | 2.77 | ręcznie | OK: suma 0.90 + 1.05 + 0.82 z raportów 09 (i wiadomość Main) |
+| [[2026-10-16-kampania-nvidia]] | 3060 | 09-chmura-3060.md:1 | OK |
+| [[2026-10-16-kampania-nvidia]] | 3090 | 09-chmura-3090.md:1 | OK |
+| [[2026-10-16-kampania-nvidia]] | 5060 | PLAN-TESTOW.md:159 | OK |
+| [[2026-10-16-bit-exact]] | 1.19, 368 | 12-bit-exact-spekulacja.md:156 | OK |
+| [[2026-10-16-bit-exact]] | 2026 | 12-bit-exact-spekulacja.md:3 | OK |
+| [[2026-10-16-bit-exact]] | 23335 | 12-bit-exact-spekulacja.md:24 | OK (inny wiersz źródła, sprawdzone) |
+| [[2026-10-16-bit-exact]] | 4c6d328b, 8cca9b70, c09ac6aab | 12-bit-exact-spekulacja.md:146 | OK |
+| [[2026-10-16-bit-exact]] | 6e261fdb4 | 12-bit-exact-spekulacja.md:182 | OK |
+| [[2026-10-16-bit-exact]] | 6f14e814, c4708318 | 12-bit-exact-spekulacja.md:8 | OK |
+| [[2026-10-16-bit-exact]] | 77240, 77240c9b3 | 12-bit-exact-spekulacja.md:163 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 0.02 | 11-mtp-pl-pilot.md:88 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 0.1, 0.9 | 11-mtp-pl-pilot.md:86 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 0.2, 1.7 | 11-mtp-pl-pilot.md:6 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 0.21, 0.39 | 11-mtp-pl-pilot.md:87 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 0.45 | 11-mtp-pl-pilot.md:80 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 1.32 | ręcznie | OK: 1 317 337 tokenów (11-mtp-pl-pilot.md:58), zaokrąglone |
+| [[2026-10-16-mtp-pl-pilot]] | 10, 2026, 27 | 11-mtp-pl-pilot.md:1 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 100, 140 | 11-mtp-pl-pilot.md:60 | OK (inny wiersz źródła, sprawdzone) |
+| [[2026-10-16-mtp-pl-pilot]] | 2.14, 3.50 | 11-mtp-pl-pilot.md:8 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 2.3 | 11-mtp-pl-pilot.md:5 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 21, 3.266 | 11-mtp-pl-pilot.md:68 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 3.268 | 11-mtp-pl-pilot.md:121 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 32 | 11-mtp-pl-pilot.md:72 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 78.3, 78.5 | 11-mtp-pl-pilot.md:111 | OK |
+| [[2026-10-16-mtp-pl-pilot]] | 78.7, 78.9 | 11-mtp-pl-pilot.md:110 | OK |
+| [[saluki]] | 0.000612, 0.000650 | 09-chmura-3060.md:124 | OK |
+| [[saluki]] | 0.09 | 09-chmura-3060.md:190 | OK (inny wiersz źródła, sprawdzone) |
+| [[saluki]] | 0.150, 7.6665 | 09-chmura-3060.md:47 | OK |
+| [[saluki]] | 1.0 | 10-post-training.md:139 | OK |
+| [[saluki]] | 10 | 10-post-training.md:386 | OK |
+| [[saluki]] | 11, 34 | 09-chmura-3060.md:27 | OK |
+| [[saluki]] | 12 | 09-chmura-3060.md:84 | OK |
+| [[saluki]] | 2.4, 4.8 | 09-chmura-3060.md:209 | OK |
+| [[saluki]] | 2025, 79.2, 84, 88, 96.7 | 10-post-training.md:337 | OK |
+| [[saluki]] | 2026 | saluki-README.md:104 | OK |
+| [[saluki]] | 22.1 | 09-chmura-3060.md:217 | OK |
+| [[saluki]] | 23, 23.4 | 09-chmura-3060.md:62 | OK |
+| [[saluki]] | 27 | 10-post-training.md:42 | OK |
+| [[saluki]] | 3060 | 09-chmura-3060.md:23 | OK |
+| [[saluki]] | 512 | 09-chmura-3060.md:43 | OK |
+| [[saluki]] | 64 | 09-chmura-3060.md:26 | OK |
+| [[saluki]] | 7.90 | 09-chmura-3060.md:25 | OK |
+| [[saluki]] | 9.7 | 09-chmura-3060.md:19 | OK |
+| [[bonsai]] | 0.000206, 0.000323 | 09-chmura-3060.md:125 | OK |
+| [[bonsai]] | 1.2 | 10-post-training.md:141 | OK |
+| [[bonsai]] | 10 | 10-post-training.md:386 | OK |
+| [[bonsai]] | 1024, 128, 20, 98.2 | 10-post-training.md:329 | OK |
+| [[bonsai]] | 124, 18, 3060, 7.63 | 09-chmura-3060.md:36 | OK |
+| [[bonsai]] | 142, 143, e3de715 | 09-chmura-3060.md:31 | OK |
+| [[bonsai]] | 2026 | 09-chmura-3060.md:196 | OK |
+| [[bonsai]] | 21, 7.21 | bonsai-README.md:44 | OK |
+| [[bonsai]] | 256 | 09-chmura-3060.md:39 | OK |
+| [[bonsai]] | 27 | 10-post-training.md:137 | OK |
+| [[bonsai]] | 28 | 10-post-training.md:334 | OK |
+| [[bonsai]] | 33.15 | 09-chmura-3060.md:106 | OK |
+| [[bonsai]] | 34 | 09-chmura-3060.md:27 | OK |
+| [[bonsai]] | 35.51 | 09-chmura-3060.md:107 | OK |
+| [[bonsai]] | 36.45 | 09-chmura-3060.md:101 | OK |
+| [[bonsai]] | 44.75, 6.8 | 09-chmura-3060.md:102 | OK |
+| [[bonsai]] | 64 | bonsai-README.md:60 | OK |
+| [[bonsai]] | 65 | 09-chmura-3060.md:124 | OK |
+| [[bonsai]] | 7.1 | 09-chmura-3060.md:182 | OK |
+| [[bonsai]] | 8.6154, 8.6171 | 09-chmura-3060.md:38 | OK |
+| [[nvfp4]] | 0.0265 | 09-chmura-5060ti.md:174 | OK |
+| [[nvfp4]] | 0.0865, 14.86, 1730, 1747 | 09-chmura-5060ti.md:175 | OK |
+| [[nvfp4]] | 0004 | rx-7900-xtx.md:38 | OK |
+| [[nvfp4]] | 0012 | 09-chmura-5060ti.md:189 | OK |
+| [[nvfp4]] | 01 | 01-konkurencja.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvfp4]] | 09 | 01-konkurencja.md:90 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvfp4]] | 1.14 | 22-lucebox.md:90 | OK (inny wiersz źródła, sprawdzone) |
+| [[nvfp4]] | 1.1826, 1.857, 7270, 7663 | 09-chmura-5060ti.md:178 | OK |
+| [[nvfp4]] | 16, 5060 | rx-7900-xtx.md:36 | OK |
+| [[nvfp4]] | 2.5 | 09-chmura-5060ti.md:256 | OK |
+| [[nvfp4]] | 2026 | 01-konkurencja.md:330 | OK |
+| [[nvfp4]] | 21.9 | 09-chmura-5060ti.md:265 | OK |
+| [[nvfp4]] | 65 | roadmap.md:244 | OK |
+| [[nvfp4]] | 69, 71, 81 | 09-chmura-5060ti.md:184 | OK |
+| [[nvfp4]] | 7900 | rx-7900-xtx.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[lfm2-5-24b-a2b]] | 0.044 | ręcznie | OK: NOTES.md:363: 0.044171 (zaokrąglone) |
+| [[lfm2-5-24b-a2b]] | 0.128 | NOTES.md:363 | OK |
+| [[lfm2-5-24b-a2b]] | 0.2008 | 09-chmura-5060ti.md:176 | OK |
+| [[lfm2-5-24b-a2b]] | 0.2029, 0.869, 13.58, 164.5, 226.8 | 09-chmura-5060ti.md:177 | OK |
+| [[lfm2-5-24b-a2b]] | 09 | NOTES.md:109 | OK (inny wiersz źródła, sprawdzone) |
+| [[lfm2-5-24b-a2b]] | 1.48 | ręcznie | OK: ls ~/models: LFM2.5-2.6B-QAD-Q4_0.gguf 1.48 GiB |
+| [[lfm2-5-24b-a2b]] | 1.8, 1.9, 500 | NOTES.md:338 | OK |
+| [[lfm2-5-24b-a2b]] | 10, 2026, 24 | NOTES.md:333 | OK |
+| [[lfm2-5-24b-a2b]] | 120.9, 15.86 | 09-chmura-5060ti.md:166 | OK |
+| [[lfm2-5-24b-a2b]] | 128, 198 | NOTES.md:336 | OK |
+| [[lfm2-5-24b-a2b]] | 131072 | NOTES.md:334 | OK |
+| [[lfm2-5-24b-a2b]] | 147.69, 207.86 | 09-chmura-5060ti.md:240 | OK (inny wiersz źródła, sprawdzone) |
+| [[lfm2-5-24b-a2b]] | 15.1, 1536, 16, 2048, 205, 30, 32, 40, 64 | NOTES.md:337 | OK |
+| [[lfm2-5-24b-a2b]] | 169.3 | NOTES.md:339 | OK |
+| [[lfm2-5-24b-a2b]] | 173 | NOTES.md:335 | OK |
+| [[lfm2-5-24b-a2b]] | 180.2 | 09-chmura-3090.md:57 | OK |
+| [[lfm2-5-24b-a2b]] | 263.9 | 09-chmura-3090.md:61 | OK |
+| [[lfm2-5-24b-a2b]] | 289.7, 293.7, 3.41, 6175 | STATUS-NEXT.md:12 | OK |
+| [[lfm2-5-24b-a2b]] | 294 | NOTES.md:375 | OK (inny wiersz źródła, sprawdzone) |
+| [[lfm2-5-24b-a2b]] | 3090 | 09-chmura-5060ti.md:89 | OK |
+| [[lfm2-5-24b-a2b]] | 38 | NOTES.md:340 | OK |
+| [[lfm2-5-24b-a2b]] | 5060 | 09-chmura-5060ti.md:195 | OK |
+| [[lfm2-5-24b-a2b]] | 56 | STATUS-NEXT.md:15 | OK |
+| [[lfm2-5-24b-a2b]] | 7900 | NOTES.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[glowica-mtp]] | 0.2 | 11-mtp-pl-pilot.md:6 | OK |
+| [[glowica-mtp]] | 0.39 | NOTES.md:135 | OK |
+| [[glowica-mtp]] | 0.45 | 11-mtp-pl-pilot.md:80 | OK |
+| [[glowica-mtp]] | 0.72 | RESULTS.md:75 | OK |
+| [[glowica-mtp]] | 0.78, 0.87, 0.89 | RESULTS.md:80 | OK |
+| [[glowica-mtp]] | 1.7 | RESULTS.md:98 | OK |
+| [[glowica-mtp]] | 10, 2026 | RESULTS.md:5 | OK |
+| [[glowica-mtp]] | 109 | NOTES.md:280 | OK (inny wiersz źródła, sprawdzone) |
+| [[glowica-mtp]] | 11, 3.11, 3.93 | RESULTS.md:54 | OK |
+| [[glowica-mtp]] | 2.3, 2.68 | RESULTS.md:60 | OK |
+| [[glowica-mtp]] | 2.48 | RESULTS.md:65 | OK |
+| [[glowica-mtp]] | 2.97, 3.04 | RESULTS.md:55 | OK |
+| [[glowica-mtp]] | 21, 3.96 | RESULTS.md:57 | OK |
+| [[glowica-mtp]] | 3.266, 3.960 | 11-mtp-pl-pilot.md:68 | OK |
+| [[glowica-mtp]] | 3.76 | RESULTS.md:63 | OK |
+| [[glowica-mtp]] | 3.89 | RESULTS.md:59 | OK |
+| [[glowica-mtp]] | 351 008 768 | 11-mtp-pl-pilot.md:28 | OK |
+| [[glowica-mtp]] | 4 102.7 | NOTES.md:316 | OK |
+| [[glowica-mtp]] | 5 103.0 | NOTES.md:317 | OK |
+| [[glowica-mtp]] | 64 | RESULTS.md:3 | OK |
+| [[glowica-mtp]] | 69 207 | RESULTS.md:15 | OK (inny wiersz źródła, sprawdzone) |
+| [[lekcja-fit-mtp-16gb]] | 14, 14.0, 14.5, 24, 3090, 31.8, 45.5, 6.3, 7.7, 760 | 09-chmura-5060ti.md:89 | OK |
+| [[lekcja-fit-mtp-16gb]] | 16 | 09-chmura-5060ti.md:27 | OK |
+| [[lekcja-fit-mtp-16gb]] | 2026 | 09-chmura-5060ti.md:3 | OK (inny wiersz źródła, sprawdzone) |
+| [[lekcja-fit-mtp-16gb]] | 32 | 09-chmura-5060ti.md:19 | OK |
+| [[lekcja-fit-mtp-16gb]] | 5060 | 09-chmura-5060ti.md:193 | OK |
+| [[lekcja-fit-mtp-16gb]] | 99 | 09-chmura-5060ti.md:28 | OK |
+| [[lekcja-limit-cpu-kontenera]] | 30, 7.65 | 11-mtp-pl-pilot.md:171 | OK |
+| [[lekcja-limit-cpu-kontenera]] | 3090 | 09-chmura-5060ti.md:15 | OK |
+| [[lekcja-limit-cpu-kontenera]] | 32 | 09-chmura-5060ti.md:19 | OK |
+| [[lekcja-limit-cpu-kontenera]] | 5060 | 09-chmura-5060ti.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[lekcja-limit-cpu-kontenera]] | 64, 7.68 | 09-chmura-5060ti.md:16 | OK |
+| [[lekcja-limit-cpu-kontenera]] | 7.7 | 09-chmura-5060ti.md:89 | OK (inny wiersz źródła, sprawdzone) |
+| [[lekcja-limit-cpu-kontenera]] | 96 | 11-mtp-pl-pilot.md:174 | OK |
+| [[lekcja-md5-wzgledem-upstreamu]] | 0.000612, 0.000650 | 09-chmura-3060.md:124 | OK |
+| [[lekcja-md5-wzgledem-upstreamu]] | 0001 | 09-chmura-3090.md:80 | OK |
+| [[lekcja-md5-wzgledem-upstreamu]] | 0013 | 09-chmura-3090.md:81 | OK |
+| [[lekcja-md5-wzgledem-upstreamu]] | 0043, 3090 | 09-chmura-5060ti.md:55 | OK |
+| [[lekcja-md5-wzgledem-upstreamu]] | 3060 | 09-chmura-3060.md:113 | OK |
+| [[lekcja-md5-wzgledem-upstreamu]] | 31 | 09-chmura-3090.md:74 | OK |
+| [[lekcja-md5-wzgledem-upstreamu]] | 949, 949a753b | 09-chmura-3090.md:70 | OK |
+| [[lekcja-mtp-glowica-optimum]] | 0.2, 1.7 | 11-mtp-pl-pilot.md:6 | OK |
+| [[lekcja-mtp-glowica-optimum]] | 0.307, 0.317 | 11-mtp-pl-pilot.md:91 | OK |
+| [[lekcja-mtp-glowica-optimum]] | 10 | 11-mtp-pl-pilot.md:1 | OK |
+| [[lekcja-mtp-glowica-optimum]] | 17 | 10-post-training.md:32 | OK |
+| [[lekcja-mtp-glowica-optimum]] | 21 | 11-mtp-pl-pilot.md:87 | OK |
+| [[lekcja-mtp-glowica-optimum]] | 3.235 | 11-mtp-pl-pilot.md:86 | OK |
+| [[lekcja-mtp-glowica-optimum]] | 3.281 | 11-mtp-pl-pilot.md:80 | OK |
+| [[lekcja-mtp-glowica-optimum]] | 33 | 11-mtp-pl-pilot.md:181 | OK |
+| [[lekcja-nadpisanie-dzialajacego-skryptu]] | 5060 | 09-chmura-5060ti.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[lekcja-bit-exact-attention]] | 0.33 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5568 | OK |
+| [[lekcja-bit-exact-attention]] | 1.19, 368, 6144 | 12-bit-exact-spekulacja.md:156 | OK |
+| [[lekcja-bit-exact-attention]] | 16, 2026 | 12-bit-exact-spekulacja.md:154 | OK |
+| [[lekcja-bit-exact-attention]] | 6e261fdb4 | 12-bit-exact-spekulacja.md:182 | OK |
+| [[lekcja-bit-exact-attention]] | 77240, 77240c9b3 | 12-bit-exact-spekulacja.md:163 | OK |
+| [[lekcja-bit-exact-attention]] | 7900 | 12-bit-exact-spekulacja.md:8 | OK (inny wiersz źródła, sprawdzone) |
+| [[lekcja-obciazenie-cpu]] | 15 | 07-nasze-metody-uogolnienie.md:276 | OK |
+| [[lekcja-obciazenie-cpu]] | 2026 | NOTES.md:172 | OK |
+| [[lekcja-obciazenie-cpu]] | 22.5, 9.7 | 09-chmura-3060.md:19 | OK |
+| [[lekcja-obciazenie-cpu]] | 3.4 | 07-nasze-metody-uogolnienie.md:383 | OK (inny wiersz źródła, sprawdzone) |
+| [[lekcja-obciazenie-cpu]] | 3060 | 09-chmura-3060.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[lekcja-obciazenie-cpu]] | 3090 | ręcznie | OK: nazwa karty |
+| [[zgodnosc-bitowa-md5]] | 0001 | 07-nasze-metody-uogolnienie.md:229 | OK |
+| [[zgodnosc-bitowa-md5]] | 0013 | NOTES.md:378 | OK |
+| [[zgodnosc-bitowa-md5]] | 07 | qwen-round5.md:23 | OK |
+| [[zgodnosc-bitowa-md5]] | 0b7b073b, 58, 58e578967 | qwen-round5.md:11 | OK |
+| [[zgodnosc-bitowa-md5]] | 129, 229 | 07-nasze-metody-uogolnienie.md:265 | OK |
+| [[zgodnosc-bitowa-md5]] | 2.2 | 07-nasze-metody-uogolnienie.md:27 | OK (inny wiersz źródła, sprawdzone) |
+| [[zgodnosc-bitowa-md5]] | 2026, 45 | qwen-round5.md:7 | OK |
+| [[zgodnosc-bitowa-md5]] | 2048, 3000, 64 | 07-nasze-metody-uogolnienie.md:228 | OK |
+| [[zgodnosc-bitowa-md5]] | 270 | 07-nasze-metody-uogolnienie.md:264 | OK |
+| [[zgodnosc-bitowa-md5]] | 3060 | 09-chmura-3060.md:113 | OK |
+| [[zgodnosc-bitowa-md5]] | 6f14e814, c4708318 | NOTES.md:357 | OK |
+| [[zgodnosc-bitowa-md5]] | 83, 94 | 07-nasze-metody-uogolnienie.md:262 | OK |
+| [[zgodnosc-bitowa-md5]] | 894, 894e56e4 | STATUS-NEXT.md:15 | OK |
+| [[zgodnosc-bitowa-md5]] | e60eff95f | NOTES.md:377 | OK |
+| [[mmvq-n1-wiersze]] | 0.135, 0059 | 07-nasze-metody-uogolnienie.md:184 | OK |
+| [[mmvq-n1-wiersze]] | 0052, 4.509, 4.610 | NOTES.md:349 | OK |
+| [[mmvq-n1-wiersze]] | 0064, 2026 | NOTES.md:372 | OK |
+| [[mmvq-n1-wiersze]] | 007000, 007000aaa, 71412, 71412d9c6 | git:1 | OK |
+| [[mmvq-n1-wiersze]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[mmvq-n1-wiersze]] | 1.7 | 09-chmura-3090.md:104 | OK |
+| [[mmvq-n1-wiersze]] | 12.6, 21 | 09-chmura-3060.md:159 | OK |
+| [[mmvq-n1-wiersze]] | 15 | 09-chmura-5060ti.md:207 | OK |
+| [[mmvq-n1-wiersze]] | 2.2 | 07-nasze-metody-uogolnienie.md:127 | OK |
+| [[mmvq-n1-wiersze]] | 2.7, 87 | 09-chmura-3090.md:113 | OK |
+| [[mmvq-n1-wiersze]] | 3.706, 3.933 | NOTES.md:374 | OK |
+| [[mmvq-n1-wiersze]] | 3060 | 09-chmura-3090.md:114 | OK |
+| [[mmvq-n1-wiersze]] | 3090, 3da7a02ec | 09-chmura-3090.md:110 | OK |
+| [[mmvq-n1-wiersze]] | 39 | NOTES.md:135 | OK (inny wiersz źródła, sprawdzone) |
+| [[mmvq-n1-wiersze]] | 5.0, 5.8, 7.2, 8.5 | 09-chmura-3090.md:103 | OK |
+| [[mmvq-n1-wiersze]] | 5060 | 09-chmura-3090.md:112 | OK |
+| [[mmvq-n1-wiersze]] | 6.1 | 07-nasze-metody-uogolnienie.md:139 | OK |
+| [[fuzje-lfm-moe]] | 0.565, 34 | 07-nasze-metody-uogolnienie.md:180 | OK |
+| [[fuzje-lfm-moe]] | 0049, 4.979, 5.067, 682, 720 | NOTES.md:346 | OK |
+| [[fuzje-lfm-moe]] | 0051, 4.642, 4.817, 521 | NOTES.md:348 | OK |
+| [[fuzje-lfm-moe]] | 0053 | NOTES.md:353 | OK |
+| [[fuzje-lfm-moe]] | 0056, 3.973, 4.070 | NOTES.md:364 | OK |
+| [[fuzje-lfm-moe]] | 07 | NOTES.md:338 | OK |
+| [[fuzje-lfm-moe]] | 1.2 | 09-chmura-3090.md:98 | OK |
+| [[fuzje-lfm-moe]] | 1.6, 4.6 | 09-chmura-3090.md:94 | OK |
+| [[fuzje-lfm-moe]] | 13 | 07-nasze-metody-uogolnienie.md:123 | OK |
+| [[fuzje-lfm-moe]] | 2.1 | 09-chmura-3090.md:95 | OK |
+| [[fuzje-lfm-moe]] | 2.2 | 07-nasze-metody-uogolnienie.md:127 | OK |
+| [[fuzje-lfm-moe]] | 2.38, 5.34 | 09-chmura-5060ti.md:97 | OK |
+| [[fuzje-lfm-moe]] | 2.39 | 09-chmura-3060.md:136 | OK |
+| [[fuzje-lfm-moe]] | 2.5, 3.5, 3.7, 38, 71, 721 | NOTES.md:340 | OK |
+| [[fuzje-lfm-moe]] | 2026 | NOTES.md:343 | OK |
+| [[fuzje-lfm-moe]] | 3060 | 09-chmura-3090.md:114 | OK |
+| [[fuzje-lfm-moe]] | 3090 | 09-chmura-3090.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[fuzje-lfm-moe]] | 3da7a02ec | 09-chmura-3090.md:110 | OK (inny wiersz źródła, sprawdzone) |
+| [[fuzje-lfm-moe]] | 4.246, 4.451, 445 | NOTES.md:355 | OK |
+| [[fuzje-lfm-moe]] | 4.99 | 09-chmura-5060ti.md:98 | OK |
+| [[fuzje-lfm-moe]] | 5060 | 09-chmura-3090.md:112 | OK |
+| [[fuzje-lfm-moe]] | 56 | NOTES.md:160 | OK (inny wiersz źródła, sprawdzone) |
+| [[fuzje-lfm-moe]] | 6.5 | 09-chmura-3090.md:93 | OK |
+| [[fuzje-lfm-moe]] | 64 | NOTES.md:337 | OK |
+| [[latki-na-nvidia]] | 0001, 35 | CUDA-AUDIT.md:13 | OK |
+| [[latki-na-nvidia]] | 0003 | CUDA-AUDIT.md:15 | OK |
+| [[latki-na-nvidia]] | 0012 | CUDA-AUDIT.md:117 | OK |
+| [[latki-na-nvidia]] | 0013 | CUDA-AUDIT.md:12 | OK |
+| [[latki-na-nvidia]] | 0017 | CUDA-AUDIT.md:122 | OK |
+| [[latki-na-nvidia]] | 0018 | CUDA-AUDIT.md:123 | OK |
+| [[latki-na-nvidia]] | 0019 | CUDA-AUDIT.md:124 | OK |
+| [[latki-na-nvidia]] | 0023 | CUDA-AUDIT.md:16 | OK |
+| [[latki-na-nvidia]] | 0024 | CUDA-AUDIT.md:129 | OK |
+| [[latki-na-nvidia]] | 0027 | CUDA-AUDIT.md:132 | OK |
+| [[latki-na-nvidia]] | 0028 | CUDA-AUDIT.md:133 | OK |
+| [[latki-na-nvidia]] | 0033, 0036 | CUDA-AUDIT.md:136 | OK |
+| [[latki-na-nvidia]] | 0038 | CUDA-AUDIT.md:138 | OK |
+| [[latki-na-nvidia]] | 0043 | CUDA-AUDIT.md:17 | OK |
+| [[latki-na-nvidia]] | 0045 | CUDA-AUDIT.md:18 | OK |
+| [[latki-na-nvidia]] | 0049 | CUDA-AUDIT.md:147 | OK |
+| [[latki-na-nvidia]] | 0051 | CUDA-AUDIT.md:149 | OK |
+| [[latki-na-nvidia]] | 0053, 0057, 5060 | CUDA-AUDIT.md:10 | OK |
+| [[latki-na-nvidia]] | 0056 | CUDA-AUDIT.md:11 | OK |
+| [[latki-na-nvidia]] | 128 | 09-chmura-3090.md:89 | OK |
+| [[latki-na-nvidia]] | 165.5, 207.7 | 09-chmura-5060ti.md:110 | OK |
+| [[latki-na-nvidia]] | 2026 | CUDA-AUDIT.md:3 | OK (inny wiersz źródła, sprawdzone) |
+| [[latki-na-nvidia]] | 3060 | 09-chmura-3060.md:113 | OK |
+| [[latki-na-nvidia]] | 3090 | 09-chmura-5060ti.md:55 | OK |
+| [[latki-na-nvidia]] | 31 | 09-chmura-3090.md:74 | OK |
+| [[latki-na-nvidia]] | 6.9 | 09-chmura-3090.md:104 | OK |
+| [[latki-na-nvidia]] | 70 | CUDA-AUDIT.md:99 | OK |
+| [[sm-86-89-120]] | 0025, 0057 | CUDA-AUDIT.md:7 | OK |
+| [[sm-86-89-120]] | 0053 | CUDA-AUDIT.md:10 | OK |
+| [[sm-86-89-120]] | 1.7 | 09-chmura-3090.md:104 | OK |
+| [[sm-86-89-120]] | 1024,1 | CUDA-AUDIT.md:130 | OK (inny wiersz źródła, sprawdzone) |
+| [[sm-86-89-120]] | 12 | CUDA-AUDIT.md:178 | OK |
+| [[sm-86-89-120]] | 120, 16, 2026, 3060, 3090, 4060, 5060, 86 | CUDA-AUDIT.md:3 | OK |
+| [[sm-86-89-120]] | 147 | CUDA-AUDIT.md:40 | OK |
+| [[sm-86-89-120]] | 2.7 | 09-chmura-3090.md:113 | OK |
+| [[sm-86-89-120]] | 24 | PLAN-TESTOW.md:89 | OK |
+| [[sm-86-89-120]] | 32 | CUDA-AUDIT.md:181 | OK |
+| [[sm-86-89-120]] | 48 | CUDA-AUDIT.md:226 | OK |
+| [[sm-86-89-120]] | 64 | CUDA-AUDIT.md:222 | OK |
+| [[sm-86-89-120]] | 8.5 | 09-chmura-3090.md:103 | OK |
+| [[sm-86-89-120]] | 90 | CUDA-AUDIT.md:176 | OK |
+| [[cuda-v070]] | 0013, 7b344114d | git:12 | OK |
+| [[cuda-v070]] | 0053, 5dae6224f, 74 | git:2 | OK |
+| [[cuda-v070]] | 0056, 2026, 7a538d96f | git:1 | OK |
+| [[cuda-v070]] | 0488, 0488cba76 | git:9 | OK |
+| [[cuda-v070]] | 3060 | git:13 | OK |
+| [[cuda-v070]] | 3090 | git:17 | OK |
+| [[cuda-v070]] | 398, 398ded98d | git:3 | OK |
+| [[cuda-v070]] | 3da7a02ec | git:5 | OK |
+| [[cuda-v070]] | 5060 | git:20 | OK |
+| [[cuda-v070]] | 71412, 71412d9c6 | git:11 | OK |
+| [[cuda-v070]] | b479c67dd | git:4 | OK |
+| [[mtp-train]] | 0.2 | 11-mtp-pl-pilot.md:6 | OK |
+| [[mtp-train]] | 10, 17 | 10-post-training.md:32 | OK |
+| [[mtp-train]] | 2026 | 11-mtp-pl-pilot.md:1 | OK |
+| [[mtp-train]] | 532, 532fd1057 | 11-mtp-pl-pilot.md:17 | OK |
+| [[batch-invariant]] | 2026 | 12-bit-exact-spekulacja.md:154 | OK |
+| [[batch-invariant]] | 204, 204f108de | git:3 | OK |
+| [[batch-invariant]] | 6e261fdb4 | 12-bit-exact-spekulacja.md:182 | OK |
+| [[batch-invariant]] | 77240, 77240c9b3 | 12-bit-exact-spekulacja.md:163 | OK |
+| [[batch-invariant]] | c09ac6aab | git:4 | OK |
+| [[2026-10-16-budzety-chmury]] | 0.82 | 09-chmura-3060.md:229 | OK |
+| [[2026-10-16-budzety-chmury]] | 0.90 | 09-chmura-3090.md:183 | OK |
+| [[2026-10-16-budzety-chmury]] | 00, 01, 2026, 38, 52 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5283 | OK |
+| [[2026-10-16-budzety-chmury]] | 02, 31 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5287 | OK |
+| [[2026-10-16-budzety-chmury]] | 1.05 | 09-chmura-5060ti.md:191 | OK |
+| [[2026-10-16-budzety-chmury]] | 2.14 | 11-mtp-pl-pilot.md:8 | OK |
+| [[2026-10-16-budzety-chmury]] | 2.77 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:1996 | OK (inny wiersz źródła, sprawdzone) |
+| [[2026-10-16-budzety-chmury]] | 3060, 3090, 5060 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5286 | OK |
+| [[2026-10-16-budzety-chmury]] | 35 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5395 | OK |
+| [[vast-ai]] | 0.08, 3060 | 05-chmura-gpu-do-testow.md:14 | OK |
+| [[vast-ai]] | 0.097 | PLAN-TESTOW.md:99 | OK |
+| [[vast-ai]] | 0.165, 163 | 05-chmura-gpu-do-testow.md:104 | OK |
+| [[vast-ai]] | 0.188 | 05-chmura-gpu-do-testow.md:110 | OK |
+| [[vast-ai]] | 0.228, 162 | 05-chmura-gpu-do-testow.md:99 | OK |
+| [[vast-ai]] | 0.232 | PLAN-TESTOW.md:101 | OK |
+| [[vast-ai]] | 0.294 | 05-chmura-gpu-do-testow.md:105 | OK |
+| [[vast-ai]] | 0.507, 318 | 05-chmura-gpu-do-testow.md:103 | OK |
+| [[vast-ai]] | 0.734 | 05-chmura-gpu-do-testow.md:108 | OK |
+| [[vast-ai]] | 0.82 | 09-chmura-3060.md:229 | OK |
+| [[vast-ai]] | 0.90 | 09-chmura-3090.md:183 | OK |
+| [[vast-ai]] | 05, 1.05 | 09-chmura-5060ti.md:191 | OK |
+| [[vast-ai]] | 1.8 | PLAN-TESTOW.md:11 | OK |
+| [[vast-ai]] | 10, 2026 | 05-chmura-gpu-do-testow.md:13 | OK |
+| [[vast-ai]] | 2.5 | PLAN-TESTOW.md:5 | OK |
+| [[vast-ai]] | 2.77 | ręcznie | OK: suma 0.90 + 1.05 + 0.82 z raportów 09 (i wiadomość Main) |
+| [[vast-ai]] | 3090 | 05-chmura-gpu-do-testow.md:15 | OK |
+| [[vast-ai]] | 4090 | 05-chmura-gpu-do-testow.md:16 | OK |
+| [[vast-ai]] | 445, 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
+| [[vast-ai]] | 50 | 05-chmura-gpu-do-testow.md:66 | OK |
+| [[vast-ai]] | 5060 | 05-chmura-gpu-do-testow.md:17 | OK |
+| [[vast-ai]] | 5070 | 05-chmura-gpu-do-testow.md:18 | OK |
+| [[vast-ai]] | 64 | 05-chmura-gpu-do-testow.md:121 | OK |
+| [[vast-ai]] | 7.7 | 09-chmura-5060ti.md:89 | OK (inny wiersz źródła, sprawdzone) |
+| [[vast-ai]] | 80 | 05-chmura-gpu-do-testow.md:21 | OK |
+| [[runpod]] | 0.22, 0.50, 22 | 05-chmura-gpu-do-testow.md:99 | OK |
+| [[runpod]] | 0.34, 0.89 | 05-chmura-gpu-do-testow.md:103 | OK |
+| [[runpod]] | 0.59 | 05-chmura-gpu-do-testow.md:111 | OK |
+| [[runpod]] | 0.69, 1.19 | 05-chmura-gpu-do-testow.md:108 | OK |
+| [[runpod]] | 05 | 11-mtp-pl-pilot.md:169 | OK |
+| [[runpod]] | 1.11 | PLAN-TESTOW.md:11 | OK |
+| [[runpod]] | 150 | 05-chmura-gpu-do-testow.md:101 | OK |
+| [[runpod]] | 2.14, 3.50 | 11-mtp-pl-pilot.md:8 | OK |
+| [[runpod]] | 2.39, 3070, 5090 | 05-chmura-gpu-do-testow.md:67 | OK |
+| [[runpod]] | 2026 | 05-chmura-gpu-do-testow.md:3 | OK (inny wiersz źródła, sprawdzone) |
+| [[runpod]] | 3.0 | PLAN-TESTOW.md:12 | OK |
+| [[runpod]] | 3060 | 05-chmura-gpu-do-testow.md:68 | OK |
+| [[runpod]] | 3090, 4090 | 05-chmura-gpu-do-testow.md:69 | OK |
+| [[runpod]] | 48 | 11-mtp-pl-pilot.md:168 | OK |
+| [[runpod]] | 7.65 | 11-mtp-pl-pilot.md:171 | OK |
+| [[runpod]] | 96 | 11-mtp-pl-pilot.md:174 | OK |
+| [[ollama]] | 0.40 | 09-chmura-3090.md:165 | OK |
+| [[ollama]] | 1,5 | 03-silniki-i-stack.md:38 | OK |
+| [[ollama]] | 1.3 | 01-konkurencja.md:144 | OK (inny wiersz źródła, sprawdzone) |
+| [[ollama]] | 165, 190 | 01-konkurencja.md:49 | OK |
+| [[ollama]] | 180.5 | 09-chmura-3090.md:172 | OK |
+| [[ollama]] | 2026 | 01-konkurencja.md:46 | OK |
+| [[ollama]] | 3090 | 01-konkurencja.md:410 | OK (inny wiersz źródła, sprawdzone) |
+| [[ollama]] | 39.0 | 09-chmura-3090.md:171 | OK |
+| [[ollama]] | 65 | 06-produkt-ux-prawo-biznes.md:17 | OK |
+| [[liquidai]] | 10, 2026 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:313 | OK |
+| [[liquidai]] | 13.58, 226.8 | 09-chmura-5060ti.md:177 | OK |
+| [[liquidai]] | 24.8 | 09-chmura-5060ti.md:277 | OK |
+| [[liquidai]] | 5060 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:148 | OK (inny wiersz źródła, sprawdzone) |
+| [[prismml]] | 1.76, 20, 27, 5.93, 98.2 | 10-post-training.md:329 | OK |
+| [[prismml]] | 142 | 09-chmura-3060.md:31 | OK |
+| [[prismml]] | 2026 | 10-post-training.md:3 | OK (inny wiersz źródła, sprawdzone) |
+| [[prismml]] | 3060 | 09-chmura-3060.md:36 | OK |
+| [[prismml]] | 44.75 | 09-chmura-3060.md:102 | OK |
+| [[raport-08-platforma]] | 0001 | 08-analiza-platformy-latek.md:12 | OK |
+| [[raport-08-platforma]] | 0022 | 08-analiza-platformy-latek.md:27 | OK |
+| [[raport-08-platforma]] | 0042 | 08-analiza-platformy-latek.md:26 | OK |
+| [[raport-08-platforma]] | 0048, 0065, 0069, 13, 15 | 08-analiza-platformy-latek.md:39 | OK |
+| [[raport-08-platforma]] | 0054 | 08-analiza-platformy-latek.md:25 | OK |
+| [[raport-08-platforma]] | 0060, 0061, 2026 | 08-analiza-platformy-latek.md:19 | OK |
+| [[raport-08-platforma]] | 07 | 08-analiza-platformy-latek.md:23 | OK |
+| [[raport-08-platforma]] | 08 | 09-chmura-3090.md:157 | OK |
+| [[raport-08-platforma]] | 09 | 09-chmura-3090.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[raport-08-platforma]] | 1.23 | 09-chmura-3090.md:196 | OK (inny wiersz źródła, sprawdzone) |
+| [[raport-08-platforma]] | 1.50 | 09-chmura-3090.md:197 | OK (inny wiersz źródła, sprawdzone) |
+| [[raport-08-platforma]] | 1.736, 14, 14.14 | 08-analiza-platformy-latek.md:29 | OK |
+| [[raport-08-platforma]] | 16 | 08-analiza-platformy-latek.md:36 | OK |
+| [[raport-08-platforma]] | 25 | 08-analiza-platformy-latek.md:35 | OK |
+| [[raport-08-platforma]] | 27 | 09-chmura-3090.md:160 | OK |
+| [[raport-08-platforma]] | 70 | 08-analiza-platformy-latek.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[raport-08-platforma]] | 73 | 08-analiza-platformy-latek.md:34 | OK |
+| [[raport-10-post-training]] | 0.2, 1.7 | 11-mtp-pl-pilot.md:6 | OK |
+| [[raport-10-post-training]] | 0.21, 3090 | 10-post-training.md:13 | OK |
+| [[raport-10-post-training]] | 0.73, 80 | 10-post-training.md:18 | OK |
+| [[raport-10-post-training]] | 00, 30 | 10-post-training.md:9 | OK |
+| [[raport-10-post-training]] | 1.83, 2.73, 3.0, 3.3, 4.2, 6.8 | 10-post-training.md:31 | OK |
+| [[raport-10-post-training]] | 10 | 10-post-training.md:1 | OK |
+| [[raport-10-post-training]] | 11 | 10-post-training.md:39 | OK |
+| [[raport-10-post-training]] | 14 | 10-post-training.md:42 | OK |
+| [[raport-10-post-training]] | 16, 2026 | 10-post-training.md:3 | OK |
+| [[raport-10-post-training]] | 17 | 10-post-training.md:32 | OK |
+| [[raport-10-post-training]] | 2.2, 2.4, 3.74 | 10-post-training.md:35 | OK |
+| [[raport-10-post-training]] | 3.07 | 10-post-training.md:20 | OK |
+| [[index]] | 0001 | STATUS-NEXT.md:3 | OK |
+| [[index]] | 0013 | 09-chmura-3090.md:199 | OK |
+| [[index]] | 10, 2026 | STATUS-NEXT.md:6 | OK |
+| [[index]] | 109.0, 1115, 27, 27.74, 43.2 | STATUS-NEXT.md:10 | OK |
+| [[index]] | 11 | 09-chmura-5060ti.md:226 | OK |
+| [[index]] | 1109, 115.5, 26, 26.68, 44.0 | STATUS-NEXT.md:11 | OK |
+| [[index]] | 128, 4096 | STATUS-NEXT.md:7 | OK |
+| [[index]] | 13 | 09-chmura-5060ti.md:216 | OK |
+| [[index]] | 14 | STATUS-NEXT.md:15 | OK |
+| [[index]] | 144.47, 147.69, 207.86 | 09-chmura-5060ti.md:240 | OK |
+| [[index]] | 16 | 09-chmura-3090.md:233 | OK |
+| [[index]] | 17 | 09-chmura-3090.md:203 | OK |
+| [[index]] | 176.0, 180.2, 263.9 | 09-chmura-3090.md:224 | OK |
+| [[index]] | 2.14 | 09-chmura-3090.md:211 | OK |
+| [[index]] | 2.77 | 11-mtp-pl-pilot.md:112 | OK (inny wiersz źródła, sprawdzone) |
+| [[index]] | 22, 22.1 | 09-chmura-3090.md:215 | OK |
+| [[index]] | 22.3, 23.4 | 09-chmura-3060.md:242 | OK |
+| [[index]] | 23 | 09-chmura-3090.md:214 | OK |
+| [[index]] | 25 | 09-chmura-5060ti.md:236 | OK |
+| [[index]] | 264.3, 267.3, 3.74, 6291 | STATUS-NEXT.md:13 | OK |
+| [[index]] | 28.07, 37.32, 51.66 | 09-chmura-5060ti.md:222 | OK |
+| [[index]] | 286 | AUDYT.md:297 | OK |
+| [[index]] | 289.7, 293.7, 3.41, 6175 | STATUS-NEXT.md:12 | OK |
+| [[index]] | 33.1, 35.5 | 09-chmura-3060.md:258 | OK |
+| [[index]] | 39.0, 49, 63.3, 78.0 | 09-chmura-3090.md:209 | OK |
+| [[index]] | 44.8 | 09-chmura-5060ti.md:227 | OK |
+| [[index]] | 70, f61994f58 | STATUS-NEXT.md:5 | OK |
+| [[index]] | 7900 | 11-mtp-pl-pilot.md:9 | OK |
 
 ## Powiązane
 - [[index|Strona główna]]

@@ -2,28 +2,35 @@
 typ: nvidia
 tags: [nvidia, wyniki, chmura]
 aktualizacja: 2026-10-16
-zrodlo: ~/qwen-opt/cloud/results/{3090,5060ti}-20261016/tbo/summary.txt:1-8; ~/qwen-opt/cloud/results/{3090,5060ti}-20261016/lb/*.jsonl (avg_ts tg128, zaokrąglone do 0.1); ~/qwen-opt/cloud/results/{3090,5060ti,3060}-20261016/greedy/ (odczyt 2026-10-16 ok. 02:40 UTC); ~/qwen-opt/cloud/PLAN-TESTOW.md:16,76-84; ~/qwen-opt/cloud/bench.sh:16-18,272-294
-status: do-sprawdzenia
+zrodlo: ~/KERNEL/product/research/09-chmura-3090.md:40-72,201-233; ~/KERNEL/product/research/09-chmura-5060ti.md:59-89,214-256; ~/KERNEL/product/research/09-chmura-3060.md:64-127,233-275; ~/qwen-opt/cloud/results/{3090,5060ti,3060}-20261016/scorecard.json
+status: aktualne
 ---
-# Wyniki NVIDIA z chmury (stan 2026-10-16, w toku)
+# Wyniki NVIDIA z chmury (2026-10-16, finalne)
 
-**Pierwsza runda na Vast: fork buduje się i przechodzi testy op na RTX 3090, na RTX 5060 Ti padają 2 testy prologu GDN, a greedy md5 forka różni się od upstreamu na każdym modelu, także z wyłączonymi przełącznikami.**
+**Pierwsza runda na trzech kartach NVIDIA zakończona: nasz silnik daje ×1.4–2.0 względem domyślnego llama.cpp na modelach z MTP lub dużym udziałem hosta (Qwen, LFM) i tylko +5–7% na 2-bitowych 27B bez MTP; greedy md5 forka różni się od upstreamu przez łatki bez przełącznika (0001/0002, 0013).**
 
-Stan plików w chwili zapisu (kampanie wciąż trwają):
-- **test-backend-ops** (fork): RTX 3090 19253/19253; RTX 5060 Ti 19251/19253, FAIL w `GATED_DELTA_NET_PROLOGUE` (q4_K, n_tokens 6 i 8: ERR 0.000505 i 0.000944 przy progu 0.0005).
-- **greedy md5:** werdykt `DIFF-BUILD` dla Qwen3.8-27B (plain i spec) i LFM2.5 na 3090 i 5060 Ti oraz dla Saluki i Bonsai na 3060: fork-safe = fork ≠ base, czyli różnicę robi łatka bez przełącznika. PLAN-TESTOW wymienia takie łatki zmieniające numerykę: 0013, 0043, 0001/0002, 0023, 0018. Gałęzie z dodatkowymi wyłącznikami do bisekcji (`cuda-3090-opt`, `cuda-v070-5060ti`) już powstały.
-- **llama-bench tg128** (2 rundy ABCDDCBA, ten sam zestaw flag `-fa on -ctk/-ctv <KV> -ngl 999`; „base” = upstream z tymi flagami, „fork” = fork z tymi flagami, „fork-safe” = fork z 31 przełącznikami = 0):
-  - 3090, Qwen3.8-27B UD-Q4_K_XL: base 39.0 / 39.0, fork 39.4 / 39.4, fork-safe 40.2 / 40.2 t/s (upstream z domyślnymi flagami: 39.4 / 39.6);
-  - 3090, LFM2.5 Q5_K_M: base 237.5 / 236.3, fork 258.2 / 256.9, fork-safe 245.3 t/s;
-  - 5060 Ti, Qwen3.8-27B UD-Q3_K_XL: base 28.6, fork 29.0 / 28.9, fork-safe 29.3 t/s;
-  - 5060 Ti, LFM2.5 Q4_K_M: base 196.9 / 196.2, fork 201.2 / 199.4, fork-safe 194.8 / 195.7 t/s.
-- **spec_sweep:** brak danych w momencie zapisu (plik pusty na 3090).
+Decode t/s (spec_sweep, 6 promptów × 3 seedy, T=1, ABBA; A0 = upstream tylko `-m`, A1 = najlepsze flagi upstream, „nasz” = fork z profilem):
 
-Wniosek wstępny: na LFM fuzje forka dają zysk w tg na 3090 (~+9% vs base tuned), na Qwenie zmiany ~±2%. Do potwierdzenia po zakończeniu kampanii.
+| karta, model | A0 | A1 | nasz | ×A0 / ×A1 |
+|---|---|---|---|---|
+| 3090, Qwen3.8-27B UD-Q4_K_XL | 39.0 | 63.3 | 78.0 | 2.00 / 1.23 |
+| 3090, LFM2.5 Q5_K_M | 180.2 | 176.0 | 263.9 | 1.46 / 1.50 |
+| 5060 Ti, Qwen3.8-27B UD-Q3_K_XL | 28.07 | 37.32 | 51.66 | 1.84 / 1.38 |
+| 5060 Ti, LFM2.5 Q4_K_M | 147.69 | 144.47 | 207.86 | 1.41 / 1.44 |
+| 3060, Saluki 27B IQ2-mix | 22.1 | 22.3 | 23.4 | 1.05 / 1.05 |
+| 3060, Bonsai 2 27B (Q2_0 repack) | — | 33.1 | 35.5 | +7% vs upstream |
+
+- Poprawność: test-backend-ops 3090 19253/19253, 5060 Ti 19251/19253 (2 FAIL tolerancji prologu GDN). Greedy md5 forka ≠ upstream na każdym modelu, także z 31 przełącznikami = 0; przyczyny: MMVQ multi-kolumna 0001/0002 (LFM: build bez multi = md5 upstream) i fuzja prologu GDN 0013 (Qwen). KLD fork vs upstream na 3060: na poziomie szumu (PASS). Na Q4_0 i NVFP4 fork = upstream bitowo.
+- Profile: Ampere `GGML_CUDA_MMVQ_N1_ROWS=2` + `GATE_UP_Q8` off; Blackwell `GATE_UP_Q8=0`, `Q8_IDS=0`, bez N1_ROWS.
+- Zysk na NVIDIA pochodzi głównie z warstwy hosta (sampler bez wolnych ścieżek, słownik draftu, koszt kroku MTP), nie z kerneli; fuzje tną kernele ~2× (Qwen 1956 → 795/token na 3090), ale grafy CUDA i tak ukrywały większość przerw.
+- Ollama 0.40.5 z domyślnymi ustawieniami (3090): Qwen 39.0, LFM 180.5 t/s, czyli tyle co A0.
+- Koszt Vast: 3090 ≈ $0.90, 5060 Ti ≈ $1.05, 3060 ≈ $0.82; wszystkie instancje zniszczone.
 
 ## Powiązane
 - [[nvidia/_hub|NVIDIA]]
 - [[latki-na-nvidia]]
 - [[rtx-3090]]
 - [[rtx-5060-ti]]
-- [[harness-chmurowy]]
+- [[rtx-3060]]
+- [[raport-09-chmura-3090]]
+- [[lekcja-md5-wzgledem-upstreamu]]

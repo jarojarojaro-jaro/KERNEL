@@ -2,7 +2,7 @@
 typ: model
 tags: [modele, lfm, moe]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:333-341,354,363; ~/KERNEL/qwen-opt/STATUS-NEXT.md:12; ~/KERNEL/product/research/06-produkt-ux-prawo-biznes.md:51,355; ~/KERNEL/product/research/10-post-training.md:141; ~/KERNEL/qwen-opt/tools/kld-canary.md:66-67; ls ~/models (2026-10-16)
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:333-341,354,363; ~/KERNEL/qwen-opt/STATUS-NEXT.md:12; ~/KERNEL/product/research/06-produkt-ux-prawo-biznes.md:51,355; ~/KERNEL/product/research/10-post-training.md:141; ~/KERNEL/qwen-opt/tools/kld-canary.md:66-67; ls ~/models (2026-10-16); ~/KERNEL/product/research/09-chmura-5060ti.md:76-86,156,164-186,197; ~/KERNEL/product/research/09-chmura-3090.md:53-61
 status: aktualne
 ---
 # LFM2.5-24B-A2B (Liquid AI)
@@ -17,11 +17,14 @@ Wyniki: baza na forku przed pracą pod LFM — czat 173 t/s, tg128 198 t/s (upst
 
 KV q8_0 vs f16: KLD 0.044 (q4_0: 0.128). Draftery: brak (jest tylko DFlash dla LFM2.5-1.2B / VL-3B). W `~/models/lfm` leży też LFM2.5-2.6B-QAD-Q4_0 (1.48 GiB), bez pomiarów w notatkach.
 
+Na NVIDIA (raport 09, 2026-10-16): RTX 3090 Q5_K_M A0 180.2 → nasz silnik 263.9 t/s (profil Ampere); RTX 5060 Ti Q4_K_M 147.69 → 207.86 t/s. Q5_K_M (15.86 GiB) nie mieści się w 16 GB (z `--n-cpu-moe 6` tylko 120.9 t/s tg128). Najlepszy plik dla 16 GB to oficjalny **QAD-Q4_0** Liquid (quantization-aware distillation, 13.58 GB): KLD 0.2029 (Q4_K_M 0.2008), PPL(Q)/PPL(Q8) 0.869, serwer 164.5 → 226.8 t/s (+38%) i md5 forka = upstream. Prefill LFM rośnie o +56% z `-b 2048 -ub 2048`.
+
 Licencja: LFM Open License v1.0 — za darmo komercyjnie tylko poniżej 10 M$ rocznego przychodu (dotyczy też klientów B2B).
 
 ## Powiązane
 - [[modele/_hub|Modele]]
 - [[lfm2-5-uncensored]]
 - [[fuzje-lfm-moe]]
-- liquid-ai
+- [[liquidai]]
 - [[lfm-runda-4-pm4]]
+- [[raport-09-chmura-5060ti]]

@@ -2,7 +2,7 @@
 typ: hub
 tags: [index, hub]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-16; git -C ~/llama-master branch -v; ~/qwen-opt/cloud/PLAN-TESTOW.md:55-58; ~/qwen-opt/cloud/results/3090-20261016/scorecard.md:1-30 (03:03 UTC); ~/qwen-opt/cloud/results/3060-20261016/summary.md:1-25 (03:20 UTC); ~/KERNEL/wiki/AUDYT.md
+zrodlo: ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-16; git -C ~/llama-master branch -v; ~/KERNEL/product/research/09-chmura-3090.md:201-233; ~/KERNEL/product/research/09-chmura-5060ti.md:214-256; ~/KERNEL/product/research/09-chmura-3060.md:233-275; ~/KERNEL/product/research/11-mtp-pl-pilot.md:3-9; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:154-197; ~/KERNEL/wiki/AUDYT.md
 status: aktualne
 ---
 # KERNEL: baza wiedzy
@@ -24,17 +24,27 @@ Zainstalowane: `~/llama-opt`, gałąź `amd-opt` @ f61994f58, 70 łatek. Pomiar 
 
 Szczegóły: [[stan-2026-10-15]].
 
-Wstępne wyniki z chmury (2026-10-16, w toku, `do-sprawdzenia`; A0 = upstream tylko z `-m`, „typowa aplikacja”; A2 = nasz fork z flagami A1: `-fit on -fa on`, KV q8_0, MTP n=4 dla Qwena; A2s = A2 z 31 przełącznikami = 0):
+Wyniki NVIDIA z chmury (2026-10-16, finalne; decode t/s, spec_sweep 6 promptów × 3 seedy, T=1; A0 = upstream tylko `-m`, A1 = najlepsze flagi upstream, „nasz” = fork z profilem karty):
 
-| karta, model | A0 decode t/s | A2 decode t/s | źródło |
+| karta, model | A0 | A1 | nasz |
 |---|---|---|---|
-| [[rtx-3090]], LFM2.5 Q5_K_M | 180.2 | 249.3 (×1.38) | `results/3090-20261016/scorecard.md` |
-| [[rtx-3090]], Qwen3.8-27B UD-Q4_K_XL | 39.0 | 78.0 | jw. |
-| [[rtx-3060]], Saluki 27B IQ2 (spec_sweep) | 22.14 | 22.68 (A2s: 23.06) | `results/3060-20261016/summary.md` |
+| [[rtx-3090]], Qwen3.8-27B UD-Q4_K_XL | 39.0 | 63.3 | 78.0 |
+| [[rtx-3090]], LFM2.5 Q5_K_M | 180.2 | 176.0 | 263.9 |
+| [[rtx-5060-ti]], Qwen3.8-27B UD-Q3_K_XL | 28.07 | 37.32 | 51.66 |
+| [[rtx-5060-ti]], LFM2.5 Q4_K_M | 147.69 | 144.47 | 207.86 |
+| [[rtx-3060]], Saluki 27B IQ2-mix | 22.1 | 22.3 | 23.4 |
+| [[rtx-3060]], Bonsai 2 27B (Q2_0; fork prism z PTQ1_0: 44.8) | — | 33.1 | 35.5 |
 
-Szczegóły i testy poprawności: [[nvidia-wyniki-2026-10-16]], [[2026-10-16-kampania-nvidia]].
+Greedy forka ≠ upstream (łatki 0001/0002 i 0013, KLD na poziomie szumu): [[lekcja-md5-wzgledem-upstreamu]]. Szczegóły: [[nvidia-wyniki-2026-10-16]]. Pilot douczania głowicy MTP: wynik negatywny ([[2026-10-16-mtp-pl-pilot]]).
 
-Teraz trwa (2026-10-16): kampanie Vast na [[rtx-3060]] (Saluki + Bonsai), [[rtx-3090]] i [[rtx-5060-ti]] w ramach [[2026-10-16-budzety-chmury|$5]] (gałęzie: [[cuda-v070]]); trening głowicy MTP na RunPod ([[mtp-train]], limit $6). Prototyp aplikacji gotowy lokalnie, niewdrożony ([[aplikacja-w-budowie]]); czeka na [[otwarte-decyzje-produktu]]. Czeka na test na Radeonie, którego teraz nie robimy ([[2026-10-16-bez-lokalnego-gpu]]): poprawka atencji w [[batch-invariant]] i [[amd-opt-v070]]. Lokalna produkcja bez zmian: [[amd-opt]].
+Wydatki: Vast ≈ $2.77 z $5, RunPod $2.14 z $6; wszystkie nasze instancje i pody zniszczone ([[2026-10-16-budzety-chmury]]).
+
+**Teraz nic nie działa.** Czeka:
+- test bit-exact na RX 7900 XTX: dwie komendy `llama-bx-diff` (< 2 min GPU), wymagają zgody, bo nie testujemy teraz na lokalnym GPU ([[2026-10-16-bit-exact]], [[2026-10-16-bez-lokalnego-gpu]]);
+- opcjonalny test potwierdzający nowej głowicy MTP na XTX ([[raport-11-mtp-pl-pilot]]);
+- [[otwarte-decyzje-produktu]] (nazwa, kolor, ceny, konto, prawo, port API, domena); prototyp aplikacji jest gotowy lokalnie ([[aplikacja-w-budowie]]).
+
+Lokalna produkcja bez zmian: [[amd-opt]].
 
 Audyt liczb: [[AUDYT]].
 
@@ -54,12 +64,12 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (23)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (16)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (26)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (25)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (27)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (30)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (17)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (49)
-- [[research/_hub|research]] — Streszczenia raportów (13)
+- [[research/_hub|research]] — Streszczenia raportów (17)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (22)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (23)
 
@@ -81,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
 - 2026-10-16 [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]]
 
-Razem 286 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
+Razem 296 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

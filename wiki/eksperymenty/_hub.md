@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (26)
+## Notatki (27)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -38,8 +38,9 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[qwen-runda-5|2026-10-15: Qwen runda 5 (gałąź opt-qwen5) — same wyniki negatywne]] — Runda 5 nie dała łatki: GDN fast nie był bitowy, podwójny bufor MMQ zwalniał, szeroki blok DFlash był wolniejszy; za to ablacja MMQ wskazała epilog jako prawdziwe ograniczenie prefillu.
 - [[runda-6|2026-10-15: runda 6 — epilog MMQ, GDN fast, narzędzia]] — Trzy gałęzie przygotowane offline i zmierzone w oknie GPU: epilog MMQ scalony (+2.2% pp4096 Qwena), GDN fast bitowy, ale w szumie (nie scalony), narzędzia LOO / kanarki KLD / Kernel Tuner gotowe, ale jeszcze nieuruchomione na GPU.
 - [[2026-10-15-sampler|2026-10-15: sampler bez wolnych ścieżek (0065–0069)]] — Web UI, budżet myślenia, `logit_bias` i gramatyka narzędzi omp po cichu włączały pełne sortowanie 128k/248k kandydatów; po łatkach LFM ~255 → ~293 t/s i Qwen MTP +6–8% w tych ścieżkach, przy tych samych tokenach.
-- [[2026-10-16-bit-exact|2026-10-16: bitowo identyczna spekulacja (MTP == plain greedy), w toku]] — Projekt trybu `LLAMA_SPEC_BITEXACT=1`, w którym greedy z MTP daje ten sam tekst co bez spekulacji; dziś na XTX plain i MTP mają różne md5 (c4708318 vs 6f14e814), bo ta sama pozycja jest liczona innym kernelem przy N=1 i N≥2.
-- [[2026-10-16-kampania-nvidia|2026-10-16: pierwsza kampania na kartach NVIDIA (Vast), w toku]] — Faza 0 E2/E4: czy łatki forka działają poprawnie i dają zysk na NVIDIA; trzy karty (RTX 3060, 5060 Ti, 3090) jedna po drugiej, budżet ≤ $8, plan ~$2.5.
+- [[2026-10-16-bit-exact|2026-10-16: bitowo identyczna spekulacja (MTP == plain greedy)]] — Tryb `LLAMA_SPEC_BITEXACT=1` (gałąź `batch-invariant`) wyrównał na GPU warstwy 0–6 między plain a weryfikacją MTP; ostatnia różnica to wyjście atencji `kqv_out-3`, a następny test GPU czeka na zgodę użytkownika.
+- [[2026-10-16-kampania-nvidia|2026-10-16: pierwsza kampania na kartach NVIDIA (Vast)]] — Faza 0 E2/E4 zakończona: trzy karty (RTX 3090, 5060 Ti, 3060) równolegle, ≈ $2.77 z $5; łatki budują się i działają na NVIDIA, dają ×1.4–2.0 na Qwen/LFM, ale greedy nie jest bitowo równy upstreamowi.
+- [[2026-10-16-mtp-pl-pilot|2026-10-16: pilot douczania głowicy MTP (wynik negatywny)]] — Douczanie wbudowanej głowicy MTP Qwen3.8-27B na naszym Q4 (RunPod A40, 3.50 h, $2.14) nie dało zysku: offline najlepszy przebieg +0.2%, online n=4 PL-proza +2.3% i pozostałe klasy 0 do −1.7%.
 - [[2026-10-16-rebase-v070|2026-10-16: rebase 70 łatek na llama.cpp v0.7.0]] — Łatki przeniesione z `e60eff95f` na tag `v0.7.0` (141 commitów upstreamu później): 69 przeniesionych (60 czysto, 9 z konfliktami), 1 porzucona, bo już jest w upstreamie; build HIP OK, pełna weryfikacja na GPU do zrobienia.
 - [[stan-2026-10-15|Stan zainstalowany 2026-10-15 (70 łatek)]] — Pomiar finalny po rundzie 6: Qwen3.8-27B 109.0 t/s, Uncensored 115.5, LFM2.5 293.7, LFM Uncensored 267.3; build `~/llama-opt`, gałąź `amd-opt` @ f61994f58.
 <!-- AUTO:END -->

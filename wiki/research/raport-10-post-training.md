@@ -2,7 +2,7 @@
 typ: research
 tags: [research, trening, mtp, kwanty]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/10-post-training.md:1-52
+zrodlo: ~/KERNEL/product/research/10-post-training.md:1-52; ~/KERNEL/product/research/11-mtp-pl-pilot.md:3-9
 status: aktualne
 ---
 # Raport 10: trening i post-training
@@ -16,9 +16,12 @@ Stan 2026-10-16, bez GPU. Ceny Vast (feed 2026-10-16 00:30 UTC): RTX 3090 $0.21/
 - QAT/niskie bity (Bonsai, GSQ-RCO, Saluki) zmieniają wyjście → osobny „Tryb maksymalny”.
 - Ścieżka: <$1 MTP Qwen3.5-0.8B przez speculators na 3090; ~$3–4 pilot MTP-PL; stretch $5–16.
 
+Wynik pilota (raport 11, 2026-10-16): douczenie głowicy MTP na 1.7 M tokenów dało ±0.2% tok/krok zamiast szacowanych +10–17%.
+
 ## Powiązane
 - [[research/_hub|research]]
 - [[raport-12-bit-exact]]
 - [[raport-07-metody]]
 - [[speculators-specforge]]
 - [[glowica-mtp]]
+- [[raport-11-mtp-pl-pilot]]

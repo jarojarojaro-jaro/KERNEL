@@ -2,7 +2,7 @@
 typ: model
 tags: [modele, mtp, spekulacja]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/mtp-train/RESULTS.md:1-10,52-127; ~/KERNEL/qwen-opt/NOTES.md:128-146,233,317; ~/KERNEL/qwen-opt/research/drafters.md:9-13; git -C ~/llama.cpp log mtp-train -1
+zrodlo: ~/KERNEL/qwen-opt/mtp-train/RESULTS.md:1-10,52-127; ~/KERNEL/qwen-opt/NOTES.md:128-146,233,317; ~/KERNEL/qwen-opt/research/drafters.md:9-13; git -C ~/llama.cpp log mtp-train -1; ~/KERNEL/product/research/11-mtp-pl-pilot.md:3-9,24-30,66-93
 status: aktualne
 ---
 # Głowica MTP Qwen3.8-27B (spekulacja bez osobnego draftera)
@@ -19,6 +19,8 @@ Wnioski z `mtp-train/RESULTS.md`:
 - głowica jest „za pewna siebie” dla rejection sampling, dlatego `--spec-draft-sampling probabilistic` nie pomógł;
 - rekomendacja: GO dla pilota samodestylacji na 2 M tokenów, oczekiwany zysk greedy +5–11% tok/krok, bez osobnej głowicy PL.
 
+**Pilot douczania (2026-10-16, raport 11) – wynik negatywny:** na 1.7 M tokenów (0.39 M on-policy) głowica zmienia tok/krok o ±2% (offline najlepiej +0.2%; online n=4 PL-proza +2.3%, reszta 0 do −1.7%). Na held-out fabryczna głowica ma 3.266 tok/krok przy n=4, wyrocznia 3.960 (+21%), ale trening jej nie przybliża. W pliku głowica jest w Q6_K/Q8_0/F32 (351 008 768 B); IQ4_XS powstaje dopiero przy ładowaniu (−0.45% tok/krok offline). Nie skalujemy tego do 10 M tokenów.
+
 Publicznie (drafters.md): nie ma EAGLE-3, Medusa ani przetrenowanej głowicy MTP dla Qwen3.8-27B. Gałąź `mtp-train` (2026-10-16) dodaje narzędzie `llama-mtp-extract`.
 
 ## Powiązane
@@ -26,4 +28,6 @@ Publicznie (drafters.md): nie ma EAGLE-3, Medusa ani przetrenowanej głowicy MTP
 - [[drafter-dflash]]
 - [[mtp-draft-graf]]
 - [[latki-spekulacji]]
-- raport-10-post-training
+- [[raport-10-post-training]]
+- [[raport-11-mtp-pl-pilot]]
+- [[2026-10-16-mtp-pl-pilot]]
