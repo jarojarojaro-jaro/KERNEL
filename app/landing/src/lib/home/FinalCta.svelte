@@ -16,7 +16,7 @@
 	const label = $derived(fill(c.tacho, { card: HERO_CARD.name, v: num(v.v, lang) }));
 </script>
 
-<section class="final" aria-labelledby="final-title">
+<section class="final heat-top" aria-labelledby="final-title">
 	<div class="heat" class:on aria-hidden="true"></div>
 	<div class="inner">
 		<div class="dial" use:reveal={{ threshold: 0.4, onin: () => (on = true) }}>
@@ -47,7 +47,6 @@
 		position: relative;
 		overflow: clip;
 		padding-block: clamp(4rem, 3rem + 4vw, 7rem);
-		border-top: 1px solid var(--line);
 		background: var(--bg-0);
 		isolation: isolate;
 	}

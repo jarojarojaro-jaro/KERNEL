@@ -567,17 +567,32 @@ export function words500(v: Variant | undefined, lang: 'pl' | 'en'): { v: number
 }
 
 /**
- * In validation (not a product claim): on the RX 7900 XTX, MTP speculation in bit-exact mode gave
- * byte-identical greedy output to plain decoding in one end-to-end test. Full validation and the
- * speed cost of the bit-exact mode are still pending.
+ * In validation (not a product claim yet): bit-exact speculation on the RX 7900 XTX, Qwen3.8-27B
+ * Q4_K_XL, full validation run 3 (2026-10-16). In bit-exact mode MTP output is byte-identical to plain
+ * greedy decoding for draft lengths n_max 1–7, on long prompts, and across repeated requests; the
+ * kernel tests all pass. MTP speed in this mode vs the current production engine, same script, comes
+ * from the run's summary file (not yet copied into the research note).
  */
 export const BITEXACT_XTX = {
 	card: 'rx-7900-xtx',
 	model: 'qwen38' as ModelKey,
 	quant: 'Q4_K_XL',
-	conditions: { pl: 'KV q4_0, kontekst 8192, MTP n_max 4, odpowiedź zachłanna (greedy)', en: 'KV q4_0, context 8192, MTP n_max 4, greedy decoding' } as L,
-	md5: '74952fd5c918b0486194c21d3ee0576c',
-	chars: 2783,
-	src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:235',
-	pendingSrc: 'KERNEL/product/research/12-bit-exact-spekulacja.md:241-252'
+	run: { pl: 'przebieg 3, 2026-10-16', en: 'run 3, 2026-10-16' } as L,
+	nMax: { v: '1–7', src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:273' },
+	longPrompts: { v: ['6,5k', '29,5k', '94k'], src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:274' },
+	detScenarios: { v: 5, src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:276' },
+	ops: {
+		v: [
+			{ name: 'MUL_MAT', pass: 2491, total: 2491 },
+			{ name: 'FLASH_ATTN_EXT', pass: 4071, total: 4071 },
+			{ name: 'GATED_DELTA_NET', pass: 43, total: 43 }
+		],
+		src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:272'
+	},
+	src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:272-276',
+	speed: {
+		bitexact: { v: 107.0, src: '/tmp/bxv/summary.txt:101' },
+		prod: { v: 107.5, src: '/tmp/bxv/summary.txt:99' },
+		script: 'spec_sweep (run-llm.sh qwen mtp rocm)'
+	}
 } as const;

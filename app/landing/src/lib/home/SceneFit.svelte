@@ -21,9 +21,10 @@
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].how.fit);
-	const tl = new Autoplay(5.2);
+	// the whole sequence in ~1.3 s, starting at ~20% in view: nobody scrolls past it unplayed
+	const tl = new Autoplay(1.3, '0px 0px -20% 0px');
 	const p = $derived(tl.p);
-	const stage = $derived(p >= 0.74 ? 4 : p >= 0.42 ? 3 : p >= 0.22 ? 2 : p > 0 ? 1 : 0);
+	const stage = $derived(p >= 0.72 ? 4 : p >= 0.4 ? 3 : p >= 0.2 ? 2 : p > 0 ? 1 : 0);
 
 	const vram = HERO_CARD.vramGB;
 	const file = HERO_RUN.file!;
@@ -39,12 +40,12 @@
 			<div class="top">
 				<SceneHead id="scene-fit" k={c.k} step={c.title} head={c.head} body={c.body} />
 				<div class="verdicts">
-					<div class="verdict yes" class:in={stage >= 2}>
+					<div class="verdict yes">
 						<span class="vh"><span class="ok" aria-hidden="true">✓</span>{c.fits}</span>
 						<span class="vsub">{c.used} {gb(used.v, used.unit)} / {vram}&nbsp;GB</span>
 						<SourceTip {lang} src={[file.src, used.src, HERO_RUN.conditionsSrc]} note="{c.usedNote} {HERO_RUN.conditions[lang]}" />
 					</div>
-					<div class="verdict no" class:in={stage >= 4}>
+					<div class="verdict no">
 						<span class="vh"><span class="x" aria-hidden="true">✕</span>{c.nofit}</span>
 						<span class="vsub">{c.ghost} · {gb(q8)} &gt; {vram}&nbsp;GB</span>
 						<SourceTip {lang} src={MODELS_SRC} note={c.ghostNote} />
@@ -149,7 +150,7 @@
 		box-shadow: inset 0 14px 40px -14px rgb(0 0 0 / 0.9);
 	}
 	.tray.hit {
-		animation: shake 0.5s var(--ease-out) 0.38s both;
+		animation: shake 0.35s var(--ease-out) 0.18s both;
 	}
 	@keyframes shake {
 		20% {
@@ -171,7 +172,7 @@
 		border-left: 1.5px dashed var(--text-hi);
 		transform-origin: 50% 100%;
 		transform: scaleY(0);
-		transition: transform 0.6s var(--ease-out);
+		transition: transform 0.3s var(--ease-out);
 		pointer-events: none;
 		z-index: 3;
 	}
@@ -204,7 +205,7 @@
 	.block.in {
 		opacity: 1;
 		transform: none;
-		animation: drop 1.1s both;
+		animation: drop 0.55s both;
 	}
 	@keyframes drop {
 		0% {
@@ -259,7 +260,7 @@
 		background: radial-gradient(circle, rgb(237 234 227 / 0.75) 1.2px, transparent 1.6px) 0 0 / 7px 7px, rgb(237 234 227 / 0.08);
 		transform-origin: 0 50%;
 		transform: scaleX(0);
-		transition: transform 0.7s var(--ease-out) 0.1s;
+		transition: transform 0.35s var(--ease-out);
 	}
 	.extra.in {
 		transform: none;
@@ -280,7 +281,7 @@
 		text-align: center;
 		padding: 0 0.3rem;
 		opacity: 0;
-		transition: opacity 0.5s 0.5s;
+		transition: opacity 0.3s 0.15s;
 	}
 	.free.in {
 		opacity: 1;
@@ -323,29 +324,25 @@
 	.ghost.in {
 		opacity: 1;
 		transform: none;
-		animation: fling 1.7s both;
+		animation: fling 0.6s both;
 	}
-	/* falls, its end hits the 24 GB wall, is flung up past the top of the scene, falls back and hovers */
+	/* slams down hard, its end hits the 24 GB wall: impact, one short bounce, rest */
 	@keyframes fling {
 		0% {
 			opacity: 1;
 			transform: translate3d(0, -36vh, 0);
-			animation-timing-function: cubic-bezier(0.55, 0, 1, 0.45);
+			animation-timing-function: cubic-bezier(0.7, 0, 1, 0.5);
 		}
-		24% {
-			transform: translate3d(0, 2.4rem, 0) rotate(1.6deg);
-			animation-timing-function: cubic-bezier(0.1, 0.7, 0.3, 1);
+		42% {
+			transform: translate3d(0, 0.9rem, 0) rotate(1.4deg) scaleY(0.9);
+			animation-timing-function: cubic-bezier(0, 0.6, 0.4, 1);
 		}
-		50% {
-			transform: translate3d(1.5rem, -30vh, 0) rotate(-5deg);
-			animation-timing-function: cubic-bezier(0.55, 0, 0.7, 0.4);
+		64% {
+			transform: translate3d(0, -0.9rem, 0) rotate(-0.6deg);
+			animation-timing-function: cubic-bezier(0.6, 0, 1, 0.6);
 		}
-		78% {
-			transform: translate3d(0, 0.6rem, 0) rotate(0.6deg);
-			animation-timing-function: cubic-bezier(0.3, 0.6, 0.4, 1);
-		}
-		90% {
-			transform: translate3d(0, -0.4rem, 0);
+		84% {
+			transform: translate3d(0, 0.15rem, 0);
 		}
 		100% {
 			opacity: 1;
@@ -416,7 +413,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		opacity: 0;
-		transition: opacity 0.4s 0.4s;
+		transition: opacity 0.3s 0.1s;
 	}
 	.legend li.in {
 		opacity: 1;
@@ -440,33 +437,11 @@
 		grid-template-columns: 1fr 1fr;
 		gap: var(--sp-6);
 	}
-	/* revealed by a wipe, never by opacity: the text is full contrast in every frame */
+	/* both verdicts are readable from the first frame; the animation only shows why */
 	.verdict {
 		display: grid;
 		justify-items: start;
 		gap: 0.45rem;
-		clip-path: inset(0 100% 0 0);
-		transform: translate3d(0, 0.8rem, 0);
-		transition:
-			clip-path 0.6s var(--ease-out),
-			transform 0.6s var(--ease-spring),
-			visibility 0s 0.6s;
-		visibility: hidden;
-	}
-	.verdict.in {
-		clip-path: inset(-0.5rem -0.5rem -0.5rem -0.5rem);
-		transform: none;
-		visibility: visible;
-		transition:
-			clip-path 0.6s var(--ease-out),
-			transform 0.6s var(--ease-spring),
-			visibility 0s;
-	}
-	.verdict.yes {
-		transition-delay: 0.45s;
-	}
-	.verdict.no {
-		transition-delay: 0.3s;
 	}
 	.vh {
 		display: flex;
@@ -532,19 +507,7 @@
 			height: 2.8rem;
 			padding: 0 0.7rem;
 		}
-		.over {
-		position: absolute;
-		top: -1.5px;
-		bottom: -1.5px;
-		right: -1.5px;
-		width: calc((1 - 1 / var(--q8)) * 100% + 1.5px);
-		border: 2px solid var(--danger);
-		border-left-style: dashed;
-		border-radius: 0 var(--r-md) var(--r-md) 0;
-		background: var(--danger-soft);
-		pointer-events: none;
-	}
-	.gname {
+		.gname {
 			font-size: var(--fs-xs);
 		}
 		.stamp {

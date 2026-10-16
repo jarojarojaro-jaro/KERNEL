@@ -199,6 +199,21 @@ Scores per round (WOW / originality / polish):
 | 2 | 6 | 6 | 5.5 |
 | 3 | 6.5 | 6 | 5.5 |
 | 4 | 6 | 6 | 6 |
+| 5 | 6.5 | 6 | 5.5 |
+
+Round 5 came after the user's next round of changes: centred hero with one Qwen race, gauges in SSR, new nav, auto-play scenes, the full-stack visual, the KLD ruler with the validated bit-exact XTX result, FAQ moved after the final CTA, pricing removed, onboarding redone, and a global heat pass. Screens are in `screens/v2/r5/`, `hero-fix/` and `nav/`.
+
+Lighthouse mobile after round 5 (Perf / A11y / BP / SEO / LCP / CLS):
+
+| Page | Perf | A11y | BP | SEO | LCP | CLS |
+|---|---|---|---|---|---|---|
+| `/pl/` | 86 | 100 | 100 | 100 | 3.5 s | 0 |
+| `/en/` | 86 | 100 | 100 | 100 | 3.5 s | 0 |
+| `/pl/wyniki/` | 90 | 100 | 100 | 100 | 3.3 s | 0.001 |
+| `/pl/karty/` | 89 | 100 | 100 | 100 | 3.3 s | 0 |
+| `/pl/karty/rtx-3090/` | 86 | 100 | 100 | 100 | 3.5 s | 0 |
+| `/pl/start/` | 93 | 100 | 100 | 100 | 3.0 s | 0 |
+| `/pl/methodology/` | 93 | 100 | 100 | 100 | 3.0 s | 0 |
 
 Details are in `design/REDESIGN.md` §11. **The ≥ 8/8/8 target was not reached.** After round 4 the hero was rebuilt again on the user's instructions: one Qwen race, a new headline layout, live gauges, a new nav and CTAs. That version has not been juried.
 

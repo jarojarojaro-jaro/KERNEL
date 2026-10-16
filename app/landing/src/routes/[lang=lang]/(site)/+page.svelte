@@ -6,7 +6,6 @@
 	import Faq from '$lib/home/Faq.svelte';
 	import FinalCta from '$lib/home/FinalCta.svelte';
 	import Hero from '$lib/home/Hero.svelte';
-	import Pricing from '$lib/home/Pricing.svelte';
 	import Privacy from '$lib/home/Privacy.svelte';
 	import Quality from '$lib/home/Quality.svelte';
 	import ResultsTeaser from '$lib/home/ResultsTeaser.svelte';
@@ -34,7 +33,7 @@
 
 <Hero {lang} />
 
-<section id="how" class="how" aria-labelledby="how-title">
+<section id="how" class="how heat-top" aria-labelledby="how-title">
 	<header class="how-head">
 		<Duo text={c.how.title} id="how-title" size="mega" />
 	</header>
@@ -48,14 +47,12 @@
 <Quality {lang} />
 <CardsTeaser {lang} />
 <Privacy {lang} />
-<Pricing {lang} />
-<Faq {lang} />
 <FinalCta {lang} />
+<Faq {lang} />
 
 <style>
 	.how {
 		position: relative;
-		border-top: 1px solid var(--line);
 		background: var(--bg-0);
 	}
 	.how-head {

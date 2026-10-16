@@ -51,11 +51,21 @@
 			const k = Math.min(1, (now - t0) / duration);
 			shown = from + (target - from) * ease(k);
 			if (k >= 1) {
+				shown = target;
 				stop = null;
 				return false;
 			}
 		});
-		return () => stop?.();
+		// rAF can be throttled (background tab, busy main thread): the rest value is always exact
+		const settle = setTimeout(() => {
+			stop?.();
+			stop = null;
+			shown = target;
+		}, duration + 120);
+		return () => {
+			clearTimeout(settle);
+			stop?.();
+		};
 	});
 
 	const sep = $derived(lang === 'pl' ? ',' : '.');

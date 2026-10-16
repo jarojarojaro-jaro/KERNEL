@@ -49,6 +49,16 @@
 		min-height: 100dvh;
 		padding: var(--sp-5);
 		background-color: var(--bg-0);
+		background-image:
+			radial-gradient(50% 40% at 70% 0%, color-mix(in srgb, var(--heat-3) 14%, transparent), transparent 70%),
+			radial-gradient(40% 40% at 10% 100%, color-mix(in srgb, var(--heat-2) 10%, transparent), transparent 70%),
+			linear-gradient(var(--grid) 1px, transparent 1px),
+			linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+		background-size:
+			auto,
+			auto,
+			32px 32px,
+			32px 32px;
 	}
 	.window {
 		display: grid;
@@ -57,10 +67,14 @@
 		min-height: 36rem;
 		max-width: 100rem;
 		margin-inline: auto;
-		border: 1px solid var(--line-strong);
+		border: 1px solid transparent;
 		border-radius: var(--r-lg);
-		background: var(--bg-1);
-		box-shadow: var(--shadow-2);
+		background:
+			linear-gradient(var(--bg-1), var(--bg-1)) padding-box,
+			linear-gradient(160deg, color-mix(in srgb, var(--heat-3) 70%, transparent), var(--line-strong) 30%, var(--line-strong) 75%, color-mix(in srgb, var(--heat-2) 60%, transparent)) border-box;
+		box-shadow:
+			var(--shadow-2),
+			0 40px 120px -60px color-mix(in srgb, var(--heat-3) 70%, transparent);
 		overflow: hidden;
 	}
 	.frame {
@@ -71,7 +85,9 @@
 	main {
 		min-width: 0;
 		overflow-y: auto;
-		background: var(--bg-0);
+		background:
+			radial-gradient(60% 30rem at 80% 0%, color-mix(in srgb, var(--heat-3) 7%, transparent), transparent 70%) no-repeat,
+			var(--bg-0);
 		outline: none;
 	}
 	.content {

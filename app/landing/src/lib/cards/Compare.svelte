@@ -104,7 +104,7 @@
 <section class="hero wrap" aria-labelledby="cmp-title">
 	<a class="back mono" href={cardsHref(lang)}><span aria-hidden="true">←</span> {tc.back}</a>
 	<p class="eyebrow">{t.eyebrow}</p>
-	<Kinetic id="cmp-title" lines={[t.title]} class="giga" />
+	<Kinetic id="cmp-title" lines={[t.title]} class="giga hx-h" />
 	<p class="lede late">{t.lede}</p>
 
 	<div class="pickers late">
@@ -117,15 +117,15 @@
 	</div>
 	<p class="fine note late">{shared.length ? t.quantNote : t.fallback}</p>
 
-	<div class="board" aria-live="polite">
+	<div class="board hx-surface hx-ring" aria-live="polite">
 		{#each sides as s (s.key)}
 			<div class="sc" class:hot={lead?.hi.key === s.key}>
-				<span class="sc-n">{s.card.short}</span>
+				<span class="sc-n hx-h">{s.card.short}</span>
 				<span class="sc-v mono">{#if s.d}<Odometer value={roundTo(s.d.ours.decode!.v, 1)} decimals={1} {lang} duration={1100} />{/if}<span class="u">t/s</span></span>
 				{#if s.d}<span class="sc-lab">{variantLabel(s.run, s.run.ours)[lang]}</span><span class="sc-bar" style="--f:{s.d.ours.decode!.v / top}" aria-hidden="true"></span>{/if}
 			</div>
 		{/each}
-		<p class="sc-x">
+		<p class="sc-x hx-bt">
 			{#if lead}<Ratio value={lead.x} {lang} size="md" /> <span>{t.leadLine(lead.hi.card.short, lead.lo.card.short)}</span>{:else}{shared.length ? t.noRace : t.noRaceModels}{/if}
 		</p>
 	</div>
@@ -136,7 +136,7 @@
 		<article class="side side--{s.key}">
 			<div class="art"><GpuArt label={s.card.short} vendor={s.card.vendor} vram={s.card.vramGB} heat={heatOf(s.d?.ratio)} flat /></div>
 			<header>
-				<h2 class="nm">{s.card.short}</h2>
+				<h2 class="nm hx-grad">{s.card.short}</h2>
 				<p class="mono sub">{s.card.vramGB}{'\u00a0'}GB · {num(s.card.bwGBs.v, lang, 0)}{'\u00a0'}GB/s · {MODEL_STYLE[s.run.model].short} {s.run.quant}</p>
 			</header>
 			{#if s.d}
@@ -163,7 +163,7 @@
 
 {#if sameScript && sides[0].w && sides[1].w}
 	<section class="wrap words" aria-labelledby="cmp-words" use:reveal={{ onin: () => (wordsIn = true) }}>
-		<h2 id="cmp-words" class="h">{t.words}</h2>
+		<h2 id="cmp-words" class="h hx-h">{t.words}</h2>
 		<TimeRace
 			lanes={sides.map((s) => ({ label: s.card.short, seconds: s.w!.v, hot: true }))}
 			run={wordsIn}
@@ -176,7 +176,7 @@
 {/if}
 
 <section class="wrap race" aria-labelledby="cmp-race">
-	<h2 id="cmp-race" class="h">{t.race}</h2>
+	<h2 id="cmp-race" class="h hx-h">{t.race}</h2>
 	{#if sameScript && lanes.length === 2}
 		{#key raceKey}
 			<RaceLanes {lanes} text={tc.raceText} {lang} loop={false} summary={lanes.map((l) => `${l.label}: ${fmtTps(l.tps, lang)} t/s`).join(', ')} />
@@ -237,8 +237,9 @@
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 1px;
-		background: var(--line);
-		border: 1px solid var(--line);
+		/* the seam between the cards is a vertical heat line */
+		background: linear-gradient(180deg, rgb(226 64 28 / 0.15), var(--heat-3) 40%, rgb(226 64 28 / 0.15));
+		border: 1px solid rgb(255 122 26 / 0.25);
 		border-radius: var(--r-xl);
 		overflow: hidden;
 	}
@@ -249,7 +250,8 @@
 		align-content: start;
 		padding: clamp(1.25rem, 3vw, 2.5rem);
 		background:
-			radial-gradient(80% 50% at 50% 0%, rgb(255 255 255 / 0.03), transparent),
+			radial-gradient(80% 50% at 50% 0%, rgb(255 122 26 / 0.09), transparent),
+			radial-gradient(70% 50% at 100% 100%, rgb(226 64 28 / 0.06), transparent),
 			var(--bg-0);
 	}
 	.art {
@@ -263,6 +265,7 @@
 		letter-spacing: -0.045em;
 		line-height: 0.9;
 		color: var(--text-hi);
+		width: fit-content;
 	}
 	.sub {
 		margin: var(--sp-2) 0 0;
@@ -285,7 +288,7 @@
 		align-items: center;
 		gap: var(--sp-4);
 		padding-top: var(--sp-3);
-		border-top: 1px solid var(--line);
+		border-top: 1px solid rgb(255 122 26 / 0.16);
 	}
 	.facts dt {
 		color: var(--text-mute);
@@ -306,6 +309,11 @@
 		color: var(--text-hi);
 		font-weight: 600;
 		font-size: var(--fs-sm);
+		text-decoration-color: var(--heat-3);
+		transition: color var(--dur-2);
+	}
+	.more:hover {
+		color: var(--hx-ink);
 	}
 	.warn {
 		margin: 0;
@@ -329,7 +337,6 @@
 		padding: var(--sp-5) var(--sp-6);
 		border: 1px solid var(--line);
 		border-radius: var(--r-xl);
-		background: linear-gradient(180deg, var(--bg-1), var(--bg-0));
 	}
 	.sc {
 		display: grid;
@@ -399,7 +406,6 @@
 		gap: 0.2rem 0.75rem;
 		margin: 0;
 		padding-top: var(--sp-3);
-		border-top: 1px solid var(--line);
 		font-size: var(--fs-sm);
 		color: var(--text);
 	}

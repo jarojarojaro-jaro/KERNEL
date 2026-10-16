@@ -98,6 +98,9 @@
 	background-clip: text;
 	color: transparent;
 	white-space: nowrap;
+	/* the clipped heat background must reach below the baseline, or the decimal comma's tail is
+	 * cut and "2,0×" reads as "2.0×" (inline padding: no layout change) */
+	padding-block: 0.06em 0.18em;
 }
 .speedup--down {
 	background: none;
@@ -214,6 +217,54 @@
 			opacity 0.9s var(--ease-out) var(--reveal-delay, 0ms),
 			transform 0.9s var(--ease-out) var(--reveal-delay, 0ms);
 	}
+}
+
+/* ---------------- heat accents (user directive: heat everywhere, AA kept) ---------------- */
+/* section divider: a glowing heat line instead of a grey rule */
+.heat-top {
+	position: relative;
+}
+.heat-top::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background: linear-gradient(90deg, transparent, rgb(226 64 28 / 0.55) 18%, var(--heat-3) 45%, rgb(255 193 90 / 0.8) 62%, rgb(226 64 28 / 0.4) 82%, transparent);
+	box-shadow: 0 0 14px rgb(255 122 26 / 0.5);
+	pointer-events: none;
+	z-index: 1;
+}
+/* section statements glow faintly warm */
+h2.statement,
+h3.duo {
+	text-shadow: 0 0 0.6em rgb(255 122 26 / 0.16);
+}
+/* secondary buttons and plain links warm up on hover */
+.cta--line {
+	transition:
+		border-color 0.3s,
+		box-shadow 0.3s,
+		color 0.3s;
+}
+.cta--line:hover,
+.cta--line:focus-visible {
+	border-color: var(--heat-3);
+	box-shadow: 0 0 22px -6px rgb(255 122 26 / 0.6);
+	color: var(--heat-5);
+}
+.cta--line .arrow {
+	color: var(--heat-4);
+}
+
+/* decorative duplicates (glyph layers, reels, glows) are never selected or copied: the real text
+ * lives once, in an sr-only/visible node next to them */
+.kin > [aria-hidden='true'],
+.speedup[aria-hidden='true'],
+[data-deco] {
+	-webkit-user-select: none;
+	user-select: none;
 }
 
 /* ---------------- kinetic headline ---------------- */

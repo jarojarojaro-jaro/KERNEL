@@ -2,9 +2,9 @@
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { magnetic } from '$lib/fx/actions';
-	import { reducedMotion } from '$lib/fx/motion';
+	import { onFrame, reducedMotion, Spring } from '$lib/fx/motion';
 	import { cardsHref, currentLang, href, resultsHref, switchLangHref } from '$lib/i18n';
-	import { tick } from 'svelte';
+	import { tick, untrack } from 'svelte';
 	import { copy } from './copy';
 	import Logo from './Logo.svelte';
 	import ThemeToggle from './ThemeToggle.svelte';
@@ -48,16 +48,98 @@
 	]);
 	const current = (to: string) => !to.includes('#') && page.url.pathname.startsWith(to);
 
-	/* Sliding highlight: one pill that glides to the hovered or focused item. */
+	/*
+	 * Gliding highlight: one heat pill that follows the hovered/focused item, or rests on the section
+	 * currently in view. Position and width run on springs (no CSS transitions, so no snapping);
+	 * when it first appears it materialises in place instead of sliding in from the left.
+	 */
 	let list: HTMLUListElement | undefined = $state();
-	let hl = $state({ x: 0, w: 0, on: false });
+	let capsule: HTMLDivElement | undefined = $state();
+	let pill: HTMLSpanElement | undefined = $state();
+	let hoverIdx = $state<number | null>(null);
+	let sectionIdx = $state<number | null>(null);
+	const target = $derived(hoverIdx ?? sectionIdx ?? links.findIndex((l) => current(l.to)));
+	const sx = new Spring(0, 260, 26);
+	const sw = new Spring(0, 260, 26);
+	let alpha = 0;
+	let shown = false;
+
+	$effect(() => {
+		const idx = target;
+		const hovering = hoverIdx !== null;
+		if (!list || !pill) return;
+		const a = list.querySelectorAll<HTMLAnchorElement>(':scope > li:not(.m-only) > a')[idx];
+		const wantAlpha = idx >= 0 && a ? (hovering ? 1 : 0.55) : 0;
+		if (a) {
+			const r = a.getBoundingClientRect();
+			const l = list.getBoundingClientRect();
+			sx.target = r.left - l.left;
+			sw.target = r.width;
+			if (!shown || reducedMotion()) {
+				sx.snap();
+				sw.snap();
+			}
+		}
+		const p = pill;
+		return untrack(() =>
+			onFrame((dt) => {
+				sx.step(dt);
+				sw.step(dt);
+				alpha += (wantAlpha - alpha) * Math.min(1, dt * 12);
+				shown = alpha > 0.02;
+				p.style.transform = `translate3d(${sx.x.toFixed(2)}px, 0, 0)`;
+				p.style.width = `${Math.max(0, sw.x).toFixed(2)}px`;
+				p.style.opacity = alpha.toFixed(3);
+				if (sx.settled && sw.settled && Math.abs(wantAlpha - alpha) < 0.01) return false;
+			})
+		);
+	});
+
 	function point(e: Event) {
 		const a = (e.target as HTMLElement).closest('a');
 		if (!a || !list || innerWidth <= 1020) return;
-		const r = a.getBoundingClientRect();
-		const l = list.getBoundingClientRect();
-		hl = { x: r.left - l.left, w: r.width, on: true };
+		const items = [...list.querySelectorAll<HTMLAnchorElement>(':scope > li:not(.m-only) > a')];
+		const i = items.indexOf(a);
+		if (i >= 0) hoverIdx = i;
 	}
+
+	// Light inside the capsule that follows the cursor (fine pointers only).
+	function light(e: PointerEvent) {
+		if (!capsule || e.pointerType !== 'mouse') return;
+		const r = capsule.getBoundingClientRect();
+		capsule.style.setProperty('--cx', `${e.clientX - r.left}px`);
+		capsule.style.setProperty('--cy', `${e.clientY - r.top}px`);
+	}
+
+	// Section currently in view on the home page (#how, #quality): the pill rests there.
+	afterNavigate(() => {
+		sectionIdx = null;
+		const ids: [string, number][] = [
+			['how', 0],
+			['quality', 3]
+		];
+		const els = ids.map(([id, i]) => [document.getElementById(id), i] as const).filter(([el]) => el);
+		if (!els.length || typeof IntersectionObserver === 'undefined') return;
+		const seen = new Map<Element, number>();
+		const io = new IntersectionObserver(
+			(entries) => {
+				for (const e of entries) seen.set(e.target, e.isIntersecting ? e.intersectionRatio : 0);
+				let best: number | null = null;
+				let bestR = 0;
+				for (const [el, i] of els) {
+					const r = seen.get(el!) ?? 0;
+					if (r > bestR) {
+						bestR = r;
+						best = i;
+					}
+				}
+				sectionIdx = best;
+			},
+			{ threshold: [0, 0.15, 0.3, 0.6], rootMargin: '-30% 0px -40% 0px' }
+		);
+		for (const [el] of els) io.observe(el!);
+		return () => io.disconnect();
+	});
 
 	function onScroll() {
 		scrolled = scrollY > 24;
@@ -78,17 +160,18 @@
 
 <a class="skip-link" href="#main">{t.skip}</a>
 <header class="site-header" class:scrolled class:showcase class:open>
-	<div class="capsule">
+	<!-- svelte-ignore a11y_no_static_element_interactions (decorative cursor light only) -->
+	<div class="capsule" bind:this={capsule} onpointermove={light}>
 		<a class="brand" href={href(lang)}>
 			<Logo />
 		</a>
 		<nav aria-label={t.main} class="nav" id="site-nav">
 			<!-- svelte-ignore a11y_mouse_events_have_key_events (focusin covers keyboard) -->
-			<ul bind:this={list} onpointerover={point} onfocusin={point} onpointerleave={() => (hl.on = false)} onfocusout={() => (hl.on = false)}>
-				<span class="hl" class:on={hl.on} style="transform: translate3d({hl.x}px, 0, 0); width: {hl.w}px" aria-hidden="true"></span>
+			<ul bind:this={list} onpointerover={point} onfocusin={point} onpointerleave={() => (hoverIdx = null)} onfocusout={() => (hoverIdx = null)}>
+				<span class="hl" bind:this={pill} aria-hidden="true"></span>
 				{#each links as l, i (l.to)}
 					<li style="--i:{i}">
-						<a href={l.to} aria-current={current(l.to) ? 'page' : undefined} onclick={() => (open = false)}>
+						<a href={l.to} class:hot={hoverIdx === i} aria-current={current(l.to) ? 'page' : undefined} onclick={() => (open = false)}>
 							<span class="txt">{l.label}</span>
 						</a>
 					</li>
@@ -166,51 +249,72 @@
 		margin: 0;
 		padding: 0;
 	}
+	/* The gliding heat pill (position/width/opacity driven by springs in the script). */
 	.hl {
 		position: absolute;
 		top: 0;
 		bottom: 0;
 		left: 0;
-		border-radius: var(--r-pill);
-		background: color-mix(in srgb, var(--text-hi) 9%, transparent);
+		width: 0;
 		opacity: 0;
-		transition:
-			transform 0.35s var(--ease-out),
-			width 0.35s var(--ease-out),
-			opacity 0.25s;
+		border-radius: var(--r-pill);
+		background:
+			radial-gradient(120% 140% at 50% 120%, rgb(255 122 26 / 0.28), transparent 60%),
+			linear-gradient(180deg, rgb(255 193 90 / 0.08), rgb(226 64 28 / 0.1));
+		box-shadow:
+			inset 0 0 0 1px rgb(255 170 100 / 0.28),
+			0 0 22px -4px rgb(255 122 26 / 0.45);
 		pointer-events: none;
-	}
-	.hl.on {
-		opacity: 1;
+		will-change: transform, width, opacity;
 	}
 	.nav a {
 		position: relative;
 		display: flex;
 		align-items: baseline;
-		gap: 0.4rem;
-		padding: 0.55rem 0.85rem;
+		padding: 0.55rem 0.95rem;
 		border-radius: var(--r-pill);
 		color: var(--text);
 		font-size: var(--fs-sm);
 		font-weight: 520;
 		line-height: 1.25;
 		text-decoration: none;
-		overflow: hidden;
-		transition: color var(--dur-2);
+		transition: color 0.3s var(--ease-out);
 	}
-	/* Rolling label: one text node, its shadow copy sits below and rolls up on hover. */
+	/* Label warms into the heat gradient: the gradient layer fades in over the plain text colour. */
 	.txt {
+		position: relative;
 		display: inline-block;
-		text-shadow: 0 2em 0 var(--text-hi);
-		transition: transform 0.38s var(--ease-out);
+		background: var(--heat-ramp-hot) 0 0 / 200% 100%;
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: inherit;
+		transition:
+			color 0.35s var(--ease-out),
+			background-position 0.6s var(--ease-out);
 	}
-	.nav a:hover,
-	.nav a:focus-visible,
+	.nav a.hot .txt,
+	.nav a:focus-visible .txt {
+		color: transparent;
+		background-position: 100% 0;
+	}
+	.nav a:focus-visible {
+		outline-offset: 0;
+	}
+	/* Light theme: the white-hot end would vanish on bone; use the deep end of the ramp. */
+	:global(:root[data-theme='light']) .txt {
+		background-image: linear-gradient(90deg, #8a2a06, #c2410c 50%, #e2541a);
+	}
 	.nav a[aria-current='page'] {
 		color: var(--text-hi);
 	}
-	.nav a:hover .txt {
-		transform: translateY(-2em);
+	/* Cursor light inside the capsule. */
+	.capsule::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		pointer-events: none;
+		background: radial-gradient(220px 120px at var(--cx, -300px) var(--cy, 50%), rgb(255 190 130 / 0.09), transparent 70%);
 	}
 	.nav a[aria-current='page']::after {
 		content: '';
@@ -334,12 +438,8 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.txt,
-		.hl,
 		.burger i {
 			transition: none;
-		}
-		.nav a:hover .txt {
-			transform: none;
 		}
 	}
 
@@ -387,11 +487,8 @@
 			color: var(--text-hi);
 			overflow: visible;
 		}
-		.txt {
-			text-shadow: none;
-		}
-		.nav a:hover .txt {
-			transform: none;
+		.nav a.hot .txt {
+			color: var(--text-hi);
 		}
 			.nav a[aria-current='page']::after {
 			display: none;

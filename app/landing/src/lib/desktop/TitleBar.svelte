@@ -86,7 +86,8 @@
 		min-height: 2.875rem;
 		padding: 0 0 0 var(--sp-4);
 		background: var(--bg-1);
-		border-bottom: 1px solid var(--line);
+		border-bottom: 1px solid transparent;
+		border-image: linear-gradient(90deg, transparent, var(--heat-3) 30%, var(--heat-4) 50%, var(--heat-2) 70%, transparent) 1;
 		user-select: none;
 	}
 	.brand {

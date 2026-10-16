@@ -20,7 +20,7 @@
 	});
 </script>
 
-<section id="faq" class="faq" aria-labelledby="faq-title">
+<section id="faq" class="faq heat-top" aria-labelledby="faq-title">
 	<div class="inner">
 		<header class="head">
 			<h2 id="faq-title" class="vert">{c.title.replace('|', ' ')}</h2>
@@ -43,7 +43,6 @@
 <style>
 	.faq {
 		padding-block: clamp(3.5rem, 2.5rem + 3vw, 6rem) clamp(3rem, 2rem + 3vw, 5rem);
-		border-top: 1px solid var(--line);
 		background: var(--bg-0);
 	}
 	/* vertical headline down the left edge, the questions to its right */

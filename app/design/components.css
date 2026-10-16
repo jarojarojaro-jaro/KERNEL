@@ -1,8 +1,9 @@
 /*
  * Component layer (v2 „Białe ciepło”, design/REDESIGN.md). Depends only on tokens.css. Class names are
  * flat and prefixed by role so they survive the move into the Tauri app and the llama.cpp chat UI.
- * Heat (`--accent`, `--heat-*`) means speed and nothing else: buttons, selection, focus, tabs and
- * badges are bone/ink; only speed values, "after" bars and the gauge redline glow.
+ * Heat (`--accent`, `--heat-*`) is the brand signal: speed values and "after" bars, plus accents
+ * (overline rules, hover glows, focus rings on fields, active tabs, heat-card borders). Primary CTAs
+ * stay bone/ink pills with a heat glow on hover; body text never sits on a heat fill.
  */
 
 /* ---------------- base ---------------- */
@@ -186,13 +187,14 @@ aside {
 .overline::before {
 	content: '';
 	width: 1.6rem;
-	height: 1px;
-	background: currentColor;
-	opacity: 0.6;
+	height: 2px;
+	border-radius: var(--r-pill);
+	background: var(--heat-ramp-hot);
+	box-shadow: 0 0 8px color-mix(in srgb, var(--heat-3) 60%, transparent);
 }
-/* Emphasised overline: bone, not heat (heat only means speed). */
+/* Emphasised overline: heat ink (AA on every background). */
 .overline--accent {
-	color: var(--text-hi);
+	color: var(--accent-ink);
 }
 .display {
 	font-size: var(--fs-display);
@@ -314,7 +316,9 @@ aside {
 .btn--primary:hover:not(:disabled, [aria-disabled='true']) {
 	background: var(--btn-hover);
 	color: var(--text-inv);
-	box-shadow: 0 10px 34px -14px color-mix(in srgb, var(--text-hi) 55%, transparent);
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--heat-3) 45%, transparent),
+		0 12px 38px -12px color-mix(in srgb, var(--heat-3) 85%, transparent);
 }
 .btn--secondary {
 	background: transparent;
@@ -322,8 +326,9 @@ aside {
 	border-color: var(--line-strong);
 }
 .btn--secondary:hover:not(:disabled, [aria-disabled='true']) {
-	border-color: var(--text-hi);
-	background: color-mix(in srgb, var(--text-hi) 5%, transparent);
+	border-color: var(--heat-3);
+	background: color-mix(in srgb, var(--heat-3) 8%, transparent);
+	box-shadow: 0 8px 30px -16px color-mix(in srgb, var(--heat-3) 90%, transparent);
 }
 .btn--ghost {
 	background: transparent;
@@ -392,7 +397,10 @@ aside {
 		transform var(--dur-3) var(--ease-out);
 }
 .card--interactive:hover {
-	border-color: var(--line-strong);
+	border-color: color-mix(in srgb, var(--heat-3) 70%, var(--line));
+	box-shadow:
+		0 0 0 1px color-mix(in srgb, var(--heat-3) 25%, transparent),
+		0 24px 60px -30px color-mix(in srgb, var(--heat-3) 80%, transparent);
 }
 /* Instrument frame: hairline box with two corner ticks (bone by default; `--hud-c` for status). */
 .hud {
@@ -407,7 +415,7 @@ aside {
 	position: absolute;
 	width: 14px;
 	height: 14px;
-	border-color: var(--hud-c, var(--line-strong));
+	border-color: var(--hud-c, var(--heat-3));
 	border-style: solid;
 	pointer-events: none;
 }
@@ -452,7 +460,12 @@ aside {
 /* Measured = bone: a fact, not a speed. */
 .badge--measured {
 	color: var(--text-hi);
-	background: color-mix(in srgb, var(--text-hi) 7%, transparent);
+	background: color-mix(in srgb, var(--heat-3) 10%, transparent);
+	border-color: color-mix(in srgb, var(--heat-3) 55%, transparent);
+}
+.badge--measured::before {
+	background: var(--heat-3);
+	box-shadow: 0 0 6px var(--heat-3);
 }
 .badge--estimate {
 	color: var(--warn-ink);
@@ -582,8 +595,10 @@ aside {
 .select:focus-visible,
 .textarea:focus-visible {
 	outline: none;
-	border-color: var(--focus);
-	box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 30%, transparent);
+	border-color: var(--heat-3);
+	box-shadow:
+		0 0 0 3px color-mix(in srgb, var(--heat-3) 28%, transparent),
+		0 0 28px -8px color-mix(in srgb, var(--heat-3) 70%, transparent);
 }
 .input[aria-invalid='true'] {
 	border-color: var(--danger-ink);
@@ -692,8 +707,8 @@ aside {
 		background-color var(--dur-2) var(--ease-out);
 }
 .switch input:checked {
-	background: var(--text-hi);
-	border-color: var(--text-hi);
+	background: linear-gradient(90deg, var(--heat-2), var(--heat-3));
+	border-color: var(--heat-3);
 }
 .switch input:checked::after {
 	transform: translateX(1rem);
@@ -738,6 +753,7 @@ aside {
 	text-transform: uppercase;
 	color: var(--text-mute);
 	white-space: nowrap;
+	border-bottom-color: color-mix(in srgb, var(--heat-3) 40%, var(--line));
 }
 .table tbody tr:last-child > * {
 	border-bottom: 0;
@@ -840,7 +856,7 @@ aside {
 	line-height: 1.6;
 }
 .codeblock pre .prompt {
-	color: var(--text-mute);
+	color: var(--accent-ink);
 	user-select: none;
 }
 kbd,
@@ -878,7 +894,7 @@ kbd,
 }
 .tabs [role='tab'][aria-selected='true'] {
 	color: var(--text-hi);
-	border-bottom-color: var(--text-hi);
+	border-bottom-color: var(--heat-3);
 }
 .tabs [role='tab']:hover {
 	color: var(--text-hi);
@@ -912,7 +928,7 @@ kbd,
 }
 .disclosure[open] > summary::after {
 	transform: rotate(45deg);
-	color: var(--text-hi);
+	color: var(--accent-ink);
 }
 .disclosure > .disclosure__body {
 	padding-bottom: var(--sp-5);
@@ -930,7 +946,7 @@ kbd,
 	font-family: var(--font-mono);
 	font-size: var(--fs-xs);
 	font-stretch: 87.5%;
-	color: var(--text-mute);
+	color: var(--accent-ink);
 	letter-spacing: 0.1em;
 }
 
@@ -950,12 +966,70 @@ kbd,
 /* ---------------- divider with tick marks ---------------- */
 .ticks {
 	height: 8px;
-	background-image: linear-gradient(90deg, var(--line-strong) 1px, transparent 1px);
+	background-image: linear-gradient(90deg, color-mix(in srgb, var(--heat-3) 70%, var(--line-strong)) 1px, transparent 1px);
 	background-size: 8px 100%;
 	mask-image: linear-gradient(90deg, transparent, #000 15%, #000 85%, transparent);
 	opacity: 0.6;
 }
 
+/* ---------------- heat accents (shared) ---------------- */
+/* Card with a heat-gradient hairline border and a warm top glow. */
+.heat-card {
+	border: 1px solid transparent;
+	background:
+		radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--heat-3) 9%, transparent), transparent 60%) padding-box,
+		linear-gradient(var(--bg-2), var(--bg-2)) padding-box,
+		linear-gradient(160deg, color-mix(in srgb, var(--heat-3) 75%, transparent), var(--line) 40%, var(--line) 70%, color-mix(in srgb, var(--heat-2) 50%, transparent)) border-box;
+	box-shadow:
+		var(--shadow-2),
+		0 30px 90px -50px color-mix(in srgb, var(--heat-3) 80%, transparent);
+}
+/* Divider that glows in the middle. */
+.heat-line {
+	height: 1px;
+	border: 0;
+	margin: 0;
+	background: linear-gradient(90deg, transparent, var(--heat-2) 20%, var(--heat-3) 50%, var(--heat-4) 80%, transparent);
+	box-shadow: 0 0 12px color-mix(in srgb, var(--heat-3) 60%, transparent);
+}
+/* Number highlight (large figures that matter). Light theme falls back to solid ink-safe heat. */
+.heat-num {
+	background: var(--heat-ramp-hot);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+:root[data-theme='light'] .heat-num {
+	background: none;
+	color: var(--accent-ink);
+}
+/* Slowly drifting ember wash behind a block (decorative). */
+.heat-wash {
+	position: relative;
+	isolation: isolate;
+}
+.heat-wash::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-radius: inherit;
+	pointer-events: none;
+	background:
+		radial-gradient(60% 80% at 0% 0%, color-mix(in srgb, var(--heat-2) 12%, transparent), transparent 70%),
+		radial-gradient(50% 70% at 100% 100%, color-mix(in srgb, var(--heat-4) 10%, transparent), transparent 70%);
+	background-size: 160% 160%;
+}
+@media (prefers-reduced-motion: no-preference) {
+	.heat-wash::before {
+		animation: heat-drift 16s var(--ease-in-out) infinite alternate;
+	}
+}
+@keyframes heat-drift {
+	to {
+		background-position: 100% 100%;
+	}
+}
 /* ---------------- motion helpers ---------------- */
 @media (prefers-reduced-motion: no-preference) {
 	.reveal {

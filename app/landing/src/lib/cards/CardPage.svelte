@@ -117,7 +117,7 @@
 
 <CardHead id={card.id} {prefix} short={card.short} vendor={card.vendor} vram={card.vramGB} {heat} kick={landed} spec="{card.vramGB} GB · {card.arch} · {num(card.bwGBs.v, lang, 0)} GB/s" charge={d ? charge : null} {rpm}>
 	{#if d}
-		<div class="hl" class:landed={landed > 0} style="--g:{heat * charge}" use:visible={startWhenIdle}>
+		<div class="hl hx-bt" class:landed={landed > 0} style="--g:{heat * charge}" use:visible={startWhenIdle}>
 			<p class="hl-m mono">{t.headline(`${MODEL_STYLE[d.run.model].short} ${d.run.quant}`)}</p>
 			<div class="hl-n">
 				<span class="b">
@@ -138,14 +138,14 @@
 	{/if}
 	{#snippet plate()}
 		{#if d}
-			<div class="plate-wrap">
+			<div class="plate-wrap hx-bt">
 				<dl class="plate" style="--n:{plateFacts.length === 4 ? 2 : plateFacts.length}">
 					{#each plateFacts as it (it.k)}
 						<div>
 							<dt>{it.k}</dt>
 							<dd>
 								{#if it.model}<ModelMark model={it.model} />{/if}
-								{#if it.cold}<span class="cold-text">{it.cold}</span>{' → '}{/if}{it.v}{#if it.star}<span class="star" aria-hidden="true"> ★</span>{/if}
+								{#if it.cold}<span class="cold-text">{it.cold}</span>{' → '}{/if}{it.v}{#if it.star}<span class="star" aria-hidden="true">{'\u00a0'}★</span>{/if}
 								{#if it.sub}<span class="q">{it.sub}</span>{/if}
 								{#if it.bar != null}<span class="pbar" aria-hidden="true"><i style="width:{it.bar * 100}%"></i></span>{/if}
 							</dd>
@@ -159,7 +159,7 @@
 </CardHead>
 
 <section class="wrap fp" aria-label={t.fingerprint}>
-	<dl class="strip">
+	<dl class="strip hx-surface">
 		<div><dt>{t.hw.vram}</dt><dd>{card.vramGB}<span>GB</span></dd></div>
 		<div><dt>{t.hw.bw}</dt><dd>{num(card.bwGBs.v, lang, 0)}<span>GB/s</span></dd></div>
 		<div><dt>{t.hw.power}</dt><dd>{num(card.powerW.v, lang, 0)}<span>W</span></dd></div>
@@ -173,7 +173,7 @@
 
 <section class="wrap runs" aria-labelledby="runs-title">
 	<div class="picker">
-		<h2 id="runs-title" class="runs-h" style="--mc:{MODEL_STYLE[run.model].color}"><ModelMark model={run.model} size="0.7em" /> {#each MODEL_INFO[run.model].name.split(' ') as w, i (i)}{i ? ' ' : ''}<span class="nw">{w}</span>{/each}</h2>
+		<h2 id="runs-title" class="runs-h hx-h" style="--mc:{MODEL_STYLE[run.model].color}"><ModelMark model={run.model} size="0.7em" /> {#each MODEL_INFO[run.model].name.split(' ') as w, i (i)}{i ? ' ' : ''}<span class="nw">{w}</span>{/each}</h2>
 		{#if card.runs.length > 1}
 			<Choice
 				legend={t.models}
@@ -193,19 +193,19 @@
 </section>
 
 <section class="wrap next" aria-labelledby="next-title">
-	<div class="next-in panel">
-		<h2 id="next-title" class="giga">{t.next}</h2>
+	<div class="next-in panel hx-surface hx-ring">
+		<h2 id="next-title" class="giga hx-grad">{t.next}</h2>
 		<div class="ctas">
 			<a class="cta cta--bone" href="{cardsHref(lang, lang === 'pl' ? 'porownaj/' : 'compare/')}?a={card.id}">{t.compareWith} <span class="arrow" aria-hidden="true">→</span></a>
 			<a class="cta cta--line" href={href(lang, '/start')}>{t.start}</a>
 		</div>
 	</div>
-	<h3 class="others-h">{t.measuredOthers}</h3>
+	<h3 class="others-h eyebrow">{t.measuredOthers}</h3>
 	<ul class="others" role="list">
 		{#each others as e (e.id)}
 			{@const od = headline(e.card)}
 			<li>
-				<a href={cardsHref(lang, `${e.id}/`)} class="other">
+				<a href={cardsHref(lang, `${e.id}/`)} class="other hx-ring hx-surface">
 					<span class="o-art"><GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(od?.ratio)} flat /></span>
 					<span class="o-name">{e.card.short}</span>
 					<span class="o-x">{#if od?.ratio}<Ratio value={od.ratio} {lang} size="sm" />{/if}<span class="mono">{e.card.vramGB} GB</span></span>
@@ -227,7 +227,6 @@
 		gap: var(--sp-3);
 		margin-top: var(--sp-6);
 		padding-top: var(--sp-6);
-		border-top: 1px solid var(--line);
 		width: 100%;
 	}
 	.hl-m {
@@ -333,7 +332,6 @@
 		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: start;
 		gap: var(--sp-4);
-		border-top: 1px solid var(--line-strong);
 		padding-top: var(--sp-4);
 	}
 	.plate {
@@ -407,13 +405,12 @@
 		display: grid;
 		grid-auto-flow: column;
 		grid-auto-columns: minmax(0, 1fr);
-		border: 1px solid var(--line);
+		border: 1px solid rgb(255 122 26 / 0.22);
 		border-radius: var(--r-lg);
-		background: linear-gradient(180deg, var(--bg-1), transparent);
 	}
 	.strip div {
 		padding: var(--sp-3) var(--sp-4);
-		border-right: 1px solid var(--line);
+		border-right: 1px solid rgb(255 122 26 / 0.14);
 		min-width: 0;
 	}
 	.strip div:last-child {
@@ -439,7 +436,7 @@
 	.strip dd span {
 		margin-left: 0.3rem;
 		font-size: var(--fs-2xs);
-		color: var(--text-mute);
+		color: var(--hx-ink);
 		letter-spacing: 0.06em;
 	}
 	.strip dd.txt {
@@ -462,7 +459,7 @@
 			border-right: 0;
 		}
 		.strip div:nth-child(n + 3) {
-			border-top: 1px solid var(--line);
+			border-top: 1px solid rgb(255 122 26 / 0.14);
 		}
 		.strip div:last-child:nth-child(odd) {
 			grid-column: 1 / -1;
@@ -567,12 +564,14 @@
 		text-decoration: none;
 		color: var(--text-hi);
 		transition:
-			border-color var(--dur-2),
+			box-shadow var(--dur-3) var(--ease-out),
 			transform var(--dur-3) var(--ease-out);
 	}
 	.other:hover {
-		border-color: var(--line-strong);
 		transform: translateY(-3px);
+	}
+	.other:hover .o-name {
+		color: var(--hx-ink);
 	}
 	.o-art {
 		grid-row: 1 / span 2;

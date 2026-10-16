@@ -19,7 +19,7 @@
 	const rows = HERO_PAIRS.map((p) => ({ ...p, a: p.before.decode!, b: p.ours.decode! }));
 </script>
 
-<section id="results" class="teaser" aria-labelledby="results-title">
+<section id="results" class="teaser heat-top" aria-labelledby="results-title">
 	<div class="inner">
 		<header class="head">
 			<h2 id="results-title" class="t">{c.title}</h2>
@@ -57,7 +57,6 @@
 <style>
 	.teaser {
 		padding-block: clamp(3.5rem, 2.5rem + 3vw, 6rem);
-		border-top: 1px solid var(--line);
 	}
 	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);
@@ -111,6 +110,10 @@
 		gap: var(--sp-4);
 		padding-block: var(--sp-3);
 		border-bottom: 1px solid var(--line);
+		transition: background 0.3s;
+	}
+	.row:hover {
+		background: linear-gradient(90deg, rgb(255 122 26 / 0.08), transparent 70%);
 	}
 	.who {
 		display: flex;
@@ -165,7 +168,8 @@
 		color: var(--before);
 	}
 	.vb {
-		color: var(--text-hi);
+		color: var(--heat-4);
+		text-shadow: 0 0 10px rgb(255 122 26 / 0.45);
 	}
 	.arr {
 		color: var(--text-mute);

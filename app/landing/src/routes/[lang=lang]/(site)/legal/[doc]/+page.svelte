@@ -45,11 +45,49 @@
 		margin-top: var(--sp-4);
 	}
 	.section :global(.legal h2.h2) {
+		position: relative;
 		font-size: var(--fs-xl);
 		font-weight: 680;
 		margin-top: var(--sp-12);
 		padding-top: var(--sp-6);
-		border-top: 1px solid var(--line);
+		border-top: 1px solid transparent;
+		border-image: linear-gradient(90deg, var(--heat-2), var(--heat-3) 15%, var(--line) 45%) 1;
+	}
+	.section :global(.legal h2.h2::before) {
+		content: '';
+		position: absolute;
+		top: -2px;
+		left: 0;
+		width: 2.5rem;
+		height: 3px;
+		border-radius: var(--r-pill);
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 14px color-mix(in srgb, var(--heat-3) 80%, transparent);
+	}
+	.section :global(.legal > h1.h1) {
+		background: linear-gradient(90deg, var(--text-hi) 55%, var(--heat-3));
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+	:global(:root[data-theme='light']) .section :global(.legal > h1.h1) {
+		background: linear-gradient(90deg, var(--text-hi) 55%, var(--accent-ink));
+		-webkit-background-clip: text;
+		background-clip: text;
+	}
+	.section {
+		position: relative;
+		overflow-x: clip;
+		isolation: isolate;
+	}
+	.section::before {
+		content: '';
+		position: absolute;
+		inset: 0 0 auto;
+		height: 32rem;
+		z-index: -1;
+		pointer-events: none;
+		background: radial-gradient(40% 55% at 65% 0%, color-mix(in srgb, var(--heat-3) 14%, transparent), transparent 70%);
 	}
 	.section :global(.legal h3) {
 		font-size: var(--fs-md);
@@ -87,6 +125,6 @@
 		font-size: var(--fs-sm);
 	}
 	.section :global(.legal .toc a:hover) {
-		color: var(--text-hi);
+		color: var(--accent-ink);
 	}
 </style>

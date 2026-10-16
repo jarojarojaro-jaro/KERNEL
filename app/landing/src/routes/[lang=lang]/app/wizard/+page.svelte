@@ -343,7 +343,7 @@
 		border-color: var(--line-strong);
 	}
 	.st[aria-current='step']::after {
-		background: var(--text-hi);
+		background: var(--heat-ramp-hot);
 	}
 	.st.done {
 		color: var(--text);
@@ -359,9 +359,10 @@
 		font-size: var(--fs-xs);
 	}
 	.st[aria-current='step'] .dot {
-		background: var(--text-hi);
-		border-color: var(--text-hi);
-		color: var(--text-inv);
+		background: var(--heat-ramp-hot);
+		border-color: transparent;
+		color: #120702;
+		box-shadow: 0 0 18px color-mix(in srgb, var(--heat-3) 70%, transparent);
 	}
 	.st.done .dot {
 		color: var(--ok-ink);
@@ -463,8 +464,8 @@
 		border-color: var(--line-strong);
 	}
 	.rec.sel {
-		border-color: var(--text-hi);
-		box-shadow: 0 0 0 1px var(--text-hi);
+		border-color: var(--heat-3);
+		box-shadow: 0 0 0 1px var(--heat-3), 0 20px 60px -30px color-mix(in srgb, var(--heat-3) 90%, transparent);
 	}
 	.rec:has(input:focus-visible) {
 		outline: 2px solid var(--focus);
@@ -482,7 +483,7 @@
 		width: 1.1rem;
 		height: 1.1rem;
 		margin: 0;
-		accent-color: var(--text-hi);
+		accent-color: var(--heat-3);
 	}
 	.rec-name {
 		font-size: var(--fs-lg);

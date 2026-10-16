@@ -41,9 +41,9 @@
 	const ticks = $derived(Array.from({ length: axis / 4 + 1 }, (_, i) => i * 4));
 </script>
 
-<section class="fit wrap" aria-labelledby="fit-title" use:reveal={{ onin: () => (shown = true) }}>
+<section class="fit wrap hx-surface hx-ring" aria-labelledby="fit-title" use:reveal={{ onin: () => (shown = true) }}>
 	<header class="intro">
-		<h2 id="fit-title" class="h">{t.fitTitle}</h2>
+		<h2 id="fit-title" class="h hx-grad">{t.fitTitle}</h2>
 		<p class="fine">{t.fitLede(card.vramGB)}</p>
 		<button type="button" class="replay mono" onclick={() => runKey++}><span aria-hidden="true">↻</span> {t.fitReplay}</button>
 	</header>
@@ -334,10 +334,14 @@
 		color: var(--text);
 		font-size: var(--fs-2xs);
 		cursor: pointer;
+		transition:
+			border-color var(--dur-2),
+			box-shadow var(--dur-2);
 	}
 	.replay:hover {
 		color: var(--text-hi);
-		border-color: var(--text-hi);
+		border-color: var(--heat-3);
+		box-shadow: 0 0 22px -6px rgb(255 122 26 / 0.6);
 	}
 
 	@media (prefers-reduced-motion: no-preference) {

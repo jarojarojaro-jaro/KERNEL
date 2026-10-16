@@ -86,10 +86,11 @@
 		bottom: 0.4rem;
 		width: 3px;
 		border-radius: 0 var(--r-xs) var(--r-xs) 0;
-		background: var(--text-hi);
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 10px var(--heat-3);
 	}
 	li a[aria-current='page'] :global(svg) {
-		color: var(--text-hi);
+		color: var(--accent-ink);
 	}
 	.machine {
 		display: grid;

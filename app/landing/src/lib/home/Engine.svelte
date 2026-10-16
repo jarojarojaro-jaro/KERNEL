@@ -1,286 +1,198 @@
 <script lang="ts">
 	/**
-	 * Jak to możliwe: one token on the RTX 3090 × Qwen run, as two dot grids side by side with the
-	 * same dot size: upstream's kernel launches (kernels.up) on the left, ours (kernels.ours) on the
-	 * right, so the density drop reads in one frame. Both counts are printed statically above the
-	 * grids (no rolling counter to catch mid-roll). Once the scene is in view (auto-play, replay
-	 * button; reduced motion: final state), groups of left dots
-	 * (~2.5 launches each) fly left → right and fuse into one bone dot of the right grid; the left
-	 * grid stays as a dim steel reference. Canvas 2D, DPR ≤ 1.5, redrawn only while the timeline runs.
-	 * Below: only the gaps between kernels per token (the waiting we remove) and the honest note on
-	 * where the 3090 gain comes from. Kernels are not speed, so no heat colour here.
+	 * Jak to możliwe, as three visuals and almost no prose:
+	 * (a) the stack: six layers between the model (top) and the graphics card (bottom) light up in
+	 *     sequence as slabs, each with a mini icon and a short label; a token pulse then runs down
+	 *     through them. Text only (no numbers).
+	 * (b) layer 02 up close: one token's kernel launches as a timeline, upstream vs ours on the same
+	 *     time scale (RTX 3090 × Qwen, HERO_RUN.kernels). Bars = kernels (work per launch = GPU ms ÷
+	 *     launches), gaps = GPU waiting (gap ms ÷ launches). Our lane starts as upstream and merges
+	 *     ~2.5 launches into one: the gaps visibly close while its counters run 1956 → 795 launches,
+	 *     3,83 → 2,55 ms of gaps, 24,9 → 24,5 ms of GPU work. Zoomed into the first 40 upstream launches.
+	 * (c) where the gain comes from, as split bars (log scale, so segments multiply): 3090 Qwen =
+	 *     upstream MTP flags × our engine; LFM2.5 (no speculation) = our engine only. From run.gain.
+	 * Auto-played on entering the viewport (replay button); reduced motion shows the final state.
 	 */
-	import { onMount } from 'svelte';
 	import { Autoplay } from '$lib/fx/autoplay.svelte';
+	import { clamp01, easeInOutCubic } from '$lib/fx/motion';
 	import Replay from '$lib/fx/Replay.svelte';
-	import { clamp01, easeInOutCubic, reducedMotion } from '$lib/fx/motion';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
+	import { findCard, MODEL_INFO, type CardView, type RunView } from '$lib/data/measurements';
 	import { localizeDecimals } from '$lib/format';
-	import { findCard, MODEL_INFO } from '$lib/data/measurements';
 	import { num, type Lang } from '$lib/i18n';
+	import ModelMark from '$lib/ModelMark.svelte';
+	import { MODEL_STYLE } from '$lib/modelStyle';
 	import { copy } from '$lib/site/copy';
-	import Rich from './Rich.svelte';
-	import { fill, fmtRatio, HERO_CARD, HERO_GAIN, HERO_KERNELS, HERO_MODEL, HERO_RUN } from './data';
+	import { fmtRatio, HERO_CARD, HERO_KERNELS, HERO_MODEL, HERO_RUN } from './data';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].engine);
 	const K = HERO_KERNELS;
+
+	// ---- (a) stack ----
+	const stackTl = new Autoplay(1.5, '0px 0px -20% 0px');
+	const ICONS = [
+		'M6 6h8v8H6zM8 3v3M12 3v3M8 14v3M12 14v3M3 8h3M3 12h3M14 8h3M14 12h3',
+		'M3 7h5v6H3zM10 7h7v6h-7z',
+		'M3 10h10M10 6l4 4-4 4M17 4v12',
+		'M4 5l5 5-5 5M10 5l5 5-5 5',
+		'M4 5h12v3H4zM4 9.5h12v3H4zM4 14h12v2H4z',
+		'M5 3v14M10 3v14M15 3v14M3.5 7h3M8.5 12h3M13.5 6h3'
+	];
+
+	// ---- (b) kernel timeline ----
+	const zoomTl = new Autoplay(2.2, '0px 0px -20% 0px');
+	const f = $derived(easeInOutCubic(clamp01((zoomTl.p - 0.12) / 0.75)));
 	const UP = K.up.v;
 	const OURS = K.ours.v;
-
-	const tl = new Autoplay(3.4);
-	const f = $derived(easeInOutCubic(clamp01(tl.p)));
-
-	let canvas: HTMLCanvasElement | undefined = $state();
-	let box: HTMLDivElement | undefined = $state();
-	let draw: ((f: number) => void) | null = null;
-	let raf = 0;
-
-	$effect(() => {
-		const v = f;
-		if (!draw) return;
-		cancelAnimationFrame(raf);
-		raf = requestAnimationFrame(() => draw?.(v));
+	const N = 40;
+	const G = Math.round((N * OURS) / UP);
+	const wU = K.gpuMs[0].v / UP;
+	const gU = K.gapMs[0].v / UP;
+	const wO = K.gpuMs[1].v / OURS;
+	const gO = K.gapMs[1].v / OURS;
+	const T = N * (wU + gU);
+	const sx = (ms: number) => (ms / T) * 1000;
+	/** Per upstream launch i: its own rect and its share of our merged kernel (group g). */
+	const bars = Array.from({ length: N }, (_, i) => {
+		const g = Math.floor((i * G) / N);
+		const first = Math.ceil((g * N) / G);
+		const size = Math.ceil(((g + 1) * N) / G) - first;
+		const k = i - first;
+		return { x0: sx(i * (wU + gU)), w0: sx(wU), x1: sx(g * (wO + gO) + (k * wO) / size), w1: sx(wO / size) };
 	});
-
-	onMount(() => {
-		if (!canvas || !box) return;
-		const ctx = canvas.getContext('2d');
-		if (!ctx) return;
-		type P = { x0: number; y0: number; x1: number; y1: number; lead: boolean; delay: number };
-		let parts: P[] = [];
-		let s = 2;
-		let W = 0;
-		let H = 0;
-		const dpr = Math.min(1.5, devicePixelRatio || 1);
-		const STEEL = 'rgb(125 135 148)';
-		const BONE = 'rgb(237 234 227)';
-
-		/** Grid that fits n cells into w×h, returns cell size and columns. */
-		const grid = (n: number, w: number, h: number) => {
-			const cell = Math.sqrt((w * h) / n);
-			let cols = Math.max(1, Math.floor(w / cell));
-			while (Math.ceil(n / cols) * (w / cols) > h && cols < n) cols++;
-			return { cols, cell: w / cols };
-		};
-		const layout = () => {
-			W = box!.clientWidth;
-			H = box!.clientHeight;
-			canvas!.width = Math.round(W * dpr);
-			canvas!.height = Math.round(H * dpr);
-			ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-			const gap = W * 0.06;
-			const pw = (W - gap) / 2;
-			// one cell size for both panels: the left one is filled by 1956, the right by 795 of the same dots
-			const g = grid(UP, pw, H);
-			s = Math.max(1.5, g.cell * 0.62);
-			const at = (i: number, x0: number) => [x0 + (i % g.cols) * g.cell + g.cell / 2, Math.floor(i / g.cols) * g.cell + g.cell / 2];
-			parts = Array.from({ length: UP }, (_, i) => {
-				const grp = Math.floor((i * OURS) / UP);
-				const first = Math.ceil((grp * UP) / OURS);
-				const [x0, y0] = at(i, 0);
-				const [x1, y1] = at(grp, pw + gap);
-				const rnd = Math.abs((Math.sin(i * 12.9898) * 43758.5453) % 1);
-				// left → right: the right-most columns of the left grid travel first
-				return { x0, y0, x1, y1, lead: i === first, delay: (1 - (i % g.cols) / g.cols) * 0.35 + (Math.floor(i / g.cols) / Math.ceil(UP / g.cols)) * 0.15 + rnd * 0.05 };
-			});
-		};
-		draw = (fv: number) => {
-			ctx.clearRect(0, 0, W, H);
-			// the upstream grid stays as a reference; dots that have "left" dim to steel ghosts
-			for (const q of parts) {
-				const k = clamp01((fv - q.delay) / 0.45);
-				ctx.globalAlpha = 0.85 - 0.55 * k;
-				ctx.fillStyle = STEEL;
-				ctx.fillRect(q.x0 - s / 2, q.y0 - s / 2, s, s);
-			}
-			// travelling copies fuse into the right grid: members fade on arrival, the lead stays as bone
-			for (const q of parts) {
-				const k = easeInOutCubic(clamp01((fv - q.delay) / 0.45));
-				if (k <= 0 || (!q.lead && k >= 1)) continue;
-				const x = q.x0 + (q.x1 - q.x0) * k;
-				const y = q.y0 + (q.y1 - q.y0) * k - Math.sin(k * Math.PI) * H * 0.06;
-				ctx.globalAlpha = q.lead ? 0.5 + 0.5 * k : 0.7 * (1 - k);
-				ctx.fillStyle = q.lead && k > 0.9 ? BONE : STEEL;
-				ctx.fillRect(x - s / 2, y - s / 2, s, s);
-			}
-			ctx.globalAlpha = 1;
-		};
-		const ro = new ResizeObserver(() => {
-			layout();
-			draw?.(reducedMotion() ? 1 : f);
-		});
-		ro.observe(box);
-		layout();
-		draw(reducedMotion() ? 1 : f);
-		return () => {
-			ro.disconnect();
-			cancelAnimationFrame(raf);
-			draw = null;
-		};
+	const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+	const live = $derived({
+		n: Math.round(lerp(UP, OURS, f)),
+		gap: lerp(K.gapMs[0].v, K.gapMs[1].v, f),
+		gpu: lerp(K.gpuMs[0].v, K.gpuMs[1].v, f)
 	});
+	const kSrc = [K.up.src, K.ours.src, K.gapMs[0].src, K.gpuMs[0].src].filter(Boolean);
 
-	/** LFM2.5 runs (no speculation): the sheet's "our engine" factor, the whole gain there. */
-	const lfm = (['rtx-3090', 'rtx-5060-ti-16'] as const).map((id) => {
+	// ---- (c) where the gain comes from ----
+	type Seg = { label: string; v: number; ours: boolean };
+	const lfm = (id: string): { card: CardView; run: RunView } => {
 		const card = findCard(id)!;
 		return { card, run: card.runs.find((r) => r.model === 'lfm25')! };
+	};
+	const rows = $derived.by(() => {
+		const q = { card: HERO_CARD, run: HERO_RUN };
+		const l1 = lfm('rtx-3090');
+		const l2 = lfm('rtx-5060-ti-16');
+		const mk = (x: { card: CardView; run: RunView }, segs: Seg[]) => ({
+			...x,
+			segs,
+			total: segs.reduce((a, s) => a * s.v, 1),
+			note: `${x.card.name} · ${MODEL_INFO[x.run.model].name}: ${(x.run.gainText?.[lang] ?? x.run.gain!.text).map((t) => localizeDecimals(t.replaceAll('\u0060', ''), lang)).join(' · ')}`
+		});
+		return [
+			mk(q, [
+				{ label: c.flags, v: q.run.gain!.flags!.v, ours: false },
+				{ label: c.mine, v: q.run.gain!.engine!.v, ours: true }
+			]),
+			mk(l1, [{ label: c.allOurs, v: l1.run.gain!.engine!.v, ours: true }]),
+			mk(l2, [{ label: c.allOurs, v: l2.run.gain!.engine!.v, ours: true }])
+		];
 	});
-	const maxGap = $derived(Math.max(K.gapMs[0].v, K.gapMs[1].v));
-	const src = $derived([K.up.src, K.ours.src, HERO_GAIN.src]);
-	const note = $derived(`${HERO_CARD.name} · ${HERO_MODEL} ${HERO_RUN.quant}. ${c.dot}`);
-	/** The sheet's "skąd zysk" cells in the page language (markdown code ticks removed). */
-	const gainNote = $derived(
-		[{ card: HERO_CARD, run: HERO_RUN }, ...lfm]
-			.map(({ card, run }) => `${card.name} · ${MODEL_INFO[run.model].name}: ${(run.gainText?.[lang] ?? run.gain!.text).map((t) => localizeDecimals(t.replaceAll('\u0060', ''), lang)).join(' · ')}`)
-			.join('. ')
-	);
+	const maxTotal = $derived(Math.max(...rows.map((r) => r.total)));
+	const w = (v: number) => Math.log(v) / Math.log(maxTotal);
 </script>
 
-<section id="engine" class="engine" aria-labelledby="engine-title">
-	<div class="wrap" use:tl.view>
-		<div class="layout">
-			<header class="head">
-				<h2 id="engine-title" class="statement">{c.title.replace('|', ' ')}</h2>
-				<p class="lede">{c.lede}</p>
-			</header>
-			<!-- the full stack, layer by layer (text only; numbers come from the registry below) -->
-			<ol class="layers">
-				{#each c.layers as [name, desc], i (name)}
-					<li class:focus={i === 1}>
-						<span class="li">{String(i + 1).padStart(2, '0')}</span>
-						<span class="lt">{name}</span>
-						<span class="ld">{desc}</span>
-					</li>
-				{/each}
-			</ol>
-			<p class="example"><span class="ex-n">02</span>{c.example} · {HERO_CARD.name} · {HERO_MODEL}</p>
-			<div class="viz">
-				<div class="counts">
-					<p class="ct">
-						<span class="cv">{num(UP, lang, 0)}</span>
-						<span class="cl">{c.kernels} · {c.up}</span>
-					</p>
-					<p class="ct ours">
-						<span class="cv">{num(OURS, lang, 0)}</span>
-						<span class="cl">{c.kernels} · {c.ours} <SourceTip {lang} {src} {note} /></span>
-					</p>
-				</div>
-				<div class="dots" bind:this={box}>
-					<canvas bind:this={canvas} aria-hidden="true"></canvas>
-				</div>
-				<p class="dot-note">{c.dot} <Replay {lang} onclick={tl.replay} disabled={tl.playing} /></p>
-				<p class="sr-only">{c.kernels}: {c.up} {UP}, {c.ours} {OURS}.</p>
+<section id="engine" class="engine heat-top" aria-labelledby="engine-title">
+	<div class="inner">
+		<h2 id="engine-title" class="statement">{c.title.replace('|', ' ')}</h2>
+
+		<div class="grid">
+			<!-- (a) the stack -->
+			<div class="stack" use:stackTl.view>
+				<p class="cap cap--model"><span class="ci" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2l7 4v8l-7 4-7-4V6zM3 6l7 4 7-4M10 10v8" /></svg></span>{c.model}</p>
+				<div class="pulse" class:run={stackTl.p >= 1} aria-hidden="true"></div>
+				<ol class="slabs">
+					{#each c.layers as [name, sub], i (name)}
+						<li class="slab" class:in={stackTl.p >= (i + 1) / 7} class:focus={i === 1} style="--i:{i}">
+							<span class="si" aria-hidden="true"><svg viewBox="0 0 20 20"><path d={ICONS[i]} /></svg></span>
+							<span class="sn">{name}</span>
+							<span class="ss">{sub}</span>
+							<span class="sk" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
+						</li>
+					{/each}
+				</ol>
+				<p class="cap cap--card"><span class="ci" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M2 6h16v9H2zM5 15v2M8 15v2M11 15v2M14 15v2M6 9h4v3H6z" /></svg></span>{c.card}</p>
 			</div>
-			<div class="side">
-				<div class="timeline">
-					<p class="th">{c.gaps}</p>
-					{#each [0, 1] as i (i)}
-						<div class="row" class:ours={i === 1}>
-							<span class="who">{i ? c.ours : c.up}</span>
-							<span class="gapbar" style="--w:{K.gapMs[i].v / maxGap}"></span>
-							<span class="ms"><b>{num(K.gapMs[i].v, lang, 2)}</b>&nbsp;ms</span>
+
+			<div class="right">
+				<!-- (b) layer 02 up close -->
+				<figure class="zoom" use:zoomTl.view>
+					<figcaption class="zh">
+						<span class="zk">02</span>
+						<span class="zt">{c.zoom}</span>
+						<span class="zm"><ModelMark model={HERO_RUN.model} size="0.7em" /> {HERO_MODEL} · {HERO_CARD.name}</span>
+						<SourceTip {lang} src={kSrc} note={c.zoomNote} />
+						<Replay {lang} onclick={zoomTl.replay} disabled={zoomTl.playing} />
+					</figcaption>
+					{#each [0, 1] as lane (lane)}
+						<div class="lane" class:ours={lane === 1}>
+							<p class="ln">{lane ? c.ours : c.up}</p>
+							<svg class="track" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true">
+								{#each bars as b, i (i)}
+									{#if lane === 0}
+										<rect x={b.x0} y="6" width={b.w0} height="28" rx="1.5" />
+									{:else}
+										<rect x={lerp(b.x0, b.x1, f)} y="6" width={lerp(b.w0, b.w1, f) + (f > 0.98 ? 0.6 : 0)} height="28" rx="1.5" />
+									{/if}
+								{/each}
+							</svg>
+							<dl class="nums">
+								<div class="n-main"><dt>{c.kernels}</dt><dd>{num(lane ? live.n : UP, lang, 0)}</dd></div>
+								<div><dt>{c.gaps}</dt><dd>{num(lane ? live.gap : K.gapMs[0].v, lang, 2)}<small>&nbsp;ms</small></dd></div>
+								<div><dt>{c.gpu}</dt><dd>{num(lane ? live.gpu : K.gpuMs[0].v, lang, 1)}<small>&nbsp;ms</small></dd></div>
+							</dl>
 						</div>
 					{/each}
-					<p class="gpu-note">{fill(c.gpuSame, { a: num(K.gpuMs[0].v, lang), b: num(K.gpuMs[1].v, lang) })}</p>
+					<p class="sr-only">{c.up}: {UP} {c.kernels}, {c.gaps} {num(K.gapMs[0].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[0].v, lang, 1)} ms. {c.ours}: {OURS} {c.kernels}, {c.gaps} {num(K.gapMs[1].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[1].v, lang, 1)} ms.</p>
+				</figure>
+
+				<!-- (c) where the gain comes from -->
+				<div class="split" class:in={zoomTl.p > 0.55}>
+					<p class="sh">{c.split}</p>
+					{#each rows as r, ri (r.card.id + r.run.model)}
+						<div class="row" style="--d:{ri * 120}ms">
+							<p class="rw">
+								<ModelMark model={r.run.model} size="0.7em" />
+								<b>{MODEL_STYLE[r.run.model].short}</b>
+								<span>{r.card.short}</span>
+							</p>
+							<div class="bwrap">
+								<div class="sbar" style="--len:{w(r.total)}">
+									{#each r.segs as s (s.label)}
+										<span class="seg" class:mine={s.ours} style="flex-grow:{w(s.v)}">
+											<b class="speedup" class:speedup--down={s.v < 1}>{fmtRatio(s.v, lang)}</b>
+											{#if r.segs.length > 1}<small>{s.label}</small>{/if}
+										</span>
+									{/each}
+								</div>
+								{#if r.segs.length === 1}<small class="after">{r.segs[0].label}</small>{:else}<small class="after leg">{r.segs.map((s) => s.label).join(' × ')}</small>{/if}
+							</div>
+							<SourceTip {lang} src={r.run.gain!.src} note={r.note} />
+						</div>
+					{/each}
 				</div>
-				<p class="honest">
-					<Rich
-						text={c.honest}
-						vars={{ card: HERO_CARD.name, cardA: lfm[0].card.name, cardB: lfm[1].card.name }}
-						speed={{
-							flags: { text: fmtRatio(HERO_GAIN.flags!.v, lang), v: HERO_GAIN.flags!.v },
-							engine: { text: fmtRatio(HERO_GAIN.engine!.v, lang), v: HERO_GAIN.engine!.v },
-							lfmA: { text: fmtRatio(lfm[0].run.gain!.engine!.v, lang), v: lfm[0].run.gain!.engine!.v },
-							lfmB: { text: fmtRatio(lfm[1].run.gain!.engine!.v, lang), v: lfm[1].run.gain!.engine!.v }
-						}}
-					/>
-					<SourceTip {lang} src={[HERO_GAIN.src, ...lfm.map((l) => l.run.gain!.src)]} note={gainNote} />
-				</p>
 			</div>
 		</div>
 	</div>
 </section>
 
 <style>
-	.layout {
+	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
-		display: grid;
-		grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-		grid-template-areas:
-			'head   layers'
-			'ex     ex'
-			'viz    side';
-		gap: var(--sp-6) clamp(2rem, 5vw, 5rem);
 		padding-block: clamp(3.5rem, 2.5rem + 3vw, 6rem);
-	}
-	.head {
-		grid-area: head;
 		display: grid;
-		align-content: start;
-		gap: var(--sp-4);
+		gap: clamp(2rem, 4vw, 3.5rem);
 	}
-	.layers {
-		grid-area: layers;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: var(--sp-4) var(--sp-5);
-		align-content: start;
-	}
-	.layers li {
-		display: grid;
-		grid-template-columns: auto 1fr;
-		column-gap: var(--sp-3);
-		row-gap: 0.2rem;
-		padding-top: var(--sp-3);
-		border-top: 1px solid var(--line);
-	}
-	.layers li.focus {
-		border-top-color: var(--text-hi);
-	}
-	.li {
-		grid-row: span 2;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text-mute);
-		padding-top: 0.2rem;
-	}
-	.lt {
-		font-weight: 700;
-		font-stretch: 108%;
-		color: var(--text-hi);
-		font-size: var(--fs-sm);
-	}
-	.ld {
-		font-size: var(--fs-xs);
-		line-height: 1.45;
-		color: var(--text-mute);
-	}
-	.example {
-		grid-area: ex;
-		display: flex;
-		align-items: center;
-		gap: var(--sp-3);
-		padding-top: var(--sp-4);
-		border-top: 1px solid var(--line);
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--text);
-	}
-	.ex-n {
-		padding: 0.15rem 0.45rem;
-		border: 1px solid var(--text-hi);
-		border-radius: 3px;
-		color: var(--text-hi);
-	}
-	/* one statement, one width: no condensed/wide formula here */
 	.statement {
 		margin: 0;
+		max-width: 20ch;
 		font-family: var(--font-display);
 		font-size: clamp(2.1rem, 0.8rem + 3vw, 4.2rem);
 		font-weight: 820;
@@ -290,146 +202,398 @@
 		color: var(--text-hi);
 		text-wrap: balance;
 	}
-	.side {
-		grid-area: side;
+	.grid {
 		display: grid;
-		gap: var(--sp-6);
-		align-content: start;
+		grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr);
+		gap: clamp(2rem, 5vw, 5rem);
+		align-items: start;
 	}
-	.lede {
-		max-width: 44ch;
-	}
-	.viz {
-		grid-area: viz;
-		display: grid;
-		gap: var(--sp-4);
-	}
-	/* both final counts, printed statically over their grids */
-	.counts {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		column-gap: 6%;
-	}
-	.ct {
-		display: grid;
-		gap: var(--sp-1);
-	}
-	.cv {
-		font-family: var(--font-mono);
-		font-size: clamp(3rem, 1.5rem + 4.4vw, 6.5rem);
-		font-weight: 300;
-		letter-spacing: -0.06em;
-		line-height: 0.9;
-		color: var(--before);
-	}
-	.ours .cv {
-		color: var(--text-hi);
-	}
-	.cl {
-		display: inline-flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--sp-2);
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		text-transform: uppercase;
-		letter-spacing: 0.12em;
-		color: var(--text);
-	}
-	.dots {
+
+	/* ---- (a) stack ---- */
+	.stack {
 		position: relative;
-		height: clamp(12rem, 18vw, 17rem);
+		display: grid;
+		gap: 0.6rem;
+		perspective: 1400px;
 	}
-	canvas {
-		position: absolute;
-		inset: 0;
-		width: 100%;
-		height: 100%;
-	}
-	.dot-note {
+	.cap {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
-		gap: var(--sp-3);
+		justify-content: center;
+		gap: 0.5rem;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text);
+	}
+	.ci svg,
+	.si svg {
+		width: 1.15rem;
+		height: 1.15rem;
+		fill: none;
+		stroke: currentColor;
+		stroke-width: 1.4;
+		stroke-linejoin: round;
+		stroke-linecap: round;
+	}
+	/* the token's path from the model down to the card; a pulse runs it once the stack is lit */
+	.pulse {
+		position: absolute;
+		left: 50%;
+		top: 1.6rem;
+		bottom: 1.6rem;
+		width: 1px;
+		background: linear-gradient(var(--line-strong), var(--line-strong));
+		overflow: hidden;
+	}
+	.pulse::after {
+		content: '';
+		position: absolute;
+		left: -1px;
+		width: 3px;
+		height: 18%;
+		background: linear-gradient(transparent, var(--text-hi), transparent);
+		box-shadow: 0 0 10px var(--text-hi);
+		transform: translate3d(0, -100%, 0);
+		opacity: 0;
+	}
+	.pulse.run::after {
+		opacity: 1;
+		animation: pulse 2.6s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+	}
+	@keyframes pulse {
+		to {
+			transform: translate3d(0, 650%, 0);
+		}
+	}
+	.slabs {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: grid;
+		gap: 0.45rem;
+		transform: rotateX(8deg) rotateY(-10deg);
+		transform-style: preserve-3d;
+	}
+	.slab {
+		position: relative;
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		grid-template-areas: 'icon name key' 'icon sub key';
+		align-items: center;
+		column-gap: 0.9rem;
+		padding: 0.7rem 1rem;
+		border: 1px solid var(--line);
+		border-radius: var(--r-md);
+		background: linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.01)), var(--bg-1);
+		box-shadow: 0 10px 24px -16px rgb(0 0 0 / 0.9);
+		opacity: 0.25;
+		transform: translate3d(-1.25rem, 0, 0);
+		transition:
+			opacity 0.35s var(--ease-out),
+			transform 0.45s var(--ease-spring),
+			border-color 0.6s;
+	}
+	.slab.in {
+		opacity: 1;
+		transform: none;
+		animation: lit 0.9s var(--ease-out);
+	}
+	@keyframes lit {
+		0% {
+			border-color: var(--text-hi);
+			box-shadow:
+				0 0 0 1px rgb(237 234 227 / 0.5),
+				0 0 28px rgb(237 234 227 / 0.25);
+		}
+	}
+	.slab.focus.in {
+		border-color: rgb(237 234 227 / 0.45);
+	}
+	.si {
+		grid-area: icon;
+		display: grid;
+		place-items: center;
+		width: 2.2rem;
+		height: 2.2rem;
+		border-radius: 8px;
+		background: rgb(237 234 227 / 0.06);
+		color: var(--text-hi);
+	}
+	.sn {
+		grid-area: name;
+		font-weight: 680;
+		font-size: var(--fs-sm);
+		color: var(--text-hi);
+		line-height: 1.2;
+	}
+	.ss {
+		grid-area: sub;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
 		letter-spacing: 0.04em;
 	}
-	/* only the waiting between kernels: the part our engine shortens (dotted = overhead) */
-	.timeline {
-		display: grid;
-		gap: var(--sp-3);
-		align-content: start;
-	}
-	.th {
+	.sk {
+		grid-area: key;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		text-transform: uppercase;
+		color: var(--text-mute);
+	}
+
+	/* ---- (b) zoom ---- */
+	.right {
+		display: grid;
+		gap: clamp(1.5rem, 3vw, 2.25rem);
+		min-width: 0;
+	}
+	.zoom {
+		margin: 0;
+		display: grid;
+		gap: 1.1rem;
+		padding: clamp(1.25rem, 2.5vw, 1.75rem);
+		border: 1px solid var(--line);
+		border-radius: var(--r-xl);
+		background: var(--bg-1);
+	}
+	.zh {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5rem 0.8rem;
+	}
+	.zk {
+		padding: 0.1rem 0.45rem;
+		border: 1px solid var(--text-hi);
+		border-radius: 3px;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text-hi);
+	}
+	.zt {
+		font-weight: 700;
+		color: var(--text-hi);
+	}
+	.zm {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		margin-right: auto;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
+	}
+	.lane {
+		display: grid;
+		grid-template-columns: 6.5rem minmax(0, 1fr);
+		grid-template-areas: 'ln track' '. nums';
+		align-items: center;
+		column-gap: 1rem;
+		row-gap: 0.4rem;
+	}
+	.ln {
+		grid-area: ln;
+		font-size: var(--fs-xs);
+		color: var(--text);
+	}
+	.ours .ln {
+		color: var(--text-hi);
+		font-weight: 650;
+	}
+	/* the waiting shows through as a dotted floor (dotted = overhead); kernels sit on it */
+	.track {
+		grid-area: track;
+		width: 100%;
+		height: 2.6rem;
+		background: radial-gradient(circle, rgb(125 135 148 / 0.55) 1px, transparent 1.4px) 0 50% / 6px 6px;
+		border-radius: 4px;
+	}
+	.track rect {
+		fill: var(--before);
+	}
+	.ours .track rect {
+		fill: var(--text-hi);
+	}
+	.nums {
+		grid-area: nums;
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.2rem 1.6rem;
+		font-variant-numeric: tabular-nums;
+	}
+	.nums div {
+		display: flex;
+		align-items: baseline;
+		gap: 0.45rem;
+	}
+	.nums dt {
+		order: 2;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
+	}
+	.nums dd {
+		margin: 0;
+		font-family: var(--font-mono);
+		font-size: var(--fs-md);
+		color: var(--text);
+	}
+	.n-main dd {
+		font-size: clamp(1.4rem, 1rem + 1vw, 1.9rem);
+		font-weight: 500;
+		letter-spacing: -0.04em;
+		color: var(--before);
+	}
+	.ours dd {
+		color: var(--text-hi);
+	}
+	.ours .n-main dd {
+		color: var(--text-hi);
+	}
+	.nums small {
+		font-size: 0.7em;
+		color: var(--text-mute);
+	}
+
+	/* ---- (c) split bars ---- */
+	.split {
+		display: grid;
+		gap: 0.9rem;
+	}
+	.sh {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
 		letter-spacing: 0.12em;
+		text-transform: uppercase;
 		color: var(--text-mute);
 	}
 	.row {
 		display: grid;
-		grid-template-columns: 6.5rem minmax(0, 1fr) 5.5rem;
+		grid-template-columns: 9.5rem minmax(0, 1fr) auto;
 		align-items: center;
-		gap: var(--sp-3);
-		font-size: var(--fs-xs);
-		color: var(--text-mute);
+		gap: 1rem;
 	}
-	.row.ours .who {
-		color: var(--text-hi);
-	}
-	.gapbar {
-		display: block;
-		height: 1.1rem;
-		width: calc(var(--w) * 100%);
-		border: 1px solid var(--line-strong);
-		border-radius: 3px;
-		background: radial-gradient(circle, rgb(125 135 148 / 0.9) 1.2px, transparent 1.6px) 0 0 / 6px 6px;
-	}
-	.row.ours .gapbar {
-		border-color: var(--text-hi);
-		background: radial-gradient(circle, rgb(237 234 227 / 0.9) 1.2px, transparent 1.6px) 0 0 / 6px 6px;
-	}
-	.ms {
-		font-family: var(--font-mono);
+	.rw {
+		display: flex;
+		align-items: baseline;
+		gap: 0.45rem;
 		white-space: nowrap;
-		color: var(--text);
-		text-align: right;
-	}
-	.ms b {
-		font-size: var(--fs-lg);
-		font-weight: 500;
-		color: var(--text-hi);
-	}
-	.gpu-note {
 		font-size: var(--fs-xs);
 		color: var(--text-mute);
 	}
-	.honest {
-		font-size: var(--fs-sm);
-		line-height: 1.55;
-		color: var(--text);
-		max-width: 56ch;
-		padding-left: var(--sp-4);
-		border-left: 2px solid var(--line-strong);
+	.rw b {
+		color: var(--text-hi);
+		font-weight: 650;
 	}
-	@media (max-width: 900px) {
-		.layout {
+	.bwrap {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		min-width: 0;
+	}
+	.leg {
+		display: none;
+	}
+	.after {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--heat-4);
+		white-space: nowrap;
+	}
+	.sbar {
+		display: flex;
+		flex: none;
+		gap: 3px;
+		width: calc(var(--len) * (100% - 11rem));
+		transform-origin: 0 50%;
+		transform: scaleX(0);
+		transition: transform 0.8s var(--ease-out) var(--d);
+	}
+	.split.in .sbar {
+		transform: none;
+	}
+	.seg {
+		flex-basis: 0;
+		min-width: 0;
+		display: flex;
+		align-items: baseline;
+		gap: 0.45rem;
+		padding: 0.45rem 0.6rem;
+		border-radius: 5px;
+		background: rgb(125 135 148 / 0.18);
+		border: 1px solid rgb(125 135 148 / 0.4);
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.seg.mine {
+		background: linear-gradient(90deg, rgb(226 64 28 / 0.25), rgb(255 122 26 / 0.3));
+		border-color: rgb(255 122 26 / 0.6);
+		box-shadow: 0 0 16px -4px rgb(255 122 26 / 0.45);
+	}
+	.seg b {
+		font-size: var(--fs-md);
+	}
+	.seg:not(.mine) b {
+		background: none;
+		color: var(--text-hi);
+		-webkit-text-fill-color: currentColor;
+	}
+	.seg small {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text);
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	@media (max-width: 1000px) {
+		.grid {
 			grid-template-columns: minmax(0, 1fr);
-			grid-template-areas: 'head' 'layers' 'ex' 'viz' 'side';
 		}
-		.dots {
-			height: 62vw;
+		.slabs {
+			transform: none;
+		}
+	}
+	@media (max-width: 640px) {
+		.lane {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: 'ln' 'track' 'nums';
 		}
 		.row {
-			grid-template-columns: 5.5rem minmax(0, 1fr) 4.5rem;
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas: 'rw src' 'bar bar';
+		}
+		.rw {
+			grid-area: rw;
+		}
+		.row :global(.src-btn),
+		.row > :global(:last-child) {
+			grid-area: src;
+		}
+		.bwrap {
+			grid-area: bar;
+			flex-wrap: wrap;
+			gap: 0.4rem;
+		}
+		.sbar {
+			width: calc(var(--len) * 100%);
+		}
+		.seg small {
+			display: none;
+		}
+		.leg {
+			display: block;
 		}
 	}
-	@media (max-width: 560px) {
-		.layers {
-			grid-template-columns: minmax(0, 1fr);
+	@media (prefers-reduced-motion: reduce) {
+		.slab,
+		.sbar {
+			transition: none;
+		}
+		.slab.in,
+		.pulse.run::after {
+			animation: none;
 		}
 	}
 </style>

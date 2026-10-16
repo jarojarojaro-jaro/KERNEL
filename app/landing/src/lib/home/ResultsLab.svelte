@@ -152,10 +152,43 @@
 <style>
 	.results {
 		position: relative;
+		isolation: isolate;
+		overflow: clip;
 		padding-block: clamp(2rem, 1.5rem + 2vw, 3.5rem) clamp(4rem, 3rem + 4vw, 6rem);
+		background: var(--bg-0);
+	}
+	/* a slow-drifting heat glow behind the lab (transform only, composited) */
+	.results::before {
+		content: '';
+		position: absolute;
+		inset: -20% -10% auto;
+		height: 90%;
+		z-index: -1;
+		pointer-events: none;
 		background:
-			radial-gradient(60% 40% at 80% 0%, rgb(255 122 26 / 0.06), transparent 70%),
-			var(--bg-0);
+			radial-gradient(40% 45% at 25% 30%, rgb(226 64 28 / 0.14), transparent 70%),
+			radial-gradient(35% 40% at 80% 20%, rgb(255 122 26 / 0.12), transparent 70%);
+		animation: lab-drift 18s ease-in-out infinite alternate;
+	}
+	@keyframes lab-drift {
+		to {
+			transform: translate3d(4%, 6%, 0) scale(1.08);
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.results::before {
+			animation: none;
+		}
+	}
+	/* panels warm up on hover; the section's numbers carry heat highlights */
+	.results :global(.panel) {
+		transition:
+			border-color 0.3s,
+			box-shadow 0.3s;
+	}
+	.results :global(.panel:hover) {
+		border-color: rgb(255 122 26 / 0.45);
+		box-shadow: 0 0 40px -18px rgb(255 122 26 / 0.6);
 	}
 	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);
@@ -181,12 +214,26 @@
 		display: grid;
 		gap: var(--sp-2);
 	}
-	.pl {
+	.pl,
+	.rh {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		text-transform: uppercase;
 		letter-spacing: 0.12em;
-		color: var(--text-mute);
+		color: var(--heat-4);
+	}
+	/* a short heat dash before each label */
+	.pl::before,
+	.rh::before {
+		content: '';
+		width: 1.4rem;
+		height: 2px;
+		border-radius: 2px;
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 8px rgb(255 122 26 / 0.6);
 	}
 	.board {
 		display: grid;
@@ -283,13 +330,6 @@
 		display: grid;
 		gap: var(--sp-3);
 	}
-	.rh {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		text-transform: uppercase;
-		letter-spacing: 0.12em;
-		color: var(--text-mute);
-	}
 	.more {
 		justify-self: start;
 		font-weight: 650;
@@ -297,12 +337,15 @@
 		font-size: var(--fs-lg);
 		color: var(--text-hi);
 		text-decoration: none;
-		border-bottom: 1px solid var(--line-strong);
+		border-bottom: 1px solid var(--heat-3);
 		padding-bottom: 0.2rem;
-		transition: border-color var(--dur-2);
+		transition:
+			border-color var(--dur-2),
+			color var(--dur-2);
 	}
 	.more:hover {
-		border-color: var(--text-hi);
+		color: var(--heat-4);
+		border-color: var(--heat-4);
 	}
 	@media (max-width: 900px) {
 		.pickers,

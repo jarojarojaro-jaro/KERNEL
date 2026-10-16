@@ -207,11 +207,11 @@
 		gap: var(--sp-4);
 		justify-items: start;
 		background:
-			radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--text-hi) 6%, transparent), transparent 60%),
+			radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--heat-3) 12%, transparent), transparent 60%),
 			var(--bg-2);
 	}
 	.moon {
-		color: var(--text-hi);
+		color: var(--accent-ink);
 	}
 	.quote {
 		margin: 0;
@@ -261,7 +261,7 @@
 		font-weight: var(--fw-medium);
 		letter-spacing: var(--tracking-overline);
 		text-transform: uppercase;
-		color: var(--text-hi);
+		color: var(--accent-ink);
 		margin-right: auto;
 	}
 	.led {
@@ -305,7 +305,7 @@
 		position: absolute;
 		inset: 0 auto 0 0;
 		width: calc(var(--v) * 100%);
-		background: var(--text-hi);
+		background: var(--heat-ramp-hot);
 		border-radius: inherit;
 		overflow: hidden;
 	}

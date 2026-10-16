@@ -95,9 +95,9 @@
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell step={2} title={t.title} lead={t.lead}>
+<Shell step={2} title={t.title} lead={t.lead} wide>
 	<div class="grid">
-		<form class="card stack" novalidate onsubmit={submit}>
+		<form class="card heat-card stack hw-form" novalidate onsubmit={submit}>
 			<GpuCombobox bind:value={gpu} label={t.gpu} placeholder={t.gpuPh} hint={t.gpuHint} none={t.gpuNone} error={tried && !gpu ? t.errGpu : null} />
 			<div class="row">
 				<div class="field">
@@ -129,7 +129,8 @@
 			<a class="btn btn--secondary btn--lg btn--block" href={cardsHref(lang)}>{cardsCopy[lang].gallery.hwLink} <span class="arrow" aria-hidden="true">→</span></a>
 		</form>
 
-		<section class="card card--inset stack scan" aria-labelledby="unknown-title">
+		<section class="card card--inset heat-wash stack scan" aria-labelledby="unknown-title">
+			<p class="overline">{lang === 'pl' ? 'Skan' : 'Scan'}</p>
 			<h2 id="unknown-title" class="h3">{t.unknownTitle}</h2>
 			<p class="small">{t.unknownLead}</p>
 			<ScanCommands initial={os} />
@@ -158,9 +159,19 @@
 <style>
 	.grid {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
 		gap: var(--sp-6);
 		align-items: start;
+	}
+	.hw-form {
+		padding: clamp(1.25rem, 0.8rem + 2vw, 2.25rem);
+	}
+	.hw-form :global(.label),
+	.hw-form label {
+		font-size: var(--fs-sm);
+	}
+	.scan {
+		overflow: hidden;
 	}
 	@media (max-width: 900px) {
 		.grid {

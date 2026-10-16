@@ -159,19 +159,25 @@
 		margin-inline: auto;
 		padding-block: clamp(6rem, 3rem + 7vh, 8rem) clamp(1.5rem, 1rem + 2vh, 2.5rem);
 		display: grid;
+		justify-items: center;
 		gap: clamp(1.75rem, 1rem + 3vh, 3rem);
+		text-align: center;
 	}
 	/* two tiers: the steel line, then the focal heat line much larger (font-size = heat line) */
 	.title {
 		margin: 0;
 		font-family: var(--font-display);
-		font-size: min(10.4vw, 19svh);
+		font-size: min(10.4vw, 19svh, 9.2rem);
 		font-weight: 840;
 		font-stretch: 118%;
 		line-height: 0.86;
 		letter-spacing: -0.05em;
 		color: var(--text-hi);
 		font-kerning: none;
+		text-align: center;
+	}
+	.title :global(.kin--wide) {
+		transform-origin: 50% 50%;
 	}
 	.title :global(.kin--cold) {
 		font-size: 0.355em;
@@ -190,6 +196,7 @@
 	.actions {
 		display: flex;
 		flex-wrap: wrap;
+		justify-content: center;
 		align-items: center;
 		gap: var(--sp-4) clamp(1.5rem, 3vw, 2.5rem);
 	}
@@ -332,7 +339,9 @@
 		border-radius: 4px;
 	}
 	.race {
+		width: min(100%, 78rem);
 		min-width: 0;
+		text-align: left;
 	}
 	.now {
 		font-family: var(--font-mono);
@@ -381,6 +390,7 @@
 			font-size: 0.5em;
 			font-stretch: 86%;
 			max-width: 8.4em;
+			margin-inline: auto;
 			line-height: 0.98;
 			margin-bottom: 0.22em;
 		}

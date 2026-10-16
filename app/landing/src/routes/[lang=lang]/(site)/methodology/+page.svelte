@@ -1265,4 +1265,115 @@
 			transition: none;
 		}
 	}
+
+	/* ---------- heat layer: section rules, numbers, highlights ---------- */
+	.hero::before {
+		background:
+			radial-gradient(closest-side, color-mix(in srgb, var(--heat-3) 16%, transparent), transparent),
+			radial-gradient(closest-side at 30% 70%, color-mix(in srgb, var(--heat-2) 10%, transparent), transparent);
+	}
+	.stats {
+		border-image: linear-gradient(90deg, var(--heat-2), var(--heat-3) 30%, var(--line) 70%) 1;
+	}
+	.stats dd:not(.stat-line dd) {
+		background: var(--heat-ramp-hot);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+	:global(:root[data-theme='light']) .stats dd:not(.stat-line dd) {
+		background: none;
+		color: var(--accent-ink);
+	}
+	.toc a.on {
+		border-left-color: var(--heat-3);
+		background: linear-gradient(90deg, color-mix(in srgb, var(--heat-3) 12%, transparent), transparent 80%);
+	}
+	.toc a.on .mono,
+	.toc a:hover .mono {
+		color: var(--accent-ink);
+	}
+	.sec-h {
+		position: relative;
+		border-top-color: transparent;
+	}
+	.sec-h::before {
+		content: '';
+		position: absolute;
+		top: -1px;
+		left: 0;
+		right: 0;
+		height: 1px;
+		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 18%, var(--heat-4) 30%, var(--line) 55%);
+	}
+	.sec-h::after {
+		content: '';
+		position: absolute;
+		top: -2px;
+		left: 0;
+		width: 3.5rem;
+		height: 3px;
+		border-radius: var(--r-pill);
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 16px color-mix(in srgb, var(--heat-3) 80%, transparent);
+	}
+	.no {
+		color: var(--accent-ink);
+	}
+	.rules li .mono {
+		color: var(--accent-ink);
+	}
+	.rules li {
+		transition: background-color var(--dur-2);
+	}
+	.rules li:hover {
+		background: linear-gradient(90deg, color-mix(in srgb, var(--heat-3) 7%, transparent), transparent 60%);
+	}
+	.mach,
+	.gpu,
+	.claim {
+		transition:
+			border-color var(--dur-3) var(--ease-out),
+			box-shadow var(--dur-3) var(--ease-out);
+	}
+	.mach:hover,
+	.gpu:hover {
+		border-color: color-mix(in srgb, var(--heat-3) 55%, var(--line));
+		box-shadow: 0 30px 80px -50px color-mix(in srgb, var(--heat-3) 90%, transparent);
+	}
+	.gpu {
+		background:
+			radial-gradient(70% 60% at 100% 0%, color-mix(in srgb, var(--heat-3) 10%, transparent), transparent 70%),
+			var(--bg-1);
+	}
+	.gpu-short {
+		background: linear-gradient(180deg, var(--text-hi) 30%, var(--heat-3));
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+	.claim {
+		border-color: color-mix(in srgb, var(--heat-3) 40%, var(--line));
+		background:
+			radial-gradient(80% 60% at 0% 0%, color-mix(in srgb, var(--heat-3) 11%, transparent), transparent 70%),
+			var(--bg-1);
+		box-shadow: 0 40px 100px -60px color-mix(in srgb, var(--heat-3) 90%, transparent);
+	}
+	.claim-t {
+		background: linear-gradient(90deg, var(--text-hi) 45%, var(--heat-3) 80%, var(--heat-4));
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+	:global(:root[data-theme='light']) .claim-t {
+		background: linear-gradient(90deg, var(--text-hi) 45%, var(--accent-ink) 80%);
+		-webkit-background-clip: text;
+		background-clip: text;
+	}
+	.kld-row .big:not(.mute) {
+		color: var(--accent-ink);
+	}
+	.checks {
+		border-color: color-mix(in srgb, var(--heat-3) 45%, var(--line-strong));
+	}
 </style>

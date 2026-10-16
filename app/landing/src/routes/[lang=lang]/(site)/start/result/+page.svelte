@@ -1,7 +1,10 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { M } from '$lib/data/measurements';
 	import {
 		CTX_OPTIONS,
+		ETA,
+		L1_MTP_BAND,
 		LICENSES,
 		TOK_PER_WORD,
 		answerSeconds,
@@ -18,8 +21,10 @@
 		type Os,
 		type Range
 	} from '$lib/estimator';
+	import { fmtRatio } from '$lib/format';
 	import { currentLang, href, num } from '$lib/i18n';
 	import { ob } from '$lib/onboarding/copy';
+	import ResultGauge from '$lib/onboarding/ResultGauge.svelte';
 	import Shell from '$lib/onboarding/Shell.svelte';
 
 	const lang = $derived(currentLang());
@@ -60,16 +65,28 @@
 	const primaryF = $derived(rec ? forecast(rec.primary) : null);
 	const licenseOf = (m: Model) => LICENSES[m.license as keyof typeof LICENSES];
 	const fitBadge = { fits: 'badge--ok', tight: 'badge--estimate', slow: 'badge--estimate', no: 'badge--danger' } as const;
+	const L1A = M.qwenUpstreamVulkanPlain;
+	const L1B = M.qwenUpstreamVulkanMtp;
+	const howSpeed = $derived(t.howSpeed(num(ETA.dense.lo, lang, 2), num(ETA.dense.hi, lang, 2), num(ETA.moe.lo, lang, 2), num(ETA.moe.hi, lang, 2)));
+	const howL1 = $derived(
+		t.howL1(`${num(L1_MTP_BAND.lo, lang, 1)}–${fmtRatio(L1_MTP_BAND.hi, lang)}`, fmtRatio(L1B.value / L1A.value, lang), num(L1A.value, lang, 1), num(L1B.value, lang, 1))
+	);
 </script>
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell step={3} title={t.title} lead={t.lead}>
+<Shell step={3} title={t.title} lead={t.lead} wide>
 	{#if ready && (!hw || !rec || !primaryF || !b)}
 		<div class="notice notice--warn"><span class="notice__icon">!</span><p>{t.missing} <a href={href(lang, '/start/hardware')}>{t.toForm}</a></p></div>
 	{:else if hw && rec && primaryF && b}
 		{@const m = rec.primary}
 		{@const lic = licenseOf(m)}
+		<ResultGauge
+			gpuId={hw.gpu?.id}
+			gpuName={hw.gpu?.name ?? ''}
+			{lang}
+			estimate={primaryF.before ? { before: primaryF.before, best: primaryF.l1 ?? primaryF.before, l1: !!primaryF.l1 } : null}
+		/>
 		<div class="layout">
 			<!-- machine -->
 			<section class="card card--inset machine" aria-labelledby="mach-title">
@@ -90,7 +107,7 @@
 			</section>
 
 			<!-- primary model -->
-			<section class="card primary hud" aria-labelledby="prim-title">
+			<section class="card heat-card primary" aria-labelledby="prim-title">
 				<p class="overline overline--accent" id="prim-title">{t.primary}</p>
 				<div class="model-head">
 					<h2 class="h2">{m.name}</h2>
@@ -188,8 +205,8 @@
 					<summary>{t.howTitle}</summary>
 					<div class="disclosure__body stack small">
 						<p>{t.howMem}</p>
-						<p>{t.howSpeed}</p>
-						<p>{t.howL1}</p>
+						<p>{howSpeed}</p>
+						<p>{howL1}</p>
 						<p>
 							{t.howBw}: <span class="num">{hw.gpu?.bw}{hw.gpu?.bwMax ? `/${hw.gpu.bwMax}` : ''} GB/s</span>
 							({hw.gpu?.bwSource === 'r04' ? t.bwR04 : t.bwSpec}); B_tok {m.name} {m.quant}: <span class="num">{num(m.bTok, lang, 2)} GB</span> ({m.bTokSource}).

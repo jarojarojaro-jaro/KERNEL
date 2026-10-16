@@ -104,4 +104,57 @@
 			font-size: var(--fs-lg);
 		}
 	}
+	/* heat layer */
+	.section {
+		position: relative;
+		overflow-x: clip;
+		isolation: isolate;
+	}
+	.section::before {
+		content: '';
+		position: absolute;
+		inset: 0 0 auto;
+		height: 36rem;
+		z-index: -1;
+		pointer-events: none;
+		background: radial-gradient(45% 60% at 60% 0%, color-mix(in srgb, var(--heat-3) 16%, transparent), transparent 70%);
+	}
+	.docs {
+		border-top: 0;
+		position: relative;
+	}
+	.docs::before {
+		content: '';
+		display: block;
+		height: 1px;
+		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 25%, var(--line) 60%);
+	}
+	.ix {
+		color: var(--accent-ink);
+	}
+	.doc {
+		position: relative;
+	}
+	.doc::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -1px;
+		height: 1px;
+		background: var(--heat-ramp-hot);
+		transform: scaleX(0);
+		transform-origin: left;
+		transition: transform 0.6s var(--ease-out);
+	}
+	.doc:hover::after,
+	.doc:focus-visible::after {
+		transform: scaleX(1);
+	}
+	.doc:hover {
+		background: linear-gradient(90deg, color-mix(in srgb, var(--heat-3) 8%, transparent), transparent 70%);
+	}
+	.doc:hover .arrow {
+		color: var(--accent-ink);
+	}
 </style>

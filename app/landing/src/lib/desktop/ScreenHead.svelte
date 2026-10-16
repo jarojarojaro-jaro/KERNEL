@@ -27,7 +27,8 @@
 		gap: var(--sp-4) var(--sp-8);
 		padding-bottom: var(--sp-6);
 		margin-bottom: var(--sp-6);
-		border-bottom: 1px solid var(--line);
+		border-bottom: 1px solid transparent;
+		border-image: linear-gradient(90deg, var(--heat-2), var(--heat-3) 20%, var(--heat-4) 35%, var(--line) 60%) 1;
 	}
 	.text {
 		display: grid;

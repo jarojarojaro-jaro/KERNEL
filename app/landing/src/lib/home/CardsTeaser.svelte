@@ -23,7 +23,7 @@
 	const top = Math.max(...tiles.map((t) => t.ours));
 </script>
 
-<section id="cards" class="cards" aria-labelledby="cards-title">
+<section id="cards" class="cards heat-top" aria-labelledby="cards-title">
 	<div class="inner">
 		<header class="head">
 			<div>
@@ -73,7 +73,6 @@
 <style>
 	.cards {
 		padding-block: clamp(3.5rem, 2.5rem + 3vw, 6rem);
-		border-top: 1px solid var(--line);
 		background: var(--bg-0);
 	}
 	.fn {

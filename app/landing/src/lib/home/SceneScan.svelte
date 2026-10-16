@@ -106,12 +106,10 @@
 	}
 	@keyframes launch {
 		0% {
-			opacity: 0.01;
 			filter: blur(8px);
 			transform: perspective(1500px) rotateY(-12deg) rotateX(6deg) translate3d(60%, 0, 0) skewX(-14deg);
 		}
 		45% {
-			opacity: 1;
 			filter: blur(1.5px);
 			transform: perspective(1500px) rotateY(-12deg) rotateX(6deg) translate3d(-4%, 0, 0) skewX(4deg);
 		}
@@ -165,24 +163,25 @@
 		margin: 0;
 		padding: 0;
 	}
+	/* revealed by clip + transform, never by opacity: the text is full contrast in every frame */
 	.callout {
 		position: absolute;
 		left: var(--x);
 		top: var(--y);
 		visibility: hidden;
-		opacity: 0;
+		clip-path: inset(50% 50% 50% 50%);
 		transform: scale(0.85);
 		transition:
-			opacity 0.35s var(--ease-out),
+			clip-path 0.35s var(--ease-out),
 			transform 0.5s var(--ease-spring),
 			visibility 0s linear 0.35s;
 	}
 	.callout.on {
 		visibility: visible;
-		opacity: 1;
+		clip-path: inset(-12rem -12rem -12rem -12rem);
 		transform: none;
 		transition:
-			opacity 0.35s var(--ease-out),
+			clip-path 0.35s var(--ease-out),
 			transform 0.5s var(--ease-spring),
 			visibility 0s;
 	}
@@ -325,12 +324,10 @@
 		}
 		@keyframes launch {
 			0% {
-				opacity: 0.01;
 				filter: blur(6px);
 				transform: translate3d(70%, 0, 0) skewX(-14deg);
 			}
 			45% {
-				opacity: 1;
 				filter: blur(1px);
 				transform: translate3d(-5%, 0, 0) skewX(4deg);
 			}

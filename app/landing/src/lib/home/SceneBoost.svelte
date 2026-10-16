@@ -47,7 +47,7 @@
 			<div class="meter">
 				<div class="read">
 					<div class="readout">
-						<span class="bignum"><Odometer value={shown} decimals={1} {lang} duration={1300} minInt={2} label={c.unit} /></span>
+						<span class="bignum"><Odometer value={shown} decimals={1} {lang} duration={800} minInt={2} label={c.unit} /></span>
 						<span class="unit">t/s</span>
 					</div>
 					<p class="layer-name" aria-live="polite">

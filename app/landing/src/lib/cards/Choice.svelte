@@ -82,9 +82,14 @@
 			border-color var(--dur-2),
 			color var(--dur-2);
 	}
+	/* hover warms the key: heat rim and an ember underglow; selection itself stays bone */
 	.cap:hover {
-		border-color: var(--line-strong);
+		border-color: var(--heat-3);
 		color: var(--text-hi);
+		box-shadow:
+			0 1px 0 rgb(255 255 255 / 0.05) inset,
+			0 2px 0 #000,
+			0 10px 26px -12px rgb(255 122 26 / 0.7);
 	}
 	.cap:active {
 		transform: translateY(2px);
@@ -100,7 +105,8 @@
 		box-shadow:
 			0 1px 0 rgb(255 255 255 / 0.1) inset,
 			0 2px 0 #000,
-			0 0 0 1px rgb(237 234 227 / 0.25);
+			0 0 0 1px rgb(237 234 227 / 0.25),
+			0 10px 30px -14px rgb(255 122 26 / 0.55);
 	}
 	.cap.on::before {
 		content: '';

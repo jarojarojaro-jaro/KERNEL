@@ -106,7 +106,7 @@
 	<div class="wrap hero-in">
 		<div class="hero-title">
 			<p class="eyebrow">{t.eyebrow}{NB}· {t.measuredCount(MEASURED.length)}{NB}· {t.queuedCount(QUEUED.length)}</p>
-			<Kinetic id="cards-title" lines={t.title} wide={1} />
+			<Kinetic id="cards-title" lines={t.title} wide={1} heat={1} class="mega hx-h" />
 			<p class="lede">{t.lede}</p>
 		</div>
 		<div class="controls">
@@ -128,8 +128,8 @@
 <div class="wrap index">
 	{#each groups as g (g.v)}
 		<section class="group" aria-labelledby="vendor-{g.v}">
-			<header class="g-head">
-				<h2 id="vendor-{g.v}" class="g-name">{t.vendors[g.v]}</h2>
+			<header class="g-head hx-bb">
+				<h2 id="vendor-{g.v}" class="g-name hx-grad">{t.vendors[g.v]}</h2>
 				<p class="g-meta mono">{t.groupMeta(g.measured.length, g.queued.length)}</p>
 			</header>
 
@@ -139,7 +139,7 @@
 						{@const d = headline(e.card)}
 						{@const prefix = e.card.name.split(e.card.short)[0].trim()}
 						<li style="--reveal-delay:{i * 60}ms; --th:{heatOf(d?.ratio)}" use:reveal>
-							<article class="tile" use:tilt={{ max: 5 }} onpointerenter={() => revUp(e.id)} onpointerleave={revDown} onfocusin={() => (hover = e.id)} onfocusout={() => (hover = null)}>
+							<article class="tile hx-ring" use:tilt={{ max: 5 }} onpointerenter={() => revUp(e.id)} onpointerleave={revDown} onfocusin={() => (hover = e.id)} onfocusout={() => (hover = null)}>
 								<div class="tile-art" style="view-transition-name: art-{e.id}; view-transition-class: gpu">
 									<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(d?.ratio)} live={hover === e.id && rev?.id !== e.id} charge={rev?.id === e.id ? rev.c : null} rpm={rev?.id === e.id ? rev.r : 0} flat />
 								</div>
@@ -150,11 +150,11 @@
 									</h3>
 									<p class="spec mono">{e.card.vramGB}{NB}GB · {num(e.card.bwGBs.v, lang, 0)}{NB}GB/s</p>
 									{#if d?.ratio}
-										<div class="stat" style="--glow:{heatOf(d.ratio)}">
+										<div class="stat hx-bt" style="--glow:{heatOf(d.ratio)}">
 											<p class="x"><Ratio value={d.ratio} {lang} size="md" replay={replay[e.id] ?? 0} /> <span class="w">{t.faster}</span></p>
 											<p class="tps mono">
 												<span class="m">{MODEL_STYLE[d.run.model].short}</span>
-												<span><span class="cold-text">{fmtTps(d.before.decode!.v, lang)}</span> → <span class="hot">{fmtTps(d.ours.decode!.v, lang)}</span>{NB}t/s</span>
+												<span><span class="cold-text">{fmtTps(d.before.decode!.v, lang)}</span> → <span class="hot hx-num">{fmtTps(d.ours.decode!.v, lang)}</span>{NB}t/s</span>
 											</p>
 										</div>
 										<span class="tip"><SourceTip {lang} src={[d.before.decode!.src, d.ours.decode!.src, ...(d.run.gain?.total ? [d.run.gain.src] : [])]} note="{d.run.title} · {d.run.metric[lang]}" /></span>
@@ -207,9 +207,9 @@
 </div>
 
 <section class="band wrap" aria-labelledby="cmp-title">
-	<div class="band-in panel">
+	<div class="band-in panel hx-surface hx-ring">
 		<div>
-			<h2 id="cmp-title" class="giga">{t.compareTitle}</h2>
+			<h2 id="cmp-title" class="giga hx-grad">{t.compareTitle}</h2>
 			<p class="lede">{t.compareLede}</p>
 		</div>
 		<a class="cta cta--bone" href={cardsHref(lang, lang === 'pl' ? 'porownaj/' : 'compare/')}>{t.compareCta} <span class="arrow" aria-hidden="true">→</span></a>
@@ -284,11 +284,22 @@
 		padding: 0 1rem 0 2.75rem;
 		border: 1px solid var(--line-strong);
 		border-radius: var(--r-md);
-		background: var(--bg-1);
+		background: linear-gradient(90deg, rgb(255 122 26 / 0.07), transparent 60%), var(--bg-1);
+		transition:
+			border-color var(--dur-2),
+			box-shadow var(--dur-2);
 		color: var(--text-hi);
 		font: inherit;
 		font-family: var(--font-mono);
 		font-size: var(--fs-sm);
+	}
+	.field input:hover,
+	.field input:focus {
+		border-color: var(--heat-3);
+		box-shadow: 0 0 0 3px rgb(255 122 26 / 0.15), 0 0 24px -6px rgb(255 122 26 / 0.45);
+	}
+	.field:focus-within svg {
+		color: var(--heat-4);
 	}
 	.field input::placeholder {
 		color: var(--text-mute);
@@ -359,7 +370,6 @@
 		justify-content: space-between;
 		gap: var(--sp-4);
 		padding-bottom: var(--sp-3);
-		border-bottom: 1px solid var(--line-strong);
 	}
 	.g-name {
 		margin: 0;
@@ -404,24 +414,21 @@
 		border: 1px solid var(--line);
 		border-radius: var(--r-lg);
 		background:
-			radial-gradient(120% 70% at 50% 0%, rgb(255 255 255 / 0.03), transparent 60%),
-			linear-gradient(180deg, var(--bg-1), #070708);
+			radial-gradient(120% 80% at 18% 50%, rgb(255 122 26 / 0.1), transparent 60%),
+			radial-gradient(90% 70% at 100% 0%, rgb(226 64 28 / 0.06), transparent 60%),
+			linear-gradient(180deg, rgb(17 15 14 / 0.94), rgb(7 7 8 / 0.94));
 		overflow: hidden;
-		transition: border-color var(--dur-3);
+		transition: box-shadow var(--dur-3) var(--ease-out);
 	}
 	/* the measured gain warms the tile from behind the card; hover brings it up */
 	.tile::before {
 		content: '';
 		position: absolute;
 		inset: -10% -10% 40%;
-		background: radial-gradient(50% 50% at 50% 50%, rgb(255 122 26 / calc(var(--th) * 0.3)), transparent 70%);
-		opacity: 0.45;
+		background: radial-gradient(50% 50% at 50% 50%, rgb(255 122 26 / calc(0.12 + var(--th) * 0.3)), transparent 70%);
+		opacity: 0.6;
 		transition: opacity 0.6s var(--ease-out);
 		pointer-events: none;
-	}
-	.tile:hover,
-	.tile:focus-within {
-		border-color: var(--line-strong);
 	}
 	.tile:hover::before,
 	.tile:focus-within::before {
@@ -454,7 +461,14 @@
 		width: 0.4rem;
 		height: 0.4rem;
 		border-radius: 50%;
-		background: var(--text-hi);
+		background: var(--heat-3);
+		box-shadow: 0 0 8px var(--heat-3);
+	}
+	.tile:is(:hover, :focus-within) .short .stretch {
+		color: var(--hx-ink);
+	}
+	.short .stretch {
+		transition: color var(--dur-2);
 	}
 	.short {
 		margin: 0;
@@ -492,7 +506,6 @@
 		gap: var(--sp-1) var(--sp-3);
 		margin-top: var(--sp-2);
 		padding-top: var(--sp-3);
-		border-top: 1px solid var(--line);
 	}
 	.x {
 		margin: 0;
@@ -542,13 +555,13 @@
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
-		color: var(--before);
+		color: var(--text);
 	}
 	.ring {
 		width: 0.45rem;
 		height: 0.45rem;
 		border-radius: 50%;
-		border: 1.5px solid var(--before);
+		border: 1.5px solid var(--heat-3);
 	}
 	.queued {
 		display: grid;
@@ -564,16 +577,23 @@
 		flex-direction: column;
 		gap: var(--sp-3);
 		padding: var(--sp-4);
-		border: 1px dashed #34343b;
+		border: 1px dashed rgb(255 122 26 / 0.32);
 		border-radius: var(--r-md);
-		background: linear-gradient(180deg, #0a0a0c, var(--bg-0));
+		background:
+			radial-gradient(100% 60% at 0% 0%, rgb(255 122 26 / 0.07), transparent 65%),
+			linear-gradient(180deg, rgb(14 12 12 / 0.92), rgb(5 5 6 / 0.92));
 		transition:
 			border-color var(--dur-3),
+			box-shadow var(--dur-3),
 			transform var(--dur-3) var(--ease-out);
 	}
-	.qtile:hover {
-		border-color: var(--line-strong);
+	.qtile:is(:hover, :focus-within) {
+		border-color: var(--heat-3);
+		box-shadow: 0 18px 44px -24px rgb(255 122 26 / 0.6);
 		transform: translateY(-2px);
+	}
+	.qtile:is(:hover, :focus-within) .q-name .stretch {
+		color: var(--hx-ink);
 	}
 	.qtile:has(.stretch:focus-visible) {
 		outline: 2px solid var(--focus);
@@ -604,7 +624,8 @@
 		text-overflow: ellipsis;
 	}
 	.q-name .stretch {
-		color: var(--text);
+		color: var(--text-hi);
+		transition: color var(--dur-2);
 	}
 	.q-est {
 		display: grid;
@@ -612,7 +633,7 @@
 		align-content: start;
 		margin-top: auto;
 		padding-top: var(--sp-3);
-		border-top: 1px solid var(--line);
+		border-top: 1px solid rgb(255 122 26 / 0.22);
 	}
 	.q-est p {
 		margin: 0;
@@ -686,7 +707,7 @@
 			margin: 0;
 			padding: 0 0 0 var(--sp-3);
 			border-top: 0;
-			border-left: 1px solid var(--line);
+			border-left: 1px solid rgb(255 122 26 / 0.22);
 		}
 	}
 

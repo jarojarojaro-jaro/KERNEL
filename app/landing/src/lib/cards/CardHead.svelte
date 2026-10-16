@@ -63,7 +63,7 @@
 			<p class="status"><span class="dot"></span>{queued ? t.queue : t.measured}</p>
 			<h1 id="card-title" class="name" style="view-transition-name: name-{id}">
 				<span class="pre">{prefix}</span>
-				<span class="short">{short}</span>
+				<span class="short {queued ? 'hx-h' : 'hx-grad'}">{short}</span>
 			</h1>
 			<p class="spec mono">{spec}</p>
 			{@render children?.()}
@@ -171,11 +171,12 @@
 		width: 0.5rem;
 		height: 0.5rem;
 		border-radius: 50%;
-		background: var(--text-hi);
+		background: var(--heat-3);
+		box-shadow: 0 0 10px var(--heat-3);
 	}
 	.queued .dot {
 		background: transparent;
-		border: 1.5px solid var(--before);
+		border: 1.5px solid var(--heat-3);
 		box-shadow: none;
 	}
 	.name {

@@ -182,7 +182,7 @@
 	{#if words.length && d && run.sameHarness}
 		<div role="group" class="tile words" aria-labelledby="words-{run.model}" use:reveal={{ onin: () => (wordsIn = true) }}>
 			<div class="t-head">
-				<h3 id="words-{run.model}" class="h">{t.words}</h3>
+				<h3 id="words-{run.model}" class="h hx-h">{t.words}</h3>
 				<button type="button" class="ghost-btn mono" onclick={() => wordsKey++} aria-label={t.wordsRun}><span aria-hidden="true">↻</span></button>
 			</div>
 			{#each words as w (w.wl)}
@@ -210,7 +210,7 @@
 	{#if run.sameHarness && lanes.length > 1}
 		<div role="group" class="tile race" aria-labelledby="race-{run.model}">
 			<div class="t-head">
-				<h3 id="race-{run.model}" class="h">{t.race}</h3>
+				<h3 id="race-{run.model}" class="h hx-h">{t.race}</h3>
 				<p class="fine">{t.raceLede}</p>
 			</div>
 			<RaceLanes {lanes} text={t.raceText} {lang} loop={false} {summary} runKey="{card.id}-{run.model}" />
@@ -221,7 +221,7 @@
 	{#if instruments.length || run.kernels}
 		<div role="group" class="tile inst-tile" aria-labelledby="inst-{run.model}">
 			<div class="t-head">
-				<h3 id="inst-{run.model}" class="h">{t.instruments}</h3>
+				<h3 id="inst-{run.model}" class="h hx-h">{t.instruments}</h3>
 				<p class="fine">{variantLabel(run, run.before)[lang]} → {variantLabel(run, run.ours)[lang]}</p>
 			</div>
 			<ul class="inst" role="list">
@@ -232,7 +232,7 @@
 						<p class="cv mono">
 							<span class="cold-text">{show(m.k, m.b, false)}</span>
 							<span class="arr" aria-hidden="true">→</span>
-							<span class="hi">{show(m.k, m.o)}</span>
+							<span class="hi" class:hx-num={m.v === 'better'}>{show(m.k, m.o)}</span>
 						</p>
 						<div class="mini" aria-hidden="true">
 							<i class="b" style="--w:{(m.b.v / top) * 100}%"></i>
@@ -251,7 +251,7 @@
 						<p class="cv mono">
 							<span class="cold-text">{num(run.kernels.up.v, lang, 0)}</span>
 							<span class="arr" aria-hidden="true">→</span>
-							<span class="hi">{num(run.kernels.ours.v, lang, 0)}</span>
+							<span class="hi" class:hx-num={kv === 'better'}>{num(run.kernels.ours.v, lang, 0)}</span>
 						</p>
 						<div class="mini" aria-hidden="true">
 							<i class="b" style="--w:100%"></i>
@@ -271,7 +271,7 @@
 	{#if long}
 		<div role="group" class="tile long" aria-labelledby="long-{run.model}">
 			<div class="t-head">
-				<h3 id="long-{run.model}" class="h">{t.longCtx}</h3>
+				<h3 id="long-{run.model}" class="h hx-h">{t.longCtx}</h3>
 				<SourceTip {lang} src={[...new Set([...long.up.map((n) => n.src), ...long.ours.map((n) => n.src)])]} note="{t.longCtxLede}{long.kv ? ` ${long.kv}.` : ''}" />
 			</div>
 			<LongCtxChart depths={long.depths} up={long.up} ours={long.ours} {lang} title="{t.longCtx}, {info.name}" labels={{ up: bonsai ? variantLabel(run, run.flags)[lang] : t.upstream, ours: t.ours, depth: t.depth }} />
@@ -282,7 +282,7 @@
 	{#if run.gain?.flags && run.gain.engine && run.gain.total && d?.flags?.decode}
 		<div role="group" class="tile gain" aria-labelledby="why-{run.model}">
 			<div class="t-head">
-				<h3 id="why-{run.model}" class="h">{t.why}</h3>
+				<h3 id="why-{run.model}" class="h hx-h">{t.why}</h3>
 			</div>
 			<GainStack gain={run.gain} text={run.gainText?.[lang]} before={d.before.decode!} flags={d.flags.decode} ours={d.ours.decode!} {lang} labels={{ before: variantLabel(run, run.before)[lang], flags: t.whyFlags, engine: t.whyEngine, total: t.gain, none: t.whyNone }} />
 		</div>
@@ -292,7 +292,7 @@
 	{#if formats.length}
 		<div role="group" class="tile formats-tile" aria-labelledby="fmt-{run.model}">
 			<div class="t-head">
-				<h3 id="fmt-{run.model}" class="h">{t.formats}</h3>
+				<h3 id="fmt-{run.model}" class="h hx-h">{t.formats}</h3>
 				<p class="fine">{t.formatsLede}</p>
 			</div>
 			<ul class="formats" role="list">
@@ -381,13 +381,39 @@
 		gap: var(--sp-4);
 		align-content: start;
 		padding: clamp(1rem, 2vw, 1.6rem);
-		border: 1px solid var(--line);
+		border: 1px solid rgb(255 122 26 / 0.2);
 		border-radius: var(--r-xl);
 		background:
-			radial-gradient(90% 60% at 0% 0%, color-mix(in srgb, var(--mc) 7%, transparent), transparent 60%),
-			linear-gradient(180deg, var(--bg-1), #070708);
+			radial-gradient(90% 60% at 0% 0%, color-mix(in srgb, var(--mc) 8%, transparent), transparent 60%),
+			radial-gradient(80% 70% at 100% 100%, rgb(255 122 26 / 0.08), transparent 60%),
+			linear-gradient(180deg, rgb(17 15 14 / 0.94), rgb(7 7 8 / 0.94));
 		box-shadow: var(--shadow-2);
 		overflow: hidden;
+		transition:
+			border-color var(--dur-3),
+			box-shadow var(--dur-3) var(--ease-out);
+	}
+	/* hover lights the rim and raises an ember glow under the tile */
+	.tile:is(:hover, :focus-within) {
+		border-color: rgb(255 122 26 / 0.6);
+		box-shadow:
+			var(--shadow-2),
+			0 0 30px -10px rgb(255 122 26 / 0.4),
+			0 26px 60px -30px rgb(226 64 28 / 0.75);
+	}
+	/* a heat line along the bottom of every tile, the model colour along the top */
+	.tile::after {
+		content: '';
+		position: absolute;
+		inset: auto 8% 0;
+		height: 1px;
+		background: var(--hx-line-c);
+		opacity: 0.55;
+		pointer-events: none;
+		transition: opacity var(--dur-3);
+	}
+	.tile:is(:hover, :focus-within)::after {
+		opacity: 1;
 	}
 	/* a thin model-colour accent along the top of every tile */
 	.tile::before {
@@ -543,13 +569,16 @@
 		color: var(--text-hi);
 		list-style: none;
 	}
+	.honest summary:hover {
+		border-color: var(--heat-3);
+	}
 	.honest summary::-webkit-details-marker {
 		display: none;
 	}
 	.honest p {
 		margin: var(--sp-2) 0 0;
 		padding-left: var(--sp-3);
-		border-left: 2px solid var(--line-strong);
+		border-left: 2px solid var(--heat-2);
 		line-height: 1.5;
 		max-width: 52ch;
 	}
@@ -591,9 +620,15 @@
 		grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
 		gap: var(--sp-3);
 	}
+	.apart div:hover {
+		border-color: rgb(255 122 26 / 0.55);
+	}
 	.apart div {
 		padding: var(--sp-4);
-		border: 1px solid var(--line);
+		border: 1px solid rgb(255 122 26 / 0.16);
+		transition:
+			border-color var(--dur-2),
+			background-color var(--dur-2);
 		border-radius: var(--r-lg);
 	}
 	.apart dt {
@@ -654,7 +689,8 @@
 	}
 	.ghost-btn:hover {
 		color: var(--text-hi);
-		border-color: var(--text-hi);
+		border-color: var(--heat-3);
+		box-shadow: 0 0 22px -6px rgb(255 122 26 / 0.6);
 	}
 
 	/* ---------- instruments: dense cells; the last row stretches, no orphans ---------- */
@@ -666,13 +702,20 @@
 		flex-wrap: wrap;
 		gap: var(--sp-2);
 	}
+	.cell:hover {
+		border-color: rgb(255 122 26 / 0.55);
+		background: rgb(255 122 26 / 0.05);
+	}
 	.cell {
 		flex: 1 1 13rem;
 		display: grid;
 		gap: var(--sp-2);
 		align-content: start;
 		padding: var(--sp-3) var(--sp-4);
-		border: 1px solid var(--line);
+		border: 1px solid rgb(255 122 26 / 0.16);
+		transition:
+			border-color var(--dur-2),
+			background-color var(--dur-2);
 		border-radius: var(--r-lg);
 		background: rgb(255 255 255 / 0.015);
 	}
@@ -716,6 +759,11 @@
 	.mini .o {
 		background: var(--text-hi);
 	}
+	/* a better "after" bar runs hot; worse or unchanged stays bone */
+	.cell:has(.vd--better) .mini .o {
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 8px rgb(255 122 26 / 0.5);
+	}
 	.cf {
 		display: flex;
 		flex-wrap: wrap;
@@ -732,7 +780,7 @@
 		letter-spacing: 0.06em;
 	}
 	.vd--better {
-		color: var(--text-hi);
+		color: var(--hx-ink);
 	}
 	.vd--worse {
 		color: var(--before);
@@ -751,11 +799,18 @@
 		grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
 		gap: var(--sp-2);
 	}
+	.formats li:hover {
+		border-color: rgb(255 122 26 / 0.55);
+		background: rgb(255 122 26 / 0.05);
+	}
 	.formats li {
 		display: grid;
 		gap: var(--sp-2);
 		padding: var(--sp-4);
-		border: 1px solid var(--line);
+		border: 1px solid rgb(255 122 26 / 0.16);
+		transition:
+			border-color var(--dur-2),
+			background-color var(--dur-2);
 		border-radius: var(--r-lg);
 	}
 	.formats p {
@@ -886,9 +941,15 @@
 		flex-wrap: wrap;
 		gap: var(--sp-2);
 	}
+	.chip:hover {
+		border-color: rgb(255 122 26 / 0.55);
+	}
 	.chip {
 		padding: 0.3rem 0.65rem;
-		border: 1px solid var(--line);
+		border: 1px solid rgb(255 122 26 / 0.16);
+		transition:
+			border-color var(--dur-2),
+			background-color var(--dur-2);
 		border-radius: var(--r-pill);
 		background: rgb(255 255 255 / 0.02);
 		font-size: var(--fs-2xs);

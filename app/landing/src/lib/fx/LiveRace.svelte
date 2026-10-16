@@ -76,8 +76,8 @@
 	} = $props();
 
 	const L = {
-		pl: { pause: 'Wstrzymaj wyścig', resume: 'Wznów wyścig', faster: 'szybciej', live: 'na żywo', paused: 'pauza' },
-		en: { pause: 'Pause the race', resume: 'Resume the race', faster: 'faster', live: 'live', paused: 'paused' }
+		pl: { pause: 'Wstrzymaj wyścig', resume: 'Wznów wyścig', faster: 'szybciej', live: 'na żywo', paused: 'pauza', median: 'zmierzone' },
+		en: { pause: 'Pause the race', resume: 'Resume the race', faster: 'faster', live: 'live', paused: 'paused', median: 'measured' }
 	};
 	const t = $derived(L[lang]);
 
@@ -106,7 +106,6 @@
 
 	let playing = $state(false);
 	let onScreen = $state(false);
-	let started = $state(false);
 	/** Live readout per lane (t/s, 0.1 steps) and needle value; null until the launch has landed. */
 	let liveRate: (number | null)[] = $state([]);
 	let needle: (number | null)[] = $state([]);
@@ -272,15 +271,12 @@
 		reset();
 		if (reducedMotion()) {
 			staticFrame();
-			started = true;
 			return;
 		}
 		return whenIdle(() => {
-			started = true;
 			playing = true;
 			onheat?.(true);
-			// after the launch (slam + overshoot) has landed, the readouts and needles go live
-			setTimeout(() => (shown = 1), 1500);
+			shown = 1;
 		}, startDelay * 1000);
 	});
 
@@ -338,15 +334,17 @@
 			<div class="lane" class:hot={l.hot} class:on={playing} class:done={l.hot && finished}>
 				<div class="inst">
 					<div class="gauge">
-						<Tacho value={needle[i] ?? (started ? l.tps : 0)} glowing={l.hot} slam={l.hot} {max} {redline} {step} tone={l.hot ? 'hot' : 'cold'} label="{l.label}: {num(l.tps, lang)} t/s" />
+						<Tacho value={needle[i] ?? l.tps} glowing={l.hot} {max} {redline} {step} tone={l.hot ? 'hot' : 'cold'} label="{l.label}: {num(l.tps, lang)} t/s" />
 					</div>
 					<div class="who">
 						<span class="label">{l.label}</span>
 						{#if l.sub}<span class="sub">{l.sub}</span>{/if}
 					</div>
 					<div class="rate">
-						<span class="tps"><Odometer value={liveRate[i] ?? (started ? l.tps : 0)} decimals={1} {lang} duration={liveRate[i] != null ? 160 : l.hot ? 1300 : 900} minInt={2} pad overshoot={liveRate[i] != null ? 0 : l.hot ? 1.8 : 0} /></span>
+						<span class="tps"><Odometer value={liveRate[i] ?? l.tps} decimals={1} {lang} duration={0} minInt={2} pad /></span>
 						<span class="unit">t/s</span>
+						<!-- the measured median, always visible next to the live (fluctuating) readout -->
+						<span class="med">{t.median} <b>{num(l.tps, lang, 1)}</b></span>
 					</div>
 				</div>
 				<div class="rule"><span class="fill" bind:this={fills[i]}></span></div>
@@ -379,6 +377,7 @@
 	/* the question both lanes answer, set like a typed prompt */
 	.prompt {
 		display: flex;
+		justify-content: center;
 		align-items: baseline;
 		gap: 0.6rem;
 		font-family: var(--font-mono);
@@ -398,8 +397,11 @@
 			opacity: 0.25;
 		}
 	}
-	/* two frameless streams; a hairline between them */
+	/* two frameless streams; a hairline between them. Decorative (the sr-only summary carries the
+	 * facts): never selected or copied. */
 	.lanes {
+		-webkit-user-select: none;
+		user-select: none;
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		column-gap: clamp(2rem, 5vw, 5rem);
@@ -423,13 +425,14 @@
 	/* instruments: compact dial · who · small readout (fixed height: never moves the text) */
 	.inst {
 		display: grid;
-		grid-template-columns: 3.25rem minmax(0, 1fr) auto;
+		grid-template-columns: var(--g) minmax(0, 1fr) auto;
 		align-items: center;
-		gap: 0.9rem;
-		height: 3.5rem;
+		gap: 1.1rem;
+		--g: clamp(5.5rem, 4rem + 2.5vw, 7rem);
+		height: var(--g);
 	}
 	.gauge {
-		width: 3.25rem;
+		width: var(--g);
 	}
 	.who {
 		display: grid;
@@ -462,9 +465,27 @@
 		text-overflow: ellipsis;
 	}
 	.rate {
-		display: flex;
+		display: grid;
+		grid-template-columns: auto auto;
+		justify-items: end;
 		align-items: baseline;
-		gap: 0.3rem;
+		column-gap: 0.3rem;
+		row-gap: 0.15rem;
+	}
+	.med {
+		grid-column: 1 / -1;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.04em;
+		color: var(--text-mute);
+		white-space: nowrap;
+	}
+	.med b {
+		font-weight: 500;
+		color: var(--text);
+	}
+	.hot .med b {
+		color: var(--heat-4);
 	}
 	.tps {
 		font-size: clamp(1.45rem, 1rem + 1.1vw, 2.05rem);
@@ -541,8 +562,7 @@
 	}
 	/* every token of the pass is laid out from the start; unemitted ones are invisible */
 	.feed :global(.tk:not(.on)) {
-		color: transparent;
-		text-shadow: none;
+		visibility: hidden;
 	}
 	.feed :global(.tk.on) {
 		animation: lit-cold 0.9s var(--ease-out) both;
@@ -600,13 +620,13 @@
 	}
 	.controls {
 		display: flex;
+		justify-content: center;
 		align-items: center;
 		gap: var(--sp-3);
 		padding-top: 0.75rem;
 		border-top: 1px solid var(--line);
 	}
 	.meta {
-		flex: 1;
 		min-width: 0;
 		display: flex;
 		flex-wrap: wrap;
@@ -658,12 +678,11 @@
 	}
 	@media (max-width: 640px) {
 		.inst {
-			grid-template-columns: 2.75rem minmax(0, 1fr) auto;
-			gap: 0.7rem;
-			height: 3rem;
+			--g: 4.25rem;
+			gap: 0.8rem;
 		}
-		.gauge {
-			width: 2.75rem;
+		.sub {
+			display: none;
 		}
 		.feed {
 			font-size: var(--fs-sm);
