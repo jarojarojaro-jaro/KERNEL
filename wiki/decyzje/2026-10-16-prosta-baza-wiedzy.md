@@ -2,7 +2,7 @@
 typ: decyzja
 tags: [decyzje, wiki]
 aktualizacja: 2026-10-16
-zrodlo: local://SKARBIEC-SPEC.md (decyzja użytkownika 2026-10-16)
+zrodlo: ~/.omp/agent/sessions/-tmp/2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5481 (prompt użytkownika 2026-10-16 02:17 UTC); local://SKARBIEC-SPEC.md
 status: aktualne
 ---
 # 2026-10-16: prosta baza wiedzy w KERNEL/wiki

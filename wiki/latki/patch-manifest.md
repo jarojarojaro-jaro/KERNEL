@@ -2,7 +2,7 @@
 typ: latka
 tags: [latki, manifest, platformy]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/patch-manifest.json (_meta i wpisy 0001–0070, policzone 2026-10-16); ~/KERNEL/product/research/08-analiza-platformy-latek.md:5
+zrodlo: ~/KERNEL/product/research/patch-manifest.json (_meta i wpisy 0001–0070, policzone 2026-10-16; stat: 193045 B); ~/KERNEL/product/research/08-analiza-platformy-latek.md:5
 status: aktualne
 ---
 # Manifest łatek (patch-manifest.json)

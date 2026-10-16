@@ -41,6 +41,7 @@ Treść 50–200 słów: liczby z datą i warunkami pomiaru.
 1. Po zakończonym zadaniu główny agent poprawia lub dodaje notatki (podagenci tylko czytają).
 2. `python3 tools/wiki.py index && python3 tools/wiki.py lint` → 0 błędów.
 3. Wpis w [[log]]: `## [RRRR-MM-DD] ingest|update|lint | co`.
+4. Nowa liczba w notatce → wiersz w [[AUDYT]] (notatka, liczba, wiersz źródła, OK/poprawione); `AUDYT.md` jest zwolniony z limitu słów.
 
 ## Powiązane
 - [[index|Strona główna]]

@@ -206,7 +206,7 @@ def lint(only: str | None = None) -> int:
             if s in n.text:
                 e("zawiera prawdziwy klucz z ~/.vast lub ~/.runpod")
         words = len(re.findall(r"\w+", n.body))
-        if not n.is_hub and words > 450:
+        if not n.is_hub and n.rel != "AUDYT.md" and words > 450:  # AUDYT.md: generowana tabela audytu liczb
             warnings.append(f"{n.rel}: {words} słów (cel 50–200)")
 
     for n in notes:

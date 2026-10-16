@@ -2,7 +2,7 @@
 typ: model
 tags: [modele, kwanty, kv]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/SPEC-QWEN27B.md:21; ~/KERNEL/sources/qwen3.8-27b.md:15-24; ~/KERNEL/qwen-opt/NOTES.md:283-286,330,354,363; ~/KERNEL/qwen-opt/research/lfm-kv-q4-vs-q8.md; ~/KERNEL/reports/Optymalizacja kerneli na AMD.md:86; ~/qwen-opt/cloud/PLAN-TESTOW.md:89-91
+zrodlo: ~/KERNEL/qwen-opt/SPEC-QWEN27B.md:21; stat -c %s ~/models/Qwen3.8-27B-UD-Q4_K_XL.gguf (17559178144 B = 16.35 GiB, 2026-10-16); ~/KERNEL/sources/qwen3.8-27b.md:15-24; ~/KERNEL/qwen-opt/NOTES.md:283-286,330,354,363; ~/KERNEL/qwen-opt/research/lfm-kv-q4-vs-q8.md; ~/KERNEL/reports/Optymalizacja kerneli na AMD.md:86; ~/qwen-opt/cloud/PLAN-TESTOW.md:89-91
 status: aktualne
 ---
 # Kwanty wag i KV, których używamy
@@ -10,7 +10,7 @@ status: aktualne
 **Wagi trzymamy w kwantach K/I GGUF ładowanych w całości do VRAM; KV cache to q4_0 dla Qwena i q8_0 dla LFM (decyzja użytkownika); zmiana kwantu = inny model, więc to nie jest „optymalizacja bezstratna”.**
 
 Wagi:
-- Qwen3.8-27B UD-Q4_K_XL (unsloth): 16.34 GiB, mieszanka Q5_K / IQ4_XS / Q4_K / Q6_K; Uncensored Q4_K_M 15.66 GiB; rozmiary OrcaRouter: Q4_K_M 16.8–17.1 GB, Q6_K 20.9–22.9 GB, Q8_0 29 GB (nie mieści się w 24 GB).
+- Qwen3.8-27B UD-Q4_K_XL (unsloth): 16.35 GiB (17 559 178 144 B; SPEC podaje 16.34 przez obcięcie), mieszanka Q5_K / IQ4_XS / Q4_K / Q6_K; Uncensored Q4_K_M 15.66 GiB; rozmiary OrcaRouter: Q4_K_M 16.8–17.1 GB, Q6_K 20.9–22.9 GB, Q8_0 29 GB (nie mieści się w 24 GB).
 - LFM2.5 Q5_K_M 15.86 GiB (na 16 GB kartach Q4_K_M, bo Q5 = 15.86 GiB się nie mieści).
 - Na mniejszych kartach w chmurze: Qwen UD-Q3_K_XL (12.2 GiB, 16 GB), UD-IQ3_XXS (10.2 GiB, 12 GB); eksperymenty niskobitowe: Saluki IQ2-mix, Bonsai Q2_0/PTQ1_0.
 - Głowica draftu MTP przekwantyzowana przy ładowaniu do IQ4_XS (łatka 0032): draft 4.82 → 3.62 ms/krok, +0.4 GB VRAM.

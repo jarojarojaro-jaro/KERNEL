@@ -2,7 +2,7 @@
 typ: nvidia
 tags: [nvidia, cuda, toolkit]
 aktualizacja: 2026-10-16
-zrodlo: ~/qwen-opt/cloud/CUDA-AUDIT.md:20-50; ~/qwen-opt/cloud/results/*/hw/hw.json i build/times.jsonl (odczyt 2026-10-16); ~/KERNEL/hardware/rx-7900-xtx.md:36-44
+zrodlo: ~/qwen-opt/cloud/CUDA-AUDIT.md:20-50; ~/qwen-opt/cloud/results/{3090,5060ti,3060}-20261016/build/times.jsonl:1-3; ~/qwen-opt/cloud/results/*/hw/hw.json (odczyt 2026-10-16); ~/KERNEL/hardware/rx-7900-xtx.md:36-44
 status: aktualne
 ---
 # Stos CUDA: jak budujemy fork dla NVIDIA

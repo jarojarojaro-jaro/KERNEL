@@ -2,7 +2,7 @@
 typ: nvidia
 tags: [nvidia, wyniki, chmura]
 aktualizacja: 2026-10-16
-zrodlo: ~/qwen-opt/cloud/results/{3090,5060ti,3060}-20261016/ (tbo/summary.txt, greedy/summary.tsv, lb/*.jsonl, summary.md; odczyt 2026-10-16 ok. 02:40 UTC); ~/qwen-opt/cloud/bench.sh:16-18,272-294
+zrodlo: ~/qwen-opt/cloud/results/{3090,5060ti}-20261016/tbo/summary.txt:1-8; ~/qwen-opt/cloud/results/{3090,5060ti}-20261016/lb/*.jsonl (avg_ts tg128, zaokrąglone do 0.1); ~/qwen-opt/cloud/results/{3090,5060ti,3060}-20261016/greedy/ (odczyt 2026-10-16 ok. 02:40 UTC); ~/qwen-opt/cloud/PLAN-TESTOW.md:16,76-84; ~/qwen-opt/cloud/bench.sh:16-18,272-294
 status: do-sprawdzenia
 ---
 # Wyniki NVIDIA z chmury (stan 2026-10-16, w toku)

@@ -2,7 +2,7 @@
 typ: hub
 tags: [index, hub]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-16; git -C ~/llama.cpp branch -v
+zrodlo: ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-16; git -C ~/llama-master branch -v; ~/qwen-opt/cloud/PLAN-TESTOW.md:55-58; ~/qwen-opt/cloud/results/3090-20261016/scorecard.md:1-30 (03:03 UTC); ~/qwen-opt/cloud/results/3060-20261016/summary.md:1-25 (03:20 UTC); ~/KERNEL/wiki/AUDYT.md
 status: aktualne
 ---
 # KERNEL: baza wiedzy
@@ -24,7 +24,19 @@ Zainstalowane: `~/llama-opt`, gałąź `amd-opt` @ f61994f58, 70 łatek. Pomiar 
 
 Szczegóły: [[stan-2026-10-15]].
 
-W toku (gałęzie z 2026-10-16 w `~/llama.cpp`): kampanie w chmurze na [[rtx-3060]], [[rtx-3090]], [[rtx-5060-ti]] (`3060-opt`, `cuda-3090-opt`, `cuda-v070-5060ti`, `cuda-v070`, `cuda-compat`), przeniesienie łatek na llama.cpp v0.7.0 (`amd-opt-v070`), trening głowicy MTP (`mtp-train`), `batch-invariant`. Wyniki z chmury mają `status: do-sprawdzenia`, dopóki nie zostaną potwierdzone.
+Wstępne wyniki z chmury (2026-10-16, w toku, `do-sprawdzenia`; A0 = upstream tylko z `-m`, „typowa aplikacja”; A2 = nasz fork z flagami A1: `-fit on -fa on`, KV q8_0, MTP n=4 dla Qwena; A2s = A2 z 31 przełącznikami = 0):
+
+| karta, model | A0 decode t/s | A2 decode t/s | źródło |
+|---|---|---|---|
+| [[rtx-3090]], LFM2.5 Q5_K_M | 180.2 | 249.3 (×1.38) | `results/3090-20261016/scorecard.md` |
+| [[rtx-3090]], Qwen3.8-27B UD-Q4_K_XL | 39.0 | 78.0 | jw. |
+| [[rtx-3060]], Saluki 27B IQ2 (spec_sweep) | 22.14 | 22.68 (A2s: 23.06) | `results/3060-20261016/summary.md` |
+
+Szczegóły i testy poprawności: [[nvidia-wyniki-2026-10-16]], [[2026-10-16-kampania-nvidia]].
+
+Teraz trwa (2026-10-16): kampanie Vast na [[rtx-3060]] (Saluki + Bonsai), [[rtx-3090]] i [[rtx-5060-ti]] w ramach [[2026-10-16-budzety-chmury|$5]] (gałęzie: [[cuda-v070]]); trening głowicy MTP na RunPod ([[mtp-train]], limit $6); budowa aplikacji w `~/KERNEL/app` ([[aplikacja-w-budowie]]). Czeka na test na Radeonie, którego teraz nie robimy ([[2026-10-16-bez-lokalnego-gpu]]): poprawka atencji w [[batch-invariant]] i [[amd-opt-v070]]. Lokalna produkcja bez zmian: [[amd-opt]].
+
+Audyt liczb: [[AUDYT]].
 
 ## Jak szukać
 
@@ -34,7 +46,7 @@ W toku (gałęzie z 2026-10-16 w `~/llama.cpp`): kampanie w chmurze na [[rtx-306
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (8)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (17)
 - [[modele/_hub|modele]] — Modele i kwanty (11)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (14)
@@ -43,13 +55,13 @@ W toku (gałęzie z 2026-10-16 w `~/llama.cpp`): kampanie w chmurze na [[rtx-306
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (16)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (26)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (5)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (4)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (25)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (17)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (0)
-- [[research/_hub|research]] — Streszczenia raportów (0)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (0)
-- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (0)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (49)
+- [[research/_hub|research]] — Streszczenia raportów (13)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (16)
+- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (23)
 
 ## Ostatnio aktualizowane
 
@@ -67,7 +79,7 @@ W toku (gałęzie z 2026-10-16 w `~/llama.cpp`): kampanie w chmurze na [[rtx-306
 - 2026-10-16 [[hip-graph-narzut|Narzut grafu HIP: ~3 µs na kernel]]
 - 2026-10-16 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
 - 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
-- 2026-10-16 [[sm-86-89-120|Architektury NVIDIA: sm_86, sm_89, sm_120]]
+- 2026-10-16 [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]]
 
-Razem 137 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
+Razem 280 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

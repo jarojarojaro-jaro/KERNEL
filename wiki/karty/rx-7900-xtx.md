@@ -2,7 +2,7 @@
 typ: karta
 tags: [karty, amd, rdna3]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:6-34,100-110; ~/KERNEL/qwen-opt/STATUS-NEXT.md:8-14; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:117,239,305
+zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:6-34,100-110; ~/KERNEL/qwen-opt/STATUS-NEXT.md:8-14; ~/KERNEL/qwen-opt/NOTES.md:126; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:117,239,305
 status: aktualne
 ---
 # AMD Radeon RX 7900 XTX (główna karta)

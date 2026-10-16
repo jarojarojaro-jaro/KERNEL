@@ -2,7 +2,7 @@
 typ: karta
 tags: [karty, nvidia, sm-120]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:36-46,105; ~/KERNEL/product/PLAN.md:287; ~/qwen-opt/cloud/PLAN-TESTOW.md:90,100,132; ~/qwen-opt/cloud/results/5060ti-20261016/ (hw.json, tbo, greedy, lb; 2026-10-16); ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:17,104,305
+zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:36-46,105; ~/KERNEL/product/PLAN.md:287; ~/qwen-opt/cloud/PLAN-TESTOW.md:90,100,132; ~/qwen-opt/cloud/results/5060ti-20261016/tbo/summary.txt:1-8; ~/qwen-opt/cloud/results/5060ti-20261016/lb/*.jsonl (avg_ts tg128, zaokrąglone do 0.1); ~/qwen-opt/cloud/results/5060ti-20261016/ (hw, greedy; 2026-10-16); ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:17,104,305
 status: do-sprawdzenia
 ---
 # NVIDIA RTX 5060 Ti 16 GB (lokalnie + wynajem)
