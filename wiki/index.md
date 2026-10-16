@@ -39,9 +39,9 @@ Greedy forka ≠ upstream (łatki 0001/0002 i 0013, KLD na poziomie szumu): [[le
 
 Wydatki: Vast ≈ $2.77 z $5, RunPod $2.14 z $6; wszystkie nasze instancje i pody zniszczone ([[2026-10-16-budzety-chmury]]).
 
-**Teraz nic nie działa.** Czeka:
-- test bit-exact na RX 7900 XTX: dwie komendy `llama-bx-diff` (< 2 min GPU), wymagają zgody, bo nie testujemy teraz na lokalnym GPU ([[2026-10-16-bit-exact]], [[2026-10-16-bez-lokalnego-gpu]]);
-- opcjonalny test potwierdzający nowej głowicy MTP na XTX ([[raport-11-mtp-pl-pilot]]);
+**Bit-exact osiągnięty (2026-10-16):** MTP i zwykły greedy dają ten sam tekst na XTX (md5 `74952fd5…`), [[2026-10-16-bit-exact]]; walidacja i pomiar kosztu w przygotowaniu.
+
+**W toku (2026-10-16 po południu):** eksperymenty na XTX (PM4-PDL, ogon kopiowania, szybkie testy, pasmo MoE LFM), w chmurze port `kvq` na CUDA, Magnitude vs nasz fork + KLD Nemotrona, jakość kwantów Swift/Saluki/Bonsai; fabryka v1 (CPU); nowy landing i strona z kartami ([[raport-15-synteza]]).
 - [[otwarte-decyzje-produktu]] (nazwa, kolor, ceny, konto, prawo, port API, domena); prototyp aplikacji jest gotowy lokalnie ([[aplikacja-w-budowie]]).
 
 Lokalna produkcja bez zmian: [[amd-opt]].
