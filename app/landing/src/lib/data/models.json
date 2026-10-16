@@ -1,0 +1,36 @@
+{
+	"_meta": {
+		"built_from": "report 04 §2.3.1–2.3.2 (GGUF sizes from HF API, 2026-10-15), report 06 §2.4.2 (licenses), report 04 §2.2.2 (KV per token)",
+		"sizeGB": "GGUF file size, decimal GB",
+		"bTok": "bytes read per generated token (GB). 'r04' = computed in report 04 §2.2.4; 'size' = file size (dense models, upper bound); 'active' = file size × active/total params (MoE, rough)",
+		"kvKiB": "KV cache per token of context at KV q8_0, KiB. 'r04' = derived from report 04 §2.2.2; 'default' = conservative class default (dense GQA, not from the model card) [SZACUNEK]",
+		"mtp": "'measured' = our MTP speedup is measured for this model family (RX 7900 XTX); null = unknown, we promise nothing"
+	},
+	"models": [
+		{ "id": "qwen35-4b-q4km", "name": "Qwen3.5-4B", "quant": "Q4_K_M", "sizeGB": 2.74, "paramsB": 4, "kind": "hybrid", "bTok": 2.74, "bTokSource": "size", "kvKiB": 34, "kvSource": "default-hybrid", "license": "apache-2.0", "pl": false, "mtp": null, "size": "S" },
+		{ "id": "qwen35-9b-q4km", "name": "Qwen3.5-9B", "quant": "Q4_K_M", "sizeGB": 5.68, "paramsB": 9.65, "kind": "hybrid", "bTok": 5.68, "bTokSource": "size", "kvKiB": 34, "kvSource": "default-hybrid", "license": "apache-2.0", "pl": false, "mtp": null, "size": "M" },
+		{ "id": "gemma4-12b-q4kxl", "name": "Gemma 4 12B", "quant": "UD-Q4_K_XL", "sizeGB": 7.37, "paramsB": 12, "kind": "dense", "bTok": 7.37, "bTokSource": "size", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": false, "mtp": null, "size": "M" },
+		{ "id": "gemma4-12b-q6k", "name": "Gemma 4 12B", "quant": "Q6_K", "sizeGB": 9.79, "paramsB": 12, "kind": "dense", "bTok": 9.79, "bTokSource": "size", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": false, "mtp": null, "size": "M" },
+		{ "id": "ministral3-14b-q4km", "name": "Ministral 3 14B", "quant": "Q4_K_M", "sizeGB": 8.24, "paramsB": 14, "kind": "dense", "bTok": 8.24, "bTokSource": "size", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": false, "mtp": null, "size": "M", "use": "code" },
+		{ "id": "bielik-minitron-7b-q4km", "name": "Bielik-Minitron-7B v3", "quant": "Q4_K_M", "sizeGB": 4.5, "paramsB": 7, "kind": "dense", "bTok": 4.5, "bTokSource": "size", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": true, "mtp": null, "size": "S" },
+		{ "id": "bielik-11b-q4km", "name": "Bielik-11B v3", "quant": "Q4_K_M", "sizeGB": 6.72, "paramsB": 11, "kind": "dense", "bTok": 6.72, "bTokSource": "size", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": true, "mtp": null, "size": "M" },
+		{ "id": "bielik-11b-q6k", "name": "Bielik-11B v3", "quant": "Q6_K", "sizeGB": 9.16, "paramsB": 11, "kind": "dense", "bTok": 9.16, "bTokSource": "size", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": true, "mtp": null, "size": "M" },
+		{ "id": "bielik-11b-q8", "name": "Bielik-11B v3", "quant": "Q8_0", "sizeGB": 11.87, "paramsB": 11, "kind": "dense", "bTok": 11.87, "bTokSource": "size", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": true, "mtp": null, "size": "M" },
+		{ "id": "gpt-oss-20b", "name": "gpt-oss-20b", "quant": "MXFP4", "sizeGB": 12.11, "paramsB": 20.91, "activeB": 3.6, "activeSource": "OpenAI model card [INFERENCE]", "kind": "moe", "bTok": 2.09, "bTokSource": "active", "kvKiB": 34, "kvSource": "default-swa", "license": "apache-2.0-usage-policy", "pl": false, "mtp": null, "size": "M" },
+		{ "id": "gemma4-26b-a4b-q3kxl", "name": "Gemma 4 26B-A4B", "quant": "UD-Q3_K_XL", "sizeGB": 12.91, "paramsB": 26, "activeB": 3.8, "activeSource": "report 04 §2.3.1", "kind": "moe", "bTok": 1.89, "bTokSource": "active", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": false, "mtp": null, "size": "L" },
+		{ "id": "qwen38-27b-q3kxl", "name": "Qwen3.8-27B", "quant": "UD-Q3_K_XL", "sizeGB": 13.15, "paramsB": 27.78, "kind": "hybrid", "bTok": 12.58, "bTokSource": "r04-scaled", "kvKiB": 34, "kvSource": "r04", "license": "apache-2.0", "pl": false, "mtp": "measured", "size": "L" },
+		{ "id": "qwen38-27b-q4kxl", "name": "Qwen3.8-27B", "quant": "UD-Q4_K_XL", "sizeGB": 17.56, "paramsB": 27.78, "kind": "hybrid", "bTok": 16.8, "bTokSource": "r04", "kvKiB": 34, "kvSource": "r04", "license": "apache-2.0", "pl": false, "mtp": "measured", "size": "L", "flagship": true },
+		{ "id": "qwen38-27b-q6k", "name": "Qwen3.8-27B", "quant": "UD-Q6_K", "sizeGB": 21.98, "paramsB": 27.78, "kind": "hybrid", "bTok": 21.03, "bTokSource": "r04-scaled", "kvKiB": 34, "kvSource": "r04", "license": "apache-2.0", "pl": false, "mtp": "measured", "size": "L" },
+		{ "id": "qwen38-27b-q8", "name": "Qwen3.8-27B", "quant": "Q8_0", "sizeGB": 29.05, "paramsB": 27.78, "kind": "hybrid", "bTok": 27.79, "bTokSource": "r04-scaled", "kvKiB": 34, "kvSource": "r04", "license": "apache-2.0", "pl": false, "mtp": "measured", "size": "L" },
+		{ "id": "qwen36-35b-a3b-q4km", "name": "Qwen3.6-35B-A3B", "quant": "UD-Q4_K_M", "sizeGB": 22.13, "paramsB": 35, "activeB": 3, "activeSource": "model name", "kind": "moe", "bTok": 1.9, "bTokSource": "r04", "kvKiB": 34, "kvSource": "default-hybrid", "license": "apache-2.0", "pl": false, "mtp": null, "size": "L", "use": "code" },
+		{ "id": "lfm25-24b-q4km", "name": "LFM2.5-24B-A2B", "quant": "Q4_K_M", "sizeGB": 14.53, "paramsB": 24, "activeB": 2.2, "activeSource": "report 04 §2.2.4", "kind": "moe", "bTok": 1.52, "bTokSource": "r04-scaled", "kvKiB": 10.6, "kvSource": "r04", "license": "lfm-open-1.0", "pl": false, "mtp": null, "size": "L", "fast": true },
+		{ "id": "lfm25-24b-q5km", "name": "LFM2.5-24B-A2B", "quant": "Q5_K_M", "sizeGB": 17.03, "paramsB": 24, "activeB": 2.2, "activeSource": "report 04 §2.2.4", "kind": "moe", "bTok": 1.78, "bTokSource": "r04", "kvKiB": 10.6, "kvSource": "r04", "license": "lfm-open-1.0", "pl": false, "mtp": null, "size": "L", "fast": true },
+		{ "id": "gpt-oss-120b", "name": "gpt-oss-120b", "quant": "MXFP4", "sizeGB": 63.39, "paramsB": 116.83, "activeB": 5.1, "activeSource": "report 04 §2.3.2 [INFERENCE]", "kind": "moe", "bTok": 2.77, "bTokSource": "active", "kvKiB": 34, "kvSource": "default-swa", "license": "apache-2.0-usage-policy", "pl": false, "mtp": null, "size": "XL" },
+		{ "id": "mistral-small4-q4km", "name": "Mistral Small 4 119B-A6.5B", "quant": "UD-Q4_K_M", "sizeGB": 73.76, "paramsB": 119, "activeB": 6.5, "activeSource": "model name", "kind": "moe", "bTok": 4.03, "bTokSource": "active", "kvKiB": 68, "kvSource": "default", "license": "apache-2.0", "pl": true, "mtp": null, "size": "XL" }
+	],
+	"licenses": {
+		"apache-2.0": { "name": "Apache 2.0", "commercial": "yes", "note": { "pl": "Wolno używać komercyjnie; dołączamy LICENSE i NOTICE.", "en": "Commercial use allowed; we ship LICENSE and NOTICE." } },
+		"apache-2.0-usage-policy": { "name": "Apache 2.0 + gpt-oss usage policy", "commercial": "yes", "note": { "pl": "Apache 2.0; dołączamy USAGE_POLICY OpenAI.", "en": "Apache 2.0; we ship OpenAI's USAGE_POLICY." } },
+		"lfm-open-1.0": { "name": "LFM Open License v1.0", "commercial": "conditional", "note": { "pl": "Komercyjnie tylko poniżej 10 mln USD rocznego przychodu (całej grupy). Dla osób prywatnych bez ograniczeń.", "en": "Commercial use only below USD 10M annual revenue (whole group). No limits for private use." } }
+	}
+}

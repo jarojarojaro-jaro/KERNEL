@@ -1,0 +1,228 @@
+/*
+ * Design tokens: the single source of truth for every surface (landing, desktop app, llama.cpp chat theme).
+ * Dark is the default identity ("telemetry at night"); light is a full, equal-quality theme.
+ * Contrast targets (WCAG 2.2 AA): body text >= 7:1, muted text >= 4.5:1, UI strokes/focus >= 3:1.
+ * Ratios (computed, WCAG 2.x relative luminance) are listed next to the pairs that carry text; DESIGN.md §3 has the full table.
+ */
+
+@font-face {
+	font-family: 'Geist';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 100 900;
+	src: url('/fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'Geist';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 100 900;
+	src: url('/fonts/geist-latin-ext-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+	font-family: 'Geist Mono';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 100 900;
+	src: url('/fonts/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'Geist Mono';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 100 900;
+	src: url('/fonts/geist-mono-latin-ext-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
+		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+:root {
+	/* ---------- type ---------- */
+	--font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+
+	/* modular scale 1.25, fluid at the top end */
+	--fs-2xs: 0.6875rem; /* 11px: mono overlines only, always uppercase + tracking */
+	--fs-xs: 0.75rem;
+	--fs-sm: 0.875rem;
+	--fs-base: 1rem;
+	--fs-md: 1.125rem;
+	--fs-lg: 1.375rem;
+	--fs-xl: 1.75rem;
+	--fs-2xl: clamp(1.875rem, 1.2rem + 2.2vw, 2.5rem);
+	--fs-3xl: clamp(2.25rem, 1.3rem + 3.6vw, 3.5rem);
+	--fs-display: clamp(2.6rem, 1.2rem + 5.4vw, 5rem);
+
+	--lh-tight: 1.04;
+	--lh-snug: 1.2;
+	--lh-body: 1.6;
+	--tracking-display: -0.038em;
+	--tracking-tight: -0.02em;
+	--tracking-overline: 0.14em;
+
+	--fw-regular: 400;
+	--fw-medium: 500;
+	--fw-semibold: 600;
+	--fw-bold: 700;
+
+	/* ---------- space (4px grid) ---------- */
+	--sp-0: 0;
+	--sp-1: 0.25rem;
+	--sp-2: 0.5rem;
+	--sp-3: 0.75rem;
+	--sp-4: 1rem;
+	--sp-5: 1.25rem;
+	--sp-6: 1.5rem;
+	--sp-8: 2rem;
+	--sp-10: 2.5rem;
+	--sp-12: 3rem;
+	--sp-16: 4rem;
+	--sp-20: 5rem;
+	--sp-24: 6rem;
+	--section-y: clamp(4rem, 2rem + 6vw, 7.5rem);
+	--container: 72rem;
+	--container-narrow: 46rem;
+	--gutter: clamp(1rem, 0.4rem + 2.6vw, 2rem);
+
+	/* ---------- radii: small = precise, never bubbly ---------- */
+	--r-xs: 3px;
+	--r-sm: 6px;
+	--r-md: 10px;
+	--r-lg: 14px;
+	--r-xl: 20px;
+	--r-pill: 999px;
+
+	/* ---------- motion ---------- */
+	--dur-1: 110ms; /* hover, press */
+	--dur-2: 180ms; /* small state changes */
+	--dur-3: 320ms; /* panels, reveals */
+	--dur-4: 640ms; /* bars filling, gauge sweep */
+	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+	--ease-linear: linear;
+
+	/* ---------- z ---------- */
+	--z-header: 50;
+	--z-banner: 80;
+	--z-toast: 90;
+
+	/* ---------- raw palette (do not use directly in components) ---------- */
+	--volt-300: #dcff86;
+	--volt-400: #c8ff3d; /* signature: the "after" colour */
+	--volt-500: #a6e01b;
+	--volt-800: #3b6e00;
+	--ion-300: #8be6ff;
+	--ion-400: #3dd6ff;
+	--ion-800: #006a8c;
+	--heat-400: #ff4d8d;
+	--heat-800: #b0174f;
+	--amber-400: #ffb23e;
+	--amber-800: #8a5100;
+	--green-400: #5be49b;
+	--green-800: #1f7a46;
+
+	/* ======================= DARK (default) ======================= */
+	color-scheme: dark;
+	--bg-0: #07080d; /* page */
+	--bg-1: #0c0e16; /* section band */
+	--bg-2: #121522; /* card */
+	--bg-3: #1a1e2f; /* inset, hover */
+	--bg-inv: #f2f5fb;
+	--line: #232840; /* hairline 1px, decorative */
+	--line-strong: #5f6890; /* input/control boundaries: >= 3:1 on bg-0..bg-3 (WCAG 1.4.11) */
+	--grid: rgb(140 160 220 / 0.055);
+
+	--text-hi: #f2f5fb; /* 18.3:1 on bg-0 */
+	--text: #c9d0e2; /* 13.0:1 on bg-0, 11.8:1 on bg-2 */
+	--text-mute: #939cb7; /* 7.3:1 on bg-0, 6.6:1 on bg-2, 6.0:1 on bg-3 */
+	--text-inv: #07080d;
+
+	--accent: var(--volt-400); /* fills: CTA, "after" bar */
+	--accent-hover: var(--volt-300);
+	--accent-ink: var(--volt-400); /* accent as text on page: 17.0:1 */
+	--on-accent: #0a0d03; /* text on accent fill: 16.6:1 */
+	--accent-soft: rgb(200 255 61 / 0.1);
+	--accent-glow: 0 0 0 1px rgb(200 255 61 / 0.32), 0 0 28px -4px rgb(200 255 61 / 0.35);
+
+	--info: var(--ion-400); /* links, focus, "measured" data lines */
+	--info-ink: var(--ion-400); /* 11.7:1 */
+	--info-soft: rgb(61 214 255 / 0.1);
+	--warn: var(--amber-400);
+	--warn-ink: var(--amber-400); /* 11.1:1 */
+	--warn-soft: rgb(255 178 62 / 0.1);
+	--danger: var(--heat-400);
+	--danger-ink: #ff7aa8; /* 8.2:1 */
+	--danger-soft: rgb(255 77 141 / 0.11);
+	--ok: var(--green-400);
+	--ok-ink: var(--green-400); /* 12.4:1 */
+	--ok-soft: rgb(91 228 155 / 0.1);
+
+	--before: #7f89a6; /* the "before" bar: deliberately quiet; 5.2:1 as text on bg-2 */
+	--before-soft: rgb(127 137 166 / 0.16);
+
+	--focus: var(--ion-400);
+	--shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.5);
+	--shadow-2: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -12px rgb(0 0 0 / 0.7);
+	--scrim: rgb(4 5 9 / 0.72);
+}
+
+/* ======================= LIGHT ======================= */
+:root[data-theme='light'] {
+	color-scheme: light;
+	--bg-0: #f5f6f9;
+	--bg-1: #eceef3;
+	--bg-2: #ffffff;
+	--bg-3: #e8ebf1;
+	--bg-inv: #0b0d14;
+	--line: #dde1ea;
+	--line-strong: #7a8399; /* >= 3.1:1 on bg-0..bg-3 */
+	--grid: rgb(30 40 80 / 0.05);
+
+	--text-hi: #0a0c12; /* 18.1:1 on bg-0 */
+	--text: #2a3042; /* 12.1:1 */
+	--text-mute: #505971; /* 6.5:1 on bg-0 */
+	--text-inv: #f5f6f9;
+
+	--accent: var(--volt-400);
+	--accent-hover: #d6ff6b;
+	--accent-ink: var(--volt-800); /* 5.7:1 on bg-0 */
+	--on-accent: #0a0d03;
+	--accent-soft: rgb(120 180 0 / 0.12);
+	--accent-glow: 0 0 0 1px rgb(59 110 0 / 0.35), 0 6px 22px -8px rgb(90 150 0 / 0.45);
+
+	--info: var(--ion-800);
+	--info-ink: var(--ion-800); /* 5.6:1 */
+	--info-soft: rgb(0 106 140 / 0.09);
+	--warn: #c27400;
+	--warn-ink: var(--amber-800); /* 6.0:1 */
+	--warn-soft: rgb(194 116 0 / 0.1);
+	--danger: var(--heat-800);
+	--danger-ink: var(--heat-800); /* 6.3:1 */
+	--danger-soft: rgb(176 23 79 / 0.08);
+	--ok: var(--green-800);
+	--ok-ink: var(--green-800); /* 4.9:1 */
+	--ok-soft: rgb(31 122 70 / 0.09);
+
+	--before: #6a7390; /* 4.7:1 as text on bg-2 */
+	--before-soft: rgb(106 115 144 / 0.16);
+
+	--focus: var(--ion-800);
+	--shadow-1: 0 1px 2px rgb(16 24 40 / 0.06);
+	--shadow-2: 0 1px 2px rgb(16 24 40 / 0.05), 0 14px 34px -14px rgb(16 24 40 / 0.18);
+	--scrim: rgb(10 12 18 / 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+	:root {
+		--dur-1: 0.01ms;
+		--dur-2: 0.01ms;
+		--dur-3: 0.01ms;
+		--dur-4: 0.01ms;
+	}
+}

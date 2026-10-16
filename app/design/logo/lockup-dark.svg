@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" fill="none">
+  <!-- Wordmark is live text until the product name is final (see DESIGN.md §2). -->
+  <rect width="220" height="48" fill="#07080D"/>
+  <g transform="translate(8 8)">
+    <path d="M8.22 24.78A11 11 0 1 1 23.78 24.78" stroke="#F2F5FB" stroke-opacity=".38" stroke-width="3" stroke-linecap="round"/>
+    <path d="M25.53 11.5A11 11 0 0 1 23.78 24.78" stroke="#C8FF3D" stroke-width="3" stroke-linecap="round"/>
+    <path d="M16 17 22.13 11.86" stroke="#C8FF3D" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="16" cy="17" r="2.6" fill="#F2F5FB"/>
+  </g>
+  <text x="50" y="31.5" fill="#F2F5FB" font-family="Geist, system-ui, sans-serif" font-size="22" font-weight="600" letter-spacing="-0.6">Podkręt</text>
+</svg>

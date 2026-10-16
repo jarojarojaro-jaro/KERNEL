@@ -1,0 +1,23 @@
+ ◆ Podkręt   1 skan  2 dobór  3 kalibracja [4 wynik] 5 noc                               PL
+
+ ╭─ PRZED → PO ────────────────────────────────────────── ten sam sprzęt · ten sam model ─╮
+ │ Qwen3.8-27B UD-Q4_K_XL · RX 7900 XTX 24 GiB                                            │
+ │  ▀▀█ █▀█   █▀█           ▄█  █▀█ █▀█   █▀█                                             │
+ │  ▀▀█ █▀█ ▄ █▀█      ──▶   █  █ █ ▀▀█ ▄ █ █                                             │
+ │  ▀▀▀ ▀▀▀ ▀ ▀▀▀ t/s       ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀▀▀ t/s                                         │
+ │                                                                                        │
+ │ przed · upstream Vulkan █████████████████▏································   38,8 t/s  │
+ │ L1 · + MTP n=4          █████████████████████████████████████▊············   85,6 t/s  │
+ │ L3 · nasz silnik        ████████████████████████████████████████████████▏·  109,0 t/s  │
+ ╰────────────────────────────────────────────────────────────────────────────────────────╯
+ ╭─ SŁOWA NA SEKUNDĘ ─────────────────────────────────────────────────────────────────────╮
+ │ słowa/s PL  14,4 → 31,8 → 40,5  ·  500 słów PL  34,7 → 15,7 → 12,3 s                   │
+ │ słowa/s EN  33,2 → 73,2 → 93,2  ·  500 słów EN  15,1 → 6,8 → 5,4 s                     │
+ ╰────────────────────────────────────────────────────────────────────────────────────────╯
+  L0 nic do naprawy · L1 +46,8 · L2 wkrótce · L3 +23,4
+  przedział ufności: po kalibracji ABBA
+  greedy md5: MTP 6f14e814… · bez spekulacji c4708318… — spekulacja zmienia wynik greedy
+  (także w upstream); tryb bit w bit: w badaniach
+  źródła: KERNEL/qwen-opt/NOTES.md:48, STATUS-NEXT.md:10; 38.8 i 109.0 z różnych skryptów
+  pomiarowych
+

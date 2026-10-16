@@ -1,0 +1,124 @@
+{
+	"source": "~/qwen-opt/cloud/results/*/scorecard.json",
+	"cards": {
+		"3090-20261016": {
+			"dir": "3090-20261016",
+			"rows": [
+				{
+					"model": "lfm25-24b-q5",
+					"card": ".",
+					"variant": "A0",
+					"decode_tps_median": 180.2,
+					"decode_tps_min": 178.54,
+					"decode_tps_max": 183.67,
+					"ms_step": 5.55,
+					"tok_step": 1,
+					"prefill_tps": {
+						"pp512": 5168,
+						"pp4096": 5167.8
+					},
+					"ttft_ms_2k": 457,
+					"server_prefill_tps_2k": 4816,
+					"vram_gb": 19.34,
+					"md5_status": "reference (upstream defaults, different flags)",
+					"n_runs": 24
+				},
+				{
+					"model": "lfm25-24b-q5",
+					"card": ".",
+					"variant": "A1",
+					"decode_tps_median": 175.99,
+					"decode_tps_min": 173.95,
+					"decode_tps_max": 180.84,
+					"ms_step": 5.68,
+					"tok_step": 1,
+					"prefill_tps": {
+						"pp512": 5112.5,
+						"pp4096": 5134.9
+					},
+					"ttft_ms_2k": 451,
+					"server_prefill_tps_2k": 4752,
+					"vram_gb": 17.51,
+					"md5_status": "reference",
+					"n_runs": 24
+				},
+				{
+					"model": "lfm25-24b-q5",
+					"card": ".",
+					"variant": "A2",
+					"decode_tps_median": 249.3,
+					"decode_tps_min": 247.91,
+					"decode_tps_max": 251.7,
+					"ms_step": 4.01,
+					"tok_step": 1,
+					"prefill_tps": {
+						"pp512": 5126,
+						"pp4096": 5163.9
+					},
+					"ttft_ms_2k": 447,
+					"server_prefill_tps_2k": 4824,
+					"vram_gb": 17.51,
+					"md5_status": "plain greedy vs A1: DIFF-BUILD",
+					"n_runs": 24
+				},
+				{
+					"model": "qwen38-27b",
+					"card": ".",
+					"variant": "A0",
+					"decode_tps_median": 39.01,
+					"decode_tps_min": 38.71,
+					"decode_tps_max": 39.22,
+					"ms_step": 25.64,
+					"tok_step": 1,
+					"prefill_tps": {
+						"pp512": 1409.6,
+						"pp4096": 1396.4
+					},
+					"ttft_ms_2k": 2139,
+					"server_prefill_tps_2k": 1210,
+					"vram_gb": 22.08,
+					"md5_status": "reference (upstream defaults, different flags)",
+					"n_runs": 24
+				},
+				{
+					"model": "qwen38-27b",
+					"card": ".",
+					"variant": "A1",
+					"decode_tps_median": 63.3,
+					"decode_tps_min": 48.82,
+					"decode_tps_max": 69.74,
+					"ms_step": 51.6,
+					"tok_step": 3.266,
+					"prefill_tps": {
+						"pp512": 1404.2,
+						"pp4096": 1383.9
+					},
+					"ttft_ms_2k": 2286,
+					"server_prefill_tps_2k": 1075,
+					"vram_gb": 19.19,
+					"md5_status": "reference",
+					"n_runs": 24
+				},
+				{
+					"model": "qwen38-27b",
+					"card": ".",
+					"variant": "A2",
+					"decode_tps_median": 77.96,
+					"decode_tps_min": 65.44,
+					"decode_tps_max": 87.91,
+					"ms_step": 38.37,
+					"tok_step": 2.999,
+					"prefill_tps": {
+						"pp512": 1377.9,
+						"pp4096": 1363
+					},
+					"ttft_ms_2k": 2395,
+					"server_prefill_tps_2k": 1039,
+					"vram_gb": 19.46,
+					"md5_status": "plain greedy vs A1: DIFF-BUILD; MTP+fork flags vs A2-safe: BIT-vs-SAFE",
+					"n_runs": 24
+				}
+			]
+		}
+	}
+}

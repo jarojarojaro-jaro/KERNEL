@@ -1,0 +1,312 @@
+TEST-linux.txt - evidence for app/scan/{scan.sh,scan-macos.sh,scan.ps1}
+Generated: 2026-10-16 03:30 on the lab Linux box (Ubuntu 24.04.5, kernel 6.8.0-138-generic, RX 7900 XTX).
+No GPU workload was run; the scan only reads sysfs/procfs text files and lspci.
+
+== 1. Syntax checks
+  bash -n scan.sh: OK
+  sh -n scan.sh: OK
+  bash --posix -n scan.sh: OK
+  busybox sh -n scan.sh: OK
+  bash -n scan-macos.sh: OK
+  sh -n scan-macos.sh: OK
+  bash --posix -n scan-macos.sh: OK
+  busybox sh -n scan-macos.sh: OK
+  (/bin/sh here is dash 0.5.12-6ubuntu5; bash 5.2.21(1)-release)
+
+== 2. Checksum self-test
+  $ sh scan.sh --selftest
+  Checksum self-test: HW1;os=linux -> E787
+  $ sh scan-macos.sh --selftest
+  Checksum self-test: HW1;os=linux -> E787
+  $ pwsh -File scan.ps1 -SelfTest
+  Checksum self-test: HW1;os=linux -> E787
+  Cross-check, same algorithm as landing/src/lib/hwcode.ts hwChecksum() run in bun: E787
+  od|gawk: E787
+  od|mawk: E787
+  od|nawk: E787
+  od|busybox awk: E787
+  => checksum of "HW1;os=linux" is E787 in every implementation.
+
+== 3. Full output: sh scan.sh (English, LANG=C.UTF-8)
+
+Hardware scan (HW1 code) - read-only
+Reads: /sys/bus/pci, /sys/class/drm, /sys/module, /proc/cpuinfo, /proc/meminfo,
+       /proc/driver/nvidia/version, /etc/os-release and lspci (names from pci.ids).
+Sends nothing, writes nothing to disk, needs no root.
+Never reads host or user name, serial numbers, GPU UUIDs, MAC addresses or logs.
+
+Computer
+  OS          Ubuntu 24.04.5 LTS
+  Kernel      6.8.0-138-generic
+  CPU         AMD Ryzen 7 5700X 8-Core Processor
+  Threads     16 logical
+  SIMD        AVX2
+  RAM         62.7 GiB
+
+Graphics
+  GPU 1
+  Chip        Navi 31 [Radeon RX 7900 XT/7900 XTX/7900M]
+  Board       Sapphire Technology Limited PULSE RX 7900 XTX
+  Vendor      Advanced Micro Devices, Inc. [AMD/ATI]
+  Type        discrete
+  VRAM        24.0 GiB
+  Driver      amdgpu 6.8.0-138-generic
+  PCIe        4.0 x16 (16.0 GT/s; current link; cards often slow it down when idle)
+  Found: 1 graphics card with a working driver; GPU 1 goes into the code.
+
+Paste code for the website - copy the whole line starting with HW1;
+--------------------------------------------------------------------------------
+
+HW1;os=linux;gpu=Navi 31 [Radeon RX 7900 XT/7900 XTX/7900M];sub=PULSE RX 7900 XTX;vendor=amd;vram=24.0;ngpu=1;drv=amdgpu 6.8.0-138-generic;ram=62.7;thr=16;isa=avx2;pcie=4x16;um=0;sum=3A6B
+
+--------------------------------------------------------------------------------
+The code contains only the fields shown above; you can read it before pasting.
+  [exit 0]
+
+== 4. Full output: LANG=pl_PL.UTF-8 sh scan.sh (Polish)
+
+Skan sprzętu (kod HW1) — tylko odczyt
+Czyta: /sys/bus/pci, /sys/class/drm, /sys/module, /proc/cpuinfo, /proc/meminfo,
+       /proc/driver/nvidia/version, /etc/os-release oraz lspci (nazwy z bazy pci.ids).
+Nic nie wysyła, niczego nie zapisuje na dysku i nie potrzebuje uprawnień roota.
+Nie czyta nazwy komputera ani użytkownika, numerów seryjnych, UUID kart, adresów MAC ani logów.
+
+Komputer
+  System      Ubuntu 24.04.5 LTS
+  Jądro       6.8.0-138-generic
+  Procesor    AMD Ryzen 7 5700X 8-Core Processor
+  Wątki       16 wątków logicznych
+  Instrukcje  AVX2
+  Pamięć RAM  62,7 GiB
+
+Karty graficzne
+  GPU 1
+  Układ       Navi 31 [Radeon RX 7900 XT/7900 XTX/7900M]
+  Karta       Sapphire Technology Limited PULSE RX 7900 XTX
+  Producent   Advanced Micro Devices, Inc. [AMD/ATI]
+  Rodzaj      dedykowana
+  VRAM        24,0 GiB
+  Sterownik   amdgpu 6.8.0-138-generic
+  PCIe        4.0 x16 (16.0 GT/s; bieżące łącze; bez obciążenia karta często je zwalnia)
+  Wykryto: 1 karta graficzna z działającym sterownikiem; GPU 1 trafia do kodu.
+
+Kod do wklejenia na stronie — skopiuj całą linię zaczynającą się od HW1;
+--------------------------------------------------------------------------------
+
+HW1;os=linux;gpu=Navi 31 [Radeon RX 7900 XT/7900 XTX/7900M];sub=PULSE RX 7900 XTX;vendor=amd;vram=24.0;ngpu=1;drv=amdgpu 6.8.0-138-generic;ram=62.7;thr=16;isa=avx2;pcie=4x16;um=0;sum=3A6B
+
+--------------------------------------------------------------------------------
+Kod zawiera wyłącznie pola pokazane powyżej; możesz go przeczytać przed wklejeniem.
+  [exit 0]
+  Paste code verified with the JS checksum: checksum OK
+
+== 5. strace: every opened path and every exec'd binary
+  Command: strace -f -e trace=openat,open,execve -o <trace> <shell> ./scan.sh   (trace file kept in /tmp, deleted after summarising)
+  Paths normalised: PCI address -> <slot>, cardN -> card<N>. Counts = number of open calls.
+
+  --- sh ./scan.sh  (exit 0)
+  exec'd binaries:
+      5x /usr/bin/awk
+      1x /usr/bin/lspci
+      1x /usr/bin/od
+      2x /usr/bin/readlink
+      1x /usr/bin/sh
+     13x /usr/bin/tr
+  opened paths:
+      1x ./scan.sh
+     23x /etc/ld.so.cache
+      1x /etc/os-release
+     23x /lib/x86_64-linux-gnu/libc.so.6
+      1x /lib/x86_64-linux-gnu/libcap.so.2
+      1x /lib/x86_64-linux-gnu/libcrypto.so.3
+      5x /lib/x86_64-linux-gnu/libgmp.so.10
+      1x /lib/x86_64-linux-gnu/libkmod.so.2
+      1x /lib/x86_64-linux-gnu/liblzma.so.5
+      5x /lib/x86_64-linux-gnu/libm.so.6
+      5x /lib/x86_64-linux-gnu/libmpfr.so.6
+      1x /lib/x86_64-linux-gnu/libpci.so.3
+      5x /lib/x86_64-linux-gnu/libreadline.so.8
+      5x /lib/x86_64-linux-gnu/libsigsegv.so.2
+      5x /lib/x86_64-linux-gnu/libtinfo.so.6
+      1x /lib/x86_64-linux-gnu/libudev.so.1
+      1x /lib/x86_64-linux-gnu/libz.so.1
+      1x /lib/x86_64-linux-gnu/libzstd.so.1
+      1x /proc/cpuinfo
+      1x /proc/meminfo
+      5x /proc/self/maps
+      1x /proc/sys/kernel/osrelease
+      1x /sys/bus/pci/devices
+      1x /sys/bus/pci/devices/
+     40x /sys/bus/pci/devices/<slot>/class
+      1x /sys/bus/pci/devices/<slot>/config
+      1x /sys/bus/pci/devices/<slot>/current_link_speed
+      1x /sys/bus/pci/devices/<slot>/current_link_width
+      2x /sys/bus/pci/devices/<slot>/device
+      1x /sys/bus/pci/devices/<slot>/revision
+      2x /sys/bus/pci/devices/<slot>/subsystem_device
+      2x /sys/bus/pci/devices/<slot>/subsystem_vendor
+      2x /sys/bus/pci/devices/<slot>/vendor
+      1x /sys/class/drm/
+      1x /sys/class/drm/card<N>/device/mem_info_gtt_total
+      1x /sys/class/drm/card<N>/device/mem_info_vram_total
+      1x /usr/share/misc/pci.ids
+      1x /usr/share/misc/pci.ids.gz (open failed, -1)
+  /dev/* opens: 0
+
+  --- bash ./scan.sh  (exit 0)
+  exec'd binaries:
+      5x /usr/bin/awk
+      1x /usr/bin/bash
+      1x /usr/bin/lspci
+      1x /usr/bin/od
+      2x /usr/bin/readlink
+     13x /usr/bin/tr
+  opened paths:
+      1x ./scan.sh
+      1x /dev/tty (open failed, -1)
+     23x /etc/ld.so.cache
+      1x /etc/os-release
+     23x /lib/x86_64-linux-gnu/libc.so.6
+      1x /lib/x86_64-linux-gnu/libcap.so.2
+      1x /lib/x86_64-linux-gnu/libcrypto.so.3
+      5x /lib/x86_64-linux-gnu/libgmp.so.10
+      1x /lib/x86_64-linux-gnu/libkmod.so.2
+      1x /lib/x86_64-linux-gnu/liblzma.so.5
+      5x /lib/x86_64-linux-gnu/libm.so.6
+      5x /lib/x86_64-linux-gnu/libmpfr.so.6
+      1x /lib/x86_64-linux-gnu/libpci.so.3
+      5x /lib/x86_64-linux-gnu/libreadline.so.8
+      5x /lib/x86_64-linux-gnu/libsigsegv.so.2
+      6x /lib/x86_64-linux-gnu/libtinfo.so.6
+      1x /lib/x86_64-linux-gnu/libudev.so.1
+      1x /lib/x86_64-linux-gnu/libz.so.1
+      1x /lib/x86_64-linux-gnu/libzstd.so.1
+      1x /proc/cpuinfo
+      1x /proc/meminfo
+      5x /proc/self/maps
+      1x /proc/sys/kernel/osrelease
+      1x /sys/bus/pci/devices
+      1x /sys/bus/pci/devices/
+     40x /sys/bus/pci/devices/<slot>/class
+      1x /sys/bus/pci/devices/<slot>/config
+      1x /sys/bus/pci/devices/<slot>/current_link_speed
+      1x /sys/bus/pci/devices/<slot>/current_link_width
+      2x /sys/bus/pci/devices/<slot>/device
+      1x /sys/bus/pci/devices/<slot>/revision
+      2x /sys/bus/pci/devices/<slot>/subsystem_device
+      2x /sys/bus/pci/devices/<slot>/subsystem_vendor
+      2x /sys/bus/pci/devices/<slot>/vendor
+      1x /sys/class/drm/
+      1x /sys/class/drm/card<N>/device/mem_info_gtt_total
+      1x /sys/class/drm/card<N>/device/mem_info_vram_total
+      1x /usr/lib/locale/locale-archive
+      1x /usr/lib/x86_64-linux-gnu/gconv/gconv-modules.cache
+      1x /usr/share/misc/pci.ids
+      1x /usr/share/misc/pci.ids.gz (open failed, -1)
+  /dev/* opens: 1
+    137339 openat(AT_FDCWD, "/dev/tty", O_RDWR|O_NONBLOCK) = -1 ENXIO (No such device or address)
+
+  Notes:
+  - sh (dash, the documented way to run it): zero /dev/* opens.
+  - bash: the only /dev entry is bash itself probing its controlling terminal at interpreter start-up
+    (openat "/dev/tty" = -1 ENXIO, i.e. failed/nothing opened). The same call appears for an empty
+    script (`bash empty.sh`), so it is bash, not scan.sh. Use `sh scan.sh` (or `curl ... | sh`).
+  - /sys/bus/pci/devices/<slot>/config and revision are opened by lspci itself (unprivileged config
+    reads return only the 64-byte standard header: IDs/class, no serial-number capability).
+  - /usr/lib/x86_64-linux-gnu/*.so, /etc/ld.so.cache, /proc/self/maps, locale files: dynamic loader and
+    libc start-up of the exec'd tools.
+  - Not opened: /dev/*, /proc/cmdline, /proc/driver/nvidia/gpus/*, hostname, logs, anything under $HOME.
+
+== 6. Graceful degradation: lspci not installed (PATH limited to awk/od/tr/cut/readlink/sh)
+Hardware scan (HW1 code) - read-only
+Reads: /sys/bus/pci, /sys/class/drm, /sys/module, /proc/cpuinfo, /proc/meminfo,
+       /proc/driver/nvidia/version, /etc/os-release and lspci (names from pci.ids).
+Sends nothing, writes nothing to disk, needs no root.
+Never reads host or user name, serial numbers, GPU UUIDs, MAC addresses or logs.
+Computer
+  OS          Ubuntu 24.04.5 LTS
+  Kernel      6.8.0-138-generic
+  CPU         AMD Ryzen 7 5700X 8-Core Processor
+  Threads     16 logical
+  SIMD        AVX2
+  RAM         62.7 GiB
+Graphics
+  (lspci not installed - cards shown by PCI ID)
+  GPU 1
+  Chip        PCI 1002:744c
+  Board       1da2:471e
+  Vendor      AMD
+  Type        discrete
+  VRAM        24.0 GiB
+  Driver      amdgpu 6.8.0-138-generic
+  PCIe        4.0 x16 (16.0 GT/s; current link; cards often slow it down when idle)
+  Found: 1 graphics card with a working driver; GPU 1 goes into the code.
+Paste code for the website - copy the whole line starting with HW1;
+--------------------------------------------------------------------------------
+HW1;os=linux;gpu=PCI 1002:744c;sub=1da2:471e;vendor=amd;vram=24.0;ngpu=1;drv=amdgpu 6.8.0-138-generic;ram=62.7;thr=16;isa=avx2;pcie=4x16;um=0;sum=F052
+--------------------------------------------------------------------------------
+The code contains only the fields shown above; you can read it before pasting.
+  [exit 0]
+
+== 7. PowerShell parse check
+  PowerShell 7.6.7 (portable linux-x64 tar.gz from github.com/PowerShell/PowerShell releases v7.6.7,
+  unpacked user-locally into ~/KERNEL/app/.tools/pwsh/).
+  $ [System.Management.Automation.Language.Parser]::ParseFile("scan.ps1", [ref]$tokens, [ref]$errors)
+  ParseFile errors: 0
+  $ pwsh -NoProfile -File scan.ps1 -SelfTest
+  Checksum self-test: HW1;os=linux -> E787
+  $ Get-Content -Raw scan.ps1 | iex      (same code path as `irm <url>/scan.ps1 | iex`; Linux has no CIM/registry,
+    so every hardware field degrades to "?" without errors)
+  HW1;os=windows;gpu=?;sub=?;vendor=none;vram=?;ngpu=0;drv=?;ram=?;thr=?;isa=avx2;pcie=?;um=0;sum=8B9F
+  Logic test with MOCKED Get-CimInstance / Get-PnpDeviceProperty (hand-written sample objects for a laptop
+  with Radeon 780M iGPU + RTX 4070 Laptop dGPU + a virtual Parsec adapter; Set-StrictMode -Version Latest
+  active in the caller; pl-PL culture). Registry is not mockable on Linux, so VRAM shows as unknown here.
+  This checks parsing/selection/formatting only; it is NOT a run on real Windows:
+    Skan sprzętu (kod HW1) — tylko odczyt
+    Czyta: Win32_OperatingSystem, Win32_Processor, Win32_VideoController (nazwa, wersja sterownika),
+           rejestr klasy kart graficznych (VRAM) i właściwości PCIe karty.
+    Nic nie wysyła, niczego nie zapisuje na dysku i nie potrzebuje uprawnień administratora.
+    Nie czyta nazwy komputera ani użytkownika, numerów seryjnych, UUID, adresów MAC ani logów.
+    Komputer
+      System      Microsoft Windows 11 Pro 10.0.26100
+      Procesor    AMD Ryzen 7 7840HS w/ Radeon 780M Graphics
+      Wątki       16 wątków logicznych
+      Instrukcje  AVX2
+      Pamięć RAM  63,9 GiB
+    Karty graficzne
+      GPU 1
+      Układ       AMD Radeon 780M Graphics
+      Karta       Lenovo 17aa:0b6b
+      Producent   Advanced Micro Devices, Inc.
+      Rodzaj      zintegrowana (pamięć wspólna z RAM)
+      VRAM        brak własnej — używa RAM systemu
+      Sterownik   amd 32.0.12011.1036
+      PCIe        nieznane
+      GPU 2
+      Układ       NVIDIA GeForce RTX 4070 Laptop GPU
+      Karta       Lenovo 17aa:3cf1
+      Producent   NVIDIA
+      Rodzaj      dedykowana
+      VRAM        nieznana; wybierz swoją kartę w formularzu
+      Sterownik   nvidia 560.94 (Windows 32.0.15.6094)
+      PCIe        4.0 x8 (16.0 GT/s; bieżące łącze; bez obciążenia karta często je zwalnia)
+      Wykryto: 2 karty graficzne z działającym sterownikiem; GPU 2 trafia do kodu.
+    Kod do wklejenia na stronie — skopiuj całą linię zaczynającą się od HW1;
+    --------------------------------------------------------------------------------
+    HW1;os=windows;gpu=NVIDIA GeForce RTX 4070 Laptop GPU;sub=Lenovo 17aa:3cf1;vendor=nvidia;vram=?;ngpu=2;drv=nvidia 560.94;ram=63.9;thr=16;isa=avx2;pcie=4x8;um=0;sum=D120
+    --------------------------------------------------------------------------------
+    Kod zawiera wyłącznie pola pokazane powyżej; możesz go przeczytać przed wklejeniem.
+  Not tested: Windows PowerShell 5.1 (not available on Linux). The script uses only PS 3+ syntax
+  (no ternary, no ??, no pipeline chains); .NET intrinsics types are looked up with -as [type], so on
+  5.1 they resolve to $null and the ISA is reported as "?". Source is pure ASCII (Polish via \uXXXX) so
+  irm|iex in 5.1 cannot mis-decode it. Real-Windows run still needed: registry VRAM, PnP link speed.
+
+== 8. macOS (scan-macos.sh)
+  No Mac available: syntax-checked only with real shells (section 1: bash -n, bash --posix -n, dash -n,
+  busybox sh -n). zsh is not installed here. macOS /bin/sh is bash 3.2 in POSIX mode; the script uses
+  only POSIX sh constructs (no arrays, no [[ ]], no here-docs, no bash-4 expansions).
+  Additionally run on Linux against STUB commands (hand-written sample output, not captured from a real
+  Mac) for sw_vers, sysctl and system_profiler to exercise the parser:
+    Apple Silicon sample (M4 Pro, 20 GPU cores, 48 GB): HW1;os=macos;gpu=Apple M4 Pro;sub=20 GPU cores;vendor=apple;vram=?;ngpu=1;drv=macOS 15.1 Metal 3;ram=48.0;thr=14;isa=neon;pcie=?;um=1;sum=F50F
+    Intel Mac sample (UHD 630 + Radeon Pro 5500M 8 GB): HW1;os=macos;gpu=AMD Radeon Pro 5500M;sub=?;vendor=amd;vram=8.0;ngpu=2;drv=macOS 15.1;ram=32.0;thr=16;isa=avx2;pcie=?;um=0;sum=5667
+

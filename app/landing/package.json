@@ -1,0 +1,24 @@
+{
+	"name": "landing",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"sync-data": "bun scripts/sync-results.ts",
+		"dev": "vite dev --port 18433",
+		"build": "bun scripts/sync-results.ts && vite build",
+		"preview": "bun scripts/serve.ts 18433",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+	},
+	"devDependencies": {
+		"@fontsource-variable/geist": "5.3.0",
+		"@fontsource-variable/geist-mono": "5.3.0",
+		"@sveltejs/adapter-static": "3.0.10",
+		"@sveltejs/kit": "2.70.2",
+		"@sveltejs/vite-plugin-svelte": "6.2.1",
+		"svelte": "5.56.1",
+		"svelte-check": "4.6.0",
+		"typescript": "5.9.3",
+		"vite": "7.3.6"
+	}
+}

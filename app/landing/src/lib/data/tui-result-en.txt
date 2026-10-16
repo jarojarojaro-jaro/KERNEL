@@ -1,0 +1,23 @@
+ ◆ Podkręt   1 scan  2 pick  3 calibrate [4 result] 5 night                              EN
+
+ ╭─ BEFORE → AFTER ────────────────────────────────────────── same hardware · same model ─╮
+ │ Qwen3.8-27B UD-Q4_K_XL · RX 7900 XTX 24 GiB                                            │
+ │  ▀▀█ █▀█   █▀█           ▄█  █▀█ █▀█   █▀█                                             │
+ │  ▀▀█ █▀█   █▀█      ──▶   █  █ █ ▀▀█   █ █                                             │
+ │  ▀▀▀ ▀▀▀ ▀ ▀▀▀ t/s       ▀▀▀ ▀▀▀ ▀▀▀ ▀ ▀▀▀ t/s                                         │
+ │                                                                                        │
+ │ before · upstream Vulkan ████████████████▊································   38.8 t/s  │
+ │ L1 · + MTP n=4           █████████████████████████████████████············   85.6 t/s  │
+ │ L3 · our engine          ███████████████████████████████████████████████▏·  109.0 t/s  │
+ ╰────────────────────────────────────────────────────────────────────────────────────────╯
+ ╭─ WORDS PER SECOND ─────────────────────────────────────────────────────────────────────╮
+ │ words/s PL  14.4 → 31.8 → 40.5  ·  500 words PL  34.7 → 15.7 → 12.3 s                  │
+ │ words/s EN  33.2 → 73.2 → 93.2  ·  500 words EN  15.1 → 6.8 → 5.4 s                    │
+ ╰────────────────────────────────────────────────────────────────────────────────────────╯
+  L0 nothing to fix · L1 +46.8 · L2 soon · L3 +23.4
+  confidence interval: after ABBA calibration
+  greedy md5: MTP 6f14e814… · no speculation c4708318… — speculation changes the greedy
+  output (upstream too); bit-exact mode: in research
+  sources: KERNEL/qwen-opt/NOTES.md:48, STATUS-NEXT.md:10; 38.8 and 109.0 come from
+  different measurement scripts
+

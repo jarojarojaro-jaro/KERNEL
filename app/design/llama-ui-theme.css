@@ -1,0 +1,119 @@
+/*
+ * llama-ui-theme.css: our design tokens mapped onto the shadcn variables of the llama.cpp web UI
+ * (llama.cpp `tools/ui`, SvelteKit 2 + Svelte 5 + Tailwind 4 + shadcn-svelte).
+ *
+ * HOW TO USE (in a checkout of llama.cpp)
+ *   1. Copy this file to `tools/ui/src/llama-ui-theme.css`.
+ *   2. Import it AFTER `app.css`, e.g. in `tools/ui/src/routes/+layout.svelte`:
+ *        import '../app.css';
+ *        import '../llama-ui-theme.css';
+ *      Same specificity as upstream (`:root`, `.dark`), so source order makes ours win; nothing in
+ *      upstream files has to change, which keeps rebases on llama.cpp trivial.
+ *   3. Light/dark switching stays upstream's: mode-watcher puts `.dark` on <html>. `:root` below is
+ *      the light theme, `.dark` the dark one (our default identity).
+ *   4. Fonts: `--font-sans`/`--font-mono` name Geist / Geist Mono first and fall back to system
+ *      fonts. To get Geist, ship the woff2 files from `KERNEL/app/landing/static/fonts/` together with
+ *      the @font-face rules from `KERNEL/app/design/tokens.css` (OFL-1.1, keep its licence file).
+ *   Do NOT import this file into the landing site or the desktop prototype: it redefines `--accent`
+ *   and other names that mean something different in our own tokens.
+ *
+ * WHERE THE VALUES COME FROM
+ *   Every value is copied from `KERNEL/app/design/tokens.css`; the comment names the source token.
+ *   Light = `:root[data-theme='light']` there, dark = its default `:root`. The file is standalone on
+ *   purpose (the llama.cpp UI does not load tokens.css); when tokens.css changes, update both blocks.
+ *
+ * LICENCE / ATTRIBUTION (MIT, required)
+ *   The llama.cpp web UI is MIT-licensed: "Copyright (c) 2023-2026 The ggml authors".
+ *   Theming it does not remove that obligation. Keep the ggml copyright notice and the full MIT
+ *   licence text in every distribution (our About window and the NOTICE file), and do not remove or
+ *   alter upstream licence headers. This file itself is ours; it contains no upstream code.
+ */
+
+/* ======================= LIGHT ======================= */
+:root {
+	--radius: 10px; /* --r-md */
+
+	--background: #f5f6f9; /* --bg-0 */
+	--foreground: #2a3042; /* --text */
+	--card: #ffffff; /* --bg-2 */
+	--card-foreground: #2a3042; /* --text */
+	--popover: #ffffff; /* --bg-2 */
+	--popover-foreground: #0a0c12; /* --text-hi */
+
+	--primary: #c8ff3d; /* --accent (volt-400): primary actions = the "after" colour */
+	--primary-foreground: #0a0d03; /* --on-accent, 16.9:1 */
+	--secondary: #e8ebf1; /* --bg-3 */
+	--secondary-foreground: #0a0c12; /* --text-hi */
+	--muted: #eceef3; /* --bg-1 */
+	--muted-foreground: #505971; /* --text-mute, 6.6:1 */
+	--accent: #e8ebf1; /* --bg-3 (shadcn "accent" = hover surface, not our brand accent) */
+	--accent-foreground: #0a0c12; /* --text-hi */
+	--destructive: #b0174f; /* --danger (heat-800) */
+
+	--border: #dde1ea; /* --line */
+	--input: #8a93aa; /* --line-strong, 3.2:1 */
+	--ring: #006a8c; /* --focus (ion-800) */
+
+	--chart-1: #3b6e00; /* --accent-ink (volt-800) */
+	--chart-2: #006a8c; /* --info (ion-800) */
+	--chart-3: #c27400; /* --warn */
+	--chart-4: #1f7a46; /* --ok (green-800) */
+	--chart-5: #b0174f; /* --danger (heat-800) */
+
+	--sidebar: #eceef3; /* --bg-1 */
+	--sidebar-foreground: #2a3042; /* --text */
+	--sidebar-primary: #c8ff3d; /* --accent */
+	--sidebar-primary-foreground: #0a0d03; /* --on-accent */
+	--sidebar-accent: #e8ebf1; /* --bg-3 */
+	--sidebar-accent-foreground: #0a0c12; /* --text-hi */
+	--sidebar-border: #dde1ea; /* --line */
+	--sidebar-ring: #006a8c; /* --focus */
+
+	--code-background: #eceef3; /* --bg-1 */
+	--code-foreground: #0a0c12; /* --text-hi */
+
+	--font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* --font-sans */
+	--font-mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace; /* --font-mono */
+}
+
+/* ======================= DARK (our default identity) ======================= */
+.dark {
+	--background: #07080d; /* --bg-0 */
+	--foreground: #c9d0e2; /* --text, 13.0:1 */
+	--card: #121522; /* --bg-2 */
+	--card-foreground: #c9d0e2; /* --text */
+	--popover: #121522; /* --bg-2 */
+	--popover-foreground: #f2f5fb; /* --text-hi */
+
+	--primary: #c8ff3d; /* --accent (volt-400) */
+	--primary-foreground: #0a0d03; /* --on-accent, 16.9:1 */
+	--secondary: #1a1e2f; /* --bg-3 */
+	--secondary-foreground: #f2f5fb; /* --text-hi */
+	--muted: #0c0e16; /* --bg-1 */
+	--muted-foreground: #939cb7; /* --text-mute, 7.2:1 */
+	--accent: #1a1e2f; /* --bg-3 (shadcn hover surface) */
+	--accent-foreground: #f2f5fb; /* --text-hi */
+	--destructive: #ff4d8d; /* --danger (heat-400) */
+
+	--border: #232840; /* --line */
+	--input: #3a4161; /* --line-strong, 3.0:1 on card */
+	--ring: #3dd6ff; /* --focus (ion-400) */
+
+	--chart-1: #c8ff3d; /* --accent (volt-400) */
+	--chart-2: #3dd6ff; /* --info (ion-400) */
+	--chart-3: #ffb23e; /* --warn (amber-400) */
+	--chart-4: #5be49b; /* --ok (green-400) */
+	--chart-5: #ff4d8d; /* --danger (heat-400) */
+
+	--sidebar: #0c0e16; /* --bg-1 */
+	--sidebar-foreground: #c9d0e2; /* --text */
+	--sidebar-primary: #c8ff3d; /* --accent */
+	--sidebar-primary-foreground: #0a0d03; /* --on-accent */
+	--sidebar-accent: #1a1e2f; /* --bg-3 */
+	--sidebar-accent-foreground: #f2f5fb; /* --text-hi */
+	--sidebar-border: #232840; /* --line */
+	--sidebar-ring: #3dd6ff; /* --focus */
+
+	--code-background: #0c0e16; /* --bg-1 */
+	--code-foreground: #f2f5fb; /* --text-hi */
+}
