@@ -54,11 +54,13 @@
 		z-index: var(--z-banner);
 		inset: auto var(--sp-4) var(--sp-4) auto;
 		width: min(30rem, calc(100% - 2 * var(--sp-4)));
-		background: var(--bg-2);
+		background:
+			linear-gradient(180deg, color-mix(in srgb, var(--text-hi) 3%, transparent), transparent 50%),
+			var(--bg-2);
 		border: 1px solid var(--line-strong);
-		border-radius: var(--r-lg);
+		border-radius: var(--r-xl);
 		box-shadow: var(--shadow-2);
-		padding: var(--sp-5);
+		padding: var(--sp-6);
 	}
 	.cookie:focus {
 		outline: none;

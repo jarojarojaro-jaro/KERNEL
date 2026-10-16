@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { BRAND } from '$lib/brand';
 	import { currentLang, num } from '$lib/i18n';
-	import { M, KLD_EXCEPTIONS, MD5, type Measurement } from '$lib/data/measurements';
+	import { M, KLD_EXCEPTIONS, MD5, SHEET, type Measurement } from '$lib/data/measurements';
 	import { TOK_PER_WORD, answerSeconds } from '$lib/estimator';
 	import { T } from '$lib/desktop/i18n';
 	import { proto } from '$lib/desktop/state.svelte';
@@ -19,6 +19,8 @@
 	const l3 = M.qwenOursMtp;
 	const scale = l3.value * 1.08;
 	const MD5_SRC = 'KERNEL/qwen-opt/STATUS-NEXT.md:15';
+	const Q = SHEET.correctness.quality;
+	const kld = (v: number) => num(v, lang, 5);
 
 	type Bar = { key: 'before' | 'l1' | 'l2' | 'l3'; m: Measurement | null; tone: string; tag?: 'same' | 'other' };
 	const bars: Bar[] = [
@@ -56,7 +58,8 @@
 				L3: { from: l1.id, to: l3.id, sameHarness: sameHarness(l1, l3) }
 			},
 			confidenceInterval: null,
-			greedyMd5: { ...MD5, source: MD5_SRC },
+			greedyMd5: { ...MD5, source: MD5_SRC, meaning: 'regression check against our own stored reference, not identity with upstream' },
+			qualityVsUpstream: { kld3060: Q, md5DiffSource: SHEET.correctness.md5Diff },
 			kldExceptions: KLD_EXCEPTIONS.map((k) => ({ what: k.what[lang], result: k.result[lang], source: k.source }))
 		};
 		const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -223,7 +226,9 @@
 		<h2 id="q-h" class="h3">{r.qualityTitle}</h2>
 		<span class="badge badge--ok">{r.qualityBadge}</span>
 	</div>
-	<p>{r.qualityBody(MD5.qwenPlain, MD5.qwenMtp, MD5.lfm)}</p>
+	<p>{r.qualityBody(kld(Q.saluki.ours.v), kld(Q.saluki.noise.v), kld(Q.bonsai.ours.v), kld(Q.bonsai.noise.v))}</p>
+	<Src src={[SHEET.correctness.md5Diff, Q.saluki.ours.src]} />
+	<p class="small">{r.md5Regression(MD5.qwenPlain, MD5.qwenMtp, MD5.lfm)}</p>
 	<p class="notice notice--info"><span class="notice__icon" aria-hidden="true">i</span><span>{r.mtpNote}</span></p>
 	<Src src={MD5_SRC} />
 
@@ -344,10 +349,10 @@
 		--bar-c: var(--before);
 	}
 	.tone-l1 .bar > i {
-		--bar-c: var(--info);
+		--bar-c: linear-gradient(90deg, var(--heat-1), var(--heat-2));
 	}
 	.tone-l3 .bar > i {
-		box-shadow: var(--accent-glow);
+		box-shadow: 0 0 18px -4px color-mix(in srgb, var(--accent) 60%, transparent);
 	}
 	.bar.empty {
 		background: transparent;

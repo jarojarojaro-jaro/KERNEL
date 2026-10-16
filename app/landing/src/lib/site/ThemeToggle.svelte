@@ -11,7 +11,7 @@
 	function toggle() {
 		theme = theme === 'dark' ? 'light' : 'dark';
 		document.documentElement.dataset.theme = theme;
-		document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#07080d' : '#f5f6f9');
+		document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme === 'dark' ? '#050506' : '#f4f2ee');
 		try {
 			localStorage.setItem('theme', theme);
 		} catch {

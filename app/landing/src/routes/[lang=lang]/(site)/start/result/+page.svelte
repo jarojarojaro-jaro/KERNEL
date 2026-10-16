@@ -326,7 +326,7 @@
 	.membar .bar > i {
 		position: absolute;
 		inset: 0 auto 0 0;
-		background: var(--info);
+		background: var(--text);
 		border-radius: inherit;
 	}
 	.speed {

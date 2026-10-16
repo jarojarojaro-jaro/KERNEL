@@ -1,51 +1,60 @@
 /*
  * Design tokens: the single source of truth for every surface (landing, desktop app, llama.cpp chat theme).
- * Dark is the default identity ("telemetry at night"); light is a full, equal-quality theme.
+ * v2 identity "Białe ciepło" (design/REDESIGN.md): deep warm blacks, bone text, and ONE heat ramp
+ * (cold → white-hot) that only ever means speed. Dark is the default; the showcase pages (home,
+ * cards explorer) are dark-only; every other page keeps the light theme.
  * Contrast targets (WCAG 2.2 AA): body text >= 7:1, muted text >= 4.5:1, UI strokes/focus >= 3:1.
  * Ratios (computed, WCAG 2.x relative luminance) are listed next to the pairs that carry text; DESIGN.md §3 has the full table.
  */
 
 @font-face {
-	font-family: 'Geist';
+	font-family: 'Showcase Sans';
 	font-style: normal;
 	font-display: swap;
-	font-weight: 100 900;
-	src: url('/fonts/geist-latin-wght-normal.woff2') format('woff2-variations');
+	font-weight: 200 900;
+	font-stretch: 75% 125%;
+	src: url('/fonts/mona-sans-latin.woff2') format('woff2-variations');
 	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
 		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-	font-family: 'Geist';
+	font-family: 'Showcase Sans';
 	font-style: normal;
 	font-display: swap;
-	font-weight: 100 900;
-	src: url('/fonts/geist-latin-ext-wght-normal.woff2') format('woff2-variations');
+	font-weight: 200 900;
+	font-stretch: 75% 125%;
+	src: url('/fonts/mona-sans-latin-ext.woff2') format('woff2-variations');
 	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
 		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 @font-face {
-	font-family: 'Geist Mono';
+	font-family: 'Martian Mono';
 	font-style: normal;
 	font-display: swap;
-	font-weight: 100 900;
-	src: url('/fonts/geist-mono-latin-wght-normal.woff2') format('woff2-variations');
+	font-weight: 100 800;
+	font-stretch: 75% 112.5%;
+	src: url('/fonts/martian-mono-latin.woff2') format('woff2-variations');
 	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
 		U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 @font-face {
-	font-family: 'Geist Mono';
+	font-family: 'Martian Mono';
 	font-style: normal;
 	font-display: swap;
-	font-weight: 100 900;
-	src: url('/fonts/geist-mono-latin-ext-wght-normal.woff2') format('woff2-variations');
+	font-weight: 100 800;
+	font-stretch: 75% 112.5%;
+	src: url('/fonts/martian-mono-latin-ext.woff2') format('woff2-variations');
 	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329,
 		U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 :root {
 	/* ---------- type ---------- */
-	--font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-	--font-mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+	/* Mona Sans (GitHub, OFL 1.1), subset to Latin + Polish with pyftsubset; renamed because "Mona" is
+	   a Reserved Font Name and the OFL forbids it on modified versions. Martian Mono has no RFN. */
+	--font-sans: 'Showcase Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+	--font-display: var(--font-sans);
+	--font-mono: 'Martian Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
 
 	/* modular scale 1.25, fluid at the top end */
 	--fs-2xs: 0.6875rem; /* 11px: mono overlines only, always uppercase + tracking */
@@ -58,6 +67,9 @@
 	--fs-2xl: clamp(1.875rem, 1.2rem + 2.2vw, 2.5rem);
 	--fs-3xl: clamp(2.25rem, 1.3rem + 3.6vw, 3.5rem);
 	--fs-display: clamp(2.6rem, 1.2rem + 5.4vw, 5rem);
+	/* showcase scale (home, cards explorer) */
+	--fs-mega: clamp(3.1rem, 0.6rem + 9.6vw, 10.5rem);
+	--fs-giga: clamp(2.5rem, 1rem + 5.6vw, 6.25rem);
 
 	--lh-tight: 1.04;
 	--lh-snug: 1.2;
@@ -106,116 +118,129 @@
 	--ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 	--ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 	--ease-linear: linear;
+	--ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* needle overshoot */
+	--ease-drop: cubic-bezier(0.5, 0, 0.75, 0); /* gravity */
 
 	/* ---------- z ---------- */
 	--z-header: 50;
 	--z-banner: 80;
 	--z-toast: 90;
 
-	/* ---------- raw palette (do not use directly in components) ---------- */
-	--volt-300: #dcff86;
-	--volt-400: #c8ff3d; /* signature: the "after" colour */
-	--volt-500: #a6e01b;
-	--volt-800: #3b6e00;
-	--ion-300: #8be6ff;
-	--ion-400: #3dd6ff;
-	--ion-800: #006a8c;
-	--heat-400: #ff4d8d;
-	--heat-800: #b0174f;
-	--amber-400: #ffb23e;
-	--amber-800: #8a5100;
-	--green-400: #5be49b;
-	--green-800: #1f7a46;
+	/* ---------- heat ramp: the ONLY place colour means something (speed) ---------- */
+	--heat-0: #1e3448; /* cold */
+	--heat-1: #7a2e1f;
+	--heat-2: #e2401c; /* red */
+	--heat-3: #ff7a1a; /* orange */
+	--heat-4: #ffc15a; /* amber */
+	--heat-5: #fff3d6; /* white-hot */
+	--heat-ramp: linear-gradient(90deg, var(--heat-0), var(--heat-1) 22%, var(--heat-2) 45%, var(--heat-3) 64%, var(--heat-4) 84%, var(--heat-5));
+	--heat-ramp-hot: linear-gradient(90deg, var(--heat-2), var(--heat-3) 35%, var(--heat-4) 70%, var(--heat-5));
+
+	/* ---------- model identity: categorical, NEVER heat hues (heat = speed only) ----------
+	   Always paired with the model's shape glyph and name (src/lib/modelStyle.ts), so colour is
+	   never the only cue (colour-blind safe). Dark values >= 6.9:1 on bg-0..bg-3. */
+	--model-qwen38: #5ec8c2; /* teal */
+	--model-lfm25: #a99bff; /* violet */
+	--model-nemotron: #79a8e8; /* sky */
+	--model-saluki: #d79bd0; /* orchid */
+	--model-bonsai: #93c47d; /* moss */
 
 	/* ======================= DARK (default) ======================= */
 	color-scheme: dark;
-	--bg-0: #07080d; /* page */
-	--bg-1: #0c0e16; /* section band */
-	--bg-2: #121522; /* card */
-	--bg-3: #1a1e2f; /* inset, hover */
-	--bg-inv: #f2f5fb;
-	--line: #232840; /* hairline 1px, decorative */
-	--line-strong: #5f6890; /* input/control boundaries: >= 3:1 on bg-0..bg-3 (WCAG 1.4.11) */
-	--grid: rgb(140 160 220 / 0.055);
+	--bg-0: #050506; /* page */
+	--bg-1: #0b0b0d; /* raised band */
+	--bg-2: #131316; /* panel */
+	--bg-3: #1c1c21; /* inset, control, hover */
+	--bg-inv: #edeae3;
+	--line: #26262c; /* hairline 1px, decorative */
+	--line-strong: #77746d; /* control boundaries: >= 3.6:1 on bg-0..bg-3 (WCAG 1.4.11) */
+	--grid: rgb(237 234 227 / 0.045);
 
-	--text-hi: #f2f5fb; /* 18.3:1 on bg-0 */
-	--text: #c9d0e2; /* 13.0:1 on bg-0, 11.8:1 on bg-2 */
-	--text-mute: #939cb7; /* 7.3:1 on bg-0, 6.6:1 on bg-2, 6.0:1 on bg-3 */
-	--text-inv: #07080d;
+	--text-hi: #edeae3; /* 17.0:1 on bg-0 */
+	--text: #bdb9b1; /* 10.4:1 on bg-0 */
+	--text-mute: #8e8a83; /* 5.9:1 on bg-0, 5.4:1 on bg-2, 4.9:1 on bg-3 */
+	--text-inv: #050506;
 
-	--accent: var(--volt-400); /* fills: CTA, "after" bar */
-	--accent-hover: var(--volt-300);
-	--accent-ink: var(--volt-400); /* accent as text on page: 17.0:1 */
-	--on-accent: #0a0d03; /* text on accent fill: 16.6:1 */
-	--accent-soft: rgb(200 255 61 / 0.1);
-	--accent-glow: 0 0 0 1px rgb(200 255 61 / 0.32), 0 0 28px -4px rgb(200 255 61 / 0.35);
+	--accent: var(--heat-3); /* fills: "after", our engine */
+	--accent-hover: #ff9a4a;
+	--accent-ink: #ff8f3d; /* accent as text: 9.0:1 on bg-0 */
+	--on-accent: #0a0603; /* 7.7:1 on accent */
+	--accent-soft: rgb(255 122 26 / 0.12);
+	--accent-glow: 0 0 0 1px rgb(255 122 26 / 0.4), 0 0 32px -4px rgb(255 122 26 / 0.45);
 
-	--info: var(--ion-400); /* links, focus, "measured" data lines */
-	--info-ink: var(--ion-400); /* 11.7:1 */
-	--info-soft: rgb(61 214 255 / 0.1);
-	--warn: var(--amber-400);
-	--warn-ink: var(--amber-400); /* 11.1:1 */
-	--warn-soft: rgb(255 178 62 / 0.1);
-	--danger: var(--heat-400);
-	--danger-ink: #ff7aa8; /* 8.2:1 */
-	--danger-soft: rgb(255 77 141 / 0.11);
-	--ok: var(--green-400);
-	--ok-ink: var(--green-400); /* 12.4:1 */
-	--ok-soft: rgb(91 228 155 / 0.1);
+	--info: #a9c7d8; /* links, focus-adjacent info: pale steel */
+	--info-ink: #a9c7d8; /* 11.5:1 */
+	--info-soft: rgb(169 199 216 / 0.1);
+	--warn: #e3cf7a; /* estimates */
+	--warn-ink: #e3cf7a; /* 13.1:1 */
+	--warn-soft: rgb(227 207 122 / 0.1);
+	--danger: #ff6b6b;
+	--danger-ink: #ff8a8a; /* 9.0:1 */
+	--danger-soft: rgb(255 107 107 / 0.11);
+	--ok: #7fd99a;
+	--ok-ink: #7fd99a; /* 11.9:1 */
+	--ok-soft: rgb(127 217 154 / 0.1);
 
-	--before: #7f89a6; /* the "before" bar: deliberately quiet; 5.2:1 as text on bg-2 */
-	--before-soft: rgb(127 137 166 / 0.16);
+	--before: #7d8794; /* the "before" / upstream: cold steel; 5.6:1 as text on bg-0 */
+	--before-soft: rgb(125 135 148 / 0.16);
 
-	--focus: var(--ion-400);
-	--shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.5);
-	--shadow-2: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 12px 32px -12px rgb(0 0 0 / 0.7);
-	--scrim: rgb(4 5 9 / 0.72);
+	--focus: #edeae3;
+	--shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.6);
+	--shadow-2: 0 1px 0 rgb(255 255 255 / 0.04) inset, 0 18px 40px -16px rgb(0 0 0 / 0.8);
+	--scrim: rgb(3 3 4 / 0.75);
 }
 
 /* ======================= LIGHT ======================= */
 :root[data-theme='light'] {
 	color-scheme: light;
-	--bg-0: #f5f6f9;
-	--bg-1: #eceef3;
-	--bg-2: #ffffff;
-	--bg-3: #e8ebf1;
-	--bg-inv: #0b0d14;
-	--line: #dde1ea;
-	--line-strong: #7a8399; /* >= 3.1:1 on bg-0..bg-3 */
-	--grid: rgb(30 40 80 / 0.05);
+	--bg-0: #f4f2ee;
+	--bg-1: #ebe8e2;
+	--bg-2: #fbfaf8;
+	--bg-3: #e4e0d8;
+	--bg-inv: #050506;
+	--line: #d8d4cb;
+	--line-strong: #807b72; /* >= 3.1:1 on bg-0..bg-3 */
+	--grid: rgb(20 18 14 / 0.05);
 
-	--text-hi: #0a0c12; /* 18.1:1 on bg-0 */
-	--text: #2a3042; /* 12.1:1 */
-	--text-mute: #505971; /* 6.5:1 on bg-0 */
-	--text-inv: #f5f6f9;
+	--text-hi: #0b0a09; /* 17.7:1 on bg-0 */
+	--text: #2c2a26; /* 12.8:1 */
+	--text-mute: #5c5852; /* 6.3:1 on bg-0 */
+	--text-inv: #f4f2ee;
 
-	--accent: var(--volt-400);
-	--accent-hover: #d6ff6b;
-	--accent-ink: var(--volt-800); /* 5.7:1 on bg-0 */
-	--on-accent: #0a0d03;
-	--accent-soft: rgb(120 180 0 / 0.12);
-	--accent-glow: 0 0 0 1px rgb(59 110 0 / 0.35), 0 6px 22px -8px rgb(90 150 0 / 0.45);
+	--accent: #e2541a;
+	--accent-hover: #f06a2e;
+	--accent-ink: #a8380b; /* 5.8:1 on bg-0 */
+	--on-accent: #0a0603;
+	--accent-soft: rgb(226 84 26 / 0.1);
+	--accent-glow: 0 0 0 1px rgb(168 56 11 / 0.35), 0 8px 24px -10px rgb(226 84 26 / 0.5);
 
-	--info: var(--ion-800);
-	--info-ink: var(--ion-800); /* 5.6:1 */
-	--info-soft: rgb(0 106 140 / 0.09);
-	--warn: #c27400;
-	--warn-ink: var(--amber-800); /* 6.0:1 */
-	--warn-soft: rgb(194 116 0 / 0.1);
-	--danger: var(--heat-800);
-	--danger-ink: var(--heat-800); /* 6.3:1 */
-	--danger-soft: rgb(176 23 79 / 0.08);
-	--ok: var(--green-800);
-	--ok-ink: var(--green-800); /* 4.9:1 */
+	--info: #2d5870;
+	--info-ink: #2d5870; /* 6.9:1 */
+	--info-soft: rgb(45 88 112 / 0.09);
+	--warn: #8a6a00;
+	--warn-ink: #7a5d00; /* 5.5:1 */
+	--warn-soft: rgb(138 106 0 / 0.1);
+	--danger: #b42318;
+	--danger-ink: #b42318; /* 5.9:1 */
+	--danger-soft: rgb(180 35 24 / 0.08);
+	--ok: #1f7a46;
+	--ok-ink: #1a6b3d; /* 5.8:1 on bg-0, 5.3:1 on bg-1, 4.9:1 on bg-3 */
 	--ok-soft: rgb(31 122 70 / 0.09);
 
-	--before: #6a7390; /* 4.7:1 as text on bg-2 */
-	--before-soft: rgb(106 115 144 / 0.16);
+	--before: #5e6874; /* 5.4:1 as text on bg-2 */
 
-	--focus: var(--ion-800);
-	--shadow-1: 0 1px 2px rgb(16 24 40 / 0.06);
-	--shadow-2: 0 1px 2px rgb(16 24 40 / 0.05), 0 14px 34px -14px rgb(16 24 40 / 0.18);
-	--scrim: rgb(10 12 18 / 0.45);
+	/* model identity, light theme: >= 4.5:1 on bg-0 and bg-2 */
+	--model-qwen38: #13706b;
+	--model-lfm25: #5b48c9;
+	--model-nemotron: #2d5f9e;
+	--model-saluki: #8e3f86;
+	--model-bonsai: #356a24;
+	--before-soft: rgb(94 104 116 / 0.16);
+
+	--focus: #0b0a09;
+	--shadow-1: 0 1px 2px rgb(20 18 14 / 0.06);
+	--shadow-2: 0 1px 2px rgb(20 18 14 / 0.05), 0 14px 34px -14px rgb(20 18 14 / 0.2);
+	--scrim: rgb(11 10 9 / 0.45);
 }
 
 @media (prefers-reduced-motion: reduce) {

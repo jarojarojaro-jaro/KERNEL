@@ -86,10 +86,10 @@
 		bottom: 0.4rem;
 		width: 3px;
 		border-radius: 0 var(--r-xs) var(--r-xs) 0;
-		background: var(--accent);
+		background: var(--text-hi);
 	}
 	li a[aria-current='page'] :global(svg) {
-		color: var(--accent-ink);
+		color: var(--text-hi);
 	}
 	.machine {
 		display: grid;
@@ -110,7 +110,7 @@
 	}
 	.site {
 		margin-top: var(--sp-2);
-		color: var(--info-ink);
+		color: var(--text-hi);
 		text-decoration: underline;
 	}
 

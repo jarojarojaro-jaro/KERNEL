@@ -66,7 +66,7 @@
 			>
 		{/each}
 	</div>
-	<div id="scan-panel" role="tabpanel" aria-labelledby="scan-tab-{os}" class="panel stack">
+	<div id="scan-panel" role="tabpanel" aria-labelledby="scan-tab-{os}" class="tabpanel stack">
 		<div class="codeblock">
 			<div class="codeblock__head">
 				<span>{t.oneLiner} · {t.shell[os]}</span>
@@ -101,10 +101,10 @@
 		display: grid;
 		gap: var(--sp-4);
 	}
-	.panel {
+	.tabpanel {
 		--stack: var(--sp-4);
 	}
-	.panel pre {
+	.tabpanel pre {
 		white-space: pre-wrap;
 		word-break: break-all;
 	}

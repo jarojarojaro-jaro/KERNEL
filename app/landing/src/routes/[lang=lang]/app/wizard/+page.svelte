@@ -122,7 +122,7 @@
 	{/each}
 </ol>
 
-<section class="panel" aria-labelledby="step-h">
+<section class="step-panel" aria-labelledby="step-h">
 	<p class="step-index">{w.stepOf(step + 1, w.steps.length).toUpperCase()}</p>
 	<h2 id="step-h" class="h3" tabindex="-1" bind:this={stepHeading}>{w.steps[step]}</h2>
 
@@ -343,7 +343,7 @@
 		border-color: var(--line-strong);
 	}
 	.st[aria-current='step']::after {
-		background: var(--accent);
+		background: var(--text-hi);
 	}
 	.st.done {
 		color: var(--text);
@@ -359,19 +359,19 @@
 		font-size: var(--fs-xs);
 	}
 	.st[aria-current='step'] .dot {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: var(--on-accent);
+		background: var(--text-hi);
+		border-color: var(--text-hi);
+		color: var(--text-inv);
 	}
 	.st.done .dot {
 		color: var(--ok-ink);
 		border-color: var(--ok);
 	}
-	.panel {
+	.step-panel {
 		display: grid;
 		gap: var(--sp-5);
 	}
-	.panel > h2 {
+	.step-panel > h2 {
 		margin-top: calc(-1 * var(--sp-4));
 		outline-offset: 4px;
 	}
@@ -463,8 +463,8 @@
 		border-color: var(--line-strong);
 	}
 	.rec.sel {
-		border-color: var(--accent-ink);
-		box-shadow: var(--accent-glow);
+		border-color: var(--text-hi);
+		box-shadow: 0 0 0 1px var(--text-hi);
 	}
 	.rec:has(input:focus-visible) {
 		outline: 2px solid var(--focus);
@@ -482,7 +482,7 @@
 		width: 1.1rem;
 		height: 1.1rem;
 		margin: 0;
-		accent-color: var(--accent-ink);
+		accent-color: var(--text-hi);
 	}
 	.rec-name {
 		font-size: var(--fs-lg);

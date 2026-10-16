@@ -63,7 +63,7 @@
 		align-content: start;
 	}
 	.os.det {
-		border-color: color-mix(in srgb, var(--info-ink) 60%, var(--line));
+		border-color: var(--text-hi);
 	}
 	.between {
 		justify-content: space-between;

@@ -144,7 +144,7 @@
 		<p class="footer small mute">{c.footer}</p>
 	</section>
 
-	<aside class="card panel" aria-labelledby="ui-h">
+	<aside class="card ui-panel" aria-labelledby="ui-h">
 		<h2 id="ui-h" class="h3">{c.panelTitle}</h2>
 		<ol class="steps-list">
 			{#each c.panel as p, i (p)}
@@ -305,7 +305,7 @@
 	.footer {
 		text-align: center;
 	}
-	.panel {
+	.ui-panel {
 		display: grid;
 		gap: var(--sp-4);
 	}

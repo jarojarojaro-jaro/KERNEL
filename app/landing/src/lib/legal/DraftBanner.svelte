@@ -21,6 +21,8 @@
 <style>
 	.wrap {
 		white-space: normal;
+		border-radius: var(--r-md);
+		margin-top: var(--sp-2);
 	}
 	.draft {
 		margin-block-end: var(--sp-8);

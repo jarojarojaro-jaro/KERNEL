@@ -1,6 +1,193 @@
 {
 	"source": "~/qwen-opt/cloud/results/*/scorecard.json",
 	"cards": {
+		"5060ti-20261016": {
+			"dir": "5060ti-20261016",
+			"rows": [
+				{
+					"model": "qwen38-27b-q3",
+					"card": "RTX 5060 Ti 16GB (sm_120)",
+					"variant": "A0 typowa aplikacja",
+					"decode_tps_median": 28.07,
+					"decode_tps_min": 27.85,
+					"decode_tps_max": 28.1,
+					"tok_per_step": 1,
+					"prefill_tps": {
+						"pp512": 1048.2,
+						"pp4096": 1043.8
+					},
+					"ttft_ms_2k": 2421,
+					"vram_gb": 13.92,
+					"md5_status": "referencja upstream (plain)",
+					"n_runs": 36,
+					"rounds": 2,
+					"tok_per_word": {
+						"en": 1.1346153846153846,
+						"pl": 2.41025641025641
+					},
+					"flags": "llama-server -m X"
+				},
+				{
+					"model": "qwen38-27b-q3",
+					"card": "RTX 5060 Ti 16GB (sm_120)",
+					"variant": "A1 najlepsze flagi upstream",
+					"decode_tps_median": 37.32,
+					"decode_tps_min": 33.97,
+					"decode_tps_max": 42.84,
+					"tok_per_step": 2.55,
+					"prefill_tps": {
+						"pp512": 1040.8,
+						"pp4096": 1038.3
+					},
+					"ttft_ms_2k": 2690,
+					"vram_gb": 14.27,
+					"md5_status": "plain = upstream (A0 nie porównywane: inny KV)",
+					"n_runs": 36,
+					"rounds": 2,
+					"tok_per_word": {
+						"en": 1.1346153846153846,
+						"pl": 2.41025641025641
+					},
+					"flags": "-fit off -ngl 99 -t 8 -fa on -ctk/-ctv q8_0 -c 32768 + MTP n=4"
+				},
+				{
+					"model": "qwen38-27b-q3",
+					"card": "RTX 5060 Ti 16GB (sm_120)",
+					"variant": "A2 nasz silnik (fork + draft vocab)",
+					"decode_tps_median": 50.8,
+					"decode_tps_min": 48.24,
+					"decode_tps_max": 59.92,
+					"tok_per_step": 2.48,
+					"prefill_tps": {
+						"pp512": 1040.8,
+						"pp4096": 1035.9
+					},
+					"ttft_ms_2k": 2707,
+					"vram_gb": 14.47,
+					"md5_status": "plain ≠ A1 (DIFF-BUILD, łatki bez przełącznika)",
+					"n_runs": 72,
+					"rounds": 4,
+					"tok_per_word": {
+						"en": 1.1346153846153846,
+						"pl": 2.41025641025641
+					},
+					"flags": "A1 + --spec-draft-vocab 64k + iq4_xs MTP head"
+				},
+				{
+					"model": "qwen38-27b-q3",
+					"card": "RTX 5060 Ti 16GB (sm_120)",
+					"variant": "nasz profil NVIDIA (A2 + GATE_UP_Q8=0)",
+					"decode_tps_median": 51.66,
+					"decode_tps_min": 49.64,
+					"decode_tps_max": 59.88,
+					"tok_per_step": 2.48,
+					"prefill_tps": {
+						"pp512": 1031.6
+					},
+					"ttft_ms_2k": 2707,
+					"vram_gb": 14.47,
+					"md5_status": "= A2 (bitowo)",
+					"n_runs": 36,
+					"rounds": 2,
+					"tok_per_word": {
+						"en": 1.1346153846153846,
+						"pl": 2.41025641025641
+					},
+					"flags": "A2 + GGML_HIP_GATE_UP_Q8=0"
+				},
+				{
+					"model": "lfm25-24b-q4",
+					"card": "RTX 5060 Ti 16GB (sm_120)",
+					"variant": "A0 typowa aplikacja",
+					"decode_tps_median": 147.69,
+					"decode_tps_min": 146.53,
+					"decode_tps_max": 150.16,
+					"tok_per_step": 1,
+					"prefill_tps": {
+						"pp512": 4147.8,
+						"pp4096": 4220.5
+					},
+					"ttft_ms_2k": 547,
+					"vram_gb": 14.54,
+					"md5_status": "referencja upstream (plain)",
+					"n_runs": 36,
+					"rounds": 2,
+					"tok_per_word": {
+						"en": 1.1634615384615385,
+						"pl": 2.5
+					},
+					"flags": "llama-server -m X"
+				},
+				{
+					"model": "lfm25-24b-q4",
+					"card": "RTX 5060 Ti 16GB (sm_120)",
+					"variant": "A1 najlepsze flagi upstream",
+					"decode_tps_median": 144.47,
+					"decode_tps_min": 139.95,
+					"decode_tps_max": 146.6,
+					"tok_per_step": 1,
+					"prefill_tps": {
+						"pp512": 4162.3,
+						"pp4096": 4209.7
+					},
+					"ttft_ms_2k": 538,
+					"vram_gb": 14.18,
+					"md5_status": "plain = upstream (A0 nie porównywane: inny KV)",
+					"n_runs": 36,
+					"rounds": 2,
+					"tok_per_word": {
+						"en": 1.1634615384615385,
+						"pl": 2.5
+					},
+					"flags": "-fit off -ngl 99 -t 8 -fa on -ctk/-ctv q8_0 -c 32768"
+				},
+				{
+					"model": "lfm25-24b-q4",
+					"card": "RTX 5060 Ti 16GB (sm_120)",
+					"variant": "A2 nasz silnik",
+					"decode_tps_median": 190.99,
+					"decode_tps_min": 178.06,
+					"decode_tps_max": 197.21,
+					"tok_per_step": 1,
+					"prefill_tps": {
+						"pp512": 4146.1,
+						"pp4096": 4235.4
+					},
+					"ttft_ms_2k": 530,
+					"vram_gb": 14.19,
+					"md5_status": "plain ≠ A1 (DIFF-BUILD, łatki bez przełącznika)",
+					"n_runs": 72,
+					"rounds": 4,
+					"tok_per_word": {
+						"en": 1.1634615384615385,
+						"pl": 2.5
+					},
+					"flags": "= A1, binarka fork"
+				},
+				{
+					"model": "lfm25-24b-q4",
+					"card": "RTX 5060 Ti 16GB (sm_120)",
+					"variant": "nasz profil NVIDIA (A2 + GATE_UP_Q8=0 Q8_IDS=0)",
+					"decode_tps_median": 207.86,
+					"decode_tps_min": 206.69,
+					"decode_tps_max": 209.14,
+					"tok_per_step": 1,
+					"prefill_tps": {
+						"pp512": 4160.4
+					},
+					"ttft_ms_2k": 530,
+					"vram_gb": 14.19,
+					"md5_status": "= A2 (bitowo)",
+					"n_runs": 36,
+					"rounds": 2,
+					"tok_per_word": {
+						"en": 1.1634615384615385,
+						"pl": 2.5
+					},
+					"flags": "A2 + GGML_HIP_GATE_UP_Q8=0 GGML_HIP_Q8_IDS=0"
+				}
+			]
+		},
 		"3090-20261016": {
 			"dir": "3090-20261016",
 			"rows": [
@@ -21,7 +208,7 @@
 					"server_prefill_tps_2k": 4816,
 					"vram_gb": 19.34,
 					"md5_status": "reference (upstream defaults, different flags)",
-					"n_runs": 24
+					"n_runs": 36
 				},
 				{
 					"model": "lfm25-24b-q5",
@@ -40,26 +227,40 @@
 					"server_prefill_tps_2k": 4752,
 					"vram_gb": 17.51,
 					"md5_status": "reference",
-					"n_runs": 24
+					"n_runs": 36
 				},
 				{
 					"model": "lfm25-24b-q5",
 					"card": ".",
-					"variant": "A2",
-					"decode_tps_median": 249.3,
-					"decode_tps_min": 247.91,
-					"decode_tps_max": 251.7,
-					"ms_step": 4.01,
+					"variant": "A2p-t",
+					"decode_tps_median": 263.91,
+					"decode_tps_min": 262.97,
+					"decode_tps_max": 266.4,
+					"ms_step": 3.79,
 					"tok_step": 1,
 					"prefill_tps": {
 						"pp512": 5126,
 						"pp4096": 5163.9
 					},
-					"ttft_ms_2k": 447,
-					"server_prefill_tps_2k": 4824,
+					"ttft_ms_2k": 446,
+					"server_prefill_tps_2k": 4826,
 					"vram_gb": 17.51,
-					"md5_status": "plain greedy vs A1: DIFF-BUILD",
-					"n_runs": 24
+					"md5_status": "plain greedy vs A1: DIFF-BUILD (cause: multi-column MMVQ 0001/0002, Q4_K/Q5_K min term via q8_1 sums; build without it = upstream md5); profile = A2 bitwise",
+					"n_runs": 36
+				},
+				{
+					"model": "lfm25-24b-q5",
+					"card": ".",
+					"variant": "ollama-default",
+					"decode_tps_median": 180.47,
+					"decode_tps_min": 175.33,
+					"decode_tps_max": 182.09,
+					"prefill_tps": {},
+					"ttft_ms_2k": 306,
+					"server_prefill_tps_2k": 6314,
+					"vram_gb": 17.49,
+					"md5_status": "n/a (different engine/defaults)",
+					"n_runs": 12
 				},
 				{
 					"model": "qwen38-27b",
@@ -78,7 +279,7 @@
 					"server_prefill_tps_2k": 1210,
 					"vram_gb": 22.08,
 					"md5_status": "reference (upstream defaults, different flags)",
-					"n_runs": 24
+					"n_runs": 36
 				},
 				{
 					"model": "qwen38-27b",
@@ -97,7 +298,7 @@
 					"server_prefill_tps_2k": 1075,
 					"vram_gb": 19.19,
 					"md5_status": "reference",
-					"n_runs": 24
+					"n_runs": 36
 				},
 				{
 					"model": "qwen38-27b",
@@ -115,8 +316,352 @@
 					"ttft_ms_2k": 2395,
 					"server_prefill_tps_2k": 1039,
 					"vram_gb": 19.46,
-					"md5_status": "plain greedy vs A1: DIFF-BUILD; MTP+fork flags vs A2-safe: BIT-vs-SAFE",
-					"n_runs": 24
+					"md5_status": "plain greedy vs A1: DIFF-BUILD (multi-column MMVQ 0001/0002 + GDN prologue fusion 0013; MTP output = fork plain/greedy); profile = A2 bitwise",
+					"n_runs": 36
+				},
+				{
+					"model": "qwen38-27b",
+					"card": ".",
+					"variant": "ollama-default",
+					"decode_tps_median": 39.01,
+					"decode_tps_min": 38.9,
+					"decode_tps_max": 39.24,
+					"prefill_tps": {},
+					"ttft_ms_2k": 1826,
+					"server_prefill_tps_2k": 1192,
+					"vram_gb": 18.44,
+					"md5_status": "n/a (different engine/defaults)",
+					"n_runs": 12
+				}
+			]
+		},
+		"3060-20261016": {
+			"dir": "3060-20261016",
+			"rows": [
+				{
+					"model": "Underdog Saluki 27B IQ2-mix",
+					"card": "RTX 3060 12GB",
+					"variant": "A0",
+					"label": "saluki|A0",
+					"decode_tps_median": 22.14,
+					"decode_tps_min": 22.1,
+					"decode_tps_max": 22.17,
+					"prefill_tps": {
+						"pp512": 573.4,
+						"pp4096": 569.9
+					},
+					"ttft_ms_2k": 3607,
+					"ttft_prompt_tokens": 1935,
+					"vram_gb": 10.08,
+					"md5_status": "n/d (inne flagi)",
+					"n_runs": 36,
+					"n_rounds": 2
+				},
+				{
+					"model": "Underdog Saluki 27B IQ2-mix",
+					"card": "RTX 3060 12GB",
+					"variant": "A1",
+					"label": "saluki|A1b",
+					"decode_tps_median": 22.29,
+					"decode_tps_min": 22.26,
+					"decode_tps_max": 22.31,
+					"prefill_tps": {
+						"pp512": null,
+						"pp4096": 581
+					},
+					"ttft_ms_2k": 3611,
+					"ttft_prompt_tokens": 1935,
+					"vram_gb": 9.72,
+					"md5_status": "referencja 2784c7565658",
+					"n_runs": 36,
+					"n_rounds": 2
+				},
+				{
+					"model": "Underdog Saluki 27B IQ2-mix",
+					"card": "RTX 3060 12GB",
+					"variant": "A2t",
+					"label": "saluki|A2t",
+					"decode_tps_median": 23.35,
+					"decode_tps_min": 23.32,
+					"decode_tps_max": 23.38,
+					"prefill_tps": {
+						"pp512": null,
+						"pp4096": 567.7
+					},
+					"ttft_ms_2k": 3667,
+					"ttft_prompt_tokens": 1935,
+					"vram_gb": 9.72,
+					"md5_status": "różni się (8ceec4546180; łatki bez przełącznika, KLD = szum)",
+					"n_runs": 36,
+					"n_rounds": 2
+				},
+				{
+					"model": "Ternary Bonsai 2 27B",
+					"card": "RTX 3060 12GB",
+					"variant": "A0",
+					"label": "bonsai|prism-A0",
+					"decode_tps_median": 36.77,
+					"decode_tps_min": 36.65,
+					"decode_tps_max": 36.9,
+					"prefill_tps": {
+						"pp512": 606.4,
+						"pp4096": 600.8
+					},
+					"ttft_ms_2k": 3396,
+					"ttft_prompt_tokens": 1935,
+					"vram_gb": 10.09,
+					"md5_status": "n/d",
+					"n_runs": 36,
+					"n_rounds": 2
+				},
+				{
+					"model": "Ternary Bonsai 2 27B",
+					"card": "RTX 3060 12GB",
+					"variant": "A1",
+					"label": "bonsai|prism-A1-ptq1",
+					"decode_tps_median": 44.77,
+					"decode_tps_min": 44.74,
+					"decode_tps_max": 44.81,
+					"prefill_tps": {
+						"pp512": 602.1,
+						"pp4096": 591.5
+					},
+					"ttft_ms_2k": 3402,
+					"ttft_prompt_tokens": 1935,
+					"vram_gb": 6.79,
+					"md5_status": "89fbea6c621f (stabilne 2/2)",
+					"n_runs": 36,
+					"n_rounds": 2
+				},
+				{
+					"model": "Ternary Bonsai 2 27B",
+					"card": "RTX 3060 12GB",
+					"variant": "A1q",
+					"label": "bonsai|q2-A1b",
+					"decode_tps_median": 33.15,
+					"decode_tps_min": 33.15,
+					"decode_tps_max": 33.15,
+					"prefill_tps": {
+						"pp512": null,
+						"pp4096": 638.4
+					},
+					"ttft_ms_2k": 3256,
+					"ttft_prompt_tokens": 1935,
+					"vram_gb": 9.42,
+					"md5_status": "referencja 611c2b2b622f",
+					"n_runs": 36,
+					"n_rounds": 2
+				},
+				{
+					"model": "Ternary Bonsai 2 27B",
+					"card": "RTX 3060 12GB",
+					"variant": "A2t",
+					"label": "bonsai|q2-A2t",
+					"decode_tps_median": 35.51,
+					"decode_tps_min": 35.49,
+					"decode_tps_max": 35.54,
+					"prefill_tps": {
+						"pp512": null,
+						"pp4096": 622.2
+					},
+					"ttft_ms_2k": 3348,
+					"ttft_prompt_tokens": 1935,
+					"vram_gb": 9.4,
+					"md5_status": "różni się od A1q (7990b0ce044c; KLD = szum)",
+					"n_runs": 36,
+					"n_rounds": 2
+				}
+			]
+		},
+		"nemotron-3090-20261016": {
+			"dir": "nemotron-3090-20261016",
+			"rows": [
+				{
+					"model": "nemotron-3.5-bolt-74b-a9b",
+					"card": "3090",
+					"variant": "A0",
+					"decode_tps_median": 87.18,
+					"decode_tps_min": 86.54,
+					"decode_tps_max": 87.97,
+					"prefill_tps": {
+						"pp512": 1601.7,
+						"pp4096": 1565.9
+					},
+					"ttft_ms_2k": 1865,
+					"vram_gb": 22.03,
+					"md5_status": "reference (upstream defaults, different flags)",
+					"n_runs": 36,
+					"quant": "IQ2_XXS (unsloth GGUF; experts IQ2_XXS, mamba in/out NVFP4, attn/latent/head Q8_0)",
+					"context": 104704,
+					"kv_type": "f16",
+					"spec": "none",
+					"tok_per_step": 1,
+					"ms_step": 11.47,
+					"server_prefill_tps_2k": 1457,
+					"tg128_llama_bench": 87.3,
+					"flags": "-m only (upstream -fit default: 4 slots x 104704 ctx)",
+					"build": "upstream v0.7.0"
+				},
+				{
+					"model": "nemotron-3.5-bolt-74b-a9b",
+					"card": "3090",
+					"variant": "A1n",
+					"decode_tps_median": 86.79,
+					"decode_tps_min": 86.39,
+					"decode_tps_max": 87.51,
+					"prefill_tps": {
+						"pp512": 1605.4,
+						"pp4096": 1561.8
+					},
+					"ttft_ms_2k": 1849,
+					"vram_gb": 20.95,
+					"md5_status": "reference plain (94b0e175ac11, deterministic)",
+					"n_runs": 36,
+					"quant": "IQ2_XXS (unsloth GGUF; experts IQ2_XXS, mamba in/out NVFP4, attn/latent/head Q8_0)",
+					"context": 65536,
+					"kv_type": "q8_0",
+					"spec": "none",
+					"tok_per_step": 1,
+					"ms_step": 11.52,
+					"server_prefill_tps_2k": 1432,
+					"tg128_llama_bench": 86.8,
+					"flags": "-fit off -ngl 999 -fa on -ctk/-ctv q8_0 -c 65536 -np 1 -t 4",
+					"build": "upstream v0.7.0"
+				},
+				{
+					"model": "nemotron-3.5-bolt-74b-a9b",
+					"card": "3090",
+					"variant": "A1",
+					"decode_tps_median": 131.4,
+					"decode_tps_min": 107.25,
+					"decode_tps_max": 140.9,
+					"prefill_tps": {
+						"pp512": 1605.4,
+						"pp4096": 1561.8
+					},
+					"ttft_ms_2k": 2332,
+					"vram_gb": 23.06,
+					"md5_status": "reference spec (c9fe478dad04, deterministic)",
+					"n_runs": 36,
+					"quant": "IQ2_XXS (unsloth GGUF; experts IQ2_XXS, mamba in/out NVFP4, attn/latent/head Q8_0)",
+					"context": 65536,
+					"kv_type": "q8_0",
+					"spec": "draft-dflash n_max 5",
+					"tok_per_step": 3.76,
+					"ms_step": 28.55,
+					"server_prefill_tps_2k": 1075,
+					"tg128_llama_bench": 86.8,
+					"flags": "A1n + --spec-type draft-dflash -md dflash-...-NVFP4.gguf --spec-draft-n-max 5",
+					"build": "upstream v0.7.0"
+				},
+				{
+					"model": "nemotron-3.5-bolt-74b-a9b",
+					"card": "3090",
+					"variant": "A2n",
+					"decode_tps_median": 90.63,
+					"decode_tps_min": 90.44,
+					"decode_tps_max": 91.13,
+					"prefill_tps": {
+						"pp512": 1605,
+						"pp4096": 1563.4
+					},
+					"ttft_ms_2k": 1832,
+					"vram_gb": 20.96,
+					"md5_status": "DIFF-BUILD vs A1n (8610e16506b8 = fork-safe; deterministic)",
+					"n_runs": 36,
+					"quant": "IQ2_XXS (unsloth GGUF; experts IQ2_XXS, mamba in/out NVFP4, attn/latent/head Q8_0)",
+					"context": 65536,
+					"kv_type": "q8_0",
+					"spec": "none",
+					"tok_per_step": 1,
+					"ms_step": 11.03,
+					"server_prefill_tps_2k": 1444,
+					"tg128_llama_bench": 90.6,
+					"flags": "A1n flags",
+					"build": "fork cuda-3090-opt 3da7a02ec"
+				},
+				{
+					"model": "nemotron-3.5-bolt-74b-a9b",
+					"card": "3090",
+					"variant": "A2",
+					"decode_tps_median": 129.04,
+					"decode_tps_min": 114.27,
+					"decode_tps_max": 149.87,
+					"prefill_tps": {
+						"pp512": 1605,
+						"pp4096": 1563.4
+					},
+					"ttft_ms_2k": 2318,
+					"vram_gb": 23.08,
+					"md5_status": "DIFF-BUILD vs A1 (93e4dfe0728a = fork-safe; deterministic); KLD not measured",
+					"n_runs": 36,
+					"quant": "IQ2_XXS (unsloth GGUF; experts IQ2_XXS, mamba in/out NVFP4, attn/latent/head Q8_0)",
+					"context": 65536,
+					"kv_type": "q8_0",
+					"spec": "draft-dflash n_max 5",
+					"tok_per_step": 3.51,
+					"ms_step": 27.1,
+					"server_prefill_tps_2k": 1081,
+					"tg128_llama_bench": 90.6,
+					"flags": "A1 flags",
+					"build": "fork cuda-3090-opt 3da7a02ec"
+				},
+				{
+					"model": "nemotron-3.5-bolt-74b-a9b",
+					"card": "3090",
+					"variant": "A2-safe",
+					"decode_tps_median": 127.34,
+					"decode_tps_min": 113.21,
+					"decode_tps_max": 147.36,
+					"prefill_tps": {
+						"pp512": 1606.2,
+						"pp4096": 1562.5
+					},
+					"ttft_ms_2k": 2325,
+					"vram_gb": 23.07,
+					"md5_status": "= A2 (93e4dfe0728a)",
+					"n_runs": 36,
+					"quant": "IQ2_XXS (unsloth GGUF; experts IQ2_XXS, mamba in/out NVFP4, attn/latent/head Q8_0)",
+					"context": 65536,
+					"kv_type": "q8_0",
+					"spec": "draft-dflash n_max 5",
+					"tok_per_step": 3.51,
+					"ms_step": 27.46,
+					"server_prefill_tps_2k": 1077,
+					"tg128_llama_bench": 89.2,
+					"flags": "A1 flags",
+					"build": "fork, all 31 switches = 0"
+				},
+				{
+					"model": "nemotron-3.5-bolt-74b-a9b",
+					"card": "3090",
+					"variant": "tuned",
+					"decode_tps_median": 141.11,
+					"decode_tps_min": 112.18,
+					"decode_tps_max": 155.17,
+					"prefill_tps": {
+						"pp512": 1605,
+						"pp4096": 1563.4
+					},
+					"ttft_ms_2k": 2332,
+					"vram_gb": 23.08,
+					"md5_status": "plain d39055098907 / spec e7d2197fdffa: differs from A2 only through GGML_CUDA_TOPK_MOE_NP2 (=0 restores the A2 md5); N1_IQ2/IQ2_LUT bitwise neutral; KLD not measured",
+					"n_runs": 36,
+					"quant": "IQ2_XXS (unsloth GGUF; experts IQ2_XXS, mamba in/out NVFP4, attn/latent/head Q8_0)",
+					"context": 65536,
+					"kv_type": "q8_0",
+					"spec": "draft-dflash n_max 5",
+					"tok_per_step": 3.82,
+					"ms_step": 27.09,
+					"server_prefill_tps_2k": 1080,
+					"tg128_llama_bench": 90.6,
+					"flags": "A1 flags",
+					"build": "nemotron-3090 (fork + TOPK_MOE_NP2 + MMVQ_N1_IQ2; IQ2_LUT tested, opt-in)",
+					"long_context_tg64": {
+						"0": 91.4,
+						"32768": 79.9,
+						"65536": 69.4
+					}
 				}
 			]
 		}

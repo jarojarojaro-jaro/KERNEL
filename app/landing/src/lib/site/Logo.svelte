@@ -25,8 +25,9 @@
 		stroke: var(--accent-ink);
 	}
 	.word {
-		font-weight: var(--fw-semibold);
+		font-weight: 760;
+		font-stretch: 118%;
 		font-size: 1.125rem;
-		letter-spacing: -0.03em;
+		letter-spacing: -0.02em;
 	}
 </style>

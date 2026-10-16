@@ -1,6 +1,8 @@
 /*
- * Component layer. Depends only on tokens.css. Class names are flat and prefixed by role
- * so they survive the move into the Tauri app and the llama.cpp chat UI unchanged.
+ * Component layer (v2 „Białe ciepło”, design/REDESIGN.md). Depends only on tokens.css. Class names are
+ * flat and prefixed by role so they survive the move into the Tauri app and the llama.cpp chat UI.
+ * Heat (`--accent`, `--heat-*`) means speed and nothing else: buttons, selection, focus, tabs and
+ * badges are bone/ink; only speed values, "after" bars and the gauge redline glow.
  */
 
 /* ---------------- base ---------------- */
@@ -26,7 +28,6 @@ body {
 	font-family: var(--font-sans);
 	font-size: var(--fs-base);
 	line-height: var(--lh-body);
-	font-feature-settings: 'ss01', 'cv11';
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	text-rendering: optimizeLegibility;
@@ -42,7 +43,8 @@ h3,
 h4 {
 	color: var(--text-hi);
 	margin: 0;
-	font-weight: var(--fw-semibold);
+	font-weight: 650;
+	font-stretch: 104%;
 	line-height: var(--lh-snug);
 	letter-spacing: var(--tracking-tight);
 	text-wrap: balance;
@@ -52,12 +54,15 @@ p {
 	text-wrap: pretty;
 }
 a {
-	color: var(--info-ink);
+	color: var(--text-hi);
+	text-decoration-line: underline;
+	text-decoration-color: color-mix(in srgb, var(--text-hi) 38%, transparent);
 	text-decoration-thickness: 1px;
-	text-underline-offset: 0.18em;
+	text-underline-offset: 0.2em;
+	transition: text-decoration-color var(--dur-1) var(--ease-out);
 }
 a:hover {
-	text-decoration-thickness: 2px;
+	text-decoration-color: currentColor;
 }
 code,
 kbd,
@@ -67,8 +72,8 @@ pre {
 	font-size: 0.92em;
 }
 ::selection {
-	background: var(--accent);
-	color: var(--on-accent);
+	background: var(--text-hi);
+	color: var(--bg-0);
 }
 :focus-visible {
 	outline: 2px solid var(--focus);
@@ -113,10 +118,10 @@ aside {
 	left: var(--sp-4);
 	top: -10rem;
 	z-index: 100;
-	background: var(--accent);
-	color: var(--on-accent);
+	background: var(--text-hi);
+	color: var(--text-inv);
 	padding: var(--sp-2) var(--sp-4);
-	border-radius: var(--r-sm);
+	border-radius: var(--r-pill);
 	font-weight: var(--fw-semibold);
 	text-decoration: none;
 }
@@ -170,40 +175,49 @@ aside {
 	font-family: var(--font-mono);
 	font-size: var(--fs-2xs);
 	font-weight: var(--fw-medium);
-	letter-spacing: var(--tracking-overline);
+	font-stretch: 87.5%;
+	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	color: var(--text-mute);
 	display: inline-flex;
 	align-items: center;
-	gap: var(--sp-2);
+	gap: 0.6rem;
 }
 .overline::before {
 	content: '';
-	width: 0.9em;
+	width: 1.6rem;
 	height: 1px;
 	background: currentColor;
+	opacity: 0.6;
 }
+/* Emphasised overline: bone, not heat (heat only means speed). */
 .overline--accent {
-	color: var(--accent-ink);
+	color: var(--text-hi);
 }
 .display {
 	font-size: var(--fs-display);
-	line-height: var(--lh-tight);
+	line-height: 0.98;
 	letter-spacing: var(--tracking-display);
-	font-weight: var(--fw-semibold);
+	font-weight: 780;
+	font-stretch: 110%;
 }
 .h1 {
 	font-size: var(--fs-3xl);
-	line-height: 1.08;
-	letter-spacing: var(--tracking-display);
+	font-weight: 760;
+	font-stretch: 108%;
+	line-height: 1.02;
+	letter-spacing: -0.035em;
 }
 .h2 {
 	font-size: var(--fs-2xl);
-	line-height: 1.12;
+	font-weight: 700;
+	font-stretch: 106%;
+	line-height: 1.08;
 	letter-spacing: -0.03em;
 }
 .h3 {
 	font-size: var(--fs-lg);
+	letter-spacing: -0.015em;
 }
 .lead {
 	font-size: var(--fs-md);
@@ -219,7 +233,8 @@ aside {
 .num {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums slashed-zero;
-	letter-spacing: -0.01em;
+	font-stretch: 93.75%;
+	letter-spacing: -0.02em;
 }
 .prose {
 	max-width: 44rem;
@@ -248,9 +263,11 @@ aside {
 	padding: 0.1em 0.35em;
 	border-radius: var(--r-xs);
 	color: var(--text-hi);
+	font-size: 0.84em;
 }
 
 /* ---------------- buttons ---------------- */
+/* Pills. Primary = bone on ink (dark) / ink on bone (light), never heat. */
 .btn {
 	--btn-h: 2.75rem;
 	display: inline-flex;
@@ -259,10 +276,11 @@ aside {
 	gap: var(--sp-2);
 	min-height: var(--btn-h);
 	padding: 0 var(--sp-5);
-	border-radius: var(--r-sm);
+	border-radius: var(--r-pill);
 	border: 1px solid transparent;
 	font: inherit;
-	font-weight: var(--fw-semibold);
+	font-weight: 620;
+	font-stretch: 104%;
 	font-size: var(--fs-sm);
 	letter-spacing: -0.005em;
 	line-height: 1;
@@ -270,41 +288,48 @@ aside {
 	cursor: pointer;
 	user-select: none;
 	transition:
-		background-color var(--dur-1) var(--ease-out),
-		border-color var(--dur-1) var(--ease-out),
-		box-shadow var(--dur-2) var(--ease-out),
-		transform var(--dur-1) var(--ease-out);
+		background-color var(--dur-2) var(--ease-out),
+		border-color var(--dur-2) var(--ease-out),
+		color var(--dur-2) var(--ease-out),
+		box-shadow var(--dur-3) var(--ease-out),
+		transform var(--dur-2) var(--ease-out);
 }
 .btn:active {
-	transform: translateY(1px);
+	transform: scale(0.97);
 }
 .btn:disabled,
 .btn[aria-disabled='true'] {
-	opacity: 0.5;
+	opacity: 0.45;
 	cursor: not-allowed;
 	transform: none;
 }
 .btn--primary {
-	background: var(--accent);
-	color: var(--on-accent);
-	box-shadow: var(--accent-glow);
+	--btn-hover: #ffffff;
+	background: var(--text-hi);
+	color: var(--text-inv);
 }
-.btn--primary:hover {
-	background: var(--accent-hover);
+:root[data-theme='light'] .btn--primary {
+	--btn-hover: #2c2a26;
+}
+.btn--primary:hover:not(:disabled, [aria-disabled='true']) {
+	background: var(--btn-hover);
+	color: var(--text-inv);
+	box-shadow: 0 10px 34px -14px color-mix(in srgb, var(--text-hi) 55%, transparent);
 }
 .btn--secondary {
-	background: var(--bg-2);
+	background: transparent;
 	color: var(--text-hi);
 	border-color: var(--line-strong);
 }
-.btn--secondary:hover {
-	background: var(--bg-3);
+.btn--secondary:hover:not(:disabled, [aria-disabled='true']) {
+	border-color: var(--text-hi);
+	background: color-mix(in srgb, var(--text-hi) 5%, transparent);
 }
 .btn--ghost {
 	background: transparent;
 	color: var(--text-hi);
 }
-.btn--ghost:hover {
+.btn--ghost:hover:not(:disabled, [aria-disabled='true']) {
 	background: var(--bg-3);
 }
 .btn--lg {
@@ -314,38 +339,45 @@ aside {
 }
 .btn--sm {
 	--btn-h: 2.25rem;
-	padding: 0 var(--sp-3);
+	padding: 0 var(--sp-4);
 	font-size: var(--fs-xs);
 }
 .btn--block {
 	width: 100%;
 }
 .btn .arrow {
-	transition: transform var(--dur-2) var(--ease-out);
+	transition: transform var(--dur-3) var(--ease-out);
 }
 .btn:hover .arrow {
-	transform: translateX(3px);
+	transform: translateX(4px);
 }
 .icon-btn {
 	display: inline-grid;
 	place-items: center;
 	width: 2.5rem;
 	height: 2.5rem;
-	border-radius: var(--r-sm);
+	border-radius: var(--r-pill);
 	border: 1px solid var(--line);
 	background: transparent;
 	color: var(--text-hi);
 	cursor: pointer;
+	transition:
+		background-color var(--dur-1) var(--ease-out),
+		border-color var(--dur-1) var(--ease-out);
 }
 .icon-btn:hover {
 	background: var(--bg-3);
+	border-color: var(--line-strong);
 }
 
 /* ---------------- cards / frames ---------------- */
 .card {
-	background: var(--bg-2);
+	position: relative;
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--text-hi) 2.5%, transparent), transparent 45%),
+		var(--bg-2);
 	border: 1px solid var(--line);
-	border-radius: var(--r-lg);
+	border-radius: var(--r-xl);
 	padding: var(--sp-6);
 	box-shadow: var(--shadow-1);
 }
@@ -356,67 +388,71 @@ aside {
 .card--interactive {
 	transition:
 		border-color var(--dur-2) var(--ease-out),
-		transform var(--dur-2) var(--ease-out);
+		background-color var(--dur-2) var(--ease-out),
+		transform var(--dur-3) var(--ease-out);
 }
 .card--interactive:hover {
 	border-color: var(--line-strong);
 }
-/* HUD frame: corner brackets, the REACTOR card border refined */
+/* Instrument frame: hairline box with two corner ticks (bone by default; `--hud-c` for status). */
 .hud {
 	position: relative;
 	border: 1px solid var(--line);
-	border-radius: var(--r-md);
+	border-radius: var(--r-lg);
 	background: var(--bg-2);
 }
 .hud::before,
 .hud::after {
 	content: '';
 	position: absolute;
-	width: 12px;
-	height: 12px;
-	border-color: var(--hud-c, var(--accent-ink));
+	width: 14px;
+	height: 14px;
+	border-color: var(--hud-c, var(--line-strong));
 	border-style: solid;
 	pointer-events: none;
 }
 .hud::before {
 	top: -1px;
 	left: -1px;
-	border-width: 2px 0 0 2px;
-	border-top-left-radius: var(--r-md);
+	border-width: 1px 0 0 1px;
+	border-top-left-radius: var(--r-lg);
 }
 .hud::after {
 	bottom: -1px;
 	right: -1px;
-	border-width: 0 2px 2px 0;
-	border-bottom-right-radius: var(--r-md);
+	border-width: 0 1px 1px 0;
+	border-bottom-right-radius: var(--r-lg);
 }
 
 /* ---------------- badges ---------------- */
 .badge {
 	display: inline-flex;
 	align-items: center;
-	gap: 0.4em;
-	padding: 0.2em 0.6em;
-	border-radius: var(--r-xs);
+	gap: 0.45em;
+	padding: 0.22em 0.7em;
+	border-radius: var(--r-pill);
 	font-family: var(--font-mono);
 	font-size: var(--fs-2xs);
 	font-weight: var(--fw-medium);
+	font-stretch: 87.5%;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	line-height: 1.5;
 	max-width: 100%;
-	border: 1px solid currentColor;
+	border: 1px solid color-mix(in srgb, currentColor 55%, transparent);
 }
 .badge::before {
 	content: '';
-	width: 0.5em;
-	height: 0.5em;
+	flex: none;
+	width: 0.45em;
+	height: 0.45em;
 	border-radius: 50%;
 	background: currentColor;
 }
+/* Measured = bone: a fact, not a speed. */
 .badge--measured {
-	color: var(--accent-ink);
-	background: var(--accent-soft);
+	color: var(--text-hi);
+	background: color-mix(in srgb, var(--text-hi) 7%, transparent);
 }
 .badge--estimate {
 	color: var(--warn-ink);
@@ -462,8 +498,8 @@ aside {
 	gap: var(--sp-3);
 	align-items: start;
 	padding: var(--sp-4) var(--sp-5);
-	border-radius: var(--r-md);
-	border: 1px solid var(--n-c, var(--line-strong));
+	border-radius: var(--r-lg);
+	border: 1px solid color-mix(in srgb, var(--n-c, var(--line-strong)) 50%, var(--line));
 	background: var(--n-bg, var(--bg-2));
 	color: var(--text);
 	font-size: var(--fs-sm);
@@ -580,7 +616,7 @@ aside {
 	width: 1.125rem;
 	height: 1.125rem;
 	margin: 0.15rem 0 0;
-	accent-color: var(--accent-ink);
+	accent-color: var(--text-hi);
 }
 
 /* segmented control (radio group) */
@@ -589,7 +625,7 @@ aside {
 	padding: 3px;
 	gap: 3px;
 	border: 1px solid var(--line);
-	border-radius: var(--r-sm);
+	border-radius: var(--r-pill);
 	background: var(--bg-1);
 }
 .segmented label {
@@ -604,16 +640,18 @@ aside {
 }
 .segmented span {
 	display: block;
-	padding: 0.4rem 0.8rem;
-	border-radius: 4px;
+	padding: 0.4rem 0.9rem;
+	border-radius: var(--r-pill);
 	font-size: var(--fs-sm);
 	font-weight: var(--fw-medium);
 	color: var(--text-mute);
+	transition:
+		background-color var(--dur-2) var(--ease-out),
+		color var(--dur-2) var(--ease-out);
 }
 .segmented input:checked + span {
-	background: var(--bg-3);
-	color: var(--text-hi);
-	box-shadow: var(--shadow-1);
+	background: var(--text-hi);
+	color: var(--text-inv);
 }
 .segmented input:focus-visible + span {
 	outline: 2px solid var(--focus);
@@ -654,19 +692,23 @@ aside {
 		background-color var(--dur-2) var(--ease-out);
 }
 .switch input:checked {
-	background: var(--accent);
-	border-color: var(--accent);
+	background: var(--text-hi);
+	border-color: var(--text-hi);
 }
 .switch input:checked::after {
 	transform: translateX(1rem);
-	background: var(--on-accent);
+	background: var(--bg-0);
+}
+.switch input:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
 }
 
 /* ---------------- data ---------------- */
 .table-wrap {
 	overflow-x: auto;
 	border: 1px solid var(--line);
-	border-radius: var(--r-lg);
+	border-radius: var(--r-xl);
 	background: var(--bg-2);
 }
 .table {
@@ -691,6 +733,7 @@ aside {
 	font-family: var(--font-mono);
 	font-size: var(--fs-2xs);
 	font-weight: var(--fw-medium);
+	font-stretch: 87.5%;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 	color: var(--text-mute);
@@ -718,8 +761,9 @@ aside {
 	font-variant-numeric: tabular-nums slashed-zero;
 	font-size: var(--fs-2xl);
 	font-weight: var(--fw-medium);
+	font-stretch: 87.5%;
 	color: var(--text-hi);
-	letter-spacing: -0.03em;
+	letter-spacing: -0.04em;
 	line-height: 1;
 }
 .stat__unit {
@@ -733,20 +777,24 @@ aside {
 	color: var(--text-mute);
 }
 
-/* horizontal bar used for before -> after */
+/* Horizontal bar for before -> after. The default fill is heat: bars only ever show speed. */
 .bar {
 	--v: 0.5;
+	--bar-heat: var(--heat-ramp-hot);
 	height: 0.75rem;
-	border-radius: var(--r-xs);
+	border-radius: var(--r-pill);
 	background: var(--bg-3);
 	overflow: hidden;
 	position: relative;
+}
+:root[data-theme='light'] .bar {
+	--bar-heat: linear-gradient(90deg, var(--heat-2), var(--heat-3) 60%, var(--heat-4));
 }
 .bar > i {
 	position: absolute;
 	inset: 0 auto 0 0;
 	width: calc(var(--v) * 100%);
-	background: var(--bar-c, var(--accent));
+	background: var(--bar-c, var(--bar-heat));
 	border-radius: inherit;
 	transition: width var(--dur-4) var(--ease-out);
 }
@@ -765,7 +813,7 @@ aside {
 .codeblock {
 	position: relative;
 	border: 1px solid var(--line);
-	border-radius: var(--r-md);
+	border-radius: var(--r-lg);
 	background: var(--bg-1);
 	overflow: hidden;
 }
@@ -778,6 +826,7 @@ aside {
 	border-bottom: 1px solid var(--line);
 	font-family: var(--font-mono);
 	font-size: var(--fs-2xs);
+	font-stretch: 87.5%;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: var(--text-mute);
@@ -787,11 +836,11 @@ aside {
 	padding: var(--sp-4);
 	overflow-x: auto;
 	color: var(--text-hi);
-	font-size: var(--fs-sm);
+	font-size: 0.8125rem;
 	line-height: 1.6;
 }
 .codeblock pre .prompt {
-	color: var(--accent-ink);
+	color: var(--text-mute);
 	user-select: none;
 }
 kbd,
@@ -829,7 +878,7 @@ kbd,
 }
 .tabs [role='tab'][aria-selected='true'] {
 	color: var(--text-hi);
-	border-bottom-color: var(--accent);
+	border-bottom-color: var(--text-hi);
 }
 .tabs [role='tab']:hover {
 	color: var(--text-hi);
@@ -863,7 +912,7 @@ kbd,
 }
 .disclosure[open] > summary::after {
 	transform: rotate(45deg);
-	color: var(--accent-ink);
+	color: var(--text-hi);
 }
 .disclosure > .disclosure__body {
 	padding-bottom: var(--sp-5);
@@ -880,16 +929,19 @@ kbd,
 .step-index {
 	font-family: var(--font-mono);
 	font-size: var(--fs-xs);
-	color: var(--accent-ink);
+	font-stretch: 87.5%;
+	color: var(--text-mute);
 	letter-spacing: 0.1em;
 }
 
 /* ---------------- source footnote ---------------- */
 .source {
-	font-size: var(--fs-xs);
+	font-size: var(--fs-2xs);
 	color: var(--text-mute);
 	font-family: var(--font-mono);
-	line-height: 1.5;
+	font-stretch: 87.5%;
+	line-height: 1.6;
+	overflow-wrap: anywhere;
 }
 .source a {
 	color: inherit;

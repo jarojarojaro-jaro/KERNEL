@@ -299,7 +299,7 @@ console.log(data.choices[0].message.content);`
 	}
 	.ep {
 		font-size: var(--fs-md);
-		color: var(--accent-ink);
+		color: var(--text-hi);
 		overflow-wrap: anywhere;
 	}
 	td code {

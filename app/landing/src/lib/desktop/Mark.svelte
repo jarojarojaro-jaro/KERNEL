@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
 	 * Tacho mark, inlined from KERNEL/app/design/logo/mark.svg. The redline and needle use
-	 * `--accent-ink` instead of the file's fixed lime so the mark keeps its contrast on light surfaces.
+	 * `--accent-ink` instead of the file's fixed heat orange so the mark keeps its contrast on light surfaces.
 	 */
 	let { size = 22 }: { size?: number } = $props();
 </script>

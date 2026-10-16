@@ -1,0 +1,1824 @@
+{
+	"source": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md",
+	"generated": "scripts/cards.ts (bun scripts/sync-results.ts)",
+	"method": {
+		"decode": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:6"
+	},
+	"correctness": {
+		"md5Diff": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:142",
+		"tbo3090": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:140",
+		"tbo5060": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:141",
+		"quality": {
+			"saluki": {
+				"ours": {
+					"v": 0.00065,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:145"
+				},
+				"noise": {
+					"v": 0.00061,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:145"
+				}
+			},
+			"bonsai": {
+				"ours": {
+					"v": 0.00032,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:145"
+				},
+				"noise": {
+					"v": 0.00021,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:145"
+				}
+			}
+		}
+	},
+	"lfmFormats5060": [
+		{
+			"file": "QAD-Q4_0 (oficjalny Liquid)",
+			"gb": {
+				"v": 13.58,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:103"
+			},
+			"up": {
+				"v": 164.5,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:103"
+			},
+			"ours": {
+				"v": 226.8,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:103"
+			},
+			"kld": {
+				"v": 0.203,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:103"
+			},
+			"md5Same": true
+		},
+		{
+			"file": "NVFP4 (społeczność)",
+			"gb": {
+				"v": 13.58,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:104"
+			},
+			"up": {
+				"v": 156,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:104"
+			},
+			"ours": {
+				"v": 198,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:104"
+			},
+			"kld": {
+				"v": 1.183,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:104"
+			},
+			"md5Same": true
+		},
+		{
+			"file": "Q5_K_M z ekspertami w RAM",
+			"gb": {
+				"v": 17.03,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:105"
+			},
+			"up": null,
+			"ours": {
+				"v": 120.9,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:105"
+			},
+			"kld": {
+				"v": 0.124,
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:105"
+			},
+			"md5Same": null
+		}
+	],
+	"checks": [
+		{
+			"card": "rtx-3090",
+			"model": "qwen38",
+			"variant": "a0",
+			"sheet": 38.9,
+			"scorecard": 39.01,
+			"file": "qwen-opt/cloud/results/3090-20261016/scorecard.json"
+		}
+	],
+	"cards": [
+		{
+			"id": "rtx-3090",
+			"heading": "RTX 3090 24 GB (Ampere sm_86)",
+			"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:17",
+			"scorecard": "3090-20261016",
+			"hw": {
+				"powerW": {
+					"v": 300,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:18"
+				},
+				"bwGBs": {
+					"v": 936,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:18"
+				},
+				"pcie": "gen3 x16",
+				"line": "limit mocy 300 W (host), PCIe gen3 x16, pamięć 936 GB/s, CPU hosta i7-4790 (2014), sterownik 615.71.09, CUDA 12.8.",
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:18"
+			},
+			"runs": [
+				{
+					"model": "qwen38",
+					"title": "Qwen3.8-27B UD-Q4_K_XL (17.6 GB)",
+					"quant": "UD-Q4_K_XL",
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:25",
+					"variants": [
+						{
+							"key": "a0",
+							"decode": {
+								"v": 38.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:28",
+								"paren": 39
+							},
+							"msStep": {
+								"v": 25.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:29"
+							},
+							"tokStep": {
+								"v": 1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:30"
+							},
+							"pp512": {
+								"v": 1410,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:31"
+							},
+							"pp4096": {
+								"v": 1396,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:31"
+							},
+							"ttft": {
+								"v": 2.14,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:33",
+								"unit": "s",
+								"paren": 1.83
+							},
+							"tg128": {
+								"v": 39.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:34"
+							},
+							"words500en": {
+								"v": 15,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:35",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 34.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:35",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 22.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:36",
+								"unit": "GB",
+								"paren": 18.4
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3090-20261016/scorecard.json",
+								"variant": "A0",
+								"decode": 39.01
+							}
+						},
+						{
+							"key": "a1",
+							"decode": {
+								"v": 63.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:28",
+								"lo": 49,
+								"hi": 70
+							},
+							"msStep": {
+								"v": 51.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:29"
+							},
+							"tokStep": {
+								"v": 3.32,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:30"
+							},
+							"pp512": {
+								"v": 1404,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:31"
+							},
+							"pp4096": {
+								"v": 1384,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:31"
+							},
+							"ttft": {
+								"v": 2.29,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:33",
+								"unit": "s"
+							},
+							"tg128": {
+								"v": 39,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:34"
+							},
+							"words500en": {
+								"v": 9.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:35",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 21.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:35",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 19.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:36",
+								"unit": "GB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3090-20261016/scorecard.json",
+								"variant": "A1",
+								"decode": 63.3
+							}
+						},
+						{
+							"key": "a2",
+							"decode": {
+								"v": 78,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:28",
+								"lo": 65,
+								"hi": 88
+							},
+							"msStep": {
+								"v": 38.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:29"
+							},
+							"tokStep": {
+								"v": 3.31,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:30"
+							},
+							"pp512": {
+								"v": 1378,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:31"
+							},
+							"pp4096": {
+								"v": 1363,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:31"
+							},
+							"ttft": {
+								"v": 2.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:33",
+								"unit": "s"
+							},
+							"tg128": {
+								"v": 39.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:34"
+							},
+							"words500en": {
+								"v": 7.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:35",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 17.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:35",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 19.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:36",
+								"unit": "GB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3090-20261016/scorecard.json",
+								"variant": "A2",
+								"decode": 77.96
+							}
+						}
+					],
+					"before": "a0",
+					"flags": "a1",
+					"ours": "a2",
+					"file": {
+						"v": 17.6,
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:25",
+						"unit": "GB"
+					},
+					"longCtx": {
+						"depths": [
+							0,
+							8192,
+							32768,
+							65536
+						],
+						"up": [
+							{
+								"v": 38.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54"
+							},
+							{
+								"v": 37,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54"
+							},
+							{
+								"v": 31.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54"
+							},
+							{
+								"v": 26.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54"
+							}
+						],
+						"ours": [
+							{
+								"v": 39.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54"
+							},
+							{
+								"v": 37.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54"
+							},
+							{
+								"v": 32.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54"
+							},
+							{
+								"v": 27.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54"
+							}
+						],
+						"kv": "KV q4_0"
+					},
+					"kernels": {
+						"up": {
+							"v": 1956,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:60"
+						},
+						"ours": {
+							"v": 795,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:60"
+						},
+						"gpuMs": [
+							{
+								"v": 24.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:60"
+							},
+							{
+								"v": 24.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:60"
+							}
+						],
+						"gapMs": [
+							{
+								"v": 3.83,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:60"
+							},
+							{
+								"v": 2.55,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:60"
+							}
+						]
+					},
+					"gain": {
+						"flags": {
+							"v": 1.62,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:151"
+						},
+						"engine": {
+							"v": 1.23,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:151"
+						},
+						"total": {
+							"v": 2,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:151"
+						},
+						"text": [
+							"×1.62 (MTP)",
+							"×1.23 (słownik draftu + IQ4_XS ×1.12, kod forka ×1.10)",
+							"×2.00"
+						],
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:151"
+					}
+				},
+				{
+					"model": "lfm25",
+					"title": "LFM2.5-24B-A2B Q5_K_M (17.0 GB)",
+					"quant": "Q5_K_M",
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:38",
+					"variants": [
+						{
+							"key": "a0",
+							"decode": {
+								"v": 180.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:41",
+								"lo": 179,
+								"hi": 184,
+								"paren": 180.5
+							},
+							"msStep": {
+								"v": 5.55,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:42"
+							},
+							"pp512": {
+								"v": 5168,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:43"
+							},
+							"pp4096": {
+								"v": 5168,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:43"
+							},
+							"ttft": {
+								"v": 0.46,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:44",
+								"unit": "s",
+								"paren": 0.31
+							},
+							"tg128": {
+								"v": 241.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:45"
+							},
+							"words500en": {
+								"v": 3.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:46",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 7.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:46",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 19.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:47",
+								"unit": "GB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3090-20261016/scorecard.json",
+								"variant": "A0",
+								"decode": 180.2
+							}
+						},
+						{
+							"key": "a1",
+							"decode": {
+								"v": 176,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:41"
+							},
+							"msStep": {
+								"v": 5.68,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:42"
+							},
+							"pp512": {
+								"v": 5113,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:43"
+							},
+							"pp4096": {
+								"v": 5135,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:43"
+							},
+							"ttft": {
+								"v": 0.45,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:44",
+								"unit": "s"
+							},
+							"tg128": {
+								"v": 236.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:45"
+							},
+							"words500en": {
+								"v": 3.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:46",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 7.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:46",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 17.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:47",
+								"unit": "GB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3090-20261016/scorecard.json",
+								"variant": "A1",
+								"decode": 175.99
+							}
+						},
+						{
+							"key": "profile",
+							"decode": {
+								"v": 263.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:41",
+								"lo": 263,
+								"hi": 266
+							},
+							"msStep": {
+								"v": 3.79,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:42"
+							},
+							"pp512": {
+								"v": 5126,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:43"
+							},
+							"pp4096": {
+								"v": 5164,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:43"
+							},
+							"ttft": {
+								"v": 0.45,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:44",
+								"unit": "s"
+							},
+							"tg128": {
+								"v": 284.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:45"
+							},
+							"words500en": {
+								"v": 2.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:46",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 5.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:46",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 17.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:47",
+								"unit": "GB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3090-20261016/scorecard.json",
+								"variant": "A2p-t",
+								"decode": 263.91
+							}
+						}
+					],
+					"before": "a0",
+					"flags": "a1",
+					"ours": "profile",
+					"file": {
+						"v": 17,
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:38",
+						"unit": "GB"
+					},
+					"longCtx": {
+						"depths": [
+							0,
+							8192,
+							32768,
+							65536
+						],
+						"up": [
+							{
+								"v": 234.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:55"
+							},
+							{
+								"v": 218.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:55"
+							},
+							{
+								"v": 178.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:55"
+							},
+							{
+								"v": 140.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:55"
+							}
+						],
+						"ours": [
+							{
+								"v": 251.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:55"
+							},
+							{
+								"v": 237,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:55"
+							},
+							{
+								"v": 190.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:55"
+							},
+							{
+								"v": 147.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:55"
+							}
+						],
+						"kv": "KV q8_0"
+					},
+					"kernels": {
+						"up": {
+							"v": 908,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:61"
+						},
+						"ours": {
+							"v": 357,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:61"
+						},
+						"gpuMs": [
+							{
+								"v": 3.95,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:61"
+							},
+							{
+								"v": 3.66,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:61"
+							}
+						],
+						"gapMs": [
+							{
+								"v": 2.22,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:61"
+							},
+							{
+								"v": 1.85,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:61"
+							}
+						]
+					},
+					"gain": {
+						"flags": {
+							"v": 0.98,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:152"
+						},
+						"engine": {
+							"v": 1.5,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:152"
+						},
+						"total": {
+							"v": 1.46,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:152"
+						},
+						"text": [
+							"×0.98",
+							"×1.50 (sampler/host ×1.42, profil Ampere ×1.06)",
+							"×1.46"
+						],
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:152"
+					}
+				},
+				{
+					"model": "nemotron",
+					"title": "Nemotron 3.5 Bolt 74B-A9B IQ2_XXS",
+					"quant": "IQ2_XXS",
+					"src": "KERNEL/product/research/14-nemotron-3090.md:214",
+					"variants": [
+						{
+							"key": "a0",
+							"decode": {
+								"v": 87.2,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:218",
+								"lo": 87,
+								"hi": 88
+							},
+							"pp512": {
+								"v": 1602,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:219"
+							},
+							"pp4096": {
+								"v": 1566,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:219"
+							},
+							"ttft": {
+								"v": 1.87,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:220",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 6.7,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:221",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 15.4,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:222",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 22,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:224",
+								"unit": "GB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/nemotron-3090-20261016/scorecard.json",
+								"variant": "A0",
+								"decode": 87.18
+							}
+						},
+						{
+							"key": "a1",
+							"decode": {
+								"v": 131.4,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:218",
+								"lo": 107,
+								"hi": 141
+							},
+							"pp512": {
+								"v": 1605,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:219"
+							},
+							"pp4096": {
+								"v": 1562,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:219"
+							},
+							"ttft": {
+								"v": 2.33,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:220",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 4.5,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:221",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 10.2,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:222",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 23.1,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:224",
+								"unit": "GB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/nemotron-3090-20261016/scorecard.json",
+								"variant": "A1",
+								"decode": 131.4
+							}
+						},
+						{
+							"key": "ours",
+							"decode": {
+								"v": 141.1,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:218",
+								"lo": 112,
+								"hi": 155
+							},
+							"pp512": {
+								"v": 1605,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:219"
+							},
+							"pp4096": {
+								"v": 1563,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:219"
+							},
+							"ttft": {
+								"v": 2.33,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:220",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 4.1,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:221",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 9.5,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:222",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 23.1,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:224",
+								"unit": "GB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/nemotron-3090-20261016/scorecard.json",
+								"variant": "tuned",
+								"decode": 141.11
+							}
+						}
+					],
+					"before": "a0",
+					"flags": "a1",
+					"ours": "ours",
+					"file": {
+						"v": 22.02,
+						"src": "KERNEL/product/research/14-nemotron-3090.md:27",
+						"unit": "GB"
+					},
+					"gain": {
+						"flags": {
+							"v": 1.51,
+							"src": "KERNEL/product/research/14-nemotron-3090.md:230"
+						},
+						"engine": {
+							"v": 1.07,
+							"src": "KERNEL/product/research/14-nemotron-3090.md:230"
+						},
+						"total": {
+							"v": 1.62,
+							"src": "KERNEL/product/research/14-nemotron-3090.md:228"
+						},
+						"text": [
+							"×1.51 (DFlash)",
+							"×1.07 (łatki)",
+							"×1.62"
+						],
+						"src": "KERNEL/product/research/14-nemotron-3090.md:230"
+					},
+					"longCtx": {
+						"depths": [
+							0,
+							32768,
+							65536
+						],
+						"up": [
+							{
+								"v": 84.6,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:95"
+							},
+							{
+								"v": 74.6,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:95"
+							},
+							{
+								"v": 65.8,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:95"
+							}
+						],
+						"ours": [
+							{
+								"v": 91.4,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:96"
+							},
+							{
+								"v": 79.9,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:96"
+							},
+							{
+								"v": 69.4,
+								"src": "KERNEL/product/research/14-nemotron-3090.md:96"
+							}
+						],
+						"kv": "KV q8_0"
+					}
+				}
+			]
+		},
+		{
+			"id": "rtx-5060-ti-16",
+			"heading": "RTX 5060 Ti 16 GB (Blackwell sm_120)",
+			"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:63",
+			"scorecard": "5060ti-20261016",
+			"hw": {
+				"powerW": {
+					"v": 180,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:64"
+				},
+				"bwGBs": {
+					"v": 448,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:64"
+				},
+				"pcie": "gen4 x8",
+				"line": "180 W, PCIe gen4 x8, GDDR7 448 GB/s, kontener z limitem 7.68 CPU (EPYC 7502), sterownik 580.173.02.",
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:64"
+			},
+			"runs": [
+				{
+					"model": "qwen38",
+					"title": "Qwen3.8-27B UD-Q3_K_XL (13.15 GB; Q4 się nie mieści)",
+					"quant": "UD-Q3_K_XL",
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:72",
+					"variants": [
+						{
+							"key": "a0",
+							"decode": {
+								"v": 28.07,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:75",
+								"lo": 27.9,
+								"hi": 28.1
+							},
+							"msStep": {
+								"v": 35.66,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:76"
+							},
+							"tokStep": {
+								"v": 1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:77"
+							},
+							"pp512": {
+								"v": 1048,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:78"
+							},
+							"pp4096": {
+								"v": 1044,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:78"
+							},
+							"ttft": {
+								"v": 2.42,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:79",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 20.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:80",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 42.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:80",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 13.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:81",
+								"unit": "GiB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/5060ti-20261016/scorecard.json",
+								"variant": "A0 typowa aplikacja",
+								"decode": 28.07
+							}
+						},
+						{
+							"key": "a1",
+							"decode": {
+								"v": 37.32,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:75",
+								"lo": 34,
+								"hi": 42.8
+							},
+							"msStep": {
+								"v": 68.36,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:76"
+							},
+							"tokStep": {
+								"v": 2.55,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:77"
+							},
+							"pp512": {
+								"v": 1041,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:78"
+							},
+							"pp4096": {
+								"v": 1038,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:78"
+							},
+							"ttft": {
+								"v": 2.69,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:79",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 15.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:80",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 32.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:80",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 14.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:81",
+								"unit": "GiB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/5060ti-20261016/scorecard.json",
+								"variant": "A1 najlepsze flagi upstream",
+								"decode": 37.32
+							}
+						},
+						{
+							"key": "a2",
+							"decode": {
+								"v": 50.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:75",
+								"lo": 48.2,
+								"hi": 59.9
+							},
+							"msStep": {
+								"v": 48.58,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:76"
+							},
+							"tokStep": {
+								"v": 2.48,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:77"
+							},
+							"pp512": {
+								"v": 1041,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:78"
+							},
+							"pp4096": {
+								"v": 1036,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:78"
+							},
+							"ttft": {
+								"v": 2.71,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:79",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 11.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:80",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 23.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:80",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 14.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:81",
+								"unit": "GiB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/5060ti-20261016/scorecard.json",
+								"variant": "A2 nasz silnik (fork + draft vocab)",
+								"decode": 50.8
+							}
+						},
+						{
+							"key": "profile",
+							"decode": {
+								"v": 51.66,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:75",
+								"lo": 49.6,
+								"hi": 59.9
+							},
+							"msStep": {
+								"v": 47.92,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:76"
+							},
+							"tokStep": {
+								"v": 2.48,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:77"
+							},
+							"pp512": {
+								"v": 1032,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:78"
+							},
+							"ttft": {
+								"v": 2.71,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:79",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 11,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:80",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 23.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:80",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 14.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:81",
+								"unit": "GiB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/5060ti-20261016/scorecard.json",
+								"variant": "nasz profil NVIDIA (A2 + GATE_UP_Q8=0)",
+								"decode": 51.66
+							}
+						}
+					],
+					"before": "a0",
+					"flags": "a1",
+					"ours": "profile",
+					"file": {
+						"v": 13.15,
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:72",
+						"unit": "GB"
+					},
+					"longCtx": {
+						"depths": [
+							0,
+							8192,
+							32768,
+							65536
+						],
+						"up": [
+							{
+								"v": 28.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:97"
+							},
+							{
+								"v": 27.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:97"
+							},
+							{
+								"v": 23.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:97"
+							},
+							{
+								"v": 20.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:97"
+							}
+						],
+						"ours": [
+							{
+								"v": 28.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:97"
+							},
+							{
+								"v": 27.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:97"
+							},
+							{
+								"v": 23.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:97"
+							},
+							{
+								"v": 20.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:97"
+							}
+						],
+						"kv": "KV q8_0"
+					},
+					"gain": {
+						"flags": {
+							"v": 1.33,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:153"
+						},
+						"engine": {
+							"v": 1.38,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:153"
+						},
+						"total": {
+							"v": 1.84,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:153"
+						},
+						"text": [
+							"×1.33 (MTP + `-fit off`)",
+							"×1.38",
+							"×1.84"
+						],
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:153"
+					}
+				},
+				{
+					"model": "lfm25",
+					"title": "LFM2.5-24B-A2B Q4_K_M (14.5 GB; Q5 się nie mieści)",
+					"quant": "Q4_K_M",
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:83",
+					"variants": [
+						{
+							"key": "a0",
+							"decode": {
+								"v": 147.69,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:86",
+								"lo": 146.5,
+								"hi": 150.2
+							},
+							"msStep": {
+								"v": 6.77,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:87"
+							},
+							"pp512": {
+								"v": 4148,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:88"
+							},
+							"pp4096": {
+								"v": 4221,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:88"
+							},
+							"ttft": {
+								"v": 0.55,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:90",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 3.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:91",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 8.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:91",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 14.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:92",
+								"unit": "GiB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/5060ti-20261016/scorecard.json",
+								"variant": "A0 typowa aplikacja",
+								"decode": 147.69
+							}
+						},
+						{
+							"key": "a1",
+							"decode": {
+								"v": 144.47,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:86"
+							},
+							"msStep": {
+								"v": 6.92,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:87"
+							},
+							"pp512": {
+								"v": 4162,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:88"
+							},
+							"pp4096": {
+								"v": 4210,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:88"
+							},
+							"ttft": {
+								"v": 0.54,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:90",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:91",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 8.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:91",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 14.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:92",
+								"unit": "GiB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/5060ti-20261016/scorecard.json",
+								"variant": "A1 najlepsze flagi upstream",
+								"decode": 144.47
+							}
+						},
+						{
+							"key": "a2",
+							"decode": {
+								"v": 190.99,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:86"
+							},
+							"msStep": {
+								"v": 5.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:87"
+							},
+							"pp512": {
+								"v": 4146,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:88"
+							},
+							"pp4096": {
+								"v": 4235,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:88"
+							},
+							"ttft": {
+								"v": 0.53,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:90",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:91",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 6.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:91",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 14.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:92",
+								"unit": "GiB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/5060ti-20261016/scorecard.json",
+								"variant": "A2 nasz silnik",
+								"decode": 190.99
+							}
+						},
+						{
+							"key": "profile",
+							"decode": {
+								"v": 207.86,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:86",
+								"lo": 206.7,
+								"hi": 209.1
+							},
+							"msStep": {
+								"v": 4.81,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:87"
+							},
+							"pp512": {
+								"v": 4160,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:88"
+							},
+							"ttft": {
+								"v": 0.53,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:90",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 2.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:91",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:91",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 14.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:92",
+								"unit": "GiB"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/5060ti-20261016/scorecard.json",
+								"variant": "nasz profil NVIDIA (A2 + GATE_UP_Q8=0 Q8_IDS=0)",
+								"decode": 207.86
+							}
+						}
+					],
+					"before": "a0",
+					"flags": "a1",
+					"ours": "profile",
+					"file": {
+						"v": 14.5,
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:83",
+						"unit": "GB"
+					},
+					"longCtx": {
+						"depths": [
+							0,
+							8192,
+							32768,
+							65536
+						],
+						"up": [
+							{
+								"v": 192.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:98"
+							},
+							{
+								"v": 178.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:98"
+							},
+							{
+								"v": 143.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:98"
+							},
+							{
+								"v": 112.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:98"
+							}
+						],
+						"ours": [
+							{
+								"v": 198.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:98"
+							},
+							{
+								"v": 181.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:98"
+							},
+							{
+								"v": 145.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:98"
+							},
+							{
+								"v": 114.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:98"
+							}
+						],
+						"kv": "KV q8_0"
+					},
+					"gain": {
+						"flags": {
+							"v": 0.98,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:154"
+						},
+						"engine": {
+							"v": 1.44,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:154"
+						},
+						"total": {
+							"v": 1.41,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:154"
+						},
+						"text": [
+							"×0.98",
+							"×1.44 (sampler ~+25%, fuzje +5%, profil +5–6%)",
+							"×1.41"
+						],
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:154"
+					}
+				}
+			]
+		},
+		{
+			"id": "rtx-3060-12",
+			"heading": "RTX 3060 12 GB (Ampere sm_86)",
+			"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:107",
+			"scorecard": "3060-20261016",
+			"hw": {
+				"powerW": {
+					"v": 170,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:108"
+				},
+				"bwGBs": {
+					"v": 360,
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:108"
+				},
+				"pcie": "gen3 x16",
+				"line": "170 W (stale na limicie), PCIe gen3 x16, 360 GB/s, Xeon E5-2698 v4, sterownik 595.71.05.",
+				"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:108"
+			},
+			"runs": [
+				{
+					"model": "saluki",
+					"title": "Underdog Saluki 27B IQ2-mix (7.9 GB)",
+					"quant": "IQ2-mix",
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:115",
+					"variants": [
+						{
+							"key": "a0",
+							"decode": {
+								"v": 22.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:118",
+								"lo": 22.1,
+								"hi": 22.2
+							},
+							"msStep": {
+								"v": 45.18,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:119"
+							},
+							"pp512": {
+								"v": 573,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:120"
+							},
+							"pp4096": {
+								"v": 570,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:120"
+							},
+							"ttft": {
+								"v": 3.61,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:121",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 26.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:122",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 60.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:122",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 10.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:123",
+								"unit": "GB"
+							},
+							"ppl": {
+								"v": 7.67,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:125"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3060-20261016/scorecard.json",
+								"variant": "A0",
+								"decode": 22.14
+							}
+						},
+						{
+							"key": "a1",
+							"decode": {
+								"v": 22.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:118"
+							},
+							"msStep": {
+								"v": 44.87,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:119"
+							},
+							"pp4096": {
+								"v": 581,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:120"
+							},
+							"ttft": {
+								"v": 3.61,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:121",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 26.2,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:122",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 60.3,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:122",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 9.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:123",
+								"unit": "GB"
+							},
+							"tg8k": {
+								"v": 21.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:124"
+							},
+							"tg32k": {
+								"v": 19.98,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:124"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3060-20261016/scorecard.json",
+								"variant": "A1",
+								"decode": 22.29
+							}
+						},
+						{
+							"key": "ours",
+							"decode": {
+								"v": 23.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:118",
+								"lo": 23.3,
+								"hi": 23.4
+							},
+							"msStep": {
+								"v": 42.82,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:119"
+							},
+							"pp4096": {
+								"v": 568,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:120"
+							},
+							"ttft": {
+								"v": 3.67,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:121",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 25.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:122",
+								"unit": "s"
+							},
+							"words500pl": {
+								"v": 57.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:122",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 9.7,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:123",
+								"unit": "GB"
+							},
+							"tg8k": {
+								"v": 22.66,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:124"
+							},
+							"tg32k": {
+								"v": 20.69,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:124"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3060-20261016/scorecard.json",
+								"variant": "A2t",
+								"decode": 23.35
+							}
+						}
+					],
+					"before": "a0",
+					"flags": "a1",
+					"ours": "ours",
+					"file": {
+						"v": 7.9,
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:115",
+						"unit": "GB"
+					},
+					"gain": {
+						"flags": {
+							"v": 1.01,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:155"
+						},
+						"engine": {
+							"v": 1.05,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:155"
+						},
+						"total": {
+							"v": 1.05,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:155"
+						},
+						"text": [
+							"×1.01",
+							"×1.05",
+							"×1.05"
+						],
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:155"
+					}
+				},
+				{
+					"model": "bonsai",
+					"title": "Ternary Bonsai 2 27B",
+					"quant": "Q2_0 (PQ2_0 repack)",
+					"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:127",
+					"variants": [
+						{
+							"key": "a0",
+							"decode": {
+								"v": 36.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:130"
+							},
+							"pp4096": {
+								"v": 601,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:131"
+							},
+							"ttft": {
+								"v": 3.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:132",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 15.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:133"
+							},
+							"words500pl": {
+								"v": 36.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:133",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 10.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:134",
+								"unit": "GB"
+							},
+							"ppl": {
+								"v": 8.62,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:136"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3060-20261016/scorecard.json",
+								"variant": "A0",
+								"decode": 36.77
+							}
+						},
+						{
+							"key": "alt",
+							"decode": {
+								"v": 44.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:130"
+							},
+							"pp4096": {
+								"v": 592,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:131"
+							},
+							"ttft": {
+								"v": 3.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:132",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 13.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:133"
+							},
+							"words500pl": {
+								"v": 30,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:133",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 6.8,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:134",
+								"unit": "GB"
+							},
+							"tg8k": {
+								"v": 42.83,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:135"
+							},
+							"tg32k": {
+								"v": 35.57,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:135"
+							},
+							"ppl": {
+								"v": 8.62,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:136"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3060-20261016/scorecard.json",
+								"variant": "A1",
+								"decode": 44.77
+							}
+						},
+						{
+							"key": "a1",
+							"decode": {
+								"v": 33.1,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:130"
+							},
+							"pp4096": {
+								"v": 638,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:131"
+							},
+							"ttft": {
+								"v": 3.26,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:132",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 17.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:133"
+							},
+							"words500pl": {
+								"v": 40.6,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:133",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 9.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:134",
+								"unit": "GB"
+							},
+							"tg8k": {
+								"v": 32.01,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:135"
+							},
+							"tg32k": {
+								"v": 27.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:135"
+							},
+							"ppl": {
+								"v": 8.62,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:136"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3060-20261016/scorecard.json",
+								"variant": "A1q",
+								"decode": 33.15
+							}
+						},
+						{
+							"key": "ours",
+							"decode": {
+								"v": 35.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:130"
+							},
+							"pp4096": {
+								"v": 622,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:131"
+							},
+							"ttft": {
+								"v": 3.35,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:132",
+								"unit": "s"
+							},
+							"words500en": {
+								"v": 16.5,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:133"
+							},
+							"words500pl": {
+								"v": 37.9,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:133",
+								"unit": "s"
+							},
+							"vram": {
+								"v": 9.4,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:134",
+								"unit": "GB"
+							},
+							"tg8k": {
+								"v": 33.86,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:135"
+							},
+							"tg32k": {
+								"v": 29.37,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:135"
+							},
+							"ppl": {
+								"v": 8.62,
+								"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:136"
+							},
+							"scorecard": {
+								"file": "qwen-opt/cloud/results/3060-20261016/scorecard.json",
+								"variant": "A2t",
+								"decode": 35.51
+							}
+						}
+					],
+					"before": "a0",
+					"flags": "a1",
+					"ours": "ours",
+					"gain": {
+						"flags": null,
+						"engine": null,
+						"total": {
+							"v": 0.97,
+							"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:156"
+						},
+						"text": [
+							"—",
+							"33.1 → 35.5 na Q2_0 (+7%)",
+							"×0.97 vs domyślny Prism"
+						],
+						"src": "KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:156"
+					}
+				}
+			]
+		}
+	]
+}

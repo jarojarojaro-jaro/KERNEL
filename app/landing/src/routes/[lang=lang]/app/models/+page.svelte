@@ -176,9 +176,9 @@
 		color: var(--text-hi);
 	}
 	.chip[aria-pressed='true'] {
-		background: var(--accent);
-		border-color: var(--accent);
-		color: var(--on-accent);
+		background: var(--text-hi);
+		border-color: var(--text-hi);
+		color: var(--text-inv);
 		font-weight: var(--fw-semibold);
 	}
 	.quant {

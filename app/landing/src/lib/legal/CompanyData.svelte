@@ -57,12 +57,26 @@
 <style>
 	.company {
 		display: grid;
-		gap: var(--sp-2);
+		gap: 0;
 		margin: var(--sp-4) 0;
-		padding: var(--sp-4);
+		padding: var(--sp-2) var(--sp-5);
 		border: 1px solid var(--line);
-		border-radius: var(--r-md);
+		border-radius: var(--r-lg);
 		background: var(--bg-1);
+	}
+	.company__row + .company__row {
+		border-top: 1px solid var(--line);
+	}
+	.company__row {
+		padding: var(--sp-3) 0;
+		font-size: var(--fs-sm);
+	}
+	.company .badge {
+		text-transform: none;
+		letter-spacing: 0;
+		font-family: var(--font-sans);
+		font-size: var(--fs-xs);
+		white-space: normal;
 	}
 	.company__row {
 		display: grid;

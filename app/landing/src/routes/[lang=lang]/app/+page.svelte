@@ -69,7 +69,7 @@
 		padding: var(--sp-5);
 	}
 	.tile:hover .name {
-		color: var(--accent-ink);
+		color: var(--text-hi);
 	}
 	.top {
 		display: flex;
@@ -84,7 +84,7 @@
 		height: 2.5rem;
 		border-radius: var(--r-sm);
 		background: var(--bg-3);
-		color: var(--accent-ink);
+		color: var(--text-hi);
 	}
 	.idx {
 		font-size: var(--fs-xs);

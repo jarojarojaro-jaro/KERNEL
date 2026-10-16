@@ -1,7 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" role="img" aria-label="Logo">
-  <!-- Tacho mark: 270° gauge track, the last 75° lit as the "redline", needle pegged into it. -->
+  <!-- Tacho mark: 270° gauge track (bone), the last 75° lit as the heat redline, needle pegged into it. -->
+  <defs><linearGradient id="h" x1="25.5" y1="11.5" x2="23.8" y2="24.8" gradientUnits="userSpaceOnUse"><stop stop-color="#FFC15A"/><stop offset=".45" stop-color="#FF7A1A"/><stop offset="1" stop-color="#E2401C"/></linearGradient></defs>
   <path d="M8.22 24.78A11 11 0 1 1 23.78 24.78" stroke="currentColor" stroke-opacity=".38" stroke-width="3" stroke-linecap="round"/>
-  <path d="M25.53 11.5A11 11 0 0 1 23.78 24.78" stroke="#C8FF3D" stroke-width="3" stroke-linecap="round"/>
-  <path d="M16 17 22.13 11.86" stroke="#C8FF3D" stroke-width="3" stroke-linecap="round"/>
+  <path d="M25.53 11.5A11 11 0 0 1 23.78 24.78" stroke="url(#h)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M16 17 22.13 11.86" stroke="#FF7A1A" stroke-width="3" stroke-linecap="round"/>
   <circle cx="16" cy="17" r="2.6" fill="currentColor"/>
 </svg>

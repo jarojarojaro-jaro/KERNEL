@@ -137,7 +137,7 @@
 	li.active {
 		background: var(--bg-3);
 		color: var(--text-hi);
-		box-shadow: inset 2px 0 0 var(--accent-ink);
+		box-shadow: inset 2px 0 0 var(--text-hi);
 	}
 	.n {
 		flex: 1;

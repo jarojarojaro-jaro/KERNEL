@@ -207,11 +207,11 @@
 		gap: var(--sp-4);
 		justify-items: start;
 		background:
-			radial-gradient(120% 120% at 0% 0%, var(--accent-soft), transparent 60%),
+			radial-gradient(120% 120% at 0% 0%, color-mix(in srgb, var(--text-hi) 6%, transparent), transparent 60%),
 			var(--bg-2);
 	}
 	.moon {
-		color: var(--accent-ink);
+		color: var(--text-hi);
 	}
 	.quote {
 		margin: 0;
@@ -236,7 +236,7 @@
 		max-width: 16rem;
 	}
 
-	/* REACTOR-style live panel */
+	/* live instrument panel */
 	.live {
 		margin-top: var(--sp-4);
 		padding: var(--sp-6);
@@ -261,7 +261,7 @@
 		font-weight: var(--fw-medium);
 		letter-spacing: var(--tracking-overline);
 		text-transform: uppercase;
-		color: var(--accent-ink);
+		color: var(--text-hi);
 		margin-right: auto;
 	}
 	.led {
@@ -271,9 +271,9 @@
 		border: 1px solid var(--text-mute);
 	}
 	.live[data-state='run'] .led {
-		background: var(--accent);
-		border-color: var(--accent);
-		box-shadow: var(--accent-glow);
+		background: var(--ok);
+		border-color: var(--ok);
+		box-shadow: 0 0 10px color-mix(in srgb, var(--ok) 70%, transparent);
 	}
 	.live[data-state='pause'] .led {
 		background: var(--warn);
@@ -297,7 +297,7 @@
 	.track {
 		position: relative;
 		height: 0.5rem;
-		border-radius: var(--r-xs);
+		border-radius: var(--r-pill);
 		background: var(--bg-3);
 		overflow: hidden;
 	}
@@ -305,7 +305,7 @@
 		position: absolute;
 		inset: 0 auto 0 0;
 		width: calc(var(--v) * 100%);
-		background: var(--accent);
+		background: var(--text-hi);
 		border-radius: inherit;
 		overflow: hidden;
 	}
@@ -317,7 +317,7 @@
 			content: '';
 			position: absolute;
 			inset: 0;
-			background: linear-gradient(90deg, transparent, var(--accent-hover), transparent);
+			background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--bg-0) 45%, transparent), transparent);
 			animation: sweep 1.6s var(--ease-in-out) infinite;
 		}
 		.live[data-state='run'] .led {

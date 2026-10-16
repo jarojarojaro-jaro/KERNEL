@@ -64,7 +64,7 @@
 		margin: 0;
 	}
 	.then dt code {
-		color: var(--accent-ink);
+		color: var(--text-hi);
 	}
 	.then dd {
 		margin: 0;

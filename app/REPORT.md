@@ -121,3 +121,98 @@ cd ~/KERNEL/app/landing
 ~/KERNEL/app/.tools/bun run build
 ~/KERNEL/app/.tools/bun scripts/serve.ts 18433
 ```
+
+---
+
+# v2 redesign („Białe ciepło”), 2026-10-16
+
+The brief is in `design/REDESIGN.md`: concept, references, type, palette, motion principles, the hero storyboard and the critique scores per round. Nothing was deployed or published, and nothing was pushed. Screenshots were taken in headless Chrome on CDP 127.0.0.1:18499 with `--disable-gpu`. WebGL went through SwiftShader (CPU only; the wrapper is `.tools/chrome-swgl`), and the `/proc/<pid>/fd` file-descriptor listings of the Chrome processes contained no `/dev/dri` or `/dev/kfd` handles.
+
+## What changed
+
+- **Identity**
+  - Deep warm blacks with one heat ramp (cold → white-hot) that only ever means speed, plus a separate categorical palette for models (`--model-*`, always paired with a shape, `src/lib/ModelMark.svelte`).
+  - Fonts: Mona Sans (variable `wdth` + `wght`) for display and text, Martian Mono for numbers, both self-hosted.
+    - Both are subset to Latin + Polish with `pyftsubset`.
+    - Mona Sans is renamed internally and in CSS to `Showcase Sans`, because "Mona" is a Reserved Font Name and the OFL forbids it on modified versions.
+  - Geist is removed. The lime accent is gone.
+  - New tokens in `design/tokens.css`; the showcase layer is `design/showcase.css`.
+- **Number registry**
+  - `src/lib/data/measurements.ts` remains the only source of numbers. It now holds `CARDS`: RTX 3090, RTX 5060 Ti, RTX 3060 and RX 7900 XTX, each with before / best flags / ours, MTP steps, prefill, TTFT, 500 words, VRAM, long context, kernels per token, the "skąd zysk" breakdown, model info, and `BITEXACT_XTX` (marked "w walidacji").
+  - `scripts/cards.ts` (run inside `sync-results.ts`) generates `cards.json` from `product/BENCHMARKI-NVIDIA-2026-10-16.md`. Every number carries its file:line.
+  - Nemotron 3.5 Bolt on the 3090 comes from `product/research/14-nemotron-3090.md`.
+  - Each value is checked against the scorecards. One disagreement is reported in `SHEET.checks` and on the methodology page: 3090 Qwen A0 is 38.9 in the sheet but 39.01 in `scorecard.json`.
+- **Home `/pl/` `/en/`**
+  - Hero: a kinetic headline (steel + heat). The live race streams the same answer continuously, with bursts set by the measured tokens per MTP step.
+  - Pair switcher, same-script pairs only: 3090 LFM / Qwen / Nemotron, 5060 Ti, XTX LFM. XTX Qwen is not raced, because its baselines come from a different script.
+  - Gauges with a redline, plus a WebGL ember shader. Under software GL the shader is replaced by a CSS fallback.
+  - Auto-play scenes Skan / Dobór / Przyspieszenie / "Jak to możliwe" (full stack; kernels 1956 → 795), each with a replay button.
+  - Quality section: KLD on a log scale with a quantisation-change reference, plus a Qwen block.
+  - Then a results teaser, cards, privacy, pricing (hypothesis), FAQ and a final CTA.
+- **New pages**
+  - `/pl/wyniki/` `/en/results/`: GPU × model picker, heat bars, race, real-time 500-word timers.
+  - `/pl/karty/` `/en/cards/`: explorer grouped by vendor, with search and a VRAM filter.
+    - Detail pages per card (4 measured + 8 queued, prerendered) in a bento layout: VRAM fit with model colours, instruments with better/worse arrows, long-context curve, "skąd zysk", race and 500 words.
+    - Queued cards show only a labelled estimate from the formula.
+    - Compare view: `porownaj` / `compare`.
+    - Linked from the onboarding hardware step.
+- **Honesty**
+  - The "bit w bit" claims are gone. The page now says „Ten sam model, ta sama jakość — zmierzone”: KLD on the 3060 is in the range of upstream's own noise.
+  - Bonsai: Prism PTQ1_0 is faster than us, and the page says so.
+  - Nemotron: our fork alone (129.0) is below upstream (131.4), and its KLD has not been measured.
+- **Other pages**
+  - Methodology, legal, onboarding and the app prototype are restyled to v2 through the shared tokens and components.
+  - The methodology page has a new NVIDIA cards section.
+  - Header: a floating capsule with a sliding highlight and a full-screen menu on mobile.
+
+## Verification (last run)
+
+- `svelte-check`: 0 errors / 0 warnings. Prerender: every page builds, and a broken link fails the build.
+- axe-core 4.14 (WCAG 2.0–2.2 A/AA plus best-practice) on the final build: 26 pages × 1280 and 390 px, **0 violations**, 0 console errors, 0 horizontal scroll at 390 px.
+- Lighthouse 13.5, mobile profile, final build, CPU-only Chrome. Columns: Perf / A11y / BP / SEO, then FCP, LCP, TBT, CLS.
+
+  | Page | Perf | A11y | BP | SEO | FCP | LCP | TBT | CLS |
+  |---|---|---|---|---|---|---|---|---|
+  | `/pl/` | 85 | 100 | 100 | 100 | 2.5 s | 3.5 s | 180 ms | 0 |
+  | `/en/` | 86 | 100 | 100 | 100 | 2.4 s | 3.5 s | 160 ms | 0 |
+  | `/pl/wyniki/` | 91 | 100 | 100 | 100 | 2.3 s | 3.2 s | 50 ms | 0.001 |
+  | `/pl/karty/` | 89 | 100 | 100 | 100 | 2.4 s | 3.3 s | 10 ms | 0.004 |
+  | `/pl/karty/rtx-3090/` | 86 | 100 | 100 | 100 | 2.4 s | 3.5 s | 160 ms | 0 |
+  | `/pl/methodology/` | 93 | 100 | 100 | 100 | 2.1 s | 3.0 s | 0 ms | 0 |
+
+  The last three rows are from the run before the final hero rework.
+
+  **LCP is still above 2.5 s on mobile** (3.0–3.5 s). The cause is FCP of 2.1–2.5 s under simulated slow 4G: about 140 KB of fonts plus inline CSS. The performance score is ≥ 85.
+- Screenshots in `screens/v2/`:
+  - `final/`: the hero after the user's latest requests (PL/EN, 1440/390, t = 1, 3, 6 s, reduced motion);
+  - `r1`–`r4`: each critique round;
+  - `before-detail` / `after-detail`: card detail pages before and after the bento rework;
+  - reduced-motion shots are included in the rounds.
+
+## Critique (Awwwards juror, a fresh subagent each round)
+
+Scores per round (WOW / originality / polish):
+
+| Round | WOW | Originality | Polish |
+|---|---|---|---|
+| 1 | 6 | 6 | 4 |
+| 2 | 6 | 6 | 5.5 |
+| 3 | 6.5 | 6 | 5.5 |
+| 4 | 6 | 6 | 6 |
+
+Details are in `design/REDESIGN.md` §11. **The ≥ 8/8/8 target was not reached.** After round 4 the hero was rebuilt again on the user's instructions: one Qwen race, a new headline layout, live gauges, a new nav and CTAs. That version has not been juried.
+
+The open points from round 4:
+- the detail pages need one signature scene;
+- the bars on the landing results teaser must start from a shared zero;
+- the answer length must be stated one way;
+- heat intensity must scale with the speed-up (1,05× on the 3060 tile);
+- check the sticky/scroll framing under the header.
+
+## Decisions for you
+
+1. Model palette (teal / violet / sky / orchid / moss) and the "Showcase Sans" name for the font subset.
+2. Font subsetting: I renamed the subset because of the OFL RFN. Alternatively we can serve the original Mona Sans without subsetting (+~30 KB).
+3. Sheet vs scorecard: 3090 Qwen A0 is 38.9 in the sheet and 39.01 in `scorecard.json`. The page shows the sheet value and reports the difference.
+4. Hero pairs include Nemotron (from the report, not the consolidated sheet). Once it is in `BENCHMARKI-NVIDIA`, move its entry from `REPORT_RUNS` to `CARDS` in `scripts/cards.ts`.
+5. The bit-exact MTP result on the XTX is shown only as „w walidacji”. Change it after validation.

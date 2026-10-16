@@ -83,11 +83,11 @@
 	}
 	.stepper li.current {
 		color: var(--text-hi);
-		border-color: var(--accent-ink);
+		border-color: var(--text-hi);
 	}
 	.stepper li.current .idx {
-		background: var(--accent);
-		color: var(--on-accent);
+		background: var(--text-hi);
+		color: var(--text-inv);
 	}
 	.stepper li.done .idx {
 		background: var(--ok-soft);

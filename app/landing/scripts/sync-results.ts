@@ -11,6 +11,7 @@ import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { buildCards } from './cards';
 
 const here = resolve(import.meta.dir, '..');
 const resultsDir = process.env.CLOUD_RESULTS ?? join(homedir(), 'qwen-opt/cloud/results');
@@ -45,6 +46,12 @@ writeFileSync(
 	JSON.stringify({ source: '~/qwen-opt/cloud/results/*/scorecard.json', cards }, null, '\t') + '\n'
 );
 console.log(`cloud scorecards: ${Object.keys(cards).length ? Object.keys(cards).join(', ') : 'none yet'}`);
+
+const sheet = process.env.NVIDIA_SHEET ?? join(homedir(), 'KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md');
+const cardsData = buildCards(sheet, resultsDir);
+writeFileSync(join(here, 'src/lib/data/cards.json'), JSON.stringify(cardsData, null, '\t') + '\n');
+console.log(`cards: ${cardsData.cards.map((c) => `${c.id} (${c.runs.length} models)`).join(', ')}`);
+for (const c of cardsData.checks) console.warn(`sheet vs scorecard: ${c.card} ${c.model} ${c.variant}: sheet ${c.sheet}, ${c.file} ${c.scorecard}`);
 
 const scanSrc = resolve(here, '../scan');
 const scanDst = join(here, 'static/scan');

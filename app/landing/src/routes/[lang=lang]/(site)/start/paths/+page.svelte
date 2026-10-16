@@ -55,7 +55,7 @@
 		color: var(--text);
 	}
 	.path.suggested {
-		border-color: color-mix(in srgb, var(--info-ink) 60%, var(--line));
+		border-color: var(--text-hi);
 	}
 	.title {
 		color: var(--text-hi);
@@ -69,7 +69,7 @@
 	}
 	.go {
 		margin-top: var(--sp-2);
-		color: var(--accent-ink);
+		color: var(--text-hi);
 		font-weight: var(--fw-semibold);
 		font-size: var(--fs-sm);
 	}

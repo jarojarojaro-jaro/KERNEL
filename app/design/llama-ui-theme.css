@@ -11,9 +11,12 @@
  *      upstream files has to change, which keeps rebases on llama.cpp trivial.
  *   3. Light/dark switching stays upstream's: mode-watcher puts `.dark` on <html>. `:root` below is
  *      the light theme, `.dark` the dark one (our default identity).
- *   4. Fonts: `--font-sans`/`--font-mono` name Geist / Geist Mono first and fall back to system
- *      fonts. To get Geist, ship the woff2 files from `KERNEL/app/landing/static/fonts/` together with
- *      the @font-face rules from `KERNEL/app/design/tokens.css` (OFL-1.1, keep its licence file).
+ *   4. Fonts: `--font-sans`/`--font-mono` name Mona Sans / Martian Mono first and fall back to
+ *      system fonts. To get them, ship `mona-sans-*.woff2` and `martian-mono-*.woff2` from
+ *      `KERNEL/app/landing/static/fonts/` together with the @font-face rules from
+ *      `KERNEL/app/design/tokens.css` (both OFL-1.1: keep OFL-MonaSans.txt and OFL-MartianMono.txt).
+ *   5. v2 identity (design/REDESIGN.md): `--primary` is bone on ink / ink on bone, never heat. Heat
+ *      (orange) appears only as `--chart-1`, i.e. where a chart shows speed.
  *   Do NOT import this file into the landing site or the desktop prototype: it redefines `--accent`
  *   and other names that mean something different in our own tokens.
  *
@@ -31,89 +34,89 @@
 
 /* ======================= LIGHT ======================= */
 :root {
-	--radius: 10px; /* --r-md */
+	--radius: 14px; /* --r-lg */
 
-	--background: #f5f6f9; /* --bg-0 */
-	--foreground: #2a3042; /* --text */
-	--card: #ffffff; /* --bg-2 */
-	--card-foreground: #2a3042; /* --text */
-	--popover: #ffffff; /* --bg-2 */
-	--popover-foreground: #0a0c12; /* --text-hi */
+	--background: #f4f2ee; /* --bg-0 */
+	--foreground: #2c2a26; /* --text, 12.8:1 */
+	--card: #fbfaf8; /* --bg-2 */
+	--card-foreground: #2c2a26; /* --text */
+	--popover: #fbfaf8; /* --bg-2 */
+	--popover-foreground: #0b0a09; /* --text-hi */
 
-	--primary: #c8ff3d; /* --accent (volt-400): primary actions = the "after" colour */
-	--primary-foreground: #0a0d03; /* --on-accent, 16.9:1 */
-	--secondary: #e8ebf1; /* --bg-3 */
-	--secondary-foreground: #0a0c12; /* --text-hi */
-	--muted: #eceef3; /* --bg-1 */
-	--muted-foreground: #505971; /* --text-mute, 6.6:1 */
-	--accent: #e8ebf1; /* --bg-3 (shadcn "accent" = hover surface, not our brand accent) */
-	--accent-foreground: #0a0c12; /* --text-hi */
-	--destructive: #b0174f; /* --danger (heat-800) */
+	--primary: #0b0a09; /* --text-hi: primary actions are ink pills on bone */
+	--primary-foreground: #f4f2ee; /* --text-inv, 17.7:1 */
+	--secondary: #e4e0d8; /* --bg-3 */
+	--secondary-foreground: #0b0a09; /* --text-hi */
+	--muted: #ebe8e2; /* --bg-1 */
+	--muted-foreground: #5c5852; /* --text-mute, 6.3:1 on bg-0 */
+	--accent: #e4e0d8; /* --bg-3 (shadcn "accent" = hover surface, not our brand accent) */
+	--accent-foreground: #0b0a09; /* --text-hi */
+	--destructive: #b42318; /* --danger */
 
-	--border: #dde1ea; /* --line */
-	--input: #8a93aa; /* --line-strong, 3.2:1 */
-	--ring: #006a8c; /* --focus (ion-800) */
+	--border: #d8d4cb; /* --line */
+	--input: #807b72; /* --line-strong, >= 3.1:1 */
+	--ring: #0b0a09; /* --focus */
 
-	--chart-1: #3b6e00; /* --accent-ink (volt-800) */
-	--chart-2: #006a8c; /* --info (ion-800) */
-	--chart-3: #c27400; /* --warn */
-	--chart-4: #1f7a46; /* --ok (green-800) */
-	--chart-5: #b0174f; /* --danger (heat-800) */
+	--chart-1: #a8380b; /* --accent-ink: heat, speed only */
+	--chart-2: #5e6874; /* --before: cold steel, "before" */
+	--chart-3: #7a5d00; /* --warn-ink */
+	--chart-4: #1f7a46; /* --ok */
+	--chart-5: #2d5870; /* --info */
 
-	--sidebar: #eceef3; /* --bg-1 */
-	--sidebar-foreground: #2a3042; /* --text */
-	--sidebar-primary: #c8ff3d; /* --accent */
-	--sidebar-primary-foreground: #0a0d03; /* --on-accent */
-	--sidebar-accent: #e8ebf1; /* --bg-3 */
-	--sidebar-accent-foreground: #0a0c12; /* --text-hi */
-	--sidebar-border: #dde1ea; /* --line */
-	--sidebar-ring: #006a8c; /* --focus */
+	--sidebar: #ebe8e2; /* --bg-1 */
+	--sidebar-foreground: #2c2a26; /* --text */
+	--sidebar-primary: #0b0a09; /* --text-hi */
+	--sidebar-primary-foreground: #f4f2ee; /* --text-inv */
+	--sidebar-accent: #e4e0d8; /* --bg-3 */
+	--sidebar-accent-foreground: #0b0a09; /* --text-hi */
+	--sidebar-border: #d8d4cb; /* --line */
+	--sidebar-ring: #0b0a09; /* --focus */
 
-	--code-background: #eceef3; /* --bg-1 */
-	--code-foreground: #0a0c12; /* --text-hi */
+	--code-background: #ebe8e2; /* --bg-1 */
+	--code-foreground: #0b0a09; /* --text-hi */
 
-	--font-sans: 'Geist', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* --font-sans */
-	--font-mono: 'Geist Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace; /* --font-mono */
+	--font-sans: 'Mona Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; /* --font-sans */
+	--font-mono: 'Martian Mono', ui-monospace, 'SF Mono', 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace; /* --font-mono */
 }
 
 /* ======================= DARK (our default identity) ======================= */
 .dark {
-	--background: #07080d; /* --bg-0 */
-	--foreground: #c9d0e2; /* --text, 13.0:1 */
-	--card: #121522; /* --bg-2 */
-	--card-foreground: #c9d0e2; /* --text */
-	--popover: #121522; /* --bg-2 */
-	--popover-foreground: #f2f5fb; /* --text-hi */
+	--background: #050506; /* --bg-0 */
+	--foreground: #bdb9b1; /* --text, 10.4:1 */
+	--card: #131316; /* --bg-2 */
+	--card-foreground: #bdb9b1; /* --text */
+	--popover: #131316; /* --bg-2 */
+	--popover-foreground: #edeae3; /* --text-hi */
 
-	--primary: #c8ff3d; /* --accent (volt-400) */
-	--primary-foreground: #0a0d03; /* --on-accent, 16.9:1 */
-	--secondary: #1a1e2f; /* --bg-3 */
-	--secondary-foreground: #f2f5fb; /* --text-hi */
-	--muted: #0c0e16; /* --bg-1 */
-	--muted-foreground: #939cb7; /* --text-mute, 7.2:1 */
-	--accent: #1a1e2f; /* --bg-3 (shadcn hover surface) */
-	--accent-foreground: #f2f5fb; /* --text-hi */
-	--destructive: #ff4d8d; /* --danger (heat-400) */
+	--primary: #edeae3; /* --text-hi: primary actions are bone pills on ink */
+	--primary-foreground: #050506; /* --text-inv, 17.0:1 */
+	--secondary: #1c1c21; /* --bg-3 */
+	--secondary-foreground: #edeae3; /* --text-hi */
+	--muted: #0b0b0d; /* --bg-1 */
+	--muted-foreground: #8e8a83; /* --text-mute, 5.9:1 on bg-0 */
+	--accent: #1c1c21; /* --bg-3 (hover surface) */
+	--accent-foreground: #edeae3; /* --text-hi */
+	--destructive: #ff6b6b; /* --danger */
 
-	--border: #232840; /* --line */
-	--input: #3a4161; /* --line-strong, 3.0:1 on card */
-	--ring: #3dd6ff; /* --focus (ion-400) */
+	--border: #26262c; /* --line */
+	--input: #77746d; /* --line-strong, >= 3.6:1 */
+	--ring: #edeae3; /* --focus */
 
-	--chart-1: #c8ff3d; /* --accent (volt-400) */
-	--chart-2: #3dd6ff; /* --info (ion-400) */
-	--chart-3: #ffb23e; /* --warn (amber-400) */
-	--chart-4: #5be49b; /* --ok (green-400) */
-	--chart-5: #ff4d8d; /* --danger (heat-400) */
+	--chart-1: #ff7a1a; /* --accent (heat-3): speed only */
+	--chart-2: #7d8794; /* --before: cold steel */
+	--chart-3: #e3cf7a; /* --warn */
+	--chart-4: #7fd99a; /* --ok */
+	--chart-5: #a9c7d8; /* --info */
 
-	--sidebar: #0c0e16; /* --bg-1 */
-	--sidebar-foreground: #c9d0e2; /* --text */
-	--sidebar-primary: #c8ff3d; /* --accent */
-	--sidebar-primary-foreground: #0a0d03; /* --on-accent */
-	--sidebar-accent: #1a1e2f; /* --bg-3 */
-	--sidebar-accent-foreground: #f2f5fb; /* --text-hi */
-	--sidebar-border: #232840; /* --line */
-	--sidebar-ring: #3dd6ff; /* --focus */
+	--sidebar: #0b0b0d; /* --bg-1 */
+	--sidebar-foreground: #bdb9b1; /* --text */
+	--sidebar-primary: #edeae3; /* --text-hi */
+	--sidebar-primary-foreground: #050506; /* --text-inv */
+	--sidebar-accent: #1c1c21; /* --bg-3 */
+	--sidebar-accent-foreground: #edeae3; /* --text-hi */
+	--sidebar-border: #26262c; /* --line */
+	--sidebar-ring: #edeae3; /* --focus */
 
-	--code-background: #0c0e16; /* --bg-1 */
-	--code-foreground: #f2f5fb; /* --text-hi */
+	--code-background: #0b0b0d; /* --bg-1 */
+	--code-foreground: #edeae3; /* --text-hi */
 }

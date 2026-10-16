@@ -3,7 +3,8 @@
 	import { onMount, tick } from 'svelte';
 	import { findGpu, matchGpu, type Gpu, type Os } from '$lib/estimator';
 	import { parseHwCode, type HwCode } from '$lib/hwcode';
-	import { currentLang, href } from '$lib/i18n';
+	import { cardsCopy } from '$lib/cards/copy';
+	import { cardsHref, currentLang, href } from '$lib/i18n';
 	import { ob } from '$lib/onboarding/copy';
 	import GpuCombobox from '$lib/onboarding/GpuCombobox.svelte';
 	import ScanCommands from '$lib/onboarding/ScanCommands.svelte';
@@ -125,6 +126,7 @@
 				</div>
 			</fieldset>
 			<button class="btn btn--primary btn--lg btn--block" type="submit">{t.submit} <span class="arrow" aria-hidden="true">→</span></button>
+			<a class="btn btn--secondary btn--lg btn--block" href={cardsHref(lang)}>{cardsCopy[lang].gallery.hwLink} <span class="arrow" aria-hidden="true">→</span></a>
 		</form>
 
 		<section class="card card--inset stack scan" aria-labelledby="unknown-title">

@@ -1,6 +1,7 @@
 <script lang="ts">
 	import '$design/tokens.css';
 	import '$design/components.css';
+	import '$design/showcase.css';
 	import { afterNavigate } from '$app/navigation';
 
 	let { children } = $props();

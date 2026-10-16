@@ -295,14 +295,16 @@ const pl = {
 		},
 		gainNone: '0 (już naprawione)',
 		gainSoon: 'wkrótce',
-		qualityTitle: 'Jakość odpowiedzi',
-		qualityBadge: 'md5 = wzorzec',
-		qualityBody: (a: string, b: string, c: string) =>
-			`Po każdej zmianie silnika porównujemy greedy md5 odpowiedzi z wersją bazową. Po instalacji 70 łatek wszystkie są zgodne: Qwen bez spekulacji ${a}…, Qwen z MTP ${b}…, LFM ${c}….`,
+		qualityTitle: 'Ten sam model, ta sama jakość — zmierzone',
+		qualityBadge: 'KLD w szumie upstreamu',
+		qualityBody: (sOurs: string, sNoise: string, bOurs: string, bNoise: string) =>
+			`Zwykły tryb greedy naszego silnika nie daje dokładnie tego samego tekstu co upstream (łatki 0001/0002/0013: wielokolumnowe MMVQ i fuzja prologu GDN). Dlatego jakość mierzymy KLD. Na RTX 3060 rozbieżność wobec upstreamu mieści się w szumie samego upstreamu: Saluki ${sOurs} przy szumie ${sNoise}, Bonsai ${bOurs} przy ${bNoise}. LFM w formatach QAD-Q4_0 i NVFP4 daje md5 identyczne z upstreamem.`,
+		md5Regression: (a: string, b: string, c: string) =>
+			`Greedy md5 to u nas test regresji: po instalacji 70 łatek skróty odpowiedzi są równe zapisanemu wzorcowi naszego silnika (Qwen bez spekulacji ${a}…, z MTP ${b}…, LFM ${c}…). To nie jest zgodność z upstreamem.`,
 		mtpNote:
-			'Spekulacja (MTP) daje w llama.cpp inny tekst niż dekodowanie bez niej, także w wersji upstream. Dlatego porównujemy MTP z MTP, nie z trybem bez spekulacji. Tryb spekulacji bit w bit jest w badaniach (raport 12).',
+			'Spekulacja (MTP) daje w llama.cpp inny tekst niż dekodowanie bez niej, także w wersji upstream. Dlatego porównujemy MTP z MTP, nie z trybem bez spekulacji. Tryb spekulacji, który pisze dokładnie to samo co dekodowanie bez niej, jest w badaniach (raport 12).',
 		details: 'Szczegóły techniczne',
-		kldIntro: 'Te zmiany nie są bit w bit. Przyjęliśmy je bramką KLD: rozbieżność wobec wersji bazowej mieści się w szumie samego pomiaru.',
+		kldIntro: 'Te zmiany zmieniają numerykę. Przyjęliśmy je bramką KLD: rozbieżność wobec wersji bazowej mieści się w szumie samego pomiaru.',
 		rawTitle: 'Surowe pomiary',
 		rawCaption: 'Wpisy z rejestru pomiarów użyte na tym ekranie',
 		rawCol: { what: 'Pomiar', value: 'Wartość', harness: 'Harness', build: 'Build i backend', source: 'Źródło' },
@@ -788,14 +790,16 @@ const en: DesktopDict = {
 		},
 		gainNone: '0 (already fixed)',
 		gainSoon: 'soon',
-		qualityTitle: 'Answer quality',
-		qualityBadge: 'md5 = reference',
-		qualityBody: (a: string, b: string, c: string) =>
-			`After every engine change we compare the greedy md5 of answers with the base version. After installing the 70 patches all of them match: Qwen without speculation ${a}…, Qwen with MTP ${b}…, LFM ${c}….`,
+		qualityTitle: 'Same model, same quality — measured',
+		qualityBadge: 'KLD within upstream noise',
+		qualityBody: (sOurs: string, sNoise: string, bOurs: string, bNoise: string) =>
+			`In plain greedy mode our engine does not produce exactly the same text as upstream (patches 0001/0002/0013: multi-column MMVQ and the fused GDN prologue). So we measure quality with KLD. On the RTX 3060 the divergence from upstream stays within upstream’s own noise: Saluki ${sOurs} with noise ${sNoise}, Bonsai ${bOurs} with ${bNoise}. LFM in the QAD-Q4_0 and NVFP4 formats gives an md5 identical to upstream.`,
+		md5Regression: (a: string, b: string, c: string) =>
+			`For us, greedy md5 is a regression test: after installing the 70 patches the answer hashes equal our engine’s stored reference (Qwen without speculation ${a}…, with MTP ${b}…, LFM ${c}…). That is not identity with upstream.`,
 		mtpNote:
-			'In llama.cpp, speculation (MTP) produces different text than plain decoding, upstream too. So we compare MTP with MTP, not with plain decoding. A bit-exact speculation mode is being researched (report 12).',
+			'In llama.cpp, speculation (MTP) produces different text than plain decoding, upstream too. So we compare MTP with MTP, not with plain decoding. A speculation mode that writes exactly what plain decoding writes is being researched (report 12).',
 		details: 'Technical details',
-		kldIntro: 'These changes are not bit-identical. We accepted them through a KLD gate: the divergence from the base version is within the noise of the measurement itself.',
+		kldIntro: 'These changes alter the numerics. We accepted them through a KLD gate: the divergence from the base version is within the noise of the measurement itself.',
 		rawTitle: 'Raw measurements',
 		rawCaption: 'Measurement registry entries used on this screen',
 		rawCol: { what: 'Measurement', value: 'Value', harness: 'Harness', build: 'Build and backend', source: 'Source' },

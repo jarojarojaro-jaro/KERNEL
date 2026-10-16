@@ -19,11 +19,36 @@ export function href(lang: Lang, path = '/'): string {
 	return `/${lang}/${clean ? `${clean}/` : ''}${hash ? `#${hash}` : ''}`;
 }
 
-/** Same page in the other language (keeps the rest of the path and the query). */
-export function switchLangHref(to: Lang): string {
-	const parts = page.url.pathname.split('/');
+/** Localised first path segment of the cards explorer: `/pl/karty/`, `/en/cards/`. */
+export const CARDS_SEG = { pl: 'karty', en: 'cards' } as const satisfies Record<Lang, string>;
+
+/** Path of the cards explorer (optionally one card or the compare view) in a language. */
+export function cardsHref(lang: Lang, rest = ''): string {
+	return href(lang, `/${CARDS_SEG[lang]}/${rest}`);
+}
+
+/** Localised segment of the results page: `/pl/wyniki/`, `/en/results/`. */
+export const RESULTS_SEG = { pl: 'wyniki', en: 'results' } as const satisfies Record<Lang, string>;
+
+export function resultsHref(lang: Lang): string {
+	return href(lang, `/${RESULTS_SEG[lang]}/`);
+}
+
+/** `pathname` translated to another language: swaps the lang prefix and localised segments. */
+export function localizePath(pathname: string, to: Lang): string {
+	const parts = pathname.split('/');
 	parts[1] = to;
+	if (parts[2] === CARDS_SEG.pl || parts[2] === CARDS_SEG.en) {
+		parts[2] = CARDS_SEG[to];
+		if (parts[3] === 'porownaj' || parts[3] === 'compare') parts[3] = to === 'pl' ? 'porownaj' : 'compare';
+	}
+	if (parts[2] === RESULTS_SEG.pl || parts[2] === RESULTS_SEG.en) parts[2] = RESULTS_SEG[to];
 	return parts.join('/') || `/${to}`;
+}
+
+/** Same page in the other language (keeps the rest of the path). */
+export function switchLangHref(to: Lang): string {
+	return localizePath(page.url.pathname, to);
 }
 
 /**
