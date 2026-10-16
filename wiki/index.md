@@ -69,7 +69,7 @@ Audyt liczb: [[AUDYT]].
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (17)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (25)
+- [[research/_hub|research]] — Streszczenia raportów (26)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (24)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (25)
 
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-16 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
 - 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
 
-Razem 340 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
+Razem 341 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

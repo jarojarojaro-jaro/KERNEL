@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (25)
+## Notatki (26)
 
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
 - [[raport-01-konkurencja|Raport 01: konkurencja]] — Detekcja sprzętu i rekomendacja modelu to już standard; żaden produkt konsumencki nie łączy pomiaru, długiej optymalizacji poza flagami, weryfikacji bitowej i raportu przed → po (stan 2026-10-15).
@@ -33,6 +33,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-12-bit-exact|Raport 12: bitowo identyczna spekulacja]] — Plain greedy (`c4708318`) i MTP (`6f14e814`) dają różne md5, bo ta sama pozycja liczona jest innym kernelem przy N=1 i N=2..6; tryb `LLAMA_SPEC_BITEXACT=1` na GPU wyrównał warstwy 0–6, zostało wyjście atencji `kqv_out-3`, a następne komendy GPU czekają na zgodę.
 - [[raport-13-rocm-10-1|Raport 13: ROCm 10.1]] — ROCm 10.1 nic istotnego nie daje na gfx1100: zostajemy na 10.0, a 10.1 trzymamy obok jako tarball user-local; ważniejsze odkrycia to ATT na gfx1100 i przyczyna PMC = 0.
 - [[raport-14-nemotron-3090|Raport 14: Nemotron 3.5 Bolt 74B-A9B na RTX 3090]] — Nemotron 3.5 Bolt 74B-A9B (IQ2_XXS, 22 GB) mieści się na RTX 3090 z drafterem DFlash; nasz silnik po dwóch nowych łatkach daje 87.2 → 141.1 t/s (×1.62 vs domyślny llama.cpp, ×1.07 vs najlepsze flagi upstream), ale KLD jest niezmierzone.
+- [[raport-15-synteza|Raport 15: synteza fali researchu (14, 15a–15f)]] — Ranking działań po audycie głośnych twierdzeń: najpierw fabryka v1 i logowanie lookupu, potem ogon lookupu szerokości 8, PM4-PDL dla LFM i port `kvq` na CUDA.
 - [[raport-15a-monokernel|Raport 15a: megakernele dla decode (vLLM MonoKernel)]] — Trwały kernel *dataflow* z prefetchem wag mógłby dać LFM2.5 na XTX +12…+28% `[SZACUNEK]`, ale trwały kernel z barierami między fazami nie pobije PM4; tańszy pierwszy krok to „PM4-PDL” (+5…+15%, bitowo).
 - [[raport-15b-spekulacja-frontier|Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)]] — Lookup z kontekstu i szeroki blok weryfikacji (HyperQwen) dają nam mało, bo nasza głowica MTP już kopiuje (P(MTP d1 | lookup d1) = 0.968 vs 0.765 bazowo); sens ma tylko doklejanie ogona („EXT”) na edycjach agenta.
 - [[raport-15c-nowe-silniki|Raport 15c: nowe silniki konkurencji (Magnitude, tqLLM, Actual, TensorFold 1.0.12)]] — Strojenie kerneli na komputerze użytkownika przestało być unikalne (Magnitude), a „spekulacja nie zmienia odpowiedzi” robią już tqLLM, Actual i TensorFold; unikalne zostaje AMD natywnie, dowolny GGUF, przed → po wobec tuned upstream i opublikowana bramka md5/KLD.
