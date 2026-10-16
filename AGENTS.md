@@ -1,6 +1,7 @@
 # KERNEL: instrukcje dla agentów
 
 - **TWARDA ZASADA (decyzja 2026-10-16):** wszystko nowe, czyli research, pomiary, eksperymenty (także nieudane), decyzje, lekcje i zmiany produktu, trafia do `wiki/` zaraz po zadaniu. Zadanie bez wpisu w wiki nie jest skończone. Każdy podagent kończy raport sekcją „Do bazy wiedzy” (folder, tytuł, liczby ze źródłem). Patrz `wiki/decyzje/2026-10-16-wszystko-do-bazy-wiedzy.md`.
+- **TWARDA ZASADA (2026-10-16): nie płacimy za stojące karty w chmurze.** Przygotowania i kompilacje lokalnie przed wynajmem, pomiary w kolejce bez przerw, po ostatnim pomiarze od razu `collect` + `destroy`. Główny agent pilnuje tego strażnikiem `qwen-opt/cloud/idle-watch.py` (alarm: GPU < 5% przez 15 min). Patrz `wiki/decyzje/2026-10-16-nie-placimy-za-przestoj.md`.
 - Baza wiedzy projektu: `wiki/` (Obsidian, Markdown z [[linkami]]). Zanim zaczniesz zadanie, przeczytaj `wiki/index.md` i pasujące notatki: `python3 wiki/tools/wiki.py search <słowa>`.
 - Decyzje użytkownika w `wiki/decyzje/` są wiążące i mają pierwszeństwo przed resztą notatek.
 - Liczby w notatkach mają datę i źródło (`zrodlo:`); przed użyciem w ważnej decyzji sprawdź źródło. `status: do-sprawdzenia` = niepotwierdzone.

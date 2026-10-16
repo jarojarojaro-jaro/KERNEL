@@ -16,6 +16,7 @@ Salda kont nie zapisujemy w wiki.
 
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
+- [[decyzje/2026-10-16-nie-placimy-za-przestoj|nie płacimy za przestój]]
 - [[2026-10-16-runpod-drugi-pod]]
 - [[2026-10-16-najpierw-wynajem-na-vast]]
 - [[firma-runpod]]
