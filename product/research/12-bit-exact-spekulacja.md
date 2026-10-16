@@ -140,3 +140,58 @@ Najmocniejszy kandydat dotyczy tylko MTP. `pending_h` (common/speculative.cpp:16
 Poprawka w worktree: zerowanie dla `pos==0`. Przy bitexact tekst nie zależy od draftów nawet bez niej.
 
 GPU: uruchomić `det_probe` na serwerze plain. Jeśli wynik jest identyczny, przyczyna jest potwierdzona.
+
+## 9. Pierwszy test GPU (Main, 2026-10-16) i narzędzie per-op
+
+- c09ac6aab: bez env plain = `c4708318` (brak regresji). Z `LLAMA_SPEC_BITEXACT=1`: plain `8cca9b70`, MTP `4c6d328b`, czyli **nadal różne**. Pierwszy rozjazd przy znaku 129, przy krótkim kontekście, więc FA nie jest przyczyną (1 split przy obu N). Tryb zmienia ścieżkę N=1: plain różni się od domyślnego od znaku 747.
+- Narzędzie `llama-bx-diff` (`examples/bx-diff`, commit na gałęzi):
+  - kontekst A: plain, token po tokenie;
+  - kontekst B: n_rs_seq N-1 (LAG), embeddings_nextn, te same tokeny jako jedna weryfikacja;
+  - porównuje bitowo wycinek tokenu każdego węzła pasującego do regexu oraz logity.
+- Kandydaci bez dowodu offline: `gdn_conv_ab<Q8_0,n>` (alpha/beta + conv), producenci q8_1, pozycja kolumny w WMMA kvq (przy krótkim kontekście tylko to), conv LAG vs plain.
+- Uwaga: callback dzieli graf na każdym dopasowanym węźle, więc fuzje przecinające węzeł są wyłączone w obu przebiegach.
+
+## 10. Wynik llama-bx-diff na GPU i poprawka FA (2026-10-16)
+
+- Z `BITEXACT=1` warstwy 0-6 są identyczne. Pierwszy różniący się węzeł to `kqv_out-3` (pierwsza warstwa pełnej uwagi), 368/6144 słów, max |d| 1.19e-7 na pozycji 0.
+- `--no-lag` daje to samo, więc GDN/LAG wykluczone. Q/K/V przed FA są identyczne.
+- **Analiza kodu kvq:**
+  - token 0 zajmuje te same kolumny 0..5 kafla przy N=1 i N=5;
+  - splity są identyczne (stały split);
+  - kod per kolumna jest ten sam.
+  Jedyna różnica wejścia bloku to zawartość pozostałych kolumn kafla: zera przy N=1, tokeny 1-2 przy N=5. Podejrzenie: sprzętowe WMMA albo `__any(raise_max)` nie są w pełni niezależne kolumnowo [INFERENCE, nieudowodnione].
+- **Poprawka (commit 77240c9b3 na gałęzi `batch-invariant`):** w trybie bitexact jeden token na blok (`cols_per_tile = gqa`). Wejście bloku jest wtedy identyczne z przypadkiem jednotokenowym. `GGML_HIP_BITEXACT_FA_SHARED=1` przywraca wspólne kafle do A/B.
+- **Koszt:** FA weryfikacji czyta K/V raz na token zamiast raz na kafel 16 kolumn: N=5 to 5 bloków zamiast 2 (×2.5 strumienia KV), N=2 to ×2.
+  - Krótki kontekst (<4k): pomijalne.
+  - 32k: szacunkowo +1.5-3 ms na weryfikację (~5-10%) [INFERENCE].
+  - Jeśli przyczyną okaże się `__any(raise_max)`, a nie WMMA, tańsza poprawka to skalowanie per kolumna bez gałęzi wspólnej dla fali.
+
+## 11. Analiza n_kv / maski, logowanie, następny krok GPU — **czeka na zgodę na GPU**
+
+Wynik GPU z 77240c9b3: per-token bloki (f1) i wspólne kafle (f3, `GGML_HIP_BITEXACT_FA_SHARED=1`) dają **bitowo te same** różnice. Q/K/V-cur warstwy 3 są identyczne, różni się tylko wyjście FA (`kqv_out-3`: 368/6144 słów, 1.19e-7). Wniosek: dla tokenu 0 przyczyną nie są sąsiednie kolumny kafla (o ile ścieżka bitexact w ogóle się wykonała). Zostają wejścia FA, których narzędzie dotąd nie porównywało: wiersze cache K/V (q4_0, widoki), maska f16, n_kv i rozmieszczenie komórek.
+
+Analiza kodu (CPU):
+- **n_kv:** w plain maska ma [2048,1], czyli n_kv = cały cache 2048. Przy stałym splicie 512 wierszy (bitexact) granice splitów są liczone od komórki 0 i nie zależą od n_kv. Wiersze ponad pozycją tokenu są zamaskowane (-inf), więc P = 0. Puste splity dają w combine wagę 0. Przy różnym n_kv wynik byłby więc nadal identyczny, pod warunkiem że wiersz = pozycja i zamaskowane V są skończone (cache zerowany przy tworzeniu, drafty skończone).
+- **Pętla, warpy, combine:** `k0 = kv_begin + warp*16 + i*128` nie zależy od N ani od n_kv. Maska jest czytana jako `mask_row + k0 + h` dla wiersza tokenu. Combine działa per wiersz (`fattn-common.cuh:925-951`).
+- **Pozostali kandydaci:**
+  1. komórki cache różne w kontekście B (n_rs_seq 4 / LAG) niż w A (wiersz ≠ pozycja, więc inny podział na warpy i splity);
+  2. różna treść wiersza p0 (K/V tokenu 0 zapisane przez set_rows 5 wierszy vs 1);
+  3. maska wiersza 0 różna (np. inna wartość w zamaskowanych komórkach albo inny wiersz `nb31`);
+  4. ścieżka bitexact FA się nie wykonała.
+  Rozstrzyga to log i porównanie poniżej.
+- **Kod (commit 6e261fdb4):**
+  - `GGML_HIP_BITEXACT_FA_LOG=1` drukuje jedną linię na konfigurację (n_tokens, n_kv): bitexact, n_kv, cols_per_tile, ntiles, nsplit, kv_per_split, kształt i stride maski, adres K.
+  - `llama-bx-diff` porównuje teraz węzły f16 (maska) i wiersze widoków cache q4_0 (`cache_k_l3 (view)` itp., wiersze 0..pozycja tokenu).
+- **Poprawki zależne od wyniku (gotowe do wpisania, bez GPU nieweryfikowalne):**
+  - jeśli n_kv lub komórki się różnią, w trybie bitexact FA iteruje stały zakres (cały cache albo pad do 512) i wymaga, by komórka = pozycja;
+  - jeśli wiersz p0 w cache się różni, przyczyną jest zapis K/V (rope/FWHT/set_rows przy N), a nie FA.
+
+Komendy GPU (< 2 min, **czeka na zgodę na GPU**):
+```
+cd ~/wt/batchinv/build-hip/bin; M=~/models/Qwen3.8-27B-UD-Q4_K_XL.gguf; export LD_LIBRARY_PATH=$PWD:/opt/rocm/core-10.0/lib
+LLAMA_SPEC_BITEXACT=1 GGML_HIP_BITEXACT_FA_LOG=1 ./llama-bx-diff -m $M -n 5 -f '^kqv_out-3$' 2>&1 | grep -E 'kvq FA|^pos|RESULT'
+LLAMA_SPEC_BITEXACT=1 ./llama-bx-diff -m $M -n 5 -f '(kq_mask|cache_[kv]_l3|kqv_out-3$)' 2>&1 | grep -E '^pos|RESULT'
+```
+Oczekiwane:
+- (1) linie `kvq FA` dla n_tokens=1 i n_tokens=5 z `bitexact=1`, a w porównaniu ich n_kv, nsplit i adresu K;
+- (2) pierwszy różniący się węzeł: maska, wiersz cache albo dopiero `kqv_out-3`.
