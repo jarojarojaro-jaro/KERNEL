@@ -1,0 +1,135 @@
+{
+  "collapse-filter": true,
+  "search": "-path:tools",
+  "showTags": false,
+  "showAttachments": false,
+  "hideUnresolved": true,
+  "showOrphans": true,
+  "collapse-color-groups": false,
+  "colorGroups": [
+    {
+      "query": "path:decyzje/",
+      "color": {
+        "a": 1,
+        "rgb": 15022389
+      }
+    },
+    {
+      "query": "path:modele/",
+      "color": {
+        "a": 1,
+        "rgb": 9315498
+      }
+    },
+    {
+      "query": "path:karty/",
+      "color": {
+        "a": 1,
+        "rgb": 3754411
+      }
+    },
+    {
+      "query": "path:rocm/",
+      "color": {
+        "a": 1,
+        "rgb": 14162784
+      }
+    },
+    {
+      "query": "path:nvidia/",
+      "color": {
+        "a": 1,
+        "rgb": 4431943
+      }
+    },
+    {
+      "query": "path:kernele/",
+      "color": {
+        "a": 1,
+        "rgb": 16485376
+      }
+    },
+    {
+      "query": "path:latki/",
+      "color": {
+        "a": 1,
+        "rgb": 16011550
+      }
+    },
+    {
+      "query": "path:metody/",
+      "color": {
+        "a": 1,
+        "rgb": 44225
+      }
+    },
+    {
+      "query": "path:eksperymenty/",
+      "color": {
+        "a": 1,
+        "rgb": 16635957
+      }
+    },
+    {
+      "query": "path:lekcje/",
+      "color": {
+        "a": 1,
+        "rgb": 7162945
+      }
+    },
+    {
+      "query": "path:narzedzia/",
+      "color": {
+        "a": 1,
+        "rgb": 5533306
+      }
+    },
+    {
+      "query": "path:chmura/",
+      "color": {
+        "a": 1,
+        "rgb": 2001125
+      }
+    },
+    {
+      "query": "path:repo/",
+      "color": {
+        "a": 1,
+        "rgb": 8172354
+      }
+    },
+    {
+      "query": "path:research/",
+      "color": {
+        "a": 1,
+        "rgb": 6174129
+      }
+    },
+    {
+      "query": "path:produkt/",
+      "color": {
+        "a": 1,
+        "rgb": 35195
+      }
+    },
+    {
+      "query": "path:ludzie-firmy/",
+      "color": {
+        "a": 1,
+        "rgb": 12634675
+      }
+    }
+  ],
+  "collapse-display": true,
+  "showArrow": false,
+  "textFadeMultiplier": 0,
+  "nodeSizeMultiplier": 1,
+  "lineSizeMultiplier": 1,
+  "collapse-forces": true,
+  "centerStrength": 0.5,
+  "repelStrength": 10,
+  "linkStrength": 1,
+  "linkDistance": 250,
+  "scale": 1,
+  "close": true
+}
