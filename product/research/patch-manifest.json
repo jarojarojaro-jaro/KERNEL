@@ -1,0 +1,5332 @@
+{
+ "_meta": {
+  "generated": "2026-10-15",
+  "report": "08-analiza-platformy-latek.md",
+  "plan": "PLAN.md §4.5, Faza 0 E3",
+  "repo": "~/llama-master",
+  "base": "e60eff95f (upstream 2026-10-09)",
+  "head": "amd-opt @ f61994f58 (70 łatek)",
+  "patches_dir": "~/KERNEL/qwen-opt/patches/llama.cpp-amd-opt/",
+  "evidence_format": "patches/<plik>.patch:<linia w pliku łatki> albo ~/llama-master@amd-opt:<ścieżka>:<linia>",
+  "verdicts": {
+   "works+gain": "działa i (oczekiwanie) daje zysk; poza linux-amd-hip-rdna3 to [SZACUNEK] oparty na mechanizmie łatki",
+   "works-neutral": "działa/kompiluje się, bez zysku (fix, narzędzie, opt-in domyślnie wyłączony, ścieżka nieaktywna lub fallback)",
+   "excluded": "wykluczone: kod wycięty w kompilacji, bramka runtime wyłącza ścieżkę, inny backend albo brak runtime (ROCr)",
+   "unknown-needs-test": "kod jest aktywny na tej platformie, ale nie był uruchomiony: poprawność bitowa i/lub zysk wymagają testu (lista testów w raporcie §8)"
+  },
+  "columns": [
+   "linux-amd-hip-rdna3",
+   "linux-amd-hip-rdna3.5",
+   "linux-amd-hip-rdna2",
+   "linux-amd-hip-rdna4",
+   "windows-amd-hip-rdna3",
+   "windows-amd-hip-rdna3.5",
+   "windows-amd-hip-rdna2",
+   "windows-amd-hip-rdna4",
+   "linux-amd-vulkan-rdna3",
+   "linux-amd-vulkan-rdna2_4",
+   "windows-amd-vulkan-rdna3",
+   "windows-amd-vulkan-rdna2_4",
+   "linux-nvidia-cuda-sm86",
+   "linux-nvidia-cuda-sm89",
+   "linux-nvidia-cuda-sm120",
+   "windows-nvidia-cuda-sm86",
+   "windows-nvidia-cuda-sm89",
+   "windows-nvidia-cuda-sm120",
+   "macos-metal-apple"
+  ],
+  "column_notes": {
+   "rdna3": "gfx1100-1102 (RDNA3_0); zmierzone tylko gfx1100 (7900 XTX, 96 CU)",
+   "rdna3.5": "gfx1150-1153 (Strix/Strix Halo)",
+   "rdna2": "gfx1030-1037",
+   "rdna4": "gfx1200/1201",
+   "windows-amd-hip": "HIP SDK for Windows (runtime HIP na PAL, nie ROCr)",
+   "vulkan-rdna2_4": "RDNA2 i RDNA4 razem (0010 i 2-wierszowe IQ4_XS z 0007 tylko RDNA3/4)",
+   "nvidia": "sm_86/sm_89/sm_120 mają identyczne werdykty: łatki nie zawierają kodu specyficznego dla arch NVIDIA"
+  },
+  "gain_units": {
+   "qwen_step": "ms/krok, Qwen3.8-27B MTP n=4, spec_sweep T=1 (suma 14.14 ms vs zmierzone 41.7->27.74 = 13.96 ms)",
+   "lfm_token": "ms/token, LFM2.5-24B-A2B tg128 (suma 1.736 vs 5.07->3.40)"
+  },
+  "sources": {
+   "amd_hip_runtime_api": "https://rocm.docs.amd.com/projects/HIP/en/latest/how-to/hip_runtime_api.html (\"rocclr ... ROCr on Linux or PAL on Microsoft Windows\")",
+   "amd_hip_sdk_components": "https://rocm.docs.amd.com/projects/install-on-windows/en/latest/conceptual/component-support.html (HIP SDK for Windows 7.2.0: Runtime HIP closed source, Profiler: Radeon GPU Profiler zamiast ROCProfiler)",
+   "clr_device_cpp": "https://github.com/ROCm/rocm-systems/blob/6e6db1702450885dfa8d1234b1e8e1e5ebab626f/projects/clr/rocclr/device/device.cpp#L843-L907 (\"On Windows by default keep PAL path for now, until we completely switch to ROCr backend\")",
+   "clr_rocclr_cmake": "https://github.com/ROCm/rocm-systems/blob/6e6db1702450885dfa8d1234b1e8e1e5ebab626f/projects/clr/rocclr/cmake/ROCclr.cmake#L7-L8",
+   "therock_windows_support": "https://github.com/ROCm/TheRock/blob/4d992b34d67c91397ecaf4483d73d01c0b5c3fa3/docs/development/windows_support.md (ROCR-Runtime: Unsupported; clr: prebuilt PAL interop; rocprofiler-sdk: Unsupported)",
+   "rocm_systems_pr_8900": "https://github.com/ROCm/rocm-systems/pull/8900 (ROCr jako domyślny backend także na Windows: draft, zamknięty bez merge 2026-10-04)",
+   "therock_pr_6713": "https://github.com/ROCm/TheRock/pull/6713 (GPU_ENABLE_PAL=0 domyślnie: draft)",
+   "ms_tdr": "https://learn.microsoft.com/en-us/windows-hardware/drivers/display/tdr-registry-keys",
+   "nvidia_sysmem_fallback": "https://nvidia.custhelp.com/app/answers/detail/a_id/5490"
+  },
+  "global_blockers": [
+   {
+    "platform": "windows-amd-hip-*",
+    "issue": "0060 dodaje bezwarunkowe find_package(hsa-runtime64 REQUIRED) i link hsa-runtime64; HIP SDK for Windows nie ma ROCr -> [SZACUNEK] konfiguracja CMake całego ggml-hip padnie",
+    "evidence": [
+     "patches/0060-HIP-RDNA3-replay-a-captured-decode-graph-as-one-PM4-.patch:776",
+     "~/llama-master@amd-opt:ggml/src/ggml-hip/CMakeLists.txt:49,145"
+    ],
+    "fix": "if (GGML_HIP_PM4 AND NOT WIN32) + #ifdef w hip-pm4.cu"
+   },
+   {
+    "platform": "windows-*-msvc (CUDA)",
+    "issue": "__builtin_popcountll w tests/test-backend-ops.cpp (0019, 0057) -> [SZACUNEK] MSVC nie skompiluje testów",
+    "evidence": [
+     "patches/0019-CUDA-HIP-fold-the-q-k-Hadamard-rotation-of-a-rotated.patch:477",
+     "patches/0057-CUDA-HIP-single-token-attention-input-q-k-norm-rope-.patch:613"
+    ],
+    "fix": "std::popcount (C++20) lub pętla"
+   },
+   {
+    "platform": "linux/windows-nvidia-cuda-*",
+    "issue": "przełączniki GGML_HIP_* czytane przez ggml_cuda_env_switch są domyślnie WŁĄCZONE także w buildzie CUDA",
+    "evidence": [
+     "~/llama-master@amd-opt:ggml/src/ggml-cuda/common.cuh:1760-1763"
+    ],
+    "fix": "nazwy GGML_CUDA_* lub domyślne wyłączenie na NVIDIA do czasu testów T1-T3"
+   }
+  ]
+ },
+ "0001": {
+  "file": "0001-HIP-mmvq-multi-column-2-8-vec_dot-for-RDNA3-with-wid.patch",
+  "title": "HIP mmvq: multi-column (2-8) vec_dot for RDNA3 with wide contiguous loads (Q4_K/Q5_K/Q6_K/IQ4_XS/IQ4_NL)",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna4": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic (spec verify 2-8 kol.; K-/IQ-quants)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit (RDNA3, greedy md5); NVIDIA: numerics-unverified (inny vdr/podział bloków)",
+  "gain_xtx": "Q5_K 8 kol. 296->621 GB/s; z 0002: MTP 68.6->82.3 t/s (+20%) [pre-baseline]",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "unknown-needs-test",
+   "linux-amd-hip-rdna4": "unknown-needs-test",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0001-HIP-mmvq-multi-column-2-8-vec_dot-for-RDNA3-with-wid.patch:345",
+   "patches/0001-HIP-mmvq-multi-column-2-8-vec_dot-for-RDNA3-with-wid.patch:363",
+   "patches/0001-HIP-mmvq-multi-column-2-8-vec_dot-for-RDNA3-with-wid.patch:334",
+   "~/llama-master@amd-opt:ggml/src/ggml-cuda/mmvq.cu:124-146 (mmvq_has_multi bez strażnika arch)",
+   "~/llama-master@amd-opt:ggml/src/ggml-cuda/mmvq.cu:1494 (use_multi na każdej arch)"
+  ],
+  "notes": "KOREKTA raportu 07/NOTES: ścieżka vec_dot_q_multi NIE jest tylko-HIP. Strojenie wierszy/warp jest per-tabela RDNA3_0, ale sam multi vec_dot (i inny vdr) działa na NVIDIA, RDNA2/3.5/4 przy 2-8 kolumnach (weryfikacja spekulacji). Zysk pre-baseline: z 0002 MTP 68.6->82.3 t/s (+20%)."
+ },
+ "0002": {
+  "file": "0002-HIP-mmvq-multi-column-i-quants-Q2_K-per-type-rows-pe.patch",
+  "title": "HIP mmvq multi-column: i-quants, Q2_K, per-type rows per block on RDNA3",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna4": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic (IQ1-IQ3, Q2_K)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit (RDNA3)",
+  "gain_xtx": "Q2_K 8 kol. 132->272 GB/s [pre-baseline]",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "unknown-needs-test",
+   "linux-amd-hip-rdna4": "unknown-needs-test",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0002-HIP-mmvq-multi-column-i-quants-Q2_K-per-type-rows-pe.patch:28"
+  ],
+  "notes": "Jak 0001: typy dołączone do mmvq_has_multi działają na wszystkich arch."
+ },
+ "0003": {
+  "file": "0003-CUDA-HIP-mmvq-reuse-q8_1-activations-across-consecut.patch",
+  "title": "CUDA/HIP mmvq: reuse q8_1 activations across consecutive MUL_MATs with the same src1",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "ggml/src/ggml-cuda/vendors/hip.h"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "+2-4% e2e [pre-baseline]",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0003-CUDA-HIP-mmvq-reuse-q8_1-activations-across-consecut.patch:115",
+   "patches/0003-CUDA-HIP-mmvq-reuse-q8_1-activations-across-consecut.patch:117",
+   "patches/0003-CUDA-HIP-mmvq-reuse-q8_1-activations-across-consecut.patch:164"
+  ],
+  "notes": "Cache q8_1 aktywacji; +2-4% e2e (pre-baseline). Alokacja poza capture grafu."
+ },
+ "0004": {
+  "file": "0004-MTP-optional-reduced-vocabulary-draft-LM-head-spec-d.patch",
+  "title": "MTP: optional reduced-vocabulary draft LM head (--spec-draft-vocab)",
+  "files": [
+   "common/arg.cpp",
+   "common/common.h",
+   "common/speculative.cpp",
+   "include/llama.h",
+   "src/llama-model.cpp",
+   "src/llama-model.h",
+   "src/models/qwen35.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (src/ llama, graf modelu; wymaga opów na backendzie)",
+  "scope": "llama",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny backend ggml",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "MTP (qwen35)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [
+    "LLAMA_ARG_SPEC_DRAFT_VOCAB",
+    "LLAMA_ARG_SPEC_DRAFT_VOCAB_N"
+   ],
+   "loo_cat": "cli",
+   "revert_clean": null,
+   "default": "opt-in (CLI), używane przez run-llm.sh"
+  },
+  "correctness": "dist (weryfikacja bez zmian)",
+  "gain_xtx": "+7.5% (słownik 64k) [pre-baseline]",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "unknown-needs-test",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "unknown-needs-test"
+  },
+  "evidence": [
+   "patches/0004-MTP-optional-reduced-vocabulary-draft-LM-head-spec-d.patch:26",
+   "patches/0004-MTP-optional-reduced-vocabulary-draft-LM-head-spec-d.patch:86"
+  ],
+  "notes": "+7.5% (64k słownika), pre-baseline. Zmiana grafu/llama: każdy backend."
+ },
+ "0005": {
+  "file": "0005-mmvq-drop-local-tuning-include.patch",
+  "title": "mmvq: drop local tuning include",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "kompiluje się (gfx1100)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się, bez wpływu na wydajność",
+   "sm_89": "kompiluje się, bez wpływu na wydajność",
+   "sm_120": "kompiluje się, bez wpływu na wydajność"
+  },
+  "model_family": [
+   "n/a"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "n/a",
+  "gain_xtx": "-",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": 0
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "works-neutral",
+   "linux-amd-hip-rdna4": "works-neutral",
+   "windows-amd-hip-rdna3": "works-neutral",
+   "windows-amd-hip-rdna3.5": "works-neutral",
+   "windows-amd-hip-rdna2": "works-neutral",
+   "windows-amd-hip-rdna4": "works-neutral",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "works-neutral",
+   "linux-nvidia-cuda-sm89": "works-neutral",
+   "linux-nvidia-cuda-sm120": "works-neutral",
+   "windows-nvidia-cuda-sm86": "works-neutral",
+   "windows-nvidia-cuda-sm89": "works-neutral",
+   "windows-nvidia-cuda-sm120": "works-neutral",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0005-mmvq-drop-local-tuning-include.patch:18"
+  ],
+  "notes": "Higiena builda."
+ },
+ "0006": {
+  "file": "0006-vulkan-AMD-RDNA-small-M-matvec-uses-float-path-with-.patch",
+  "title": "vulkan: AMD RDNA small-M matvec uses float path with 256-thread workgroups (ssm_alpha/beta 13.6 -> 8.6 us)",
+  "files": [
+   "ggml/src/ggml-vulkan/ggml-vulkan.cpp"
+  ],
+  "backends": [
+   "Vulkan"
+  ],
+  "effective_backend": "Vulkan",
+  "guard": "runtime: vendor_id==AMD && architecture!=AMD_GCN (0006/0008/0009) lub is_rdna3_or_4 (0007 IQ4_XS, 0010)",
+  "scope": "vulkan",
+  "os": {
+   "linux": "OK",
+   "windows": "OK (sterownik AMD Vulkan zamiast RADV; zysk niezmierzony)",
+   "macos": "nie dotyczy (MoltenVK nie jest celem)"
+  },
+  "runtime": "Vulkan (RADV/AMDVLK/AMD Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna3": "zmierzone (RADV, gfx1100)",
+   "rdna3_5": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna4": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "sm_86": "n/a (backend Vulkan; brak w CUDA)",
+   "sm_89": "n/a (backend Vulkan; brak w CUDA)",
+   "sm_120": "n/a (backend Vulkan; brak w CUDA)"
+  },
+  "model_family": [
+   "generic (małe M, np. qwen35 ssm_alpha/beta)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "numerics (nie bramkowane osobno)",
+  "gain_xtx": "13.6->8.6 us/wyw. (~0.5 ms/krok, Vulkan)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "excluded",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "excluded",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0006-vulkan-AMD-RDNA-small-M-matvec-uses-float-path-with-.patch:21",
+   "patches/0006-vulkan-AMD-RDNA-small-M-matvec-uses-float-path-with-.patch:22"
+  ],
+  "notes": "Gate: vendor AMD && !GCN (RDNA1-4). Zysk ~0.5 ms/krok na Vulkan RADV."
+ },
+ "0007": {
+  "file": "0007-vulkan-MMVQ-fast-path-for-Q4_K-Q5_K-Q6_K-IQ4_XS-with.patch",
+  "title": "vulkan: MMVQ fast path for Q4_K/Q5_K/Q6_K/IQ4_XS with hoisted per-thread chunk decoding",
+  "files": [
+   "ggml/src/ggml-vulkan/ggml-vulkan.cpp",
+   "ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq.comp",
+   "ggml/src/ggml-vulkan/vulkan-shaders/mul_mat_vecq_funcs.glsl"
+  ],
+  "backends": [
+   "Vulkan"
+  ],
+  "effective_backend": "Vulkan",
+  "guard": "runtime: vendor_id==AMD && architecture!=AMD_GCN (0006/0008/0009) lub is_rdna3_or_4 (0007 IQ4_XS, 0010)",
+  "scope": "vulkan",
+  "os": {
+   "linux": "OK",
+   "windows": "OK (sterownik AMD Vulkan zamiast RADV; zysk niezmierzony)",
+   "macos": "nie dotyczy (MoltenVK nie jest celem)"
+  },
+  "runtime": "Vulkan (RADV/AMDVLK/AMD Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna3": "zmierzone (RADV, gfx1100)",
+   "rdna3_5": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna4": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "sm_86": "n/a (backend CUDA); w Vulkan na NVIDIA tylko shader 0007 (bitowo)",
+   "sm_89": "n/a (backend CUDA); w Vulkan na NVIDIA tylko shader 0007 (bitowo)",
+   "sm_120": "n/a (backend CUDA); w Vulkan na NVIDIA tylko shader 0007 (bitowo)"
+  },
+  "model_family": [
+   "generic (K-quants, IQ4_XS)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "0007-0010: -5.2% ms/krok (Vulkan)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "excluded",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "excluded",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0007-vulkan-MMVQ-fast-path-for-Q4_K-Q5_K-Q6_K-IQ4_XS-with.patch:37",
+   "patches/0007-vulkan-MMVQ-fast-path-for-Q4_K-Q5_K-Q6_K-IQ4_XS-with.patch:61"
+  ],
+  "notes": "Shader fast path dotyczy KAŻDEGO vendora używającego ścieżki MMVQ q8_1 w Vulkan (bitowo); 2 wiersze IQ4_XS tylko RDNA3/4. 0007-0010 razem: ms/krok -5.2% (Vulkan)."
+ },
+ "0008": {
+  "file": "0008-vulkan-AMD-RDNA-uses-the-integer-dot-MMVQ-path-for-Q.patch",
+  "title": "vulkan: AMD RDNA uses the integer-dot MMVQ path for Q6_K from four columns on",
+  "files": [
+   "ggml/src/ggml-vulkan/ggml-vulkan.cpp"
+  ],
+  "backends": [
+   "Vulkan"
+  ],
+  "effective_backend": "Vulkan",
+  "guard": "runtime: vendor_id==AMD && architecture!=AMD_GCN (0006/0008/0009) lub is_rdna3_or_4 (0007 IQ4_XS, 0010)",
+  "scope": "vulkan",
+  "os": {
+   "linux": "OK",
+   "windows": "OK (sterownik AMD Vulkan zamiast RADV; zysk niezmierzony)",
+   "macos": "nie dotyczy (MoltenVK nie jest celem)"
+  },
+  "runtime": "Vulkan (RADV/AMDVLK/AMD Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna3": "zmierzone (RADV, gfx1100)",
+   "rdna3_5": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna4": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "sm_86": "n/a (backend Vulkan; brak w CUDA)",
+   "sm_89": "n/a (backend Vulkan; brak w CUDA)",
+   "sm_120": "n/a (backend Vulkan; brak w CUDA)"
+  },
+  "model_family": [
+   "generic (Q6_K lm_head)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "numerics (KLD 0.0042, PASS)",
+  "gain_xtx": "lm_head n=6 1.9->1.3 ms (Vulkan)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "excluded",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "excluded",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0008-vulkan-AMD-RDNA-uses-the-integer-dot-MMVQ-path-for-Q.patch:30",
+   "patches/0008-vulkan-AMD-RDNA-uses-the-integer-dot-MMVQ-path-for-Q.patch:31"
+  ],
+  "notes": ""
+ },
+ "0009": {
+  "file": "0009-vulkan-AMD-RDNA-uses-the-float-matvec-path-for-m-409.patch",
+  "title": "vulkan: AMD RDNA uses the float matvec path for m < 4096 above four columns",
+  "files": [
+   "ggml/src/ggml-vulkan/ggml-vulkan.cpp"
+  ],
+  "backends": [
+   "Vulkan"
+  ],
+  "effective_backend": "Vulkan",
+  "guard": "runtime: vendor_id==AMD && architecture!=AMD_GCN (0006/0008/0009) lub is_rdna3_or_4 (0007 IQ4_XS, 0010)",
+  "scope": "vulkan",
+  "os": {
+   "linux": "OK",
+   "windows": "OK (sterownik AMD Vulkan zamiast RADV; zysk niezmierzony)",
+   "macos": "nie dotyczy (MoltenVK nie jest celem)"
+  },
+  "runtime": "Vulkan (RADV/AMDVLK/AMD Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna3": "zmierzone (RADV, gfx1100)",
+   "rdna3_5": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna4": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "sm_86": "n/a (backend Vulkan; brak w CUDA)",
+   "sm_89": "n/a (backend Vulkan; brak w CUDA)",
+   "sm_120": "n/a (backend Vulkan; brak w CUDA)"
+  },
+  "model_family": [
+   "generic (małe K/V proj.)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "numerics (float vs q8_1, nie bramkowane)",
+  "gain_xtx": "q6_K m=1024 18.1->9.7 us (Vulkan)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "excluded",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "excluded",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0009-vulkan-AMD-RDNA-uses-the-float-matvec-path-for-m-409.patch:29"
+  ],
+  "notes": ""
+ },
+ "0010": {
+  "file": "0010-vulkan-RDNA3-4-MMVQ-uses-2-rows-per-workgroup-at-eig.patch",
+  "title": "vulkan: RDNA3/4 MMVQ uses 2 rows per workgroup at eight columns",
+  "files": [
+   "ggml/src/ggml-vulkan/ggml-vulkan.cpp"
+  ],
+  "backends": [
+   "Vulkan"
+  ],
+  "effective_backend": "Vulkan",
+  "guard": "runtime: vendor_id==AMD && architecture!=AMD_GCN (0006/0008/0009) lub is_rdna3_or_4 (0007 IQ4_XS, 0010)",
+  "scope": "vulkan",
+  "os": {
+   "linux": "OK",
+   "windows": "OK (sterownik AMD Vulkan zamiast RADV; zysk niezmierzony)",
+   "macos": "nie dotyczy (MoltenVK nie jest celem)"
+  },
+  "runtime": "Vulkan (RADV/AMDVLK/AMD Windows)",
+  "arch": {
+   "rdna2": "wykluczone (is_rdna3_or_4)",
+   "rdna3": "zmierzone (RADV, gfx1100)",
+   "rdna3_5": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "rdna4": "kompiluje się i działa (Vulkan, gate AMD && !GCN)",
+   "sm_86": "n/a (backend Vulkan; brak w CUDA)",
+   "sm_89": "n/a (backend Vulkan; brak w CUDA)",
+   "sm_120": "n/a (backend Vulkan; brak w CUDA)"
+  },
+  "model_family": [
+   "generic"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "mieszane (Vulkan)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "excluded",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "excluded",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0010-vulkan-RDNA3-4-MMVQ-uses-2-rows-per-workgroup-at-eig.patch:26"
+  ],
+  "notes": ""
+ },
+ "0011": {
+  "file": "0011-HIP-FA-RDNA3-kernel-reading-the-q4_0-KV-cache-direct.patch",
+  "title": "HIP FA: RDNA3 kernel reading the q4_0 KV cache directly for small batches",
+  "files": [
+   "ggml/src/ggml-cuda/fattn-kvq.cu",
+   "ggml/src/ggml-cuda/fattn-kvq.cuh",
+   "ggml/src/ggml-cuda/fattn.cu",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "HIP only (gfx110x)",
+  "guard": "compile: GGML_USE_HIP && RDNA3_0 lub runtime GGML_CUDA_CC_IS_RDNA3_0 / tabela MMVQ_PARAMETERS_RDNA3_0 (tylko gfx110x)",
+  "scope": "hip_rdna3_0",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (brak WMMA)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna4": "wykluczone; port wymaga WMMA gfx12 (inny układ operandów)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic attention: KV q4_0, GQA, <=8 (później 16) tokenów"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "numerics (inny tekst greedy Qwena; KLD dla Qwena NIE mierzony)",
+  "gain_xtx": "krótki ctx ~0; 94k: 43.0->70.9 t/s (+65%)",
+  "gain_ms": {
+   "qwen_step": 0.0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0011-HIP-FA-RDNA3-kernel-reading-the-q4_0-KV-cache-direct.patch:57",
+   "patches/0011-HIP-FA-RDNA3-kernel-reading-the-q4_0-KV-cache-direct.patch:106",
+   "patches/0011-HIP-FA-RDNA3-kernel-reading-the-q4_0-KV-cache-direct.patch:627"
+  ],
+  "notes": "Krótki kontekst ~0 (41.74 vs 41.8 ms/krok), 94k: 43.0->70.9 t/s (+65%). WMMA gfx11 + permlanex16 + układ lane gfx11."
+ },
+ "0012": {
+  "file": "0012-CUDA-HIP-bias-residual-ADD-epilogue-for-multi-column.patch",
+  "title": "CUDA/HIP: bias/residual ADD epilogue for multi-column MMVQ",
+  "files": [
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic (spec verify)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "A3-A5 razem 41.7->37.71 ms/krok; udział [SZACUNEK]",
+  "gain_ms": {
+   "qwen_step": 0.6,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0012-CUDA-HIP-bias-residual-ADD-epilogue-for-multi-column.patch:28"
+  ],
+  "notes": "Część A3-A5 (-4.0 ms); udział oszacowany z liczby usuniętych kerneli (128/848) [SZACUNEK]."
+ },
+ "0013": {
+  "file": "0013-CUDA-HIP-fuse-the-GATED_DELTA_NET-prologue-alpha-bet.patch",
+  "title": "CUDA/HIP: fuse the GATED_DELTA_NET prologue (alpha/beta projections, q/k l2 norm, state gather)",
+  "files": [
+   "ggml/src/ggml-cuda/gated_delta_net.cu",
+   "ggml/src/ggml-cuda/gated_delta_net.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "ggml/src/ggml-cuda/mmvq.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN (qwen35/3.8)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "numerics (KLD 0.0067 vs szum bazy 0.0098, PASS)",
+  "gain_xtx": "część A3-A5 [SZACUNEK]",
+  "gain_ms": {
+   "qwen_step": 1.81,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0013-CUDA-HIP-fuse-the-GATED_DELTA_NET-prologue-alpha-bet.patch:504",
+   "patches/0013-CUDA-HIP-fuse-the-GATED_DELTA_NET-prologue-alpha-bet.patch:39"
+  ],
+  "notes": "Udział w A3-A5 [SZACUNEK] 384/848 kerneli."
+ },
+ "0014": {
+  "file": "0014-CUDA-HIP-fold-the-conv-state-concat-snapshot-copies-.patch",
+  "title": "CUDA/HIP: fold the conv-state concat, snapshot copies and gather into SSM_CONV",
+  "files": [
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/ssm-conv.cu",
+   "ggml/src/ggml-cuda/ssm-conv.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN/conv hybrydy (qwen35)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "część A3-A5 [SZACUNEK]",
+  "gain_ms": {
+   "qwen_step": 1.58,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0014-CUDA-HIP-fold-the-conv-state-concat-snapshot-copies-.patch:55"
+  ],
+  "notes": "Udział w A3-A5 [SZACUNEK] 336/848 kerneli."
+ },
+ "0015": {
+  "file": "0015-CUDA-HIP-write-the-q8_1-MMVQ-activations-from-the-pr.patch",
+  "title": "CUDA/HIP: write the q8_1 MMVQ activations from the producing norm/GLU/unary*mul kernels",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/norm.cu",
+   "ggml/src/ggml-cuda/norm.cuh",
+   "ggml/src/ggml-cuda/unary.cu",
+   "ggml/src/ggml-cuda/unary.cuh"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "37.73->37.04 ms/krok",
+  "gain_ms": {
+   "qwen_step": 0.69,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0015-CUDA-HIP-write-the-q8_1-MMVQ-activations-from-the-pr.patch:128",
+   "patches/0015-CUDA-HIP-write-the-q8_1-MMVQ-activations-from-the-pr.patch:34"
+  ],
+  "notes": ""
+ },
+ "0016": {
+  "file": "0016-CUDA-HIP-GDN-alpha-beta-MMVQ-templated-on-the-token-.patch",
+  "title": "CUDA/HIP: GDN alpha/beta MMVQ templated on the token count",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "425->286 us/weryfikację",
+  "gain_ms": {
+   "qwen_step": 0.14,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0016-CUDA-HIP-GDN-alpha-beta-MMVQ-templated-on-the-token-.patch:54"
+  ],
+  "notes": ""
+ },
+ "0017": {
+  "file": "0017-CUDA-HIP-qwen35-fuse-IMROPE-MROPE-into-RMS_NORM-MUL-.patch",
+  "title": "CUDA/HIP + qwen35: fuse IMROPE/MROPE into RMS_NORM+MUL+ROPE, drop the attention gate copy",
+  "files": [
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/rope.cu",
+   "src/models/qwen35.cpp",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "host/llama (wszystkie backendy)",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "M-RoPE (qwen35/Qwen-VL) + graf qwen35"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "31.53->31.17 ms (verify wall)",
+  "gain_ms": {
+   "qwen_step": 0.36,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "unknown-needs-test",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "unknown-needs-test"
+  },
+  "evidence": [
+   "patches/0017-CUDA-HIP-qwen35-fuse-IMROPE-MROPE-into-RMS_NORM-MUL-.patch:35"
+  ],
+  "notes": "Część zmiany w src/models/qwen35.cpp (bez ggml_cont bramki) działa na każdym backendzie."
+ },
+ "0018": {
+  "file": "0018-CUDA-HIP-fix-race-in-flash_attn_ext_f16_process_tile.patch",
+  "title": "CUDA/HIP: fix race in flash_attn_ext_f16_process_tile when nbatch_combine != DKQ/2 (cherry-pick of upstream #30103)",
+  "files": [
+   "ggml/src/ggml-cuda/fattn-mma-f16.cuh"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się, bez wpływu na wydajność",
+   "sm_89": "kompiluje się, bez wpływu na wydajność",
+   "sm_120": "kompiluje się, bez wpływu na wydajność"
+  },
+  "model_family": [
+   "generic"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "fix (upstream #30103)",
+  "gain_xtx": "fix",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "works-neutral",
+   "linux-amd-hip-rdna4": "works-neutral",
+   "windows-amd-hip-rdna3": "works-neutral",
+   "windows-amd-hip-rdna3.5": "works-neutral",
+   "windows-amd-hip-rdna2": "works-neutral",
+   "windows-amd-hip-rdna4": "works-neutral",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "works-neutral",
+   "linux-nvidia-cuda-sm89": "works-neutral",
+   "linux-nvidia-cuda-sm120": "works-neutral",
+   "windows-nvidia-cuda-sm86": "works-neutral",
+   "windows-nvidia-cuda-sm89": "works-neutral",
+   "windows-nvidia-cuda-sm120": "works-neutral",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0018-CUDA-HIP-fix-race-in-flash_attn_ext_f16_process_tile.patch:21"
+  ],
+  "notes": ""
+ },
+ "0019": {
+  "file": "0019-CUDA-HIP-fold-the-q-k-Hadamard-rotation-of-a-rotated.patch",
+  "title": "CUDA/HIP: fold the q/k Hadamard rotation of a rotated KV cache into RMS_NORM+MUL+ROPE",
+  "files": [
+   "ggml/src/ggml-cuda/fwht.cu",
+   "ggml/src/ggml-cuda/fwht.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/rope.cu",
+   "ggml/src/ggml-cuda/rope.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA); test-backend-ops: __builtin_popcountll nie kompiluje się pod MSVC [SZACUNEK]",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "rotowany KV (FWHT), generic"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "31.17->31.01 ms (verify wall)",
+  "gain_ms": {
+   "qwen_step": 0.16,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0019-CUDA-HIP-fold-the-q-k-Hadamard-rotation-of-a-rotated.patch:85",
+   "patches/0019-CUDA-HIP-fold-the-q-k-Hadamard-rotation-of-a-rotated.patch:119",
+   "patches/0019-CUDA-HIP-fold-the-q-k-Hadamard-rotation-of-a-rotated.patch:477"
+  ],
+  "notes": "Test test-backend-ops używa __builtin_popcountll: kompilacja testów pod MSVC (Windows CUDA) [SZACUNEK] nie przejdzie."
+ },
+ "0020": {
+  "file": "0020-speculative-qwen35-greedy-MTP-drafts-as-one-unrolled.patch",
+  "title": "speculative + qwen35: greedy MTP drafts as one unrolled draft-chain graph",
+  "files": [
+   "common/arg.cpp",
+   "common/speculative.cpp",
+   "src/llama-context.cpp",
+   "src/llama-context.h",
+   "src/llama-cparams.h",
+   "src/llama-ext.h",
+   "src/llama-graph.cpp",
+   "src/llama-graph.h",
+   "src/llama-kv-cache.cpp",
+   "src/llama-model.cpp",
+   "src/llama-model.h",
+   "src/models/qwen35.cpp",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)",
+   "tests"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (src/ llama, graf modelu; wymaga opów na backendzie)",
+  "scope": "llama",
+  "os": {
+   "linux": "OK",
+   "windows": "OK; +180 MiB VRAM -> ryzyko Sysmem Fallback na NVIDIA WDDM",
+   "macos": "OK"
+  },
+  "runtime": "dowolny backend ggml",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "MTP (qwen35)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit (drafty identyczne)",
+  "gain_xtx": "36.39->35.67 ms/krok",
+  "gain_ms": {
+   "qwen_step": 0.71,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "unknown-needs-test",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "unknown-needs-test"
+  },
+  "evidence": [
+   "patches/0020-speculative-qwen35-greedy-MTP-drafts-as-one-unrolled.patch:783",
+   "patches/0020-speculative-qwen35-greedy-MTP-drafts-as-one-unrolled.patch:73"
+  ],
+  "notes": "+180 MiB VRAM (kopia wierszy token_embd): ryzyko sysmem fallback na Windows NVIDIA przy pełnej karcie. Wymaga 0004."
+ },
+ "0021": {
+  "file": "0021-HIP-RDNA3-multi-column-MMVQ-buffer-resource-loads-pe.patch",
+  "title": "HIP/RDNA3 multi-column MMVQ: buffer-resource loads, per-type occupancy, Q6_K pipelining, transposed DPP reduction",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej; DPP row_xmask/permlanex16 dostępne od gfx10",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna4": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic (spec verify)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "K1 razem 35.67->33.17 ms/krok; udział = reszta po 0022",
+  "gain_ms": {
+   "qwen_step": 1.63,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "unknown-needs-test",
+   "linux-amd-hip-rdna4": "unknown-needs-test",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0021-HIP-RDNA3-multi-column-MMVQ-buffer-resource-loads-pe.patch:36",
+   "patches/0021-HIP-RDNA3-multi-column-MMVQ-buffer-resource-loads-pe.patch:53",
+   "patches/0021-HIP-RDNA3-multi-column-MMVQ-buffer-resource-loads-pe.patch:377",
+   "patches/0021-HIP-RDNA3-multi-column-MMVQ-buffer-resource-loads-pe.patch:78"
+  ],
+  "notes": "Buffer resource (dword3 0x31004000) tylko RDNA3/3.5; DPP butterfly na każdym RDNA; nowe loadery bajtowe działają też na NVIDIA (fallback wskaźnikowy) w ścieżce multi."
+ },
+ "0022": {
+  "file": "0022-HIP-RDNA3-multi-column-MMVQ-stream-weight-loads-past.patch",
+  "title": "HIP/RDNA3 multi-column MMVQ: stream weight loads past the per-CU caches (GLC|DLC)",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "HIP only (RDNA3)",
+  "guard": "compile: defined(RDNA3) (gfx110x+gfx115x) / runtime GGML_CUDA_CC_IS_RDNA3",
+  "scope": "hip_rdna3",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (strażnik RDNA3 = gfx110x/115x)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "aktywne (buffer loads RDNA3), GLC|DLC na APU niesprawdzone",
+   "rdna4": "wykluczone (strażnik RDNA3 = gfx110x/115x)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic (spec verify)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": true,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "mmvq 22.95->22.08 ms/weryfikację",
+  "gain_ms": {
+   "qwen_step": 0.87,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0022-HIP-RDNA3-multi-column-MMVQ-stream-weight-loads-past.patch:21",
+   "patches/0022-HIP-RDNA3-multi-column-MMVQ-stream-weight-loads-past.patch:77"
+  ],
+  "notes": "GLC|DLC tylko w ścieżce buffer-load (RDNA3/3.5); na gfx1151 (APU, LPDDR5X) efekt nieznany."
+ },
+ "0023": {
+  "file": "0023-CUDA-HIP-clamp-the-fp16-d-sum-of-every-q8_1-block-wr.patch",
+  "title": "CUDA/HIP: clamp the fp16 (d, sum) of every q8_1 block written to +-65504",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/fattn-common.cuh",
+   "ggml/src/ggml-cuda/quantize.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się, bez wpływu na wydajność",
+   "sm_89": "kompiluje się, bez wpływu na wydajność",
+   "sm_120": "kompiluje się, bez wpływu na wydajność"
+  },
+  "model_family": [
+   "generic"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "fix (bitowy na danych skończonych)",
+  "gain_xtx": "fix",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "works-neutral",
+   "linux-amd-hip-rdna4": "works-neutral",
+   "windows-amd-hip-rdna3": "works-neutral",
+   "windows-amd-hip-rdna3.5": "works-neutral",
+   "windows-amd-hip-rdna2": "works-neutral",
+   "windows-amd-hip-rdna4": "works-neutral",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "works-neutral",
+   "linux-nvidia-cuda-sm89": "works-neutral",
+   "linux-nvidia-cuda-sm120": "works-neutral",
+   "windows-nvidia-cuda-sm86": "works-neutral",
+   "windows-nvidia-cuda-sm89": "works-neutral",
+   "windows-nvidia-cuda-sm120": "works-neutral",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0023-CUDA-HIP-clamp-the-fp16-d-sum-of-every-q8_1-block-wr.patch:29"
+  ],
+  "notes": ""
+ },
+ "0024": {
+  "file": "0024-CUDA-HIP-MMVQ-pair-launch-for-two-products-of-the-sa.patch",
+  "title": "CUDA/HIP: MMVQ pair launch for two products of the same src1 (GGML_HIP_MMVQ_PAIR)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "src/models/qwen35.cpp",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "host/llama (wszystkie backendy)",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic (gate/up, qkv/z) + kolejność w qwen35"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_MMVQ_PAIR"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "MMVQ 21.96->21.67 ms/weryfikację (skalowane do K2) [SZACUNEK]",
+  "gain_ms": {
+   "qwen_step": 0.26,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "works-neutral",
+   "linux-amd-vulkan-rdna2_4": "works-neutral",
+   "windows-amd-vulkan-rdna3": "works-neutral",
+   "windows-amd-vulkan-rdna2_4": "works-neutral",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "works-neutral"
+  },
+  "evidence": [
+   "patches/0024-CUDA-HIP-MMVQ-pair-launch-for-two-products-of-the-sa.patch:75",
+   "patches/0024-CUDA-HIP-MMVQ-pair-launch-for-two-products-of-the-sa.patch:35"
+  ],
+  "notes": "Wprowadza ggml_cuda_env_switch: przełączniki GGML_HIP_* domyślnie WŁĄCZONE także w buildzie CUDA."
+ },
+ "0025": {
+  "file": "0025-CUDA-HIP-unrolled-rms_norm-mul-q8_1-for-2048.8192-co.patch",
+  "title": "CUDA/HIP: unrolled rms_norm*mul(+q8_1) for 2048..8192-column rows, DPP reductions (GGML_HIP_NORM_FAST)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "ggml/src/ggml-cuda/norm.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone; DPP row_xmask/permlanex16 dostępne od gfx10",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic (hidden 2048-8192)"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_NORM_FAST"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit (jawny łańcuch fmaf; na nvcc niesprawdzone)",
+  "gain_xtx": "5.87->4.51 us x148/krok [SZACUNEK]",
+  "gain_ms": {
+   "qwen_step": 0.18,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0025-CUDA-HIP-unrolled-rms_norm-mul-q8_1-for-2048.8192-co.patch:33",
+   "patches/0025-CUDA-HIP-unrolled-rms_norm-mul-q8_1-for-2048.8192-co.patch:274"
+  ],
+  "notes": "KOREKTA raportu 07 (AMD-RDNA3): kernel działa też na NVIDIA (zamiast DPP __shfl_xor). DPP na każdym RDNA (gfx10+)."
+ },
+ "0026": {
+  "file": "0026-CUDA-HIP-argmax-with-16-loads-in-flight-and-DPP-exch.patch",
+  "title": "CUDA/HIP: argmax with 16 loads in flight and DPP exchanges (GGML_HIP_ARGMAX_FAST)",
+  "files": [
+   "ggml/src/ggml-cuda/argmax.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone; DPP row_xmask/permlanex16 dostępne od gfx10",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic op (argmax; drafty greedy MTP)"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_ARGMAX_FAST"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "16.8->4.3 us x4/krok",
+  "gain_ms": {
+   "qwen_step": 0.05,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0026-CUDA-HIP-argmax-with-16-loads-in-flight-and-DPP-exch.patch:137",
+   "patches/0026-CUDA-HIP-argmax-with-16-loads-in-flight-and-DPP-exch.patch:93",
+   "patches/0026-CUDA-HIP-argmax-with-16-loads-in-flight-and-DPP-exch.patch:103"
+  ],
+  "notes": "KOREKTA raportu 07: aktywne też na NVIDIA (ścieżka shfl)."
+ },
+ "0027": {
+  "file": "0027-CUDA-HIP-GDN-gated-output-norm-silu-z-rms_norm-x-w-q.patch",
+  "title": "CUDA/HIP: GDN gated output norm silu(z) * (rms_norm(x) * w) + q8_1 in one launch (GGML_HIP_NORM_GATE)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/norm.cu",
+   "ggml/src/ggml-cuda/norm.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone; DPP row_xmask/permlanex16 dostępne od gfx10",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_NORM_GATE"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit (ggml_cuda_no_contract)",
+  "gain_xtx": "27.79->27.52 ms (verify) [SZACUNEK skalowane]",
+  "gain_ms": {
+   "qwen_step": 0.24,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0027-CUDA-HIP-GDN-gated-output-norm-silu-z-rms_norm-x-w-q.patch:57",
+   "patches/0027-CUDA-HIP-GDN-gated-output-norm-silu-z-rms_norm-x-w-q.patch:36"
+  ],
+  "notes": ""
+ },
+ "0028": {
+  "file": "0028-CUDA-HIP-GDN-fused-SSM_CONV-and-alpha-beta-projectio.patch",
+  "title": "CUDA/HIP: GDN fused SSM_CONV and alpha/beta projections in one grid (GGML_HIP_GDN_CONV_AB)",
+  "files": [
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "ggml/src/ggml-cuda/mmvq.cuh",
+   "ggml/src/ggml-cuda/ssm-conv.cu",
+   "ggml/src/ggml-cuda/ssm-conv.cuh"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_GDN_CONV_AB"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "~0.33 ms/krok [SZACUNEK skalowane]",
+  "gain_ms": {
+   "qwen_step": 0.3,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0028-CUDA-HIP-GDN-fused-SSM_CONV-and-alpha-beta-projectio.patch:73",
+   "patches/0028-CUDA-HIP-GDN-fused-SSM_CONV-and-alpha-beta-projectio.patch:200"
+  ],
+  "notes": ""
+ },
+ "0029": {
+  "file": "0029-ggml-backend-llama-asynchronous-graph-input-uploads-.patch",
+  "title": "ggml-backend/llama: asynchronous graph input uploads (LLAMA_ASYNC_INPUTS)",
+  "files": [
+   "ggml/include/ggml-backend.h",
+   "ggml/src/ggml-backend.cpp",
+   "src/llama-context.cpp",
+   "src/llama-context.h",
+   "src/llama-graph.cpp",
+   "src/llama-graph.h",
+   "src/llama-kv-cache.cpp"
+  ],
+  "backends": [
+   "ggml-core (wszystkie backendy)",
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_ASYNC_INPUTS"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "32.20->31.89 ms/krok",
+  "gain_ms": {
+   "qwen_step": 0.33,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "unknown-needs-test",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "unknown-needs-test"
+  },
+  "evidence": [
+   "patches/0029-ggml-backend-llama-asynchronous-graph-input-uploads-.patch:268",
+   "patches/0029-ggml-backend-llama-asynchronous-graph-input-uploads-.patch:86",
+   "patches/0029-ggml-backend-llama-asynchronous-graph-input-uploads-.patch:316"
+  ],
+  "notes": "ggml-backend sched: aktywne na KAŻDYM backendzie z set_tensor_async+event (CUDA/HIP, Vulkan, Metal; Metal ma is_host=false). Testowane tylko na HIP."
+ },
+ "0030": {
+  "file": "0030-llama-MTP-draft-chain-on-its-own-scheduler-LLAMA_MTP.patch",
+  "title": "llama: MTP draft chain on its own scheduler (LLAMA_MTP_CHAIN_SCHED)",
+  "files": [
+   "src/llama-context.cpp",
+   "src/llama-context.h"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (src/ llama, graf modelu; wymaga opów na backendzie)",
+  "scope": "llama",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny backend ggml",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "MTP"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_MTP_CHAIN_SCHED"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "31.89->31.59 ms/krok",
+  "gain_ms": {
+   "qwen_step": 0.32,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "unknown-needs-test",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "unknown-needs-test"
+  },
+  "evidence": [
+   "patches/0030-llama-MTP-draft-chain-on-its-own-scheduler-LLAMA_MTP.patch:34",
+   "patches/0030-llama-MTP-draft-chain-on-its-own-scheduler-LLAMA_MTP.patch:167"
+  ],
+  "notes": ""
+ },
+ "0031": {
+  "file": "0031-common-server-top-k-candidates-without-the-full-cand.patch",
+  "title": "common/server: top-k candidates without the full candidate array, no sampler copy per spec step",
+  "files": [
+   "common/sampling.cpp",
+   "tools/server/server-context.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK; MSVC nie definiuje __SSE2__ -> skalarny fallback",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic (sampler)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_SAMPLER_FAST_TOPK",
+    "LLAMA_SPEC_LAZY_SAVE"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "same-tok",
+  "gain_xtx": "31.68->31.19 ms/krok",
+  "gain_ms": {
+   "qwen_step": 0.52,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "works+gain",
+   "windows-amd-vulkan-rdna3": "works+gain",
+   "windows-amd-vulkan-rdna2_4": "works+gain",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "works+gain"
+  },
+  "evidence": [
+   "patches/0031-common-server-top-k-candidates-without-the-full-cand.patch:34",
+   "patches/0031-common-server-top-k-candidates-without-the-full-cand.patch:107",
+   "patches/0031-common-server-top-k-candidates-without-the-full-cand.patch:228"
+  ],
+  "notes": "SSE2 tylko gdy __SSE2__ (gcc/clang x86); MSVC i ARM64 (Apple) -> skalarny fallback, ten sam wynik."
+ },
+ "0032": {
+  "file": "0032-llama-common-re-quantize-the-MTP-draft-head-and-MTP-.patch",
+  "title": "llama/common: re-quantize the MTP draft head and MTP block at load time (--spec-draft-head-type, --spec-mtp-type)",
+  "files": [
+   "common/arg.cpp",
+   "common/common.h",
+   "common/speculative.cpp",
+   "include/llama.h",
+   "src/llama-model.cpp",
+   "src/llama-model.h"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (src/ llama, graf modelu; wymaga opów na backendzie)",
+  "scope": "llama",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny backend ggml",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "MTP"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [
+    "LLAMA_ARG_SPEC_DRAFT_HEAD_TYPE",
+    "LLAMA_ARG_SPEC_MTP_TYPE"
+   ],
+   "loo_cat": "cli",
+   "revert_clean": null,
+   "default": "opt-in (CLI), używane przez run-llm.sh"
+  },
+  "correctness": "dist (drafty zmienione, weryfikacja nie)",
+  "gain_xtx": "30.97->29.76 ms/krok",
+  "gain_ms": {
+   "qwen_step": 1.21,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "unknown-needs-test",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "unknown-needs-test"
+  },
+  "evidence": [
+   "patches/0032-llama-common-re-quantize-the-MTP-draft-head-and-MTP-.patch:93"
+  ],
+  "notes": ""
+ },
+ "0033": {
+  "file": "0033-ggml-llama-delta-net-speculative-rollback-by-replay-.patch",
+  "title": "ggml/llama: delta-net speculative rollback by replay of a lagged state (GATED_DELTA_NET_LAG)",
+  "files": [
+   "ggml/include/ggml-rpc.h",
+   "ggml/include/ggml.h",
+   "ggml/src/ggml-cpu/ggml-cpu.c",
+   "ggml/src/ggml-cpu/ops.cpp",
+   "ggml/src/ggml-cuda/gated_delta_net.cu",
+   "ggml/src/ggml-cuda/gated_delta_net.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml.c",
+   "src/llama-graph.cpp",
+   "src/llama-graph.h",
+   "src/llama-memory-hybrid.cpp",
+   "src/llama-memory-hybrid.h",
+   "src/llama-memory-recurrent.cpp",
+   "src/llama-memory-recurrent.h",
+   "src/llama-model.cpp",
+   "src/models/delta-net-base.cpp",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CPU",
+   "CUDA",
+   "HIP",
+   "ggml-core (wszystkie backendy)",
+   "host/llama (wszystkie backendy)",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "llama: ggml_backend_dev_supports_op(GATED_DELTA_NET_LAG); kernel: wspólny ggml-cuda",
+  "scope": "cuda+llama",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA/HIP (+ fallback na innych)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN + spekulacja"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_GDN_REPLAY",
+    "LLAMA_GDN_REPLAY"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "S4 razem ->29.36 ms/krok; VRAM stanów 748->195 MiB",
+  "gain_ms": {
+   "qwen_step": 0.38,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "works-neutral",
+   "linux-amd-vulkan-rdna2_4": "works-neutral",
+   "windows-amd-vulkan-rdna3": "works-neutral",
+   "windows-amd-vulkan-rdna2_4": "works-neutral",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "works-neutral"
+  },
+  "evidence": [
+   "patches/0033-ggml-llama-delta-net-speculative-rollback-by-replay-.patch:949",
+   "patches/0033-ggml-llama-delta-net-speculative-rollback-by-replay-.patch:63",
+   "patches/0033-ggml-llama-delta-net-speculative-rollback-by-replay-.patch:1281"
+  ],
+  "notes": "Nowy op: CPU ref + CUDA/HIP. Vulkan/Metal: supports_op=false -> rs_lag wyłączone, stara ścieżka snapshotów."
+ },
+ "0034": {
+  "file": "0034-llama-ggml-GATED_DELTA_NET_LAG-lag-info-as-n_seqs-4-.patch",
+  "title": "llama/ggml: GATED_DELTA_NET_LAG lag info as [n_seqs, 4], its first row is the state gather index (one input upload)",
+  "files": [
+   "ggml/include/ggml.h",
+   "ggml/src/ggml-cpu/ops.cpp",
+   "ggml/src/ggml-cuda/gated_delta_net.cu",
+   "ggml/src/ggml.c",
+   "src/llama-graph.cpp",
+   "src/llama-graph.h",
+   "src/llama-memory-recurrent.cpp",
+   "src/llama-memory-recurrent.h",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CPU",
+   "CUDA",
+   "HIP",
+   "ggml-core (wszystkie backendy)",
+   "host/llama (wszystkie backendy)",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "llama: ggml_backend_dev_supports_op(GATED_DELTA_NET_LAG); kernel: wspólny ggml-cuda",
+  "scope": "cuda+llama",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA/HIP (+ fallback na innych)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": false,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "część S4",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "works-neutral",
+   "linux-amd-vulkan-rdna2_4": "works-neutral",
+   "windows-amd-vulkan-rdna3": "works-neutral",
+   "windows-amd-vulkan-rdna2_4": "works-neutral",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "works-neutral"
+  },
+  "evidence": [
+   "patches/0034-llama-ggml-GATED_DELTA_NET_LAG-lag-info-as-n_seqs-4-.patch:28"
+  ],
+  "notes": ""
+ },
+ "0035": {
+  "file": "0035-CUDA-HIP-GATED_DELTA_NET_LAG-issues-the-loads-of-the.patch",
+  "title": "CUDA/HIP: GATED_DELTA_NET_LAG issues the loads of the next pending row before the recurrence of the current one (GDN 661 -> 638 us per verify)",
+  "files": [
+   "ggml/src/ggml-cuda/gated_delta_net.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": true,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "661->638 us/weryfikację",
+  "gain_ms": {
+   "qwen_step": 0.02,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0035-CUDA-HIP-GATED_DELTA_NET_LAG-issues-the-loads-of-the.patch:21"
+  ],
+  "notes": ""
+ },
+ "0036": {
+  "file": "0036-llama-the-lagged-delta-net-state-is-read-from-its-ca.patch",
+  "title": "llama: the lagged delta-net state is read from its cache row (single cell), no gather index input",
+  "files": [
+   "ggml/include/ggml.h",
+   "src/llama-graph.cpp",
+   "src/llama-graph.h",
+   "src/llama-memory-recurrent.cpp",
+   "src/llama-memory-recurrent.h"
+  ],
+  "backends": [
+   "ggml-core (wszystkie backendy)",
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "llama: ggml_backend_dev_supports_op(GATED_DELTA_NET_LAG); kernel: wspólny ggml-cuda",
+  "scope": "cuda+llama",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA/HIP (+ fallback na innych)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": true,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "część S4",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "works-neutral",
+   "linux-amd-vulkan-rdna2_4": "works-neutral",
+   "windows-amd-vulkan-rdna3": "works-neutral",
+   "windows-amd-vulkan-rdna2_4": "works-neutral",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "works-neutral"
+  },
+  "evidence": [
+   "patches/0036-llama-the-lagged-delta-net-state-is-read-from-its-ca.patch:25"
+  ],
+  "notes": ""
+ },
+ "0037": {
+  "file": "0037-CUDA-HIP-RDNA3-verify-batches-of-9-16-columns-WMMA-s.patch",
+  "title": "CUDA/HIP: RDNA3 verify batches of 9-16 columns: WMMA small-N MUL_MAT kernel, wide MMVQ dispatch",
+  "files": [
+   "ggml/src/ggml-cuda/fattn-kvq.cu",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "ggml/src/ggml-cuda/mmvq.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "HIP only (gfx110x)",
+  "guard": "compile: GGML_USE_HIP && RDNA3_0 lub runtime GGML_CUDA_CC_IS_RDNA3_0 / tabela MMVQ_PARAMETERS_RDNA3_0 (tylko gfx110x)",
+  "scope": "hip_rdna3_0",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (brak WMMA)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna4": "wykluczone; port wymaga WMMA gfx12 (inny układ operandów)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic (spec verify 9-16 kol.)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": true,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "numerics (KLD 0.0122-0.0128 vs baza 0.0124+-0.0006, PASS)",
+  "gain_xtx": "n=9: 49.2->32.1 ms/forward; 0 przy n=4",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0037-CUDA-HIP-RDNA3-verify-batches-of-9-16-columns-WMMA-s.patch:247",
+   "patches/0037-CUDA-HIP-RDNA3-verify-batches-of-9-16-columns-WMMA-s.patch:273",
+   "patches/0037-CUDA-HIP-RDNA3-verify-batches-of-9-16-columns-WMMA-s.patch:139"
+  ],
+  "notes": "Nieaktywne przy MTP n=4 (5 kolumn); zysk przy n>=9 (49.2->32.1 ms/forward)."
+ },
+ "0038": {
+  "file": "0038-llama-CUDA-lagged-conv-history-for-the-delta-net-rol.patch",
+  "title": "llama/CUDA: lagged conv history for the delta-net rollback by replay, no per-token conv snapshots (LLAMA_CONV_LAG)",
+  "files": [
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/ssm-conv.cu",
+   "ggml/src/ggml-cuda/ssm-conv.cuh",
+   "src/llama-graph.cpp",
+   "src/llama-graph.h",
+   "src/llama-memory-recurrent.cpp",
+   "src/llama-memory-recurrent.h",
+   "src/models/delta-net-base.cpp",
+   "src/models/models.h",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "host/llama (wszystkie backendy)",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "llama: ggml_backend_dev_supports_op(GATED_DELTA_NET_LAG); kernel: wspólny ggml-cuda",
+  "scope": "cuda+llama",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA/HIP (+ fallback na innych)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN/conv + spekulacja (draft >=8)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_CONV_LAG"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "0 przy n=4; draft 8: 40.8->37.2 ms/krok",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "works-neutral",
+   "linux-amd-vulkan-rdna2_4": "works-neutral",
+   "windows-amd-vulkan-rdna3": "works-neutral",
+   "windows-amd-vulkan-rdna2_4": "works-neutral",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "works-neutral"
+  },
+  "evidence": [
+   "patches/0038-llama-CUDA-lagged-conv-history-for-the-delta-net-rol.patch:390"
+  ],
+  "notes": "0 przy n=4; draft 8: 40.8->37.2 ms/krok."
+ },
+ "0039": {
+  "file": "0039-common-llama-cost-priced-adaptive-MTP-draft-depth-sp.patch",
+  "title": "common/llama: cost-priced adaptive MTP draft depth (--spec-draft-adaptive, opt-in), per-width verify graphs",
+  "files": [
+   "common/arg.cpp",
+   "common/common.h",
+   "common/speculative.cpp",
+   "src/llama-context.cpp",
+   "src/llama-context.h",
+   "src/llama-cparams.h",
+   "src/llama-ext.h",
+   "src/llama-graph.cpp",
+   "src/llama-graph.h",
+   "src/models/qwen35.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (src/ llama, graf modelu; wymaga opów na backendzie)",
+  "scope": "llama",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny backend ggml",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "MTP"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_SPEC_DEPTH_POWER",
+    "LLAMA_VERIFY_SCHED"
+   ],
+   "cli": [
+    "LLAMA_ARG_SPEC_DRAFT_ADAPTIVE",
+    "LLAMA_ARG_SPEC_DRAFT_SEG"
+   ],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "opt-in (CLI), domyślnie wyłączone"
+  },
+  "correctness": "dist",
+  "gain_xtx": "w szumie (opt-in)",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "works-neutral",
+   "linux-amd-hip-rdna4": "works-neutral",
+   "windows-amd-hip-rdna3": "works-neutral",
+   "windows-amd-hip-rdna3.5": "works-neutral",
+   "windows-amd-hip-rdna2": "works-neutral",
+   "windows-amd-hip-rdna4": "works-neutral",
+   "linux-amd-vulkan-rdna3": "works-neutral",
+   "linux-amd-vulkan-rdna2_4": "works-neutral",
+   "windows-amd-vulkan-rdna3": "works-neutral",
+   "windows-amd-vulkan-rdna2_4": "works-neutral",
+   "linux-nvidia-cuda-sm86": "works-neutral",
+   "linux-nvidia-cuda-sm89": "works-neutral",
+   "linux-nvidia-cuda-sm120": "works-neutral",
+   "windows-nvidia-cuda-sm86": "works-neutral",
+   "windows-nvidia-cuda-sm89": "works-neutral",
+   "windows-nvidia-cuda-sm120": "works-neutral",
+   "macos-metal-apple": "works-neutral"
+  },
+  "evidence": [
+   "patches/0039-common-llama-cost-priced-adaptive-MTP-draft-depth-sp.patch:315",
+   "patches/0039-common-llama-cost-priced-adaptive-MTP-draft-depth-sp.patch:319"
+  ],
+  "notes": "Opt-in (--spec-draft-adaptive), zysk w szumie."
+ },
+ "0040": {
+  "file": "0040-CUDA-HIP-RDNA3-MMQ-picks-a-narrower-tile-when-the-wi.patch",
+  "title": "CUDA/HIP: RDNA3 MMQ picks a narrower tile when the widest one leaves CUs idle (48-row GDN alpha/beta, 1024-row K/V projections)",
+  "files": [
+   "ggml/src/ggml-cuda/mmq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "HIP only (RDNA3)",
+  "guard": "compile: defined(RDNA3) (gfx110x+gfx115x) / runtime GGML_CUDA_CC_IS_RDNA3",
+  "scope": "hip_rdna3",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (strażnik RDNA3 = gfx110x/115x)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna4": "wykluczone (strażnik RDNA3 = gfx110x/115x)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic prefill (małe M)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": true,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "pp2048 1059->1080 (+2%)",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0040-CUDA-HIP-RDNA3-MMQ-picks-a-narrower-tile-when-the-wi.patch:26",
+   "patches/0040-CUDA-HIP-RDNA3-MMQ-picks-a-narrower-tile-when-the-wi.patch:27"
+  ],
+  "notes": "Próg liczony z nsm urządzenia (dowolna liczba CU). pp2048 +2%."
+ },
+ "0041": {
+  "file": "0041-llama-the-qwen35-MTP-layer-computes-only-K-V-for-row.patch",
+  "title": "llama: the qwen35 MTP layer computes only K/V for rows without output (prompt and verify rows of the process() hook)",
+  "files": [
+   "src/llama-graph.cpp",
+   "src/models/qwen35.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (src/ llama, graf modelu; wymaga opów na backendzie)",
+  "scope": "llama",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny backend ggml",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "MTP (qwen35)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": true,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "prefill 6.6k 913->936 t/s",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "unknown-needs-test",
+   "linux-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "windows-amd-vulkan-rdna3": "unknown-needs-test",
+   "windows-amd-vulkan-rdna2_4": "unknown-needs-test",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "unknown-needs-test"
+  },
+  "evidence": [
+   "patches/0041-llama-the-qwen35-MTP-layer-computes-only-K-V-for-row.patch:49"
+  ],
+  "notes": "Prefill +2.5-3%."
+ },
+ "0042": {
+  "file": "0042-CUDA-HIP-RDNA-FA-MMA-D-256-prompt-tile-keeps-Q-in-SR.patch",
+  "title": "CUDA/HIP: RDNA FA MMA D=256 prompt tile keeps Q in SRAM (Q in registers spilled ~1.1 KB per lane)",
+  "files": [
+   "ggml/src/ggml-cuda/fattn-mma-f16.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "HIP only (WMMA)",
+  "guard": "compile: AMD_WMMA_AVAILABLE (RDNA3, RDNA3.5, RDNA4)",
+  "scope": "hip_wmma",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (strażnik AMD_WMMA = RDNA3/4)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna4": "aktywne (tabela get_config_rdna), niesprawdzone: możliwe spill/regresja lub inne bity",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic prefill, D=256"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": true,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit (z 0043)",
+  "gain_xtx": "FA prefill 40->49 TFLOPS; FA 32k 4.36->3.42 s",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "unknown-needs-test",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0042-CUDA-HIP-RDNA-FA-MMA-D-256-prompt-tile-keeps-Q-in-SR.patch:28",
+   "~/llama-master@amd-opt:ggml/src/ggml-cuda/fattn-mma-f16.cuh:130,262 (tabela rdna dla AMD_WMMA_AVAILABLE = RDNA3|RDNA4)"
+  ],
+  "notes": "Tabela get_config_rdna = RDNA3, RDNA3.5 i RDNA4: zmiana kafla aktywna na RDNA4 bez testu (limit VGPR, perf)."
+ },
+ "0043": {
+  "file": "0043-CUDA-HIP-FA-MMA-walks-the-K-chunks-in-order-unless-K.patch",
+  "title": "CUDA/HIP: FA MMA walks the K chunks in order unless K is the V view (MLA)",
+  "files": [
+   "ggml/src/ggml-cuda/fattn-mma-f16.cuh"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się; zmienia kolejność akumulacji FA MMA (bitowo != upstream)",
+   "sm_89": "kompiluje się; zmienia kolejność akumulacji FA MMA (bitowo != upstream)",
+   "sm_120": "kompiluje się; zmienia kolejność akumulacji FA MMA (bitowo != upstream)"
+  },
+  "model_family": [
+   "generic"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "fix numeryki (KLD 0.0135->0 dla 0042); NVIDIA: inna kolejność akumulacji gdy nbatch_K2 < DKQ/2",
+  "gain_xtx": "fix numeryki",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "works-neutral",
+   "linux-amd-hip-rdna4": "works-neutral",
+   "windows-amd-hip-rdna3": "works-neutral",
+   "windows-amd-hip-rdna3.5": "works-neutral",
+   "windows-amd-hip-rdna2": "works-neutral",
+   "windows-amd-hip-rdna4": "works-neutral",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0043-CUDA-HIP-FA-MMA-walks-the-K-chunks-in-order-unless-K.patch:27"
+  ],
+  "notes": "Na NVIDIA zmienia kolejność sumowania KQ w konfiguracjach z kilkoma chunkami K: bitowo != upstream (jakościowo neutralne)."
+ },
+ "0044": {
+  "file": "0044-tests-perf-cases-for-the-Qwen3.5-3.8-27B-prompt-matm.patch",
+  "title": "tests: perf cases for the Qwen3.5/3.8 27B prompt matmul shapes (FFN, GDN qkv, alpha/beta, K/V projections)",
+  "files": [
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "tests"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "tylko testy",
+  "scope": "tests",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "n/a",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "n/a"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "n/a",
+  "gain_xtx": "-",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "works-neutral",
+   "linux-amd-hip-rdna4": "works-neutral",
+   "windows-amd-hip-rdna3": "works-neutral",
+   "windows-amd-hip-rdna3.5": "works-neutral",
+   "windows-amd-hip-rdna2": "works-neutral",
+   "windows-amd-hip-rdna4": "works-neutral",
+   "linux-amd-vulkan-rdna3": "works-neutral",
+   "linux-amd-vulkan-rdna2_4": "works-neutral",
+   "windows-amd-vulkan-rdna3": "works-neutral",
+   "windows-amd-vulkan-rdna2_4": "works-neutral",
+   "linux-nvidia-cuda-sm86": "works-neutral",
+   "linux-nvidia-cuda-sm89": "works-neutral",
+   "linux-nvidia-cuda-sm120": "works-neutral",
+   "windows-nvidia-cuda-sm86": "works-neutral",
+   "windows-nvidia-cuda-sm89": "works-neutral",
+   "windows-nvidia-cuda-sm120": "works-neutral",
+   "macos-metal-apple": "works-neutral"
+  },
+  "evidence": [
+   "patches/0044-tests-perf-cases-for-the-Qwen3.5-3.8-27B-prompt-matm.patch:22"
+  ],
+  "notes": "Tylko przypadki perf."
+ },
+ "0045": {
+  "file": "0045-CUDA-HIP-prompt-batches-of-the-fused-l2-GDN-normaliz.patch",
+  "title": "CUDA/HIP: prompt batches of the fused-l2 GDN normalize q/k once per (head, token) in a pre-pass",
+  "files": [
+   "ggml/src/ggml-cuda/gated_delta_net.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "GDN (prefill)"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [],
+   "loo_cat": "build",
+   "revert_clean": true,
+   "default": "brak przełącznika (tylko build)"
+  },
+  "correctness": "bit",
+  "gain_xtx": "pp2048 1082->1108 (+2.4%)",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0045-CUDA-HIP-prompt-batches-of-the-fused-l2-GDN-normaliz.patch:30"
+  ],
+  "notes": ""
+ },
+ "0046": {
+  "file": "0046-MTP-attention-window-of-the-MTP-layer-spec-mtp-windo.patch",
+  "title": "MTP: attention window of the MTP layer (--spec-mtp-window, WIP)",
+  "files": [
+   "common/arg.cpp",
+   "common/common.h",
+   "common/speculative.cpp",
+   "src/llama-context.cpp",
+   "src/llama-ext.h",
+   "src/llama-graph.cpp",
+   "src/llama-graph.h",
+   "src/llama-kv-cache.cpp",
+   "src/llama-kv-cache.h",
+   "src/llama-kv-cells.h"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (src/ llama, graf modelu; wymaga opów na backendzie)",
+  "scope": "llama",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny backend ggml",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "MTP"
+  ],
+  "env_switch": {
+   "vars": [],
+   "cli": [
+    "LLAMA_ARG_SPEC_MTP_WINDOW"
+   ],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "opt-in (CLI), domyślnie wyłączone"
+  },
+  "correctness": "zmienia akceptację (opt-in WIP)",
+  "gain_xtx": "negatywne (opt-in)",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "works-neutral",
+   "linux-amd-hip-rdna4": "works-neutral",
+   "windows-amd-hip-rdna3": "works-neutral",
+   "windows-amd-hip-rdna3.5": "works-neutral",
+   "windows-amd-hip-rdna2": "works-neutral",
+   "windows-amd-hip-rdna4": "works-neutral",
+   "linux-amd-vulkan-rdna3": "works-neutral",
+   "linux-amd-vulkan-rdna2_4": "works-neutral",
+   "windows-amd-vulkan-rdna3": "works-neutral",
+   "windows-amd-vulkan-rdna2_4": "works-neutral",
+   "linux-nvidia-cuda-sm86": "works-neutral",
+   "linux-nvidia-cuda-sm89": "works-neutral",
+   "linux-nvidia-cuda-sm120": "works-neutral",
+   "windows-nvidia-cuda-sm86": "works-neutral",
+   "windows-nvidia-cuda-sm89": "works-neutral",
+   "windows-nvidia-cuda-sm120": "works-neutral",
+   "macos-metal-apple": "works-neutral"
+  },
+  "evidence": [
+   "patches/0046-MTP-attention-window-of-the-MTP-layer-spec-mtp-windo.patch:29"
+  ],
+  "notes": "Negatywne (W=8192 105->90 t/s), domyślnie wyłączone."
+ },
+ "0047": {
+  "file": "0047-llama-server-per-step-host-costs-of-the-spec-loop-of.patch",
+  "title": "llama/server: per-step host costs of the spec loop off the critical path",
+  "files": [
+   "common/speculative.cpp",
+   "common/speculative.h",
+   "src/llama-kv-cache.cpp",
+   "src/llama-kv-cells.h",
+   "tools/server/server-context.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic (spekulacja, długi ctx)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_KV_MASK_FAST",
+    "LLAMA_KV_SEQ_RM_SCAN"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "29.36->28.94 ms/krok",
+  "gain_ms": {
+   "qwen_step": 0.42,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "works+gain",
+   "windows-amd-vulkan-rdna3": "works+gain",
+   "windows-amd-vulkan-rdna2_4": "works+gain",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "works+gain"
+  },
+  "evidence": [
+   "patches/0047-llama-server-per-step-host-costs-of-the-spec-loop-of.patch:86",
+   "patches/0047-llama-server-per-step-host-costs-of-the-spec-loop-of.patch:192"
+  ],
+  "notes": ""
+ },
+ "0048": {
+  "file": "0048-common-fast-top-k-candidates-also-behind-a-penalties.patch",
+  "title": "common: fast top-k candidates also behind a penalties sampler that only lowers logits (LLAMA_SAMPLER_FAST_PENALTIES)",
+  "files": [
+   "common/sampling.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic (repeat_penalty, np. GGUF LFM)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_SAMPLER_FAST_PENALTIES",
+    "LLAMA_SAMPLER_FAST_TOPK"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "same-tok",
+  "gain_xtx": "LFM serwer (repeat_penalty) 5.79->5.11 ms/tok (+13%)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "works+gain",
+   "windows-amd-vulkan-rdna3": "works+gain",
+   "windows-amd-vulkan-rdna2_4": "works+gain",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "works+gain"
+  },
+  "evidence": [
+   "patches/0048-common-fast-top-k-candidates-also-behind-a-penalties.patch:47"
+  ],
+  "notes": ""
+ },
+ "0049": {
+  "file": "0049-CUDA-HIP-the-FFN-norm-writes-the-q8_1-activations-of.patch",
+  "title": "CUDA/HIP: the FFN norm writes the q8_1 activations of the single-token MoE gate/up MUL_MAT_ID (GGML_HIP_Q8_IDS)",
+  "files": [
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "MoE"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_Q8_IDS"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "5.067->4.979 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.088
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0049-CUDA-HIP-the-FFN-norm-writes-the-q8_1-activations-of.patch:31"
+  ],
+  "notes": ""
+ },
+ "0050": {
+  "file": "0050-CUDA-HIP-LFM2-shortconv-b-x-and-c-conv-folded-into-t.patch",
+  "title": "CUDA/HIP: LFM2 shortconv: b*x and c*conv folded into the fused SSM_CONV, which writes the q8_1 out_proj input (GGML_HIP_CONV_MUL)",
+  "files": [
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/ssm-conv.cu",
+   "ggml/src/ggml-cuda/ssm-conv.cuh"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "LFM2 shortconv"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_CONV_MUL"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "4.979->4.800 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.179
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0050-CUDA-HIP-LFM2-shortconv-b-x-and-c-conv-folded-into-t.patch:34"
+  ],
+  "notes": ""
+ },
+ "0051": {
+  "file": "0051-CUDA-HIP-single-token-MoE-tail-down-MUL_MAT_ID-exper.patch",
+  "title": "CUDA/HIP: single-token MoE tail (down MUL_MAT_ID, expert weighting, residual ADD) in one MMVQ launch (GGML_HIP_MOE_DOWN_REDUCE)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "ggml/src/ggml-cuda/mmvq.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "MoE"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_MOE_DOWN_REDUCE",
+    "GGML_HIP_Q8_IDS"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "4.817->4.642 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.175
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0051-CUDA-HIP-single-token-MoE-tail-down-MUL_MAT_ID-exper.patch:39",
+   "patches/0051-CUDA-HIP-single-token-MoE-tail-down-MUL_MAT_ID-exper.patch:175"
+  ],
+  "notes": ""
+ },
+ "0052": {
+  "file": "0052-HIP-RDNA3-one-column-MMVQ-2-rows-per-block-for-the-K.patch",
+  "title": "HIP/RDNA3 one-column MMVQ: 2 rows per block for the K-quants (GGML_HIP_MMVQ_N1_ROWS)",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "HIP only (gfx110x)",
+  "guard": "compile: GGML_USE_HIP && RDNA3_0 lub runtime GGML_CUDA_CC_IS_RDNA3_0 / tabela MMVQ_PARAMETERS_RDNA3_0 (tylko gfx110x)",
+  "scope": "hip_rdna3_0",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna4": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic (n=1, K-quants)"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_MMVQ_N1_ROWS"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "4.610->4.509 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.101
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0052-HIP-RDNA3-one-column-MMVQ-2-rows-per-block-for-the-K.patch:40",
+   "patches/0052-HIP-RDNA3-one-column-MMVQ-2-rows-per-block-for-the-K.patch:149"
+  ],
+  "notes": "Strojenie gfx1100 (96 CU); na innych RDNA3_0 (7800/7700, 60/54 CU) bez strojenia."
+ },
+ "0053": {
+  "file": "0053-CUDA-HIP-single-token-MoE-routing-FFN-norm-F32-route.patch",
+  "title": "CUDA/HIP: single-token MoE routing (FFN norm, F32 router, topk_moe) in one launch (GGML_HIP_NORM_ROUTER)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/topk-moe.cu",
+   "ggml/src/ggml-cuda/topk-moe.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone; DPP row_xmask/permlanex16 dostępne od gfx10",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "MoE (topk_moe, 64/4 testowane)"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_NORM_ROUTER"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "4.451->4.246 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.205
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0053-CUDA-HIP-single-token-MoE-routing-FFN-norm-F32-route.patch:152",
+   "patches/0053-CUDA-HIP-single-token-MoE-routing-FFN-norm-F32-route.patch:176",
+   "patches/0053-CUDA-HIP-single-token-MoE-routing-FFN-norm-F32-route.patch:575"
+  ],
+  "notes": "Ticket atomowy + __threadfence; DPP na RDNA, shfl na NVIDIA."
+ },
+ "0054": {
+  "file": "0054-CUDA-HIP-LFM2-shortconv-in_proj-MMVQ-with-the-fused-.patch",
+  "title": "CUDA/HIP: LFM2 shortconv in_proj MMVQ with the fused conv as per-group ticket tails (GGML_HIP_INPROJ_CONV)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "ggml/src/ggml-cuda/mmvq.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "HIP only (RDNA)",
+  "guard": "runtime: GGML_CUDA_CC_IS_RDNA(cc) && warp_size==32 (RDNA1-4)",
+  "scope": "hip_rdna",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna4": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "LFM2 shortconv"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_CONV_MUL",
+    "GGML_HIP_INPROJ_CONV",
+    "GGML_HIP_MMVQ_N1_ROWS"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "4.231->4.100 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.131
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "unknown-needs-test",
+   "linux-amd-hip-rdna4": "unknown-needs-test",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0054-CUDA-HIP-LFM2-shortconv-in_proj-MMVQ-with-the-fused-.patch:329",
+   "patches/0054-CUDA-HIP-LFM2-shortconv-in_proj-MMVQ-with-the-fused-.patch:125"
+  ],
+  "notes": "Bramka GGML_CUDA_CC_IS_RDNA: RDNA1-4 (nie tylko RDNA3), NVIDIA wykluczone."
+ },
+ "0055": {
+  "file": "0055-HIP-RDNA3-FA-the-kvq-decode-kernel-also-reads-a-q8_0.patch",
+  "title": "HIP/RDNA3 FA: the kvq decode kernel also reads a q8_0 KV cache (GGML_HIP_KVQ_Q8)",
+  "files": [
+   "ggml/src/ggml-cuda/fattn-kvq.cu",
+   "ggml/src/ggml-cuda/fattn-kvq.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "HIP only (gfx110x)",
+  "guard": "compile: GGML_USE_HIP && RDNA3_0 lub runtime GGML_CUDA_CC_IS_RDNA3_0 / tabela MMVQ_PARAMETERS_RDNA3_0 (tylko gfx110x)",
+  "scope": "hip_rdna3_0",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (brak WMMA)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna4": "wykluczone; port wymaga WMMA gfx12 (inny układ operandów)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic attention: KV q8_0, D 64/128"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_KVQ_Q8"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "numerics (KLD 0.044196 vs 0.044171, PASS)",
+  "gain_xtx": "d0 4.121->4.099; 98k 6.561->5.462 ms/tok (+20%)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.022
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0055-HIP-RDNA3-FA-the-kvq-decode-kernel-also-reads-a-q8_0.patch:301",
+   "patches/0055-HIP-RDNA3-FA-the-kvq-decode-kernel-also-reads-a-q8_0.patch:44"
+  ],
+  "notes": ""
+ },
+ "0056": {
+  "file": "0056-CUDA-HIP-single-token-gate-up-GLU-MMVQ-writes-the-q8.patch",
+  "title": "CUDA/HIP: single-token gate/up(+GLU) MMVQ writes the q8_1 input of the down projection (GGML_HIP_GATE_UP_Q8)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/mmvq.cu",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "MoE + gęste FFN"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_GATE_UP_Q8"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "4.070->3.973 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.097
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0056-CUDA-HIP-single-token-gate-up-GLU-MMVQ-writes-the-q8.patch:34",
+   "patches/0056-CUDA-HIP-single-token-gate-up-GLU-MMVQ-writes-the-q8.patch:65"
+  ],
+  "notes": ""
+ },
+ "0057": {
+  "file": "0057-CUDA-HIP-single-token-attention-input-q-k-norm-rope-.patch",
+  "title": "CUDA/HIP: single-token attention input (q/k norm+rope+FWHT, v FWHT, q8_0 SET_ROWS of k and v) in one launch (GGML_HIP_ATTN_PREP)",
+  "files": [
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/rope.cu",
+   "ggml/src/ggml-cuda/rope.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA); test-backend-ops: __builtin_popcountll nie kompiluje się pod MSVC [SZACUNEK]",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "rotowany KV q8_0, głowa 64 (kształt LFM2)"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_ATTN_PREP"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "4.043->3.907 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.136
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0057-CUDA-HIP-single-token-attention-input-q-k-norm-rope-.patch:67",
+   "patches/0057-CUDA-HIP-single-token-attention-input-q-k-norm-rope-.patch:613"
+  ],
+  "notes": "Test używa __builtin_popcountll (MSVC)."
+ },
+ "0058": {
+  "file": "0058-CUDA-HIP-kvq-attention-applies-the-output-FWHT-q8_1-.patch",
+  "title": "CUDA/HIP: kvq attention applies the output FWHT (+ q8_1 for the o projection) in its combine launch (GGML_HIP_KVQ_FWHT)",
+  "files": [
+   "ggml/src/ggml-cuda/fattn-common.cuh",
+   "ggml/src/ggml-cuda/fattn-kvq.cu",
+   "ggml/src/ggml-cuda/fattn-kvq.cuh",
+   "ggml/src/ggml-cuda/fattn.cu",
+   "ggml/src/ggml-cuda/fattn.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "HIP only (gfx110x)",
+  "guard": "compile: GGML_USE_HIP && RDNA3_0 lub runtime GGML_CUDA_CC_IS_RDNA3_0 / tabela MMVQ_PARAMETERS_RDNA3_0 (tylko gfx110x)",
+  "scope": "hip_rdna3_0",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (brak WMMA)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna4": "wykluczone; port wymaga WMMA gfx12 (inny układ operandów)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "rotowany KV + kvq"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_KVQ_FWHT"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "3.928->3.879 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.049
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0058-CUDA-HIP-kvq-attention-applies-the-output-FWHT-q8_1-.patch:127",
+   "patches/0058-CUDA-HIP-kvq-attention-applies-the-output-FWHT-q8_1-.patch:133"
+  ],
+  "notes": "Wymaga BEST_FATTN_KERNEL_KVQ (RDNA3_0)."
+ },
+ "0059": {
+  "file": "0059-CUDA-HIP-batch-the-small-async-input-uploads-of-a-gr.patch",
+  "title": "CUDA/HIP: batch the small async input uploads of a graph into one H2D copy + one scatter launch (GGML_HIP_INPUT_BATCH)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_89": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA",
+   "sm_120": "kompiluje się i działa (wspólny kod CUDA/HIP), nigdy nie uruchomione na NVIDIA"
+  },
+  "model_family": [
+   "generic"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_INPUT_BATCH"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "3.840->3.806 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.034
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "unknown-needs-test",
+   "windows-amd-hip-rdna4": "unknown-needs-test",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "unknown-needs-test",
+   "linux-nvidia-cuda-sm89": "unknown-needs-test",
+   "linux-nvidia-cuda-sm120": "unknown-needs-test",
+   "windows-nvidia-cuda-sm86": "unknown-needs-test",
+   "windows-nvidia-cuda-sm89": "unknown-needs-test",
+   "windows-nvidia-cuda-sm120": "unknown-needs-test",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0059-CUDA-HIP-batch-the-small-async-input-uploads-of-a-gr.patch:37",
+   "patches/0059-CUDA-HIP-batch-the-small-async-input-uploads-of-a-gr.patch:162"
+  ],
+  "notes": ""
+ },
+ "0060": {
+  "file": "0060-HIP-RDNA3-replay-a-captured-decode-graph-as-one-PM4-.patch",
+  "title": "HIP/RDNA3: replay a captured decode graph as one PM4 indirect buffer on an own ROCr queue (GGML_HIP_PM4)",
+  "files": [
+   "ggml/src/ggml-cuda/common.cuh",
+   "ggml/src/ggml-cuda/ggml-cuda.cu",
+   "ggml/src/ggml-cuda/hip-pm4.cu",
+   "ggml/src/ggml-cuda/hip-pm4.cuh",
+   "ggml/src/ggml-hip/CMakeLists.txt"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "HIP(build)"
+  ],
+  "effective_backend": "HIP only (ROCr)",
+  "guard": "compile: GGML_USE_HIP && USE_CUDA_GRAPH; runtime: GGML_CUDA_CC_IS_RDNA3(cc) && GGML_HIP_PM4; build: find_package(hsa-runtime64 REQUIRED)",
+  "scope": "rocr",
+  "os": {
+   "linux": "OK",
+   "windows": "NIE: HIP SDK używa PAL, brak ROCr/hsa-runtime64; wymaga strażnika w CMake",
+   "macos": "nie dotyczy"
+  },
+  "runtime": "ROCr/HSA (Linux KFD) — NIE PAL",
+  "arch": {
+   "rdna2": "wykluczone w runtime (GGML_CUDA_CC_IS_RDNA3); PM4 per generacja = PORT",
+   "rdna3": "zmierzone (gfx1100)",
+   "rdna3_5": "kompiluje się; runtime-gate RDNA3 obejmuje gfx115x -> aktywne, niesprawdzone (rejestry gfx11)",
+   "rdna4": "wykluczone w runtime (GGML_CUDA_CC_IS_RDNA3); PM4 per generacja = PORT",
+   "sm_86": "wykluczone (tylko HIP)",
+   "sm_89": "wykluczone (tylko HIP)",
+   "sm_120": "wykluczone (tylko HIP)"
+  },
+  "model_family": [
+   "generic (każdy przechwycony graf)"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_PM4",
+    "GGML_HIP_PM4_DEBUG"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "LFM 3.887->3.424 ms/tok (+13.5%); Qwen 29.16->27.80 ms/krok (+4.9%)",
+  "gain_ms": {
+   "qwen_step": 1.36,
+   "lfm_token": 0.463
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "excluded",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0060-HIP-RDNA3-replay-a-captured-decode-graph-as-one-PM4-.patch:776",
+   "patches/0060-HIP-RDNA3-replay-a-captured-decode-graph-as-one-PM4-.patch:112",
+   "patches/0060-HIP-RDNA3-replay-a-captured-decode-graph-as-one-PM4-.patch:723",
+   "patches/0060-HIP-RDNA3-replay-a-captured-decode-graph-as-one-PM4-.patch:354",
+   "~/llama-master@amd-opt:ggml/src/ggml-hip/CMakeLists.txt:49,145 (hsa-runtime64 REQUIRED, bezwarunkowo)"
+  ],
+  "notes": "ROCr/HSA: hsa_queue_create, loader ext 1.03, vendor AQL PM4_IB, rejestry gfx10/11. Windows HIP SDK = PAL (brak ROCr) -> wykluczone; dodatkowo find_package(hsa-runtime64 REQUIRED) bez strażnika WIN32 [SZACUNEK] łamie build całego backendu HIP na Windows."
+ },
+ "0061": {
+  "file": "0061-HIP-PM4-replay-GGML_HIP_PM4_DEBUG-2-per-launch-timin.patch",
+  "title": "HIP PM4 replay: GGML_HIP_PM4_DEBUG=2 per-launch timing (GPU timestamps of the tape, host sync/submit, idle between tapes), =3 per-dispatch durations (pm4trace lines on stderr)",
+  "files": [
+   "ggml/src/ggml-cuda/hip-pm4.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "HIP only (ROCr)",
+  "guard": "compile: GGML_USE_HIP && USE_CUDA_GRAPH; runtime: GGML_CUDA_CC_IS_RDNA3(cc) && GGML_HIP_PM4; build: find_package(hsa-runtime64 REQUIRED)",
+  "scope": "rocr",
+  "os": {
+   "linux": "OK",
+   "windows": "NIE (cxxabi/__cxa_demangle, ROCr)",
+   "macos": "nie dotyczy"
+  },
+  "runtime": "ROCr/HSA (Linux KFD) — NIE PAL",
+  "arch": {
+   "rdna2": "wykluczone w runtime (GGML_CUDA_CC_IS_RDNA3); PM4 per generacja = PORT",
+   "rdna3": "zmierzone (gfx1100)",
+   "rdna3_5": "kompiluje się; runtime-gate RDNA3 obejmuje gfx115x -> aktywne, niesprawdzone (rejestry gfx11)",
+   "rdna4": "wykluczone w runtime (GGML_CUDA_CC_IS_RDNA3); PM4 per generacja = PORT",
+   "sm_86": "wykluczone (tylko HIP)",
+   "sm_89": "wykluczone (tylko HIP)",
+   "sm_120": "wykluczone (tylko HIP)"
+  },
+  "model_family": [
+   "n/a (diagnostyka)"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_PM4_DEBUG"
+   ],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "n/a",
+  "gain_xtx": "-",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": 0
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "excluded",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0061-HIP-PM4-replay-GGML_HIP_PM4_DEBUG-2-per-launch-timin.patch:97",
+   "patches/0061-HIP-PM4-replay-GGML_HIP_PM4_DEBUG-2-per-launch-timin.patch:30"
+  ],
+  "notes": "abi::__cxa_demangle (cxxabi) - Linux/Itanium ABI."
+ },
+ "0062": {
+  "file": "0062-CUDA-HIP-RDNA3-the-shortconv-in_proj-MMVQ-runs-4-row.patch",
+  "title": "CUDA/HIP RDNA3: the shortconv in_proj MMVQ runs 4 rows per block (GGML_HIP_CONV_ROWS4)",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "HIP only (gfx110x)",
+  "guard": "compile: GGML_USE_HIP && RDNA3_0 lub runtime GGML_CUDA_CC_IS_RDNA3_0 / tabela MMVQ_PARAMETERS_RDNA3_0 (tylko gfx110x)",
+  "scope": "hip_rdna3_0",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna4": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "LFM2 shortconv"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_CONV_ROWS4",
+    "GGML_HIP_MMVQ_N1_ROWS"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "3.458->3.402 ms/tok",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.056
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0062-CUDA-HIP-RDNA3-the-shortconv-in_proj-MMVQ-runs-4-row.patch:32",
+   "patches/0062-CUDA-HIP-RDNA3-the-shortconv-in_proj-MMVQ-runs-4-row.patch:41"
+  ],
+  "notes": "Motywacja: siatka 3072 = pojemność fal 96 CU; na kartach z inną liczbą CU próg inny."
+ },
+ "0063": {
+  "file": "0063-CUDA-HIP-GGML_HIP_PM4-and-GGML_HIP_CONV_ROWS4-read-t.patch",
+  "title": "CUDA/HIP: GGML_HIP_PM4 and GGML_HIP_CONV_ROWS4 read through ggml_cuda_env_switch (the fork's helper)",
+  "files": [
+   "ggml/src/ggml-cuda/hip-pm4.cu",
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "CUDA+HIP",
+  "guard": "brak strażnika arch (wspólny ggml-cuda); ewentualne DPP tylko pod GGML_USE_HIP && RDNA",
+  "scope": "cuda",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "CUDA runtime lub HIP (ROCr na Linux, PAL na Windows)",
+  "arch": {
+   "rdna2": "kompiluje się i działa, niesprawdzone",
+   "rdna3": "kompiluje się (gfx1100)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone",
+   "rdna4": "kompiluje się i działa, niesprawdzone",
+   "sm_86": "kompiluje się, bez wpływu na wydajność",
+   "sm_89": "kompiluje się, bez wpływu na wydajność",
+   "sm_120": "kompiluje się, bez wpływu na wydajność"
+  },
+  "model_family": [
+   "n/a"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_CONV_ROWS4",
+    "GGML_HIP_PM4"
+   ],
+   "cli": [],
+   "loo_cat": "nonspeed",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "n/a",
+  "gain_xtx": "-",
+  "gain_ms": {
+   "qwen_step": 0,
+   "lfm_token": 0
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works-neutral",
+   "linux-amd-hip-rdna3.5": "works-neutral",
+   "linux-amd-hip-rdna2": "works-neutral",
+   "linux-amd-hip-rdna4": "works-neutral",
+   "windows-amd-hip-rdna3": "works-neutral",
+   "windows-amd-hip-rdna3.5": "works-neutral",
+   "windows-amd-hip-rdna2": "works-neutral",
+   "windows-amd-hip-rdna4": "works-neutral",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "works-neutral",
+   "linux-nvidia-cuda-sm89": "works-neutral",
+   "linux-nvidia-cuda-sm120": "works-neutral",
+   "windows-nvidia-cuda-sm86": "works-neutral",
+   "windows-nvidia-cuda-sm89": "works-neutral",
+   "windows-nvidia-cuda-sm120": "works-neutral",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0063-CUDA-HIP-GGML_HIP_PM4-and-GGML_HIP_CONV_ROWS4-read-t.patch:21"
+  ],
+  "notes": ""
+ },
+ "0064": {
+  "file": "0064-HIP-RDNA3-one-column-MMVQ-Q8_0-joins-the-2-row-path-.patch",
+  "title": "HIP/RDNA3 one-column MMVQ: Q8_0 joins the 2-row path (and the 4-row conv path) (GGML_HIP_MMVQ_N1_Q8_0)",
+  "files": [
+   "ggml/src/ggml-cuda/mmvq.cu"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP"
+  ],
+  "effective_backend": "HIP only (gfx110x)",
+  "guard": "compile: GGML_USE_HIP && RDNA3_0 lub runtime GGML_CUDA_CC_IS_RDNA3_0 / tabela MMVQ_PARAMETERS_RDNA3_0 (tylko gfx110x)",
+  "scope": "hip_rdna3_0",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "rdna4": "wykluczone (strażnik RDNA3_0 = gfx110x)",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic (n=1, Q8_0)"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_MMVQ_N1_Q8_0"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit",
+  "gain_xtx": "tylko LFM Uncensored (Q8_0): 3.933->3.706 ms/tok (+6.1%)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": 0.0
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "excluded",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "excluded",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0064-HIP-RDNA3-one-column-MMVQ-Q8_0-joins-the-2-row-path-.patch:39"
+  ],
+  "notes": "Zysk tylko dla kwantów z wagami Q8_0 (LFM Uncensored +6.1%)."
+ },
+ "0065": {
+  "file": "0065-server-LLAMA_SERVER_REASONING_CONTROL-0-ignores-the-.patch",
+  "title": "server: LLAMA_SERVER_REASONING_CONTROL=0 ignores the client reasoning_control flag (the web UI always sends true, which forces the full-vocabulary sampling path); LFM UI-style request 255 -> 291 t/s",
+  "files": [
+   "tools/server/server-context.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic (web UI llama-server)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_SERVER_REASONING_CONTROL"
+   ],
+   "cli": [],
+   "loo_cat": "env",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "zmiana zachowania API (obejście, zastąpione przez 0066)",
+  "gain_xtx": "LFM UI 255->291 t/s",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "works+gain",
+   "windows-amd-vulkan-rdna3": "works+gain",
+   "windows-amd-vulkan-rdna2_4": "works+gain",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "works+gain"
+  },
+  "evidence": [
+   "patches/0065-server-LLAMA_SERVER_REASONING_CONTROL-0-ignores-the-.patch:20"
+  ],
+  "notes": "Domyślnie? - obejście; produkt powinien używać 0066."
+ },
+ "0066": {
+  "file": "0066-common-fast-top-k-candidates-also-with-a-reasoning-b.patch",
+  "title": "common: fast top-k candidates also with a reasoning-budget sampler (LLAMA_SAMPLER_FAST_RBUDGET)",
+  "files": [
+   "common/sampling.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic (budżet myślenia)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_SAMPLER_FAST_RBUDGET"
+   ],
+   "cli": [],
+   "loo_cat": "(poza loo-plan: łatka po c36fd2c87)",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "same-tok",
+  "gain_xtx": "Qwen MTP UI 99.3->107.0; LFM 256.9->292.9 t/s",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "works+gain",
+   "windows-amd-vulkan-rdna3": "works+gain",
+   "windows-amd-vulkan-rdna2_4": "works+gain",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "works+gain"
+  },
+  "evidence": [
+   "patches/0066-common-fast-top-k-candidates-also-with-a-reasoning-b.patch:42"
+  ],
+  "notes": ""
+ },
+ "0067": {
+  "file": "0067-common-fast-top-k-candidates-also-with-n_probs-0-LLA.patch",
+  "title": "common: fast top-k candidates also with n_probs > 0 (LLAMA_SAMPLER_FAST_NPROBS)",
+  "files": [
+   "common/sampling.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic (logprobs)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_SAMPLER_FAST_NPROBS"
+   ],
+   "cli": [],
+   "loo_cat": "(poza loo-plan: łatka po c36fd2c87)",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "same-tok",
+  "gain_xtx": "brak pomiaru",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "works+gain",
+   "windows-amd-vulkan-rdna3": "works+gain",
+   "windows-amd-vulkan-rdna2_4": "works+gain",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "works+gain"
+  },
+  "evidence": [
+   "patches/0067-common-fast-top-k-candidates-also-with-n_probs-0-LLA.patch:39"
+  ],
+  "notes": "Brak osobnego pomiaru."
+ },
+ "0068": {
+  "file": "0068-common-fast-top-k-candidates-also-behind-a-logit-bia.patch",
+  "title": "common: fast top-k candidates also behind a logit-bias sampler (LLAMA_SAMPLER_FAST_LOGIT_BIAS)",
+  "files": [
+   "common/sampling.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic (logit_bias)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_SAMPLER_FAST_LOGIT_BIAS"
+   ],
+   "cli": [],
+   "loo_cat": "(poza loo-plan: łatka po c36fd2c87)",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "same-tok",
+  "gain_xtx": "Qwen MTP 98.9->105.4; LFM 257.1->292.6 t/s",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "works+gain",
+   "windows-amd-vulkan-rdna3": "works+gain",
+   "windows-amd-vulkan-rdna2_4": "works+gain",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "works+gain"
+  },
+  "evidence": [
+   "patches/0068-common-fast-top-k-candidates-also-behind-a-logit-bia.patch:54"
+  ],
+  "notes": ""
+ },
+ "0069": {
+  "file": "0069-common-fast-top-k-candidates-also-with-a-grammar-unl.patch",
+  "title": "common: fast top-k candidates also with a grammar, unless grammar_first (LLAMA_SAMPLER_FAST_GRAMMAR)",
+  "files": [
+   "common/sampling.cpp"
+  ],
+  "backends": [
+   "host/llama (wszystkie backendy)"
+  ],
+  "effective_backend": "wszystkie",
+  "guard": "brak (kod hosta: common/, tools/server, ggml-backend)",
+  "scope": "host",
+  "os": {
+   "linux": "OK",
+   "windows": "OK",
+   "macos": "OK"
+  },
+  "runtime": "dowolny",
+  "arch": {
+   "rdna2": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna3_5": "n/a: kod hosta/llama, niezależny od arch",
+   "rdna4": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_86": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_89": "n/a: kod hosta/llama, niezależny od arch",
+   "sm_120": "n/a: kod hosta/llama, niezależny od arch"
+  },
+  "model_family": [
+   "generic (gramatyka/tool calling)"
+  ],
+  "env_switch": {
+   "vars": [
+    "LLAMA_SAMPLER_FAST_GRAMMAR"
+   ],
+   "cli": [],
+   "loo_cat": "(poza loo-plan: łatka po c36fd2c87)",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "same-tok",
+  "gain_xtx": "Qwen MTP 104.8->113.2; LFM 254.2->294.3 t/s",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "works+gain",
+   "linux-amd-hip-rdna2": "works+gain",
+   "linux-amd-hip-rdna4": "works+gain",
+   "windows-amd-hip-rdna3": "works+gain",
+   "windows-amd-hip-rdna3.5": "works+gain",
+   "windows-amd-hip-rdna2": "works+gain",
+   "windows-amd-hip-rdna4": "works+gain",
+   "linux-amd-vulkan-rdna3": "works+gain",
+   "linux-amd-vulkan-rdna2_4": "works+gain",
+   "windows-amd-vulkan-rdna3": "works+gain",
+   "windows-amd-vulkan-rdna2_4": "works+gain",
+   "linux-nvidia-cuda-sm86": "works+gain",
+   "linux-nvidia-cuda-sm89": "works+gain",
+   "linux-nvidia-cuda-sm120": "works+gain",
+   "windows-nvidia-cuda-sm86": "works+gain",
+   "windows-nvidia-cuda-sm89": "works+gain",
+   "windows-nvidia-cuda-sm120": "works+gain",
+   "macos-metal-apple": "works+gain"
+  },
+  "evidence": [
+   "patches/0069-common-fast-top-k-candidates-also-with-a-grammar-unl.patch:44"
+  ],
+  "notes": ""
+ },
+ "0070": {
+  "file": "0070-HIP-RDNA3-MMQ-Q4_K-Q5_K-scale-epilogue-in-VOPD-paira.patch",
+  "title": "HIP/RDNA3 MMQ: Q4_K/Q5_K scale epilogue in VOPD-pairable f32 ops, bitwise the same sums (GGML_HIP_MMQ_EPI=0 off)",
+  "files": [
+   "ggml/src/ggml-cuda/mmq-vec-dot.cuh",
+   "ggml/src/ggml-cuda/mmq.cuh",
+   "tests/test-backend-ops.cpp"
+  ],
+  "backends": [
+   "CUDA",
+   "HIP",
+   "tests"
+  ],
+  "effective_backend": "HIP only (RDNA3)",
+  "guard": "compile: defined(RDNA3) (gfx110x+gfx115x) / runtime GGML_CUDA_CC_IS_RDNA3",
+  "scope": "hip_rdna3",
+  "os": {
+   "linux": "OK",
+   "windows": "kompiluje się (clang z HIP SDK / nvcc+MSVC); runtime PAL (AMD) / WDDM (NVIDIA)",
+   "macos": "nie dotyczy (brak CUDA/HIP)"
+  },
+  "runtime": "HIP (ROCr|PAL)",
+  "arch": {
+   "rdna2": "wykluczone (strażnik RDNA3 = gfx110x/115x)",
+   "rdna3": "zmierzone (gfx1100, 7900 XTX)",
+   "rdna3_5": "kompiluje się i działa, niesprawdzone; strojenie pod gfx1100 -> możliwie wolniej",
+   "rdna4": "wykluczone (#if RDNA3); VOPD istnieje w gfx12, ale WMMA gfx12 inne -> PORT",
+   "sm_86": "wykluczone (strażnik HIP/RDNA)",
+   "sm_89": "wykluczone (strażnik HIP/RDNA)",
+   "sm_120": "wykluczone (strażnik HIP/RDNA)"
+  },
+  "model_family": [
+   "generic prefill Q4_K/Q5_K"
+  ],
+  "env_switch": {
+   "vars": [
+    "GGML_HIP_MMQ_EPI"
+   ],
+   "cli": [],
+   "loo_cat": "(poza loo-plan: łatka po c36fd2c87)",
+   "revert_clean": null,
+   "default": "włączone"
+  },
+  "correctness": "bit (dowód ISA + logity)",
+  "gain_xtx": "Qwen pp4096 1099.5->1123.2 (+2.2%)",
+  "gain_ms": {
+   "qwen_step": null,
+   "lfm_token": null
+  },
+  "portability": {
+   "linux-amd-hip-rdna3": "works+gain",
+   "linux-amd-hip-rdna3.5": "unknown-needs-test",
+   "linux-amd-hip-rdna2": "excluded",
+   "linux-amd-hip-rdna4": "excluded",
+   "windows-amd-hip-rdna3": "unknown-needs-test",
+   "windows-amd-hip-rdna3.5": "unknown-needs-test",
+   "windows-amd-hip-rdna2": "excluded",
+   "windows-amd-hip-rdna4": "excluded",
+   "linux-amd-vulkan-rdna3": "excluded",
+   "linux-amd-vulkan-rdna2_4": "excluded",
+   "windows-amd-vulkan-rdna3": "excluded",
+   "windows-amd-vulkan-rdna2_4": "excluded",
+   "linux-nvidia-cuda-sm86": "excluded",
+   "linux-nvidia-cuda-sm89": "excluded",
+   "linux-nvidia-cuda-sm120": "excluded",
+   "windows-nvidia-cuda-sm86": "excluded",
+   "windows-nvidia-cuda-sm89": "excluded",
+   "windows-nvidia-cuda-sm120": "excluded",
+   "macos-metal-apple": "excluded"
+  },
+  "evidence": [
+   "patches/0070-HIP-RDNA3-MMQ-Q4_K-Q5_K-scale-epilogue-in-VOPD-paira.patch:97",
+   "patches/0070-HIP-RDNA3-MMQ-Q4_K-Q5_K-scale-epilogue-in-VOPD-paira.patch:87",
+   "patches/0070-HIP-RDNA3-MMQ-Q4_K-Q5_K-scale-epilogue-in-VOPD-paira.patch:298"
+  ],
+  "notes": "Bramka RDNA3 obejmuje RDNA3.5 (gfx1151): aktywne bez testu."
+ }
+}
