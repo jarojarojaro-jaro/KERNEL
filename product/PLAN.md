@@ -372,6 +372,46 @@ Wynik analizy zapisujemy w manifeście łatki jako predykat, np. `os: [linux]`, 
   - formularz zapisów z podwójnym opt-in.
 - Faza: szkic w fazie 1 (lista oczekujących), pełna strona przy publicznej becie (faza 2).
 
+#### 8.1.1 Ścieżka użytkownika na stronie (pomysł z 2026-10-16)
+```mermaid
+flowchart TD
+  H[Hero: Ten sam sprzęt. Ten sam model. Po prostu szybciej.<br/>+ animacja prędkości] --> CTA[Przycisk: Zacznij]
+  CTA --> ACC[Załóż konto<br/>e-mail / Google / GitHub]
+  ACC --> CH{Wybierz drogę}
+  CH --> W[1. Wpisz swój sprzęt<br/>formularz: GPU, VRAM, RAM, system]
+  CH --> D[2. Pobierz aplikację desktop<br/>Windows / Linux / macOS]
+  CH --> T[3. Terminal<br/>jedna komenda instalacji]
+  W -- nie wiesz, co masz? --> SC[Komenda „skan” do skopiowania<br/>PowerShell / bash / macOS:<br/>wypisuje specyfikację, nic nie wysyła]
+  SC --> W
+  W --> R[Wynik na stronie: polecany model,<br/>przewidywana prędkość przed → po,<br/>z naszej bazy profili]
+  R --> D
+  R --> T
+  D --> APP[Aplikacja loguje się na to samo konto:<br/>profil, wyniki, historia optymalizacji]
+  T --> APP
+```
+- **Konto na początku:**
+  - zapisuje sprzęt, wyniki „przed → po”, historię optymalizacji i edycję (Free / Turbo);
+  - łączy stronę, aplikację desktop i terminal;
+  - pozwala odesłać przepis z fabryki, gdy kombinacja nie była znana (§4.3).
+  - Ryzyko: obowiązkowe konto przed pobraniem obniża liczbę instalacji. Do sprawdzenia testem A/B; alternatywa to pobieranie bez konta i logowanie przy pierwszej optymalizacji.
+- **Droga 1, formularz sprzętu:**
+  - pola z podpowiedziami (lista popularnych GPU z bazy);
+  - wynik od razu na stronie, z naszego estymatora (§4.2) i bazy profili;
+  - przy nieznanych kombinacjach uczciwy przedział zamiast liczby.
+- **Komenda „skan” dla tych, co nie wiedzą, co mają:**
+  - jedna linia do skopiowania (Windows PowerShell, Linux bash, macOS);
+  - działa bez admina;
+  - **wypisuje tylko** GPU, VRAM, RAM, CPU, system i sterownik w czytelnej formie, plus kod do wklejenia w formularz;
+  - nic nie wysyła sama; kod źródłowy pod linkiem, żeby każdy mógł sprawdzić, co robi.
+- **Droga 2, aplikacja desktop:** podpisany instalator dla wykrytego systemu (Windows / Linux / macOS); przy pierwszym uruchomieniu logowanie do konta i pełny skan (§3.2).
+- **Droga 3, terminal:**
+  - jedna komenda instalacji: `winget` / `brew` / skrypt `curl … | sh`, z sumą kontrolną i podpisem;
+  - potem TUI/CLI z tym samym kontem.
+- **Prawo przy koncie:**
+  - RODO: minimalne dane, zgoda na marketing osobno, usunięcie konta jednym przyciskiem;
+  - logowanie przez Google / GitHub zgodne z ich zasadami;
+  - regulamin i polityka prywatności akceptowane przy rejestracji.
+
 ---
 
 ## 9. Roadmapa z kryteriami wyjścia
