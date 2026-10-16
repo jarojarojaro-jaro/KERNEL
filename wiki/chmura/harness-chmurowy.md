@@ -2,7 +2,7 @@
 typ: chmura
 tags: [chmura, harness, vast]
 aktualizacja: 2026-10-16
-zrodlo: ~/qwen-opt/cloud/{find,up,push,bootstrap,bench,collect,down,watchdog,env,lib}.sh (nagłówki); ~/qwen-opt/cloud/PLAN-TESTOW.md:7-49,51-71
+zrodlo: ~/qwen-opt/cloud/{find,up,push,bootstrap,bench,collect,down,watchdog,env,lib}.sh (nagłówki); ~/qwen-opt/cloud/PLAN-TESTOW.md:7-49,51-71; ~/KERNEL/product/research/16c-kvq-cuda.md:37,210
 status: aktualne
 ---
 # Harness chmurowy (~/qwen-opt/cloud)
@@ -23,6 +23,8 @@ status: aktualne
 Bezpieczniki kosztów: lokalny watchdog + samozniszczenie na instancji po N h + 15 min (per-instancyjny klucz, który może tylko start/stop/destroy tej jednej maszyny); bench przestaje startować nowe przebiegi 20 min przed terminem. Klucze API są tylko w plikach na serwerze (chmod 600), wczytywane przez `env.sh`; nigdy w repo.
 
 Na każdą kartę osobny katalog `runs/<karta>/` z kopiami skryptów dopasowanymi w trakcie kampanii (np. `scorecard.py`, `ttft.py`, `opt-switch.sh`).
+
+Uwaga z E1 (2026-10-16): upload z domu ~155 KB/s (53 MB binarek w 5:42 min); przy iteracji lepiej wysłać bundle źródeł (355 KB) i zbudować na instancji (sm_120: 234 s przy 11 wątkach). Zobacz też [[lekcja-vast-authorized-keys]].
 
 ## Powiązane
 - [[chmura/_hub|Chmura]]

@@ -2,12 +2,12 @@
 typ: kernel
 tags: [kernele, flash-attention, kv]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058); ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,34-41,107; ~/KERNEL/product/research/15b-spekulacja-frontier.md:20,92,179; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54-55
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058); ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,34-41,107; ~/KERNEL/product/research/15b-spekulacja-frontier.md:20,92,179; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54-55; ~/KERNEL/product/research/16c-kvq-cuda.md:7-15,190-198
 status: aktualne
 ---
 # FA `kvq`: atencja dekodowania na skwantyzowanym KV
 
-**Kernel flash attention (RDNA3, WMMA), który czyta KV q4_0 lub q8_0 bez konwersji do F16 i liczy całą grupę GQA oraz do 8 tokenów w jednym przejściu.**
+**Kernel flash attention (RDNA3, WMMA), który czyta KV q4_0 lub q8_0 bez konwersji do F16 i liczy całą grupę GQA oraz do 8 tokenów w jednym przejściu; od 2026-10-16 także port CUDA (Ampere+).**
 
 Problem (2026-10-12): przy KV q4_0 i 5 tokenach llama.cpp wybierał kernel tile, który co krok konwertował cały K/V do F16; kernel vec czytał KV osobno dla każdej z 6 głów Q w grupie (d32768 n5: 120.6 ms).
 
@@ -24,11 +24,14 @@ Poprawność:
 
 Wyłączniki: 0011 brak (build), `GGML_HIP_KVQ_Q8`, `GGML_HIP_KVQ_FWHT`. Tylko gfx110x; RDNA4 wymaga portu (inny układ WMMA gfx12).
 
-## Luka na CUDA (raporty 15b, 15d; 2026-10-16)
-- Upstream CUDA dla KV q4_0/q8_0: kernel vec czyta KV osobno dla każdej głowy Q (`fattn-vec.cuh:108-111`), a na Ampere przy n ≥ 2 wybiera MMA_F16, które co krok konwertuje cały K/V warstwy do f16 (`fattn.cu:655-670`, `fattn-common.cuh:1041-1090`); na Ada/Blackwell vec do n ≤ 2. Nasz kvq jest dostępny tylko dla RDNA3_0.
-- 3090 tg64 base / fork przy 0 → 64k: Qwen 39.3 → 27.2, LFM 251.9 → 147.7 t/s; model ponownych odczytów GQA zgadza się z pomiarem (LFM +3.05 ms przewidziane vs +2.80 ms zmierzone).
-- Szacunek po porcie kvq na CUDA `[INFERENCE]`: Qwen ~37, LFM ~200 t/s przy 64k (+36%), MTP@64k +30–55%, VRAM −0.27…−0.84 GB. Plan E1 w raporcie 15d (6–10 osobodni + ~$1.5 chmury, wymaga zgody); upstream odrzucił podobne PR-y.
-- Koszt szerokości weryfikacji na XTX: kvq czyta KV raz na kafel 16 wierszy, `ceil(6·W/16)` kafli (W5 = 2, W8 = 3, W16 = 6); kalibracja d32768 n1 28.1 vs n5 33.8 ms. Kandydat: jedno czytanie KV dla ≤ 16 tokenów × 6 głów. HyperQwen (split-KV Triton, 128 wierszy na kafel) mierzy 250/583/1132 µs na warstwę przy 8/16/32 zapytaniach i 25k – do sprawdzenia.
+## Luka na CUDA (raporty 15b, 15d) – zamknięta przez 16c
+- Upstream CUDA: vec czyta KV osobno dla każdej głowy Q, przy n ≥ 2 na Ampere MMA_F16 z konwersją K/V do f16 ([[fa-kv-kwantyzowane-cuda]]). 3090 tg64 base / fork przy 0 → 64k: Qwen 39.3 → 27.2, LFM 251.9 → 147.7 t/s.
+- XTX: kvq czyta KV raz na kafel 16 wierszy, `ceil(6·W/16)` kafli (W5 = 2, W8 = 3, W16 = 6); d32768 n1 28.1 vs n5 33.8 ms.
+
+## Port CUDA 16c (2026-10-16)
+- `fattn-kvq-mma.cu` (`f08dc78bb`, gałąź `kvq-cuda`, `GGML_CUDA_KVQ=0` wyłącza), cc ≥ 8.0, q4_0/q8_0, D 64/128/256, ≤ 16 tokenów.
+- 3090 tg64@64k: Qwen 28.61 → 39.14 (+36.8%), LFM 159.65 → 208.12 t/s (+30.4%); MTP@59k 70.33 → 89.75 t/s (+27.6%).
+- Jądro 64k: Qwen q4_0 705 → 116.5 µs, LFM q8_0 286 → 119.4 µs. Szczegóły: [[2026-10-16-kvq-cuda]], decyzja KLD: [[2026-10-16-kvq-cuda-zostaje]].
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

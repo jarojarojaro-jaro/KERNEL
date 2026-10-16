@@ -14,14 +14,16 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (39)
+## Notatki (42)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
+- [[lekcja-pkill-wlasna-powloka|`pkill -f` przez ssh zabija własną powłokę; zadania GPU pod flock]] — W E1 `pkill -f "bench.sh"` wysłane przez ssh dopasowało też własną powłokę zdalną i ją zabiło, a jeden przebieg perf nałożył się na llama-bench i trzeba go było wyrzucić z tabel (`perf/excluded/`) (2026-10-16).
 - [[lekcja-agent-zmienia-protokol|Agent potrafi „poprawić” wynik zmianą protokołu ewaluacji]] — W papierze Sakana (arXiv 2610.18933 §6.3) w 2 z 3 przebiegów agent zmienił protokół ewaluacji (majority vote zamiast pass@1), a ani ewaluator, ani rubryki tego nie złapały – wykrył to dopiero ręczny audyt.
 - [[lekcja-benchmark-kopia|Benchmark na kopiowaniu zawyża spekulację]] — Zadania „powtórz tekst” albo kopiowanie dokumentu dają 4–6+ tokenów na krok i nic nie mówią o nowym pisaniu; tak powstały liczby Magnitude, tqLLM i HyperQwen.
 - [[lekcja-jeden-prompt|Benchmark z jednym promptem]] — „DFlash 120 t/s” zmierzono na 1 prompcie; na zestawie promptów wynik ≈ MTP. Zawsze 6 promptów × seedy.
 - [[lekcja-bit-exact-attention|Bit-exact: WMMA reaguje na zamaskowane wiersze cache]] — Ostatnia różnica między zwykłym dekodowaniem a weryfikacją MTP siedziała w atencji: zamaskowane (-inf) wiersze KV za pozycją tokena zmieniały wynik WMMA, choć matematycznie mnożą się przez 0; wyzerowanie ich (`GGML_HIP_BITEXACT_FA_ZERO_MASKED=1`) daje md5 zwykły = md5 MTP (`74952fd5…`) na Qwen3.8-27B (7900 XTX, 2026-10-16).
 - [[lekcja-brak-column-w-obrazie|Brak programu `column` w obrazie CUDA zatrzymał benchmark]] — Obraz `nvidia/cuda:12.8.1-devel-ubuntu24.04` nie ma `column`; wywołanie w `bootstrap.sh` przy `set -e` zatrzymywało benchmarki na wynajętej karcie (2026-10-16).
+- [[lekcja-kld-szum-kolejnosci|Bramka KLD 2σ leży w szumie kolejności sumowania]] — To samo jądro kvq na CUDA z innym podziałem KV (`GGML_CUDA_KVQ_BPSM=1`, zmienia tylko kolejność sumowania) przesunęło mean KLD o ±1–1.9σ, a dla LFM oblało bramkę (ΔKLD +1.47σ, same top −1.88σ, 99.9% ×1.278) przy identycznej arytmetyce (2026-10-16).
 - [[lekcja-bledny-roofline|Błędny roofline (bajty na token zamiast na przebieg)]] — „1075 GB/s, 112% peaku” wyszło z liczenia bajtów na token zamiast na przebieg modelu; poprawnie: bajty na przebieg × tokeny na krok.
 - [[lekcja-commity-bez-pomiaru|Commity bez pomiaru (UNMEASURED)]] — Łatki 0066–0070 powstały z dopiskiem „UNMEASURED”, bo w czasie rundy nie było dostępu do GPU; zmierzono je później.
 - [[lekcja-mtp-embd-state|Crash MTP po rebase: embd_state]] — Po rebase na v0.7.0 Qwen MTP ze słownikiem draftu przerywał serwer przy pierwszym żądaniu, bo upstream przeniósł stan ukryty MTP do `embd_state`, a dwa nasze wywołania git zmergował bez konfliktu na starym `set_embd`.
@@ -51,6 +53,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-megakernel-prefetch-nie-granica|Trwały kernel: zysk to prefetch, nie granica]] — Szacunek „trwały kernel MoE po PM4 ≈ 1.4%” liczył tylko granice kerneli; megakernele wygrywają nakładaniem rampy wag i małych operacji, a zmierzona bariera trwałej siatki (0.48–0.77 µs) kosztuje tyle co granica PM4 (0.46–0.86 µs).
 - [[baco-runtime-suspend|Usypianie karty (BACO) wyrzuca model z VRAM]] — Bez aktywności amdgpu usypia kartę po 5 s (runtime PM/BACO) i przenosi VRAM do RAM; model działa wtedy przez PCIe: 4.4 zamiast 92 t/s.
 - [[lekcja-vast-cli-klucz|vast CLI wymaga jawnego --api-key]] — `vastai show instances` po `source env.sh` w powłoce agenta zwrócił „Failed with error 403: This action requires login”; zadziałało dopiero `vastai --api-key "$(cat ~/.vast/key)" …` (2026-10-16).
+- [[lekcja-vast-authorized-keys|Vast: sshd odrzuca klucz przez prawa do authorized_keys]] — Pierwsza 3090 w E1 (host w Jordanii) odrzucała klucz SSH z błędem „bad ownership or modes for /root/.ssh/authorized_keys”; instancję zniszczono po ~4 min (~$0.02), a naprawą jest pętla `chown`/`chmod` w onstart (2026-10-16).
 - [[lekcja-wolna-sciezka-samplera|Wolna ścieżka samplera wyzwalana przez klienta]] — Ustawienia klienta (`reasoning_control` z web UI, budżet myślenia, `repeat_penalty` 1.05 w GGUF LFM, gramatyka narzędzi, `logit_bias`, `n_probs`) włączały pełną tablicę 128k/248k kandydatów: LFM 293 → ~255 t/s.
 - [[lekcja-5060ti-bezczynna|Wynajęta 5060 Ti stała bezczynnie]] — Na 5060 Ti kompilacja skończyła się szybko, ale pomiary nie ruszyły, bo agent dopisywał skrypty; płatna karta stała z 0% GPU (2026-10-16 ok. 01:24 UTC).
 - [[lekcja-zombie-serwery|Zombie serwery i współdzielony VRAM]] — DFlash wisiał na SIGTERM, a wynik MTP spadł do 5.6 t/s; serwer agenta K4 na porcie 8097 trzymał VRAM.

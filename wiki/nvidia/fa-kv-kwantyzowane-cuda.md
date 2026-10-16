@@ -2,7 +2,7 @@
 typ: nvidia
 tags: [nvidia, flash-attention, kv, cuda]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,39-41,59-60,255; ~/wt/3090-opt/ggml/src/ggml-cuda/fattn.cu:655-670; ~/wt/3090-opt/ggml/src/ggml-cuda/fattn-vec.cuh:108-111
+zrodlo: ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,39-41,59-60,255; ~/wt/3090-opt/ggml/src/ggml-cuda/fattn.cu:655-670; ~/wt/3090-opt/ggml/src/ggml-cuda/fattn-vec.cuh:108-111; ~/KERNEL/product/research/16c-kvq-cuda.md:11,57-75,190-198
 status: aktualne
 ---
 # Flash attention na KV q4_0/q8_0 w upstream CUDA
@@ -15,6 +15,7 @@ status: aktualne
 - Upstream odrzucił #29827 i #29846 (maintainer: „Don't make new PRs for this. I'm not going to review them.”). #29846 zmierzył dla qwen35 27B na 3090 pp1024@d32768: ub2 ×1.21, ub4 ×1.18, ub8 ×1.10, ub512 ×1.02.
 - Metal #30645 robi pakowanie GQA dla 1–4 tokenów: 1.11–1.80× przy 4 głowach KV / 6 Q (kształt Qwen3.8-27B).
 - Otwarte issues #29371 i #29826: bufor konwersji f16 zjada 8.7–13.3% oszczędności VRAM z kwantyzacji KV przy 131k.
+- **Luka zamknięta w forku (2026-10-16, raport 16c):** kvq-mma na Ampere+; 5060 Ti sm_120 Qwen q8_0 tg@64k +24.6%, LFM +30.0%, jądro ~92% pasma 448 GB/s. Zobacz [[2026-10-16-kvq-cuda]].
 
 ## Powiązane
 - [[nvidia/_hub|NVIDIA]]

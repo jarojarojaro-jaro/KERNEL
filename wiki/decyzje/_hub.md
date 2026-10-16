@@ -14,7 +14,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (19)
+## Notatki (20)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -27,6 +27,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-16-budzety-chmury|2026-10-16: budżety $5 na Vast i $6 na RunPod]] — Kampania NVIDIA na Vast może wydać łącznie do $5 (z przedłużeniami), a trening głowicy MTP na RunPod do $6 kosztu naszego poda.
 - [[2026-10-16-runpod-drugi-pod|2026-10-16: drugi pod na RunPod należy do użytkownika]] — Drugi działający pod na koncie RunPod (od innego projektu użytkownika) jest jego; nasi agenci go nie dotykają, a nasz limit liczy tylko koszt naszego poda.
 - [[2026-10-16-landing-i-konto|2026-10-16: hero landingu i konto na początku]] — Użytkownik chce pełnoprawnego landingu z hero „same hardware, same model, just faster / ten sam sprzęt, ten sam model, po prostu szybciej” i animacją prędkości, a potem konta zakładanego na początku i trzech dróg: wpisz sprzęt (z komendą skanu), aplikacja desktop, terminal.
+- [[2026-10-16-kvq-cuda-zostaje|2026-10-16: kvq na CUDA zostaje włączone, KLD Qwena do powtórki]] — Rodzic (Main) zdecydował: `kvq` na CUDA zostaje domyślnie włączone także dla Qwena przy ub 1, mimo FAIL bramki KLD +2.53σ; przy następnym wynajmie 3090 powtarzamy KLD Qwena z `--chunks 4`.
 - [[2026-10-16-saluki-bonsai-na-3060|2026-10-16: na RTX 3060 tylko Saluki i Bonsai]] — Na RTX 3060 testujemy Underdog Saluki 27B i Ternary Bonsai 2 27B, bez Qwen3.5-9B i Qwen 0.8B („tutaj robimy tylko saluki i bonsaia bez 9b i 08b”, 2026-10-16 01:26 UTC).
 - [[2026-10-16-nie-placimy-za-przestoj|2026-10-16: nie płacimy za stojące karty w chmurze (twarda zasada)]] — Wynajęta karta ma liczyć albo zostać usunięta; główny agent pilnuje tego automatycznie strażnikiem `idle-watch.py`.
 - [[2026-10-16-bez-lokalnego-gpu|2026-10-16: nie testujemy na naszym 7900 XTX]] — Użytkownik: najpierw „narazie nie rób testów na naszym gpu” (2026-10-16 00:56 UTC), a po krótkim teście bit-exact (02:46 UTC): optymalizacje tylko na kartach z Vast, 7900 XTX zostawić i nie robić na nim testów.

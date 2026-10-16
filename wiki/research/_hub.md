@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (26)
+## Notatki (27)
 
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
 - [[raport-01-konkurencja|Raport 01: konkurencja]] — Detekcja sprzętu i rekomendacja modelu to już standard; żaden produkt konsumencki nie łączy pomiaru, długiej optymalizacji poza flagami, weryfikacji bitowej i raportu przed → po (stan 2026-10-15).
@@ -30,7 +30,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-09-chmura-5060ti|Raport 09 (5060 Ti): RTX 5060 Ti 16 GB w chmurze]] — RTX 5060 Ti (Blackwell sm_120, Vast, 2026-10-16): Qwen3.8-27B UD-Q3_K_XL 28 → 51.7 t/s (×1.84; ×1.38 vs flagi upstream), LFM2.5 Q4_K_M 148 → 208 t/s (×1.41); NVFP4 przyspiesza tylko prefill, a jakość dostępnych GGUF NVFP4 jest słaba.
 - [[raport-10-post-training|Raport 10: trening i post-training]] — Do obietnicy produktu najlepiej pasuje trening draftera, nie modelu: fine-tune głowicy MTP Qwen3.8-27B przez self-distillation na trunku Q4, szacunek +10–17% tok/krok na czacie PL za $0–4.
 - [[raport-11-mtp-pl-pilot|Raport 11: pilot douczania głowicy MTP]] — Wynik negatywny (2026-10-16, RunPod A40, $2.14): douczona głowica MTP Qwen3.8-27B na 1.7 M tokenów zmienia tok/krok o ±2% (offline +0.2% w najlepszym przebiegu); fabryczna głowica jest już blisko optimum dla tej skali danych.
-- [[raport-12-bit-exact|Raport 12: bitowo identyczna spekulacja]] — Plain greedy (`c4708318`) i MTP (`6f14e814`) dają różne md5, bo ta sama pozycja liczona jest innym kernelem przy N=1 i N=2..6; tryb `LLAMA_SPEC_BITEXACT=1` na GPU wyrównał warstwy 0–6, zostało wyjście atencji `kqv_out-3`, a następne komendy GPU czekają na zgodę.
+- [[raport-12-bit-exact|Raport 12: bitowo identyczna spekulacja]] — Plain greedy (`c4708318`) i MTP (`6f14e814`) dają różne md5, bo ta sama pozycja liczona jest innym kernelem przy N=1 i N=2..6; tryb `LLAMA_SPEC_BITEXACT=1` na GPU wyrównał warstwy 0–6, zostało wyjście atencji `kqv_out-3`, a §13 domyka sprawę: zerowanie zamaskowanych wierszy KV daje plain == MTP i pełna walidacja przechodzi (PASS).
 - [[raport-13-rocm-10-1|Raport 13: ROCm 10.1]] — ROCm 10.1 nic istotnego nie daje na gfx1100: zostajemy na 10.0, a 10.1 trzymamy obok jako tarball user-local; ważniejsze odkrycia to ATT na gfx1100 i przyczyna PMC = 0.
 - [[raport-14-nemotron-3090|Raport 14: Nemotron 3.5 Bolt 74B-A9B na RTX 3090]] — Nemotron 3.5 Bolt 74B-A9B (IQ2_XXS, 22 GB) mieści się na RTX 3090 z drafterem DFlash; nasz silnik po dwóch nowych łatkach daje 87.2 → 141.1 t/s (×1.62 vs domyślny llama.cpp, ×1.07 vs najlepsze flagi upstream), ale KLD jest niezmierzone.
 - [[raport-15-synteza|Raport 15: synteza fali researchu (14, 15a–15f)]] — Ranking działań po audycie głośnych twierdzeń: najpierw fabryka v1 i logowanie lookupu, potem ogon lookupu szerokości 8, PM4-PDL dla LFM i port `kvq` na CUDA.
@@ -40,6 +40,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-15d-prefill-dlugi-kontekst|Raport 15d: prefill i długi kontekst (PFlash v2, KVFlash, cache sesji)]] — Największa bezstratna strata przy długim kontekście na NVIDIA to kernel atencji, nie prefill: port naszego `kvq` na CUDA to top pomysł; PFlash v2 to tryb stratny opt-in, KVFlash odrzucony, dyskowy cache sesji to realny bezstratny brak.
 - [[raport-15e-kwantyzacja-nowa|Raport 15e: nowe formaty niskobitowe dla 27B na 12–16 GB]] — GSQ-RCO jest „SOTA” tylko w wąskiej klasie, Swift 1.5 to fine-tune z niedouczoną głowicą MTP, CSF/QAD (NVFP4) są poza naszymi kartami, a największy zysk na 12 GB to MTP na istniejących 2-bitowych plikach.
 - [[raport-15f-agentowa-nauka|Raport 15f: agentowa nauka (Sakana v3, KernelGuard) a nasza fabryka]] — Z systemów automatycznej nauki warto przenieść dyscyplinę artefaktów (ewaluator poza zasięgiem agenta, ledger, reguły z fixture’ami), ale nie promocję „wynik ściśle większy” bez statystyki; propozycja fabryki v1 za ~8–9 osobodni.
+- [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]] — Agent CudaKvq przeniósł kernel `kvq` na NVIDIA Ampere+ (mma.sync m16n8k16, jedno przejście KV dla całej grupy GQA): +24.6…+36.8% tg przy 64k na 3090 i 5060 Ti, MTP@64k +27.6%, jeden graniczny FAIL KLD.
 - [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]] — Trzy raporty rundy 6 (2026-10-15), wszystkie bez GPU: szybki kernel GDN bitowy z konstrukcji, epilog MMQ w VOPD oraz narzędzia LOO / kanarki KLD / Kernel Tuner.
 - [[star-elastic-2605-07182|Star Elastic (arXiv 2605.07182)]] — Praca NVIDIA o zagnieżdżonych podmodelach Nemotron Nano v3 (30B → 23B/12B z jednego post-trainingu) i osobnym podmodelu dla fazy myślenia; nie dotyczy kerneli, dla nas niska istotność.
 <!-- AUTO:END -->
