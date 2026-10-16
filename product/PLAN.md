@@ -354,6 +354,24 @@ Wynik analizy zapisujemy w manifeście łatki jako predykat, np. `os: [linux]`, 
   - Polska jako rynek testowy (język, Bielik).
 - **Popyt zmierzyć przed budową płatności:** strona z wynikiem przed → po i listą oczekujących z ceną (fake-door), w fazie 1.
 
+### 8.1 Landing page (pomysł z 2026-10-16; budujemy po fazie 0, gdy będą zmierzone liczby)
+- **Hero:** „**Same hardware. Same model. Just faster.**” / „**Ten sam sprzęt. Ten sam model. Po prostu szybciej.**”
+- **Obok animacja (motion):** licznik prędkości lub dwa strumienie tekstu obok siebie („typowa aplikacja” vs „nasza”) generujące tę samą odpowiedź w różnym tempie. Liczby tylko z naszych pomiarów, z podpisem: karta, model, metoda.
+- **Pod hero:**
+  - tabela kart (z fazy 0: XTX, 3090, 5060 Ti, 3060…): przed → po;
+  - „jak to działa” w 3 krokach (skan → dobór → przyspieszenie);
+  - odznaka „odpowiedzi bit w bit” z linkiem do metodologii;
+  - lista oczekujących z testem ceny (fake-door).
+- **Produkcyjnie i zgodnie z prawem:**
+  - regulamin, polityka prywatności (RODO, cookies tylko za zgodą);
+  - dane firmy (spółka z §7);
+  - informacja „AI” (AI Act art. 50);
+  - każde „×2” udokumentowane metodologią i surowymi wynikami (dyrektywa UCPD);
+  - dostępność WCAG 2.2 AA;
+  - hosting w UE;
+  - formularz zapisów z podwójnym opt-in.
+- Faza: szkic w fazie 1 (lista oczekujących), pełna strona przy publicznej becie (faza 2).
+
 ---
 
 ## 9. Roadmapa z kryteriami wyjścia
