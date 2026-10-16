@@ -22,6 +22,7 @@ Raport z 2026-10-16, bez GPU.
 
 ## Powiązane
 - [[research/_hub|research]]
+- [[research/raport-15-synteza|synteza fali 15]]
 - [[vllm-monokernel]]
 - [[megakernele-prior-art]]
 - [[2026-10-16-budzet-lfm-megakernel]]
