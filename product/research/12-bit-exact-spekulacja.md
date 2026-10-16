@@ -195,3 +195,102 @@ LLAMA_SPEC_BITEXACT=1 ./llama-bx-diff -m $M -n 5 -f '(kq_mask|cache_[kv]_l3|kqv_
 Oczekiwane:
 - (1) linie `kvq FA` dla n_tokens=1 i n_tokens=5 z `bitexact=1`, a w porównaniu ich n_kv, nsplit i adresu K;
 - (2) pierwszy różniący się węzeł: maska, wiersz cache albo dopiero `kqv_out-3`.
+
+## 12. Diagnostyka FA po teście g1/g2 — **czeka na zgodę na GPU**
+
+g1/g2 (Main):
+- bitexact jest aktywny przy N=1/4/5;
+- n_kv=256, gqa 6, cols_per_tile 6, nsplit 2 (kv_per_split 512, więc drugi split jest pusty);
+- maska oraz wiersze cache K/V do pozycji tokenu identyczne, a mimo to `kqv_out-3` się różni.
+
+Jedyne wejście bloku tokenu 0, które jeszcze się różni, to **wiersze KV za pozycją tokenu (zamaskowane)**: w plain to nigdy nie zapisane komórki (zera), w weryfikacji K/V draftów. Z kodu wynika, że dają dokładne zera:
+- `fmaf(-inf, log2e, KQ) = -inf`;
+- `exp2(-inf) = 0`, a P(f16) = 0;
+- iloczyny w VKQ są równe ±0.
+
+Nie potrafię pokazać kanału wpływu bez GPU. Hipoteza [INFERENCE]: zachowanie WMMA (np. wyrównanie wykładników sumy iloczynów przy wejściach o różnej wielkości albo obsługa -0) albo coś w combine z pustym splitem.
+
+Haki diagnostyczne (commit ce2105d32, tylko w trybie bitexact):
+- `GGML_HIP_BITEXACT_FA_ZERO_MASKED=1`: w bloku jednego tokenu wiersze K/V niewidoczne dla tokenu (maska -inf) są zastępowane zerowymi bajtami, jak niezapisane komórki w plain. Plain się nie zmienia (te komórki już są zerami).
+  - Jeśli to usuwa różnicę, przyczyną są zamaskowane wiersze, a ten hak jest **gotową poprawką**. Koszt: jeden odczyt f16 maski na linię na kawałek 16 wierszy, pomijalny.
+- `GGML_HIP_BITEXACT_FA_NSPLIT1=1`: jeden split i bezpośredni zapis VKQ/KQ_sum, bez combine. Jeśli to usuwa różnicę, winny jest combine lub pusty split.
+
+Komendy GPU (< 2 min, **czeka na zgodę na GPU**):
+```
+cd ~/wt/batchinv/build-hip/bin; M=~/models/Qwen3.8-27B-UD-Q4_K_XL.gguf; export LD_LIBRARY_PATH=$PWD:/opt/rocm/core-10.0/lib
+F='^kqv_out-3$'
+LLAMA_SPEC_BITEXACT=1 GGML_HIP_BITEXACT_FA_ZERO_MASKED=1 GGML_HIP_BITEXACT_FA_LOG=1 ./llama-bx-diff -m $M -n 5 -f $F 2>&1 | grep -E 'kvq FA|^pos|RESULT'
+LLAMA_SPEC_BITEXACT=1 GGML_HIP_BITEXACT_FA_NSPLIT1=1 ./llama-bx-diff -m $M -n 5 -f $F 2>&1 | grep -E '^pos|RESULT'
+LLAMA_SPEC_BITEXACT=1 GGML_HIP_BITEXACT_FA_ZERO_MASKED=1 GGML_HIP_BITEXACT_FA_NSPLIT1=1 ./llama-bx-diff -m $M -n 5 -f $F 2>&1 | grep -E '^pos|RESULT'
+# jeśli kqv_out-3 = none: pełny model
+LLAMA_SPEC_BITEXACT=1 GGML_HIP_BITEXACT_FA_ZERO_MASKED=1 ./llama-bx-diff -m $M -n 5 -f '^l_out' 2>&1 | grep -E '^pos|RESULT'
+```
+
+## 13. Wynik: plain == MTP bitowo (2026-10-16, XTX, testy Main)
+
+- **h1**, `LLAMA_SPEC_BITEXACT=1 GGML_HIP_BITEXACT_FA_ZERO_MASKED=1`, llama-bx-diff na wszystkich węzłach: „verify batch == plain for all 5 positions”.
+- **h2**, sam `NSPLIT1`: różnica zostaje. Przyczyną nie jest więc combine, tylko **treść zamaskowanych wierszy KV, która mimo maski -inf wpływa na wynik WMMA**:
+  - w weryfikacji są to K/V draftów, w plain zera nigdy nie zapisanych komórek;
+  - dokładny mechanizm sprzętowy jest niewyjaśniony [INFERENCE: WMMA nie jest ściśle elementowe przy P=0 / sumie iloczynów].
+- **End-to-end:** greedy.sh (Qwen Q4_K_XL, KV q4_0, ctx 8192, MTP n_max 4 + draft vocab 64k), świeże serwery. md5 plain = md5 MTP = `74952fd5c918b0486194c21d3ee0576c` (2783 znaki).
+- **Commit 40c4bf7bb:** zerowanie zamaskowanych wierszy jest domyślne w trybie bitexact (`GGML_HIP_BITEXACT_FA_ZERO_MASKED=0` wyłącza).
+  - Przy jednym tokenie na blok (`cols_per_tile = gqa`) koszt to jeden odczyt f16 maski na linię na kawałek 16 wierszy.
+  - Jeden token na blok zwiększa strumień KV weryfikacji N razy względem kafli 16-kolumnowych (N=5 ×2.5). Na krótkim kontekście to pomijalne, na 32k szacunkowo +5-10% kroku MTP.
+  - Do pomiaru w `validate.sh`. Tańszy wariant do zbadania: wspólne kafle + zerowanie per kolumna; dziś niemożliwe, bo WMMA dzieli wiersze K/V między kolumny.
+
+### Pełna walidacja — **czeka na zgodę na GPU**
+Skrypt: `~/wt/bx-isa/validate.sh [ops greedy long tail det lfm speed]`. Wyniki trafiają do `/tmp/bxv/summary.txt`. Pełny przebieg trwa ~20-30 min (sekcja speed ok. 10 min).
+1. **ops:** test-backend-ops MUL_MAT / FLASH_ATTN_EXT / GATED_DELTA_NET, domyślnie i z bitexact.
+2. **greedy:** domyślny plain = `c4708318`; bitexact plain = `74952fd5`; MTP n_max 1..7 = plain.
+3. **long:** prompty ~6.6k / 29.5k / 94k tokenów (kilka splitów KV), plain vs MTP n_max 4.
+4. **tail:** prompty 1024+r tokenów (r=1..7, przypadki ogona ubatcha), plain vs MTP.
+5. **det:** det_probe na serwerze plain i MTP z bitexact oraz na MTP domyślnym (sama poprawka `pending_h`).
+6. **lfm:** LFM2.5 plain domyślnie i z bitexact (nowe md5 tylko zapisywane).
+7. **speed:** ABBA (prod `~/llama-opt` / nowy domyślny / nowy bitexact):
+   - llama-bench tg128 i pp5 przy d0/32768 (forward 5 tokenów);
+   - spec_sweep 6 promptów × 3 seedy (MTP n_max 4).
+   - Oczekiwane: plain −1..2% (n1_multi, brak fuzji GLU), MTP krótki kontekst ≈0, MTP 32k −5..10% (FA jeden token na blok).
+
+## Do bazy wiedzy
+- **Niezmienniczość względem batcha** jest warunkiem koniecznym bezstratnej spekulacji greedy na skwantyzowanych modelach (upstream llama.cpp #23335/#25618; vLLM/SGLang batch-invariant ops, Thinking Machines 2025). Wystarczy jedna różnica 1 ulp, bo kaskaduje przez warstwy.
+- **Metoda, która zadziałała:**
+  1. mapa operacji per N;
+  2. offline symboliczne porównanie ISA (emulator gfx11: DAG IEEE) dla kerneli z jawną arytmetyką (MMVQ, GDN);
+  3. na GPU narzędzie per-węzeł `llama-bx-diff` (plain token po tokenie vs jedna weryfikacja N tokenów, bitowe porównanie każdego węzła, masek i wierszy cache) do lokalizacji resztek, których emulator nie modeluje (WMMA).
+- **Pułapki znalezione:**
+  - N=1 w MMVQ to inny algorytm niż kolumna kernela wielokolumnowego: inny podział K, człon min Q4_K/Q5_K przez sumę fp16, inne nwarps;
+  - instancje szablonu z fuzją bramki inaczej kontraktują FMA (IQ4_XS, SwiGLU);
+  - liczba splitów KV w FA zależna od N i n_kv;
+  - zamaskowane wiersze KV (-inf) nie są w WMMA dokładnym no-op;
+  - stan ukryty MTP `pending_h` nie był resetowany między requestami (niedeterminizm na jednym serwerze);
+  - podział promptu na ubatche zależny od trybu (`n_rs_seq`).
+- **Projekt:** zamiast spowalniać weryfikację (odtwarzać arytmetykę N=1 w N kolumnach), przełączyć N=1 na arytmetykę kolumny kerneli wielokolumnowych. Weryfikacja zostaje bez zmian, plain zmienia się raz.
+
+### Wyniki pełnej walidacji (run 3, 2026-10-16; `/tmp/bxv/summary.txt`, log `/tmp/bxv-run3.log`)
+
+**PASS:**
+- **test-backend-ops**, domyślnie i z bitexact: MUL_MAT 2491/2491, FLASH_ATTN_EXT 4071/4071, GATED_DELTA_NET 43/43.
+- **Greedy, krótki prompt:** bitexact plain = MTP n_max 1..7 = `5fdc8a14`. Inny harness niż greedy.sh Main'a, gdzie `74952fd5` dawał 2 prompty z reasoning.
+- **Długie prompty** ~6.5k / 29.5k / 94k tokenów (wiele splitów KV): plain == MTP.
+- **Prompty 1024+1..7 tokenów** (ogon ubatcha): plain == MTP.
+- **det_probe** (5 scenariuszy): bitexact plain i bitexact MTP identyczne we wszystkich.
+- **LFM2.5 plain:** domyślnie == bitexact (`68b329da`). Kernel kvq LFM (D 64, q8_0, gqa 4) ani matmul N=1 nie zmieniły tu wyniku.
+
+**Ustalenie:** MTP domyślny z samą poprawką `pending_h` nadal rozjeżdża się między requestami (znak ~106-113). Niedeterminizm na jednym serwerze bierze się więc głównie z braku niezmienniczości względem N (różne drafty dają różne N), a nie tylko z `pending_h`. Bitexact go usuwa.
+
+**Szybkość** (harness run 3; spec_sweep jeszcze nie z flagami produkcyjnymi):
+- tg128 (plain, jeden token): nowy domyślny 40.46/40.55 t/s, bitexact 41.77/41.89 t/s, czyli **bitexact o ~3% szybszy**. Ścieżka n1_multi wielokolumnowa i brak fuzji GLU przy N=1 nie kosztują, a nawet pomagają [do potwierdzenia ABBA vs produkcja].
+- spec_sweep (flagi skryptu, nie produkcyjne): nowy 81.6 t/s vs bitexact 80.8 t/s (−1%, szum). Liczby nie są porównywalne z produkcyjnymi 109 t/s.
+
+**Błędy skryptu poprawione** (commit fbfcb09ca + `validate.sh`):
+1. Serwer produkcyjny nie startował: biblioteki w `~/llama-opt/lib`, a skrypt podawał `bin`. Teraz jest `libdir()`.
+2. Md5 domyślnego plain liczono innym harnessem niż `c4708318`. Teraz sprawdzane jest `~/qwen-opt/fusion/greedy.sh` (MODES=plain) dla nowego buildu i dla bazy amd-opt-v070 (`~/wt/rebase070/build-hip`). `a3cb29cf` to md5 innego formatu (1 prompt, sama treść), a nie zmiana numeryki domyślnej.
+3. spec_sweep idzie przez `run-llm.sh qwen mtp rocm` (`ROCM_DIR` = build): ctx 204800, n=4, 64k draft vocab, draft IQ4_XS, `-ctkd/-ctvd q4_0`. Wyniki są więc porównywalne z produkcyjnymi 109 t/s.
+4. Brakujące wiersze pp5 dla bitexact: `llama-bench -ub 5` z tail 8 przerywał się na `GGML_ASSERT(n_ubatch > n_keep_tail)`. Tail bitexact jest teraz ograniczony do `n_ubatch-1`.
+
+Ponowne uruchomienie tylko poprawionych części (czeka na zgodę na GPU): `~/wt/bx-isa/validate.sh greedy speed` (sam bierze `/tmp/gpu.lock` i `/tmp/quiet.lock`, ~20 min).
+
+### Do bazy wiedzy (uzupełnienie)
+- **Bitexact plain (n1_multi + rozbita SwiGLU) jest o ~3% szybszy na tg128.** Arytmetyka kolumny kernela wielokolumnowego dla N=1 to kandydat na domyślną ścieżkę N=1 także poza trybem bitexact. Do decyzji po ABBA.
+- **Niedeterminizm greedy na jednym serwerze z MTP** wynika z braku niezmienniczości względem N, a nie z samego stanu draftu. Naprawia go dopiero tryb bitexact.
+- **LFM2.5** (bez MTP) ma bitowo ten sam wynik plain w obu trybach.
