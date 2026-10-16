@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (44)
+## Notatki (45)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-pkill-wlasna-powloka|`pkill -f` przez ssh zabija własną powłokę; zadania GPU pod flock]] — W E1 `pkill -f "bench.sh"` wysłane przez ssh dopasowało też własną powłokę zdalną i ją zabiło, a jeden przebieg perf nałożył się na llama-bench i trzeba go było wyrzucić z tabel (`perf/excluded/`) (2026-10-16).
@@ -32,6 +32,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-mtp-glowica-optimum|Fabryczna głowica MTP jest już blisko optimum]] — Douczanie głowicy MTP Qwen3.8-27B na 1.7 M tokenów dało ±0.2% tok/krok offline (online ±2%): głowica była trenowana wielokrokowo na dużo większym korpusie, a zapas widoczny u wyroczni (+21–33%) nie jest osiągalny tą drogą.
 - [[lekcja-build-cuda-0057-0070|Fork amd-opt nie budował się dla CUDA (0057, 0070)]] — `amd-opt` nie kompilował się dla CUDA: dwa błędy z łatek 0070 i 0057 psuły 25 jednostek kompilacji; naprawa w `cuda-compat` (4 commity), build 579/579 kroków w 835 s.
 - [[lekcja-drafter-gleboki-vs-mtp|Głęboki drafter vs MTP: kopia vs polski]] — DFlash2 u Magnitude daje 7.3–7.8 tok/krok na kopii i edycji kodu, ale 1.32 na polskiej prozie (27B, 3090), a DFlash na 9B 1.00; nasze MTP n=4 ma sufit 5, za to na pl-proza 1.97 (27B) i 1.71 (9B) (2026-10-16).
+- [[lekcja-vgpr-limit-hak-spill|Kernel na limicie VGPR: hak we wspólnym szablonie spilluje ścieżkę domyślną]] — Haki diagnostyczne bitexact (`ce2105d32`) dodane do wspólnej instancji `flash_attn_ext_kvq<256,8,Q4_0>`, która miała 255/256 VGPR, wywołały 14 spillowanych VGPR (scratch 60 B) w ścieżce domyślnej i −6% tg128 (40.5 vs 43.05 t/s) na 7900 XTX, choć haki działały tylko z env (2026-10-16).
 - [[lekcja-kld-protokoly|KLD z różnych protokołów nie wolno mieszać]] — Ten sam plik ISTA GSQ-RCO IQ3_S ma KLD 0.0519 przy ctx 512 i 0.0665 przy ctx 2048 (+28%), a Swift mierzy KLD do własnego BF16 zamiast do Qwena – liczby z różnych kontekstów, referencji i korpusów nie są porównywalne.
 - [[lekcja-kolejnosc-akumulacji-fa|Kolejność akumulacji w FA zmienia KLD]] — Nowy kafel prefillu w Flash Attention zmienił kolejność akumulacji i dał KLD 0.0135; łatka 0043 przywróciła kolejność chunków K i KLD = 0.
 - [[lekcja-limit-cpu-kontenera|Kontener widzi wszystkie rdzenie hosta, a ma limit cgroup]] — W kontenerach Vast i RunPod `nproc` pokazuje wszystkie wątki hosta (64 albo 96), a limit cgroup to ok. 7.7 CPU; llama.cpp bez `-t` bierze za dużo wątków i dławi się na kwocie.

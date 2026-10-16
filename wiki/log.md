@@ -35,6 +35,9 @@ Nowe: [[fabryka-cli]], [[2026-10-16-backtest-regul-fabryki]], [[raport-16h-fabry
 ## [2026-10-16] ingest | Raporty 16d i 16i (Magnitude) + decyzja „badamy Magnitude”
 Nowe: [[2026-10-16-magnitude-vs-fork]] (z danymi 9B na 5060 Ti), [[2026-10-16-magnitude-rozklad-wygranej]], [[raport-16d-magnitude-vs-nasz]], [[raport-16i-magnitude]], [[firma-magnitude]], [[kontroler-szerokosci-draftu]], [[sprzezone-probkowanie-draftu]], [[lekcja-sufit-bloku]], [[lekcja-drafter-gleboki-vs-mtp]], [[2026-10-16-badamy-magnitude]]. Zaktualizowane: [[magnitude]] (status aktualne), [[drafter-dflash]], [[mmvq-multikolumnowe]], [[produkt-ryzyka]], [[lekcja-limit-cpu-kontenera]], [[lekcja-pkill-wlasna-powloka]], [[zgodnosc-bitowa-md5]], [[2026-10-16-nemotron-3090]] (KLD PASS).
 
+## [2026-10-16] update | Regresja nowego drzewa bit-exact naprawiona
+[[2026-10-16-bit-exact]] i [[raport-12-bit-exact]]: przyczyna `ce2105d32` (14 spilli VGPR), poprawka `02813c1c5`, tg128 43.15/43.16 = prod. Nowa lekcja [[lekcja-vgpr-limit-hak-spill]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

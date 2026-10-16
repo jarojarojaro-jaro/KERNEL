@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (20)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (37)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (44)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (45)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (18)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-16 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
 - 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
 
-Razem 361 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
+Razem 362 notatek. Wygenerowano 2026-10-16 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
