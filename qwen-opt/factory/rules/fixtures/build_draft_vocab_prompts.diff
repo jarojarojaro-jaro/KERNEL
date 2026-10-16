@@ -1,0 +1,37 @@
+diff --git a/build_draft_vocab.py b/build_draft_vocab.py
+--- a/build_draft_vocab.py
++++ b/build_draft_vocab.py
+@@ -0,0 +1,33 @@
++
++PROMPTS = [
++    # English prose / knowledge
++    "Explain the causes of the French Revolution in detail.",
++    "Write a short story about a lighthouse keeper who finds a message in a bottle.",
++    "Compare TCP and UDP and explain when to use each.",
++    "Summarize the theory of evolution for a high school student.",
++    "What are the health benefits and risks of intermittent fasting?",
++    "Write a cover letter for a junior data analyst position.",
++    # Polish
++    "Opisz historię Krakowa od średniowiecza do dziś.",
++    "Napisz opowiadanie o kocie, który podróżuje pociągiem po Polsce.",
++    "Wyjaśnij, jak działa kredyt hipoteczny i na co uważać przy jego wyborze.",
++    "Jakie są zalety i wady pracy zdalnej? Odpowiedz w punktach.",
++    "Napisz e-mail do szefa z prośbą o urlop w sierpniu.",
++    "Wytłumacz zasadę działania silnika elektrycznego prostym językiem.",
++    "Przetłumacz na polski i wyjaśnij: 'The quick brown fox jumps over the lazy dog'.",
++    "Podaj przepis na pierogi ruskie krok po kroku.",
++    # code
++    "Implement a thread-safe bounded queue in C++ with condition variables.",
++    "Write a Python script that downloads a web page and counts word frequencies.",
++    "Write a Rust function that parses a CSV line handling quoted fields.",
++    "Write a bash script that backs up a directory to a tarball with a date in the name.",
++    "Implement quicksort and mergesort in JavaScript and compare them.",
++    "Write a SQL query that finds the top 5 customers by total order value per year.",
++    "Napisz w Pythonie funkcję, która sprawdza, czy liczba jest pierwsza, z komentarzami po polsku.",
++    "Write a CUDA kernel for vector addition and the host code to launch it.",
++    # math / reasoning
++    "Solve: a train travels 300 km at 80 km/h and returns at 120 km/h. What is the average speed?",
++    "Prove that the square root of 2 is irrational.",
++    "Ile wynosi suma liczb od 1 do 1000? Pokaż rozumowanie.",
++    "A bag has 3 red and 5 blue balls. Two are drawn without replacement. What is P(both red)?",
++]

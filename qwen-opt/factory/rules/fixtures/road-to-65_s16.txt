@@ -1,0 +1,16 @@
+### Rachunek pasma (model matematycznie wymuszony)
+
+```
+decode: 61.2 tok/s @ MTP n=3 (acceptance nie zmienia liczby kroków target)
+model Q4_K_XL: 17.5 GB
+=> efektywny odczyt wag: 61.2 × 17.5 = 1075 GB/s
+   RX 7900 XTX HBM3 peak: 960 GB/s
+   => 112% PEAKU (możliwe dzięki 96 MB Infinity Cache)
+```
+
+### Wniosek twardy
+
+Każdy token wymaga przeczytania całego modelu z VRAM. Przy 61 tok/s karta
+już odczytuje **1075 GB/s — powyżej nominalnego peaku HBM** dzięki cache.
+Żeby mieć 65 tok/s potrzeba **1138 GB/s** trwale — to ponad to co 96 MB IC
+dowiezie na 17.5 GB roboczych (model nie mieści się w cache, KC odczytów

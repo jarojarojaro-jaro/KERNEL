@@ -1,0 +1,43 @@
+{
+ "rule": "R26",
+ "cases": [
+  {
+   "name": "RunPod A40: nproc 96, quota 7.65, no -t",
+   "expect": "fire",
+   "kind": "real",
+   "source": "lekcja-limit-cpu-kontenera",
+   "ctx": {
+    "snapshot": {
+     "nproc": 96,
+     "cpu_quota": 7.65
+    },
+    "server_argv": {
+     "A": [
+      "llama-server",
+      "-m",
+      "x.gguf"
+     ]
+    }
+   }
+  },
+  {
+   "name": "-t 6",
+   "expect": "clean",
+   "kind": "real",
+   "source": "same lesson (-t 6 -tb 6)",
+   "ctx": {
+    "snapshot": {
+     "nproc": 96,
+     "cpu_quota": 7.65
+    },
+    "server_argv": {
+     "A": [
+      "llama-server",
+      "-t",
+      "6"
+     ]
+    }
+   }
+  }
+ ]
+}

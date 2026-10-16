@@ -1,0 +1,25 @@
+{
+ "rule": "R23",
+ "cases": [
+  {
+   "name": "edits spec_sweep max_tokens and server t/s",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "threat T1 (15f §5.4)",
+   "ctx": {},
+   "ctx_files": {
+    "diff": "fixtures/deny_protocol_change.diff"
+   }
+  },
+  {
+   "name": "0053 adds test-backend-ops cases (allowed)",
+   "expect": "clean",
+   "kind": "real",
+   "source": "patches/0053 tests/test-backend-ops.cpp hunk",
+   "ctx": {},
+   "ctx_files": {
+    "diff": "fixtures/patch_0053_tests.diff"
+   }
+  }
+ ]
+}

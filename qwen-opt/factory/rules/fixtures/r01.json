@@ -1,0 +1,43 @@
+{
+ "rule": "R01",
+ "cases": [
+  {
+   "name": "k2a NORM_FAST unrolled x*x (FMA contraction)",
+   "expect": "fire",
+   "kind": "real",
+   "source": "md5sum qwen-opt/fusion/greedy/k2a.plain.txt k2base.plain.txt (2026-10-13), NOTES.md:261",
+   "ctx": {
+    "card": {
+     "correctness_class": "BIT"
+    },
+    "greedy": {
+     "base": {
+      "plain": "c4708318411479c9530911e310f865bd"
+     },
+     "cand": {
+      "plain": "32b54d319332a3f8f68d91fbfb553064"
+     }
+    }
+   }
+  },
+  {
+   "name": "k2a with the norm switch off = base",
+   "expect": "clean",
+   "kind": "real",
+   "source": "md5sum qwen-opt/fusion/greedy/k2a-nonorm.plain.txt = k2base.plain.txt",
+   "ctx": {
+    "card": {
+     "correctness_class": "BIT"
+    },
+    "greedy": {
+     "base": {
+      "plain": "c4708318411479c9530911e310f865bd"
+     },
+     "cand": {
+      "plain": "c4708318411479c9530911e310f865bd"
+     }
+    }
+   }
+  }
+ ]
+}

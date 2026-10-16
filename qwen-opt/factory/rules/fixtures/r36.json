@@ -1,0 +1,27 @@
+{
+ "rule": "R36",
+ "cases": [
+  {
+   "name": "diff copies a held-out prompt into a tuning list",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "15f E-E (selection set must differ from report set); sealed text replaced by a stand-in",
+   "ctx": {
+    "sealed_texts": [
+     "Plan a three day autumn trip in the mountains with a dog and no car, starting from the train station"
+    ],
+    "diff": "diff --git a/tune.py b/tune.py\n--- a/tune.py\n+++ b/tune.py\n@@ -1,0 +1,1 @@\n+PROMPTS = ['Plan a three day autumn trip in the mountains with a dog and no car, starting from the train station']\n"
+   }
+  },
+  {
+   "name": "build_draft_vocab.py prompt list vs sealed-v1",
+   "expect": "clean",
+   "kind": "real",
+   "source": "qwen-opt/build_draft_vocab.py:26-58 against factory/sealed/prompts.jsonl",
+   "ctx": {},
+   "ctx_files": {
+    "diff": "fixtures/build_draft_vocab_prompts.diff"
+   }
+  }
+ ]
+}

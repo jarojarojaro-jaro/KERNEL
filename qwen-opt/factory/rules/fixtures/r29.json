@@ -1,0 +1,25 @@
+{
+ "rule": "R29",
+ "cases": [
+  {
+   "name": "0070 ggml_cuda_mmq_epi_pin unguarded",
+   "expect": "fire",
+   "kind": "real",
+   "source": "llama-master f61994f58:ggml/src/ggml-cuda/mmq-vec-dot.cuh lines 1-400",
+   "ctx": {},
+   "ctx_files_after": {
+    "ggml/src/ggml-cuda/mmq-vec-dot.cuh": "fixtures/mmq-vec-dot.f61994f58.head400.cuh"
+   }
+  },
+  {
+   "name": "cuda-compat fix 57e0bdfe4",
+   "expect": "clean",
+   "kind": "real",
+   "source": "llama-master 57e0bdfe4:ggml/src/ggml-cuda/mmq-vec-dot.cuh lines 1-402",
+   "ctx": {},
+   "ctx_files_after": {
+    "ggml/src/ggml-cuda/mmq-vec-dot.cuh": "fixtures/mmq-vec-dot.57e0bdfe4.head402.cuh"
+   }
+  }
+ ]
+}

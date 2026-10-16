@@ -1,0 +1,65 @@
+{
+ "rule": "R09",
+ "cases": [
+  {
+   "name": "BACO: model in GTT",
+   "expect": "fire",
+   "kind": "real",
+   "source": "KERNEL/qwen-opt/NOTES.md:122-126 (vram_used 35 MB, gtt_used 23.8 GB, 4.4 t/s)",
+   "ctx": {
+    "snapshot": {
+     "power_control": "auto",
+     "keepawake": false
+    },
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 1,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "telemetry": {
+       "max_vram_used": 35000000,
+       "max_gtt_used": 23800000000
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "power/control=on (this machine)",
+   "expect": "clean",
+   "kind": "real",
+   "source": "/sys/class/drm/card0/device/power/control = on (2026-10-16)",
+   "ctx": {
+    "snapshot": {
+     "power_control": "on",
+     "keepawake": false
+    },
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 1,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "telemetry": {
+       "max_vram_used": 21000000000,
+       "max_gtt_used": 15659008
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

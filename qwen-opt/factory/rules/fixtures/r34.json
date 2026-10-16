@@ -1,0 +1,44 @@
+{
+ "rule": "R34",
+ "cases": [
+  {
+   "name": "switch not compiled in (WSL-like silent skip)",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "T5 (15f §5.4)",
+   "ctx": {
+    "identity": {
+     "switch": "GGML_HIP_NOT_THERE",
+     "switch_hits": [],
+     "commit": "f61994f58",
+     "commit_hits": [
+      "lib/libllama-common.so.0.6.0"
+     ],
+     "sha_mismatch": {}
+    }
+   }
+  },
+  {
+   "name": "~/llama-opt (f61994f58): switch and commit found",
+   "expect": "clean",
+   "kind": "real",
+   "source": "byte search in ~/llama-opt/lib, 2026-10-16",
+   "ctx": {
+    "identity": {
+     "switch": "GGML_HIP_MMQ_EPI",
+     "switch_hits": [
+      "lib/libggml-hip.so.0.26.0"
+     ],
+     "commit": "f61994f58",
+     "commit_hits": [
+      "lib/libllama-common.so.0.6.0"
+     ],
+     "sha_mismatch": {
+      "base": [],
+      "cand": []
+     }
+    }
+   }
+  }
+ ]
+}

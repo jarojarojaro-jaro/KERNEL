@@ -1,0 +1,33 @@
+{
+ "rule": "R02",
+ "cases": [
+  {
+   "name": "0043 FA tile files under a SAME-TOK card",
+   "expect": "fire",
+   "kind": "real",
+   "source": "patches/llama.cpp-amd-opt/0043-*.patch",
+   "ctx": {
+    "card": {
+     "correctness_class": "SAME-TOK"
+    }
+   },
+   "ctx_files": {
+    "diff": "fixtures/patch_0043.diff"
+   }
+  },
+  {
+   "name": "0043 under a KLD card",
+   "expect": "clean",
+   "kind": "real",
+   "source": "same patch",
+   "ctx": {
+    "card": {
+     "correctness_class": "KLD"
+    }
+   },
+   "ctx_files": {
+    "diff": "fixtures/patch_0043.diff"
+   }
+  }
+ ]
+}

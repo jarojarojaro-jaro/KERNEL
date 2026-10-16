@@ -1,0 +1,49 @@
+{
+ "rule": "R03",
+ "cases": [
+  {
+   "name": "det_probe: same greedy request twice on one server",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "det_probe.py protocol, KERNEL/qwen-opt/NOTES.md:377 (diverges after ~270 chars on the 2nd call)",
+   "ctx": {
+    "greedy_requests": [
+     {
+      "pid": 4242,
+      "prompt": "Explain how a hash map works, then implement one in C with open addressing."
+     },
+     {
+      "pid": 4242,
+      "prompt": "Explain how a hash map works, then implement one in C with open addressing."
+     }
+    ]
+   }
+  },
+  {
+   "name": "greedy.sh: 2 different prompts per fresh server, one server per mode",
+   "expect": "clean",
+   "kind": "real",
+   "source": "qwen-opt/fusion/greedy.sh",
+   "ctx": {
+    "greedy_requests": [
+     {
+      "pid": 1,
+      "prompt": "hash map"
+     },
+     {
+      "pid": 1,
+      "prompt": "latarnik"
+     },
+     {
+      "pid": 2,
+      "prompt": "hash map"
+     },
+     {
+      "pid": 2,
+      "prompt": "latarnik"
+     }
+    ]
+   }
+  }
+ ]
+}

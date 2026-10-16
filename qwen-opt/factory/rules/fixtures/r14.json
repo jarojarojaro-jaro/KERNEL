@@ -1,0 +1,79 @@
+{
+ "rule": "R14",
+ "cases": [
+  {
+   "name": "-ub 2048 at ctx 204800: OOM",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "NOTES.md:218 (24.5 GB VRAM on the first long prompt); log line in the ROCm wording",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "pid": 9,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "log_tail": "ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1536.00 MiB on device 0: cudaMalloc failed: out of memory"
+     }
+    ]
+   }
+  },
+  {
+   "name": "junction 106 C during a 196k prefill",
+   "expect": "fire",
+   "kind": "real",
+   "source": "KERNEL/qwen-opt/NOTES.md:118",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 9,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "telemetry": {
+       "max_junction_c": 106
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "285 W cap: junction 87 C",
+   "expect": "clean",
+   "kind": "real",
+   "source": "NOTES.md:170 (284 W, junction 87)",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 9,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "telemetry": {
+       "max_junction_c": 87
+      },
+      "log_tail": "main: server is listening"
+     }
+    ]
+   }
+  }
+ ]
+}

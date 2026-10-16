@@ -1,0 +1,32 @@
+From bf32386c9c5af6911e42ec45b1db0143618ba36d Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 15 Oct 2026 00:17:45 +0000
+Subject: [PATCH 66/70] common: fast top-k candidates also with a
+ reasoning-budget sampler (LLAMA_SAMPLER_FAST_RBUDGET)
+
+The web UI sends "reasoning_control": true with every request (and thinking_budget_tokens when a
+budget is set), which creates the reasoning-budget sampler; that disabled the LLAMA_SAMPLER_FAST_TOPK
+path, so every token filled and partial-sorted the full candidate array (128000 on LFM2.5, 248320 on
+Qwen3.8, up to 5 times per MTP verify step).
+
+The budget sampler is applied before the chain. Its apply (common/reasoning-budget.cpp) returns without
+touching the candidates unless the state is FORCING (IDLE, COUNTING, WAITING_UTF8 and DONE are
+passthrough; state changes happen only in accept and in common_reasoning_budget_force). In those states
+the chain sees exactly the input it sees without a budget sampler, so the existing fast path (raw top-k,
+or the penalties variant) gives the same candidates, the same token and the same RNG draws. While FORCING
+(all logits but the forced token -> -inf) the state is checked per sampled token in common_sampler_sample
+and the full candidate array is used, so forced tokens, the runtime force from the control endpoint and
+state changes inside an MTP verify step (common_sampler_sample_and_accept_n samples and accepts token by
+token) all take the unchanged slow path. Grammar (also a lazy one) still disables the fast path.
+Off: LLAMA_SAMPLER_FAST_RBUDGET=0 (LLAMA_SAMPLER_FAST_TOPK=0 still turns everything off).
+
+CPU harness (common_sampler_sample with interposed llama_get_logits_ith, slow = LLAMA_SAMPLER_FAST_TOPK=0
+vs fast, same seed, synthetic logits incl. quantized ties, web UI chain edkypmxt T=0.8 k=40 p=0.95
+min_p=0.05, budgets 0/12/20/30/40, reasoning_control, random runtime forces, partial-UTF-8 tokens, MTP
+accept_n with 4 drafts, penalties 1.1): token ids and post-chain candidates (id, logit, p bitwise) equal
+on every vector, in all five states, for vocab 128000 and 248320.
+
+UNMEASURED: end-to-end server A/B (t/s, seeded md5) pending, GPU not available; verified with the CPU harness only.
+---
+ common/sampling.cpp | 11 +++++++++--
+ 1 file changed, 9 insertions(+), 2 deletions(-)

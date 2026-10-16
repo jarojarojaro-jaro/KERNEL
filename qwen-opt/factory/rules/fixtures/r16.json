@@ -1,0 +1,39 @@
+{
+ "rule": "R16",
+ "cases": [
+  {
+   "name": "0066 UNMEASURED",
+   "expect": "fire",
+   "kind": "real",
+   "source": "patches/0066 header",
+   "ctx": {
+    "commit": "0066aaaaaaaa",
+    "ledger_rows": []
+   },
+   "ctx_files": {
+    "commit_message": "fixtures/patch_0066_header.txt"
+   }
+  },
+  {
+   "name": "0065 with a CONFIRMED ledger row",
+   "expect": "clean",
+   "kind": "real",
+   "source": "patches/0065 header + synthetic ledger row",
+   "ctx": {
+    "commit": "0065bbbbbbbb",
+    "ledger_rows": [
+     {
+      "kind": "verdict",
+      "verdict": "CONFIRMED",
+      "commits": {
+       "cand": "0065bbbbbbbb"
+      }
+     }
+    ]
+   },
+   "ctx_files": {
+    "commit_message": "fixtures/patch_0065_header.txt"
+   }
+  }
+ ]
+}

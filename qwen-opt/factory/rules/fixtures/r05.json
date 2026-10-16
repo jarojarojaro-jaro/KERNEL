@@ -1,0 +1,38 @@
+{
+ "rule": "R05",
+ "cases": [
+  {
+   "name": "0066 sampler change without client-ui requests",
+   "expect": "fire",
+   "kind": "real",
+   "source": "patches/0066 (common/sampling.cpp); LFM 291.4 vs 255.6 t/s",
+   "ctx": {
+    "workload": {
+     "variants": [
+      "plain"
+     ]
+    }
+   },
+   "ctx_files": {
+    "diff": "fixtures/patch_0066.diff"
+   }
+  },
+  {
+   "name": "0066 with the client-ui variant",
+   "expect": "clean",
+   "kind": "real",
+   "source": "same",
+   "ctx": {
+    "workload": {
+     "variants": [
+      "plain",
+      "client-ui"
+     ]
+    }
+   },
+   "ctx_files": {
+    "diff": "fixtures/patch_0066.diff"
+   }
+  }
+ ]
+}

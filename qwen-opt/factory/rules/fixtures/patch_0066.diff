@@ -1,0 +1,37 @@
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index d87bbcce8..9b1f07f10 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -564,12 +564,17 @@ struct common_sampler * common_sampler_init(
+     // [LLAMA_SAMPLER_FAST_TOPK] the chain may start from the top-k candidates if every sampler before the top-k sampler
+     // is a no-op (the same predicates that make llama_sampler_init_* return an empty sampler)
+     // [LLAMA_SAMPLER_FAST_PENALTIES] ... or a penalties sampler with a short window that can only lower logits
++    // [LLAMA_SAMPLER_FAST_RBUDGET] a reasoning-budget sampler changes logits only in the FORCING state (all but the
++    // forced token -> -inf); in every other state its apply returns without touching the candidates, so the fast path
++    // stays exact. common_sampler_sample uses the full candidate array for the tokens sampled while it is FORCING.
+     {
+         const char * env = getenv("LLAMA_SAMPLER_FAST_TOPK");
+         const bool enabled = !env || atoi(env) != 0;
+         const char * env_pen = getenv("LLAMA_SAMPLER_FAST_PENALTIES");
+         const bool enabled_pen = !env_pen || atoi(env_pen) != 0;
+-        if (enabled && !grmr && !rbudget && !has_logit_bias && params.mirostat == 0 && params.n_probs == 0) {
++        const char * env_rb = getenv("LLAMA_SAMPLER_FAST_RBUDGET");
++        const bool enabled_rb = !env_rb || atoi(env_rb) != 0;
++        if (enabled && !grmr && (!rbudget || enabled_rb) && !has_logit_bias && params.mirostat == 0 && params.n_probs == 0) {
+             int32_t idx = 0; // index of cnstr's sampler in the chain (no logit-bias sampler in front of it here)
+             for (const auto & cnstr : params.samplers) {
+                 if (cnstr == COMMON_SAMPLER_TYPE_TOP_K) {
+@@ -785,7 +790,9 @@ llama_token common_sampler_sample(struct common_sampler * gsmpl, struct llama_co
+     auto & chain = gsmpl->chain;
+     auto & cur_p = gsmpl->cur_p; // initialized by set_logits
+ 
+-    if (gsmpl->fast_top_k <= 0 || !gsmpl->set_logits_top_k(ctx, idx)) {
++    // [LLAMA_SAMPLER_FAST_RBUDGET] a FORCING reasoning budget sets all but the forced token to -inf: full candidates
++    const bool rbudget_forcing = rbudget && common_reasoning_budget_get_state(rbudget) == REASONING_BUDGET_FORCING;
++    if (gsmpl->fast_top_k <= 0 || rbudget_forcing || !gsmpl->set_logits_top_k(ctx, idx)) {
+         gsmpl->set_logits(ctx, idx);
+     }
+ 
+-- 
+2.43.0
+

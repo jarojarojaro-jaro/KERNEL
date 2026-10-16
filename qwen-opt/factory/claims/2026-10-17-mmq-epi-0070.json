@@ -1,0 +1,104 @@
+{
+ "id": "2026-10-17-mmq-epi-0070",
+ "author": "agent:FactoryV1",
+ "created": "2026-10-16T15:52:50+0000",
+ "hypothesis": "GGML_HIP_MMQ_EPI=1 (0070, Q4_K/Q5_K MMQ scale epilogue in VOPD-pairable f32 ops) raises Qwen llama-bench pp4096 by at least 1% over GGML_HIP_MMQ_EPI=0 in the same binary, bit-identical",
+ "mechanism": "inner k01 loop of the Q4_K J=128 tile: VALU 237 -> 178 (126 VOPD), Q5_K 239 -> 181, no spills, LDS unchanged (offline ISA in the commit message)",
+ "profile": "qwen-plain",
+ "metric": "pp_tps",
+ "expected": {
+  "effect_pct": 1.5,
+  "basis": "[SZACUNEK] fewer VALU in the MMQ inner loop; MMQ share of pp4096 not profiled"
+ },
+ "kill": {
+  "effect_pct_below": 0.3
+ },
+ "correctness_class": "BIT",
+ "switch": {
+  "name": "GGML_HIP_MMQ_EPI",
+  "on": "1",
+  "off": "0"
+ },
+ "probe": {
+  "kind": "timing"
+ },
+ "prompt_set": {
+  "id": "sealed-v1+spec6",
+  "sealed_sha256": "1e6c3a4ba773a3f2a5c15d3cc5d6d8f425cbdbf65ac29bb2020fb89f39373cc5"
+ },
+ "attacked": {
+  "kernels": [
+   "mul_mat_q<Q4_K,J>=48>",
+   "mul_mat_q<Q5_K,J>=48>"
+  ],
+  "share_ms": null,
+  "source": null
+ },
+ "ops": [
+  "MUL_MAT|type_a=q[45]_K",
+  "MUL_MAT_ID|type_a=q[45]_K"
+ ],
+ "reference": "fork",
+ "repo": "/home/jaro/llama-master",
+ "commits": {
+  "base": "f4f0deae5",
+  "cand": "f61994f58"
+ },
+ "touched_paths": [
+  "ggml/src/ggml-cuda/mmq-vec-dot.cuh",
+  "ggml/src/ggml-cuda/mmq.cuh",
+  "tests/test-backend-ops.cpp"
+ ],
+ "builds": {
+  "base": {
+   "dir": "/home/jaro/llama-opt",
+   "sha256": {
+    "bin/llama-server": "0556e39cc9583dfad8a573142c998cb1b7a51171819f7d7b2cb4788ae18168f6",
+    "bin/llama-bench": "3e66611bccc3047dbb6a2e311101ea4cabd92a62359cad4933646d392b4edb20",
+    "bin/test-backend-ops": "565cb01216b3ffda11ed04247331606d0cdbc829a9e4fa5ce4ffb6f9d2f7e009",
+    "bin/llama-perplexity": "fbe67f7c69e73a77190073d3f38e7b5711a6ba4a4903f86659502621eb74e43f",
+    "lib/libggml-base.so.0.26.0": "278741410c8a43e9f94297b3cf5488e07005bb07e62b945998df1381afe08bcf",
+    "lib/libggml-cpu.so.0.26.0": "83153842cf349ff55f7d531588facdea4ec0cd6d2972f85386787422725cc8e1",
+    "lib/libggml-hip.so.0.26.0": "c24635e3dd94ec1a4e655b4e75d5989e95eff8384e35f7fedc20c45259180443",
+    "lib/libggml.so.0.26.0": "5fcca848c8d5040b4acddc53e8a725832aa72133fd7edcbc5241ca27b713831c",
+    "lib/libllama-batched-bench-impl.so": "7d07e27561cd392fc6aeb3158c216eccd088ea39c58356c8e71ac54efb74c2bb",
+    "lib/libllama-bench-impl.so": "48869bbb00fa2d85136f0f7eb23eb60e5b1ea9303fd316114dcfbe1f140cc770",
+    "lib/libllama-cli-impl.so": "547e92a640addbe56992c5fd23daee1ecc3475c7a9200f80d711e18f1537060a",
+    "lib/libllama-common.so.0.6.0": "e6375a636355473101b0d54856dec794d72c6b1f5c73060e01362e3407585c07",
+    "lib/libllama-completion-impl.so": "74e0fc15e0826a2917b77991520a2339ccef9e5ef87ac92e6d77d4703d6f0acb",
+    "lib/libllama-fit-params-impl.so": "ade4db091b63c410bb067ee1e50c60a0a8e0956d353c5c9a1c34c6996e53d689",
+    "lib/libllama-perplexity-impl.so": "79afe80cce1dbf9425ea986747ccffc11c998ef8d11a07b7729f4d103cd09f80",
+    "lib/libllama-quantize-impl.so": "a45477df023b831ebe1168b6585fbbdf074e775428266af30479da601cb32c14",
+    "lib/libllama-server-impl.so": "e9fc862bed3890d25c053e61366c1d020079b8cb644652fe047c872a52ae4083",
+    "lib/libllama.so.0.6.0": "11cd14a970f70ef052bbfa653e58ce0002d1407db71ba54f0cca1f40c8287010",
+    "lib/libmtmd.so.0.6.0": "74057926ea6df935472b6dc44e12c9c14e7e6ecf525df2737825d07012e35293"
+   }
+  },
+  "cand": {
+   "dir": "/home/jaro/llama-opt",
+   "sha256": {
+    "bin/llama-server": "0556e39cc9583dfad8a573142c998cb1b7a51171819f7d7b2cb4788ae18168f6",
+    "bin/llama-bench": "3e66611bccc3047dbb6a2e311101ea4cabd92a62359cad4933646d392b4edb20",
+    "bin/test-backend-ops": "565cb01216b3ffda11ed04247331606d0cdbc829a9e4fa5ce4ffb6f9d2f7e009",
+    "bin/llama-perplexity": "fbe67f7c69e73a77190073d3f38e7b5711a6ba4a4903f86659502621eb74e43f",
+    "lib/libggml-base.so.0.26.0": "278741410c8a43e9f94297b3cf5488e07005bb07e62b945998df1381afe08bcf",
+    "lib/libggml-cpu.so.0.26.0": "83153842cf349ff55f7d531588facdea4ec0cd6d2972f85386787422725cc8e1",
+    "lib/libggml-hip.so.0.26.0": "c24635e3dd94ec1a4e655b4e75d5989e95eff8384e35f7fedc20c45259180443",
+    "lib/libggml.so.0.26.0": "5fcca848c8d5040b4acddc53e8a725832aa72133fd7edcbc5241ca27b713831c",
+    "lib/libllama-batched-bench-impl.so": "7d07e27561cd392fc6aeb3158c216eccd088ea39c58356c8e71ac54efb74c2bb",
+    "lib/libllama-bench-impl.so": "48869bbb00fa2d85136f0f7eb23eb60e5b1ea9303fd316114dcfbe1f140cc770",
+    "lib/libllama-cli-impl.so": "547e92a640addbe56992c5fd23daee1ecc3475c7a9200f80d711e18f1537060a",
+    "lib/libllama-common.so.0.6.0": "e6375a636355473101b0d54856dec794d72c6b1f5c73060e01362e3407585c07",
+    "lib/libllama-completion-impl.so": "74e0fc15e0826a2917b77991520a2339ccef9e5ef87ac92e6d77d4703d6f0acb",
+    "lib/libllama-fit-params-impl.so": "ade4db091b63c410bb067ee1e50c60a0a8e0956d353c5c9a1c34c6996e53d689",
+    "lib/libllama-perplexity-impl.so": "79afe80cce1dbf9425ea986747ccffc11c998ef8d11a07b7729f4d103cd09f80",
+    "lib/libllama-quantize-impl.so": "a45477df023b831ebe1168b6585fbbdf074e775428266af30479da601cb32c14",
+    "lib/libllama-server-impl.so": "e9fc862bed3890d25c053e61366c1d020079b8cb644652fe047c872a52ae4083",
+    "lib/libllama.so.0.6.0": "11cd14a970f70ef052bbfa653e58ce0002d1407db71ba54f0cca1f40c8287010",
+    "lib/libmtmd.so.0.6.0": "74057926ea6df935472b6dc44e12c9c14e7e6ecf525df2737825d07012e35293"
+   }
+  }
+ },
+ "model_sha256": "3f227079003add2511437e5b1e94812e363385225bf6a9b47b0054a72bc8b01e",
+ "notes": "0070 was committed UNMEASURED (15f §7 X2 sample). Greedy md5 prompts are short (J<48), so G2 says little about the variant; test-backend-ops (G1) covers J=48..128."
+}

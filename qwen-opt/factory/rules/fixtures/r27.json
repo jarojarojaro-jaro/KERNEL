@@ -1,0 +1,45 @@
+{
+ "rule": "R27",
+ "cases": [
+  {
+   "name": "5060 Ti: -fit on + MTP (7.7 t/s)",
+   "expect": "fire",
+   "kind": "real",
+   "source": "lekcja-fit-mtp-16gb",
+   "ctx": {
+    "server_argv": {
+     "A": [
+      "llama-server",
+      "-m",
+      "q.gguf",
+      "-fit",
+      "on",
+      "--spec-type",
+      "draft-mtp"
+     ]
+    }
+   }
+  },
+  {
+   "name": "-fit off -ngl 99 -t 8 (31.8 t/s)",
+   "expect": "clean",
+   "kind": "real",
+   "source": "same",
+   "ctx": {
+    "server_argv": {
+     "A": [
+      "llama-server",
+      "-fit",
+      "off",
+      "-ngl",
+      "99",
+      "-t",
+      "8",
+      "--spec-type",
+      "draft-mtp"
+     ]
+    }
+   }
+  }
+ ]
+}

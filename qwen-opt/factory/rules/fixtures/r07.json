@@ -1,0 +1,27 @@
+{
+ "rule": "R07",
+ "cases": [
+  {
+   "name": "mmvq-bench kernel time as the claim metric",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "NOTES.md:247 (mmvq-bench vs rocprofv3 in the model)",
+   "ctx": {
+    "card": {
+     "metric": "kernel_us"
+    }
+   }
+  },
+  {
+   "name": "server ms/step",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "-",
+   "ctx": {
+    "card": {
+     "metric": "ms_step"
+    }
+   }
+  }
+ ]
+}

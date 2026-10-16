@@ -1,0 +1,25 @@
+{
+ "rule": "R28",
+ "cases": [
+  {
+   "name": "0053 norm_router_topk_f32 without pdl_sync",
+   "expect": "fire",
+   "kind": "real",
+   "source": "llama-master c15c84e83:ggml/src/ggml-cuda/topk-moe.cu",
+   "ctx": {},
+   "ctx_files_after": {
+    "ggml/src/ggml-cuda/topk-moe.cu": "fixtures/topk-moe.c15c84e83.cu"
+   }
+  },
+  {
+   "name": "cuda-compat fix 14506801c",
+   "expect": "clean",
+   "kind": "real",
+   "source": "llama-master 14506801c:ggml/src/ggml-cuda/topk-moe.cu",
+   "ctx": {},
+   "ctx_files_after": {
+    "ggml/src/ggml-cuda/topk-moe.cu": "fixtures/topk-moe.14506801c.cu"
+   }
+  }
+ ]
+}

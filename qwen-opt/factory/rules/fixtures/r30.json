@@ -1,0 +1,51 @@
+{
+ "rule": "R30",
+ "cases": [
+  {
+   "name": "embd_state assert after the v0.7.0 rebase",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "lekcja-mtp-embd-state (assert text from the note)",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "pid": 5,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "log_tail": "llama-graph.cpp:NNN: GGML_ASSERT(ubatch->embd_state && \"...\") failed"
+     }
+    ]
+   }
+  },
+  {
+   "name": "healthy log",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "-",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "pid": 5,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "log_tail": "srv  update_slots: all slots are idle"
+     }
+    ]
+   }
+  }
+ ]
+}

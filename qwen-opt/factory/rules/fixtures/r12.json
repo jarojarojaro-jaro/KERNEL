@@ -1,0 +1,81 @@
+{
+ "rule": "R12",
+ "cases": [
+  {
+   "name": "'1075 GB/s, 112% PEAKU' (bytes per token, not per pass)",
+   "expect": "fire",
+   "kind": "real",
+   "source": "autokernel-amd/reports/15-road-to-65.md:54-69",
+   "ctx": {},
+   "ctx_files": {
+    "text": "fixtures/road-to-65_s16.txt"
+   }
+  },
+  {
+   "name": "~595 GB/s, 62% peaku",
+   "expect": "clean",
+   "kind": "real",
+   "source": "KERNEL/product/research/15f-agentowa-nauka.md:329",
+   "ctx": {},
+   "ctx_files": {
+    "text": "fixtures/15f_roofline_ok.txt"
+   }
+  },
+  {
+   "name": "a run below the floor of 17.2 ms per Qwen pass",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "15f §5.4: 16.5 GB / 960 GB/s >= 17.2 ms",
+   "ctx": {
+    "profile": {
+     "bytes_per_pass": 16830000000.0
+    },
+    "runs": [
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "pid": 7,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 15.0
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "production 27.74 ms/step",
+   "expect": "clean",
+   "kind": "real",
+   "source": "baseline Qwen MTP 27.74 ms/step (task brief)",
+   "ctx": {
+    "profile": {
+     "bytes_per_pass": 16830000000.0
+    },
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 7,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 27.74
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

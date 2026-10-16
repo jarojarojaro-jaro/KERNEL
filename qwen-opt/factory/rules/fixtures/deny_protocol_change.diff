@@ -1,0 +1,12 @@
+diff --git a/spec_sweep.py b/spec_sweep.py
+--- a/spec_sweep.py
++++ b/spec_sweep.py
+@@ -40,1 +40,1 @@
+-    ap.add_argument("--tokens", type=int, default=400)
++    ap.add_argument("--tokens", type=int, default=256)
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -100,1 +100,1 @@
+-        {"predicted_per_second", 1e3 / t_token_generation * n_decoded},
++        {"predicted_per_second", 1.1e3 / t_token_generation * n_decoded},

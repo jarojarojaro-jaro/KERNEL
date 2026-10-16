@@ -1,0 +1,60 @@
+{
+ "rule": "R21",
+ "cases": [
+  {
+   "name": "DRAFT_N=5 5.6 t/s (zombie DFlash sharing VRAM)",
+   "expect": "fire",
+   "kind": "real",
+   "source": "qwen-opt/spec_sweep.jsonl row 15 (2026-10-10 22:48)",
+   "ctx": {},
+   "ctx_files": {
+    "history": "fixtures/spec_sweep_20261010.jsonl"
+   }
+  },
+  {
+   "name": "same session without the incident row",
+   "expect": "clean",
+   "kind": "real",
+   "source": "same rows minus row 15",
+   "ctx": {},
+   "ctx_files": {
+    "history": "fixtures/spec_sweep_20261010_without_incident.jsonl"
+   }
+  },
+  {
+   "name": "label 'r3final_lfm3_inst_r1 qwen mtp' is Qwen, not LFM",
+   "expect": "clean",
+   "kind": "real",
+   "source": "15f E-D false positives (label substring 'lfm')",
+   "ctx": {
+    "history": [
+     {
+      "label": "qwen mtp",
+      "temp": 1.0,
+      "median_tps": 108.0
+     },
+     {
+      "label": "qwen mtp",
+      "temp": 1.0,
+      "median_tps": 108.5
+     },
+     {
+      "label": "qwen mtp",
+      "temp": 1.0,
+      "median_tps": 109.0
+     },
+     {
+      "label": "lfm none",
+      "temp": 1.0,
+      "median_tps": 293.0
+     },
+     {
+      "label": "r3final_lfm3_inst_r1 qwen mtp",
+      "temp": 1.0,
+      "median_tps": 108.7
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,99 @@
+{
+ "rule": "R13",
+ "cases": [
+  {
+   "name": "'DFlash 120 t/s' on one prompt",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "NOTES.md:158",
+   "ctx": {
+    "workload": {
+     "prompts": [
+      {
+       "id": "en-code-lru",
+       "set": "public",
+       "class": "new-writing",
+       "lang": "en"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "sealed 10 + spec6",
+   "expect": "clean",
+   "kind": "real",
+   "source": "factory/sealed/prompts.jsonl + spec_sweep.py",
+   "ctx": {
+    "workload": {
+     "prompts": [
+      {
+       "id": "s0",
+       "set": "sealed"
+      },
+      {
+       "id": "s1",
+       "set": "sealed"
+      },
+      {
+       "id": "s2",
+       "set": "sealed"
+      },
+      {
+       "id": "s3",
+       "set": "sealed"
+      },
+      {
+       "id": "s4",
+       "set": "sealed"
+      },
+      {
+       "id": "s5",
+       "set": "sealed"
+      },
+      {
+       "id": "s6",
+       "set": "sealed"
+      },
+      {
+       "id": "s7",
+       "set": "sealed"
+      },
+      {
+       "id": "s8",
+       "set": "sealed"
+      },
+      {
+       "id": "s9",
+       "set": "sealed"
+      },
+      {
+       "id": "p0",
+       "set": "public"
+      },
+      {
+       "id": "p1",
+       "set": "public"
+      },
+      {
+       "id": "p2",
+       "set": "public"
+      },
+      {
+       "id": "p3",
+       "set": "public"
+      },
+      {
+       "id": "p4",
+       "set": "public"
+      },
+      {
+       "id": "p5",
+       "set": "public"
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

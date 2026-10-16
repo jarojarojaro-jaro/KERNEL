@@ -1,0 +1,37 @@
+{
+ "rule": "R04",
+ "cases": [
+  {
+   "name": "plain c4708318 compared with MTP 6f14e814",
+   "expect": "fire",
+   "kind": "real",
+   "source": "production md5 on f61994f58 (task brief), lekcja-spekulacja-zmienia-numeryke",
+   "ctx": {
+    "greedy_compared": [
+     [
+      "plain",
+      "mtp"
+     ]
+    ]
+   }
+  },
+  {
+   "name": "mode by mode",
+   "expect": "clean",
+   "kind": "real",
+   "source": "greedy.sh output order",
+   "ctx": {
+    "greedy_compared": [
+     [
+      "plain",
+      "plain"
+     ],
+     [
+      "mtp",
+      "mtp"
+     ]
+    ]
+   }
+  }
+ ]
+}

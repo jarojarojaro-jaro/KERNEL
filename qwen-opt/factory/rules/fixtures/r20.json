@@ -1,0 +1,57 @@
+{
+ "rule": "R20",
+ "cases": [
+  {
+   "name": "'r1-base-qwen': 41.70 and 33.15 ms/step",
+   "expect": "fire",
+   "kind": "real",
+   "source": "qwen-opt/fusion/spec_sweep.jsonl rows 0 and 43",
+   "ctx": {},
+   "ctx_files": {
+    "history": "fixtures/fusion_r1_base_qwen.jsonl"
+   }
+  },
+  {
+   "name": "runs with lib sha256 and build_info",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "factory run record",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 1,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)"
+     }
+    ]
+   }
+  },
+  {
+   "name": "run without binary identity",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "-",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 1,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": null,
+      "build_info": null
+     }
+    ]
+   }
+  }
+ ]
+}

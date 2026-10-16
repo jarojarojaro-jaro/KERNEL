@@ -1,0 +1,29 @@
+{
+ "rule": "R19",
+ "cases": [
+  {
+   "name": "BIT vs upstream (LFM fork 894e56e4 vs upstream 949a753b)",
+   "expect": "fire",
+   "kind": "real",
+   "source": "lekcja-md5-wzgledem-upstreamu; LFM md5 baseline 894e56e4",
+   "ctx": {
+    "card": {
+     "reference": "upstream",
+     "correctness_class": "BIT"
+    }
+   }
+  },
+  {
+   "name": "NEAR-TIE vs upstream",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "-",
+   "ctx": {
+    "card": {
+     "reference": "upstream",
+     "correctness_class": "NEAR-TIE"
+    }
+   }
+  }
+ ]
+}

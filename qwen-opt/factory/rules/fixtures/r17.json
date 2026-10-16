@@ -1,0 +1,101 @@
+{
+ "rule": "R17",
+ "cases": [
+  {
+   "name": "one process per arm (gate+up 24.3 vs 27.2 us lottery)",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "KERNEL/qwen-opt/NOTES.md:359",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 1,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)"
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "pid": 2,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)"
+     }
+    ],
+    "aa": []
+   }
+  },
+  {
+   "name": "ABBA with fresh processes and A/A",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "fk.stats.abba_schedule",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 1,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)"
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "pid": 2,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)"
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 2,
+      "pid": 3,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)"
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 3,
+      "pid": 4,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)"
+     }
+    ],
+    "aa": [
+     0.03
+    ]
+   }
+  }
+ ]
+}

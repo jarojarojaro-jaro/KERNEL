@@ -1,0 +1,51 @@
+{
+ "rule": "R25",
+ "cases": [
+  {
+   "name": "ISTA IQ3_S: ctx 512 vs ctx 2048",
+   "expect": "fire",
+   "kind": "real",
+   "source": "15e: KLD 0.0519 @512 vs 0.0665 @2048",
+   "ctx": {
+    "kld": {
+     "base": {
+      "ctx": 512,
+      "chunks": 100,
+      "reference": "own-bf16"
+     },
+     "cand": {
+      "ctx": 2048,
+      "chunks": 60,
+      "reference": "qwen-bf16"
+     }
+    }
+   }
+  },
+  {
+   "name": "same protocol (kld_canary: 3 x 16k, ub 1)",
+   "expect": "clean",
+   "kind": "real",
+   "source": "tools/kld_canary.sh",
+   "ctx": {
+    "kld": {
+     "base": {
+      "ctx": 16384,
+      "chunks": 3,
+      "ppl_base": [
+       7.1,
+       0.1
+      ]
+     },
+     "cand": {
+      "ctx": 16384,
+      "chunks": 3,
+      "ppl_base": [
+       7.1,
+       0.1
+      ]
+     }
+    }
+   }
+  }
+ ]
+}

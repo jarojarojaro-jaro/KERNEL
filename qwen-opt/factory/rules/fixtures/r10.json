@@ -1,0 +1,25 @@
+{
+ "rule": "R10",
+ "cases": [
+  {
+   "name": "spec_sweep rows of 2026-10-10 (t/s and acceptance only)",
+   "expect": "fire",
+   "kind": "real",
+   "source": "qwen-opt/spec_sweep.jsonl rows 0-20",
+   "ctx": {},
+   "ctx_files": {
+    "history": "fixtures/spec_sweep_20261010.jsonl"
+   }
+  },
+  {
+   "name": "current rows carry ms_step and tok_step",
+   "expect": "clean",
+   "kind": "real",
+   "source": "qwen-opt/spec_sweep.jsonl last row (rebase070, 27.83 ms/step)",
+   "ctx": {},
+   "ctx_files": {
+    "history": "fixtures/spec_sweep_last.jsonl"
+   }
+  }
+ ]
+}

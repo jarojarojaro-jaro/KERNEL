@@ -1,0 +1,72 @@
+{
+ "rule": "R22",
+ "cases": [
+  {
+   "name": "max_tokens 256 and prompt cache on",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "lekcja-agent-zmienia-protokol (Sakana §6.3 analogue)",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "pid": 2,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "request": {
+       "tokens": 256,
+       "temps": [
+        1.0
+       ],
+       "seeds": [
+        1,
+        2
+       ],
+       "cache_prompt": true,
+       "n_votes": 5
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "harness protocol",
+   "expect": "clean",
+   "kind": "real",
+   "source": "fk/profiles.py PROTOCOL = spec_sweep.py defaults",
+   "ctx": {
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 1,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "request": {
+       "tokens": 400,
+       "temps": [
+        1.0
+       ],
+       "seeds": [
+        1,
+        2
+       ],
+       "cache_prompt": false
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

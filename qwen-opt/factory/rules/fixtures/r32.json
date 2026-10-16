@@ -1,0 +1,61 @@
+{
+ "rule": "R32",
+ "cases": [
+  {
+   "name": "MTP block Q6_K in one arm, IQ4_XS in the other",
+   "expect": "fire",
+   "kind": "real",
+   "source": "11-mtp-pl-pilot.md:80,182 (+0.45% tok/step from Q6_K)",
+   "ctx": {
+    "server_argv": {
+     "A": [
+      "/w/a/bin/llama-server",
+      "-m",
+      "q.gguf",
+      "--port",
+      "18471",
+      "--spec-mtp-type",
+      "iq4_xs"
+     ],
+     "B": [
+      "/w/b/bin/llama-server",
+      "-m",
+      "q.gguf",
+      "--port",
+      "18472",
+      "--spec-mtp-type",
+      "q6_k"
+     ]
+    }
+   }
+  },
+  {
+   "name": "only build dir and port differ",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "-",
+   "ctx": {
+    "server_argv": {
+     "A": [
+      "/w/a/bin/llama-server",
+      "-m",
+      "q.gguf",
+      "--port",
+      "18471",
+      "--spec-mtp-type",
+      "iq4_xs"
+     ],
+     "B": [
+      "/w/b/bin/llama-server",
+      "-m",
+      "q.gguf",
+      "--port",
+      "18472",
+      "--spec-mtp-type",
+      "iq4_xs"
+     ]
+    }
+   }
+  }
+ ]
+}

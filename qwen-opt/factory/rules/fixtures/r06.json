@@ -1,0 +1,41 @@
+{
+ "rule": "R06",
+ "cases": [
+  {
+   "name": "rocprofv3 budget with PM4 on (default)",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "NOTES.md:256; pm4-niewidoczne-w-rocprof",
+   "ctx": {
+    "card": {
+     "attacked": {
+      "share_ms": 0.61,
+      "source": {
+       "tool": "rocprofv3",
+       "env": {}
+      }
+     }
+    }
+   }
+  },
+  {
+   "name": "rocprofv3 with GGML_HIP_PM4=0",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "same",
+   "ctx": {
+    "card": {
+     "attacked": {
+      "share_ms": 0.61,
+      "source": {
+       "tool": "rocprofv3",
+       "env": {
+        "GGML_HIP_PM4": "0"
+       }
+      }
+     }
+    }
+   }
+  }
+ ]
+}

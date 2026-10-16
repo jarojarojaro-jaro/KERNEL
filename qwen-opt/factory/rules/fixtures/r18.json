@@ -1,0 +1,33 @@
+{
+ "rule": "R18",
+ "cases": [
+  {
+   "name": "plan.sh overwritten while running",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "lekcja-nadpisanie-dzialajacego-skryptu (5060 Ti, 2026-10-16)",
+   "ctx": {
+    "harness_before": {
+     "ext/fusion/greedy.sh": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    "harness_after": {
+     "ext/fusion/greedy.sh": "2222222222222222222222222222222222222222222222222222222222222222"
+    }
+   }
+  },
+  {
+   "name": "unchanged",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "-",
+   "ctx": {
+    "harness_before": {
+     "a": "1"
+    },
+    "harness_after": {
+     "a": "1"
+    }
+   }
+  }
+ ]
+}

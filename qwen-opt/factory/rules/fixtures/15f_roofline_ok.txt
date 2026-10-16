@@ -1,0 +1,1 @@
+Dla Qwen na XTX: 16.5 GB / 960 GB/s daje ≥ 17.2 ms na przebieg. Przy 27.74 ms/krok mamy ~595 GB/s, czyli 62% peaku, więc wynik jest wiarygodny.

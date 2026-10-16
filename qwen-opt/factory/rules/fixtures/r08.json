@@ -1,0 +1,44 @@
+{
+ "rule": "R08",
+ "cases": [
+  {
+   "name": "K4 agent server on port 8097 holding VRAM",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "NOTES.md:300 (Uncensored after K4: interrupted, server on 8097 held VRAM)",
+   "ctx": {
+    "snapshot": {
+     "user_server": false,
+     "llama_servers": [
+      "31337 /home/jaro/wt/k4/build/bin/llama-server --port 8097 -m Qwen3.8-27B-Uncensored-Q4_K_M.gguf"
+     ],
+     "kfd_procs": [
+      {
+       "pid": 31337,
+       "cmd": "llama-server --port 8097"
+      }
+     ],
+     "vram_used": 18900000000,
+     "port": 18471,
+     "port_free": true
+    }
+   }
+  },
+  {
+   "name": "idle card (snapshot 2026-10-16 on this machine)",
+   "expect": "clean",
+   "kind": "real",
+   "source": "fk.preflight.snapshot(): vram_used 27856896, no KFD processes",
+   "ctx": {
+    "snapshot": {
+     "user_server": false,
+     "llama_servers": [],
+     "kfd_procs": [],
+     "vram_used": 27856896,
+     "port": 18471,
+     "port_free": true
+    }
+   }
+  }
+ ]
+}

@@ -1,0 +1,47 @@
+{
+ "rule": "R24",
+ "cases": [
+  {
+   "name": "copy-only workload (HyperQwen 381 t/s on verbatim copy)",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "15b: 381 t/s copy vs 133 chat",
+   "ctx": {
+    "workload": {
+     "prompts": [
+      {
+       "id": "copy-moby",
+       "set": "sealed",
+       "class": "copy-edit",
+       "lang": "en"
+      }
+     ]
+    }
+   }
+  },
+  {
+   "name": "sealed-v1 classes",
+   "expect": "clean",
+   "kind": "real",
+   "source": "factory/sealed/prompts.jsonl (5 new-writing/5 copy-edit, 4 pl/6 en)",
+   "ctx": {
+    "workload": {
+     "prompts": [
+      {
+       "id": "a",
+       "set": "sealed",
+       "class": "new-writing",
+       "lang": "pl"
+      },
+      {
+       "id": "b",
+       "set": "sealed",
+       "class": "copy-edit",
+       "lang": "en"
+      }
+     ]
+    }
+   }
+  }
+ ]
+}

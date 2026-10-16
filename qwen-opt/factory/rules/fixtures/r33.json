@@ -1,0 +1,37 @@
+{
+ "rule": "R33",
+ "cases": [
+  {
+   "name": "0.9 ms saved from kernels worth 0.61 ms",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "15f §5.3 card example (share 0.61 ms/step)",
+   "ctx": {
+    "card": {
+     "attacked": {
+      "share_ms": 0.61
+     }
+    },
+    "summary": {
+     "saving_ms": 0.9
+    }
+   }
+  },
+  {
+   "name": "0.04 ms predicted, 0.05 ms measured",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "same",
+   "ctx": {
+    "card": {
+     "attacked": {
+      "share_ms": 0.61
+     }
+    },
+    "summary": {
+     "saving_ms": 0.05
+    }
+   }
+  }
+ ]
+}

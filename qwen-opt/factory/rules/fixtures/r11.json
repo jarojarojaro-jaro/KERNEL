@@ -1,0 +1,271 @@
+{
+ "rule": "R11",
+ "cases": [
+  {
+   "name": "3072-block grid: 13.6 or 14.6 us per process",
+   "expect": "fire",
+   "kind": "reconstructed",
+   "source": "KERNEL/qwen-opt/NOTES.md:378 (values per process, 8 processes)",
+   "ctx": {
+    "card": {
+     "metric": "ms_step"
+    },
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 100,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 13.6
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 1,
+      "pid": 101,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 14.6
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 2,
+      "pid": 102,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 13.6
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 3,
+      "pid": 103,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 14.6
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 0,
+      "pid": 104,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 14.6
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 1,
+      "pid": 105,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 13.6
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 2,
+      "pid": 106,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 13.6
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 3,
+      "pid": 107,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 14.6
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "2560 blocks: always 12.2 us",
+   "expect": "clean",
+   "kind": "reconstructed",
+   "source": "same line",
+   "ctx": {
+    "card": {
+     "metric": "ms_step"
+    },
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "pid": 100,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 12.2
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 1,
+      "pid": 101,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 12.209999999999999
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 2,
+      "pid": 102,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 12.219999999999999
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 3,
+      "pid": 103,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 12.2
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 0,
+      "pid": 104,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 12.209999999999999
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 1,
+      "pid": 105,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 12.219999999999999
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 2,
+      "pid": 106,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 12.2
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 3,
+      "pid": 107,
+      "session": "s1",
+      "ok": true,
+      "lib_sha256": {
+       "lib/libggml-hip.so.0.26.0": "abababababababababababababababababababababababababababababababab"
+      },
+      "build_info": "8000 (f61994f58)",
+      "values": {
+       "ms_step": 12.209999999999999
+      }
+     }
+    ]
+   }
+  }
+ ]
+}
