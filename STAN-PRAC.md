@@ -82,11 +82,9 @@
 - Prędkość 3060 (`results/3060-20261016/opt/`): Saluki 17.2 → MTP 24.3 t/s; Bonsai repack 27.6 t/s (sweep niedokończony).
 - **Do zrobienia (CPU):** zebrać wszystko w raport 16e. Bez nowego wynajmu, chyba że użytkownik zdecyduje inaczej.
 
-### LandingWow: strona (`~/KERNEL/app`, ostatni commit poniżej; build `landing/build` aktualny na r7)
-- Po wznowieniu: naprawiony `hydration_mismatch` na całej stronie (SourceTip: blokowy popover w `<p>` → remount, przez to puste liczniki/wyścig u użytkownika). Intro hero tylko z transform. QA hero 40/40 świeżych ładowań (1920/1536@1.25/1440/390; normal, CPU 4×/6×, wolna sieć, bez JS): `app/screens/v2/hero-qa/`, skrypty `app/landing/scripts/qa/` (puppeteer-core na CDP 18499).
-- Finalne wartości w SSR wszędzie, animacje tylko jako replay przy wejściu w widok. Odczyty na żywo ≤ mediana. Wyścig z linią mety. Jeden krój display. Onboarding zaczyna się od nagłówka, bez paska kroków. Ciemny motyw domyślny; przełącznik motywu w stopce (poza showcase).
-- Juror: r6 7/7/6, r7 7/7/6 (`design/REDESIGN.md` §11). axe 0 (20 stron × 2), hydration 0, Lighthouse mobile /pl/ 83, LCP 3.5 s.
-- **W toku (r8, LandingPage):** fit-scena nachodzi na nagłówek, odznaka 2,0× poza panelem, więcej heat w środku strony, belki wyników, karty na home jak w galerii, mobile ucięte opisy. Potem: build, `hyd.ts` + `heroqa.ts` + `axe.ts`, `shots.ts` → `screens/v2/r8/`, juror r8, commit, raport do Main z „Do bazy wiedzy”.
+### LandingWow: strona (`~/KERNEL/app`, wszystko zacommitowane; build `landing/build` = runda 8)
+- Runda 8 zbudowana i sprawdzona: svelte-check 0/0, hydration 0 (14 stron), hero QA 40/40, axe 0 (20 stron × 2), Lighthouse mobile /pl/ 87 (LCP 3.6 s). Juror r8: 7 / 6 / 7 (cel 8/8/8 nieosiągnięty).
+- Otwarte (juror r8): wyścig na mobile (szybki tor poniżej ekranu), zegar użyty 6×, jedna generyczna grafika GPU, nagłówki scen pod nawigacją, legenda jakości, drugi „wielki moment” po hero. Skrypty QA: `app/landing/scripts/qa/`.
 
 ### WikiIngest
 - Wiki aktualne do 16c/16d/16i/16h + naprawa regresji (381 notatek, lint 0/0). Czeka na kolejne raporty.

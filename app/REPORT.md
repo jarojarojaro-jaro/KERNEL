@@ -200,6 +200,9 @@ Scores per round (WOW / originality / polish):
 | 3 | 6.5 | 6 | 5.5 |
 | 4 | 6 | 6 | 6 |
 | 5 | 6.5 | 6 | 5.5 |
+| 6 | 7 | 7 | 6 |
+| 7 | 7 | 7 | 6 |
+| 8 | 7 | 6 | 7 |
 
 Round 5 came after the user's next round of changes: centred hero with one Qwen race, gauges in SSR, new nav, auto-play scenes, the full-stack visual, the KLD ruler with the validated bit-exact XTX result, FAQ moved after the final CTA, pricing removed, onboarding redone, and a global heat pass. Screens are in `screens/v2/r5/`, `hero-fix/` and `nav/`.
 
@@ -231,3 +234,20 @@ The open points from round 4:
 3. Sheet vs scorecard: 3090 Qwen A0 is 38.9 in the sheet and 39.01 in `scorecard.json`. The page shows the sheet value and reports the difference.
 4. Hero pairs include Nemotron (from the report, not the consolidated sheet). Once it is in `BENCHMARKI-NVIDIA`, move its entry from `REPORT_RUNS` to `CARDS` in `scripts/cards.ts`.
 5. The bit-exact MTP result on the XTX is shown only as „w walidacji”. Change it after validation.
+
+## Rounds 6–8 (after the crash and the reboot, 2026-10-16/18)
+
+- **Root cause of „liczniki niewidoczne”:** a site-wide Svelte `hydration_mismatch`. `SourceTip` rendered a block popover (`div`/`p`/`ul`) inside `<p>`; the browser repaired the HTML, Svelte remounted, and the intro/race/counters restarted or stayed blank. The popover is now phrasing-only.
+- **Hero:** the intro is transform-only, so the headline, buttons, race and gauges show from the first frame. Hero QA: **40/40 fresh loads** at 1920, 1536 @1.25, 1440 and 390 under normal, CPU 4×/6×, slow network and no-JS (before the fix: 12/40). Contact sheet: `screens/v2/hero-qa/`.
+- **Counters:** final measured values are in the SSR HTML everywhere; animations replay only on entering view and snap to final on leave, hidden tab and bfcache. Live t/s readouts stay within 97–100 % of the measured median.
+- Onboarding opens with its headline (no step rail); an example RTX 3090 result shows when no hardware is entered. Dark is the default on every page; the theme switch is in the footer. A stale-chunk error reloads once.
+- **Checks on the round-8 build:** svelte-check 0/0; 0 hydration warnings on 14 pages; axe 0 violations on 20 pages × 1280/390; Lighthouse mobile `/pl/` 87, `/pl/wyniki/` 90, `/pl/karty/rtx-3090/` 88, `/pl/start/` 93, CLS 0; LCP still 3.0–3.6 s.
+- **QA scripts:** `landing/scripts/qa/` (see the README there).
+- **Open items from juror round 8:**
+  - mobile race shows only the slow lane above the fold;
+  - the gauge is reused six times;
+  - one generic GPU drawing for every card;
+  - sticky scene headings still graze the nav;
+  - the quality section depends on a legend;
+  - the live readout next to „zmierzone” reads as a disagreement;
+  - a second big moment after the hero.
