@@ -124,8 +124,11 @@ export const ob = {
 			nextLead: 'Aplikacja zmierzy Twój komputer na miejscu i zastąpi szacunek prawdziwą liczbą.',
 			toDownload: 'Pobierz aplikację',
 			toTerminal: 'Zainstaluj z terminala',
-			missing: 'Brak danych o sprzęcie. Wypełnij formularz.',
+			missing: 'Tak wygląda wynik. Wpisz swoją kartę, a policzymy go dla Ciebie.',
 			toForm: 'Do formularza',
+			example: (card: string) => `Przykład: ${card}`,
+			examplePick: 'Polecany model',
+			exampleCta: 'Wpisz swoją kartę',
 			mb: 'GB'
 		},
 		download: {
@@ -304,8 +307,11 @@ export const ob = {
 			nextLead: 'The app measures your computer on the spot and replaces the estimate with a real number.',
 			toDownload: 'Download the app',
 			toTerminal: 'Install from the terminal',
-			missing: 'No hardware data. Fill in the form.',
+			missing: 'This is what a result looks like. Enter your card and we compute it for you.',
 			toForm: 'To the form',
+			example: (card: string) => `Example: ${card}`,
+			examplePick: 'Recommended model',
+			exampleCta: 'Enter your card',
 			mb: 'GB'
 		},
 		download: {

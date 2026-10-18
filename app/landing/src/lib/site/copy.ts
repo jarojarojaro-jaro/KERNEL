@@ -59,12 +59,12 @@ const raw = {
 				coldSub: 'llama.cpp · ustawienia domyślne',
 				hotSub: 'ten sam plik · nasz silnik',
 				prompt: 'Zaplanuj mi sobotę w Krakowie',
-				text: 'Rano zacznij od kawy na Kazimierzu, zanim zrobi się tłoczno, a potem przejdź bulwarami nad Wisłą pod Wawel. Dziedziniec zamku jest bezpłatny, więc na komnaty kup bilet tylko wtedy, gdy masz ochotę. Na obiad wybierz pierogi albo zupę w barze mlecznym przy Starym Mieście: szybko, tanio i po krakowsku. Po południu Sukiennice i Rynek, a jeśli pada, Muzeum pod Rynkiem. Wieczorem wróć na Kazimierz albo przejdź kładką na Podgórze, gdzie jest spokojniej. Kolację zarezerwuj dzień wcześniej, bo w sobotę miejsca szybko znikają. Wygodne buty obowiązkowo: wszystko jest blisko, a najlepiej zwiedza się pieszo.',
+				text: 'Rano kawa na Kazimierzu, zanim zrobi się tłoczno, potem bulwarami pod Wawel; dziedziniec jest bezpłatny. Na obiad pierogi w barze mlecznym przy Starym Mieście. Po południu Sukiennice i Rynek, a jeśli pada, Muzeum pod Rynkiem. Wieczorem kolacja na Podgórzu, zarezerwowana dzień wcześniej. Wygodne buty obowiązkowo.',
 				summary: 'Animacja: {card}, {model} {quant}. Ta sama odpowiedź pisana w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Ten sam skrypt pomiarowy po obu stronach.',
 				burstNote: 'Paczka = tokeny przyjęte w jednym kroku MTP (zmierzone: {burst} na krok); średnie tempo = zmierzone t/s',
 				msNote: 'czas kroku {a} → {b} ms (zmierzone)',
-				liveNote: 'Nasz silnik: średnio {a2} t/s (mediana); wahania w granicach zmierzonego zakresu {lo}–{hi}. Typowa aplikacja: {a0} t/s, arkusz nie podaje zakresu, wahania najwyżej ±1%',
-				stripNote: 'Pasek pod tekstem: każdy krok z ostatnich 1,6 s, wysokość = liczba tokenów w kroku',
+				liveNote: 'Tokeny pojawiają się dokładnie w zmierzonym tempie (mediana: nasz silnik {a2} t/s, typowa aplikacja {a0} t/s); czasy na mecie = tokeny ÷ mediana. Chwilowy odczyt na zegarze waha się do 3% poniżej mediany, nigdy powyżej',
+				stripNote: 'Pasek pod tekstem: każdy krok z ostatnich 1,6 s, wysokość = liczba tokenów w kroku. Tor na dole: postęp i czas każdej strony',
 				textNote: 'Tekst jest przykładem; tempo słów z pomiaru (t/s ÷ {tpw} tokenu na słowo).'
 			}
 		},
@@ -303,12 +303,12 @@ const raw = {
 				coldSub: 'llama.cpp · default settings',
 				hotSub: 'same file · our engine',
 				prompt: 'Plan me a Saturday in Kraków',
-				text: 'Start the morning with coffee in Kazimierz before it gets busy, then walk along the Vistula boulevards up to Wawel. The castle courtyard is free, so only buy a ticket for the chambers if you feel like it. For lunch, have pierogi or soup at a milk bar near the Old Town: quick, cheap and very local. In the afternoon see the Cloth Hall and the Main Square, and if it rains, the Rynek Underground museum. In the evening head back to Kazimierz or cross the footbridge to Podgórze, where it is calmer. Book dinner a day ahead, because on Saturdays tables go fast. Comfortable shoes are a must: everything is close and the city is best seen on foot.',
+				text: 'Start with coffee in Kazimierz before it gets busy, then walk the boulevards up to Wawel; the courtyard is free. Lunch: pierogi at a milk bar near the Old Town. In the afternoon, the Cloth Hall and the Main Square, or the Rynek Underground if it rains. Dinner in Podgórze, booked a day ahead. Comfortable shoes are a must.',
 				summary: 'Animation: {card}, {model} {quant}. The same answer written at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. The same measurement script on both sides.',
 				burstNote: 'Burst = tokens accepted in one MTP step (measured: {burst} per step); the average pace = the measured t/s',
 				msNote: 'step time {a} → {b} ms (measured)',
-				liveNote: 'Our engine: {a2} t/s on average (median); fluctuations stay within the measured range {lo}–{hi}. Typical app: {a0} t/s, the sheet gives no range, fluctuations at most ±1%',
-				stripNote: 'Strip under the text: every step of the last 1.6 s, height = tokens in the step',
+				liveNote: 'Tokens appear at exactly the measured pace (median: our engine {a2} t/s, typical app {a0} t/s); finish times = tokens ÷ median. The live reading on the dial dips up to 3% below the median, never above it',
+				stripNote: 'Strip under the text: every step of the last 1.6 s, height = tokens in the step. The track below: each side’s progress and time',
 				textNote: 'The text is an example; the word pace comes from the measurement (t/s ÷ {tpw} tokens per word).'
 			}
 		},

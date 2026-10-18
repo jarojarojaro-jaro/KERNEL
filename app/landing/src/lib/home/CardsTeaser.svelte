@@ -21,7 +21,8 @@
 		if (!d) return [];
 		return [{ card, run: d.run, gain: d.ratio, src: d.run.gain?.total?.src ?? d.run.src, before: decode(d.before), ours: decode(d.ours), model: MODEL_INFO[d.run.model].name }];
 	});
-	const top = Math.max(...tiles.map((t) => t.ours));
+	/** Outline numerals share one size: the one that fits the longest label. */
+	const maxLen = Math.max(...tiles.map((t) => t.card.short.length));
 </script>
 
 <section id="cards" class="cards heat-top" aria-labelledby="cards-title">
@@ -35,7 +36,7 @@
 		<ul class="grid" role="list">
 			{#each tiles as t (t.card.id)}
 				<li>
-					<a class="tile" href={cardsHref(lang, t.card.id)} use:tilt style="--b:{t.before / top}; --o:{t.ours / top}; --len:{t.card.short.length}; --th:{heatOf(t.gain)}">
+					<a class="tile" href={cardsHref(lang, t.card.id)} use:tilt style="--b:{t.before / t.ours}; --o:1; --len:{maxLen}; --th:{heatOf(t.gain)}">
 						<span class="meta">{t.card.arch} · {t.card.vramGB} GB</span>
 						<span class="short" aria-hidden="true">{t.card.short}</span>
 						<span class="name">{nb(t.card.name)}</span>
@@ -150,10 +151,10 @@
 		left: var(--sp-5);
 		top: 2.4rem;
 		font-family: var(--font-display);
-		/* fit the model number to the tile width whatever its length */
-		font-size: min(7.5rem, calc(150cqi / var(--len)));
+		/* one size for every tile: the longest model number fits its tile, none is cut */
+		font-size: min(7.5rem, calc(180cqi / var(--len)));
 		font-weight: 850;
-		font-stretch: 112%;
+		font-stretch: 100%;
 		letter-spacing: -0.05em;
 		line-height: 1;
 		color: transparent;

@@ -155,7 +155,7 @@
 
 				<!-- (c) where the gain comes from -->
 				<div class="split" class:in={zoomTl.p > 0.55}>
-					<p class="sh">{c.split}</p>
+					<p class="sh">{c.split} <SourceTip {lang} src={rows.map((r) => r.run.gain!.src)} note={rows.map((r) => r.note).join(' — ')} /></p>
 					{#each rows as r, ri (r.card.id + r.run.model)}
 						<div class="row" style="--d:{ri * 120}ms">
 							<p class="rw">
@@ -176,7 +176,6 @@
 									{#each r.segs as s, si (s.label)}{#if si > 0}<span class="x" aria-hidden="true">×</span>{/if}<span class="ck" class:mine={s.ours}>{s.label}</span>{/each}
 								</p>
 							</div>
-							<SourceTip {lang} src={r.run.gain!.src} note={r.note} />
 						</div>
 					{/each}
 				</div>
@@ -466,6 +465,9 @@
 		gap: 0.9rem;
 	}
 	.sh {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.12em;
@@ -474,7 +476,7 @@
 	}
 	.row {
 		display: grid;
-		grid-template-columns: 9.5rem minmax(0, 1fr) auto;
+		grid-template-columns: 9.5rem minmax(0, 1fr);
 		align-items: center;
 		gap: 1rem;
 	}
@@ -577,15 +579,11 @@
 			grid-template-areas: 'ln' 'track' 'nums';
 		}
 		.row {
-			grid-template-columns: minmax(0, 1fr) auto;
-			grid-template-areas: 'rw src' 'bar bar';
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: 'rw' 'bar';
 		}
 		.rw {
 			grid-area: rw;
-		}
-		.row :global(.src-btn),
-		.row > :global(:last-child) {
-			grid-area: src;
 		}
 		.bwrap {
 			grid-area: bar;

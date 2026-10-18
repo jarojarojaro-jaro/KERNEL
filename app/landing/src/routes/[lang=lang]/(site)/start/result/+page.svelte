@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { M } from '$lib/data/measurements';
+	import { findCard, M } from '$lib/data/measurements';
 	import {
 		CTX_OPTIONS,
 		ETA,
@@ -67,6 +67,8 @@
 	const fitBadge = { fits: 'badge--ok', tight: 'badge--estimate', slow: 'badge--estimate', no: 'badge--danger' } as const;
 	const L1A = M.qwenUpstreamVulkanPlain;
 	const L1B = M.qwenUpstreamVulkanMtp;
+	/** Shown when no hardware was entered: the headline measured card, labelled as an example. */
+	const EXAMPLE = findCard('rtx-3090');
 	const howSpeed = $derived(t.howSpeed(num(ETA.dense.lo, lang, 2), num(ETA.dense.hi, lang, 2), num(ETA.moe.lo, lang, 2), num(ETA.moe.hi, lang, 2)));
 	const howL1 = $derived(
 		t.howL1(`${num(L1_MTP_BAND.lo, lang, 1)}–${fmtRatio(L1_MTP_BAND.hi, lang)}`, fmtRatio(L1B.value / L1A.value, lang), num(L1A.value, lang, 1), num(L1B.value, lang, 1))
@@ -77,7 +79,8 @@
 
 <Shell title={t.title} lead={t.lead} wide back="/start/hardware">
 	{#if ready && (!hw || !rec || !primaryF || !b)}
-		<div class="notice notice--warn"><span class="notice__icon">!</span><p>{t.missing} <a href={href(lang, '/start/hardware')}>{t.toForm}</a></p></div>
+		<p class="example-lead">{t.missing}</p>
+		<ResultGauge gpuId={EXAMPLE?.id} gpuName={EXAMPLE?.name ?? ''} {lang} estimate={null} example />
 	{:else if hw && rec && primaryF && b}
 		{@const m = rec.primary}
 		{@const lic = licenseOf(m)}
@@ -258,6 +261,13 @@
 </Shell>
 
 <style>
+	.example-lead {
+		text-align: center;
+		margin: 0 auto var(--sp-6);
+		max-width: 40rem;
+		color: var(--text);
+		font-size: var(--fs-md);
+	}
 	.layout {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr);

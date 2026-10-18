@@ -57,6 +57,20 @@
 		})).filter((g) => g.measured.length + g.queued.length > 0)
 	);
 	const total = MEASURED.length + QUEUED.length;
+	/** One source chip per vendor group: every tile's before/after figures and their conditions. */
+	const groupSrc = (es: MeasuredEntry[]) =>
+		es.flatMap((e) => {
+			const d = headline(e.card);
+			return d ? [d.before.decode!.src, d.ours.decode!.src, ...(d.run.gain?.total ? [d.run.gain.src] : [])] : [];
+		});
+	const groupNote = (es: MeasuredEntry[]) =>
+		es
+			.map((e) => {
+				const d = headline(e.card);
+				return d ? `${e.card.short}: ${d.run.title} · ${d.run.metric[lang]}` : '';
+			})
+			.filter(Boolean)
+			.join(' — ');
 	const shown = $derived(groups.reduce((n, g) => n + g.measured.length + g.queued.length, 0));
 	const NB = '\u00a0';
 
@@ -106,7 +120,7 @@
 	<div class="wrap hero-in">
 		<div class="hero-title">
 			<p class="eyebrow">{t.eyebrow}{NB}· {t.measuredCount(MEASURED.length)}{NB}· {t.queuedCount(QUEUED.length)}</p>
-			<Kinetic id="cards-title" lines={t.title} wide={1} heat={1} class="mega hx-h" />
+			<Kinetic id="cards-title" lines={t.title} heat={1} class="mega hx-h" />
 			<p class="lede">{t.lede}</p>
 		</div>
 		<div class="controls">
@@ -130,7 +144,10 @@
 		<section class="group" aria-labelledby="vendor-{g.v}">
 			<header class="g-head hx-bb">
 				<h2 id="vendor-{g.v}" class="g-name hx-grad">{t.vendors[g.v]}</h2>
-				<p class="g-meta mono">{t.groupMeta(g.measured.length, g.queued.length)}</p>
+				<div class="g-side">
+					<p class="g-meta mono">{t.groupMeta(g.measured.length, g.queued.length)}</p>
+					{#if g.measured.length}<SourceTip {lang} src={groupSrc(g.measured)} note={groupNote(g.measured)} />{/if}
+				</div>
 			</header>
 
 			{#if g.measured.length}
@@ -157,7 +174,6 @@
 												<span><span class="cold-text">{fmtTps(d.before.decode!.v, lang)}</span> → <span class="hot hx-num">{fmtTps(d.ours.decode!.v, lang)}</span>{NB}t/s</span>
 											</p>
 										</div>
-										<span class="tip"><SourceTip {lang} src={[d.before.decode!.src, d.ours.decode!.src, ...(d.run.gain?.total ? [d.run.gain.src] : [])]} note="{d.run.title} · {d.run.metric[lang]}" /></span>
 									{/if}
 								</div>
 							</article>
@@ -167,7 +183,11 @@
 			{/if}
 
 			{#if g.queued.length}
-				<p class="q-label mono"><span class="ring"></span>{t.queuedShort}</p>
+				<div class="q-head">
+					<p class="q-label mono"><span class="ring"></span>{t.queuedShort}</p>
+					<EstTag text={t.estimateShort} />
+					<SourceTip {lang} src={[EST_SRC, GPU_SRC]} note={t.estimate} />
+				</div>
 				<ul class="queued" role="list">
 					{#each g.queued as e, i (e.id)}
 						{@const est = queueEstimate(e.gpu)[0]}
@@ -184,7 +204,6 @@
 								<div class="q-est">
 									{#if est}
 										<p class="mono"><span class="hi">≈{NB}{num(est.decode.lo, lang, 0)}–{num(est.decode.hi, lang, 0)}{NB}t/s</span><span class="lbl">{est.model.name} {est.model.quant}</span></p>
-										<div class="q-row"><EstTag text={t.estimateShort} /><span class="tip"><SourceTip {lang} src={[EST_SRC, GPU_SRC]} note={t.estimate} /></span></div>
 									{:else}
 										<p class="mono"><span class="lbl">{t.soon}</span></p>
 									{/if}
@@ -375,7 +394,7 @@
 		margin: 0;
 		font-size: clamp(1.75rem, 1rem + 2.4vw, 3rem);
 		font-weight: 850;
-		font-stretch: 125%;
+		font-stretch: 112%;
 		letter-spacing: -0.02em;
 		line-height: 1;
 		color: var(--text-hi);
@@ -474,7 +493,7 @@
 		margin: 0;
 		font-size: clamp(1.6rem, 1.2rem + 0.9vw, 2.2rem);
 		font-weight: 850;
-		font-stretch: 118%;
+		font-stretch: 112%;
 		line-height: 0.95;
 		letter-spacing: -0.035em;
 		white-space: nowrap;
@@ -539,10 +558,18 @@
 	.hi {
 		color: var(--text-hi);
 	}
-	.tip {
-		position: relative;
-		z-index: 2;
-		justify-self: start;
+	.g-side {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: flex-end;
+		gap: var(--sp-2) var(--sp-3);
+	}
+	.q-head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-2) var(--sp-3);
 		margin-top: var(--sp-2);
 	}
 
@@ -551,7 +578,7 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		margin: var(--sp-2) 0 0;
+		margin: 0;
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
@@ -646,12 +673,6 @@
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.02em;
 	}
-	.q-row {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: var(--sp-2);
-	}
 
 	/* ---------- phones: rows, so several cards fit on one screen ---------- */
 	@media (max-width: 40rem) {
@@ -687,9 +708,6 @@
 		.stat {
 			margin-top: var(--sp-1);
 			padding-top: var(--sp-2);
-		}
-		.tile .tip {
-			display: none;
 		}
 		.queued {
 			gap: var(--sp-2);

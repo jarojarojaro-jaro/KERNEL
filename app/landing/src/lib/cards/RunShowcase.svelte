@@ -102,10 +102,11 @@
 				})
 			: []
 	);
-	/** Instrument grid without orphans: columns from the count, the last cell spans what is left. */
-	const nInst = $derived(instruments.length + (run.kernels ? 1 : 0));
-	const instCols = $derived(nInst <= 4 ? nInst : nInst <= 6 ? 3 : 4);
-	const instSpan = $derived(nInst % instCols ? instCols - (nInst % instCols) + 1 : 1);
+	/** One source chip per tile: every figure's file and line, every figure's note. */
+	const instSrc = $derived([...instruments.flatMap((m) => [m.b.src, m.o.src]), ...(run.kernels ? [run.kernels.up.src] : [])]);
+	const instNote = $derived(
+		[...instruments.map((m) => `${m.label}: ${m.k === 'vram' && m.o.unit === 'GiB' ? `${m.hint} (${t.gibNote})` : m.hint}`), ...(run.kernels ? [`${t.kernels}: ${t.kernelsHint}`] : [])].join(' · ')
+	);
 
 	/* ---- long context: the sheet's depth table, or tg at 8k/32k (upstream best flags vs ours) ---- */
 	const long = $derived.by(() => {
@@ -130,6 +131,8 @@
 	const race500 = new Play(() => (Math.max(0, ...words.map((w) => w.before!.v)) + 1.5) * 1000);
 	/** The conditions as chips: the sheet's own clauses, split at commas and semicolons. */
 	const condChips = $derived(run.conditions[lang].split(/;\s*|,\s*(?![^()]*\))/).filter(Boolean));
+	const barSrc = $derived(bars.flatMap((v) => [v.decode!.src, ...(v.scorecard ? [`${v.scorecard.file} (${v.scorecard.variant}: ${v.scorecard.decode})`] : [])]));
+	const barNote = $derived(`${run.sameHarness ? bars.map((v) => hintNote(v.key)).join(' · ') + ' · ' : ''}${run.metric[lang]}`);
 	const hintNote = (k: VariantKey) => (bonsai ? variantLabel(run, k)[lang] : `${variantLabel(run, k)[lang]}: ${hint(k)[lang]}`);
 </script>
 
@@ -160,22 +163,23 @@
 			{#if run.sameHarness}
 				<div class="bars">
 					{#each bars as v, i (v.key)}
-						<div class="bar-row">
-							<HeatBar value={roundTo(v.decode!.v, 1)} replay={speed.n} max={maxDecode} label={variantLabel(run, v.key)[lang]} sub={subOf(v)} cold={v.key === run.before} {lang} decimals={1} delay={i * 200} />
-							<SourceTip {lang} src={[v.decode!.src, ...(v.scorecard ? [`${v.scorecard.file} (${v.scorecard.variant}: ${v.scorecard.decode})`] : [])]} note="{hintNote(v.key)} · {run.metric[lang]}" />
-						</div>
+						<HeatBar value={roundTo(v.decode!.v, 1)} replay={speed.n} max={maxDecode} label={variantLabel(run, v.key)[lang]} sub={subOf(v)} cold={v.key === run.before} {lang} decimals={1} delay={i * 200} />
 					{/each}
+					<span class="tile-src"><SourceTip {lang} src={barSrc} note={barNote} /></span>
 				</div>
 			{:else}
 				<!-- different scripts: no bars side by side, each number with its own script -->
-				<dl class="apart">
-					{#each bars as v (v.key)}
-						<div>
-							<dt>{variantLabel(run, v.key)[lang]}</dt>
-							<dd><span class="big mono">{fmtTps(v.decode!.v, lang)}</span> <span class="u">t/s</span> <SourceTip {lang} src={v.decode!.src} note={run.metric[lang]} /></dd>
-						</div>
-					{/each}
-				</dl>
+				<div class="bars">
+					<dl class="apart">
+						{#each bars as v (v.key)}
+							<div>
+								<dt>{variantLabel(run, v.key)[lang]}</dt>
+								<dd><span class="big mono">{fmtTps(v.decode!.v, lang)}</span> <span class="u">t/s</span></dd>
+							</div>
+						{/each}
+					</dl>
+					<span class="tile-src"><SourceTip {lang} src={barSrc} note={barNote} /></span>
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -185,13 +189,15 @@
 		<div role="group" class="tile words" aria-labelledby="words-{run.model}" use:race500.view>
 			<div class="t-head">
 				<h3 id="words-{run.model}" class="h hx-h">{t.words}</h3>
-				<button type="button" class="ghost-btn mono" onclick={race500.replay} aria-label={t.wordsRun}><span aria-hidden="true">↻</span></button>
+				<span class="t-tools">
+					<SourceTip {lang} src={words.flatMap((w) => [w.before!.src, w.ours!.src])} note={words.some((w) => w.ours!.derived) ? t.wordsDerived : `${t.wordsLede} ${run.metric[lang]}`} />
+					<button type="button" class="ghost-btn mono" onclick={race500.replay} aria-label={t.wordsRun}><span aria-hidden="true">↻</span></button>
+				</span>
 			</div>
 			{#each words as w (w.wl)}
 				<div class="wrow">
 					<div class="wl">
 						<p class="mono" lang={w.wl}>{w.wl === 'pl' ? t.wordsPl : t.wordsEn}</p>
-						<SourceTip {lang} src={[w.before!.src, w.ours!.src]} note={w.ours!.derived ? t.wordsDerived : `${t.wordsLede} ${run.metric[lang]}`} />
 					</div>
 					<TimeRace
 						lanes={[
@@ -224,7 +230,10 @@
 		<div role="group" class="tile inst-tile" aria-labelledby="inst-{run.model}">
 			<div class="t-head">
 				<h3 id="inst-{run.model}" class="h hx-h">{t.instruments}</h3>
-				<p class="fine">{variantLabel(run, run.before)[lang]} → {variantLabel(run, run.ours)[lang]}</p>
+				<span class="t-tools">
+					<p class="fine">{variantLabel(run, run.before)[lang]} → {variantLabel(run, run.ours)[lang]}</p>
+					<SourceTip {lang} src={instSrc} note={instNote} />
+				</span>
 			</div>
 			<ul class="inst" role="list">
 				{#each instruments as m (m.k)}
@@ -240,10 +249,7 @@
 							<i class="b" style="--w:{(m.b.v / top) * 100}%"></i>
 							<i class="o" style="--w:{(m.o.v / top) * 100}%"></i>
 						</div>
-						<div class="cf">
-							<p class="vd vd--{m.v}">{t.verdict[m.v]}</p>
-							<SourceTip {lang} src={[m.b.src, m.o.src]} note={m.k === 'vram' && m.o.unit === 'GiB' ? `${m.hint} · ${t.gibNote}` : m.hint} />
-						</div>
+						<p class="vd vd--{m.v}">{t.verdict[m.v]}</p>
 					</li>
 				{/each}
 				{#if run.kernels}
@@ -259,10 +265,7 @@
 							<i class="b" style="--w:100%"></i>
 							<i class="o" style="--w:{(run.kernels.ours.v / run.kernels.up.v) * 100}%"></i>
 						</div>
-						<div class="cf">
-							<p class="vd vd--{kv}">{t.verdict[kv]}</p>
-							<SourceTip {lang} src={[run.kernels.up.src]} note={t.kernelsHint} />
-						</div>
+						<p class="vd vd--{kv}">{t.verdict[kv]}</p>
 					</li>
 				{/if}
 			</ul>
@@ -295,7 +298,10 @@
 		<div role="group" class="tile formats-tile" aria-labelledby="fmt-{run.model}">
 			<div class="t-head">
 				<h3 id="fmt-{run.model}" class="h hx-h">{t.formats}</h3>
-				<p class="fine">{t.formatsLede}</p>
+				<span class="t-tools">
+					<p class="fine">{t.formatsLede}</p>
+					<SourceTip {lang} src={formats.flatMap((f) => [f.gb.src, f.up!.src, f.kld.src])} note={formats.map((f) => `${f.file}, ${fmtGB(f.gb.v, 'GB', lang).text}`).join(' · ')} />
+				</span>
 			</div>
 			<ul class="formats" role="list">
 				{#each formats as f (f.file)}
@@ -303,10 +309,7 @@
 						<p class="fn">{lang === 'en' ? f.file.replace('oficjalny', 'official').replace('społeczność', 'community') : f.file}</p>
 						<p class="mono fv"><span class="cold-text">{fmtTps(f.up!.v, lang)}</span> → <span class="hi">{fmtTps(f.ours!.v, lang)}</span>{'\u00a0'}t/s</p>
 						<p class="mono fk">{t.formatsKld} {num(f.kld.v, lang, 3)}{#if f.kld.v > 1}<span class="bad"> · {t.formatsBad}</span>{/if}</p>
-						<div class="frow">
-							{#if f.md5Same}<span class="badge mono">{t.md5Same}</span>{/if}
-							<SourceTip {lang} src={[f.gb.src, f.up!.src, f.kld.src]} note="{f.file}, {fmtGB(f.gb.v, 'GB', lang).text}" />
-						</div>
+						{#if f.md5Same}<div class="frow"><span class="badge mono">{t.md5Same}</span></div>{/if}
 					</li>
 				{/each}
 			</ul>
@@ -494,11 +497,17 @@
 	.t-head .fine {
 		margin: 0;
 	}
+	.t-tools {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-2) var(--sp-3);
+	}
 	.h {
 		margin: 0;
 		font-size: var(--fs-lg);
 		font-weight: 750;
-		font-stretch: 110%;
+		font-stretch: 108%;
 		letter-spacing: -0.015em;
 		color: var(--text-hi);
 	}
@@ -588,21 +597,9 @@
 		display: grid;
 		gap: var(--sp-4);
 	}
-	.bar-row {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: end;
-		gap: var(--sp-3);
-	}
-	@media (max-width: 52rem) {
-		.bar-row {
-			grid-template-columns: 1fr;
-			justify-items: end;
-			gap: var(--sp-1);
-		}
-		.bar-row > :global(.hb) {
-			justify-self: stretch;
-		}
+	/* one source chip per tile, under its figures */
+	.tile-src {
+		justify-self: end;
 	}
 	.warn {
 		margin: 0;
@@ -765,13 +762,6 @@
 	.cell:has(.vd--better) .mini .o {
 		background: var(--heat-ramp-hot);
 		box-shadow: 0 0 8px rgb(255 122 26 / 0.5);
-	}
-	.cf {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: var(--sp-2);
 	}
 	/* better / worse: words and an arrow, bone for better, steel for worse; never heat */
 	.vd {
@@ -968,7 +958,7 @@
 		gap: 0 0.5rem;
 		font-size: var(--fs-xl);
 		font-weight: 800;
-		font-stretch: 110%;
+		font-stretch: 108%;
 		letter-spacing: -0.02em;
 		line-height: 1.1;
 		color: var(--text-hi);

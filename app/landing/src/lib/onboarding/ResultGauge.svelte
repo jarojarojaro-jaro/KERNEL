@@ -6,6 +6,8 @@
 	 *   card page. A different-script pair (RX 7900 XTX Qwen) says so.
 	 * - Other cards: the needle rests at the middle of our formula's range, and the range itself is the
 	 *   readout, labelled as an estimate.
+	 * - `example`: no hardware entered yet. Shows a measured card as a labelled example, with its
+	 *   recommended model and a call to enter your own card.
 	 */
 	import { findCard, MODEL_INFO, variantLabel, variantOf } from '$lib/data/measurements';
 	import type { Range } from '$lib/estimator';
@@ -14,15 +16,16 @@
 	import Odometer from '$lib/fx/Odometer.svelte';
 	import Tacho from '$lib/fx/Tacho.svelte';
 	import { reducedMotion } from '$lib/fx/motion';
-	import { cardsHref, num, type Lang } from '$lib/i18n';
+	import { cardsHref, href, num, type Lang } from '$lib/i18n';
 	import { ob } from './copy';
 
 	let {
 		gpuId,
 		gpuName,
 		lang,
-		estimate
-	}: { gpuId: string | null | undefined; gpuName: string; lang: Lang; estimate: { before: Range; best: Range; l1: boolean } | null } = $props();
+		estimate,
+		example = false
+	}: { gpuId: string | null | undefined; gpuName: string; lang: Lang; estimate: { before: Range; best: Range; l1: boolean } | null; example?: boolean } = $props();
 
 	const t = $derived(ob[lang].result);
 
@@ -75,7 +78,7 @@
 		</div>
 
 		<div class="text">
-			<p class="overline overline--accent">{measured ? t.gaugeMeasured(measured.card.name) : t.gaugeEstimate}</p>
+			<p class="overline overline--accent">{example && measured ? t.example(measured.card.name) : measured ? t.gaugeMeasured(measured.card.name) : t.gaugeEstimate}</p>
 			<h2 id="gauge-title" class="gpu">{gpuName}</h2>
 			{#if measured}
 				{@const ratio = measured.ours.v / measured.before.v}
@@ -94,9 +97,16 @@
 					<span><i class="sw hot-sw"></i>{variantLabel(measured.run, measured.run.ours)[lang]}</span>
 					<span class="badge badge--measured">{t.measured}</span>
 				</p>
-				<p class="fine">{t.gaugeModel}: <strong>{MODEL_INFO[measured.run.model].name} {measured.run.quant}</strong>. {measured.run.metric[lang]}{measured.run.sameHarness ? '' : ` ${t.harnessWarn}`}</p>
+				<p class="fine">{example ? t.examplePick : t.gaugeModel}: <strong>{MODEL_INFO[measured.run.model].name} {measured.run.quant}</strong>. {#if example}{measured.card.pick.why[lang]} {/if}{measured.run.metric[lang]}{measured.run.sameHarness ? '' : ` ${t.harnessWarn}`}</p>
 				<p class="source">{measured.before.src} · {measured.ours.src}</p>
-				<a class="btn btn--primary" href={cardsHref(lang, `${measured.card.id}/`)}>{t.gaugeCard} <span class="arrow" aria-hidden="true">→</span></a>
+				{#if example}
+					<div class="ctas">
+						<a class="btn btn--primary btn--lg" href={href(lang, '/start/hardware')}>{t.exampleCta} <span class="arrow" aria-hidden="true">→</span></a>
+						<a class="btn btn--secondary" href={cardsHref(lang, `${measured.card.id}/`)}>{t.gaugeCard}</a>
+					</div>
+				{:else}
+					<a class="btn btn--primary" href={cardsHref(lang, `${measured.card.id}/`)}>{t.gaugeCard} <span class="arrow" aria-hidden="true">→</span></a>
+				{/if}
 			{:else if estimate}
 				<p class="big"><span class="heat-num rng-big mono">{fmtR(estimate.best)}</span> <span class="faster">t/s · {t.gaugeRange}</span></p>
 				<p class="legend">
@@ -138,7 +148,6 @@
 		font-family: var(--font-mono);
 		font-size: clamp(1.6rem, 1.2rem + 1.4vw, 2.4rem);
 		font-weight: 400;
-		font-stretch: 87.5%;
 		letter-spacing: -0.04em;
 		color: var(--text-hi);
 	}
@@ -158,7 +167,6 @@
 	.gpu {
 		font-size: clamp(1.75rem, 1.2rem + 2vw, 3rem);
 		font-weight: 760;
-		font-stretch: 110%;
 		letter-spacing: -0.035em;
 		line-height: 1;
 	}
@@ -181,8 +189,7 @@
 	}
 	.rng-big {
 		font-size: clamp(2.5rem, 1.6rem + 3vw, 4.5rem);
-		font-weight: 300;
-		font-stretch: 87.5%;
+		font-weight: 500;
 		letter-spacing: -0.05em;
 		line-height: 1;
 	}
@@ -195,7 +202,6 @@
 		align-items: baseline;
 		gap: var(--sp-3);
 		font-size: var(--fs-xl);
-		font-stretch: 87.5%;
 		letter-spacing: -0.03em;
 	}
 	.pair .cold {
@@ -238,6 +244,17 @@
 	}
 	.text .btn {
 		margin-top: var(--sp-2);
+	}
+	.ctas {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-3);
+	}
+	@media (max-width: 760px) {
+		.ctas {
+			justify-content: center;
+		}
 	}
 	@media (max-width: 760px) {
 		.gauge {

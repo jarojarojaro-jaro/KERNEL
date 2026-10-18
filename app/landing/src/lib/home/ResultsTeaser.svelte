@@ -18,6 +18,8 @@
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].results.teaser);
 	const rows = HERO_PAIRS.map((p) => ({ ...p, a: p.before.decode!, b: p.ours.decode! }));
+	/** One source note for the whole table: each row's script and conditions. */
+	const tableNote = $derived(rows.map((r) => `${MODEL_STYLE[r.run.model].short} · ${r.card.name} ${r.run.quant}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — '))
 </script>
 
 <section id="results" class="teaser heat-top" aria-labelledby="results-title">
@@ -28,7 +30,7 @@
 			<a class="cta cta--line" href={resultsHref(lang)}>{c.link} <span class="arrow" aria-hidden="true">→</span></a>
 		</header>
 		<div class="board" use:reveal={{ threshold: 0.25 }}>
-			<p class="unit">{c.unit}</p>
+			<p class="unit">{c.unit} <SourceTip {lang} src={rows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note={tableNote} /></p>
 			<ul class="rows" role="list">
 				{#each rows as r, i (r.id)}
 					<li class="row" style="--a:{r.a.v / r.b.v}; --d:{i * 70}ms">
@@ -47,7 +49,6 @@
 							<span class="vb">{fmtTps(r.b.v, lang)}</span>
 						</span>
 						<span class="speedup g" style="--rh:{heatOf(r.b.v / r.a.v)}">{fmtRatio(r.b.v / r.a.v, lang)}</span>
-						<SourceTip {lang} src={[r.a.src, r.b.src, r.run.conditionsSrc]} note="{r.card.name} · {r.run.quant}. {r.run.metric[lang]} {r.run.conditions[lang]}." />
 					</li>
 				{/each}
 			</ul>
@@ -92,6 +93,9 @@
 		gap: var(--sp-3);
 	}
 	.unit {
+		display: flex;
+		align-items: center;
+		gap: 0.6rem;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.1em;
@@ -106,7 +110,7 @@
 	}
 	.row {
 		display: grid;
-		grid-template-columns: minmax(11rem, 1.1fr) minmax(6rem, 1.4fr) auto 4.2rem auto;
+		grid-template-columns: minmax(11rem, 1.1fr) minmax(6rem, 1.4fr) auto 4.2rem;
 		align-items: center;
 		gap: var(--sp-4);
 		padding-block: var(--sp-3);
@@ -191,11 +195,11 @@
 	}
 	@media (max-width: 640px) {
 		.row {
-			grid-template-columns: minmax(0, 1fr) auto auto;
+			grid-template-columns: minmax(0, 1fr) auto;
 			grid-template-areas:
-				'who  g    src'
-				'bars bars bars'
-				'vals vals vals';
+				'who  g'
+				'bars bars'
+				'vals vals';
 			row-gap: var(--sp-2);
 		}
 		.who {

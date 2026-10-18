@@ -85,7 +85,7 @@
 	}
 	.big {
 		font-size: clamp(2.6rem, 1.5rem + 3vw, 4.5rem);
-		font-weight: 400;
+		font-weight: 500;
 		letter-spacing: -0.05em;
 		color: var(--heat-5);
 		filter: drop-shadow(0 0 16px rgb(255 122 26 / 0.5));

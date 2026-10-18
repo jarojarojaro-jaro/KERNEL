@@ -198,7 +198,7 @@
 		font-family: var(--font-display);
 		font-size: clamp(3.6rem, 1rem + 8.4vw, 10rem);
 		font-weight: 850;
-		font-stretch: 120%;
+		font-stretch: 112%;
 		line-height: 0.86;
 		letter-spacing: -0.045em;
 	}

@@ -129,7 +129,7 @@
 	}
 	.code {
 		font-size: clamp(1.75rem, 1.2rem + 2vw, 2.75rem);
-		font-weight: 300;
+		font-weight: 500;
 		letter-spacing: 0.14em;
 		padding: var(--sp-3) var(--sp-6);
 		border: 1px dashed color-mix(in srgb, var(--heat-3) 60%, var(--line-strong));

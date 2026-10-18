@@ -38,6 +38,20 @@
 	const pct = (v: number) => (v / axis) * 100;
 	/** The drop plays when the panel enters the view; at rest (and on SSR) the blocks sit in place. */
 	const drop = new Play(() => (rows.length + over.length) * 200 + 1600);
+	/** One source chip for the panel: every measured row, and the estimate for files that do not fit. */
+	const fitSrc = $derived([
+		...rows.flatMap((row) => [...(row.file ? [row.file.src] : []), ...(row.used ? [row.used.src] : []), row.r.conditionsSrc]),
+		...(over.length ? [EST_SRC, 'app/landing/src/lib/data/models.json'] : [])
+	]);
+	const fitNote = $derived(
+		[
+			...rows.map((row) => `${MODEL_STYLE[row.r.model].short}: ${row.r.conditions[lang]}`),
+			rows.some((row) => row.used?.unit === 'GiB') ? t.gibNote : '',
+			over.length ? t.fitNoNote : ''
+		]
+			.filter(Boolean)
+			.join(' · ')
+	);
 	const ticks = $derived(Array.from({ length: axis / 4 + 1 }, (_, i) => i * 4));
 </script>
 
@@ -45,6 +59,7 @@
 	<header class="intro">
 		<h2 id="fit-title" class="h hx-grad">{t.fitTitle}</h2>
 		<p class="fine">{t.fitLede(card.vramGB)}</p>
+		<span class="intro-src"><SourceTip {lang} src={fitSrc} note={fitNote} /></span>
 		<button type="button" class="replay mono" onclick={drop.replay}><span aria-hidden="true">↻</span> {t.fitReplay}</button>
 	</header>
 
@@ -74,7 +89,6 @@
 						<div class="facts mono">
 							{#if row.file}<span class="chip"><i class="key w"></i>{t.fitFile} <b>{g(row.file.v, row.file.unit)}</b></span>{/if}
 							{#if row.used}<span class="chip"><i class="key u"></i>{t.fitUsed} <b>{g(row.used.v, row.used.unit)}</b></span>{/if}
-							<SourceTip {lang} src={[...(row.file ? [row.file.src] : []), ...(row.used ? [row.used.src] : []), row.r.conditionsSrc]} note={row.used?.unit === 'GiB' ? `${row.r.conditions[lang]} · ${t.gibNote}` : row.r.conditions[lang]} />
 						</div>
 					</div>
 				</div>
@@ -95,7 +109,6 @@
 							<span class="chip">{t.fitFile} <b>{g(x.model.sizeGB)}</b></span>
 							<span class="chip">≈{'\u00a0'}<b>{t.fitShare(share(x.lo), share(x.hi))}</b></span>
 							<EstTag text={cardsCopy[lang].gallery.estimateShort} />
-							<SourceTip {lang} src={[EST_SRC, 'app/landing/src/lib/data/models.json']} note={t.fitNoNote} />
 						</div>
 					</div>
 				</div>
@@ -128,8 +141,11 @@
 	.intro {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: baseline;
+		align-items: center;
 		gap: var(--sp-2) var(--sp-5);
+	}
+	.intro-src {
+		margin-left: auto;
 	}
 	.h {
 		margin: 0;

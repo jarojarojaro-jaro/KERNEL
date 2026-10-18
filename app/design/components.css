@@ -45,7 +45,6 @@ h4 {
 	color: var(--text-hi);
 	margin: 0;
 	font-weight: 650;
-	font-stretch: 104%;
 	line-height: var(--lh-snug);
 	letter-spacing: var(--tracking-tight);
 	text-wrap: balance;
@@ -176,7 +175,6 @@ aside {
 	font-family: var(--font-mono);
 	font-size: var(--fs-2xs);
 	font-weight: var(--fw-medium);
-	font-stretch: 87.5%;
 	letter-spacing: 0.12em;
 	text-transform: uppercase;
 	color: var(--text-mute);
@@ -201,19 +199,16 @@ aside {
 	line-height: 0.98;
 	letter-spacing: var(--tracking-display);
 	font-weight: 780;
-	font-stretch: 110%;
 }
 .h1 {
 	font-size: var(--fs-3xl);
 	font-weight: 760;
-	font-stretch: 108%;
 	line-height: 1.02;
 	letter-spacing: -0.035em;
 }
 .h2 {
 	font-size: var(--fs-2xl);
 	font-weight: 700;
-	font-stretch: 106%;
 	line-height: 1.08;
 	letter-spacing: -0.03em;
 }
@@ -235,7 +230,6 @@ aside {
 .num {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums slashed-zero;
-	font-stretch: 93.75%;
 	letter-spacing: -0.02em;
 }
 .prose {
@@ -282,7 +276,6 @@ aside {
 	border: 1px solid transparent;
 	font: inherit;
 	font-weight: 620;
-	font-stretch: 104%;
 	font-size: var(--fs-sm);
 	letter-spacing: -0.005em;
 	line-height: 1;
@@ -442,7 +435,6 @@ aside {
 	font-family: var(--font-mono);
 	font-size: var(--fs-2xs);
 	font-weight: var(--fw-medium);
-	font-stretch: 87.5%;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	line-height: 1.5;
@@ -748,7 +740,6 @@ aside {
 	font-family: var(--font-mono);
 	font-size: var(--fs-2xs);
 	font-weight: var(--fw-medium);
-	font-stretch: 87.5%;
 	letter-spacing: 0.1em;
 	text-transform: uppercase;
 	color: var(--text-mute);
@@ -777,7 +768,6 @@ aside {
 	font-variant-numeric: tabular-nums slashed-zero;
 	font-size: var(--fs-2xl);
 	font-weight: var(--fw-medium);
-	font-stretch: 87.5%;
 	color: var(--text-hi);
 	letter-spacing: -0.04em;
 	line-height: 1;
@@ -842,7 +832,6 @@ aside {
 	border-bottom: 1px solid var(--line);
 	font-family: var(--font-mono);
 	font-size: var(--fs-2xs);
-	font-stretch: 87.5%;
 	letter-spacing: 0.08em;
 	text-transform: uppercase;
 	color: var(--text-mute);
@@ -947,7 +936,6 @@ kbd,
 .step-index {
 	font-family: var(--font-mono);
 	font-size: var(--fs-xs);
-	font-stretch: 87.5%;
 	color: var(--accent-ink);
 	letter-spacing: 0.1em;
 }
@@ -957,7 +945,6 @@ kbd,
 	font-size: var(--fs-2xs);
 	color: var(--text-mute);
 	font-family: var(--font-mono);
-	font-stretch: 87.5%;
 	line-height: 1.6;
 	overflow-wrap: anywhere;
 }

@@ -117,7 +117,7 @@
 
 		<div class="below">
 			<div class="qwen">
-				<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name}</p>
+				<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name} <SourceTip {lang} src={qwenRows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note={qwenRows.map((r) => `${r.card.name}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — ')} /></p>
 				{#each qwenRows as r (r.card.id)}
 					<div class="qrow">
 						<span class="qc">{r.card.short}</span>
@@ -127,7 +127,6 @@
 						{:else}
 							<span class="qg"><small class="cross">{c.qwen.cross}</small></span>
 						{/if}
-						<SourceTip {lang} src={[r.a.src, r.b.src, r.run.conditionsSrc]} note="{r.run.metric[lang]} {r.run.conditions[lang]}." />
 					</div>
 				{/each}
 				<div class="qrow">
@@ -441,7 +440,7 @@
 	}
 	.qrow {
 		display: grid;
-		grid-template-columns: 7.5rem minmax(0, 1fr) auto auto;
+		grid-template-columns: 7.5rem minmax(0, 1fr) auto;
 		align-items: baseline;
 		gap: 0.75rem;
 		padding-top: 0.75rem;
@@ -564,6 +563,11 @@
 	@media (max-width: 640px) {
 		.axis span:nth-child(even) {
 			display: none;
+		}
+		/* NVFP4's label sits at its marker's top (clear of the axis), under QAD's */
+		.fmt:not(.hi) .fl {
+			top: 0;
+			bottom: auto;
 		}
 		.qrow {
 			grid-template-columns: minmax(0, 1fr) auto;

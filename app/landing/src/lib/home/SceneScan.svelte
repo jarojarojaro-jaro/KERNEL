@@ -37,7 +37,20 @@
 
 <div class="wrap" use:tl.view style="--p:{p}">
 	<div class="layout">
-			<SceneHead id="scene-scan" k={c.k} step={c.title} head={c.head} body={c.body} />
+			<div class="side">
+				<SceneHead id="scene-scan" k={c.k} step={c.title} head={c.head} body={c.body} />
+					<!-- scan readout: a designed instrument, not a debug percentage -->
+					<div class="readout">
+						<span class="rl" aria-hidden="true">{c.title}</span>
+						<span class="rn" aria-hidden="true">{HERO_CARD.name}</span>
+						<span class="track" aria-hidden="true"><span class="fillbar" style="--s:{s}"></span></span>
+						<span class="found" aria-hidden="true" class:done={found === callouts.length}>
+							{#each callouts as k, i (k.id)}<i class:on={i < found}></i>{/each}
+							<b>{found}/{callouts.length}</b>
+						</span>
+						<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
+					</div>
+			</div>
 			<div class="stage">
 				<div class="gpu" class:go={p > 0}>
 					<div class="layer shroud"><GpuArt label={HERO_CARD.short} vendor={HERO_CARD.vendor} vram={HERO_CARD.vramGB} flat /></div>
@@ -56,17 +69,6 @@
 						{/each}
 					</ul>
 				</div>
-				<!-- scan readout: a designed instrument, not a debug percentage -->
-				<div class="readout">
-					<span class="rl" aria-hidden="true">{c.title}</span>
-					<span class="rn" aria-hidden="true">{HERO_CARD.name}</span>
-					<span class="track" aria-hidden="true"><span class="fillbar" style="--s:{s}"></span></span>
-					<span class="found" aria-hidden="true" class:done={found === callouts.length}>
-						{#each callouts as k, i (k.id)}<i class:on={i < found}></i>{/each}
-						<b>{found}/{callouts.length}</b>
-					</span>
-					<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
-				</div>
 			</div>
 	</div>
 </div>
@@ -83,16 +85,21 @@
 		margin-inline: auto;
 		display: grid;
 		grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
-		align-items: start;
+		align-items: center;
 		gap: clamp(2rem, 5vw, 6rem);
 		padding-block: var(--header-clear) clamp(2rem, 1.5rem + 2vw, 3.5rem);
 	}
 	/* room above and under the render for the callouts, then the scan readout */
+	/* heading and the scan instrument share the left column (no empty column under the text) */
+	.side {
+		display: grid;
+		gap: clamp(1.5rem, 3vw, 2.5rem);
+		align-content: center;
+	}
 	.stage {
 		display: grid;
-		gap: 7rem;
-		/* room above the render for the upward callouts (300 W sits highest) */
-		padding-top: 7rem;
+		/* room above the render for the upward callouts (300 W sits highest) and below for 936 GB/s */
+		padding-block: 7rem 7.5rem;
 	}
 	/* render and x-ray share one box and one 3D pose */
 	.gpu {
@@ -145,10 +152,10 @@
 		bottom: 0;
 		left: -1px;
 		width: 2px;
-		background: #fff;
+		background: var(--heat-5);
 		box-shadow:
-			0 0 10px 2px rgb(255 255 255 / 0.85),
-			0 0 40px 10px rgb(237 234 227 / 0.25);
+			0 0 10px 2px rgb(255 193 90 / 0.9),
+			0 0 40px 12px rgb(255 122 26 / 0.45);
 	}
 	.beam::before {
 		content: '';
@@ -157,7 +164,7 @@
 		bottom: 0;
 		right: 0;
 		width: 9rem;
-		background: linear-gradient(90deg, transparent, rgb(237 234 227 / 0.08));
+		background: linear-gradient(90deg, transparent, rgb(255 122 26 / 0.16));
 	}
 	.callouts {
 		list-style: none;
@@ -193,9 +200,9 @@
 		width: 12px;
 		height: 12px;
 		border-radius: 50%;
-		border: 2px solid var(--text-hi);
+		border: 2px solid var(--heat-4);
 		background: var(--bg-0);
-		box-shadow: 0 0 14px rgb(237 234 227 / 0.6);
+		box-shadow: 0 0 14px rgb(255 122 26 / 0.7);
 	}
 	.pin::after {
 		content: '';
@@ -203,11 +210,11 @@
 		left: 50%;
 		width: 1px;
 		height: 2.6rem;
-		background: linear-gradient(var(--text-hi), rgb(237 234 227 / 0.1));
+		background: linear-gradient(var(--heat-4), rgb(255 122 26 / 0.1));
 	}
 	.up .pin::after {
 		bottom: 100%;
-		background: linear-gradient(rgb(237 234 227 / 0.1), var(--text-hi));
+		background: linear-gradient(rgb(255 122 26 / 0.1), var(--heat-4));
 	}
 	.down .pin::after {
 		top: 100%;
@@ -220,7 +227,8 @@
 		gap: 0.15rem;
 		white-space: nowrap;
 		padding: 0.55rem 0.8rem 0.6rem;
-		border: 1px solid var(--line);
+		border: 1px solid rgb(255 122 26 / 0.45);
+		box-shadow: 0 0 24px -10px rgb(255 122 26 / 0.7);
 		border-radius: var(--r-md);
 		background: rgb(11 11 13 / 0.9);
 	}
@@ -255,7 +263,7 @@
 	/* ---- scan readout ---- */
 	.readout {
 		display: grid;
-		grid-template-columns: auto auto minmax(4rem, 1fr) auto auto;
+		grid-template-columns: auto minmax(4rem, 1fr) auto auto;
 		align-items: center;
 		gap: var(--sp-4);
 		padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
@@ -271,7 +279,7 @@
 		color: var(--text-hi);
 	}
 	.rn {
-		color: var(--text-mute);
+		display: none;
 	}
 	.track {
 		position: relative;
@@ -284,8 +292,8 @@
 		inset: 0;
 		transform-origin: 0 50%;
 		transform: scaleX(var(--s));
-		background: var(--text-hi);
-		box-shadow: 0 0 8px rgb(237 234 227 / 0.8);
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 8px rgb(255 122 26 / 0.8);
 	}
 	.found {
 		display: flex;
@@ -301,8 +309,9 @@
 		transition: background 0.3s;
 	}
 	.found i.on {
-		background: var(--text-hi);
-		border-color: var(--text-hi);
+		background: var(--heat-4);
+		border-color: var(--heat-4);
+		box-shadow: 0 0 6px rgb(255 122 26 / 0.7);
 	}
 	.found b {
 		margin-left: 0.3rem;
@@ -341,7 +350,6 @@
 			}
 		}
 		.readout {
-			order: -1;
 			grid-template-columns: auto minmax(3rem, 1fr) auto auto;
 		}
 		.rn {

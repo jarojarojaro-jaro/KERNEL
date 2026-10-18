@@ -143,8 +143,7 @@
 	}
 	.k {
 		font-size: clamp(2.5rem, 1.6rem + 2vw, 3.5rem);
-		font-weight: 200;
-		font-stretch: 87.5%;
+		font-weight: 500;
 		letter-spacing: -0.05em;
 		line-height: 0.8;
 		color: var(--line-strong);
@@ -165,7 +164,6 @@
 		position: relative;
 		font-size: var(--fs-xl);
 		font-weight: 720;
-		font-stretch: 108%;
 		letter-spacing: -0.03em;
 		line-height: 1.05;
 		color: var(--text-hi);
@@ -188,7 +186,6 @@
 		color: var(--text-hi);
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		font-stretch: 87.5%;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}

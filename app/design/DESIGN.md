@@ -90,9 +90,9 @@ Ciemny jest domyślny (tożsamość). Strona główna i eksplorator kart są **t
 
 - **Mona Sans** (GitHub, OFL 1.1; zmienny: grubość 200–900, szerokość 75–125%) do nagłówków i tekstu oraz **Martian Mono** (Evil Martians, OFL 1.1; grubość 100–800, szerokość 75–112,5%) do liczb, kodu i etykiet. **Hostowane lokalnie** (`static/fonts`, podzbiory latin + latin-ext z polskimi znakami, licencje `OFL-MonaSans.txt`, `OFL-MartianMono.txt`), łacina wstępnie ładowana w `app.html`. Zero zapytań do Google Fonts (RODO: wyrok LG München 3 O 17493/20 dotyczył właśnie Google Fonts). Geist usunięty.
 - Skala 1,25, płynna u góry: `--fs-2xs` 11 px (etykiety mono, wersaliki, tracking 0,12 em), `xs` 12, `sm` 14, `base` 16, `md` 18, `lg` 22, `xl` 28, `2xl` 30–40, `3xl` 36–56, `display` 42–80 px; warstwa pokazowa: `--fs-giga` 40–100 px, `--fs-mega` 50–168 px.
-- Nagłówki: grubość 650–800, szerokość 104–112% (większy stopień = szerzej), tracking −0,015 do −0,038 em, `text-wrap: balance`. Akapity: `text-wrap: pretty`, interlinia 1,6, szerokość ≤ 44 rem.
-- **Liczby**: zawsze `.num` (Martian Mono, szerokość 93,75%, `tabular-nums slashed-zero`); duże odczyty `.stat__value` w szerokości 87,5%; jednostka mniejsza i przygaszona. Separator dziesiętny wg języka: „109,0 t/s” po polsku, „109.0 t/s” po angielsku (`num()` w `i18n.ts`).
-- **Overline** (`.overline`, w warstwie pokazowej `.eyebrow`): mono 87,5%, wersaliki, kreska 1,6 rem przed tekstem; nazwa sekcji jak etykieta kanału na przyrządzie.
+- Nagłówki: grubość 650–800, tracking −0,015 do −0,038 em, `text-wrap: balance`. Akapity: `text-wrap: pretty`, interlinia 1,6, szerokość ≤ 44 rem. **Dwie rodziny, bez mieszania szerokości**: w komponentach i na stronach drugorzędnych nie zmieniamy `font-stretch` (jedyny wyjątek to tytuły pokazowe `.giga`/`.mega` z `showcase.css`); żadnych cienkich (200–300) cyfr ani zestawień „wąski + bardzo gruby”.
+- **Liczby**: zawsze `.num` (Martian Mono, `tabular-nums slashed-zero`), duże odczyty grubością 400–600; jednostka mniejsza i przygaszona. Separator dziesiętny wg języka: „109,0 t/s” po polsku, „109.0 t/s” po angielsku (`num()` w `i18n.ts`).
+- **Overline** (`.overline`, w warstwie pokazowej `.eyebrow`): mono, wersaliki, kreska 1,6 rem przed tekstem; nazwa sekcji jak etykieta kanału na przyrządzie.
 
 ## 5. Przestrzeń, siatka, kształt
 

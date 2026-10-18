@@ -98,7 +98,6 @@
 		text-decoration: none;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		font-stretch: 87.5%;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 	}
@@ -177,7 +176,6 @@
 		color: var(--text-mute);
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		font-stretch: 87.5%;
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		cursor: pointer;

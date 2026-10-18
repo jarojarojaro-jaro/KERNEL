@@ -76,7 +76,6 @@
 	.name {
 		font-size: var(--fs-xl);
 		font-weight: 680;
-		font-stretch: 106%;
 		letter-spacing: -0.025em;
 		color: var(--text-hi);
 	}

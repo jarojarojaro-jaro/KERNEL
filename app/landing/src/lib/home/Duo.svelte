@@ -48,19 +48,20 @@
 		letter-spacing: -0.03em;
 		line-height: 1;
 	}
+	/* one face, one cut: the heavy display weight at one width; the payoff differs only in colour */
 	.lo {
 		display: block;
-		font-weight: 560;
-		font-stretch: 75%;
-		color: var(--text);
-		letter-spacing: -0.02em;
+		font-weight: 800;
+		font-stretch: 104%;
+		letter-spacing: -0.035em;
+		color: var(--text-hi);
 	}
 	/* the payoff burns: heat ramp drifting slowly through the letters, with an ember glow */
 	.hi {
 		display: block;
-		font-weight: 840;
-		font-stretch: 125%;
-		letter-spacing: -0.045em;
+		font-weight: 800;
+		font-stretch: 104%;
+		letter-spacing: -0.035em;
 		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 30%, var(--heat-4) 55%, var(--heat-5) 70%, var(--heat-3) 100%) 0 0 / 200% 100%;
 		-webkit-background-clip: text;
 		background-clip: text;
@@ -71,10 +72,6 @@
 	}
 	.duo--plain {
 		text-shadow: 0 0 0.6em rgb(255 122 26 / 0.18);
-	}
-	/* scene headings sit in a narrow column: a slightly narrower payoff avoids orphaned words */
-	.duo--scene .hi {
-		font-stretch: 112%;
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		.hi {

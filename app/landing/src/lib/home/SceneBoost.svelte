@@ -51,25 +51,29 @@
 						<span class="bignum"><Odometer value={shown} decimals={1} {lang} duration={800} minInt={2} label={c.unit} /></span>
 						<span class="unit">t/s</span>
 					</div>
-					<p class="layer-name" aria-live="polite">
-						{#if stage}<span class="ln">{c.layers[stage - 1]}</span><span class="ls">{c.subs[stage - 1]}</span>{/if}
-					</p>
-					<p class="total" class:in={stage >= 3}>
+					<!-- the three measured layers, always listed; the one being added lights up -->
+					<ol class="ledger">
+						{#each segs as s, i (i)}
+							<li class:on={stage > i} class:now={stage === i + 1}>
+								<span class="li">{String(i + 1).padStart(2, '0')}</span>
+								<span class="lt"><b>{s.label}</b><small>{c.subs[i]}</small></span>
+								<span class="lv">{fmtTps(s.v.v, lang)}</span>
+								<span class="lg">{#if s.gain}<b class="speedup" style="--rh:{heatOf(s.gain.v)}">{fmtRatio(s.gain.v, lang)}</b>{/if}</span>
+							</li>
+						{/each}
+					</ol>
+					<div class="total">
 						<b class="speedup" style="--rh:{heatOf(HERO_GAIN.total!.v)}">{fmtRatio(HERO_GAIN.total!.v, lang)}</b>
-						<span>{c.total} · {HERO_CARD.name}</span>
+						<span class="tt">{c.total} · {HERO_CARD.name}</span>
 						<SourceTip {lang} {src} {note} />
-					</p>
-					<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
+						<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
+					</div>
 				</div>
 				<div class="tower" style="--red:{REDLINE / DIAL_MAX}">
 					<div class="redzone" class:flare={overRed} aria-hidden="true"><span>{REDLINE}</span></div>
 					{#each segs as s, i (i)}
 						<div class="seg seg--{s.key}" class:in={stage > i} style="--a:{s.from}; --b:{s.to}">
-							<span class="tag">
-								<span class="tv">{fmtTps(s.v.v, lang)}</span>
-								{#if s.gain}<span class="tg speedup" style="--rh:{heatOf(s.gain.v)}">{fmtRatio(s.gain.v, lang)}</span>{/if}
-								<span class="tl">{s.label}</span>
-							</span>
+							<span class="tag"><span class="tv">{fmtTps(s.v.v, lang)}</span></span>
 							<span class="mv" aria-hidden="true">{fmtTps(s.v.v, lang)}</span>
 						</div>
 					{/each}
@@ -141,7 +145,7 @@
 		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
 		gap: clamp(1.5rem, 3vw, 3rem);
-		padding-right: clamp(8rem, 6rem + 4vw, 12rem);
+		padding-right: 4.5rem;
 	}
 	.read {
 		display: grid;
@@ -158,12 +162,10 @@
 		font-size: clamp(4rem, 1.5rem + 7vw, 8.5rem);
 		line-height: 0.9;
 		color: var(--before);
-		font-stretch: 75%;
-		font-weight: 300;
+		font-stretch: 108%;
+		font-weight: 780;
 		letter-spacing: -0.04em;
 		transition:
-			font-stretch 1s var(--ease-out),
-			font-weight 1s var(--ease-out),
 			color 0.8s,
 			filter 0.8s;
 	}
@@ -172,14 +174,10 @@
 		font-variant-numeric: tabular-nums lining-nums;
 	}
 	[data-stage='2'] .bignum {
-		font-stretch: 100%;
-		font-weight: 500;
 		color: var(--heat-4);
 		filter: drop-shadow(0 0 22px rgb(255 122 26 / 0.35));
 	}
 	[data-stage='3'] .bignum {
-		font-stretch: 125%;
-		font-weight: 760;
 		color: #fff;
 		filter: drop-shadow(0 0 14px rgb(255 193 90 / 0.55)) drop-shadow(0 0 40px rgb(255 122 26 / 0.45));
 	}
@@ -188,24 +186,6 @@
 		font-size: var(--fs-sm);
 		color: var(--text-mute);
 		letter-spacing: 0.1em;
-	}
-	.layer-name {
-		min-height: 2.8rem;
-		display: grid;
-		gap: 0.2rem;
-	}
-	.ln {
-		font-weight: 700;
-		font-stretch: 110%;
-		font-size: var(--fs-lg);
-		color: var(--text-hi);
-	}
-	.ls {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--text-mute);
 	}
 	/* ---- the tower: 0–100 t/s, red zone from 70 ---- */
 	.tower {
@@ -280,15 +260,6 @@
 		display: grid;
 		gap: 0.1rem;
 		white-space: nowrap;
-		opacity: 0;
-		transform: translate3d(-0.6rem, 0, 0);
-		transition:
-			opacity 0.5s 0.35s,
-			transform 0.6s var(--ease-out) 0.35s;
-	}
-	.seg.in .tag {
-		opacity: 1;
-		transform: none;
 	}
 	.tag::before {
 		content: '';
@@ -308,34 +279,77 @@
 		font-size: var(--fs-md);
 		color: var(--text-hi);
 	}
-	.tg {
-		font-size: var(--fs-lg);
-	}
-	.tl {
-		font-size: var(--fs-xs);
-		color: var(--text-mute);
-	}
 	.total {
 		display: flex;
-		align-items: baseline;
+		align-items: center;
 		flex-wrap: wrap;
-		gap: 0.4rem 0.8rem;
-		opacity: 0;
-		transform: translate3d(0, 0.6rem, 0);
+		gap: 0.5rem 0.9rem;
+		padding-top: var(--sp-3);
+		border-top: 1px solid rgb(255 122 26 / 0.35);
+	}
+	.ledger {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: grid;
+		gap: 0.15rem;
+		width: min(100%, 34rem);
+	}
+	.ledger li {
+		display: grid;
+		grid-template-columns: 2rem minmax(0, 1fr) auto 3.6rem;
+		align-items: center;
+		gap: 0.8rem;
+		padding: 0.55rem 0.7rem;
+		border-radius: var(--r-md);
+		color: var(--text-mute);
 		transition:
-			opacity 0.5s 0.6s,
-			transform 0.6s var(--ease-spring) 0.6s;
-		visibility: hidden;
+			background 0.4s,
+			color 0.4s;
 	}
-	.total.in {
-		opacity: 1;
-		transform: none;
-		visibility: visible;
+	.ledger li.on {
+		color: var(--text);
 	}
-	.total b {
+	.ledger li.now {
+		background: linear-gradient(90deg, rgb(255 122 26 / 0.16), transparent);
+		color: var(--text-hi);
+	}
+	.li {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+	}
+	.lt {
+		display: grid;
+		gap: 0.1rem;
+		min-width: 0;
+	}
+	.lt b {
+		font-weight: 700;
+		font-size: var(--fs-md);
+	}
+	.lt small {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.04em;
+		color: var(--text-mute);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	.lv {
+		font-family: var(--font-mono);
+		font-size: var(--fs-lg);
+	}
+	.lg {
+		justify-self: end;
+	}
+	.lg b {
+		font-size: var(--fs-lg);
+	}
+	.total > b {
 		font-size: clamp(2rem, 1rem + 2.4vw, 3.2rem);
 	}
-	.total span {
+	.total .tt {
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		text-transform: uppercase;
@@ -408,9 +422,6 @@
 		}
 		.seg--cold .mv {
 			color: var(--before);
-		}
-		.layer-name {
-			min-height: 3rem;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

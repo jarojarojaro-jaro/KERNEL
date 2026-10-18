@@ -118,7 +118,6 @@
 		font: inherit;
 		font-size: var(--fs-md);
 		font-weight: 620;
-		font-stretch: 104%;
 		text-align: left;
 		cursor: pointer;
 		transition:

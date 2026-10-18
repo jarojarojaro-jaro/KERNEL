@@ -5,6 +5,9 @@
 	import { ETA, L1_MTP_BAND, TOK_PER_WORD } from '$lib/estimator';
 	import { fmtGB, fmtRatio, localizeDecimals, ratioDigits } from '$lib/format';
 	import { reveal } from '$lib/fx/actions';
+	import { reducedMotion } from '$lib/fx/motion';
+	import Odometer from '$lib/fx/Odometer.svelte';
+	import Tacho from '$lib/fx/Tacho.svelte';
 	import { currentLang, href, num } from '$lib/i18n';
 
 	const lang = $derived(currentLang());
@@ -22,6 +25,17 @@
 		const before = run && variantOf(run, run.before)?.decode;
 		return card && run && ours && before ? { card, run, ours, before } : null;
 	})();
+	/** Needle: typical app first, then our engine. SSR / no JS / reduced motion show the final value. */
+	let specNeedle = $state(spec?.ours.v ?? 0);
+	const specMax = spec ? Math.ceil((spec.ours.v * 1.25) / 10) * 10 : 100;
+	onMount(() => {
+		if (spec && !reducedMotion()) specNeedle = 0;
+	});
+	function sweep() {
+		if (!spec || reducedMotion()) return;
+		specNeedle = spec.before.v;
+		setTimeout(() => (specNeedle = spec.ours.v), 1200);
+	}
 
 	/** Decimals as printed in the source (38.9 → 1, 28.07 → 2); speeds keep at least one (78 → 78,0). */
 	const dec = (v: number) => Math.min(2, (String(v).split('.')[1] ?? '').length);
@@ -246,10 +260,20 @@
 			<p class="lede">{t.lead}</p>
 		</div>
 		{#if spec}
-			<figure class="spec" use:reveal aria-labelledby="spec-cap">
+			<figure class="spec" use:reveal={{ onin: sweep }} aria-labelledby="spec-cap">
 				<figcaption id="spec-cap" class="eyebrow">{t.anatomy}</figcaption>
-				<p class="spec-v"><span class="spec-num mono">{tps(spec.ours.v)}</span><span class="spec-u mono">t/s</span></p>
-				<p class="spec-was mono"><span class="k">{variantLabel(spec.run, spec.run.before)[lang]}</span>{tps(spec.before.v)} t/s</p>
+				<div class="spec-top">
+					<div class="spec-dial">
+						<Tacho value={specNeedle} max={specMax} redline={Math.round(specMax * 0.7)} step={10} label="{variantLabel(spec.run, spec.run.ours)[lang]}: {tps(spec.ours.v)} t/s" slam>
+							<span class="spec-read mono"><Odometer value={specNeedle} decimals={1} {lang} duration={1000} /><span class="spec-u">t/s</span></span>
+						</Tacho>
+					</div>
+					<div class="spec-side">
+						<p class="spec-x speedup">{fmtRatio(spec.ours.v / spec.before.v, lang)}</p>
+						<p class="spec-was mono"><span class="k">{variantLabel(spec.run, spec.run.before)[lang]}</span>{tps(spec.before.v)} t/s</p>
+						<p class="spec-now mono"><span class="k">{variantLabel(spec.run, spec.run.ours)[lang]}</span>{tps(spec.ours.v)} t/s</p>
+					</div>
+				</div>
 				<dl class="spec-dl">
 					<div><dt>{t.a.card}</dt><dd>{spec.card.name}</dd></div>
 					<div><dt>{t.a.model}</dt><dd>{MODEL_INFO[spec.run.model].name} {spec.run.quant}</dd></div>
@@ -481,48 +505,78 @@
 	}
 	/* specimen: one sourced number with everything that belongs to it */
 	.spec {
+		position: relative;
 		margin: 0;
 		display: grid;
 		gap: var(--sp-3);
 		padding: var(--sp-6) var(--sp-6) var(--sp-5);
-		border: 1px solid var(--line);
+		border: 1px solid transparent;
 		border-radius: var(--r-xl);
 		background:
-			radial-gradient(80% 60% at 0% 0%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 70%),
-			var(--bg-1);
-		box-shadow: var(--shadow-2);
+			radial-gradient(70% 55% at 25% 30%, color-mix(in srgb, var(--heat-3) 16%, transparent), transparent 70%) padding-box,
+			linear-gradient(var(--bg-1), var(--bg-1)) padding-box,
+			linear-gradient(160deg, color-mix(in srgb, var(--heat-3) 75%, transparent), var(--line) 40%, var(--line) 70%, color-mix(in srgb, var(--heat-2) 55%, transparent)) border-box;
+		box-shadow:
+			var(--shadow-2),
+			0 40px 110px -50px color-mix(in srgb, var(--heat-3) 85%, transparent);
 	}
-	.spec-v {
-		display: flex;
-		align-items: baseline;
+	.spec-top {
+		display: grid;
+		grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
+		align-items: center;
+		gap: var(--sp-5);
+	}
+	.spec-dial {
+		position: relative;
+	}
+	.spec-dial::before {
+		content: '';
+		position: absolute;
+		inset: -14%;
+		background: radial-gradient(closest-side, color-mix(in srgb, var(--heat-3) 26%, transparent), transparent);
+		pointer-events: none;
+	}
+	.spec-read {
+		display: grid;
+		justify-items: center;
+		font-size: clamp(1.4rem, 1.1rem + 0.9vw, 1.9rem);
+		font-weight: 500;
+		letter-spacing: -0.04em;
+		color: var(--text-hi);
+		line-height: 1;
+	}
+	.spec-side {
+		display: grid;
 		gap: var(--sp-2);
-		line-height: 0.9;
-		margin-top: var(--sp-2);
+		justify-items: start;
 	}
-	.spec-num {
-		font-size: clamp(3.5rem, 2.5rem + 3.5vw, 5.75rem);
-		font-weight: 300;
-		font-stretch: 87.5%;
-		letter-spacing: -0.06em;
-		background: var(--heat-ramp-hot);
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
+	.spec-x {
+		font-size: clamp(3rem, 2rem + 3vw, 4.5rem);
 	}
-	:global(:root[data-theme='light']) .spec-num,
+	.spec-u {
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.08em;
+		color: var(--text-mute);
+	}
+	.spec-was,
+	.spec-now {
+		display: grid;
+		gap: 0.1rem;
+		font-size: var(--fs-md);
+	}
+	.spec-was {
+		color: var(--before);
+	}
+	.spec-now {
+		color: var(--accent-ink);
+		font-weight: 600;
+	}
+	:global(:root[data-theme='light']) .spec-x,
 	:global(:root[data-theme='light']) .hot .val {
 		background: var(--heat-large);
 		-webkit-background-clip: text;
 		background-clip: text;
 		color: transparent;
-	}
-	.spec-u {
-		font-size: var(--fs-sm);
-		color: var(--text-mute);
-	}
-	.spec-was {
-		font-size: var(--fs-sm);
-		color: var(--before);
 	}
 	.spec-dl {
 		margin: var(--sp-2) 0 0;
@@ -544,7 +598,6 @@
 	.spec-dl dt {
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		font-stretch: 87.5%;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--text-mute);
@@ -560,11 +613,11 @@
 		overflow-wrap: anywhere;
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .spec:not([data-in]) .spec-v {
+		:global(html.js) .spec:not([data-in]) .spec-top {
 			opacity: 0;
 			transform: translateY(0.3em);
 		}
-		.spec-v {
+		.spec-top {
 			transition:
 				opacity 0.9s var(--ease-out) 0.2s,
 				transform 0.9s var(--ease-out) 0.2s;
@@ -606,8 +659,7 @@
 	.stats dd {
 		margin: 0;
 		font-size: clamp(2.25rem, 1.5rem + 2.4vw, 3.5rem);
-		font-weight: 300;
-		font-stretch: 87.5%;
+		font-weight: 500;
 		line-height: 1;
 		letter-spacing: -0.04em;
 		color: var(--text-hi);
@@ -694,7 +746,6 @@
 		gap: var(--sp-4);
 		font-size: clamp(1.75rem, 1.2rem + 1.8vw, 2.75rem);
 		font-weight: 720;
-		font-stretch: 108%;
 		letter-spacing: -0.03em;
 		line-height: 1.05;
 		padding-top: var(--sp-5);
@@ -714,7 +765,6 @@
 	.k {
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		font-stretch: 87.5%;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--text-mute);
@@ -813,8 +863,7 @@
 	.gpu-short {
 		margin: 0;
 		font-size: clamp(2.75rem, 2rem + 3vw, 4.5rem);
-		font-weight: 200;
-		font-stretch: 87.5%;
+		font-weight: 500;
 		line-height: 0.85;
 		letter-spacing: -0.06em;
 		color: var(--text-hi);
@@ -912,7 +961,6 @@
 		text-align: right;
 		font-size: var(--fs-xl);
 		font-weight: 400;
-		font-stretch: 87.5%;
 		letter-spacing: -0.04em;
 		color: var(--text-hi);
 		white-space: nowrap;
@@ -957,7 +1005,6 @@
 	.gain dt {
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		font-stretch: 87.5%;
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--text-mute);
@@ -967,7 +1014,6 @@
 	}
 	.gain dd.mono {
 		font-size: var(--fs-lg);
-		font-stretch: 87.5%;
 		letter-spacing: -0.03em;
 		color: var(--text-hi);
 	}
@@ -1049,7 +1095,6 @@
 	.claim-t {
 		font-size: clamp(1.5rem, 1.1rem + 1.4vw, 2.25rem);
 		font-weight: 720;
-		font-stretch: 110%;
 		letter-spacing: -0.03em;
 		line-height: 1.08;
 		color: var(--text-hi);
@@ -1083,7 +1128,6 @@
 	.big {
 		font-size: var(--fs-xl);
 		font-weight: 400;
-		font-stretch: 87.5%;
 		letter-spacing: -0.03em;
 		color: var(--text-hi);
 	}
@@ -1220,6 +1264,23 @@
 		}
 	}
 	@media (max-width: 640px) {
+		.spec-top {
+			grid-template-columns: minmax(0, 1fr);
+			justify-items: center;
+		}
+		.spec-dial {
+			width: min(100%, 15rem);
+		}
+		.spec-side {
+			grid-template-columns: auto auto;
+			justify-items: start;
+			gap: var(--sp-2) var(--sp-5);
+			width: 100%;
+		}
+		.spec-x {
+			grid-column: 1 / -1;
+			justify-self: center;
+		}
 		.gpu-head {
 			flex-direction: column;
 			align-items: flex-start;

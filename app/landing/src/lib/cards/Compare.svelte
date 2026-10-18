@@ -269,7 +269,7 @@
 		margin: 0;
 		font-size: clamp(2.6rem, 1.2rem + 4vw, 5rem);
 		font-weight: 850;
-		font-stretch: 118%;
+		font-stretch: 112%;
 		letter-spacing: -0.045em;
 		line-height: 0.9;
 		color: var(--text-hi);
@@ -352,7 +352,7 @@
 	}
 	.sc-n {
 		font-weight: 800;
-		font-stretch: 115%;
+		font-stretch: 112%;
 		font-size: var(--fs-lg);
 		color: var(--text);
 		letter-spacing: -0.02em;
@@ -431,7 +431,7 @@
 		margin: 0;
 		font-size: var(--fs-2xl);
 		font-weight: 750;
-		font-stretch: 110%;
+		font-stretch: 108%;
 		color: var(--text-hi);
 	}
 	.race .fine {

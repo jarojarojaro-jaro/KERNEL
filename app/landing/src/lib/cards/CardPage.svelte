@@ -65,10 +65,13 @@
 			if (t < 0.45) tp = o - (o - b) * easeInOut(t / 0.45);
 			else if (t < 0.7) tp = b;
 			else {
+				// the counter climbs and locks onto the measured value (no slow tail of 77,9 → 78,0,
+				// never above it); the fans keep spinning down after the lock
 				const k = Math.min(1, (t - 0.7) / 1.7);
-				tp = k >= 1 ? o : b + (o - b) * easeOutCubic(k);
+				const lock = Math.min(1, easeOutCubic(k) / 0.96);
+				tp = lock >= 1 ? o : Math.min(o, b + (o - b) * lock);
 				rpm = k < 1 ? 0.25 + 0.75 * easeOutCubic(k) : Math.max(0, 1 - (t - 2.4) / 2.6);
-				if (k >= 1 && landed === 0) landed = 1;
+				if (lock >= 1 && landed === 0) landed = 1;
 				if (k >= 1 && rpm === 0) {
 					stop = null;
 					return false;
@@ -614,7 +617,7 @@
 	.o-name {
 		font-size: var(--fs-xl);
 		font-weight: 800;
-		font-stretch: 115%;
+		font-stretch: 112%;
 		letter-spacing: -0.03em;
 		width: fit-content;
 	}

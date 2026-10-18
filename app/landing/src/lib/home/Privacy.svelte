@@ -46,9 +46,9 @@
 	.statement {
 		margin: 0;
 		font-family: var(--font-display);
-		font-size: clamp(2.4rem, 0.6rem + 5.6vw, 7rem);
-		font-weight: 300;
-		font-stretch: 112%;
+		font-size: clamp(2.2rem, 0.8rem + 4vw, 5rem);
+		font-weight: 800;
+		font-stretch: 104%;
 		line-height: 1;
 		letter-spacing: -0.04em;
 		color: var(--text-hi);

@@ -113,23 +113,19 @@
 	}
 	.q {
 		font-family: var(--font-display);
-		font-size: clamp(1.45rem, 0.9rem + 2.2vw, 3.1rem);
-		font-weight: 700;
-		font-stretch: 75%;
-		line-height: 1.02;
+		font-size: clamp(1.2rem, 0.9rem + 1.1vw, 1.9rem);
+		font-weight: 760;
+		line-height: 1.1;
 		letter-spacing: -0.025em;
 		color: var(--text);
-		transition:
-			font-stretch 0.6s var(--ease-out),
-			color var(--dur-2);
+		transition: color var(--dur-2);
 		text-wrap: balance;
 	}
 	summary:hover .q {
 		color: var(--text-hi);
 	}
 	details[open] .q {
-		font-stretch: 118%;
-		color: var(--text-hi);
+		color: var(--heat-4);
 	}
 	.ic {
 		position: relative;

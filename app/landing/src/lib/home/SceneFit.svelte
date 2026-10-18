@@ -60,7 +60,7 @@
 				<div class="fitfield">
 					<!-- Q8_0 ghost: the file alone is wider than the card's memory (hatched = does not fit) -->
 					<div class="ghost" class:in={stage >= 3} aria-hidden="true">
-						<span class="gname"><ModelMark model={HERO_RUN.model} size="0.8em" /> {HERO_MODEL} <b>Q8_0</b> · {gb(q8)}</span>
+						<span class="gname"><ModelMark model={HERO_RUN.model} size="0.8em" /> <span class="gm">{HERO_MODEL}</span> <b>Q8_0</b> · {gb(q8)}</span>
 						<!-- the part past the card's 24 GB: outlined in danger red -->
 						<span class="over" aria-hidden="true"></span>
 						<span class="stamp" class:in={stage >= 4}>{c.nofit}</span>
@@ -184,12 +184,13 @@
 		inset: 8px auto 8px 8px;
 		width: calc(var(--file) * (100% - 16px));
 		border-radius: var(--r-md);
-		/* the model's identity colour (Qwen = teal), lit from above */
+		/* the winner glows hot (the model's teal stays only as its mark), lit from above */
 		background:
-			linear-gradient(180deg, rgb(255 255 255 / 0.35), transparent 45%, rgb(0 0 0 / 0.18)),
-			var(--model-qwen38);
+			linear-gradient(180deg, rgb(255 255 255 / 0.3), transparent 45%, rgb(0 0 0 / 0.12)),
+			linear-gradient(90deg, var(--heat-3), var(--heat-4) 60%, var(--heat-5));
 		box-shadow:
-			0 0 0 1px rgb(255 255 255 / 0.35) inset,
+			0 0 0 1px rgb(255 243 214 / 0.5) inset,
+			0 0 40px -6px rgb(255 122 26 / 0.65),
 			0 18px 40px -16px rgb(0 0 0 / 0.9);
 		display: grid;
 		align-content: center;
@@ -495,7 +496,8 @@
 		}
 		/* the Q8 ghost runs off the right edge (clipped by the sticky frame) */
 		.stage {
-			--tw: 100%;
+			/* 80%: the 29 GB ghost (×1,21) still ends inside the screen */
+			--tw: 80%;
 			gap: var(--sp-3);
 			align-content: start;
 			order: 1;
@@ -510,9 +512,13 @@
 		.gname {
 			font-size: var(--fs-xs);
 		}
+		/* the same model as the block below: the ghost says only what differs */
+		.gm {
+			display: none;
+		}
 		.stamp {
 			font-size: var(--fs-2xs);
-			margin-right: 18%;
+			margin-right: 0;
 		}
 		.legend {
 			order: 0;

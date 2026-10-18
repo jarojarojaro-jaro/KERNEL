@@ -59,7 +59,8 @@
 	<div class="est-head">
 		{#if est.length}<EstTag text={t.estimateTitle} />{/if}
 		<h2 id="est-title" class="giga hx-grad">{t.fitTitle}</h2>
-		{#if est.length}<p class="lede">{t.estimateLede}</p>{/if}
+		{#if est.length}<p class="lede">{t.estimateLede}</p>
+			<SourceTip {lang} src={[EST_SRC, GPU_SRC, 'app/landing/src/lib/data/models.json']} note={t.estimateLede} />{/if}
 	</div>
 	{#if est.length}
 		<ul class="rows" class:play={fill.on} role="list">
@@ -77,7 +78,6 @@
 						<p class="mono"><span class="k">{t.estimateNeed}</span> <b>≈ {t.fitShare(share(e.need.lo), share(e.need.hi))}</b></p>
 						<p class="mono"><span class="k">{t.estimateBefore}</span> <b>≈ {num(e.decode.lo, lang, 0)}–{num(e.decode.hi, lang, 0)} t/s</b></p>
 						<p class="mono"><span class="k">{t.estimateAfter}</span> <b>{cardsCopy[lang].gallery.soon}</b></p>
-						<SourceTip {lang} src={[EST_SRC, GPU_SRC, 'app/landing/src/lib/data/models.json']} note={t.estimateLede} />
 					</div>
 				</li>
 			{/each}

@@ -36,7 +36,7 @@
 		} catch {
 			/* storage blocked */
 		}
-		root.dataset.theme = theme === 'light' || theme === 'dark' ? theme : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+		root.dataset.theme = theme === 'light' ? 'light' : 'dark';
 	});
 
 	const links = $derived([

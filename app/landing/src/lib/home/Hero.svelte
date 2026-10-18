@@ -42,8 +42,8 @@
 		t2: num(Math.round(words * TOK_PER_WORD[lang]) / hot.decode!.v, lang, 1)
 	});
 	const lanes = $derived([
-		{ id: 'cold', label: variantLabel(HERO_RUN, 'a0')[lang], sub: r.coldSub, tps: cold.decode!.v, hot: false, burst: cold.tokStep?.v, lo: cold.decode!.lo, hi: cold.decode!.hi },
-		{ id: 'hot', label: variantLabel(HERO_RUN, 'a2')[lang], sub: r.hotSub, tps: hot.decode!.v, hot: true, burst: hot.tokStep?.v, lo: hot.decode!.lo, hi: hot.decode!.hi }
+		{ id: 'cold', label: variantLabel(HERO_RUN, 'a0')[lang], sub: r.coldSub, tps: cold.decode!.v, hot: false, burst: cold.tokStep?.v },
+		{ id: 'hot', label: variantLabel(HERO_RUN, 'a2')[lang], sub: r.hotSub, tps: hot.decode!.v, hot: true, burst: hot.tokStep?.v }
 	]);
 	const src = [HERO_RUN.src, cold.decode!.src, hot.decode!.src, cold.tokStep?.src, hot.tokStep?.src, cold.msStep?.src, hot.msStep?.src, HERO_RUN.conditionsSrc, 'TOK_PER_WORD: raport 06 §2.1.2'].filter(
 		(x): x is string => !!x
@@ -59,7 +59,7 @@
 			.join('; ')
 	);
 	const liveText = $derived(
-		fill(r.liveNote, { a0: fmtTps(cold.decode!.v, lang), a2: fmtTps(hot.decode!.v, lang), lo: num(hot.decode!.lo ?? hot.decode!.v, lang, 0), hi: num(hot.decode!.hi ?? hot.decode!.v, lang, 0) })
+		fill(r.liveNote, { a0: fmtTps(cold.decode!.v, lang), a2: fmtTps(hot.decode!.v, lang) })
 	);
 	const note = $derived(
 		[`${HERO_CARD.name} · ${HERO_MODEL} ${HERO_RUN.quant}`, fill(c.answer, vars), HERO_RUN.metric[lang], HERO_RUN.conditions[lang], liveText, gainWhy, burstText, r.stripNote, fill(r.textNote, vars)]
@@ -94,7 +94,7 @@
 			</a>
 		</div>
 		<div class="race">
-			<LiveRace {lanes} text={r.text} {lang} max={dial.max} redline={dial.redline} startDelay={0.9} prompt={r.prompt} summary={fill(r.summary, vars)} {onheat}>
+			<LiveRace {lanes} text={r.text} {lang} max={dial.max} redline={dial.redline} prompt={r.prompt} summary={fill(r.summary, vars)} {onheat}>
 				{#snippet meta()}
 					<span class="now">{HERO_MODEL} {HERO_RUN.quant} · {HERO_CARD.name}</span>
 					<SourceTip {lang} {src} {note} />
@@ -159,17 +159,17 @@
 	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
-		padding-block: clamp(6rem, 3rem + 7vh, 8rem) clamp(1.5rem, 1rem + 2vh, 2.5rem);
+		padding-block: clamp(5.5rem, 3rem + 5vh, 7rem) clamp(1.5rem, 1rem + 2vh, 2.5rem);
 		display: grid;
 		justify-items: center;
-		gap: clamp(1.75rem, 1rem + 3vh, 3rem);
+		gap: clamp(1.25rem, 0.5rem + 2.4vh, 2.4rem);
 		text-align: center;
 	}
 	/* two tiers: the steel line, then the focal heat line much larger (font-size = heat line) */
 	.title {
 		margin: 0;
 		font-family: var(--font-display);
-		font-size: min(10.4vw, 19svh, 9.2rem);
+		font-size: min(10.4vw, 15svh, 8.2rem);
 		font-weight: 840;
 		font-stretch: 118%;
 		line-height: 0.86;
