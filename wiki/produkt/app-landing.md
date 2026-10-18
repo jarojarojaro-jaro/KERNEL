@@ -1,8 +1,8 @@
 ---
 typ: produkt
 tags: [produkt, app, landing]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/app/REPORT.md:11-13,16-17,22-46,70,77-78; ~/KERNEL/app/design/DESIGN.md:119
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/app/REPORT.md:11-13,16-17,22-46,70,77-78; ~/KERNEL/app/design/DESIGN.md:119; ~/KERNEL/app/REPORT.md:238-260; ~/KERNEL/app/design/REDESIGN.md:154-169; ~/.omp/agent/sessions/-tmp/2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8/LandingWow.jsonl:1224
 status: aktualne
 ---
 # Strona (landing) PL/EN
@@ -17,6 +17,8 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 - `/legal/{terms,privacy,cookies,ai,imprint}/`: projekty z banerem „do weryfikacji przez prawnika”, dane spółki puste. Baner cookies: „Odrzucam” i „Akceptuję” równej wagi, nic nie ładuje się przed zgodą.
 - Weryfikacja: `svelte-check` 0 błędów (249 plików), 50 ścieżek → 200, axe-core 4.14 0 naruszeń (1280 i 390 px, oba motywy), Lighthouse mobile wydajność 96–98, pozostałe 100.
 - Wybór SvelteKit zamiast Astro: ten sam stos co web UI llama.cpp i przyszła aplikacja Tauri.
+
+**Rundy 6–8 (2026-10-16/18, commit `511fcf2`):** naprawiony `hydration_mismatch` ([[lekcja-hydration-blok-w-p]]); hero tylko z `transform` (QA 40/40); wartości końcowe liczników w HTML z SSR, odczyty na żywo nie przekraczają zmierzonej mediany; onboarding zaczyna się nagłówkiem, ciemny motyw domyślnie. Juror (WOW/oryginalność/szlif): r6 7/7/6, r7 7/7/6, r8 7/6/7 – cel 8/8/8 nieosiągnięty. Kontrole r8: svelte-check 0/0, axe 0, Lighthouse mobile `/pl/` 87, `/pl/wyniki/` 90, CLS 0, LCP 3.0–3.6 s ([[landing-qa]]).
 
 ## Powiązane
 - [[produkt/_hub|produkt]]

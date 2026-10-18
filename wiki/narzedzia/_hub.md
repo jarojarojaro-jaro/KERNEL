@@ -14,7 +14,7 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (18)
+## Notatki (19)
 
 - [[kld-canary|Bramka KLD i kanarki (kld_gate.py, kld_canary.sh, perturb_gguf.py)]] — Trzy narzędzia: `kld_gate.py` porównuje dwa logi `llama-perplexity --kl-divergence`, `perturb_gguf.py` robi celowo uszkodzone kopie GGUF, a `kld_canary.sh` sprawdza, że bramka łapie prawdziwe szkody.
 - [[det-probe|det_probe.py (sonda determinizmu)]] — Sprawdza, które zdarzenie serwera psuje powtarzalność greedy: wysyła to samo zapytanie bez cache przed i po innych zapytaniach i pokazuje, gdzie wyjścia się rozjeżdżają.
@@ -26,6 +26,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[llama-bx-diff|llama-bx-diff (pierwszy rozjeżdżający się węzeł)]] — Program z gałęzi `batch-invariant`: znajduje pierwszy węzeł grafu, którego wynik dla tokenu różni się między zwykłym dekodem (token po tokenie) a weryfikacją N tokenów w jednym batchu.
 - [[loo-py|loo.py (leave-one-out łatek)]] — Narzędzie leave-one-out serii `amd-opt`: plan (CPU, git), runner GPU, buildy z revertami i raport ze sparowanym 95% CI.
 - [[pm4-soak|pm4_soak.py (test wytrzymałościowy serwera)]] — Soak test działającego llama-server: wiele zapytań czatu o mieszanej długości, powtarzane zapytania greedy muszą się zgadzać, follow-upy ćwiczą cache promptu; kod wyjścia 1 przy błędzie lub rozjeździe.
+- [[landing-qa|QA landingu: `app/landing/scripts/qa/`]] — Cztery skrypty puppeteer-core po CDP (Chrome bez GPU, `.tools/chrome-swgl`, port 18499): hydracja, hero pod obciążeniem, axe i zrzuty ekranu.
 - [[reactor-monitor|REACTOR (monitor terminalowy)]] — Pełnoekranowy monitor GPU/CPU/LLM w terminalu dla serwera z RX 7900 XTX, w czystym Pythonie 3.12 (tylko stdlib) z 24-bitowymi kolorami ANSI.
 - [[run-llm-sh|run-llm.sh — start produkcyjnego serwera]] — Jeden skrypt, który uruchamia zoptymalizowany llama-server na RX 7900 XTX z naszymi ustawieniami dla każdego modelu.
 - [[samp-ab|samp_ab.py (A/B samplera)]] — Skrypt A/B szybkich ścieżek samplera: wysyła do działającego llama-server zapytania w stylu web UI i omp, wypisuje t/s dekodu i md5 wyjścia z ustalonym seedem.

@@ -1,8 +1,8 @@
 ---
 typ: research
 tags: [research, flash-attention, cuda]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/16c-kvq-cuda.md:1-211
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/product/research/16c-kvq-cuda.md:1-211; ~/KERNEL/product/research/16c-kvq-cuda.md:191-221,245-252; ~/qwen-opt/cloud/results/kvq-cuda-20261016/kld-c5/
 status: aktualne
 ---
 # Raport 16c: kvq na CUDA (E1)
@@ -14,6 +14,8 @@ status: aktualne
 - Korekta raportu 15d: MTP@64k na 3090 bez kvq to już 70.3 t/s, nie szacowane 52–55 t/s.
 - Wyniki: [[2026-10-16-kvq-cuda]]; decyzja: [[2026-10-16-kvq-cuda-zostaje]].
 - Dalej: rozdzielić D między warpy dla ≥ 32 kolumn, 8 warpów dla LFM D64.
+
+- **§9 (2026-10-18):** powtórka KLD Qwena na 40 960 tokenach – FAIL ogona, wyjątek `678473a27` dla decode 1 tokenu D256 q4_0 ([[2026-10-16-kvq-cuda-zostaje]]).
 
 ## Powiązane
 - [[research/_hub|research]]

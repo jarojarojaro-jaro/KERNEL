@@ -1,8 +1,8 @@
 ---
 typ: kernel
 tags: [kernele, flash-attention, kv]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058); ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,34-41,107; ~/KERNEL/product/research/15b-spekulacja-frontier.md:20,92,179; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54-55; ~/KERNEL/product/research/16c-kvq-cuda.md:7-15,190-198
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058); ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,34-41,107; ~/KERNEL/product/research/15b-spekulacja-frontier.md:20,92,179; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54-55; ~/KERNEL/product/research/16c-kvq-cuda.md:7-15,190-198; ~/KERNEL/product/research/16c-kvq-cuda.md:191-221,245-252; ~/qwen-opt/cloud/results/kvq-cuda-20261016/kld-c5/
 status: aktualne
 ---
 # FA `kvq`: atencja dekodowania na skwantyzowanym KV
@@ -24,14 +24,10 @@ Poprawność:
 
 Wyłączniki: 0011 brak (build), `GGML_HIP_KVQ_Q8`, `GGML_HIP_KVQ_FWHT`. Tylko gfx110x; RDNA4 wymaga portu (inny układ WMMA gfx12).
 
-## Luka na CUDA (raporty 15b, 15d) – zamknięta przez 16c
-- Upstream CUDA: vec czyta KV osobno dla każdej głowy Q, przy n ≥ 2 na Ampere MMA_F16 z konwersją K/V do f16 ([[fa-kv-kwantyzowane-cuda]]). 3090 tg64 base / fork przy 0 → 64k: Qwen 39.3 → 27.2, LFM 251.9 → 147.7 t/s.
-- XTX: kvq czyta KV raz na kafel 16 wierszy, `ceil(6·W/16)` kafli (W5 = 2, W8 = 3, W16 = 6); d32768 n1 28.1 vs n5 33.8 ms.
-
-## Port CUDA 16c (2026-10-16)
-- `fattn-kvq-mma.cu` (`f08dc78bb`, gałąź `kvq-cuda`, `GGML_CUDA_KVQ=0` wyłącza), cc ≥ 8.0, q4_0/q8_0, D 64/128/256, ≤ 16 tokenów.
-- 3090 tg64@64k: Qwen 28.61 → 39.14 (+36.8%), LFM 159.65 → 208.12 t/s (+30.4%); MTP@59k 70.33 → 89.75 t/s (+27.6%).
-- Jądro 64k: Qwen q4_0 705 → 116.5 µs, LFM q8_0 286 → 119.4 µs. Szczegóły: [[2026-10-16-kvq-cuda]], decyzja KLD: [[2026-10-16-kvq-cuda-zostaje]].
+## CUDA (raporty 15b, 15d, 16c)
+- Luka upstreamu: vec czyta KV osobno dla każdej głowy Q, przy n ≥ 2 na Ampere MMA_F16 z konwersją do f16 ([[fa-kv-kwantyzowane-cuda]]). Na XTX kvq czyta KV raz na kafel 16 wierszy (`ceil(6·W/16)` kafli).
+- Port 16c: `fattn-kvq-mma.cu` (`f08dc78bb`, `GGML_CUDA_KVQ=0` wyłącza), cc ≥ 8.0, ≤ 16 tokenów; 3090 tg64@64k Qwen 28.61 → 39.14 (+36.8%), LFM 159.65 → 208.12 (+30.4%), MTP@59k 70.33 → 89.75 t/s ([[2026-10-16-kvq-cuda]]).
+- Wyjątek n=1 (2026-10-18, `678473a27`): decode 1 tokenu D256 q4_0 domyślnie na vec (`GGML_CUDA_KVQ_N1_D256_Q4=1` włącza kvq) po FAIL ogona KLD (99.9% ×2.04, szum ×1.41). tg64@64k off/kvq/wyjątek 27.29 / 36.99 / 27.40, pp5@64k 103.18 / 139.27 / 141.83 t/s ([[2026-10-16-kvq-cuda-zostaje]]).
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

@@ -1,8 +1,8 @@
 ---
 typ: lekcja
 tags: [lekcje, kld, determinizm]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/16c-kvq-cuda.md:137-145,160-168; ~/qwen-opt/cloud/results/kvq-cuda-20261016/kld/
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/product/research/16c-kvq-cuda.md:137-145,160-168; ~/qwen-opt/cloud/results/kvq-cuda-20261016/kld/; ~/KERNEL/product/research/16c-kvq-cuda.md:207-210
 status: aktualne
 ---
 # Bramka KLD 2σ leży w szumie kolejności sumowania
@@ -12,6 +12,8 @@ status: aktualne
 Skutek: FAIL kvq dla Qwen ub1 (+2.53σ) nie odróżnia się od szumu; w tej samej serii dwie pary wyszły −2.0σ na korzyść kvq.
 
 Reguła: przy werdykcie bramki 2σ / ×1.25 dodawać kontrolę „to samo jądro, inny podział” i dłuższy tekst (`--chunks` ≥ 4) zanim zmiana zostanie odrzucona albo dostanie wyjątek.
+
+Powtórka 2026-10-18 (5 × 8192): ten sam efekt na ogonie – kvq vs kvq z innym podziałem 99.9% ×0.69, vec vs kvq-bpsm1 ×1.41; statystyka 99.9% opiera się na ~41 tokenach.
 
 ## Powiązane
 - [[lekcje/_hub|lekcje]]

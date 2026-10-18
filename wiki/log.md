@@ -44,6 +44,9 @@ Nowe: [[2026-10-16-magnitude-vs-fork]] (z danymi 9B na 5060 Ti), [[2026-10-16-ma
 ## [2026-10-18] ingest | Raport 16e (kwanty 27B, KLD) + incydent danych + Salad
 Nowe: [[2026-10-18-e1-kwanty-27b-kld]], [[raport-16e-kwanty-kld]], [[kld-po-polsku]], lekcje [[lekcja-unikalny-katalog-wynikow]], [[lekcja-build-przed-wynajmem]], [[lekcja-bootstrap-numpy]], [[lekcja-zabicie-skryptu-nie-serwera]], [[lekcja-limit-mocy-hosta]]. Zaktualizowane: [[swift-1-5]], [[rtx-3060]], [[rtx-5060-ti]], [[kwanty-gguf]], [[saluki]], [[bonsai]], [[raport-15e-kwantyzacja-nowa]], [[runpod]], [[raport-09-chmura-3060]] (dane nadpisane), [[lekcja-limit-cpu-kontenera]], [[lekcja-pkill-wlasna-powloka]], [[otwarte-decyzje-produktu]] (16 GB A3, 12 GB IQ3_XXS-mtp – rekomendacje, bez decyzji), [[salad]], [[firma-salad]], [[radeony-do-wynajecia]] (AMD w Salad niedostępne, brak XTX do wynajęcia).
 
+## [2026-10-18] ingest | 16c §9, 16j, landing r6–r8, wentylator XTX i restart
+16c §9: wyjątek kvq n=1 D256 q4_0 (`678473a27`) w [[fattn-kvq]], [[2026-10-16-kvq-cuda]], [[2026-10-16-kvq-cuda-zostaje]], [[bramka-kld-kanarki]], [[lekcja-kld-szum-kolejnosci]], [[raport-16c-kvq-cuda]]. 16j: nowe [[2026-10-18-magnitude-vulkan-xtx]], [[raport-16j-magnitude-vulkan-xtx]], [[lekcja-koszt-szerokosci-backendu]]; zaktualizowane [[magnitude]], [[firma-magnitude]], [[produkt-ryzyka]], [[raport-16i-magnitude]], [[2026-10-16-badamy-magnitude]]. Landing: [[lekcja-hydration-blok-w-p]], [[landing-qa]], [[app-landing]]. Ops: [[rx-7900-xtx]] (overdrive, krzywa wentylatora, Vulkan bez sudo), [[lekcja-wentylator-rdna3]], [[lekcja-tmp-po-restarcie]] (`/tmp/bx*` utracone, oznaczone w `zrodlo` notatek bit-exact).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

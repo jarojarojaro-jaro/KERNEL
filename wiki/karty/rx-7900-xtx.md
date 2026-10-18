@@ -1,8 +1,8 @@
 ---
 typ: karta
 tags: [karty, amd, rdna3]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:6-34,100-110; ~/KERNEL/qwen-opt/STATUS-NEXT.md:8-14; ~/KERNEL/qwen-opt/NOTES.md:126; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:117,239,305
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:6-34,100-110; ~/KERNEL/qwen-opt/STATUS-NEXT.md:8-14; ~/KERNEL/qwen-opt/NOTES.md:126; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:117,239,305; ~/qwen-opt/tools/fan.sh:1-45; /proc/cmdline; komunikat Main do WikiIngest 2026-10-18
 status: aktualne
 ---
 # AMD Radeon RX 7900 XTX (główna karta)
@@ -16,6 +16,8 @@ Zestaw: drugi GPU RTX 5060 Ti 16 GB, Ryzen 7 5700X (AVX2, bez AVX-512), 64 GB DD
 Wyniki (2026-10-15, `amd-opt`, spec_sweep): Qwen3.8-27B 109.0 t/s, Uncensored 115.5, LFM2.5 293.7, LFM Uncensored 267.3; pp4096 Qwen 1115, LFM 6175. Referencja Llama 2 7B Q4_0 (scoreboard): Vulkan tg128 190.9, ROCm 170.1.
 
 Rynek (raport 05, 2026-10): używana mediana €837, nowa $1,821; 0.40% w Steam; zero ofert na Vast, w chmurze tylko Salad (WSL2) i Hostkey (pre-order). Ustawienia: limit 285 W, wyłączone usypianie.
+
+**Chłodzenie (2026-10-18):** restart ~20:27 UTC z `amdgpu.ppfeaturemask=0xfff7ffff` (GRUB) włączył overdrive; `sudo ~/qwen-opt/tools/fan.sh max` ustawia krzywą 40% do 40 °C, 100% od 50 °C (po każdym starcie, wymaga sudo). Przed: pod ciągłym obciążeniem junction 86–87 °C, pamięć 89–90 °C przy wentylatorze 44%; po: 99% / 3454 RPM, junction 48 °C / pamięć 64 °C tuż po obciążeniu; odczyt sysfs pod pełnym obciążeniem po restarcie: 3402 RPM, junction 71 °C, pamięć 78 °C ([[lekcja-wentylator-rdna3]]). Vulkan bez sudo: `apt-get download libvulkan1 mesa-vulkan-drivers libllvm20 …` + `dpkg -x` do `~/.local/vk/root`, ICD ze ścieżką absolutną (RADV NAVI31, API 1.4.318; [[2026-10-18-magnitude-vulkan-xtx]]).
 
 ## Powiązane
 - [[karty/_hub|Karty]]

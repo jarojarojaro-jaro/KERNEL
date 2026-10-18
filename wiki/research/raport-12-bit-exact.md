@@ -2,7 +2,7 @@
 typ: research
 tags: [research, determinizm, spekulacja]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/12-bit-exact-spekulacja.md:1-13,82-112,144-197; ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,136-143; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:229-370; /tmp/bxv/summary.txt:71-103
+zrodlo: ~/KERNEL/product/research/12-bit-exact-spekulacja.md:1-13,82-112,144-197; ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,136-143; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:229-370; /tmp/bxv/summary.txt:71-103 (pliki `/tmp/bx*` utracone przy restarcie 2026-10-18, zob. lekcja-tmp-po-restarcie)
 status: aktualne
 ---
 # Raport 12: bitowo identyczna spekulacja

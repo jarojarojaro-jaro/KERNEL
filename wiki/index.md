@@ -64,32 +64,32 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (24)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (21)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (38)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (51)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (18)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (39)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (55)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (19)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (31)
+- [[research/_hub|research]] — Streszczenia raportów (32)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (24)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
 ## Ostatnio aktualizowane
 
+- 2026-10-18 [[raport-16j-magnitude-vulkan-xtx|Raport 16j: Magnitude przez Vulkan na 7900 XTX (E-X5)]]
+- 2026-10-18 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
 - 2026-10-18 [[raport-16e-kwanty-kld|Raport 16e: nowe kwanty 27B na 12–16 GB (E1 + E3 z 15e)]]
+- 2026-10-18 [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]]
+- 2026-10-18 [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]]
+- 2026-10-18 [[produkt-ryzyka|Największe ryzyka]]
+- 2026-10-18 [[app-landing|Strona (landing) PL/EN]]
+- 2026-10-18 [[landing-qa|QA landingu: `app/landing/scripts/qa/`]]
 - 2026-10-18 [[kld-po-polsku|KLD kwantów na polskim tekście (protokół 16e)]]
+- 2026-10-18 [[bramka-kld-kanarki|Bramka KLD z kanarkami]]
+- 2026-10-18 [[firma-magnitude|Magnitude (magnitudedev): najbliższy konkurent]]
 - 2026-10-18 [[lekcja-zabicie-skryptu-nie-serwera|Zabicie skryptu nie zabija serwera]]
+- 2026-10-18 [[lekcja-wentylator-rdna3|Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive]]
 - 2026-10-18 [[lekcja-unikalny-katalog-wynikow|Katalog wyników `<klasa>-<data>` nie jest unikalny: collect nadpisał dane raportu 09]]
-- 2026-10-18 [[lekcja-limit-mocy-hosta|Host Vast z kartą przyciętą do 120 W]]
-- 2026-10-18 [[lekcja-build-przed-wynajmem|Binarki budować lokalnie przed wynajmem]]
-- 2026-10-18 [[lekcja-bootstrap-numpy|`bootstrap.sh` bez `python3-numpy` psuje repack Bonsai]]
-- 2026-10-18 [[2026-10-18-e1-kwanty-27b-kld|2026-10-16/18: E1 – nowe kwanty Qwen3.8-27B na 12–16 GB (KLD, zadania, prędkość)]]
-- 2026-10-16 [[wsl2-rocm|ROCm w WSL2 (tech preview 10.1)]]
-- 2026-10-16 [[therock|TheRock: system budowania i wydań ROCm]]
-- 2026-10-16 [[rocr|ROCr (HSA runtime) i KFD]]
-- 2026-10-16 [[rocprof|rocprofv3 i profilowanie na gfx1100]]
-- 2026-10-16 [[rocm-vs-vulkan|ROCm czy Vulkan na RX 7900 XTX]]
-- 2026-10-16 [[rocm-stos|Stos ROCm na naszym serwerze]]
-- 2026-10-16 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
+- 2026-10-18 [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]]
 
-Razem 371 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
+Razem 378 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

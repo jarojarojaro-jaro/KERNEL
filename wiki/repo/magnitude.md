@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, konkurencja, autotuning]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15c-nowe-silniki.md:17-22,52-66,108-164,229-254,380; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:22-28,37,119-129; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,111-118,308-321
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/product/research/15c-nowe-silniki.md:17-22,52-66,108-164,229-254,380; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:22-28,37,119-129; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,111-118,308-321; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:9,17-32
 status: aktualne
 ---
 # Magnitude (silnik Seismic z autotunem 60 s)
@@ -21,6 +21,8 @@ Repo `magnitudedev/magnitude` @ `1f54d5b7` (2026-10-15), Apache-2.0, 6,944★ (2
 - Autotune w release: 67/67 domyślnych konfiguracji; gotowość 51.5 s (Qwen) / 62.5 s (LFM), z cache 5–10 s.
 - Kwanty: brak IQ2_S/IQ2_XXS/Q4_1/Q2_K (`weights.rs:2085`) → żaden 27B ≤ 16 GB; Q3_K/IQ3_S → q6k. LFM 64k OOM na 16 GB; „MemoryPressure HostRam” przy 31 GB RAM.
 - AMD tylko przez Vulkan (`docs/compatibility.md:150`). Pomiary: [[2026-10-16-magnitude-vs-fork]].
+
+Vulkan na gfx1100 (16j, 2026-10-18): działa (RADV 25.2.8, user-local ICD); pierwszy start 95.6 s (przygotowanie kerneli 70.7 s), z cache 23–26 s; autotune 67/67 i 21/21 kanoniczne defaulty, 0 pomiarów; na XTX ~2× wolniejszy od nas ([[2026-10-18-magnitude-vulkan-xtx]]).
 
 ## Powiązane
 - [[repo/_hub|repo]]
