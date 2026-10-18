@@ -283,7 +283,19 @@
 
 <div class="live" use:visible={(v) => (onScreen = v)}>
 	<p class="sr-only">{summary}</p>
-	{#if prompt}<p class="prompt" class:on={playing} aria-hidden="true"><span class="caret">›</span>{prompt}</p>{/if}
+	<!-- race header: the question (chip) on the left, model · card · source · live · pause on the right -->
+	<div class="controls">
+		{#if prompt}<p class="prompt" class:on={playing} aria-hidden="true"><span class="caret">›</span>{prompt}</p>{/if}
+		{#if meta}<div class="meta">{@render meta()}</div>{/if}
+		<span class="state" class:on={playing}>{playing ? t.live : t.paused}</span>
+		<button type="button" class="ctl" onclick={toggle} aria-label={playing ? t.pause : t.resume} aria-pressed={!playing}>
+			{#if playing}
+				<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor" /></svg>
+			{:else}
+				<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
+			{/if}
+		</button>
+	</div>
 	<div class="lanes" aria-hidden="true">
 		{#each lanes as l, i (l.id)}
 			<div class="lane" class:hot={l.hot} class:on={playing} class:done={l.hot && finished}>
@@ -324,17 +336,6 @@
 			</p>
 		{/if}
 	</div>
-	<div class="controls">
-		{#if meta}<div class="meta">{@render meta()}</div>{/if}
-		<span class="state" class:on={playing}>{playing ? t.live : t.paused}</span>
-		<button type="button" class="ctl" onclick={toggle} aria-label={playing ? t.pause : t.resume} aria-pressed={!playing}>
-			{#if playing}
-				<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 3h3v10H4zM9 3h3v10H9z" fill="currentColor" /></svg>
-			{:else}
-				<svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M4 2.5v11l9-5.5z" fill="currentColor" /></svg>
-			{/if}
-		</button>
-	</div>
 </div>
 
 <style>
@@ -344,10 +345,14 @@
 	}
 	/* the question both lanes answer, set like a typed prompt */
 	.prompt {
-		display: flex;
-		justify-content: center;
+		margin: 0 auto 0 0;
+		display: inline-flex;
 		align-items: baseline;
-		gap: 0.6rem;
+		gap: 0.5rem;
+		padding: 0.3rem 0.75rem;
+		border: 1px solid rgb(255 122 26 / 0.35);
+		border-radius: var(--r-pill);
+		background: rgb(255 122 26 / 0.06);
 		font-family: var(--font-mono);
 		font-size: var(--fs-xs);
 		letter-spacing: 0.02em;
@@ -481,14 +486,18 @@
 		letter-spacing: 0.1em;
 	}
 	/* the answer: always complete in layout; unwritten tokens are a dim preview */
+	/* four lines of the answer, following the newest one (transform only) */
 	.win {
 		position: relative;
 		overflow: clip;
+		height: calc(4 * 1.55em);
+		font-size: clamp(1rem, 0.85rem + 0.4vw, 1.22rem);
+		mask-image: linear-gradient(transparent, #000 0.9em);
 	}
 	.feed {
 		margin: 0;
 		transition: transform 0.2s var(--ease-out);
-		font-size: clamp(1rem, 0.85rem + 0.4vw, 1.22rem);
+		font-size: inherit;
 		line-height: 1.55;
 		letter-spacing: -0.005em;
 		color: rgb(237 234 227 / 0.17);
@@ -584,11 +593,16 @@
 	.tt {
 		grid-column: 3;
 		justify-self: end;
-		font-family: var(--font-mono);
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-weight: 650;
 		font-size: var(--fs-sm);
 		font-variant-numeric: tabular-nums;
 		color: var(--text);
 		white-space: nowrap;
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-weight: 650;
 	}
 	.hot .tt {
 		color: var(--heat-4);
@@ -628,7 +642,7 @@
 	.controls {
 		display: flex;
 		flex-wrap: wrap;
-		justify-content: center;
+		justify-content: flex-end;
 		align-items: center;
 		gap: var(--sp-3);
 	}

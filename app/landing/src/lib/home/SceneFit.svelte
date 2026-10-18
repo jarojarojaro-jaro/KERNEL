@@ -529,13 +529,16 @@
 			font-size: var(--fs-2xs);
 			margin-right: 0;
 		}
+		/* legend under the axis; the bar keeps the model name */
 		.legend {
-			order: 0;
 			display: grid;
 			gap: 0.3rem;
 			margin: 0;
 		}
-		.bname,
+		.bname {
+			font-size: 0.95rem;
+		}
+		.bname .q,
 		.bsize,
 		.free span {
 			display: none;

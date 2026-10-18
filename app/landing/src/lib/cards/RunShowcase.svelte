@@ -174,7 +174,7 @@
 						{#each bars as v (v.key)}
 							<div>
 								<dt>{variantLabel(run, v.key)[lang]}</dt>
-								<dd><span class="big mono">{fmtTps(v.decode!.v, lang)}</span> <span class="u">t/s</span></dd>
+								<dd><span class="big fig">{fmtTps(v.decode!.v, lang)}</span> <span class="u">t/s</span></dd>
 							</div>
 						{/each}
 					</dl>
@@ -221,7 +221,7 @@
 				<h3 id="race-{run.model}" class="h hx-h">{t.race}</h3>
 				<p class="fine">{t.raceLede}</p>
 			</div>
-			<RaceLanes {lanes} text={t.raceText} {lang} loop={false} {summary} runKey="{card.id}-{run.model}" tacho="hot" />
+			<RaceLanes {lanes} text={t.raceText} {lang} loop={false} {summary} runKey="{card.id}-{run.model}" tacho="all" />
 		</div>
 	{/if}
 
@@ -240,7 +240,7 @@
 					{@const top = Math.max(m.b.v, m.o.v)}
 					<li class="cell">
 						<p class="cl">{m.label}</p>
-						<p class="cv mono">
+						<p class="cv fig">
 							<span class="cold-text">{show(m.k, m.b, false)}</span>
 							<span class="arr" aria-hidden="true">→</span>
 							<span class="hi" class:hx-num={m.v === 'better'}>{show(m.k, m.o)}</span>
@@ -256,7 +256,7 @@
 					{@const kv = verdict('kernels', run.kernels.up.v, run.kernels.ours.v)}
 					<li class="cell">
 						<p class="cl">{t.kernels}</p>
-						<p class="cv mono">
+						<p class="cv fig">
 							<span class="cold-text">{num(run.kernels.up.v, lang, 0)}</span>
 							<span class="arr" aria-hidden="true">→</span>
 							<span class="hi" class:hx-num={kv === 'better'}>{num(run.kernels.ours.v, lang, 0)}</span>
@@ -307,7 +307,7 @@
 				{#each formats as f (f.file)}
 					<li>
 						<p class="fn">{lang === 'en' ? f.file.replace('oficjalny', 'official').replace('społeczność', 'community') : f.file}</p>
-						<p class="mono fv"><span class="cold-text">{fmtTps(f.up!.v, lang)}</span> → <span class="hi">{fmtTps(f.ours!.v, lang)}</span>{'\u00a0'}t/s</p>
+						<p class="fv fig"><span class="cold-text">{fmtTps(f.up!.v, lang)}</span> → <span class="hi">{fmtTps(f.ours!.v, lang)}</span>{'\u00a0'}t/s</p>
 						<p class="mono fk">{t.formatsKld} {num(f.kld.v, lang, 3)}{#if f.kld.v > 1}<span class="bad"> · {t.formatsBad}</span>{/if}</p>
 						{#if f.md5Same}<div class="frow"><span class="badge mono">{t.md5Same}</span></div>{/if}
 					</li>

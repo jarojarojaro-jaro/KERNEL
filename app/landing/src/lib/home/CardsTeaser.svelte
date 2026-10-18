@@ -6,7 +6,7 @@
 	 */
 	import { heatOf } from '$lib/cards/explorer';
 	import { headline } from '$lib/cards/explorer';
-	import GpuArt from '$lib/cards/GpuArt.svelte';
+	import GpuArt, { artSpec } from '$lib/cards/GpuArt.svelte';
 	import { tilt } from '$lib/fx/actions';
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
@@ -25,6 +25,9 @@
 		return [{ card, run: d.run, gain: d.ratio, src: d.run.gain?.total?.src ?? d.run.src, before: decode(d.before), ours: decode(d.ours), model: MODEL_INFO[d.run.model].name }];
 	});
 	let hover = $state<string | null>(null);
+	/** Each render fills at least ~80% of its frame (board + bracket, 640-unit viewBox); longer
+	 * boards stay longer, so the real length order survives. Transform only: no layout change. */
+	const artScale = (label: string, vendor: string, vram: number | null) => Math.max(1, (0.8 * 640) / (artSpec(label, vendor, vram).len + 22)).toFixed(3);
 </script>
 
 <section id="cards" class="cards heat-top" aria-labelledby="cards-title">
@@ -41,7 +44,7 @@
 				<li style="--th:{heatOf(t.gain)}">
 					<!-- the same product tile as the cards explorer gallery: render, identity, gain -->
 					<article class="tile" use:tilt={{ max: 5 }} onpointerenter={() => (hover = t.card.id)} onpointerleave={() => (hover = null)} onfocusin={() => (hover = t.card.id)} onfocusout={() => (hover = null)}>
-						<div class="art"><GpuArt label={t.card.short} vendor={t.card.vendor} vram={t.card.vramGB} heat={heatOf(t.gain)} live={hover === t.card.id} flat /></div>
+						<div class="art" style="--as:{artScale(t.card.short, t.card.vendor, t.card.vramGB)}"><GpuArt label={t.card.short} vendor={t.card.vendor} vram={t.card.vramGB} heat={heatOf(t.gain)} live={hover === t.card.id} flat /></div>
 						<div class="body">
 							<p class="pre"><span class="dot" aria-hidden="true"></span>{prefix}</p>
 							<h3 class="short"><a class="stretch" href={cardsHref(lang, t.card.id)}>{t.card.short}</a></h3>
@@ -120,7 +123,7 @@
 	.tile {
 		position: relative;
 		display: grid;
-		grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
 		align-items: center;
 		gap: var(--sp-3) var(--sp-4);
 		height: 100%;
@@ -161,6 +164,9 @@
 	.art {
 		width: 100%;
 		user-select: none;
+		transform: scale(var(--as, 1));
+		/* room for the scaled render (viewBox 640×300: height = 47% of width) */
+		margin-block: calc((var(--as, 1) - 1) * 23.5%);
 	}
 	.body {
 		display: grid;

@@ -50,7 +50,7 @@
 							{#each callouts as k, i (k.id)}<i class:on={i < found}></i>{/each}
 							<b>{found}/{callouts.length}</b>
 						</span>
-						<SourceTip {lang} src={specSrc} note={hwNote} />
+						<span class="rsrc"><SourceTip {lang} src={specSrc} note={hwNote} /></span>
 						<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 					</div>
 			</div>
@@ -367,8 +367,16 @@
 				transform: none;
 			}
 		}
+		/* the pill shrinks to the screen; the source chip gets its own line */
 		.readout {
-			grid-template-columns: auto minmax(3rem, 1fr) auto auto auto;
+			grid-template-columns: auto minmax(0, 1fr) auto auto;
+			gap: var(--sp-3);
+			border-radius: var(--r-lg);
+		}
+		.rsrc {
+			grid-column: 1 / -1;
+			grid-row: 2;
+			justify-self: start;
 		}
 		.rn {
 			display: none;

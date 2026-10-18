@@ -105,7 +105,7 @@
 <section id="engine" class="engine heat-top" aria-labelledby="engine-title">
 	<div class="atmo" aria-hidden="true"></div>
 	<div class="inner">
-		<h2 id="engine-title" class="statement"><span class="t1">{titleParts[0]}</span> <span class="t2">{titleParts[1] ?? ''}</span></h2>
+		<h2 id="engine-title" class="statement"><span class="t1">{titleParts[0]}</span> <span class="t2"><span class="ul">{titleParts[1] ?? ''}</span></span></h2>
 
 		<div class="grid">
 			<!-- (a) the stack: model → card, lit layer by layer -->
@@ -238,11 +238,14 @@
 	}
 	.t2 {
 		display: block;
-		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 35%, var(--heat-4) 70%, var(--heat-5));
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
-		filter: drop-shadow(0 0 0.3em rgb(255 122 26 / 0.3));
+		color: var(--text-hi);
+	}
+	/* heat in the underline, not the letters (gradient headlines are for the hero and the finale) */
+	.ul {
+		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 45%, var(--heat-4)) no-repeat 0 92% / 100% 0.07em;
+		-webkit-box-decoration-break: clone;
+		box-decoration-break: clone;
+		padding-bottom: 0.06em;
 	}
 	.grid {
 		display: grid;

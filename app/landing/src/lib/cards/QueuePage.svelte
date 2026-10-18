@@ -30,7 +30,7 @@
 		{@const scale = Math.ceil((e.decode.hi * 1.6) / 10) * 10}
 		<div class="hero-est">
 			<EstTag text={t.estimateTitle} />
-			<p class="he-n mono"><span class="ap">≈</span>{num(e.decode.lo, lang, 0)}–{num(e.decode.hi, lang, 0)}<span class="u">t/s</span></p>
+			<p class="he-n fig"><span class="ap">≈</span>{num(e.decode.lo, lang, 0)}–{num(e.decode.hi, lang, 0)}<span class="u">t/s</span></p>
 			<p class="he-l">{t.estimateBefore} · {e.model.name} {e.model.quant} · {t.estimateAfter}: {cardsCopy[lang].gallery.soon}</p>
 			<div class="range" role="img" aria-label="{t.estimateBefore}: {num(e.decode.lo, lang, 0)}–{num(e.decode.hi, lang, 0)} t/s">
 				<div class="rg" style="left:{(e.decode.lo / scale) * 100}%; width:{((e.decode.hi - e.decode.lo) / scale) * 100}%"></div>
@@ -44,10 +44,10 @@
 
 <section class="wrap fp" aria-label={t.fingerprint}>
 	<dl class="strip hx-surface">
-		<div><dt>{t.hw.vram}</dt>{#if gpu.vram}<dd>{gpu.vram}<span>GB</span></dd>{:else}<dd class="txt">{gpu.unified ? t.hw.unified : '—'}</dd>{/if}</div>
+		<div><dt>{t.hw.vram}</dt>{#if gpu.vram}<dd class="fig">{gpu.vram}<span>GB</span></dd>{:else}<dd class="txt">{gpu.unified ? t.hw.unified : '—'}</dd>{/if}</div>
 		<div>
 			<dt>{t.hw.bw}</dt>
-			<dd>{num(gpu.bw, lang, 0)}<span>GB/s</span></dd>
+			<dd class="fig">{num(gpu.bw, lang, 0)}<span>GB/s</span></dd>
 			{#if gpu.bwSource === 'spec'}<dd class="tag mono">{t.vendorSpec}</dd>{/if}
 		</div>
 		<div><dt>{t.hw.arch}</dt><dd class="txt">{gpu.arch}</dd></div>

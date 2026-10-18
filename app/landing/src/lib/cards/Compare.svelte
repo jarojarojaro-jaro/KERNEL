@@ -129,7 +129,7 @@
 		{#each sides as s (s.key)}
 			<div class="sc" class:hot={lead?.hi.key === s.key}>
 				<span class="sc-n hx-h">{s.card.short}</span>
-				<span class="sc-v mono">{#if s.d}<Odometer value={roundTo(s.d.ours.decode!.v, 1)} decimals={1} {lang} duration={1100} />{/if}<span class="u">t/s</span></span>
+				<span class="sc-v fig">{#if s.d}<Odometer value={roundTo(s.d.ours.decode!.v, 1)} decimals={1} {lang} duration={1100} />{/if}<span class="u">t/s</span></span>
 				{#if s.d}<span class="sc-lab">{variantLabel(s.run, s.run.ours)[lang]}</span><span class="sc-bar" style="--f:{s.d.ours.decode!.v / top}" aria-hidden="true"></span>{/if}
 			</div>
 		{/each}
@@ -153,11 +153,11 @@
 					{#if s.w}
 						<div>
 							<dt>{t.words}</dt>
-							<dd class="mono">{fmtSec(s.w.v, lang)}</dd>
+							<dd class="fig">{fmtSec(s.w.v, lang)}</dd>
 						</div>
 					{/if}
-					{#if s.d.ours.ttft}<div><dt>{t.ttft}</dt><dd class="mono">{fmtSec(s.d.ours.ttft.v, lang)}</dd></div>{/if}
-					{#if s.d.ours.vram}<div><dt>{t.vram}</dt><dd class="mono">{fmtGB(s.d.ours.vram.v, s.d.ours.vram.unit, lang).text} / {s.card.vramGB}{'\u00a0'}GB</dd></div>{/if}
+					{#if s.d.ours.ttft}<div><dt>{t.ttft}</dt><dd class="fig">{fmtSec(s.d.ours.ttft.v, lang)}</dd></div>{/if}
+					{#if s.d.ours.vram}<div><dt>{t.vram}</dt><dd class="fig">{fmtGB(s.d.ours.vram.v, s.d.ours.vram.unit, lang).text} / {s.card.vramGB}{'\u00a0'}GB</dd></div>{/if}
 				</dl>
 				<p class="foot">
 					<SourceTip {lang} src={[s.d.ours.decode!.src, s.d.before.decode!.src, ...(s.w ? [s.w.src] : []), s.run.conditionsSrc]} note="{s.run.conditions[lang]} · {s.run.metric[lang]}{s.d.ours.vram?.unit === 'GiB' ? ` · ${tc.gibNote}` : ''}" />

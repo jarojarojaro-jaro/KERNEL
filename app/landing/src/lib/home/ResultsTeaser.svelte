@@ -153,11 +153,10 @@
 		background: var(--before);
 		transform: scaleX(var(--a));
 	}
-	/* heat by the size of the speed-up (heatOf): 1,4× glows less than 2,0× */
+	/* one heat colour; the glow grows with the speed-up (heatOf) */
 	.bar-b {
 		transform: scaleX(var(--b));
 		background: var(--heat-ramp-hot);
-		filter: saturate(calc(0.3 + 0.7 * var(--th))) brightness(calc(0.72 + 0.28 * var(--th)));
 		box-shadow: 0 0 calc(4px + 12px * var(--th)) rgb(255 122 26 / calc(0.2 + 0.4 * var(--th)));
 	}
 	@media (prefers-reduced-motion: no-preference) {
@@ -177,9 +176,14 @@
 		justify-content: flex-end;
 		align-items: baseline;
 		gap: 0.4rem;
-		font-family: var(--font-mono);
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-weight: 650;
 		font-size: var(--fs-sm);
 		white-space: nowrap;
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-weight: 650;
 	}
 	.va {
 		color: var(--before);

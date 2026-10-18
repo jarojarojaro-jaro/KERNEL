@@ -158,7 +158,7 @@
 	}
 	@keyframes head-flare {
 		25% {
-			filter: brightness(1.45) drop-shadow(0 0 0.25em rgb(255 122 26 / 0.85));
+			filter: brightness(1.18) drop-shadow(0 0 24px rgb(255 122 26 / 0.35));
 		}
 	}
 	.inner {
@@ -195,9 +195,8 @@
 		margin-bottom: 0.32em;
 	}
 	.title :global(.kin--heat .ch) {
-		text-shadow:
-			0 0 0.18em rgb(255 122 26 / 0.35),
-			0 0 0.6em rgb(226 64 28 / 0.25);
+		/* one soft bloom (≈24px, 35%): the letters stay crisp */
+		text-shadow: 0 0 24px rgb(255 122 26 / 0.35);
 	}
 	/* ---- CTAs ---- */
 	.actions {

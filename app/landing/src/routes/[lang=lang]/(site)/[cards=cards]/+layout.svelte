@@ -91,6 +91,28 @@
 		height: 2px;
 		border-radius: 1px;
 	}
+	/*
+	 * Headline figures (78,0 · 34,5 s · 24 GB): the display face with tabular, lining figures, as on
+	 * the home page; rolling odometers inside take the same face. Units stay in the mono metadata face.
+	 */
+	.explorer :global(.fig.fig),
+	.explorer :global(.fig .odo),
+	.explorer :global(.hb .val .odo) {
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-stretch: 108%;
+		letter-spacing: -0.025em;
+	}
+	.explorer :global(.fig.fig),
+	.explorer :global(.hb .val .odo) {
+		font-weight: 720;
+	}
+	.explorer :global(.fig > span:not(.odo):not(.cold-text):not(.hot):not(.hi):not(.arr)) {
+		font-family: var(--font-mono);
+		font-stretch: 100%;
+		font-weight: 400;
+		letter-spacing: 0.02em;
+	}
 	/* lit numbers */
 	.explorer :global(.hx-num.hx-num) {
 		color: var(--hx-ink);

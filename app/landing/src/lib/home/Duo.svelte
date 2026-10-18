@@ -1,8 +1,8 @@
 <script lang="ts">
 	/**
-	 * Two-width headline: the copy's `|` splits a condensed lead (wdth 75, lighter) from a wide
-	 * payoff (wdth 125, heavy). The width contrast is the brief's kinetic device; when the heading
-	 * scrolls in, the payoff stretches from 75 to 125 (CSS only, reduced motion = final state).
+	 * Two-line headline: the copy's `|` splits the lead from the payoff, both in the same heavy cut.
+	 * The payoff carries an ember underline (heat in the divider, not the letters); only `burn`
+	 * headings (the final section) set the payoff itself in the heat gradient with a bloom.
 	 */
 	import { reveal } from '$lib/fx/actions';
 
@@ -12,13 +12,14 @@
 		id,
 		size = 'giga',
 		/** 'duo' = condensed lead + wide payoff (kept for 2–3 key moments); 'plain' = one cut, one width. */
-		mode = 'duo'
-	}: { text: string; tag?: 'h1' | 'h2' | 'h3'; id?: string; size?: 'giga' | 'scene' | 'mega' | 'sub'; mode?: 'duo' | 'plain' } = $props();
+		mode = 'duo',
+		burn = false
+	}: { text: string; tag?: 'h1' | 'h2' | 'h3'; id?: string; size?: 'giga' | 'scene' | 'mega' | 'sub'; mode?: 'duo' | 'plain'; burn?: boolean } = $props();
 	const parts = $derived(text.split('|'));
 </script>
 
 <svelte:element this={tag} {id} class="duo duo--{size} duo--{mode}" use:reveal={{ threshold: 0.4 }}>
-	{#if mode === 'plain'}{parts.join(' ')}{:else if parts.length > 1}<span class="lo">{parts[0]}</span>{' '}<span class="hi">{parts[1]}</span>{:else}{text}{/if}
+	{#if mode === 'plain'}{parts.join(' ')}{:else if parts.length > 1}<span class="lo">{parts[0]}</span>{' '}<span class="hi" class:burn><span class="ul">{parts[1]}</span></span>{:else}{text}{/if}
 </svelte:element>
 
 <style>
@@ -56,26 +57,41 @@
 		letter-spacing: -0.035em;
 		color: var(--text-hi);
 	}
-	/* the payoff burns: heat ramp drifting slowly through the letters, with an ember glow */
 	.hi {
 		display: block;
 		font-weight: 800;
 		font-stretch: 104%;
 		letter-spacing: -0.035em;
+		color: var(--text-hi);
+		transform-origin: 0 50%;
+	}
+	/* heat in the underline: an ember stroke under the payoff, following every wrapped line */
+	.ul {
+		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 45%, var(--heat-4)) no-repeat 0 92% / 100% 0.075em;
+		-webkit-box-decoration-break: clone;
+		box-decoration-break: clone;
+		padding-bottom: 0.06em;
+	}
+	/* the final section: the payoff itself burns, heat ramp drifting through the letters */
+	.hi.burn {
 		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 30%, var(--heat-4) 55%, var(--heat-5) 70%, var(--heat-3) 100%) 0 0 / 200% 100%;
 		-webkit-background-clip: text;
 		background-clip: text;
 		color: transparent;
-		filter: drop-shadow(0 0 0.35em rgb(255 122 26 / 0.3));
-		text-shadow: none;
-		transform-origin: 0 50%;
+		filter: drop-shadow(0 0 24px rgb(255 122 26 / 0.35));
+	}
+	.hi.burn .ul {
+		background: none;
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		.hi {
+		.hi.burn {
 			animation: hi-drift 7s ease-in-out infinite alternate;
 		}
 		/* resting state final; entering view replays a stretch-in (transform only, no layout shift) */
 		:global(html.js) .duo:global([data-in]) .hi {
+			animation: hi-in 1.1s var(--ease-out) 0.15s backwards;
+		}
+		:global(html.js) .duo:global([data-in]) .hi.burn {
 			animation:
 				hi-in 1.1s var(--ease-out) 0.15s backwards,
 				hi-drift 7s ease-in-out infinite alternate;

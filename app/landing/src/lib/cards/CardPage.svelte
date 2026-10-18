@@ -160,12 +160,12 @@
 			<div class="hl-n">
 				<span class="b">
 					<span class="lbl">{variantLabel(d.run, d.run.before)[lang]}</span>
-					<span class="v cold"><Odometer value={cold} decimals={1} {lang} duration={0} /></span>
+					<span class="v cold fig"><Odometer value={cold} decimals={1} {lang} duration={0} /></span>
 				</span>
 				<span class="arrow" aria-hidden="true">→</span>
 				<span class="b">
 					<span class="lbl">{variantLabel(d.run, d.run.ours)[lang]}</span>
-					<span class="v hot"><Odometer value={roundTo(tp, 1)} decimals={1} {lang} duration={0} label={variantLabel(d.run, d.run.ours)[lang]} /><span class="u">t/s</span></span>
+					<span class="v hot fig"><Odometer value={roundTo(tp, 1)} decimals={1} {lang} duration={0} label={variantLabel(d.run, d.run.ours)[lang]} /><span class="u">t/s</span></span>
 				</span>
 			</div>
 			<div class="hl-foot">
@@ -198,9 +198,9 @@
 
 <section class="wrap fp" aria-label={t.fingerprint}>
 	<dl class="strip hx-surface">
-		<div><dt>{t.hw.vram}</dt><dd>{card.vramGB}<span>GB</span></dd></div>
-		<div><dt>{t.hw.bw}</dt><dd>{num(card.bwGBs.v, lang, 0)}<span>GB/s</span></dd></div>
-		<div><dt>{t.hw.power}</dt><dd>{num(card.powerW.v, lang, 0)}<span>W</span></dd></div>
+		<div><dt>{t.hw.vram}</dt><dd class="fig">{card.vramGB}<span>GB</span></dd></div>
+		<div><dt>{t.hw.bw}</dt><dd class="fig">{num(card.bwGBs.v, lang, 0)}<span>GB/s</span></dd></div>
+		<div><dt>{t.hw.power}</dt><dd class="fig">{num(card.powerW.v, lang, 0)}<span>W</span></dd></div>
 		<div><dt>{t.hw.arch}</dt><dd class="txt">{card.arch}</dd></div>
 		{#if card.pcie}<div><dt>{t.hw.pcie}</dt><dd class="txt">{card.pcie}</dd></div>{/if}
 	</dl>

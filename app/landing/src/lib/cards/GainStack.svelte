@@ -52,7 +52,7 @@
 		<li>
 			<span class="k base"></span>
 			<span class="t">{labels.before}</span>
-			<span class="v mono cold-text">{fmtTps(before.v, lang)}{'\u00a0'}t/s</span>
+			<span class="v fig cold-text">{fmtTps(before.v, lang)}{'\u00a0'}t/s</span>
 		</li>
 		<li>
 			<span class="k" class:flags={flagsUp} class:loss={!flagsUp}></span>

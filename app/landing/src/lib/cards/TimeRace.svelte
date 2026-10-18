@@ -70,7 +70,7 @@
 					</div>
 				{/if}
 			</div>
-			<p class="target mono">{num(l.seconds, lang)}<span>s</span></p>
+			<p class="target fig">{num(l.seconds, lang)}<span>s</span></p>
 		</div>
 	{/each}
 </div>

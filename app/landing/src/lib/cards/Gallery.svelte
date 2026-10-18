@@ -169,9 +169,9 @@
 									{#if d?.ratio}
 										<div class="stat hx-bt">
 											<p class="x"><Ratio value={d.ratio} {lang} size="md" replay={replay[e.id] ?? 0} /> <span class="w">{t.faster}</span></p>
-											<p class="tps mono">
-												<span class="m">{MODEL_STYLE[d.run.model].short}</span>
-												<span><span class="cold-text">{fmtTps(d.before.decode!.v, lang)}</span> → <span class="hot hx-num">{fmtTps(d.ours.decode!.v, lang)}</span>{NB}t/s</span>
+											<p class="tps">
+												<span class="m mono">{MODEL_STYLE[d.run.model].short}</span>
+												<span class="fig"><span class="cold-text">{fmtTps(d.before.decode!.v, lang)}</span> → <span class="hot hx-num">{fmtTps(d.ours.decode!.v, lang)}</span>{NB}t/s</span>
 											</p>
 										</div>
 									{/if}
@@ -422,11 +422,11 @@
 	.measured li {
 		display: grid;
 	}
-	/* compact product tile: small render left, identity and numbers right */
+	/* product tile: the card's render on top (80 % of the tile), identity and numbers below */
 	.tile {
 		position: relative;
 		display: grid;
-		grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+		grid-template-columns: minmax(0, 1fr);
 		align-items: center;
 		gap: var(--sp-3) var(--sp-4);
 		padding: var(--sp-4);
@@ -458,7 +458,8 @@
 		outline-offset: 3px;
 	}
 	.tile-art {
-		width: 100%;
+		width: 80%;
+		justify-self: center;
 		user-select: none;
 	}
 	.tile-body {
@@ -687,6 +688,10 @@
 			grid-template-columns: 36% minmax(0, 1fr);
 			gap: var(--sp-2) var(--sp-3);
 			padding: var(--sp-3);
+		}
+		/* phones: rows, so several cards fit on one screen; the render fills its column */
+		.tile-art {
+			width: 100%;
 		}
 		.filter-row :global(.caps) {
 			flex-wrap: nowrap;

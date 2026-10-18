@@ -65,6 +65,9 @@
 		letter-spacing: 0.04em;
 	}
 	.val {
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-weight: 650;
 		font-size: var(--fs-xl);
 		color: var(--text-hi);
 		white-space: nowrap;

@@ -2,8 +2,8 @@
 	/**
 	 * A speed-up factor in the site's one speed-up style (showcase.css `.speedup`: heat-gradient
 	 * display numerals in Mona Sans; below ×1 it is steel, `.speedup--down`), text from format.ts
-	 * `fmtRatio`. The heat scales with the gain (`heatOf`): ×2,0 burns white-hot and glows, ×1,05
-	 * is a dim ember. At rest it always shows the measured value (never a half-counted one). Changing
+	 * `fmtRatio`. Every gain has the same heat colour; its size shows through size, weight and glow
+	 * (`heatOf`): ×2,0 big and lit, ×1,05 smaller and lighter. At rest it always shows the measured value (never a half-counted one). Changing
 	 * `replay` counts it up once from ×1 to the value; a throttled frame loop (hidden tab) still lands
 	 * on the value. Reduced motion ignores it.
 	 */
@@ -53,7 +53,7 @@
 	});
 </script>
 
-<span class="speedup rx rx--{size}" class:speedup--down={value < 1} style="--rh:{heatOf(value)}">{fmtRatio(shown, lang)}</span>
+<span class="speedup rx rx--{size}" class:speedup--down={value < 1} style="--rm:{heatOf(value)}">{fmtRatio(shown, lang)}</span>
 
 <style>
 	.rx {
@@ -61,36 +61,30 @@
 		font-family: var(--font-display);
 		font-variant-numeric: normal;
 		font-feature-settings: normal;
+		/*
+		 * One heat colour for every gain (the full ramp; --rh pins the shared .speedup mix to it).
+		 * The magnitude (--rm = heatOf) shows through size, weight and glow: ×2,0 is big, heavy and
+		 * lit, ×1,05 smaller and lighter, never muted.
+		 */
+		--rh: 1;
+		font-size: calc(var(--rx-fs) * (0.8 + var(--rm, 1) * 0.2));
+		font-weight: calc(660 + var(--rm, 1) * 200);
 	}
-	/*
-	 * Heat by magnitude: each stop of the hot ramp is mixed with a dim copper by --rh (heatOf), and
-	 * the glow grows with it. Even the coolest end stays >= 4.5:1 on the dark panels.
-	 */
 	.rx:not(.speedup--down) {
-		background: linear-gradient(
-			90deg,
-			color-mix(in oklab, var(--heat-2) calc(var(--rh) * 100%), #b4502f),
-			color-mix(in oklab, var(--heat-3) calc(var(--rh) * 100%), #c25d33) 38%,
-			color-mix(in oklab, var(--heat-4) calc(var(--rh) * 100%), #cb6a3a) 72%,
-			color-mix(in oklab, var(--heat-5) calc(var(--rh) * 100%), #d27845)
-		);
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
-		filter: drop-shadow(0 0 calc(var(--rh) * 0.25em) rgb(255 122 26 / calc(var(--rh) * 0.5)));
+		filter: drop-shadow(0 0 calc(var(--rm) * 0.22em) rgb(255 122 26 / calc(0.1 + var(--rm) * 0.4)));
 	}
 	.rx--sm {
-		font-size: var(--fs-lg);
+		--rx-fs: var(--fs-lg);
 		letter-spacing: -0.02em;
 	}
 	.rx--md {
-		font-size: clamp(1.9rem, 1.2rem + 1.8vw, 2.75rem);
+		--rx-fs: clamp(1.9rem, 1.2rem + 1.8vw, 2.75rem);
 	}
 	.rx--lg {
-		font-size: clamp(2.6rem, 1.4rem + 3vw, 4.25rem);
+		--rx-fs: clamp(2.6rem, 1.4rem + 3vw, 4.25rem);
 	}
 	.rx--xl {
-		font-size: clamp(5rem, 2rem + 9vw, 11rem);
+		--rx-fs: clamp(5rem, 2rem + 9vw, 11rem);
 		letter-spacing: -0.05em;
 	}
 </style>

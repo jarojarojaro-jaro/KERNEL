@@ -137,8 +137,8 @@
 <style>
 	.odo {
 		display: inline-flex;
-		font-family: var(--font-mono);
-		font-variant-numeric: tabular-nums;
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
 		line-height: 1;
 	}
 	/* the reels are decoration: never selectable, never copied */

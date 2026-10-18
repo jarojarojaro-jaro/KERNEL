@@ -126,7 +126,7 @@
 
 		<div class="below">
 			<div class="qwen">
-				<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name} <SourceTip {lang} src={qwenRows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note={qwenRows.map((r) => `${r.card.name}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — ')} /></p>
+				<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name} <SourceTip {lang} src={qwenRows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note="{qwenRows.map((r) => `${r.card.name}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — ')} — {c.qwen.kld}: {c.qwen.kldPending}." /></p>
 				{#each qwenRows as r (r.card.id)}
 					<div class="qrow">
 						<span class="qc">{r.card.short}</span>
@@ -138,10 +138,6 @@
 						{/if}
 					</div>
 				{/each}
-				<div class="qrow">
-					<span class="qc">{c.qwen.kld}</span>
-					<span class="pending">{c.qwen.kldPending}</span>
-				</div>
 			</div>
 
 			<div class="val">
@@ -479,7 +475,7 @@
 		justify-content: space-between;
 		gap: 0.4rem 1.2rem;
 		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
+		font-size: var(--fs-xs);
 		color: var(--text);
 	}
 	.caption span {
@@ -580,6 +576,12 @@
 		font-size: var(--fs-xs);
 		color: var(--text-mute);
 	}
+	.qv {
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-weight: 650;
+		font-size: var(--fs-md);
+	}
 	.qv b {
 		font-weight: 500;
 		color: var(--text-hi);
@@ -597,10 +599,6 @@
 	}
 	.cross {
 		color: var(--text) !important;
-	}
-	.pending {
-		grid-column: 2 / -1;
-		color: var(--text-mute);
 	}
 	/* in validation: secondary, quiet dashed frame = not a product claim yet */
 	.val {

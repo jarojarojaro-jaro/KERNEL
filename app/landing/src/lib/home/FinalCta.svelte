@@ -44,7 +44,7 @@
 			</p>
 		</div>
 		<div class="copy">
-			<Duo text={c.title} id="final-title" />
+			<Duo text={c.title} id="final-title" burn />
 			<p class="lede">{c.lede}</p>
 			<div class="ctas">
 				<a class="cta cta--bone" href={cardsHref(lang)} use:magnetic>{c.cards} <span class="arrow" aria-hidden="true">→</span></a>
