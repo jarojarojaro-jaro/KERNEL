@@ -30,17 +30,22 @@
   - longspec ~27k (decode t/s): produkcja 111.77/111.85, new 113.2, bx 102.66 (−9%).
 - **Zakończone.** Raport 12 §13 + „Do bazy wiedzy” uzupełnione. Czeka na decyzję użytkownika o wdrożeniu (przełącznik domyślnie wyłączony; „new” = produkcja).
 
-### XtxLookupTail: ogon z lookupu za MTP (`~/wt/lookup`, gałąź `lookup-tail`, **zmiany NIEzacommitowane**, build `build-hip` gotowy)
-- Zaimplementowane za `LLAMA_SPEC_LOOKUP` (0 wył., 1 log, 2 ogon, 3 ogon + łańcuchy bez draftera), `LLAMA_SPEC_LOOKUP_W` (domyślnie 8), `_MMIN` (6).
-- E1 (log na sucho): na czacie ogon bezużyteczny (0.46% pozycji); **na kopii/kodzie: 84% pozycji z trafieniem ≥8, zgodność z MTP 0.995, +2.4 tokenu/krok przy W8** (baza 3.86) — kierunek potwierdzony.
-- Greedy md5 przy włączonym ogonie niezweryfikowane (ogon nie odpalił na tych promptach).
-- E2 (koszt weryfikacji 5/8/16 × 2k/8k/32k/64k): przerwany, brak wyników.
-- **Do zrobienia:** zacommitować kod; E2; E3 A/B (`~/qwen-opt/lookup/e3_ab.sh`, tryby copy/sweep/long/mvs); raport 16b.
+### XtxLookupTail: ogon z lookupu za MTP (`~/wt/lookup`, gałąź `lookup-tail`, zacommitowane `6e12530cc` + `586f1d596`; build `build-hip` = `6e12530cc`, kontroler jeszcze NIEzbudowany)
+- Przełączniki: `LLAMA_SPEC_LOOKUP` (0 wył., 1 log, 2 ogon, 3 ogon + łańcuchy), `_W` (8), `_MMIN` (6), `_ADAPT=1` (kontroler 5/8/16, commit `586f1d596`, niezmierzony).
+- E1 gotowe: czat 0.5% pozycji z trafieniem ≥ 8; kopia/edycje 83.9%, P(MTP d1 | lookup d1) 0.995 (`~/qwen-opt/lookup/logs/e1-*.stats.json`).
+- Greedy md5: LOOKUP=0 plain `c4708318` / MTP `6f14e814`; LOOKUP=1/2/3 MTP `6f14e814`. Na zestawie copy przy T=0 tekst identyczny w ramionach A/B/C (6/6).
+- E2 gotowe (`~/qwen-opt/lookup/e2/e2.jsonl`, mediana próbek 3–5): V8−V5 = 2.47/2.75/3.25/3.79 ms, V16−V5 = 6.38/7.20/9.50/12.45 ms przy 2k/8k/32k/64k.
+- E3 copy gotowe (ABC CBA): wył. 163.3 → tryb 3 230.6 t/s (+41.2%) T=0, 160.0 → 208.8 (+30.5%) T=1; tryb 2 +30.6% / +30.1%.
+- **Pauza (reboot). Do zrobienia po wznowieniu:**
+  1. `cd /tmp/lookup-run` (jeśli nie istnieje: `mkdir -p /tmp/lookup-run && cp ~/qwen-opt/lookup/{arm.sh,copy_bench.py,copy_prompts.json,e3_ab.sh,e2_bench.sh,vram_ok.sh} /tmp/lookup-run/`), potem `export LOGDIR=~/qwen-opt/lookup/logs BLOCK_S=600; for s in sweep mvs long; do ./e3_ab.sh $s; done 2>&1 | tee -a $LOGDIR/e3_run.txt` (z `~/wt/lookup/build-hip` = `6e12530cc`; NIE przebudowywać przed tym).
+  2. Potem przebudować (`flock -s /tmp/quiet.lock nice -n 10 cmake --build ~/wt/lookup/build-hip -j6 --target llama-server`) i zmierzyć W16 oraz `_ADAPT=1` (`EXTRA_ENV="LLAMA_SPEC_LOOKUP_W=16 LLAMA_SPEC_LOOKUP_ADAPT=1"`) na mvs/copy/long + spec_sweep.
+  3. Podsumowanie: `~/qwen-opt/.venv/bin/python ~/qwen-opt/lookup/ab_summary.py ~/qwen-opt/lookup/logs`; raport `~/KERNEL/product/research/16b-lookup-tail.md`.
 
-### XtxPm4Pdl: PM4 bez barier + prefetch (`~/wt/pm4pdl`, **zmiany NIEzacommitowane**)
-- X1 mikrobenchmark (`~/qwen-opt/pm4pdl/x1/bench4.log`): oszczędność 0.05–0.11 µs dla kształtu LFM 2048² → **poniżej progu 0.5 µs**; większe siatki 0.5–1.1 µs.
-- X2/X3 (`x2/ab1.log`): zdążyła 1 runda z 26: produkcja 291.4, baza 293.1, UB=conv (górna granica, niebezpieczna) 296.3 t/s (+1.1%).
-- **Do zrobienia:** puścić `~/qwen-opt/pm4pdl/x2/run1.sh` od nowa; jeśli górna granica < +3% → wynik negatywny; raport 16a.
+### XtxPm4Pdl: PM4 bez barier + prefetch (`~/wt/pm4pdl`, gałąź `pm4-pdl`, commit `f19d4a050`, build `build-hip` aktualny; PAUZA 2026-10-18 ~20:25 UTC)
+- X1 mikrobench gotowy (`~/qwen-opt/pm4pdl/x1/bench4.log`, czysty przebieg): kształt LFM 2048², 1024 bloki: B 4.775 → najlepszy PDL (relay ×16) 4.669 µs/kernel = **−0.11 µs < progu 0.5 → kill**. 1536 bl. −0.59, 2560 −1.09, 3072 −0.95 µs. Bez synchronizacji (dolna granica, złe wyniki) −1.7…−2.8 µs: synchronizacja zjada prawie cały zysk. Siatka 6144 (2× pojemność GPU): bez zakleszczenia, 0 wygaśnięć. Flagi RELEASE_MEM (CP): wygasają, odrzucone. Soak 10⁵ nieuruchomiony (zbędny po kill).
+- X2 górna granica (`GGML_HIP_PM4_UB`, bez synchronizacji, złe wyniki), `x2/ab2.log`, **1 runda**: prod 294.84, build 294.07, UB conv 288.88, down 306.06 (+4.1%), mmvq1 303.25 (+3.1%), router 297.08, norm 297.19 t/s. UB conv,down,mmvq1,router,norm: taśma wisi (abort 10 s, `x2/comb.err`), też „all” nie mierzyć.
+- X3 (`GGML_HIP_PM4_TOUCH`): smoke działa (54 dispatche touch/taśmę), **A/B niezmierzone**. `x2/ab3.log` pusty (przerwane przez pauzę i serwer użytkownika na 8080 ~20:18).
+- **Wznowienie:** sprawdzić `pgrep -f "llama-server.*--port 8080"`; `mkdir -p /tmp/pm4pdl-run && cp ~/qwen-opt/pm4pdl/x2/frozen/*.sh /tmp/pm4pdl-run/ && /tmp/pm4pdl-run/run3.sh` (2 rundy × 12 konfiguracji, wynik w `x2/ab3.log`, odporny na błędy). Potem decyzja: UB to górna granica PDL; jeśli suma down+mmvq1 nie da realnie ≥+3% po odjęciu kosztu synchronizacji z X1, wynik negatywny. TOUCH: przy ≥+1% greedy md5 (`PORT=18450 MODES=plain ~/qwen-opt/fusion/greedy.sh ~/wt/pm4pdl/build-hip/bin ~/wt/pm4pdl/build-hip/bin /tmp/g lfm`, oczekiwane 894e56e4). Raport `~/KERNEL/product/research/16a-pm4-pdl.md` jeszcze nienapisany.
 
 ### XtxQuickWins: szybkie testy (`~/wt/quickwins`, **zmiany NIEzacommitowane**; w chwili zapisu w tle kończy się kompilacja `llama-server`)
 - **E4, cache promptu (ważne dla omp):** obce zapytanie wyrzuca slot i serwer liczy od nowa ~7.3k tokenów promptu systemowego. Łatka `LLAMA_SERVER_CACHE_SHARE_MIN=1024`: Qwen 8019 → 1612 ms, LFM 1357 → 230 ms (z `LLAMA_LFM2_MSG_SPANS=1`: 166 ms). Niesprawdzone, czy sam omp wysyła takie poboczne zapytania.
@@ -49,18 +54,21 @@
 - E1 (LFM `-ub 2048`), E2 (typ głowy MTP): nieuruchomione.
 - **Do zrobienia:** E1, E2, E3; zacommitować; raport 16f.
 
-### XtxLfmMoe: pasmo MoE w LFM (`~/wt/lfmmoe`, kod produkcyjny nietknięty; narzędzia w `~/wt/lfmmoe-prof/`)
-- Kernele MoE osiągają ~690 GB/s vs ~850 GB/s idealnego odczytu. Najlepszy bit-exact wariant gate_up −1.4 µs (−6%), down Q6_K −1.0 µs → łącznie ~70 µs/token ≈ **2%** [INFERENCE].
-- **Do zrobienia:** rep 3 (`./rep.sh 3 r6`), decyzja (2% to mało), raport 16g.
+### XtxLfmMoe: pasmo MoE w LFM (`~/wt/lfmmoe`, gałąź `opt-lfmmoe`, commit `6ccf30b33` WIP; narzędzia i wyniki w `~/wt/lfmmoe-prof/`, kopia z /tmp w `~/wt/lfmmoe-prof/frozen/`)
+- Zrobione: profil per kernel (PM4 trace + rocprofv3), ATT działa na gfx1100 (in-model gate+up: 85% czasu fali w `s_waitcnt vmcnt`), mikrobench `moebench` (3 procesy): replika gate+up 23.6–24.2 µs → wariant 16 fal/blok + ogon q8 z LDS + prefetch 22.3–22.5 µs (bitowo). Down: brak zysku (Q5_K), wariant Q6_K nie był bitowy wobec produkcji (ta ma 2 fale/wiersz).
+- Zaimplementowane `GGML_HIP_MOE_GU_BLOCK` (domyślnie wł.): logit hashes LFM d0/d3000 i Uncensored bez zmian; trace in-model gate+up 25.36/27.24 → 24.84/25.00 µs, ale out_proj 5.48 → 5.8 µs; taśma 3190/3268 → 3227/3259 µs (2 procesy, niejednoznaczne).
+- ABBA przerwane po 3 z 12 przebiegów (A 285.4, B 288.9/291.2) — nie liczyć.
+- **Wznowienie (GPU):** `mkdir -p /tmp/lfmmoe-frozen && cp ~/wt/lfmmoe-prof/frozen/* ~/wt/lfmmoe-prof/logit_hash /tmp/lfmmoe-frozen/ && cd /tmp/lfmmoe-frozen && ./abba.sh 3 ~/models/lfm/LFM2.5-24B-A2B-Q5_K_M.gguf abba_lfm.txt && ./abba.sh 2 ~/models/lfm/LFM2.5-24B-A2B-Uncensored-AD-Q5_K_M.gguf abba_unc.txt`; potem greedy md5 (`PORT=18440 MODES=plain ~/qwen-opt/fusion/greedy.sh ~/wt/lfmmoe/inst/bin ~/wt/lfmmoe/inst/lib /tmp/lfmmoe-frozen/g lfm`, oczekiwane 894e56e4) i spec_sweep ABBA (`ROCM_DIR=~/wt/lfmmoe/inst`, `GGML_HIP_MOE_GU_BLOCK=0/1`, PORT 18441). Kryterium: zostaje, jeśli ABBA ≥ +0.7% przy niezmienionym md5; inaczej wynik negatywny. Potem raport 16g.
 
 ### CoupledSampling: sprzężone losowanie (`~/wt/coupled`, gałąź `opt-coupled`, **kod napisany, NIEskompilowany, NIEzacommitowany**)
 - Cały kod za `LLAMA_SPEC_COUPLED` (nowy op `GGML_OP_GUMBEL_MAX` CPU+HIP, draft MTP z szumem Gumbela, test statystyczny `tests/test-coupled-sampling.cpp`). Skrypty `~/qwen-opt/coupled/{arm,run}.sh`.
 - **Do zrobienia:** kompilacja CPU → test statystyczny → HIP → ABBA T=1/0.7; raport 16k.
 
 ### MagnitudeVulkanXtx: Magnitude przez Vulkan na XTX (`~/qwen-opt/magnitude-xtx/`)
-- Lokalny sterownik RADV w `~/.local/vk/` (`. ~/.local/vk/env.sh`). Pierwszy start: przygotowanie kerneli nie skończyło się w 300 s (125 artefaktów Vulkan w `cache/smoke`).
-- Drafter `Qwen3.8-27B-DFlash2-Q8_0.gguf` **nie pobrał się** (pusty `.incomplete` w `~/models/magnitude/`).
-- **Do zrobienia:** pobrać drafter, dłuższy pierwszy start (cache), pomiar; raport 16j.
+- **Działa** (pauza przed rebootem, 2026-10-18). RADV user-local `~/.local/vk/` (`. ~/.local/vk/env.sh`), binarka `magnitude-xtx/magnitude-engine` (954d677, build lokalny). Drafter Q8_0 i LFM2.5-24B-A2B-Q4_K_M w `~/models/magnitude/` (sha256 zgodne z `models.tsv`).
+- Pierwszy start qwen dflash2: 95.6 s (prep 70.7 s, autotune 67/67 canonical defaults, 0 mierzonych), cache `cache/qwen`; kolejne starty 23–26 s, VRAM 20.7 GB (`logs/`, `servers.jsonl`).
+- Wyniki qwen (`x/xbench.jsonl`): mag 1 i 4 = sweep 49.1/51.0 t/s, copy64k ~63.6 t/s (prefill 117 s), code 94/94/93/68 t/s; ours 2 = sweep 99.9, copy 141 t/s (prefill 78 s), code ~170 t/s. Sesja **ours 3** biegła w chwili pauzy — sprawdzić, czy jest w `x/xbench.jsonl` (label `qwen|xtx|ours|3`), inaczej powtórzyć.
+- **Wznowienie:** `cp ~/qwen-opt/magnitude-xtx/{session,prep}.sh /tmp/` → (jeśli brak ours 3) `flock /tmp/gpu.lock flock /tmp/quiet.lock timeout 1800 /tmp/session.sh qwen ours 3`; LFM: `flock … timeout 1800 env WAIT_S=1750 /tmp/prep.sh lfm.mag.first $HOME/qwen-opt/magnitude-xtx/cache/lfm --model $HOME/models/magnitude/LFM2.5-24B-A2B-Q4_K_M.gguf --method plain --no-projector --context-tokens 67584 --output-capacity 1024`, potem `session.sh lfm mag 1`, `lfm ours 2`, `lfm ours 3`, `lfm mag 4`; `python3 analyze.py`; raport 16j.
 
 ### QuantKLD: jakość nowych kwantów (chmura usunięta, wyniki lokalnie)
 - **KLD na A40** (`results/quantkld-20261016/pod/kld.json`, pełne w `pod-final/`), wiki vs Qwen BF16: U3 (UD-Q3_K_XL) 0.039, A3 0.040, ISTA I4 0.073, I2 0.164, Saluki 0.257, Bonsai 0.352; Swift W4 0.072–0.076, W3 0.119, W2 0.164–0.166, W1 0.222; szum Q8_0 0.0038.
@@ -69,10 +77,11 @@
 - Prędkość 3060 (`results/3060-20261016/opt/`): Saluki 17.2 → MTP 24.3 t/s; Bonsai repack 27.6 t/s (sweep niedokończony).
 - **Do zrobienia (CPU):** zebrać wszystko w raport 16e. Bez nowego wynajmu, chyba że użytkownik zdecyduje inaczej.
 
-### LandingWow: strona (`~/KERNEL/app`, **runda po commicie `22bce75` NIEzacommitowana**, build aktualny)
-- Zrobione wszystkie uwagi użytkownika: hero wyśrodkowane z widocznymi zegarami, menu z płynną pigułką, Dobór ~1.3 s, animowany stos + oś kerneli, linijka KLD + bit-exact, usunięty cennik, FAQ pod końcowym CTA, nowy onboarding, gorące akcenty na wszystkich podstronach.
-- Juror runda 5: 6.5 / 6 / 5.5. Otwarte: treść pod szklanym nagłówkiem, większe zegary + „meta” wyścigu, jasny motyw, legenda jakości, LCP 3.0–3.5 s.
-- **Do zrobienia:** zacommitować rundę; dalsze poprawki po uwagach użytkownika.
+### LandingWow: strona (`~/KERNEL/app`, ostatni commit poniżej; build `landing/build` aktualny na r7)
+- Po wznowieniu: naprawiony `hydration_mismatch` na całej stronie (SourceTip: blokowy popover w `<p>` → remount, przez to puste liczniki/wyścig u użytkownika). Intro hero tylko z transform. QA hero 40/40 świeżych ładowań (1920/1536@1.25/1440/390; normal, CPU 4×/6×, wolna sieć, bez JS): `app/screens/v2/hero-qa/`, skrypty `app/landing/scripts/qa/` (puppeteer-core na CDP 18499).
+- Finalne wartości w SSR wszędzie, animacje tylko jako replay przy wejściu w widok. Odczyty na żywo ≤ mediana. Wyścig z linią mety. Jeden krój display. Onboarding zaczyna się od nagłówka, bez paska kroków. Ciemny motyw domyślny; przełącznik motywu w stopce (poza showcase).
+- Juror: r6 7/7/6, r7 7/7/6 (`design/REDESIGN.md` §11). axe 0 (20 stron × 2), hydration 0, Lighthouse mobile /pl/ 83, LCP 3.5 s.
+- **W toku (r8, LandingPage):** fit-scena nachodzi na nagłówek, odznaka 2,0× poza panelem, więcej heat w środku strony, belki wyników, karty na home jak w galerii, mobile ucięte opisy. Potem: build, `hyd.ts` + `heroqa.ts` + `axe.ts`, `shots.ts` → `screens/v2/r8/`, juror r8, commit, raport do Main z „Do bazy wiedzy”.
 
 ### WikiIngest
 - Wiki aktualne do 16c/16d/16i/16h + naprawa regresji (381 notatek, lint 0/0). Czeka na kolejne raporty.

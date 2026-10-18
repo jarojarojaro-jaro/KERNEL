@@ -78,6 +78,7 @@
 	.wrap {
 		position: relative;
 		overflow-x: clip;
+		scroll-margin-top: var(--header-clear);
 		--s: clamp(0, calc((var(--p) - 0.16) / 0.66), 1);
 	}
 	.layout {
@@ -95,6 +96,11 @@
 		display: grid;
 		gap: clamp(1.5rem, 3vw, 2.5rem);
 		align-content: center;
+		align-self: start;
+		/* stays clear of the floating header while the tall render scrolls past */
+		position: sticky;
+		top: var(--header-clear);
+		scroll-margin-top: var(--header-clear);
 	}
 	.stage {
 		display: grid;
@@ -324,6 +330,9 @@
 		.layout {
 			grid-template-columns: minmax(0, 1fr);
 			gap: var(--sp-5);
+		}
+		.side {
+			position: static;
 		}
 		.stage {
 			gap: var(--sp-4);

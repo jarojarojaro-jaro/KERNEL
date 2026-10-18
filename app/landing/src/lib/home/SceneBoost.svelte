@@ -332,9 +332,7 @@
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.04em;
 		color: var(--text-mute);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+		line-height: 1.35;
 	}
 	.lv {
 		font-family: var(--font-mono);

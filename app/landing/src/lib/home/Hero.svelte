@@ -118,6 +118,11 @@
 	.hero :global(.heatfield) {
 		z-index: -2;
 	}
+	/* the field's faint speed lines stay at the edges: never behind the text columns */
+	.hero :global(.heatfield .streak-frame) {
+		-webkit-mask-image: linear-gradient(90deg, #000, transparent 9%, transparent 91%, #000);
+		mask-image: linear-gradient(90deg, #000, transparent 9%, transparent 91%, #000);
+	}
 	/* darken the top so the header and headline sit on near-black; heat rises from below */
 	.veil {
 		position: absolute;

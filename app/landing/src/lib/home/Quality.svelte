@@ -73,7 +73,7 @@
 	const bxSrc = [bx.src, bx.speed.bitexact.src, bx.speed.prod.src];
 </script>
 
-<section id="quality" class="quality" aria-labelledby="quality-title">
+<section id="quality" class="quality heat-top" aria-labelledby="quality-title">
 	<div class="inner">
 		<header class="head">
 			<h2 id="quality-title" class="statement">{c.title}</h2>
@@ -106,6 +106,10 @@
 				</div>
 			</div>
 			<p class="sr-only">{zoneDetail} {fmts.map((r) => `${fmtName(r.file)}: ${num(r.kld.v, lang, 3)}`).join(', ')}.</p>
+			<!-- narrow screens: the format values as a key under the ruler (no labels colliding in the chart) -->
+			<p class="fkey" aria-hidden="true">
+				{#each fmts as r (r.file)}<span><i class="lg-fmt"></i>{fmtName(r.file)} <b>{num(r.kld.v, lang, 3)}</b>{#if r.kld.v > 1}<em>{' · '}{c.bad}</em>{/if}</span>{/each}
+			</p>
 			<figcaption class="legend">
 				<span>{#each ours as r (r.k)}<ModelMark model={r.k} size="0.8rem" />{/each} {c.ours}: {ours.map((r) => MODEL_STYLE[r.k].short).join(', ')}</span>
 				<span><i class="lg-noise"></i>{c.noise}</span>
@@ -379,6 +383,28 @@
 			transform: scaleX(0);
 		}
 	}
+	.fkey {
+		display: none;
+		flex-wrap: wrap;
+		gap: 0.4rem 1.2rem;
+		margin: 0;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text);
+	}
+	.fkey span {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+	}
+	.fkey b {
+		color: var(--text-hi);
+		font-weight: 500;
+	}
+	.fkey em {
+		font-style: normal;
+		color: var(--text-mute);
+	}
 	.legend {
 		display: flex;
 		flex-wrap: wrap;
@@ -564,10 +590,11 @@
 		.axis span:nth-child(even) {
 			display: none;
 		}
-		/* NVFP4's label sits at its marker's top (clear of the axis), under QAD's */
-		.fmt:not(.hi) .fl {
-			top: 0;
-			bottom: auto;
+		.fl {
+			display: none;
+		}
+		.fkey {
+			display: flex;
 		}
 		.qrow {
 			grid-template-columns: minmax(0, 1fr) auto;

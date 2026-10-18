@@ -176,7 +176,7 @@ void main(){
 
 <div class="heatfield {cls}" class:soft class:off={!onScreen} class:boost={boost > 0.5} style="--heat:{heat}" aria-hidden="true" use:visible={(v) => (onScreen = v)}>
 	<canvas bind:this={canvas} class:ok></canvas>
-	{#if soft}<div class="streaks"></div>{/if}
+	{#if soft}<div class="streak-frame"><div class="streaks"></div></div>{/if}
 </div>
 
 <style>
@@ -203,6 +203,14 @@ void main(){
 		opacity: 1;
 	}
 	/* CSS field for software GL: a few composited speed streaks; they run hotter while `boost` is on */
+	/* static frame for the moving streaks: a parent (e.g. the hero) can mask it without the mask
+	 * travelling with the streaks */
+	.streak-frame {
+		position: absolute;
+		inset: 0;
+		overflow: hidden;
+		pointer-events: none;
+	}
 	.streaks {
 		position: absolute;
 		inset: 30% -50% 0 -50%;

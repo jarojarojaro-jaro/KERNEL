@@ -132,10 +132,13 @@
 		text-transform: uppercase;
 		color: var(--text-mute);
 	}
+	/* the drops and the bounce stay inside the chart row: they never pass over the headline */
 	.fitfield {
 		position: relative;
 		display: grid;
 		gap: var(--sp-3);
+		overflow: clip;
+		overflow-clip-margin: 1rem;
 		padding-top: clamp(5rem, 4rem + 3vw, 7rem);
 	}
 	.tray {
@@ -504,6 +507,12 @@
 		}
 		.fitfield {
 			padding-top: 3.6rem;
+		}
+		/* the 24 GB wall starts at the bars, below the ghost and its stamp */
+		.limit {
+			top: 3.4rem;
+			height: auto;
+			bottom: 1.6rem;
 		}
 		.ghost {
 			height: 2.8rem;

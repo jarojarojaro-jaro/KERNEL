@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { BRAND } from '$lib/brand';
 	import { cardsHref, currentLang, href } from '$lib/i18n';
+	import { page } from '$app/state';
 	import { consent } from './consent.svelte';
+	import ThemeToggle from './ThemeToggle.svelte';
 	import { copy } from './copy';
 	import Logo from './Logo.svelte';
 
@@ -36,6 +38,9 @@
 					<li><a href={href(lang, `/legal/${d}`)}>{t.footer.legalLinks[d]}</a></li>
 				{/each}
 				<li><button class="linklike" type="button" onclick={() => (consent.open = true)}>{t.footer.cookieSettings}</button></li>
+				<!-- The theme switch lives here (not in the nav) so the nav is identical on every page;
+				     the showcase pages are dark-only, so it is offered only elsewhere. -->
+				{#if !page.url.pathname.match(/^\/(pl|en)\/((karty|cards|wyniki|results)\/.*)?$/)}<li class="theme"><ThemeToggle toDark={t.nav.themeToDark} toLight={t.nav.themeToLight} /></li>{/if}
 			</ul>
 		</nav>
 	</div>

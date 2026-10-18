@@ -127,6 +127,26 @@
 	details[open] .q {
 		color: var(--heat-4);
 	}
+	/* the open answer gets a heat rule along its edge */
+	details {
+		position: relative;
+	}
+	details::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: -1px;
+		height: 2px;
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 14px rgb(255 122 26 / 0.6);
+		transform-origin: 0 50%;
+		transform: scaleX(0);
+		transition: transform 0.5s var(--ease-out);
+	}
+	details[open]::before {
+		transform: none;
+	}
 	.ic {
 		position: relative;
 		width: 1.4rem;

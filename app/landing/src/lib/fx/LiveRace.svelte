@@ -90,8 +90,8 @@
 	const ends = $derived(lanes.map((l) => pieces.length / l.tps));
 	/** The race as first painted (and continued from by the client). */
 	const T0 = 0.6;
-	/** Seconds both finished sides rest before the race starts over. */
-	const HOLD = 2.6;
+	/** Seconds the finished race (both sides through, the verdict up) holds before it starts over. */
+	const HOLD = 4;
 	/** Seconds of history in the rhythm strip. */
 	const STRIP_S = 1.6;
 
@@ -516,7 +516,8 @@
 	/* ---- the shared finish track ---- */
 	.track {
 		display: grid;
-		grid-template-columns: minmax(7rem, auto) minmax(0, 1fr) 4.5rem minmax(8.5rem, auto);
+		/* the verdict has its own fixed slot inside the track: it never pushes past the panel */
+		grid-template-columns: minmax(7rem, auto) minmax(0, 1fr) 4.5rem 11.5rem;
 		align-items: center;
 		column-gap: 1rem;
 		row-gap: 0.55rem;
@@ -593,8 +594,10 @@
 		display: grid;
 		justify-items: center;
 		gap: 0.2rem;
+		min-width: 0;
+		text-align: center;
 		visibility: hidden;
-		transform: scale(1.6);
+		transform: scale(0.92);
 		transition:
 			transform 0.4s var(--ease-spring),
 			visibility 0s 0.4s;
@@ -613,10 +616,10 @@
 	.verdict small {
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		letter-spacing: 0.06em;
+		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--heat-4);
-		white-space: nowrap;
+		line-height: 1.3;
 	}
 	.controls {
 		display: flex;

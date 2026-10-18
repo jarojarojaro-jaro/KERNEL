@@ -33,7 +33,7 @@
 			<p class="unit">{c.unit} <SourceTip {lang} src={rows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note={tableNote} /></p>
 			<ul class="rows" role="list">
 				{#each rows as r, i (r.id)}
-					<li class="row" style="--a:{r.a.v / r.b.v}; --d:{i * 70}ms">
+					<li class="row" style="--a:{r.a.v / r.b.v}; --d:{i * 70}ms; --th:{heatOf(r.b.v / r.a.v)}">
 						<span class="who">
 							<ModelMark model={r.run.model} size="0.75em" />
 							<b>{MODEL_STYLE[r.run.model].short}</b>
@@ -110,7 +110,8 @@
 	}
 	.row {
 		display: grid;
-		grid-template-columns: minmax(11rem, 1.1fr) minmax(6rem, 1.4fr) auto 4.2rem;
+		/* fixed columns: every row's bars start on one shared baseline */
+		grid-template-columns: 12.5rem minmax(6rem, 1fr) 10.5rem 4.2rem;
 		align-items: center;
 		gap: var(--sp-4);
 		padding-block: var(--sp-3);
@@ -138,11 +139,11 @@
 	}
 	.bars {
 		display: grid;
-		gap: 3px;
+		gap: 4px;
 	}
 	.bar-a,
 	.bar-b {
-		height: 5px;
+		height: 9px;
 		border-radius: var(--r-pill);
 		transform-origin: 0 50%;
 	}
@@ -150,9 +151,11 @@
 		background: var(--before);
 		transform: scaleX(var(--a));
 	}
+	/* heat by the size of the speed-up (heatOf): 1,4× glows less than 2,0× */
 	.bar-b {
 		background: var(--heat-ramp-hot);
-		box-shadow: 0 0 10px rgb(255 122 26 / 0.45);
+		filter: saturate(calc(0.3 + 0.7 * var(--th))) brightness(calc(0.72 + 0.28 * var(--th)));
+		box-shadow: 0 0 calc(4px + 12px * var(--th)) rgb(255 122 26 / calc(0.2 + 0.4 * var(--th)));
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* resting state final; entering view replays the bars filling */
@@ -168,6 +171,7 @@
 	}
 	.vals {
 		display: flex;
+		justify-content: flex-end;
 		align-items: baseline;
 		gap: 0.4rem;
 		font-family: var(--font-mono);

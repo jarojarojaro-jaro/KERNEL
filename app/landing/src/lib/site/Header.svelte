@@ -7,7 +7,6 @@
 	import { tick, untrack } from 'svelte';
 	import { copy } from './copy';
 	import Logo from './Logo.svelte';
-	import ThemeToggle from './ThemeToggle.svelte';
 
 	const lang = $derived(currentLang());
 	const t = $derived(copy[lang].nav);
@@ -183,7 +182,6 @@
 			<a class="lang" href={switchLangHref(other)} hreflang={other} title={t.langLabel} data-sveltekit-reload>
 				<span class="cur">{lang.toUpperCase()}</span><span class="sep" aria-hidden="true">/</span><span class="oth">{other.toUpperCase()}</span><span class="sr-only" lang={other}> – {t.lang}</span>
 			</a>
-			{#if !showcase}<ThemeToggle toDark={t.themeToDark} toLight={t.themeToLight} />{/if}
 			<a class="go" href={href(lang, '/start')} use:magnetic={{ max: 3 }}><span>{t.start}</span><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg></a>
 			<button bind:this={menuBtn} class="menu" type="button" aria-expanded={open} aria-controls="site-nav" aria-label={open ? t.close : t.menu} onclick={toggle}>
 				<span class="burger" aria-hidden="true"><i></i><i></i></span>

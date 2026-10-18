@@ -304,14 +304,28 @@
 	}
 	@keyframes lit {
 		0% {
-			border-color: var(--text-hi);
+			border-color: var(--heat-4);
 			box-shadow:
-				0 0 0 1px rgb(237 234 227 / 0.5),
-				0 0 28px rgb(237 234 227 / 0.25);
+				0 0 0 1px rgb(255 193 90 / 0.6),
+				0 0 28px rgb(255 122 26 / 0.45);
 		}
 	}
+	/* the layer shown up close below: a heat edge and glow */
 	.slab.focus.in {
-		border-color: rgb(237 234 227 / 0.45);
+		border-color: var(--heat-3);
+		background:
+			linear-gradient(90deg, rgb(255 122 26 / 0.16), transparent 70%),
+			var(--bg-1);
+		box-shadow:
+			0 0 0 1px rgb(255 122 26 / 0.35),
+			0 0 34px -6px rgb(255 122 26 / 0.7);
+	}
+	.slab.focus .si {
+		background: rgb(255 122 26 / 0.18);
+		color: var(--heat-4);
+	}
+	.slab.focus .sk {
+		color: var(--heat-4);
 	}
 	.si {
 		grid-area: icon;
@@ -552,10 +566,17 @@
 		overflow: hidden;
 		white-space: nowrap;
 	}
+	/* our engine's share: the full heat ramp, dark ink on it */
 	.seg.mine {
-		background: linear-gradient(90deg, rgb(226 64 28 / 0.25), rgb(255 122 26 / 0.3));
-		border-color: rgb(255 122 26 / 0.6);
-		box-shadow: 0 0 16px -4px rgb(255 122 26 / 0.45);
+		background: var(--heat-ramp-hot);
+		border-color: rgb(255 243 214 / 0.5);
+		box-shadow: 0 0 22px -4px rgb(255 122 26 / 0.7);
+	}
+	.seg.mine b {
+		background: none;
+		color: #1a0b03;
+		-webkit-text-fill-color: currentColor;
+		filter: none;
 	}
 	.seg b {
 		font-size: var(--fs-md);
