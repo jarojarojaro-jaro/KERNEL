@@ -54,8 +54,12 @@ def main():
             time.sleep(INTERVAL)
             continue
         if not inst:
-            print(f"{time.strftime('%H:%M')} no instances left", flush=True)
-            return 0
+            if os.environ.get("STAY") != "1":
+                print(f"{time.strftime('%H:%M')} no instances left", flush=True)
+                return 0
+            idle.clear()
+            time.sleep(INTERVAL)
+            continue
         alerts = []
         for iid, name, util, cost in inst:
             idle[iid] = idle.get(iid, 0) + 1 if util < THRESH else 0

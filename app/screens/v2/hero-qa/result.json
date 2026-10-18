@@ -1,0 +1,328 @@
+{
+ "url": "/pl/",
+ "t": 1500,
+ "pass": 40,
+ "total": 40,
+ "rows": [
+  {
+   "vp": "1920",
+   "i": 0,
+   "cond": "normal",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-00-normal.png"
+  },
+  {
+   "vp": "1920",
+   "i": 1,
+   "cond": "cpu4",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-01-cpu4.png"
+  },
+  {
+   "vp": "1920",
+   "i": 2,
+   "cond": "cpu6",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-02-cpu6.png"
+  },
+  {
+   "vp": "1920",
+   "i": 3,
+   "cond": "slownet",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-03-slownet.png"
+  },
+  {
+   "vp": "1920",
+   "i": 4,
+   "cond": "nojs",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-04-nojs.png"
+  },
+  {
+   "vp": "1920",
+   "i": 5,
+   "cond": "normal",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-05-normal.png"
+  },
+  {
+   "vp": "1920",
+   "i": 6,
+   "cond": "cpu4",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-06-cpu4.png"
+  },
+  {
+   "vp": "1920",
+   "i": 7,
+   "cond": "cpu6",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-07-cpu6.png"
+  },
+  {
+   "vp": "1920",
+   "i": 8,
+   "cond": "slownet",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-08-slownet.png"
+  },
+  {
+   "vp": "1920",
+   "i": 9,
+   "cond": "nojs",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1920-09-nojs.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 0,
+   "cond": "normal",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-00-normal.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 1,
+   "cond": "cpu4",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-01-cpu4.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 2,
+   "cond": "cpu6",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-02-cpu6.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 3,
+   "cond": "slownet",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-03-slownet.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 4,
+   "cond": "nojs",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-04-nojs.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 5,
+   "cond": "normal",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-05-normal.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 6,
+   "cond": "cpu4",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-06-cpu4.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 7,
+   "cond": "cpu6",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-07-cpu6.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 8,
+   "cond": "slownet",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-08-slownet.png"
+  },
+  {
+   "vp": "1536@1.25",
+   "i": 9,
+   "cond": "nojs",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1536-dpr1.25-09-nojs.png"
+  },
+  {
+   "vp": "1440",
+   "i": 0,
+   "cond": "normal",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-00-normal.png"
+  },
+  {
+   "vp": "1440",
+   "i": 1,
+   "cond": "cpu4",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-01-cpu4.png"
+  },
+  {
+   "vp": "1440",
+   "i": 2,
+   "cond": "cpu6",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-02-cpu6.png"
+  },
+  {
+   "vp": "1440",
+   "i": 3,
+   "cond": "slownet",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-03-slownet.png"
+  },
+  {
+   "vp": "1440",
+   "i": 4,
+   "cond": "nojs",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-04-nojs.png"
+  },
+  {
+   "vp": "1440",
+   "i": 5,
+   "cond": "normal",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-05-normal.png"
+  },
+  {
+   "vp": "1440",
+   "i": 6,
+   "cond": "cpu4",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-06-cpu4.png"
+  },
+  {
+   "vp": "1440",
+   "i": 7,
+   "cond": "cpu6",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-07-cpu6.png"
+  },
+  {
+   "vp": "1440",
+   "i": 8,
+   "cond": "slownet",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-08-slownet.png"
+  },
+  {
+   "vp": "1440",
+   "i": 9,
+   "cond": "nojs",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/1440-09-nojs.png"
+  },
+  {
+   "vp": "390",
+   "i": 0,
+   "cond": "normal",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-00-normal.png"
+  },
+  {
+   "vp": "390",
+   "i": 1,
+   "cond": "cpu4",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-01-cpu4.png"
+  },
+  {
+   "vp": "390",
+   "i": 2,
+   "cond": "cpu6",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-02-cpu6.png"
+  },
+  {
+   "vp": "390",
+   "i": 3,
+   "cond": "slownet",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-03-slownet.png"
+  },
+  {
+   "vp": "390",
+   "i": 4,
+   "cond": "nojs",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-04-nojs.png"
+  },
+  {
+   "vp": "390",
+   "i": 5,
+   "cond": "normal",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-05-normal.png"
+  },
+  {
+   "vp": "390",
+   "i": 6,
+   "cond": "cpu4",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-06-cpu4.png"
+  },
+  {
+   "vp": "390",
+   "i": 7,
+   "cond": "cpu6",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-07-cpu6.png"
+  },
+  {
+   "vp": "390",
+   "i": 8,
+   "cond": "slownet",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-08-slownet.png"
+  },
+  {
+   "vp": "390",
+   "i": 9,
+   "cond": "nojs",
+   "ok": true,
+   "why": [],
+   "img": "/home/jaro/KERNEL/app/screens/v2/hero-qa/390-09-nojs.png"
+  }
+ ]
+}
