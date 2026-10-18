@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (21)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (41)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (57)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (59)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (20)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-18 [[kld-po-polsku|KLD kwantów na polskim tekście (protokół 16e)]]
 - 2026-10-18 [[bramka-kld-kanarki|Bramka KLD z kanarkami]]
 
-Razem 385 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
+Razem 387 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
