@@ -56,6 +56,9 @@ Nowe: [[2026-10-18-lfm-moe-pasmo]], [[2026-10-18-lfm-moe-negatywne]], [[mmvq-moe
 ## [2026-10-18] ingest | Landing rundy 9–12
 [[app-landing]] (rundy 9–12, źródło bit-exact = raport 12 §13 run 4, juror r9–r12, kontrole r12); nowe lekcje [[lekcja-juror-llm-plateau]], [[lekcja-timeline-scen-3s]].
 
+## [2026-10-18] ingest | Raport 16a (PM4-PDL, prefetch MALL)
+Nowe: [[2026-10-18-pm4-pdl-x1]], [[2026-10-18-pm4-ub-lfm]], [[lekcja-handoff-rdna3]], [[lekcja-prefetch-mall-xtx]], [[raport-16a-pm4-pdl]]. Zaktualizowane: [[raport-15a-monokernel]] (korekta S1: +9…+15% → realnie ≈ +3%), [[pm4-replay]], [[wyniki-negatywne]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

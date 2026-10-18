@@ -64,12 +64,12 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (25)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (21)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (41)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (59)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (43)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (61)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (20)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (33)
+- [[research/_hub|research]] — Streszczenia raportów (34)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (24)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
@@ -81,6 +81,8 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-18 [[raport-16g-lfm-moe-pasmo|Raport 16g: pasmo kerneli MoE LFM2.5 na XTX]]
 - 2026-10-18 [[raport-16e-kwanty-kld|Raport 16e: nowe kwanty 27B na 12–16 GB (E1 + E3 z 15e)]]
 - 2026-10-18 [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]]
+- 2026-10-18 [[raport-16a-pm4-pdl|Raport 16a: PM4-PDL i prefetch wag na XTX (X1–X3 z 15a)]]
+- 2026-10-18 [[raport-15a-monokernel|Raport 15a: megakernele dla decode (vLLM MonoKernel)]]
 - 2026-10-18 [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]]
 - 2026-10-18 [[produkt-ryzyka|Największe ryzyka]]
 - 2026-10-18 [[app-landing|Strona (landing) PL/EN]]
@@ -88,8 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-18 [[att-gfx1100|ATT (thread trace) na gfx1100]]
 - 2026-10-18 [[lfm2-5-uncensored|LFM2.5-24B-A2B-Uncensored (AtomicChat, AD-Q5_K_M)]]
 - 2026-10-18 [[lfm2-5-24b-a2b|LFM2.5-24B-A2B (Liquid AI)]]
-- 2026-10-18 [[kld-po-polsku|KLD kwantów na polskim tekście (protokół 16e)]]
-- 2026-10-18 [[bramka-kld-kanarki|Bramka KLD z kanarkami]]
 
-Razem 387 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
+Razem 392 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -2694,6 +2694,9 @@ Liczby przepisane z wierszy w `zrodlo` (16c:191-252, 16j:7-110, `app/REPORT.md:2
 ## Aktualizacja: 16g (2026-10-18)
 Liczby w 7 nowych i 5 zmienionych notatkach przepisane z wierszy 16g podanych w `zrodlo` (tabele §1–§3, §5) i `lfm-decode-round4.md:154-159` (objaw 285 W z rundy 4). `lekcja-limit-mocy-285w` ma `status: do-sprawdzenia`, bo przyczyna (limit mocy) to hipoteza. Błędnych: 0.
 
+## Aktualizacja: 16a (2026-10-18)
+Liczby z 16a (tabele §1–§3) przepisane z wierszy w `zrodlo`; „16 kopii flagi” i ułamki 6/29/35/44% z §1–§2. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

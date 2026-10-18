@@ -1,8 +1,8 @@
 ---
 typ: metoda
 tags: [metody, proces, negatywne]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:98-105,351,369; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:234
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:98-105,351,369; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:234; ~/KERNEL/product/research/16a-pm4-pdl.md:7-19
 status: aktualne
 ---
 # Wyniki negatywne zapisujemy z liczbami
@@ -17,6 +17,8 @@ Przykłady z `qwen-opt/NOTES.md` (sekcja „Wyniki negatywne (nie wracać bez no
 - raport „1075 GB/s, 112% peaku” był błędny: przy MTP jeden przebieg daje ~2.7 tokenu, więc odczyt wag to ~400 GB/s.
 
 Zasada scalania: tylko realny zysk w przeplatanym A/B. Bitowy, ale w szumie (GDN fast +0.15%) = nie scalamy, gałąź zostaje.
+
+2026-10-18: PM4-PDL i prefetch MALL na XTX ([[raport-16a-pm4-pdl]], [[lekcja-prefetch-mall-xtx]]); MoE matvec LFM ([[2026-10-18-lfm-moe-negatywne]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

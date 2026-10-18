@@ -1,13 +1,13 @@
 ---
 typ: research
 tags: [research, megakernel, pm4, lfm]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15a-monokernel.md:1-28,118-168,206-215
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/product/research/15a-monokernel.md:1-28,118-168,206-215; ~/KERNEL/product/research/16a-pm4-pdl.md:13-17,108-110
 status: aktualne
 ---
 # Raport 15a: megakernele dla decode (vLLM MonoKernel)
 
-**Trwały kernel *dataflow* z prefetchem wag mógłby dać LFM2.5 na XTX +12…+28% `[SZACUNEK]`, ale trwały kernel z barierami między fazami nie pobije PM4; tańszy pierwszy krok to „PM4-PDL” (+5…+15%, bitowo).**
+**Trwały kernel *dataflow* z prefetchem wag mógłby dać LFM2.5 na XTX +12…+28% `[SZACUNEK]`, ale trwały kernel z barierami między fazami nie pobije PM4; tańszy pierwszy krok to „PM4-PDL” (+5…+15%, bitowo) – 16a zmierzył realnie ≈ +3% (kill).**
 
 Raport z 2026-10-16, bez GPU.
 - **vLLM MonoKernel** (RFC #60904): jedna trwała siatka 256 CTA × 512 wątków na warstwę, bez bariery siatki, „tagged pairs”, wagi ładowane przed czekaniem; GLM-5.2 13.70 → 5.92 ms przy batch 1 na 8× MI350X, ale baza vLLM wykorzystuje tylko 5–8% pasma HBM (Mono 12–24%), a względem mocniejszej bazy (ATOM) to −22% TPOT.
@@ -19,6 +19,8 @@ Raport z 2026-10-16, bez GPU.
 - `hipLaunchAttributeExtDynDataPrefetch` jest w HIP 7.15, ale ROCr zwraca 0 regionów poniżej gfx12.5.
 - Ranking: 1. mikrobench PM4-PDL (X1), 2. prefetch do MALL, 3. proces bezpieczeństwa z RFC, 4. pełny megakernel LFM (25–35 osobodni), 5. trwały blok MoE.
 - arXiv 2605.07182 to inny temat (Star Elastic).
+
+**Korekta (16a, 2026-10-18):** szacunek S1 (+9…+15%) za wysoki – zmierzona górna granica bez synchronizacji to +12.0% (LFM 289.3 → 324.0 t/s), a z realną synchronizacją ≈ +2.9%; X1, X2 i X3 zakończone KILL ([[raport-16a-pm4-pdl]]).
 
 ## Powiązane
 - [[research/_hub|research]]
