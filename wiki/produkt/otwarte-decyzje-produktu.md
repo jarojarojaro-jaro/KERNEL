@@ -2,7 +2,7 @@
 typ: produkt
 tags: [produkt, decyzje-otwarte, app]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:334-343
+zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:334-343,340-342
 status: aktualne
 ---
 # Otwarte decyzje produktu (po prototypie aplikacji)

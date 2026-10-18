@@ -2,7 +2,7 @@
 typ: lekcja
 tags: [lekcje, determinizm, fa]
 aktualizacja: 2026-10-16
-zrodlo: /tmp/bxd/g1.log, g2.log, h1.log, h2.log, zm.plain.txt, zm.mtp.txt (testy na 7900 XTX 2026-10-16); ~/KERNEL/product/research/12-bit-exact-spekulacja.md §10–12; gałąź batch-invariant; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:356
+zrodlo: /tmp/bxd/g1.log, g2.log, h1.log, h2.log, zm.plain.txt, zm.mtp.txt (testy na 7900 XTX 2026-10-16); ~/KERNEL/product/research/12-bit-exact-spekulacja.md §10–12; gałąź batch-invariant; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:349-356
 status: aktualne
 ---
 # Bit-exact: WMMA reaguje na zamaskowane wiersze cache
