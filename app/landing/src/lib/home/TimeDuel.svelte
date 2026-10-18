@@ -170,16 +170,21 @@
 		color: var(--heat-4);
 		white-space: nowrap;
 	}
+	/* the summary tile: the time saved on every 500-word answer, always shown (final value in the
+	 * HTML); it flashes when the hot side's bar stops */
 	.gap {
-		justify-self: start;
-		margin-top: var(--sp-1);
-		padding: 0.3rem 0.7rem;
-		border: 1px solid var(--heat-3);
-		border-radius: var(--r-pill);
-		font-family: var(--font-mono);
-		font-size: var(--fs-xs);
+		margin-top: var(--sp-2);
+		padding: 0.85rem 1.1rem;
+		border: 1px solid rgb(255 122 26 / 0.45);
+		border-radius: var(--r-lg);
+		background: linear-gradient(90deg, rgb(255 122 26 / 0.14), rgb(226 64 28 / 0.04));
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-size: clamp(1.3rem, 1rem + 0.9vw, 1.9rem);
+		font-weight: 760;
+		letter-spacing: -0.02em;
 		color: var(--heat-5);
-		box-shadow: 0 0 20px -6px rgb(255 122 26 / 0.7);
+		box-shadow: 0 0 28px -10px rgb(255 122 26 / 0.8);
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* both bars grow at real-time pace on the same axis; the hot one stops first */
@@ -191,7 +196,7 @@
 		}
 		.go .stamp,
 		.go .gap {
-			animation: pop 0.4s var(--ease-spring) var(--h) both;
+			animation: pop 0.5s var(--ease-spring) var(--h);
 		}
 	}
 	@keyframes grow {
@@ -200,8 +205,8 @@
 		}
 	}
 	@keyframes pop {
-		from {
-			transform: translate3d(0, 0.3rem, 0) scale(0);
+		40% {
+			transform: scale(1.04);
 		}
 	}
 </style>

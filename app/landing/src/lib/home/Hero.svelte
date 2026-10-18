@@ -96,7 +96,7 @@
 		<div class="race">
 			<LiveRace {lanes} text={r.text} {lang} max={dial.max} redline={dial.redline} prompt={r.prompt} summary={fill(r.summary, vars)} {onheat}>
 				{#snippet meta()}
-					<span class="now">{HERO_MODEL} {HERO_RUN.quant} · {HERO_CARD.name}</span>
+					<span class="now">{HERO_MODEL}<span class="nq">{' '}{HERO_RUN.quant}</span> · {HERO_CARD.name}</span>
 					<SourceTip {lang} {src} {note} />
 				{/snippet}
 			</LiveRace>
@@ -353,6 +353,17 @@
 		font-family: var(--font-mono);
 		letter-spacing: 0.03em;
 		color: var(--text);
+	}
+	/* one line on phones: model · card, the source as its icon (the button keeps its label) */
+	@media (max-width: 900px) {
+		.now {
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.nq,
+		.race :global(.src-btn span) {
+			display: none;
+		}
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* the headline lands first; the CTAs follow, then the race rises */

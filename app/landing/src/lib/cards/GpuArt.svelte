@@ -4,7 +4,8 @@
 	 * passes): length, fan count and the maker's shroud. Stylised, not photoreal; sizes follow the
 	 * real boards (≈ 1 unit per 0.56 mm of length), so a 3060 is visibly shorter than a 3090.
 	 *   fe30  NVIDIA Founders (30 series): silver frame, graphite plate, one fan + flow-through fins
-	 *   fe40  NVIDIA Founders (40 series): darker titanium frame, same flow-through layout
+	 *   fe40  NVIDIA Founders (40 series, Ada): gunmetal frame with chamfered tail corners, a bigger
+	 *         fan in a thick bezel, a raked fin window
 	 *   fe50  NVIDIA Founders (50 series): graphite, double flow-through, a fan at each end
 	 *   dark  partner two-fan boards: charcoal shroud with machined corners
 	 *   amd   Radeon reference (RDNA3): black shroud, red accent stripes between the fans
@@ -31,6 +32,19 @@
 		[/4060/, { len: 450, fans: 2, shroud: 'dark' }],
 		[/3060/, { len: 380, fans: 2, shroud: 'dark' }]
 	];
+	/**
+	 * Rim light per family: colour and the angle it comes from (0 = from the left, 90 = from the
+	 * top). Product identity only; never the heat hues, which mean speed.
+	 */
+	export const LIGHT: Record<Shroud, { c: string; a: number }> = {
+		fe30: { c: '#eef2f8', a: 35 },
+		fe40: { c: '#a6e34a', a: 205 },
+		fe50: { c: '#8fc2ff', a: 90 },
+		dark: { c: '#b4c4d6', a: 120 },
+		amd: { c: '#ff3b4f', a: 150 },
+		radeon: { c: '#ff5d6c', a: 165 },
+		arc: { c: '#3ea8ff', a: 0 }
+	};
 	export function artSpec(label: string, vendor: string, vram: number | null): ArtSpec {
 		const hit = SPECS.find(([re]) => re.test(label));
 		if (hit) return hit[1];
@@ -91,7 +105,7 @@
 	const fans = $derived.by(() => {
 		const { fans: n, len, shroud } = spec;
 		// flow-through Founders: one fan by the bracket (the second blows through the fins from behind)
-		if (n === 1) return [{ cx: x0 + 100, r: len > 500 ? 88 : 80 }];
+		if (n === 1) return shroud === 'fe40' ? [{ cx: x0 + 108, r: len > 500 ? 92 : 84 }] : [{ cx: x0 + 100, r: len > 500 ? 88 : 80 }];
 		// double flow-through: a fan at each end, the board in between
 		if (shroud === 'fe50') return [{ cx: x0 + 96, r: 82 }, { cx: x1 - 96, r: 82 }];
 		const slot = len / n;
@@ -99,6 +113,16 @@
 	});
 	/** Flow-through fin window (single-fan Founders): from past the fan to the far end. */
 	const fin = $derived(spec.fans === 1 ? { x: fans[0].cx + fans[0].r + 22, w: x1 - 16 - (fans[0].cx + fans[0].r + 22) } : null);
+	const ada = $derived(spec.shroud === 'fe40');
+	const light = $derived(LIGHT[spec.shroud]);
+	/** Shroud outline: a rounded box; Ada's tail end is chamfered (a different silhouette). */
+	const outline = $derived(
+		ada
+			? `M${x0 + 26} 26 H${x1 - 32} L${x1} 58 V200 L${x1 - 32} 232 H${x0 + 26} A26 26 0 0 1 ${x0} 206 V52 A26 26 0 0 1 ${x0 + 26} 26 Z`
+			: `M${x0 + 18} 26 H${x1 - 18} A18 18 0 0 1 ${x1} 44 V214 A18 18 0 0 1 ${x1 - 18} 232 H${x0 + 18} A18 18 0 0 1 ${x0} 214 V44 A18 18 0 0 1 ${x0 + 18} 26 Z`
+	);
+	/** Ada's raked fin window: the leading edge leans back, the tail follows the chamfer. */
+	const adaFin = $derived(fin ? `M${fin.x + 20} 46 H${x1 - 42} L${x1 - 16} 72 V186 L${x1 - 42} 212 H${fin.x - 8} Z` : '');
 	/** Gaps between fans (accent stripes on the Radeon reference). */
 	const gaps = $derived(fans.slice(1).map((f, i) => (fans[i].cx + fans[i].r + f.cx - f.r) / 2));
 	const chips = $derived(Math.max(4, Math.min(16, Math.round((vram ?? 8) / 2))));
@@ -118,7 +142,7 @@
 	});
 </script>
 
-<div class="art" class:live class:flat class:ignite={ignite && charge == null} class:driven={charge != null} class:cold={h === 0} style="--h:{h}; --c:{c}; --rpm:{rpm}; {box}" aria-hidden="true">
+<div class="art" class:live class:flat class:ignite={ignite && charge == null} class:driven={charge != null} class:cold={h === 0} style="--h:{h}; --c:{c}; --rpm:{rpm}; --fl:{light.c}; {box}" aria-hidden="true">
 	<div class="glow"></div>
 	<div class="floor"></div>
 	<div class="body">
@@ -153,9 +177,9 @@
 							<stop offset="0.75" stop-color="#2c2e33" />
 							<stop offset="1" stop-color="#1c1d21" />
 						{:else if spec.shroud === 'fe40'}
-							<stop offset="0" stop-color="#5d6067" />
-							<stop offset="0.35" stop-color="#36383e" />
-							<stop offset="1" stop-color="#18191c" />
+							<stop offset="0" stop-color="#4a4d54" />
+							<stop offset="0.3" stop-color="#2b2d32" />
+							<stop offset="1" stop-color="#141518" />
 						{:else if spec.shroud === 'fe50'}
 							<stop offset="0" stop-color="#3f4147" />
 							<stop offset="0.4" stop-color="#232429" />
@@ -210,7 +234,14 @@
 						<stop offset="0.97" stop-color="#3a3a42" stop-opacity="0.7" />
 						<stop offset="1" stop-color="#0a0a0c" stop-opacity="0" />
 					</radialGradient>
-					<clipPath id="clip-{uid}"><rect x={x0} y="26" width={spec.len} height="206" rx="18" /></clipPath>
+					<clipPath id="clip-{uid}"><path d={outline} /></clipPath>
+					{#if ada}<clipPath id="fin-{uid}"><path d={adaFin} /></clipPath>{/if}
+					<linearGradient id="rl-{uid}" x1="0" y1="0.5" x2="1" y2="0.5" gradientTransform="rotate({light.a} 0.5 0.5)">
+						<stop offset="0" stop-color={light.c} stop-opacity="0.95" />
+						<stop offset="0.32" stop-color={light.c} stop-opacity="0.3" />
+						<stop offset="0.6" stop-color={light.c} stop-opacity="0" />
+						<stop offset="1" stop-color={light.c} stop-opacity="0.12" />
+					</linearGradient>
 				</defs>
 				<!-- bracket -->
 				<rect x={x0 - 22} y="14" width="18" height="250" rx="3" fill="url(#br-{uid})" />
@@ -224,13 +255,28 @@
 				<rect x={x0 + 72} y="262" width="250" height="16" rx="2" fill="#4d4636" />
 				{#each Array.from({ length: 30 }, (_, i) => i) as i (i)}<rect x={x0 + 75 + i * 8.2} y="264" width="5" height="12" fill="#6b604c" />{/each}
 				<!-- shroud -->
-				<rect x={x0} y="26" width={spec.len} height="206" rx="18" fill="url(#sh-{uid})" stroke={fe ? '#6a6d74' : '#2c2c33'} />
-				<path d="M{x0 + 18} 27.5H{x1 - 18}" stroke="rgb(255 255 255 / {spec.shroud === 'fe30' ? 0.45 : 0.2})" stroke-width="1" />
+				<path d={outline} fill="url(#sh-{uid})" stroke={fe ? '#5a5d64' : '#2c2c33'} />
+				<path d="M{x0 + 26} 27.5H{x1 - (ada ? 34 : 18)}" stroke="rgb(255 255 255 / {spec.shroud === 'fe30' ? 0.45 : 0.2})" stroke-width="1" />
 				<g clip-path="url(#clip-{uid})">
 					{#if fe}
 						<!-- Founders: a graphite plate inside the metal frame -->
-						<rect x={x0 + 12} y="38" width={spec.len - 24} height="182" rx="11" fill="#121316" stroke="rgb(0 0 0 / 0.6)" />
-						{#if fin}
+						{#if ada}
+							<!-- Ada: a gunmetal band with two machined grooves, no inner plate -->
+							<path d="M{x0 + 30} 36 H{x1 - 40} M{x0 + 30} 222 H{x1 - 40}" stroke="rgb(0 0 0 / 0.55)" stroke-width="1.5" />
+							<path d="M{x0 + 30} 37.5 H{x1 - 40} M{x0 + 30} 223.5 H{x1 - 40}" stroke="rgb(255 255 255 / 0.08)" />
+						{:else}
+							<rect x={x0 + 12} y="38" width={spec.len - 24} height="182" rx="11" fill="#121316" stroke="rgb(0 0 0 / 0.6)" />
+						{/if}
+						{#if fin && ada}
+							<!-- raked fin window: the fin stack behind it, fins lean with the leading edge -->
+							<path d={adaFin} fill="#050506" />
+							<g clip-path="url(#fin-{uid})">
+								{#each Array.from({ length: Math.floor((fin.w + 30) / 6.5) }, (_, i) => i) as i (i)}
+									<path d="M{fin.x + 2 + i * 6.5} 46 L{fin.x - 20 + i * 6.5} 212" stroke="#26272c" stroke-width="2" />
+								{/each}
+							</g>
+							<path d={adaFin} fill="none" stroke="rgb(255 255 255 / 0.12)" />
+						{:else if fin}
 							<!-- flow-through: the fin stack shows through, the second fan is behind it -->
 							<rect x={fin.x} y="46" width={fin.w} height="166" rx="6" fill="#060607" />
 							{#each Array.from({ length: Math.floor(fin.w / 7) }, (_, i) => i) as i (i)}
@@ -257,6 +303,7 @@
 						{#each Array.from({ length: 9 }, (_, i) => i) as i (i)}<rect x={x1 - 112 + i * 11} y="208" width="5" height="12" rx="1.5" fill="#09090b" />{/each}
 					{/if}
 					{#each fans as f, i (i)}
+						{#if ada}<circle cx={f.cx} cy="132" r={f.r + 14} fill="#1b1c20" stroke="rgb(255 255 255 / 0.1)" />{/if}
 						<circle cx={f.cx} cy="132" r={f.r + 8} fill="url(#rim-{uid})" />
 						<circle cx={f.cx} cy="132" r={f.r + 3} fill="#050506" />
 						<circle cx={f.cx} cy="132" r={f.r} fill="url(#fan-{uid})" />
@@ -285,10 +332,16 @@
 					{/if}
 					<rect class="sweep" x={x0 - 244} y="0" width="200" height="300" fill="url(#sw-{uid})" />
 				</g>
+				<!-- rim light: the family's colour, from the family's side -->
+				<path d={outline} fill="none" stroke="url(#rl-{uid})" stroke-width="5" opacity="0.28" />
+				<path d={outline} fill="none" stroke="url(#rl-{uid})" stroke-width="1.6" />
 				{#if spec.shroud === 'fe50'}
 					<text x={(x0 + x1) / 2} y="182" text-anchor="middle" class="engrave fe">{label}</text>
 				{:else if fe}
-					<text x={x1 - 26} y="214" text-anchor="end" class="engrave fe">{label}</text>
+					<!-- a dark name plate over the fin stack: always whole, always readable -->
+					{@const pw = label.length * 8.8 + 18}
+					<rect x={x1 - (ada ? 52 : 30) - pw} y="54" width={pw} height="20" rx="4" fill="#141518" stroke="rgb(255 255 255 / 0.24)" />
+					<text x={x1 - (ada ? 52 : 30) - pw / 2} y="68" text-anchor="middle" class="engrave fe band">{label}</text>
 				{:else}
 					<text x={x0 + 22} y="46" class="engrave">{label}</text>
 				{/if}
@@ -402,8 +455,9 @@
 			transform 0.9s var(--ease-out),
 			opacity 0.9s var(--ease-out);
 	}
+	/* not measured yet: no heat, the family's own light behind the card */
 	.cold .glow {
-		background: radial-gradient(closest-side, rgb(125 135 148 / 0.1), transparent);
+		background: radial-gradient(closest-side, color-mix(in srgb, var(--fl, #7d8794) 13%, transparent), transparent);
 	}
 	.live .glow {
 		transform: scale(1.04);
@@ -417,7 +471,10 @@
 		text-transform: uppercase;
 	}
 	.engrave.fe {
-		fill: #6a6d74;
+		fill: #b3b6bd;
+	}
+	.engrave.band {
+		font-size: 11px;
 	}
 	.engrave.apple {
 		font-family: var(--font-display);

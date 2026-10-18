@@ -29,10 +29,11 @@
 	const where5060 = findCard('rtx-5060-ti-16')?.name ?? '';
 
 	/** Cropped log axis: just below the smallest value (0,00021) to just above the largest (1,183). */
-	const LO = Math.log10(1.5e-4);
-	const HI = Math.log10(1.6);
+	/* a balanced log axis, 1e-4 … 2: whole decades, the edge points sit inside the frame */
+	const LO = -4;
+	const HI = Math.log10(2);
 	const x = (v: number) => (Math.log10(v) - LO) / (HI - LO);
-	const ticks = [-3, -2, -1, 0];
+	const ticks = [-4, -3, -2, -1, 0];
 	const digits = (v: number) => Math.max(2, -Math.floor(Math.log10(v)) + 1);
 
 	const ours = (['saluki', 'bonsai'] as const).map((k) => ({ k, name: MODEL_INFO[k].name, ...q[k] }));
@@ -94,7 +95,7 @@
 		<figure class="ruler" use:reveal={{ threshold: 0.3 }}>
 			<!-- for scale: format changes (another model), with labels above their markers -->
 			<div class="plane">
-				<div class="zone" style="--a:0; --b:{x(1e-3)}">
+				<div class="zone" style="--a:{x(1e-4)}; --b:{x(1e-3)}">
 					<span class="zl">{c.zone} <SourceTip {lang} src={oursSrc} note={zoneDetail} /></span>
 				</div>
 				<div class="bracket" style="--a:{x(worstOurs)}; --b:{x(bestFmt)}" aria-hidden="true">
@@ -274,7 +275,7 @@
 	}
 	.plane {
 		position: relative;
-		height: 11rem;
+		height: 13rem;
 	}
 	.plane::before {
 		content: '';
@@ -306,10 +307,7 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 0.3rem;
-		font-family: var(--font-mono);
-		font-size: 0.62rem;
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
+		font-size: var(--fs-xs);
 		line-height: 1.25;
 		color: var(--text);
 	}
@@ -363,8 +361,7 @@
 		left: calc(100% + 0.4rem);
 		top: 50%;
 		transform: translateY(-50%);
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
+		font-size: var(--fs-xs);
 		color: var(--text-hi);
 		white-space: nowrap;
 	}
@@ -391,8 +388,7 @@
 		padding: 0.1rem 0.3rem;
 		border-radius: 4px;
 		background: var(--bg-1);
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
+		font-size: var(--fs-xs);
 		color: var(--text);
 		white-space: nowrap;
 	}
@@ -410,20 +406,21 @@
 		bottom: calc(1.8rem + 7.9rem);
 		left: calc(var(--a) * 100%);
 		width: calc((var(--b) - var(--a)) * 100%);
-		height: 0.9rem;
-		border: 2px solid transparent;
+		height: 1.3rem;
+		border: 3px solid transparent;
 		border-bottom: 0;
 		border-image: linear-gradient(90deg, var(--heat-2), var(--heat-3) 50%, var(--heat-4)) 1;
-		filter: drop-shadow(0 0 6px rgb(255 122 26 / 0.6));
+		filter: drop-shadow(0 0 10px rgb(255 122 26 / 0.7));
 		transform-origin: 0 50%;
 	}
 	.bl {
 		position: absolute;
 		left: 50%;
-		bottom: calc(100% + 0.2rem);
+		bottom: calc(100% + 0.15rem);
 		transform: translateX(-50%);
 		font-family: var(--font-display);
-		font-size: clamp(1.1rem, 0.9rem + 0.6vw, 1.5rem);
+		font-size: clamp(1.9rem, 1.2rem + 1.8vw, 3rem);
+		line-height: 1;
 		font-weight: 820;
 		letter-spacing: -0.03em;
 		color: var(--heat-5);
@@ -435,8 +432,8 @@
 		right: 0;
 		bottom: 0;
 		height: 1.4rem;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
+		font-size: var(--fs-xs);
+		font-variant-numeric: tabular-nums;
 		color: var(--text-mute);
 	}
 	.axis span {
@@ -444,8 +441,8 @@
 		left: calc(var(--t) * 100%);
 		transform: translateX(-50%);
 	}
-	.axis span:last-child {
-		transform: translateX(-100%);
+	.axis span:first-child {
+		transform: none;
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* resting state final; entering view replays the markers dropping onto the scale */
@@ -474,7 +471,6 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.4rem 1.2rem;
-		font-family: var(--font-mono);
 		font-size: var(--fs-xs);
 		color: var(--text);
 	}
@@ -493,6 +489,8 @@
 		background: rgb(237 234 227 / 0.06);
 	}
 	.caption .ax {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
 		color: var(--text-mute);
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
@@ -713,7 +711,7 @@
 		}
 		/* narrow: format labels stacked above the dots' labels, the bracket above them */
 		.plane {
-			height: 14.5rem;
+			height: 16.5rem;
 		}
 		.fmt {
 			height: 10.6rem;

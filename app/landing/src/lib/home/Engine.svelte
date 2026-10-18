@@ -47,6 +47,8 @@
 	const f = $derived(easeInOutCubic(clamp01((zoomTl.p - 0.12) / 0.75)));
 	const UP = K.up.v;
 	const OURS = K.ours.v;
+	/** Fewer launches is the win: say so next to the smaller number (1 − ours/upstream). */
+	const cutPct = Math.round((1 - OURS / UP) * 100);
 	const N = 72;
 	const G = Math.round((N * OURS) / UP);
 	const wU = K.gpuMs[0].v / UP;
@@ -138,13 +140,14 @@
 					<span class="g-up">{num(UP, lang, 0)}</span>
 					<span class="g-ar">→</span>
 					<span class="g-ours">{num(live.n, lang, 0)}</span>
+					<span class="g-cut">−{Math.round((1 - live.n / UP) * 100)}{lang === 'pl' ? '\u00a0' : ''}%</span>
 				</p>
 				<p class="g-cap">{c.kernels}</p>
 				<dl class="pair">
 					<div><dt>{c.gaps}</dt><dd><span class="pu">{num(K.gapMs[0].v, lang, 2)}</span> → <b>{num(live.gap, lang, 2)}</b>&nbsp;ms</dd></div>
 					<div><dt>{c.gpu}</dt><dd><span class="pu">{num(K.gpuMs[0].v, lang, 1)}</span> → <b>{num(live.gpu, lang, 1)}</b>&nbsp;ms</dd></div>
 				</dl>
-				<p class="sr-only">{c.up}: {UP} {c.kernels}, {c.gaps} {num(K.gapMs[0].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[0].v, lang, 1)} ms. {c.ours}: {OURS} {c.kernels}, {c.gaps} {num(K.gapMs[1].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[1].v, lang, 1)} ms.</p>
+				<p class="sr-only">{c.up}: {UP} {c.kernels}, {c.gaps} {num(K.gapMs[0].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[0].v, lang, 1)} ms. {c.ours}: {OURS} {c.kernels} (−{cutPct}%), {c.gaps} {num(K.gapMs[1].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[1].v, lang, 1)} ms.</p>
 			</div>
 		</div>
 	</div>
@@ -455,6 +458,19 @@
 	.g-ours {
 		color: var(--heat-5);
 		filter: drop-shadow(0 0 20px rgb(255 122 26 / 0.55));
+	}
+	/* the drop is the gain: a heat chip reads "fewer", not "less" (counts with the counter) */
+	.g-cut {
+		align-self: center;
+		padding: 0.3em 0.6em 0.25em;
+		border-radius: var(--r-pill);
+		background: var(--heat-ramp-hot);
+		color: #140a04;
+		font-size: 0.22em;
+		font-weight: 800;
+		letter-spacing: -0.01em;
+		line-height: 1;
+		box-shadow: 0 0 22px rgb(255 122 26 / 0.45);
 	}
 	.g-cap {
 		font-family: var(--font-mono);

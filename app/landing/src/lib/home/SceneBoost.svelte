@@ -21,7 +21,7 @@
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].how.boost);
-	const tl = new Autoplay(5);
+	const tl = new Autoplay(2.8);
 	const p = $derived(tl.p);
 	const stage = $derived(p >= 0.62 ? 3 : p >= 0.32 ? 2 : p > 0.02 ? 1 : 0);
 

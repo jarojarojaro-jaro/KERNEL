@@ -118,6 +118,14 @@
 	}
 	const first = $derived(lanes.map((l) => runAt(l, T0).pos));
 	const fmtS = (s: number) => `${num(s, lang, 1)}\u00a0s`;
+	/** The side that finishes first: its clock is the only one running until it crosses the line. */
+	const leadIdx = $derived(ends.indexOf(Math.min(...ends)));
+	/** One running clock at a time: the leader's until it finishes, then each trailing side's (its
+	 * clock appears a tenth of a second after the leader's final, so two lanes never read the same). */
+	function timerText(i: number, time: number) {
+		if (i === leadIdx || time >= ends[leadIdx] + 0.1) return fmtS(Math.min(time, ends[i]));
+		return '–';
+	}
 
 	let playing = $state(false);
 	let onScreen = $state(false);
@@ -127,6 +135,8 @@
 	let phase: number[] = [];
 	/** The fast side has written the whole answer (this pass). */
 	let finished = $state(false);
+	/** Both sides are through: only now are both times known, so only now is the verdict shown. */
+	let settled = $state(false);
 	let doneAt = 0;
 	let feeds: HTMLElement[] = $state([]);
 	let trails: HTMLElement[] = $state([]);
@@ -142,7 +152,8 @@
 		clock = time;
 		runs = lanes.map((l) => runAt(l, time));
 		finished = hotIdx >= 0 && runs[hotIdx].pos >= pieces.length;
-		doneAt = finished ? Math.max(...ends) : 0;
+		settled = runs.every((r) => r.pos >= pieces.length);
+		doneAt = settled ? Math.max(...ends) : 0;
 		lanes.forEach((_, i) => {
 			const f = feeds[i];
 			if (f) for (let j = 0; j < f.children.length; j++) f.children[j].classList.toggle('on', j < runs[i].pos);
@@ -155,7 +166,7 @@
 		const tr = trails[i];
 		if (tr) tr.style.transform = `translate3d(${((r.pos / pieces.length - 1) * 100).toFixed(2)}%, 0, 0)`;
 		const tm = timers[i];
-		if (tm) tm.textContent = fmtS(Math.min(clock, ends[i]));
+		if (tm) tm.textContent = timerText(i, clock);
 	}
 
 	function emit(i: number, k: number) {
@@ -235,8 +246,8 @@
 	onMount(() => {
 		phase = lanes.map((_, i) => i * 2.1 + 0.7);
 		if (reducedMotion()) {
-			// one readable frame: the moment the fast side crosses the line
-			seek(hotIdx >= 0 ? ends[hotIdx] : T0);
+			// one readable frame: both sides through, both times and the verdict shown
+			seek(Math.max(...ends));
 			return;
 		}
 		seek(T0);
@@ -265,7 +276,10 @@
 				needle = nn;
 				if (since > 2.6 && since - d <= 2.6) onheat?.(false);
 				const allDone = runs.every((r) => r.pos >= pieces.length);
-				if (allDone && !doneAt) doneAt = clock;
+				if (allDone && !doneAt) {
+					doneAt = clock;
+					settled = true;
+				}
 				if (allDone && clock - doneAt > HOLD) {
 					seek(0);
 					since = 0;
@@ -321,12 +335,12 @@
 		{/each}
 	</div>
 	<!-- one shared finish track: runner, finish line and a running timer per side -->
-	<div class="track" class:won={finished} aria-hidden="true">
+	<div class="track" class:won={settled} aria-hidden="true">
 		{#each lanes as l, i (l.id)}
 			<div class="trow" class:hot={l.hot} style="grid-row:{i + 1}">
 				<span class="tn">{l.label}</span>
 				<span class="tline"><span class="trail" bind:this={trails[i]} style="transform: translate3d({((first[i] / pieces.length - 1) * 100).toFixed(2)}%, 0, 0)"></span></span>
-				<span class="tt" bind:this={timers[i]}>{fmtS(Math.min(T0, ends[i]))}</span>
+				<span class="tt" bind:this={timers[i]}>{timerText(i, T0)}</span>
 			</div>
 		{/each}
 		{#if ratio > 0}
@@ -562,7 +576,7 @@
 		height: 0.7rem;
 		overflow: hidden;
 		border-right: 2px solid var(--text-hi);
-		background: repeating-linear-gradient(90deg, rgb(237 234 227 / 0.12) 0 2px, transparent 2px 10px) 0 50% / 100% 1px no-repeat;
+		background: linear-gradient(rgb(237 234 227 / 0.14), rgb(237 234 227 / 0.14)) 0 50% / 100% 1px no-repeat;
 	}
 	.trail {
 		position: absolute;
@@ -597,17 +611,13 @@
 		font-variant-numeric: tabular-nums lining-nums;
 		font-weight: 650;
 		font-size: var(--fs-sm);
-		font-variant-numeric: tabular-nums;
 		color: var(--text);
 		white-space: nowrap;
-		font-family: var(--font-display);
-		font-variant-numeric: tabular-nums lining-nums;
-		font-weight: 650;
 	}
 	.hot .tt {
 		color: var(--heat-4);
 	}
-	/* the result, big, stamped when the fast side crosses the line (always laid out: no shift) */
+	/* the result, big, stamped when the slow side crosses the line too (always laid out: no shift) */
 	.verdict {
 		grid-column: 4;
 		grid-row: 1 / span 2;
@@ -741,6 +751,28 @@
 			line-height: 1.45;
 		}
 		.strip {
+			display: none;
+		}
+		/* two short rows: the prompt as one line, then model · card · source · pause on one line */
+		.controls {
+			gap: 0.45rem 0.6rem;
+		}
+		.prompt {
+			flex: 1 0 100%;
+			min-width: 0;
+			padding: 0;
+			border: 0;
+			background: none;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.meta {
+			flex: 1 1 0;
+			flex-wrap: nowrap;
+			white-space: nowrap;
+		}
+		.state {
 			display: none;
 		}
 		.track {

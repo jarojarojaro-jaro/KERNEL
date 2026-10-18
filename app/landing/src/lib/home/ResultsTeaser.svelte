@@ -1,9 +1,9 @@
 <script lang="ts">
 	/**
-	 * Landing teaser for the results page: the same-script pairs (HERO_PAIRS) as one compact board,
-	 * each row = model mark + name, card, a steel bar (typical app) and a heat bar (our engine) on the
-	 * row's own scale, both t/s values and the speed-up. The full interactive lab lives on
-	 * /pl/wyniki/ · /en/results/.
+	 * Landing teaser for the results page: a full-width heat band. The same-script pairs (HERO_PAIRS)
+	 * as one board, each row = model mark + name, card, a steel bar (typical app = 1×) and a thick
+	 * glowing heat bar (our engine) on one shared speed-up scale, both t/s values and the speed-up.
+	 * The full interactive lab lives on /pl/wyniki/ · /en/results/.
 	 */
 	import { heatOf } from '$lib/cards/explorer';
 	import { reveal } from '$lib/fx/actions';
@@ -59,21 +59,34 @@
 </section>
 
 <style>
+	/* a full-bleed heat band: the warmth lives in the data here, not in the headline */
 	.teaser {
+		position: relative;
 		padding-block: clamp(3.5rem, 2.5rem + 3vw, 6rem);
+		background:
+			radial-gradient(60% 120% at 70% 55%, rgb(255 122 26 / 0.13), transparent 70%),
+			radial-gradient(40% 90% at 15% 80%, rgb(226 64 28 / 0.09), transparent 70%),
+			linear-gradient(180deg, rgb(255 122 26 / 0.02), rgb(255 122 26 / 0.06) 50%, rgb(255 122 26 / 0.02));
+	}
+	.teaser::after {
+		content: '';
+		position: absolute;
+		inset: auto 0 0;
+		height: 1px;
+		background: linear-gradient(90deg, transparent, var(--heat-2) 20%, var(--heat-4) 60%, transparent);
+		opacity: 0.6;
 	}
 	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
 		display: grid;
-		grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.5fr);
-		gap: clamp(2rem, 5vw, 5rem);
-		align-items: start;
+		gap: clamp(1.75rem, 3vw, 3rem);
 	}
 	.head {
 		display: grid;
-		gap: var(--sp-4);
-		justify-items: start;
+		grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) auto;
+		align-items: end;
+		gap: var(--sp-4) clamp(2rem, 4vw, 4rem);
 	}
 	.t {
 		margin: 0;
@@ -87,6 +100,7 @@
 		text-wrap: balance;
 	}
 	.lede {
+		margin: 0;
 		color: var(--text);
 		max-width: 40ch;
 	}
@@ -113,7 +127,7 @@
 	.row {
 		display: grid;
 		/* fixed columns: every row's bars start on one shared baseline */
-		grid-template-columns: 12.5rem minmax(6rem, 1fr) 10.5rem 4.2rem;
+		grid-template-columns: 14rem minmax(6rem, 1fr) 11rem 5rem;
 		align-items: center;
 		gap: var(--sp-4);
 		padding-block: var(--sp-3);
@@ -140,14 +154,29 @@
 		color: var(--text-mute);
 	}
 	.bars {
+		position: relative;
 		display: grid;
-		gap: 4px;
+		gap: 5px;
+	}
+	/* the 1× line: where the typical app ends, through every row */
+	.bars::after {
+		content: '';
+		position: absolute;
+		top: -0.5rem;
+		bottom: -0.5rem;
+		left: calc(var(--a) * 100%);
+		border-left: 1px dashed rgb(237 234 227 / 0.22);
 	}
 	.bar-a,
 	.bar-b {
-		height: 9px;
 		border-radius: var(--r-pill);
 		transform-origin: 0 50%;
+	}
+	.bar-a {
+		height: 8px;
+	}
+	.bar-b {
+		height: 14px;
 	}
 	.bar-a {
 		background: var(--before);
@@ -157,7 +186,9 @@
 	.bar-b {
 		transform: scaleX(var(--b));
 		background: var(--heat-ramp-hot);
-		box-shadow: 0 0 calc(4px + 12px * var(--th)) rgb(255 122 26 / calc(0.2 + 0.4 * var(--th)));
+		box-shadow:
+			0 0 calc(8px + 16px * var(--th)) rgb(255 122 26 / calc(0.35 + 0.35 * var(--th))),
+			inset 0 1px 0 rgb(255 243 214 / 0.5);
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* resting state final; entering view replays the bars filling */
@@ -181,9 +212,6 @@
 		font-weight: 650;
 		font-size: var(--fs-sm);
 		white-space: nowrap;
-		font-family: var(--font-display);
-		font-variant-numeric: tabular-nums lining-nums;
-		font-weight: 650;
 	}
 	.va {
 		color: var(--before);
@@ -200,8 +228,10 @@
 		text-align: right;
 	}
 	@media (max-width: 1000px) {
-		.inner {
+		.head {
 			grid-template-columns: minmax(0, 1fr);
+			align-items: start;
+			justify-items: start;
 		}
 	}
 	@media (max-width: 640px) {

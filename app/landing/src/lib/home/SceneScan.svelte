@@ -21,7 +21,7 @@
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].how.scan);
 	// starts as soon as the scene's top enters the viewport: the card is never waiting off-screen
-	const tl = new Autoplay(4.6, '0px');
+	const tl = new Autoplay(2.6, '0px');
 	const p = $derived(tl.p);
 	const s = $derived(clamp01((p - 0.16) / 0.66));
 
@@ -106,8 +106,10 @@
 	}
 	.stage {
 		display: grid;
-		/* room above the render for the upward callouts (300 W sits highest) and below for 936 GB/s */
-		padding-block: 6rem 6rem;
+		/* room above the render for the upward callouts (300 W sits highest) and below for 936 GB/s;
+		 * the whole stage sits one header height lower, so the board and its top tags clear the
+		 * floating nav while the sticky text column holds */
+		padding-block: calc(6rem + var(--header-clear)) 4.5rem;
 	}
 	/* render and x-ray share one box and one 3D pose */
 	.gpu {
