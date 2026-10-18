@@ -95,7 +95,7 @@
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell step={2} title={t.title} lead={t.lead} wide>
+<Shell title={t.title} lead={t.lead} wide back="/start/paths">
 	<div class="grid">
 		<form class="card heat-card stack hw-form" novalidate onsubmit={submit}>
 			<GpuCombobox bind:value={gpu} label={t.gpu} placeholder={t.gpuPh} hint={t.gpuHint} none={t.gpuNone} error={tried && !gpu ? t.errGpu : null} />

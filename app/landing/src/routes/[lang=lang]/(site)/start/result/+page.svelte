@@ -75,7 +75,7 @@
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell step={3} title={t.title} lead={t.lead} wide>
+<Shell title={t.title} lead={t.lead} wide back="/start/hardware">
 	{#if ready && (!hw || !rec || !primaryF || !b)}
 		<div class="notice notice--warn"><span class="notice__icon">!</span><p>{t.missing} <a href={href(lang, '/start/hardware')}>{t.toForm}</a></p></div>
 	{:else if hw && rec && primaryF && b}

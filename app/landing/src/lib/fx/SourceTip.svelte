@@ -15,7 +15,7 @@
 	const id = `src-${uid}`;
 	const lines = $derived([...new Set(Array.isArray(src) ? src : [src])]);
 	let btn: HTMLButtonElement | undefined = $state();
-	let pop: HTMLDivElement | undefined = $state();
+	let pop: HTMLSpanElement | undefined = $state();
 
 	function place(e: Event) {
 		if ((e as ToggleEvent).newState !== 'open' || !btn || !pop) return;
@@ -34,12 +34,14 @@
 	<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="none" stroke="currentColor" stroke-width="1.2" /><path d="M6 5.2v3.3M6 3.4v.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" /></svg>
 	<span>{lang === 'pl' ? 'źródło' : 'source'}</span>
 </button>
-<div bind:this={pop} {id} popover="auto" class="src-pop" ontoggle={place}>
-	{#if note}<p class="note">{note}</p>{/if}
-	<ul>
-		{#each lines as l (l)}<li><code>{l}</code></li>{/each}
-	</ul>
-</div>
+<!-- Phrasing content only (span), so the tip is valid inside a <p>: block elements there make the
+     browser repair the HTML, which breaks hydration (hydration_mismatch → remount). -->
+<span bind:this={pop} {id} popover="auto" class="src-pop" ontoggle={place}>
+	{#if note}<span class="note">{note}</span>{/if}
+	<span class="list" role="list">
+		{#each lines as l (l)}<span class="item" role="listitem"><code>{l}</code></span>{/each}
+	</span>
+</span>
 
 <style>
 	.src-btn {
@@ -77,15 +79,19 @@
 		font-size: var(--fs-xs);
 		line-height: 1.5;
 	}
+	.src-pop:popover-open {
+		display: block;
+	}
 	.note {
+		display: block;
 		margin-bottom: var(--sp-2);
 	}
-	ul {
-		margin: 0;
-		padding: 0;
-		list-style: none;
+	.list {
 		display: grid;
 		gap: 0.2rem;
+	}
+	.item {
+		display: block;
 	}
 	code {
 		font-size: var(--fs-2xs);

@@ -33,7 +33,7 @@
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell step={1} title={t.title} lead={t.lead}>
+<Shell title={t.title} lead={t.lead}>
 	<form class="card heat-card stage-card" bind:this={form} novalidate onsubmit={(e) => (e.preventDefault(), proceed('email'))}>
 		<div class="oauth">
 			<button class="oa" type="button" onclick={() => proceed('google')}>

@@ -305,8 +305,8 @@ h3.duo {
 		animation: kin-line 0.9s var(--ease-out) var(--line-delay, 0ms) both;
 	}
 	html.js .kin .ch {
-		animation: kin-in 0.7s var(--ease-out) both;
-		animation-delay: calc(var(--line-delay, 0ms) + var(--i) * 32ms);
+		animation: kin-in 0.55s var(--ease-out) both;
+		animation-delay: calc(var(--line-delay, 0ms) + var(--i) * 12ms);
 	}
 	html.js .kin--wide {
 		animation-name: kin-line-wide;
@@ -315,20 +315,20 @@ h3.duo {
 	}
 	html.js .kin--cold .ch {
 		animation:
-			kin-in 0.7s var(--ease-out) both,
+			kin-in 0.55s var(--ease-out) both,
 			kin-sheen 1.6s var(--ease-in-out) both;
 		animation-delay:
-			calc(var(--line-delay, 0ms) + var(--i) * 32ms),
-			calc(var(--line-delay, 0ms) + 900ms + var(--i) * 45ms);
+			calc(var(--line-delay, 0ms) + var(--i) * 12ms),
+			calc(var(--line-delay, 0ms) + 700ms + var(--i) * 30ms);
 	}
 	/* once the line has landed, a white-hot glint runs through it left to right */
 	html.js .kin--heat .ch {
 		animation:
-			kin-in 0.7s var(--ease-out) both,
+			kin-in 0.55s var(--ease-out) both,
 			kin-glint 0.8s var(--ease-out) both;
 		animation-delay:
-			calc(var(--line-delay, 0ms) + var(--i) * 32ms),
-			calc(var(--line-delay, 0ms) + 1000ms + var(--i) * 30ms);
+			calc(var(--line-delay, 0ms) + var(--i) * 12ms),
+			calc(var(--line-delay, 0ms) + 750ms + var(--i) * 22ms);
 	}
 }
 @keyframes kin-sheen {
@@ -347,9 +347,11 @@ h3.duo {
 			0 0 0.6em rgb(255 122 26 / 0.7);
 	}
 }
+/* Glyphs never start invisible: the intro is transform-only, so a late, throttled or restarted
+ * animation can never leave the headline faded (and the text is the LCP element). */
 @keyframes kin-in {
 	from {
-		opacity: 0.01;
+		transform: translate3d(0, 0.18em, 0);
 	}
 }
 @keyframes kin-line {

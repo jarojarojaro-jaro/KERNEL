@@ -18,7 +18,7 @@
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell step={3} title={t.title} lead={t.lead} wide>
+<Shell title={t.title} lead={t.lead} wide back="/start/paths">
 	<ul class="oses" role="list">
 		{#each list as o (o)}
 			<li class="card os" class:det={detected === o} class:heat-card={detected === o}>

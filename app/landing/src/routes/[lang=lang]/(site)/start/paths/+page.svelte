@@ -17,7 +17,7 @@
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell step={2} title={t.title} lead={t.lead} wide>
+<Shell title={t.title} lead={t.lead} wide back="/start">
 	<ul class="paths" role="list">
 		{#each t.items as p, i (p.id)}
 			<li style="--d:{i * 90}ms">

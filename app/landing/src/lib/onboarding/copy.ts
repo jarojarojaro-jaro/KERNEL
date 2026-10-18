@@ -6,11 +6,10 @@ export const ob = {
 	pl: {
 		prototype: 'Prototyp: logowanie, pobieranie i zapis nie działają jeszcze naprawdę. Nic nie jest wysyłane; dane z tych kroków zostają w tej karcie przeglądarki (sessionStorage).',
 		protoChip: 'Prototyp · nic nie wysyłamy',
-		steps: ['Konto', 'Droga', 'Wynik'],
-		stepOf: (i: number, n: number) => `Krok ${i} z ${n}`,
+		back: 'Wstecz',
 		account: {
 			title: `Załóż konto ${N}`,
-			lead: 'Konto łączy stronę, aplikację i terminal: Twój sprzęt, wyniki „przed → po” i historię strojenia w jednym miejscu.',
+			lead: 'Jedno konto dla strony, aplikacji i terminala.',
 			google: 'Kontynuuj z Google',
 			github: 'Kontynuuj z GitHub',
 			or: 'albo e-mailem',
@@ -187,11 +186,10 @@ export const ob = {
 	en: {
 		prototype: 'Prototype: sign-in, downloads and saving do not really work yet. Nothing is sent; data from these steps stays in this browser tab (sessionStorage).',
 		protoChip: 'Prototype · nothing is sent',
-		steps: ['Account', 'Path', 'Result'],
-		stepOf: (i: number, n: number) => `Step ${i} of ${n}`,
+		back: 'Back',
 		account: {
 			title: `Create your ${N} account`,
-			lead: 'Your account connects the website, the app and the terminal: your hardware, before → after results and tuning history in one place.',
+			lead: 'One account for the website, the app and the terminal.',
 			google: 'Continue with Google',
 			github: 'Continue with GitHub',
 			or: 'or with email',

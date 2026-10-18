@@ -79,7 +79,7 @@
 	{#key flares}{#if flares > 0}<div class="bloom" aria-hidden="true"></div>{/if}{/key}
 	<div class="inner">
 		<h1 id="hero-title" class="title">
-			<Kin lines={c.title} wide={[1]} heat={[1]} cold={[0]} delays={[100, 420]} />
+			<Kin lines={c.title} wide={[1]} heat={[1]} cold={[0]} delays={[0, 120]} />
 		</h1>
 		<div class="actions">
 			<a class="ignite" href={cardsHref(lang)} use:magnetic={{ max: 6 }}>
@@ -351,22 +351,21 @@
 	@media (prefers-reduced-motion: no-preference) {
 		/* the headline lands first; the CTAs follow, then the race rises */
 		:global(html.js) .actions {
-			animation: fade-up 0.7s var(--ease-out) 0.8s both;
+			animation: fade-up 0.6s var(--ease-out) 0.25s both;
 		}
 		:global(html.js) .race {
-			animation: rise 0.9s var(--ease-out) 0.95s both;
+			animation: rise 0.7s var(--ease-out) 0.35s both;
 		}
 	}
+	/* transform-only: the CTAs and the race are visible from the first painted frame */
 	@keyframes fade-up {
 		from {
-			opacity: 0.01;
-			transform: translate3d(0, 1rem, 0);
+			transform: translate3d(0, 0.75rem, 0);
 		}
 	}
 	@keyframes rise {
 		from {
-			opacity: 0.01;
-			transform: translate3d(0, 2rem, 0);
+			transform: translate3d(0, 1.5rem, 0);
 		}
 	}
 	@media (max-width: 640px) {

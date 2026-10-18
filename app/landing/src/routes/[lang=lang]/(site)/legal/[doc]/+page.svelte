@@ -64,16 +64,20 @@
 		background: var(--heat-ramp-hot);
 		box-shadow: 0 0 14px color-mix(in srgb, var(--heat-3) 80%, transparent);
 	}
+	/* Title stays bone/ink; heat only as a short underline. */
 	.section :global(.legal > h1.h1) {
-		background: linear-gradient(90deg, var(--text-hi) 55%, var(--heat-3));
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
+		position: relative;
+		padding-bottom: var(--sp-4);
 	}
-	:global(:root[data-theme='light']) .section :global(.legal > h1.h1) {
-		background: linear-gradient(90deg, var(--text-hi) 55%, var(--accent-ink));
-		-webkit-background-clip: text;
-		background-clip: text;
+	.section :global(.legal > h1.h1::after) {
+		content: '';
+		position: absolute;
+		left: 0;
+		bottom: 0;
+		width: 4rem;
+		height: 3px;
+		border-radius: var(--r-pill);
+		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 55%, var(--heat-4));
 	}
 	.section {
 		position: relative;
