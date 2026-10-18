@@ -1,7 +1,7 @@
 # 16c. E1: port kernela `kvq` na CUDA (Ampere+)
 
 Data: 2026-10-16. Autor: agent CudaKvq. Zlecenie: eksperyment E1 z raportu 15d (`15d-prefill-dlugi-kontekst.md:187-218`).
-Kod: worktree `~/wt/kvq-cuda`, gałąź `kvq-cuda` od `cuda-3090-opt` (`3da7a02ec`), commit `f08dc78bb`. Wyłącznik: `GGML_CUDA_KVQ=0`.
+Kod: worktree `~/wt/kvq-cuda`, gałąź `kvq-cuda` od `cuda-3090-opt` (`3da7a02ec`), commity `f08dc78bb` (kernel), `67445d884` + `678473a27` (wyjątek dla decode 1 tokenu D256 q4_0, §9). Wyłączniki: `GGML_CUDA_KVQ=0` (całość), `GGML_CUDA_KVQ_N1_D256_Q4=1` (włącza kvq także dla decode 1 tokenu D256 q4_0; domyślnie wyłączone).
 Surowe wyniki: `~/qwen-opt/cloud/results/kvq-cuda-20261016/` (3090) i `.../kvq-cuda-20261016/5060ti/`. Skrypty: `~/qwen-opt/cloud/runs/kvq-cuda/` (`inst/*.sh`, `perf_table.py`, `bench_table.py`) i `runs/kvq-cuda-5060ti/`.
 
 ## TL;DR
@@ -12,6 +12,7 @@ Surowe wyniki: `~/qwen-opt/cloud/results/kvq-cuda-20261016/` (3090) i `.../kvq-c
 4. **Kernel FA osobno, 64k, układ cache KV, 3090:** Qwen q4_0 przy 1 tokenie 680 → **115 µs** (5.9×, ~656 GB/s), przy 5 tokenach 1054 → 236 µs. LFM q8_0 przy 1 tokenie 301 → 120 µs (2.5×). Na 5060 Ti Qwen q8_0 przy 1 tokenie 895 → 347 µs, czyli ~92% pasma 448 GB/s.
 5. **Poprawność:** test-backend-ops `FLASH_ATTN_EXT` daje 4095/4095 z kvq i bez, na sm_86 i sm_120 (w tym 36 nowych przypadków). Greedy md5 na świeżych serwerach jest deterministyczny w obu trybach. Tekst z kvq różni się od bazy (zmiana numeryki, jak dla HIP kvq).
 6. **Bramka KLD: 4 z 5 zgodnie z oczekiwaniem, 1 FAIL na granicy.** Kanarek (KV q4_0) poprawnie FAIL przy +22σ. Przeszły: LFM ub1 (kvq **lepszy** od vec o −2.0σ), LFM ub5, Qwen ub5 (kvq lepszy od ścieżki MMA_F16 o −2.0σ). **Qwen ub1 (zwykły decode) FAIL przy +2.53σ:** 0.002899 vs 0.002527. Same top i 99.9% KLD przechodzą. Kontrola szumu (to samo jądro, inny podział KV) jest w §5. Moja interpretacja i decyzja do podjęcia są w §6.
+7. **Aktualizacja 2026-10-18 (§9): powtórka bramki dla Qwena na dłuższym tekście (5 × 8192 tok.) daje FAIL** na ogonie 99.9% KLD (×2.04 wobec vec, średnia +1.52σ, same top −1.98σ). Kontrola szumu (sam podział KV) też oblewa ogon (×1.41). Zgodnie z regułą wszedł wąski wyjątek: decode 1 tokenu D256 q4_0 zostaje na vec. **Koszt:** tg64@64k Qwena wraca do 27.40 t/s (kvq dawał 36.99). Weryfikacja MTP (pp5@64k) zachowuje zysk: 141.83 vs 103.18 t/s bez kvq. LFM, q8_0 i ub 2–16 bez zmian.
 
 ## 1. Co zbudowałem
 
@@ -165,7 +166,7 @@ Domyślne wartości trafiają w optimum albo są w granicach 3% od niego, więc 
 
 - **Kill (zysk przy 64k < +10%) nie zachodzi:** +36.8% (Qwen) i +30.4% (LFM) na 3090, +24.6% i +30.0% na 5060 Ti, MTP@64k +27.6%. Hipotezy 15d: H1 potwierdzona (przyrost czasu tokenu przy 64k spada z +11.4 ms do ~1.7 ms dla Qwena). H3 potwierdzona dla Qwena (≤ 2.5 ms). H2 nieistotna, bo MTP@64k już ma 70 t/s.
 - **Bramka KLD:** ścieżki weryfikacji (ub 5) i LFM przechodzą z wynikiem lepszym od upstreamu. Jedyny FAIL to Qwen ub 1 przy +2.53σ, z zachowanymi top-p i ogonem 99.9%. W tej samej serii dwie inne pary wyszły o −2.0σ na korzyść kvq, więc moim zdaniem ±2σ to rozrzut między dwiema różnymi, równie dokładnymi numerykami na hybrydzie. Kontrola szumu (§4/§5) to potwierdza: zmiana samej kolejności sumowania daje ±1–1.9σ i potrafi oblać bramkę. Z teorii f16 Q (2⁻¹² względnie) jest dokładniejsze od q8_1 Q w vec (~2⁻⁸) `[INFERENCE]`.
-- **Rekomendacja:** domyślnie włączone dla ub 2–16 (weryfikacja MTP) i dla LFM. Dla Qwen ub 1 decyzję zostawiam rodzicowi. Wariant ostrożny: wyłączyć kvq tylko przy `Q->ne[1] == 1` dla D 256 q4_0, kosztem zysku tg bez MTP (+36.8% przy 64k). Rozsądniej jest powtórzyć KLD Qwena na dłuższym tekście (`--chunks 4`), zanim dołożymy wyjątek.
+- **Rekomendacja (pierwotna, 2026-10-16):** domyślnie włączone dla ub 2–16 (weryfikacja MTP) i dla LFM; dla Qwen ub 1 powtórzyć KLD na dłuższym tekście. **Rozstrzygnięcie w §9: FAIL → wyjątek dla decode 1 tokenu D256 q4_0 jest domyślny.**
 
 ## 7. Koszt
 
@@ -186,6 +187,38 @@ Wszystkie trzy instancje są zniszczone (`vastai show instances`: brak etykiet `
 - LFM na 3090 osiąga tylko 63% pasma przy D 64. Kandydat: 8 warpów albo większe kafle (więcej bajtów w locie na blok).
 - Nie mierzyłem `spec_sweep` z krótkim kontekstem (regresji przy d0 nie ma: tg64 +0.6% i +0.1%, MTP 8k +2.4%) ani VRAM. kvq nie alokuje bufora f16 K/V, więc dla n ≥ 2 VRAM powinien spaść `[INFERENCE]`.
 - Turing (sm_75) nie jest obsłużony (cp.async). Ścieżka HIP RDNA3 (`fattn-kvq.cu`) jest nietknięta.
+
+## 9. Powtórka bramki KLD dla Qwena (2026-10-18)
+
+Zlecenie rodzica: powtórzyć bramkę Qwena na dłuższym tekście z kontrolą szumu. PASS → kvq zostaje dla decode 1 tokenu. FAIL → wąski wyjątek za przełącznikiem i pomiar.
+
+**Środowisko:** Vast 56603163 (oferta 56200479, Utah), RTX 3090, sterownik 595.71.05, limit 300 W, EPYC 7402 (kwota → `-t 15`). Build na instancji z bundla (`67445d884`, sm_86, 221 s). Protokół jak w 16c: wikitext-2, `-c 8192 -b 8192 -ub 1`, referencja f16 KV na tej samej karcie, ale **`--chunks 5`** (40 960 tokenów zamiast 8 192). Wyniki: `~/qwen-opt/cloud/results/kvq-cuda-20261016/kld-c5/`.
+
+| para (baza → kandydat) | mean KLD baza | mean KLD kand. | ΔKLD/σ | same top Δ | 99.9% KLD | werdykt |
+|---|---|---|---|---|---|---|
+| vec → kvq | 0.011093 ± 0.001968 | 0.016625 ± 0.003057 | +1.52 | −1.98σ | 1.106 → 2.256 (×2.04) | **FAIL** (ogon) |
+| vec → kvq z innym podziałem KV (`GGML_CUDA_KVQ_BPSM=1`) | 0.011093 | 0.012422 ± 0.002256 | +0.44 | −1.21σ | ×1.41 | FAIL (ogon) |
+| kvq → kvq z innym podziałem KV | 0.016625 | 0.012422 | −1.11 | +0.77σ | ×0.69 | PASS |
+
+- Chunki 1–2 to ten sam tekst co w 16c (te same liczby: kvq 0.00290 vs vec 0.00253 po 2 chunkach).
+- Cały ogon pochodzi z chunku 3 (średnia vec skacze 0.0025 → 0.0166). Pojedyncze tokeny mają tam KLD ~20 we wszystkich trzech wariantach (max: vec 20.56, kvq 23.93, kvq-bpsm1 19.50), czyli to miejsca, gdzie KV q4_0 samo psuje rozkład. 99.9% z 40 960 tokenów to ~41 tokenów i ta statystyka jest niestabilna. Sama zmiana kolejności sumowania w tym samym jądrze przesuwa ją o ×0.69/×1.41.
+- Interpretacja: średnia i top-p przechodzą. Ogon jest gorszy, ale w zasięgu szumu kolejności sumowania, więc różnicy jakości nie da się tu wykazać ani wykluczyć. Reguła bramki mówi FAIL, więc wszedł wąski wyjątek.
+
+**Wyjątek** (`678473a27`, `fattn-kvq-mma.cu`, `ggml_cuda_flash_attn_ext_kvq_mma_supported`): przy `Q->ne[1] == 1`, D 256 i K q4_0 kvq nie jest wybierany i wybór wraca do vec. `GGML_CUDA_KVQ_N1_D256_Q4=1` włącza kvq z powrotem. Pomiar na tej samej instancji (llama-bench, KV q4_0, `-d 0,65536 -p 5 -n 64 -r 3`, kolejność off/on/wyj./wyj./on/off, `kld-c5/bench/`; ostatni przebieg „off” przerwano przy 64k, więc off@64k ma 3 próbki):
+
+| test | kvq off | kvq on | wyjątek |
+|---|---|---|---|
+| tg64 d0 | 40.41 (39.47–41.19) | 40.91 (40.28–41.33) | 40.93 (40.47–41.48) |
+| tg64 d65536 | 27.29 (27.26–27.33) | 36.99 (36.89–37.01) | **27.40** (27.34–27.44) |
+| pp5 d0 | 140.70 | 138.65 | 142.29 |
+| pp5 d65536 | 103.18 (102.44–113.62) | 139.27 (130.46–165.49) | **141.83** (131.94–165.85) |
+
+- Wyjątek odbiera zysk zwykłego decode Qwena (tg@64k +35.5% → +0.4%). Zachowuje go dla weryfikacji MTP (pp5@64k +37.5%) i dla wszystkich ścieżek q8_0/LFM. MTP@64k (§3.4, +27.6%) korzystał głównie z weryfikacji, ale serwer MTP robi też decode 1 tokenu (prompt/draft), więc część zysku może zniknąć `[INFERENCE]`, nie zmierzone.
+- KLD wariantu z wyjątkiem nie zdążyło się skończyć (instancja zniszczona na polecenie użytkownika przed restartem serwera). Przy `-ub 1` wszystkie wywołania FA mają 1 token, więc z wyjątkiem idą ścieżką vec i log powinien być IDENTICAL z `qwen-q4-vec.log` `[INFERENCE]`, niezmierzone.
+- Na tej instancji zysk on/off przy 64k jest mniejszy niż w 16c (+35.5% vs +36.8%; inny host: EPYC 7402, 300 W).
+- Możliwe dalsze kroki (bez zlecenia): (a) bramka na innym korpusie albo z większą liczbą chunków, żeby ustabilizować 99.9%; (b) dokładniejszy wariant n=1, np. akumulacja P·V w f32 zamiast f16 P.
+
+**Koszt §9:** 56603163 przez ~1.42 h × $0.291 ≈ $0.41, transfer ~17.5 GB ≈ $0.05, **razem ~$0.46** (limit $0.80). Instancja zniszczona, watchdog zabity, `vastai show instances`: 0 naszych. Łączny koszt E1: ~$1.40.
 
 ## Do bazy wiedzy
 
@@ -209,3 +242,11 @@ Wszystkie trzy instancje są zniszczone (`vastai show instances`: brak etykiet `
    - kolejne zadania GPU na instancji uruchamiać pod `flock /root/gpu.lock`, bo jeden przebieg perf nałożył się na llama-bench i trzeba go było wyrzucić.
 7. **chmura**: upload z domu ~155 KB/s (53 MB binarek w 5:42 min). Dla iteracji lepszy bundle (355 KB) + build na instancji (sm_120: 234 s przy 11 wątkach).
 8. **research/raport-15d** (korekta): MTP@64k na 3090 to już 70.3 t/s bez kvq, a nie 52–55 t/s `[INFERENCE]` (`mtp/mtp.jsonl`).
+9. **kernele/fattn-kvq.md** (dopisać do pkt 1):
+   - decode 1 tokenu D256 q4_0 (Qwen bez MTP) domyślnie na vec (`678473a27`, `GGML_CUDA_KVQ_N1_D256_Q4=1` włącza kvq);
+   - powód: bramka KLD na 5 × 8192 tok. FAIL na ogonie (×2.04), z kontrolą szumu ×1.41;
+   - tg@64k Qwena: off 27.29 / kvq 36.99 / wyjątek 27.40 t/s; pp5@64k 103.18 / 139.27 / 141.83 t/s (`16c §9`, `kld-c5/`).
+10. **metody/bramka-kld-kanarki.md** (aktualizacja):
+   - 99.9% KLD na 40 960 tokenach to ~41 tokenów; na Qwenie z KV q4_0 jeden fragment tekstu (chunk 3 wikitext, KLD tokenu ~20) decyduje o werdykcie;
+   - sama zmiana kolejności sumowania przesuwa 99.9% o ×0.69–×1.41;
+   - przy kandydatach blisko progu zawsze dołożyć kontrolę „to samo jądro, inny podział” (`16c §9`).

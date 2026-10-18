@@ -91,6 +91,12 @@
 ### WikiIngest
 - Wiki aktualne do 16c/16d/16i/16h + naprawa regresji (381 notatek, lint 0/0). Czeka na kolejne raporty.
 
+### CudaKvq: E1 port `kvq` na CUDA (`~/wt/kvq-cuda`, gałąź `kvq-cuda`, ostatni commit `678473a27`, czysty) — ZAKOŃCZONE
+- Raport `product/research/16c-kvq-cuda.md` (§1–8 z 2026-10-16, §9 z 2026-10-18, „Do bazy wiedzy” pkt 1–10). Wyniki: `~/qwen-opt/cloud/results/kvq-cuda-20261016/` (§9: `kld-c5/`).
+- §9: bramka KLD Qwena na 5 × 8192 tok. FAIL na ogonie (99.9% ×2.04; kontrola szumu ×1.41). Wszedł wyjątek: decode 1 tokenu D256 q4_0 domyślnie na vec (`GGML_CUDA_KVQ_N1_D256_Q4=1` włącza kvq). Pomiar: tg64@64k 27.29 / kvq 36.99 / wyjątek 27.40 t/s; pp5@64k 103.18 / 139.27 / 141.83.
+- Niezmierzone: KLD wariantu z wyjątkiem (przerwane przy niszczeniu; przy ub 1 z konstrukcji = vec) i serwer MTP@64k z wyjątkiem. Oba wymagają nowego wynajmu, więc najpierw zgoda.
+- Chmura: wszystkie instancje zniszczone (ostatnia 56603163), watchdogi zabite, 0 naszych instancji. Koszt E1 łącznie ~$1.40.
+
 ## Odłożone (decyzja użytkownika)
 
 ### Nemotron 3.5 Bolt na RTX 3090 — „odpuszczamy, wrócimy kiedyś”
