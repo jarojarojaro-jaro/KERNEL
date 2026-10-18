@@ -203,6 +203,10 @@ Scores per round (WOW / originality / polish):
 | 6 | 7 | 7 | 6 |
 | 7 | 7 | 7 | 6 |
 | 8 | 7 | 6 | 7 |
+| 9 | 6.5 | 6 | 6.5 |
+| 10 | 7 | 6 | 7 |
+| 11 | 7 | 6.5 | 7 |
+| 12 | 7 | 6 | 7 |
 
 Round 5 came after the user's next round of changes: centred hero with one Qwen race, gauges in SSR, new nav, auto-play scenes, the full-stack visual, the KLD ruler with the validated bit-exact XTX result, FAQ moved after the final CTA, pricing removed, onboarding redone, and a global heat pass. Screens are in `screens/v2/r5/`, `hero-fix/` and `nav/`.
 
@@ -251,3 +255,28 @@ The open points from round 4:
   - the quality section depends on a legend;
   - the live readout next to „zmierzone” reads as a disagreement;
   - a second big moment after the hero.
+
+## Rounds 9–12 (2026-10-18)
+
+- **Bit-exact source:** `BITEXACT_XTX.speed` now cites the final run 4 (`product/research/12-bit-exact-spekulacja.md:325-326`): spec_sweep 108,3 vs 107,7 t/s (production), and at a 27 327-token prompt 102,66 vs 111,77 t/s (−8 %). The `/tmp` source is gone. It is still labelled „w walidacji · jeszcze nie w produkcie”.
+- **Changes:**
+  - hero digits show only measured values; the live wobble is only on the needles;
+  - both race lanes are above the fold on mobile; the verdict appears only after both lanes finish;
+  - "Przyspieszamy cały stos" is a full-bleed scene (−59 % kernel launches);
+  - per-card GPU drawings with per-family light;
+  - the gauge is only in the hero and in the card replay;
+  - one figure face and one heat colour for multipliers;
+  - exact settled counters; faster scan and boost timelines.
+- **Checks on the round-12 build:**
+  - svelte-check 0/0;
+  - hydration 0 (12 pages);
+  - hero QA 40/40;
+  - axe 0 (17 pages × 1280/390);
+  - Lighthouse mobile `/pl/` 87, `/pl/wyniki/` 90, `/pl/karty/rtx-3090/` 88; CLS 0; LCP 3.2–3.6 s.
+- **Juror:** scores plateaued at about 7/6/7 (rounds 10–12). Open from round 12:
+  - the middle of the page repeats one layout and needs a second set-piece;
+  - the hero race still reads partly as a dashboard;
+  - onboarding uses template forms;
+  - model colours vs the heat palette (the user asked for model colours);
+  - quality chart balance;
+  - many „źródło” pills.

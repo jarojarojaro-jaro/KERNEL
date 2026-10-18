@@ -76,9 +76,9 @@
 - Prędkość 3060 (`results/3060-20261016/opt/`): Saluki 17.2 → MTP 24.3 t/s; Bonsai repack 27.6 t/s (sweep niedokończony).
 - **Do zrobienia (CPU):** zebrać wszystko w raport 16e. Bez nowego wynajmu, chyba że użytkownik zdecyduje inaczej.
 
-### LandingWow: strona (`~/KERNEL/app`, wszystko zacommitowane; build `landing/build` = runda 8)
-- Runda 8 zbudowana i sprawdzona: svelte-check 0/0, hydration 0 (14 stron), hero QA 40/40, axe 0 (20 stron × 2), Lighthouse mobile /pl/ 87 (LCP 3.6 s). Juror r8: 7 / 6 / 7 (cel 8/8/8 nieosiągnięty).
-- Otwarte (juror r8): wyścig na mobile (szybki tor poniżej ekranu), zegar użyty 6×, jedna generyczna grafika GPU, nagłówki scen pod nawigacją, legenda jakości, drugi „wielki moment” po hero. Skrypty QA: `app/landing/scripts/qa/`.
+### LandingWow: strona (`~/KERNEL/app`, wszystko zacommitowane; build `landing/build` = runda 12)
+- Rundy 9–12 zrobione i sprawdzone: svelte-check 0/0, hydration 0, hero QA 40/40, axe 0, Lighthouse mobile /pl/ 87 (LCP 3.6 s). Bit-exact na stronie z przebiegu 4 (`research/12-…md:325-326`).
+- Juror utknął na ~7 / 6 / 7 od rundy 6; cel 8/8/8 nieosiągnięty, uwagi jurorów częściowo sprzeczne z wcześniejszymi i z życzeniami użytkownika. Otwarte: powtarzalny środek strony (drugi „set-piece”), szablonowy onboarding, balans wykresu jakości, liczba pigułek „źródło”. Skrypty QA: `app/landing/scripts/qa/`.
 
 ### WikiIngest
 - Wiki aktualne do 16c/16d/16i/16h + naprawa regresji (381 notatek, lint 0/0). Czeka na kolejne raporty.
