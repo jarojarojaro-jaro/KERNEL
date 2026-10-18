@@ -27,8 +27,8 @@
   - tg128: produkcja 43.17/42.91, new 42.96/43.02, bx 41.79/41.79 t/s;
   - pp5@32k: produkcja 152.1/156.8, new 152.3/150.4, bx 133.8/134.5;
   - **spec_sweep (flagi produkcyjne): produkcja 107.7 / new 109.0 / bx 108.3 / produkcja 107.6 t/s** → bit-exact w MTP bez kosztu;
-  - longspec ~27k: tylko `base` zrobiony (decode 111.8 t/s, prefill 948.7 t/s); `new` i `bx` **niezmierzone** (przerwane).
-- **Do zrobienia:** powtórzyć tylko `longspec` (`cp ~/wt/bx-isa/validate.sh /tmp/bxv-frozen5.sh && /tmp/bxv-frozen5.sh longspec`); uzupełnić raport 12 §13 + wiki; potem decyzja użytkownika o wdrożeniu do produkcji.
+  - longspec ~27k (decode t/s): produkcja 111.77/111.85, new 113.2, bx 102.66 (−9%).
+- **Zakończone.** Raport 12 §13 + „Do bazy wiedzy” uzupełnione. Czeka na decyzję użytkownika o wdrożeniu (przełącznik domyślnie wyłączony; „new” = produkcja).
 
 ### XtxLookupTail: ogon z lookupu za MTP (`~/wt/lookup`, gałąź `lookup-tail`, **zmiany NIEzacommitowane**, build `build-hip` gotowy)
 - Zaimplementowane za `LLAMA_SPEC_LOOKUP` (0 wył., 1 log, 2 ogon, 3 ogon + łańcuchy bez draftera), `LLAMA_SPEC_LOOKUP_W` (domyślnie 8), `_MMIN` (6).

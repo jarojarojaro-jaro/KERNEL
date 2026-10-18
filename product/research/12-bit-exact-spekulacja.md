@@ -294,3 +294,69 @@ Ponowne uruchomienie tylko poprawionych części (czeka na zgodę na GPU): `~/wt
 - **Bitexact plain (n1_multi + rozbita SwiGLU) jest o ~3% szybszy na tg128.** Arytmetyka kolumny kernela wielokolumnowego dla N=1 to kandydat na domyślną ścieżkę N=1 także poza trybem bitexact. Do decyzji po ABBA.
 - **Niedeterminizm greedy na jednym serwerze z MTP** wynika z braku niezmienniczości względem N, a nie z samego stanu draftu. Naprawia go dopiero tryb bitexact.
 - **LFM2.5** (bez MTP) ma bitowo ten sam wynik plain w obu trybach.
+
+### Regresja trybu domyślnego (−6% tg128) i jej naprawa (2026-10-16)
+- **Objaw:** walidacja z flagami produkcyjnymi pokazała drzewo batch-invariant bez env o ~5-6% wolniejsze od produkcji:
+  - tg128: 40.5 vs 43.05 t/s;
+  - spec_sweep: 103.0 t/s / 29.73 ms/krok vs 107.5 / 28.15.
+  Bitexact miał 41.5 t/s tg128 i 107.0 t/s spec_sweep.
+- **Bisekcja** (ABBA tg128 -r 5, `~/wt/bx-isa/bench_tg.sh`):
+  - prod 43.25/43.11, v070 43.26/43.14;
+  - c09ac6aab 43.20/43.04, 77240c9b3 43.16/43.15, czyli te commity są bez regresji.
+  - Regresję wprowadził **ce2105d32** (haki diagnostyczne `GGML_HIP_BITEXACT_FA_ZERO_MASKED`/`NSPLIT1`). Offline ISA: wspólna instancja `flash_attn_ext_kvq<256,8,Q4_0>` przeszła z 0 na **14 spillowanych VGPR** (scratch 60 B). Kernel był już na granicy 255/256 VGPR, a zerowanie surowych K/V w pętli dodało rejestry. Przy 77240c9b3 i 6e261fdb4 spilli nie ma.
+- **Poprawka 02813c1c5:** wariant bitexact (jeden token na blok + zerowanie zamaskowanych wierszy) jest osobną instancją szablonu (`bx_tok`). Domyślny kernel: 0 spilli, 4615 vs 4610 instrukcji bazy.
+  - Pomiar po poprawce (ABBA): **nowy domyślny 43.15/43.16 t/s = prod 43.25/43.11 = v070 43.26/43.14**.
+- **Zostaje:** wariant bitexact kvq nadal ma 14 spilli. To część kosztu bx: pp5@32k 137 vs 148-149 t/s (−8%), obok jednego tokenu na blok, czyli KV czytanego N razy.
+  - Propozycja: zamiast zerować 8+ rejestrów po każdym load, wybierać wskaźnik źródła (`zamaskowany ? wiersz zer w pamięci : K_row + k*nb11`), co daje te same bajty bez dodatkowych rejestrów.
+  - Zmierzyć spec_sweep na długim kontekście z bitexact po tej zmianie.
+
+### Do bazy wiedzy (uzupełnienie 2)
+- **Haki diagnostyczne w hot-loopie kernela na granicy 256 VGPR potrafią włączyć spille w ścieżce domyślnej (tu −6% tg128).** Każdy dodatek przy kernelu na limicie rejestrów robić jako osobną instancję szablonu albo sprawdzać `vgpr_spill_count` w ISA przed commitem (`isa.sh`, metadata `.vgpr_spill_count`).
+- **Bisekcja wydajności:** ABBA tg128 -r 5 per commit (osobne worktree/build), a offline ISA per commit wskazuje przyczynę bez GPU.
+
+### Run 4: wyniki końcowe (2026-10-16/17, commit 365af3e5e; XTX, flock gpu+quiet)
+Build: `~/wt/batchinv/build-hip` (gałąź `batch-invariant`). „new” = to drzewo bez env, „bx” = `LLAMA_SPEC_BITEXACT=1`, „prod” = `~/llama-opt`.
+
+| test | prod | new (bez env) | bx |
+|---|---|---|---|
+| greedy plain (fusion/greedy.sh) | – | `c4708318` ✓ (v070 też `c4708318`) | plain = MTP n_max 1..7 = `5fdc8a14` ✓ (harness validate.sh) |
+| llama-bench tg128 (t/s, ABBA) | 43.17 / 42.91 | 42.96 / 43.02 | 41.79 / 41.79 (−2.8%) |
+| llama-bench pp5 @ d32768 (t/s) | 152.1 / 156.8 | 152.3 / 150.4 | 133.8 / 134.5 (−11%) |
+| spec_sweep, flagi produkcyjne (6 promptów × 3 seedy, t/s) | 107.7 / 107.6 | 109.0 | 108.3 |
+| MTP długi kontekst, prompt 27 327 tok., T=0, 256 tok. (decode t/s / akceptacja) | 111.77 / 111.85 (0.595) | 113.2 (0.597) | 102.66 (0.638), czyli −9% |
+| prefill 27k (t/s) | 948.7 / 959.7 | 970.8 | 959.5 |
+
+**Wnioski:**
+- **Tryb domyślny** po poprawce regresji (02813c1c5) jest równy produkcji w granicach szumu: tg128 −0.1%, spec_sweep +1.3%, długi kontekst +1.3%, md5 `c4708318`.
+- **Koszt bitexact:**
+  - krótki kontekst: MTP bez kosztu (spec_sweep 108.3 vs 107.7 prod), plain tg128 −2.8%;
+  - kontekst ~27-32k: MTP −9% decode, forward weryfikacji 5 tokenów −11%. Przyczyną jest FA z jednym tokenem na blok: KV czytane N razy zamiast raz na kafel 16 kolumn, plus 1 spill w wariancie bx.
+  - Akceptacja w bx jest inna (0.638), bo inny jest tekst greedy. Tempo decode porównujemy przy różnych tekstach.
+- **Poprawność bitexact** (run 3 + run 4):
+  - test-backend-ops PASS w obu trybach;
+  - plain == MTP dla n_max 1..7, dla promptów ~6.5k/29.5k/94k i dla długości 1024+1..7;
+  - det_probe: 5/5 scenariuszy identycznych na jednym serwerze (plain i MTP);
+  - LFM2.5 plain: bitexact == domyślny (`68b329da`).
+- **Rekomendacja:**
+  - wdrożyć do produkcji drzewo z przełącznikiem (domyślnie wyłączony; „new” jest równy prod);
+  - `LLAMA_SPEC_BITEXACT=1` oferować jako tryb „gwarantowanie te same odpowiedzi co bez spekulacji” (koszt 0% na krótkim, ~9% na 30k kontekście).
+- **Dalsze obniżenie kosztu na długim kontekście:** zamiast jednego tokenu na blok, wspólne kafle z kolumnami przyporządkowanymi tak, by każda kolumna miała w swoim kafelku te same sąsiednie dane (zera) co przy N=1. Wymaga zrozumienia sprzężenia WMMA z zamaskowanymi wierszami (sekcja 12, nierozstrzygnięte).
+
+### Do bazy wiedzy (końcowe)
+- **Bitowo identyczna spekulacja MTP na RDNA3 (Qwen3.8-27B Q4_K_XL, KV q4_0) jest osiągalna:** `LLAMA_SPEC_BITEXACT=1`, gałąź `batch-invariant`.
+  - Koszt: MTP 0% na krótkim kontekście, −9% przy ~27k; plain −3%.
+  - Weryfikacja: md5 plain = MTP n_max 1..7, długie prompty do 94k, det_probe.
+- **Źródła rozbieżności (w kolejności znalezienia):**
+  1. MMVQ N=1 to inny algorytm niż kolumna kernela wielokolumnowego;
+  2. fuzja gate/SwiGLU przy N=1 inaczej kontraktuje FMA;
+  3. liczba splitów KV w FA zależna od N i n_kv;
+  4. **zamaskowane (-inf) wiersze KV zmieniają wynik WMMA o 1-2 ulp**: treść draftów vs zera; naprawa: ładować je z wiersza zer;
+  5. podział promptu na ubatche zależny od `n_rs_seq`;
+  6. `pending_h` MTP nieresetowany między requestami.
+- **Niedeterminizm greedy na jednym serwerze z MTP** wynika głównie z braku niezmienniczości względem N (drafty zmieniają N), a nie z samego stanu draftu. Usuwa go tryb bitexact.
+- **Narzędzia:**
+  - `~/wt/bx-isa/mmvqemu.py`, `gdnseq.py`: symboliczne porównanie ISA gfx11;
+  - `llama-bx-diff`: pierwszy różniący się węzeł grafu, plain vs weryfikacja, włącznie z maską i wierszami cache;
+  - `~/wt/bx-isa/validate.sh`: pełna walidacja z lockami;
+  - `bench_tg.sh`: ABBA tg128.
+- **Pułapka wydajności:** kod diagnostyczny w kernelu na granicy 256 VGPR włączył spille w ścieżce domyślnej (−6% tg128). Warianty robić jako osobne instancje szablonu i sprawdzać `.vgpr_spill_count` w ISA.
