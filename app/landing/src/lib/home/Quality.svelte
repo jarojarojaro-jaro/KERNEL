@@ -28,10 +28,11 @@
 	const where = findCard('rtx-3060-12')?.name ?? '';
 	const where5060 = findCard('rtx-5060-ti-16')?.name ?? '';
 
-	const LO = -4;
-	const HI = Math.log10(2);
+	/** Cropped log axis: just below the smallest value (0,00021) to just above the largest (1,183). */
+	const LO = Math.log10(1.5e-4);
+	const HI = Math.log10(1.6);
 	const x = (v: number) => (Math.log10(v) - LO) / (HI - LO);
-	const ticks = [-4, -3, -2, -1, 0];
+	const ticks = [-3, -2, -1, 0];
 	const digits = (v: number) => Math.max(2, -Math.floor(Math.log10(v)) + 1);
 
 	const ours = (['saluki', 'bonsai'] as const).map((k) => ({ k, name: MODEL_INFO[k].name, ...q[k] }));
@@ -70,34 +71,45 @@
 			})
 		)
 	);
-	const bxSrc = [bx.src, bx.speed.bitexact.src, bx.speed.prod.src];
+	const bxSrc = [bx.src, bx.speed.bitexact.src, bx.speed.longCtx.bitexact.src];
+	const bxLongCost = Math.round((bx.speed.longCtx.bitexact.v / bx.speed.longCtx.prod.v - 1) * 100);
 </script>
 
 <section id="quality" class="quality heat-top" aria-labelledby="quality-title">
 	<div class="inner">
 		<header class="head">
 			<h2 id="quality-title" class="statement">{c.title}</h2>
-			<p class="hero-num">
-				<span class="lx">{fill(c.less, { x: num(ratio, lang, 0) })}</span>
-				<span class="ln">{c.lessNote}</span>
-			</p>
+			<!-- the whole point in one line: our difference vs the smallest format change -->
+			<div class="hero-num">
+				<p class="gl">{c.gapLabel}</p>
+				<p class="gv">
+					<span class="go">{num(worstOurs, lang, digits(worstOurs))}</span>
+					<span class="gvs">vs</span>
+					<span class="gf">{num(bestFmt, lang, 3)}</span>
+				</p>
+				<p class="gc"><span>{c.gapOurs}</span><span>{c.gapFmt}</span></p>
+				<p class="lx">{fill(c.less, { x: num(ratio, lang, 0) })}</p>
+			</div>
 		</header>
 
 		<figure class="ruler" use:reveal={{ threshold: 0.3 }}>
 			<!-- for scale: format changes (another model), with labels above their markers -->
 			<div class="plane">
-				<div class="zone" style="--a:{x(1e-4)}; --b:{x(1e-3)}" aria-hidden="true"></div>
+				<div class="zone" style="--a:0; --b:{x(1e-3)}">
+					<span class="zl">{c.zone} <SourceTip {lang} src={oursSrc} note={zoneDetail} /></span>
+				</div>
 				<div class="bracket" style="--a:{x(worstOurs)}; --b:{x(bestFmt)}" aria-hidden="true">
 					<span class="bl">≈&nbsp;{num(ratio, lang, 0)}×</span>
 				</div>
 				{#each ours as r, i (r.k)}
-					<span class="noise" style="--x:{x(r.noise.v)}; --d:{i * 90}ms" aria-hidden="true"></span>
-					<span class="dot" style="--x:{x(r.ours.v)}; --d:{120 + i * 90}ms; --mc:{MODEL_STYLE[r.k].color}" title="{r.name}: {num(r.ours.v, lang, digits(r.ours.v))}">
+					<span class="noise" style="--x:{x(r.noise.v)}; --d:{i * 90}ms" aria-hidden="true"><i>{num(r.noise.v, lang, digits(r.noise.v))}</i></span>
+					<span class="dot" class:up={r.ours.v === worstOurs} style="--x:{x(r.ours.v)}; --d:{120 + i * 90}ms; --mc:{MODEL_STYLE[r.k].color}" aria-hidden="true">
 						<ModelMark model={r.k} size="0.95rem" />
+						<span class="dl"><b>{MODEL_STYLE[r.k].short.split(' ')[0]}</b> {num(r.ours.v, lang, digits(r.ours.v))}</span>
 					</span>
 				{/each}
 				{#each fmts as r, i (r.file)}
-					<span class="fmt" class:hi={i === 0} style="--x:{x(r.kld.v)}; --d:{350 + i * 120}ms">
+					<span class="fmt" class:hi={i === 0} style="--x:{x(r.kld.v)}; --d:{350 + i * 120}ms" aria-hidden="true">
 						<span class="fl"><ModelMark model="lfm25" size="0.7em" /> {fmtName(r.file)} <b>{num(r.kld.v, lang, 3)}</b>{#if r.kld.v > 1}<em>{' · '}{c.bad}</em>{/if}</span>
 					</span>
 				{/each}
@@ -106,15 +118,9 @@
 				</div>
 			</div>
 			<p class="sr-only">{zoneDetail} {fmts.map((r) => `${fmtName(r.file)}: ${num(r.kld.v, lang, 3)}`).join(', ')}.</p>
-			<!-- narrow screens: the format values as a key under the ruler (no labels colliding in the chart) -->
-			<p class="fkey" aria-hidden="true">
-				{#each fmts as r (r.file)}<span><i class="lg-fmt"></i>{fmtName(r.file)} <b>{num(r.kld.v, lang, 3)}</b>{#if r.kld.v > 1}<em>{' · '}{c.bad}</em>{/if}</span>{/each}
-			</p>
-			<figcaption class="legend">
-				<span>{#each ours as r (r.k)}<ModelMark model={r.k} size="0.8rem" />{/each} {c.ours}: {ours.map((r) => MODEL_STYLE[r.k].short).join(', ')}</span>
-				<span><i class="lg-noise"></i>{c.noise}</span>
-				<span><i class="lg-zone"></i>{c.zone} <SourceTip {lang} src={oursSrc} note={zoneDetail} /></span>
-				<span><i class="lg-fmt"></i>{fill(c.fmt, { card: where5060 })} <SourceTip {lang} src={fmts.map((r) => r.kld.src)} /></span>
+			<figcaption class="caption">
+				<span class="zcap"><i class="zsw"></i>{c.zone} <SourceTip {lang} src={oursSrc} note={zoneDetail} /></span>
+				<span><ModelMark model="lfm25" size="0.7rem" /> {fill(c.fmt, { card: where5060 })} <SourceTip {lang} src={fmts.map((r) => r.kld.src)} /></span>
 				<span class="ax">{c.axis}</span>
 			</figcaption>
 		</figure>
@@ -145,8 +151,18 @@
 				<ul class="checks">
 					{#each bxChecks as t, i (i)}<li><span class="ok" aria-hidden="true">✓</span>{t}</li>{/each}
 				</ul>
+				<div class="vbars" aria-hidden="true">
+					{#each [{ k: c.qwen.valShort, bx: bx.speed.bitexact.v, pr: bx.speed.prod.v }, { k: fill(c.qwen.valLong, { ctx: bx.speed.longCtx.promptTokens.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US') }), bx: bx.speed.longCtx.bitexact.v, pr: bx.speed.longCtx.prod.v }] as g (g.k)}
+						{@const top = Math.max(g.bx, g.pr)}
+						<div class="vg">
+							<span class="vk">{g.k}</span>
+							<span class="vrow"><span class="vn">{c.qwen.valBx}</span><span class="vb vb--bx" style="--w:{g.bx / top}"></span><b>{fmtTps(g.bx, lang)}</b></span>
+							<span class="vrow"><span class="vn">{c.qwen.valProd}</span><span class="vb" style="--w:{g.pr / top}"></span><b>{fmtTps(g.pr, lang)}</b></span>
+						</div>
+					{/each}
+				</div>
 				<p class="vs">
-					{fill(c.qwen.valSpeed, { a: fmtTps(bx.speed.bitexact.v, lang), b: fmtTps(bx.speed.prod.v, lang) })}
+					{fill(c.qwen.valSpeed, { a: fmtTps(bx.speed.bitexact.v, lang), b: fmtTps(bx.speed.prod.v, lang), ctx: bx.speed.longCtx.promptTokens.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US'), la: fmtTps(bx.speed.longCtx.bitexact.v, lang), lb: fmtTps(bx.speed.longCtx.prod.v, lang), cost: `${bxLongCost > 0 ? '+' : '−'}${Math.abs(bxLongCost)} %` })}
 					<SourceTip {lang} src={bxSrc} note="{MODEL_INFO.qwen38.name} {bx.quant} · {bx.run[lang]}. {fill(c.qwen.valSpeedNote, { script: bx.speed.script })}" />
 				</p>
 			</div>
@@ -192,42 +208,82 @@
 	}
 	.hero-num {
 		display: grid;
-		gap: 0.5rem;
+		gap: 0.4rem;
 		justify-items: end;
 		text-align: right;
 	}
-	.lx {
+	.gl {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+	}
+	.gv {
+		margin: 0;
+		display: flex;
+		align-items: baseline;
+		gap: 0.3em;
 		font-family: var(--font-display);
-		font-size: clamp(3rem, 1.5rem + 5vw, 7rem);
-		font-weight: 860;
-		font-stretch: 120%;
+		font-variant-numeric: tabular-nums lining-nums;
+		font-size: clamp(2.6rem, 1.2rem + 4.2vw, 6rem);
+		font-weight: 820;
 		letter-spacing: -0.045em;
 		line-height: 0.9;
-		/* a KLD ratio, not a speed: bone, not heat */
-		color: var(--text-hi);
-		text-shadow: 0 0 0.5em rgb(237 234 227 / 0.18);
 	}
-	.ln {
-		max-width: 34ch;
-		font-size: var(--fs-sm);
+	.go {
+		color: var(--text-hi);
+	}
+	.gvs {
+		font-size: 0.38em;
+		font-family: var(--font-mono);
+		font-weight: 500;
+		color: var(--text-mute);
+		letter-spacing: 0.04em;
+	}
+	.gf {
+		background: var(--heat-ramp-hot);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		padding-bottom: 0.08em;
+	}
+	.gc {
+		margin: 0;
+		display: flex;
+		justify-content: flex-end;
+		gap: 0.4rem 1.6rem;
+		flex-wrap: wrap;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
 		color: var(--text);
 	}
+	.gc span + span {
+		color: var(--heat-4);
+	}
+	.lx {
+		margin: 0.4rem 0 0;
+		font-family: var(--font-display);
+		font-size: clamp(1.3rem, 1rem + 0.9vw, 1.9rem);
+		font-weight: 800;
+		letter-spacing: -0.03em;
+		color: var(--text-hi);
+	}
 
-	/* ---- the ruler ---- */
+	/* ---- the ruler: labels on the markers, no legend ---- */
 	.ruler {
 		margin: 0;
 		display: grid;
-		gap: 1rem;
-		padding: clamp(1.25rem, 3vw, 2.25rem) clamp(1rem, 3vw, 2.25rem) clamp(1rem, 2vw, 1.5rem);
+		gap: 0.9rem;
+		padding: clamp(1rem, 2.5vw, 1.75rem) clamp(1rem, 3vw, 2.25rem) clamp(0.9rem, 2vw, 1.25rem);
 		border-radius: var(--r-xl);
 		background: linear-gradient(180deg, rgb(255 255 255 / 0.02), transparent), var(--bg-1);
 		box-shadow: inset 0 0 0 1px var(--line);
 	}
 	.plane {
 		position: relative;
-		height: 9.25rem;
+		height: 11rem;
 	}
-	/* baseline with a heat hairline */
 	.plane::before {
 		content: '';
 		position: absolute;
@@ -237,16 +293,33 @@
 		height: 1px;
 		background: linear-gradient(90deg, var(--line-strong), rgb(255 122 26 / 0.6) 70%, var(--heat-2));
 	}
+	/* upstream's own noise: the decade the dots sit in */
 	.zone {
 		position: absolute;
 		bottom: 1.8rem;
 		left: calc(var(--a) * 100%);
 		width: calc((var(--b) - var(--a)) * 100%);
-		height: 4.2rem;
+		height: 6.4rem;
 		border-radius: 8px 8px 0 0;
-		background: linear-gradient(180deg, rgb(237 234 227 / 0.02), rgb(237 234 227 / 0.09));
-		border: 1px dashed rgb(237 234 227 / 0.3);
+		background: linear-gradient(180deg, rgb(237 234 227 / 0.02), rgb(237 234 227 / 0.08));
+		border: 1px dashed rgb(237 234 227 / 0.28);
 		border-bottom: 0;
+	}
+	.zl {
+		position: absolute;
+		left: 0.5rem;
+		top: 0.4rem;
+		right: 0.3rem;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.3rem;
+		font-family: var(--font-mono);
+		font-size: 0.62rem;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		line-height: 1.25;
+		color: var(--text);
 	}
 	.noise,
 	.dot,
@@ -257,22 +330,28 @@
 	.noise {
 		bottom: 1.8rem;
 		width: 2px;
-		height: 1.3rem;
+		height: 1.1rem;
 		margin-left: -1px;
 		background: var(--before);
 	}
+	.noise i {
+		display: none;
+	}
 	.dot {
-		bottom: calc(1.8rem + 1.6rem);
+		bottom: calc(1.8rem + 1.5rem);
 		display: grid;
 		place-items: center;
-		width: 1.8rem;
-		height: 1.8rem;
-		margin-left: -0.9rem;
+		width: 1.7rem;
+		height: 1.7rem;
+		margin-left: -0.85rem;
 		border-radius: 50%;
 		background: color-mix(in srgb, var(--mc) 18%, var(--bg-1));
 		box-shadow:
 			0 0 0 1px color-mix(in srgb, var(--mc) 70%, transparent),
 			0 0 18px color-mix(in srgb, var(--mc) 55%, transparent);
+	}
+	.dot.up {
+		bottom: calc(1.8rem + 3.2rem);
 	}
 	.dot::after {
 		content: '';
@@ -280,36 +359,50 @@
 		top: 100%;
 		left: 50%;
 		width: 1px;
-		height: 0.8rem;
-		background: color-mix(in srgb, var(--mc) 70%, transparent);
+		height: 1.5rem;
+		background: linear-gradient(color-mix(in srgb, var(--mc) 70%, transparent), color-mix(in srgb, var(--mc) 15%, transparent));
+	}
+	.dot.up::after {
+		height: 3.2rem;
+	}
+	/* the label sits right next to its marker, in the model's colour */
+	.dl {
+		position: absolute;
+		left: calc(100% + 0.4rem);
+		top: 50%;
+		transform: translateY(-50%);
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text-hi);
+		white-space: nowrap;
+	}
+	.dl b {
+		font-weight: 600;
+		color: var(--mc);
 	}
 	.fmt {
 		bottom: 1.8rem;
-		height: 5.9rem;
+		height: 7.2rem;
 		border-left: 2px dashed var(--heat-3);
 	}
 	.fmt:not(.hi) {
-		height: 3.6rem;
+		height: 4.4rem;
 		border-left-color: var(--heat-2);
 	}
 	.fl {
 		position: absolute;
 		right: 0.5rem;
-		top: 0;
+		top: -0.2rem;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
+		padding: 0.1rem 0.3rem;
+		border-radius: 4px;
+		background: var(--bg-1);
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		color: var(--text);
 		white-space: nowrap;
-		padding: 0.1rem 0.3rem;
-		border-radius: 4px;
-		background: var(--bg-1);
-	}
-	.fmt:not(.hi) .fl {
-		top: auto;
-		bottom: 0.5rem;
 	}
 	.fl b {
 		color: var(--text-hi);
@@ -319,29 +412,29 @@
 		font-style: normal;
 		color: var(--text-mute);
 	}
-	/* our worst value → the smallest format change: the gap, in heat */
+	/* the gap, in heat: our worst value → the smallest format change */
 	.bracket {
 		position: absolute;
-		bottom: calc(1.8rem + 5.6rem);
+		bottom: calc(1.8rem + 7.9rem);
 		left: calc(var(--a) * 100%);
 		width: calc((var(--b) - var(--a)) * 100%);
 		height: 0.9rem;
 		border: 2px solid transparent;
 		border-bottom: 0;
-		border-image: linear-gradient(90deg, rgb(237 234 227 / 0.35), var(--text-hi)) 1;
+		border-image: linear-gradient(90deg, var(--heat-2), var(--heat-3) 50%, var(--heat-4)) 1;
+		filter: drop-shadow(0 0 6px rgb(255 122 26 / 0.6));
 		transform-origin: 0 50%;
 	}
 	.bl {
 		position: absolute;
 		left: 50%;
-		bottom: calc(100% + 0.25rem);
+		bottom: calc(100% + 0.2rem);
 		transform: translateX(-50%);
 		font-family: var(--font-display);
-		font-size: clamp(1.2rem, 0.9rem + 0.8vw, 1.7rem);
+		font-size: clamp(1.1rem, 0.9rem + 0.6vw, 1.5rem);
 		font-weight: 820;
-		font-stretch: 115%;
 		letter-spacing: -0.03em;
-		color: var(--text-hi);
+		color: var(--heat-5);
 		white-space: nowrap;
 	}
 	.axis {
@@ -359,8 +452,8 @@
 		left: calc(var(--t) * 100%);
 		transform: translateX(-50%);
 	}
-	.axis span:first-child {
-		transform: none;
+	.axis span:last-child {
+		transform: translateX(-100%);
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* resting state final; entering view replays the markers dropping onto the scale */
@@ -383,62 +476,74 @@
 			transform: scaleX(0);
 		}
 	}
-	.fkey {
-		display: none;
-		flex-wrap: wrap;
-		gap: 0.4rem 1.2rem;
-		margin: 0;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text);
-	}
-	.fkey span {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.45rem;
-	}
-	.fkey b {
-		color: var(--text-hi);
-		font-weight: 500;
-	}
-	.fkey em {
-		font-style: normal;
-		color: var(--text-mute);
-	}
-	.legend {
+	.caption {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.5rem 1.6rem;
+		justify-content: space-between;
+		gap: 0.4rem 1.2rem;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		color: var(--text);
 	}
-	.legend span {
+	.caption span {
 		display: inline-flex;
 		align-items: center;
-		gap: 0.45rem;
+		gap: 0.4rem;
 	}
-	.legend .ax {
-		margin-left: auto;
+	.zcap {
+		display: none !important;
+	}
+	.zsw {
+		width: 0.9rem;
+		height: 0.65rem;
+		border: 1px dashed rgb(237 234 227 / 0.45);
+		background: rgb(237 234 227 / 0.06);
+	}
+	.caption .ax {
 		color: var(--text-mute);
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 	}
-	.lg-zone {
-		width: 1rem;
-		height: 0.7rem;
-		border: 1px dashed rgb(237 234 227 / 0.45);
-		background: rgb(237 234 227 / 0.06);
+	/* bit-exact speed: two tiny pairs of bars */
+	.vbars {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 0.9rem 1.4rem;
 	}
-	.lg-noise {
-		width: 2px;
-		height: 0.9rem;
+	.vg {
+		display: grid;
+		gap: 0.3rem;
+		min-width: 0;
+	}
+	.vk {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+	}
+	.vrow {
+		display: grid;
+		grid-template-columns: 5.2rem minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.5rem;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text);
+	}
+	.vb {
+		height: 6px;
+		width: calc(var(--w) * 100%);
+		border-radius: var(--r-pill);
 		background: var(--before);
 	}
-	.lg-fmt {
-		height: 0.9rem;
-		border-left: 2px dashed var(--heat-3);
+	.vb--bx {
+		background: var(--text-hi);
+	}
+	.vrow b {
+		font-weight: 500;
+		color: var(--text-hi);
 	}
 
 	/* ---- below: Qwen + validation ---- */
@@ -585,16 +690,13 @@
 			justify-items: start;
 			text-align: left;
 		}
+		.gc {
+			justify-content: flex-start;
+		}
 	}
 	@media (max-width: 640px) {
 		.axis span:nth-child(even) {
 			display: none;
-		}
-		.fl {
-			display: none;
-		}
-		.fkey {
-			display: flex;
 		}
 		.qrow {
 			grid-template-columns: minmax(0, 1fr) auto;
@@ -603,8 +705,30 @@
 			grid-column: 1 / -1;
 			order: 3;
 		}
-		.legend .ax {
-			margin-left: 0;
+		.gc {
+			justify-content: flex-start;
+		}
+		.vbars {
+			grid-template-columns: minmax(0, 1fr);
+		}
+		.zl {
+			display: none;
+		}
+		.zcap {
+			display: inline-flex !important;
+		}
+		/* narrow: format labels stacked above the dots' labels, the bracket above them */
+		.plane {
+			height: 12.5rem;
+		}
+		.fmt {
+			height: 8.6rem;
+		}
+		.fmt:not(.hi) {
+			height: 6.2rem;
+		}
+		.bracket {
+			bottom: calc(1.8rem + 9.4rem);
 		}
 	}
 </style>

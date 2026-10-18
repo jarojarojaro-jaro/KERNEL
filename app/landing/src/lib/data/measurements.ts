@@ -568,10 +568,10 @@ export function words500(v: Variant | undefined, lang: 'pl' | 'en'): { v: number
 
 /**
  * In validation (not a product claim yet): bit-exact speculation on the RX 7900 XTX, Qwen3.8-27B
- * Q4_K_XL, full validation run 3 (2026-10-16). In bit-exact mode MTP output is byte-identical to plain
- * greedy decoding for draft lengths n_max 1–7, on long prompts, and across repeated requests; the
- * kernel tests all pass. MTP speed in this mode vs the current production engine, same script, comes
- * from the run's summary file (not yet copied into the research note).
+ * Q4_K_XL. Correctness from validation run 3 (2026-10-16): in bit-exact mode MTP output is
+ * byte-identical to plain greedy decoding for draft lengths n_max 1–7, on long prompts, and across
+ * repeated requests; the kernel tests all pass. Speed from the final run 4 (research note §13 table):
+ * spec_sweep with production flags, and MTP decode at a ~27k-token prompt (−9 % in bit-exact mode).
  */
 export const BITEXACT_XTX = {
 	card: 'rx-7900-xtx',
@@ -591,8 +591,15 @@ export const BITEXACT_XTX = {
 	},
 	src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:272-276',
 	speed: {
-		bitexact: { v: 107.0, src: '/tmp/bxv/summary.txt:101' },
-		prod: { v: 107.5, src: '/tmp/bxv/summary.txt:99' },
-		script: 'spec_sweep (run-llm.sh qwen mtp rocm)'
+		/** spec_sweep, production flags, 6 prompts × 3 seeds; prod was measured twice (107.7 / 107.6). */
+		bitexact: { v: 108.3, src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:325' },
+		prod: { v: 107.7, src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:325' },
+		script: 'spec_sweep (run-llm.sh qwen mtp rocm)',
+		/** MTP decode with a 27 327-token prompt, T=0, 256 tokens: the cost of bit-exact mode at long context. */
+		longCtx: {
+			bitexact: { v: 102.66, src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:326' },
+			prod: { v: 111.77, src: 'KERNEL/product/research/12-bit-exact-spekulacja.md:326' },
+			promptTokens: 27327
+		}
 	}
 } as const;

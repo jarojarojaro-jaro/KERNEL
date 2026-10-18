@@ -187,13 +187,30 @@
 	.foot .lede {
 		max-width: 46ch;
 	}
+	/* narrow screens: one row, icons on top of short labels */
 	@media (max-width: 640px) {
 		.wire {
-			flex-wrap: wrap;
+			flex-wrap: nowrap;
+			gap: 0.35rem;
+			font-size: 0.56rem;
+			letter-spacing: 0.06em;
+		}
+		.node {
+			flex-direction: column;
+			gap: 0.3rem;
+			padding: 0.5rem 0.55rem;
+			border-radius: var(--r-md);
+			text-align: center;
+		}
+		.node span {
+			max-width: 5.2rem;
 		}
 		.line,
 		.cut {
-			min-width: 3rem;
+			min-width: 1.2rem;
+		}
+		.cut {
+			flex: 1;
 		}
 	}
 </style>

@@ -160,6 +160,9 @@ const raw = {
 		},
 		quality: {
 			title: 'Ten sam model, ta sama jakość — zmierzone.',
+			gapLabel: 'Różnica jakości',
+			gapOurs: 'nasz silnik wobec upstreamu (gorszy z dwóch modeli)',
+			gapFmt: 'najmniejsza zmiana formatu (inny model)',
 			less: '≈ {x}× mniej',
 			lessNote: 'tyle mniejsza jest różnica, którą wprowadza nasz silnik, niż najmniejsza zmiana formatu kwantyzacji na tej linijce',
 			kld: 'KLD',
@@ -187,8 +190,12 @@ const raw = {
 					'powtórne zapytania: identycznie ({det} scenariuszy)',
 					'testy kerneli: {ops}'
 				],
-				valSpeed: 'MTP w tym trybie: {a} t/s wobec {b} t/s silnika produkcyjnego',
-				valSpeedNote: 'Ten sam skrypt ({script}). Liczby szybkości pochodzą z pliku podsumowania przebiegu; notatka badawcza jeszcze ich nie zawiera.'
+				valShort: 'krótkie prompty',
+				valLong: 'prompt {ctx} tokenów',
+				valBx: 'bit-exact',
+				valProd: 'produkcja',
+				valSpeed: 'MTP w tym trybie: {a} t/s wobec {b} t/s silnika produkcyjnego; przy prompcie {ctx} tokenów {la} wobec {lb} t/s ({cost})',
+				valSpeedNote: 'Ten sam skrypt ({script}), flagi produkcyjne, przebieg końcowy. Długi kontekst: dekodowanie MTP, T=0, 256 tokenów.'
 			}
 		},
 		cards: {
@@ -404,6 +411,9 @@ const raw = {
 		},
 		quality: {
 			title: 'Same model, same quality — measured.',
+			gapLabel: 'Quality difference',
+			gapOurs: 'our engine vs upstream (the worse of two models)',
+			gapFmt: 'the smallest format change (another model)',
 			less: '≈ {x}× smaller',
 			lessNote: 'that is how much smaller our engine’s difference is than the smallest quantisation format change on this ruler',
 			kld: 'KLD',
@@ -431,8 +441,12 @@ const raw = {
 					'repeated requests: identical ({det} scenarios)',
 					'kernel tests: {ops}'
 				],
-				valSpeed: 'MTP in this mode: {a} t/s vs {b} t/s for the production engine',
-				valSpeedNote: 'The same script ({script}). The speed numbers come from the run’s summary file; the research note does not contain them yet.'
+				valShort: 'short prompts',
+				valLong: '{ctx}-token prompt',
+				valBx: 'bit-exact',
+				valProd: 'production',
+				valSpeed: 'MTP in this mode: {a} t/s vs {b} t/s for the production engine; with a {ctx}-token prompt {la} vs {lb} t/s ({cost})',
+				valSpeedNote: 'The same script ({script}), production flags, final run. Long context: MTP decode, T=0, 256 tokens.'
 			}
 		},
 		cards: {

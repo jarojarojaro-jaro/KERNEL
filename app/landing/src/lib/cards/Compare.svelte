@@ -187,7 +187,7 @@
 	<h2 id="cmp-race" class="h hx-h">{t.race}</h2>
 	{#if sameScript && lanes.length === 2}
 		{#key raceKey}
-			<RaceLanes {lanes} text={tc.raceText} {lang} loop={false} summary={lanes.map((l) => `${l.label}: ${fmtTps(l.tps, lang)} t/s`).join(', ')} />
+			<RaceLanes {lanes} text={tc.raceText} {lang} loop={false} tacho="none" summary={lanes.map((l) => `${l.label}: ${fmtTps(l.tps, lang)} t/s`).join(', ')} />
 		{/key}
 		<p class="fine">{runA.metric[lang]}</p>
 	{:else}

@@ -1,7 +1,51 @@
+<script lang="ts" module>
+	/**
+	 * Per-card shroud, inferred from the card's short name (the same `label` every caller already
+	 * passes): length, fan count and the maker's shroud. Stylised, not photoreal; sizes follow the
+	 * real boards (≈ 1 unit per 0.56 mm of length), so a 3060 is visibly shorter than a 3090.
+	 *   fe30  NVIDIA Founders (30 series): silver frame, graphite plate, one fan + flow-through fins
+	 *   fe40  NVIDIA Founders (40 series): darker titanium frame, same flow-through layout
+	 *   fe50  NVIDIA Founders (50 series): graphite, double flow-through, a fan at each end
+	 *   dark  partner two-fan boards: charcoal shroud with machined corners
+	 *   amd   Radeon reference (RDNA3): black shroud, red accent stripes between the fans
+	 *   radeon partner Radeon: black, brushed-silver lower edge, a thin red line
+	 *   arc   Intel Arc Limited Edition: matte black, a pale diagonal light band
+	 */
+	type Shroud = 'fe30' | 'fe40' | 'fe50' | 'dark' | 'amd' | 'radeon' | 'arc';
+	export interface ArtSpec {
+		len: number;
+		fans: number;
+		shroud: Shroud;
+	}
+	const SPECS: [RegExp, ArtSpec][] = [
+		[/3090/, { len: 560, fans: 1, shroud: 'fe30' }],
+		[/4090/, { len: 545, fans: 1, shroud: 'fe40' }],
+		[/4080/, { len: 545, fans: 1, shroud: 'fe40' }],
+		[/4070/, { len: 440, fans: 1, shroud: 'fe40' }],
+		[/5090|5080/, { len: 545, fans: 2, shroud: 'fe50' }],
+		[/5070/, { len: 430, fans: 2, shroud: 'fe50' }],
+		[/7900/, { len: 515, fans: 3, shroud: 'amd' }],
+		[/9070/, { len: 570, fans: 3, shroud: 'radeon' }],
+		[/B5\d0|A7\d0/, { len: 490, fans: 2, shroud: 'arc' }],
+		[/5060/, { len: 415, fans: 2, shroud: 'dark' }],
+		[/4060/, { len: 450, fans: 2, shroud: 'dark' }],
+		[/3060/, { len: 380, fans: 2, shroud: 'dark' }]
+	];
+	export function artSpec(label: string, vendor: string, vram: number | null): ArtSpec {
+		const hit = SPECS.find(([re]) => re.test(label));
+		if (hit) return hit[1];
+		const big = (vram ?? 0) >= 20;
+		if (vendor === 'amd') return { len: big ? 540 : 470, fans: big ? 3 : 2, shroud: 'radeon' };
+		if (vendor === 'intel') return { len: 470, fans: 2, shroud: 'arc' };
+		return { len: big ? 540 : 450, fans: big ? 3 : 2, shroud: 'dark' };
+	}
+</script>
+
 <script lang="ts">
 	/**
-	 * Stylised, dark-on-dark product render of a graphics card (or an Apple SoC package): bracket,
-	 * shroud with fans, PCB edge with one memory package per 2 GB, PCIe fingers. `heat` (0..1) is the
+	 * Stylised product render of the specific graphics card (or an Apple SoC package): bracket,
+	 * the maker's shroud at the board's length with its fan layout (see `artSpec`), PCB edge with one
+	 * memory package per 2 GB, PCIe fingers. `heat` (0..1) is the
 	 * measured speed-up mapped to the heat ramp: the light strip and the glow behind the card show how
 	 * much faster it writes with our engine (0 = not measured, stays cold). Fans spin and a light sweep
 	 * passes only while `live` is true and motion is allowed. A specular sheen follows the tilt
@@ -39,9 +83,27 @@
 
 	const uid = $props.id();
 	const apple = $derived(vendor === 'apple');
-	const nFans = $derived((vram ?? 0) >= 20 ? 3 : 2);
-	const fans = $derived(Array.from({ length: nFans }, (_, i) => ({ cx: 24 + (588 * (i + 0.5)) / nFans, r: nFans === 3 ? 74 : 84 })));
+	const spec = $derived(artSpec(label, vendor, vram));
+	const fe = $derived(spec.shroud.startsWith('fe'));
+	/** Shroud box on the 640×300 grid, centred: x0..x1, y 26..232. */
+	const x0 = $derived(24 + (588 - spec.len) / 2);
+	const x1 = $derived(x0 + spec.len);
+	const fans = $derived.by(() => {
+		const { fans: n, len, shroud } = spec;
+		// flow-through Founders: one fan by the bracket (the second blows through the fins from behind)
+		if (n === 1) return [{ cx: x0 + 100, r: len > 500 ? 88 : 80 }];
+		// double flow-through: a fan at each end, the board in between
+		if (shroud === 'fe50') return [{ cx: x0 + 96, r: 82 }, { cx: x1 - 96, r: 82 }];
+		const slot = len / n;
+		return Array.from({ length: n }, (_, i) => ({ cx: x0 + slot * (i + 0.5), r: Math.min(n === 3 ? 74 : 76, slot / 2 - (n === 3 ? 10 : 14)) }));
+	});
+	/** Flow-through fin window (single-fan Founders): from past the fan to the far end. */
+	const fin = $derived(spec.fans === 1 ? { x: fans[0].cx + fans[0].r + 22, w: x1 - 16 - (fans[0].cx + fans[0].r + 22) } : null);
+	/** Gaps between fans (accent stripes on the Radeon reference). */
+	const gaps = $derived(fans.slice(1).map((f, i) => (fans[i].cx + fans[i].r + f.cx - f.r) / 2));
 	const chips = $derived(Math.max(4, Math.min(16, Math.round((vram ?? 8) / 2))));
+	/** Sheen and underglow follow the shroud box (percent of the 640-wide grid). */
+	const box = $derived(`--sl:${(x0 / 6.4).toFixed(2)}%; --sr:${((640 - x1) / 6.4).toFixed(2)}%; --ul:${((x0 + 16) / 6.4).toFixed(2)}%; --uw:${((spec.len - 32) / 6.4).toFixed(2)}%`);
 	const blades = Array.from({ length: 11 }, (_, i) => (i * 360) / 11);
 	const h = $derived(Math.max(0, Math.min(1, heat)));
 	const c = $derived(charge == null ? 1 : Math.max(0, Math.min(1, charge)));
@@ -56,7 +118,7 @@
 	});
 </script>
 
-<div class="art" class:live class:flat class:ignite={ignite && charge == null} class:driven={charge != null} class:cold={h === 0} style="--h:{h}; --c:{c}; --rpm:{rpm}" aria-hidden="true">
+<div class="art" class:live class:flat class:ignite={ignite && charge == null} class:driven={charge != null} class:cold={h === 0} style="--h:{h}; --c:{c}; --rpm:{rpm}; {box}" aria-hidden="true">
 	<div class="glow"></div>
 	<div class="floor"></div>
 	<div class="body">
@@ -78,30 +140,52 @@
 					<rect x={212 + i * 18.5} y="259" width="7" height="7" rx="1.5" fill="#3a3a42" />
 				{/each}
 				<rect x="236" y="66" width="168" height="168" rx="14" fill="url(#die-{uid})" stroke="#2c2c33" />
-				<text x="320" y="164" text-anchor="middle" class="engrave apple">{label}</text>
+				<text x="320" y="164" text-anchor="middle" class="engrave apple">{label.replace(/^Apple\s+/i, "")}</text>
 				<rect class="strip" x="236" y="242" width="168" height="3" rx="1.5" />
 			</svg>
 		{:else}
-			<svg viewBox="0 0 640 300">
+			<svg viewBox="0 0 640 300" class="sh-{spec.shroud}">
 				<defs>
 					<linearGradient id="sh-{uid}" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0" stop-color="#202026" />
-						<stop offset="0.55" stop-color="#121215" />
-						<stop offset="1" stop-color="#0a0a0c" />
+						{#if spec.shroud === 'fe30'}
+							<stop offset="0" stop-color="#8a8d94" />
+							<stop offset="0.3" stop-color="#53565d" />
+							<stop offset="0.75" stop-color="#2c2e33" />
+							<stop offset="1" stop-color="#1c1d21" />
+						{:else if spec.shroud === 'fe40'}
+							<stop offset="0" stop-color="#5d6067" />
+							<stop offset="0.35" stop-color="#36383e" />
+							<stop offset="1" stop-color="#18191c" />
+						{:else if spec.shroud === 'fe50'}
+							<stop offset="0" stop-color="#3f4147" />
+							<stop offset="0.4" stop-color="#232429" />
+							<stop offset="1" stop-color="#121315" />
+						{:else if spec.shroud === 'arc'}
+							<stop offset="0" stop-color="#1d1d21" />
+							<stop offset="1" stop-color="#0b0b0d" />
+						{:else if spec.shroud === 'amd' || spec.shroud === 'radeon'}
+							<stop offset="0" stop-color="#1c1c20" />
+							<stop offset="0.55" stop-color="#0f0f12" />
+							<stop offset="1" stop-color="#08080a" />
+						{:else}
+							<stop offset="0" stop-color="#202026" />
+							<stop offset="0.55" stop-color="#121215" />
+							<stop offset="1" stop-color="#0a0a0c" />
+						{/if}
 					</linearGradient>
 					<radialGradient id="fan-{uid}" cx="0.5" cy="0.4" r="0.6">
 						<stop offset="0" stop-color="#18181c" />
 						<stop offset="1" stop-color="#060607" />
 					</radialGradient>
 					<linearGradient id="bl-{uid}" x1="0" y1="0" x2="1" y2="1">
-						<stop offset="0" stop-color="#34343b" />
+						<stop offset="0" stop-color={fe ? '#4a4c53' : '#34343b'} />
 						<stop offset="0.6" stop-color="#18181c" />
 						<stop offset="1" stop-color="#0e0e10" />
 					</linearGradient>
 					<linearGradient id="rim-{uid}" x1="0" y1="0" x2="0" y2="1">
-						<stop offset="0" stop-color="#3c3c44" />
+						<stop offset="0" stop-color={spec.shroud === 'fe30' ? '#9a9da4' : '#3c3c44'} />
 						<stop offset="0.5" stop-color="#17171b" />
-						<stop offset="1" stop-color="#2a2a31" />
+						<stop offset="1" stop-color={spec.shroud === 'fe30' ? '#55585e' : '#2a2a31'} />
 					</linearGradient>
 					<linearGradient id="br-{uid}" x1="0" y1="0" x2="1" y2="0">
 						<stop offset="0" stop-color="#4a4a52" />
@@ -126,26 +210,52 @@
 						<stop offset="0.97" stop-color="#3a3a42" stop-opacity="0.7" />
 						<stop offset="1" stop-color="#0a0a0c" stop-opacity="0" />
 					</radialGradient>
-					<clipPath id="clip-{uid}"><rect x="24" y="26" width="588" height="206" rx="18" /></clipPath>
+					<clipPath id="clip-{uid}"><rect x={x0} y="26" width={spec.len} height="206" rx="18" /></clipPath>
 				</defs>
 				<!-- bracket -->
-				<rect x="2" y="14" width="18" height="250" rx="3" fill="url(#br-{uid})" />
-				{#each [0, 1, 2, 3, 4, 5, 6] as i (i)}<rect x="7" y={40 + i * 28} width="8" height="18" rx="3" fill="#0b0b0d" />{/each}
+				<rect x={x0 - 22} y="14" width="18" height="250" rx="3" fill="url(#br-{uid})" />
+				{#each [0, 1, 2, 3, 4, 5, 6] as i (i)}<rect x={x0 - 17} y={40 + i * 28} width="8" height="18" rx="3" fill="#0b0b0d" />{/each}
 				<!-- PCB edge with memory packages -->
-				<rect x="20" y="222" width="600" height="40" rx="4" fill="#0d0e10" stroke="#1f2024" />
+				<rect x={x0 - 4} y="222" width={spec.len + 8} height="40" rx="4" fill="#0d0e10" stroke="#1f2024" />
 				{#each Array.from({ length: chips }, (_, i) => i) as i (i)}
-					<rect x={60 + i * (520 / chips)} y="240" width={520 / chips - 8} height="12" rx="1.5" fill="#1b1c20" stroke="#2a2b30" stroke-width="0.8" />
+					<rect x={x0 + 36 + i * ((spec.len - 72) / chips)} y="240" width={(spec.len - 72) / chips - 8} height="12" rx="1.5" fill="#1b1c20" stroke="#2a2b30" stroke-width="0.8" />
 				{/each}
 				<!-- PCIe fingers -->
-				<rect x="96" y="262" width="250" height="16" rx="2" fill="#4d4636" />
-				{#each Array.from({ length: 30 }, (_, i) => i) as i (i)}<rect x={99 + i * 8.2} y="264" width="5" height="12" fill="#6b604c" />{/each}
+				<rect x={x0 + 72} y="262" width="250" height="16" rx="2" fill="#4d4636" />
+				{#each Array.from({ length: 30 }, (_, i) => i) as i (i)}<rect x={x0 + 75 + i * 8.2} y="264" width="5" height="12" fill="#6b604c" />{/each}
 				<!-- shroud -->
-				<rect x="24" y="26" width="588" height="206" rx="18" fill="url(#sh-{uid})" stroke="#2c2c33" />
-				<path d="M42 27.5H594" stroke="rgb(255 255 255 / 0.2)" stroke-width="1" />
+				<rect x={x0} y="26" width={spec.len} height="206" rx="18" fill="url(#sh-{uid})" stroke={fe ? '#6a6d74' : '#2c2c33'} />
+				<path d="M{x0 + 18} 27.5H{x1 - 18}" stroke="rgb(255 255 255 / {spec.shroud === 'fe30' ? 0.45 : 0.2})" stroke-width="1" />
 				<g clip-path="url(#clip-{uid})">
-					<!-- machined accents between the fans -->
-					<path d="M24 196 L110 232 H24 Z M612 60 L540 26 H612 Z" fill="#17171b" stroke="rgb(255 255 255 / 0.06)" />
-					{#each Array.from({ length: 9 }, (_, i) => i) as i (i)}<rect x={500 + i * 11} y="208" width="5" height="12" rx="1.5" fill="#09090b" />{/each}
+					{#if fe}
+						<!-- Founders: a graphite plate inside the metal frame -->
+						<rect x={x0 + 12} y="38" width={spec.len - 24} height="182" rx="11" fill="#121316" stroke="rgb(0 0 0 / 0.6)" />
+						{#if fin}
+							<!-- flow-through: the fin stack shows through, the second fan is behind it -->
+							<rect x={fin.x} y="46" width={fin.w} height="166" rx="6" fill="#060607" />
+							{#each Array.from({ length: Math.floor(fin.w / 7) }, (_, i) => i) as i (i)}
+								<rect x={fin.x + 4 + i * 7} y="50" width="2" height="158" fill="#24252a" />
+							{/each}
+							<rect x={fin.x} y="46" width={fin.w} height="166" rx="6" fill="none" stroke="rgb(255 255 255 / 0.08)" />
+							{#if spec.shroud === 'fe30'}
+								<!-- the 30-series V of the frame cutting across the fins -->
+								<path d="M{fin.x - 6} 30 L{fin.x + fin.w * 0.58} 132 L{fin.x - 6} 228" fill="none" stroke="#7d8087" stroke-width="12" stroke-linejoin="round" />
+								<path d="M{fin.x - 6} 30 L{fin.x + fin.w * 0.58} 132 L{fin.x - 6} 228" fill="none" stroke="rgb(255 255 255 / 0.35)" stroke-width="1.2" stroke-linejoin="round" transform="translate(0 -4)" />
+							{/if}
+						{:else}
+							<!-- double flow-through: the board sits between the two fans -->
+							<rect x={fans[0].cx + fans[0].r + 18} y="70" width={fans[1].cx - fans[1].r - fans[0].cx - fans[0].r - 36} height="124" rx="8" fill="#0b0c0e" stroke="rgb(255 255 255 / 0.07)" />
+						{/if}
+					{:else if spec.shroud === 'dark'}
+						<!-- machined accents in the corners -->
+						<path d="M{x0} 196 L{x0 + 86} 232 H{x0} Z M{x1} 60 L{x1 - 72} 26 H{x1} Z" fill="#17171b" stroke="rgb(255 255 255 / 0.06)" />
+					{:else if spec.shroud === 'arc'}
+						<!-- a pale light band across the matte shroud -->
+						<path d="M{x0 + spec.len * 0.44} 26 L{x0 + spec.len * 0.52} 26 L{x0 + spec.len * 0.48} 232 L{x0 + spec.len * 0.4} 232 Z" fill="#cfd0d6" opacity="0.5" />
+					{/if}
+					{#if spec.shroud === 'dark' || spec.shroud === 'amd' || spec.shroud === 'radeon'}
+						{#each Array.from({ length: 9 }, (_, i) => i) as i (i)}<rect x={x1 - 112 + i * 11} y="208" width="5" height="12" rx="1.5" fill="#09090b" />{/each}
+					{/if}
 					{#each fans as f, i (i)}
 						<circle cx={f.cx} cy="132" r={f.r + 8} fill="url(#rim-{uid})" />
 						<circle cx={f.cx} cy="132" r={f.r + 3} fill="#050506" />
@@ -156,16 +266,35 @@
 							{/each}
 						</g>
 						{#if charge != null}<circle class="blur" cx={f.cx} cy="132" r={f.r * 0.97} fill="url(#smear-{uid})" />{/if}
-						<circle cx={f.cx} cy="132" r={f.r * 0.26} fill="#111114" stroke="#34343c" stroke-width="1.5" />
+						<circle cx={f.cx} cy="132" r={f.r * 0.26} fill="#111114" stroke={spec.shroud === 'arc' ? '#8d8e95' : '#34343c'} stroke-width="1.5" />
 						<circle cx={f.cx} cy="132" r={f.r * 0.14} fill="none" stroke="#24242a" />
 						<circle cx={f.cx} cy="132" r="2.5" fill="#4a4a52" />
 					{/each}
-					<rect class="sweep" x="-220" y="0" width="200" height="300" fill="url(#sw-{uid})" />
+					{#if spec.shroud === 'amd'}
+						<!-- reference RDNA3: three red stripes in each gap between the fans, top and bottom -->
+						{#each gaps as gx (gx)}
+							{#each [-7, 0, 7] as o (o)}
+								<path d="M{gx + o - 5} 30 L{gx + o + 5} 52" stroke="#d1202f" stroke-width="2.2" stroke-linecap="round" />
+								<path d="M{gx + o - 5} 206 L{gx + o + 5} 228" stroke="#d1202f" stroke-width="2.2" stroke-linecap="round" />
+							{/each}
+						{/each}
+					{:else if spec.shroud === 'radeon'}
+						<rect x={x0} y="214" width={spec.len} height="18" fill="#3b3d42" />
+						<path d="M{x0} 214.5 H{x1}" stroke="rgb(255 255 255 / 0.25)" />
+						<path d="M{x0 + 26} 208 H{x0 + spec.len * 0.36}" stroke="#d1202f" stroke-width="2" stroke-linecap="round" />
+					{/if}
+					<rect class="sweep" x={x0 - 244} y="0" width="200" height="300" fill="url(#sw-{uid})" />
 				</g>
-				<text x="46" y="46" class="engrave">{label}</text>
+				{#if spec.shroud === 'fe50'}
+					<text x={(x0 + x1) / 2} y="182" text-anchor="middle" class="engrave fe">{label}</text>
+				{:else if fe}
+					<text x={x1 - 26} y="214" text-anchor="end" class="engrave fe">{label}</text>
+				{:else}
+					<text x={x0 + 22} y="46" class="engrave">{label}</text>
+				{/if}
 				<!-- light strip: as long and as hot as the measured speed-up -->
-				<rect x="40" y="226" width="556" height="3" rx="1.5" fill="#1a1a1e" />
-				<rect class="strip" x="40" y="226" width={556} height="3" rx="1.5" fill="url(#ramp-{uid})" />
+				<rect x={x0 + 16} y="226" width={spec.len - 32} height="3" rx="1.5" fill="#1a1a1e" />
+				<rect class="strip" x={x0 + 16} y="226" width={spec.len - 32} height="3" rx="1.5" fill="url(#ramp-{uid})" />
 			</svg>
 		{/if}
 		<div class="under" class:apple></div>
@@ -206,8 +335,8 @@
 	/* specular sheen on the shroud: follows the cursor through the tile's --gx/--gy */
 	.sheen {
 		position: absolute;
-		left: 3.75%;
-		right: 4.4%;
+		left: var(--sl, 3.75%);
+		right: var(--sr, 4.4%);
 		top: 8.7%;
 		bottom: 22.7%;
 		border-radius: 2.8% / 8.7%;
@@ -232,8 +361,8 @@
 	/* heat underglow: light spilling from the strip onto the PCB, as long as the speed-up */
 	.under {
 		position: absolute;
-		left: 6%;
-		width: 87%;
+		left: var(--ul, 6%);
+		width: var(--uw, 87%);
 		bottom: 18%;
 		height: 9%;
 		border-radius: 50%;
@@ -286,6 +415,9 @@
 		letter-spacing: 0.18em;
 		fill: #4a4a52;
 		text-transform: uppercase;
+	}
+	.engrave.fe {
+		fill: #6a6d74;
 	}
 	.engrave.apple {
 		font-family: var(--font-display);

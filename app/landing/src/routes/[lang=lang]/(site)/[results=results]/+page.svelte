@@ -16,6 +16,7 @@
 </svelte:head>
 
 <div class="grain" aria-hidden="true"></div>
+<div class="nav-fade" aria-hidden="true"></div>
 <CursorGlow />
 
 <div class="page">

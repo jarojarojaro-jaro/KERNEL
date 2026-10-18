@@ -380,12 +380,12 @@
 			align-items: start;
 		}
 		.inner {
-			padding-top: 5.75rem;
-			gap: var(--sp-6);
+			padding-top: 5.25rem;
+			gap: var(--sp-4);
 		}
 		/* condensed cut: steel on two lines, the heat line on two big lines */
 		.title {
-			font-size: 19.5vw;
+			font-size: 16.5vw;
 			font-stretch: 82%;
 			line-height: 0.84;
 		}
@@ -400,15 +400,21 @@
 			line-height: 0.98;
 			margin-bottom: 0.22em;
 		}
+		/* primary and the text link on one row */
 		.actions {
-			gap: var(--sp-3) var(--sp-5);
+			flex-wrap: nowrap;
+			gap: var(--sp-4);
 		}
 		.ignite {
-			min-height: 3.1rem;
+			min-height: 2.9rem;
+			padding: 0 1rem 0 1.15rem;
+			gap: 0.6rem;
 			font-size: var(--fs-sm);
+			white-space: nowrap;
 		}
 		.mlink {
 			font-size: var(--fs-sm);
+			white-space: nowrap;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

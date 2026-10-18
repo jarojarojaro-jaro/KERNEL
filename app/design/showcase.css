@@ -221,6 +221,20 @@
 	--header-clear: calc(4.2rem + 24px);
 }
 
+/* A solid fade behind the floating glass header: content scrolling up never reads through it.
+ * Anchored sections land below the header. */
+.nav-fade {
+	position: fixed;
+	inset: 0 0 auto;
+	height: calc(var(--header-clear) - 8px);
+	z-index: calc(var(--z-header) - 1);
+	pointer-events: none;
+	background: linear-gradient(180deg, var(--bg-0) 0%, color-mix(in srgb, var(--bg-0) 92%, transparent) 55%, transparent);
+}
+main section[id] {
+	scroll-margin-top: var(--header-clear);
+}
+
 /* ---------------- reveal on scroll ---------------- */
 @keyframes reveal-rise {
 	from {

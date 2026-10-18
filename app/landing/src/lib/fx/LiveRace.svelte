@@ -22,9 +22,11 @@
 	 *
 	 * Honesty: tokens are emitted at exactly the measured median t/s, in steps of `burst` tokens
 	 * (measured MTP tokens accepted per step, a deterministic 3,3,4,… pattern with the measured
-	 * mean); finish times = tokens ÷ median. The live readout breathes only BELOW the median, within
-	 * [0,97 × median, median]; the needle kicks a little on each emitted step and a spring settles it
-	 * back to the readout. The measured median is printed next to each readout.
+	 * mean); finish times = tokens ÷ median. The digits show only the measured median (never a live
+	 * value that could disagree with it); the motion lives in the needle, which breathes within
+	 * [0,97 × median, median] and kicks a little on each emitted step, and in the rhythm strip.
+	 * Narrow screens: the lanes sit side by side and each answer shows a 4-line window that follows
+	 * the newest line (transform only).
 	 *
 	 * The answer is cut into token-sized pieces so the piece count matches TOK_PER_WORD (report 06
 	 * §2.1.2); the text is an example, the pace is measured.
@@ -119,8 +121,7 @@
 
 	let playing = $state(false);
 	let onScreen = $state(false);
-	/** Live readout per lane (t/s, 0.1 steps) and needle value; null = show the median. */
-	let liveRate: (number | null)[] = $state([]);
+	/** Needle value per lane; null = rest on the median. */
 	let needle: (number | null)[] = $state([]);
 	let kick: number[] = [];
 	let phase: number[] = [];
@@ -145,6 +146,7 @@
 		lanes.forEach((_, i) => {
 			const f = feeds[i];
 			if (f) for (let j = 0; j < f.children.length; j++) f.children[j].classList.toggle('on', j < runs[i].pos);
+			follow(i);
 			paint(i);
 		});
 	}
@@ -160,6 +162,21 @@
 		const f = feeds[i];
 		const r = runs[i];
 		for (let j = 0; j < k && r.pos < pieces.length; j++) f?.children[r.pos++]?.classList.add('on');
+		follow(i);
+	}
+	/** Narrow windows: keep the newest lit line at the bottom (transform; no-op when the text fits). */
+	const shift: number[] = [];
+	function follow(i: number) {
+		const f = feeds[i];
+		const win = f?.parentElement;
+		if (!f || !win) return;
+		const h = win.clientHeight;
+		const last = f.children[Math.max(0, runs[i].pos - 1)] as HTMLElement | undefined;
+		const y = h >= f.offsetHeight || !last ? 0 : Math.max(0, Math.min(f.offsetHeight - h, last.offsetTop + last.offsetHeight - h));
+		if (y !== shift[i]) {
+			shift[i] = y;
+			f.style.transform = y ? `translate3d(0, ${-y}px, 0)` : '';
+		}
 	}
 
 	/** Live readout: the median × (1 − 3% × w), w ∈ [0, 1] from slow sines: never above the median. */
@@ -229,7 +246,6 @@
 		});
 	});
 
-	let liveTick = 0;
 	// the frame loop lives only while playing on screen
 	$effect(() => {
 		if (!playing || !onScreen) return;
@@ -238,22 +254,13 @@
 				const d = Math.min(dt, 0.1);
 				clock += d;
 				since += d;
-				const nr = [...liveRate];
 				const nn = [...needle];
 				for (let i = 0; i < lanes.length; i++) {
 					advance(i, d);
 					paint(i);
 					drawStrip(i);
 					kick[i] = (kick[i] ?? 0) * Math.exp(-d / 0.09);
-					const rate = readoutAt(i, clock);
-					nr[i] = Math.floor(rate * 10) / 10;
-					nn[i] = rate + kick[i];
-				}
-				// the readout ticks at ~12 Hz (readable digits); the needle follows every frame
-				liveTick += d;
-				if (liveTick > 0.08) {
-					liveTick = 0;
-					liveRate = nr;
+					nn[i] = readoutAt(i, clock) + kick[i];
 				}
 				needle = nn;
 				if (since > 2.6 && since - d <= 2.6) onheat?.(false);
@@ -289,14 +296,14 @@
 						{#if l.sub}<span class="sub">{l.sub}</span>{/if}
 					</div>
 					<div class="rate">
-						<span class="tps"><Odometer value={liveRate[i] ?? l.tps} decimals={1} {lang} duration={0} minInt={2} pad /></span>
+						<span class="tps"><Odometer value={l.tps} decimals={1} {lang} duration={0} minInt={2} pad /></span>
 						<span class="unit">t/s</span>
 						<!-- the measured median, always visible next to the live readout -->
-						<span class="med">{t.median} <b>{num(l.tps, lang, 1)}</b></span>
+						<span class="med">{t.median}</span>
 					</div>
 				</div>
 				<!-- the whole answer, always laid out: dim preview, lit as the lane writes it -->
-				<p class="feed" bind:this={feeds[i]}>{#each pieces as piece, j (j)}<span class="tk" class:on={j < first[i]}>{piece}</span>{/each}</p>
+				<div class="win"><p class="feed" bind:this={feeds[i]}>{#each pieces as piece, j (j)}<span class="tk" class:on={j < first[i]}>{piece}</span>{/each}</p></div>
 				<canvas class="strip" bind:this={strips[i]}></canvas>
 			</div>
 		{/each}
@@ -434,18 +441,13 @@
 	}
 	.med {
 		grid-column: 1 / -1;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.04em;
 		color: var(--text-mute);
 		white-space: nowrap;
-	}
-	.med b {
-		font-weight: 500;
-		color: var(--text);
-	}
-	.hot .med b {
-		color: var(--heat-4);
 	}
 	.tps {
 		font-size: clamp(1.45rem, 1rem + 1.1vw, 2.05rem);
@@ -479,8 +481,13 @@
 		letter-spacing: 0.1em;
 	}
 	/* the answer: always complete in layout; unwritten tokens are a dim preview */
+	.win {
+		position: relative;
+		overflow: clip;
+	}
 	.feed {
 		margin: 0;
+		transition: transform 0.2s var(--ease-out);
 		font-size: clamp(1rem, 0.85rem + 0.4vw, 1.22rem);
 		line-height: 1.55;
 		letter-spacing: -0.005em;
@@ -669,40 +676,85 @@
 		background: var(--bg-2);
 		border-color: var(--text-mute);
 	}
+	/* narrow screens: both lanes side by side, short windows, so the whole race fits the first screen */
 	@media (max-width: 900px) {
 		.lanes {
-			grid-template-columns: minmax(0, 1fr);
-			row-gap: 1.6rem;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			column-gap: 1.1rem;
 		}
 		.lanes::before {
-			display: none;
+			display: block;
 		}
-	}
-	@media (max-width: 640px) {
 		.inst {
-			--g: 4.25rem;
-			gap: 0.8rem;
+			--g: 2.9rem;
+			grid-template-columns: var(--g) minmax(0, 1fr);
+			grid-template-areas: 'g who' 'g rate';
+			align-items: center;
+			column-gap: 0.55rem;
+			row-gap: 0.1rem;
+			height: auto;
+		}
+		.gauge {
+			grid-area: g;
+		}
+		.who {
+			grid-area: who;
+		}
+		.rate {
+			grid-area: rate;
+			justify-items: start;
+			justify-self: start;
 		}
 		.sub {
 			display: none;
 		}
+		.label {
+			font-size: 0.78rem;
+		}
+		.tps {
+			font-size: 1.35rem;
+		}
+		.med {
+			display: none;
+		}
+		/* four lines of the answer, following the newest one */
+		.win {
+			height: calc(4 * 1.45em);
+			font-size: 0.8rem;
+			mask-image: linear-gradient(transparent, #000 0.9em);
+		}
 		.feed {
-			font-size: var(--fs-sm);
+			font-size: inherit;
+			line-height: 1.45;
+		}
+		.strip {
+			display: none;
 		}
 		.track {
-			grid-template-columns: minmax(0, auto) minmax(0, 1fr) 3.6rem;
-			padding: 0.8rem;
-			column-gap: 0.7rem;
+			grid-template-columns: minmax(0, auto) minmax(0, 1fr) 3.4rem;
+			padding: 0.7rem 0.8rem;
+			column-gap: 0.6rem;
+			row-gap: 0.45rem;
 		}
 		.tn {
 			font-size: var(--fs-2xs);
+			max-width: 6.5rem;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+		.tt {
+			font-size: var(--fs-xs);
 		}
 		.verdict {
 			grid-column: 1 / -1;
 			grid-row: 3;
 			grid-auto-flow: column;
+			justify-content: center;
 			align-items: baseline;
 			gap: 0.6rem;
+		}
+		.verdict b {
+			font-size: 2rem;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
@@ -713,6 +765,7 @@
 			animation: none;
 		}
 		.trail,
+		.feed,
 		.verdict,
 		.won .verdict {
 			transition: none;

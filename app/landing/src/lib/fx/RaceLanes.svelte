@@ -48,6 +48,8 @@
 		runKey = '',
 		/** Show each lane's elapsed seconds (off when the answer length differs from other timings on the page). */
 		clock = true,
+		/** Which lanes draw a dial: all, only the hot lane, or none (lanes without one keep the readout). */
+		tacho = 'all',
 	}: {
 		lanes: Lane[];
 		text: string;
@@ -60,6 +62,7 @@
 		summary: string;
 		runKey?: string;
 		clock?: boolean;
+		tacho?: 'all' | 'hot' | 'none';
 	} = $props();
 
 	const L = {
@@ -190,14 +193,22 @@
 					<span class="label">{l.label}</span>
 					{#if l.sub}<span class="sub">{l.sub}</span>{/if}
 				</div>
-				<div class="gauge">
-					<Tacho value={s.running || s.done ? l.tps : 0} glowing={s.running} max={top} redline={red} {step} tone={l.hot ? 'hot' : 'cold'} label="{l.label}: {num(l.tps, lang)} t/s">
-						<span class="readout">
-							<span class="big"><Odometer value={elapsed > LEAD ? l.tps : 0} decimals={1} {lang} duration={900} minInt={2} /></span>
-							<span class="unit">t/s</span>
-						</span>
-					</Tacho>
-				</div>
+				{#snippet readout()}
+					<!-- the digits always show the measured value; motion lives in the needle and the text -->
+					<span class="readout">
+						<span class="big"><Odometer value={l.tps} decimals={1} {lang} duration={0} minInt={2} /></span>
+						<span class="unit">t/s</span>
+					</span>
+				{/snippet}
+				{#if tacho === 'all' || (tacho === 'hot' && l.hot)}
+					<div class="gauge">
+						<Tacho value={s.running || s.done ? l.tps : 0} glowing={s.running} max={top} redline={red} {step} tone={l.hot ? 'hot' : 'cold'} label="{l.label}: {num(l.tps, lang)} t/s">
+							{@render readout()}
+						</Tacho>
+					</div>
+				{:else}
+					<div class="gauge nodial">{@render readout()}</div>
+				{/if}
 				<div class="text" class:hot={l.hot}>
 					<p>
 						{#if s.w > 0}
@@ -306,6 +317,16 @@
 	.gauge {
 		width: min(100%, 15rem);
 		justify-self: center;
+	}
+	.nodial {
+		display: grid;
+		place-items: center;
+		min-height: 5rem;
+	}
+	.nodial .big {
+		font-size: clamp(2.2rem, 1.4rem + 2vw, 3.2rem);
+		font-weight: 500;
+		letter-spacing: -0.04em;
 	}
 	.readout {
 		display: grid;

@@ -1,11 +1,11 @@
 <script lang="ts">
 	/**
-	 * Final CTA: the dial rests on our engine's measured value (server HTML included); when it is
-	 * actually in view the needle sweeps up from 0 into the redline once more.
+	 * Final CTA: one giant number on a heat track (no dial; the gauges belong to the hero race). It
+	 * rests on our engine's measured value (server HTML included); in view it counts up and the track
+	 * fills once more. The typical app is marked on the same scale.
 	 */
 	import { magnetic, play } from '$lib/fx/actions';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
-	import Tacho from '$lib/fx/Tacho.svelte';
 	import Odometer from '$lib/fx/Odometer.svelte';
 	import { cardsHref, href, num, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
@@ -15,6 +15,7 @@
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].final);
 	const v = HERO_V.a2.decode!;
+	const a0 = HERO_V.a0.decode!;
 	let rep = $state(0);
 	const label = $derived(fill(c.tacho, { card: HERO_CARD.name, v: num(v.v, lang) }));
 </script>
@@ -22,16 +23,24 @@
 <section class="final heat-top" aria-labelledby="final-title">
 	<div class="heat" aria-hidden="true"></div>
 	<div class="inner">
-		<div class="dial" use:play={{ threshold: 0.4, onplay: () => rep++ }}>
-			<Tacho value={v.v} replay={rep} max={DIAL_MAX} redline={REDLINE} {label}>
-				<span class="ro">
-					<span class="big"><Odometer value={v.v} replay={rep} decimals={1} {lang} duration={1600} minInt={2} /></span>
+		<!-- one number on a heat track (0–100 t/s, red zone from 70): our engine, with the typical app marked -->
+		<div class="meter" use:play={{ threshold: 0.4, onplay: () => rep++ }}>
+			<!-- the graphic is one labelled image; the source button below stays outside it (no interactive child in role="img") -->
+			<div role="img" aria-label={label}>
+				<p class="mbig" aria-hidden="true">
+					<span class="num"><Odometer value={v.v} replay={rep} decimals={1} {lang} duration={1600} minInt={2} /></span>
 					<span class="u">t/s</span>
-				</span>
-			</Tacho>
+				</p>
+				<div class="htrack" aria-hidden="true" style="--v:{v.v / DIAL_MAX}; --a:{a0.v / DIAL_MAX}; --r:{REDLINE / DIAL_MAX}">
+					<span class="red"></span>
+					{#key rep}<span class="hfill" class:play={rep > 0}></span>{/key}
+					<span class="mk mk-a"><i></i><b>{num(a0.v, lang)}</b></span>
+					<span class="scale"><span>0</span><span class="rl">{REDLINE}</span><span>{DIAL_MAX}</span></span>
+				</div>
+			</div>
 			<p class="cap">
 				{HERO_CARD.name} · {HERO_MODEL} {HERO_RUN.quant}
-				<SourceTip {lang} src={v.src} note="{HERO_RUN.metric[lang]}. {HERO_RUN.conditions[lang]}." />
+				<SourceTip {lang} src={[v.src, a0.src]} note="{HERO_RUN.metric[lang]}. {HERO_RUN.conditions[lang]}." />
 			</p>
 		</div>
 		<div class="copy">
@@ -70,37 +79,117 @@
 		gap: clamp(2rem, 6vw, 6rem);
 		align-items: center;
 	}
-	.dial {
+	.meter {
 		display: grid;
-		justify-items: center;
-		gap: var(--sp-4);
+		gap: var(--sp-5);
 	}
-	.dial :global(.tacho) {
-		width: min(100%, 30rem);
+	.mbig {
+		margin: 0;
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
 	}
-	.ro {
-		display: grid;
-		justify-items: center;
-		gap: 0.2rem;
-	}
-	.big {
-		font-size: clamp(2.6rem, 1.5rem + 3vw, 4.5rem);
-		font-weight: 500;
+	.num {
+		font-size: clamp(5rem, 2.5rem + 8vw, 11rem);
+		font-weight: 800;
 		letter-spacing: -0.05em;
+		line-height: 0.85;
 		color: var(--heat-5);
-		filter: drop-shadow(0 0 16px rgb(255 122 26 / 0.5));
+		filter: drop-shadow(0 0 22px rgb(255 122 26 / 0.55)) drop-shadow(0 0 60px rgb(226 64 28 / 0.35));
+	}
+	.num :global(.odo) {
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
 	}
 	.u {
 		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
+		font-size: var(--fs-sm);
 		color: var(--text-mute);
 		letter-spacing: 0.12em;
+	}
+	/* the heat track: the full ramp revealed up to our value; red zone from the redline */
+	.htrack {
+		position: relative;
+		height: 1.1rem;
+		margin-bottom: 2.2rem;
+		border-radius: var(--r-pill);
+		background: var(--bg-2);
+		box-shadow: inset 0 0 0 1px var(--line);
+	}
+	.red {
+		position: absolute;
+		top: -0.35rem;
+		bottom: -0.35rem;
+		left: calc(var(--r) * 100%);
+		right: 0;
+		border-left: 2px solid var(--heat-2);
+		background: linear-gradient(90deg, rgb(226 64 28 / 0.18), transparent);
+		border-radius: 0 var(--r-pill) var(--r-pill) 0;
+	}
+	.hfill {
+		position: absolute;
+		inset: 0;
+		width: calc(var(--v) * 100%);
+		border-radius: var(--r-pill);
+		background: var(--heat-ramp-hot);
+		box-shadow:
+			0 0 18px rgb(255 122 26 / 0.7),
+			0 0 50px rgb(226 64 28 / 0.4);
+		transform-origin: 0 50%;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.hfill.play {
+			animation: hfill 1.6s var(--ease-out) backwards;
+		}
+	}
+	@keyframes hfill {
+		from {
+			transform: scaleX(0);
+		}
+	}
+	.mk {
+		position: absolute;
+		top: -0.5rem;
+		bottom: -0.5rem;
+		left: calc(var(--a) * 100%);
+		display: grid;
+		justify-items: center;
+	}
+	.mk i {
+		width: 2px;
+		height: 100%;
+		background: var(--before);
+	}
+	.mk b {
+		position: absolute;
+		top: calc(100% + 0.25rem);
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		font-weight: 500;
+		color: var(--before);
+		white-space: nowrap;
+	}
+	.scale {
+		position: absolute;
+		left: 0;
+		right: 0;
+		top: calc(100% + 0.75rem);
+		display: flex;
+		justify-content: space-between;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
+	}
+	.scale .rl {
+		position: absolute;
+		left: calc(var(--r) * 100%);
+		transform: translateX(-50%);
+		color: #ff6a4a;
 	}
 	.cap {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		justify-content: center;
 		gap: var(--sp-2);
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
@@ -119,7 +208,7 @@
 		.inner {
 			grid-template-columns: minmax(0, 1fr);
 		}
-		.dial {
+		.meter {
 			order: 2;
 		}
 	}

@@ -95,7 +95,8 @@
 		stroke: var(--heat-3);
 	}
 	.v {
-		font-family: var(--font-mono);
+		font-family: var(--font-display);
+		font-weight: 650;
 		font-variant-numeric: tabular-nums;
 		font-size: var(--fs-2xl);
 		color: var(--text);

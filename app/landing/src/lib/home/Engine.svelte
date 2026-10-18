@@ -1,6 +1,6 @@
 <script lang="ts">
 	/**
-	 * Jak to możliwe, as three visuals and almost no prose:
+	 * Jak to możliwe: the page's second big scene, full-bleed and cinematic, almost no prose:
 	 * (a) the stack: six layers between the model (top) and the graphics card (bottom) light up in
 	 *     sequence as slabs, each with a mini icon and a short label; a token pulse then runs down
 	 *     through them. Text only (no numbers).
@@ -8,7 +8,8 @@
 	 *     time scale (RTX 3090 × Qwen, HERO_RUN.kernels). Bars = kernels (work per launch = GPU ms ÷
 	 *     launches), gaps = GPU waiting (gap ms ÷ launches). Our lane starts as upstream and merges
 	 *     ~2.5 launches into one: the gaps visibly close while its counters run 1956 → 795 launches,
-	 *     3,83 → 2,55 ms of gaps, 24,9 → 24,5 ms of GPU work. Zoomed into the first 40 upstream launches.
+	 *     3,83 → 2,55 ms of gaps, 24,9 → 24,5 ms of GPU work. Zoomed into the first 72 upstream launches, drawn as a
+	 *     full-width band; giant live counters above it.
 	 * (c) where the gain comes from, as split bars (log scale, so segments multiply): 3090 Qwen =
 	 *     upstream MTP flags × our engine; LFM2.5 (no speculation) = our engine only. From run.gain.
 	 * Auto-played on entering the viewport (replay button); reduced motion shows the final state.
@@ -31,7 +32,7 @@
 	const K = HERO_KERNELS;
 
 	// ---- (a) stack ----
-	const stackTl = new Autoplay(1.5, '0px 0px -20% 0px');
+	const stackTl = new Autoplay(1.8, '0px 0px -20% 0px');
 	const ICONS = [
 		'M6 6h8v8H6zM8 3v3M12 3v3M8 14v3M12 14v3M3 8h3M3 12h3M14 8h3M14 12h3',
 		'M3 7h5v6H3zM10 7h7v6h-7z',
@@ -42,11 +43,11 @@
 	];
 
 	// ---- (b) kernel timeline ----
-	const zoomTl = new Autoplay(2.2, '0px 0px -20% 0px');
+	const zoomTl = new Autoplay(2.6, '0px 0px -15% 0px');
 	const f = $derived(easeInOutCubic(clamp01((zoomTl.p - 0.12) / 0.75)));
 	const UP = K.up.v;
 	const OURS = K.ours.v;
-	const N = 40;
+	const N = 72;
 	const G = Math.round((N * OURS) / UP);
 	const wU = K.gpuMs[0].v / UP;
 	const gU = K.gapMs[0].v / UP;
@@ -97,14 +98,17 @@
 	});
 	const maxTotal = $derived(Math.max(...rows.map((r) => r.total)));
 	const w = (v: number) => Math.log(v) / Math.log(maxTotal);
+	/** Title as two lines: the claim (bone) and the payoff (heat). */
+	const titleParts = $derived(c.title.split('|'));
 </script>
 
 <section id="engine" class="engine heat-top" aria-labelledby="engine-title">
+	<div class="atmo" aria-hidden="true"></div>
 	<div class="inner">
-		<h2 id="engine-title" class="statement">{c.title.replace('|', ' ')}</h2>
+		<h2 id="engine-title" class="statement"><span class="t1">{titleParts[0]}</span> <span class="t2">{titleParts[1] ?? ''}</span></h2>
 
 		<div class="grid">
-			<!-- (a) the stack -->
+			<!-- (a) the stack: model → card, lit layer by layer -->
 			<div class="stack" use:stackTl.view>
 				<p class="cap cap--model"><span class="ci" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2l7 4v8l-7 4-7-4V6zM3 6l7 4 7-4M10 10v8" /></svg></span>{c.model}</p>
 				<div class="pulse" class:run={stackTl.p >= 1} aria-hidden="true"></div>
@@ -121,94 +125,130 @@
 				<p class="cap cap--card"><span class="ci" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M2 6h16v9H2zM5 15v2M8 15v2M11 15v2M14 15v2M6 9h4v3H6z" /></svg></span>{c.card}</p>
 			</div>
 
-			<div class="right">
-				<!-- (b) layer 02 up close -->
-				<figure class="zoom" use:zoomTl.view>
-					<figcaption class="zh">
-						<span class="zk">02</span>
-						<span class="zt">{c.zoom}</span>
-						<span class="zm"><ModelMark model={HERO_RUN.model} size="0.7em" /> {HERO_MODEL} · {HERO_CARD.name}</span>
-						<SourceTip {lang} src={kSrc} note={c.zoomNote} />
-						<Replay {lang} onclick={zoomTl.replay} disabled={zoomTl.playing} />
-					</figcaption>
-					{#each [0, 1] as lane (lane)}
-						<div class="lane" class:ours={lane === 1}>
-							<p class="ln">{lane ? c.ours : c.up}</p>
-							<svg class="track" viewBox="0 0 1000 40" preserveAspectRatio="none" aria-hidden="true">
-								{#each bars as b, i (i)}
-									{#if lane === 0}
-										<rect x={b.x0} y="6" width={b.w0} height="28" rx="1.5" />
-									{:else}
-										<rect x={lerp(b.x0, b.x1, f)} y="6" width={lerp(b.w0, b.w1, f) + (f > 0.98 ? 0.6 : 0)} height="28" rx="1.5" />
-									{/if}
-								{/each}
-							</svg>
-							<dl class="nums">
-								<div class="n-main"><dt>{c.kernels}</dt><dd>{num(lane ? live.n : UP, lang, 0)}</dd></div>
-								<div><dt>{c.gaps}</dt><dd>{num(lane ? live.gap : K.gapMs[0].v, lang, 2)}<small>&nbsp;ms</small></dd></div>
-								<div><dt>{c.gpu}</dt><dd>{num(lane ? live.gpu : K.gpuMs[0].v, lang, 1)}<small>&nbsp;ms</small></dd></div>
-							</dl>
-						</div>
-					{/each}
-					<p class="sr-only">{c.up}: {UP} {c.kernels}, {c.gaps} {num(K.gapMs[0].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[0].v, lang, 1)} ms. {c.ours}: {OURS} {c.kernels}, {c.gaps} {num(K.gapMs[1].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[1].v, lang, 1)} ms.</p>
-				</figure>
+			<!-- (b) layer 02 up close: giant live counters -->
+			<div class="close" use:zoomTl.view>
+				<p class="zh">
+					<span class="zk">02</span>
+					<span class="zt">{c.zoom}</span>
+					<span class="zm"><ModelMark model={HERO_RUN.model} size="0.7em" /> {HERO_MODEL} · {HERO_CARD.name}</span>
+					<SourceTip {lang} src={kSrc} note={c.zoomNote} />
+					<Replay {lang} onclick={zoomTl.replay} disabled={zoomTl.playing} />
+				</p>
+				<p class="giant" aria-hidden="true">
+					<span class="g-up">{num(UP, lang, 0)}</span>
+					<span class="g-ar">→</span>
+					<span class="g-ours">{num(live.n, lang, 0)}</span>
+				</p>
+				<p class="g-cap">{c.kernels}</p>
+				<dl class="pair">
+					<div><dt>{c.gaps}</dt><dd><span class="pu">{num(K.gapMs[0].v, lang, 2)}</span> → <b>{num(live.gap, lang, 2)}</b>&nbsp;ms</dd></div>
+					<div><dt>{c.gpu}</dt><dd><span class="pu">{num(K.gpuMs[0].v, lang, 1)}</span> → <b>{num(live.gpu, lang, 1)}</b>&nbsp;ms</dd></div>
+				</dl>
+				<p class="sr-only">{c.up}: {UP} {c.kernels}, {c.gaps} {num(K.gapMs[0].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[0].v, lang, 1)} ms. {c.ours}: {OURS} {c.kernels}, {c.gaps} {num(K.gapMs[1].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[1].v, lang, 1)} ms.</p>
+			</div>
+		</div>
+	</div>
 
-				<!-- (c) where the gain comes from -->
-				<div class="split" class:in={zoomTl.p > 0.55}>
-					<p class="sh">{c.split} <SourceTip {lang} src={rows.map((r) => r.run.gain!.src)} note={rows.map((r) => r.note).join(' — ')} /></p>
-					{#each rows as r, ri (r.card.id + r.run.model)}
-						<div class="row" style="--d:{ri * 120}ms">
-							<p class="rw">
-								<ModelMark model={r.run.model} size="0.7em" />
-								<b>{MODEL_STYLE[r.run.model].short}</b>
-								<span>{r.card.short}</span>
-							</p>
-							<div class="bwrap">
-								<div class="sbar" style="--len:{w(r.total)}">
-									{#each r.segs as s (s.label)}
-										<span class="seg" class:mine={s.ours} style="flex-grow:{w(s.v)}">
-											<b class="speedup" class:speedup--down={s.v < 1} style="--rh:{heatOf(s.v)}">{fmtRatio(s.v, lang)}</b>
-										</span>
-									{/each}
-								</div>
-								<!-- what each segment is, right under its bar (never truncated inside a narrow segment) -->
-								<p class="cap2">
-									{#each r.segs as s, si (s.label)}{#if si > 0}<span class="x" aria-hidden="true">×</span>{/if}<span class="ck" class:mine={s.ours}>{s.label}</span>{/each}
-								</p>
-							</div>
-						</div>
+	<!-- the kernel timeline as a full-bleed band: bars = kernels, the dotted floor = GPU waiting -->
+	<div class="band" aria-hidden="true">
+		{#each [0, 1] as lane (lane)}
+			<div class="lane" class:ours={lane === 1}>
+				<span class="ln">{lane ? c.ours : c.up}</span>
+				<svg class="track" viewBox="0 0 1000 40" preserveAspectRatio="none">
+					{#each bars as b, i (i)}
+						{#if lane === 0}
+							<rect x={b.x0} y="4" width={b.w0} height="32" rx="1" />
+						{:else}
+							<rect x={lerp(b.x0, b.x1, f)} y="4" width={lerp(b.w0, b.w1, f) + (f > 0.98 ? 0.6 : 0)} height="32" rx="1" />
+						{/if}
 					{/each}
-				</div>
+				</svg>
+			</div>
+		{/each}
+	</div>
+
+	<div class="inner">
+		<!-- (c) where the gain comes from, compact -->
+		<div class="split" class:in={zoomTl.p > 0.55}>
+			<p class="sh">{c.split} <SourceTip {lang} src={rows.map((r) => r.run.gain!.src)} note={rows.map((r) => r.note).join(' — ')} /></p>
+			<div class="rows">
+				{#each rows as r, ri (r.card.id + r.run.model)}
+					<div class="row" style="--d:{ri * 120}ms">
+						<p class="rw">
+							<ModelMark model={r.run.model} size="0.7em" />
+							<b>{MODEL_STYLE[r.run.model].short}</b>
+							<span>{r.card.short}</span>
+						</p>
+						<div class="sbar" style="--len:{w(r.total)}">
+							{#each r.segs as s (s.label)}
+								<span class="seg" class:mine={s.ours} style="flex-grow:{w(s.v)}">
+									<b class="speedup" class:speedup--down={s.v < 1} style="--rh:{heatOf(s.v)}">{fmtRatio(s.v, lang)}</b>
+								</span>
+							{/each}
+						</div>
+						<p class="cap2">
+							{#each r.segs as s, si (s.label)}{#if si > 0}<span class="x" aria-hidden="true">×</span>{/if}<span class="ck" class:mine={s.ours}>{s.label}</span>{/each}
+						</p>
+					</div>
+				{/each}
 			</div>
 		</div>
 	</div>
 </section>
 
 <style>
+	.engine {
+		position: relative;
+		isolation: isolate;
+		overflow: clip;
+		padding-block: clamp(4rem, 3rem + 4vw, 8rem);
+		background: #070606;
+	}
+	/* the scene's atmosphere: a heat bloom from below and a faint measuring grid */
+	.atmo {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		pointer-events: none;
+		background:
+			radial-gradient(55% 45% at 70% 62%, rgb(255 122 26 / 0.16), transparent 70%),
+			radial-gradient(45% 40% at 15% 30%, rgb(226 64 28 / 0.1), transparent 70%),
+			linear-gradient(rgb(237 234 227 / 0.035) 1px, transparent 1px) 0 0 / 100% 4rem,
+			linear-gradient(90deg, rgb(237 234 227 / 0.035) 1px, transparent 1px) 0 0 / 4rem 100%;
+		mask-image: linear-gradient(transparent, #000 15%, #000 85%, transparent);
+	}
 	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
-		padding-block: clamp(3.5rem, 2.5rem + 3vw, 6rem);
 		display: grid;
 		gap: clamp(2rem, 4vw, 3.5rem);
 	}
 	.statement {
 		margin: 0;
-		max-width: 20ch;
 		font-family: var(--font-display);
-		font-size: clamp(2.1rem, 0.8rem + 3vw, 4.2rem);
+		font-size: clamp(2.6rem, 1rem + 5.4vw, 7rem);
 		font-weight: 820;
-		font-stretch: 112%;
-		line-height: 0.95;
-		letter-spacing: -0.04em;
-		color: var(--text-hi);
+		line-height: 0.92;
+		letter-spacing: -0.045em;
 		text-wrap: balance;
+	}
+	.t1 {
+		display: block;
+		color: var(--text-hi);
+	}
+	.t2 {
+		display: block;
+		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 35%, var(--heat-4) 70%, var(--heat-5));
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		filter: drop-shadow(0 0 0.3em rgb(255 122 26 / 0.3));
 	}
 	.grid {
 		display: grid;
-		grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.4fr);
+		grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.25fr);
 		gap: clamp(2rem, 5vw, 5rem);
-		align-items: start;
+		align-items: center;
 	}
 
 	/* ---- (a) stack ---- */
@@ -229,6 +269,9 @@
 		text-transform: uppercase;
 		color: var(--text);
 	}
+	.cap--card {
+		color: var(--heat-4);
+	}
 	.ci svg,
 	.si svg {
 		width: 1.15rem;
@@ -239,30 +282,32 @@
 		stroke-linejoin: round;
 		stroke-linecap: round;
 	}
-	/* the token's path from the model down to the card; a pulse runs it once the stack is lit */
+	/* the token's path from the model down to the card: a heat filament, a spark runs it */
 	.pulse {
 		position: absolute;
 		left: 50%;
 		top: 1.6rem;
 		bottom: 1.6rem;
-		width: 1px;
-		background: linear-gradient(var(--line-strong), var(--line-strong));
+		width: 2px;
+		margin-left: -1px;
+		background: linear-gradient(var(--heat-2), var(--heat-3), var(--heat-4));
+		box-shadow: 0 0 10px rgb(255 122 26 / 0.7);
 		overflow: hidden;
 	}
 	.pulse::after {
 		content: '';
 		position: absolute;
 		left: -1px;
-		width: 3px;
+		width: 4px;
 		height: 18%;
-		background: linear-gradient(transparent, var(--text-hi), transparent);
-		box-shadow: 0 0 10px var(--text-hi);
+		background: linear-gradient(transparent, var(--heat-5), transparent);
+		box-shadow: 0 0 12px var(--heat-5);
 		transform: translate3d(0, -100%, 0);
-		opacity: 0;
 	}
-	.pulse.run::after {
-		opacity: 1;
-		animation: pulse 2.6s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+	@media (prefers-reduced-motion: no-preference) {
+		.pulse.run::after {
+			animation: pulse 2.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+		}
 	}
 	@keyframes pulse {
 		to {
@@ -274,8 +319,8 @@
 		padding: 0;
 		list-style: none;
 		display: grid;
-		gap: 0.45rem;
-		transform: rotateX(8deg) rotateY(-10deg);
+		gap: 0.5rem;
+		transform: rotateX(10deg) rotateY(-12deg);
 		transform-style: preserve-3d;
 	}
 	.slab {
@@ -284,22 +329,23 @@
 		grid-template-columns: auto minmax(0, 1fr) auto;
 		grid-template-areas: 'icon name key' 'icon sub key';
 		align-items: center;
-		column-gap: 0.9rem;
-		padding: 0.7rem 1rem;
+		column-gap: 1rem;
+		padding: 0.85rem 1.1rem;
 		border: 1px solid var(--line);
 		border-radius: var(--r-md);
-		background: linear-gradient(180deg, rgb(255 255 255 / 0.035), rgb(255 255 255 / 0.01)), var(--bg-1);
-		box-shadow: 0 10px 24px -16px rgb(0 0 0 / 0.9);
-		opacity: 0.25;
+		background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.01)), var(--bg-1);
+		box-shadow: 0 12px 26px -16px rgb(0 0 0 / 0.9);
 		transform: translate3d(-1.25rem, 0, 0);
+		filter: brightness(0.55);
 		transition:
-			opacity 0.35s var(--ease-out),
 			transform 0.45s var(--ease-spring),
+			filter 0.4s,
 			border-color 0.6s;
 	}
 	.slab.in {
-		opacity: 1;
 		transform: none;
+		filter: none;
+		border-color: rgb(255 122 26 / 0.3);
 		animation: lit 0.9s var(--ease-out);
 	}
 	@keyframes lit {
@@ -307,40 +353,32 @@
 			border-color: var(--heat-4);
 			box-shadow:
 				0 0 0 1px rgb(255 193 90 / 0.6),
-				0 0 28px rgb(255 122 26 / 0.45);
+				0 0 32px rgb(255 122 26 / 0.5);
 		}
 	}
-	/* the layer shown up close below: a heat edge and glow */
 	.slab.focus.in {
 		border-color: var(--heat-3);
 		background:
-			linear-gradient(90deg, rgb(255 122 26 / 0.16), transparent 70%),
+			linear-gradient(90deg, rgb(255 122 26 / 0.18), transparent 70%),
 			var(--bg-1);
 		box-shadow:
-			0 0 0 1px rgb(255 122 26 / 0.35),
-			0 0 34px -6px rgb(255 122 26 / 0.7);
-	}
-	.slab.focus .si {
-		background: rgb(255 122 26 / 0.18);
-		color: var(--heat-4);
-	}
-	.slab.focus .sk {
-		color: var(--heat-4);
+			0 0 0 1px rgb(255 122 26 / 0.4),
+			0 0 40px -6px rgb(255 122 26 / 0.75);
 	}
 	.si {
 		grid-area: icon;
 		display: grid;
 		place-items: center;
-		width: 2.2rem;
-		height: 2.2rem;
+		width: 2.4rem;
+		height: 2.4rem;
 		border-radius: 8px;
-		background: rgb(237 234 227 / 0.06);
-		color: var(--text-hi);
+		background: rgb(255 122 26 / 0.08);
+		color: var(--heat-4);
 	}
 	.sn {
 		grid-area: name;
-		font-weight: 680;
-		font-size: var(--fs-sm);
+		font-weight: 700;
+		font-size: var(--fs-md);
 		color: var(--text-hi);
 		line-height: 1.2;
 	}
@@ -357,23 +395,18 @@
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
 	}
+	.slab.focus .sk {
+		color: var(--heat-4);
+	}
 
-	/* ---- (b) zoom ---- */
-	.right {
+	/* ---- (b) close-up counters ---- */
+	.close {
 		display: grid;
-		gap: clamp(1.5rem, 3vw, 2.25rem);
+		gap: 0.6rem;
 		min-width: 0;
 	}
-	.zoom {
-		margin: 0;
-		display: grid;
-		gap: 1.1rem;
-		padding: clamp(1.25rem, 2.5vw, 1.75rem);
-		border: 1px solid var(--line);
-		border-radius: var(--r-xl);
-		background: var(--bg-1);
-	}
 	.zh {
+		margin: 0;
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
@@ -381,11 +414,11 @@
 	}
 	.zk {
 		padding: 0.1rem 0.45rem;
-		border: 1px solid var(--text-hi);
+		border: 1px solid var(--heat-3);
 		border-radius: 3px;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		color: var(--text-hi);
+		color: var(--heat-4);
 	}
 	.zt {
 		font-weight: 700;
@@ -400,80 +433,116 @@
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
 	}
-	.lane {
+	.giant {
+		margin: 0.4rem 0 0;
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 0 0.25em;
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-size: clamp(3.4rem, 1.5rem + 6vw, 8.5rem);
+		font-weight: 800;
+		line-height: 0.9;
+		letter-spacing: -0.05em;
+	}
+	.g-up {
+		color: var(--before);
+	}
+	.g-ar {
+		font-size: 0.45em;
+		color: var(--text-mute);
+	}
+	.g-ours {
+		color: var(--heat-5);
+		filter: drop-shadow(0 0 20px rgb(255 122 26 / 0.55));
+	}
+	.g-cap {
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text);
+	}
+	.pair {
+		margin: 0.8rem 0 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.6rem 2.5rem;
+	}
+	.pair div {
 		display: grid;
-		grid-template-columns: 6.5rem minmax(0, 1fr);
-		grid-template-areas: 'ln track' '. nums';
-		align-items: center;
-		column-gap: 1rem;
-		row-gap: 0.4rem;
+		gap: 0.2rem;
+	}
+	.pair dt {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+	}
+	.pair dd {
+		margin: 0;
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums;
+		font-size: clamp(1.4rem, 1rem + 1vw, 2rem);
+		font-weight: 700;
+		color: var(--text);
+	}
+	.pu {
+		color: var(--before);
+	}
+	.pair b {
+		color: var(--heat-4);
+	}
+
+	/* ---- the full-bleed band ---- */
+	.band {
+		margin-block: clamp(2.5rem, 5vw, 4.5rem);
+		display: grid;
+		gap: 0.9rem;
+		padding-block: 1.2rem;
+		border-block: 1px solid rgb(255 122 26 / 0.25);
+		background: linear-gradient(90deg, rgb(255 122 26 / 0.02), rgb(255 122 26 / 0.07) 50%, rgb(255 122 26 / 0.02));
+	}
+	.lane {
+		position: relative;
 	}
 	.ln {
-		grid-area: ln;
-		font-size: var(--fs-xs);
+		position: absolute;
+		left: max(var(--gutter), calc((100% - 90rem) / 2));
+		top: 50%;
+		transform: translateY(-50%);
+		z-index: 1;
+		padding: 0.2rem 0.6rem;
+		border-radius: 4px;
+		background: rgb(7 6 6 / 0.85);
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
 		color: var(--text);
 	}
 	.ours .ln {
-		color: var(--text-hi);
-		font-weight: 650;
+		color: var(--heat-4);
 	}
-	/* the waiting shows through as a dotted floor (dotted = overhead); kernels sit on it */
 	.track {
-		grid-area: track;
+		display: block;
 		width: 100%;
-		height: 2.6rem;
-		background: radial-gradient(circle, rgb(125 135 148 / 0.55) 1px, transparent 1.4px) 0 50% / 6px 6px;
-		border-radius: 4px;
+		height: clamp(2.8rem, 2rem + 2vw, 4.4rem);
+		background: radial-gradient(circle, rgb(125 135 148 / 0.5) 1px, transparent 1.4px) 0 50% / 7px 7px;
 	}
 	.track rect {
-		fill: var(--before);
+		fill: rgb(125 135 148 / 0.75);
 	}
 	.ours .track rect {
-		fill: var(--text-hi);
+		fill: var(--heat-4);
 	}
-	.nums {
-		grid-area: nums;
-		margin: 0;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0.2rem 1.6rem;
-		font-variant-numeric: tabular-nums;
-	}
-	.nums div {
-		display: flex;
-		align-items: baseline;
-		gap: 0.45rem;
-	}
-	.nums dt {
-		order: 2;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text-mute);
-	}
-	.nums dd {
-		margin: 0;
-		font-family: var(--font-mono);
-		font-size: var(--fs-md);
-		color: var(--text);
-	}
-	.n-main dd {
-		font-size: clamp(1.4rem, 1rem + 1vw, 1.9rem);
-		font-weight: 500;
-		letter-spacing: -0.04em;
-		color: var(--before);
-	}
-	.ours dd {
-		color: var(--text-hi);
-	}
-	.ours .n-main dd {
-		color: var(--text-hi);
-	}
-	.nums small {
-		font-size: 0.7em;
-		color: var(--text-mute);
+	.ours .track {
+		filter: drop-shadow(0 0 8px rgb(255 122 26 / 0.5));
 	}
 
-	/* ---- (c) split bars ---- */
+	/* ---- (c) split, compact ---- */
 	.split {
 		display: grid;
 		gap: 0.9rem;
@@ -488,11 +557,15 @@
 		text-transform: uppercase;
 		color: var(--text-mute);
 	}
+	.rows {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: clamp(1rem, 2.5vw, 2rem);
+	}
 	.row {
 		display: grid;
-		grid-template-columns: 9.5rem minmax(0, 1fr);
-		align-items: center;
-		gap: 1rem;
+		gap: 0.45rem;
+		align-content: start;
 	}
 	.rw {
 		display: flex;
@@ -506,10 +579,52 @@
 		color: var(--text-hi);
 		font-weight: 650;
 	}
-	.bwrap {
-		display: grid;
-		gap: 0.35rem;
+	.sbar {
+		display: flex;
+		gap: 3px;
+		width: calc(var(--len) * 100%);
+		transform-origin: 0 50%;
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.split.in .sbar {
+			animation: bar-in 0.8s var(--ease-out) var(--d) backwards;
+		}
+	}
+	@keyframes bar-in {
+		from {
+			transform: scaleX(0);
+		}
+	}
+	.seg {
+		flex-basis: 0;
 		min-width: 0;
+		display: flex;
+		align-items: baseline;
+		padding: 0.4rem 0.6rem;
+		border-radius: 5px;
+		background: rgb(125 135 148 / 0.18);
+		border: 1px solid rgb(125 135 148 / 0.4);
+		overflow: hidden;
+		white-space: nowrap;
+	}
+	.seg.mine {
+		background: var(--heat-ramp-hot);
+		border-color: rgb(255 243 214 / 0.5);
+		box-shadow: 0 0 22px -4px rgb(255 122 26 / 0.7);
+	}
+	.seg b {
+		font-size: var(--fs-md);
+	}
+	.seg.mine b {
+		background: none;
+		color: #1a0b03;
+		-webkit-text-fill-color: currentColor;
+		filter: none;
+	}
+	.seg:not(.mine) b {
+		background: none;
+		color: var(--text-hi);
+		-webkit-text-fill-color: currentColor;
 	}
 	.cap2 {
 		display: flex;
@@ -541,51 +656,6 @@
 	.cap2 .x {
 		color: var(--text-mute);
 	}
-	.sbar {
-		display: flex;
-		flex: none;
-		gap: 3px;
-		width: calc(var(--len) * 100%);
-		transform-origin: 0 50%;
-		transform: scaleX(0);
-		transition: transform 0.8s var(--ease-out) var(--d);
-	}
-	.split.in .sbar {
-		transform: none;
-	}
-	.seg {
-		flex-basis: 0;
-		min-width: 0;
-		display: flex;
-		align-items: baseline;
-		gap: 0.45rem;
-		padding: 0.45rem 0.6rem;
-		border-radius: 5px;
-		background: rgb(125 135 148 / 0.18);
-		border: 1px solid rgb(125 135 148 / 0.4);
-		overflow: hidden;
-		white-space: nowrap;
-	}
-	/* our engine's share: the full heat ramp, dark ink on it */
-	.seg.mine {
-		background: var(--heat-ramp-hot);
-		border-color: rgb(255 243 214 / 0.5);
-		box-shadow: 0 0 22px -4px rgb(255 122 26 / 0.7);
-	}
-	.seg.mine b {
-		background: none;
-		color: #1a0b03;
-		-webkit-text-fill-color: currentColor;
-		filter: none;
-	}
-	.seg b {
-		font-size: var(--fs-md);
-	}
-	.seg:not(.mine) b {
-		background: none;
-		color: var(--text-hi);
-		-webkit-text-fill-color: currentColor;
-	}
 	@media (max-width: 1000px) {
 		.grid {
 			grid-template-columns: minmax(0, 1fr);
@@ -593,30 +663,25 @@
 		.slabs {
 			transform: none;
 		}
+		.rows {
+			grid-template-columns: minmax(0, 1fr);
+		}
 	}
 	@media (max-width: 640px) {
+		.ln {
+			top: auto;
+			bottom: calc(100% - 0.2rem);
+			transform: none;
+		}
 		.lane {
-			grid-template-columns: minmax(0, 1fr);
-			grid-template-areas: 'ln' 'track' 'nums';
-		}
-		.row {
-			grid-template-columns: minmax(0, 1fr);
-			grid-template-areas: 'rw' 'bar';
-		}
-		.rw {
-			grid-area: rw;
-		}
-		.bwrap {
-			grid-area: bar;
+			padding-top: 1.1rem;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.slab,
-		.sbar {
+		.slab {
 			transition: none;
 		}
-		.slab.in,
-		.pulse.run::after {
+		.slab.in {
 			animation: none;
 		}
 	}

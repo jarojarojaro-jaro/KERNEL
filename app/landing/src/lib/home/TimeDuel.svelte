@@ -87,11 +87,13 @@
 		font-size: var(--fs-xs);
 		color: var(--text-mute);
 	}
+	/* display face with tabular figures: the mono face's full-cell comma read as "34 , 5" */
 	.targets b {
-		font-family: var(--font-mono);
-		font-weight: 400;
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums;
+		font-weight: 700;
 		font-size: clamp(2.2rem, 1.4rem + 2vw, 3.4rem);
-		letter-spacing: -0.04em;
+		letter-spacing: -0.03em;
 		line-height: 1;
 		color: var(--before);
 	}

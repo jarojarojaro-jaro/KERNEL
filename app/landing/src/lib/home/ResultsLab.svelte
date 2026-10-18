@@ -151,7 +151,7 @@
 		{#if run.sameHarness}
 			<div class="race">
 				<p class="rh">{c.race}</p>
-				<RaceLanes {lanes} text={raceText} {lang} runKey={key} loop={false} {summary} clock={false} max={dial.max} redline={dial.redline} />
+				<RaceLanes {lanes} text={raceText} {lang} runKey={key} loop={false} {summary} clock={false} max={dial.max} redline={dial.redline} tacho="none" />
 			</div>
 		{/if}
 

@@ -5,9 +5,6 @@
 	import { ETA, L1_MTP_BAND, TOK_PER_WORD } from '$lib/estimator';
 	import { fmtGB, fmtRatio, localizeDecimals, ratioDigits } from '$lib/format';
 	import { reveal } from '$lib/fx/actions';
-	import { reducedMotion } from '$lib/fx/motion';
-	import Odometer from '$lib/fx/Odometer.svelte';
-	import Tacho from '$lib/fx/Tacho.svelte';
 	import { currentLang, href, num } from '$lib/i18n';
 
 	const lang = $derived(currentLang());
@@ -25,17 +22,6 @@
 		const before = run && variantOf(run, run.before)?.decode;
 		return card && run && ours && before ? { card, run, ours, before } : null;
 	})();
-	/** Needle: typical app first, then our engine. SSR / no JS / reduced motion show the final value. */
-	let specNeedle = $state(spec?.ours.v ?? 0);
-	const specMax = spec ? Math.ceil((spec.ours.v * 1.25) / 10) * 10 : 100;
-	onMount(() => {
-		if (spec && !reducedMotion()) specNeedle = 0;
-	});
-	function sweep() {
-		if (!spec || reducedMotion()) return;
-		specNeedle = spec.before.v;
-		setTimeout(() => (specNeedle = spec.ours.v), 1200);
-	}
 
 	/** Decimals as printed in the source (38.9 → 1, 28.07 → 2); speeds keep at least one (78 → 78,0). */
 	const dec = (v: number) => Math.min(2, (String(v).split('.')[1] ?? '').length);
@@ -260,16 +246,14 @@
 			<p class="lede">{t.lead}</p>
 		</div>
 		{#if spec}
-			<figure class="spec" use:reveal={{ onin: sweep }} aria-labelledby="spec-cap">
+			<figure class="spec" use:reveal aria-labelledby="spec-cap">
 				<figcaption id="spec-cap" class="eyebrow">{t.anatomy}</figcaption>
 				<div class="spec-top">
-					<div class="spec-dial">
-						<Tacho value={specNeedle} max={specMax} redline={Math.round(specMax * 0.7)} step={10} label="{variantLabel(spec.run, spec.run.ours)[lang]}: {tps(spec.ours.v)} t/s" slam>
-							<span class="spec-read mono"><Odometer value={specNeedle} decimals={1} {lang} duration={1000} /><span class="spec-u">t/s</span></span>
-						</Tacho>
+					<p class="spec-fig"><span class="spec-num mono">{tps(spec.ours.v)}</span><span class="spec-u mono">t/s</span><span class="spec-x speedup">{fmtRatio(spec.ours.v / spec.before.v, lang)}</span></p>
+					<div class="spec-bar" style="--b:{spec.before.v / spec.ours.v}" aria-hidden="true">
+						<i class="cold"></i><i class="hot"></i>
 					</div>
-					<div class="spec-side">
-						<p class="spec-x speedup">{fmtRatio(spec.ours.v / spec.before.v, lang)}</p>
+					<div class="spec-legend" style="--b:{spec.before.v / spec.ours.v}">
 						<p class="spec-was mono"><span class="k">{variantLabel(spec.run, spec.run.before)[lang]}</span>{tps(spec.before.v)} t/s</p>
 						<p class="spec-now mono"><span class="k">{variantLabel(spec.run, spec.run.ours)[lang]}</span>{tps(spec.ours.v)} t/s</p>
 					</div>
@@ -522,41 +506,62 @@
 	}
 	.spec-top {
 		display: grid;
-		grid-template-columns: minmax(9rem, 13rem) minmax(0, 1fr);
-		align-items: center;
-		gap: var(--sp-5);
+		gap: var(--sp-3);
+		margin-top: var(--sp-2);
 	}
-	.spec-dial {
-		position: relative;
+	.spec-fig {
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 0 var(--sp-3);
+		line-height: 0.9;
 	}
-	.spec-dial::before {
-		content: '';
-		position: absolute;
-		inset: -14%;
-		background: radial-gradient(closest-side, color-mix(in srgb, var(--heat-3) 26%, transparent), transparent);
-		pointer-events: none;
-	}
-	.spec-read {
-		display: grid;
-		justify-items: center;
-		font-size: clamp(1.4rem, 1.1rem + 0.9vw, 1.9rem);
+	.spec-num {
+		font-size: clamp(3.75rem, 2.6rem + 3.8vw, 6rem);
 		font-weight: 500;
-		letter-spacing: -0.04em;
-		color: var(--text-hi);
-		line-height: 1;
-	}
-	.spec-side {
-		display: grid;
-		gap: var(--sp-2);
-		justify-items: start;
+		letter-spacing: -0.06em;
+		background: var(--heat-ramp-hot);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
 	}
 	.spec-x {
-		font-size: clamp(3rem, 2rem + 3vw, 4.5rem);
+		margin-left: auto;
+		font-size: clamp(2rem, 1.5rem + 1.6vw, 3rem);
 	}
 	.spec-u {
-		font-size: var(--fs-2xs);
+		font-size: var(--fs-sm);
 		letter-spacing: 0.08em;
 		color: var(--text-mute);
+	}
+	/* heat bar: the cold part is where the typical app stops, the rest is what our engine adds */
+	.spec-bar {
+		position: relative;
+		height: 0.7rem;
+		border-radius: var(--r-pill);
+		background: var(--bg-3);
+		overflow: hidden;
+	}
+	.spec-bar i {
+		position: absolute;
+		inset: 0;
+		border-radius: inherit;
+		transform-origin: left;
+	}
+	.spec-bar .hot {
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 18px color-mix(in srgb, var(--heat-3) 80%, transparent);
+	}
+	.spec-bar .cold {
+		z-index: 1;
+		right: auto;
+		width: calc(var(--b) * 100%);
+		background: var(--before);
+		border-right: 2px solid var(--bg-1);
+	}
+	.spec-legend {
+		display: grid;
+		grid-template-columns: calc(var(--b) * 100%) 1fr;
 	}
 	.spec-was,
 	.spec-now {
@@ -568,10 +573,39 @@
 		color: var(--before);
 	}
 	.spec-now {
+		justify-items: end;
+		text-align: right;
 		color: var(--accent-ink);
 		font-weight: 600;
 	}
+	/* fields hang off a heat spine: each one is a part of the number above */
+	.spec-dl {
+		position: relative;
+		padding-left: var(--sp-4);
+	}
+	.spec-dl::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 1.1rem;
+		width: 1px;
+		background: linear-gradient(180deg, var(--heat-3), color-mix(in srgb, var(--heat-3) 15%, var(--line)));
+	}
+	.spec-dl > div {
+		position: relative;
+	}
+	.spec-dl > div::before {
+		content: '';
+		position: absolute;
+		left: calc(-1 * var(--sp-4));
+		top: 1.1em;
+		width: calc(var(--sp-4) - 0.35rem);
+		height: 1px;
+		background: color-mix(in srgb, var(--heat-3) 55%, var(--line));
+	}
 	:global(:root[data-theme='light']) .spec-x,
+	:global(:root[data-theme='light']) .spec-num,
 	:global(:root[data-theme='light']) .hot .val {
 		background: var(--heat-large);
 		-webkit-background-clip: text;
@@ -613,14 +647,14 @@
 		overflow-wrap: anywhere;
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .spec:not([data-in]) .spec-top {
-			opacity: 0;
-			transform: translateY(0.3em);
+		.spec-bar i {
+			transition: transform 1.2s var(--ease-out) 0.25s;
 		}
-		.spec-top {
-			transition:
-				opacity 0.9s var(--ease-out) 0.2s,
-				transform 0.9s var(--ease-out) 0.2s;
+		.spec-bar .hot {
+			transition-delay: 0.9s;
+		}
+		:global(html.js) .spec:not([data-in]) .spec-bar i {
+			transform: scaleX(0);
 		}
 	}
 	.hero::before {
@@ -1264,22 +1298,12 @@
 		}
 	}
 	@media (max-width: 640px) {
-		.spec-top {
-			grid-template-columns: minmax(0, 1fr);
-			justify-items: center;
+		.spec-legend {
+			grid-template-columns: 1fr 1fr;
 		}
-		.spec-dial {
-			width: min(100%, 15rem);
-		}
-		.spec-side {
-			grid-template-columns: auto auto;
-			justify-items: start;
-			gap: var(--sp-2) var(--sp-5);
-			width: 100%;
-		}
-		.spec-x {
-			grid-column: 1 / -1;
-			justify-self: center;
+		.spec-was,
+		.spec-now {
+			font-size: var(--fs-sm);
 		}
 		.gpu-head {
 			flex-direction: column;

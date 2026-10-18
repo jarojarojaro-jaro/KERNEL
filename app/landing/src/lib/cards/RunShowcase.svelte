@@ -221,7 +221,7 @@
 				<h3 id="race-{run.model}" class="h hx-h">{t.race}</h3>
 				<p class="fine">{t.raceLede}</p>
 			</div>
-			<RaceLanes {lanes} text={t.raceText} {lang} loop={false} {summary} runKey="{card.id}-{run.model}" />
+			<RaceLanes {lanes} text={t.raceText} {lang} loop={false} {summary} runKey="{card.id}-{run.model}" tacho="hot" />
 		</div>
 	{/if}
 
