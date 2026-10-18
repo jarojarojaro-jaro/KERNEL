@@ -1,12 +1,12 @@
 <script lang="ts">
 	import SourceTip from '$lib/fx/SourceTip.svelte';
-	import { reveal } from '$lib/fx/actions';
 	import type { Gpu } from '$lib/estimator';
 	import { cardsHref, currentLang, href, num } from '$lib/i18n';
 	import CardHead from './CardHead.svelte';
 	import EstTag from './EstTag.svelte';
 	import { cardsCopy } from './copy';
 	import { EST_SRC, GPU_SRC, MEASURED, queueEstimate, splitName } from './explorer';
+	import { Play } from './play.svelte';
 
 	let { gpu }: { gpu: Gpu } = $props();
 
@@ -14,7 +14,8 @@
 	const t = $derived(cardsCopy[lang].card);
 	const est = $derived(queueEstimate(gpu));
 	const { prefix, short } = $derived(splitName(gpu.name, gpu.vendor));
-	let shown = $state(false);
+	/** The estimate bars fill when the list enters the view; at rest (and on SSR) they are full. */
+	const fill = new Play(() => est.length * 220 + 1300);
 	/** Estimated memory as a share of the card's memory (the estimator counts both in GiB). */
 	const share = (v: number) => `${Math.round((v / gpu.vram!) * 100)}`;
 </script>
@@ -54,14 +55,14 @@
 	<SourceTip {lang} src={GPU_SRC} note={gpu.bwSource === 'spec' ? t.vendorSpec : ''} />
 </section>
 
-<section class="wrap est" aria-labelledby="est-title" use:reveal={{ onin: () => (shown = true) }}>
+<section class="wrap est" aria-labelledby="est-title" use:fill.view>
 	<div class="est-head">
 		{#if est.length}<EstTag text={t.estimateTitle} />{/if}
 		<h2 id="est-title" class="giga hx-grad">{t.fitTitle}</h2>
 		{#if est.length}<p class="lede">{t.estimateLede}</p>{/if}
 	</div>
 	{#if est.length}
-		<ul class="rows" class:shown role="list">
+		<ul class="rows" class:play={fill.on} role="list">
 			{#each est as e, i (e.model.id)}
 				<li class="row" style="--d:{i * 220}ms">
 					<div class="name">
@@ -340,11 +341,13 @@
 		max-width: 40ch;
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		.rows:not(.shown) .need {
-			transform: scaleX(0);
+		.play .need {
+			animation: need-grow 1.1s var(--ease-out) var(--d) both;
 		}
-		.need {
-			transition: transform 1.1s var(--ease-out) var(--d);
+	}
+	@keyframes need-grow {
+		from {
+			transform: scaleX(0);
 		}
 	}
 

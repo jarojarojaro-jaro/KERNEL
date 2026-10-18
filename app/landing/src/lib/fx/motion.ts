@@ -111,3 +111,25 @@ export function whenIdle(cb: () => void, minDelay = 0): () => void {
 		if (idle && typeof cancelIdleCallback === 'function') cancelIdleCallback(idle);
 	};
 }
+
+/**
+ * Jump-to-final signal for every running intro: the tab was hidden (rAF stops, a counter would
+ * freeze mid-roll) or the page came back from the bfcache. Subscribers snap to their final value.
+ */
+const finishers = new Set<() => void>();
+let finishWired = false;
+export function onFinish(cb: () => void): () => void {
+	if (typeof document === 'undefined') return () => {};
+	if (!finishWired) {
+		finishWired = true;
+		const all = () => finishers.forEach((f) => f());
+		document.addEventListener('visibilitychange', () => {
+			if (document.hidden) all();
+		});
+		addEventListener('pageshow', (e) => {
+			if ((e as PageTransitionEvent).persisted) all();
+		});
+	}
+	finishers.add(cb);
+	return () => finishers.delete(cb);
+}

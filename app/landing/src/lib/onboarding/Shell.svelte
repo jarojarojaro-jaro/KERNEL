@@ -26,7 +26,7 @@
 
 <svelte:head><meta name="description" content={lead} /></svelte:head>
 
-<div class="shell">
+<div class="shell heat-scope">
 	<div class="aura" aria-hidden="true"></div>
 	<div class="stage container" class:wide>
 		{#if back}<a class="back" href={href(lang, back)}><span aria-hidden="true">←</span> {t.back}</a>{/if}

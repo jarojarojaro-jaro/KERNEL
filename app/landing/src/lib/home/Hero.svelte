@@ -37,7 +37,9 @@
 		a2: fmtTps(hot.decode!.v, lang),
 		words,
 		tok: Math.round(words * TOK_PER_WORD[lang]),
-		tpw: num(TOK_PER_WORD[lang], lang, 2)
+		tpw: num(TOK_PER_WORD[lang], lang, 2),
+		t0: num(Math.round(words * TOK_PER_WORD[lang]) / cold.decode!.v, lang, 1),
+		t2: num(Math.round(words * TOK_PER_WORD[lang]) / hot.decode!.v, lang, 1)
 	});
 	const lanes = $derived([
 		{ id: 'cold', label: variantLabel(HERO_RUN, 'a0')[lang], sub: r.coldSub, tps: cold.decode!.v, hot: false, burst: cold.tokStep?.v, lo: cold.decode!.lo, hi: cold.decode!.hi },

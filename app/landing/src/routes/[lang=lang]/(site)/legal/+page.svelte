@@ -14,7 +14,7 @@
 
 <svelte:head><title>{t.title} · {BRAND.name}</title><meta name="description" content={t.lead} /></svelte:head>
 
-<section class="section">
+<section class="section heat-scope">
 	<div class="container container--narrow">
 		<header class="head">
 			<p class="eyebrow">{LEGAL_VERSION[lang]}</p>

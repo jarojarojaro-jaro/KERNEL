@@ -3,7 +3,7 @@
  * All of them are no-ops under prefers-reduced-motion or on coarse pointers where noted.
  */
 import type { Action } from 'svelte/action';
-import { reducedMotion } from './motion';
+import { onFinish, reducedMotion } from './motion';
 
 const finePointer = () => typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
 
@@ -73,7 +73,7 @@ export const magnetic: Action<HTMLElement, { max?: number } | undefined> = (node
 
 /**
  * Reveal once when the node enters the viewport: sets `data-in`. CSS (`[data-reveal]` in
- * showcase.css) hides the node only when JS runs (`html.js`), so content is never lost without JS.
+ * showcase.css) replays a short rise from the final resting state; content is never hidden.
  * `onin` fires at the same moment for JS-driven animations (counters, races).
  */
 export const reveal: Action<HTMLElement, { threshold?: number; onin?: () => void } | undefined> = (node, opts) => {
@@ -107,4 +107,41 @@ export const visible: Action<HTMLElement, (on: boolean) => void> = (node, cb) =>
 	const io = new IntersectionObserver(([e]) => cb(e.isIntersecting), { threshold: 0 });
 	io.observe(node);
 	return { destroy: () => io.disconnect() };
+};
+
+/**
+ * Play an enhancement once the node is actually in view: `onplay` fires the first time it
+ * intersects; `onfinish` fires if it then leaves the viewport, the tab is hidden or the page returns
+ * from the bfcache, so the final value always wins. The node's resting state must be final (server
+ * HTML shows measured values); `onplay` may replay from 0. No-op under reduced motion.
+ */
+export const play: Action<HTMLElement, { onplay: () => void; onfinish?: () => void; threshold?: number }> = (node, o) => {
+	if (reducedMotion() || typeof IntersectionObserver === 'undefined') return;
+	let opts = o;
+	let started = false;
+	let finished = false;
+	const finish = () => {
+		if (started && !finished) {
+			finished = true;
+			opts.onfinish?.();
+		}
+	};
+	const io = new IntersectionObserver(
+		([e]) => {
+			if (e.isIntersecting && !started) {
+				started = true;
+				opts.onplay();
+			} else if (!e.isIntersecting && started) finish();
+		},
+		{ threshold: opts.threshold ?? 0.3 }
+	);
+	io.observe(node);
+	const off = onFinish(finish);
+	return {
+		update: (n) => (opts = n),
+		destroy: () => {
+			io.disconnect();
+			off();
+		}
+	};
 };

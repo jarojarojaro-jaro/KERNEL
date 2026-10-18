@@ -8,6 +8,7 @@
 	 * 70; crossing it fires a flare. Gains from the sheet (`run.gain`). The layers play on an
 	 * auto-played timeline (once on entering the viewport, replay button; reduced motion: final).
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import { Autoplay } from '$lib/fx/autoplay.svelte';
 	import Replay from '$lib/fx/Replay.svelte';
 	import Odometer from '$lib/fx/Odometer.svelte';
@@ -54,7 +55,7 @@
 						{#if stage}<span class="ln">{c.layers[stage - 1]}</span><span class="ls">{c.subs[stage - 1]}</span>{/if}
 					</p>
 					<p class="total" class:in={stage >= 3}>
-						<b class="speedup">{fmtRatio(HERO_GAIN.total!.v, lang)}</b>
+						<b class="speedup" style="--rh:{heatOf(HERO_GAIN.total!.v)}">{fmtRatio(HERO_GAIN.total!.v, lang)}</b>
 						<span>{c.total} · {HERO_CARD.name}</span>
 						<SourceTip {lang} {src} {note} />
 					</p>
@@ -66,7 +67,7 @@
 						<div class="seg seg--{s.key}" class:in={stage > i} style="--a:{s.from}; --b:{s.to}">
 							<span class="tag">
 								<span class="tv">{fmtTps(s.v.v, lang)}</span>
-								{#if s.gain}<span class="tg speedup">{fmtRatio(s.gain.v, lang)}</span>{/if}
+								{#if s.gain}<span class="tg speedup" style="--rh:{heatOf(s.gain.v)}">{fmtRatio(s.gain.v, lang)}</span>{/if}
 								<span class="tl">{s.label}</span>
 							</span>
 							<span class="mv" aria-hidden="true">{fmtTps(s.v.v, lang)}</span>
@@ -132,7 +133,7 @@
 		grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
 		align-items: center;
 		gap: clamp(2rem, 5vw, 6rem);
-		padding-block: clamp(3rem, 2rem + 3vw, 5rem);
+		padding-block: var(--header-clear) clamp(3rem, 2rem + 3vw, 5rem);
 	}
 	/* readout and tower side by side: the number climbs right next to the stack that drives it */
 	.meter {

@@ -351,6 +351,9 @@
 	.tone-l1 .bar > i {
 		--bar-c: linear-gradient(90deg, var(--heat-1), var(--heat-2));
 	}
+	:global(:root[data-theme='light']) .tone-l1 .bar > i {
+		--bar-c: linear-gradient(90deg, color-mix(in srgb, var(--heat-4) 55%, var(--bg-3)), color-mix(in srgb, var(--heat-3) 65%, var(--bg-3)));
+	}
 	.tone-l3 .bar > i {
 		box-shadow: 0 0 18px -4px color-mix(in srgb, var(--accent) 60%, transparent);
 	}
@@ -385,6 +388,13 @@
 	}
 	.after {
 		color: var(--accent-ink);
+	}
+	:global(:root[data-theme='light']) .tone-l3 .row-val,
+	:global(:root[data-theme='light']) .after {
+		background: var(--heat-large);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
 	}
 	.ci {
 		display: grid;

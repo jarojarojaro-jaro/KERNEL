@@ -7,11 +7,11 @@
 	 * The race runs only when both runs come from the same script and conditions.
 	 */
 	import { afterNavigate, replaceState } from '$app/navigation';
+	import { untrack } from 'svelte';
 	import HeatBar from '$lib/fx/HeatBar.svelte';
 	import Odometer from '$lib/fx/Odometer.svelte';
 	import RaceLanes, { type Lane } from '$lib/fx/RaceLanes.svelte';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
-	import { reveal } from '$lib/fx/actions';
 	import { findCard, MODEL_INFO, variantLabel, words500, type ModelKey } from '$lib/data/measurements';
 	import { fmtGB, fmtSec, fmtTps } from '$lib/format';
 	import { cardsHref, currentLang, num } from '$lib/i18n';
@@ -22,6 +22,7 @@
 	import Kinetic from './Kinetic.svelte';
 	import Ratio from './Ratio.svelte';
 	import TimeRace from './TimeRace.svelte';
+	import { Play } from './play.svelte';
 
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].compare);
@@ -90,7 +91,14 @@
 		const [hi, lo] = dA.ours.decode!.v >= dB.ours.decode!.v ? [sides[0], sides[1]] : [sides[1], sides[0]];
 		return { hi, lo, x: hi.d!.ours.decode!.v / lo.d!.ours.decode!.v };
 	});
-	let wordsIn = $state(false);
+	/** The 500-word race plays in real time when it enters the view, and again when the pair changes. */
+	const race500 = new Play(() => (Math.max(0, ...sides.map((s) => s.w?.v ?? 0)) + 1.5) * 1000);
+	let seenPair = '';
+	$effect(() => {
+		const k = raceKey;
+		if (seenPair && seenPair !== k) untrack(race500.replay);
+		seenPair = k;
+	});
 	const cardOptions = (other: string) => MEASURED.map((e) => ({ value: e.id, label: e.card.short, sub: `${e.card.vramGB}\u00a0GB`, disabled: e.id === other }));
 </script>
 
@@ -162,12 +170,12 @@
 </section>
 
 {#if sameScript && sides[0].w && sides[1].w}
-	<section class="wrap words" aria-labelledby="cmp-words" use:reveal={{ onin: () => (wordsIn = true) }}>
+	<section class="wrap words" aria-labelledby="cmp-words" use:race500.view>
 		<h2 id="cmp-words" class="h hx-h">{t.words}</h2>
 		<TimeRace
 			lanes={sides.map((s) => ({ label: s.card.short, seconds: s.w!.v, hot: true }))}
-			run={wordsIn}
-			runKey={raceKey}
+			run={race500.on}
+			runKey="{raceKey}-{race500.n}"
 			{lang}
 			labels={{ done: tc.wordsDone, saved: tc.wordsSaved }}
 		/>

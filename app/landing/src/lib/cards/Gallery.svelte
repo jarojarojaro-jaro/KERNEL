@@ -8,7 +8,7 @@
 	 * group; the live count says how many cards are shown.
 	 */
 	import { onDestroy, onMount } from 'svelte';
-	import { reveal, tilt } from '$lib/fx/actions';
+	import { tilt } from '$lib/fx/actions';
 	import HeatField from '$lib/fx/HeatField.svelte';
 	import { onFrame, reducedMotion, whenIdle } from '$lib/fx/motion';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
@@ -138,7 +138,7 @@
 					{#each g.measured as e, i (e.id)}
 						{@const d = headline(e.card)}
 						{@const prefix = e.card.name.split(e.card.short)[0].trim()}
-						<li style="--reveal-delay:{i * 60}ms; --th:{heatOf(d?.ratio)}" use:reveal>
+						<li style="--th:{heatOf(d?.ratio)}">
 							<article class="tile hx-ring" use:tilt={{ max: 5 }} onpointerenter={() => revUp(e.id)} onpointerleave={revDown} onfocusin={() => (hover = e.id)} onfocusout={() => (hover = null)}>
 								<div class="tile-art" style="view-transition-name: art-{e.id}; view-transition-class: gpu">
 									<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(d?.ratio)} live={hover === e.id && rev?.id !== e.id} charge={rev?.id === e.id ? rev.c : null} rpm={rev?.id === e.id ? rev.r : 0} flat />
@@ -150,7 +150,7 @@
 									</h3>
 									<p class="spec mono">{e.card.vramGB}{NB}GB · {num(e.card.bwGBs.v, lang, 0)}{NB}GB/s</p>
 									{#if d?.ratio}
-										<div class="stat hx-bt" style="--glow:{heatOf(d.ratio)}">
+										<div class="stat hx-bt">
 											<p class="x"><Ratio value={d.ratio} {lang} size="md" replay={replay[e.id] ?? 0} /> <span class="w">{t.faster}</span></p>
 											<p class="tps mono">
 												<span class="m">{MODEL_STYLE[d.run.model].short}</span>
@@ -172,7 +172,7 @@
 					{#each g.queued as e, i (e.id)}
 						{@const est = queueEstimate(e.gpu)[0]}
 						{@const nm = splitName(e.gpu.name, e.gpu.vendor)}
-						<li style="--reveal-delay:{i * 40}ms" use:reveal>
+						<li>
 							<article class="qtile">
 								<div class="q-id">
 									<p class="q-pre mono">{nm.prefix}</p>
@@ -414,8 +414,8 @@
 		border: 1px solid var(--line);
 		border-radius: var(--r-lg);
 		background:
-			radial-gradient(120% 80% at 18% 50%, rgb(255 122 26 / 0.1), transparent 60%),
-			radial-gradient(90% 70% at 100% 0%, rgb(226 64 28 / 0.06), transparent 60%),
+			radial-gradient(120% 80% at 18% 50%, rgb(255 122 26 / calc(0.03 + var(--th) * 0.1)), transparent 60%),
+			radial-gradient(90% 70% at 100% 0%, rgb(226 64 28 / calc(0.02 + var(--th) * 0.05)), transparent 60%),
 			linear-gradient(180deg, rgb(17 15 14 / 0.94), rgb(7 7 8 / 0.94));
 		overflow: hidden;
 		transition: box-shadow var(--dur-3) var(--ease-out);

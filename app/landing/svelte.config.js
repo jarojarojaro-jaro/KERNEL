@@ -37,6 +37,8 @@ const config = {
 			// the cards explorer is listed in full so no card page depends on being linked.
 			entries: ['*', ...['pl', 'en'].flatMap((l) => ['paths', 'result', 'download', 'terminal'].map((s) => `/${l}/start/${s}/`)), ...cardPages]
 		},
+		// New deploy detection: client navigations after a deploy do a full page load (no stale chunks).
+		version: { pollInterval: 300000 },
 		// Inline the (small) global CSS so first paint needs no extra round trip.
 		inlineStyleThreshold: 40000
 	}

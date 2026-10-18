@@ -3,8 +3,13 @@
 	 * Two answer times, shown as the result first (big, static: before → after), then replayed in
 	 * real time as secondary: two bars on one shared time axis grow at the same real-time pace, so
 	 * the hot one stops halfway; when it stops it is stamped and the gap lights up. The running
-	 * Stopwatches sit under the bars. CSS-timed (no JS clock), reduced motion = final state.
+	 * Stopwatches sit under the bars. CSS-timed (no JS clock). At rest (server HTML, before `run`,
+	 * reduced motion) everything shows the final state; the replay only runs while `run` is on and
+	 * jumps to the final state if it leaves the viewport or the tab is hidden.
 	 */
+	import { onMount } from 'svelte';
+	import { visible } from '$lib/fx/actions';
+	import { onFinish } from '$lib/fx/motion';
 	import Stopwatch from '$lib/fx/Stopwatch.svelte';
 	import { num, type Lang } from '$lib/i18n';
 	import { fill } from './data';
@@ -22,6 +27,14 @@
 	}: { cold: Side; hot: Side; lang: Lang; run: boolean; runKey: string; done: string; gap: string; title: string } = $props();
 
 	const top = $derived(Math.max(cold.s, hot.s));
+	/** The replay was cut short (left the viewport, hidden tab): show the final state. */
+	let cut = $state(false);
+	$effect(() => {
+		void runKey;
+		cut = false;
+	});
+	onMount(() => onFinish(() => (cut = true)));
+	const live = $derived(run && !cut);
 	const diff = $derived(cold.s - hot.s);
 </script>
 
@@ -33,14 +46,14 @@
 		<span class="th2"><span class="tl">{hot.label}</span><b>{num(hot.s, lang)}<small>s</small></b></span>
 	</p>
 	{#key runKey}
-		<div class="replay" class:go={run} style="--c:{cold.s}s; --h:{hot.s}s; --fc:{cold.s / top}; --fh:{hot.s / top}">
+		<div class="replay" class:go={live} use:visible={(v) => !v && live && (cut = true)} style="--c:{cold.s}s; --h:{hot.s}s; --fc:{cold.s / top}; --fh:{hot.s / top}">
 			<div class="row">
 				<span class="lanebar"><span class="fill"></span></span>
-				<Stopwatch seconds={cold.s} {run} {runKey} {lang} label={cold.label} />
+				<Stopwatch seconds={cold.s} run={live} {runKey} {lang} label={cold.label} />
 			</div>
 			<div class="row hot">
 				<span class="lanebar"><span class="fill"></span><span class="stamp">{done}</span></span>
-				<Stopwatch seconds={hot.s} {run} {runKey} {lang} hot label={hot.label} />
+				<Stopwatch seconds={hot.s} run={live} {runKey} {lang} hot label={hot.label} />
 			</div>
 			{#if diff > 0}<p class="gap">{fill(gap, { s: num(diff, lang) })}</p>{/if}
 		</div>
@@ -168,20 +181,15 @@
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* both bars grow at real-time pace on the same axis; the hot one stops first */
-		.fill {
-			animation: grow var(--c) linear both paused;
+		.go .fill {
+			animation: grow var(--c) linear both;
 		}
-		.hot .fill {
+		.go.replay .hot .fill {
 			animation-duration: var(--h);
 		}
-		.stamp,
-		.gap {
-			animation: pop 0.4s var(--ease-spring) var(--h) both paused;
-		}
-		.go .fill,
 		.go .stamp,
 		.go .gap {
-			animation-play-state: running;
+			animation: pop 0.4s var(--ease-spring) var(--h) both;
 		}
 	}
 	@keyframes grow {
@@ -191,8 +199,7 @@
 	}
 	@keyframes pop {
 		from {
-			opacity: 0;
-			transform: translate3d(0, 0.3rem, 0) scale(0.9);
+			transform: translate3d(0, 0.3rem, 0) scale(0);
 		}
 	}
 </style>

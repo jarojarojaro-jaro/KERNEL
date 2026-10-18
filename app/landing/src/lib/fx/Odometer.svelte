@@ -6,8 +6,8 @@
 	 * Screen readers and copy/paste get the final value as one visually hidden text; the drums are
  * aria-hidden and not selectable.
 	 */
-	import { untrack } from 'svelte';
-	import { easeOutExpo, onFrame, reducedMotion } from './motion';
+	import { onMount, untrack } from 'svelte';
+	import { easeOutExpo, onFinish, onFrame, reducedMotion } from './motion';
 
 	let {
 		value,
@@ -20,8 +20,10 @@
 		/** easeOutBack strength: > 0 counts past the value and settles back onto it (0 = no overshoot). */
 		overshoot = 0,
 		/** Keep leading drums' width (they fade instead of collapsing): the counter never changes size. */
-		pad = false
-	}: { value: number; decimals?: number; lang?: 'pl' | 'en'; duration?: number; minInt?: number; label?: string; overshoot?: number; pad?: boolean } = $props();
+		pad = false,
+		/** Bump to count up again from 0 (e.g. when the counter enters the viewport); rests on `value`. */
+		replay = 0
+	}: { value: number; decimals?: number; lang?: 'pl' | 'en'; duration?: number; minInt?: number; label?: string; overshoot?: number; pad?: boolean; replay?: number } = $props();
 
 	const ease = (k: number) => (overshoot > 0 ? 1 + (overshoot + 1) * (k - 1) ** 3 + overshoot * (k - 1) ** 2 : easeOutExpo(k));
 
@@ -32,11 +34,28 @@
 	let t0 = 0;
 	let stop: (() => void) | null = null;
 	let first = true;
+	let lastReplay = 0;
+
+	// a hidden tab or a bfcache restore: rest on the exact value at once
+	onMount(() =>
+		onFinish(() => {
+			stop?.();
+			stop = null;
+			shown = Math.round(value * 10 ** decimals) / 10 ** decimals;
+		})
+	);
 
 	$effect(() => {
 		// The drums can only rest on whole digits: round the target to the shown precision.
 		const v = Math.round(value * 10 ** decimals) / 10 ** decimals;
-		if (first || duration === 0 || reducedMotion()) {
+		const r = replay;
+		const again = r !== lastReplay;
+		lastReplay = r;
+		if (again && !reducedMotion() && duration > 0) {
+			first = false;
+			untrack(() => (shown = 0));
+		}
+		else if (first || duration === 0 || reducedMotion()) {
 			first = false;
 			stop?.();
 			shown = v;

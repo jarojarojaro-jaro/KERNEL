@@ -7,7 +7,6 @@
 	 * does not fit (estimate from our formula, labelled) is desaturated, hatched and red-outlined, and
 	 * runs past the edge. Colour is always paired with the model's shape mark and name.
 	 */
-	import { reveal } from '$lib/fx/actions';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { MODEL_INFO, variantOf, type CardView } from '$lib/data/measurements';
 	import { fmtGB } from '$lib/format';
@@ -17,13 +16,12 @@
 	import { cardsCopy } from './copy';
 	import EstTag from './EstTag.svelte';
 	import { EST_SRC, familyOf, ghosts } from './explorer';
+	import { Play } from './play.svelte';
 
 	let { card }: { card: CardView } = $props();
 
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].card);
-	let runKey = $state(0);
-	let shown = $state(false);
 
 	/*
 	 * Text: measured memory in decimal GB (format.ts; GiB figures are converted and the source tip
@@ -38,17 +36,19 @@
 	/** Shared axis: the card plus room for the largest file that does not fit, in 4 GB steps. */
 	const axis = $derived(Math.ceil((Math.max(card.vramGB, ...over.map((x) => x.hi)) * 1.04) / 4) * 4);
 	const pct = (v: number) => (v / axis) * 100;
+	/** The drop plays when the panel enters the view; at rest (and on SSR) the blocks sit in place. */
+	const drop = new Play(() => (rows.length + over.length) * 200 + 1600);
 	const ticks = $derived(Array.from({ length: axis / 4 + 1 }, (_, i) => i * 4));
 </script>
 
-<section class="fit wrap hx-surface hx-ring" aria-labelledby="fit-title" use:reveal={{ onin: () => (shown = true) }}>
+<section class="fit wrap hx-surface hx-ring" aria-labelledby="fit-title" use:drop.view>
 	<header class="intro">
 		<h2 id="fit-title" class="h hx-grad">{t.fitTitle}</h2>
 		<p class="fine">{t.fitLede(card.vramGB)}</p>
-		<button type="button" class="replay mono" onclick={() => runKey++}><span aria-hidden="true">↻</span> {t.fitReplay}</button>
+		<button type="button" class="replay mono" onclick={drop.replay}><span aria-hidden="true">↻</span> {t.fitReplay}</button>
 	</header>
 
-	<div class="bars" class:shown style="--card:{pct(card.vramGB)}%; --cells:{axis}">
+	<div class="bars" class:play={drop.on} style="--card:{pct(card.vramGB)}%; --cells:{axis}">
 		<div class="row head" aria-hidden="true">
 			<span></span>
 			<div class="lane">
@@ -56,7 +56,7 @@
 				{#if over.length}<span class="beyond mono" style="left:{pct(card.vramGB)}%">{t.fitBeyond}</span>{/if}
 			</div>
 		</div>
-		{#key runKey}
+		{#key drop.n}
 			{#each rows as row, i (row.r.model)}
 				{@const main = row.used?.v ?? row.file?.v ?? 0}
 				<div class="row" style="--d:{i * 200}ms; --mc:{MODEL_STYLE[row.r.model].color}">
@@ -345,18 +345,20 @@
 	}
 
 	@media (prefers-reduced-motion: no-preference) {
-		.bars:not(.shown) .block,
-		.bars:not(.shown) .val {
-			opacity: 0;
+		/* only while a play runs: at rest the blocks and labels are in their final place */
+		.play .val {
+			animation: val-in 0.4s var(--ease-out) calc(var(--d) + 0.8s) both;
 		}
-		.val {
-			transition: opacity 0.4s var(--ease-out) calc(var(--d) + 0.8s);
-		}
-		.shown .row:not(.ghost) .block {
+		.play .row:not(.ghost) .block {
 			animation: drop 1s linear var(--d) both;
 		}
-		.shown .ghost .block {
+		.play .ghost .block {
 			animation: jam 1.4s var(--ease-out) var(--d) both;
+		}
+	}
+	@keyframes val-in {
+		from {
+			opacity: 0;
 		}
 	}
 	@keyframes drop {

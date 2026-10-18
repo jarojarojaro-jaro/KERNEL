@@ -4,7 +4,7 @@
 	 * themselves when the chart enters the viewport (stroke-dashoffset on a normalised pathLength);
 	 * reduced motion shows them drawn.
 	 */
-	import { reveal } from '$lib/fx/actions';
+	import { Play } from './play.svelte';
 	import { num } from '$lib/i18n';
 	import type { Num } from '$lib/data/measurements';
 
@@ -37,10 +37,11 @@
 	});
 	const grid = $derived(Array.from({ length: Math.floor(top / step) }, (_, i) => (i + 1) * step));
 	const kfmt = (d: number) => (d === 0 ? '0' : `${Math.round(d / 1024)}k`);
-	let shown = $state(false);
+	/** The curves draw themselves when the chart enters the view; at rest (and on SSR) they are drawn. */
+	const draw = new Play(2900);
 </script>
 
-<figure class="chart" class:shown use:reveal={{ onin: () => (shown = true) }}>
+<figure class="chart" class:play={draw.on} use:draw.view>
 	<svg viewBox="0 0 {W} {H}" role="img" aria-labelledby="lc-{uid}">
 		<title id="lc-{uid}">{title}: {depths.map((d, i) => `${kfmt(d)} ${num(up[i].v, lang)} → ${num(ours[i].v, lang)} t/s`).join('; ')}</title>
 		<defs>
@@ -158,32 +159,32 @@
 	.sw.up {
 		background: var(--before);
 	}
+	/* only while a play runs: at rest (and on SSR) both curves, the area and the points are drawn */
 	@media (prefers-reduced-motion: no-preference) {
-		.line {
-			stroke-dashoffset: 1;
-			transition: stroke-dashoffset 1.6s cubic-bezier(0.65, 0, 0.35, 1);
+		.play .line {
+			animation: draw 1.6s cubic-bezier(0.65, 0, 0.35, 1) both;
 		}
-		.line.up {
+		.play .line.up {
 			stroke-dasharray: 1;
 		}
-		.line.ours {
-			transition-delay: 0.35s;
+		.play .line.ours {
+			animation-delay: 0.35s;
 		}
-		.shown .line {
-			stroke-dashoffset: 0;
+		.play .area {
+			animation: fade-in 0.6s var(--ease-out) 1.4s both;
 		}
-		.area,
-		.pt {
+		.play .pt {
+			animation: fade-in 0.6s var(--ease-out) calc(0.5s + var(--i) * 0.35s) both;
+		}
+	}
+	@keyframes draw {
+		from {
+			stroke-dashoffset: 1;
+		}
+	}
+	@keyframes fade-in {
+		from {
 			opacity: 0;
-			transition: opacity 0.6s var(--ease-out);
-		}
-		.shown .area {
-			opacity: 1;
-			transition-delay: 1.4s;
-		}
-		.shown .pt {
-			opacity: 1;
-			transition-delay: calc(0.5s + var(--i) * 0.35s);
 		}
 	}
 </style>

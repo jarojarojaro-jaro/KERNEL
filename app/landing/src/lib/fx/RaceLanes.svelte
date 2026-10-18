@@ -18,16 +18,18 @@
 	 * finishes, the speed-up is stamped in its own slot beside "gotowe" (never over the text).
 	 *
 	 * Performance: the clock runs in a plain variable; the rendered state (words, tokens, progress)
-	 * updates at most 15×/s, the rAF subscription exists only while playing and on screen, and the
-	 * first autoplay waits for load idle (never during hydration). Under reduced motion it shows the
-	 * finished state and plays only on request. Pause and replay always work.
+	 * updates at most 15×/s, the rAF subscription exists only while playing and on screen. At rest
+	 * (server HTML, before it is seen, reduced motion) the race shows its finished state; it plays the
+	 * first time it is on screen, and leaving the viewport, a hidden tab or a bfcache restore jumps
+	 * to the finished state. Under reduced motion it plays only on request. Pause and replay always work.
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import { onMount, untrack } from 'svelte';
 	import { TOK_PER_WORD } from '$lib/estimator';
 	import { fmtRatio } from '$lib/format';
 	import { num } from '$lib/i18n';
 	import { visible } from './actions';
-	import { onFrame, reducedMotion, whenIdle } from './motion';
+	import { onFinish, onFrame, reducedMotion } from './motion';
 	import Odometer from './Odometer.svelte';
 	import Tacho from './Tacho.svelte';
 
@@ -80,11 +82,19 @@
 
 
 	/** Rendered clock (quantised to HZ); the real clock is `clockT` below. */
-	let elapsed = $state(0);
-	let clockT = 0;
+	// svelte-ignore state_referenced_locally
+	let elapsed = $state(LEAD + slowest);
+	// svelte-ignore state_referenced_locally
+	let clockT = LEAD + slowest;
 	let playing = $state(false);
 	let onScreen = $state(false);
 	let reduce = false;
+	let started = false;
+	/** The finished race (server HTML, offscreen, hidden tab): every lane at its final state. */
+	function toEnd() {
+		setClock(LEAD + slowest);
+		playing = false;
+	}
 
 	function setClock(v: number) {
 		clockT = v;
@@ -94,15 +104,18 @@
 
 	onMount(() => {
 		reduce = reducedMotion();
-		if (reduce || !autoplay) {
-			setClock(LEAD + slowest);
-			return;
-		}
-		return whenIdle(() => {
+		return onFinish(toEnd);
+	});
+	/** Visibility: the first time the race is on screen it plays (autoplay); leaving mid-race ends it. */
+	function seen(v: boolean) {
+		onScreen = v;
+		if (reduce) return;
+		if (v && !started && autoplay) {
+			started = true;
 			setClock(0);
 			playing = true;
-		});
-	});
+		} else if (!v && playing) toEnd();
+	}
 
 	// The rAF subscription lives only while the race plays on screen.
 	$effect(() => {
@@ -133,7 +146,7 @@
 		}
 		seenKey = k;
 		untrack(() => {
-			if (reduce) setClock(LEAD + slowest);
+			if (reduce || !onScreen) toEnd();
 			else {
 				setClock(0);
 				playing = true;
@@ -167,7 +180,7 @@
 	const hotDone = $derived(hotIdx >= 0 && ls[hotIdx].done);
 </script>
 
-<div class="race" use:visible={(v) => (onScreen = v)}>
+<div class="race" use:visible={seen}>
 	<p class="sr-only">{summary}</p>
 	<div class="lanes" aria-hidden="true">
 		{#each lanes as l, i (l.id)}
@@ -207,7 +220,7 @@
 						{:else if !l.hot && s.running && hotDone}
 							<span class="time still">{t.still}</span>
 						{/if}
-						{#if l.hot && ratio > 0}<span class="stamp-big speedup" class:speedup--down={ratio < 1} class:show={s.done}>{fmtRatio(ratio, lang)}</span>{/if}
+						{#if l.hot && ratio > 0}<span class="stamp-big speedup" class:speedup--down={ratio < 1} class:show={s.done} style="--rh:{heatOf(ratio)}">{fmtRatio(ratio, lang)}</span>{/if}
 					</span>
 				</div>
 			</div>

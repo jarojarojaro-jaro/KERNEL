@@ -4,13 +4,15 @@
 	 * two real-time stopwatches (500 words) and a compact race replay. Race and stopwatches appear
 	 * only for same-script pairs; otherwise the different-script warning takes their place.
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import { duel } from '$lib/cards/explorer';
-	import { reveal, tilt } from '$lib/fx/actions';
+	import { play, reveal, tilt } from '$lib/fx/actions';
 	import HeatBar from '$lib/fx/HeatBar.svelte';
 	import RaceLanes from '$lib/fx/RaceLanes.svelte';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { MODEL_INFO, variantLabel, variantOf, words500 } from '$lib/data/measurements';
 	import { cardsHref, num, type Lang } from '$lib/i18n';
+	import { TOK_PER_WORD } from '$lib/estimator';
 	import { copy } from '$lib/site/copy';
 	import { CARDS, columns, decode, dialFor, fill, nb, raceCold, fmtRatio } from './data';
 	import { MODEL_STYLE } from '$lib/modelStyle';
@@ -25,7 +27,9 @@
 
 	let gpu = $state(CARDS[0].id);
 	let model = $state(CARDS[0].pick.model as string);
+	/** Bars and counters rest on the measured values; entering view replays them once from 0. */
 	let seen = $state(false);
+	let rep = $state(0);
 
 	const card = $derived(CARDS.find((k) => k.id === gpu) ?? CARDS[0]);
 	const run = $derived(card.runs.find((r) => r.model === model) ?? card.runs.find((r) => r.model === card.pick.model) ?? card.runs[0]);
@@ -57,6 +61,11 @@
 		{ id: `${key}:hot`, label: variantLabel(run, run.ours)[lang], tps: decode(ours), hot: true }
 	]);
 	const dial = $derived(dialFor(Math.max(...lanes.map((l) => l.tps))));
+	const raceWords = $derived(raceText.split(/\s+/).filter(Boolean).length);
+	/** One sentence that ties the three lengths on this page together (measured pace, 500 words, the race). */
+	const lengths = $derived(
+		fill(c.lengths, { t500: num(Math.round(500 * TOK_PER_WORD[lang]), lang, 0), words: raceWords, tok: num(Math.round(raceWords * TOK_PER_WORD[lang]), lang, 0) })
+	);
 	const summary = $derived(
 		fill(c.summary, { card: card.name, model: `${MODEL_INFO[run.model].name} ${run.quant}`, cold: lanes[0].label, a: num(lanes[0].tps, lang), hot: lanes[1].label, b: num(lanes[1].tps, lang) })
 	);
@@ -68,7 +77,7 @@
 			<Duo text={c.title} tag="h1" id="results-title" size="scene" mode="plain" />
 		</header>
 
-		<div class="pickers" use:reveal={{ onin: () => (seen = true) }}>
+		<div class="pickers" use:reveal use:play={{ threshold: 0.2, onplay: () => { rep++; seen = true; } }}>
 			<div class="pk">
 				<span class="pl" id="pk-gpu">{c.gpu}</span>
 				<Segmented options={gpuOptions} bind:value={() => gpu, pickGpu} label={c.gpu} size="lg" />
@@ -90,7 +99,8 @@
 				{#each cols as k, i (k)}
 					{@const v = variantOf(run, k)}
 					<HeatBar
-						value={seen ? decode(v) : 0}
+						value={decode(v)}
+						replay={rep}
 						max={barDial.max}
 						redline={barDial.redline}
 						label={variantLabel(run, k)[lang]}
@@ -115,7 +125,7 @@
 				{:else}
 					<div class="gain panel" use:tilt={{ max: 4 }}>
 						{#if gain}
-							<p class="gv speedup" class:speedup--down={gain < 1}>{fmtRatio(gain, lang)}</p>
+							<p class="gv speedup" class:speedup--down={gain < 1} style="--rh:{heatOf(gain)}">{fmtRatio(gain, lang)}</p>
 							<p class="gl">{fill(c.gainOf, { before: variantLabel(run, run.before)[lang] })}</p>
 						{/if}
 						{#if w0 && w1}
@@ -145,6 +155,7 @@
 			</div>
 		{/if}
 
+		<p class="lengths">{lengths}</p>
 		<a class="more" href={cardsHref(lang, card.id)}>{c.more} <span aria-hidden="true">→</span></a>
 	</div>
 </section>
@@ -329,6 +340,12 @@
 	.race {
 		display: grid;
 		gap: var(--sp-3);
+	}
+	.lengths {
+		max-width: 72ch;
+		font-size: var(--fs-xs);
+		line-height: 1.5;
+		color: var(--text-mute);
 	}
 	.more {
 		justify-self: start;

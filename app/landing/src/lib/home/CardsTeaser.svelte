@@ -3,6 +3,7 @@
 	 * Twoja karta: the measured cards as big tactile tiles (tilt + glare), each with the headline
 	 * gain of its pick run, linking into the cards explorer; planned cards as queue chips.
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import { headline } from '$lib/cards/explorer';
 	import { tilt } from '$lib/fx/actions';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
@@ -34,13 +35,13 @@
 		<ul class="grid" role="list">
 			{#each tiles as t (t.card.id)}
 				<li>
-					<a class="tile" href={cardsHref(lang, t.card.id)} use:tilt style="--b:{t.before / top}; --o:{t.ours / top}; --len:{t.card.short.length}">
+					<a class="tile" href={cardsHref(lang, t.card.id)} use:tilt style="--b:{t.before / top}; --o:{t.ours / top}; --len:{t.card.short.length}; --th:{heatOf(t.gain)}">
 						<span class="meta">{t.card.arch} · {t.card.vramGB} GB</span>
 						<span class="short" aria-hidden="true">{t.card.short}</span>
 						<span class="name">{nb(t.card.name)}</span>
 						<span class="gain">
 							{#if t.gain !== null}
-								<b class="speedup" class:speedup--down={t.gain < 1}>{fmtRatio(t.gain, lang)}</b>
+								<b class="speedup" class:speedup--down={t.gain < 1} style="--rh:{heatOf(t.gain)}">{fmtRatio(t.gain, lang)}</b>
 								<span>{c.faster} · {t.model}</span>
 							{:else}
 								<b>{num(t.ours, lang)} <small>t/s</small></b>
@@ -213,8 +214,10 @@
 		inset: 0;
 		transform-origin: 0 50%;
 	}
+	/* heat by magnitude: a 1,05× bar is barely warm, a 2,0× bar burns */
 	.bo {
 		background: var(--heat-ramp-hot);
+		filter: saturate(calc(0.25 + 0.75 * var(--th, 1))) brightness(calc(0.7 + 0.3 * var(--th, 1)));
 		transform: scaleX(var(--o));
 		transition: transform 0.6s var(--ease-out);
 	}

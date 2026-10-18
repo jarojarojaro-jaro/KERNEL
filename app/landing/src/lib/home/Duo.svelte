@@ -80,15 +80,16 @@
 		.hi {
 			animation: hi-drift 7s ease-in-out infinite alternate;
 		}
-		/* reveal by transform/opacity only (font-stretch would re-lay the text: layout shift) */
-		:global(html.js) .duo:not([data-in]) .hi {
-			transform: scaleX(0.8);
-			opacity: 0.2;
+		/* resting state final; entering view replays a stretch-in (transform only, no layout shift) */
+		:global(html.js) .duo:global([data-in]) .hi {
+			animation:
+				hi-in 1.1s var(--ease-out) 0.15s backwards,
+				hi-drift 7s ease-in-out infinite alternate;
 		}
-		.hi {
-			transition:
-				transform 1.1s var(--ease-out) 0.15s,
-				opacity 0.6s var(--ease-out) 0.15s;
+	}
+	@keyframes hi-in {
+		from {
+			transform: scaleX(0.8);
 		}
 	}
 	@keyframes hi-drift {

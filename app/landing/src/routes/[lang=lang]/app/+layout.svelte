@@ -28,7 +28,7 @@
 	<meta name="robots" content="noindex" />
 </svelte:head>
 
-<div class="desk bg-grid">
+<div class="desk bg-grid heat-scope">
 	<a class="skip-link" href="#app-main">{t.shell.skip}</a>
 	<div class="window">
 		<TitleBar bind:navOpen {navId} />

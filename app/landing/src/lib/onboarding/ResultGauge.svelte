@@ -172,10 +172,12 @@
 	.big .speedup {
 		font-size: clamp(3.5rem, 2rem + 5vw, 6.5rem);
 	}
-	:global(:root[data-theme='light']) .big .speedup:not(.speedup--down) {
-		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 60%, #c24f0c);
+	:global(:root[data-theme='light']) .big .speedup:not(.speedup--down),
+	:global(:root[data-theme='light']) .pair .hot {
+		background: var(--heat-large);
 		-webkit-background-clip: text;
 		background-clip: text;
+		color: transparent;
 	}
 	.rng-big {
 		font-size: clamp(2.5rem, 1.6rem + 3vw, 4.5rem);

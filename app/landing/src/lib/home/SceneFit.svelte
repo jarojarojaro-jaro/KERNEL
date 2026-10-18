@@ -102,7 +102,7 @@
 		margin-inline: auto;
 		display: grid;
 		gap: clamp(1.25rem, 2.5vw, 2.5rem);
-		padding-block: clamp(2.5rem, 2rem + 2vw, 4rem);
+		padding-block: var(--header-clear) clamp(2.5rem, 2rem + 2vw, 4rem);
 	}
 	.caprow {
 		display: flex;

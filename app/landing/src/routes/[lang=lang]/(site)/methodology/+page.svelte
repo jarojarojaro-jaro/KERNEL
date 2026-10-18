@@ -238,7 +238,7 @@
 	<meta name="description" content={t.lead} />
 </svelte:head>
 
-<article class="page">
+<article class="page heat-scope">
 	<header class="hero container">
 		<div class="hero-text">
 			<p class="eyebrow">{t.eyebrow}</p>
@@ -509,9 +509,12 @@
 		background-clip: text;
 		color: transparent;
 	}
-	:global(:root[data-theme='light']) .spec-num {
-		background: none;
-		color: var(--accent-ink);
+	:global(:root[data-theme='light']) .spec-num,
+	:global(:root[data-theme='light']) .hot .val {
+		background: var(--heat-large);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
 	}
 	.spec-u {
 		font-size: var(--fs-sm);
@@ -886,6 +889,9 @@
 	}
 	.warm .track i {
 		background: linear-gradient(90deg, var(--heat-1), var(--heat-2));
+	}
+	:global(:root[data-theme='light']) .warm .track i {
+		background: linear-gradient(90deg, color-mix(in srgb, var(--heat-4) 55%, var(--bg-3)), color-mix(in srgb, var(--heat-3) 65%, var(--bg-3)));
 	}
 	.alt .track i {
 		background: repeating-linear-gradient(-45deg, var(--text-mute) 0 3px, transparent 3px 6px);
@@ -1282,8 +1288,14 @@
 		color: transparent;
 	}
 	:global(:root[data-theme='light']) .stats dd:not(.stat-line dd) {
-		background: none;
-		color: var(--accent-ink);
+		background: var(--heat-large);
+		-webkit-background-clip: text;
+		background-clip: text;
+	}
+	:global(:root[data-theme='light']) .gpu-short {
+		background: linear-gradient(180deg, var(--text-hi) 35%, var(--heat-2));
+		-webkit-background-clip: text;
+		background-clip: text;
 	}
 	.toc a.on {
 		border-left-color: var(--heat-3);
@@ -1366,7 +1378,7 @@
 		color: transparent;
 	}
 	:global(:root[data-theme='light']) .claim-t {
-		background: linear-gradient(90deg, var(--text-hi) 45%, var(--accent-ink) 80%);
+		background: linear-gradient(90deg, var(--text-hi) 55%, var(--heat-2) 90%);
 		-webkit-background-clip: text;
 		background-clip: text;
 	}

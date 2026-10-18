@@ -6,8 +6,8 @@
 	 * `children` renders in the dial centre (usually an Odometer).
 	 */
 	import type { Snippet } from 'svelte';
-	import { untrack } from 'svelte';
-	import { heatColor, onFrame, reducedMotion, Spring } from './motion';
+	import { onMount, untrack } from 'svelte';
+	import { heatColor, onFinish, onFrame, reducedMotion, Spring } from './motion';
 
 	let {
 		value,
@@ -22,6 +22,8 @@
 		/** Hard launch: a stiff, under-damped needle that slams past the value and bounces, and a
 		 * dial shake when it crosses into the red zone. */
 		slam = false,
+		/** Bump to sweep the needle up again from 0 (e.g. on entering the viewport); rests on `value`. */
+		replay = 0,
 		children
 	}: {
 		value: number;
@@ -34,6 +36,7 @@
 		size?: string;
 		glowing?: boolean;
 		slam?: boolean;
+		replay?: number;
 		children?: Snippet;
 	} = $props();
 
@@ -47,8 +50,22 @@
 	// svelte-ignore state_referenced_locally
 	let shown = $state(value);
 
+	let lastReplay = 0;
+	// a hidden tab or a bfcache restore: the needle rests on the value at once
+	onMount(() =>
+		onFinish(() => {
+			spring.snap(Math.min(max * 1.04, Math.max(0, value)));
+			shown = spring.x;
+		})
+	);
+
 	$effect(() => {
 		spring.target = Math.min(max * 1.04, Math.max(0, value));
+		if (replay !== lastReplay) {
+			lastReplay = replay;
+			spring.x = 0;
+			spring.v = 0;
+		}
 		if (reducedMotion()) {
 			spring.snap();
 			shown = spring.x;

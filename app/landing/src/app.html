@@ -13,6 +13,17 @@
 			// Theme before first paint (no flash). Preference lives in localStorage only after the user
 			// clicks the toggle: a user-requested, strictly necessary storage (ePrivacy art. 5(3) exemption).
 			// The showcase pages (home, results, cards explorer) are dark-only: their cinematic scenes have no light variant.
+			// Stale HTML after a deploy can reference hashed chunks that no longer exist. The SSR page
+			// is complete without JS, so nothing is half-rendered; reload once to pick up the new build.
+			addEventListener('vite:preloadError', function () {
+				try {
+					if (sessionStorage.getItem('chunk-reload')) return;
+					sessionStorage.setItem('chunk-reload', '1');
+				} catch (e) {
+					return;
+				}
+				location.reload();
+			});
 			(function () {
 				document.documentElement.classList.add('js');
 				if (/^\/(pl|en)\/((karty|cards|wyniki|results)\/.*)?$/.test(location.pathname)) {

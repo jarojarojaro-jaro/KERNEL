@@ -5,6 +5,7 @@
 	 * row's own scale, both t/s values and the speed-up. The full interactive lab lives on
 	 * /pl/wyniki/ · /en/results/.
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import { reveal } from '$lib/fx/actions';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { fmtRatio, fmtTps } from '$lib/format';
@@ -45,7 +46,7 @@
 							<span class="arr" aria-hidden="true">→</span>
 							<span class="vb">{fmtTps(r.b.v, lang)}</span>
 						</span>
-						<span class="speedup g">{fmtRatio(r.b.v / r.a.v, lang)}</span>
+						<span class="speedup g" style="--rh:{heatOf(r.b.v / r.a.v)}">{fmtRatio(r.b.v / r.a.v, lang)}</span>
 						<SourceTip {lang} src={[r.a.src, r.b.src, r.run.conditionsSrc]} note="{r.card.name} · {r.run.quant}. {r.run.metric[lang]} {r.run.conditions[lang]}." />
 					</li>
 				{/each}
@@ -140,7 +141,6 @@
 		height: 5px;
 		border-radius: var(--r-pill);
 		transform-origin: 0 50%;
-		transition: transform 1s var(--ease-out) var(--d);
 	}
 	.bar-a {
 		background: var(--before);
@@ -151,8 +151,14 @@
 		box-shadow: 0 0 10px rgb(255 122 26 / 0.45);
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .board:not([data-in]) .bar-a,
-		:global(html.js) .board:not([data-in]) .bar-b {
+		/* resting state final; entering view replays the bars filling */
+		:global(html.js) .board:global([data-in]) .bar-a,
+		:global(html.js) .board:global([data-in]) .bar-b {
+			animation: bar-in 1s var(--ease-out) var(--d) backwards;
+		}
+	}
+	@keyframes bar-in {
+		from {
 			transform: scaleX(0);
 		}
 	}

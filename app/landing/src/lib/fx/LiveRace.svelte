@@ -41,6 +41,7 @@
 	 * frame loop runs only while playing on screen and first starts on load idle; strip canvas DPR ≤ 1.5.
 	 * Reduced motion: one static, readable frame.
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import type { Snippet } from 'svelte';
 	import { onMount, untrack } from 'svelte';
 	import { TOK_PER_WORD } from '$lib/estimator';
@@ -76,8 +77,8 @@
 	} = $props();
 
 	const L = {
-		pl: { pause: 'Wstrzymaj wyścig', resume: 'Wznów wyścig', faster: 'szybciej', live: 'na żywo', paused: 'pauza', median: 'zmierzone' },
-		en: { pause: 'Pause the race', resume: 'Resume the race', faster: 'faster', live: 'live', paused: 'paused', median: 'measured' }
+		pl: { pause: 'Wstrzymaj wyścig', resume: 'Wznów wyścig', faster: 'szybciej', live: 'na żywo', paused: 'pauza', median: 'zmierzone', done: 'gotowe' },
+		en: { pause: 'Pause the race', resume: 'Resume the race', faster: 'faster', live: 'live', paused: 'paused', median: 'measured', done: 'done' }
 	};
 	const t = $derived(L[lang]);
 
@@ -94,6 +95,8 @@
 		}
 		return out;
 	});
+	/** Tokens in the answer (same rule as the copy: words × TOK_PER_WORD); the finish stamp = tokens ÷ median t/s. */
+	const totalTok = $derived(Math.round(text.split(/\s+/).filter(Boolean).length * TOK_PER_WORD[lang]));
 	/** Seconds the finished fast lane rests while the slow one keeps writing, before both restart. */
 	const HOLD = 2.6;
 	/** Seconds of history in the rhythm strip. */
@@ -351,7 +354,8 @@
 				<div class="feed"><p bind:this={feeds[i]}></p></div>
 				<div class="foot">
 					<canvas class="strip" bind:this={strips[i]}></canvas>
-					{#if l.hot && ratio > 0}<span class="gain speedup" class:speedup--down={ratio < 1}>{fmtRatio(ratio, lang)} <small>{t.faster}</small></span>{/if}
+					{#if l.hot}<span class="fin" class:show={finished}>{t.done} · {num(totalTok / l.tps, lang, 1)}&nbsp;s</span>{/if}
+					{#if l.hot && ratio > 0}<span class="gain speedup" class:speedup--down={ratio < 1} style="--rh:{heatOf(ratio)}">{fmtRatio(ratio, lang)} <small>{t.faster}</small></span>{/if}
 				</div>
 			</div>
 		{/each}
@@ -605,6 +609,29 @@
 		flex: 1;
 		min-width: 0;
 		height: 1rem;
+	}
+	/* finish stamp: always laid out (no shift), shown when the fast lane has written the answer */
+	.fin {
+		flex: none;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.04em;
+		color: var(--heat-5);
+		padding: 0.15rem 0.5rem;
+		border: 1px solid rgb(255 193 90 / 0.6);
+		border-radius: 4px;
+		visibility: hidden;
+		transform: scale(1.4);
+		transition:
+			transform 0.35s var(--ease-spring),
+			visibility 0s 0.35s;
+	}
+	.fin.show {
+		visibility: visible;
+		transform: none;
+		transition:
+			transform 0.35s var(--ease-spring),
+			visibility 0s;
 	}
 	.gain {
 		flex: none;

@@ -1,14 +1,16 @@
 /**
- * A scene timeline that plays once when the scene enters the viewport (no scroll scrubbing):
- * `p` runs 0 → 1 over `duration` seconds; `replay()` runs it again. Reduced motion jumps to p = 1.
+ * A scene timeline played when the scene enters the viewport (no scroll scrubbing). `p` STARTS AT 1:
+ * the server HTML and any frame before the scene is seen show the final state. Once the scene is
+ * actually in view, `p` replays 0 → 1 over `duration` seconds. If it leaves the viewport mid-play,
+ * the tab is hidden or the page returns from the bfcache, it jumps to 1. Reduced motion: always 1.
  *
  *   const tl = new Autoplay(4);
  *   <div use:tl.view style="--p:{tl.p}"> … <Replay onclick={tl.replay} /> </div>
  */
-import { onFrame, reducedMotion } from './motion';
+import { onFinish, onFrame, reducedMotion } from './motion';
 
 export class Autoplay {
-	p = $state(0);
+	p = $state(1);
 	playing = $state(false);
 	#stop: (() => void) | null = null;
 	#duration: number;
@@ -40,21 +42,34 @@ export class Autoplay {
 		});
 	};
 
-	/** Action: start the timeline the first time the node enters the viewport (see `margin`). */
+	finish = () => {
+		this.#stop?.();
+		this.#stop = null;
+		this.p = 1;
+		this.playing = false;
+	};
+
+	/** Action: play the first time the node enters the viewport (see `margin`); finish when it leaves. */
 	view = (node: HTMLElement) => {
-		if (reducedMotion()) this.p = 1;
+		if (reducedMotion() || typeof IntersectionObserver === 'undefined') return;
+		let seen = false;
 		const io = new IntersectionObserver(
 			([e]) => {
-				if (!e.isIntersecting) return;
-				io.disconnect();
-				if (this.p < 1) this.replay();
+				if (e.isIntersecting) {
+					if (!seen) {
+						seen = true;
+						this.replay();
+					}
+				} else if (this.playing) this.finish();
 			},
 			{ rootMargin: this.#margin }
 		);
 		io.observe(node);
+		const off = onFinish(this.finish);
 		return {
 			destroy: () => {
 				io.disconnect();
+				off();
 				this.#stop?.();
 			}
 		};

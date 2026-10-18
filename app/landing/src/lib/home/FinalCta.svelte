@@ -1,6 +1,9 @@
 <script lang="ts">
-	/** Final CTA: the needle sweeps into the redline (our engine on the hero run) when it scrolls in. */
-	import { magnetic, reveal } from '$lib/fx/actions';
+	/**
+	 * Final CTA: the dial rests on our engine's measured value (server HTML included); when it is
+	 * actually in view the needle sweeps up from 0 into the redline once more.
+	 */
+	import { magnetic, play } from '$lib/fx/actions';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import Tacho from '$lib/fx/Tacho.svelte';
 	import Odometer from '$lib/fx/Odometer.svelte';
@@ -12,17 +15,17 @@
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].final);
 	const v = HERO_V.a2.decode!;
-	let on = $state(false);
+	let rep = $state(0);
 	const label = $derived(fill(c.tacho, { card: HERO_CARD.name, v: num(v.v, lang) }));
 </script>
 
 <section class="final heat-top" aria-labelledby="final-title">
-	<div class="heat" class:on aria-hidden="true"></div>
+	<div class="heat" aria-hidden="true"></div>
 	<div class="inner">
-		<div class="dial" use:reveal={{ threshold: 0.4, onin: () => (on = true) }}>
-			<Tacho value={on ? v.v : 0} max={DIAL_MAX} redline={REDLINE} {label}>
+		<div class="dial" use:play={{ threshold: 0.4, onplay: () => rep++ }}>
+			<Tacho value={v.v} replay={rep} max={DIAL_MAX} redline={REDLINE} {label}>
 				<span class="ro">
-					<span class="big"><Odometer value={on ? v.v : 0} decimals={1} {lang} duration={1600} minInt={2} /></span>
+					<span class="big"><Odometer value={v.v} replay={rep} decimals={1} {lang} duration={1600} minInt={2} /></span>
 					<span class="u">t/s</span>
 				</span>
 			</Tacho>
@@ -58,11 +61,6 @@
 		background:
 			radial-gradient(35% 45% at 25% 85%, rgb(255 122 26 / 0.32), transparent 70%),
 			radial-gradient(60% 60% at 30% 100%, rgb(226 64 28 / 0.45), rgb(122 46 31 / 0.15) 50%, transparent 75%);
-		opacity: 0;
-		transition: opacity 2s var(--ease-out) 0.6s;
-	}
-	.heat.on {
-		opacity: 1;
 	}
 	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);

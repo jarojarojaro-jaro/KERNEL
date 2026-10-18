@@ -13,6 +13,7 @@
 	 *     upstream MTP flags × our engine; LFM2.5 (no speculation) = our engine only. From run.gain.
 	 * Auto-played on entering the viewport (replay button); reduced motion shows the final state.
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import { Autoplay } from '$lib/fx/autoplay.svelte';
 	import { clamp01, easeInOutCubic } from '$lib/fx/motion';
 	import Replay from '$lib/fx/Replay.svelte';
@@ -166,12 +167,14 @@
 								<div class="sbar" style="--len:{w(r.total)}">
 									{#each r.segs as s (s.label)}
 										<span class="seg" class:mine={s.ours} style="flex-grow:{w(s.v)}">
-											<b class="speedup" class:speedup--down={s.v < 1}>{fmtRatio(s.v, lang)}</b>
-											{#if r.segs.length > 1}<small>{s.label}</small>{/if}
+											<b class="speedup" class:speedup--down={s.v < 1} style="--rh:{heatOf(s.v)}">{fmtRatio(s.v, lang)}</b>
 										</span>
 									{/each}
 								</div>
-								{#if r.segs.length === 1}<small class="after">{r.segs[0].label}</small>{:else}<small class="after leg">{r.segs.map((s) => s.label).join(' × ')}</small>{/if}
+								<!-- what each segment is, right under its bar (never truncated inside a narrow segment) -->
+								<p class="cap2">
+									{#each r.segs as s, si (s.label)}{#if si > 0}<span class="x" aria-hidden="true">×</span>{/if}<span class="ck" class:mine={s.ours}>{s.label}</span>{/each}
+								</p>
 							</div>
 							<SourceTip {lang} src={r.run.gain!.src} note={r.note} />
 						</div>
@@ -488,25 +491,45 @@
 		font-weight: 650;
 	}
 	.bwrap {
-		display: flex;
-		align-items: center;
-		gap: 0.75rem;
+		display: grid;
+		gap: 0.35rem;
 		min-width: 0;
 	}
-	.leg {
-		display: none;
-	}
-	.after {
+	.cap2 {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.2rem 0.5rem;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
+		color: var(--text);
+	}
+	.ck {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+	}
+	.ck::before {
+		content: '';
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 2px;
+		background: rgb(125 135 148 / 0.6);
+	}
+	.ck.mine {
 		color: var(--heat-4);
-		white-space: nowrap;
+	}
+	.ck.mine::before {
+		background: var(--heat-3);
+	}
+	.cap2 .x {
+		color: var(--text-mute);
 	}
 	.sbar {
 		display: flex;
 		flex: none;
 		gap: 3px;
-		width: calc(var(--len) * (100% - 11rem));
+		width: calc(var(--len) * 100%);
 		transform-origin: 0 50%;
 		transform: scaleX(0);
 		transition: transform 0.8s var(--ease-out) var(--d);
@@ -540,13 +563,6 @@
 		color: var(--text-hi);
 		-webkit-text-fill-color: currentColor;
 	}
-	.seg small {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text);
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
 	@media (max-width: 1000px) {
 		.grid {
 			grid-template-columns: minmax(0, 1fr);
@@ -573,17 +589,6 @@
 		}
 		.bwrap {
 			grid-area: bar;
-			flex-wrap: wrap;
-			gap: 0.4rem;
-		}
-		.sbar {
-			width: calc(var(--len) * 100%);
-		}
-		.seg small {
-			display: none;
-		}
-		.leg {
-			display: block;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

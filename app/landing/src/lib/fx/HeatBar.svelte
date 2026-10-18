@@ -17,8 +17,10 @@
 		unit = 't/s',
 		delay = 0,
 		/** Optional redline on the same scale as `max` (a thin red mark across the track). */
-		redline
-	}: { value: number; max: number; label: string; sub?: string; cold?: boolean; lang: 'pl' | 'en'; decimals?: number; unit?: string; delay?: number; redline?: number } = $props();
+		redline,
+		/** Bump to fill again from 0 (e.g. on entering the viewport); rests on `value`. */
+		replay = 0
+	}: { value: number; max: number; label: string; sub?: string; cold?: boolean; lang: 'pl' | 'en'; decimals?: number; unit?: string; delay?: number; redline?: number; replay?: number } = $props();
 
 	const f = $derived(Math.max(0, Math.min(1, value / max)));
 </script>
@@ -26,11 +28,11 @@
 <div class="hb" class:cold style="--f:{f}; --d:{delay}ms">
 	<div class="meta">
 		<span class="label">{label}{#if sub}<span class="sub">{sub}</span>{/if}</span>
-		<span class="val"><Odometer {value} {decimals} {lang} minInt={1} /> <span class="unit">{unit}</span></span>
+		<span class="val"><Odometer {value} {decimals} {lang} minInt={1} {replay} /> <span class="unit">{unit}</span></span>
 	</div>
 	<div class="track" aria-hidden="true">
 		<div class="ramp"></div>
-		<div class="cover"></div>
+		{#key replay}<div class="cover" class:play={replay > 0}></div>{/key}
 		{#if redline}<span class="rl" style="--r:{redline / max}"></span>{/if}
 	</div>
 </div>
@@ -98,6 +100,15 @@
 		transition: transform 1.1s var(--ease-out) var(--d);
 	}
 	/* glowing leading edge rides on the cover, so it moves with the same transform */
+	/* replay: the cover starts closed and slides to the value (resting state = the value) */
+	.cover.play {
+		animation: cover-in 1.1s var(--ease-out) var(--d) backwards;
+	}
+	@keyframes cover-in {
+		from {
+			transform: translate3d(0, 0, 0);
+		}
+	}
 	.cover::before {
 		content: '';
 		position: absolute;
@@ -112,8 +123,10 @@
 		display: none;
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.cover {
+		.cover,
+		.cover.play {
 			transition: none;
+			animation: none;
 		}
 	}
 	.rl {

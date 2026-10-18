@@ -4,6 +4,7 @@
 	 * `speed` render in the global `.speedup` face (`.speedup--down` below 1×), everything else is
 	 * plain text. The whole sentence goes through `nb()` once, so non-breaking glue is unchanged.
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import { fill } from './data';
 
 	let { text, vars, speed = {} }: { text: string; vars: Record<string, string | number>; speed?: Record<string, { text: string; v: number }> } = $props();
@@ -17,4 +18,4 @@
 	});
 </script>
 
-{#each parts as part, i (i)}{#if part.s}<b class="speedup" class:speedup--down={part.s.v < 1}>{part.s.text}</b>{:else}{part.t}{/if}{/each}
+{#each parts as part, i (i)}{#if part.s}<b class="speedup" class:speedup--down={part.s.v < 1} style="--rh:{heatOf(part.s.v)}">{part.s.text}</b>{:else}{part.t}{/if}{/each}

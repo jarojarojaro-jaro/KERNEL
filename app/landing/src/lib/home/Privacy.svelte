@@ -56,16 +56,7 @@
 		max-width: 24ch;
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .statement:not([data-in]) {
-			opacity: 0;
-			transform: none;
-			letter-spacing: 0.04em;
-		}
-		.statement {
-			transition:
-				opacity 1s var(--ease-out),
-				letter-spacing 1.4s var(--ease-out) !important;
-		}
+		/* resting state final; entering view replays a short rise (global reveal) */
 	}
 	.wire {
 		width: 100%;
@@ -120,11 +111,13 @@
 		box-shadow: 6px 0 0 var(--text-hi);
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .wire:not([data-in]) .line {
-			transform: scaleX(0);
+		:global(html.js) .wire:global([data-in]) .line {
+			animation: line-in 1.2s var(--ease-out) 0.2s backwards;
 		}
-		.line {
-			transition: transform 1.2s var(--ease-out) 0.2s;
+	}
+	@keyframes line-in {
+		from {
+			transform: scaleX(0);
 		}
 	}
 	.foot {

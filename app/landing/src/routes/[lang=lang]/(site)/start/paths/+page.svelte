@@ -154,6 +154,13 @@
 	.suggested .k {
 		color: var(--accent-ink);
 	}
+	:global(:root[data-theme='light']) .tile:hover .k,
+	:global(:root[data-theme='light']) .suggested .k {
+		background: var(--heat-large);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
 	.title {
 		position: relative;
 		font-size: var(--fs-xl);

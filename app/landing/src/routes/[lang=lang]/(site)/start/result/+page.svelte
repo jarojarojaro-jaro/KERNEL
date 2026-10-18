@@ -373,7 +373,10 @@
 		align-items: center;
 	}
 	.bar.mid > :global(i) {
-		background: color-mix(in srgb, var(--accent) 55%, var(--before));
+		background: linear-gradient(90deg, var(--heat-1), var(--heat-2));
+	}
+	:global(:root[data-theme='light']) .bar.mid > :global(i) {
+		background: linear-gradient(90deg, color-mix(in srgb, var(--heat-4) 55%, var(--bg-3)), color-mix(in srgb, var(--heat-3) 65%, var(--bg-3)));
 	}
 	.bar.span > :global(i) {
 		left: calc(var(--lo) * 100%);

@@ -85,13 +85,14 @@
 		grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
 		align-items: start;
 		gap: clamp(2rem, 5vw, 6rem);
-		padding-block: clamp(2.5rem, 2rem + 2vw, 4rem) clamp(2rem, 1.5rem + 2vw, 3.5rem);
+		padding-block: var(--header-clear) clamp(2rem, 1.5rem + 2vw, 3.5rem);
 	}
 	/* room above and under the render for the callouts, then the scan readout */
 	.stage {
 		display: grid;
 		gap: 7rem;
-		padding-top: 4.5rem;
+		/* room above the render for the upward callouts (300 W sits highest) */
+		padding-top: 7rem;
 	}
 	/* render and x-ray share one box and one 3D pose */
 	.gpu {
@@ -178,7 +179,7 @@
 	}
 	.callout.on {
 		visibility: visible;
-		clip-path: inset(-12rem -12rem -12rem -12rem);
+		clip-path: inset(-40rem -40rem -40rem -40rem);
 		transform: none;
 		transition:
 			clip-path 0.35s var(--ease-out),

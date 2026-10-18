@@ -877,6 +877,8 @@ kbd,
 	gap: var(--sp-1);
 	border-bottom: 1px solid var(--line);
 	overflow-x: auto;
+	overflow-y: hidden;
+	scrollbar-width: none;
 }
 .tabs [role='tab'] {
 	appearance: none;
@@ -973,6 +975,30 @@ kbd,
 }
 
 /* ---------------- heat accents (shared) ---------------- */
+/*
+ * Light theme ("bone"): heat is light, never rust. Fills and glows use the bright end of the ramp
+ * (orange → amber); small text stays ink (the secondary pages scope `--accent-ink` to ink, see
+ * .heat-scope); large figures (>= 24px, WCAG large text) use `--heat-large`, a vivid red-orange.
+ */
+:root {
+	--heat-large: var(--heat-ramp-hot);
+}
+:root[data-theme='light'] {
+	--heat-large: linear-gradient(90deg, #e2401c, #e8501a); /* large text only: >= 3.4:1 on bg-0, >= 3.6:1 on bg-2 */
+}
+/* Secondary pages (onboarding, methodology, legal, app prototype): small heat text becomes ink in light. */
+:root[data-theme='light'] .heat-scope {
+	--accent-ink: var(--text-hi);
+}
+:root[data-theme='light'] .heat-card {
+	background:
+		radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--heat-4) 16%, transparent), transparent 60%) padding-box,
+		linear-gradient(var(--bg-2), var(--bg-2)) padding-box,
+		linear-gradient(160deg, color-mix(in srgb, var(--heat-3) 65%, transparent), var(--line) 40%, var(--line) 70%, color-mix(in srgb, var(--heat-4) 70%, transparent)) border-box;
+	box-shadow:
+		var(--shadow-2),
+		0 30px 90px -50px color-mix(in srgb, var(--heat-4) 90%, transparent);
+}
 /* Card with a heat-gradient hairline border and a warm top glow. */
 .heat-card {
 	border: 1px solid transparent;
@@ -992,16 +1018,12 @@ kbd,
 	background: linear-gradient(90deg, transparent, var(--heat-2) 20%, var(--heat-3) 50%, var(--heat-4) 80%, transparent);
 	box-shadow: 0 0 12px color-mix(in srgb, var(--heat-3) 60%, transparent);
 }
-/* Number highlight (large figures that matter). Light theme falls back to solid ink-safe heat. */
+/* Number highlight (large figures that matter, >= 24px). */
 .heat-num {
-	background: var(--heat-ramp-hot);
+	background: var(--heat-large);
 	-webkit-background-clip: text;
 	background-clip: text;
 	color: transparent;
-}
-:root[data-theme='light'] .heat-num {
-	background: none;
-	color: var(--accent-ink);
 }
 /* Slowly drifting ember wash behind a block (decorative). */
 .heat-wash {

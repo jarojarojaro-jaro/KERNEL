@@ -4,10 +4,10 @@
 	 * upstream's best flags add (or take away), then what our engine adds on top. The segments grow
 	 * in order when the bar enters the viewport. Multipliers come from the sheet's gain table.
 	 */
-	import { reveal } from '$lib/fx/actions';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { fmtRatio, fmtTps, localizeDecimals } from '$lib/format';
 	import Ratio from './Ratio.svelte';
+	import { Play } from './play.svelte';
 	import type { Gain, Num } from '$lib/data/card-types';
 
 	let {
@@ -34,10 +34,11 @@
 	const flagsUp = $derived(flags.v >= before.v);
 	/** The sheet's explanation without the multiplier we already print ("×1.62 (MTP)" → "MTP"). */
 	const detail = $derived((text ?? []).map((x) => localizeDecimals(x.replaceAll('`', '').replace(/^×[\d.,]+\s*/, '').replace(/^\((.*)\)$/, '$1'), lang)));
-	let shown = $state(false);
+	/** The segments grow in order when the bar enters the view; at rest (and on SSR) they are full. */
+	const grow = new Play(2100);
 </script>
 
-<div class="gs" class:shown use:reveal={{ onin: () => (shown = true) }}>
+<div class="gs" class:play={grow.on} use:grow.view>
 	<div class="bar" role="img" aria-label="{labels.before} {fmtTps(before.v, lang)} t/s; {labels.flags} {fmtRatio(gain.flags!.v, lang)}; {labels.engine} {fmtRatio(gain.engine!.v, lang)}; {labels.total} {fmtRatio(gain.total!.v, lang)}">
 		<div class="seg base" style="--w:{p(before.v)}%; --o:0%; --d:0s"></div>
 		{#if flagsUp}
@@ -172,12 +173,13 @@
 		grid-column: 1 / -1;
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		.seg {
-			transform: scaleX(0);
-			transition: transform 0.9s var(--ease-out) var(--d);
+		.play .seg {
+			animation: seg-grow 0.9s var(--ease-out) var(--d) both;
 		}
-		.shown .seg {
-			transform: none;
+	}
+	@keyframes seg-grow {
+		from {
+			transform: scaleX(0);
 		}
 	}
 </style>

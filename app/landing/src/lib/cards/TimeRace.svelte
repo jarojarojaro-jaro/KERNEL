@@ -3,7 +3,9 @@
 	 * Two answer times side by side. The measured targets are always printed big at the end of each
 	 * track; the tracks fill in real time (a 34,5 s answer really takes 34,5 s), with a small running
 	 * clock as secondary information. When the faster lane stops it is stamped done and the time it
-	 * saved is marked on the slower lane's track. Reduced motion: the final state, no clock.
+	 * saved is marked on the slower lane's track. The race runs only while `run` is true (the parent
+	 * starts and interrupts it); otherwise, and on SSR and under reduced motion, the lanes show the
+	 * final state.
 	 */
 	import { untrack } from 'svelte';
 	import { num } from '$lib/i18n';
@@ -23,8 +25,9 @@
 		labels: { done: string; saved: (s: string) => string };
 	} = $props();
 
-	let t = $state(0);
 	const max = $derived(Math.max(...lanes.map((l) => l.seconds)));
+	// svelte-ignore state_referenced_locally
+	let t = $state(max);
 	const fast = $derived(Math.min(...lanes.map((l) => l.seconds)));
 
 	$effect(() => {
@@ -32,12 +35,11 @@
 		const go = run;
 		const end = max;
 		return untrack(() => {
-			if (reducedMotion()) {
+			if (!go || reducedMotion()) {
 				t = end;
 				return;
 			}
 			t = 0;
-			if (!go) return;
 			return onFrame((dt) => {
 				t = Math.min(end, t + dt);
 				if (t >= end) return false;

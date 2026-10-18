@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { MODEL_STYLE } from '$lib/modelStyle';
-	import { onDestroy } from 'svelte';
+	import { onDestroy, onMount } from 'svelte';
 	import { visible } from '$lib/fx/actions';
 	import { onFrame, reducedMotion, whenIdle } from '$lib/fx/motion';
 	import Odometer from '$lib/fx/Odometer.svelte';
@@ -27,6 +27,13 @@
 	// svelte-ignore state_referenced_locally
 	let model = $state<ModelKey>(card.pick.model);
 	const run = $derived(card.runs.find((r) => r.model === model) ?? card.runs[0]);
+	/** The run panel slides in only when the reader switches models (never on the first paint). */
+	let swapped = $state(false);
+	// svelte-ignore state_referenced_locally
+	const firstModel = model;
+	$effect(() => {
+		if (model !== firstModel) swapped = true;
+	});
 
 	/*
 	 * The signature moment, one timeline for the counter and the card. The page paints its final,
@@ -69,13 +76,41 @@
 			}
 		});
 	}
-	/** Start once the hero is on screen, after load, when the main thread is idle (keeps TBT low). */
-	let cancelIdle: (() => void) | null = null;
-	function startWhenIdle(on: boolean) {
-		if (!on || started) return;
-		started = true;
-		cancelIdle = whenIdle(rev, 400);
+	/** Any interruption (hero scrolled away, tab hidden, bfcache restore) lands on the measured state. */
+	function finish() {
+		if (!stop) return;
+		stop();
+		stop = null;
+		tp = hot;
+		rpm = 0;
 	}
+	/**
+	 * Start once the hero is on screen, after load, when the main thread is idle (keeps TBT low);
+	 * skip it if by then the hero has gone or the tab is hidden.
+	 */
+	let cancelIdle: (() => void) | null = null;
+	let heroOn = false;
+	function startWhenIdle(on: boolean) {
+		heroOn = on;
+		if (!on) {
+			cancelIdle?.();
+			finish();
+			return;
+		}
+		if (started) return;
+		started = true;
+		cancelIdle = whenIdle(() => heroOn && !document.hidden && rev(), 400);
+	}
+	onMount(() => {
+		const hide = () => document.hidden && finish();
+		const show = (e: PageTransitionEvent) => e.persisted && finish();
+		document.addEventListener('visibilitychange', hide);
+		window.addEventListener('pageshow', show);
+		return () => {
+			document.removeEventListener('visibilitychange', hide);
+			window.removeEventListener('pageshow', show);
+		};
+	});
 	onDestroy(() => {
 		stop?.();
 		cancelIdle?.();
@@ -186,7 +221,7 @@
 		{/if}
 	</div>
 	{#key run.model}
-		<div class="run-body">
+		<div class="run-body" class:swap={swapped}>
 			<RunShowcase {card} {run} {lang} />
 		</div>
 	{/key}
@@ -500,7 +535,7 @@
 		color: var(--text-hi);
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		.run-body {
+		.run-body.swap {
 			animation: swap 0.6s var(--ease-out) both;
 		}
 	}

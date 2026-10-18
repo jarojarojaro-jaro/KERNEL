@@ -11,6 +11,7 @@
 	 * Below: Qwen3.8-27B compact (3090 same script with the multiplier; XTX indicative, no multiplier;
 	 * NVIDIA KLD in progress) and the bit-exact validation slot (BITEXACT_XTX, not in the product yet).
 	 */
+	import { heatOf } from '$lib/cards/explorer';
 	import { reveal } from '$lib/fx/actions';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { BITEXACT_XTX, findCard, MODEL_INFO, SHEET, variantOf } from '$lib/data/measurements';
@@ -85,11 +86,9 @@
 		<figure class="ruler" use:reveal={{ threshold: 0.3 }}>
 			<!-- for scale: format changes (another model), with labels above their markers -->
 			<div class="plane">
-				<div class="zone" style="--a:{x(1e-4)}; --b:{x(1e-3)}">
-					<span class="zl">{c.zone} <SourceTip {lang} src={oursSrc} note={zoneDetail} /></span>
-				</div>
+				<div class="zone" style="--a:{x(1e-4)}; --b:{x(1e-3)}" aria-hidden="true"></div>
 				<div class="bracket" style="--a:{x(worstOurs)}; --b:{x(bestFmt)}" aria-hidden="true">
-					<span class="bl speedup">≈&nbsp;{num(ratio, lang, 0)}×</span>
+					<span class="bl">≈&nbsp;{num(ratio, lang, 0)}×</span>
 				</div>
 				{#each ours as r, i (r.k)}
 					<span class="noise" style="--x:{x(r.noise.v)}; --d:{i * 90}ms" aria-hidden="true"></span>
@@ -108,8 +107,9 @@
 			</div>
 			<p class="sr-only">{zoneDetail} {fmts.map((r) => `${fmtName(r.file)}: ${num(r.kld.v, lang, 3)}`).join(', ')}.</p>
 			<figcaption class="legend">
-				<span><i class="lg-dot"></i>{c.ours}</span>
+				<span>{#each ours as r (r.k)}<ModelMark model={r.k} size="0.8rem" />{/each} {c.ours}: {ours.map((r) => MODEL_STYLE[r.k].short).join(', ')}</span>
 				<span><i class="lg-noise"></i>{c.noise}</span>
+				<span><i class="lg-zone"></i>{c.zone} <SourceTip {lang} src={oursSrc} note={zoneDetail} /></span>
 				<span><i class="lg-fmt"></i>{fill(c.fmt, { card: where5060 })} <SourceTip {lang} src={fmts.map((r) => r.kld.src)} /></span>
 				<span class="ax">{c.axis}</span>
 			</figcaption>
@@ -123,7 +123,7 @@
 						<span class="qc">{r.card.short}</span>
 						<span class="qv"><span class="steel">{fmtTps(r.a.v, lang)}</span> → <b>{fmtTps(r.b.v, lang)}</b> <small>t/s</small></span>
 						{#if r.run.sameHarness}
-							<span class="qg"><b class="speedup">{fmtRatio(r.b.v / r.a.v, lang)}</b> <small>{c.qwen.same}</small></span>
+							<span class="qg"><b class="speedup" style="--rh:{heatOf(r.b.v / r.a.v)}">{fmtRatio(r.b.v / r.a.v, lang)}</b> <small>{c.qwen.same}</small></span>
 						{:else}
 							<span class="qg"><small class="cross">{c.qwen.cross}</small></span>
 						{/if}
@@ -200,11 +200,9 @@
 		font-stretch: 120%;
 		letter-spacing: -0.045em;
 		line-height: 0.9;
-		background: var(--heat-ramp-hot);
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
-		filter: drop-shadow(0 0 24px rgb(255 122 26 / 0.35));
+		/* a KLD ratio, not a speed: bone, not heat */
+		color: var(--text-hi);
+		text-shadow: 0 0 0.5em rgb(237 234 227 / 0.18);
 	}
 	.ln {
 		max-width: 34ch;
@@ -224,8 +222,7 @@
 	}
 	.plane {
 		position: relative;
-		height: 11.5rem;
-		margin-top: 0.5rem;
+		height: 9.25rem;
 	}
 	/* baseline with a heat hairline */
 	.plane::before {
@@ -233,53 +230,36 @@
 		position: absolute;
 		left: 0;
 		right: 0;
-		bottom: 2rem;
+		bottom: 1.8rem;
 		height: 1px;
 		background: linear-gradient(90deg, var(--line-strong), rgb(255 122 26 / 0.6) 70%, var(--heat-2));
 	}
 	.zone {
 		position: absolute;
-		bottom: 2rem;
+		bottom: 1.8rem;
 		left: calc(var(--a) * 100%);
 		width: calc((var(--b) - var(--a)) * 100%);
-		height: 5.5rem;
+		height: 4.2rem;
 		border-radius: 8px 8px 0 0;
 		background: linear-gradient(180deg, rgb(237 234 227 / 0.02), rgb(237 234 227 / 0.09));
 		border: 1px dashed rgb(237 234 227 / 0.3);
 		border-bottom: 0;
-	}
-	.zl {
-		position: absolute;
-		left: 0.6rem;
-		bottom: calc(100% + 0.4rem);
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-hi);
-		white-space: nowrap;
 	}
 	.noise,
 	.dot,
 	.fmt {
 		position: absolute;
 		left: calc(var(--x) * 100%);
-		transition:
-			left 1.2s var(--ease-out) var(--d),
-			opacity 0.4s var(--d);
 	}
 	.noise {
-		bottom: 2rem;
+		bottom: 1.8rem;
 		width: 2px;
-		height: 2.2rem;
+		height: 1.3rem;
 		margin-left: -1px;
 		background: var(--before);
 	}
 	.dot {
-		bottom: calc(2rem + 2.6rem);
+		bottom: calc(1.8rem + 1.6rem);
 		display: grid;
 		place-items: center;
 		width: 1.8rem;
@@ -301,12 +281,12 @@
 		background: color-mix(in srgb, var(--mc) 70%, transparent);
 	}
 	.fmt {
-		bottom: 2rem;
-		height: 8.5rem;
+		bottom: 1.8rem;
+		height: 5.9rem;
 		border-left: 2px dashed var(--heat-3);
 	}
 	.fmt:not(.hi) {
-		height: 6.2rem;
+		height: 3.6rem;
 		border-left-color: var(--heat-2);
 	}
 	.fl {
@@ -339,22 +319,26 @@
 	/* our worst value → the smallest format change: the gap, in heat */
 	.bracket {
 		position: absolute;
-		bottom: calc(2rem + 7.4rem);
+		bottom: calc(1.8rem + 5.6rem);
 		left: calc(var(--a) * 100%);
 		width: calc((var(--b) - var(--a)) * 100%);
 		height: 0.9rem;
 		border: 2px solid transparent;
 		border-bottom: 0;
-		border-image: linear-gradient(90deg, rgb(237 234 227 / 0.6), var(--heat-3), var(--heat-4)) 1;
+		border-image: linear-gradient(90deg, rgb(237 234 227 / 0.35), var(--text-hi)) 1;
 		transform-origin: 0 50%;
-		transition: transform 1.1s var(--ease-out) 0.5s;
 	}
 	.bl {
 		position: absolute;
 		left: 50%;
 		bottom: calc(100% + 0.25rem);
 		transform: translateX(-50%);
+		font-family: var(--font-display);
 		font-size: clamp(1.2rem, 0.9rem + 0.8vw, 1.7rem);
+		font-weight: 820;
+		font-stretch: 115%;
+		letter-spacing: -0.03em;
+		color: var(--text-hi);
 		white-space: nowrap;
 	}
 	.axis {
@@ -376,13 +360,23 @@
 		transform: none;
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .ruler:not([data-in]) .dot,
-		:global(html.js) .ruler:not([data-in]) .noise,
-		:global(html.js) .ruler:not([data-in]) .fmt {
-			left: 0;
-			opacity: 0;
+		/* resting state final; entering view replays the markers dropping onto the scale */
+		:global(html.js) .ruler:global([data-in]) .dot,
+		:global(html.js) .ruler:global([data-in]) .noise,
+		:global(html.js) .ruler:global([data-in]) .fmt {
+			animation: mark-in 0.8s var(--ease-spring) var(--d) backwards;
 		}
-		:global(html.js) .ruler:not([data-in]) .bracket {
+		:global(html.js) .ruler:global([data-in]) .bracket {
+			animation: bracket-in 1.1s var(--ease-out) 0.5s backwards;
+		}
+	}
+	@keyframes mark-in {
+		from {
+			transform: translate3d(0, -1.5rem, 0) scale(0.3);
+		}
+	}
+	@keyframes bracket-in {
+		from {
 			transform: scaleX(0);
 		}
 	}
@@ -406,12 +400,11 @@
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 	}
-	.lg-dot {
-		width: 0.7rem;
+	.lg-zone {
+		width: 1rem;
 		height: 0.7rem;
-		border-radius: 50%;
-		background: var(--text-hi);
-		box-shadow: 0 0 8px rgb(237 234 227 / 0.6);
+		border: 1px dashed rgb(237 234 227 / 0.45);
+		background: rgb(237 234 227 / 0.06);
 	}
 	.lg-noise {
 		width: 2px;
@@ -426,7 +419,7 @@
 	/* ---- below: Qwen + validation ---- */
 	.below {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
 		gap: clamp(1rem, 2.5vw, 1.75rem);
 	}
 	.qwen,
@@ -483,33 +476,31 @@
 		grid-column: 2 / -1;
 		color: var(--text-mute);
 	}
-	/* in validation: dashed heat frame = not a product claim yet */
+	/* in validation: secondary, quiet dashed frame = not a product claim yet */
 	.val {
-		background: linear-gradient(160deg, rgb(255 122 26 / 0.06), transparent 50%), var(--bg-1);
-		box-shadow: inset 0 0 0 1px rgb(255 122 26 / 0.28);
-		outline: 1px dashed rgb(255 122 26 / 0.35);
-		outline-offset: -6px;
+		background: transparent;
+		box-shadow: none;
+		border: 1px dashed var(--line-strong);
+		gap: 0.6rem;
 	}
 	.vtag {
 		justify-self: start;
-		padding: 0.2rem 0.65rem;
-		border: 1px solid var(--heat-3);
+		padding: 0.15rem 0.55rem;
+		border: 1px dashed var(--text-mute);
 		border-radius: var(--r-pill);
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color: var(--heat-4);
+		color: var(--text);
 	}
 	.vt {
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
-		font-family: var(--font-display);
-		font-size: var(--fs-xl);
-		font-weight: 760;
-		letter-spacing: -0.02em;
-		color: var(--text-hi);
+		font-weight: 700;
+		font-size: var(--fs-md);
+		color: var(--text);
 	}
 	.checks {
 		margin: 0;
@@ -517,15 +508,15 @@
 		list-style: none;
 		display: grid;
 		gap: 0.4rem;
-		font-size: var(--fs-sm);
-		color: var(--text);
+		font-size: var(--fs-xs);
+		color: var(--text-mute);
 	}
 	.checks li {
 		display: flex;
 		gap: 0.55rem;
 	}
 	.ok {
-		color: var(--heat-4);
+		color: var(--text);
 		font-weight: 700;
 	}
 	.vs {
@@ -536,8 +527,8 @@
 		padding-top: 0.75rem;
 		border-top: 1px solid var(--line);
 		font-family: var(--font-mono);
-		font-size: var(--fs-xs);
-		color: var(--text-hi);
+		font-size: var(--fs-2xs);
+		color: var(--text);
 	}
 	.foot {
 		display: flex;
@@ -571,19 +562,8 @@
 		}
 	}
 	@media (max-width: 640px) {
-		.plane {
-			height: 14rem;
-		}
-		.bracket {
-			bottom: calc(2rem + 10rem);
-		}
 		.axis span:nth-child(even) {
 			display: none;
-		}
-		.zl {
-			left: 0;
-			font-size: 0.6rem;
-			letter-spacing: 0.04em;
 		}
 		.qrow {
 			grid-template-columns: minmax(0, 1fr) auto;

@@ -5,7 +5,6 @@
 	 * where the gain comes from, honesty notes, conditions and the model card. Every number is read
 	 * from measurements.ts and carries a SourceTip.
 	 */
-	import { reveal } from '$lib/fx/actions';
 	import HeatBar from '$lib/fx/HeatBar.svelte';
 	import RaceLanes, { type Lane } from '$lib/fx/RaceLanes.svelte';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
@@ -13,13 +12,14 @@
 	import { fmtGB, fmtSec, fmtTps, localizeDecimals } from '$lib/format';
 	import { href, num } from '$lib/i18n';
 	import { cardsCopy } from './copy';
-	import { duel, heatOf, KLD_PENDING, roundTo } from './explorer';
+	import { duel, KLD_PENDING, roundTo } from './explorer';
 	import Ratio from './Ratio.svelte';
 	import ModelMark from '$lib/ModelMark.svelte';
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import GainStack from './GainStack.svelte';
 	import LongCtxChart from './LongCtxChart.svelte';
 	import TimeRace from './TimeRace.svelte';
+	import { Play } from './play.svelte';
 
 	let { card, run, lang }: { card: CardView; run: RunView; lang: 'pl' | 'en' } = $props();
 
@@ -38,9 +38,6 @@
 			.filter(Boolean)
 			.join(' ');
 
-	let barsIn = $state(false);
-	let wordsIn = $state(false);
-	let wordsKey = $state(0);
 
 	/* ---- race ---- */
 	const raceKeys = $derived<VariantKey[]>(bonsai ? ['a1', 'ours', 'alt'] : [run.before, run.ours]);
@@ -124,8 +121,13 @@
 	const q = SHEET.correctness.quality;
 	const kldMax = Math.max(...(['saluki', 'bonsai'] as const).flatMap((m) => [q[m].ours.v, q[m].noise.v]));
 
-	/** Each counter, bar and curve plays when its tile enters the view (reduced motion: final state). */
-	let ratioKey = $state(0);
+	/*
+	 * Each counter, bar and race plays when its tile enters the view. At rest (SSR, reduced motion,
+	 * after a play or an interrupted one) everything shows the final measured values.
+	 */
+	const speed = new Play(2400);
+	/** The 500-word race runs in real time: the slowest answer plus a beat. */
+	const race500 = new Play(() => (Math.max(0, ...words.map((w) => w.before!.v)) + 1.5) * 1000);
 	/** The conditions as chips: the sheet's own clauses, split at commas and semicolons. */
 	const condChips = $derived(run.conditions[lang].split(/;\s*|,\s*(?![^()]*\))/).filter(Boolean));
 	const hintNote = (k: VariantKey) => (bonsai ? variantLabel(run, k)[lang] : `${variantLabel(run, k)[lang]}: ${hint(k)[lang]}`);
@@ -133,15 +135,15 @@
 
 <div class="bento" style="--mc:{MODEL_STYLE[run.model].color}">
 	<!-- ============ SPEED ============ -->
-	<div role="group" class="tile speed" aria-labelledby="speed-{run.model}" use:reveal={{ onin: () => { barsIn = true; ratioKey++; } }}>
+	<div role="group" class="tile speed" aria-labelledby="speed-{run.model}" use:speed.view>
 		<h2 id="speed-{run.model}" class="eyebrow"><ModelMark model={run.model} /> {t.speed} · {MODEL_STYLE[run.model].short}</h2>
 		<div class="speed-in">
 			<div class="speed-head">
 				{#if bonsai}
 					<p class="honest-title">{t.bonsaiTitle}</p>
 				{:else if d?.ratio}
-					<p class="ratio" style="--glow:{heatOf(d.ratio)}">
-						<Ratio value={d.ratio} {lang} size="xl" replay={ratioKey} />
+					<p class="ratio">
+						<Ratio value={d.ratio} {lang} size="xl" replay={speed.n} />
 						<span class="rw">{t.faster}</span>
 					</p>
 				{:else}
@@ -159,7 +161,7 @@
 				<div class="bars">
 					{#each bars as v, i (v.key)}
 						<div class="bar-row">
-							<HeatBar value={barsIn ? roundTo(v.decode!.v, 1) : 0} max={maxDecode} label={variantLabel(run, v.key)[lang]} sub={subOf(v)} cold={v.key === run.before} {lang} decimals={1} delay={i * 200} />
+							<HeatBar value={roundTo(v.decode!.v, 1)} replay={speed.n} max={maxDecode} label={variantLabel(run, v.key)[lang]} sub={subOf(v)} cold={v.key === run.before} {lang} decimals={1} delay={i * 200} />
 							<SourceTip {lang} src={[v.decode!.src, ...(v.scorecard ? [`${v.scorecard.file} (${v.scorecard.variant}: ${v.scorecard.decode})`] : [])]} note="{hintNote(v.key)} · {run.metric[lang]}" />
 						</div>
 					{/each}
@@ -180,10 +182,10 @@
 
 	<!-- ============ 500 WORDS ============ -->
 	{#if words.length && d && run.sameHarness}
-		<div role="group" class="tile words" aria-labelledby="words-{run.model}" use:reveal={{ onin: () => (wordsIn = true) }}>
+		<div role="group" class="tile words" aria-labelledby="words-{run.model}" use:race500.view>
 			<div class="t-head">
 				<h3 id="words-{run.model}" class="h hx-h">{t.words}</h3>
-				<button type="button" class="ghost-btn mono" onclick={() => wordsKey++} aria-label={t.wordsRun}><span aria-hidden="true">↻</span></button>
+				<button type="button" class="ghost-btn mono" onclick={race500.replay} aria-label={t.wordsRun}><span aria-hidden="true">↻</span></button>
 			</div>
 			{#each words as w (w.wl)}
 				<div class="wrow">
@@ -196,8 +198,8 @@
 							{ label: variantLabel(run, run.before)[lang], seconds: w.before!.v, hot: false },
 							{ label: variantLabel(run, run.ours)[lang], seconds: w.ours!.v, hot: true }
 						]}
-						run={wordsIn}
-						runKey={String(wordsKey)}
+						run={race500.on}
+						runKey={String(race500.n)}
 						{lang}
 						labels={{ done: t.wordsDone, saved: t.wordsSaved }}
 					/>

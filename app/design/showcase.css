@@ -4,7 +4,7 @@
  * prefers-reduced-motion end state.
  */
 
-/* `html.js` is set by app.html before first paint: reveal-on-scroll hides content only when JS runs. */
+/* `html.js` is set by app.html before first paint; intros only replay from the final state (never hide). */
 
 /* ---------------- grain: static SVG noise, one layer for the whole page ---------------- */
 .grain {
@@ -93,7 +93,16 @@
 	font-stretch: 120%;
 	letter-spacing: -0.04em;
 	line-height: 0.9;
-	background: var(--heat-ramp-hot);
+	/* heat by magnitude (same rule as the cards explorer's Ratio): `--rh` = heatOf(ratio), 0.12–1;
+	 * each stop of the hot ramp is mixed with a dim copper, so 1,05× glows faintly and 2,0× burns */
+	--rh: 1;
+	background: linear-gradient(
+		90deg,
+		color-mix(in oklab, var(--heat-2) calc(var(--rh) * 100%), #b4502f),
+		color-mix(in oklab, var(--heat-3) calc(var(--rh) * 100%), #c25d33) 38%,
+		color-mix(in oklab, var(--heat-4) calc(var(--rh) * 100%), #cb6a3a) 72%,
+		color-mix(in oklab, var(--heat-5) calc(var(--rh) * 100%), #d27845)
+	);
 	-webkit-background-clip: text;
 	background-clip: text;
 	color: transparent;
@@ -206,16 +215,22 @@
 	opacity: 1;
 }
 
+/* Clear space under the floating glass header (0.6rem offset + 3.6rem capsule) + 24px: scenes that
+ * fill the viewport start below it, so no title, counter or callout sits under the glass. */
+:root {
+	--header-clear: calc(4.2rem + 24px);
+}
+
 /* ---------------- reveal on scroll ---------------- */
-@media (prefers-reduced-motion: no-preference) {
-	html.js [data-reveal]:not([data-in]) {
-		opacity: 0;
+@keyframes reveal-rise {
+	from {
 		transform: translate3d(0, 2rem, 0);
 	}
-	html.js [data-reveal] {
-		transition:
-			opacity 0.9s var(--ease-out) var(--reveal-delay, 0ms),
-			transform 0.9s var(--ease-out) var(--reveal-delay, 0ms);
+}
+@media (prefers-reduced-motion: no-preference) {
+	/* the resting state is final (server HTML shows it); entering view only replays a short rise */
+	html.js [data-reveal][data-in] {
+		animation: reveal-rise 0.9s var(--ease-out) var(--reveal-delay, 0ms) backwards;
 	}
 }
 

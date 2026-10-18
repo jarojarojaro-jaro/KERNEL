@@ -27,7 +27,7 @@
 <style>
 	/*
 	 * Explorer heat language: one warm vocabulary on every cards page (gallery, card, queue, compare).
-	 * Glowing headings (.hx-h), heat-line dividers (.hx-line / .hx-bt / .hx-bb), lit numbers (.hx-num),
+	 * Glowing headings (.hx-h), heat-line dividers (.hx-bt / .hx-bb), lit numbers (.hx-num),
 	 * a heat ring that rises on hover (.hx-ring) and slow embers drifting behind the page. Text keeps
 	 * its AA colours: heat is added as glow, borders and backgrounds, and as amber ink (>= 10:1 dark,
 	 * accent-ink >= 5.8:1 light). Model identity colours stay on their models.
@@ -45,11 +45,14 @@
 		--hx-ink: var(--accent-ink);
 		--hx-glow: rgb(226 84 26 / 0.3);
 	}
-	/* embers: one fixed, composited layer drifting slowly behind every explorer page */
+	/*
+	 * Embers: one static, fixed layer of warm light behind every explorer page. It is promoted once
+	 * (will-change) so scrolling never repaints it, and it does not animate: no per-frame compositing.
+	 */
 	.explorer::before {
 		content: '';
 		position: fixed;
-		inset: -8vmax;
+		inset: 0;
 		z-index: -1;
 		pointer-events: none;
 		background:
@@ -57,19 +60,6 @@
 			radial-gradient(44vmax 30vmax at 88% 62%, rgb(255 122 26 / 0.1), transparent 70%),
 			radial-gradient(30vmax 22vmax at 55% 95%, rgb(255 193 90 / 0.06), transparent 70%);
 		will-change: transform;
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		.explorer::before {
-			animation: hx-drift 26s ease-in-out infinite alternate;
-		}
-	}
-	@keyframes hx-drift {
-		50% {
-			transform: translate3d(5vmax, -3vmax, 0);
-		}
-		to {
-			transform: translate3d(-4vmax, 4vmax, 0);
-		}
 	}
 
 	/* (utility classes are doubled for specificity over a component's own colour/background) */
@@ -106,35 +96,7 @@
 		color: var(--hx-ink);
 		text-shadow: 0 0 0.6em var(--hx-glow);
 	}
-	/* heat-line dividers: a rule element, or a top/bottom border on any block */
-	.explorer :global(.hx-line) {
-		position: relative;
-		display: block;
-		height: 1px;
-		border: 0;
-		margin: 0;
-		background: var(--hx-line-c);
-		overflow: hidden;
-	}
-	.explorer :global(.hx-line::after) {
-		content: '';
-		position: absolute;
-		inset: -1px auto -1px 0;
-		width: 18%;
-		background: linear-gradient(90deg, transparent, var(--heat-5), transparent);
-		transform: translateX(-100%);
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		.explorer :global(.hx-line::after) {
-			animation: hx-sheen 5.5s var(--ease-out) infinite;
-		}
-	}
-	@keyframes hx-sheen {
-		60%,
-		to {
-			transform: translateX(600%);
-		}
-	}
+	/* heat-line dividers: a top or bottom border on any block */
 	.explorer :global(.hx-bt.hx-bt) {
 		border-top: 1px solid transparent;
 		border-image: var(--hx-line) 1;

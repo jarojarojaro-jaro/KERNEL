@@ -14,7 +14,7 @@
 	<meta name="description" content={doc.description[lang]} />
 </svelte:head>
 
-<section class="section">
+<section class="section heat-scope">
 	<div class="container container--narrow">
 		<nav class="small back" aria-label={lang === 'pl' ? 'Nawigacja' : 'Breadcrumb'}>
 			<a href={href(lang, '/legal')}>{lang === 'pl' ? '← Dokumenty prawne' : '← Legal documents'}</a>
