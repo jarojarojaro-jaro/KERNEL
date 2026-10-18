@@ -47,6 +47,9 @@ Nowe: [[2026-10-18-e1-kwanty-27b-kld]], [[raport-16e-kwanty-kld]], [[kld-po-pols
 ## [2026-10-18] ingest | 16c §9, 16j, landing r6–r8, wentylator XTX i restart
 16c §9: wyjątek kvq n=1 D256 q4_0 (`678473a27`) w [[fattn-kvq]], [[2026-10-16-kvq-cuda]], [[2026-10-16-kvq-cuda-zostaje]], [[bramka-kld-kanarki]], [[lekcja-kld-szum-kolejnosci]], [[raport-16c-kvq-cuda]]. 16j: nowe [[2026-10-18-magnitude-vulkan-xtx]], [[raport-16j-magnitude-vulkan-xtx]], [[lekcja-koszt-szerokosci-backendu]]; zaktualizowane [[magnitude]], [[firma-magnitude]], [[produkt-ryzyka]], [[raport-16i-magnitude]], [[2026-10-16-badamy-magnitude]]. Landing: [[lekcja-hydration-blok-w-p]], [[landing-qa]], [[app-landing]]. Ops: [[rx-7900-xtx]] (overdrive, krzywa wentylatora, Vulkan bez sudo), [[lekcja-wentylator-rdna3]], [[lekcja-tmp-po-restarcie]] (`/tmp/bx*` utracone, oznaczone w `zrodlo` notatek bit-exact).
 
+## [2026-10-18] update | Źródło bit-exact: raport 12 §13 kanoniczny
+`/tmp/bx*` zniknęły przy restarcie ~18:53 UTC (przed archiwum); poprawione [[lekcja-tmp-po-restarcie]], `zrodlo` notatek bit-exact, [[AUDYT]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
