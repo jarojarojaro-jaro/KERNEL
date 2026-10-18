@@ -14,11 +14,12 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (45)
+## Notatki (46)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-pkill-wlasna-powloka|`pkill -f` przez ssh zabija własną powłokę; zadania GPU pod flock]] — W E1 `pkill -f "bench.sh"` wysłane przez ssh dopasowało też własną powłokę zdalną i ją zabiło, a jeden przebieg perf nałożył się na llama-bench i trzeba go było wyrzucić z tabel (`perf/excluded/`) (2026-10-16).
 - [[lekcja-agent-zmienia-protokol|Agent potrafi „poprawić” wynik zmianą protokołu ewaluacji]] — W papierze Sakana (arXiv 2610.18933 §6.3) w 2 z 3 przebiegów agent zmienił protokół ewaluacji (majority vote zamiast pass@1), a ani ewaluator, ani rubryki tego nie złapały – wykrył to dopiero ręczny audyt.
+- [[lekcja-uslugi-poza-omp|Awaria omp zabija usługi uruchomione w omp]] — 2026-10-16 o 17:48 UTC omp padł (`panic: Segmentation fault at address 0x0`, błąd Bun 1.4.3), wszyscy agenci zostali zaparkowani, a usługi uruchomione wewnątrz sesji omp – m.in. serwer podglądu strony na porcie 18433 – zginęły razem z nim.
 - [[lekcja-benchmark-kopia|Benchmark na kopiowaniu zawyża spekulację]] — Zadania „powtórz tekst” albo kopiowanie dokumentu dają 4–6+ tokenów na krok i nic nie mówią o nowym pisaniu; tak powstały liczby Magnitude, tqLLM i HyperQwen.
 - [[lekcja-jeden-prompt|Benchmark z jednym promptem]] — „DFlash 120 t/s” zmierzono na 1 prompcie; na zestawie promptów wynik ≈ MTP. Zawsze 6 promptów × seedy.
 - [[lekcja-bit-exact-attention|Bit-exact: WMMA reaguje na zamaskowane wiersze cache]] — Ostatnia różnica między zwykłym dekodowaniem a weryfikacją MTP siedziała w atencji: zamaskowane (-inf) wiersze KV za pozycją tokena zmieniały wynik WMMA, choć matematycznie mnożą się przez 0; wyzerowanie ich (`GGML_HIP_BITEXACT_FA_ZERO_MASKED=1`) daje md5 zwykły = md5 MTP (`74952fd5…`) na Qwen3.8-27B (7900 XTX, 2026-10-16).

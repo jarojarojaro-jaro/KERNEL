@@ -2,7 +2,7 @@
 typ: research
 tags: [research, determinizm, spekulacja]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/12-bit-exact-spekulacja.md:1-13,82-112,144-197; ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,136-143; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:229-316; /tmp/bxv/summary.txt:71-103
+zrodlo: ~/KERNEL/product/research/12-bit-exact-spekulacja.md:1-13,82-112,144-197; ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,136-143; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:229-370; /tmp/bxv/summary.txt:71-103
 status: aktualne
 ---
 # Raport 12: bitowo identyczna spekulacja
@@ -19,7 +19,7 @@ Data 2026-10-16, gałąź `batch-invariant`.
 - Koszt (szacunki): weryfikacja MTP ~0, FA przy 32k ~0.5%, plain bez fuzji GLU ~0.3–1.3%.
 - **§13 (wynik):** `GGML_HIP_BITEXACT_FA_ZERO_MASKED` domyślne w bitexact (`40c4bf7bb`); walidacja `validate.sh` PASS (ops, greedy n_max 1–7, długie prompty do 94k, ogon ubatcha, det_probe, LFM2.5 `68b329da` w obu trybach). Szczegóły i prędkość: [[2026-10-16-bit-exact]].
 - **Ustalenie:** niedeterminizm MTP na jednym serwerze (rozjazd przy znaku ~106–113) wynika głównie z braku niezmienniczości względem N, nie z samego `pending_h`; usuwa go dopiero bitexact.
-- **Prędkość (run 4, flagi produkcyjne):** spec_sweep produkcja 107.5/107.8, nowe drzewo 103.0, bitexact 107.0 t/s; tg128 43.1 / 40.5 / 41.5 t/s. Regresja nowego drzewa (~5–6%) to spille z `ce2105d32`, naprawione w `02813c1c5` (tg128 43.15/43.16 = prod); koszt bitexact pp5@32k −8% ([[lekcja-vgpr-limit-hak-spill]]).
+- **Wynik końcowy (`365af3e5e`):** tryb domyślny = produkcja (tg128 42.96/43.02 vs 43.17/42.91, spec_sweep 109.0 vs 107.7/107.6); bitexact: MTP krótki kontekst 0% (108.3), plain −2.8%, MTP ~27k −9%, pp5@32k −11%. Regresja przejściowa naprawiona w `02813c1c5` ([[lekcja-vgpr-limit-hak-spill]]). Rekomendacja (czeka na użytkownika): wdrożyć z przełącznikiem domyślnie wyłączonym, `LLAMA_SPEC_BITEXACT=1` jako opt-in.
 
 Metodyka z tqLLM (raport 15b): test end-to-end na długim prompcie (3.7k tokenów, 512 wyjścia) z przemiataniem `ubatch` ∈ {64, 512, 4096} i kontekstu ∈ {16k, 64k}, bo u nich błąd wychodził tylko przy `-ub 4096` (`8bb1119`, wycofany w `015a14a`); test `memcmp` per kolumna 1..16 dla K4 WMMA jako warunek bitexact dla W > 8.
 
