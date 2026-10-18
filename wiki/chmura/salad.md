@@ -2,7 +2,7 @@
 typ: chmura
 tags: [chmura, salad, wsl2]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:21-23,55,68,136,203,298,365,404
+zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:21-23,55,68,136,203,298,365,404; komunikat Main do WikiIngest 2026-10-18 (portal SaladCloud, 2026-10-18)
 status: aktualne
 ---
 # SaladCloud (domowe PC graczy, WSL2)
@@ -14,6 +14,8 @@ status: aktualne
 - NVIDIA: np. 3090 od $0.09/h na najniższym priorytecie; 4 priorytety cenowe i wywłaszczanie.
 - Rola w planie (raport 05): walidacja Windows/WSL2, 6 klas × 20 h ≈ $20/mies.; wyniki etykietować jako „WSL2-path”, bo nie są reprezentatywne dla PM4/HIP.
 - Dla PM4: w WSL2 pakiet PM4 jest cicho pomijany, więc łatka 0060 musi się tam sama wyłączać.
+
+**Stan 2026-10-18:** klasy AMD są tylko udokumentowane, dla naszej organizacji niedostępne – wybór GPU (priorytet Medium) pokazał wyłącznie NVIDIA: RTX 5090 $0.417, A5000 $0.197, 5090 Laptop $0.19, 4090 $0.273, 3090 Ti $0.16, 3090 $0.143 /h. Bez `/dev/kfd` i tak nie ma PM4 ani rocprof.
 
 ## Powiązane
 - [[chmura/_hub|Chmura]]

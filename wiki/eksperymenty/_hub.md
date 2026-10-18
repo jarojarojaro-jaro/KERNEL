@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (37)
+## Notatki (38)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -38,6 +38,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[qwen-runda-5|2026-10-15: Qwen runda 5 (gałąź opt-qwen5) — same wyniki negatywne]] — Runda 5 nie dała łatki: GDN fast nie był bitowy, podwójny bufor MMQ zwalniał, szeroki blok DFlash był wolniejszy; za to ablacja MMQ wskazała epilog jako prawdziwe ograniczenie prefillu.
 - [[runda-6|2026-10-15: runda 6 — epilog MMQ, GDN fast, narzędzia]] — Trzy gałęzie przygotowane offline i zmierzone w oknie GPU: epilog MMQ scalony (+2.2% pp4096 Qwena), GDN fast bitowy, ale w szumie (nie scalony), narzędzia LOO / kanarki KLD / Kernel Tuner gotowe, ale jeszcze nieuruchomione na GPU.
 - [[2026-10-15-sampler|2026-10-15: sampler bez wolnych ścieżek (0065–0069)]] — Web UI, budżet myślenia, `logit_bias` i gramatyka narzędzi omp po cichu włączały pełne sortowanie 128k/248k kandydatów; po łatkach LFM ~255 → ~293 t/s i Qwen MTP +6–8% w tych ścieżkach, przy tych samych tokenach.
+- [[2026-10-18-e1-kwanty-27b-kld|2026-10-16/18: E1 – nowe kwanty Qwen3.8-27B na 12–16 GB (KLD, zadania, prędkość)]] — KLD do prawdziwego Qwen BF16 na 5 korpusach: na 16 GB AP-Q3_K_XL (A3) ma te same bajty co UD-Q3_K_XL (U3), a KLD czat −12% i kod −23%; GSQ IQ3_S przegrywa (KLD-PL 1.77 × U3, MTP −3%); na 12 GB bramkę przechodzi tylko Swift IQ3_XXS-mtp (W3).
 - [[2026-10-16-backtest-regul-fabryki|2026-10-16: backtest reguł fabryki na historii (X1 z 15f)]] — Reguły fabryki v1 puszczone na prawdziwych danych (tylko CPU): R21 łapie 1/1 incydent (wiersz 15, 5.6 t/s) z 0 fałszywymi alarmami na 194 i 182 wierszach `spec_sweep.jsonl` (wcześniej 5/182 przez podciąg „lfm”); X1 przechodzi.
 - [[2026-10-16-kompresja-skal-offline|2026-10-16: bezstratna kompresja skal kwantów (offline, odrzucona)]] — Pomiar entropii skal na prawdziwych plikach: dla naszych K-quantów (UD-Q4_K_XL) bezstratna kompresja skal oszczędziłaby najwyżej 2.19% bajtów – za mało na nowy typ ggml; dla NVFP4 w GGUF −5.4% (kod CSF-like) do −8% (entropia), odłożone.
 - [[2026-10-16-bit-exact|2026-10-16: bitowo identyczna spekulacja (MTP == plain greedy) — OSIĄGNIĘTE]] — Na 7900 XTX z `LLAMA_SPEC_BITEXACT=1 GGML_HIP_BITEXACT_FA_ZERO_MASKED=1` (gałąź `batch-invariant`) greedy Qwen3.8-27B daje ten sam tekst z MTP i bez: md5 obu `74952fd5c918b0486194c21d3ee0576c` (2783 znaki, 0 różnic); pełna walidacja PASS; koszt: MTP 0% na krótkim kontekście, −9% przy ~27k, plain −2.8% (końcowy pomiar `365af3e5e`).

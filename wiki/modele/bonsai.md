@@ -2,7 +2,7 @@
 typ: model
 tags: [modele, kwanty, qwen]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/10-post-training.md:140,329-331,389; ~/qwen-opt/cloud/runs/3060/pre/bonsai-README.md:44,63-86; ~/KERNEL/product/research/09-chmura-3060.md:30-62,86-107,120-127,177-179,194-223
+zrodlo: ~/KERNEL/product/research/10-post-training.md:140,329-331,389; ~/qwen-opt/cloud/runs/3060/pre/bonsai-README.md:44,63-86; ~/KERNEL/product/research/09-chmura-3060.md:30-62,86-107,120-127,177-179,194-223; ~/KERNEL/product/research/16e-kwanty-kld.md:34-46,63
 status: aktualne
 ---
 # Ternary Bonsai 2 27B (PrismML)
@@ -15,6 +15,8 @@ status: aktualne
 - RTX 3060 (2026-10-16): prism PTQ1_0 **44.75 t/s** (6.8 GB VRAM), prism PQ2_0 36.45, upstream Q2_0 33.15, nasz fork Q2_0 **35.51 t/s** (+7.1% vs upstream, −21% vs PTQ1_0). Narzut Hadamarda w forku ~1.2 ms z 28 ms; prism ma fuzję FWHT+znaki+q8_1 tylko dla PTQ1_0.
 - KLD forka 0.000323 vs szum upstreamu 0.000206 – PASS. Po polsku robi błędy językowe.
 - Port naszych łatek na fork prism: 9 OK, 65 konfliktów – lepsza droga to repack i nasz fork.
+
+E1 (2026-10-18): KLD do Qwen BF16 wiki 0.352, PL 0.508 (najgorszy, PL/wiki 1.44); nadal najszybszy na 12 GB (PTQ1_0 Prism 44.9 t/s).
 
 ## Powiązane
 - [[modele/_hub|Modele]]

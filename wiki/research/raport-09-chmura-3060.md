@@ -2,7 +2,7 @@
 typ: research
 tags: [research, chmura, nvidia, sm-86, kwanty]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/09-chmura-3060.md:1-275
+zrodlo: ~/KERNEL/product/research/09-chmura-3060.md:1-275; ~/qwen-opt/cloud/results/3060-20261016/NOTE-quantkld-overwrite.txt:1-5
 status: aktualne
 ---
 # Raport 09 (3060): Saluki i Bonsai na RTX 3060
@@ -17,6 +17,8 @@ status: aktualne
 - `GGML_HIP_GATE_UP_Q8` szkodzi na i-quantach (+2.39% po wyłączeniu); KV f16 szybszy przy 8k (+3.7% / +5.7%); `-ub 1024`; eksperyment `GGML_CUDA_MMVQ_N1_WIDE` −12.6…−21% (odrzucony).
 - n-gram neutralny; port naszych łatek na fork prism: 9 OK, 65 konfliktów.
 Werdykt: teza raportu 08 potwierdzona co do rzędu wielkości dla modeli bez MTP – nie obiecywać ×1.5–2.
+
+Uwaga (2026-10-18): `results/3060-20261016/hw/*` i część `build/*` zostały nadpisane danymi innej instancji 3060 (120 W, EPYC 7662); oryginały stracone ([[lekcja-unikalny-katalog-wynikow]]). Liczby w tej notatce pochodzą z raportu 09.
 
 ## Powiązane
 - [[research/_hub|research]]

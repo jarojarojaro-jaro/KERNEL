@@ -2,7 +2,7 @@
 typ: model
 tags: [modele, kwanty, qwen]
 aktualizacja: 2026-10-16
-zrodlo: ~/qwen-opt/cloud/runs/3060/pre/saluki-README.md; ~/qwen-opt/cloud/runs/3060/pre/saluki-head.json; ~/KERNEL/product/research/10-post-training.md:45,52,139,337,389,453; ~/KERNEL/product/research/09-chmura-3060.md:21-29,41-82,109-127,202-223; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:52-55,91,154-157
+zrodlo: ~/qwen-opt/cloud/runs/3060/pre/saluki-README.md; ~/qwen-opt/cloud/runs/3060/pre/saluki-head.json; ~/KERNEL/product/research/10-post-training.md:45,52,139,337,389,453; ~/KERNEL/product/research/09-chmura-3060.md:21-29,41-82,109-127,202-223; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:52-55,91,154-157; ~/KERNEL/product/research/16e-kwanty-kld.md:34-46
 status: aktualne
 ---
 # Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)
@@ -16,6 +16,8 @@ status: aktualne
 - Po polsku pisze czysto; zalecany dla aplikacji PL na 12 GB.
 
 Uzupełnienie (raport 15e): nagłówek ma `general.name = "Qwen3.8-27B GSQ-RCO"` i `quantized_by = ISTA DASLab` – to plik z potoku ISTA z własną, niższą alokacją (~2.35 bpw); „strojenie pod tool calling” nieopisane. Graft MTP Kujiry (`Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF`, 8.35 GB, głowica Qwena w Q8_0): RTX 3080 12 GB 41.2 → 66.2 t/s (×1.61), VRAM 11.5 GB, ctx ≤ 32k – najtańszy zysk dla 12 GB, nasz pomiar 3060 (23.4 t/s bez MTP) go nie użył.
+
+E1 (2026-10-18): KLD do Qwen BF16 wiki 0.257, PL 0.320 (PL/wiki 1.24 – imatrix „angielski”); Swift IQ3_XXS-mtp daje tę samą prędkość z MTP przy KLD-PL 0.108.
 
 ## Powiązane
 - [[modele/_hub|Modele]]

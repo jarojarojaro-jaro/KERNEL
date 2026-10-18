@@ -63,18 +63,26 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (24)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (20)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (37)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (46)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (21)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (38)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (51)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (18)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (30)
+- [[research/_hub|research]] — Streszczenia raportów (31)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (24)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
 ## Ostatnio aktualizowane
 
+- 2026-10-18 [[raport-16e-kwanty-kld|Raport 16e: nowe kwanty 27B na 12–16 GB (E1 + E3 z 15e)]]
+- 2026-10-18 [[kld-po-polsku|KLD kwantów na polskim tekście (protokół 16e)]]
+- 2026-10-18 [[lekcja-zabicie-skryptu-nie-serwera|Zabicie skryptu nie zabija serwera]]
+- 2026-10-18 [[lekcja-unikalny-katalog-wynikow|Katalog wyników `<klasa>-<data>` nie jest unikalny: collect nadpisał dane raportu 09]]
+- 2026-10-18 [[lekcja-limit-mocy-hosta|Host Vast z kartą przyciętą do 120 W]]
+- 2026-10-18 [[lekcja-build-przed-wynajmem|Binarki budować lokalnie przed wynajmem]]
+- 2026-10-18 [[lekcja-bootstrap-numpy|`bootstrap.sh` bez `python3-numpy` psuje repack Bonsai]]
+- 2026-10-18 [[2026-10-18-e1-kwanty-27b-kld|2026-10-16/18: E1 – nowe kwanty Qwen3.8-27B na 12–16 GB (KLD, zadania, prędkość)]]
 - 2026-10-16 [[wsl2-rocm|ROCm w WSL2 (tech preview 10.1)]]
 - 2026-10-16 [[therock|TheRock: system budowania i wydań ROCm]]
 - 2026-10-16 [[rocr|ROCr (HSA runtime) i KFD]]
@@ -82,14 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-16 [[rocm-vs-vulkan|ROCm czy Vulkan na RX 7900 XTX]]
 - 2026-10-16 [[rocm-stos|Stos ROCm na naszym serwerze]]
 - 2026-10-16 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
-- 2026-10-16 [[rdna3-gfx1100|RDNA3 / gfx1100: architektura, pod którą piszemy]]
-- 2026-10-16 [[pm4|PM4: bufory poleceń procesora poleceń GPU]]
-- 2026-10-16 [[hip|HIP: jak piszemy kernele pod gfx1100]]
-- 2026-10-16 [[hip-na-windows|HIP na Windows: PAL zamiast ROCr]]
-- 2026-10-16 [[hip-graph-narzut|Narzut grafu HIP: ~3 µs na kernel]]
-- 2026-10-16 [[hip-dyn-data-prefetch|HIP DynDataPrefetch (prefetch L2 przed kernelem)]]
-- 2026-10-16 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
-- 2026-10-16 [[amd-smi|AMD SMI (amd-smi)]]
 
-Razem 363 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
+Razem 371 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

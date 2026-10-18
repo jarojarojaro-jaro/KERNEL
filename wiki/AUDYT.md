@@ -2685,6 +2685,9 @@ Automatyczna kontrola 44 notatek, których `zrodlo` zaczyna się od raportu 14/1
 ## Aktualizacja: 12 §13, 16c, 16d, 16h, 16i (2026-10-16)
 Liczby w nowych i zmienionych notatkach przepisane ręcznie z wierszy podanych w `zrodlo` (raporty 12, 14 §13, 16c, 16d, 16h, 16i; `/tmp/bxv/summary.txt:71-103` dla prędkości bit-exact). Rozbieżność źródeł: Magnitude 9B copy 64k 175.8 t/s (16d, mediana) vs 174.8 (16i, suma żądań) – w notatkach obie z opisem; za kanoniczne przyjęto 16d (decyzja Main). Pominięte celowo (repo publiczne): adres IP hosta z 16c §8, ID instancji, kredyt Vast. Błędnych: 0.
 
+## Aktualizacja: 16e i incydent nadpisania (2026-10-18)
+Liczby z 16e przepisane z wierszy w `zrodlo` (raport 16e i `quantkld-20261016/*/speed.md`, `kld-all/kld.md`); błędnych 0. **Uwaga:** `results/3060-20261016/build/times.jsonl` (źródło wiersza [[nvidia/cuda-stos]] wyżej) i `hw/*` zostały 2026-10-16 nadpisane danymi innej instancji – weryfikacja z audytu 2026-10-16 była przed nadpisaniem, dziś pliku nie da się użyć ponownie ([[lekcja-unikalny-katalog-wynikow]]).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

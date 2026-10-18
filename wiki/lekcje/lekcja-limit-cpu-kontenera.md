@@ -2,7 +2,7 @@
 typ: lekcja
 tags: [lekcje, chmura, cpu, watki]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/09-chmura-5060ti.md:16,19; ~/KERNEL/product/research/09-chmura-3090.md:18; ~/KERNEL/product/research/11-mtp-pl-pilot.md:171-174; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:173
+zrodlo: ~/KERNEL/product/research/09-chmura-5060ti.md:16,19; ~/KERNEL/product/research/09-chmura-3090.md:18; ~/KERNEL/product/research/11-mtp-pl-pilot.md:171-174; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:173; ~/KERNEL/product/research/16e-kwanty-kld.md:305
 status: aktualne
 ---
 # Kontener widzi wszystkie rdzenie hosta, a ma limit cgroup
@@ -15,6 +15,8 @@ status: aktualne
 Reguła: na wynajętej maszynie odczytać kwotę cgroup (`/sys/fs/cgroup/cpu.max`) i ustawić `-t`/`-tb` według niej, nie według `nproc`. To samo dotyczy produktu w kontenerach i WSL.
 
 Hosty z cgroup v1 nie mają `cpu.max`; kwota jest w `cpu/cpu.cfs_quota_us` (5060 Ti w 16d: 768000/100000 = 7.68 przy `nproc` 64); bootstrap ma fallback (`inst/bootstrap.sh:55-58`).
+
+E1 (2026-10-18): host 3060 B z cgroup v1 – bez `cpu.max`, `nproc` = 80; po odczycie `cfs_quota_us` w `e2.sh` → `-t 9`.
 
 ## Powiązane
 - [[lekcje/_hub|lekcje]]

@@ -41,6 +41,9 @@ Nowe: [[2026-10-16-magnitude-vs-fork]] (z danymi 9B na 5060 Ti), [[2026-10-16-ma
 ## [2026-10-16] update | Raport 12 §13 końcowy (`365af3e5e`) + lekcja o awarii omp
 [[2026-10-16-bit-exact]] (run 4 końcowy: domyślnie = produkcja; bitexact MTP 0% krótki / −9% ~27k, plain −2.8%, pp5@32k −11%), [[raport-12-bit-exact]], [[batch-invariant]], [[lekcja-bit-exact-attention]] (lista źródeł rozbieżności), [[otwarte-decyzje-produktu]] (opt-in „identyczne odpowiedzi” czeka na użytkownika). Nowa: [[lekcja-uslugi-poza-omp]].
 
+## [2026-10-18] ingest | Raport 16e (kwanty 27B, KLD) + incydent danych + Salad
+Nowe: [[2026-10-18-e1-kwanty-27b-kld]], [[raport-16e-kwanty-kld]], [[kld-po-polsku]], lekcje [[lekcja-unikalny-katalog-wynikow]], [[lekcja-build-przed-wynajmem]], [[lekcja-bootstrap-numpy]], [[lekcja-zabicie-skryptu-nie-serwera]], [[lekcja-limit-mocy-hosta]]. Zaktualizowane: [[swift-1-5]], [[rtx-3060]], [[rtx-5060-ti]], [[kwanty-gguf]], [[saluki]], [[bonsai]], [[raport-15e-kwantyzacja-nowa]], [[runpod]], [[raport-09-chmura-3060]] (dane nadpisane), [[lekcja-limit-cpu-kontenera]], [[lekcja-pkill-wlasna-powloka]], [[otwarte-decyzje-produktu]] (16 GB A3, 12 GB IQ3_XXS-mtp – rekomendacje, bez decyzji), [[salad]], [[firma-salad]], [[radeony-do-wynajecia]] (AMD w Salad niedostępne, brak XTX do wynajęcia).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

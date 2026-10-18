@@ -2,7 +2,7 @@
 typ: model
 tags: [modele, qwen, kwanty, licencje]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:33-40,130-150,238-246
+zrodlo: ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:33-40,130-150,238-246; ~/KERNEL/product/research/16e-kwanty-kld.md:48-59,162-176; ~/qwen-opt/cloud/results/quantkld-20261016/tasks-all/tasks-report.json
 status: aktualne
 ---
 # Swift 1.5 (UkisAI): Qwen3.8-27B z krótszym myśleniem
@@ -15,6 +15,8 @@ status: aktualne
 - KLD do **własnego** BF16 Swifta: 0.190 / 0.135 / 0.098 / 0.051 – nieporównywalne z ISTA (inna referencja).
 - Deklaracja „9.18× szybciej” to jedno demo; karta BF16 mówi 1.95× (Amdahl przy −58.5% tokenów ≤ 2.4×).
 - **Licencja Swift Open License v1.0:** komercyjnie tylko przy przychodzie < US$1M rocznie (§5), automatyczne wygaśnięcie przy naruszeniu (§12) – ryzyko dla B2B; decyzja otwarta.
+
+E1 (2026-10-18): KLD Swift-Q8 do Qwen-Q8 0.0082 wiki / 0.0019 PL (podłoga Q8 0.0038/0.0006) – na tekście ≈ Qwen; akceptacja MTP z głowicą Qwena = ISTA (0.55 vs 0.53/0.55); zadania −19% tokenów przez rzadsze zapętlenia (mediana bez zmian), W4 pass 1.00 i 0 ucięć. W3 (IQ3_XXS-mtp) jedyny przechodzi bramkę 12 GB ([[2026-10-18-e1-kwanty-27b-kld]]).
 
 ## Powiązane
 - [[modele/_hub|Modele]]

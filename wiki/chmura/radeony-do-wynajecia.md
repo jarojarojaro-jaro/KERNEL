@@ -2,7 +2,7 @@
 typ: chmura
 tags: [chmura, amd, bare-metal]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:22-28,71-76,130-141,258-260,289-292,403
+zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:22-28,71-76,130-141,258-260,289-292,403; komunikat Main do WikiIngest 2026-10-18 (portal SaladCloud, 2026-10-18)
 status: aktualne
 ---
 # Gdzie wynająć Radeona, Arca i Maca (Hostkey, GigaGPU, Scaleway, hyperscalerzy)
@@ -19,6 +19,8 @@ status: aktualne
 | SaladCloud | 5 klas Radeonów | kontener WSL2 | 0.04–0.17 $/h |
 
 Wnioski raportu 05: AMD i Intela kupujemy (RX 9070 XT €694, Arc B580 €270), bo podaż w chmurze jest punktowa (jeden host w NL, jeden w UK, Salad) i może zniknąć; Hostkey R9700 jako „przelew” na równoległe kampanie RDNA4 (zakup 9070 XT zwraca się po ~1,470 h wynajmu).
+
+Stan 2026-10-18: RX 7900 XTX nie da się wynająć ani na Vast, ani na RunPod, a klasy AMD w Salad są niedostępne dla naszej organizacji ([[salad]]).
 
 ## Powiązane
 - [[chmura/_hub|Chmura]]

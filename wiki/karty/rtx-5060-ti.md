@@ -2,7 +2,7 @@
 typ: karta
 tags: [karty, nvidia, sm-120]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:36-46,105; ~/KERNEL/product/PLAN.md:287; ~/KERNEL/product/research/09-chmura-5060ti.md:1-20,59-89,119-124,166-186,191; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:17,104,305
+zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:36-46,105; ~/KERNEL/product/PLAN.md:287; ~/KERNEL/product/research/09-chmura-5060ti.md:1-20,59-89,119-124,166-186,191; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:17,104,305; ~/qwen-opt/cloud/results/quantkld-20261016/5060ti/speed.md:3-5
 status: aktualne
 ---
 # NVIDIA RTX 5060 Ti 16 GB (lokalnie + wynajem)
@@ -16,6 +16,8 @@ status: aktualne
 - Profil Blackwell: `GATE_UP_Q8=0`, `Q8_IDS=0`; `GGML_CUDA_MMVQ_N1_ROWS=2` tu szkodzi (LFM −2.7%).
 - Na 16 GB: nie używać upstreamowego `-fit on` z MTP (7.7 t/s); LFM Q5_K_M się nie mieści (offload −43%), najlepszy LFM to oficjalny QAD-Q4_0 (226.8 t/s, md5 = upstream).
 - NVFP4: prefill +65–81%, decode bez zysku. Koszt instancji ≈ $1.05.
+
+E1 (2026-10-18, ctx 32k): U3 MTP 51.7 vs I4/W4 50.0 t/s, plain 29.1 vs 30.3; U3 wygrywa z MTP wyższą akceptacją (0.59 vs 0.55).
 
 ## Powiązane
 - [[karty/_hub|Karty]]

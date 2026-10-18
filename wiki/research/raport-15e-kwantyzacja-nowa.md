@@ -2,7 +2,7 @@
 typ: research
 tags: [research, kwanty, nvfp4, gsq]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:1-62,273-287
+zrodlo: ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:1-62,273-287; ~/KERNEL/product/research/16e-kwanty-kld.md:267-292
 status: aktualne
 ---
 # Raport 15e: nowe formaty niskobitowe dla 27B na 12–16 GB
@@ -19,6 +19,8 @@ Raport 2026-10-16, bez GPU, trzy eksperymenty CPU.
 - Kompresja skal K-quantów odrzucona (sufit 2.19%).
 - 16 GB: zostać przy UD-Q3_K_XL albo AP-Q3_K_XL (KLD held-out −19.5% przy tych samych bajtach).
 Ranking: 1. MTP na 2-bitowych 27B, 2. AP zamiast UD, 3. Swift jako „krótkie myślenie” (warunkowo licencja), 4. naprawa kwantyzatora NVFP4. E1 ≈ $5–8 albo ≈ $1.5–2 + CPU (wymaga zgody).
+
+Wynik E1/E3: [[raport-16e-kwanty-kld]] – H1 i H3 potwierdzone, H2 na granicy, kill GSQ 16 GB zadziałał, E3 zamknięte.
 
 ## Powiązane
 - [[research/_hub|research]]
