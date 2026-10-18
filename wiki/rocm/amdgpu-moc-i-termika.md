@@ -1,8 +1,8 @@
 ---
 typ: rocm
 tags: [rocm, amdgpu, moc]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:107-126,146,170; ~/KERNEL/qwen-opt/README.md:32-33
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:107-126,146,170; ~/KERNEL/qwen-opt/README.md:32-33; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:76-81
 status: aktualne
 ---
 # Sterownik amdgpu: limit mocy, termika, usypianie
@@ -20,6 +20,8 @@ Ustawienia produkcyjne (`gpu-powercap.service`, root): limit 285 W i `power/cont
 Runtime suspend (BACO, 2026-10-10): bez monitora amdgpu usypia kartę po 5 s bezczynności i przenosi VRAM do GTT; model działa wtedy przez PCIe: 4.4 zamiast 92 t/s. Bez roota `run-llm.sh` trzyma kontekst KFD (`gpu-keepawake`). Po naprawie: 94.1 / 90.6 / 94.7 t/s także po 20 s bezczynności.
 
 Limit mocy jako optymalizacja (−20% mocy za ≤5% t/s) odłożony na prośbę użytkownika.
+
+Objaw limitu 285 W przy optymalizacji kerneli: [[lekcja-limit-mocy-285w]] (2026-10-18).
 
 ## Powiązane
 - [[rocm/_hub|ROCm]]

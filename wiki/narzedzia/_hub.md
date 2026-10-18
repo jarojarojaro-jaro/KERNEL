@@ -14,8 +14,9 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (19)
+## Notatki (20)
 
+- [[att-gfx1100|ATT (thread trace) na gfx1100]] — Śledzenie instrukcji fali (ATT) działa na RX 7900 XTX w ROCm 10.0: `rocprofv3 --att --att-target-cu 1 --att-simd-select 0 --kernel-include-regex … --kernel-iteration-range …` z `GGML_HIP_PM4=0`; skrypt `att_model.sh` i parser `attsum.py` w `~/wt/lfmmoe-prof/` (2026-10-18).
 - [[kld-canary|Bramka KLD i kanarki (kld_gate.py, kld_canary.sh, perturb_gguf.py)]] — Trzy narzędzia: `kld_gate.py` porównuje dwa logi `llama-perplexity --kl-divergence`, `perturb_gguf.py` robi celowo uszkodzone kopie GGUF, a `kld_canary.sh` sprawdza, że bramka łapie prawdziwe szkody.
 - [[det-probe|det_probe.py (sonda determinizmu)]] — Sprawdza, które zdarzenie serwera psuje powtarzalność greedy: wysyła to samo zapytanie bez cache przed i po innych zapytaniach i pokazuje, gdzie wyjścia się rozjeżdżają.
 - [[fabryka-cli|Fabryka v1: CLI `factory`]] — `~/qwen-opt/factory/` (Python stdlib, 2394 linie `fk/` + CLI, 36 reguł w 1141 liniach, 57 testów OK w 29.5 s na CPU) zamraża kartę twierdzenia przed pomiarem, mierzy kaskadą G0–G5 i zapisuje werdykt do `ledger.jsonl` z łańcuchem sha256; zbudowane 2026-10-16 bez GPU.

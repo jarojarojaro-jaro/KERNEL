@@ -50,6 +50,9 @@ Nowe: [[2026-10-18-e1-kwanty-27b-kld]], [[raport-16e-kwanty-kld]], [[kld-po-pols
 ## [2026-10-18] update | Źródło bit-exact: raport 12 §13 kanoniczny
 `/tmp/bx*` zniknęły przy restarcie ~18:53 UTC (przed archiwum); poprawione [[lekcja-tmp-po-restarcie]], `zrodlo` notatek bit-exact, [[AUDYT]].
 
+## [2026-10-18] ingest | Raport 16g (pasmo MoE LFM)
+Nowe: [[2026-10-18-lfm-moe-pasmo]], [[2026-10-18-lfm-moe-negatywne]], [[mmvq-moe-gate-up-blok]], [[att-gfx1100]], [[lekcja-sufit-wzorca]], [[lekcja-limit-mocy-285w]], [[raport-16g-lfm-moe-pasmo]]. Zaktualizowane: [[lfm2-5-24b-a2b]], [[lfm2-5-uncensored]], [[seria-amd-opt]] (kandydat 0071), [[otwarte-decyzje-produktu]] (scalenie 0071 – decyzja użytkownika), [[amdgpu-moc-i-termika]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

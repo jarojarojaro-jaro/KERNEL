@@ -2,7 +2,7 @@
 typ: produkt
 tags: [produkt, decyzje-otwarte, app]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:334-343,340-342; ~/KERNEL/product/research/16e-kwanty-kld.md:282-292
+zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:334-343,340-342; ~/KERNEL/product/research/16e-kwanty-kld.md:282-292; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:10
 status: aktualne
 ---
 # Otwarte decyzje produktu (po prototypie aplikacji)
@@ -26,6 +26,7 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 | tryb „identyczne odpowiedzi” | gałąź `batch-invariant` @ `365af3e5e`, przełącznik wyłączony = produkcja | wdrożyć z `LLAMA_SPEC_BITEXACT=1` jako opt-in? koszt 0% krótki kontekst, −9% przy ~27k ([[2026-10-16-bit-exact]], raport 12) |
 | model 16 GB | UD-Q3_K_XL (U3) | podmienić na AP-Q3_K_XL po bramce (md5, `kld_gate.py` czat PL, ABBA) – rekomendacja 16e, KLD czat −12%, kod −23% ([[2026-10-18-e1-kwanty-27b-kld]]) |
 | model 12 GB | Saluki/Bonsai | IQ3_XXS-mtp: Swift W3 (licencja) albo ISTA (Apache, do zmierzenia); KLD-PL 0.108 vs Saluki 0.320 |
+| łatka 0071 `GGML_HIP_MOE_GU_BLOCK` | gałąź `opt-lfmmoe` @ `7c5b2a116`, poza produkcją | scalić z wyłącznikiem, domyślnie wł.? bitowa, LFM +0.33% (szum), Uncensored +1.39% ([[2026-10-18-lfm-moe-pasmo]]) |
 
 Decyzje już podjęte są w folderze decyzji (np. open core, czat na web UI llama.cpp, konto na początku jako pomysł użytkownika).
 

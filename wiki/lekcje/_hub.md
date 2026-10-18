@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (55)
+## Notatki (57)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]] — Restarty serwera 2026-10-18 czyszczą `/tmp`: `/tmp/bxv/summary.txt` i `/tmp/bxd/*` (walidacja bit-exact) zniknęły już przy wcześniejszym restarcie ~18:53 UTC, przed archiwizacją; przed restartem ~20:27 UTC (overdrive) resztę zarchiwizowano do `~/qwen-opt/tmp-archive-20261018/` (63 MB: coupled, lookup, pm4pdl, lfmmoe, qa).
@@ -50,6 +50,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-mtp-juz-kopiuje|MTP już kopiuje: zmierz P(MTP | lookup), zanim dołożysz drafter z kontekstu]] — Na 69 207 pozycjach z prawdziwymi łańcuchami MTP P(draft MTP trafia | lookup trafia) = 0.968 wobec 0.765 bazowo, więc lookup z kontekstu dokłada głównie ogon za pozycją 4, a nadpisywanie draftów MTP lookupem to strata.
 - [[lekcja-sufit-bloku|Na kopii wygrywa sufit bloku, nie kernel]] — Magnitude bije nas na code-edit (157.0 vs 105.7 t/s, pad.cu, 3090) tylko dlatego, że jedno przejście wag daje im 8 tokenów, a nam 5: obie strony przyjmują prawie wszystko (894/897 vs 816/828), a ich krok jest wolniejszy (50.2 vs 46.5 ms) (2026-10-16).
 - [[lekcja-nadpisanie-dzialajacego-skryptu|Nadpisanie działającego skryptu psuje pomiar (2 incydenty)]] — Powłoka czyta skrypt w trakcie wykonania po przesunięciu bajtowym, więc zmiana pliku, który właśnie działa, zmienia dalsze polecenia; zdarzyło się to dwa razy 2026-10-16.
+- [[lekcja-sufit-wzorca|Najpierw sufit wzorca dostępu, potem optymalizacja kernela]] — Gate+up ekspertów LFM czytał 17.30 MB w 23.6–24.2 µs (673 GB/s), a sam odczyt tych samych bajtów tym samym wzorcem i siatką (2 wiersze gate + 2 up po 1408 B na falę, 3072 fale) bez żadnej arytmetyki trwał 22.4–24.4 µs – arytmetyka q8_1 ani gather nie były problemem (2026-10-18).
 - [[lekcja-md5-wzgledem-upstreamu|Nasze „bit w bit” było zawsze względem naszego poprzedniego buildu]] — Kampania NVIDIA pokazała, że greedy md5 forka różni się od upstreamu w trybie plain także z 31 przełącznikami = 0, przez łatki bez przełącznika: MMVQ multi-kolumna 0001/0002 i fuzję prologu GDN 0013; nasza bramka „bitowo identyczne” zawsze porównywała z poprzednim buildem forka, nie z upstreamem.
 - [[lekcja-obciazenie-cpu|Obciążenie CPU psuje pomiar]] — Równoległe obciążenie CPU (np. kompilacja) zafałszowało pomiar `-bs`, który trzeba było powtórzyć; pomiary GPU robimy pod `quiet.lock` w osobnym oknie.
 - [[lekcja-pdl-sm120|PDL na Blackwell: kernel musi czekać na poprzednika]] — Na sm_120 llama.cpp startuje kernele wcześniej (PDL); nowy kernel bez `ggml_cuda_pdl_sync` może czytać dane, zanim poprzedni skończy.
@@ -70,5 +71,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-5060ti-bezczynna|Wynajęta 5060 Ti stała bezczynnie]] — Na 5060 Ti kompilacja skończyła się szybko, ale pomiary nie ruszyły, bo agent dopisywał skrypty; płatna karta stała z 0% GPU (2026-10-16 ok. 01:24 UTC).
 - [[lekcja-zabicie-skryptu-nie-serwera|Zabicie skryptu nie zabija serwera]] — Po zabiciu skryptu zadań osierocony `llama-server` (Saluki, `-np 20`) trzymał 18 GB na A40, przez co dwa kolejne serwery zadań (U3, B0) dostały OOM (E1, 2026-10-16).
 - [[lekcja-zombie-serwery|Zombie serwery i współdzielony VRAM]] — DFlash wisiał na SIGTERM, a wynik MTP spadł do 5.6 t/s; serwer agenta K4 na porcie 8097 trzymał VRAM.
+- [[lekcja-limit-mocy-285w|Zysk kernela ≠ zysk tokena przy limicie mocy 285 W]] — Szybszy gate+up LFM (−0.5 µs/wywołanie w trybie szybkim, −2.2 µs w wolnym) spowolnił inne kernele (out_proj 5.48 → 5.76–5.84 µs × 39 wywołań), więc LFM zyskał tylko +0.33%; ten sam objaw dały 3 wiersze w rundzie 4 (down 12.92 → 13.20, out_proj 5.44 → 5.84, FA 8.88 → 9.48 µs) (2026-10-18).
 - [[lekcja-baseline-wlasnego-silnika|„Nx szybciej” bywa liczone względem własnego albo zimnego silnika]] — Posty Lucebox podają przyspieszenia względem własnego silnika albo zimnego llama.cpp: KVFlash ma pełny prefill 32K 47.2 s (694 t/s) wobec 1168 t/s llama.cpp na tej samej 3090, a PFlash v1 porównywał się do „~257 s” na zimno zamiast 169.3 s na ciepło.
 <!-- AUTO:END -->

@@ -61,35 +61,35 @@ Audyt liczb: [[AUDYT]].
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (15)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
-- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (24)
+- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (25)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (21)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (39)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (55)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (19)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (41)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (57)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (20)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (32)
+- [[research/_hub|research]] — Streszczenia raportów (33)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (24)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
 ## Ostatnio aktualizowane
 
+- 2026-10-18 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
 - 2026-10-18 [[raport-16j-magnitude-vulkan-xtx|Raport 16j: Magnitude przez Vulkan na 7900 XTX (E-X5)]]
 - 2026-10-18 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
+- 2026-10-18 [[raport-16g-lfm-moe-pasmo|Raport 16g: pasmo kerneli MoE LFM2.5 na XTX]]
 - 2026-10-18 [[raport-16e-kwanty-kld|Raport 16e: nowe kwanty 27B na 12–16 GB (E1 + E3 z 15e)]]
 - 2026-10-18 [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]]
 - 2026-10-18 [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]]
 - 2026-10-18 [[produkt-ryzyka|Największe ryzyka]]
 - 2026-10-18 [[app-landing|Strona (landing) PL/EN]]
 - 2026-10-18 [[landing-qa|QA landingu: `app/landing/scripts/qa/`]]
+- 2026-10-18 [[att-gfx1100|ATT (thread trace) na gfx1100]]
+- 2026-10-18 [[lfm2-5-uncensored|LFM2.5-24B-A2B-Uncensored (AtomicChat, AD-Q5_K_M)]]
+- 2026-10-18 [[lfm2-5-24b-a2b|LFM2.5-24B-A2B (Liquid AI)]]
 - 2026-10-18 [[kld-po-polsku|KLD kwantów na polskim tekście (protokół 16e)]]
 - 2026-10-18 [[bramka-kld-kanarki|Bramka KLD z kanarkami]]
-- 2026-10-18 [[firma-magnitude|Magnitude (magnitudedev): najbliższy konkurent]]
-- 2026-10-18 [[lekcja-zabicie-skryptu-nie-serwera|Zabicie skryptu nie zabija serwera]]
-- 2026-10-18 [[lekcja-wentylator-rdna3|Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive]]
-- 2026-10-18 [[lekcja-unikalny-katalog-wynikow|Katalog wyników `<klasa>-<data>` nie jest unikalny: collect nadpisał dane raportu 09]]
-- 2026-10-18 [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]]
 
-Razem 378 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
+Razem 385 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

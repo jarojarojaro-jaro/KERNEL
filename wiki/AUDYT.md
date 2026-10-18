@@ -2691,6 +2691,9 @@ Liczby z 16e przepisane z wierszy w `zrodlo` (raport 16e i `quantkld-20261016/*/
 ## Aktualizacja: 16c §9, 16j, landing, chłodzenie (2026-10-18)
 Liczby przepisane z wierszy w `zrodlo` (16c:191-252, 16j:7-110, `app/REPORT.md:238-260`, `REDESIGN.md:154-169`, `scripts/qa/README.md`); juror r7 7/7/6 i „wrapper omp ukrył ostrzeżenia” tylko w sekcji „Do bazy wiedzy” LandingWow (transkrypt, wiersz 1224) – w REDESIGN.md brak wiersza r7. Temperatury przed/po restarcie z komunikatu Main; odczyt pod obciążeniem (3402 RPM, 71/78 °C) z sysfs przez WikiIngest. Źródła `/tmp/bxv/summary.txt` i `/tmp/bxd/*` utracone przy restarcie 2026-10-18 ~18:53 UTC, przed archiwizacją (nie ma ich w `tmp-archive-20261018`); kanoniczne źródło: raport 12 §13; liczby z nich sprawdzone 2026-10-16, przed utratą. Błędnych: 0.
 
+## Aktualizacja: 16g (2026-10-18)
+Liczby w 7 nowych i 5 zmienionych notatkach przepisane z wierszy 16g podanych w `zrodlo` (tabele §1–§3, §5) i `lfm-decode-round4.md:154-159` (objaw 285 W z rundy 4). `lekcja-limit-mocy-285w` ma `status: do-sprawdzenia`, bo przyczyna (limit mocy) to hipoteza. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

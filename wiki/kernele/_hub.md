@@ -14,7 +14,7 @@ Klasy poprawności: *bitowo identyczne* (te same logity / greedy md5) albo *zmia
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (24)
+## Notatki (25)
 
 - [[argmax-dpp|Argmax z DPP (0026)]] — Argmax po słowniku w drafcie MTP: 16 ładowań w locie i wymiana między lane'ami przez DPP zamiast pamięci LDS; 16.8 → 4.3 µs na wywołanie.
 - [[cache-q8-1|Cache q8_1 aktywacji i „producenci” q8_1]] — MMVQ potrzebuje wejścia skwantyzowanego do q8_1; zamiast osobnego kernela kwantyzacji przed każdym matvec, kwantyzujemy raz i najlepiej już w kernelu, który to wejście produkuje.
@@ -30,6 +30,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[gdn-replay|GDN z opóźnieniem: cofanie przez przeliczenie (S4)]] — Zamiast zapisywać snapshot stanu rekurencyjnego po każdym tokenie weryfikacji, cache trzyma zatwierdzony stan i bufory wierszy oczekujących, a następna weryfikacja przelicza przyjęte wiersze.
 - [[conv-lag|Historia conv z opóźnieniem (T1, łatka 0038)]] — Stan konwolucji Qwena trzymany jak stan GDN w S4: okno wokół wierszy oczekujących zamiast snapshotów, co usunęło „klif” przy drafcie ≥ 8 tokenów.
 - [[mmvq-n1-wiersze|MMVQ 1-kolumnowe: 2 wiersze na blok (0052, 0064)]] — Strojenie zwykłego matvec (dekodowanie bez spekulacji) pod gfx1100: blok liczy 2 wiersze zamiast jednego, najpierw dla K-quantów, potem także dla Q8_0.
+- [[mmvq-moe-gate-up-blok|MMVQ MoE gate+up: blok jednej grupy q8_1 (`GGML_HIP_MOE_GU_BLOCK`)]] — `mul_mat_vec_q_moe_gate_up_q5k<8>`: blok 16 fal liczy 32 wiersze jednej grupy q8_1 (każdy wiersz jak kernel 2-wierszowy), wagi następnej iteracji ładuje przed bieżącym iloczynem, a ogon q8_1 idzie przez LDS i jedną barierę zamiast fence + atomika ticketu; bitowo identyczny z produkcją.
 - [[mmvq-multikolumnowe|MMVQ wielokolumnowe (weryfikacja spekulacji)]] — Kernel matvec, który przy weryfikacji 2–8 tokenów rozpakowuje wagi raz i mnoży je przez wszystkie kolumny; podstawa całego przyspieszenia spekulacji MTP/DFlash na RX 7900 XTX.
 - [[para-mmvq|Para MMVQ jedną siatką (0024)]] — Dwa MUL_MAT tego samego typu na tym samym wejściu (ffn up/gate, GDN qkv/z) liczone jednym uruchomieniem kernela zamiast dwóch.
 - [[prefill-mmq-fa|Prefill: kafle MMQ i FA (K5 + T3, 0040–0045)]] — Runda prefillu z 2026-10-14: lepszy wybór kafla MMQ, kafel FA bez spilli z bitową kolejnością chunków i lżejsza warstwa MTP dla wierszy promptu.

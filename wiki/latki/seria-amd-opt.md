@@ -1,8 +1,8 @@
 ---
 typ: latka
 tags: [latki, amd-opt, historia]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/patches/llama.cpp-amd-opt/ (70 plików); ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:53,155,157-172; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5; ~/KERNEL/qwen-opt/README.md:1-40; ~/KERNEL/product/research/16h-fabryka-v1.md:51-58
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/qwen-opt/patches/llama.cpp-amd-opt/ (70 plików); ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:53,155,157-172; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5; ~/KERNEL/qwen-opt/README.md:1-40; ~/KERNEL/product/research/16h-fabryka-v1.md:51-58; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:5-10
 status: aktualne
 ---
 # Seria łatek amd-opt (0001–0070)
@@ -27,6 +27,8 @@ status: aktualne
 Model docelowy (raport 07): Qwen 0001–0047 (bez 5 łatek Vulkan), LFM 0048–0064, oba 0065–0069, Qwen prefill 0070. Odtworzenie: `git am patches/llama.cpp-amd-opt/*.patch` na `e60eff95f` (README; uwaga: README wciąż mówi o 59 zmianach).
 
 Łatka 0070 (2026-10-16): karta fabryki `2026-10-17-mmq-epi-0070` zarejestrowana (ledger seq 1), czeka na ~20 min GPU; R29 = build CUDA na `amd-opt` (naprawione w `cuda-compat` `57e0bdfe4`); zob. [[fabryka-cli]].
+
+Kandydat 0071 (2026-10-18): `GGML_HIP_MOE_GU_BLOCK`, gałąź `opt-lfmmoe` @ `7c5b2a116`, bitowy, LFM +0.33% / Uncensored +1.39%; **scalenie do `amd-opt` to otwarta decyzja użytkownika** ([[mmvq-moe-gate-up-blok]], [[otwarte-decyzje-produktu]]).
 
 ## Powiązane
 - [[latki/_hub|Łatki]]
