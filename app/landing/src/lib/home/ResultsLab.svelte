@@ -102,7 +102,6 @@
 						value={decode(v)}
 						replay={rep}
 						max={barDial.max}
-						redline={barDial.redline}
 						label={variantLabel(run, k)[lang]}
 						cold={k !== run.ours}
 						{lang}

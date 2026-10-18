@@ -116,7 +116,7 @@ const raw = {
 				title: 'Każda para zmierzona tym samym skryptem.',
 				lede: 'Typowa aplikacja i nasz silnik, ta sama karta i ten sam plik modelu.',
 				link: 'Wszystkie wyniki i szczegóły',
-				unit: 't/s · typowa aplikacja → nasz silnik'
+				unit: 't/s · typowa aplikacja → nasz silnik · paski: przyspieszenie (typowa = 1×)'
 			},
 			title: 'Wybierz kartę.|Zobacz różnicę.',
 			gpu: 'Karta graficzna',
@@ -367,7 +367,7 @@ const raw = {
 				title: 'Every pair measured with the same script.',
 				lede: 'The typical app and our engine, on the same card with the same model file.',
 				link: 'All results and details',
-				unit: 't/s · typical app → our engine'
+				unit: 't/s · typical app → our engine · bars: speed-up (typical = 1×)'
 			},
 			title: 'Pick a card.|See the difference.',
 			gpu: 'Graphics card',

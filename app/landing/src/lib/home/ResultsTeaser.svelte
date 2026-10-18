@@ -18,6 +18,8 @@
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].results.teaser);
 	const rows = HERO_PAIRS.map((p) => ({ ...p, a: p.before.decode!, b: p.ours.decode! }));
+	/** One shared speed-up scale: steel = the typical app (1×), heat = our engine (its ×), so a 2,0× bar is twice the steel. */
+	const maxR = Math.max(...rows.map((r) => r.b.v / r.a.v));
 	/** One source note for the whole table: each row's script and conditions. */
 	const tableNote = $derived(rows.map((r) => `${MODEL_STYLE[r.run.model].short} · ${r.card.name} ${r.run.quant}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — '))
 </script>
@@ -33,7 +35,7 @@
 			<p class="unit">{c.unit} <SourceTip {lang} src={rows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note={tableNote} /></p>
 			<ul class="rows" role="list">
 				{#each rows as r, i (r.id)}
-					<li class="row" style="--a:{r.a.v / r.b.v}; --d:{i * 70}ms; --th:{heatOf(r.b.v / r.a.v)}">
+					<li class="row" style="--a:{1 / maxR}; --b:{r.b.v / r.a.v / maxR}; --d:{i * 70}ms; --th:{heatOf(r.b.v / r.a.v)}">
 						<span class="who">
 							<ModelMark model={r.run.model} size="0.75em" />
 							<b>{MODEL_STYLE[r.run.model].short}</b>
@@ -153,6 +155,7 @@
 	}
 	/* heat by the size of the speed-up (heatOf): 1,4× glows less than 2,0× */
 	.bar-b {
+		transform: scaleX(var(--b));
 		background: var(--heat-ramp-hot);
 		filter: saturate(calc(0.3 + 0.7 * var(--th))) brightness(calc(0.72 + 0.28 * var(--th)));
 		box-shadow: 0 0 calc(4px + 12px * var(--th)) rgb(255 122 26 / calc(0.2 + 0.4 * var(--th)));

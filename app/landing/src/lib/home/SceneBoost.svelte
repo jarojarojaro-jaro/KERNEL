@@ -345,7 +345,7 @@
 		font-size: var(--fs-lg);
 	}
 	.total > b {
-		font-size: clamp(2rem, 1rem + 2.4vw, 3.2rem);
+		font-size: clamp(1.5rem, 1rem + 1vw, 2.1rem);
 	}
 	.total .tt {
 		font-family: var(--font-mono);

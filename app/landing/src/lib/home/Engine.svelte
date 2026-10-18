@@ -320,8 +320,6 @@
 		list-style: none;
 		display: grid;
 		gap: 0.5rem;
-		transform: rotateX(10deg) rotateY(-12deg);
-		transform-style: preserve-3d;
 	}
 	.slab {
 		position: relative;
@@ -335,7 +333,6 @@
 		border-radius: var(--r-md);
 		background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.01)), var(--bg-1);
 		box-shadow: 0 12px 26px -16px rgb(0 0 0 / 0.9);
-		transform: translate3d(-1.25rem, 0, 0);
 		filter: brightness(0.55);
 		transition:
 			transform 0.45s var(--ease-spring),
@@ -343,7 +340,6 @@
 			border-color 0.6s;
 	}
 	.slab.in {
-		transform: none;
 		filter: none;
 		border-color: rgb(255 122 26 / 0.3);
 		animation: lit 0.9s var(--ease-out);

@@ -70,9 +70,6 @@
 		text-shadow: none;
 		transform-origin: 0 50%;
 	}
-	.duo--plain {
-		text-shadow: 0 0 0.6em rgb(255 122 26 / 0.18);
-	}
 	@media (prefers-reduced-motion: no-preference) {
 		.hi {
 			animation: hi-drift 7s ease-in-out infinite alternate;

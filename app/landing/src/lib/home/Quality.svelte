@@ -88,7 +88,6 @@
 					<span class="gf">{num(bestFmt, lang, 3)}</span>
 				</p>
 				<p class="gc"><span>{c.gapOurs}</span><span>{c.gapFmt}</span></p>
-				<p class="lx">{fill(c.less, { x: num(ratio, lang, 0) })}</p>
 			</div>
 		</header>
 
@@ -231,8 +230,14 @@
 		letter-spacing: -0.045em;
 		line-height: 0.9;
 	}
+	/* ours is the hero number (warm); the format change is the cold reference */
 	.go {
-		color: var(--text-hi);
+		background: var(--heat-ramp-hot);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		padding-bottom: 0.08em;
+		filter: drop-shadow(0 0 0.25em rgb(255 122 26 / 0.35));
 	}
 	.gvs {
 		font-size: 0.38em;
@@ -242,11 +247,7 @@
 		letter-spacing: 0.04em;
 	}
 	.gf {
-		background: var(--heat-ramp-hot);
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
-		padding-bottom: 0.08em;
+		color: var(--before);
 	}
 	.gc {
 		margin: 0;
@@ -258,16 +259,11 @@
 		font-size: var(--fs-2xs);
 		color: var(--text);
 	}
-	.gc span + span {
+	.gc span:first-child {
 		color: var(--heat-4);
 	}
-	.lx {
-		margin: 0.4rem 0 0;
-		font-family: var(--font-display);
-		font-size: clamp(1.3rem, 1rem + 0.9vw, 1.9rem);
-		font-weight: 800;
-		letter-spacing: -0.03em;
-		color: var(--text-hi);
+	.gc span + span {
+		color: var(--before);
 	}
 
 	/* ---- the ruler: labels on the markers, no legend ---- */
@@ -719,16 +715,16 @@
 		}
 		/* narrow: format labels stacked above the dots' labels, the bracket above them */
 		.plane {
-			height: 12.5rem;
+			height: 14.5rem;
 		}
 		.fmt {
-			height: 8.6rem;
+			height: 10.6rem;
 		}
 		.fmt:not(.hi) {
-			height: 6.2rem;
+			height: 8rem;
 		}
 		.bracket {
-			bottom: calc(1.8rem + 9.4rem);
+			bottom: calc(1.8rem + 11.4rem);
 		}
 	}
 </style>

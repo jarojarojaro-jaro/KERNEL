@@ -378,6 +378,7 @@
 	@media (max-width: 640px) {
 		.hero {
 			align-items: start;
+			min-height: 0;
 		}
 		.inner {
 			padding-top: 5.25rem;

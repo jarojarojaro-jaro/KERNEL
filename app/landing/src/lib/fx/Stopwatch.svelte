@@ -1,6 +1,7 @@
 <script lang="ts">
 	/**
-	 * A stopwatch that really runs: counts 0 → `seconds` in real time while `run` is true (and
+	 * A stopwatch whose ring really runs: the ring fills 0 → `seconds` in real time while `run` is true
+	 * (the digits always show the measured target, so two running clocks never read as a tie) (and
 	 * restarts whenever `runKey` changes), then stamps the measured value. At rest (`run` false, the
 	 * server HTML, reduced motion) it shows the measured value; if it goes offscreen or the tab is
 	 * hidden mid-run it jumps to the measured value. The accessible text is always the measured value.
@@ -65,7 +66,7 @@
 		<circle cx="20" cy="20" r="17" class="ring" />
 		<circle cx="20" cy="20" r="17" class="arc" style="stroke-dashoffset:{106.8 * (1 - pct)}" />
 	</svg>
-	<span class="v" aria-hidden="true">{num(t, lang, 1)}<span class="s">s</span></span>
+	<span class="v" aria-hidden="true">{num(seconds, lang, 1)}<span class="s">s</span></span>
 </div>
 
 <style>

@@ -524,7 +524,7 @@
 	.track {
 		display: grid;
 		/* the verdict has its own fixed slot inside the track: it never pushes past the panel */
-		grid-template-columns: minmax(7rem, auto) minmax(0, 1fr) 4.5rem 11.5rem;
+		grid-template-columns: minmax(7rem, auto) minmax(0, 1fr) 4.5rem 13rem;
 		align-items: center;
 		column-gap: 1rem;
 		row-gap: 0.55rem;
@@ -605,9 +605,6 @@
 		text-align: center;
 		visibility: hidden;
 		transform: scale(0.92);
-		transition:
-			transform 0.4s var(--ease-spring),
-			visibility 0s 0.4s;
 	}
 	.won .verdict {
 		visibility: visible;
@@ -617,7 +614,7 @@
 			visibility 0s;
 	}
 	.verdict b {
-		font-size: clamp(2.4rem, 1.6rem + 2vw, 3.4rem);
+		font-size: clamp(3rem, 1.8rem + 2.8vw, 4.6rem);
 		filter: drop-shadow(0 0 18px rgb(255 122 26 / 0.45));
 	}
 	.verdict small {
@@ -710,6 +707,8 @@
 		}
 		.label {
 			font-size: 0.78rem;
+			white-space: normal;
+			line-height: 1.15;
 		}
 		.tps {
 			font-size: 1.35rem;
@@ -738,9 +737,9 @@
 		}
 		.tn {
 			font-size: var(--fs-2xs);
-			max-width: 6.5rem;
-			overflow: hidden;
-			text-overflow: ellipsis;
+			max-width: 5.5rem;
+			white-space: normal;
+			line-height: 1.15;
 		}
 		.tt {
 			font-size: var(--fs-xs);
@@ -754,7 +753,7 @@
 			gap: 0.6rem;
 		}
 		.verdict b {
-			font-size: 2rem;
+			font-size: 2.6rem;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

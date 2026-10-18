@@ -26,13 +26,15 @@
 	const s = $derived(clamp01((p - 0.16) / 0.66));
 
 	const callouts = $derived([
-		{ id: 'vram', at: 0.3, x: 50, y: 16.7, dir: 'up', value: `${HERO_CARD.vramGB}\u00a0GB`, label: c.vram, src: HERO_CARD.hwSrc },
-		{ id: 'bw', at: 0.45, x: 33, y: 80, dir: 'down', value: `${num(HERO_CARD.bwGBs.v, lang, 0)}\u00a0GB/s`, label: c.bw, src: HERO_CARD.bwGBs.src },
-		{ id: 'power', at: 0.6, x: 89.4, y: 5.7, dir: 'up', value: `${num(HERO_CARD.powerW.v, lang, 0)}\u00a0W`, label: c.power, src: HERO_CARD.powerW.src },
-		{ id: 'arch', at: 0.75, x: 57.5, y: 50, dir: 'down', value: HERO_CARD.arch, label: c.arch, src: HERO_CARD.hwSrc }
+		{ id: 'vram', at: 0.3, x: 50, y: 16.7, dir: 'up', end: true, value: `${HERO_CARD.vramGB}\u00a0GB`, label: c.vram, src: HERO_CARD.hwSrc },
+		{ id: 'bw', at: 0.45, x: 33, y: 80, dir: 'down', end: true, value: `${num(HERO_CARD.bwGBs.v, lang, 0)}\u00a0GB/s`, label: c.bw, src: HERO_CARD.bwGBs.src },
+		{ id: 'power', at: 0.6, x: 89.4, y: 5.7, dir: 'up', end: true, value: `${num(HERO_CARD.powerW.v, lang, 0)}\u00a0W`, label: c.power, src: HERO_CARD.powerW.src },
+		{ id: 'arch', at: 0.75, x: 57.5, y: 50, dir: 'down', end: false, value: HERO_CARD.arch, label: c.arch, src: HERO_CARD.hwSrc }
 	]);
 	const found = $derived(callouts.filter((k) => p >= k.at).length);
 	const hwNote = $derived(HERO_CARD.hwLine?.[lang] ?? '');
+	/** One source for the four specs (in the readout), not a pill on every callout. */
+	const specSrc = $derived([...new Set(callouts.map((k) => k.src))]);
 </script>
 
 <div class="wrap" use:tl.view style="--p:{p}">
@@ -48,6 +50,7 @@
 							{#each callouts as k, i (k.id)}<i class:on={i < found}></i>{/each}
 							<b>{found}/{callouts.length}</b>
 						</span>
+						<SourceTip {lang} src={specSrc} note={hwNote} />
 						<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 					</div>
 			</div>
@@ -58,12 +61,11 @@
 					<div class="sweep" aria-hidden="true"><span class="beam"></span></div>
 					<ul class="callouts" role="list">
 						{#each callouts as k (k.id)}
-							<li class="callout {k.dir}" class:on={p >= k.at} style="--x:{k.x}%; --y:{k.y}%">
+							<li class="callout {k.dir}" class:end={k.end} class:on={p >= k.at} style="--x:{k.x}%; --y:{k.y}%; --xn:{k.x}; --yn:{k.y}">
 								<span class="pin" aria-hidden="true"></span>
 								<span class="tag">
 									<span class="v">{k.value}</span>
 									<span class="l">{k.label}</span>
-									<SourceTip {lang} src={k.src} note={hwNote} />
 								</span>
 							</li>
 						{/each}
@@ -105,11 +107,12 @@
 	.stage {
 		display: grid;
 		/* room above the render for the upward callouts (300 W sits highest) and below for 936 GB/s */
-		padding-block: 7rem 7.5rem;
+		padding-block: 6rem 6rem;
 	}
 	/* render and x-ray share one box and one 3D pose */
 	.gpu {
 		position: relative;
+		container-type: size;
 		aspect-ratio: 640 / 300;
 		transform: perspective(1500px) rotateY(-12deg) rotateX(6deg);
 		transform-style: preserve-3d;
@@ -178,7 +181,10 @@
 		padding: 0;
 	}
 	/* revealed by clip + transform, never by opacity: the text is full contrast in every frame */
+	/* every leader runs from its pin to just outside the card edge (container units of .gpu), so the
+	 * tags form a ring above and below the card instead of covering it */
 	.callout {
+		--len: calc(var(--yn) * 1cqh + 1.4rem);
 		position: absolute;
 		left: var(--x);
 		top: var(--y);
@@ -215,12 +221,15 @@
 		position: absolute;
 		left: 50%;
 		width: 1px;
-		height: 2.6rem;
+		height: var(--len);
 		background: linear-gradient(var(--heat-4), rgb(255 122 26 / 0.1));
 	}
 	.up .pin::after {
 		bottom: 100%;
 		background: linear-gradient(rgb(255 122 26 / 0.1), var(--heat-4));
+	}
+	.down {
+		--len: calc((100 - var(--yn)) * 1cqh + 1.4rem);
 	}
 	.down .pin::after {
 		top: 100%;
@@ -239,10 +248,10 @@
 		background: rgb(11 11 13 / 0.9);
 	}
 	.up .tag {
-		bottom: 2.6rem;
+		bottom: calc(var(--len) + 6px);
 	}
 	.down .tag {
-		top: 2.6rem;
+		top: calc(var(--len) + 6px);
 	}
 	.v {
 		font-family: var(--font-display);
@@ -261,7 +270,7 @@
 		color: var(--text-mute);
 		margin-bottom: 0.3rem;
 	}
-	.callout:nth-child(3) .tag {
+	.callout.end .tag {
 		left: auto;
 		right: -0.6rem;
 		justify-items: end;
@@ -269,7 +278,7 @@
 	/* ---- scan readout ---- */
 	.readout {
 		display: grid;
-		grid-template-columns: auto minmax(4rem, 1fr) auto auto;
+		grid-template-columns: auto minmax(4rem, 1fr) auto auto auto;
 		align-items: center;
 		gap: var(--sp-4);
 		padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
@@ -359,7 +368,7 @@
 			}
 		}
 		.readout {
-			grid-template-columns: auto minmax(3rem, 1fr) auto auto;
+			grid-template-columns: auto minmax(3rem, 1fr) auto auto auto;
 		}
 		.rn {
 			display: none;
@@ -380,7 +389,7 @@
 			display: none;
 		}
 		.tag,
-		.callout:nth-child(3) .tag {
+		.callout.end .tag {
 			position: static;
 			grid-template-columns: minmax(0, 1fr) auto;
 			align-items: center;

@@ -69,7 +69,9 @@
 		stop = onFrame((_, now) => {
 			const k = Math.min(1, (now - t0) / duration);
 			shown = from + (target - from) * ease(k);
-			if (k >= 1) {
+			// the long easing tail would show the last digit one short (77,9 for 78,0): within one unit
+			// of the target (and past any overshoot) it lands exactly on it
+			if (k >= 1 || ((overshoot === 0 || k > 0.8) && Math.abs(target - shown) < 1 / 10 ** decimals)) {
 				shown = target;
 				stop = null;
 				return false;

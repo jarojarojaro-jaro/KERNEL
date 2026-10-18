@@ -98,10 +98,10 @@
 	--rh: 1;
 	background: linear-gradient(
 		90deg,
-		color-mix(in oklab, var(--heat-2) calc(var(--rh) * 100%), #b4502f),
-		color-mix(in oklab, var(--heat-3) calc(var(--rh) * 100%), #c25d33) 38%,
-		color-mix(in oklab, var(--heat-4) calc(var(--rh) * 100%), #cb6a3a) 72%,
-		color-mix(in oklab, var(--heat-5) calc(var(--rh) * 100%), #d27845)
+		color-mix(in oklab, var(--heat-2) calc(var(--rh) * 100%), #5f5752),
+		color-mix(in oklab, var(--heat-3) calc(var(--rh) * 100%), #6a605a) 38%,
+		color-mix(in oklab, var(--heat-4) calc(var(--rh) * 100%), #766a62) 72%,
+		color-mix(in oklab, var(--heat-5) calc(var(--rh) * 100%), #82766c)
 	);
 	-webkit-background-clip: text;
 	background-clip: text;
@@ -264,11 +264,6 @@ main section[id] {
 	box-shadow: 0 0 14px rgb(255 122 26 / 0.5);
 	pointer-events: none;
 	z-index: 1;
-}
-/* section statements glow faintly warm */
-h2.statement,
-h3.duo {
-	text-shadow: 0 0 0.6em rgb(255 122 26 / 0.16);
 }
 /* secondary buttons and plain links warm up on hover */
 .cta--line {

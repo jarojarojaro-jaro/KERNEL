@@ -228,7 +228,7 @@
 		gap: 0.5rem;
 	}
 	.x b {
-		font-size: clamp(1.8rem, 1.2rem + 1.2vw, 2.5rem);
+		font-size: clamp(1.35rem, 1.1rem + 0.5vw, 1.7rem);
 	}
 	.x b.plain {
 		font-family: var(--font-display);
