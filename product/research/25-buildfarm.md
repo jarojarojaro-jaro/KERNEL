@@ -18,7 +18,7 @@ z lokalnym buildem tego samego drzewa: 109/109 plików `bin/` mają te same `.te
 | rbuild bez zmian (push + make no-op + diff sha1) | 9–12 s całość, 4 KB pobrane, lokalnie 0.8 s CPU user |
 | lokalny CPU przy pełnym pobraniu (pack git + zstd/tar) | 20–35 s user (jednorazowo na nowym serwerze) |
 | pełny rebuild z ciepłym ccache (przed wyłączeniem HIP z ccache) | 9.3 s |
-| rbuild bez zmian (push + make no-op + diff sha1) | 9 s całość, 4 KB pobrane |
+| pełny build bez ccache: czas CPU | 272 s ściany, 3719 s user + 121 s sys |
 | pobranie po pełnym buildzie | 23 MB zstd (115 MB surowo); typowo 2.4–14 MB |
 | 1 TU, 1 wątek: `mmq-instance-q4_k.cu` / `llama-model.cpp` | lokalnie 10.5 / 6.7 s, zdalnie 24.4 / 14.6 s |
 | lokalny pełny build -j2 (szacunek) | 3840 CPU·s ÷ 2.27 (rdzeń 5700X szybszy) ÷ 2 ≈ **~14 min** [SZACUNEK; Main obserwował ~50 min trzymania quiet.lock przez buildy -j2] |
