@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Build a llama.cpp worktree on the remote build server (~/qwen-opt/cloud/buildfarm.sh) and install the results here.
+#   rbuild [options] <worktree> [cmake targets...]          (no targets = everything)
+#   -B DIR       build dir inside the worktree (default build-hip; build-cuda* uses the CUDA 12.8 toolchain)
+#   --prefix P   install into P/bin (RUNPATH rewritten to $ORIGIN) instead of <worktree>/<DIR>/bin
+#   -j N         remote jobs (default: the box's Vast vCPU allotment)
+#   -D...        extra cmake options (forces a remote reconfigure)
+#   --local      skip the remote, build here with `cpuheavy --quiet ... -j2`
+# How: snapshots the worktree (HEAD + uncommitted + small untracked files) as a commit WITHOUT touching your index,
+# `git push`es it (only new objects cross the link), checks it out on the server at the SAME absolute path, configures
+# with the cmake options of your local <DIR>/CMakeCache.txt (or HIP/CUDA defaults), builds with ccache, and pulls back
+# only the bin/ files whose sha1 differs from yours (zstd). Host CPU code is built for this Ryzen 5700X (the server's
+# ccache wrapper maps -march=native to our gcc expansion; libs with AVX-512 are refused). Remote down -> local build.
+set -euo pipefail
+CLOUD=$HOME/qwen-opt/cloud
+B=build-hip; prefix=; jobs=; local_only=0; extra=(); wt=; targets=()
+while [ $# -gt 0 ]; do
+    case $1 in
+        -B) B=$2; shift 2 ;;
+        --prefix) prefix=$2; shift 2 ;;
+        -j) jobs=$2; shift 2 ;;
+        -D*) extra+=("$1"); shift ;;
+        --local) local_only=1; shift ;;
+        -h|--help) sed -n 2,14p "$0"; exit 0 ;;
+        *) if [ -z "$wt" ]; then wt=$1; else targets+=("$1"); fi; shift ;;
+    esac
+done
+[ -n "$wt" ] || { sed -n 2,14p "$0"; exit 2; }
+wt=$(realpath "$wt")
+git -C "$wt" rev-parse --git-dir > /dev/null 2>&1 || { echo "rbuild: $wt is not a git worktree" >&2; exit 2; }
+bd=$wt/$B
+dest=$bd/bin; prefix_mode=0
+[ -n "$prefix" ] && { mkdir -p "$prefix/bin"; dest=$(realpath "$prefix")/bin; prefix_mode=1; }
+say() { echo "rbuild: $*" >&2; }
+
+# cmake options: what the local cache says (user-set -D's are UNINITIALIZED; GGML_/LLAMA_ options; compilers/flags)
+cmake_opts() {
+    if [ -f "$bd/CMakeCache.txt" ]; then
+        awk '
+        match($0, /^[A-Za-z_][A-Za-z0-9_]*:(BOOL|STRING|PATH|FILEPATH|UNINITIALIZED)=/) {
+            k = substr($0, 1, index($0, ":") - 1); rest = substr($0, index($0, ":") + 1)
+            t = substr(rest, 1, index(rest, "=") - 1); v = substr(rest, index(rest, "=") + 1)
+            if (v ~ /-NOTFOUND$/) next
+            if (t == "UNINITIALIZED") { print "-D" k "=" v; next }
+            if ((k ~ /^(GGML|LLAMA)_/ && t ~ /^(BOOL|STRING)$/) ||
+                k ~ /^(CMAKE_BUILD_TYPE|BUILD_SHARED_LIBS|CMAKE_(C|CXX|HIP|CUDA)_(FLAGS|COMPILER|HOST_COMPILER|ARCHITECTURES)|CMAKE_(EXE|SHARED|MODULE)_LINKER_FLAGS)$/)
+                print "-D" k ":" t "=" v
+        }' "$bd/CMakeCache.txt" | sort
+    else
+        case $B in
+            *cuda*) printf '%s\n' -DGGML_CUDA=ON -DCMAKE_BUILD_TYPE=Release "-DCMAKE_CUDA_ARCHITECTURES=86;89;120" \
+                        -DCMAKE_CUDA_COMPILER="$HOME/opt/cuda-12.8/bin/nvcc" -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++ \
+                        -DCUDAToolkit_ROOT="$HOME/opt/cuda-12.8" \
+                        "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-rpath-link,$HOME/opt/cuda-12.8/lib/stubs" -DLLAMA_CURL=OFF ;;
+            *) printf '%s\n' -DGGML_HIP=ON -DGPU_TARGETS=gfx1100 -DCMAKE_BUILD_TYPE=Release \
+                   -DCMAKE_HIP_COMPILER=/opt/rocm/core-10.0/lib/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm/core-10.0 \
+                   -DGGML_HIP_NO_VMM=ON -DLLAMA_CURL=OFF -DLLAMA_BUILD_TESTS=ON ;;
+        esac
+    fi
+    [ ${#extra[@]} -eq 0 ] || printf '%s\n' "${extra[@]}"
+}
+
+build_local() {
+    say "building LOCALLY ($1): cpuheavy --quiet, -j2"
+    [ -f "$bd/CMakeCache.txt" ] && [ ${#extra[@]} -eq 0 ] || { mapfile -t o < <(cmake_opts); cpuheavy cmake -S "$wt" -B "$bd" "${o[@]}"; }
+    local tgt=(); [ ${#targets[@]} -eq 0 ] || tgt=(--target "${targets[@]}")
+    cpuheavy --quiet cmake --build "$bd" -j2 "${tgt[@]}"
+    if [ "$prefix_mode" = 1 ]; then cp -a "$bd/bin/." "$dest/"; say "copied to $dest (RUNPATH still points at $bd/bin)"; fi
+}
+
+[ "$local_only" = 1 ] && { build_local "--local"; exit; }
+[ -f "$CLOUD/state/buildfarm.env" ] || { build_local "no build server: ~/qwen-opt/cloud/buildfarm.sh up <offer>"; exit; }
+. "$CLOUD/state/buildfarm.env"
+jobs=${jobs:-${BF_JOBS:-0}}
+ctl=/tmp/rbuild-ssh-$USER-%C
+SSH=(ssh -i "$HOME/.ssh/cloud_ed25519" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new
+     -o UserKnownHostsFile="$CLOUD/state/known_hosts" -o ServerAliveInterval=30 -o ConnectTimeout=15 -o LogLevel=ERROR
+     -o ControlMaster=auto -o ControlPath="$ctl" -o ControlPersist=600 -p "$BF_PORT")
+if ! "${SSH[@]}" "root@$BF_HOST" test -x /root/bf/remote-build.sh 2> /dev/null; then
+    build_local "build server $BF_HOST:$BF_PORT unreachable or not set up"; exit
+fi
+t0=$(date +%s)
+
+# snapshot: temp index = real index + tracked changes + untracked files <= 2 MB (your index/worktree stay untouched)
+cd "$wt"
+sha=$(git rev-parse HEAD)
+if [ -n "$(git status --porcelain --untracked-files=normal | head -1)" ]; then
+    tmpidx=$(mktemp); trap 'rm -f "$tmpidx"' EXIT
+    cp "$(git rev-parse --git-path index)" "$tmpidx"
+    GIT_INDEX_FILE=$tmpidx git add -u
+    # untracked: only small non-binary files (new sources/headers), never install trees, models or ELF outputs
+    skipped=0
+    git ls-files -o --exclude-standard -z | while IFS= read -r -d '' f; do
+        if [ ! -L "$f" ] && [ "$(stat -c %s "$f")" -le 524288 ] && ! grep -qP '\x00' <(head -c 8192 "$f"); then
+            printf '%s\0' "$f"
+        else skipped=$((skipped + 1)); [ "$skipped" -le 3 ] && say "not sending untracked $f (binary/big/symlink)"; fi
+    done | GIT_INDEX_FILE=$tmpidx xargs -0 -r git add --
+    # fixed dates/identity: the same tree gives the same snapshot sha, so build-info (commit hash) does not force relinks
+    d=$(git log -1 --format=%cI HEAD)
+    sha=$(GIT_AUTHOR_DATE=$d GIT_COMMITTER_DATE=$d GIT_AUTHOR_NAME=rbuild GIT_AUTHOR_EMAIL=rbuild@localhost \
+          GIT_COMMITTER_NAME=rbuild GIT_COMMITTER_EMAIL=rbuild@localhost \
+          git commit-tree "$(GIT_INDEX_FILE=$tmpidx git write-tree)" -p HEAD -m "rbuild snapshot of $wt")
+    say "worktree is dirty: snapshot ${sha:0:9} on top of $(git rev-parse --short HEAD)"
+fi
+ref=refs/rbuild/$(printf %s "$wt" | tr -c 'A-Za-z0-9._-' _)
+GIT_SSH_COMMAND="${SSH[*]}" nice git push -q --no-verify "ssh://root@$BF_HOST/root/bf/repo.git" "+$sha:$ref"
+t1=$(date +%s)
+
+# remote build; the artifact stream lands in a temp file first, so a broken connection never half-installs
+mkdir -p "$dest"
+art=$(mktemp --suffix=.tar.zst)
+trap 'rm -f "$art" ${tmpidx:-}' EXIT
+rc=0
+{ cmake_opts; echo --manifest--; (cd "$dest" && find . -maxdepth 1 -type f -printf '%P\0' | xargs -0 -r nice sha1sum); } |
+    "${SSH[@]}" "root@$BF_HOST" /root/bf/remote-build.sh "$wt" "$B" "$sha" "$prefix_mode" "$jobs" "${targets[@]}" > "$art" || rc=$?
+if [ "$rc" = 255 ]; then build_local "connection to the build server lost (ssh rc 255)"; exit; fi
+[ "$rc" = 0 ] || { say "remote build FAILED (rc $rc), nothing installed"; exit "$rc"; }
+t2=$(date +%s)
+# -U: unlink before writing, so a running llama-server keeps its old inode instead of crashing
+nice zstd -dcq "$art" | tar -x -U -C "$dest"
+say "OK ${sha:0:9} -> $dest  (push $((t1 - t0)) s, remote build+transfer $((t2 - t1)) s, $(du -h "$art" | cut -f1) pulled, total $(( $(date +%s) - t0 )) s)"

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+# /usr/local/bin/ccache on the build server (ggml's GGML_CCACHE launches "ccache <compiler> <args>" via PATH).
+# Replaces -march=native / -mtune=native with the workstation's gcc expansion (/root/bf/native-flags, one token
+# per line: -march=znver3 -m... --param l1-cache-size=...), so the build server's own CPU never leaks into the
+# binaries. Inside comma lists (nvcc -Xcompiler=a,b) the expansion is comma-joined.
+mapfile -t NATIVE < /root/bf/native-flags
+joined=$(IFS=,; echo "${NATIVE[*]}")
+args=()
+for a in "$@"; do
+    case $a in
+        -march=native) args+=("${NATIVE[@]}") ;;
+        -mtune=native) ;;                       # the expansion already carries -mtune=znver3
+        *-march=native*) a=${a//-march=native/$joined}; args+=("${a//,-mtune=native/}") ;;
+        *) args+=("$a") ;;
+    esac
+done
+# HIP TUs bypass ccache: clang derives __hip_cuid_* from the output path and ccache compiles into a temp file, so a
+# cached .cu.o differs from the workstation's (other cuid symbols, 4/140 code objects laid out differently).
+# Without ccache the fatbin is bit-identical to a local build; make still rebuilds only the changed TUs.
+for a in "${args[@]}"; do [ "$a" = hip ] && [ "$prev" = -x ] && exec "${args[@]}"; prev=$a; done
+exec /usr/bin/ccache "${args[@]}"

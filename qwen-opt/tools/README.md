@@ -1,4 +1,4 @@
-# Narzędzia: LOO łatek, kanarki KLD, Kernel Tuner
+# Narzędzia: LOO łatek, kanarki KLD, Kernel Tuner, zdalny build (rbuild)
 
 Trzy narzędzia do fork-a `amd-opt` @ c36fd2c87 (65 łatek na e60eff95f, instalacja `~/llama-opt`). Bez GPU działają
 wszystkie tryby `--dry-run` / fake. Każda komenda GPU poniżej sama bierze `flock /tmp/gpu.lock flock /tmp/quiet.lock`,
@@ -73,3 +73,35 @@ $P kt.py tune --kernel mmvq_n1 --shape 17        # pojedynczy kształt (Qwen ffn
 $P kt.py table          # kt-table-gfx1100.{json,inc}; domyślnie tylko konfiguracje bitowo równe produkcji (--any: wszystkie)
 ```
 Każda konfiguracja: tolerancja vs float64 (CPU) + osobny test bitowy względem konfiguracji produkcyjnej.
+
+## 4. Zdalny build: `rbuild` (+ serwer `~/qwen-opt/cloud/buildfarm.sh`)
+
+```
+~/qwen-opt/tools/rbuild ~/wt/<drzewo> [cele cmake…]          # np. llama-server test-backend-ops; bez celów = wszystko
+~/qwen-opt/tools/rbuild --prefix /tmp/x ~/wt/<drzewo>       # do /tmp/x/bin, RUNPATH = $ORIGIN
+~/qwen-opt/tools/rbuild -B build-cuda ~/wt/<drzewo> llama-server   # CUDA 12.8 (ten sam env conda co ~/opt/cuda-12.8)
+```
+Opcje: `-j N` (domyślnie przydział vCPU z Vast), `-D…` (dodatkowe opcje cmake, wymusza rekonfigurację), `--local`.
+Co robi: migawka drzewa (HEAD + niezacommitowane + małe nie-binarne pliki nieśledzone) jako commit bez ruszania
+indeksu → `git push` (przez łącze idą tylko nowe obiekty) → checkout na serwerze pod TĄ SAMĄ ścieżką bezwzględną →
+cmake z opcjami z lokalnego `<B>/CMakeCache.txt` → build z ccache → z powrotem tylko pliki `bin/` o innym sha1 niż
+lokalne (zstd, `tar -U`, więc działający llama-server zachowuje stary plik). Toolchain na serwerze jest identyczny
+(te same deby ROCm 10.0.0~pre4, ten sam env conda CUDA 12.8, gcc 13.3, cmake 3.28; `buildfarm.sh setup` robi diff).
+Kod CPU: wrapper ccache zamienia `-march=native` na rozwinięcie gcc z naszego Ryzena 5700X (znver3, bez AVX-512),
+a `remote-build.sh` odmawia wysyłki, jeśli `libggml-cpu/libggml-base/libllama` mają choć jedną instrukcję `zmm`.
+Serwer padł / brak serwera → sam buduje lokalnie `cpuheavy --quiet … -j2`. Błąd kompilacji → nic nie instaluje.
+
+Serwer (Vast, etykieta `buildfarm-*`, `idle-watch.py` go pomija):
+```
+~/qwen-opt/cloud/buildfarm.sh find 0.25          # oferty wg vCPU/$ (bez klucza)
+~/qwen-opt/cloud/buildfarm.sh up <offer> --hours 3   # wynajem ubuntu:24.04 + instalacja toolchainów (~4 min) + diff wersji
+~/qwen-opt/cloud/buildfarm.sh status | down
+```
+Trzy zabezpieczenia: lokalny watchdog (N h), samozniszczenie na instancji (N h + 15 min), `idle-kill.sh` na instancji
+(30 min bez buildu → kasuje się sam).
+
+**Symulacje CPU na serwerze (dla innych agentów):** wolno, jeśli wejścia da się pobrać na serwerze prosto z HF
+(`curl -L https://huggingface.co/<repo>/resolve/<rev>/<plik>`), a nie wysyłać naszym łączem (~1 MB/s); z powrotem
+tylko małe wyniki. Uruchamiaj przez `buildfarm.sh run '<komenda>'` — trzyma blokadę aktywności, więc serwer nie
+skasuje się w trakcie; po 30 min bez pracy znika. Pliki robocze w `/root/work/<agent>/`; nie ruszaj `/root/bf/`
+ani `/home/jaro/wt/*` (drzewa buildów). Buildy mają pierwszeństwo: symulacje `nice -n 19`.

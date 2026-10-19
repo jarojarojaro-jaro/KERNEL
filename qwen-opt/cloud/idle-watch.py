@@ -4,7 +4,9 @@
 Polls every INTERVAL s. An instance counts as idle when GPU util < THRESH %. After IDLE_SAMPLES
 consecutive idle samples (default 5 x 180 s = 15 min) it prints the alert and exits 2, so the
 caller (a background job of the main agent) gets woken up and can act. Exits 0 when no instances
-remain. RunPod pods listed in IGNORE (the user's own) are never reported.
+remain. RunPod pods listed in IGNORE (the user's own) are never reported. Vast instances labelled
+buildfarm* (CPU build server for ~/qwen-opt/tools/rbuild, GPU idle by design) are skipped: they
+destroy themselves after 30 min without a build (buildfarm/idle-kill.sh).
 """
 import json
 import os
@@ -25,7 +27,8 @@ def vast():
     out = subprocess.run([f"{HERE}/.venv/bin/vastai", "--api-key", key, "show", "instances", "--raw"],
                          capture_output=True, text=True, timeout=60).stdout
     return [(f"vast:{i['id']}", i.get("label") or i.get("gpu_name"), float(i.get("gpu_util") or 0),
-             round(float(i.get("dph_total") or 0), 3)) for i in json.loads(out or "[]")]
+             round(float(i.get("dph_total") or 0), 3)) for i in json.loads(out or "[]")
+            if not (i.get("label") or "").startswith("buildfarm")]
 
 
 def runpod():
@@ -50,7 +53,8 @@ def main():
         try:
             inst = vast() + runpod()
         except Exception as e:  # network hiccup: try again next round
-            print(f"{time.strftime('%H:%M')} poll error: {e}", flush=True)
+            # only the exception type: subprocess errors embed the full command line, incl. the API key
+            print(f"{time.strftime('%H:%M')} poll error: {type(e).__name__}", flush=True)
             time.sleep(INTERVAL)
             continue
         if not inst:
