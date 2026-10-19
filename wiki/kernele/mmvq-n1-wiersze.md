@@ -1,8 +1,8 @@
 ---
 typ: kernel
 tags: [kernele, mmvq, lfm]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:349,374; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:127,139,184; ~/KERNEL/product/research/patch-manifest.json (0052, 0064); ~/KERNEL/qwen-opt/run-llm.sh:11; ~/KERNEL/product/research/09-chmura-3090.md:103,110-125; ~/KERNEL/product/research/09-chmura-5060ti.md:124,207; ~/KERNEL/product/research/09-chmura-3060.md:159; git -C ~/llama-master log -1 3da7a02ec; git -C ~/llama-master log -1 007000aaa; git -C ~/llama-master log -1 71412d9c6; ~/KERNEL/product/research/14-nemotron-3090.md:134,139-141
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:349,374; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:127,139,184; ~/KERNEL/product/research/patch-manifest.json (0052, 0064); ~/KERNEL/qwen-opt/run-llm.sh:11; ~/KERNEL/product/research/09-chmura-3090.md:103,110-125; ~/KERNEL/product/research/09-chmura-5060ti.md:124,207; ~/KERNEL/product/research/09-chmura-3060.md:159; git -C ~/llama-master log -1 3da7a02ec; git -C ~/llama-master log -1 007000aaa; git -C ~/llama-master log -1 71412d9c6; ~/KERNEL/product/research/14-nemotron-3090.md:134,139-141; ~/KERNEL/product/research/23b-re-kernele-amd.md:20-22,40
 status: aktualne
 ---
 # MMVQ 1-kolumnowe: 2 wiersze na blok (0052, 0064)
@@ -23,6 +23,8 @@ Ta sama bitowa ścieżka „2/4 wiersze na blok” udostępniona na CUDA dla Q4_
 - RTX 3060 (sm_86) nie był mierzony z tym przełącznikiem; eksperyment `GGML_CUDA_MMVQ_N1_WIDE` (8 warpów na wiersz) dał −12.6…−21% i nie wszedł.
 Dla Nemotron 3.5 Bolt (2026-10-16) dołożono `GGML_CUDA_MMVQ_N1_IQ2`: IQ2_XXS w ścieżce 2 wierszy na blok na sm_80–87, bitowo neutralne (część zysku tg128 91.1 → 96.7 razem z `TOPK_MOE_NP2`).
 Wniosek: przełącznik tylko z predykatem per arch w manifeście (sm_80–87 tak, Blackwell nie); Ada sm_89 do ustalenia.
+
+23b (2026-10-19): ścieżka n=1 nadal ładuje upstreamowo – 18 `global_load_b32`/`d16` na iterację (Q4_K, 3.3 B na instrukcję); kandydat: loader `mmvq_ld` z wielokolumnowej (b128, bitowo zgodny), szacunek plain +2–5%, LFM +2–5% ([[raport-23b-re-kernele-amd]]).
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

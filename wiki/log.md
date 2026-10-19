@@ -140,6 +140,9 @@ Nowe: [[raport-21l-re-gpu]], [[co-stats]], [[umr-offline-pm4]], [[lekcja-radare2
 ## [2026-10-19] update | `cpuheavy.lock` na rdzeniach 0–1
 [[2026-10-19-szanujemy-sprzet-serwera]]: `taskset -c 0-1`, buildy `-j2`, CUDA jedna architektura na build.
 
+## [2026-10-19] ingest | Raport 23b (RE kerneli AMD)
+Nowa [[raport-23b-re-kernele-amd]]; zaktualizowana [[mmvq-n1-wiersze]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
