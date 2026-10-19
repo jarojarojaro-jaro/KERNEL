@@ -63,15 +63,15 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (26)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (24)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (54)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (73)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (25)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (56)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (74)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (40)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (25)
-- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (59)
+- [[research/_hub|research]] — Streszczenia raportów (41)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (26)
+- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
 ## Ostatnio aktualizowane
 
@@ -80,6 +80,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[hip-kopie-stronicowane-zostawiaja-svm|Kopie HIP z pamięci stronicowanej zostawiają zmapowane zakresy SVM]]
 - 2026-10-19 [[gfx11-pm4-dispatch-priv|Własny dispatch PM4 na GFX11 musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1`]]
 - 2026-10-19 [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]]
+- 2026-10-19 [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]]
 - 2026-10-19 [[raport-21c-cplm|Raport 21c: Copy-Paste Language Models (CPLM) – nie adoptujemy]]
 - 2026-10-19 [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]]
 - 2026-10-19 [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]]
@@ -87,9 +88,8 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-16b-lookup-tail|Raport 16b: ogon z lookupu za MTP (15b E1–E3, 16i E-X0–E-X3)]]
 - 2026-10-19 [[raport-15b-spekulacja-frontier|Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)]]
 - 2026-10-19 [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]]
+- 2026-10-19 [[rsr-27b|RSR-27B (IntelligenceLab): Qwen3.8-27B po RSR + RL]]
 - 2026-10-19 [[galezie-rund|Gałęzie rund optymalizacji (opt-*)]]
-- 2026-10-19 [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]]
-- 2026-10-19 [[zestaw-copy-mvs|Zestawy kopii i edycji: `copy`, `mvs`, `long`]]
 
-Razem 435 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 443 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

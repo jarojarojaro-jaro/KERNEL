@@ -28,7 +28,7 @@ Model docelowy (raport 07): Qwen 0001–0047 (bez 5 łatek Vulkan), LFM 0048–0
 
 Łatka 0070 (2026-10-16): karta fabryki `2026-10-17-mmq-epi-0070` zarejestrowana (ledger seq 1), czeka na ~20 min GPU; R29 = build CUDA na `amd-opt` (naprawione w `cuda-compat` `57e0bdfe4`); zob. [[fabryka-cli]].
 
-Kandydat 0071 (2026-10-18): `GGML_HIP_MOE_GU_BLOCK`, gałąź `opt-lfmmoe` @ `7c5b2a116`, bitowy, LFM +0.33% / Uncensored +1.39%; **scalenie do `amd-opt` to otwarta decyzja użytkownika** ([[mmvq-moe-gate-up-blok]], [[otwarte-decyzje-produktu]]).
+Kandydat 0071 (2026-10-18): `GGML_HIP_MOE_GU_BLOCK`, gałąź `opt-lfmmoe` @ `7c5b2a116`, bitowy, LFM +0.33% / Uncensored +1.39%; **scalenie do `amd-opt` to otwarta decyzja użytkownika** ([[mmvq-moe-gate-up-blok]], [[otwarte-decyzje-techniczne]]).
 
 ## Powiązane
 - [[latki/_hub|Łatki]]

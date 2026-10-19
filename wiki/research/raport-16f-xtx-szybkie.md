@@ -17,7 +17,7 @@ status: aktualne
 | E4 | `CACHE_SHARE_MIN`: Qwen 8019 → 1612 ms | [[2026-10-18-cache-promptu-agenta]] |
 | E5 | restore z SSD 2.51 s vs prefill ~61.5 s | [[cache-sesji-na-dysku]] |
 
-Propozycje do `run-llm.sh` (`-b 2048 -ub 2048` dla LFM, `LLAMA_SERVER_CACHE_SHARE_MIN=1024` po scaleniu `50c3a2f2a`) czekają na decyzję użytkownika ([[otwarte-decyzje-produktu]]). Korekty: 15d L4 (TTFT −5–7%) zawyżone dla XTX; offline +0.45% tok/krok Q6_K z pilota 11 nie przenosi się. Lekcje: [[lekcja-5-seedow]], [[lekcja-nie-odtwarzac-lockow]].
+Propozycje do `run-llm.sh` (`-b 2048 -ub 2048` dla LFM, `LLAMA_SERVER_CACHE_SHARE_MIN=1024` po scaleniu `50c3a2f2a`) czekają na decyzję użytkownika ([[otwarte-decyzje-techniczne]]). Korekty: 15d L4 (TTFT −5–7%) zawyżone dla XTX; offline +0.45% tok/krok Q6_K z pilota 11 nie przenosi się. Lekcje: [[lekcja-5-seedow]], [[lekcja-nie-odtwarzac-lockow]].
 
 ## Powiązane
 - [[research/_hub|research]]

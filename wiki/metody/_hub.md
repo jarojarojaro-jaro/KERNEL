@@ -14,7 +14,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (24)
+## Notatki (25)
 
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
 - [[agr-lookup-zgodny-z-mtp|AGR: wybór kandydata lookupu zgodnego z draftami MTP]] — Reguła bez treningu i bezstratna: spośród kandydatów lookupu (sufiks ≥ 2 albo ≥ 4 tokenów) zostawić tych, których pierwsze 4 tokeny kontynuacji równają się 4 draftom MTP, potem najdłuższy sufiks, potem najnowszy; w symulacji AGR2 daje +3.7% t/s na agencie (2/3 sufitu idealnego pointera) i +0.6% na czacie (raport 21c, 2026-10-19).
@@ -31,6 +31,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[playbook-optymalizacji|Playbook optymalizacji]] — Każda optymalizacja przechodzi tę samą pętlę: sufit → profil → hipoteza z budżetem → łatka z wyłącznikiem → bramka poprawności → przeplatane A/B → wpis w NOTES.
 - [[pomiar-abba|Pomiar: przeplatane A/B (ABBA) na ms/krok]] — Porównania robimy w jednej binarce, przeplatając warianty (ABBA), na metryce ms/krok, z kilkoma seedami i promptami; pojedynczy przebieg nic nie dowodzi.
 - [[dowod-offline|Praca offline przed oknem GPU]] — Gdy GPU jest zajęte albo zakazane, przygotowujemy zmiany do końca bez niego (kompilacja, ISA, emulacja, dry-run) i zostawiamy gotowe komendy na okno GPU.
+- [[petla-rsi-f|Pętla RSI-F: samodoskonalenie fabryki bez trenowania wag (projekt)]] — Przeniesienie RSI na naszą pracę nad silnikiem: tylko werdykt `CONFIRMED` z fabryki staje się materiałem; świeży Rewriter pisze z niego playbook, Recenzent sprawdza przeciek, a do `skills/` trafia tylko playbook, z którym świeży Replayer powtórzył zysk na innym celu (raport 21h, 2026-10-19).
 - [[serializacja-gpu|Serializacja GPU między agentami]] — Wielu agentów dzieli jedną kartę, więc każdy pomiar bierze locki, używa własnego portu i sprząta po sobie serwery.
 - [[sprzezone-probkowanie-draftu|Sprzężone próbkowanie draftu (coupled sampling)]] — Magnitude losuje każdą propozycję draftu z tym samym ziarnem i pozycją co próbka celu (Gumbel-max na Philox4x32-10 kluczowany pozycją i tokenem), więc przy równych rozkładach draft i cel wybierają ten sam token także przy T=1; metoda bezstratna i przenośna 1:1.
 - [[sufit-pasma-i-mapa-czasu|Sufit pasma i mapa czasu kroku]] — Zanim cokolwiek zmienimy, liczymy, ile bajtów musi przeczytać krok (sufit pasma) i gdzie naprawdę idzie czas (profil rocprofv3 w modelu).

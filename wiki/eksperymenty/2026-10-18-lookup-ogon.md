@@ -22,7 +22,7 @@ status: aktualne
 - Czat (`spec_sweep`, T=1): ogon odpala 13–15 razy na ~4500 kroków, ms/krok w szumie (28.74 → 28.73); t/s −1.1% / +0.7% zależnie od seedów ([[lekcja-ogon-zmienia-tekst-t1]]).
 - Kontroler szerokości 5/8/16: wynik zerowy ([[2026-10-18-kontroler-szerokosci-zerowy]]).
 
-Kill: wszystkie zaliczone poza 15b E1 (udział ogona na prawdziwym ruchu), otwartym do tygodnia logowania. Włączenie w produkcji – decyzja użytkownika ([[otwarte-decyzje-produktu]]).
+Kill: wszystkie zaliczone poza 15b E1 (udział ogona na prawdziwym ruchu), otwartym do tygodnia logowania. Włączenie w produkcji – decyzja użytkownika ([[otwarte-decyzje-techniczne]]).
 
 ## Powiązane
 - [[eksperymenty/_hub|Eksperymenty]]

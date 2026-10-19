@@ -21,7 +21,7 @@ status: do-sprawdzenia
 - E-X4: 7 resetów na 2338 requestów (~1/330), 0 w 901 slotach przed zapełnieniem `--cache-ram` 16 GiB, 7 w 1410 później (~1/200).
 - Hipotezy: **H1 (~60%)** wywłaszczenie kolejki KFD w środku IB gubi rejestry SH → `USER_DATA` = 0 → wskaźnik kernargów 0 (w bootach widać `restore_userptr_worker` 64×, `svm_range_restore_work` kończące się 156 ms po R9); H2 (~20%) uszkodzenie kernargów w VRAM; H3 (~10%) uszkodzenie IB w RAM; H4 (~10%) inne. Wszystko `[INFERENCE]`.
 - Korekty: R9 to tryb 1 i nie wynikał z kolizji blokad ([[lekcja-nie-odtwarzac-lockow]]); alarmy „serwer na 8080” były fałszywe ([[lekcja-pgrep-f-lapie-powloki]]).
-- Produkcja zagrożona: `~/llama-opt` ma PM4 domyślnie i te same flagi; reset zabija serwer użytkownika i zeruje krzywą wentylatora. Plan testu i decyzja: [[raport-17-gpu-page-fault]], [[otwarte-decyzje-produktu]].
+- Produkcja zagrożona: `~/llama-opt` ma PM4 domyślnie i te same flagi; reset zabija serwer użytkownika i zeruje krzywą wentylatora. Plan testu i decyzja: [[raport-17-gpu-page-fault]], [[otwarte-decyzje-techniczne]].
 
 Ciąg dalszy (§9): [[2026-10-19-pm4-priv-analiza]] – kandydat H1′ (PRIV=0 + ewikcja SVM).
 

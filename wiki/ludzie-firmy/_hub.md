@@ -14,7 +14,7 @@ Dostawcy chmury są w [[chmura/_hub|Chmurze]], projekty open source w [[repo/_hu
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (26)
+## Notatki (27)
 
 - [[actual-computer|Actual Computer (silnik „e”, relay)]] — Firma z silnikiem „e” (host w asemblerze AArch64 + cubiny sm_103a, tylko DGX Station GB300) i relayem na AWS Nitro; na sprzęcie konsumenckim uruchamia vendored llama.cpp albo silnik „malibu”.
 - [[firma-amd|AMD]] — Producent naszej karty RX 7900 XTX i stosu ROCm; dla produktu raczej kanał dystrybucji niż konkurent.
@@ -37,6 +37,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[firma-runpod|RunPod]] — Chmura GPU z Community i Secure Cloud; NVIDIA od 3070 do 5090 i A100, z AMD tylko MI300X ($2.39).
 - [[firma-salad|Salad (SaladCloud)]] — Rozproszona chmura na komputerach graczy; jedyne godzinowe konsumenckie Radeony, ale tylko w kontenerze WSL2 bez `/dev/kfd` i bez SSH.
 - [[scaleway|Scaleway]] — Francuski dostawca z Mac mini as-a-service (bare metal macOS); nasza droga do testów Metal przed zakupem Maca.
+- [[tencent-terminal-rsi|Tencent Hy Frontier / IntelligenceLab (Terminal-RSI, RSR)]] — Zespół Tencent Hunyuan stojący za RSR (arXiv 2610.02826), Terminal-RSI (2610.22192) oraz benchmarkami TB-Hard, LHTB i generatorem SWR; wydał RSR-27B (Apache-2.0), Terminal-RSI-27B zapowiedziany, ale niewydany (stan 2026-10-19).
 - [[thinking-machines|Thinking Machines (batch invariance)]] — Laboratorium AI, autor wpisu „Defeating Nondeterminism in LLM Inference” (10.09.2025) o niezależności wyniku od wielkości wsadu (batch invariance).
 - [[turbollm|TurboLLM]] — Flag-tuner dla llama.cpp (285★, FSL-1.1 → Apache-2.0): mierzy przy ładowaniu i dobiera warstwy, MoE offload, KV quant i sampling.
 - [[ukisai|UkisAI (autor Swift)]] — Autor Swift 1.0/1.5 – fine-tune’ów Qwen3.8-27B na krótsze myślenie – z licencją Swift Open License v1.0, która dopuszcza użycie komercyjne tylko poniżej US$1M przychodu rocznie.

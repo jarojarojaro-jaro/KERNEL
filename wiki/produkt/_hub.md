@@ -14,7 +14,7 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (25)
+## Notatki (26)
 
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
@@ -30,6 +30,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[produkt-ryzyka|Największe ryzyka]] — Dziewięć ryzyk z odpowiedziami; najgroźniejsze: zysk nie przenosi się poza 7900 XTX/Linux oraz wbudowanie auto-tuningu przez LM Studio, Ollamę, Jana lub NVIDIA.
 - [[produkt-optymalizacja-u-uzytkownika|Optymalizacja u użytkownika: kalibracja i noc]] — Zawsze szybka kalibracja 1–5 min; opcjonalnie noc za zgodą (zasilacz, bezczynność, limity), z bramką md5 i ABBA; nigdy agentów ani kompilacji na komputerze użytkownika.
 - [[otwarte-decyzje-produktu|Otwarte decyzje produktu (po prototypie aplikacji)]] — Pytania AppStudio do użytkownika z 2026-10-16, wciąż bez decyzji: nazwa, kolor akcentu, ceny w teście fake-door, konto przed pobraniem, sprawy prawne, port lokalnego API 11500 i domena.
+- [[otwarte-decyzje-techniczne|Otwarte decyzje techniczne (silnik, flagi, wydatki)]] — Rekomendacje agentów, które czekają na decyzję użytkownika: zmiany flag `run-llm.sh`, scalenie łatek do `amd-opt`, testy GPU z ryzykiem i wydatki na chmurę; po decyzji wiersz przechodzi do [[decyzje/_hub|decyzji]].
 - [[produkt-platformy-i-lab|Platformy, sprzęt i lab]] — Rozwój na Linuksie, projekt od początku na Win/Linux/macOS; wolumen to NVIDIA (76% Steam), wyróżnik AMD; popularne karty kupujemy, rzadkie (3090, 4090, 5090) wynajmujemy.
 - [[produkt-prawo|Prawo, dystrybucja, prywatność]] — Potrzebna spółka z o.o. (podpis Azure w UE, Apple dla organizacji); AI Act art. 50(2) to główne otwarte pytanie; telemetria domyślnie wyłączona; koszt roku 1 ~5.8 tys. zł opłat twardych.
 - [[tryb-stratny-pflash|Propozycja: tryb stratny „szybki odczyt długich dokumentów” (PFlash)]] — Propozycja z raportu 15d: PFlash tylko jako jawny tryb opt-in „szybki odczyt długich dokumentów (przybliżony)”, nigdy w sesjach agenta; decyzja po etapie C pilota (~$2 chmury).

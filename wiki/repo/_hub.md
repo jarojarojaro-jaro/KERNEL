@@ -14,7 +14,7 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (58)
+## Notatki (59)
 
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
 - [[atrex-kernel-agent|alibaba/atrex-kernel-agent (AKA)]] — Orkiestrator agentów kodujących dla jednego operatora naraz (HEAD `5ad94ff`, 2026-10-14, v0.3.0); bierzemy narzędzia pomiarowe; werdykt: średnia (narzędzia).
@@ -61,6 +61,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[tokamax|openxla/tokamax]] — Kernele Google/DeepMind w JAX + Pallas (HEAD `b500ee4`, 2026-10-14), kod inference tylko pod TPU; werdykt: niska.
 - [[pplx-kernels|perplexityai/pplx-kernels i pplx-garden/lily]] — Kernele MoE all-to-all Perplexity (porzucone, HEAD `f70d1eb7`) i następca `lily` (MoE decode na jednym GPU); werdykt: niska.
 - [[prism-llama-cpp|PrismML-Eng/llama.cpp (fork pod Bonsai)]] — Fork llama.cpp od PrismML potrzebny do formatów PQ2_0 i PTQ1_0 modelu Ternary Bonsai 2 27B; u nas klon „prism” testowany na RTX 3060.
+- [[rsr-27b|RSR-27B (IntelligenceLab): Qwen3.8-27B po RSR + RL]] — Wydany model `IntelligenceLab/RSR-27B` (Apache-2.0, `qwen3_5`, 64 warstwy, 27.78 mld parametrów BF16) to Qwen3.8-27B dostrojony na przepisanych trajektoriach RSR + „dodatkowe RL”; tensory `mtp.*` (15) i `model.visual.*` są skopiowane z bazy (`model-missing-from-origin-*.safetensors`), więc głowica MTP nie pasuje do zmienionego pnia (2026-10-19).
 - [[sakana-agentic-scientist|Sakana AI-Scientist-v3 (Agentic Scientist)]] — Orkiestracja agentów do badań, w której kod wymusza izolację ewaluacji (harness, hashe, osobne kontenery), a naukę rozstrzyga LLM; brak jakiejkolwiek statystyki istotności.
 - [[kernelbench|ScalingIntelligence/KernelBench]] — Benchmark kerneli pisanych przez LLM (HEAD `423217d9`, 2026-03-05); bierzemy lepszą bramkę poprawności; werdykt: średnia (proces).
 - [[strata|Strata (Niko1221/Strata)]] — Silnik C++/CUDA/HIP pod jeden model MoE z offloadem (HEAD `a0116b27`, 2026-10-12, tag v0.1.43.1), studiowany jako wzór metodologii autora.

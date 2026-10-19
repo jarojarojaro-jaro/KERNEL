@@ -2721,6 +2721,9 @@ Liczby z 17-gpu-page-fault.md:210-425 (vmstat, timeouty MES 107–128 ms, doorbe
 ## Aktualizacja: raport 21c (2026-10-19)
 Liczby z 21c §0–§6 (wiersze w `zrodlo`) i plików `21c-cplm/{chat,agent,oov,oov_steps}.txt`; liczby arXiv 2610.19247 przepisane z raportu (nie z PDF). Rekordów nowych brak (symulacje CPU). Błędnych: 0.
 
+## Aktualizacja: raport 21h (2026-10-19)
+Liczby z 21h (wiersze w `zrodlo`); niespójne mianowniki Terminal-RSI (TB 4.0 19.84% = 25/126, Hard 69.50% = 139/200, TB 2.1 51.70% ≠ k/89, TB 3.0 16.95% ≠ k/70; SWR p = 0.50, LHTB p = 0.056) to rachunek agenta ResRSI na liczbach z s. 7, 21, 22 pracy, nie sprawdzony przez WikiIngest w PDF. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

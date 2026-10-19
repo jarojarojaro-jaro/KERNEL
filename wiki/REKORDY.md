@@ -11,7 +11,7 @@ status: aktualne
 
 Zasada (decyzja użytkownika 2026-10-19): **każdy nowy najlepszy wynik trafia tu od razu** – liczba, data, warunki (skrypt, T, kontekst, flagi, build/commit), źródło i status produkcji ([[KONWENCJE]]). Pełne porównanie przed → po: [[benchmarki-przed-po-2026-10-19]].
 
-Legenda „prod.”: **tak** = ten build i flagi to dziś `run-llm.sh`; **nie** = gałąź/flaga poza produkcją; **był** = zmierzone na produkcji, ale warunki już nieodtwarzalne. Uwaga: raport 17 zaleca `GGML_HIP_PM4=0` – wtedy obowiązują liczby „bez PM4” (Qwen MTP 103.7, Uncensored 109.9, LFM 259.3 t/s, `NOTES.md:375`); decyzja otwarta ([[otwarte-decyzje-produktu]]).
+Legenda „prod.”: **tak** = ten build i flagi to dziś `run-llm.sh`; **nie** = gałąź/flaga poza produkcją; **był** = zmierzone na produkcji, ale warunki już nieodtwarzalne. Uwaga: raport 17 zaleca `GGML_HIP_PM4=0` – wtedy obowiązują liczby „bez PM4” (Qwen MTP 103.7, Uncensored 109.9, LFM 259.3 t/s, `NOTES.md:375`); decyzja otwarta ([[otwarte-decyzje-techniczne]]).
 
 Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400 tok., świeży serwer, mediana; **long_ctx_bench** = serwer, MTP n=4, T=0, 256 tok.; **llama-bench** = `-fa 1 -p 4096 -n 128 -r 2`, KV jak w `run-llm.sh`; **xbench** = workload MagnitudeVs (sweep, copy 64k, code-edit 4 pliki, TTFT); **copy_bench** = zestawy `copy`/`mvs`/`long` ([[zestaw-copy-mvs]]).
 
@@ -103,4 +103,4 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 - [[benchmarki-przed-po-2026-10-19]]
 - [[stan-2026-10-15]]
 - [[nvidia-wyniki-2026-10-16]]
-- [[otwarte-decyzje-produktu]]
+- [[otwarte-decyzje-techniczne]]

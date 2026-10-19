@@ -17,7 +17,7 @@ status: aktualne
 - T2 (tylko po czystym T1): soak ≥ 1000 requestów; kryterium PM4 w produkcji: 0 faultów i cool-down < 10% kroków.
 - Opcjonalnie celowa reprodukcja H1 (wymuszona inwalidacja userptr) – kosztuje reset, osobna zgoda.
 
-Rekomendacja: `GGML_HIP_PM4=0` w `run-llm.sh` i blokach agentów (Qwen MTP 108.8 → 103.7 t/s, −4.7%; LFM 293.6 → 259.3, −12%) – decyzja użytkownika ([[otwarte-decyzje-produktu]]); PM4 nie trafia do produktu bez T2. Wyniki: [[2026-10-19-page-faulty-gpu-analiza]].
+Rekomendacja: `GGML_HIP_PM4=0` w `run-llm.sh` i blokach agentów (Qwen MTP 108.8 → 103.7 t/s, −4.7%; LFM 293.6 → 259.3, −12%) – decyzja użytkownika ([[otwarte-decyzje-techniczne]]); PM4 nie trafia do produktu bez T2. Wyniki: [[2026-10-19-page-faulty-gpu-analiza]].
 
 **§9 (Pm4Fix, 2026-10-19):** przyczyna wskazana w źródłach – brak `PRIV=1` w dispatchach taśmy na GFX11 + ewikcje SVM z kopii HIP stanu `--cache-ram`; nieudowodniona na GPU; prototypy `b7fb3fe85`; testy S1–S6 (S5 = celowy reset, opcjonalny) czekają na decyzję użytkownika ([[2026-10-19-pm4-priv-analiza]]).
 

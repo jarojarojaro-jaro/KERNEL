@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (40)
+## Notatki (41)
 
 - [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]] — Zestawienie wszystkich zmierzonych liczb całej optymalizacji – upstream, wcześniejszy fork i produkcja – dla XTX (Qwen, Uncensored, LFM), nowych zmian poza produkcją, kart NVIDIA i Magnitude, każda ze źródłem `plik:wiersz` i oceną porównywalności (P / O / brak).
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
@@ -54,6 +54,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]] — Agent CoupledSampling przeniósł sprzężone próbkowanie Magnitude do forka za `LLAMA_SPEC_COUPLED` (domyślnie wył.): dowód i testy bezstratności przechodzą, zysk MTP przy T=1 nierozstrzygnięty (+0…+3.6%), A/B przerwane przez resety GPU.
 - [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]] — Agent Pm4FaultAnalysis przeanalizował na CPU (journal, logi, kod `hip-pm4.cu`) 10 resetów: 8 to ta sama awaria taśmy PM4 w serwerze Qwen MTP, przyczyna nieudowodniona (H1 wywłaszczenie kolejki w środku IB ~60%), produkcja zagrożona (~1 reset/330 requestów, ~1/200 przy pełnym cache promptu).
 - [[raport-21c-cplm|Raport 21c: Copy-Paste Language Models (CPLM) – nie adoptujemy]] — CPLM (Godey & Artzi, arXiv 2610.19247, 13.10.2026) to architektura wyjścia trenowana od pretrainingu – pointer po stanach ukrytych kontekstu + token bramki `<copy>` + klucz `<sink>` – a nie optymalizacja inferencji; dekodowanie spowalnia o 1.0–3.8% (Tab. 6), więc jej nie adoptujemy, a z jej intuicji bierzemy tylko regułę AGR dla naszego lookupu.
+- [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]] — „RSI” w Terminal-RSI (arXiv 2610.22192) to dwa cykle expert iteration (rozwiązania przechodzące ukryte testy → przepisane demonstracje → SFT) + PPO, z decyzjami ludzi między cyklami; kierunek wyniku jest realny (Qwen3.8-27B TB 2.1 51.7 → 86.5%, TB 4.0 0 → 19.84%), ale pokazany zbyt korzystnie; dla nas: adoptować i zmierzyć RSR-27B (E1), a RSI przenieść na fabrykę bez trenowania wag (pętla RSI-F).
 - [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]] — Trzy raporty rundy 6 (2026-10-15), wszystkie bez GPU: szybki kernel GDN bitowy z konstrukcji, epilog MMQ w VOPD oraz narzędzia LOO / kanarki KLD / Kernel Tuner.
 - [[star-elastic-2605-07182|Star Elastic (arXiv 2605.07182)]] — Praca NVIDIA o zagnieżdżonych podmodelach Nemotron Nano v3 (30B → 23B/12B z jednego post-trainingu) i osobnym podmodelu dla fazy myślenia; nie dotyczy kerneli, dla nas niska istotność.
 <!-- AUTO:END -->

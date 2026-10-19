@@ -11,7 +11,7 @@ status: aktualne
 
 Hipotezy 15e: H1 (GSQ/Swift-mtp ≥ 1.3 × Saluki przy niższym KLD) potwierdzona (W2 ×1.46, KLD 0.164 < 0.257); H2 (Swift −20% tokenów) na granicy; H3 (GSQ na 16 GB gorszy w KLD-PL) potwierdzona. Kill: GSQ 16 GB zadziałał, MTP 12 GB / Swift / AP nie.
 
-Rekomendacje (czekają na decyzję, [[otwarte-decyzje-produktu]]): 16 GB U3 → A3 po bramce na forku; 12 GB IQ3_XXS-mtp (W3 zmierzony, ISTA IQ3_XXS-mtp do jednego przebiegu KLD); Swift jako tryb „mniej zapętleń” (licencja).
+Rekomendacje (czekają na decyzję, [[otwarte-decyzje-techniczne]]): 16 GB U3 → A3 po bramce na forku; 12 GB IQ3_XXS-mtp (W3 zmierzony, ISTA IQ3_XXS-mtp do jednego przebiegu KLD); Swift jako tryb „mniej zapętleń” (licencja).
 
 Zastrzeżenia: host 3060 A przycięty do 120 W (tylko porównania wewnątrz hosta), LanguageTool na ~550 słowach to szum, seedy zadań na różnych kartach. Wyniki: [[2026-10-18-e1-kwanty-27b-kld]], metoda: [[kld-po-polsku]].
 

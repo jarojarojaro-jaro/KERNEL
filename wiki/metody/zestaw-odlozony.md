@@ -1,8 +1,8 @@
 ---
 typ: metoda
 tags: [metody, pomiar, spekulacja]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15f-agentowa-nauka.md:22,84,139-147,184-194; ~/KERNEL/product/research/16h-fabryka-v1.md:73
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/research/15f-agentowa-nauka.md:22,84,139-147,184-194; ~/KERNEL/product/research/16h-fabryka-v1.md:73; ~/KERNEL/product/research/21h-rsi.md:198-215
 status: aktualne
 ---
 # Zestaw odłożony i klątwa zwycięzcy
@@ -22,6 +22,8 @@ status: aktualne
 Reguła: `factory/sealed/` (≥ 4 prompty z innych domen, hash w ledgerze), raport podaje obie liczby, a t/s rozbija na tok/krok ÷ ms/krok. Mała próba – to wskaźnik, nie dowód.
 
 **Stan 2026-10-16:** zestaw `sealed-v1` istnieje (`factory/sealed/prompts.jsonl`, sha256 `1e6c3a4b…` przypięty w `fk/sealed.py`): 10 promptów (5 new-writing / 5 copy-edit, 4 PL / 6 EN, 4 edycje agentowe); werdykt na nim, spec6 obok ([[fabryka-cli]]).
+
+Klątwa zwycięzcy w literaturze (21h, 2026-10-19): Terminal-RSI wybrał checkpoint (krok 18) na wynikach benchmarków – krok 20 traci 2.4…3.0 pp, a nagrodę SPR zaprojektowano na danych już widzianych; autorzy sami piszą, że to miesza uczenie z adaptacją do testu ([[raport-21h-rsi]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

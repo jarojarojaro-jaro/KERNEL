@@ -86,6 +86,9 @@ Nowe: [[2026-10-19-pm4-priv-analiza]], [[gfx11-pm4-dispatch-priv]], [[hip-kopie-
 ## [2026-10-19] ingest | Raport 21c (Copy-Paste LM)
 Nowe: [[raport-21c-cplm]], [[lekcja-lm-head-bottleneck]], [[2026-10-19-sufit-pointera-lookup]], [[2026-10-19-tokeny-spoza-slownika-draftu]], [[agr-lookup-zgodny-z-mtp]]; zaktualizowany [[raport-16b-lookup-tail]].
 
+## [2026-10-19] ingest | Raport 21h (Terminal-RSI) + podział otwartych decyzji
+Nowe: [[raport-21h-rsi]], [[rsr-27b]], [[tencent-terminal-rsi]], [[lekcja-verified-to-nie-poprawny]], [[petla-rsi-f]], [[2026-10-19-plan-retro-rsr-0070]], [[2026-10-19-plan-e1-rsr27b]], [[otwarte-decyzje-techniczne]] (wydzielone z [[otwarte-decyzje-produktu]]: flagi, łatki, testy GPU, wydatki; nowe wiersze P0/P1 i E1). Zaktualizowany [[zestaw-odlozony]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

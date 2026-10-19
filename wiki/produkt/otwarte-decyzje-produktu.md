@@ -23,13 +23,8 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 | teza produktu (PLAN §0.1) | „żaden nie robi naraz…” | zawęzić wyróżnik po Magnitude ([[zawezenie-tezy-produktu]], raport 15c) |
 | tryb stratny PFlash | brak | czy oferować opt-in „szybki odczyt długich dokumentów” ([[tryb-stratny-pflash]], raport 15d) |
 | licencje z progiem przychodu | brak | czy dopuszczamy modele jak Swift 1.5 (komercyjnie tylko < US$1M przychodu, [[swift-1-5]], raport 15e) |
-| tryb „identyczne odpowiedzi” | gałąź `batch-invariant` @ `365af3e5e`, przełącznik wyłączony = produkcja | opt-in `LLAMA_SPEC_BITEXACT=1`? MTP 0% krótki, −9% przy ~27k ([[2026-10-16-bit-exact]]) |
-| model 16 GB | UD-Q3_K_XL (U3) | AP-Q3_K_XL po bramce? KLD czat −12%, kod −23% ([[2026-10-18-e1-kwanty-27b-kld]]) |
-| model 12 GB | Saluki/Bonsai | IQ3_XXS-mtp (Swift W3 lub ISTA)? KLD-PL 0.108 vs 0.320 |
-| łatka 0071 `GGML_HIP_MOE_GU_BLOCK` | gałąź `opt-lfmmoe` @ `7c5b2a116`, poza produkcją | scalić, domyślnie wł.? bitowa, LFM +0.33%, Uncensored +1.39% ([[2026-10-18-lfm-moe-pasmo]]) |
-| flagi `run-llm.sh` (16f) | bez zmian | LFM `-ub 2048` (+17% prefillu) i `CACHE_SHARE_MIN=1024` ([[raport-16f-xtx-szybkie]]) |
-| ogon lookupu dla Qwena (16b) | gałąź `lookup-tail`, poza produkcją | `LLAMA_SPEC_LOOKUP=3`, `_W=16` (mvs ×2.41) po tygodniu logu `=1` na ruchu omp ([[raport-16b-lookup-tail]]) |
-| PM4 w serwerach (raport 17) | `~/llama-opt` z PM4 domyślnie (~1 reset/330 req.) | `GGML_HIP_PM4=0`? (−4.7% / −12%); testy S1–S6, `HSA_USE_SVM=0` ([[2026-10-19-pm4-priv-analiza]]) |
+
+Decyzje techniczne silnika (flagi produkcji, łatki do scalenia, wydatki na GPU/chmurę): [[otwarte-decyzje-techniczne]].
 
 Decyzje już podjęte są w folderze decyzji (np. open core, czat na web UI llama.cpp, konto na początku jako pomysł użytkownika).
 
