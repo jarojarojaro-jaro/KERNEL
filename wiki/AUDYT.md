@@ -2718,6 +2718,9 @@ Liczby z 20-build-topka.md:14-17,65-72; alarm z `gpu-guard.log:3`, progi z `gpu-
 ## Aktualizacja: raport 17 §9 (2026-10-19)
 Liczby z 17-gpu-page-fault.md:210-425 (vmstat, timeouty MES 107–128 ms, doorbell `0x100a`, progi restore 1/1/100 ms). Notatki `decyzje/2026-10-19-pm4-w-serwerach` (proponowanej w §9.7) nie ma – decyzja PM4 jest otwarta, więc trafiła do `otwarte-decyzje-produktu`. Błędnych: 0.
 
+## Aktualizacja: raport 21c (2026-10-19)
+Liczby z 21c §0–§6 (wiersze w `zrodlo`) i plików `21c-cplm/{chat,agent,oov,oov_steps}.txt`; liczby arXiv 2610.19247 przepisane z raportu (nie z PDF). Rekordów nowych brak (symulacje CPU). Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

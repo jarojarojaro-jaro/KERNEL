@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (72)
+## Notatki (73)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]] — Restarty serwera 2026-10-18 czyszczą `/tmp`: `/tmp/bxv/summary.txt` i `/tmp/bxd/*` (walidacja bit-exact) zniknęły już przy wcześniejszym restarcie ~18:53 UTC, przed archiwizacją; przed restartem ~20:27 UTC (overdrive) resztę zarchiwizowano do `~/qwen-opt/tmp-archive-20261018/` (63 MB: coupled, lookup, pm4pdl, lfmmoe, qa).
@@ -86,6 +86,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-zabicie-skryptu-nie-serwera|Zabicie skryptu nie zabija serwera]] — Po zabiciu skryptu zadań osierocony `llama-server` (Saluki, `-np 20`) trzymał 18 GB na A40, przez co dwa kolejne serwery zadań (U3, B0) dostały OOM (E1, 2026-10-16).
 - [[lekcja-zombie-serwery|Zombie serwery i współdzielony VRAM]] — DFlash wisiał na SIGTERM, a wynik MTP spadł do 5.6 t/s; serwer agenta K4 na porcie 8097 trzymał VRAM.
 - [[lekcja-limit-mocy-285w|Zysk kernela ≠ zysk tokena przy limicie mocy 285 W]] — Szybszy gate+up LFM (−0.5 µs/wywołanie w trybie szybkim, −2.2 µs w wolnym) spowolnił inne kernele (out_proj 5.48 → 5.76–5.84 µs × 39 wywołań), więc LFM zyskał tylko +0.33%; ten sam objaw dały 3 wiersze w rundzie 4 (down 12.92 → 13.20, out_proj 5.44 → 5.84, FA 8.88 → 9.48 µs) (2026-10-18).
+- [[lekcja-lm-head-bottleneck|„LM head bottleneck” w pracach treningowych ≠ koszt LM head w dekodowaniu]] — W pracach treningowych (np. CPLM) „LM head bottleneck” znaczy utratę gradientu przy rzutowaniu V logitów do D wymiarów (> 99% normy przy V ≫ D) i niski rząd softmaksu – nie koszt czytania LM head przy dekodowaniu, którego te metody nie zmniejszają (CPLM dokłada 1–4%) (raport 21c, 2026-10-19).
 - [[lekcja-baseline-wlasnego-silnika|„Nx szybciej” bywa liczone względem własnego albo zimnego silnika]] — Posty Lucebox podają przyspieszenia względem własnego silnika albo zimnego llama.cpp: KVFlash ma pełny prefill 32K 47.2 s (694 t/s) wobec 1168 t/s llama.cpp na tej samej 3090, a PFlash v1 porównywał się do „~257 s” na zimno zamiast 169.3 s na ciepło.
 - [[lekcja-timeout-tasmy-to-skutek|„Tape did not complete within 10 s” to skutek, nie przyczyna]] — W 7 awariach E-X4 fault i reset GPU przyszły 0.57–3.20 s po starcie requestu, a komunikat `tape of 823 dispatches did not complete within 10 s` dopiero ~10 s później – po resecie sygnał taśmy nigdy nie spada (raport 17, 2026-10-19).
 <!-- AUTO:END -->
