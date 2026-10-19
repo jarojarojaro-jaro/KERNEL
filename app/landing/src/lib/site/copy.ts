@@ -74,11 +74,14 @@ const raw = {
 				k: '01',
 				title: 'Skan',
 				head: 'Najpierw czytamy|Twoją kartę.',
-				body: 'Model, pamięć, przepustowość, limit mocy. Lokalnie, bez uprawnień administratora i bez wysyłania czegokolwiek.',
-				vram: 'pamięci VRAM',
+				body: 'Model, pamięć, przepustowość, moc. Lokalnie, bez uprawnień administratora i bez wysyłania czegokolwiek.',
+				detected: 'wykryto',
+				lab: 'karta z naszego labu',
+				vram: 'pamięć VRAM',
 				bw: 'przepustowość pamięci',
-				power: 'limit mocy',
-				arch: 'architektura'
+				power: 'moc karty (TBP)',
+				arch: 'układ',
+				note: 'Nasza karta testowa. Pamięć, szyna, prędkość pamięci, moc (Total Board Power) i złącza: specyfikacja Sapphire. Navi 31: vulkaninfo na maszynie labu. Domyślny limit mocy w sterowniku tej karty: {w} W.'
 			},
 			fit: {
 				k: '02',
@@ -325,11 +328,14 @@ const raw = {
 				k: '01',
 				title: 'Scan',
 				head: 'First, we read|your card.',
-				body: 'Model, memory, bandwidth, power limit. Locally, without admin rights, without sending anything.',
-				vram: 'of VRAM',
+				body: 'Model, memory, bandwidth, power. Locally, without admin rights, without sending anything.',
+				detected: 'detected',
+				lab: 'the card in our lab',
+				vram: 'VRAM',
 				bw: 'memory bandwidth',
-				power: 'power limit',
-				arch: 'architecture'
+				power: 'board power (TBP)',
+				arch: 'chip',
+				note: 'Our test card. Memory, bus, memory speed, power (Total Board Power) and connectors: Sapphire spec sheet. Navi 31: vulkaninfo on the lab machine. Default driver power limit on this card: {w} W.'
 			},
 			fit: {
 				k: '02',

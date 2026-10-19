@@ -1,121 +1,137 @@
 <script lang="ts">
 	/**
-	 * Scene 01, Skan: the same product render as the cards explorer (`GpuArt`) launches in as soon as
-	 * the scene enters the viewport (fast slide with motion blur, skids to a stop), then a light bar
-	 * sweeps it on an auto-played timeline (`--p`, plays once, replay button). Behind the bar the
-	 * shroud gives way to an x-ray of the board, drawn on the render's own grid; four spec callouts
-	 * pop at p = .3 / .45 / .6 / .75, each with its source. A scan readout (track, parameters found) replaces a bare percentage. Bone light only:
-	 * heat colour is reserved for speed.
+	 * Scene 01, Skan: our lab card, a Sapphire PULSE RX 7900 XTX (`PulseXtx`), shoots in as soon as the
+	 * scene enters the viewport (motion blur, skids to a stop) with its fans spinning up, then a red scan
+	 * beam crosses it on an auto-played timeline (`--p`, plays once, replay button). An x-ray band
+	 * trails the beam: under the shroud, the board on the same grid, where every part the scan reads
+	 * lights red. Each spec callout pops the moment the beam passes its part, so the readout fills
+	 * left to right; the model name types into the readout first. The end state (and the server HTML,
+	 * reduced motion) is the whole card with its four specs. Red is the Radeon accent here; heat
+	 * colours stay reserved for speed.
 	 */
-	import GpuArt from '$lib/cards/GpuArt.svelte';
 	import { Autoplay } from '$lib/fx/autoplay.svelte';
 	import { clamp01 } from '$lib/fx/motion';
 	import Replay from '$lib/fx/Replay.svelte';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { num, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
-	import { HERO_CARD } from './data';
-	import Gpu3090 from './Gpu3090.svelte';
+	import { fill, SCAN_BOARD as B, SCAN_CARD as C } from './data';
+	import PulseXtx from './PulseXtx.svelte';
 	import SceneHead from './SceneHead.svelte';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].how.scan);
 	// starts as soon as the scene's top enters the viewport: the card is never waiting off-screen
-	const tl = new Autoplay(2.6, '0px');
+	const tl = new Autoplay(2.8, '0px');
 	const p = $derived(tl.p);
-	const s = $derived(clamp01((p - 0.16) / 0.66));
+	/** The x-ray band behind the beam, as a fraction of the card width. */
+	const BAND = 0.25;
+	/** Beam position across the card: 0 → 1 + BAND, so the band leaves past the tail at the end. */
+	const b = $derived(clamp01((p - 0.14) / 0.74) * (1 + BAND));
+	/** Model name typing into the readout, before the beam starts. */
+	const t = $derived(clamp01((p - 0.02) / 0.16));
+	/** Fans spin up on arrival and coast to a stop (turns, eased out). */
+	const spin = $derived(4 * (1 - (1 - p) ** 3));
+	/** Card grid of `PulseXtx`. */
+	const W = 800;
+	const H = 330;
 
-	const callouts = $derived([
-		{ id: 'vram', at: 0.3, x: 50, y: 16.7, dir: 'up', end: true, value: `${HERO_CARD.vramGB}\u00a0GB`, label: c.vram, src: HERO_CARD.hwSrc },
-		{ id: 'bw', at: 0.45, x: 33, y: 80, dir: 'down', end: true, value: `${num(HERO_CARD.bwGBs.v, lang, 0)}\u00a0GB/s`, label: c.bw, src: HERO_CARD.bwGBs.src },
-		{ id: 'power', at: 0.6, x: 89.4, y: 5.7, dir: 'up', end: true, value: `${num(HERO_CARD.powerW.v, lang, 0)}\u00a0W`, label: c.power, src: HERO_CARD.powerW.src },
-		{ id: 'arch', at: 0.75, x: 57.5, y: 50, dir: 'down', end: false, value: HERO_CARD.arch, label: c.arch, src: HERO_CARD.hwSrc }
-	]);
-	const found = $derived(callouts.filter((k) => p >= k.at).length);
-	const hwNote = $derived(HERO_CARD.hwLine?.[lang] ?? '');
-	/** One source for the four specs (in the readout), not a pill on every callout. */
-	const specSrc = $derived([...new Set(callouts.map((k) => k.src))]);
+	const callouts = $derived(
+		[
+			{ id: 'arch', px: 290, py: 186, dir: 'down', end: false, value: B.chip.v, label: c.arch, d: C.arch.replace(/^RDNA(\d)\s+/, 'RDNA\u00a0$1 · ') },
+			{ id: 'vram', px: 270, py: 59, dir: 'up', end: false, value: `${C.vramGB}\u00a0GB`, label: c.vram, d: `${B.memType.v} · ${B.busBits.v}-bit` },
+			{ id: 'bw', px: 212, py: 175, dir: 'down', end: true, value: `${num(C.bwGBs.v, lang, 0)}\u00a0GB/s`, label: c.bw, d: `${B.gbps.v}\u00a0Gbps × ${B.busBits.v}\u00a0bit` },
+			{ id: 'power', px: 528, py: 14, dir: 'up', end: false, value: `${num(B.tbpW.v, lang, 0)}\u00a0W`, label: c.power, d: `${B.pins8.v} × 8-pin` }
+		].map((k) => ({ ...k, x: (k.px / W) * 100, y: (k.py / H) * 100, on: b >= k.px / W }))
+	);
+	const lit = $derived({ bus: b >= 172 / W, mem: b >= 215 / W, gpu: b >= 232 / W, pwr: b >= 440 / W });
+	const found = $derived(callouts.filter((k) => k.on).length);
+	/** One source chip for the four specs (in the readout), not a pill on every callout. */
+	const specSrc = $derived([B.memType.src, C.bwGBs.src, B.chip.src, C.powerW.src]);
+	const note = $derived(fill(c.note, { w: num(C.powerW.v, lang, 0) }));
 </script>
 
-<div class="wrap" use:tl.view style="--p:{p}">
+<div class="wrap" use:tl.view style="--b:{b}; --t:{t}">
 	<div class="layout">
-			<div class="side">
-				<SceneHead id="scene-scan" k={c.k} step={c.title} head={c.head} body={c.body} />
-					<!-- scan readout: a designed instrument, not a debug percentage -->
-					<div class="readout">
-						<span class="rl" aria-hidden="true">{c.title}</span>
-						<span class="rn" aria-hidden="true">{HERO_CARD.name}</span>
-						<span class="track" aria-hidden="true"><span class="fillbar" style="--s:{s}"></span></span>
-						<span class="found" aria-hidden="true" class:done={found === callouts.length}>
-							{#each callouts as k, i (k.id)}<i class:on={i < found}></i>{/each}
-							<b>{found}/{callouts.length}</b>
-						</span>
-						<span class="rsrc"><SourceTip {lang} src={specSrc} note={hwNote} /></span>
-						<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
-					</div>
-			</div>
-			<div class="stage">
-				<div class="gpu" class:go={p > 0}>
-					<div class="layer shroud"><GpuArt label={HERO_CARD.short} vendor={HERO_CARD.vendor} vram={HERO_CARD.vramGB} flat /></div>
-					<div class="layer xray"><Gpu3090 /></div>
-					<div class="sweep" aria-hidden="true"><span class="beam"></span></div>
-					<ul class="callouts" role="list">
-						{#each callouts as k (k.id)}
-							<li class="callout {k.dir}" class:end={k.end} class:on={p >= k.at} style="--x:{k.x}%; --y:{k.y}%; --xn:{k.x}; --yn:{k.y}">
-								<span class="pin" aria-hidden="true"></span>
-								<span class="tag">
-									<span class="v">{k.value}</span>
-									<span class="l">{k.label}</span>
-								</span>
-							</li>
-						{/each}
-					</ul>
+		<div class="side">
+			<SceneHead id="scene-scan" k={c.k} step={c.title} head={c.head} body={c.body} />
+			<!-- scan readout: what the scan read, then the instrument -->
+			<div class="readout">
+				<p class="det">
+					<span class="dl">{c.detected}</span>
+					<span class="dn">{C.name}</span>
+					<span class="dm">{B.maker} {B.series} · {c.lab}</span>
+				</p>
+				<div class="ctl">
+					<span class="rl" aria-hidden="true">{c.title}</span>
+					<span class="track" aria-hidden="true"><span class="fillbar"></span></span>
+					<span class="found" aria-hidden="true" class:done={found === callouts.length}>
+						{#each callouts as k, i (k.id)}<i class:on={i < found}></i>{/each}
+						<b>{found}/{callouts.length}</b>
+					</span>
+					<span class="rsrc"><SourceTip {lang} src={specSrc} {note} /></span>
+					<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 				</div>
 			</div>
+		</div>
+		<div class="stage">
+			<div class="gpu" class:go={p > 0} style="--spin:{spin}">
+				<div class="layer shroud"><PulseXtx part="shroud" /></div>
+				<div class="layer xray"><PulseXtx part="xray" {lit} /></div>
+				<div class="sweep" aria-hidden="true"><span class="beam"></span></div>
+				<ul class="callouts" role="list">
+					{#each callouts as k (k.id)}
+						<li class="callout {k.dir}" class:end={k.end} class:on={k.on} style="--x:{k.x}%; --y:{k.y}%; --yn:{k.y}">
+							<span class="pin" aria-hidden="true"></span>
+							<span class="tag">
+								<span class="v">{k.value}</span>
+								<span class="l">{k.label}</span>
+								<span class="d">{k.d}</span>
+							</span>
+						</li>
+					{/each}
+				</ul>
+			</div>
+		</div>
 	</div>
 </div>
 
 <style>
 	/* the launch slide and the sweep travel past the right edge: never widen the page */
 	.wrap {
+		--amd: #ff3b4f;
 		position: relative;
 		overflow-x: clip;
 		scroll-margin-top: var(--header-clear);
-		--s: clamp(0, calc((var(--p) - 0.16) / 0.66), 1);
 	}
+	/* heading + readout on the left, the card with its callout ring on the right; the whole scene
+	 * fits one viewport (the card shrinks with the viewport height, never the other way round) */
 	.layout {
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
 		display: grid;
-		grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.4fr);
+		grid-template-columns: minmax(0, 0.78fr) minmax(0, 1.5fr);
 		align-items: center;
-		gap: clamp(2rem, 5vw, 6rem);
-		padding-block: var(--header-clear) clamp(2rem, 1.5rem + 2vw, 3.5rem);
+		gap: clamp(2rem, 4vw, 5rem);
+		padding-block: var(--header-clear) clamp(1.25rem, 3vh, 2.5rem);
 	}
-	/* room above and under the render for the callouts, then the scan readout */
-	/* heading and the scan instrument share the left column (no empty column under the text) */
 	.side {
 		display: grid;
-		gap: clamp(1.5rem, 3vw, 2.5rem);
+		gap: clamp(1.25rem, 3vh, 2.25rem);
 		align-content: center;
-		align-self: start;
-		/* stays clear of the floating header while the tall render scrolls past */
-		position: sticky;
-		top: var(--header-clear);
-		scroll-margin-top: var(--header-clear);
 	}
+	/* room above and under the card for the callout ring */
 	.stage {
 		display: grid;
-		/* room above the render for the upward callouts (300 W sits highest) and below for 936 GB/s;
-		 * the whole stage sits one header height lower, so the board and its top tags clear the
-		 * floating nav while the sticky text column holds */
-		padding-block: calc(6rem + var(--header-clear)) 4.5rem;
+		padding-block: 7.5rem 7rem;
 	}
-	/* render and x-ray share one box and one 3D pose */
+	/* card and x-ray share one box and one 3D pose; 1rem + 16rem: header, padding and the ring */
 	.gpu {
 		position: relative;
 		container-type: size;
-		aspect-ratio: 640 / 300;
+		justify-self: center;
+		width: min(100%, (100svh - var(--header-clear) - 17.5rem) * 800 / 330);
+		aspect-ratio: 800 / 330;
 		transform: perspective(1500px) rotateY(-12deg) rotateX(6deg);
 		transform-style: preserve-3d;
 	}
@@ -144,17 +160,23 @@
 		position: absolute;
 		inset: 0;
 	}
-	.shroud {
-		clip-path: inset(-20% -20% -20% calc(var(--s) * 100%));
+	/* a soft red floor light under the card */
+	.shroud::after {
+		content: '';
+		position: absolute;
+		inset: 70% 8% -14%;
+		background: radial-gradient(50% 50% at 50% 50%, rgb(255 59 79 / 0.18), transparent 70%);
+		z-index: -1;
 	}
+	/* the x-ray band trails the beam (BAND = 0.25 of the card) */
 	.xray {
-		clip-path: inset(-10% calc((1 - var(--s)) * 100%) -10% -5%);
+		clip-path: inset(-12% calc(clamp(0, 1 - var(--b), 1) * 100%) -12% calc((var(--b) - 0.25) * 100%));
 	}
 	.sweep {
 		position: absolute;
-		inset: -8% 0;
-		transform: translate3d(calc(var(--s) * 100%), 0, 0);
-		opacity: clamp(0, calc(min(var(--s), 1 - var(--s)) * 25), 1);
+		inset: -10% 0;
+		transform: translate3d(calc(min(var(--b), 1) * 100%), 0, 0);
+		opacity: clamp(0, calc(min(var(--b), 1.04 - var(--b)) * 25), 1);
 		pointer-events: none;
 	}
 	.beam {
@@ -163,10 +185,10 @@
 		bottom: 0;
 		left: -1px;
 		width: 2px;
-		background: var(--heat-5);
+		background: #fff1f2;
 		box-shadow:
-			0 0 10px 2px rgb(255 193 90 / 0.9),
-			0 0 40px 12px rgb(255 122 26 / 0.45);
+			0 0 10px 2px rgb(255 120 135 / 0.95),
+			0 0 44px 14px rgb(255 59 79 / 0.45);
 	}
 	.beam::before {
 		content: '';
@@ -174,8 +196,8 @@
 		top: 0;
 		bottom: 0;
 		right: 0;
-		width: 9rem;
-		background: linear-gradient(90deg, transparent, rgb(255 122 26 / 0.16));
+		width: 7rem;
+		background: linear-gradient(90deg, transparent, rgb(255 59 79 / 0.18));
 	}
 	.callouts {
 		list-style: none;
@@ -186,7 +208,7 @@
 	/* every leader runs from its pin to just outside the card edge (container units of .gpu), so the
 	 * tags form a ring above and below the card instead of covering it */
 	.callout {
-		--len: calc(var(--yn) * 1cqh + 1.4rem);
+		--len: calc(var(--yn) * 1cqh + 1.2rem);
 		position: absolute;
 		left: var(--x);
 		top: var(--y);
@@ -214,9 +236,9 @@
 		width: 12px;
 		height: 12px;
 		border-radius: 50%;
-		border: 2px solid var(--heat-4);
+		border: 2px solid var(--amd);
 		background: var(--bg-0);
-		box-shadow: 0 0 14px rgb(255 122 26 / 0.7);
+		box-shadow: 0 0 14px rgb(255 59 79 / 0.75);
 	}
 	.pin::after {
 		content: '';
@@ -224,14 +246,14 @@
 		left: 50%;
 		width: 1px;
 		height: var(--len);
-		background: linear-gradient(var(--heat-4), rgb(255 122 26 / 0.1));
+		background: linear-gradient(var(--amd), rgb(255 59 79 / 0.1));
 	}
 	.up .pin::after {
 		bottom: 100%;
-		background: linear-gradient(rgb(255 122 26 / 0.1), var(--heat-4));
+		background: linear-gradient(rgb(255 59 79 / 0.1), var(--amd));
 	}
 	.down {
-		--len: calc((100 - var(--yn)) * 1cqh + 1.4rem);
+		--len: calc((100 - var(--yn)) * 1cqh + 1.2rem);
 	}
 	.down .pin::after {
 		top: 100%;
@@ -243,11 +265,11 @@
 		justify-items: start;
 		gap: 0.15rem;
 		white-space: nowrap;
-		padding: 0.55rem 0.8rem 0.6rem;
-		border: 1px solid rgb(255 122 26 / 0.45);
-		box-shadow: 0 0 24px -10px rgb(255 122 26 / 0.7);
+		padding: 0.5rem 0.8rem 0.55rem;
+		border: 1px solid rgb(255 59 79 / 0.5);
+		box-shadow: 0 0 26px -10px rgb(255 59 79 / 0.8);
 		border-radius: var(--r-md);
-		background: rgb(11 11 13 / 0.9);
+		background: rgb(11 11 13 / 0.92);
 	}
 	.up .tag {
 		bottom: calc(var(--len) + 6px);
@@ -257,7 +279,7 @@
 	}
 	.v {
 		font-family: var(--font-display);
-		font-size: clamp(1.3rem, 0.8rem + 1.2vw, 2rem);
+		font-size: clamp(1.3rem, 0.8rem + 1.1vw, 1.95rem);
 		font-weight: 760;
 		font-stretch: 110%;
 		letter-spacing: -0.02em;
@@ -269,8 +291,13 @@
 		font-size: var(--fs-2xs);
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
+		color: var(--text);
+	}
+	.d {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.04em;
 		color: var(--text-mute);
-		margin-bottom: 0.3rem;
 	}
 	.callout.end .tag {
 		left: auto;
@@ -280,23 +307,56 @@
 	/* ---- scan readout ---- */
 	.readout {
 		display: grid;
-		grid-template-columns: auto minmax(4rem, 1fr) auto auto auto;
-		align-items: center;
-		gap: var(--sp-4);
-		padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
+		gap: var(--sp-3);
+		padding: var(--sp-4) var(--sp-4) var(--sp-3) var(--sp-5);
 		border: 1px solid var(--line);
-		border-radius: var(--r-pill);
-		background: rgb(11 11 13 / 0.7);
+		border-left: 2px solid var(--amd);
+		border-radius: var(--r-lg);
+		background: linear-gradient(90deg, rgb(255 59 79 / 0.07), transparent 60%), rgb(11 11 13 / 0.7);
+	}
+	.det {
+		display: grid;
+		gap: 0.2rem;
+		margin: 0;
+	}
+	.dl,
+	.dm,
+	.ctl {
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 	}
+	.dl {
+		color: var(--amd);
+	}
+	/* the model name types in (clip, full contrast) */
+	.dn {
+		justify-self: start;
+		font-family: var(--font-display);
+		font-weight: 780;
+		font-stretch: 110%;
+		font-size: clamp(1.35rem, 1rem + 0.9vw, 1.9rem);
+		letter-spacing: -0.02em;
+		line-height: 1.1;
+		color: var(--text-hi);
+		clip-path: inset(-0.2em calc((1 - var(--t)) * 100%) -0.2em 0);
+	}
+	.dm {
+		color: var(--text-mute);
+		letter-spacing: 0.08em;
+	}
+	/* not `.bar`: design/components.css owns that class globally */
+	.ctl {
+		display: grid;
+		grid-template-columns: auto minmax(3rem, 1fr) auto auto auto;
+		align-items: center;
+		gap: var(--sp-4);
+		padding-top: var(--sp-3);
+		border-top: 1px solid var(--line);
+	}
 	.rl {
 		color: var(--text-hi);
-	}
-	.rn {
-		display: none;
 	}
 	.track {
 		position: relative;
@@ -308,9 +368,9 @@
 		position: absolute;
 		inset: 0;
 		transform-origin: 0 50%;
-		transform: scaleX(var(--s));
-		background: var(--heat-ramp-hot);
-		box-shadow: 0 0 8px rgb(255 122 26 / 0.8);
+		transform: scaleX(min(var(--b), 1));
+		background: linear-gradient(90deg, #8f1b29, var(--amd) 60%, #ffd5da);
+		box-shadow: 0 0 8px rgb(255 59 79 / 0.8);
 	}
 	.found {
 		display: flex;
@@ -326,9 +386,9 @@
 		transition: background 0.3s;
 	}
 	.found i.on {
-		background: var(--heat-4);
-		border-color: var(--heat-4);
-		box-shadow: 0 0 6px rgb(255 122 26 / 0.7);
+		background: var(--amd);
+		border-color: var(--amd);
+		box-shadow: 0 0 6px rgb(255 59 79 / 0.7);
 	}
 	.found b {
 		margin-left: 0.3rem;
@@ -343,13 +403,14 @@
 			gap: var(--sp-5);
 		}
 		.side {
-			position: static;
-		}
-		.stage {
 			gap: var(--sp-4);
-			padding-top: 0;
+		}
+		/* the 2 × 2 callout grid sits under the card */
+		.stage {
+			padding-block: 0 9.75rem;
 		}
 		.gpu {
+			width: 100%;
 			transform: none;
 		}
 		@keyframes launch {
@@ -369,23 +430,25 @@
 				transform: none;
 			}
 		}
-		/* the pill shrinks to the screen; the source chip gets its own line */
 		.readout {
-			grid-template-columns: auto minmax(0, 1fr) auto auto;
+			padding: var(--sp-3) var(--sp-3) var(--sp-2) var(--sp-4);
+			gap: var(--sp-2);
+		}
+		.dm {
+			letter-spacing: 0.03em;
+		}
+		.ctl {
+			grid-template-columns: auto minmax(2rem, 1fr) auto auto auto;
 			gap: var(--sp-3);
-			border-radius: var(--r-lg);
+			padding-top: var(--sp-2);
 		}
-		.rsrc {
-			grid-column: 1 / -1;
-			grid-row: 2;
-			justify-self: start;
-		}
-		.rn {
+		/* icon-only source chip: the control row stays one line */
+		.rsrc :global(.src-btn span) {
 			display: none;
 		}
 		.callouts {
 			position: absolute;
-			top: calc(100% + var(--sp-5));
+			top: calc(100% + var(--sp-4));
 			left: 0;
 			right: 0;
 			display: grid;
@@ -401,30 +464,36 @@
 		.tag,
 		.callout.end .tag {
 			position: static;
-			grid-template-columns: minmax(0, 1fr) auto;
-			align-items: center;
+			height: 100%;
 			justify-items: start;
 			text-align: left;
 			white-space: normal;
-			padding: 0.5rem 0.6rem;
-		}
-		.tag :global(.src-btn) {
-			grid-column: 2;
-			grid-row: 1;
-			padding-inline: 0.4rem;
-		}
-		.tag :global(.src-btn span) {
-			display: none;
-		}
-		.l {
-			grid-column: 1 / -1;
-			margin: 0;
+			padding: 0.45rem 0.65rem 0.5rem;
 		}
 		.v {
 			font-size: 1.15rem;
 		}
+		.l,
+		.d {
+			font-size: 0.625rem;
+			letter-spacing: 0.04em;
+		}
+	}
+	/* tablets: a smaller card and the four specs in one row keep the scene within one screen */
+	@media (min-width: 600px) and (max-width: 900px) {
 		.stage {
-			padding-bottom: 9.5rem;
+			padding-bottom: 6.5rem;
+		}
+		.gpu {
+			width: min(100%, 36rem);
+		}
+		.callouts {
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+		}
+	}
+	@media (max-width: 360px) {
+		.found b {
+			display: none;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

@@ -2,7 +2,7 @@
  * Numbers the home page shows, picked from the registries (measurements.ts, estimator.ts).
  * Nothing is typed in here: this module only selects runs and variants and formats them.
  */
-import { CARDS, findCard, MODEL_INFO, variantOf, type CardView, type ModelKey, type RunView, type Variant, type VariantKey } from '$lib/data/measurements';
+import { CARDS, findCard, MODEL_INFO, variantOf, XTX_BOARD, type CardView, type ModelKey, type RunView, type Variant, type VariantKey } from '$lib/data/measurements';
 import { findModel, GPUS } from '$lib/estimator';
 import { fmtRatio } from '$lib/format';
 import { nb } from '$lib/site/copy';
@@ -23,6 +23,10 @@ export const HERO_V = {
 	a1: must(variantOf(HERO_RUN, 'a1'), 'a1'),
 	a2: must(variantOf(HERO_RUN, 'a2'), 'a2')
 };
+
+/** The scan scene reads our lab card: Sapphire PULSE RX 7900 XTX (board spec + registry entry). */
+export const SCAN_CARD = must(findCard(XTX_BOARD.card), XTX_BOARD.card);
+export const SCAN_BOARD = XTX_BOARD;
 export const HERO_MODEL = MODEL_INFO[HERO_RUN.model].name;
 export const HERO_GAIN = must(HERO_RUN.gain, 'gain');
 export const HERO_KERNELS = must(HERO_RUN.kernels, 'kernels');
