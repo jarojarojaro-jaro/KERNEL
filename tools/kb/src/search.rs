@@ -249,6 +249,7 @@ pub fn facts_query(idx: &Index, q: &str, force_agg: Option<Agg>, force_unit: Opt
     }
     let mut hits: Vec<FactHit> = Vec::new();
     let mut line_cache: HashMap<(u32, u32), HashSet<String>> = HashMap::new();
+    let mut heading_cache: HashMap<u32, HashSet<String>> = HashMap::new();
     let candidate_chunks: Vec<u32> = if terms.is_empty() { (0..idx.chunks.len() as u32).collect() } else { chunk_terms.keys().copied().collect() };
     for ci in candidate_chunks {
         let (s, e) = idx.chunk_facts[ci as usize];
@@ -276,12 +277,19 @@ pub fn facts_query(idx: &Index, q: &str, force_agg: Option<Agg>, force_unit: Opt
                 analyze(text).into_iter().map(|t| t.term).collect()
             });
             let label_terms: HashSet<String> = analyze(&f.label).into_iter().map(|t| t.term).collect();
+            // wiersz tabeli: sekcja (nagłówek nad tabelą) jest podmiotem wiersza, jak tekst linii
+            // („## RX 7900 XTX – Qwen…” + „| code-edit | 400.9 t/s |”)
+            let section_terms = if c.table_header.is_empty() {
+                None
+            } else {
+                Some(heading_cache.entry(ci).or_insert_with(|| analyze(c.heading.rsplit(" > ").next().unwrap_or("")).into_iter().map(|t| t.term).collect::<HashSet<String>>()))
+            };
             let mut rel = 0.0;
             let mut cov = 0.0;
             for (ti, (t, w)) in terms.iter().enumerate() {
                 let m = if label_terms.contains(t) {
                     1.0
-                } else if line_terms.contains(t) {
+                } else if line_terms.contains(t) || section_terms.as_ref().is_some_and(|h| h.contains(t)) {
                     0.8
                 } else if in_chunk.is_some_and(|v| v.contains(&ti)) {
                     0.55

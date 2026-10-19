@@ -54,3 +54,25 @@ fn search_json_has_sources() {
     }
     assert!(res.iter().any(|r| r["text"].as_str().unwrap().contains("130")), "{v}");
 }
+
+/// Regresja (2026-10-19): rekord z wiersza tabeli, którego podmiot („Qwen … XTX”) jest tylko w nagłówku
+/// sekcji, był odcinany filtrem trafności i `kb facts` pokazywał 396.9 zamiast 400.9 t/s.
+#[test]
+fn facts_record_from_table_section() {
+    let root = home().join("KERNEL");
+    if !root.join("wiki/REKORDY.md").exists() {
+        return;
+    }
+    let out = Command::new(env!("CARGO_BIN_EXE_kb"))
+        .args(["facts", "--json", "--max", "-k", "5", "najlepszy", "wynik", "qwen", "xtx"])
+        .env("KB_NO_DAEMON", "1")
+        .output()
+        .unwrap();
+    assert!(out.status.success());
+    let v: serde_json::Value = serde_json::from_slice(&out.stdout).unwrap();
+    let res = v["results"].as_array().unwrap();
+    assert!(
+        res.iter().any(|r| r["value"].as_f64() == Some(400.9) && r["path"] == "wiki/REKORDY.md"),
+        "brak 400.9 t/s z REKORDY.md w top 5: {v}"
+    );
+}

@@ -139,7 +139,7 @@ Same embeddingi dają tylko 0.688. W hybrydzie dokładają jednak +9 pkt do BM25
     - Najlepszy/najszybszy/rekord/best → Best (t/s, ×, %, tok/krok w górę; czas, koszt i KLD w dół). Najwolniejszy/najgorszy → Worst. Najwyższy/największy/max → Max, najniższy/najmniejszy/min → Min.
     - Jednostka podana wprost działa jako filtr, a słowo wskazujące (prefill→t/s, koszt→$, kld→KLD…) jako podpowiedź. Przy agregacji bez jednostki domyślnie t/s.
     - Liczby w zapytaniu: `130` = [130, 131), `130.2` = ±0.05, `100%` = 100 z jednostką %.
-  - **Trafność faktu.** Ważona idf zgodność termów: etykieta 1.0, linia 0.8, fragment z kontekstem 0.55. Dochodzą premie:
+  - **Trafność faktu.** Ważona idf zgodność termów: etykieta 1.0, linia 0.8, fragment z kontekstem 0.55. Dla wiersza tabeli nagłówek sekcji nad tabelą liczy się jak linia (0.8), bo to on mówi, czego dotyczy wiersz. Dochodzą premie:
     - +1.0, gdy wartość pasuje do liczby z pytania;
     - +0.5, gdy w tej samej linii jest liczba spełniająca warunek, np. „przy 100%”.
   - **Agregacja.** Filtry działają po kolei:
@@ -203,6 +203,7 @@ Kolejne kroki strojenia (hybryda + fakty, recall@5 dla wszystkich 80 pytań):
 | + poprawka numeracji linii w łączonych fragmentach (błąd: puste linie znikały) | 0.925 (held-out 0.875) |
 | + różnorodność 1 fragment na plik | 0.950 (held-out 0.925) |
 | + opisy `kb` przyciszone (×0.3), poziomy źródeł i trafność przy rekordach, jednostki tylko w listach, „vs”, poprawka KLD w nazwach plików | **0.963** (held-out 0.950) |
+| + regresja g81 (zgłoszona przez Main): `kb facts "najlepszy wynik qwen xtx" --max` dawał 396.9 zamiast rekordu 400.9 t/s (`REKORDY.md:29`). Przyczyna: wiersz 29 ma „Qwen … XTX” tylko w nagłówku sekcji, a filtr trafności (najlepsza − 0.15) wycinał go na rzecz wierszy, które przypadkiem miały „qwen” w tekście. Poprawka: nagłówek sekcji = podmiot wiersza (0.8). Dodane pytanie g81 i test `facts_record_from_table_section` | **0.963** na 81 pytaniach (held-out g41+ 0.951; p95 173 ms przy obciążonym serwerze) |
 
 Przeglądy parametrów (wszystkie 80 pytań; zrobione przed ostatnim wierszem tabeli wyżej):
 

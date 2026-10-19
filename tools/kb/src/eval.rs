@@ -146,7 +146,7 @@ pub fn report(results: &[ModeResult], gold: &[Gold], k: usize) -> String {
     let held: Vec<usize> = all.iter().copied().filter(|&i| id_num(&gold[i].id) > 40).collect();
     let facts: Vec<usize> = all.iter().copied().filter(|&i| gold[i].kind == "fact").collect();
     let mut s = format!(
-        "| tryb | recall@{k} wszystkie ({}) | dev g01–g40 | held-out g41–g80 | fakty ({}) | MRR@{k} | plik@{k} | p50 ms | p95 ms |\n|---|---|---|---|---|---|---|---|---|\n",
+        "| tryb | recall@{k} wszystkie ({}) | dev g01–g40 | held-out g41+ | fakty ({}) | MRR@{k} | plik@{k} | p50 ms | p95 ms |\n|---|---|---|---|---|---|---|---|---|\n",
         all.len(),
         facts.len()
     );
