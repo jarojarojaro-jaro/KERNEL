@@ -437,3 +437,29 @@ Gdyby S4 dał fault, następny krok to opcja 5 albo PM4 tylko w `llama-bench`. W
 | `kernele/` | aktualizacja `pm4-replay.md` | Sekcja „Awarie”: kandydat na przyczynę to brak `PRIV=1` (obejście GFX11) w połączeniu z ewikcją SVM/userptr w środku taśmy (`[INFERENCE]`, raport 17 §9); różnice wobec kfdtest/tinygrad (ORDERED_APPEND_ENBL, RESTART, polityka cache IB 3); prototypy `GGML_HIP_PM4_WA`, `GUARD` z obserwacją przy PM4=0, `EVICT_TEST_MS`; plan S1–S6. |
 | `decyzje/` | aktualizacja `2026-10-19-pm4-w-serwerach.md` | PM4 w serwerach off do czasu S4+S6 (§9.5). Kandydat na zmianę niezależną od PM4: `HSA_USE_SVM=0` albo `GPU_PINNED_MIN_XFER_SIZE` po pomiarze S3. Decyzja użytkownika. |
 | `research/` | aktualizacja hubu raportu 17 | Status: przyczyna wskazana w źródłach (PRIV na GFX11 + ewikcja SVM z kopii HIP), nieudowodniona na GPU; prototypy `b7fb3fe85`; sekwencja S1–S6. |
+
+## 10. Testy GPU S1–S6 (19.10, wykonane)
+
+**Werdykt:** obejście `GGML_HIP_PM4_WA=2` (PRIV=1, bez ORDERED_APPEND, RESTART=0, IB cache policy 0) przetrwało wszystkie ewikcje kolejek, także **w środku taśmy** (LFM 6073, Qwen 1076+506 wymuszonych), bez ani jednego page faultu / resetu i z identycznym greedy md5. Na buildzie topka z PM4=1 WA=2 GUARD=1 HSA_USE_SVM=0 przeszło **482 żądania produkcyjne, 0 faultów**. Wymagane ≥1000 żądań i pomiar ABBA na buildzie topka **nie zostały dokończone** (pauza GPU zarządzona przez użytkownika o ~16:55 UTC), więc **PM4 w topce pozostaje OFF** — nie adoptuję.
+
+| Test | Build / ustawienia | Obciążenie | Ewikcje (w taśmie) | Faulty | md5 / szybkość |
+|---|---|---|---|---|---|
+| S1 | pm4fault, PM4=0, wymuszone ewikcje | greedy plain + MTP | 210 + 116 (0) | 0 | c4708318 / 6f14e814 ✓ |
+| S2 | pm4fault, PM4=0, GUARD=2 | 244 żąd. (spec_sweep T=1/0.7, seedy 4–23) | 446 (392 SVM, 54 userptr), 5125 unmapów SVM | 0 | 106.2 t/s T=1, 110.6 t/s T=0.7 |
+| S3 | jw. + `HSA_USE_SVM=0` | 244 żąd. | **18** (tylko userptr), 0 unmapów | 0 | 105.0 / 111.0 t/s |
+| S4 | pm4fault, PM4=1 WA=2, ewikcje co ~20 ms, cool-down 0 | LFM tg128 ~2 min + greedy Qwen ×2 | LFM 6073; Qwen plain 1127 (1073 w taśmie), MTP 550 (503); powtórka 1139 (1076) / 553 (506) | 0 | md5 c4708318 / 6f14e814 ✓ (oba przebiegi) |
+| S4 szybkość | LFM tg128, -r 30, ABBA | — | — | 0 | PM4 off 263.85 / 259.14 vs WA=2 297.62 / 293.16 t/s = **+13%** |
+| S6 c1 | topka `2821e1303` (staging `~/wt/topka/inst`), PM4=1 WA=2 GUARD=1 SVM=0 | 241 żąd., seedy 4–23 | 4 (0); 87 493 taśm | 0 | 111.1 t/s / 28.16 ms/step T=1; 117.0 T=0.7 |
+| S6 c2 | jw. | 241 żąd., seedy 24–43 | 4 (1 w taśmie, userptr), 13 restore (9 przełożonych); 87 604 taśm | 0 | 116.6 t/s / 28.43 ms/step T=0.7 |
+
+Uwaga: S6 c1–c2 i S2/S3 to różne buildy i różne seedy — liczby t/s nie są porównaniem ABBA.
+
+**Nie zrobione (pauza GPU):** S6 c3–c5 (do ≥1000 żądań), ramię 241 żądań bez `HSA_USE_SVM=0`, ABBA szybkości na buildzie topka (Qwen spec_sweep 5 seedów, LFM tg128, `taskset -c 2-5`; skrypt gotowy: `~/qwen-opt/pm4fix/s6s.sh`), przebudowa `~/llama-topka` i zmiana domyślnych w `run-topka.sh`. Ciąg dalszy: `flock … ./s6w.sh s6-cN <seedy> "GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0"` dla seedów 44–103, potem `s6s.sh`.
+
+**Adopt/kill:** WA=2 — obiecujące (0 faultów przy ~9 tys. ewikcji, +13% LFM), adopcja dopiero po dokończeniu S6. `HSA_USE_SVM=0` — redukuje ewikcje 446→18 bez straty szybkości w S3 (105.0 vs 106.2 t/s T=1, w szumie), kandydat niezależny od PM4. Topka bez zmian (PM4=0).
+
+### 10.1 Do bazy wiedzy
+- WA=2 (PRIV=1 + ORDERED_APPEND off + RESTART=0 + IB policy 0) czyni taśmę PM4 odporną na ewikcję kolejki KFD w środku taśmy: 0 faultów przy 1073+503+6073 ewikcjach, md5 identyczne (S4).
+- `HSA_USE_SVM=0` eliminuje ewikcje SVM w serwerze (446→18, zostają tylko userptr) bez mierzalnej straty (S3).
+- Topka + PM4 WA=2 GUARD=1 SVM=0: 482 żądania, 0 faultów (S6 częściowe); próg 1000 niedokończony.
+- `GUARD=1` loguje tylko podsumowanie (`guard: N tape launches … queue evictions`), `evsum` z lib.sh liczy linie GUARD=2 — przy GUARD=1 czytać linię podsumowania.
