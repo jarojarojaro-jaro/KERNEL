@@ -30,13 +30,10 @@
   - longspec ~27k (decode t/s): produkcja 111.77/111.85, new 113.2, bx 102.66 (−9%).
 - **Zakończone.** Raport 12 §13 + „Do bazy wiedzy” uzupełnione. Czeka na decyzję użytkownika o wdrożeniu (przełącznik domyślnie wyłączony; „new” = produkcja).
 
-### XtxLookupTail: ogon z lookupu za MTP (`~/wt/lookup`, gałąź `lookup-tail`, zacommitowane `6e12530cc` + `586f1d596`; build `build-hip` = `586f1d596`; STOP GPU 2026-10-18 ~23:50 UTC)
-- Przełączniki: `LLAMA_SPEC_LOOKUP` (0 wył., 1 log, 2 ogon, 3 ogon + łańcuchy), `_W` (8), `_MMIN` (6), `_ADAPT=1` (kontroler 5/8/16).
-- Gotowe: E1, E2 (`e2/e2_table.txt`), E3 copy/mvs/long/sweep (`logs/e3_summary.txt`), E4 W8/W16/adapt na mvs/copy/long (`logs/e4_summary.txt`). Tekst T=0 identyczny we wszystkich ramionach (W8, W16, adapt) na 11/11 promptach.
-- Liczby: mvs wył. 166.2 → W8+łańcuchy 255.6 (+54%) → W16 400.9 / adapt 401.6 t/s (×2.41) przy T=0; T=1 166.1 → 231.0 → 376 t/s. Kontroler zawsze wybiera 16 (= W16).
-- **Problem:** spec_sweep (6×3, seedy 1–3) tryb 3 W8: ms/krok 29.06 → 29.13 (+0.2%), ale t/s −1.1% (8 ogonów na 2258 kroków zmieniło tekst T=1 w pl-proza/pl-kod; kill 15b −0.5%). Rozstrzygnąć na nowych seedach.
-- **Do zrobienia po wznowieniu (GPU):** `mkdir -p /tmp/lookup-run && cp ~/qwen-opt/lookup/{arm.sh,copy_bench.py,copy_prompts.json,e4_ab.sh,vram_ok.sh} /tmp/lookup-run/ && cd /tmp/lookup-run && export LOGDIR=~/qwen-opt/lookup/logs BLOCK_S=900 && ./e4_ab.sh sweep && I0=10 ./e4_ab.sh long && I0=10 ./e4_ab.sh copy` (sweep: A B D D B A, seedy 4–9; long/copy: powtórki ramion odrzuconych w oknie locków 23:18–23:30 i przy 8080; odrzucone dane już w `logs/discarded/`).
-- Potem raport `~/KERNEL/product/research/16b-lookup-tail.md` (jest szkic nagłówka) i `ab_summary.py logs --prefix e4-`.
+### XtxLookupTail: ogon z lookupu za MTP — **ZAKOŃCZONE 2026-10-19** (raport `product/research/16b-lookup-tail.md` z „Do bazy wiedzy”; `~/wt/lookup`, gałąź `lookup-tail`, `6e12530cc` + `586f1d596`, liczby w `git notes`)
+- mvs code-edit T=0: MTP4 166.2 → W8 255.6 → W16 400.9 t/s (×2.41); T=1 166.1 → 231.0 → 375.8. Tekst T=0 identyczny 11/11; czat: ms/krok ±0.2%.
+- Kontroler 5/8/16 = stałe W16 (bez zysku, zostaje wyłączony). Zalecenie: `LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16` po tygodniu logu `=1` — decyzja użytkownika.
+- Nic nie działa w tle; dane w `~/qwen-opt/lookup/` (odrzucone ramiona w `logs/discarded/`).
 
 ### XtxPm4Pdl: PM4 bez barier + prefetch — **ZAKOŃCZONE 2026-10-18 ~22:30 UTC** (`~/wt/pm4pdl`, gałąź `pm4-pdl`, commit `3a008359b`)
 - Raport: `product/research/16a-pm4-pdl.md` (z „Do bazy wiedzy”). Wyniki: `~/qwen-opt/pm4pdl/x1/bench4.log`, `x2/ab4.log` (2 ważne rundy).
