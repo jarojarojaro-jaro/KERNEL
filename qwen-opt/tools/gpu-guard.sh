@@ -33,8 +33,10 @@ while true; do
     busy=$(cat $dev/gpu_busy_percent 2>/dev/null || echo 0); rpm=$(cat $hw/fan1_input 2>/dev/null || echo 0)
     [ "$hot" -ge 100 ] && stop "hotspot ${hot} C"
     [ "$mem" -ge 98 ] && stop "VRAM ${mem} C"
-    if [ "$busy" -ge 50 ] && [ "$rpm" -lt 2500 ]; then slowfan=$((slowfan + 2)); else slowfan=0; fi
-    [ "$slowfan" -ge 20 ] && stop "fan ${rpm} RPM at ${busy}% busy for 20 s (hotspot ${hot} C, VRAM ${mem} C)"
+    # firmware zero-RPM keeps the fan stopped while the card is still cool (seen: 0 RPM at hotspot 65-67 C,
+    # 3300+ RPM from ~70 C), so a stopped fan only counts as a failure once the card is actually warm
+    if [ "$busy" -ge 50 ] && [ "$rpm" -lt 2500 ] && { [ "$hot" -ge 80 ] || [ "$mem" -ge 82 ]; }; then slowfan=$((slowfan + 2)); else slowfan=0; fi
+    [ "$slowfan" -ge 20 ] && stop "fan ${rpm} RPM at ${busy}% busy for 20 s while hot (hotspot ${hot} C, VRAM ${mem} C)"
     # early warning (no kill): wake the parent agent so it acts before limits are near
     if [ "$mem" -ge 85 ] || [ "$hot" -ge 90 ]; then
         echo "$(date -u '+%F %T') WARN: hotspot ${hot} C, VRAM ${mem} C, fan ${rpm} RPM, busy ${busy}%" | tee -a "$log"; exit 4
