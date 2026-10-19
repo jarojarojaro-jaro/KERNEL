@@ -14,7 +14,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (27)
+## Notatki (28)
 
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
 - [[agr-lookup-zgodny-z-mtp|AGR: wybór kandydata lookupu zgodnego z draftami MTP]] — Reguła bez treningu i bezstratna: spośród kandydatów lookupu (sufiks ≥ 2 albo ≥ 4 tokenów) zostawić tych, których pierwsze 4 tokeny kontynuacji równają się 4 draftom MTP, potem najdłuższy sufiks, potem najnowszy; w symulacji AGR2 daje +3.7% t/s na agencie (2/3 sufitu idealnego pointera) i +0.6% na czacie (raport 21c, 2026-10-19).
@@ -25,6 +25,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[kld-po-polsku|KLD kwantów na polskim tekście (protokół 16e)]] — Referencja to prawdziwe BF16 (na 48 GB z `-fit on`, offload do RAM, 54–240 s na korpus), a ocena idzie na pięciu korpusach o stałych md5, w tym trzech polskich; KLD-PL/KLD-wiki pokazuje, czy kwant ma „angielski” imatrix.
 - [[kontroler-szerokosci-draftu|Kontroler szerokości draftu (wzorzec Magnitude)]] — Magnitude (`draft_control.rs`, domyślnie włączony) co rundę wybiera parę (wydraftowane, zweryfikowane) o największej liczbie tokenów na sekundę z drabinki szerokości wypełniających klasy wierszy 2/4/8/16; u nich propozycji/krok waha się od 0.23 (9B pl-proza) do 6.75 (27B pl-kod).
 - [[koszt-szerokosci-weryfikacji|Krzywa kosztu szerokości weryfikacji V(w, kontekst) na XTX]] — Pomiar E2 z 16b (`llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 1,5,8,9,16 -n 0 -d …`, mediana powtórzeń 3–5, Qwen3.8-27B): V16 − V5 = 6.40 / 7.13 / 9.50 / 12.45 ms przy 2k / 8k / 32k / 64k – hipoteza 15b „≤ 12 ms przy 32k” potwierdzona (2026-10-18).
+- [[ksztalt-ruchu-agentowego|Kształt ruchu agentowego wg śladów AgentX]] — Korpus AgentX v1.0 256k (393 sesje Claude Code, 06-2026): wejście p50 88 768 / p90 204 288 tokenów, wyjście p50 376 / p90 1845 – stosunek 117:1; limit kontekstu 128k zostawia 66.3% zapytań, 64k 35.3%; przy współdzieleniu prefiksów nietrafionych w cache jest radix 3.8%, lane 8.5%, single 20.6% wejścia (2026-10-19).
 - [[loo|Leave-one-out łatek (LOO)]] — Wyłączamy po jednej łatce i mierzymy, czy bez niej jest wolniej; łatka bez mierzalnego zysku jest kandydatem do usunięcia.
 - [[mikrobench-granicy-kernela|Mikrobenchmark granicy kernela]] — Zanim zainwestujemy w fuzje albo nowy sposób wysyłania pracy, mierzymy, ile kosztuje sama granica między kernelami na danym stosie.
 - [[model-kosztu-weryfikacji-moe|Model kosztu weryfikacji MoE (LFM2.5)]] — Weryfikacja N tokenów w MoE czyta sumę ekspertów wszystkich N tokenów: przy niezależnym routingu u(N) = 64·(1 − (60/64)^N) ekspertów na warstwę, B(N) = 0.761 + 0.254·u(N) GB, T(N) ≈ 1.45 ms + B(N)/0.9 GB/ms; kalibracja T(1) = 3.42 ms vs zmierzone 3.40 (raport 18, 2026-10-19, `[SZACUNEK]`).

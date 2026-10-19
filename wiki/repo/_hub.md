@@ -14,7 +14,7 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (62)
+## Notatki (63)
 
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
 - [[atrex-kernel-agent|alibaba/atrex-kernel-agent (AKA)]] — Orkiestrator agentów kodujących dla jednego operatora naraz (HEAD `5ad94ff`, 2026-10-14, v0.3.0); bierzemy narzędzia pomiarowe; werdykt: średnia (narzędzia).
@@ -74,6 +74,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[ako4all|TongmingLAIC/AKO4ALL i AKO4X]] — Protokół dla agenta optymalizującego kernele (commit `bbd0e1c`, 2026-09-15), nie kod kerneli; werdykt: średnia (proces).
 - [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]] — Własny silnik C++/CUDA tylko dla Qwen3.5/3.8 na NVIDIA (sm_86/89/120/121) z kwantem TQ3_4S, DFlash2 i dokładną spekulacją greedy; rekord 273.1 t/s na 3090 w LocalMaxxing przy T=0 z prywatnego buildu, a per bajt plain decode ma parytet z nami.
 - [[mkernel|uccl-project/mKernel]] — Wielo-GPU trwałe kernele z UC Berkeley (HEAD `97e916b`, 2026-10-01); zostają tylko wzorce synchronizacji; werdykt: niska.
+- [[vllm-kimi-k3-specialized-decode|vLLM Kimi K3 „specialized decode” (nie megakernel)]] — Fuzja w CuTe DSL z komunikacją TP na 16×GB300: 23 → 13 kerneli na warstwę i 130 → 69 µs na warstwę, krok B1 bez spekulacji 7.38 → 3.90 ms (1.89×), czyli `[SZACUNEK]` 8% → 15% pasma HBM – reżim latencji i komunikacji, nie pasma (PR #61867, 2026-10).
 - [[vllm-monokernel|vLLM MonoKernel (RFC #60904)]] — Jeden trwały kernel na warstwę dekodera bez bariery siatki: siatka 256 CTA × 512 wątków (1 CTA na CU MI355X), zależności przez „tagged pairs”, wagi niezależne od wejścia ładowane przed czekaniem, bounded waits; na razie tylko ROCm.
 - [[speculators-specforge|vLLM speculators i SGLang SpecForge]] — Dwa narzędzia do trenowania drafterów (MTP, EAGLE-3); speculators to nasza ścieżka do fine-tune głowicy MTP.
 - [[vllm-xpu-kernels|vllm-project/vllm-xpu-kernels]] — Kernele vLLM na Intel GPU w SYCL (HEAD `6b30c9b9`, 2026-10-14); bierzemy pomysł fuzji q/k-norm + RoPE + zapis KV; werdykt: niska.

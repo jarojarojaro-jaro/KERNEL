@@ -14,7 +14,7 @@ Liczby t/s zawsze z datą i warunkami (kwant, KV, MTP/DFlash, prompt, T). Aktual
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (15)
+## Notatki (16)
 
 - [[drafter-dflash|Drafter DFlash2 dla Qwen3.8-27B]] — Osobny mały model draftujący (z-lab / incoai, 5 warstw) — świetny na angielski kod przy T=0, ale na szerszym zestawie i po polsku nie bije głowicy MTP, więc domyślnie używamy MTP.
 - [[drafter-dspine|Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem]] — Drafter z rodziny DFlash (5 warstw, blok 16, K/V z cech 5 warstw celu, wspólny embedding i LM head) z trzema zmianami: atencja w bloku przyczynowa, po każdej warstwie bramkowana wiadomość z przewidywanej cechy poprzednika (przestrzeń 1024-d z wybielonych wierszy LM head celu) i wybór tokenu warunkowany poprzednikiem („transition cache”, K=16) (arXiv 2609.36173v2, 2026-10-10).
@@ -27,6 +27,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[modele-telefon|Modele na telefon: MiniCPM-V 4.7 1B i EmbeddingGemma 2]] — Osobny projekt (`jarojarojaro-jaro/phoneuse`): lokalny agent na telefonie realme Note 50 (Unisoc UMS9230H), gdzie EmbeddingGemma dopasowuje podpisy ekranu, a MiniCPM-V jest opcjonalny; zasada: model nigdy nie klika z pewnością w złe miejsce.
 - [[nemotron-3-5-bolt-74b-a9b|NVIDIA Nemotron 3.5 Bolt 74B-A9B]] — Hybrydowy MoE NVIDIA (Mamba-2 + LatentMoE + 8 warstw attention, ~9B aktywnych) w pliku IQ2_XXS 22 018 326 528 B; na RTX 3090 z drafterem DFlash nasz silnik daje 141.1 t/s.
 - [[qwen3-8-27b|Qwen3.8-27B (główny model)]] — Gęsty hybrydowy model 27B (48 warstw Gated DeltaNet + 16 pełnej uwagi) z wbudowaną głowicą MTP; na RX 7900 XTX przyspieszony z 59.2 do 109 t/s.
+- [[qwen38-27b-inferencex|Qwen3.8-27B na InferenceX (wpis eksperymentalny)]] — Na InferenceX Qwen3.8-27B ma eksperymentalny wpis: bf16, 1×H100, vLLM + drafter DSpark k=7, fixed-sequence 1k/1k na losowych tokenach; przy c=1 mediana 86.1 tok/s, p90 67.4, AL ≈ 2.0 (run 35359530151, PR #3260 niescalony, 2026-10-19).
 - [[qwen3-8-27b-uncensored|Qwen3.8-27B-Uncensored (OrcaRouter)]] — Abliterowana wersja Qwen3.8-27B od OrcaRouter: usunięty „kierunek odmowy”, architektura bez zmian; u nas najszybszy wariant Qwena (115.5 t/s).
 - [[swift-1-5|Swift 1.5 (UkisAI): Qwen3.8-27B z krótszym myśleniem]] — Fine-tune RL/OPD Qwen3.8-27B na krótsze myślenie (deklaracja: −41.9% średnio i −58.5% w medianie tokenów GPQA-D przy +0.31 pp); kwanty GSQ-RCO z alokacją ISTA 1:1, głowica MTP niedouczona, licencja z progiem US$1M przychodu.
 - [[bonsai|Ternary Bonsai 2 27B (PrismML)]] — Qwen3.8-27B w trytach {−1, 0, +1} od PrismML; najszybszy jest w forku prism jako PTQ1_0 (44.75 t/s na RTX 3060), a PQ2_0 można bezstratnie przepakować do upstreamowego Q2_0 i uruchomić na czystym llama.cpp i naszym forku.

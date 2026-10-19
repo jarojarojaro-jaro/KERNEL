@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (78)
+## Notatki (79)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]] — Restarty serwera 2026-10-18 czyszczą `/tmp`: `/tmp/bxv/summary.txt` i `/tmp/bxd/*` (walidacja bit-exact) zniknęły już przy wcześniejszym restarcie ~18:53 UTC, przed archiwizacją; przed restartem ~20:27 UTC (overdrive) resztę zarchiwizowano do `~/qwen-opt/tmp-archive-20261018/` (63 MB: coupled, lookup, pm4pdl, lfmmoe, qa).
@@ -55,6 +55,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-mikrobench-klamie|Mikrobench kłamie]] — Mikrobenchmark dał inną decyzję niż model (Q6_K z GLC|DLC); decyzje o kernelach podejmujemy tylko na rocprofv3 w pełnym modelu.
 - [[lekcja-mtp-juz-kopiuje|MTP już kopiuje: zmierz P(MTP | lookup), zanim dołożysz drafter z kontekstu]] — Na 69 207 pozycjach z prawdziwymi łańcuchami MTP P(draft MTP trafia | lookup trafia) = 0.968 wobec 0.765 bazowo, więc lookup z kontekstu dokłada głównie ogon za pozycją 4, a nadpisywanie draftów MTP lookupem to strata.
 - [[lekcja-sufit-bloku|Na kopii wygrywa sufit bloku, nie kernel]] — Magnitude bije nas na code-edit (157.0 vs 105.7 t/s, pad.cu, 3090) tylko dlatego, że jedno przejście wag daje im 8 tokenów, a nam 5: obie strony przyjmują prawie wszystko (894/897 vs 816/828), a ich krok jest wolniejszy (50.2 vs 46.5 ms) (2026-10-16).
+- [[lekcja-agent-prefill-nie-decode|Na sesji agentowej Qwena prefill waży więcej niż decode]] — Na śladach AgentX z naszymi krzywymi XTX (Qwen, limit 128k, polityka cram jak w produkcji) prefill zajmuje 148 h z 256 h zegara (58%), decode 82 h (32%): ×2 decode skraca zegar sesji o ~16%, ×2 prefill o ~29%, a zmiana polityki cache lane → radix tnie prefill 148 → 68 h (−32% zegara) (raport 21f, `[SZACUNEK]`, 2026-10-19).
 - [[lekcja-nadpisanie-dzialajacego-skryptu|Nadpisanie działającego skryptu psuje pomiar (2 incydenty)]] — Powłoka czyta skrypt w trakcie wykonania po przesunięciu bajtowym, więc zmiana pliku, który właśnie działa, zmienia dalsze polecenia; zdarzyło się to dwa razy 2026-10-16.
 - [[lekcja-naglowki-drafterow|Nagłówki drafterów liczone od przetrenowanych baz]] — DSpine ogłasza „+27.8% τ nad DFlash” (3.77 → 4.82), ale porównuje z DFlashem przetrenowanym przez autorów na ShareGPT, słabszym od oficjalnego checkpointu (5.92 na tej samej karcie HF); przy tych samych danych przewaga nad DFlash2 to +3.7…+6.9% (raport 21a, 2026-10-19).
 - [[lekcja-sufit-wzorca|Najpierw sufit wzorca dostępu, potem optymalizacja kernela]] — Gate+up ekspertów LFM czytał 17.30 MB w 23.6–24.2 µs (673 GB/s), a sam odczyt tych samych bajtów tym samym wzorcem i siatką (2 wiersze gate + 2 up po 1408 B na falę, 3072 fale) bez żadnej arytmetyki trwał 22.4–24.4 µs – arytmetyka q8_1 ani gather nie były problemem (2026-10-18).

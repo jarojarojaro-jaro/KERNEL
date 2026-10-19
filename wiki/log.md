@@ -98,6 +98,9 @@ Nowe: [[drafter-dspine]], [[raport-21a-dspine]], [[lekcja-akceptacja-h100-nie-pr
 ## [2026-10-19] ingest | Raport 21b (zasoby GPU perf, Blackwell TG)
 Nowe: [[raport-21b-gpu-perf-zasoby]], [[wafer-gpu-perf-lista]], [[projekcja-rtx-5090]], [[karty-nvidia-parametry]], [[pdl-mmvq-trigger]], [[mmvq-prefetch-l2]], [[l2-persist]], [[trwala-siatka-bez-pm4]], [[lekcja-littles-law-gemv]], [[physics-floor-check]]; zaktualizowany [[sm-86-89-120]].
 
+## [2026-10-19] ingest | Raport 21f (InferenceX / AgentX, Kimi K3)
+Nowe: [[raport-21f-inferencex]], [[ksztalt-ruchu-agentowego]], [[lekcja-agent-prefill-nie-decode]], [[agentx-harness]], [[qwen38-27b-inferencex]], [[vllm-kimi-k3-specialized-decode]], [[single-neuron-safety-2605-08513]] (link użytkownika dotyczy innej pracy).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
