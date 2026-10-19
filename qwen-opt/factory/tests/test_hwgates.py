@@ -101,6 +101,35 @@ class EachGate(unittest.TestCase):
             self.assertNotIn(g, hwgates.check({**CLEAN, **over}), f"{g} {over}")
 
 
+class PowerFacts(unittest.TestCase):
+    OD = ("OD_SCLK:\n0: 500Mhz\n1: {sclk}Mhz\nOD_MCLK:\n0: 97Mhz\n1: 1250MHz\nOD_VDDGFX_OFFSET:\n{off}mV\n"
+          "OD_FAN_CURVE:\n0: 25C {fan}%\nOD_RANGE:\nSCLK:     500Mhz       5000Mhz\n"
+          "VDDGFX_OFFSET:    -450mv          0mv\n")
+
+    def facts(self, sclk=2895, off=0, fan=30, curve="idle"):
+        import tempfile
+        from pathlib import Path
+        d = Path(tempfile.mkdtemp())
+        (d / "hwmon" / "hwmon3").mkdir(parents=True)
+        (d / "hwmon" / "hwmon3" / "power1_cap").write_text("327000000\n")
+        (d / "power_dpm_force_performance_level").write_text("auto\n")
+        (d / "pp_od_clk_voltage").write_text(self.OD.format(sclk=sclk, off=off, fan=fan))
+        (d / "gpu_od" / "fan_ctrl").mkdir(parents=True)
+        (d / "gpu_od" / "fan_ctrl" / "fan_curve").write_text(curve)
+        return hwgates.power_facts(d)
+
+    def h7(self, now):
+        return hwgates.check({**CLEAN, "power": now, "baseline": self.facts()}).get("H7")
+
+    def test_fan_curve_flips_do_not_fire(self):
+        self.assertFalse(self.h7(self.facts(fan=100, curve="load")))
+
+    def test_clock_and_voltage_changes_fire(self):
+        self.assertTrue(self.h7(self.facts(sclk=2500)))
+        self.assertTrue(self.h7(self.facts(off=-50)))
+
+
+
 class State(unittest.TestCase):
     def setUp(self):
         self.sb = Sandbox()

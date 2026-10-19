@@ -53,10 +53,11 @@ def inner_command(spec: dict) -> str:
 
 class Runner:
     def __init__(self, mode: str, blocks_dir: Path | None, pause_s: float = paths.PAUSE_S, log=print, fake=None,
-                 card: dict | None = None, vid: str = ""):
+                 card: dict | None = None, vid: str = "", stop_topka: bool = False):
         assert mode in ("real", "dry", "fake"), mode
         self.mode, self.dir, self.pause_s, self.log = mode, blocks_dir, pause_s, log
         self.card, self.vid = card, vid
+        self.stop_topka = stop_topka  # the block stops the user's :8080 server inside its lock hold (never restarts)
         self.n = 0
         self.fake = FakeGPU(**(fake or {})) if mode == "fake" else None
         self.plan: list[dict] = []
@@ -64,6 +65,8 @@ class Runner:
     def block(self, spec: dict) -> dict:
         self.n += 1
         spec = dict(spec, name=f"{self.n:02d}-{spec['name']}", env={**paths.HW_ENV, **(spec.get("env") or {})})
+        if self.stop_topka:
+            spec["stop_topka"] = True
         spec_path = (self.dir / f"{spec['name']}.json") if self.dir else Path(f"runs/<vid>/blocks/{spec['name']}.json")
         spec["out"] = str(spec_path.with_suffix(".out.json"))
         self.plan.append({"name": spec["name"], "kind": spec["kind"], "inner": inner_command(spec)})
@@ -86,7 +89,8 @@ class Runner:
         build_dir = str(Path(spec["lib_dir"]).parent)
         try:  # H0-H11 (fk/hwgates.py): refuse, never "drop and retry"; transient H1/H11 wait for a cool, quiet box
             hwgates.enforce({"env": spec["env"], "argv": spec.get("argv"), "card": self.card, "builds": [build_dir],
-                             "wrap": block_command(spec_path)[:4], "block_timeout": paths.BLOCK_TIMEOUT_S},
+                             "wrap": block_command(spec_path)[:4], "block_timeout": paths.BLOCK_TIMEOUT_S,
+                             "stop_topka": self.stop_topka},
                             wait=True, log=self.log)
         except hwgates.HwRefused as e:
             raise Refused(f"hardware gates: {e}")

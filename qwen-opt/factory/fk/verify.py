@@ -48,7 +48,7 @@ def set_values(rec: dict, set_name: str, variant: str = "plain") -> dict:
 
 class Verification:
     def __init__(self, card_path, mode="real", ledger_path=None, rounds=2, port=paths.DEFAULT_PORT,
-                 pause_s=paths.PAUSE_S, ci="t", log=print, fake=None, model_path=None):
+                 pause_s=paths.PAUSE_S, ci="t", log=print, fake=None, model_path=None, stop_topka=False):
         self.card_path = Path(card_path)
         self.card = card_mod.load(card_path)
         self.csha = card_mod.card_sha(self.card)
@@ -60,7 +60,7 @@ class Verification:
             for d in ("blocks", "logs", "harness", "greedy"):
                 (self.rundir / d).mkdir(parents=True, exist_ok=True)
         self.runner = Runner(mode, self.rundir / "blocks" if self.rundir else None, pause_s, log, fake,
-                             card=self.card, vid=self.vid)
+                             card=self.card, vid=self.vid, stop_topka=stop_topka)
         self.profile = profiles.PROFILES.get(self.card.get("profile"), {})
         self.model_path = Path(model_path or self.profile.get("gguf", "/nonexistent"))
         self.gates, self.findings, self.reasons, self.runs = {}, [], [], []

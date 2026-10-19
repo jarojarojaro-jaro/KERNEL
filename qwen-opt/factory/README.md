@@ -267,8 +267,11 @@ Pełna lista jest w raporcie 16h §5. Najważniejsze:
 - **Krytyk:** kalibracja z ledgera (`rsi/calibration.jsonl`, nigdy nie resetowana) daje prior do rankingu kolejki.
 - **Cykl:** `--open` rotuje zestaw zapieczętowany i blokuje harness; `--go` wymaga karty `null_rebuild` (sonda szumu,
   oczekiwany `NULL`), weryfikuje karty w kolejności rankingu, staje przy pierwszym faultcie (H3) albo budżecie (H6),
-  `--stop-topka` zatrzymuje serwer na :8080 i zawsze go wznawia (`/health`).
+  `--stop-topka`: każdy blok GPU zatrzymuje serwer na :8080 dopiero WEWNĄTRZ swojego hold (pod lockami); fabryka go
+  nie wznawia — robi to `tools/topka-keeper.sh`, gdy lock GPU jest wolny. Procesy bloków (llama-server/bench/
+  perplexity/test-backend-ops) startują pod `taskset -c 2-5` (`paths.HOST_PIN`).
 - **Bramki sprzętowe** (`fk/hwgates.py`, odmowa w kodzie): H0 locki GPU, H1 gpu-guard + start przy hotspot < 70 °C
   i VRAM < 75 °C, H2 PM4=0, H3 kwarantanna + halt, H4 journal wszystkich bootów od watermarku, H5 kernel ⇒ `ops`,
-  H6 ≤ 60 min GPU/24 h i ≤ 15 h/30 dni, H7 zakaz zegarów/napięć/limitów mocy (diff, argv, env, baseline sysfs),
+  H6 ≤ 60 min GPU/24 h i ≤ 15 h/30 dni, H7 zakaz zegarów/napięć/limitów mocy (diff, argv, env, baseline sysfs: power1_cap,
+  perf level, sha tylko sekcji OD_SCLK/OD_MCLK/OD_VDDGFX_OFFSET — krzywa wentylatora `gpu_od/fan_ctrl` wyłączona),
   H8 `ss -ltn 'sport = :8080'`, H9 SSD ≤ 2 GiB stanu i ≤ 512 MiB/24 h, H10 chmura z watchdogiem, H11 CPU.

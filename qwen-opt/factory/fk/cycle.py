@@ -8,8 +8,8 @@ PLAN (rsi/cycles/<name>.json): {"cycle": N, "name", "rotate_sealed": bool, "card
            GPU blocks of every card (verify --dry-run), playbook library and transfer scores.
 --go --open  start the cycle: rotate the sealed set (if the plan says so and the cycle has not rotated yet) and lock
            the harness with that reason; records rsi/cycles/<name>.state.json. Cards are written after this.
---go       verification phase: refuses unless the hardware gates pass (H8 may be cleared with --stop-topka, which stops
-           the user's server and ALWAYS restarts it at the end, checking /health); verifies the cards in ranked order
+--go       verification phase: refuses unless the hardware gates pass (H8 may be cleared with --stop-topka: every GPU
+           block then stops the user's server INSIDE its lock hold; topka-keeper restarts it once the lock is free);
            (each block re-checks H0-H11); stops at the first hardware stop (H3) or when H6 says the budget is spent;
            then logs calibration, scores transfers (k1-k3), tries playbook promotions and writes
            rsi/cycles/<name>.result.json with the meta metrics.
@@ -22,7 +22,6 @@ import re
 import signal
 import subprocess
 import time
-import urllib.request
 from pathlib import Path
 
 from . import calib, card as card_mod, hashing, hwgates, paths, sealed, transfer
@@ -90,33 +89,6 @@ def stop_user_server(log=print, wait_s=60) -> list[dict]:
 def preflight_listening() -> bool:
     from .preflight import user_server_listening
     return user_server_listening()
-
-
-def health(port=paths.USER_PORT, timeout=3) -> bool:
-    try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=timeout) as r:
-            return r.status == 200
-    except OSError:
-        return False
-
-
-def start_topka(log=print, wait_s=420) -> bool:
-    """`setsid nohup ~/qwen-opt/run-topka.sh qwen > ~/qwen-opt/logs/topka-8080.launcher.log 2>&1 &`, then /health."""
-    if preflight_listening():
-        return health() or True
-    paths.TOPKA_LOG.parent.mkdir(parents=True, exist_ok=True)
-    with open(paths.TOPKA_LOG, "w") as lf:
-        subprocess.Popen(["nohup", str(paths.TOPKA), "qwen"], stdout=lf, stderr=subprocess.STDOUT,
-                         stdin=subprocess.DEVNULL, start_new_session=True)
-    log(f"  restarting topka: setsid nohup {paths.TOPKA} qwen > {paths.TOPKA_LOG}")
-    t = time.time()
-    while time.time() - t < wait_s:
-        time.sleep(10)
-        if health():
-            log(f"  topka /health 200 after {time.time() - t:.0f} s")
-            return True
-    log("  topka did not answer /health in time: CHECK BY HAND")
-    return False
 
 
 # ---------------------------------------------------------------------------------------------- phases
@@ -213,34 +185,27 @@ def run(plan: dict, led: Ledger, by: str, stop_topka: bool = False, log=print, v
     if blocking:
         raise CycleError(f"hardware gates refuse the cycle: {json.dumps(blocking, ensure_ascii=False)[:600]}")
     res = {"cycle": plan["cycle"], "name": plan["name"], "started": hwgates.utcnow(), "critic_before": cal0,
-           "verdicts": [], "stopped": None, "topka": {}}
+           "verdicts": [], "stopped": None, "topka": {"stop_inside_blocks": stop_topka}}
     vids = []
-    try:
-        if stop_topka:
-            res["topka"]["stopped"] = stop_user_server(log)
-        for p in order:
-            c = card_mod.load(p)
-            log(f"== verify {c['id']}")
-            v = Verification(p, mode="real", ledger_path=led.path, log=log, **(verify_kw or {}))
-            r = v.run()
-            vids.append(v.vid)
-            res["verdicts"].append({"claim_id": c["id"], "verdict": r.get("verdict"), "median": r.get("median"),
-                                    "ci95": r.get("ci95"), "seq": r.get("seq"), "refused": r.get("refused"),
-                                    "reasons": (r.get("reasons") or [])[-4:], "vid": v.vid})
-            if c.get("null_rebuild") and r.get("stat_verdict") in ("CONFIRMED", "REGRESSION"):
-                res["stopped"] = f"null-rebuild probe gave {r.get('stat_verdict')}: rebuild noise > MDE (21i A4)"
-                break
-            hw = hwgates.load_state()
-            if hw.get("halt"):
-                res["stopped"] = f"H3 halt: {hw['halt'].get('reason')}"
-                break
-            if hwgates.check(hwgates.collect({}), only=("H6",)):
-                res["stopped"] = "H6 budget or hardware-INVALID streak"
-                break
-    finally:
-        if stop_topka or res["topka"].get("stopped"):
-            res["topka"]["restarted"] = start_topka(log)
-            res["topka"]["health"] = health()
+    for p in order:
+        c = card_mod.load(p)
+        log(f"== verify {c['id']}")
+        v = Verification(p, mode="real", ledger_path=led.path, log=log, stop_topka=stop_topka, **(verify_kw or {}))
+        r = v.run()
+        vids.append(v.vid)
+        res["verdicts"].append({"claim_id": c["id"], "verdict": r.get("verdict"), "median": r.get("median"),
+                                "ci95": r.get("ci95"), "seq": r.get("seq"), "refused": r.get("refused"),
+                                "reasons": (r.get("reasons") or [])[-4:], "vid": v.vid})
+        if c.get("null_rebuild") and r.get("stat_verdict") in ("CONFIRMED", "REGRESSION"):
+            res["stopped"] = f"null-rebuild probe gave {r.get('stat_verdict')}: rebuild noise > MDE (21i A4)"
+            break
+        hw = hwgates.load_state()
+        if hw.get("halt"):
+            res["stopped"] = f"H3 halt: {hw['halt'].get('reason')}"
+            break
+        if hwgates.check(hwgates.collect({}), only=("H6",)):
+            res["stopped"] = "H6 budget or hardware-INVALID streak"
+            break
     res["finished"] = hwgates.utcnow()
     res["calibration"] = calib.log(led)
     rows = led.rows()

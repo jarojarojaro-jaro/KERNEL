@@ -4,6 +4,7 @@ import json
 import subprocess
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import mock
 
 import _path  # noqa: F401
@@ -312,22 +313,41 @@ class Cycle(unittest.TestCase):
         finally:
             sb.close()
 
-    def test_topka_restart_is_always_attempted(self):
+    def test_topka_is_stopped_only_inside_blocks_and_never_restarted(self):
         sb = Sandbox()
         try:
             sb.make_card()
             plan = {"cycle": 1, "name": "t2", "cards": [str(sb.card_path)], "null_rebuild_waived": "test"}
-            calls = []
-            with mock.patch.object(hwgates, "collect", return_value={}), \
-                    mock.patch.object(cycle, "stop_user_server", lambda log: calls.append("stop") or [{"pid": 1}]), \
-                    mock.patch.object(cycle, "start_topka", lambda log: calls.append("start") or True), \
-                    mock.patch.object(cycle, "health", return_value=True), \
-                    mock.patch("fk.verify.Verification.run", side_effect=RuntimeError("boom")):
+            seen = []
+
+            def fake_run(v):
+                seen.append(v.runner.stop_topka)
+                raise RuntimeError("boom")
+            with mock.patch.object(hwgates, "collect", return_value={"port_user": True}), \
+                    mock.patch.object(cycle, "stop_user_server", side_effect=AssertionError("cycle-level stop")), \
+                    mock.patch("fk.verify.Verification.run", fake_run):
                 with self.assertRaises(RuntimeError):
                     cycle.run(plan, sb.ledger, "test", stop_topka=True, log=lambda *a: None)
-            self.assertEqual(calls, ["stop", "start"])
+            self.assertEqual(seen, [True])
+            self.assertFalse(hasattr(cycle, "start_topka"))
         finally:
             sb.close()
+
+    def test_block_stops_topka_inside_the_hold(self):
+        import tempfile
+        from fk import block, preflight
+        d = Path(tempfile.mkdtemp())
+        for stop, rc_want, stops in ((False, 97, 0), (True, 98, 1)):
+            spec = d / f"s{stop}.json"
+            spec.write_text(json.dumps({"name": "x", "kind": "bench", "out": str(d / f"o{stop}.json"),
+                                        **({"stop_topka": True} if stop else {})}))
+            calls = []
+            with mock.patch.object(preflight, "user_server_listening", lambda: not calls), \
+                    mock.patch.object(cycle, "stop_user_server", lambda log: calls.append(1) or [{"pid": 1}]), \
+                    mock.patch.object(block, "_preflight", return_value=({}, [SimpleNamespace(rule="R1", message="m")])), \
+                    mock.patch.object(block.hashing, "hash_harness", return_value={}):
+                self.assertEqual(block.main(str(spec)), rc_want)
+            self.assertEqual(len(calls), stops)
 
 
 if __name__ == "__main__":

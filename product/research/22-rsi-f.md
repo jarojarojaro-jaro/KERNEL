@@ -61,3 +61,41 @@ kodowe). k1 więc nie odpala. Wpis do biblioteki (`playbook new`) czeka na werdy
 | `decyzje/` | aktualizacja [[2026-10-19-bezpieczenstwo-sprzetu]] | H0–H11 egzekwowane kodem; :8080 przez `ss`; ack faultów wymaga człowieka | `fk/hwgates.py` |
 | `eksperymenty/` | Pilot P0/P1 retro-RSR 0070 (`2026-10-19-retro-rsr-0070.md`), szkic | stan: nieuruchomiony na GPU, playbook przeszedł recenzję bez diffu (0 trafień / 192 linie) | ten raport |
 | `lekcje/` | Recenzja przecieku: słowa z komentarzy ≠ identyfikatory (`lekcja-recenzja-przecieku.md`) | heurystyka „słowo ≥ 8 znaków z diffu” dała 10 fałszywych trafień; tylko nazwy kodowe | `fk/playbook.py` IDENT |
+
+## Aktualizacja 2026-10-19 wieczór (RsiF2, po awarii zasilania)
+
+**Werdykty**
+
+- **Testy fabryki: 112 OK** (109 + 3 nowe), `rules test` 0 mismatches. Lustro KERNEL zacommitowane i wypchnięte
+  (`8cb4dad`, potem commit z poprawkami poniżej); bez `sealed/pool.jsonl`, `runs/`, `evidence/`, `rsi/state|logs`.
+- **P0 (karta 0070): BRAK werdyktu pomiarowego.** Trzy podejścia, żadne nie doszło do pomiaru na GPU:
+  1. ledger seq 5 `INVALID` — G0 odmówił przed GPU: harness różnił się od locka (moje zmiany + `tbo_parse.py`). Wina
+     harnessu, nie karty.
+  2. ledger seq 7 `VOID` (`H8 something listens on :8080`) — cykl zatrzymał topkę *przed* czekaniem na lock, czekał
+     ~65 min w kolejce GPU, w tym czasie :8080 znów wstał, blok odmówił. Przy wznowieniu topka padła z OOM (16 GiB),
+     bo cudzy job zajął VRAM w chwili zwolnienia locka. Błąd projektowy fabryki → naprawiony (niżej).
+  3. run 20261019-162135 — blok 01 czekał na lock 27 min, zabity przy pauzie GPU (polecenie użytkownika), cykl
+     przerwany przeze mnie. Brak wiersza werdyktu, 0 s GPU.
+- **P1: nie zrobione (GPU wstrzymane; warunek „P0 = CONFIRMED” niespełniony).**
+- **aob-v1: harness działa end-to-end na T4 (`neg_pm4_pdl_ceiling`, CPU)**: `validate` 0 problemów, `cpu_tier.sh`
+  → `{"cpu_pass": 1}`, odpowiedź `{"pred_effect_pct": 2.5, "decision": "kill"}` → `reward` 1.0, `estimate` 0.85.
+  Zastrzeżenie: odpowiadałem ja, po obejrzeniu `task.toml` (zawiera `measured_effect_pct`) — to dowód działania
+  harnessu, nie wynik agenta. Luki: brak komendy `score-answer` w CLI (liczone przez `fk.aob.reward`), T4 nie ma
+  plików danych wymienionych w `instruction.md`, a `task.toml` z liczbą-wyroczni leży w katalogu zadania.
+
+**Poprawki fabryki (zlecone przez użytkownika przez Main)**
+
+| zmiana | plik | test |
+|---|---|---|
+| H7 hashuje tylko sekcje OD_SCLK/OD_MCLK/OD_VDDGFX_OFFSET (+ power1_cap, perf level); krzywa wentylatora (`xtx-fan`, `gpu_od/fan_ctrl`) wyłączona — inaczej H7 flapuje. Po rebootcie sha OD się zmieniło (zegary/napięcia na ustawieniach sterownika); ack: „post-power-loss reboot; …; never undervolted” (ledger seq 4) | `fk/hwgates.py` | `PowerFacts` (2) |
+| `--stop-topka`: topka zatrzymywana tylko WEWNĄTRZ hold każdego bloku; fabryka nigdy jej nie wznawia (`topka-keeper.sh`); `start_topka`/`health` usunięte | `fk/block.py`, `fk/cycle.py`, `fk/gpu.py`, `fk/verify.py` | `Cycle` (2) |
+| procesy bloków pod `taskset -c 2-5` (reguła CPU) | `fk/paths.py` `HOST_PIN`, `fk/block.py`, `fk/measure.py` | — |
+
+Harness zablokowany ponownie: ledger seq 8, `52f0a9f2f457`.
+
+**Nie zrobione (GPU wstrzymane):** P0 pomiar 0070 (12 bloków, ~20 min GPU), P1 (playbook new/review, 4 briefy × 2 cele
+× A/B, k1–k3), zadania aob z GPU (T1, T3, T2/T5 `needs-fixture`).
+
+**Dalej:** po wznowieniu GPU `./factory rsi cycle rsi/cycles/p0.json --go --stop-topka` (harness gotowy); bloki
+czekają na lock pojedynczo, więc P0 przeplata się z innymi jobami. Przy P0 = CONFIRMED → P1 wg planu wyżej, buildy
+przez `rbuild`, nie lokalnie.

@@ -72,7 +72,7 @@ class Server:
 
     def __enter__(self):
         self.log = open(self.log_path, "w")
-        self.p = subprocess.Popen(self.argv, env=self.env, stdout=self.log, stderr=subprocess.STDOUT,
+        self.p = subprocess.Popen([*paths.HOST_PIN, *self.argv], env=self.env, stdout=self.log, stderr=subprocess.STDOUT,
                                   start_new_session=True)
         while time.time() < self.deadline:
             if self.p.poll() is not None:

@@ -134,7 +134,26 @@ def temps(dev: Path = paths.DRM_DEVICE) -> dict:
     return out
 
 
+OD_HASHED = ("OD_SCLK", "OD_MCLK", "OD_VDDGFX_OFFSET")
+
+
+def od_clock_voltage(od: str) -> str:
+    """Clock/voltage part of pp_od_clk_voltage: only the OD_SCLK, OD_MCLK and OD_VDDGFX_OFFSET sections. Fan curve
+    sections (OD_FAN_*, ACOUSTIC_*, also exposed under gpu_od/fan_ctrl/) and OD_RANGE are excluded: the root timer
+    xtx-fan flips the fan curve between 'load' and 'idle' constantly, which must not trip H7."""
+    keep, out = False, []
+    for line in od.splitlines():
+        s = line.strip()
+        if s.endswith(":") and s[:-1].replace("_", "").isalnum() and s[:-1].isupper():
+            keep = s[:-1] in OD_HASHED
+        if keep and s:
+            out.append(s)
+    return "\n".join(out)
+
+
 def power_facts(dev: Path = paths.DRM_DEVICE) -> dict:
+    """Fields H7 compares with the baseline: power1_cap, power_dpm_force_performance_level and the sha256 of the
+    clock/voltage OD sections. Nothing under gpu_od/fan_ctrl/ is read."""
     def rd(p):
         try:
             return Path(p).read_text().strip()
@@ -144,7 +163,7 @@ def power_facts(dev: Path = paths.DRM_DEVICE) -> dict:
     cap = rd(hw[0] / "power1_cap") if hw else None
     od = rd(dev / "pp_od_clk_voltage")
     return {"power_cap_uw": cap, "perf_level": rd(dev / "power_dpm_force_performance_level"),
-            "od_sha256": hashing.sha256_bytes(od.encode()) if od is not None else None}
+            "od_sha256": hashing.sha256_bytes(od_clock_voltage(od).encode()) if od is not None else None}
 
 
 def boots() -> list[dict]:
@@ -263,7 +282,7 @@ def collect(ctx: dict | None = None) -> dict:
         "gpu_s_day": gpu_seconds(86400), "gpu_s_30d": gpu_seconds(30 * 86400),
         "hw_invalid_streak": st.get("hw_invalid_streak", 0),
         "texts": text_items(ctx), "power": power_facts(), "baseline": st.get("baseline"),
-        "port_user": preflight.user_server_listening(),
+        "port_user": preflight.user_server_listening() and not ctx.get("stop_topka"),  # else the block stops it
         "ssd_bytes": nb, "ssd_day": ssd_day_growth(nb), "disk_free": shutil.disk_usage(paths.FACTORY).free,
         "cloud": ctx.get("cloud"), "where": ctx.get("where", "local"),
         "commands": ctx.get("commands") or [], "load1": load1, "nproc": os.cpu_count() or 1,

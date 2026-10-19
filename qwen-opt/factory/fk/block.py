@@ -35,7 +35,7 @@ def _preflight(spec):
 def _run(argv, env, log, deadline, info=None):
     """Run to completion inside the block deadline; info gets the pid (a fresh process per run, rule R17)."""
     with open(log, "w") as lf:
-        p = subprocess.Popen(argv, env=env, stdout=lf, stderr=subprocess.STDOUT)
+        p = subprocess.Popen([*paths.HOST_PIN, *argv], env=env, stdout=lf, stderr=subprocess.STDOUT)
         if info is not None:
             info["pid"] = p.pid
         try:
@@ -112,9 +112,13 @@ def main(spec_path: str) -> int:
     spec["deadline"] = time.time() + spec.get("budget_s", paths.BLOCK_TIMEOUT_S - 10)
     res = {"name": spec["name"], "kind": spec["kind"], "started": time.time(), "ok": False}
     if preflight.user_server_listening():  # H8: anything on :8080 is the user's server (ss, not pgrep)
-        res["refused"] = [f"H8 something listens on :{paths.USER_PORT} (the user's server)"]
-        out.write_text(json.dumps(res))
-        return 97
+        if spec.get("stop_topka"):  # inside both locks; topka-keeper restarts it once the GPU lock is free
+            from .cycle import stop_user_server
+            res["topka_stopped"] = stop_user_server(log=lambda *a: None)
+        if preflight.user_server_listening():
+            res["refused"] = [f"H8 something listens on :{paths.USER_PORT} (the user's server)"]
+            out.write_text(json.dumps(res))
+            return 97
     h0 = hashing.hash_harness()
     snap, found = _preflight(spec)
     res["snapshot"] = snap
