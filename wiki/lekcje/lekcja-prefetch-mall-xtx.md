@@ -1,8 +1,8 @@
 ---
 typ: lekcja
 tags: [lekcje, pm4, cache, wyniki-negatywne]
-aktualizacja: 2026-10-18
-zrodlo: ~/KERNEL/product/research/16a-pm4-pdl.md:18-19,114-134; ~/qwen-opt/pm4pdl/x2/ab4.log
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/research/16a-pm4-pdl.md:18-19,114-134; ~/qwen-opt/pm4pdl/x2/ab4.log; ~/KERNEL/product/research/18-nastepna-fala.md:200-211
 status: aktualne
 ---
 # Wynik negatywny: prefetch wag do L2/MALL dispatchem bez granicy
@@ -12,6 +12,8 @@ status: aktualne
 Przyczyna: touch konkuruje o pasmo z bieżącym kernelem; w X1 analogiczny touch przed czekaniem też przegrywał z prefetchem do VGPR. `hipLaunchAttributeExtDynDataPrefetch` nie działa na gfx1100 (ROCr: 0 regionów, 15a §7).
 
 Reguła: na XTX prefetch do cache osobnym dispatchem nie jest dźwignią; jeśli prefetch, to do rejestrów wewnątrz kernela konsumenta.
+
+Arytmetyka (raport 18): w kroku batch 1 żadna waga nie jest czytana dwa razy, a odległość ponownego użycia między krokami to ~16.8 GB (Qwen) / ~1.8 GB (LFM) ≫ 96 MB MALL; jedyny kandydat z reużyciem – stan GDN Qwena – ma 151 MB f32.
 
 ## Powiązane
 - [[lekcje/_hub|lekcje]]

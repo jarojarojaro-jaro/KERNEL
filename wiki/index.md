@@ -63,13 +63,13 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (26)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (25)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (56)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (74)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (26)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (75)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (59)
-- [[research/_hub|research]] — Streszczenia raportów (41)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (62)
+- [[research/_hub|research]] — Streszczenia raportów (42)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (26)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
@@ -82,14 +82,14 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]]
 - 2026-10-19 [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]]
 - 2026-10-19 [[raport-21c-cplm|Raport 21c: Copy-Paste Language Models (CPLM) – nie adoptujemy]]
+- 2026-10-19 [[raport-18-nastepna-fala|Raport 18: następna fala optymalizacji (15 pomysłów, plan 30 dni)]]
 - 2026-10-19 [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]]
 - 2026-10-19 [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]]
 - 2026-10-19 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
 - 2026-10-19 [[raport-16b-lookup-tail|Raport 16b: ogon z lookupu za MTP (15b E1–E3, 16i E-X0–E-X3)]]
 - 2026-10-19 [[raport-15b-spekulacja-frontier|Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)]]
 - 2026-10-19 [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]]
-- 2026-10-19 [[rsr-27b|RSR-27B (IntelligenceLab): Qwen3.8-27B po RSR + RL]]
-- 2026-10-19 [[galezie-rund|Gałęzie rund optymalizacji (opt-*)]]
+- 2026-10-19 [[suffixdecoding|SuffixDecoding / ArcticInference: globalne drzewa sufiksów]]
 
-Razem 443 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 451 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -14,7 +14,7 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (59)
+## Notatki (62)
 
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
 - [[atrex-kernel-agent|alibaba/atrex-kernel-agent (AKA)]] — Orkiestrator agentów kodujących dla jednego operatora naraz (HEAD `5ad94ff`, 2026-10-14, v0.3.0); bierzemy narzędzia pomiarowe; werdykt: średnia (narzędzia).
@@ -46,12 +46,14 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[hipfire|Kaden-Schutt/hipfire]] — Silnik inferencji Rust + HIP tylko pod AMD (HEAD `1ff5182`, 2026-10-14, v0.4.2) z replayem tokenu jako bufor PM4; werdykt: średnia–wysoka.
 - [[kernelguard|KernelGuard (GPU MODE)]] — Zestaw 62 deterministycznych detektorów oszustw w zgłoszeniach kerneli, każdy z fixture’em historycznego hacka, plus „physics floor” z roofline’u; odsetek oszukanych zgłoszeń spadł z 3.45% do 0.37% w 32 dni.
 - [[kernel-tuner-repo|KernelTuner/kernel_tuner]] — Pythonowy framework autotuningu (commit `8e71bbf`, 2026-10-08, v1.5.0) jako silnik przeszukiwania tablic per kształt; werdykt: średnia.
+- [[knlp-lm-head|knlp: certyfikowana głowica LM przy dekodowaniu]] — Metoda: słownik w 256 blokach, offline baza PCA stanów (r ≈ 0.36·d), cień int8 `W_U·B` i normy reszt wierszy; w dekodowaniu górna granica każdego logitu z Cauchy'ego–Schwarza, a bloki otwiera się, aż najlepszy dokładny logit przewyższy granice reszty – bezstratnie. U nich na W7900 (gfx1100) głowica Qwen2.5-7B ×1.97 przy batch 1, ~5× mniej bajtów, batch 4/8 ×1.36/×1.41.
 - [[laya-mlx|laya-mlx i Laya (model decyzyjny)]] — Laya (Convai Innovations) to nieautoregresywny encoder decyzyjny 322–421M, a laya-mlx (mizorewww) jego port MLX; za wolne do decyzji per token.
 - [[how-to-optimize-in-gpu|Liu-xiandong/How_to_optimize_in_GPU]] — Dydaktyczne „drabiny optymalizacji” CUDA dla V100 (HEAD `5d2def3e`, 2023-07-29); werdykt: niska.
 - [[lucebox|Luce-Org/lucebox]] — Serwer inferencji C++ z forkiem ggml i spekulacją DFlash2 (HEAD `54132ca`, 2026-10-14) na tym samym modelu i drafterze co my; werdykt: średnia.
 - [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]] — Własny silnik w Ruście z językiem kerneli „Seismic” (Metal, CUDA, Vulkan, CPU; bez HIP/ROCm), który stroi kernele 60 s przy pierwszym załadowaniu z bramką błędu α = 8 (nie bitową); najbliższy bezpośredni konkurent, ale bez AMD natywnie, bez bitowej bramki i bez MoE offload.
 - [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]] — Hazy Megakernels (interpreter instrukcji per SM ze stronicowanym SMEM) i MPK/Mirage (kompilator tGraph) osiągają 71–80% pasma przy batch 1, wobec ≤ 50% kernel-per-op; na RDNA3 publicznego megakernela nie ma.
 - [[kernelagent|meta-pytorch/KernelAgent]] — Wieloagentowy system Meta zamieniający PyTorch na kernele Triton (HEAD `e0647170`, 2026-07-15); bierzemy strukturę pętli; werdykt: średnia (proces).
+- [[mtplx|MTPLX: współbieżny MTP dla wielu agentów]] — Silnik z MTP w kohortach (3/8 strumieni) deklaruje 1.6–2.25× na strumień dla 2 agentów względem zwykłego batchingu AR; wspiera LFM2 (wydanie 2.6.0, stan 2026-10-19).
 - [[llama-cpp-fork|Nasz fork llama.cpp: repozytoria, gałęzie i worktree]] — Cała praca kernelowa żyje w jednym repo git `~/llama-master` z worktree w `~/wt/`; gałąź produkcyjna to `amd-opt` (70 commitów na upstream `e60eff95f`), a jej odpowiednik na v0.7.0 to `amd-opt-v070`.
 - [[cuda-rust|NVIDIA/cuda-rust]] — Oficjalna platforma NVIDIA „CUDA dla Rusta” (HEAD `bc46b1f`, 2026-10-12); daje tylko liczbę odniesienia; werdykt: brak.
 - [[cutile-python|NVIDIA/cutile-python (cuTile)]] — Kafelkowy DSL NVIDIA kompilowany do Tile IR (commit `d9d8520`, 2026-10-13); bierzemy odpowiednik PDL na AMD; werdykt: niska–średnia.
@@ -65,6 +67,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[sakana-agentic-scientist|Sakana AI-Scientist-v3 (Agentic Scientist)]] — Orkiestracja agentów do badań, w której kod wymusza izolację ewaluacji (harness, hashe, osobne kontenery), a naukę rozstrzyga LLM; brak jakiejkolwiek statystyki istotności.
 - [[kernelbench|ScalingIntelligence/KernelBench]] — Benchmark kerneli pisanych przez LLM (HEAD `423217d9`, 2026-03-05); bierzemy lepszą bramkę poprawności; werdykt: średnia (proces).
 - [[strata|Strata (Niko1221/Strata)]] — Silnik C++/CUDA/HIP pod jeden model MoE z offloadem (HEAD `a0116b27`, 2026-10-12, tag v0.1.43.1), studiowany jako wzór metodologii autora.
+- [[suffixdecoding|SuffixDecoding / ArcticInference: globalne drzewa sufiksów]] — Spekulacja bez modelu draftującego z drzew sufiksów budowanych z promptów i wcześniejszych wyjść (także między żądaniami); na workloadach agentowych do ×5.3, ×2.8 względem EAGLE-2/3 (arXiv 2411.04975, w vLLM jako „suffix”).
 - [[tensara|tensara/tensara]] — Platforma zawodów w pisaniu kerneli (commit `fae96618`, 2026-07-21) z silnikiem oceny na Modal; werdykt: niska.
 - [[tensorfold|TensorFold (ashhart/TensorFold)]] — Serwer Zig z kontraktem dokładności („drafted == plain”) dla 7 rodzin modeli (HEAD `0efbd447`, 2026-10-12, v1.0.8; aktualizacja do v1.0.11 2026-10-14).
 - [[tilelang|tile-ai/tilelang]] — Python DSL do kafelkowych kerneli (HEAD `19da924`, 2026-10-14); na RDNA3 tylko f16 WMMA, bez iu8; werdykt: niska.

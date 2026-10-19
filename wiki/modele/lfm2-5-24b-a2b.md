@@ -1,8 +1,8 @@
 ---
 typ: model
 tags: [modele, lfm, moe]
-aktualizacja: 2026-10-18
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:333-341,354,363; ~/KERNEL/qwen-opt/STATUS-NEXT.md:12; ~/KERNEL/product/research/06-produkt-ux-prawo-biznes.md:51,355; ~/KERNEL/product/research/10-post-training.md:141; ~/KERNEL/qwen-opt/tools/kld-canary.md:66-67; ls ~/models (2026-10-16); ~/KERNEL/product/research/09-chmura-5060ti.md:76-86,156,164-186,197; ~/KERNEL/product/research/09-chmura-3090.md:53-61; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:15-33,83-89
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:333-341,354,363; ~/KERNEL/qwen-opt/STATUS-NEXT.md:12; ~/KERNEL/product/research/06-produkt-ux-prawo-biznes.md:51,355; ~/KERNEL/product/research/10-post-training.md:141; ~/KERNEL/qwen-opt/tools/kld-canary.md:66-67; ls ~/models (2026-10-16); ~/KERNEL/product/research/09-chmura-5060ti.md:76-86,156,164-186,197; ~/KERNEL/product/research/09-chmura-3090.md:53-61; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:15-33,83-89; ~/KERNEL/product/research/18-nastepna-fala.md:143-163,500-512
 status: aktualne
 ---
 # LFM2.5-24B-A2B (Liquid AI)
@@ -22,6 +22,8 @@ Na NVIDIA (raport 09, 2026-10-16): RTX 3090 Q5_K_M A0 180.2 → nasz silnik 263.
 Licencja: LFM Open License v1.0 — za darmo komercyjnie tylko poniżej 10 M$ rocznego przychodu (dotyczy też klientów B2B).
 
 Pasmo MoE (16g, 2026-10-18): narzut matvec 718 µs/token; gate+up ekspertów 673 GB/s, in_proj+conv 593, out_proj 519, głowica Q6_K 894 GB/s. Kandydat `GGML_HIP_MOE_GU_BLOCK`: +0.33% (szum), usuwa rozrzut między procesami (llama-bench 286.8–294.0 → 291.4–293.1 t/s) ([[2026-10-18-lfm-moe-pasmo]]).
+
+Raport 18: KV q8_0 10 880 B/token, głowica 215 MB = 12% bajtów, roofline @0 540 t/s (zmierzone 54%); LFM2.5-2.6B-QAD ma ten sam słownik 128 000, ale jako drafter za drogi (1.5 GB/token) ([[model-kosztu-weryfikacji-moe]]).
 
 ## Powiązane
 - [[modele/_hub|Modele]]
