@@ -1,8 +1,8 @@
 ---
 typ: kernel
 tags: [kernele, mmvq, spekulacja]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:38-47,59-78,89,241-256; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:76-77,96-97; ~/KERNEL/product/research/08-analiza-platformy-latek.md:24; ~/KERNEL/product/research/patch-manifest.json (0001, 0002, 0021, 0022); ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:89-95,240
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:38-47,59-78,89,241-256; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:76-77,96-97; ~/KERNEL/product/research/08-analiza-platformy-latek.md:24; ~/KERNEL/product/research/patch-manifest.json (0001, 0002, 0021, 0022); ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:89-95,240; ~/KERNEL/product/research/21l-reverse-engineering-gpu.md:40-41; ~/KERNEL/product/research/21l-skrypty/rga-livereg-mmvq-q4k-ncols5.txt
 status: aktualne
 ---
 # MMVQ wielokolumnowe (weryfikacja spekulacji)
@@ -18,6 +18,8 @@ Problem (NOTES): upstream liczył każdą kolumnę osobno, więc przy 8 kolumnac
 Poprawność: bitowo identyczne (`test-backend-ops -o MUL_MAT` 2444/2444). Wyłącznik: brak, tylko build. Platformy (raport 08): ścieżka z 0001/0002/0021 nie ma strażnika arch, więc działa też na NVIDIA i innych RDNA (nigdy tam nieuruchomiona); 0022 tylko RDNA3.
 
 Wzorzec z Magnitude (2026-10-16): swap-AB GEMV na `mma.m16n8k16` (wagi jako A, wiersze aktywacji jako N=8), wynik wiersza niezależny od M, więc M = 1..16 bitowo jak M = 1 – warunek weryfikacji W16 w trybie bitexact ([[raport-16i-magnitude]], technika #5).
+
+Klif VGPR (21l, 2026-10-19): MMVQ Q4_K 4 kolumny 88–89 VGPR (16 fal/SIMD), 5 kolumn 140–141 (10 fal), 8 kolumn 190–191; szczyt 136 żywych VGPR w bloku `v_dot4_i32_iu8`. Kandydat: ncols=5 ≤ 120 VGPR (12 fal) albo weryfikacja jako 4+1 ([[co-stats]]).
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

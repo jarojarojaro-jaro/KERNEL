@@ -134,6 +134,9 @@ Nowe [[2026-10-19-najlepiej-bez-pytania]] (linia w `AGENTS.md`) i [[2026-10-19-s
 ## [2026-10-19] update | Zasada `cpuheavy.lock`
 [[2026-10-19-szanujemy-sprzet-serwera]]: ciężkie komendy CPU tylko pod `flock /tmp/cpuheavy.lock nice -n 19 taskset -c 0-3`, buildy `-j4`.
 
+## [2026-10-19] ingest | Raport 21l (RE dla GPU)
+Nowe: [[raport-21l-re-gpu]], [[co-stats]], [[umr-offline-pm4]], [[lekcja-radare2-sass]], [[re-vendorow-zasady]]; [[mmvq-multikolumnowe]] (klif VGPR ncols 4 → 5).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

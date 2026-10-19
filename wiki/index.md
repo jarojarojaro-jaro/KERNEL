@@ -63,13 +63,13 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (32)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (33)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (84)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (24)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (85)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (26)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (68)
-- [[research/_hub|research]] — Streszczenia raportów (55)
+- [[research/_hub|research]] — Streszczenia raportów (56)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (28)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
@@ -85,11 +85,11 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
 - 2026-10-19 [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]]
 - 2026-10-19 [[raport-23a-rea|Raport 23a: morluto/rea („Reverse Engineer Anything”) – bez wsparcia GPU]]
+- 2026-10-19 [[raport-21l-re-gpu|Raport 21l: narzędzia reverse engineeringu dla GPU]]
 - 2026-10-19 [[raport-21j-flameox|Raport 21j: flameox – nie instalujemy, bierzemy zasady]]
 - 2026-10-19 [[raport-21i-rsi-inference-bench|Raport 21i: RSI-Inference Bench (Apple) – co mierzy i co bierzemy do fabryki]]
 - 2026-10-19 [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]]
 - 2026-10-19 [[raport-21g-nowe-silniki|Raport 21g: nowe silniki – inferrous, TensorFold 1.1.0, Project Maya 1.1.14–1.1.15, Strata v0.1.44.1–v0.1.45]]
-- 2026-10-19 [[raport-21f-inferencex|Raport 21f: InferenceX / AgentX (SemiAnalysis) i „megakernel” Kimi K3 w vLLM]]
 
-Razem 504 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 509 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
