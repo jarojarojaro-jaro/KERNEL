@@ -51,4 +51,4 @@ Bun.serve({
 		return new Response(body, { headers });
 	}
 });
-console.log(`serving ${root} on http://127.0.0.1:${port}/`);
+console.log(`serving ${root} on http://${hostname}:${port}/`);
