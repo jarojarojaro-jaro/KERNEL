@@ -59,22 +59,25 @@ Audyt liczb: [[AUDYT]].
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (23)
 - [[modele/_hub|modele]] — Modele i kwanty (14)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
-- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (15)
+- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (17)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (26)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (23)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (49)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (67)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (50)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (70)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (37)
+- [[research/_hub|research]] — Streszczenia raportów (38)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (25)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
 ## Ostatnio aktualizowane
 
+- 2026-10-19 [[kfd-smi-eventy|Zdarzenia KFD SMI (`AMDKFD_IOC_SMI_EVENTS`) bez roota]]
+- 2026-10-19 [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]]
+- 2026-10-19 [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]]
 - 2026-10-19 [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]]
 - 2026-10-19 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
 - 2026-10-19 [[raport-16b-lookup-tail|Raport 16b: ogon z lookupu za MTP (15b E1–E3, 16i E-X0–E-X3)]]
@@ -86,10 +89,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[kontroler-szerokosci-draftu|Kontroler szerokości draftu (wzorzec Magnitude)]]
 - 2026-10-19 [[lekcja-wentylator-rdna3|Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive]]
 - 2026-10-19 [[lekcja-ustalony-seed-to-nie-powtorzenie|Ustalony seed to nie powtórzenie: ABBA nie redukuje szumu tekstu]]
-- 2026-10-19 [[lekcja-ogon-zmienia-tekst-t1|Szeroki blok zmienia tekst T=1 nawet przy 0.3% kroków]]
-- 2026-10-19 [[lekcja-mtp-juz-kopiuje|MTP już kopiuje: zmierz P(MTP | lookup), zanim dołożysz drafter z kontekstu]]
-- 2026-10-19 [[lekcja-agent-nie-patrzyl-na-temperatury|Agent główny nie patrzył na temperatury; `journalctl -k` widzi tylko bieżący boot]]
-- 2026-10-19 [[pm4-replay|Replay grafu dekodowania jako bufor PM4 (0060, 0061, 0063)]]
+- 2026-10-19 [[lekcja-timeout-tasmy-to-skutek|„Tape did not complete within 10 s” to skutek, nie przyczyna]]
 
-Razem 415 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 422 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

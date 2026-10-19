@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (37)
+## Notatki (38)
 
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
 - [[raport-01-konkurencja|Raport 01: konkurencja]] — Detekcja sprzętu i rekomendacja modelu to już standard; żaden produkt konsumencki nie łączy pomiaru, długiej optymalizacji poza flagami, weryfikacji bitowej i raportu przed → po (stan 2026-10-15).
@@ -51,6 +51,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]] — Analiza kodu Magnitude 0.2.9 (`954d677d`) i logów z 16d (tylko CPU): ich przewaga to sufit bloku DFlash2 i kontroler szerokości, nie kernele; najtańsza droga do ich wyniku to ogon z lookupu do 8 wierszy przy MTP4 (projekcja XTX code-edit ×1.4).
 - [[raport-16j-magnitude-vulkan-xtx|Raport 16j: Magnitude przez Vulkan na 7900 XTX (E-X5)]] — Agent MagnitudeVulkanXtx uruchomił Magnitude na naszej XTX przez Vulkan i zmierzył go tym samym harnessem co 16d: na AMD Magnitude jest konkurentem w łatwości instalacji (jedna binarka, bez ROCm), nie w wydajności (×1.42–×2.24 dla nas).
 - [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]] — Agent CoupledSampling przeniósł sprzężone próbkowanie Magnitude do forka za `LLAMA_SPEC_COUPLED` (domyślnie wył.): dowód i testy bezstratności przechodzą, zysk MTP przy T=1 nierozstrzygnięty (+0…+3.6%), A/B przerwane przez resety GPU.
+- [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]] — Agent Pm4FaultAnalysis przeanalizował na CPU (journal, logi, kod `hip-pm4.cu`) 10 resetów: 8 to ta sama awaria taśmy PM4 w serwerze Qwen MTP, przyczyna nieudowodniona (H1 wywłaszczenie kolejki w środku IB ~60%), produkcja zagrożona (~1 reset/330 requestów, ~1/200 przy pełnym cache promptu).
 - [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]] — Trzy raporty rundy 6 (2026-10-15), wszystkie bez GPU: szybki kernel GDN bitowy z konstrukcji, epilog MMQ w VOPD oraz narzędzia LOO / kanarki KLD / Kernel Tuner.
 - [[star-elastic-2605-07182|Star Elastic (arXiv 2605.07182)]] — Praca NVIDIA o zagnieżdżonych podmodelach Nemotron Nano v3 (30B → 23B/12B z jednego post-trainingu) i osobnym podmodelu dla fazy myślenia; nie dotyczy kerneli, dla nas niska istotność.
 <!-- AUTO:END -->

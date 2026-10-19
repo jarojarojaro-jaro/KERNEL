@@ -71,6 +71,9 @@ Nowe: [[2026-10-18-sprzezone-probkowanie-mtp]] (nierozstrzygnięte, nie domyśln
 ## [2026-10-19] ingest | Raport 16b (ogon lookupu za MTP)
 Nowe: [[2026-10-18-lookup-ogon]], [[2026-10-18-kontroler-szerokosci-zerowy]], [[koszt-szerokosci-weryfikacji]], [[zestaw-copy-mvs]], [[lekcja-ogon-zmienia-tekst-t1]], [[raport-16b-lookup-tail]]. Zaktualizowane: [[lekcja-mtp-juz-kopiuje]], [[2026-10-16-lookup-kopiowalnosc]], [[kontroler-szerokosci-draftu]], [[raport-15b-spekulacja-frontier]], [[2026-10-16-badamy-magnitude]], [[raport-16i-magnitude]], [[otwarte-decyzje-produktu]] (włączenie w produkcji – decyzja użytkownika).
 
+## [2026-10-19] ingest | Raport 17 (page faulty GPU, resety)
+Nowe: [[2026-10-19-page-faulty-gpu-analiza]], [[raport-17-gpu-page-fault]], [[dekodowanie-page-fault-amdgpu]], [[kfd-smi-eventy]], lekcje [[lekcja-pm4-zamienia-fault-w-reset]], [[lekcja-timeout-tasmy-to-skutek]], [[lekcja-pgrep-f-lapie-powloki]]. Zaktualizowane: [[pm4-replay]], [[2026-10-18-sprzezone-probkowanie-mtp]], [[2026-10-19-bezpieczenstwo-sprzetu]]; korekty [[lekcja-nie-odtwarzac-lockow]] i [[lekcja-wentylator-rdna3]] (reset 23:25 nie z kolizji blokad); [[otwarte-decyzje-produktu]] (`GGML_HIP_PM4=0` – decyzja użytkownika).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

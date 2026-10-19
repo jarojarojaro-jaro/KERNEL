@@ -2706,6 +2706,9 @@ Liczby 16k z tabel §4–§5 (wiersze w `zrodlo`); progi strażnika z `gpu-guard
 ## Aktualizacja: 16b (2026-10-19)
 Liczby z tabel 16b §2–§5 (wiersze w `zrodlo`, w tym `e3_summary.txt`, `e4_summary.txt`, `e2_table.txt`). Copy W16 355.0 t/s pochodzi z serii po naprawie wentylatorów (W8 w tej serii 235.8, nie 230.6) – opisane w notatce. Błędnych: 0.
 
+## Aktualizacja: raport 17 (2026-10-19)
+Liczby z tabel i §0–§7 raportu 17 (wiersze w `zrodlo`); koszt PM4=0 (108.8 → 103.7, 293.6 → 259.3 t/s) zgodny z wcześniejszym audytem `NOTES.md:375`. Poprawione 2 notatki: reset 23:25 przypisany wcześniej kolizji blokad. Błędnych: 0 (poza tą korektą).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

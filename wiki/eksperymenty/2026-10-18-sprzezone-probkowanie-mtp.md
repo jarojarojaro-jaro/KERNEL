@@ -2,7 +2,7 @@
 typ: eksperyment
 tags: [eksperymenty, spekulacja, sampler, mtp]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:6-24,76-170; ~/qwen-opt/coupled/logs/, ~/qwen-opt/coupled/logs5/, ~/qwen-opt/coupled/test-coupled-sampling-200k.txt
+zrodlo: ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:6-24,76-170; ~/qwen-opt/coupled/logs/, ~/qwen-opt/coupled/logs5/, ~/qwen-opt/coupled/test-coupled-sampling-200k.txt; ~/KERNEL/product/research/17-gpu-page-fault.md:28-61
 status: do-sprawdzenia
 ---
 # 2026-10-18: E-X4 – sprzężone próbkowanie draftu MTP na XTX (nierozstrzygnięte)
@@ -21,6 +21,8 @@ Run 3 (12 bloków ABBA, seedy 1–3, tryb 0 off / 1 sprzężony / 2 kontrola = s
 Czysty efekt (1 vs 2): tok/krok +1.6% (T=1) / +2.6% (T=0.7), koszt +1.5% ms/krok → netto +0.2%. Kontrola sama dała +7.8% t/s względem off – to szum innego strumienia RNG ([[lekcja-ustalony-seed-to-nie-powtorzenie]]). Test identyczności (160 tekstów): akceptacja 0.377 → 0.404, tok/krok +4.0%. Run 5 (20 seedów, szybszy kernel `3f25fc204`): tryb 1 vs 0 +4.4% t/s, +3.8% tok/krok, +0.4% ms/krok – jeden blok, bez kontroli.
 
 Przerwane: 7 bloków skończyło się page faultem SQC @0 i resetem GPU, także w trybie 0 ([[pm4-replay]]); build wstrzymany na GPU ([[2026-10-19-bezpieczenstwo-sprzetu]]). Dokończenie: 20–40 seedów, tryby 0/1/2, `LLAMA_SPEC_COUPLED_DT` 1.3.
+
+Analiza resetów: [[2026-10-19-page-faulty-gpu-analiza]] (awaria PM4 niezależna od kodu sprzężenia).
 
 ## Powiązane
 - [[eksperymenty/_hub|Eksperymenty]]
