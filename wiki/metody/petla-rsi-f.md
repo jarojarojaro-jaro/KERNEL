@@ -2,7 +2,7 @@
 typ: metoda
 tags: [metody, fabryka, agenci, rsi]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/21h-rsi.md:364-482; ~/KERNEL/product/research/21i-rsi-inference-bench.md:231-274
+zrodlo: ~/KERNEL/product/research/21h-rsi.md:364-482; ~/KERNEL/product/research/21i-rsi-inference-bench.md:231-274; ~/KERNEL/product/research/21j-flameox.md:255-269
 status: do-sprawdzenia
 ---
 # Pętla RSI-F: samodoskonalenie fabryki bez trenowania wag (projekt)
@@ -18,6 +18,8 @@ status: do-sprawdzenia
 Pilot: [[2026-10-19-plan-retro-rsr-0070]] (P0 + P1, decyzja użytkownika w [[otwarte-decyzje-techniczne]]).
 
 Uzupełnienia z RSI-Inference Bench (21i): [[zmiany-fabryki-z-21i]] (VOID, acceptance floor, guards, reward, worktree bez historii) i benchmark regresji [[aob-v1]].
+
+MCP flameoxa łamie H0 (20 narzędzi capture bez trybu tylko-analiza) – nie podłączać; dowody dla Replayera przez `evidence_id` z `factory preserve` ([[raport-21j-flameox]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

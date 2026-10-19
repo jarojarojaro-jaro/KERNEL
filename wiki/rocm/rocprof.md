@@ -1,8 +1,8 @@
 ---
 typ: rocm
 tags: [rocm, profilowanie, rocprofv3]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/reports/Optymalizacja kerneli na AMD.md:49; ~/KERNEL/qwen-opt/NOTES.md:184,247-248,256,374; ~/KERNEL/product/research/13-rocm-10.1.md:16-19,30-33,62-95; ~/KERNEL/product/research/08-analiza-platformy-latek.md:44
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/reports/Optymalizacja kerneli na AMD.md:49; ~/KERNEL/qwen-opt/NOTES.md:184,247-248,256,374; ~/KERNEL/product/research/13-rocm-10.1.md:16-19,30-33,62-95; ~/KERNEL/product/research/08-analiza-platformy-latek.md:44; ~/KERNEL/product/research/21j-flameox.md:144-170,244
 status: aktualne
 ---
 # rocprofv3 i profilowanie na gfx1100
@@ -20,6 +20,8 @@ Ograniczenia i ustalenia:
 - **PC sampling** i roofline Compute Profilera: tylko Instinct/APU, nie dla dyskretnego Radeona.
 - **Windows:** rocprofv3 nie istnieje (TheRock: rocprofiler-sdk „Unsupported”).
 - roctracer i rocprof v1/v2 nie są już utrzymywane.
+
+21j (2026-10-19): `trace_breakdown.py` – sum-busy = union-busy na 5 trace'ach (overlap ≤ 0.01 ms); DuckDB 0.48 s vs Python 2.37 s na 158 MB CSV przy identycznych liczbach; zasady pokrycia: [[dowod-z-profilu]].
 
 ## Powiązane
 - [[rocm/_hub|ROCm]]

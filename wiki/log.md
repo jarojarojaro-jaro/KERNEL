@@ -125,6 +125,9 @@ Nowe: [[raport-23a-rea]], [[hip-fatbin-extract]], [[raport-19-kb-wyszukiwanie]],
 ## [2026-10-19] ingest | Raport 21i (RSI-Inference Bench)
 Nowe: [[raport-21i-rsi-inference-bench]], [[zmiany-fabryki-z-21i]], [[aob-v1]], [[lekcja-regula-tylko-w-prompcie]]; zaktualizowana [[petla-rsi-f]].
 
+## [2026-10-19] ingest | Raport 21j (flameox)
+Nowe: [[raport-21j-flameox]], [[flameox]], [[lekcja-bootstrap-male-n]], [[dowod-z-profilu]]; zaktualizowane [[fabryka-cli]], [[rocprof]], [[petla-rsi-f]], [[produkt-architektura]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

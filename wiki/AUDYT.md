@@ -2754,6 +2754,9 @@ Liczby z 23a (wiersze w `zrodlo`); rozmiary `libggml-hip.so` i liczby bundli/ins
 ## Aktualizacja: raport 21i (2026-10-19)
 Liczby z 21i §0–§7 (wiersze w `zrodlo`); dane leaderboardu i bootstrap CI to wyliczenia agenta z `docs/leaderboard.html`, nie sprawdzone przez WikiIngest. Błędnych: 0.
 
+## Aktualizacja: raport 21j (2026-10-19)
+Liczby z 21j §0–§7 (wiersze w `zrodlo`) i `flameox-demo/{{fx_cov,fx_list,fx_union}}.py`. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

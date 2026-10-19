@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (83)
+## Notatki (84)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]] — Restarty serwera 2026-10-18 czyszczą `/tmp`: `/tmp/bxv/summary.txt` i `/tmp/bxd/*` (walidacja bit-exact) zniknęły już przy wcześniejszym restarcie ~18:53 UTC, przed archiwizacją; przed restartem ~20:27 UTC (overdrive) resztę zarchiwizowano do `~/qwen-opt/tmp-archive-20261018/` (63 MB: coupled, lookup, pm4pdl, lfmmoe, qa).
@@ -64,6 +64,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-nie-odtwarzac-lockow|Nigdy nie usuwać ani nie odtwarzać `/tmp/*.lock`]] — 2026-10-18 ktoś odtworzył pliki `/tmp/gpu.lock` i `/tmp/quiet.lock`; nowy inode złamał wzajemne wykluczanie `flock`, dwa zadania GPU szły równolegle (23:18–23:30 UTC, wyniki 16f odrzucone).
 - [[lekcja-obciazenie-cpu|Obciążenie CPU psuje pomiar]] — Równoległe obciążenie CPU (np. kompilacja) zafałszowało pomiar `-bs`, który trzeba było powtórzyć; pomiary GPU robimy pod `quiet.lock` w osobnym oknie.
 - [[lekcja-pdl-sm120|PDL na Blackwell: kernel musi czekać na poprzednika]] — Na sm_120 llama.cpp startuje kernele wcześniej (PDL); nowy kernel bez `ggml_cuda_pdl_sync` może czytać dane, zanim poprzedni skończy.
+- [[lekcja-bootstrap-male-n|Percentile bootstrap przy małym n kłamie]] — Symulacja przy prawdziwej H0 (1500 prób na n, N(0,1)): 95% CI z percentile bootstrap wyklucza 0 przy n = 5 w 17.8% przypadków dla średniej i 7.4% dla mediany, a Student t w 5.5%; przy n = 4 bootstrap średniej 19.7%, dopiero od n ≈ 12 zbliża się do 5% (raport 21j, 2026-10-19).
 - [[lekcja-pm4-zamienia-fault-w-reset|PM4 zamienia fault kernela w reset całego GPU]] — Fault w taśmie PM4 kończył się resetem GPU 9 razy na 10 (MES nie umie zdjąć kolejki z IB i zhalt'owanymi falami), a ten sam typ faultu w zwykłej kolejce AQL (`moebench` ×3, 16.10) zabijał tylko proces (raport 17, 2026-10-19).
 - [[lekcja-fit-mtp-16gb|Pułapka upstream: -fit on ze spekulacją (MTP na 16 GB, DFlash na 24 GB)]] — Upstreamowe `-fit on` źle liczy pamięć spekulacji. Na RTX 5060 Ti 16 GB upstreamowy serwer z `-fit on` i MTP dawał 7.7 t/s, wolniej niż bez spekulacji, bo `-fit` przy ciasnym VRAM zostawiał część pracy MTP na CPU; `-fit off -ngl 99 -t 8` dało 31.8 t/s na tym samym prompcie.
 - [[lekcja-handoff-rdna3|RDNA3: hand-off przez pamięć kosztuje prawie tyle co granica PM4]] — Każdy protokół flag i ticketów między zależnymi kernelami na XTX kosztował prawie tyle, co pakiety granicy `CS_PARTIAL_FLUSH` + `ACQUIRE_MEM` (0.46–0.86 µs): przy 1024 blokach zostaje 6% zysku z usunięcia granicy, przy 1536–3072 blokach 29–44%, i to tylko z prefetchem wag do VGPR przed czekaniem (2026-10-18).

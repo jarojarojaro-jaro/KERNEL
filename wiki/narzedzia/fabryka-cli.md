@@ -1,8 +1,8 @@
 ---
 typ: narzedzie
 tags: [narzedzia, fabryka, pomiar, bramki]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/16h-fabryka-v1.md:1-60,61-80,176-205,253-262; `~/qwen-opt/factory/README.md`
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/research/16h-fabryka-v1.md:1-60,61-80,176-205,253-262; `~/qwen-opt/factory/README.md`; ~/KERNEL/product/research/21j-flameox.md:236-241
 status: aktualne
 ---
 # Fabryka v1: CLI `factory`
@@ -17,6 +17,8 @@ Zasady dla agentów:
 - **Zmiana harnessu:** osobny commit + `harness lock --reason`. Nowy incydent: fixture → reguła `rNN_*.py` → `rules test` → `harness lock`.
 
 Stan: harness `4163856fa42e` (ledger seq 0), zestaw `sealed-v1` sha256 `1e6c3a4b…`; pierwsza karta `2026-10-17-mmq-epi-0070` (seq 1), `verify --dry-run` = 12 bloków, ok. 20 min GPU `[SZACUNEK]`. Nie walidowane na GPU.
+
+Propozycje z 21j (2026-10-19): P1 percentile bootstrap w `stats.summarize` tylko przy n ≥ 12, poniżej wymuszony `t` ([[lekcja-bootstrap-male-n]]); P3 `factory preserve` – dowody w `factory/evidence/sha256/…/payload.zst` + manifest, wiersz ledgera wskazuje `evidence_id` (trace 158.2 → 8.56 MB przy `zstd -3`); P4 werdykt G1 przeliczany z liczb `test-backend-ops`, sprzeczność → `INVALID`.
 
 ## Powiązane
 - [[narzedzia/_hub|Narzędzia]]

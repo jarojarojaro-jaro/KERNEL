@@ -1,8 +1,8 @@
 ---
 typ: produkt
 tags: [produkt, plan, architektura]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/PLAN.md:130-193
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/PLAN.md:130-193; ~/KERNEL/product/research/21j-flameox.md:245
 status: aktualne
 ---
 # Architektura systemu i silnik
@@ -15,6 +15,8 @@ status: aktualne
 - Upstream ręcznie: sampler 0031/0048/0066–0069, host 0047, q8_1 0003/0015/0023, async wejścia 0029/0059.
 - Detekcja w 3 etapach: inwentarz < 300 ms, test silnika w podprocesie, pomiar 3–10 s; zakazane WMI `AdapterRAM` i parsowanie `nvidia-smi`.
 - Katalog jako podpisany manifest; domyślnie 24 GB → Qwen3.8-27B Q4_K_XL; LFM2.5 jako „najszybszy”, nie domyślny.
+
+Telemetria (P6 z 21j, 2026-10-19): digest obciążenia bez promptów – sha256 z listy (ISL, OSL, offset) + sha buildu i modelu + klasa sprzętu; porównania tylko przy równych digestach; projekcja pól przez allowlistę, nie regex.
 
 ## Powiązane
 - [[produkt/_hub|produkt]]
