@@ -138,7 +138,7 @@ Krzywe: `--ease-out` (0.16, 1, 0.3, 1) dla wejść, `--ease-in-out` dla pętli, 
 | `.source` | przypis źródła: mono, 12 px |
 | `.overline`, `.ticks`, `.bg-grid` | elementy telemetryczne |
 
-Warstwa pokazowa (`showcase.css`, komponenty `src/lib/fx`: `Tacho`, `RaceLanes`, `Odometer`, `HeatBar`, `HeatField`…) jest opisana w `REDESIGN.md` §5–8.
+Warstwa pokazowa (`showcase.css`, komponenty `src/lib/fx`: `Tacho`, `Speedo` (duży zegar wyścigu w hero), `RaceLanes`, `Odometer`, `HeatBar`, `HeatField`…) jest opisana w `REDESIGN.md` §5–8.
 
 Komponenty Svelte strony: `Header`, `Footer`, `Logo`, `ThemeToggle`, `CookieBanner`, `Waitlist` (`src/lib/site`), sceny strony głównej (`src/lib/home`), eksplorator kart (`src/lib/cards`); onboarding: `Shell` (kroki + pasek prototypu), `GpuCombobox` (wzorzec ARIA 1.2 combobox), `ScanCommands` (zakładki OS, komenda z bieżącym adresem, podgląd kodu skryptu), `CopyButton` (`src/lib/onboarding`).
 

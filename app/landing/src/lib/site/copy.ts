@@ -63,8 +63,8 @@ const raw = {
 				summary: 'Animacja: {card}, {model} {quant}. Ta sama odpowiedź pisana w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Ten sam skrypt pomiarowy po obu stronach.',
 				burstNote: 'Paczka = tokeny przyjęte w jednym kroku MTP (zmierzone: {burst} na krok); średnie tempo = zmierzone t/s',
 				msNote: 'czas kroku {a} → {b} ms (zmierzone)',
-				liveNote: 'Tokeny pojawiają się dokładnie w zmierzonym tempie (mediana: nasz silnik {a2} t/s, typowa aplikacja {a0} t/s); czasy na mecie = tokeny ÷ mediana. Chwilowy odczyt na zegarze waha się do 3% poniżej mediany, nigdy powyżej',
-				stripNote: 'Pasek pod tekstem: każdy krok z ostatnich 1,6 s, wysokość = liczba tokenów w kroku. Tor na dole: postęp i czas każdej strony',
+				liveNote: 'Tokeny pojawiają się dokładnie w zmierzonym tempie (mediana: nasz silnik {a2} t/s, typowa aplikacja {a0} t/s); czas odpowiedzi = tokeny ÷ mediana. Cyfry na zegarze to zawsze zmierzona mediana; wskazówka podczas pisania waha się o ±3% wokół niej, a w przerwie między odpowiedziami opada do zera',
+				stripNote: 'Animacja się zapętla: w jednym cyklu wolniejsza strona pisze odpowiedź raz, a szybsza tyle pełnych odpowiedzi, ile mieści jej zmierzone tempo (każda z krótką przerwą); kropki przy nazwie to ukończone odpowiedzi w cyklu',
 				textNote: 'Tekst jest przykładem; tempo słów z pomiaru (t/s ÷ {tpw} tokenu na słowo).'
 			}
 		},
@@ -314,8 +314,8 @@ const raw = {
 				summary: 'Animation: {card}, {model} {quant}. The same answer written at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. The same measurement script on both sides.',
 				burstNote: 'Burst = tokens accepted in one MTP step (measured: {burst} per step); the average pace = the measured t/s',
 				msNote: 'step time {a} → {b} ms (measured)',
-				liveNote: 'Tokens appear at exactly the measured pace (median: our engine {a2} t/s, typical app {a0} t/s); finish times = tokens ÷ median. The live reading on the dial dips up to 3% below the median, never above it',
-				stripNote: 'Strip under the text: every step of the last 1.6 s, height = tokens in the step. The track below: each side’s progress and time',
+				liveNote: 'Tokens appear at exactly the measured pace (median: our engine {a2} t/s, typical app {a0} t/s); answer time = tokens ÷ median. The digits on the dial are always the measured median; while writing, the needle moves within ±3% of it, and between answers it falls back to zero',
+				stripNote: 'The animation loops: in one cycle the slower side writes the answer once and the faster side writes as many full answers as its measured pace fits (each with a short pause); the dots next to the name are the answers finished in the cycle',
 				textNote: 'The text is an example; the word pace comes from the measurement (t/s ÷ {tpw} tokens per word).'
 			}
 		},

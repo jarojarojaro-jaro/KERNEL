@@ -3,11 +3,12 @@
 	 * Hero (design/REDESIGN.md §6): heat field, a two-tier headline (CSS only: it is the LCP) — the
 	 * steel line "Ten sam sprzęt. Ten sam model." over the focal, much larger heat line "Po prostu
 	 * szybciej." — one custom primary CTA with a slowly turning heat edge plus a text link, then the
-	 * race as two frameless typographic streams (LiveRace): RTX 3090 × Qwen3.8-27B, the typical app
-	 * (a0) vs our engine (a2), same script, MTP bursts from the measured tokens per step.
+	 * race (LiveRace): two lanes, each a large live speedometer beside the same answer being written,
+	 * RTX 3090 × Qwen3.8-27B, the typical app (a0) vs our engine (a2), same script, MTP bursts from
+	 * the measured tokens per step, looping forever.
 	 * Conditions and sources live only in the „źródło” popover. Other pairs: /wyniki and card pages.
-	 * Redline flare: while the race starts, the heat field runs hot, a bloom sweeps the hero once and
-	 * the heat line flares.
+	 * Redline flare: each race cycle runs the heat field hot for a moment; the first start also sweeps
+	 * a bloom across the hero once and flares the heat line.
 	 */
 	import { magnetic } from '$lib/fx/actions';
 	import HeatField from '$lib/fx/HeatField.svelte';
@@ -68,17 +69,20 @@
 	);
 
 	let heat = $state(false);
-	let flares = $state(0);
+	/** The first start only: one bloom sweep and one heat-line flare (later cycles only warm the field). */
+	let flare = $state(false);
+	let bloomed = $state(false);
 	function onheat(h: boolean) {
 		heat = h;
-		if (h) flares++;
+		if (h && !bloomed) bloomed = flare = true;
+		if (!h) flare = false;
 	}
 </script>
 
-<section class="hero" class:hot={heat} aria-labelledby="hero-title">
+<section class="hero" class:hot={flare} aria-labelledby="hero-title">
 	<HeatField heat={heat ? 1 : 0.62} boost={heat ? 1 : 0} />
 	<div class="veil" aria-hidden="true"></div>
-	{#key flares}{#if flares > 0}<div class="bloom" aria-hidden="true"></div>{/if}{/key}
+	{#if bloomed}<div class="bloom" aria-hidden="true"></div>{/if}
 	<div class="inner">
 		<h1 id="hero-title" class="title">
 			<Kin lines={c.title} wide={[1]} heat={[1]} cold={[0]} delays={[0, 120]} />
@@ -345,7 +349,7 @@
 		border-radius: 4px;
 	}
 	.race {
-		width: min(100%, 78rem);
+		width: min(100%, 84rem);
 		min-width: 0;
 		text-align: left;
 	}

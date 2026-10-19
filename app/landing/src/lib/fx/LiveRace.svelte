@@ -13,39 +13,34 @@
 
 <script lang="ts">
 	/**
-	 * The hero race: both lanes write the same short answer, shown in full from the first frame as a
-	 * dim preview that each lane lights up token by token at its measured pace, so you always see how
-	 * far each side has got (no scrolling window, nothing cropped). Under the lanes one shared finish
-	 * track: a runner per side, a running timer that stops at that side's finish time, and, once the
-	 * fast side is through, a big speed-up figure. When both are done the race holds for a moment and
-	 * starts over: a continuous feed. Pause is always available.
+	 * The hero race, an endless loop: two lanes, each a large speedometer next to the same short
+	 * answer, which is laid out in full from the first frame as a dim preview and lit token by token
+	 * at the lane's measured pace. One cycle = the slower side writes the answer once, then a short
+	 * rest; in that time the faster side writes as many full answers as its pace fits (2 for
+	 * 78,0 vs 38,9 t/s), each followed by its own short rest. A pip per finished answer fills next to
+	 * the lane's name. Then both sides restart together, forever. Pause is always available.
 	 *
 	 * Honesty: tokens are emitted at exactly the measured median t/s, in steps of `burst` tokens
 	 * (measured MTP tokens accepted per step, a deterministic 3,3,4,… pattern with the measured
-	 * mean); finish times = tokens ÷ median. The digits show only the measured median (never a live
-	 * value that could disagree with it); the motion lives in the needle, which breathes within
-	 * [0,97 × median, median] and kicks a little on each emitted step, and in the rhythm strip.
-	 * Narrow screens: the lanes sit side by side and each answer shows a 4-line window that follows
-	 * the newest line (transform only).
+	 * mean). The digits show only the measured median. The motion lives in the needle: while a lane
+	 * writes, it breathes within ±3% of the median and ticks on each emitted step (zero-mean); while
+	 * the lane rests between answers it falls back towards 0, and it climbs again with the next one.
 	 *
 	 * The answer is cut into token-sized pieces so the piece count matches TOK_PER_WORD (report 06
 	 * §2.1.2); the text is an example, the pace is measured.
 	 *
-	 * SSR / first paint: the race is shown 0,6 s in (prompt, first words lit, timers running), and the
+	 * SSR / first paint: the race is shown 0,6 s in (first words lit, needles on the median), and the
 	 * client continues from exactly that state. Every token is always laid out (CLS 0): emitting only
-	 * toggles a class; runners move by transform. The frame loop runs only while playing on screen.
-	 * Reduced motion: one static frame at the moment the fast side finishes.
+	 * toggles a class; the needles move by transform. The frame loop runs only while playing on screen.
+	 * Reduced motion: one static frame, both answers complete, needles on the median, no loop.
 	 */
-	import { heatOf } from '$lib/cards/explorer';
 	import type { Snippet } from 'svelte';
 	import { onMount, untrack } from 'svelte';
 	import { TOK_PER_WORD } from '$lib/estimator';
-	import { fmtRatio } from '$lib/format';
 	import { num } from '$lib/i18n';
 	import { visible } from './actions';
-	import { onFrame, reducedMotion, whenIdle } from './motion';
-	import Odometer from './Odometer.svelte';
-	import Tacho from './Tacho.svelte';
+	import { onFrame, reducedMotion, Spring, whenIdle } from './motion';
+	import Speedo from './Speedo.svelte';
 
 	let {
 		lanes,
@@ -70,8 +65,8 @@
 	} = $props();
 
 	const L = {
-		pl: { pause: 'Wstrzymaj wyścig', resume: 'Wznów wyścig', faster: 'szybciej', same: 'ten sam skrypt', live: 'na żywo', paused: 'pauza', median: 'zmierzone' },
-		en: { pause: 'Pause the race', resume: 'Resume the race', faster: 'faster', same: 'the same script', live: 'live', paused: 'paused', median: 'measured' }
+		pl: { pause: 'Wstrzymaj wyścig', resume: 'Wznów wyścig', live: 'na żywo', paused: 'pauza', median: 'zmierzone', answers: 'odpowiedzi' },
+		en: { pause: 'Pause the race', resume: 'Resume the race', live: 'live', paused: 'paused', median: 'measured', answers: 'answers' }
 	};
 	const t = $derived(L[lang]);
 
@@ -88,91 +83,81 @@
 		}
 		return out;
 	});
-	/** Each side's finish time: tokens ÷ measured median t/s. */
+	/** Each side's time for one answer: tokens ÷ measured median t/s. */
 	const ends = $derived(lanes.map((l) => pieces.length / l.tps));
+	const slowest = $derived(Math.max(...ends));
+	/** One cycle: the slower side's answer plus a short rest; both sides restart together after it. */
+	const cycle = $derived(slowest + Math.max(1.4, 0.45 * slowest));
+	/** Full answers per cycle: as many as the side's pace fits into the slower side's one. */
+	const passes = $derived(ends.map((e) => Math.max(1, Math.floor(slowest / e + 1e-9))));
+	const slots = $derived(passes.map((n) => cycle / n));
 	/** The race as first painted (and continued from by the client). */
 	const T0 = 0.6;
-	/** Seconds the finished race (both sides through, the verdict up) holds before it starts over. */
-	const HOLD = 4;
-	/** Seconds of history in the rhythm strip. */
-	const STRIP_S = 1.6;
-
-	const hotIdx = $derived(lanes.findIndex((l) => l.hot));
-	const coldIdx = $derived(lanes.findIndex((l) => !l.hot));
-	const ratio = $derived(hotIdx >= 0 && coldIdx >= 0 ? lanes[hotIdx].tps / lanes[coldIdx].tps : 0);
+	/** Seconds the heat field runs hot at the start of each cycle. */
+	const HEAT_S = 2.6;
 	const step = $derived(max <= 120 ? 20 : max <= 250 ? 50 : 100);
 
-	type LaneRun = { acc: number; pos: number; budget: number; events: { t: number; k: number }[] };
-	/** Deterministic emission: the lane's state after `time` seconds at its median rate. */
-	function runAt(l: LiveLane, time: number): LaneRun {
+	/** Deterministic emission: tokens written and steps taken after `time` seconds at the median. */
+	function runAt(l: LiveLane, time: number) {
 		const burst = l.burst ?? 1;
-		const r: LaneRun = { acc: 0, pos: 0, budget: l.tps * time, events: [] };
-		let k = Math.floor(r.acc + burst) - Math.floor(r.acc);
-		while (r.budget >= k && r.pos < pieces.length) {
-			r.budget -= k;
-			r.acc += burst;
-			r.pos = Math.min(pieces.length, r.pos + k);
-			k = Math.floor(r.acc + burst) - Math.floor(r.acc);
+		let budget = l.tps * time;
+		let acc = 0;
+		let pos = 0;
+		let steps = 0;
+		let k = Math.floor(burst);
+		while (budget >= k && pos < pieces.length) {
+			budget -= k;
+			acc += burst;
+			pos = Math.min(pieces.length, pos + k);
+			steps++;
+			k = Math.floor(acc + burst) - Math.floor(acc);
 		}
-		return r;
+		return { pos, steps };
 	}
-	const first = $derived(lanes.map((l) => runAt(l, T0).pos));
-	const fmtS = (s: number) => `${num(s, lang, 1)}\u00a0s`;
-	/** The side that finishes first: its clock is the only one running until it crosses the line. */
-	const leadIdx = $derived(ends.indexOf(Math.min(...ends)));
-	/** One running clock at a time: the leader's until it finishes, then each trailing side's (its
-	 * clock appears a tenth of a second after the leader's final, so two lanes never read the same). */
-	function timerText(i: number, time: number) {
-		if (i === leadIdx || time >= ends[leadIdx] + 0.1) return fmtS(Math.min(time, ends[i]));
-		return '–';
+	/** Lane `i` at cycle time `tm`: tokens lit, steps taken, writing or resting, answers finished. */
+	function laneAt(i: number, tm: number) {
+		const s = Math.min(passes[i] - 1, Math.floor(tm / slots[i]));
+		const tau = tm - s * slots[i];
+		const writing = tau < ends[i];
+		const r = writing ? runAt(lanes[i], tau) : { pos: pieces.length, steps: Infinity };
+		return { pass: s, writing, pos: r.pos, steps: r.steps, done: s + (writing ? 0 : 1) };
 	}
+
+	const first = $derived(lanes.map((_, i) => laneAt(i, T0)));
 
 	let playing = $state(false);
 	let onScreen = $state(false);
-	/** Needle value per lane; null = rest on the median. */
-	let needle: (number | null)[] = $state([]);
-	let kick: number[] = [];
-	let phase: number[] = [];
-	/** The fast side has written the whole answer (this pass). */
-	let finished = $state(false);
-	/** Both sides are through: only now are both times known, so only now is the verdict shown. */
-	let settled = $state(false);
-	let doneAt = 0;
+	/** Answers finished this cycle, per lane (fills the pips). */
+	// svelte-ignore state_referenced_locally
+	let done = $state(first.map((f) => f.done));
+	/** The lane is resting between answers (the needle falls, the digits dim). */
+	// svelte-ignore state_referenced_locally
+	let resting = $state(first.map((f) => !f.writing));
 	let feeds: HTMLElement[] = $state([]);
-	let trails: HTMLElement[] = $state([]);
-	let timers: HTMLElement[] = $state([]);
-	let strips: HTMLCanvasElement[] = $state([]);
+	let dials: Speedo[] = $state([]);
 
-	let clock = 0;
-	let since = 0;
-	let runs: LaneRun[] = [];
+	let clock = T0;
+	// svelte-ignore state_referenced_locally
+	let lit = first.map((f) => f.pos);
+	// svelte-ignore state_referenced_locally
+	let stepsSeen = first.map((f) => f.steps);
+	// svelte-ignore state_referenced_locally
+	let passSeen = first.map((f) => f.pass);
+	// svelte-ignore state_referenced_locally
+	const springs = lanes.map((l) => new Spring(l.tps, 90, 16));
+	// svelte-ignore state_referenced_locally
+	const kick = lanes.map(() => 0);
+	// svelte-ignore state_referenced_locally
+	const phase = lanes.map((_, i) => i * 2.1 + 0.7);
 
-	/** Put every lane at time `time` (DOM classes, runners, timers), deterministically. */
-	function seek(time: number) {
-		clock = time;
-		runs = lanes.map((l) => runAt(l, time));
-		finished = hotIdx >= 0 && runs[hotIdx].pos >= pieces.length;
-		settled = runs.every((r) => r.pos >= pieces.length);
-		doneAt = settled ? Math.max(...ends) : 0;
-		lanes.forEach((_, i) => {
-			const f = feeds[i];
-			if (f) for (let j = 0; j < f.children.length; j++) f.children[j].classList.toggle('on', j < runs[i].pos);
-			follow(i);
-			paint(i);
-		});
-	}
-	function paint(i: number) {
-		const r = runs[i];
-		const tr = trails[i];
-		if (tr) tr.style.transform = `translate3d(${((r.pos / pieces.length - 1) * 100).toFixed(2)}%, 0, 0)`;
-		const tm = timers[i];
-		if (tm) tm.textContent = timerText(i, clock);
-	}
-
-	function emit(i: number, k: number) {
+	/** Light (or, after a restart, dim) the lane's tokens so exactly `pos` are lit. */
+	function light(i: number, pos: number) {
 		const f = feeds[i];
-		const r = runs[i];
-		for (let j = 0; j < k && r.pos < pieces.length; j++) f?.children[r.pos++]?.classList.add('on');
+		if (!f || pos === lit[i]) return;
+		const kids = f.children;
+		if (pos > lit[i]) for (let j = lit[i]; j < pos; j++) kids[j]?.classList.add('on');
+		else for (let j = pos; j < lit[i]; j++) kids[j]?.classList.remove('on');
+		lit[i] = pos;
 		follow(i);
 	}
 	/** Narrow windows: keep the newest lit line at the bottom (transform; no-op when the text fits). */
@@ -182,72 +167,42 @@
 		const win = f?.parentElement;
 		if (!f || !win) return;
 		const h = win.clientHeight;
-		const last = f.children[Math.max(0, runs[i].pos - 1)] as HTMLElement | undefined;
-		const y = h >= f.offsetHeight || !last ? 0 : Math.max(0, Math.min(f.offsetHeight - h, last.offsetTop + last.offsetHeight - h));
+		const last = f.children[Math.max(0, lit[i] - 1)] as HTMLElement | undefined;
+		const y = h >= f.offsetHeight || !last || lit[i] === 0 ? 0 : Math.max(0, Math.min(f.offsetHeight - h, last.offsetTop + last.offsetHeight - h));
 		if (y !== shift[i]) {
 			shift[i] = y;
 			f.style.transform = y ? `translate3d(0, ${-y}px, 0)` : '';
 		}
 	}
 
-	/** Live readout: the median × (1 − 3% × w), w ∈ [0, 1] from slow sines: never above the median. */
+	/** Live needle target while writing: the median × (1 + 3% × m), m ∈ [−1, 1] from three sines. */
 	function readoutAt(i: number, time: number) {
-		const p = phase[i] ?? 0;
-		const m = 0.55 * Math.sin(time * 1.7 + p) + 0.3 * Math.sin(time * 3.1 + 2 * p) + 0.15 * Math.sin(time * 5.3 + 3 * p);
-		return lanes[i].tps * (1 - 0.03 * ((m + 1) / 2));
-	}
-	/** Advance one lane by dt at its median rate and emit the steps that are due. */
-	function advance(i: number, dt: number) {
-		const l = lanes[i];
-		const r = runs[i];
-		const burst = l.burst ?? 1;
-		if (r.pos >= pieces.length) return;
-		r.budget += l.tps * dt;
-		let k = Math.floor(r.acc + burst) - Math.floor(r.acc);
-		while (r.budget >= k && r.pos < pieces.length) {
-			r.budget -= k;
-			r.acc += burst;
-			r.events.push({ t: clock, k });
-			emit(i, k);
-			kick[i] = (kick[i] ?? 0) + k * l.tps * 0.01;
-			k = Math.floor(r.acc + burst) - Math.floor(r.acc);
-		}
-		if (l.hot && r.pos >= pieces.length && !finished) finished = true;
-		while (r.events.length && r.events[0].t < clock - STRIP_S) r.events.shift();
+		const p = phase[i];
+		const m = 0.5 * Math.sin(time * 2.3 + p) + 0.3 * Math.sin(time * 4.1 + 2 * p) + 0.2 * Math.sin(time * 7.7 + 3 * p);
+		return lanes[i].tps * (1 + 0.03 * m);
 	}
 
-	const dpr = typeof devicePixelRatio === 'number' ? Math.min(1.5, devicePixelRatio) : 1;
-	function drawStrip(i: number) {
-		const cv = strips[i];
-		if (!cv) return;
-		const w = cv.clientWidth;
-		const h = cv.clientHeight;
-		if (cv.width !== Math.round(w * dpr)) {
-			cv.width = Math.round(w * dpr);
-			cv.height = Math.round(h * dpr);
-		}
-		const ctx = cv.getContext('2d');
-		if (!ctx) return;
-		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-		ctx.clearRect(0, 0, w, h);
-		const hot = lanes[i].hot;
-		const unit = h / 4;
-		for (const e of runs[i].events) {
-			const age = clock - e.t;
-			const x = w - (age / STRIP_S) * w;
-			const bh = Math.min(h, unit * e.k);
-			ctx.globalAlpha = Math.max(0.12, 1 - age / STRIP_S);
-			ctx.fillStyle = hot ? (age < 0.12 ? '#fff3d6' : '#ff9a3a') : '#7d8794';
-			ctx.fillRect(x - 1, h - bh, 2, bh);
-		}
-		ctx.globalAlpha = 1;
+	/** Put every lane at cycle time `tm` at once (no needle physics): first paint, reduced motion. */
+	function seek(tm: number) {
+		lanes.forEach((_, i) => {
+			const s = laneAt(i, tm);
+			light(i, s.pos);
+			stepsSeen[i] = s.steps;
+			passSeen[i] = s.pass;
+			follow(i);
+		});
+		done = lanes.map((_, i) => laneAt(i, tm).done);
+		resting = lanes.map((_, i) => !laneAt(i, tm).writing);
 	}
 
 	onMount(() => {
-		phase = lanes.map((_, i) => i * 2.1 + 0.7);
+		// the SSR markup already shows T0; align the bookkeeping with the DOM
+		lit = lanes.map((_, i) => feeds[i]?.querySelectorAll('.tk.on').length ?? 0);
 		if (reducedMotion()) {
-			// one readable frame: both sides through, both times and the verdict shown
-			seek(Math.max(...ends));
+			// one readable frame: both answers complete, needles on the median, every pip filled
+			lanes.forEach((_, i) => light(i, pieces.length));
+			done = [...passes];
+			resting = lanes.map(() => false);
 			return;
 		}
 		seek(T0);
@@ -263,35 +218,47 @@
 		return untrack(() =>
 			onFrame((dt) => {
 				const d = Math.min(dt, 0.1);
+				const before = clock % cycle;
 				clock += d;
-				since += d;
-				const nn = [...needle];
+				const tm = clock % cycle;
+				const restart = tm < before;
+				if (restart) onheat?.(true);
+				else if (before < HEAT_S && tm >= HEAT_S) onheat?.(false);
+				let nd: number[] | null = null;
+				let nr: boolean[] | null = null;
 				for (let i = 0; i < lanes.length; i++) {
-					advance(i, d);
-					paint(i);
-					drawStrip(i);
-					kick[i] = (kick[i] ?? 0) * Math.exp(-d / 0.09);
-					nn[i] = readoutAt(i, clock) + kick[i];
+					const l = lanes[i];
+					const s = laneAt(i, tm);
+					const fresh = s.pass !== passSeen[i] || restart;
+					if (fresh) {
+						passSeen[i] = s.pass;
+						stepsSeen[i] = 0;
+						light(i, 0);
+					}
+					// a zero-mean tick per emitted step: bigger steps than the mean kick up, smaller down
+					if (s.writing && s.steps > stepsSeen[i]) {
+						const burst = l.burst ?? 1;
+						kick[i] += (s.pos - lit[i] - (s.steps - stepsSeen[i]) * burst) * 0.015 * l.tps;
+						stepsSeen[i] = s.steps;
+					}
+					light(i, s.pos);
+					const sp = springs[i];
+					sp.target = s.writing ? readoutAt(i, clock) : 0;
+					sp.step(d);
+					kick[i] *= Math.exp(-d / 0.09);
+					dials[i]?.set(Math.max(0, sp.x + kick[i]));
+					if (s.done !== done[i]) (nd ??= [...done])[i] = s.done;
+					if (!s.writing !== resting[i]) (nr ??= [...resting])[i] = !s.writing;
 				}
-				needle = nn;
-				if (since > 2.6 && since - d <= 2.6) onheat?.(false);
-				const allDone = runs.every((r) => r.pos >= pieces.length);
-				if (allDone && !doneAt) {
-					doneAt = clock;
-					settled = true;
-				}
-				if (allDone && clock - doneAt > HOLD) {
-					seek(0);
-					since = 0;
-					onheat?.(true);
-				}
+				if (nd) done = nd;
+				if (nr) resting = nr;
 			})
 		);
 	});
 
 	function toggle() {
 		playing = !playing;
-		if (!playing) onheat?.(false);
+		onheat?.(playing && clock % cycle < HEAT_S);
 	}
 </script>
 
@@ -312,50 +279,34 @@
 	</div>
 	<div class="lanes" aria-hidden="true">
 		{#each lanes as l, i (l.id)}
-			<div class="lane" class:hot={l.hot} class:on={playing} class:done={l.hot && finished}>
-				<div class="inst">
-					<div class="gauge">
-						<Tacho value={needle[i] ?? l.tps} glowing={l.hot} {max} {redline} {step} tone={l.hot ? 'hot' : 'cold'} label="{l.label}: {num(l.tps, lang)} t/s" />
-					</div>
-					<div class="who">
+			<div class="lane" class:hot={l.hot} class:rest={resting[i]}>
+				<div class="dial">
+					<Speedo bind:this={dials[i]} value={l.tps} {max} {redline} {step} tone={l.hot ? 'hot' : 'cold'}>
+						<span class="tps">{num(l.tps, lang, 1)}</span>
+						<span class="unit">t/s<span class="med">&nbsp;·&nbsp;{t.median}</span></span>
+					</Speedo>
+				</div>
+				<div class="body">
+					<div class="head">
 						<span class="label">{l.label}</span>
 						{#if l.sub}<span class="sub">{l.sub}</span>{/if}
+						<div class="tally">
+							<span class="tl">{t.answers}</span>
+							{#each { length: passes[i] }, j (j)}<span class="pip" class:on={j < done[i]}></span>{/each}
+						</div>
 					</div>
-					<div class="rate">
-						<span class="tps"><Odometer value={l.tps} decimals={1} {lang} duration={0} minInt={2} pad /></span>
-						<span class="unit">t/s</span>
-						<!-- the measured median, always visible next to the live readout -->
-						<span class="med">{t.median}</span>
-					</div>
+					<!-- the whole answer, always laid out: dim preview, lit as the lane writes it -->
+					<div class="win"><p class="feed" bind:this={feeds[i]}>{#each pieces as piece, j (j)}<span class="tk" class:on={j < first[i].pos}>{piece}</span>{/each}</p></div>
 				</div>
-				<!-- the whole answer, always laid out: dim preview, lit as the lane writes it -->
-				<div class="win"><p class="feed" bind:this={feeds[i]}>{#each pieces as piece, j (j)}<span class="tk" class:on={j < first[i]}>{piece}</span>{/each}</p></div>
-				<canvas class="strip" bind:this={strips[i]}></canvas>
 			</div>
 		{/each}
-	</div>
-	<!-- one shared finish track: runner, finish line and a running timer per side -->
-	<div class="track" class:won={settled} aria-hidden="true">
-		{#each lanes as l, i (l.id)}
-			<div class="trow" class:hot={l.hot} style="grid-row:{i + 1}">
-				<span class="tn">{l.label}</span>
-				<span class="tline"><span class="trail" bind:this={trails[i]} style="transform: translate3d({((first[i] / pieces.length - 1) * 100).toFixed(2)}%, 0, 0)"></span></span>
-				<span class="tt" bind:this={timers[i]}>{timerText(i, T0)}</span>
-			</div>
-		{/each}
-		{#if ratio > 0}
-			<p class="verdict">
-				<b class="speedup" class:speedup--down={ratio < 1} style="--rh:{heatOf(ratio)}">{fmtRatio(ratio, lang)}</b>
-				<small>{t.faster} · {t.same}</small>
-			</p>
-		{/if}
 	</div>
 </div>
 
 <style>
 	.live {
 		display: grid;
-		gap: clamp(0.75rem, 1.6vh, 1.25rem);
+		gap: clamp(0.9rem, 2vh, 1.5rem);
 	}
 	/* the question both lanes answer, set like a typed prompt */
 	.prompt {
@@ -383,271 +334,6 @@
 		50% {
 			opacity: 0.25;
 		}
-	}
-	/* two frameless streams; a hairline between them. Decorative (the sr-only summary carries the
-	 * facts): never selected or copied. */
-	.lanes {
-		-webkit-user-select: none;
-		user-select: none;
-		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		column-gap: clamp(2rem, 5vw, 5rem);
-		position: relative;
-	}
-	.lanes::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		bottom: 0;
-		left: 50%;
-		width: 1px;
-		background: linear-gradient(transparent, var(--line) 20%, var(--line) 80%, transparent);
-	}
-	.lane {
-		position: relative;
-		display: grid;
-		align-content: start;
-		gap: 0.6rem;
-		min-width: 0;
-	}
-	/* instruments: compact dial · who · small readout (fixed height: never moves the text) */
-	.inst {
-		display: grid;
-		grid-template-columns: var(--g) minmax(0, 1fr) auto;
-		align-items: center;
-		gap: 1.1rem;
-		--g: clamp(4.5rem, 3.5rem + 1.8vw, 5.75rem);
-		height: var(--g);
-	}
-	.gauge {
-		width: var(--g);
-	}
-	.who {
-		display: grid;
-		gap: 0.15rem;
-		min-width: 0;
-		overflow: hidden;
-	}
-	.label {
-		font-weight: 680;
-		font-size: var(--fs-sm);
-		line-height: 1.2;
-		color: var(--text);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.hot .label {
-		color: var(--text-hi);
-	}
-	.sub {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--text-mute);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.rate {
-		display: grid;
-		grid-template-columns: auto auto;
-		justify-items: end;
-		align-items: baseline;
-		column-gap: 0.3rem;
-		row-gap: 0.15rem;
-	}
-	.med {
-		grid-column: 1 / -1;
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.04em;
-		color: var(--text-mute);
-		white-space: nowrap;
-	}
-	.tps {
-		font-size: clamp(1.45rem, 1rem + 1.1vw, 2.05rem);
-		font-weight: 500;
-		letter-spacing: -0.04em;
-		color: var(--before);
-	}
-	/* hot metal: the digits glow and drift through the heat ramp, continuously alive */
-	.hot .tps {
-		color: var(--heat-4);
-		text-shadow:
-			0 0 10px rgb(255 122 26 / 0.6),
-			0 0 26px rgb(226 64 28 / 0.35);
-		animation: metal 2.6s ease-in-out infinite alternate;
-	}
-	@keyframes metal {
-		0% {
-			color: var(--heat-3);
-		}
-		55% {
-			color: var(--heat-4);
-		}
-		100% {
-			color: var(--heat-5);
-		}
-	}
-	.unit {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text-mute);
-		letter-spacing: 0.1em;
-	}
-	/* the answer: always complete in layout; unwritten tokens are a dim preview */
-	/* four lines of the answer, following the newest one (transform only) */
-	.win {
-		position: relative;
-		overflow: clip;
-		height: calc(4 * 1.55em);
-		font-size: clamp(1rem, 0.85rem + 0.4vw, 1.22rem);
-		mask-image: linear-gradient(transparent, #000 0.9em);
-	}
-	.feed {
-		margin: 0;
-		transition: transform 0.2s var(--ease-out);
-		font-size: inherit;
-		line-height: 1.55;
-		letter-spacing: -0.005em;
-		color: rgb(237 234 227 / 0.17);
-	}
-	.feed :global(.tk.on) {
-		color: #a3a8b1;
-		animation: lit-cold 0.9s var(--ease-out) backwards;
-	}
-	@keyframes lit-cold {
-		from {
-			color: var(--text-hi);
-		}
-	}
-	/* fast lane: the text is hot metal; each step's tokens flash white-hot and cool to orange */
-	.hot .feed :global(.tk.on) {
-		color: var(--heat-4);
-		text-shadow: 0 0 14px rgb(255 122 26 / 0.35);
-		animation: lit-hot 1.1s var(--ease-out) backwards;
-	}
-	@keyframes lit-hot {
-		0% {
-			color: #fff;
-			text-shadow:
-				0 0 6px #fff3d6,
-				0 0 18px #ffc15a;
-		}
-	}
-	.strip {
-		width: 100%;
-		height: 1rem;
-	}
-	/* ---- the shared finish track ---- */
-	.track {
-		display: grid;
-		/* the verdict has its own fixed slot inside the track: it never pushes past the panel */
-		grid-template-columns: minmax(7rem, auto) minmax(0, 1fr) 4.5rem 13rem;
-		align-items: center;
-		column-gap: 1rem;
-		row-gap: 0.55rem;
-		padding: 1rem 1.1rem;
-		border-radius: var(--r-lg);
-		background: linear-gradient(90deg, rgb(255 255 255 / 0.025), rgb(255 122 26 / 0.04));
-		box-shadow: inset 0 0 0 1px var(--line);
-	}
-	.trow {
-		display: contents;
-	}
-	.tn {
-		grid-column: 1;
-		font-size: var(--fs-xs);
-		color: var(--text);
-		white-space: nowrap;
-	}
-	.hot .tn {
-		color: var(--text-hi);
-		font-weight: 650;
-	}
-	/* the lane line ends in a finish post; the trail (with the runner at its head) slides along it */
-	.tline {
-		grid-column: 2;
-		position: relative;
-		height: 0.7rem;
-		overflow: hidden;
-		border-right: 2px solid var(--text-hi);
-		background: linear-gradient(rgb(237 234 227 / 0.14), rgb(237 234 227 / 0.14)) 0 50% / 100% 1px no-repeat;
-	}
-	.trail {
-		position: absolute;
-		inset: 0.25rem 0;
-		border-radius: var(--r-pill);
-		background: linear-gradient(90deg, transparent, var(--before));
-		transition: transform 0.08s linear;
-	}
-	.trail::after {
-		content: '';
-		position: absolute;
-		right: 0;
-		top: 50%;
-		width: 0.6rem;
-		height: 0.6rem;
-		margin-top: -0.3rem;
-		border-radius: 50%;
-		background: var(--before);
-	}
-	.hot .trail {
-		background: linear-gradient(90deg, transparent, var(--heat-2) 40%, var(--heat-4));
-		box-shadow: 0 0 12px rgb(255 122 26 / 0.6);
-	}
-	.hot .trail::after {
-		background: var(--heat-5);
-		box-shadow: 0 0 10px var(--heat-4);
-	}
-	.tt {
-		grid-column: 3;
-		justify-self: end;
-		font-family: var(--font-display);
-		font-variant-numeric: tabular-nums lining-nums;
-		font-weight: 650;
-		font-size: var(--fs-sm);
-		color: var(--text);
-		white-space: nowrap;
-	}
-	.hot .tt {
-		color: var(--heat-4);
-	}
-	/* the result, big, stamped when the slow side crosses the line too (always laid out: no shift) */
-	.verdict {
-		grid-column: 4;
-		grid-row: 1 / span 2;
-		margin: 0;
-		display: grid;
-		justify-items: center;
-		gap: 0.2rem;
-		min-width: 0;
-		text-align: center;
-		visibility: hidden;
-		transform: scale(0.92);
-	}
-	.won .verdict {
-		visibility: visible;
-		transform: none;
-		transition:
-			transform 0.4s var(--ease-spring),
-			visibility 0s;
-	}
-	.verdict b {
-		font-size: clamp(3rem, 1.8rem + 2.8vw, 4.6rem);
-		filter: drop-shadow(0 0 18px rgb(255 122 26 / 0.45));
-	}
-	.verdict small {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--heat-4);
-		line-height: 1.3;
 	}
 	.controls {
 		display: flex;
@@ -697,63 +383,251 @@
 		background: var(--bg-2);
 		border-color: var(--text-mute);
 	}
-	/* narrow screens: both lanes side by side, short windows, so the whole race fits the first screen */
-	@media (max-width: 900px) {
-		.lanes {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-			column-gap: 1.1rem;
+	/* two lanes side by side, a hairline between them. Decorative (the sr-only summary carries the
+	 * facts): never selected or copied. */
+	.lanes {
+		-webkit-user-select: none;
+		user-select: none;
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		column-gap: clamp(1rem, 4.5vw, 4.5rem);
+		position: relative;
+	}
+	.lanes::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		left: 50%;
+		width: 1px;
+		background: linear-gradient(transparent, var(--line) 20%, var(--line) 80%, transparent);
+	}
+	/* wide: the big dial on the left, name and the answer on the right */
+	.lane {
+		--g: clamp(10rem, min(5rem + 13vw, 33svh), 18rem);
+		position: relative;
+		display: grid;
+		grid-template-columns: var(--g) minmax(0, 1fr);
+		align-items: center;
+		column-gap: clamp(1rem, 2vw, 1.75rem);
+		min-width: 0;
+	}
+	.dial {
+		width: var(--g);
+		min-width: 0;
+	}
+	.body {
+		container: lanebody / inline-size;
+		display: grid;
+		align-content: center;
+		gap: 0.75rem;
+		min-width: 0;
+	}
+	/* name and the answer pips on one line, the setup below */
+	.head {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		grid-template-areas: 'label tally' 'sub sub';
+		align-items: center;
+		gap: 0.2rem 0.75rem;
+		min-width: 0;
+	}
+	.label {
+		grid-area: label;
+		min-width: 0;
+		font-weight: 720;
+		font-size: clamp(1rem, 0.8rem + 0.45vw, 1.3rem);
+		line-height: 1.15;
+		letter-spacing: -0.01em;
+		color: var(--text);
+	}
+	.hot .label {
+		color: var(--text-hi);
+	}
+	.sub {
+		grid-area: sub;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+	}
+	/* one pip per answer the lane finishes in a cycle */
+	.tally {
+		grid-area: tally;
+		display: flex;
+		align-items: center;
+		gap: 0.35rem;
+		flex: none;
+		padding-bottom: 0.15rem;
+	}
+	.tl {
+		margin-right: 0.15rem;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+	}
+	.pip {
+		width: 0.7rem;
+		height: 0.7rem;
+		border-radius: 50%;
+		box-shadow: inset 0 0 0 1.5px var(--line-strong);
+		transition:
+			background 0.25s,
+			box-shadow 0.25s;
+	}
+	.pip.on {
+		background: var(--before);
+		box-shadow: inset 0 0 0 1.5px var(--before);
+		animation: pip 0.5s var(--ease-spring);
+	}
+	.hot .pip.on {
+		background: var(--heat-4);
+		box-shadow:
+			inset 0 0 0 1.5px var(--heat-4),
+			0 0 12px rgb(255 122 26 / 0.75);
+	}
+	@keyframes pip {
+		from {
+			transform: scale(1.8);
 		}
-		.lanes::before {
-			display: block;
+	}
+	/* the measured median in the open bottom of the dial */
+	.tps {
+		font-family: var(--font-display);
+		font-weight: 760;
+		font-size: 16cqi;
+		line-height: 1;
+		letter-spacing: -0.045em;
+		font-variant-numeric: tabular-nums lining-nums;
+		color: var(--before);
+		/* a dark halo: the needle passes under the digits cleanly */
+		text-shadow:
+			0 0 3px #050506,
+			0 0 8px #050506;
+		transition: opacity 0.35s var(--ease-out);
+	}
+	/* hot metal: the digits glow and drift through the heat ramp, continuously alive */
+	.hot .tps {
+		color: var(--heat-4);
+		text-shadow:
+			0 0 3px #050506,
+			0 0 10px rgb(255 122 26 / 0.6),
+			0 0 28px rgb(226 64 28 / 0.4);
+		animation: metal 2.6s ease-in-out infinite alternate;
+	}
+	@keyframes metal {
+		0% {
+			color: var(--heat-3);
 		}
-		.inst {
-			--g: 2.9rem;
-			grid-template-columns: var(--g) minmax(0, 1fr);
-			grid-template-areas: 'g who' 'g rate';
-			align-items: center;
-			column-gap: 0.55rem;
-			row-gap: 0.1rem;
-			height: auto;
+		55% {
+			color: var(--heat-4);
 		}
-		.gauge {
-			grid-area: g;
+		100% {
+			color: var(--heat-5);
 		}
-		.who {
-			grid-area: who;
-		}
-		.rate {
-			grid-area: rate;
-			justify-items: start;
-			justify-self: start;
-		}
-		.sub {
-			display: none;
-		}
-		.label {
-			font-size: 0.78rem;
-			white-space: normal;
-			line-height: 1.15;
-		}
-		.tps {
-			font-size: 1.35rem;
-		}
+	}
+	.rest .tps {
+		opacity: 0.45;
+	}
+	.unit {
+		margin-top: 2.5cqi;
+		font-family: var(--font-mono);
+		font-size: max(0.56rem, 4.6cqi);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+		white-space: nowrap;
+	}
+	@container (max-width: 12.5rem) {
 		.med {
 			display: none;
 		}
-		/* four lines of the answer, following the newest one */
+	}
+	/* the answer: always complete in layout; unwritten tokens are a dim preview. Five lines,
+	 * following the newest one (transform only). */
+	.win {
+		position: relative;
+		overflow: clip;
+		height: calc(5 * 1.5em);
+		font-size: clamp(0.95rem, 0.8rem + 0.35vw, 1.15rem);
+		mask-image: linear-gradient(transparent, #000 0.9em);
+	}
+	.feed {
+		margin: 0;
+		transition: transform 0.2s var(--ease-out);
+		font-size: inherit;
+		line-height: 1.5;
+		letter-spacing: -0.005em;
+		color: rgb(237 234 227 / 0.17);
+	}
+	.feed :global(.tk.on) {
+		color: #a3a8b1;
+		animation: lit-cold 0.9s var(--ease-out) backwards;
+	}
+	@keyframes lit-cold {
+		from {
+			color: var(--text-hi);
+		}
+	}
+	/* fast lane: the text is hot metal; each step's tokens flash white-hot and cool to orange */
+	.hot .feed :global(.tk.on) {
+		color: var(--heat-4);
+		text-shadow: 0 0 14px rgb(255 122 26 / 0.35);
+		animation: lit-hot 1.1s var(--ease-out) backwards;
+	}
+	@keyframes lit-hot {
+		0% {
+			color: #fff;
+			text-shadow:
+				0 0 6px #fff3d6,
+				0 0 18px #ffc15a;
+		}
+	}
+	/* a narrow text column beside the dial: name, setup and pips each on their own line */
+	@container lanebody (max-width: 22rem) {
+		.head {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: 'label' 'sub' 'tally';
+			justify-items: start;
+		}
+	}
+	/* narrower: each lane is a column, the dial on top as large as the column and the screen allow */
+	@media (max-width: 1000px) {
+		.lane {
+			--g: min(100%, clamp(8rem, 30svh, 16rem));
+			grid-template-columns: minmax(0, 1fr);
+			justify-items: center;
+			align-items: start;
+			row-gap: 0.85rem;
+		}
+		.body {
+			width: 100%;
+		}
+		.head {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-areas: 'label' 'sub' 'tally';
+			justify-items: center;
+			gap: 0.3rem;
+			text-align: center;
+		}
+		.tally {
+			padding-bottom: 0;
+		}
 		.win {
-			height: calc(4 * 1.45em);
-			font-size: 0.8rem;
-			mask-image: linear-gradient(transparent, #000 0.9em);
+			height: calc(4 * 1.5em);
 		}
-		.feed {
-			font-size: inherit;
-			line-height: 1.45;
-		}
-		.strip {
+		.state {
 			display: none;
 		}
-		/* two short rows: the prompt as one line, then model · card · source · pause on one line */
+	}
+	/* small tablets and phones: the prompt on its own line, then model · card · source · pause */
+	@media (max-width: 760px) {
 		.controls {
 			gap: 0.45rem 0.6rem;
 		}
@@ -772,47 +646,43 @@
 			flex-wrap: nowrap;
 			white-space: nowrap;
 		}
-		.state {
+	}
+	/* phones: compact names, four short lines of the answer */
+	@media (max-width: 640px) {
+		.lanes {
+			column-gap: 1.1rem;
+		}
+		.lane {
+			row-gap: 0.6rem;
+		}
+		.sub,
+		.tl {
 			display: none;
 		}
-		.track {
-			grid-template-columns: minmax(0, auto) minmax(0, 1fr) 3.4rem;
-			padding: 0.7rem 0.8rem;
-			column-gap: 0.6rem;
-			row-gap: 0.45rem;
+		.label {
+			font-size: 0.85rem;
 		}
-		.tn {
-			font-size: var(--fs-2xs);
-			max-width: 5.5rem;
-			white-space: normal;
-			line-height: 1.15;
+		.pip {
+			width: 0.55rem;
+			height: 0.55rem;
 		}
-		.tt {
-			font-size: var(--fs-xs);
+		.win {
+			height: calc(4 * 1.45em);
+			font-size: 0.8rem;
 		}
-		.verdict {
-			grid-column: 1 / -1;
-			grid-row: 3;
-			grid-auto-flow: column;
-			justify-content: center;
-			align-items: baseline;
-			gap: 0.6rem;
-		}
-		.verdict b {
-			font-size: 2.6rem;
+		.feed {
+			line-height: 1.45;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.prompt.on .caret,
 		.hot .tps,
+		.pip.on,
 		.feed :global(.tk.on),
 		.hot .feed :global(.tk.on) {
 			animation: none;
 		}
-		.trail,
-		.feed,
-		.verdict,
-		.won .verdict {
+		.feed {
 			transition: none;
 		}
 	}
