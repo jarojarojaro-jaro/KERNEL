@@ -1,8 +1,8 @@
 ---
 typ: kernel
 tags: [kernele, gdn, spekulacja]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:290-295; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:108-111; ~/KERNEL/qwen-opt/research/round6/test-tooling.md:26; ~/KERNEL/product/research/patch-manifest.json (0033)
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:290-295; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:108-111; ~/KERNEL/qwen-opt/research/round6/test-tooling.md:26; ~/KERNEL/product/research/patch-manifest.json (0033); ~/KERNEL/product/research/23e-re-silniki.md:21
 status: aktualne
 ---
 # GDN z opóźnieniem: cofanie przez przeliczenie (S4)
@@ -21,6 +21,8 @@ Wynik:
 Koszt: zapis stanu przy każdym żądaniu +10–15 ms prefillu (48 kopii buforów oczekujących); poprawka leży w stash na `opt-s4`.
 
 Poprawność: bitowo identyczne. Wyłącznik: `LLAMA_GDN_REPLAY=0` (gasi też 0034–0036 i 0038; manifest wymienia też `GGML_HIP_GDN_REPLAY`). Duża zmiana core: raport 07 ocenia szansę upstreamu jako średnią–niską.
+
+Raport 23e (2026-10-19) proponował „rollback GDN przez replay” jako nowy pomysł ze Straty – to dokładnie ta technika, już w produkcji.
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

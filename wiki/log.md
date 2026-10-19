@@ -146,6 +146,9 @@ Nowa [[raport-23b-re-kernele-amd]]; zaktualizowana [[mmvq-n1-wiersze]].
 ## [2026-10-19] ingest | Raport 23d (RE runtime AMD, firmware MEC)
 Nowe: [[mec-fw-dispatch-aql-gfx11]], [[rs64-firmware-re]]; zaktualizowane [[gfx11-pm4-dispatch-priv]], [[hip-graph-narzut]]. Zrzuty firmware tylko lokalnie, w wiki same numery linii.
 
+## [2026-10-19] ingest | Raporty 23b2 (bariery) i 23e (RE silników)
+Nowa [[raport-23e-re-silniki]] (hipfire 54.3 vs 43.2 t/s – bajty, nie ISA; pomysł nr 1 już w forku); zaktualizowane [[raport-23b-re-kernele-amd]], [[bariera-lds-rdna3]], [[hipfire]], [[gdn-replay]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
