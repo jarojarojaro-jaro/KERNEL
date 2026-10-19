@@ -14,7 +14,7 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (22)
+## Notatki (23)
 
 - [[agentx-harness|AgentX harness (SemiAnalysis, AIPerf)]] — `agentx-harness==1.0.11` (na AIPerf NVIDIA, wrapper `python3 -m infx.bench agentic`) odtwarza 393 sesje Claude Code z zachowanymi długościami, hashami bloków 64 tokenów, drzewem subagentów i przerwami na narzędzia, ale z syntetyczną treścią; c = liczba żywych drzew sesji, punkt ≥ 900 s (oficjalnie 1 h) na świeżym serwerze (raport 21f, 2026-10-19).
 - [[att-gfx1100|ATT (thread trace) na gfx1100]] — Śledzenie instrukcji fali (ATT) działa na RX 7900 XTX w ROCm 10.0: `rocprofv3 --att --att-target-cu 1 --att-simd-select 0 --kernel-include-regex … --kernel-iteration-range …` z `GGML_HIP_PM4=0`; skrypt `att_model.sh` i parser `attsum.py` w `~/wt/lfmmoe-prof/` (2026-10-18).
@@ -24,6 +24,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[gdnemu-isadiff|gdnemu.py i isadiff.py (dowód bitowości z ISA)]] — Symboliczny emulator gfx11 wave32 wykonujący skompilowany ISA kerneli GDN bez GPU oraz `isadiff.py`, który sprawdza, że każdy kernel bazowy jest bajtowo identyczny w nowym buildzie.
 - [[gpu-keepawake|gpu-keepawake (trzymanie GPU w stanie aktywnym)]] — 12-liniowy program HIP, który trzyma kontekst KFD, żeby runtime PM amdgpu nie uśpił karty (BACO); uruchamiany przez `run-llm.sh`, gdy runtime suspend jest włączony.
 - [[greedy-check|greedy.sh / greedy_check.sh — bramka md5]] — Skrypty uruchamiają świeży serwer i zapisują tekst greedy (T=0) w trybie plain i MTP; md5 musi się zgadzać z bazą, żeby łatka była „bitowo identyczna”.
+- [[kb|kb: szybkie wyszukiwanie w bazie wiedzy]] — `kb search <pytanie>` i `kb facts <pytanie> [--max|--min]` (`~/.local/bin/kb`) przeszukują cały `~/KERNEL` (wiki, raporty, `NOTES.md`) i zwracają odpowiedź z `plik:linia`. Na 80 prawdziwych pytaniach recall@5 wynosi 0.963, a zapytanie trwa 10–70 ms.
 - [[kt-harness|Kernel Tuner harness (kt/)]] — Rusztowanie Kernel Tunera dla gorących kerneli dekodu na gfx1100: `mmvq_n1`, `moe_gate_up`, `moe_down`, `gdn`; tylko `tune` dotyka GPU.
 - [[llama-bx-diff|llama-bx-diff (pierwszy rozjeżdżający się węzeł)]] — Program z gałęzi `batch-invariant`: znajduje pierwszy węzeł grafu, którego wynik dla tokenu różni się między zwykłym dekodem (token po tokenie) a weryfikacją N tokenów w jednym batchu.
 - [[loo-py|loo.py (leave-one-out łatek)]] — Narzędzie leave-one-out serii `amd-opt`: plan (CPU, git), runner GPU, buildy z revertami i raport ze sparowanym 95% CI.
@@ -37,5 +38,5 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[spec-sweep|spec_sweep — główny pomiar t/s i ms/krok]] — Standardowy benchmark projektu: restartuje serwer dla każdej konfiguracji i mierzy t/s, ms/krok, tokeny na krok i akceptację draftu na stałym zestawie promptów PL/EN.
 - [[ss-zrzut-ekranu|ss (zrzut ekranu z Windowsa na serwer)]] — Funkcja PowerShella `ss` w profilu użytkownika: zapisuje obrazek ze schowka jako PNG i kopiuje go przez `scp` do `/tmp` na serwerze, żeby agent mógł go przeczytać.
 - [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]] — Skrypt odpytuje co 2 s log jądra i sensory XTX; przy zagrożeniu zabija wszystkie `llama-server` / `llama-bench` / `llama-perplexity` / `test-backend-ops` / `magnitude-engine` poza produkcją na :8080, zapisuje powód do `gpu-guard.log` i kończy się kodem 3, który budzi agenta głównego.
-- [[wiki-py|wiki.py (narzędzie tej bazy wiedzy)]] — Skrypt tylko ze stdlib do utrzymania wiki: `lint` (błędy → kod wyjścia 1), `index` (odświeża listy w `_hub.md` i `index.md`), `search` (tytuły, streszczenia, tagi).
+- [[wiki-py|wiki.py (narzędzie tej bazy wiedzy)]] — Skrypt tylko ze stdlib do utrzymania wiki: `lint` (błędy → kod wyjścia 1), `index` (odświeża listy w `_hub.md` i `index.md`), `search` (deleguje do [[kb]], gdy `kb` jest w PATH; bez niego tytuły, streszczenia, tagi).
 <!-- AUTO:END -->

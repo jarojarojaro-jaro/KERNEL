@@ -1,0 +1,3 @@
+# ONNX Runtime 1.22 (statycznie, pyke) pobiera setup.sh do .ort/ (poza gitem).
+[env]
+ORT_LIB_LOCATION = { value = ".ort/onnxruntime/lib", relative = true }

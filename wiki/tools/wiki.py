@@ -3,13 +3,15 @@
 
   python3 wiki/tools/wiki.py lint [folder]   # błędy -> kod wyjścia 1; folder zawęża raport
   python3 wiki/tools/wiki.py index           # odświeża listy w _hub.md i index.md
-  python3 wiki/tools/wiki.py search słowa…   # szuka w tytułach, streszczeniach, tagach
+  python3 wiki/tools/wiki.py search słowa…   # deleguje do `kb search` (tools/kb), bez kb: tytuły, streszczenia, tagi
 """
 from __future__ import annotations
 
 import datetime as dt
 import os
 import re
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -275,6 +277,11 @@ def search(words: list[str]) -> int:
     if not words:
         print("użycie: wiki.py search słowa…")
         return 2
+    # Szybkie wyszukiwanie `kb` (tools/kb: BM25 + embeddingi + fakty, cały ~/KERNEL, plik:linia).
+    # KB_NO_DELEGATE=1 wymusza stare wyszukiwanie po tytułach/streszczeniach poniżej.
+    kb = shutil.which("kb")
+    if kb and not os.environ.get("KB_NO_DELEGATE"):
+        return subprocess.call([kb, "search", *words])
     qs = [w.lower() for w in words]
     scored = []
     for n in load_notes():

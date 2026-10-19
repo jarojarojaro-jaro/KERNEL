@@ -1,0 +1,24 @@
+[package]
+name = "kb"
+version = "0.1.0"
+edition = "2021"
+description = "Szybkie wyszukiwanie w bazie wiedzy KERNEL: BM25 + embeddingi + indeks faktów liczbowych"
+publish = false
+
+[dependencies]
+anyhow = "1"
+clap = { version = "4", features = ["derive", "env"] }
+ort = { version = "=2.0.0-rc.10", default-features = false, features = ["std"] }
+postcard = { version = "1", features = ["use-std"] }
+rayon = "1"
+regex = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokenizers = { version = "0.22", default-features = false, features = ["onig"] }
+xxhash-rust = { version = "0.8", features = ["xxh3"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 4
+debug = false

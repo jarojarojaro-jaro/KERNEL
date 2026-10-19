@@ -2742,6 +2742,9 @@ Liczby z 21d §2–§11 (wiersze w `zrodlo`); SMART i `dd` to odczyty agenta z 2
 ## Aktualizacja: raport 21e (2026-10-19)
 Liczby z 21e §0–§6 i `21e-skrypty/{qwen_abl_s,lfm_abl,qwen_diff}.txt` (wiersze w `zrodlo`); wyniki paperu przepisane z raportu. Błędnych: 0.
 
+## Aktualizacja: raport 19 (2026-10-19)
+Liczby w [[kb]] (recall@5 0.963 / 0.912 / 0.825 / 0.750 / 0.688, p95 131 ms, 10–70 ms przez demona, 16 MB / 33 MB, 0.04 s / 0.33 s, RSS ~0.7 GB, ~24 tys. faktów) z `19-kb-wyszukiwanie.md` §0 i §6.2 (pomiar `kb eval` 2026-10-19). Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

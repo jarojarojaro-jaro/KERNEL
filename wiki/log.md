@@ -113,6 +113,9 @@ Nowa [[2026-10-19-kv-tylko-w-ram]]; [[kv-na-dysku-polityka]] → nieaktualne (an
 ## [2026-10-19] ingest | Raport 21k (smokinggun)
 Nowa [[smokinggun]]: skaner CPU + porównanie benchmarków, nie stosuje się; fabryka v1 robi gate lepiej.
 
+## [2026-10-19] ingest | Narzędzie kb (raport 19)
+Nowa [[kb]]: `kb search` / `kb facts` (BM25F + e5-small + indeks faktów, cały `~/KERNEL`, `plik:linia`), recall@5 0.963 na 80 pytaniach (`wiki.py` 0.750); [[wiki-py]] `search` deleguje do `kb`; `AGENTS.md`: najpierw `kb`. Raport `product/research/19-kb-wyszukiwanie.md`.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
