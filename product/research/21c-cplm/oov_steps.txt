@@ -1,0 +1,8 @@
+class                    tok/step full | 64k+ctx | 64k   (64k+ctx vs 64k)
+agent:assistant-text     3.017 | 3.004 | 2.972   +1.07%
+agent:bash               3.018 | 3.012 | 2.985   +0.89%
+agent:call-other         3.009 | 2.996 | 2.957   +1.32%
+agent:edit-hashline      3.039 | 3.037 | 3.013   +0.77%
+agent:write              3.038 | 3.024 | 2.992   +1.05%
+chat:en                  3.051 | 2.994 | 2.966   +0.97%
+chat:pl                  3.029 | 2.929 | 2.881   +1.68%

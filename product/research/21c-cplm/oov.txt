@@ -1,0 +1,15 @@
+agent:assistant-text         tokens    111137  outside64k  1.09%  of which in context  68.2%
+agent:bash                   tokens    488603  outside64k  0.78%  of which in context  81.0%
+agent:call-other             tokens    344504  outside64k  1.26%  of which in context  74.8%
+agent:edit-hashline          tokens    322366  outside64k  0.55%  of which in context  92.4%
+agent:write                  tokens    606132  outside64k  1.06%  of which in context  69.6%
+chat:en:chat                 tokens      8760  outside64k  2.27%  of which in context  34.2%
+chat:en:code                 tokens     10526  outside64k  1.46%  of which in context  51.9%
+chat:en:prose                tokens      7790  outside64k  2.90%  of which in context  21.2%
+chat:en:tech                 tokens      8293  outside64k  1.63%  of which in context  44.4%
+chat:pl:chat                 tokens     11282  outside64k  3.50%  of which in context  31.6%
+chat:pl:code                 tokens      7000  outside64k  2.66%  of which in context  53.8%
+chat:pl:prose                tokens      9970  outside64k  4.96%  of which in context  21.6%
+chat:pl:tech                 tokens      5586  outside64k  2.99%  of which in context  44.3%
+ALL agent                    tokens   1872742  outside64k  0.93%  of which in context  75.6%
+ALL chat                     tokens     69207  outside64k  2.83%  of which in context  33.8%
