@@ -58,19 +58,19 @@ Audyt liczb: [[AUDYT]].
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (23)
 - [[modele/_hub|modele]] — Modele i kwanty (16)
-- [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
+- [[karty/_hub|karty]] — Karty GPU: używane i planowane (11)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (21)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (28)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (28)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (79)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (80)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (22)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (63)
-- [[research/_hub|research]] — Streszczenia raportów (48)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (26)
+- [[research/_hub|research]] — Streszczenia raportów (49)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (27)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
 ## Ostatnio aktualizowane
@@ -85,11 +85,11 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]]
 - 2026-10-19 [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]]
 - 2026-10-19 [[raport-21f-inferencex|Raport 21f: InferenceX / AgentX (SemiAnalysis) i „megakernel” Kimi K3 w vLLM]]
+- 2026-10-19 [[raport-21d-kv-na-dysku|Raport 21d: KV na dysku (Strata, Mirai S Ada) i nasza polityka]]
 - 2026-10-19 [[raport-21c-cplm|Raport 21c: Copy-Paste Language Models (CPLM) – nie adoptujemy]]
 - 2026-10-19 [[raport-21b-gpu-perf-zasoby|Raport 21b: zasoby GPU perf (wafer-ai) i Blackwell Tuning Guide na nasze karty]]
 - 2026-10-19 [[raport-21a-dspine|Raport 21a: DSpine vs MTP4 + ogon W16 na XTX]]
 - 2026-10-19 [[raport-18-nastepna-fala|Raport 18: następna fala optymalizacji (15 pomysłów, plan 30 dni)]]
-- 2026-10-19 [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]]
 
-Razem 472 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 476 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

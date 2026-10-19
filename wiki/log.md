@@ -101,6 +101,9 @@ Nowe: [[raport-21b-gpu-perf-zasoby]], [[wafer-gpu-perf-lista]], [[projekcja-rtx-
 ## [2026-10-19] ingest | Raport 21f (InferenceX / AgentX, Kimi K3)
 Nowe: [[raport-21f-inferencex]], [[ksztalt-ruchu-agentowego]], [[lekcja-agent-prefill-nie-decode]], [[agentx-harness]], [[qwen38-27b-inferencex]], [[vllm-kimi-k3-specialized-decode]], [[single-neuron-safety-2605-08513]] (link użytkownika dotyczy innej pracy).
 
+## [2026-10-19] ingest | Raport 21d (KV na dysku)
+Nowe: [[raport-21d-kv-na-dysku]], [[kv-na-dysku-polityka]], [[dysk-serwera-pm9b1]], [[lekcja-restore-stanu-exactness]]; zaktualizowane [[cache-sesji-na-dysku]], [[strata]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

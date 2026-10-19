@@ -2736,6 +2736,9 @@ Liczby z 21b §0–§5 (wiersze w `zrodlo`); odwołania do `mmvq.cu`/`common.cuh
 ## Aktualizacja: raport 21f (2026-10-19)
 Liczby z 21f §0–§9 i `21f-agentx-stats-out.txt` (wiersze w `zrodlo`). Uwaga: link arXiv 2605.08513 od użytkownika dotyczy pracy o alignmencie, nie InferenceX. Błędnych: 0.
 
+## Aktualizacja: raport 21d (2026-10-19)
+Liczby z 21d §2–§11 (wiersze w `zrodlo`); SMART i `dd` to odczyty agenta z 2026-10-19 (nie powtórzone przez WikiIngest). Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

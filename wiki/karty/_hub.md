@@ -14,13 +14,14 @@ Lokalna maszyna: RX 7900 XTX + RTX 5060 Ti. Karty NVIDIA z chmury: [[chmura/_hub
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (10)
+## Notatki (11)
 
 - [[mi300x|AMD Instinct MI300X (tylko do sanity-checku)]] — Datacenterowy CDNA3 (gfx942, wave64, MFMA); nie jest rynkiem produktu, a darmowe $100 kredytu AMD wystarczy do sprawdzenia, czy wspólny kod HIP działa na CDNA.
 - [[radeon-ai-pro-r9700|AMD Radeon AI PRO R9700 (do wynajęcia)]] — RDNA4 gfx1201 z 32 GB (ten sam Navi48 co RX 9070 XT); jedyny RDNA4 do wynajęcia z root na godziny (Hostkey, €0.471/h), plan na kampanie RDNA4.
 - [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]] — Nasza główna karta: RDNA3 gfx1100, 24 GB GDDR6, 960 GB/s; na niej powstało 70 łatek i rekordy Qwen 109 t/s i LFM 294 t/s.
 - [[rx-9070-xt|AMD Radeon RX 9070 XT (planowany zakup)]] — Najpopularniejszy Radeon w Steam (RDNA4, gfx1201, 16 GB, 640 GB/s); w planie do kupienia, bo RDNA4 wymaga przepisania naszych kerneli WMMA.
 - [[strix-halo|AMD Strix Halo (Ryzen AI Max, gfx1151)]] — APU RDNA3.5 z pamięcią zunifikowaną do 128 GB; cel na fazę 3 produktu, dziś tylko w danych z raportów.
+- [[dysk-serwera-pm9b1|Dysk serwera: Samsung PM9B1 512 GB (NVMe)]] — Serwer ma `SAMSUNG MZVL4512HBLU-00BH1` (PM9B1 512 GB, OEM, kontroler Marvell, bez DRAM, TLC 128L) na łączu PCIe 3.0 x4 mimo dysku Gen4; SMART 2026-10-19: 1.875 TB zapisane, 0% zużycia, spare 100%, 0 błędów nośnika, 46 niebezpiecznych wyłączeń, 38 °C.
 - [[arc-b580-i-mac|Intel Arc B580 i Mac mini M4 (platformy spoza AMD/NVIDIA)]] — Dwie platformy z listy MVP, których nie da się wynająć z root na godziny (Arc) albo wynajmuje się je tylko z 24-godzinnym minimum (Mac); w planie zakup.
 - [[rtx-3060|NVIDIA RTX 3060 12 GB (wynajem)]] — Ampere sm_86 z 12 GB, najtańsza karta i #5 w Steam; w kampanii 2026-10-16 (decyzja: tylko Saluki i Bonsai) nasz silnik dał jednocyfrowy zysk, bo te modele nie mają MTP.
 - [[rtx-3090|NVIDIA RTX 3090 (wynajem, Vast)]] — Ampere sm_86 z 24 GB uruchamia ten sam plik Qwen3.8-27B co nasz RX 7900 XTX; w kampanii 2026-10-16 nasz silnik dał Qwen 39 → 78 t/s i LFM2.5 180 → 264 t/s.

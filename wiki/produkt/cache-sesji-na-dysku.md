@@ -1,8 +1,8 @@
 ---
 typ: produkt
 tags: [produkt, cache, serwer]
-aktualizacja: 2026-10-18
-zrodlo: ~/KERNEL/product/research/16f-xtx-szybkie.md:16,192-215; ~/wt/quickwins/qw/e5.jsonl
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/research/16f-xtx-szybkie.md:16,192-215; ~/wt/quickwins/qw/e5.jsonl; ~/KERNEL/product/research/21d-kv-na-dysku.md:5-13
 status: aktualne
 ---
 # Cache sesji na dysku (projekt z 16f E5)
@@ -19,6 +19,8 @@ Warianty:
 - **B, natywny (3–5 dni lub upstream #28092):** asynchroniczny zapis wpisów usuwanych z `--cache-ram`, indeks hashy bloków na dysku, budżet i TTL jak w Lucebox (128 GB, 72 h).
 
 Zalecenie raportu: najpierw A (95% zysku przy przełączaniu Qwen ↔ LFM). Niezaimplementowane.
+
+Polityka zapisu i budżet zużycia SSD (21d, 2026-10-19): [[kv-na-dysku-polityka]] – P4 ~7 GB/dzień zamiast ~4.7 TB/dzień przy zapisie co turę.
 
 ## Powiązane
 - [[produkt/_hub|Produkt]]
