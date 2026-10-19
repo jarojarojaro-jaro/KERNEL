@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (24)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (26)
 - [[modele/_hub|modele]] — Modele i kwanty (17)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (11)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (21)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-21g-nowe-silniki|Raport 21g: nowe silniki – inferrous, TensorFold 1.1.0, Project Maya 1.1.14–1.1.15, Strata v0.1.44.1–v0.1.45]]
 - 2026-10-19 [[raport-21f-inferencex|Raport 21f: InferenceX / AgentX (SemiAnalysis) i „megakernel” Kimi K3 w vLLM]]
 
-Razem 502 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 504 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

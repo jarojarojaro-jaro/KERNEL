@@ -22,6 +22,8 @@ status: aktualne
 | E1: RSR-27B vs Qwen (21h) | niezmierzone | ~$40–70 na wynajętych 3090 ([[2026-10-19-plan-e1-rsr27b]]) |
 | Uncensored jako tryb (21e) | osobne pliki Uncensored | źródło wektorów: z cudzych GGUF czy własne (Arditi)? ([[przelaczanie-main-uncensored]]) |
 
+Od 2026-10-19 rekomendacje przechodzące bramki wdrażamy bez pytania ([[2026-10-19-najlepiej-bez-pytania]]); użytkownik decyduje już tylko o testach z resetem GPU, wydatkach ponad budżet, usuwaniu danych i domyślnych ustawieniach `~/llama-opt`.
+
 Zamknięte 2026-10-19: warstwa SSD dla cache KV/sesji – nie ([[2026-10-19-kv-tylko-w-ram]]).
 
 ## Powiązane

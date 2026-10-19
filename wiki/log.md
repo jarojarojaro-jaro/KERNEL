@@ -128,6 +128,9 @@ Nowe: [[raport-21i-rsi-inference-bench]], [[zmiany-fabryki-z-21i]], [[aob-v1]], 
 ## [2026-10-19] ingest | Raport 21j (flameox)
 Nowe: [[raport-21j-flameox]], [[flameox]], [[lekcja-bootstrap-male-n]], [[dowod-z-profilu]]; zaktualizowane [[fabryka-cli]], [[rocprof]], [[petla-rsi-f]], [[produkt-architektura]].
 
+## [2026-10-19] update | Decyzja: najlepiej, bez pytania
+Nowe [[2026-10-19-najlepiej-bez-pytania]] (linia w `AGENTS.md`) i [[2026-10-19-szanujemy-sprzet-serwera]] (zasada z `AGENTS.md:7` bez notatki w decyzjach); [[otwarte-decyzje-techniczne]] zaktualizowane.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

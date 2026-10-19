@@ -14,7 +14,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (24)
+## Notatki (26)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -38,6 +38,8 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-16-wszystko-do-bazy-wiedzy|2026-10-16: wszystko nowe trafia do bazy wiedzy (twarda zasada)]] — Każdy research, pomiar, eksperyment, decyzja i lekcja z projektu trafia do `KERNEL/wiki` zaraz po zakończeniu zadania, zanim zadanie uznamy za skończone.
 - [[2026-10-19-kv-tylko-w-ram|2026-10-19: cache sesji/KV tylko w RAM, bez warstwy SSD]] — Użytkownik zdecydował (2026-10-19): „zostawiamy głównie RAM offload, jak już SSD nie ruszamy” – stan sesji i KV trzymamy tylko w RAM (`--cache-ram`, ewentualnie tmpfs), niczego z KV/sesji nie zapisujemy na dysk; warstwa L3 SSD z raportu 21d odpada.
 - [[2026-10-19-bezpieczenstwo-sprzetu|2026-10-19: maksymalna optymalizacja, ale nigdy kosztem bezpieczeństwa sprzętu]] — Twarda zasada użytkownika (2026-10-19, `AGENTS.md` wiersz 5): optymalizujemy maksymalnie, ale nigdy kosztem bezpieczeństwa sprzętu.
+- [[2026-10-19-szanujemy-sprzet-serwera|2026-10-19: szanujemy sprzęt serwera (CPU i narzędzia w tle)]] — Twarda zasada z `AGENTS.md` (2026-10-19): ciężkie skrypty CPU `nice -n 19` i ≤ 4 wątki, kompilacje `nice -n 10 -j6`, bez pętli z drogimi komendami (pełny `journalctl`, `find ~`), headless Chrome zamykany od razu po testach, narzędzia działające w tle mają kosztować ~0 CPU; dla GPU obowiązuje [[2026-10-19-bezpieczenstwo-sprzetu]].
 - [[2026-10-19-wentylator-100-przy-pracy|2026-10-19: wentylator XTX 100%, gdy GPU pracuje]] — Użytkownik zdecydował (2026-10-19, 00:00 UTC): gdy GPU pracuje, wentylator RX 7900 XTX chodzi na 100% (`FAN=100` w `fan.sh`, wcześniej 90%).
+- [[2026-10-19-najlepiej-bez-pytania|2026-10-19: wszystko jak najlepiej i jak najszybciej, bez pytania]] — Użytkownik (2026-10-19): „Wszystko jak najlepiej i jak najszybciej. Jeśli coś poprawia, dodajemy; jeśli dodanie psuje coś innego, nie dodajemy. Nie pytaj mnie – po prostu zrób najlepiej, jak się da.”
 - [[2026-10-09-limit-mocy-odlozony|Limit mocy GPU odłożony (na prośbę użytkownika)]] — Optymalizacja limitu mocy (np. −20% mocy kosztem ≤5% t/s) została odłożona na prośbę użytkownika; karta pracuje z limitem 285 W.
 <!-- AUTO:END -->
