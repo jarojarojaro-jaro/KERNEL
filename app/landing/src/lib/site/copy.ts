@@ -102,11 +102,12 @@ const raw = {
 			boost: {
 				k: '03',
 				title: 'Przyspieszenie',
-				head: 'Warstwa po warstwie,|aż\u00a0w czerwone pole.',
-				body: 'Ten sam model, ta sama karta. Każda warstwa to osobny pomiar tym samym skryptem.',
+				head: 'Trzy ustawienia.|Nasz silnik najszybszy.',
+				body: 'Ten sam model, ta sama karta, ten sam skrypt pomiaru. Każdy słupek to osobny pomiar.',
 				layers: ['Typowa aplikacja', 'Najlepsze flagi + MTP', 'Nasz silnik'],
 				subs: ['llama.cpp z ustawieniami domyślnymi', 'upstream llama.cpp, spekulacja MTP', 'lżejszy draft i własne kernele'],
-				total: 'łącznie',
+				vs: 'wobec typowej aplikacji',
+				over: 'szybciej niż najlepsze flagi upstreamu',
 				unit: 'tokenów na sekundę'
 			}
 		},
@@ -356,11 +357,12 @@ const raw = {
 			boost: {
 				k: '03',
 				title: 'Accelerate',
-				head: 'Layer by layer,|into the redline.',
-				body: 'Same model, same card. Every layer is a separate measurement with the same script.',
+				head: 'Three setups.|Our engine is fastest.',
+				body: 'Same model, same card, same measuring script. Every bar is a separate measurement.',
 				layers: ['Typical app', 'Best flags + MTP', 'Our engine'],
 				subs: ['llama.cpp with default settings', 'upstream llama.cpp, MTP speculation', 'lighter draft and our own kernels'],
-				total: 'in total',
+				vs: 'vs the typical app',
+				over: 'faster than the best upstream flags',
 				unit: 'tokens per second'
 			}
 		},
