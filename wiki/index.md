@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (23)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (24)
 - [[modele/_hub|modele]] — Modele i kwanty (17)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (11)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (21)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-21b-gpu-perf-zasoby|Raport 21b: zasoby GPU perf (wafer-ai) i Blackwell Tuning Guide na nasze karty]]
 - 2026-10-19 [[raport-21a-dspine|Raport 21a: DSpine vs MTP4 + ogon W16 na XTX]]
 
-Razem 480 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 481 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -14,6 +14,8 @@ status: aktualne
 - TBW nieopublikowane; proxy 300 TBW / 5 lat (detaliczne 500 GB) → 1.875 TB to 0.6%. Progi temperatury 83/85 °C. TRIM cotygodniowy (`fstrim.timer`), zajętość / 55%.
 - Skutki: 46 niebezpiecznych wyłączeń wymusza atomowy zapis plików stanu ([[lekcja-restore-stanu-exactness]]); budżet zapisu cache KV w [[kv-na-dysku-polityka]].
 
+**Decyzja użytkownika 2026-10-19:** KV/sesje tylko w RAM, bez SSD – [[2026-10-19-kv-tylko-w-ram]].
+
 ## Powiązane
 - [[karty/_hub|Karty]]
 - [[rx-7900-xtx]]

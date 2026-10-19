@@ -22,6 +22,8 @@ Zalecenie raportu: najpierw A (95% zysku przy przełączaniu Qwen ↔ LFM). Niez
 
 Polityka zapisu i budżet zużycia SSD (21d, 2026-10-19): [[kv-na-dysku-polityka]] – P4 ~7 GB/dzień zamiast ~4.7 TB/dzień przy zapisie co turę.
 
+**Decyzja użytkownika 2026-10-19:** KV/sesje tylko w RAM, bez SSD – [[2026-10-19-kv-tylko-w-ram]].
+
 ## Powiązane
 - [[produkt/_hub|Produkt]]
 - [[2026-10-18-cache-promptu-agenta]]

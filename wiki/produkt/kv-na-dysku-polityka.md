@@ -3,7 +3,7 @@ typ: produkt
 tags: [produkt, cache, ssd, zuzycie]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21d-kv-na-dysku.md:5-13,34-56,124-146,168-193
-status: aktualne
+status: nieaktualne
 ---
 # Cache KV na dysku: polityka warstw i budżet zużycia SSD
 
@@ -21,6 +21,8 @@ status: aktualne
 Reguły projektu: warstwy L0 VRAM → L1 `--cache-ram` → L2 tmpfs (`/dev/shm`, min(12 GiB, 20% RAM), przeżywa restart serwera i zmianę modelu) → L3 SSD (tylko shutdown, wypchnięcie wpisu wznawianego ≥ 1×, „przypnij sesję”; nigdy na ścieżce żądania). Do L2 tylko sesje ≥ 16k przy bezczynności ≥ 60 s. Format: segmenty KV po 8192 pozycji adresowane BLAKE3 bajtów (append-only), jeden punkt stanu (GDN + MTP sidecar + 1 checkpoint), manifest z fingerprintem; zapis tmp → `fdatasync` → `rename` → fsync katalogu. Limity: zapis L3 ≤ 2% pojemności/dzień, miejsce ≤ min(32 GB, 10%), zajętość FS ≤ 80%, TTL 72 h; strażnik SMART (`percent_used` ≥ 80, spare, `critical_warning`, rosnące `media_errors`) wyłącza L3. Odczyty nie zużywają NAND.
 
 Bajty: Qwen q4_0 18 432 B/token (+ MTP 1152), stan GDN 156.9 MB, checkpoint 178.6 MB; LFM q8_0 10 880 B/token. Plik Qwena z 1 checkpointem: 53k 1.31 GB, 150k 3.10 GB, 200k 4.02 GB (dziś z 7 checkpointami 2.21 / 6.14 / 8.13 GB).
+
+**Decyzja użytkownika 2026-10-19:** KV/sesje tylko w RAM, bez SSD – [[2026-10-19-kv-tylko-w-ram]].
 
 ## Powiązane
 - [[produkt/_hub|produkt]]

@@ -16,6 +16,8 @@ status: aktualne
 
 Notatki: [[kv-na-dysku-polityka]], [[dysk-serwera-pm9b1]], [[lekcja-restore-stanu-exactness]].
 
+**Decyzja użytkownika 2026-10-19:** KV/sesje tylko w RAM, bez SSD – [[2026-10-19-kv-tylko-w-ram]].
+
 ## Powiązane
 - [[research/_hub|research]]
 - [[cache-sesji-na-dysku]]

@@ -107,6 +107,9 @@ Nowe: [[raport-21d-kv-na-dysku]], [[kv-na-dysku-polityka]], [[dysk-serwera-pm9b1
 ## [2026-10-19] ingest | Raport 21e (KV między modelami, Uncensored = ablacja)
 Nowe: [[raport-21e-kv-miedzy-modelami]], [[uncensored-ablacja-kierunku]], [[przelaczanie-main-uncensored]], [[pamiec-stanu-gdn]]; zaktualizowane [[qwen3-8-27b-uncensored]], [[lfm2-5-uncensored]], [[otwarte-decyzje-techniczne]] (źródło wektorów – decyzja użytkownika).
 
+## [2026-10-19] update | Decyzja: KV tylko w RAM
+Nowa [[2026-10-19-kv-tylko-w-ram]]; [[kv-na-dysku-polityka]] → nieaktualne (analiza bez wdrożenia); linki w [[raport-21d-kv-na-dysku]], [[cache-sesji-na-dysku]], [[dysk-serwera-pm9b1]], [[otwarte-decyzje-techniczne]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
