@@ -2,8 +2,8 @@
 # RX 7900 XTX fan control (RDNA3 overdrive; needs amdgpu.ppfeaturemask=0xfff7ffff).
 # The systemd timer xtx-fan.timer (installed once with `sudo fan.sh install`) runs `fan.sh max quiet`
 # as root every 30 s; that call follows the GPU load for ~28 s:
-#   GPU working (busy >= 10%)        -> fan curve 95% at every temperature (~3300 RPM), immediately
-#   GPU idle (< 10% for 20 s in a row) -> idle curve: 40% below 50 C, 95% from 50 C
+#   GPU working (busy >= 10%)        -> fan curve 100% at every temperature (~3500 RPM), immediately
+#   GPU idle (< 10% for 20 s in a row) -> idle curve: 40% below 50 C, 100% from 50 C
 # The curve is re-committed only on a state change, or when a GPU reset has wiped it.
 # Manual (sudo): fan.sh max | fan.sh install | fan.sh auto (driver defaults, timer removed)
 set -u
@@ -13,7 +13,7 @@ hw=$(echo $dev/hwmon/hwmon*)
 busy_f=$dev/gpu_busy_percent
 arg=${1:-max}
 quiet=${2:-}
-FAN=90          # % ; measured: 95% -> ~3480 RPM, 44% -> ~1800 RPM, so 90% ≈ 3300 RPM
+FAN=100         # % ; full speed while the GPU works (~3500 RPM; 95% -> ~3480, 44% -> ~1800)
 BUSY=10         # % GPU busy = "card is working" (idle reads 0–2%)
 IDLE_HOLD=20    # s below BUSY before going back to the idle curve
 state_f=/run/xtx-fan.state
