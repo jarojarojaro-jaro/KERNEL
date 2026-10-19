@@ -29,7 +29,7 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 | łatka 0071 `GGML_HIP_MOE_GU_BLOCK` | gałąź `opt-lfmmoe` @ `7c5b2a116`, poza produkcją | scalić, domyślnie wł.? bitowa, LFM +0.33%, Uncensored +1.39% ([[2026-10-18-lfm-moe-pasmo]]) |
 | flagi `run-llm.sh` (16f) | bez zmian | LFM `-ub 2048` (+17% prefillu) i `CACHE_SHARE_MIN=1024` ([[raport-16f-xtx-szybkie]]) |
 | ogon lookupu dla Qwena (16b) | gałąź `lookup-tail`, poza produkcją | `LLAMA_SPEC_LOOKUP=3`, `_W=16` (mvs ×2.41) po tygodniu logu `=1` na ruchu omp ([[raport-16b-lookup-tail]]) |
-| PM4 w serwerach (raport 17) | `~/llama-opt` z PM4 domyślnie (~1 reset/330 req.) | `GGML_HIP_PM4=0` w `run-llm.sh`? Qwen −4.7%, LFM −12% ([[raport-17-gpu-page-fault]]) |
+| PM4 w serwerach (raport 17) | `~/llama-opt` z PM4 domyślnie (~1 reset/330 req.) | `GGML_HIP_PM4=0`? (−4.7% / −12%); testy S1–S6, `HSA_USE_SVM=0` ([[2026-10-19-pm4-priv-analiza]]) |
 
 Decyzje już podjęte są w folderze decyzji (np. open core, czat na web UI llama.cpp, konto na początku jako pomysł użytkownika).
 

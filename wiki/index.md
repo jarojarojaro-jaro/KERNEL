@@ -59,13 +59,13 @@ Audyt liczb: [[AUDYT]].
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (23)
 - [[modele/_hub|modele]] — Modele i kwanty (14)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
-- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (17)
+- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (20)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (26)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (23)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (51)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (70)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (52)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (72)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
@@ -76,6 +76,9 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-10-19 [[kfd-smi-eventy|Zdarzenia KFD SMI (`AMDKFD_IOC_SMI_EVENTS`) bez roota]]
+- 2026-10-19 [[kfd-ewikcja-kolejek-gfx11|Ewikcja i przywracanie kolejek KFD + MES na gfx11 (Linux 6.8)]]
+- 2026-10-19 [[hip-kopie-stronicowane-zostawiaja-svm|Kopie HIP z pamięci stronicowanej zostawiają zmapowane zakresy SVM]]
+- 2026-10-19 [[gfx11-pm4-dispatch-priv|Własny dispatch PM4 na GFX11 musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1`]]
 - 2026-10-19 [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]]
 - 2026-10-19 [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]]
 - 2026-10-19 [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]]
@@ -87,9 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]]
 - 2026-10-19 [[zestaw-copy-mvs|Zestawy kopii i edycji: `copy`, `mvs`, `long`]]
 - 2026-10-19 [[sprzezone-probkowanie-draftu|Sprzężone próbkowanie draftu (coupled sampling)]]
-- 2026-10-19 [[koszt-szerokosci-weryfikacji|Krzywa kosztu szerokości weryfikacji V(w, kontekst) na XTX]]
-- 2026-10-19 [[kontroler-szerokosci-draftu|Kontroler szerokości draftu (wzorzec Magnitude)]]
-- 2026-10-19 [[lekcja-wentylator-rdna3|Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive]]
 
-Razem 424 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 430 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

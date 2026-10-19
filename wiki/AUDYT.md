@@ -2715,6 +2715,9 @@ Każda liczba w [[REKORDY]] sprawdzona skryptem względem cytowanego wiersza (47
 ## Aktualizacja: raport 20 (2026-10-19)
 Liczby z 20-build-topka.md:14-17,65-72; alarm z `gpu-guard.log:3`, progi z `gpu-guard.sh:38`; „0 RPM do ~70 °C” z komentarza `gpu-guard.sh:36-37`, `fan_zero_rpm_enable` od 6.13 z komunikatu Main (jądro tu: 6.8.0-138). Błędnych: 0.
 
+## Aktualizacja: raport 17 §9 (2026-10-19)
+Liczby z 17-gpu-page-fault.md:210-425 (vmstat, timeouty MES 107–128 ms, doorbell `0x100a`, progi restore 1/1/100 ms). Notatki `decyzje/2026-10-19-pm4-w-serwerach` (proponowanej w §9.7) nie ma – decyzja PM4 jest otwarta, więc trafiła do `otwarte-decyzje-produktu`. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (51)
+## Notatki (52)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -66,5 +66,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-18-lfm-moe-negatywne|2026-10-18: wyniki negatywne MoE matvec LFM (mikrobench)]] — Warianty kerneli MoE LFM2.5, które nie pomogły w mikrobenchu `moebench.hip` (zimne wagi, rocprofv3, 3 procesy); produkcja gate+up 23.6–24.2 µs, down Q5_K 11.64 µs.
 - [[2026-10-18-pm4-ub-lfm|2026-10-18: X2 – górna granica „mniej granic” w taśmie LFM (KILL)]] — `GGML_HIP_PM4_UB=<klasy>` usuwa pakiety granicy przed dispatchami danej klasy bez żadnej synchronizacji (błędne wyniki, tylko czas): MoE down +6.5%, zwykłe MMVQ n=1 +6.8%, oba 289.3 → 324.0 t/s (+12.0%); po realnej synchronizacji zostaje ≈ +2.9% `[SZACUNEK]`, poniżej progu +3%.
 - [[2026-10-19-build-topka|2026-10-19: build „topka” – ogon lookupu + współdzielenie cache, PM4 wyłączone]] — Gałąź `topka` (od `amd-opt` @ `f61994f58`: `6c21a3e9f` = ogon lookupu, `22e2b0f55` = `CACHE_SHARE_MIN`, bez kontrolera) zainstalowana w `~/llama-topka` daje na code-edit `mvs` przy T=0 Qwen 166.1 → **396.9 t/s (×2.39)** i Uncensored **414.8 t/s**, z PM4 wyłączonym i tekstem greedy jak w produkcji (szybka ścieżka, jeden przebieg).
+- [[2026-10-19-pm4-priv-analiza|2026-10-19: przyczyna resetów PM4 – brak PRIV=1 na GFX11 + ewikcje SVM (analiza CPU)]] — Agent Pm4Fix (raport 17 §9, tylko CPU) wskazał najbardziej prawdopodobną przyczynę (H1′, `[INFERENCE]`): każdy `DISPATCH_DIRECT` naszej taśmy startuje fale z `COMPUTE_PGM_RSRC1.PRIV=0`, a GFX11 wymaga `PRIV=1` (obejście CWSR DEGFX11_12113, które CP robi sam tylko dla pakietów AQL); w połączeniu z ewikcją kolejek przez KFD w środku taśmy daje to SQC fault @0 i reset.
 - [[stan-2026-10-15|Stan zainstalowany 2026-10-15 (70 łatek)]] — Pomiar finalny po rundzie 6: Qwen3.8-27B 109.0 t/s, Uncensored 115.5, LFM2.5 293.7, LFM Uncensored 267.3; build `~/llama-opt`, gałąź `amd-opt` @ f61994f58.
 <!-- AUTO:END -->

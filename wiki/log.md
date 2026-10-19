@@ -80,6 +80,9 @@ Nowe: [[REKORDY]] (najlepsze wyniki per karta/model/obciążenie/metryka z datą
 ## [2026-10-19] ingest | Raport 20 (build topka) + zero-RPM
 Nowa [[2026-10-19-build-topka]]; [[REKORDY]]: Uncensored code-edit 414.8 t/s (nowa para), Qwen topka 396.9 t/s obok rekordu 400.9; [[galezie-rund]], [[lekcja-wentylator-rdna3]] i [[gpu-guard]] (fałszywy alarm zero-RPM, próg 80/82 °C).
 
+## [2026-10-19] ingest | Raport 17 §9 (przyczyna PM4: PRIV=1 na GFX11 + ewikcje SVM)
+Nowe: [[2026-10-19-pm4-priv-analiza]], [[gfx11-pm4-dispatch-priv]], [[hip-kopie-stronicowane-zostawiaja-svm]], [[kfd-ewikcja-kolejek-gfx11]], [[lekcja-wlasny-pm4-musi-robic-to-co-firmware]], [[lekcja-test-wywlaszczenia]]. Zaktualizowane: [[kfd-smi-eventy]], [[pm4-replay]], [[raport-17-gpu-page-fault]], [[2026-10-19-page-faulty-gpu-analiza]], [[otwarte-decyzje-produktu]] (testy S1–S6 – decyzja użytkownika).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

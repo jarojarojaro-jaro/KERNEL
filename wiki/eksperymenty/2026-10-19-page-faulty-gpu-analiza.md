@@ -2,7 +2,7 @@
 typ: eksperyment
 tags: [eksperymenty, pm4, awarie, rdna3]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/17-gpu-page-fault.md:6-61,104-130,184-193; journalctl -k -b -2/-1/0; ~/qwen-opt/coupled/logs*/
+zrodlo: ~/KERNEL/product/research/17-gpu-page-fault.md:6-61,104-130,184-193; journalctl -k -b -2/-1/0; ~/qwen-opt/coupled/logs*/; ~/KERNEL/product/research/17-gpu-page-fault.md:216-247
 status: do-sprawdzenia
 ---
 # 2026-10-16/19: page faulty GPU i 10 resetów XTX (analiza bez GPU)
@@ -22,6 +22,8 @@ status: do-sprawdzenia
 - Hipotezy: **H1 (~60%)** wywłaszczenie kolejki KFD w środku IB gubi rejestry SH → `USER_DATA` = 0 → wskaźnik kernargów 0 (w bootach widać `restore_userptr_worker` 64×, `svm_range_restore_work` kończące się 156 ms po R9); H2 (~20%) uszkodzenie kernargów w VRAM; H3 (~10%) uszkodzenie IB w RAM; H4 (~10%) inne. Wszystko `[INFERENCE]`.
 - Korekty: R9 to tryb 1 i nie wynikał z kolizji blokad ([[lekcja-nie-odtwarzac-lockow]]); alarmy „serwer na 8080” były fałszywe ([[lekcja-pgrep-f-lapie-powloki]]).
 - Produkcja zagrożona: `~/llama-opt` ma PM4 domyślnie i te same flagi; reset zabija serwer użytkownika i zeruje krzywą wentylatora. Plan testu i decyzja: [[raport-17-gpu-page-fault]], [[otwarte-decyzje-produktu]].
+
+Ciąg dalszy (§9): [[2026-10-19-pm4-priv-analiza]] – kandydat H1′ (PRIV=0 + ewikcja SVM).
 
 ## Powiązane
 - [[eksperymenty/_hub|Eksperymenty]]
