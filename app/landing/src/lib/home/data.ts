@@ -3,7 +3,7 @@
  * Nothing is typed in here: this module only selects runs and variants and formats them.
  */
 import { CARDS, findCard, MODEL_INFO, variantOf, XTX_BOARD, type CardView, type ModelKey, type RunView, type Variant, type VariantKey } from '$lib/data/measurements';
-import { findModel, GPUS } from '$lib/estimator';
+import { findModel } from '$lib/estimator';
 import { fmtRatio } from '$lib/format';
 import { nb } from '$lib/site/copy';
 
@@ -34,9 +34,6 @@ export const HERO_KERNELS = must(HERO_RUN.kernels, 'kernels');
 /** The Q8_0 build of the same model: too big for 24 GB (estimator registry, report 04). */
 export const Q8 = must(findModel('qwen38-27b-q8'), 'qwen38-27b-q8');
 export const MODELS_SRC = 'app/landing/src/lib/data/models.json (raport 04 §2.3.1)';
-
-/** GPUs waiting in the lab queue. */
-export const PLANNED = GPUS.filter((g) => g.lab === 'planned');
 
 export { CARDS };
 

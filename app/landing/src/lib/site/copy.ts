@@ -228,7 +228,6 @@ const raw = {
 			lede: 'Każda karta ma swoją stronę: modele, które się mieszczą, wyniki i warunki pomiaru.',
 			faster: 'szybciej',
 			diff: 'różne skrypty: porównanie orientacyjne',
-			queue: 'W kolejce pomiarów',
 			note: 'Na kafelkach: polecany model karty albo, gdy nie ma dla niego porównania tym samym skryptem, pierwszy model, który je ma. Nasz silnik wobec typowej aplikacji; warunki są na stronach kart.',
 			open: 'Otwórz eksplorator kart'
 		},
@@ -504,7 +503,6 @@ const raw = {
 			lede: 'Every card has its own page: the models that fit, the results and the measurement conditions.',
 			faster: 'faster',
 			diff: 'different scripts: indicative comparison',
-			queue: 'In the measurement queue',
 			note: 'On the tiles: the card’s recommended model or, when it has no same-script comparison, the first model that does. Our engine vs the typical app; conditions are on the card pages.',
 			open: 'Open the cards explorer'
 		},
