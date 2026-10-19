@@ -2,7 +2,7 @@
 typ: metoda
 tags: [metody, fabryka, agenci, rsi]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/21h-rsi.md:364-482
+zrodlo: ~/KERNEL/product/research/21h-rsi.md:364-482; ~/KERNEL/product/research/21i-rsi-inference-bench.md:231-274
 status: do-sprawdzenia
 ---
 # Pętla RSI-F: samodoskonalenie fabryki bez trenowania wag (projekt)
@@ -16,6 +16,8 @@ status: do-sprawdzenia
 - Przepustowość: 16–60 werdyktów/miesiąc – pętla podnosi tylko trafność, nie znajdzie mnożników strukturalnych (MTP, lookup).
 
 Pilot: [[2026-10-19-plan-retro-rsr-0070]] (P0 + P1, decyzja użytkownika w [[otwarte-decyzje-techniczne]]).
+
+Uzupełnienia z RSI-Inference Bench (21i): [[zmiany-fabryki-z-21i]] (VOID, acceptance floor, guards, reward, worktree bez historii) i benchmark regresji [[aob-v1]].
 
 ## Powiązane
 - [[metody/_hub|Metody]]

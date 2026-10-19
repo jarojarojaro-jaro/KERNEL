@@ -122,6 +122,9 @@ Nowe: [[raport-21g-nowe-silniki]], [[inferrous]], [[project-maya]], [[bariera-ld
 ## [2026-10-19] ingest | Raport 23a (rea) + uzupełnienie raportu 19 (kb)
 Nowe: [[raport-23a-rea]], [[hip-fatbin-extract]], [[raport-19-kb-wyszukiwanie]], [[najpierw-baza-kb]], [[lekcja-markdown-puste-linie]]; zaktualizowane [[kb]].
 
+## [2026-10-19] ingest | Raport 21i (RSI-Inference Bench)
+Nowe: [[raport-21i-rsi-inference-bench]], [[zmiany-fabryki-z-21i]], [[aob-v1]], [[lekcja-regula-tylko-w-prompcie]]; zaktualizowana [[petla-rsi-f]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

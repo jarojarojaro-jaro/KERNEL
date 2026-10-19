@@ -2751,6 +2751,9 @@ Liczby z 21g i `21g-notatki/` (wiersze w `zrodlo`); wyniki konkurencji przepisan
 ## Aktualizacja: raport 23a (2026-10-19)
 Liczby z 23a (wiersze w `zrodlo`); rozmiary `libggml-hip.so` i liczby bundli/instancji z raportu (CPU agenta ResRea). Błędnych: 0.
 
+## Aktualizacja: raport 21i (2026-10-19)
+Liczby z 21i §0–§7 (wiersze w `zrodlo`); dane leaderboardu i bootstrap CI to wyliczenia agenta z `docs/leaderboard.html`, nie sprawdzone przez WikiIngest. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

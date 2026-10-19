@@ -14,8 +14,9 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (29)
+## Notatki (31)
 
+- [[aob-v1|`aob-v1` (AMD-Opt Bench): benchmark regresji RSI-F z naszej historii (projekt)]] — Własny benchmark w formacie Harbor-lite (`task.toml`, `instruction.md`, `environment/`, ukryte `tests/`, `solution/oracle.patch` + `null.patch`) z fabryką jako weryfikatorem i podziałem dev (łatki 0001–0047) / test (0048–0070 + negatywy); przy naszym budżecie GPU to test regresji i postępu RSI-F, nie leaderboard – przy 10 zadaniach SE ≈ 0.15 (raport 21i, 2026-10-19).
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
 - [[agr-lookup-zgodny-z-mtp|AGR: wybór kandydata lookupu zgodnego z draftami MTP]] — Reguła bez treningu i bezstratna: spośród kandydatów lookupu (sufiks ≥ 2 albo ≥ 4 tokenów) zostawić tych, których pierwsze 4 tokeny kontynuacji równają się 4 draftom MTP, potem najdłuższy sufiks, potem najnowszy; w symulacji AGR2 daje +3.7% t/s na agencie (2/3 sufitu idealnego pointera) i +0.6% na czacie (raport 21c, 2026-10-19).
 - [[analiza-platformy|Analiza platformy (obowiązkowy krok)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; bez niej nie trafia do produktu (decyzja z 2026-10-15).
@@ -45,4 +46,5 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[zestaw-odlozony|Zestaw odłożony i klątwa zwycięzcy]] — Decyzje konfiguracji spekulacji wybrane na 6 promptach spec_sweep nie przenoszą się na prompt odłożony (przewaga +2.22% → −4.34%, zmiana znaku w 3/5 przypadków), więc twierdzenia o konfiguracji wymagają zapieczętowanego zestawu promptów spoza selekcji.
 - [[zestaw-copy-mvs|Zestawy kopii i edycji: `copy`, `mvs`, `long`]] — Trzy zestawy z 16b do mierzenia spekulacji na ruchu agentowym (kopia i edycja), uzupełniające `spec_sweep` (nowe pisanie): `copy` (6 promptów), `mvs` (4 pliki code-edit z MagnitudeVs) i `long` (~30k tokenów).
 - [[zgodnosc-bitowa-md5|Zgodność bitowa (greedy md5, hash logitów)]] — Zmiana „bitowo identyczna” musi dać ten sam tekst greedy (md5) na świeżym serwerze i te same logity co baza w tym samym trybie.
+- [[zmiany-fabryki-z-21i|Zmiany fabryki v1 i RSI-F z RSI-Inference Bench (propozycja)]] — Dwanaście mechanizmów z benchmarku Apple przełożonych na karty i bramki naszej fabryki; najwyżej w priorytecie: werdykt `VOID` oddzielony od `INVALID`, audyt promptów Implementera (każde „nie wolno X” ma regułę z fixture'em albo znika) i worktree bez historii przed P2 (raport 21i, 2026-10-19).
 <!-- AUTO:END -->
