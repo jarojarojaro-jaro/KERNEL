@@ -68,7 +68,7 @@ Audyt liczb: [[AUDYT]].
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (80)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (22)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (63)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (64)
 - [[research/_hub|research]] — Streszczenia raportów (50)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (28)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-21b-gpu-perf-zasoby|Raport 21b: zasoby GPU perf (wafer-ai) i Blackwell Tuning Guide na nasze karty]]
 - 2026-10-19 [[raport-21a-dspine|Raport 21a: DSpine vs MTP4 + ogon W16 na XTX]]
 
-Razem 481 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 482 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
