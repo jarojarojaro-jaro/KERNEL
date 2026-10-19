@@ -37,9 +37,9 @@ const raw = {
 			how: 'Jak to działa',
 			results: 'Wyniki',
 			cards: 'Twoja karta',
-			quality: 'Jakość',
 			faq: 'FAQ',
 			methodology: 'Metodologia',
+			contact: 'Kontakt',
 			start: 'Sprawdź swój sprzęt',
 			menu: 'Menu',
 			close: 'Zamknij menu',
@@ -290,15 +290,9 @@ const raw = {
 		},
 		cookies: {
 			title: 'Prywatność na tej stronie',
-			body: 'Nie używamy śledzenia ani reklam. Zapisujemy w przeglądarce tylko to, co niezbędne: motyw, jeśli go zmienisz, i ten wybór. Kategoria „Analityka” jest wyłączona i pusta: nie mamy zainstalowanego żadnego narzędzia.',
+			body: 'Bez śledzenia i reklam. Zapisujemy tylko motyw i ten wybór.',
 			accept: 'Akceptuję',
-			reject: 'Odrzucam',
-			settings: 'Ustawienia',
-			save: 'Zapisz wybór',
-			necessary: 'Niezbędne',
-			necessaryHint: 'Motyw i zapis tego wyboru. Zawsze włączone.',
-			analytics: 'Analityka',
-			analyticsHint: 'Obecnie żadne narzędzie nie jest zainstalowane. Nic się nie załaduje, nawet po zgodzie.',
+			necessaryOnly: 'Tylko niezbędne',
 			policy: 'Polityka cookies'
 		}
 	},
@@ -311,9 +305,9 @@ const raw = {
 			how: 'How it works',
 			results: 'Results',
 			cards: 'Your card',
-			quality: 'Quality',
 			faq: 'FAQ',
 			methodology: 'Methodology',
+			contact: 'Contact',
 			start: 'Check your hardware',
 			menu: 'Menu',
 			close: 'Close menu',
@@ -564,15 +558,9 @@ const raw = {
 		},
 		cookies: {
 			title: 'Privacy on this site',
-			body: 'No tracking, no ads. We store only what is strictly necessary in your browser: the theme, if you change it, and this choice. The “Analytics” category is off and empty: no analytics tool is installed.',
+			body: 'No tracking, no ads. We only store your theme and this choice.',
 			accept: 'Accept',
-			reject: 'Reject',
-			settings: 'Settings',
-			save: 'Save choice',
-			necessary: 'Strictly necessary',
-			necessaryHint: 'Theme and the record of this choice. Always on.',
-			analytics: 'Analytics',
-			analyticsHint: 'No tool is installed. Nothing will load, even after consent.',
+			necessaryOnly: 'Necessary only',
 			policy: 'Cookie policy'
 		}
 	}

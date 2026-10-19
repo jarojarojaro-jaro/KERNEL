@@ -42,8 +42,8 @@
 		{ label: t.how, to: href(lang, '/#how') },
 		{ label: t.results, to: resultsHref(lang) },
 		{ label: t.cards, to: cardsHref(lang) },
-		{ label: t.quality, to: href(lang, '/#quality') },
-		{ label: t.methodology, to: href(lang, '/methodology') }
+		{ label: t.methodology, to: href(lang, '/methodology') },
+		{ label: t.contact, to: href(lang, '/contact') }
 	]);
 	const current = (to: string) => !to.includes('#') && page.url.pathname.startsWith(to);
 
@@ -110,13 +110,10 @@
 		capsule.style.setProperty('--cy', `${e.clientY - r.top}px`);
 	}
 
-	// Section currently in view on the home page (#how, #quality): the pill rests there.
+	// Section currently in view on the home page (#how): the pill rests there.
 	afterNavigate(() => {
 		sectionIdx = null;
-		const ids: [string, number][] = [
-			['how', 0],
-			['quality', 3]
-		];
+		const ids: [string, number][] = [['how', 0]];
 		const els = ids.map(([id, i]) => [document.getElementById(id), i] as const).filter(([el]) => el);
 		if (!els.length || typeof IntersectionObserver === 'undefined') return;
 		const seen = new Map<Element, number>();
