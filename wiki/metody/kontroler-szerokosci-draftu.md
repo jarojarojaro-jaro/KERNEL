@@ -1,8 +1,8 @@
 ---
 typ: metoda
 tags: [metody, spekulacja, kontroler]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,65-80,222-235,258-271
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,65-80,222-235,258-271; ~/KERNEL/product/research/16b-lookup-tail.md:132-136
 status: aktualne
 ---
 # Kontroler szerokości draftu (wzorzec Magnitude)
@@ -16,6 +16,8 @@ Algorytm:
 - Wybór: max `(1 + Σ right) / (draft(g) + verify(v+1))`; „looks” 1% czasu na szersze rundy; po drafcie `verify()` może zwęzić.
 
 Różnice wobec naszej T2 (0039, 103.6 vs 102.7 t/s – nic): T2 testowano tylko na prozie i z łańcuchem MTP (~1.6 ms/poziom). Dla nas: drabinka 5/8/16 wierszy z ogonem lookupu, którego głębokości oceniamy za darmo na CPU; koszt per klasa kontekstu konieczny, bo W16 przy 64k szacunkowo 113 ms.
+
+U nas (16b, 2026-10-18): kontroler 5/8/16 zawsze wybiera 16 na kopii – wynik zerowy ([[2026-10-18-kontroler-szerokosci-zerowy]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

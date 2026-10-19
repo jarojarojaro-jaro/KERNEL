@@ -1,8 +1,8 @@
 ---
 typ: eksperyment
 tags: [eksperymenty, spekulacja, lookup, agent]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:160-249; ~/KERNEL/product/research/15b-sim/results.txt:1-20
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:160-249; ~/KERNEL/product/research/15b-sim/results.txt:1-20; ~/KERNEL/product/research/16b-lookup-tail.md:10-23
 status: aktualne
 ---
 # 2026-10-16: kopiowalność naszych workloadów (symulacja CPU)
@@ -21,6 +21,8 @@ Metoda: lookup jak w HyperQwen (sufiks 4..12, kontynuacja do 15), prawdziwe ła�
 | agent: write | 0.27 | 0.07 |
 
 Polityki (t/s vs MTP n=4): prawdziwe drafty – HYB-16 −0.9% (wszystkie), EXT-8 0.0%; agent krótki kontekst / ~32k – EXT+CH-16 mieszanka +2.9% / −3.8%, EXT+CH-8 +2.4% / +0.2%; hashline +8.2% (krótki), str_replace +22.9%. Koszt szerokości: V(16) − V(5) = +7.09 ms, V(8) − V(5) = +2.48 ms. Ograniczenia: MTP dla agenta to model (AL 3.2 założone), wyjścia agenta pisał Claude, nie Qwen.
+
+Realizacja na serwerze: [[2026-10-18-lookup-ogon]] (mvs ×2.41 przy W16).
 
 ## Powiązane
 - [[eksperymenty/_hub|Eksperymenty]]

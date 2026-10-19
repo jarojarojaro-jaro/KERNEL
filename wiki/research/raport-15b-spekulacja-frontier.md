@@ -1,8 +1,8 @@
 ---
 typ: research
 tags: [research, spekulacja, lookup, mtp]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:1-31; ~/KERNEL/product/research/15b-sim/results.txt:3-5
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:1-31; ~/KERNEL/product/research/15b-sim/results.txt:3-5; ~/KERNEL/product/research/16b-lookup-tail.md:152-161
 status: aktualne
 ---
 # Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)
@@ -17,6 +17,8 @@ Raport 2026-10-16, symulacja CPU na naszych danych, bez GPU.
 - DFlash2 n=15: akceptacja na kodzie rośnie (pl-kod 4.21 → 5.67), ale krok 32.9 → 39.1 ms; średnio 97.9 vs MTP 108.8 t/s.
 - tqLLM „identyczne wyjście”: greedy, 1 slot, naprawione 2026-10-13; metodyka testu end-to-end z przemiataniem `ubatch` do przejęcia.
 Ranking: shadow-log lookupu (0.5 osobodnia) → EXT-W8 + łańcuchy (2) → EXT-W16 po pomiarze V(W) przy 32k; nie robić HYB, DFlash2+lookup, bloków 32/64.
+
+E1–E4 zrealizowane w [[raport-16b-lookup-tail]]: E2 V16 − V5 @32k 9.50 ms, E3 copy +41%, E4 W16 +51% nad W8; E1 (ruch użytkownika) otwarte.
 
 ## Powiązane
 - [[research/_hub|research]]

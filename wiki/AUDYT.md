@@ -2703,6 +2703,9 @@ Liczby 16f przepisane z tabel E1–E5 (wiersze w `zrodlo`). Wentylator: progi z 
 ## Aktualizacja: 16k i bezpieczeństwo (2026-10-19)
 Liczby 16k z tabel §4–§5 (wiersze w `zrodlo`); progi strażnika z `gpu-guard.sh:1-45`; „10 resetów w bootach −2/−1/0” i 90 °C VRAM z komunikatu Main (nie sprawdzane przez WikiIngest). Błędnych: 0.
 
+## Aktualizacja: 16b (2026-10-19)
+Liczby z tabel 16b §2–§5 (wiersze w `zrodlo`, w tym `e3_summary.txt`, `e4_summary.txt`, `e2_table.txt`). Copy W16 355.0 t/s pochodzi z serii po naprawie wentylatorów (W8 w tej serii 235.8, nie 230.6) – opisane w notatce. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

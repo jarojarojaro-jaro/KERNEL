@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (66)
+## Notatki (67)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]] — Restarty serwera 2026-10-18 czyszczą `/tmp`: `/tmp/bxv/summary.txt` i `/tmp/bxd/*` (walidacja bit-exact) zniknęły już przy wcześniejszym restarcie ~18:53 UTC, przed archiwizacją; przed restartem ~20:27 UTC (overdrive) resztę zarchiwizowano do `~/qwen-opt/tmp-archive-20261018/` (63 MB: coupled, lookup, pm4pdl, lfmmoe, qa).
@@ -64,6 +64,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-siatka-pelna-fala|Siatka równa pojemności fali daje bimodalne czasy]] — Siatka dokładnie 3072 bloków na 96 CU (pełna pojemność jednej fali) dawała per proces 13.6 albo 14.6 µs; 2560 bloków zawsze 12.2 µs.
 - [[lekcja-5-seedow|spec_sweep z 2 seedami potrafi odwrócić znak efektu]] — Typ bloku MTP Q6_K „wygrywał” z IQ4_XS przy 2 seedach (108.7 vs 106.5 t/s, bo pl-kod 3.67 vs 3.25 tok/krok), a przy 5 seedach przegrał (109.4 vs 113.2 t/s, 3.012 vs 3.063 tok/krok) (E2 z 16f, 2026-10-18).
 - [[lekcja-spekulacja-zmienia-numeryke|Spekulacja zmienia numerykę batcha]] — MTP rozjeżdża się z plain po 129 znakach, DFlash po 229; zmiana draftu zmienia tekst przy remisie, więc MTP porównujemy z bazą MTP, nie z plain.
+- [[lekcja-ogon-zmienia-tekst-t1|Szeroki blok zmienia tekst T=1 nawet przy 0.3% kroków]] — Ogon lookupu odpalił na czacie tylko 8–15 razy na 2258–4500 kroków, a mimo to t/s `spec_sweep` przy T=1 zmienił się o −1.1% (seedy 1–3) i +0.7% (seedy 4–9) przy stałym ms/krok (29.06 → 29.13, 28.74 → 28.73) (2026-10-18).
 - [[lekcja-szum-t-s-przy-t1|Szum t/s przy T=1]] — Przy T=1 t/s zależy od wylosowanego tekstu bardziej niż od kernela; metryka to ms/krok, kilka seedów i przeplatanie.
 - [[lekcja-slaby-cpu-3090|Słaby CPU na wynajętym RTX 3090]] — Agent wybrał najtańszą ofertę 3090 ($0.201/h) bez kryterium CPU i dostał Intel i7-4790 (4 rdzenie, 2014) z dyskiem 498 MB/s; mocniejsza oferta z 16 rdzeniami EPYC kosztowała ~$0.305/h.
 - [[lekcja-ten-sam-serwer-pending-h|Ten sam serwer, inna odpowiedź (pending_h)]] — Ten sam greedy request bez cache dawał inny tekst przy 1. i 2. wywołaniu po starcie serwera (rozjazd po ~270 znakach); 2026-10-16 prawdopodobną przyczyną okazał się stan MTP `pending_h` nieczyszczony między zapytaniami.

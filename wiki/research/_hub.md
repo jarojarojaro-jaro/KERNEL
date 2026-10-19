@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (36)
+## Notatki (37)
 
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
 - [[raport-01-konkurencja|Raport 01: konkurencja]] — Detekcja sprzętu i rekomendacja modelu to już standard; żaden produkt konsumencki nie łączy pomiaru, długiej optymalizacji poza flagami, weryfikacji bitowej i raportu przed → po (stan 2026-10-15).
@@ -41,6 +41,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-15e-kwantyzacja-nowa|Raport 15e: nowe formaty niskobitowe dla 27B na 12–16 GB]] — GSQ-RCO jest „SOTA” tylko w wąskiej klasie, Swift 1.5 to fine-tune z niedouczoną głowicą MTP, CSF/QAD (NVFP4) są poza naszymi kartami, a największy zysk na 12 GB to MTP na istniejących 2-bitowych plikach.
 - [[raport-15f-agentowa-nauka|Raport 15f: agentowa nauka (Sakana v3, KernelGuard) a nasza fabryka]] — Z systemów automatycznej nauki warto przenieść dyscyplinę artefaktów (ewaluator poza zasięgiem agenta, ledger, reguły z fixture’ami), ale nie promocję „wynik ściśle większy” bez statystyki; propozycja fabryki v1 za ~8–9 osobodni.
 - [[raport-16a-pm4-pdl|Raport 16a: PM4-PDL i prefetch wag na XTX (X1–X3 z 15a)]] — Wszystkie trzy eksperymenty z raportu 15a odpadły na lokalnym XTX ($0, gałąź `pm4-pdl` @ `3a008359b`, przełączniki domyślnie wyłączone): X1 mikrobench PDL −0.11 µs (próg 0.5), X2 górna granica +12% w LFM, ale realnie ~+3%, X3 prefetch do MALL w szumie.
+- [[raport-16b-lookup-tail|Raport 16b: ogon z lookupu za MTP (15b E1–E3, 16i E-X0–E-X3)]] — Agent XtxLookupTail: MTP4 + ogon lookupu do 16 wierszy + łańcuchy daje na edycjach kodu ×2.26–×2.41 na XTX (mvs 401 t/s przy T=0) bez zmiany tekstu greedy i bez kosztu na czacie; kontroler szerokości nic nie dodaje ponad stałe W16.
 - [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]] — Agent CudaKvq przeniósł kernel `kvq` na NVIDIA Ampere+ (mma.sync m16n8k16, jedno przejście KV dla całej grupy GQA): +24.6…+36.8% tg przy 64k na 3090 i 5060 Ti, MTP@64k +27.6%, jeden graniczny FAIL KLD.
 - [[raport-16d-magnitude-vs-nasz|Raport 16d: Magnitude vs nasz fork vs upstream (X1 z 15c) + KLD Nemotrona]] — Head-to-head na 3090 i 5060 Ti: przewaga naszych kerneli na NVIDIA bez draftera +30–40% i w prefillu +18–35%, a słabością są głębokie drafty – Magnitude wygrywa kopią/edycją kodu dzięki DFlash2 (7.3–7.8 tok/krok vs sufit 5 MTP n=4).
 - [[raport-16e-kwanty-kld|Raport 16e: nowe kwanty 27B na 12–16 GB (E1 + E3 z 15e)]] — Agent QuantKLD zmierzył 12 ramion kwantów Qwen3.8-27B/Swift/Saluki/Bonsai (KLD do BF16 na 5 korpusach, 20 zadań, prędkość na 3060 i 5060 Ti) w dwóch rundach (2026-10-16, dokończenie po awarii omp 2026-10-18).
