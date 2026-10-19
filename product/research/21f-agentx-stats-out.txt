@@ -1,0 +1,56 @@
+# MODEL=qwen
+sessions 393  requests 68266  subagent groups 1697
+input  tokens total 6,891,228,864  mean 100,947  p50 88,768  p90 204,288  p99 249,088
+output tokens total 58,728,807  mean 860  p50 376  p90 1,845  p99 7,948
+input:output ratio 117.3
+main requests 28444  subagent requests 39822
+  main: in p50 135,104  out p50 483  out mean 1,131
+  sub: in p50 60,608  out p50 330  out mean 667
+models: [('claude-opus-4-8', 35904), ('claude-fable-5', 12176), ('claude-haiku-4-5-20251001', 7973), ('claude-opus-4-7', 6080), ('claude-opus-4-6', 5450), ('claude-sonnet-4-6', 576), ('claude-sonnet-4-5', 107)]
+cap  32k: requests kept  14.1%  output tokens kept  10.9%
+cap  64k: requests kept  35.3%  output tokens kept  23.1%
+cap 100k: requests kept  54.8%  output tokens kept  40.5%
+cap 128k: requests kept  66.3%  output tokens kept  53.1%
+cap 200k: requests kept  88.7%  output tokens kept  82.9%
+subagent groups: requests/group p50 16; sessions with peak parallel groups >=2: 127/393, peak max 10
+think/tool time >0: p50 2.11s p90 34.6s; share >10s 15.8%
+uncached tokens [radix ]: total 263,514,240 = 3.8% of input; p50 1,600 p90 6,848 p99 49,408
+uncached tokens [lane  ]: total 589,187,712 = 8.5% of input; p50 1,792 p90 25,664 p99 117,184
+uncached tokens [single]: total 1,416,392,128 = 20.6% of input; p50 2,944 p90 70,976 p99 173,270
+
+local model: prefill a=0.953 ms/tok b=3.795 ns/tok^2 -> marginal @0 1049 t/s, @100k 584 t/s, @200k 405 t/s
+             decode @1.7k 130.2 t/s, @100k 96.0, @200k 75.7
+cap 200k radix : prefill    98.3 h (36.2%)  decode  139.9 h (51.6%)  tool<=10s   33.1 h (12.2%)  | x2 decode -> wall -25.8%; x2 prefill -> wall -18.1%  | Anthropic api_time 171.0 h
+cap 200k lane  : prefill   202.5 h (53.9%)  decode  139.9 h (37.3%)  tool<=10s   33.1 h ( 8.8%)  | x2 decode -> wall -18.6%; x2 prefill -> wall -27.0%  | Anthropic api_time 171.0 h
+cap 200k single: prefill   494.7 h (74.1%)  decode  139.9 h (21.0%)  tool<=10s   33.1 h ( 5.0%)  | x2 decode -> wall -10.5%; x2 prefill -> wall -37.0%  | Anthropic api_time 171.0 h
+cap 200k cram  : prefill   202.5 h + RAM restore   9.0 h (21486 switches)  decode 36.4% of wall 384.5 h
+            model interactivity (tok/s/user): p50 101.9  slow-tail p10 82.1; E2E-normalized (lane cache) p50 59.8 p10 9.6
+cap 128k radix : prefill    67.5 h (40.0%)  decode   81.6 h (48.4%)  tool<=10s   19.6 h (11.6%)  | x2 decode -> wall -24.2%; x2 prefill -> wall -20.0%  | Anthropic api_time 117.1 h
+cap 128k lane  : prefill   148.3 h (59.4%)  decode   81.6 h (32.7%)  tool<=10s   19.6 h ( 7.8%)  | x2 decode -> wall -16.4%; x2 prefill -> wall -29.7%  | Anthropic api_time 117.1 h
+cap 128k single: prefill   281.9 h (73.6%)  decode   81.6 h (21.3%)  tool<=10s   19.6 h ( 5.1%)  | x2 decode -> wall -10.7%; x2 prefill -> wall -36.8%  | Anthropic api_time 117.1 h
+cap 128k cram  : prefill   148.3 h + RAM restore   6.0 h (18273 switches)  decode 31.9% of wall 255.5 h
+            model interactivity (tok/s/user): p50 107.4  slow-tail p10 93.5; E2E-normalized (lane cache) p50 61.9 p10 8.6
+cap  64k radix : prefill    29.5 h (43.8%)  decode   31.7 h (47.0%)  tool<=10s    6.2 h ( 9.2%)  | x2 decode -> wall -23.5%; x2 prefill -> wall -21.9%  | Anthropic api_time 57.9 h
+cap  64k lane  : prefill    75.3 h (66.5%)  decode   31.7 h (28.0%)  tool<=10s    6.2 h ( 5.5%)  | x2 decode -> wall -14.0%; x2 prefill -> wall -33.3%  | Anthropic api_time 57.9 h
+cap  64k single: prefill    98.5 h (72.2%)  decode   31.7 h (23.2%)  tool<=10s    6.2 h ( 4.5%)  | x2 decode -> wall -11.6%; x2 prefill -> wall -36.1%  | Anthropic api_time 57.9 h
+cap  64k cram  : prefill    75.3 h + RAM restore   2.7 h (12154 switches)  decode 27.4% of wall 115.9 h
+            model interactivity (tok/s/user): p50 115.5  slow-tail p10 108.2; E2E-normalized (lane cache) p50 63.1 p10 8.0
+
+# MODEL=lfm (trace stats identical)
+local model: prefill a=0.159 ms/tok b=1.169 ns/tok^2 -> marginal @0 6306 t/s, @100k 2548 t/s, @200k 1597 t/s
+             decode @1.7k 173.7 t/s, @100k 152.1, @200k 135.0
+cap 200k radix : prefill    21.3 h (14.9%)  decode   88.6 h (62.0%)  tool<=10s   33.1 h (23.1%)  | x2 decode -> wall -31.0%; x2 prefill -> wall - 7.4%  | Anthropic api_time 171.0 h
+cap 200k lane  : prefill    42.1 h (25.7%)  decode   88.6 h (54.1%)  tool<=10s   33.1 h (20.2%)  | x2 decode -> wall -27.1%; x2 prefill -> wall -12.8%  | Anthropic api_time 171.0 h
+cap 200k single: prefill   106.6 h (46.7%)  decode   88.6 h (38.8%)  tool<=10s   33.1 h (14.5%)  | x2 decode -> wall -19.4%; x2 prefill -> wall -23.4%  | Anthropic api_time 171.0 h
+cap 200k cram  : prefill    42.1 h + RAM restore   2.1 h (21486 switches)  decode 53.4% of wall 165.9 h
+            model interactivity (tok/s/user): p50 156.4  slow-tail p10 140.8; E2E-normalized (lane cache) p50 125.1 p10 39.7
+cap 128k radix : prefill    14.0 h (15.9%)  decode   54.4 h (61.9%)  tool<=10s   19.6 h (22.2%)  | x2 decode -> wall -30.9%; x2 prefill -> wall - 7.9%  | Anthropic api_time 117.1 h
+cap 128k lane  : prefill    29.6 h (28.6%)  decode   54.4 h (52.6%)  tool<=10s   19.6 h (18.9%)  | x2 decode -> wall -26.3%; x2 prefill -> wall -14.3%  | Anthropic api_time 117.1 h
+cap 128k single: prefill    57.8 h (43.9%)  decode   54.4 h (41.3%)  tool<=10s   19.6 h (14.8%)  | x2 decode -> wall -20.6%; x2 prefill -> wall -21.9%  | Anthropic api_time 117.1 h
+cap 128k cram  : prefill    29.6 h + RAM restore   1.4 h (18273 switches)  decode 51.8% of wall 104.9 h
+            model interactivity (tok/s/user): p50 160.2  slow-tail p10 150.2; E2E-normalized (lane cache) p50 129.4 p10 37.2
+cap  64k radix : prefill     5.6 h (16.4%)  decode   22.5 h (65.6%)  tool<=10s    6.2 h (18.0%)  | x2 decode -> wall -32.8%; x2 prefill -> wall - 8.2%  | Anthropic api_time 57.9 h
+cap  64k lane  : prefill    14.1 h (33.0%)  decode   22.5 h (52.6%)  tool<=10s    6.2 h (14.4%)  | x2 decode -> wall -26.3%; x2 prefill -> wall -16.5%  | Anthropic api_time 57.9 h
+cap  64k single: prefill    18.9 h (39.7%)  decode   22.5 h (47.3%)  tool<=10s    6.2 h (13.0%)  | x2 decode -> wall -23.7%; x2 prefill -> wall -19.9%  | Anthropic api_time 57.9 h
+cap  64k cram  : prefill    14.1 h + RAM restore   0.7 h (12154 switches)  decode 51.8% of wall 43.4 h
+            model interactivity (tok/s/user): p50 165.3  slow-tail p10 160.7; E2E-normalized (lane cache) p50 134.3 p10 35.7
