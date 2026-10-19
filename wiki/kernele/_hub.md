@@ -14,7 +14,7 @@ Klasy poprawności: *bitowo identyczne* (te same logity / greedy md5) albo *zmia
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (28)
+## Notatki (29)
 
 - [[argmax-dpp|Argmax z DPP (0026)]] — Argmax po słowniku w drafcie MTP: 16 ładowań w locie i wymiana między lane'ami przez DPP zamiast pamięci LDS; 16.8 → 4.3 µs na wywołanie.
 - [[cache-q8-1|Cache q8_1 aktywacji i „producenci” q8_1]] — MMVQ potrzebuje wejścia skwantyzowanego do q8_1; zamiast osobnego kernela kwantyzacji przed każdym matvec, kwantyzujemy raz i najlepiej już w kernelu, który to wejście produkuje.
@@ -33,6 +33,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[mmvq-moe-gate-up-blok|MMVQ MoE gate+up: blok jednej grupy q8_1 (`GGML_HIP_MOE_GU_BLOCK`)]] — `mul_mat_vec_q_moe_gate_up_q5k<8>`: blok 16 fal liczy 32 wiersze jednej grupy q8_1 (każdy wiersz jak kernel 2-wierszowy), wagi następnej iteracji ładuje przed bieżącym iloczynem, a ogon q8_1 idzie przez LDS i jedną barierę zamiast fence + atomika ticketu; bitowo identyczny z produkcją.
 - [[mmvq-multikolumnowe|MMVQ wielokolumnowe (weryfikacja spekulacji)]] — Kernel matvec, który przy weryfikacji 2–8 tokenów rozpakowuje wagi raz i mnoży je przez wszystkie kolumny; podstawa całego przyspieszenia spekulacji MTP/DFlash na RX 7900 XTX.
 - [[gumbel-max|Op `GGML_OP_GUMBEL_MAX` (draft MTP ze sprzężonym szumem)]] — Nowy op ggml (CPU `ggml-cpu/ops.cpp`, HIP/CUDA `ggml-cuda/gumbel-max.cu`) zastępuje `ggml_argmax` w grafie łańcucha MTP: top-k → top-p → min-p → /T + szum Philox4x32-10 kluczowany (seed, pozycja, token) na wierszu 65536 tokenów słownika draftu; wybiera bitowo to samo co CPU i łańcuch samplera celu.
+- [[pamiec-stanu-gdn|Pamięć stanu GDN w Qwen3.8-27B]] — Połówkowy czas zaniku stanu GDN przy zerowym wejściu (2304 głowice = 48 warstw × 48): p50 25 tokenów, p90 1 010, p99 2 574, maksimum 18 132 – stan ma pamięć wykładniczą z długim ogonem (raport 21e, analiza wag na CPU, 2026-10-19).
 - [[para-mmvq|Para MMVQ jedną siatką (0024)]] — Dwa MUL_MAT tego samego typu na tym samym wejściu (ffn up/gate, GDN qkv/z) liczone jednym uruchomieniem kernela zamiast dwóch.
 - [[pdl-mmvq-trigger|PDL w MMVQ użyty tylko w połowie (CUDA sm_90+)]] — Gęsty `mul_mat_vec_q` woła `ggml_cuda_pdl_sync()` przed jakimkolwiek odczytem wag (`mmvq.cu:1530`) i nigdy nie woła triggera (`ggml_cuda_pdl_lc` jest tylko w `mul_mat_vec_q_moe`, `:1980`), więc PDL ukrywa dziś tylko launch i prolog, a nie rampę strumienia wag (raport 21b, 2026-10-19).
 - [[mmvq-prefetch-l2|Prefetch L2 w pętli MMVQ: włączony tylko na DGX Spark]] — Upstream włącza prefetch L2 w pętli MMVQ tylko dla `GGML_CUDA_CC_DGX_SPARK` (`mmvq.cu:1703`); na GB10 przy 5 kolumnach dał Q4_K +2.89%, Q5_K +3.90%, Q6_K +6.19%, przy 1 kolumnie ~0, a teza „na kartach z większym pasmem nie pomaga” nie ma danych (raport 21b, 2026-10-19).

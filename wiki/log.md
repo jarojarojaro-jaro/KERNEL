@@ -104,6 +104,9 @@ Nowe: [[raport-21f-inferencex]], [[ksztalt-ruchu-agentowego]], [[lekcja-agent-pr
 ## [2026-10-19] ingest | Raport 21d (KV na dysku)
 Nowe: [[raport-21d-kv-na-dysku]], [[kv-na-dysku-polityka]], [[dysk-serwera-pm9b1]], [[lekcja-restore-stanu-exactness]]; zaktualizowane [[cache-sesji-na-dysku]], [[strata]].
 
+## [2026-10-19] ingest | Raport 21e (KV między modelami, Uncensored = ablacja)
+Nowe: [[raport-21e-kv-miedzy-modelami]], [[uncensored-ablacja-kierunku]], [[przelaczanie-main-uncensored]], [[pamiec-stanu-gdn]]; zaktualizowane [[qwen3-8-27b-uncensored]], [[lfm2-5-uncensored]], [[otwarte-decyzje-techniczne]] (źródło wektorów – decyzja użytkownika).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

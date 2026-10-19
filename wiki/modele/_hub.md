@@ -14,7 +14,7 @@ Liczby t/s zawsze z datą i warunkami (kwant, KV, MTP/DFlash, prompt, T). Aktual
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (16)
+## Notatki (17)
 
 - [[drafter-dflash|Drafter DFlash2 dla Qwen3.8-27B]] — Osobny mały model draftujący (z-lab / incoai, 5 warstw) — świetny na angielski kod przy T=0, ale na szerszym zestawie i po polsku nie bije głowicy MTP, więc domyślnie używamy MTP.
 - [[drafter-dspine|Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem]] — Drafter z rodziny DFlash (5 warstw, blok 16, K/V z cech 5 warstw celu, wspólny embedding i LM head) z trzema zmianami: atencja w bloku przyczynowa, po każdej warstwie bramkowana wiadomość z przewidywanej cechy poprzednika (przestrzeń 1024-d z wybielonych wierszy LM head celu) i wybór tokenu warunkowany poprzednikiem („transition cache”, K=16) (arXiv 2609.36173v2, 2026-10-10).
@@ -31,5 +31,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[qwen3-8-27b-uncensored|Qwen3.8-27B-Uncensored (OrcaRouter)]] — Abliterowana wersja Qwen3.8-27B od OrcaRouter: usunięty „kierunek odmowy”, architektura bez zmian; u nas najszybszy wariant Qwena (115.5 t/s).
 - [[swift-1-5|Swift 1.5 (UkisAI): Qwen3.8-27B z krótszym myśleniem]] — Fine-tune RL/OPD Qwen3.8-27B na krótsze myślenie (deklaracja: −41.9% średnio i −58.5% w medianie tokenów GPQA-D przy +0.31 pp); kwanty GSQ-RCO z alokacją ISTA 1:1, głowica MTP niedouczona, licencja z progiem US$1M przychodu.
 - [[bonsai|Ternary Bonsai 2 27B (PrismML)]] — Qwen3.8-27B w trytach {−1, 0, +1} od PrismML; najszybszy jest w forku prism jako PTQ1_0 (44.75 t/s na RTX 3060), a PQ2_0 można bezstratnie przepakować do upstreamowego Q2_0 i uruchomić na czystym llama.cpp i naszym forku.
+- [[uncensored-ablacja-kierunku|Uncensored = Main + edycja rank-1 kierunku w „pisarzach” strumienia]] — Oba nasze modele Uncensored to analityczne edycje wag Maina, nie fine-tune: Qwen3.8-27B-Uncensored (OrcaRouter) ma jeden globalny kierunek r rzutowany ze wszystkich writerów strumienia rezydualnego (s = 0.994–1.000), a LFM2.5-Uncensored (AtomicChat) ma osobny kierunek r_l w każdej warstwie 14–39 ze skalą 1.75 (analiza wag na CPU, raport 21e, 2026-10-19).
 - [[saluki|Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)]] — Qwen3.8-27B skwantyzowany do 7.90 GB (IQ2-mix na bazie ISTA GSQ-RCO), strojony pod tool calling; na RTX 3060 działa z czystym upstreamem, ma najlepsze PPL i polszczyznę wśród naszych 2-bitowych 27B, ale bez MTP i z prędkością ~23 t/s.
 <!-- AUTO:END -->

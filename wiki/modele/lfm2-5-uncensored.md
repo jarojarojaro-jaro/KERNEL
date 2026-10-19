@@ -1,8 +1,8 @@
 ---
 typ: model
 tags: [modele, lfm, uncensored]
-aktualizacja: 2026-10-18
-zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:14,129-133; ~/KERNEL/qwen-opt/STATUS-NEXT.md:13; ~/KERNEL/qwen-opt/run-llm.sh:11; ~/KERNEL/qwen-opt/README.md:56; ~/KERNEL/qwen-opt/NOTES.md:374-375; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:88,94-95
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:14,129-133; ~/KERNEL/qwen-opt/STATUS-NEXT.md:13; ~/KERNEL/qwen-opt/run-llm.sh:11; ~/KERNEL/qwen-opt/README.md:56; ~/KERNEL/qwen-opt/NOTES.md:374-375; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:88,94-95; ~/KERNEL/product/research/21e-kv-miedzy-modelami.md:105-113
 status: aktualne
 ---
 # LFM2.5-24B-A2B-Uncensored (AtomicChat, AD-Q5_K_M)
@@ -16,6 +16,8 @@ status: aktualne
 - Uruchomienie: `run-llm.sh lfm-uncensored` (te same ustawienia co LFM).
 
 16g (2026-10-18): `GGML_HIP_MOE_GU_BLOCK` obejmuje 33 warstwy z gate/up Q5_K (5 warstw Q6_K stara droga); llama-bench 264.60 → 268.27 t/s (+1.39%), hash logitów `f74300e3142a5535` bez zmian ([[2026-10-18-lfm-moe-pasmo]]).
+
+Analiza wag (21e, 2026-10-19): LFM2.5 z ablacją kierunku per warstwa w warstwach 14–39, skala 1.75; warstwy 0–13 nieruszone – [[uncensored-ablacja-kierunku]].
 
 ## Powiązane
 - [[modele/_hub|Modele]]

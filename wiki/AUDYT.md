@@ -2739,6 +2739,9 @@ Liczby z 21f §0–§9 i `21f-agentx-stats-out.txt` (wiersze w `zrodlo`). Uwaga:
 ## Aktualizacja: raport 21d (2026-10-19)
 Liczby z 21d §2–§11 (wiersze w `zrodlo`); SMART i `dd` to odczyty agenta z 2026-10-19 (nie powtórzone przez WikiIngest). Błędnych: 0.
 
+## Aktualizacja: raport 21e (2026-10-19)
+Liczby z 21e §0–§6 i `21e-skrypty/{qwen_abl_s,lfm_abl,qwen_diff}.txt` (wiersze w `zrodlo`); wyniki paperu przepisane z raportu. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

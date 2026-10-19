@@ -14,7 +14,7 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (27)
+## Notatki (28)
 
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
@@ -37,6 +37,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[tryb-stratny-pflash|Propozycja: tryb stratny „szybki odczyt długich dokumentów” (PFlash)]] — Propozycja z raportu 15d: PFlash tylko jako jawny tryb opt-in „szybki odczyt długich dokumentów (przybliżony)”, nigdy w sesjach agenta; decyzja po etapie C pilota (~$2 chmury).
 - [[app-prototyp-desktop|Prototyp aplikacji desktop, makieta TUI i architektura]] — Osiem ekranów prototypu aplikacji (`/[lang]/app/…`, kod w `landing/src/lib/desktop`), makieta TUI w stylu REACTOR (`tui/tui_demo.py`, 5 scen) i dokument architektury: daemon, lokalne API, onboarding, łączenie konta, dane lokalne vs wysyłane.
 - [[app-onboarding-prototyp|Prototyp onboardingu (konto, 3 drogi, wynik)]] — Ścieżki `/start/`, `paths`, `hardware`, `result`, `download`, `terminal` i `/scan/`: konto na początku (Google, GitHub, e-mail – bez backendu), trzy drogi i wynik z przedziałami z estymatora.
+- [[przelaczanie-main-uncensored|Przełączanie Main ↔ Uncensored (i „Uncensored jako tryb”)]] — Dziś przełączenie Main ↔ Uncensored to przeładowanie modelu i pełny prefill (~61.5 s przy 53k dla Qwena); llama.cpp przyjmuje jednak plik slotu z drugiego modelu o tych samych kształtach (sprawdza tylko magic, wersję i rozmiary), więc restore trwa 2.51 s – a tryb Uncensored w locie (`h ← h − r(r·h)`) zniósłby przełączenie i osobne pliki całkiem (raport 21e, 2026-10-19).
 - [[produkt-roadmapa|Roadmapa: fazy 0–4 z kryteriami wyjścia]] — Faza 0 dowód (3–4 tyg., E1–E7), faza 1 silnik + CLI/TUI alfa (6–8 tyg.), faza 2 GUI + noc beta (8–12 tyg.), faza 3 launch + Turbo + macOS (od ~6.–9. miesiąca), faza 4 rozszerzenia.
 - [[app-skrypty-skanu|Skrypty skanu sprzętu (scan.sh, scan-macos.sh, scan.ps1)]] — Trzy skrypty tylko do odczytu wypisują specyfikację i czytelny kod `HW1;os=…;gpu=…;sum=XXXX` do wklejenia w formularz; na Linuksie `strace` uruchomienia przez `sh` pokazał 0 otwarć `/dev/*`.
 - [[produkt-stack|Stack technologiczny]] — llama.cpp jako cienka nakładka, daemon i TUI w Rust (ratatui), GUI w Tauri 2 z web UI llama.cpp, API OpenAI/Anthropic/Ollama tylko na 127.0.0.1 z tokenem.

@@ -2,7 +2,7 @@
 typ: produkt
 tags: [produkt, decyzje, silnik]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:334-343,340-342; ~/KERNEL/product/research/16e-kwanty-kld.md:282-292; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:10; ~/KERNEL/product/research/16f-xtx-szybkie.md:19-45,238; ~/KERNEL/product/research/16b-lookup-tail.md:163-165; ~/KERNEL/product/research/17-gpu-page-fault.md:22-26; ~/KERNEL/product/research/21h-rsi.md:340-363,483-525
+zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:334-343,340-342; ~/KERNEL/product/research/16e-kwanty-kld.md:282-292; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:10; ~/KERNEL/product/research/16f-xtx-szybkie.md:19-45,238; ~/KERNEL/product/research/16b-lookup-tail.md:163-165; ~/KERNEL/product/research/17-gpu-page-fault.md:22-26; ~/KERNEL/product/research/21h-rsi.md:340-363,483-525; ~/KERNEL/product/research/21e-kv-miedzy-modelami.md:201-204
 status: aktualne
 ---
 # Otwarte decyzje techniczne (silnik, flagi, wydatki)
@@ -20,6 +20,7 @@ status: aktualne
 | PM4 w serwerach (raport 17) | `~/llama-opt` z PM4 domyślnie (~1 reset/330 req.) | `GGML_HIP_PM4=0`? (−4.7% / −12%); testy S1–S6, `HSA_USE_SVM=0` ([[2026-10-19-pm4-priv-analiza]]) |
 | RSI-F pilot P0/P1 (21h) | fabryka bez werdyktu na GPU | P0 ~20 min + P1 ~60–80 min GPU XTX, $0 ([[petla-rsi-f]]) |
 | E1: RSR-27B vs Qwen (21h) | niezmierzone | ~$40–70 na wynajętych 3090 ([[2026-10-19-plan-e1-rsr27b]]) |
+| Uncensored jako tryb (21e) | osobne pliki Uncensored | źródło wektorów: z cudzych GGUF czy własne (Arditi)? ([[przelaczanie-main-uncensored]]) |
 
 ## Powiązane
 - [[produkt/_hub|produkt]]
