@@ -15,7 +15,8 @@ z lokalnym buildem tego samego drzewa: 109/109 plików `bin/` mają te same `.te
 | cena | $0.094/h, transfer $0/TB; do 17:15 UTC ~1.2 h najmu ≈ $0.11 (stawka × czas) |
 | instalacja toolchainów (ubuntu:24.04) | 226 s / 141 s (+ ~1 min start Vast) |
 | pełny build, zimny ccache, -j24 | 269 s, 271 s; po wyłączeniu ccache dla HIP: 232 s |
-| pełny build bez ccache: czas CPU | 272 s ściany, 3719 s user + 121 s sys |
+| rbuild bez zmian (push + make no-op + diff sha1) | 9–12 s całość, 4 KB pobrane, lokalnie 0.8 s CPU user |
+| lokalny CPU przy pełnym pobraniu (pack git + zstd/tar) | 20–35 s user (jednorazowo na nowym serwerze) |
 | pełny rebuild z ciepłym ccache (przed wyłączeniem HIP z ccache) | 9.3 s |
 | rbuild bez zmian (push + make no-op + diff sha1) | 9 s całość, 4 KB pobrane |
 | pobranie po pełnym buildzie | 23 MB zstd (115 MB surowo); typowo 2.4–14 MB |
