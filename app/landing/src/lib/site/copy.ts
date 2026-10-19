@@ -275,7 +275,15 @@ const raw = {
 			lede: 'Sprawdź, ile z niej wyciśniemy. Bez zmiany modelu.',
 			cards: 'Sprawdź swoją kartę',
 			method: 'Metodologia',
-			tacho: '{card}, nasz silnik: {v} tokenu na sekundę'
+			without: 'Bez Podkrętu',
+			with: 'Z Podkrętem',
+			faster: 'szybciej',
+			tokens: 'tokenów',
+			pause: 'Wstrzymaj strumień',
+			resume: 'Wznów strumień',
+			note: 'tekst przykładowy, tempo zmierzone',
+			summary: '{card}, {model} {quant}: ta sama odpowiedź płynie bez Podkrętu z prędkością {a0} tokenu na sekundę, a z Podkrętem {a2} tokenu na sekundę.',
+			text: 'Cześć! Przesuwam jutrzejsze spotkanie zespołu z rana na popołudnie, bo wypadła mi wizyta u klienta. Sala i link do rozmowy zostają te same. Jeśli komuś nie pasuje nowa pora, dajcie znać do wieczora, a poszukam innego terminu. Przygotujcie proszę krótkie podsumowanie tygodnia, po dwa zdania na osobę. Dzięki i do jutra!'
 		},
 		footer: {
 			tagline: 'Lokalne AI, które samo się przyspiesza. Bez zmiany modelu.',
@@ -550,7 +558,15 @@ const raw = {
 			lede: 'See how much we can get out of it. Without changing the model.',
 			cards: 'Check your card',
 			method: 'Methodology',
-			tacho: '{card}, our engine: {v} tokens per second'
+			without: 'Without Podkręt',
+			with: 'With Podkręt',
+			faster: 'faster',
+			tokens: 'tokens',
+			pause: 'Pause the stream',
+			resume: 'Resume the stream',
+			note: 'example text, measured pace',
+			summary: '{card}, {model} {quant}: the same answer streams at {a0} tokens per second without Podkręt and at {a2} tokens per second with Podkręt.',
+			text: 'Hi all! I’m moving tomorrow’s team meeting from the morning to the afternoon, because a client visit came up. The room and the call link stay the same. If the new time doesn’t work for you, let me know by tonight and I’ll find another slot. Please bring a short summary of your week, two sentences each. Thanks, and see you tomorrow!'
 		},
 		footer: {
 			tagline: 'Local AI that speeds itself up. Without changing the model.',
