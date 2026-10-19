@@ -57,7 +57,7 @@ Audyt liczb: [[AUDYT]].
 ## Kategorie
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (23)
-- [[modele/_hub|modele]] — Modele i kwanty (14)
+- [[modele/_hub|modele]] — Modele i kwanty (15)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (20)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
@@ -65,11 +65,11 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (26)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (75)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (77)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (62)
-- [[research/_hub|research]] — Streszczenia raportów (42)
+- [[research/_hub|research]] — Streszczenia raportów (43)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (26)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
@@ -82,6 +82,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]]
 - 2026-10-19 [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]]
 - 2026-10-19 [[raport-21c-cplm|Raport 21c: Copy-Paste Language Models (CPLM) – nie adoptujemy]]
+- 2026-10-19 [[raport-21a-dspine|Raport 21a: DSpine vs MTP4 + ogon W16 na XTX]]
 - 2026-10-19 [[raport-18-nastepna-fala|Raport 18: następna fala optymalizacji (15 pomysłów, plan 30 dni)]]
 - 2026-10-19 [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]]
 - 2026-10-19 [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-16b-lookup-tail|Raport 16b: ogon z lookupu za MTP (15b E1–E3, 16i E-X0–E-X3)]]
 - 2026-10-19 [[raport-15b-spekulacja-frontier|Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)]]
 - 2026-10-19 [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]]
-- 2026-10-19 [[suffixdecoding|SuffixDecoding / ArcticInference: globalne drzewa sufiksów]]
 
-Razem 451 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 455 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

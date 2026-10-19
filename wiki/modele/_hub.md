@@ -14,9 +14,10 @@ Liczby t/s zawsze z datą i warunkami (kwant, KV, MTP/DFlash, prompt, T). Aktual
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (14)
+## Notatki (15)
 
 - [[drafter-dflash|Drafter DFlash2 dla Qwen3.8-27B]] — Osobny mały model draftujący (z-lab / incoai, 5 warstw) — świetny na angielski kod przy T=0, ale na szerszym zestawie i po polsku nie bije głowicy MTP, więc domyślnie używamy MTP.
+- [[drafter-dspine|Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem]] — Drafter z rodziny DFlash (5 warstw, blok 16, K/V z cech 5 warstw celu, wspólny embedding i LM head) z trzema zmianami: atencja w bloku przyczynowa, po każdej warstwie bramkowana wiadomość z przewidywanej cechy poprzednika (przestrzeń 1024-d z wybielonych wierszy LM head celu) i wybór tokenu warunkowany poprzednikiem („transition cache”, K=16) (arXiv 2609.36173v2, 2026-10-10).
 - [[glowica-mtp|Głowica MTP Qwen3.8-27B (spekulacja bez osobnego draftera)]] — Wbudowana warstwa `blk.64` (nextn) zgaduje kolejne tokeny, a główny model weryfikuje je jednym przebiegiem; to podstawa naszego 109 t/s, z ~3 tokenami na krok.
 - [[kwanty-gguf|Kwanty wag i KV, których używamy]] — Wagi trzymamy w kwantach K/I GGUF ładowanych w całości do VRAM; KV cache to q4_0 dla Qwena i q8_0 dla LFM (decyzja użytkownika); zmiana kwantu = inny model, więc to nie jest „optymalizacja bezstratna”.
 - [[lfm2-5-24b-a2b|LFM2.5-24B-A2B (Liquid AI)]] — MoE 24B z ~2B aktywnymi parametrami i warstwami krótkiej konwolucji; na RX 7900 XTX z 173 do 294 t/s, bez spekulacji (brak draftera).

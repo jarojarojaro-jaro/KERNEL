@@ -2727,6 +2727,9 @@ Liczby z 21h (wiersze w `zrodlo`); niespójne mianowniki Terminal-RSI (TB 4.0 19
 ## Aktualizacja: raport 18 (2026-10-19)
 Liczby z 18 §0–§6 (wiersze w `zrodlo`); roofline 57.1 / 75.7% z §3.1, udziały 34.4 / 56.6 / 8.9% i współbieżność z §2 (skrypty agenta jednorazowe, niezachowane). Błędnych: 0.
 
+## Aktualizacja: raport 21a (2026-10-19)
+Liczby z 21a §0, §4, §8 i sekcji „Do bazy wiedzy” (wiersze w `zrodlo`); V16/V1 = 30.53/22.83 i 39.66/24.60 z `16b:59-64` sprawdzone. Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

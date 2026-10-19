@@ -92,6 +92,9 @@ Nowe: [[raport-21h-rsi]], [[rsr-27b]], [[tencent-terminal-rsi]], [[lekcja-verifi
 ## [2026-10-19] ingest | Raport 18 (następna fala)
 Nowe: [[raport-18-nastepna-fala]], [[2026-10-19-workload-omp]], [[model-kosztu-weryfikacji-moe]], [[2026-10-19-certyfikowana-glowica-pilot]], [[lekcja-rzadkosc-vs-weryfikacja]], [[knlp-lm-head]], [[mtplx]], [[suffixdecoding]]. Zaktualizowane: [[qwen3-8-27b]], [[lfm2-5-24b-a2b]], [[lekcja-prefetch-mall-xtx]].
 
+## [2026-10-19] ingest | Raport 21a (DSpine)
+Nowe: [[drafter-dspine]], [[raport-21a-dspine]], [[lekcja-akceptacja-h100-nie-przenosi-sie]], [[lekcja-naglowki-drafterow]]; zaktualizowany [[drafter-dflash]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
