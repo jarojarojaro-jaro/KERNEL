@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, spekulacja, dflash, metal]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/research/tensorfold/README.md:1-25; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:41; ~/KERNEL/product/research/15c-nowe-silniki.md:34-37,93-102,210-221
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/qwen-opt/research/tensorfold/README.md:1-25; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:41; ~/KERNEL/product/research/15c-nowe-silniki.md:34-37,93-102,210-221; ~/KERNEL/product/research/21g-nowe-silniki.md:90-157,284-289; ~/KERNEL/product/research/21g-notatki/tf-delta.md
 status: aktualne
 ---
 # TensorFold (ashhart/TensorFold)
@@ -16,6 +16,12 @@ Repo: 1560 commitów na `main`, 32 tagi w 18 dni, 552 PR-y, 235 issues. Rdzeń �
 - Nowe techniki: „twins” (GEMV 1/2–7/8–32 wiersze z tą samą kolejnością fma co kafle prompt, sprawdzane bitowo przy ładowaniu), dokładny dekod 4-bit „half pair” 0x6400 (pre-scaling gubił subnormale: x = 2^-126 daje 0x0080 → 0x0000), Recall (trwały n-gram wyceniany wobec MTP; powtórki 2.4× na 27B), TP przez hosty z podziałem samych ekspertów (TP=2 == TP=1 bitowo).
 - Super VL na 2×GB10: MTP 38.2 → 46.8 t/s (recipe:86-91).
 - HIP to preview i nadal słaby: 2×W7800 TP2 39.0 t/s plain na 27B (#655) wobec naszego 1×XTX 43.2.
+
+## v1.1.0 i aplikacja Beta 7/8 (raport 21g, 2026-10-19)
+- HIP +12/−9 bez zmian funkcjonalnych w 901 commitach; `--drafter` na HIP ignorowany (#1001), tablica odrzuca ROCm – AMD dalej nasze.
+- CUDA: Qwen3.8-27B + DFlash2; RTX 5090 chat T0 263.0 / code T0 366.8 t/s (≈ 141 / 196 na pasmo XTX `[INFERENCE]`, nasze 103–130) – przed ogłoszeniem przewagi na NVIDIA A/B na 3090.
+- Tablica: 45 przebiegów, 0 AMD, 0 „serial baseline”, 1 angielski prompt na klasę; „874 t/s” = wydanie 1.0.6.
+- Aplikacja (Mac): profile per model, „Serial baseline”, porównanie dwóch modeli, polski maszynowy ([[raport-21g-nowe-silniki]]).
 
 ## Powiązane
 - [[repo/_hub|repo]]

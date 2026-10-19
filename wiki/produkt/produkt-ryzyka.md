@@ -1,8 +1,8 @@
 ---
 typ: produkt
 tags: [produkt, plan, ryzyka]
-aktualizacja: 2026-10-18
-zrodlo: ~/KERNEL/product/PLAN.md:475-487; ~/KERNEL/product/research/15c-nowe-silniki.md:389-393; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:308-321; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:131-138; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:85-91
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/PLAN.md:475-487; ~/KERNEL/product/research/15c-nowe-silniki.md:389-393; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:308-321; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:131-138; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:85-91; ~/KERNEL/product/research/21g-nowe-silniki.md:359-362
 status: aktualne
 ---
 # Największe ryzyka
@@ -25,6 +25,8 @@ status: aktualne
 Nowe ryzyko z 2026-10-16: Magnitude ma 6.9k★ w 4 miesiące, ale brak HIP, brak bitowej bramki i brak MoE offload (#194).
 
 Magnitude (2026-10-16): wygrywa code-edit 1.35–1.56×; nasze przewagi: polski (9B sweep 121.0 vs 68.2 t/s), 27B Q3_K_XL na 16 GB (u nich się nie ładuje), LFM 64k na 16 GB (u nich OOM), prefill 27B na 3090 (64k 72.4 vs 86.4 s). Magnitude Vulkan na XTX zmierzony 2026-10-18: my ×1.94–×2.22 (Qwen 27B), ×1.42–×2.24 (LFM); ich przewaga na AMD to tylko instalacja bez ROCm ([[2026-10-18-magnitude-vulkan-xtx]], [[firma-magnitude]]).
+
+21g (2026-10-19): TensorFold 27B + DFlash2 na NVIDIA (5090 263/367 t/s) wymaga A/B z naszym forkiem na 3090; Strata uruchamia 125B MoE na XTX + 96 GB RAM z ~80 t/s – alternatywa dla użytkowników z dużym RAM-em ([[raport-21g-nowe-silniki]]).
 
 ## Powiązane
 - [[produkt/_hub|produkt]]

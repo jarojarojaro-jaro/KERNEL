@@ -14,9 +14,10 @@ Klasy poprawności: *bitowo identyczne* (te same logity / greedy md5) albo *zmia
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (29)
+## Notatki (30)
 
 - [[argmax-dpp|Argmax z DPP (0026)]] — Argmax po słowniku w drafcie MTP: 16 ładowań w locie i wymiana między lane'ami przez DPP zamiast pamięci LDS; 16.8 → 4.3 µs na wywołanie.
+- [[bariera-lds-rdna3|Bariera tylko LDS na RDNA3 (bez `buffer_gl0_inv`)]] — Na gfx1100 `__syncthreads()` kompiluje się do `s_waitcnt lgkmcnt(0); s_barrier; buffer_gl0_inv`, a bariera z płotami `__builtin_amdgcn_fence(…, "workgroup", "local")` wokół `__builtin_amdgcn_s_barrier()` do samego `s_waitcnt lgkmcnt(0); s_barrier` – bez unieważniania L0, więc load globalny za barierą nie czeka; Strata #3064 zmierzyła −1.3…−5% czasu weryfikacji GDN na R9700, bitowo (raport 21g, ISA sprawdzone `hipcc -S`, 2026-10-19).
 - [[cache-q8-1|Cache q8_1 aktywacji i „producenci” q8_1]] — MMVQ potrzebuje wejścia skwantyzowanego do q8_1; zamiast osobnego kernela kwantyzacji przed każdym matvec, kwantyzujemy raz i najlepiej już w kernelu, który to wejście produkuje.
 - [[clamp-q8-1|Clamp (d, sum) bloków q8_1 do ±65504 (0023, poprawka)]] — Poprawka poprawności (S1): pola d i sum każdego bloku q8_1 są przycinane do zakresu fp16 (±65504) we wszystkich miejscach, które piszą q8_1.
 - [[mtp-draft-graf|Draft MTP jako jeden graf (0020) i własny scheduler (0030)]] — Cztery osobne przebiegi głowicy MTP zastąpione jednym rozwiniętym grafem z argmax i get_rows na GPU; łańcuch draftu dostał też własny scheduler, żeby nie przebudowywać grafów co krok.

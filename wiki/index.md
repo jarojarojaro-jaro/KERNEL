@@ -61,15 +61,15 @@ Audyt liczb: [[AUDYT]].
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (11)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (21)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
-- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (29)
+- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (28)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (80)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (81)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (23)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (64)
-- [[research/_hub|research]] — Streszczenia raportów (50)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (67)
+- [[research/_hub|research]] — Streszczenia raportów (51)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (28)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
@@ -84,12 +84,12 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
 - 2026-10-19 [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]]
 - 2026-10-19 [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]]
+- 2026-10-19 [[raport-21g-nowe-silniki|Raport 21g: nowe silniki – inferrous, TensorFold 1.1.0, Project Maya 1.1.14–1.1.15, Strata v0.1.44.1–v0.1.45]]
 - 2026-10-19 [[raport-21f-inferencex|Raport 21f: InferenceX / AgentX (SemiAnalysis) i „megakernel” Kimi K3 w vLLM]]
 - 2026-10-19 [[raport-21e-kv-miedzy-modelami|Raport 21e: KV między modelami (NVIDIA 2608.03893) i Uncensored jako edycja rank-1]]
 - 2026-10-19 [[raport-21d-kv-na-dysku|Raport 21d: KV na dysku (Strata, Mirai S Ada) i nasza polityka]]
 - 2026-10-19 [[raport-21c-cplm|Raport 21c: Copy-Paste Language Models (CPLM) – nie adoptujemy]]
 - 2026-10-19 [[raport-21b-gpu-perf-zasoby|Raport 21b: zasoby GPU perf (wafer-ai) i Blackwell Tuning Guide na nasze karty]]
-- 2026-10-19 [[raport-21a-dspine|Raport 21a: DSpine vs MTP4 + ogon W16 na XTX]]
 
-Razem 483 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 489 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

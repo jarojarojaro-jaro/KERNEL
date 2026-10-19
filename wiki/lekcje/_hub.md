@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (80)
+## Notatki (81)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]] — Restarty serwera 2026-10-18 czyszczą `/tmp`: `/tmp/bxv/summary.txt` i `/tmp/bxd/*` (walidacja bit-exact) zniknęły już przy wcześniejszym restarcie ~18:53 UTC, przed archiwizacją; przed restartem ~20:27 UTC (overdrive) resztę zarchiwizowano do `~/qwen-opt/tmp-archive-20261018/` (63 MB: coupled, lookup, pm4pdl, lfmmoe, qa).
@@ -28,6 +28,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-benchmark-kopia|Benchmark na kopiowaniu zawyża spekulację]] — Zadania „powtórz tekst” albo kopiowanie dokumentu dają 4–6+ tokenów na krok i nic nie mówią o nowym pisaniu; tak powstały liczby Magnitude, tqLLM i HyperQwen.
 - [[lekcja-jeden-prompt|Benchmark z jednym promptem]] — „DFlash 120 t/s” zmierzono na 1 prompcie; na zestawie promptów wynik ≈ MTP. Zawsze 6 promptów × seedy.
 - [[lekcja-build-przed-wynajmem|Binarki budować lokalnie przed wynajmem]] — W E1 bootstrap na wynajętej karcie (budowa forka + Prism na 9 vCPU) trwał ~25 min przy GPU 0%; watchdog rodzica słusznie zgłosił „idle” (2026-10-16).
+- [[lekcja-bit-exact-wobec-siebie|Bit-exact wobec siebie ≠ wierność modelowi]] — inferrous zachowuje w każdej rundzie optymalizacji hashe wszystkich logitów wobec własnego pierwszego buildu, a niezależna bramka z PyTorch nie przechodzi (rel. L2 logitów 9–11%); Maya obiecuje „te same odpowiedzi” tylko przy przypiętym stanie warstw (domyślnie 17/70 restartów) (raport 21g, 2026-10-19).
 - [[lekcja-bit-exact-attention|Bit-exact: WMMA reaguje na zamaskowane wiersze cache]] — Ostatnia różnica między zwykłym dekodowaniem a weryfikacją MTP siedziała w atencji: zamaskowane (-inf) wiersze KV za pozycją tokena zmieniały wynik WMMA, choć matematycznie mnożą się przez 0; wyzerowanie ich (`GGML_HIP_BITEXACT_FA_ZERO_MASKED=1`) daje md5 zwykły = md5 MTP (`74952fd5…`) na Qwen3.8-27B (7900 XTX, 2026-10-16).
 - [[lekcja-brak-column-w-obrazie|Brak programu `column` w obrazie CUDA zatrzymał benchmark]] — Obraz `nvidia/cuda:12.8.1-devel-ubuntu24.04` nie ma `column`; wywołanie w `bootstrap.sh` przy `set -e` zatrzymywało benchmarki na wynajętej karcie (2026-10-16).
 - [[lekcja-kld-szum-kolejnosci|Bramka KLD 2σ leży w szumie kolejności sumowania]] — To samo jądro kvq na CUDA z innym podziałem KV (`GGML_CUDA_KVQ_BPSM=1`, zmienia tylko kolejność sumowania) przesunęło mean KLD o ±1–1.9σ, a dla LFM oblało bramkę (ΔKLD +1.47σ, same top −1.88σ, 99.9% ×1.278) przy identycznej arytmetyce (2026-10-16).

@@ -116,6 +116,9 @@ Nowa [[smokinggun]]: skaner CPU + porównanie benchmarków, nie stosuje się; fa
 ## [2026-10-19] ingest | Narzędzie kb (raport 19)
 Nowa [[kb]]: `kb search` / `kb facts` (BM25F + e5-small + indeks faktów, cały `~/KERNEL`, `plik:linia`), recall@5 0.963 na 80 pytaniach (`wiki.py` 0.750); [[wiki-py]] `search` deleguje do `kb`; `AGENTS.md`: najpierw `kb`. Raport `product/research/19-kb-wyszukiwanie.md`.
 
+## [2026-10-19] ingest | Raport 21g (nowe silniki)
+Nowe: [[raport-21g-nowe-silniki]], [[inferrous]], [[project-maya]], [[bariera-lds-rdna3]], [[lekcja-bit-exact-wobec-siebie]], [[llama-moe-cache-mib]]; zaktualizowane [[tensorfold]] (1.1.0, Beta 7/8), [[strata]] (v0.1.44.1–v0.1.45), [[produkt-ryzyka]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
