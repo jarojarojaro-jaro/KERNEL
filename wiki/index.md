@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (21)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (22)
 - [[modele/_hub|modele]] — Modele i kwanty (14)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (15)
@@ -75,6 +75,9 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-10-19 [[lekcja-wentylator-rdna3|Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive]]
+- 2026-10-19 [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]]
+- 2026-10-19 [[2026-10-19-wentylator-100-przy-pracy|2026-10-19: wentylator XTX 100%, gdy GPU pracuje]]
 - 2026-10-18 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
 - 2026-10-18 [[raport-16j-magnitude-vulkan-xtx|Raport 16j: Magnitude przez Vulkan na 7900 XTX (E-X5)]]
 - 2026-10-18 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
@@ -87,9 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-18 [[raport-15a-monokernel|Raport 15a: megakernele dla decode (vLLM MonoKernel)]]
 - 2026-10-18 [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]]
 - 2026-10-18 [[produkt-ryzyka|Największe ryzyka]]
-- 2026-10-18 [[cache-sesji-na-dysku|Cache sesji na dysku (projekt z 16f E5)]]
-- 2026-10-18 [[app-landing|Strona (landing) PL/EN]]
-- 2026-10-18 [[landing-qa|QA landingu: `app/landing/scripts/qa/`]]
 
-Razem 401 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 402 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

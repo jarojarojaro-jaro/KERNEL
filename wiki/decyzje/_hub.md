@@ -14,7 +14,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (21)
+## Notatki (22)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -36,5 +36,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-16-prosta-baza-wiedzy|2026-10-16: prosta baza wiedzy w KERNEL/wiki]] — Użytkownik: „po prostu baza wiedzy; wszystko ma być dokładnie, ale bez przesady”, każda kategoria w osobnym folderze, widoczna w Obsidianie.
 - [[2026-10-16-wiki-jeden-agent|2026-10-16: second brain robi jeden agent, po kolei]] — Użytkownik (2026-10-16 02:23 UTC): „zrób tego second braina jako jeden agent po kolei wszystko dokładnie – mamy dużo czasu, nie spiesz się”.
 - [[2026-10-16-wszystko-do-bazy-wiedzy|2026-10-16: wszystko nowe trafia do bazy wiedzy (twarda zasada)]] — Każdy research, pomiar, eksperyment, decyzja i lekcja z projektu trafia do `KERNEL/wiki` zaraz po zakończeniu zadania, zanim zadanie uznamy za skończone.
+- [[2026-10-19-wentylator-100-przy-pracy|2026-10-19: wentylator XTX 100%, gdy GPU pracuje]] — Użytkownik zdecydował (2026-10-19, 00:00 UTC): gdy GPU pracuje, wentylator RX 7900 XTX chodzi na 100% (`FAN=100` w `fan.sh`, wcześniej 90%).
 - [[2026-10-09-limit-mocy-odlozony|Limit mocy GPU odłożony (na prośbę użytkownika)]] — Optymalizacja limitu mocy (np. −20% mocy kosztem ≤5% t/s) została odłożona na prośbę użytkownika; karta pracuje z limitem 285 W.
 <!-- AUTO:END -->

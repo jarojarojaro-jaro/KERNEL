@@ -1,8 +1,8 @@
 ---
 typ: lekcja
 tags: [lekcje, rdna3, chlodzenie]
-aktualizacja: 2026-10-18
-zrodlo: ~/qwen-opt/tools/fan.sh:6-7,22-45; /proc/cmdline; komunikat Main do WikiIngest 2026-10-18; ~/qwen-opt/tools/fan.sh:1-40,66-90; /etc/systemd/system/xtx-fan.timer; komunikat Main do WikiIngest 2026-10-18 (wentylator, Chrome)
+aktualizacja: 2026-10-19
+zrodlo: ~/qwen-opt/tools/fan.sh:6-7,22-45; /proc/cmdline; komunikat Main do WikiIngest 2026-10-18; ~/qwen-opt/tools/fan.sh:1-40,66-90; /etc/systemd/system/xtx-fan.timer; komunikat Main do WikiIngest 2026-10-18 (wentylator, Chrome); komunikat Main do WikiIngest 2026-10-19 (decyzja użytkownika 00:00 UTC)
 status: aktualne
 ---
 # Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive
@@ -14,6 +14,8 @@ status: aktualne
 - Restart czyści `/tmp` ([[lekcja-tmp-po-restarcie]]).
 
 **Przyczyny awarii 2026-10-18:** o 23:25 mode1 reset GPU (dwa zadania naraz po odtworzeniu plików blokad, [[lekcja-nie-odtwarzac-lockow]]) wyzerował krzywą overdrive; potem zapis `acoustic_target` po krzywej przełączył SMU13 w tryb akustyczny (tryby krzywa / akustyczny / temperatura docelowa wykluczają się, wygrywa ostatni commit) – wentylator stał na ~1800 RPM przy pamięci 88–90 °C. Naprawa: `fan.sh` pisze tylko krzywą, timer `xtx-fan.timer` (root) co 30 s śledzi `gpu_busy_percent` i wykrywa wyzerowaną krzywą. Weryfikacja: busy 99% → 3320–3500 RPM w 12 s, hotspot 73 °C, pamięć 74 °C.
+
+Od 2026-10-19 przy pracy GPU krzywa 100% (`FAN=100`, decyzja użytkownika: [[2026-10-19-wentylator-100-przy-pracy]]).
 
 ## Powiązane
 - [[lekcje/_hub|lekcje]]

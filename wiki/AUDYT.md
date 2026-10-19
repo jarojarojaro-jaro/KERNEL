@@ -2698,7 +2698,7 @@ Liczby w 7 nowych i 5 zmienionych notatkach przepisane z wierszy 16g podanych w 
 Liczby z 16a (tabele §1–§3) przepisane z wierszy w `zrodlo`; „16 kopii flagi” i ułamki 6/29/35/44% z §1–§2. Błędnych: 0.
 
 ## Aktualizacja: 16f i wentylator (2026-10-18)
-Liczby 16f przepisane z tabel E1–E5 (wiersze w `zrodlo`). Wentylator: progi z `fan.sh:16-18` (FAN=90, BUSY=10, IDLE_HOLD=20; komentarz w nagłówku skryptu wciąż mówi 95%), przyczyny i weryfikacja (3320–3500 RPM, 73/74 °C, ~1800 RPM, 88–90 °C) z komunikatu Main; Chrome ~90% rdzenia przez 3 h z komunikatu Main. Błędnych: 0.
+Liczby 16f przepisane z tabel E1–E5 (wiersze w `zrodlo`). Wentylator: progi z `fan.sh:16-18` (FAN=90, BUSY=10, IDLE_HOLD=20; od 2026-10-19 FAN=100 i nagłówek poprawiony), przyczyny i weryfikacja (3320–3500 RPM, 73/74 °C, ~1800 RPM, 88–90 °C) z komunikatu Main; Chrome ~90% rdzenia przez 3 h z komunikatu Main. Błędnych: 0.
 
 ## Powiązane
 - [[index|Strona główna]]
