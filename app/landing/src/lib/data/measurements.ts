@@ -589,21 +589,23 @@ export function words500(v: Variant | undefined, lang: 'pl' | 'en'): { v: number
 /**
  * Close-ups of the engine's layers (home page, "Jak to możliwe"): for each layer one before/after
  * pair measured with that layer switched off and on, everything else equal. Layer 02 (fewer GPU
- * stalls) reads the nsys step profile from the cards registry (`run.kernels`); layer 05 reads the
- * BACO pair above (M.bacoAsleep / M.bacoAwake). A layer without such a pair gets no close-up.
+ * stalls) reads the nsys step profile from the cards registry (`run.kernels`). `total`: the whole
+ * engine end to end, upstream vs ours on the same card (Qwen on the 3090 comes from the cards
+ * registry, HERO_RUN).
  */
 const R3090 = 'KERNEL/product/research/09-chmura-3090.md';
 const R5060 = 'KERNEL/product/research/09-chmura-5060ti.md';
+const R26 = 'KERNEL/product/research/26-kolejka-gpu-wieczor.md';
+const NOTES = 'KERNEL/qwen-opt/NOTES.md';
 export const ENGINE_LAYERS = {
-	/** 01 kernels: llama-bench tg128 (no sampler, GPU path only), upstream A1 vs our fork A2 with the A1 flags. */
+	/** 01 kernels: llama-bench tg128 (no sampler, GPU path only), upstream e60eff95f vs our fork before any LFM-specific work, both KV q4_0. */
 	kernels: {
-		card: 'rtx-3090',
+		card: 'rx-7900-xtx',
 		model: 'lfm25' as ModelKey,
 		tg128: [
-			{ v: 236.9, src: `${R3090}:58` },
-			{ v: 257.5, src: `${R3090}:59` }
-		] as [Num, Num],
-		flagsSrc: `${R3090}:25-28`
+			{ v: 169.3, src: `${NOTES}:339` },
+			{ v: 198.3, src: `${NOTES}:339` }
+		] as [Num, Num]
 	},
 	/** 03 sampler: the same fork in the server with its 6 sampler switches off vs on (LFM Q4_K_M). */
 	sampler: {
@@ -615,6 +617,26 @@ export const ENGINE_LAYERS = {
 		] as [Num, Num],
 		/** Why: upstream fully sorts the 65k candidates on the CPU (repeat_penalty in the LFM GGUF). */
 		whySrc: `${R5060}:86`
+	},
+	/**
+	 * 05 PM4 command replay (WA=2 + guard, deployed 2026-10-19): each captured graph replayed as one
+	 * PM4 command buffer instead of one submission per kernel. A/B, bit-identical greedy md5.
+	 */
+	pm4: {
+		card: 'rx-7900-xtx',
+		model: 'lfm25' as ModelKey,
+		tg128: [
+			{ v: 266.4, src: `${R26}:9` },
+			{ v: 295.7, src: `${R26}:9` }
+		] as [Num, Num],
+		/** Qwen3.8-27B chat with MTP (spec_sweep T=1). */
+		qwen: [
+			{ v: 111.0, src: `${R26}:9` },
+			{ v: 115.3, src: `${R26}:9` }
+		] as [Num, Num],
+		/** Soak: requests served with the replay on, and faults among them. */
+		requests: { v: 1205, src: `${R26}:9` },
+		faults: { v: 0, src: `${R26}:9` }
 	},
 	/** 04 speculation: A2c (fork, A1 flags) vs A2 (+ 64k draft vocabulary, MTP head in IQ4_XS), Qwen MTP n=4. */
 	draft: {
@@ -638,14 +660,23 @@ export const ENGINE_LAYERS = {
 	profile: {
 		card: 'rtx-3090',
 		model: 'lfm25' as ModelKey,
-		decode: [
-			{ v: 250.9, src: `${R3090}:125` },
-			{ v: 263.9, src: `${R3090}:125` }
-		] as [Num, Num],
 		tg128: [
 			{ v: 256.8, src: `${R3090}:123` },
 			{ v: 284.5, src: `${R3090}:123` }
 		] as [Num, Num],
+		decode: [
+			{ v: 250.9, src: `${R3090}:125` },
+			{ v: 263.9, src: `${R3090}:125` }
+		] as [Num, Num],
 		flagsSrc: `${R3090}:30`
+	},
+	/** The whole engine on LFM2.5 / RX 7900 XTX, llama-bench tg128: upstream (KV q4_0) vs production (the slower KV q8_0). */
+	total: {
+		card: 'rx-7900-xtx',
+		model: 'lfm25' as ModelKey,
+		tg128: [
+			{ v: 169.3, src: `${NOTES}:339` },
+			{ v: 289.7, src: 'KERNEL/qwen-opt/STATUS-NEXT.md:12' }
+		] as [Num, Num]
 	}
 } as const;

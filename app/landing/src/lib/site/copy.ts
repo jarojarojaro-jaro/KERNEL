@@ -144,10 +144,10 @@ const raw = {
 			card: 'karta graficzna',
 			layers: [
 				['Własne kernele GPU', 'matmul · atencja · MoE'],
-				['Mniej przestojów GPU', 'mniej uruchomień · PM4'],
+				['Mniej przestojów GPU', 'mniej uruchomień · fuzje'],
 				['Szybszy sampler i host', 'krótsza droga CPU'],
 				['Sprytniejsza spekulacja', 'MTP · DFlash'],
-				['Pamięć i sterowniki', 'dopasowanie do VRAM'],
+				['Pamięć i sterowniki', 'kolejka poleceń PM4'],
 				['Profil pod kartę', 'zmierzony dla GPU']
 			] as [string, string][],
 			pick: 'Warstwy silnika',
@@ -157,7 +157,7 @@ const raw = {
 					metric: 'tokenów na sekundę · sam GPU, bez samplera',
 					lanes: ['upstream', 'nasz silnik'],
 					lane: 'kreska = gotowy token · ten sam odcinek czasu',
-					note: 'llama-bench tg128, więc liczy się tylko praca GPU. Upstream z najlepszymi flagami wobec naszego silnika z tymi samymi flagami.',
+					note: 'llama-bench tg128, więc liczy się tylko praca GPU. Upstream wobec naszych kerneli, jeszcze przed pracą nad samym LFM; ten sam KV q4_0.',
 					extra: []
 				},
 				{
@@ -182,20 +182,23 @@ const raw = {
 					extra: ['tokenów na sekundę', 'tokenów na krok']
 				},
 				{
-					metric: 'tokenów na sekundę',
-					lanes: ['karta uśpiona', 'karta czuwa'],
-					lane: 'kreska = gotowy token · ten sam odcinek czasu',
-					note: 'Bez monitora sterownik usypia kartę po 5 s i przenosi VRAM do RAM, a model działa wtedy przez PCIe. Nasz silnik nie pozwala karcie zasnąć. Notatki nie podają skryptu tego pomiaru: to ilustracja skali.',
-					extra: []
+					metric: 'tokenów na sekundę · sam GPU, bez samplera',
+					lanes: ['kernel po kernelu', 'jedna taśma PM4'],
+					lane: 'pakiet = zgłoszenie kernela do karty · ten sam odcinek czasu',
+					note: 'Zamiast zgłaszać karcie każdy kernel osobno, nagrywamy cały krok jako jedną taśmę poleceń PM4 i odtwarzamy ją od razu. Wynik bitowo identyczny; w teście obciążeniowym {req} zapytań i {faults} błędów.',
+					extra: ['Qwen3.8-27B, czat z MTP']
 				},
 				{
-					metric: 'tokenów na sekundę · serwer',
+					metric: 'tokenów na sekundę · sam GPU (tg128)',
 					lanes: ['bez profilu', 'profil Ampere'],
 					lane: 'kreska = gotowy token · ten sam odcinek czasu',
 					note: 'Ustawienia zmierzone dla tej architektury (dwa wiersze na blok w MMVQ, bez fuzji gate/up), teraz domyślne na kartach Ampere.',
-					extra: ['sam GPU (tg128)']
+					extra: ['serwer, czat']
 				}
-			] as { metric: string; lanes: [string, string]; lane: string; note: string; extra: string[] }[]
+			] as { metric: string; lanes: [string, string]; lane: string; note: string; extra: string[] }[],
+			total: 'Cały silnik razem',
+			totalRows: ['llama-bench tg128 · upstream wobec naszego silnika, nasz z wolniejszym KV q8_0', 'czat (spec_sweep) · typowa aplikacja wobec naszego silnika'],
+			totalNote: 'Każda warstwa powyżej to osobny pomiar przed i po. Zyski warstw nie sumują się wprost, dlatego liczy się ten pomiar końcowy.'
 		},
 		quality: {
 			title: 'Ten sam model, ta sama jakość — zmierzone.',
@@ -423,10 +426,10 @@ const raw = {
 			card: 'graphics card',
 			layers: [
 				['Our own GPU kernels', 'matmul · attention · MoE'],
-				['Less GPU idle time', 'fewer launches · PM4'],
+				['Less GPU idle time', 'fewer launches · fusions'],
 				['Faster sampler and host', 'a shorter CPU path'],
 				['Smarter speculation', 'MTP · DFlash'],
-				['Memory and drivers', 'fitting into VRAM'],
+				['Memory and drivers', 'PM4 command queue'],
 				['A profile for your card', 'measured per GPU']
 			] as [string, string][],
 			pick: 'Engine layers',
@@ -436,7 +439,7 @@ const raw = {
 					metric: 'tokens per second · GPU only, no sampler',
 					lanes: ['upstream', 'our engine'],
 					lane: 'mark = a finished token · the same stretch of time',
-					note: 'llama-bench tg128, so only the GPU work counts. Upstream with the best flags vs our engine with the same flags.',
+					note: 'llama-bench tg128, so only the GPU work counts. Upstream vs our kernels, before any work on LFM itself; the same q4_0 KV.',
 					extra: []
 				},
 				{
@@ -461,20 +464,23 @@ const raw = {
 					extra: ['tokens per second', 'tokens per step']
 				},
 				{
-					metric: 'tokens per second',
-					lanes: ['card asleep', 'card awake'],
-					lane: 'mark = a finished token · the same stretch of time',
-					note: 'With no monitor attached, the driver puts the card to sleep after 5 s and moves VRAM to system RAM; the model then runs over PCIe. Our engine keeps the card awake. The notes do not name the script of this measurement: it shows the scale only.',
-					extra: []
+					metric: 'tokens per second · GPU only, no sampler',
+					lanes: ['kernel by kernel', 'one PM4 tape'],
+					lane: 'packet = one kernel submitted to the card · the same stretch of time',
+					note: 'Instead of submitting every kernel to the card on its own, we record the whole step as one PM4 command tape and replay it at once. Bit-identical output; {req} requests and {faults} faults in the soak test.',
+					extra: ['Qwen3.8-27B, chat with MTP']
 				},
 				{
-					metric: 'tokens per second · server',
+					metric: 'tokens per second · GPU only (tg128)',
 					lanes: ['no profile', 'Ampere profile'],
 					lane: 'mark = a finished token · the same stretch of time',
 					note: 'Settings measured for this architecture (two rows per block in MMVQ, no gate/up fusion), now the default on Ampere cards.',
-					extra: ['GPU only (tg128)']
+					extra: ['server, chat']
 				}
-			] as { metric: string; lanes: [string, string]; lane: string; note: string; extra: string[] }[]
+			] as { metric: string; lanes: [string, string]; lane: string; note: string; extra: string[] }[],
+			total: 'The whole engine',
+			totalRows: ['llama-bench tg128 · upstream vs our engine, ours with the slower q8_0 KV', 'chat (spec_sweep) · typical app vs our engine'],
+			totalNote: 'Each layer above is its own before/after measurement. Layer gains do not simply add up, so this end-to-end measurement is what counts.'
 		},
 		quality: {
 			title: 'Same model, same quality — measured.',

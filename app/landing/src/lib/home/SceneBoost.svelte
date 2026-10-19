@@ -12,7 +12,6 @@
 	import { Autoplay } from '$lib/fx/autoplay.svelte';
 	import { clamp01 } from '$lib/fx/motion';
 	import Replay from '$lib/fx/Replay.svelte';
-	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { num, type Lang } from '$lib/i18n';
 	import ModelMark from '$lib/ModelMark.svelte';
 	import { copy } from '$lib/site/copy';
@@ -40,8 +39,6 @@
 	const stage = $derived(ks[2] > 0 ? 3 : ks[1] > 0 ? 2 : ks[0] > 0 ? 1 : 0);
 	const overRed = $derived(shown(2) >= REDLINE);
 	const width = (v: number) => num(v, lang, 1).length;
-	const src = $derived([...vals.map((v) => v.src), HERO_GAIN.src]);
-	const note = $derived(`${HERO_CARD.name} · ${HERO_MODEL} ${HERO_RUN.quant}. ${HERO_RUN.metric[lang]}. ${HERO_RUN.conditions[lang]}.`);
 </script>
 
 <div class="wrap" use:tl.view data-stage={stage} class:live={tl.inView}>
@@ -78,7 +75,6 @@
 				<figcaption class="foot">
 					<span class="win"><b>{fmtRatio(HERO_GAIN.engine!.v, lang)}</b> {c.over}</span>
 					<span class="tt"><ModelMark model={HERO_RUN.model} size="0.8em" /> {HERO_MODEL} · {HERO_CARD.name} · t/s · {c.vs}</span>
-					<SourceTip {lang} {src} {note} />
 					<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 				</figcaption>
 			</figure>
@@ -140,17 +136,25 @@
 		grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.3fr);
 		align-items: center;
 		gap: clamp(2rem, 5vw, 6rem);
-		padding-block: var(--header-clear) clamp(3rem, 2rem + 3vw, 5rem);
+		padding-block: var(--header-clear) clamp(1.25rem, 3vh, 2.5rem);
 	}
 
 	/* ---- the race: three bars on 0–100 t/s, red zone from 70 ---- */
+	/*
+	 * The whole scene fits one viewport below the header. Our value rides the top of the tallest bar
+	 * (78 of 100): its tag (--tag) overhangs the plot by --tag − 22% of the plot, kept as headroom.
+	 * The plot takes what is left of the viewport after the header, the tag, and --rest (labels,
+	 * footer, gaps, bottom padding; on phones also the heading above): plot = (left) / 0.78.
+	 */
 	.race {
-		--plot: min(50svh, 28rem);
+		--val-hot: clamp(2rem, min(1.1rem + 3.2vw, 6.5svh), 4.8rem);
+		--tag: calc(var(--val-hot) + 3.4rem);
+		--rest: 15rem;
+		--plot: clamp(7.5rem, (100svh - var(--header-clear) - var(--tag) - var(--rest)) / 0.78, 28rem);
 		margin: 0;
-		/* headroom for our value, which rides the top of the tallest bar */
-		padding-top: clamp(4.5rem, 2.5rem + 4vw, 7.5rem);
+		padding-top: max(0px, var(--tag) - 0.22 * var(--plot));
 		display: grid;
-		gap: 1rem;
+		gap: clamp(0.6rem, 1.6vh, 1rem);
 	}
 	.plot {
 		position: relative;
@@ -270,13 +274,13 @@
 		font-family: var(--font-display);
 		font-variant-numeric: tabular-nums lining-nums;
 		font-weight: 760;
-		font-size: clamp(1.3rem, 0.9rem + 1.6vw, 2.6rem);
+		font-size: clamp(1.3rem, min(0.9rem + 1.6vw, 4svh), 2.6rem);
 		letter-spacing: -0.03em;
 		line-height: 1;
 		color: var(--before);
 	}
 	.col--hot .val {
-		font-size: clamp(2.1rem, 1.1rem + 3.2vw, 4.8rem);
+		font-size: var(--val-hot);
 		font-weight: 820;
 		letter-spacing: -0.045em;
 		color: #fff;
@@ -379,10 +383,30 @@
 		.layout {
 			grid-template-columns: minmax(0, 1fr);
 			align-content: start;
-			gap: var(--sp-6);
+			gap: clamp(1rem, 2.5vh, 2rem);
 		}
+		/* stacked: the heading above the chart also comes out of the viewport */
 		.race {
-			--plot: min(52svh, 20rem);
+			--rest: 33rem;
+		}
+	}
+	@media (max-width: 380px) {
+		.race {
+			--rest: 35rem;
+		}
+	}
+	/* short phones: the setup sublines go (names and values stay) so the plot keeps its height */
+	@media (max-width: 900px) and (max-height: 800px) {
+		.race {
+			--rest: 27rem;
+		}
+		.nm small {
+			display: none;
+		}
+	}
+	@media (max-width: 380px) and (max-height: 800px) {
+		.race {
+			--rest: 29rem;
 		}
 	}
 	@media (max-width: 480px) {
