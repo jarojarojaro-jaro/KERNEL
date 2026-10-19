@@ -67,7 +67,6 @@
 					</div>
 					<span class="limit" class:in={stage >= 3} aria-hidden="true"></span>
 					<ul class="legend" aria-hidden="true">
-						<li class:in={stage >= 1}><ModelMark model={HERO_RUN.model} size="0.8rem" />{HERO_MODEL} {HERO_RUN.quant} · {gb(file.v, file.unit)}</li>
 						<li class:in={stage >= 2}><i class="sw sw--extra"></i>{c.extra}</li>
 						<li class:in={stage >= 2}><i class="sw sw--free"></i>{gb(vram - used.v, used.unit)} {c.free}</li>
 					</ul>
@@ -96,13 +95,14 @@
 		position: relative;
 		overflow-x: clip;
 	}
-	/* heading row on top, the tray across the full content width below it */
+	/* heading row on top, the tray across the full content width below it; the whole scene fits one
+	 * viewport (gaps, the ghost row and the tray scale with the viewport height) */
 	.layout {
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
 		display: grid;
-		gap: clamp(1.25rem, 2.5vw, 2.5rem);
-		padding-block: var(--header-clear) clamp(2.5rem, 2rem + 2vw, 4rem);
+		gap: clamp(1rem, 3vh, 2rem);
+		padding-block: var(--header-clear) clamp(1.25rem, 3vh, 2.5rem);
 	}
 	.caprow {
 		display: flex;
@@ -115,10 +115,14 @@
 		gap: clamp(2rem, 5vw, 6rem);
 		align-items: end;
 	}
+	/* two lines of body on desktop: the heading row stays short */
+	.top :global(.body) {
+		max-width: 46ch;
+	}
 	.stage {
 		display: grid;
 		align-content: center;
-		gap: var(--sp-4);
+		gap: clamp(0.5rem, 1.5vh, 1rem);
 		/* the 24 GB tray: 80% of the width, so the 29 GB ghost (×1.21) still ends inside the page */
 		--tw: 80%;
 	}
@@ -132,19 +136,23 @@
 		text-transform: uppercase;
 		color: var(--text-mute);
 	}
-	/* the drops and the bounce stay inside the chart row: they never pass over the headline */
+	/* the drops and the bounce stay inside the chart row: they never pass over the headline.
+	 * Columns: the 24 GB tray and its scale, then the legend under the Q8_0 overhang. */
 	.fitfield {
+		--gh: clamp(3rem, 6.5vh, 4.25rem);
 		position: relative;
 		display: grid;
-		gap: var(--sp-3);
+		grid-template-columns: var(--tw) minmax(0, 1fr);
+		gap: var(--sp-2) 0;
 		overflow: clip;
 		overflow-clip-margin: 1rem;
-		padding-top: clamp(5rem, 4rem + 3vw, 7rem);
+		padding-top: calc(var(--gh) + clamp(0.6rem, 1.6vh, 1.1rem));
 	}
 	.tray {
 		position: relative;
-		width: var(--tw);
-		height: clamp(7rem, 4rem + 5vw, 10rem);
+		grid-column: 1;
+		grid-row: 1;
+		height: clamp(5.25rem, 13vh, 8.5rem);
 		border: 1.5px solid var(--line-strong);
 		border-radius: var(--r-lg);
 		background:
@@ -292,8 +300,9 @@
 	}
 	.scale {
 		position: relative;
-		width: var(--tw);
-		height: 1.2rem;
+		grid-column: 1;
+		grid-row: 2;
+		height: 1.1rem;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
@@ -309,7 +318,7 @@
 		top: 0;
 		left: 0;
 		width: calc(var(--q8) * var(--tw));
-		height: clamp(3.6rem, 2.6rem + 3vh, 5rem);
+		height: var(--gh);
 		border: 1.5px dashed rgb(237 234 227 / 0.55);
 		border-radius: var(--r-md);
 		/* the same model, desaturated and hatched: does not fit */
@@ -399,17 +408,19 @@
 			opacity 0.15s,
 			transform 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) 0.05s;
 	}
-	/* legend under the scale on desktop (above the bar on mobile) */
+	/* legend beside the tray, under the Q8_0 overhang (under the axis on mobile) */
 	.legend {
-		order: 5;
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--sp-2) var(--sp-6);
-		margin: var(--sp-2) 0 0;
-		padding: 0;
+		grid-column: 2;
+		grid-row: 1;
+		align-self: center;
+		display: grid;
+		gap: var(--sp-3);
+		margin: 0;
+		padding: 0 0 0 clamp(1rem, 2vw, 2rem);
 		list-style: none;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
+		line-height: 1.4;
 		color: var(--text);
 	}
 	.legend li {
@@ -439,25 +450,42 @@
 	.verdicts {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
-		gap: var(--sp-6);
+		gap: var(--sp-3);
 	}
 	/* both verdicts are readable from the first frame; the animation only shows why */
 	.verdict {
 		display: grid;
-		justify-items: start;
-		gap: 0.45rem;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.55rem var(--sp-3);
+		padding: clamp(0.8rem, 1.8vh, 1.15rem) clamp(0.9rem, 1.5vw, 1.35rem);
+		border: 1px solid var(--line);
+		border-radius: var(--r-lg);
+		background: var(--bg-1);
+	}
+	/* the winner carries the block's heat; the reject the over-the-limit red */
+	.verdict.yes {
+		border-color: rgb(255 122 26 / 0.5);
+		background: linear-gradient(135deg, rgb(255 122 26 / 0.12), transparent 60%), var(--bg-1);
+		box-shadow: 0 0 34px -16px rgb(255 122 26 / 0.8);
+	}
+	.verdict.no {
+		border-color: color-mix(in srgb, var(--danger) 45%, transparent);
+		background: repeating-linear-gradient(-45deg, rgb(125 135 148 / 0.07) 0 6px, transparent 6px 12px), var(--bg-1);
 	}
 	.vh {
+		grid-column: 1 / -1;
 		display: flex;
 		align-items: center;
-		gap: 0.6rem;
+		gap: 0.55rem;
 		font-family: var(--font-display);
 		font-weight: 820;
 		font-stretch: 120%;
-		font-size: clamp(1.6rem, 1rem + 2vw, 2.8rem);
+		font-size: clamp(1.4rem, 0.9rem + 1.5vw, 2.3rem);
 		letter-spacing: -0.03em;
 		line-height: 1;
 		color: var(--text-hi);
+		white-space: nowrap;
 	}
 	.no .vh {
 		color: var(--before);
@@ -476,15 +504,21 @@
 		font-size: 0.7em;
 	}
 	.vsub {
+		grid-column: 1;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--text-mute);
 	}
+	.verdict :global(.src-btn) {
+		grid-column: 2;
+		grid-row: 2;
+		align-self: end;
+	}
 	@media (max-width: 900px) {
 		.layout {
-			gap: var(--sp-4);
+			gap: var(--sp-3);
 		}
 		.caprow {
 			width: 100%;
@@ -493,29 +527,46 @@
 		.top {
 			display: contents;
 		}
+		.top :global(.body) {
+			max-width: 34ch;
+		}
 		.verdicts {
 			order: 2;
-			gap: var(--sp-4);
+			gap: var(--sp-2);
+		}
+		.verdict {
+			gap: 0.35rem var(--sp-2);
+			padding: 0.6rem 0.7rem;
+		}
+		.verdict :global(.src-btn) {
+			padding-inline: 0.4rem;
+		}
+		.verdict :global(.src-btn span) {
+			display: none;
+		}
+		.vsub {
+			font-size: 0.625rem;
+			letter-spacing: 0.02em;
+			text-transform: none;
 		}
 		/* the Q8 ghost runs off the right edge (clipped by the sticky frame) */
 		.stage {
 			/* 80%: the 29 GB ghost (×1,21) still ends inside the screen */
 			--tw: 80%;
-			gap: var(--sp-3);
+			gap: var(--sp-2);
 			align-content: start;
 			order: 1;
 		}
 		.fitfield {
-			padding-top: 3.6rem;
+			--gh: 2.6rem;
+			padding-top: 3.2rem;
 		}
-		/* the 24 GB wall starts at the bars, below the ghost and its stamp */
+		/* the 24 GB wall starts at the bars, below the ghost and its stamp, and ends at the axis */
 		.limit {
-			top: 3.4rem;
-			height: auto;
-			bottom: 1.6rem;
+			top: 3rem;
+			height: 6.4rem;
 		}
 		.ghost {
-			height: 2.8rem;
 			padding: 0 0.7rem;
 		}
 		.gname {
@@ -529,25 +580,35 @@
 			font-size: var(--fs-2xs);
 			margin-right: 0;
 		}
-		/* legend under the axis; the bar keeps the model name */
+		/* legend under the axis, one line */
 		.legend {
-			display: grid;
-			gap: 0.3rem;
-			margin: 0;
+			grid-column: 1 / -1;
+			grid-row: 3;
+			display: flex;
+			flex-wrap: wrap;
+			gap: 0.3rem var(--sp-4);
+			padding: 0;
+			font-size: 0.625rem;
+		}
+		.block {
+			gap: 0.15rem;
+			padding: 0 0.8rem;
 		}
 		.bname {
 			font-size: 0.95rem;
 		}
+		.bsize {
+			font-size: 0.625rem;
+		}
 		.bname .q,
-		.bsize,
 		.free span {
 			display: none;
 		}
 		.tray {
-			height: 5.5rem;
+			height: 4.75rem;
 		}
 		.vh {
-			font-size: 1.4rem;
+			font-size: 1.3rem;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
