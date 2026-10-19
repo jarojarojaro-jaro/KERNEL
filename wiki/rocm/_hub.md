@@ -14,11 +14,12 @@ ROCm jest domyślnym backendem od 2026-10-12 (Vulkan tylko jako opcja). Kernele 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (21)
+## Notatki (22)
 
 - [[amd-smi|AMD SMI (amd-smi)]] — Narzędzie i biblioteka AMD do telemetrii i sterowania GPU (moc, zegary, perf-level); w ROCm zastąpiło rocm-smi, działa na Linuksie, natywnego Windows brak.
 - [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]] — Jak czytać wpisy `[gfxhub] page fault` i `sq_intr` w `journalctl -k` na RX 7900 XTX: pola `GCVM_L2_PROTECTION_FAULT_STATUS`, typy przerwań SQ i komunikaty MES (raport 17, 2026-10-19).
 - [[kfd-ewikcja-kolejek-gfx11|Ewikcja i przywracanie kolejek KFD + MES na gfx11 (Linux 6.8)]] — KFD ewikuje wszystkie kolejki procesu przy unieważnieniu SVM lub userptr, ewikcji TTM i suspendzie; MES dostaje REMOVE_QUEUE, a przy restore ADD_QUEUE z tym samym MQD – pola dispatchu (`compute_pgm_*`, `user_data`, `restart`, `cp_hqd_ib_*`) zapisuje i odtwarza wyłącznie zamknięty firmware (raport 17 §9.2, 2026-10-19).
+- [[mec-fw-dispatch-aql-gfx11|Firmware MEC gfx11: co robi z pakietem AQL, a czego nie robi z `DISPATCH_DIRECT`]] — Przy pakiecie AQL firmware MEC ustawia RSRC1 = deskryptor & `0xe4aff3ff` z PRIV wziętym z flagi kolejki (obejście CWSR), RSRC2 = deskryptor & `0x1fbf` | TRAP_PRESENT | LDS z pakietu (granula 512 B, limit 64 KiB), `PGM_HI |= 0x100` i inicjator `0x1065 | W32<<15`; handler `DISPATCH_DIRECT` zapisuje tylko wymiary, START i inicjator, a RSRC1 bierze bez zmian – fale naszej taśmy dostają PRIV wyłącznie od nas (raport 23d, 2026-10-19).
 - [[hip-dyn-data-prefetch|HIP DynDataPrefetch (prefetch L2 przed kernelem)]] — `hipLaunchAttributeExtDynDataPrefetch` (prefetch regionów do L2 przed startem kernela) jest w HIP 7.15 u nas, ale ROCr zwraca 0 regionów dla wszystkiego poniżej gfx12.5, więc na gfx1100 nie działa.
 - [[hip-na-windows|HIP na Windows: PAL zamiast ROCr]] — Na natywnym Windows HIP używa runtime PAL, a nie ROCr; dlatego łatki zależne od ROCr (PM4 replay 0060/0061) i profiler rocprofv3 tam nie działają.
 - [[hip|HIP: jak piszemy kernele pod gfx1100]] — HIP to CUDA-podobny C++ kompilowany przez AMD clang; llama.cpp kompiluje swój backend CUDA jako HIP, a nasze kernele siedzą w tych samych plikach `ggml-cuda/*.cu`.

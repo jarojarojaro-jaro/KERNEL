@@ -143,6 +143,9 @@ Nowe: [[raport-21l-re-gpu]], [[co-stats]], [[umr-offline-pm4]], [[lekcja-radare2
 ## [2026-10-19] ingest | Raport 23b (RE kerneli AMD)
 Nowa [[raport-23b-re-kernele-amd]]; zaktualizowana [[mmvq-n1-wiersze]].
 
+## [2026-10-19] ingest | Raport 23d (RE runtime AMD, firmware MEC)
+Nowe: [[mec-fw-dispatch-aql-gfx11]], [[rs64-firmware-re]]; zaktualizowane [[gfx11-pm4-dispatch-priv]], [[hip-graph-narzut]]. Zrzuty firmware tylko lokalnie, w wiki same numery linii.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

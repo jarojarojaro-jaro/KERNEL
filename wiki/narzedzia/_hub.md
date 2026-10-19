@@ -14,13 +14,14 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (26)
+## Notatki (27)
 
 - [[co-stats|`co_stats.py`: statyczny audyt kerneli (VGPR, spille, fale)]] — `21l-skrypty/co_stats.py OUT.csv <lib.so|*.co|*.hsaco>` czyta wszystkie kernele z bundli HIP (także skompresowanych CCOB) i zapisuje per kernel VGPR, SGPR, spille, LDS i fale/SIMD; reguła fal gfx1100 = min(16, ⌊1536 / ⌈VGPR⌉₂₄⌋), zgodna z kompilatorem i RGA (raport 21l, 2026-10-19).
 - [[hip-fatbin-extract|`tools/re/hip_fatbin_extract.py`: code objects z `.hip_fatbin`]] — Skrypt w czystym Pythonie (CPU) wyciąga z sekcji `.hip_fatbin` biblioteki HIP nieskompresowane bundle `__CLANG_OFFLOAD_BUNDLE__` (jeden na jednostkę kompilacji) i zapisuje każdy wpis `hipv4-amdgcn-*` jako `<outdir>/<idx>.<target>.co`; `--filter SUBSTR` zostawia tylko obiekty zawierające nazwę kernela (raport 23a, 2026-10-19).
 - [[agentx-harness|AgentX harness (SemiAnalysis, AIPerf)]] — `agentx-harness==1.0.11` (na AIPerf NVIDIA, wrapper `python3 -m infx.bench agentic`) odtwarza 393 sesje Claude Code z zachowanymi długościami, hashami bloków 64 tokenów, drzewem subagentów i przerwami na narzędzia, ale z syntetyczną treścią; c = liczba żywych drzew sesji, punkt ≥ 900 s (oficjalnie 1 h) na świeżym serwerze (raport 21f, 2026-10-19).
 - [[att-gfx1100|ATT (thread trace) na gfx1100]] — Śledzenie instrukcji fali (ATT) działa na RX 7900 XTX w ROCm 10.0: `rocprofv3 --att --att-target-cu 1 --att-simd-select 0 --kernel-include-regex … --kernel-iteration-range …` z `GGML_HIP_PM4=0`; skrypt `att_model.sh` i parser `attsum.py` w `~/wt/lfmmoe-prof/` (2026-10-18).
 - [[kld-canary|Bramka KLD i kanarki (kld_gate.py, kld_canary.sh, perturb_gguf.py)]] — Trzy narzędzia: `kld_gate.py` porównuje dwa logi `llama-perplexity --kl-divergence`, `perturb_gguf.py` robi celowo uszkodzone kopie GGUF, a `kld_canary.sh` sprawdza, że bramka łapie prawdziwe szkody.
+- [[rs64-firmware-re|Deasemblacja firmware CP/MES gfx11 (RS64 = RV64)]] — Jak czytać firmware MEC/MES gfx11: parsowanie nagłówka v2 (`fwparse.py`), deasemblacja capstone RV64C, propagacja znanych bitów do nazw rejestrów (`rs64kb.py`); apertura SH – indeks rejestru × 4 od `0x1_0002_0000_0000` (raport 23d, 2026-10-19).
 - [[det-probe|det_probe.py (sonda determinizmu)]] — Sprawdza, które zdarzenie serwera psuje powtarzalność greedy: wysyła to samo zapytanie bez cache przed i po innych zapytaniach i pokazuje, gdzie wyjścia się rozjeżdżają.
 - [[fabryka-cli|Fabryka v1: CLI `factory`]] — `~/qwen-opt/factory/` (Python stdlib, 2394 linie `fk/` + CLI, 36 reguł w 1141 liniach, 57 testów OK w 29.5 s na CPU) zamraża kartę twierdzenia przed pomiarem, mierzy kaskadą G0–G5 i zapisuje werdykt do `ledger.jsonl` z łańcuchem sha256; zbudowane 2026-10-16 bez GPU.
 - [[gdnemu-isadiff|gdnemu.py i isadiff.py (dowód bitowości z ISA)]] — Symboliczny emulator gfx11 wave32 wykonujący skompilowany ISA kerneli GDN bez GPU oraz `isadiff.py`, który sprawdza, że każdy kernel bazowy jest bajtowo identyczny w nowym buildzie.

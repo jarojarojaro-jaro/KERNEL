@@ -2,7 +2,7 @@
 typ: rocm
 tags: [rocm, pm4, rdna3, cwsr]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/17-gpu-page-fault.md:218-232,249-292
+zrodlo: ~/KERNEL/product/research/17-gpu-page-fault.md:218-232,249-292; ~/KERNEL/product/research/23d-re-runtime-amd.md:5-14
 status: aktualne
 ---
 # Własny dispatch PM4 na GFX11 musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1`
@@ -12,6 +12,8 @@ status: aktualne
 Źródła: F. Kuehling (AMD) o tinygrad – „The GFXv11 GPU line requires a workaround to set COMPUTE_PGM_RSRC1.PRIV=1 … it requires this workaround in its PM4-based dispatch” (gist); kfdtest `Dispatch.cpp#L146-L154` i commit `507637e`; tinygrad `ops_amd.py#L288-L289`; KFD dla GC 11.0.0–11.0.3 dodaje kolejki z `trap_en = 0` (`kfd_dbg_has_cwsr_workaround`).
 
 Inne różnice naszej taśmy wobec kfdtest/tinygrad: inicjator z ORDERED_APPEND_ENBL (bit 3; sterownik ostrzega o złych wave ID po suspend/resume), niezerowane `COMPUTE_RESTART_X/Y/Z`, polityka cache IB 3 (nieudokumentowana), DISPATCH_DIRECT w IB pakietu vendor kolejki AQL (kombinacja nietestowana przez AMD). Prototyp `GGML_HIP_PM4_WA=1/2` (`b7fb3fe85`).
+
+Dowód z firmware (23d): PRIV dla AQL ustawia MEC z flagi kolejki, dla `DISPATCH_DIRECT` nikt; dalsze różnice ORDER_MODE i `PGM_HI` bit 8 – kandydaci na `WA=3` ([[mec-fw-dispatch-aql-gfx11]]).
 
 ## Powiązane
 - [[rocm/_hub|ROCm]]

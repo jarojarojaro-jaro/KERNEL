@@ -1,8 +1,8 @@
 ---
 typ: rocm
 tags: [rocm, hip-graph, launch-overhead]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/research/v2/rr-hip.md:3-26; ~/KERNEL/qwen-opt/NOTES.md:57,93,101-102,232
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/qwen-opt/research/v2/rr-hip.md:3-26; ~/KERNEL/qwen-opt/NOTES.md:57,93,101-102,232; ~/KERNEL/product/research/23d-re-runtime-amd.md:35-49,68-69
 status: aktualne
 ---
 # Narzut grafu HIP: ~3 µs na kernel
@@ -14,6 +14,8 @@ Analiza trace z 2026-10-12 (rr-hip.md, Qwen MTP n_max=4, ctx 16k): w grafie wery
 Przyczyna (źródło CLR `rocvirtual.cpp`): każdy pakiet AQL kernela ma bit bariery i agent-scope acquire (inwalidacja I, K i L1), więc CP czeka na poprzedni pakiet. Wysyłka z hosta nie jest problemem (graf kopiuje pakiety jednym doorbellem). Dlatego zmienne HIP (graph batch/segment, kernarg, direct dispatch, `DEBUG_HIP_GRAPH_BATCH_SIZE=16`) dały szum. Niezależny pomiar: ROCm issue #6409 (W7900, gfx1100) 3.865 µs/węzeł vs 0.876 µs/dispatch w replay RADV.
 
 Co z tym zrobiliśmy: mniej kerneli (fuzje: weryfikacja 2156 → ~830) i replay PM4 (granica ~0.5–0.9 µs). To też tłumaczyło, czemu Vulkan dekodował szybciej przed fuzjami.
+
+23d (2026-10-19): na Linuksie CLR dzwoni doorbellem przy każdym pakiecie (`rocvirtual.cpp:1610`, `DEBUG_CLR_DOORBELL_SKIP` nie działa), graf kopiuje pakiety hurtem (`dispatchAqlPacketBatchFlat`); podłogę 2.08 µs wyznacza praca firmware na pakiet – bez PM4 jedyną dźwignią są fuzje kerneli (−2.1…−3.3 µs na każdy kernel mniej).
 
 ## Powiązane
 - [[rocm/_hub|ROCm]]

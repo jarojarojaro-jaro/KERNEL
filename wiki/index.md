@@ -59,14 +59,14 @@ Audyt liczb: [[AUDYT]].
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (26)
 - [[modele/_hub|modele]] — Modele i kwanty (17)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (11)
-- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (21)
+- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (22)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (33)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (85)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (26)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (27)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (68)
 - [[research/_hub|research]] — Streszczenia raportów (57)
@@ -77,9 +77,11 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-10-19 [[trwala-siatka-bez-pm4|XTX bez PM4: trwała siatka wraca do gry (warunkowo)]]
 - 2026-10-19 [[rocprof|rocprofv3 i profilowanie na gfx1100]]
+- 2026-10-19 [[mec-fw-dispatch-aql-gfx11|Firmware MEC gfx11: co robi z pakietem AQL, a czego nie robi z `DISPATCH_DIRECT`]]
 - 2026-10-19 [[kfd-smi-eventy|Zdarzenia KFD SMI (`AMDKFD_IOC_SMI_EVENTS`) bez roota]]
 - 2026-10-19 [[kfd-ewikcja-kolejek-gfx11|Ewikcja i przywracanie kolejek KFD + MES na gfx11 (Linux 6.8)]]
 - 2026-10-19 [[hip-kopie-stronicowane-zostawiaja-svm|Kopie HIP z pamięci stronicowanej zostawiają zmapowane zakresy SVM]]
+- 2026-10-19 [[hip-graph-narzut|Narzut grafu HIP: ~3 µs na kernel]]
 - 2026-10-19 [[gfx11-pm4-dispatch-priv|Własny dispatch PM4 na GFX11 musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1`]]
 - 2026-10-19 [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]]
 - 2026-10-19 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
@@ -88,8 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-23a-rea|Raport 23a: morluto/rea („Reverse Engineer Anything”) – bez wsparcia GPU]]
 - 2026-10-19 [[raport-21l-re-gpu|Raport 21l: narzędzia reverse engineeringu dla GPU]]
 - 2026-10-19 [[raport-21j-flameox|Raport 21j: flameox – nie instalujemy, bierzemy zasady]]
-- 2026-10-19 [[raport-21i-rsi-inference-bench|Raport 21i: RSI-Inference Bench (Apple) – co mierzy i co bierzemy do fabryki]]
-- 2026-10-19 [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]]
 
-Razem 510 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 512 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
