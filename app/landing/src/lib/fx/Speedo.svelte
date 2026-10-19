@@ -3,9 +3,11 @@
 	 * The hero's large speedometer: a 240° dial driven every frame by its parent through `set(v)`.
 	 * Built as stacked layers so a frame costs almost nothing: the face, ticks and numbers are one
 	 * static SVG (never repainted); the needle is its own layer turned by a transform (compositor);
-	 * the glow is a layer whose opacity follows the needle (compositor); only the value arc repaints
-	 * (stroke-dashoffset). The hot dial wears a slowly turning heat edge (the hero CTA's language).
-	 * `value` is the server-rendered and pre-hydration position; afterwards only `set` moves it.
+	 * the glow and the hot dial's outer aura are layers whose opacity follows the needle
+	 * (compositor); only the value arc repaints (stroke-dashoffset). The hot dial wears a slowly
+	 * turning heat edge (the hero CTA's language); the cold dial is muted steel.
+	 * `value` is the server-rendered position (no JS: the dial rests there). With JS the dial reads
+	 * 0 until the parent first calls `set`, so the needle can climb from 0 when the race starts.
 	 * `children` renders in the open bottom of the dial (the measured readout).
 	 */
 	import type { Snippet } from 'svelte';
@@ -61,13 +63,18 @@
 	const full = $derived(arc(0, max * 1.04));
 	const frac = (v: number) => clampV(v) / (max * 1.04);
 	const glowOf = (v: number) => (tone === 'hot' ? Math.min(1, Math.max(0, (v - redline * 0.6) / (max - redline * 0.6))) : 0);
+	const auraOf = (v: number) => Math.min(1, Math.max(0, v / (max * 0.8)));
 
 	let needleEl: HTMLElement | undefined = $state();
 	let fillEl: SVGPathElement | undefined = $state();
 	let glowEl: HTMLElement | undefined = $state();
+	let auraEl: HTMLElement | undefined = $state();
+	/** Driven by the parent (until then, with JS, the dial reads 0). */
+	let live = $state(false);
 	let last = Number.NaN;
 	/** Move the dial to `v` t/s (direct DOM writes: no reactivity per frame). */
 	export function set(v: number) {
+		if (!live) live = true;
 		const r = Math.round(v * 20) / 20;
 		if (r === last) return;
 		last = r;
@@ -78,11 +85,15 @@
 			fillEl.style.opacity = r > 0.3 ? '' : '0';
 		}
 		if (glowEl) glowEl.style.opacity = glowOf(r).toFixed(3);
+		if (auraEl) auraEl.style.opacity = auraOf(r).toFixed(3);
 	}
 </script>
 
-<div class="speedo" class:hot={tone === 'hot'}>
-	{#if tone === 'hot'}<div class="edge" aria-hidden="true"></div>{/if}
+<div class="speedo" class:hot={tone === 'hot'} class:live>
+	{#if tone === 'hot'}
+		<div class="aura" bind:this={auraEl} style="opacity:{auraOf(value).toFixed(3)}" aria-hidden="true"></div>
+		<div class="edge" aria-hidden="true"></div>
+	{/if}
 	<div class="glow" bind:this={glowEl} style="opacity:{glowOf(value).toFixed(3)}" aria-hidden="true"></div>
 	<svg class="dial" viewBox="0 0 200 200" aria-hidden="true">
 		<defs>
@@ -139,7 +150,8 @@
 	.speedo > svg,
 	.needle,
 	.glow,
-	.edge {
+	.edge,
+	.aura {
 		position: absolute;
 		inset: 0;
 		width: 100%;
@@ -147,6 +159,24 @@
 	}
 	svg {
 		overflow: visible;
+	}
+	/* with JS, before the race drives it: the dial reads 0 (no JS: it rests on `value`) */
+	:global(html.js) .speedo:not(.live) .needle {
+		transform: rotate(-120deg) !important;
+	}
+	:global(html.js) .speedo:not(.live) :is(.value, .glow, .aura) {
+		opacity: 0 !important;
+	}
+	/* the hot dial's heat aura: a soft ring of light around it, brighter the faster it runs */
+	.aura {
+		inset: -14%;
+		width: auto;
+		height: auto;
+		z-index: -1;
+		border-radius: 50%;
+		background: radial-gradient(closest-side, transparent 66%, rgb(255 122 26 / 0.26) 73%, rgb(226 64 28 / 0.12) 84%, transparent 100%);
+		pointer-events: none;
+		will-change: opacity;
 	}
 	/* the hot dial's living heat edge: a conic ring turned by transform (compositor only) */
 	.edge {
@@ -214,6 +244,19 @@
 		stroke-opacity: 0.85;
 		stroke-width: 2.5;
 	}
+	/* the typical app's dial: muted steel, the red zone only hinted */
+	.speedo:not(.hot) .red {
+		stroke-opacity: 0.4;
+	}
+	.speedo:not(.hot) .tick.major {
+		stroke: var(--text-mute);
+	}
+	.speedo:not(.hot) .num {
+		fill: var(--text-mute);
+	}
+	.speedo:not(.hot) .num.redtick {
+		fill: rgb(255 106 74 / 0.6);
+	}
 	.fill {
 		fill: none;
 		stroke-width: 9;
@@ -258,7 +301,7 @@
 		opacity: 0.18;
 	}
 	.blade {
-		fill: #c9cfd8;
+		fill: #a9b1bc;
 	}
 	.hot .halo {
 		fill: var(--heat-3);

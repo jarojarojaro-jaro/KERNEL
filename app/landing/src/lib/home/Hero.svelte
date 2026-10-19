@@ -3,21 +3,19 @@
 	 * Hero (design/REDESIGN.md §6): heat field, a two-tier headline (CSS only: it is the LCP) — the
 	 * steel line "Ten sam sprzęt. Ten sam model." over the focal, much larger heat line "Po prostu
 	 * szybciej." — one custom primary CTA with a slowly turning heat edge plus a text link, then the
-	 * race (LiveRace): two lanes, each a large live speedometer beside the same answer being written,
-	 * RTX 3090 × Qwen3.8-27B, the typical app (a0) vs our engine (a2), same script, MTP bursts from
-	 * the measured tokens per step, looping forever.
-	 * Conditions and sources live only in the „źródło” popover. Other pairs: /wyniki and card pages.
-	 * Redline flare: each race cycle runs the heat field hot for a moment; the first start also sweeps
-	 * a bloom across the hero once and flares the heat line.
+	 * race (LiveRace): two lanes, each a large live speedometer beside the same long text being
+	 * written nonstop, RTX 3090 × Qwen3.8-27B, the typical app (a0) vs our engine (a2), same script,
+	 * MTP bursts from the measured tokens per step. No caption or source pill here: conditions and
+	 * sources live on /metodologia (the „Jak mierzymy” link) and in the boost section.
+	 * Redline flare: when the race starts, the heat field runs hot, a bloom sweeps the hero once and
+	 * the heat line flares.
 	 */
 	import { magnetic } from '$lib/fx/actions';
 	import HeatField from '$lib/fx/HeatField.svelte';
 	import LiveRace from '$lib/fx/LiveRace.svelte';
-	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { variantLabel } from '$lib/data/measurements';
-	import { TOK_PER_WORD } from '$lib/estimator';
-	import { fmtTps, localizeDecimals } from '$lib/format';
-	import { cardsHref, href, num, type Lang } from '$lib/i18n';
+	import { fmtTps } from '$lib/format';
+	import { cardsHref, href, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
 	import { fill, HERO_CARD, HERO_MODEL, HERO_RUN, HERO_V, heroDial } from './data';
 	import Kin from './Kin.svelte';
@@ -29,47 +27,18 @@
 	const cold = HERO_V.a0;
 	const hot = HERO_V.a2;
 	const dial = heroDial(hot.decode!.v);
-	const words = $derived(r.text.split(/\s+/).filter(Boolean).length);
-	const vars = $derived({
-		card: HERO_CARD.name,
-		model: HERO_MODEL,
-		quant: HERO_RUN.quant,
-		a0: fmtTps(cold.decode!.v, lang),
-		a2: fmtTps(hot.decode!.v, lang),
-		words,
-		tok: Math.round(words * TOK_PER_WORD[lang]),
-		tpw: num(TOK_PER_WORD[lang], lang, 2),
-		t0: num(Math.round(words * TOK_PER_WORD[lang]) / cold.decode!.v, lang, 1),
-		t2: num(Math.round(words * TOK_PER_WORD[lang]) / hot.decode!.v, lang, 1)
-	});
+	const summary = $derived(
+		fill(r.summary, { card: HERO_CARD.name, model: HERO_MODEL, quant: HERO_RUN.quant, a0: fmtTps(cold.decode!.v, lang), a2: fmtTps(hot.decode!.v, lang) })
+	);
 	const lanes = $derived([
 		{ id: 'cold', label: variantLabel(HERO_RUN, 'a0')[lang], sub: r.coldSub, tps: cold.decode!.v, hot: false, burst: cold.tokStep?.v },
 		{ id: 'hot', label: variantLabel(HERO_RUN, 'a2')[lang], sub: r.hotSub, tps: hot.decode!.v, hot: true, burst: hot.tokStep?.v }
 	]);
-	const src = [HERO_RUN.src, cold.decode!.src, hot.decode!.src, cold.tokStep?.src, hot.tokStep?.src, cold.msStep?.src, hot.msStep?.src, HERO_RUN.conditionsSrc, 'TOK_PER_WORD: raport 06 §2.1.2'].filter(
-		(x): x is string => !!x
-	);
-	/** The sheet's "skąd zysk" cells (honest attribution: upstream MTP flags vs our engine). */
-	const gainWhy = $derived(HERO_RUN.gainText ? localizeDecimals(HERO_RUN.gainText[lang].join(' · ').replaceAll('\u0060', ''), lang) : '');
-	const burstText = $derived(
-		[
-			hot.tokStep ? fill(r.burstNote, { burst: num(hot.tokStep.v, lang, 2) }) : '',
-			cold.msStep && hot.msStep ? fill(r.msNote, { a: num(cold.msStep.v, lang, 2), b: num(hot.msStep.v, lang, 2) }) : ''
-		]
-			.filter(Boolean)
-			.join('; ')
-	);
-	const liveText = $derived(
-		fill(r.liveNote, { a0: fmtTps(cold.decode!.v, lang), a2: fmtTps(hot.decode!.v, lang) })
-	);
-	const note = $derived(
-		[`${HERO_CARD.name} · ${HERO_MODEL} ${HERO_RUN.quant}`, fill(c.answer, vars), HERO_RUN.metric[lang], HERO_RUN.conditions[lang], liveText, gainWhy, burstText, r.stripNote, fill(r.textNote, vars)]
-			.filter(Boolean)
-			.join('. ')
-	);
+	/** The rest of the race's long text: a separate chunk per language, loaded once the page is idle. */
+	const more = (l: Lang) => () => (l === 'pl' ? import('./stream/pl') : import('./stream/en')).then((m) => m.default);
 
 	let heat = $state(false);
-	/** The first start only: one bloom sweep and one heat-line flare (later cycles only warm the field). */
+	/** The race start: one bloom sweep and one heat-line flare while the field runs hot. */
 	let flare = $state(false);
 	let bloomed = $state(false);
 	function onheat(h: boolean) {
@@ -98,12 +67,10 @@
 			</a>
 		</div>
 		<div class="race">
-			<LiveRace {lanes} text={r.text} {lang} max={dial.max} redline={dial.redline} prompt={r.prompt} summary={fill(r.summary, vars)} {onheat}>
-				{#snippet meta()}
-					<span class="now">{HERO_MODEL}<span class="nq">{' '}{HERO_RUN.quant}</span> · {HERO_CARD.name}</span>
-					<SourceTip {lang} {src} {note} />
-				{/snippet}
-			</LiveRace>
+			<!-- keyed: the race owns its text nodes, so a language switch mounts a fresh one -->
+			{#key lang}
+				<LiveRace {lanes} opening={r.opening} more={more(lang)} {lang} max={dial.max} redline={dial.redline} {summary} {onheat} />
+			{/key}
 		</div>
 	</div>
 </section>
@@ -352,22 +319,6 @@
 		width: min(100%, 84rem);
 		min-width: 0;
 		text-align: left;
-	}
-	.now {
-		font-family: var(--font-mono);
-		letter-spacing: 0.03em;
-		color: var(--text);
-	}
-	/* one line on phones: model · card, the source as its icon (the button keeps its label) */
-	@media (max-width: 900px) {
-		.now {
-			overflow: hidden;
-			text-overflow: ellipsis;
-		}
-		.nq,
-		.race :global(.src-btn span) {
-			display: none;
-		}
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* the headline lands first; the CTAs follow, then the race rises */

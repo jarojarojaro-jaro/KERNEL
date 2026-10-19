@@ -54,18 +54,13 @@ const raw = {
 			title: ['Ten sam sprzęt. Ten sam model.', 'Po prostu szybciej.'],
 			cta: 'Sprawdź swoją kartę',
 			ctaSecondary: 'Jak mierzymy',
-			answer: 'Ta przykładowa odpowiedź: {words} słów ≈ {tok} tokenów (po polsku {tpw} tokenu na słowo). W zmierzonym tempie nasz silnik pisze ją w ≈ {t2} s, typowa aplikacja w ≈ {t0} s; samo tempo zmierzono w warunkach poniżej',
 			race: {
 				coldSub: 'llama.cpp · ustawienia domyślne',
 				hotSub: 'ten sam plik · nasz silnik',
-				prompt: 'Zaplanuj mi sobotę w Krakowie',
+				/** The first paragraph of the hero race's endless text (server HTML); the rest: home/stream/pl.ts. */
+				opening: 'Kraków najlepiej poznawać bez pośpiechu, choć jeden weekend wystarczy, żeby złapać jego rytm. Zacznij wcześnie rano na Kazimierzu, kiedy kawiarnie dopiero wystawiają stoliki, a na Placu Nowym przy Okrąglaku sprzedawcy szykują pierwsze zapiekanki. Ulice Szeroka, Józefa i Miodowa są wtedy prawie puste i można spokojnie zajrzeć w podwórka, do synagog i małych galerii, zanim pojawią się wycieczki.',
 				text: 'Rano kawa na Kazimierzu, zanim zrobi się tłoczno, potem bulwarami pod Wawel; dziedziniec jest bezpłatny. Na obiad pierogi w barze mlecznym przy Starym Mieście. Po południu Sukiennice i Rynek, a jeśli pada, Muzeum pod Rynkiem. Wieczorem kolacja na Podgórzu, zarezerwowana dzień wcześniej. Wygodne buty obowiązkowo.',
-				summary: 'Animacja: {card}, {model} {quant}. Ta sama odpowiedź pisana w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Ten sam skrypt pomiarowy po obu stronach.',
-				burstNote: 'Paczka = tokeny przyjęte w jednym kroku MTP (zmierzone: {burst} na krok); średnie tempo = zmierzone t/s',
-				msNote: 'czas kroku {a} → {b} ms (zmierzone)',
-				liveNote: 'Tokeny pojawiają się dokładnie w zmierzonym tempie (mediana: nasz silnik {a2} t/s, typowa aplikacja {a0} t/s); czas odpowiedzi = tokeny ÷ mediana. Cyfry na zegarze to zawsze zmierzona mediana; wskazówka podczas pisania waha się o ±3% wokół niej, a w przerwie między odpowiedziami opada do zera',
-				stripNote: 'Animacja się zapętla: w jednym cyklu wolniejsza strona pisze odpowiedź raz, a szybsza tyle pełnych odpowiedzi, ile mieści jej zmierzone tempo (każda z krótką przerwą); kropki przy nazwie to ukończone odpowiedzi w cyklu',
-				textNote: 'Tekst jest przykładem; tempo słów z pomiaru (t/s ÷ {tpw} tokenu na słowo).'
+				summary: 'Animacja: {card}, {model} {quant}. Ten sam długi tekst pisany bez przerwy w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Ten sam skrypt pomiarowy po obu stronach.'
 			}
 		},
 		how: {
@@ -333,18 +328,13 @@ const raw = {
 			title: ['Same hardware. Same model.', 'Just faster.'],
 			cta: 'Check your card',
 			ctaSecondary: 'How we measure',
-			answer: 'This example answer: {words} words ≈ {tok} tokens (in English {tpw} tokens per word). At the measured pace our engine writes it in ≈ {t2} s, the typical app in ≈ {t0} s; the pace itself was measured under the conditions below',
 			race: {
 				coldSub: 'llama.cpp · default settings',
 				hotSub: 'same file · our engine',
-				prompt: 'Plan me a Saturday in Kraków',
+				/** The first paragraph of the hero race's endless text (server HTML); the rest: home/stream/en.ts. */
+				opening: 'Kraków is best explored without hurrying, although a single weekend is enough to catch its rhythm. Start early in the morning in Kazimierz, when the cafés are only just setting out their tables and the vendors at the Okrąglak on Plac Nowy are getting the first zapiekanki ready. Szeroka, Józefa and Miodowa streets are almost empty then, so you can take your time looking into courtyards, synagogues and small galleries before the tour groups arrive.',
 				text: 'Start with coffee in Kazimierz before it gets busy, then walk the boulevards up to Wawel; the courtyard is free. Lunch: pierogi at a milk bar near the Old Town. In the afternoon, the Cloth Hall and the Main Square, or the Rynek Underground if it rains. Dinner in Podgórze, booked a day ahead. Comfortable shoes are a must.',
-				summary: 'Animation: {card}, {model} {quant}. The same answer written at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. The same measurement script on both sides.',
-				burstNote: 'Burst = tokens accepted in one MTP step (measured: {burst} per step); the average pace = the measured t/s',
-				msNote: 'step time {a} → {b} ms (measured)',
-				liveNote: 'Tokens appear at exactly the measured pace (median: our engine {a2} t/s, typical app {a0} t/s); answer time = tokens ÷ median. The digits on the dial are always the measured median; while writing, the needle moves within ±3% of it, and between answers it falls back to zero',
-				stripNote: 'The animation loops: in one cycle the slower side writes the answer once and the faster side writes as many full answers as its measured pace fits (each with a short pause); the dots next to the name are the answers finished in the cycle',
-				textNote: 'The text is an example; the word pace comes from the measurement (t/s ÷ {tpw} tokens per word).'
+				summary: 'Animation: {card}, {model} {quant}. The same long text written nonstop at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. The same measurement script on both sides.'
 			}
 		},
 		how: {

@@ -104,14 +104,13 @@ The comparison uses only same-harness numbers: RTX 3090, Qwen3.8-27B UD-Q4_K_XL,
 | 0.10–0.60 s | „Ten sam sprzęt.” Each glyph rises 0.4em from a mask, weight 300 → 800, width 75 → 100, 35 ms stagger. |
 | 0.35–0.85 s | „Ten sam model.” Same treatment. |
 | 0.70–1.40 s | „Po prostu szybciej.” Width animates 75 → 125 (the line literally widens, as if accelerating). The fill is the heat ramp; a speed streak passes through it once. |
-| 1.20 s | The race rises in: two lanes side by side, each a large speedometer (`fx/Speedo`, 0–100 t/s, redline from 70, the measured median in its open bottom) beside the same answer as a dim preview. The left lane is "Typowa aplikacja · llama.cpp domyślnie" (cold steel), the right "Nasz silnik" (heat, with the turning heat edge of the hero CTA). |
-| 1.60 s | GO. Both lanes light the answer token by token at the measured t/s (MTP bursts from the measured tokens per step). While a lane writes, its needle breathes within ±3% of the median and ticks on each step. |
-| ~1.5 s / ~3.0 s | Each lane finishes; its answer pip fills, its needle falls to 0 and the digits dim during a short rest. The fast lane fits two full answers into the slow lane's one (two pips vs one). |
-| ~4.4 s | Both lanes restart together, forever. No finish track and no time/× stamp. Pause/play in the console corner; offscreen the loop stops; reduced motion shows one static frame (both answers complete, needles on the median). |
+| 1.20 s | The race rises in: two lanes side by side, each a large speedometer (`fx/Speedo`, 0–100 t/s, redline from 70, the measured median in its open bottom, ≈ 310 px at 1440) beside the opening of one long text as a dim preview. Left "Typowa aplikacja · llama.cpp domyślnie" (muted steel), right "Nasz silnik" (heat aura and the turning heat edge of the hero CTA). Needles read 0. No caption, source pill or live badge (sources: /metodologia, the boost section). |
+| ~1.5 s (page idle) | GO, once. Both needles climb from 0 to the measured median (38.9 / 78.0) and stay there for as long as the page is open, breathing within ±3% (zero-mean) and ticking on each MTP step. Each lane writes at the speed its needle shows, so its long-run pace is the measured median. |
+| then, nonstop | The same long text (≈ 2.4k words PL, 3k EN; `home/stream/*.ts`, a lazy chunk per language) streams in both lanes; each window follows its newest line smoothly; after the last paragraph the text goes on with the first. No restarts, no pauses, no finish track, no stamps. A small pause node sits on the hairline between the lanes; off screen the loop sleeps and later continues where it was; reduced motion shows one static frame (needles on the median, the opening written). |
 
 The cursor moves a faint heat light across the shader. In the headline, a radial highlight follows the cursor (CSS `--mx/--my`).
 
-Mobile 390: the headline fills the width at 14vw. The lanes stay side by side, each with its dial on top at the full column width (≈ 165 px), above a four-line window of the answer.
+Mobile 390: the headline fills the width at 14vw. The lanes stay side by side, each with its dial on top at the full column width (≈ 165 px), above a six-line window of the text.
 
 ## 7. Scroll scenes
 
