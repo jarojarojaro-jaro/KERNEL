@@ -9,7 +9,7 @@ status: aktualne
 
 **Wiedza projektu w jednym miejscu: szybkie lokalne LLM na RX 7900 XTX i kartach NVIDIA, nasze kernele i łatki llama.cpp oraz plan produktu.**
 
-Notatki streszczają źródła i do nich linkują; źródła (NOTES.md, PLAN.md, raporty, manifest łatek) zostają tam, gdzie są. **Rekordy (najlepsze zmierzone wyniki): [[REKORDY]].** Zasady pisania: [[KONWENCJE]]. Historia zmian wiki: [[log]]. Decyzje użytkownika w [[decyzje/_hub|decyzje/]] są wiążące.
+Notatki streszczają źródła i do nich linkują; źródła (NOTES.md, PLAN.md, raporty, manifest łatek) zostają tam, gdzie są. **Rekordy (najlepsze zmierzone wyniki): [[REKORDY]]. Podręcznik optymalizacji GPU: [[podrecznik-gpu]].** Zasady pisania: [[KONWENCJE]]. Historia zmian wiki: [[log]]. Decyzje użytkownika w [[decyzje/_hub|decyzje/]] są wiążące.
 
 ## Stan na dziś
 
@@ -63,10 +63,10 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (33)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (34)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (85)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (27)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (68)
 - [[research/_hub|research]] — Streszczenia raportów (59)
@@ -77,6 +77,7 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-10-19 [[trwala-siatka-bez-pm4|XTX bez PM4: trwała siatka wraca do gry (warunkowo)]]
 - 2026-10-19 [[rocprof|rocprofv3 i profilowanie na gfx1100]]
+- 2026-10-19 [[rdna3-gfx1100|RDNA3 / gfx1100: architektura, pod którą piszemy]]
 - 2026-10-19 [[mec-fw-dispatch-aql-gfx11|Firmware MEC gfx11: co robi z pakietem AQL, a czego nie robi z `DISPATCH_DIRECT`]]
 - 2026-10-19 [[kfd-smi-eventy|Zdarzenia KFD SMI (`AMDKFD_IOC_SMI_EVENTS`) bez roota]]
 - 2026-10-19 [[kfd-ewikcja-kolejek-gfx11|Ewikcja i przywracanie kolejek KFD + MES na gfx11 (Linux 6.8)]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-23e-re-silniki|Raport 23e: RE kerneli dekodu konkurencyjnych silników]]
 - 2026-10-19 [[raport-23c-re-kernele-nvidia|Raport 23c: kernele NVIDIA (cuBLASLt, FlashInfer, Marlin, exllamav3) vs nasz ggml-cuda]]
 - 2026-10-19 [[raport-23b-re-kernele-amd|Raport 23b: kernele AMD (gfx1100) vs nasze MMVQ, weryfikacja i atencja]]
-- 2026-10-19 [[raport-23a-rea|Raport 23a: morluto/rea („Reverse Engineer Anything”) – bez wsparcia GPU]]
 
-Razem 514 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 516 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -152,6 +152,9 @@ Nowa [[raport-23e-re-silniki]] (hipfire 54.3 vs 43.2 t/s – bajty, nie ISA; pom
 ## [2026-10-19] ingest | Raport 23c (RE kerneli NVIDIA)
 Nowa [[raport-23c-re-kernele-nvidia]]; zaktualizowana [[pdl-mmvq-trigger]].
 
+## [2026-10-19] ingest | Raport 23f (podręcznik optymalizacji GPU)
+Nowe: [[podrecznik-gpu]] (hub, link z [[index]]), [[isa-kstat]]; poprawka reguły occupancy w [[rdna3-gfx1100]] (granulat 24 VGPR, 255 VGPR = 5 fal, nie 6).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

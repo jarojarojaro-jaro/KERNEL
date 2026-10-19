@@ -14,7 +14,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (33)
+## Notatki (34)
 
 - [[aob-v1|`aob-v1` (AMD-Opt Bench): benchmark regresji RSI-F z naszej historii (projekt)]] — Własny benchmark w formacie Harbor-lite (`task.toml`, `instruction.md`, `environment/`, ukryte `tests/`, `solution/oracle.patch` + `null.patch`) z fabryką jako weryfikatorem i podziałem dev (łatki 0001–0047) / test (0048–0070 + negatywy); przy naszym budżecie GPU to test regresji i postępu RSI-F, nie leaderboard – przy 10 zadaniach SE ≈ 0.15 (raport 21i, 2026-10-19).
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
@@ -34,6 +34,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[najpierw-baza-kb|Najpierw baza: `kb search` / `kb facts` przed pytaniem i pomiarem]] — Zasada od 2026-10-19 (`AGENTS.md`, wiersz 8, i `~/AGENTS.md`): zanim agent zapyta albo zacznie mierzyć, szuka w bazie – `kb search <pytanie>` albo `kb facts <pytanie> [--max|--min]` – i odpowiada liczbą z `plik:linia`; `wiki.py search` deleguje do `kb` (`KB_NO_DELEGATE=1` przywraca stare).
 - [[physics-floor-check|Physics-floor check: czas kernela ≥ bajty / pasmo]] — Każdy zmierzony czas kernela porównać z fizyczną podłogą (bajty do przeczytania / szczytowe pasmo); wynik szybszy niż podłoga to błąd pomiaru, nie rekord – u nas tak wyszedł raport „1075 GB/s, 112% peaku”, który przy MTP był ~400 GB/s (propozycja raportu 21b #8, wzorem KernelGuard i SOL-ExecBench, 2026-10-19).
 - [[playbook-optymalizacji|Playbook optymalizacji]] — Każda optymalizacja przechodzi tę samą pętlę: sufit → profil → hipoteza z budżetem → łatka z wyłącznikiem → bramka poprawności → przeplatane A/B → wpis w NOTES.
+- [[podrecznik-gpu|Podręcznik optymalizacji GPU (wejście dla nowego agenta)]] — Decode przy batch 1 to strumień bajtów: Qwen3.8-27B plain czyta 16.82 GB/krok przy 75.7% pasma XTX, LFM2.5 1.777 GB/token przy 54%; vendorzy i konkurenci nie mają lepszej pętli GEMV niż nasza wielokolumnowa, najsłabsza gorąca ścieżka to MMVQ n=1, a największą dźwignią na XTX jest bezpieczne PM4 (raport 23f, synteza raportów RE, 2026-10-19).
 - [[pomiar-abba|Pomiar: przeplatane A/B (ABBA) na ms/krok]] — Porównania robimy w jednej binarce, przeplatając warianty (ABBA), na metryce ms/krok, z kilkoma seedami i promptami; pojedynczy przebieg nic nie dowodzi.
 - [[dowod-offline|Praca offline przed oknem GPU]] — Gdy GPU jest zajęte albo zakazane, przygotowujemy zmiany do końca bez niego (kompilacja, ISA, emulacja, dry-run) i zostawiamy gotowe komendy na okno GPU.
 - [[petla-rsi-f|Pętla RSI-F: samodoskonalenie fabryki bez trenowania wag (projekt)]] — Przeniesienie RSI na naszą pracę nad silnikiem: tylko werdykt `CONFIRMED` z fabryki staje się materiałem; świeży Rewriter pisze z niego playbook, Recenzent sprawdza przeciek, a do `skills/` trafia tylko playbook, z którym świeży Replayer powtórzył zysk na innym celu (raport 21h, 2026-10-19).
