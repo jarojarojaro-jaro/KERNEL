@@ -1,0 +1,4 @@
+{"t": "token_embd.weight", "ta": "Q4_K", "tb": "Q4_K", "s": 0.997, "keep": 0.088, "resid": 0.951}
+{"t": "blk.0.ffn_down.weight", "ta": "IQ4_XS", "tb": "Q6_K", "s": 0.998, "keep": 0.052, "resid": 0.978}
+{"t": "blk.0.ssm_out.weight", "ta": "Q8_0", "tb": "Q4_K", "s": 1.0, "keep": 0.088, "resid": 0.963}
+{"t": "blk.1.ffn_down.weight", "ta": "IQ4_NL", "tb": "Q6_K", "s": 0.998, "keep": 0.052, "resid": 0.976}

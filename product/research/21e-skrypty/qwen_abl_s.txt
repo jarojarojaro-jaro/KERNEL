@@ -1,0 +1,17 @@
+{"t": "token_embd.weight", "ta": "Q4_K", "tb": "Q4_K", "s": 0.997, "keep": 0.088, "resid": 0.951}
+{"t": "blk.3.attn_output.weight", "ta": "Q6_K", "tb": "Q4_K", "s": 0.997, "keep": 0.086, "resid": 0.966}
+{"t": "blk.3.ffn_down.weight", "ta": "Q5_K", "tb": "Q6_K", "s": 0.997, "keep": 0.053, "resid": 0.91}
+{"t": "blk.7.attn_output.weight", "ta": "Q5_K", "tb": "Q4_K", "s": 0.999, "keep": 0.083, "resid": 0.966}
+{"t": "blk.7.ffn_down.weight", "ta": "IQ4_XS", "tb": "Q6_K", "s": 0.997, "keep": 0.051, "resid": 0.972}
+{"t": "blk.15.attn_output.weight", "ta": "IQ4_XS", "tb": "Q4_K", "s": 0.999, "keep": 0.08, "resid": 0.98}
+{"t": "blk.15.ffn_down.weight", "ta": "IQ4_XS", "tb": "Q4_K", "s": 0.998, "keep": 0.083, "resid": 0.982}
+{"t": "blk.31.attn_output.weight", "ta": "Q6_K", "tb": "Q4_K", "s": 0.995, "keep": 0.081, "resid": 0.965}
+{"t": "blk.31.ffn_down.weight", "ta": "IQ4_XS", "tb": "Q6_K", "s": 0.997, "keep": 0.051, "resid": 0.972}
+{"t": "blk.47.attn_output.weight", "ta": "Q5_K", "tb": "Q4_K", "s": 0.997, "keep": 0.084, "resid": 0.971}
+{"t": "blk.47.ffn_down.weight", "ta": "IQ4_XS", "tb": "Q4_K", "s": 0.996, "keep": 0.085, "resid": 0.984}
+{"t": "blk.62.ffn_down.weight", "ta": "Q5_K", "tb": "Q6_K", "s": 0.996, "keep": 0.055, "resid": 0.923}
+{"t": "blk.62.ssm_out.weight", "ta": "Q6_K", "tb": "Q4_K", "s": 0.997, "keep": 0.091, "resid": 0.97}
+{"t": "blk.63.attn_output.weight", "ta": "Q6_K", "tb": "Q4_K", "s": 0.994, "keep": 0.094, "resid": 0.973}
+{"t": "blk.63.ffn_down.weight", "ta": "Q6_K", "tb": "Q6_K", "s": 0.996, "keep": 0.054, "resid": 0.798}
+{"t": "blk.64.attn_output.weight", "ta": "Q6_K", "tb": "Q4_K", "s": 0.998, "keep": 0.089, "resid": 0.969}
+{"t": "blk.64.ffn_down.weight", "ta": "Q6_K", "tb": "Q6_K", "s": 0.997, "keep": 0.051, "resid": 0.661}
