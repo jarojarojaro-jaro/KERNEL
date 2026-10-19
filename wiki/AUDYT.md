@@ -2709,6 +2709,9 @@ Liczby z tabel 16b §2–§5 (wiersze w `zrodlo`, w tym `e3_summary.txt`, `e4_su
 ## Aktualizacja: raport 17 (2026-10-19)
 Liczby z tabel i §0–§7 raportu 17 (wiersze w `zrodlo`); koszt PM4=0 (108.8 → 103.7, 293.6 → 259.3 t/s) zgodny z wcześniejszym audytem `NOTES.md:375`. Poprawione 2 notatki: reset 23:25 przypisany wcześniej kolizji blokad. Błędnych: 0 (poza tą korektą).
 
+## Aktualizacja: REKORDY (2026-10-19)
+Każda liczba w [[REKORDY]] sprawdzona skryptem względem cytowanego wiersza (47 par plik:wiersz); 5 odwołań poprawionych o 1 wiersz (16c:120, 14:95-97, 16e:247/249, 12:323). Wiersze `spec_sweep.jsonl` (113, 86, 172, 189–191) odczytane bezpośrednio. Błędnych liczb: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

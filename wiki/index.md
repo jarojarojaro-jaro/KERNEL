@@ -1,7 +1,7 @@
 ---
 typ: hub
 tags: [index, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-16; git -C ~/llama-master branch -v; ~/KERNEL/product/research/09-chmura-3090.md:201-233; ~/KERNEL/product/research/09-chmura-5060ti.md:214-256; ~/KERNEL/product/research/09-chmura-3060.md:233-275; ~/KERNEL/product/research/11-mtp-pl-pilot.md:3-9; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:154-197; ~/KERNEL/wiki/AUDYT.md
 status: aktualne
 ---
@@ -9,7 +9,7 @@ status: aktualne
 
 **Wiedza projektu w jednym miejscu: szybkie lokalne LLM na RX 7900 XTX i kartach NVIDIA, nasze kernele i łatki llama.cpp oraz plan produktu.**
 
-Notatki streszczają źródła i do nich linkują; źródła (NOTES.md, PLAN.md, raporty, manifest łatek) zostają tam, gdzie są. Zasady pisania: [[KONWENCJE]]. Historia zmian wiki: [[log]]. Decyzje użytkownika w [[decyzje/_hub|decyzje/]] są wiążące.
+Notatki streszczają źródła i do nich linkują; źródła (NOTES.md, PLAN.md, raporty, manifest łatek) zostają tam, gdzie są. **Rekordy (najlepsze zmierzone wyniki): [[REKORDY]].** Zasady pisania: [[KONWENCJE]]. Historia zmian wiki: [[log]]. Decyzje użytkownika w [[decyzje/_hub|decyzje/]] są wiążące.
 
 ## Stan na dziś
 
@@ -69,7 +69,7 @@ Audyt liczb: [[AUDYT]].
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (38)
+- [[research/_hub|research]] — Streszczenia raportów (39)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (25)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
@@ -82,6 +82,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
 - 2026-10-19 [[raport-16b-lookup-tail|Raport 16b: ogon z lookupu za MTP (15b E1–E3, 16i E-X0–E-X3)]]
 - 2026-10-19 [[raport-15b-spekulacja-frontier|Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)]]
+- 2026-10-19 [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]]
 - 2026-10-19 [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]]
 - 2026-10-19 [[zestaw-copy-mvs|Zestawy kopii i edycji: `copy`, `mvs`, `long`]]
 - 2026-10-19 [[sprzezone-probkowanie-draftu|Sprzężone próbkowanie draftu (coupled sampling)]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[kontroler-szerokosci-draftu|Kontroler szerokości draftu (wzorzec Magnitude)]]
 - 2026-10-19 [[lekcja-wentylator-rdna3|Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive]]
 - 2026-10-19 [[lekcja-ustalony-seed-to-nie-powtorzenie|Ustalony seed to nie powtórzenie: ABBA nie redukuje szumu tekstu]]
-- 2026-10-19 [[lekcja-timeout-tasmy-to-skutek|„Tape did not complete within 10 s” to skutek, nie przyczyna]]
 
-Razem 422 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 423 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

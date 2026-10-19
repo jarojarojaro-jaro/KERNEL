@@ -6,6 +6,7 @@
 - **TWARDA ZASADA (2026-10-19): najpierw baza, potem odpowiedź.** Każde pytanie o wyniki, rekordy, decyzje albo wcześniejsze eksperymenty: najpierw przeszukaj `wiki/` (i raporty `product/research/`, `qwen-opt/NOTES.md`), odpowiadaj liczbą ze źródłem `plik:linia`; nigdy nie zgaduj wyniku, który może być zapisany. Każdy nowy najlepszy wynik od razu na stronę rekordów w wiki.
 - Baza wiedzy projektu: `wiki/` (Obsidian, Markdown z [[linkami]]). Zanim zaczniesz zadanie, przeczytaj `wiki/index.md` i pasujące notatki: `python3 wiki/tools/wiki.py search <słowa>`.
 - Decyzje użytkownika w `wiki/decyzje/` są wiążące i mają pierwszeństwo przed resztą notatek.
+- **Rekordy (decyzja użytkownika 2026-10-19):** każdy nowy najlepszy wynik trafia od razu do `wiki/REKORDY.md` (data, warunki: skrypt, T, kontekst, flagi, build/commit; źródło `plik:wiersz`; czy w produkcji). Raport podagenta wymienia nowe rekordy w sekcji „Do bazy wiedzy”.
 - Liczby w notatkach mają datę i źródło (`zrodlo:`); przed użyciem w ważnej decyzji sprawdź źródło. `status: do-sprawdzenia` = niepotwierdzone.
 - Repo jest publiczne: nigdy nie zapisuj sekretów (kluczy API, tokenów), adresów IP, e-maili ani sald.
 - Podagenci tylko czytają wiki. Po zakończonym zadaniu w raporcie zaproponuj, które notatki dodać lub poprawić; główny agent je aktualizuje według `wiki/KONWENCJE.md` i uruchamia `python3 wiki/tools/wiki.py index && python3 wiki/tools/wiki.py lint` (0 błędów).

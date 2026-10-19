@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-10-19
 zrodlo: wiki/tools/wiki.py
 status: aktualne
 ---
@@ -41,7 +41,8 @@ Treść 50–200 słów: liczby z datą i warunkami pomiaru.
 1. Po zakończonym zadaniu główny agent poprawia lub dodaje notatki (podagenci tylko czytają).
 2. `python3 tools/wiki.py index && python3 tools/wiki.py lint` → 0 błędów.
 3. Wpis w [[log]]: `## [RRRR-MM-DD] ingest|update|lint | co`.
-4. Nowa liczba w notatce → wiersz w [[AUDYT]] (notatka, liczba, wiersz źródła, OK/poprawione); `AUDYT.md` i `log.md` są zwolnione z limitu słów.
+4. **Nowy najlepszy wynik → od razu wiersz w [[REKORDY]]** (data, warunki: skrypt, T, kontekst, flagi, build/commit; źródło `plik:wiersz`; czy w produkcji) – decyzja użytkownika 2026-10-19.
+5. Nowa liczba w notatce → wiersz w [[AUDYT]] (notatka, liczba, wiersz źródła, OK/poprawione); `AUDYT.md`, `REKORDY.md` i `log.md` są zwolnione z limitu słów.
 
 ## Powiązane
 - [[index|Strona główna]]
