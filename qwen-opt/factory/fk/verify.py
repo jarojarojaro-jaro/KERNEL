@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import re
 import shutil
 import statistics
@@ -23,7 +24,7 @@ from pathlib import Path
 import rules
 
 from . import card as card_mod
-from . import diffscan, hashing, neartie, paths, profiles, sealed, stats
+from . import diffscan, evidence, hashing, hwgates, neartie, paths, profiles, sealed, stats
 from .gpu import Refused, Runner
 from .ledger import Ledger
 
@@ -58,7 +59,8 @@ class Verification:
         if self.rundir:
             for d in ("blocks", "logs", "harness", "greedy"):
                 (self.rundir / d).mkdir(parents=True, exist_ok=True)
-        self.runner = Runner(mode, self.rundir / "blocks" if self.rundir else None, pause_s, log, fake)
+        self.runner = Runner(mode, self.rundir / "blocks" if self.rundir else None, pause_s, log, fake,
+                             card=self.card, vid=self.vid)
         self.profile = profiles.PROFILES.get(self.card.get("profile"), {})
         self.model_path = Path(model_path or self.profile.get("gguf", "/nonexistent"))
         self.gates, self.findings, self.reasons, self.runs = {}, [], [], []
@@ -143,7 +145,7 @@ class Verification:
             mismatch[arm] = sorted(k for k in set(have) | set(want) if have.get(k) != want.get(k))
         self.identity = {"sha_mismatch": mismatch}
         cand = self.build("cand")
-        if cand and Path(cand, "lib").is_dir() and self.sw.get("name"):
+        if cand and Path(cand, "lib").is_dir() and self.sw.get("name") and not c.get("null_rebuild"):
             self.identity.update(switch=self.sw["name"], switch_hits=hashing.build_contains(cand, self.sw["name"]))
             commit = (c.get("commits") or {}).get("cand", "")
             if commit:
@@ -169,7 +171,8 @@ class Verification:
                 if set(touched) != set(c.get("touched_paths") or []):
                     problems.append(f"touched_paths {sorted(c.get('touched_paths') or [])[:4]} != diff {touched[:4]}")
                 name = self.sw.get("name", "")
-                if name and name not in diffscan.added_text(files) and not diffscan.git_grep(repo, cm["cand"], name):
+                if name and not c.get("null_rebuild") and name not in diffscan.added_text(files) and \
+                        not diffscan.git_grep(repo, cm["cand"], name):
                     problems.append(f"switch {name} is neither in the diff nor in the candidate tree")
                 for f in touched:
                     if f.endswith((".cu", ".cuh")):
@@ -181,7 +184,11 @@ class Verification:
                     self.hip_headers["ggml/src/ggml-cuda/common.cuh"] = hdr
             except RuntimeError as e:
                 problems.append(str(e))
-        self.sealed_entries = sealed.load_sealed() if self.sealed_sha else []
+        # 21i A12: the active set may hold 40 prompts; each verify draws 10 (stratified) with a seed of its own,
+        # written into the ledger row; both arms see the same draw
+        self.sealed_seed = int.from_bytes(os.urandom(4), "big")
+        self.sealed_pool = sealed.load_sealed() if self.sealed_sha else []
+        self.sealed_entries = sealed.draw(self.sealed_pool, self.sealed_seed)
         self.public_entries = sealed.load_public()
         self.touched = sorted(c.get("touched_paths") or [])
         from rules.r05_client_sampler import UI_VARIANT, needs_client_ui
@@ -199,6 +206,14 @@ class Verification:
             ctx["diff"] = self.diff
         found = rules.run("static", ctx)
         refuse += [f"{f.rule} {f.message}" for f in found if f.verdict == "REFUSE" and f.severity == "block"]
+        # hardware gates that are static facts of the claim: quarantined build (H3), kernel change without G1 ops
+        # (H5), clock/voltage/power changes in the diff (H7); the live gates run before every block (fk/gpu.py)
+        trees = {d: hashing.tree_sha(self.build_sha[a]) for a, d in (("base", self.build("base")),
+                                                                       ("cand", self.build("cand")))
+                 if self.build_sha.get(a)}
+        hw = hwgates.check({"card": c, "builds": trees, "quarantine": hwgates.quarantined(),
+                            "texts": hwgates.text_items({"diff": self.diff})}, only=("H3", "H5", "H7"))
+        refuse += [f"{g} {m}" for g, ms in hw.items() for m in ms]
         blocking = self.add_findings("G0", [f for f in found if f.verdict != "REFUSE"])
         for x in refuse:
             self.log(f"  G0 REFUSE {x}")
@@ -370,6 +385,8 @@ class Verification:
                     self.note("G3", "the switch changes no md5: no visible effect, use probe log or timing")
         elif kind == "timing":
             g["note"] = f"G4 arm A = candidate with {name}={off}: the switch effect is the measured effect"
+        elif kind == "null":
+            g["note"] = "null-rebuild noise probe (21i A4): A = base build, B = rebuilt candidate; expected NULL"
         self.gates["G3"] = g
         return ok
 
@@ -482,20 +499,34 @@ class Verification:
                 if verdict is None:
                     ok4 = self.g4()
                     if self.mode == "dry":
+                        if self.card.get("guards"):
+                            self.guards()
                         self.log("dry run: nothing executed, nothing written")
                         return {"verdict": None, "plan": self.runner.plan, "gates": self.gates,
                                 "reasons": self.reasons, "findings": self.findings}
                     ok5 = self.g5() if self.summary else True
+                    if ok4 and ok5 and self.card.get("guards"):
+                        self.guards()
                     verdict, stat_verdict = self.decide(ok4, ok5)
         except Refused as e:
             self.refused = True
-            verdict = "INVALID"
             self.reasons.append(f"refused: {e}")
+            # 21i A3: a refusal (hardware gate, preflight R08/R09/R14/R15, user server) is VOID: re-run, never
+            # scored. Exception H3: a GPU fault is the candidate's INVALID and its build is already quarantined.
+            verdict = "INVALID" if "H3" in str(e) else "VOID"
+            if verdict == "VOID":
+                self.void_reason = str(e)[:300]
         if self.mode == "dry":
             self.log("dry run: nothing executed, nothing written")
             return {"verdict": None, "plan": self.runner.plan, "gates": self.gates, "reasons": self.reasons,
                     "findings": self.findings}
         row = self.ledger_row(verdict, stat_verdict)
+        if self.rundir:  # 21j P3: the row points at an immutable, sha256-addressed, compressed copy of the run
+            ev = evidence.preserve(self.rundir)
+            row["evidence_id"] = ev["evidence_id"]
+            row["evidence_store"] = {k: ev[k] for k in ("files", "bytes_in", "bytes_out")}
+        if self.mode == "real":
+            hwgates.record_verdict(verdict, self.reasons)
         if not self.registration or self.ledger.verify():
             self.log(f"verdict {verdict} NOT written (card not registered or broken ledger)")
             return {**row, "written": False}
@@ -506,11 +537,18 @@ class Verification:
     def decide(self, ok4, ok5):
         metric = self.card["metric"]
         if not ok4 or not ok5:
+            a_bad = [x for x in self.runs if x["arm"] == "A" and not x["ok"]]
+            b_bad = [x for x in self.runs if x["arm"] == "B" and not x["ok"]]
+            if a_bad and not b_bad:
+                self.void_reason = f"baseline arm A failed in {len(a_bad)} run(s): {a_bad[0].get('error')}"[:300]
+                self.note("G4", self.void_reason)
+                return "VOID", None
             return "INVALID", None
         aa_med = statistics.median(self.aa) if self.aa else 0.0
         if abs(aa_med) > stats.AA_MAX[metric]:
-            self.note("G4", f"A/A control {aa_med:+.3f} % beyond {stats.AA_MAX[metric]} %: session too noisy")
-            return "INVALID", None
+            self.void_reason = f"A/A control {aa_med:+.3f} % beyond {stats.AA_MAX[metric]} %: session too noisy"
+            self.note("G4", self.void_reason)
+            return "VOID", None
         self.mde = stats.mde(metric, self.aa, self.card.get("mde_pct"))
         kill = (self.card.get("kill") or {}).get("effect_pct_below")
         sv, why = stats.verdict(self.summary, self.mde, kill)
@@ -524,10 +562,49 @@ class Verification:
                 human.append("sealed and public sets disagree in sign (winner's curse?)")
         if self.card.get("correctness_class") in ("KLD", "NEAR-TIE") and sv == "CONFIRMED":
             human.append(f"numerics change ({self.card['correctness_class']}): human approval before merge (G7)")
+        if sv == "CONFIRMED":
+            bad = [g for g in (self.gates.get("guards") or {}).values() if g.get("regressed")]
+            if bad:  # 21i A6: a confirmed gain must not cost a guard workload (whole CI below -MDE)
+                self.reasons += [f"guard {g['profile']}/{g['metric']}: CI {g['ci95']} below -{g['mde']:.2f} %"
+                                 for g in bad]
+                return "REGRESSION", sv
+        if self.card.get("null_rebuild") and sv in ("CONFIRMED", "REGRESSION"):
+            human.append(f"null-rebuild probe gave {sv}: rebuild noise exceeds the MDE, the cycle stops (21i A4)")
         if human:
             self.reasons += [f"NEEDS-HUMAN: {h}" for h in human]
             return "NEEDS-HUMAN", sv
         return sv, sv
+
+    # ------------------------------------------------------------------ guards (21i A6)
+    def guards(self):
+        """One ABBA round per guard workload (bench metrics): CONFIRMED needs no guard whose whole CI < -MDE."""
+        out = {}
+        for gd in self.card.get("guards") or []:
+            prof_name = gd["profile"] if isinstance(gd, dict) else gd
+            metric = gd.get("metric", "pp_tps") if isinstance(gd, dict) else "pp_tps"
+            prof = profiles.PROFILES[prof_name]
+            vals = {}
+            for r, pos, arm in stats.abba_schedule(1):
+                build, env = self.arm_spec(arm)
+                res = self.runner.block({"kind": "bench", "name": f"guard-{prof_name}-{metric}-p{pos}{arm}",
+                                         "arm": arm, "round": r, "pos": pos, "treated": arm == "B",
+                                         "lib_dir": f"{build}/lib", "model_family": prof["model"], "metric": metric,
+                                         "env": env, "argv": profiles.bench_argv(prof, f"{build}/bin", metric),
+                                         "log": self.p(f"logs/guard-{prof_name}-{metric}-p{pos}{arm}.log")})
+                if res.get("ok") and "avg_ts" in res:
+                    vals[(r, pos)] = (arm, res["avg_ts"])
+            key = f"{prof_name}/{metric}"
+            if self.mode == "dry":
+                out[key] = {"profile": prof_name, "metric": metric, "dry": True}
+                continue
+            eff, aa, _ = stats.paired_effects(vals, metric)
+            s = stats.summarize(eff) if eff else None
+            mde = stats.mde(metric, aa)
+            hi = (s or {}).get("ci95", [None, None])[1]
+            out[key] = {"profile": prof_name, "metric": metric, "effects": eff, "aa": aa, "mde": mde,
+                        "median": (s or {}).get("median"), "ci95": (s or {}).get("ci95"),
+                        "regressed": bool(s) and hi == hi and hi < -mde, "complete": len(vals) == 4}
+        self.gates["guards"] = out
 
     def ledger_row(self, verdict, stat_verdict) -> dict:
         evidence = []
@@ -545,7 +622,8 @@ class Verification:
             if hasattr(self, "build_sha") else None,
             "model": {"path": str(self.model_path), "sha256": getattr(self, "model_sha", None)},
             "profile": self.card.get("profile"), "server_argv": getattr(self, "server_argv", None),
-            "env": {arm: self.arm_spec(arm)[1] for arm in ("A", "B")}, "protocol": profiles.PROTOCOL,
+            "env": {arm: self.arm_spec(arm)[1] for arm in ("A", "B")}, "hw_env": paths.HW_ENV,
+            "protocol": profiles.PROTOCOL,
             "harness_sha256": getattr(self, "harness_tree", None), "sealed_sha256": getattr(self, "sealed_sha", None),
             "driver": {"serve": "fk/measure.py:serve_run", "greedy": f"fusion/greedy.sh@"
                        f"{(getattr(self, 'harness', {}) or {}).get('ext/fusion/greedy.sh', '')[:12]}",
@@ -554,7 +632,7 @@ class Verification:
             "samples": [{k: v for k, v in x.items() if k not in ("log_tail", "text_sha256", "snapshot", "argv", "env")}
                         for x in self.runs],
             "metric": self.card.get("metric"), "median": (s or {}).get("median"), "ci95": (s or {}).get("ci95"),
-            "ci_method": (s or {}).get("ci_method"), "n_pairs": (s or {}).get("n"),
+            "ci_method": (s or {}).get("ci_method"), "ci_note": (s or {}).get("ci_note"), "n_pairs": (s or {}).get("n"),
             "aa": {"effects": getattr(self, "aa", None),
                    "median": statistics.median(self.aa) if getattr(self, "aa", None) else None},
             "mde_pct": getattr(self, "mde", None),
@@ -564,4 +642,25 @@ class Verification:
             "verdict": verdict, "stat_verdict": stat_verdict, "refused": self.refused, "reasons": self.reasons,
             "findings": self.findings, "hw": snap, "logs": str(self.rundir) if self.rundir else None,
             "evidence": evidence,
+            # 21i A5: continuous reward only behind the verdict gate; recovery against a known oracle (aob task_ref)
+            "reward": self.reward(verdict, s), "recovery": self.recovery(verdict, s),
+            "void_reason": getattr(self, "void_reason", None) if verdict == "VOID" else None,
+            "sealed_draw": {"seed": getattr(self, "sealed_seed", None), "pool_n": len(getattr(self, "sealed_pool", [])),
+                            "ids": [e["id"] for e in getattr(self, "sealed_entries", [])]},
         }
+
+    @staticmethod
+    def _r(s):
+        m = (s or {}).get("median")
+        return None if m is None else 1.0 + m / 100.0
+
+    def reward(self, verdict, s):
+        r = self._r(s)
+        return max(0.0, r - 1.0) if verdict == "CONFIRMED" and r is not None else 0.0
+
+    def recovery(self, verdict, s):
+        o = (self.card.get("task_ref") or {}).get("oracle_effect_pct")
+        r = self._r(s)
+        if not o or r is None or verdict != "CONFIRMED":
+            return None
+        return (r - 1.0) / (o / 100.0)

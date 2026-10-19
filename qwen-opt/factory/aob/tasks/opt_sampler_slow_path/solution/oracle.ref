@@ -1,0 +1,6 @@
+repo = ~/llama-master
+base = 56be15abf
+oracle = f4f0deae5
+patches = 0065 0066 0067 0068 0069
+switches = LLAMA_SAMPLER_FAST_PENALTIES LLAMA_SAMPLER_FAST_RBUDGET LLAMA_SAMPLER_FAST_NPROBS LLAMA_SAMPLER_FAST_LOGIT_BIAS LLAMA_SAMPLER_FAST_GRAMMAR
+numbers = omp tools LFM 254.2 -> 294.3 t/s, Qwen MTP 104.8 -> 113.2, LFM thinking budget 256.9 -> 292.9 (wiki kernele/sampler-fast-path.md)

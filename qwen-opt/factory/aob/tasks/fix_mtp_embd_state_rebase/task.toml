@@ -1,0 +1,16 @@
+id = "fix_mtp_embd_state_rebase"
+title = "T5"
+kind = "fix"
+split = "test"
+profile = "qwen-mtp"
+metric = "tps"
+base_commit = "d3f92e35b"
+oracle_commit = "8c942e5a9"
+gpu_minutes = 45
+correctness_class = "SAME-TOK"
+oracle_effect_pct = "none"
+guards = ["qwen-mtp:ms_step", "qwen-plain"]
+ops = []
+switch_hint = "none"
+status = "needs-fixture"
+source = "~/KERNEL/product/research/21i-rsi-inference-bench.md:326 (table \u00a75.3 T5; f2p driver of 16 MTP requests with draft vocab not yet packaged)"

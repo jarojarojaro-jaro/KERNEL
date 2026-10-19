@@ -67,7 +67,7 @@ def render(rows: list[dict], chain_problems: list[str], title="Fabryka v1: werdy
         out += [f"  - {x}" for x in (r.get("reasons") or [])[:12]] or ["  - —"]
         out += [f"- Logi: `{r.get('logs')}`; {ref(r)}", ""]
     calib = [(r["claim_id"], r["expected_effect_pct"], r["median"]) for r in verdicts
-             if r.get("expected_effect_pct") and r.get("median") is not None and r["verdict"] != "INVALID"]
+             if r.get("expected_effect_pct") and r.get("median") is not None and r["verdict"] not in ("INVALID", "VOID")]
     out += ["## Kalibracja przewidywań (karta vs ledger)", ""]
     if calib:
         out += ["| karta | przewidziane % | zmierzone % | zmierzone / przewidziane |", "|---|---|---|---|"]

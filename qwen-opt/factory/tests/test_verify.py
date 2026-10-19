@@ -54,11 +54,11 @@ class FakeMode(unittest.TestCase):
         self.assertEqual(self.verify(0.0)["verdict"], "REFUTED")
         self.assertEqual(self.verify(-1.0)["verdict"], "REGRESSION")
 
-    def test_aa_failure_invalid(self):
+    def test_aa_failure_void(self):
         self.sb.make_card()
         r = self.verify(0.5, aa_drift_pct=1.0)
-        self.assertEqual(r["verdict"], "INVALID")
-        self.assertTrue(any("A/A" in x for x in r["reasons"]))
+        self.assertEqual(r["verdict"], "VOID")  # 21i A3: a noisy session is not the candidate's fault
+        self.assertIn("A/A", r["void_reason"])
 
     def test_outlier_run_invalid(self):
         self.sb.make_card()
@@ -147,7 +147,7 @@ class DryRun(unittest.TestCase):
             self.assertEqual(sb.ledger_path.read_text(), before)
             self.assertFalse(paths.RUNS.exists())
             self.assertIn("flock /tmp/gpu.lock flock /tmp/quiet.lock timeout 290", text)
-            self.assertIn("pgrep -f 'llama-server.*--port 8080' && exit 3", text)
+            self.assertIn("[ -z \"$(ss -ltnH 'sport = :8080')\" ] || exit 3", text)
             self.assertIn("test-backend-ops test -o MUL_MAT", text)
             self.assertIn("sleep 45", text)
             kinds = [p["kind"] for p in r["plan"]]
@@ -157,14 +157,12 @@ class DryRun(unittest.TestCase):
 
 
 IDLE = {"user_server": False, "llama_servers": [], "kfd_procs": [], "power_control": "on", "vram_used": 1 << 20,
-        "gtt_used": 1 << 20, "temp_c": {"junction": 45.0}, "loadavg": [0.2, 0.2, 0.2], "nproc": 16,
+        "gtt_used": 1 << 20, "temp_c": {"junction": 45.0, "mem": 50.0}, "loadavg": [0.2, 0.2, 0.2], "nproc": 16,
         "cpu_quota": None, "port_free": True}
 
 
 def in_process_blocks(argv, *a, **k):
-    """Stands in for `flock ... timeout ... factory.py _block SPEC` (and the pgrep check) without locks or GPU."""
-    if argv[0] == "pgrep":
-        return subprocess.CompletedProcess(argv, 1)
+    """Stands in for `flock ... timeout ... factory.py _block SPEC` without locks or GPU."""
     assert argv[-2] == "_block", argv
     return subprocess.CompletedProcess(argv, block.main(argv[-1]))
 
@@ -181,12 +179,17 @@ class RealPath(unittest.TestCase):
             with mock.patch.object(paths, "GPU_WRAP", []), \
                     mock.patch.object(gpu, "subprocess", SimpleNamespace(run=in_process_blocks)), \
                     mock.patch("fk.preflight.snapshot", return_value=dict(IDLE, port=port)), \
-                    mock.patch("fk.preflight._pgrep", return_value=[]), \
+                    mock.patch("fk.preflight.user_server_listening", return_value=False), \
+                    mock.patch("fk.hwgates.enforce", return_value={}) as gates, \
+                    mock.patch("fk.hwgates.after_block") as after, \
                     mock.patch.dict(os.environ, {"FAKE_EFFECT": "0.8"}):
                 v = Verification(sb.card_path, mode="real", ledger_path=sb.ledger_path, rounds=2, port=port,
                                  pause_s=0, log=quiet, model_path=sb.model)
                 r = v.run()
             self.assertEqual(r["verdict"], "CONFIRMED", r["reasons"])
+            self.assertEqual(gates.call_count, len(v.runner.plan))  # H0-H11 before every block
+            self.assertEqual(after.call_count, len(v.runner.plan))  # fault scan after every block
+            self.assertTrue(all(c.args[0]["env"]["GGML_HIP_PM4"] == "0" for c in gates.call_args_list))  # H2
             self.assertAlmostEqual(r["median"], 0.8, delta=0.05)
             g2 = r["gates"]["G2"]
             self.assertTrue(g2["identical"])

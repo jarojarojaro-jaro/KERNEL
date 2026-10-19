@@ -91,12 +91,18 @@ Werdykty, sprawdzane w tej kolejności:
 
 | werdykt | warunek |
 |---|---|
-| `INVALID` | bramka G0–G3 albo G5 zawiodła, A/A powyżej 0.5% (ms) lub 1% (pozostałe), reguła blokująca |
+| `VOID` | odmowa sprzętowa lub infrastrukturalna (bramki H0–H11, preflight R08/R09/R14/R15, serwer na :8080), padnięte ramię A albo A/A powyżej 0.5% (ms) lub 1% (pozostałe): powtórzyć, nigdy nie liczyć jako porażki (21i A3) |
+| `INVALID` | wina kandydata: bramka G0–G3 albo G5 zawiodła, reguła blokująca (m.in. R37); **page fault / reset GPU = `INVALID` + kwarantanna builda (H3), nigdy `VOID`** |
 | `REGRESSION` | cały CI poniżej 0 |
 | `REFUTED` | cały CI poniżej progu `kill` |
-| `CONFIRMED` | CI powyżej 0 i mediana ≥ MDE |
+| `CONFIRMED` | CI powyżej 0 i mediana ≥ MDE; strażnicy (`guards`, 1 runda ABBA llama-bench na profil) bez całego CI < −MDE, inaczej `REGRESSION` |
 | `NULL` | pozostałe przypadki (CI zawiera 0 albo efekt jest poniżej MDE) |
-| `NEEDS-HUMAN` | zastępuje `CONFIRMED`, gdy klasa to KLD/NEAR-TIE, reguła zgłosiła `NEEDS-HUMAN` (R11, R26, R28, R29) albo zestaw zapieczętowany i spec6 dają przeciwne znaki; pierwotny werdykt zostaje w `stat_verdict` |
+| `NEEDS-HUMAN` | zastępuje `CONFIRMED`, gdy klasa to KLD/NEAR-TIE, reguła zgłosiła `NEEDS-HUMAN` (R11, R26, R28, R29), zestaw zapieczętowany i spec6 dają przeciwne znaki albo karta `null_rebuild` dała `CONFIRMED`/`REGRESSION`; pierwotny werdykt zostaje w `stat_verdict` |
+
+Wiersz `verdict` ma też `reward` (= mediana/100 tylko przy `CONFIRMED`, inaczej 0), `recovery` (gdy karta ma
+`task_ref.oracle_effect_pct`), `void_reason`, `sealed_draw` (seed i 10 wylosowanych id), `ci_note` i `evidence_id`.
+Bootstrap CI tylko przy n ≥ 12 par; poniżej weryfikator wymusza Student t (21j §4.4: przy n = 5 bootstrap średniej
+fałszywie wyklucza 0 w 17.8% przypadków).
 
 ## 5. Ledger (`ledger.jsonl`)
 
@@ -119,20 +125,20 @@ Rodzaje wierszy: `register`, `harness-lock`, `verdict`. Wiersz `verdict` zawiera
 
 ## 6. Zestaw zapieczętowany (`sealed/prompts.jsonl`)
 
-Zestaw liczy 10 promptów, rozłącznych ze spec_sweep, `greedy.sh` i `build_draft_vocab.py`:
+Aktywny zestaw wskazuje `sealed/registry.json` (id, plik, sha256 każdego zestawu kiedykolwiek użytego); `sealed-v1` ma
+10 promptów, kolejne zestawy w `sealed/pool.jsonl` po 40 (`sealed-v2`). Każdy cykl RSI-F aktywuje następny zestaw
+(`factory rsi cycle PLAN --go --open` albo `factory rsi sealed rotate`), zużyty zestaw nie wraca. Każdy `verify`
+losuje 10 promptów aktywnego zestawu warstwowo (5 „new-writing”/5 „copy-edit”, 4 PL/6 EN), seed trafia do ledgera
+(21i A12). Zestawy są rozłączne ze spec_sweep, `greedy.sh` i `build_draft_vocab.py`; sealed-v1:
 - czat wieloturowy PL i EN;
 - kod PL (Go) i EN (TypeScript);
 - ekstrakcja do JSON;
 - zadanie matematyczne PL;
 - 4 edycje kodu w stylu agenta (`old_string`/`new_string` albo unified diff; Python, TypeScript, C, polecenie PL).
 
-Podział:
-- klasy: 5 „new-writing” i 5 „copy-edit”;
-- języki: 4 PL i 6 EN.
-
-Sha256 zestawu jest przypięty w `fk/sealed.py` (`SEALED_SHA256`) i trafia do każdego wiersza ledgera. Zmiana zestawu jest
-zmianą harnessu. `./factory sealed summary` pokazuje tylko liczności. Implementerzy nie czytają pliku, a reguła R36
-sprawdza, czy w diffie nie ma 8-gramów z tego zestawu.
+Rejestr i pula leżą w `sealed/`, więc rotacja jest zmianą harnessu i wymaga `harness lock` (robi to `--open`).
+`./factory sealed summary` pokazuje tylko liczności. Implementerzy nie czytają `sealed/`, a reguła R36 sprawdza, czy
+w diffie nie ma 8-gramów z któregokolwiek zestawu (użytego, aktywnego, w puli).
 
 Werdykt liczy się na zestawie zapieczętowanym. Spec6 jest raportowany obok, a przeciwne znaki obu zestawów dają
 `NEEDS-HUMAN` (klątwa zwycięzcy, 15f E-C).
@@ -185,7 +191,9 @@ Nowa reguła powstaje z nowego incydentu: najpierw fixture z artefaktu, potem `c
   `ledger.fake.jsonl`. Służy do testów i do nauki.
 - Tryb rzeczywisty:
   - każdy blok to `flock /tmp/gpu.lock flock /tmp/quiet.lock timeout 290 python3 factory.py _block SPEC`;
-  - przed każdym blokiem sprawdza `pgrep -f "llama-server.*--port 8080"` (odmowa, gdy działa serwer produkcyjny);
+  - przed każdym blokiem kod sprawdza bramki sprzętowe H0–H11 (§12; m.in. `ss -ltn 'sport = :8080'`, gpu-guard,
+    hotspot < 70 °C i VRAM < 75 °C, journal wszystkich bootów, budżet GPU), po każdym bloku skanuje journal pod kątem
+    page fault / ring timeout / reset; każdy blok dostaje `GGML_HIP_PM4=0` (H2);
   - między blokami pauza 45 s (`--pause`), port 18471 (dozwolone 18434–18499);
   - w bloku preflight (R08 obce serwery, procesy KFD i zajęty VRAM; R09 BACO; R14 junction ≥ 90°C; R15 loadavg) i
     czyste środowisko: zmienne `GGML_*`, `LLAMA_*`, `HIP_*` wołającego są usuwane, a ustawiane są tylko te z karty i
@@ -211,7 +219,7 @@ Koszt jednego twierdzenia `[SZACUNEK]`:
 ## 10. Testy
 
 ```bash
-cd ~/qwen-opt/factory && python3 -m unittest discover -s tests     # 57 testów, ok. 30 s, tylko CPU
+cd ~/qwen-opt/factory && cpuheavy python3 -m unittest discover -s tests
 ```
 
 - Testy budują piaskownicę: repo git z bazą i kandydatem, dwie sztuczne instalacje, model, ledger.
@@ -219,11 +227,48 @@ cd ~/qwen-opt/factory && python3 -m unittest discover -s tests     # 57 testów,
   sha256), dry-run i CLI.
 - Ścieżkę rzeczywistą `_block` → `measure.serve_run` → `fusion/greedy.sh` testują na serwerze-atrapie
   (`tests/fake_llama_server.py`), bez GPU i bez locków.
+- `test_hwgates.py`: każda bramka H0–H11 ma przypadki „odpala” i „czysto”, plus kwarantanna, ack, budżet i odmowy
+  w `Runner`/G0; `test_rsi.py`: playbooki, recenzja bez diffu, briefy, scoring k1–k3, kalibracja, cykl, snapshot.
 
 ## 11. Ograniczenia
 
 Pełna lista jest w raporcie 16h §5. Najważniejsze:
-- weryfikator nie był jeszcze uruchomiony na GPU;
+- pierwszy przebieg na GPU: P0 (raport 22, wiersz ledgera z werdyktem 0070);
 - izolacja przed implementerem jest konwencją plus hashe, a nie piaskownicą systemową;
 - bramka near-tie działa na `top_logprobs` serwera, nie na logitach FP32 referencji;
 - G2 md5 na krótkich promptach `greedy.sh` nie testuje ścieżek prefillu (np. MMQ J ≥ 48).
+- implementer RSI-F nie ma odciętej sieci (21i A10): to konwencja w briefie, nie `unshare -n`;
+- bramka „generation judge” dla klas NEAR-TIE/KLD (21i A2) nie jest jeszcze zbudowana: te klasy i tak kończą się
+  `NEEDS-HUMAN`.
+
+## 12. RSI-F: pętla samodoskonalenia bez trenowania wag (raport 21h §5, raport 22)
+
+```bash
+./factory rsi gates [--card CARD]                  # H0–H11 na żywo, nic nie uruchamia
+./factory rsi hw status | ack --reason "..."       # watermark faultów, halt, kwarantanna (ack = człowiek przeczytał)
+./factory rsi playbook new|check|review|accept|list|show ...
+./factory rsi transfer brief|effort|score ...      # brief świeżego agenta z samego playbooka, ramiona A/B, k1–k3
+./factory rsi calib [--write]                      # przewidziane vs zmierzone, |błąd|, Brier, prior P(CONFIRMED)
+./factory rsi workspace --repo R --commit C --dest D   # snapshot jednego commita bez historii (21i A9)
+./factory rsi aob list|validate|plan               # AMD-Opt Bench aob-v1 (aob/tasks, 21i §5)
+./factory rsi cycle PLAN --dry-run | --go --open | --go [--stop-topka]
+./factory preserve RUNDIR | check ID | restore ID DEST   # magazyn dowodów sha256 + zstd (21j P3)
+```
+
+- **Jedyny sygnał sukcesu:** wiersz `verdict` w trybie real z `CONFIRMED` (albo `NEEDS-HUMAN` ze `stat_verdict`
+  `CONFIRMED` i notą `human-approval`). G0–G3 + `NULL` daje w rankingu SPR 0.25, nigdy 1.
+- **Playbook** (`playbooks/<id>.json`, schemat w `fk/playbook.py`): `draft` tylko ze źródła będącego sukcesem;
+  `candidate` po automatycznej recenzji bez diffu (0 8-gramów diffu, 0 długich linii, 0 nowych identyfikatorów,
+  hashy commitów i nazwy przełącznika źródła, 0 tekstu sealed, 0 zmierzonych liczb źródła) i podpisie recenzenta
+  innego niż autor; `accepted` dopiero po `CONFIRMED` świeżego agenta (inny autor) w ramieniu A na innym celu, z
+  briefem, którego sha256 jest w ledgerze. Każde przejście to wiersz `note` w ledgerze; zmiana treści cofa status.
+- **Transfer:** `rsi/targets/<id>.json`; brief jest generowany z celu (+ playbook w ramieniu A) i przechodzi tę samą
+  recenzję; budowanie przez `rsi/build-slot.sh` (jedno drzewo buildu, CPU: `cpuheavy --quiet`, `-j2`). Kill: k1 recenzja nie przepuszcza, k2 ramię A bez G3 albo z wysiłkiem ≥ B, k3 fault.
+- **Krytyk:** kalibracja z ledgera (`rsi/calibration.jsonl`, nigdy nie resetowana) daje prior do rankingu kolejki.
+- **Cykl:** `--open` rotuje zestaw zapieczętowany i blokuje harness; `--go` wymaga karty `null_rebuild` (sonda szumu,
+  oczekiwany `NULL`), weryfikuje karty w kolejności rankingu, staje przy pierwszym faultcie (H3) albo budżecie (H6),
+  `--stop-topka` zatrzymuje serwer na :8080 i zawsze go wznawia (`/health`).
+- **Bramki sprzętowe** (`fk/hwgates.py`, odmowa w kodzie): H0 locki GPU, H1 gpu-guard + start przy hotspot < 70 °C
+  i VRAM < 75 °C, H2 PM4=0, H3 kwarantanna + halt, H4 journal wszystkich bootów od watermarku, H5 kernel ⇒ `ops`,
+  H6 ≤ 60 min GPU/24 h i ≤ 15 h/30 dni, H7 zakaz zegarów/napięć/limitów mocy (diff, argv, env, baseline sysfs),
+  H8 `ss -ltn 'sport = :8080'`, H9 SSD ≤ 2 GiB stanu i ≤ 512 MiB/24 h, H10 chmura z watchdogiem, H11 CPU.

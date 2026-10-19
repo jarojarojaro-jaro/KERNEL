@@ -1,0 +1,26 @@
+{
+ "hypothesis": "The candidate change raises Qwen llama-bench pp4096 by at least 0.3 % over the switch-off arm of the same binary, bit-identical",
+ "mechanism": "aob-v1 T1: fewer VALU in the Q4_K/Q5_K MMQ inner loop (task-defined)",
+ "expected": {
+  "effect_pct": 2.2
+ },
+ "kill": {
+  "effect_pct_below": 0.3
+ },
+ "ops": [
+  "MUL_MAT|type_a=q[45]_K",
+  "MUL_MAT_ID"
+ ],
+ "profile": "qwen-plain",
+ "metric": "pp_tps",
+ "correctness_class": "BIT",
+ "switch": {
+  "name": "GGML_HIP_AOB_T1",
+  "on": "1",
+  "off": "0"
+ },
+ "probe": {
+  "kind": "timing"
+ },
+ "reference": "fork"
+}

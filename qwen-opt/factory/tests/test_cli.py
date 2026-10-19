@@ -65,14 +65,20 @@ class BlockRefusal(unittest.TestCase):
             spec = sb.root / "spec.json"
             spec.write_text(json.dumps({"name": "x", "kind": "serve", "out": str(sb.root / "out.json"), "port": 18496}))
             busy = {"loadavg": [30.0, 30.0, 30.0], "nproc": 16, "user_server": False, "llama_servers": []}
-            with mock.patch("fk.preflight.snapshot", return_value=busy), mock.patch("fk.preflight._pgrep",
-                                                                                     return_value=[]), \
+            with mock.patch("fk.preflight.snapshot", return_value=busy), \
+                    mock.patch("fk.preflight.user_server_listening", return_value=False), \
                     mock.patch.object(block, "LOAD_RETRIES", 0):
                 self.assertEqual(block.main(str(spec)), 98)
             res = json.loads((sb.root / "out.json").read_text())
             self.assertTrue(res["refused"][0].startswith("R15"))
-            with mock.patch("fk.preflight._pgrep", return_value=["1 llama-server --port 8080"]):
+            with mock.patch("fk.preflight.user_server_listening", return_value=True):
                 self.assertEqual(block.main(str(spec)), 97)
+            hot = dict(busy, loadavg=[0.1, 0.1, 0.1], temp_c={"junction": 74.0, "mem": 60.0})
+            with mock.patch("fk.preflight.snapshot", return_value=hot), \
+                    mock.patch("fk.preflight.user_server_listening", return_value=False), \
+                    mock.patch.object(block, "H1_WAIT_S", 0):
+                self.assertEqual(block.main(str(spec)), 98)  # H1 inside the locks: too hot to start
+            self.assertTrue(json.loads((sb.root / "out.json").read_text())["refused"][0].startswith("H1"))
         finally:
             sb.close()
 

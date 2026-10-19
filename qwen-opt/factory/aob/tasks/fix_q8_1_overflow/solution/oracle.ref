@@ -1,0 +1,6 @@
+repo = ~/llama-master
+base = 9f83f1f81
+oracle = ba90baf3a
+patches = 0023
+switches = 
+numbers = wiki kernele/clamp-q8-1.md

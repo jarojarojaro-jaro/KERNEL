@@ -1,0 +1,67 @@
+{
+ "id": "pb-mmq-epilogue-vopd",
+ "title": "RDNA3 MMQ: make the per-element scale epilogue after WMMA fully VOPD-pairable, bitwise identical",
+ "technique": "On RDNA3 (gfx11) the quantized matrix-multiply (MMQ) prefill kernels do the dot products on the matrix cores (integer WMMA), but after every k-step each lane must turn its integer accumulators into floats and apply the block scales: per output element a convert of the int32 accumulator, a product of the x and y scales, an FMA into the running f32 sum and a second scaled term (the min/sum correction). When the scales live as f16 pairs, the compiler folds the f16->f32 conversions into the mixed-precision FMA (fma_mix) and converts the accumulator with an int->float convert. Neither of those can dual-issue: VOPD only pairs a small set of plain f32 ops (mul, add, fmac, mov, ...), and only when the two halves read registers from different VGPR banks. So the epilogue is issued one op per instruction and the VALU stream, not the matrix core, sets the length of the inner loop. The technique rewrites the epilogue so that every per-element op is a plain f32 VOPD candidate, while computing exactly the same IEEE operations in the same order. (1) Widen once, use many times: the f16 scales of one k-step (the x scales of the tile rows and the y scales of the J/16 column tiles) are converted to f32 once, before the element loop. Then the scale product is a plain f32 mul and the correction term a plain f32 fmac. (2) Opaque widening: the compiler sees that the widened values come from f16 and folds them back into fma_mix, which undoes the gain. Pass each widened value through an empty inline-asm statement with a register in/out constraint, so it becomes an opaque f32 the compiler must keep. Keep these values in runs of 4 consecutive VGPRs, so the operands of two neighbouring products fall in different banks and VOPD can pair them. (3) Biased integer accumulator: instead of starting the WMMA accumulator at integer 0, start it at the bit pattern of a float whose exponent puts integer 0 at the mantissa LSB (1.5*2^23). After the integer accumulation the register, read as a float, is exactly 1.5*2^23 + C, so a single f32 subtract of 1.5*2^23 gives C as a float. That subtract is VOPD-pairable and replaces the int->float convert. This is exact only if the mantissa never carries out of or borrows into the exponent field, i.e. under the general condition |C| < 2^22 for every accumulator value that can occur before conversion. The integer add of the bias must also not overflow int32, and the matrix-core accumulate must not saturate or clamp. The result has more ops but fewer instructions, because nearly all of them pair. In the source the inner-loop VALU instruction count dropped by roughly a quarter at the largest tile width, with no LDS or occupancy change. End-to-end it gave a small single-digit % on dense-model prefill and almost nothing on MoE prefill.",
+ "applies_when": [
+  "RDNA3 / gfx11 target with WMMA and VOPD, and the MMQ prefill path of a quant type that accumulates integer WMMA tiles and then applies per-block scales per output element",
+  "the ISA of the inner k-loop shows many fma_mix and int->float convert instructions per WMMA, and a low fraction of v_dual instructions among the VALU",
+  "the per-wave VALU instruction count of one k-iteration is comparable to (or above) the WMMA issue cycles of that iteration, so VALU and matrix core compete for the SIMD",
+  "the scales that get multiplied are f16 (or bf16) values, so their widening is exact and the product of two of them is exact in f32",
+  "a per-type bound on the integer accumulator before conversion can be derived and is below 2^22",
+  "wide column tiles (J >= 48) are used in practice (prefill with large ubatches), and the kernel has VGPR headroom so that a few more live registers do not reduce occupancy"
+ ],
+ "not_when": [
+  "small column tiles: at J=16 the one-time widening is not amortized and the inner loop got more VALU instructions; at J=32 it did not change. Restrict the variant to J >= 48 (re-measure the threshold for the new type)",
+  "fallback / bounds-checked kernel variants with higher register pressure: one such variant spilled VGPRs with the rewrite, so keep the old epilogue there",
+  "fully unrolling the k-loop to give the scheduler more pairs: at a mid tile width this spilled hundreds of VGPRs; keep the loop non-unrolled",
+  "the products are not exact in f32 (e.g. f32 x f16 or f32 x f32 scales, or derived scales with more than 12 significand bits) and the rewrite would change how many roundings happen or reorder them: then it is no longer bitwise",
+  "the derived accumulator bound reaches 2^22 (large k-steps times large quant magnitudes, e.g. 8-bit lookup-table values over long k-steps): the bias trick is then not exact; keep the int->float convert",
+  "targets without VOPD (CDNA, RDNA2, NVIDIA) or token generation (vector-dot path, not MMQ)",
+  "MoE prefill with few tokens per expert: tiles are small and the gain is close to zero"
+ ],
+ "steps": [
+  "Find the VALU-bound inner loop. Start from the planner's prefill ablation or per-kernel profile (GPU profiling is planner-only), or statically: in the MMQ kernel of the target type, locate the k-loop where WMMA tiles are followed by the per-element scale epilogue, and list the instantiations per column tile width J and the fallback variants.",
+  "Dump the ISA with the build's own flags. Take the exact compile command of the MMQ translation unit for the target type from compile_commands.json (or `ninja -t commands`), add `--save-temps` (keep the .s / code object) and the target arch, or extract the code object from the built library and disassemble it with `llvm-objdump -d --mcpu=gfx1100`. Find each kernel symbol and isolate the inner loop body (from the loop label to its backward branch).",
+  "Count per kernel and J, base build: total loop instructions, VALU, v_dual (VOPD), WMMA, fma_mix, int->float and f16->f32 converts, VGPR count, spill count, LDS bytes (from kernel metadata / `-Rpass-analysis=kernel-resource-usage`). Compute WMMA issue cycles vs VALU instructions per iteration, and occupancy from VGPRs and LDS. Proceed only if the epilogue ops that cannot pair are a large share of the loop.",
+  "Rewrite behind a switch: add a kernel template parameter that selects the new epilogue. Read an env switch on the host once and pick the instantiation, so that switch off launches exactly the old kernels (same ISA). Implement it this way: widen the k-step's scales to f32 once and make them opaque with an empty inline asm; keep them in runs of 4 consecutive registers; start the integer accumulator at the bias pattern and convert with one f32 subtract; keep the k-loop non-unrolled. Put every HIP-only construct (inline asm, gfx11-only assumptions) under the HIP / RDNA3 preprocessor guard, so CUDA and other AMD archs compile the old code unchanged.",
+  "Re-dump and gate: repeat the counts for switch-on kernels for every J and variant. Enable the variant only where loop instructions and VALU drop, spills stay 0 and occupancy does not drop (in the source this was J >= 48 and non-fallback). Then diff the switch-off kernel bodies and VGPR counts against the base build: they must be identical, and untouched types must be byte-identical.",
+  "Prove bitwise equality offline: write the per-element argument (see correctness) for the new type, including the accumulator bound derived from its block layout. Check that the kernel descriptor's f16/f32 denorm mode is the same in both builds.",
+  "Add test-backend-ops cases that actually reach the new path for the target type: matrix-multiply with many rows and n covering each enabled J (e.g. 48, 64, 96, 128 and a large n), plus an expert-indexed matrix-multiply case with enough tokens per expert. The existing cases may never hit the wide non-fallback tiles. Run test-backend-ops for both ops with the switch on and off (GPU under the factory lock, or through the planner).",
+  "Ask the planner for the factory verify: per-row logits hash of a prefill at two ubatch sizes (one per J regime) with switch on vs off, which must be identical; interleaved A/B prefill benchmark rounds with the switch; and the greedy-decode regression hashes. Claim BIT only if the logits are identical."
+ ],
+ "profiling": [
+  "compile_commands.json / `ninja -t commands <target>` to get the build's exact flags for the MMQ translation unit",
+  "clang/hipcc with the build flags plus `--save-temps` and `--offload-arch=gfx1100` to keep the device assembly",
+  "`clang-offload-bundler --unbundle` or `roc-obj` to extract the code object from the built library; `llvm-objdump -d --mcpu=gfx1100` to disassemble",
+  "`llvm-readelf --notes` on the code object, or `-Rpass-analysis=kernel-resource-usage`, for VGPR count, spills, scratch and LDS per kernel",
+  "a small text script that cuts the inner loop of each kernel and counts instructions by class (v_dual_*, v_wmma_*, fma_mix, cvt, other VALU, SALU, LDS), per J and variant",
+  "a text diff of the switch-off kernel bodies against the base build (strip addresses and labels)",
+  "occupancy arithmetic: waves per SIMD from VGPRs vs the waves needed by blocks per WGP from LDS",
+  "GPU, planner-only: rocprofv3 --kernel-trace --stats for per-kernel time with the switch on/off; interleaved llama-bench prefill A/B"
+ ],
+ "pitfalls": [
+  "Without the opaque inline asm the compiler folds the widened scales straight back into fma_mix, and the ISA does not change.",
+  "Count instructions and issue slots, not ops: the rewrite has more ops than the base and still wins because they pair.",
+  "VOPD needs the two halves' sources in different VGPR banks; scattered widened values leave muls/fmacs unpaired. Group them in runs of 4 consecutive registers and check the v_dual count, not just the source.",
+  "A full unroll of the k-loop caused massive spills; the fallback variant spilled even without it. Check spills for every J and variant, not only the largest.",
+  "At small J the rewrite costs more than it saves; gate by J based on the ISA counts.",
+  "The offline estimate (VALU and WMMA fully serialized) was more than twice the measured gain, because other waves partly hide VALU behind the matrix core. Treat the estimate as an upper bound.",
+  "The existing backend-op tests did not reach the wide non-fallback tiles for these types; a green test run proved nothing until new cases were added.",
+  "Integer side of the bias: the WMMA must accumulate without clamping, and the bias pattern plus the largest |C| must stay below 2^31.",
+  "HIP-only inline asm or gfx11 assumptions outside a HIP guard break the CUDA build (rule R29).",
+  "Gain is much smaller on MoE models (small per-expert tiles); measure the dense and the MoE model separately."
+ ],
+ "correctness": "Target class BIT: every output element must see the same IEEE operations, with the same operands and in the same order, as before. Prove it per op for the new type. (a) Widening f16 (or bf16) to f32 is always exact. (b) Scale product: the old code computed a single-rounded product (fma_mix with a -0 addend) and the new code an f32 mul of the same exact operands, so both give one rounding of the same value. Signed zeros match, since +0 + -0 = +0 and -0 + -0 = -0. If the rewrite changes how many roundings happen (splits or fuses a multiply-add, or reuses a product in a different association), you additionally need the intermediate product to be exact. That holds for f16 x f16: 11+11 significand bits fit in 24, and the magnitude stays between 2^-48 (subnormal f16 inputs) and 2^32, inside the f32 normal range. It does not hold for f32 x f16 or f32 x f32. (c) The correction term: an fmac of the widened values into the sum equals the old mixed FMA, since both are one rounding of the exact product plus the sum. (d) Accumulator bias: re-derive the bound for the new type. The bound is the number of integer products summed into one accumulator before it is converted (the k-step length of one WMMA chain, including any chaining over sub-blocks) times the maximum |x quant| times the maximum |y quant|, using the type's real value range after offset/lookup (e.g. 6-bit signed values, 4-bit lookup-table values that can reach about 127, q8 activations up to 127/128 in magnitude). It must satisfy |C| < 2^22 strictly. Then the biased register read as a float is exactly 1.5*2^23 + C, and subtracting 1.5*2^23 gives exactly C (and +0 for C = 0, like the int->float convert). Also check that the integer add cannot overflow int32. (e) Accumulation order (k-step, tile, element) is unchanged. (f) Both kernels must keep the same f16/f32 denorm mode, because subnormal activation scales occur. (g) Caveat: the bits can differ only in NaN payloads, when a scale is already inf/NaN; the logits are NaN either way. Evidence: identical switch-off ISA vs base, test-backend-ops passing on and off with cases that reach the path, and identical per-row prefill logits hashes at ubatch sizes that cover each J regime (planner).",
+ "rules_fired": [
+  "R29"
+ ],
+ "source": {
+  "ledger_seq": 0,
+  "ledger_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "claim_id": "2026-10-17-mmq-epi-0070",
+  "target": "mmq-epi-q4k-q5k"
+ },
+ "author": "agent:Rewriter",
+ "created": "2026-10-19",
+ "expires": "2026-12-31"
+}

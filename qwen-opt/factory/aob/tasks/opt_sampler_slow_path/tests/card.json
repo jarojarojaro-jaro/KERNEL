@@ -1,0 +1,23 @@
+{
+ "hypothesis": "The candidate change raises LFM client-profile tokens per second by at least 3 % over the switch-off arm, same tokens",
+ "mechanism": "aob-v1 T3: host-side sampling cost per token (task-defined)",
+ "expected": {
+  "effect_pct": 15.8
+ },
+ "kill": {
+  "effect_pct_below": 3.0
+ },
+ "ops": [],
+ "profile": "lfm",
+ "metric": "tps",
+ "correctness_class": "SAME-TOK",
+ "switch": {
+  "name": "GGML_HIP_AOB_T3",
+  "on": "1",
+  "off": "0"
+ },
+ "probe": {
+  "kind": "timing"
+ },
+ "reference": "fork"
+}

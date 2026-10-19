@@ -1,0 +1,36 @@
+{
+ "status": "needs-fixture",
+ "f2p": [
+  {
+   "kind": "server",
+   "requests": 16,
+   "mode": "mtp+draft-vocab",
+   "expect": "no GGML_ASSERT (R30)",
+   "fixture": null
+  },
+  {
+   "kind": "greedy-md5",
+   "modes": [
+    "mtp"
+   ],
+   "equal_to": "pre-rebase MTP md5, same mode (R04)"
+  }
+ ],
+ "p2p": [
+  {
+   "kind": "greedy-md5",
+   "modes": [
+    "plain"
+   ]
+  },
+  {
+   "kind": "test-backend-ops",
+   "op": "touched ops"
+  },
+  {
+   "kind": "guard",
+   "metric": "ms_step",
+   "within": "MDE"
+  }
+ ]
+}

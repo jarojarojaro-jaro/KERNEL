@@ -14,7 +14,7 @@ import sys
 import time
 from pathlib import Path
 
-from . import paths
+from . import hwgates, paths
 
 
 class Refused(Exception):
@@ -52,16 +52,18 @@ def inner_command(spec: dict) -> str:
 
 
 class Runner:
-    def __init__(self, mode: str, blocks_dir: Path | None, pause_s: float = paths.PAUSE_S, log=print, fake=None):
+    def __init__(self, mode: str, blocks_dir: Path | None, pause_s: float = paths.PAUSE_S, log=print, fake=None,
+                 card: dict | None = None, vid: str = ""):
         assert mode in ("real", "dry", "fake"), mode
         self.mode, self.dir, self.pause_s, self.log = mode, blocks_dir, pause_s, log
+        self.card, self.vid = card, vid
         self.n = 0
         self.fake = FakeGPU(**(fake or {})) if mode == "fake" else None
         self.plan: list[dict] = []
 
     def block(self, spec: dict) -> dict:
         self.n += 1
-        spec = dict(spec, name=f"{self.n:02d}-{spec['name']}")
+        spec = dict(spec, name=f"{self.n:02d}-{spec['name']}", env={**paths.HW_ENV, **(spec.get("env") or {})})
         spec_path = (self.dir / f"{spec['name']}.json") if self.dir else Path(f"runs/<vid>/blocks/{spec['name']}.json")
         spec["out"] = str(spec_path.with_suffix(".out.json"))
         self.plan.append({"name": spec["name"], "kind": spec["kind"], "inner": inner_command(spec)})
@@ -69,7 +71,7 @@ class Runner:
             if self.n > 1:
                 self.log(f"sleep {self.pause_s:g}")
             self.log(f"# block {spec['name']} ({spec['kind']}, <= {paths.BLOCK_TIMEOUT_S} s)")
-            self.log(f"pgrep -f {shlex.quote(paths.USER_SERVER_RE)} && exit 3")
+            self.log(f"[ -z \"$(ss -ltnH 'sport = :{paths.USER_PORT}')\" ] || exit 3   # + hardware gates H0-H11")
             self.log(show(block_command(spec_path)))
             self.log(f"#   inside: {inner_command(spec)}")
             return {"dry": True, "name": spec["name"], "kind": spec["kind"], "ok": None}
@@ -81,15 +83,28 @@ class Runner:
             return res
         if self.n > 1:
             time.sleep(self.pause_s)
-        if subprocess.run(["pgrep", "-f", paths.USER_SERVER_RE], capture_output=True).returncode == 0:
-            raise Refused("production llama-server on port 8080 is running")
+        build_dir = str(Path(spec["lib_dir"]).parent)
+        try:  # H0-H11 (fk/hwgates.py): refuse, never "drop and retry"; transient H1/H11 wait for a cool, quiet box
+            hwgates.enforce({"env": spec["env"], "argv": spec.get("argv"), "card": self.card, "builds": [build_dir],
+                             "wrap": block_command(spec_path)[:4], "block_timeout": paths.BLOCK_TIMEOUT_S},
+                            wait=True, log=self.log)
+        except hwgates.HwRefused as e:
+            raise Refused(f"hardware gates: {e}")
         spec_path.write_text(json.dumps(spec, indent=1))
         self.log(f"[{time.strftime('%H:%M:%S')}] block {spec['name']}: {inner_command(spec)[:160]}")
+        start_utc, t0 = hwgates.utcnow(), time.time()
         r = subprocess.run(block_command(spec_path))
         try:
             res = json.loads(Path(spec["out"]).read_text())
         except (OSError, ValueError):
             res = {"ok": False, "error": f"block exited {r.returncode} without a result (timeout {paths.BLOCK_TIMEOUT_S} s?)"}
+        # GPU time = time inside both locks (the block's own clock); waiting for the lock is not ours
+        hwgates.record_block(self.vid, spec["name"], res.get("secs") or (0 if r.returncode in (97, 98) else
+                                                                         time.time() - t0))
+        try:
+            hwgates.after_block(start_utc, build_dir, self.vid, spec["name"])
+        except hwgates.HardwareStop as e:
+            raise Refused(f"H3 hardware stop: {e}")
         if r.returncode in (97, 98):
             raise Refused("; ".join(res.get("refused") or [f"exit {r.returncode}"]))
         res["exit"] = r.returncode

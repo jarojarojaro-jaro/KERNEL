@@ -1,0 +1,293 @@
+{
+ "rule": "R37",
+ "cases": [
+  {
+   "name": "cheaper drafter: ms_step better, tok_step -5 %",
+   "expect": "fire",
+   "kind": "synthetic",
+   "source": "21i A1 (Apple acceptance gate); no real artifact of ours yet",
+   "ctx": {
+    "card": {
+     "metric": "ms_step"
+    },
+    "profile": {
+     "spec": true
+    },
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.0
+      }
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.85
+      }
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 2,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.86
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 3,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.01
+      }
+     },
+     {
+      "arm": "B",
+      "round": 2,
+      "pos": 0,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.84
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 1,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.99
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 2,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.0
+      }
+     },
+     {
+      "arm": "B",
+      "round": 2,
+      "pos": 3,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.85
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "tok_step unchanged",
+   "expect": "clean",
+   "kind": "synthetic",
+   "source": "same",
+   "ctx": {
+    "card": {
+     "metric": "ms_step"
+    },
+    "profile": {
+     "spec": true
+    },
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.0
+      }
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.0
+      }
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 2,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.0
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 3,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.01
+      }
+     },
+     {
+      "arm": "B",
+      "round": 2,
+      "pos": 0,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.01
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 1,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.99
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 2,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.0
+      }
+     },
+     {
+      "arm": "B",
+      "round": 2,
+      "pos": 3,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.99
+      }
+     }
+    ]
+   }
+  },
+  {
+   "name": "plain profile is not judged",
+   "expect": "clean",
+   "kind": "synthetic",
+   "source": "same",
+   "ctx": {
+    "card": {
+     "metric": "ms_step"
+    },
+    "profile": {
+     "spec": false
+    },
+    "runs": [
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 0,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.0
+      }
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 1,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.5
+      }
+     },
+     {
+      "arm": "B",
+      "round": 1,
+      "pos": 2,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.5
+      }
+     },
+     {
+      "arm": "A",
+      "round": 1,
+      "pos": 3,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.01
+      }
+     },
+     {
+      "arm": "B",
+      "round": 2,
+      "pos": 0,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.5
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 1,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.99
+      }
+     },
+     {
+      "arm": "A",
+      "round": 2,
+      "pos": 2,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 3.0
+      }
+     },
+     {
+      "arm": "B",
+      "round": 2,
+      "pos": 3,
+      "ok": true,
+      "values": {
+       "ms_step": 27.0,
+       "tok_step": 2.5
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

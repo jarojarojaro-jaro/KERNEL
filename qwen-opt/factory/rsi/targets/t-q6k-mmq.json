@@ -1,0 +1,17 @@
+{
+ "id": "t-q6k-mmq",
+ "title": "Faster Q6_K MMQ prefill on gfx1100 (bit-identical)",
+ "task": "Prefill of Qwen3.8-27B UD-Q4_K_XL (llama-bench pp4096, the factory profile qwen-plain, metric pp_tps) on an RX 7900 XTX (gfx1100, RDNA3, int8 WMMA) runs the quantized matrix multiplication kernels (MMQ). Q6_K holds about 14 % of the weight parameters (Q6_K tensors: ffn and attention output of several layers) of this model. Make the Q6_K MMQ path faster in prefill with bit-identical outputs, behind an env switch whose off value restores the old kernels. Relevant sources: ggml/src/ggml-cuda/mmq.cuh, mmq.cu, vecdotq.cuh, template-instances/mmq-instance-q6_k.cu. Correctness smoke (run by the planner): test-backend-ops -o MUL_MAT and MUL_MAT_ID with type_a=q6_K.",
+ "profile": "qwen-plain",
+ "metric": "pp_tps",
+ "ops_hint": "MUL_MAT|type_a=q6_K\", \"MUL_MAT_ID|type_a=q6_K",
+ "workspace": {
+  "A": "/home/jaro/wt/rsi-c1-q6k-A",
+  "B": "/home/jaro/wt/rsi-c1-q6k-B"
+ },
+ "base_commit_ws": {
+  "A": "1634fc2a1dc2cc8e870d10f5864091f67e63bbd6",
+  "B": "1634fc2a1dc2cc8e870d10f5864091f67e63bbd6"
+ },
+ "where": "local"
+}

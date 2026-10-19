@@ -1,0 +1,6 @@
+repo = ~/llama-master
+base = d3f92e35b
+oracle = 8c942e5a9
+patches = 
+switches = 
+numbers = symptom GGML_ASSERT(ubatch->embd_state ...); upstream cause 781dbc5ac (#30257); our sites draft_greedy_chain, draft_chain_segment (wiki lekcje/lekcja-mtp-embd-state.md)

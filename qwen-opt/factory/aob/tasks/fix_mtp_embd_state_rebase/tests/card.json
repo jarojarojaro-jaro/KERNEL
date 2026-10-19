@@ -1,0 +1,23 @@
+{
+ "hypothesis": "The candidate fix serves 16 Qwen MTP requests with draft vocab without an assertion and keeps tokens per second within 1 % of the switch-off arm",
+ "mechanism": "aob-v1 T5: batch state carried into the MTP draft chain (task-defined)",
+ "expected": {
+  "effect_pct": 0.0
+ },
+ "kill": {
+  "effect_pct_below": -1.0
+ },
+ "ops": [],
+ "profile": "qwen-mtp",
+ "metric": "tps",
+ "correctness_class": "SAME-TOK",
+ "switch": {
+  "name": "GGML_HIP_AOB_T5",
+  "on": "1",
+  "off": "0"
+ },
+ "probe": {
+  "kind": "timing"
+ },
+ "reference": "fork"
+}

@@ -19,6 +19,9 @@ Required fields (validate() lists every problem):
   model_sha256       sha256 of the profile's GGUF                                      (factory card fill)
 Optional: attacked {"kernels": [...], "share_ms": 0.61, "source": {"tool": "pm4trace", "env": {...}}} for the
 Amdahl gate; ops ["MUL_MAT", "MUL_MAT|type_a=q4_K"] for test-backend-ops (-o OP [-p PARAMS]); reference "fork" | "upstream"; mde_pct; notes.
+RSI-F (fk/rsi.py): expected.p_confirmed (0..1, the implementer's probability of CONFIRMED, scored with Brier);
+rsi {"playbook": id | null, "arm": "A" | "B", "target": target id, "brief_sha256": sha of the brief the agent got}.
+prompt_set must name the ACTIVE sealed set (sealed/registry.json; it rotates once per RSI cycle).
 """
 from __future__ import annotations
 
@@ -28,14 +31,14 @@ from pathlib import Path
 
 from .hashing import sha256_json
 from .profiles import PROFILES
-from .sealed import PUBLIC_ID, SEALED_ID, SEALED_SHA256
+from . import sealed
 from .stats import E2E_METRICS
 
 CLASSES = ("BIT", "NEAR-TIE", "SAME-TOK", "KLD")
 PROBES = ("log", "timing", "md5")
 SWITCH_RE = re.compile(r"^(GGML_HIP|GGML_CUDA|GGML_VK|LLAMA|GGML)_[A-Z0-9_]+$")
 ID_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]*$")
-PROMPT_SET = f"{SEALED_ID}+{PUBLIC_ID}"
+RSI_ARMS = ("A", "B")  # A = fresh implementer with a playbook, B = the same brief without it (fk/transfer.py)
 
 
 def load(path) -> dict:
@@ -55,7 +58,7 @@ def template(cid: str, author: str, created: str) -> dict:
         "correctness_class": "BIT",
         "switch": {"name": "GGML_HIP_", "on": "1", "off": "0"},
         "probe": {"kind": "timing"},
-        "prompt_set": {"id": PROMPT_SET, "sealed_sha256": SEALED_SHA256},
+        "prompt_set": {"id": sealed.prompt_set_id(), "sealed_sha256": sealed.active()["sha256"]},
         "attacked": {"kernels": [], "share_ms": None, "source": None},
         "ops": [], "reference": "fork",
         "repo": "", "commits": {"base": "", "cand": ""}, "touched_paths": [],
@@ -100,18 +103,36 @@ def validate(card: dict, filled: bool = True) -> list[str]:
             p.append("switch.on/off: two different values")
     if need("probe", dict):
         k = card["probe"].get("kind")
-        if k not in PROBES:
-            p.append(f"probe.kind: one of {PROBES}")
+        if k not in PROBES and not (k == "null" and card.get("null_rebuild") is True):
+            p.append(f"probe.kind: one of {PROBES} (\"null\" only on a null_rebuild card)")
+        if card.get("null_rebuild") is True and k != "null":
+            p.append("a null_rebuild card has probe {\"kind\": \"null\"} (A = base build, B = rebuilt candidate)")
         if k == "log" and not card["probe"].get("regex"):
             p.append("probe.regex: required for kind log")
         if k == "md5" and card.get("correctness_class") == "BIT":
             p.append("probe md5 cannot show anything for a BIT claim (on and off give the same md5); use log/timing")
+    for gd in card.get("guards") or []:
+        prof = gd.get("profile") if isinstance(gd, dict) else gd
+        met = gd.get("metric", "pp_tps") if isinstance(gd, dict) else "pp_tps"
+        if prof not in PROFILES or met not in ("pp_tps", "tg_tps"):
+            p.append(f"guards: {gd!r}: profile from {sorted(PROFILES)}, metric pp_tps|tg_tps (llama-bench guards, 21i A6)")
     if need("prompt_set", dict):
         ps = card["prompt_set"]
-        if ps.get("id") != PROMPT_SET:
-            p.append(f"prompt_set.id: must be {PROMPT_SET} (the verifier always runs the sealed set)")
-        if ps.get("sealed_sha256") != SEALED_SHA256:
-            p.append("prompt_set.sealed_sha256: does not match the pinned sealed set")
+        a = sealed.active()
+        if ps.get("id") != sealed.prompt_set_id():
+            p.append(f"prompt_set.id: must be {sealed.prompt_set_id()} (the verifier always runs the active sealed set)")
+        if ps.get("sealed_sha256") != a["sha256"]:
+            p.append(f"prompt_set.sealed_sha256: does not match the active sealed set {a['id']}")
+    pc = (card.get("expected") or {}).get("p_confirmed")
+    if pc is not None and not (isinstance(pc, (int, float)) and 0 <= pc <= 1):
+        p.append("expected.p_confirmed: probability 0..1")
+    r = card.get("rsi")
+    if r is not None:
+        if not isinstance(r, dict) or r.get("arm") not in RSI_ARMS or not r.get("target") or \
+                not re.fullmatch(r"[0-9a-f]{64}", str(r.get("brief_sha256", ""))):
+            p.append("rsi: {playbook, arm A|B, target, brief_sha256} (factory rsi transfer brief)")
+        elif (r["arm"] == "A") != bool(r.get("playbook")):
+            p.append("rsi: arm A carries a playbook id, arm B none")
     att = card.get("attacked") or {}
     if card.get("metric") in ("ms_step", "ms_token") and not isinstance(att.get("share_ms"), (int, float)):
         p.append("attacked.share_ms: required for ms metrics (Amdahl gate G5); profile the attacked kernels")

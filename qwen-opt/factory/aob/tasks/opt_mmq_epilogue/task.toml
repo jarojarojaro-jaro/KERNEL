@@ -1,0 +1,16 @@
+id = "opt_mmq_epilogue"
+title = "T1"
+kind = "opt"
+split = "test"
+profile = "qwen-plain"
+metric = "pp_tps"
+base_commit = "f4f0deae5"
+oracle_commit = "f61994f58"
+gpu_minutes = 15
+correctness_class = "BIT"
+oracle_effect_pct = 2.2
+guards = ["qwen-plain:pp512", "lfm:pp4096", "J=16"]
+ops = ["MUL_MAT|type_a=q[45]_K", "MUL_MAT_ID"]
+switch_hint = "none"
+status = "ready"
+source = "~/KERNEL/product/research/21i-rsi-inference-bench.md:322 (table \u00a75.3 T1); claims/2026-10-17-mmq-epi-0070.json"

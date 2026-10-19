@@ -13,6 +13,8 @@
   factory.py sealed check | summary               seal of the held-out set (counts only)
   factory.py harness status | lock --reason TEXT  pin the harness hash (planner only)
   factory.py merge-check COMMIT [--repo R]        exit 0 only with a CONFIRMED verdict and no UNMEASURED
+  factory.py rsi ...                              RSI-F loop (report 21h): `factory rsi -h`, fk/rsicli.py
+  factory.py preserve RUNDIR | check ID | restore ID DEST   sha256-addressed compressed evidence (fk/evidence.py)
 Common: --ledger PATH (default ledger.jsonl; --fake uses ledger.fake.jsonl).
 """
 from __future__ import annotations
@@ -191,7 +193,7 @@ def cmd_sealed(a):
         return 1
     if a.action == "summary":
         print(json.dumps(sealed.summary(sealed.load_sealed()), ensure_ascii=False))
-    print(f"{sealed.SEALED_ID}: sha256 {d} (pinned) OK")
+    print(f"{sealed.active()['id']}: sha256 {d} (pinned in sealed/registry.json) OK")
     return 0
 
 
@@ -278,6 +280,12 @@ def main(argv=None):
     s.add_argument("--repo")
     s = sub.add_parser("_block")
     s.add_argument("spec")
+    s = sub.add_parser("rsi", help="RSI-F: hw gates, playbooks, transfer, calibration, sealed rotation, cycle "
+                                   "(fk/rsicli.py)")
+    s.add_argument("rest", nargs=argparse.REMAINDER)
+    s = sub.add_parser("preserve")
+    s.add_argument("target", help="run directory to store, or `check` / `restore`")
+    s.add_argument("arg", nargs="*")
     a = ap.parse_args(argv)
     if a.cmd == "card" and a.action == "new" and not a.id:
         a.id = a.card
@@ -288,6 +296,20 @@ def main(argv=None):
     if a.cmd == "_block":
         from fk import block
         return block.main(a.spec)
+    if a.cmd == "preserve":
+        from fk import evidence
+        if a.target == "check":
+            probs = evidence.verify_evidence(a.arg[0])
+            print("\n".join(probs) or f"{a.arg[0]}: OK")
+            return 1 if probs else 0
+        if a.target == "restore":
+            evidence.restore(a.arg[0], Path(a.arg[1]))
+            return 0
+        print(json.dumps(evidence.preserve(Path(a.target)), default=str))
+        return 0
+    if a.cmd == "rsi":
+        from fk import rsicli
+        return rsicli.main(a.rest, ledger=a.ledger)
     return {"card": cmd_card, "register": cmd_register, "verify": cmd_verify, "ledger": cmd_ledger,
             "report": cmd_report, "rules": cmd_rules, "sealed": cmd_sealed, "harness": cmd_harness,
             "merge-check": cmd_merge_check}[a.cmd](a)

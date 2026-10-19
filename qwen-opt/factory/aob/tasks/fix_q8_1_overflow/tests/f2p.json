@@ -1,0 +1,36 @@
+{
+ "status": "needs-fixture",
+ "f2p": [
+  {
+   "kind": "test-backend-ops",
+   "op": "MUL_MAT",
+   "case": "q8_1 activation block whose sum exceeds +-65504 (to be built from ggml-org/llama.cpp#23606)",
+   "fixture": null
+  }
+ ],
+ "p2p": [
+  {
+   "kind": "test-backend-ops",
+   "op": "MUL_MAT",
+   "pass": "2444/2444"
+  },
+  {
+   "kind": "test-backend-ops",
+   "op": "FLASH_ATTN_EXT",
+   "pass": "4017/4017"
+  },
+  {
+   "kind": "test-backend-ops",
+   "op": "RMS_NORM",
+   "pass": "53/53"
+  },
+  {
+   "kind": "greedy-md5",
+   "modes": [
+    "plain",
+    "mtp"
+   ],
+   "equal_to": "9f83f1f81"
+  }
+ ]
+}

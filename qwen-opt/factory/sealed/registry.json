@@ -1,0 +1,12 @@
+{
+ "active": "sealed-v1",
+ "sets": [
+  {
+   "id": "sealed-v1",
+   "file": "prompts.jsonl",
+   "sha256": "1e6c3a4ba773a3f2a5c15d3cc5d6d8f425cbdbf65ac29bb2020fb89f39373cc5",
+   "cycle": 0,
+   "activated": "2026-10-16"
+  }
+ ]
+}

@@ -24,9 +24,13 @@ class Sandbox:
     def __init__(self, cand_src: str | None = None, extra_files: dict | None = None):
         self.tmp = tempfile.TemporaryDirectory(prefix="factory-test-")
         self.root = Path(self.tmp.name)
-        self._saved = (paths.RUNS, paths.CACHE)
+        self._saved = (paths.RUNS, paths.CACHE, paths.RSI, paths.RSI_STATE, paths.PLAYBOOKS, paths.EVIDENCE)
         paths.RUNS = self.root / "runs"
         paths.CACHE = self.root / "cache"
+        paths.RSI = self.root / "rsi"
+        paths.RSI_STATE = self.root / "rsi" / "state"
+        paths.PLAYBOOKS = self.root / "playbooks"
+        paths.EVIDENCE = self.root / "evidence"
         self.repo = self.root / "llama"
         self.repo.mkdir()
         git(self.repo, "init", "-q")
@@ -76,6 +80,7 @@ class Sandbox:
         return b
 
     def make_card(self, register=True, **over) -> dict:
+        over.setdefault("ops", ["MUL_MAT"])  # H5: a kernel change declares its test-backend-ops smoke
         c = card_mod.template("2026-10-17-test-claim", "agent:test", "2026-10-17T10:00:00+0000")
         c.update({
             "hypothesis": "foo behind the switch saves about half a percent of ms per step",
@@ -99,5 +104,8 @@ class Sandbox:
         return c
 
     def close(self):
-        paths.RUNS, paths.CACHE = self._saved
+        paths.RUNS, paths.CACHE, paths.RSI, paths.RSI_STATE, paths.PLAYBOOKS, paths.EVIDENCE = self._saved
+        for f in self.root.rglob("*"):  # evidence payloads are 0444
+            if f.is_dir():
+                f.chmod(0o755)
         self.tmp.cleanup()

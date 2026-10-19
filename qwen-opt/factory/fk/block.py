@@ -14,9 +14,10 @@ import sys
 import time
 from pathlib import Path
 
-from . import hashing, measure, paths, preflight
+from . import hashing, hwgates, measure, paths, preflight
 
 LOAD_RETRIES, LOAD_WAIT_S = 2, 20
+H1_WAIT_S = 45
 
 
 def _preflight(spec):
@@ -74,11 +75,25 @@ def do_bench(spec):
             "build_commit": row.get("build_commit"), "pid": info.get("pid"), "log_tail": out[-2000:]}
 
 
+def tbo_parser():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("tbo_parse", paths.TBO_PARSE)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.parse_test_backend_ops
+
+
 def do_ops(spec):
     rc, out = _run(spec["argv"], measure.block_env(spec), spec["log"], spec["deadline"])
     fails = re.findall(r"^.*FAIL.*$", out, re.M)
     passed = re.search(r"(\d+)/(\d+) tests passed", out)
-    return {"rc": rc, "ok": rc == 0 and not fails, "fails": fails[:20],
+    # 21j P4: the pass/fail of every case is recomputed from the printed error vs threshold and the summary counts;
+    # any contradiction between what the tool says and its own numbers fails G1
+    p = tbo_parser()(out)
+    contra = p.get("contradictions") or []
+    return {"rc": rc, "ok": rc == 0 and not fails and not contra, "fails": fails[:20] + [
+            f"contradiction {c.get('kind')}: {str(c.get('detail'))[:120]}" for c in contra[:5]],
+            "recomputed": {k: p.get(k) for k in ("status", "n_ok", "n_fail", "summary_passed", "summary_total")},
             "passed": passed.group(0) if passed else None, "log_tail": out[-2000:]}
 
 
@@ -96,8 +111,8 @@ def main(spec_path: str) -> int:
     out = Path(spec["out"])
     spec["deadline"] = time.time() + spec.get("budget_s", paths.BLOCK_TIMEOUT_S - 10)
     res = {"name": spec["name"], "kind": spec["kind"], "started": time.time(), "ok": False}
-    if preflight._pgrep(paths.USER_SERVER_RE):
-        res["refused"] = ["production llama-server on port 8080 is running"]
+    if preflight.user_server_listening():  # H8: anything on :8080 is the user's server (ss, not pgrep)
+        res["refused"] = [f"H8 something listens on :{paths.USER_PORT} (the user's server)"]
         out.write_text(json.dumps(res))
         return 97
     h0 = hashing.hash_harness()
@@ -105,6 +120,18 @@ def main(spec_path: str) -> int:
     res["snapshot"] = snap
     if found:
         res["refused"] = [f"{f.rule} {f.message}" for f in found]
+        out.write_text(json.dumps(res))
+        return 98
+    # H1 inside both locks: the previous holder may have left the card hot; wait (sysfs reads) up to H1_WAIT_S
+    waited = 0
+    while True:
+        hot = hwgates.h1({"temp_c": (snap.get("temp_c") if waited == 0 else hwgates.temps())})
+        if not hot or waited >= H1_WAIT_S:
+            break
+        time.sleep(15)
+        waited += 15
+    if hot:
+        res["refused"] = [f"H1 {m}" for m in hot]
         out.write_text(json.dumps(res))
         return 98
     try:

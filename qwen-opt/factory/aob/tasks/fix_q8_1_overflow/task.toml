@@ -1,0 +1,16 @@
+id = "fix_q8_1_overflow"
+title = "T2"
+kind = "fix"
+split = "dev"
+profile = "qwen-plain"
+metric = "tps"
+base_commit = "9f83f1f81"
+oracle_commit = "ba90baf3a"
+gpu_minutes = 10
+correctness_class = "BIT"
+oracle_effect_pct = "none"
+guards = ["qwen-plain", "qwen-mtp"]
+ops = ["MUL_MAT", "FLASH_ATTN_EXT", "RMS_NORM"]
+switch_hint = "none"
+status = "needs-fixture"
+source = "~/KERNEL/product/research/21i-rsi-inference-bench.md:323 (table \u00a75.3 T2: f2p case still to be built from ggml-org/llama.cpp#23606)"

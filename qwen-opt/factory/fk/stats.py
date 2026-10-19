@@ -86,13 +86,21 @@ def paired_effects(values: dict, metric: str, a="A", b="B"):
     return effects, aa, bb
 
 
+BOOTSTRAP_MIN_N = 12  # 21j §4.4: percentile bootstrap at n=5 excludes 0 in 17.8 % (mean) / 7.4 % (median) of null
+                      # cases vs 5.5 % for Student t; below 12 pairs the verifier forces t and says so in the ledger
+
+
 def summarize(effects, method: str = "t"):
+    note = None
+    if method == "bootstrap" and len(effects) < BOOTSTRAP_MIN_N:
+        method, note = "t", f"bootstrap requested with n={len(effects)} < {BOOTSTRAP_MIN_N}: Student t used (21j)"
     if method == "bootstrap":
         est, lo, hi = bootstrap_ci(effects)
     else:
         _, lo, hi = t_ci(effects)
         est = median(effects)
-    return {"n": len(effects), "median": median(effects), "estimate": est, "ci95": [lo, hi], "ci_method": method}
+    return {"n": len(effects), "median": median(effects), "estimate": est, "ci95": [lo, hi], "ci_method": method,
+            "ci_note": note}
 
 
 def mde(metric: str, aa_effects, card_mde=None) -> float:

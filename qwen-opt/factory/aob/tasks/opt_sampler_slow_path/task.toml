@@ -1,0 +1,16 @@
+id = "opt_sampler_slow_path"
+title = "T3"
+kind = "opt"
+split = "test"
+profile = "lfm"
+metric = "tps"
+base_commit = "56be15abf"
+oracle_commit = "f4f0deae5"
+gpu_minutes = 20
+correctness_class = "SAME-TOK"
+oracle_effect_pct = 15.8
+guards = ["qwen-mtp"]
+ops = []
+switch_hint = "none"
+status = "ready"
+source = "~/KERNEL/product/research/21i-rsi-inference-bench.md:324 (table \u00a75.3 T3; base = parent of the first commit of the oracle series, 0031 already in)"

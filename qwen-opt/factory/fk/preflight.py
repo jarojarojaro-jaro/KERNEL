@@ -27,6 +27,15 @@ def _pgrep(pattern: str, exact: bool = False) -> list[str]:
     return [l for l in r.stdout.splitlines() if l and l.split()[0] != me and "pgrep" not in l]
 
 
+def user_server_listening(port: int = paths.USER_PORT) -> bool:
+    """H8: is anything listening on the user's port? `ss -ltn 'sport = :PORT'` (a socket, not a command line: the
+    live server may be topka, production or anything else). If ss itself fails we assume yes (fail closed)."""
+    r = subprocess.run(["ss", "-ltnH", f"sport = :{port}"], capture_output=True, text=True)
+    if r.returncode != 0:
+        return True
+    return any(l.strip() for l in r.stdout.splitlines())
+
+
 def port_free(port: int) -> bool:
     s = socket.socket()
     try:
@@ -66,7 +75,7 @@ def snapshot(port: int | None = None, dev: Path = paths.DRM_DEVICE) -> dict:
     load = _read("/proc/loadavg", lambda s: [float(x) for x in s.split()[:3]], [0.0, 0.0, 0.0])
     return {
         "ts": time.time(),
-        "user_server": bool(_pgrep(paths.USER_SERVER_RE)),
+        "user_server": user_server_listening(),
         "llama_servers": [re.sub(r"\s+", " ", l)[:300] for l in _pgrep("^llama-server$", exact=True)],
         "kfd_procs": kfd_procs(),
         "keepawake": bool(_pgrep("keepawake")),

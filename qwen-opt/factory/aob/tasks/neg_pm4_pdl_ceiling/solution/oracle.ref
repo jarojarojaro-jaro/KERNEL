@@ -1,0 +1,6 @@
+repo = none
+base = none
+oracle = none
+patches = 
+switches = 
+numbers = X1: 4.775 -> 4.669 us/kernel (0.11 us at a 0.5 threshold); X2 upper bound +12.0 %, realistic ~+2.9 % -> KILL (16a TL;DR)

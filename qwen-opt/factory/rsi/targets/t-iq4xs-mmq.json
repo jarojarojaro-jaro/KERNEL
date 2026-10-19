@@ -1,0 +1,17 @@
+{
+ "id": "t-iq4xs-mmq",
+ "title": "Faster IQ4_XS MMQ prefill on gfx1100 (bit-identical)",
+ "task": "Prefill of Qwen3.8-27B UD-Q4_K_XL (llama-bench pp4096, the factory profile qwen-plain, metric pp_tps) on an RX 7900 XTX (gfx1100, RDNA3, int8 WMMA) runs the quantized matrix multiplication kernels (MMQ). IQ4_XS holds about 23 % of the weight parameters (IQ4_XS tensors) of this model. Make the IQ4_XS MMQ path faster in prefill with bit-identical outputs, behind an env switch whose off value restores the old kernels. Relevant sources: ggml/src/ggml-cuda/mmq.cuh, mmq.cu, vecdotq.cuh, template-instances/mmq-instance-iq4_xs.cu. Correctness smoke (run by the planner): test-backend-ops -o MUL_MAT and MUL_MAT_ID with type_a=iq4_xs.",
+ "profile": "qwen-plain",
+ "metric": "pp_tps",
+ "ops_hint": "MUL_MAT|type_a=iq4_xs\", \"MUL_MAT_ID|type_a=iq4_xs",
+ "workspace": {
+  "A": "/home/jaro/wt/rsi-c1-iq4xs-A",
+  "B": "/home/jaro/wt/rsi-c1-iq4xs-B"
+ },
+ "base_commit_ws": {
+  "A": "1634fc2a1dc2cc8e870d10f5864091f67e63bbd6",
+  "B": "1634fc2a1dc2cc8e870d10f5864091f67e63bbd6"
+ },
+ "where": "local"
+}

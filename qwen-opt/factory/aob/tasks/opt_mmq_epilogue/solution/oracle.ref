@@ -1,0 +1,6 @@
+repo = ~/llama-master
+base = f4f0deae5
+oracle = f61994f58
+patches = 0070
+switches = GGML_HIP_MMQ_EPI
+numbers = 1099.5 -> 1123.2 t/s pp4096 (+2.2 %, each of 3 rounds), pp512 +1.9 %, LFM +0.3 %; MUL_MAT 2486/2486, MUL_MAT_ID 933/933 (wiki kernele/mmq-epilog.md)

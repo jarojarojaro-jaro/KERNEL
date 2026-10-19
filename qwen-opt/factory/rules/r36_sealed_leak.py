@@ -21,7 +21,7 @@ def check(ctx):
         for t in ctx["sealed_texts"]:
             grams |= sealed.ngrams(t, N)
     else:
-        grams = sealed.sealed_ngrams(sealed.load_sealed(), N)
+        grams = sealed.sealed_ngrams(sealed.load_all(), N)  # used, active and pooled sets (rotation, RSI-F)
     added = sealed.ngrams("\n".join(l for x in f for l in x.added), N)
     hit = added & grams
     return [f"diff contains {len(hit)} {N}-grams of the sealed prompt set, e.g. {' '.join(sorted(hit)[0])!r}"] if hit \
