@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (26)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (23)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (50)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (51)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (70)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -83,13 +83,13 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-16b-lookup-tail|Raport 16b: ogon z lookupu za MTP (15b E1–E3, 16i E-X0–E-X3)]]
 - 2026-10-19 [[raport-15b-spekulacja-frontier|Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)]]
 - 2026-10-19 [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]]
+- 2026-10-19 [[galezie-rund|Gałęzie rund optymalizacji (opt-*)]]
 - 2026-10-19 [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]]
 - 2026-10-19 [[zestaw-copy-mvs|Zestawy kopii i edycji: `copy`, `mvs`, `long`]]
 - 2026-10-19 [[sprzezone-probkowanie-draftu|Sprzężone próbkowanie draftu (coupled sampling)]]
 - 2026-10-19 [[koszt-szerokosci-weryfikacji|Krzywa kosztu szerokości weryfikacji V(w, kontekst) na XTX]]
 - 2026-10-19 [[kontroler-szerokosci-draftu|Kontroler szerokości draftu (wzorzec Magnitude)]]
 - 2026-10-19 [[lekcja-wentylator-rdna3|Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive]]
-- 2026-10-19 [[lekcja-ustalony-seed-to-nie-powtorzenie|Ustalony seed to nie powtórzenie: ABBA nie redukuje szumu tekstu]]
 
-Razem 423 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 424 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (50)
+## Notatki (51)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -65,5 +65,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-18-lfm-ubatch-2048|2026-10-18: LFM `-b 2048 -ub 2048` na XTX (E1 z 16f)]] — Ubatch 2048 zamiast 512 przyspiesza prefill LFM2.5 na XTX o +17–18% (pp4096 6108 → 7148 t/s, pp16384 5654 → 6680) i skraca TTFT o 15% od 8k wzwyż, kosztem +498 MiB VRAM; na 5060 Ti zysk był +56%, bo baza była słabsza.
 - [[2026-10-18-lfm-moe-negatywne|2026-10-18: wyniki negatywne MoE matvec LFM (mikrobench)]] — Warianty kerneli MoE LFM2.5, które nie pomogły w mikrobenchu `moebench.hip` (zimne wagi, rocprofv3, 3 procesy); produkcja gate+up 23.6–24.2 µs, down Q5_K 11.64 µs.
 - [[2026-10-18-pm4-ub-lfm|2026-10-18: X2 – górna granica „mniej granic” w taśmie LFM (KILL)]] — `GGML_HIP_PM4_UB=<klasy>` usuwa pakiety granicy przed dispatchami danej klasy bez żadnej synchronizacji (błędne wyniki, tylko czas): MoE down +6.5%, zwykłe MMVQ n=1 +6.8%, oba 289.3 → 324.0 t/s (+12.0%); po realnej synchronizacji zostaje ≈ +2.9% `[SZACUNEK]`, poniżej progu +3%.
+- [[2026-10-19-build-topka|2026-10-19: build „topka” – ogon lookupu + współdzielenie cache, PM4 wyłączone]] — Gałąź `topka` (od `amd-opt` @ `f61994f58`: `6c21a3e9f` = ogon lookupu, `22e2b0f55` = `CACHE_SHARE_MIN`, bez kontrolera) zainstalowana w `~/llama-topka` daje na code-edit `mvs` przy T=0 Qwen 166.1 → **396.9 t/s (×2.39)** i Uncensored **414.8 t/s**, z PM4 wyłączonym i tekstem greedy jak w produkcji (szybka ścieżka, jeden przebieg).
 - [[stan-2026-10-15|Stan zainstalowany 2026-10-15 (70 łatek)]] — Pomiar finalny po rundzie 6: Qwen3.8-27B 109.0 t/s, Uncensored 115.5, LFM2.5 293.7, LFM Uncensored 267.3; build `~/llama-opt`, gałąź `amd-opt` @ f61994f58.
 <!-- AUTO:END -->

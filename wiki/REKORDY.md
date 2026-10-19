@@ -2,7 +2,7 @@
 typ: meta
 tags: [meta, rekordy, wyniki]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md
+zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl
 status: aktualne
 ---
 # Rekordy: najlepsze zmierzone wyniki
@@ -27,6 +27,7 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 | decode MTP 6.6k / 29.5k / 94k | 118.5 / 105.2 / **100.6 t/s** | 2026-10-14 | j.w. | `NOTES.md:331` | był |
 | decode MTP, prompt 27 327 tok. | 113.2 t/s (nowe drzewo), prod 111.85 | 2026-10-17 | `365af3e5e`, T=0, 256 tok. | `12-bit-exact-spekulacja.md:326` | prod 111.85 tak |
 | code-edit (`mvs`), T=0 | **400.9 t/s** (14.0–14.4 tok/krok) | 2026-10-18 | copy_bench, `LLAMA_SPEC_LOOKUP=3 W=16`, `lookup-tail` @ `586f1d596` | `16b-lookup-tail.md:13-17,102` | nie |
+| code-edit (`mvs`), T=0, PM4 wył. | 396.9 t/s (391.1–405.8) | 2026-10-19 | build `topka` @ `22e2b0f55`, `run-topka.sh qwen` (W16 + `CACHE_SHARE_MIN`, `GGML_HIP_PM4=0`), 1 przebieg | `20-build-topka.md:16,65` | nie (topka) |
 | code-edit (`mvs`), T=1 | 375.8 t/s | 2026-10-18 | j.w. | `16b-lookup-tail.md:103` | nie |
 | code-edit bez lookupu | 170.0 t/s (xbench), 166.2 (`mvs`) | 2026-10-18 | MTP4, ctx 67584 / produkcja | `16j-magnitude-vulkan-xtx.md:46`; `16b:13` | tak |
 | copy 64k (xbench) | 141.2 t/s | 2026-10-18 | MTP4, ctx 67584 | `16j-magnitude-vulkan-xtx.md:45` | tak |
@@ -46,6 +47,7 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 |---|---|---|---|---|---|
 | spec_sweep, mediana | **115.5 t/s**, 26.68 ms/krok | 2026-10-15 | `run-llm.sh uncensored`, label `final-uncensored` | `STATUS-NEXT.md:11`; `spec_sweep.jsonl:190` | tak |
 | spec_sweep per prompt | pl-proza 100.9, pl-tech 123.6, pl-kod 128.3, en-chat 94.4, en-tech 119.4, en-code 111.5 | 2026-10-15 | j.w. | `spec_sweep.jsonl:190` | tak |
+| code-edit (`mvs`), T=0 | **414.8 t/s** (406.1–421.1), 14.03–14.42 tok/krok | 2026-10-19 | build `topka` @ `22e2b0f55`, `run-topka.sh uncensored`, PM4 wył., 1 przebieg | `20-build-topka.md:67,83`; `copy_bench.jsonl` (`fast-unc-topka`) | nie (topka) |
 | tg128 / pp4096 | 44.0 / 1109 t/s | 2026-10-15 | llama-bench | `STATUS-NEXT.md:11` | tak |
 | prefill serwera 6.6k / 29.5k / 94k | 956 / 941 / 762 t/s | 2026-10-14 | long_ctx_bench | `NOTES.md:322` | był |
 

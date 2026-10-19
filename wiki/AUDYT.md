@@ -2712,6 +2712,9 @@ Liczby z tabel i §0–§7 raportu 17 (wiersze w `zrodlo`); koszt PM4=0 (108.8 �
 ## Aktualizacja: REKORDY (2026-10-19)
 Każda liczba w [[REKORDY]] sprawdzona skryptem względem cytowanego wiersza (47 par plik:wiersz); 5 odwołań poprawionych o 1 wiersz (16c:120, 14:95-97, 16e:247/249, 12:323). Wiersze `spec_sweep.jsonl` (113, 86, 172, 189–191) odczytane bezpośrednio. Błędnych liczb: 0.
 
+## Aktualizacja: raport 20 (2026-10-19)
+Liczby z 20-build-topka.md:14-17,65-72; alarm z `gpu-guard.log:3`, progi z `gpu-guard.sh:38`; „0 RPM do ~70 °C” z komentarza `gpu-guard.sh:36-37`, `fan_zero_rpm_enable` od 6.13 z komunikatu Main (jądro tu: 6.8.0-138). Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

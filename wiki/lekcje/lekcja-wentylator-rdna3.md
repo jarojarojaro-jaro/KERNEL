@@ -2,7 +2,7 @@
 typ: lekcja
 tags: [lekcje, rdna3, chlodzenie]
 aktualizacja: 2026-10-19
-zrodlo: ~/qwen-opt/tools/fan.sh:6-7,22-45; /proc/cmdline; komunikat Main do WikiIngest 2026-10-18; ~/qwen-opt/tools/fan.sh:1-40,66-90; /etc/systemd/system/xtx-fan.timer; komunikat Main do WikiIngest 2026-10-18 (wentylator, Chrome); komunikat Main do WikiIngest 2026-10-19 (decyzja użytkownika 00:00 UTC); ~/KERNEL/product/research/17-gpu-page-fault.md:55-56
+zrodlo: ~/qwen-opt/tools/fan.sh:6-7,22-45; /proc/cmdline; komunikat Main do WikiIngest 2026-10-18; ~/qwen-opt/tools/fan.sh:1-40,66-90; /etc/systemd/system/xtx-fan.timer; komunikat Main do WikiIngest 2026-10-18 (wentylator, Chrome); komunikat Main do WikiIngest 2026-10-19 (decyzja użytkownika 00:00 UTC); ~/KERNEL/product/research/17-gpu-page-fault.md:55-56; ~/KERNEL/qwen-opt/tools/gpu-guard.sh:36-39; ~/qwen-opt/tools/gpu-guard.log:3; komunikat Main do WikiIngest 2026-10-19 (zero-RPM, jądro 6.8)
 status: aktualne
 ---
 # Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive
@@ -16,6 +16,8 @@ status: aktualne
 **Przyczyny awarii 2026-10-18:** o 23:25 mode1 reset GPU (awaria taśmy PM4, nie kolizja blokad – raport 17, [[2026-10-19-page-faulty-gpu-analiza]]) wyzerował krzywą overdrive; potem zapis `acoustic_target` po krzywej przełączył SMU13 w tryb akustyczny (tryby krzywa / akustyczny / temperatura docelowa wykluczają się, wygrywa ostatni commit) – wentylator stał na ~1800 RPM przy pamięci 88–90 °C. Naprawa: `fan.sh` pisze tylko krzywą, timer `xtx-fan.timer` (root) co 30 s śledzi `gpu_busy_percent` i wykrywa wyzerowaną krzywą. Weryfikacja: busy 99% → 3320–3500 RPM w 12 s, hotspot 73 °C, pamięć 74 °C.
 
 Od 2026-10-19 przy pracy GPU krzywa 100% (`FAN=100`, decyzja użytkownika: [[2026-10-19-wentylator-100-przy-pracy]]).
+
+**Zero-RPM firmware (2026-10-19):** mimo krzywej 100% wentylator stoi (0 RPM) do ~70 °C hotspotu, potem 3300+ RPM; na jądrze 6.8 nie da się tego wyłączyć (`fan_zero_rpm_enable` dopiero od 6.13). Strażnik zgłosił przez to fałszywy alarm (02:39:41, 0 RPM przy 93% busy, hotspot 67 °C).
 
 ## Powiązane
 - [[lekcje/_hub|lekcje]]

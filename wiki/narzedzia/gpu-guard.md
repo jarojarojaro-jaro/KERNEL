@@ -2,7 +2,7 @@
 typ: narzedzie
 tags: [narzedzia, gpu, bezpieczenstwo]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/qwen-opt/tools/gpu-guard.sh:1-45; ~/KERNEL/AGENTS.md:5
+zrodlo: ~/KERNEL/qwen-opt/tools/gpu-guard.sh:1-45; ~/KERNEL/AGENTS.md:5; ~/KERNEL/qwen-opt/tools/gpu-guard.sh:36-39; ~/qwen-opt/tools/gpu-guard.log:3
 status: aktualne
 ---
 # Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`
@@ -12,9 +12,11 @@ status: aktualne
 Warunki zatrzymania:
 - nowy w `journalctl -k`: page fault amdgpu, timeout ringu, `GPU reset begin`, „MES might be…”;
 - hotspot ≥ 100 °C albo VRAM ≥ 98 °C;
-- busy ≥ 50% przy wentylatorze < 2500 RPM przez 20 s.
+- busy ≥ 50% przy wentylatorze < 2500 RPM przez 20 s, ale tylko gdy hotspot ≥ 80 °C albo VRAM ≥ 82 °C.
 
 Wczesne ostrzeżenie (bez zabijania, kod 4): VRAM ≥ 85 °C albo hotspot ≥ 90 °C – agent ma zareagować, zanim limity są blisko. Kill najpierw SIGTERM, po 3 s SIGKILL.
+
+Poprawka (2026-10-19): „wentylator stoi pod obciążeniem” liczy się tylko przy hotspot ≥ 80 °C albo VRAM ≥ 82 °C – firmware zero-RPM trzyma 0 RPM do ~70 °C (fałszywy alarm 02:39:41 przy hotspot 67 °C, VRAM 70 °C; [[lekcja-wentylator-rdna3]]).
 
 ## Powiązane
 - [[narzedzia/_hub|Narzędzia]]

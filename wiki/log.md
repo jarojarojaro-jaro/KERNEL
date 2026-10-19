@@ -77,6 +77,9 @@ Nowe: [[2026-10-19-page-faulty-gpu-analiza]], [[raport-17-gpu-page-fault]], [[de
 ## [2026-10-19] ingest | Strona rekordów + benchmarki przed → po
 Nowe: [[REKORDY]] (najlepsze wyniki per karta/model/obciążenie/metryka z datą, warunkami, źródłem i statusem produkcji; zwolniona z limitu słów), [[benchmarki-przed-po-2026-10-19]]. Zasada „nowy rekord od razu na stronę rekordów” w [[KONWENCJE]] i `AGENTS.md`; link z [[index]].
 
+## [2026-10-19] ingest | Raport 20 (build topka) + zero-RPM
+Nowa [[2026-10-19-build-topka]]; [[REKORDY]]: Uncensored code-edit 414.8 t/s (nowa para), Qwen topka 396.9 t/s obok rekordu 400.9; [[galezie-rund]], [[lekcja-wentylator-rdna3]] i [[gpu-guard]] (fałszywy alarm zero-RPM, próg 80/82 °C).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

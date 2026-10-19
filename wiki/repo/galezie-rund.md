@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, llama-cpp, galezie, worktree]
-aktualizacja: 2026-10-16
-zrodlo: git -C ~/llama-master branch --format=%(refname:short)\ %(objectname:short)\ %(committerdate:short)\ %(subject)
+aktualizacja: 2026-10-19
+zrodlo: git -C ~/llama-master branch --format=%(refname:short)\ %(objectname:short)\ %(committerdate:short)\ %(subject); ~/KERNEL/product/research/20-build-topka.md:6-10,19-43
 status: aktualne
 ---
 # Gałęzie rund optymalizacji (opt-*)
@@ -14,6 +14,8 @@ Stan gałęzi (HEAD, data ostatniego commitu):
 - 2026-10-13: `opt-k1` `9f83f1f81` (MMVQ GLC|DLC), `opt-k2` `849b69978` (GDN conv+AB), `opt-k3` `35d04b446` (host top-k), `opt-k4` `d3a0973ae` (WMMA 9–16), `opt-s2` `343c2fbbb`, `opt-s4` `b1a203959`;
 - 2026-10-14: `opt-k5` `575e3d893`, `opt-s3t1` `e84abb808`, `opt-t2` `7e9c73d8b`, `opt-lfm` `3b053e5e2`, `opt-lfm2` `5909da1f1`, `opt-lfm3` `9d493cf6e`, `opt-lfm4` `e41c2330e`;
 - 2026-10-15: `opt-samp` `f4f0deae5`, `opt-gdn6` `0d89ce56c`, `opt-mmq6` `ae1ef6a97`, `opt-qwen5` `2aa6999ed`, `tools6` `4db68c6ab`.
+
+**`topka`** (2026-10-19): `amd-opt` + `6c21a3e9f` (ogon lookupu) + `22e2b0f55` (`CACHE_SHARE_MIN`), instalacja `~/llama-topka`, launcher `~/qwen-opt/run-topka.sh` (PM4 wył.); start/stop/powrót w [[2026-10-19-build-topka]].
 
 ## Powiązane
 - [[repo/_hub|repo]]
