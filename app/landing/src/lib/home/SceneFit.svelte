@@ -11,18 +11,18 @@
 	 */
 	import { Autoplay } from '$lib/fx/autoplay.svelte';
 	import Replay from '$lib/fx/Replay.svelte';
-	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { fmtGB } from '$lib/format';
 	import { type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
-	import { HERO_CARD, HERO_MODEL, HERO_RUN, HERO_V, MODELS_SRC, Q8 } from './data';
+	import { HERO_CARD, HERO_MODEL, HERO_RUN, HERO_V, Q8 } from './data';
 	import SceneHead from './SceneHead.svelte';
 	import ModelMark from '$lib/ModelMark.svelte';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].how.fit);
-	// the whole sequence in ~1.3 s, starting at ~20% in view: nobody scrolls past it unplayed
-	const tl = new Autoplay(1.3, '0px 0px -20% 0px');
+	// the whole sequence in ~1.5 s, starting at ~20% in view; armed below the fold, so the end state
+	// never flashes before the drop
+	const tl = new Autoplay(1.5, '0px 0px -20% 0px', { arm: true });
 	const p = $derived(tl.p);
 	const stage = $derived(p >= 0.72 ? 4 : p >= 0.4 ? 3 : p >= 0.2 ? 2 : p > 0 ? 1 : 0);
 
@@ -40,15 +40,13 @@
 			<div class="top">
 				<SceneHead id="scene-fit" k={c.k} step={c.title} head={c.head} body={c.body} />
 				<div class="verdicts">
-					<div class="verdict yes">
+					<div class="verdict yes" class:lit={stage >= 2}>
 						<span class="vh"><span class="ok" aria-hidden="true">✓</span>{c.fits}</span>
 						<span class="vsub">{c.used} {gb(used.v, used.unit)} / {vram}&nbsp;GB</span>
-						<SourceTip {lang} src={[file.src, used.src, HERO_RUN.conditionsSrc]} note="{c.usedNote} {HERO_RUN.conditions[lang]}" />
 					</div>
-					<div class="verdict no">
+					<div class="verdict no" class:lit={stage >= 4}>
 						<span class="vh"><span class="x" aria-hidden="true">✕</span>{c.nofit}</span>
 						<span class="vsub">{c.ghost} · {gb(q8)} &gt; {vram}&nbsp;GB</span>
-						<SourceTip {lang} src={MODELS_SRC} note={c.ghostNote} />
 					</div>
 				</div>
 			</div>
@@ -452,29 +450,48 @@
 		grid-template-columns: 1fr 1fr;
 		gap: var(--sp-3);
 	}
-	/* both verdicts are readable from the first frame; the animation only shows why */
+	/* both verdicts are readable from the first frame; each lights up when the animation proves it
+	 * (the fit after the block settles, the reject after the stamp) */
 	.verdict {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
-		gap: 0.55rem var(--sp-3);
+		gap: 0.55rem;
 		padding: clamp(0.8rem, 1.8vh, 1.15rem) clamp(0.9rem, 1.5vw, 1.35rem);
 		border: 1px solid var(--line);
 		border-radius: var(--r-lg);
 		background: var(--bg-1);
+		transition:
+			border-color 0.5s var(--ease-out),
+			box-shadow 0.5s var(--ease-out),
+			background-color 0.5s,
+			translate 0.35s var(--ease-out);
+	}
+	.verdict:hover {
+		translate: 0 -3px;
 	}
 	/* the winner carries the block's heat; the reject the over-the-limit red */
 	.verdict.yes {
-		border-color: rgb(255 122 26 / 0.5);
 		background: linear-gradient(135deg, rgb(255 122 26 / 0.12), transparent 60%), var(--bg-1);
+	}
+	.verdict.yes.lit {
+		border-color: rgb(255 122 26 / 0.55);
 		box-shadow: 0 0 34px -16px rgb(255 122 26 / 0.8);
 	}
+	.verdict.yes.lit:hover {
+		border-color: rgb(255 122 26 / 0.85);
+		box-shadow: 0 0 44px -12px rgb(255 122 26 / 0.9);
+	}
 	.verdict.no {
-		border-color: color-mix(in srgb, var(--danger) 45%, transparent);
 		background: repeating-linear-gradient(-45deg, rgb(125 135 148 / 0.07) 0 6px, transparent 6px 12px), var(--bg-1);
 	}
+	.verdict.no.lit {
+		border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+	}
+	.verdict.no.lit:hover {
+		border-color: var(--danger);
+		box-shadow: 0 0 34px -14px color-mix(in srgb, var(--danger) 70%, transparent);
+	}
 	.vh {
-		grid-column: 1 / -1;
 		display: flex;
 		align-items: center;
 		gap: 0.55rem;
@@ -490,6 +507,14 @@
 	.no .vh {
 		color: var(--before);
 	}
+	.ok,
+	.x {
+		transition: transform 0.5s var(--ease-spring);
+	}
+	.verdict:not(.lit) :is(.ok, .x) {
+		transform: scale(0.6) rotate(-20deg);
+		transition-duration: 0s;
+	}
 	.ok {
 		display: inline-grid;
 		place-items: center;
@@ -501,20 +526,15 @@
 		font-size: 0.7em;
 	}
 	.x {
+		display: inline-block;
 		font-size: 0.7em;
 	}
 	.vsub {
-		grid-column: 1;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
 		color: var(--text-mute);
-	}
-	.verdict :global(.src-btn) {
-		grid-column: 2;
-		grid-row: 2;
-		align-self: end;
 	}
 	@media (max-width: 900px) {
 		.layout {
@@ -535,14 +555,8 @@
 			gap: var(--sp-2);
 		}
 		.verdict {
-			gap: 0.35rem var(--sp-2);
+			gap: 0.35rem;
 			padding: 0.6rem 0.7rem;
-		}
-		.verdict :global(.src-btn) {
-			padding-inline: 0.4rem;
-		}
-		.verdict :global(.src-btn span) {
-			display: none;
 		}
 		.vsub {
 			font-size: 0.625rem;
@@ -620,6 +634,8 @@
 		.extra,
 		.free,
 		.verdict,
+		.ok,
+		.x,
 		.limit,
 		.legend li,
 		.stamp.in {

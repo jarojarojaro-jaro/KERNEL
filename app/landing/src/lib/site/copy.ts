@@ -80,8 +80,7 @@ const raw = {
 				vram: 'pamięć VRAM',
 				bw: 'przepustowość pamięci',
 				power: 'moc karty (TBP)',
-				arch: 'układ',
-				note: 'Nasza karta testowa. Pamięć, szyna, prędkość pamięci, moc (Total Board Power) i złącza: specyfikacja Sapphire. Navi 31: vulkaninfo na maszynie labu. Domyślny limit mocy w sterowniku tej karty: {w} W.'
+				arch: 'układ'
 			},
 			fit: {
 				k: '02',
@@ -95,9 +94,7 @@ const raw = {
 				extra: 'kontekst, KV i bufory silnika',
 				fits: 'pasuje',
 				nofit: 'nie pasuje',
-				ghost: 'ten sam model w Q8_0',
-				ghostNote: 'Q8_0: rozmiar pliku z naszego estymatora. Sam plik jest większy niż cała pamięć karty.',
-				usedNote: 'Zajętość VRAM przez nasz silnik przy kontekście z warunków pomiaru.'
+				ghost: 'ten sam model w Q8_0'
 			},
 			boost: {
 				k: '03',
@@ -362,8 +359,7 @@ const raw = {
 				vram: 'VRAM',
 				bw: 'memory bandwidth',
 				power: 'board power (TBP)',
-				arch: 'chip',
-				note: 'Our test card. Memory, bus, memory speed, power (Total Board Power) and connectors: Sapphire spec sheet. Navi 31: vulkaninfo on the lab machine. Default driver power limit on this card: {w} W.'
+				arch: 'chip'
 			},
 			fit: {
 				k: '02',
@@ -377,9 +373,7 @@ const raw = {
 				extra: 'context, KV cache and engine buffers',
 				fits: 'fits',
 				nofit: 'does not fit',
-				ghost: 'the same model in Q8_0',
-				ghostNote: 'Q8_0: file size from our estimator. The file alone is larger than the card’s whole memory.',
-				usedNote: 'VRAM used by our engine at the context from the measurement conditions.'
+				ghost: 'the same model in Q8_0'
 			},
 			boost: {
 				k: '03',

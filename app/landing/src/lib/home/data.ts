@@ -33,7 +33,6 @@ export const HERO_KERNELS = must(HERO_RUN.kernels, 'kernels');
 
 /** The Q8_0 build of the same model: too big for 24 GB (estimator registry, report 04). */
 export const Q8 = must(findModel('qwen38-27b-q8'), 'qwen38-27b-q8');
-export const MODELS_SRC = 'app/landing/src/lib/data/models.json (raport 04 §2.3.1)';
 
 export { CARDS };
 

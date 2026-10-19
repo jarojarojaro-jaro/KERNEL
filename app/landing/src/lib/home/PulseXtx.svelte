@@ -1,30 +1,44 @@
 <script lang="ts">
 	/**
-	 * Our lab card, Sapphire PULSE RX 7900 XTX, seen from the fan side on an 800×330 grid: steel
-	 * bracket, three fans in a black shroud with red accents, backplate edge along the top, three 8-pin
-	 * sockets in the top notch, PCIe x16 fingers under the board. `part="xray"` draws the board on the
-	 * same grid (Navi 31: one GCD + six MCDs, 12 GDDR6 packages, two per MCD, VRM, outputs, heatsink
-	 * past the PCB end), so the scan scene can lay it exactly under the shroud. `lit` turns the parts
-	 * the scan has read red. Rotors turn by `--spin` (turns, set by the caller).
+	 * Our lab card, Sapphire PULSE RX 7900 XTX, seen from the fan side on an 800×330 grid, drawn after
+	 * Sapphire's dimension drawing and product photos (313 × 121 mm shroud, fans at 19.5 / 50 / 80.5%
+	 * of the length, 78% of its height): gunmetal shroud with the PULSE red pinstripes stepping down
+	 * between the first two fans, nine-blade fans with the red-ringed PULSE hub, corner vent slots,
+	 * backplate edge along the top, three 8-pin sockets at the tail, steel bracket (shorter than the
+	 * shroud) and the PCIe x16 fingers with their key. `part="xray"` draws the board on the same grid
+	 * (Navi 31: one GCD + six MCDs, 12 GDDR6 packages, two per MCD, VRM, outputs, fin stack past the
+	 * PCB end), so the scan scene can lay it exactly under the shroud. `lit` turns the parts the scan
+	 * has read red. Rotors turn by `--spin` (turns) and blur by `--rpm` (0..1), both set by the caller.
 	 */
 	let { part, lit = {} }: { part: 'shroud' | 'xray'; lit?: { mem?: boolean; gpu?: boolean; bus?: boolean; pwr?: boolean } } = $props();
 	const uid = $props.id();
 
-	const FANS = [160, 403, 646];
-	const FY = 160;
+	const FANS = [170, 403, 636];
+	const FY = 157;
 	const pt = (cx: number, r: number, deg: number) => {
 		const a = (deg * Math.PI) / 180;
 		return `${(cx + r * Math.cos(a)).toFixed(1)} ${(FY + r * Math.sin(a)).toFixed(1)}`;
 	};
-	/** Swept blade from the hub to the tip ring (11 per rotor). */
+	/** A wide swept PULSE blade: leading edge hub → tip, along the tip ring, trailing edge back. */
 	const blade = (cx: number, a: number) =>
-		`M${pt(cx, 27, a - 6)} Q${pt(cx, 66, a + 4)} ${pt(cx, 97, a + 25)} L${pt(cx, 97, a + 3)} Q${pt(cx, 60, a - 12)} ${pt(cx, 27, a - 28)}Z`;
-	const BLADES = Array.from({ length: 11 }, (_, i) => (i * 360) / 11);
-	/** 8-pin sockets in the top notch: x of each, 36 wide. */
-	const PINS = [468, 510, 552];
-	const holes = Array.from({ length: 8 }, (_, i) => ({ dx: 5 + (i % 4) * 7.5, dy: i < 4 ? 9 : 15 }));
-	/** PCIe x16: a short key segment, then the long run. */
-	const fingers = [...Array.from({ length: 3 }, (_, i) => 113 + i * 7.6), ...Array.from({ length: 25 }, (_, i) => 146 + i * 7.4)];
+		`M${pt(cx, 33, a)} Q${pt(cx, 74, a + 4)} ${pt(cx, 104, a + 36)} A104 104 0 0 0 ${pt(cx, 104, a + 8)} Q${pt(cx, 68, a - 16)} ${pt(cx, 33, a - 28)}Z`;
+	const BLADES = Array.from({ length: 9 }, (_, i) => i * 40);
+	/** Three 8-pin sockets at the tail of the top edge: x of each, 36 wide. */
+	const PINS = [586, 628, 670];
+	const holes = Array.from({ length: 8 }, (_, i) => ({ dx: 5 + (i % 4) * 7.5, dy: i < 4 ? 6 : 12 }));
+	/** PCIe x16: the short segment before the key, then the long run. */
+	const fingers = [...Array.from({ length: 3 }, (_, i) => 101 + i * 6.6), ...Array.from({ length: 28 }, (_, i) => 131 + i * 7.3)];
+	/** Shroud outline (x 22..784, y 16..298) with the slight chamfer at the tail bottom. */
+	const SHROUD = 'M22 24Q22 16 30 16H776Q784 16 784 24V286L772 298H30Q22 298 22 290Z';
+	/** Vent slots in the shroud corners beside the fans. */
+	const SLOTS = [
+		[40, 58],
+		[40, 256],
+		[286, 58],
+		[286, 256],
+		[766, 58],
+		[766, 256]
+	];
 
 	// x-ray: 12 GDDR6 packages, each pair wired to one of the six MCDs around the GCD
 	const MCD = [
@@ -49,80 +63,96 @@
 		const t = mc(m.to);
 		return m.w > m.h ? `M${c.x} ${c.y} V${(c.y + t.y) / 2} H${t.x} V${t.y}` : `M${c.x} ${c.y} H${(c.x + t.x) / 2} V${t.y} H${t.x}`;
 	});
-	const chokes = Array.from({ length: 12 }, (_, i) => ({ x: 440 + (i % 6) * 27, y: i < 6 ? 98 : 202 }));
-	const caps = Array.from({ length: 7 }, (_, i) => 446 + i * 24);
-	const fins = Array.from({ length: 28 }, (_, i) => 616 + i * 6);
-	const lanes = Array.from({ length: 6 }, (_, i) => `M${158 + i * 26} 300 V${284 - i * 4} H${226 + i * 4} V228`);
+	const chokes = Array.from({ length: 12 }, (_, i) => ({ x: 452 + (i % 6) * 28, y: i < 6 ? 98 : 202 }));
+	const caps = Array.from({ length: 8 }, (_, i) => 456 + i * 24);
+	const fins = Array.from({ length: 13 }, (_, i) => 708 + i * 6);
+	const lanes = Array.from({ length: 6 }, (_, i) => `M${146 + i * 30} 300 V${284 - i * 4} H${226 + i * 4} V228`);
 </script>
 
 {#if part === 'shroud'}
 	<svg viewBox="0 0 800 330" class="art" aria-hidden="true">
 		<defs>
-			<linearGradient id="{uid}-body" x1="0" y1="0" x2="0" y2="1">
-				<stop offset="0" stop-color="#202026" />
-				<stop offset="0.45" stop-color="#131317" />
-				<stop offset="1" stop-color="#09090b" />
+			<linearGradient id="{uid}-body" x1="0" y1="0" x2="0.25" y2="1">
+				<stop offset="0" stop-color="#4a4b51" />
+				<stop offset="0.35" stop-color="#36373c" />
+				<stop offset="1" stop-color="#222327" />
 			</linearGradient>
-			<linearGradient id="{uid}-steel" x1="0" y1="0" x2="0" y2="1">
-				<stop offset="0" stop-color="#8a8a93" />
-				<stop offset="1" stop-color="#34343b" />
+			<linearGradient id="{uid}-sheen" x1="0" y1="0" x2="1" y2="0">
+				<stop offset="0" stop-color="#fff" stop-opacity="0" />
+				<stop offset="0.45" stop-color="#fff" stop-opacity="0.07" />
+				<stop offset="0.55" stop-color="#fff" stop-opacity="0" />
 			</linearGradient>
 			<linearGradient id="{uid}-brkt" x1="0" y1="0" x2="1" y2="0">
-				<stop offset="0" stop-color="#5a5a62" />
-				<stop offset="0.5" stop-color="#a3a3ab" />
-				<stop offset="1" stop-color="#4a4a51" />
+				<stop offset="0" stop-color="#6a6a72" />
+				<stop offset="0.5" stop-color="#c2c2c9" />
+				<stop offset="1" stop-color="#55555c" />
+			</linearGradient>
+			<linearGradient id="{uid}-bevel" x1="0" y1="0" x2="0" y2="1">
+				<stop offset="0" stop-color="#121214" />
+				<stop offset="1" stop-color="#6d6e75" />
 			</linearGradient>
 			<radialGradient id="{uid}-well">
-				<stop offset="0.25" stop-color="#030304" />
-				<stop offset="1" stop-color="#0f0f13" />
+				<stop offset="0.3" stop-color="#050506" />
+				<stop offset="1" stop-color="#151518" />
 			</radialGradient>
 			<linearGradient id="{uid}-blade" x1="0" y1="0" x2="1" y2="1">
-				<stop offset="0" stop-color="#34343c" />
-				<stop offset="1" stop-color="#16161a" />
+				<stop offset="0" stop-color="#3d3e45" />
+				<stop offset="0.6" stop-color="#202126" />
+				<stop offset="1" stop-color="#141418" />
 			</linearGradient>
+			<radialGradient id="{uid}-smear">
+				<stop offset="0.3" stop-color="#3a3b42" stop-opacity="0.2" />
+				<stop offset="0.75" stop-color="#4a4b53" stop-opacity="0.55" />
+				<stop offset="1" stop-color="#2a2b31" stop-opacity="0.35" />
+			</radialGradient>
+			<radialGradient id="{uid}-hub" cx="0.4" cy="0.35">
+				<stop offset="0" stop-color="#3a3b41" />
+				<stop offset="1" stop-color="#0c0c0e" />
+			</radialGradient>
 			<linearGradient id="{uid}-gold" x1="0" y1="0" x2="0" y2="1">
-				<stop offset="0" stop-color="#b79a5c" />
-				<stop offset="1" stop-color="#6d5a32" />
+				<stop offset="0" stop-color="#d8b56a" />
+				<stop offset="1" stop-color="#7d6534" />
 			</linearGradient>
 		</defs>
 		<!-- PCB edge and PCIe fingers under the shroud -->
-		<rect x="96" y="290" width="512" height="12" fill="#0d1311" />
-		{#each fingers as x (x)}<rect {x} y="301" width="5" height="19" rx="1" fill="url(#{uid}-gold)" />{/each}
-		<!-- bracket, seen edge-on: plate, top tab, tongue -->
-		<path d="M1 6H24V316H19V328H12V316H8V20H1Z" fill="url(#{uid}-brkt)" />
-		<!-- backplate edge along the top and down the tail -->
-		<path d="M28 14H774Q786 14 786 26V286" class="bp" />
-		<!-- 8-pin sockets in the top notch -->
+		<rect x="92" y="296" width="250" height="8" fill="#0c1410" />
+		{#each fingers as x (x)}<rect {x} y="302" width="4.6" height="20" rx="0.8" fill="url(#{uid}-gold)" />{/each}
+		<!-- bracket, edge-on: shorter than the shroud, top tab, tongue -->
+		<path d="M2 84H22V330H16V320H9V92H2Z" fill="url(#{uid}-brkt)" />
+		<!-- 8-pin sockets at the tail, peeking over the top edge -->
 		{#each PINS as x (x)}
 			<g class="sock">
-				<rect {x} y="3" width="36" height="27" rx="2" />
-				<rect x={x + 13} y="0" width="10" height="5" rx="1" class="latch" />
-				{#each holes as h (h.dx + h.dy * 10)}<rect x={x + h.dx} y={h.dy - 3} width="4" height="4" rx="0.6" class="hole" />{/each}
+				<rect {x} y="1" width="36" height="20" rx="2" />
+				<rect x={x + 13} y="0" width="10" height="3" rx="1" class="latch" />
+				{#each holes as h (h.dx + h.dy * 10)}<rect x={x + h.dx} y={h.dy} width="4" height="4" rx="0.6" class="hole" />{/each}
 			</g>
 		{/each}
-		<!-- shroud: notch over the sockets, chamfered tail corner -->
-		<path d="M22 32Q22 20 34 20H458L466 30H594L602 20H772Q784 20 784 32V276L766 298H34Q22 298 22 286Z" fill="url(#{uid}-body)" class="body" />
-		<!-- facets and the brushed lower lip -->
-		<path d="M22 268H784V276L766 298H34Q22 298 22 286Z" class="lip" />
-		<path d="M272 24L294 24L286 52Z M515 24L537 24L529 52Z M272 296L294 296L286 268Z M515 296L537 296L529 268Z" class="facet" />
-		<!-- red accents (Radeon) -->
-		<path d="M30 272H118 M202 272H318 M488 272H560" class="red" />
-		<path d="M281.5 132V188 M524.5 132V188" class="red thin" />
+		<!-- backplate edge along the top and down the tail -->
+		<path d="M26 13H780Q787 13 787 20V284" class="bp" />
+		<!-- shroud -->
+		<path d={SHROUD} fill="url(#{uid}-body)" class="body" />
+		<path d={SHROUD} fill="url(#{uid}-sheen)" class="sheen" />
+		<!-- panel grooves and the PULSE red pinstripes, stepping between fans 1 and 2 -->
+		<path d="M24 70H276L290 56H782 M24 244H276L290 258H782" class="groove" />
+		<path d="M24 66H274L288 52H782 M24 248H274L288 262H782" class="red" />
+		<path d="M24 28H782 M24 286H770" class="seam" />
+		{#each SLOTS as [x, y] (x * 1000 + y)}<path d="M{x - 4} {y + 4}L{x + 4} {y - 4}" class="slot" />{/each}
 		<!-- three fans -->
 		{#each FANS as cx (cx)}
-			<circle {cx} cy={FY} r="111" class="ring" />
-			<circle {cx} cy={FY} r="106" fill="url(#{uid}-well)" />
-			<g class="rotor">
-				{#each BLADES as a (a)}<path d={blade(cx, a)} fill="url(#{uid}-blade)" class="blade" />{/each}
-				<circle {cx} cy={FY} r="98" class="tip" />
-				<circle {cx} cy={FY} r="27" class="hub" />
-				<circle {cx} cy={FY} r="19" class="hub-in" />
-				<path d="M{cx - 7} {FY + 4}L{cx} {FY - 8}L{cx + 7} {FY + 4}Z" class="gem" />
+			<circle {cx} cy={FY} r="117" class="ring" stroke="url(#{uid}-bevel)" />
+			<circle {cx} cy={FY} r="112" fill="url(#{uid}-well)" />
+			<g class="rotor" style="transform-origin: {cx}px {FY}px">
+				<g class="blades">
+					{#each BLADES as a (a)}<path d={blade(cx, a)} fill="url(#{uid}-blade)" class="blade" />{/each}
+				</g>
+				<circle {cx} cy={FY} r="33" fill="url(#{uid}-hub)" class="hub" />
+				<circle {cx} cy={FY} r="27" class="hub-ring" />
+				<text x={cx} y={FY - 9} class="hub-s" text-anchor="middle">SAPPHIRE</text>
+				<text x={cx} y={FY + 5} class="hub-t" text-anchor="middle">PU<tspan class="hub-l">L</tspan>SE</text>
 			</g>
+			<!-- motion blur: the spinning blades read as a disc -->
+			<circle {cx} cy={FY} r="106" fill="url(#{uid}-smear)" class="smear" />
 		{/each}
-		<!-- branding -->
-		<text x="36" y="291" class="brand">PULSE</text>
-		<text x="760" y="290" class="model" text-anchor="end">RADEON RX 7900 XTX</text>
 	</svg>
 {:else}
 	<svg viewBox="0 0 800 330" class="art xray" aria-hidden="true">
@@ -136,17 +166,17 @@
 			</radialGradient>
 		</defs>
 		<!-- the cooler past the PCB end: fin stack and heat pipes -->
-		<path d="M22 32Q22 20 34 20H772Q784 20 784 32V276L766 298H34Q22 298 22 286Z" class="shell" />
-		{#each fins as x (x)}<path d="M{x} 34V286" class="fin" />{/each}
+		<path d={SHROUD} class="shell" />
+		{#each fins as x (x)}<path d="M{x} 26V288" class="fin" />{/each}
 		<!-- PCB -->
-		<rect x="26" y="22" width="584" height="278" rx="6" class="pcb" />
-		<rect x="26" y="22" width="584" height="278" rx="6" fill="url(#{uid}-grid)" />
+		<rect x="24" y="22" width="678" height="278" rx="6" class="pcb" />
+		<rect x="24" y="22" width="678" height="278" rx="6" fill="url(#{uid}-grid)" />
 		<path d="M290 96V60Q290 40 320 40H780 M290 224V262Q290 280 320 280H780 M358 132H780 M358 188H780" class="pipe" />
 		<!-- bracket and display outputs -->
-		<path d="M1 6H24V316H19V328H12V316H8V20H1Z" class="ln faint" />
-		{#each [36, 92, 148, 204] as y (y)}<rect x="30" {y} width="28" height="46" rx="3" class="ln" />{/each}
+		<path d="M2 84H22V330H16V320H9V92H2Z" class="ln faint" />
+		{#each [96, 148, 200, 252] as y (y)}<rect x="28" {y} width="26" height="42" rx="3" class="ln" />{/each}
 		<!-- PCIe x16 fingers and lanes -->
-		{#each fingers as x (x)}<rect {x} y="301" width="5" height="19" rx="1" class="ln faint" />{/each}
+		{#each fingers as x (x)}<rect {x} y="302" width="4.6" height="20" rx="0.8" class="ln faint" />{/each}
 		{#each lanes as d (d)}<path {d} class="trace lane" />{/each}
 		<!-- memory bus: two GDDR6 packages per MCD -->
 		{#each bus as d (d)}<path {d} class="trace bus" class:on={lit.bus} />{/each}
@@ -165,15 +195,15 @@
 			<rect x={k.x + 3} y={k.y + (k.y < 150 ? 27 : -15)} width="15" height="9" rx="1" class="ln faint" />
 		{/each}
 		{#each caps as x (x)}<circle cx={x} cy="166" r="6" class="ln faint" />{/each}
-		<text x="518" y="90" class="lbl" text-anchor="middle">VRM</text>
+		<text x="533" y="88" class="lbl" text-anchor="middle">VRM</text>
 		<!-- 3 × 8-pin, wired to the VRM -->
 		{#each PINS as x (x)}
-			<path d="M{x + 18} 25V{98}" class="trace pwr" class:on={lit.pwr} />
-			<rect {x} y="3" width="36" height="22" rx="2" class="sock-x" class:on={lit.pwr} />
-			{#each holes as h (h.dx + h.dy * 10)}<rect x={x + h.dx} y={h.dy - 3} width="4" height="4" rx="0.6" class="ln faint" />{/each}
+			<path d="M{x + 18} 21V60H{x - 90}V98" class="trace pwr" class:on={lit.pwr} />
+			<rect {x} y="1" width="36" height="20" rx="2" class="sock-x" class:on={lit.pwr} />
+			{#each holes as h (h.dx + h.dy * 10)}<rect x={x + h.dx} y={h.dy} width="4" height="4" rx="0.6" class="ln faint" />{/each}
 		{/each}
-		<text x="528" y="62" class="lbl" text-anchor="middle">3 × 8-PIN</text>
-		<text x="238" y="296" class="lbl" text-anchor="middle">PCIe ×16</text>
+		<text x="646" y="36" class="lbl" text-anchor="middle">3 × 8-PIN</text>
+		<text x="226" y="294" class="lbl" text-anchor="middle">PCIe ×16</text>
 	</svg>
 {/if}
 
@@ -187,87 +217,94 @@
 	/* ---- shroud ---- */
 	.bp {
 		fill: none;
-		stroke: #6d6d76;
-		stroke-width: 4;
+		stroke: #1a1a1e;
+		stroke-width: 5;
 		stroke-linecap: round;
 	}
 	.sock rect:first-child {
 		fill: #0b0b0d;
-		stroke: #3c3c44;
+		stroke: #45454d;
 	}
 	.latch {
-		fill: #26262c;
+		fill: #2c2c33;
 	}
 	.hole {
 		fill: #3a3a42;
 	}
 	.body {
-		stroke: #34343c;
-		stroke-width: 1.5;
+		stroke: #5a5b62;
+		stroke-width: 1.2;
 	}
-	.lip {
-		fill: #1d1d22;
-		stroke: #3a3a42;
-		stroke-width: 1;
+	/* the sheen follows the pointer tilt (set by the scene; 0 at rest) */
+	.sheen {
+		transform: translate3d(calc(var(--tx, 0) * 6%), 0, 0);
+		transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
 	}
-	.facet {
-		fill: #26262d;
+	.groove {
+		fill: none;
+		stroke: #17171a;
+		stroke-width: 2;
 	}
 	.red {
 		fill: none;
-		stroke: #ff3b4f;
-		stroke-width: 3;
-		stroke-linecap: round;
-		filter: drop-shadow(0 0 3px rgb(255 59 79 / 0.6));
-	}
-	.red.thin {
+		stroke: #e3283e;
 		stroke-width: 2;
+		filter: drop-shadow(0 0 2px rgb(255 59 79 / 0.55));
 	}
-	.ring {
-		fill: #070708;
-		stroke: #3a3a43;
-		stroke-width: 2.5;
-	}
-	.rotor {
-		transform-box: fill-box;
-		transform-origin: 50% 50%;
-		transform: rotate(calc(var(--spin, 0) * 1turn));
-	}
-	.blade {
-		stroke: rgb(255 255 255 / 0.1);
-		stroke-width: 0.8;
-	}
-	.tip {
+	.seam {
 		fill: none;
-		stroke: #2f2f37;
-		stroke-width: 3;
-	}
-	.hub {
-		fill: #141418;
-		stroke: #45454e;
-		stroke-width: 1.5;
-	}
-	.hub-in {
-		fill: #0c0c0e;
-		stroke: rgb(255 59 79 / 0.55);
+		stroke: rgb(255 255 255 / 0.07);
 		stroke-width: 1;
 	}
-	.gem {
-		fill: #9a9aa3;
+	.slot {
+		stroke: #121214;
+		stroke-width: 3.5;
+		stroke-linecap: round;
 	}
-	.brand {
+	.ring {
+		fill: #0c0c0e;
+		stroke-width: 3;
+	}
+	.rotor {
+		transform-box: view-box;
+		transform: rotate(calc(var(--spin, 0) * 1turn));
+	}
+	.blades {
+		opacity: calc(1 - var(--rpm, 0) * 0.65);
+	}
+	.blade {
+		stroke: rgb(255 255 255 / 0.13);
+		stroke-width: 0.8;
+	}
+	.smear {
+		opacity: var(--rpm, 0);
+		pointer-events: none;
+	}
+	.hub {
+		stroke: #4a4b52;
+		stroke-width: 1.2;
+	}
+	.hub-ring {
+		fill: none;
+		stroke: #e3283e;
+		stroke-width: 1.8;
+	}
+	.hub-s {
+		font-family: var(--font-mono);
+		font-size: 3.6px;
+		letter-spacing: 0.2em;
+		fill: #9a9ba3;
+	}
+	.hub-t {
 		font-family: var(--font-display);
 		font-weight: 800;
 		font-style: italic;
-		font-size: 15px;
-		letter-spacing: 0.12em;
-		fill: #e9e7e2;
+		font-size: 12px;
+		letter-spacing: 0.04em;
+		fill: #d9dade;
 	}
-	.model {
-		font-family: var(--font-mono);
-		font-size: 9px;
-		letter-spacing: 0.16em;
-		fill: #8d8d96;
+	.hub-l {
+		fill: #ff3b4f;
 	}
 	/* ---- x-ray: bone and steel, red where the scan has read ---- */
 	.shell {
@@ -276,7 +313,7 @@
 		stroke-width: 1;
 	}
 	.fin {
-		stroke: rgb(237 234 227 / 0.13);
+		stroke: rgb(237 234 227 / 0.16);
 		stroke-width: 1;
 	}
 	.pcb {
@@ -304,6 +341,9 @@
 		fill: none;
 		stroke: rgb(169 199 216 / 0.3);
 		stroke-width: 1.2;
+		transition:
+			stroke 0.4s,
+			stroke-width 0.4s;
 	}
 	.trace.lane {
 		stroke: rgb(237 234 227 / 0.14);
@@ -315,6 +355,9 @@
 		fill: rgb(237 234 227 / 0.07);
 		stroke: var(--text-hi);
 		stroke-width: 1.2;
+		transition:
+			fill 0.4s,
+			stroke 0.4s;
 	}
 	.die {
 		stroke-width: 1.4;
@@ -324,9 +367,7 @@
 	}
 	.halo {
 		opacity: 0;
-	}
-	.on {
-		stroke: #ff3b4f;
+		transition: opacity 0.5s;
 	}
 	.mem.on,
 	.die.on,
@@ -354,5 +395,16 @@
 		font-weight: 600;
 		letter-spacing: 0.12em;
 		fill: var(--text-hi);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.sheen,
+		.trace,
+		.mem,
+		.die,
+		.choke,
+		.sock-x,
+		.halo {
+			transition: none;
+		}
 	}
 </style>
