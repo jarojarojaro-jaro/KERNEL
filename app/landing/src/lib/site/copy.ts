@@ -185,21 +185,7 @@ const raw = {
 				same: 'ten sam skrypt',
 				cross: 'orientacyjnie: różne skrypty',
 				kld: 'KLD na NVIDIA',
-				kldPending: 'w toku',
-				valTag: 'w walidacji · jeszcze nie w produkcie',
-				valTitle: 'Tryb bit-exact na {card}',
-				valChecks: [
-					'MTP = zwykłe dekodowanie, bajt w bajt (n_max {nmax})',
-					'długie prompty {long} tokenów: identycznie',
-					'powtórne zapytania: identycznie ({det} scenariuszy)',
-					'testy kerneli: {ops}'
-				],
-				valShort: 'krótkie prompty',
-				valLong: 'prompt {ctx} tokenów',
-				valBx: 'bit-exact',
-				valProd: 'produkcja',
-				valSpeed: 'MTP w tym trybie: {a} t/s wobec {b} t/s silnika produkcyjnego; przy prompcie {ctx} tokenów {la} wobec {lb} t/s ({cost})',
-				valSpeedNote: 'Ten sam skrypt ({script}), flagi produkcyjne, przebieg końcowy. Długi kontekst: dekodowanie MTP, T=0, 256 tokenów.'
+				kldPending: 'w toku'
 			}
 		},
 		cards: {
@@ -440,21 +426,7 @@ const raw = {
 				same: 'the same script',
 				cross: 'indicative: different scripts',
 				kld: 'KLD on NVIDIA',
-				kldPending: 'in progress',
-				valTag: 'in validation · not in the product yet',
-				valTitle: 'Bit-exact mode on the {card}',
-				valChecks: [
-					'MTP = plain decoding, byte for byte (n_max {nmax})',
-					'long prompts of {long} tokens: identical',
-					'repeated requests: identical ({det} scenarios)',
-					'kernel tests: {ops}'
-				],
-				valShort: 'short prompts',
-				valLong: '{ctx}-token prompt',
-				valBx: 'bit-exact',
-				valProd: 'production',
-				valSpeed: 'MTP in this mode: {a} t/s vs {b} t/s for the production engine; with a {ctx}-token prompt {la} vs {lb} t/s ({cost})',
-				valSpeedNote: 'The same script ({script}), production flags, final run. Long context: MTP decode, T=0, 256 tokens.'
+				kldPending: 'in progress'
 			}
 		},
 		cards: {

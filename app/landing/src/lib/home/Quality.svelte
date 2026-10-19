@@ -9,12 +9,12 @@
 	 * - A heat bracket spans our worst value → the smallest format change: the hero number "≈ 310×"
 	 *   (computed, rounded down to two significant digits).
 	 * Below: Qwen3.8-27B compact (3090 same script with the multiplier; XTX indicative, no multiplier;
-	 * NVIDIA KLD in progress) and the bit-exact validation slot (BITEXACT_XTX, not in the product yet).
+	 * NVIDIA KLD in progress).
 	 */
 	import { heatOf } from '$lib/cards/explorer';
 	import { reveal } from '$lib/fx/actions';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
-	import { BITEXACT_XTX, findCard, MODEL_INFO, SHEET, variantOf } from '$lib/data/measurements';
+	import { findCard, MODEL_INFO, SHEET, variantOf } from '$lib/data/measurements';
 	import { fmtRatio, fmtTps } from '$lib/format';
 	import { href, num, type Lang } from '$lib/i18n';
 	import ModelMark from '$lib/ModelMark.svelte';
@@ -60,20 +60,6 @@
 		const b = run && variantOf(run, run.ours)?.decode;
 		return card && run && a && b ? [{ card, run, a, b }] : [];
 	});
-	const bx = BITEXACT_XTX;
-	const bxCard = findCard(bx.card)?.name ?? '';
-	const bxChecks = $derived(
-		c.qwen.valChecks.map((t) =>
-			fill(t, {
-				nmax: bx.nMax.v,
-				long: bx.longPrompts.v.map((v) => (lang === 'en' ? v.replace(',', '.') : v)).join(' / '),
-				det: bx.detScenarios.v,
-				ops: bx.ops.v.map((o) => `${o.name} ${num(o.pass, lang, 0)}/${num(o.total, lang, 0)}`).join(' · ')
-			})
-		)
-	);
-	const bxSrc = [bx.src, bx.speed.bitexact.src, bx.speed.longCtx.bitexact.src];
-	const bxLongCost = Math.round((bx.speed.longCtx.bitexact.v / bx.speed.longCtx.prod.v - 1) * 100);
 </script>
 
 <section id="quality" class="quality heat-top" aria-labelledby="quality-title">
@@ -125,43 +111,19 @@
 			</figcaption>
 		</figure>
 
-		<div class="below">
-			<div class="qwen">
-				<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name} <SourceTip {lang} src={qwenRows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note="{qwenRows.map((r) => `${r.card.name}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — ')} — {c.qwen.kld}: {c.qwen.kldPending}." /></p>
-				{#each qwenRows as r (r.card.id)}
-					<div class="qrow">
-						<span class="qc">{r.card.short}</span>
-						<span class="qv"><span class="steel">{fmtTps(r.a.v, lang)}</span> → <b>{fmtTps(r.b.v, lang)}</b> <small>t/s</small></span>
-						{#if r.run.sameHarness}
-							<span class="qg"><b class="speedup" style="--rh:{heatOf(r.b.v / r.a.v)}">{fmtRatio(r.b.v / r.a.v, lang)}</b> <small>{c.qwen.same}</small></span>
-						{:else}
-							<span class="qg"><small class="cross">{c.qwen.cross}</small></span>
-						{/if}
-					</div>
-				{/each}
-			</div>
-
-			<div class="val">
-				<p class="vtag">{c.qwen.valTag}</p>
-				<p class="vt"><ModelMark model={bx.model} size="0.6em" /> {fill(c.qwen.valTitle, { card: bxCard })}</p>
-				<ul class="checks">
-					{#each bxChecks as t, i (i)}<li><span class="ok" aria-hidden="true">✓</span>{t}</li>{/each}
-				</ul>
-				<div class="vbars" aria-hidden="true">
-					{#each [{ k: c.qwen.valShort, bx: bx.speed.bitexact.v, pr: bx.speed.prod.v }, { k: fill(c.qwen.valLong, { ctx: bx.speed.longCtx.promptTokens.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US') }), bx: bx.speed.longCtx.bitexact.v, pr: bx.speed.longCtx.prod.v }] as g (g.k)}
-						{@const top = Math.max(g.bx, g.pr)}
-						<div class="vg">
-							<span class="vk">{g.k}</span>
-							<span class="vrow"><span class="vn">{c.qwen.valBx}</span><span class="vb vb--bx" style="--w:{g.bx / top}"></span><b>{fmtTps(g.bx, lang)}</b></span>
-							<span class="vrow"><span class="vn">{c.qwen.valProd}</span><span class="vb" style="--w:{g.pr / top}"></span><b>{fmtTps(g.pr, lang)}</b></span>
-						</div>
-					{/each}
+		<div class="qwen">
+			<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name} <SourceTip {lang} src={qwenRows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note="{qwenRows.map((r) => `${r.card.name}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — ')} — {c.qwen.kld}: {c.qwen.kldPending}." /></p>
+			{#each qwenRows as r (r.card.id)}
+				<div class="qrow">
+					<span class="qc">{r.card.short}</span>
+					<span class="qv"><span class="steel">{fmtTps(r.a.v, lang)}</span> → <b>{fmtTps(r.b.v, lang)}</b> <small>t/s</small></span>
+					{#if r.run.sameHarness}
+						<span class="qg"><b class="speedup" style="--rh:{heatOf(r.b.v / r.a.v)}">{fmtRatio(r.b.v / r.a.v, lang)}</b> <small>{c.qwen.same}</small></span>
+					{:else}
+						<span class="qg"><small class="cross">{c.qwen.cross}</small></span>
+					{/if}
 				</div>
-				<p class="vs">
-					{fill(c.qwen.valSpeed, { a: fmtTps(bx.speed.bitexact.v, lang), b: fmtTps(bx.speed.prod.v, lang), ctx: bx.speed.longCtx.promptTokens.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US'), la: fmtTps(bx.speed.longCtx.bitexact.v, lang), lb: fmtTps(bx.speed.longCtx.prod.v, lang), cost: `${bxLongCost > 0 ? '+' : '−'}${Math.abs(bxLongCost)} %` })}
-					<SourceTip {lang} src={bxSrc} note="{MODEL_INFO.qwen38.name} {bx.quant} · {bx.run[lang]}. {fill(c.qwen.valSpeedNote, { script: bx.speed.script })}" />
-				</p>
-			</div>
+			{/each}
 		</div>
 
 		<div class="foot">
@@ -495,55 +457,10 @@
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 	}
-	/* bit-exact speed: two tiny pairs of bars */
-	.vbars {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 0.9rem 1.4rem;
-	}
-	.vg {
-		display: grid;
-		gap: 0.3rem;
-		min-width: 0;
-	}
-	.vk {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.06em;
-		text-transform: uppercase;
-		color: var(--text-mute);
-	}
-	.vrow {
-		display: grid;
-		grid-template-columns: 5.2rem minmax(0, 1fr) auto;
-		align-items: center;
-		gap: 0.5rem;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text);
-	}
-	.vb {
-		height: 6px;
-		width: calc(var(--w) * 100%);
-		border-radius: var(--r-pill);
-		background: var(--before);
-	}
-	.vb--bx {
-		background: var(--text-hi);
-	}
-	.vrow b {
-		font-weight: 500;
-		color: var(--text-hi);
-	}
 
-	/* ---- below: Qwen + validation ---- */
-	.below {
-		display: grid;
-		grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-		gap: clamp(1rem, 2.5vw, 1.75rem);
-	}
-	.qwen,
-	.val {
+	/* ---- below: Qwen ---- */
+	.qwen {
+		max-width: 46rem;
 		display: grid;
 		gap: 0.85rem;
 		align-content: start;
@@ -598,60 +515,6 @@
 	.cross {
 		color: var(--text) !important;
 	}
-	/* in validation: secondary, quiet dashed frame = not a product claim yet */
-	.val {
-		background: transparent;
-		box-shadow: none;
-		border: 1px dashed var(--line-strong);
-		gap: 0.6rem;
-	}
-	.vtag {
-		justify-self: start;
-		padding: 0.15rem 0.55rem;
-		border: 1px dashed var(--text-mute);
-		border-radius: var(--r-pill);
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--text);
-	}
-	.vt {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-weight: 700;
-		font-size: var(--fs-md);
-		color: var(--text);
-	}
-	.checks {
-		margin: 0;
-		padding: 0;
-		list-style: none;
-		display: grid;
-		gap: 0.4rem;
-		font-size: var(--fs-xs);
-		color: var(--text-mute);
-	}
-	.checks li {
-		display: flex;
-		gap: 0.55rem;
-	}
-	.ok {
-		color: var(--text);
-		font-weight: 700;
-	}
-	.vs {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--line);
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text);
-	}
 	.foot {
 		display: flex;
 		flex-wrap: wrap;
@@ -673,9 +536,13 @@
 	.link:hover {
 		color: var(--heat-4);
 	}
+	@media (max-width: 360px) {
+		.gv {
+			font-size: 2.2rem;
+		}
+	}
 	@media (max-width: 900px) {
-		.head,
-		.below {
+		.head {
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.hero-num {
@@ -699,9 +566,6 @@
 		}
 		.gc {
 			justify-content: flex-start;
-		}
-		.vbars {
-			grid-template-columns: minmax(0, 1fr);
 		}
 		.zl {
 			display: none;
