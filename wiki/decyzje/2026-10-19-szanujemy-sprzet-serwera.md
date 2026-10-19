@@ -13,6 +13,8 @@ Tło: Chrome zostawiony z animowaną stroną palił ~90% rdzenia przez 3 h ([[le
 
 **Zaostrzenie (użytkownik, 2026-10-19, CPU 73 °C):** każda ciężka komenda CPU (kompilacje, także nvcc/cicc/hipcc, buildy cmake, deasemblacja dużych bibliotek, `strings`/grep po dużych binarkach, kompilatory shaderów, analizy w Pythonie, embeddingi) tylko jako `flock /tmp/cpuheavy.lock nice -n 19 taskset -c 0-3 <cmd>` – jedno ciężkie zadanie naraz u wszystkich agentów, maks. 4 rdzenie, buildy `-j4`. Lekkie odczyty (cat, małe grepy, `git log`) bez blokady. Pliku blokady nigdy nie usuwać ani nie odtwarzać ([[lekcja-nie-odtwarzac-lockow]]).
 
+**Kolejne zaostrzenie (użytkownik, 2026-10-19, CPU 67–73 °C, cieplej niż GPU):** nowe ciężkie komendy `flock /tmp/cpuheavy.lock nice -n 19 taskset -c 0-1 <cmd>`, buildy `-j2`, buildy CUDA tylko dla potrzebnej architektury (`CMAKE_CUDA_ARCHITECTURES=86` albo `120`, nie obie).
+
 ## Powiązane
 - [[decyzje/_hub|Decyzje]]
 - [[2026-10-19-bezpieczenstwo-sprzetu]]

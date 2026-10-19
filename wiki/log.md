@@ -137,6 +137,9 @@ Nowe [[2026-10-19-najlepiej-bez-pytania]] (linia w `AGENTS.md`) i [[2026-10-19-s
 ## [2026-10-19] ingest | Raport 21l (RE dla GPU)
 Nowe: [[raport-21l-re-gpu]], [[co-stats]], [[umr-offline-pm4]], [[lekcja-radare2-sass]], [[re-vendorow-zasady]]; [[mmvq-multikolumnowe]] (klif VGPR ncols 4 → 5).
 
+## [2026-10-19] update | `cpuheavy.lock` na rdzeniach 0–1
+[[2026-10-19-szanujemy-sprzet-serwera]]: `taskset -c 0-1`, buildy `-j2`, CUDA jedna architektura na build.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
