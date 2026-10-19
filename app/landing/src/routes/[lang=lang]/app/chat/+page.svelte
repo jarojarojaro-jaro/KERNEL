@@ -64,7 +64,7 @@
 
 <div class="wrap">
 	<section class="chat" aria-labelledby="chat-h">
-		<header class="bar">
+		<header class="chat-bar">
 			<h1 id="chat-h" class="h3">{c.title}</h1>
 			<div class="segmented" role="radiogroup" aria-label={c.picker}>
 				{#each PICKS as p (p.key)}
@@ -172,7 +172,7 @@
 		border-radius: var(--r-lg);
 		background: var(--bg-1);
 	}
-	.bar {
+	.chat-bar {
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;

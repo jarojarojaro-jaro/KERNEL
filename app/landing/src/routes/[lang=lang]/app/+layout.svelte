@@ -62,6 +62,7 @@
 	}
 	.window {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		grid-template-rows: auto minmax(0, 1fr) auto;
 		height: calc(100dvh - 2 * var(--sp-5));
 		min-height: 36rem;

@@ -109,6 +109,7 @@
 	.proto {
 		min-width: 0;
 		overflow: hidden;
+		white-space: nowrap;
 		text-overflow: ellipsis;
 	}
 	.short {
@@ -184,6 +185,11 @@
 	}
 	@media (max-width: 400px) {
 		.name {
+			display: none;
+		}
+	}
+	@media (max-width: 359px) {
+		.proto {
 			display: none;
 		}
 	}
