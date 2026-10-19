@@ -1,13 +1,15 @@
 /**
  * Local preview of the static build with what a real static host does: gzip, long-lived caching
- * for hashed assets, `<dir>/index.html` resolution. Usage: `bun scripts/serve.ts [port]` (default 18433).
- * Binds to 127.0.0.1 only; this is not a deployment.
+ * for hashed assets, `<dir>/index.html` resolution. Usage: `bun scripts/serve.ts [port] [host]`
+ * (default 18433, 127.0.0.1). Pass the LAN address (e.g. 192.168.10.230) to open it from another machine on the
+ * home network; this is not a deployment.
  */
 import { existsSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 
 const root = resolve(import.meta.dir, '../build');
 const port = Number(process.argv[2] ?? 18433);
+const hostname = process.argv[3] ?? '127.0.0.1';
 const TYPES: Record<string, string> = {
 	'.html': 'text/html; charset=utf-8',
 	'.js': 'text/javascript; charset=utf-8',
@@ -22,7 +24,7 @@ const TYPES: Record<string, string> = {
 const COMPRESSIBLE = new Set(['.html', '.js', '.css', '.json', '.svg', '.txt', '.sh', '.ps1']);
 
 Bun.serve({
-	hostname: '127.0.0.1',
+	hostname,
 	port,
 	async fetch(req) {
 		const url = new URL(req.url);
