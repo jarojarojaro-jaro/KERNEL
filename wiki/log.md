@@ -95,6 +95,9 @@ Nowe: [[raport-18-nastepna-fala]], [[2026-10-19-workload-omp]], [[model-kosztu-w
 ## [2026-10-19] ingest | Raport 21a (DSpine)
 Nowe: [[drafter-dspine]], [[raport-21a-dspine]], [[lekcja-akceptacja-h100-nie-przenosi-sie]], [[lekcja-naglowki-drafterow]]; zaktualizowany [[drafter-dflash]].
 
+## [2026-10-19] ingest | Raport 21b (zasoby GPU perf, Blackwell TG)
+Nowe: [[raport-21b-gpu-perf-zasoby]], [[wafer-gpu-perf-lista]], [[projekcja-rtx-5090]], [[karty-nvidia-parametry]], [[pdl-mmvq-trigger]], [[mmvq-prefetch-l2]], [[l2-persist]], [[trwala-siatka-bez-pm4]], [[lekcja-littles-law-gemv]], [[physics-floor-check]]; zaktualizowany [[sm-86-89-120]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

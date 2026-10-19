@@ -14,7 +14,7 @@ ROCm jest domyślnym backendem od 2026-10-12 (Vulkan tylko jako opcja). Kernele 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (20)
+## Notatki (21)
 
 - [[amd-smi|AMD SMI (amd-smi)]] — Narzędzie i biblioteka AMD do telemetrii i sterowania GPU (moc, zegary, perf-level); w ROCm zastąpiło rocm-smi, działa na Linuksie, natywnego Windows brak.
 - [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]] — Jak czytać wpisy `[gfxhub] page fault` i `sq_intr` w `journalctl -k` na RX 7900 XTX: pola `GCVM_L2_PROTECTION_FAULT_STATUS`, typy przerwań SQ i komunikaty MES (raport 17, 2026-10-19).
@@ -35,5 +35,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[rocm-stos|Stos ROCm na naszym serwerze]] — Pracujemy na ROCm 10.0 (`/opt/rocm/core-10.0`, wersja kandydująca 10.0.0~pre4) z RX 7900 XTX (gfx1100); ROCm 10.1 leży obok w katalogu użytkownika do testów.
 - [[therock|TheRock: system budowania i wydań ROCm]] — Od ROCm 7.14 (2026-07-15) AMD buduje i wydaje ROCm przez otwarty system TheRock: Core SDK, instalator Runfile (kilka wersji obok siebie), pakiety DEB/RPM, koła Pythona per rodzina gfx i tarballe.
 - [[gfx11-pm4-dispatch-priv|Własny dispatch PM4 na GFX11 musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1`]] — Na GFX11 (w tym gfx1100) każdy własny `DISPATCH_DIRECT` musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1` (bit 20) – obejście błędu CWSR DEGFX11_12113; firmware CP robi to sam tylko dla pakietów AQL, więc taśma PM4 kopiująca RSRC1 z deskryptora kernela startuje fale z PRIV=0 (raport 17 §9, 2026-10-19).
+- [[trwala-siatka-bez-pm4|XTX bez PM4: trwała siatka wraca do gry (warunkowo)]] — Bez PM4 granica między kernelami kosztuje 2.75 µs w HIP graph, a podłoga pakietu AQL to 2.08 µs nawet bez fence'ów, podczas gdy bariera trwałej siatki to 0.48–0.77 µs; jeśli PM4 nie da się zabezpieczyć, trwały blok MoE na warstwę LFM jest jedyną bezstratną drogą do odzyskania części −12% (szacunek +8–10% względem PM4-off) (raport 21b, 2026-10-19).
 - [[kfd-smi-eventy|Zdarzenia KFD SMI (`AMDKFD_IOC_SMI_EVENTS`) bez roota]] — Proces może otworzyć własny `/dev/kfd` i przez `AMDKFD_IOC_SMI_EVENTS` dostawać zdarzenia swoich kolejek (bez roota): `QUEUE_EVICTION` z przyczyną (SVM, userptr, TTM, suspend), `QUEUE_RESTORE`, plus globalne `VMFAULT` i `GPU_PRE_RESET` (raport 17, 2026-10-19).
 <!-- AUTO:END -->

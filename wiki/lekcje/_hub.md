@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (77)
+## Notatki (78)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]] — Restarty serwera 2026-10-18 czyszczą `/tmp`: `/tmp/bxv/summary.txt` i `/tmp/bxd/*` (walidacja bit-exact) zniknęły już przy wcześniejszym restarcie ~18:53 UTC, przed archiwizacją; przed restartem ~20:27 UTC (overdrive) resztę zarchiwizowano do `~/qwen-opt/tmp-archive-20261018/` (63 MB: coupled, lookup, pm4pdl, lfmmoe, qa).
@@ -49,6 +49,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-kolejnosc-akumulacji-fa|Kolejność akumulacji w FA zmienia KLD]] — Nowy kafel prefillu w Flash Attention zmienił kolejność akumulacji i dał KLD 0.0135; łatka 0043 przywróciła kolejność chunków K i KLD = 0.
 - [[lekcja-limit-cpu-kontenera|Kontener widzi wszystkie rdzenie hosta, a ma limit cgroup]] — W kontenerach Vast i RunPod `nproc` pokazuje wszystkie wątki hosta (64 albo 96), a limit cgroup to ok. 7.7 CPU; llama.cpp bez `-t` bierze za dużo wątków i dławi się na kwocie.
 - [[lekcja-label-to-nie-binarka|Label w pomiarach nie jest tożsamością binarki]] — Label „base” w `spec_sweep.jsonl` wskazywał na nadpisywany katalog `~/llama-opt`, więc ta sama nazwa dawała 29.77, 29.36, 29.12 i 29.16 ms/krok w różnych sesjach i nie da się oddzielić dryfu sprzętu od zmian kodu.
+- [[lekcja-littles-law-gemv|Little's law dla GEMV: liczy się liczba ładowań w locie]] — Bajty w locie = pasmo × latencja: przy ~600 ns latencji DRAM `[ZAŁOŻENIE]` XTX potrzebuje ~6.0 KB w locie na CU, 3090 6.8 KB/SM, 4090 4.7, 5060 Ti 7.5, 5090 6.3 – czyli ~10–16 ładowań 16 B na falę/warp; to samo pokazał ATT na XTX (gate+up LFM 85% czasu w `s_waitcnt vmcnt`) (raport 21b, 2026-10-19).
 - [[lekcja-losowe-spowolnienia|Losowe spowolnienia per proces]] — Gate+up w LFM trwał 24.3 albo 27.2 µs w 4 z 8 profili, także na buildzie bez zmian; A/B trzeba robić na wielu procesach, nie na jednym.
 - [[lekcja-sondy-en-na-polskim|Małe sondy trenowane po angielsku mylą się na polskim]] — Sonda żądania PFlash (trenowana po angielsku) w 9/10 polskich przypadków wzięła tytuł wklejonego dokumentu za prośbę użytkownika, choć główna głowica Q/K przeniosła się na polski dobrze.
 - [[lekcja-mikrobench-klamie|Mikrobench kłamie]] — Mikrobenchmark dał inną decyzję niż model (Q6_K z GLC|DLC); decyzje o kernelach podejmujemy tylko na rocprofv3 w pełnym modelu.

@@ -14,7 +14,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (26)
+## Notatki (27)
 
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
 - [[agr-lookup-zgodny-z-mtp|AGR: wybór kandydata lookupu zgodnego z draftami MTP]] — Reguła bez treningu i bezstratna: spośród kandydatów lookupu (sufiks ≥ 2 albo ≥ 4 tokenów) zostawić tych, których pierwsze 4 tokeny kontynuacji równają się 4 draftom MTP, potem najdłuższy sufiks, potem najnowszy; w symulacji AGR2 daje +3.7% t/s na agencie (2/3 sufitu idealnego pointera) i +0.6% na czacie (raport 21c, 2026-10-19).
@@ -29,6 +29,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[mikrobench-granicy-kernela|Mikrobenchmark granicy kernela]] — Zanim zainwestujemy w fuzje albo nowy sposób wysyłania pracy, mierzymy, ile kosztuje sama granica między kernelami na danym stosie.
 - [[model-kosztu-weryfikacji-moe|Model kosztu weryfikacji MoE (LFM2.5)]] — Weryfikacja N tokenów w MoE czyta sumę ekspertów wszystkich N tokenów: przy niezależnym routingu u(N) = 64·(1 − (60/64)^N) ekspertów na warstwę, B(N) = 0.761 + 0.254·u(N) GB, T(N) ≈ 1.45 ms + B(N)/0.9 GB/ms; kalibracja T(1) = 3.42 ms vs zmierzone 3.40 (raport 18, 2026-10-19, `[SZACUNEK]`).
 - [[ms-na-krok|ms/krok jako główna metryka spekulacji]] — Przy dekodowaniu spekulacyjnym t/s = (tokeny na krok) / (czas kroku); kernel zmienia tylko czas kroku, więc to ms/krok mierzy łatkę, a t/s miesza ją z losowością tekstu.
+- [[physics-floor-check|Physics-floor check: czas kernela ≥ bajty / pasmo]] — Każdy zmierzony czas kernela porównać z fizyczną podłogą (bajty do przeczytania / szczytowe pasmo); wynik szybszy niż podłoga to błąd pomiaru, nie rekord – u nas tak wyszedł raport „1075 GB/s, 112% peaku”, który przy MTP był ~400 GB/s (propozycja raportu 21b #8, wzorem KernelGuard i SOL-ExecBench, 2026-10-19).
 - [[playbook-optymalizacji|Playbook optymalizacji]] — Każda optymalizacja przechodzi tę samą pętlę: sufit → profil → hipoteza z budżetem → łatka z wyłącznikiem → bramka poprawności → przeplatane A/B → wpis w NOTES.
 - [[pomiar-abba|Pomiar: przeplatane A/B (ABBA) na ms/krok]] — Porównania robimy w jednej binarce, przeplatając warianty (ABBA), na metryce ms/krok, z kilkoma seedami i promptami; pojedynczy przebieg nic nie dowodzi.
 - [[dowod-offline|Praca offline przed oknem GPU]] — Gdy GPU jest zajęte albo zakazane, przygotowujemy zmiany do końca bez niego (kompilacja, ISA, emulacja, dry-run) i zostawiamy gotowe komendy na okno GPU.

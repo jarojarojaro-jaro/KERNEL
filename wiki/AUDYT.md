@@ -2730,6 +2730,9 @@ Liczby z 18 §0–§6 (wiersze w `zrodlo`); roofline 57.1 / 75.7% z §3.1, udzia
 ## Aktualizacja: raport 21a (2026-10-19)
 Liczby z 21a §0, §4, §8 i sekcji „Do bazy wiedzy” (wiersze w `zrodlo`); V16/V1 = 30.53/22.83 i 39.66/24.60 z `16b:59-64` sprawdzone. Błędnych: 0.
 
+## Aktualizacja: raport 21b (2026-10-19)
+Liczby z 21b §0–§5 (wiersze w `zrodlo`); odwołania do `mmvq.cu`/`common.cuh` przepisane z raportu (nie sprawdzone w kodzie przez WikiIngest). Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

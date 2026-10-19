@@ -59,37 +59,37 @@ Audyt liczb: [[AUDYT]].
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (23)
 - [[modele/_hub|modele]] — Modele i kwanty (15)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
-- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (20)
-- [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
-- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (26)
+- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (21)
+- [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
+- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (28)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (26)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (27)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (77)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (78)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (62)
-- [[research/_hub|research]] — Streszczenia raportów (43)
+- [[research/_hub|research]] — Streszczenia raportów (46)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (26)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
 ## Ostatnio aktualizowane
 
+- 2026-10-19 [[trwala-siatka-bez-pm4|XTX bez PM4: trwała siatka wraca do gry (warunkowo)]]
 - 2026-10-19 [[kfd-smi-eventy|Zdarzenia KFD SMI (`AMDKFD_IOC_SMI_EVENTS`) bez roota]]
 - 2026-10-19 [[kfd-ewikcja-kolejek-gfx11|Ewikcja i przywracanie kolejek KFD + MES na gfx11 (Linux 6.8)]]
 - 2026-10-19 [[hip-kopie-stronicowane-zostawiaja-svm|Kopie HIP z pamięci stronicowanej zostawiają zmapowane zakresy SVM]]
 - 2026-10-19 [[gfx11-pm4-dispatch-priv|Własny dispatch PM4 na GFX11 musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1`]]
 - 2026-10-19 [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]]
+- 2026-10-19 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
 - 2026-10-19 [[raport-21h-rsi|Raport 21h: Terminal-RSI (Tencent Hunyuan) i RSI jako metoda]]
 - 2026-10-19 [[raport-21c-cplm|Raport 21c: Copy-Paste Language Models (CPLM) – nie adoptujemy]]
+- 2026-10-19 [[raport-21b-gpu-perf-zasoby|Raport 21b: zasoby GPU perf (wafer-ai) i Blackwell Tuning Guide na nasze karty]]
 - 2026-10-19 [[raport-21a-dspine|Raport 21a: DSpine vs MTP4 + ogon W16 na XTX]]
 - 2026-10-19 [[raport-18-nastepna-fala|Raport 18: następna fala optymalizacji (15 pomysłów, plan 30 dni)]]
 - 2026-10-19 [[raport-17-gpu-page-fault|Raport 17: page faulty GPU i resety XTX (16–19.10)]]
 - 2026-10-19 [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]]
 - 2026-10-19 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
-- 2026-10-19 [[raport-16b-lookup-tail|Raport 16b: ogon z lookupu za MTP (15b E1–E3, 16i E-X0–E-X3)]]
-- 2026-10-19 [[raport-15b-spekulacja-frontier|Raport 15b: frontier spekulacji (lookup, szeroki blok, DFlash2, bit-exact)]]
-- 2026-10-19 [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]]
 
-Razem 455 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 465 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
