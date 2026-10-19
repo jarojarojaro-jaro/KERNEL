@@ -1,8 +1,8 @@
 ---
 typ: kernel
 tags: [kernele, pm4, rocr]
-aktualizacja: 2026-10-18
-zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:6-14,18-57,81-99; ~/KERNEL/qwen-opt/NOTES.md:372-376; ~/KERNEL/product/research/08-analiza-platformy-latek.md:14-21; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:135-136,473; ~/KERNEL/product/research/15a-monokernel.md:179-183,196,233-242; ~/KERNEL/product/research/16a-pm4-pdl.md:145-150
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:6-14,18-57,81-99; ~/KERNEL/qwen-opt/NOTES.md:372-376; ~/KERNEL/product/research/08-analiza-platformy-latek.md:14-21; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:135-136,473; ~/KERNEL/product/research/15a-monokernel.md:179-183,196,233-242; ~/KERNEL/product/research/16a-pm4-pdl.md:145-150; ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:142-150; komunikat Main do WikiIngest 2026-10-19
 status: aktualne
 ---
 # Replay grafu dekodowania jako bufor PM4 (0060, 0061, 0063)
@@ -24,6 +24,8 @@ Wyłączniki: `GGML_HIP_PM4=0`; diagnostyka `GGML_HIP_PM4_DEBUG=1/2/3` (0061), b
 Pomysł: taśma PM4 bez pakietów granicy (`CS_PARTIAL_FLUSH` + `ACQUIRE_MEM`) między parą producent → konsument; konsument (MMVQ n=1) najpierw ładuje wagi do VGPR, potem czeka na flagę `gen` ustawianą z release przez ostatni blok producenta (tickety już są w 0051/0053/0054/0056/0057). Zmierzony overlap bez granicy 0.24–0.35 µs (runda 4). Szacunek +5…+15% LFM przy ~1/4 kosztu megakernela, bitowo z definicji; ryzyko zakleszczenia, jeśli dispatcher nie wydaje grup roboczych po kolei – rozstrzyga mikrobench X1 (wymaga zgody na GPU). Zob. [[raport-15a-monokernel]].
 
 PM4-PDL (16a, 2026-10-18): zamknięte – synchronizacja przez pamięć kosztuje prawie tyle co granica ([[lekcja-handoff-rdna3]]); `GGML_HIP_PM4_UB` (gałąź `pm4-pdl`) daje szybką górną granicę dla pomysłów „mniej granic”.
+
+**Awarie (18–19.10, w analizie):** 7 bloków E-X4 (także bez nowego kodu) skończyło się `tape of 823 dispatches did not complete within 10 s` po page faulcie `[gfxhub] … address 0x0 … client SQC (data)`, „MES might be in unrecoverable state” i resecie GPU; tylko w seriach ≥ ~50 requestów z eksmisją cache promptu; ten sam podpis 16.10 15:35 w innym `llama-server`. Przyczyna nieustalona – analizuje agent Pm4FaultAnalysis (raport 17 w toku).
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

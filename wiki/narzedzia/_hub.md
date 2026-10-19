@@ -14,7 +14,7 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (20)
+## Notatki (21)
 
 - [[att-gfx1100|ATT (thread trace) na gfx1100]] — Śledzenie instrukcji fali (ATT) działa na RX 7900 XTX w ROCm 10.0: `rocprofv3 --att --att-target-cu 1 --att-simd-select 0 --kernel-include-regex … --kernel-iteration-range …` z `GGML_HIP_PM4=0`; skrypt `att_model.sh` i parser `attsum.py` w `~/wt/lfmmoe-prof/` (2026-10-18).
 - [[kld-canary|Bramka KLD i kanarki (kld_gate.py, kld_canary.sh, perturb_gguf.py)]] — Trzy narzędzia: `kld_gate.py` porównuje dwa logi `llama-perplexity --kl-divergence`, `perturb_gguf.py` robi celowo uszkodzone kopie GGUF, a `kld_canary.sh` sprawdza, że bramka łapie prawdziwe szkody.
@@ -35,5 +35,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[skrypty-chmury|Skrypty chmury (~/qwen-opt/cloud)]] — Zestaw skryptów bash do kampanii na wynajętych kartach Vast; każdy domyślnie tylko wypisuje komendy, a wykonuje je dopiero z `--go`.
 - [[spec-sweep|spec_sweep — główny pomiar t/s i ms/krok]] — Standardowy benchmark projektu: restartuje serwer dla każdej konfiguracji i mierzy t/s, ms/krok, tokeny na krok i akceptację draftu na stałym zestawie promptów PL/EN.
 - [[ss-zrzut-ekranu|ss (zrzut ekranu z Windowsa na serwer)]] — Funkcja PowerShella `ss` w profilu użytkownika: zapisuje obrazek ze schowka jako PNG i kopiuje go przez `scp` do `/tmp` na serwerze, żeby agent mógł go przeczytać.
+- [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]] — Skrypt odpytuje co 2 s log jądra i sensory XTX; przy zagrożeniu zabija wszystkie `llama-server` / `llama-bench` / `llama-perplexity` / `test-backend-ops` / `magnitude-engine` poza produkcją na :8080, zapisuje powód do `gpu-guard.log` i kończy się kodem 3, który budzi agenta głównego.
 - [[wiki-py|wiki.py (narzędzie tej bazy wiedzy)]] — Skrypt tylko ze stdlib do utrzymania wiki: `lint` (błędy → kod wyjścia 1), `index` (odświeża listy w `_hub.md` i `index.md`), `search` (tytuły, streszczenia, tagi).
 <!-- AUTO:END -->

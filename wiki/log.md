@@ -65,6 +65,9 @@ Nowe: [[2026-10-18-lfm-ubatch-2048]], [[lfm-czulosc-na-podzial-batcha]], [[2026-
 ## [2026-10-19] update | Wentylator XTX 100% przy pracy (decyzja użytkownika)
 Nowa [[2026-10-19-wentylator-100-przy-pracy]]; zaktualizowane [[rx-7900-xtx]], [[lekcja-wentylator-rdna3]].
 
+## [2026-10-19] ingest | 16k sprzężone próbkowanie + zasada bezpieczeństwa sprzętu
+Nowe: [[2026-10-18-sprzezone-probkowanie-mtp]] (nierozstrzygnięte, nie domyślnie), [[gumbel-max]], [[lekcja-ustalony-seed-to-nie-powtorzenie]], [[raport-16k-sprzezone-probkowanie]], [[2026-10-19-bezpieczenstwo-sprzetu]], [[gpu-guard]], [[lekcja-agent-nie-patrzyl-na-temperatury]]. Zaktualizowane: [[sprzezone-probkowanie-draftu]], [[pm4-replay]] (page faulty SQC @0, raport 17 w toku), [[2026-10-16-badamy-magnitude]], [[raport-16i-magnitude]], [[rx-7900-xtx]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

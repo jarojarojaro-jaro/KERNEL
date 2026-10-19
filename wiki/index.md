@@ -56,40 +56,40 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (22)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (23)
 - [[modele/_hub|modele]] — Modele i kwanty (14)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (15)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
-- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (25)
+- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (26)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (21)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (46)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (64)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (20)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (47)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (66)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (21)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (35)
+- [[research/_hub|research]] — Streszczenia raportów (36)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (25)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
 ## Ostatnio aktualizowane
 
+- 2026-10-19 [[raport-16k-sprzezone-probkowanie|Raport 16k: sprzężone próbkowanie draftu (E-X4)]]
+- 2026-10-19 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
+- 2026-10-19 [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]]
+- 2026-10-19 [[sprzezone-probkowanie-draftu|Sprzężone próbkowanie draftu (coupled sampling)]]
 - 2026-10-19 [[lekcja-wentylator-rdna3|Wentylator RDNA3: PWM odrzucony, krzywa tylko przez overdrive]]
+- 2026-10-19 [[lekcja-ustalony-seed-to-nie-powtorzenie|Ustalony seed to nie powtórzenie: ABBA nie redukuje szumu tekstu]]
+- 2026-10-19 [[lekcja-agent-nie-patrzyl-na-temperatury|Agent główny nie patrzył na temperatury; `journalctl -k` widzi tylko bieżący boot]]
+- 2026-10-19 [[pm4-replay|Replay grafu dekodowania jako bufor PM4 (0060, 0061, 0063)]]
+- 2026-10-19 [[gumbel-max|Op `GGML_OP_GUMBEL_MAX` (draft MTP ze sprzężonym szumem)]]
 - 2026-10-19 [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]]
+- 2026-10-19 [[2026-10-18-sprzezone-probkowanie-mtp|2026-10-18: E-X4 – sprzężone próbkowanie draftu MTP na XTX (nierozstrzygnięte)]]
 - 2026-10-19 [[2026-10-19-wentylator-100-przy-pracy|2026-10-19: wentylator XTX 100%, gdy GPU pracuje]]
+- 2026-10-19 [[2026-10-19-bezpieczenstwo-sprzetu|2026-10-19: maksymalna optymalizacja, ale nigdy kosztem bezpieczeństwa sprzętu]]
+- 2026-10-19 [[2026-10-16-badamy-magnitude|2026-10-16: badamy podejście Magnitude i przejmujemy, co działa]]
 - 2026-10-18 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
-- 2026-10-18 [[raport-16j-magnitude-vulkan-xtx|Raport 16j: Magnitude przez Vulkan na 7900 XTX (E-X5)]]
-- 2026-10-18 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
-- 2026-10-18 [[raport-16g-lfm-moe-pasmo|Raport 16g: pasmo kerneli MoE LFM2.5 na XTX]]
-- 2026-10-18 [[raport-16f-xtx-szybkie|Raport 16f: szybkie zyski na XTX (ubatch LFM, typ bloku MTP, hak MTP, cache agenta, cache na SSD)]]
-- 2026-10-18 [[raport-16e-kwanty-kld|Raport 16e: nowe kwanty 27B na 12–16 GB (E1 + E3 z 15e)]]
-- 2026-10-18 [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]]
-- 2026-10-18 [[raport-16a-pm4-pdl|Raport 16a: PM4-PDL i prefetch wag na XTX (X1–X3 z 15a)]]
-- 2026-10-18 [[raport-15d-prefill-dlugi-kontekst|Raport 15d: prefill i długi kontekst (PFlash v2, KVFlash, cache sesji)]]
-- 2026-10-18 [[raport-15a-monokernel|Raport 15a: megakernele dla decode (vLLM MonoKernel)]]
-- 2026-10-18 [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]]
-- 2026-10-18 [[produkt-ryzyka|Największe ryzyka]]
 
-Razem 402 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 409 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -1,8 +1,8 @@
 ---
 typ: research
 tags: [research, konkurencja, spekulacja]
-aktualizacja: 2026-10-18
-zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:1-349; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:110
+aktualizacja: 2026-10-19
+zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:1-349; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:110; ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:152-160
 status: aktualne
 ---
 # Raport 16i: Magnitude – co robią dobrze i co przejąć
@@ -16,6 +16,8 @@ Projekcja XTX d=2048 (§3): MTP4 27.74 ms, 177 t/s; + ogon do 8 wierszy 30.22 ms
 Plan GPU (§8): E-X0 krzywa V(w, d) na XTX; E-X1 akceptacja ogona per głębokość (shadow); E-X2 ogon W8/W16 (kill < +20% mvs); E-X3 kontroler (`LLAMA_SPEC_LOOKUP=3`); E-X4 sprzężone próbkowanie (kill < +2%); E-X5 Magnitude Vulkan na XTX; E-C1 krzywa szerokości na 3090; E-C2 head-to-head na 3090 (cel code-edit ≥ 150 t/s). Stan: [[2026-10-16-badamy-magnitude]].
 
 E-X5 zamknięte 2026-10-18: [[raport-16j-magnitude-vulkan-xtx]] – Magnitude na XTX ~2× wolniejszy.
+
+E-X4: [[raport-16k-sprzezone-probkowanie]] – nierozstrzygnięte (+0…+3.6%), A/B przerwane resetami GPU.
 
 ## Powiązane
 - [[research/_hub|research]]

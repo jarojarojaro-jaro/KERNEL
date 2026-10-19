@@ -2700,6 +2700,9 @@ Liczby z 16a (tabele §1–§3) przepisane z wierszy w `zrodlo`; „16 kopii fla
 ## Aktualizacja: 16f i wentylator (2026-10-18)
 Liczby 16f przepisane z tabel E1–E5 (wiersze w `zrodlo`). Wentylator: progi z `fan.sh:16-18` (FAN=90, BUSY=10, IDLE_HOLD=20; od 2026-10-19 FAN=100 i nagłówek poprawiony), przyczyny i weryfikacja (3320–3500 RPM, 73/74 °C, ~1800 RPM, 88–90 °C) z komunikatu Main; Chrome ~90% rdzenia przez 3 h z komunikatu Main. Błędnych: 0.
 
+## Aktualizacja: 16k i bezpieczeństwo (2026-10-19)
+Liczby 16k z tabel §4–§5 (wiersze w `zrodlo`); progi strażnika z `gpu-guard.sh:1-45`; „10 resetów w bootach −2/−1/0” i 90 °C VRAM z komunikatu Main (nie sprawdzane przez WikiIngest). Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
