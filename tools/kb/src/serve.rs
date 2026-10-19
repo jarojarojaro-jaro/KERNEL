@@ -3,7 +3,7 @@
 //! Załadowanie modelu e5 (tokenizer 17 MB JSON + sesja ONNX) kosztuje 0.4–1 s, a samo zapytanie
 //! ~10 ms. Dlatego `kb search` najpierw pyta demona przez gniazdo Unix
 //! (`~/.cache/kb/kb-<hash>.sock`); jeśli go nie ma, liczy w procesie i uruchamia demona w tle
-//! (`nice -n 10`, kończy się po `KB_IDLE` s bezczynności, domyślnie 1800). Demon przed każdym
+//! (`nice -n 19 taskset -c 0-3`, kończy się po `KB_IDLE` s bezczynności, domyślnie 1800). Demon przed każdym
 //! zapytaniem odświeża indeks (stat plików, ~2 ms), więc nigdy nie odpowiada z nieaktualnej bazy.
 
 use crate::embed::{sync_vectors, Embedder, Vectors};
@@ -159,8 +159,9 @@ pub fn client(cfg: &Config, req: &Req) -> Result<Out> {
 pub fn spawn_daemon(cfg: &Config) {
     let Ok(exe) = std::env::current_exe() else { return };
     let log = std::fs::OpenOptions::new().create(true).append(true).open(cfg.cache.join("serve.log"));
+    // zasada serwera: praca w tle na najniższym priorytecie i najwyżej rdzeniach 0-3
     let mut cmd = std::process::Command::new("setsid");
-    cmd.args(["-f", "nice", "-n", "10"]).arg(exe).arg("serve");
+    cmd.args(["-f", "nice", "-n", "19", "taskset", "-c", "0-3"]).arg(exe).arg("serve");
     cmd.stdin(std::process::Stdio::null()).stdout(std::process::Stdio::null());
     match log {
         Ok(f) => cmd.stderr(f),

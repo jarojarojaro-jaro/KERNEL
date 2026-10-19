@@ -23,7 +23,7 @@ Tryby `--mode`:
 ## Jak działa w praktyce
 
 - **Odświeżanie.** Każde zapytanie sprawdza mtime i rozmiar plików (~2 ms). Zmienione pliki są dzielone ponownie, a brakujące embeddingi liczone (wektory są kluczowane hashem tekstu fragmentu).
-- **Demon.** Model trzyma demon `kb serve`, który startuje sam przy pierwszym `kb search` (`setsid nice -n 10`). Gniazdo: `~/.cache/kb/index-*.sock`. Kończy pracę po 30 min bezczynności (`KB_IDLE`).
+- **Demon.** Model trzyma demon `kb serve`, który startuje sam przy pierwszym `kb search` (`setsid nice -n 19 taskset -c 0-3`). Gniazdo: `~/.cache/kb/index-*.sock`. Kończy pracę po 30 min bezczynności (`KB_IDLE`).
   - Z rozgrzanym demonem zapytanie trwa 10–70 ms.
   - Bez demona pierwsze zapytanie trwa ~0.9 s, bo samo ładowanie tokenizera i sesji ONNX zajmuje 0.4–1 s.
   - `KB_NO_DAEMON=1` liczy zawsze w procesie.
@@ -47,8 +47,8 @@ Strojenie (tylko do eksperymentów): `KB_W_TITLE`, `KB_W_HEAD` (wagi pól przy `
 ## Instalacja, testy
 
 ```bash
-~/KERNEL/tools/kb/setup.sh        # ORT (sha256), model z HF, build (nice, -j6), ~/.local/bin/kb, reindex
-cd ~/KERNEL/tools/kb && nice -n 10 cargo test --release -j6   # testy jednostkowe + złoty zbiór (recall@5 ≥ 0.9, p95 < 200 ms)
+~/KERNEL/tools/kb/setup.sh        # ORT (sha256), model z HF, build i reindex pod /tmp/cpuheavy.lock, ~/.local/bin/kb
+cd ~/KERNEL/tools/kb && flock /tmp/cpuheavy.lock nice -n 19 taskset -c 0-3 cargo test --release -j4   # testy + złoty zbiór (recall@5 ≥ 0.9, p95 < 200 ms)
 ```
 
 Pierwszy pełny indeks embeddingów to ok. 21 tys. fragmentów. Na 8 wątkach z `nice` przy obciążonym serwerze trwał ~9 min. Później liczone są tylko zmienione fragmenty.

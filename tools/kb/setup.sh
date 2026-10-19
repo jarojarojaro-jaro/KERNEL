@@ -22,7 +22,9 @@ for f in onnx/model_quantized.onnx tokenizer.json config.json; do
 done
 
 export PATH="$HOME/.cargo/bin:$PATH"
-nice -n 10 cargo build --release -j6
+# zasada serwera (2026-10-19): ciężkie zadania pod wspólnym lockiem, nice 19, rdzenie 0-3, -j4
+HEAVY="flock /tmp/cpuheavy.lock nice -n 19 taskset -c 0-3"
+$HEAVY cargo build --release -j4
 mkdir -p "$HOME/.local/bin"
 install -m 755 target/release/kb "$HOME/.local/bin/kb"
-KB_THREADS=${KB_THREADS:-4} nice -n 19 "$HOME/.local/bin/kb" reindex
+KB_THREADS=${KB_THREADS:-4} $HEAVY "$HOME/.local/bin/kb" reindex
