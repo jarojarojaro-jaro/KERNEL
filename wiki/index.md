@@ -65,11 +65,11 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (34)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (85)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (86)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (68)
-- [[research/_hub|research]] — Streszczenia raportów (59)
+- [[research/_hub|research]] — Streszczenia raportów (60)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (28)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[raport-23c-re-kernele-nvidia|Raport 23c: kernele NVIDIA (cuBLASLt, FlashInfer, Marlin, exllamav3) vs nasz ggml-cuda]]
 - 2026-10-19 [[raport-23b-re-kernele-amd|Raport 23b: kernele AMD (gfx1100) vs nasze MMVQ, weryfikacja i atencja]]
 
-Razem 516 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 518 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
