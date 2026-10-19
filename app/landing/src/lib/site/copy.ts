@@ -214,13 +214,9 @@ const raw = {
 			bad: 'zła jakość',
 			axis: 'KLD, skala logarytmiczna',
 			where: 'Pomiar na {card}.',
-			body: 'Nasze domyślne wyjście zachłanne nie jest bit w bit identyczne z upstream (łatki 0001, 0002 i 0013). Dlatego mierzymy KLD.',
-			link: 'Jak mierzymy jakość',
 			qwen: {
 				same: 'ten sam skrypt',
-				cross: 'orientacyjnie: różne skrypty',
-				kld: 'KLD na NVIDIA',
-				kldPending: 'w toku'
+				cross: 'orientacyjnie: różne skrypty'
 			}
 		},
 		cards: {
@@ -497,13 +493,9 @@ const raw = {
 			bad: 'poor quality',
 			axis: 'KLD, log scale',
 			where: 'Measured on the {card}.',
-			body: 'Our default greedy output is not bit-identical to upstream (patches 0001, 0002 and 0013). That is why we measure KLD.',
-			link: 'How we measure quality',
 			qwen: {
 				same: 'the same script',
-				cross: 'indicative: different scripts',
-				kld: 'KLD on NVIDIA',
-				kldPending: 'in progress'
+				cross: 'indicative: different scripts'
 			}
 		},
 		cards: {

@@ -13,10 +13,9 @@
 	 */
 	import { heatOf } from '$lib/cards/explorer';
 	import { reveal } from '$lib/fx/actions';
-	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { findCard, MODEL_INFO, SHEET, variantOf } from '$lib/data/measurements';
 	import { fmtRatio, fmtTps } from '$lib/format';
-	import { href, num, type Lang } from '$lib/i18n';
+	import { num, type Lang } from '$lib/i18n';
 	import ModelMark from '$lib/ModelMark.svelte';
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import { copy } from '$lib/site/copy';
@@ -47,7 +46,6 @@
 		return Math.floor(r / p) * p;
 	})();
 	const fmtName = (file: string) => file.replace(/\s*\(.*\)$/, '');
-	const oursSrc = ours.flatMap((r) => [r.ours.src, r.noise.src]);
 	const zoneDetail = $derived(
 		`${c.zoneNote} ${ours.map((r) => `${r.name}: ${c.ours} ${num(r.ours.v, lang, digits(r.ours.v))}, ${c.noise} ${num(r.noise.v, lang, digits(r.noise.v))}`).join('; ')}. ${fill(c.where, { card: where })}`
 	);
@@ -82,7 +80,7 @@
 			<!-- for scale: format changes (another model), with labels above their markers -->
 			<div class="plane">
 				<div class="zone" style="--a:{x(1e-4)}; --b:{x(1e-3)}">
-					<span class="zl">{c.zone} <SourceTip {lang} src={oursSrc} note={zoneDetail} /></span>
+					<span class="zl">{c.zone}</span>
 				</div>
 				<div class="bracket" style="--a:{x(worstOurs)}; --b:{x(bestFmt)}" aria-hidden="true">
 					<span class="bl">≈&nbsp;{num(ratio, lang, 0)}×</span>
@@ -105,14 +103,14 @@
 			</div>
 			<p class="sr-only">{zoneDetail} {fmts.map((r) => `${fmtName(r.file)}: ${num(r.kld.v, lang, 3)}`).join(', ')}.</p>
 			<figcaption class="caption">
-				<span class="zcap"><i class="zsw"></i>{c.zone} <SourceTip {lang} src={oursSrc} note={zoneDetail} /></span>
-				<span><ModelMark model="lfm25" size="0.7rem" /> {fill(c.fmt, { card: where5060 })} <SourceTip {lang} src={fmts.map((r) => r.kld.src)} /></span>
+				<span class="zcap"><i class="zsw"></i>{c.zone}</span>
+				<span><ModelMark model="lfm25" size="0.7rem" /> {fill(c.fmt, { card: where5060 })}</span>
 				<span class="ax">{c.axis}</span>
 			</figcaption>
 		</figure>
 
 		<div class="qwen">
-			<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name} <SourceTip {lang} src={qwenRows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note="{qwenRows.map((r) => `${r.card.name}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — ')} — {c.qwen.kld}: {c.qwen.kldPending}." /></p>
+			<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name}</p>
 			{#each qwenRows as r (r.card.id)}
 				<div class="qrow">
 					<span class="qc">{r.card.short}</span>
@@ -124,11 +122,6 @@
 					{/if}
 				</div>
 			{/each}
-		</div>
-
-		<div class="foot">
-			<p class="body">{c.body}</p>
-			<a class="link" href={href(lang, '/methodology#quality')}>{c.link} <span aria-hidden="true">→</span></a>
 		</div>
 	</div>
 </section>
@@ -515,30 +508,10 @@
 	.cross {
 		color: var(--text) !important;
 	}
-	.foot {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: space-between;
-		align-items: baseline;
-		gap: var(--sp-4);
-	}
-	.body {
-		max-width: 60ch;
-		font-size: var(--fs-sm);
-		color: var(--text-mute);
-	}
-	.link {
-		font-weight: 650;
-		color: var(--text-hi);
-		text-decoration-color: var(--heat-3);
-		text-underline-offset: 0.25em;
-	}
-	.link:hover {
-		color: var(--heat-4);
-	}
 	@media (max-width: 360px) {
 		.gv {
-			font-size: 2.2rem;
+			font-size: min(2.2rem, 10vw);
+			flex-wrap: wrap;
 		}
 	}
 	@media (max-width: 900px) {
@@ -546,6 +519,7 @@
 			grid-template-columns: minmax(0, 1fr);
 		}
 		.hero-num {
+			min-width: 0;
 			justify-items: start;
 			text-align: left;
 		}

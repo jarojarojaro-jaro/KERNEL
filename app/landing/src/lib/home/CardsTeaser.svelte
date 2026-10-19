@@ -17,7 +17,6 @@
 	import { play, tilt, visible } from '$lib/fx/actions';
 	import { reducedMotion } from '$lib/fx/motion';
 	import { MODEL_STYLE } from '$lib/modelStyle';
-	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { MODEL_INFO, variantLabel } from '$lib/data/measurements';
 	import { cardsHref, num, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
@@ -30,7 +29,7 @@
 	const tiles = CARDS.flatMap((card) => {
 		const d = headline(card);
 		if (!d) return [];
-		return [{ card, run: d.run, gain: d.ratio, src: d.run.gain?.total?.src ?? d.run.src, before: decode(d.before), ours: decode(d.ours), beforeKey: d.before.key, oursKey: d.ours.key, model: MODEL_INFO[d.run.model].name }];
+		return [{ card, run: d.run, gain: d.ratio, before: decode(d.before), ours: decode(d.ours), beforeKey: d.before.key, oursKey: d.ours.key, model: MODEL_INFO[d.run.model].name }];
 	});
 	const MAKER: Record<string, string> = { nvidia: 'NVIDIA', amd: 'AMD' };
 	/** The render fills ~90% of its stage (board + bracket, 640-unit viewBox); longer boards stay
@@ -121,10 +120,7 @@
 			{/each}
 		</ul>
 		<div class="fn">
-			<p>
-				<span>{c.note}</span>
-				<SourceTip {lang} src={tiles.flatMap((t) => [t.src, ...t.run.variants.map((v) => v.decode?.src ?? '')]).filter(Boolean)} note={tiles.map((t) => `${t.card.short}: ${t.run.metric[lang]}`).join(' ')} />
-			</p>
+			<p>{c.note}</p>
 			<a class="cta cta--line" href={cardsHref(lang)}>{c.open} <span class="arrow" aria-hidden="true">→</span></a>
 		</div>
 	</div>

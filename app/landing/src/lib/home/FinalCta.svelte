@@ -15,7 +15,6 @@
 	import { onMount, untrack } from 'svelte';
 	import { magnetic, visible } from '$lib/fx/actions';
 	import { onFrame, reducedMotion } from '$lib/fx/motion';
-	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import Ratio from '$lib/cards/Ratio.svelte';
 	import { variantLabel } from '$lib/data/measurements';
 	import { TOK_PER_WORD } from '$lib/estimator';
@@ -202,7 +201,6 @@
 			<figcaption class="cap">
 				<span>{HERO_CARD.name} · {HERO_MODEL} {HERO_RUN.quant}</span>
 				<span class="note">{c.note}</span>
-				<SourceTip {lang} src={[hot.src, cold.src]} note="{HERO_RUN.metric[lang]}. {HERO_RUN.conditions[lang]}." />
 				<button type="button" class="pp" aria-pressed={!playing} aria-label={playing ? c.pause : c.resume} title={playing ? c.pause : c.resume} onclick={() => (playing = !playing)}>
 					{#if playing}<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.4" height="8" rx="0.6" /><rect x="7.1" y="2" width="2.4" height="8" rx="0.6" /></svg>
 					{:else}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 2.2v7.6L10 6z" /></svg>{/if}

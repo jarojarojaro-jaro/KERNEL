@@ -7,7 +7,6 @@
 	 */
 	import { heatOf } from '$lib/cards/explorer';
 	import { reveal } from '$lib/fx/actions';
-	import SourceTip from '$lib/fx/SourceTip.svelte';
 	import { fmtRatio, fmtTps } from '$lib/format';
 	import { resultsHref, type Lang } from '$lib/i18n';
 	import ModelMark from '$lib/ModelMark.svelte';
@@ -20,8 +19,6 @@
 	const rows = HERO_PAIRS.map((p) => ({ ...p, a: p.before.decode!, b: p.ours.decode! }));
 	/** One shared speed-up scale: steel = the typical app (1×), heat = our engine (its ×), so a 2,0× bar is twice the steel. */
 	const maxR = Math.max(...rows.map((r) => r.b.v / r.a.v));
-	/** One source note for the whole table: each row's script and conditions. */
-	const tableNote = $derived(rows.map((r) => `${MODEL_STYLE[r.run.model].short} · ${r.card.name} ${r.run.quant}: ${r.run.metric[lang]} ${r.run.conditions[lang]}`).join(' — '))
 </script>
 
 <section id="results" class="teaser heat-top" aria-labelledby="results-title">
@@ -32,7 +29,7 @@
 			<a class="cta cta--line" href={resultsHref(lang)}>{c.link} <span class="arrow" aria-hidden="true">→</span></a>
 		</header>
 		<div class="board" use:reveal={{ threshold: 0.25 }}>
-			<p class="unit">{c.unit} <SourceTip {lang} src={rows.flatMap((r) => [r.a.src, r.b.src, r.run.conditionsSrc])} note={tableNote} /></p>
+			<p class="unit">{c.unit}</p>
 			<ul class="rows" role="list">
 				{#each rows as r, i (r.id)}
 					<li class="row" style="--a:{1 / maxR}; --b:{r.b.v / r.a.v / maxR}; --d:{i * 70}ms; --th:{heatOf(r.b.v / r.a.v)}">
