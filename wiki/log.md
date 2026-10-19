@@ -119,6 +119,9 @@ Nowa [[kb]]: `kb search` / `kb facts` (BM25F + e5-small + indeks faktów, cały 
 ## [2026-10-19] ingest | Raport 21g (nowe silniki)
 Nowe: [[raport-21g-nowe-silniki]], [[inferrous]], [[project-maya]], [[bariera-lds-rdna3]], [[lekcja-bit-exact-wobec-siebie]], [[llama-moe-cache-mib]]; zaktualizowane [[tensorfold]] (1.1.0, Beta 7/8), [[strata]] (v0.1.44.1–v0.1.45), [[produkt-ryzyka]].
 
+## [2026-10-19] ingest | Raport 23a (rea) + uzupełnienie raportu 19 (kb)
+Nowe: [[raport-23a-rea]], [[hip-fatbin-extract]], [[raport-19-kb-wyszukiwanie]], [[najpierw-baza-kb]], [[lekcja-markdown-puste-linie]]; zaktualizowane [[kb]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

@@ -2,7 +2,7 @@
 typ: narzedzie
 tags: [narzedzia, meta, wyszukiwanie]
 aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/19-kb-wyszukiwanie.md:1-40,170-215; ~/KERNEL/tools/kb/README.md; ~/KERNEL/tools/kb/gold/gold.jsonl
+zrodlo: ~/KERNEL/product/research/19-kb-wyszukiwanie.md:1-40,170-215; ~/KERNEL/tools/kb/README.md; ~/KERNEL/tools/kb/gold/gold.jsonl; ~/KERNEL/product/research/19-kb-wyszukiwanie.md
 status: aktualne
 ---
 # kb: szybkie wyszukiwanie w bazie wiedzy
@@ -28,6 +28,8 @@ status: aktualne
   Zapytanie w procesie trwa p95 131 ms.
 - **Indeks i demon.** Indeks zajmuje 16 MB, wektory 33 MB; leżą w `~/.cache/kb`, poza repo. Indeks sam się odświeża: sprawdzenie zmian trwa 0.04 s, pełna przebudowa leksykalna 0.33 s. Model trzyma demon `kb serve` (startuje sam, RSS ~0.7 GB, kończy pracę po 30 min bezczynności).
 - **Pozostałe polecenia.** `--json` dla agentów, `kb eval` mierzy recall na złotym zbiorze. [[wiki-py]] `search` deleguje do `kb`.
+
+Raport i pomiar: [[raport-19-kb-wyszukiwanie]]; zasada użycia: [[najpierw-baza-kb]].
 
 ## Powiązane
 - [[narzedzia/_hub|narzedzia]]

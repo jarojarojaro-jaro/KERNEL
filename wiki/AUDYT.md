@@ -2748,6 +2748,9 @@ Liczby w [[kb]] (recall@5 0.963 / 0.912 / 0.825 / 0.750 / 0.688, p95 131 ms, 10�
 ## Aktualizacja: raport 21g (2026-10-19)
 Liczby z 21g i `21g-notatki/` (wiersze w `zrodlo`); wyniki konkurencji przepisane z raportu (źródła pierwotne: repo, release notes, issues). Błędnych: 0.
 
+## Aktualizacja: raport 23a (2026-10-19)
+Liczby z 23a (wiersze w `zrodlo`); rozmiary `libggml-hip.so` i liczby bundli/instancji z raportu (CPU agenta ResRea). Błędnych: 0.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

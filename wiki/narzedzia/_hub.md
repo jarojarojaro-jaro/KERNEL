@@ -14,8 +14,9 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (23)
+## Notatki (24)
 
+- [[hip-fatbin-extract|`tools/re/hip_fatbin_extract.py`: code objects z `.hip_fatbin`]] — Skrypt w czystym Pythonie (CPU) wyciąga z sekcji `.hip_fatbin` biblioteki HIP nieskompresowane bundle `__CLANG_OFFLOAD_BUNDLE__` (jeden na jednostkę kompilacji) i zapisuje każdy wpis `hipv4-amdgcn-*` jako `<outdir>/<idx>.<target>.co`; `--filter SUBSTR` zostawia tylko obiekty zawierające nazwę kernela (raport 23a, 2026-10-19).
 - [[agentx-harness|AgentX harness (SemiAnalysis, AIPerf)]] — `agentx-harness==1.0.11` (na AIPerf NVIDIA, wrapper `python3 -m infx.bench agentic`) odtwarza 393 sesje Claude Code z zachowanymi długościami, hashami bloków 64 tokenów, drzewem subagentów i przerwami na narzędzia, ale z syntetyczną treścią; c = liczba żywych drzew sesji, punkt ≥ 900 s (oficjalnie 1 h) na świeżym serwerze (raport 21f, 2026-10-19).
 - [[att-gfx1100|ATT (thread trace) na gfx1100]] — Śledzenie instrukcji fali (ATT) działa na RX 7900 XTX w ROCm 10.0: `rocprofv3 --att --att-target-cu 1 --att-simd-select 0 --kernel-include-regex … --kernel-iteration-range …` z `GGML_HIP_PM4=0`; skrypt `att_model.sh` i parser `attsum.py` w `~/wt/lfmmoe-prof/` (2026-10-18).
 - [[kld-canary|Bramka KLD i kanarki (kld_gate.py, kld_canary.sh, perturb_gguf.py)]] — Trzy narzędzia: `kld_gate.py` porównuje dwa logi `llama-perplexity --kl-divergence`, `perturb_gguf.py` robi celowo uszkodzone kopie GGUF, a `kld_canary.sh` sprawdza, że bramka łapie prawdziwe szkody.
