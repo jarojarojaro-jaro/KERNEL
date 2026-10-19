@@ -29,6 +29,10 @@ Oznaczenia: `[SZACUNEK]` = nasz rachunek; `[NIEZWERYFIKOWANE]` = nie sprawdzone 
    - Pełny megakernel się nie opłaca: Qwen ma sufit +3–6% decode, czyli −1…−3% zegara sesji agentowej.
    - LFM: sufit +12–28% decode (15a), ale X1–X3 z 16a padły (~+3%).
    - Do przeniesienia: (i) specjalizacja kerneli pod szerokości weryfikacji M = 5…17 (MTP4 + ogon W16); (ii) reguła „przed czekaniem ładuj tylko statyczne wagi”; (iii) bramka numeryczna „szum 1-ulp”; (iv) RMSNorm liczony redundantnie w prologu konsumenta zamiast osobnego kernela. Minimalne eksperymenty w §8.5.
+9. **Pełne pokrycie strony (§11):**
+   - InferenceX nie mierzy żadnej karty konsumenckiej ani llama.cpp;
+   - z 60 przykładów optymalizacji przenosi się 9 testów, na czele zapis przyrostowy do `--cache-ram`, tokenizacja per tura i stan MTP po przywróceniu;
+   - golden AL Qwen3.8-27B (PR #3304: thinking on n=4 2.72, off 3.79) obejmuje nasze 3.0 tok/krok.
 
 ## 1. Co jest czym (źródła pierwotne)
 
@@ -303,6 +307,152 @@ Dla nas: zero wpływu na wydajność. Produktowo przypomina, że modyfikacje wag
   - `product/research/15a-monokernel.md` §1–4, `16a-pm4-pdl.md:9-23`, `16f-xtx-szybkie.md:16,159-190,192-215`;
   - `wiki/REKORDY.md:22,74`, `wiki/lekcje/lekcja-5-seedow.md:10`, `wiki/lekcje/lekcja-handoff-rdna3.md`;
   - `~/wt/quickwins/qw/capture_proxy.py`, `replay.py`; `~/wt/fusion/ggml/src/ggml-cuda/norm.cu:168-172`.
+- Pełne pokrycie (§11): `sitemap.xml` (1426 stron EN + tyle samo `/zh`), teksty stron w `~/qwen-opt/research-src/inferencex-data/pages/`, API v1 (`views/options`, `availability`, `benchmarks?model=…`, `datasets`, `views/ubenchx`), golden AL `golden_al/*.yaml`, notatki `notes-opt.txt`; PR-y InferenceX #3262, #3304, #3305 (GitHub API, `gh_*.json`).
+
+## 11. Pełne pokrycie strony (A–Z)
+
+Stan na 2026-10-19. Dane: `~/qwen-opt/research-src/inferencex-data/` (wszystko < 3 MB). Strony to głównie powłoki Next.js renderowane po stronie klienta, więc liczby brałem z API, a nie z HTML.
+
+### 11.1 Inwentarz stron
+
+| strona (liczba) | co tam jest | dla nas | liczby / akcja |
+|---|---|---|---|
+| `/`, `/overview`, `/inference/{16 modeli}`, `/inference/agentic` | dashboard: throughput/chip vs interactivity, AgentX i 8k/1k (1k/1k i 1k/8k oznaczone jako deprecated) | niska: serwery | — |
+| `/compare` (408), `/compare-per-dollar` (408), `/chips` (22), `/gpu-specs`, `/rankings` (33), `/run/{model}-on-{gpu}` (106) | pary GPU, koszt, rankingi; generowane szablonem | brak: zero kart konsumenckich | sprzęt: §11.2 |
+| `/compare-precision` (43) | FP4 vs FP8/BF16/INT4 przy tej samej karcie | niska (formaty Blackwell/CDNA, nie GGUF) | — |
+| `/compare-spec-decode` (67) | MTP vs brak, interpolowane przy tej samej interaktywności | **średnia**: jedyny wpis bliski konsumenckiemu (RTX PRO 6000) | §11.3 |
+| `/calculator`, `/historical`, `/fleet`, `/profit-estimator(-per-gigawatt)`, `/whitepaper` (MI355X K3: $32.6B przychodu/GW-rok) | TCO, koszt chip-godziny (H100 $1.17, RTX PRO 6000 $0.68/h), przychód z GW | brak | — |
+| `/evaluation`, `/reliability`, `/submissions`, `/current-inferencex-image`, `/ai-chart`, `/operatorx` (GEMM/MoE/attention), `/collectivex` (EP/KV/swap) | jakość, odsetek udanych biegów, obrazy kontenerów, mikrobenchmarki | niska | `views/ubenchx`: mem-bw, odległość SM–L2, „tpc-skyline”, tylko dla GPU z centrów danych |
+| `/model/{12}` | karty modeli z architekturą | średnia dla Qwen3.8-Flash-Next | §11.3 |
+| `/agentx/*` (16: methodology, telemetry, quickstart, 2 strony korpusów, 10 stron optymalizacji) | metodologia (pokryta w §2) i optymalizacje | **wysoka**: §11.4–11.5 | — |
+| `/blog` (36) | 10 krótkich wpisów AgentX, artykuły o przyroście wydajności, TileRT, Engram, TPU | średnia: przykłady optymalizacji | §11.4 |
+| `/glossary` (195) | definicje; `unofficial-run` = nakładka biegu CI spoza opublikowanej bazy | niska | — |
+| `/api` (dokumentacja OpenAPI 3.1, 45 endpointów) | `views/*`, `benchmarks`, `availability`, `datasets`, `pareto`, `tco-feed`, `server-log*`, `request-timeline`, `trace-*` | narzędzie | `robots.txt` blokuje `/api/` dla crawlerów, ale publiczny GET działa bez klucza |
+| `/quotes`, `/about`, `/land-acknowledgement` | marketing, FAQ, lista SKU | brak | — |
+
+Changelog serwisu jest w `GET /api/v1/workflow-info` (bez parametru zwraca pustą odpowiedź, 33 B) i w polu `changelog` PR-ów recept, a nie na osobnej stronie.
+
+### 11.2 Sprzęt, modele, silniki (`views/options`, `availability`: 6880 konfiguracji)
+- **Sprzęt:** VR200, H100, H200, B200, B300, GB200, GB300, MI300X, MI325X, MI355X, RTX PRO 6000, TPU7x, Jalapeño. **Nie ma żadnej karty konsumenckiej ani RDNA** (brak 7900 XTX, W7900, R9700, 4090, 5090).
+  - Najbliżej nas jest RTX PRO 6000 (GB202, 96 GB, 600 W, ten sam chip co 5090): **2 konfiguracje**, Qwen3.5-397B FP4, SGLang, 8k/1k (2026-07-30).
+  - AMD to wyłącznie CDNA3/4.
+- **Modele:** DSv4-Pro, DSv4.1-Flash, Kimi-K3, MiniMax-M3, GLM-5.2/5.3, Qwen3.5-397B-A17B, Qwen3.8-Flash-Next, Muse-Spark-Open, starsze (DSR1, gpt-oss, Llama-70B, Kimi-K2.5, MiniMax-M2.5).
+  - Qwen3.8-27B i 27B-Eager: kategoria „experimental”, **0 wierszy** w `benchmarks` (sprawdzone 2026-10-19).
+  - LFM: brak.
+- **Silniki:** vLLM v0.32.0, SGLang v0.5.22 (`framework-releases`), TRT-LLM, ATOM, Dynamo (vLLM/SGLang/TRT), llm-d, MoRI-SGLang/vLLM, Mooncake-ATOM, TileRT, Teacup.
+  - **llama.cpp, Ollama, ExLlama i GGUF nie występują nigdzie na stronie** (grep wszystkich 300+ stron tekstowych).
+- **Spekulacja:** `mtp` 804 konfiguracje, `draft_model` 43 (DSpark/DFlash), `none` 6033.
+
+### 11.3 Liczby istotne dla nas (surowe wiersze API)
+
+| pomiar | wartość | warunki | źródło | dla nas |
+|---|---|---|---|---|
+| RTX PRO 6000 ×4, Qwen3.5-397B FP4, c=1 | bez spekulacji 78.3 tok/s (TPOT 12.8 ms) → MTP **153.6** (6.5 ms) = **1.96×**; c=4: 53.4 → 91.6; c=64: 10.8 → 12.5 | SGLang v0.5.16-cu130, TP4 przez PCIe (bez NVLink), 8k/1k, TTFT 0.80 s | `api_benchmarks_qwen35.json` | 17B aktywnych × ~4.5 bita ≈ 9.6 GB/token, /4 = 2.4 GB na GPU → 1.3 ms przy 1.79 TB/s, czyli ~10% pasma `[SZACUNEK]`. **TP na konsumenckim PCIe przy B=1 to reżim latencji**, w którym weryfikacja jest prawie darmowa i MTP daje ~2×. Na jednym XTX MTP daje mniej, bo decode jest bliżej pasma (76–77%, 15a). Czy AL w tych biegach był wymuszony: `[NIEZWERYFIKOWANE]` |
+| Qwen3.8-Flash-Next AgentX, c=1 | B200 FP4: mediana interaktywności 292 tok/s, p90 259; TTFT med 0.48 s przy medianie wejścia 72k; 560 zapytań/h; trafienia GPU 96.3% (teoretycznie 94.3%) | SGLang MTP, 1 GPU, bez offloadu | `api_benchmarks_model_Qwen3.8-Flash-Next.json` | trafienia ≈ nasze radix 96.2% (§5). **p90 jest niestabilne**: B300 c=1 p90 37.9 przy medianie 290, H100/H200 c=1 p90 15–16 przy medianie 240–244 (średnie ITL 23 ms przy medianie 4 ms). To potwierdza tezę 4 z §3 na ich własnych danych |
+| Qwen3.8-27B natywne MTP, golden AL | thinking off n=1…4: **1.90 / 2.68 / 3.28 / 3.79** (AR 90/84/76/70%); thinking on: **1.73 / 2.21 / 2.52 / 2.72** (AR 73/61/51/43%); FP8 = BF16 ±0.01 | H200 TP1, SPEED-Bench coding (80 promptów), 16k ctx, wyjście 4096; głowica MTP BF16 (checkpoint FP8 kwantyzuje MTP, więc ładują oryginał) | PR #3304 (zamknięty, YAML niescalony) | **zgodne z naszymi pomiarami**: MTP4 przy T=1 daje 3.01–3.06 tok/krok (`lekcja-5-seedow.md:10`), czyli między ich „on” i „off”; kwant Q4 nie obniża AL wyraźniej niż FP8. Przy thinking on n=3 → 4 dodaje tylko +0.20 AL (+8%), a koszt pasa MTP to ~0.8 ms z ~37–41 ms kroku (`stepcost.md`), więc n=4 nadal się opłaca |
+| Golden AL innych modeli (coding, thinking on, n=4) | Qwen3.5-397B 3.97; Kimi-K3 DSpark 3.22 (n=7 3.78); GLM-5.2 3.33; MiniMax-M3 EAGLE3 3.11; Muse-Spark DFlash2 3.44; DSv4-Pro MTP 2.54 (plateau od n=3); Qwen3.8-Flash-Next 2.47 | B300/B200, vLLM/SGLang | `golden_al/*.yaml` | Qwen3.8-27B (2.72) i Flash-Next (2.47) mają najniższe AL przy thinking on. Plateau DSv4 to przykład, że głębokość ponad 3 nie zawsze coś daje |
+| DSpark dla Qwen3.8-27B | k=7 (trenowany blok; k=4 i k=6 wolniejsze), losowanie draftu „probabilistic” ~23% szybsze od greedy; adaptacyjna weryfikacja odrzucona przez backend GDN w vLLM | H100 bf16, vLLM nightly | PR #3262 | już w `drafters.md`: DSpark na czacie nie jest lepszy od MTP; probabilistyczne MTP u nas bez zysku (`NOTES.md:159`, głowica przekonana o sobie, `mtp-train/RESULTS.md:82`) |
+
+Niespójności po stronie InferenceX:
+- karta Qwen3.8-Flash-Next podaje AL 3.24 dla MTP=3 przy thinking off, a `qwen3.8next_mtp.yaml` ma tylko thinking on (2.32 dla n=3);
+- strona MoRI UMBP podaje medianę 142K wejścia i 444 wyjścia na turę, a blog DSv4 i nasz korpus 256k 88k/413 i 88.8k/376 (inny korpus 1M albo inne ważenie `[INFERENCE]`);
+- blog v3 mówi o „70+” PR-ach, a strona optymalizacji o „50+”.
+
+### 11.4 Katalog optymalizacji A–Z
+
+Kategorie: **C** cache/KV, **S** harmonogram/serwer, **K** kernel, **P** spekulacja, **Q** kwantyzacja/format, **R** równoległość/komunikacja, **F** frontend/tokenizacja, **X** poprawność. „Nas” = jeden użytkownik, llama.cpp (fork), XTX i konsumenckie NVIDIA, Qwen3.8-27B (hybryda GDN) i LFM2.5.
+
+| # | projekt / PR | co zrobiono | zysk (warunki) | nas? |
+|---|---|---|---|---|
+| 1 | vLLM #43447 #44774 #45444 #42258 #44082 | **C** selektywne zachowanie checkpointów SWA na granicach replay; blok lookahead spekulacji w zachowanym prefiksie | hit > 95% (14 równoległych, ctx do 1M) | **tak, częściowo już jest**: llama-server robi checkpointy przy granicy wiadomości użytkownika i końcu promptu (`server-context.cpp:3980-4058`, `-cms` 8192, 32 na slot) → test T3 |
+| 2 | vLLM #37160 #40549 #42296 #42828 | **C** CPU offload KV dla modeli hybrydowych (SimpleCPU connector, ROCm) | +81.7% wyjścia, −46.6% E2E vs przeliczanie (DSv4) | odpowiednik już jest: `--cache-ram` zapisuje KV, stan rekurencyjny i draft |
+| 3 | vLLM #41289 #46412 #46906 | **C** węższy zapis: pomijać duplikat w locie, **zapisywać tylko deltę**, nie zależeć od rezydencji w HBM | — (koszt przeniesiony ze ścieżki zapisu) | **tak**: `server_prompt_cache::alloc` pomija tylko prompt w pełni zawarty; przedłużony prompt zapisuje **cały stan od nowa** (`server-task.cpp:1722-1760`) → T2 |
+| 4 | vLLM #45659 #45969 #45971 #46188 | **S** asynchroniczny lookup cache, klucze zero-copy, równoległy odbiór | — | nie (1 slot, lookup to LCP po tokenach) |
+| 5 | vLLM #44103 #45371 #46855 #45340 #49069 #49071 | **X** zdarzenia cache per grupa; **stan EAGLE gubiony przy offloadzie** | poprawność | **sprawdzić**: checkpointy niosą `data_dft` i `data_spec` (`server-context.cpp:2575-2578`), ale draft jest „dropped”, gdy nie pasuje (`:2700-2706`) → T1 |
+| 6 | vLLM #51183 | **K** KDA decode pisze wprost do bufora wyjścia (−1 kopia/warstwę) | mały | **tak**: audyt kopii po GDN (`cpy`/`cont` na token) → T6 |
+| 7 | vLLM #51714 | **K** wybór dedykowanego kernela sparse-MLA zamiast generycznego | +5.22% wyjścia AgentX | zasada „generyczna ścieżka = zły kernel” → T6 |
+| 8 | vLLM #51713 | **K** strojone GEMM dla projekcji atencji | +2.3% fixed-seq, **znika w szumie AgentX** | lekcja metodyczna: zysk kernela < 3% nie jest widoczny na zegarze agenta (zgodne z §5) |
+| 9 | vLLM #45879 #45720 #45546 | **X** asercja NIXL block_len (gsm8k = 0); dtype fp8 fnuz na gfx942; brak interfejsu EAGLE3 w pliku modelu AMD | poprawność dnia zero | lekcja: osobne pliki/ścieżki per backend rozjeżdżają się; nasze `*_parity` i greedy md5 to pokrywają |
+| 10 | SGLang #26907 #27210 #29369 #30339 | **C** alokator SWA: zwalniać strony wychodzące z okna, limit blokad do 1 okna, sprzątać stare wpisy; poprawka ring-cache ROCm | pojemność, poprawność | nie (Qwen3.8 bez SWA; LFM ma krótki conv-state) |
+| 11 | SGLang #29417 #28534 #29735 | **C** HiCache: offload pełnej atencji, okno SWA odbudowywane; checkpointy GDN (FlashInfer) | 47 771 → 53 004 tok/s/GPU przy 92.4% hit | idea już u nas (stan rekurencyjny w checkpointach) |
+| 12 | SGLang #30255 | **S/K** długość kontekstu jako skalar w runtime → jedna kompilacja zamiast osobnej na długość | +26.75% wyjścia, −36.25% TTFT (c=384) | **sprawdzić**: czy graf HIP/CUDA w llama.cpp przechwytuje się ponownie przy zmianie długości KV albo batcha weryfikacji → T7 |
+| 13 | SGLang #30365 | **S** usunięty synchronizowany D2H długości sekwencji co krok | bąbel decode | już badane (PM4-PDL, `stepcost.md` #6–7) |
+| 14 | SGLang #26091 #26245 #26293 #26387 #26579 | **S** routing DP z afinicją cache i balansowaniem | — | tylko przy `-np` > 1: przypinanie toru subagenta do slotu (ramię B w §7.1) |
+| 15 | SGLang #30461 #30497 #31294 #33662 #32042 #32196 | **P** transfer okna draftu w disagg, overlap scheduling, usunięta pusta renormalizacja EAGLE, brak syncu hosta w prefillu EAGLE | — | częściowo: sync w prefillu MTP → T6 (profil) |
+| 16 | SGLang #30545 #30762 #32368 #34216 | **X** staging świadomy radix w heterogenicznym disagg | igły 2/128 → 128/128 przy 127.5k; +9.61% na użytkownika | nie (disagg) |
+| 17 | TRT-LLM #17462, #16231 | **F** **przyrostowa tokenizacja z cofnięciem o 1 token** (BPE łączy przez złączenie), render szablonu poza głównym wątkiem | **185.1 → 11.3 ms/turę**, zgodna na 1087 przejściach (trace Qwen3.5) | **tak**: llama-server renderuje szablon jinja i tokenizuje cały prompt (~100k) przy każdym zapytaniu → T4 |
+| 18 | TRT-LLM #17518 #17428 | **R** koalescencja deskryptorów KV w disagg | p99 26.74 s → 125 ms (c=5) | nie |
+| 19 | TRT-LLM #17473, #16876 | **K** CUDA graph dla stabilnych producentów sparse, atencja zależna od zapytania eager | +12.58% na użytkownika | pośrednio: graf dla części stałej, eager dla zmiennej → T7 |
+| 20 | TRT-LLM #17316 | **K** kandydaci CuTeDSL w autotunerze MXFP8 | +7–10% przy niskim c | nie (format) |
+| 21 | TRT-LLM #17105 | **X** usunięte błędne taktyki split-K MoE (5/7 biegów padało) | stabilność | lekcja: autotuner wybierze „szybkie i złe”; każda taktyka musi przejść parity (mamy `mmvq_il_parity`) |
+| 22 | TRT-LLM #16279 #17278 | **S** zapas slotów przy nakładaniu się kończącego i nowego zapytania | stabilność | nie |
+| 23 | TRT-LLM #15727 #17526 (otwarte) | **R** potokowy transfer KV per chunk prefillu | — | idea → T8 (warstwowe ładowanie z RAM) |
+| 24 | ATOM #1640 | **C** zachowanie rzadkich checkpointów DSv4 SWA | hit 5.6% → 96.45%; straty na bramce SWA 91.35% → 0.16% (c=48) | jak #1 → T3 |
+| 25 | ATOM #902 #939 #1345 | **X/K** trafienia z puli wolnych niszczyły wpisy; przywrócony hashing prefiksu; prefill po trafieniu na zoptymalizowanym kernelu | 0 → pełne użycie prefiksu | lekcja: **sprawdzić, czy prefill po trafieniu (krótki suffix przy długim KV) idzie właściwą ścieżką FA** → T6 |
+| 26 | ATOM #1771 | **C** checkpointy stanu rekurencyjnego adresowane treścią; po wygenerowanej turze reuse 512 tokenów i 2-tokenowy suffix; bezwarunkowe publikowanie kosztowało **−17.5%** na ruchu bez trafień, więc odstęp co N tokenów | 1k/1k bez zmian | **tak**: koszt naszych checkpointów (Qwen ~0.15 GB stanu `[SZACUNEK]` z 16f) przy każdej wiadomości użytkownika → T3 |
+| 27 | ATOM #1318 #1406 #1725 #1807 | **C** offload: przeładowanie 32k z CPU 0.32 s vs 2.5 s przeliczenia (8×); **promocja przywróconych bloków do indeksu GPU** | brak ponownego transferu | u nas przywrócony stan zostaje w slocie, więc działa `[INFERENCE]`; koszt zmiany toru liczony w §5 |
+| 28 | ATOM #869 #919 #1699 | **S** routing świadomy cache, sticky z wygasaniem | — | jak #14 |
+| 29 | ATOM #1737 #1331 #1647 | **R** disagg mieszanych cache, KV draftu EAGLE, backpressure | — | nie |
+| 30 | ATOM #1220 #1701 #1746 #1552 | **R** prefill context-parallel (−35…−43% TTFT, +49% przy 64k); chunked PP prefill (TTFT 28.6 → 8.7 s, 3.68× bloków KV) | multi-GPU | nie (1 GPU); na 2 GPU konsumenckich PP prefill to temat poza zakresem |
+| 31 | AITER #3728 #3267 | **R/K** grupy PCP, indeksowanie wierszy > 131k | — | nie |
+| 32 | AITER #2893 #4474 #4680 | **X** adresowanie 64-bit dla pul > 2–4 GB (ciche złe wiersze) | poprawność | niskie ryzyko: KV u nas to osobne tensory na warstwę (~0.3 GB przy 200k) `[INFERENCE]`; zostaje needle przy 200k w `long_ctx_bench` |
+| 33 | AITER #3459 | **K** persistent MLA decode pod 64/128 głowic (decode i weryfikacja MTP) | — | jak 21f §8.5 K3 (kernele pod szerokość weryfikacji) |
+| 34 | Dynamo #10540 #10836 #11095 | **S** batchowane dopasowanie KV w routerze | +22.2% (c=512) | nie |
+| 35 | Dynamo #11503 #11508 #12329 | **S** leasy zamiast liczników na blok | −23.71% czasu replay (vLLM) | nie |
+| 36 | Dynamo #10521 #10676 #11644 #10645 #12158 | **S** kubełkowe wygasanie, sprzątanie tylko delty, kompresja ścieżek promptów (−35.3% CPU frontendu) | +13.7% | nie |
+| 37 | Dynamo #10437 #11104 #11539 #11574 #11569 #10433 | **F** MessagePack, zero-copy ramek, bez metryk ITL na każdy token | +8.1% tput, −9.7% TTFT | marginalnie: koszt SSE/JSON na token w llama-server → T9 |
+| 38 | Dynamo #11820 #12161 #12999 | **F** statyczne filtry logów (932 → 1133 rps), metryki detokenizacji raz na odpowiedź (~½ CPU frontendu) | — | jak #37 → T9 |
+| 39 | LMCache #3382 | **C** rezerwacja per chunk zamiast całego ładowania (deadlock po 28 zapytaniach) | 120 zapytań | nie |
+| 40 | LMCache #3635 #3869 #3908 | **C** zapisywać tylko użyteczne części grup hybrydowych (~20× mniej na token), prefetch tylko żywego okna | — | jak #3: **czy cache-ram zapisuje coś zbędnego** (np. checkpointy razem ze stanem, `checkpoints_size` w `alloc`) → T2 |
+| 41 | LMCache #4524 (otwarte) | **X** blokady per chunk współdzielone między zapytaniami → uszkodzone generacje przy eviction | poprawność | nie (1 slot) |
+| 42 | LMCache #3092 #3101 #3843 #4273 #4363 | **K** Triton block-sparse attention zamiast FlashInfer, backend hipFile GDS, koło ROCm | dostępność na AMD | nie |
+| 43 | LMCache #3561 | **C** offload świadomy DCP | > 30 000 trafień CPU | nie |
+| 44 | Mooncake #2225 #3184 #3338 | **R** GPU-direct RDMA przez HIP dmabuf, koło ROCm | — | nie |
+| 45 | MoRI UMBP, SGLang #37578 #38269 #39911 #41024 #35619 | **C** pula DRAM poza procesem (przeżywa restart silnika), **ładowanie warstwa po warstwie z obliczaniem w trakcie**, deduplikacja kopii TP 8 → 1 | +8.3% tput, −35% P90 TTFT przy DRAM < 1% tokenów; +26–34% tput/GPU na 12 zamiast 16 GPU | **tak**: (a) cache-ram poza procesem = nasze E5 (cache sesji na SSD, 16f); (b) warstwowe przywracanie → T8 |
+| 46 | SGLang #20736 | **K** shared expert jako ekspert top-K+1 w jednym wywołaniu MoE | +4.6% tput, −4% TPOT (c=16) | nie (LFM bez shared expert, Qwen gęsty) |
+| 47 | SGLang #21188 | **K** GemmaRMSNorm na AMD szedł **natywnym fallbackiem**; po fuzji: c=1 **−23.1% E2E, +30% tput** | 8×MI355X, 8k/1k | **tak, jako audyt**: każdy op Qwen/LFM ze ścieżką generyczną zamiast fuzowanej → T6 |
+| 48 | SGLang #21421 | **K** fused_topk z AITER (1.31–6.29× kernel) | +1.9% e2e | LFM: `norm_router_topk` 198 µs na 3404 µs tokenu (15a) → T10 |
+| 49 | vLLM #35850 | **K** MLA przy 8 głowicach/rank: powtórzenie głowic do 16, żeby użyć gotowego kernela ASM zamiast fallbacku Triton | TPOT 152–199 → 13–43 ms (Kimi K2.5) | wzorzec: dopasować kształt do szybkiego kernela zamiast pisać nowy (np. M weryfikacji 5…17, 21f §8.5 K3) |
+| 50 | SGLang 0.5.6 (blog) | **S/K** piecewise CUDA graph, wspólna pętla zdarzeń, JIT | **1.79× przy c=4**, 1.03–1.16× przy dużym c | potwierdza, że przy małym batchu stały koszt kroku dominuje; u nas to PM4/grafy (16a) |
+| 51 | SGLang #21511 | **K/Q** FP8 KV i fuzja rope+concat+zapis+kwant w jednym kernelu | > 5% MI355, > 10% MI300 | gfx1100 nie ma FP8; idea „zapis KV fuzowany z RoPE” → T6 |
+| 52 | AMD DSv4 (31 PR-ów, 110×) | **K** fuzje RoPE+Hadamard (−1 launch po stronie CPU), layernorm+kwant FP8, rmsnorm+kwant, greedy sample w AITER, fuzja zapisu cache; usunięte fallbacki Torch/Triton | 110.5× w 26 dniach (start z fallbacków) | lekcja jak #47; u nas mamy już `rms_norm_mul` + q8_1 |
+| 53 | DSv4 TRT (blog) | **X** kernel mHC na sztywno pod hidden 4096 dawał śmieci dla 7168 | poprawność | bramka greedy md5 i KLD na każdym nowym modelu |
+| 54 | TileRT (blog) | **K** cały decode jako jeden trwały kernel, specjalizacja per GPU, komunikacja w kafelkach | GLM-5 FP8 8×B200 **340 tok/s/użytk.** vs 113.6 (3.0×), kosztem throughputu (160 vs 240 tok/s/GPU) | ocena bez zmian (15a, §8.4): zysk TileRT bierze się z synchronizacji 8 GPU i TPOT < 3 ms; na jednym GPU przy TPOT 8–10 ms sufit +3–6% (Qwen) |
+| 55 | wide EP / DBO (blogi GB200) | **R** EP 8–32 na NVLink, nakładanie all-to-all | 3.1–4.4× | nie |
+| 56 | GB300 tail tax (blog v3) | **S** w mieszanym batchu decode atencja najdłuższych zapytań to 8.4 z 9.8 ms; dzielenie batcha według długości KV (otwarte) | — | tylko przy `-np` > 1 z subagentami: krótkie tory czekają na długi → do ramienia B w §7.1 |
+| 57 | MTP przy dużym batchu (blog DSv4) | **P** MTP pogarsza wynik przy dużym batchu (compute-bound) | — | nie dotyczy (B=1) |
+| 58 | Engram / n-gram embedding (blog, Qwen3.8-Flash-Next) | **C/Q** tablica 51B (Flash-Next) / 189 GiB (DSv4.1-Flash) adresowana ID tokenów, więc prefetch z DRAM/mmap SSD w trakcie wcześniejszych warstw | lepiej niż w HBM na większości Pareto | obserwacja modelu: Flash-Next ma 125B rdzenia (Q4 ≈ 70 GB `[SZACUNEK]`), więc na 24 GB tylko z ekspertami w RAM; poza zakresem |
+| 59 | TPU (blog) | **C** GDN: osobne sloty na odczyt checkpointu i zapis żywego stanu, checkpointy na wyrównanych granicach | prefix caching hybryd | jak #1/#26; u nas checkpoint to kopia, nie slot `[INFERENCE]` |
+| 60 | DSpark (PR #3262) | **P** losowanie draftu probabilistic +23% vs greedy (k=7) | vLLM, T>0 | **znane**: `drafters.md:11,67` (DSpark/DFlash2 probabilistycznie to osobny projekt); dla MTP zero zysku (`NOTES.md:159`) |
+
+### 11.5 Ranking tego, co się przenosi, i testy
+
+Kolejność według oczekiwanego zysku na zegarze sesji agentowej (§5) do kosztu. Wszystkie testy GPU wymagają zgody; T2 i T4 można zacząć na CPU.
+
+| ranga | test | z czego (#) | oczekiwany zysk | kill |
+|---|---|---|---|---|
+| 1 | **T2: zapis przyrostowy do `--cache-ram`.** Zmierzyć czas `prompt_save` i `prompt_load` przy zmianie toru (Qwen, 32k/94k/128k) w logach serwera; potem prototyp „dopisz tylko nowe wiersze KV + bieżący stan rekurencyjny” zamiast pełnej kopii | 3, 40, 45a | §5 liczył tylko przywracanie (cram 128k: 6 h na 256 h). Jeśli zapis kosztuje tyle samo (~1.1 s na 2.3 GB, 16f E4), to drugie ~2–3% zegara `[SZACUNEK]`; delta tnie zapis do ~ułamka | zapis < 0.2 s na zmianę toru przy 94k albo < 1% zegara z modelu §5 |
+| 2 | **T4: tokenizacja i szablon per tura.** CPU: czas `llama-tokenize` (słownik Qwen 248k) i renderu jinja dla rozmowy 100k tokenów; potem w serwerze `t_tokenize` przy turze z pełnym trafieniem cache | 17 | TRT: 185 → 11 ms/turę przy ~100k. U nas TTFT tury z krótkim wynikiem narzędzia to kilkaset ms, więc 100–200 ms by się liczyło `[NIEZWERYFIKOWANE]` (próba pomiaru nie ruszyła: kolejka `cpuheavy` i brak `libhipblas` w `LD_LIBRARY_PATH`) | tokenizacja + render < 30 ms przy 100k |
+| 3 | **T1: akceptacja po przywróceniu stanu.** Ta sama sesja w 3 wariantach: ciągły slot / przywrócenie z `--cache-ram` / przywrócenie z checkpointu; porównać tok/krok MTP w turze N+1 | 5 | vLLM gubił stan EAGLE po offloadzie po cichu. U nas stan draftu jest zapisywany, ale może zostać odrzucony (`server-context.cpp:2700-2706`) | różnica tok/krok < 2% we wszystkich wariantach |
+| 4 | **T3: koszt i trafność checkpointów GDN.** Z logów (`created/restored context checkpoint`) policzyć przeliczone tokeny po restore i czas tworzenia checkpointu; ramiona `-cms` 8192 / 2048 i checkpoint po końcu odpowiedzi asystenta | 1, 24, 26, 59 | ATOM: zły odstęp kosztował −17.5%, dobry dał 5.6% → 96% trafień. U nas zysk to część „lane” 8.5% nietrafionych (§5) | przeliczone po restore < 2% tokenów prefillu i koszt checkpointów < 1% zegara |
+| 5 | **T6: audyt fallbacków i kopii w grafie decode** (Qwen i LFM): op-level profil tokenu, szukać ścieżek generycznych, `cpy`/`cont` po GDN, prefill krótkiego suffixu przy długim KV | 6, 7, 25, 47, 51, 52 | SGLang: jeden fallback RMSNorm = +30% przy c=1. U nas 15a nie pokazał dużego fallbacku, więc realnie 0–3% `[INFERENCE]` | brak opu spoza matvec/FA/GDN > 2% czasu tokenu |
+| 6 | **T7: ponowne przechwytywanie grafu** przy zmianie długości KV i szerokości weryfikacji (MTP 1…5 + ogon lookup) | 12, 19, 50 | SGLang: +26.75% po usunięciu rekompilacji per długość. U nas na tokenie raczej < 1% `[INFERENCE]` | liczba przechwyceń/aktualizacji grafu na 1000 tokenów < 5 albo < 0.1 ms/token |
+| 7 | **T8: warstwowe przywracanie z RAM nakładane na prefill suffixu** | 23, 45b | chowa do ~1.1 s na zmianę toru; 2.3% zegara cram 128k (6/256 h) | po T2 zysk < 1% zegara |
+| 8 | **T10: router LFM** (`norm_router_topk` 198 µs/token): porównać z dolną granicą pasma i z fuzją softmax+top-k | 48 | ≤ ~150 µs z 3404 (≤ 4%) `[SZACUNEK]` | kernel w granicach 2× dolnej granicy |
+| 9 | **T9: koszt strumienia SSE/JSON na token** (stream vs bez stream, `--metrics` on/off) | 37, 38 | < 1% przy ~110 tok/s `[INFERENCE]` | różnica < 1% |
+
+Nie przenosi się (z powodem): disagg, wide EP/DP/TP/PCP/DCP, routing klastra, RDMA, koła i obrazy (#4, 16, 18, 22, 28–31, 34–36, 39, 41–44, 55); formaty FP8/MXFP8 bez wsparcia na gfx1100 (#20, 51); SWA (#10); duży batch (#57).
+
+### 11.6 Weryfikacja wobec naszych pomiarów
+- **Potwierdzone:**
+  - AL Qwen3.8-27B (PR #3304) obejmuje nasze 3.0 tok/krok (MTP4, T=1);
+  - trafienia cache w biegach AgentX 92–96% ≈ nasze radix 96.2%;
+  - zysk pojedynczych kerneli znika w szumie AgentX (#8), co zgadza się z §5;
+  - persistent kernel (TileRT) nie zmienia oceny 15a dla jednego GPU.
+- **Doprecyzowane:**
+  - §2.2: Qwen3.8-Flash-Next n=4 2.47 dotyczy thinking on; karta modelu podaje 3.24 dla n=3 przy thinking off bez pokrycia w YAML;
+  - TL;DR pkt 6 i §3 #6: Qwen3.8-27B nadal ma 0 oficjalnych punktów. Są nieopublikowane biegi natywnego MTP z wymuszonym AL 2.51 (H100 BF16, 1k/1k run 35495270307, 8k/1k run 35501338930, PR #3305), do odczytu jako „unofficial overlay”.
+- **Bez konfliktu z bazą wiedzy:** nic na stronie nie dotyczy llama.cpp ani kart konsumenckich, więc żadna liczba nie podważa REKORDY.md. Jedyna porównywalna karta (RTX PRO 6000) działała w TP4 na modelu 397B.
 
 ## Do bazy wiedzy
 
@@ -315,3 +465,7 @@ Dla nas: zero wpływu na wydajność. Produktowo przypomina, że modyfikacje wag
 | modele | Qwen3.8-27B na InferenceX (`qwen38-27b-inferencex.md`) | Eksperymentalny wpis: bf16, 1×H100, vLLM + DSpark k=7, 1k/1k random; c=1 med 86.1 / p90 67.4 tok/s, AL ≈ 2.0; nasz XTX Q4 + MTP4 109.0 (O) | run 35359530151; PR #3260 (otwarty); `REKORDY.md:22` |
 | repo | vLLM Kimi K3 specialized decode (`vllm-kimi-k3-specialized-decode.md`) | Fuzja CuTe DSL z komunikacją TP na GB300: 23 → 13 kerneli/warstwę, B1 7.38 → 3.90 ms; nie megakernel; dla jednego GPU przenosi się reguła „tylko statyczne wagi przed czekaniem” i bramka 1-ulp | PR #61867; blog vLLM 2026-10-16; `[SZACUNEK]` 8% → 15% pasma HBM (`21f` §8.2) |
 | research | arXiv 2605.08513 to nie InferenceX (`single-neuron-safety-2605-08513.md`) | Praca o omijaniu alignmentu jednym neuronem; zero wpływu na wydajność | 7 modeli, 1.7B–70B (arXiv 2605.08513) |
+| research | InferenceX: katalog optymalizacji AgentX i przeniesienie na llama.cpp (`inferencex-optymalizacje.md`) | 60 przykładów z 10 stron optymalizacji i blogów. Przenosi się 9 testów: zapis przyrostowy cache-ram, tokenizacja per tura, stan MTP po restore, checkpointy GDN, audyt fallbacków; reszta to multi-GPU i serwer | TRT tokenizacja 185 → 11 ms/turę (#17462); ATOM checkpointy −17.5% przy złym odstępie, hit 5.6 → 96.45% (#1771, #1640); SGLang fallback RMSNorm +30% przy c=1 (#21188) (`21f` §11.4–11.5) |
+| modele | Qwen3.8-27B: golden AL natywnego MTP (`qwen38-27b-golden-al.md`) | SPEED-Bench coding, H200; zgodne z naszym 3.0 tok/krok przy MTP4 | off n=1…4: 1.90/2.68/3.28/3.79; on: 1.73/2.21/2.52/2.72; FP8 = BF16 (PR #3304) |
+| sprzet | InferenceX nie mierzy kart konsumenckich (`inferencex-sprzet.md`) | Brak XTX, RDNA, 4090 i 5090. Najbliżej jest RTX PRO 6000 (GB202): Qwen3.5-397B FP4 TP4 przez PCIe | c=1: 78.3 → 153.6 tok/s z MTP (1.96×), TPOT 12.8 → 6.5 ms (`api_benchmarks_qwen35.json`) |
+| lekcje | llama-server zapisuje do cache-ram pełny stan zamiast delty (`lekcja-cache-ram-pelny-zapis.md`) | `server_prompt_cache::alloc` pomija tylko prompt w pełni zawarty; przedłużony prompt to pełna kopia KV + stanu rekurencyjnego + draftu + checkpointów | `server-task.cpp:1722-1760`; do zmierzenia w T2 (`21f` §11.5) |
