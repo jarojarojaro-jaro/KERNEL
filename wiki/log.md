@@ -149,6 +149,9 @@ Nowe: [[mec-fw-dispatch-aql-gfx11]], [[rs64-firmware-re]]; zaktualizowane [[gfx1
 ## [2026-10-19] ingest | Raporty 23b2 (bariery) i 23e (RE silników)
 Nowa [[raport-23e-re-silniki]] (hipfire 54.3 vs 43.2 t/s – bajty, nie ISA; pomysł nr 1 już w forku); zaktualizowane [[raport-23b-re-kernele-amd]], [[bariera-lds-rdna3]], [[hipfire]], [[gdn-replay]].
 
+## [2026-10-19] ingest | Raport 23c (RE kerneli NVIDIA)
+Nowa [[raport-23c-re-kernele-nvidia]]; zaktualizowana [[pdl-mmvq-trigger]].
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

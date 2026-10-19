@@ -69,7 +69,7 @@ Audyt liczb: [[AUDYT]].
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (27)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (68)
-- [[research/_hub|research]] — Streszczenia raportów (58)
+- [[research/_hub|research]] — Streszczenia raportów (59)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (28)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
@@ -87,9 +87,9 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-19 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
 - 2026-10-19 [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]]
 - 2026-10-19 [[raport-23e-re-silniki|Raport 23e: RE kerneli dekodu konkurencyjnych silników]]
+- 2026-10-19 [[raport-23c-re-kernele-nvidia|Raport 23c: kernele NVIDIA (cuBLASLt, FlashInfer, Marlin, exllamav3) vs nasz ggml-cuda]]
 - 2026-10-19 [[raport-23b-re-kernele-amd|Raport 23b: kernele AMD (gfx1100) vs nasze MMVQ, weryfikacja i atencja]]
 - 2026-10-19 [[raport-23a-rea|Raport 23a: morluto/rea („Reverse Engineer Anything”) – bez wsparcia GPU]]
-- 2026-10-19 [[raport-21l-re-gpu|Raport 21l: narzędzia reverse engineeringu dla GPU]]
 
-Razem 513 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 514 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
