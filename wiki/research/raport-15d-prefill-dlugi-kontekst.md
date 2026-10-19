@@ -1,8 +1,8 @@
 ---
 typ: research
 tags: [research, prefill, dlugi-kontekst, lucebox]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:1-41,99-126; ~/KERNEL/product/research/16c-kvq-cuda.md:10
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:1-41,99-126; ~/KERNEL/product/research/16c-kvq-cuda.md:10; ~/KERNEL/product/research/16f-xtx-szybkie.md:12,133,147-149,213
 status: aktualne
 ---
 # Raport 15d: prefill i długi kontekst (PFlash v2, KVFlash, cache sesji)
@@ -19,6 +19,8 @@ Raport 2026-10-16, bez GPU, pilot na CPU.
 - Przepis syv-ai (22.4 → 0.56 s) to prefix cache, który llama.cpp już ma.
 - Prefill NVIDIA: fork −1.5…−1.9% w llama-bench; TTFT +4.8% vs A1, głównie hook MTP na prompt (150 ms przy 2k).
 Ranking bezstratnych: L1 kvq CUDA, L2 audyt cache agenta, L3 dyskowy cache sesji, L4 hook MTP w grafie, L5 bisect prefillu NVIDIA, L6 LFM `-b 2048 -ub 2048`.
+
+Wyniki 16f (2026-10-18, XTX): L6 (LFM ub 2048) +17% prefillu; L4 (hak MTP w grafie) maks. 2.2–2.6% TTFT, nie 5–7%; L2 i L3 zrealizowane jako [[2026-10-18-cache-promptu-agenta]] i [[cache-sesji-na-dysku]].
 
 ## Powiązane
 - [[research/_hub|research]]

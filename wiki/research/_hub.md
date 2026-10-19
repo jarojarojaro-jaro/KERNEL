@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (34)
+## Notatki (35)
 
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
 - [[raport-01-konkurencja|Raport 01: konkurencja]] — Detekcja sprzętu i rekomendacja modelu to już standard; żaden produkt konsumencki nie łączy pomiaru, długiej optymalizacji poza flagami, weryfikacji bitowej i raportu przed → po (stan 2026-10-15).
@@ -44,6 +44,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]] — Agent CudaKvq przeniósł kernel `kvq` na NVIDIA Ampere+ (mma.sync m16n8k16, jedno przejście KV dla całej grupy GQA): +24.6…+36.8% tg przy 64k na 3090 i 5060 Ti, MTP@64k +27.6%, jeden graniczny FAIL KLD.
 - [[raport-16d-magnitude-vs-nasz|Raport 16d: Magnitude vs nasz fork vs upstream (X1 z 15c) + KLD Nemotrona]] — Head-to-head na 3090 i 5060 Ti: przewaga naszych kerneli na NVIDIA bez draftera +30–40% i w prefillu +18–35%, a słabością są głębokie drafty – Magnitude wygrywa kopią/edycją kodu dzięki DFlash2 (7.3–7.8 tok/krok vs sufit 5 MTP n=4).
 - [[raport-16e-kwanty-kld|Raport 16e: nowe kwanty 27B na 12–16 GB (E1 + E3 z 15e)]] — Agent QuantKLD zmierzył 12 ramion kwantów Qwen3.8-27B/Swift/Saluki/Bonsai (KLD do BF16 na 5 korpusach, 20 zadań, prędkość na 3060 i 5060 Ti) w dwóch rundach (2026-10-16, dokończenie po awarii omp 2026-10-18).
+- [[raport-16f-xtx-szybkie|Raport 16f: szybkie zyski na XTX (ubatch LFM, typ bloku MTP, hak MTP, cache agenta, cache na SSD)]] — Agent XtxQuickWins (gałąź `quickwins` od `amd-opt` @ `f61994f58`): dwie wygrane do produkcji (LFM `-ub 2048` +17% prefillu, łatka cache agenta −80% startu sesji), IQ4_XS bloku MTP potwierdzony, hak MTP i pinned staging przegrywają, cache sesji na SSD wykonalny już dziś.
 - [[raport-16g-lfm-moe-pasmo|Raport 16g: pasmo kerneli MoE LFM2.5 na XTX]] — Agent XtxLfmMoe rozłożył narzut matvec LFM2.5 (718 µs/token) na kernele, pokazał mikrobenchem i ATT, że gate+up ogranicza wzorzec dostępu, i zbudował bitowy kernel `GGML_HIP_MOE_GU_BLOCK` (`7c5b2a116`): LFM +0.33% (w szumie), Uncensored +1.39%, stabilniejsze tempo.
 - [[raport-16h-fabryka-v1|Raport 16h: fabryka v1 zbudowana]] — Rdzeń fabryki z raportu 15f (działanie nr 1 z syntezy 15) zbudowany na CPU za $0: karta, ledger, weryfikator G0–G5, zestaw zapieczętowany, 36 reguł z fixture'ami z prawdziwych incydentów; brak walidacji na GPU.
 - [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]] — Analiza kodu Magnitude 0.2.9 (`954d677d`) i logów z 16d (tylko CPU): ich przewaga to sufit bloku DFlash2 i kontroler szerokości, nie kernele; najtańsza droga do ich wyniku to ogon z lookupu do 8 wierszy przy MTP4 (projekcja XTX code-edit ×1.4).

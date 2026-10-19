@@ -1,8 +1,8 @@
 ---
 typ: eksperyment
 tags: [eksperymenty, cache-promptu, konfiguracja]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:193-219; ~/KERNEL/qwen-opt/STATUS-NEXT.md:40-44; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:14,88-94,108-109,239-242; ~/llama-master/tools/server/server-task.cpp:1824; ~/llama-master/tools/server/server-context.cpp:3979-3985
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:193-219; ~/KERNEL/qwen-opt/STATUS-NEXT.md:40-44; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:14,88-94,108-109,239-242; ~/llama-master/tools/server/server-task.cpp:1824; ~/llama-master/tools/server/server-context.cpp:3979-3985; ~/KERNEL/product/research/16f-xtx-szybkie.md:151-190
 status: aktualne
 ---
 # 2026-10-12: cache promptu, długi kontekst po `kvq` i testy bez zmian w kodzie (A7)
@@ -30,6 +30,8 @@ A7 (bez zmian w kodzie, ROCm):
 Późniejsza analiza logów (STATUS-NEXT): w 9 sesjach LFM cache trafiał 91% tokenów (tura omp ~99.8%, mediana 25 nowych tokenów), prefill to 3.8% czasu GPU; pomysły (zapis prefiksu na dysk, checkpointy przy hybrydach) niezrobione.
 
 Uzupełnienie (raport 15d, 2026-10-16): wpisy `--cache-ram` z `f_keep < 0.25` są pomijane (`server-task.cpp:1824`); checkpoint startu wiadomości użytkownika powstaje zawsze, gdy lista checkpointów jest pusta (`server-context.cpp:3979-3985`). Propozycja E3: audyt startu sesji agenta (skąd pełne 7–10k tokenów prefillu; podejrzany zmienny nagłówek system promptu). Strata #2175 przeniosła środowisko do wiadomości użytkownika: 11.9 → 1.1 s. Brakuje dyskowego cache sesji (Lucebox: 45K po restarcie 2.6 s vs 56.2 s); upstream `--cache-disk` (#28092) wisi.
+
+Przyczyna przeliczeń na starcie sesji agenta (2026-10-18): [[2026-10-18-cache-promptu-agenta]].
 
 ## Powiązane
 - [[eksperymenty/_hub|Eksperymenty]]

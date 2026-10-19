@@ -1,8 +1,8 @@
 ---
 typ: latka
 tags: [latki, spekulacja, mtp]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:86-88,283-288,310-317,321,327,330; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:79,107,114,116,121
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:86-88,283-288,310-317,321,327,330; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:79,107,114,116,121; ~/KERNEL/product/research/16f-xtx-szybkie.md:94-115
 status: aktualne
 ---
 # Łatki spekulacji (słownik draftu, requant, okno, adaptacja)
@@ -18,6 +18,8 @@ status: aktualne
 | 0046 (S3) | okno atencji warstwy MTP (`--spec-mtp-window`) | W=8192: 105 → 90 t/s (akceptacja 3.31 → 2.78) | negatywne, domyślnie 0 |
 
 Weryfikacja zostaje bez zmian, więc 0004, 0032, 0039 zmieniają tylko drafty (klasa DIST): rozkład wyjścia ten sam, ale tekst greedy może się różnić przy remisie. Konfiguracja (bez łatki): KV draftu q4_0 włączone domyślnie (94k: 97.5 → 100.6 t/s), draft n=4.
+
+Typ bloku MTP na żywo (16f E2, 2026-10-18, 5 seedów ABBA): IQ4_XS 113.2 t/s, 3.063 tok/krok, 28.14 ms/krok vs natywny Q6_K 109.4, 3.012, 28.76; q8_0 103.1 vs 106.4 t/s (2 seedy). Offline +0.45% z pilota 11 nie przenosi się; IQ4_XS zostaje.
 
 ## Powiązane
 - [[latki/_hub|Łatki]]

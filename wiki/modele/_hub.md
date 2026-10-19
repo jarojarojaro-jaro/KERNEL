@@ -14,13 +14,14 @@ Liczby t/s zawsze z datą i warunkami (kwant, KV, MTP/DFlash, prompt, T). Aktual
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (13)
+## Notatki (14)
 
 - [[drafter-dflash|Drafter DFlash2 dla Qwen3.8-27B]] — Osobny mały model draftujący (z-lab / incoai, 5 warstw) — świetny na angielski kod przy T=0, ale na szerszym zestawie i po polsku nie bije głowicy MTP, więc domyślnie używamy MTP.
 - [[glowica-mtp|Głowica MTP Qwen3.8-27B (spekulacja bez osobnego draftera)]] — Wbudowana warstwa `blk.64` (nextn) zgaduje kolejne tokeny, a główny model weryfikuje je jednym przebiegiem; to podstawa naszego 109 t/s, z ~3 tokenami na krok.
 - [[kwanty-gguf|Kwanty wag i KV, których używamy]] — Wagi trzymamy w kwantach K/I GGUF ładowanych w całości do VRAM; KV cache to q4_0 dla Qwena i q8_0 dla LFM (decyzja użytkownika); zmiana kwantu = inny model, więc to nie jest „optymalizacja bezstratna”.
 - [[lfm2-5-24b-a2b|LFM2.5-24B-A2B (Liquid AI)]] — MoE 24B z ~2B aktywnymi parametrami i warstwami krótkiej konwolucji; na RX 7900 XTX z 173 do 294 t/s, bez spekulacji (brak draftera).
 - [[lfm2-5-uncensored|LFM2.5-24B-A2B-Uncensored (AtomicChat, AD-Q5_K_M)]] — Abliterowany LFM2.5 od AtomicChat; ma więcej tensorów Q8_0, dlatego dostał własną łatkę MMVQ (0064) i działa z 267.3 t/s.
+- [[lfm-czulosc-na-podzial-batcha|LFM2.5: logity zależą od podziału promptu na ubatche]] — Dowolne dwa rozmiary ubatcha (128–2048) dają dla LFM2.5-24B-A2B KLD 0.055–0.068 i 88–89% tego samego top-1, przy KV q8_0 i f16, a upstream `e60eff95f` daje bit w bit te same liczby co fork; A/A (ub 512 vs 512) to KLD 0 (2026-10-18).
 - [[modele-katalogowe|Modele katalogu produktu i testów (gpt-oss, Gemma 4, Qwen3.5-9B, Bielik, Mistral)]] — Modele z licencją Apache 2.0, które produkt ma polecać i które testujemy na kartach NVIDIA; dla nich nie mamy jeszcze własnych kerneli.
 - [[modele-telefon|Modele na telefon: MiniCPM-V 4.7 1B i EmbeddingGemma 2]] — Osobny projekt (`jarojarojaro-jaro/phoneuse`): lokalny agent na telefonie realme Note 50 (Unisoc UMS9230H), gdzie EmbeddingGemma dopasowuje podpisy ekranu, a MiniCPM-V jest opcjonalny; zasada: model nigdy nie klika z pewnością w złe miejsce.
 - [[nemotron-3-5-bolt-74b-a9b|NVIDIA Nemotron 3.5 Bolt 74B-A9B]] — Hybrydowy MoE NVIDIA (Mamba-2 + LatentMoE + 8 warstw attention, ~9B aktywnych) w pliku IQ2_XXS 22 018 326 528 B; na RTX 3090 z drafterem DFlash nasz silnik daje 141.1 t/s.

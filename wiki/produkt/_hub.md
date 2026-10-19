@@ -14,7 +14,7 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (24)
+## Notatki (25)
 
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
@@ -22,6 +22,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[produkt-architektura|Architektura systemu i silnik]] — Komputer użytkownika (GUI Tauri, TUI, daemon Rust `appd`, llama-server jako proces potomny, tuner, updater Ed25519) + mały backend (katalog, baza profili, kolejka) + fabryka przepisów.
 - [[produkt-biznes-edycje|Biznes: edycje, model kodu, wejście na rynek]] — Hipotezy (nie decyzje): Free, Turbo (149 zł/rok lub 299 zł dożywotnio), Business (~8 €/stanowisko/mies.), OEM (1–3 € za urządzenie), Tuning Lab (od 5 k€); kod w modelu open core.
 - [[produkt-budzet|Budżet (rząd wielkości)]] — GPU w chmurze: faza 0 ~$50–150 łącznie, faza 1 ~$500–600/mies., faza 2 ~$1.2–1.5k/mies., faza 3 ~$2.5–3.5k/mies.; tokeny agentów prawdopodobnie największy koszt fabryki.
+- [[cache-sesji-na-dysku|Cache sesji na dysku (projekt z 16f E5)]] — Istniejący mechanizm llama-server `--slot-save-path` + `/slots/0?action=save|restore` (z checkpointami) przywraca sesję 53k z SSD 23–24× szybciej niż prefill: Qwen MTP 2.28 GiB w 2.51 s zamiast ~61.5 s, LFM 553 MiB w 0.53 s zamiast ~12.2 s (2026-10-18).
 - [[produkt-dla-kogo-i-ekrany|Dla kogo, przepływ laika i ekrany MVP]] — Trzy persony (gracz z dobrą kartą, entuzjasta, firma), cel „rozmowa w < 10 min” i siedem ekranów MVP z czatem opartym na web UI llama.cpp.
 - [[zawezenie-tezy-produktu|Do decyzji: zawężenie tezy PLAN §0.1 po Magnitude]] — Propozycja raportu 15c (do decyzji użytkownika): teza „żaden produkt nie robi naraz…” zostaje, ale „optymalizacja poza flagami” nie jest już wyróżnikiem; wyróżnikiem jest kombinacja weryfikacji (md5/KLD) + przed → po wobec tuned upstream + AMD natywnie.
 - [[produkt-fabryka|Fabryka przepisów (lab)]] — Fabryka zamienia nową parę (GPU, model) w zweryfikowane przyspieszenie: 10-krokowy playbook, istniejące narzędzia, bramki antyoszustwa i metryki (cel ≤ 7 dni od premiery modelu).

@@ -59,6 +59,9 @@ Nowe: [[2026-10-18-lfm-moe-pasmo]], [[2026-10-18-lfm-moe-negatywne]], [[mmvq-moe
 ## [2026-10-18] ingest | Raport 16a (PM4-PDL, prefetch MALL)
 Nowe: [[2026-10-18-pm4-pdl-x1]], [[2026-10-18-pm4-ub-lfm]], [[lekcja-handoff-rdna3]], [[lekcja-prefetch-mall-xtx]], [[raport-16a-pm4-pdl]]. Zaktualizowane: [[raport-15a-monokernel]] (korekta S1: +9…+15% → realnie ≈ +3%), [[pm4-replay]], [[wyniki-negatywne]].
 
+## [2026-10-18] ingest | Raport 16f (szybkie zyski XTX) + wentylator za obciążeniem + Chrome
+Nowe: [[2026-10-18-lfm-ubatch-2048]], [[lfm-czulosc-na-podzial-batcha]], [[2026-10-18-cache-promptu-agenta]], [[2026-10-18-hak-mtp-i-checkpointy]], [[cache-sesji-na-dysku]], [[raport-16f-xtx-szybkie]], lekcje [[lekcja-5-seedow]], [[lekcja-nie-odtwarzac-lockow]], [[lekcja-chrome-zostawiony]]. Zaktualizowane: [[latki-spekulacji]], [[wylaczniki-env]], [[2026-10-12-cache-promptu-i-a7]], [[raport-15d-prefill-dlugi-kontekst]], [[lekcja-unikalny-katalog-wynikow]], [[otwarte-decyzje-produktu]] (flagi `run-llm.sh` – decyzja użytkownika), [[rx-7900-xtx]] i [[lekcja-wentylator-rdna3]] (timer, reset GPU, tryb akustyczny).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

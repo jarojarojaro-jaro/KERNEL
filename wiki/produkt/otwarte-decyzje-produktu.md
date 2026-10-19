@@ -2,7 +2,7 @@
 typ: produkt
 tags: [produkt, decyzje-otwarte, app]
 aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:334-343,340-342; ~/KERNEL/product/research/16e-kwanty-kld.md:282-292; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:10
+zrodlo: ~/KERNEL/app/REPORT.md:92-109; ~/KERNEL/product/PLAN.md:491-499; ~/KERNEL/product/research/15c-nowe-silniki.md:395; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:122; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:146-149,547; ~/KERNEL/product/research/12-bit-exact-spekulacja.md:334-343,340-342; ~/KERNEL/product/research/16e-kwanty-kld.md:282-292; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:10; ~/KERNEL/product/research/16f-xtx-szybkie.md:19-45,238
 status: aktualne
 ---
 # Otwarte decyzje produktu (po prototypie aplikacji)
@@ -27,6 +27,7 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 | model 16 GB | UD-Q3_K_XL (U3) | podmienić na AP-Q3_K_XL po bramce (md5, `kld_gate.py` czat PL, ABBA) – rekomendacja 16e, KLD czat −12%, kod −23% ([[2026-10-18-e1-kwanty-27b-kld]]) |
 | model 12 GB | Saluki/Bonsai | IQ3_XXS-mtp: Swift W3 (licencja) albo ISTA (Apache, do zmierzenia); KLD-PL 0.108 vs Saluki 0.320 |
 | łatka 0071 `GGML_HIP_MOE_GU_BLOCK` | gałąź `opt-lfmmoe` @ `7c5b2a116`, poza produkcją | scalić z wyłącznikiem, domyślnie wł.? bitowa, LFM +0.33% (szum), Uncensored +1.39% ([[2026-10-18-lfm-moe-pasmo]]) |
+| flagi `run-llm.sh` (16f) | bez zmian | LFM `-b 2048 -ub 2048` (+17% prefillu, +0.5 GB VRAM) i `LLAMA_SERVER_CACHE_SHARE_MIN=1024` po scaleniu `50c3a2f2a` ([[raport-16f-xtx-szybkie]]) |
 
 Decyzje już podjęte są w folderze decyzji (np. open core, czat na web UI llama.cpp, konto na początku jako pomysł użytkownika).
 

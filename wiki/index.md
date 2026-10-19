@@ -57,20 +57,20 @@ Audyt liczb: [[AUDYT]].
 ## Kategorie
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (21)
-- [[modele/_hub|modele]] — Modele i kwanty (13)
+- [[modele/_hub|modele]] — Modele i kwanty (14)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (10)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (15)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (7)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (25)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (21)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (43)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (61)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (46)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (64)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (20)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (58)
-- [[research/_hub|research]] — Streszczenia raportów (34)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (24)
+- [[research/_hub|research]] — Streszczenia raportów (35)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (25)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (26)
 
 ## Ostatnio aktualizowane
@@ -79,17 +79,17 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-18 [[raport-16j-magnitude-vulkan-xtx|Raport 16j: Magnitude przez Vulkan na 7900 XTX (E-X5)]]
 - 2026-10-18 [[raport-16i-magnitude|Raport 16i: Magnitude – co robią dobrze i co przejąć]]
 - 2026-10-18 [[raport-16g-lfm-moe-pasmo|Raport 16g: pasmo kerneli MoE LFM2.5 na XTX]]
+- 2026-10-18 [[raport-16f-xtx-szybkie|Raport 16f: szybkie zyski na XTX (ubatch LFM, typ bloku MTP, hak MTP, cache agenta, cache na SSD)]]
 - 2026-10-18 [[raport-16e-kwanty-kld|Raport 16e: nowe kwanty 27B na 12–16 GB (E1 + E3 z 15e)]]
 - 2026-10-18 [[raport-16c-kvq-cuda|Raport 16c: kvq na CUDA (E1)]]
 - 2026-10-18 [[raport-16a-pm4-pdl|Raport 16a: PM4-PDL i prefetch wag na XTX (X1–X3 z 15a)]]
+- 2026-10-18 [[raport-15d-prefill-dlugi-kontekst|Raport 15d: prefill i długi kontekst (PFlash v2, KVFlash, cache sesji)]]
 - 2026-10-18 [[raport-15a-monokernel|Raport 15a: megakernele dla decode (vLLM MonoKernel)]]
 - 2026-10-18 [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]]
 - 2026-10-18 [[produkt-ryzyka|Największe ryzyka]]
+- 2026-10-18 [[cache-sesji-na-dysku|Cache sesji na dysku (projekt z 16f E5)]]
 - 2026-10-18 [[app-landing|Strona (landing) PL/EN]]
 - 2026-10-18 [[landing-qa|QA landingu: `app/landing/scripts/qa/`]]
-- 2026-10-18 [[att-gfx1100|ATT (thread trace) na gfx1100]]
-- 2026-10-18 [[lfm2-5-uncensored|LFM2.5-24B-A2B-Uncensored (AtomicChat, AD-Q5_K_M)]]
-- 2026-10-18 [[lfm2-5-24b-a2b|LFM2.5-24B-A2B (Liquid AI)]]
 
-Razem 392 notatek. Wygenerowano 2026-10-18 przez `tools/wiki.py index`.
+Razem 401 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

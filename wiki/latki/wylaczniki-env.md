@@ -1,8 +1,8 @@
 ---
 typ: latka
 tags: [latki, wylaczniki, env]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/patch-manifest.json (pole env_switch, 0001–0070); ~/KERNEL/qwen-opt/NOTES.md:345-383; ~/KERNEL/qwen-opt/research/round6/gdn-bitwise.md:13-16
+aktualizacja: 2026-10-18
+zrodlo: ~/KERNEL/product/research/patch-manifest.json (pole env_switch, 0001–0070); ~/KERNEL/qwen-opt/NOTES.md:345-383; ~/KERNEL/qwen-opt/research/round6/gdn-bitwise.md:13-16; ~/KERNEL/product/research/16f-xtx-szybkie.md:119-121,135,172-174
 status: aktualne
 ---
 # Wyłączniki env łatek
@@ -42,6 +42,8 @@ status: aktualne
 | `GGML_HIP_MMQ_EPI` | 0070 | epilog MMQ VOPD |
 
 Poza `amd-opt` (gałąź `opt-gdn6`): `GGML_HIP_GDN_FAST`, `GGML_HIP_GDN_B128`. CLI zamiast env: 0004 `--spec-draft-vocab(-n)`, 0032 `--spec-draft-head-type` / `--spec-mtp-type`; opt-in: 0039 `--spec-draft-adaptive`, 0046 `--spec-mtp-window`. Uwaga: przełączniki `GGML_HIP_*` czyta też build CUDA.
+
+Gałąź `quickwins` (16f, poza `amd-opt`): `LLAMA_SERVER_CACHE_SHARE_MIN=N` (`50c3a2f2a`), `LLAMA_LFM2_MSG_SPANS=1` (zmienia md5 LFM), `LLAMA_MTP_HOOK_TIMING=1`, `LLAMA_MTP_HOOK_SKIP=N` (diagnostyka, psuje drafty), `LLAMA_CKPT_TIMING=1` (`7369380bf`).
 
 ## Powiązane
 - [[latki/_hub|Łatki]]
