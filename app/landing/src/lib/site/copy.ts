@@ -150,17 +150,52 @@ const raw = {
 				['Pamięć i sterowniki', 'dopasowanie do VRAM'],
 				['Profil pod kartę', 'zmierzony dla GPU']
 			] as [string, string][],
-			zoom: 'Warstwa 02 z bliska',
-			zoomNote: 'Kreska = kernel, przerwa = GPU czeka. Zbliżenie na ułamek jednego tokenu.',
-			kernels: 'uruchomień na token',
-			gaps: 'przerwy',
-			gpu: 'praca GPU',
-			up: 'upstream',
-			ours: 'nasz silnik',
-			split: 'Skąd zysk',
-			flags: 'flagi MTP (upstream)',
-			mine: 'nasz silnik',
-			allOurs: 'cały zysk to nasz silnik'
+			pick: 'Warstwy silnika',
+			zoom: 'z bliska',
+			zooms: [
+				{
+					metric: 'tokenów na sekundę · sam GPU, bez samplera',
+					lanes: ['upstream', 'nasz silnik'],
+					lane: 'kreska = gotowy token · ten sam odcinek czasu',
+					note: 'llama-bench tg128, więc liczy się tylko praca GPU. Upstream z najlepszymi flagami wobec naszego silnika z tymi samymi flagami.',
+					extra: []
+				},
+				{
+					metric: 'uruchomień kerneli na token',
+					lanes: ['upstream', 'nasz silnik'],
+					lane: 'kreska = kernel, przerwa = GPU czeka · ułamek jednego tokenu',
+					note: 'Profil kroku (nsys): łączymy kernele, więc GPU rzadziej czeka na kolejne polecenie.',
+					extra: ['przerwy', 'praca GPU']
+				},
+				{
+					metric: 'tokenów na sekundę · serwer',
+					lanes: ['sampler upstream', 'nasz sampler'],
+					lane: 'kreska = gotowy token · ten sam odcinek czasu',
+					note: 'Ten sam silnik z sześcioma przełącznikami samplera wyłączonymi i włączonymi. Upstream przy każdym tokenie sortuje na CPU wszystkich 65 tys. kandydatów.',
+					extra: []
+				},
+				{
+					metric: 'ms na krok spekulacji',
+					lanes: ['pełny draft', 'lżejszy draft'],
+					lane: 'blok = krok: draft i weryfikacja · ten sam odcinek czasu',
+					note: 'Słownik draftu 64k i głowica MTP w IQ4_XS: krok jest krótszy, a tokenów przyjętych na krok prawie tyle samo.',
+					extra: ['tokenów na sekundę', 'tokenów na krok']
+				},
+				{
+					metric: 'tokenów na sekundę',
+					lanes: ['karta uśpiona', 'karta czuwa'],
+					lane: 'kreska = gotowy token · ten sam odcinek czasu',
+					note: 'Bez monitora sterownik usypia kartę po 5 s i przenosi VRAM do RAM, a model działa wtedy przez PCIe. Nasz silnik nie pozwala karcie zasnąć. Notatki nie podają skryptu tego pomiaru: to ilustracja skali.',
+					extra: []
+				},
+				{
+					metric: 'tokenów na sekundę · serwer',
+					lanes: ['bez profilu', 'profil Ampere'],
+					lane: 'kreska = gotowy token · ten sam odcinek czasu',
+					note: 'Ustawienia zmierzone dla tej architektury (dwa wiersze na blok w MMVQ, bez fuzji gate/up), teraz domyślne na kartach Ampere.',
+					extra: ['sam GPU (tg128)']
+				}
+			] as { metric: string; lanes: [string, string]; lane: string; note: string; extra: string[] }[]
 		},
 		quality: {
 			title: 'Ten sam model, ta sama jakość — zmierzone.',
@@ -391,17 +426,52 @@ const raw = {
 				['Memory and drivers', 'fitting into VRAM'],
 				['A profile for your card', 'measured per GPU']
 			] as [string, string][],
-			zoom: 'Layer 02 up close',
-			zoomNote: 'A bar is a kernel, a gap is the GPU waiting. Zoomed into a fraction of one token.',
-			kernels: 'launches per token',
-			gaps: 'gaps',
-			gpu: 'GPU work',
-			up: 'upstream',
-			ours: 'our engine',
-			split: 'Where the gain comes from',
-			flags: 'MTP flags (upstream)',
-			mine: 'our engine',
-			allOurs: 'the whole gain is our engine'
+			pick: 'Engine layers',
+			zoom: 'up close',
+			zooms: [
+				{
+					metric: 'tokens per second · GPU only, no sampler',
+					lanes: ['upstream', 'our engine'],
+					lane: 'mark = a finished token · the same stretch of time',
+					note: 'llama-bench tg128, so only the GPU work counts. Upstream with the best flags vs our engine with the same flags.',
+					extra: []
+				},
+				{
+					metric: 'kernel launches per token',
+					lanes: ['upstream', 'our engine'],
+					lane: 'bar = a kernel, gap = the GPU waiting · a fraction of one token',
+					note: 'Step profile (nsys): we merge kernels, so the GPU waits for its next command less often.',
+					extra: ['gaps', 'GPU work']
+				},
+				{
+					metric: 'tokens per second · server',
+					lanes: ['upstream sampler', 'our sampler'],
+					lane: 'mark = a finished token · the same stretch of time',
+					note: 'The same engine with its six sampler switches off and on. For every token, upstream sorts all 65k candidates on the CPU.',
+					extra: []
+				},
+				{
+					metric: 'ms per speculation step',
+					lanes: ['full draft', 'lighter draft'],
+					lane: 'block = a step: draft and verification · the same stretch of time',
+					note: 'A 64k draft vocabulary and the MTP head in IQ4_XS: each step is shorter, and almost as many tokens are accepted per step.',
+					extra: ['tokens per second', 'tokens per step']
+				},
+				{
+					metric: 'tokens per second',
+					lanes: ['card asleep', 'card awake'],
+					lane: 'mark = a finished token · the same stretch of time',
+					note: 'With no monitor attached, the driver puts the card to sleep after 5 s and moves VRAM to system RAM; the model then runs over PCIe. Our engine keeps the card awake. The notes do not name the script of this measurement: it shows the scale only.',
+					extra: []
+				},
+				{
+					metric: 'tokens per second · server',
+					lanes: ['no profile', 'Ampere profile'],
+					lane: 'mark = a finished token · the same stretch of time',
+					note: 'Settings measured for this architecture (two rows per block in MMVQ, no gate/up fusion), now the default on Ampere cards.',
+					extra: ['GPU only (tg128)']
+				}
+			] as { metric: string; lanes: [string, string]; lane: string; note: string; extra: string[] }[]
 		},
 		quality: {
 			title: 'Same model, same quality — measured.',

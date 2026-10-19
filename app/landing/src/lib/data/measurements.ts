@@ -585,3 +585,67 @@ export function words500(v: Variant | undefined, lang: 'pl' | 'en'): { v: number
 	const tpw = TOK_PER_WORD[lang];
 	return { v: (500 * tpw) / v.decode.v, src: `${v.decode.src} × ${tpw} tok/słowo (raport 06 §2.1.2)`, derived: true };
 }
+
+/**
+ * Close-ups of the engine's layers (home page, "Jak to możliwe"): for each layer one before/after
+ * pair measured with that layer switched off and on, everything else equal. Layer 02 (fewer GPU
+ * stalls) reads the nsys step profile from the cards registry (`run.kernels`); layer 05 reads the
+ * BACO pair above (M.bacoAsleep / M.bacoAwake). A layer without such a pair gets no close-up.
+ */
+const R3090 = 'KERNEL/product/research/09-chmura-3090.md';
+const R5060 = 'KERNEL/product/research/09-chmura-5060ti.md';
+export const ENGINE_LAYERS = {
+	/** 01 kernels: llama-bench tg128 (no sampler, GPU path only), upstream A1 vs our fork A2 with the A1 flags. */
+	kernels: {
+		card: 'rtx-3090',
+		model: 'lfm25' as ModelKey,
+		tg128: [
+			{ v: 236.9, src: `${R3090}:58` },
+			{ v: 257.5, src: `${R3090}:59` }
+		] as [Num, Num],
+		flagsSrc: `${R3090}:25-28`
+	},
+	/** 03 sampler: the same fork in the server with its 6 sampler switches off vs on (LFM Q4_K_M). */
+	sampler: {
+		card: 'rtx-5060-ti-16',
+		model: 'lfm25' as ModelKey,
+		decode: [
+			{ v: 166.6, src: `${R5060}:112` },
+			{ v: 208.4, src: `${R5060}:112` }
+		] as [Num, Num],
+		/** Why: upstream fully sorts the 65k candidates on the CPU (repeat_penalty in the LFM GGUF). */
+		whySrc: `${R5060}:86`
+	},
+	/** 04 speculation: A2c (fork, A1 flags) vs A2 (+ 64k draft vocabulary, MTP head in IQ4_XS), Qwen MTP n=4. */
+	draft: {
+		card: 'rtx-3090',
+		model: 'qwen38' as ModelKey,
+		msStep: [
+			{ v: 44.4, src: `${R3090}:48` },
+			{ v: 38.4, src: `${R3090}:49` }
+		] as [Num, Num],
+		decode: [
+			{ v: 69.5, src: `${R3090}:48` },
+			{ v: 78.0, src: `${R3090}:49` }
+		] as [Num, Num],
+		tokStep: [
+			{ v: 3.38, src: `${R3090}:48` },
+			{ v: 3.31, src: `${R3090}:49` }
+		] as [Num, Num],
+		flagsSrc: `${R3090}:28-29`
+	},
+	/** 06 card profile: the Ampere profile (MMVQ_N1_ROWS=2, GATE_UP_Q8 off), ABBA fork vs new defaults. */
+	profile: {
+		card: 'rtx-3090',
+		model: 'lfm25' as ModelKey,
+		decode: [
+			{ v: 250.9, src: `${R3090}:125` },
+			{ v: 263.9, src: `${R3090}:125` }
+		] as [Num, Num],
+		tg128: [
+			{ v: 256.8, src: `${R3090}:123` },
+			{ v: 284.5, src: `${R3090}:123` }
+		] as [Num, Num],
+		flagsSrc: `${R3090}:30`
+	}
+} as const;

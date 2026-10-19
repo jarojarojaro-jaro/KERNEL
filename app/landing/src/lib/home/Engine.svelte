@@ -1,38 +1,38 @@
 <script lang="ts">
 	/**
-	 * Jak to możliwe: the page's second big scene, full-bleed and cinematic, almost no prose:
-	 * (a) the stack: six layers between the model (top) and the graphics card (bottom) light up in
-	 *     sequence as slabs, each with a mini icon and a short label; a token pulse then runs down
-	 *     through them. Text only (no numbers).
-	 * (b) layer 02 up close: one token's kernel launches as a timeline, upstream vs ours on the same
-	 *     time scale (RTX 3090 × Qwen, HERO_RUN.kernels). Bars = kernels (work per launch = GPU ms ÷
-	 *     launches), gaps = GPU waiting (gap ms ÷ launches). Our lane starts as upstream and merges
-	 *     ~2.5 launches into one: the gaps visibly close while its counters run 1956 → 795 launches,
-	 *     3,83 → 2,55 ms of gaps, 24,9 → 24,5 ms of GPU work. Zoomed into the first 72 upstream launches, drawn as a
-	 *     full-width band; giant live counters above it.
-	 * (c) where the gain comes from, as split bars (log scale, so segments multiply): 3090 Qwen =
-	 *     upstream MTP flags × our engine; LFM2.5 (no speculation) = our engine only. From run.gain.
-	 * Auto-played on entering the viewport (replay button); reduced motion shows the final state.
+	 * Jak to możliwe: the page's second big scene, full-bleed and cinematic, almost no prose.
+	 * (a) The stack: six layers between the model (top) and the graphics card (bottom) light up in
+	 *     sequence; a token pulse then runs down through them. The layers are tabs.
+	 * (b) One close-up per layer, on the right: a before/after pair measured with only that layer
+	 *     switched off and on (ENGINE_LAYERS; layer 02 = the nsys step profile of HERO_RUN, layer 05 =
+	 *     the BACO pair M.bacoAsleep / M.bacoAwake). A giant counter runs from the "before" value to
+	 *     the exact "after" value; two lanes show the same stretch of time before/after (finished
+	 *     tokens, speculation steps, or for layer 02 kernel launches merging, upstream vs ours on the
+	 *     same scale: bar = kernel, gap = GPU waiting); secondary pairs count along.
+	 * The close-ups cycle on their own while the scene is on screen (a progress line runs on the
+	 * active layer). Hovering the scene or keyboard focus in it pauses the cycle; hovering or clicking
+	 * a layer, or the arrow keys on the tabs, switch to it. Counters are armed below the fold (start
+	 * state, so the end values never flash first) and play on entry; reduced motion: final state, no
+	 * cycling.
 	 */
-	import { heatOf } from '$lib/cards/explorer';
 	import { Autoplay } from '$lib/fx/autoplay.svelte';
 	import { clamp01, easeInOutCubic } from '$lib/fx/motion';
 	import Replay from '$lib/fx/Replay.svelte';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
-	import { findCard, MODEL_INFO, type CardView, type RunView } from '$lib/data/measurements';
-	import { localizeDecimals } from '$lib/format';
+	import { ENGINE_LAYERS as E, findCard, M, MODEL_INFO, type ModelKey, type Num } from '$lib/data/measurements';
+	import { fmtRatio } from '$lib/format';
 	import { num, type Lang } from '$lib/i18n';
 	import ModelMark from '$lib/ModelMark.svelte';
-	import { MODEL_STYLE } from '$lib/modelStyle';
 	import { copy } from '$lib/site/copy';
-	import { fmtRatio, HERO_CARD, HERO_KERNELS, HERO_MODEL, HERO_RUN } from './data';
+	import { HERO_CARD, HERO_KERNELS, HERO_RUN } from './data';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].engine);
+	const uid = $props.id();
 	const K = HERO_KERNELS;
 
 	// ---- (a) stack ----
-	const stackTl = new Autoplay(1.8, '0px 0px -20% 0px');
+	const stackTl = new Autoplay(1.8, '0px 0px -20% 0px', { arm: true });
 	const ICONS = [
 		'M6 6h8v8H6zM8 3v3M12 3v3M8 14v3M12 14v3M3 8h3M3 12h3M14 8h3M14 12h3',
 		'M3 7h5v6H3zM10 7h7v6h-7z',
@@ -42,64 +42,164 @@
 		'M5 3v14M10 3v14M15 3v14M3.5 7h3M8.5 12h3M13.5 6h3'
 	];
 
-	// ---- (b) kernel timeline ----
-	const zoomTl = new Autoplay(2.6, '0px 0px -15% 0px');
-	const f = $derived(easeInOutCubic(clamp01((zoomTl.p - 0.12) / 0.75)));
-	const UP = K.up.v;
-	const OURS = K.ours.v;
-	/** Fewer launches is the win: say so next to the smaller number (1 − ours/upstream). */
-	const cutPct = Math.round((1 - OURS / UP) * 100);
+	// ---- (b) close-ups ----
+	/** A measured before/after pair; `d` = decimals of each side as measured (BACO: 4.4 vs 92). */
+	interface Pair {
+		up: Num;
+		ours: Num;
+		d: [number, number];
+		unit: string;
+	}
+	interface Zoom {
+		card: string;
+		/** null: the source does not name the model (BACO). */
+		model: ModelKey | null;
+		main: Pair & { lower: boolean };
+		extra: Pair[];
+		/** Lanes: per-token or per-step period in ms (before, ours); layer 02 draws kernel launches. */
+		lanes: { kind: 'kernels' } | { kind: 'tokens' | 'steps'; ms: [number, number] };
+		src: string[];
+	}
+	const pair = (n: readonly [Num, Num], d: number, unit: string, dOurs = d): Pair => ({ up: n[0], ours: n[1], d: [d, dOurs], unit });
+	const perToken = (n: readonly [Num, Num]): [number, number] => [1000 / n[0].v, 1000 / n[1].v];
+	const baco: [Num, Num] = [
+		{ v: M.bacoAsleep.value, src: M.bacoAsleep.source },
+		{ v: M.bacoAwake.value, src: M.bacoAwake.source }
+	];
+	const ZOOMS: Zoom[] = [
+		{
+			card: E.kernels.card,
+			model: E.kernels.model,
+			main: { ...pair(E.kernels.tg128, 1, 't/s'), lower: false },
+			extra: [],
+			lanes: { kind: 'tokens', ms: perToken(E.kernels.tg128) },
+			src: [E.kernels.tg128[0].src, E.kernels.tg128[1].src, E.kernels.flagsSrc]
+		},
+		{
+			card: HERO_CARD.id,
+			model: HERO_RUN.model,
+			main: { ...pair([K.up, K.ours], 0, ''), lower: true },
+			extra: [pair(K.gapMs, 2, 'ms'), pair(K.gpuMs, 1, 'ms')],
+			lanes: { kind: 'kernels' },
+			src: [K.up.src, K.ours.src, K.gapMs[0].src, K.gpuMs[0].src]
+		},
+		{
+			card: E.sampler.card,
+			model: E.sampler.model,
+			main: { ...pair(E.sampler.decode, 1, 't/s'), lower: false },
+			extra: [],
+			lanes: { kind: 'tokens', ms: perToken(E.sampler.decode) },
+			src: [E.sampler.decode[0].src, E.sampler.whySrc]
+		},
+		{
+			card: E.draft.card,
+			model: E.draft.model,
+			main: { ...pair(E.draft.msStep, 1, 'ms'), lower: true },
+			extra: [pair(E.draft.decode, 1, 't/s'), pair(E.draft.tokStep, 2, '')],
+			lanes: { kind: 'steps', ms: [E.draft.msStep[0].v, E.draft.msStep[1].v] },
+			src: [E.draft.msStep[0].src, E.draft.msStep[1].src, E.draft.flagsSrc]
+		},
+		{
+			card: 'rx-7900-xtx',
+			model: null,
+			main: { ...pair(baco, 1, 't/s', 0), lower: false },
+			extra: [],
+			lanes: { kind: 'tokens', ms: perToken(baco) },
+			src: [baco[0].src, baco[1].src]
+		},
+		{
+			card: E.profile.card,
+			model: E.profile.model,
+			main: { ...pair(E.profile.decode, 1, 't/s'), lower: false },
+			extra: [pair(E.profile.tg128, 1, 't/s')],
+			lanes: { kind: 'tokens', ms: perToken(E.profile.decode) },
+			src: [E.profile.decode[0].src, E.profile.tg128[0].src, E.profile.flagsSrc]
+		}
+	];
+	const cardName = (id: string) => findCard(id)?.name ?? '';
+
+	/** The change as a chip: fewer/shorter is the win for `lower` metrics; big jumps read as ×. */
+	const pct = (x: number) => `${Math.round(x)}${lang === 'pl' ? '\u00a0' : ''}%`;
+	const chip = (p: Pair & { lower: boolean }) => {
+		const r = p.ours.v / p.up.v;
+		if (p.lower) return `−${pct((1 - r) * 100)}`;
+		return r >= 1.5 ? fmtRatio(r, lang) : `+${pct((r - 1) * 100)}`;
+	};
+
+	const zoomTl = new Autoplay(1.9, '0px 0px -15% 0px', { arm: true });
+	/** Progress of the active close-up: monotonic (no overshoot), exactly 1 at rest. */
+	const f = $derived(easeInOutCubic(clamp01((zoomTl.p - 0.06) / 0.86)));
+	const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+	/** A counter's value at progress k: before → after, and the exact measured "after" at rest. */
+	const at = (p: Pair, k: number) => (k >= 1 ? p.ours.v : lerp(p.up.v, p.ours.v, k));
+	const show = (p: Pair, k: number) => num(at(p, k), lang, p.d[1]);
+	/**
+	 * Width that fits every value a counter passes through (tabular figures): held while it counts so
+	 * nothing beside it moves, released at rest so the gain chip (hidden until then) sits tight.
+	 */
+	const width = (p: Pair) => Math.max(num(p.up.v, lang, p.d[1]).length, num(p.ours.v, lang, p.d[1]).length);
+
+	// layer 02 lanes: one token's kernel launches, zoomed into the first N upstream launches
 	const N = 72;
-	const G = Math.round((N * OURS) / UP);
-	const wU = K.gpuMs[0].v / UP;
-	const gU = K.gapMs[0].v / UP;
-	const wO = K.gpuMs[1].v / OURS;
-	const gO = K.gapMs[1].v / OURS;
+	const G = Math.round((N * K.ours.v) / K.up.v);
+	const wU = K.gpuMs[0].v / K.up.v;
+	const gU = K.gapMs[0].v / K.up.v;
+	const wO = K.gpuMs[1].v / K.ours.v;
+	const gO = K.gapMs[1].v / K.ours.v;
 	const T = N * (wU + gU);
 	const sx = (ms: number) => (ms / T) * 1000;
 	/** Per upstream launch i: its own rect and its share of our merged kernel (group g). */
-	const bars = Array.from({ length: N }, (_, i) => {
+	const kbars = Array.from({ length: N }, (_, i) => {
 		const g = Math.floor((i * G) / N);
 		const first = Math.ceil((g * N) / G);
 		const size = Math.ceil(((g + 1) * N) / G) - first;
 		const k = i - first;
 		return { x0: sx(i * (wU + gU)), w0: sx(wU), x1: sx(g * (wO + gO) + (k * wO) / size), w1: sx(wO / size) };
 	});
-	const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
-	const live = $derived({
-		n: Math.round(lerp(UP, OURS, f)),
-		gap: lerp(K.gapMs[0].v, K.gapMs[1].v, f),
-		gpu: lerp(K.gpuMs[0].v, K.gpuMs[1].v, f)
-	});
-	const kSrc = [K.up.src, K.ours.src, K.gapMs[0].src, K.gpuMs[0].src].filter(Boolean);
 
-	// ---- (c) where the gain comes from ----
-	type Seg = { label: string; v: number; ours: boolean };
-	const lfm = (id: string): { card: CardView; run: RunView } => {
-		const card = findCard(id)!;
-		return { card, run: card.runs.find((r) => r.model === 'lfm25')! };
-	};
-	const rows = $derived.by(() => {
-		const q = { card: HERO_CARD, run: HERO_RUN };
-		const l1 = lfm('rtx-3090');
-		const l2 = lfm('rtx-5060-ti-16');
-		const mk = (x: { card: CardView; run: RunView }, segs: Seg[]) => ({
-			...x,
-			segs,
-			total: segs.reduce((a, s) => a * s.v, 1),
-			note: `${x.card.name} · ${MODEL_INFO[x.run.model].name}: ${(x.run.gainText?.[lang] ?? x.run.gain!.text).map((t) => localizeDecimals(t.replaceAll('\u0060', ''), lang)).join(' · ')}`
-		});
-		return [
-			mk(q, [
-				{ label: c.flags, v: q.run.gain!.flags!.v, ours: false },
-				{ label: c.mine, v: q.run.gain!.engine!.v, ours: true }
-			]),
-			mk(l1, [{ label: c.allOurs, v: l1.run.gain!.engine!.v, ours: true }]),
-			mk(l2, [{ label: c.allOurs, v: l2.run.gain!.engine!.v, ours: true }])
-		];
-	});
-	const maxTotal = $derived(Math.max(...rows.map((r) => r.total)));
-	const w = (v: number) => Math.log(v) / Math.log(maxTotal);
+	/** The same stretch of time on both lanes: our lane gets n periods, the "before" lane what fits. */
+	function marks(kind: 'tokens' | 'steps', ms: [number, number]) {
+		const n = kind === 'steps' ? 6 : Math.max(16, Math.ceil((1.15 * ms[0]) / ms[1]));
+		const t = n * ms[1];
+		const lane = (P: number) => {
+			const out: { x: number; w: number }[] = [];
+			if (kind === 'steps') for (let a = 0; a < t; a += P) out.push({ x: (a / t) * 1000, w: (P / t) * 1000 - 8 });
+			else {
+				const w = Math.min(10, ((0.4 * ms[1]) / t) * 1000);
+				for (let a = P; a <= t + 1e-9; a += P) out.push({ x: (a / t) * 1000 - w, w });
+			}
+			return out;
+		};
+		return [lane(ms[0]), lane(ms[1])];
+	}
+	const MARKS = ZOOMS.map((z) => (z.lanes.kind === 'kernels' ? null : marks(z.lanes.kind, z.lanes.ms)));
+
+	// ---- tabs: auto-cycle, hover, click, keys ----
+	const CYCLE = 7;
+	let active = $state(0);
+	let tabs: HTMLButtonElement[] = $state([]);
+	let hoverTimer: ReturnType<typeof setTimeout> | undefined;
+	function pick(i: number) {
+		clearTimeout(hoverTimer);
+		if (i === active) return;
+		active = i;
+		zoomTl.replay();
+	}
+	const next = () => pick((active + 1) % ZOOMS.length);
+	function hover(e: PointerEvent, i: number) {
+		if (e.pointerType !== 'mouse') return;
+		clearTimeout(hoverTimer);
+		hoverTimer = setTimeout(() => pick(i), 140);
+	}
+	function onKey(e: KeyboardEvent) {
+		const n = ZOOMS.length;
+		const i = { ArrowDown: active + 1, ArrowRight: active + 1, ArrowUp: active - 1 + n, ArrowLeft: active - 1 + n, Home: 0, End: n - 1 }[e.key];
+		if (i === undefined) return;
+		e.preventDefault();
+		pick(i % n);
+		tabs[i % n]?.focus();
+	}
+
 	/** Title as two lines: the claim (bone) and the payoff (heat). */
 	const titleParts = $derived(c.title.split('|'));
 </script>
@@ -110,87 +210,93 @@
 		<h2 id="engine-title" class="statement"><span class="t1">{titleParts[0]}</span> <span class="t2"><span class="ul">{titleParts[1] ?? ''}</span></span></h2>
 
 		<div class="grid">
-			<!-- (a) the stack: model → card, lit layer by layer -->
+			<!-- (a) the stack: model → card, lit layer by layer; every layer is a tab -->
 			<div class="stack" use:stackTl.view>
 				<p class="cap cap--model"><span class="ci" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M10 2l7 4v8l-7 4-7-4V6zM3 6l7 4 7-4M10 10v8" /></svg></span>{c.model}</p>
 				<div class="pulse" class:run={stackTl.p >= 1} aria-hidden="true"></div>
-				<ol class="slabs">
-					{#each c.layers as [name, sub], i (name)}
-						<li class="slab" class:in={stackTl.p >= (i + 1) / 7} class:focus={i === 1} style="--i:{i}">
+				<div class="slabs" role="tablist" aria-label={c.pick} aria-orientation="vertical" tabindex="-1" onkeydown={onKey}>
+					{#each c.layers as [name, sub], i (i)}
+						<button
+							bind:this={tabs[i]}
+							type="button"
+							role="tab"
+							id="{uid}-tab-{i}"
+							aria-controls="{uid}-panel-{i}"
+							aria-selected={i === active}
+							tabindex={i === active ? 0 : -1}
+							class="slab"
+							class:in={stackTl.p >= (i + 1) / 7}
+							class:on={i === active}
+							style="--i:{i}"
+							onclick={() => pick(i)}
+							onpointerenter={(e) => hover(e, i)}
+							onpointerleave={() => clearTimeout(hoverTimer)}
+						>
 							<span class="si" aria-hidden="true"><svg viewBox="0 0 20 20"><path d={ICONS[i]} /></svg></span>
 							<span class="sn">{name}</span>
 							<span class="ss">{sub}</span>
 							<span class="sk" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span>
-						</li>
+							{#if i === active && zoomTl.inView}<i class="prog" style="--cycle:{CYCLE}s" onanimationend={next} aria-hidden="true"></i>{/if}
+						</button>
 					{/each}
-				</ol>
+				</div>
 				<p class="cap cap--card"><span class="ci" aria-hidden="true"><svg viewBox="0 0 20 20"><path d="M2 6h16v9H2zM5 15v2M8 15v2M11 15v2M14 15v2M6 9h4v3H6z" /></svg></span>{c.card}</p>
 			</div>
 
-			<!-- (b) layer 02 up close: giant live counters -->
-			<div class="close" use:zoomTl.view>
-				<p class="zh">
-					<span class="zk">02</span>
-					<span class="zt">{c.zoom}</span>
-					<span class="zm"><ModelMark model={HERO_RUN.model} size="0.7em" /> {HERO_MODEL} · {HERO_CARD.name}</span>
-					<SourceTip {lang} src={kSrc} note={c.zoomNote} />
-					<Replay {lang} onclick={zoomTl.replay} disabled={zoomTl.playing} />
-				</p>
-				<p class="giant" aria-hidden="true">
-					<span class="g-up">{num(UP, lang, 0)}</span>
-					<span class="g-ar">→</span>
-					<span class="g-ours">{num(live.n, lang, 0)}</span>
-					<span class="g-cut">−{Math.round((1 - live.n / UP) * 100)}{lang === 'pl' ? '\u00a0' : ''}%</span>
-				</p>
-				<p class="g-cap">{c.kernels}</p>
-				<dl class="pair">
-					<div><dt>{c.gaps}</dt><dd><span class="pu">{num(K.gapMs[0].v, lang, 2)}</span> → <b>{num(live.gap, lang, 2)}</b>&nbsp;ms</dd></div>
-					<div><dt>{c.gpu}</dt><dd><span class="pu">{num(K.gpuMs[0].v, lang, 1)}</span> → <b>{num(live.gpu, lang, 1)}</b>&nbsp;ms</dd></div>
-				</dl>
-				<p class="sr-only">{c.up}: {UP} {c.kernels}, {c.gaps} {num(K.gapMs[0].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[0].v, lang, 1)} ms. {c.ours}: {OURS} {c.kernels} (−{cutPct}%), {c.gaps} {num(K.gapMs[1].v, lang, 2)} ms, {c.gpu} {num(K.gpuMs[1].v, lang, 1)} ms.</p>
-			</div>
-		</div>
-	</div>
-
-	<!-- the kernel timeline as a full-bleed band: bars = kernels, the dotted floor = GPU waiting -->
-	<div class="band" aria-hidden="true">
-		{#each [0, 1] as lane (lane)}
-			<div class="lane" class:ours={lane === 1}>
-				<span class="ln">{lane ? c.ours : c.up}</span>
-				<svg class="track" viewBox="0 0 1000 40" preserveAspectRatio="none">
-					{#each bars as b, i (i)}
-						{#if lane === 0}
-							<rect x={b.x0} y="4" width={b.w0} height="32" rx="1" />
-						{:else}
-							<rect x={lerp(b.x0, b.x1, f)} y="4" width={lerp(b.w0, b.w1, f) + (f > 0.98 ? 0.6 : 0)} height="32" rx="1" />
-						{/if}
-					{/each}
-				</svg>
-			</div>
-		{/each}
-	</div>
-
-	<div class="inner">
-		<!-- (c) where the gain comes from, compact -->
-		<div class="split" class:in={zoomTl.p > 0.55}>
-			<p class="sh">{c.split} <SourceTip {lang} src={rows.map((r) => r.run.gain!.src)} note={rows.map((r) => r.note).join(' — ')} /></p>
-			<div class="rows">
-				{#each rows as r, ri (r.card.id + r.run.model)}
-					<div class="row" style="--d:{ri * 120}ms">
-						<p class="rw">
-							<ModelMark model={r.run.model} size="0.7em" />
-							<b>{MODEL_STYLE[r.run.model].short}</b>
-							<span>{r.card.short}</span>
+			<!-- (b) one close-up per layer, stacked in one cell (the tallest sets the height) -->
+			<div class="zooms" use:zoomTl.view>
+				{#each ZOOMS as z, i (i)}
+					{@const on = i === active}
+					{@const k = on ? f : 1}
+					{@const zc = c.zooms[i]}
+					<div class="close" class:on id="{uid}-panel-{i}" role="tabpanel" aria-labelledby="{uid}-tab-{i}" inert={!on}>
+						<p class="zh">
+							<span class="zk">{String(i + 1).padStart(2, '0')} · {c.zoom}</span>
+							<span class="zm">{#if z.model}<ModelMark model={z.model} size="0.7em" /> {MODEL_INFO[z.model].name}{' · '}{/if}{cardName(z.card)}</span>
+							<SourceTip {lang} src={z.src} note={zc.note} />
+							<Replay {lang} onclick={zoomTl.replay} disabled={on && zoomTl.playing} />
 						</p>
-						<div class="sbar" style="--len:{w(r.total)}">
-							{#each r.segs as s (s.label)}
-								<span class="seg" class:mine={s.ours} style="flex-grow:{w(s.v)}">
-									<b class="speedup" class:speedup--down={s.v < 1} style="--rh:{heatOf(s.v)}">{fmtRatio(s.v, lang)}</b>
-								</span>
+						<p class="giant" aria-hidden="true">
+							<span class="g-up">{num(z.main.up.v, lang, z.main.d[0])}</span>
+							<span class="g-ar">→</span>
+							<span class="g-ours" style:min-width={k < 1 ? `${width(z.main)}ch` : null}>{show(z.main, k)}</span>
+							<span class="g-cut" class:shown={k >= 1}>{chip(z.main)}</span>
+						</p>
+						<p class="g-cap">{zc.metric}</p>
+
+						<div class="lanes" aria-hidden="true">
+							{#each [0, 1] as lane (lane)}
+								<div class="lane" class:ours={lane === 1}>
+									<span class="ln">{zc.lanes[lane]}</span>
+									<svg class="track" viewBox="0 0 1000 40" preserveAspectRatio="none" style={MARKS[i] ? `clip-path: inset(0 ${((1 - k) * 100).toFixed(2)}% 0 0)` : undefined}>
+										{#if MARKS[i]}
+											{#each MARKS[i]![lane] as m, j (j)}<rect x={m.x} y="4" width={m.w} height="32" rx="2" />{/each}
+										{:else}
+											{#each kbars as b, j (j)}
+												{#if lane === 0}
+													<rect x={b.x0} y="4" width={b.w0} height="32" rx="1" />
+												{:else}
+													<rect x={lerp(b.x0, b.x1, k)} y="4" width={lerp(b.w0, b.w1, k) + (k > 0.98 ? 0.6 : 0)} height="32" rx="1" />
+												{/if}
+											{/each}
+										{/if}
+									</svg>
+								</div>
 							{/each}
+							<p class="lcap">{zc.lane}</p>
 						</div>
-						<p class="cap2">
-							{#each r.segs as s, si (s.label)}{#if si > 0}<span class="x" aria-hidden="true">×</span>{/if}<span class="ck" class:mine={s.ours}>{s.label}</span>{/each}
+
+						{#if z.extra.length}
+							<dl class="pair">
+								{#each z.extra as p, j (j)}
+									<div><dt>{zc.extra[j]}</dt><dd><span class="pu">{num(p.up.v, lang, p.d[0])}</span> → <b style:min-width={k < 1 ? `${width(p)}ch` : null}>{show(p, k)}</b>{#if p.unit}&nbsp;{p.unit}{/if}</dd></div>
+								{/each}
+							</dl>
+						{/if}
+						<p class="znote">{zc.note}</p>
+						<p class="sr-only">
+							{c.layers[i][0]}, {zc.metric}: {zc.lanes[0]} {num(z.main.up.v, lang, z.main.d[0])}{z.main.unit ? ` ${z.main.unit}` : ''}, {zc.lanes[1]} {num(z.main.ours.v, lang, z.main.d[1])}{z.main.unit ? ` ${z.main.unit}` : ''} ({chip(z.main)}).
+							{#each z.extra as p, j (j)}{zc.extra[j]}: {num(p.up.v, lang, p.d[0])} → {num(p.ours.v, lang, p.d[1])}{p.unit ? ` ${p.unit}` : ''}. {/each}
 						</p>
 					</div>
 				{/each}
@@ -262,7 +368,6 @@
 		position: relative;
 		display: grid;
 		gap: 0.6rem;
-		perspective: 1400px;
 	}
 	.cap {
 		display: flex;
@@ -321,12 +426,13 @@
 		}
 	}
 	.slabs {
-		margin: 0;
-		padding: 0;
-		list-style: none;
 		display: grid;
 		gap: 0.5rem;
 	}
+	.slabs:focus {
+		outline: none;
+	}
+	/* every layer is a tab: dim until the stack lights it, hot when its close-up is shown */
 	.slab {
 		position: relative;
 		display: grid;
@@ -334,20 +440,28 @@
 		grid-template-areas: 'icon name key' 'icon sub key';
 		align-items: center;
 		column-gap: 1rem;
+		width: 100%;
 		padding: 0.85rem 1.1rem;
 		border: 1px solid var(--line);
 		border-radius: var(--r-md);
 		background: linear-gradient(180deg, rgb(255 255 255 / 0.04), rgb(255 255 255 / 0.01)), var(--bg-1);
 		box-shadow: 0 12px 26px -16px rgb(0 0 0 / 0.9);
+		font: inherit;
+		color: inherit;
+		text-align: left;
+		cursor: pointer;
+		overflow: hidden;
 		filter: brightness(0.55);
 		transition:
 			transform 0.45s var(--ease-spring),
 			filter 0.4s,
-			border-color 0.6s;
+			border-color 0.4s,
+			box-shadow 0.4s,
+			background-color 0.4s;
 	}
 	.slab.in {
 		filter: none;
-		border-color: rgb(255 122 26 / 0.3);
+		border-color: rgb(255 122 26 / 0.22);
 		animation: lit 0.9s var(--ease-out);
 	}
 	@keyframes lit {
@@ -358,14 +472,22 @@
 				0 0 32px rgb(255 122 26 / 0.5);
 		}
 	}
-	.slab.focus.in {
+	.slab:hover {
+		border-color: rgb(255 122 26 / 0.5);
+	}
+	.slab.on {
 		border-color: var(--heat-3);
 		background:
-			linear-gradient(90deg, rgb(255 122 26 / 0.18), transparent 70%),
+			linear-gradient(90deg, rgb(255 122 26 / 0.2), transparent 75%),
 			var(--bg-1);
 		box-shadow:
-			0 0 0 1px rgb(255 122 26 / 0.4),
-			0 0 40px -6px rgb(255 122 26 / 0.75);
+			0 0 0 1px rgb(255 122 26 / 0.45),
+			0 0 44px -6px rgb(255 122 26 / 0.8);
+		transform: translateX(0.5rem);
+	}
+	.slab:focus-visible {
+		outline: 2px solid var(--heat-4);
+		outline-offset: 3px;
 	}
 	.si {
 		grid-area: icon;
@@ -376,6 +498,11 @@
 		border-radius: 8px;
 		background: rgb(255 122 26 / 0.08);
 		color: var(--heat-4);
+		transition: background-color 0.4s, color 0.4s;
+	}
+	.slab.on .si {
+		background: var(--heat-3);
+		color: #1a0b03;
 	}
 	.sn {
 		grid-area: name;
@@ -397,15 +524,72 @@
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
 	}
-	.slab.focus .sk {
+	.slab.on .sk {
 		color: var(--heat-4);
 	}
+	/* the auto-cycle timer: a heat line under the active layer; hover or keyboard focus holds it */
+	.prog {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 2px;
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 8px rgb(255 122 26 / 0.8);
+		transform-origin: 0 50%;
+		animation: prog var(--cycle) linear forwards;
+	}
+	.grid:hover .prog,
+	.grid:has(:focus-visible) .prog {
+		animation-play-state: paused;
+	}
+	@keyframes prog {
+		from {
+			transform: scaleX(0);
+		}
+		to {
+			transform: scaleX(1);
+		}
+	}
 
-	/* ---- (b) close-up counters ---- */
-	.close {
+	/* ---- (b) close-ups: stacked in one grid cell, the active one fades in ---- */
+	.zooms {
 		display: grid;
+		min-width: 0;
+	}
+	.close {
+		grid-area: 1 / 1;
+		position: relative;
+		display: grid;
+		align-content: start;
 		gap: 0.6rem;
 		min-width: 0;
+		padding: clamp(1.1rem, 0.6rem + 2vw, 2.2rem);
+		border: 1px solid rgb(255 122 26 / 0.28);
+		border-radius: 18px;
+		background:
+			radial-gradient(70% 60% at 85% 0%, rgb(255 122 26 / 0.14), transparent 70%),
+			linear-gradient(180deg, rgb(255 255 255 / 0.03), transparent 40%),
+			#0c0a09;
+		box-shadow:
+			0 30px 60px -30px rgb(0 0 0 / 0.9),
+			0 0 60px -30px rgb(255 122 26 / 0.6);
+		visibility: hidden;
+		opacity: 0;
+		transform: translate3d(0, 0.6rem, 0);
+		transition:
+			opacity 0.3s,
+			transform 0.45s var(--ease-out),
+			visibility 0s linear 0.3s;
+	}
+	.close.on {
+		visibility: visible;
+		opacity: 1;
+		transform: none;
+		transition:
+			opacity 0.4s 0.05s,
+			transform 0.5s var(--ease-out) 0.05s,
+			visibility 0s;
 	}
 	.zh {
 		margin: 0;
@@ -415,16 +599,15 @@
 		gap: 0.5rem 0.8rem;
 	}
 	.zk {
-		padding: 0.1rem 0.45rem;
+		padding: 0.15rem 0.5rem;
 		border: 1px solid var(--heat-3);
 		border-radius: 3px;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
 		color: var(--heat-4);
-	}
-	.zt {
-		font-weight: 700;
-		color: var(--text-hi);
+		white-space: nowrap;
 	}
 	.zm {
 		display: inline-flex;
@@ -433,36 +616,44 @@
 		margin-right: auto;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
-		color: var(--text-mute);
+		color: var(--text);
 	}
 	.giant {
-		margin: 0.4rem 0 0;
+		margin: 0.5rem 0 0;
 		display: flex;
 		align-items: baseline;
 		flex-wrap: wrap;
-		gap: 0 0.25em;
+		gap: 0 0.22em;
 		font-family: var(--font-display);
 		font-variant-numeric: tabular-nums lining-nums;
-		font-size: clamp(3.4rem, 1.5rem + 6vw, 8.5rem);
+		font-size: clamp(3.2rem, 1.4rem + 5.2vw, 7.4rem);
 		font-weight: 800;
-		line-height: 0.9;
-		letter-spacing: -0.05em;
+		line-height: 0.95;
+		letter-spacing: -0.045em;
+		white-space: nowrap;
 	}
+	/* "before" small and cold, ours huge and white-hot */
 	.g-up {
+		font-size: 0.42em;
+		font-weight: 650;
 		color: var(--before);
+		letter-spacing: -0.02em;
 	}
 	.g-ar {
-		font-size: 0.45em;
+		font-size: 0.32em;
 		color: var(--text-mute);
 	}
 	.g-ours {
+		display: inline-block;
 		color: var(--heat-5);
-		filter: drop-shadow(0 0 20px rgb(255 122 26 / 0.55));
+		text-shadow:
+			0 0 18px rgb(255 193 90 / 0.45),
+			0 0 48px rgb(255 122 26 / 0.45);
 	}
-	/* the drop is the gain: a heat chip reads "fewer", not "less" (counts with the counter) */
+	/* the gain lands when the counter does (it never counts through "−0 %") */
 	.g-cut {
 		align-self: center;
-		padding: 0.3em 0.6em 0.25em;
+		padding: 0.32em 0.65em 0.26em;
 		border-radius: var(--r-pill);
 		background: var(--heat-ramp-hot);
 		color: #140a04;
@@ -470,7 +661,16 @@
 		font-weight: 800;
 		letter-spacing: -0.01em;
 		line-height: 1;
-		box-shadow: 0 0 22px rgb(255 122 26 / 0.45);
+		box-shadow: 0 0 22px rgb(255 122 26 / 0.55);
+		opacity: 0;
+		transform: scale(0.6);
+		transition:
+			opacity 0.25s,
+			transform 0.5s var(--ease-spring);
+	}
+	.g-cut.shown {
+		opacity: 1;
+		transform: none;
 	}
 	.g-cap {
 		font-family: var(--font-mono);
@@ -479,8 +679,55 @@
 		text-transform: uppercase;
 		color: var(--text);
 	}
+	/* the same stretch of time, before vs ours */
+	.lanes {
+		display: grid;
+		gap: 0.45rem;
+		margin-top: 0.7rem;
+		padding: 0.8rem 0.9rem 0.6rem;
+		border-radius: 12px;
+		background: rgb(255 255 255 / 0.025);
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+	}
+	.lane {
+		display: grid;
+		grid-template-columns: 8.5rem minmax(0, 1fr);
+		align-items: center;
+		gap: 0.8rem;
+	}
+	.ln {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--before);
+	}
+	.ours .ln {
+		color: var(--heat-4);
+	}
+	.track {
+		display: block;
+		width: 100%;
+		height: clamp(1.8rem, 1.4rem + 1vw, 2.5rem);
+		background: radial-gradient(circle, rgb(125 135 148 / 0.45) 1px, transparent 1.4px) 0 50% / 7px 7px;
+	}
+	.track rect {
+		fill: rgb(125 135 148 / 0.75);
+	}
+	.ours .track rect {
+		fill: var(--heat-4);
+	}
+	.ours .track {
+		filter: drop-shadow(0 0 6px rgb(255 122 26 / 0.6));
+	}
+	.lcap {
+		margin: 0.15rem 0 0;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
+	}
 	.pair {
-		margin: 0.8rem 0 0;
+		margin: 0.6rem 0 0;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.6rem 2.5rem;
@@ -499,201 +746,78 @@
 	.pair dd {
 		margin: 0;
 		font-family: var(--font-display);
-		font-variant-numeric: tabular-nums;
-		font-size: clamp(1.4rem, 1rem + 1vw, 2rem);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-size: clamp(1.3rem, 1rem + 0.9vw, 1.9rem);
 		font-weight: 700;
 		color: var(--text);
+		white-space: nowrap;
 	}
 	.pu {
 		color: var(--before);
 	}
 	.pair b {
+		display: inline-block;
 		color: var(--heat-4);
+	}
+	.znote {
+		margin: 0.4rem 0 0;
+		max-width: 62ch;
+		font-size: var(--fs-sm);
+		line-height: 1.5;
+		color: var(--text-mute);
 	}
 
-	/* ---- the full-bleed band ---- */
-	.band {
-		margin-block: clamp(2.5rem, 5vw, 4.5rem);
-		display: grid;
-		gap: 0.9rem;
-		padding-block: 1.2rem;
-		border-block: 1px solid rgb(255 122 26 / 0.25);
-		background: linear-gradient(90deg, rgb(255 122 26 / 0.02), rgb(255 122 26 / 0.07) 50%, rgb(255 122 26 / 0.02));
-	}
-	.lane {
-		position: relative;
-	}
-	.ln {
-		position: absolute;
-		left: max(var(--gutter), calc((100% - 90rem) / 2));
-		top: 50%;
-		transform: translateY(-50%);
-		z-index: 1;
-		padding: 0.2rem 0.6rem;
-		border-radius: 4px;
-		background: rgb(7 6 6 / 0.85);
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--text);
-	}
-	.ours .ln {
-		color: var(--heat-4);
-	}
-	.track {
-		display: block;
-		width: 100%;
-		height: clamp(2.8rem, 2rem + 2vw, 4.4rem);
-		background: radial-gradient(circle, rgb(125 135 148 / 0.5) 1px, transparent 1.4px) 0 50% / 7px 7px;
-	}
-	.track rect {
-		fill: rgb(125 135 148 / 0.75);
-	}
-	.ours .track rect {
-		fill: var(--heat-4);
-	}
-	.ours .track {
-		filter: drop-shadow(0 0 8px rgb(255 122 26 / 0.5));
-	}
-
-	/* ---- (c) split, compact ---- */
-	.split {
-		display: grid;
-		gap: 0.9rem;
-	}
-	.sh {
-		display: flex;
-		align-items: center;
-		gap: 0.6rem;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.12em;
-		text-transform: uppercase;
-		color: var(--text-mute);
-	}
-	.rows {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: clamp(1rem, 2.5vw, 2rem);
-	}
-	.row {
-		display: grid;
-		gap: 0.45rem;
-		align-content: start;
-	}
-	.rw {
-		display: flex;
-		align-items: baseline;
-		gap: 0.45rem;
-		white-space: nowrap;
-		font-size: var(--fs-xs);
-		color: var(--text-mute);
-	}
-	.rw b {
-		color: var(--text-hi);
-		font-weight: 650;
-	}
-	.sbar {
-		display: flex;
-		gap: 3px;
-		width: calc(var(--len) * 100%);
-		transform-origin: 0 50%;
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		.split.in .sbar {
-			animation: bar-in 0.8s var(--ease-out) var(--d) backwards;
-		}
-	}
-	@keyframes bar-in {
-		from {
-			transform: scaleX(0);
-		}
-	}
-	.seg {
-		flex-basis: 0;
-		min-width: 0;
-		display: flex;
-		align-items: baseline;
-		padding: 0.4rem 0.6rem;
-		border-radius: 5px;
-		background: rgb(125 135 148 / 0.18);
-		border: 1px solid rgb(125 135 148 / 0.4);
-		overflow: hidden;
-		white-space: nowrap;
-	}
-	.seg.mine {
-		background: var(--heat-ramp-hot);
-		border-color: rgb(255 243 214 / 0.5);
-		box-shadow: 0 0 22px -4px rgb(255 122 26 / 0.7);
-	}
-	.seg b {
-		font-size: var(--fs-md);
-	}
-	.seg.mine b {
-		background: none;
-		color: #1a0b03;
-		-webkit-text-fill-color: currentColor;
-		filter: none;
-	}
-	.seg:not(.mine) b {
-		background: none;
-		color: var(--text-hi);
-		-webkit-text-fill-color: currentColor;
-	}
-	.cap2 {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.2rem 0.5rem;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text);
-	}
-	.ck {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-	}
-	.ck::before {
-		content: '';
-		width: 0.55rem;
-		height: 0.55rem;
-		border-radius: 2px;
-		background: rgb(125 135 148 / 0.6);
-	}
-	.ck.mine {
-		color: var(--heat-4);
-	}
-	.ck.mine::before {
-		background: var(--heat-3);
-	}
-	.cap2 .x {
-		color: var(--text-mute);
-	}
 	@media (max-width: 1000px) {
 		.grid {
 			grid-template-columns: minmax(0, 1fr);
 		}
-		.slabs {
+		.slab.on {
 			transform: none;
-		}
-		.rows {
-			grid-template-columns: minmax(0, 1fr);
 		}
 	}
+	/* phones: the six layers as a 2 × 3 grid of compact tabs above the close-up */
 	@media (max-width: 640px) {
-		.ln {
-			top: auto;
-			bottom: calc(100% - 0.2rem);
-			transform: none;
+		.pulse,
+		.cap {
+			display: none;
+		}
+		.slabs {
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			gap: 0.4rem;
+		}
+		.slab {
+			grid-template-areas: 'icon name' 'icon key';
+			grid-template-columns: auto minmax(0, 1fr);
+			column-gap: 0.6rem;
+			padding: 0.55rem 0.65rem;
+		}
+		.si {
+			width: 1.9rem;
+			height: 1.9rem;
+		}
+		.sn {
+			font-size: var(--fs-xs);
+			line-height: 1.2;
+		}
+		.ss {
+			display: none;
 		}
 		.lane {
-			padding-top: 1.1rem;
+			grid-template-columns: minmax(0, 1fr);
+			gap: 0.2rem;
+		}
+		.zk {
+			margin-right: auto;
+		}
+		.zm {
+			order: 3;
+			flex-basis: 100%;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.slab {
+		.slab,
+		.close,
+		.g-cut {
 			transition: none;
 		}
 		.slab.in {
