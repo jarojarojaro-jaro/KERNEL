@@ -42,7 +42,8 @@ Treść 50–200 słów: liczby z datą i warunkami pomiaru.
 2. `python3 tools/wiki.py index && python3 tools/wiki.py lint` → 0 błędów.
 3. Wpis w [[log]]: `## [RRRR-MM-DD] ingest|update|lint | co`.
 4. **Nowy najlepszy wynik → od razu wiersz w [[REKORDY]]** (data, warunki: skrypt, T, kontekst, flagi, build/commit; źródło `plik:wiersz`; czy w produkcji) – decyzja użytkownika 2026-10-19.
-5. Nowa liczba w notatce → wiersz w [[AUDYT]] (notatka, liczba, wiersz źródła, OK/poprawione); `AUDYT.md`, `REKORDY.md` i `log.md` są zwolnione z limitu słów.
+5. Nowa liczba w notatce → wiersz w [[AUDYT]] (notatka, liczba, wiersz źródła, OK/poprawione); `AUDYT.md`, `REKORDY.md`, `ZRODLA.md` i `log.md` są zwolnione z limitu słów.
+6. **Nie badamy drugi raz tego samego** (decyzja użytkownika 2026-10-19). Przed każdym researchem: `kb search <nazwa/URL>` + rejestr źródeł [[ZRODLA]]. Jeśli źródło już było badane → tylko DELTA od zapisanej wersji/commitu/daty (co nowego), bez powtarzania wniosków. Po researchu dopisz wiersz do [[ZRODLA]] (źródło, wersja/commit, data, raport, werdykt, co sprawdzić następnym razem).
 
 ## Powiązane
 - [[index|Strona główna]]

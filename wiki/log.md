@@ -158,6 +158,9 @@ Nowe: [[podrecznik-gpu]] (hub, link z [[index]]), [[isa-kstat]]; poprawka reguł
 ## [2026-10-19] ingest | Raport 21m (Declarative Attention)
 Nowe: [[raport-21m-declarative-attention]] (nie dla nas), [[lekcja-odczyty-kv-batch1]].
 
+## [2026-10-19] update | Rejestr źródeł ZRODLA
+Nowe: [[ZRODLA]] (przebadane źródła z raportów 01–24b, 21n, `qwen-opt/research/`, repo/ i ludzie-firmy/; tabela dublowania). Zasada „nie badamy drugi raz tego samego” w [[KONWENCJE]]; link w [[index]]; `kb` daje ZRODLA mnożnik 1.25 jak REKORDY.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

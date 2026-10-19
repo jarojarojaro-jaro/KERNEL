@@ -128,7 +128,8 @@ pub fn file_prior(path: &str) -> f32 {
         _ if path == "wiki/log.md" => 0.6,
         _ if name == "_hub.md" || path == "wiki/index.md" => 0.7,
         _ if path.contains("/node_modules/") || path.starts_with("app/") && !path.starts_with("app/REPORT") => 0.6,
-        _ if path == "wiki/REKORDY.md" => 1.25,
+        // rejestry: najlepsze wyniki i przebadane źródła (punkt startu każdego researchu)
+        _ if path == "wiki/REKORDY.md" || path == "wiki/ZRODLA.md" => 1.25,
         // opisy samego kb cytują przykładowe pytania i liczby z innych notatek – nie mogą ich zasłaniać
         _ if SELF_DOCS.contains(&path) => 0.3,
         // notatki o cudzych repozytoriach i surowe rundy researchu (po angielsku), nie wyniki projektu
