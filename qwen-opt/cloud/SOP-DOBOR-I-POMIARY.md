@@ -26,10 +26,12 @@ Każda liczba w raporcie ma źródło `plik:linia` albo znacznik `[SZACUNEK]` / 
 ## 3. Rachunek pamięci (przed wynajmem)
 
 ```
-fitcalc.py <plik|URL|repo:plik> --card <karta> [--arm T|U1|plain] [--ub 512] [--kv q4_0] [--ctx 131072,204800]
+fitcalc.py <plik|URL|repo:plik[,shard2...]> --card <karta> [--arm T|U1|plain] [--ub 512] [--kv q4_0] [--ctx 131072,204800]
+           [--draft <mtp-*.gguf|drafter>] [--n-cpu-moe N] [--ram-bw 70] [--depth 0,65536,131072]
 ```
 Czyta tylko nagłówek GGUF (range request). Model i walidacja: `product/PLAN-NV-V2.md` §1 (błąd części statycznej ≤ 16 MiB,
-szczyt przeszacowany o 2–339 MiB przy g = 18 KB/token).
+szczyt przeszacowany o 2–339 MiB przy g = 18 KB/token). iSWA (Gemma 4, gpt-oss, Mellum), MLA, MoE z ekspertami w RAM,
+drafter w osobnym pliku i szacunek decode t/s: `product/research/33-modele-na-karty.md` §1 (t/s 0.75–1.21× pomiarów).
 
 - [ ] Dla każdego kandydata: max `-c` „pewny” (ub 512, g preset) i „górny” (`--ub 256 --g 14000`).
 - [ ] Kandydat przechodzi J3-plan, jeśli **pewny max `-c` ≥ 131072**. Tylko „górny” ≥ 131072 → kandydat drugiego wyboru,
