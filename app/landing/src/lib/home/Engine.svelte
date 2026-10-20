@@ -31,14 +31,17 @@
 	const first = S[0].v;
 	const last = S[n - 1].v;
 
-	// ---- geometry: viewBox 1000 × 300, scale 0–125 t/s; milestone i sits at the centre of column i ----
-	const TOP = 125;
+	// ---- geometry: viewBox 1000 × 300, scale 30–120 t/s (no empty band under the start); milestone i at the centre of column i ----
+	const BOT = 30;
+	const TOP = 120;
 	const W = 1000;
 	const H = 300;
 	const col = W / n;
 	const cx = (i: number) => (i + 0.5) * col;
 	const PL = col * 0.3;
-	const yv = (v: number) => H * (1 - v / TOP);
+	/** Height of a value on the scale, 0 (bottom) … 1 (top). */
+	const fy = (v: number) => (v - BOT) / (TOP - BOT);
+	const yv = (v: number) => H * (1 - fy(v));
 	/** The stepped line: a plateau round every milestone, a ramp between them. */
 	const pts: [number, number][] = [[0, first]];
 	S.forEach((s, i) => {
@@ -102,19 +105,17 @@
 
 		<figure class="journey" class:done class:live={tl.inView} use:tl.view>
 			<div class="top">
-				<div class="who">
-					<p class="wm"><ModelMark model={J.model} size="0.8em" /> <b>{MODEL_INFO[J.model].name}</b> · {card}</p>
-					<p class="wx">{c.meta}</p>
-				</div>
-				<div class="readout" aria-hidden="true">
-					<span class="big" style="min-width:{wide}ch">{num(shown, lang, 1)}</span>
-					<span class="unit">t/s</span>
-					<span class="mult"><b>{ratio}</b> {c.vs}</span>
-				</div>
+				<p class="wm"><ModelMark model={J.model} size="0.8em" /> <b>{MODEL_INFO[J.model].name}</b> · {card} <span class="wx">· {c.meta}</span></p>
 				<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 			</div>
 
 			<div class="chartbox">
+				<!-- wide screens: the readout sits in the chart's empty top-left corner -->
+				<div class="readout" aria-hidden="true">
+					<span class="big" style:min-width={done ? null : `${wide - 0.9}ch`}>{num(shown, lang, 1)}</span>
+					<span class="unit">t/s</span>
+					<span class="mult"><b>{ratio}</b> {c.vs}</span>
+				</div>
 				<div class="plot" aria-hidden="true">
 					<svg class="chart" viewBox="0 0 {W} {H}" preserveAspectRatio="none" style:clip-path={done ? null : `inset(-10% ${(100 - (X / W) * 100).toFixed(2)}% -10% 0)`}>
 						<defs>
@@ -138,18 +139,18 @@
 						<path class="line" d={line} stroke="url(#jr-stroke)" />
 					</svg>
 					{#each S as s, i (s.key)}
-						<span class="node node--{heat[i]}" class:lit={lit(i)} style="--x:{cx(i) / W}; --y:{s.v / TOP}">
+						<span class="node node--{heat[i]}" class:lit={lit(i)} style="--x:{cx(i) / W}; --y:{fy(s.v)}">
 							<i class="dot"></i>
 							<b class="nv">{num(s.v, lang, 1)}</b>
 						</span>
 					{/each}
-					<span class="spark" class:on={tl.playing} style="--x:{X / W}; --y:{valueAt(X) / TOP}"></span>
+					<span class="spark" class:on={tl.playing} style="--x:{X / W}; --y:{fy(valueAt(X))}"></span>
 				</div>
 
 				<!-- wide screens: each milestone's label sits in the chart by its point (upstream above, ours below) -->
 				<ol class="steps">
 					{#each c.steps as st, i (i)}
-						<li class="step step--{heat[i]}" class:up={i < 2} class:lit={lit(i)} style="--d:{i * 60}ms; --x:{cx(i) / W}; --y:{S[i].v / TOP}; --dy:{DY[i]}rem">
+						<li class="step step--{heat[i]}" class:up={i < 2} class:lit={lit(i)} style="--d:{i * 60}ms; --x:{cx(i) / W}; --y:{fy(S[i].v)}; --dy:{DY[i]}rem">
 							<b class="sn">{st.name}</b>
 							<span class="ss">{st.sub}</span>
 							{#if st.did.length}
@@ -238,22 +239,19 @@
 			#0b0908;
 		box-shadow: 0 40px 80px -40px rgb(0 0 0 / 0.9);
 	}
+	/* one compact line: model · card · what is measured, the replay button at the end */
 	.top {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto auto;
-		align-items: end;
-		gap: 1rem clamp(1rem, 3vw, 2.5rem);
-	}
-	.who {
-		display: grid;
-		gap: 0.35rem;
-		align-self: start;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 1rem;
 	}
 	.wm {
 		margin: 0;
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.4rem;
+		gap: 0.2rem 0.4rem;
 		font-family: var(--font-mono);
 		font-size: var(--fs-xs);
 		color: var(--text);
@@ -263,7 +261,6 @@
 		color: var(--text-hi);
 	}
 	.wx {
-		margin: 0;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.08em;
@@ -282,7 +279,7 @@
 		text-align: right;
 		font-family: var(--font-display);
 		font-variant-numeric: tabular-nums lining-nums;
-		font-size: clamp(2.6rem, 1.2rem + 3.6vw, min(5.4rem, 8svh));
+		font-size: clamp(2.6rem, 1rem + 3.4vw, min(5rem, 8svh));
 		font-weight: 820;
 		line-height: 0.9;
 		letter-spacing: -0.05em;
@@ -540,6 +537,24 @@
 		border-color: var(--heat-4);
 		background: rgb(255 193 90 / 0.16);
 	}
+	/* the readout sits in the chart's empty top-left corner (the line starts low there) */
+	@media (min-width: 761px) {
+		.readout {
+			position: absolute;
+			left: 0;
+			top: 0;
+			z-index: 2;
+			max-width: 25%;
+		}
+	}
+	@media (min-width: 761px) and (max-width: 1099px) {
+		.readout .big {
+			font-size: clamp(2rem, 0.4rem + 3vw, 3.2rem);
+		}
+		.readout .mult b {
+			font-size: 1.1rem;
+		}
+	}
 	/*
 	 * Wide screens: the labels move into the chart's empty space, each by its point with a leader:
 	 * upstream's above the low start (over the value), ours below the high end, and they appear when
@@ -547,7 +562,10 @@
 	 */
 	@media (min-width: 1100px) {
 		.chartbox {
-			--ph: clamp(15rem, 100svh - 27rem, 26rem);
+			--ph: clamp(14rem, 100svh - 27rem, 22rem);
+		}
+		.readout {
+			max-width: 20%;
 		}
 		.steps {
 			position: absolute;
@@ -713,17 +731,13 @@
 	}
 
 	@media (max-width: 760px) {
-		.top {
-			grid-template-columns: minmax(0, 1fr) auto;
-		}
-		.who {
-			grid-column: 1 / -1;
-		}
-		.wx {
+		/* phones: the headline already carries 114,8 and 3,2×; the chart gets the room */
+		.wx,
+		.readout {
 			display: none;
 		}
 		.chartbox {
-			--ph: clamp(8.5rem, 100svh - 45rem, 12rem);
+			--ph: clamp(9rem, 100svh - 40rem, 14rem);
 			margin-top: 1.6rem;
 		}
 		.nv {
