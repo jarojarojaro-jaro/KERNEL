@@ -16,6 +16,7 @@
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import { copy } from '$lib/site/copy';
 	import { fill } from './data';
+	import Hl from './Hl.svelte';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].quality);
@@ -68,7 +69,7 @@
 	<div class="inner">
 		<header class="head">
 			<h2 id="quality-title" class="statement">
-				{#each titleParts as p, i (i)}<span class:hot={i === titleParts.length - 1}>{p}</span>{/each}
+				{#each titleParts as p, i (i)}<span><Hl text={p} /></span>{/each}
 			</h2>
 			<p class="lede">{fill(c.lede, { x: num(ratio, lang, 0) })}</p>
 		</header>
@@ -174,17 +175,8 @@
 		color: var(--text-hi);
 		text-wrap: balance;
 	}
-	.statement span {
+	.statement > span {
 		display: block;
-	}
-	.statement .hot {
-		width: fit-content;
-		max-width: 100%;
-		background: var(--heat-large);
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
-		padding-bottom: 0.08em;
 	}
 	.lede {
 		margin: 0;
