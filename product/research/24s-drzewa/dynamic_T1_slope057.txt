@@ -1,0 +1,141 @@
+== en-chat n=8728 chain4 tok/step 2.6888
+   chain4+sib tau=0.02          rows 7.632  tok 3.0218  ms 29.1    dtok +12.38%  net +6.59%
+   chain4+sib tau=0.05          rows 7.282  tok 3.0004  ms 28.901  dtok +11.59%  net +6.57%
+   chain4+sib tau=0.08          rows 6.78   tok 2.9645  ms 28.615  dtok +10.26%  net +6.35%
+   chain4+sib tau=0.1           rows 6.457  tok 2.9367  ms 28.431  dtok +9.22%  net +6.03%
+   chain4+sib tau=0.15          rows 5.87   tok 2.8725  ms 28.096  dtok +6.83%  net +4.94%
+   chain4+sib tau=0.2           rows 5.526  tok 2.8191  ms 27.9    dtok +4.85%  net +3.72%
+   chain4+sib tau=0.3           rows 5.185  tok 2.7485  ms 27.706  dtok +2.22%  net +1.83%
+   best-first n=3 Dmax=4        rows 4      tok 2.5398  ms 27.6    dtok -5.54%  net -5.54%
+   best-first n=4 Dmax=4        rows 5      tok 2.7703  ms 27.6    dtok +3.03%  net +3.03%
+   best-first n=5 Dmax=4        rows 6      tok 2.8963  ms 28.17   dtok +7.72%  net +5.54%
+   best-first n=6 Dmax=4        rows 7      tok 2.9791  ms 28.74   dtok +10.80%  net +6.40%
+   best-first n=7 Dmax=4        rows 8      tok 3.035   ms 29.31   dtok +12.87%  net +6.29%
+   best-first n=8 Dmax=4        rows 9      tok 3.0738  ms 30.68   dtok +14.32%  net +2.84%
+   best-first n=3 Dmax=5        rows 4      tok 2.5398  ms 27.6    dtok -5.54%  net -5.54%
+   best-first n=4 Dmax=5        rows 5      tok 2.7703  ms 27.6    dtok +3.03%  net +3.03%
+   best-first n=5 Dmax=5        rows 6      tok 2.9308  ms 28.581  dtok +9.00%  net +5.26%
+   best-first n=6 Dmax=5        rows 7      tok 3.0367  ms 29.3    dtok +12.94%  net +6.39%
+   best-first n=7 Dmax=5        rows 8      tok 3.1135  ms 29.952  dtok +15.80%  net +6.70%
+   best-first n=8 Dmax=5        rows 9      tok 3.1669  ms 31.383  dtok +17.78%  net +3.58%
+== en-chat/answer n=4543 chain4 tok/step 2.6778
+   chain4+sib tau=0.02          rows 7.606  tok 3.0079  ms 29.085  dtok +12.33%  net +6.59%
+   chain4+sib tau=0.05          rows 7.242  tok 2.9858  ms 28.878  dtok +11.50%  net +6.57%
+   chain4+sib tau=0.08          rows 6.74   tok 2.9482  ms 28.592  dtok +10.10%  net +6.28%
+   chain4+sib tau=0.1           rows 6.42   tok 2.9199  ms 28.409  dtok +9.04%  net +5.93%
+   chain4+sib tau=0.15          rows 5.866  tok 2.8566  ms 28.094  dtok +6.68%  net +4.80%
+   chain4+sib tau=0.2           rows 5.52   tok 2.805   ms 27.896  dtok +4.75%  net +3.64%
+   chain4+sib tau=0.3           rows 5.181  tok 2.7338  ms 27.703  dtok +2.09%  net +1.71%
+   best-first n=3 Dmax=4        rows 4      tok 2.5304  ms 27.6    dtok -5.51%  net -5.51%
+   best-first n=4 Dmax=4        rows 5      tok 2.7596  ms 27.6    dtok +3.06%  net +3.06%
+   best-first n=5 Dmax=4        rows 6      tok 2.8833  ms 28.17   dtok +7.67%  net +5.50%
+   best-first n=6 Dmax=4        rows 7      tok 2.967   ms 28.74   dtok +10.80%  net +6.41%
+   best-first n=7 Dmax=4        rows 8      tok 3.0235  ms 29.31   dtok +12.91%  net +6.32%
+   best-first n=8 Dmax=4        rows 9      tok 3.062   ms 30.68   dtok +14.35%  net +2.87%
+   best-first n=3 Dmax=5        rows 4      tok 2.5304  ms 27.6    dtok -5.51%  net -5.51%
+   best-first n=4 Dmax=5        rows 5      tok 2.7596  ms 27.6    dtok +3.06%  net +3.06%
+   best-first n=5 Dmax=5        rows 6      tok 2.92    ms 28.59   dtok +9.05%  net +5.27%
+   best-first n=6 Dmax=5        rows 7      tok 3.0242  ms 29.309  dtok +12.93%  net +6.35%
+   best-first n=7 Dmax=5        rows 8      tok 3.1019  ms 29.957  dtok +15.84%  net +6.72%
+   best-first n=8 Dmax=5        rows 9      tok 3.1551  ms 31.386  dtok +17.83%  net +3.61%
+== en-prose n=7758 chain4 tok/step 2.4893
+   chain4+sib tau=0.02          rows 7.736  tok 2.8127  ms 29.16   dtok +12.99%  net +6.95%
+   chain4+sib tau=0.05          rows 7.388  tok 2.7947  ms 28.961  dtok +12.27%  net +6.99%
+   chain4+sib tau=0.08          rows 6.825  tok 2.7578  ms 28.64   dtok +10.79%  net +6.76%
+   chain4+sib tau=0.1           rows 6.476  tok 2.7312  ms 28.441  dtok +9.72%  net +6.47%
+   chain4+sib tau=0.15          rows 5.857  tok 2.6648  ms 28.088  dtok +7.05%  net +5.19%
+   chain4+sib tau=0.2           rows 5.5    tok 2.6119  ms 27.885  dtok +4.92%  net +3.85%
+   chain4+sib tau=0.3           rows 5.169  tok 2.5438  ms 27.696  dtok +2.19%  net +1.83%
+   best-first n=3 Dmax=4        rows 4      tok 2.403   ms 27.6    dtok -3.47%  net -3.47%
+   best-first n=4 Dmax=4        rows 5      tok 2.5901  ms 27.6    dtok +4.05%  net +4.05%
+   best-first n=5 Dmax=4        rows 6      tok 2.7025  ms 28.17   dtok +8.56%  net +6.37%
+   best-first n=6 Dmax=4        rows 7      tok 2.7734  ms 28.74   dtok +11.41%  net +6.99%
+   best-first n=7 Dmax=4        rows 8      tok 2.8255  ms 29.31   dtok +13.50%  net +6.88%
+   best-first n=8 Dmax=4        rows 9      tok 2.8646  ms 30.68   dtok +15.08%  net +3.52%
+   best-first n=3 Dmax=5        rows 4      tok 2.403   ms 27.6    dtok -3.47%  net -3.47%
+   best-first n=4 Dmax=5        rows 5      tok 2.5901  ms 27.6    dtok +4.05%  net +4.05%
+   best-first n=5 Dmax=5        rows 6      tok 2.7232  ms 28.493  dtok +9.39%  net +5.97%
+   best-first n=6 Dmax=5        rows 7      tok 2.8145  ms 29.207  dtok +13.06%  net +6.84%
+   best-first n=7 Dmax=5        rows 8      tok 2.8773  ms 29.867  dtok +15.58%  net +6.81%
+   best-first n=8 Dmax=5        rows 9      tok 2.9216  ms 31.312  dtok +17.37%  net +3.45%
+== en-prose/answer n=6106 chain4 tok/step 2.4368
+   chain4+sib tau=0.02          rows 7.771  tok 2.7558  ms 29.18   dtok +13.09%  net +6.97%
+   chain4+sib tau=0.05          rows 7.437  tok 2.7393  ms 28.989  dtok +12.41%  net +7.03%
+   chain4+sib tau=0.08          rows 6.858  tok 2.7034  ms 28.659  dtok +10.94%  net +6.84%
+   chain4+sib tau=0.1           rows 6.491  tok 2.6761  ms 28.45   dtok +9.82%  net +6.54%
+   chain4+sib tau=0.15          rows 5.858  tok 2.6082  ms 28.089  dtok +7.03%  net +5.17%
+   chain4+sib tau=0.2           rows 5.5    tok 2.5562  ms 27.885  dtok +4.90%  net +3.83%
+   chain4+sib tau=0.3           rows 5.164  tok 2.4898  ms 27.693  dtok +2.17%  net +1.83%
+   best-first n=3 Dmax=4        rows 4      tok 2.3669  ms 27.6    dtok -2.87%  net -2.87%
+   best-first n=4 Dmax=4        rows 5      tok 2.5434  ms 27.6    dtok +4.37%  net +4.37%
+   best-first n=5 Dmax=4        rows 6      tok 2.6493  ms 28.17   dtok +8.72%  net +6.52%
+   best-first n=6 Dmax=4        rows 7      tok 2.7179  ms 28.74   dtok +11.54%  net +7.11%
+   best-first n=7 Dmax=4        rows 8      tok 2.7686  ms 29.31   dtok +13.62%  net +6.99%
+   best-first n=8 Dmax=4        rows 9      tok 2.8056  ms 30.68   dtok +15.14%  net +3.58%
+   best-first n=3 Dmax=5        rows 4      tok 2.3669  ms 27.6    dtok -2.87%  net -2.87%
+   best-first n=4 Dmax=5        rows 5      tok 2.5434  ms 27.6    dtok +4.37%  net +4.37%
+   best-first n=5 Dmax=5        rows 6      tok 2.666   ms 28.463  dtok +9.41%  net +6.09%
+   best-first n=6 Dmax=5        rows 7      tok 2.7503  ms 29.179  dtok +12.87%  net +6.76%
+   best-first n=7 Dmax=5        rows 8      tok 2.8101  ms 29.844  dtok +15.32%  net +6.65%
+   best-first n=8 Dmax=5        rows 9      tok 2.8529  ms 31.294  dtok +17.07%  net +3.26%
+== pl-prose n=9934 chain4 tok/step 2.4763
+   chain4+sib tau=0.02          rows 7.722  tok 2.7406  ms 29.152  dtok +10.67%  net +4.78%
+   chain4+sib tau=0.05          rows 7.239  tok 2.7204  ms 28.876  dtok +9.86%  net +5.00%
+   chain4+sib tau=0.08          rows 6.547  tok 2.6827  ms 28.482  dtok +8.33%  net +4.98%
+   chain4+sib tau=0.1           rows 6.189  tok 2.6559  ms 28.278  dtok +7.25%  net +4.68%
+   chain4+sib tau=0.15          rows 5.652  tok 2.604   ms 27.972  dtok +5.15%  net +3.76%
+   chain4+sib tau=0.2           rows 5.376  tok 2.5666  ms 27.814  dtok +3.65%  net +2.85%
+   chain4+sib tau=0.3           rows 5.129  tok 2.5175  ms 27.674  dtok +1.66%  net +1.39%
+   best-first n=3 Dmax=4        rows 4      tok 2.3963  ms 27.6    dtok -3.23%  net -3.23%
+   best-first n=4 Dmax=4        rows 5      tok 2.572   ms 27.6    dtok +3.86%  net +3.86%
+   best-first n=5 Dmax=4        rows 6      tok 2.6607  ms 28.17   dtok +7.44%  net +5.27%
+   best-first n=6 Dmax=4        rows 7      tok 2.7147  ms 28.74   dtok +9.63%  net +5.28%
+   best-first n=7 Dmax=4        rows 8      tok 2.7542  ms 29.31   dtok +11.22%  net +4.73%
+   best-first n=8 Dmax=4        rows 9      tok 2.7816  ms 30.68   dtok +12.33%  net +1.05%
+   best-first n=3 Dmax=5        rows 4      tok 2.3963  ms 27.6    dtok -3.23%  net -3.23%
+   best-first n=4 Dmax=5        rows 5      tok 2.572   ms 27.6    dtok +3.86%  net +3.86%
+   best-first n=5 Dmax=5        rows 6      tok 2.6883  ms 28.459  dtok +8.56%  net +5.28%
+   best-first n=6 Dmax=5        rows 7      tok 2.7614  ms 29.132  dtok +11.51%  net +5.65%
+   best-first n=7 Dmax=5        rows 8      tok 2.8085  ms 29.767  dtok +13.41%  net +5.15%
+   best-first n=8 Dmax=5        rows 9      tok 2.8447  ms 31.207  dtok +14.88%  net +1.60%
+== pl-prose/answer n=7829 chain4 tok/step 2.3212
+   chain4+sib tau=0.02          rows 7.795  tok 2.5711  ms 29.193  dtok +10.77%  net +4.72%
+   chain4+sib tau=0.05          rows 7.289  tok 2.5521  ms 28.904  dtok +9.95%  net +4.99%
+   chain4+sib tau=0.08          rows 6.54   tok 2.5136  ms 28.478  dtok +8.29%  net +4.95%
+   chain4+sib tau=0.1           rows 6.162  tok 2.4872  ms 28.262  dtok +7.15%  net +4.64%
+   chain4+sib tau=0.15          rows 5.608  tok 2.4373  ms 27.947  dtok +5.00%  net +3.70%
+   chain4+sib tau=0.2           rows 5.338  tok 2.4008  ms 27.792  dtok +3.43%  net +2.71%
+   chain4+sib tau=0.3           rows 5.11   tok 2.3571  ms 27.663  dtok +1.55%  net +1.32%
+   best-first n=3 Dmax=4        rows 4      tok 2.289   ms 27.6    dtok -1.38%  net -1.38%
+   best-first n=4 Dmax=4        rows 5      tok 2.4281  ms 27.6    dtok +4.61%  net +4.61%
+   best-first n=5 Dmax=4        rows 6      tok 2.5029  ms 28.17   dtok +7.83%  net +5.65%
+   best-first n=6 Dmax=4        rows 7      tok 2.5483  ms 28.74   dtok +9.79%  net +5.43%
+   best-first n=7 Dmax=4        rows 8      tok 2.5837  ms 29.31   dtok +11.31%  net +4.82%
+   best-first n=8 Dmax=4        rows 9      tok 2.6085  ms 30.68   dtok +12.38%  net +1.10%
+   best-first n=3 Dmax=5        rows 4      tok 2.289   ms 27.6    dtok -1.38%  net -1.38%
+   best-first n=4 Dmax=5        rows 5      tok 2.4281  ms 27.6    dtok +4.61%  net +4.61%
+   best-first n=5 Dmax=5        rows 6      tok 2.5168  ms 28.397  dtok +8.43%  net +5.38%
+   best-first n=6 Dmax=5        rows 7      tok 2.5744  ms 29.061  dtok +10.91%  net +5.33%
+   best-first n=7 Dmax=5        rows 8      tok 2.612   ms 29.698  dtok +12.53%  net +4.58%
+   best-first n=8 Dmax=5        rows 9      tok 2.6409  ms 31.143  dtok +13.77%  net +0.83%
+== prose n=17692 chain4 tok/step 2.482
+   chain4+sib tau=0.02          rows 7.728  tok 2.7722  ms 29.155  dtok +11.69%  net +5.73%
+   chain4+sib tau=0.05          rows 7.304  tok 2.753   ms 28.913  dtok +10.92%  net +5.88%
+   chain4+sib tau=0.08          rows 6.669  tok 2.7156  ms 28.551  dtok +9.41%  net +5.77%
+   chain4+sib tau=0.1           rows 6.315  tok 2.6889  ms 28.349  dtok +8.33%  net +5.47%
+   chain4+sib tau=0.15          rows 5.742  tok 2.6307  ms 28.023  dtok +5.99%  net +4.39%
+   chain4+sib tau=0.2           rows 5.43   tok 2.5865  ms 27.845  dtok +4.21%  net +3.29%
+   chain4+sib tau=0.3           rows 5.147  tok 2.529   ms 27.684  dtok +1.89%  net +1.58%
+   best-first n=3 Dmax=4        rows 4      tok 2.3992  ms 27.6    dtok -3.34%  net -3.34%
+   best-first n=4 Dmax=4        rows 5      tok 2.5799  ms 27.6    dtok +3.94%  net +3.94%
+   best-first n=5 Dmax=4        rows 6      tok 2.679   ms 28.17   dtok +7.94%  net +5.75%
+   best-first n=6 Dmax=4        rows 7      tok 2.7405  ms 28.74   dtok +10.41%  net +6.03%
+   best-first n=7 Dmax=4        rows 8      tok 2.7855  ms 29.31   dtok +12.23%  net +5.68%
+   best-first n=8 Dmax=4        rows 9      tok 2.818   ms 30.68   dtok +13.54%  net +2.14%
+   best-first n=3 Dmax=5        rows 4      tok 2.3992  ms 27.6    dtok -3.34%  net -3.34%
+   best-first n=4 Dmax=5        rows 5      tok 2.5799  ms 27.6    dtok +3.94%  net +3.94%
+   best-first n=5 Dmax=5        rows 6      tok 2.7036  ms 28.474  dtok +8.93%  net +5.58%
+   best-first n=6 Dmax=5        rows 7      tok 2.7847  ms 29.165  dtok +12.19%  net +6.17%
+   best-first n=7 Dmax=5        rows 8      tok 2.8387  ms 29.811  dtok +14.37%  net +5.89%
+   best-first n=8 Dmax=5        rows 9      tok 2.8784  ms 31.253  dtok +15.97%  net +2.42%
+{"T": 1.0, "cost": {"ext": "/home/jaro/qwen-opt/tree/ext_greedy", "T": 1.0, "top_k": 20, "base": 27.6, "slope": 0.57, "cliff": 1.37, "late": 0.6, "pass_ms": 0.85, "max_rows": 8}}
