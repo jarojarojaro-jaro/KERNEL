@@ -13,6 +13,7 @@
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import { copy } from '$lib/site/copy';
 	import { HERO_PAIRS } from './data';
+	import Hl from './Hl.svelte';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].results.teaser);
@@ -24,7 +25,7 @@
 <section id="results" class="teaser heat-top" aria-labelledby="results-title">
 	<div class="inner">
 		<header class="head">
-			<h2 id="results-title" class="t">{c.title}</h2>
+			<h2 id="results-title" class="t"><Hl text={c.title} /></h2>
 			<p class="lede">{c.lede}</p>
 			<a class="cta cta--line" href={resultsHref(lang)}>{c.link} <span class="arrow" aria-hidden="true">→</span></a>
 		</header>

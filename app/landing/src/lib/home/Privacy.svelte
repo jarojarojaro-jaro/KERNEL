@@ -6,6 +6,7 @@
 	import { reveal } from '$lib/fx/actions';
 	import { href, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
+	import Hl from './Hl.svelte';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].privacy);
@@ -13,7 +14,7 @@
 
 <section id="privacy" class="privacy heat-top" aria-labelledby="privacy-title">
 	<div class="inner">
-		<h2 id="privacy-title" class="statement" use:reveal>{c.title.replace('|', ' ')}</h2>
+		<h2 id="privacy-title" class="statement" use:reveal><Hl text={c.title.replace('|', ' ')} /></h2>
 		<!-- the data path: scan → your computer is a live heat filament; the link to the internet is cut -->
 		<div class="wire" use:reveal aria-hidden="true">
 			<span class="node local">

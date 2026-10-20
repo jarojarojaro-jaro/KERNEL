@@ -1,10 +1,11 @@
 <script lang="ts">
 	/**
 	 * Two-line headline: the copy's `|` splits the lead from the payoff, both in the same heavy cut.
-	 * The payoff carries an ember underline (heat in the divider, not the letters); only `burn`
-	 * headings (the final section) set the payoff itself in the heat gradient with a bloom.
+	 * One or two key words marked *…* in the copy carry the ember accent (`.hx-accent`, via Hl); only `burn`
+	 * headings (the final section) set the whole payoff in the heat gradient with a bloom.
 	 */
 	import { reveal } from '$lib/fx/actions';
+	import Hl from './Hl.svelte';
 
 	let {
 		text,
@@ -19,7 +20,7 @@
 </script>
 
 <svelte:element this={tag} {id} class="duo duo--{size} duo--{mode}" use:reveal={{ threshold: 0.4 }}>
-	{#if mode === 'plain'}{parts.join(' ')}{:else if parts.length > 1}<span class="lo">{parts[0]}</span>{' '}<span class="hi" class:burn><span class="ul">{parts[1]}</span></span>{:else}{text}{/if}
+	{#if mode === 'plain'}<Hl text={parts.join(' ')} />{:else if parts.length > 1}<span class="lo"><Hl text={parts[0]} /></span>{' '}<span class="hi" class:burn><Hl text={parts[1]} /></span>{:else}<Hl {text} />{/if}
 </svelte:element>
 
 <style>
@@ -65,13 +66,6 @@
 		color: var(--text-hi);
 		transform-origin: 0 50%;
 	}
-	/* heat in the underline: an ember stroke under the payoff, following every wrapped line */
-	.ul {
-		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 45%, var(--heat-4)) no-repeat 0 92% / 100% 0.075em;
-		-webkit-box-decoration-break: clone;
-		box-decoration-break: clone;
-		padding-bottom: 0.06em;
-	}
 	/*
 	 * The final section: the payoff itself burns, heat ramp drifting through the letters. The clipped
 	 * background only paints inside the box, and the display line-height (0.92) is shorter than the
@@ -88,7 +82,7 @@
 		margin: -0.16em -0.1em -0.24em 0;
 	}
 	/* inside the burning payoff the accent is the payoff itself */
-	.hi.burn :global(.hl) {
+	.hi.burn :global(.hx-accent) {
 		background: none;
 		color: inherit;
 		padding: 0;

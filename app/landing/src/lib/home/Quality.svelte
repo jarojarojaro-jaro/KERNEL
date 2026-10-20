@@ -61,7 +61,7 @@
 	const val = (v: number) => num(v, lang, Math.max(2, -Math.floor(Math.log10(v)) + 1));
 
 	const summary = $derived(
-		`${fill(c.lede, { x: num(ratio, lang, 0) })} ${ours.map((r) => `${r.name}: ${c.ours} ${val(r.ours.v)}, ${c.noise} ${val(r.noise.v)}`).join('; ')}. ${c.fmtBar} (${fmtName}): ${num(fmt.kld.v, lang, 3)}.`
+		`${ours.map((r) => `${r.name}: ${c.ours} ${val(r.ours.v)}, ${c.noise} ${val(r.noise.v)}`).join('; ')}. ${c.fmtBar} (${fmtName}): ${num(fmt.kld.v, lang, 3)}.`
 	);
 </script>
 
@@ -124,10 +124,9 @@
 							</div>
 						{/each}
 					</div>
-					<p class="verdict">{c.verdict}</p>
 				</div>
 			</div>
-			<figcaption class="caption">{fill(c.caption, { card: where, card2: where5060 })}</figcaption>
+			<figcaption class="caption"><details><summary>{c.how}</summary><p>{fill(c.caption, { card: where, card2: where5060 })}</p></details></figcaption>
 		</figure>
 
 		<div class="same">
@@ -137,7 +136,7 @@
 			</div>
 			<ul class="sl">
 				{#each c.same.items as it (it)}
-					<li><span class="sn">{it}</span><span class="eq" aria-hidden="true"></span><span class="ok">✓ {c.same.ok}</span></li>
+					<li><span class="ok" aria-hidden="true">✓</span><span class="sn">{it}</span></li>
 				{/each}
 			</ul>
 		</div>
@@ -154,9 +153,9 @@
 	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
-		padding-block: clamp(3.5rem, 2.5rem + 3vw, 6rem);
+		padding-block: clamp(2.5rem, 1.5rem + 3vw, 5rem);
 		display: grid;
-		gap: clamp(1.75rem, 3.5vw, 3rem);
+		gap: clamp(1rem, 2.4vh, 1.75rem);
 	}
 	.head {
 		display: grid;
@@ -167,7 +166,7 @@
 	.statement {
 		margin: 0;
 		font-family: var(--font-display);
-		font-size: clamp(2.1rem, 0.8rem + 3vw, 4.2rem);
+		font-size: clamp(2.1rem, 0.8rem + 3vw, min(4.2rem, 7svh));
 		font-weight: 800;
 		font-stretch: 108%;
 		line-height: 0.98;
@@ -203,7 +202,8 @@
 		box-shadow: inset 0 0 0 1px var(--line);
 	}
 	.stage {
-		--ph: clamp(24rem, 16rem + 11vw, 30rem);
+		/* the plot takes what the viewport leaves after the heading, the caption and the strip below */
+		--ph: clamp(16rem, 100svh - 31rem, 26rem);
 		--iw: min(34rem, 50%);
 		--ih: calc(var(--ph) - var(--lr) - 3.4rem);
 		position: relative;
@@ -391,7 +391,7 @@
 		width: var(--iw);
 		height: var(--ih);
 		display: grid;
-		grid-template-rows: auto auto minmax(0, 1fr) auto;
+		grid-template-rows: auto auto minmax(0, 1fr);
 		gap: 0.6rem;
 		padding: clamp(0.9rem, 1.6vw, 1.25rem);
 		border-radius: var(--r-lg, 14px);
@@ -437,7 +437,7 @@
 	}
 	.iplot {
 		position: relative;
-		min-height: 7rem;
+		min-height: 4.5rem;
 		margin: 1.4rem 2.4rem 1.6rem 0; /* value labels above, tick labels right, names below */
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -493,34 +493,35 @@
 		color: var(--text);
 		white-space: nowrap;
 	}
-	.verdict {
-		margin: 0;
-		font-size: var(--fs-sm);
-		font-weight: 600;
-		line-height: 1.35;
-		color: var(--heat-4);
-		text-wrap: balance;
-	}
+	/* how it is measured: one line, unfolds on demand */
 	.caption {
 		font-size: var(--fs-xs);
 		line-height: 1.5;
 		color: var(--text-mute);
 		max-width: 62rem;
 	}
+	.caption summary {
+		width: fit-content;
+		cursor: pointer;
+		color: var(--text);
+	}
+	.caption p {
+		margin: 0.4rem 0 0;
+	}
 
 	/* ---- the lossless switches ---- */
 	.same {
 		display: grid;
-		grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-		gap: clamp(1rem, 3vw, 3rem);
+		grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+		gap: 0.8rem clamp(1rem, 3vw, 3rem);
 		align-items: center;
-		padding: clamp(1.1rem, 2.5vw, 1.75rem) clamp(1rem, 3vw, 2.25rem);
+		padding: clamp(0.8rem, 1.6vw, 1.2rem) clamp(1rem, 3vw, 2.25rem);
 		border-radius: var(--r-xl);
 		background: var(--bg-1);
 		box-shadow: inset 0 0 0 1px var(--line);
 	}
 	.st h3 {
-		margin: 0 0 0.45rem;
+		margin: 0 0 0.25rem;
 		font-family: var(--font-display);
 		font-size: var(--fs-lg);
 		font-weight: 750;
@@ -529,38 +530,39 @@
 	}
 	.st p {
 		margin: 0;
-		font-size: var(--fs-sm);
-		line-height: 1.55;
+		font-size: var(--fs-xs);
+		line-height: 1.5;
 		color: var(--text);
 		text-wrap: pretty;
 	}
+	/* the switches as chips, each ticked: the heading already says what the tick means */
 	.sl {
 		margin: 0;
 		padding: 0;
 		list-style: none;
-		display: grid;
-		gap: 0.55rem;
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 0.4rem;
 	}
 	.sl li {
-		display: grid;
-		grid-template-columns: auto minmax(1rem, 1fr) auto;
+		display: inline-flex;
 		align-items: center;
-		gap: 0.7rem;
+		gap: 0.4rem;
+		padding: 0.3rem 0.75rem;
+		border-radius: var(--r-pill);
+		border: 1px solid rgb(255 193 90 / 0.4);
+		background: rgb(255 193 90 / 0.08);
 		font-size: var(--fs-sm);
+		white-space: nowrap;
 	}
 	.sn {
 		color: var(--text-hi);
 		font-weight: 600;
 	}
-	.eq {
-		height: 0;
-		border-top: 1px dashed var(--line-strong);
-	}
 	.ok {
-		font-family: var(--font-mono);
-		font-size: var(--fs-xs);
+		font-weight: 800;
 		color: var(--heat-4);
-		white-space: nowrap;
 	}
 
 	/* ---- motion: resting state is final; entering view replays the build-up ---- */
@@ -584,9 +586,6 @@
 		}
 		:global(html.js) .board:global([data-in]) .zb {
 			animation: grow 0.9s var(--ease-spring) calc(1.2s + var(--i, 0) * 0.15s) backwards;
-		}
-		:global(html.js) .board:global([data-in]) .verdict {
-			animation: rise 0.6s var(--ease-out) 1.7s backwards;
 		}
 	}
 	@keyframes grow {
@@ -624,7 +623,7 @@
 			repeating-linear-gradient(135deg, rgb(255 255 255 / 0.14) 0 2px, transparent 2px 9px),
 			linear-gradient(0deg, var(--heat-2), var(--heat-3));
 	}
-	:global(:root[data-theme='light']) :is(.zx, .verdict, .ok, .here) {
+	:global(:root[data-theme='light']) :is(.zx, .ok, .here) {
 		color: var(--accent-ink);
 	}
 
@@ -642,10 +641,10 @@
 			--tr: 0rem;
 		}
 		.stage {
-			--ph: clamp(17rem, 12rem + 10vw, 22rem);
+			--ph: clamp(8.5rem, 100svh - 46rem, 16rem);
 		}
 		.plot {
-			margin-bottom: 4.6rem;
+			margin-bottom: 3.2rem;
 		}
 		/* the bar carries its own value; the tick labels would collide with the dimension */
 		.plot > .gl i {
@@ -680,10 +679,48 @@
 			position: relative;
 			width: auto;
 			height: auto;
-			min-height: 18rem;
+			gap: 0.4rem;
 		}
 		.iplot {
-			min-height: 9rem;
+			min-height: 4rem;
+			margin-top: 1.1rem;
+			margin-bottom: 1.4rem;
+		}
+		.inset {
+			padding: 0.8rem 0.9rem;
+		}
+		.legend {
+			font-size: var(--fs-2xs);
+			gap: 0.2rem 0.8rem;
+		}
+		.st h3 {
+			font-size: var(--fs-md);
+		}
+		.same {
+			gap: 0.5rem;
+			padding: 0.8rem 1rem;
+		}
+		.inner {
+			gap: 0.9rem;
+		}
+		.board {
+			gap: 0.6rem;
+		}
+		.zx {
+			font-size: var(--fs-md);
+		}
+		.lede {
+			font-size: var(--fs-sm);
+		}
+		.st p {
+			display: none;
+		}
+		.sl {
+			justify-content: flex-start;
+		}
+		.sl li {
+			padding: 0.2rem 0.6rem;
+			font-size: var(--fs-xs);
 		}
 		.zb {
 			width: 2.8rem;

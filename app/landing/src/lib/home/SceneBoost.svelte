@@ -50,7 +50,7 @@
 		<div class="rim" aria-hidden="true"></div>
 		<div class="layout">
 			<SceneHead id="scene-boost" k={c.k} step={c.title} head={c.head} body={c.body} mode="duo" />
-			<figure class="race" style="--red:{REDLINE / DIAL_MAX}">
+			<figure class="race" style="--red:{REDLINE / DIAL_MAX}; --top:{Math.max(...vals.map((v) => v.v)) / DIAL_MAX}">
 				<div class="plot">
 					<div class="redzone" class:flare={overRed} aria-hidden="true"><span>{REDLINE} t/s</span></div>
 					{#each vals as v, i (i)}
@@ -142,19 +142,20 @@
 	/* ---- the race: three bars on 0–100 t/s, red zone from 70 ---- */
 	/*
 	 * The whole scene fits one viewport below the header. Our value rides the top of the tallest bar
-	 * (78 of 100): its tag (--tag) overhangs the plot by --tag − 22% of the plot, kept as headroom.
-	 * The plot takes what is left of the viewport after the header, the tag, and --rest (labels,
-	 * footer, gaps, bottom padding; on phones also the heading above): plot = (left) / 0.78.
+	 * (--top of the scale): its tag (--tag) overhangs the plot by --tag − (1 − --top) of the plot,
+	 * kept as headroom. The plot takes what is left of the viewport after the header, the tag and
+	 * --rest (labels, footer, gaps, bottom padding; on phones also the heading above):
+	 * plot = (left) / --top.
 	 */
 	.race {
-		--val-hot: clamp(2rem, min(1.1rem + 3.2vw, 6.5svh), 4.8rem);
-		--tag: calc(var(--val-hot) + 3.4rem);
-		--rest: 15rem;
-		--plot: clamp(7.5rem, (100svh - var(--header-clear) - var(--tag) - var(--rest)) / 0.78, 28rem);
+		--val-hot: clamp(2rem, min(1.1rem + 3vw, 6svh), 4.4rem);
+		--tag: calc(var(--val-hot) + 3.2rem);
+		--rest: 13.5rem;
+		--plot: clamp(7rem, (100svh - var(--header-clear) - var(--tag) - var(--rest)) / var(--top), 26rem);
 		margin: 0;
-		padding-top: max(0px, var(--tag) - 0.22 * var(--plot));
+		padding-top: max(0px, var(--tag) - (1 - var(--top)) * var(--plot));
 		display: grid;
-		gap: clamp(0.6rem, 1.6vh, 1rem);
+		gap: clamp(0.5rem, 1.4vh, 0.9rem);
 	}
 	.plot {
 		position: relative;

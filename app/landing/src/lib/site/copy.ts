@@ -62,11 +62,11 @@ const raw = {
 			}
 		},
 		how: {
-			title: 'Trzy kroki.|Każdy zmierzony.',
+			title: 'Trzy kroki.|Każdy *zmierzony*.',
 			scan: {
 				k: '01',
 				title: 'Skan',
-				head: 'Najpierw czytamy|Twoją kartę.',
+				head: 'Najpierw czytamy|*Twoją kartę*.',
 				body: 'Lokalnie, bez uprawnień administratora i bez wysyłania czegokolwiek. Z tego dobieramy model.',
 				lab: 'karta z naszego labu',
 				gpu: 'GPU',
@@ -83,7 +83,7 @@ const raw = {
 			fit: {
 				k: '02',
 				title: 'Dobór',
-				head: 'Model, który|naprawdę się mieści.',
+				head: 'Model, który|*naprawdę się mieści*.',
 				body: 'Liczymy pamięć z kontekstem i buforami, nie tylko rozmiar pliku. Za duży model odpada od razu.',
 				vram: 'VRAM',
 				file: 'plik modelu',
@@ -97,7 +97,7 @@ const raw = {
 			boost: {
 				k: '03',
 				title: 'Przyspieszenie',
-				head: 'Trzy ustawienia.|Nasz silnik najszybszy.',
+				head: 'Trzy ustawienia.|Nasz silnik *najszybszy*.',
 				body: 'Ten sam model, ta sama karta, ten sam skrypt pomiaru. Każdy słupek to osobny pomiar.',
 				layers: ['Typowa aplikacja', 'Najlepsze flagi + MTP', 'Nasz silnik'],
 				subs: ['llama.cpp z ustawieniami domyślnymi', 'upstream llama.cpp, spekulacja MTP', 'lżejszy draft i własne kernele'],
@@ -112,7 +112,7 @@ const raw = {
 				description: 'Zmierzone przyspieszenie na każdej karcie i każdym modelu: typowa aplikacja, najlepsze flagi i nasz silnik, z warunkami i źródłem każdej liczby.'
 			},
 			teaser: {
-				title: 'Każda para zmierzona tym samym skryptem.',
+				title: 'Każda para zmierzona *tym samym skryptem*.',
 				lede: 'Typowa aplikacja i nasz silnik, ta sama karta i ten sam plik modelu.',
 				link: 'Wszystkie wyniki i szczegóły',
 				unit: 't/s · typowa aplikacja → nasz silnik · paski: przyspieszenie (typowa = 1×)'
@@ -134,7 +134,7 @@ const raw = {
 			summary: '{card}, {model}: {cold} {a} tokenu na sekundę, {hot} {b} tokenu na sekundę.'
 		},
 		engine: {
-			title: 'Ten sam model, ta sama karta.|Ponad trzy razy szybciej.',
+			title: 'Z {a} do *{b} t/s*.|*{x}* szybciej, ta sama karta.',
 			meta: 'czat · tokeny na sekundę · każdy krok tym samym skryptem pomiaru',
 			vs: 'wobec typowej aplikacji',
 			did: 'co zrobiliśmy',
@@ -149,8 +149,9 @@ const raw = {
 			codeNote: 'ta sama karta i model, zadanie edycji plików: typowa aplikacja wobec naszego silnika dziś'
 		},
 		quality: {
-			title: 'Ten sam model,|ta sama jakość.',
-			lede: 'Mierzymy, o ile nasz silnik zmienia odpowiedzi modelu względem zwykłego llama.cpp. Wychodzi mniej więcej tyle, ile sam llama.cpp zmienia je przy innym ustawieniu, czyli szum. Zmiana formatu modelu to różnica ok. {x}× większa.',
+			title: 'Ten sam model,|ta sama *jakość*.',
+			lede: 'Nasz silnik zmienia odpowiedzi modelu tyle, co szum samego llama.cpp. Zmiana formatu modelu to różnica ok. {x}× większa.',
+			how: 'Jak to mierzymy',
 			ours: 'nasz silnik wobec llama.cpp',
 			noise: 'llama.cpp wobec samego siebie',
 			here: 'tu, ledwie nad zerem',
@@ -159,17 +160,15 @@ const raw = {
 			fmtSub: 'LFM2.5: {fmt} wobec Q8_0',
 			times: 'większa różnica',
 			zoomTitle: 'to samo miejsce w powiększeniu',
-			verdict: 'Podobne słupki: nasz silnik zmienia odpowiedzi mniej więcej tyle, co szum samego llama.cpp.',
 			caption: 'Skala liniowa. Miara: KLD, czyli o ile różnią się prawdopodobieństwa kolejnego słowa (0 = identycznie). Szum llama.cpp: ten sam llama.cpp z inną wielkością paczki (ubatch 256 i 512). Saluki i Bonsai mierzone na {card}; zmiana formatu to inny model (LFM2.5 na {card2}), pokazany dla skali.',
 			same: {
 				title: 'Przyspieszenia nie zmieniają tekstu',
-				note: 'Włączone czy wyłączone, spekulacja, weryfikacja na GPU i odtwarzanie PM4 dają przy wyborze zachłannym ten sam tekst, bit w bit; pilnują tego testy sum md5. Sama nasza kompilacja liczy część mnożeń w innej kolejności, więc od llama.cpp różni się na poziomie szumu. Dlatego mierzymy KLD.',
-				items: ['spekulacja', 'weryfikacja na GPU', 'odtwarzanie PM4'],
-				ok: 'ten sam tekst'
+				note: 'Włączone czy wyłączone, dają przy wyborze zachłannym ten sam tekst, bit w bit (testy md5). Od llama.cpp różni nas tylko kolejność części mnożeń, na poziomie szumu; stąd KLD.',
+				items: ['spekulacja', 'weryfikacja na GPU', 'odtwarzanie PM4']
 			}
 		},
 		cards: {
-			title: 'Zmierzone,|karta po karcie.',
+			title: 'Zmierzone,|*karta po karcie*.',
 			lede: 'Każda karta ma swoją stronę: modele, które się mieszczą, wyniki i warunki pomiaru.',
 			faster: 'szybciej',
 			diff: 'różne skrypty: porównanie orientacyjne',
@@ -178,7 +177,7 @@ const raw = {
 		},
 		privacy: {
 			overline: 'Prywatność',
-			title: 'Skan działa na Twoim komputerze.|Rozmowy nigdy go nie opuszczają.',
+			title: 'Skan działa na Twoim komputerze.|Rozmowy *nigdy* go nie opuszczają.',
 			lede: 'Skan czyta tylko specyfikację sprzętu i sam niczego nie wysyła. Wynik to zwykły tekst: widzisz każde pole.',
 			link: 'Zobacz, co czyta skan',
 			scanLink: 'Komendy skanu',
@@ -187,7 +186,7 @@ const raw = {
 			neverList: ['nazwy komputera ani użytkownika', 'numerów seryjnych, UUID karty, adresów MAC', 'listy plików i programów', 'treści promptów i rozmów', 'lokalizacji']
 		},
 		faq: {
-			title: 'Zanim|zapytasz.',
+			title: 'Zanim|*zapytasz*.',
 			items: [
 				[
 					'Czy to inny model niż ten, który znam?',
@@ -288,11 +287,11 @@ const raw = {
 			}
 		},
 		how: {
-			title: 'Three steps.|Each one measured.',
+			title: 'Three steps.|Each one *measured*.',
 			scan: {
 				k: '01',
 				title: 'Scan',
-				head: 'First, we read|your card.',
+				head: 'First, we read|*your card*.',
 				body: 'Locally, without admin rights, without sending anything. This is what we pick the model from.',
 				lab: 'the card in our lab',
 				gpu: 'GPU',
@@ -309,7 +308,7 @@ const raw = {
 			fit: {
 				k: '02',
 				title: 'Pick',
-				head: 'A model that|really fits.',
+				head: 'A model that|*really fits*.',
 				body: 'We count memory with context and buffers, not just the file size. A model that is too big is out straight away.',
 				vram: 'VRAM',
 				file: 'model file',
@@ -323,7 +322,7 @@ const raw = {
 			boost: {
 				k: '03',
 				title: 'Accelerate',
-				head: 'Three setups.|Our engine is fastest.',
+				head: 'Three setups.|Our engine is *fastest*.',
 				body: 'Same model, same card, same measuring script. Every bar is a separate measurement.',
 				layers: ['Typical app', 'Best flags + MTP', 'Our engine'],
 				subs: ['llama.cpp with default settings', 'upstream llama.cpp, MTP speculation', 'lighter draft and our own kernels'],
@@ -338,7 +337,7 @@ const raw = {
 				description: 'Measured speed-ups on every card and model: the typical app, the best flags and our engine, with the conditions and source of every number.'
 			},
 			teaser: {
-				title: 'Every pair measured with the same script.',
+				title: 'Every pair measured with *the same script*.',
 				lede: 'The typical app and our engine, on the same card with the same model file.',
 				link: 'All results and details',
 				unit: 't/s · typical app → our engine · bars: speed-up (typical = 1×)'
@@ -360,7 +359,7 @@ const raw = {
 			summary: '{card}, {model}: {cold} {a} tokens per second, {hot} {b} tokens per second.'
 		},
 		engine: {
-			title: 'Same model, same card.|More than three times faster.',
+			title: 'From {a} to *{b} t/s*.|*{x}* faster, same card.',
 			meta: 'chat · tokens per second · every step measured with the same script',
 			vs: 'vs the typical app',
 			did: 'what we did',
@@ -375,8 +374,9 @@ const raw = {
 			codeNote: 'the same card and model, a file-editing task: the typical app vs our engine today'
 		},
 		quality: {
-			title: 'Same model,|same quality.',
-			lede: 'We measure how much our engine changes the model’s answers compared with plain llama.cpp. The change is about as large as llama.cpp’s own under a different setting: noise. Changing the model format makes a difference about {x}× bigger.',
+			title: 'Same model,|same *quality*.',
+			lede: 'Our engine changes the model’s answers as much as llama.cpp’s own noise. Changing the model format makes a difference about {x}× bigger.',
+			how: 'How we measure it',
 			ours: 'our engine vs llama.cpp',
 			noise: 'llama.cpp vs itself',
 			here: 'here, just above zero',
@@ -385,17 +385,15 @@ const raw = {
 			fmtSub: 'LFM2.5: {fmt} vs Q8_0',
 			times: 'bigger difference',
 			zoomTitle: 'the same spot, magnified',
-			verdict: 'Similar bars: our engine changes the answers about as much as llama.cpp’s own noise.',
 			caption: 'Linear scale. Metric: KLD, how much the next-word probabilities differ (0 = identical). llama.cpp noise: the same llama.cpp with a different batch size (ubatch 256 vs 512). Saluki and Bonsai measured on the {card}; the format change is another model (LFM2.5 on the {card2}), shown for scale.',
 			same: {
 				title: 'Speed-ups don’t change the text',
-				note: 'On or off, speculation, GPU verification and PM4 replay give the same greedy text, bit for bit; md5 checks guard it. Our build itself computes some multiplications in a different order, so it differs from llama.cpp at noise level. That is why we measure KLD.',
-				items: ['speculation', 'GPU verification', 'PM4 replay'],
-				ok: 'same text'
+				note: 'On or off, they give the same greedy text, bit for bit (md5 checks). We differ from llama.cpp only in the order of some multiplications, at noise level; hence KLD.',
+				items: ['speculation', 'GPU verification', 'PM4 replay']
 			}
 		},
 		cards: {
-			title: 'Measured,|card by card.',
+			title: 'Measured,|*card by card*.',
 			lede: 'Every card has its own page: the models that fit, the results and the measurement conditions.',
 			faster: 'faster',
 			diff: 'different scripts: indicative comparison',
@@ -404,7 +402,7 @@ const raw = {
 		},
 		privacy: {
 			overline: 'Privacy',
-			title: 'The scan runs on your computer.|Your chats never leave it.',
+			title: 'The scan runs on your computer.|Your chats *never* leave it.',
 			lede: 'The scan reads only your hardware spec and sends nothing by itself. The result is plain text: you can read every field.',
 			link: 'See what the scan reads',
 			scanLink: 'Scan commands',
@@ -413,7 +411,7 @@ const raw = {
 			neverList: ['computer or user names', 'serial numbers, GPU UUIDs, MAC addresses', 'lists of files or programs', 'your prompts and chats', 'your location']
 		},
 		faq: {
-			title: 'Before|you ask.',
+			title: 'Before|*you ask*.',
 			items: [
 				[
 					'Is this a different model from the one I know?',

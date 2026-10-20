@@ -1012,6 +1012,23 @@ kbd,
 	background-clip: text;
 	color: transparent;
 }
+/*
+ * Heading accent: one or two key words of a section heading in ember (red → orange). Copy marks
+ * them with *…* and `Hl.svelte` renders the span. The clipped background paints only inside the
+ * inline box, so the box is padded (descenders ę ą g y j p below, the hook of j on the left, the
+ * last glyph's overhang on the right) and the side padding is taken back by negative margins: the
+ * layout does not move.
+ */
+.hx-accent {
+	background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 85%);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	-webkit-box-decoration-break: clone;
+	box-decoration-break: clone;
+	padding: 0.1em 0.12em 0.3em 0.12em;
+	margin: 0 -0.12em;
+}
 /* Slowly drifting ember wash behind a block (decorative). */
 .heat-wash {
 	position: relative;

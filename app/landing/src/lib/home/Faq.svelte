@@ -8,6 +8,7 @@
 	import { num, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
 	import { HERO_CARD, HERO_GAIN, HERO_MODEL, fmtRatio } from './data';
+	import Hl from './Hl.svelte';
 	import Rich from './Rich.svelte';
 
 	let { lang }: { lang: Lang } = $props();
@@ -23,7 +24,7 @@
 <section id="faq" class="faq heat-top" aria-labelledby="faq-title">
 	<div class="inner">
 		<header class="head">
-			<h2 id="faq-title" class="vert">{c.title.replace('|', ' ')}</h2>
+			<h2 id="faq-title" class="vert"><Hl text={c.title.replace('|', ' ')} /></h2>
 		</header>
 		<div class="list">
 			{#each c.items as [q, a], i (q)}

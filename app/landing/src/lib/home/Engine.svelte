@@ -19,7 +19,9 @@
 	import { fmtRatio } from '$lib/format';
 	import { num, type Lang } from '$lib/i18n';
 	import ModelMark from '$lib/ModelMark.svelte';
+	import Hl from './Hl.svelte';
 	import { copy } from '$lib/site/copy';
+	import { fill } from './data';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].engine);
@@ -85,13 +87,13 @@
 	const [cu, co] = J.code;
 
 	/** Title as two lines: the claim (bone) and the payoff (heat). */
-	const titleParts = $derived(c.title.split('|'));
+	const titleParts = $derived(fill(c.title, { a: num(first, lang, 1), b: num(last, lang, 1), x: fmtRatio(last / first, lang) }).split('|'));
 </script>
 
 <section id="engine" class="engine heat-top" aria-labelledby="engine-title">
 	<div class="atmo" aria-hidden="true"></div>
 	<div class="inner">
-		<h2 id="engine-title" class="statement"><span class="t1">{titleParts[0]}</span> <span class="t2"><span class="ul">{titleParts[1] ?? ''}</span></span></h2>
+		<h2 id="engine-title" class="statement"><span class="t1"><Hl text={titleParts[0]} /></span> <span class="t2"><Hl text={titleParts[1] ?? ''} /></span></h2>
 
 		<figure class="journey" class:done class:live={tl.inView} use:tl.view>
 			<div class="top">
@@ -174,7 +176,7 @@
 		position: relative;
 		isolation: isolate;
 		overflow: clip;
-		padding-block: clamp(4rem, 3rem + 4vw, 8rem);
+		padding-block: clamp(2.5rem, 1.5rem + 3vw, 5rem);
 		background: #070606;
 	}
 	/* the scene's atmosphere: a heat bloom from below and a faint measuring grid */
@@ -194,12 +196,12 @@
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
 		display: grid;
-		gap: clamp(2rem, 4vw, 3.5rem);
+		gap: clamp(1rem, 2.5vh, 2rem);
 	}
 	.statement {
 		margin: 0;
 		font-family: var(--font-display);
-		font-size: clamp(2.6rem, 1rem + 5.4vw, 7rem);
+		font-size: clamp(2.4rem, 0.9rem + 4.6vw, min(6rem, 8.5svh));
 		font-weight: 820;
 		line-height: 0.92;
 		letter-spacing: -0.045em;
@@ -213,20 +215,13 @@
 		display: block;
 		color: var(--text-hi);
 	}
-	/* heat in the underline, not the letters (gradient headlines are for the hero and the finale) */
-	.ul {
-		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 45%, var(--heat-4)) no-repeat 0 92% / 100% 0.07em;
-		-webkit-box-decoration-break: clone;
-		box-decoration-break: clone;
-		padding-bottom: 0.06em;
-	}
 
 	/* ---- the journey ---- */
 	.journey {
 		margin: 0;
 		display: grid;
 		gap: clamp(0.8rem, 2vh, 1.4rem);
-		padding: clamp(1.2rem, 0.6rem + 2.4vw, 2.6rem);
+		padding: clamp(1rem, 0.5rem + 1.6vw, 1.8rem) clamp(1.1rem, 0.6rem + 2vw, 2.4rem);
 		border: 1px solid rgb(255 122 26 / 0.24);
 		border-radius: 22px;
 		background:
@@ -267,19 +262,19 @@
 		text-transform: uppercase;
 		color: var(--text-mute);
 	}
+	/* one row: the counter, its unit, the multiplier once it lands */
 	.readout {
-		display: grid;
-		grid-template-columns: auto auto;
-		align-items: baseline;
-		column-gap: 0.5rem;
-		justify-items: start;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.3rem 0.9rem;
 	}
 	.big {
 		display: inline-block;
 		text-align: right;
 		font-family: var(--font-display);
 		font-variant-numeric: tabular-nums lining-nums;
-		font-size: clamp(3.4rem, 1.6rem + 6vw, 8rem);
+		font-size: clamp(2.6rem, 1.2rem + 3.6vw, min(5.4rem, 8svh));
 		font-weight: 820;
 		line-height: 0.9;
 		letter-spacing: -0.05em;
@@ -292,14 +287,14 @@
 		font-family: var(--font-mono);
 		font-size: var(--fs-sm);
 		color: var(--text-mute);
+		align-self: flex-end;
+		margin-bottom: 0.4rem;
 	}
 	.mult {
-		grid-column: 1 / -1;
-		justify-self: end;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.5rem;
-		margin-top: 0.5rem;
+		max-width: 11rem;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.06em;
@@ -330,10 +325,11 @@
 
 	/* the chart: an SVG line (non-scaling stroke) with HTML nodes and labels over it */
 	.plot {
-		--ph: clamp(13rem, 6rem + 22vh, 22rem);
+		/* the chart takes what the viewport leaves after the heading, the top row and the milestones */
+		--ph: clamp(9rem, 100svh - 36rem, 20rem);
 		position: relative;
 		height: var(--ph);
-		margin-top: 2.6rem;
+		margin-top: 2rem;
 		background: repeating-linear-gradient(0deg, rgb(237 234 227 / 0.05) 0 1px, transparent 1px 20%);
 		border-bottom: 1px solid var(--line-strong);
 	}
@@ -624,11 +620,12 @@
 		.who {
 			grid-column: 1 / -1;
 		}
-		.mult {
-			justify-self: start;
+		.wx {
+			display: none;
 		}
 		.plot {
-			--ph: clamp(11rem, 4rem + 22vh, 15rem);
+			--ph: clamp(8.5rem, 100svh - 43rem, 12rem);
+			margin-top: 1.6rem;
 		}
 		.nv {
 			font-size: 0.95rem;
@@ -639,20 +636,31 @@
 		/* the milestones as a vertical list with a heat rail */
 		.steps {
 			grid-template-columns: minmax(0, 1fr);
-			gap: 0.7rem;
-			padding-left: 1rem;
+			gap: 0.5rem;
+			padding-left: 0.8rem;
 			border-left: 2px solid rgb(255 122 26 / 0.35);
 		}
+		/* compact rows: the name, then what we did as chips on the same line */
 		.step {
-			text-align: left;
-			justify-items: start;
-			padding: 0;
-		}
-		.did {
-			justify-items: start;
 			display: flex;
 			flex-wrap: wrap;
-			gap: 0.3rem;
+			align-items: center;
+			gap: 0.3rem 0.5rem;
+			text-align: left;
+			padding: 0;
+		}
+		.sn {
+			font-size: var(--fs-sm);
+		}
+		.ss {
+			display: none;
+		}
+		.did {
+			display: contents;
+		}
+		.did li {
+			padding: 0.15rem 0.5rem;
+			font-size: var(--fs-2xs);
 		}
 		.code {
 			grid-template-columns: minmax(0, 1fr) auto;
