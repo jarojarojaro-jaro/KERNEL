@@ -1,0 +1,37 @@
+0.00.125.802 I srv  llama_server: initializing ...
+0.00.125.822 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.125.934 I srv  init_listene: The UI is disabled
+0.00.125.936 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.126.027 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.128.426 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-IQ4_XS.gguf'
+0.04.904.380 I cmn          init: llama threadpool init, n_threads = 4
+0.05.022.539 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-IQ4_XS.gguf'
+0.05.072.707 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 40960, kv_unified = 'false'
+1.00.770.737 I spec common_spec_: context lookup: mode 3, width 16, tail match >= 6, log ''
+1.00.880.489 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+1.00.880.537 I srv  llama_server: model loaded
+1.00.880.542 I srv  llama_server: listening on http://127.0.0.1:18762
+1.00.984.407 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+1.00.984.523 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.05.547.449 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   4096, progress = 0.28, t =   4.25 s / 964.64 tokens per second
+1.07.788.601 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   6144, progress = 0.43, t =   6.49 s / 947.37 tokens per second
+1.10.074.193 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   8192, progress = 0.57, t =   8.77 s / 934.43 tokens per second
+1.12.423.000 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  10240, progress = 0.71, t =  11.11 s / 921.88 tokens per second
+1.14.850.221 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  12288, progress = 0.85, t =  13.53 s / 908.44 tokens per second
+1.16.851.066 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  13877, progress = 0.96, t =  15.77 s / 879.77 tokens per second
+1.17.630.604 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  14389, progress = 1.00, t =  16.34 s / 880.82 tokens per second
+1.20.850.033 I slot print_timing: id  0 | task 0 | n_gen =    140, tg =  46.27 t/s, tg_3s =  46.60 t/s
+1.23.854.537 I slot print_timing: id  0 | task 0 | n_gen =    278, tg =  46.10 t/s, tg_3s =  45.93 t/s
+1.26.879.352 I slot print_timing: id  0 | task 0 | n_gen =    421, tg =  46.49 t/s, tg_3s =  47.28 t/s
+1.29.930.245 I slot print_timing: id  0 | task 0 | n_gen =    556, tg =  45.93 t/s, tg_3s =  44.25 t/s
+1.32.948.247 I slot print_timing: id  0 | task 0 | n_gen =    679, tg =  44.89 t/s, tg_3s =  40.76 t/s
+1.35.977.086 I slot print_timing: id  0 | task 0 | n_gen =    835, tg =  46.00 t/s, tg_3s =  51.50 t/s
+1.39.011.182 I slot print_timing: id  0 | task 0 | n_gen =    977, tg =  46.11 t/s, tg_3s =  46.80 t/s
+1.39.817.013 I slot print_timing: id  0 | task 0 | prompt eval time =   16861.27 ms / 14393 tokens (    1.17 ms per token,   853.61 tokens per second)
+1.39.817.017 I slot print_timing: id  0 | task 0 |        eval time =   21971.18 ms /  1024 tokens (   21.48 ms per token,    46.56 tokens per second)
+1.39.817.017 I slot print_timing: id  0 | task 0 |       total time =   38832.45 ms / 15417 tokens
+1.39.817.022 I slot print_timing: id  0 | task 0 |    graphs reused =        294
+1.39.817.026 I slot print_timing: id  0 | task 0 | draft acceptance = 0.57878 (  720 accepted /  1244 generated), mean len =  3.38
+1.39.817.030 I spec  print_stats: context lookup: 303 steps, lookup proposed at 36, tails 3 (9/33 tokens accepted), chains 0 (0/0), lost history 0, host 1.925 ms
+1.39.817.699 I slot      release: id  0 | task 0 | stop processing: n_tokens = 15416, truncated = 0
+1.39.820.797 I srv    operator(): operator(): cleaning up before exit...

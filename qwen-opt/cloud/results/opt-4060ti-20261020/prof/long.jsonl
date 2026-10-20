@@ -1,0 +1,4 @@
+{"label": "plT16.warm", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 419.5, "prefill_s": 1.04, "ttft_s": 1.073, "decode_tps": 49.97, "gen_tokens": 256, "ms_step": 68.964, "tok_step": 3.459, "draft_acceptance": 0.585}
+{"label": "plT16.warm", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 549.9, "prefill_s": 0.79, "ttft_s": 0.796, "decode_tps": 51.25, "gen_tokens": 256, "ms_step": 66.339, "tok_step": 3.413, "draft_acceptance": 0.593}
+{"label": "plT16", "size": "c54067", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 832.9, "prefill_s": 17.28, "ttft_s": 17.702, "decode_tps": 41.17, "gen_tokens": 256, "ms_step": 80.432, "tok_step": 3.325, "draft_acceptance": 0.581}
+{"label": "plT16", "size": "c54067", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 836.8, "prefill_s": 17.2, "ttft_s": 17.267, "decode_tps": 36.97, "gen_tokens": 256, "ms_step": 79.288, "tok_step": 2.943, "draft_acceptance": 0.481}

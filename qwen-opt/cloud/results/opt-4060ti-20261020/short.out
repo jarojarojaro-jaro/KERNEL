@@ -1,0 +1,31 @@
+=== 17:04:47 full qwen.T.p1 XENV=LLAMA_SPEC_COUPLED=1 GGML_CUDA_GDN_MMA=1 GGML_CUDA_KVQ=1
+qwen.T.p1 T=1.0: median  48.6 t/s, 62.15 ms/step | pl-proza  42.6 (2.65 tok/step)  pl-tech  55.1 (3.42 tok/step)  pl-kod  49.8 (3.08 tok/step)  en-chat  40.5 (2.51 tok/step)  en-tech  47.8 (2.97 tok/step)  en-code  49.4 (3.08 tok/step)
+qwen.T.p1 T=0.0: median 186.7 t/s | mvs-pad.cu 182.5 (14.03t 76.85ms)  mvs-ngram-cache.h 187.5 (14.22t 75.87ms)  mvs-sampling.h 189.6 (14.42t 76.07ms)  mvs-lazy.py 186.0 (14.42t 77.56ms)
+{"label": "qwen.T.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 621.1, "prefill_s": 0.7, "ttft_s": 1.148, "decode_tps": 56.0, "gen_tokens": 256, "ms_step": 62.373, "tok_step": 3.507, "draft_acceptance": 0.618}
+{"label": "qwen.T.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 629.7, "prefill_s": 0.69, "ttft_s": 0.696, "decode_tps": 54.34, "gen_tokens": 256, "ms_step": 62.571, "tok_step": 3.413, "draft_acceptance": 0.593}
+{"label": "qwen.T.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 856.4, "prefill_s": 16.81, "ttft_s": 17.128, "decode_tps": 46.63, "gen_tokens": 256, "ms_step": 71.015, "tok_step": 3.325, "draft_acceptance": 0.581}
+{"label": "qwen.T.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 855.6, "prefill_s": 16.82, "ttft_s": 16.854, "decode_tps": 41.42, "gen_tokens": 256, "ms_step": 70.757, "tok_step": 2.943, "draft_acceptance": 0.481}
+=== 17:10:06 full qwen.X.p1 XENV=LLAMA_SPEC_COUPLED=1 GGML_CUDA_GDN_MMA=1 GGML_CUDA_KVQ=1
+qwen.X.p1 T=1.0: median  50.8 t/s, 62.04 ms/step | pl-proza  44.7 (2.78 tok/step)  pl-tech  55.3 (3.43 tok/step)  pl-kod  52.9 (3.28 tok/step)  en-chat  44.6 (2.75 tok/step)  en-tech  48.7 (3.02 tok/step)  en-code  54.2 (3.37 tok/step)
+qwen.X.p1 T=0.0: median 188.6 t/s | mvs-pad.cu 183.7 (14.03t 76.35ms)  mvs-ngram-cache.h 189.0 (14.22t 75.24ms)  mvs-sampling.h 191.4 (14.42t 75.33ms)  mvs-lazy.py 188.1 (14.42t 76.66ms)
+{"label": "qwen.X.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 612.9, "prefill_s": 0.71, "ttft_s": 1.177, "decode_tps": 53.0, "gen_tokens": 256, "ms_step": 62.488, "tok_step": 3.325, "draft_acceptance": 0.552}
+{"label": "qwen.X.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 620.5, "prefill_s": 0.7, "ttft_s": 0.706, "decode_tps": 55.66, "gen_tokens": 256, "ms_step": 61.911, "tok_step": 3.459, "draft_acceptance": 0.625}
+{"label": "qwen.X.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 852.6, "prefill_s": 16.88, "ttft_s": 17.223, "decode_tps": 51.43, "gen_tokens": 256, "ms_step": 64.388, "tok_step": 3.325, "draft_acceptance": 0.57}
+{"label": "qwen.X.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 851.3, "prefill_s": 16.91, "ttft_s": 16.95, "decode_tps": 51.8, "gen_tokens": 256, "ms_step": 63.932, "tok_step": 3.325, "draft_acceptance": 0.589}
+=== 17:15:58 lb final T r1: 512/0 973.2 4096/0 972.5 0/128 19 
+=== 17:16:42 lb final X r2: 512/0 1010.1 4096/0 1009.6 0/128 19 
+=== 17:16:42 full qwen.U1.p1 XENV=LLAMA_SPEC_COUPLED=1 GGML_CUDA_GDN_MMA=1 GGML_CUDA_KVQ=1
+qwen.U1.p1 T=1.0: median  38.5 t/s, 82.85 ms/step | pl-proza  32.5 (2.70 tok/step)  pl-tech  38.7 (3.21 tok/step)  pl-kod  39.1 (3.24 tok/step)  en-chat  32.4 (2.68 tok/step)  en-tech  38.5 (3.19 tok/step)  en-code  38.5 (3.17 tok/step)
+qwen.U1.p1 T=0.0: median  58.7 t/s | mvs-pad.cu  58.7 (4.95t 84.21ms)  mvs-ngram-cache.h  58.9 (4.95t 84.04ms)  mvs-sampling.h  58.6 (4.95t 84.46ms)  mvs-lazy.py  58.3 (4.95t 84.89ms)
+{"label": "qwen.U1.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 675.4, "prefill_s": 0.64, "ttft_s": 1.019, "decode_tps": 45.0, "gen_tokens": 256, "ms_step": 82.135, "tok_step": 3.71, "draft_acceptance": 0.695}
+{"label": "qwen.U1.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 677.6, "prefill_s": 0.64, "ttft_s": 0.647, "decode_tps": 37.36, "gen_tokens": 203, "ms_step": 81.918, "tok_step": 3.076, "draft_acceptance": 0.527}
+{"label": "qwen.U1.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 870.5, "prefill_s": 16.53, "ttft_s": 16.754, "decode_tps": 36.24, "gen_tokens": 256, "ms_step": 91.377, "tok_step": 3.325, "draft_acceptance": 0.595}
+{"label": "qwen.U1.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 868.0, "prefill_s": 16.58, "ttft_s": 16.613, "decode_tps": 33.52, "gen_tokens": 256, "ms_step": 91.657, "tok_step": 3.084, "draft_acceptance": 0.532}
+=== 17:22:35 gate gate.TP.gv1 (X) XENV=LLAMA_SPEC_COUPLED=1 GGML_CUDA_GDN_MMA=1 GGML_CUDA_KVQ=1
+gate.TP.gv1 T=0.0: median 188.7 t/s | mvs-pad.cu 183.9 (14.03t 76.30ms)  mvs-ngram-cache.h 189.0 (14.22t 75.24ms)  mvs-sampling.h 191.7 (14.42t 75.25ms)  mvs-lazy.py 188.3 (14.42t 76.57ms)
+gate.TP.gv1 T=0.0: median 187.1 t/s | edit-2k-en 190.4 (14.22t 74.69ms)  edit-8k-en 194.3 (14.63t 75.31ms)  strrep-en 141.6 (10.24t 72.32ms)  hashline-pl  91.8 (6.24t 68.05ms)  quote-pl 200.1 (15.06t 75.24ms)  refactor-en 183.8 (13.47t 73.31ms)
+=== 17:26:33 gate gate.TP.gv1: 26 rows, md5sum 74f35406
+=== 17:26:33 gate gate.TP.gv0 (X) XENV=LLAMA_SPEC_COUPLED=1 GGML_CUDA_GDN_MMA=1 GGML_CUDA_KVQ=1 LLAMA_GPU_VERIFY=0
+gate.TP.gv0 T=0.0: median 182.3 t/s | mvs-pad.cu 176.7 (14.03t 79.39ms)  mvs-ngram-cache.h 182.8 (14.22t 77.82ms)  mvs-sampling.h 185.1 (14.42t 77.94ms)  mvs-lazy.py 181.8 (14.42t 79.32ms)
+gate.TP.gv0 T=0.0: median 180.4 t/s | edit-2k-en 183.6 (14.22t 77.46ms)  edit-8k-en 187.8 (14.63t 77.88ms)  strrep-en 138.5 (10.24t 73.92ms)  hashline-pl  90.2 (6.24t 69.22ms)  quote-pl 193.1 (15.06t 77.98ms)  refactor-en 177.2 (13.47t 76.05ms)
+=== 17:30:34 gate gate.TP.gv0: 22 rows, md5sum 8fd1f772
