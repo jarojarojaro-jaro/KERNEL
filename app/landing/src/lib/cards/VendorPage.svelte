@@ -19,6 +19,7 @@
 	import { cardsCopy } from './copy';
 	import { GROUPS, headline, heatOf, LINEUP, MEASURED, queueEstimate, splitName, VENDORS } from './explorer';
 	import EstTag from './EstTag.svelte';
+	import Hl from '$lib/home/Hl.svelte';
 	import GpuArt from './GpuArt.svelte';
 	import Ratio from './Ratio.svelte';
 	import { MAKER_PHOTO, photoOf, VENDOR, vendorVars, type Vendor } from './vendor';
@@ -33,6 +34,8 @@
 	const tc = $derived(cardsCopy[lang].card);
 	const g = $derived(GROUPS[vendor]);
 	const name = $derived(VENDOR[vendor].name);
+	/* Apple: a quieter, centred, aluminium showroom; nothing measured yet, so a plan instead of a number */
+	const apple = $derived(vendor === 'apple');
 	const NB = '\u00a0';
 
 	/* the headline: the maker's best measured card and run, else the first card in the queue */
@@ -129,12 +132,15 @@
 								<p class="est-v"><EstTag text={t.estimateShort} /> <span class="mono">≈{NB}{num(nextEst.decode.lo, lang, 0)}–{num(nextEst.decode.hi, lang, 0)}{NB}t/s · {nextEst.model.name} {nextEst.model.quant}</span></p>
 								<p class="res-on">{tv.nextNote}</p>
 							{:else}
-								<p class="res-on">{tc.soonNoVram}</p>
+								<p class="res-on">{tv.planNote}</p>
+								<ul class="plan" role="list" aria-label={tv.plan}>
+									{#each tv.planItems as p (p)}<li class="mono">{p}</li>{/each}
+								</ul>
 							{/if}
 						</div>
 					{/if}
 
-					<p class="lede">{g.measured.length ? tv.lede(name) : tv.noneLede(name)}</p>
+					<p class="lede">{g.measured.length ? tv.lede(name) : apple ? tv.prepLede : tv.noneLede(name)}</p>
 				</div>
 
 				<div class="stage" aria-hidden="true" style="view-transition-name: vendor-stage">
@@ -160,7 +166,7 @@
 	{#if g.measured.length}
 		<section class="wrap blk" aria-labelledby="v-measured">
 			<header class="blk-h">
-				<h2 id="v-measured" class="h hx-h">{tv.measured}</h2>
+				<h2 id="v-measured" class="h hx-h"><Hl text={tv.measured} /></h2>
 				<p class="fine">{tv.measuredLede}</p>
 			</header>
 			<ul class="measured" role="list" use:play={{ threshold: 0.2, onplay: () => rep++ }} class:played={rep > 0}>
@@ -222,11 +228,11 @@
 	{/if}
 
 	{#if g.queued.length}
-		<section class="wrap blk blk--q" aria-labelledby="v-queue">
+		<section class="wrap blk blk--q" class:apple aria-labelledby="v-queue">
 			<header class="blk-h">
-				<h2 id="v-queue" class="h h--q"><span class="ring" aria-hidden="true"></span>{tv.queue}</h2>
-				<EstTag text={t.estimateShort} />
-				<p class="fine">{tv.queueLede}</p>
+				<h2 id="v-queue" class="h h--q"><span class="ring" aria-hidden="true"></span><span><Hl text={tv.queue} /></span></h2>
+				{#if !apple}<EstTag text={t.estimateShort} />{/if}
+				<p class="fine">{apple ? tc.soonNoVram : tv.queueLede}</p>
 			</header>
 			<ul class="queued" role="list">
 				{#each g.queued as e (e.id)}
@@ -256,10 +262,10 @@
 		</section>
 	{/if}
 
-	<section class="wrap more" aria-labelledby="v-others">
+	<section class="wrap more" class:apple aria-labelledby="v-others">
 		<div class="vsx">
 			<div>
-				<h2 id="v-others" class="h hx-h">{tv.compareTitle}</h2>
+				<h2 id="v-others" class="h hx-h"><Hl text={tv.compareTitle} /></h2>
 				<p class="fine">{tv.compareLede}</p>
 			</div>
 			<a class="cta cta--bone" href={cmpHref}>{t.compareCta} <span class="arrow" aria-hidden="true">→</span></a>
@@ -341,14 +347,15 @@
 			linear-gradient(200deg, var(--v-deep), #070708 72%);
 		overflow: hidden;
 		isolation: isolate;
-		view-transition-name: vendor-band;
 	}
+	/* Apple: the same light as the other makers, in cool silver over brushed aluminium */
 	.vh--apple {
 		background:
-			repeating-linear-gradient(90deg, rgb(255 255 255 / 0.016) 0 1px, transparent 1px 3px),
-			radial-gradient(55% 80% at 74% 46%, rgb(var(--v) / 0.26), transparent 72%),
+			repeating-linear-gradient(90deg, rgb(255 255 255 / 0.018) 0 1px, transparent 1px 3px),
+			radial-gradient(55% 80% at 74% 46%, rgb(236 240 247 / 0.2), transparent 72%),
 			radial-gradient(45% 60% at 0% 0%, rgb(232 234 239 / 0.2), transparent 70%),
-			linear-gradient(200deg, #17181b, #070708 72%);
+			linear-gradient(165deg, rgb(232 234 239 / 0.1), transparent 42%),
+			linear-gradient(200deg, #18191c, #070708 72%);
 	}
 	/* a lit edge closes the band */
 	.vh::after {
@@ -425,12 +432,11 @@
 		max-width: 34rem;
 		padding: var(--sp-4) var(--sp-5) var(--sp-5);
 		border-radius: var(--r-lg);
-		background: linear-gradient(135deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015)), rgb(7 7 8 / 0.45);
+		background: linear-gradient(135deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015)), rgb(7 7 8 / 0.6);
 		box-shadow:
 			inset 0 0 0 1px rgb(var(--v) / 0.3),
 			inset 0 1px 0 rgb(255 255 255 / 0.08),
 			0 30px 60px -40px #000;
-		backdrop-filter: blur(6px);
 	}
 	.res-k {
 		margin: 0;
@@ -661,6 +667,8 @@
 		display: grid;
 		place-items: center;
 		transform: translate3d(calc(var(--px) * -12px), calc(var(--py) * -8px), 0) rotateY(calc(var(--px) * 5deg));
+		/* its own layer: pointer parallax moves pixels, it never repaints the photo and its shadow */
+		will-change: transform;
 	}
 	.prod > :global(*),
 	.refl > :global(*) {
@@ -679,27 +687,33 @@
 		transform: translate3d(calc(var(--px) * -12px), 0, 0) scaleY(-1);
 		mask-image: linear-gradient(0deg, #000, transparent 46%);
 		filter: blur(1.5px);
+		will-change: transform;
 	}
+	/* entrances: transform only and short; everything is visible from the first paint */
 	@media (prefers-reduced-motion: no-preference) {
 		:global(html.js) .wm {
-			animation: wm-in 1s var(--ease-spring) backwards;
+			animation: wm-in 0.6s var(--ease-out) backwards;
 		}
 		:global(html.js) .stage {
-			animation: stage-in 1.2s var(--ease-spring) 0.1s backwards;
+			animation: stage-in 0.7s var(--ease-out) backwards;
 		}
 		:global(html.js) .res {
-			animation: rise 0.9s var(--ease-spring) 0.18s backwards;
+			animation: res-in 0.6s var(--ease-out) 0.05s backwards;
 		}
 	}
 	@keyframes wm-in {
 		from {
-			transform: translate3d(-0.12em, 0, 0) skewX(-6deg);
+			transform: translate3d(-0.08em, 0, 0) skewX(-4deg);
 		}
 	}
 	@keyframes stage-in {
 		from {
-			opacity: 0;
-			transform: translate3d(8%, 3%, 0) scale(0.94);
+			transform: translate3d(4%, 1.5%, 0) scale(0.97);
+		}
+	}
+	@keyframes res-in {
+		from {
+			transform: translate3d(0, 12px, 0);
 		}
 	}
 	@keyframes rise {
@@ -1205,21 +1219,20 @@
 		animation-timing-function: var(--ease-spring);
 	}
 	:global(::view-transition-old(vendor-stage)) {
-		animation: 0.35s ease-in both vs-out;
+		animation: 0.25s ease-in both vs-out;
 	}
 	:global(::view-transition-new(vendor-stage)) {
-		animation: 0.8s var(--ease-spring) 0.1s both vs-in;
+		animation: 0.45s var(--ease-out) both vs-in;
 	}
 	@keyframes -global-vs-out {
 		to {
 			opacity: 0;
-			transform: translate3d(-8%, 0, 0) scale(0.96);
+			transform: translate3d(-6%, 0, 0) scale(0.97);
 		}
 	}
 	@keyframes -global-vs-in {
 		from {
-			opacity: 0;
-			transform: translate3d(10%, 0, 0) scale(0.96);
+			transform: translate3d(6%, 0, 0) scale(0.97);
 		}
 	}
 
@@ -1248,6 +1261,43 @@
 			align-self: end;
 		}
 	}
+	/* ================= Apple: the same showroom, in silver ================= */
+	.vh--apple::after {
+		background: linear-gradient(90deg, rgb(232 234 239 / 0.7), rgb(232 234 239 / 0.2) 60%, transparent);
+	}
+	/* "Apple" is upright and has descenders (pp): room for them in the painted box */
+	.vh--apple .wm {
+		padding-bottom: 0.28em;
+		margin-bottom: -0.28em;
+	}
+	/* nothing measured, no estimate: what we will measure, as quiet chips */
+	.plan {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+	.plan li {
+		padding: 0.25rem 0.6rem;
+		border-radius: var(--r-pill);
+		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.35);
+		font-size: var(--fs-2xs);
+		color: var(--text);
+	}
+	/* accent words in silver on the Apple page */
+	.apple :global(.hx-accent) {
+		background: linear-gradient(90deg, #ffffff, #cfd4dc 60%, #9aa1ad);
+		-webkit-background-clip: text;
+		background-clip: text;
+	}
+	/* the queue on the Apple page: quiet rows on a silver hairline */
+	.blk--q.apple .qrow {
+		border-bottom-style: solid;
+		border-bottom-color: rgb(232 234 239 / 0.12);
+	}
+
 	@media (max-width: 56rem) {
 		.vh-grid {
 			grid-template-columns: minmax(0, 1fr);

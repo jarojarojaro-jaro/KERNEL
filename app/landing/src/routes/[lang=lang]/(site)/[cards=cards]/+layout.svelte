@@ -201,11 +201,13 @@
 			filter: none;
 		}
 	}
+	/* the new page is on screen at once (it lies above the old one) and settles with a short rise:
+	   no fade-in, no delay, so the next page never seems to lag behind the click */
 	:global(::view-transition-old(root)) {
 		animation: 0.2s ease-out both vt-out;
 	}
 	:global(::view-transition-new(root)) {
-		animation: 0.45s cubic-bezier(0.16, 1, 0.3, 1) 0.1s both vt-in;
+		animation: 0.35s cubic-bezier(0.16, 1, 0.3, 1) both vt-in;
 	}
 	@keyframes -global-vt-out {
 		to {
@@ -214,8 +216,7 @@
 	}
 	@keyframes -global-vt-in {
 		from {
-			opacity: 0;
-			transform: translateY(12px);
+			transform: translateY(8px);
 		}
 	}
 </style>

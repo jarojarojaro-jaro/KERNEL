@@ -50,9 +50,9 @@ const pl = {
 		eyebrow: 'Producent',
 		lede: (name: string) => `Każda karta ${name}, którą zmierzyliśmy, przed i po naszym silniku. Ta sama karta, ten sam model, ten sam skrypt.`,
 		noneLede: (name: string) => `Kart ${name} jeszcze nie zmierzyliśmy. Są w kolejce: do tego czasu pokazujemy specyfikację i, gdzie się da, szacunek z naszego wzoru, jasno podpisany.`,
-		measured: 'Zmierzone',
+		measured: '*Zmierzone*',
 		measuredLede: 'Przed i po na tej samej karcie, tym samym modelu i tym samym skrypcie.',
-		queue: 'W kolejce pomiarów',
+		queue: 'W kolejce *pomiarów*',
 		queueLede: 'Tych jeszcze nie zmierzyliśmy. Specyfikacja i, gdzie się da, szacunek z naszego wzoru: to nie pomiar.',
 		others: 'Inni producenci',
 		nav: 'Producenci kart',
@@ -63,8 +63,13 @@ const pl = {
 		bw: 'przepustowość',
 		mem: 'pamięć',
 		bestModel: 'najlepszy model',
-		compareTitle: 'Zmierz się z inną kartą',
-		compareLede: 'Dwie zmierzone karty naprzeciw siebie, ten sam model.'
+		compareTitle: 'Zmierz się z *inną* kartą',
+		compareLede: 'Dwie zmierzone karty naprzeciw siebie, ten sam model.',
+		/* Apple: nothing measured yet and no estimate (unified memory); what we will measure */
+		prepLede: 'Na Macu model i system dzielą jedną pamięć, więc wynik zależy od konkretnego komputera. Dlatego tu nie szacujemy: liczby pokażemy po pomiarze, tym samym skryptem co karty graficzne.',
+		plan: 'Co zmierzymy',
+		planNote: 'Pamięć wspólna z systemem: bez szacunku. Zmierzymy:',
+		planItems: ['pamięć wspólna', 'generowanie przed i po', 'pierwszy token']
 	},
 	card: {
 		back: 'Wszystkie karty',
@@ -243,9 +248,9 @@ const en: Copy = {
 		eyebrow: 'Maker',
 		lede: (name: string) => `Every ${name} card we measured, before and after our engine. Same card, same model, same script.`,
 		noneLede: (name: string) => `We have not measured an ${name} card yet. They are in the queue: until then we show the spec and, where possible, an estimate from our formula, clearly labelled.`,
-		measured: 'Measured',
+		measured: '*Measured*',
 		measuredLede: 'Before and after on the same card, the same model and the same script.',
-		queue: 'In the measurement queue',
+		queue: 'In the measurement *queue*',
 		queueLede: 'Not measured yet. The spec and, where possible, an estimate from our formula: not a measurement.',
 		others: 'Other makers',
 		nav: 'Card makers',
@@ -256,8 +261,12 @@ const en: Copy = {
 		bw: 'bandwidth',
 		mem: 'memory',
 		bestModel: 'best model',
-		compareTitle: 'Take on another card',
-		compareLede: 'Two measured cards face to face, the same model.'
+		compareTitle: 'Take on *another* card',
+		compareLede: 'Two measured cards face to face, the same model.',
+		prepLede: 'On a Mac the model and the system share one memory, so the result depends on the exact machine. That is why we do not estimate here: numbers come once measured, with the same script as the graphics cards.',
+		plan: 'What we will measure',
+		planNote: 'Memory shared with the system: no estimate. We will measure:',
+		planItems: ['unified memory', 'generation before and after', 'first token']
 	},
 	card: {
 		back: 'All cards',
