@@ -1,0 +1,50 @@
+{"t":"02:56:44","what":"gate v0","loadavg":"33.44 40.93 42.96","builds":4}
+{"t":"03:01:58","what":"gate v1","loadavg":"33.23 36.89 40.75","builds":4}
+{"t":"03:07:01","what":"lb std qwen U r1 start","loadavg":"32.19 34.82 38.91","builds":2}
+{"t":"03:07:52","what":"lb std qwen U r1 end","loadavg":"32.12 34.39 38.55","builds":1}
+{"t":"03:07:52","what":"lb std qwen T r2 start","loadavg":"32.12 34.39 38.55","builds":1}
+{"t":"03:08:43","what":"lb std qwen T r2 end","loadavg":"31.70 33.93 38.17","builds":0}
+{"t":"03:08:43","what":"lb std qwen T r3 start","loadavg":"31.70 33.93 38.17","builds":0}
+{"t":"03:09:35","what":"lb std qwen T r3 end","loadavg":"31.40 33.51 37.81","builds":0}
+{"t":"03:09:35","what":"lb std qwen U r4 start","loadavg":"31.40 33.51 37.81","builds":0}
+{"t":"03:10:25","what":"lb std qwen U r4 end","loadavg":"31.16 33.08 37.41","builds":0}
+{"t":"03:10:25","what":"lb depth qwen U r1 start","loadavg":"31.16 33.08 37.41","builds":0}
+{"t":"03:11:11","what":"lb depth qwen U r1 end","loadavg":"31.07 32.79 37.11","builds":0}
+{"t":"03:11:11","what":"lb depth qwen T r2 start","loadavg":"31.07 32.79 37.11","builds":0}
+{"t":"03:11:57","what":"lb depth qwen T r2 end","loadavg":"31.03 32.54 36.81","builds":0}
+{"t":"03:11:57","what":"lb depth qwen T r3 start","loadavg":"31.03 32.54 36.81","builds":0}
+{"t":"03:12:43","what":"lb depth qwen T r3 end","loadavg":"31.06 32.33 36.54","builds":0}
+{"t":"03:12:43","what":"lb depth qwen U r4 start","loadavg":"31.06 32.33 36.54","builds":0}
+{"t":"03:13:28","what":"lb depth qwen U r4 end","loadavg":"31.02 32.15 36.28","builds":0}
+{"t":"03:13:28","what":"qwen.U0.p1 start","loadavg":"31.02 32.15 36.28","builds":0}
+{"t":"03:25:30","what":"qwen.U0.p1 end","loadavg":"31.05 31.12 33.41","builds":0}
+{"t":"03:25:35","what":"qwen.U1.p1 start","loadavg":"30.96 31.10 33.39","builds":0}
+{"t":"03:32:52","what":"qwen.U1.p1 end","loadavg":"31.00 31.03 32.49","builds":0}
+{"t":"03:32:57","what":"qwen.T.p1 start","loadavg":"30.92 31.01 32.47","builds":0}
+{"t":"03:39:38","what":"qwen.T.p1 end","loadavg":"31.32 31.81 32.51","builds":0}
+{"t":"03:39:43","what":"qwen.T.p2 start","loadavg":"31.22 31.78 32.50","builds":0}
+{"t":"03:44:29","what":"qwen.T.p2 end","loadavg":"31.17 32.24 32.63","builds":0}
+{"t":"03:44:34","what":"qwen.U1.p2 start","loadavg":"31.15 32.21 32.62","builds":0}
+{"t":"03:48:57","what":"qwen.U1.p2 end","loadavg":"31.07 31.56 32.23","builds":0}
+{"t":"03:49:02","what":"qwen.U0.p2 start","loadavg":"30.98 31.53 32.22","builds":0}
+{"t":"03:55:36","what":"qwen.U0.p2 end","loadavg":"31.02 31.16 31.80","builds":0}
+{"t":"03:55:41","what":"lb std lfm U r1 start","loadavg":"30.94 31.14 31.79","builds":0}
+{"t":"03:56:03","what":"lb std lfm U r1 end","loadavg":"30.96 31.13 31.77","builds":0}
+{"t":"03:56:03","what":"lb std lfm T r2 start","loadavg":"30.96 31.13 31.77","builds":0}
+{"t":"03:56:17","what":"lb std lfm T r2 end","loadavg":"30.97 31.12 31.76","builds":0}
+{"t":"03:56:17","what":"lb std lfm T r3 start","loadavg":"30.97 31.12 31.76","builds":0}
+{"t":"03:56:32","what":"lb std lfm T r3 end","loadavg":"30.97 31.12 31.74","builds":0}
+{"t":"03:56:32","what":"lb std lfm U r4 start","loadavg":"30.97 31.12 31.74","builds":0}
+{"t":"03:56:46","what":"lb std lfm U r4 end","loadavg":"30.98 31.11 31.73","builds":0}
+{"t":"03:56:46","what":"lfm.U0.p1 start","loadavg":"30.98 31.11 31.73","builds":0}
+{"t":"03:58:00","what":"lfm.U0.p1 end","loadavg":"31.08 31.10 31.68","builds":0}
+{"t":"03:58:04","what":"lfm.U1.p1 start","loadavg":"30.99 31.08 31.67","builds":0}
+{"t":"03:59:16","what":"lfm.U1.p1 end","loadavg":"31.02 31.08 31.62","builds":0}
+{"t":"03:59:20","what":"lfm.T.p1 start","loadavg":"31.02 31.08 31.62","builds":0}
+{"t":"04:00:19","what":"lfm.T.p1 end","loadavg":"31.00 31.06 31.58","builds":0}
+{"t":"04:00:23","what":"lfm.T.p2 start","loadavg":"30.92 31.04 31.57","builds":0}
+{"t":"04:01:22","what":"lfm.T.p2 end","loadavg":"31.01 31.05 31.54","builds":0}
+{"t":"04:01:26","what":"lfm.U1.p2 start","loadavg":"30.92 31.03 31.53","builds":0}
+{"t":"04:02:39","what":"lfm.U1.p2 end","loadavg":"30.95 31.01 31.48","builds":0}
+{"t":"04:02:43","what":"lfm.U0.p2 start","loadavg":"30.87 30.99 31.47","builds":0}
+{"t":"04:03:56","what":"lfm.U0.p2 end","loadavg":"30.99 31.00 31.44","builds":0}

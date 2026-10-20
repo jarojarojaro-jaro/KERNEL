@@ -1,0 +1,99 @@
+=== 02:56:16 gate: test-backend-ops
+=== 02:56:22 tbo TOP_K rc=0   533/533 tests passed
+=== 02:56:43 tbo GET_ROWS rc=0   222/222 tests passed
+=== 02:56:44 tbo SUM_ROWS rc=0   10/10 tests passed
+=== 02:56:44 gate: md5 LLAMA_GPU_VERIFY=0
+{"label": "gate.v0", "prompt": "pl-proza", "temp": 0.0, "md5": "a67a9afa", "n": 400, "draft": 523, "accepted": 270}
+{"label": "gate.v0", "prompt": "pl-tech", "temp": 0.0, "md5": "b86d60a0", "n": 400, "draft": 473, "accepted": 283}
+{"label": "gate.v0", "prompt": "pl-kod", "temp": 0.0, "md5": "12528fbd", "n": 400, "draft": 416, "accepted": 294}
+{"label": "gate.v0", "prompt": "en-chat", "temp": 0.0, "md5": "172bd76d", "n": 311, "draft": 460, "accepted": 196}
+{"label": "gate.v0", "prompt": "en-tech", "temp": 0.0, "md5": "da56ec59", "n": 400, "draft": 466, "accepted": 288}
+{"label": "gate.v0", "prompt": "en-code", "temp": 0.0, "md5": "fb7b1339", "n": 400, "draft": 443, "accepted": 291}
+{"label": "gate.v0", "prompt": "pl-proza", "temp": 1.0, "md5": "7bc18aab", "n": 400, "draft": 592, "accepted": 253}
+{"label": "gate.v0", "prompt": "pl-tech", "temp": 1.0, "md5": "597fb9e8", "n": 400, "draft": 496, "accepted": 274}
+{"label": "gate.v0", "prompt": "pl-kod", "temp": 1.0, "md5": "e8f4b4d3", "n": 400, "draft": 607, "accepted": 249}
+{"label": "gate.v0", "prompt": "en-chat", "temp": 1.0, "md5": "3f6af058", "n": 361, "draft": 584, "accepted": 214}
+{"label": "gate.v0", "prompt": "en-tech", "temp": 1.0, "md5": "8efea68d", "n": 400, "draft": 517, "accepted": 271}
+{"label": "gate.v0", "prompt": "en-code", "temp": 1.0, "md5": "64e10244", "n": 400, "draft": 532, "accepted": 265}
+gate.v0 T=0.0: median 163.0 t/s | mvs-pad.cu 159.6 (14.03t 87.87ms)  mvs-ngram-cache.h 163.5 (14.22t 87.01ms)  mvs-sampling.h 165.9 (14.42t 86.92ms)  mvs-lazy.py 162.5 (14.42t 88.78ms)
+gate.v0 T=0.0: median 158.3 t/s | edit-2k-en 162.6 (14.22t 87.47ms)  edit-8k-en 166.4 (14.63t 87.90ms)  strrep-en 120.2 (10.24t 85.20ms)  hashline-pl  74.4 (6.24t 83.94ms)  quote-pl 172.9 (15.06t 87.07ms)  refactor-en 153.9 (13.13t 85.30ms)
+=== 03:01:58 gate: md5 LLAMA_GPU_VERIFY=1
+{"label": "gate.v1", "prompt": "pl-proza", "temp": 0.0, "md5": "a67a9afa", "n": 400, "draft": 523, "accepted": 270}
+{"label": "gate.v1", "prompt": "pl-tech", "temp": 0.0, "md5": "b86d60a0", "n": 400, "draft": 473, "accepted": 283}
+{"label": "gate.v1", "prompt": "pl-kod", "temp": 0.0, "md5": "12528fbd", "n": 400, "draft": 416, "accepted": 294}
+{"label": "gate.v1", "prompt": "en-chat", "temp": 0.0, "md5": "172bd76d", "n": 311, "draft": 460, "accepted": 196}
+{"label": "gate.v1", "prompt": "en-tech", "temp": 0.0, "md5": "da56ec59", "n": 400, "draft": 466, "accepted": 288}
+{"label": "gate.v1", "prompt": "en-code", "temp": 0.0, "md5": "fb7b1339", "n": 400, "draft": 443, "accepted": 291}
+{"label": "gate.v1", "prompt": "pl-proza", "temp": 1.0, "md5": "7bc18aab", "n": 400, "draft": 592, "accepted": 253}
+{"label": "gate.v1", "prompt": "pl-tech", "temp": 1.0, "md5": "597fb9e8", "n": 400, "draft": 496, "accepted": 274}
+{"label": "gate.v1", "prompt": "pl-kod", "temp": 1.0, "md5": "e8f4b4d3", "n": 400, "draft": 607, "accepted": 249}
+{"label": "gate.v1", "prompt": "en-chat", "temp": 1.0, "md5": "3f6af058", "n": 361, "draft": 584, "accepted": 214}
+{"label": "gate.v1", "prompt": "en-tech", "temp": 1.0, "md5": "8efea68d", "n": 400, "draft": 517, "accepted": 271}
+{"label": "gate.v1", "prompt": "en-code", "temp": 1.0, "md5": "64e10244", "n": 400, "draft": 532, "accepted": 265}
+gate.v1 T=0.0: median 170.2 t/s | mvs-pad.cu 167.1 (14.03t 83.97ms)  mvs-ngram-cache.h 170.1 (14.22t 83.60ms)  mvs-sampling.h 173.4 (14.42t 83.18ms)  mvs-lazy.py 170.2 (14.42t 84.72ms)
+gate.v1 T=0.0: median 164.9 t/s | edit-2k-en 170.1 (14.22t 83.61ms)  edit-8k-en 174.0 (14.63t 84.06ms)  strrep-en 123.6 (10.24t 82.82ms)  hashline-pl  75.0 (6.24t 83.26ms)  quote-pl 181.3 (15.06t 83.08ms)  refactor-en 159.7 (13.13t 82.23ms)
+{"tbo_ok":1,"md5_ok":1,"md5_rows":22,"T_gpu_verify":1}
+=== 03:07:52 lb std qwen U r1: 512/0@0 795 4096/0@0 790.9 0/128@0 18.9 
+=== 03:08:43 lb std qwen T r2: 512/0@0 764.4 4096/0@0 759.5 0/128@0 18.7 
+=== 03:09:35 lb std qwen T r3: 512/0@0 761 4096/0@0 761.8 0/128@0 18.7 
+=== 03:10:25 lb std qwen U r4: 512/0@0 792.4 4096/0@0 785.9 0/128@0 18.8 
+=== 03:11:11 lb depth qwen U r1: 0/128@16384 16.8 
+=== 03:11:57 lb depth qwen T r2: 0/128@16384 16.7 
+=== 03:12:43 lb depth qwen T r3: 0/128@16384 16.8 
+=== 03:13:28 lb depth qwen U r4: 0/128@16384 16.8 
+=== 03:13:28 arm qwen.U0.p1
+{"label":"qwen.U0.p1","vram_before_mb":8,"vram_loaded_mb":14354,"n_ctx":"27904","gpu_verify":"-"}
+qwen.U0.p1 T=1.0: median  18.7 t/s, 53.61 ms/step | pl-proza  18.8 (1.00 tok/step)  pl-tech  18.7 (1.00 tok/step)  pl-kod  18.7 (1.00 tok/step)  en-chat  18.7 (1.00 tok/step)  en-tech  18.6 (1.00 tok/step)  en-code  18.6 (1.00 tok/step)
+qwen.U0.p1 T=0.0: median  18.5 t/s | mvs-pad.cu  18.5 (1.00t 54.00ms)  mvs-ngram-cache.h  18.5 (1.00t 54.05ms)  mvs-sampling.h  18.5 (1.00t 54.06ms)  mvs-lazy.py  18.5 (1.00t 54.15ms)
+{"label": "qwen.U0.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 646.5, "prefill_s": 0.67, "ttft_s": 1.45, "decode_tps": 18.64, "gen_tokens": 256, "ms_step": 53.447, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "qwen.U0.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 628.4, "prefill_s": 0.69, "ttft_s": 0.698, "decode_tps": 18.63, "gen_tokens": 170, "ms_step": 53.365, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "qwen.U0.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 728.7, "prefill_s": 19.75, "ttft_s": 20.192, "decode_tps": 17.6, "gen_tokens": 256, "ms_step": 56.606, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "qwen.U0.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 726.1, "prefill_s": 19.82, "ttft_s": 19.876, "decode_tps": 17.62, "gen_tokens": 256, "ms_step": 56.545, "tok_step": 1.0, "draft_acceptance": null}
+=== 03:25:35 arm qwen.U1.p1
+{"label":"qwen.U1.p1","vram_before_mb":8,"vram_loaded_mb":14570,"n_ctx":"32768","gpu_verify":"-"}
+qwen.U1.p1 T=1.0: median  30.6 t/s, 97.63 ms/step | pl-proza  28.2 (2.71 tok/step)  pl-tech  34.5 (3.34 tok/step)  pl-kod  33.0 (3.22 tok/step)  en-chat  25.2 (2.46 tok/step)  en-tech  29.4 (2.88 tok/step)  en-code  31.8 (3.11 tok/step)
+qwen.U1.p1 T=0.0: median  50.0 t/s | mvs-pad.cu  49.7 (4.95t 99.47ms)  mvs-ngram-cache.h  50.2 (4.95t 98.58ms)  mvs-sampling.h  50.3 (4.95t 98.33ms)  mvs-lazy.py  49.0 (4.90t 99.90ms)
+{"label": "qwen.U1.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 505.5, "prefill_s": 0.86, "ttft_s": 1.489, "decode_tps": 35.29, "gen_tokens": 256, "ms_step": 97.658, "tok_step": 3.459, "draft_acceptance": 0.625}
+{"label": "qwen.U1.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 507.3, "prefill_s": 0.86, "ttft_s": 0.863, "decode_tps": 31.65, "gen_tokens": 256, "ms_step": 97.075, "tok_step": 3.084, "draft_acceptance": 0.532}
+{"label": "qwen.U1.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 675.2, "prefill_s": 21.32, "ttft_s": 21.718, "decode_tps": 33.33, "gen_tokens": 256, "ms_step": 104.808, "tok_step": 3.507, "draft_acceptance": 0.64}
+{"label": "qwen.U1.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 674.5, "prefill_s": 21.34, "ttft_s": 21.391, "decode_tps": 31.11, "gen_tokens": 256, "ms_step": 105.081, "tok_step": 3.282, "draft_acceptance": 0.586}
+=== 03:32:57 arm qwen.T.p1
+{"label":"qwen.T.p1","vram_before_mb":8,"vram_loaded_mb":14848,"n_ctx":"32768","gpu_verify":"1"}
+qwen.T.p1 T=1.0: median  35.3 t/s, 81.67 ms/step | pl-proza  34.5 (2.73 tok/step)  pl-tech  38.8 (3.11 tok/step)  pl-kod  35.5 (2.90 tok/step)  en-chat  29.8 (2.44 tok/step)  en-tech  35.2 (2.87 tok/step)  en-code  38.0 (3.11 tok/step)
+qwen.T.p1 T=0.0: median 170.9 t/s | mvs-pad.cu 167.2 (14.03t 83.88ms)  mvs-ngram-cache.h 171.2 (14.22t 83.07ms)  mvs-sampling.h 173.7 (14.42t 83.04ms)  mvs-lazy.py 170.5 (14.42t 84.57ms)
+{"label": "qwen.T.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 457.8, "prefill_s": 0.95, "ttft_s": 1.778, "decode_tps": 41.32, "gen_tokens": 256, "ms_step": 81.197, "tok_step": 3.368, "draft_acceptance": 0.544}
+{"label": "qwen.T.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 458.3, "prefill_s": 0.95, "ttft_s": 0.956, "decode_tps": 39.32, "gen_tokens": 256, "ms_step": 82.087, "tok_step": 3.241, "draft_acceptance": 0.569}
+{"label": "qwen.T.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 661.4, "prefill_s": 21.76, "ttft_s": 22.315, "decode_tps": 40.15, "gen_tokens": 256, "ms_step": 89.443, "tok_step": 3.606, "draft_acceptance": 0.638}
+{"label": "qwen.T.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 658.0, "prefill_s": 21.87, "ttft_s": 21.926, "decode_tps": 35.82, "gen_tokens": 256, "ms_step": 87.895, "tok_step": 3.16, "draft_acceptance": 0.538}
+=== 03:39:43 arm qwen.T.p2
+{"label":"qwen.T.p2","vram_before_mb":8,"vram_loaded_mb":14848,"n_ctx":"32768","gpu_verify":"1"}
+qwen.T.p2 T=1.0: median  35.4 t/s, 81.45 ms/step | pl-proza  34.5 (2.73 tok/step)  pl-tech  38.6 (3.11 tok/step)  pl-kod  35.7 (2.90 tok/step)  en-chat  29.6 (2.44 tok/step)  en-tech  35.1 (2.87 tok/step)  en-code  37.9 (3.11 tok/step)
+=== 03:44:34 arm qwen.U1.p2
+{"label":"qwen.U1.p2","vram_before_mb":8,"vram_loaded_mb":14570,"n_ctx":"32768","gpu_verify":"-"}
+qwen.U1.p2 T=1.0: median  30.5 t/s, 97.85 ms/step | pl-proza  28.2 (2.71 tok/step)  pl-tech  34.6 (3.34 tok/step)  pl-kod  33.0 (3.22 tok/step)  en-chat  25.0 (2.46 tok/step)  en-tech  29.3 (2.88 tok/step)  en-code  31.7 (3.11 tok/step)
+=== 03:49:02 arm qwen.U0.p2
+{"label":"qwen.U0.p2","vram_before_mb":8,"vram_loaded_mb":14354,"n_ctx":"27904","gpu_verify":"-"}
+qwen.U0.p2 T=1.0: median  18.6 t/s, 53.72 ms/step | pl-proza  18.8 (1.00 tok/step)  pl-tech  18.6 (1.00 tok/step)  pl-kod  18.6 (1.00 tok/step)  en-chat  18.6 (1.00 tok/step)  en-tech  18.6 (1.00 tok/step)  en-code  18.6 (1.00 tok/step)
+=== 03:56:03 lb std lfm U r1: 512/0@0 3281.1 4096/0@0 3262.4 0/128@0 143 
+=== 03:56:17 lb std lfm T r2: 512/0@0 3278 4096/0@0 3262.2 0/128@0 155.3 
+=== 03:56:32 lb std lfm T r3: 512/0@0 3278.8 4096/0@0 3273.3 0/128@0 154.9 
+=== 03:56:46 lb std lfm U r4: 512/0@0 3291.5 4096/0@0 3283.2 0/128@0 142.9 
+=== 03:56:46 arm lfm.U0.p1
+{"label":"lfm.U0.p1","vram_before_mb":8,"vram_loaded_mb":14944,"n_ctx":"85504","gpu_verify":"-"}
+lfm.U0.p1 T=1.0: median 114.4 t/s,  8.74 ms/step | pl-proza 114.7 (1.00 tok/step)  pl-tech 114.3 (1.00 tok/step)  pl-kod 114.5 (1.00 tok/step)  en-chat 114.4 (1.00 tok/step)  en-tech 113.9 (1.00 tok/step)  en-code 115.1 (1.00 tok/step)
+=== 03:58:04 arm lfm.U1.p1
+{"label":"lfm.U1.p1","vram_before_mb":8,"vram_loaded_mb":13914,"n_ctx":"32768","gpu_verify":"-"}
+lfm.U1.p1 T=1.0: median 113.3 t/s,  8.83 ms/step | pl-proza 115.0 (1.00 tok/step)  pl-tech 112.7 (1.00 tok/step)  pl-kod 113.3 (1.00 tok/step)  en-chat 113.3 (1.00 tok/step)  en-tech 112.5 (1.00 tok/step)  en-code 113.3 (1.00 tok/step)
+=== 03:59:20 arm lfm.T.p1
+{"label":"lfm.T.p1","vram_before_mb":8,"vram_loaded_mb":13924,"n_ctx":"32768","gpu_verify":"1"}
+lfm.T.p1 T=1.0: median 149.4 t/s,  6.69 ms/step | pl-proza 149.1 (1.00 tok/step)  pl-tech 149.4 (1.00 tok/step)  pl-kod 149.4 (1.00 tok/step)  en-chat 149.0 (1.00 tok/step)  en-tech 149.4 (1.00 tok/step)  en-code 149.5 (1.00 tok/step)
+=== 04:00:23 arm lfm.T.p2
+{"label":"lfm.T.p2","vram_before_mb":8,"vram_loaded_mb":13924,"n_ctx":"32768","gpu_verify":"1"}
+lfm.T.p2 T=1.0: median 149.4 t/s,  6.69 ms/step | pl-proza 149.3 (1.00 tok/step)  pl-tech 149.3 (1.00 tok/step)  pl-kod 149.8 (1.00 tok/step)  en-chat 149.4 (1.00 tok/step)  en-tech 149.5 (1.00 tok/step)  en-code 149.3 (1.00 tok/step)
+=== 04:01:26 arm lfm.U1.p2
+{"label":"lfm.U1.p2","vram_before_mb":8,"vram_loaded_mb":13914,"n_ctx":"32768","gpu_verify":"-"}
+lfm.U1.p2 T=1.0: median 113.4 t/s,  8.82 ms/step | pl-proza 114.9 (1.00 tok/step)  pl-tech 112.8 (1.00 tok/step)  pl-kod 113.7 (1.00 tok/step)  en-chat 113.4 (1.00 tok/step)  en-tech 113.1 (1.00 tok/step)  en-code 113.4 (1.00 tok/step)
+=== 04:02:43 arm lfm.U0.p2
+{"label":"lfm.U0.p2","vram_before_mb":8,"vram_loaded_mb":14944,"n_ctx":"85504","gpu_verify":"-"}
+lfm.U0.p2 T=1.0: median 114.3 t/s,  8.75 ms/step | pl-proza 114.4 (1.00 tok/step)  pl-tech 114.2 (1.00 tok/step)  pl-kod 114.2 (1.00 tok/step)  en-chat 114.0 (1.00 tok/step)  en-tech 114.5 (1.00 tok/step)  en-code 115.0 (1.00 tok/step)
+=== 04:04:00 fin4060 done
