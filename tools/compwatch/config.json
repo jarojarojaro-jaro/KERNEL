@@ -1,0 +1,120 @@
+{
+  "_opis": "Konfiguracja compwatch. Opis pól i jak dodać źródło: README.md obok.",
+  "report_min_score": 20,
+  "digest_days": 7,
+  "top_items": 12,
+  "first_run_days": 14,
+
+  "cards": [
+    {"key": "XTX",    "label": "RX 7900 XTX",   "re": "7900 ?XTX",                 "w": 1.0, "unverified": true},
+    {"key": "R9700",  "label": "Radeon AI PRO R9700", "re": "R9700",           "w": 0.8, "unverified": true},
+    {"key": "3060",   "label": "RTX 3060",      "re": "RTX 3060(?! ?Ti)",          "w": 0.8},
+    {"key": "3080",   "label": "RTX 3080",      "re": "RTX 3080(?! ?Ti)",          "w": 0.8},
+    {"key": "3090",   "label": "RTX 3090",      "re": "RTX 3090(?! ?Ti)",          "w": 0.9},
+    {"key": "4060Ti", "label": "RTX 4060 Ti",   "re": "RTX 4060 ?Ti",              "w": 0.8},
+    {"key": "4070Ti", "label": "RTX 4070 Ti",   "re": "RTX 4070 ?Ti(?! ?Super)",   "w": 0.8},
+    {"key": "4090",   "label": "RTX 4090",      "re": "RTX 4090",                  "w": 0.7},
+    {"key": "5060Ti", "label": "RTX 5060 Ti",   "re": "RTX 5060 ?Ti",              "w": 0.9},
+    {"key": "5090",   "label": "RTX 5090",      "re": "RTX 5090",                  "w": 0.7},
+    {"key": "M1Pro",  "label": "Apple M1 Pro",  "re": "\\bM1 Pro\\b",              "w": 0.6},
+    {"key": "M4",     "label": "Apple M4",      "re": "\\bM4\\b(?! ?(Pro|Max|Ultra))", "w": 0.6},
+    {"key": "Spark",  "label": "DGX Spark (GB10)", "re": "GB10|DGX Spark",         "w": 0.6}
+  ],
+
+  "models": [
+    {"key": "Qwen3.8-27B",       "re": "qwen3[._-]?8[._-]27b",            "tier": "core"},
+    {"key": "LFM2.5-24B-A2B",    "re": "lfm2[._-]?5[._-]24b",             "tier": "core"},
+    {"key": "Gemma 4 26B-A4B",   "re": "gemma[._-]?4[._-]26b",            "tier": "catalog"},
+    {"key": "Gemma 4 12B",       "re": "gemma[._-]?4[._-]12b",            "tier": "catalog"},
+    {"key": "Gemma 4 31B",       "re": "gemma[._-]?4[._-]31b",            "tier": "candidate"},
+    {"key": "Gemma 4 E2B/E4B",   "re": "gemma[._-]?4[._-]e[24]b",         "tier": "candidate"},
+    {"key": "Qwen3.6-35B-A3B",   "re": "qwen3[._-]?6[._-]35b",            "tier": "catalog"},
+    {"key": "Qwen3.5-9B",        "re": "qwen3[._-]?5[._-]9b",             "tier": "catalog"},
+    {"key": "Qwen3.5-4B",        "re": "qwen3[._-]?5[._-]4b",             "tier": "catalog"},
+    {"key": "Qwen3.8-Flash-Next","re": "qwen3[._-]?8[._-]flash",          "tier": "candidate"},
+    {"key": "gpt-oss-20b",       "re": "gpt[._-]?oss[._-]20b",            "tier": "catalog"},
+    {"key": "gpt-oss-120b",      "re": "gpt[._-]?oss[._-]120b",           "tier": "catalog"},
+    {"key": "Ministral 3 14B",   "re": "ministral[._-]?3[._-]14b",        "tier": "catalog"},
+    {"key": "Mistral Small 4",   "re": "mistral[._-]small[._-]4",         "tier": "catalog"},
+    {"key": "Bielik",            "re": "bielik",                          "tier": "catalog"},
+    {"key": "Bonsai 27B",        "re": "bonsai",                          "tier": "candidate"},
+    {"key": "Saluki 27B",        "re": "saluki",                          "tier": "candidate"},
+    {"key": "GLM-5.3-Flash",     "re": "glm[._-]?5[._-]?3[._-]flash",     "tier": "candidate"},
+    {"key": "Nemotron 3.5",      "re": "nemotron[._-]?3[._-]?5",          "tier": "candidate"},
+    {"key": "Phi",               "re": "(^|/)phi[._-]?[456]",             "tier": "candidate"},
+    {"key": "DeepSeek-V4.1-Flash","re": "deepseek[._-]v4[._-]?1[._-]flash", "tier": "candidate"},
+    {"key": "LFM (inne)",        "re": "(^|/)lfm[23]",                    "tier": "candidate"}
+  ],
+
+  "nasze": [
+    {"card": "XTX",    "model": "Qwen3.8-27B",    "tok": 136.5, "metric": "long_ctx_bench 1.7k, T=0, 256 tok., sam MTP n=4, UD-Q4_K_XL, KV q4_0, licznik serwera", "src": "wiki/REKORDY.md:107"},
+    {"card": "3090",   "model": "Qwen3.8-27B",    "tok": 93.3,  "metric": "spec_sweep T=1 (6 promptów x 3 seedy, 400 tok.), cuda-topka2 MTP+lookup W16, UD-Q4_K_XL", "src": "wiki/REKORDY.md:110"},
+    {"card": "5060Ti", "model": "Qwen3.8-27B",    "tok": 62.6,  "metric": "spec_sweep T=1, nv-5060ti T, UD-IQ4_XS, ctx 32k, KV q4_0, limit 150 W", "src": "product/research/31-5060ti.md:10"},
+    {"card": "4060Ti", "model": "Qwen3.8-27B",    "tok": 50.8,  "metric": "spec_sweep T=1, nv-4060ti T', UD-IQ4_XS, ctx 32k, KV q4_0", "src": "product/research/31-4060ti.md:12"},
+    {"card": "4070Ti", "model": "Qwen3.8-27B",    "tok": 93.3,  "metric": "spec_sweep T=1, nv-4070ti T, UD-Q2_K_XL (!), ctx 36k, KV q4_0", "src": "product/research/31-4070ti.md:11"},
+    {"card": "3080",   "model": "Qwen3.8-27B",    "tok": 74.5,  "metric": "spec_sweep T=1, nv-ampere-small T', UD-IQ2_XXS + MTP graft (!), ctx 32k", "src": "product/research/31-3060-3080.md:9"},
+    {"card": "3060",   "model": "Qwen3.8-27B",    "tok": 38.6,  "metric": "spec_sweep T=1, nv-ampere-small T', UD-Q2_K_XL (!), ctx 36k", "src": "product/research/31-3060-3080.md:10"},
+    {"card": "XTX",    "model": "LFM2.5-24B-A2B", "tok": 293.8, "metric": "spec_sweep T=1 (lfm none), Q5_K_M, KV q8_0, bez spekulacji", "src": "wiki/REKORDY.md:58"},
+    {"card": "3090",   "model": "LFM2.5-24B-A2B", "tok": 291.6, "metric": "xbench sweep, Q4_K_M, cuda-3090-opt, bez spekulacji", "src": "wiki/REKORDY.md:80"},
+    {"card": "5060Ti", "model": "LFM2.5-24B-A2B", "tok": 226.8, "metric": "serwer, QAD-Q4_0, bez spekulacji", "src": "wiki/REKORDY.md:88"},
+    {"card": "4060Ti", "model": "LFM2.5-24B-A2B", "tok": 149.4, "metric": "spec_sweep T=1, QAD-Q4_0, cuda-topka2", "src": "wiki/REKORDY.md:117"}
+  ],
+  "nasze_files": ["wiki/REKORDY.md", "product/research/31-*.md"],
+
+  "localmaxxing": {
+    "base": "https://www.localmaxxing.com/api/leaderboard",
+    "daily_max": 10,
+    "spacing_s": 2.0,
+    "queries": [
+      {"name": "qwen38-27b-verified", "params": {"hfId": "Qwen3.8-27B", "verifiedRun": "true", "limit": "200"}},
+      {"name": "lfm25-24b-verified",  "params": {"hfId": "LFM2.5-24B",  "verifiedRun": "true", "limit": "200"}},
+      {"name": "gemma4-verified",     "params": {"hfId": "gemma-4",     "verifiedRun": "true", "limit": "200"}},
+      {"name": "xtx-all",             "params": {"hardwareName": "7900 XTX", "limit": "200"}},
+      {"name": "r9700-30d",           "params": {"hardwareName": "R9700",    "since": "30d", "limit": "200"}},
+      {"name": "verified-7d",         "params": {"verifiedRun": "true", "since": "7d", "limit": "200"}, "max_pages": 2},
+      {"name": "qwen38-27b-7d",       "params": {"hfId": "Qwen3.8-27B", "since": "7d", "limit": "200"}}
+    ],
+    "prompts": {
+      "9000edaadb16fc77ab78b39917245a03d4d7585c3ba770cb045a47a0e0683445": "reasoning-v1",
+      "a737db738bd4e37881d1737f8dc51cae0295eff9ece6551d39826ce8ed43a690": "code-v1"
+    }
+  },
+
+  "github": {
+    "registry": "wiki/ZRODLA.md",
+    "baseline_sections": "product/research/*.md",
+    "tiers": {"A": 50, "B": 30, "C": 15},
+    "repos": [
+      {"slug": "mw00/project-maya",               "tier": "A"},
+      {"slug": "Niko1221/Strata",                 "tier": "A"},
+      {"slug": "Neroued/ninfer",                  "tier": "A", "name": "NInfer"},
+      {"slug": "turbo-tan/tqllm",                 "tier": "A"},
+      {"slug": "turboderp-org/exllamav3",         "tier": "A"},
+      {"slug": "Kaden-Schutt/hipfire",            "tier": "A"},
+      {"slug": "magnitudedev/magnitude",          "tier": "A", "release_ignore": "^desktop-update-acceptance/"},
+      {"slug": "Luce-Org/lucebox",                "tier": "A"},
+      {"slug": "ggml-org/llama.cpp",              "tier": "B", "ignore_releases": true},
+      {"slug": "vllm-project/vllm",               "tier": "B"},
+      {"slug": "sgl-project/sglang",              "tier": "B"},
+      {"slug": "deepseek-ai/DeepInfer",           "tier": "B"},
+      {"slug": "ml-explore/mlx-lm",               "tier": "B"},
+      {"slug": "ikawrakow/ik_llama.cpp",          "tier": "B"},
+      {"slug": "ashhart/TensorFold",              "tier": "B"},
+      {"slug": "LottoLottoLotto/localmaxxing-cli","tier": "B"},
+      {"slug": "halo-box/strix-llama.cpp",        "tier": "B"},
+      {"slug": "z-lab/dflash",                    "tier": "B"},
+      {"slug": "noonghunna/club-3090",            "tier": "B", "name": "club-3090 (BENCHMARKS.md 3090/4090/5090)"},
+      {"slug": "victoralcazardev/rx7900xtx-local-llm", "tier": "B", "name": "rx7900xtx-local-llm (pomiary XTX)"},
+      {"slug": "vijay-14/qwen3-8-rocm-bench",     "tier": "B", "name": "qwen3-8-rocm-bench (XTX ROCm)"}
+    ],
+    "keywords": ["rocm", "hip", "gfx11", "gfx1100", "gfx12", "rdna", "radeon", "7900", "r9700", "vulkan",
+                 "sm_86", "sm_89", "sm_120", "3090", "4090", "5090", "5060", "mtp", "speculative", "spec-", "draft",
+                 "dflash", "eagle", "lookup", "ngram", "n-gram", "qwen3.8", "qwen3_8", "lfm", "gemma", "gguf",
+                 "kv cache", "kv-cache", "mmvq", "gdn", "decode", "tok/s", "t/s", "faster", "speedup", "perf"]
+  },
+
+  "hf": {
+    "authors": ["unsloth", "bartowski", "ggml-org"],
+    "limit": 200
+  }
+}
