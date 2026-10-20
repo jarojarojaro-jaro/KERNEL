@@ -1,0 +1,8 @@
+base : 24.7527 ms/batch  202.00 t/s  sd 10.72  
+skipn GGML_HIP_UB_SKIP_NORM=1: 24.0630 ms/batch  207.79 t/s  sd 10.96  
+ubm GGML_HIP_PM4_UB=mmvq: 23.9641 ms/batch  208.65 t/s  sd 11.02  GGML_HIP_PM4_UB dropped 340 of 919 boundaries (timing only, wrong output)
+ubn GGML_HIP_PM4_UB=norm: 24.0244 ms/batch  208.12 t/s  sd 10.97  GGML_HIP_PM4_UB dropped 208 of 919 boundaries (timing only, wrong output)
+ubn GGML_HIP_PM4_UB=norm: 24.0134 ms/batch  208.22 t/s  sd 11.00  GGML_HIP_PM4_UB dropped 208 of 919 boundaries (timing only, wrong output)
+ubm GGML_HIP_PM4_UB=mmvq: 23.9603 ms/batch  208.68 t/s  sd 11.00  GGML_HIP_PM4_UB dropped 340 of 919 boundaries (timing only, wrong output)
+skipn GGML_HIP_UB_SKIP_NORM=1: 24.0592 ms/batch  207.82 t/s  sd 10.94  
+base : 24.7352 ms/batch  202.14 t/s  sd 10.47  

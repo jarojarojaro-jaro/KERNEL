@@ -1,0 +1,8 @@
+# report 37 (XtxProse): E0 prose baseline on production ~/llama-topka (8 prompts x 8 seeds + mvs), then item #4a
+# GPU_FORCE_BLIT_COPY_SIZE=1024 (HIP runtime env, small H2D/D2H copies by blit kernel instead of SDMA): md5 gate + ABBA
+p37-e0|900|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash p100_arm.sh p37-e0 prose,mvs
+p37-blit-gate|600|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash p100_md5.sh blit ~/llama-topka "GPU_FORCE_BLIT_COPY_SIZE=1024"
+p37-blit-A1|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/blit.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 bash p100_arm.sh p37-blit-A1a prose,mvs
+p37-blit-B1|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/blit.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 XENV="GPU_FORCE_BLIT_COPY_SIZE=1024" bash p100_arm.sh p37-blit-B1a prose,mvs
+p37-blit-B2|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/blit.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 XENV="GPU_FORCE_BLIT_COPY_SIZE=1024" bash p100_arm.sh p37-blit-B1b prose,mvs
+p37-blit-A2|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/blit.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 bash p100_arm.sh p37-blit-A1b prose,mvs

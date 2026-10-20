@@ -1,0 +1,59 @@
+p37-trace.launch.log [:]: 1459 steps, 30.525 ms/step wall (host clock between update_slots)
+  pair (us/step = n/step x med)                 us/step n/step       med      mean       p90        max
+  pm4.in -> pm4.done                           39203.31   1.68  23393.71  13599.54  24579.46    94629.1
+  srv.post.out -> llm.sync.in                   1229.32   0.01 224196.37 224196.37 224196.37   229048.6
+  srv.update -> llm.sync.in                      578.04   0.01 105419.33 105419.33 105419.33   106609.3
+  llm.inputs -> cuda.gc.in                        78.78   2.99     26.36     26.62     34.18      169.8
+  srv.update -> srv.render                        67.72   0.01  10978.24   9830.16  10978.24    11945.2
+  cuda.cap.in -> cuda.cap.out                     40.47   0.03   1342.07    967.95   2078.78     3432.6
+  llm.dec.in -> llm.dec.prep                      36.79   2.99     12.31     14.31     15.32      887.8
+  llm.graph -> llm.inputs                         36.66   2.99     12.27     12.01     14.51      128.8
+  llm.compute -> llm.dec.out                      27.42   2.99      9.17    146.70    712.65     2953.1
+  cuda.cap.out -> pm4.build                       27.17   0.03    900.87    723.00   1492.96     2610.4
+  cuda.gc.in -> pm4.in                            16.83   1.93      8.71     10.03     19.97      652.8
+  cuda.gc.in -> cuda.direct                       14.24   0.05    259.76   1944.40  10498.55    66704.1
+  pm4.build -> cuda.exec                           8.57   0.01   1389.21    708.53   1389.21     6152.8
+  cuda.exec -> cuda.glaunch                        6.89   1.26      5.48      6.26      9.44       25.7
+  llm.sync.out -> srv.post.out                     6.23   0.99      6.27      6.60      8.12       24.1
+  llm.dec.prep -> llm.graph                        6.00   2.99      2.01     18.55      2.51     8415.0
+  mtp.proc.dec -> llm.dec.in                       4.71   1.00      4.71      6.39      5.27     1551.7
+  llm.sync.out -> llm.sync.in                      3.78  16.45      0.23     25.36      1.98    45768.6
+  srv.post.out -> srv.update                       3.57   0.99      3.59      3.87      5.05       12.1
+  srv.draft.out -> srv.render                      2.75   0.99      2.78      2.86      3.04       13.4
+  que.work.end -> srv.dec.out                      2.71   1.00      2.71      2.95      3.13       23.8
+  llm.sync.in -> llm.sync.out                      2.63  21.44      0.12    211.55      0.91   113882.6
+  mtp.chain.in -> llm.dec.in                       2.58   0.99      2.61      2.63      2.79        8.7
+  llm.sync.out -> srv.update                       2.53   0.01    460.96    460.96    460.96      535.6
+  srv.dec.in -> llm.dec.in                         2.50   1.00      2.50      2.64      2.71       16.9
+  cuda.gc.in -> cuda.exec                          2.04   0.97      2.11      2.42      3.85       11.7
+  srv.draft.in -> mtp.chain.in                     1.96   0.99      1.98      2.18      2.60       17.3
+  llm.sync.out -> mtp.proc.out                     1.40   1.00      1.40      1.45      1.61        5.7
+  llm.dec.out -> llm.sync.in                       1.36   1.99      0.68      1.09      0.81      743.7
+  srv.update -> srv.draft.in                       0.93   0.99      0.94      0.98      1.10        4.7
+  llm.sync.out -> srv.render                       0.86   0.01    156.13    156.13    156.13      194.3
+  srv.post.in -> llm.sync.in                       0.83   0.99      0.84      1.15      0.97       59.8
+  llm.dec.out -> mtp.chain.dec                     0.75   0.99      0.76      0.79      0.88        3.5
+  mtp.chain.tok -> srv.draft.out                   0.67   0.99      0.68      0.69      0.75        4.2
+  llm.sync.out -> mtp.proc.dec                     0.44   1.00      0.44      0.48      0.50       12.2
+  pm4.in -> cuda.exec                              0.43   0.28      1.54     94.69      1.69    11690.0
+  srv.spec.in -> llm.sync.in                       0.43   1.00      0.43      0.48      0.51        9.8
+  pm4.done -> llm.compute                          0.41   1.68      0.24      0.31      0.37       20.7
+  cuda.gc.in -> cuda.cap.in                        0.40   0.03     13.40     27.19    112.98      252.9
+  srv.render -> srv.dec.in                         0.23   1.00      0.23      0.26      0.27        5.2
+  srv.spec.out -> srv.post.in                      0.21   1.00      0.21      0.22      0.24        2.1
+  mtp.proc.out -> srv.spec.out                     0.17   1.00      0.17      0.17      0.19        0.8
+  cuda.glaunch -> llm.compute                      0.15   1.26      0.12      0.14      0.15        5.7
+  llm.sync.out -> que.work.end                     0.13   0.99      0.13      0.18      0.35        4.2
+  llm.sync.out -> mtp.chain.tok                    0.12   0.99      0.13      0.13      0.15        1.8
+  value                                         us/step n/step       med      mean       p90        max
+  tape.l.gpu                                   20519.18   0.84  24478.73  24568.01  24541.27    94326.5
+  tape.l.guard                                     3.99   0.84      4.76      4.96      5.23       19.3
+  tape.l.idle_before                             141.04   0.84    168.25   3415.46    187.23   580571.8
+  tape.l.lat                                      20.28   0.84     24.20     23.44     24.63      143.2
+  tape.l.ssync                                    23.82   0.84     28.42     29.14     32.14      100.4
+  tape.m.gpu                                    2035.54   0.84   2430.32   2430.67   2453.22     2497.0
+  tape.m.guard                                     1.35   0.84      1.61      1.92      2.48       10.0
+  tape.m.idle_before                             268.52   0.84    321.13   1058.57    335.18   642771.7
+  tape.m.lat                                      20.56   0.84     24.55     23.76     25.10       43.5
+  tape.m.ssync                                    89.91   0.84    107.34    106.10    114.24      181.9
+  GPU idle between tapes (sum of n x median idle_before): 409.6 us/step

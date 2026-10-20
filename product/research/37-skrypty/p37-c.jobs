@@ -1,0 +1,4 @@
+# report 37 (XtxProse) part c: HIP API host costs (fixed lib path), combined upper bound, thinking-on bridge to spec_sweep
+p37-api2|120|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=/opt/rocm/core-10.0/lib; for e in "" "GPU_FORCE_BLIT_COPY_SIZE=1024"; do echo "== env: $e"; env $e taskset -c 2-5 ./hipapi_bench; done
+p37-ub2|600|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/off.PASS ] || exit 1; bash ub_bench.sh ~/wt/prose100/build-hip base ubmn
+p37-think|420|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 bash p100_arm.sh p37-e0t prosethink

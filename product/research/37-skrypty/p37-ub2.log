@@ -1,0 +1,4 @@
+base : 24.7677 ms/batch  201.88 t/s  sd 10.52  
+ubmn GGML_HIP_PM4_UB=mmvq,norm: 22.5972 ms/batch  221.27 t/s  sd 11.72  GGML_HIP_PM4_UB dropped 548 of 919 boundaries (timing only, wrong output)
+ubmn GGML_HIP_PM4_UB=mmvq,norm: 22.5941 ms/batch  221.30 t/s  sd 11.82  GGML_HIP_PM4_UB dropped 548 of 919 boundaries (timing only, wrong output)
+base : 24.7600 ms/batch  201.94 t/s  sd 10.55  

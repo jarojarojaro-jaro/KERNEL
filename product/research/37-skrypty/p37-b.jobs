@@ -1,0 +1,14 @@
+# report 37 (XtxProse) part b, build ~/wt/prose100/build-hip (topka 9056cea22 + diagnostics/switches, all default off)
+# 1 HIP API host costs (idle sync/query, small pinned copies; default vs GPU_FORCE_BLIT_COPY_SIZE=1024), no kernels of ours
+p37-api|120|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=0; for e in "" "GPU_FORCE_BLIT_COPY_SIZE=1024"; do echo "== env: $e"; env $e taskset -c 2-5 ./hipapi_bench; done
+# 2 md5 gate: switches off (must equal production, Qwen + LFM) and GGML_HIP_SYNC_QUERY=1 (item #4b)
+p37-gate0|900|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; LFM=1 bash p100_md5.sh off ~/wt/prose100/build-hip "" && bash p100_md5.sh sq ~/wt/prose100/build-hip "GGML_HIP_SYNC_QUERY=1"
+# 3 host-gap trace with medians (production config, switches off), prose seeds 1
+p37-trace|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/off.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/prose100/build-hip SEEDS=1 XENV="LLAMA_HOSTGAP_TRACE=1" bash p100_arm.sh p37-trace prose
+# 4 upper bounds (timing only): norm skipped (#3), no boundary before MMVQ / norm in the verify tape (#1)
+p37-ub|600|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/off.PASS ] || exit 1; bash ub_bench.sh ~/wt/prose100/build-hip base skipn ubm ubn
+# 5 item #4b ABBA: GGML_HIP_SYNC_QUERY=1
+p37-sq-A1|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/sq.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/prose100/build-hip SEEDS=1,2 bash p100_arm.sh p37-sq-A1a prose,mvs
+p37-sq-B1|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/sq.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/prose100/build-hip SEEDS=1,2 XENV="GGML_HIP_SYNC_QUERY=1" bash p100_arm.sh p37-sq-B1a prose,mvs
+p37-sq-B2|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/sq.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/prose100/build-hip SEEDS=1,2 XENV="GGML_HIP_SYNC_QUERY=1" bash p100_arm.sh p37-sq-B1b prose,mvs
+p37-sq-A2|420|~/qwen-opt/xtxroadmap|[ -e /tmp/p100-gate/sq.PASS ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/prose100/build-hip SEEDS=1,2 bash p100_arm.sh p37-sq-A1b prose,mvs
