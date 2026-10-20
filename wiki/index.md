@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (34)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (59)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (91)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (92)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (68)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-20 [[raport-24r-mmvq-pasmo|Raport 24r: pasmo MMVQ weryfikacji n=5 – sufit 926 GB/s]]
 - 2026-10-20 [[raport-24q-adaptacyjna-spekulacja|Raport 24q: adaptacyjna spekulacja – bramka ogona i głębokość MTP z akceptacji]]
 
-Razem 571 notatek. Wygenerowano 2026-10-20 przez `tools/wiki.py index`.
+Razem 572 notatek. Wygenerowano 2026-10-20 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -17,3 +17,4 @@ Kolejność odczytu klucza w vastai 1.8.3: `--api-key` > `$VAST_API_KEY` > `~/.c
 - [[lekcja-5060ti-bezczynna]]
 - [[vast-ai]]
 - [[skrypty-chmury]]
+- [[lekcja-vast-transfer-kosztuje]]

@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (91)
+## Notatki (92)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-tmp-po-restarcie|`/tmp` znika przy restarcie: wyniki trzymać poza nim]] — Restarty serwera 2026-10-18 czyszczą `/tmp`: `/tmp/bxv/summary.txt` i `/tmp/bxd/*` (walidacja bit-exact) zniknęły już przy wcześniejszym restarcie ~18:53 UTC, przed archiwizacją; przed restartem ~20:27 UTC (overdrive) resztę zarchiwizowano do `~/qwen-opt/tmp-archive-20261018/` (63 MB: coupled, lookup, pm4pdl, lfmmoe, qa).
@@ -86,6 +86,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-ten-sam-serwer-pending-h|Ten sam serwer, inna odpowiedź (pending_h)]] — Ten sam greedy request bez cache dawał inny tekst przy 1. i 2. wywołaniu po starcie serwera (rozjazd po ~270 znakach); 2026-10-16 prawdopodobną przyczyną okazał się stan MTP `pending_h` nieczyszczony między zapytaniami.
 - [[lekcja-timeline-scen-3s|Timeline sceny ≤ 3 s, inaczej widać liczby w trakcie przewijania]] — Na landingu scena „boost” wciąż przewijała licznik 3.3 s po wejściu w widok (timeline 5 s), a juror rundy 9 złapał licznik w połowie animacji; po skróceniu scan/boost do 2.6/2.8 s i dosuwaniu do wartości końcowej problem zniknął (rundy 9–12, 2026-10-18).
 - [[lekcja-koszt-szerokosci-backendu|tok/krok nie wygra z drogim krokiem]] — Magnitude na Vulkanie (XTX, 2026-10-18) ma na code-edit 7.05 tok/krok, ale krok 83 ms → 87.7 t/s; my 4.92 tok/krok przy 29 ms → 170 t/s. Ich krok 1-wierszowy (27.7 ms) kosztuje tyle co nasz 5-wierszowy (28.1 ms), a 8 wierszy to ×3.0 kroku 1-wierszowego.
+- [[lekcja-vast-transfer-kosztuje|Transfer na Vast kosztował więcej niż karty]] — 2026-10-20 kampania opt-* (6 kart, plan $4.54 za 5 h) zjadła $6.90 w ~2.5 h: GPU $2.67, dysk ~$0.4, pobieranie $3.80 (55%). Kredyt skończył się w połowie testów.
 - [[lekcja-megakernel-prefetch-nie-granica|Trwały kernel: zysk to prefetch, nie granica]] — Szacunek „trwały kernel MoE po PM4 ≈ 1.4%” liczył tylko granice kerneli; megakernele wygrywają nakładaniem rampy wag i małych operacji, a zmierzona bariera trwałej siatki (0.48–0.77 µs) kosztuje tyle co granica PM4 (0.46–0.86 µs).
 - [[lekcja-ustalony-seed-to-nie-powtorzenie|Ustalony seed to nie powtórzenie: ABBA nie redukuje szumu tekstu]] — Przy ustalonym seedzie każde powtórzenie bloku generuje ten sam tekst (rozrzut bloków ±0.1–0.5 t/s), więc ABBA nie zmniejsza szumu tekstu; sama zmiana strumienia RNG (tryb kontrolny 2 vs 0, ten sam drafter) dała +7.8% t/s i +3.6% tok/krok na 18 tekstach (E-X4, run 3, 2026-10-18).
 - [[baco-runtime-suspend|Usypianie karty (BACO) wyrzuca model z VRAM]] — Bez aktywności amdgpu usypia kartę po 5 s (runtime PM/BACO) i przenosi VRAM do RAM; model działa wtedy przez PCIe: 4.4 zamiast 92 t/s.
