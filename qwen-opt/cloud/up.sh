@@ -11,13 +11,15 @@
 #   --label NAME  instance label (default qwenbench-<class>-<date>; buildfarm-* = CPU build server, see rbuild)
 set -euo pipefail
 . "$(dirname "$0")/lib.sh"
-offer=; hours=3; disk=; image=$IMAGE_DEFAULT; label=
+offer=; hours=3; disk=; image=$IMAGE_DEFAULT; label=; dl_gb=${DL_GB:-}; max_dl_cost=${MAX_DL_COST_PER_GB:-0.002}
 while [ $# -gt 0 ]; do
     case $1 in
         --hours) hours=$2; shift 2 ;;
         --disk) disk=$2; shift 2 ;;
         --image) image=$2; shift 2 ;;
         --label) label=$2; shift 2 ;;
+        --download-gb) dl_gb=$2; shift 2 ;;
+        --allow-paid-traffic) max_dl_cost=1000; shift ;;
         -h|--help) sed -n 2,12p "$0"; exit 0 ;;
         *) [ -z "$offer" ] || die "unexpected argument $1"; offer=$1; shift ;;
     esac
@@ -37,9 +39,15 @@ if [ -n "$oj" ]; then
       "offer \(.id): \(.gpu_name) \(.gpu_ram/1024|floor) GB, \(.geolocation), reliability \(.reliability*1000|round/1000), CUDA \(.cuda_max_good), driver \(.driver_version)",
       "  $\(.dph_base*1000|round/1000)/h GPU + storage $\(.storage_cost*1000|round/1000)/GB/month x \($d) GB, bandwidth down $\(.inet_down_cost*1000|round)/TB up $\(.inet_up_cost*1000|round)/TB",
       "  worst case for \($h) h: $\((.dph_base + .storage_cost * $d / 730) * $h * 100 | round / 100) + traffic"' <<<"$oj"
+    # 2026-10-20: transfer cost $3.79 of a $6.96 campaign (lekcja-vast-transfer-kosztuje): refuse paid-download hosts
+    [ -n "$dl_gb" ] || die "--download-gb N is required (GB this box will download: models + sources); see SOP"
+    dlc=$(jq -r .inet_down_cost <<<"$oj")
+    awk -v c="$dlc" -v m="$max_dl_cost" 'BEGIN { exit !(c <= m) }' \
+        || die "offer $offer charges \$$dlc/GB download (> \$$max_dl_cost/GB); pick a free-traffic host or pass --allow-paid-traffic with user approval"
+    jq -r --argjson h "$hours" --argjson d "$disk" --argjson g "$dl_gb" '
+      "  TOTAL estimate for \($h) h incl. \($g) GB download: $\(((.dph_base + .storage_cost * $d / 730) * $h + .inet_down_cost * $g) * 100 | round / 100)"' <<<"$oj"
 else
-    echo "warning: offer $offer not found in search (rented or gone); using defaults" >&2
-    gpu=unknown; class=3090; disk=${disk:-$(est_disk_gb 3090)}
+    die "offer $offer not found by offer_json: cannot check its transfer price; refusing (pick a listed offer)"
 fi
 date_tag=$(date +%Y%m%d-%H%M)
 [ -n "$label" ] || label="$LABEL_PREFIX-$class-$date_tag"
