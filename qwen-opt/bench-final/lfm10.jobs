@@ -1,0 +1,7 @@
+# LFM part of WYNIKI-XTX-2026-10-19, cut to fit the <=10 min GPU rule (replaces lfm.jobs): no U1 arm, one server
+# pass per arm, llama-bench one round per build (-r 3 inside). Order A B for LFM, B A for LFM Uncensored.
+# Estimated ~7 min total. Run: ~/qwen-opt/queue/run-jobs.sh ~/qwen-opt/bench-final/lfm10.jobs
+fb-lb-lfm|180|~/qwen-opt/bench-final|./fb_lb.sh lfm "U T"
+fb-lfm-p1|300|~/qwen-opt/bench-final|./fb_arm.sh lfm U0 1 sweep,long && ./fb_arm.sh lfm T 1 sweep,long
+fb-lb-lfmu|180|~/qwen-opt/bench-final|./fb_lb.sh lfm-uncensored "T U"
+fb-lfmu-p1|300|~/qwen-opt/bench-final|./fb_arm.sh lfm-uncensored T 1 sweep,long && ./fb_arm.sh lfm-uncensored U0 1 sweep,long

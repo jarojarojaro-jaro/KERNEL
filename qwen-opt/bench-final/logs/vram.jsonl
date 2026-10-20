@@ -10,3 +10,7 @@
 {"label":"uncensored.T.p2","vram_before_mb":26,"vram_loaded_mb":22645,"n_ctx":"204800","ctx_requested":"204800"}
 {"label":"uncensored.U1.p2","vram_before_mb":26,"vram_loaded_mb":22509,"n_ctx":"204800","ctx_requested":"204800"}
 {"label":"uncensored.U0.p2","vram_before_mb":26,"vram_loaded_mb":23167,"n_ctx":"109056","ctx_requested":"default"}
+{"label":"lfm.U0.p1","vram_before_mb":26,"vram_loaded_mb":19431,"n_ctx":"131072","ctx_requested":"default"}
+{"label":"lfm.T.p1","vram_before_mb":26,"vram_loaded_mb":18644,"n_ctx":"131072","ctx_requested":"131072"}
+{"label":"lfm-uncensored.T.p1","vram_before_mb":26,"vram_loaded_mb":18890,"n_ctx":"131072","ctx_requested":"131072"}
+{"label":"lfm-uncensored.U0.p1","vram_before_mb":26,"vram_loaded_mb":19676,"n_ctx":"131072","ctx_requested":"default"}

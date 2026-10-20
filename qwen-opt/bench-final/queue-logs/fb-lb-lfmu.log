@@ -1,0 +1,8 @@
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 24560 MiB):
+  Device 0: AMD Radeon RX 7900 XTX, gfx1100 (0x1100), VMM: no, Wave Size: 32, VRAM: 24560 MiB
+ggml_hip_pm4: guard 1: watching the KFD queue events of this process (gpu id 1695) from 01:43:40.761107
+ggml_hip_pm4: guard: 0 tape launches, 0 replayed as HIP graph (cool-down), 3 graph launches without a tape, 8 queue evictions (0 during a tape), 14 restores (6 rescheduled), 0 SVM unmaps, IB repairs 0, kernarg repairs 0
+lfm-uncensored T r1: 512/0 4081.4 4096/0 7413.2 0/128 208.3 
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 24560 MiB):
+  Device 0: AMD Radeon RX 7900 XTX, gfx1100 (0x1100), VMM: no, Wave Size: 32, VRAM: 24560 MiB
+lfm-uncensored U r2: 512/0 5750.1 4096/0 6239.5 0/128 156.4 

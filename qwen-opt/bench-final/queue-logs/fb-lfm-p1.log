@@ -1,0 +1,6 @@
+{"label":"lfm.U0.p1","vram_before_mb":26,"vram_loaded_mb":19431,"n_ctx":"131072","ctx_requested":"default"}
+lfm.U0.p1 T=1.0: median 146.8 t/s,  6.81 ms/step | pl-proza 147.1 (1.00 tok/step)  pl-tech 146.6 (1.00 tok/step)  pl-kod 151.3 (1.00 tok/step)  en-chat 148.4 (1.00 tok/step)  en-tech 142.0 (1.00 tok/step)  en-code 138.0 (1.00 tok/step)
+{"label": "lfm.U0.p1", "prompt_tokens": 29733, "prefill_tps": 5068.9, "prefill_s": 5.87, "ttft_s": 5.91, "decode_tps": 126.43, "gen_tokens": 256, "draft_acceptance": null}
+{"label":"lfm.T.p1","vram_before_mb":26,"vram_loaded_mb":18644,"n_ctx":"131072","ctx_requested":"131072"}
+lfm.T.p1 T=1.0: median 274.1 t/s,  3.65 ms/step | pl-proza 282.7 (1.00 tok/step)  pl-tech 282.2 (1.00 tok/step)  pl-kod 262.9 (1.00 tok/step)  en-chat 258.1 (1.00 tok/step)  en-tech 265.9 (1.00 tok/step)  en-code 287.0 (1.00 tok/step)
+{"label": "lfm.T.p1", "prompt_tokens": 29733, "prefill_tps": 6066.5, "prefill_s": 4.9, "ttft_s": 4.94, "decode_tps": 250.69, "gen_tokens": 256, "draft_acceptance": null}

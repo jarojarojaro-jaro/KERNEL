@@ -10,3 +10,7 @@
 {"label": "uncensored.T.p2", "prompt_tokens": 29510, "prefill_tps": 958.9, "prefill_s": 30.77, "ttft_s": 31.24, "decode_tps": 99.82, "gen_tokens": 256, "draft_acceptance": 0.515}
 {"label": "uncensored.U1.p2", "prompt_tokens": 29510, "prefill_tps": 881.4, "prefill_s": 33.48, "ttft_s": 33.78, "decode_tps": 49.34, "gen_tokens": 256, "draft_acceptance": 0.602}
 {"label": "uncensored.U0.p2", "prompt_tokens": 29510, "prefill_tps": 913.8, "prefill_s": 32.29, "ttft_s": 32.74, "decode_tps": 33.53, "gen_tokens": 256, "draft_acceptance": null}
+{"label": "lfm.U0.p1", "prompt_tokens": 29733, "prefill_tps": 5068.9, "prefill_s": 5.87, "ttft_s": 5.91, "decode_tps": 126.43, "gen_tokens": 256, "draft_acceptance": null}
+{"label": "lfm.T.p1", "prompt_tokens": 29733, "prefill_tps": 6066.5, "prefill_s": 4.9, "ttft_s": 4.94, "decode_tps": 250.69, "gen_tokens": 256, "draft_acceptance": null}
+{"label": "lfm-uncensored.T.p1", "prompt_tokens": 29733, "prefill_tps": 6279.8, "prefill_s": 4.73, "ttft_s": 4.77, "decode_tps": 228.27, "gen_tokens": 256, "draft_acceptance": null}
+{"label": "lfm-uncensored.U0.p1", "prompt_tokens": 29733, "prefill_tps": 5252.9, "prefill_s": 5.66, "ttft_s": 5.7, "decode_tps": 126.89, "gen_tokens": 256, "draft_acceptance": null}

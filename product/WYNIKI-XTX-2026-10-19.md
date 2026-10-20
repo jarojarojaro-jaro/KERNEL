@@ -1,6 +1,10 @@
 # Wyniki RX 7900 XTX: upstream llama.cpp → topka (pomiar 2026-10-19)
 
-Każdą liczbę zmierzono 2026-10-19 w jednej kolejce GPU (`~/qwen-opt/queue/run-jobs.sh`): te same skrypty, prompty i karta. Nie ma tu starych liczb, z wyjątkiem tabeli rekordu long_ctx, gdzie stary wiersz podano tylko dla porównania.
+Każdą liczbę zmierzono w kolejce GPU (`~/qwen-opt/queue/run-jobs.sh`) tymi samymi skryptami, z tymi samymi promptami, na tej samej karcie:
+- Qwen: 2026-10-19, 21:33–23:22 UTC;
+- LFM: 2026-10-20, 01:40–01:46 UTC.
+
+Nie ma tu starych liczb, z wyjątkiem tabeli rekordu long_ctx, gdzie stary wiersz podano tylko dla porównania.
 
 ## Co porównujemy
 | ramię | build | uruchomienie |
@@ -12,7 +16,7 @@ Każdą liczbę zmierzono 2026-10-19 w jednej kolejce GPU (`~/qwen-opt/queue/run
 **MTP w upstreamie:** upstream `4c3c5810f` obsługuje głowicę MTP Qwen3.8 z pliku GGUF (`--spec-type draft-mtp`). Daje ona 3.23 tok/krok (Qwen) i 3.14 tok/krok (Uncensored), więc ramię U1 to „upstream + MTP z najlepszą udokumentowaną flagą”.
 
 **Metoda.** Wszystko przypięte do rdzeni `taskset -c 2-5`, każdy przebieg na świeżym serwerze.
-- **llama-bench:** `-fa 1 -p 512,4096 -n 128 -r 3 -ngl 999`, KV q4_0. Topka dostaje środowisko PM4 z `run-topka.sh`. Rundy w kolejności U T T U.
+- **llama-bench:** `-fa 1 -p 512,4096 -n 128 -r 3 -ngl 999`, KV jak w `run-llm.sh` (Qwen q4_0, LFM q8_0). Topka dostaje środowisko PM4 z `run-topka.sh`, a dla LFM także `-b/-ub 2048`. Rundy w kolejności U T T U (LFM: patrz §4).
 - **Serwer:** dwa przejścia, pierwsze U0 U1 T, drugie T U1 U0 (A/B/B/A). W każdym przejściu kolejno:
   1. VRAM po załadowaniu (`amd-smi`, cała karta; przed startem zajęte 26 MiB);
   2. **czat**: `spec_sweep.py`, 6 promptów PL/EN × seedy 1,2,3, T=1, 400 tok.;
@@ -85,17 +89,68 @@ Wnioski:
 - Krótki prompt (1.7k): sam MTP pobija dziś rekord (136.5 wobec 130.2). Lookup W16 kosztuje tu 9%, bo przy streszczaniu krótkiego tekstu ogon z kontekstu rzadko trafia (akceptacja 0.653 przy W16, 0.739 przy samym MTP).
 - Od 6.6k tokenów W16 jest szybszy od samego MTP o 3–5%.
 
-## 4. LFM2.5-24B-A2B Q5_K_M — **w kolejce**
-Zadania `~/qwen-opt/bench-final/lfm.jobs` (llama-bench U T T U; serwer U0 U1 T / T U1 U0: czat + ~32k + VRAM) czekają na GPU. Tabela zostanie uzupełniona po przebiegu.
+## 4. LFM2.5-24B-A2B Q5_K_M
 
-## 5. LFM2.5-24B-A2B Uncensored AD-Q5_K_M — **w kolejce**
-Jak w punkcie 4 (`lfm.jobs`, zadania `fb-lb-lfmu`, `fb-lfmu-p1/p2`).
+Zakres skrócony do reguły użytkownika „≤ 10 min GPU na test” (`lfm10.jobs`):
+- tylko U0 i T, bez U1, jedno przejście;
+- llama-bench: jedna runda na build (`-r 3`), kolejność U T;
+- bez spekulacji (LFM nie ma głowicy MTP, w topce lookup jest wyłączony), więc nie ma też code-edit ani copy.
+
+Topka używa `-b 2048 -ub 2048` i KV q8_0 (`run-topka.sh lfm`). U0 to KV f16 z ctx dobranym przez `-fit` (tu 131 072).
+
+| metryka | upstream domyślny (U0) | **topka (T)** | zmiana T/U0 | log |
+|---|---|---|---|---|
+| prefill pp512 (llama-bench) | 5579.4 | 5345.7 | ×0.96 (−4.2%) | `L/lb.lfm.U.r1.jsonl`, `L/lb.lfm.T.r2.jsonl` |
+| prefill pp4096 | 6105.8 | **7190.3** | ×1.18 (+17.8%) | j.w. |
+| decode tg128 | 163.4 | **278.2** | **×1.70** | j.w. |
+| **czat** spec_sweep T=1, t/s | 146.8 | **274.1** | **×1.87** | `L/spec_sweep.jsonl:13` / `:14` |
+| czat: ms/token | 6.81 | **3.65** | −46.4% | j.w. |
+| ~32k (29 733 tok.) prefill t/s | 5068.9 | **6066.5** | ×1.20 (+19.7%) | `L/long.jsonl:13` / `:14` |
+| ~32k TTFT | 5.91 s | **4.94 s** | −16.4% | j.w. |
+| ~32k decode t/s | 126.4 | **250.7** | **×1.98** | j.w. |
+| VRAM serwera po załadowaniu, ctx 131 072 | 19 405 MiB (KV f16) | **18 618 MiB** (KV q8_0) | −4.1% | `L/vram.jsonl:13` / `:14` |
+
+Jak czytać prefill:
+- pp512 topki jest niższy, bo `-ub 2048` dla promptu 512 tokenów nic nie daje.
+- Pomiar pp512 na LFM ma duży rozrzut (wcześniej ±1100–1400, `R/16f:61`).
+- Zysk z `-ub 2048` widać od 4k tokenów: pp4096 i prefill przy ~32k.
+
+## 5. LFM2.5-24B-A2B Uncensored AD-Q5_K_M
+
+Ten sam zakres co w punkcie 4. Kolejność odwrócona: llama-bench T U, serwer T, potem U0.
+
+| metryka | upstream domyślny (U0) | **topka (T)** | zmiana T/U0 | log |
+|---|---|---|---|---|
+| prefill pp512 (llama-bench) | 5750.1 | 4081.4 ⚠ | ×0.71 | `L/lb.lfm-uncensored.U.r2.jsonl`, `L/lb.lfm-uncensored.T.r1.jsonl` |
+| prefill pp4096 | 6239.5 | **7413.2** | ×1.19 (+18.8%) | j.w. |
+| decode tg128 | 156.4 | 208.3 ⚠ | ×1.33 | j.w. |
+| **czat** spec_sweep T=1, t/s | 143.9 | **250.7** | **×1.74** | `L/spec_sweep.jsonl:16` / `:15` |
+| czat: ms/token | 6.95 | **3.99** | −42.6% | j.w. |
+| ~32k (29 733 tok.) prefill t/s | 5252.9 | **6279.8** | ×1.20 (+19.5%) | `L/long.jsonl:16` / `:15` |
+| ~32k TTFT | 5.70 s | **4.77 s** | −16.3% | j.w. |
+| ~32k decode t/s | 126.9 | **228.3** | **×1.80** | j.w. |
+| VRAM serwera po załadowaniu, ctx 131 072 | 19 650 MiB (KV f16) | **18 864 MiB** (KV q8_0) | −4.0% | `L/vram.jsonl:16` / `:15` |
+
+⚠ **llama-bench topki dla Uncensored to jedna runda i jest niereprezentatywna:**
+- To była pierwsza runda w zadaniu. Guard PM4 zapisał w niej **0 uruchomień taśmy PM4 i 8 wywłaszczeń kolejki** (`Q/fb-lb-lfmu.log`), więc replay PM4 w ogóle nie zadziałał.
+- Wiarygodna liczba decode dla tego modelu to czat przez serwer: 250.7 t/s.
+- Powtórzenie llama-bench (≤ 2 min) jest do zrobienia, jeśli potrzebna jest czysta wartość tg128 [INFERENCE: przyczyną spadku są wywłaszczenia].
 
 ---
 
-## Co dały 2 dni (Qwen; LFM po przebiegu kolejki)
-1. **Czat ×3.0–3.2 względem domyślnego upstreamu** (35.8 → 114.8 t/s Qwen, 36.8 → 111.4 Uncensored) i **×1.9–2.0 względem upstreamu z jego własnym MTP**. Krok weryfikacji 4 draftów trwa u nas tyle, ile u upstreamu jeden token (27.7 vs 27.9 ms), a u upstreamu z MTP 53.7 ms.
-2. **Edycja i kopiowanie kodu ×11.5–11.9** (35 → 407–435 t/s) dzięki ogonowi lookup W16. Wyjście przy T=0 jest identyczne z upstreamem (mvs 4/4 md5).
-3. **Długi kontekst:** decode przy 29.5k ×3.1–3.4 (32.7 → 111.6 t/s), prefill +4–5%, TTFT −4%. Przy 94k decode 105.6 t/s, przy 199k 74.5 t/s.
-4. **Bez spekulacji:** tg128 +22–23% (35.3 → 43.4), pp4096 +6.5–6.8%, pp512 +3.6–4.2%.
-5. **Pamięć:** pełny kontekst 204 800 mieści się w 22.6–23.3 GB. Domyślny upstream w tej samej pamięci (`-fit`) dostaje tylko 99–109k kontekstu.
+## Co dały 2 dni
+1. **Czat:**
+   - Qwen **×3.0–3.2** względem domyślnego upstreamu (35.8 → 114.8 t/s; Uncensored 36.8 → 111.4) i ×1.9–2.0 względem upstreamu z jego własnym MTP. Krok z 4 draftami trwa u nas tyle, ile u upstreamu jeden token (27.7 vs 27.9 ms; upstream z MTP: 53.7 ms).
+   - LFM **×1.74–1.87** (146.8 → 274.1 t/s; 6.81 → 3.65 ms/token).
+2. **Edycja i kopiowanie kodu na Qwenie ×11.5–11.9** (35 → 407–435 t/s) dzięki ogonowi lookup W16. Przy T=0 wyjście mvs jest identyczne z upstreamem (4/4 md5).
+3. **Długi kontekst (~32k):**
+   - decode: Qwen ×3.1–3.4 (32.7 → 111.6 t/s), LFM ×1.8–2.0 (126.4 → 250.7);
+   - prefill: Qwen +4–5%, LFM +20%;
+   - TTFT: Qwen −4%, LFM −16%;
+   - Qwen przy 94k: 105.6 t/s, przy 199k: 74.5 t/s.
+4. **Bez spekulacji (llama-bench):**
+   - Qwen: tg128 +22–23% (35.3 → 43.4), pp4096 +6.5–6.8%;
+   - LFM: tg128 ×1.70 (163.4 → 278.2), pp4096 +18–19%.
+5. **Pamięć:**
+   - Qwen mieści pełny kontekst 204 800 w 22.6–23.3 GB, podczas gdy domyślny upstream w tej samej pamięci (`-fit`) dostaje tylko 99–109k.
+   - LFM: 131 072 kontekstu zajmuje o 4% mniej VRAM niż u upstreamu.
