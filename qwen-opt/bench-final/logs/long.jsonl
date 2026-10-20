@@ -1,0 +1,12 @@
+{"label": "qwen.U0.p1", "prompt_tokens": 29510, "prefill_tps": 923.4, "prefill_s": 31.96, "ttft_s": 32.39, "decode_tps": 32.68, "gen_tokens": 256, "draft_acceptance": null}
+{"label": "qwen.U1.p1", "prompt_tokens": 29510, "prefill_tps": 885.2, "prefill_s": 33.34, "ttft_s": 33.64, "decode_tps": 49.47, "gen_tokens": 256, "draft_acceptance": 0.577}
+{"label": "qwen.T.p1", "prompt_tokens": 29510, "prefill_tps": 964.5, "prefill_s": 30.59, "ttft_s": 31.04, "decode_tps": 111.57, "gen_tokens": 256, "draft_acceptance": 0.586}
+{"label": "qwen.T.p2", "prompt_tokens": 29510, "prefill_tps": 963.6, "prefill_s": 30.62, "ttft_s": 31.08, "decode_tps": 111.66, "gen_tokens": 256, "draft_acceptance": 0.586}
+{"label": "qwen.U1.p2", "prompt_tokens": 29510, "prefill_tps": 885.0, "prefill_s": 33.34, "ttft_s": 33.65, "decode_tps": 49.58, "gen_tokens": 256, "draft_acceptance": 0.577}
+{"label": "qwen.U0.p2", "prompt_tokens": 29510, "prefill_tps": 922.9, "prefill_s": 31.98, "ttft_s": 32.42, "decode_tps": 32.65, "gen_tokens": 256, "draft_acceptance": null}
+{"label": "uncensored.U0.p1", "prompt_tokens": 29510, "prefill_tps": 914.9, "prefill_s": 32.25, "ttft_s": 32.71, "decode_tps": 33.55, "gen_tokens": 256, "draft_acceptance": null}
+{"label": "uncensored.U1.p1", "prompt_tokens": 29510, "prefill_tps": 879.2, "prefill_s": 33.56, "ttft_s": 33.86, "decode_tps": 48.89, "gen_tokens": 256, "draft_acceptance": 0.602}
+{"label": "uncensored.T.p1", "prompt_tokens": 29510, "prefill_tps": 958.0, "prefill_s": 30.8, "ttft_s": 31.27, "decode_tps": 106.8, "gen_tokens": 256, "draft_acceptance": 0.515}
+{"label": "uncensored.T.p2", "prompt_tokens": 29510, "prefill_tps": 958.9, "prefill_s": 30.77, "ttft_s": 31.24, "decode_tps": 99.82, "gen_tokens": 256, "draft_acceptance": 0.515}
+{"label": "uncensored.U1.p2", "prompt_tokens": 29510, "prefill_tps": 881.4, "prefill_s": 33.48, "ttft_s": 33.78, "decode_tps": 49.34, "gen_tokens": 256, "draft_acceptance": 0.602}
+{"label": "uncensored.U0.p2", "prompt_tokens": 29510, "prefill_tps": 913.8, "prefill_s": 32.29, "ttft_s": 32.74, "decode_tps": 33.53, "gen_tokens": 256, "draft_acceptance": null}

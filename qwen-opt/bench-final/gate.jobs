@@ -1,0 +1,2 @@
+fb-lb-qwen|900|~/qwen-opt/bench-final|./fb_lb.sh qwen "U T T U"
+fb-qwen-U0-p1|900|~/qwen-opt/bench-final|./fb_arm.sh qwen U0 1 sweep,mvs,copy,long

@@ -1,0 +1,5 @@
+{"label":"uncensored.U0.p2","vram_before_mb":26,"vram_loaded_mb":23167,"n_ctx":"109056","ctx_requested":"default"}
+uncensored.U0.p2 T=1.0: median  36.8 t/s, 27.16 ms/step | pl-proza  36.6 (1.00 tok/step)  pl-tech  36.8 (1.00 tok/step)  pl-kod  36.8 (1.00 tok/step)  en-chat  36.9 (1.00 tok/step)  en-tech  36.8 (1.00 tok/step)  en-code  36.8 (1.00 tok/step)
+uncensored.U0.p2 T=0.0: median  36.5 t/s | mvs-pad.cu  36.6 (1.00t 27.35ms)  mvs-ngram-cache.h  36.5 (1.00t 27.37ms)  mvs-sampling.h  36.5 (1.00t 27.40ms)  mvs-lazy.py  36.2 (1.00t 27.64ms)
+uncensored.U0.p2 T=0.0: median  36.3 t/s | edit-2k-en  36.2 (1.00t 27.60ms)  edit-8k-en  35.9 (1.00t 27.83ms)  strrep-en  36.4 (1.00t 27.48ms)  hashline-pl  36.4 (1.00t 27.44ms)  quote-pl  36.2 (1.00t 27.62ms)  refactor-en  36.5 (1.00t 27.36ms)
+{"label": "uncensored.U0.p2", "prompt_tokens": 29510, "prefill_tps": 913.8, "prefill_s": 32.29, "ttft_s": 32.74, "decode_tps": 33.53, "gen_tokens": 256, "draft_acceptance": null}

@@ -1,0 +1,7 @@
+{"label":"qwen.T.p1","vram_before_mb":26,"vram_loaded_mb":23359,"n_ctx":"204800","ctx_requested":"204800"}
+qwen.T.p1 T=1.0: median 114.8 t/s, 27.67 ms/step | pl-proza 102.4 (2.84 tok/step)  pl-tech 123.6 (3.43 tok/step)  pl-kod 123.3 (3.40 tok/step)  en-chat  87.8 (2.43 tok/step)  en-tech 121.9 (3.37 tok/step)  en-code 107.6 (2.98 tok/step)
+qwen.T.p1 T=0.0: median 419.7 t/s | mvs-pad.cu 413.5 (14.03t 33.92ms)  mvs-ngram-cache.h 416.8 (14.03t 33.65ms)  mvs-sampling.h 428.5 (14.42t 33.66ms)  mvs-lazy.py 422.7 (14.42t 34.12ms)
+qwen.T.p1 T=0.0: median 406.4 t/s | edit-2k-en 417.5 (14.22t 34.06ms)  edit-8k-en 425.8 (14.63t 34.35ms)  strrep-en 309.9 (10.67t 34.42ms)  hashline-pl 203.9 (6.24t 30.62ms)  quote-pl 452.1 (15.06t 33.31ms)  refactor-en 395.3 (13.47t 34.08ms)
+{"label": "qwen.T.p1", "prompt_tokens": 29510, "prefill_tps": 964.5, "prefill_s": 30.59, "ttft_s": 31.04, "decode_tps": 111.57, "gen_tokens": 256, "draft_acceptance": 0.586}
+3.23.483.134 I spec  print_stats: context lookup: 2795 steps, lookup proposed at 623, tails 77 (600/833 tokens accepted), chains 387 (5384/5757), lost history 0, host 6.253 ms
+3.25.770.651 I spec  print_stats: context lookup: 2872 steps, lookup proposed at 631, tails 77 (600/833 tokens accepted), chains 387 (5384/5757), lost history 0, host 8.119 ms

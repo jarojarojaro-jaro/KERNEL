@@ -1,0 +1,14 @@
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 24560 MiB):
+  Device 0: AMD Radeon RX 7900 XTX, gfx1100 (0x1100), VMM: no, Wave Size: 32, VRAM: 24560 MiB
+qwen U r1: 512/0 1015.6 4096/0 1056.9 0/128 35.3 
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 24560 MiB):
+  Device 0: AMD Radeon RX 7900 XTX, gfx1100 (0x1100), VMM: no, Wave Size: 32, VRAM: 24560 MiB
+ggml_hip_pm4: guard 1: watching the KFD queue events of this process (gpu id 1695) from 21:33:52.526440
+qwen T r2: 512/0 1050.1 4096/0 1125.1 0/128 43.4 
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 24560 MiB):
+  Device 0: AMD Radeon RX 7900 XTX, gfx1100 (0x1100), VMM: no, Wave Size: 32, VRAM: 24560 MiB
+ggml_hip_pm4: guard 1: watching the KFD queue events of this process (gpu id 1695) from 21:34:21.939719
+qwen T r3: 512/0 1050.2 4096/0 1125.5 0/128 43.4 
+ggml_cuda_init: found 1 ROCm devices (Total VRAM: 24560 MiB):
+  Device 0: AMD Radeon RX 7900 XTX, gfx1100 (0x1100), VMM: no, Wave Size: 32, VRAM: 24560 MiB
+qwen U r4: 512/0 1012.2 4096/0 1055.5 0/128 35.3 

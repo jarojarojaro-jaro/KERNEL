@@ -1,0 +1,7 @@
+{"label":"uncensored.T.p2","vram_before_mb":26,"vram_loaded_mb":22645,"n_ctx":"204800","ctx_requested":"204800"}
+uncensored.T.p2 T=1.0: median 111.4 t/s, 26.56 ms/step | pl-proza 101.1 (2.70 tok/step)  pl-tech 117.8 (3.13 tok/step)  pl-kod 128.3 (3.40 tok/step)  en-chat  95.9 (2.54 tok/step)  en-tech 111.8 (2.97 tok/step)  en-code 111.0 (2.95 tok/step)
+uncensored.T.p2 T=0.0: median 436.6 t/s | mvs-pad.cu 427.7 (14.03t 32.80ms)  mvs-ngram-cache.h 436.2 (14.22t 32.61ms)  mvs-sampling.h 444.8 (14.42t 32.43ms)  mvs-lazy.py 436.9 (14.42t 33.01ms)
+uncensored.T.p2 T=0.0: median 421.5 t/s | edit-2k-en 431.9 (14.22t 32.93ms)  edit-8k-en 440.0 (14.63t 33.25ms)  strrep-en 329.7 (10.45t 31.70ms)  hashline-pl 211.7 (6.24t 29.49ms)  quote-pl 467.3 (15.06t 32.22ms)  refactor-en 411.1 (13.47t 32.78ms)
+{"label": "uncensored.T.p2", "prompt_tokens": 29510, "prefill_tps": 958.9, "prefill_s": 30.77, "ttft_s": 31.24, "decode_tps": 99.82, "gen_tokens": 256, "draft_acceptance": 0.515}
+3.22.032.478 I spec  print_stats: context lookup: 2869 steps, lookup proposed at 596, tails 77 (604/827 tokens accepted), chains 387 (5391/5762), lost history 0, host 6.082 ms
+3.24.588.817 I spec  print_stats: context lookup: 2952 steps, lookup proposed at 601, tails 77 (604/827 tokens accepted), chains 387 (5391/5762), lost history 0, host 7.908 ms

@@ -1,0 +1,2 @@
+{"label": "fb-lcb17-W16", "prompt_tokens": 1714, "prefill_tps": 753.1, "prefill_s": 2.3, "decode_tps": 123.7, "gen_tokens": 256, "draft_acceptance": 0.653}
+{"label": "fb-lcb17-MTP", "prompt_tokens": 1714, "prefill_tps": 781.4, "prefill_s": 2.2, "decode_tps": 136.52, "gen_tokens": 256, "draft_acceptance": 0.739}

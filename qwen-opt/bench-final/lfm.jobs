@@ -1,0 +1,6 @@
+fb-lb-lfm|900|~/qwen-opt/bench-final|./fb_lb.sh lfm "U T T U"
+fb-lfm-p1|900|~/qwen-opt/bench-final|./fb_arm.sh lfm U0 1 sweep,long && ./fb_arm.sh lfm U1 1 sweep,long && ./fb_arm.sh lfm T 1 sweep,long
+fb-lfm-p2|900|~/qwen-opt/bench-final|./fb_arm.sh lfm T 2 sweep,long && ./fb_arm.sh lfm U1 2 sweep,long && ./fb_arm.sh lfm U0 2 sweep,long
+fb-lb-lfmu|900|~/qwen-opt/bench-final|./fb_lb.sh lfm-uncensored "U T T U"
+fb-lfmu-p1|900|~/qwen-opt/bench-final|./fb_arm.sh lfm-uncensored U0 1 sweep,long && ./fb_arm.sh lfm-uncensored U1 1 sweep,long && ./fb_arm.sh lfm-uncensored T 1 sweep,long
+fb-lfmu-p2|900|~/qwen-opt/bench-final|./fb_arm.sh lfm-uncensored T 2 sweep,long && ./fb_arm.sh lfm-uncensored U1 2 sweep,long && ./fb_arm.sh lfm-uncensored U0 2 sweep,long

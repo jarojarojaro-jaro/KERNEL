@@ -1,0 +1,5 @@
+{"label":"qwen.U0.p1","vram_before_mb":26,"vram_loaded_mb":23167,"n_ctx":"99072","ctx_requested":"default"}
+qwen.U0.p1 T=1.0: median  35.9 t/s, 27.89 ms/step | pl-proza  35.7 (1.00 tok/step)  pl-tech  35.9 (1.00 tok/step)  pl-kod  35.9 (1.00 tok/step)  en-chat  35.8 (1.00 tok/step)  en-tech  35.8 (1.00 tok/step)  en-code  35.9 (1.00 tok/step)
+qwen.U0.p1 T=0.0: median  35.5 t/s | mvs-pad.cu  35.6 (1.00t 28.11ms)  mvs-ngram-cache.h  35.5 (1.00t 28.14ms)  mvs-sampling.h  35.5 (1.00t 28.16ms)  mvs-lazy.py  35.3 (1.00t 28.32ms)
+qwen.U0.p1 T=0.0: median  35.3 t/s | edit-2k-en  35.3 (1.00t 28.35ms)  edit-8k-en  35.0 (1.00t 28.57ms)  strrep-en  35.4 (1.00t 28.21ms)  hashline-pl  35.0 (1.00t 28.55ms)  quote-pl  35.2 (1.00t 28.38ms)  refactor-en  35.6 (1.00t 28.10ms)
+{"label": "qwen.U0.p1", "prompt_tokens": 29510, "prefill_tps": 923.4, "prefill_s": 31.96, "ttft_s": 32.39, "decode_tps": 32.68, "gen_tokens": 256, "draft_acceptance": null}

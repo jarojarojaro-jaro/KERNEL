@@ -1,0 +1,18 @@
+fb-qwen-U1-p1|900|~/qwen-opt/bench-final|./fb_arm.sh qwen U1 1 sweep,mvs,copy,long
+fb-qwen-T-p1|900|~/qwen-opt/bench-final|./fb_arm.sh qwen T 1 sweep,mvs,copy,long
+fb-qwen-T-p2|900|~/qwen-opt/bench-final|./fb_arm.sh qwen T 2 sweep,mvs,copy,long
+fb-qwen-U1-p2|900|~/qwen-opt/bench-final|./fb_arm.sh qwen U1 2 sweep,mvs,copy,long
+fb-qwen-U0-p2|900|~/qwen-opt/bench-final|./fb_arm.sh qwen U0 2 sweep,mvs,copy,long
+fb-lb-unc|900|~/qwen-opt/bench-final|./fb_lb.sh uncensored "U T T U"
+fb-unc-U0-p1|900|~/qwen-opt/bench-final|./fb_arm.sh uncensored U0 1 sweep,mvs,copy,long
+fb-unc-U1-p1|900|~/qwen-opt/bench-final|./fb_arm.sh uncensored U1 1 sweep,mvs,copy,long
+fb-unc-T-p1|900|~/qwen-opt/bench-final|./fb_arm.sh uncensored T 1 sweep,mvs,copy,long
+fb-unc-T-p2|900|~/qwen-opt/bench-final|./fb_arm.sh uncensored T 2 sweep,mvs,copy,long
+fb-unc-U1-p2|900|~/qwen-opt/bench-final|./fb_arm.sh uncensored U1 2 sweep,mvs,copy,long
+fb-unc-U0-p2|900|~/qwen-opt/bench-final|./fb_arm.sh uncensored U0 2 sweep,mvs,copy,long
+fb-lb-lfm|900|~/qwen-opt/bench-final|./fb_lb.sh lfm "U T T U"
+fb-lfm-p1|900|~/qwen-opt/bench-final|./fb_arm.sh lfm U0 1 sweep,long && ./fb_arm.sh lfm U1 1 sweep,long && ./fb_arm.sh lfm T 1 sweep,long
+fb-lfm-p2|900|~/qwen-opt/bench-final|./fb_arm.sh lfm T 2 sweep,long && ./fb_arm.sh lfm U1 2 sweep,long && ./fb_arm.sh lfm U0 2 sweep,long
+fb-lb-lfmu|900|~/qwen-opt/bench-final|./fb_lb.sh lfm-uncensored "U T T U"
+fb-lfmu-p1|900|~/qwen-opt/bench-final|./fb_arm.sh lfm-uncensored U0 1 sweep,long && ./fb_arm.sh lfm-uncensored U1 1 sweep,long && ./fb_arm.sh lfm-uncensored T 1 sweep,long
+fb-lfmu-p2|900|~/qwen-opt/bench-final|./fb_arm.sh lfm-uncensored T 2 sweep,long && ./fb_arm.sh lfm-uncensored U1 2 sweep,long && ./fb_arm.sh lfm-uncensored U0 2 sweep,long

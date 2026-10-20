@@ -1,0 +1,12 @@
+{"label":"qwen.U0.p1","vram_before_mb":26,"vram_loaded_mb":23167,"n_ctx":"99072","ctx_requested":"default"}
+{"label":"qwen.U1.p1","vram_before_mb":26,"vram_loaded_mb":23226,"n_ctx":"204800","ctx_requested":"204800"}
+{"label":"qwen.T.p1","vram_before_mb":26,"vram_loaded_mb":23359,"n_ctx":"204800","ctx_requested":"204800"}
+{"label":"qwen.T.p2","vram_before_mb":26,"vram_loaded_mb":23359,"n_ctx":"204800","ctx_requested":"204800"}
+{"label":"qwen.U1.p2","vram_before_mb":26,"vram_loaded_mb":23226,"n_ctx":"204800","ctx_requested":"204800"}
+{"label":"qwen.U0.p2","vram_before_mb":26,"vram_loaded_mb":23167,"n_ctx":"99072","ctx_requested":"default"}
+{"label":"uncensored.U0.p1","vram_before_mb":26,"vram_loaded_mb":23167,"n_ctx":"109056","ctx_requested":"default"}
+{"label":"uncensored.U1.p1","vram_before_mb":26,"vram_loaded_mb":22509,"n_ctx":"204800","ctx_requested":"204800"}
+{"label":"uncensored.T.p1","vram_before_mb":26,"vram_loaded_mb":22645,"n_ctx":"204800","ctx_requested":"204800"}
+{"label":"uncensored.T.p2","vram_before_mb":26,"vram_loaded_mb":22645,"n_ctx":"204800","ctx_requested":"204800"}
+{"label":"uncensored.U1.p2","vram_before_mb":26,"vram_loaded_mb":22509,"n_ctx":"204800","ctx_requested":"204800"}
+{"label":"uncensored.U0.p2","vram_before_mb":26,"vram_loaded_mb":23167,"n_ctx":"109056","ctx_requested":"default"}
