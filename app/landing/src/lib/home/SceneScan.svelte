@@ -363,14 +363,16 @@
 			transform: scale(0.94, 0.85);
 		}
 	}
+	/* the beam layer moves only while it sweeps; at rest it sits on the card, so it never adds
+	 * overflow to the scene (the wrap clips it anyway) */
 	.sweep {
 		position: absolute;
 		inset: -8% 0;
-		transform: translate3d(calc(min(var(--b), 1) * 100%), 0, 0);
 		opacity: 0;
 		pointer-events: none;
 	}
 	.sweep.on {
+		transform: translate3d(calc(min(var(--b), 1) * 100%), 0, 0);
 		opacity: clamp(0, calc(min(var(--b), 1.04 - var(--b)) * 25), 1);
 	}
 	.beam {
@@ -509,11 +511,11 @@
 		background: linear-gradient(90deg, #8f1b29, var(--amd) 60%, #ffd5da);
 		box-shadow: 0 0 8px rgb(255 59 79 / 0.8);
 	}
+	/* wraps on narrow logs, never truncated */
 	.lab {
 		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		line-height: 1.4;
+		text-wrap: balance;
 		color: var(--text);
 		letter-spacing: 0.06em;
 	}

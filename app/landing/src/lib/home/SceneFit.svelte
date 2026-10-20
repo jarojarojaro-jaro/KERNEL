@@ -310,6 +310,10 @@
 		left: calc(var(--t) * 100%);
 		transform: translateX(-50%);
 	}
+	/* the 0 tick starts at the tray edge instead of hanging past the clipped field */
+	.scale span:first-child {
+		transform: none;
+	}
 	/* Q8_0 ghost: hatched = does not fit */
 	.ghost {
 		position: absolute;
