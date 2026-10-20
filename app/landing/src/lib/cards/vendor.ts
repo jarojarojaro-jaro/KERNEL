@@ -74,16 +74,19 @@ export function vendorHeat(v: string): string {
  * Photoreal product shots (AI-generated with OpenRouter `openai/gpt-image-2.5-sunburst`, static/media/cards/):
  * the real products, not generic hardware, from one camera (3/4 front, slightly from above, soft key light
  * from the top left) on a transparent 3:2 canvas, product centred. Markings are the products' own, small.
+ * Models sold only by partners (5060 Ti, 3060) are a typical unbranded dual-fan board with just the model name.
  * No studio black to blend away: draw glows and light stripes BEHIND the photo. Each file exists as
  * `<id>-480|800|1200` in AVIF and WebP (ProductPhoto renders them).
  */
-export type PhotoId = 'rx-7900-xtx-pulse' | 'rtx-3090-fe' | 'arc-b580' | 'mac-studio';
+export type PhotoId = 'rx-7900-xtx-pulse' | 'rtx-3090-fe' | 'rtx-5060-ti' | 'rtx-3060' | 'arc-b580' | 'mac-studio';
 export const PHOTO_W = 1200;
 export const PHOTO_H = 800;
 const PHOTO_WIDTHS = [480, 800, 1200];
 export const PHOTO: Record<PhotoId, { alt: { pl: string; en: string } }> = {
 	'rx-7900-xtx-pulse': { alt: { pl: 'Karta Sapphire PULSE Radeon RX 7900 XTX', en: 'Sapphire PULSE Radeon RX 7900 XTX graphics card' } },
 	'rtx-3090-fe': { alt: { pl: 'Karta GeForce RTX 3090 Founders Edition', en: 'GeForce RTX 3090 Founders Edition graphics card' } },
+	'rtx-5060-ti': { alt: { pl: 'Karta GeForce RTX 5060 Ti 16 GB', en: 'GeForce RTX 5060 Ti 16 GB graphics card' } },
+	'rtx-3060': { alt: { pl: 'Karta GeForce RTX 3060 12 GB', en: 'GeForce RTX 3060 12 GB graphics card' } },
 	'arc-b580': { alt: { pl: 'Karta Intel Arc B580 Limited Edition', en: 'Intel Arc B580 Limited Edition graphics card' } },
 	'mac-studio': { alt: { pl: 'Komputer Apple Mac Studio', en: 'Apple Mac Studio computer' } }
 };
@@ -96,6 +99,8 @@ export const MAKER_PHOTO: Record<Vendor, PhotoId> = { nvidia: 'rtx-3090-fe', amd
 const CARD_PHOTO: Record<string, PhotoId> = {
 	'rx-7900-xtx': 'rx-7900-xtx-pulse',
 	'rtx-3090': 'rtx-3090-fe',
+	'rtx-5060-ti-16': 'rtx-5060-ti',
+	'rtx-3060-12': 'rtx-3060',
 	'arc-b580': 'arc-b580',
 	'apple-m1-max': 'mac-studio',
 	'apple-m2-max': 'mac-studio',

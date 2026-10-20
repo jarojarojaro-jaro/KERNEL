@@ -1,20 +1,22 @@
 <script lang="ts">
 	/**
 	 * Twoja karta: the measured cards as a lineup of product tiles. Each tile is a dark showroom in
-	 * the maker's colour (NVIDIA green, AMD red: identity only), the card's render angled on a
-	 * reflective floor, its name, the headline gain of its pick run (heat: speed) and the two measured
-	 * speeds as bars on one scale. Links into the explorer.
+	 * the maker's colour (NVIDIA green, AMD red: identity only), the card's product photo (vendor.ts
+	 * `photoOf`; the SVG GpuArt for a card without one) over a floor lit in that colour, its name, the
+	 * headline gain of its pick run (heat: speed) and the two measured speeds as bars on one scale.
+	 * Links into the explorer.
 	 *
-	 * Alive: while the lineup is on screen one card at a time is "live" (fans spin, a light sweep
-	 * passes, the render turns to face you), cycling; hover or focus takes over. On narrow screens
-	 * the tiles are a snap carousel and the live card is the one in view. Reduced motion: no cycle,
-	 * no spin (GpuArt), bars at rest.
+	 * Alive: while the lineup is on screen one card at a time is "live" (the card lifts, its floor
+	 * light swells, a light sweep passes behind it), cycling; hover or focus takes over. On narrow
+	 * screens the tiles are a snap carousel and the live card is the one in view. Reduced motion: no
+	 * cycle, no lift, bars at rest.
 	 */
 	import { untrack } from 'svelte';
 	import { heatOf, headline } from '$lib/cards/explorer';
 	import GpuArt, { artSpec } from '$lib/cards/GpuArt.svelte';
+	import ProductPhoto from '$lib/cards/ProductPhoto.svelte';
 	import Ratio from '$lib/cards/Ratio.svelte';
-	import { VENDOR, vendorOf, vendorVars } from '$lib/cards/vendor';
+	import { photoOf, VENDOR, vendorOf, vendorVars } from '$lib/cards/vendor';
 	import { play, tilt, visible } from '$lib/fx/actions';
 	import { reducedMotion } from '$lib/fx/motion';
 	import { MODEL_STYLE } from '$lib/modelStyle';
@@ -32,8 +34,8 @@
 		if (!d) return [];
 		return [{ card, run: d.run, gain: d.ratio, before: decode(d.before), ours: decode(d.ours), beforeKey: d.before.key, oursKey: d.ours.key, model: MODEL_INFO[d.run.model].name }];
 	});
-	/** The render fills ~90% of its stage (board + bracket, 640-unit viewBox); longer boards stay
-	 * longer, so the real length order survives. Transform only: no layout change. */
+	/** SVG fallback only: the render fills ~90% of its stage (board + bracket, 640-unit viewBox); longer
+	 * boards stay longer, so the real length order survives. (The photos carry it in their framing.) */
 	const artScale = (label: string, vendor: string, vram: number | null) => Math.max(1, (0.9 * 640) / (artSpec(label, vendor, vram).len + 22)).toFixed(3);
 
 	let hover = $state<string | null>(null);
@@ -79,6 +81,7 @@
 		<ul class="grid" role="list" bind:this={grid} use:visible={(v) => (onScreen = v)} use:play={{ threshold: 0.35, onplay: () => rep++ }} class:played={rep > 0}>
 			{#each tiles as t (t.card.id)}
 				{@const prefix = t.card.name.split(t.card.short)[0].trim()}
+				{@const ph = photoOf(t.card.id)}
 				<li style="{vendorVars(t.card.vendor)}; --th:{heatOf(t.gain)}; --b:{(t.before / Math.max(t.before, t.ours)).toFixed(4)}; --o:{(t.ours / Math.max(t.before, t.ours)).toFixed(4)}">
 					<article class="tile" class:live={live === t.card.id} use:tilt={{ max: 5 }} onpointerenter={() => (hover = t.card.id)} onpointerleave={() => (hover = null)} onfocusin={() => (hover = t.card.id)} onfocusout={() => (hover = null)}>
 						<p class="brand">
@@ -87,10 +90,14 @@
 							<span class="vram">{t.card.vramGB}&nbsp;GB</span>
 						</p>
 						<div class="stage" aria-hidden="true">
-							<div class="art" style="--as:{artScale(t.card.short, t.card.vendor, t.card.vramGB)}">
-								<GpuArt label={t.card.short} vendor={t.card.vendor} vram={t.card.vramGB} heat={heatOf(t.gain)} live={live === t.card.id} />
-							</div>
 							<span class="sweep"></span>
+							{#if ph}
+								<div class="art art--photo"><ProductPhoto id={ph} sizes="(max-width: 640px) min(84vw, 22rem), (max-width: 1100px) 46vw, 22rem" /></div>
+							{:else}
+								<div class="art" style="--as:{artScale(t.card.short, t.card.vendor, t.card.vramGB)}">
+									<GpuArt label={t.card.short} vendor={t.card.vendor} vram={t.card.vramGB} heat={heatOf(t.gain)} live={live === t.card.id} />
+								</div>
+							{/if}
 						</div>
 						<div class="id">
 							<h3 class="short"><a class="stretch" href={cardsHref(lang, t.card.id)}>{t.card.short}</a></h3>
@@ -270,6 +277,14 @@
 		background: radial-gradient(closest-side, rgb(var(--v) / 0.38), rgb(var(--v) / 0.08) 60%, transparent);
 		filter: blur(6px);
 		transform: scaleY(0.7);
+		transition:
+			opacity 0.8s var(--ease-out),
+			transform 0.8s var(--ease-out);
+		opacity: 0.85;
+	}
+	.tile:is(.live, :hover, :focus-within) .stage::before {
+		opacity: 1;
+		transform: scaleY(0.8) scaleX(1.06);
 	}
 	/* scaled by size, not transform; the margins keep every stage the same height (viewBox
 	 * 640×300: height = 46.875% of width) */
@@ -283,6 +298,19 @@
 	.art :global(.glow) {
 		background: radial-gradient(closest-side, rgb(var(--v) / calc(0.22 + var(--th) * 0.2)), transparent);
 	}
+	/* a product photo (transparent 3:2, the board's real length is in its framing): trimmed to about
+	 * the SVG stage's height; the live card lifts a little over its floor light */
+	.art--photo {
+		width: 100%;
+		margin: -4% 0 -5%;
+		transition: transform 0.8s var(--ease-spring);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.tile:is(.live, :hover, :focus-within) .art--photo {
+			transform: translate3d(0, -3.5%, 0) scale(1.035);
+		}
+	}
+	/* the sweep sits before the art in the DOM: the light passes behind the card, never over it */
 	.sweep {
 		position: absolute;
 		inset: -10% auto -10% 0;
