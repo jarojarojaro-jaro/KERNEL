@@ -71,7 +71,7 @@
 		<div class="race">
 			<!-- keyed: the duel caches its text nodes, so a language switch mounts a fresh one -->
 			{#key lang}
-				<StreamDuel {lanes} {gain} text={r.stream} {lang} labels={dl} {summary} dial={dial} countUp {onstart} />
+				<StreamDuel {lanes} {gain} text={r.stream} {lang} labels={dl} {summary} {dial} countUp seam {onstart} />
 			{/key}
 		</div>
 	</div>
@@ -318,12 +318,12 @@
 		border-radius: 4px;
 	}
 	.race {
-		width: min(100%, 66rem);
+		width: min(100%, 72rem);
 		min-width: 0;
 		text-align: left;
-		/* the stream windows: as tall as the first screen allows */
+		/* the stream windows: as tall as the first screen allows (stacked on phones: short) */
 		--duel-win: clamp(7.5rem, 30svh - 6rem, 12rem);
-		--duel-win-sm: clamp(8rem, 30svh - 4rem, 13rem);
+		--duel-win-sm: 6.6rem;
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* the headline lands first; the CTAs follow, then the race rises */
@@ -386,6 +386,13 @@
 		.mlink {
 			font-size: var(--fs-sm);
 			white-space: nowrap;
+		}
+	}
+	/* the smallest phones: the text link drops under the primary instead of running off the edge */
+	@media (max-width: 380px) {
+		.actions {
+			flex-wrap: wrap;
+			row-gap: var(--sp-2);
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

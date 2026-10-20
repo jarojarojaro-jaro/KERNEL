@@ -67,11 +67,14 @@
 	const frac = (v: number) => clampV(v) / (max * 1.04);
 	const glowOf = (v: number) => (tone === 'hot' ? Math.min(1, Math.max(0, (v - redline * 0.6) / (max - redline * 0.6))) : 0);
 	const auraOf = (v: number) => Math.min(1, Math.max(0, v / (max * 0.8)));
+	/** The red zone lights up the deeper the hot needle is in it (flickers as the needle swings). */
+	const flareOf = (v: number) => (tone === 'hot' ? Math.min(1, Math.max(0, ((v - redline) / (max - redline)) * 2.5)) : 0);
 
 	let needleEl: HTMLElement | undefined = $state();
 	let fillEl: SVGPathElement | undefined = $state();
 	let glowEl: HTMLElement | undefined = $state();
 	let auraEl: HTMLElement | undefined = $state();
+	let flareEl: SVGSVGElement | undefined = $state();
 	/** Driven by the parent (until then, with JS, the dial reads 0). */
 	let live = $state(false);
 	let last = Number.NaN;
@@ -89,6 +92,7 @@
 		}
 		if (glowEl) glowEl.style.opacity = glowOf(r).toFixed(3);
 		if (auraEl) auraEl.style.opacity = auraOf(r).toFixed(3);
+		if (flareEl) flareEl.style.opacity = flareOf(r).toFixed(3);
 	}
 </script>
 
@@ -128,6 +132,11 @@
 			{#if t.major && !compact}<text x={t.tx} y={t.ty} class="num" class:redtick={t.red}>{t.v}</text>{/if}
 		{/each}
 	</svg>
+	{#if tone === 'hot'}
+		<svg class="flare" viewBox="0 0 200 200" bind:this={flareEl} style="opacity:{flareOf(value).toFixed(3)}" aria-hidden="true">
+			<path d={arc(redline, max, R + 6)} />
+		</svg>
+	{/if}
 	<svg class="value" viewBox="0 0 200 200" aria-hidden="true">
 		<path d={full} pathLength="1" class="fill" stroke="url(#{fillId})" bind:this={fillEl} style="stroke-dashoffset:{(1 - frac(value)).toFixed(4)}" />
 	</svg>
@@ -169,7 +178,7 @@
 	:global(html.js) .speedo:not(.live) .needle {
 		transform: rotate(-120deg) !important;
 	}
-	:global(html.js) .speedo:not(.live) :is(.value, .glow, .aura) {
+	:global(html.js) .speedo:not(.live) :is(.value, .glow, .aura, .flare) {
 		opacity: 0 !important;
 	}
 	/* the hot dial's heat aura: a soft ring of light around it, brighter the faster it runs */
@@ -219,6 +228,21 @@
 	}
 	.dial {
 		z-index: 0;
+	}
+	/* the lit red zone: its own layer, only its opacity changes (compositor) */
+	.flare {
+		z-index: 1;
+		will-change: opacity;
+	}
+	.flare path {
+		fill: none;
+		stroke: var(--heat-4);
+		stroke-width: 3.5;
+		stroke-linecap: round;
+		filter: drop-shadow(0 0 3px var(--heat-3)) drop-shadow(0 0 8px rgb(226 64 28 / 0.9));
+	}
+	.compact .flare path {
+		stroke-width: 6;
 	}
 	.value {
 		z-index: 2;

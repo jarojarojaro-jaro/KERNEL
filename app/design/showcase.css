@@ -313,6 +313,10 @@ main section[id] {
 	-webkit-background-clip: text;
 	background-clip: text;
 	-webkit-text-fill-color: transparent;
+	/* the clipped chrome must reach the glyphs' ink (ę, ł, accents, tight tracking): a padded paint
+	 * box; inline vertical padding never moves the line, the side padding is cancelled by the margin */
+	padding: 0.16em 0.12em 0.24em;
+	margin-inline: -0.12em;
 }
 /* Heat line: glyphs carry their own ramp colour (set inline) and a faint ember glow. */
 .kin--heat .ch {

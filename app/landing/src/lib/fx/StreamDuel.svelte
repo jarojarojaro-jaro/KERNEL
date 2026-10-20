@@ -26,7 +26,12 @@
 	 * The loop runs only while on screen and not paused, and continues where it stopped. SSR, no JS
 	 * and reduced motion: one static frame `T0` seconds in (ours has written as much more as it is
 	 * faster), no loop. With JS the dials read 0 until the loop first runs, then climb to the
-	 * measured speed and stay there, breathing within ±3% of it (zero-mean).
+	 * measured speed and stay there, never still: ours swings ±7% fast with a twitch on every MTP
+	 * step (alternating sign), the typical app wobbles ±3% slowly; both are zero-mean, so the
+	 * needle's average is exactly the measured median.
+	 *
+	 * `seam` (the hero): each rate sits in its header's top-right corner and the speed-up is one
+	 * glowing badge on the seam between the panes (stacked panes on phones: between them).
 	 */
 	import type { Snippet } from 'svelte';
 	import { onMount, untrack } from 'svelte';
@@ -47,6 +52,7 @@
 		caption,
 		dial,
 		countUp = false,
+		seam = false,
 		onstart
 	}: {
 		/** [cold, hot]. */
@@ -64,6 +70,8 @@
 		dial?: { max: number; redline: number };
 		/** Count the speed-up up from 1× when the stream first runs. */
 		countUp?: boolean;
+		/** Rates in the header corners, the speed-up as a badge between the panes. */
+		seam?: boolean;
 		/** The stream ran its first frame (e.g. a one-time flare). */
 		onstart?: () => void;
 	} = $props();
@@ -114,7 +122,10 @@
 	let clock = 0;
 	let live = 0;
 	// svelte-ignore state_referenced_locally
-	const springs = lanes.map(() => new Spring(0, 55, 14));
+	const springs = lanes.map((l) => (l.id === 'hot' ? new Spring(0, 320, 16) : new Spring(0, 30, 10)));
+	/** Per lane: MTP steps seen and the step twitch (alternating sign, decays in ~40 ms). */
+	const stepsSeen = [0, 0];
+	const kick = [0, 0];
 
 	function measure() {
 		feeds.forEach((f, i) => {
@@ -168,11 +179,14 @@
 			place(i);
 		});
 	}
-	/** Dial target: the median × (1 + 3% × m), m ∈ [−1, 1] from three sines (zero mean). */
+	/** Dial target: the median × (1 + a × m), m ∈ [−1, 1] from three sines (zero mean); ours ±7%
+	 * at ~1–5 Hz, the typical app ±3% at ~0.1–0.7 Hz. */
 	function readout(i: number, time: number) {
 		const p = i * 2.1 + 0.7;
-		const m = 0.5 * Math.sin(time * 2.3 + p) + 0.3 * Math.sin(time * 4.1 + 2 * p) + 0.2 * Math.sin(time * 7.7 + 3 * p);
-		return lanes[i].tps * (1 + 0.03 * m);
+		const hot = lanes[i].id === 'hot';
+		const [a, w] = hot ? [0.07, 6.3] : [0.03, 0.9];
+		const m = 0.5 * Math.sin(time * w + p) + 0.3 * Math.sin(time * w * 2.13 + 2 * p) + 0.2 * Math.sin(time * w * 4.7 + 3 * p);
+		return lanes[i].tps * (1 + a * m);
 	}
 
 	const rm = typeof window !== 'undefined' && reducedMotion();
@@ -210,10 +224,19 @@
 				live += d;
 				seek(clock, false, d);
 				for (let i = 0; i < dials.length; i++) {
+					const l = lanes[i];
 					const s = springs[i];
 					s.target = readout(i, live);
 					s.step(d);
-					dials[i]?.set(Math.max(0, s.x));
+					// our side twitches on every MTP step: ±2,5%, alternating, so it averages out
+					const steps = Math.floor((l.tps * live) / l.burst);
+					if (l.id === 'hot' && steps > stepsSeen[i]) {
+						const sign = steps % 2 ? 1 : -1;
+						kick[i] = sign * 0.025 * l.tps * (0.7 + 0.3 * Math.abs(Math.sin(steps * 1.7)));
+					}
+					stepsSeen[i] = steps;
+					kick[i] *= Math.exp(-d / 0.04);
+					dials[i]?.set(Math.max(0, s.x + kick[i]));
 				}
 			})
 		);
@@ -222,14 +245,14 @@
 
 <figure class="duel" class:run={playing && onScreen && !rm} use:visible={(v) => (onScreen = v)}>
 	<p class="sr-only">{summary}</p>
-	<div class="panes" aria-hidden="true">
+	<div class="panes" class:seam aria-hidden="true">
 		{#each lanes as l, i (l.id)}
 			{@const d = headOf(first[i])}
 			<div class="pane {l.id}">
 				{#if l.id === 'hot'}<span class="edge"></span>{/if}
 				<div class="face">
 					<header class="ph">
-						<div class="row" class:dialed={!!dial}>
+						<div class="row" class:dialed={!!dial} class:corner={seam}>
 							{#if dial}
 								<div class="gauge">
 									<Speedo bind:this={dials[i]} value={l.tps} max={dial.max} redline={dial.redline} {step} tone={l.id} compact />
@@ -238,12 +261,13 @@
 							<div class="info">
 								<p class="tag"><span class="dot"></span>{l.tag}</p>
 								<p class="who">{l.who}</p>
-								<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>
-								{#if l.id === 'hot'}<p class="gain"><Ratio value={gain} {lang} size="sm" replay={countUp && ran ? 1 : 0} duration={1400} /><span>{labels.faster}</span></p>{/if}
+								{#if !seam}<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>{/if}
+								{#if l.id === 'hot' && !seam}<p class="gain"><Ratio value={gain} {lang} size="sm" replay={countUp && ran ? 1 : 0} duration={1400} /><span>{labels.faster}</span></p>{/if}
 							</div>
+							{#if seam}<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>{/if}
 						</div>
 					</header>
-					<div class="win">
+					<div class="win" data-clip-ok>
 						<div class="feed" bind:this={feeds[i]}>
 							{#each [0, 1] as k (k)}
 								<p>
@@ -259,6 +283,14 @@
 				</div>
 			</div>
 		{/each}
+		{#if seam}
+			<p class="seamgain">
+				<span class="pill">
+					<span class="ring"></span>
+					<span class="core"><Ratio value={gain} {lang} size="md" replay={countUp && ran ? 1 : 0} duration={1400} /><span class="fx">{labels.faster}</span></span>
+				</span>
+			</p>
+		{/if}
 	</div>
 	<figcaption class="cap">
 		{#if caption}{@render caption()}{/if}
@@ -281,7 +313,8 @@
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		grid-template-rows: auto auto auto;
-		gap: 0 clamp(0.6rem, 1.5vw, 1.25rem);
+		--cg: clamp(0.6rem, 1.5vw, 1.25rem);
+		gap: 0 var(--cg);
 	}
 
 	/* a terminal pane; always dark, also in the light theme */
@@ -404,9 +437,6 @@
 	.who {
 		flex-basis: 100%;
 		min-width: 0;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 	/* the rate takes its full width (flex item, no shrink); the speed-up wraps below when it must */
 	.rate {
@@ -601,8 +631,155 @@
 		.pp {
 			display: none;
 		}
+		.ring::before {
+			animation: none;
+		}
 	}
 
+	/* ---- seam layout (the hero): rates in the header corners, the speed-up between the panes ---- */
+	.panes.seam {
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+	}
+	.seam .pane.cold {
+		grid-column: 1;
+		grid-row: 1 / span 3;
+	}
+	.seam .pane.hot {
+		grid-column: 3;
+		grid-row: 1 / span 3;
+	}
+	.row.corner {
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+	}
+	.corner .rate {
+		align-self: start;
+		justify-self: end;
+		margin-top: 0 !important;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 0.1rem;
+	}
+	.corner .rate b {
+		font-size: clamp(1.4rem, 8.5cqi, 2.5rem);
+		min-width: 0;
+	}
+	/* a narrow header (tablets): tighter gaps and tracking, so the labels never reach the rate */
+	@container (max-width: 18rem) {
+		.row.corner {
+			column-gap: var(--sp-2);
+		}
+		.corner .gauge {
+			width: 3.25rem;
+		}
+		.corner .tag {
+			letter-spacing: 0.05em;
+			gap: 0.3rem;
+		}
+	}
+	/* the speed-up: one glowing badge on the seam, a heat line running through it into both panes */
+	.seamgain {
+		grid-column: 2;
+		grid-row: 1 / span 3;
+		align-self: center;
+		position: relative;
+		z-index: 1;
+		margin: 0;
+		display: grid;
+		place-items: center;
+	}
+	.seamgain::before {
+		content: '';
+		position: absolute;
+		z-index: -1;
+		top: 50%;
+		left: calc(-1 * var(--cg));
+		right: calc(-1 * var(--cg));
+		height: 2px;
+		margin-top: -1px;
+		background: linear-gradient(90deg, var(--before), var(--heat-2) 35%, var(--heat-4));
+		box-shadow: 0 0 12px rgb(255 122 26 / 0.6);
+	}
+	.pill {
+		position: relative;
+		isolation: isolate;
+		display: grid;
+		padding: 0.85rem 1rem 0.75rem;
+		border-radius: 1.25rem;
+		box-shadow:
+			0 0 0 1px rgb(255 122 26 / 0.3),
+			0 0 48px -6px rgb(255 122 26 / 0.65),
+			0 20px 50px -24px rgb(226 64 28 / 0.8);
+	}
+	/* a turning heat edge (compositor only) around a dark core */
+	.ring {
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		overflow: hidden;
+		border-radius: inherit;
+	}
+	.ring::before {
+		content: '';
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		width: 200%;
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		background: conic-gradient(var(--heat-2), var(--heat-3) 10%, var(--heat-5) 17%, var(--heat-4) 24%, rgb(255 122 26 / 0.18) 40%, rgb(255 122 26 / 0.1) 75%, var(--heat-2));
+		animation: turn 3.2s linear infinite paused;
+		will-change: transform;
+	}
+	.run .ring::before {
+		animation-play-state: running;
+	}
+	.ring::after {
+		content: '';
+		position: absolute;
+		inset: 1.5px;
+		border-radius: calc(1.25rem - 1.5px);
+		background:
+			radial-gradient(80% 70% at 50% 30%, rgb(255 122 26 / 0.22), transparent 70%),
+			#0d0907;
+	}
+	.core {
+		display: grid;
+		justify-items: center;
+		gap: 0.25rem;
+		line-height: 1;
+	}
+	.fx {
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.14em;
+		text-transform: uppercase;
+		color: var(--heat-4);
+	}
+	/* phones and small tablets: the panes stack; the badge sits between them, the heat line across */
+	@media (max-width: 720px) {
+		.panes.seam {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: repeat(7, auto);
+		}
+		.seam .pane.cold {
+			grid-column: 1;
+			grid-row: 1 / span 3;
+		}
+		.seam .pane.hot {
+			grid-column: 1;
+			grid-row: 5 / span 3;
+		}
+		.seamgain {
+			grid-column: 1;
+			grid-row: 4;
+			padding-block: 0.8rem;
+		}
+		.seamgain::before {
+			left: 0;
+			right: 0;
+		}
+	}
 	/* a narrow header: the dial sits above the header text */
 	@container (max-width: 14rem) {
 		.row.dialed {

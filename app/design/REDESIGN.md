@@ -104,13 +104,13 @@ The comparison uses only same-harness numbers: RTX 3090, Qwen3.8-27B UD-Q4_K_XL,
 | 0.10–0.60 s | „Ten sam sprzęt.” Each glyph rises 0.4em from a mask, weight 300 → 800, width 75 → 100, 35 ms stagger. |
 | 0.35–0.85 s | „Ten sam model.” Same treatment. |
 | 0.70–1.40 s | „Po prostu szybciej.” Width animates 75 → 125 (the line literally widens, as if accelerating). The fill is the heat ramp; a speed streak passes through it once. |
-| 1.20 s | The duel rises in (`fx/StreamDuel`, the same component as the final CTA): two terminal panes on our lab card, RX 7900 XTX × Qwen3.8-27B (one script, ABBA). Left „Bez Podkrętu · Typowa aplikacja · 35,9 t/s” (steel), right „Z Podkrętem · Nasz silnik · 114,8 t/s · 3,2× szybciej” (heat gradient digits, turning heat edge). A small speedometer (`fx/Speedo` compact, 0–140, red from 100) sits left of each header; with JS it reads 0. No caption, source pill or live badge (sources: /metodologia, the boost section, the card page). |
-| first frame on screen | GO, once: the heat field runs hot, a bloom sweeps the hero, the speed-up counts up from 1×, both needles climb to the measured speed and stay there, breathing within ±3% (zero-mean). |
+| 1.20 s | The duel rises in (`fx/StreamDuel`, the same component as the final CTA): two terminal panes on our lab card, RX 7900 XTX × Qwen3.8-27B (one script, ABBA). Left „Bez Podkrętu · Typowa aplikacja” (steel), right „Z Podkrętem · Nasz silnik” (heat gradient digits, turning heat edge); each rate (35,9 / 114,8 t/s) in its header's top-right corner, „3,2× szybciej” as one glowing badge on the seam between the panes (a heat line runs through it; ≤ 720 px the panes stack and the badge sits between them). A small speedometer (`fx/Speedo` compact, 0–140, red from 100) sits left of each header; with JS it reads 0. No caption, source pill or live badge (sources: /metodologia, the boost section, the card page). |
+| first frame on screen | GO, once: the heat field runs hot, a bloom sweeps the hero, the speed-up counts up from 1×, both needles climb to the measured speed and stay there, never still: ours swings ±7% at ~1–5 Hz with a twitch on every MTP step (alternating sign) and its red zone flickers lit; the typical app wobbles ±3% slowly. All zero-mean: the average is exactly the measured median. |
 | then, nonstop | Both panes stream the same answer at the measured median t/s (ours in MTP steps = t/s × measured ms/step), each window following its newest line and wrapping into the next copy; token counters grow, with our live lead. No restarts. Pause under the panes; off screen the loop sleeps and continues where it was; reduced motion shows one static frame (needles on the measured speed). |
 
 The cursor moves a faint heat light across the shader. In the headline, a radial highlight follows the cursor (CSS `--mx/--my`).
 
-Mobile 390: the headline fills the width at 14vw. The panes stay side by side; in a narrow header the dial sits above the labels.
+Mobile 390: the headline fills the width at 14vw. The panes stack, the speed-up badge between them.
 
 ## 7. Scroll scenes
 
