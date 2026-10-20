@@ -90,6 +90,12 @@ export const KLD_PENDING: ModelKey[] = ['nemotron'];
 
 export const sharedModels = (a: CardView, b: CardView): ModelKey[] => a.runs.map((r) => r.model).filter((m) => b.runs.some((r) => r.model === m));
 
+/**
+ * Two runs on different cards may be ranked (winner, speed-up) only when they measured the same
+ * model with the same script and conditions on both sides.
+ */
+export const comparable = (r1: RunView, r2: RunView): boolean => r1.model === r2.model && r1.sameHarness && r2.sameHarness && r1.metric.en === r2.metric.en;
+
 /* ---------------- makers ---------------- */
 
 /** Maker order of the explorer's front page and of the maker pages (`/pl/karty/nvidia/`). */

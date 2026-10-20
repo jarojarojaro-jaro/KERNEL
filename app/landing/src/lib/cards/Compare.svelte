@@ -1,36 +1,34 @@
 <script lang="ts">
 	/**
 	 * Versus: two measured cards face to face on a shared model (each card's pick when they share
-	 * none). The arena is lit in both makers' colours: card A's from the left, card B's from the
-	 * right, meeting and blending at a white-hot seam where the VS stands (NVIDIA green against AMD
-	 * red; two cards of one maker share its colour). Identity colour only: speeds keep the heat ramp.
-	 * Each fighter has its render, name, our engine's measured speed and a bar on one shared scale;
-	 * the bars grow toward the seam. The verdict under the arena is a speed-up only when both runs
-	 * come from the same script and conditions.
+	 * none), as a title-fight face-off (Versus.svelte): each card in its maker's colour field, the
+	 * fields colliding on an energy seam under a heavy VS, stat bars clashing from both edges. A stat
+	 * has a winner only when both runs come from the same model, script and conditions (`comparable`);
+	 * otherwise the arena says there is no verdict. The fighters are picked below like a fighter
+	 * select (photo chips in the makers' colours). Then the 500-word race and the token race.
 	 *
 	 * State lives in the query string (?a=…&b=…&m=…), read on the client: the prerendered page is the
-	 * default pair. Changing a card replays its entrance (it slides in from its side, the VS lands);
-	 * transforms and opacity only, nothing under reduced motion.
+	 * default pair. The arena plays its entrance from the first paint; changing a card replays its
+	 * slam and the VS, the bars glide and the numbers roll to the new pair.
 	 */
 	import { afterNavigate, replaceState } from '$app/navigation';
 	import { untrack } from 'svelte';
-	import HeatBar from '$lib/fx/HeatBar.svelte';
-	import Odometer from '$lib/fx/Odometer.svelte';
 	import RaceLanes, { type Lane } from '$lib/fx/RaceLanes.svelte';
-	import { findCard, MODEL_INFO, variantLabel, words500, type ModelKey } from '$lib/data/measurements';
-	import { fmtGB, fmtSec, fmtTps } from '$lib/format';
+	import { findCard, MODEL_INFO, words500, type ModelKey } from '$lib/data/measurements';
+	import { fmtTps } from '$lib/format';
 	import { cardsHref, currentLang, num } from '$lib/i18n';
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import Choice from './Choice.svelte';
 	import { cardsCopy } from './copy';
-	import { duel, heatOf, MEASURED, roundTo, runOf, sharedModels } from './explorer';
+	import { comparable, duel, heatOf, MEASURED, roundTo, runOf, sharedModels } from './explorer';
 	import GpuArt from './GpuArt.svelte';
 	import Kinetic from './Kinetic.svelte';
-	import Ratio from './Ratio.svelte';
-	import TimeRace from './TimeRace.svelte';
 	import { Play } from './play.svelte';
 	import ProductPhoto from './ProductPhoto.svelte';
-	import { photoOf, VENDOR, vendorOf } from './vendor';
+	import Ratio from './Ratio.svelte';
+	import TimeRace from './TimeRace.svelte';
+	import { photoOf, VENDOR, vendorOf, vendorVars } from './vendor';
+	import Versus, { type VsFighter, type VsStat } from './Versus.svelte';
 
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].compare);
@@ -50,8 +48,8 @@
 	const runB = $derived(shared.length ? runOf(B, runA.model)! : runOf(B, B.pick.model)!);
 	const dA = $derived(duel(runA));
 	const dB = $derived(duel(runB));
-	// Race only for the same model under the same script and conditions.
-	const sameScript = $derived(shared.length > 0 && runA.sameHarness && runB.sameHarness && runA.metric.en === runB.metric.en);
+	// Winners and races only for the same model under the same script and conditions.
+	const sameScript = $derived(comparable(runA, runB));
 
 	// Read the pair from the query once the router is up (replaceState needs it), on first load and
 	// when the page is reached again through a link with another ?a=…&b=….
@@ -85,7 +83,6 @@
 			{ key: 'b', card: B, run: runB, d: dB }
 		].map((s) => ({ ...s, w: s.d ? words500(s.d.ours, 'pl') : null }))
 	);
-	const top = $derived(Math.max(...sides.map((s) => s.d?.ours.decode?.v ?? 0)) * 1.08);
 	// Both lanes run our engine, so both are hot (heat means our speed).
 	const lanes = $derived<Lane[]>(
 		sides
@@ -107,15 +104,37 @@
 		if (seenPair && seenPair !== k) untrack(race500.replay);
 		seenPair = k;
 	});
-	const cardOptions = (other: string) => MEASURED.map((e) => ({ value: e.id, label: e.card.short, sub: `${e.card.vramGB}\u00a0GB`, disabled: e.id === other }));
 
-	/** The two makers' colours: A lights the arena from the left, B from the right. */
-	const vs = $derived.by(() => {
+	const NB = '\u00a0';
+	const fighters = $derived(
+		sides.map(
+			(s): VsFighter => ({
+				id: s.card.id,
+				vendor: s.card.vendor,
+				name: s.card.short,
+				sub: [`${s.card.vramGB}${NB}GB`, `${num(s.card.bwGBs.v, lang, 0)}${NB}GB/s`, MODEL_INFO[s.run.model].name, s.run.quant],
+				photo: photoOf(s.card.id),
+				vram: s.card.vramGB,
+				heat: heatOf(s.d?.ratio),
+				href: cardsHref(lang, `${s.card.id}/`),
+				hrefLabel: t.open,
+				note: s.run.sameHarness ? undefined : tc.scriptsWarn
+			})
+		)
+	);
+	const r1 = (v: number | undefined) => (v == null ? null : roundTo(v, 1));
+	const stats = $derived<VsStat[]>([
+		{ key: 'ours', label: t.decode, unit: 't/s', decimals: 1, a: r1(dA?.ours.decode?.v), b: r1(dB?.ours.decode?.v), better: 'hi' },
+		{ key: 'words', label: t.words, unit: 's', decimals: 1, a: r1(sides[0].w?.v), b: r1(sides[1].w?.v), better: 'lo' },
+		{ key: 'ttft', label: t.ttft, unit: 's', decimals: 1, a: r1(dA?.ours.ttft?.v), b: r1(dB?.ours.ttft?.v), better: 'lo' },
+		{ key: 'before', label: t.before, unit: 't/s', decimals: 1, a: r1(dA?.before.decode?.v), b: r1(dB?.before.decode?.v), better: 'hi' },
+		{ key: 'vram', label: t.vram, unit: 'GB', decimals: 1, a: r1(dA?.ours.vram?.v), b: r1(dB?.ours.vram?.v), better: null, aSub: `/ ${A.vramGB}${NB}GB`, bSub: `/ ${B.vramGB}${NB}GB` }
+	]);
+	const glow = $derived.by(() => {
 		const va = VENDOR[vendorOf(A.vendor)];
 		const vb = VENDOR[vendorOf(B.vendor)];
-		return `--a:${va.rgb}; --a-hi:${va.hi}; --a-deep:${va.deep}; --b:${vb.rgb}; --b-hi:${vb.hi}; --b-deep:${vb.deep}`;
+		return `--a:${va.rgb}; --b:${vb.rgb}`;
 	});
-	const NB = '\u00a0';
 </script>
 
 <svelte:head>
@@ -125,7 +144,7 @@
 	<meta property="og:description" content={meta.compareDescription} />
 </svelte:head>
 
-<div class="amb" style={vs} aria-hidden="true"></div>
+<div class="amb" style={glow} aria-hidden="true"></div>
 
 <section class="hero wrap" aria-labelledby="cmp-title">
 	<a class="back mono" href={cardsHref(lang)}><span aria-hidden="true">←</span> {tc.back}</a>
@@ -134,72 +153,53 @@
 	<p class="lede">{t.lede}</p>
 </section>
 
-<section class="wrap arena-w" style={vs} aria-label="{A.name} {t.vs} {B.name}">
-	<div class="arena" aria-live="polite">
-		<span class="blade" aria-hidden="true"></span>
-		{#each sides as s (s.key)}
-			<div class="fighter f-{s.key}" class:win={lead?.hi.key === s.key}>
-				{#key s.card.id}
-					<div class="f-in">
-						<p class="f-wm" class:upright={s.card.vendor !== 'nvidia' && s.card.vendor !== 'amd'}>{VENDOR[vendorOf(s.card.vendor)].name}</p>
-						<div class="f-art" aria-hidden="true">
-							{#if photoOf(s.card.id)}<ProductPhoto id={photoOf(s.card.id)!} sizes="(max-width: 40rem) 44vw, 22rem" eager />{:else}<GpuArt label={s.card.short} vendor={s.card.vendor} vram={s.card.vramGB} heat={heatOf(s.d?.ratio)} live flat />{/if}
-						</div>
-						<h2 class="f-nm">{s.card.short}</h2>
-						<p class="f-sub mono">{s.card.vramGB}{NB}GB · {num(s.card.bwGBs.v, lang, 0)}{NB}GB/s · {MODEL_STYLE[s.run.model].short} {s.run.quant}</p>
-					</div>
-				{/key}
-				{#if s.d}
-					<div class="f-score">
-						<p class="f-v fig"><Odometer value={roundTo(s.d.ours.decode!.v, 1)} decimals={1} {lang} duration={1100} /><span class="u">t/s</span></p>
-						<p class="f-lab">{variantLabel(s.run, s.run.ours)[lang]}</p>
-						<span class="f-bar" style="--f:{(s.d.ours.decode!.v / top).toFixed(4)}" aria-hidden="true"><i></i></span>
-					</div>
-				{/if}
-			</div>
-		{/each}
-		<div class="core" aria-hidden="true">
-			{#key `${a}-${b}`}<span class="vs">VS</span>{/key}
-		</div>
-	</div>
-	<p class="verdict">
-		{#if lead}<Ratio value={lead.x} {lang} size="md" /> <span>{t.leadLine(lead.hi.card.short, lead.lo.card.short)}</span>{:else}<span class="nv">{shared.length ? t.noRace : t.noRaceModels}</span>{/if}
-	</p>
+<section class="wrap arena" aria-label="{A.name} {t.vs} {B.name}" aria-live="polite">
+	<Versus a={fighters[0]} b={fighters[1]} {stats} verdict={sameScript} {lang} winLabel={t.win} missingLabel={t.missing} mode="intro">
+		{#snippet foot()}
+			<p class="verdict">
+				{#if lead}<Ratio value={lead.x} {lang} size="md" /> <span>{t.leadLine(lead.hi.card.short, lead.lo.card.short)}</span>{:else}<span class="nv">{shared.length ? t.noVerdict : t.noRaceModels}</span>{/if}
+			</p>
+		{/snippet}
+	</Versus>
 </section>
 
-<section class="wrap pick" style={vs} aria-label="{t.a}, {t.b}">
-	<div class="pk pk-a"><Choice legend={t.a} name="cmp-a" bind:value={a} options={cardOptions(b)} tight /></div>
-	{#if shared.length > 1}
-		<div class="pk pk-m"><Choice legend={t.model} name="cmp-m" bind:value={model} options={shared.map((m) => ({ value: m, model: m, label: MODEL_STYLE[m].short }))} tight /></div>
-	{/if}
-	<div class="pk pk-b"><Choice legend={t.b} name="cmp-b" bind:value={b} options={cardOptions(a)} tight /></div>
-	<p class="fine note">{shared.length ? t.quantNote : t.fallback}</p>
-</section>
-
-<section class="wrap duel" style={vs} aria-label="{A.name} {t.vs} {B.name}">
-	{#each sides as s (s.key)}
-		<article class="side side--{s.key}">
-			<header>
-				<p class="s-wm mono">{VENDOR[vendorOf(s.card.vendor)].name}</p>
-				<h2 class="nm">{s.card.short}</h2>
-			</header>
-			{#if s.d}
-				<HeatBar value={roundTo(s.d.before.decode!.v, 1)} max={top} label={t.before} cold {lang} />
-				<dl class="facts">
-					{#if s.w}
-						<div>
-							<dt>{t.words}</dt>
-							<dd class="fig">{fmtSec(s.w.v, lang)}</dd>
-						</div>
+{#snippet roster(side: 'a' | 'b', legend: string)}
+	<fieldset class="roster roster-{side}">
+		<legend><span class="tag">{side === 'a' ? 'A' : 'B'}</span>{legend}</legend>
+		<div class="chips">
+			{#each MEASURED as e (e.id)}
+				{@const taken = side === 'a' ? e.id === b : e.id === a}
+				{@const on = side === 'a' ? e.id === a : e.id === b}
+				<label class="chip" class:on class:taken style={vendorVars(e.card.vendor)}>
+					{#if side === 'a'}
+						<input type="radio" name="cmp-a" value={e.id} bind:group={a} disabled={taken} />
+					{:else}
+						<input type="radio" name="cmp-b" value={e.id} bind:group={b} disabled={taken} />
 					{/if}
-					{#if s.d.ours.ttft}<div><dt>{t.ttft}</dt><dd class="fig">{fmtSec(s.d.ours.ttft.v, lang)}</dd></div>{/if}
-					{#if s.d.ours.vram}<div><dt>{t.vram}</dt><dd class="fig">{fmtGB(s.d.ours.vram.v, s.d.ours.vram.unit, lang).text} / {s.card.vramGB}{NB}GB</dd></div>{/if}
-				</dl>
-				<p class="foot"><a href={cardsHref(lang, `${s.card.id}/`)} class="more">{t.open} →</a></p>
-				{#if !s.run.sameHarness}<p class="warn mono">{tc.scriptsWarn}</p>{/if}
-			{/if}
-		</article>
-	{/each}
+					<span class="thumb" aria-hidden="true">
+						{#if photoOf(e.id)}<ProductPhoto id={photoOf(e.id)!} sizes="7rem" />{:else}<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} flat />{/if}
+					</span>
+					<span class="who">
+						<span class="mk" class:upright={e.card.vendor !== 'nvidia' && e.card.vendor !== 'amd'}>{VENDOR[vendorOf(e.card.vendor)].name}</span>
+						<span class="nm">{e.card.short}</span>
+						<span class="vr mono">{e.card.vramGB}{NB}GB</span>
+					</span>
+				</label>
+			{/each}
+		</div>
+	</fieldset>
+{/snippet}
+
+<section class="wrap pick" aria-labelledby="cmp-select">
+	<h2 id="cmp-select" class="pick-h">{t.select}</h2>
+	<div class="rosters">
+		{@render roster('a', t.a)}
+		{@render roster('b', t.b)}
+	</div>
+	{#if shared.length > 1}
+		<div class="pk-m"><Choice legend={t.model} name="cmp-m" bind:value={model} options={shared.map((m) => ({ value: m, model: m, label: MODEL_STYLE[m].short }))} tight /></div>
+	{/if}
+	<p class="fine note">{shared.length ? t.quantNote : t.fallback}</p>
 </section>
 
 {#if sameScript && sides[0].w && sides[1].w}
@@ -277,262 +277,6 @@
 		color: var(--text-hi);
 	}
 
-	/* ---------- the arena: A's colour from the left, B's from the right, blended at the seam ---------- */
-	.arena {
-		--text-hi: #edeae3;
-		--text: #bdb9b1;
-		--text-mute: #8e8a83;
-		color-scheme: dark;
-		position: relative;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: clamp(3.5rem, 9vw, 9rem);
-		padding: clamp(1.25rem, 3.5vw, 3rem) clamp(1rem, 3.5vw, 3rem) clamp(1.5rem, 3.5vw, 3rem);
-		border-radius: var(--r-xl);
-		color: var(--text);
-		background:
-			radial-gradient(22% 60% at 50% 46%, rgb(255 243 214 / 0.16), transparent 70%),
-			radial-gradient(40% 70% at 50% 50%, color-mix(in oklab, rgb(var(--a) / 0.32), rgb(var(--b) / 0.32)), transparent 75%),
-			radial-gradient(60% 95% at 0% 40%, rgb(var(--a) / 0.6), transparent 70%),
-			radial-gradient(60% 95% at 100% 40%, rgb(var(--b) / 0.6), transparent 70%),
-			linear-gradient(90deg, rgb(var(--a) / 0.34), rgb(var(--a) / 0.1) 36%, transparent 58%),
-			linear-gradient(270deg, rgb(var(--b) / 0.34), rgb(var(--b) / 0.1) 36%, transparent 58%),
-			linear-gradient(90deg, var(--a-deep), #070708 50%, var(--b-deep));
-		box-shadow:
-			inset 0 0 0 1px rgb(255 255 255 / 0.08),
-			inset 1px 0 0 rgb(var(--a) / 0.6),
-			inset -1px 0 0 rgb(var(--b) / 0.6),
-			0 50px 90px -60px #000;
-		overflow: hidden;
-		isolation: isolate;
-	}
-	/* each maker's diagonal accent in its own outer corner */
-	.arena::before,
-	.arena::after {
-		content: '';
-		position: absolute;
-		z-index: -1;
-		top: -30%;
-		width: 34%;
-		height: 80%;
-		pointer-events: none;
-	}
-	.arena::before {
-		left: -8%;
-		background: linear-gradient(65deg, transparent 0 52%, rgb(var(--a) / 0.4) 52% 55%, transparent 55% 60%, rgb(var(--a) / 0.18) 60% 61.5%, transparent 61.5%);
-	}
-	.arena::after {
-		right: -8%;
-		background: linear-gradient(115deg, transparent 0 38.5%, rgb(var(--b) / 0.18) 38.5% 40%, transparent 40% 45%, rgb(var(--b) / 0.4) 45% 48%, transparent 48%);
-	}
-	/* the seam: a slanted blade, A's colour on its left edge, white-hot core, B's on its right */
-	.blade {
-		position: absolute;
-		z-index: -1;
-		top: -15%;
-		bottom: -15%;
-		left: 50%;
-		width: clamp(5px, 0.6vw, 9px);
-		background: linear-gradient(90deg, rgb(var(--a)), #fff3d6 50%, rgb(var(--b)));
-		box-shadow:
-			-10px 0 40px 2px rgb(var(--a) / 0.55),
-			10px 0 40px 2px rgb(var(--b) / 0.55),
-			0 0 70px 10px rgb(255 243 214 / 0.18);
-		transform: translateX(-50%) rotate(10deg);
-		pointer-events: none;
-	}
-	.fighter {
-		position: relative;
-		display: grid;
-		align-content: start;
-		gap: var(--sp-4);
-		min-width: 0;
-	}
-	.f-b {
-		text-align: right;
-	}
-	.f-in {
-		display: grid;
-		gap: 0.3rem;
-		min-width: 0;
-	}
-	.f-b .f-in {
-		justify-items: end;
-	}
-	.f-wm {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: clamp(1rem, 0.7rem + 1vw, 1.6rem);
-		font-weight: 900;
-		font-style: italic;
-		font-stretch: 115%;
-		letter-spacing: 0.02em;
-		line-height: 1;
-		color: var(--a-hi);
-		text-shadow: 0 0 18px rgb(var(--a) / 0.7);
-	}
-	.f-b .f-wm {
-		color: var(--b-hi);
-		text-shadow: 0 0 18px rgb(var(--b) / 0.7);
-	}
-	.f-wm.upright {
-		font-style: normal;
-	}
-	.f-art {
-		width: min(100%, 22rem);
-		margin-block: var(--sp-2);
-		user-select: none;
-	}
-	.f-a .f-art :global(.glow) {
-		background: radial-gradient(closest-side, rgb(var(--a) / 0.4), transparent);
-	}
-	.f-b .f-art :global(.glow) {
-		background: radial-gradient(closest-side, rgb(var(--b) / 0.4), transparent);
-	}
-	.f-nm {
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: clamp(2.1rem, 1rem + 4vw, 5rem);
-		font-weight: 900;
-		font-stretch: 115%;
-		letter-spacing: -0.045em;
-		line-height: 0.9;
-		color: var(--text-hi);
-		white-space: nowrap;
-	}
-	.f-sub {
-		margin: var(--sp-1) 0 0;
-		font-size: var(--fs-2xs);
-		color: var(--text-mute);
-	}
-	.f-score {
-		display: grid;
-		gap: 0.35rem;
-	}
-	.f-b .f-score {
-		justify-items: end;
-	}
-	.f-v {
-		margin: 0;
-		display: flex;
-		align-items: baseline;
-		gap: 0.4rem;
-		font-size: clamp(2rem, 1rem + 3.6vw, 4.25rem);
-		line-height: 1;
-		/* our engine's speed on both sides: hot; the faster one glows more */
-		color: var(--heat-5);
-		filter: drop-shadow(0 0 8px rgb(255 122 26 / 0.3));
-	}
-	.win .f-v {
-		filter: drop-shadow(0 0 18px rgb(255 122 26 / 0.65));
-	}
-	.u {
-		font-size: var(--fs-xs);
-		color: var(--text-mute);
-	}
-	.f-lab {
-		margin: 0;
-		font-size: var(--fs-xs);
-		color: var(--text-mute);
-	}
-	/* the bars grow toward the seam, on one shared scale */
-	.f-bar {
-		position: relative;
-		display: block;
-		width: 100%;
-		height: 0.55rem;
-		border-radius: 99px;
-		background: rgb(255 255 255 / 0.07);
-		overflow: hidden;
-	}
-	.f-bar i {
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		background: linear-gradient(90deg, var(--heat-2), var(--heat-3), var(--heat-4), var(--heat-5));
-		box-shadow: 0 0 14px rgb(255 122 26 / 0.6);
-		transform: scaleX(var(--f));
-		transform-origin: left;
-		transition: transform 0.9s var(--ease-spring);
-	}
-	.f-b .f-bar i {
-		background: linear-gradient(270deg, var(--heat-2), var(--heat-3), var(--heat-4), var(--heat-5));
-		transform-origin: right;
-	}
-
-	/* the VS at the seam */
-	.core {
-		position: absolute;
-		left: 50%;
-		top: clamp(5.5rem, 13vw, 11rem);
-		transform: translate(-50%, -50%);
-		pointer-events: none;
-	}
-	.vs {
-		display: block;
-		font-family: var(--font-display);
-		font-size: clamp(3.4rem, 1.5rem + 7vw, 9.5rem);
-		font-weight: 900;
-		font-style: italic;
-		font-stretch: 125%;
-		letter-spacing: -0.05em;
-		line-height: 0.8;
-		padding: 0.06em 0.24em;
-		background: linear-gradient(90deg, var(--a-hi) 18%, #fff3d6 50%, var(--b-hi) 82%);
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
-		filter: drop-shadow(0 0 20px rgb(255 243 214 / 0.35)) drop-shadow(0 6px 0 rgb(0 0 0 / 0.55));
-	}
-
-	/* entrances: each fighter from its side, the VS lands on a spring */
-	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .f-a .f-in {
-			animation: from-left 0.9s var(--ease-spring) backwards;
-		}
-		:global(html.js) .f-b .f-in {
-			animation: from-right 0.9s var(--ease-spring) backwards;
-		}
-		:global(html.js) .vs {
-			animation: vs-land 0.75s var(--ease-spring) 0.15s backwards;
-		}
-		:global(html.js) .blade {
-			animation: blade-in 0.9s var(--ease-out) backwards;
-		}
-		:global(html.js) .f-bar i {
-			animation: bar-in 1.1s var(--ease-out) 0.2s backwards;
-		}
-	}
-	@keyframes from-left {
-		from {
-			opacity: 0;
-			transform: translate3d(-18%, 0, 0);
-		}
-	}
-	@keyframes from-right {
-		from {
-			opacity: 0;
-			transform: translate3d(18%, 0, 0);
-		}
-	}
-	@keyframes vs-land {
-		from {
-			opacity: 0;
-			transform: scale(1.9) rotate(-6deg);
-		}
-	}
-	@keyframes blade-in {
-		from {
-			opacity: 0;
-			transform: translateX(-50%) rotate(10deg) scaleY(0.2);
-		}
-	}
-	@keyframes bar-in {
-		from {
-			transform: scaleX(0);
-		}
-	}
-
 	.verdict {
 		display: flex;
 		flex-wrap: wrap;
@@ -549,167 +293,161 @@
 		color: var(--text-mute);
 	}
 
-	/* ---------- pickers: A on the left in A's colour, B on the right in B's ---------- */
+	/* ---------- fighter select ---------- */
 	.pick {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-		align-items: end;
-		gap: var(--sp-4) var(--sp-6);
-		padding-top: clamp(1.5rem, 3vw, 2.5rem);
+		gap: var(--sp-4);
+		padding-top: clamp(2rem, 4vw, 3rem);
 	}
-	.pk-a {
-		grid-column: 1;
+	.pick-h {
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: var(--fs-xl);
+		font-weight: 850;
+		font-style: italic;
+		font-stretch: 115%;
+		letter-spacing: -0.01em;
+		text-transform: uppercase;
+		color: var(--text-hi);
+	}
+	.rosters {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: var(--sp-4) clamp(1rem, 3vw, 2.5rem);
+	}
+	.roster {
+		margin: 0;
+		padding: 0;
+		border: 0;
+		min-width: 0;
+	}
+	legend {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-bottom: var(--sp-2);
+		padding: 0;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+	}
+	.roster-b legend {
+		justify-content: flex-end;
+		width: 100%;
+	}
+	.tag {
+		display: inline-grid;
+		place-items: center;
+		width: 1.4rem;
+		height: 1.4rem;
+		border-radius: var(--r-sm);
+		background: var(--text-hi);
+		color: var(--bg-0);
+		font-family: var(--font-display);
+		font-weight: 900;
+		font-style: italic;
+		letter-spacing: 0;
+	}
+	.chips {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--sp-2);
+	}
+	/* a fighter chip: the card's photo on its maker's colour; picked = lit rim and lift */
+	.chip {
+		--text-hi: #edeae3;
+		--text-mute: #8e8a83;
+		position: relative;
+		display: grid;
+		grid-template-columns: 5.5rem minmax(0, 1fr);
+		align-items: center;
+		gap: var(--sp-2);
+		min-height: 4.25rem;
+		padding: 0.4rem 0.75rem 0.4rem 0.4rem;
+		border-radius: var(--r-lg);
+		background: linear-gradient(110deg, rgb(var(--v) / 0.3), rgb(var(--v) / 0.06) 55%), linear-gradient(180deg, var(--v-deep), #070708);
+		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.3);
+		color: var(--text-hi);
+		cursor: pointer;
+		user-select: none;
+		transition:
+			transform 0.45s var(--ease-spring),
+			box-shadow 0.3s,
+			opacity 0.3s;
+	}
+	.chip:hover:not(.taken) {
+		transform: translate3d(0, -2px, 0);
+		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.7);
+	}
+	.chip.on {
+		transform: translate3d(0, -2px, 0);
+		box-shadow:
+			inset 0 0 0 2px rgb(var(--v)),
+			0 0 28px -6px rgb(var(--v) / 0.8);
+	}
+	.chip.taken {
+		opacity: 0.35;
+		cursor: not-allowed;
+	}
+	.chip:has(input:focus-visible) {
+		outline: 2px solid var(--focus);
+		outline-offset: 3px;
+	}
+	.chip input {
+		position: absolute;
+		opacity: 0;
+		width: 1px;
+		height: 1px;
+		pointer-events: none;
+	}
+	.thumb {
+		display: block;
+		filter: drop-shadow(0 0 6px rgb(var(--v) / 0.5));
+	}
+	.who {
+		display: grid;
+		min-width: 0;
+		line-height: 1.1;
+	}
+	.mk {
+		padding-right: 0.2em;
+		font-family: var(--font-display);
+		font-size: 0.7rem;
+		font-weight: 900;
+		font-style: italic;
+		letter-spacing: 0.06em;
+		color: var(--v-hi);
+	}
+	.mk.upright {
+		font-style: normal;
+	}
+	.nm {
+		font-family: var(--font-display);
+		font-size: var(--fs-lg);
+		font-weight: 850;
+		font-stretch: 110%;
+		letter-spacing: -0.02em;
+	}
+	.vr {
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
 	}
 	.pk-m {
-		grid-column: 2;
 		justify-self: center;
 	}
 	.pk-m :global(legend) {
 		width: 100%;
+		justify-content: center;
 		text-align: center;
 	}
-	.pk-b {
-		grid-column: 3;
-		justify-self: end;
-	}
-	.pk-b :global(legend) {
-		text-align: right;
-		width: 100%;
-	}
-	.pk-b :global(.caps) {
-		justify-content: flex-end;
-	}
-	.pk-a :global(.cap.on) {
-		border-color: rgb(var(--a));
-		box-shadow:
-			0 1px 0 rgb(255 255 255 / 0.1) inset,
-			0 2px 0 #000,
-			0 0 0 1px rgb(var(--a) / 0.4),
-			0 10px 30px -12px rgb(var(--a) / 0.7);
-	}
-	.pk-a :global(.cap.on::before) {
-		background: rgb(var(--a));
-	}
-	.pk-b :global(.cap.on) {
-		border-color: rgb(var(--b));
-		box-shadow:
-			0 1px 0 rgb(255 255 255 / 0.1) inset,
-			0 2px 0 #000,
-			0 0 0 1px rgb(var(--b) / 0.4),
-			0 10px 30px -12px rgb(var(--b) / 0.7);
-	}
-	.pk-b :global(.cap.on::before) {
-		background: rgb(var(--b));
-	}
 	.note {
-		grid-column: 1 / -1;
 		justify-self: center;
 		margin: 0;
 		text-align: center;
 	}
 
-	/* ---------- details: each side washed in its maker's colour from its outer edge ---------- */
-	.duel {
-		display: grid;
-		grid-template-columns: 1fr 1fr;
-		gap: 1px;
-		margin-top: clamp(2rem, 4vw, 3rem);
-		background: linear-gradient(180deg, transparent, #fff3d6 30%, #fff3d6 70%, transparent);
-		border-radius: var(--r-xl);
-		box-shadow: inset 1px 0 0 rgb(var(--a) / 0.5), inset -1px 0 0 rgb(var(--b) / 0.5), inset 0 0 0 1px var(--line);
-		overflow: hidden;
-	}
-	.side {
-		position: relative;
-		display: grid;
-		gap: var(--sp-5);
-		align-content: start;
-		padding: clamp(1.25rem, 3vw, 2.5rem);
-		background: var(--bg-0);
-	}
-	.side--a {
-		background:
-			radial-gradient(70% 60% at 0% 0%, rgb(var(--a) / 0.16), transparent 70%),
-			var(--bg-0);
-	}
-	.side--b {
-		text-align: right;
-		background:
-			radial-gradient(70% 60% at 100% 0%, rgb(var(--b) / 0.16), transparent 70%),
-			var(--bg-0);
-	}
-	.s-wm {
-		margin: 0;
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--text-mute);
-	}
-	.nm {
-		margin: 0.2rem 0 0;
-		font-family: var(--font-display);
-		font-size: clamp(1.8rem, 1rem + 2.4vw, 3rem);
-		font-weight: 850;
-		font-stretch: 112%;
-		letter-spacing: -0.04em;
-		line-height: 0.95;
-		color: var(--text-hi);
-	}
-	.facts {
-		margin: 0;
-		display: grid;
-		gap: var(--sp-3);
-	}
-	.facts div {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		gap: var(--sp-4);
-		padding-top: var(--sp-3);
-		border-top: 1px solid var(--line);
-	}
-	.side--a .facts div {
-		border-image: linear-gradient(90deg, rgb(var(--a) / 0.45), var(--line) 60%) 1;
-	}
-	.side--b .facts div {
-		border-image: linear-gradient(270deg, rgb(var(--b) / 0.45), var(--line) 60%) 1;
-	}
-	.facts dt {
-		color: var(--text-mute);
-		font-size: var(--fs-sm);
-		text-align: left;
-	}
-	.facts dd {
-		margin: 0;
-		color: var(--text-hi);
-	}
-	.foot {
-		margin: 0;
-	}
-	.more {
-		color: var(--text-hi);
-		font-weight: 600;
-		font-size: var(--fs-sm);
-		text-decoration-color: var(--heat-3);
-		transition: color var(--dur-2);
-	}
-	.more:hover {
-		color: var(--hx-ink);
-	}
-	.warn {
-		margin: 0;
-		font-size: var(--fs-2xs);
-		color: var(--text-hi);
-		border: 1px dashed var(--line-strong);
-		border-radius: var(--r-sm);
-		padding: 0.3rem 0.6rem;
-		justify-self: start;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-	}
-	.side--b .warn {
-		justify-self: end;
-	}
 	.words {
 		display: grid;
 		gap: var(--sp-5);
@@ -738,78 +476,17 @@
 		.hero .lede {
 			display: none;
 		}
-		.arena {
-			gap: var(--sp-8);
-		}
-		.pick {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-			gap: var(--sp-4);
-		}
-		.pk-a,
-		.pk-b {
-			grid-row: 1;
-		}
-		.pk-b {
-			grid-column: 2;
-			justify-self: stretch;
-		}
-		.pk-m {
-			grid-row: 2;
-			grid-column: 1 / -1;
-		}
-		.duel {
-			grid-template-columns: 1fr 1fr;
+		.chips {
+			grid-template-columns: minmax(0, 1fr);
 		}
 	}
-	@media (max-width: 40rem) {
-		.arena {
-			gap: var(--sp-4);
-			padding: var(--sp-4) var(--sp-3) var(--sp-5);
+	@media (max-width: 30rem) {
+		.chip {
+			grid-template-columns: 3.75rem minmax(0, 1fr);
+			padding-right: 0.5rem;
 		}
-		.f-sub {
-			display: none;
-		}
-		.f-art {
-			margin-block: var(--sp-1);
-		}
-		.f-wm {
-			font-size: 0.85rem;
-		}
-		.f-nm {
-			font-size: clamp(1.2rem, 0.2rem + 5.4vw, 2.1rem);
-		}
-		.f-v {
-			font-size: clamp(1.55rem, 0.6rem + 5vw, 2.2rem);
-			gap: 0.25rem;
-		}
-		.f-lab {
-			font-size: var(--fs-2xs);
-		}
-		.core {
-			top: 4.6rem;
-		}
-		.vs {
-			font-size: 2.6rem;
-		}
-		.pick :global(.tight .caps) {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.duel {
-			grid-template-columns: minmax(0, 1fr);
-		}
-		.side--b {
-			text-align: left;
-		}
-		.side--b .warn {
-			justify-self: start;
-		}
-		.side--b .facts div {
-			border-image: linear-gradient(90deg, rgb(var(--b) / 0.45), var(--line) 60%) 1;
-		}
-		.side--b {
-			background:
-				radial-gradient(70% 60% at 0% 0%, rgb(var(--b) / 0.16), transparent 70%),
-				var(--bg-0);
+		.nm {
+			font-size: var(--fs-md);
 		}
 	}
 </style>

@@ -4,22 +4,23 @@
 	 * showroom blocks in their own colours (NVIDIA green, AMD red, Intel blue, Apple silver: identity
 	 * only, speed stays on the heat ramp). Each block shows the maker's face card (its best measured
 	 * gain, else the first card in the queue), how many cards are measured and queued, and opens the
-	 * maker page. Search across every card stays below for people who know their model. A versus
-	 * band (NVIDIA green against AMD red) opens the compare view on the two makers' best cards.
+	 * maker page. Search across every card stays below for people who know their model. A VERSUS
+	 * face-off (Versus.svelte: NVIDIA's best card against AMD's) opens the compare view on that pair.
 	 *
 	 * Motion: blocks rise in on a spring, on hover they lift, the render floats and its fans spin,
 	 * a light sweep crosses the block. Transforms and opacity only; reduced motion: all static.
 	 */
 	import { tilt } from '$lib/fx/actions';
 	import { fmtTps } from '$lib/format';
-	import { cardsHref, currentLang, href, num } from '$lib/i18n';
+	import { cardsHref, currentLang, href } from '$lib/i18n';
+	import { MODEL_INFO } from '$lib/data/measurements';
 	import { cardsCopy } from './copy';
-	import { ENTRIES, entryVendor, GROUPS, headline, heatOf, LINEUP, matches, MEASURED, QUEUED, splitName, VENDORS, type Entry } from './explorer';
-	import EstTag from './EstTag.svelte';
+	import { comparable, ENTRIES, entryVendor, GROUPS, headline, heatOf, LINEUP, matches, MEASURED, QUEUED, roundTo, splitName, VENDORS, type Entry } from './explorer';
 	import GpuArt from './GpuArt.svelte';
 	import Ratio from './Ratio.svelte';
 	import ProductPhoto from './ProductPhoto.svelte';
 	import { MAKER_PHOTO, photoOf, VENDOR, vendorVars } from './vendor';
+	import Versus, { type VsFighter, type VsStat } from './Versus.svelte';
 
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].gallery);
@@ -31,13 +32,36 @@
 	const hits = $derived(q.trim() ? ENTRIES.filter((e) => matches(e, q)) : []);
 	const name = (e: Entry) => (e.kind === 'measured' ? e.card.name : e.gpu.name);
 
-	/* versus band: the two makers' face cards (both measured) */
-	const A = GROUPS.nvidia.face;
-	const B = GROUPS.amd.face;
-	const vsVars = `--a:${VENDOR.nvidia.rgb}; --a-hi:${VENDOR.nvidia.hi}; --b:${VENDOR.amd.rgb}; --b-hi:${VENDOR.amd.hi}`;
-	const cmpHref = $derived(cardsHref(lang, `${lang === 'pl' ? 'porownaj' : 'compare'}/?a=${A.id}&b=${B.id}`));
-	const faceShort = (id: string) => MEASURED.find((e) => e.id === id)!.card.short;
-	const faceSpeed = (id: string) => headline(MEASURED.find((e) => e.id === id)!.card)?.ours.decode?.v ?? null;
+	/* the face-off: the two makers' best measured cards, our engine's measured speed on each */
+	const tcmp = $derived(cardsCopy[lang].compare);
+	const pair = [GROUPS.nvidia.face.id, GROUPS.amd.face.id].map((id) => {
+		const card = MEASURED.find((e) => e.id === id)!.card;
+		return { card, d: headline(card) };
+	});
+	const cmpHref = $derived(cardsHref(lang, `${lang === 'pl' ? 'porownaj' : 'compare'}/?a=${pair[0].card.id}&b=${pair[1].card.id}`));
+	const vsFighters = pair.map(
+		({ card, d }): VsFighter => ({
+			id: card.id,
+			vendor: card.vendor,
+			name: card.short,
+			sub: [LINEUP[card.vendor], `${card.vramGB}${NB}GB`, ...(d ? [MODEL_INFO[d.run.model].name, d.run.quant] : [])],
+			photo: photoOf(card.id),
+			vram: card.vramGB,
+			heat: heatOf(d?.ratio)
+		})
+	);
+	const vsComparable = pair[0].d && pair[1].d ? comparable(pair[0].d.run, pair[1].d.run) : false;
+	const vsStats = $derived<VsStat[]>([
+		{
+			key: 'ours',
+			label: tcmp.decode,
+			unit: 't/s',
+			decimals: 1,
+			a: pair[0].d ? roundTo(pair[0].d.ours.decode!.v, 1) : null,
+			b: pair[1].d ? roundTo(pair[1].d.ours.decode!.v, 1) : null,
+			better: 'hi'
+		}
+	]);
 </script>
 
 <section class="hero" aria-labelledby="cards-title">
@@ -131,31 +155,14 @@
 	</div>
 </section>
 
-<section class="wrap vsb" aria-labelledby="cmp-title" style={vsVars}>
-	<div class="vsb-in">
-		<div class="vsb-side vsb-a" aria-hidden="true">
-			<span class="vsb-wm">{VENDOR.nvidia.name}</span>
-			<div class="vsb-art">
-				{#if photoOf(A.id)}<ProductPhoto id={photoOf(A.id)!} sizes="(max-width: 64rem) 45vw, 22rem" />{:else}<GpuArt label={A.label} vendor="nvidia" vram={A.vram} heat={heatOf(A.ratio)} flat />{/if}
-			</div>
-			<span class="vsb-nm">{faceShort(A.id)}</span>
-			{#if faceSpeed(A.id)}<span class="vsb-v mono">{fmtTps(faceSpeed(A.id)!, lang)}{NB}t/s</span>{/if}
-		</div>
-		<div class="vsb-mid">
-			<span class="vsb-vs" aria-hidden="true">VS</span>
+<section class="wrap vsb" aria-labelledby="cmp-title">
+	<Versus a={vsFighters[0]} b={vsFighters[1]} stats={vsStats} verdict={vsComparable} {lang} winLabel={tcmp.win} missingLabel={tcmp.missing} mode="view" size="teaser" nameTag="p">
+		{#snippet center()}
 			<h2 id="cmp-title" class="vsb-t">{t.compareTitle}</h2>
-			<p class="vsb-l">{t.compareLede}</p>
+			<p class="vsb-l">{t.compareLede}{#if !vsComparable}<span class="vsb-n"> {tcmp.noVerdict}</span>{/if}</p>
 			<a class="cta cta--bone" href={cmpHref}>{t.compareCta} <span class="arrow" aria-hidden="true">→</span></a>
-		</div>
-		<div class="vsb-side vsb-b" aria-hidden="true">
-			<span class="vsb-wm">{VENDOR.amd.name}</span>
-			<div class="vsb-art">
-				{#if photoOf(B.id)}<ProductPhoto id={photoOf(B.id)!} sizes="(max-width: 64rem) 45vw, 22rem" />{:else}<GpuArt label={B.label} vendor="amd" vram={B.vram} heat={heatOf(B.ratio)} flat />{/if}
-			</div>
-			<span class="vsb-nm">{faceShort(B.id)}</span>
-			{#if faceSpeed(B.id)}<span class="vsb-v mono">{fmtTps(faceSpeed(B.id)!, lang)}{NB}t/s</span>{/if}
-		</div>
-	</div>
+		{/snippet}
+	</Versus>
 </section>
 
 <style>
@@ -631,133 +638,32 @@
 		color: var(--text-hi);
 	}
 
-	/* ---------- versus band: green from the left, red from the right, a white-hot seam ---------- */
+	/* ---------- the VERSUS teaser (Versus.svelte) ---------- */
 	.vsb {
 		padding-bottom: var(--section-y);
-	}
-	.vsb-in {
-		--text-hi: #edeae3;
-		--text: #bdb9b1;
-		--text-mute: #8e8a83;
-		color-scheme: dark;
-		position: relative;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr);
-		align-items: center;
-		gap: var(--sp-4);
-		padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1rem, 3vw, 3rem);
-		border-radius: var(--r-xl);
-		color: var(--text);
-		background:
-			radial-gradient(40% 80% at 50% 50%, rgb(255 243 214 / 0.08), transparent 70%),
-			linear-gradient(90deg, rgb(var(--a) / 0.55), rgb(var(--a) / 0.16) 34%, transparent 56%),
-			linear-gradient(270deg, rgb(var(--b) / 0.55), rgb(var(--b) / 0.16) 34%, transparent 56%),
-			#070708;
-		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08), 0 40px 80px -50px #000;
-		overflow: hidden;
-		isolation: isolate;
-	}
-	/* the seam where the two colours meet: a slanted white-hot blade */
-	.vsb-in::before {
-		content: '';
-		position: absolute;
-		z-index: -1;
-		inset: -20% auto -20% 50%;
-		width: 3px;
-		background: linear-gradient(180deg, transparent, rgb(var(--a)) 20%, #fff3d6 50%, rgb(var(--b)) 80%, transparent);
-		box-shadow: 0 0 24px 4px rgb(255 243 214 / 0.25);
-		transform: translateX(-50%) rotate(12deg);
-		/* it cuts through the VS, then gives way to the words under it */
-		mask-image: linear-gradient(180deg, #000 0 40%, transparent 50% 90%, #000 100%);
-	}
-	.vsb-side {
-		display: grid;
-		justify-items: start;
-		gap: 0.35rem;
-		min-width: 0;
-	}
-	.vsb-b {
-		justify-items: end;
-		text-align: right;
-	}
-	.vsb-wm {
-		font-family: var(--font-display);
-		font-size: var(--fs-sm);
-		font-weight: 900;
-		font-style: italic;
-		letter-spacing: 0.04em;
-		color: var(--a-hi);
-		text-shadow: 0 0 14px rgb(var(--a) / 0.6);
-	}
-	.vsb-b .vsb-wm {
-		color: var(--b-hi);
-		text-shadow: 0 0 14px rgb(var(--b) / 0.6);
-	}
-	.vsb-art {
-		display: block;
-		width: 100%;
-		max-width: 22rem;
-		transition: transform 0.9s var(--ease-spring);
-	}
-	.vsb-a .vsb-art :global(.glow) {
-		background: radial-gradient(closest-side, rgb(var(--a) / 0.35), transparent);
-	}
-	.vsb-b .vsb-art :global(.glow) {
-		background: radial-gradient(closest-side, rgb(var(--b) / 0.35), transparent);
-	}
-	.vsb-in:hover .vsb-a .vsb-art {
-		transform: translate3d(4%, 0, 0);
-	}
-	.vsb-in:hover .vsb-b .vsb-art {
-		transform: translate3d(-4%, 0, 0);
-	}
-	.vsb-nm {
-		font-family: var(--font-display);
-		font-size: clamp(1.4rem, 0.9rem + 1.6vw, 2.5rem);
-		font-weight: 850;
-		font-stretch: 112%;
-		letter-spacing: -0.035em;
-		line-height: 1;
-		color: var(--text-hi);
-		white-space: nowrap;
-	}
-	.vsb-v {
-		font-size: var(--fs-xs);
-		color: var(--heat-4);
-	}
-	.vsb-mid {
-		display: grid;
-		justify-items: center;
-		text-align: center;
-		gap: var(--sp-3);
-	}
-	.vsb-vs {
-		padding: 0.06em 0.22em;
-		font-family: var(--font-display);
-		font-size: clamp(3.5rem, 2rem + 5vw, 7.5rem);
-		font-weight: 900;
-		font-style: italic;
-		font-stretch: 120%;
-		line-height: 0.85;
-		letter-spacing: -0.04em;
-		background: linear-gradient(90deg, var(--a-hi) 20%, #fff3d6 50%, var(--b-hi) 80%);
-		-webkit-background-clip: text;
-		background-clip: text;
-		color: transparent;
-		filter: drop-shadow(0 0 26px rgb(255 243 214 / 0.25));
 	}
 	.vsb-t {
 		margin: 0;
 		font-family: var(--font-display);
 		font-size: var(--fs-2xl);
-		font-weight: 800;
-		font-stretch: 110%;
+		font-weight: 850;
+		font-style: italic;
+		font-stretch: 115%;
+		text-transform: uppercase;
+		letter-spacing: -0.01em;
+		padding-right: 0.15em;
 		color: var(--text-hi);
 	}
 	.vsb-l {
 		margin: 0;
-		max-width: 28rem;
+		max-width: 40rem;
 		color: var(--text);
+	}
+	.vsb-n {
+		display: block;
+		margin-top: 0.25rem;
+		font-size: var(--fs-sm);
+		color: var(--text-mute);
 	}
 
 	@media (max-width: 64rem) {
@@ -769,13 +675,6 @@
 		}
 		.below {
 			grid-template-columns: minmax(0, 1fr);
-		}
-		.vsb-in {
-			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		}
-		.vsb-mid {
-			grid-column: 1 / -1;
-			grid-row: 2;
 		}
 	}
 	@media (max-width: 40rem) {
@@ -823,10 +722,6 @@
 		.lede {
 			font-size: var(--fs-base);
 		}
-		.vsb-in {
-			padding: var(--sp-5) var(--sp-4);
-			gap: var(--sp-3);
-		}
 	}
 	/* the narrowest phones: the block itself is the link, the arrow gives way to the wordmark */
 	@media (max-width: 25rem) {
@@ -843,12 +738,6 @@
 		.up,
 		.none {
 			font-size: 0.6875rem;
-		}
-	}
-	/* stacked band: the blade runs between the two cards and stops above the words */
-	@media (max-width: 64rem) {
-		.vsb-in::before {
-			mask-image: linear-gradient(180deg, #000 0 46%, transparent 56% 94%, #000 100%);
 		}
 	}
 </style>

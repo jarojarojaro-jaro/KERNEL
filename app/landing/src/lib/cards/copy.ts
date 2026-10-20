@@ -195,7 +195,12 @@ const pl = {
 		noRaceModels: 'Bez wyścigu: na tych kartach mierzyliśmy różne modele.',
 		leadLine: (hi: string, lo: string) => `szybciej pisze ${hi} niż ${lo}. Nasz silnik na obu kartach, ten sam skrypt.`,
 		same: 'ta sama karta',
-		open: 'Szczegóły karty'
+		open: 'Szczegóły karty',
+		win: 'WIN',
+		missing: 'brak pomiaru',
+		noVerdict: 'Bez werdyktu: te pomiary pochodzą z różnych skryptów, więc nikt tu nie wygrywa.',
+		select: 'Wybierz zawodników',
+		ours: 'nasz silnik'
 	}
 };
 
@@ -391,7 +396,12 @@ const en: Copy = {
 		noRaceModels: 'No race: we measured different models on these cards.',
 		leadLine: (hi: string, lo: string) => `faster: the ${hi} against the ${lo}. Our engine on both cards, the same script.`,
 		same: 'same card',
-		open: 'Card details'
+		open: 'Card details',
+		win: 'WIN',
+		missing: 'not measured',
+		noVerdict: 'No verdict: these measurements come from different scripts, so nobody wins here.',
+		select: 'Pick the fighters',
+		ours: 'our engine'
 	}
 };
 
