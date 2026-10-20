@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cardsCopy } from '$lib/cards/copy';
-	import Gallery from '$lib/cards/Gallery.svelte';
+	import VendorHub from '$lib/cards/VendorHub.svelte';
 	import { currentLang } from '$lib/i18n';
 
 	const lang = $derived(currentLang());
@@ -14,4 +14,4 @@
 	<meta property="og:description" content={m.description} />
 </svelte:head>
 
-<Gallery />
+<VendorHub />

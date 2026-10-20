@@ -8,6 +8,7 @@
  */
 import { CARDS, variantOf, type CardView, type ModelKey, type RunView, type Variant } from '$lib/data/measurements';
 import { decodeRange, findModel, fit, GPUS, memoryNeed, recommend, type Gpu, type Model, type Range } from '$lib/estimator';
+import type { Vendor } from './vendor';
 
 export type MeasuredEntry = { kind: 'measured'; id: string; card: CardView; gpu: Gpu | null };
 export type QueuedEntry = { kind: 'queued'; id: string; gpu: Gpu };
@@ -89,6 +90,40 @@ export const KLD_PENDING: ModelKey[] = ['nemotron'];
 
 export const sharedModels = (a: CardView, b: CardView): ModelKey[] => a.runs.map((r) => r.model).filter((m) => b.runs.some((r) => r.model === m));
 
+/* ---------------- makers ---------------- */
+
+/** Maker order of the explorer's front page and of the maker pages (`/pl/karty/nvidia/`). */
+export const VENDORS = ['nvidia', 'amd', 'intel', 'apple'] as const satisfies readonly Vendor[];
+
+/** Each maker's consumer line, as the makers name it (not translated). */
+export const LINEUP: Record<Vendor, string> = { nvidia: 'GeForce RTX', amd: 'Radeon RX', intel: 'Arc', apple: 'Apple Silicon' };
+
+export const entryVendor = (e: Entry): string => (e.kind === 'measured' ? e.card.vendor : e.gpu.vendor);
+
+export interface VendorGroup {
+	v: Vendor;
+	measured: MeasuredEntry[];
+	queued: QueuedEntry[];
+	/** The largest same-script speed-up measured on this maker's cards (null: nothing measured yet). */
+	best: number | null;
+	/** The card that stands for the maker: the measured card with the best gain, else the first in the queue. */
+	face: { id: string; label: string; vram: number | null; ratio: number | null };
+}
+
+function group(v: Vendor): VendorGroup {
+	const measured = MEASURED.filter((e) => e.card.vendor === v);
+	const queued = QUEUED.filter((e) => e.gpu.vendor === v);
+	const ranked = measured.map((e) => ({ e, r: headline(e.card)?.ratio ?? null })).sort((a, b) => (b.r ?? 0) - (a.r ?? 0));
+	const top = ranked[0];
+	const q = queued[0];
+	const face = top
+		? { id: top.e.id, label: top.e.card.short, vram: top.e.card.vramGB, ratio: top.r }
+		: { id: q.id, label: splitName(q.gpu.name, q.gpu.vendor).short, vram: q.gpu.vram ?? null, ratio: null };
+	return { v, measured, queued, best: top?.r ?? null, face };
+}
+
+export const GROUPS = Object.fromEntries(VENDORS.map((v) => [v, group(v)])) as Record<Vendor, VendorGroup>;
+
 /* ---------------- estimates (labelled) ---------------- */
 
 /** Model families we measured that also exist in the estimator's model list, best quality first. */
@@ -126,20 +161,8 @@ export function queueEstimate(gpu: Gpu): QueueEstimate[] {
 
 /* ---------------- search ---------------- */
 
-export type VramBand = 'all' | 'le12' | '16' | 'ge20';
-export const VRAM_BANDS: VramBand[] = ['all', 'le12', '16', 'ge20'];
-
 export const entryVram = (e: Entry): number | null => (e.kind === 'measured' ? e.card.vramGB : (e.gpu.vram ?? null));
 export const entryName = (e: Entry) => (e.kind === 'measured' ? e.card.name : e.gpu.name);
-
-export function inBand(e: Entry, band: VramBand): boolean {
-	const v = entryVram(e);
-	if (band === 'all') return true;
-	if (v == null) return false;
-	if (band === 'le12') return v <= 12;
-	if (band === '16') return v > 12 && v < 20;
-	return v >= 20;
-}
 
 const norm = (s: string) => s.toLowerCase().replace(/geforce|radeon|nvidia|amd|intel/g, '').replace(/[^a-z0-9]+/g, '');
 

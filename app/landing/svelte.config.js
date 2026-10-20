@@ -7,7 +7,8 @@ const json = (p) => JSON.parse(readFileSync(new URL(p, import.meta.url), 'utf8')
 /**
  * Cards explorer pages (src/lib/cards/explorer.ts uses the same rule): every card in the generated
  * sheet (cards.json) plus every GPU with a lab status in gpus.json ('measured', 'in-progress',
- * 'planned' = the measurement queue). Gallery, compare view and one page per card, in both languages.
+ * 'planned' = the measurement queue). Maker index, one page per maker, compare view and one page
+ * per card, in both languages.
  */
 const cardIds = [
 	...new Set([
@@ -17,10 +18,11 @@ const cardIds = [
 			.map((g) => g.id)
 	])
 ];
+const vendors = ['nvidia', 'amd', 'intel', 'apple'];
 const cardPages = [
 	['pl', 'karty', 'porownaj'],
 	['en', 'cards', 'compare']
-].flatMap(([l, seg, cmp]) => [`/${l}/${seg}/`, `/${l}/${seg}/${cmp}/`, ...cardIds.map((id) => `/${l}/${seg}/${id}/`)]);
+].flatMap(([l, seg, cmp]) => [`/${l}/${seg}/`, `/${l}/${seg}/${cmp}/`, ...vendors.map((v) => `/${l}/${seg}/${v}/`), ...cardIds.map((id) => `/${l}/${seg}/${id}/`)]);
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
