@@ -3,12 +3,11 @@
 	 * Jak to możliwe: one story instead of a dozen. Qwen3.8-27B UD-Q4_K_XL on the RX 7900 XTX, chat
 	 * speed from upstream llama.cpp with default settings to our engine today, every milestone
 	 * measured with the same script (QWEN_XTX_JOURNEY). One stepped line climbs through the five
-	 * milestones on a 0–125 t/s scale: the two upstream ones cold steel, ours heating up to
-	 * white-hot. Under each milestone, what we did to get there (the engine's layers). A giant
+	 * milestones on a 30–120 t/s scale: the two upstream ones cold steel, ours heating up to
+	 * white-hot. By each milestone, what we did to get there (the engine's layers). A giant
 	 * readout rides the line: it holds on every plateau and climbs on every riser, landing exactly
-	 * on the measured value; the multiplier vs the typical app lands at the end. Below, the same
-	 * runs' code-edit workload as two bars.
-	 * Auto-played on entering the viewport (armed below the fold, replay button); the line is
+	 * on the measured value; the multiplier vs the typical app lands at the end.
+	 * Auto-played (2,8 s) once ~15 % of the scene is up (armed below the fold, replay button); the line is
 	 * revealed with clip-path, the spark and labels move by transform/opacity; reduced motion and
 	 * SSR show the final state.
 	 */
@@ -61,7 +60,7 @@
 	}
 
 	// ---- timeline: one eased leg per riser, a short hold on every plateau ----
-	const tl = new Autoplay(5.2, '0px 0px -20% 0px', { arm: true });
+	const tl = new Autoplay(2.8, '0px 0px -15% 0px', { arm: true });
 	const A = 0.06;
 	const B = 0.9;
 	const X = $derived.by(() => {
@@ -88,11 +87,6 @@
 	const DY = [0, 0, 1.5, 2.6, 1.5];
 	const ratio = $derived(fmtRatio(last / first, lang));
 	const wide = Math.max(num(first, 'pl', 1).length, num(last, 'pl', 1).length);
-
-	// ---- code editing: the same runs, two bars ----
-	const codeTl = new Autoplay(1.6, '0px 0px -10% 0px', { arm: true });
-	const ck = $derived(easeInOutCubic(clamp01(codeTl.p / 0.92)));
-	const [cu, co] = J.code;
 
 	/** Title as two lines: the claim (bone) and the payoff (heat). */
 	const titleParts = $derived(fill(c.title, { a: num(first, lang, 1), b: num(last, lang, 1), x: fmtRatio(last / first, lang) }).split('|'));
@@ -164,19 +158,6 @@
 				</ol>
 			</div>
 		</figure>
-
-		<div class="code" use:codeTl.view style="--k:{ck}; --u:{cu.v / co.v}">
-			<p class="ch">{c.code}</p>
-			<div class="crow">
-				<span class="cbar cbar--up" aria-hidden="true"><i></i></span>
-				<span class="cv cv--up">{num(cu.v, lang, 1)}</span>
-			</div>
-			<div class="crow">
-				<span class="cbar cbar--ours" aria-hidden="true"><i></i></span>
-				<span class="cv"><b>{num(ck >= 1 ? co.v : cu.v + (co.v - cu.v) * ck, lang, 1)}</b>&nbsp;t/s <span class="cx" class:shown={ck >= 1}>{fmtRatio(co.v / cu.v, lang)}</span></span>
-			</div>
-			<p class="cn">{c.codeNote}</p>
-		</div>
 	</div>
 </section>
 
@@ -645,91 +626,6 @@
 		}
 	}
 
-	/* ---- code editing ---- */
-	.code {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto;
-		align-items: center;
-		gap: 0.6rem 1.2rem;
-		padding-inline: clamp(1.2rem, 0.6rem + 2.4vw, 2.6rem);
-	}
-	.ch {
-		grid-row: span 2;
-		margin: 0;
-		font-family: var(--font-display);
-		font-size: clamp(1.2rem, 1rem + 0.8vw, 1.7rem);
-		font-weight: 800;
-		letter-spacing: -0.02em;
-		color: var(--text-hi);
-	}
-	.crow {
-		display: contents;
-	}
-	.cbar {
-		position: relative;
-		height: 0.8rem;
-		border-radius: var(--r-pill);
-		background: rgb(255 255 255 / 0.05);
-		overflow: hidden;
-	}
-	.cbar i {
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		transform-origin: 0 50%;
-	}
-	.cbar--up i {
-		background: linear-gradient(90deg, #2a3038, var(--before));
-		transform: scaleX(var(--u));
-	}
-	.cbar--ours i {
-		background: var(--heat-ramp-hot);
-		box-shadow: 0 0 18px rgb(255 122 26 / 0.6);
-		transform: scaleX(calc(var(--u) + (1 - var(--u)) * var(--k)));
-	}
-	.cv {
-		font-family: var(--font-display);
-		font-variant-numeric: tabular-nums lining-nums;
-		font-size: clamp(1.1rem, 0.9rem + 0.8vw, 1.6rem);
-		font-weight: 750;
-		white-space: nowrap;
-		color: var(--text);
-	}
-	.cv--up {
-		color: var(--before);
-	}
-	.cv b {
-		display: inline-block;
-		min-width: 5ch;
-		text-align: right;
-		color: var(--heat-5);
-	}
-	.cx {
-		display: inline-block;
-		margin-left: 0.4rem;
-		padding: 0.15em 0.5em 0.1em;
-		border-radius: var(--r-pill);
-		background: var(--heat-ramp-hot);
-		color: #140a04;
-		font-weight: 820;
-		opacity: 0;
-		transform: scale(0.7);
-		transition:
-			opacity 0.3s ease,
-			transform 0.6s var(--ease-spring);
-	}
-	.cx.shown {
-		opacity: 1;
-		transform: none;
-	}
-	.cn {
-		grid-column: 2 / -1;
-		margin: 0;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text-mute);
-	}
-
 	@media (max-width: 760px) {
 		/* phones: the headline already carries 114,8 and 3,2×; the chart gets the room */
 		.wx,
@@ -775,24 +671,12 @@
 			padding: 0.15rem 0.5rem;
 			font-size: var(--fs-2xs);
 		}
-		.code {
-			grid-template-columns: minmax(0, 1fr) auto;
-			padding-inline: 0;
-		}
-		.ch {
-			grid-row: auto;
-			grid-column: 1 / -1;
-		}
-		.cn {
-			grid-column: 1 / -1;
-		}
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.dot,
 		.nv,
 		.mult,
 		.step,
-		.cx,
 		.spark {
 			transition: none;
 		}

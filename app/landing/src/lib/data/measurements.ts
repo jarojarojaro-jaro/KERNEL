@@ -974,10 +974,8 @@ export function words500(v: Variant | undefined, lang: 'pl' | 'en'): { v: number
  * with default settings to our engine today. Every milestone is the same script: spec_sweep chat,
  * 6 prompts × 3 seeds, T=1, fresh server, median. The start, upstream's best and today are the
  * 2026-10-19 ABBA runs (M.qwenXtx*, first pass, as in the hero); the two milestones between are our
- * engine's earlier states measured the same way. `code`: the same runs' code-edit workload (mvs,
- * T=0) at the start and today.
+ * engine's earlier states measured the same way.
  */
-const QLOGS = '~/qwen-opt/queue/logs';
 const step = (m: Measurement, key: string) => ({ key, v: m.value, src: m.source });
 export const QWEN_XTX_JOURNEY = {
 	card: 'rx-7900-xtx',
@@ -991,9 +989,5 @@ export const QWEN_XTX_JOURNEY = {
 		{ key: 'prod', v: 109.0, src: 'KERNEL/qwen-opt/STATUS-NEXT.md:10' },
 		/** today: stable PM4 command replay + verification on the GPU, 27.67 ms per step */
 		step(M.qwenXtxOurs, 'today')
-	] as (Num & { key: string })[],
-	code: [
-		{ v: 35.5, src: `${QLOGS}/fb-qwen-U0-p1.log:3` },
-		{ v: 419.7, src: `${QLOGS}/fb-qwen-T-p1.log:3` }
-	] as [Num, Num]
+	] as (Num & { key: string })[]
 } as const;

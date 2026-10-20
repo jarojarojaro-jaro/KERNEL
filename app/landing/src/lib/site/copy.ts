@@ -111,7 +111,8 @@ const raw = {
 				layers: ['Typowa aplikacja', 'Najlepsze flagi + MTP', 'Nasz silnik'],
 				subs: ['llama.cpp z ustawieniami domyślnymi', 'upstream llama.cpp, spekulacja MTP', 'lżejszy draft i własne kernele'],
 				vs: 'wobec typowej aplikacji',
-				over: 'szybciej niż najlepsze flagi upstreamu',
+				over: 'szybciej niż typowa aplikacja',
+				overFlags: 'wobec najlepszych flag upstreamu',
 				unit: 'tokenów na sekundę'
 			}
 		},
@@ -153,9 +154,7 @@ const raw = {
 				{ name: 'Nasz silnik, 12.10', sub: 'pierwsza wersja', did: ['Własne kernele pod RDNA3'] },
 				{ name: 'Nasz silnik, 15.10', sub: 'wydanie produkcyjne', did: ['Mniej uruchomień i fuzje', 'Szybszy sampler i host', 'Sprytniejsza spekulacja MTP'] },
 				{ name: 'Nasz silnik dziś', sub: '19.10', did: ['Stabilny replay poleceń PM4', 'Weryfikacja na GPU'] }
-			] as { name: string; sub: string; did: string[] }[],
-			code: 'Edycja kodu',
-			codeNote: 'ta sama karta i model, zadanie edycji plików: typowa aplikacja wobec naszego silnika dziś'
+			] as { name: string; sub: string; did: string[] }[]
 		},
 		quality: {
 			title: 'Ten sam model,|ta sama *jakość*.',
@@ -345,7 +344,8 @@ const raw = {
 				layers: ['Typical app', 'Best flags + MTP', 'Our engine'],
 				subs: ['llama.cpp with default settings', 'upstream llama.cpp, MTP speculation', 'lighter draft and our own kernels'],
 				vs: 'vs the typical app',
-				over: 'faster than the best upstream flags',
+				over: 'faster than the typical app',
+				overFlags: 'vs the best upstream flags',
 				unit: 'tokens per second'
 			}
 		},
@@ -387,9 +387,7 @@ const raw = {
 				{ name: 'Our engine, Oct 12', sub: 'first version', did: ['Our own kernels for RDNA3'] },
 				{ name: 'Our engine, Oct 15', sub: 'production release', did: ['Fewer launches and fusions', 'A faster sampler and host', 'Smarter MTP speculation'] },
 				{ name: 'Our engine today', sub: 'Oct 19', did: ['Stable PM4 command replay', 'Verification on the GPU'] }
-			] as { name: string; sub: string; did: string[] }[],
-			code: 'Code editing',
-			codeNote: 'the same card and model, a file-editing task: the typical app vs our engine today'
+			] as { name: string; sub: string; did: string[] }[]
 		},
 		quality: {
 			title: 'Same model,|same *quality*.',

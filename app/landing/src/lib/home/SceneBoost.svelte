@@ -20,17 +20,18 @@
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].how.boost);
-	const tl = new Autoplay(3.4, '0px 0px -20% 0px', { arm: true });
+	/** Starts once ~15 % of the scene is up; the three bars grow in 0,7 s with an 80 ms stagger. */
+	const tl = new Autoplay(0.78, '0px 0px -15% 0px', { arm: true });
 
 	const vals = [HERO_V.a0.decode!, HERO_V.a1.decode!, HERO_V.a2.decode!];
 	/** Multiplier of each setup vs the typical app, from the measured medians (×1.76 MTP, ×2.17 total). */
 	const mult = [null, HERO_GAIN.flags!, HERO_GAIN.total!];
 	const KEYS = ['cold', 'warm', 'hot'] as const;
-	/** Each bar's slice of the timeline; ours grows last and longest. */
+	/** Each bar's slice of the timeline (0,78 s): 0,54 s each, 80 ms apart, all done at 0,7 s. */
 	const WIN: [number, number][] = [
-		[0, 0.3],
-		[0.2, 0.52],
-		[0.44, 0.94]
+		[0, 0.69],
+		[0.103, 0.795],
+		[0.205, 0.9]
 	];
 	const easeOut = (t: number) => 1 - (1 - t) ** 3;
 	const ks = $derived(WIN.map(([a, b]) => easeOut(clamp01((tl.p - a) / (b - a)))));
@@ -50,7 +51,7 @@
 		<div class="rim" aria-hidden="true"></div>
 		<div class="layout">
 			<SceneHead id="scene-boost" k={c.k} step={c.title} head={c.head} body={c.body} mode="duo" />
-			<figure class="race" style="--red:{REDLINE / DIAL_MAX}; --top:{Math.max(...vals.map((v) => v.v)) / DIAL_MAX}">
+			<figure class="race" class:landed={ks[2] >= 1} style="--red:{REDLINE / DIAL_MAX}; --top:{Math.max(...vals.map((v) => v.v)) / DIAL_MAX}">
 				<div class="plot">
 					<div class="redzone" class:flare={overRed} aria-hidden="true"><span>{REDLINE} t/s</span></div>
 					{#each vals as v, i (i)}
@@ -73,8 +74,9 @@
 					{/each}
 				</ol>
 				<figcaption class="foot">
-					<span class="win"><b>{fmtRatio(HERO_GAIN.engine!.v, lang)}</b> {c.over}</span>
-					<span class="tt"><ModelMark model={HERO_RUN.model} size="0.8em" /> {HERO_MODEL} · {HERO_CARD.name} · t/s · {c.vs}</span>
+					<span class="win"><b>{fmtRatio(HERO_GAIN.total!.v, lang)}</b> {c.over}</span>
+					{#if HERO_GAIN.engine}<span class="win2">{fmtRatio(HERO_GAIN.engine.v, lang)} {c.overFlags}</span>{/if}
+					<span class="tt"><ModelMark model={HERO_RUN.model} size="0.8em" /> {HERO_MODEL} · {HERO_CARD.name} · t/s</span>
 					<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 				</figcaption>
 			</figure>
@@ -97,7 +99,7 @@
 		inset: 0;
 		pointer-events: none;
 		opacity: 0;
-		transition: opacity 1.1s var(--ease-out);
+		transition: opacity 0.5s var(--ease-out);
 	}
 	.t1 {
 		background:
@@ -302,8 +304,8 @@
 		opacity: 0;
 		transform: scale(0.6);
 		transition:
-			opacity 0.25s,
-			transform 0.5s var(--ease-spring);
+			opacity 0.12s,
+			transform 0.28s var(--ease-spring);
 	}
 	.col--hot .x {
 		font-size: clamp(1rem, 0.8rem + 0.9vw, 1.6rem);
@@ -357,11 +359,12 @@
 		display: inline-flex;
 		align-items: baseline;
 		gap: 0.5rem;
-		margin-right: auto;
 		font-weight: 650;
 		color: var(--text-hi);
 	}
+	/* the headline gain (vs the typical app) pops right after our bar lands */
 	.win b {
+		display: inline-block;
 		font-family: var(--font-display);
 		font-size: clamp(1.4rem, 1rem + 1vw, 2rem);
 		font-weight: 820;
@@ -369,6 +372,24 @@
 		-webkit-background-clip: text;
 		background-clip: text;
 		color: transparent;
+		padding: 0.1em 0.12em 0.2em 0;
+		margin: -0.1em -0.12em -0.2em 0;
+		opacity: 0;
+		transform: scale(0.7);
+		transform-origin: 0 70%;
+		transition:
+			opacity 0.1s 0.04s,
+			transform 0.3s var(--ease-spring) 0.04s;
+	}
+	.landed .win b {
+		opacity: 1;
+		transform: none;
+	}
+	.win2 {
+		margin-right: auto;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		color: var(--text);
 	}
 	.tt {
 		display: inline-flex;
@@ -426,7 +447,8 @@
 	@media (prefers-reduced-motion: reduce) {
 		.temp,
 		.rim,
-		.x {
+		.x,
+		.win b {
 			transition: none;
 		}
 		.redzone.flare {
