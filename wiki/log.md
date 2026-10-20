@@ -164,6 +164,9 @@ Nowe: [[ZRODLA]] (przebadane źródła z raportów 01–24b, 21n, `qwen-opt/rese
 ## [2026-10-20] ingest | Raporty 20–30 i WYNIKI-XTX (wszystkie bez notatki)
 Nowe `raport-*` (36): 20, 21k, 21n, 21o, 22, 23b2, 23d, 23f, 24a–24v, 25, 26, 27, 28, 30, WYNIKI-XTX; przegląd [[raporty-2026-10-19-20]]. Lekcje: [[lekcja-pm4-zawsze-jawnie]], [[lekcja-wyrazna-wygrana-albo-nic]], [[lekcja-glebokosc-zmienia-tekst]], [[lekcja-landing-jeden-uklad]], [[lekcja-dostep-intel-apple]]; zaktualizowana [[lekcja-obciazenie-cpu]] (benchmark nigdy razem z buildem, 24o). Decyzje: [[2026-10-20-karta-fabrycznie]], [[2026-10-20-szybkie-iteracje]], [[2026-10-19-buildy-przez-rbuild]], [[2026-10-19-chmura-bez-destroy-all]], [[2026-10-19-topka-tylko-keeper]], [[2026-10-20-auth-bez-backendu]], [[2026-10-20-uncensored-poza-strona]]. Aktualizacje: [[sprzezone-probkowanie-draftu]], [[kontroler-szerokosci-draftu]], [[koszt-szerokosci-weryfikacji]], [[wyniki-negatywne]], [[bariera-lds-rdna3]] (odrzucona), [[strata]], [[rtx-3090]]. [[REKORDY]]: XTX czat 114.8, host-gap 117.9 (gałąź), sprzężone 111.4, mvs 419.9 / 430.8, long_ctx 1.7k 136.5 (MTP-only), Uncensored mvs 434.9, 3090 93.3, 3060 38.2. [[ZRODLA]]: gemma.ai, Gyro/agentionai, DFloat11/ZipNN, TensorFold 1.1.0 na 3090, hipfire R24g, Apple SLA/Metal. [[AUDYT]]: sekcja ingestu 2026-10-20.
 
+## [2026-10-20] ingest | Raporty 29, 24w, podsumowanie nocy
+Nowe: [[rtx-4060-ti]], [[raport-29-4060ti]], [[raport-24w-pair2]], [[2026-10-20-podsumowanie-nocy]]; [[raport-24q-adaptacyjna-spekulacja]] – werdykt końcowy (odrzucone). [[REKORDY]]: 4060 Ti (Qwen 35.4 / mvs 170.9, LFM 149.4 t/s, nie w produkcji), topka-next 114.6 t/s (+1.4%, niezainstalowana). [[AUDYT]] uzupełniony.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

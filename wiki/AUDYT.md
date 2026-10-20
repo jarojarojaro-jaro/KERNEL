@@ -2818,7 +2818,8 @@ Automat: tokeny liczbowe (≥ 2 znaki) z nowych notatek i z nowych akapitów w n
 | [[sprzezone-probkowanie-draftu]] | 14 | cytowane wiersze + plik | OK |
 | [[strata]] | 3 | cytowane wiersze + plik | OK |
 | [[wyniki-negatywne]] | 14 | cytowane wiersze + plik | OK |
-| [[REKORDY]] (sekcja 2026-10-19/20) | 12 wierszy | `WYNIKI-XTX:44-86`, `24p:31-32`, `27:20-33,59-68,168`, `hg-sweep1.log:2,5`, `hg-mvs.log:2,5` | OK |
+| [[rtx-4060-ti]], [[raport-29-4060ti]], [[raport-24w-pair2]], [[2026-10-20-podsumowanie-nocy]] (runda 2) | 76 | `29-4060ti.md`, `24w-pair2.md`, `PODSUMOWANIE-NOC-2026-10-20.md` | OK (automat + ręcznie) |
+| [[REKORDY]] (sekcja 2026-10-19/20) | 16 wierszy | `WYNIKI-XTX:44-86`, `24p:31-32`, `27:20-33,59-68,168`, `hg-sweep1.log:2,5`, `hg-mvs.log:2,5` | OK |
 
 ## Powiązane
 - [[index|Strona główna]]
