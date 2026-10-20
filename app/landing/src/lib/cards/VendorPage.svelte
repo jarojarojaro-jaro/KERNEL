@@ -102,7 +102,8 @@
 
 					{#if hd && faceCard}
 						<div class="res">
-							<p class="res-k mono"><ModelMark model={hd.run.model} /> {tv.best} · {MODEL_INFO[hd.run.model].name} {hd.run.quant}</p>
+							<p class="res-k mono">{tv.best}</p>
+							<p class="res-m mono"><ModelMark model={hd.run.model} /> <span>{MODEL_INFO[hd.run.model].name}</span> <span>{hd.run.quant}</span></p>
 							{#if hd.ratio}
 								<p class="res-x"><Ratio value={hd.ratio} {lang} size="lg" /> <span class="res-w">{t.faster}</span></p>
 							{/if}
@@ -441,6 +442,18 @@
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 		color: var(--text);
+	}
+	.res-m {
+		margin: -0.35rem 0 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.1rem 0.45rem;
+		font-size: var(--fs-xs);
+		color: var(--text-hi);
+	}
+	.res-m span {
+		white-space: nowrap;
 	}
 	.res-x {
 		margin: 0;
