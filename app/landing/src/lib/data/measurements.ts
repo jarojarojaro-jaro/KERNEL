@@ -574,19 +574,18 @@ const PULSE_SPEC = 'sapphiretech.com/en/consumer/pulse-radeon-rx-7900-xtx-24g-gd
 
 /**
  * The physical board in our lab: Sapphire PULSE RX 7900 XTX. Board facts from the vendor spec sheet,
- * the chip name from `vulkaninfo` on the lab machine. The home scan scene draws and reads this card.
+ * the chip name from `vulkaninfo` and the ROCm version from our notes on the lab machine. The home
+ * scan scene draws and reads this card.
  */
 export const XTX_BOARD = {
 	card: 'rx-7900-xtx',
 	maker: 'Sapphire',
 	series: 'PULSE',
 	chip: { v: 'Navi 31', src: 'KERNEL/product/research/16j-magnitude-vulkan-xtx.md:18 (vulkaninfo: RADV NAVI31)' },
+	rocm: { v: '10.0', src: 'KERNEL/qwen-opt/NOTES.md:1' },
 	memType: { v: 'GDDR6', src: PULSE_SPEC },
 	busBits: { v: 384, src: PULSE_SPEC },
-	gbps: { v: 20, src: PULSE_SPEC },
-	tbpW: { v: 370, src: PULSE_SPEC },
-	pins8: { v: 3, src: PULSE_SPEC },
-	fans: { v: 3, src: PULSE_SPEC }
+	gbps: { v: 20, src: PULSE_SPEC }
 } as const;
 
 export const CARDS: CardView[] = [
