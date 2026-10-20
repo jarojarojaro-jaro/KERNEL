@@ -1,20 +1,16 @@
 <script lang="ts">
 	/**
-	 * Jakość as one visual idea: a KLD log-scale ruler (10⁻⁴ … 2).
-	 * - Left: the decade 10⁻⁴–10⁻³, "the order of upstream's own noise". Our engine's dots (model
-	 *   colour + shape) and upstream's run-to-run noise ticks (SHEET.correctness.quality, RTX 3060)
-	 *   all sit in it; the per-model values live in the popover.
-	 * - Right: what a real quality change looks like, for scale: other LFM2.5 formats vs Q8_0 on the
-	 *   RTX 5060 Ti (SHEET.lfmFormats5060), labelled as another model and format.
-	 * - A heat bracket spans our worst value → the smallest format change: the hero number "≈ 310×"
-	 *   (computed, rounded down to two significant digits).
-	 * Below: Qwen3.8-27B compact (3090 same script with the multiplier; XTX indicative, no multiplier;
-	 * NVIDIA KLD in progress).
+	 * Jakość as one picture on a LINEAR KLD scale:
+	 * - the main plot puts our engine's difference vs upstream (SHEET.correctness.quality, RTX 3060)
+	 *   and upstream's own noise (ubatch 256 vs 512) next to the smallest format change
+	 *   (SHEET.lfmFormats5060: another model, for scale). On that scale ours and the noise are a
+	 *   hairline at zero; the format change towers, with the "≈ 310×" dimension next to it;
+	 * - a magnifier inset shows the same hairlines ZOOM× closer: ours ≈ noise, pair by pair;
+	 * - below: the lossless switches keep the greedy text bit-identical (md5 gates), while the
+	 *   default build differs at noise level, which is why KLD is measured at all.
 	 */
-	import { heatOf } from '$lib/cards/explorer';
 	import { reveal } from '$lib/fx/actions';
-	import { findCard, MODEL_INFO, SHEET, variantOf } from '$lib/data/measurements';
-	import { fmtRatio, fmtTps } from '$lib/format';
+	import { findCard, MODEL_INFO, SHEET } from '$lib/data/measurements';
 	import { num, type Lang } from '$lib/i18n';
 	import ModelMark from '$lib/ModelMark.svelte';
 	import { MODEL_STYLE } from '$lib/modelStyle';
@@ -23,105 +19,126 @@
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].quality);
+	const titleParts = $derived(c.title.split('|'));
 	const q = SHEET.correctness.quality;
 	const where = findCard('rtx-3060-12')?.name ?? '';
 	const where5060 = findCard('rtx-5060-ti-16')?.name ?? '';
 
-	/** Cropped log axis: just below the smallest value (0,00021) to just above the largest (1,183). */
-	/* a balanced log axis, 1e-4 … 2: whole decades, the edge points sit inside the frame */
-	const LO = -4;
-	const HI = Math.log10(2);
-	const x = (v: number) => (Math.log10(v) - LO) / (HI - LO);
-	const ticks = [-4, -3, -2, -1, 0];
-	const digits = (v: number) => Math.max(2, -Math.floor(Math.log10(v)) + 1);
-
 	const ours = (['saluki', 'bonsai'] as const).map((k) => ({ k, name: MODEL_INFO[k].name, ...q[k] }));
-	const fmts = SHEET.lfmFormats5060.filter((r) => r.md5Same !== null);
+	/** The smallest format change with a same-text check: QAD-Q4_0 vs Q8_0 on LFM2.5. */
+	const fmt = SHEET.lfmFormats5060.filter((r) => r.md5Same !== null).reduce((a, b) => (b.kld.v < a.kld.v ? b : a));
+	const fmtName = fmt.file.replace(/\s*\(.*\)$/, '');
 	const worstOurs = Math.max(...ours.map((r) => r.ours.v));
-	const bestFmt = Math.min(...fmts.map((r) => r.kld.v));
 	/** Rounded down to two significant digits: never overstated. */
 	const ratio = (() => {
-		const r = bestFmt / worstOurs;
+		const r = fmt.kld.v / worstOurs;
 		const p = 10 ** (Math.floor(Math.log10(r)) - 1);
 		return Math.floor(r / p) * p;
 	})();
-	const fmtName = (file: string) => file.replace(/\s*\(.*\)$/, '');
-	const zoneDetail = $derived(
-		`${c.zoneNote} ${ours.map((r) => `${r.name}: ${c.ours} ${num(r.ours.v, lang, digits(r.ours.v))}, ${c.noise} ${num(r.noise.v, lang, digits(r.noise.v))}`).join('; ')}. ${fill(c.where, { card: where })}`
-	);
 
-	/** Qwen3.8-27B speed: baseline vs ours on the 3090 (same script) and the XTX (different scripts). */
-	const qwenRows = (['rtx-3090', 'rx-7900-xtx'] as const).flatMap((id) => {
-		const card = findCard(id);
-		const run = card?.runs.find((r) => r.model === 'qwen38');
-		const a = run && variantOf(run, run.before)?.decode;
-		const b = run && variantOf(run, run.ours)?.decode;
-		return card && run && a && b ? [{ card, run, a, b }] : [];
-	});
+	/* Linear scales with round ends: the main plot tops out just above the format change, the inset
+	   is the same scale ZOOM× closer, so its top sits just above our worst value. */
+	const STEPS = [1, 2, 2.5, 5, 10];
+	const decade = (v: number) => 10 ** Math.floor(Math.log10(v));
+	const niceUp = (v: number) => (STEPS.find((s) => s * decade(v) >= v * (1 - 1e-9)) ?? 10) * decade(v);
+	const niceDown = (v: number) => ([...STEPS].reverse().find((s) => s * decade(v) <= v * (1 + 1e-9)) ?? 1) * decade(v);
+	const MAX = niceUp(fmt.kld.v * 1.15);
+	const ZOOM = niceDown(MAX / (worstOurs * 1.25));
+	const ZMAX = MAX / ZOOM;
+	const ticksOf = (max: number) => {
+		const step = niceUp(max / 2.5);
+		return Array.from({ length: Math.floor(max / step + 1e-9) + 1 }, (_, i) => i * step);
+	};
+	const ticks = ticksOf(MAX);
+	const zticks = ticksOf(ZMAX);
+	/** Fewest decimals that show the value exactly (0,1 · 0,0004). */
+	const dec = (v: number) => {
+		for (let d = 0; d < 7; d++) if (Math.abs(Math.round(v * 10 ** d) - v * 10 ** d) < 1e-6) return d;
+		return 6;
+	};
+	const tick = (v: number) => num(v, lang, dec(v));
+	const val = (v: number) => num(v, lang, Math.max(2, -Math.floor(Math.log10(v)) + 1));
+
+	const summary = $derived(
+		`${fill(c.lede, { x: num(ratio, lang, 0) })} ${ours.map((r) => `${r.name}: ${c.ours} ${val(r.ours.v)}, ${c.noise} ${val(r.noise.v)}`).join('; ')}. ${c.fmtBar} (${fmtName}): ${num(fmt.kld.v, lang, 3)}.`
+	);
 </script>
 
 <section id="quality" class="quality heat-top" aria-labelledby="quality-title">
 	<div class="inner">
 		<header class="head">
-			<h2 id="quality-title" class="statement">{c.title}</h2>
-			<!-- the whole point in one line: our difference vs the smallest format change -->
-			<div class="hero-num">
-				<p class="gl">{c.gapLabel}</p>
-				<p class="gv">
-					<span class="go">{num(worstOurs, lang, digits(worstOurs))}</span>
-					<span class="gvs">vs</span>
-					<span class="gf">{num(bestFmt, lang, 3)}</span>
-				</p>
-				<p class="gc"><span>{c.gapOurs}</span><span>{c.gapFmt}</span></p>
-			</div>
+			<h2 id="quality-title" class="statement">
+				{#each titleParts as p, i (i)}<span class:hot={i === titleParts.length - 1}>{p}</span>{/each}
+			</h2>
+			<p class="lede">{fill(c.lede, { x: num(ratio, lang, 0) })}</p>
 		</header>
 
-		<figure class="ruler" use:reveal={{ threshold: 0.3 }}>
-			<!-- for scale: format changes (another model), with labels above their markers -->
-			<div class="plane">
-				<div class="zone" style="--a:{x(1e-4)}; --b:{x(1e-3)}">
-					<span class="zl">{c.zone}</span>
-				</div>
-				<div class="bracket" style="--a:{x(worstOurs)}; --b:{x(bestFmt)}" aria-hidden="true">
-					<span class="bl">≈&nbsp;{num(ratio, lang, 0)}×</span>
-				</div>
-				{#each ours as r, i (r.k)}
-					<span class="noise" style="--x:{x(r.noise.v)}; --d:{i * 90}ms" aria-hidden="true"><i>{num(r.noise.v, lang, digits(r.noise.v))}</i></span>
-					<span class="dot" class:up={r.ours.v === worstOurs} style="--x:{x(r.ours.v)}; --d:{120 + i * 90}ms; --mc:{MODEL_STYLE[r.k].color}" aria-hidden="true">
-						<ModelMark model={r.k} size="0.95rem" />
-						<span class="dl"><b>{MODEL_STYLE[r.k].short.split(' ')[0]}</b> {num(r.ours.v, lang, digits(r.ours.v))}</span>
-					</span>
+		<figure class="board" use:reveal={{ threshold: 0.25 }}>
+			<p class="sr-only">{summary}</p>
+			<div class="stage" aria-hidden="true">
+			<div class="plot">
+				{#each ticks as t, i (i)}
+					<span class="gl" class:zero={t === 0} style="--t:{t / MAX}"><i>{tick(t)}</i></span>
 				{/each}
-				{#each fmts as r, i (r.file)}
-					<span class="fmt" class:hi={i === 0} style="--x:{x(r.kld.v)}; --d:{350 + i * 120}ms" aria-hidden="true">
-						<span class="fl"><ModelMark model="lfm25" size="0.7em" /> {fmtName(r.file)} <b>{num(r.kld.v, lang, 3)}</b>{#if r.kld.v > 1}<em>{' · '}{c.bad}</em>{/if}</span>
-					</span>
-				{/each}
-				<div class="axis" aria-hidden="true">
-					{#each ticks as t (t)}<span style="--t:{x(10 ** t)}">{num(10 ** t, lang, Math.max(0, -t))}</span>{/each}
+
+				<!-- ours and upstream's noise: on this scale, a hairline at zero -->
+				<div class="tiny">
+					{#each ours as r (r.k)}
+						<span class="b noise" style="--h:{r.noise.v / MAX}"></span>
+						<span class="b ours" style="--h:{r.ours.v / MAX}"></span>
+					{/each}
+				</div>
+				<span class="lens"></span>
+				<span class="beam"></span>
+				<span class="here">{c.here}</span>
+
+				<!-- the format change: same scale, towering -->
+				<div class="tall" style="--h:{fmt.kld.v / MAX}">
+					<span class="tv">{num(fmt.kld.v, lang, 3)}</span>
+				</div>
+				<div class="dim" style="--h:{fmt.kld.v / MAX}">
+					<span class="dl"><b>≈&nbsp;{num(ratio, lang, 0)}×</b><small>{c.times}</small></span>
+				</div>
+
+				<p class="lab lab-tiny"><b>{c.tinyLabel}</b></p>
+				<p class="lab lab-tall"><b>{c.fmtBar}</b><small><ModelMark model="lfm25" size="0.85em" /> {fill(c.fmtSub, { fmt: fmtName })}</small></p>
+			</div>
+
+				<!-- the magnifier: the same hairlines ZOOM× closer -->
+				<div class="inset">
+					<p class="ih"><span class="zx">×{num(ZOOM, lang, 0)}</span>{c.zoomTitle}</p>
+					<p class="legend">
+						<span><i class="sw noise"></i>{c.noise}</span>
+						<span><i class="sw ours"></i>{c.ours}</span>
+					</p>
+					<div class="iplot">
+						{#each zticks as t, i (i)}
+							<span class="gl" class:zero={t === 0} style="--t:{t / ZMAX}"><i>{tick(t)}</i></span>
+						{/each}
+						{#each ours as r, i (r.k)}
+							<div class="pair" style="--i:{i}">
+								<span class="zb noise" style="--h:{r.noise.v / ZMAX}"><em>{val(r.noise.v)}</em></span>
+								<span class="zb ours" style="--h:{r.ours.v / ZMAX}"><em>{val(r.ours.v)}</em></span>
+								<span class="pn"><ModelMark model={r.k} size="0.85em" /> {MODEL_STYLE[r.k].short}</span>
+							</div>
+						{/each}
+					</div>
+					<p class="verdict">{c.verdict}</p>
 				</div>
 			</div>
-			<p class="sr-only">{zoneDetail} {fmts.map((r) => `${fmtName(r.file)}: ${num(r.kld.v, lang, 3)}`).join(', ')}.</p>
-			<figcaption class="caption">
-				<span class="zcap"><i class="zsw"></i>{c.zone}</span>
-				<span><ModelMark model="lfm25" size="0.7rem" /> {fill(c.fmt, { card: where5060 })}</span>
-				<span class="ax">{c.axis}</span>
-			</figcaption>
+			<figcaption class="caption">{fill(c.caption, { card: where, card2: where5060 })}</figcaption>
 		</figure>
 
-		<div class="qwen">
-			<p class="qh"><ModelMark model="qwen38" size="0.75em" /> {MODEL_INFO.qwen38.name}</p>
-			{#each qwenRows as r (r.card.id)}
-				<div class="qrow">
-					<span class="qc">{r.card.short}</span>
-					<span class="qv"><span class="steel">{fmtTps(r.a.v, lang)}</span> → <b>{fmtTps(r.b.v, lang)}</b> <small>t/s</small></span>
-					{#if r.run.sameHarness}
-						<span class="qg"><b class="speedup" style="--rh:{heatOf(r.b.v / r.a.v)}">{fmtRatio(r.b.v / r.a.v, lang)}</b> <small>{c.qwen.same}</small></span>
-					{:else}
-						<span class="qg"><small class="cross">{c.qwen.cross}</small></span>
-					{/if}
-				</div>
-			{/each}
+		<div class="same">
+			<div class="st">
+				<h3>{c.same.title}</h3>
+				<p>{c.same.note}</p>
+			</div>
+			<ul class="sl">
+				{#each c.same.items as it (it)}
+					<li><span class="sn">{it}</span><span class="eq" aria-hidden="true"></span><span class="ok">✓ {c.same.ok}</span></li>
+				{/each}
+			</ul>
 		</div>
 	</div>
 </section>
@@ -138,12 +155,12 @@
 		margin-inline: auto;
 		padding-block: clamp(3.5rem, 2.5rem + 3vw, 6rem);
 		display: grid;
-		gap: clamp(2rem, 4vw, 3.5rem);
+		gap: clamp(1.75rem, 3.5vw, 3rem);
 	}
 	.head {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: clamp(1.5rem, 4vw, 4rem);
+		grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+		gap: clamp(1.25rem, 4vw, 4rem);
 		align-items: end;
 	}
 	.statement {
@@ -152,413 +169,546 @@
 		font-size: clamp(2.1rem, 0.8rem + 3vw, 4.2rem);
 		font-weight: 800;
 		font-stretch: 108%;
-		line-height: 0.96;
+		line-height: 0.98;
 		letter-spacing: -0.04em;
 		color: var(--text-hi);
 		text-wrap: balance;
 	}
-	.hero-num {
-		display: grid;
-		gap: 0.4rem;
-		justify-items: end;
-		text-align: right;
+	.statement span {
+		display: block;
 	}
-	.gl {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--text-mute);
-	}
-	.gv {
-		margin: 0;
-		display: flex;
-		align-items: baseline;
-		gap: 0.3em;
-		font-family: var(--font-display);
-		font-variant-numeric: tabular-nums lining-nums;
-		font-size: clamp(2.6rem, 1.2rem + 4.2vw, 6rem);
-		font-weight: 820;
-		letter-spacing: -0.045em;
-		line-height: 0.9;
-	}
-	/* ours is the hero number (warm); the format change is the cold reference */
-	.go {
-		background: var(--heat-ramp-hot);
+	.statement .hot {
+		width: fit-content;
+		max-width: 100%;
+		background: var(--heat-large);
 		-webkit-background-clip: text;
 		background-clip: text;
 		color: transparent;
 		padding-bottom: 0.08em;
-		filter: drop-shadow(0 0 0.25em rgb(255 122 26 / 0.35));
 	}
-	.gvs {
-		font-size: 0.38em;
-		font-family: var(--font-mono);
-		font-weight: 500;
-		color: var(--text-mute);
-		letter-spacing: 0.04em;
-	}
-	.gf {
-		color: var(--before);
-	}
-	.gc {
+	.lede {
 		margin: 0;
-		display: flex;
-		justify-content: flex-end;
-		gap: 0.4rem 1.6rem;
-		flex-wrap: wrap;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
+		max-width: 38rem;
+		font-size: var(--fs-md);
+		line-height: 1.5;
 		color: var(--text);
-	}
-	.gc span:first-child {
-		color: var(--heat-4);
-	}
-	.gc span + span {
-		color: var(--before);
+		text-wrap: pretty;
 	}
 
-	/* ---- the ruler: labels on the markers, no legend ---- */
-	.ruler {
+	/* ---- the board: one linear plot with a magnifier ---- */
+	.board {
+		--lx: 1.4rem; /* left edge of the hairline group */
+		--gw: 2.6rem; /* its width */
+		--lr: 1.9rem; /* lens radius */
+		--tw: clamp(5.5rem, 3rem + 7vw, 10rem); /* tall bar width */
+		--tr: 3rem; /* room for tick labels at the right */
 		margin: 0;
 		display: grid;
-		gap: 0.9rem;
-		padding: clamp(1rem, 2.5vw, 1.75rem) clamp(1rem, 3vw, 2.25rem) clamp(0.9rem, 2vw, 1.25rem);
+		gap: 1rem;
+		padding: clamp(1rem, 2.5vw, 2rem) clamp(1rem, 3vw, 2.25rem) clamp(0.9rem, 2vw, 1.4rem);
 		border-radius: var(--r-xl);
 		background: linear-gradient(180deg, rgb(255 255 255 / 0.02), transparent), var(--bg-1);
 		box-shadow: inset 0 0 0 1px var(--line);
 	}
-	.plane {
+	.stage {
+		--ph: clamp(24rem, 16rem + 11vw, 30rem);
+		--iw: min(34rem, 50%);
+		--ih: calc(var(--ph) - var(--lr) - 3.4rem);
 		position: relative;
-		height: 13rem;
 	}
-	.plane::before {
-		content: '';
+	.plot {
+		position: relative;
+		height: var(--ph);
+		margin-bottom: 3.6rem; /* the labels under the baseline */
+	}
+	.gl {
 		position: absolute;
 		left: 0;
 		right: 0;
-		bottom: 1.8rem;
-		height: 1px;
-		background: linear-gradient(90deg, var(--line-strong), rgb(255 122 26 / 0.6) 70%, var(--heat-2));
+		bottom: calc(var(--t) * 100%);
+		height: 0;
+		border-top: 1px dashed color-mix(in srgb, var(--text) 16%, transparent);
 	}
-	/* upstream's own noise: the decade the dots sit in */
-	.zone {
+	.gl.zero {
+		border-top: 1px solid var(--line-strong);
+	}
+	.gl i {
 		position: absolute;
-		bottom: 1.8rem;
-		left: calc(var(--a) * 100%);
-		width: calc((var(--b) - var(--a)) * 100%);
-		height: 6.4rem;
-		border-radius: 8px 8px 0 0;
-		background: linear-gradient(180deg, rgb(237 234 227 / 0.02), rgb(237 234 227 / 0.08));
-		border: 1px dashed rgb(237 234 227 / 0.28);
-		border-bottom: 0;
-	}
-	.zl {
-		position: absolute;
-		left: 0.5rem;
-		top: 0.4rem;
-		right: 0.3rem;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.3rem;
-		font-size: var(--fs-xs);
-		line-height: 1.25;
-		color: var(--text);
-	}
-	.noise,
-	.dot,
-	.fmt {
-		position: absolute;
-		left: calc(var(--x) * 100%);
-	}
-	.noise {
-		bottom: 1.8rem;
-		width: 2px;
-		height: 1.1rem;
-		margin-left: -1px;
-		background: var(--before);
-	}
-	.noise i {
-		display: none;
-	}
-	.dot {
-		bottom: calc(1.8rem + 1.5rem);
-		display: grid;
-		place-items: center;
-		width: 1.7rem;
-		height: 1.7rem;
-		margin-left: -0.85rem;
-		border-radius: 50%;
-		background: color-mix(in srgb, var(--mc) 18%, var(--bg-1));
-		box-shadow:
-			0 0 0 1px color-mix(in srgb, var(--mc) 70%, transparent),
-			0 0 18px color-mix(in srgb, var(--mc) 55%, transparent);
-	}
-	.dot.up {
-		bottom: calc(1.8rem + 3.2rem);
-	}
-	.dot::after {
-		content: '';
-		position: absolute;
-		top: 100%;
-		left: 50%;
-		width: 1px;
-		height: 1.5rem;
-		background: linear-gradient(color-mix(in srgb, var(--mc) 70%, transparent), color-mix(in srgb, var(--mc) 15%, transparent));
-	}
-	.dot.up::after {
-		height: 3.2rem;
-	}
-	/* the label sits right next to its marker, in the model's colour */
-	.dl {
-		position: absolute;
-		left: calc(100% + 0.4rem);
-		top: 50%;
-		transform: translateY(-50%);
-		font-size: var(--fs-xs);
-		color: var(--text-hi);
-		white-space: nowrap;
-	}
-	.dl b {
-		font-weight: 600;
-		color: var(--mc);
-	}
-	.fmt {
-		bottom: 1.8rem;
-		height: 7.2rem;
-		border-left: 2px dashed var(--heat-3);
-	}
-	.fmt:not(.hi) {
-		height: 4.4rem;
-		border-left-color: var(--heat-2);
-	}
-	.fl {
-		position: absolute;
-		right: 0.5rem;
-		top: -0.2rem;
-		display: inline-flex;
-		align-items: center;
-		gap: 0.35rem;
-		padding: 0.1rem 0.3rem;
-		border-radius: 4px;
-		background: var(--bg-1);
-		font-size: var(--fs-xs);
-		color: var(--text);
-		white-space: nowrap;
-	}
-	.fl b {
-		color: var(--text-hi);
-		font-weight: 500;
-	}
-	.fl em {
+		right: 0;
+		bottom: 0.25rem;
+		font-family: var(--font-mono);
 		font-style: normal;
-		color: var(--text-mute);
-	}
-	/* the gap, in heat: our worst value → the smallest format change */
-	.bracket {
-		position: absolute;
-		bottom: calc(1.8rem + 7.9rem);
-		left: calc(var(--a) * 100%);
-		width: calc((var(--b) - var(--a)) * 100%);
-		height: 1.3rem;
-		border: 3px solid transparent;
-		border-bottom: 0;
-		border-image: linear-gradient(90deg, var(--heat-2), var(--heat-3) 50%, var(--heat-4)) 1;
-		filter: drop-shadow(0 0 10px rgb(255 122 26 / 0.7));
-		transform-origin: 0 50%;
-	}
-	.bl {
-		position: absolute;
-		left: 50%;
-		bottom: calc(100% + 0.15rem);
-		transform: translateX(-50%);
-		font-family: var(--font-display);
-		font-size: clamp(1.9rem, 1.2rem + 1.8vw, 3rem);
-		line-height: 1;
-		font-weight: 820;
-		letter-spacing: -0.03em;
-		color: var(--heat-5);
-		white-space: nowrap;
-	}
-	.axis {
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		height: 1.4rem;
-		font-size: var(--fs-xs);
+		font-size: var(--fs-2xs);
 		font-variant-numeric: tabular-nums;
 		color: var(--text-mute);
 	}
-	.axis span {
+	/* bars: steel = upstream vs itself, amber = ours vs upstream (same mapping in the inset) */
+	.b.noise,
+	.zb.noise,
+	.sw.noise {
+		background: linear-gradient(0deg, color-mix(in srgb, var(--before) 70%, transparent), var(--before));
+	}
+	.b.ours,
+	.zb.ours,
+	.sw.ours {
+		background: linear-gradient(0deg, var(--heat-3), var(--heat-4));
+	}
+	.tiny {
 		position: absolute;
-		left: calc(var(--t) * 100%);
+		left: var(--lx);
+		bottom: 0;
+		width: var(--gw);
+		height: 100%;
+		display: flex;
+		align-items: flex-end;
+		justify-content: space-between;
+	}
+	.b {
+		width: 0.45rem;
+		height: max(2px, calc(var(--h) * 100%));
+		border-radius: 1px 1px 0 0;
+	}
+	.lens {
+		position: absolute;
+		left: calc(var(--lx) + var(--gw) / 2 - var(--lr));
+		bottom: calc(-1 * var(--lr));
+		width: calc(2 * var(--lr));
+		height: calc(2 * var(--lr));
+		border-radius: 50%;
+		border: 2px solid var(--heat-4);
+		box-shadow:
+			0 0 0 4px color-mix(in srgb, var(--heat-4) 14%, transparent),
+			0 0 24px rgb(255 193 90 / 0.35);
+		background: radial-gradient(circle, rgb(255 193 90 / 0.08), transparent 70%);
+	}
+	/* light from the lens up into the inset */
+	.beam {
+		position: absolute;
+		z-index: 1;
+		left: 0;
+		width: var(--iw);
+		top: var(--ih);
+		bottom: var(--lr);
+		background: linear-gradient(0deg, rgb(255 193 90 / 0.34), rgb(255 193 90 / 0.06));
+		clip-path: polygon(0 0, 100% 0, calc(var(--lx) + var(--gw) / 2 + var(--lr) * 0.8) 100%, calc(var(--lx) + var(--gw) / 2 - var(--lr) * 0.8) 100%);
+	}
+	.here {
+		display: none;
+	}
+	.tall {
+		position: absolute;
+		right: var(--tr);
+		bottom: 0;
+		width: var(--tw);
+		height: calc(var(--h) * 100%);
+		border-radius: 6px 6px 0 0;
+		background:
+			repeating-linear-gradient(135deg, rgb(255 255 255 / 0.07) 0 2px, transparent 2px 9px),
+			linear-gradient(0deg, var(--heat-1), var(--heat-2));
+		box-shadow: 0 0 40px rgb(226 64 28 / 0.25);
+		transform-origin: 50% 100%;
+	}
+	.tv {
+		position: absolute;
+		left: 50%;
+		bottom: calc(100% + 0.35rem);
 		transform: translateX(-50%);
+		font-family: var(--font-display);
+		font-variant-numeric: tabular-nums lining-nums;
+		font-size: var(--fs-lg);
+		font-weight: 700;
+		color: var(--text-hi);
+		white-space: nowrap;
 	}
-	.axis span:first-child {
-		transform: none;
+	/* the dimension: from zero (where ours sits) to the top of the format change */
+	.dim {
+		position: absolute;
+		right: calc(var(--tr) + var(--tw) + 0.9rem);
+		bottom: 0;
+		height: calc(var(--h) * 100%);
+		width: 0.7rem;
+		border: 2px solid var(--heat-3);
+		border-left: 0;
+		transform-origin: 50% 100%;
 	}
-	@media (prefers-reduced-motion: no-preference) {
-		/* resting state final; entering view replays the markers dropping onto the scale */
-		:global(html.js) .ruler:global([data-in]) .dot,
-		:global(html.js) .ruler:global([data-in]) .noise,
-		:global(html.js) .ruler:global([data-in]) .fmt {
-			animation: mark-in 0.8s var(--ease-spring) var(--d) backwards;
-		}
-		:global(html.js) .ruler:global([data-in]) .bracket {
-			animation: bracket-in 1.1s var(--ease-out) 0.5s backwards;
-		}
+	.dl {
+		position: absolute;
+		right: calc(100% + 0.6rem);
+		top: 50%;
+		transform: translateY(-50%);
+		display: grid;
+		justify-items: end;
+		text-align: right;
+		gap: 0.2rem;
 	}
-	@keyframes mark-in {
-		from {
-			transform: translate3d(0, -1.5rem, 0) scale(0.3);
-		}
+	.dl b {
+		font-family: var(--font-display);
+		font-size: clamp(2rem, 1rem + 2.6vw, 3.6rem);
+		font-weight: 820;
+		line-height: 0.95;
+		letter-spacing: -0.04em;
+		white-space: nowrap;
+		background: var(--heat-large);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		filter: drop-shadow(0 0 0.25em rgb(255 122 26 / 0.35));
 	}
-	@keyframes bracket-in {
-		from {
-			transform: scaleX(0);
-		}
+	.dl small {
+		max-width: 10rem;
+		font-size: var(--fs-xs);
+		line-height: 1.3;
+		color: var(--text);
 	}
-	.caption {
+	.lab {
+		position: absolute;
+		top: calc(100% + var(--lr) + 0.3rem);
+		margin: 0;
+		display: grid;
+		gap: 0.15rem;
+		font-size: var(--fs-xs);
+		line-height: 1.3;
+		color: var(--text);
+	}
+	.lab b {
+		font-weight: 600;
+		color: var(--text-hi);
+	}
+	.lab small {
+		display: block;
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
+	}
+	.lab-tiny {
+		left: 0;
+		max-width: 12rem;
+	}
+	.lab-tall {
+		top: calc(100% + 0.5rem);
+		right: var(--tr);
+		width: max-content;
+		max-width: min(16rem, 60%);
+		justify-items: end;
+		text-align: right;
+	}
+
+	.inset {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: var(--iw);
+		height: var(--ih);
+		display: grid;
+		grid-template-rows: auto auto minmax(0, 1fr) auto;
+		gap: 0.6rem;
+		padding: clamp(0.9rem, 1.6vw, 1.25rem);
+		border-radius: var(--r-lg, 14px);
+		background: color-mix(in srgb, var(--bg-2, var(--bg-1)) 92%, transparent);
+		box-shadow:
+			inset 0 0 0 1.5px color-mix(in srgb, var(--heat-4) 55%, transparent),
+			0 0 44px rgb(255 193 90 / 0.08);
+		transform-origin: 10% 100%;
+	}
+	.ih {
+		margin: 0;
+		display: flex;
+		align-items: baseline;
+		flex-wrap: wrap;
+		gap: 0.2rem 0.6rem;
+		font-size: var(--fs-sm);
+		font-weight: 600;
+		color: var(--text-hi);
+	}
+	.zx {
+		font-family: var(--font-display);
+		font-size: var(--fs-lg);
+		font-weight: 800;
+		color: var(--heat-4);
+	}
+	.legend {
+		margin: 0;
 		display: flex;
 		flex-wrap: wrap;
-		align-items: center;
-		justify-content: space-between;
-		gap: 0.4rem 1.2rem;
+		gap: 0.3rem 1.1rem;
 		font-size: var(--fs-xs);
 		color: var(--text);
 	}
-	.caption span {
+	.legend span {
 		display: inline-flex;
 		align-items: center;
 		gap: 0.4rem;
 	}
-	.zcap {
-		display: none !important;
+	.sw {
+		width: 0.7rem;
+		height: 0.7rem;
+		border-radius: 2px;
 	}
-	.zsw {
-		width: 0.9rem;
-		height: 0.65rem;
-		border: 1px dashed rgb(237 234 227 / 0.45);
-		background: rgb(237 234 227 / 0.06);
+	.iplot {
+		position: relative;
+		min-height: 7rem;
+		margin: 1.4rem 2.4rem 1.6rem 0; /* value labels above, tick labels right, names below */
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
 	}
-	.caption .ax {
+	.iplot .gl i {
+		right: auto;
+		left: calc(100% + 0.4rem);
+		bottom: -0.45em;
+	}
+	.pair {
+		position: relative;
+		display: flex;
+		justify-content: center;
+		align-items: flex-end;
+		gap: clamp(0.35rem, 1vw, 0.7rem);
+	}
+	.zb {
+		position: relative;
+		width: clamp(1.6rem, 0.8rem + 2.4vw, 3rem);
+		height: calc(var(--h) * 100%);
+		border-radius: 4px 4px 0 0;
+		transform-origin: 50% 100%;
+	}
+	.zb.ours {
+		box-shadow: 0 0 22px rgb(255 122 26 / 0.3);
+	}
+	.zb em {
+		position: absolute;
+		left: 50%;
+		bottom: calc(100% + 0.25rem);
+		transform: translateX(-50%);
 		font-family: var(--font-mono);
+		font-style: normal;
 		font-size: var(--fs-2xs);
+		font-variant-numeric: tabular-nums;
+		color: var(--text-hi);
+		white-space: nowrap;
+	}
+	.zb.noise em {
+		color: var(--text);
+	}
+	.pn {
+		position: absolute;
+		top: calc(100% + 0.4rem);
+		left: 0;
+		right: 0;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		gap: 0.3rem;
+		font-size: var(--fs-xs);
+		color: var(--text);
+		white-space: nowrap;
+	}
+	.verdict {
+		margin: 0;
+		font-size: var(--fs-sm);
+		font-weight: 600;
+		line-height: 1.35;
+		color: var(--heat-4);
+		text-wrap: balance;
+	}
+	.caption {
+		font-size: var(--fs-xs);
+		line-height: 1.5;
 		color: var(--text-mute);
-		text-transform: uppercase;
-		letter-spacing: 0.1em;
+		max-width: 62rem;
 	}
 
-	/* ---- below: Qwen ---- */
-	.qwen {
-		max-width: 46rem;
+	/* ---- the lossless switches ---- */
+	.same {
 		display: grid;
-		gap: 0.85rem;
-		align-content: start;
-		padding: clamp(1.25rem, 2.5vw, 1.75rem);
+		grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+		gap: clamp(1rem, 3vw, 3rem);
+		align-items: center;
+		padding: clamp(1.1rem, 2.5vw, 1.75rem) clamp(1rem, 3vw, 2.25rem);
 		border-radius: var(--r-xl);
 		background: var(--bg-1);
 		box-shadow: inset 0 0 0 1px var(--line);
 	}
-	.qh {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		font-weight: 700;
-		color: var(--text-hi);
-	}
-	.qrow {
-		display: grid;
-		grid-template-columns: 7.5rem minmax(0, 1fr) auto;
-		align-items: baseline;
-		gap: 0.75rem;
-		padding-top: 0.75rem;
-		border-top: 1px solid var(--line);
-		font-family: var(--font-mono);
-		font-size: var(--fs-sm);
-		color: var(--text);
-	}
-	.qc {
-		font-size: var(--fs-xs);
-		color: var(--text-mute);
-	}
-	.qv {
+	.st h3 {
+		margin: 0 0 0.45rem;
 		font-family: var(--font-display);
-		font-variant-numeric: tabular-nums lining-nums;
-		font-weight: 650;
-		font-size: var(--fs-md);
-	}
-	.qv b {
-		font-weight: 500;
+		font-size: var(--fs-lg);
+		font-weight: 750;
+		letter-spacing: -0.02em;
 		color: var(--text-hi);
 	}
-	.steel {
-		color: var(--before);
+	.st p {
+		margin: 0;
+		font-size: var(--fs-sm);
+		line-height: 1.55;
+		color: var(--text);
+		text-wrap: pretty;
 	}
-	.qv small,
-	.qg small {
-		font-size: var(--fs-2xs);
-		color: var(--text-mute);
+	.sl {
+		margin: 0;
+		padding: 0;
+		list-style: none;
+		display: grid;
+		gap: 0.55rem;
 	}
-	.qg b {
-		font-size: var(--fs-lg);
+	.sl li {
+		display: grid;
+		grid-template-columns: auto minmax(1rem, 1fr) auto;
+		align-items: center;
+		gap: 0.7rem;
+		font-size: var(--fs-sm);
 	}
-	.cross {
-		color: var(--text) !important;
+	.sn {
+		color: var(--text-hi);
+		font-weight: 600;
 	}
-	@media (max-width: 360px) {
-		.gv {
-			font-size: min(2.2rem, 10vw);
-			flex-wrap: wrap;
+	.eq {
+		height: 0;
+		border-top: 1px dashed var(--line-strong);
+	}
+	.ok {
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		color: var(--heat-4);
+		white-space: nowrap;
+	}
+
+	/* ---- motion: resting state is final; entering view replays the build-up ---- */
+	@media (prefers-reduced-motion: no-preference) {
+		:global(html.js) .board:global([data-in]) .tall,
+		:global(html.js) .board:global([data-in]) .dim {
+			animation: grow 1.2s var(--ease-out) 0.1s backwards;
+		}
+		:global(html.js) .board:global([data-in]) .dl,
+		:global(html.js) .board:global([data-in]) .tv {
+			animation: rise 0.7s var(--ease-out) 0.9s backwards;
+		}
+		:global(html.js) .board:global([data-in]) .lens {
+			animation: pop 0.8s var(--ease-spring) 0.45s backwards;
+		}
+		:global(html.js) .board:global([data-in]) .beam {
+			animation: fade 0.8s var(--ease-out) 0.7s backwards;
+		}
+		:global(html.js) .board:global([data-in]) .inset {
+			animation: zoom-in 0.9s var(--ease-out) 0.7s backwards;
+		}
+		:global(html.js) .board:global([data-in]) .zb {
+			animation: grow 0.9s var(--ease-spring) calc(1.2s + var(--i, 0) * 0.15s) backwards;
+		}
+		:global(html.js) .board:global([data-in]) .verdict {
+			animation: rise 0.6s var(--ease-out) 1.7s backwards;
 		}
 	}
+	@keyframes grow {
+		from {
+			transform: scaleY(0);
+		}
+	}
+	@keyframes rise {
+		from {
+			opacity: 0;
+			translate: 0 0.6rem;
+		}
+	}
+	@keyframes pop {
+		from {
+			opacity: 0;
+			transform: scale(0.3);
+		}
+	}
+	@keyframes fade {
+		from {
+			opacity: 0;
+		}
+	}
+	@keyframes zoom-in {
+		from {
+			opacity: 0;
+			transform: scale(0.4);
+		}
+	}
+
+	/* light ("bone"): heat is light, never rust; small heat text becomes the accent ink */
+	:global(:root[data-theme='light']) .tall {
+		background:
+			repeating-linear-gradient(135deg, rgb(255 255 255 / 0.14) 0 2px, transparent 2px 9px),
+			linear-gradient(0deg, var(--heat-2), var(--heat-3));
+	}
+	:global(:root[data-theme='light']) :is(.zx, .verdict, .ok, .here) {
+		color: var(--accent-ink);
+	}
+
 	@media (max-width: 900px) {
-		.head {
+		.head,
+		.same {
 			grid-template-columns: minmax(0, 1fr);
 		}
-		.hero-num {
-			min-width: 0;
-			justify-items: start;
-			text-align: left;
+	}
+	/* narrow: the inset leaves the plot and sits under it; the lens gets a pointer label */
+	@media (max-width: 900px) {
+		.board {
+			--tw: 4.4rem;
+			--lr: 1.6rem;
+			--tr: 0rem;
 		}
-		.gc {
-			justify-content: flex-start;
+		.stage {
+			--ph: clamp(17rem, 12rem + 10vw, 22rem);
+		}
+		.plot {
+			margin-bottom: 4.6rem;
+		}
+		/* the bar carries its own value; the tick labels would collide with the dimension */
+		.plot > .gl i {
+			display: none;
+		}
+		.beam {
+			display: none;
+		}
+		.here {
+			display: block;
+			position: absolute;
+			left: calc(var(--lx) + var(--gw) / 2 - 0.5rem);
+			bottom: calc(var(--lr) + 0.5rem);
+			max-width: 7.5rem;
+			font-size: var(--fs-2xs);
+			line-height: 1.3;
+			color: var(--heat-4);
+		}
+		.dl b {
+			font-size: clamp(1.6rem, 1rem + 3vw, 2.2rem);
+		}
+		.dl small {
+			max-width: 6.5rem;
+		}
+		.lab-tiny {
+			max-width: 8.5rem;
+		}
+		.lab-tall {
+			max-width: 55%;
+		}
+		.inset {
+			position: relative;
+			width: auto;
+			height: auto;
+			min-height: 18rem;
+		}
+		.iplot {
+			min-height: 9rem;
+		}
+		.zb {
+			width: 2.8rem;
+		}
+		.pair {
+			gap: 0.5rem;
+		}
+		.zb em {
+			font-size: 0.625rem;
 		}
 	}
-	@media (max-width: 640px) {
-		.axis span:nth-child(even) {
+	@media (max-width: 480px) {
+		.iplot {
+			margin-right: 0;
+		}
+		.iplot .gl i {
 			display: none;
-		}
-		.qrow {
-			grid-template-columns: minmax(0, 1fr) auto;
-		}
-		.qv {
-			grid-column: 1 / -1;
-			order: 3;
-		}
-		.gc {
-			justify-content: flex-start;
-		}
-		.zl {
-			display: none;
-		}
-		.zcap {
-			display: inline-flex !important;
-		}
-		/* narrow: format labels stacked above the dots' labels, the bracket above them */
-		.plane {
-			height: 16.5rem;
-		}
-		.fmt {
-			height: 10.6rem;
-		}
-		.fmt:not(.hi) {
-			height: 8rem;
-		}
-		.bracket {
-			bottom: calc(1.8rem + 11.4rem);
 		}
 	}
 </style>

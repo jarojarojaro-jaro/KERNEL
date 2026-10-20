@@ -146,25 +146,23 @@ const raw = {
 			codeNote: 'ta sama karta i model, zadanie edycji plików: typowa aplikacja wobec naszego silnika dziś'
 		},
 		quality: {
-			title: 'Ten sam model, ta sama jakość — zmierzone.',
-			gapLabel: 'Różnica jakości',
-			gapOurs: 'nasz silnik wobec upstreamu (gorszy z dwóch modeli)',
-			gapFmt: 'najmniejsza zmiana formatu (inny model)',
-			less: '≈ {x}× mniej',
-			lessNote: 'tyle mniejsza jest różnica, którą wprowadza nasz silnik, niż najmniejsza zmiana formatu kwantyzacji na tej linijce',
-			kld: 'KLD',
-			kldDef: 'Dywergencja Kullbacka–Leiblera: o ile rozkład kolejnego tokenu różni się od wzorca. Zero znaczy: identycznie.',
-			zone: 'rząd szumu samego upstreamu',
-			zoneNote: 'Wniosek raportu: KLD naszego silnika „mieści się w szumie samego upstreamu”. Wszystkie cztery wartości leżą w tym samym rzędzie wielkości (10⁻⁴–10⁻³).',
-			ours: 'nasz silnik',
-			noise: 'szum upstreamu',
-			fmt: 'zmiana formatu (inny model: LFM2.5 na {card}, wobec Q8_0)',
-			bad: 'zła jakość',
-			axis: 'KLD, skala logarytmiczna',
-			where: 'Pomiar na {card}.',
-			qwen: {
-				same: 'ten sam skrypt',
-				cross: 'orientacyjnie: różne skrypty'
+			title: 'Ten sam model,|ta sama jakość.',
+			lede: 'Mierzymy, o ile nasz silnik zmienia odpowiedzi modelu względem zwykłego llama.cpp. Wychodzi mniej więcej tyle, ile sam llama.cpp zmienia je przy innym ustawieniu, czyli szum. Zmiana formatu modelu to różnica ok. {x}× większa.',
+			ours: 'nasz silnik wobec llama.cpp',
+			noise: 'llama.cpp wobec samego siebie',
+			here: 'tu, ledwie nad zerem',
+			tinyLabel: 'nasz silnik i szum llama.cpp',
+			fmtBar: 'zmiana formatu modelu',
+			fmtSub: 'LFM2.5: {fmt} wobec Q8_0',
+			times: 'większa różnica',
+			zoomTitle: 'to samo miejsce w powiększeniu',
+			verdict: 'Podobne słupki: nasz silnik zmienia odpowiedzi mniej więcej tyle, co szum samego llama.cpp.',
+			caption: 'Skala liniowa. Miara: KLD, czyli o ile różnią się prawdopodobieństwa kolejnego słowa (0 = identycznie). Szum llama.cpp: ten sam llama.cpp z inną wielkością paczki (ubatch 256 i 512). Saluki i Bonsai mierzone na {card}; zmiana formatu to inny model (LFM2.5 na {card2}), pokazany dla skali.',
+			same: {
+				title: 'Przyspieszenia nie zmieniają tekstu',
+				note: 'Włączone czy wyłączone, spekulacja, weryfikacja na GPU i odtwarzanie PM4 dają przy wyborze zachłannym ten sam tekst, bit w bit; pilnują tego testy sum md5. Sama nasza kompilacja liczy część mnożeń w innej kolejności, więc od llama.cpp różni się na poziomie szumu. Dlatego mierzymy KLD.',
+				items: ['spekulacja', 'weryfikacja na GPU', 'odtwarzanie PM4'],
+				ok: 'ten sam tekst'
 			}
 		},
 		cards: {
@@ -368,25 +366,23 @@ const raw = {
 			codeNote: 'the same card and model, a file-editing task: the typical app vs our engine today'
 		},
 		quality: {
-			title: 'Same model, same quality — measured.',
-			gapLabel: 'Quality difference',
-			gapOurs: 'our engine vs upstream (the worse of two models)',
-			gapFmt: 'the smallest format change (another model)',
-			less: '≈ {x}× smaller',
-			lessNote: 'that is how much smaller our engine’s difference is than the smallest quantisation format change on this ruler',
-			kld: 'KLD',
-			kldDef: 'Kullback–Leibler divergence: how far the next-token distribution is from the reference. Zero means identical.',
-			zone: 'the order of upstream’s own noise',
-			zoneNote: 'The report’s conclusion: our engine’s KLD “is within upstream’s own noise”. All four values sit in the same order of magnitude (10⁻⁴–10⁻³).',
-			ours: 'our engine',
-			noise: 'upstream noise',
-			fmt: 'a format change (another model: LFM2.5 on the {card}, vs Q8_0)',
-			bad: 'poor quality',
-			axis: 'KLD, log scale',
-			where: 'Measured on the {card}.',
-			qwen: {
-				same: 'the same script',
-				cross: 'indicative: different scripts'
+			title: 'Same model,|same quality.',
+			lede: 'We measure how much our engine changes the model’s answers compared with plain llama.cpp. The change is about as large as llama.cpp’s own under a different setting: noise. Changing the model format makes a difference about {x}× bigger.',
+			ours: 'our engine vs llama.cpp',
+			noise: 'llama.cpp vs itself',
+			here: 'here, just above zero',
+			tinyLabel: 'our engine and llama.cpp noise',
+			fmtBar: 'a model format change',
+			fmtSub: 'LFM2.5: {fmt} vs Q8_0',
+			times: 'bigger difference',
+			zoomTitle: 'the same spot, magnified',
+			verdict: 'Similar bars: our engine changes the answers about as much as llama.cpp’s own noise.',
+			caption: 'Linear scale. Metric: KLD, how much the next-word probabilities differ (0 = identical). llama.cpp noise: the same llama.cpp with a different batch size (ubatch 256 vs 512). Saluki and Bonsai measured on the {card}; the format change is another model (LFM2.5 on the {card2}), shown for scale.',
+			same: {
+				title: 'Speed-ups don’t change the text',
+				note: 'On or off, speculation, GPU verification and PM4 replay give the same greedy text, bit for bit; md5 checks guard it. Our build itself computes some multiplications in a different order, so it differs from llama.cpp at noise level. That is why we measure KLD.',
+				items: ['speculation', 'GPU verification', 'PM4 replay'],
+				ok: 'same text'
 			}
 		},
 		cards: {
