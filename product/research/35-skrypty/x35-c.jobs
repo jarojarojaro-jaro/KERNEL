@@ -1,0 +1,7 @@
+# report 35 E5: gate of ~/wt/bxadapt, then ABBA A = switches off (topka), B = LLAMA_SPEC_BITEXACT=1 + LLAMA_SPEC_DEPTH_ADAPT=1
+# (chat T=1 seeds 1,2 + short documents < 8k, T=0), production topka env in both arms
+e5-gate|1200|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash e5_gate.sh
+e5-Aa|600|~/qwen-opt/xtxlab|[ -e /tmp/x35/E5_PASS ] || { echo "E5 gate not passed: skipped"; exit 1; }; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/bxadapt/build-hip bash x_arm.sh e5-A1a sweep,doc
+e5-Ba|600|~/qwen-opt/xtxlab|[ -e /tmp/x35/E5_PASS ] || { echo "E5 gate not passed: skipped"; exit 1; }; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/bxadapt/build-hip XENV="LLAMA_SPEC_BITEXACT=1 LLAMA_SPEC_DEPTH_ADAPT=1" bash x_arm.sh e5-B1a sweep,doc
+e5-Bb|600|~/qwen-opt/xtxlab|[ -e /tmp/x35/E5_PASS ] || { echo "E5 gate not passed: skipped"; exit 1; }; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/bxadapt/build-hip XENV="LLAMA_SPEC_BITEXACT=1 LLAMA_SPEC_DEPTH_ADAPT=1" bash x_arm.sh e5-B1b sweep,doc
+e5-Ab|600|~/qwen-opt/xtxlab|[ -e /tmp/x35/E5_PASS ] || { echo "E5 gate not passed: skipped"; exit 1; }; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/wt/bxadapt/build-hip bash x_arm.sh e5-A1b sweep,doc

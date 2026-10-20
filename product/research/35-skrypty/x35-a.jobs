@@ -1,0 +1,13 @@
+# report 35: E1 MTP depth scan, E3 penalties, E2 checkpoint cost (ABBA ckpt default vs --ctx-checkpoints 0), E4 fresh starts
+# PM4 env explicit in every job (x_arm.sh / e4_fresh.sh also force it)
+e1-n4a|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=4 bash x_arm.sh e1-n4a reason,sweep
+e1-n7|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=7 bash x_arm.sh e1-n7 reason,sweep
+e1-n6|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=6 bash x_arm.sh e1-n6 reason,sweep
+e1-n5|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=5 bash x_arm.sh e1-n5 reason
+e1-n4b|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=4 bash x_arm.sh e1-n4b reason,sweep
+e3-pen|900|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e3 pen
+e2-A1|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; XENV=LLAMA_SERVER_AP_TIMING=1 bash x_arm.sh e2-A1 ttft,replay
+e2-B1|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; XENV=LLAMA_SERVER_AP_TIMING=1 EXTRA_ARGS=--ctx-checkpoints,0 bash x_arm.sh e2-B1 ttft,replay
+e2-B2|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; XENV=LLAMA_SERVER_AP_TIMING=1 EXTRA_ARGS=--ctx-checkpoints,0 bash x_arm.sh e2-B2 ttft,replay
+e2-A2|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; XENV=LLAMA_SERVER_AP_TIMING=1 bash x_arm.sh e2-A2 ttft,replay
+e4-fresh|900|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash e4_fresh.sh

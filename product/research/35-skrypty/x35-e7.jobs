@@ -1,0 +1,2 @@
+# report 35 E7: KLD UD-IQ4_XS vs Q8_0 + n-cpu-moe smoke (upstream llama-master, PM4 off: not our fork)
+e7-kld|2400|~/qwen-opt/xtxlab|export GGML_HIP_PM4=0; bash e7_kld.sh

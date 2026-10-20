@@ -1,0 +1,6 @@
+# report 35 E1: MTP depth scan, production topka config, fresh server per arm (x_arm.sh)
+e1-n4a|600|~/qwen-opt/xtxlab|DRAFT_N=4 bash x_arm.sh e1-n4a reason,sweep
+e1-n7|600|~/qwen-opt/xtxlab|DRAFT_N=7 bash x_arm.sh e1-n7 reason,sweep
+e1-n6|600|~/qwen-opt/xtxlab|DRAFT_N=6 bash x_arm.sh e1-n6 reason,sweep
+e1-n5|600|~/qwen-opt/xtxlab|DRAFT_N=5 bash x_arm.sh e1-n5 reason
+e1-n4b|600|~/qwen-opt/xtxlab|DRAFT_N=4 bash x_arm.sh e1-n4b reason,sweep

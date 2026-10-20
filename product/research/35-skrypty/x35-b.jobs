@@ -1,0 +1,7 @@
+# report 35 E1 follow-up: ABBA MTP n=4 vs n=5 (chat T=1 seeds 1,2 + mvs T=0; reason T=0 in the n=5 arms), md5 gates
+e1ab-n4a|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=4 bash x_arm.sh e1ab-n4a sweep,mvs
+e1ab-n5a|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=5 bash x_arm.sh e1ab-n5a reason,sweep,mvs
+e1ab-n5b|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=5 bash x_arm.sh e1ab-n5b reason,sweep,mvs
+e1ab-n4b|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=4 bash x_arm.sh e1ab-n4b sweep,mvs
+e1-gv0|600|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; DRAFT_N=5 LLAMA_GPU_VERIFY=0 bash x_arm.sh e1-gv0-n5 reason
+e1-md5|900|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash e1_md5.sh 5
