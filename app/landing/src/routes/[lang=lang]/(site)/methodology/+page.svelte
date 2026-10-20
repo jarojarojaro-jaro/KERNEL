@@ -17,6 +17,8 @@
 	const lang = $derived(currentLang());
 	const c = $derived(COPY[lang]);
 	const VIZ = [QuestionRace, AbbaLab, Lossless, StepScope, SpecPlayground, Metal, Graveyard, RecordBoard];
+	/** Subtle AI-generated chapter loops (static/media/methodology), keyed by chapter id. */
+	const LOOP: Record<string, string> = { question: 'die', measure: 'lab', step: 'simd', speculation: 'tokens', metal: 'pm4' };
 </script>
 
 <svelte:head>
@@ -28,7 +30,7 @@
 	<Rail items={c.ch} label={c.rail} />
 	{#each c.ch as ch, i (ch.id)}
 		{@const Viz = VIZ[i]}
-		<Chapter id={ch.id} index={i} total={c.ch.length} kicker="{c.chapter} {i + 1} · {ch.kicker}" title={ch.title} lead={ch.lead} sourcesLabel={c.sources} sources={CH_SOURCES[ch.id]} hero={i === 0}>
+		<Chapter id={ch.id} index={i} total={c.ch.length} kicker="{c.chapter} {i + 1} · {ch.kicker}" title={ch.title} lead={ch.lead} sourcesLabel={c.sources} sources={CH_SOURCES[ch.id]} hero={i === 0} loop={LOOP[ch.id] && `/media/methodology/${LOOP[ch.id]}`}>
 			<Viz {lang} />
 		</Chapter>
 	{/each}

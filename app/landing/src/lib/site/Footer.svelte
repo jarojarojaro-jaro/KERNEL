@@ -18,6 +18,7 @@
 			<Logo />
 			<p class="tag">{t.footer.tagline}</p>
 			<p class="fine-print">{t.footer.credit}</p>
+			<p class="fine-print">{t.footer.aiMedia}</p>
 		</div>
 		<nav aria-labelledby="f-product">
 			<h2 id="f-product" class="lbl">{t.footer.product}</h2>

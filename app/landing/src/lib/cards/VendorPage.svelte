@@ -18,6 +18,7 @@
 	import GpuArt from './GpuArt.svelte';
 	import Ratio from './Ratio.svelte';
 	import { VENDOR, vendorVars, type Vendor } from './vendor';
+	import VendorRender from './VendorRender.svelte';
 	import VendorTheme from './VendorTheme.svelte';
 
 	let { vendor }: { vendor: Vendor } = $props();
@@ -53,6 +54,7 @@
 <VendorTheme {vendor}>
 	<div class="amb" aria-hidden="true"></div>
 	<section class="vh vh--{vendor}" aria-labelledby="vendor-title" style="--th:{heatOf(g.best)}">
+		<div class="vh-chip" aria-hidden="true"><VendorRender {vendor} kind="chip" sizes="(max-width: 40rem) 100vw, 60vw" /></div>
 		<div class="wrap vh-in">
 			<a class="back mono" href={cardsHref(lang)}><span aria-hidden="true">←</span> {tv.back}</a>
 			<div class="vh-grid">
@@ -71,7 +73,9 @@
 					</div>
 				</div>
 				<div class="vh-art" aria-hidden="true">
-					<GpuArt label={g.face.label} vendor={vendor} vram={g.face.vram} heat={heatOf(g.face.ratio)} ignite live />
+					<VendorRender {vendor} kind="show" sizes="(max-width: 56rem) min(100vw, 26rem), 44vw" eager>
+						{#snippet fallback()}<GpuArt label={g.face.label} vendor={vendor} vram={g.face.vram} heat={heatOf(g.face.ratio)} ignite live />{/snippet}
+					</VendorRender>
 				</div>
 			</div>
 			<nav class="switch" aria-label={tv.nav}>
@@ -387,6 +391,21 @@
 		position: relative;
 		min-width: 0;
 		user-select: none;
+	}
+	/* a generated render: its studio black drops out against the band (blend on the animated box) */
+	.vh-art:has(> :global(.render)) {
+		mix-blend-mode: lighten;
+	}
+	/* the maker's silicon, large and faint behind the band's text */
+	.vh-chip {
+		position: absolute;
+		z-index: -1;
+		left: -6%;
+		bottom: -18%;
+		width: min(62%, 52rem);
+		opacity: 0.2;
+		mix-blend-mode: lighten;
+		pointer-events: none;
 	}
 	.vh-art :global(.glow) {
 		background: radial-gradient(closest-side, rgb(var(--v) / calc(0.3 + var(--th) * 0.2)), transparent);

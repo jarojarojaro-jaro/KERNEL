@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { reveal } from '$lib/fx/actions';
+	import BgLoop from '$lib/fx/BgLoop.svelte';
 
 	interface Props {
 		id: string;
@@ -14,13 +15,16 @@
 		sources: string[];
 		/** The first chapter carries the page h1. */
 		hero?: boolean;
+		/** A subtle background loop behind the chapter head (static/media path without extension). */
+		loop?: string;
 		children: Snippet;
 	}
-	let { id, index, total, kicker, title, lead, sourcesLabel, sources, hero = false, children }: Props = $props();
+	let { id, index, total, kicker, title, lead, sourcesLabel, sources, hero = false, loop, children }: Props = $props();
 	const no = $derived(String(index + 1).padStart(2, '0'));
 </script>
 
 <section {id} class="ch" class:hero style="--heat:{index / (total - 1)}" aria-labelledby="{id}-h">
+	{#if loop}<div class="loop"><BgLoop src={loop} /></div>{/if}
 	<div class="glow" aria-hidden="true"></div>
 	<header class="ch-head container" use:reveal>
 		<p class="kick"><span class="no mono">{no}</span><span class="bar" aria-hidden="true"></span>{kicker}</p>
@@ -65,6 +69,22 @@
 		background:
 			radial-gradient(48rem 26rem at 85% 0%, color-mix(in srgb, var(--heat-3) calc(4% + var(--heat) * 14%), transparent), transparent 70%),
 			radial-gradient(36rem 20rem at 5% 30%, color-mix(in srgb, var(--heat-2) calc(2% + var(--heat) * 8%), transparent), transparent 70%);
+	}
+	/* the chapter's theme as a faint moving texture: lit only, fading out under the head; dark theme
+	   only (hidden boxes never load the video) */
+	.loop {
+		position: absolute;
+		inset: 0 0 auto;
+		height: min(40rem, 100%);
+		z-index: -1;
+		opacity: 0.22;
+		mix-blend-mode: screen;
+		pointer-events: none;
+		-webkit-mask-image: linear-gradient(180deg, transparent, #000 18%, #000 45%, transparent);
+		mask-image: linear-gradient(180deg, transparent, #000 18%, #000 45%, transparent);
+	}
+	:global(:root[data-theme='light']) .loop {
+		display: none;
 	}
 	.ch-head {
 		display: grid;

@@ -35,3 +35,25 @@ export function vendorVars(v: string): string {
 		`--v-line:linear-gradient(90deg, rgb(${rgb} / 0.9), rgb(${rgb} / 0.25) 55%, transparent)`
 	].join('; ');
 }
+
+/**
+ * AI-generated product renders per maker (Higgsfield Marketing Studio, static/media/vendor/): generic,
+ * unbranded hardware in the maker's colour family on a dark studio floor, no logos. `face` is the
+ * hub block, `show` the maker page's showroom band, `chip` a faint backdrop of that band. Each file
+ * exists as `<name>-640` and `<name>-1024` in AVIF and WebP. Set an entry to null to fall back to the
+ * SVG render (GpuArt) when a generated image looks wrong.
+ */
+export type RenderKind = 'face' | 'show' | 'chip';
+export const RENDER: Record<Vendor, Record<RenderKind, string | null>> = {
+	nvidia: { face: 'nvidia-face', show: 'nvidia-show', chip: 'nvidia-chip' },
+	amd: { face: 'amd-face', show: 'amd-show', chip: 'amd-chip' },
+	intel: { face: 'intel-face', show: 'intel-show', chip: 'intel-chip' },
+	apple: { face: 'apple-face', show: 'apple-show', chip: 'apple-chip' }
+};
+
+/** `srcset` of a render in one format (both widths), or null when the maker has none of that kind. */
+export function renderSet(v: string, kind: RenderKind, ext: 'avif' | 'webp'): string | null {
+	const vend = vendorOf(v);
+	const name = vend === 'other' ? null : RENDER[vend][kind];
+	return name ? `/media/vendor/${name}-640.${ext} 640w, /media/vendor/${name}-1024.${ext} 1024w` : null;
+}

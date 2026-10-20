@@ -9,8 +9,11 @@
 	 * sources live on /metodologia (the „Jak mierzymy” link) and in the boost section.
 	 * Redline flare: when the race starts, the heat field runs hot, a bloom sweeps the hero once and
 	 * the heat line flares.
+	 * Reel: a muted loop of our lab card (Sapphire PULSE RX 7900 XTX, AI-generated from its SVG) glows
+	 * through the field behind the race; reduced motion shows its poster, offscreen it pauses.
 	 */
 	import { magnetic } from '$lib/fx/actions';
+	import BgLoop from '$lib/fx/BgLoop.svelte';
 	import HeatField from '$lib/fx/HeatField.svelte';
 	import LiveRace from '$lib/fx/LiveRace.svelte';
 	import { variantLabel } from '$lib/data/measurements';
@@ -50,6 +53,7 @@
 
 <section class="hero" class:hot={flare} aria-labelledby="hero-title">
 	<HeatField heat={heat ? 1 : 0.62} boost={heat ? 1 : 0} />
+	<div class="reel"><BgLoop src="/media/hero/hero" eager /></div>
 	<div class="veil" aria-hidden="true"></div>
 	{#if bloomed}<div class="bloom" aria-hidden="true"></div>{/if}
 	<div class="inner">
@@ -93,6 +97,17 @@
 	.hero :global(.heatfield .streak-frame) {
 		-webkit-mask-image: linear-gradient(90deg, #000, transparent 9%, transparent 91%, #000);
 		mask-image: linear-gradient(90deg, #000, transparent 9%, transparent 91%, #000);
+	}
+	/* our lab card behind the race (AI-generated loop): lit only, so the field's dark stays dark; the
+	   veil above keeps the headline and lanes legible */
+	.reel {
+		position: absolute;
+		inset: 0;
+		z-index: -2;
+		opacity: 0.32;
+		mix-blend-mode: screen;
+		-webkit-mask-image: radial-gradient(85% 70% at 50% 62%, #000 40%, transparent 100%);
+		mask-image: radial-gradient(85% 70% at 50% 62%, #000 40%, transparent 100%);
 	}
 	/* darken the top so the header and headline sit on near-black; heat rises from below */
 	.veil {

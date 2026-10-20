@@ -19,6 +19,7 @@
 	import GpuArt from './GpuArt.svelte';
 	import Ratio from './Ratio.svelte';
 	import { VENDOR, vendorVars } from './vendor';
+	import VendorRender from './VendorRender.svelte';
 
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].gallery);
@@ -55,7 +56,11 @@
 								<span class="line mono">{LINEUP[v]}</span>
 							</div>
 							<div class="stage" aria-hidden="true">
-								<div class="art"><GpuArt label={g.face.label} vendor={v} vram={g.face.vram} heat={heatOf(g.face.ratio)} live={hover === v} flat /></div>
+								<div class="art">
+									<VendorRender vendor={v} kind="face" sizes="(max-width: 40rem) 92vw, (max-width: 64rem) 46vw, 24rem">
+										{#snippet fallback()}<GpuArt label={g.face.label} vendor={v} vram={g.face.vram} heat={heatOf(g.face.ratio)} live={hover === v} flat />{/snippet}
+									</VendorRender>
+								</div>
 								<span class="sweep"></span>
 							</div>
 							<div class="mk-foot">
@@ -338,6 +343,10 @@
 	.art {
 		display: block;
 		transition: transform 0.8s var(--ease-spring);
+	}
+	/* a generated render: its studio black drops out against the maker surface */
+	.art:has(> :global(.render)) {
+		mix-blend-mode: lighten;
 	}
 	.art :global(.glow) {
 		background: radial-gradient(closest-side, rgb(var(--v) / calc(0.24 + var(--th) * 0.2)), transparent);
