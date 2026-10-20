@@ -1,0 +1,8 @@
+{"label":"qwen.U1c.p1","vram_before_mb":1,"vram_loaded_mb":21016,"n_ctx":"131072"}
+{"label":"qwen.U1c.p1","vram_peak_after_60k_mb":21058}
+{"label":"qwen.Tc.p1","vram_before_mb":1,"vram_loaded_mb":21380,"n_ctx":"131072"}
+{"label":"qwen.Tc.p1","vram_peak_after_60k_mb":22198}
+{"label":"qwen.Tc.p2","vram_before_mb":1,"vram_loaded_mb":21380,"n_ctx":"131072"}
+{"label":"qwen.Tc.p2","vram_peak_after_60k_mb":22198}
+{"label":"qwen.U1c.p2","vram_before_mb":1,"vram_loaded_mb":21016,"n_ctx":"131072"}
+{"label":"qwen.U1c.p2","vram_peak_after_60k_mb":21058}

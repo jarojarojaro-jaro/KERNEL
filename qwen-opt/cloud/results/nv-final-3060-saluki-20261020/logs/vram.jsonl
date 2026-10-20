@@ -1,0 +1,4 @@
+{"label":"saluki.U0.p1","vram_before_mb":9,"vram_loaded_mb":10313,"n_ctx":"34048"}
+{"label":"saluki.T.p1","vram_before_mb":9,"vram_loaded_mb":9811,"n_ctx":"20480"}
+{"label":"saluki.T.p2","vram_before_mb":9,"vram_loaded_mb":9811,"n_ctx":"20480"}
+{"label":"saluki.U0.p2","vram_before_mb":9,"vram_loaded_mb":10313,"n_ctx":"34048"}

@@ -1,0 +1,6 @@
+{"label":"uncensored.U0.p1","vram_before_mb":1,"vram_loaded_mb":22550,"n_ctx":"100864","ctx_requested":"default","gpu_verify":"-"}
+{"label":"uncensored.U1.p1","vram_before_mb":1,"vram_loaded_mb":22400,"n_ctx":"204800","ctx_requested":"204800","gpu_verify":"-"}
+{"label":"uncensored.T.p1","vram_before_mb":1,"vram_loaded_mb":22764,"n_ctx":"204800","ctx_requested":"204800","gpu_verify":"1"}
+{"label":"uncensored.T.p2","vram_before_mb":1,"vram_loaded_mb":22764,"n_ctx":"204800","ctx_requested":"204800","gpu_verify":"1"}
+{"label":"uncensored.U1.p2","vram_before_mb":1,"vram_loaded_mb":22400,"n_ctx":"204800","ctx_requested":"204800","gpu_verify":"-"}
+{"label":"uncensored.U0.p2","vram_before_mb":1,"vram_loaded_mb":22550,"n_ctx":"100864","ctx_requested":"default","gpu_verify":"-"}

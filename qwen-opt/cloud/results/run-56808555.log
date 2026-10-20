@@ -1,0 +1,109 @@
+W: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/InRelease: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
+debconf: delaying package configuration, since apt-utils is not installed
+=== 00:02:16 lb U r1: 512/0 571.4 4096/0 560 0/128 23.4 
+=== 00:03:11 lb T r2: 512/0 543.8 4096/0 537.7 0/128 22.7 
+=== 00:04:05 lb T r3: 512/0 542.8 4096/0 536.1 0/128 22.7 
+=== 00:04:58 lb U r4: 512/0 559.3 4096/0 552.1 0/128 23.2 
+=== 00:04:58 arm saluki.U0.p1
+{"label":"saluki.U0.p1","vram_before_mb":1,"vram_loaded_mb":10305,"n_ctx":"34048"}
+saluki.U0.p1 T=1.0: median  22.9 t/s, 43.62 ms/step | pl-proza  23.1 (1.00 tok/step)  pl-tech  22.9 (1.00 tok/step)  pl-kod  22.9 (1.00 tok/step)  en-chat  22.9 (1.00 tok/step)  en-tech  22.9 (1.00 tok/step)  en-code  22.9 (1.00 tok/step)
+{"label": "saluki.U0.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 463.6, "prefill_s": 0.94, "ttft_s": 1.287, "decode_tps": 22.8, "gen_tokens": 256, "ms_step": 43.686, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 465.3, "prefill_s": 0.93, "ttft_s": 0.943, "decode_tps": 22.82, "gen_tokens": 256, "ms_step": 43.651, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 523.8, "prefill_s": 27.48, "ttft_s": 27.777, "decode_tps": 21.64, "gen_tokens": 256, "ms_step": 46.033, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 523.9, "prefill_s": 27.48, "ttft_s": 27.553, "decode_tps": 21.66, "gen_tokens": 256, "ms_step": 45.983, "tok_step": 1.0, "draft_acceptance": null}
+=== 00:12:12 arm saluki.T.p1
+{"label":"saluki.T.p1","vram_before_mb":1,"vram_loaded_mb":9803,"n_ctx":"20480"}
+Traceback (most recent call last):
+  File "/root/cloud/spec_sweep.py", line 67, in <module>
+    main()
+  File "/root/cloud/spec_sweep.py", line 51, in main
+    runs = [chat(a.port, p, a.tokens, temp, s) for s in map(int, a.seeds.split(","))]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/cloud/spec_sweep.py", line 32, in chat
+    t = json.load(urllib.request.urlopen(req, timeout=600))["timings"]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 1373, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 1348, in do_open
+    r = h.getresponse()
+        ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 1457, in getresponse
+    response.begin()
+  File "/usr/lib/python3.12/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 305, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+{"label": "saluki.T.p1", "size": "512", "temp": 0.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p1", "size": "512", "temp": 1.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p1", "size": "16k", "temp": 0.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p1", "size": "16k", "temp": 1.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+/root/cloud/fin3060.sh: line 41:  5551 Killed                  env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 $TK/llama-server -m "$GGUF" -ngl 999 -fa on -ctk q8_0 -ctv q8_0 -c 20480 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port $PORT --no-webui --spec-type draft-mtp --spec-draft-n-max 2 -ctkd q8_0 -ctvd q8_0 --spec-draft-vocab $H/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs > "$2" 2>&1
+4.04.667.911 I spec  print_stats: context lookup: 2520 steps, lookup proposed at 122, tails 12 (27/141 tokens accepted), chains 0 (0/0), lost history 0, host 4.253 ms
+4.14.514.904 I spec  print_stats: context lookup: 2678 steps, lookup proposed at 132, tails 14 (44/167 tokens accepted), chains 0 (0/0), lost history 0, host 4.548 ms
+=== 00:16:30 arm saluki.T.p2
+{"label":"saluki.T.p2","vram_before_mb":1,"vram_loaded_mb":9803,"n_ctx":"20480"}
+Traceback (most recent call last):
+  File "/root/cloud/spec_sweep.py", line 67, in <module>
+    main()
+  File "/root/cloud/spec_sweep.py", line 51, in main
+    runs = [chat(a.port, p, a.tokens, temp, s) for s in map(int, a.seeds.split(","))]
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/root/cloud/spec_sweep.py", line 32, in chat
+    t = json.load(urllib.request.urlopen(req, timeout=600))["timings"]
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 215, in urlopen
+    return opener.open(url, data, timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 515, in open
+    response = self._open(req, data)
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 532, in _open
+    result = self._call_chain(self.handle_open, protocol, protocol +
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 492, in _call_chain
+    result = func(*args)
+             ^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 1373, in http_open
+    return self.do_open(http.client.HTTPConnection, req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/urllib/request.py", line 1348, in do_open
+    r = h.getresponse()
+        ^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 1457, in getresponse
+    response.begin()
+  File "/usr/lib/python3.12/http/client.py", line 336, in begin
+    version, status, reason = self._read_status()
+                              ^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.12/http/client.py", line 305, in _read_status
+    raise RemoteDisconnected("Remote end closed connection without"
+http.client.RemoteDisconnected: Remote end closed connection without response
+{"label": "saluki.T.p2", "size": "512", "temp": 0.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p2", "size": "512", "temp": 1.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p2", "size": "16k", "temp": 0.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p2", "size": "16k", "temp": 1.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+/root/cloud/fin3060.sh: line 41:  5882 Killed                  env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 $TK/llama-server -m "$GGUF" -ngl 999 -fa on -ctk q8_0 -ctv q8_0 -c 20480 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port $PORT --no-webui --spec-type draft-mtp --spec-draft-n-max 2 -ctkd q8_0 -ctvd q8_0 --spec-draft-vocab $H/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs > "$2" 2>&1
+4.03.877.533 I spec  print_stats: context lookup: 2520 steps, lookup proposed at 122, tails 12 (27/141 tokens accepted), chains 0 (0/0), lost history 0, host 4.288 ms
+4.13.736.233 I spec  print_stats: context lookup: 2678 steps, lookup proposed at 132, tails 14 (44/167 tokens accepted), chains 0 (0/0), lost history 0, host 4.581 ms
+=== 00:20:48 arm saluki.U0.p2
+{"label":"saluki.U0.p2","vram_before_mb":1,"vram_loaded_mb":10305,"n_ctx":"34048"}
+saluki.U0.p2 T=1.0: median  23.1 t/s, 43.37 ms/step | pl-proza  23.2 (1.00 tok/step)  pl-tech  23.1 (1.00 tok/step)  pl-kod  23.1 (1.00 tok/step)  en-chat  23.1 (1.00 tok/step)  en-tech  23.0 (1.00 tok/step)  en-code  23.0 (1.00 tok/step)
+{"label": "saluki.U0.p2", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 473.9, "prefill_s": 0.92, "ttft_s": 1.256, "decode_tps": 22.95, "gen_tokens": 256, "ms_step": 43.403, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 475.5, "prefill_s": 0.91, "ttft_s": 0.922, "decode_tps": 22.95, "gen_tokens": 256, "ms_step": 43.398, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 525.6, "prefill_s": 27.38, "ttft_s": 27.658, "decode_tps": 21.69, "gen_tokens": 256, "ms_step": 45.934, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 525.4, "prefill_s": 27.4, "ttft_s": 27.475, "decode_tps": 21.68, "gen_tokens": 256, "ms_step": 45.943, "tok_step": 1.0, "draft_acceptance": null}
+=== 00:28:04 fin3060 done

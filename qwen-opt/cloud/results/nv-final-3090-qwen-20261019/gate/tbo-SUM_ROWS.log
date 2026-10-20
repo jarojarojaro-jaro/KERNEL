@@ -1,0 +1,31 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 24124 MiB):
+  Device 0: NVIDIA GeForce RTX 3090, compute capability 8.6, VMM: yes, VRAM: 24124 MiB
+Testing 2 devices
+
+Backend 1/2: CUDA0
+  Device description: NVIDIA GeForce RTX 3090
+  Device memory: 24124 MB (23843 MB free)
+
+  SUM_ROWS(type=f32,ne=[10,5,4,3],permute=0,slice=0): [1;32mOK[0m
+  SUM_ROWS(type=f32,ne=[11,5,6,3],permute=1,slice=0): [1;32mOK[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+  SUM_ROWS(type=f32,ne=[11,5,6,3],permute=0,slice=1): [1;32mOK[0m
+  SUM_ROWS(type=f32,ne=[11,5,6,3],permute=1,slice=1): [1;32mOK[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup reset
+ggml_backend_cuda_graph_compute: CUDA graph warmup reset
+  SUM_ROWS(type=f32,ne=[16,5,6,3],permute=1,slice=0): [1;32mOK[0m
+  SUM_ROWS(type=f32,ne=[16,5,6,3],permute=0,slice=1): [1;32mOK[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+  SUM_ROWS(type=f32,ne=[16,5,6,3],permute=1,slice=1): [1;32mOK[0m
+  SUM_ROWS(type=f32,ne=[33,1,1,1],permute=0,slice=0): [1;32mOK[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+  SUM_ROWS(type=f32,ne=[33,1024,1,1],permute=0,slice=0): [1;32mOK[0m
+  SUM_ROWS(type=f32,ne=[33,256,1,1],permute=0,slice=0): [1;32mOK[0m
+  10/10 tests passed
+  Backend CUDA0: [1;32mOK[0m
+Backend 2/2: CPU
+  Skipping
+2/2 backends passed
+[1;32mOK[0m

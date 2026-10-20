@@ -1,0 +1,7 @@
+A=56805074 qwen (56803290 destroyed: host CDI error); B=56803392 uncensored; C=56807546 3060 saluki
+C=56807546 destroyed (ssh key rejected)
+C2=56808555 3060 saluki (label says 3090: offer lookup fallback)
+E=56812983 3060 saluki rerun (cache-ram 8192)
+D=56813669 3090 qwen60k rerun (ctx 131072)
+E=56812983 destroyed: CUDA init failed (forward compatibility on non supported HW), llama-bench on CPU
+F=56814433 3060 saluki rerun 2

@@ -1,0 +1,39 @@
+W: https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/InRelease: Key is stored in legacy trusted.gpg keyring (/etc/apt/trusted.gpg), see the DEPRECATION section in apt-key(8) for details.
+debconf: delaying package configuration, since apt-utils is not installed
+=== 00:51:26 lb U r1: 512/0 581.8 4096/0 576.4 0/128 24.2 
+=== 00:52:17 lb T r2: 512/0 564.3 4096/0 558.9 0/128 23.6 
+=== 00:53:09 lb T r3: 512/0 563.8 4096/0 558.8 0/128 23.6 
+=== 00:54:00 lb U r4: 512/0 580.7 4096/0 574.7 0/128 24.2 
+=== 00:54:00 arm saluki.U0.p1
+{"label":"saluki.U0.p1","vram_before_mb":9,"vram_loaded_mb":10313,"n_ctx":"34048"}
+saluki.U0.p1 T=1.0: median  24.0 t/s, 41.70 ms/step | pl-proza  24.0 (1.00 tok/step)  pl-tech  24.0 (1.00 tok/step)  pl-kod  24.0 (1.00 tok/step)  en-chat  24.0 (1.00 tok/step)  en-tech  24.0 (1.00 tok/step)  en-code  24.0 (1.00 tok/step)
+{"label": "saluki.U0.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 498.2, "prefill_s": 0.87, "ttft_s": 1.182, "decode_tps": 23.85, "gen_tokens": 256, "ms_step": 41.766, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 488.8, "prefill_s": 0.89, "ttft_s": 0.893, "decode_tps": 23.83, "gen_tokens": 256, "ms_step": 41.803, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 546.1, "prefill_s": 26.36, "ttft_s": 26.634, "decode_tps": 22.48, "gen_tokens": 256, "ms_step": 44.313, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 545.8, "prefill_s": 26.37, "ttft_s": 26.448, "decode_tps": 22.47, "gen_tokens": 256, "ms_step": 44.327, "tok_step": 1.0, "draft_acceptance": null}
+=== 01:00:53 arm saluki.T.p1
+{"label":"saluki.T.p1","vram_before_mb":9,"vram_loaded_mb":9811,"n_ctx":"20480"}
+saluki.T.p1 T=1.0: median  38.2 t/s, 58.37 ms/step | pl-proza  35.2 (2.06 tok/step)  pl-tech  37.6 (2.18 tok/step)  pl-kod  38.8 (2.26 tok/step)  en-chat  36.3 (2.12 tok/step)  en-tech  41.8 (2.45 tok/step)  en-code  40.2 (2.35 tok/step)
+{"label": "saluki.T.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 413.1, "prefill_s": 1.05, "ttft_s": 1.446, "decode_tps": 45.41, "gen_tokens": 256, "ms_step": 59.108, "tok_step": 2.695, "draft_acceptance": 0.759}
+{"label": "saluki.T.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 415.8, "prefill_s": 1.05, "ttft_s": 1.055, "decode_tps": 41.17, "gen_tokens": 256, "ms_step": 59.557, "tok_step": 2.462, "draft_acceptance": 0.644}
+{"label": "saluki.T.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 505.6, "prefill_s": 28.47, "ttft_s": 28.807, "decode_tps": 35.49, "gen_tokens": 256, "ms_step": 65.912, "tok_step": 2.349, "draft_acceptance": 0.642}
+{"label": "saluki.T.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 506.6, "prefill_s": 28.41, "ttft_s": 28.489, "decode_tps": 34.66, "gen_tokens": 256, "ms_step": 66.276, "tok_step": 2.306, "draft_acceptance": 0.592}
+5.39.768.189 I spec  print_stats: context lookup: 3487 steps, lookup proposed at 204, tails 24 (70/288 tokens accepted), chains 0 (0/0), lost history 0, host 7.933 ms
+5.47.127.157 I spec  print_stats: context lookup: 3597 steps, lookup proposed at 214, tails 26 (74/314 tokens accepted), chains 0 (0/0), lost history 0, host 10.312 ms
+=== 01:06:44 arm saluki.T.p2
+{"label":"saluki.T.p2","vram_before_mb":9,"vram_loaded_mb":9811,"n_ctx":"20480"}
+saluki.T.p2 T=1.0: median  38.2 t/s, 58.36 ms/step | pl-proza  35.3 (2.06 tok/step)  pl-tech  37.5 (2.18 tok/step)  pl-kod  38.8 (2.26 tok/step)  en-chat  36.3 (2.12 tok/step)  en-tech  41.8 (2.45 tok/step)  en-code  40.2 (2.35 tok/step)
+{"label": "saluki.T.p2", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 415.1, "prefill_s": 1.05, "ttft_s": 1.444, "decode_tps": 45.48, "gen_tokens": 256, "ms_step": 59.02, "tok_step": 2.695, "draft_acceptance": 0.759}
+{"label": "saluki.T.p2", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 419.7, "prefill_s": 1.04, "ttft_s": 1.045, "decode_tps": 41.15, "gen_tokens": 256, "ms_step": 59.588, "tok_step": 2.462, "draft_acceptance": 0.644}
+{"label": "saluki.T.p2", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 506.1, "prefill_s": 28.44, "ttft_s": 28.781, "decode_tps": 35.52, "gen_tokens": 256, "ms_step": 65.863, "tok_step": 2.349, "draft_acceptance": 0.642}
+{"label": "saluki.T.p2", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 506.9, "prefill_s": 28.39, "ttft_s": 28.471, "decode_tps": 34.68, "gen_tokens": 256, "ms_step": 66.248, "tok_step": 2.306, "draft_acceptance": 0.592}
+5.39.534.012 I spec  print_stats: context lookup: 3487 steps, lookup proposed at 204, tails 24 (70/288 tokens accepted), chains 0 (0/0), lost history 0, host 7.893 ms
+5.46.889.974 I spec  print_stats: context lookup: 3597 steps, lookup proposed at 214, tails 26 (74/314 tokens accepted), chains 0 (0/0), lost history 0, host 10.278 ms
+=== 01:12:35 arm saluki.U0.p2
+{"label":"saluki.U0.p2","vram_before_mb":9,"vram_loaded_mb":10313,"n_ctx":"34048"}
+saluki.U0.p2 T=1.0: median  24.0 t/s, 41.69 ms/step | pl-proza  24.0 (1.00 tok/step)  pl-tech  24.0 (1.00 tok/step)  pl-kod  24.0 (1.00 tok/step)  en-chat  24.0 (1.00 tok/step)  en-tech  24.0 (1.00 tok/step)  en-code  24.0 (1.00 tok/step)
+{"label": "saluki.U0.p2", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 498.0, "prefill_s": 0.87, "ttft_s": 1.188, "decode_tps": 23.85, "gen_tokens": 256, "ms_step": 41.765, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 487.3, "prefill_s": 0.89, "ttft_s": 0.901, "decode_tps": 23.84, "gen_tokens": 256, "ms_step": 41.785, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 545.7, "prefill_s": 26.37, "ttft_s": 26.661, "decode_tps": 22.49, "gen_tokens": 256, "ms_step": 44.29, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 545.4, "prefill_s": 26.39, "ttft_s": 26.467, "decode_tps": 22.5, "gen_tokens": 256, "ms_step": 44.276, "tok_step": 1.0, "draft_acceptance": null}
+=== 01:19:28 fin3060 done

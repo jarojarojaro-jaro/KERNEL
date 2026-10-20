@@ -1,0 +1,2 @@
+downloads start 00:44:12
+Qwen3.8-27B-UD-Q4_K_XL.gguf 00:53:12 ok=yes

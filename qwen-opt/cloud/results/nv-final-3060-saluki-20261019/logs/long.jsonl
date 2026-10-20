@@ -1,0 +1,16 @@
+{"label": "saluki.U0.p1", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 463.6, "prefill_s": 0.94, "ttft_s": 1.287, "decode_tps": 22.8, "gen_tokens": 256, "ms_step": 43.686, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 465.3, "prefill_s": 0.93, "ttft_s": 0.943, "decode_tps": 22.82, "gen_tokens": 256, "ms_step": 43.651, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 523.8, "prefill_s": 27.48, "ttft_s": 27.777, "decode_tps": 21.64, "gen_tokens": 256, "ms_step": 46.033, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p1", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 523.9, "prefill_s": 27.48, "ttft_s": 27.553, "decode_tps": 21.66, "gen_tokens": 256, "ms_step": 45.983, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.T.p1", "size": "512", "temp": 0.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p1", "size": "512", "temp": 1.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p1", "size": "16k", "temp": 0.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p1", "size": "16k", "temp": 1.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p2", "size": "512", "temp": 0.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p2", "size": "512", "temp": 1.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p2", "size": "16k", "temp": 0.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.T.p2", "size": "16k", "temp": 1.0, "error": "<urlopen error [Errno 111] Connection refused>"}
+{"label": "saluki.U0.p2", "size": "512", "temp": 0.0, "prompt_tokens": 435, "prefill_tps": 473.9, "prefill_s": 0.92, "ttft_s": 1.256, "decode_tps": 22.95, "gen_tokens": 256, "ms_step": 43.403, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "512", "temp": 1.0, "prompt_tokens": 435, "prefill_tps": 475.5, "prefill_s": 0.91, "ttft_s": 0.922, "decode_tps": 22.95, "gen_tokens": 256, "ms_step": 43.398, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "16k", "temp": 0.0, "prompt_tokens": 14393, "prefill_tps": 525.6, "prefill_s": 27.38, "ttft_s": 27.658, "decode_tps": 21.69, "gen_tokens": 256, "ms_step": 45.934, "tok_step": 1.0, "draft_acceptance": null}
+{"label": "saluki.U0.p2", "size": "16k", "temp": 1.0, "prompt_tokens": 14393, "prefill_tps": 525.4, "prefill_s": 27.4, "ttft_s": 27.475, "decode_tps": 21.68, "gen_tokens": 256, "ms_step": 45.943, "tok_step": 1.0, "draft_acceptance": null}
