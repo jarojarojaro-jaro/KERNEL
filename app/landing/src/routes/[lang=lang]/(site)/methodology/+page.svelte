@@ -5,7 +5,6 @@
 	import Archive from '$lib/methodology/Archive.svelte';
 	import Chapter from '$lib/methodology/Chapter.svelte';
 	import { CH_SOURCES, COPY } from '$lib/methodology/copy';
-	import Graveyard from '$lib/methodology/Graveyard.svelte';
 	import Lossless from '$lib/methodology/Lossless.svelte';
 	import Metal from '$lib/methodology/Metal.svelte';
 	import QuestionRace from '$lib/methodology/QuestionRace.svelte';
@@ -16,7 +15,7 @@
 
 	const lang = $derived(currentLang());
 	const c = $derived(COPY[lang]);
-	const VIZ = [QuestionRace, AbbaLab, Lossless, StepScope, SpecPlayground, Metal, Graveyard, RecordBoard];
+	const VIZ = [QuestionRace, AbbaLab, Lossless, StepScope, SpecPlayground, Metal, RecordBoard];
 	/** Subtle AI-generated chapter loops (static/media/methodology), keyed by chapter id. */
 	const LOOP: Record<string, string> = { question: 'die', measure: 'lab', step: 'simd', speculation: 'tokens', metal: 'pm4' };
 </script>
@@ -30,7 +29,7 @@
 	<Rail items={c.ch} label={c.rail} />
 	{#each c.ch as ch, i (ch.id)}
 		{@const Viz = VIZ[i]}
-		<Chapter id={ch.id} index={i} total={c.ch.length} kicker="{c.chapter} {i + 1} · {ch.kicker}" title={ch.title} lead={ch.lead} sourcesLabel={c.sources} sources={CH_SOURCES[ch.id]} hero={i === 0} loop={LOOP[ch.id] && `/media/methodology/${LOOP[ch.id]}`}>
+		<Chapter id={ch.id} index={i} total={c.ch.length} kicker={ch.kicker} title={ch.title} lead={ch.lead} sourcesLabel={c.sources} sources={CH_SOURCES[ch.id]} hero={i === 0} loop={LOOP[ch.id] && `/media/methodology/${LOOP[ch.id]}`}>
 			<Viz {lang} />
 		</Chapter>
 	{/each}

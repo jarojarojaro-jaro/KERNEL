@@ -5,6 +5,7 @@
 	import { ETA, L1_MTP_BAND, TOK_PER_WORD } from '$lib/estimator';
 	import { fmtGB, fmtRatio, localizeDecimals, ratioDigits } from '$lib/format';
 	import { reveal } from '$lib/fx/actions';
+	import Hl from '$lib/home/Hl.svelte';
 	import { currentLang, href, num } from '$lib/i18n';
 
 	const lang = $derived(currentLang());
@@ -63,7 +64,7 @@
 		{
 			pl: {
 				eyebrow: 'Archiwum',
-				title: 'Surowe liczby, zasady i skrypty',
+				title: '*Surowe liczby*, zasady i skrypty',
 				lead: `Każda liczba wydajności na stronie ${BRAND.name} pochodzi stąd: skrypt, wersja silnika, ustawienia i plik źródłowy z numerem linii. Nie zaokrąglamy w górę i nie ekstrapolujemy.`,
 				stats: [
 					{ v: String(CARDS.length), k: 'zmierzone karty' },
@@ -134,7 +135,7 @@
 			},
 			en: {
 				eyebrow: 'Archive',
-				title: 'Raw numbers, principles and scripts',
+				title: '*Raw numbers*, principles and scripts',
 				lead: `Every performance number on the ${BRAND.name} website comes from here: script, engine version, settings and the source file with its line number. We do not round up and we do not extrapolate.`,
 				stats: [
 					{ v: String(CARDS.length), k: 'cards measured' },
@@ -241,7 +242,7 @@
 <section id="archive" class="page heat-scope" aria-labelledby="archive-h">
 	<header class="arch-head container">
 		<p class="eyebrow">{t.eyebrow}</p>
-		<h2 id="archive-h" class="arch-title">{t.title}</h2>
+		<h2 id="archive-h" class="arch-title"><Hl text={t.title} /></h2>
 		<p class="lede">{t.lead}</p>
 	</header>
 

@@ -7,10 +7,9 @@ import type { Lang } from '$lib/i18n';
 const pl = {
 	meta: {
 		title: 'Metodologia: jak mierzymy i przyspieszamy',
-		desc: 'Podróż przez nasz warsztat: uczciwy pomiar ABBA, bramki bezstratności md5 i KLD, profil jednego kroku dekodowania na RX 7900 XTX, spekulacja MTP, błąd PRIV w GFX11 i eksperymenty, które odrzuciliśmy.'
+		desc: 'Podróż przez nasz warsztat: uczciwy pomiar ABBA, bramki bezstratności md5 i KLD, profil jednego kroku dekodowania na RX 7900 XTX, spekulacja MTP i błąd PRIV w GFX11, aż po tablicę wyników przed i po.'
 	},
 	rail: 'Rozdziały',
-	chapter: 'Rozdział',
 	sources: 'Źródła',
 	illustr: 'ilustracja',
 	measured: 'zmierzone',
@@ -24,56 +23,49 @@ const pl = {
 			id: 'question',
 			nav: 'Pytanie',
 			kicker: 'Pytanie',
-			title: 'Ta sama karta. Ten sam plik modelu. Ile da samo oprogramowanie?',
+			title: 'Ta sama karta. Ten sam plik modelu. Ile da *samo oprogramowanie*?',
 			lead: 'Nie zmieniamy kwantyzacji, nie podmieniamy modelu na mniejszy, nie dokupujemy sprzętu. Jedyna zmienna to silnik, który liczy model. I jedna twarda zasada: odpowiedź ma być tak samo dobra.'
 		},
 		{
 			id: 'measure',
 			nav: 'Uczciwy pomiar',
 			kicker: 'Uczciwy pomiar',
-			title: 'Najpierw nauczyliśmy się nie oszukiwać samych siebie.',
+			title: 'Najpierw nauczyliśmy się *nie oszukiwać* samych siebie.',
 			lead: 'Karta się nagrzewa, zegary pływają, a jeden przebieg potrafi skłamać o kilka procent. Zysk z jednej łatki bywa mniejszy niż ten szum. Dlatego każdą zmianę mierzymy tym samym skryptem po obu stronach, na świeżych serwerach, w kolejności ABBA.'
 		},
 		{
 			id: 'quality',
 			nav: 'Bezstratnie',
 			kicker: 'Bezstratnie albo wcale',
-			title: 'Szybciej, ale ani jednego tokenu inaczej.',
+			title: 'Szybciej, ale *ani jednego tokenu* inaczej.',
 			lead: 'Przyspieszenie, które psuje odpowiedź, to nie przyspieszenie. Każda zmiana przechodzi przez bramki: skrót md5 odpowiedzi, testy operacji GPU względem CPU i, gdy kolejność sumowania musi się zmienić, dywergencję KL na tle szumu samego upstreamu.'
 		},
 		{
 			id: 'step',
 			nav: 'Gdzie idzie czas',
 			kicker: 'Gdzie idzie czas',
-			title: 'Jeden krok dekodowania pod mikroskopem.',
+			title: 'Jeden krok dekodowania *pod mikroskopem*.',
 			lead: 'Zanim cokolwiek przyspieszymy, rozbieramy krok na kernele. To prawdziwy ślad rocprofv3 z RX 7900 XTX: 946 kerneli, trzy serie i przerwy, w których GPU czeka na procesor.'
 		},
 		{
 			id: 'speculation',
 			nav: 'Spekulacja',
 			kicker: 'Spekulacja, po ludzku',
-			title: 'Zgadnij kilka tokenów naprzód. Sprawdź wszystkie naraz.',
+			title: 'Zgadnij kilka tokenów naprzód. *Sprawdź wszystkie naraz*.',
 			lead: 'Duży model czyta całe swoje wagi przy każdym kroku, niezależnie od tego, czy liczy jeden token, czy pięć. Mała głowica MTP podsuwa więc kilka tokenów naprzód, a model sprawdza je w jednym kroku. Przyjmuje zgodny początek, resztę odrzuca i dokłada jeden token od siebie. Tekst jest ten, który model napisałby i tak.'
 		},
 		{
 			id: 'metal',
 			nav: 'Do metalu',
 			kicker: 'Do metalu',
-			title: 'Jeden bit w rejestrze, który wywracał kartę.',
+			title: 'Jeden *bit w rejestrze*, który wywracał kartę.',
 			lead: 'Nasz silnik nagrywa sekwencję kerneli i odtwarza ją jako taśmę poleceń PM4, z pominięciem kosztownej ścieżki uruchamiania. Szybko, ale co jakiś czas GPU padało z błędem strony pod adresem 0. Szukaliśmy przyczyny aż do pojedynczego bitu.'
-		},
-		{
-			id: 'negative',
-			nav: 'Co odrzuciliśmy',
-			kicker: 'Wyniki negatywne',
-			title: 'Cmentarzysko pomysłów. Zostawiamy je na widoku.',
-			lead: 'Większość pomysłów nie przechodzi. Notujemy każdy: co obiecywał, co zmierzyliśmy i dlaczego go zabiliśmy. Bez tego nie dałoby się ufać liczbom, które zostały.'
 		},
 		{
 			id: 'records',
 			nav: 'Tablica wyników',
 			kicker: 'Tablica wyników',
-			title: 'Przed i po. Ta sama karta, ten sam model, ten sam skrypt.',
+			title: '*Przed i po*. Ta sama karta, ten sam model, ten sam skrypt.',
 			lead: 'Wszystkie pary karta × model, które zmierzyliśmy od początku do końca. „Przed” to typowa aplikacja z ustawieniami domyślnymi, „po” to nasz silnik.'
 		}
 	],
@@ -205,61 +197,6 @@ const pl = {
 		preset: (v: number) => `Q4_K ncols=5: ${v} VGPR`,
 		cliff: 'Kernel Q4_K dla 5 kolumn miał 140 VGPR i 10 fal. Ograniczony do 119 VGPR mieści 12 fal, bez spilla do pamięci.'
 	},
-	n: {
-		killed: 'odrzucone',
-		stopped: 'zatrzymane',
-		open: 'Pokaż szczegóły',
-		promise: 'Obietnica',
-		result: 'Wynik',
-		why: 'Dlaczego koniec',
-		items: [
-			{
-				id: 'lds',
-				name: 'Bariery tylko-LDS',
-				fig: '±0,2%',
-				tag: 'killed',
-				promise: 'Lżejsza synchronizacja w kernelach: czekać tylko na pamięć współdzieloną, nie na całą pamięć.',
-				result: 'Średnie z dwóch par ABBA: Qwen pp4096 1130,6 → 1128,8; LFM 6125 → 6139; czat 102,5 → 102,4 t/s. Poprawne bitowo.',
-				why: 'Wszystko w szumie. Wąskim gardłem nie są bariery.'
-			},
-			{
-				id: 'oov',
-				name: 'Ogon OOV draftu, klastry',
-				fig: '−1,5%',
-				tag: 'killed',
-				promise: 'Głowica draftu zna 64k tokenów z 248k. Dla rzadkich tokenów dołożyć klastry, żeby draft trafiał częściej.',
-				result: '111,0 → 109,4 t/s na czacie. Droższa głowica zjada więcej, niż daje trafność.',
-				why: 'Ujemny wynik netto. Także wersja z pełnym słownikiem ma ujemny sufit we wszystkich grupach.'
-			},
-			{
-				id: 'router',
-				name: 'Router DFlash2 na edycji kodu',
-				fig: '+1,1%',
-				tag: 'killed',
-				promise: 'Drugi drafter, który przejmuje kroki, gdy ogon lookup nie ma czego skopiować.',
-				result: 'Sufit wyroczni (idealny wybór w każdym kroku): +1,1% przy T=0, +2,0% przy T=1. Próg opłacalności: +8%.',
-				why: 'Ogon W16 bierze już 14,5 z 16 tokenów na krok. Nie ma czego dołożyć. Zabite bez jednej minuty GPU.'
-			},
-			{
-				id: 'wide',
-				name: 'MMVQ n=1, szerokie ładowania',
-				fig: '−1,0%',
-				tag: 'killed',
-				promise: 'Mniej instrukcji ładowania na iterację (18 → 12) w mnożeniu dla jednego wiersza.',
-				result: 'Qwen tg128 40,86 → 40,41 t/s. md5 identyczne.',
-				why: 'Liczba instrukcji ładowania nie jest wąskim gardłem. Mniej instrukcji nie znaczy szybciej.'
-			},
-			{
-				id: 'norm',
-				name: 'Fuzja norm w prologu GEMV',
-				fig: 'GPU fault',
-				tag: 'stopped',
-				promise: 'Górny limit zmierzony: pominięcie 129 norm daje +4,6% (1,07 ms na token).',
-				result: 'Pierwszy test na GPU zawiesił taśmę PM4: page fault SQC @0x0, reset GPU.',
-				why: 'Zasada sprzętowa: po faulcie stop, bez ponawiania. Najpierw przyczyna, potem kolejna próba.'
-			}
-		]
-	},
 	r: {
 		filterAll: 'Wszystkie',
 		before: 'Typowa aplikacja',
@@ -267,7 +204,7 @@ const pl = {
 		speed: 't/s',
 		x: 'razy szybciej',
 		archive: 'Pełne tabele, skrypty i zasady w archiwum poniżej',
-		ctaTitle: 'Sprawdź, ile da Twoja karta.',
+		ctaTitle: 'Sprawdź, ile da *Twoja karta*.',
 		ctaLead: 'Wybierz kartę i model. Pokażemy zmierzony wynik albo uczciwie oznaczony szacunek.',
 		cta: 'Znajdź swoją kartę',
 		cta2: 'Zacznij instalację'
@@ -279,10 +216,9 @@ type Copy = typeof pl;
 const en: Copy = {
 	meta: {
 		title: 'Methodology: how we measure and speed things up',
-		desc: 'A journey through our workshop: honest ABBA measurement, md5 and KLD losslessness gates, one decode step profiled on the RX 7900 XTX, MTP speculation, the GFX11 PRIV bug and the experiments we killed.'
+		desc: 'A journey through our workshop: honest ABBA measurement, md5 and KLD losslessness gates, one decode step profiled on the RX 7900 XTX, MTP speculation and the GFX11 PRIV bug, all the way to the before-and-after record board.'
 	},
 	rail: 'Chapters',
-	chapter: 'Chapter',
 	sources: 'Sources',
 	illustr: 'illustration',
 	measured: 'measured',
@@ -296,56 +232,49 @@ const en: Copy = {
 			id: 'question',
 			nav: 'The question',
 			kicker: 'The question',
-			title: 'Same card. Same model file. How much can software alone do?',
+			title: 'Same card. Same model file. How much can *software alone* do?',
 			lead: 'We do not change the quantisation, swap in a smaller model or buy new hardware. The only variable is the engine that runs the model. And one hard rule: the answer must be just as good.'
 		},
 		{
 			id: 'measure',
 			nav: 'Honest measurement',
 			kicker: 'Honest measurement',
-			title: 'First we learned not to fool ourselves.',
+			title: 'First we learned *not to fool* ourselves.',
 			lead: 'The card heats up, clocks drift, and a single run can lie by a few percent. The gain from one patch is often smaller than that noise. So every change is measured with the same script on both sides, on fresh servers, in ABBA order.'
 		},
 		{
 			id: 'quality',
 			nav: 'Lossless',
 			kicker: 'Lossless or nothing',
-			title: 'Faster, but not a single token different.',
+			title: 'Faster, but *not a single token* different.',
 			lead: 'A speed-up that damages the answer is not a speed-up. Every change goes through gates: the md5 of the answer, GPU op tests against the CPU and, when the summation order has to change, KL divergence against upstream’s own noise.'
 		},
 		{
 			id: 'step',
 			nav: 'Where the time goes',
 			kicker: 'Where the time goes',
-			title: 'One decode step under the microscope.',
+			title: 'One decode step *under the microscope*.',
 			lead: 'Before we speed anything up, we take the step apart kernel by kernel. This is a real rocprofv3 trace from the RX 7900 XTX: 946 kernels, three bursts and the gaps where the GPU waits for the CPU.'
 		},
 		{
 			id: 'speculation',
 			nav: 'Speculation',
 			kicker: 'Speculation, explained',
-			title: 'Guess a few tokens ahead. Check them all at once.',
+			title: 'Guess a few tokens ahead. *Check them all at once*.',
 			lead: 'A big model reads all of its weights on every step, whether it computes one token or five. So a small MTP head proposes a few tokens ahead and the model checks them in one step. It keeps the matching prefix, drops the rest and adds one token of its own. The text is exactly what the model would have written anyway.'
 		},
 		{
 			id: 'metal',
 			nav: 'Down to the metal',
 			kicker: 'Down to the metal',
-			title: 'One register bit that kept crashing the card.',
+			title: 'One *register bit* that kept crashing the card.',
 			lead: 'Our engine records the sequence of kernels and replays it as a tape of PM4 commands, skipping the expensive launch path. Fast, but every so often the GPU died with a page fault at address 0. We chased the cause down to a single bit.'
-		},
-		{
-			id: 'negative',
-			nav: 'What we killed',
-			kicker: 'Negative results',
-			title: 'A graveyard of ideas. We keep it in plain sight.',
-			lead: 'Most ideas do not make it. We record every one: what it promised, what we measured and why we killed it. Without that, the numbers that survived would not be worth trusting.'
 		},
 		{
 			id: 'records',
 			nav: 'Record board',
 			kicker: 'Record board',
-			title: 'Before and after. Same card, same model, same script.',
+			title: '*Before and after*. Same card, same model, same script.',
 			lead: 'Every card × model pair we measured end to end. “Before” is a typical app with default settings, “after” is our engine.'
 		}
 	],
@@ -477,61 +406,6 @@ const en: Copy = {
 		preset: (v: number) => `Q4_K ncols=5: ${v} VGPR`,
 		cliff: 'The Q4_K kernel for 5 columns used 140 VGPR and got 10 waves. Capped at 119 VGPR it fits 12 waves, with no spill to memory.'
 	},
-	n: {
-		killed: 'killed',
-		stopped: 'stopped',
-		open: 'Show details',
-		promise: 'Promise',
-		result: 'Result',
-		why: 'Why it ended',
-		items: [
-			{
-				id: 'lds',
-				name: 'LDS-only barriers',
-				fig: '±0.2%',
-				tag: 'killed',
-				promise: 'Lighter synchronisation in kernels: wait only for shared memory, not for all memory.',
-				result: 'Means of two ABBA pairs: Qwen pp4096 1130.6 → 1128.8; LFM 6125 → 6139; chat 102.5 → 102.4 t/s. Bit-exact.',
-				why: 'All within noise. Barriers are not the bottleneck.'
-			},
-			{
-				id: 'oov',
-				name: 'Clustered OOV draft tail',
-				fig: '−1.5%',
-				tag: 'killed',
-				promise: 'The draft head knows 64k of 248k tokens. Add clusters for rare tokens so the draft hits more often.',
-				result: '111.0 → 109.4 t/s in chat. The pricier head costs more than the extra hits give.',
-				why: 'Net negative. The full-vocabulary variant also has a negative ceiling in every group.'
-			},
-			{
-				id: 'router',
-				name: 'DFlash2 router for code edits',
-				fig: '+1.1%',
-				tag: 'killed',
-				promise: 'A second drafter that takes over steps where the lookup tail has nothing to copy.',
-				result: 'Oracle ceiling (perfect choice on every step): +1.1% at T=0, +2.0% at T=1. Break-even threshold: +8%.',
-				why: 'The W16 tail already takes 14.5 of 16 tokens per step. Nothing left to add. Killed without a minute of GPU time.'
-			},
-			{
-				id: 'wide',
-				name: 'MMVQ n=1, wide loads',
-				fig: '−1.0%',
-				tag: 'killed',
-				promise: 'Fewer load instructions per iteration (18 → 12) in the single-row multiply.',
-				result: 'Qwen tg128 40.86 → 40.41 t/s. md5 identical.',
-				why: 'Load instruction count is not the bottleneck. Fewer instructions does not mean faster.'
-			},
-			{
-				id: 'norm',
-				name: 'Norm fusion into the GEMV prologue',
-				fig: 'GPU fault',
-				tag: 'stopped',
-				promise: 'Measured upper bound: skipping 129 norms gives +4.6% (1.07 ms per token).',
-				result: 'The first GPU test hung the PM4 tape: SQC page fault @0x0, GPU reset.',
-				why: 'Hardware rule: after a fault we stop, no retries. Find the cause first, then try again.'
-			}
-		]
-	},
 	r: {
 		filterAll: 'All',
 		before: 'Typical app',
@@ -539,7 +413,7 @@ const en: Copy = {
 		speed: 't/s',
 		x: 'times faster',
 		archive: 'Full tables, scripts and principles in the archive below',
-		ctaTitle: 'See what your card can do.',
+		ctaTitle: 'See what *your card* can do.',
 		ctaLead: 'Pick a card and a model. We show the measured result or a clearly labelled estimate.',
 		cta: 'Find your card',
 		cta2: 'Start the install'
@@ -558,6 +432,5 @@ export const CH_SOURCES: Record<string, string[]> = {
 	step: [`${R}/24m-weryfikacja-gpu.md:8-20,42-49`, '~/qwen-opt/vcost/prof/off (rocprofv3, vc_trace.py)', `${R}/24k-koszt-weryfikacji.md`, `${R}/26-kolejka-gpu-wieczor.md:14`],
 	speculation: [`${R}/16b-lookup-tail.md`, `${R}/24j-router-edycja.md:12`, '~/qwen-opt/queue/logs/fb-qwen-{U0,U1,T}-p1.log:2'],
 	metal: [`${R}/17-gpu-page-fault.md:210-240,286,381,443`, `${R}/26-kolejka-gpu-wieczor.md:9,22`, `${R}/24n-mmvq-n5.md:16-22,43`, `${R}/24f-mmvq-i-fa.md:12`],
-	negative: [`${R}/26-kolejka-gpu-wieczor.md:10-13`, `${R}/24b-skrypty-oov-analysis.md:23`, `${R}/24b-draft-pelny-slownik.md:5-7`, `${R}/24j-router-edycja.md:3`, `${R}/24f-mmvq-i-fa.md:11`, `${R}/24l-fuzja-norm.md:5-7,29`],
 	records: ['app/landing/src/lib/data/cards.json', 'app/landing/src/lib/data/measurements.ts']
 };

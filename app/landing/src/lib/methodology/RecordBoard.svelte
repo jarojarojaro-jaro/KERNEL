@@ -2,6 +2,7 @@
 	import { CARDS, MODEL_INFO, variantOf } from '$lib/data/measurements';
 	import { fmtRatio } from '$lib/format';
 	import { magnetic, reveal } from '$lib/fx/actions';
+	import Hl from '$lib/home/Hl.svelte';
 	import { cardsHref, href, num, type Lang } from '$lib/i18n';
 	import { COPY } from './copy';
 
@@ -22,7 +23,7 @@
 </script>
 
 <div class="board">
-	<div class="seg wrap" role="group" aria-label={c.ch[7].nav}>
+	<div class="seg wrap" role="group" aria-label={c.ch[c.ch.length - 1].nav}>
 		<button type="button" aria-pressed={pick === 'all'} onclick={() => (pick = 'all')}>{c.r.filterAll}</button>
 		{#each cards as card (card.id)}
 			<button type="button" aria-pressed={pick === card.id} onclick={() => (pick = card.id)}>{card.short}</button>
@@ -54,7 +55,7 @@
 
 	<div class="cta">
 		<div>
-			<p class="ct">{c.r.ctaTitle}</p>
+			<p class="ct"><Hl text={c.r.ctaTitle} /></p>
 			<p class="cl">{c.r.ctaLead}</p>
 		</div>
 		<div class="acts">
