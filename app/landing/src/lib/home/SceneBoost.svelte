@@ -23,7 +23,7 @@
 	const tl = new Autoplay(3.4, '0px 0px -20% 0px', { arm: true });
 
 	const vals = [HERO_V.a0.decode!, HERO_V.a1.decode!, HERO_V.a2.decode!];
-	/** Multiplier of each setup vs the typical app, as printed in the sheet (×1.62 MTP, ×2.00 total). */
+	/** Multiplier of each setup vs the typical app, from the measured medians (×1.76 MTP, ×2.17 total). */
 	const mult = [null, HERO_GAIN.flags!, HERO_GAIN.total!];
 	const KEYS = ['cold', 'warm', 'hot'] as const;
 	/** Each bar's slice of the timeline; ours grows last and longest. */

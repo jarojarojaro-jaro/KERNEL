@@ -77,7 +77,7 @@ export { fmtRatio };
 
 /**
  * One redline for the page (design/REDESIGN.md §6): every dial and bar for dense models runs to
- * 100 t/s with the red zone from 70 t/s, so the 3090 Qwen run (78,0) visibly crosses it.
+ * 100 t/s with the red zone from 70 t/s, so the 3090 Qwen run (93,3) visibly crosses it.
  */
 export const REDLINE = 70;
 export const DIAL_MAX = 100;

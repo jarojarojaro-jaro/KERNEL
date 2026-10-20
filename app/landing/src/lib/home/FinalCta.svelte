@@ -5,12 +5,12 @@
 	 * engine, a2), RTX 3090 × Qwen3.8-27B, at exactly the measured median t/s; our side emits in
 	 * steps of the measured MTP tokens per step. Each pane follows its newest line and wraps from the
 	 * end of the answer straight into the next copy, so the stream is endless; under it a counter
-	 * of tokens written grows, ours twice as fast. Not the hero race: no dials, no restarts.
+	 * of tokens written grows, ours at the measured ratio. Not the hero race: no dials, no restarts.
 	 *
 	 * The text is an example, the pace is measured. Every token is laid out from the first frame
 	 * (two stacked copies per pane); writing only toggles classes, the window moves by transform.
 	 * The loop runs only while on screen and not paused. SSR, no JS and reduced motion: one static
-	 * frame `T0` seconds in (ours has written twice as much), no loop.
+	 * frame `T0` seconds in (ours has written as much more as it is faster), no loop.
 	 */
 	import { onMount, untrack } from 'svelte';
 	import { magnetic, visible } from '$lib/fx/actions';

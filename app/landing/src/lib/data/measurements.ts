@@ -398,10 +398,27 @@ const SHEET_EN: [RegExp, string][] = [
 ];
 const toEn = (s: string) => SHEET_EN.reduce((t, [re, en]) => t.replace(re, en), s);
 
+/**
+ * A newer same-script session that replaces the sheet's run for one model completely (variants,
+ * gain, long context); only fields of the sheet run that the session did not measure again and that
+ * do not depend on the build (title, file, kernel profile) are kept.
+ */
+interface Final {
+	variants: Variant[];
+	before: VariantKey;
+	flags: VariantKey;
+	ours: VariantKey;
+	src: string;
+	metric: L;
+	gain?: Run['gain'];
+	longCtx?: Run['longCtx'];
+	kernels?: Run['kernels'];
+}
+
 function nvidia(
 	id: string,
 	meta: Pick<CardView, 'name' | 'short' | 'vramGB' | 'arch' | 'pick'>,
-	conditions: Partial<Record<ModelKey, { c: L; src: string; note?: L }>>
+	conditions: Partial<Record<ModelKey, { c: L; src: string; note?: L; final?: Final }>>
 ): CardView {
 	const c = sheetCard(id);
 	return {
@@ -413,17 +430,136 @@ function nvidia(
 		pcie: c.hw.pcie,
 		hwLine: { pl: c.hw.line, en: toEn(c.hw.line) },
 		hwSrc: c.hw.src,
-		runs: c.runs.map((r) => ({
-			...r,
-			metric: SPEC_SWEEP,
-			sameHarness: true,
-			conditions: conditions[r.model]!.c,
-			conditionsSrc: conditions[r.model]!.src,
-			...(r.gain ? { gainText: { pl: r.gain.text, en: r.gain.text.map(toEn) as [string, string, string] } } : {}),
-			...(conditions[r.model]!.note ? { note: conditions[r.model]!.note } : {})
-		}))
+		runs: c.runs.map((sheet) => {
+			const k = conditions[sheet.model]!;
+			const f = k.final;
+			const r: Run = f ? { model: sheet.model, title: sheet.title, quant: sheet.quant, file: sheet.file, kernels: sheet.kernels, ...f } : sheet;
+			return {
+				...r,
+				metric: f?.metric ?? SPEC_SWEEP,
+				sameHarness: true,
+				conditions: k.c,
+				conditionsSrc: k.src,
+				...(r.gain ? { gainText: { pl: r.gain.text, en: r.gain.text.map(toEn) as [string, string, string] } } : {}),
+				...(k.note ? { note: k.note } : {})
+			};
+		})
 	};
 }
+
+/*
+ * RTX 3090 and RTX 3060 final sessions (2026-10-19/20, report 27): upstream default (U0), upstream
+ * with production flags + its own MTP (U1) and our engine (T), fresh servers in ABBA order; values are
+ * the mean of the two passes. Logs are copied into the repo under qwen-opt/cloud/results/nv-final-*.
+ */
+const R27 = 'KERNEL/product/research/27-3090-final.md';
+const NV3090 = 'KERNEL/qwen-opt/cloud/results/nv-final-3090-qwen-20261019/logs';
+const NV3090L = 'KERNEL/qwen-opt/cloud/results/nv-final-3090-qwen60k-20261020/logs';
+const NV3060 = 'KERNEL/qwen-opt/cloud/results/nv-final-3060-saluki-20261020/logs';
+const s3090 = (log: string, line: number) => `${NV3090}/${log}; ${R27}:${line}`;
+const s3060 = (log: string, line: number) => `${NV3060}/${log}; ${R27}:${line}`;
+/** nvidia-smi MiB after load as GiB (shown as GB with the site's GiB note). */
+const mib = (v: number, src: string): Num => ({ v: Math.round((v / 1024) * 10) / 10, src: `${src} (${v} MiB)`, unit: 'GiB' });
+const SPEC_SWEEP_ABBA: L = {
+	pl: 'spec_sweep przez serwer, ten sam skrypt po obu stronach: czat, 6 promptów × 3 seedy, T=1, świeży serwer, mediana; kolejność ABBA, średnia z dwóch przebiegów',
+	en: 'spec_sweep through the server, the same script on both sides: chat, 6 prompts × 3 seeds, T=1, fresh server, median; ABBA order, mean of the two passes'
+};
+const LB = (u: string, t: string) => `${NV3090}/${u} / ${t}`;
+const FINAL_3090_QWEN: Final = {
+	src: s3090('spec_sweep.jsonl', 59),
+	before: 'a0',
+	flags: 'a1',
+	ours: 'a2',
+	metric: SPEC_SWEEP_ABBA,
+	variants: [
+		{
+			key: 'a0',
+			decode: { v: 42.9, src: s3090('spec_sweep.jsonl (qwen.U0.p1/p2)', 59) },
+			msStep: { v: 23.29, src: s3090('spec_sweep.jsonl', 60) },
+			tokStep: { v: 1, src: s3090('spec_sweep.jsonl', 61) },
+			pp512: { v: 1584.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:98` },
+			pp4096: { v: 1581.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:99` },
+			ttft: { v: 1.23, src: s3090('long.jsonl (prompt 1747 tok)', 90), unit: 's' },
+			tg128: { v: 43.1, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:100` },
+			vram: mib(22545, s3090('vram.jsonl', 104))
+		},
+		{
+			key: 'a1',
+			decode: { v: 75.3, src: s3090('spec_sweep.jsonl (qwen.U1.p1/p2)', 59) },
+			msStep: { v: 43.4, src: s3090('spec_sweep.jsonl', 60) },
+			tokStep: { v: 3.27, src: s3090('spec_sweep.jsonl', 61) },
+			pp512: { v: 1584.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:98 (U1 = U0, the same binary)` },
+			pp4096: { v: 1581.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:99 (U1 = U0, the same binary)` },
+			ttft: { v: 1.43, src: s3090('long.jsonl (prompt 1747 tok)', 90), unit: 's' },
+			vram: mib(23129, s3090('vram.jsonl', 104))
+		},
+		{
+			key: 'a2',
+			decode: { v: 93.3, src: s3090('spec_sweep.jsonl (qwen.T.p1/p2)', 59) },
+			msStep: { v: 32.36, src: s3090('spec_sweep.jsonl', 60) },
+			tokStep: { v: 3.03, src: s3090('spec_sweep.jsonl', 61) },
+			pp512: { v: 1540.4, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:98` },
+			pp4096: { v: 1542.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:99` },
+			ttft: { v: 1.6, src: s3090('long.jsonl (prompt 1747 tok)', 90), unit: 's' },
+			tg128: { v: 45.9, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:100` },
+			vram: mib(23493, s3090('vram.jsonl', 104))
+		}
+	],
+	gain: {
+		flags: { v: 75.3 / 42.9, src: `${R27}:59 (75.3 / 42.9)` },
+		engine: { v: 93.3 / 75.3, src: `${R27}:59 (93.3 / 75.3)` },
+		total: { v: 93.3 / 42.9, src: `${R27}:59 (93.3 / 42.9)` },
+		text: ['×1.76 (MTP)', '×1.24 (lookup W16, share, GPU verify)', '×2.17'],
+		src: `${R27}:20,59`
+	},
+	/** llama-bench tg128 at a filled context, no speculation (upstream vs ours, the same binary as U0/U1). */
+	longCtx: {
+		depths: [0, 16384, 32768, 65536],
+		up: [
+			{ v: 43.1, src: `${NV3090}/lb.qwen.U.r1,r4.jsonl; ${R27}:100` },
+			{ v: 39.1, src: `${NV3090}/lbd.qwen.U.r1,r4.jsonl; ${R27}:101` },
+			{ v: 35.7, src: `${NV3090}/lbd.qwen.U.r1,r4.jsonl; ${R27}:102` },
+			{ v: 30.4, src: `${NV3090}/lbd.qwen.U.r1,r4.jsonl; ${R27}:103` }
+		],
+		ours: [
+			{ v: 45.9, src: `${NV3090}/lb.qwen.T.r2,r3.jsonl; ${R27}:100` },
+			{ v: 41.4, src: `${NV3090}/lbd.qwen.T.r2,r3.jsonl; ${R27}:101` },
+			{ v: 37.7, src: `${NV3090}/lbd.qwen.T.r2,r3.jsonl; ${R27}:102` },
+			{ v: 31.9, src: `${NV3090}/lbd.qwen.T.r2,r3.jsonl; ${R27}:103` }
+		],
+		kv: 'KV q4_0'
+	}
+};
+const FINAL_3060_SALUKI: Final = {
+	src: s3060('spec_sweep.jsonl', 168),
+	before: 'a0',
+	flags: 'a0',
+	ours: 'ours',
+	metric: SPEC_SWEEP_ABBA,
+	variants: [
+		{
+			key: 'a0',
+			decode: { v: 24.0, src: s3060('spec_sweep.jsonl (saluki.U0.p1/p2)', 168) },
+			msStep: { v: 41.7, src: s3060('spec_sweep.jsonl', 169) },
+			tokStep: { v: 1, src: s3060('spec_sweep.jsonl', 170) },
+			pp512: { v: 581.2, src: `${NV3060}/lb.saluki.U.r1,r4.jsonl; ${R27}:184` },
+			pp4096: { v: 575.6, src: `${NV3060}/lb.saluki.U.r1,r4.jsonl; ${R27}:185` },
+			tg128: { v: 24.2, src: `${NV3060}/lb.saluki.U.r1,r4.jsonl; ${R27}:186` },
+			vram: mib(10313, s3060('vram.jsonl', 187))
+		},
+		{
+			key: 'ours',
+			decode: { v: 38.2, src: s3060('spec_sweep.jsonl (saluki.T.p1/p2)', 168) },
+			msStep: { v: 58.36, src: s3060('spec_sweep.jsonl', 169) },
+			tokStep: { v: 2.22, src: s3060('spec_sweep.jsonl', 170) },
+			pp512: { v: 564.0, src: `${NV3060}/lb.saluki.T.r2,r3.jsonl; ${R27}:184` },
+			pp4096: { v: 558.9, src: `${NV3060}/lb.saluki.T.r2,r3.jsonl; ${R27}:185` },
+			tg128: { v: 23.6, src: `${NV3060}/lb.saluki.T.r2,r3.jsonl; ${R27}:186` },
+			vram: mib(9811, s3060('vram.jsonl', 187))
+		}
+	],
+	gain: { flags: null, engine: null, total: { v: 38.2 / 24.0, src: `${R27}:168 (38.2 / 24.0)` }, text: ['—', '—', '×1.59'], src: `${R27}:33,168` }
+};
 
 const XTX_HW = 'KERNEL/qwen-opt/NOTES.md:110';
 /** FinalBench same-script XTX logs (lab server, 2026-10-19). */
@@ -456,9 +592,20 @@ export const XTX_BOARD = {
 export const CARDS: CardView[] = [
 	nvidia(
 		'rtx-3090',
-		{ name: 'GeForce RTX 3090', short: '3090', vramGB: 24, arch: 'Ampere sm_86', pick: { model: 'qwen38', why: { pl: 'Najlepsza jakość, która mieści się w 24 GB, i największy zysk: 2× szybciej.', en: 'The best quality that fits in 24 GB, and the biggest gain: 2× faster.' } } },
+		{ name: 'GeForce RTX 3090', short: '3090', vramGB: 24, arch: 'Ampere sm_86', pick: { model: 'qwen38', why: { pl: 'Najlepsza jakość, która mieści się w 24 GB: 2,2× szybciej niż typowa aplikacja.', en: 'The best quality that fits in 24 GB: 2.2× faster than the typical app.' } } },
 		{
-			qwen38: { c: { pl: 'kontekst 64k (-c 65536), KV q4_0, MTP n=4; A0: -fit wybrał 84k, KV f16', en: '64k context (-c 65536), KV q4_0, MTP n=4; A0: -fit chose 84k, KV f16' }, src: `${BS}:19-23` },
+			qwen38: {
+				c: {
+					pl: 'najlepsze flagi i nasz silnik: kontekst 200k (-c 204800), KV q4_0, MTP n=4, -fa on; nasz dodatkowo słownik draftu 64k, lookup W16, GPU verify; A0: samo -m (-fit: kontekst 90k, KV f16); karta 335 W',
+					en: 'best flags and our engine: 200k context (-c 204800), KV q4_0, MTP n=4, -fa on; ours adds the 64k draft vocabulary, lookup W16, GPU verify; A0: plain -m (-fit: 90k context, KV f16); card at 335 W'
+				},
+				src: `${R27}:10-14,62-79,109,207,211-212; ${NV3090}/vram.jsonl; ${NV3090L}/vram.jsonl`,
+				note: {
+					pl: 'Ten sam skrypt, inne zadania: czat zachłanny (T=0) 42,3 → 76,7 → 103,4 t/s; edycja kodu 42,0 → 109,5 → 348,9 t/s; kopiowanie 41,8 → 108,4 → 343,8 t/s; generowanie po 32k kontekstu 39,1 → 64,0 → 79,9 t/s. Uczciwie: nasz silnik z kontekstem 200k nie zmieścił promptu ~55,6k tokenów w 24 GB; na kartach NVIDIA 24 GB ustawiamy kontekst ≤ 131 072 (szczyt 22,2 GB przy 60k).',
+					en: 'The same script, other tasks: greedy chat (T=0) 42.3 → 76.7 → 103.4 t/s; code edits 42.0 → 109.5 → 348.9 t/s; copying 41.8 → 108.4 → 343.8 t/s; generation after a 32k context 39.1 → 64.0 → 79.9 t/s. Honestly: with a 200k context our engine did not fit a ~55.6k-token prompt in 24 GB; on 24 GB NVIDIA cards we set the context to ≤ 131,072 (22.2 GB peak at 60k).'
+				},
+				final: FINAL_3090_QWEN
+			},
 			lfm25: { c: { pl: 'kontekst 64k (-c 65536), KV q8_0, bez spekulacji', en: '64k context (-c 65536), KV q8_0, no speculation' }, src: `${BS}:19-21` },
 			nemotron: {
 				c: {
@@ -487,9 +634,20 @@ export const CARDS: CardView[] = [
 	),
 	nvidia(
 		'rtx-3060-12',
-		{ name: 'GeForce RTX 3060 12 GB', short: '3060', vramGB: 12, arch: 'Ampere sm_86', pick: { model: 'saluki', why: { pl: 'Lepsza jakość (perplexity 7,67 wobec 8,62). Bonsai jest szybszy, ale słabszy.', en: 'Better quality (perplexity 7.67 vs 8.62). Bonsai is faster but weaker.' } } },
+		{ name: 'GeForce RTX 3060 12 GB', short: '3060', vramGB: 12, arch: 'Ampere sm_86', pick: { model: 'saluki', why: { pl: 'Lepsza jakość (perplexity 7,67 wobec 8,62), a z głowicą MTP 1,6× szybciej.', en: 'Better quality (perplexity 7.67 vs 8.62), and 1.6× faster with the MTP head.' } } },
 		{
-			saluki: { c: { pl: 'kontekst 32k, KV f16, -ub 1024; bez spekulacji (brak głowicy MTP)', en: '32k context, KV f16, -ub 1024; no speculation (no MTP head)' }, src: `${BS}:109-113` },
+			saluki: {
+				c: {
+					pl: 'nasz: głowica MTP Kujiry n=2 (słownik 64k, IQ4_XS), lookup W16, GPU verify, KV q8_0, kontekst 20k (-c 20480); A0: samo -m (-fit: kontekst 34k, KV f16), bez spekulacji; karta 170 W',
+					en: 'ours: the Kujira MTP head n=2 (64k vocabulary, IQ4_XS), lookup W16, GPU verify, KV q8_0, 20k context (-c 20480); A0: plain -m (-fit: 34k context, KV f16), no speculation; card at 170 W'
+				},
+				src: `${R27}:190; ${NV3060}/vram.jsonl`,
+				note: {
+					pl: 'Po 16k kontekstu: 22,5 → 35,5 t/s. Bez spekulacji (llama-bench tg128) nasz silnik jest tu o 2,4% wolniejszy (24,2 → 23,6): cały zysk na tej karcie daje głowica MTP.',
+					en: 'After a 16k context: 22.5 → 35.5 t/s. Without speculation (llama-bench tg128) our engine is 2.4% slower here (24.2 → 23.6): the whole gain on this card comes from the MTP head.'
+				},
+				final: FINAL_3060_SALUKI
+			},
 			bonsai: {
 				c: { pl: 'kontekst 32k, KV f16, -ub 1024; bez spekulacji (brak głowicy MTP)', en: '32k context, KV f16, -ub 1024; no speculation (no MTP head)' },
 				src: `${BS}:109-113`,
@@ -612,11 +770,11 @@ export const MODEL_INFO: Record<ModelKey, { name: string; what: L; license: L; l
 	},
 	saluki: {
 		name: 'Underdog Saluki 27B',
-		what: { pl: 'Model 27B (architektura qwen35) skwantyzowany do ~2 bitów standardowymi typami IQ: plik 7,9 GB. Bez głowicy MTP.', en: 'A 27B model (qwen35 architecture) quantised to ~2 bits with standard IQ types: a 7.9 GB file. No MTP head.' },
+		what: { pl: 'Model 27B (architektura qwen35) skwantyzowany do ~2 bitów standardowymi typami IQ: plik 7,9 GB. Sam nie ma głowicy MTP; nasz silnik dokłada głowicę MTP Kujiry.', en: 'A 27B model (qwen35 architecture) quantised to ~2 bits with standard IQ types: a 7.9 GB file. It has no MTP head of its own; our engine adds the Kujira MTP head.' },
 		license: { pl: 'Licencji jeszcze nie zweryfikowaliśmy', en: 'Licence not verified yet' },
 		licenseSrc: 'KERNEL/product/research/09-chmura-3060.md:25-29',
 		good: [{ pl: 'mała pamięć', en: 'low memory' }, { pl: 'jakość przy 12 GB', en: 'quality on 12 GB' }],
-		src: 'KERNEL/product/research/09-chmura-3060.md:25-29'
+		src: `KERNEL/product/research/09-chmura-3060.md:25-29; ${R27}:32-33`
 	},
 	nemotron: {
 		name: 'Nemotron 3.5 Bolt 74B-A9B',
