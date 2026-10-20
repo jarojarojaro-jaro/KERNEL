@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, zrodla, research, rejestr, inferencex, agentx, strata, tensorfold, magnitude, hipfire, dflash, lucebox]
-aktualizacja: 2026-10-19
+aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14
 status: aktualne
 ---
@@ -173,6 +173,10 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | TurboLLM, llmfit, llama-optimus, local-llm-autotune, ggrun, gguf-parser-go | R01, R04, [[turbollm]] | Flag-tunery; nie optymalizują kerneli. | – |
 | Tauri 2, velopack, llama-cpp-rs, Textual | R03, R06 | Wybrany stos produktu. | – |
 | Vast.ai, RunPod, Salad, HOSTKEY, GigaGPU, Scaleway, TensorDock, Thunder Compute | R05, R09, [[firma-vast-ai]], [[firma-runpod]], [[firma-salad]], [[hostkey]], [[gigagpu]], [[scaleway]] | NVIDIA tanio u Vast; Radeonów z rootem prawie brak. | ceny i nowe Radeony |
+| Intel Arc do wynajęcia: GigaGPU Arc Pro B60/B70, Zed Up (karta B60), Intel Tiber AI Cloud, Vast.ai (CLI live), TensorDock, Hetzner/OVH/Scaleway GPU **2×** | R05 (10-15) → [R30](../product/research/30-intel-apple-dostep.md) (10-20) | Godzinowego Arc nie ma (Vast: 5039 ofert, 0 Intel/AMD); GigaGPU B60 £129/mies. = krzem B580, 24 GB, 456 GB/s, root. | nowe oferty Arc na Vast (`gpu_arch=intel`), Tiber z Arc |
+| Apple Silicon do wynajęcia: Scaleway (M1…M4 Pro), AWS EC2 Mac (M4/M4 Pro/M4 Max/M3 Ultra), MyRemoteMac, MacStadium, MacinCloud, RentAMac, MacRent, RoundFleet, HostMyApple **2×** | R05 (10-15) → [R30](../product/research/30-intel-apple-dostep.md) (10-20) | Karta M4: Scaleway M4-M 32 GB €0.29/h, 24 h min. (€6.96); AWS m4max $6.25/h, m3ultra $12.50/h, wszędzie 24 h min. (licencja Apple). | nowe M5/M6 w Scaleway; ceny |
+| Enverge (enverge.ai, mac-studio.enverge.ai) | [R30](../product/research/30-intel-apple-dostep.md) 10-20 | Najtańszy krótki test Apple: Mac Studio M5 Ultra 256 GB $2.50/h, co minutę, admin+sudo, kolejka FIFO; też DGX Spark $0.75/h, RTX Pro 6000 $1.95/h. | dostępność Mac Studio (portal za logowaniem); 512 GB i cena |
+| Darkbloom (darkbloom.dev, Eigen Labs, `Layr-Labs/d-inference`) | [R30](../product/research/30-intel-apple-dostep.md) 10-20 | Nie wynajem: API inferencji (OpenAI) na cudzych Makach, bez SSH; public alpha od 2026-04-15. | tylko jako konkurencja (prywatna inferencja Apple) |
 | AMD, NVIDIA, Hugging Face, Liquid AI, Unsloth, Thinking Machines | [[firma-amd]], [[firma-nvidia]], [[hugging-face]], [[liquidai]], [[unsloth]], [[thinking-machines]] | Profile firm. | – |
 | AI Act, licencje, prawo (eur-lex, twobirds) | R06, [[raport-06-produkt]] | Jesteśmy providerem aplikacji czatu. | – |
 
