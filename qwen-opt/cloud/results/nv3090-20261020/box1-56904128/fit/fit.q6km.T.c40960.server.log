@@ -1,0 +1,59 @@
+0.00.205.687 I srv  llama_server: initializing ...
+0.00.205.705 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.205.823 I srv  init_listene: The UI is disabled
+0.00.205.824 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.205.916 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.225.679 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-Q6_K_M.gguf'
+0.01.678.097 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort
+0.07.477.896 I cmn          init: llama threadpool init, n_threads = 64
+0.07.607.634 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-Q6_K_M.gguf'
+0.07.674.989 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 40960, kv_unified = 'false'
+0.37.714.764 I spec common_spec_: context lookup: mode 3, width 16, tail match >= 6, log ''
+0.37.837.330 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+0.37.837.383 I srv  llama_server: model loaded
+0.37.837.388 I srv  llama_server: listening on http://127.0.0.1:18701
+0.41.375.695 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.41.375.900 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.46.972.436 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   4096, progress = 0.10, t =   5.23 s / 782.50 tokens per second
+0.49.741.085 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   6144, progress = 0.15, t =   8.00 s / 768.44 tokens per second
+0.52.565.654 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =   8192, progress = 0.20, t =  10.81 s / 757.97 tokens per second
+0.55.447.307 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  10240, progress = 0.25, t =  13.68 s / 748.55 tokens per second
+0.58.388.711 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  12288, progress = 0.31, t =  16.61 s / 739.97 tokens per second
+1.01.408.018 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  14336, progress = 0.36, t =  19.62 s / 730.86 tokens per second
+1.04.489.452 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  16384, progress = 0.41, t =  22.69 s / 722.05 tokens per second
+1.07.633.792 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  18432, progress = 0.46, t =  25.83 s / 713.60 tokens per second
+1.10.832.831 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  20480, progress = 0.51, t =  29.03 s / 705.51 tokens per second
+1.14.075.382 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  22528, progress = 0.56, t =  32.27 s / 698.10 tokens per second
+1.17.384.626 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  24576, progress = 0.61, t =  35.57 s / 690.92 tokens per second
+1.20.770.555 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  26624, progress = 0.66, t =  38.95 s / 683.55 tokens per second
+1.24.189.532 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  28672, progress = 0.71, t =  42.36 s / 676.81 tokens per second
+1.27.677.618 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  30720, progress = 0.76, t =  45.84 s / 670.15 tokens per second
+1.31.223.125 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  32768, progress = 0.81, t =  49.38 s / 663.59 tokens per second
+1.34.826.782 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  34816, progress = 0.86, t =  52.98 s / 657.21 tokens per second
+1.38.485.856 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  36864, progress = 0.92, t =  56.63 s / 651.01 tokens per second
+1.42.209.317 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  38912, progress = 0.97, t =  60.34 s / 644.89 tokens per second
+1.44.053.821 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  39769, progress = 0.99, t =  62.26 s / 638.72 tokens per second
+1.45.187.653 I slot print_timing: id  0 | task 0 | prompt processing, n_tokens =  40281, progress = 1.00, t =  63.33 s / 636.05 tokens per second
+/home/jaro/wt/cuda-topka2/ggml/src/ggml-cuda/ggml-cuda.cu:110: CUDA error
+1.45.648.788 E CUDA error: out of memory
+1.45.648.797 E   current device: 0, in function ggml_cuda_graph_evaluate_and_capture at /home/jaro/wt/cuda-topka2/ggml/src/ggml-cuda/ggml-cuda.cu:5911
+1.45.648.798 E   cudaGraphInstantiate(&graph->instance, graph->graph, __null, __null, 0)
+/root/bin/topka2/libggml-base.so.0(+0x1d57b)[0x7289a197357b]
+/root/bin/topka2/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7289a19739fc]
+/root/bin/topka2/libggml-base.so.0(ggml_abort+0x15b)[0x7289a1973bdb]
+/root/bin/topka2/libggml-cuda.so.0(_Z15ggml_cuda_errorPKcS0_S0_iS0_+0xb7)[0x72899dd94597]
+/root/bin/topka2/libggml-cuda.so.0(+0x31ae32)[0x72899ddb2e32]
+/root/bin/topka2/libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x414)[0x7289a1992964]
+/root/bin/topka2/libllama.so.0(_ZN13llama_context13graph_computeEP11ggml_cgraphb+0xdb)[0x7289a1c5319b]
+/root/bin/topka2/libllama.so.0(_ZN13llama_context14process_ubatchERK12llama_ubatch14llm_graph_typeP22llama_memory_context_iR11ggml_status+0x166)[0x7289a1c577f6]
+/root/bin/topka2/libllama.so.0(_ZN13llama_context6decodeERK15llama_batch_ext+0x67c)[0x7289a1c600cc]
+/root/bin/topka2/libllama-server-impl.so(_ZNSt17_Function_handlerIFvvEZN19server_context_impl6decodeERiiEUlvE_E9_M_invokeERKSt9_Any_data+0x52)[0x7289a2b2abd2]
+/root/bin/topka2/libllama-server-impl.so(_ZN12server_queue14yield_to_queueEOSt8functionIFvvEE+0xa6)[0x7289a2ae4716]
+/root/bin/topka2/libllama-server-impl.so(_ZN19server_context_impl6decodeERii+0x193)[0x7289a2b416c3]
+/root/bin/topka2/libllama-server-impl.so(_ZN19server_context_impl12update_slotsEv+0x468)[0x7289a2b433c8]
+/root/bin/topka2/libllama-server-impl.so(_ZN12server_queue10start_loopEl+0x125)[0x7289a2ae60b5]
+/root/bin/topka2/libllama-server-impl.so(_Z12llama_serverR13common_paramsiPPcR12server_child+0x3f33)[0x7289a2a97073]
+/root/bin/topka2/libllama-server-impl.so(_Z12llama_serveriPPc+0x131)[0x7289a2a97d31]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7289a25241ca]
+/usr/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7289a252428b]
+/root/bin/topka2/llama-server(+0x12a5)[0x5b66cc6482a5]

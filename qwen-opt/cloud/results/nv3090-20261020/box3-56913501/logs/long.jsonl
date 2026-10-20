@@ -1,0 +1,2 @@
+{"label": "base.U1.p1", "n_ctx": 32768, "frac": 1.0, "prompt_tokens": 32041, "prefill_tps": 1145.7, "decode_tps": 57.96, "gen": 256, "ms_step": 57.139, "wall_s": 32.7}
+{"label": "base.T.p1", "n_ctx": 32768, "frac": 1.0, "prompt_tokens": 32041, "prefill_tps": 1117.4, "decode_tps": 68.39, "gen": 256, "ms_step": 50.389, "wall_s": 32.9}

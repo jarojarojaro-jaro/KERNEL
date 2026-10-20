@@ -1,0 +1,17 @@
+{"label":"base.U0.p1","arm":"U0","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"12800","vram_load":22550,"vram_max":22566,"extra":""}
+{"label":"base.U1.p1","arm":"U1","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23180,"vram_max":23226,"extra":""}
+{"label":"base.T.p1","arm":"T","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":24120,"extra":""}
+{"label":"base.T.p2","arm":"T","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23856,"extra":""}
+{"label":"base.U1.p2","arm":"U1","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23180,"vram_max":23222,"extra":""}
+{"label":"base.U0.p2","arm":"U0","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"12800","vram_load":22550,"vram_max":22564,"extra":""}
+{"label":"l2pf.A.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23884,"extra":""}
+{"label":"l2pf.B.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23876,"extra":"GGML_CUDA_MMVQ_L2PF=1"}
+{"label":"l2pf.B.p2","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23876,"extra":"GGML_CUDA_MMVQ_L2PF=1"}
+{"label":"l2pf.A.p2","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23876,"extra":""}
+{"label":"occ12.A.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23856,"extra":""}
+{"label":"occ12.B.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23862,"extra":"GGML_CUDA_MMVQ_OCC=12"}
+{"label":"occ12.B.p2","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23856,"extra":"GGML_CUDA_MMVQ_OCC=12"}
+{"label":"occ12.A.p2","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23856,"extra":""}
+{"label":"pipe1.A.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23876,"extra":""}
+{"label":"pipe1.B.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23750,"extra":"GGML_CUDA_MMVQ_PIPE=1"}
+{"label":"pipe1.B.p2","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23750,"extra":"GGML_CUDA_MMVQ_PIPE=1"}

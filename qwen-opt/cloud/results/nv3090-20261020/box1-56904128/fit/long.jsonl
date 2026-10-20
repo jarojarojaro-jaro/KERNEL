@@ -1,0 +1,2 @@
+{"label": "fit.q6km.T.c32k", "n_ctx": 32768, "frac": 1.0, "prompt_tokens": 32041, "prefill_tps": 646.8, "decode_tps": 26.44, "gen": 256, "ms_step": 116.209, "wall_s": 59.3}
+{"label": "fit.q6km.T.c40960", "n_ctx": 40960, "frac": 1.0, "error": "Remote end closed connection without response"}

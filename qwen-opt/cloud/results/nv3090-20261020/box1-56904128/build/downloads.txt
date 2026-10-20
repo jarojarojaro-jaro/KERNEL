@@ -1,0 +1,3 @@
+model 14:24:26
+Qwen3.8-27B-UD-Q6_K.gguf 14:32:09 ok=y
+Qwen3.8-27B-UD-Q6_K_M.gguf 14:32:18 ok=y

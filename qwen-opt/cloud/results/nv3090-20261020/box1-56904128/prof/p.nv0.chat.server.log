@@ -1,0 +1,60 @@
+0.00.363.593 I srv  llama_server: initializing ...
+0.00.363.614 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.364.306 I srv  init_listene: The UI is disabled
+0.00.364.309 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.364.412 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.386.243 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-Q6_K_M.gguf'
+0.07.828.563 I cmn          init: llama threadpool init, n_threads = 64
+0.07.972.453 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-Q6_K_M.gguf'
+0.08.032.203 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 32768, kv_unified = 'false'
+0.38.033.333 I spec common_spec_: context lookup: mode 3, width 16, tail match >= 6, log ''
+0.38.160.941 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+0.38.161.015 I srv  llama_server: model loaded
+0.38.161.024 I srv  llama_server: listening on http://127.0.0.1:18701
+0.39.137.179 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.39.137.461 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+0.40.298.321 I slot print_timing: id  0 | task 0 | prompt eval time =     750.64 ms /    41 tokens (   18.31 ms per token,    54.62 tokens per second)
+0.40.298.325 I slot print_timing: id  0 | task 0 |        eval time =     410.17 ms /    16 tokens (   27.34 ms per token,    36.57 tokens per second)
+0.40.298.326 I slot print_timing: id  0 | task 0 |       total time =    1160.82 ms /    57 tokens
+0.40.298.333 I slot print_timing: id  0 | task 0 |    graphs reused =          2
+0.40.298.338 I slot print_timing: id  0 | task 0 | draft acceptance = 0.73333 (   11 accepted /    15 generated), mean len =  3.75
+0.40.298.343 I spec  print_stats: context lookup: 4 steps, lookup proposed at 0, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 0.015 ms
+0.40.298.409 I slot      release: id  0 | task 0 | stop processing: n_tokens = 56, truncated = 0
+0.40.754.320 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.418 (> 0.100 thold), f_keep = 0.589
+0.40.754.460 I slot launch_slot_: id  0 | task 8 | processing task, is_child = 0
+0.41.337.009 I spec  print_stats: context lookup: 4 steps, lookup proposed at 0, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 0.015 ms
+0.44.414.919 I slot print_timing: id  0 | task 8 | n_gen =    106, tg =  34.12 t/s, tg_3s =  34.44 t/s
+0.47.448.502 I slot print_timing: id  0 | task 8 | n_gen =    220, tg =  35.83 t/s, tg_3s =  37.58 t/s
+0.50.361.968 I slot print_timing: id  0 | task 8 | prompt eval time =     582.66 ms /    79 tokens (    7.38 ms per token,   135.59 tokens per second)
+0.50.361.973 I slot print_timing: id  0 | task 8 |        eval time =    9024.82 ms /   300 tokens (   30.18 ms per token,    33.13 tokens per second)
+0.50.361.974 I slot print_timing: id  0 | task 8 |       total time =    9607.48 ms /   379 tokens
+0.50.361.975 I slot print_timing: id  0 | task 8 |    graphs reused =         94
+0.50.361.981 I slot print_timing: id  0 | task 8 | draft acceptance = 0.51918 (  203 accepted /   391 generated), mean len =  3.11
+0.50.361.983 I spec  print_stats: context lookup: 100 steps, lookup proposed at 4, tails 1 (9/11 tokens accepted), chains 0 (0/0), lost history 0, host 0.173 ms
+0.50.362.041 I slot      release: id  0 | task 8 | stop processing: n_tokens = 378, truncated = 0
+0.50.368.712 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.284 (> 0.100 thold), f_keep = 0.087
+0.50.806.949 I slot launch_slot_: id  0 | task 108 | processing task, is_child = 0
+0.51.410.751 I spec  print_stats: context lookup: 100 steps, lookup proposed at 4, tails 1 (9/11 tokens accepted), chains 0 (0/0), lost history 0, host 0.173 ms
+0.54.468.914 I slot print_timing: id  0 | task 108 | n_gen =    109, tg =  35.32 t/s, tg_3s =  35.64 t/s
+0.57.541.008 I slot print_timing: id  0 | task 108 | n_gen =    190, tg =  30.83 t/s, tg_3s =  26.37 t/s
+1.00.624.313 I slot print_timing: id  0 | task 108 | n_gen =    276, tg =  29.85 t/s, tg_3s =  27.89 t/s
+1.01.460.822 I slot print_timing: id  0 | task 108 | prompt eval time =     603.92 ms /   116 tokens (    5.21 ms per token,   192.08 tokens per second)
+1.01.460.827 I slot print_timing: id  0 | task 108 |        eval time =   10049.91 ms /   300 tokens (   33.61 ms per token,    29.75 tokens per second)
+1.01.460.828 I slot print_timing: id  0 | task 108 |       total time =   10653.83 ms /   416 tokens
+1.01.460.829 I slot print_timing: id  0 | task 108 |    graphs reused =        195
+1.01.460.834 I slot print_timing: id  0 | task 108 | draft acceptance = 0.44394 (  194 accepted /   437 generated), mean len =  2.87
+1.01.460.837 I spec  print_stats: context lookup: 204 steps, lookup proposed at 10, tails 3 (18/33 tokens accepted), chains 0 (0/0), lost history 0, host 0.431 ms
+1.01.460.894 I slot      release: id  0 | task 108 | stop processing: n_tokens = 415, truncated = 0
+1.08.806.275 I srv    operator(): operator(): cleaning up before exit...
+Received second interrupt, terminating immediately.
+/opt/nvidia/nsight-systems/2024.6.2/target-linux-x64/libToolsInjection64.so(+0x574ade)[0x725cb9b21ade]
+/root/bin/nv0/libggml-base.so.0(+0x1d57b)[0x725d14ce857b]
+/root/bin/nv0/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x725d14ce89fc]
+/root/bin/nv0/libggml-base.so.0(+0x3288f)[0x725d14cfd88f]
+/usr/lib/x86_64-linux-gnu/libstdc++.so.6(+0xbb0da)[0x725d15d060da]
+/usr/lib/x86_64-linux-gnu/libstdc++.so.6(_ZSt10unexpectedv+0x0)[0x725d15cf0a55]
+/root/bin/nv0/libllama-server-impl.so(+0x1a863e)[0x725d1607863e]
+/usr/lib/x86_64-linux-gnu/libc.so.6(__cxa_finalize+0xc2)[0x725d15a4f382]
+/root/bin/nv0/libllama-server-impl.so(+0xd9407)[0x725d15fa9407]
+terminate called without an active exception
+Collecting data...

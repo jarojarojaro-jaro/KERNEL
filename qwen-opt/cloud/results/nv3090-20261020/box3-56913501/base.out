@@ -1,0 +1,32 @@
+=== 16:04:35 base.U0.p1: /root/bin/upstream/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf --host 127.0.0.1 --port 18701 --no-webui
+base.U0.p1 chat T=1.0: 33.9 t/s pooled, 29.51 ms/step, 1.00 tok/step
+base.U0.p1 chat T=0.0: 33.9 t/s pooled, 29.47 ms/step, 1.00 tok/step
+base.U0.p1 mvs T=0.0: 33.7 t/s pooled, 29.69 ms/step, 1.00 tok/step
+base.U0.p1 short T=0.0: 33.7 t/s pooled, 29.71 ms/step, 1.00 tok/step
+{"label":"base.U0.p1","arm":"U0","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"12800","vram_load":22550,"vram_max":22566,"extra":""}
+=== 16:13:17 base.U1.p1: /root/bin/upstream/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0
+base.U1.p1 chat T=1.0: 63.0 t/s pooled, 48.24 ms/step, 3.04 tok/step
+base.U1.p1 chat T=0.0: 69.0 t/s pooled, 48.09 ms/step, 3.32 tok/step
+base.U1.p1 mvs T=0.0: 99.6 t/s pooled, 49.59 ms/step, 4.94 tok/step
+base.U1.p1 short T=0.0: 98.4 t/s pooled, 49.73 ms/step, 4.89 tok/step
+{"label": "base.U1.p1", "n_ctx": 32768, "frac": 1.0, "prompt_tokens": 32041, "prefill_tps": 1145.7, "decode_tps": 57.96, "gen": 256, "ms_step": 57.139, "wall_s": 32.7}
+{"label":"base.U1.p1","arm":"U1","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23180,"vram_max":23226,"extra":""}
+=== 16:18:24 base.T.p1: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 /root/bin/topka2/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+base.T.p1 chat T=1.0: 74.2 t/s pooled, 41.59 ms/step, 3.08 tok/step
+base.T.p1 chat T=0.0: 78.9 t/s pooled, 41.56 ms/step, 3.28 tok/step
+base.T.p1 mvs T=0.0: 299.6 t/s pooled, 47.64 ms/step, 14.27 tok/step
+base.T.p1 short T=0.0: 264.3 t/s pooled, 46.31 ms/step, 12.24 tok/step
+{"label": "base.T.p1", "n_ctx": 32768, "frac": 1.0, "prompt_tokens": 32041, "prefill_tps": 1117.4, "decode_tps": 68.39, "gen": 256, "ms_step": 50.389, "wall_s": 32.9}
+{"label":"base.T.p1","arm":"T","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":24120,"extra":""}
+=== 16:23:06 base.T.p2: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 /root/bin/topka2/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+base.T.p2 chat T=1.0: 72.3 t/s pooled, 41.67 ms/step, 3.01 tok/step
+base.T.p2 mvs T=0.0: 301.3 t/s pooled, 47.36 ms/step, 14.27 tok/step
+{"label":"base.T.p2","arm":"T","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23856,"extra":""}
+=== 16:26:15 base.U1.p2: /root/bin/upstream/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0
+base.U1.p2 chat T=1.0: 61.8 t/s pooled, 48.22 ms/step, 2.98 tok/step
+base.U1.p2 mvs T=0.0: 99.3 t/s pooled, 49.68 ms/step, 4.93 tok/step
+{"label":"base.U1.p2","arm":"U1","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23180,"vram_max":23222,"extra":""}
+=== 16:29:27 base.U0.p2: /root/bin/upstream/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf --host 127.0.0.1 --port 18701 --no-webui
+base.U0.p2 chat T=1.0: 33.9 t/s pooled, 29.51 ms/step, 1.00 tok/step
+base.U0.p2 mvs T=0.0: 33.7 t/s pooled, 29.69 ms/step, 1.00 tok/step
+{"label":"base.U0.p2","arm":"U0","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"12800","vram_load":22550,"vram_max":22564,"extra":""}

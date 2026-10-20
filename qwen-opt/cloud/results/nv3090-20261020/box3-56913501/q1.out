@@ -1,0 +1,36 @@
+rc=0 Tue Oct 20 16:42:00 UTC 2026
+=== 16:42:00 l2pf.A.p1: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 /root/bin/nv0/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+l2pf.A.p1 chat T=1.0: 72.8 t/s pooled, 41.60 ms/step, 3.03 tok/step
+l2pf.A.p1 chat T=0.0: 78.0 t/s pooled, 42.26 ms/step, 3.30 tok/step
+l2pf.A.p1 mvs T=0.0: 300.1 t/s pooled, 47.55 ms/step, 14.27 tok/step
+{"label":"l2pf.A.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23884,"extra":""}
+=== 16:45:03 l2pf.B.p1: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 GGML_CUDA_MMVQ_L2PF=1 /root/bin/nv0/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+l2pf.B.p1 chat T=1.0: 71.5 t/s pooled, 42.62 ms/step, 3.05 tok/step
+l2pf.B.p1 chat T=0.0: 75.8 t/s pooled, 43.27 ms/step, 3.28 tok/step
+l2pf.B.p1 mvs T=0.0: 300.2 t/s pooled, 47.53 ms/step, 14.27 tok/step
+{"label":"l2pf.B.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23876,"extra":"GGML_CUDA_MMVQ_L2PF=1"}
+=== 16:48:10 l2pf.B.p2: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 GGML_CUDA_MMVQ_L2PF=1 /root/bin/nv0/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+l2pf.B.p2 chat T=1.0: 72.6 t/s pooled, 42.55 ms/step, 3.09 tok/step
+l2pf.B.p2 mvs T=0.0: 299.1 t/s pooled, 47.72 ms/step, 14.27 tok/step
+{"label":"l2pf.B.p2","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23876,"extra":"GGML_CUDA_MMVQ_L2PF=1"}
+=== 16:50:40 l2pf.A.p2: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 /root/bin/nv0/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+l2pf.A.p2 chat T=1.0: 74.4 t/s pooled, 41.52 ms/step, 3.09 tok/step
+l2pf.A.p2 mvs T=0.0: 299.9 t/s pooled, 47.59 ms/step, 14.27 tok/step
+{"label":"l2pf.A.p2","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23876,"extra":""}
+ABBA_MD5 l2pf: 16/34 identical DIFF: [('chat', 'en-chat', 0.0, 1), ('chat', 'en-chat', 1.0, 1), ('chat', 'en-chat', 1.0, 2), ('chat', 'en-code', 0.0, 1), ('chat', 'en-code', 1.0, 1), ('chat', 'en-code', 1.0, 2)]
+=== 16:53:08 occ12.A.p1: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 /root/bin/occ/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+occ12.A.p1 chat T=1.0: 73.4 t/s pooled, 41.52 ms/step, 3.05 tok/step
+occ12.A.p1 chat T=0.0: 77.9 t/s pooled, 42.14 ms/step, 3.28 tok/step
+occ12.A.p1 mvs T=0.0: 300.8 t/s pooled, 47.44 ms/step, 14.27 tok/step
+{"label":"occ12.A.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23856,"extra":""}
+=== 16:56:10 occ12.B.p1: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 GGML_CUDA_MMVQ_OCC=12 /root/bin/occ/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+occ12.B.p1 chat T=1.0: 62.6 t/s pooled, 48.69 ms/step, 3.05 tok/step
+occ12.B.p1 chat T=0.0: 66.2 t/s pooled, 49.54 ms/step, 3.28 tok/step
+occ12.B.p1 mvs T=0.0: 296.9 t/s pooled, 48.07 ms/step, 14.27 tok/step
+{"label":"occ12.B.p1","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23862,"extra":"GGML_CUDA_MMVQ_OCC=12"}
+=== 16:59:31 occ12.B.p2: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 GGML_CUDA_MMVQ_OCC=12 /root/bin/occ/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+occ12.B.p2 chat T=1.0: 63.2 t/s pooled, 48.84 ms/step, 3.09 tok/step
+occ12.B.p2 mvs T=0.0: 296.9 t/s pooled, 48.08 ms/step, 14.27 tok/step
+{"label":"occ12.B.p2","arm":"N","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23856,"extra":"GGML_CUDA_MMVQ_OCC=12"}
+=== 17:02:12 occ12.A.p2: env LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_REASONING_CONTROL=0 /root/bin/occ/llama-server -m /root/models/Qwen3.8-27B-UD-Q6_K_M.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 32768 -np 1 --jinja --cache-ram 16384 --reasoning-effort low --host 127.0.0.1 --port 18701 --no-webui --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab /root/cloud/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+occ12.A.p2 chat T=1.0: 74.4 t/s pooled, 41.48 ms/step, 3.09 tok/step

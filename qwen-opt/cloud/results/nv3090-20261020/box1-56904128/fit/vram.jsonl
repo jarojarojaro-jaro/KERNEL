@@ -1,0 +1,2 @@
+{"label":"fit.q6km.T.c32k","arm":"T","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"32768","n_ctx":"32768","vram_load":23706,"vram_max":23996,"extra":""}
+{"label":"fit.q6km.T.c40960","arm":"T","model":"Qwen3.8-27B-UD-Q6_K_M.gguf","ctx":"40960","n_ctx":"40960","vram_load":23940,"vram_max":24122,"extra":""}
