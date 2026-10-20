@@ -14,7 +14,8 @@
 	import { fmtGB } from '$lib/format';
 	import { type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
-	import { HERO_CARD, HERO_MODEL, HERO_RUN, HERO_V, Q8 } from './data';
+	import { MODEL_INFO } from '$lib/data/measurements';
+	import { Q8, SCAN_CARD, SCAN_RUN, SCAN_USED } from './data';
 	import SceneHead from './SceneHead.svelte';
 	import ModelMark from '$lib/ModelMark.svelte';
 
@@ -26,9 +27,11 @@
 	const p = $derived(tl.p);
 	const stage = $derived(p >= 0.72 ? 4 : p >= 0.4 ? 3 : p >= 0.2 ? 2 : p > 0 ? 1 : 0);
 
-	const vram = HERO_CARD.vramGB;
-	const file = HERO_RUN.file!;
-	const used = HERO_V.a2.vram!;
+	/** The same card the scan scene read (RX 7900 XTX) and what our engine measured on it. */
+	const vram = SCAN_CARD.vramGB;
+	const file = SCAN_RUN.file!;
+	const used = SCAN_USED;
+	const modelName = MODEL_INFO[SCAN_RUN.model].name;
 	const q8 = Q8.sizeGB;
 	/** Memory always in decimal GB, one decimal (src/lib/format.ts). */
 	const gb = (v: number, unit: string | undefined = undefined) => fmtGB(v, unit, lang).text;
@@ -54,13 +57,13 @@
 			</div>
 			<div class="stage">
 				<div class="caprow">
-					<p class="cap" aria-hidden="true"><span>{HERO_CARD.name}</span><span>{vram}&nbsp;GB {c.vram}</span></p>
+					<p class="cap" aria-hidden="true"><span>{SCAN_CARD.name}</span><span>{vram}&nbsp;GB {c.vram}</span></p>
 					<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 				</div>
 				<div class="fitfield">
 					<!-- Q8_0 ghost: the file alone is wider than the card's memory (hatched = does not fit) -->
 					<div class="ghost" class:in={stage >= 3} aria-hidden="true">
-						<span class="gname"><ModelMark model={HERO_RUN.model} size="0.8em" /> <span class="gm">{HERO_MODEL}</span> <b>Q8_0</b> · {gb(q8)}</span>
+						<span class="gname"><ModelMark model={SCAN_RUN.model} size="0.8em" /> <span class="gm">{modelName}</span> <b>Q8_0</b> · {gb(q8)}</span>
 						<!-- the part past the card's 24 GB: outlined in danger red -->
 						<span class="over" aria-hidden="true"></span>
 						<span class="stamp" class:in={stage >= 4}>{c.nofit}</span>
@@ -72,7 +75,7 @@
 					</ul>
 					<div class="tray" class:hit={stage >= 3}>
 						<div class="block" class:in={stage >= 1}>
-							<span class="bname"><ModelMark model={HERO_RUN.model} size="0.7em" /> {HERO_MODEL} <span class="q">{HERO_RUN.quant}</span></span>
+							<span class="bname"><ModelMark model={SCAN_RUN.model} size="0.7em" /> {modelName} <span class="q">{SCAN_RUN.quant}</span></span>
 							<span class="bsize">{gb(file.v, file.unit)} · {c.file}</span>
 						</div>
 						<div class="extra" class:in={stage >= 2}></div>
@@ -83,7 +86,7 @@
 					</div>
 				</div>
 				<p class="sr-only">
-					{HERO_CARD.name}: {vram} GB VRAM. {HERO_MODEL} {HERO_RUN.quant}: {c.file} {gb(file.v, file.unit)}, {c.used} {gb(used.v, used.unit)} — {c.fits}.
+					{SCAN_CARD.name}: {vram} GB VRAM. {modelName} {SCAN_RUN.quant}: {c.file} {gb(file.v, file.unit)}, {c.used} {gb(used.v, used.unit)} — {c.fits}.
 					{c.ghost}: {gb(q8)} — {c.nofit}.
 				</p>
 			</div>

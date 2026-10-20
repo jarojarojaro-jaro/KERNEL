@@ -27,6 +27,12 @@ export const HERO_V = {
 /** The scan scene reads our lab card: Sapphire PULSE RX 7900 XTX (board spec + registry entry). */
 export const SCAN_CARD = must(findCard(XTX_BOARD.card), XTX_BOARD.card);
 export const SCAN_BOARD = XTX_BOARD;
+/** The run on that card the fit scene shows: its pick (Qwen3.8-27B UD-Q4_K_XL) and what our engine used. */
+export const SCAN_RUN = must(
+	SCAN_CARD.runs.find((r) => r.model === SCAN_CARD.pick.model),
+	`${XTX_BOARD.card} pick`
+);
+export const SCAN_USED = must(variantOf(SCAN_RUN, SCAN_RUN.ours)?.vram, `${XTX_BOARD.card} vram`);
 export const HERO_MODEL = MODEL_INFO[HERO_RUN.model].name;
 export const HERO_GAIN = must(HERO_RUN.gain, 'gain');
 export const HERO_KERNELS = must(HERO_RUN.kernels, 'kernels');

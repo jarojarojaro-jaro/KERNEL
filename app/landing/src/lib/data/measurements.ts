@@ -682,7 +682,7 @@ export const CARDS: CardView[] = [
 				variants: [
 					{ key: 'a0', decode: n(M.qwenXtxDefault), msStep: { v: 27.89, src: `${FB}/fb-qwen-U0-p1.log:2` }, pp4096: { v: 1055.5, src: `${FB}/fb-lb-qwen.log:14` }, tg128: { v: 35.3, src: `${FB}/fb-lb-qwen.log:14` } },
 					{ key: 'a1', decode: n(M.qwenXtxFlags), msStep: { v: 53.72, src: `${FB}/fb-qwen-U1-p1.log:2` } },
-					{ key: 'ours', decode: n(M.qwenXtxOurs), msStep: { v: 27.67, src: `${FB}/fb-qwen-T-p1.log:2` }, pp4096: { v: 1125.5, src: `${FB}/fb-lb-qwen.log:11` }, tg128: { v: 43.4, src: `${FB}/fb-lb-qwen.log:11` } }
+					{ key: 'ours', decode: n(M.qwenXtxOurs), msStep: { v: 27.67, src: `${FB}/fb-qwen-T-p1.log:2` }, pp4096: { v: 1125.5, src: `${FB}/fb-lb-qwen.log:11` }, tg128: { v: 43.4, src: `${FB}/fb-lb-qwen.log:11` }, vram: mib(23359, `${FB}/fb-qwen-T-p1.log:1 (amd-smi USED_VRAM after load, n_ctx 204800)`) }
 				],
 				metric: SPEC_SWEEP_XTX,
 				sameHarness: true,
