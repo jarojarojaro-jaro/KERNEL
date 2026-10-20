@@ -561,6 +561,164 @@ const FINAL_3060_SALUKI: Final = {
 	gain: { flags: null, engine: null, total: { v: 38.2 / 24.0, src: `${R27}:168 (38.2 / 24.0)` }, text: ['—', '—', '×1.59'], src: `${R27}:33,168` }
 };
 
+/*
+ * RTX 4060 Ti 16 GB (report 29, 2026-10-20): the nv-final harness of report 27 on a rented card
+ * (power limit 100 W set by the host, PCIe gen3 x8), U0 / U1 / T in ABBA order, mean of the two
+ * passes; the same GGUF files as the 5060 Ti. Not in the 10-16 sheet, so the card is written out
+ * here instead of going through nvidia().
+ */
+const R29 = 'KERNEL/product/research/29-4060ti.md';
+const NV4060 = 'KERNEL/qwen-opt/cloud/results/nv-final-4060ti-20261020/logs';
+const s4060 = (log: string, line: number) => `${NV4060}/${log}; ${R29}:${line}`;
+const LB4060 = (m: string, line: number) => `${NV4060}/lb.${m}.U.r1,r4.jsonl / lb.${m}.T.r2,r3.jsonl; ${R29}:${line}`;
+const COND_4060: L = {
+	pl: 'najlepsze flagi i nasz silnik: kontekst 32k (-c 32768), KV q8_0, -fit off, -fa on; nasz dodatkowo GPU verify; A0: samo -m (domyślny -fit, KV f16); karta z limitem mocy 100 W, PCIe gen3 x8',
+	en: 'best flags and our engine: 32k context (-c 32768), KV q8_0, -fit off, -fa on; ours adds GPU verify; A0: plain -m (default -fit, KV f16); card power-limited to 100 W, PCIe gen3 x8'
+};
+const RTX_4060TI: CardView = {
+	id: 'rtx-4060-ti-16',
+	name: 'GeForce RTX 4060 Ti 16 GB',
+	short: '4060 Ti',
+	vendor: 'nvidia',
+	vramGB: 16,
+	arch: 'Ada sm_89',
+	bwGBs: { v: 288, src: `${R29}:25; app/landing/src/lib/data/gpus.json` },
+	powerW: { v: 100, src: `${R29}:25-26` },
+	pcie: 'gen3 x8',
+	hwLine: {
+		pl: 'limit mocy 100 W (host; domyślnie 165 W), PCIe gen3 x8, GDDR6 288 GB/s, CPU hosta Ryzen 9 3950X, sterownik 595.84',
+		en: 'power limit 100 W (host; default 165 W), PCIe gen3 x8, GDDR6 288 GB/s, host CPU Ryzen 9 3950X, driver 595.84'
+	},
+	hwSrc: `${R29}:25-28`,
+	pick: { model: 'qwen38', why: { pl: 'Qwen w Q3 mieści się w 16 GB z kontekstem 32k i jest tu 1,9× szybszy niż typowa aplikacja.', en: 'Qwen at Q3 fits in 16 GB with a 32k context and is 1.9× faster here than the typical app.' } },
+	runs: [
+		{
+			model: 'qwen38',
+			title: 'Qwen3.8-27B UD-Q3_K_XL (13.15 GB)',
+			quant: 'UD-Q3_K_XL',
+			file: { v: 13.15, src: `${R29}:52`, unit: 'GB' },
+			src: s4060('spec_sweep.jsonl', 56),
+			before: 'a0',
+			flags: 'a1',
+			ours: 'a2',
+			variants: [
+				{
+					key: 'a0',
+					decode: { v: 18.6, src: s4060('spec_sweep.jsonl (qwen.U0.p1/p2)', 56) },
+					msStep: { v: 53.67, src: s4060('spec_sweep.jsonl', 57) },
+					tokStep: { v: 1, src: s4060('spec_sweep.jsonl', 58) },
+					pp512: { v: 793.7, src: LB4060('qwen', 66) },
+					pp4096: { v: 788.4, src: LB4060('qwen', 67) },
+					tg128: { v: 18.8, src: LB4060('qwen', 68) },
+					vram: mib(14354, s4060('vram.jsonl', 70))
+				},
+				{
+					key: 'a1',
+					decode: { v: 30.6, src: s4060('spec_sweep.jsonl (qwen.U1.p1/p2)', 56) },
+					msStep: { v: 97.74, src: s4060('spec_sweep.jsonl', 57) },
+					tokStep: { v: 2.99, src: s4060('spec_sweep.jsonl', 58) },
+					vram: mib(14570, s4060('vram.jsonl', 70))
+				},
+				{
+					key: 'a2',
+					decode: { v: 35.4, src: s4060('spec_sweep.jsonl (qwen.T.p1/p2)', 56) },
+					msStep: { v: 81.56, src: s4060('spec_sweep.jsonl', 57) },
+					tokStep: { v: 2.88, src: s4060('spec_sweep.jsonl', 58) },
+					pp512: { v: 762.7, src: LB4060('qwen', 66) },
+					pp4096: { v: 760.7, src: LB4060('qwen', 67) },
+					tg128: { v: 18.7, src: LB4060('qwen', 68) },
+					vram: mib(14848, s4060('vram.jsonl', 70))
+				}
+			],
+			gain: {
+				flags: { v: 30.6 / 18.6, src: `${R29}:56 (30.6 / 18.6)` },
+				engine: { v: 35.4 / 30.6, src: `${R29}:56 (35.4 / 30.6)` },
+				total: { v: 35.4 / 18.6, src: `${R29}:56 (35.4 / 18.6)` },
+				text: ['×1.65 (MTP)', '×1.16 (słownik draftu 64k, lookup W16, GPU verify)', '×1.90'],
+				src: `${R29}:9-11,56`
+			},
+			gainText: {
+				pl: ['×1,65 (MTP)', '×1,16 (słownik draftu 64k, lookup W16, GPU verify)', '×1,90'],
+				en: ['×1.65 (MTP)', '×1.16 (64k draft vocabulary, lookup W16, GPU verify)', '×1.90']
+			},
+			longCtx: {
+				depths: [0, 16384],
+				up: [
+					{ v: 18.8, src: LB4060('qwen', 68) },
+					{ v: 16.8, src: `${NV4060}/lbd.qwen.U.r1,r4.jsonl; ${R29}:69` }
+				],
+				ours: [
+					{ v: 18.7, src: LB4060('qwen', 68) },
+					{ v: 16.8, src: `${NV4060}/lbd.qwen.T.r2,r3.jsonl; ${R29}:69` }
+				],
+				kv: 'KV q8_0'
+			},
+			metric: SPEC_SWEEP_ABBA,
+			sameHarness: true,
+			conditions: {
+				pl: `${COND_4060.pl}; MTP n=4, nasz: słownik draftu 64k, głowice IQ4_XS, lookup W16`,
+				en: `${COND_4060.en}; MTP n=4, ours: 64k draft vocabulary, IQ4_XS heads, lookup W16`
+			},
+			conditionsSrc: `${R29}:37-47; ${NV4060}/vram.jsonl`,
+			note: {
+				pl: 'Ten sam skrypt, inne zadania: edycja kodu (T=0) 18,5 → 50,0 → 170,9 t/s; generowanie po 16k kontekstu (T=0) 17,6 → 33,3 → 40,1 t/s. Uczciwie: zysk nad najlepszymi flagami to krótszy krok (81,6 wobec 97,7 ms), nie więcej tokenów na krok; prefill jest u nas o 3,5–3,9% wolniejszy, a bez spekulacji (llama-bench tg128) tempo jest takie samo.',
+				en: 'The same script, other tasks: code edits (T=0) 18.5 → 50.0 → 170.9 t/s; generation after a 16k context (T=0) 17.6 → 33.3 → 40.1 t/s. Honestly: the gain over the best flags is a shorter step (81.6 vs 97.7 ms), not more tokens per step; our prefill is 3.5–3.9% slower, and without speculation (llama-bench tg128) the pace is the same.'
+			}
+		},
+		{
+			model: 'lfm25',
+			title: 'LFM2.5-24B-A2B QAD-Q4_0 (13.58 GB)',
+			quant: 'QAD-Q4_0',
+			file: { v: 13.58, src: `${R29}:73`, unit: 'GB' },
+			src: s4060('spec_sweep.jsonl', 77),
+			before: 'a0',
+			flags: 'a1',
+			ours: 'a2',
+			variants: [
+				{
+					key: 'a0',
+					decode: { v: 114.4, src: s4060('spec_sweep.jsonl (lfm.U0.p1/p2)', 77) },
+					msStep: { v: 8.74, src: s4060('spec_sweep.jsonl', 78) },
+					pp512: { v: 3286.3, src: LB4060('lfm', 79) },
+					pp4096: { v: 3272.8, src: LB4060('lfm', 80) },
+					tg128: { v: 143.0, src: LB4060('lfm', 81) },
+					vram: mib(14944, s4060('vram.jsonl', 82))
+				},
+				{
+					key: 'a1',
+					decode: { v: 113.3, src: s4060('spec_sweep.jsonl (lfm.U1.p1/p2)', 77) },
+					msStep: { v: 8.82, src: s4060('spec_sweep.jsonl', 78) },
+					vram: mib(13914, s4060('vram.jsonl', 82))
+				},
+				{
+					key: 'a2',
+					decode: { v: 149.4, src: s4060('spec_sweep.jsonl (lfm.T.p1/p2)', 77) },
+					msStep: { v: 6.69, src: s4060('spec_sweep.jsonl', 78) },
+					pp512: { v: 3278.4, src: LB4060('lfm', 79) },
+					pp4096: { v: 3267.8, src: LB4060('lfm', 80) },
+					tg128: { v: 155.1, src: LB4060('lfm', 81) },
+					vram: mib(13924, s4060('vram.jsonl', 82))
+				}
+			],
+			gain: {
+				flags: { v: 113.3 / 114.4, src: `${R29}:77 (113.3 / 114.4)` },
+				engine: { v: 149.4 / 113.3, src: `${R29}:77 (149.4 / 113.3)` },
+				total: { v: 149.4 / 114.4, src: `${R29}:77 (149.4 / 114.4)` },
+				text: ['×0.99', '×1.32 (sampler + kernele)', '×1.31'],
+				src: `${R29}:14-15,77`
+			},
+			gainText: {
+				pl: ['×0,99', '×1,32 (sampler + kernele)', '×1,31'],
+				en: ['×0.99', '×1.32 (sampler + kernels)', '×1.31']
+			},
+			metric: SPEC_SWEEP_ABBA,
+			sameHarness: true,
+			conditions: { pl: `${COND_4060.pl}; bez spekulacji, -b 2048 -ub 2048`, en: `${COND_4060.en}; no speculation, -b 2048 -ub 2048` },
+			conditionsSrc: `${R29}:37-47; ${NV4060}/vram.jsonl`
+		}
+	]
+};
+
 const XTX_HW = 'KERNEL/qwen-opt/NOTES.md:110';
 /** FinalBench same-script XTX logs (lab server, 2026-10-19). */
 const FB = '~/qwen-opt/queue/logs';
@@ -658,6 +816,7 @@ export const CARDS: CardView[] = [
 			}
 		}
 	),
+	RTX_4060TI,
 	{
 		id: 'rx-7900-xtx',
 		name: 'Radeon RX 7900 XTX',

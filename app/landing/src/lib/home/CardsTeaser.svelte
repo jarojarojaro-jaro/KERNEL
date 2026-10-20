@@ -156,13 +156,15 @@
 		gap: var(--sp-5);
 	}
 
-	/* the lineup: four across on wide screens, two on tablets, a snap carousel on phones */
+	/* the lineup: every measured card in one row on wide screens, three / two across on tablets, a
+	   snap carousel on phones */
 	.grid {
+		--n: 5;
 		list-style: none;
 		margin: 0;
 		padding: 0;
 		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
+		grid-template-columns: repeat(var(--n), minmax(0, 1fr));
 		gap: var(--sp-4);
 		perspective: 1200px;
 	}
@@ -336,21 +338,28 @@
 		}
 	}
 
+	/* name and speed-up scale with the tile (five across on desktop), and wrap if they still must;
+	   the query container is this row, never the subgridded tile */
 	.id {
+		container-type: inline-size;
 		display: flex;
+		flex-wrap: wrap;
 		align-items: baseline;
 		justify-content: space-between;
-		gap: var(--sp-3);
+		gap: 0.2rem var(--sp-3);
 		min-width: 0;
 	}
 	.short {
 		margin: 0;
 		font-family: var(--font-display);
-		font-size: clamp(1.6rem, 1.1rem + 1vw, 2.2rem);
+		font-size: clamp(1.3rem, 12cqi, 2.2rem);
 		font-weight: 850;
 		line-height: 0.95;
 		letter-spacing: -0.035em;
 		white-space: nowrap;
+	}
+	.x :global(.rx--md) {
+		--rx-fs: clamp(1.3rem, 12cqi, 2.6rem);
 	}
 	.stretch {
 		color: var(--text-hi);
@@ -489,9 +498,14 @@
 		color: var(--text-mute);
 	}
 
-	@media (max-width: 1100px) {
+	@media (max-width: 1279px) {
 		.grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
+			--n: 3;
+		}
+	}
+	@media (max-width: 900px) {
+		.grid {
+			--n: 2;
 		}
 	}
 	@media (max-width: 720px) {
