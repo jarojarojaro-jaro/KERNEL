@@ -811,96 +811,30 @@ export function words500(v: Variant | undefined, lang: 'pl' | 'en'): { v: number
 }
 
 /**
- * Close-ups of the engine's layers (home page, "Jak to możliwe"): for each layer one before/after
- * pair measured with that layer switched off and on, everything else equal. Layer 02 (fewer GPU
- * stalls) reads the nsys step profile from the cards registry (`run.kernels`). `total`: the whole
- * engine end to end, upstream vs ours on the same card (Qwen on the 3090 comes from the cards
- * registry, HERO_RUN).
+ * The home page's engine story: Qwen3.8-27B UD-Q4_K_XL on the RX 7900 XTX, from upstream llama.cpp
+ * with default settings to our engine today. Every milestone is the same script: spec_sweep chat,
+ * 6 prompts × 3 seeds, T=1, fresh server, median. The start, upstream's best and today are the
+ * 2026-10-19 ABBA runs (M.qwenXtx*, first pass, as in the hero); the two milestones between are our
+ * engine's earlier states measured the same way. `code`: the same runs' code-edit workload (mvs,
+ * T=0) at the start and today.
  */
-const R3090 = 'KERNEL/product/research/09-chmura-3090.md';
-const R5060 = 'KERNEL/product/research/09-chmura-5060ti.md';
-const R26 = 'KERNEL/product/research/26-kolejka-gpu-wieczor.md';
-const NOTES = 'KERNEL/qwen-opt/NOTES.md';
-export const ENGINE_LAYERS = {
-	/** 01 kernels: llama-bench tg128 (no sampler, GPU path only), upstream e60eff95f vs our fork before any LFM-specific work, both KV q4_0. */
-	kernels: {
-		card: 'rx-7900-xtx',
-		model: 'lfm25' as ModelKey,
-		tg128: [
-			{ v: 169.3, src: `${NOTES}:339` },
-			{ v: 198.3, src: `${NOTES}:339` }
-		] as [Num, Num]
-	},
-	/** 03 sampler: the same fork in the server with its 6 sampler switches off vs on (LFM Q4_K_M). */
-	sampler: {
-		card: 'rtx-5060-ti-16',
-		model: 'lfm25' as ModelKey,
-		decode: [
-			{ v: 166.6, src: `${R5060}:112` },
-			{ v: 208.4, src: `${R5060}:112` }
-		] as [Num, Num],
-		/** Why: upstream fully sorts the 65k candidates on the CPU (repeat_penalty in the LFM GGUF). */
-		whySrc: `${R5060}:86`
-	},
-	/**
-	 * 05 PM4 command replay (WA=2 + guard, deployed 2026-10-19): each captured graph replayed as one
-	 * PM4 command buffer instead of one submission per kernel. A/B, bit-identical greedy md5.
-	 */
-	pm4: {
-		card: 'rx-7900-xtx',
-		model: 'lfm25' as ModelKey,
-		tg128: [
-			{ v: 266.4, src: `${R26}:9` },
-			{ v: 295.7, src: `${R26}:9` }
-		] as [Num, Num],
-		/** Qwen3.8-27B chat with MTP (spec_sweep T=1). */
-		qwen: [
-			{ v: 111.0, src: `${R26}:9` },
-			{ v: 115.3, src: `${R26}:9` }
-		] as [Num, Num],
-		/** Soak: requests served with the replay on, and faults among them. */
-		requests: { v: 1205, src: `${R26}:9` },
-		faults: { v: 0, src: `${R26}:9` }
-	},
-	/** 04 speculation: A2c (fork, A1 flags) vs A2 (+ 64k draft vocabulary, MTP head in IQ4_XS), Qwen MTP n=4. */
-	draft: {
-		card: 'rtx-3090',
-		model: 'qwen38' as ModelKey,
-		msStep: [
-			{ v: 44.4, src: `${R3090}:48` },
-			{ v: 38.4, src: `${R3090}:49` }
-		] as [Num, Num],
-		decode: [
-			{ v: 69.5, src: `${R3090}:48` },
-			{ v: 78.0, src: `${R3090}:49` }
-		] as [Num, Num],
-		tokStep: [
-			{ v: 3.38, src: `${R3090}:48` },
-			{ v: 3.31, src: `${R3090}:49` }
-		] as [Num, Num],
-		flagsSrc: `${R3090}:28-29`
-	},
-	/** 06 card profile: the Ampere profile (MMVQ_N1_ROWS=2, GATE_UP_Q8 off), ABBA fork vs new defaults. */
-	profile: {
-		card: 'rtx-3090',
-		model: 'lfm25' as ModelKey,
-		tg128: [
-			{ v: 256.8, src: `${R3090}:123` },
-			{ v: 284.5, src: `${R3090}:123` }
-		] as [Num, Num],
-		decode: [
-			{ v: 250.9, src: `${R3090}:125` },
-			{ v: 263.9, src: `${R3090}:125` }
-		] as [Num, Num],
-		flagsSrc: `${R3090}:30`
-	},
-	/** The whole engine on LFM2.5 / RX 7900 XTX, llama-bench tg128: upstream (KV q4_0) vs production (the slower KV q8_0). */
-	total: {
-		card: 'rx-7900-xtx',
-		model: 'lfm25' as ModelKey,
-		tg128: [
-			{ v: 169.3, src: `${NOTES}:339` },
-			{ v: 289.7, src: 'KERNEL/qwen-opt/STATUS-NEXT.md:12' }
-		] as [Num, Num]
-	}
+const QLOGS = '~/qwen-opt/queue/logs';
+const step = (m: Measurement, key: string) => ({ key, v: m.value, src: m.source });
+export const QWEN_XTX_JOURNEY = {
+	card: 'rx-7900-xtx',
+	model: 'qwen38' as ModelKey,
+	steps: [
+		step(M.qwenXtxDefault, 'default'),
+		step(M.qwenXtxFlags, 'flags'),
+		/** our fork, first ROCm state (2026-10-12): 41.8 ms per step */
+		{ key: 'fork', v: 74.5, src: 'KERNEL/qwen-opt/NOTES.md:183' },
+		/** production amd-opt (2026-10-15): 27.74 ms per step */
+		{ key: 'prod', v: 109.0, src: 'KERNEL/qwen-opt/STATUS-NEXT.md:10' },
+		/** today: stable PM4 command replay + verification on the GPU, 27.67 ms per step */
+		step(M.qwenXtxOurs, 'today')
+	] as (Num & { key: string })[],
+	code: [
+		{ v: 35.5, src: `${QLOGS}/fb-qwen-U0-p1.log:3` },
+		{ v: 419.7, src: `${QLOGS}/fb-qwen-T-p1.log:3` }
+	] as [Num, Num]
 } as const;

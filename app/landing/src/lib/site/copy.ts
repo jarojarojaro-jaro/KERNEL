@@ -131,66 +131,19 @@ const raw = {
 			summary: '{card}, {model}: {cold} {a} tokenu na sekundę, {hot} {b} tokenu na sekundę.'
 		},
 		engine: {
-			title: 'Przyspieszamy cały stos.|Każdą warstwę mierzymy.',
-			model: 'model',
-			card: 'karta graficzna',
-			layers: [
-				['Własne kernele GPU', 'matmul · atencja · MoE'],
-				['Mniej przestojów GPU', 'mniej uruchomień · fuzje'],
-				['Szybszy sampler i host', 'krótsza droga CPU'],
-				['Sprytniejsza spekulacja', 'MTP · DFlash'],
-				['Pamięć i sterowniki', 'kolejka poleceń PM4'],
-				['Profil pod kartę', 'zmierzony dla GPU']
-			] as [string, string][],
-			pick: 'Warstwy silnika',
-			zoom: 'z bliska',
-			zooms: [
-				{
-					metric: 'tokenów na sekundę · sam GPU, bez samplera',
-					lanes: ['upstream', 'nasz silnik'],
-					lane: 'kreska = gotowy token · ten sam odcinek czasu',
-					note: 'llama-bench tg128, więc liczy się tylko praca GPU. Upstream wobec naszych kerneli, jeszcze przed pracą nad samym LFM; ten sam KV q4_0.',
-					extra: []
-				},
-				{
-					metric: 'uruchomień kerneli na token',
-					lanes: ['upstream', 'nasz silnik'],
-					lane: 'kreska = kernel, przerwa = GPU czeka · ułamek jednego tokenu',
-					note: 'Profil kroku (nsys): łączymy kernele, więc GPU rzadziej czeka na kolejne polecenie.',
-					extra: ['przerwy', 'praca GPU']
-				},
-				{
-					metric: 'tokenów na sekundę · serwer',
-					lanes: ['sampler upstream', 'nasz sampler'],
-					lane: 'kreska = gotowy token · ten sam odcinek czasu',
-					note: 'Ten sam silnik z sześcioma przełącznikami samplera wyłączonymi i włączonymi. Upstream przy każdym tokenie sortuje na CPU wszystkich 65 tys. kandydatów.',
-					extra: []
-				},
-				{
-					metric: 'ms na krok spekulacji',
-					lanes: ['pełny draft', 'lżejszy draft'],
-					lane: 'blok = krok: draft i weryfikacja · ten sam odcinek czasu',
-					note: 'Słownik draftu 64k i głowica MTP w IQ4_XS: krok jest krótszy, a tokenów przyjętych na krok prawie tyle samo.',
-					extra: ['tokenów na sekundę', 'tokenów na krok']
-				},
-				{
-					metric: 'tokenów na sekundę · sam GPU, bez samplera',
-					lanes: ['kernel po kernelu', 'jedna taśma PM4'],
-					lane: 'pakiet = zgłoszenie kernela do karty · ten sam odcinek czasu',
-					note: 'Zamiast zgłaszać karcie każdy kernel osobno, nagrywamy cały krok jako jedną taśmę poleceń PM4 i odtwarzamy ją od razu. Wynik bitowo identyczny; w teście obciążeniowym {req} zapytań i {faults} błędów.',
-					extra: ['Qwen3.8-27B, czat z MTP']
-				},
-				{
-					metric: 'tokenów na sekundę · sam GPU (tg128)',
-					lanes: ['bez profilu', 'profil Ampere'],
-					lane: 'kreska = gotowy token · ten sam odcinek czasu',
-					note: 'Ustawienia zmierzone dla tej architektury (dwa wiersze na blok w MMVQ, bez fuzji gate/up), teraz domyślne na kartach Ampere.',
-					extra: ['serwer, czat']
-				}
-			] as { metric: string; lanes: [string, string]; lane: string; note: string; extra: string[] }[],
-			total: 'Cały silnik razem',
-			totalRows: ['llama-bench tg128 · upstream wobec naszego silnika, nasz z wolniejszym KV q8_0', 'czat (spec_sweep) · typowa aplikacja wobec naszego silnika'],
-			totalNote: 'Każda warstwa powyżej to osobny pomiar przed i po. Zyski warstw nie sumują się wprost, dlatego liczy się ten pomiar końcowy.'
+			title: 'Ten sam model, ta sama karta.|Ponad trzy razy szybciej.',
+			meta: 'czat · tokeny na sekundę · każdy krok tym samym skryptem pomiaru',
+			vs: 'wobec typowej aplikacji',
+			did: 'co zrobiliśmy',
+			steps: [
+				{ name: 'Typowa aplikacja', sub: 'upstream llama.cpp, ustawienia domyślne', did: [] },
+				{ name: 'Najlepsze flagi + MTP', sub: 'upstream llama.cpp z własną spekulacją', did: [] },
+				{ name: 'Nasz silnik, 12.10', sub: 'pierwsza wersja', did: ['Własne kernele pod RDNA3'] },
+				{ name: 'Nasz silnik, 15.10', sub: 'wydanie produkcyjne', did: ['Mniej uruchomień i fuzje', 'Szybszy sampler i host', 'Sprytniejsza spekulacja MTP'] },
+				{ name: 'Nasz silnik dziś', sub: '19.10', did: ['Stabilny replay poleceń PM4', 'Weryfikacja na GPU'] }
+			] as { name: string; sub: string; did: string[] }[],
+			code: 'Edycja kodu',
+			codeNote: 'ta sama karta i model, zadanie edycji plików: typowa aplikacja wobec naszego silnika dziś'
 		},
 		quality: {
 			title: 'Ten sam model, ta sama jakość — zmierzone.',
@@ -400,66 +353,19 @@ const raw = {
 			summary: '{card}, {model}: {cold} {a} tokens per second, {hot} {b} tokens per second.'
 		},
 		engine: {
-			title: 'We speed up the whole stack.|We measure every layer.',
-			model: 'model',
-			card: 'graphics card',
-			layers: [
-				['Our own GPU kernels', 'matmul · attention · MoE'],
-				['Less GPU idle time', 'fewer launches · fusions'],
-				['Faster sampler and host', 'a shorter CPU path'],
-				['Smarter speculation', 'MTP · DFlash'],
-				['Memory and drivers', 'PM4 command queue'],
-				['A profile for your card', 'measured per GPU']
-			] as [string, string][],
-			pick: 'Engine layers',
-			zoom: 'up close',
-			zooms: [
-				{
-					metric: 'tokens per second · GPU only, no sampler',
-					lanes: ['upstream', 'our engine'],
-					lane: 'mark = a finished token · the same stretch of time',
-					note: 'llama-bench tg128, so only the GPU work counts. Upstream vs our kernels, before any work on LFM itself; the same q4_0 KV.',
-					extra: []
-				},
-				{
-					metric: 'kernel launches per token',
-					lanes: ['upstream', 'our engine'],
-					lane: 'bar = a kernel, gap = the GPU waiting · a fraction of one token',
-					note: 'Step profile (nsys): we merge kernels, so the GPU waits for its next command less often.',
-					extra: ['gaps', 'GPU work']
-				},
-				{
-					metric: 'tokens per second · server',
-					lanes: ['upstream sampler', 'our sampler'],
-					lane: 'mark = a finished token · the same stretch of time',
-					note: 'The same engine with its six sampler switches off and on. For every token, upstream sorts all 65k candidates on the CPU.',
-					extra: []
-				},
-				{
-					metric: 'ms per speculation step',
-					lanes: ['full draft', 'lighter draft'],
-					lane: 'block = a step: draft and verification · the same stretch of time',
-					note: 'A 64k draft vocabulary and the MTP head in IQ4_XS: each step is shorter, and almost as many tokens are accepted per step.',
-					extra: ['tokens per second', 'tokens per step']
-				},
-				{
-					metric: 'tokens per second · GPU only, no sampler',
-					lanes: ['kernel by kernel', 'one PM4 tape'],
-					lane: 'packet = one kernel submitted to the card · the same stretch of time',
-					note: 'Instead of submitting every kernel to the card on its own, we record the whole step as one PM4 command tape and replay it at once. Bit-identical output; {req} requests and {faults} faults in the soak test.',
-					extra: ['Qwen3.8-27B, chat with MTP']
-				},
-				{
-					metric: 'tokens per second · GPU only (tg128)',
-					lanes: ['no profile', 'Ampere profile'],
-					lane: 'mark = a finished token · the same stretch of time',
-					note: 'Settings measured for this architecture (two rows per block in MMVQ, no gate/up fusion), now the default on Ampere cards.',
-					extra: ['server, chat']
-				}
-			] as { metric: string; lanes: [string, string]; lane: string; note: string; extra: string[] }[],
-			total: 'The whole engine',
-			totalRows: ['llama-bench tg128 · upstream vs our engine, ours with the slower q8_0 KV', 'chat (spec_sweep) · typical app vs our engine'],
-			totalNote: 'Each layer above is its own before/after measurement. Layer gains do not simply add up, so this end-to-end measurement is what counts.'
+			title: 'Same model, same card.|More than three times faster.',
+			meta: 'chat · tokens per second · every step measured with the same script',
+			vs: 'vs the typical app',
+			did: 'what we did',
+			steps: [
+				{ name: 'Typical app', sub: 'upstream llama.cpp, default settings', did: [] },
+				{ name: 'Best flags + MTP', sub: 'upstream llama.cpp with its own speculation', did: [] },
+				{ name: 'Our engine, Oct 12', sub: 'first version', did: ['Our own kernels for RDNA3'] },
+				{ name: 'Our engine, Oct 15', sub: 'production release', did: ['Fewer launches and fusions', 'A faster sampler and host', 'Smarter MTP speculation'] },
+				{ name: 'Our engine today', sub: 'Oct 19', did: ['Stable PM4 command replay', 'Verification on the GPU'] }
+			] as { name: string; sub: string; did: string[] }[],
+			code: 'Code editing',
+			codeNote: 'the same card and model, a file-editing task: the typical app vs our engine today'
 		},
 		quality: {
 			title: 'Same model, same quality — measured.',
