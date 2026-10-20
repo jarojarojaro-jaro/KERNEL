@@ -35,3 +35,17 @@ Raport 30: Intel Arc bez wynajmu godzinowego (GigaGPU Arc Pro B60 £129/mies.), 
 3. PAIR2: `p2.jobs` (≤10 min).
 4. Karta 4060 Ti na stronę.
 5. Baza wiedzy: `wiki` zaktualizowana (commit dbea20c, lint 0/0).
+
+## Wyniki rano (2026-10-20, 13:49–14:04 UTC)
+
+Kolejka `~/qwen-opt/queue/morning.jobs`, log `~/qwen-opt/queue/logs/queue.log`. Bez błędów GPU w logu jądra.
+
+| Co | Wynik | Źródło |
+|---|---|---|
+| Instalacja topka-next | `~/llama-topka` = topka-next (`9056cea22`) od 13:45, kopia poprzedniej w `~/llama-topka.7cdc0121b`. `run-topka.sh`: `hostgap_default=1` dla Qwen (`LLAMA_SERVER_YIELD_FAST=2`, `GGML_HIP_PM4_MIN_DISPATCH=16`, `GGML_HIP_PM4_LAZY_EXEC=1`), 0 dla LFM | `~/qwen-opt/run-topka.sh:41,47,60-61` |
+| md5 na zainstalowanej | Qwen plain c4708318, MTP 6f14e814, LFM 894e56e4; przełączniki on == off | `queue/logs/m-md5-qwen.log`, `m-md5-lfm.log` |
+| Edycja kodu mvs T=0, ABBA (coupled=1 w obu ramionach) | A 420.2 → B **433.0 t/s (+3.0%)**, każdy plik szybszy: lazy.py 423.7 → 436.2, ngram-cache.h 416.1 → 433.1, pad.cu 411.1 → 419.5, sampling.h 430.1 → 443.0; md5 tekstu identyczne w obu ramionach | `~/qwen-opt/lookup/ab_summary.py ~/qwen-opt/hostgap/logs-next --prefix hg-mvs` |
+| Czat T=1 (noc) | 113.0 → 114.6 t/s (+1.4%) | wyżej |
+| PAIR2 (24w) | md5 OK; czat T=1 ABBA 115.1 → 115.6 t/s (+0.4%), ms/krok 27.28–27.49 → 27.18–27.35 → **odrzucone** (poniżej progu „wyraźna wygrana albo nic”) | `research/24w-pair2.md`; `ab_summary.py ~/qwen-opt/pair2/logs --prefix p2-` |
+
+Strona nadal pokazuje 114.8 / 419.7 t/s z harnessu bench-final (inny skrypt niż `hg_ab.sh`; liczb nie mieszamy).

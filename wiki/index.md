@@ -83,7 +83,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-20 [[raport-27-3090-final|Raport 27: RTX 3090 i 3060 – finał przed/po (Qwen, Uncensored, Saluki)]]
 - 2026-10-20 [[raport-26-kolejka-gpu|Raport 26: kolejka GPU 2026-10-19 wieczorem – testy odłożone przez pauzę]]
 - 2026-10-20 [[raport-25-buildfarm|Raport 25: zdalny serwer buildów (Vast) i `rbuild`]]
-- 2026-10-20 [[raport-24w-pair2|Raport 24w: PAIR2 (para MMVQ dla mieszanych typów) na topce – zbudowane, niezmierzone]]
+- 2026-10-20 [[raport-24w-pair2|Raport 24w: PAIR2 (para MMVQ dla mieszanych typów) na topce – odrzucone (+0.4%)]]
 - 2026-10-20 [[raport-24v-prefill-fa|Raport 24v: FA D=256 w prefillu Qwena – spille usunięte, zysk za mały]]
 - 2026-10-20 [[raport-24u-norm-quant|Raport 24u: osobny kernel rms_norm × w + quantize q8_1 – stop, zysk ≈ 0]]
 - 2026-10-20 [[raport-24t-entropia-wag|Raport 24t: bezstratna kompresja entropijna wag GGUF (DFloat11/ZipNN) – kill]]

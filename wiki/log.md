@@ -167,6 +167,9 @@ Nowe `raport-*` (36): 20, 21k, 21n, 21o, 22, 23b2, 23d, 23f, 24a–24v, 25, 26, 
 ## [2026-10-20] ingest | Raporty 29, 24w, podsumowanie nocy
 Nowe: [[rtx-4060-ti]], [[raport-29-4060ti]], [[raport-24w-pair2]], [[2026-10-20-podsumowanie-nocy]]; [[raport-24q-adaptacyjna-spekulacja]] – werdykt końcowy (odrzucone). [[REKORDY]]: 4060 Ti (Qwen 35.4 / mvs 170.9, LFM 149.4 t/s, nie w produkcji), topka-next 114.6 t/s (+1.4%, niezainstalowana). [[AUDYT]] uzupełniony.
 
+## [2026-10-20] update | Wyniki rano: topka-next zainstalowana, PAIR2 odrzucone
+[[2026-10-20-podsumowanie-nocy]]: topka-next jako `~/llama-topka` (host-gap dla Qwen), `mvs` 420.2 → 433.0 t/s (+3.0%), md5 OK. [[raport-24w-pair2]]: +0.4% → odrzucone; [[wyniki-negatywne]], [[lekcja-wyrazna-wygrana-albo-nic]]. [[REKORDY]]: XTX `mvs` 433.0 i czat 114.6 (`hg_ab.sh`), oba w produkcji. [[AUDYT]] uzupełniony.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

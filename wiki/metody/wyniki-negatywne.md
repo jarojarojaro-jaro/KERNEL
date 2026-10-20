@@ -2,7 +2,7 @@
 typ: metoda
 tags: [metody, proces, negatywne]
 aktualizacja: 2026-10-20
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:98-105,351,369; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:234; ~/KERNEL/product/research/16a-pm4-pdl.md:7-19; ~/KERNEL/product/research/26-kolejka-gpu-wieczor.md:10-12; ~/KERNEL/product/research/24n-mmvq-n5.md:7-12; ~/KERNEL/product/research/24r-mmvq-pasmo.md:10-13
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:98-105,351,369; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:234; ~/KERNEL/product/research/16a-pm4-pdl.md:7-19; ~/KERNEL/product/research/26-kolejka-gpu-wieczor.md:10-12; ~/KERNEL/product/research/24n-mmvq-n5.md:7-12; ~/KERNEL/product/research/24r-mmvq-pasmo.md:10-13; ~/KERNEL/product/research/24w-pair2.md:5,21-34
 status: aktualne
 ---
 # Wyniki negatywne zapisujemy z liczbami
@@ -21,6 +21,7 @@ Zasada scalania: tylko realny zysk w przeplatanym A/B. Bitowy, ale w szumie (GDN
 2026-10-18: PM4-PDL i prefetch MALL na XTX ([[raport-16a-pm4-pdl]], [[lekcja-prefetch-mall-xtx]]); MoE matvec LFM ([[2026-10-18-lfm-moe-negatywne]]).
 
 2026-10-19/20: bariera LDS (szum), MMVQ n=1 wide (−1.0%), ogon OOV klastrowy (−1.5%), obłożenie MMVQ n=5 (−0.5% / −6.4%), RPB=1 (−3.0%), `-np 2` (wall +11%), router DFlash2 (sufit +1.1%), entropia wag (≤ 0.9%), FA bez spilli (+0.4–0.8%, za mało) – przegląd w [[raporty-2026-10-19-20]].
+PAIR2 (24w, 2026-10-20 rano): para MMVQ dla mieszanych typów, md5 OK, czat +0.4% (115.1 → 115.6 t/s) – odrzucone ([[raport-24w-pair2]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

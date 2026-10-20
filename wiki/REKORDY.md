@@ -2,7 +2,7 @@
 typ: meta
 tags: [meta, rekordy, wyniki]
 aktualizacja: 2026-10-20
-zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5; ~/KERNEL/product/research/29-4060ti.md:56-81; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:10
+zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5; ~/KERNEL/product/research/29-4060ti.md:56-81; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:10; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:44-47
 status: aktualne
 ---
 # Rekordy: najlepsze zmierzone wyniki
@@ -95,7 +95,7 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 
 ## Nowe rekordy 2026-10-19/20 (raporty 24m–27, WYNIKI-XTX)
 
-Zweryfikowane w źródłach 2026-10-20. „topka” = `~/llama-topka` @ `f2217bac7` przez `run-topka.sh` (MTP n=4 + słownik 64k, lookup W16, PM4 WA=2 + GUARD, `HSA_USE_SVM=0`, `LLAMA_GPU_VERIFY=1`), od 2026-10-19 serwer użytkownika na :8080 → prod. **tak**.
+Zweryfikowane w źródłach 2026-10-20. Uwaga: strona produktu pokazuje 114.8 / 419.7 t/s z harnessu bench-final (`spec_sweep.py`/`copy_bench.py`), a 114.6 / 433.0 pochodzą z `hg_ab.sh` – inne skrypty, liczb nie mieszamy ani nie porównujemy wprost. „topka” = `~/llama-topka` @ `f2217bac7` przez `run-topka.sh` (MTP n=4 + słownik 64k, lookup W16, PM4 WA=2 + GUARD, `HSA_USE_SVM=0`, `LLAMA_GPU_VERIFY=1`), od 2026-10-19 serwer użytkownika na :8080 → prod. **tak**.
 
 | karta / model | obciążenie / metryka | rekord (poprzedni) | data | warunki | źródło | prod. |
 |---|---|---|---|---|---|---|
@@ -110,7 +110,8 @@ Zweryfikowane w źródłach 2026-10-20. „topka” = `~/llama-topka` @ `f2217ba
 | 3090 / Qwen 27B Q4_K_XL | spec_sweep T=1 | **93.3 t/s**, 32.36 ms/krok (78.0) | 2026-10-19 | `cuda-topka2` `2a261101b`, lookup W16 + share + GPU verify, ctx 204800, 335 W, ABBA | `27-3090-final.md:20,59` | nie (chmura) |
 | 3090 / Qwen | code-edit `mvs` / copy T=0 | **348.9 / 343.8 t/s** (121.1 / 94.0) | 2026-10-19 | j.w. | `27-3090-final.md:22,65,68` | nie |
 | 3090 / Qwen Uncensored | spec_sweep T=1 / mvs | **75.3 / 319.5 t/s** | 2026-10-19 | j.w., 300 W | `27-3090-final.md:27-29` | nie |
-| XTX / Qwen | spec_sweep T=1, topka-next (coupled + host-gap), A/B seedy 1–3 | **114.6 t/s** (ramię bez host-gap 113.0) | 2026-10-20 | `topka-next` @ `9056cea22`, coupled=1 w obu ramionach, ABBA | `PODSUMOWANIE-NOC-2026-10-20.md:10` (`~/qwen-opt/hostgap/logs-next/SUMMARY-sweep.txt`) | nie (zbudowana, niezainstalowana) |
+| XTX / Qwen | spec_sweep T=1 przez `hg_ab.sh` (6 promptów × seedy 1–3), topka `9056cea22` (coupled + host-gap) | **114.6 t/s** (bez host-gap 113.0) | 2026-10-20 | coupled=1 w obu ramionach, ABBA; od 13:45 to zainstalowana `~/llama-topka` | `PODSUMOWANIE-NOC-2026-10-20.md:10` (`~/qwen-opt/hostgap/logs-next/SUMMARY-sweep.txt`) | tak |
+| XTX / Qwen | code-edit `mvs` T=0 przez `hg_ab.sh`, topka `9056cea22` + przełączniki host-gap | **433.0 t/s** (bez host-gap 420.2; lazy.py 436.2, ngram-cache.h 433.1, pad.cu 419.5, sampling.h 443.0) | 2026-10-20 | coupled=1 w obu ramionach, ABBA, md5 tekstu identyczne | `PODSUMOWANIE-NOC-2026-10-20.md:47`; `ab_summary.py ~/qwen-opt/hostgap/logs-next --prefix hg-mvs` | tak |
 | 4060 Ti 16 GB / Qwen 27B UD-Q3_K_XL | spec_sweep T=1 / mvs T=0 | **35.4 / 170.9 t/s** (U0 18.6 / 18.5) | 2026-10-20 | `cuda-topka2` `2a261101b`, lookup W16 + share + GPU verify, ctx 32768, KV q8_0, 100 W, PCIe gen3 x8, ABBA | `29-4060ti.md:56,59` | nie (chmura) |
 | 4060 Ti / Qwen Q3_K_XL | decode po 16k T=0 / T=1 | **40.1 / 35.8 t/s** | 2026-10-20 | j.w. | `29-4060ti.md:62` | nie |
 | 4060 Ti / LFM2.5 QAD-Q4_0 | spec_sweep T=1 | **149.4 t/s** (U0 114.4); tg128 155.1 | 2026-10-20 | j.w., GPU verify | `29-4060ti.md:77,81` | nie |
