@@ -78,6 +78,11 @@
 	const shown = $derived(done ? last : valueAt(X));
 	const lit = (i: number) => X >= cx(i) - 1;
 	const heat = ['cold', 'cold', 'warm', 'hot', 'white'];
+	/**
+	 * Gap between our points and their labels below (rem): enough that the steep riser into the next
+	 * point (left of it) passes above the label's top corner.
+	 */
+	const DY = [0, 0, 1.5, 2.6, 1.5];
 	const ratio = $derived(fmtRatio(last / first, lang));
 	const wide = Math.max(num(first, 'pl', 1).length, num(last, 'pl', 1).length);
 
@@ -109,51 +114,54 @@
 				<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 			</div>
 
-			<div class="plot" aria-hidden="true">
-				<svg class="chart" viewBox="0 0 {W} {H}" preserveAspectRatio="none" style:clip-path={done ? null : `inset(-10% ${(100 - (X / W) * 100).toFixed(2)}% -10% 0)`}>
-					<defs>
-						<linearGradient id="jr-stroke" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={W} y2="0">
-							<stop offset="0" stop-color="#7d8794" />
-							<stop offset={(cx(1) + PL) / W} stop-color="#7d8794" />
-							<stop offset={cx(2) / W} stop-color="#e2401c" />
-							<stop offset={cx(3) / W} stop-color="#ff7a1a" />
-							<stop offset={cx(4) / W} stop-color="#ffc15a" />
-							<stop offset="1" stop-color="#fff3d6" />
-						</linearGradient>
-						<linearGradient id="jr-fill" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={W} y2="0">
-							<stop offset="0" stop-color="#7d8794" stop-opacity="0.1" />
-							<stop offset={(cx(1) + PL) / W} stop-color="#7d8794" stop-opacity="0.12" />
-							<stop offset={cx(2) / W} stop-color="#e2401c" stop-opacity="0.2" />
-							<stop offset="1" stop-color="#ff7a1a" stop-opacity="0.34" />
-						</linearGradient>
-					</defs>
-					<path class="area" d={area} fill="url(#jr-fill)" />
-					<path class="glow" d={line} stroke="url(#jr-stroke)" />
-					<path class="line" d={line} stroke="url(#jr-stroke)" />
-				</svg>
-				{#each S as s, i (s.key)}
-					<span class="node node--{heat[i]}" class:lit={lit(i)} style="--x:{cx(i) / W}; --y:{s.v / TOP}">
-						<i class="dot"></i>
-						<b class="nv">{num(s.v, lang, 1)}</b>
-					</span>
-				{/each}
-				<span class="spark" class:on={tl.playing} style="--x:{X / W}; --y:{valueAt(X) / TOP}"></span>
-			</div>
+			<div class="chartbox">
+				<div class="plot" aria-hidden="true">
+					<svg class="chart" viewBox="0 0 {W} {H}" preserveAspectRatio="none" style:clip-path={done ? null : `inset(-10% ${(100 - (X / W) * 100).toFixed(2)}% -10% 0)`}>
+						<defs>
+							<linearGradient id="jr-stroke" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={W} y2="0">
+								<stop offset="0" stop-color="#7d8794" />
+								<stop offset={(cx(1) + PL) / W} stop-color="#7d8794" />
+								<stop offset={cx(2) / W} stop-color="#e2401c" />
+								<stop offset={cx(3) / W} stop-color="#ff7a1a" />
+								<stop offset={cx(4) / W} stop-color="#ffc15a" />
+								<stop offset="1" stop-color="#fff3d6" />
+							</linearGradient>
+							<linearGradient id="jr-fill" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2={W} y2="0">
+								<stop offset="0" stop-color="#7d8794" stop-opacity="0.1" />
+								<stop offset={(cx(1) + PL) / W} stop-color="#7d8794" stop-opacity="0.12" />
+								<stop offset={cx(2) / W} stop-color="#e2401c" stop-opacity="0.2" />
+								<stop offset="1" stop-color="#ff7a1a" stop-opacity="0.34" />
+							</linearGradient>
+						</defs>
+						<path class="area" d={area} fill="url(#jr-fill)" />
+						<path class="glow" d={line} stroke="url(#jr-stroke)" />
+						<path class="line" d={line} stroke="url(#jr-stroke)" />
+					</svg>
+					{#each S as s, i (s.key)}
+						<span class="node node--{heat[i]}" class:lit={lit(i)} style="--x:{cx(i) / W}; --y:{s.v / TOP}">
+							<i class="dot"></i>
+							<b class="nv">{num(s.v, lang, 1)}</b>
+						</span>
+					{/each}
+					<span class="spark" class:on={tl.playing} style="--x:{X / W}; --y:{valueAt(X) / TOP}"></span>
+				</div>
 
-			<ol class="steps">
-				{#each c.steps as st, i (i)}
-					<li class="step step--{heat[i]}" class:lit={lit(i)} style="--d:{i * 60}ms">
-						<b class="sn">{st.name}</b>
-						<span class="ss">{st.sub}</span>
-						{#if st.did.length}
-							<ul class="did" aria-label={c.did}>
-								{#each st.did as d (d)}<li>{d}</li>{/each}
-							</ul>
-						{/if}
-						<span class="sr-only">: {num(S[i].v, lang, 1)} t/s</span>
-					</li>
-				{/each}
-			</ol>
+				<!-- wide screens: each milestone's label sits in the chart by its point (upstream above, ours below) -->
+				<ol class="steps">
+					{#each c.steps as st, i (i)}
+						<li class="step step--{heat[i]}" class:up={i < 2} class:lit={lit(i)} style="--d:{i * 60}ms; --x:{cx(i) / W}; --y:{S[i].v / TOP}; --dy:{DY[i]}rem">
+							<b class="sn">{st.name}</b>
+							<span class="ss">{st.sub}</span>
+							{#if st.did.length}
+								<ul class="did" aria-label={c.did}>
+									{#each st.did as d (d)}<li>{d}</li>{/each}
+								</ul>
+							{/if}
+							<span class="sr-only">: {num(S[i].v, lang, 1)} t/s</span>
+						</li>
+					{/each}
+				</ol>
+			</div>
 		</figure>
 
 		<div class="code" use:codeTl.view style="--k:{ck}; --u:{cu.v / co.v}">
@@ -324,12 +332,17 @@
 	}
 
 	/* the chart: an SVG line (non-scaling stroke) with HTML nodes and labels over it */
-	.plot {
+	.chartbox {
 		/* the chart takes what the viewport leaves after the heading, the top row and the milestones */
 		--ph: clamp(9rem, 100svh - 36rem, 20rem);
 		position: relative;
-		height: var(--ph);
+		display: grid;
+		gap: clamp(0.8rem, 2vh, 1.4rem);
 		margin-top: 2rem;
+	}
+	.plot {
+		position: relative;
+		height: var(--ph);
 		background: repeating-linear-gradient(0deg, rgb(237 234 227 / 0.05) 0 1px, transparent 1px 20%);
 		border-bottom: 1px solid var(--line-strong);
 	}
@@ -527,6 +540,92 @@
 		border-color: var(--heat-4);
 		background: rgb(255 193 90 / 0.16);
 	}
+	/*
+	 * Wide screens: the labels move into the chart's empty space, each by its point with a leader:
+	 * upstream's above the low start (over the value), ours below the high end, and they appear when
+	 * the line reaches their point.
+	 */
+	@media (min-width: 1100px) {
+		.chartbox {
+			--ph: clamp(15rem, 100svh - 27rem, 26rem);
+		}
+		.steps {
+			position: absolute;
+			inset: 0 0 auto;
+			height: var(--ph);
+			display: block;
+			pointer-events: none;
+		}
+		.step {
+			position: absolute;
+			left: calc(var(--x) * 100%);
+			width: max-content;
+			max-width: 16%;
+			padding: 0;
+			gap: 0.2rem;
+			opacity: 0;
+			transform: translate3d(-50%, 0.6rem, 0);
+			transition:
+				opacity 0.45s ease,
+				transform 0.7s var(--ease-out);
+		}
+		.step.lit {
+			opacity: 1;
+			transform: translate3d(-50%, 0, 0);
+		}
+		.step.up {
+			bottom: calc(var(--y) * 100% + 4.3rem);
+			transform: translate3d(-50%, -0.6rem, 0);
+		}
+		.step.up.lit {
+			transform: translate3d(-50%, 0, 0);
+		}
+		.step:not(.up) {
+			top: calc((1 - var(--y)) * 100% + 0.6rem + var(--dy));
+		}
+		/* the leader: a hairline between the point (or its value) and the label */
+		.step::before {
+			content: '';
+			position: absolute;
+			left: 50%;
+			width: 1px;
+		}
+		.step.up::before {
+			top: calc(100% + 0.2rem);
+			height: 1rem;
+			background: linear-gradient(rgb(125 135 148 / 0.9), rgb(125 135 148 / 0.2));
+		}
+		.step:not(.up)::before {
+			bottom: calc(100% + 0.2rem);
+			height: calc(var(--dy) - 0.1rem);
+			background: linear-gradient(var(--heat-3), rgb(255 122 26 / 0.15));
+		}
+		.step--white::before {
+			background: linear-gradient(var(--heat-4), rgb(255 193 90 / 0.15));
+		}
+		.sn {
+			font-size: var(--fs-sm);
+		}
+		.step--warm .sn,
+		.step--hot .sn {
+			color: var(--heat-4);
+		}
+		.step--white .sn {
+			color: #fff;
+		}
+		.ss {
+			margin-bottom: 0.1rem;
+		}
+		.did {
+			margin: 0.2rem 0 0;
+			gap: 0.25rem;
+		}
+		.did li {
+			padding: 0.2rem 0.55rem;
+			font-size: var(--fs-2xs);
+			text-wrap: balance;
+		}
+	}
 
 	/* ---- code editing ---- */
 	.code {
@@ -623,8 +722,8 @@
 		.wx {
 			display: none;
 		}
-		.plot {
-			--ph: clamp(8.5rem, 100svh - 43rem, 12rem);
+		.chartbox {
+			--ph: clamp(8.5rem, 100svh - 45rem, 12rem);
 			margin-top: 1.6rem;
 		}
 		.nv {
