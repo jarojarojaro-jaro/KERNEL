@@ -243,7 +243,7 @@ const raw = {
 			draftNote: 'Dokumenty prawne to projekty do weryfikacji przez prawnika.',
 			company: 'Dane firmy zostaną uzupełnione po rejestracji spółki.',
 			credit: 'Silnik oparty na llama.cpp i ggml (MIT, © The ggml authors).',
-			aiMedia: 'Część grafik i wideo dekoracyjnych wygenerowano AI (Higgsfield).',
+			aiMedia: 'Część grafik i wideo dekoracyjnych oraz zdjęcia sprzętu w katalogu kart wygenerowano AI (Higgsfield, OpenAI).',
 			name: `Nazwa „${N}” jest robocza.`
 		},
 		cookies: {
@@ -469,7 +469,7 @@ const raw = {
 			draftNote: 'Legal documents are drafts to be reviewed by a lawyer.',
 			company: 'Company details will be added once the company is registered.',
 			credit: 'Engine based on llama.cpp and ggml (MIT, © The ggml authors).',
-			aiMedia: 'Some decorative images and videos were generated with AI (Higgsfield).',
+			aiMedia: 'Some decorative images and videos, and the hardware photos in the card catalogue, were generated with AI (Higgsfield, OpenAI).',
 			name: `“${N}” is a working name.`
 		},
 		cookies: {

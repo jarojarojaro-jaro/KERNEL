@@ -1,14 +1,16 @@
 <script lang="ts">
 	/**
-	 * Top of a card page: back link, status, the card's name set huge and its render. The render and
-	 * the name share `view-transition-name`s with the gallery tile, so the tile zooms into this.
+	 * Top of a card page: back link, status, the card's name set huge and its render (the product
+	 * photo for the models we have one of, else GpuArt). The render and the name share
+	 * `view-transition-name`s with the gallery tile, so the tile zooms into this.
 	 */
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
 	import { cardsHref, currentLang } from '$lib/i18n';
 	import { cardsCopy } from './copy';
 	import GpuArt from './GpuArt.svelte';
-	import { VENDOR, vendorOf } from './vendor';
+	import ProductPhoto from './ProductPhoto.svelte';
+	import { photoOf, VENDOR, vendorOf } from './vendor';
 
 	let {
 		id,
@@ -47,6 +49,8 @@
 	/** The maker's wordmark before the series ("NVIDIA GeForce RTX"), never doubled ("Apple M4"). */
 	const maker = $derived(VENDOR[vendorOf(vendor)].name);
 	const rest = $derived(maker && prefix.toLowerCase().startsWith(maker.toLowerCase()) ? prefix.slice(maker.length).trim() : prefix);
+	/** The real product's photo when this page is about it (vendor.ts `photoOf`), else the SVG render. */
+	const photo = $derived(photoOf(id));
 
 	// Undriven pages (queue): fans spin briefly when the page opens, then stop (no endless loop).
 	let live = $state(false);
@@ -76,7 +80,13 @@
 		</div>
 		<div class="art-col">
 			<div class="art" class:kicked={kick > 0} style="view-transition-name: art-{id}; view-transition-class: gpu">
-				<GpuArt label={short} {vendor} {vram} {heat} {live} ignite {charge} {rpm} />
+				{#if photo}
+					<ProductPhoto id={photo} sizes="(max-width: 56rem) calc(100vw - 2rem), min(48vw, 46rem)" eager>
+						{#snippet fallback()}<GpuArt label={short} {vendor} {vram} {heat} {live} ignite {charge} {rpm} />{/snippet}
+					</ProductPhoto>
+				{:else}
+					<GpuArt label={short} {vendor} {vram} {heat} {live} ignite {charge} {rpm} />
+				{/if}
 			</div>
 			{@render plate?.()}
 		</div>

@@ -12,9 +12,10 @@
 	import { cardsCopy } from './copy';
 	import { headline, heatOf, MEASURED, roundTo } from './explorer';
 	import GpuArt from './GpuArt.svelte';
+	import ProductPhoto from './ProductPhoto.svelte';
 	import Ratio from './Ratio.svelte';
 	import RunShowcase from './RunShowcase.svelte';
-	import { vendorVars } from './vendor';
+	import { photoOf, vendorVars } from './vendor';
 	import VendorTheme from './VendorTheme.svelte';
 	import VramFill from './VramFill.svelte';
 
@@ -222,9 +223,12 @@
 	<ul class="others" role="list">
 		{#each others as e (e.id)}
 			{@const od = headline(e.card)}
+			{@const op = photoOf(e.id)}
 			<li>
 				<a href={cardsHref(lang, `${e.id}/`)} class="other hx-ring hx-surface" style={vendorVars(e.card.vendor)}>
-					<span class="o-art"><GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(od?.ratio)} flat /></span>
+					<span class="o-art">
+						{#if op}<ProductPhoto id={op} sizes="8rem" />{:else}<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(od?.ratio)} flat />{/if}
+					</span>
 					<span class="o-name">{e.card.short}</span>
 					<span class="o-x">{#if od?.ratio}<Ratio value={od.ratio} {lang} size="sm" />{/if}<span class="mono">{e.card.vramGB} GB</span></span>
 				</a>
