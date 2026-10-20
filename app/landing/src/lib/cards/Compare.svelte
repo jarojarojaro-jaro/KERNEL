@@ -29,7 +29,8 @@
 	import Ratio from './Ratio.svelte';
 	import TimeRace from './TimeRace.svelte';
 	import { Play } from './play.svelte';
-	import { VENDOR, vendorOf } from './vendor';
+	import ProductPhoto from './ProductPhoto.svelte';
+	import { photoOf, VENDOR, vendorOf } from './vendor';
 
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].compare);
@@ -141,7 +142,9 @@
 				{#key s.card.id}
 					<div class="f-in">
 						<p class="f-wm" class:upright={s.card.vendor !== 'nvidia' && s.card.vendor !== 'amd'}>{VENDOR[vendorOf(s.card.vendor)].name}</p>
-						<div class="f-art" aria-hidden="true"><GpuArt label={s.card.short} vendor={s.card.vendor} vram={s.card.vramGB} heat={heatOf(s.d?.ratio)} live flat /></div>
+						<div class="f-art" aria-hidden="true">
+							{#if photoOf(s.card.id)}<ProductPhoto id={photoOf(s.card.id)!} sizes="(max-width: 40rem) 44vw, 22rem" eager />{:else}<GpuArt label={s.card.short} vendor={s.card.vendor} vram={s.card.vramGB} heat={heatOf(s.d?.ratio)} live flat />{/if}
+						</div>
 						<h2 class="f-nm">{s.card.short}</h2>
 						<p class="f-sub mono">{s.card.vramGB}{NB}GB · {num(s.card.bwGBs.v, lang, 0)}{NB}GB/s · {MODEL_STYLE[s.run.model].short} {s.run.quant}</p>
 					</div>
@@ -474,7 +477,7 @@
 		font-stretch: 125%;
 		letter-spacing: -0.05em;
 		line-height: 0.8;
-		padding: 0 0.1em;
+		padding: 0.06em 0.24em;
 		background: linear-gradient(90deg, var(--a-hi) 18%, #fff3d6 50%, var(--b-hi) 82%);
 		-webkit-background-clip: text;
 		background-clip: text;

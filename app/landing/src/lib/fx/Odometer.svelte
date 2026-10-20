@@ -125,7 +125,8 @@
 	<span class="drums" aria-hidden="true">
 		{#each drums as d, i (i)}
 			{#if decimals > 0 && i === drums.length - decimals}<span class="sep">{sep}</span>{/if}
-			<span class="drum" class:lead={d.lead && !pad} class:ghost={d.lead && pad}>
+			<!-- a reel is a rolling window (masked edges): qa:clip ignores it -->
+			<span class="drum" class:lead={d.lead && !pad} class:ghost={d.lead && pad} data-clip-ok>
 				<span class="strip" style="transform: translate3d(0, {-d.pos}em, 0)">
 					{#each [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0] as n, j (j)}<span>{n}</span>{/each}
 				</span>
@@ -173,12 +174,14 @@
 		height: 1em;
 		text-align: center;
 	}
-	/* Martian Mono's comma is a full 1ch cell: centre it in a narrower, clipped slot */
+	/* Martian Mono's comma is a full 1ch cell: centre it in a narrower slot, clipped sideways only
+	   (its tail hangs below the 1em line) */
 	.sep {
 		display: inline-flex;
 		justify-content: center;
 		width: 0.5ch;
-		overflow: clip;
+		overflow-x: clip;
+		overflow-y: visible;
 		line-height: 1;
 	}
 </style>

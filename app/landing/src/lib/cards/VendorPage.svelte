@@ -1,24 +1,28 @@
 <script lang="ts">
 	/**
-	 * One maker's page (`/pl/karty/nvidia/`): a dark showroom band in the maker's colour with its
-	 * wordmark (it morphs from the block on the front page), the face card's render, the measured and
-	 * queued counts and the best measured gain; then the measured cards as showroom tiles (render,
-	 * speed-up, before and after on one scale) and the cards in the measurement queue as quieter,
-	 * dashed tiles whose numbers are labelled estimates. The other makers and the versus view close
-	 * the page. Identity colour from vendor.ts; speed keeps the heat ramp.
+	 * One maker's showroom (`/pl/karty/amd/`). The band: the product on a lit floor with its
+	 * reflection, a slow light sweep and the maker's hairlines BEHIND it (never over it), pointer
+	 * parallax between the layers; the maker's wordmark; the headline result as one strong number
+	 * with the model, the card and both measured speeds (makers with nothing measured yet show the
+	 * first card in the queue with a labelled estimate, visually muted); a segmented maker switch in
+	 * the makers' colours whose indicator slides from page to page (view transition). Below: measured
+	 * cards as rich tiles, the queue as quiet estimate rows, the other makers and the versus view.
+	 * Identity colour from vendor.ts; speed keeps the heat ramp. Reduced motion: no parallax, no
+	 * sweep, no rise-in.
 	 */
-	import { play, tilt } from '$lib/fx/actions';
+	import { play, tilt, visible } from '$lib/fx/actions';
+	import { reducedMotion } from '$lib/fx/motion';
 	import { fmtTps } from '$lib/format';
 	import { cardsHref, currentLang, num } from '$lib/i18n';
-	import { MODEL_STYLE } from '$lib/modelStyle';
-	import { variantLabel } from '$lib/data/measurements';
+	import ModelMark from '$lib/ModelMark.svelte';
+	import { MODEL_INFO, variantLabel } from '$lib/data/measurements';
 	import { cardsCopy } from './copy';
 	import { GROUPS, headline, heatOf, LINEUP, MEASURED, queueEstimate, splitName, VENDORS } from './explorer';
 	import EstTag from './EstTag.svelte';
 	import GpuArt from './GpuArt.svelte';
 	import Ratio from './Ratio.svelte';
-	import { VENDOR, vendorVars, type Vendor } from './vendor';
-	import VendorRender from './VendorRender.svelte';
+	import { MAKER_PHOTO, photoOf, VENDOR, vendorVars, type Vendor } from './vendor';
+	import ProductPhoto from './ProductPhoto.svelte';
 	import VendorTheme from './VendorTheme.svelte';
 
 	let { vendor }: { vendor: Vendor } = $props();
@@ -31,8 +35,36 @@
 	const name = $derived(VENDOR[vendor].name);
 	const NB = '\u00a0';
 
+	/* the headline: the maker's best measured card and run, else the first card in the queue */
+	const faceCard = $derived(MEASURED.find((e) => e.id === g.face.id)?.card ?? null);
+	const hd = $derived(faceCard ? headline(faceCard) : null);
+	const hdTop = $derived(hd ? Math.max(hd.before.decode!.v, hd.ours.decode!.v) : 1);
+	const nextGpu = $derived(g.measured.length ? null : (g.queued[0]?.gpu ?? null));
+	const nextEst = $derived(nextGpu ? (queueEstimate(nextGpu)[0] ?? null) : null);
+
 	let hover = $state<string | null>(null);
 	let rep = $state(0);
+	let onScreen = $state(false);
+
+	/* pointer parallax: the product, the light and the floor move at different depths */
+	let band: HTMLElement | undefined = $state();
+	let frame = 0;
+	function parallax(e: PointerEvent) {
+		if (!band || e.pointerType !== 'mouse' || reducedMotion()) return;
+		const b = band;
+		cancelAnimationFrame(frame);
+		frame = requestAnimationFrame(() => {
+			const r = b.getBoundingClientRect();
+			b.style.setProperty('--px', (((e.clientX - r.left) / r.width) * 2 - 1).toFixed(3));
+			b.style.setProperty('--py', (((e.clientY - r.top) / r.height) * 2 - 1).toFixed(3));
+		});
+	}
+	function settle() {
+		cancelAnimationFrame(frame);
+		band?.style.setProperty('--px', '0');
+		band?.style.setProperty('--py', '0');
+	}
+	$effect(() => () => cancelAnimationFrame(frame));
 
 	/* The versus view opens on this maker's face card against the best card of another maker. */
 	const rival = $derived(vendor === 'amd' ? GROUPS.nvidia : GROUPS.amd);
@@ -51,36 +83,74 @@
 	<meta property="og:description" content={tv.metaDescription(name)} />
 </svelte:head>
 
+{#snippet product(eager: boolean)}
+	<ProductPhoto id={MAKER_PHOTO[vendor]} sizes="(max-width: 56rem) min(92vw, 34rem), 46vw" {eager}>
+		{#snippet fallback()}<GpuArt label={g.face.label} {vendor} vram={g.face.vram} heat={heatOf(g.face.ratio)} live={onScreen} />{/snippet}
+	</ProductPhoto>
+{/snippet}
+
 <VendorTheme {vendor}>
 	<div class="amb" aria-hidden="true"></div>
-	<section class="vh vh--{vendor}" aria-labelledby="vendor-title" style="--th:{heatOf(g.best)}">
-		<div class="vh-chip" aria-hidden="true"><VendorRender {vendor} kind="chip" sizes="(max-width: 40rem) 100vw, 60vw" /></div>
+	<section class="vh vh--{vendor}" class:on={onScreen} aria-labelledby="vendor-title" style="--th:{heatOf(g.best)}" bind:this={band} onpointermove={parallax} onpointerleave={settle} use:visible={(v) => (onScreen = v)}>
 		<div class="wrap vh-in">
 			<a class="back mono" href={cardsHref(lang)}><span aria-hidden="true">←</span> {tv.back}</a>
+
 			<div class="vh-grid">
 				<div class="vh-text">
 					<p class="eyebrow">{tv.eyebrow}{NB}· {LINEUP[vendor]}</p>
-					<h1 id="vendor-title" class="wm" style="view-transition-name: vendor-{vendor}">{name}</h1>
+					<h1 id="vendor-title" class="wm" class:upright={vendor === 'intel' || vendor === 'apple'} style="view-transition-name: vendor-{vendor}">{name}</h1>
+
+					{#if hd && faceCard}
+						<div class="res">
+							<p class="res-k mono"><ModelMark model={hd.run.model} /> {tv.best} · {MODEL_INFO[hd.run.model].name} {hd.run.quant}</p>
+							{#if hd.ratio}
+								<p class="res-x"><Ratio value={hd.ratio} {lang} size="lg" /> <span class="res-w">{t.faster}</span></p>
+							{/if}
+							<div class="res-bars">
+								<p class="rb cold">
+									<span class="lb">{variantLabel(hd.run, hd.before.key)[lang]}</span>
+									<b>{fmtTps(hd.before.decode!.v, lang)}</b>
+									<span class="track"><i style="--w:{(hd.before.decode!.v / hdTop).toFixed(4)}"></i></span>
+								</p>
+								<p class="rb hot">
+									<span class="lb">{variantLabel(hd.run, hd.ours.key)[lang]}</span>
+									<b>{fmtTps(hd.ours.decode!.v, lang)}{NB}<small>t/s</small></b>
+									<span class="track"><i style="--w:{(hd.ours.decode!.v / hdTop).toFixed(4)}"></i></span>
+								</p>
+							</div>
+							<p class="res-on mono">{tv.measuredOn(faceCard.name)}{#if !hd.run.sameHarness} · {tc.scriptsWarn}{/if}</p>
+						</div>
+					{:else if nextGpu}
+						<div class="res res--est">
+							<p class="res-k mono"><span class="ring" aria-hidden="true"></span>{tv.next}</p>
+							<p class="est-nm">{nextGpu.name}</p>
+							{#if nextEst}
+								<p class="est-v"><EstTag text={t.estimateShort} /> <span class="mono">≈{NB}{num(nextEst.decode.lo, lang, 0)}–{num(nextEst.decode.hi, lang, 0)}{NB}t/s · {nextEst.model.name} {nextEst.model.quant}</span></p>
+								<p class="res-on">{tv.nextNote}</p>
+							{:else}
+								<p class="res-on">{tc.soonNoVram}</p>
+							{/if}
+						</div>
+					{/if}
+
 					<p class="lede">{g.measured.length ? tv.lede(name) : tv.noneLede(name)}</p>
-					<div class="stats">
-						{#if g.best}
-							<p class="st st--gain"><span class="up">{t.upTo}</span> <Ratio value={g.best} {lang} size="lg" /> <span class="up">{t.faster}</span></p>
-						{/if}
-						<p class="st mono">
-							{#if g.measured.length}<span class="c-m"><i class="dot"></i>{t.vendorMeasured(g.measured.length)}</span>{:else}<span>{t.vendorNone}</span>{/if}
-							{#if g.queued.length}<span><i class="ring"></i>{t.vendorQueued(g.queued.length)}</span>{/if}
-						</p>
-					</div>
 				</div>
-				<div class="vh-art" aria-hidden="true">
-					<VendorRender {vendor} kind="show" sizes="(max-width: 56rem) min(100vw, 26rem), 44vw" eager>
-						{#snippet fallback()}<GpuArt label={g.face.label} vendor={vendor} vram={g.face.vram} heat={heatOf(g.face.ratio)} ignite live />{/snippet}
-					</VendorRender>
+
+				<div class="stage" aria-hidden="true" style="view-transition-name: vendor-stage">
+					<div class="beam"><span></span></div>
+					<div class="lines"><i></i><i></i><i></i></div>
+					<div class="floor"></div>
+					<div class="prod">{@render product(true)}</div>
+					<div class="refl">{@render product(false)}</div>
 				</div>
 			</div>
-			<nav class="switch" aria-label={tv.nav}>
+
+			<nav class="seg" aria-label={tv.nav} style="--k:{VENDORS.indexOf(vendor)}">
+				<span class="seg-ind" style="{vendorVars(vendor)}; view-transition-name: vendor-seg" aria-hidden="true"></span>
 				{#each VENDORS as v (v)}
-					<a href={cardsHref(lang, `${v}/`)} class="sw" class:on={v === vendor} aria-current={v === vendor ? 'page' : undefined} style={vendorVars(v)}><i></i>{VENDOR[v].name}</a>
+					<a href={cardsHref(lang, `${v}/`)} class="seg-i" class:on={v === vendor} aria-current={v === vendor ? 'page' : undefined} style={vendorVars(v)}>
+						<i aria-hidden="true"></i>{VENDOR[v].name}
+					</a>
 				{/each}
 			</nav>
 		</div>
@@ -92,20 +162,29 @@
 				<h2 id="v-measured" class="h hx-h">{tv.measured}</h2>
 				<p class="fine">{tv.measuredLede}</p>
 			</header>
-			<ul class="measured" role="list" use:play={{ threshold: 0.25, onplay: () => rep++ }} class:played={rep > 0}>
+			<ul class="measured" role="list" use:play={{ threshold: 0.2, onplay: () => rep++ }} class:played={rep > 0}>
 				{#each g.measured as e, i (e.id)}
 					{@const d = headline(e.card)}
 					{@const top = d ? Math.max(d.before.decode!.v, d.ours.decode!.v) : 1}
+					{@const ph = photoOf(e.id)}
 					<li style="--th:{heatOf(d?.ratio)}; --i:{i}">
 						<article class="tile" class:live={hover === e.id} use:tilt={{ max: 4 }} onpointerenter={() => (hover = e.id)} onpointerleave={() => (hover = null)} onfocusin={() => (hover = e.id)} onfocusout={() => (hover = null)}>
+							<span class="acc" aria-hidden="true"><i></i><i></i></span>
 							<p class="brand mono">
-								<span class="maker">{name}</span>
+								<span class="maker" class:upright={vendor === 'intel' || vendor === 'apple'}>{name}</span>
 								<span class="pre">{prefixOf(e.card.name, e.card.short)}</span>
-								<span class="vram">{e.card.vramGB}{NB}GB</span>
 							</p>
-							<div class="stage" style="view-transition-name: art-{e.id}; view-transition-class: gpu" aria-hidden="true">
-								<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(d?.ratio)} live={hover === e.id} flat />
+							<div class="t-stage" style="view-transition-name: art-{e.id}; view-transition-class: gpu" aria-hidden="true">
 								<span class="sweep"></span>
+								<div class="t-art">
+									{#if ph}
+										<ProductPhoto id={ph} sizes="(max-width: 40rem) 90vw, 26rem">
+											{#snippet fallback()}<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(d?.ratio)} live={hover === e.id} flat />{/snippet}
+										</ProductPhoto>
+									{:else}
+										<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(d?.ratio)} live={hover === e.id} flat />
+									{/if}
+								</div>
 							</div>
 							<div class="id">
 								<h3 class="short" style="view-transition-name: name-{e.id}">
@@ -113,9 +192,14 @@
 								</h3>
 								{#if d?.ratio}<span class="x"><Ratio value={d.ratio} {lang} size="md" replay={rep} /></span>{/if}
 							</div>
-							<p class="spec mono"><span>{e.card.arch}</span><span>{num(e.card.bwGBs.v, lang, 0)}{NB}GB/s</span></p>
+							<ul class="chips mono" role="list">
+								<li><b>{e.card.vramGB}{NB}GB</b> {tv.mem}</li>
+								<li><b>{num(e.card.bwGBs.v, lang, 0)}{NB}GB/s</b> {tv.bw}</li>
+								<li>{e.card.arch}</li>
+							</ul>
 							{#if d}
 								<div class="bars">
+									<p class="model mono"><span class="m"><ModelMark model={d.run.model} /> {MODEL_INFO[d.run.model].name} {d.run.quant}</span><span class="k">{tv.bestModel}</span></p>
 									<p class="speed cold">
 										<span class="lb">{variantLabel(d.run, d.before.key)[lang]}</span>
 										<b>{fmtTps(d.before.decode!.v, lang)}</b>
@@ -126,7 +210,7 @@
 										<b>{fmtTps(d.ours.decode!.v, lang)}{NB}<small>t/s</small></b>
 										<span class="track"><i style="--w:{(d.ours.decode!.v / top).toFixed(4)}"></i></span>
 									</p>
-									<p class="model mono"><span class="m">{MODEL_STYLE[d.run.model].short} {d.run.quant}</span>{#if !d.run.sameHarness}<span>{tc.scriptsWarn}</span>{/if}</p>
+									{#if !d.run.sameHarness}<p class="warn mono">{tc.scriptsWarn}</p>{/if}
 								</div>
 							{/if}
 						</article>
@@ -140,6 +224,7 @@
 		<section class="wrap blk blk--q" aria-labelledby="v-queue">
 			<header class="blk-h">
 				<h2 id="v-queue" class="h h--q"><span class="ring" aria-hidden="true"></span>{tv.queue}</h2>
+				<EstTag text={t.estimateShort} />
 				<p class="fine">{tv.queueLede}</p>
 			</header>
 			<ul class="queued" role="list">
@@ -147,23 +232,23 @@
 					{@const est = queueEstimate(e.gpu)[0]}
 					{@const nm = splitName(e.gpu.name, e.gpu.vendor)}
 					<li>
-						<article class="qtile">
-							<div class="q-id">
-								<p class="q-pre mono">{nm.prefix}</p>
-								<h3 class="q-name" style="view-transition-name: name-{e.id}">
-									<a href={cardsHref(lang, `${e.id}/`)} class="stretch" aria-label={t.open(e.gpu.name)}>{nm.short}</a>
-								</h3>
-								<p class="q-spec mono">{e.gpu.vram ? `${e.gpu.vram}${NB}GB · ` : ''}{num(e.gpu.bw, lang, 0)}{NB}GB/s</p>
-							</div>
-							<div class="q-est">
+						<a class="qrow" href={cardsHref(lang, `${e.id}/`)} aria-label={t.open(e.gpu.name)}>
+							<span class="q-id">
+								<span class="q-pre mono">{nm.prefix}</span>
+								<span class="q-name" style="view-transition-name: name-{e.id}">{nm.short}</span>
+							</span>
+							<span class="q-spec mono">{e.gpu.vram ? `${e.gpu.vram}${NB}GB · ` : ''}{num(e.gpu.bw, lang, 0)}{NB}GB/s</span>
+							<span class="q-est mono">
 								{#if est}
-									<EstTag text={t.estimateShort} />
-									<p class="mono"><span class="v">≈{NB}{num(est.decode.lo, lang, 0)}–{num(est.decode.hi, lang, 0)}{NB}t/s</span><span class="lbl">{t.estimate} · {est.model.name} {est.model.quant}</span></p>
+									<span class="v">≈{NB}{num(est.decode.lo, lang, 0)}–{num(est.decode.hi, lang, 0)}{NB}t/s</span>
+									<span class="lbl">{t.estimate}</span>
+									<span class="lbl">{est.model.name} {est.model.quant}</span>
 								{:else}
-									<p class="mono"><span class="lbl">{t.soon}</span></p>
+									<span class="lbl">{t.soon}</span>
 								{/if}
-							</div>
-						</article>
+							</span>
+							<span class="q-go" aria-hidden="true">→</span>
+						</a>
 					</li>
 				{/each}
 			</ul>
@@ -171,7 +256,14 @@
 	{/if}
 
 	<section class="wrap more" aria-labelledby="v-others">
-		<h2 id="v-others" class="h hx-h">{tv.others}</h2>
+		<div class="vsx">
+			<div>
+				<h2 id="v-others" class="h hx-h">{tv.compareTitle}</h2>
+				<p class="fine">{tv.compareLede}</p>
+			</div>
+			<a class="cta cta--bone" href={cmpHref}>{t.compareCta} <span class="arrow" aria-hidden="true">→</span></a>
+		</div>
+		<h2 class="sr-only">{tv.others}</h2>
 		<ul class="others" role="list">
 			{#each others as v (v)}
 				{@const og = GROUPS[v]}
@@ -184,7 +276,6 @@
 				</li>
 			{/each}
 		</ul>
-		<a class="cta cta--bone vs-cta" href={cmpHref}>{t.compareCta} <span class="arrow" aria-hidden="true">→</span></a>
 	</section>
 </VendorTheme>
 
@@ -211,43 +302,54 @@
 	.mono {
 		font-family: var(--font-mono);
 	}
+	ul {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+	.ring {
+		display: inline-block;
+		flex: none;
+		width: 0.55rem;
+		height: 0.55rem;
+		border-radius: 50%;
+		border: 1.5px dashed currentColor;
+	}
+	.wm.upright,
+	.maker.upright,
+	.ot-wm.upright {
+		font-style: normal;
+	}
 
-	/* ---------- the maker's showroom band (dark in both themes) ---------- */
+	/* ================= the showroom band (dark in both themes) ================= */
 	.vh {
 		--text-hi: #edeae3;
 		--text: #bdb9b1;
 		--text-mute: #8e8a83;
+		--before: #7d8794;
+		--px: 0;
+		--py: 0;
 		color-scheme: dark;
 		position: relative;
-		padding: calc(4.25rem + clamp(1rem, 3vh, 2.5rem)) 0 clamp(1.75rem, 4vw, 3rem);
+		padding: calc(4.25rem + clamp(0.75rem, 2.5vh, 2rem)) 0 clamp(1.5rem, 3.5vw, 2.75rem);
 		color: var(--text);
 		background:
-			radial-gradient(60% 90% at 78% 40%, rgb(var(--v) / 0.3), transparent 70%),
-			radial-gradient(50% 70% at 0% 0%, rgb(var(--v) / 0.32), transparent 70%),
-			linear-gradient(160deg, rgb(var(--v) / 0.22), transparent 45%),
-			linear-gradient(200deg, var(--v-deep), #070708 70%);
+			radial-gradient(55% 80% at 74% 46%, rgb(var(--v) / 0.34), transparent 72%),
+			radial-gradient(45% 60% at 0% 0%, rgb(var(--v) / 0.28), transparent 70%),
+			linear-gradient(165deg, rgb(var(--v) / 0.18), transparent 42%),
+			linear-gradient(200deg, var(--v-deep), #070708 72%);
 		overflow: hidden;
 		isolation: isolate;
+		view-transition-name: vendor-band;
 	}
 	.vh--apple {
 		background:
 			repeating-linear-gradient(90deg, rgb(255 255 255 / 0.016) 0 1px, transparent 1px 3px),
-			radial-gradient(60% 90% at 78% 40%, rgb(var(--v) / 0.22), transparent 70%),
-			radial-gradient(50% 70% at 0% 0%, rgb(232 234 239 / 0.22), transparent 70%),
-			linear-gradient(200deg, #17181b, #070708 70%);
+			radial-gradient(55% 80% at 74% 46%, rgb(var(--v) / 0.26), transparent 72%),
+			radial-gradient(45% 60% at 0% 0%, rgb(232 234 239 / 0.2), transparent 70%),
+			linear-gradient(200deg, #17181b, #070708 72%);
 	}
-	/* the maker's diagonal accent, large, behind the render; a lit edge closes the band */
-	.vh::before {
-		content: '';
-		position: absolute;
-		z-index: -1;
-		top: -20%;
-		right: -8%;
-		width: 60%;
-		height: 140%;
-		background: linear-gradient(115deg, transparent 0 40%, rgb(var(--v) / 0.3) 40% 42%, transparent 42% 47%, rgb(var(--v) / 0.14) 47% 48%, transparent 48%);
-		pointer-events: none;
-	}
+	/* a lit edge closes the band */
 	.vh::after {
 		content: '';
 		position: absolute;
@@ -257,7 +359,7 @@
 	}
 	.vh-in {
 		display: grid;
-		gap: var(--sp-4);
+		gap: var(--sp-3);
 	}
 	.back {
 		display: inline-flex;
@@ -275,187 +377,397 @@
 	}
 	.vh-grid {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 0.95fr);
+		grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr);
 		align-items: center;
 		gap: var(--sp-6) clamp(1.5rem, 4vw, 4rem);
 	}
 	.vh-text {
 		display: grid;
-		gap: var(--sp-4);
+		gap: var(--sp-5);
 		min-width: 0;
+		align-content: center;
 	}
 	.eyebrow {
 		margin: 0;
 	}
+	/* gradient wordmark: the padding is room for the italic overhang (the colour is painted only
+	   inside the box), the negative margin keeps the layout */
 	.wm {
-		margin: 0;
+		margin: -0.05em -0.22em -0.12em -0.05em;
+		padding: 0.05em 0.22em 0.12em 0.05em;
 		width: fit-content;
-		max-width: 100%;
+		max-width: calc(100% + 0.27em);
 		font-family: var(--font-display);
-		font-size: clamp(3.4rem, 1rem + 11vw, 10.5rem);
+		font-size: clamp(3.25rem, 1rem + 9vw, 9.5rem);
 		font-weight: 900;
 		font-stretch: 118%;
 		font-style: italic;
 		letter-spacing: -0.04em;
 		line-height: 0.88;
-		padding-right: 0.08em;
-		background: linear-gradient(100deg, #fff 15%, var(--v-hi) 70%, rgb(var(--v)));
+		background: linear-gradient(100deg, #fff 15%, var(--v-hi) 65%, rgb(var(--v)));
 		-webkit-background-clip: text;
 		background-clip: text;
 		color: transparent;
 		filter: drop-shadow(0 0 30px rgb(var(--v) / 0.45));
 	}
-	.vh--intel .wm,
-	.vh--apple .wm {
-		font-style: normal;
+	.lede {
+		margin: 0;
+		max-width: 36rem;
+		font-size: var(--fs-base);
+		color: var(--text);
+	}
+
+	/* the headline result: one strong number, the model, both measured speeds */
+	.res {
+		display: grid;
+		gap: var(--sp-3);
+		max-width: 34rem;
+		padding: var(--sp-4) var(--sp-5) var(--sp-5);
+		border-radius: var(--r-lg);
+		background: linear-gradient(135deg, rgb(255 255 255 / 0.06), rgb(255 255 255 / 0.015)), rgb(7 7 8 / 0.45);
+		box-shadow:
+			inset 0 0 0 1px rgb(var(--v) / 0.3),
+			inset 0 1px 0 rgb(255 255 255 / 0.08),
+			0 30px 60px -40px #000;
+		backdrop-filter: blur(6px);
+	}
+	.res-k {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.3rem 0.5rem;
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text);
+	}
+	.res-x {
+		margin: 0;
+		display: flex;
+		align-items: baseline;
+		gap: 0.6rem;
+		line-height: 0.9;
+	}
+	.res-x :global(.rx--lg) {
+		--rx-fs: clamp(3rem, 1.6rem + 3.6vw, 5.25rem);
+	}
+	.res-w {
+		font-size: var(--fs-md);
+		font-weight: 650;
+		color: var(--text-hi);
+	}
+	.res-bars {
+		display: grid;
+		gap: 0.6rem;
+	}
+	.rb,
+	.speed {
+		margin: 0;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.3rem var(--sp-2);
+		align-items: baseline;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+	}
+	.lb {
+		color: var(--text-mute);
+	}
+	.rb b,
+	.speed b {
+		font-weight: 600;
+		font-variant-numeric: tabular-nums;
+		white-space: nowrap;
+	}
+	.rb b {
+		font-size: var(--fs-sm);
+	}
+	small {
+		font-size: 1em;
+		color: var(--text-mute);
+		font-weight: 400;
+	}
+	.cold b {
+		color: var(--before);
+	}
+	.hot b {
+		color: var(--heat-4);
+	}
+	.track {
+		grid-column: 1 / -1;
+		height: 0.45rem;
+		border-radius: var(--r-pill);
+		background: rgb(255 255 255 / 0.07);
+		overflow: hidden;
+	}
+	.track i {
+		display: block;
+		height: 100%;
+		width: 100%;
+		border-radius: inherit;
+		transform: scaleX(var(--w));
+		transform-origin: 0 50%;
+	}
+	.cold .track i {
+		background: var(--before);
+		opacity: 0.7;
+	}
+	.hot .track i {
+		background: var(--heat-ramp-hot);
+		box-shadow: 0 0 12px rgb(255 122 26 / 0.6);
+	}
+	.res-on {
+		margin: 0;
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
+	}
+	/* nothing measured yet: the first card in the queue, muted, the estimate labelled */
+	.res--est {
+		background: rgb(7 7 8 / 0.4);
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.1);
+		border: 1px dashed rgb(var(--v) / 0.45);
+	}
+	.res--est .res-k {
+		color: var(--text-mute);
+	}
+	.est-nm {
+		margin: 0;
+		font-family: var(--font-display);
+		font-size: var(--fs-2xl);
+		font-weight: 800;
+		font-stretch: 110%;
+		letter-spacing: -0.02em;
+		line-height: 1.05;
+		color: var(--text-hi);
+	}
+	.est-v {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--sp-2) var(--sp-3);
+		font-size: var(--fs-xs);
+		color: var(--text);
+	}
+
+	/* ---------- the product stage: light and lines behind, the product, its reflection ---------- */
+	.stage {
+		position: relative;
+		min-width: 0;
+		aspect-ratio: 3 / 2.15;
+		display: grid;
+		place-items: center;
+		user-select: none;
+		isolation: isolate;
+	}
+	.beam,
+	.lines,
+	.floor,
+	.prod,
+	.refl {
+		position: absolute;
+		transition: transform 0.9s var(--ease-out);
+	}
+	/* the halo and a slow light sweep behind the product */
+	.beam {
+		z-index: 0;
+		inset: -12% -20%;
+		background: radial-gradient(42% 46% at 50% 46%, rgb(var(--v) / 0.42), rgb(var(--v) / 0.1) 55%, transparent 72%);
+		transform: translate3d(calc(var(--px) * 18px), calc(var(--py) * 12px), 0);
+		overflow: hidden;
+		mask-image: radial-gradient(60% 60% at 50% 50%, #000 40%, transparent 80%);
+	}
+	.beam span {
+		position: absolute;
+		top: -20%;
+		bottom: -20%;
+		left: 35%;
+		width: 22%;
+		background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.16), transparent);
+		transform: translate3d(-180%, 0, 0) skewX(-18deg);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.vh.on .beam span {
+			animation: beam 7.5s var(--ease-in-out) infinite alternate;
+		}
+	}
+	@keyframes beam {
+		to {
+			transform: translate3d(180%, 0, 0) skewX(-18deg);
+		}
+	}
+	/* the maker's hairlines, raking behind the product */
+	.lines {
+		z-index: 0;
+		inset: -30% -10% -10% 0;
+		transform: translate3d(calc(var(--px) * 28px), calc(var(--py) * 18px), 0);
+		mask-image: radial-gradient(70% 70% at 60% 40%, #000 30%, transparent 75%);
+	}
+	.lines i {
+		position: absolute;
+		top: 0;
+		left: 62%;
+		width: 2px;
+		height: 120%;
+		border-radius: 2px;
+		background: linear-gradient(180deg, rgb(var(--v) / 0), rgb(var(--v) / 0.9) 40%, rgb(var(--v) / 0));
+		box-shadow: 0 0 18px 1px rgb(var(--v) / 0.5);
+		transform: rotate(26deg);
+		transform-origin: top;
+	}
+	.lines i:nth-child(2) {
+		left: 74%;
+		width: 1px;
+		opacity: 0.55;
+		box-shadow: none;
+	}
+	.lines i:nth-child(3) {
+		left: 82%;
+		width: 1px;
+		opacity: 0.3;
+		box-shadow: none;
+	}
+	/* the floor: a lit ellipse and a contact shadow under the product */
+	.floor {
+		z-index: 1;
+		left: 6%;
+		right: 6%;
+		bottom: 6%;
+		height: 24%;
+		border-radius: 50%;
+		background:
+			radial-gradient(closest-side, rgb(0 0 0 / 0.75), rgb(0 0 0 / 0.3) 55%, transparent 80%),
+			radial-gradient(closest-side, rgb(var(--v) / 0.5), transparent);
+		filter: blur(8px);
+		transform: translate3d(calc(var(--px) * 6px), 0, 0) scaleY(0.6);
+	}
+	.prod {
+		z-index: 2;
+		inset: 0 4% 18%;
+		display: grid;
+		place-items: center;
+		transform: translate3d(calc(var(--px) * -12px), calc(var(--py) * -8px), 0) rotateY(calc(var(--px) * 5deg));
+	}
+	.prod > :global(*),
+	.refl > :global(*) {
+		width: 100%;
+	}
+	.prod :global(.glow) {
+		background: radial-gradient(closest-side, rgb(var(--v) / calc(0.3 + var(--th) * 0.2)), transparent);
+	}
+	/* the reflection on the floor: the product mirrored, fading away */
+	.refl {
+		z-index: 1;
+		inset: 64% 4% -46%;
+		display: grid;
+		place-items: start center;
+		opacity: 0.22;
+		transform: translate3d(calc(var(--px) * -12px), 0, 0) scaleY(-1);
+		mask-image: linear-gradient(0deg, #000, transparent 46%);
+		filter: blur(1.5px);
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		:global(html.js) .wm {
 			animation: wm-in 1s var(--ease-spring) backwards;
 		}
-		:global(html.js) .vh-art {
-			animation: art-in 1.2s var(--ease-spring) 0.12s backwards;
+		:global(html.js) .stage {
+			animation: stage-in 1.2s var(--ease-spring) 0.1s backwards;
+		}
+		:global(html.js) .res {
+			animation: rise 0.9s var(--ease-spring) 0.18s backwards;
 		}
 	}
 	@keyframes wm-in {
 		from {
-			transform: translate3d(-0.15em, 0, 0) skewX(-6deg);
+			transform: translate3d(-0.12em, 0, 0) skewX(-6deg);
 		}
 	}
-	@keyframes art-in {
+	@keyframes stage-in {
 		from {
 			opacity: 0;
-			transform: translate3d(14%, 4%, 0) rotate(-4deg) scale(0.92);
+			transform: translate3d(8%, 3%, 0) scale(0.94);
 		}
 	}
-	.lede {
-		margin: 0;
-		max-width: 38rem;
-		font-size: var(--fs-md);
-		color: var(--text);
+	@keyframes rise {
+		from {
+			opacity: 0;
+			transform: translate3d(0, 22px, 0);
+		}
 	}
-	.stats {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-end;
-		gap: var(--sp-3) var(--sp-8);
-	}
-	.st {
-		margin: 0;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.3rem 1rem;
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-mute);
-	}
-	.st > span {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.45rem;
-		white-space: nowrap;
-	}
-	.st--gain {
-		align-items: baseline;
-		gap: 0 0.5rem;
-		letter-spacing: 0;
-		text-transform: none;
-		line-height: 1;
-	}
-	.up {
-		font-size: var(--fs-md);
-		font-weight: 600;
-		color: var(--text);
-	}
-	.c-m {
-		color: var(--text);
-	}
-	.dot,
-	.ring {
-		display: inline-block;
-		width: 0.5rem;
-		height: 0.5rem;
-		border-radius: 50%;
-		flex: none;
-	}
-	.dot {
-		background: var(--v-hi);
-		box-shadow: 0 0 10px rgb(var(--v) / 0.9);
-	}
-	.ring {
-		border: 1.5px dashed currentColor;
-	}
-	.vh-art {
+
+	/* ---------- the maker switch: a segmented control in the makers' colours ---------- */
+	.seg {
 		position: relative;
-		min-width: 0;
-		user-select: none;
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		width: min(100%, 34rem);
+		margin-top: var(--sp-4);
+		padding: 0.3rem;
+		border-radius: var(--r-pill);
+		background: rgb(0 0 0 / 0.45);
+		box-shadow:
+			inset 0 0 0 1px rgb(255 255 255 / 0.1),
+			inset 0 2px 6px rgb(0 0 0 / 0.5);
 	}
-	/* a generated render: its studio black drops out against the band (blend on the animated box) */
-	.vh-art:has(> :global(.render)) {
-		mix-blend-mode: lighten;
-	}
-	/* the maker's silicon, large and faint behind the band's text */
-	.vh-chip {
+	/* the lit segment slides to the new maker on navigation (view transition) */
+	.seg-ind {
 		position: absolute;
-		z-index: -1;
-		left: -6%;
-		bottom: -18%;
-		width: min(62%, 52rem);
-		opacity: 0.2;
-		mix-blend-mode: lighten;
-		pointer-events: none;
+		top: 0.3rem;
+		bottom: 0.3rem;
+		left: 0.3rem;
+		width: calc((100% - 0.6rem) / 4);
+		border-radius: var(--r-pill);
+		background: linear-gradient(135deg, rgb(var(--v) / 0.75), rgb(var(--v) / 0.35));
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.25),
+			0 0 26px -4px rgb(var(--v) / 0.75);
+		transform: translate3d(calc(var(--k) * 100%), 0, 0);
 	}
-	.vh-art :global(.glow) {
-		background: radial-gradient(closest-side, rgb(var(--v) / calc(0.3 + var(--th) * 0.2)), transparent);
-	}
-	.switch {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--sp-2);
-		margin-top: var(--sp-2);
-	}
-	.sw {
+	.seg-i {
+		position: relative;
 		display: inline-flex;
 		align-items: center;
-		gap: 0.5rem;
-		min-height: 2.5rem;
-		padding: 0 1rem;
+		justify-content: center;
+		gap: 0.45rem;
+		min-height: 2.6rem;
+		padding: 0 0.5rem;
 		border-radius: var(--r-pill);
-		background: rgb(255 255 255 / 0.04);
-		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.12);
 		font-family: var(--font-display);
 		font-weight: 750;
 		font-size: var(--fs-sm);
-		letter-spacing: 0.02em;
+		letter-spacing: 0.01em;
 		color: var(--text);
 		text-decoration: none;
+		white-space: nowrap;
 		transition:
-			background-color var(--dur-2),
-			box-shadow var(--dur-2),
 			color var(--dur-2),
-			transform 0.5s var(--ease-spring);
+			background-color var(--dur-2);
 	}
-	.sw i {
-		width: 0.55rem;
-		height: 0.55rem;
+	.seg-i i {
+		flex: none;
+		width: 0.5rem;
+		height: 0.5rem;
 		border-radius: 50%;
 		background: rgb(var(--v));
 		box-shadow: 0 0 8px rgb(var(--v) / 0.8);
 	}
-	.sw:hover {
+	.seg-i:not(.on):hover {
 		color: var(--text-hi);
-		transform: translate3d(0, -2px, 0);
-		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.7);
+		background: rgb(var(--v) / 0.14);
 	}
-	.sw.on {
+	.seg-i.on {
 		color: #fff;
-		background: linear-gradient(135deg, rgb(var(--v) / 0.5), rgb(var(--v) / 0.18));
-		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.9), 0 0 24px -6px rgb(var(--v) / 0.7);
+	}
+	.seg-i.on i {
+		background: #fff;
+	}
+	.seg-i:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
 	}
 
-	/* ---------- sections ---------- */
+	/* ================= sections ================= */
 	.blk {
 		display: grid;
 		gap: var(--sp-5);
@@ -464,12 +776,11 @@
 	.blk-h {
 		display: flex;
 		flex-wrap: wrap;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: var(--sp-2) var(--sp-6);
+		align-items: center;
+		gap: var(--sp-2) var(--sp-4);
 	}
 	.blk-h .fine {
-		margin: 0;
+		margin: 0 0 0 auto;
 		max-width: 36rem;
 	}
 	.h {
@@ -489,17 +800,10 @@
 		color: var(--text);
 	}
 	.h--q .ring {
-		width: 0.65rem;
-		height: 0.65rem;
 		color: var(--text-mute);
 	}
-	ul {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
 
-	/* ---------- measured: showroom tiles ---------- */
+	/* ---------- measured: rich showroom tiles ---------- */
 	.measured {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
@@ -514,11 +818,15 @@
 			animation: rise 0.9s var(--ease-spring) backwards;
 			animation-delay: calc(200ms + var(--i) * 90ms);
 		}
-	}
-	@keyframes rise {
-		from {
-			opacity: 0;
-			transform: translate3d(0, 24px, 0);
+		:global(html.js) .measured .track i {
+			transform: scaleX(0);
+		}
+		:global(html.js) .played .track i {
+			transform: scaleX(var(--w));
+			transition: transform 1.3s var(--ease-out);
+		}
+		:global(html.js) .played .hot .track i {
+			transition-delay: 0.25s;
 		}
 	}
 	.tile {
@@ -542,17 +850,6 @@
 		isolation: isolate;
 		transition: box-shadow 0.6s var(--ease-out);
 	}
-	.tile::before {
-		content: '';
-		position: absolute;
-		z-index: -1;
-		top: -30%;
-		right: -18%;
-		width: 55%;
-		height: 70%;
-		background: linear-gradient(115deg, transparent 0 38%, rgb(var(--v) / 0.42) 38% 41%, transparent 41% 47%, rgb(var(--v) / 0.2) 47% 48.5%, transparent 48.5%);
-		pointer-events: none;
-	}
 	.tile.live,
 	.tile:focus-within {
 		box-shadow:
@@ -565,19 +862,49 @@
 		outline: 2px solid var(--focus);
 		outline-offset: 3px;
 	}
+	/* hairlines in the top corner, fading out above the product */
+	.acc {
+		position: absolute;
+		z-index: -1;
+		top: 0;
+		right: 0;
+		width: 44%;
+		height: 4.5rem;
+		overflow: hidden;
+		pointer-events: none;
+		mask-image: linear-gradient(180deg, #000 20%, transparent 100%);
+	}
+	.acc i {
+		position: absolute;
+		top: -40%;
+		left: 52%;
+		width: 2px;
+		height: 200%;
+		border-radius: 2px;
+		background: linear-gradient(180deg, rgb(var(--v) / 0), rgb(var(--v) / 0.95) 45%, rgb(var(--v) / 0.25));
+		box-shadow: 0 0 14px 1px rgb(var(--v) / 0.55);
+		transform: rotate(32deg);
+	}
+	.acc i + i {
+		left: 70%;
+		width: 1px;
+		opacity: 0.55;
+		box-shadow: none;
+	}
 	.brand {
 		margin: 0;
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
-		gap: 0.55rem;
+		gap: 0.2rem 0.55rem;
 		min-width: 0;
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--text-mute);
-		white-space: nowrap;
 	}
 	.maker {
+		padding-right: 0.15em;
 		font-family: var(--font-display);
 		font-size: 0.8rem;
 		font-weight: 850;
@@ -586,28 +913,19 @@
 		color: var(--v-hi);
 		text-shadow: 0 0 14px rgb(var(--v) / 0.6);
 	}
-	.pre {
-		overflow: hidden;
-		text-overflow: ellipsis;
-	}
-	.vram {
-		margin-left: auto;
-		padding: 0.2rem 0.5rem;
-		border-radius: var(--r-pill);
-		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.45);
-		color: var(--text);
-		letter-spacing: 0.06em;
-	}
-	.stage {
+	.t-stage {
 		position: relative;
 		margin: var(--sp-3) calc(-1 * var(--sp-2));
 		user-select: none;
+	}
+	.t-art {
+		position: relative;
 		transition: transform 0.8s var(--ease-spring);
 	}
-	.tile.live .stage {
+	.tile.live .t-art {
 		transform: translate3d(0, -3%, 0) scale(1.03);
 	}
-	.stage :global(.glow) {
+	.t-stage :global(.glow) {
 		background: radial-gradient(closest-side, rgb(var(--v) / calc(0.22 + var(--th) * 0.2)), transparent);
 	}
 	.sweep {
@@ -626,9 +944,10 @@
 	}
 	.id {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: baseline;
 		justify-content: space-between;
-		gap: var(--sp-3);
+		gap: 0 var(--sp-3);
 		min-width: 0;
 	}
 	.short {
@@ -637,9 +956,8 @@
 		font-size: clamp(1.7rem, 1.2rem + 1vw, 2.4rem);
 		font-weight: 850;
 		font-stretch: 112%;
-		line-height: 0.95;
+		line-height: 1;
 		letter-spacing: -0.035em;
-		white-space: nowrap;
 	}
 	.stretch {
 		color: var(--text-hi);
@@ -659,198 +977,151 @@
 		color: #fff;
 	}
 	.x {
-		line-height: 0.9;
+		line-height: 1;
 	}
-	.spec {
-		margin: 0.4rem 0 var(--sp-4);
+	.chips {
 		display: flex;
-		justify-content: space-between;
-		gap: var(--sp-3);
+		flex-wrap: wrap;
+		gap: 0.35rem;
+		margin-top: var(--sp-3);
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
+	}
+	.chips li {
+		padding: 0.25rem 0.55rem;
+		border-radius: var(--r-pill);
+		background: rgb(255 255 255 / 0.04);
+		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.3);
+	}
+	.chips b {
+		font-weight: 600;
+		color: var(--text-hi);
 	}
 	.bars {
 		display: grid;
 		gap: 0.55rem;
 		margin-top: auto;
-		padding-top: var(--sp-3);
-		border-top: 1px solid rgb(var(--v) / 0.22);
-	}
-	.speed {
-		margin: 0;
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: 0.3rem var(--sp-2);
-		align-items: baseline;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-	}
-	.lb {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		color: var(--text-mute);
-	}
-	.speed b {
-		font-weight: 600;
-		font-variant-numeric: tabular-nums;
-	}
-	.speed small {
-		font-size: 1em;
-		color: var(--text-mute);
-		font-weight: 400;
-	}
-	.cold b {
-		color: var(--before);
-	}
-	.hot b {
-		color: var(--heat-4);
-	}
-	.track {
-		grid-column: 1 / -1;
-		height: 0.4rem;
-		border-radius: var(--r-pill);
-		background: rgb(255 255 255 / 0.06);
-		overflow: hidden;
-	}
-	.track i {
-		display: block;
-		height: 100%;
-		width: calc(var(--w) * 100%);
-		border-radius: inherit;
-		transform-origin: 0 50%;
-	}
-	.cold .track i {
-		background: var(--before);
-		opacity: 0.7;
-	}
-	.hot .track i {
-		background: var(--heat-ramp-hot);
-		box-shadow: 0 0 12px rgb(255 122 26 / 0.6);
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .measured .track i {
-			transform: scaleX(0);
-		}
-		:global(html.js) .played .track i {
-			transform: none;
-			transition: transform 1.3s var(--ease-out);
-		}
-		:global(html.js) .played .hot .track i {
-			transition-delay: 0.25s;
-		}
+		padding-top: var(--sp-4);
 	}
 	.model {
-		margin: 0.15rem 0 0;
+		margin: 0 0 0.15rem;
 		display: flex;
 		flex-wrap: wrap;
+		justify-content: space-between;
 		gap: 0.1rem 0.6rem;
+		padding-top: var(--sp-3);
+		border-top: 1px solid rgb(var(--v) / 0.22);
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
 	}
 	.model .m {
 		color: var(--text);
 	}
-
-	/* ---------- queue: quieter, dashed, numbers labelled as estimates ---------- */
-	.blk--q {
-		gap: var(--sp-4);
+	.model .k {
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
 	}
+	.warn {
+		margin: 0.2rem 0 0;
+		font-size: var(--fs-2xs);
+		color: var(--text);
+	}
+
+	/* ---------- queue: quiet estimate rows, visually secondary ---------- */
 	.queued {
 		display: grid;
-		grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
-		gap: var(--sp-3);
+		grid-template-columns: repeat(auto-fill, minmax(min(100%, 30rem), 1fr));
+		gap: 0 var(--sp-6);
 	}
-	.queued > li {
-		display: grid;
-	}
-	.qtile {
-		--text-hi: #edeae3;
-		--text: #bdb9b1;
-		--text-mute: #8e8a83;
-		color-scheme: dark;
+	.qrow {
 		position: relative;
-		display: flex;
-		flex-direction: column;
-		gap: var(--sp-3);
-		padding: var(--sp-4);
-		border: 1px dashed rgb(var(--v) / 0.38);
-		border-radius: var(--r-lg);
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto auto;
+		grid-template-areas: 'id est go' 'spec est go';
+		align-items: center;
+		gap: 0.15rem var(--sp-4);
+		padding: var(--sp-3) var(--sp-2);
+		border-bottom: 1px dashed rgb(var(--v) / 0.28);
 		color: var(--text);
-		background:
-			radial-gradient(100% 70% at 0% 0%, rgb(var(--v) / 0.1), transparent 65%),
-			linear-gradient(180deg, #0e0e10, #070708);
+		text-decoration: none;
 		transition:
-			border-color var(--dur-3),
-			box-shadow var(--dur-3),
-			transform 0.6s var(--ease-spring);
+			background-color var(--dur-2),
+			transform 0.5s var(--ease-spring);
 	}
-	.qtile:is(:hover, :focus-within) {
-		border-color: rgb(var(--v) / 0.8);
-		box-shadow: 0 18px 44px -24px rgb(var(--v) / 0.55);
-		transform: translate3d(0, -3px, 0);
+	.qrow:hover {
+		background: rgb(var(--v) / 0.06);
+		transform: translate3d(3px, 0, 0);
 	}
-	.qtile:has(.stretch:focus-visible) {
+	.qrow:focus-visible {
 		outline: 2px solid var(--focus);
-		outline-offset: 3px;
+		outline-offset: 2px;
 	}
 	.q-id {
-		display: grid;
-		gap: 0.25rem;
+		grid-area: id;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0 0.5rem;
 		min-width: 0;
 	}
-	.q-pre,
-	.q-spec {
-		margin: 0;
+	.q-pre {
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 		color: var(--text-mute);
 	}
-	.q-spec {
-		letter-spacing: 0.02em;
-		text-transform: none;
-	}
 	.q-name {
-		margin: 0;
 		font-family: var(--font-display);
-		font-size: var(--fs-xl);
-		font-weight: 800;
-		font-stretch: 112%;
-		letter-spacing: -0.03em;
-		line-height: 1.05;
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
+		font-size: var(--fs-lg);
+		font-weight: 750;
+		font-stretch: 110%;
+		letter-spacing: -0.02em;
+		color: var(--text);
+	}
+	.q-spec {
+		grid-area: spec;
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
 	}
 	.q-est {
+		grid-area: est;
 		display: grid;
-		gap: var(--sp-2);
-		align-content: start;
-		justify-items: start;
-		margin-top: auto;
-		padding-top: var(--sp-3);
-		border-top: 1px dashed rgb(var(--v) / 0.25);
-	}
-	.q-est p {
-		margin: 0;
-		display: grid;
-		gap: 0.15rem;
+		justify-items: end;
+		gap: 0.1rem;
+		text-align: right;
 		font-size: var(--fs-xs);
 	}
 	.q-est .v {
 		color: var(--text);
 	}
 	.q-est .lbl {
-		color: var(--text-mute);
 		font-size: var(--fs-2xs);
+		color: var(--text-mute);
+	}
+	.q-go {
+		grid-area: go;
+		color: var(--text-mute);
+		transition: color var(--dur-2);
+	}
+	.qrow:hover .q-go {
+		color: var(--hx-ink);
 	}
 
-	/* ---------- the other makers, the versus view ---------- */
+	/* ---------- the versus view, the other makers ---------- */
 	.more {
 		display: grid;
 		gap: var(--sp-5);
 		padding: clamp(3rem, 7vw, 5.5rem) 0 var(--section-y);
+	}
+	.vsx {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		justify-content: space-between;
+		gap: var(--sp-4) var(--sp-8);
+	}
+	.vsx .fine {
+		margin: var(--sp-2) 0 0;
 	}
 	.others {
 		display: grid;
@@ -872,16 +1143,20 @@
 		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.3);
 		color: var(--text);
 		text-decoration: none;
-		overflow: hidden;
 		transition:
 			transform 0.6s var(--ease-spring),
 			box-shadow 0.4s;
 	}
 	.ot:is(:hover, :focus-visible) {
 		transform: translate3d(0, -4px, 0);
-		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.8), 0 0 40px -14px rgb(var(--v) / 0.6);
+		box-shadow:
+			inset 0 0 0 1px rgb(var(--v) / 0.8),
+			0 0 40px -14px rgb(var(--v) / 0.6);
 	}
 	.ot-wm {
+		width: fit-content;
+		padding: 0.04em 0.2em 0.1em 0.04em;
+		margin: -0.04em -0.2em -0.1em -0.04em;
 		font-family: var(--font-display);
 		font-size: var(--fs-xl);
 		font-weight: 900;
@@ -892,9 +1167,6 @@
 		-webkit-background-clip: text;
 		background-clip: text;
 		color: transparent;
-	}
-	.ot-wm.upright {
-		font-style: normal;
 	}
 	.ot-c {
 		grid-column: 1;
@@ -913,57 +1185,112 @@
 	.ot:is(:hover, :focus-visible) .ot-a {
 		transform: translate3d(4px, 0, 0);
 	}
-	.vs-cta {
-		justify-self: start;
+
+	/* maker to maker: the band's colour crossfades, the product slides, the segment glides */
+	:global(::view-transition-group(vendor-seg)) {
+		animation-duration: 0.55s;
+		animation-timing-function: var(--ease-spring);
+	}
+	:global(::view-transition-old(vendor-stage)) {
+		animation: 0.35s ease-in both vs-out;
+	}
+	:global(::view-transition-new(vendor-stage)) {
+		animation: 0.8s var(--ease-spring) 0.1s both vs-in;
+	}
+	@keyframes -global-vs-out {
+		to {
+			opacity: 0;
+			transform: translate3d(-8%, 0, 0) scale(0.96);
+		}
+	}
+	@keyframes -global-vs-in {
+		from {
+			opacity: 0;
+			transform: translate3d(10%, 0, 0) scale(0.96);
+		}
 	}
 
-	@media (max-width: 52rem) {
+	/* one measured card: a wide tile, the product on the left, the numbers beside it */
+	@media (min-width: 48rem) {
+		.measured:has(> li:only-child) {
+			grid-template-columns: minmax(0, 62rem);
+		}
+		.measured > li:only-child .tile {
+			display: grid;
+			grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+			grid-template-rows: auto auto auto 1fr;
+			column-gap: var(--sp-8);
+			padding: var(--sp-6);
+		}
+		.measured > li:only-child .t-stage {
+			grid-column: 1;
+			grid-row: 1 / span 4;
+			align-self: center;
+			margin: 0;
+		}
+		.measured > li:only-child :is(.brand, .id, .chips, .bars) {
+			grid-column: 2;
+		}
+		.measured > li:only-child .bars {
+			align-self: end;
+		}
+	}
+	@media (max-width: 56rem) {
 		.vh-grid {
 			grid-template-columns: minmax(0, 1fr);
 		}
-		.vh-art {
+		.stage {
 			order: -1;
-			width: min(100%, 26rem);
+			width: min(100%, 34rem);
 			justify-self: center;
-			margin-bottom: calc(-1 * var(--sp-4));
+			margin-block: calc(-1 * var(--sp-4)) calc(-1 * var(--sp-6));
 		}
 		.others {
 			grid-template-columns: minmax(0, 1fr);
 		}
+		.blk-h .fine {
+			margin-left: 0;
+		}
 	}
 	@media (max-width: 40rem) {
 		.vh {
-			padding-top: calc(4.25rem + 0.5rem);
+			padding-top: calc(4.25rem + 0.25rem);
 		}
-		.vh-in {
-			gap: var(--sp-3);
+		.vh-text {
+			gap: var(--sp-4);
 		}
-		.vh-art {
-			width: min(82%, 20rem);
+		.res {
+			padding: var(--sp-3) var(--sp-4) var(--sp-4);
 		}
-		.lede {
-			font-size: var(--fs-base);
+		.seg {
+			width: 100%;
 		}
-		.up {
-			font-size: var(--fs-sm);
-		}
-		.switch {
-			display: grid;
-			grid-template-columns: repeat(4, minmax(0, 1fr));
-			gap: 0.35rem;
-		}
-		.sw {
-			justify-content: center;
-			gap: 0.35rem;
-			padding: 0 0.4rem;
+		.seg-i {
+			gap: 0.3rem;
+			padding: 0 0.25rem;
 			font-size: var(--fs-xs);
 		}
-		.sw i {
-			width: 0.45rem;
-			height: 0.45rem;
+		.seg-i i {
+			width: 0.4rem;
+			height: 0.4rem;
 		}
 		.tile {
 			padding: var(--sp-3) var(--sp-3) var(--sp-4);
+		}
+		.qrow {
+			grid-template-columns: minmax(0, 1fr) auto;
+			grid-template-areas: 'id go' 'spec go' 'est go';
+			gap: 0.2rem var(--sp-3);
+		}
+		.q-est {
+			justify-items: start;
+			text-align: left;
+			margin-top: 0.2rem;
+		}
+	}
+	@media (max-width: 22rem) {
+		.seg-i i {
+			display: none;
 		}
 	}
 </style>

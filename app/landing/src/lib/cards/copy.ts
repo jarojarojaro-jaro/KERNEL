@@ -55,7 +55,16 @@ const pl = {
 		queue: 'W kolejce pomiarów',
 		queueLede: 'Tych jeszcze nie zmierzyliśmy. Specyfikacja i, gdzie się da, szacunek z naszego wzoru: to nie pomiar.',
 		others: 'Inni producenci',
-		nav: 'Producenci kart'
+		nav: 'Producenci kart',
+		best: 'Najlepszy zmierzony wynik',
+		measuredOn: (card: string) => `zmierzone na ${card}`,
+		next: 'Pierwsza w kolejce pomiarów',
+		nextNote: 'Typowa aplikacja, szacunek z naszego wzoru. Prawdziwe liczby po pomiarze.',
+		bw: 'przepustowość',
+		mem: 'pamięć',
+		bestModel: 'najlepszy model',
+		compareTitle: 'Zmierz się z inną kartą',
+		compareLede: 'Dwie zmierzone karty naprzeciw siebie, ten sam model.'
 	},
 	card: {
 		back: 'Wszystkie karty',
@@ -239,7 +248,16 @@ const en: Copy = {
 		queue: 'In the measurement queue',
 		queueLede: 'Not measured yet. The spec and, where possible, an estimate from our formula: not a measurement.',
 		others: 'Other makers',
-		nav: 'Card makers'
+		nav: 'Card makers',
+		best: 'Best measured result',
+		measuredOn: (card: string) => `measured on the ${card}`,
+		next: 'First in the measurement queue',
+		nextNote: 'Typical app, an estimate from our formula. Real numbers once measured.',
+		bw: 'bandwidth',
+		mem: 'memory',
+		bestModel: 'best model',
+		compareTitle: 'Take on another card',
+		compareLede: 'Two measured cards face to face, the same model.'
 	},
 	card: {
 		back: 'All cards',

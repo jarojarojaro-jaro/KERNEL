@@ -18,8 +18,8 @@
 	import EstTag from './EstTag.svelte';
 	import GpuArt from './GpuArt.svelte';
 	import Ratio from './Ratio.svelte';
-	import { VENDOR, vendorVars } from './vendor';
-	import VendorRender from './VendorRender.svelte';
+	import ProductPhoto from './ProductPhoto.svelte';
+	import { MAKER_PHOTO, photoOf, VENDOR, vendorVars } from './vendor';
 
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].gallery);
@@ -51,17 +51,18 @@
 					{@const g = GROUPS[v]}
 					<li class="mk mk--{v}" style="{vendorVars(v)}; --i:{i}; --th:{heatOf(g.best)}">
 						<a class="mk-tile" href={cardsHref(lang, `${v}/`)} use:tilt={{ max: 4 }} onpointerenter={() => (hover = v)} onpointerleave={() => (hover = null)} onfocus={() => (hover = v)} onblur={() => (hover = null)}>
+							<span class="acc" aria-hidden="true"><i></i><i></i></span>
 							<div class="mk-top">
 								<span class="wm" style="view-transition-name: vendor-{v}">{VENDOR[v].name}</span>
 								<span class="line mono">{LINEUP[v]}</span>
 							</div>
 							<div class="stage" aria-hidden="true">
-								<div class="art">
-									<VendorRender vendor={v} kind="face" sizes="(max-width: 40rem) 92vw, (max-width: 64rem) 46vw, 24rem">
-										{#snippet fallback()}<GpuArt label={g.face.label} vendor={v} vram={g.face.vram} heat={heatOf(g.face.ratio)} live={hover === v} flat />{/snippet}
-									</VendorRender>
-								</div>
 								<span class="sweep"></span>
+								<div class="art">
+									<ProductPhoto id={MAKER_PHOTO[v]} sizes="(max-width: 40rem) 46vw, (max-width: 64rem) 46vw, 24rem" eager>
+										{#snippet fallback()}<GpuArt label={g.face.label} vendor={v} vram={g.face.vram} heat={heatOf(g.face.ratio)} live={hover === v} flat />{/snippet}
+									</ProductPhoto>
+								</div>
 							</div>
 							<div class="mk-foot">
 								<span class="gain">
@@ -134,7 +135,9 @@
 	<div class="vsb-in">
 		<div class="vsb-side vsb-a" aria-hidden="true">
 			<span class="vsb-wm">{VENDOR.nvidia.name}</span>
-			<div class="vsb-art"><GpuArt label={A.label} vendor="nvidia" vram={A.vram} heat={heatOf(A.ratio)} flat /></div>
+			<div class="vsb-art">
+				{#if photoOf(A.id)}<ProductPhoto id={photoOf(A.id)!} sizes="(max-width: 64rem) 45vw, 22rem" />{:else}<GpuArt label={A.label} vendor="nvidia" vram={A.vram} heat={heatOf(A.ratio)} flat />{/if}
+			</div>
 			<span class="vsb-nm">{faceShort(A.id)}</span>
 			{#if faceSpeed(A.id)}<span class="vsb-v mono">{fmtTps(faceSpeed(A.id)!, lang)}{NB}t/s</span>{/if}
 		</div>
@@ -146,7 +149,9 @@
 		</div>
 		<div class="vsb-side vsb-b" aria-hidden="true">
 			<span class="vsb-wm">{VENDOR.amd.name}</span>
-			<div class="vsb-art"><GpuArt label={B.label} vendor="amd" vram={B.vram} heat={heatOf(B.ratio)} flat /></div>
+			<div class="vsb-art">
+				{#if photoOf(B.id)}<ProductPhoto id={photoOf(B.id)!} sizes="(max-width: 64rem) 45vw, 22rem" />{:else}<GpuArt label={B.label} vendor="amd" vram={B.vram} heat={heatOf(B.ratio)} flat />{/if}
+			</div>
 			<span class="vsb-nm">{faceShort(B.id)}</span>
 			{#if faceSpeed(B.id)}<span class="vsb-v mono">{fmtTps(faceSpeed(B.id)!, lang)}{NB}t/s</span>{/if}
 		</div>
@@ -249,21 +254,44 @@
 		isolation: isolate;
 		transition: box-shadow 0.6s var(--ease-out);
 	}
-	/* the maker's diagonal accent through the top corner */
-	.mk-tile::before {
-		content: '';
+	/*
+	 * The maker's accent: two hairlines raking down from the top corner, fading out above the
+	 * product (masked out of the stage, and painted under everything in the block).
+	 */
+	.acc {
 		position: absolute;
 		z-index: -1;
-		top: -25%;
-		right: -22%;
-		width: 70%;
-		height: 75%;
-		background: linear-gradient(115deg, transparent 0 38%, rgb(var(--v) / 0.45) 38% 41%, transparent 41% 47%, rgb(var(--v) / 0.2) 47% 48.5%, transparent 48.5%);
+		top: 0;
+		right: 0;
+		width: 46%;
+		height: clamp(4.5rem, 7vw, 7rem);
+		overflow: hidden;
 		pointer-events: none;
+		mask-image: linear-gradient(180deg, #000 20%, transparent 100%);
+	}
+	.acc i {
+		position: absolute;
+		top: -40%;
+		left: 52%;
+		width: 2px;
+		height: 200%;
+		border-radius: 2px;
+		background: linear-gradient(180deg, rgb(var(--v) / 0), rgb(var(--v) / 0.95) 45%, rgb(var(--v) / 0.25));
+		box-shadow: 0 0 14px 1px rgb(var(--v) / 0.55);
+		transform: rotate(32deg);
 		transition: transform 0.9s var(--ease-spring);
 	}
-	.mk-tile:is(:hover, :focus-visible)::before {
-		transform: translate3d(-6%, 4%, 0);
+	.acc i + i {
+		left: 70%;
+		width: 1px;
+		opacity: 0.55;
+		box-shadow: none;
+	}
+	.mk-tile:is(:hover, :focus-visible) .acc i {
+		transform: translate3d(-10px, 0, 0) rotate(32deg);
+	}
+	.mk-tile:is(:hover, :focus-visible) .acc i + i {
+		transform: translate3d(-18px, 0, 0) rotate(32deg);
 	}
 	.mk-tile:is(:hover, :focus-visible) {
 		box-shadow:
@@ -290,8 +318,12 @@
 		gap: 0.3rem;
 		min-width: 0;
 	}
+	/* gradient text paints only inside its box: padding leaves room for the italic overhang and
+	   descenders (p), the negative margins keep the layout where it was */
 	.wm {
 		width: fit-content;
+		padding: 0.04em 0.2em 0.14em 0.04em;
+		margin: -0.04em -0.2em -0.14em -0.04em;
 		font-family: var(--font-display);
 		font-size: clamp(1.5rem, 0.9rem + 2.1vw, 3rem);
 		font-weight: 900;
@@ -309,14 +341,12 @@
 	.mk--apple .wm {
 		font-style: normal;
 	}
+	/* never truncated: on the narrowest blocks the line wraps */
 	.line {
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.14em;
 		text-transform: uppercase;
 		color: var(--text-mute);
-		white-space: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
 	}
 
 	.stage {
@@ -340,13 +370,11 @@
 		transition: opacity 0.6s var(--ease-out);
 		opacity: 0.75;
 	}
+	/* positioned after the sweep, so the light passes behind the product, never over it */
 	.art {
+		position: relative;
 		display: block;
 		transition: transform 0.8s var(--ease-spring);
-	}
-	/* a generated render: its studio black drops out against the maker surface */
-	.art:has(> :global(.render)) {
-		mix-blend-mode: lighten;
 	}
 	.art :global(.glow) {
 		background: radial-gradient(closest-side, rgb(var(--v) / calc(0.24 + var(--th) * 0.2)), transparent);
@@ -704,6 +732,7 @@
 		gap: var(--sp-3);
 	}
 	.vsb-vs {
+		padding: 0.06em 0.22em;
 		font-family: var(--font-display);
 		font-size: clamp(3.5rem, 2rem + 5vw, 7.5rem);
 		font-weight: 900;
