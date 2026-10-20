@@ -20,6 +20,7 @@ Konwencje: `[INFERENCE]` oznacza wniosek bez pomiaru. CI to 95% bootstrap po pro
 | E5 | bitexact + adaptacyjna głębokość | przebieg 1: build nie skompilował się (`t.pos`, merge), kolejka poszła bez binarki. Po poprawce `3ec2fb535`: bitexact plain = MTP = MTP+adapt ×2 = GV=0 = `74952fd5`, tbo OK; domyślne MTP `a6328731` ≠ `6f14e814` (zamierzony reset `pending_h`) | **poprawność PASS; A/B szybkości niewykonane** (limit 10 min GPU), nie wdrażać przed ABBA |
 | E7 | KLD Qwen3.6-35B-A3B (raport 33) | E7_WIERSZ | E7_WERDYKT |
 | E6 | KLD EXL3-SC 3.0/4.0 | potrzeba ~30 GB EXL3 + referencji BF16 (54 GB) | **zablokowane łączem**, nie zaczęte |
+| E8 | rozgrzewka promptu przed 1. żądaniem (39a E1) | 1. żądanie 2k: −182 ms (−6.7%), ABBA 4/4; md5 zmienia się (Qwen plain/MTP, LFM) | **nie wdrażać z klienta** (stratne); bezstratnie tylko w serwerze z `llama_memory_clear(…, true)` |
 
 Wdrożone: tylko opis profilu `DRAFT_N=5` w nagłówku `~/qwen-opt/run-topka.sh` (opt-in, bez zmiany wartości domyślnej). Binarka `~/llama-topka` bez zmian. Topka nie była restartowana.
 
@@ -172,11 +173,31 @@ Bezstratność: to tylko kopie bajtów stanu. Bramka: md5 greedy + test restore 
 - baza Q8_0 z `--n-cpu-moe 22`, bo nie mieści się w 24 GB;
 - smoke `llama-bench -ncmoe 0,21,28 -d 0,32768` (KV q4_0).
 
-Uruchamia się samo przez `xtxlab/e7_wait.sh`: czeka na oba pliki, sprawdza rozmiary, potem kolejka `x35-e7.jobs`. Wyniki: `/tmp/x35/e7/`.
+Uruchamia się samo przez `xtxlab/e7_dl.sh`: pobiera, sprawdza rozmiar, potem kolejka `x35-e7.jobs`. Wyniki: `/tmp/x35/e7/`. IQ4_XS jest kompletny (17 730 509 792 B, 22:13). Pierwsze pobieranie Q8_0 zostało ucięte z 23.7 GB do zera: **`curl -C - --retry` przy ponowieniu używa offsetu z pierwszego startu i nadpisuje plik od początku**. `e7_dl.sh` robi więc pętlę świeżych `curl -C -` bez `--retry`.
 
 E7_WYNIKI
 
 **E6 (EXL3-SC 3.0/4.0, raport 32c nr 1):** niezaczęte. Wymaga ~30 GB EXL3 + referencji BF16 (54 GB) i exllamav3 1.6.3 (poprawki ROCm/gfx1100, CompWatch 2026-10-20). Przy obecnym łączu to ~2.5 h samego pobierania, więc osobne zadanie.
+
+## 6b. E8: rozgrzewka ścieżki promptu przed pierwszym żądaniem (raport 39a E1, Maya #285)
+
+**Setup.** Kolejka `x35-e8.jobs`, topka `~/llama-topka`, jawne PM4 produkcyjne. Rozgrzewkę udaje klient: jedno żądanie `/completion` z 1100 tokenami, `n_predict 4`, `cache_prompt false`, zaraz po `/health`.
+- Bramka `xtxlab/e8_gate.sh`: `greedy.sh` (nowy `WARM=1`, domyślnie wyłączony) na Qwen plain + MTP n=4 i LFM plain, porównanie zimny vs rozgrzany.
+- Pomiar: ABBA ×2 (A1 B1 B2 A2 A3 B3 B4 A4), każde ramię to świeży `run-topka.sh qwen` + `ttft.py --sizes 2048 --reps 4`.
+- GPU: 103 s bramka + 8 × ~57 s ≈ 9.2 min.
+
+**Szybkość (wall 2k, ms):**
+
+| ramię | 1. żądanie | 2.–4. (min) | 1. − min |
+|---|---|---|---|
+| A (zimny) 1/2/3/4 | 2733 / 2705 / 2690 / 2723 | 2611 / 2594 / 2600 / 2647 | +122 / +111 / +90 / +76 (śr. **+100**) |
+| B (rozgrzany) 1/2/3/4 | 2575 / 2509 / 2517 / 2521 | 2648 / 2590 / 2597 / 2612 | −73 / −81 / −80 / −91 |
+
+Pierwsze żądanie 2k: A średnio 2713 ms, B 2531 ms, czyli **−182 ms (−6.7%)**, 4/4 pary. Kryterium 39a (A ≥ 80 ms, B ≤ 30 ms) jest spełnione. Kolejne żądania nie różnią się między ramionami. W B pierwsze żądanie jest nawet szybsze od kolejnych (~−80 ms); `[INFERENCE]` kolejne płacą coś, czego pierwsze po rozgrzewce nie płaci (np. checkpoint).
+
+**Bramka md5: FAIL we wszystkich trzech.** Qwen plain `c4708318` → `8e089652` (pierwszy rozjazd przy znaku 69), MTP `6f14e814` → `fab508be`, LFM plain `894e56e4` → `cf3a7436` (znak 1760). Rozgrzewka zmienia tekst pierwszego żądania nawet w plain. `[INFERENCE]` Mechanizm jak w raporcie 12: zamaskowane wiersze KV nie są dokładnym no-op w WMMA/FA. Po rozgrzewce w komórkach poza aktualnym promptem leżą stare dane zamiast zer świeżego bufora. Do tego dochodzi stan `pending_h` MTP.
+
+**Werdykt E8: nie wdrażać jako domyślne `run-topka.sh`.** Zysk jest realny (−182 ms TTFT pierwszego 2k raz na proces), ale bramka bezstratności nie przechodzi, więc rozgrzewka po stronie klienta odpada. Bezstratna wersja wymaga zmiany w serwerze: rozgrzewka przed READY, potem `llama_memory_clear(mem, /*data=*/true)` (zeruje bufory KV/stanu, nie tylko metadane), reset `pending_h` i stanu spekulacji, czyszczenie checkpointów slotu i cache RAM. Potem ta sama bramka (`greedy.sh WARM=1` musi dać `c4708318` / `6f14e814` / `894e56e4`). To build + ~10 min GPU, czyli osobny pomysł z raportu 39a nr 1.
 
 ## 7. Do bazy wiedzy
 
@@ -188,3 +209,5 @@ E7_WYNIKI
 - **Lekcja: łańcuch build → kolejka GPU musi przerywać się na `rc≠0`.** Inaczej okno GPU idzie na ramiona z brakującą binarką (E5, przebieg 1).
 - **Lekcja PM4: domyślne 0 kolejki przeciekało do `run-topka.sh`** (−5.7% bez ostrzeżenia). Naprawione w `2a46550` (`QUEUE_PM4_SAFETY`). PM4-off były tylko: void E1 i okna `user-window` 2026-10-20 00:38 i 14:07 ([[lekcja-pm4-zawsze-jawnie]]).
 - **Merge'e gałęzi na kod topki kompilować przed kolejką.** `fa88de6c3` na bxadapt nie kompilował się (nazwa zmiennej z innej bazy).
+- **Rozgrzewka promptu: −182 ms (−6.7%) TTFT pierwszego żądania 2k po starcie, ale z klienta jest stratna.** Zmienia greedy md5 Qwen plain/MTP i LFM, bo stan bufora KV po rozgrzewce wpływa na numerykę zamaskowanych wierszy. Bezstratnie tylko w serwerze z `llama_memory_clear(..., true)` i resetem stanu spekulacji (E8).
+- **`curl -C - --retry` nie jest wznawialne między ponowieniami:** retry wraca do offsetu z pierwszego startu i nadpisuje plik. Do dużych pobrań używać pętli świeżych `curl -C -`.

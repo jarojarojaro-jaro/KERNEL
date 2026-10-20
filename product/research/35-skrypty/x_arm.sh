@@ -47,6 +47,10 @@ for b in ${benches//,/ }; do
         mvs)    taskset -c 2-5 "$py" "$HOME/qwen-opt/lookup/copy_bench.py" --label "$label" --port "$PORT" \
                     --out "$logdir/copy_bench.jsonl" --set mvs --temps 0.0 --tokens 1024 ;;
         doc)    taskset -c 2-5 "$py" "$HOME/qwen-opt/xtxlab/doc_bench.py" --label "$label" --port "$PORT" ;;
+        warm)   curl -s "http://127.0.0.1:$PORT/completion" -H 'Content-Type: application/json' \
+                    -d "{\"prompt\":\"$(printf 'w %.0s' $(seq 1100))\",\"n_predict\":4,\"cache_prompt\":false}" > /dev/null ;;
+        ttft2k) taskset -c 2-5 "$py" "$HOME/qwen-opt/xtxlab/ckpt/ttft.py" --label "$label" --port "$PORT" \
+                    --sizes 2048 --reps 4 --out "$logdir/e8w.jsonl" ;;
         ttft)   taskset -c 2-5 "$py" "$HOME/qwen-opt/xtxlab/ckpt/ttft.py" --label "$label" --port "$PORT" \
                     --sizes 2048,8192 --reps 3 --out "$logdir/ttft.jsonl"
                 taskset -c 2-5 "$py" "$HOME/qwen-opt/xtxlab/ckpt/ttft.py" --label "$label" --port "$PORT" \

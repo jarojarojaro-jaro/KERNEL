@@ -1,0 +1,10 @@
+# report 35 E8 (39a E1): prompt warm-up before the first request; gate first, then ABBA x2 (A cold, B warm), ttft 2k x4
+e8-gate|900|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash e8_gate.sh
+e8-A1|300|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e8-A1 ttft2k
+e8-B1|300|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e8-B1 warm,ttft2k
+e8-B2|300|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e8-B2 warm,ttft2k
+e8-A2|300|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e8-A2 ttft2k
+e8-A3|300|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e8-A3 ttft2k
+e8-B3|300|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e8-B3 warm,ttft2k
+e8-B4|300|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e8-B4 warm,ttft2k
+e8-A4|300|~/qwen-opt/xtxlab|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash x_arm.sh e8-A4 ttft2k
