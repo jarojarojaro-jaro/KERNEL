@@ -14,6 +14,7 @@
 	import { heatOf, headline } from '$lib/cards/explorer';
 	import GpuArt, { artSpec } from '$lib/cards/GpuArt.svelte';
 	import Ratio from '$lib/cards/Ratio.svelte';
+	import { VENDOR, vendorOf, vendorVars } from '$lib/cards/vendor';
 	import { play, tilt, visible } from '$lib/fx/actions';
 	import { reducedMotion } from '$lib/fx/motion';
 	import { MODEL_STYLE } from '$lib/modelStyle';
@@ -31,7 +32,6 @@
 		if (!d) return [];
 		return [{ card, run: d.run, gain: d.ratio, before: decode(d.before), ours: decode(d.ours), beforeKey: d.before.key, oursKey: d.ours.key, model: MODEL_INFO[d.run.model].name }];
 	});
-	const MAKER: Record<string, string> = { nvidia: 'NVIDIA', amd: 'AMD' };
 	/** The render fills ~90% of its stage (board + bracket, 640-unit viewBox); longer boards stay
 	 * longer, so the real length order survives. Transform only: no layout change. */
 	const artScale = (label: string, vendor: string, vram: number | null) => Math.max(1, (0.9 * 640) / (artSpec(label, vendor, vram).len + 22)).toFixed(3);
@@ -79,10 +79,10 @@
 		<ul class="grid" role="list" bind:this={grid} use:visible={(v) => (onScreen = v)} use:play={{ threshold: 0.35, onplay: () => rep++ }} class:played={rep > 0}>
 			{#each tiles as t (t.card.id)}
 				{@const prefix = t.card.name.split(t.card.short)[0].trim()}
-				<li class="v-{t.card.vendor}" style="--th:{heatOf(t.gain)}; --b:{(t.before / Math.max(t.before, t.ours)).toFixed(4)}; --o:{(t.ours / Math.max(t.before, t.ours)).toFixed(4)}">
+				<li style="{vendorVars(t.card.vendor)}; --th:{heatOf(t.gain)}; --b:{(t.before / Math.max(t.before, t.ours)).toFixed(4)}; --o:{(t.ours / Math.max(t.before, t.ours)).toFixed(4)}">
 					<article class="tile" class:live={live === t.card.id} use:tilt={{ max: 5 }} onpointerenter={() => (hover = t.card.id)} onpointerleave={() => (hover = null)} onfocusin={() => (hover = t.card.id)} onfocusout={() => (hover = null)}>
 						<p class="brand">
-							<span class="maker">{MAKER[t.card.vendor] ?? t.card.vendor}</span>
+							<span class="maker">{VENDOR[vendorOf(t.card.vendor)].name}</span>
 							<span class="pre">{prefix}</span>
 							<span class="vram">{t.card.vramGB}&nbsp;GB</span>
 						</p>
@@ -167,15 +167,6 @@
 		grid-template-rows: subgrid;
 		row-gap: 0;
 		min-width: 0;
-		/* maker colour (identity only; speed is always heat) */
-		--v: 118 185 0;
-		--v-hi: #9be22a;
-		--v-deep: #0b1405;
-	}
-	.grid > li.v-amd {
-		--v: 237 28 36;
-		--v-hi: #ff5a5f;
-		--v-deep: #170607;
 	}
 
 	/* a product tile: always a dark showroom, also in the light theme */
@@ -193,10 +184,7 @@
 		padding: var(--sp-4) var(--sp-4) var(--sp-5);
 		border-radius: var(--r-xl);
 		color: var(--text);
-		background:
-			radial-gradient(90% 55% at 50% 34%, rgb(var(--v) / 0.3), transparent 70%),
-			linear-gradient(155deg, rgb(var(--v) / 0.34), rgb(var(--v) / 0.06) 32%, transparent 52%),
-			linear-gradient(200deg, var(--v-deep), #070708 62%);
+		background: var(--v-grad);
 		box-shadow:
 			inset 0 0 0 1px rgb(var(--v) / 0.32),
 			inset 0 1px 0 rgb(255 255 255 / 0.08),
