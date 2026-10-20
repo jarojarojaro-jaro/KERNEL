@@ -438,6 +438,27 @@
 		}
 	}
 
+	/* ---------- desktop: one line from 1021 px, tighter until 1280 px ---------- */
+	@media (min-width: 1021px) {
+		.nav a {
+			white-space: nowrap;
+		}
+	}
+	@media (min-width: 1021px) and (max-width: 1279px) {
+		.capsule {
+			gap: var(--sp-3);
+		}
+		.nav a {
+			padding-inline: 0.7rem;
+		}
+		.lang {
+			padding-inline: 0.55rem;
+		}
+		.go {
+			padding: 0 0.85rem 0 0.95rem;
+		}
+	}
+
 	/* ---------- compact: full-screen menu ---------- */
 	@media (max-width: 1020px) {
 		.menu {
