@@ -10,7 +10,7 @@
 	import { onMount, tick } from 'svelte';
 	import { reducedMotion } from './motion';
 
-	let { src, eager = false }: { src: string; eager?: boolean } = $props();
+	let { src }: { src: string } = $props();
 
 	let video = $state<HTMLVideoElement>();
 	let attached = $state(false);
@@ -51,7 +51,7 @@
 </script>
 
 <div class="bgloop" aria-hidden="true">
-	<img class="poster" src="{src}-poster.webp" alt="" loading={eager ? 'eager' : 'lazy'} decoding="async" />
+	<img class="poster" src="{src}-poster.webp" alt="" loading="lazy" decoding="async" />
 	<video bind:this={video} class:on={playing} muted playsinline loop autoplay preload="none" disablepictureinpicture tabindex="-1" onplaying={() => (playing = true)}>
 		{#if attached}
 			<source src="{src}.webm" type="video/webm" />

@@ -18,6 +18,8 @@
 		redline = 70,
 		step = 20,
 		tone = 'hot',
+		/** Small dial (a pane header): major ticks only, no numerals, heavier strokes. */
+		compact = false,
 		children
 	}: {
 		value: number;
@@ -25,6 +27,7 @@
 		redline?: number;
 		step?: number;
 		tone?: 'hot' | 'cold';
+		compact?: boolean;
 		children?: Snippet;
 	} = $props();
 
@@ -89,7 +92,7 @@
 	}
 </script>
 
-<div class="speedo" class:hot={tone === 'hot'} class:live>
+<div class="speedo" class:hot={tone === 'hot'} class:live class:compact>
 	{#if tone === 'hot'}
 		<div class="aura" bind:this={auraEl} style="opacity:{auraOf(value).toFixed(3)}" aria-hidden="true"></div>
 		<div class="edge" aria-hidden="true"></div>
@@ -119,8 +122,10 @@
 		<path d={arc(0, max)} class="track" />
 		<path d={arc(redline, max, R + 6)} class="red" />
 		{#each ticks as t (t.v)}
-			<line x1={t.x0} y1={t.y0} x2={t.x1} y2={t.y1} class="tick" class:major={t.major} class:mid={t.mid} class:redtick={t.red} />
-			{#if t.major}<text x={t.tx} y={t.ty} class="num" class:redtick={t.red}>{t.v}</text>{/if}
+			{#if !compact || t.major}
+				<line x1={t.x0} y1={t.y0} x2={t.x1} y2={t.y1} class="tick" class:major={t.major} class:mid={t.mid} class:redtick={t.red} />
+			{/if}
+			{#if t.major && !compact}<text x={t.tx} y={t.ty} class="num" class:redtick={t.red}>{t.v}</text>{/if}
 		{/each}
 	</svg>
 	<svg class="value" viewBox="0 0 200 200" aria-hidden="true">
@@ -332,6 +337,20 @@
 		justify-items: center;
 		text-align: center;
 		pointer-events: none;
+	}
+	/* the small header dial: heavier strokes so it reads at ~5rem */
+	.compact .track,
+	.compact .fill {
+		stroke-width: 14;
+	}
+	.compact .red {
+		stroke-width: 4;
+	}
+	.compact .tick.major {
+		stroke-width: 4;
+	}
+	.compact .aura {
+		inset: -10%;
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.edge {

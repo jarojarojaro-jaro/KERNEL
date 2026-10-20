@@ -55,12 +55,10 @@ const raw = {
 			cta: 'Sprawdź swoją kartę',
 			ctaSecondary: 'Jak mierzymy',
 			race: {
-				coldSub: 'llama.cpp · ustawienia domyślne',
-				hotSub: 'ten sam plik · nasz silnik',
-				/** The first paragraph of the hero race's endless text (server HTML); the rest: home/stream/pl.ts. */
-				opening: 'Kraków najlepiej poznawać bez pośpiechu, choć jeden weekend wystarczy, żeby złapać jego rytm. Zacznij wcześnie rano na Kazimierzu, kiedy kawiarnie dopiero wystawiają stoliki, a na Placu Nowym przy Okrąglaku sprzedawcy szykują pierwsze zapiekanki. Ulice Szeroka, Józefa i Miodowa są wtedy prawie puste i można spokojnie zajrzeć w podwórka, do synagog i małych galerii, zanim pojawią się wycieczki.',
+				/** The hero duel's answer (an example text; the pace is measured). */
+				stream: 'Kraków najlepiej poznawać bez pośpiechu, choć jeden weekend wystarczy, żeby złapać jego rytm. Zacznij wcześnie rano na Kazimierzu, kiedy kawiarnie dopiero wystawiają stoliki, a na Placu Nowym przy Okrąglaku sprzedawcy szykują pierwsze zapiekanki. Ulice Szeroka, Józefa i Miodowa są wtedy prawie puste i można spokojnie zajrzeć w podwórka, do synagog i małych galerii, zanim pojawią się wycieczki. Na Kazimierzu warto zatrzymać się dłużej. Przez stulecia było to osobne miasto, a od końca piętnastego wieku centrum życia krakowskich Żydów. Przy ulicy Szerokiej stoi Stara Synagoga, dziś oddział Muzeum Krakowa, a kilka kroków dalej synagoga Remuh i przylegający do niej stary cmentarz z renesansowymi macewami. Wieczorem te same ulice wypełniają się muzyką i rozmowami z ogródków, ale rano słychać tylko kroki i dzwonki rowerów. Z Kazimierza dobrze zejść nad Wisłę i bulwarami ruszyć w stronę Wawelu. Spacer zajmuje kwadrans, a po drodze mija się barki, rowerzystów i wędkarzy, którzy siedzą tu bez względu na pogodę. Pod samym wzgórzem stoi smok wawelski z brązu, który co kilka minut zieje ogniem, ku radości dzieci i zaskoczeniu dorosłych. Na wzgórze wchodzi się przez Bramę Herbową. Dziedziniec zamku jest dostępny bez biletu, a już sam widok arkadowych krużganków wynagradza wspinaczkę. Bilety do komnat i skarbca lepiej kupić wcześniej, bo w sezonie szybko znikają. Katedra wawelska była miejscem koronacji i pochówku polskich królów. Warto wspiąć się na wieżę Zygmuntowską, gdzie wisi dzwon Zygmunt, w który bije się tylko w najważniejsze święta i przy wyjątkowych okazjach. Schody są wąskie i strome, ale z góry widać całe Stare Miasto i szerokie zakole Wisły. W kryptach spoczywają królowie, a także poeci i bohaterowie narodowi, co dobrze pokazuje, jak ważne jest to wzgórze dla polskiej pamięci.',
 				text: 'Rano kawa na Kazimierzu, zanim zrobi się tłoczno, potem bulwarami pod Wawel; dziedziniec jest bezpłatny. Na obiad pierogi w barze mlecznym przy Starym Mieście. Po południu Sukiennice i Rynek, a jeśli pada, Muzeum pod Rynkiem. Wieczorem kolacja na Podgórzu, zarezerwowana dzień wcześniej. Wygodne buty obowiązkowo.',
-				summary: 'Animacja: {card}, {model} {quant}. Ten sam długi tekst pisany bez przerwy w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Ten sam skrypt pomiarowy po obu stronach.'
+				summary: 'Animacja: {card}, {model} {quant}. Ten sam tekst pisany bez przerwy w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Ten sam skrypt pomiarowy po obu stronach.'
 			}
 		},
 		how: {
@@ -212,17 +210,20 @@ const raw = {
 				]
 			]
 		},
-		final: {
-			title: 'Twoja karta|może więcej.',
-			lede: 'Sprawdź, ile z niej wyciśniemy. Bez zmiany modelu.',
-			cards: 'Sprawdź swoją kartę',
-			method: 'Metodologia',
+		/** The two-terminal stream duel (fx/StreamDuel): hero and final CTA. */
+		duel: {
 			without: 'Bez Podkrętu',
 			with: 'Z Podkrętem',
 			faster: 'szybciej',
 			tokens: 'tokenów',
 			pause: 'Wstrzymaj strumień',
-			resume: 'Wznów strumień',
+			resume: 'Wznów strumień'
+		},
+		final: {
+			title: 'Twoja karta|może więcej.',
+			lede: 'Sprawdź, ile z niej wyciśniemy. Bez zmiany modelu.',
+			cards: 'Sprawdź swoją kartę',
+			method: 'Metodologia',
 			note: 'tekst przykładowy, tempo zmierzone',
 			summary: '{card}, {model} {quant}: ta sama odpowiedź płynie bez Podkrętu z prędkością {a0} tokenu na sekundę, a z Podkrętem {a2} tokenu na sekundę.',
 			text: 'Cześć! Przesuwam jutrzejsze spotkanie zespołu z rana na popołudnie, bo wypadła mi wizyta u klienta. Sala i link do rozmowy zostają te same. Jeśli komuś nie pasuje nowa pora, dajcie znać do wieczora, a poszukam innego terminu. Przygotujcie proszę krótkie podsumowanie tygodnia, po dwa zdania na osobę. Dzięki i do jutra!'
@@ -275,12 +276,10 @@ const raw = {
 			cta: 'Check your card',
 			ctaSecondary: 'How we measure',
 			race: {
-				coldSub: 'llama.cpp · default settings',
-				hotSub: 'same file · our engine',
-				/** The first paragraph of the hero race's endless text (server HTML); the rest: home/stream/en.ts. */
-				opening: 'Kraków is best explored without hurrying, although a single weekend is enough to catch its rhythm. Start early in the morning in Kazimierz, when the cafés are only just setting out their tables and the vendors at the Okrąglak on Plac Nowy are getting the first zapiekanki ready. Szeroka, Józefa and Miodowa streets are almost empty then, so you can take your time looking into courtyards, synagogues and small galleries before the tour groups arrive.',
+				/** The hero duel's answer (an example text; the pace is measured). */
+				stream: 'Kraków is best explored without hurrying, although a single weekend is enough to catch its rhythm. Start early in the morning in Kazimierz, when the cafés are only just setting out their tables and the vendors at the Okrąglak on Plac Nowy are getting the first zapiekanki ready. Szeroka, Józefa and Miodowa streets are almost empty then, so you can take your time looking into courtyards, synagogues and small galleries before the tour groups arrive. Kazimierz deserves more than a quick look. For centuries it was a separate town, and from the end of the fifteenth century it was the heart of Jewish life in Kraków. On Szeroka Street stands the Old Synagogue, now a branch of the Museum of Kraków, and a few steps away the Remuh Synagogue with its old cemetery of Renaissance headstones. In the evening the same streets fill with music and the chatter of beer gardens, but in the morning all you hear is footsteps and bicycle bells. From Kazimierz, head down to the Vistula and follow the riverside boulevards towards Wawel. The walk takes a quarter of an hour, past barges, cyclists and anglers who sit here whatever the weather. At the foot of the hill stands the bronze Wawel Dragon, which breathes fire every few minutes, to the delight of children and the surprise of their parents. You enter the hill through the Heraldic Gate. The castle courtyard is free, and the arcaded galleries alone are worth the climb. Tickets for the state rooms and the treasury are best bought in advance, as they sell out quickly in season. Wawel Cathedral was where Polish kings were crowned and buried. It is worth climbing the Sigismund Tower, home of the Sigismund Bell, which rings only on the most important holidays and on exceptional occasions. The stairs are narrow and steep, but from the top you can see the whole Old Town and the wide bend of the Vistula. The crypts hold kings as well as poets and national heroes, which says a lot about what this hill means to Polish memory.',
 				text: 'Start with coffee in Kazimierz before it gets busy, then walk the boulevards up to Wawel; the courtyard is free. Lunch: pierogi at a milk bar near the Old Town. In the afternoon, the Cloth Hall and the Main Square, or the Rynek Underground if it rains. Dinner in Podgórze, booked a day ahead. Comfortable shoes are a must.',
-				summary: 'Animation: {card}, {model} {quant}. The same long text written nonstop at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. The same measurement script on both sides.'
+				summary: 'Animation: {card}, {model} {quant}. The same text written nonstop at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. The same measurement script on both sides.'
 			}
 		},
 		how: {
@@ -432,17 +431,20 @@ const raw = {
 				]
 			]
 		},
-		final: {
-			title: 'Your card|can do more.',
-			lede: 'See how much we can get out of it. Without changing the model.',
-			cards: 'Check your card',
-			method: 'Methodology',
+		/** The two-terminal stream duel (fx/StreamDuel): hero and final CTA. */
+		duel: {
 			without: 'Without Podkręt',
 			with: 'With Podkręt',
 			faster: 'faster',
 			tokens: 'tokens',
 			pause: 'Pause the stream',
-			resume: 'Resume the stream',
+			resume: 'Resume the stream'
+		},
+		final: {
+			title: 'Your card|can do more.',
+			lede: 'See how much we can get out of it. Without changing the model.',
+			cards: 'Check your card',
+			method: 'Methodology',
 			note: 'example text, measured pace',
 			summary: '{card}, {model} {quant}: the same answer streams at {a0} tokens per second without Podkręt and at {a2} tokens per second with Podkręt.',
 			text: 'Hi all! I’m moving tomorrow’s team meeting from the morning to the afternoon, because a client visit came up. The room and the call link stay the same. If the new time doesn’t work for you, let me know by tonight and I’ll find another slot. Please bring a short summary of your week, two sentences each. Thanks, and see you tomorrow!'

@@ -31,6 +31,21 @@ export const HERO_MODEL = MODEL_INFO[HERO_RUN.model].name;
 export const HERO_GAIN = must(HERO_RUN.gain, 'gain');
 export const HERO_KERNELS = must(HERO_RUN.kernels, 'kernels');
 
+/**
+ * The hero race reads our lab card: RX 7900 XTX × Qwen3.8-27B UD-Q4_K_XL, the typical app (upstream
+ * llama.cpp, default settings) vs our engine, one script on both sides (spec_sweep chat, ABBA).
+ */
+export const RACE_CARD = must(findCard('rx-7900-xtx'), 'rx-7900-xtx');
+export const RACE_RUN = must(
+	RACE_CARD.runs.find((r) => r.model === 'qwen38' && r.sameHarness),
+	'rx-7900-xtx qwen38 same-script run'
+);
+export const RACE_V = {
+	before: must(variantOf(RACE_RUN, RACE_RUN.before), 'race before'),
+	ours: must(variantOf(RACE_RUN, RACE_RUN.ours), 'race ours')
+};
+export const RACE_MODEL = MODEL_INFO[RACE_RUN.model].name;
+
 /** The Q8_0 build of the same model: too big for 24 GB (estimator registry, report 04). */
 export const Q8 = must(findModel('qwen38-27b-q8'), 'qwen38-27b-q8');
 
@@ -93,15 +108,15 @@ export function dialFor(fastest: number): { max: number; redline: number } {
 }
 
 /**
- * Hero dial for one pair: the scale ends so that our measured value sits at ~80% of it, and the
- * red zone is always the top 30% of the dial (same fraction as the page-wide 70 of 100). Every tick
- * is a real t/s value; only the scale length changes with the pair.
+ * Hero dial for one pair: the scale ends ~20% above our measured value, rounded to a whole major
+ * step, and the red zone covers the top ~30% (rounded to 10). Every tick is a real t/s value; only
+ * the scale length changes with the pair (114,8 → 0–140, red from 100).
  */
 export function heroDial(fastest: number): { max: number; redline: number } {
-	const raw = fastest / 0.8;
+	const raw = fastest * 1.2;
 	const step = raw <= 120 ? 10 : raw <= 200 ? 20 : 50;
 	const max = Math.ceil(raw / step) * step;
-	return { max, redline: Math.round(max * 0.7) };
+	return { max, redline: Math.round((max * 0.7) / 10) * 10 };
 }
 
 export function decode(v: Variant | undefined): number {

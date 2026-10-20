@@ -3,57 +3,55 @@
 	 * Hero (design/REDESIGN.md §6): heat field, a two-tier headline (CSS only: it is the LCP) — the
 	 * steel line "Ten sam sprzęt. Ten sam model." over the focal, much larger heat line "Po prostu
 	 * szybciej." — one custom primary CTA with a slowly turning heat edge plus a text link, then the
-	 * race (LiveRace): two lanes, each a large live speedometer beside the same long text being
-	 * written nonstop, RTX 3090 × Qwen3.8-27B, the typical app (a0) vs our engine (a2), same script,
-	 * MTP bursts from the measured tokens per step. No caption or source pill here: conditions and
-	 * sources live on /metodologia (the „Jak mierzymy” link) and in the boost section.
-	 * Redline flare: when the race starts, the heat field runs hot, a bloom sweeps the hero once and
+	 * duel (fx/StreamDuel, shared with the final CTA): two terminals stream the same answer nonstop,
+	 * without Podkręt (steel) and with it (heat), each with a small live speedometer in its header,
+	 * on our lab card (RX 7900 XTX × Qwen3.8-27B, upstream llama.cpp default vs our engine, one
+	 * script, ABBA); MTP bursts from the measured step time; the speed-up counts up once.
+	 * No caption or source pill here: conditions and sources live on /metodologia (the „Jak mierzymy”
+	 * link), in the boost section and on the card page.
+	 * Redline flare: when the stream starts, the heat field runs hot, a bloom sweeps the hero once and
 	 * the heat line flares.
-	 * Reel: a muted loop of our lab card (Sapphire PULSE RX 7900 XTX, AI-generated from its SVG) glows
-	 * through the field behind the race; reduced motion shows its poster, offscreen it pauses.
 	 */
 	import { magnetic } from '$lib/fx/actions';
-	import BgLoop from '$lib/fx/BgLoop.svelte';
 	import HeatField from '$lib/fx/HeatField.svelte';
-	import LiveRace from '$lib/fx/LiveRace.svelte';
+	import StreamDuel from '$lib/fx/StreamDuel.svelte';
 	import { variantLabel } from '$lib/data/measurements';
 	import { fmtTps } from '$lib/format';
 	import { cardsHref, href, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
-	import { fill, HERO_CARD, HERO_MODEL, HERO_RUN, HERO_V, heroDial } from './data';
+	import { fill, heroDial, RACE_CARD, RACE_MODEL, RACE_RUN, RACE_V } from './data';
 	import Kin from './Kin.svelte';
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].hero);
 	const r = $derived(c.race);
+	const dl = $derived(copy[lang].duel);
 
-	const cold = HERO_V.a0;
-	const hot = HERO_V.a2;
+	const cold = RACE_V.before;
+	const hot = RACE_V.ours;
 	const dial = heroDial(hot.decode!.v);
+	const gain = hot.decode!.v / cold.decode!.v;
+	/** Tokens accepted per step = measured t/s × measured ms per step (MTP bursts; 1 without MTP). */
+	const burstOf = (v: typeof hot) => (v.msStep ? Math.max(1, (v.decode!.v * v.msStep.v) / 1000) : 1);
 	const summary = $derived(
-		fill(r.summary, { card: HERO_CARD.name, model: HERO_MODEL, quant: HERO_RUN.quant, a0: fmtTps(cold.decode!.v, lang), a2: fmtTps(hot.decode!.v, lang) })
+		fill(r.summary, { card: RACE_CARD.name, model: RACE_MODEL, quant: RACE_RUN.quant, a0: fmtTps(cold.decode!.v, lang), a2: fmtTps(hot.decode!.v, lang) })
 	);
 	const lanes = $derived([
-		{ id: 'cold', label: variantLabel(HERO_RUN, 'a0')[lang], sub: r.coldSub, tps: cold.decode!.v, hot: false, burst: cold.tokStep?.v },
-		{ id: 'hot', label: variantLabel(HERO_RUN, 'a2')[lang], sub: r.hotSub, tps: hot.decode!.v, hot: true, burst: hot.tokStep?.v }
+		{ id: 'cold' as const, tag: dl.without, who: variantLabel(RACE_RUN, cold.key)[lang], tps: cold.decode!.v, burst: burstOf(cold) },
+		{ id: 'hot' as const, tag: dl.with, who: variantLabel(RACE_RUN, hot.key)[lang], tps: hot.decode!.v, burst: burstOf(hot) }
 	]);
-	/** The rest of the race's long text: a separate chunk per language, loaded once the page is idle. */
-	const more = (l: Lang) => () => (l === 'pl' ? import('./stream/pl') : import('./stream/en')).then((m) => m.default);
 
+	/** The stream start: the field runs hot for a moment, one bloom sweep and one heat-line flare. */
 	let heat = $state(false);
-	/** The race start: one bloom sweep and one heat-line flare while the field runs hot. */
-	let flare = $state(false);
 	let bloomed = $state(false);
-	function onheat(h: boolean) {
-		heat = h;
-		if (h && !bloomed) bloomed = flare = true;
-		if (!h) flare = false;
+	function onstart() {
+		heat = bloomed = true;
+		setTimeout(() => (heat = false), 2600);
 	}
 </script>
 
-<section class="hero" class:hot={flare} aria-labelledby="hero-title">
+<section class="hero" class:hot={heat} aria-labelledby="hero-title">
 	<HeatField heat={heat ? 1 : 0.62} boost={heat ? 1 : 0} />
-	<div class="reel"><BgLoop src="/media/hero/hero" eager /></div>
 	<div class="veil" aria-hidden="true"></div>
 	{#if bloomed}<div class="bloom" aria-hidden="true"></div>{/if}
 	<div class="inner">
@@ -71,9 +69,9 @@
 			</a>
 		</div>
 		<div class="race">
-			<!-- keyed: the race owns its text nodes, so a language switch mounts a fresh one -->
+			<!-- keyed: the duel caches its text nodes, so a language switch mounts a fresh one -->
 			{#key lang}
-				<LiveRace {lanes} opening={r.opening} more={more(lang)} {lang} max={dial.max} redline={dial.redline} {summary} {onheat} />
+				<StreamDuel {lanes} {gain} text={r.stream} {lang} labels={dl} {summary} dial={dial} countUp {onstart} />
 			{/key}
 		</div>
 	</div>
@@ -97,17 +95,6 @@
 	.hero :global(.heatfield .streak-frame) {
 		-webkit-mask-image: linear-gradient(90deg, #000, transparent 9%, transparent 91%, #000);
 		mask-image: linear-gradient(90deg, #000, transparent 9%, transparent 91%, #000);
-	}
-	/* our lab card behind the race (AI-generated loop): lit only, so the field's dark stays dark; the
-	   veil above keeps the headline and lanes legible */
-	.reel {
-		position: absolute;
-		inset: 0;
-		z-index: -2;
-		opacity: 0.32;
-		mix-blend-mode: screen;
-		-webkit-mask-image: radial-gradient(85% 70% at 50% 62%, #000 40%, transparent 100%);
-		mask-image: radial-gradient(85% 70% at 50% 62%, #000 40%, transparent 100%);
 	}
 	/* darken the top so the header and headline sit on near-black; heat rises from below */
 	.veil {
@@ -331,9 +318,12 @@
 		border-radius: 4px;
 	}
 	.race {
-		width: min(100%, 84rem);
+		width: min(100%, 66rem);
 		min-width: 0;
 		text-align: left;
+		/* the stream windows: as tall as the first screen allows */
+		--duel-win: clamp(7.5rem, 30svh - 6rem, 12rem);
+		--duel-win-sm: clamp(8rem, 30svh - 4rem, 13rem);
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		/* the headline lands first; the CTAs follow, then the race rises */

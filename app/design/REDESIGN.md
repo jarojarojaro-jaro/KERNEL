@@ -104,13 +104,13 @@ The comparison uses only same-harness numbers: RTX 3090, Qwen3.8-27B UD-Q4_K_XL,
 | 0.10–0.60 s | „Ten sam sprzęt.” Each glyph rises 0.4em from a mask, weight 300 → 800, width 75 → 100, 35 ms stagger. |
 | 0.35–0.85 s | „Ten sam model.” Same treatment. |
 | 0.70–1.40 s | „Po prostu szybciej.” Width animates 75 → 125 (the line literally widens, as if accelerating). The fill is the heat ramp; a speed streak passes through it once. |
-| 1.20 s | The race rises in: two lanes side by side, each a large speedometer (`fx/Speedo`, 0–100 t/s, redline from 70, the measured median in its open bottom, ≈ 310 px at 1440) beside the opening of one long text as a dim preview. Left "Typowa aplikacja · llama.cpp domyślnie" (muted steel), right "Nasz silnik" (heat aura and the turning heat edge of the hero CTA). Needles read 0. No caption, source pill or live badge (sources: /metodologia, the boost section). |
-| ~1.5 s (page idle) | GO, once. Both needles climb from 0 to the measured median (38.9 / 78.0) and stay there for as long as the page is open, breathing within ±3% (zero-mean) and ticking on each MTP step. Each lane writes at the speed its needle shows, so its long-run pace is the measured median. |
-| then, nonstop | The same long text (≈ 2.4k words PL, 3k EN; `home/stream/*.ts`, a lazy chunk per language) streams in both lanes; each window follows its newest line smoothly; after the last paragraph the text goes on with the first. No restarts, no pauses, no finish track, no stamps. A small pause node sits on the hairline between the lanes; off screen the loop sleeps and later continues where it was; reduced motion shows one static frame (needles on the median, the opening written). |
+| 1.20 s | The duel rises in (`fx/StreamDuel`, the same component as the final CTA): two terminal panes on our lab card, RX 7900 XTX × Qwen3.8-27B (one script, ABBA). Left „Bez Podkrętu · Typowa aplikacja · 35,9 t/s” (steel), right „Z Podkrętem · Nasz silnik · 114,8 t/s · 3,2× szybciej” (heat gradient digits, turning heat edge). A small speedometer (`fx/Speedo` compact, 0–140, red from 100) sits left of each header; with JS it reads 0. No caption, source pill or live badge (sources: /metodologia, the boost section, the card page). |
+| first frame on screen | GO, once: the heat field runs hot, a bloom sweeps the hero, the speed-up counts up from 1×, both needles climb to the measured speed and stay there, breathing within ±3% (zero-mean). |
+| then, nonstop | Both panes stream the same answer at the measured median t/s (ours in MTP steps = t/s × measured ms/step), each window following its newest line and wrapping into the next copy; token counters grow, with our live lead. No restarts. Pause under the panes; off screen the loop sleeps and continues where it was; reduced motion shows one static frame (needles on the measured speed). |
 
 The cursor moves a faint heat light across the shader. In the headline, a radial highlight follows the cursor (CSS `--mx/--my`).
 
-Mobile 390: the headline fills the width at 14vw. The lanes stay side by side, each with its dial on top at the full column width (≈ 165 px), above a six-line window of the text.
+Mobile 390: the headline fills the width at 14vw. The panes stay side by side; in a narrow header the dial sits above the labels.
 
 ## 7. Scroll scenes
 
