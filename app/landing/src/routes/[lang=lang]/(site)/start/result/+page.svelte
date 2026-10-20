@@ -77,7 +77,7 @@
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell title={t.title} lead={t.lead} wide back="/start/hardware">
+<Shell title={t.title} lead={t.lead} step={4} wide back="/start/hardware">
 	{#if ready && (!hw || !rec || !primaryF || !b)}
 		<p class="example-lead">{t.missing}</p>
 		<ResultGauge gpuId={EXAMPLE?.id} gpuName={EXAMPLE?.name ?? ''} {lang} estimate={null} example />
