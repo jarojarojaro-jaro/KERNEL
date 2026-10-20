@@ -1,0 +1,4 @@
+file /home/jaro/models/lfm/LFM2.5-24B-A2B-Q5_K_M.gguf
+Q6_K    GB= 0.842 scale-overhead=0.5625 bpw of 6.5625; d: raw 0.0625 H0 0.0300 H1 0.0280 sc8: raw 0.5000 H0 0.4486 H1 0.4456 | save H0 1.28% H1 1.35% of type bytes
+Q5_K    GB= 3.860 scale-overhead=0.5000 bpw of 5.5000; d: raw 0.0625 H0 0.0323 H1 0.0287 dmin: raw 0.0625 H0 0.0382 H1 0.0279 m6: raw 0.1875 H0 0.1607 H1 0.1595 sc6: raw 0.1875 H0 0.1512 H1 0.1498 | save H0 2.14% H1 2.44% of type bytes
+ALL analysed types: 4.702 GB; lossless saving bound H0 1.98%  H1 2.24%  (= 0.106 GB)
