@@ -72,13 +72,20 @@
 		box-decoration-break: clone;
 		padding-bottom: 0.06em;
 	}
-	/* the final section: the payoff itself burns, heat ramp drifting through the letters */
+	/*
+	 * The final section: the payoff itself burns, heat ramp drifting through the letters. The clipped
+	 * background only paints inside the box, and the display line-height (0.92) is shorter than the
+	 * glyphs: padding gives descenders (ę ą g y j p) and the last glyph's overhang their room, the
+	 * negative margin keeps the layout where it was.
+	 */
 	.hi.burn {
 		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 30%, var(--heat-4) 55%, var(--heat-5) 70%, var(--heat-3) 100%) 0 0 / 200% 100%;
 		-webkit-background-clip: text;
 		background-clip: text;
 		color: transparent;
 		filter: drop-shadow(0 0 24px rgb(255 122 26 / 0.35));
+		padding: 0.08em 0.1em 0.24em 0;
+		margin: -0.08em -0.1em -0.24em 0;
 	}
 	.hi.burn .ul {
 		background: none;

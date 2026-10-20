@@ -285,6 +285,8 @@
 		overflow: hidden;
 		isolation: isolate;
 		min-width: 0;
+		/* the big rate scales with the pane, never with the viewport alone */
+		container-type: inline-size;
 	}
 	.face {
 		position: relative;
@@ -332,10 +334,10 @@
 	}
 
 	.ph {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: end;
-		align-content: start;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: flex-end;
+		align-content: flex-start;
 		gap: 0.2rem var(--sp-3);
 		padding: var(--sp-4) var(--sp-4) var(--sp-3);
 		border-bottom: 1px solid rgb(255 255 255 / 0.07);
@@ -351,7 +353,7 @@
 		color: var(--text-mute);
 	}
 	.tag {
-		grid-column: 1 / -1;
+		flex-basis: 100%;
 		display: inline-flex;
 		align-items: center;
 		gap: 0.45rem;
@@ -373,26 +375,35 @@
 		box-shadow: 0 0 10px var(--heat-3);
 	}
 	.who {
-		grid-column: 1 / -1;
+		flex-basis: 100%;
+		min-width: 0;
 		white-space: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
 	}
+	/* the rate takes its full width (flex item, no shrink); the speed-up wraps below when it must */
 	.rate {
+		flex: 0 0 auto;
 		display: flex;
 		align-items: baseline;
 		gap: 0.35rem;
 		margin-top: var(--sp-2) !important;
 	}
 	.rate b {
+		/* "93,3" in tabular digits: at most ~2.9em wide, so 15cqi keeps it inside a narrow pane */
 		font-family: var(--font-display);
-		font-size: clamp(2rem, 1.2rem + 2.6vw, 3.6rem);
+		font-size: clamp(1.75rem, 15cqi, 3.6rem);
 		font-weight: 850;
 		font-stretch: 120%;
-		letter-spacing: -0.045em;
-		line-height: 0.9;
+		letter-spacing: -0.03em;
+		line-height: 1;
 		font-variant-numeric: tabular-nums lining-nums;
+		white-space: nowrap;
+		min-width: 4ch;
 		color: var(--before);
+		/* room for the glyphs' overhang (stretched cut, tight tracking): the clipped heat must reach it */
+		padding: 0.04em 0.12em 0.12em 0.02em;
+		margin: -0.04em -0.12em -0.12em -0.02em;
 	}
 	.hot .rate b {
 		background: var(--heat-ramp-hot);
@@ -400,7 +411,6 @@
 		background-clip: text;
 		color: transparent;
 		filter: drop-shadow(0 0 18px rgb(255 122 26 / 0.5));
-		padding-block: 0.04em 0.1em;
 	}
 	.rate span {
 		font-family: var(--font-mono);
@@ -409,6 +419,7 @@
 		color: var(--text-mute);
 	}
 	.gain {
+		margin-left: auto !important;
 		display: grid;
 		justify-items: end;
 		gap: 0.15rem;
@@ -571,10 +582,11 @@
 	}
 	@media (max-width: 520px) {
 		.ph {
-			grid-template-columns: minmax(0, 1fr);
 			padding: var(--sp-3);
 		}
 		.gain {
+			flex-basis: 100%;
+			margin-left: 0 !important;
 			justify-items: start;
 		}
 		.win {
