@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 # Host gate for a Vast GPU box (SOP-DOBOR-I-POMIARY.md §5). Two modes:
-#   hostcheck.sh offer <offer_id> <download_GB> <hours>   LOCAL, before renting: price incl. transfer, reliability, driver
-#   hostcheck.sh box <hf_model_url> <model_GB>             ON THE BOX, first 5 minutes: power limit, PCIe, HF speed, disk, RAM
+#   hostcheck.sh offer <offer_id> <download_GB> <hours> [experts_GB]   LOCAL, before renting: price incl. transfer, rel, driver
+#   hostcheck.sh box <hf_model_url> <model_GB> [experts_GB]             ON THE BOX, first 5 min: power, PCIe, HF, disk, RAM
+# experts_GB > 0 = MoE with --n-cpu-moe (experts in host RAM, prefill copies them over PCIe every ubatch):
+#   RAM >= max(32, experts+16) GB (offer) / MemAvailable >= experts + 8 GB (box), PCIe gen >= 3 and >= x8 are hard gates.
 # Exit 0 = PASS, 1 = FAIL (destroy the box / skip the offer), 2 = usage. Every line prints PASS/FAIL/INFO.
 # Thresholds (env): MAX_DL_COST (0.002 $/GB), MIN_REL (0.98), MIN_HF_MBS (25 MB/s), MIN_RAM_GB (24), MIN_DRIVER (570)
 set -uo pipefail
@@ -12,7 +14,7 @@ info() { echo "INFO  $*"; }
 
 case $mode in
 offer)
-    offer=${2:?offer id}; dl=${3:?download GB}; h=${4:?hours}
+    offer=${2:?offer id}; dl=${3:?download GB}; h=${4:?hours}; xgb=${5:-0}
     . "$(dirname "$0")/lib.sh"
     oj=$(offer_json "$offer" 70) || true
     [ -n "$oj" ] || { echo "FAIL  offer $offer not found (rented or gone)"; exit 1; }
@@ -26,13 +28,20 @@ offer)
         || bad "inet_down_cost \$$dlc/GB (x $dl GB = \$$(awk -v c="$dlc" -v g="$dl" 'BEGIN{printf "%.2f", c*g}'))"
     awk -v d="${drv%%.*}" -v m="${MIN_DRIVER:-570}" 'BEGIN{exit !(d>=m)}' && ok "driver $drv >= ${MIN_DRIVER:-570}" || bad "driver $drv < ${MIN_DRIVER:-570} (CUDA 12.8 falls back to CPU)"
     [ "${ram:-0}" -ge "${MIN_RAM_GB:-24}" ] && ok "host RAM $ram GB" || bad "host RAM $ram GB < ${MIN_RAM_GB:-24} (mmap + cache-ram)"
-    [ "${pw:-0}" -ge 8 ] && ok "PCIe x$pw advertised" || info "PCIe x$pw advertised (x1 riser seen on 3060: GV=1 mandatory)"
+    if awk -v x="$xgb" 'BEGIN{exit !(x>0)}'; then
+        need=$(awk -v x="$xgb" 'BEGIN{n=x+16; if (n<32) n=32; printf "%d", n}')
+        [ "${ram:-0}" -ge "$need" ] && ok "MoE: host RAM $ram GB >= max(32, experts $xgb + 16)" || bad "MoE: host RAM $ram GB < $need (experts $xgb GB in RAM)"
+        { [ "${pg%%.*}" -ge 3 ] && [ "${pw:-0}" -ge 8 ]; } && ok "MoE: PCIe gen$pg x$pw (prefill streams experts over PCIe)" \
+            || bad "MoE: PCIe gen$pg x$pw < gen3 x8 (TTFT at 131k would be many minutes)"
+    else
+        [ "${pw:-0}" -ge 8 ] && ok "PCIe x$pw advertised" || info "PCIe x$pw advertised (x1 riser seen on 3060: GV=1 mandatory)"
+    fi
     awk -v p="$dph" -v s="$store" -v c="$dlc" -v u="$ulc" -v g="$dl" -v h="$h" 'BEGIN {
         gpu=p*h; disk=s*70/730*h; tr=c*g+u*1; t=gpu+disk+tr;
         printf "INFO  cost %.1f h: GPU $%.3f + disk(70 GB) $%.3f + transfer $%.3f = $%.3f; x1.3 margin = $%.3f\n", h, gpu, disk, tr, t, t*1.3 }'
     ;;
 box)
-    url=${2:?hf url}; mgb=${3:?model GB}
+    url=${2:?hf url}; mgb=${3:?model GB}; xgb=${4:-0}
     command -v nvidia-smi >/dev/null || { echo "FAIL  no nvidia-smi"; exit 1; }
     q=$(nvidia-smi -q -d POWER)
     cur=$(awk -F: '/Current Power Limit/{gsub(/[ W]/,"",$2); print $2; exit}' <<<"$q")
@@ -41,6 +50,15 @@ box)
     nvidia-smi --query-gpu=name,memory.total,driver_version,pcie.link.gen.max,pcie.link.width.max --format=csv,noheader | sed 's/^/INFO  gpu: /'
     # PCIe width under load: start a 10 s GPU-busy probe if a llama-bench binary exists, else report idle width
     w=$(nvidia-smi --query-gpu=pcie.link.width.current --format=csv,noheader,nounits | head -1)
+    gen=$(nvidia-smi --query-gpu=pcie.link.gen.max --format=csv,noheader,nounits | head -1)
+    if awk -v x="$xgb" 'BEGIN{exit !(x>0)}'; then
+        wm=$(nvidia-smi --query-gpu=pcie.link.width.max --format=csv,noheader,nounits | head -1)
+        { [ "${wm:-0}" -ge 8 ] && [ "${gen:-0}" -ge 3 ]; } && ok "MoE: PCIe link max gen$gen x$wm (re-check width under load in the fill test)" \
+            || bad "MoE: PCIe link max gen$gen x$wm < gen3 x8 -> DESTROY (experts stream over PCIe in prefill)"
+        avail=$(awk '/MemAvailable/{printf "%d", $2/1048576}' /proc/meminfo)
+        awk -v a="$avail" -v x="$xgb" 'BEGIN{exit !(a >= x + 8)}' && ok "MoE: MemAvailable $avail GB >= experts $xgb + 8" \
+            || bad "MoE: MemAvailable $avail GB < experts $xgb + 8 -> DESTROY"
+    fi
     [ "${w:-0}" -ge 8 ] && ok "PCIe width now x$w" || info "PCIe width now x$w (idle reading; re-check under load; x1 => GV=1, note in report)"
     clk=$(nvidia-smi --query-gpu=clocks_event_reasons.active --format=csv,noheader 2>/dev/null | head -1)
     info "clock event reasons (idle): $clk"

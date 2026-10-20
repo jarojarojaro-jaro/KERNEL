@@ -1,9 +1,14 @@
 # PLAN-NV-V2 — kampania NVIDIA v2: najlepszy model z kontekstem ≥ 131k na każdą kartę
 
-Data: 2026-10-20 (UTC ~18:00). Autor: PlanNvV2 (Opus, tylko CPU, nic nie wynajęte). Procedura, z której wynika ten plan:
-[`qwen-opt/cloud/SOP-DOBOR-I-POMIARY.md`](../qwen-opt/cloud/SOP-DOBOR-I-POMIARY.md); brief inżyniera:
-[`qwen-opt/cloud/ENGINEER-PROMPT.md`](../qwen-opt/cloud/ENGINEER-PROMPT.md); kalkulator pamięci:
-`qwen-opt/cloud/fitcalc.py`; bramka hosta: `qwen-opt/cloud/hostcheck.sh`; bramka długiego kontekstu: `qwen-opt/cloud/needle.py`.
+Wersja 2, 2026-10-20 (UTC ~19:00). Autor: PlanNvV2 (Opus, tylko CPU, nic nie wynajęte). Zmiana względem v1 (eeb29e9):
+karty 10–16 GB dostają **Qwen3.6-35B-A3B (MoE) z ekspertami częściowo w RAM (`--n-cpu-moe`)** zgodnie z raportem
+[`33-modele-na-karty.md`](research/33-modele-na-karty.md) (f305dfb). 24 GB i 32 GB bez zmian (Qwen3.8-27B + MTP).
+Kampania w chmurze dla MoE startuje **dopiero po bramce jakości E7** (KLD kwantów Qwen3.6 do BF16, mierzone lokalnie
+przez XtxLab, raport 35).
+
+Procedura: [`qwen-opt/cloud/SOP-DOBOR-I-POMIARY.md`](../qwen-opt/cloud/SOP-DOBOR-I-POMIARY.md); brief inżyniera:
+[`qwen-opt/cloud/ENGINEER-PROMPT.md`](../qwen-opt/cloud/ENGINEER-PROMPT.md); narzędzia: `qwen-opt/cloud/fitcalc.py`
+(v2: MoE, `--n-cpu-moe`, szacunek t/s), `hostcheck.sh` (v2: bramki RAM/PCIe dla MoE), `needle.py`.
 
 Co poszło źle 2026-10-20 (raporty `31-*`, [[lekcja-vast-transfer-kosztuje]], [[2026-10-20-kontekst-min-131k]]):
 kontekst 32–37k, 2-bitowe Qwen na 10–12 GB (wbrew [[2026-10-16-saluki-bonsai-na-3060]]), transfer $3.80 z $6.90,
@@ -11,30 +16,32 @@ kredyt skończył się w połowie. Ten plan naprawia każdy z tych punktów regu
 
 ## 0. Werdykt
 
-Bramki (twarde, SOP §4): **J1 jakość** KLD-wiki ≤ 0.05 i KLD-czat ≤ 0.07 (protokół 16e, do BF16); **J2 zadania** PL/EN
-czat + edycja kodu poprawna; **J3 kontekst** `-c ≥ 131072`, szczyt VRAM po prompcie długości `-c` + 512 MiB ≤ VRAM,
-bez OOM w pełnej sekwencji żądań, needle 5/5 przy `-c`; **J4 prędkość** decode ≥ 20 t/s po 64k (T=1); TTFT 32k raportowany.
+Bramki (twarde, SOP §4): **J1 jakość** KLD do BF16 tego samego modelu: wiki ≤ 0.05, czat ≤ 0.07 (protokół 16e);
+**J2 zadania** PL/EN czat + edycja kodu poprawna; **J3 kontekst** `-c ≥ 131072`, szczyt VRAM po prompcie długości `-c`
++ 512 MiB ≤ VRAM, bez OOM w pełnej sekwencji, needle 5/5; **J4 prędkość** decode ≥ 20 t/s po 64k (T=1);
+**J5 (nowa, MoE z ekspertami w RAM) TTFT** przy promptcie 32k ≤ 120 s; TTFT przy 131k raportowany.
 
-| karta | rekomendacja | kwant (plik) | `-c` | VRAM: po załadowaniu / szczyt (model, g=18K) / całość MiB | jakość (KLD wiki / czat) | oczekiwane t/s | status |
-|---|---|---|---|---|---|---|---|
-| **RTX 3090 24 GB** | **Qwen3.8-27B** | **UD-Q4_K_XL** (17.56 GB, MTP w pliku) | **131072**, ub 512 | 21380 (zmierzone, `27-3090-final.md:207`) / 23630 / 24576 → zapas 946 | 0.0153 / 0.0226 (zmierzone, `16e-kwanty-kld.md:134`) | czat T=1 ~93 (`27-3090-final.md:232`); decode po 60k T=1 **56.7** (host 280 W, `27-3090-final.md:200`) | **faza 1 (rdzeń)** |
-| RTX 5090 32 GB (referencja) | Qwen3.8-27B | **UD-Q6_K** (21.98 GB) | **204800**, ub 512 | 27806 / 31321 / 32607 → zapas 1286 `[SZACUNEK: ovh 5090 niezmierzony]` | ~0.009 / ~0.011 `[SZACUNEK]` | czat ~140, po 64k ~110 `[SZACUNEK z pasma]` | faza 2 (opcja, zalecana) |
-| RTX 4090 24 GB (referencja) | Qwen3.8-27B | UD-Q4_K_XL | 131072 | 21522 / 23772 / 24564 → 792 `[SZACUNEK ovh]` | jak 3090 | ~1.1× 3090 `[SZACUNEK]` | opcja, niezalecana (ta sama pamięć co 3090) |
-| RTX 5060 Ti 16 GB | **ta karta: brak modelu 27B spełniającego próg** | — | — | najlepszy 27B z J1 (AP-Q3_K_XL) mieści 51k (g=18K) / 66k (ub 256, g=14K) | — | — | brak wynajmu w fazie 1–2 |
-|  | kandydat warunkowy | Qwen3.5-9B Q8_0 (9.53 GB) | 262144 | 12006 / 14256 / 16311 | ≈ podłoga Q8 `[SZACUNEK]`, J2/J3 do zmierzenia | ~40 po 64k `[SZACUNEK]` | faza 3, tylko po zgodzie na 9B |
-| RTX 4060 Ti 16 GB | **ta karta: brak modelu 27B spełniającego próg** | — | — | jak 5060 Ti | — | — | jw. |
-|  | kandydat warunkowy | Qwen3.5-9B Q8_0 | 262144 | 11998 / 14248 / 16380 | jw. | ~27 po 64k `[SZACUNEK]` | faza 3 |
-| RTX 4070 Ti 12 GB | **ta karta: brak modelu spełniającego próg** (27B ≥ Q3_K_XL nie mieści się nawet bez kontekstu; brak ofert na Vast 2026-10-20 18:00) | — | — | — | — | — | brak wynajmu |
-| RTX 3060 12 GB | **ta karta: brak modelu spełniającego próg** — decyzja [[2026-10-16-saluki-bonsai-na-3060]] dopuszcza tylko Saluki/Bonsai, a oba oblewają J1 (KLD-wiki 0.257 / 0.352, PL 0.320 / 0.508, `16e-kwanty-kld.md:143-144`) | — | — | Saluki plain 125k, Bonsai PQ2_0 144k (mieszczą się, ale J1 ✗) | — | — | brak wynajmu |
-| RTX 3080 10 GB | **ta karta: brak modelu spełniającego próg** (brak też oferty spełniającej filtr hosta) | — | — | — | — | — | brak wynajmu |
+| karta | model | kwant, flagi | `-c` | VRAM szczyt / całość MiB; RAM na ekspertów | t/s plain 0 / 64k / 131k | warunek startu |
+|---|---|---|---|---|---|---|
+| **RTX 3090 24 GB** | **Qwen3.8-27B** + MTP (ramię T) | UD-Q4_K_XL 17.56 GB | **131072** | 23630 / 24576 (walidowane: 21380 po załadowaniu, `27-3090-final.md:207`) | **zmierzone T**: czat T=1 93.3, po 60k 56.7 (`27:232,200`) | brak — rdzeń |
+| **RTX 5060 Ti 16 GB** | **Qwen3.6-35B-A3B** | **UD-IQ4_XS** 18.21 GB (plik MTP-GGUF), `--n-cpu-moe 11` | **131072** (max 168k) | 15246 / 16311; 4.1 GB | 88 / 62 / 48 `[SZACUNEK]` | E7: IQ4_XS ✓ J1 |
+| **RTX 4060 Ti 16 GB** | Qwen3.6-35B-A3B | UD-IQ4_XS, `--n-cpu-moe 11` | 131072 | 15236 / 16380; 4.1 GB | 65 / 44 / 33 `[SZACUNEK]` | E7 + wynik 5060 Ti |
+| **RTX 3060 12 GB** | Qwen3.6-35B-A3B | UD-IQ4_XS, `--n-cpu-moe 21` | 131072 (max 138k) | 11666 / 12288; 7.8 GB | 52 / 40 / 32 `[SZACUNEK]` | E7 + **zmiana decyzji 2026-10-16** (dziś tylko Saluki/Bonsai, oba ✗ J1) |
+| RTX 3080 10 GB | Qwen3.6-35B-A3B | UD-IQ4_XS, `--n-cpu-moe 28` | 131072 (max 143k) | 9530 / 10240; 10.5 GB | 64 / 55 / 47 `[SZACUNEK]` | E7 + zgoda na transfer $0.0026/GB (brak darmowej oferty) — opcja |
+| RTX 4070 Ti 12 GB | Qwen3.6-35B-A3B | UD-IQ4_XS, `--n-cpu-moe 21` | 131072 | 11758 / 12282; 7.8 GB | 69 / 54 / 44 `[SZACUNEK]` | **brak ofert na Vast** (18:48 UTC) — nie w kampanii |
+| RTX 5090 32 GB (referencja) | Qwen3.8-27B + MTP | UD-Q6_K 21.98 GB | **204800** | 31321 / 32607 `[SZACUNEK ovh]` | plain 64 / 52 / 43; z MTP ~110 po 64k `[SZACUNEK]` | opcja (faza 3) |
 
-**Doładowanie Vast: $8** (zalecane = faza 1 + faza 2 + faza 3 z marginesem 30% i rezerwą na złe hosty: $7.49 − kredyt
-$0.23 = $7.26). Minimum (tylko 3090): $1.81 − $0.23 = **$1.58**. Szczegóły w §6.
+**Odstępstwo od raportu 33 na 16 GB (świadome):** raport proponuje UD-Q3_K_XL `--n-cpu-moe 8`. fitcalc pokazuje, że
+**UD-IQ4_XS z `--n-cpu-moe 11` też mieści 131k** (szczyt 15246 MiB, zapas 1065; max 168k) przy decode po 64k 62 vs 66 t/s
+(−6%) `[SZACUNEK]`; z MTP (ramię U1) n 15 nadal 131k (szczyt 15177, max 156k). Wyższy kwant przy prawie tej samej prędkości wygrywa (SOP §4: najwyższa jakość, która się mieści).
+Do tego **jeden plik dla wszystkich kart 10–16 GB**: jedna bramka E7, jedna referencja md5. Q3_K_XL zostaje kwantem
+zapasowym dla 16 GB, gdyby J5 (TTFT) albo J4 wypadły na granicy.
 
-Najważniejszy wniosek liczbowy: przy KV q4_0 nasz T kosztuje **~29.8 KB VRAM na token kontekstu po załadowaniu**
-(KV celu 18 432 B + KV draftu 1 152 B + bufory obliczeń 2 × 5 120 B przy ub 512) **i do ~18 KB/token więcej szczytowo
-po długim prompcie**. 131k tokenów to więc ~3.6 GiB + do ~2.2 GiB ponad wagi i ~1.6 GiB stałych. Na 16 GB zostaje na
-wagi ~9 GB, czyli tylko klasa IQ2/Q2 — a ta oblewa J1. Stąd „brak modelu” na 10/12/16 GB, nie z ostrożności.
+**Doładowanie Vast: $8** (pełny: 3090 + 5060 Ti + 4060 Ti + 3060 + 5090 = $8.19 − kredyt $0.23). **Wariant oszczędny:
+$3** (3090 + 5060 Ti = $2.83 − $0.23 = $2.60): jedna karta gęsta 24 GB i jedna MoE 16 GB. Opcja 3080: +$1.77. §6.
+
+Kolejność: E7 (lokalnie, $0) → faza 1 (3090 i 5060 Ti równolegle) → faza 2 (4060 Ti i 3060 po wyniku 5060 Ti) →
+faza 3 (5090). Jeśli E7 da IQ4_XS ✗ J1 → MoE nie idzie w chmurę, zostaje sama faza 1 dla 3090 ($1.79).
 
 ## 1. Model pamięci (z nagłówków GGUF i logów serwera)
 
@@ -111,243 +118,262 @@ Wnioski z walidacji:
 - **Największa niepewność: g zmierzone tylko do promptu 55.6k.** Przy 131k ekstrapolacja liniowa daje +2.25 GiB (g=18K).
   Dlatego `-c` zatwierdza dopiero test wypełnienia na karcie (SOP §7), a fitcalc służy do wyboru kwantu przed wynajmem.
 
+### 1.4 Rozszerzenie dla MoE z ekspertami w RAM (fitcalc v2, raport 33 §1.1)
+
+Qwen3.6-35B-A3B (`qwen35moe`, nagłówek `unsloth/Qwen3.6-35B-A3B-MTP-GGUF`): 40 warstw = 10 pełnej uwagi (2 × 256,
+KV q4_0 5 760 B/token) + 30 GDN + MTP (`nextn`, KV 576 B/token); 256 ekspertów, 8 aktywnych + shared; eksperci UD-IQ4_XS
+15.22 GB z 17.66 GB wag na GPU-bez-`token_embd`; aktywne bajty/token 2.49 GB. `--n-cpu-moe N` zdejmuje ekspertów warstw
+0..N−1 do RAM. Ten sam rachunek co §1.2 (RS z GDN, bufory `c·10·ub`, ovh karty, wzrost szczytu g × skala warstwy 0.5),
+więc walidacja z §1.3 przenosi się na część stałą; **dla qwen35moe nie ma jeszcze ani jednego naszego pomiaru VRAM** —
+pierwszy test na karcie (SOP §7) kalibruje.
+
+| karta, plik | n | VRAM po załadowaniu / szczyt @131k | zapas | eksperci w RAM | max `-c` | ramię z MTP (n) |
+|---|---|---|---|---|---|---|
+| 5060 Ti / 4060 Ti, UD-IQ4_XS | 11 | 14684 / 15246; 14674 / 15236 | 1065 / 1144 | 4.11 GB | 168k / 174k | n 15: 14052 / 15177, 5.6 GB RAM, max 156k ✓ |
+| 5060 Ti, UD-IQ4_XS | 12 | 14328 / 14890 | 1421 | 4.48 GB | 193k | (zapas na `-ub 1024`, +640 MiB) |
+| 4060 Ti, UD-Q3_K_XL (zapas) | 8 | 14998 / 15560 | 820 | 2.79 GB | 151k | — |
+| 5060 Ti, UD-Q3_K_XL (zapas) | 8 / 12 (MTP) | 15008 / 15570; 14472 / 15597 (U1) | 741 / 714 | 2.79 / 4.18 GB | 146k / 139k | n 12 ✓ |
+| 3060, UD-IQ4_XS | 21 | 11104 / 11666 | 622 | 7.84 GB | 138k | n 24: max 123k ✗; **n 25: 10472 / 11597, 9.3 GB RAM, max 138k ✓** |
+| 4070 Ti, UD-IQ4_XS | 21 | 11196 / 11758 | 524 | 7.84 GB | 131k | — |
+| 3080, UD-IQ4_XS | 28 | 8855 / 9530 | 710 | 10.45 GB | 143k | — |
+
+Prefill z ekspertami w RAM: dla ubatcha ≥ 32 tokenów llama.cpp kopiuje wagi ekspertów warstw CPU na GPU co ubatch
+(`GGML_OP_OFFLOAD_MIN_BATCH`, raport 04 §2.2.5). Szacunek `[SZACUNEK]` samej kopii przy `-ub 512`
+(131072/512 = 256 ubatchy): 5060 Ti (4.1 GB, PCIe 4 x8 ~13 GB/s) ~80 s; 4060 Ti (4.1 GB, PCIe 3 x8 ~6.5 GB/s) ~160 s;
+3060 (7.8 GB, PCIe 3 x16 ~12 GB/s) ~170 s; 3080 (10.5 GB) ~225 s — plus obliczenia. Przy 32k: ćwierć tego. `-ub 1024`
+połowi kopie kosztem +640 MiB VRAM przy 131k (mieści się na 16 GB przy n 12, nie na 10–12 GB). Dlatego **PCIe ≥ gen3
+x8 to twardy filtr hosta**, a TTFT jest bramką J5.
+
 ## 2. Kandydaci i jakość
 
-KLD do BF16, protokół 16e (wiki / czat PL; `16e-kwanty-kld.md:133-144`). Wartości bez pomiaru: `[SZACUNEK]` =
-log-liniowa interpolacja po rozmiarze pliku w rodzinie unsloth UD między U3 (13.15 GB), U4 (17.56 GB) i Q8_0 (29.05 GB).
+KLD do BF16, protokół 16e (wiki / czat PL; `16e-kwanty-kld.md:133-144`). `[SZACUNEK]` = log-liniowa interpolacja po
+rozmiarze pliku w rodzinie unsloth UD między U3 (13.15 GB), U4 (17.56 GB) i Q8_0 (29.05 GB).
 
-| kandydat | GB | KLD wiki / czat | J1 (≤ 0.05 / ≤ 0.07) | uwagi |
+### 2.1 Qwen3.8-27B (24/32 GB)
+
+| kandydat | GB | KLD wiki / czat | J1 | uwagi |
 |---|---|---|---|---|
-| UD-Q6_K_M | 23.09 | ~0.008 / ~0.009 `[SZACUNEK]` | ✓ | |
-| UD-Q6_K | 21.98 | ~0.009 / ~0.011 `[SZACUNEK]` | ✓ | |
-| UD-Q5_K_XL / Q5_K_M / Q5_K_S | 20.88 / 19.77 / 18.67 | ~0.010–0.013 / ~0.013–0.019 `[SZACUNEK]` | ✓ | |
-| **UD-Q4_K_XL (U4)** | 17.56 | **0.0153 / 0.0226** | ✓ | zmierzone |
-| UD-Q4_K_M / Q4_K_S | 16.46 / 15.36 | ~0.019 / ~0.029; ~0.024 / ~0.038 `[SZACUNEK]` | ✓ | |
-| UD-IQ4_XS / AP-IQ4_XS | 14.25 | ~0.031 / ~0.049 `[SZACUNEK]` | ✓ | KLD nigdy nie mierzony (`31-5060ti.md:43`) |
-| **UD-Q3_K_XL (U3) / AP-Q3_K_XL (A3)** | 13.15 | 0.0390 / 0.0635; **0.0400 / 0.0559** | ✓ (próg) | zmierzone; A3 lepszy na czacie/kodzie |
-| UD-IQ3_S | 12.04 | ~0.054 / ~0.09 `[SZACUNEK: 1.39 × U3 z 15e]` | ✗ | |
-| GSQ IQ3_S (I4) / Swift IQ3_S (W4) | 11.77 | 0.073 / 0.088; 0.076 / 0.094 | ✗ | |
-| Swift IQ3_XXS (W3) | 10.09 | 0.119 / 0.161 | ✗ | licencja < US$1M |
-| IQ2_S (W2/I2), UD-Q2_K_XL, UD-IQ2_XXS | 7.3–9.8 | 0.164 / 0.19–0.21 (W2/I2) | ✗ | |
-| Saluki S0 | 7.90 | 0.257 / 0.315 (PL 0.320) | ✗ | decyzja 3060 |
-| Bonsai B0 | 7.62 | 0.352 / 0.437 (PL 0.508) | ✗ | decyzja 3060 |
-| LFM2.5 QAD-Q4_0 / Q4_K_M / Q5_K_M | 13.58 / 14.53 / 17.03 | 0.203 / 0.201 / 0.124 (do własnego Q8_0, wikitext 512; Qwen U3 w tym protokole 0.0265) | ✗ | `09-chmura-5060ti.md:174-179` |
-| LFM2.5 Q6_K | 19.69 | niezmierzony | ? | max 128k; na 24 GB i tak przegrywa z 27B Q4_K_XL `[INFERENCE]` |
-| Qwen3.5-9B Q8_0 / UD-Q5_K_XL | 9.53 / 6.74 | do własnego BF16: ~podłoga Q8 (0.004) / niezmierzony `[SZACUNEK]` | ✓ formalnie | inny, mniejszy model: J2/J3 rozstrzygają, czy „do pracy”; użytkownik wykluczył 9B na 3060 |
+| UD-Q6_K_M / Q6_K | 23.09 / 21.98 | ~0.008 / ~0.009; ~0.009 / ~0.011 `[SZACUNEK]` | ✓ | 5090 |
+| UD-Q5_K_XL / Q5_K_M / Q5_K_S | 20.88 / 19.77 / 18.67 | ~0.010–0.013 / ~0.013–0.019 `[SZACUNEK]` | ✓ | nie mieszczą 131k na 24 GB |
+| **UD-Q4_K_XL (U4)** | 17.56 | **0.0153 / 0.0226** (zmierzone) | ✓ | 3090 |
+| UD-Q4_K_M / IQ4_XS | 16.46 / 14.25 | ~0.019 / ~0.029; ~0.031 / ~0.049 `[SZACUNEK]` | ✓ | więcej ctx, gorsza jakość |
+| U3 / A3 (Q3_K_XL) | 13.15 | 0.039 / 0.0635; 0.040 / 0.056 | ✓ (próg) | na 16 GB nie mieści 131k z MTP (v1 §3) |
+| IQ3_S i niżej, Saluki, Bonsai | ≤ 12.04 | 0.054–0.352 / 0.088–0.437 | ✗ | |
 
-Próg J1 (uzasadnienie): U3/A3 to najniższy **zmierzony** tier, przy którym PL same-top ≥ 91.9% i PPL(Q)/PPL(BF16) ≤ 1.02
-(`16e-kwanty-kld.md:135-136`), i to on jest wyborem decyzji E1 dla 16 GB. Następny zmierzony tier (I4/W4, IQ3_S) ma 1.9×
-wyższy KLD-wiki i same-top 89.6–89.9%. Próg 0.05 / 0.07 leży między nimi — **żaden kwant klasy IQ3_S i niżej, w tym
-wszystkie IQ2/Q2, go nie przechodzi**.
+### 2.2 Qwen3.6-35B-A3B (10–16 GB) — bramka E7 przed chmurą
 
-Próg J4 (20 t/s po 64k): Qwen myśli; przy `--reasoning-effort low` odpowiedź to ~1–2k tokenów, czyli ≤ 100 s przy 20 t/s
-— górna granica pracy interaktywnej. 20 t/s to też U0 (goły upstream) na najwolniejszej karcie z kampanii
-(3060: 20.6 t/s, `31-3060-3080.md:10`).
+Jakość bazowa (raport 33 §3): AA v4.3.2 **18** (Qwen3.8-27B: 34), GPQA-D 86.0, SWE-bench V 73.4, LCB v6 80.4 — najlepszy
+model, który mieści 131k na 10–16 GB; gęste alternatywy (Ornith/Qwen3.5-9B, Gemma 4 12B) mają AA 11–14 i 20–40 t/s.
+**KLD kwantów Qwen3.6 nie mamy** (unsloth publikuje tylko wykres). Dlatego:
 
-## 3. Karty: każdy wykonalny model, max `-c`, jakość, prędkość, decyzja
-
-Max `-c` z `fitcalc` (T, KV q4_0, zapas 512 MiB): **pewny** = ub 512, g = 18K; **górny** = ub 256, g = 14K
-(do sprawdzenia testem wypełnienia). Kandydaci bez MTP liczeni jako ramię plain (połowa g).
-
-### RTX 3090 24 GB (24576 MiB, 936 GB/s, sm_86) — rekomendacja: **UD-Q4_K_XL, `-c 131072`**
-
-| model | max `-c` pewny / górny | J1 | ≥131k | t/s (źródło) | decyzja |
-|---|---|---|---|---|---|
-| UD-Q6_K_M / Q6_K / Q5_K_XL / Q5_K_M | 27k / 50k / 72k / 91k (górny 36–116k) | ✓ | ✗ | Q6_K_M czat T=1 73.2 (`31-3090.md:66`) | odpada (kontekst) |
-| UD-Q5_K_S | 114k / 143k | ✓ | tylko górny | — | odpada (nie „pewny”) |
-| **UD-Q4_K_XL** | **137k / 171k** | ✓ zmierzone | ✓ | czat T=1 93.3 (`27:232`), mvs 349 (`27:234`), po 32k / 60k T=1 64.8 / 56.7 (host 280 W, `27:202,200`); po 128k ~43 `[SZACUNEK: liniowo w ms/token]`; prefill 60k 924 t/s, TTFT 32k 28.8 s / 60k 60.4 s (`27:204-206`); TTFT 128k ~165 s `[SZACUNEK]` | **WYBRANY** |
-| UD-Q4_K_M | 159k / 199k | ✓ (szac.) | ✓ | ~+6% vs Q4_K_XL `[SZACUNEK z bajtów]` | nie: +20k ctx za ~+25% KLD |
-| UD-IQ4_XS | 203k / 253k | ✓ (szac. 2×U4) | ✓ (200k) | — | nie: 200k kosztuje jakość (zasada „200k tylko bez kosztu jakości”) |
-
-`-c 131072` daje przewidywany szczyt 23630 MiB (zapas 946 MiB) — zgodne z pomiarem 22198 MiB po 55.6k (`27:207`).
-Rozszerzenie: test wypełnienia także `-c 163840 -ub 256` (model: szczyt 24241, zapas 335 < 512 → odrzucony z góry;
-nie testować). `-c` 131072 jest finalny.
-
-### RTX 4090 24 GB (referencja, opcjonalnie) — jak 3090: UD-Q4_K_XL, `-c 131072` (szczyt 23772, zapas 792 `[SZACUNEK ovh]`). Niezalecana: ta sama pojemność, odpowiada tylko „o ile szybciej”.
-
-### RTX 5090 32 GB (32607 MiB, 1792 GB/s, sm_120) — rekomendacja: **UD-Q6_K, `-c 204800`**
-
-| model | max `-c` pewny / górny | J1 | ≥131k / 200k | decyzja |
-|---|---|---|---|---|
-| UD-Q6_K_M | 194k / 242k | ✓ (~0.008) | ✓ / tylko górny | nie: 200k niepewne |
-| **UD-Q6_K** | **216k / 256k** | ✓ (~0.009) | ✓ / ✓ | **WYBRANY**: 200k bez straty jakości (Δ KLD vs Q6_K_M ~0.001 `[SZACUNEK]`) |
-| UD-Q5_K_XL | 239k / 256k | ✓ | ✓ / ✓ | nie: niższa jakość za kontekst ponad 200k, którego nie potrzebujemy |
-
-Prędkość `[SZACUNEK]`: czat T=1 ~140 t/s (3090 Q6_K_M 73.2 × 1.9 pasma), po 64k ~110. Nic nie zmierzone na 5090 — stąd
-faza 2 jako referencja górnej półki.
-
-### RTX 5060 Ti 16 GB (16311 MiB) i RTX 4060 Ti 16 GB (16380 MiB) — **brak modelu 27B spełniającego próg**
-
-| model | max `-c` 5060 Ti / 4060 Ti (pewny\|górny) | J1 | powód odpadnięcia |
+| E7 (XtxLab, lokalnie, raport 35) | plik | próg PASS | jeśli FAIL |
 |---|---|---|---|
-| UD-IQ4_XS (dotychczasowy wybór) | 29\|38k / 30\|40k | ✓ | kontekst (zmierzone: 32k, `31-4060ti.md:62`) |
-| AP-Q3_K_XL (najniższy z J1) | 51\|66k / 53\|68k | ✓ | kontekst; nawet bez MTP przy ub 256: zapas 60 MiB przy 131k (< 512) |
-| UD-IQ3_S / Swift IQ3_S | 74\|94k | ✗ | jakość i kontekst |
-| Swift IQ3_XXS / UD-Q2_K_XL / Saluki-MTP | 106–147\|133–184k | ✗ | jakość (KLD 0.12–0.26) |
-| Saluki / Bonsai (plain) | 251–256k | ✗ | jakość |
-| LFM QAD-Q4_0 (KV q8_0) | 122\|142k (max 128k z modelu) | ✗ (KLD 0.203) | jakość |
-| **Qwen3.5-9B Q8_0** | **256k / 256k** | ✓ formalnie | **warunkowy**: J2/J3/J4 niezmierzone; t/s ~40 (5060 Ti) / ~27 (4060 Ti) po 64k `[SZACUNEK: 0.85–0.9 × pasma / (8.4 GB wag + ~1.2 GB odczytu KV)]` |
+| E7.1 | UD-IQ4_XS 18.21 GB (MTP-GGUF) | KLD do BF16 wiki ≤ 0.05 i czat PL ≤ 0.07, protokół 16e (20 × 2048, 5 korpusów) | MoE nie idzie w chmurę na 10–12 GB; 16 GB: UD-Q4_K_M 22.66 GB z większym n (przeliczyć fitcalc, RAM ≥ 48 GB) albo „brak modelu” |
+| E7.2 | UD-Q3_K_XL 17.23 GB | jw. | 16 GB tylko IQ4_XS |
+| E7.3 | J2 na CPU/XTX: 3 czaty PL + 3 EN, 3 edycje kodu z testem, ramię plain | wszystkie poprawne | brak chmury |
+| E7.4 | czy nasz fork ładuje `qwen35moe` z flagami T (`--spec-draft-vocab` 64k, `--spec-draft-head-type iq4_xs`, `--spec-mtp-type iq4_xs`) i md5 T=0 `LLAMA_GPU_VERIFY` 0 == 1 na CPU/XTX | działa / nie | ramię T bez tych flag (lookup + share + GV) |
 
-Żeby 27B ≥ Q3_K_XL weszło na 16 GB przy 131k, potrzebna jest zmiana silnika: prefill FA bez pełnej konwersji K/V
-do f16 (dziś g ≈ 14–18 KB/token, `31-4060ti.md:64`), mniejszy bufor kontekstu draftu, ub 256. Rachunek `[SZACUNEK fitcalc]`:
-nawet z g → 2 KB/token i ub 256 AP-Q3_K_XL **z MTP** mieści ~98k (✗), **bez MTP** ~157k (✓, ale bez spekulacji:
-plain Q3_K_XL na 5060 Ti 28.9 t/s przy krótkim kontekście, `09-chmura-5060ti.md:174`; 4060 Ti 18.8 t/s, `29-4060ti.md:68`
-→ 4060 Ti oblewa J4). To projekt deweloperski na CPU (DeepSeek), nie zakup godzin GPU — poza budżetem tego planu.
+Kampania MoE startuje po E7.1 + E7.3 = PASS. Ornith-1.5-35B-A3B (ten sam szkielet, MIT) jest #2 z raportu 33 — nie
+wchodzi do tej kampanii (jakość tylko z deklaracji vendora, MTP w pliku z akceptacją ~0.13).
 
-### RTX 4070 Ti 12 GB, RTX 3060 12 GB, RTX 3080 10 GB — **brak modelu spełniającego próg**
+## 3. Karty: decyzje
 
-- 27B ≥ Q3_K_XL: same wagi (12006 MiB) ≥ VRAM po odjęciu stałych. Nie mieści się przy żadnym `-c`.
-- 3060: **tu obowiązuje decyzja 2026-10-16** (tylko Saluki/Bonsai). Mieszczą się przy 131k bez MTP (Saluki 125|147k,
-  Bonsai PQ2_0 144|169k), Saluki z MTP tylko 61|78k — ale oba oblewają J1 (KLD-wiki 0.257 / 0.352). Wynik: brak modelu.
-  Gdyby użytkownik dopuścił 9B: Qwen3.5-9B Q8_0 `-c 131072` (szczyt 11320, zapas 968) — faza 3, tylko na jego polecenie.
-- 4070 Ti: 9B Q8_0 `-c 131072` mieściłby się (szczyt 11410), ale 2026-10-20 18:00 na Vast nie ma żadnej oferty 4070 Ti.
-- 3080: 9B UD-Q5_K_XL `-c 131072` mieściłby się (szczyt 9271); żadna oferta 3080 nie przechodzi filtra hosta
-  (najtańsza: transfer $0.0026/GB i 15 GB RAM).
+### RTX 3090 24 GB — **Qwen3.8-27B UD-Q4_K_XL, `-c 131072`, ramię T** (bez zmian względem v1)
 
-## 4. Protokół testu (każda wynajęta karta; szczegóły i listy kontrolne w SOP §7–§9)
-
-1. **hostcheck box** w pierwszych 5 min (limit mocy = domyślny, HF ≥ 25 MB/s, dysk, RAM); FAIL → zniszcz.
-2. **Staging raz:** jeden plik modelu z HF na boxie (sha256 z HF LFS), źródła jako `git diff`, buildy upstream `4c3c5810f`
-   i gałęzi `nv-v2` (sm_86/89/120), nigdy w trakcie pomiaru.
-3. **Test wypełnienia (J3 VRAM):** ramię T przy wybranym `-c`: 512 → 16k T=0 → 16k T=1 → 64k → (c−1.2k) T=0 →
-   drugi (c−1.2k) innym tekstem T=1 → czat; nvidia-smi co 0.2 s; PASS = 0 błędów i szczyt + 512 ≤ VRAM. Tak samo U1.
-4. **Bramki jakości na karcie:** J3 `needle.py --tokens <c>` (5/5, 0 zmyśleń; dla 5090 także 200k); J2: 3 czaty PL + 3 EN
-   (T=1, czytane przez inżyniera: spójne, poprawny język, bez pętli) + 3 edycje kodu z testem (diff stosuje się, test przechodzi).
-5. **Ramiona przy wybranym `-c`:** U0 = upstream `-m` (domyślny fit; jego n_ctx zapisany, obciążenia ponad jego kontekst „—”);
-   U1 = upstream + `-fit off -ngl 99 -fa on -ctk q4_0 -ctv q4_0 -c <c> -ub <ub> -np 1 --jinja --cache-ram 8192
-   --reasoning-effort low --spec-type draft-mtp --spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0`; T = `cuda-topka2` z flagami U1
-   + słownik draftu 64k, głowice iq4_xs, `LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024
-   LLAMA_GPU_VERIFY=1` (jak w 31-*, żeby wyniki były porównywalne). 9B: U0 i T bez MTP (lookup).
-6. **Obciążenia:** czat T=1 (spec_sweep 6 promptów × 3 seedy × 400 tok); edycja kodu mvs T=0 (4 × 1024) + zestaw edit;
-   decode po 16k / 64k / 128k (+200k na 5090) przy T=0 i T=1 (256 tok); prefill 32k i 128k z TTFT; VRAM.
-7. **ABBA:** U0 U1 T | T U1 U0, świeży serwer na ramię, p1 seedy 1–3, p2 seedy 4–6; CI95 bootstrap po (prompt, seed).
-8. **Bramki md5:** 22 wiersze (6 czat T=0, 6 czat T=1 seed 1, 4 mvs, 6 copy): `LLAMA_GPU_VERIFY=0` == `=1`; build z
-   przełącznikami off == `cuda-topka2`; przełącznik bitowy → md5 = baza; niebitowy (GDN MMA, KVQ) → KLD vs referencja
-   CPU fp32 PASS (metoda `31-4060ti.md:88-89`); zmiana głębokości draftu → nowe md5 referencyjne + deterministyczność.
-9. **Pętla optymalizacji (≤ 10 min GPU na pomysł, kolejność wg oczekiwanego zysku):**
-
-| # | pomysł | dowód z 31-* | 3090 Q4_K_XL | 5090 Q6_K | 9B (faza 3) |
+| model | max `-c` pewny / górny | J1 | ≥131k | t/s | decyzja |
 |---|---|---|---|---|---|
-| O1 | `GGML_CUDA_KVQ=1` (FA czyta q4_0 w weryfikacji) | 4060 Ti: po 16k +10%, po 29.5k **+28%**, usuwa OOM T (`31-4060ti.md:33-34,89`) | **pierwszy** (128k!) | tak | tak |
-| O2 | `LLAMA_SPEC_COUPLED=1` | +5.3…+6.8% czat T=1 na sm_86/89 (`31-3060-3080.md:146`, `31-4070ti.md:180`, `31-4060ti.md:87`); 5060 Ti nierozstrzygnięte | tak | tak | nie (brak MTP) |
-| O3 | `GGML_CUDA_GDN_MMA=1` (chunked GDN w prefillu) | pp +3.8% (`31-4060ti.md:88`) → TTFT 128k | tak | tak | tak |
-| O4 | głębokość draftu n=3 / n=5 (statyczna na kartę, reguła przyjęta 2026-10-20) | 3060 n=3, 3080 n=2 (+3…+5%, `31-3060-3080.md:147`), 4060 Ti n=5 −0.75% (`31-4060ti.md:91`) | n=3 i n=5 | n=5 (szybka weryfikacja) | — |
-| O5 | `LLAMA_SERVER_YIELD_FAST=2` | +1.0% na słabym CPU (`31-4070ti.md:178`) | tylko gdy host < 8 rdzeni | nie | tak |
-| O6 | `-ub 256` vs 512 | −5% prefill, −640 MiB przy 131k | tylko jeśli J3 wymaga | — | — |
-| O7 | słownik draftu 32k | sufit ~2% (`31-4060ti.md:93`) | tak | tak | — |
-| O8 | MMVQ i-quantów (`GGML_CUDA_MMVQ_IQ_TUNE=2`, RPB, Q3K_MULTI) | +1.4% tylko dla IQ3/IQ2 (`31-5060ti.md:15`); RPB/Q3K/OCC odrzucone | **pomijamy**: Q4_K_XL ma 0.15 GB typów IQ3/Q3_K | pomijamy (Q6_K/Q8_0) | pomijamy (Q8_0) |
-| O9 | Q6_K MMVQ przy K=5120 (555 GB/s z 936, `31-3090.md:21-22`): PIPE (błędne wyjście) i Q8_WIDE | KILL / niezmierzone | najpierw debug PIPE na CPU (DeepSeek) — na GPU tylko po teście bitowym | jw. (Q6_K dominuje w pliku) | — |
+| UD-Q6_K_M … Q5_K_M | 27–91k | ✓ | ✗ | Q6_K_M czat T=1 73.2 (`31-3090.md:66`) | odpada |
+| **UD-Q4_K_XL** | **137k / 171k** | ✓ zmierzone | ✓ | czat T=1 93.3, mvs 349 (`27:232,234`); po 32k / 60k T=1 64.8 / 56.7 (host 280 W, `27:202,200`); po 128k ~43 `[SZACUNEK]`; TTFT 32k 28.8 s, 60k 60.4 s (`27:204-206`) | **WYBRANY** |
+| UD-Q4_K_M / IQ4_XS | 159k / 203k | ✓ szac. | ✓ | — | nie: kontekst ponad 131k za cenę jakości |
+| Qwen3.6-35B-A3B / Ornith (MoE) | 164–211k | E7 | ✓ | plain 106–117 po 64k `[SZACUNEK]` | „tryb szybki”, nie w tej kampanii (AA 18 vs 34) |
 
-   Przyjęcie: CI95 zmiany t/s wyklucza 0 albo ms/krok spada na każdym prompcie, + bramki md5/KLD. Finał T' vs T ABBA
-   na tym samym binarnym, potem pełne U0/U1/T/T' (najpierw T i T', na początku okna — lekcja z 2026-10-20).
+### RTX 5060 Ti 16 GB — **Qwen3.6-35B-A3B UD-IQ4_XS, `--n-cpu-moe 11`, `-c 131072`**
+
+| model | konfiguracja | max `-c` | szczyt @131k | t/s 0/64k/131k | jakość | decyzja |
+|---|---|---|---|---|---|---|
+| **Qwen3.6 UD-IQ4_XS** | n 11, ub 512 (n 12 przy ub 1024; n 15 z MTP) | 168k | 15246 | 88 / 62 / 48 | E7.1 | **WYBRANY** |
+| Qwen3.6 UD-Q3_K_XL | n 8 (n 12 z MTP) | 146k | 15570 | 95 / 66 / 50 | E7.2 | zapas |
+| Qwen3.6 UD-IQ3_XXS (całość w VRAM) | n 0 | 162k | 15322 | 132 / 81 / 59 | ✗ prawdopodobnie (3-bit IQ) | nie |
+| Qwen3.8-27B ≥ Q3_K_XL | z MTP | 51–66k | — | — | ✓ | ✗ J3 (v1 §3) |
+
+Spekulacja: MTP z pliku (n=2) mieści 131k przy n 15 (decode plain po 64k 59 vs 62 t/s, 5.6 GB RAM); raport 33 §6: MTP przy ekspertach w RAM daje mało lub ujemnie
+(numsu 8 GB), 3060 +20% (tanhaien) → pomysł O-M1 w pętli, nie domyślnie.
+
+### RTX 4060 Ti 16 GB — jak 5060 Ti (ten sam plik, n 11)
+
+Pasmo 288 GB/s i PCIe 3 x8: szczyt 15236 / 16380, decode 65 / 44 / 33 t/s `[SZACUNEK]`, TTFT 131k ~2× dłuższy niż 5060 Ti `[SZACUNEK]`. Faza 2: tylko gdy
+5060 Ti zaliczy J1–J5 (ten sam plik, więc J1/J2 przenoszą się; mierzymy J3–J5).
+
+### RTX 3060 12 GB — Qwen3.6-35B-A3B UD-IQ4_XS, `--n-cpu-moe 21`, `-c 131072` — **warunkowo**
+
+**Obowiązuje decyzja [[2026-10-16-saluki-bonsai-na-3060]]** (tylko Saluki/Bonsai). Oba oblewają J1 (KLD-wiki 0.257 /
+0.352, `16e-kwanty-kld.md:143-144`), więc bez zmiany decyzji: „ta karta: brak modelu spełniającego próg”. Po zgodzie
+użytkownika na Qwen3.6: szczyt 11666 / 12288 (zapas 622), 7.8 GB RAM, 52 / 40 / 32 t/s `[SZACUNEK]`; społeczność:
+Q4_K_M ncmoe 25 → 50–58 t/s przy 32k (raport 33 §4). Ryzyko J5: TTFT 32k ~45–60 s, 131k ~4–5 min `[SZACUNEK]`.
+
+### RTX 3080 10 GB — opcja (UD-IQ4_XS, n 28, szczyt 9530, 10.5 GB RAM)
+
+Na Vast 18:48 UTC brak oferty z transferem ≤ $0.002/GB, RAM ≥ 32 GB i PCIe ≥ x8; najbliższa: 54738116 (Hiszpania,
+$0.265/h, $0.0026/GB, 64 GB RAM, gen3 x16) — transfer 25 GB = $0.065, ale to łamie regułę → tylko z
+`--allow-paid-traffic` i zgodą użytkownika. Najdłuższy TTFT z kart (10.5 GB ekspertów przez PCIe).
+
+### RTX 4070 Ti 12 GB — konfiguracja jak 3060 (n 21, szczyt 11758), **brak ofert** na Vast → nie w kampanii.
+
+### RTX 5090 32 GB — Qwen3.8-27B UD-Q6_K, `-c 204800` (bez zmian względem v1; faza 3, referencja)
+
+## 4. Protokół testu (SOP §7–§9; poniżej to, co dochodzi dla MoE)
+
+1. **hostcheck box** w pierwszych 5 min: `hostcheck.sh box <url> <GB> <eksperci_GB>` — limit mocy = domyślny, HF ≥ 25 MB/s,
+   dysk, **MemAvailable ≥ eksperci + 8 GB, PCIe link ≥ gen3 x8**; FAIL → zniszcz.
+2. **Staging raz:** jeden plik (3090: UD-Q4_K_XL; 10–16 GB: `unsloth/Qwen3.6-35B-A3B-MTP-GGUF` UD-IQ4_XS, 18 209 036 576 B,
+   sha256 `df27a780…`), buildy upstream + `nv-v2`, nigdy w trakcie pomiaru. Na hoście z RAM ≤ 48 GB: `--no-mmap`
+   nie używać (mmap + eksperci w RAM to jedna kopia).
+3. **Test wypełnienia (J3) + strojenie MoE (≤ 30 min):** sekwencja 512 → 16k → 64k → (c−1.2k) T=0 → drugi (c−1.2k) T=1 →
+   czat, VRAM co 0.2 s, RAM (`free -m`) co 1 s; siatka: n ∈ {n_fit, n_fit+1, n_fit+2} × ub ∈ {512, 1024 jeśli mieści}; wybór =
+   najmniejsze n, które przechodzi z zapasem ≥ 512 MiB; potem TTFT 32k dla każdej przechodzącej pary (J5). PCIe
+   `pcie.link.width.current` pod obciążeniem prefillu zapisany.
+4. **Bramki jakości na karcie:** J3 `needle.py --tokens 131072` (5/5, 0 zmyśleń); J2 ramię T (3 PL + 3 EN + 3 edycje kodu);
+   md5: GPU verify 0 == 1 (22 wiersze).
+5. **Ramiona przy wybranym `-c`, n, ub:**
+   - U0 = upstream `llama-server -m` (domyślny `-fit`; dla MoE `-fit` sam dobiera offload — zapisać jego n_ctx i n);
+   - U1 = upstream `-fit off -ngl 99 --n-cpu-moe <n> -fa on -ctk q4_0 -ctv q4_0 -c 131072 -ub <ub> -np 1 --jinja
+     --cache-ram 8192 --reasoning-effort low -t <kwota>` (gęsty 27B: + `--spec-type draft-mtp --spec-draft-n-max 4 -ctkd/-ctvd q4_0`);
+   - T = gałąź `nv-v2` z flagami U1 + `LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_SERVER_CACHE_SHARE_MIN=1024
+     LLAMA_GPU_VERIFY=1`; dla 27B dodatkowo MTP n=4 + słownik draftu 64k + głowice iq4_xs (jak `31-*`); dla Qwen3.6 MTP
+     tylko jeśli O-M1 przejdzie (plain + lookup domyślnie).
+6. **Obciążenia:** czat T=1 (6 × 3 × 400 tok); mvs T=0 (4 × 1024) + edit; **decode po 16k / 64k / 128k** T=0 i T=1 (jeden
+   haystack rosnący prefiksami → prompt cache oszczędza prefill); **prefill + TTFT przy 32k i 131k** (zimny cache,
+   osobny serwer, 2 powtórzenia); VRAM i RAM.
+7. **ABBA** U0 U1 T | T U1 U0, świeży serwer na ramię, p1 seedy 1–3, p2 seedy 4–6, CI95 bootstrap; taskset na jednym
+   węźle NUMA/CCX, **`-t` = kwota CPU** (eksperci liczą się na CPU — liczba wątków ma znaczenie, w siatce §4.3 sprawdzić
+   `-t` kwota vs kwota−2).
+8. **Pętla optymalizacji (≤ 10 min GPU na pomysł):**
+
+| # | pomysł | dowód | 3090 (27B) | 16 GB MoE | 12 GB MoE |
+|---|---|---|---|---|---|
+| O1 | `GGML_CUDA_KVQ=1` | 4060 Ti po 29.5k +28% (`31-4060ti.md:33-34,89`) | **pierwszy** | tak (10 warstw uwagi — mniejszy zysk) | tak |
+| O2 | `LLAMA_SPEC_COUPLED=1` | +5.3…+6.8% T=1 (`31-3060-3080.md:146`, `31-4070ti.md:180`, `31-4060ti.md:87`) | tak | tylko z MTP | tylko z MTP |
+| O3 | `GGML_CUDA_GDN_MMA=1` (prefill) | pp +3.8% (`31-4060ti.md:88`) | tak | **tak (TTFT)** | tak |
+| O4 | głębokość draftu n=3/5 | `31-3060-3080.md:147`, `31-4060ti.md:91` | tak | — | — |
+| O5 | `LLAMA_SERVER_YIELD_FAST=2` | +1.0% (`31-4070ti.md:178`) | gdy host < 8 rdzeni | tak (CPU zajęty ekspertami) | tak |
+| O-M1 | MTP z pliku n=2 (+ coupled); 16 GB n 15, 3060 n 25 (fitcalc §1.4) | raport 33 §6: 3060 +20%, 8 GB ±; akceptacja 83% (n=2) | — | tak | tak |
+| O-M2 | `-ub 1024` / `-b 2048` (mniej kopii ekspertów w prefillu) | §1.4 | — | **tak (J5)** | nie mieści |
+| O-M3 | `GGML_OP_OFFLOAD_MIN_BATCH` (próg kopiowania ekspertów) i `-t` | raport 04 §2.2.5 | — | tak | tak |
+| O7 | słownik draftu 32k | sufit ~2% (`31-4060ti.md:93`) | tak | — | — |
+| O9 | Q6_K MMVQ (PIPE debug na CPU) | `31-3090.md:21-22,136-137` | po teście bitowym | — | — |
+
+   Przyjęcie: CI95 t/s wyklucza 0 albo ms/krok spada na każdym prompcie + bramki md5/KLD (SOP §9). Finał T' vs T na
+   początku okna kredytu, potem pełne U0/U1/T/T'.
 
 ## 5. Logistyka
 
-### 5.1 Filtr hostów (live, `vastai search offers`, 2026-10-20 17:33 UTC)
+### 5.1 Filtr hostów (live, 2026-10-20 18:48 UTC)
 
 ```
-vastai search offers 'gpu_name=<GPU> num_gpus=1 gpu_ram>=<V> reliability>0.98 verified=true rentable=true
-  direct_port_count>=1 disk_space>=60 inet_down>=300 cuda_vers>=12.8 inet_down_cost<=0.002 inet_up_cost<=0.002
-  cpu_cores_effective>=4 cpu_ram>=24 geolocation notin [CN]' --storage 60 -o dph_total --raw
+# 24/32 GB (gęsty, bez ekspertów w RAM):
+vastai search offers 'gpu_name=<GPU> num_gpus=1 gpu_ram>=<V> reliability>0.98 verified=true rentable=true direct_port_count>=1
+  disk_space>=60 inet_down>=300 cuda_vers>=12.8 inet_down_cost<=0.002 inet_up_cost<=0.002 cpu_cores_effective>=4
+  cpu_ram>=24 geolocation notin [CN]' --storage 70 -o dph_total --raw
+# 10–16 GB MoE (eksperci w RAM, prefill przez PCIe):
+...  cpu_cores_effective>=4 cpu_ram>=32 pci_gen>=3 gpu_lanes>=8 ...
 ```
+Potem `hostcheck.sh offer <id> <GB> <h> [eksperci_GB]` (MoE: RAM ≥ max(32, eksperci + 16) GB, PCIe ≥ gen3 x8, transfer
+≤ $0.002/GB), `up.sh <id> --download-gb <GB> --hours <h> --go`, na boxie `hostcheck.sh box <url> <GB> [eksperci_GB]`
+(limit mocy = domyślny, MemAvailable ≥ eksperci + 8, HF ≥ 25 MB/s). Hosty x1 (riser, `31-3060-3080.md:23`) są wykluczone.
 
-Potem przed wynajmem `hostcheck.sh offer <id> <GB pobrania> <h>` (cena z transferem, verified, rel, driver ≥ 570, RAM),
-`up.sh <id> --download-gb <GB> --hours <h> --go` (od 76e6ac2 sam odrzuca transfer > $0.002/GB), a po starcie
-`hostcheck.sh box <url modelu> <GB>`: `nvidia-smi -q -d POWER` Current == Default (inaczej zniszcz), HF ≥ 25 MB/s
-(1 GiB range), dysk ≥ model + 30 GB, RAM ≥ 24 GB, szerokość PCIe.
+| karta | oferta (hostcheck PASS) | $/h z dyskiem | GPU $/h | transfer $/GB | rel | RAM / PCIe | zapas |
+|---|---|---|---|---|---|---|---|
+| 3090 | **52272575** Oregon | 0.246 | 0.227 | 0.0013 | 0.998 | 32 GB / 4.0 x16 | 51372161 Virginia $0.296 |
+| 5060 Ti | **54073766** Australia | 0.186 | 0.173 | ~0 | 0.998 | 32 GB / 4.0 x8 | — (jedyna) |
+| 4060 Ti | **56468701** Floryda (host z `31-4060ti.md`, 165 W stock) | 0.186 | 0.173 | ~0 | 0.991 | 48 GB / 3.0 x8 | 13645294 Kentucky $0.193 |
+| 3060 | **55447316** Michigan | 0.126 | 0.093 | 0.0013 | 0.998 | 40 GB / 3.0 x16 | — (z płatnym transferem: 47594089 $0.099, $0.0026/GB) |
+| 3080 | 54738116 Hiszpania (płatny transfer) | 0.265 | 0.252 | **0.0026** | 0.993 | 64 GB / 3.0 x16 | — |
+| 4070 Ti | — | — | — | — | — | — | brak jakichkolwiek ofert |
+| 5090 | **56935334** Wietnam | 0.805 | 0.785 | ~0 | 0.990 | 51 GB / 5.0 x16 | 50452984 Ontario $0.69 (transfer $0.00195) |
 
-| karta | oferta (wybrana) | $/h z dyskiem 60 GB | GPU / dysk $/h | transfer $/GB | rel | uwagi |
-|---|---|---|---|---|---|---|
-| 3090 | **56607987** Oregon, PCIe 4 x16 | 0.2433 | 0.2267 / 0.0167 | 0.0013 | 0.998 | zapas: 54042498 Tajwan $0.2233, transfer 0, rel 0.987 (tajwański 3090 miał limit 200 W, `31-3090.md:28`) |
-| 5090 | **52411630** Czechy, 6.5 Gb/s | 0.904 | 0.8873 / 0.0167 | 0 | 0.984 | zapas 51969545 Kalifornia $0.984 |
-| 4090 | 53960908 Oregon | 0.470 | 0.4533 / 0.0167 | 0.0013 | 0.997 | opcja |
-| 5060 Ti | 54073761 Australia | 0.1844 | 0.1733 / 0.0111 | ~0 | 0.998 | jedyna przechodząca filtr |
-| 4060 Ti | 56468703 Floryda (host z `31-4060ti.md`, 165 W stock) | 0.1844 | 0.1733 / 0.0111 | ~0 | 0.991 | jedyna przechodząca filtr |
-| 3060 | 55447325 Michigan | 0.1211 | 0.0933 / 0.0278 | 0.0013 | 0.998 | tylko gdy użytkownik zmieni decyzję |
-| 3080 | — | — | — | — | — | brak oferty z transferem ≤ $0.002 i RAM ≥ 24 GB |
-| 4070 Ti | — | — | — | — | — | brak jakiejkolwiek oferty |
+### 5.2 Staging (jeden plik na kartę)
 
-### 5.2 Staging: jeden plik na kartę, pobrany raz na boxie
+3090: `unsloth/Qwen3.8-27B-GGUF` `Qwen3.8-27B-UD-Q4_K_XL.gguf` (17 559 178 144 B, sha256 3f227079…).
+10–16 GB: `unsloth/Qwen3.6-35B-A3B-MTP-GGUF` `Qwen3.6-35B-A3B-UD-IQ4_XS.gguf` (18 209 036 576 B, sha256 df27a780…; MTP
+w pliku — ten sam plik dla ramienia plain i O-M1). 5090: `Qwen3.8-27B-UD-Q6_K.gguf` (21 983 677 344 B). Pobranie =
+model + obraz ~5 GB + źródła ~1 GB ≈ 24–28 GB.
 
-3090/4090: `unsloth/Qwen3.8-27B-GGUF` `Qwen3.8-27B-UD-Q4_K_XL.gguf` (17 559 178 144 B, sha256 3f227079…, `models.tsv`).
-5090: `Qwen3.8-27B-UD-Q6_K.gguf` (21 983 677 344 B). 5060 Ti / 4060 Ti: `unsloth/Qwen3.5-9B-GGUF` `Qwen3.5-9B-Q8_0.gguf`
-(9 527 502 048 B). Pobranie = model + obraz ~5 GB + źródła/apt ~1 GB. Nigdy nie wysyłać modeli ze stacji (upload 0.45 MB/s).
+### 5.3 Faza 0 — lokalnie, $0, przed doładowaniem
 
-### 5.3 Faza 0 — lokalnie, $0, przed doładowaniem (CPU, `nice -n 19`)
-
-| # | zadanie | po co |
+| # | zadanie | kto |
 |---|---|---|
-| F0.1 | Gałąź `nv-v2` = `cuda-topka2` + coupled `7cdc0121b` + host-gap `49bc932a8` + GDN MMA `e55006b3a` + KVQ `007a6f813` (z `nv-4060ti` `6edd8d8b9`); wszystkie przełączniki domyślnie off; kompilacja lokalna sm_86/89/120 (CUDA 12.8 w `~/opt/cuda-12.8`) | żadnego debugowania buildu na płatnym boxie |
-| F0.2 | `corpus256k.txt` (PL+EN: wiki + raporty + kod, ≥ 900 KB) i rozmiary 64k/128k/200k w `long_bench.py`; `fillseq.sh` uogólniony z `runs/nv5060ti/inst/fitseq.sh` (sekwencja z §4.3, model i `-c` z parametrów) | obciążenia 128k/200k nie istnieją w harnessie (corpus60k ma 199 KB) |
-| F0.3 | Zestaw J2: 3 PL + 3 EN prompty czatu, 3 edycje kodu z testem (np. funkcje z `qwen-opt/tools`) | bramka zadań powtarzalna |
-| F0.4 | Próba `needle.py` na CPU z małym modelem (np. LFM2.5-2.6B przy 8k) | skrypt sprawdzony przed GPU |
-| F0.5 | Faza 3 tylko jeśli: 9B Q8_0 KLD do BF16 (CPU, 20 × 2048) i J2 na CPU zaliczone **oraz użytkownik zgodzi się na 9B** | nie płacić za kartę bez modelu |
-| F0.6 | DeepSeek: debug `GGML_CUDA_MMVQ_PIPE` na CPU (hash MUL_MAT, `31-3090.md:136-137`) | O9 tylko jeśli bitowo poprawne |
+| **E7** | KLD Qwen3.6 UD-IQ4_XS / UD-Q3_K_XL do BF16 (protokół 16e) + J2 + fork z flagami T dla `qwen35moe` (§2.2) | XtxLab (raport 35) |
+| F0.1 | gałąź `nv-v2` = `cuda-topka2` + coupled `7cdc0121b` + host-gap `49bc932a8` + GDN MMA `e55006b3a` + KVQ `007a6f813`; kompilacja sm_86/89/120 lokalnie | Opus + DeepSeek |
+| F0.2 | `corpus256k.txt` (PL+EN), rozmiary 64k/128k w `long_bench.py`, `fillseq.sh` z RAM-em i siatką n × ub | Opus |
+| F0.3 | zestaw J2 (3 PL + 3 EN + 3 edycje kodu z testem) | Opus |
+| F0.4 | `needle.py` sprawdzony na CPU małym modelem | Opus |
+| F0.5 | `ttft.py`: zimny prefill 32k / 131k, osobny serwer, zapis PCIe width i RAM | Opus |
+| F0.6 | (zrobione) fitcalc ramienia MTP: 16 GB n 15, 3060 n 25 — §1.4 | PlanNvV2 |
 
 ### 5.4 Godziny na kartę
 
-| karta | build + pobranie | wypełnienie + J2/J3 | ABBA U0/U1/T | optymalizacja + finał T' | raport/zniszczenie | razem z zapasem 25% |
+| karta | build + pobranie | wypełnienie + siatka n×ub + J2/J3/J5 | ABBA U0/U1/T (z TTFT 32k/131k) | optymalizacja + finał | raport | razem (+25%) |
 |---|---|---|---|---|---|---|
-| 3090 | 0.45 h | 0.8 h (prefill 128k ~3 min × ~10) | 0.75 h | 1.6 h | 0.2 h | **5.0 h** |
-| 5090 | 0.4 h | 0.6 h | 0.5 h | 1.2 h | 0.2 h | **3.5 h** |
-| 4090 (opcja) | 0.4 h | 0.6 h | 0.5 h | 1.2 h | 0.2 h | 3.5 h |
-| 5060 Ti (faza 3) | 0.45 h | 0.6 h | 0.4 h | 0.4 h | 0.15 h | **2.5 h** |
-| 4060 Ti (faza 3, tylko gdy 5060 Ti zaliczy) | 0.45 h | 0.5 h | 0.3 h | 0.3 h | 0.1 h | **2.0 h** |
+| 3090 (27B) | 0.45 | 0.8 | 0.75 | 1.6 | 0.2 | **5.0 h** |
+| 5060 Ti (MoE) | 0.45 | 0.8 | 0.9 | 0.8 | 0.2 | **4.0 h** |
+| 4060 Ti (MoE) | 0.45 | 0.8 | 0.9 | 0.8 | 0.2 | **4.0 h** |
+| 3060 (MoE) | 0.45 | 0.9 | 1.1 (prefill 131k ~4–5 min/ramię) | 0.8 | 0.2 | **4.5 h** |
+| 3080 (opcja) | 0.45 | 0.9 | 1.1 | 0.8 | 0.2 | 4.5 h |
+| 5090 (27B) | 0.4 | 0.6 | 0.5 | 1.2 | 0.2 | **3.5 h** |
 
-## 6. Koszt i doładowanie (ceny live 2026-10-20 17:33 UTC; transfer = GB × $/GB; +30%)
+## 6. Koszt i doładowanie (ceny live 18:48 UTC; `hostcheck.sh offer`; dysk 70 GB; +30%; rezerwa = 1–2 złe hosty × 0.3 h)
 
-| karta | h | GPU | dysk | transfer | suma | +30% | rezerwa na zły host (+30%) | **razem** |
+| karta (oferta) | h | GPU | dysk | transfer (GB × $/GB) | suma | ×1.3 | rezerwa | **razem** |
 |---|---|---|---|---|---|---|---|---|
-| 3090 (56607987) | 5.0 | $1.133 | $0.083 | 25 GB × $0.0013 = $0.033 | $1.249 | $1.62 | 2 × 0.3 h = $0.19 | **$1.81** |
-| 5090 (52411630) | 3.5 | $3.106 | $0.058 | 28 GB × $0 = $0 | $3.164 | $4.11 | 1 × 0.3 h = $0.35 | **$4.46** |
-| 5060 Ti (54073761) | 2.5 | $0.433 | $0.028 | 16 GB × ~$0 = $0.00 | $0.461 | $0.60 | $0.07 | **$0.67** |
-| 4060 Ti (56468703) | 2.0 | $0.347 | $0.022 | 16 GB × $0.00004 = $0.00 | $0.369 | $0.48 | $0.07 | **$0.55** |
-| 4090 (opcja, 53960908) | 3.5 | $1.587 | $0.058 | 25 GB × $0.0013 = $0.033 | $1.678 | $2.18 | $0.18 | $2.36 |
-| 3060 (tylko po zmianie decyzji) | 2.0 | $0.187 | $0.056 | 16 GB × $0.0013 = $0.021 | $0.264 | $0.34 | $0.05 | $0.39 |
+| 3090 (52272575) | 5.0 | $1.133 | $0.096 | 25 × 0.0013 = $0.033 | $1.263 | $1.64 | $0.15 | **$1.79** |
+| 5060 Ti (54073766) | 4.0 | $0.693 | $0.051 | 24 × ~0 = $0.000 | $0.745 | $0.97 | $0.07 | **$1.04** |
+| 4060 Ti (56468701) | 4.0 | $0.693 | $0.051 | 24 × 0.00004 = $0.001 | $0.745 | $0.97 | $0.07 | **$1.04** |
+| 3060 (55447316) | 4.5 | $0.420 | $0.144 | 25 × 0.0013 = $0.034 | $0.598 | $0.78 | $0.05 | **$0.83** |
+| 5090 (56935334) | 3.5 | $2.375 | $0.067 | 28 × ~0 = $0.000 | $2.442 | $3.17 | $0.31 | **$3.49** |
+| 3080 (54738116, opcja) | 4.5 | $1.134 | $0.059 | 25 × 0.0026 = $0.065 | $1.258 | $1.64 | $0.13 | $1.77 |
 
-- Faza 1 (3090): **$1.81**. Faza 1 + 2 (5090): **$6.27**. Faza 1 + 2 + 3 (5060 Ti, 4060 Ti): **$7.49**. Z 4090: $9.85.
-- Kredyt teraz: **$0.23** (`vastai show user`, 2026-10-20). **Doładowanie: $8** (pokrywa fazy 1–3 = $7.26 netto).
-  Wariant oszczędny: $2 (tylko 3090).
-- Robotnicy DeepSeek i inżynierowie Opus nie są w budżecie Vast.
+- **Pełny** (3090 + 5060 Ti + 4060 Ti + 3060 + 5090): $8.19 − kredyt $0.23 (`vastai show user`, 18:50 UTC) = $7.96 →
+  **doładowanie $8**. Bez 3060 (jeśli decyzja 2026-10-16 zostaje): $7.36 → $7.50.
+- **Oszczędny** (3090 + 5060 Ti): $2.83 − $0.23 = $2.60 → **doładowanie $3**.
+- Z opcją 3080: +$1.77. Inżynierowie Opus i robotnicy DeepSeek poza budżetem Vast.
 
-### 6.1 Kolejność
+### 6.1 Kolejność i strażnik kredytu
 
-1. Faza 0 lokalnie (F0.1–F0.4) — bez kredytu.
-2. **Fazy 1 i 2 równolegle** (3090 i 5090, osobni inżynierowie, osobne `--hours`): rdzeń i referencja nie zależą od siebie;
-   tanie karty nie idą pierwsze, bo nie mają modelu spełniającego próg.
-3. Faza 3 po raporcie z faz 1–2 i tylko po decyzji użytkownika o 9B: najpierw 5060 Ti, 4060 Ti tylko jeśli 5060 Ti zaliczy J2–J4.
-4. Strażnik kredytu: inżynier sprawdza `vastai show user` co 30 min; przy kredycie < 1.3 × (koszt pozostałych godzin
-   wszystkich boxów) przechodzi od razu do finału T/T' (bez nowych pomysłów).
+1. E7 + F0 lokalnie (bez kredytu). E7 FAIL → tylko 3090.
+2. Faza 1 równolegle: 3090 i 5060 Ti (osobni inżynierowie, osobne `--hours`).
+3. Faza 2 po raporcie 5060 Ti (J3–J5 PASS): 4060 Ti, 3060 (po zmianie decyzji), 3080 (po zgodzie na transfer).
+4. Faza 3: 5090.
+5. Co 30 min `vastai show user`; kredyt < 1.3 × koszt pozostałych godzin wszystkich boxów → finał T/T', bez nowych pomysłów.
 
 ## 7. Organizacja pracy
 
-- Jeden inżynier Opus na kartę, brief = `qwen-opt/cloud/ENGINEER-PROMPT.md` + karta parametrów z §0/§5 tej strony.
-- Kod piszą robotnicy DeepSeek v4.1 Flash przez `~/qwen-opt/tools/ds-agent <name> <worktree> <brief> [45m]`, brief wg
-  `qwen-opt/cloud/DEEPSEEK-WORKER-PROMPT.md`; ≤ 3 naraz na inżyniera, ≤ 45 min, edycja tylko w swoim worktree, bez GPU.
-- Reguły jak w kampanii 31 plus: `-c ≥ 131072` zawsze (decyzja 2026-10-20), KV q4_0 (cel i draft; LFM q8_0), jeden model
-  na kartę wybrany tutaj, bramki J1–J4, rozliczenie z `vastai show invoices-v1 --charges` po zniszczeniu.
+- Jeden inżynier Opus na kartę, brief = `qwen-opt/cloud/ENGINEER-PROMPT.md` + karta parametrów z §0/§5 (dla MoE dopisać
+  n, ub, eksperci_GB, J5).
+- Kod piszą robotnicy DeepSeek v4.1 Flash przez `~/qwen-opt/tools/ds-agent` (brief `DEEPSEEK-WORKER-PROMPT.md`),
+  ≤ 3 naraz, ≤ 45 min, bez GPU.
+- Reguły jak w kampanii 31 plus: `-c ≥ 131072`, KV q4_0, jeden plik na kartę, bramki J1–J5, rozliczenie z
+  `vastai show invoices-v1 --charges` po zniszczeniu.
 
 ## 8. Ryzyka
 
 | ryzyko | skutek | zabezpieczenie |
 |---|---|---|
-| g (wzrost szczytu) zmierzone tylko do promptu 55.6k; przy 131k może być większe niż 18 KB/token | 3090 nie utrzyma 131k z zapasem 512 MiB | test wypełnienia jako pierwszy krok; kolejno: `-ub 256` (−640 MiB), O1 KVQ, a jeśli dalej brak → raport „131k nie mieści się” zamiast cichego zejścia do 32k; Q4_K_M (−1044 MiB) jako jedyny dopuszczalny zamiennik |
-| 5090: ovh i prędkość niezmierzone, sm_120 + driver ≥ 570 | błąd szacunku ~±300 MiB | Q6_K ma zapas 1286 MiB; build sm_120 sprawdzony lokalnie (F0.1) |
-| hosty 3090 z limitem mocy (200/220 W, `31-3090.md:28-29`), wolny HF (26 KB/s) | stracony czas, fałszywe t/s | `hostcheck.sh box` w 5 min, rezerwa 2 × 0.3 h w budżecie |
-| oferty znikają / zmieniają cenę (3060 i 3080 w kampanii 31) | inna cena | `hostcheck.sh offer` tuż przed `up.sh`; zapasowe oferty w §5.1 |
-| przełączniki niebitowe (KVQ, GDN MMA) zmieniają tekst | spór o bezstratność | bramka KLD vs CPU fp32 (jak `31-4060ti.md:88-89`) |
-| 9B nie jest „do pracy” mimo KLD ≈ 0 | płacimy za kartę bez modelu | faza 3 dopiero po J2 na CPU i zgodzie użytkownika; brak wynajmu na 3060 bez zmiany decyzji |
-| kredyt kończy się w połowie | brak finału (2026-10-20) | budżet z rezerwą, strażnik kredytu co 30 min, finał T/T' na początku okna, twarde `--hours` + samozniszczenie |
-| prefill 128k/200k jest długi (3090: ~3 min na 128k) | godziny rosną | prompt cache (`--cache-ram`, cache share), jeden haystack na serię needle, harmonogram w §5.4 |
-| korpus 128k/200k nie istnieje | brak obciążeń | F0.2 przed wynajmem |
-| LFM2.5: max kontekst 131072, KLD Q4/Q5 ✗ | — | wykluczony z tej kampanii; Q6_K tylko do pomiaru KLD w przyszłości |
+| E7: IQ4_XS Qwen3.6 > 0.05 / 0.07 KLD (MoE z 256 ekspertami bywa czulsze na kwant) | brak modelu na 10–16 GB | chmura MoE dopiero po E7; zapas: Q4_K_M z większym n na 16 GB (RAM ≥ 48 GB) |
+| **brak naszego pomiaru VRAM dla `qwen35moe`** (fitcalc kalibrowany na qwen35) | szczyt inny o ±300 MiB | zapas 1065 MiB na 16 GB; na 12 GB tylko 524–622 → siatka n_fit…n_fit+2 w teście wypełnienia |
+| TTFT 131k z ekspertami w RAM to minuty (§1.4) | J5 FAIL na 4060 Ti / 3060 / 3080 | PCIe ≥ gen3 x8 w filtrze; O-M2 (`-ub 1024`) i O-M3; J5 liczony przy 32k, 131k raportowany |
+| RAM hosta DDR4 i współdzielony (Vast `cpu_ram` = przydział) | decode −10–20% `[SZACUNEK]`, OOM hosta | MemAvailable ≥ eksperci + 8 GB w `hostcheck box`; RSS serwera logowany |
+| spekulacja przy ekspertach w RAM nie daje zysku (raport 33 §6) | T ≈ U1 na MoE | T bez MTP domyślnie (lookup + GV + share); MTP jako O-M1 |
+| nasze flagi T (słownik 64k, requant MTP) nie obsługują `qwen35moe` | brak ramienia T z MTP | E7.4 lokalnie |
+| g (wzrost szczytu) zmierzone tylko do 55.6k (3090) | 131k nie mieści się z zapasem | test wypełnienia pierwszy; `-ub 256`, O1 KVQ; Q4_K_M jako jedyny zamiennik na 3090 |
+| oferty znikają (3080 56540010 zniknęła w 10 min) | inna cena | `hostcheck.sh offer` tuż przed `up.sh`, oferty zapasowe w §5.1 |
+| decyzja 2026-10-16 (3060) | 3060 poza kampanią | pytanie do użytkownika przed fazą 2 |
+| kredyt kończy się w połowie | brak finału | rezerwa w budżecie, strażnik co 30 min, finał T/T' na początku okna, `--hours` + samozniszczenie |
 
 ## 9. Źródła
 
-`product/research/27-3090-final.md:160,187-188,198-207,211,232-234`; `31-3090.md:21-29,44,66`; `31-4070ti.md:44-47,178,180`;
-`31-3060-3080.md:10,35,42,62,78,146`; `31-5060ti.md:15,40,43,66`; `31-4060ti.md:15,33-34,59-64,87-89,95`; `29-4060ti.md:70`;
-`16e-kwanty-kld.md:133-144`; `09-chmura-5060ti.md:174-179`; `qwen-opt/bench-final/queue-logs/fb-qwen-T-p1.log:1`;
-logi buforów w §1.2; nagłówki GGUF: HF `unsloth/Qwen3.8-27B-GGUF`, `agentionai/Qwen3.8-27B-AP-GGUF`,
-`ukisai/Swift-1.5-Qwen3.8-27B-GSQ-RCO-GGUF`, `Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF`, `ConwayResearch/Underdog-Saluki-27B-1.0`,
-`prism-ml/Ternary-Bonsai-2-27B-gguf`, `LiquidAI/LFM2.5-24B-A2B-GGUF`, `unsloth/Qwen3.5-9B-GGUF` (range requests 2026-10-20);
-oferty: `vastai search offers` 2026-10-20 17:33 UTC; kredyt: `vastai show user` 2026-10-20.
+`product/research/33-modele-na-karty.md:17-35,177,190,202,213-216,255,273,301-325`; `27-3090-final.md:160,187-188,198-207,211,232-234`;
+`31-3090.md:21-29,44,66`; `31-4070ti.md:44-47,178,180`; `31-3060-3080.md:10,23,35,42,62,78,146-147`; `31-5060ti.md:15,40,43,66`;
+`31-4060ti.md:15,33-34,59-64,87-93`; `29-4060ti.md:70`; `16e-kwanty-kld.md:133-144`; `09-chmura-5060ti.md:174-179`;
+`qwen-opt/bench-final/queue-logs/fb-qwen-T-p1.log:1`; logi buforów §1.2; fitcalc v2 na nagłówkach HF
+`unsloth/Qwen3.6-35B-A3B-MTP-GGUF` (UD-IQ4_XS, UD-Q3_K_XL; 2026-10-20 18:30–19:00 UTC); oferty: `vastai search offers`
+2026-10-20 18:48 UTC + `hostcheck.sh offer`; kredyt: `vastai show user` 2026-10-20 18:50 UTC.

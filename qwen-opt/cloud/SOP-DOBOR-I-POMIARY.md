@@ -47,6 +47,7 @@ drafter w osobnym pliku i szacunek decode t/s: `product/research/33-modele-na-ka
 | **J2 zadania** | 3 czaty PL + 3 EN (T=1) spójne, poprawny język, bez pętli; 3 edycje kodu: diff się stosuje i test przechodzi | najpierw CPU (krótkie prompty), potem na karcie ramię T | KLD nie łapie pętli i błędów językowych (Bonsai po polsku) |
 | **J3 kontekst** | `-c ≥ 131072`; szczyt VRAM po pełnej sekwencji (§7) + 512 MiB ≤ VRAM; 0 błędów; `needle.py --tokens <c>` 5/5 i 0 zmyśleń (także 200k, jeśli wybrany) | na karcie | 32k „to nie kontekst do pracy” (decyzja 2026-10-20) |
 | **J4 prędkość** | decode po 64k, T=1, ramię T (lub T') ≥ 20 t/s; TTFT przy 32k raportowany | na karcie | ~1–2k tokenów odpowiedzi myślącego modelu ≤ 100 s; 20 t/s = goły upstream na 3060 (`31-3060-3080.md:10`) |
+| **J5 TTFT (MoE z `--n-cpu-moe`)** | TTFT zimnego promptu 32k ≤ 120 s; TTFT 131k raportowany | na karcie | prefill kopiuje ekspertów z RAM przez PCIe co ubatch (`PLAN-NV-V2.md` §1.4) |
 
 - [ ] J1 i J2-CPU zrobione **przed** wynajmem. Wynik w tabeli kandydatów (zmierzone / szacunek ze źródłem).
 - [ ] Wybór: najwyższa jakość (J1) wśród kandydatów z pewnym `-c ≥ 131072`; remis → większy kontekst.
@@ -59,10 +60,11 @@ drafter w osobnym pliku i szacunek decode t/s: `product/research/33-modele-na-ka
 vastai search offers 'gpu_name=<GPU> num_gpus=1 gpu_ram>=<V> reliability>0.98 verified=true rentable=true
   direct_port_count>=1 disk_space>=60 inet_down>=300 cuda_vers>=12.8 inet_down_cost<=0.002 inet_up_cost<=0.002
   cpu_cores_effective>=4 cpu_ram>=24 geolocation notin [CN]' --storage 60 -o dph_total --raw
+# MoE z ekspertami w RAM: cpu_ram>=32 pci_gen>=3 gpu_lanes>=8 (hosty x1 wykluczone)
 ```
 - [ ] Sortuj po `dph_total × h + GB_pobrania × inet_down_cost` (lekcja: transfer był 55% kosztu kampanii 2026-10-20).
-- [ ] `hostcheck.sh offer <id> <GB_pobrania> <h>` → RESULT PASS (verified, rel > 0.98, transfer ≤ $0.002/GB, driver ≥ 570,
-      RAM ≥ 24 GB). Drukuje koszt GPU + dysk + transfer i ×1.3.
+- [ ] `hostcheck.sh offer <id> <GB_pobrania> <h> [eksperci_GB]` → RESULT PASS (verified, rel > 0.98, transfer ≤ $0.002/GB,
+      driver ≥ 570, RAM ≥ 24 GB; MoE: RAM ≥ max(32, eksperci + 16) GB, PCIe ≥ gen3 x8). Drukuje koszt GPU + dysk + transfer i ×1.3.
 - [ ] Zapisz 1–2 oferty zapasowe.
 
 ### 5.2 Wynajem
@@ -72,7 +74,7 @@ vastai search offers 'gpu_name=<GPU> num_gpus=1 gpu_ram>=<V> reliability>0.98 ve
 
 ### 5.3 Bramka boxa (pierwsze 5 minut, przed pobraniem modelu)
 ```
-hostcheck.sh box https://huggingface.co/<repo>/resolve/main/<plik>.gguf <GB>
+hostcheck.sh box https://huggingface.co/<repo>/resolve/main/<plik>.gguf <GB> [eksperci_GB]   # MoE: MemAvailable ≥ eksperci + 8, link ≥ gen3 x8
 ```
 - [ ] `nvidia-smi -q -d POWER`: Current Power Limit == Default Power Limit. Inaczej **zniszcz od razu** (3090 przy 200 W: SM 405–480 MHz).
 - [ ] HF ≥ 25 MB/s na 1 GiB z pliku modelu. Inaczej zniszcz (2026-10-20: 26 KB/s).
