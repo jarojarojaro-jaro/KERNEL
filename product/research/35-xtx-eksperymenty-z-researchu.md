@@ -18,7 +18,7 @@ Konwencje: `[INFERENCE]` oznacza wniosek bez pomiaru. CI to 95% bootstrap po pro
 | E3 | kary a akceptacja MTP (czat T=1) | akceptacja 54.5% → 52.7% (presence 1.5, −1.8 pp) i 53.1% (repeat 1.05, −1.4 pp); t/s −3.1% / −1.9%; ms/krok bez zmian | **nie wdrażać kar po stronie draftu** (próg ≥5 pp nieosiągnięty, sufit ≤3% t/s) |
 | E4 | rozrzut prefillu przy świeżych startach | 10 startów llama-bench pp512: 1134.7–1137.2 t/s, rozrzut **0.22%**, brak bimodalności | **brak problemu MES na gfx1100**, nic do zrobienia |
 | E5 | bitexact + adaptacyjna głębokość | przebieg 1: build nie skompilował się (`t.pos`, merge), kolejka poszła bez binarki. Po poprawce `3ec2fb535`: bitexact plain = MTP = MTP+adapt ×2 = GV=0 = `74952fd5`, tbo OK; domyślne MTP `a6328731` ≠ `6f14e814` (zamierzony reset `pending_h`) | **poprawność PASS; A/B szybkości niewykonane** (limit 10 min GPU), nie wdrażać przed ABBA |
-| E7 | KLD Qwen3.6-35B-A3B (raport 33) | E7_WIERSZ | E7_WERDYKT |
+| E7 | KLD Qwen3.6-35B-A3B (raport 33) | IQ4_XS gotowy, Q8_0 pobierany (31.5/36.9 GB); KLD rusza automatycznie przez kolejkę | **w toku** |
 | E6 | KLD EXL3-SC 3.0/4.0 | potrzeba ~30 GB EXL3 + referencji BF16 (54 GB) | **zablokowane łączem**, nie zaczęte |
 | E8 | rozgrzewka promptu przed 1. żądaniem (39a E1) | 1. żądanie 2k: −182 ms (−6.7%), ABBA 4/4; md5 zmienia się (Qwen plain/MTP, LFM) | **nie wdrażać z klienta** (stratne); bezstratnie tylko w serwerze z `llama_memory_clear(…, true)` |
 
@@ -175,7 +175,7 @@ Bezstratność: to tylko kopie bajtów stanu. Bramka: md5 greedy + test restore 
 
 Uruchamia się samo przez `xtxlab/e7_dl.sh`: pobiera, sprawdza rozmiar, potem kolejka `x35-e7.jobs`. Wyniki: `/tmp/x35/e7/`. IQ4_XS jest kompletny (17 730 509 792 B, 22:13). Pierwsze pobieranie Q8_0 zostało ucięte z 23.7 GB do zera: **`curl -C - --retry` przy ponowieniu używa offsetu z pierwszego startu i nadpisuje plik od początku**. `e7_dl.sh` robi więc pętlę świeżych `curl -C -` bez `--retry`.
 
-E7_WYNIKI
+**Stan 2026-10-20 23:35:** IQ4_XS pobrany (17.7 GB, 22:13). Q8_0 jest na 31.5/36.9 GB przy ~11 MB/s, czyli zostało ~8 min. `e7_dl.sh` po pobraniu sam odpala `e7_kld.sh` przez kolejkę. Wyniki KLD dopisze kolejna sesja (log: `xtxlab/e7-chain.log`).
 
 **E6 (EXL3-SC 3.0/4.0, raport 32c nr 1):** niezaczęte. Wymaga ~30 GB EXL3 + referencji BF16 (54 GB) i exllamav3 1.6.3 (poprawki ROCm/gfx1100, CompWatch 2026-10-20). Przy obecnym łączu to ~2.5 h samego pobierania, więc osobne zadanie.
 
