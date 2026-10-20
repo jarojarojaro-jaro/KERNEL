@@ -16,18 +16,22 @@
 	 * flows toward the viewer, as a race. Both lanes write the same text, cut into answers of
 	 * `answer` tokens, at their measured median t/s (in steps of the measured MTP tokens per step):
 	 * the newest row is written at the horizon and the road moves one row per row written. So the
-	 * typical app's road crawls and ours rushes past 3,2× faster: its painted speed lettering, its
-	 * edge dashes and every finished answer's chequered finish line come by 3,2× as often.
+	 * typical app's road crawls and ours rushes past 3,2× faster: its edge dashes, its ground grid
+	 * and every finished answer's chequered finish line come by 3,2× as often.
 	 *
-	 * Speed, ours only: rows near the camera smear back up the road and flare white-hot, warp
-	 * streaks fly out of the vanishing point over our lane. The typical lane is dimmer and still.
+	 * Background motion: a faint perspective grid on the open ground beside each lane whose cross
+	 * lines come toward the camera at that lane's speed, and streaks flying out of the vanishing
+	 * point over the whole screen (the typical side few and slow, ours many and fast, three depths).
+	 * Speed, ours only: rows near the camera smear back up the road and flare white-hot. The typical
+	 * lane is dimmer and still.
 	 *
 	 * The near end (`.near`, in the page flow): two glass windshields, one per lane, each with the
 	 * lane's name, the answer number, a live token counter, a progress bar and the answer itself,
 	 * readable, written token by token at the lane's measured rate behind a caret (four lines, the
 	 * newest at the bottom). When a lane finishes an answer, a stamp „Gotowe · 4,4 s” (answer ÷
 	 * measured t/s) flashes once and the next answer starts in an empty panel. Lanes loop
-	 * independently; nothing resets. `center` renders between the panels (the gauge). The canvas is
+	 * independently; nothing resets. `center` renders between the panels, `side(i)` on each panel's
+	 * outer side. The canvas is
 	 * absolutely positioned against the caller's positioned ancestor (full bleed behind the hero).
 	 *
 	 * One 2D canvas (devicePixelRatio ≤ 1,5). Each row is rendered once into a pooled bitmap and then
@@ -53,7 +57,8 @@
 		labels,
 		playing = true,
 		keepClear,
-		center
+		center,
+		side
 	}: {
 		/** [cold, hot]. */
 		lanes: HighwayLane[];
@@ -67,8 +72,10 @@
 		labels: { answer: string; tokens: string; done: string };
 		playing?: boolean;
 		keepClear?: HTMLElement;
-		/** Between the two panels (the gauge). */
+		/** Between the two panels (the speed-up). */
 		center?: Snippet;
+		/** Beside each panel, on its outer side (each lane's gauge): side(0) cold, side(1) hot. */
+		side?: Snippet<[number]>;
 	} = $props();
 
 	/** Far/near depth ratio: the horizon row is 1/K the size of the nearest one. */
@@ -77,8 +84,6 @@
 	const COLD = '#8f98a3';
 	const HOT = '#ffad4a';
 	const WHITE = '#fff6e4';
-	/** Painted speed lettering every MARK rows. */
-	const MARK = 13;
 
 	/** A paragraph as words of token-sized pieces (piece count ≈ words × TOK_PER_WORD). */
 	function words(text: string): string[][] {
@@ -97,7 +102,7 @@
 	let paras: string[][][] = [words(opening)];
 
 	type Row = { idx: number; text: string; pieces: string[]; ends: number[]; start: number; n: number; bmp?: HTMLCanvasElement; glow?: HTMLCanvasElement };
-	type Lane = { tps: number; burst: number; hot: boolean; tau: number; origin: number; built: number; next: number; pi: number; wi: number; rows: Row[]; cur: number; mark?: HTMLCanvasElement };
+	type Lane = { tps: number; burst: number; hot: boolean; tau: number; origin: number; built: number; next: number; pi: number; wi: number; rows: Row[]; cur: number };
 	// svelte-ignore state_referenced_locally
 	const road: Lane[] = lanes.map((l) => ({ tps: l.tps, burst: l.burst, hot: l.id === 'hot', tau: 0, origin: 0, built: 0, next: 0, pi: 0, wi: 0, rows: [], cur: 0 }));
 	/** Seconds per answer: the answer's tokens ÷ the measured t/s. */
@@ -106,7 +111,7 @@
 	const sec = (s: number) => `${num(s, lang, 1)}\u00a0s`;
 
 	/** Scene geometry (CSS px), recomputed on resize. */
-	const G = { W: 0, H: 0, vx: 0, yH: 0, Hs: 0, R: 40, fN: 16, cw: 0.6, chars: 30, bw: 0, bh: 0, family: 'monospace', display: 'sans-serif', lane: [0, 0] as number[], wl: 0, m: 12 };
+	const G = { W: 0, H: 0, vx: 0, yH: 0, Hs: 0, R: 40, fN: 16, cw: 0.6, chars: 30, bw: 0, bh: 0, family: 'monospace', lane: [0, 0] as number[], wl: 0, m: 12 };
 	let canvas: HTMLCanvasElement | undefined = $state();
 	let ctx: CanvasRenderingContext2D | null = null;
 	let pool: HTMLCanvasElement[] = [];
@@ -156,29 +161,6 @@
 		x.fillText(text, 2, G.bh * 0.76);
 		return c;
 	}
-	/** The lane's speed, painted on the road like asphalt lettering (one bitmap per layout). */
-	function paintMark(L: Lane, tps: number) {
-		const c = L.mark ?? document.createElement('canvas');
-		const text = `${num(tps, lang, 1)} t/s`;
-		const x = c.getContext('2d')!;
-		const base = 100;
-		x.font = `800 ${base}px ${G.display}`;
-		const fs = (base * G.wl * 0.84) / x.measureText(text).width;
-		c.width = Math.ceil(G.wl * 0.86 * DPR);
-		c.height = Math.ceil(fs * 1.05 * DPR);
-		x.font = `800 ${fs * DPR}px ${G.display}`;
-		x.textBaseline = 'alphabetic';
-		if (L.hot) {
-			const g = x.createLinearGradient(0, 0, c.width, 0);
-			g.addColorStop(0, '#e2401c');
-			g.addColorStop(0.55, '#ff7a1a');
-			g.addColorStop(1, '#ffc15a');
-			x.fillStyle = g;
-		} else x.fillStyle = '#8d97a4';
-		x.fillText(text, 2, c.height * 0.86);
-		L.mark = c;
-	}
-
 	/** The next row of a lane: whole words up to the line length; a paragraph ends a row. */
 	function build(L: Lane) {
 		const pieces: string[] = [];
@@ -246,7 +228,6 @@
 		G.lane = [G.vx - m - wl, G.vx + m];
 		const cs = getComputedStyle(canvas);
 		G.family = cs.fontFamily || 'monospace';
-		G.display = cs.getPropertyValue('--font-sans').trim() || 'sans-serif';
 		const fN = Math.max(11.5, Math.min(21, wl / 23));
 		const probe = canvas.getContext('2d')!;
 		probe.font = `${fN}px ${G.family}`;
@@ -258,10 +239,11 @@
 		Object.assign(G, { fN, cw, chars, R });
 		G.bw = Math.ceil((chars + 1) * cw * fN * DPR) + 4;
 		G.bh = Math.ceil(fN * 1.3 * DPR);
-		road.forEach((L, i) => paintMark(L, lanes[i].tps));
 		if (relaid) {
 			pool = [];
 			for (const L of road) reset(L);
+			// the text was laid out again: the panels rewrite the current answer from the new rows
+			saidK.fill(-1);
 		}
 		warpSeed();
 		draw();
@@ -301,6 +283,34 @@
 		const x1 = x0 + G.wl;
 		const far = 1 / K;
 		const near = 1.12;
+		// the open ground beside the lane: a faint perspective grid whose cross lines come toward
+		// the camera at the lane's own speed (ours 3,2× as fast)
+		const outer = L.hot ? x1 : x0;
+		const dir = L.hot ? 1 : -1;
+		const sp = G.wl * 0.42;
+		c.strokeStyle = L.hot ? '#ff9a4a' : '#8d97a4';
+		c.lineWidth = 1;
+		c.globalAlpha = L.hot ? 0.09 : 0.05;
+		c.beginPath();
+		for (let k = 1; k <= 6; k++) {
+			const x = outer + dir * sp * k;
+			c.moveTo(xOf(x, far), yOf(far));
+			c.lineTo(xOf(x, near), yOf(near));
+		}
+		c.stroke();
+		const edgeX = L.hot ? G.W : 0;
+		for (let i = Math.ceil(Q - G.R - 1); i <= Q; i++) {
+			if (((i % 3) + 3) % 3) continue;
+			const a = aOf(Q - i);
+			if (a > 1.15) continue;
+			c.globalAlpha = (L.hot ? 0.16 : 0.07) * clamp01((a - far) / 0.25) * a;
+			c.lineWidth = 0.6 + 1.2 * a;
+			c.beginPath();
+			c.moveTo(xOf(outer, a), yOf(a));
+			c.lineTo(edgeX, yOf(a));
+			c.stroke();
+		}
+		c.globalAlpha = 1;
 		// the lane's floor
 		const g = c.createLinearGradient(0, G.yH, 0, G.H);
 		g.addColorStop(0, 'rgb(0 0 0 / 0)');
@@ -428,63 +438,52 @@
 				c.drawImage(r.bmp, 0, 0, sw, G.bh, x, top, w, h);
 			}
 		}
-		// the speed painted on the road over the rows, every MARK rows (ours passes it 3,2× as often)
-		if (L.mark) {
-			const span = 3.4;
-			for (let i = Math.ceil(Q - G.R - 1); i <= Q; i++) {
-				if (((i % MARK) + MARK) % MARK) continue;
-				const d = Q - i;
-				const an = aOf(d);
-				const af = aOf(d - span);
-				if (an < 0.36 || af > 1.25) continue;
-				const am = aOf(d - span / 2);
-				const yn = yOf(an);
-				const yf = yOf(af);
-				c.globalAlpha = (L.hot ? 0.5 : 0.2) * clamp01((an - 0.36) / 0.2);
-				c.drawImage(L.mark, xOf(x0 + G.wl * 0.07, am), yf, (L.mark.width / DPR) * am, yn - yf);
-			}
-			c.globalAlpha = 1;
-		}
 		c.globalAlpha = 1;
 	}
 
-	/** Warp streaks over our lane: out of the vanishing point, faster the farther out. */
-	type Streak = { dx: number; dy: number; D: number; s: number };
+	/** Streaks out of the vanishing point, faster the farther out: over the whole screen, the
+	 * typical side few, steel and slow, ours many, ember and fast (three depths each: parallax). */
+	type Streak = { dx: number; dy: number; D: number; s: number; hot: boolean; k: number; w: number };
 	let warp: Streak[] = [];
 	function spawn(st: Streak, fresh: boolean) {
-		// a ray from the vanishing point to a point on our lane's near end
-		const tx = G.vx + G.m + G.wl * (0.04 + 0.92 * Math.random());
-		const ty = G.H * (0.82 + 0.25 * Math.random());
+		const left = !st.hot;
+		const tx = left ? Math.random() * (G.vx - G.m * 0.5) : G.vx + G.m * 0.5 + Math.random() * (G.W - G.vx - G.m * 0.5);
+		const ty = G.H * (0.35 + 0.75 * Math.random());
 		const dx = tx - G.vx;
 		const dy = ty - G.yH;
 		const D = Math.hypot(dx, dy);
+		const depth = Math.floor(Math.random() * 3);
 		st.dx = dx / D;
 		st.dy = dy / D;
 		st.D = D;
+		// the rate of the streak's flight follows its side's measured speed (ours 3,2×)
+		st.k = (st.hot ? 1.6 : 0.5) * (0.7 + 0.3 * depth);
+		st.w = 0.5 + 0.45 * depth;
 		st.s = fresh ? 0.15 + Math.random() * 1.1 : 0.12 + Math.random() * 0.12;
 	}
 	function warpSeed() {
-		warp = Array.from({ length: G.W < 600 ? 12 : 22 }, () => {
-			const st = { dx: 0, dy: 0, D: 1, s: 0 };
+		const n = G.W < 600 ? [5, 14] : [10, 30];
+		warp = [...Array(n[0] + n[1])].map((_, i) => {
+			const st = { dx: 0, dy: 0, D: 1, s: 0, hot: i >= n[0], k: 1, w: 1 };
 			spawn(st, true);
 			return st;
 		});
 	}
 	function warpStep(dt: number) {
 		for (const st of warp) {
-			st.s += st.s * 1.5 * dt;
+			st.s += st.s * st.k * dt;
 			if (st.s > 1.5) spawn(st, false);
 		}
 	}
 	function warpDraw(c: CanvasRenderingContext2D) {
-		c.strokeStyle = '#ffd9a8';
 		for (const st of warp) {
 			const s1 = st.s * st.D;
-			const s0 = s1 * 0.8;
+			const s0 = s1 * (st.hot ? 0.78 : 0.9);
 			const f = clamp01((st.s - 0.25) / 0.35) * clamp01((1.5 - st.s) / 0.3);
 			if (f <= 0) continue;
-			c.globalAlpha = 0.28 * f;
-			c.lineWidth = 0.6 + 1.4 * st.s;
+			c.strokeStyle = st.hot ? '#ffd9a8' : '#aeb6c1';
+			c.globalAlpha = (st.hot ? 0.3 : 0.14) * f;
+			c.lineWidth = st.w * (0.6 + 1.4 * st.s);
 			c.beginPath();
 			c.moveTo(G.vx + st.dx * s0, G.yH + st.dy * s0);
 			c.lineTo(G.vx + st.dx * s1, G.yH + st.dy * s1);
@@ -591,6 +590,7 @@
 <canvas class="scene" class:run={started && playing && onScreen} bind:this={canvas} aria-hidden="true" use:visible={(v) => (onScreen = v)}></canvas>
 <div class="near" class:run={started && playing && onScreen}>
 	{#each lanes as l, i (l.id)}
+		{#if side}<div class="side s{i}">{@render side(i)}</div>{/if}
 		<div class="pane {l.id}" aria-hidden="true">
 			{#key done[i]}
 				{#if still || done[i] > 0}
@@ -623,19 +623,34 @@
 		-webkit-mask-image: linear-gradient(180deg, transparent 12%, #000 34%, #000 84%, transparent);
 		mask-image: linear-gradient(180deg, transparent 12%, #000 34%, #000 84%, transparent);
 	}
-	/* the near end: two glass windshields with the live answers, the gauge between them */
+	/* the near end: each lane's gauge on the outer edge, its glass windshield with the live answer,
+	 * the speed-up between the two windshields */
 	.near {
 		position: relative;
-		width: min(100% - 2 * var(--gutter), 90rem);
+		width: min(100% - 2 * var(--gutter), 96rem);
 		margin-inline: auto;
 		display: grid;
-		grid-template-columns: minmax(0, 32rem) auto minmax(0, 32rem);
+		grid-template-columns: auto minmax(0, 30rem) auto minmax(0, 30rem) auto;
+		grid-template-areas: 'g0 p0 c p1 g1';
 		justify-content: space-between;
 		align-items: end;
 		column-gap: var(--sp-4);
 	}
+	.s0 {
+		grid-area: g0;
+	}
+	.s1 {
+		grid-area: g1;
+	}
+	.pane.cold {
+		grid-area: p0;
+	}
+	.pane.hot {
+		grid-area: p1;
+	}
 	.center {
-		align-self: end;
+		grid-area: c;
+		align-self: center;
 	}
 	.pane {
 		position: relative;
@@ -701,7 +716,9 @@
 		color: var(--text-mute);
 		white-space: nowrap;
 	}
+	/* the counter on its own line: both windshields keep the same height */
 	.count {
+		flex-basis: 100%;
 		font-size: var(--fs-sm);
 		color: var(--text-mute);
 		white-space: nowrap;
@@ -776,6 +793,10 @@
 		position: absolute;
 		left: 1rem;
 		bottom: calc(100% + 0.5rem);
+		padding: 0.3rem 0.6rem 0.35rem;
+		border-radius: 0.6rem;
+		background: rgb(8 8 10 / 0.85);
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
 		display: flex;
 		align-items: baseline;
 		gap: 0.5rem;
@@ -831,15 +852,28 @@
 			transform: translate3d(0, -0.3rem, 0);
 		}
 	}
-	/* tablets and phones: the two panels stacked (ours second), the gauge after them */
-	@media (max-width: 900px) {
+	/* tablets: the two windshields side by side, the gauges and the speed-up in a row under them */
+	@media (max-width: 1100px) {
 		.near {
-			grid-template-columns: minmax(0, 1fr);
+			grid-template-columns: repeat(4, minmax(0, 1fr));
+			grid-template-areas:
+				'p0 p0 p1 p1'
+				'g0 c c g1';
 			row-gap: var(--sp-3);
 		}
+		.side,
 		.center {
-			order: 3;
 			justify-self: center;
+		}
+	}
+	/* phones: the two windshields stacked (ours second), then the gauges flanking the speed-up */
+	@media (max-width: 900px) {
+		.near {
+			grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+			grid-template-areas:
+				'p0 p0 p0'
+				'p1 p1 p1'
+				'g0 c g1';
 		}
 		.pane {
 			padding: 0.6rem 0.8rem 0.7rem;
@@ -860,9 +894,6 @@
 			bottom: 1.3rem;
 			left: auto;
 			right: 0.8rem;
-			padding: 0.25rem 0.45rem;
-			border-radius: 0.5rem;
-			background: rgb(8 8 10 / 0.88);
 		}
 		.stamp span {
 			font-size: 1.25rem;

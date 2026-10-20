@@ -7,14 +7,16 @@
 	 * from under the headline toward the viewer, two lanes of the same text at the measured speeds on
 	 * our lab card (RX 7900 XTX × Qwen3.8-27B, upstream llama.cpp default vs our engine, one script,
 	 * ABBA; MTP steps from the measured step time). The headline sits around the middle on a soft dark
-	 * halo; at the near end two glass windshields show each lane's live answer, readable, and between
-	 * them the instrument cluster (fx/Cluster). The conditions in small print at the very bottom.
+	 * halo; at the near end two glass windshields show each lane's live answer, readable, each with
+	 * its own speedometer on the outer side (fx/Dial, one scale: steel 35,9 vs ember 114,8) and the
+	 * speed-up between the windshields. The conditions in small print at the very bottom.
 	 * When the page is idle and the cluster on screen, it makes its one entrance: the heat field
 	 * runs hot, a bloom sweeps the hero once and the heat line flares.
 	 */
 	import { onMount } from 'svelte';
 	import { magnetic, visible } from '$lib/fx/actions';
-	import Cluster from '$lib/fx/Cluster.svelte';
+	import Ratio from '$lib/cards/Ratio.svelte';
+	import Dial from '$lib/fx/Dial.svelte';
 	import HeatField from '$lib/fx/HeatField.svelte';
 	import Highway from '$lib/fx/Highway.svelte';
 	import { reducedMotion, whenIdle } from '$lib/fx/motion';
@@ -101,8 +103,13 @@
 	{#key lang}
 		<Highway {lanes} opening={r.opening} more={more(lang)} {lang} answer={ANSWER} labels={r} {playing} keepClear={cluster}>
 			{#snippet center()}
-				<div class="dash" bind:this={cluster} aria-hidden="true" use:visible={(v) => (dashOn = v)}>
-					<Cluster max={dial.max} redline={dial.redline} {cold} {hot} {gain} {lang} unit="t/s" faster={r.faster} {go} still={!playing} />
+				<p class="factor" bind:this={cluster} aria-hidden="true" use:visible={(v) => (dashOn = v)}>
+					<Ratio value={gain} {lang} size="xl" replay={go ? 1 : 0} duration={1500} /><span>{r.faster}</span>
+				</p>
+			{/snippet}
+			{#snippet side(i: number)}
+				<div class="gauge" aria-hidden="true">
+					<Dial value={i ? hot : cold} max={dial.max} redline={dial.redline} tone={i ? 'hot' : 'cold'} {lang} unit="t/s" {go} still={!playing} />
 				</div>
 			{/snippet}
 		</Highway>
@@ -204,7 +211,7 @@
 	.title {
 		margin: 0;
 		font-family: var(--font-display);
-		font-size: min(10.4vw, 15svh, 8.2rem);
+		font-size: min(11vw, 17svh, 9rem);
 		font-weight: 840;
 		font-stretch: 118%;
 		line-height: 0.86;
@@ -217,7 +224,7 @@
 		transform-origin: 50% 50%;
 	}
 	.title :global(.kin--cold) {
-		font-size: 0.355em;
+		font-size: 0.4em;
 		font-weight: 760;
 		font-stretch: 108%;
 		letter-spacing: -0.035em;
@@ -375,8 +382,31 @@
 		border-radius: 4px;
 	}
 	/* the gauge between the windshields, small: it never fights the headline */
-	.dash {
-		width: min(clamp(10.5rem, 14vw, 15rem), 28svh);
+	/* each lane's gauge beside its windshield; the speed-up between the windshields */
+	.gauge {
+		width: min(clamp(9rem, 12vw, 14rem), 25svh);
+	}
+	.factor {
+		margin: 0;
+		display: grid;
+		justify-items: center;
+		gap: 0.3rem;
+		line-height: 1;
+	}
+	.factor :global(.speedup) {
+		--rx-fs: clamp(3.25rem, 1.5rem + 3.6vw, 6rem);
+		background: linear-gradient(180deg, #fff 6%, var(--heat-5) 30%, var(--heat-4) 55%, var(--heat-3) 80%, var(--heat-2));
+		-webkit-background-clip: text;
+		background-clip: text;
+		filter: drop-shadow(0 0 18px rgb(255 122 26 / 0.5));
+	}
+	.factor span {
+		font-family: var(--font-mono);
+		font-size: var(--fs-xs);
+		font-weight: 600;
+		letter-spacing: 0.2em;
+		text-transform: uppercase;
+		color: var(--heat-4);
 	}
 	.foot {
 		width: min(100% - 2 * var(--gutter), 90rem);
@@ -429,8 +459,8 @@
 		fill: currentColor;
 	}
 	@media (max-width: 900px) {
-		.dash {
-			width: min(15rem, 80vw);
+		.gauge {
+			width: min(8.5rem, 28vw);
 		}
 		.note {
 			padding-left: 0;
@@ -470,7 +500,7 @@
 		}
 		/* condensed cut: steel on two lines, the heat line on two big lines */
 		.title {
-			font-size: 16.5vw;
+			font-size: 17.5vw;
 			font-stretch: 82%;
 			line-height: 0.84;
 		}
