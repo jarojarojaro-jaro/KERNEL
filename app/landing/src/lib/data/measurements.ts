@@ -229,6 +229,65 @@ export const M = {
 		method: { pl: 'jak wyżej', en: 'as above' },
 		source: 'KERNEL/qwen-opt/NOTES.md:124',
 		date: '2026-10-10'
+	},
+	/*
+	 * Same script on all three sides (FinalBench, 2026-10-19): spec_sweep chat, 6 prompts × 3 seeds,
+	 * T=1, fresh server each, ABBA order (two passes; the first pass is shown, the second agrees to
+	 * ±0.2 t/s: 35.8 / 60.2 / 114.9). Logs on the lab server under ~/qwen-opt/queue/logs.
+	 */
+	qwenXtxDefault: {
+		id: 'qwenXtxDefault',
+		model: QWEN,
+		quant: 'UD-Q4_K_XL',
+		gpu: XTX,
+		backend: 'ROCm (HIP)',
+		build: 'upstream llama.cpp',
+		config: { pl: 'ustawienia domyślne, bez spekulacji', en: 'default settings, no speculation' },
+		value: 35.9,
+		unit: 't/s',
+		harness: 'spec_sweep',
+		method: {
+			pl: 'spec_sweep czat: 6 promptów × 3 seedy, T=1, świeży serwer, mediana; kolejność ABBA, pierwszy przebieg (drugi: 35,8)',
+			en: 'spec_sweep chat: 6 prompts × 3 seeds, T=1, fresh server, median; ABBA order, first pass (second: 35.8)'
+		},
+		source: '~/qwen-opt/queue/logs/fb-qwen-U0-p1.log:2 (p2: fb-qwen-U0-p2.log:2)',
+		date: '2026-10-19'
+	},
+	qwenXtxFlags: {
+		id: 'qwenXtxFlags',
+		model: QWEN,
+		quant: 'UD-Q4_K_XL',
+		gpu: XTX,
+		backend: 'ROCm (HIP)',
+		build: 'upstream llama.cpp',
+		config: { pl: 'najlepsze flagi + spekulacja MTP', en: 'best flags + MTP speculation' },
+		value: 60.0,
+		unit: 't/s',
+		harness: 'spec_sweep',
+		method: {
+			pl: 'spec_sweep czat jak wyżej; pierwszy przebieg (drugi: 60,2)',
+			en: 'spec_sweep chat as above; first pass (second: 60.2)'
+		},
+		source: '~/qwen-opt/queue/logs/fb-qwen-U1-p1.log:2 (p2: fb-qwen-U1-p2.log:2)',
+		date: '2026-10-19'
+	},
+	qwenXtxOurs: {
+		id: 'qwenXtxOurs',
+		model: QWEN,
+		quant: 'UD-Q4_K_XL',
+		gpu: XTX,
+		backend: 'ROCm (HIP)',
+		build: 'amd-opt (nasz silnik / our engine)',
+		config: { pl: 'te same flagi + spekulacja MTP', en: 'the same flags + MTP speculation' },
+		value: 114.8,
+		unit: 't/s',
+		harness: 'spec_sweep',
+		method: {
+			pl: 'spec_sweep czat jak wyżej; pierwszy przebieg (drugi: 114,9)',
+			en: 'spec_sweep chat as above; first pass (second: 114.9)'
+		},
+		source: '~/qwen-opt/queue/logs/fb-qwen-T-p1.log:2 (p2: fb-qwen-T-p2.log:2)',
+		date: '2026-10-19'
 	}
 } satisfies Record<string, Measurement>;
 
@@ -367,6 +426,12 @@ function nvidia(
 }
 
 const XTX_HW = 'KERNEL/qwen-opt/NOTES.md:110';
+/** FinalBench same-script XTX logs (lab server, 2026-10-19). */
+const FB = '~/qwen-opt/queue/logs';
+const SPEC_SWEEP_XTX: L = {
+	pl: 'spec_sweep przez serwer, ten sam skrypt po obu stronach: czat, 6 promptów × 3 seedy, T=1, świeży serwer, mediana; kolejność ABBA (drugi przebieg w granicach ±0,2 t/s)',
+	en: 'spec_sweep through the server, the same script on both sides: chat, 6 prompts × 3 seeds, T=1, fresh server, median; ABBA order (the second pass within ±0.2 t/s)'
+};
 
 /** Vendor spec sheet of our lab card (Specification tab, read 2026-10-19). */
 const PULSE_SPEC = 'sapphiretech.com/en/consumer/pulse-radeon-rx-7900-xtx-24g-gddr6 (Specification)';
@@ -445,29 +510,30 @@ export const CARDS: CardView[] = [
 		bwGBs: { v: 960, src: 'app/landing/src/lib/data/gpus.json (raport 04 §2.1.6)' },
 		powerW: { v: 303, src: XTX_HW },
 		hwSrc: XTX_HW,
-		pick: { model: 'qwen38', why: { pl: 'Na tej karcie powstał nasz silnik: Qwen ze spekulacją MTP pisze 109 t/s.', en: 'Our engine was built on this card: Qwen with MTP speculation writes 109 t/s.' } },
+		pick: { model: 'qwen38', why: { pl: 'Na tej karcie powstał nasz silnik: Qwen ze spekulacją MTP pisze 114,8 t/s, 3,2× szybciej niż typowa aplikacja.', en: 'Our engine was built on this card: Qwen with MTP speculation writes 114.8 t/s, 3.2× faster than the typical app.' } },
 		runs: [
 			{
 				model: 'qwen38',
 				title: 'Qwen3.8-27B UD-Q4_K_XL',
 				quant: 'UD-Q4_K_XL',
 				file: { v: 17.56, src: 'app/landing/src/lib/data/models.json (raport 04 §2.3.1)', unit: 'GB' },
-				src: M.qwenOursMtp.source,
+				src: M.qwenXtxOurs.source,
 				before: 'a0',
 				flags: 'a1',
 				ours: 'ours',
 				variants: [
-					{ key: 'a0', decode: n(M.qwenUpstreamVulkanPlain) },
-					{ key: 'a1', decode: n(M.qwenUpstreamVulkanMtp) },
-					{ key: 'ours', decode: n(M.qwenOursMtp), msStep: { v: 27.74, src: `${SN}:10` }, pp4096: n(M.qwenOursPrefill), tg128: n(M.qwenOursPlainTg128) }
+					{ key: 'a0', decode: n(M.qwenXtxDefault), msStep: { v: 27.89, src: `${FB}/fb-qwen-U0-p1.log:2` }, pp4096: { v: 1055.5, src: `${FB}/fb-lb-qwen.log:14` }, tg128: { v: 35.3, src: `${FB}/fb-lb-qwen.log:14` } },
+					{ key: 'a1', decode: n(M.qwenXtxFlags), msStep: { v: 53.72, src: `${FB}/fb-qwen-U1-p1.log:2` } },
+					{ key: 'ours', decode: n(M.qwenXtxOurs), msStep: { v: 27.67, src: `${FB}/fb-qwen-T-p1.log:2` }, pp4096: { v: 1125.5, src: `${FB}/fb-lb-qwen.log:11` }, tg128: { v: 43.4, src: `${FB}/fb-lb-qwen.log:11` } }
 				],
-				metric: {
-					pl: 'Różne skrypty: upstream serve_bench (256 tokenów, temp 0), nasz spec_sweep (6 promptów × 3 seedy, T=1). Porównanie orientacyjne.',
-					en: 'Different scripts: upstream serve_bench (256 tokens, temp 0), ours spec_sweep (6 prompts × 3 seeds, T=1). Indicative comparison.'
-				},
-				sameHarness: false,
-				conditions: { pl: 'ROCm (nasz) i Vulkan (upstream), KV q4_0, MTP', en: 'ROCm (ours) and Vulkan (upstream), KV q4_0, MTP' },
-				conditionsSrc: `${M.qwenUpstreamVulkanPlain.source}; ${SN}:6-10`
+				metric: SPEC_SWEEP_XTX,
+				sameHarness: true,
+				conditions: { pl: 'ROCm, ten sam serwer i skrypt po obu stronach; spekulacja MTP (najlepsze flagi i nasz silnik); kontekst 200k (n_ctx 204800)', en: 'ROCm, the same server and script on both sides; MTP speculation (best flags and our engine); 200k context (n_ctx 204800)' },
+				conditionsSrc: `${FB}/fb-qwen-T-p1.log:1; ${FB}/fb-qwen-U0-p1.log:1`,
+				note: {
+					pl: 'Edycja kodu (ten sam skrypt, T=0, 4 pliki): typowa aplikacja 35,5 t/s, najlepsze flagi 89,0 t/s, nasz silnik 419,7 t/s. Bez spekulacji (llama-bench tg128): 35,3 → 43,4 t/s.',
+					en: 'Code edits (the same script, T=0, 4 files): typical app 35.5 t/s, best flags 89.0 t/s, our engine 419.7 t/s. Without speculation (llama-bench tg128): 35.3 → 43.4 t/s.'
+				}
 			},
 			{
 				model: 'lfm25',
