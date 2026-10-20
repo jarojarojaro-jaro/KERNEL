@@ -136,9 +136,9 @@
 	}
 	.head::before {
 		background:
-			radial-gradient(48% 46% at 72% 42%, rgb(255 193 90 / 0.22), transparent 60%),
-			radial-gradient(75% 70% at 72% 45%, rgb(255 122 26 / 0.3), transparent 72%),
-			radial-gradient(110% 90% at 70% 50%, rgb(226 64 28 / 0.14), transparent 80%);
+			radial-gradient(48% 46% at 72% 42%, rgb(var(--amber-rgb, 255 193 90) / 0.22), transparent 60%),
+			radial-gradient(75% 70% at 72% 45%, rgb(var(--hot-rgb, 255 122 26) / 0.3), transparent 72%),
+			radial-gradient(110% 90% at 70% 50%, rgb(var(--ember-rgb, 226 64 28) / 0.14), transparent 80%);
 		opacity: var(--hh);
 	}
 	.head::after {

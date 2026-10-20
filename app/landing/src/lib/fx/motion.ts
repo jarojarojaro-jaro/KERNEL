@@ -23,6 +23,17 @@ export function heatColor(t: number): string {
 	return `rgb(${a.map((v, k) => Math.round(v + (b[k] - v) * f)).join(' ')})`;
 }
 
+/**
+ * The same point on the heat ramp as `heatColor`, but through the CSS tokens (--heat-0..5), so a
+ * scope that re-tints them (a maker's card page) re-tints this colour too.
+ */
+export function heatVar(t: number): string {
+	const x = Math.min(1, Math.max(0, t)) * (HEAT.length - 1);
+	const i = Math.min(HEAT.length - 2, Math.floor(x));
+	const f = x - i;
+	return `color-mix(in srgb, var(--heat-${i}) ${((1 - f) * 100).toFixed(1)}%, var(--heat-${i + 1}))`;
+}
+
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const easeOutExpo = (t: number) => (t >= 1 ? 1 : 1 - 2 ** (-10 * t));
 export const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2);

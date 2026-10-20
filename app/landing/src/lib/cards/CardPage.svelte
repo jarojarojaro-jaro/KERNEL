@@ -137,7 +137,7 @@
 <VendorTheme vendor={card.vendor}>
 <CardHead id={card.id} {prefix} short={card.short} vendor={card.vendor} vram={card.vramGB} {heat} kick={landed} spec="{card.vramGB} GB · {card.arch} · {num(card.bwGBs.v, lang, 0)} GB/s" charge={d ? charge : null} {rpm}>
 	{#if d}
-		<div class="hl hx-bt" class:landed={landed > 0} style="--g:{heat * charge}" use:visible={startWhenIdle}>
+		<div class="speedline hx-bt" class:landed={landed > 0} style="--g:{heat * charge}" use:visible={startWhenIdle}>
 			<p class="hl-m mono">{t.headline(`${MODEL_STYLE[d.run.model].short} ${d.run.quant}`)}</p>
 			<!-- one line: typical → ours · the speed-up (wraps only on narrow phones) -->
 			<div class="hl-n">
@@ -245,7 +245,7 @@
 	}
 
 	/* headline numbers inside the hero: one row, typical → ours · speed-up */
-	.hl {
+	.speedline {
 		display: grid;
 		gap: var(--sp-2);
 		margin-top: var(--sp-3);
@@ -293,7 +293,7 @@
 	.v.hot {
 		font-size: clamp(2.2rem, 1.2rem + 2.6vw, 3.6rem);
 		color: var(--text-hi);
-		filter: drop-shadow(0 0 calc(4px + var(--g) * 22px) rgb(255 122 26 / calc(var(--g) * 0.75)));
+		filter: drop-shadow(0 0 calc(4px + var(--g) * 22px) rgb(var(--hot-rgb, 255 122 26) / calc(var(--g) * 0.75)));
 	}
 	.u {
 		font-size: var(--fs-xs);
@@ -348,7 +348,7 @@
 	}
 	@keyframes land {
 		25% {
-			filter: drop-shadow(0 0 calc(10px + var(--g) * 30px) rgb(255 193 90 / calc(0.2 + var(--g) * 0.8)));
+			filter: drop-shadow(0 0 calc(10px + var(--g) * 30px) rgb(var(--amber-rgb, 255 193 90) / calc(0.2 + var(--g) * 0.8)));
 		}
 	}
 
@@ -375,7 +375,6 @@
 		text-transform: uppercase;
 		letter-spacing: 0.1em;
 		color: var(--text-mute);
-		white-space: nowrap;
 	}
 	.plate dd {
 		margin: 0;
@@ -412,9 +411,6 @@
 		.plate {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
 			justify-content: stretch;
-		}
-		.plate dt {
-			white-space: normal;
 		}
 	}
 	.rank-list > li {
@@ -467,6 +463,7 @@
 	.strip dd.txt {
 		font-size: var(--fs-sm);
 		padding-top: 0.35rem;
+		white-space: normal;
 	}
 	/* two columns on narrow screens; an odd last cell spans the row */
 	@media (max-width: 48rem) {

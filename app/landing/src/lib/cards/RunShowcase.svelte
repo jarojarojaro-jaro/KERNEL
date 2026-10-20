@@ -784,7 +784,7 @@
 	.ghost-btn:hover {
 		color: var(--text-hi);
 		border-color: var(--heat-3);
-		box-shadow: 0 0 22px -6px rgb(255 122 26 / 0.6);
+		box-shadow: 0 0 22px -6px rgb(var(--rim) / 0.6);
 	}
 
 	/* ---------- instruments: dense cells; the last row stretches, no orphans ---------- */
@@ -797,8 +797,8 @@
 		gap: var(--sp-2);
 	}
 	.cell:hover {
-		border-color: rgb(255 122 26 / 0.55);
-		background: rgb(255 122 26 / 0.05);
+		border-color: rgb(var(--rim) / 0.55);
+		background: rgb(var(--rim) / 0.05);
 	}
 	.cell {
 		flex: 1 1 13rem;
@@ -806,7 +806,7 @@
 		gap: var(--sp-2);
 		align-content: start;
 		padding: var(--sp-3) var(--sp-4);
-		border: 1px solid rgb(255 122 26 / 0.16);
+		border: 1px solid rgb(var(--rim) / 0.16);
 		transition:
 			border-color var(--dur-2),
 			background-color var(--dur-2);
@@ -856,7 +856,7 @@
 	/* a better "after" bar runs hot; worse or unchanged stays bone */
 	.cell:has(.vd--better) .mini .o {
 		background: var(--heat-ramp-hot);
-		box-shadow: 0 0 8px rgb(255 122 26 / 0.5);
+		box-shadow: 0 0 8px rgb(var(--hot-rgb, 255 122 26) / 0.5);
 	}
 	/* better / worse: words and an arrow, bone for better, steel for worse; never heat */
 	.vd {
@@ -887,14 +887,14 @@
 		gap: var(--sp-2);
 	}
 	.formats li:hover {
-		border-color: rgb(255 122 26 / 0.55);
-		background: rgb(255 122 26 / 0.05);
+		border-color: rgb(var(--rim) / 0.55);
+		background: rgb(var(--rim) / 0.05);
 	}
 	.formats li {
 		display: grid;
 		gap: var(--sp-2);
 		padding: var(--sp-4);
-		border: 1px solid rgb(255 122 26 / 0.16);
+		border: 1px solid rgb(var(--rim) / 0.16);
 		transition:
 			border-color var(--dur-2),
 			background-color var(--dur-2);
@@ -1029,11 +1029,11 @@
 		gap: var(--sp-2);
 	}
 	.chip:hover {
-		border-color: rgb(255 122 26 / 0.55);
+		border-color: rgb(var(--rim) / 0.55);
 	}
 	.chip {
 		padding: 0.3rem 0.65rem;
-		border: 1px solid rgb(255 122 26 / 0.16);
+		border: 1px solid rgb(var(--rim) / 0.16);
 		transition:
 			border-color var(--dur-2),
 			background-color var(--dur-2);

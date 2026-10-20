@@ -209,7 +209,7 @@
 				{:else}
 					<div class="gauge nodial">{@render readout()}</div>
 				{/if}
-				<div class="text" class:hot={l.hot}>
+				<div class="text" class:hot={l.hot} data-clip-ok>
 					<p>
 						{#if s.w > 0}
 							{@const shownW = words.slice(0, s.w)}
@@ -279,7 +279,7 @@
 		position: absolute;
 		inset: -40% -20% auto;
 		height: 80%;
-		background: radial-gradient(closest-side, rgb(255 122 26 / 0.22), transparent);
+		background: radial-gradient(closest-side, rgb(var(--hot-rgb, 255 122 26) / 0.22), transparent);
 		opacity: 0;
 		transition: opacity 0.6s var(--ease-out);
 		z-index: -1;
@@ -367,7 +367,7 @@
 	/* heat trail: the hot lane's newest words glow and cool over the last few words */
 	.tw {
 		color: color-mix(in srgb, var(--heat-4) calc((1 - var(--age)) * 100%), var(--text));
-		text-shadow: 0 0 10px rgb(255 122 26 / calc(0.7 * (1 - var(--age))));
+		text-shadow: 0 0 10px rgb(var(--hot-rgb, 255 122 26) / calc(0.7 * (1 - var(--age))));
 	}
 	.lane.behind .still {
 		color: var(--before);
@@ -418,7 +418,7 @@
 	/* the speed-up stamped in its own slot beside "gotowe" when the hot lane finishes */
 	.stamp-big {
 		font-size: clamp(1.6rem, 1rem + 1.4vw, 2.4rem);
-		filter: drop-shadow(0 0 16px rgb(255 122 26 / 0.45));
+		filter: drop-shadow(0 0 16px rgb(var(--hot-rgb, 255 122 26) / 0.45));
 		opacity: 0;
 		transform: scale(1.5);
 		transform-origin: 100% 50%;
@@ -474,7 +474,7 @@
 	}
 	.lane.hot .trail {
 		background: var(--heat-ramp-hot);
-		box-shadow: 0 0 12px rgb(255 122 26 / 0.6);
+		box-shadow: 0 0 12px rgb(var(--hot-rgb, 255 122 26) / 0.6);
 	}
 	@media (max-width: 640px) {
 		.controls {

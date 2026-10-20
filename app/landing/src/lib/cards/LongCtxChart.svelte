@@ -46,12 +46,12 @@
 		<title id="lc-{uid}">{title}: {depths.map((d, i) => `${kfmt(d)} ${num(up[i].v, lang)} → ${num(ours[i].v, lang)} t/s`).join('; ')}</title>
 		<defs>
 			<linearGradient id="lg-{uid}" x1="0" y1="0" x2="1" y2="0">
-				<stop offset="0" stop-color="#ffc15a" />
-				<stop offset="1" stop-color="#e2401c" />
+				<stop offset="0" style="stop-color: var(--heat-4, #ffc15a)" />
+				<stop offset="1" style="stop-color: var(--heat-2, #e2401c)" />
 			</linearGradient>
 			<linearGradient id="fill-{uid}" x1="0" y1="0" x2="0" y2="1">
-				<stop offset="0" stop-color="#ff7a1a" stop-opacity="0.22" />
-				<stop offset="1" stop-color="#ff7a1a" stop-opacity="0" />
+				<stop offset="0" style="stop-color: var(--heat-3, #ff7a1a)" stop-opacity="0.22" />
+				<stop offset="1" style="stop-color: var(--heat-3, #ff7a1a)" stop-opacity="0" />
 			</linearGradient>
 		</defs>
 		{#each grid as g (g)}
@@ -114,7 +114,7 @@
 		stroke-dasharray: none;
 	}
 	.line.ours {
-		filter: drop-shadow(0 0 6px rgb(255 122 26 / 0.6));
+		filter: drop-shadow(0 0 6px rgb(var(--hot-rgb, 255 122 26) / 0.6));
 	}
 	.dot.up {
 		fill: var(--bg-0);
@@ -143,7 +143,8 @@
 	}
 	.axis-l {
 		margin-left: auto;
-		white-space: nowrap;
+		min-width: 0;
+		text-align: right;
 	}
 	.sw {
 		display: inline-block;

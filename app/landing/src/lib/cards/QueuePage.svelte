@@ -178,8 +178,8 @@
 		bottom: -3px;
 		border: 1px dashed var(--heat-4);
 		border-radius: var(--r-sm);
-		background: repeating-linear-gradient(135deg, rgb(255 160 80 / 0.55) 0 4px, transparent 4px 8px);
-		box-shadow: 0 0 16px -4px rgb(255 122 26 / 0.55);
+		background: repeating-linear-gradient(135deg, rgb(var(--hot-rgb, 255 160 80) / 0.55) 0 4px, transparent 4px 8px);
+		box-shadow: 0 0 16px -4px rgb(var(--hot-rgb, 255 122 26) / 0.55);
 	}
 	.r0,
 	.r1 {
@@ -309,9 +309,9 @@
 		/* solid up to the low end of the range, hatched across the uncertainty */
 		/* estimate: warm, but hatched and dashed (never a solid measured fill) */
 		background:
-			linear-gradient(90deg, rgb(255 140 60 / 0.38) var(--lo), transparent var(--lo)),
-			repeating-linear-gradient(135deg, rgb(255 140 60 / 0.38) 0 5px, transparent 5px 10px);
-		border: 1px dashed rgb(255 160 80 / 0.7);
+			linear-gradient(90deg, rgb(var(--hot-rgb, 255 140 60) / 0.38) var(--lo), transparent var(--lo)),
+			repeating-linear-gradient(135deg, rgb(var(--hot-rgb, 255 140 60) / 0.38) 0 5px, transparent 5px 10px);
+		border: 1px dashed rgb(var(--hot-rgb, 255 160 80) / 0.7);
 		transform-origin: left center;
 	}
 	.cap {
@@ -411,7 +411,7 @@
 	.others a:hover {
 		border-color: var(--heat-3);
 		color: var(--hx-ink);
-		box-shadow: 0 10px 28px -12px rgb(255 122 26 / 0.65);
+		box-shadow: 0 10px 28px -12px rgb(var(--hot-rgb, 255 122 26) / 0.65);
 	}
 	.others .mono {
 		font-size: var(--fs-2xs);

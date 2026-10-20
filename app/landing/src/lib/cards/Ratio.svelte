@@ -71,7 +71,7 @@
 		font-weight: calc(660 + var(--rm, 1) * 200);
 	}
 	.rx:not(.speedup--down) {
-		filter: drop-shadow(0 0 calc(var(--rm) * 0.22em) rgb(255 122 26 / calc(0.1 + var(--rm) * 0.4)));
+		filter: drop-shadow(0 0 calc(var(--rm) * 0.22em) rgb(var(--hot-rgb, 255 122 26) / calc(0.1 + var(--rm) * 0.4)));
 	}
 	.rx--sm {
 		--rx-fs: var(--fs-lg);

@@ -7,7 +7,7 @@
 	 */
 	import type { Snippet } from 'svelte';
 	import { onMount, untrack } from 'svelte';
-	import { heatColor, onFinish, onFrame, reducedMotion, Spring } from './motion';
+	import { heatVar, onFinish, onFrame, reducedMotion, Spring } from './motion';
 
 	let {
 		value,
@@ -101,7 +101,7 @@
 			return { v, major, x0, y0, x1, y1, tx, ty, red: v >= redline };
 		})
 	);
-	const hot = $derived(tone === 'hot' ? heatColor(0.25 + (0.75 * shown) / max) : 'var(--before)');
+	const hot = $derived(tone === 'hot' ? heatVar(0.25 + (0.75 * shown) / max) : 'var(--before)');
 	const glow = $derived(tone === 'hot' && glowing ? Math.min(1, Math.max(0, (shown - redline) / (max - redline))) : 0);
 
 	/* Redline flare: the red ticks flash once when a hot needle crosses into the red zone. */
@@ -124,9 +124,9 @@
 	<svg viewBox="0 0 200 200" aria-hidden="true">
 		<defs>
 			<radialGradient id={glowId}>
-				<stop offset="0" stop-color="#fff3d6" stop-opacity=".9" />
-				<stop offset=".35" stop-color="#ff7a1a" stop-opacity=".45" />
-				<stop offset="1" stop-color="#e2401c" stop-opacity="0" />
+				<stop offset="0" style="stop-color: var(--heat-5, #fff3d6)" stop-opacity=".9" />
+				<stop offset=".35" style="stop-color: var(--heat-3, #ff7a1a)" stop-opacity=".45" />
+				<stop offset="1" style="stop-color: var(--heat-2, #e2401c)" stop-opacity="0" />
 			</radialGradient>
 		</defs>
 		<circle cx={C} cy={C} r="99" class="face" />
@@ -189,7 +189,7 @@
 	}
 	.redtick {
 		stroke: var(--heat-2);
-		fill: #ff6a4a;
+		fill: var(--redline-ink, #ff6a4a);
 	}
 	.num {
 		font-family: var(--font-mono);
@@ -199,7 +199,7 @@
 		dominant-baseline: middle;
 	}
 	.num.redtick {
-		fill: #ff6a4a;
+		fill: var(--redline-ink, #ff6a4a);
 	}
 	.needle {
 		transform-origin: 100px 100px;
@@ -224,7 +224,7 @@
 		15% {
 			stroke: var(--heat-5);
 			stroke-opacity: 1;
-			filter: drop-shadow(0 0 6px #ff7a1a);
+			filter: drop-shadow(0 0 6px var(--heat-3, #ff7a1a));
 		}
 	}
 	@keyframes tick-flash {

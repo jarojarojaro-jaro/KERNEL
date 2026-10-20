@@ -216,15 +216,15 @@
 						<stop offset="1" stop-color="#1e1e23" />
 					</linearGradient>
 					<linearGradient id="ramp-{uid}" x1="0" y1="0" x2="1" y2="0">
-						<stop offset="0" stop-color="#7a2e1f" />
-						<stop offset="0.35" stop-color="#e2401c" />
-						<stop offset="0.6" stop-color="#ff7a1a" />
-						<stop offset="0.85" stop-color="#ffc15a" />
-						<stop offset="1" stop-color="#fff3d6" />
+						<stop offset="0" style="stop-color: var(--heat-1, #7a2e1f)" />
+						<stop offset="0.35" style="stop-color: var(--heat-2, #e2401c)" />
+						<stop offset="0.6" style="stop-color: var(--heat-3, #ff7a1a)" />
+						<stop offset="0.85" style="stop-color: var(--heat-4, #ffc15a)" />
+						<stop offset="1" style="stop-color: var(--heat-5, #fff3d6)" />
 					</linearGradient>
 					<linearGradient id="sw-{uid}" x1="0" y1="0" x2="1" y2="0">
 						<stop offset="0" stop-color="#fff" stop-opacity="0" />
-						<stop offset="0.5" stop-color="#fff3d6" stop-opacity="0.16" />
+						<stop offset="0.5" style="stop-color: var(--heat-5, #fff3d6)" stop-opacity="0.16" />
 						<stop offset="1" stop-color="#fff" stop-opacity="0" />
 					</linearGradient>
 					<radialGradient id="smear-{uid}" cx="0.5" cy="0.5" r="0.5">
@@ -395,7 +395,7 @@
 		border-radius: 2.8% / 8.7%;
 		pointer-events: none;
 		background:
-			radial-gradient(40% 75% at var(--gx, 28%) var(--gy, 18%), rgb(255 243 214 / 0.16), transparent 70%),
+			radial-gradient(40% 75% at var(--gx, 28%) var(--gy, 18%), rgb(var(--white-rgb, 255 243 214) / 0.16), transparent 70%),
 			linear-gradient(112deg, transparent 32%, rgb(255 255 255 / 0.045) 44%, transparent 56%);
 		mix-blend-mode: screen;
 		opacity: 0.55;
@@ -448,7 +448,7 @@
 		position: absolute;
 		inset: 10% 6% -8%;
 		border-radius: 50%;
-		background: radial-gradient(closest-side, rgb(255 122 26 / calc((0.08 + var(--h) * 0.38) * var(--c))), rgb(226 64 28 / calc(var(--h) * 0.12 * var(--c))) 55%, transparent);
+		background: radial-gradient(closest-side, rgb(var(--hot-rgb, 255 122 26) / calc((0.08 + var(--h) * 0.38) * var(--c))), rgb(var(--ember-rgb, 226 64 28) / calc(var(--h) * 0.12 * var(--c))) 55%, transparent);
 		filter: blur(18px);
 		transform: scale(0.92);
 		transition:
@@ -502,8 +502,8 @@
 	.driven .sheen {
 		opacity: 1;
 		background:
-			radial-gradient(40% 75% at var(--gx, 28%) var(--gy, 18%), rgb(255 243 214 / 0.12), transparent 70%),
-			linear-gradient(0deg, rgb(255 122 26 / calc(var(--h) * var(--c) * 0.3)), transparent 60%),
+			radial-gradient(40% 75% at var(--gx, 28%) var(--gy, 18%), rgb(var(--white-rgb, 255 243 214) / 0.12), transparent 70%),
+			linear-gradient(0deg, rgb(var(--hot-rgb, 255 122 26) / calc(var(--h) * var(--c) * 0.3)), transparent 60%),
 			linear-gradient(180deg, rgb(125 135 148 / calc((1 - var(--c)) * 0.16)), rgb(30 52 72 / calc((1 - var(--c)) * 0.12)));
 	}
 	/* motion blur: the blades fade into a smeared disc as the fans speed up */

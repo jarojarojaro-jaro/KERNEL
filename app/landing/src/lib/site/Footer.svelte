@@ -127,17 +127,21 @@
 	}
 	/* giant outlined wordmark, a nameplate above the legal line */
 	.word {
-		margin: var(--sp-12) 0 var(--sp-6);
+		/* the clipped fill needs the glyphs' full height: line-height 0.8 is shorter than the ę and
+		   the accents, so the box is padded and the margins give the space back */
+		margin: calc(var(--sp-12) - 0.08em) 0 calc(var(--sp-6) - 0.24em);
+		padding: 0.08em 0.06em 0.24em;
 		text-align: center;
 		font-family: var(--font-display);
-		font-size: clamp(5rem, 22vw, 22rem);
+		/* ~4em wide: 20vw keeps it inside the gutters down to 320 px */
+		font-size: clamp(3rem, 20vw, 22rem);
 		font-weight: 860;
 		font-stretch: 125%;
 		letter-spacing: -0.06em;
 		line-height: 0.8;
 		color: transparent;
 		-webkit-text-stroke: 1px color-mix(in srgb, var(--text-hi) 16%, transparent);
-		background: linear-gradient(180deg, color-mix(in srgb, var(--text-hi) 7%, transparent), transparent 75%);
+		background: linear-gradient(180deg, color-mix(in srgb, var(--text-hi) 7%, transparent), transparent 85%);
 		-webkit-background-clip: text;
 		background-clip: text;
 		user-select: none;

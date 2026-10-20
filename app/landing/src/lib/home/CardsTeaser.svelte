@@ -229,7 +229,7 @@
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		color: var(--text-mute);
-		white-space: nowrap;
+		flex-wrap: wrap;
 	}
 	.maker {
 		font-family: var(--font-display);
@@ -241,8 +241,7 @@
 		text-shadow: 0 0 14px rgb(var(--v) / 0.6);
 	}
 	.pre {
-		overflow: hidden;
-		text-overflow: ellipsis;
+		min-width: 0;
 	}
 	.vram {
 		margin-left: auto;
@@ -378,9 +377,7 @@
 		font-size: var(--fs-2xs);
 	}
 	.lb {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		min-width: 0;
 		color: var(--text-mute);
 	}
 	.speed b {

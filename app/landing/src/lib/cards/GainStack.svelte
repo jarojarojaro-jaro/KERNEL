@@ -110,7 +110,7 @@
 		background: var(--heat-ramp-hot);
 		box-shadow:
 			-2px 0 0 #050506,
-			0 0 30px rgb(255 122 26 / 0.5);
+			0 0 30px rgb(var(--hot-rgb, 255 122 26) / 0.5);
 	}
 	.legend {
 		list-style: none;

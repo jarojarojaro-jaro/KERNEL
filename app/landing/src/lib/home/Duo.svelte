@@ -84,11 +84,15 @@
 		background-clip: text;
 		color: transparent;
 		filter: drop-shadow(0 0 24px rgb(255 122 26 / 0.35));
-		padding: 0.08em 0.1em 0.24em 0;
-		margin: -0.08em -0.1em -0.24em 0;
+		padding: 0.16em 0.1em 0.24em 0;
+		margin: -0.16em -0.1em -0.24em 0;
 	}
-	.hi.burn .ul {
+	/* inside the burning payoff the accent is the payoff itself */
+	.hi.burn :global(.hl) {
 		background: none;
+		color: inherit;
+		padding: 0;
+		margin: 0;
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		.hi.burn {

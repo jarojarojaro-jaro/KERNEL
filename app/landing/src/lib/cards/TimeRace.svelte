@@ -145,7 +145,7 @@
 	}
 	.hot .fill {
 		background: var(--heat-ramp-hot);
-		box-shadow: 0 0 18px rgb(255 122 26 / 0.35);
+		box-shadow: 0 0 18px rgb(var(--hot-rgb, 255 122 26) / 0.35);
 	}
 	.end {
 		position: absolute;
@@ -176,11 +176,12 @@
 		opacity: 1;
 		transform: none;
 	}
+	/* the label hangs from the gap's right end, which is always the track's end (the slowest lane
+	   sets the scale), so it never runs past the tile, however short the gap */
 	.gap span {
 		position: absolute;
-		left: 50%;
+		right: 0;
 		bottom: calc(100% + 0.3rem);
-		transform: translateX(-50%);
 		white-space: nowrap;
 		font-size: var(--fs-xs);
 		font-weight: 600;

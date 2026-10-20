@@ -119,7 +119,7 @@
 		bottom: -50%;
 		left: -1.5rem;
 		width: 1.5rem;
-		background: radial-gradient(closest-side at 100% 50%, rgb(255 243 214 / 0.85), transparent);
+		background: radial-gradient(closest-side at 100% 50%, rgb(var(--white-rgb, 255 243 214) / 0.85), transparent);
 		opacity: calc(var(--f) * 20);
 	}
 	.cold .cover::before {
@@ -139,6 +139,6 @@
 		left: calc(var(--r) * 100%);
 		width: 2px;
 		background: var(--heat-2);
-		box-shadow: 0 0 6px rgb(226 64 28 / 0.8);
+		box-shadow: 0 0 6px rgb(var(--ember-rgb, 226 64 28) / 0.8);
 	}
 </style>

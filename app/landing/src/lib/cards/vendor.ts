@@ -36,6 +36,40 @@ export function vendorVars(v: string): string {
 	].join('; ');
 }
 
+const mixRgb = (a: number[], b: number[], t: number) => a.map((x, i) => Math.round(x + (b[i] - x) * t)).join(' ');
+
+/**
+ * A card page is the maker's world: inside it the heat tokens (--heat-2..5, the ramps) and the heat
+ * channels used for glows (--hot-rgb, --ember-rgb, --amber-rgb, --white-rgb) take the maker's
+ * family, so bars, the ×N, glows and the render's light strip read NVIDIA green, Intel blue, Apple
+ * silver. AMD's family is red, so its page keeps the site's heat: empty string.
+ */
+export function vendorHeat(v: string): string {
+	const id = vendorOf(v);
+	if (id === 'amd') return '';
+	const { rgb, hi } = VENDOR[id];
+	const c = rgb.split(' ').map(Number);
+	const h = [1, 3, 5].map((i) => parseInt(hi.slice(i, i + 2), 16));
+	const ember = mixRgb(c, [0, 0, 0], 0.35);
+	const white = mixRgb(h, [255, 255, 255], 0.7);
+	const deep = mixRgb(c, [0, 0, 0], 0.65);
+	const hiRgb = h.join(' ');
+	return [
+		`--heat-1:rgb(${deep})`,
+		`--heat-2:rgb(${ember})`,
+		`--heat-3:rgb(${rgb})`,
+		`--heat-4:${hi}`,
+		`--heat-5:rgb(${white})`,
+		`--heat-ramp:linear-gradient(90deg, var(--heat-0), rgb(${deep}) 22%, rgb(${ember}) 45%, rgb(${rgb}) 64%, ${hi} 84%, rgb(${white}))`,
+		`--heat-ramp-hot:linear-gradient(90deg, rgb(${ember}), rgb(${rgb}) 35%, ${hi} 70%, rgb(${white}))`,
+		`--hot-rgb:${rgb}`,
+		`--ember-rgb:${ember}`,
+		`--amber-rgb:${hiRgb}`,
+		`--white-rgb:${white}`,
+		`--redline-ink:${hi}`
+	].join('; ');
+}
+
 /**
  * Photoreal product shots (AI-generated with OpenRouter `openai/gpt-image-2.5-sunburst`, static/media/cards/):
  * the real products, not generic hardware, from one camera (3/4 front, slightly from above, soft key light
