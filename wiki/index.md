@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (26)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (33)
 - [[modele/_hub|modele]] — Modele i kwanty (17)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (11)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (22)
@@ -65,31 +65,31 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (34)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (58)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (86)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (91)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (68)
-- [[research/_hub|research]] — Streszczenia raportów (60)
+- [[research/_hub|research]] — Streszczenia raportów (97)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (28)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
 ## Ostatnio aktualizowane
 
-- 2026-10-19 [[trwala-siatka-bez-pm4|XTX bez PM4: trwała siatka wraca do gry (warunkowo)]]
-- 2026-10-19 [[rocprof|rocprofv3 i profilowanie na gfx1100]]
-- 2026-10-19 [[rdna3-gfx1100|RDNA3 / gfx1100: architektura, pod którą piszemy]]
-- 2026-10-19 [[mec-fw-dispatch-aql-gfx11|Firmware MEC gfx11: co robi z pakietem AQL, a czego nie robi z `DISPATCH_DIRECT`]]
-- 2026-10-19 [[kfd-smi-eventy|Zdarzenia KFD SMI (`AMDKFD_IOC_SMI_EVENTS`) bez roota]]
-- 2026-10-19 [[kfd-ewikcja-kolejek-gfx11|Ewikcja i przywracanie kolejek KFD + MES na gfx11 (Linux 6.8)]]
-- 2026-10-19 [[hip-kopie-stronicowane-zostawiaja-svm|Kopie HIP z pamięci stronicowanej zostawiają zmapowane zakresy SVM]]
-- 2026-10-19 [[hip-graph-narzut|Narzut grafu HIP: ~3 µs na kernel]]
-- 2026-10-19 [[gfx11-pm4-dispatch-priv|Własny dispatch PM4 na GFX11 musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1`]]
-- 2026-10-19 [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]]
-- 2026-10-19 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
-- 2026-10-19 [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]]
-- 2026-10-19 [[raport-23e-re-silniki|Raport 23e: RE kerneli dekodu konkurencyjnych silników]]
-- 2026-10-19 [[raport-23c-re-kernele-nvidia|Raport 23c: kernele NVIDIA (cuBLASLt, FlashInfer, Marlin, exllamav3) vs nasz ggml-cuda]]
-- 2026-10-19 [[raport-23b-re-kernele-amd|Raport 23b: kernele AMD (gfx1100) vs nasze MMVQ, weryfikacja i atencja]]
+- 2026-10-20 [[raporty-2026-10-19-20|Raporty 2026-10-19/20 (20–30, WYNIKI-XTX): przegląd]]
+- 2026-10-20 [[raport-wyniki-xtx-2026-10-19|Wyniki RX 7900 XTX 2026-10-19/20: upstream → topka (ten sam skrypt, ABBA)]]
+- 2026-10-20 [[raport-30-intel-apple|Raport 30: dostęp do Intel Arc i Apple Silicon + plan testów na M1 Pro]]
+- 2026-10-20 [[raport-28-moe-offload|Raport 28: silniki MoE-offload TideLM i Xolotl – stratne z założenia]]
+- 2026-10-20 [[raport-27-3090-final|Raport 27: RTX 3090 i 3060 – finał przed/po (Qwen, Uncensored, Saluki)]]
+- 2026-10-20 [[raport-26-kolejka-gpu|Raport 26: kolejka GPU 2026-10-19 wieczorem – testy odłożone przez pauzę]]
+- 2026-10-20 [[raport-25-buildfarm|Raport 25: zdalny serwer buildów (Vast) i `rbuild`]]
+- 2026-10-20 [[raport-24v-prefill-fa|Raport 24v: FA D=256 w prefillu Qwena – spille usunięte, zysk za mały]]
+- 2026-10-20 [[raport-24u-norm-quant|Raport 24u: osobny kernel rms_norm × w + quantize q8_1 – stop, zysk ≈ 0]]
+- 2026-10-20 [[raport-24t-entropia-wag|Raport 24t: bezstratna kompresja entropijna wag GGUF (DFloat11/ZipNN) – kill]]
+- 2026-10-20 [[raport-24s-drzewa-proza|Raport 24s: drzewa draftu MTP i temperatura draftu na prozie – sufit offline]]
+- 2026-10-20 [[raport-24r-mmvq-pasmo|Raport 24r: pasmo MMVQ weryfikacji n=5 – sufit 926 GB/s]]
+- 2026-10-20 [[raport-24q-adaptacyjna-spekulacja|Raport 24q: adaptacyjna spekulacja – bramka ogona i głębokość MTP z akceptacji]]
+- 2026-10-20 [[raport-24p-sprzezone-t1|Raport 24p: sprzężone próbkowanie draftu (`LLAMA_SPEC_COUPLED`) na topce przy T=1]]
+- 2026-10-20 [[raport-24o-luki-hosta|Raport 24o: luki hosta w kroku spekulacji MTP]]
 
-Razem 518 notatek. Wygenerowano 2026-10-19 przez `tools/wiki.py index`.
+Razem 567 notatek. Wygenerowano 2026-10-20 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -2,7 +2,7 @@
 typ: meta
 tags: [meta, zrodla, research, rejestr, inferencex, agentx, strata, tensorfold, magnitude, hipfire, dflash, lucebox]
 aktualizacja: 2026-10-20
-zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14
+zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14; ~/KERNEL/product/research/{21n,21o,24e,24g,24t,30}-*.md
 status: aktualne
 ---
 # Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)
@@ -56,6 +56,8 @@ Legenda: **2×/3×/4×** = źródło badane wielokrotnie; kolumna „delta” m�
 | Inne silniki z R03 (mlc-llm, mistral.rs, candle, ktransformers, PowerInfer, onnxruntime-genai, LiteRT-LM, MNN, executorch, exllamav2, tabbyAPI, llamafile, koboldcpp, sglang-radeon, hipEngine, braidinfer) | R03 10-15; Q:v2 10-12 | R03, Q:v2/rr-engines-drafters, [[raport-03-silniki]] | Bazą zostaje llama.cpp; żaden nie bije na AMD. | – | tylko jeśli ktoś ogłosi gfx1100 |
 | Forki llama.cpp pod RDNA (llama-cpp-rdna-boosts, llama.cpp-qwen35-rocm, nasone32 RDNA3-7900xtx-opt, QingYis llama-7900xtx, salvatoretrimarchi) | Q:v2 10-12, R01 | Q:v2/roadmap, Q:v2/rr-engines-drafters | rdna-boosts: adaptacyjne MTP (RDNA4) – pomysł, nie kod. | rdna-boosts code +28%, recall +61% | nowe commity w rdna-boosts |
 | prism llama.cpp (github.com/PrismML-Eng/llama.cpp) | R09-3060, R10 | [[prism-llama-cpp]] | Potrzebny tylko dla PQ2_0/PTQ1_0 (Bonsai). | PQ2_0 → Q2_0 bezstratny repack | – |
+| agentionai/llama.cpp (gitlab, `9aa51ce4`) + HF `agentionai/Qwen3.8-Flash-Next-Gyro-GGUF` (`aa0a0c3e`) + Strata issue #2938 (XTX IQ3_S) | 10-19 | [R21n](../product/research/21n-strata-020-gyro.md), [[raport-21n-strata-gyro]] | Gyro-S to próg 32 GB; nie testujemy teraz. | Gyro-S 1.708 bpw, plik 58.48 GB; #2938 82.5 t/s zawyżone (T=0, powtarzany akapit) | IQ3_S w naszym forku; kill < 50 t/s |
+| TensorFold 1.1.0 na RTX 3090 (headless, MLX-4bit + DFlash2) | 10-19 | [R24e](../product/research/24e-nvidia-runda.md), [[raport-24e-nvidia-runda]] | Przegrywa z topką: kopia ×2.3, prefill 64k ×4.6 wolniej. | czat 73.9 vs 77.3; edycja 309 vs 317 t/s | DELTA nowej wersji tylko dla NVIDIA |
 
 ## Repozytoria kerneli, DSL i narzędzia
 
@@ -101,6 +103,7 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | speculators (vllm), SpecForge | R10 | R10, [[speculators-specforge]] | Ścieżka do fine-tune głowicy MTP. | – |
 | sakana AI-Scientist-v3 | R15f | R15f, [[sakana-agentic-scientist]] | Izolacja ewaluacji tak, statystyki brak. | – |
 | wafer-ai gpu-perf-engineering-resources | R21b 10-19 | R21b, [[wafer-gpu-perf-lista]] | Spis lektur o serwerach; o RDNA3 nic. | – |
+| hipfire – lista fuzji i stan GDN int8 (R24g) | 10-19 | [R24g](../product/research/24g-hipfire-pomysly.md), [[raport-24g-hipfire]] | GDN int8 KLD 0.0234 – kill; fuzja norm górna granica +4.6% (808 kerneli/token, normy 0.69 ms). | fuzja norm bez spin-waitu |
 
 ## Benchmarki i rankingi
 
@@ -131,6 +134,7 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Prace o kwantyzacji (GSQ-RCO, QTIP, CSF/QAD, 2604.18556, 2605.00649) | R10, R15e | [[raport-15e-kwantyzacja-nowa]], [[ista-daslab]] | GSQ-RCO SOTA wąsko; NVFP4 poza naszymi kartami. | – | – |
 | Prace z R18 (multi-stream, KV jednoprzejściowe, ~40 pozycji arXiv) | R18 10-19 | [[raport-18-nastepna-fala]] | Mnożniki: więcej tokenów na odczyt wag. | plain 57.1 t/s roofline | – |
 | Prace z R21b (FlashAttention-2 2307.08691, online softmax 1805.02867, 2512.22219) | R21b | [[raport-21b-gpu-perf-zasoby]] | Większość technik już mamy. | – | – |
+| DFloat11 / ZipNN (bezstratna kompresja wag) | 10-20 | [R24t](../product/research/24t-entropia-wag.md), [[raport-24t-entropia-wag]] | Dla K-quant/IQ4 sufit ≈ 5%, kodek ≤ 0.9% – kill. | Q4_K 3.865/4 b, Q5_K 4.864/5 | tylko dla BF16/FP8/NVFP4 |
 
 ## Modele, kwanty i drafery (Hugging Face)
 
@@ -164,6 +168,8 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Narzędzia RE: RGA 2.15, umr, ATT, llvm-objdump, cuobjdump/nvdisasm, radare2, Ghidra | R21l | [[raport-21l-re-gpu]] | Działa zestaw producentów i LLVM. | – |
 | NVIDIA/AMD/Intel/Apple/Microsoft API detekcji sprzętu (NVML, ADLX, DXGI, Metal) | R04 | [[raport-04-sprzet]] | Dwuwarstwowa detekcja. | – |
 | Windows HIP (PAL) | R08 | [[raport-08-platforma]] | PM4 replay nie działa na Windows. | HIP na ROCr dla Windows |
+| gemma.ai (99 URL mapy strony; `capabilities/mtp`, `qat`, `visual-guides/{mtp,gemma-4}`, `diffusiongemma/*`, `deployment/*`) | 10-19 | [R21o](../product/research/21o-gemma-ai.md), [[raport-21o-gemma]] | Klastrowa głowica nie dla Qwena (d1 −4…−11%); ogon OOV offline +0.92% tok/krok, na GPU −1.5%. | tokenizer Gemmy (PL tok/słowo) po zgodzie na pobranie |
+| Apple macOS SLA §3A (leasing ≥ 24 h), llama.cpp issue #26129 (limit Metal 2/3 RAM), `ivanopcode/devnote-override-macos-metal-vram-cap`, instances.vantage.sh (ceny EC2 Mac) | 10-20 | [R30](../product/research/30-intel-apple-dostep.md), [[raport-30-intel-apple]] | Apple w chmurze min. 24 h (m4max $6.25/h, m3ultra $12.50/h); M1 Pro 16 GB = 10.67 GiB dla GPU. | zmiana zasad Enverge; macOS 27 limit |
 
 ## Aplikacje, firmy i chmury (konkurencja, rynek)
 

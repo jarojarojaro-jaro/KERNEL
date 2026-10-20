@@ -1,8 +1,8 @@
 ---
 typ: metoda
 tags: [metody, spekulacja, weryfikacja, kvq]
-aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/16b-lookup-tail.md:55-70; ~/qwen-opt/lookup/e2/e2_table.txt:2-5; ~/qwen-opt/lookup/e2_bench.sh
+aktualizacja: 2026-10-20
+zrodlo: ~/KERNEL/product/research/16b-lookup-tail.md:55-70; ~/qwen-opt/lookup/e2/e2_table.txt:2-5; ~/qwen-opt/lookup/e2_bench.sh; ~/KERNEL/product/research/24k-koszt-weryfikacji.md:3-9; ~/KERNEL/product/research/24s-proza-drzewa.md:16,109
 status: aktualne
 ---
 # Krzywa kosztu szerokości weryfikacji V(w, kontekst) na XTX
@@ -20,6 +20,8 @@ status: aktualne
 - Przyrost z kontekstem pochodzi z kafli kvq ([[fattn-kvq]]); 16i zakładało przy 64k +18 ms, pomiar daje +12.45.
 - Pierwsze dwa powtórzenia to rozgrzewka grafu (+5…+40 ms) – odrzucać.
 - Porównanie: Magnitude na Vulkanie blok 8 = ×3.0 kroku 1-wierszowego ([[lekcja-koszt-szerokosci-backendu]]). CUDA (>8 kolumn przez MMQ) do zmierzenia (16i E-C1).
+
+W serwerze (24k, 2026-10-19): krok W16 na `mvs` 35.61 vs MTP4 29.62 ms; 5 → 16 wierszy ≈ 9.4 ms (llama-bench 6.4 ms nie liczy głowy LM, replay GDN ani kopii logitów 0.045 ms/wiersz) ([[raport-24k-koszt-weryfikacji]]). Drzewa MTP opłacą się (≥ +6% proza) dopiero przy ≤ 0.57 ms na wiersz 5 → 8 (dziś 0.85) ([[raport-24s-drzewa-proza]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

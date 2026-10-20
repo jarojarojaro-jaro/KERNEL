@@ -1,8 +1,8 @@
 ---
 typ: metoda
 tags: [metody, spekulacja, kontroler]
-aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,65-80,222-235,258-271; ~/KERNEL/product/research/16b-lookup-tail.md:132-136
+aktualizacja: 2026-10-20
+zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,65-80,222-235,258-271; ~/KERNEL/product/research/16b-lookup-tail.md:132-136; ~/KERNEL/product/research/24q-adaptacyjna-spekulacja.md:11-21,48-53
 status: aktualne
 ---
 # Kontroler szerokości draftu (wzorzec Magnitude)
@@ -18,6 +18,8 @@ Algorytm:
 Różnice wobec naszej T2 (0039, 103.6 vs 102.7 t/s – nic): T2 testowano tylko na prozie i z łańcuchem MTP (~1.6 ms/poziom). Dla nas: drabinka 5/8/16 wierszy z ogonem lookupu, którego głębokości oceniamy za darmo na CPU; koszt per klasa kontekstu konieczny, bo W16 przy 64k szacunkowo 113 ms.
 
 U nas (16b, 2026-10-18): kontroler 5/8/16 zawsze wybiera 16 na kopii – wynik zerowy ([[2026-10-18-kontroler-szerokosci-zerowy]]).
+
+24q (2026-10-20): bramka ogona – sufit wyroczni ≤ +0.5%; głębokość MTP z akceptacji – symulacja czat +2.6…3.1%, ale greedy md5 się zmienia (weryfikacja zależy od szerokości) → odłożone ([[raport-24q-adaptacyjna-spekulacja]], [[lekcja-glebokosc-zmienia-tekst]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

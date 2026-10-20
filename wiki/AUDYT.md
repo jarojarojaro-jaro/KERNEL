@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, audyt]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-10-20
 zrodlo: zrodlo każdej notatki (kolumna „wiersz źródła”); wiki/tools/wiki.py
 status: aktualne
 ---
@@ -2756,6 +2756,69 @@ Liczby z 21i §0–§7 (wiersze w `zrodlo`); dane leaderboardu i bootstrap CI to
 
 ## Aktualizacja: raport 21j (2026-10-19)
 Liczby z 21j §0–§7 (wiersze w `zrodlo`) i `flameox-demo/{fx_cov,fx_list,fx_union}.py`. Błędnych: 0.
+
+## Ingest 2026-10-20 (raporty 20–30, WYNIKI-XTX)
+Automat: tokeny liczbowe (≥ 2 znaki) z nowych notatek i z nowych akapitów w notatkach aktualizowanych szukane w plikach z `zrodlo` (warianty kropka/przecinek, bez spacji tysięcy). Razem 761 tokenów; nieznalezione przejrzane ręcznie: daty, nazwy kart (7900, 3090), numery linii (`:19`, `:34`, `:91`, `:685`) – identyfikatory; 22.8 / 22.9 GB i 0.6–0.7 s z opisów commitów `53945b1` / `e873c35` (sprawdzone `git log`); 3.6% z wyniku `hg_summary.py`; 111.4 / 75.3 / 11.1 / 117.9 – brakujące źródła dopisane do `zrodlo`. Rekordy w [[REKORDY]] sprawdzone wiersz po wierszu w źródłach (2026-10-20).
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[2026-10-19-buildy-przez-rbuild]] | 8 | cytowane wiersze + plik | OK |
+| [[2026-10-19-chmura-bez-destroy-all]] | 6 | cytowane wiersze + plik | OK |
+| [[2026-10-19-topka-tylko-keeper]] | 5 | cytowane wiersze + plik | OK |
+| [[2026-10-20-auth-bez-backendu]] | 3 | cytowane wiersze + plik | OK |
+| [[2026-10-20-karta-fabrycznie]] | 4 | cytowane wiersze + plik | OK |
+| [[2026-10-20-szybkie-iteracje]] | 3 | cytowane wiersze + plik | OK |
+| [[2026-10-20-uncensored-poza-strona]] | 6 | cytowane wiersze + plik | OK po weryfikacji ręcznej: 111.4, 75.3 |
+| [[bariera-lds-rdna3]] | 10 | cytowane wiersze + plik | OK |
+| [[kontroler-szerokosci-draftu]] | 6 | cytowane wiersze + plik | OK |
+| [[koszt-szerokosci-weryfikacji]] | 11 | cytowane wiersze + plik | OK |
+| [[lekcja-dostep-intel-apple]] | 11 | cytowane wiersze + plik | OK |
+| [[lekcja-glebokosc-zmienia-tekst]] | 8 | cytowane wiersze + plik | OK |
+| [[lekcja-landing-jeden-uklad]] | 15 | cytowane wiersze + plik | OK po weryfikacji ręcznej: 22.8, 0.7, 0.6, 22.9 |
+| [[lekcja-obciazenie-cpu]] | 7 | cytowane wiersze + plik | OK |
+| [[lekcja-pm4-zawsze-jawnie]] | 5 | cytowane wiersze + plik | OK |
+| [[lekcja-wyrazna-wygrana-albo-nic]] | 17 | cytowane wiersze + plik | OK |
+| [[raport-21k-smokinggun]] | 7 | cytowane wiersze + plik | OK |
+| [[raport-21n-strata-gyro]] | 19 | cytowane wiersze + plik | OK |
+| [[raport-21o-gemma]] | 18 | cytowane wiersze + plik | OK |
+| [[raport-22-rsi-f]] | 8 | cytowane wiersze + plik | OK |
+| [[raport-23b2-bariery-lds]] | 11 | cytowane wiersze + plik | OK |
+| [[raport-23d-re-runtime-amd]] | 7 | cytowane wiersze + plik | OK |
+| [[raport-23f-podrecznik-gpu]] | 9 | cytowane wiersze + plik | OK po weryfikacji ręcznej: 11.1 |
+| [[raport-24a-bariera-lds]] | 17 | cytowane wiersze + plik | OK |
+| [[raport-24b-draft-pelny-slownik]] | 11 | cytowane wiersze + plik | OK |
+| [[raport-24c-wiele-zapytan]] | 14 | cytowane wiersze + plik | OK |
+| [[raport-24d-lfm-lookup]] | 19 | cytowane wiersze + plik | OK |
+| [[raport-24e-nvidia-runda]] | 19 | cytowane wiersze + plik | OK |
+| [[raport-24f-mmvq-fa]] | 18 | cytowane wiersze + plik | OK |
+| [[raport-24g-hipfire]] | 19 | cytowane wiersze + plik | OK |
+| [[raport-24h-kv-jeden-przebieg]] | 19 | cytowane wiersze + plik | OK |
+| [[raport-24i-sciezka-agenta]] | 15 | cytowane wiersze + plik | OK |
+| [[raport-24j-router]] | 15 | cytowane wiersze + plik | OK |
+| [[raport-24k-koszt-weryfikacji]] | 17 | cytowane wiersze + plik | OK |
+| [[raport-24l-fuzja-norm]] | 10 | cytowane wiersze + plik | OK |
+| [[raport-24m-weryfikacja-gpu]] | 21 | cytowane wiersze + plik | OK |
+| [[raport-24n-mmvq-n5]] | 12 | cytowane wiersze + plik | OK |
+| [[raport-24o-luki-hosta]] | 19 | cytowane wiersze + plik | OK po weryfikacji ręcznej: 3.6 |
+| [[raport-24p-sprzezone-t1]] | 15 | cytowane wiersze + plik | OK |
+| [[raport-24q-adaptacyjna-spekulacja]] | 14 | cytowane wiersze + plik | OK |
+| [[raport-24r-mmvq-pasmo]] | 24 | cytowane wiersze + plik | OK |
+| [[raport-24s-drzewa-proza]] | 20 | cytowane wiersze + plik | OK |
+| [[raport-24t-entropia-wag]] | 20 | cytowane wiersze + plik | OK |
+| [[raport-24u-norm-quant]] | 13 | cytowane wiersze + plik | OK |
+| [[raport-24v-prefill-fa]] | 14 | cytowane wiersze + plik | OK |
+| [[raport-25-buildfarm]] | 19 | cytowane wiersze + plik | OK |
+| [[raport-26-kolejka-gpu]] | 16 | cytowane wiersze + plik | OK |
+| [[raport-27-3090-final]] | 36 | cytowane wiersze + plik | OK |
+| [[raport-28-moe-offload]] | 8 | cytowane wiersze + plik | OK |
+| [[raport-30-intel-apple]] | 17 | cytowane wiersze + plik | OK |
+| [[raport-wyniki-xtx-2026-10-19]] | 35 | cytowane wiersze + plik | OK |
+| [[raporty-2026-10-19-20]] | 19 | cytowane wiersze + plik | OK po weryfikacji ręcznej: 117.9 |
+| [[rtx-3090]] | 11 | cytowane wiersze + plik | OK |
+| [[sprzezone-probkowanie-draftu]] | 14 | cytowane wiersze + plik | OK |
+| [[strata]] | 3 | cytowane wiersze + plik | OK |
+| [[wyniki-negatywne]] | 14 | cytowane wiersze + plik | OK |
+| [[REKORDY]] (sekcja 2026-10-19/20) | 12 wierszy | `WYNIKI-XTX:44-86`, `24p:31-32`, `27:20-33,59-68,168`, `hg-sweep1.log:2,5`, `hg-mvs.log:2,5` | OK |
 
 ## Powiązane
 - [[index|Strona główna]]

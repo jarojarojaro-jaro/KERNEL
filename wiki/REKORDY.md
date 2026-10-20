@@ -1,8 +1,8 @@
 ---
 typ: meta
 tags: [meta, rekordy, wyniki]
-aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl
+aktualizacja: 2026-10-20
+zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5
 status: aktualne
 ---
 # Rekordy: najlepsze zmierzone wyniki
@@ -93,6 +93,25 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 | 3060 / Bonsai 27B | serwer | **44.9 t/s** (Prism PTQ1_0); nasz Q2_0 35.5 | 2026-10-18 / 16 | fork Prism / nasz | `16e-kwanty-kld.md:249`; `BENCHMARKI-PRZED-PO:102` | nie (Prism) / gałąź |
 | 3060 / Swift IQ3_XXS-mtp (W3) | MTP n=2 | 25.15 t/s (host 120 W) | 2026-10-18 | E1 host A | `16e-kwanty-kld.md:239` | nie |
 
+## Nowe rekordy 2026-10-19/20 (raporty 24m–27, WYNIKI-XTX)
+
+Zweryfikowane w źródłach 2026-10-20. „topka” = `~/llama-topka` @ `f2217bac7` przez `run-topka.sh` (MTP n=4 + słownik 64k, lookup W16, PM4 WA=2 + GUARD, `HSA_USE_SVM=0`, `LLAMA_GPU_VERIFY=1`), od 2026-10-19 serwer użytkownika na :8080 → prod. **tak**.
+
+| karta / model | obciążenie / metryka | rekord (poprzedni) | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|---|
+| XTX / Qwen 27B Q4_K_XL | spec_sweep T=1 (6 × 3 seedy) | **114.8 t/s** [114.8 / 114.9], 27.65 ms/krok (109.0) | 2026-10-19 | topka, ABBA vs upstream `4c3c5810f` | `WYNIKI-XTX-2026-10-19.md:44-45` | tak |
+| XTX / Qwen | spec_sweep T=1, przełączniki host-gap | **117.9 t/s**, 27.40 ms/krok (ramię A 113.8, 28.56) | 2026-10-20 | `host-gap` @ `49bc932a8`: `YIELD_FAST=2`, `PM4_MIN_DISPATCH=16`, `PM4_LAZY_EXEC=1`; 1 przebieg na ramię | `~/qwen-opt/queue/logs/hg-sweep1.log:2,5` | nie (gałąź) |
+| XTX / Qwen | spec_sweep T=1, sprzężone próbkowanie | **111.4 t/s** pula 96 żądań, 3.111 tok/krok (off 107.6) | 2026-10-20 | `coupled-topka`, `LLAMA_SPEC_COUPLED=1`, 16 seedów ABBA | `24p-sprzezone-t1.md:31-32` | nie (zalecone) |
+| XTX / Qwen | code-edit `mvs` T=0 | **419.9 t/s** [419.7 / 420.1] (400.9) | 2026-10-19 | topka | `WYNIKI-XTX-2026-10-19.md:46` | tak |
+| XTX / Qwen | code-edit `mvs` T=0, host-gap | **430.8 t/s** mediana (A 414.4) | 2026-10-20 | j.w. host-gap, 1 przebieg | `~/qwen-opt/queue/logs/hg-mvs.log:2,5` | nie (gałąź) |
+| XTX / Qwen | long_ctx_bench 1.7k, T=0 | **136.5 t/s** (130.2) | 2026-10-19 | binarka topki, `LLAMA_SPEC_LOOKUP=0` (sam MTP n=4) | `WYNIKI-XTX-2026-10-19.md:82` | nie (topka z W16: 123.7) |
+| XTX / Qwen | long_ctx_bench 6.6k / 29.5k / 94k / 199k | **121.6 / 109.4 / 105.6 / 74.5 t/s** (118.5 / 105.2 / 100.6 / –) | 2026-10-19 | topka W16 | `WYNIKI-XTX-2026-10-19.md:83-86` | tak |
+| XTX / Qwen Uncensored Q4_K_M | code-edit `mvs` T=0 | **434.9 t/s** (414.8) | 2026-10-19 | topka | `WYNIKI-XTX-2026-10-19.md:68` | tak |
+| 3090 / Qwen 27B Q4_K_XL | spec_sweep T=1 | **93.3 t/s**, 32.36 ms/krok (78.0) | 2026-10-19 | `cuda-topka2` `2a261101b`, lookup W16 + share + GPU verify, ctx 204800, 335 W, ABBA | `27-3090-final.md:20,59` | nie (chmura) |
+| 3090 / Qwen | code-edit `mvs` / copy T=0 | **348.9 / 343.8 t/s** (121.1 / 94.0) | 2026-10-19 | j.w. | `27-3090-final.md:22,65,68` | nie |
+| 3090 / Qwen Uncensored | spec_sweep T=1 / mvs | **75.3 / 319.5 t/s** | 2026-10-19 | j.w., 300 W | `27-3090-final.md:27-29` | nie |
+| 3060 / Saluki 27B IQ2-mix + MTP Kujiry | spec_sweep T=1 | **38.2 t/s** (33.1) | 2026-10-20 | topka MTP n=2 + lookup + GPU verify, 170 W | `27-3090-final.md:33,168` | nie |
+
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.
 2. Nowa para (karta, model, obciążenie, metryka) → nowy wiersz.
@@ -101,6 +120,8 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 ## Powiązane
 - [[index|Strona główna]]
 - [[benchmarki-przed-po-2026-10-19]]
+- [[raport-wyniki-xtx-2026-10-19]]
+- [[raport-27-3090-final]]
 - [[stan-2026-10-15]]
 - [[nvidia-wyniki-2026-10-16]]
 - [[otwarte-decyzje-techniczne]]
