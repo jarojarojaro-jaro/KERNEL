@@ -1,21 +1,27 @@
 <script lang="ts">
 	/**
-	 * Scene 01, Skan: our lab card, a Sapphire PULSE RX 7900 XTX (`PulseXtx`, assembled as a CSS 3D box
-	 * seen at a slight three-quarter angle), and a detection log of what our scanner reads from it. One
-	 * auto-played timeline (`Autoplay`, plays once on entering the viewport, replay button):
-	 *   card springs in (motion blur) → fans spin up to a blur → a red beam sweeps the card with an x-ray
-	 *   band behind it → the log types one line per finding, and each line opens an x-ray lens on its
-	 *   part of the board, lights that part red and drops a pin on it → recommended model → „Gotowe ·
-	 *   4/4” → the fans coast to a stop and the floor light breathes while the scene is on screen.
-	 * Desktop: hovering a log line re-opens its lens; the card leans toward the pointer. Every value is
-	 * real: the registry entry of the card (960 GB/s, the driver's default power cap 303 W measured on
-	 * our machine) and `XTX_BOARD` (Sapphire spec sheet, vulkaninfo, our ROCm notes). The illustration
-	 * and the log are aria-hidden; screen readers get one sentence. The server HTML, reduced motion and
-	 * an off-screen exit show the final state. Red is the Radeon accent; heat colours stay for speed.
+	 * Scene 01, Skan: our lab card, a Sapphire PULSE RX 7900 XTX (`PulseXtx`, a CSS 3D box at a slight
+	 * three-quarter pose), and the detection log of what our scanner reads from it. One fast
+	 * auto-played timeline (~4.4 s, `Autoplay`, once on entering the viewport, replay button):
+	 *   card springs in → fans spin up to a blur → a quick red beam sweeps it with an x-ray band → six
+	 *   steps, each opening an x-ray lens on its exact part, playing its effect and pulling the
+	 *   finding out of the card into the log along a leader line (desktop), the log line typing in sync:
+	 *   GPU → the Navi 31 die behind the middle fan · Driver → ROCm / HIP layers rising off the PCIe
+	 *   fingers · VRAM → the 12 GDDR6 chips light up around the die (12 × 32-bit = 384-bit) ·
+	 *   Bandwidth → data racing on the memory bus, the number counting up · Power → the 3 × 8-pin glow,
+	 *   current flowing into the VRM · Recommended model → the 17,6 GB file drops into the memory
+	 *   → „Gotowe · 4/4” → the fans coast to a stop and the floor light breathes while on screen.
+	 * Desktop: hovering a log line re-opens its part. Values: the registry entry of the card (960 GB/s,
+	 * the driver's default 303 W cap measured on our machine, the model file) and `XTX_BOARD` (Sapphire
+	 * spec sheet, vulkaninfo, our ROCm notes). Illustration, callouts and log are aria-hidden (callout
+	 * text is CSS content, never page text); screen readers get one sentence. Server HTML, reduced
+	 * motion and leaving the viewport mid-play show the final state.
 	 */
+	import { tick } from 'svelte';
 	import { Autoplay } from '$lib/fx/autoplay.svelte';
 	import { clamp01, easeInOutCubic, reducedMotion } from '$lib/fx/motion';
 	import Replay from '$lib/fx/Replay.svelte';
+	import { fmtGB } from '$lib/format';
 	import { num, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
 	import { fill, SCAN_BOARD as B, SCAN_CARD as C } from './data';
@@ -24,76 +30,100 @@
 
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].how.scan);
-	const tl = new Autoplay(4.8, '0px 0px -25% 0px', { arm: true });
-	const p = $derived(tl.p);
 
-	/* ---- timeline (fractions of the 4.8 s) ---- */
-	const SWEEP: [number, number] = [0.15, 0.36];
-	/** Start of each log line; each types over TYPE. */
-	const START = [0.38, 0.47, 0.55, 0.64, 0.73, 0.82];
-	const TYPE = 0.055;
-	const DONE = 0.9;
+	/* ---- timeline: seconds of a 4.4 s play ---- */
+	const D = 4.4;
+	const at = (sec: number) => sec / D;
+	const tl = new Autoplay(D, '0px 0px -25% 0px', { arm: true });
+	const p = $derived(tl.p);
+	const SWEEP: [number, number] = [at(0.45), at(0.95)];
+	/** Each step starts 0.5 s after the previous; its log line types 0.12–0.34 s into it. */
+	const START = [0, 1, 2, 3, 4, 5].map((i) => at(1.0 + 0.5 * i));
+	const DONE = at(4.05);
 	/** The x-ray band behind the beam, as a fraction of the card width. */
 	const BAND = 0.25;
 	const b = $derived(easeInOutCubic(clamp01((p - SWEEP[0]) / (SWEEP[1] - SWEEP[0]))) * (1 + BAND));
 	const sweeping = $derived(p > SWEEP[0] && p < SWEEP[1]);
 
-	/**
-	 * Fans: spin up over [0, UP], full speed until DOWN, then coast to a stop ((1 − u)² decay). `spin`
-	 * is the integral of `rpm`, scaled so the rotors end after exactly TURNS turns (hubs upright).
-	 */
-	const UP = 0.1;
-	const DOWN = 0.84;
-	const TURNS = 14;
+	/** Fans: spin up, full speed, coast to a stop; `spin` integrates `rpm` so they end hubs upright. */
+	const UP = at(0.4);
+	const DOWN = at(3.9);
+	const TURNS = 16;
 	const K = TURNS / (UP / 2 + (DOWN - UP) + (1 - DOWN) / 3);
 	const rpm = $derived(p < UP ? p / UP : p < DOWN ? 1 : (1 - (p - DOWN) / (1 - DOWN)) ** 2);
 	const spin = $derived(
 		p < UP ? (K * p * p) / (2 * UP) : p < DOWN ? K * (UP / 2 + p - UP) : K * (UP / 2 + DOWN - UP + ((1 - DOWN) * (1 - (1 - (p - DOWN) / (1 - DOWN)) ** 3)) / 3)
 	);
 
-	/* ---- what the scan reads, and where it sits on the card (800 × 330 grid of `PulseXtx`) ---- */
-	type PartId = 'gpu' | 'vram' | 'bw' | 'pwr';
-	const PARTS: Record<PartId, { r: [number, number, number, number]; pin: [number, number]; tag: string }> = {
-		gpu: { r: [204, 74, 376, 246], pin: [290, 96], tag: 'GPU' },
-		vram: { r: [158, 34, 422, 286], pin: [310, 38], tag: 'VRAM' },
-		bw: { r: [158, 34, 422, 286], pin: [240, 272], tag: 'GB/s' },
-		pwr: { r: [436, 0, 712, 236], pin: [628, 34], tag: 'W' }
+	/* ---- where each finding sits on the card (800 × 330 grid of `PulseXtx`) ---- */
+	type PartId = 'gpu' | 'drv' | 'vram' | 'bw' | 'pwr' | 'model';
+	/** `r`: the x-ray lens, `a`: the anchor (pin, leader start). */
+	const PARTS: Record<PartId, { r: [number, number, number, number]; a: [number, number] }> = {
+		gpu: { r: [323, 82, 483, 238], a: [403, 112] },
+		drv: { r: [92, 196, 350, 330], a: [220, 168] },
+		vram: { r: [275, 38, 531, 282], a: [343, 59] },
+		bw: { r: [275, 38, 531, 282], a: [319, 147] },
+		pwr: { r: [540, 0, 712, 236], a: [646, 11] },
+		model: { r: [275, 38, 531, 282], a: [300, 59] }
 	};
-	const PART_IDS = Object.keys(PARTS) as PartId[];
+	/** The four hardware findings counted in „4/4”. */
+	const HW = ['gpu', 'vram', 'bw', 'pwr'] as const;
+	const PIN: Record<(typeof HW)[number], string> = { gpu: 'GPU', vram: 'VRAM', bw: 'GB/s', pwr: 'W' };
+	const CHIPS = 12;
 	const gfx = C.arch.split(' ').pop() ?? '';
-	const model = C.runs.find((r) => r.model === C.pick.model)?.title ?? '';
+	const run = C.runs.find((r) => r.model === C.pick.model);
+	const model = run?.title ?? '';
+	const fileGB = run?.file?.v ?? 0;
+	const fileText = $derived(run?.file ? fmtGB(run.file.v, run.file.unit, lang).text : '');
+	const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(2)}%`;
+
+	/** Typing progress of step `i`. */
+	const kOf = (i: number) => clamp01((p - START[i] - at(0.12)) / at(0.22));
+	const bwNow = $derived(`${num(Math.round(C.bwGBs.v * (1 - (1 - kOf(3)) ** 3)), lang, 0)}\u00a0GB/s`);
 	const lines = $derived(
 		[
 			{ part: 'gpu', key: c.gpu, value: `AMD ${C.name}`, sub: `${B.chip.v} · ${gfx}` },
-			{ part: 'gpu', key: c.driver, value: `ROCm ${B.rocm.v} · HIP`, sub: '' },
-			{ part: 'vram', key: c.vram, value: `${C.vramGB}\u00a0GB ${B.memType.v}`, sub: `${B.busBits.v}-bit` },
-			{ part: 'bw', key: c.bw, value: `${num(C.bwGBs.v, lang, 0)}\u00a0GB/s`, sub: `${B.gbps.v}\u00a0Gbps × ${B.busBits.v}\u00a0bit` },
+			{ part: 'drv', key: c.driver, value: `ROCm ${B.rocm.v} · HIP`, sub: '' },
+			{ part: 'vram', key: c.vram, value: `${C.vramGB}\u00a0GB ${B.memType.v}`, sub: `${B.busBits.v}-bit · ${CHIPS} × ${B.busBits.v / CHIPS}-bit` },
+			{ part: 'bw', key: c.bw, value: bwNow, sub: `${B.gbps.v}\u00a0Gbps × ${B.busBits.v}\u00a0bit`, count: true },
 			{ part: 'pwr', key: c.power, value: `${num(C.powerW.v, lang, 0)}\u00a0W`, sub: c.powerSub },
-			{ part: null, key: c.model, value: model, sub: '' }
-		].map((l, i) => ({ ...l, part: l.part as PartId | null, k: clamp01((p - START[i]) / TYPE) }))
+			{ part: 'model', key: c.model, value: model, sub: '' }
+		].map((l, i) => ({ ...l, part: l.part as PartId, k: kOf(i) }))
 	);
-	/** First log line of each part: the part lights and gets its pin when that line starts. */
-	const seen = $derived(Object.fromEntries(PART_IDS.map((id) => [id, lines.some((l) => l.part === id && l.k > 0)])) as Record<PartId, boolean>);
-	const lit = $derived({ gpu: seen.gpu, mem: seen.vram, bus: seen.bw, pwr: seen.pwr });
-	const found = $derived(PART_IDS.filter((id) => lines.some((l) => l.part === id && l.k >= 1)).length);
-	/** Desktop: the log line under the pointer. */
+	const seen = $derived(Object.fromEntries(lines.map((l, i) => [l.part, p >= START[i]])) as Record<PartId, boolean>);
+	const found = $derived(HW.filter((id) => lines.find((l) => l.part === id)!.k >= 1).length);
+
+	/** Desktop: the log line under the pointer (after the play). */
 	let hover: number | null = $state(null);
-	/** The highlighted log line: the hovered one, else the one being typed (until the model line). */
+	/** The highlighted step: the hovered line, else the step playing now. */
 	const active = $derived.by((): number | null => {
 		if (hover !== null && !tl.playing) return hover;
-		if (p >= START[5] || p < START[0]) return null;
-		const i = lines.findLastIndex((l) => l.k > 0);
-		return i < 0 ? null : i;
+		if (p < START[0] || p >= DONE) return null;
+		return START.findLastIndex((s) => p >= s);
 	});
-	/** The part under the x-ray lens. */
 	const focus = $derived(active === null ? null : lines[active].part);
-	const pct = (v: number, of: number) => `${((v / of) * 100).toFixed(2)}%`;
+	const lit = $derived({
+		gpu: seen.gpu,
+		mem: seen.vram,
+		bus: seen.bw,
+		pwr: seen.pwr,
+		fill: seen.model ? fileGB / C.vramGB : 0,
+		flow: focus === 'bw',
+		current: focus === 'pwr'
+	});
 	const xclip = $derived.by(() => {
 		if (sweeping) return `inset(-12% ${((1 - Math.min(b, 1)) * 100).toFixed(2)}% -12% ${((b - BAND) * 100).toFixed(2)}%)`;
 		if (!focus) return 'inset(50% 50% 50% 50% round 14px)';
 		const [x1, y1, x2, y2] = PARTS[focus].r;
 		return `inset(${pct(y1, 330)} ${pct(800 - x2, 800)} ${pct(330 - y2, 330)} ${pct(x1, 800)} round 14px)`;
 	});
+	/** On-card callouts: the finding comes out of its part (CSS text). */
+	const calls = $derived([
+		{ id: 'gpu' as PartId, x: 403, y: 86, below: false, l: `${B.chip.v} · ${gfx}` },
+		{ id: 'vram' as PartId, x: 403, y: 40, below: false, l: `${CHIPS} × ${B.busBits.v / CHIPS}-bit = ${B.busBits.v}-bit` },
+		{ id: 'bw' as PartId, x: 403, y: 284, below: true, l: bwNow },
+		{ id: 'pwr' as PartId, x: 626, y: 236, below: true, l: `${B.pins8.v} × 8-pin → VRM · ${num(C.powerW.v, lang, 0)}\u00a0W` }
+	]);
 	const prog = $derived(clamp01((p - SWEEP[0]) / (DONE - SWEEP[0])));
 	const done = $derived(p >= DONE);
 	const live = $derived(tl.inView && !tl.playing);
@@ -112,49 +142,51 @@
 		})
 	);
 
-	const fine = () => !reducedMotion() && matchMedia('(hover: hover) and (pointer: fine)').matches;
-
-	/** Desktop: the card leans toward the pointer (CSS vars on the stage, one write per frame). */
-	function tilt(node: HTMLElement) {
-		if (!fine()) return;
+	/* ---- leader line from the part to its log line (desktop), measured after each step change ---- */
+	let layoutEl: HTMLElement | undefined = $state();
+	let size = $state(0);
+	let leader: { d: string; ax: number; ay: number; lx: number; ly: number } | null = $state(null);
+	$effect(() => {
+		const el = layoutEl;
+		if (!el) return;
+		const ro = new ResizeObserver(() => size++);
+		ro.observe(el);
+		return () => ro.disconnect();
+	});
+	$effect(() => {
+		const i = active;
+		void size;
+		const el = layoutEl;
+		if (i === null || !el || !matchMedia('(min-width: 901px)').matches) {
+			leader = null;
+			return;
+		}
 		let raf = 0;
-		let x = 0;
-		let y = 0;
-		const apply = () => {
-			raf = 0;
-			node.style.setProperty('--tx', x.toFixed(3));
-			node.style.setProperty('--ty', y.toFixed(3));
-		};
-		const queue = () => {
-			if (!raf) raf = requestAnimationFrame(apply);
-		};
-		const move = (e: PointerEvent) => {
-			const r = node.getBoundingClientRect();
-			x = Math.max(-1, Math.min(1, ((e.clientX - r.left) / r.width) * 2 - 1));
-			y = Math.max(-1, Math.min(1, ((e.clientY - r.top) / r.height) * 2 - 1));
-			queue();
-		};
-		const leave = () => {
-			x = 0;
-			y = 0;
-			queue();
-		};
-		node.addEventListener('pointermove', move);
-		node.addEventListener('pointerleave', leave);
-		return {
-			destroy() {
-				cancelAnimationFrame(raf);
-				node.removeEventListener('pointermove', move);
-				node.removeEventListener('pointerleave', leave);
-			}
-		};
-	}
+		tick().then(() => {
+			raf = requestAnimationFrame(() => {
+				const a = el.querySelector(`[data-a="${lines[i].part}"]`);
+				const li = el.querySelector(`.line[data-i="${i}"]`);
+				const log = el.querySelector('.log');
+				if (!a || !li || !log) return;
+				const L = el.getBoundingClientRect();
+				const ar = a.getBoundingClientRect();
+				const lr = li.getBoundingClientRect();
+				const ax = ar.left + ar.width / 2 - L.left;
+				const ay = ar.top + ar.height / 2 - L.top;
+				const lx = log.getBoundingClientRect().right - L.left;
+				const ly = lr.top + lr.height / 2 - L.top;
+				const mx = (ax + lx) / 2;
+				leader = { d: `M${ax.toFixed(1)} ${ay.toFixed(1)}C${mx.toFixed(1)} ${ay.toFixed(1)} ${mx.toFixed(1)} ${ly.toFixed(1)} ${lx.toFixed(1)} ${ly.toFixed(1)}`, ax, ay, lx, ly };
+			});
+		});
+		return () => cancelAnimationFrame(raf);
+	});
 
 	/** Desktop: hovering a log line points the x-ray lens at its part. */
 	function lineHover(node: HTMLElement) {
-		if (!fine()) return;
+		if (reducedMotion() || !matchMedia('(hover: hover) and (pointer: fine)').matches) return;
 		const over = (e: PointerEvent) => {
-			const li = (e.target as Element).closest<HTMLElement>('[data-i]');
+			const li = e.target instanceof Element ? e.target.closest<HTMLElement>('[data-i]') : null;
 			hover = li ? Number(li.dataset.i) : null;
 		};
 		const leave = () => (hover = null);
@@ -170,7 +202,7 @@
 </script>
 
 <div class="wrap" class:live use:tl.view style="--b:{b}">
-	<div class="layout">
+	<div class="layout" bind:this={layoutEl}>
 		<div class="head"><SceneHead id="scene-scan" k={c.k} step={c.title} head={c.head} body={c.body} /></div>
 		<div class="log" class:done>
 			<div class="lh" aria-hidden="true">
@@ -180,37 +212,59 @@
 			</div>
 			<ol class="lines" aria-hidden="true" use:lineHover>
 				{#each lines as l, i (l.key)}
-					<li class="line" class:on={l.k > 0} class:ok={l.k >= 1} class:cur={i === active && l.part !== null} class:pick={l.part === null} data-i={i} style="--k:{l.k}">
+					<li class="line" class:on={l.k > 0} class:ok={l.k >= 1} class:cur={i === active} class:pick={l.part === 'model'} class:count={l.count} data-i={i} style="--k:{l.k}">
 						<span class="lk">{l.key}</span>
 						<span class="lv"><b>{l.value}</b>{#if l.sub}<i>{l.sub}</i>{/if}</span>
 					</li>
 				{/each}
 			</ol>
 			<div class="lf">
-				<span class="st" aria-hidden="true">{done ? c.done : c.reading} · {found}/{PART_IDS.length}</span>
+				<span class="st" aria-hidden="true">{done ? c.done : c.reading} · {found}/{HW.length}</span>
 				<Replay {lang} onclick={tl.replay} disabled={tl.playing} />
 			</div>
 			<p class="sr-only">{sr}</p>
 		</div>
-		<div class="stage" aria-hidden="true" use:tilt>
+		<div class="stage" aria-hidden="true">
 			<div class="gpu" class:go={p > 0} class:wait={p === 0} style="--spin:{spin}; --rpm:{rpm}">
 				<span class="shadow"></span>
 				<span class="floor"></span>
 				<div class="box">
-					<div class="face top"><PulseXtx part="top" /></div>
+					<div class="face top"><PulseXtx part="top" {lit} /></div>
 					<div class="face end"><PulseXtx part="end" /></div>
-					<!-- one flat face: shroud, x-ray lens, beam and pins never depth-fight -->
+					<!-- one flat face: shroud, x-ray lens, effects, callouts and pins never depth-fight -->
 					<div class="face front">
 						<PulseXtx part="front" />
 						<div class="xray" class:sweeping style="clip-path:{xclip}"><PulseXtx part="xray" {lit} /></div>
 						<div class="sweep" class:on={sweeping}><span class="beam"></span></div>
-						{#each PART_IDS as id (id)}
-							<span class="pin" class:on={seen[id]} class:cur={focus === id} data-l={PARTS[id].tag} style="left:{pct(PARTS[id].pin[0], 800)}; top:{pct(PARTS[id].pin[1], 330)}"></span>
+						<!-- driver: the software layers rise off the PCIe fingers -->
+						<div class="holo" class:on={focus === 'drv'}>
+							<span class="slab s1" data-l="HIP"></span>
+							<span class="slab s2" data-l="ROCm {B.rocm.v}"></span>
+						</div>
+						<!-- recommended model: the file drops into the memory -->
+						<span class="drop" class:on={focus === 'model'} data-m={model.split(' ')[0]} data-s={fileText}></span>
+						{#each calls as k (k.id)}
+							<span class="call" class:below={k.below} class:on={focus === k.id} data-l={k.l} style="left:{pct(k.x, 800)}; top:{pct(k.y, 330)}"></span>
+						{/each}
+						{#each Object.entries(PARTS) as [id, P] (id)}
+							<span class="anchor" data-a={id} style="left:{pct(P.a[0], 800)}; top:{pct(P.a[1], 330)}"></span>
+						{/each}
+						{#each HW as id (id)}
+							<span class="pin" class:on={seen[id]} class:cur={focus === id} data-l={PIN[id]} style="left:{pct(PARTS[id].a[0], 800)}; top:{pct(PARTS[id].a[1], 330)}"></span>
 						{/each}
 					</div>
 				</div>
 			</div>
 		</div>
+		{#if leader}
+			<svg class="leader" aria-hidden="true">
+				{#key leader.d}
+					<path d={leader.d} pathLength="1" class="ld" />
+					<circle cx={leader.ax} cy={leader.ay} r="4.5" class="ldot" />
+					<circle cx={leader.lx} cy={leader.ly} r="3" class="ldot end" />
+				{/key}
+			</svg>
+		{/if}
 	</div>
 </div>
 
@@ -238,6 +292,7 @@
 		align-items: center;
 		gap: clamp(1.25rem, 3.5vh, 2.25rem) clamp(2rem, 4vw, 5rem);
 		padding-block: var(--header-clear) clamp(1.25rem, 3vh, 2.5rem);
+		position: relative;
 	}
 	.head {
 		grid-area: head;
@@ -299,13 +354,12 @@
 			transform: none;
 		}
 	}
-	/* the 3D box: three-quarter pose plus the pointer lean (desktop) */
+	/* the 3D box at its three-quarter pose (static, so the leader lines land exactly) */
 	.box {
 		position: absolute;
 		inset: 0;
 		transform-style: preserve-3d;
-		transform: perspective(1700px) rotateX(calc(var(--rx) + var(--ty, 0) * 3deg)) rotateY(calc(var(--ry) + var(--tx, 0) * 6deg));
-		transition: transform 0.9s var(--glide);
+		transform: perspective(1700px) rotateX(var(--rx)) rotateY(var(--ry));
 	}
 	.face {
 		position: absolute;
@@ -334,7 +388,7 @@
 	.xray {
 		position: absolute;
 		inset: 0;
-		transition: clip-path 0.6s var(--glide);
+		transition: clip-path 0.38s var(--glide);
 	}
 	.xray.sweeping {
 		transition: none;
@@ -394,6 +448,204 @@
 		right: 0;
 		width: 7rem;
 		background: linear-gradient(90deg, transparent, rgb(255 59 79 / 0.18));
+	}
+	/* ---- per-step effects on the card (positions in % of the 800 × 330 grid) ---- */
+	.anchor {
+		position: absolute;
+		width: 1px;
+		height: 1px;
+	}
+	/* driver: two translucent layers rising off the PCIe fingers (x 104–336, standing on y 300) */
+	.holo {
+		position: absolute;
+		left: 13%;
+		width: 29%;
+		bottom: 9%;
+		height: 44%;
+		pointer-events: none;
+		perspective: 500px;
+	}
+	.holo::before {
+		content: '';
+		position: absolute;
+		inset: auto 6% 0;
+		height: 100%;
+		background: linear-gradient(0deg, rgb(255 59 79 / 0.32), transparent 85%);
+		transform-origin: 50% 100%;
+		transform: scaleY(0);
+	}
+	.slab {
+		position: absolute;
+		left: 0;
+		right: 0;
+		height: 38%;
+		display: grid;
+		place-items: center;
+		border: 1px solid rgb(255 120 135 / 0.8);
+		border-radius: 4px;
+		background:
+			repeating-linear-gradient(0deg, rgb(255 255 255 / 0.06) 0 1px, transparent 1px 4px),
+			linear-gradient(180deg, rgb(255 59 79 / 0.34), rgb(255 59 79 / 0.1));
+		box-shadow:
+			0 0 18px -2px rgb(255 59 79 / 0.7),
+			inset 0 1px 0 rgb(255 255 255 / 0.25);
+		opacity: 0;
+		transform: translate3d(0, 70%, 0) rotateX(55deg) scaleY(0.4);
+	}
+	.slab::after {
+		content: attr(data-l);
+		font-family: var(--font-mono);
+		font-size: max(0.5625rem, 1.55cqw);
+		font-weight: 600;
+		letter-spacing: 0.12em;
+		color: #fff4f5;
+		text-shadow: 0 0 8px rgb(255 59 79 / 0.9);
+		white-space: nowrap;
+	}
+	.s1 {
+		bottom: 0;
+	}
+	.s2 {
+		bottom: 50%;
+	}
+	.holo.on::before {
+		transform: none;
+		transition: transform 0.3s var(--glide);
+	}
+	.holo.on .slab {
+		opacity: 1;
+		transform: rotateX(14deg);
+		transition:
+			opacity 0.2s,
+			transform 0.5s var(--spring);
+	}
+	.holo.on .s2 {
+		transition-delay: 0.1s;
+	}
+	/* recommended model: the file block drops onto the memory (over the top chip row, x 300–506, y 48–70) */
+	.drop {
+		position: absolute;
+		left: 37.5%;
+		width: 25.75%;
+		top: 14.5%;
+		z-index: 1;
+		height: 6.7%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.6em;
+		border-radius: 3px;
+		background: linear-gradient(180deg, #8fe6e0, var(--model-qwen38));
+		box-shadow:
+			0 0 18px rgb(94 200 194 / 0.7),
+			inset 0 1px 0 rgb(255 255 255 / 0.6);
+		font-family: var(--font-mono);
+		font-size: max(0.5rem, 1.05cqw);
+		font-weight: 700;
+		color: #062321;
+		white-space: nowrap;
+		opacity: 0;
+	}
+	.drop::before {
+		content: attr(data-m);
+	}
+	.drop::after {
+		content: attr(data-s);
+	}
+	.drop.on {
+		opacity: 1;
+		animation: land 0.5s var(--glide) both;
+	}
+	@keyframes land {
+		0% {
+			opacity: 0;
+			transform: translate3d(0, -520%, 0) scale(1.15, 0.85);
+		}
+		55% {
+			opacity: 1;
+			transform: translate3d(0, 0, 0) scale(1.06, 0.8);
+		}
+		75% {
+			transform: translate3d(0, -35%, 0) scale(0.98, 1.04);
+		}
+		100% {
+			transform: none;
+		}
+	}
+	/* callouts: the finding pops out of its part (CSS text, not page text) */
+	.call {
+		position: absolute;
+		padding: 0.25em 0.6em;
+		border: 1px solid rgb(255 120 135 / 0.75);
+		border-radius: 4px;
+		background: rgb(11 11 13 / 0.9);
+		box-shadow: 0 0 18px -4px rgb(255 59 79 / 0.8);
+		font-family: var(--font-mono);
+		font-size: max(0.5625rem, 1.25cqw);
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--text-hi);
+		white-space: nowrap;
+		opacity: 0;
+		transform: translate(-50%, -80%) scale(0.5);
+		transform-origin: 50% 100%;
+	}
+	.call::after {
+		content: attr(data-l);
+	}
+	.call.below {
+		transform: translate(-50%, -20%) scale(0.5);
+		transform-origin: 50% 0;
+	}
+	.call.on {
+		opacity: 1;
+		transform: translate(-50%, -100%);
+		transition:
+			opacity 0.15s,
+			transform 0.45s var(--spring);
+	}
+	.call.below.on {
+		transform: translate(-50%, 0);
+	}
+	/* ---- leader: from the part to its log line (desktop) ---- */
+	.leader {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		overflow: visible;
+		pointer-events: none;
+		z-index: 2;
+	}
+	.ld {
+		fill: none;
+		stroke: var(--amd);
+		stroke-width: 1.5;
+		stroke-dasharray: 1;
+		stroke-dashoffset: 1;
+		filter: drop-shadow(0 0 4px rgb(255 59 79 / 0.85));
+		animation: draw 0.32s var(--glide) forwards;
+	}
+	@keyframes draw {
+		to {
+			stroke-dashoffset: 0;
+		}
+	}
+	.ldot {
+		fill: #0b0b0d;
+		stroke: var(--amd);
+		stroke-width: 2;
+		filter: drop-shadow(0 0 6px rgb(255 59 79 / 0.9));
+	}
+	.ldot.end {
+		fill: var(--amd);
+		opacity: 0;
+		animation: pop 0.2s linear 0.28s forwards;
+	}
+	@keyframes pop {
+		to {
+			opacity: 1;
+		}
 	}
 	/* pins: a red dot on each part the scan has read, with a short tag (CSS text, not page text) */
 	.pin {
@@ -569,6 +821,10 @@
 		min-width: 0;
 		clip-path: inset(-0.4em calc((1 - var(--k)) * 100%) -0.4em 0);
 	}
+	.line.count .lv {
+		clip-path: none;
+		opacity: min(1, calc(var(--k) * 4));
+	}
 	.lv b {
 		font-family: var(--font-display);
 		font-size: clamp(0.95rem, 0.8rem + 0.35vw, 1.1rem);
@@ -659,6 +915,11 @@
 		.head :global(.sh) {
 			grid-template-columns: minmax(0, 1fr);
 		}
+		/* simplified on the phone: the lens, the effects and the log line, no text callouts */
+		.call,
+		.drop::before {
+			display: none;
+		}
 		/* heading, the card, then the log */
 		.layout {
 			grid-template-columns: minmax(0, 1fr);
@@ -712,11 +973,22 @@
 		.gpu.go,
 		.live .floor,
 		.dot.busy,
-		.pin::before {
+		.pin::before,
+		.drop.on,
+		.ld,
+		.ldot.end {
 			animation: none;
 		}
-		.box,
+		.ld {
+			stroke-dashoffset: 0;
+		}
+		.ldot.end {
+			opacity: 1;
+		}
 		.xray,
+		.holo::before,
+		.holo .slab,
+		.call,
 		.pin,
 		.line,
 		.line .lk,

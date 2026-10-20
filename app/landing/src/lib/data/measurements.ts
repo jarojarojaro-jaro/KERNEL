@@ -585,7 +585,8 @@ export const XTX_BOARD = {
 	rocm: { v: '10.0', src: 'KERNEL/qwen-opt/NOTES.md:1' },
 	memType: { v: 'GDDR6', src: PULSE_SPEC },
 	busBits: { v: 384, src: PULSE_SPEC },
-	gbps: { v: 20, src: PULSE_SPEC }
+	gbps: { v: 20, src: PULSE_SPEC },
+	pins8: { v: 3, src: PULSE_SPEC }
 } as const;
 
 export const CARDS: CardView[] = [

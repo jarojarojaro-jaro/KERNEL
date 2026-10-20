@@ -10,13 +10,15 @@
 	 *   pipes through the shroud window, three 8-pin sockets at the tail (spec sheet: 3 × 8-pin);
 	 * - `end` (135×330): the open fin edge of the tail;
 	 * - `xray` (800×330, same grid as `front`): the board (Navi 31: GCD + six MCDs, 12 GDDR6 packages,
-	 *   two per MCD, VRM, outputs, fin stack past the PCB end); `lit` turns the parts the scan has read red.
+	 *   two per MCD, VRM, outputs, fin stack past the PCB end); `lit` turns the parts the scan has read red,
+	 *   fills the memory with the model's share (`fill`) and runs the data (`flow`) and current animations.
 	 * No <text>: lettering is stroked paths from a small built-in glyph set, so nothing in the drawing
 	 * reaches the page text, selection or reader mode. Rotors turn by `--spin` (turns) and blur by
-	 * `--rpm` (0..1); the sheen follows `--tx` (pointer tilt, −1..1). All set by the caller.
+	 * `--rpm` (0..1), both set by the caller.
 	 */
 	type Part = 'front' | 'top' | 'end' | 'xray';
-	type Lit = { mem?: boolean; gpu?: boolean; bus?: boolean; pwr?: boolean };
+	/** Parts the scan has read (stay lit), the model's share of VRAM (0..1) and the live effects. */
+	type Lit = { mem?: boolean; gpu?: boolean; bus?: boolean; pwr?: boolean; fill?: number; flow?: boolean; current?: boolean };
 	let { part, lit = {} }: { part: Part; lit?: Lit } = $props();
 	const uid = $props.id();
 
@@ -92,33 +94,47 @@
 	// end face: the open fin edge
 	const endFins = Array.from({ length: 52 }, (_, i) => 26 + i * 5.2);
 
-	// x-ray: 12 GDDR6 packages, each pair wired to one of the six MCDs around the GCD
+	// x-ray, on the front grid: the Navi 31 package sits behind the middle fan (die centre 403, 160),
+	// 12 GDDR6 packages around it, each pair on one of the six MCDs, the VRM toward the tail under the
+	// 8-pin sockets, PCIe lanes from the fingers into the package
+	const DIE = { x: 403, y: 160 };
 	const MCD = [
-		{ x: 232, y: 112 },
-		{ x: 232, y: 147 },
-		{ x: 232, y: 182 },
-		{ x: 330, y: 112 },
-		{ x: 330, y: 147 },
-		{ x: 330, y: 182 }
+		{ x: 345, y: 112 },
+		{ x: 345, y: 147 },
+		{ x: 345, y: 182 },
+		{ x: 443, y: 112 },
+		{ x: 443, y: 147 },
+		{ x: 443, y: 182 }
 	];
 	const mc = (i: number) => ({ x: MCD[i].x + 9, y: MCD[i].y + 13 });
+	/** Clockwise from the top-left, so the chips light up around the die in order. */
 	const MEM = [
-		...[215, 255].map((x) => ({ x, y: 48, w: 30, h: 22, to: 0 })),
-		...[295, 335].map((x) => ({ x, y: 48, w: 30, h: 22, to: 3 })),
-		...[215, 255].map((x) => ({ x, y: 250, w: 30, h: 22, to: 2 })),
-		...[295, 335].map((x) => ({ x, y: 250, w: 30, h: 22, to: 5 })),
-		...[120, 172].map((y) => ({ x: 172, y, w: 22, h: 30, to: 1 })),
-		...[120, 172].map((y) => ({ x: 386, y, w: 22, h: 30, to: 4 }))
+		...[328, 368].map((x) => ({ x, y: 48, w: 30, h: 22, to: 0 })),
+		...[408, 448].map((x) => ({ x, y: 48, w: 30, h: 22, to: 3 })),
+		...[120, 172].map((y) => ({ x: 499, y, w: 22, h: 30, to: 4 })),
+		...[448, 408].map((x) => ({ x, y: 250, w: 30, h: 22, to: 5 })),
+		...[368, 328].map((x) => ({ x, y: 250, w: 30, h: 22, to: 2 })),
+		...[172, 120].map((y) => ({ x: 285, y, w: 22, h: 30, to: 1 }))
 	];
 	const bus = MEM.map((m) => {
 		const c = { x: m.x + m.w / 2, y: m.y + m.h / 2 };
 		const t = mc(m.to);
 		return m.w > m.h ? `M${c.x} ${c.y} V${(c.y + t.y) / 2} H${t.x} V${t.y}` : `M${c.x} ${c.y} H${(c.x + t.x) / 2} V${t.y} H${t.x}`;
 	});
-	const chokes = Array.from({ length: 12 }, (_, i) => ({ x: 452 + (i % 6) * 28, y: i < 6 ? 98 : 202 }));
-	const caps = Array.from({ length: 8 }, (_, i) => 456 + i * 24);
+	const CH = Array.from({ length: 6 }, (_, i) => 548 + i * 25);
+	const chokes = CH.flatMap((x) => [98, 202].map((y) => ({ x, y })));
+	const caps = Array.from({ length: 8 }, (_, i) => 552 + i * 18);
+	/** Current: sockets → a bus along the top → every choke column → down to the lower row → into the package. */
+	const power = [
+		...PINS.map((x) => `M${x + 18} 21V72`),
+		'M560 72H700',
+		...CH.map((x) => `M${x + 10.5} 72V98`),
+		...CH.map((x) => `M${x + 10.5} 119V202`),
+		'M548 140H471',
+		'M548 180H471'
+	];
 	const xfins = Array.from({ length: 13 }, (_, i) => 708 + i * 6);
-	const lanes = Array.from({ length: 6 }, (_, i) => `M${146 + i * 30} 300 V${284 - i * 4} H${226 + i * 4} V228`);
+	const lanes = Array.from({ length: 6 }, (_, i) => `M${120 + i * 34} 300V${290 - i * 3}H${312 + i * 3}V${212 + i * 2}H335`);
 </script>
 
 {#snippet lettering(w: ReturnType<typeof word>, x: number, y: number, s: number, cls: string, skew = 0)}
@@ -219,7 +235,7 @@
 			<!-- motion blur: the spinning blades read as a disc -->
 			<circle {cx} cy={FY} r="106" fill="url(#{uid}-smear)" class="smear" />
 		{/each}
-		<!-- specular sheen across the shroud (follows the pointer tilt) -->
+		<!-- specular sheen across the shroud -->
 		<path d={SHROUD} fill="url(#{uid}-sheen)" class="sheen" />
 	</svg>
 {:else if part === 'top'}
@@ -253,7 +269,7 @@
 		{@render lettering(SAPPHIRE, 181, 59, 2.9, 'plate-mark')}
 		<!-- 3 × 8-pin sockets at the tail, facing up -->
 		{#each PINS as x (x)}
-			<g class="sock">
+			<g class="sock" class:on={lit.pwr}>
 				<rect {x} y="40" width="36" height="34" rx="2.5" />
 				{#each holes as h (h.dx + h.dy * 10)}<rect x={x + h.dx} y={40 + h.dy * 1.6} width="4.4" height="5.6" rx="0.8" class="hole" />{/each}
 				<rect x={x + 12} y="74" width="12" height="6" rx="1" class="latch" />
@@ -286,31 +302,34 @@
 		<!-- PCB -->
 		<rect x="24" y="22" width="678" height="278" rx="6" class="pcb" />
 		<rect x="24" y="22" width="678" height="278" rx="6" fill="url(#{uid}-grid)" />
-		<path d="M290 96V60Q290 40 320 40H780 M290 224V262Q290 280 320 280H780 M358 132H780 M358 188H780" class="pipe" />
+		<path d="M403 92V60Q403 34 433 34H780 M403 228V262Q403 286 433 286H780 M471 132H780 M471 188H780" class="pipe" />
 		<!-- bracket and display outputs -->
 		<path d="M2 84H22V330H16V320H9V92H2Z" class="ln faint" />
 		{#each [96, 148, 200, 252] as y (y)}<rect x="28" {y} width="26" height="42" rx="3" class="ln" />{/each}
-		<!-- PCIe x16 fingers and lanes -->
+		<!-- PCIe x16 fingers and lanes into the package -->
 		{#each fingers as x (x)}<rect {x} y="302" width="4.6" height="20" rx="0.8" class="ln faint" />{/each}
 		{#each lanes as d (d)}<path {d} class="trace lane" />{/each}
-		<!-- memory bus: two GDDR6 packages per MCD -->
-		{#each bus as d (d)}<path {d} class="trace bus" class:on={lit.bus} />{/each}
-		{#each MEM as m, i (i)}<rect x={m.x} y={m.y} width={m.w} height={m.h} rx="2" class="mem" class:on={lit.mem} />{/each}
+		<!-- memory bus: two GDDR6 packages per MCD; dashes race along it while the bandwidth is read -->
+		{#each bus as d, i (d)}<path {d} pathLength="20" class="trace bus" class:on={lit.bus} class:flow={lit.flow} class:rev={i % 2 === 1} />{/each}
+		{#each MEM as m, i (i)}
+			<rect x={m.x} y={m.y} width={m.w} height={m.h} rx="2" class="mem" class:on={lit.mem} style="--i:{i}" />
+			<rect x={m.x + 2} y={m.y + 2} width={m.w - 4} height={m.h - 4} rx="1" class="mfill" style="--i:{i}; --f:{Math.max(0, Math.min(1, (lit.fill ?? 0) * MEM.length - i))}" />
+		{/each}
 		<!-- Navi 31 package: GCD and six MCDs -->
-		<circle cx="290" cy="160" r="96" fill="url(#{uid}-die)" class="halo" class:on={lit.gpu} />
-		<rect x="222" y="92" width="136" height="136" rx="6" class="ln strong" />
+		<circle cx={DIE.x} cy={DIE.y} r="96" fill="url(#{uid}-die)" class="halo" class:on={lit.gpu} />
+		<rect x="335" y="92" width="136" height="136" rx="6" class="ln strong" />
 		{#each MCD as d, i (i)}<rect x={d.x} y={d.y} width="18" height="26" rx="2" class="die mcd" class:on={lit.gpu} />{/each}
-		<rect x="258" y="128" width="64" height="64" rx="3" class="die" class:on={lit.gpu} />
-		{@render lettering(NAVI, 290, 155, 1.35, 'die-mark')}
-		<!-- VRM: chokes, power stages, capacitors -->
+		<rect x="371" y="128" width="64" height="64" rx="3" class="die" class:on={lit.gpu} />
+		{@render lettering(NAVI, DIE.x, 155, 1.35, 'die-mark')}
+		<!-- VRM: chokes, power stages, capacitors; current flows from the sockets while the power is read -->
+		{#each power as d (d)}<path {d} pathLength="20" class="trace pwr" class:on={lit.pwr} class:flow={lit.current} />{/each}
 		{#each chokes as k, i (i)}
 			<rect x={k.x} y={k.y} width="21" height="21" rx="3" class="choke" class:on={lit.pwr} />
 			<rect x={k.x + 3} y={k.y + (k.y < 150 ? 27 : -15)} width="15" height="9" rx="1" class="ln faint" />
 		{/each}
 		{#each caps as x (x)}<circle cx={x} cy="166" r="6" class="ln faint" />{/each}
-		<!-- 3 × 8-pin, wired to the VRM -->
+		<!-- 3 × 8-pin -->
 		{#each PINS as x (x)}
-			<path d="M{x + 18} 21V60H{x - 90}V98" class="trace pwr" class:on={lit.pwr} />
 			<rect {x} y="1" width="36" height="20" rx="2" class="sock-x" class:on={lit.pwr} />
 			{#each holes as h (h.dx + h.dy * 10)}<rect x={x + h.dx} y={h.dy} width="4" height="4" rx="0.6" class="ln faint" />{/each}
 		{/each}
@@ -438,10 +457,6 @@
 		stroke-width: 2;
 		stroke-linecap: round;
 	}
-	.sheen {
-		transform: translate3d(calc(var(--tx, 0) * 7%), 0, 0);
-		transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
-	}
 	/* ---- top and end faces ---- */
 	.tfin {
 		stroke: rgb(237 234 227 / 0.16);
@@ -453,6 +468,13 @@
 	.sock rect:first-child {
 		fill: #0a0a0c;
 		stroke: #48484f;
+	}
+	.sock.on rect:first-child {
+		stroke: #ff6b7a;
+		filter: drop-shadow(0 0 4px rgb(255 59 79 / 0.9));
+		transition:
+			stroke 0.3s,
+			filter 0.3s;
 	}
 	.hole {
 		fill: #2e2e35;
@@ -539,6 +561,33 @@
 		fill: rgb(255 59 79 / 0.3);
 		stroke: #ff6b7a;
 	}
+	/* chips light up one by one around the die */
+	.mem.on {
+		transition-delay: calc(var(--i) * 45ms);
+	}
+	/* the model's share of the 24 GB, filling chip after chip */
+	.mfill {
+		fill: rgb(94 200 194 / 0.75);
+		transform-box: fill-box;
+		transform-origin: 0 50%;
+		transform: scaleX(var(--f));
+		transition: transform 0.25s linear calc(var(--i) * 40ms);
+	}
+	/* data and current: dashes racing along the traces (pathLength 20) */
+	.trace.trace.flow {
+		stroke: #ff8a96;
+		stroke-width: 2;
+		stroke-dasharray: 1.4 2.6;
+		animation: race 0.32s linear infinite;
+	}
+	.trace.trace.flow.rev {
+		animation-direction: reverse;
+	}
+	@keyframes race {
+		to {
+			stroke-dashoffset: -4;
+		}
+	}
 	.trace.on {
 		stroke: rgb(255 59 79 / 0.9);
 		stroke-width: 1.8;
@@ -547,7 +596,12 @@
 		opacity: 1;
 	}
 	@media (prefers-reduced-motion: reduce) {
-		.sheen,
+		.trace.flow {
+			animation: none;
+		}
+		.mfill {
+			transition: none;
+		}
 		.trace,
 		.mem,
 		.die,

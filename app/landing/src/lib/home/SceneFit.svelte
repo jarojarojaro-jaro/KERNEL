@@ -43,10 +43,12 @@
 					<div class="verdict yes" class:lit={stage >= 2}>
 						<span class="vh"><span class="ok" aria-hidden="true">✓</span>{c.fits}</span>
 						<span class="vsub">{c.used} {gb(used.v, used.unit)} / {vram}&nbsp;GB</span>
+						<span class="vbar" aria-hidden="true" style="--cap:{vram / q8}; --f:{used.v / q8}"><i class="vfill"></i></span>
 					</div>
 					<div class="verdict no" class:lit={stage >= 4}>
 						<span class="vh"><span class="x" aria-hidden="true">✕</span>{c.nofit}</span>
 						<span class="vsub">{c.ghost} · {gb(q8)} &gt; {vram}&nbsp;GB</span>
+						<span class="vbar" aria-hidden="true" style="--cap:{vram / q8}; --f:1"><i class="vfill"></i><i class="vspill"></i></span>
 					</div>
 				</div>
 			</div>
@@ -74,7 +76,7 @@
 							<span class="bsize">{gb(file.v, file.unit)} · {c.file}</span>
 						</div>
 						<div class="extra" class:in={stage >= 2}></div>
-						<div class="free" class:in={stage >= 2}><span>{gb(vram - used.v, used.unit)} {c.free}</span></div>
+						<div class="free" class:in={stage >= 2}>{#if vram - used.v >= 3}<span>{gb(vram - used.v, used.unit)} {c.free}</span>{/if}</div>
 					</div>
 					<div class="scale" aria-hidden="true">
 						{#each ticks as t (t)}<span style="--t:{t / vram}">{t}</span>{/each}
@@ -454,46 +456,51 @@
 		grid-template-columns: 1fr 1fr;
 		gap: var(--sp-3);
 	}
-	/* both verdicts are readable from the first frame; each lights up when the animation proves it
-	 * (the fit after the block settles, the reject after the stamp) */
+	/* both verdicts are readable from the first frame; each lights up in its status colour when the
+	 * animation proves it (the fit after the block settles, the reject after the stamp). Status
+	 * colours are the theme's --ok / --danger tokens (dark and light). Glass: a tinted gradient, a
+	 * top highlight and a soft coloured glow (no backdrop-filter: cheap to paint). */
 	.verdict {
+		--c: var(--line-strong);
+		--soft: transparent;
+		position: relative;
 		display: grid;
 		align-items: center;
-		gap: 0.55rem;
-		padding: clamp(0.8rem, 1.8vh, 1.15rem) clamp(0.9rem, 1.5vw, 1.35rem);
+		gap: 0.5rem;
+		padding: clamp(0.75rem, 1.6vh, 1.05rem) clamp(0.9rem, 1.5vw, 1.3rem);
 		border: 1px solid var(--line);
 		border-radius: var(--r-lg);
-		background: var(--bg-1);
+		background:
+			linear-gradient(180deg, rgb(255 255 255 / 0.05), transparent 45%),
+			linear-gradient(135deg, var(--soft), transparent 70%),
+			color-mix(in srgb, var(--bg-2) 78%, transparent);
+		box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.07);
 		transition:
 			border-color 0.5s var(--ease-out),
 			box-shadow 0.5s var(--ease-out),
-			background-color 0.5s,
 			translate 0.35s var(--ease-out);
 	}
-	.verdict:hover {
-		translate: 0 -3px;
-	}
-	/* the winner carries the block's heat; the reject the over-the-limit red */
 	.verdict.yes {
-		background: linear-gradient(135deg, rgb(255 122 26 / 0.12), transparent 60%), var(--bg-1);
-	}
-	.verdict.yes.lit {
-		border-color: rgb(255 122 26 / 0.55);
-		box-shadow: 0 0 34px -16px rgb(255 122 26 / 0.8);
-	}
-	.verdict.yes.lit:hover {
-		border-color: rgb(255 122 26 / 0.85);
-		box-shadow: 0 0 44px -12px rgb(255 122 26 / 0.9);
+		--c: var(--ok);
+		--ink: var(--ok-ink);
 	}
 	.verdict.no {
-		background: repeating-linear-gradient(-45deg, rgb(125 135 148 / 0.07) 0 6px, transparent 6px 12px), var(--bg-1);
+		--c: var(--danger);
+		--ink: var(--danger-ink);
 	}
-	.verdict.no.lit {
-		border-color: color-mix(in srgb, var(--danger) 50%, transparent);
+	.verdict.lit {
+		--soft: color-mix(in srgb, var(--c) 16%, transparent);
+		border-color: color-mix(in srgb, var(--c) 55%, transparent);
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.08),
+			0 0 36px -14px color-mix(in srgb, var(--c) 75%, transparent);
 	}
-	.verdict.no.lit:hover {
-		border-color: var(--danger);
-		box-shadow: 0 0 34px -14px color-mix(in srgb, var(--danger) 70%, transparent);
+	.verdict.lit:hover {
+		translate: 0 -3px;
+		border-color: var(--c);
+		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.1),
+			0 0 46px -10px color-mix(in srgb, var(--c) 85%, transparent);
 	}
 	.vh {
 		display: flex;
@@ -502,43 +509,113 @@
 		font-family: var(--font-display);
 		font-weight: 820;
 		font-stretch: 120%;
-		font-size: clamp(1.4rem, 0.9rem + 1.5vw, 2.3rem);
+		font-size: clamp(1.35rem, 0.9rem + 1.4vw, 2.2rem);
 		letter-spacing: -0.03em;
 		line-height: 1;
 		color: var(--text-hi);
 		white-space: nowrap;
+		transition: color 0.4s;
 	}
-	.no .vh {
-		color: var(--before);
+	.lit .vh {
+		color: var(--ink);
 	}
+	/* status icon: a filled disc in the status colour */
 	.ok,
 	.x {
-		transition: transform 0.5s var(--ease-spring);
+		display: inline-grid;
+		place-items: center;
+		flex: none;
+		width: 1.05em;
+		height: 1.05em;
+		border-radius: 50%;
+		background: var(--line-strong);
+		color: var(--bg-0);
+		font-size: 0.66em;
+		font-weight: 900;
+		transition:
+			transform 0.5s var(--ease-spring),
+			background-color 0.4s,
+			box-shadow 0.4s;
+	}
+	.lit :is(.ok, .x) {
+		background: var(--c);
+		box-shadow: 0 0 16px -2px color-mix(in srgb, var(--c) 70%, transparent);
 	}
 	.verdict:not(.lit) :is(.ok, .x) {
 		transform: scale(0.6) rotate(-20deg);
 		transition-duration: 0s;
-	}
-	.ok {
-		display: inline-grid;
-		place-items: center;
-		width: 1.1em;
-		height: 1.1em;
-		border-radius: 50%;
-		background: var(--text-hi);
-		color: var(--bg-0);
-		font-size: 0.7em;
-	}
-	.x {
-		display: inline-block;
-		font-size: 0.7em;
 	}
 	.vsub {
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color: var(--text-mute);
+		color: var(--text);
+	}
+	/* mini VRAM bar, one scale for both cards (0 … the Q8_0 size): the card's 24 GB ends at the
+	 * marked line; the fit fills up to it, the Q8_0 spills past it in red */
+	.vbar {
+		position: relative;
+		height: 0.5rem;
+		margin-top: 0.2rem;
+	}
+	.vbar::before {
+		content: '';
+		position: absolute;
+		inset: 0 calc((1 - var(--cap)) * 100%) 0 0;
+		border-radius: 999px;
+		background: rgb(255 255 255 / 0.07);
+		box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.06);
+	}
+	/* the 24 GB wall */
+	.vbar::after {
+		content: '';
+		position: absolute;
+		top: -0.3rem;
+		bottom: -0.3rem;
+		left: calc(var(--cap) * 100%);
+		border-left: 1.5px dashed var(--text-mute);
+	}
+	.vfill,
+	.vspill {
+		position: absolute;
+		top: 0;
+		bottom: 0;
+		transform-origin: 0 50%;
+		transform: scaleX(0);
+	}
+	.vfill {
+		left: 0;
+		width: calc(var(--f) * 100%);
+		border-radius: 999px;
+		background: linear-gradient(90deg, color-mix(in srgb, var(--c) 55%, transparent), var(--c));
+		box-shadow: 0 0 10px -1px color-mix(in srgb, var(--c) 70%, transparent);
+	}
+	.vspill {
+		left: calc(var(--cap) * 100%);
+		width: calc((var(--f) - var(--cap)) * 100%);
+		border-radius: 0 999px 999px 0;
+		background: repeating-linear-gradient(-45deg, var(--danger) 0 4px, color-mix(in srgb, var(--danger) 55%, transparent) 4px 8px);
+		box-shadow: 0 0 14px 0 color-mix(in srgb, var(--danger) 80%, transparent);
+	}
+	.no .vfill {
+		width: calc(var(--cap) * 100%);
+		border-radius: 999px 0 0 999px;
+	}
+	.lit .vfill {
+		transform: none;
+		transition: transform 0.7s var(--ease-out) 0.1s;
+	}
+	/* the spill bursts past the wall after the fill, then pulses twice */
+	.lit .vspill {
+		transform: none;
+		transition: transform 0.45s cubic-bezier(0.34, 1.5, 0.64, 1) 0.75s;
+		animation: spill 1.6s ease-in-out 1.3s 2;
+	}
+	@keyframes spill {
+		50% {
+			box-shadow: 0 0 22px 3px color-mix(in srgb, var(--danger) 90%, transparent);
+		}
 	}
 	@media (max-width: 900px) {
 		.layout {
@@ -632,7 +709,8 @@
 	@media (prefers-reduced-motion: reduce) {
 		.block.in,
 		.ghost.in,
-		.tray.hit {
+		.tray.hit,
+		.lit .vspill {
 			animation: none;
 		}
 		.extra,
@@ -640,6 +718,9 @@
 		.verdict,
 		.ok,
 		.x,
+		.vh,
+		.vfill,
+		.vspill,
 		.limit,
 		.legend li,
 		.stamp.in {
