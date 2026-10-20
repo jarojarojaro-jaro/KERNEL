@@ -70,7 +70,6 @@ function scan(TOL: number): Hit[] {
 	if (de.scrollWidth > de.clientWidth) hits.push({ kind: 'overflow', where: 'html', text: '', px: de.scrollWidth - de.clientWidth });
 
 	type Box = { l: number; t: number; r: number; b: number };
-	type Clip = { box: Box; el: Element; ellipsis: boolean } | null;
 	const INF = 1e9;
 	const desc = (el: Element) => {
 		const parts: string[] = [];
@@ -82,13 +81,25 @@ function scan(TOL: number): Hit[] {
 	};
 
 	/* the effective clip box of an element's content: the intersection of every clipping ancestor
-	   on its containing-block chain (absolute/fixed boxes escape non-positioned ancestors) */
+	   on its containing-block chain (absolute/fixed boxes escape non-positioned ancestors). A box that
+	   scrolls in an axis (carousel) frees that axis for itself and every ancestor beyond it: whatever
+	   lies outside its viewport is reached by scrolling. Each edge remembers the element that set it. */
+	type Edge = 'l' | 't' | 'r' | 'b';
+	type Clip = { box: Box; own: Record<Edge, Element | null>; ellipsis: boolean } | null;
 	const clipCache = new Map<Element, Clip | 'skip'>();
 	function clipOf(start: Element): Clip | 'skip' {
 		if (clipCache.has(start)) return clipCache.get(start)!;
-		let box: Box = { l: -INF, t: -INF, r: INF, b: INF };
-		let clipEl: Element | null = null;
+		const box: Box = { l: -INF, t: -INF, r: INF, b: INF };
+		const own: Record<Edge, Element | null> = { l: null, t: null, r: null, b: null };
+		const tighten = (e: Element, edge: Edge, v: number) => {
+			if (edge === 'l' || edge === 't' ? v > box[edge] : v < box[edge]) {
+				box[edge] = v;
+				own[edge] = e;
+			}
+		};
 		let ellipsis = false;
+		let freeX = false;
+		let freeY = false;
 		let escape: 'none' | 'absolute' | 'fixed' = 'none';
 		let res: Clip | 'skip' = null;
 		for (let e: Element | null = start; e; e = e.parentElement) {
@@ -109,30 +120,36 @@ function scan(TOL: number): Hit[] {
 				const bl = parseFloat(cs.borderLeftWidth), bt = parseFloat(cs.borderTopWidth);
 				const pad: Box = root ? { l: 0, t: -INF, r: de.clientWidth, b: INF } : { l: r.left + bl, t: r.top + bt, r: r.left + bl + e.clientWidth, b: r.top + bt + e.clientHeight };
 				const ox = cs.overflowX, oy = cs.overflowY;
-				const scrollsX = (ox === 'auto' || ox === 'scroll') && e.scrollWidth > e.clientWidth + 1 && !root;
-				const scrollsY = (oy === 'auto' || oy === 'scroll') && e.scrollHeight > e.clientHeight + 1 && !root;
+				if ((ox === 'auto' || ox === 'scroll') && e.scrollWidth > e.clientWidth + 1 && !root) freeX = true;
+				if ((oy === 'auto' || oy === 'scroll') && e.scrollHeight > e.clientHeight + 1 && !root) freeY = true;
 				let clipped = false;
-				if (ox !== 'visible' && !scrollsX) {
-					box = { ...box, l: Math.max(box.l, pad.l), r: Math.min(box.r, pad.r) };
+				if (ox !== 'visible' && !freeX) {
+					tighten(e, 'l', pad.l);
+					tighten(e, 'r', pad.r);
 					clipped = true;
 				}
-				if (oy !== 'visible' && !scrollsY && !root) {
-					box = { ...box, t: Math.max(box.t, pad.t), b: Math.min(box.b, pad.b) };
+				if (oy !== 'visible' && !freeY && !root) {
+					tighten(e, 't', pad.t);
+					tighten(e, 'b', pad.b);
 					clipped = true;
 				}
 				if (cs.clipPath !== 'none' && !root) {
-					box = { l: Math.max(box.l, r.left), t: Math.max(box.t, r.top), r: Math.min(box.r, r.right), b: Math.min(box.b, r.bottom) };
+					if (!freeX) {
+						tighten(e, 'l', r.left);
+						tighten(e, 'r', r.right);
+					}
+					if (!freeY) {
+						tighten(e, 't', r.top);
+						tighten(e, 'b', r.bottom);
+					}
 					clipped = true;
 				}
-				if (clipped) {
-					clipEl ??= e;
-					if (cs.textOverflow === 'ellipsis') ellipsis = true;
-				}
+				if (clipped && cs.textOverflow === 'ellipsis') ellipsis = true;
 			}
 			if (cs.position === 'fixed') escape = 'fixed';
 			else if (cs.position === 'absolute' && escape === 'none') escape = 'absolute';
 		}
-		if (res !== 'skip') res = clipEl ? { box, el: clipEl, ellipsis } : null;
+		if (res !== 'skip') res = own.l || own.t || own.r || own.b ? { box, own, ellipsis } : null;
 		clipCache.set(start, res);
 		return res;
 	}
@@ -207,10 +224,17 @@ function scan(TOL: number): Hit[] {
 		if (rects.every((r) => fullyOut({ l: r.left, t: r.top, r: r.right, b: r.bottom }, clip.box))) continue;
 		const gs = glyphs(n, cs);
 		let worst = 0;
+		const over: Record<Edge, number> = { l: 0, t: 0, r: 0, b: 0 };
 		const state = new Map<string, Set<string>>();
 		for (const g of gs) {
 			const st = fullyOut(g.ink, clip.box) ? 'out' : outside(g.ink, clip.box) > TOL ? 'cut' : 'in';
 			if (st === 'cut') worst = Math.max(worst, outside(g.ink, clip.box));
+			if (st !== 'in') {
+				over.l = Math.max(over.l, clip.box.l - g.ink.l);
+				over.r = Math.max(over.r, g.ink.r - clip.box.r);
+				over.t = Math.max(over.t, clip.box.t - g.ink.t);
+				over.b = Math.max(over.b, g.ink.b - clip.box.b);
+			}
 			for (const key of [`w${g.word}`, `l${g.line}`]) {
 				const set = state.get(key) ?? new Set();
 				set.add(st);
@@ -220,7 +244,10 @@ function scan(TOL: number): Hit[] {
 		const mixed = [...state.values()].some((s) => s.has('in') && (s.has('out') || s.has('cut')));
 		if ((worst > TOL || mixed) && !seen.has(el)) {
 			seen.add(el);
-			hits.push({ kind: clip.ellipsis ? 'ellipsis' : 'clip', where: `${desc(el)}  (clipped by ${desc(clip.el)})`, text: n.data.trim().slice(0, 40), px: Math.round(worst * 10) / 10 });
+			// name the element whose edge the text crosses the most
+			const edge = (['l', 't', 'r', 'b'] as Edge[]).reduce((a, b) => (over[b] > over[a] ? b : a));
+			const by = clip.own[edge] ?? clip.own.l ?? clip.own.t ?? clip.own.r ?? clip.own.b!;
+			hits.push({ kind: clip.ellipsis ? 'ellipsis' : 'clip', where: `${desc(el)}  (clipped by ${desc(by)})`, text: n.data.trim().slice(0, 40), px: Math.round(worst * 10) / 10 });
 		}
 	}
 
