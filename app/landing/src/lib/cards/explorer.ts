@@ -98,22 +98,6 @@ const FAMILIES: string[][] = [
 ];
 const CTX = 32768;
 
-/**
- * "Does not fit" ghosts for a card's VRAM bar: per family, the smallest file that would not fit
- * at a 32k context according to the estimator's memory formula (an ESTIMATE, labelled in the UI).
- */
-export function ghosts(vramGiB: number): { model: Model; need: Range }[] {
-	const out: { model: Model; need: Range }[] = [];
-	for (const fam of FAMILIES) {
-		const over = fam
-			.map((id) => findModel(id)!)
-			.filter((m) => memoryNeed(m, CTX).lo > vramGiB)
-			.sort((a, b) => a.sizeGB - b.sizeGB)[0];
-		if (over) out.push({ model: over, need: memoryNeed(over, CTX) });
-	}
-	return out;
-}
-
 export interface QueueEstimate {
 	model: Model;
 	need: Range;

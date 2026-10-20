@@ -8,6 +8,7 @@
 	import { cardsHref, currentLang } from '$lib/i18n';
 	import { cardsCopy } from './copy';
 	import GpuArt from './GpuArt.svelte';
+	import { VENDOR, vendorOf } from './vendor';
 
 	let {
 		id,
@@ -43,6 +44,9 @@
 
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].card);
+	/** The maker's wordmark before the series ("NVIDIA GeForce RTX"), never doubled ("Apple M4"). */
+	const maker = $derived(VENDOR[vendorOf(vendor)].name);
+	const rest = $derived(maker && prefix.toLowerCase().startsWith(maker.toLowerCase()) ? prefix.slice(maker.length).trim() : prefix);
 
 	// Undriven pages (queue): fans spin briefly when the page opens, then stop (no endless loop).
 	let live = $state(false);
@@ -55,6 +59,8 @@
 </script>
 
 <section class="head" class:queued aria-labelledby="card-title" style="--hh:{heat * (charge ?? 1)}; --cc:{charge == null ? 0 : 1 - charge}">
+	<!-- the maker's band: its colour washes the top of the page and draws the line under the head -->
+	<div class="band" aria-hidden="true"></div>
 	<div class="wrap">
 		<a class="back mono" href={cardsHref(lang)}><span aria-hidden="true">←</span> {t.back}</a>
 	</div>
@@ -62,7 +68,7 @@
 		<div class="copy">
 			<p class="status"><span class="dot"></span>{queued ? t.queue : t.measured}</p>
 			<h1 id="card-title" class="name" style="view-transition-name: name-{id}">
-				<span class="pre">{prefix}</span>
+				<span class="pre">{#if maker}<span class="maker">{maker}</span>{/if} {rest}</span>
 				<span class="short {queued ? 'hx-h' : 'hx-grad'}">{short}</span>
 			</h1>
 			<p class="spec mono">{spec}</p>
@@ -84,8 +90,28 @@
 	}
 	.head {
 		position: relative;
-		padding: calc(4.25rem + clamp(1rem, 4vh, 3rem)) 0 clamp(1.25rem, 3vh, 2.5rem);
+		padding: calc(4.25rem + clamp(0.5rem, 2.5vh, 1.75rem)) 0 clamp(1rem, 2.5vh, 2rem);
 		isolation: isolate;
+	}
+	/* the maker's band: a wash of its colour from the top-left and a line under the head */
+	.band {
+		position: absolute;
+		inset: 0;
+		z-index: -2;
+		pointer-events: none;
+		background:
+			radial-gradient(55% 75% at 16% 0%, rgb(var(--v, 125 135 148) / 0.24), transparent 72%),
+			linear-gradient(180deg, rgb(var(--v, 125 135 148) / 0.09), transparent 78%);
+	}
+	.band::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 1px;
+		background: var(--v-line, var(--line));
+		opacity: 0.7;
 	}
 	/* The card's heat spills onto the page: a wide heat-ramp glow behind the render whose opacity is
 	   the measured gain × the current charge (opacity only, so it composites); during the cold start
@@ -135,11 +161,11 @@
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
 		align-items: center;
-		gap: var(--sp-8) clamp(1.5rem, 4vw, 4rem);
+		gap: var(--sp-6) clamp(1.5rem, 4vw, 4rem);
 	}
 	.copy {
 		display: grid;
-		gap: var(--sp-4);
+		gap: var(--sp-3);
 		justify-items: start;
 		min-width: 0;
 	}
@@ -155,6 +181,9 @@
 	}
 	.back:hover {
 		color: var(--text-hi);
+	}
+	.back {
+		transition: color 0.35s var(--ease-out);
 	}
 	.status {
 		display: inline-flex;
@@ -194,9 +223,22 @@
 		text-transform: uppercase;
 		color: var(--text-mute);
 	}
+	.maker {
+		margin-right: 0.35rem;
+		font-family: var(--font-display);
+		font-style: italic;
+		font-weight: 850;
+		letter-spacing: 0.06em;
+		color: var(--v-hi, var(--text));
+		text-shadow: 0 0 14px rgb(var(--v, 125 135 148) / 0.55);
+	}
+	:global(:root[data-theme='light']) .maker {
+		color: color-mix(in srgb, rgb(var(--v, 125 135 148)) 62%, #000);
+		text-shadow: none;
+	}
 	.short {
 		font-family: var(--font-display);
-		font-size: clamp(3.6rem, 1rem + 8.4vw, 10rem);
+		font-size: clamp(3.2rem, 1rem + 6.6vw, 8.25rem);
 		font-weight: 850;
 		font-stretch: 112%;
 		line-height: 0.86;
@@ -214,7 +256,7 @@
 	.art-col {
 		min-width: 0;
 		display: grid;
-		gap: var(--sp-8);
+		gap: var(--sp-5);
 	}
 	@media (max-width: 56rem) {
 		.grid {

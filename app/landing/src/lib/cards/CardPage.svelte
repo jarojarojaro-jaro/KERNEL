@@ -4,18 +4,18 @@
 	import { visible } from '$lib/fx/actions';
 	import { onFrame, reducedMotion, whenIdle } from '$lib/fx/motion';
 	import Odometer from '$lib/fx/Odometer.svelte';
-	import SourceTip from '$lib/fx/SourceTip.svelte';
-	import { MODEL_INFO, variantLabel, words500, type CardView, type ModelKey } from '$lib/data/measurements';
-	import { fmtGB, fmtSec, localizeDecimals } from '$lib/format';
+	import { variantLabel, words500, type CardView, type ModelKey } from '$lib/data/measurements';
+	import { fmtGB, fmtSec } from '$lib/format';
 	import ModelMark from '$lib/ModelMark.svelte';
 	import { cardsHref, currentLang, href, num } from '$lib/i18n';
 	import CardHead from './CardHead.svelte';
-	import Choice from './Choice.svelte';
 	import { cardsCopy } from './copy';
 	import { headline, heatOf, MEASURED, roundTo } from './explorer';
 	import GpuArt from './GpuArt.svelte';
 	import Ratio from './Ratio.svelte';
 	import RunShowcase from './RunShowcase.svelte';
+	import { vendorVars } from './vendor';
+	import VendorTheme from './VendorTheme.svelte';
 	import VramFill from './VramFill.svelte';
 
 	let { card }: { card: CardView } = $props();
@@ -23,17 +23,8 @@
 	const lang = $derived(currentLang());
 	const t = $derived(cardsCopy[lang].card);
 	const d = $derived(headline(card));
-
-	// svelte-ignore state_referenced_locally
-	let model = $state<ModelKey>(card.pick.model);
-	const run = $derived(card.runs.find((r) => r.model === model) ?? card.runs[0]);
-	/** The run panel slides in only when the reader switches models (never on the first paint). */
-	let swapped = $state(false);
-	// svelte-ignore state_referenced_locally
-	const firstModel = model;
-	$effect(() => {
-		if (model !== firstModel) swapped = true;
-	});
+	/** The ranking: our pick first, then the other measured models in the registry's order. */
+	const ranked = $derived([...card.runs].sort((a, b) => Number(b.model === card.pick.model) - Number(a.model === card.pick.model)));
 
 	/*
 	 * The signature moment, one timeline for the counter and the card. The page paints its final,
@@ -140,23 +131,14 @@
 		if (wb && wo) items.push({ k: t.words, v: fmtSec(wo.v, lang), cold: fmtSec(wb.v, lang) });
 		return items;
 	});
-	const plateSrc = $derived(
-		d
-			? [
-					...(d.run.file ? [d.run.file.src] : []),
-					...(d.ours.vram ? [d.ours.vram.src] : []),
-					...[words500(d.ours, lang), words500(d.before, lang)].filter((w) => w).map((w) => w!.src),
-					d.run.conditionsSrc
-				]
-			: []
-	);
-	const plateNote = $derived(d ? [d.run.conditions[lang], d.ours.vram?.unit === 'GiB' ? t.gibNote : '', words500(d.ours, lang)?.derived ? t.wordsDerived : ''].filter(Boolean).join(' · ') : '');
 </script>
 
-<CardHead id={card.id} {prefix} short={card.short} vendor={card.vendor} vram={card.vramGB} {heat} kick={landed} spec="{card.vramGB} GB · {card.arch} · {num(card.bwGBs.v, lang, 0)} GB/s" charge={d ? charge : null} {rpm}>
+<VendorTheme vendor={card.vendor}>
+<CardHead id={card.id} {prefix} short={card.short} vendor={card.vendor} vram={card.vramGB} {heat} kick={landed} spec="{card.vramGB} GB · {card.arch} · {num(card.bwGBs.v, lang, 0)} GB/s" charge={d ? charge : null} {rpm}>
 	{#if d}
 		<div class="hl hx-bt" class:landed={landed > 0} style="--g:{heat * charge}" use:visible={startWhenIdle}>
 			<p class="hl-m mono">{t.headline(`${MODEL_STYLE[d.run.model].short} ${d.run.quant}`)}</p>
+			<!-- one line: typical → ours · the speed-up (wraps only on narrow phones) -->
 			<div class="hl-n">
 				<span class="b">
 					<span class="lbl">{variantLabel(d.run, d.run.before)[lang]}</span>
@@ -167,17 +149,19 @@
 					<span class="lbl">{variantLabel(d.run, d.run.ours)[lang]}</span>
 					<span class="v hot fig"><Odometer value={roundTo(tp, 1)} decimals={1} {lang} duration={0} label={variantLabel(d.run, d.run.ours)[lang]} /><span class="u">t/s</span></span>
 				</span>
-			</div>
-			<div class="hl-foot">
-				{#if d.ratio}<span class="stamp"><Ratio value={d.ratio} {lang} size="lg" /> <span class="w">{t.faster}</span></span>{/if}
-				<SourceTip {lang} src={[d.before.decode!.src, d.ours.decode!.src, ...(d.run.gain?.total ? [d.run.gain.src] : [])]} note={d.run.metric[lang]} />
+				{#if d.ratio}
+					<span class="b stamp">
+						<span class="lbl">{t.faster}</span>
+						<Ratio value={d.ratio} {lang} size="md" />
+					</span>
+				{/if}
 			</div>
 		</div>
 	{/if}
 	{#snippet plate()}
 		{#if d}
 			<div class="plate-wrap hx-bt">
-				<dl class="plate" style="--n:{plateFacts.length === 4 ? 2 : plateFacts.length}">
+				<dl class="plate" style="--n:{plateFacts.length}">
 					{#each plateFacts as it (it.k)}
 						<div>
 							<dt>{it.k}</dt>
@@ -190,7 +174,6 @@
 						</div>
 					{/each}
 				</dl>
-				<SourceTip {lang} src={plateSrc} note={plateNote} />
 			</div>
 		{/if}
 	{/snippet}
@@ -204,30 +187,27 @@
 		<div><dt>{t.hw.arch}</dt><dd class="txt">{card.arch}</dd></div>
 		{#if card.pcie}<div><dt>{t.hw.pcie}</dt><dd class="txt">{card.pcie}</dd></div>{/if}
 	</dl>
-	<span class="fp-tip"><SourceTip {lang} src={[card.bwGBs.src, card.powerW.src, card.hwSrc]} note={card.hwLine ? localizeDecimals(card.hwLine[lang], lang) : ''} /></span>
 </section>
 
 <VramFill {card} />
 
 <section class="wrap runs" aria-labelledby="runs-title">
-	<div class="picker">
-		<h2 id="runs-title" class="runs-h hx-h" style="--mc:{MODEL_STYLE[run.model].color}"><ModelMark model={run.model} size="0.7em" /> {#each MODEL_INFO[run.model].name.split(' ') as w, i (i)}{i ? ' ' : ''}<span class="nw">{w}</span>{/each}</h2>
-		{#if card.runs.length > 1}
-			<Choice
-				legend={t.models}
-				name="model-{card.id}"
-				size="lg"
-				tight
-				bind:value={model}
-				options={card.runs.map((r) => ({ value: r.model, model: r.model, label: MODEL_STYLE[r.model].short, sub: r.model === card.pick.model ? `${r.quant} · ${t.pickBadge}` : r.quant }))}
-			/>
+	<header class="runs-head">
+		<h2 id="runs-title" class="runs-h hx-grad">{t.rankTitle}</h2>
+		<p class="fine">{t.rankLede}</p>
+		{#if ranked.length > 1}
+			<nav class="jump" aria-label={t.rankTitle}>
+				{#each ranked as r, i (r.model)}
+					<a href="#model-{r.model}" style="--mc:{MODEL_STYLE[r.model].color}"><span class="mono">{String(i + 1).padStart(2, '0')}</span> <ModelMark model={r.model} /> {MODEL_STYLE[r.model].short}{#if r.model === card.pick.model}<span aria-hidden="true">{'\u00a0'}★</span>{/if}</a>
+				{/each}
+			</nav>
 		{/if}
-	</div>
-	{#key run.model}
-		<div class="run-body" class:swap={swapped}>
-			<RunShowcase {card} {run} {lang} />
-		</div>
-	{/key}
+	</header>
+	<ol class="rank-list" role="list">
+		{#each ranked as r, i (r.model)}
+			<li><RunShowcase {card} run={r} {lang} rank={i + 1} /></li>
+		{/each}
+	</ol>
 </section>
 
 <section class="wrap next" aria-labelledby="next-title">
@@ -243,7 +223,7 @@
 		{#each others as e (e.id)}
 			{@const od = headline(e.card)}
 			<li>
-				<a href={cardsHref(lang, `${e.id}/`)} class="other hx-ring hx-surface">
+				<a href={cardsHref(lang, `${e.id}/`)} class="other hx-ring hx-surface" style={vendorVars(e.card.vendor)}>
 					<span class="o-art"><GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(od?.ratio)} flat /></span>
 					<span class="o-name">{e.card.short}</span>
 					<span class="o-x">{#if od?.ratio}<Ratio value={od.ratio} {lang} size="sm" />{/if}<span class="mono">{e.card.vramGB} GB</span></span>
@@ -252,6 +232,7 @@
 		{/each}
 	</ul>
 </section>
+</VendorTheme>
 
 <style>
 	.wrap {
@@ -259,12 +240,12 @@
 		margin-inline: auto;
 	}
 
-	/* headline numbers inside the hero */
+	/* headline numbers inside the hero: one row, typical → ours · speed-up */
 	.hl {
 		display: grid;
-		gap: var(--sp-3);
-		margin-top: var(--sp-6);
-		padding-top: var(--sp-6);
+		gap: var(--sp-2);
+		margin-top: var(--sp-3);
+		padding-top: var(--sp-4);
 		width: 100%;
 	}
 	.hl-m {
@@ -277,32 +258,36 @@
 	.hl-n {
 		display: flex;
 		align-items: flex-end;
-		flex-wrap: wrap;
-		gap: var(--sp-2) var(--sp-5);
+		flex-wrap: nowrap;
+		gap: var(--sp-2) clamp(0.7rem, 1.4vw, 1.4rem);
+		min-width: 0;
 	}
 	.b {
 		display: grid;
-		gap: 0.2rem;
+		gap: 0.3rem;
+		min-width: 0;
 	}
 	.lbl {
 		font-size: var(--fs-xs);
 		color: var(--text-mute);
+		white-space: nowrap;
 	}
 	.v {
 		font-family: var(--font-mono);
 		font-weight: 600;
-		line-height: 1;
+		line-height: 0.95;
 		display: inline-flex;
 		align-items: baseline;
-		gap: 0.4rem;
+		gap: 0.35rem;
+		white-space: nowrap;
 	}
 	.v.cold {
-		font-size: clamp(1.8rem, 1rem + 2vw, 2.75rem);
+		font-size: clamp(1.5rem, 1rem + 1.2vw, 2.25rem);
 		color: var(--before);
 	}
 	/* our figure glows as much as the measured gain (a ×1.05 card barely; ×2.0 white-hot) */
 	.v.hot {
-		font-size: clamp(3rem, 1.4rem + 4.4vw, 5.25rem);
+		font-size: clamp(2.2rem, 1.2rem + 2.6vw, 3.6rem);
 		color: var(--text-hi);
 		filter: drop-shadow(0 0 calc(4px + var(--g) * 22px) rgb(255 122 26 / calc(var(--g) * 0.75)));
 	}
@@ -312,26 +297,33 @@
 		text-shadow: none;
 	}
 	.arrow {
-		font-size: var(--fs-xl);
+		font-size: var(--fs-lg);
 		color: var(--text-mute);
-		padding-bottom: 0.4rem;
+		padding-bottom: 0.25rem;
 	}
-	.hl-foot {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: var(--sp-3) var(--sp-5);
-		min-height: 3.5rem;
-	}
-	/* the speed-up stamps in when the counter lands */
+	/* the speed-up closes the row behind a hairline; it stamps in when the counter lands */
 	.stamp {
-		display: inline-flex;
-		align-items: baseline;
-		gap: 0.5rem;
+		padding-left: clamp(0.7rem, 1.4vw, 1.4rem);
+		border-left: 1px solid rgb(var(--v, 255 122 26) / 0.35);
+		line-height: 0.9;
 	}
-	.stamp .w {
-		font-weight: 650;
-		color: var(--text-hi);
+	.stamp :global(.rx--md) {
+		--rx-fs: clamp(1.7rem, 1rem + 1.6vw, 2.6rem);
+	}
+	@media (max-width: 30rem) {
+		.hl-n {
+			flex-wrap: wrap;
+		}
+		.stamp {
+			flex-basis: 100%;
+			display: flex;
+			flex-direction: row-reverse;
+			justify-content: flex-end;
+			align-items: baseline;
+			gap: 0.5rem;
+			padding: var(--sp-2) 0 0;
+			border-left: 0;
+		}
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		.stamp {
@@ -347,7 +339,7 @@
 	}
 	@keyframes stamp {
 		30% {
-			transform: scale(1.18);
+			transform: scale(1.12);
 		}
 	}
 	@keyframes land {
@@ -356,31 +348,20 @@
 		}
 	}
 
-	.nw {
-		white-space: nowrap;
-	}
-
-	.nw {
-		white-space: nowrap;
-	}
-
-	/* plate under the render: as many columns as facts */
+	/* plate under the render: one tight row of facts */
 	.plate-wrap {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: start;
-		gap: var(--sp-4);
-		padding-top: var(--sp-4);
+		padding-top: var(--sp-3);
 	}
 	.plate {
 		margin: 0;
 		display: grid;
-		grid-template-columns: repeat(var(--n), minmax(0, 1fr));
-		gap: var(--sp-4);
+		grid-template-columns: repeat(var(--n), minmax(0, auto));
+		justify-content: space-between;
+		gap: var(--sp-2) var(--sp-5);
 	}
 	.plate div {
 		display: grid;
-		gap: 0.35rem;
+		gap: 0.25rem;
 		align-content: start;
 		min-width: 0;
 	}
@@ -388,29 +369,32 @@
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		text-transform: uppercase;
-		letter-spacing: 0.12em;
+		letter-spacing: 0.1em;
 		color: var(--text-mute);
+		white-space: nowrap;
 	}
 	.plate dd {
 		margin: 0;
-		overflow-wrap: anywhere;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		gap: 0 0.35rem;
 		font-family: var(--font-mono);
-		font-size: var(--fs-md);
+		font-size: var(--fs-sm);
 		color: var(--text-hi);
 	}
 	.plate .q {
-		display: block;
-		margin-top: 0.15rem;
-		font-size: var(--fs-xs);
+		font-size: var(--fs-2xs);
 		color: var(--text-mute);
 	}
 	.star {
-		color: var(--text-hi);
+		color: var(--v-hi, var(--text-hi));
 	}
 	.pbar {
+		flex-basis: 100%;
 		display: block;
 		height: 3px;
-		margin-top: 0.45rem;
+		margin-top: 0.3rem;
 		background: var(--bg-3);
 		border-radius: 2px;
 		overflow: hidden;
@@ -418,19 +402,19 @@
 	.pbar i {
 		display: block;
 		height: 100%;
-		background: var(--text-hi);
+		background: rgb(var(--v, 237 234 227));
 	}
 	@media (max-width: 40rem) {
 		.plate {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
+			justify-content: stretch;
 		}
-		.plate div:first-child,
-		.plate div:last-child:nth-child(even) {
-			grid-column: 1 / -1;
+		.plate dt {
+			white-space: normal;
 		}
-		.plate dd {
-			font-size: var(--fs-sm);
-		}
+	}
+	.rank-list > li {
+		min-width: 0;
 	}
 
 	/* fingerprint: one compact strip */
@@ -443,17 +427,16 @@
 		display: grid;
 		grid-auto-flow: column;
 		grid-auto-columns: minmax(0, 1fr);
-		border: 1px solid rgb(255 122 26 / 0.22);
+		border: 1px solid rgb(var(--v) / 0.25);
 		border-radius: var(--r-lg);
 	}
 	.strip div {
 		padding: var(--sp-3) var(--sp-4);
-		border-right: 1px solid rgb(255 122 26 / 0.14);
+		border-right: 1px solid rgb(var(--v) / 0.16);
 		min-width: 0;
 	}
 	.strip div:last-child {
 		border-right: 0;
-		padding-right: 6rem;
 	}
 	.strip dt {
 		font-family: var(--font-mono);
@@ -481,12 +464,6 @@
 		font-size: var(--fs-sm);
 		padding-top: 0.35rem;
 	}
-	.fp-tip {
-		position: absolute;
-		right: var(--sp-3);
-		top: 50%;
-		transform: translateY(-50%);
-	}
 	/* two columns on narrow screens; an odd last cell spans the row */
 	@media (max-width: 48rem) {
 		.strip {
@@ -497,39 +474,30 @@
 			border-right: 0;
 		}
 		.strip div:nth-child(n + 3) {
-			border-top: 1px solid rgb(255 122 26 / 0.14);
+			border-top: 1px solid rgb(var(--v) / 0.16);
 		}
 		.strip div:last-child:nth-child(odd) {
 			grid-column: 1 / -1;
 		}
-		.strip div:last-child {
-			padding-right: 6rem;
-		}
-		.fp-tip {
-			top: auto;
-			bottom: var(--sp-3);
-			transform: none;
-		}
 	}
 
-	/* runs */
+	/* the ranking: every model the same block, best first */
 	.runs {
-		padding-top: var(--sp-6);
+		padding-top: clamp(2rem, 4vw, 3rem);
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--sp-5);
 	}
-	.picker {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: flex-end;
-		justify-content: space-between;
-		gap: var(--sp-3) var(--sp-6);
-		padding-bottom: var(--sp-2);
+	.runs-head {
+		display: grid;
+		gap: var(--sp-3);
+	}
+	.runs-head .fine {
+		margin: 0;
+		max-width: 60ch;
 	}
 	.runs-h {
 		margin: 0;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0 0.4em;
 		font-size: clamp(1.75rem, 1rem + 2.6vw, 3.25rem);
 		font-weight: 800;
 		font-stretch: 112%;
@@ -537,16 +505,45 @@
 		line-height: 1.05;
 		color: var(--text-hi);
 	}
-	@media (prefers-reduced-motion: no-preference) {
-		.run-body.swap {
-			animation: swap 0.6s var(--ease-out) both;
-		}
+	.jump {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--sp-2);
 	}
-	@keyframes swap {
-		from {
-			opacity: 0;
-			transform: translate3d(0, 1.5rem, 0);
-		}
+	.jump a {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.45rem;
+		min-height: 2.5rem;
+		padding: 0 0.95rem;
+		border: 1px solid rgb(var(--v) / 0.3);
+		border-radius: var(--r-pill);
+		background: rgb(255 255 255 / 0.02);
+		font-size: var(--fs-sm);
+		font-weight: 650;
+		color: var(--text-hi);
+		text-decoration: none;
+		transition:
+			border-color 0.4s var(--ease-out),
+			background-color 0.4s var(--ease-out),
+			transform 0.4s var(--ease-out);
+	}
+	.jump a .mono {
+		font-size: var(--fs-2xs);
+		color: var(--hx-ink);
+	}
+	.jump a:hover {
+		border-color: var(--mc);
+		background: color-mix(in srgb, var(--mc) 10%, transparent);
+		transform: translateY(-1px);
+	}
+	.rank-list {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: clamp(2rem, 4vw, 3rem);
 	}
 
 	/* next */

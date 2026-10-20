@@ -21,13 +21,14 @@
 	import TimeRace from './TimeRace.svelte';
 	import { Play } from './play.svelte';
 
-	let { card, run, lang }: { card: CardView; run: RunView; lang: 'pl' | 'en' } = $props();
+	let { card, run, lang, rank }: { card: CardView; run: RunView; lang: 'pl' | 'en'; rank: number } = $props();
 
 	const t = $derived(cardsCopy[lang].card);
 	const d = $derived(duel(run));
 	const info = $derived(MODEL_INFO[run.model]);
 	const isPick = $derived(card.pick.model === run.model);
 	const bonsai = $derived(run.model === 'bonsai');
+	const hasGain = $derived(!!(run.gain?.flags && run.gain.engine && run.gain.total));
 
 
 	const bars = $derived(run.variants.filter((v) => v.decode));
@@ -136,248 +137,310 @@
 	const hintNote = (k: VariantKey) => (bonsai ? variantLabel(run, k)[lang] : `${variantLabel(run, k)[lang]}: ${hint(k)[lang]}`);
 </script>
 
-<div class="bento" style="--mc:{MODEL_STYLE[run.model].color}">
-	<!-- ============ SPEED ============ -->
-	<div role="group" class="tile speed" aria-labelledby="speed-{run.model}" use:speed.view>
-		<h2 id="speed-{run.model}" class="eyebrow"><ModelMark model={run.model} /> {t.speed} · {MODEL_STYLE[run.model].short}</h2>
-		<div class="speed-in">
-			<div class="speed-head">
-				{#if bonsai}
-					<p class="honest-title">{t.bonsaiTitle}</p>
-				{:else if d?.ratio}
-					<p class="ratio">
-						<Ratio value={d.ratio} {lang} size="xl" replay={speed.n} />
-						<span class="rw">{t.faster}</span>
-					</p>
-				{:else}
-					<p class="warn mono">{t.scriptsWarn}</p>
-				{/if}
-				<p class="fine sub">{run.sameHarness ? t.speedLede : run.metric[lang]}</p>
-				{#if run.note}
-					<details class="honest">
-						<summary class="mono">{t.honestMore}</summary>
-						<p>{localizeDecimals(run.note[lang], lang)}</p>
-					</details>
-				{/if}
-			</div>
-			{#if run.sameHarness}
+<article class="block" id="model-{run.model}" style="--mc:{MODEL_STYLE[run.model].color}" aria-labelledby="mh-{run.model}">
+	<!-- ============ RANK HEADER: the same strip for every model ============ -->
+	<header class="bh">
+		<span class="rank fig" aria-hidden="true">{String(rank).padStart(2, '0')}</span>
+		<div class="bh-id">
+			<h3 id="mh-{run.model}" class="bh-name"><ModelMark model={run.model} size="0.8em" /> {#each info.name.split(' ') as w, i (i)}{i ? ' ' : ''}<span class="nw">{w}</span>{/each}</h3>
+			<p class="bh-meta mono">
+				<span>{run.quant}</span>
+				{#if run.file}<span>{fmtGB(run.file.v, run.file.unit, lang).text}</span>{/if}
+				<span>{t.license}: {info.license[lang]}</span>
+			</p>
+		</div>
+		{#if isPick}<p class="pick"><span class="star" aria-hidden="true">★</span> {t.pickBadge}</p>{/if}
+		{#if d?.ratio}<p class="bh-x" aria-hidden="true"><Ratio value={d.ratio} {lang} size="md" /></p>{/if}
+	</header>
+
+	<div class="bento">
+		<!-- ============ SPEED ============ -->
+		<div role="group" class="tile speed" aria-labelledby="speed-{run.model}" use:speed.view>
+			<h4 id="speed-{run.model}" class="eyebrow">{t.speed}</h4>
+			<div class="speed-in">
+				<div class="speed-head">
+					{#if bonsai}
+						<p class="honest-title">{t.bonsaiTitle}</p>
+					{:else if d?.ratio}
+						<p class="ratio">
+							<Ratio value={d.ratio} {lang} size="xl" replay={speed.n} />
+							<span class="rw">{t.faster}</span>
+						</p>
+					{:else}
+						<p class="warn mono">{t.scriptsWarn}</p>
+					{/if}
+					<p class="fine sub">{run.sameHarness ? t.speedLede : run.metric[lang]}</p>
+					{#if run.note}
+						<details class="honest">
+							<summary class="mono">{t.honestMore}</summary>
+							<p>{localizeDecimals(run.note[lang], lang)}</p>
+						</details>
+					{/if}
+				</div>
 				<div class="bars">
 					{#each bars as v, i (v.key)}
 						<HeatBar value={roundTo(v.decode!.v, 1)} replay={speed.n} max={maxDecode} label={variantLabel(run, v.key)[lang]} sub={subOf(v)} cold={v.key === run.before} {lang} decimals={1} delay={i * 200} />
 					{/each}
 					<span class="tile-src"><SourceTip {lang} src={barSrc} note={barNote} /></span>
 				</div>
-			{:else}
-				<!-- different scripts: no bars side by side, each number with its own script -->
-				<div class="bars">
-					<dl class="apart">
-						{#each bars as v (v.key)}
-							<div>
-								<dt>{variantLabel(run, v.key)[lang]}</dt>
-								<dd><span class="big fig">{fmtTps(v.decode!.v, lang)}</span> <span class="u">t/s</span></dd>
+			</div>
+		</div>
+
+		<!-- ============ 500 WORDS ============ -->
+		{#if words.length && d && run.sameHarness}
+			<div role="group" class="tile words" aria-labelledby="words-{run.model}" use:race500.view>
+				<div class="t-head">
+					<h4 id="words-{run.model}" class="h hx-h">{t.words}</h4>
+					<span class="t-tools">
+						<SourceTip {lang} src={words.flatMap((w) => [w.before!.src, w.ours!.src])} note={words.some((w) => w.ours!.derived) ? t.wordsDerived : `${t.wordsLede} ${run.metric[lang]}`} />
+						<button type="button" class="ghost-btn mono" onclick={race500.replay} aria-label={t.wordsRun}><span aria-hidden="true">↻</span></button>
+					</span>
+				</div>
+				{#each words as w (w.wl)}
+					<div class="wrow">
+						<div class="wl">
+							<p class="mono" lang={w.wl}>{w.wl === 'pl' ? t.wordsPl : t.wordsEn}</p>
+						</div>
+						<TimeRace
+							lanes={[
+								{ label: variantLabel(run, run.before)[lang], seconds: w.before!.v, hot: false },
+								{ label: variantLabel(run, run.ours)[lang], seconds: w.ours!.v, hot: true }
+							]}
+							run={race500.on}
+							runKey={String(race500.n)}
+							{lang}
+							labels={{ done: t.wordsDone, saved: t.wordsSaved }}
+						/>
+					</div>
+				{/each}
+			</div>
+		{/if}
+
+		<!-- ============ LIVE REPLAY ============ -->
+		{#if run.sameHarness && lanes.length > 1}
+			<div role="group" class="tile race" aria-labelledby="race-{run.model}">
+				<div class="t-head">
+					<h4 id="race-{run.model}" class="h hx-h">{t.race}</h4>
+					<p class="fine">{t.raceLede}</p>
+				</div>
+				<RaceLanes {lanes} text={t.raceText} {lang} loop={false} {summary} runKey="{card.id}-{run.model}" tacho="all" />
+			</div>
+		{/if}
+
+		<!-- ============ CONDITIONS ============ -->
+		<div role="group" class="tile cond" aria-labelledby="c-{run.model}">
+			<h4 id="c-{run.model}" class="eyebrow">{t.conditions}</h4>
+			<p class="fine metric-line">{localizeDecimals(run.metric[lang], lang)}</p>
+			<ul class="chips" role="list">
+				{#each condChips as c (c)}<li class="chip mono">{localizeDecimals(c, lang)}</li>{/each}
+			</ul>
+			<SourceTip
+				{lang}
+				src={[run.conditionsSrc, card.hwSrc, ...checks.map((c) => c.file)]}
+				note={[run.metric[lang], card.hwLine ? localizeDecimals(card.hwLine[lang], lang) : '', ...checks.map((c) => t.checkNote(num(c.sheet, lang), num(c.scorecard, lang, 2)))].filter(Boolean).join(' · ')}
+			/>
+		</div>
+
+		<!-- ============ MODEL ============ -->
+		<div role="group" class="tile model" aria-labelledby="m-{run.model}">
+			<h4 id="m-{run.model}" class="eyebrow">{t.modelInfo}</h4>
+			<p class="body">{info.what[lang]}</p>
+			{#if isPick}<p class="fine why">{localizeDecimals(card.pick.why[lang], lang)}</p>{/if}
+			<ul class="chips" role="list">
+				{#each info.good as g (g.en)}<li class="chip">{g[lang]}</li>{/each}
+			</ul>
+			<SourceTip {lang} src={[info.src, info.licenseSrc, ...(run.file ? [run.file.src] : [])]} />
+		</div>
+	</div>
+
+	<!-- ============ EVERYTHING ELSE MEASURED: one disclosure, same place for every model ============ -->
+		<details class="more">
+			<summary><span>{t.moreData}</span><span class="chev" aria-hidden="true"></span></summary>
+			<div class="bento">
+				<!-- ============ INSTRUMENTS ============ -->
+				{#if instruments.length || run.kernels}
+					<div role="group" class="tile inst-tile" aria-labelledby="inst-{run.model}">
+						<div class="t-head">
+							<h4 id="inst-{run.model}" class="h hx-h">{t.instruments}</h4>
+							<span class="t-tools">
+								<p class="fine">{variantLabel(run, run.before)[lang]} → {variantLabel(run, run.ours)[lang]}</p>
+								<SourceTip {lang} src={instSrc} note={instNote} />
+							</span>
+						</div>
+						<ul class="inst" role="list">
+							{#each instruments as m (m.k)}
+								{@const top = Math.max(m.b.v, m.o.v)}
+								<li class="cell">
+									<p class="cl">{m.label}</p>
+									<p class="cv fig">
+										<span class="cold-text">{show(m.k, m.b, false)}</span>
+										<span class="arr" aria-hidden="true">→</span>
+										<span class="hi" class:hx-num={m.v === 'better'}>{show(m.k, m.o)}</span>
+									</p>
+									<div class="mini" aria-hidden="true">
+										<i class="b" style="--w:{(m.b.v / top) * 100}%"></i>
+										<i class="o" style="--w:{(m.o.v / top) * 100}%"></i>
+									</div>
+									<p class="vd vd--{m.v}">{t.verdict[m.v]}</p>
+								</li>
+							{/each}
+							{#if run.kernels}
+								{@const kv = verdict('kernels', run.kernels.up.v, run.kernels.ours.v)}
+								<li class="cell">
+									<p class="cl">{t.kernels}</p>
+									<p class="cv fig">
+										<span class="cold-text">{num(run.kernels.up.v, lang, 0)}</span>
+										<span class="arr" aria-hidden="true">→</span>
+										<span class="hi" class:hx-num={kv === 'better'}>{num(run.kernels.ours.v, lang, 0)}</span>
+									</p>
+									<div class="mini" aria-hidden="true">
+										<i class="b" style="--w:100%"></i>
+										<i class="o" style="--w:{(run.kernels.ours.v / run.kernels.up.v) * 100}%"></i>
+									</div>
+									<p class="vd vd--{kv}">{t.verdict[kv]}</p>
+								</li>
+							{/if}
+						</ul>
+					</div>
+				{/if}
+
+				<!-- ============ LONG CONTEXT ============ -->
+				{#if long}
+					<div role="group" class="tile long" aria-labelledby="long-{run.model}">
+						<div class="t-head">
+							<h4 id="long-{run.model}" class="h hx-h">{t.longCtx}</h4>
+							<SourceTip {lang} src={[...new Set([...long.up.map((n) => n.src), ...long.ours.map((n) => n.src)])]} note="{t.longCtxLede}{long.kv ? ` ${long.kv}.` : ''}" />
+						</div>
+						<LongCtxChart depths={long.depths} up={long.up} ours={long.ours} {lang} title="{t.longCtx}, {info.name}" labels={{ up: bonsai ? variantLabel(run, run.flags)[lang] : t.upstream, ours: t.ours, depth: t.depth }} />
+					</div>
+				{/if}
+
+				<!-- ============ WHERE THE GAIN COMES FROM ============ -->
+				{#if hasGain && run.gain && d?.flags?.decode}
+					<div role="group" class="tile gain" aria-labelledby="why-{run.model}">
+						<div class="t-head">
+							<h4 id="why-{run.model}" class="h hx-h">{t.why}</h4>
+						</div>
+						<GainStack gain={run.gain} text={run.gainText?.[lang]} before={d.before.decode!} flags={d.flags.decode} ours={d.ours.decode!} {lang} labels={{ before: variantLabel(run, run.before)[lang], flags: t.whyFlags, engine: t.whyEngine, total: t.gain, none: t.whyNone }} />
+					</div>
+				{/if}
+
+				<!-- ============ OTHER LFM FORMATS (5060 Ti) ============ -->
+				{#if formats.length}
+					<div role="group" class="tile formats-tile" aria-labelledby="fmt-{run.model}">
+						<div class="t-head">
+							<h4 id="fmt-{run.model}" class="h hx-h">{t.formats}</h4>
+							<span class="t-tools">
+								<p class="fine">{t.formatsLede}</p>
+								<SourceTip {lang} src={formats.flatMap((f) => [f.gb.src, f.up!.src, f.kld.src])} note={formats.map((f) => `${f.file}, ${fmtGB(f.gb.v, 'GB', lang).text}`).join(' · ')} />
+							</span>
+						</div>
+						<ul class="formats" role="list">
+							{#each formats as f (f.file)}
+								<li>
+									<p class="fn">{lang === 'en' ? f.file.replace('oficjalny', 'official').replace('społeczność', 'community') : f.file}</p>
+									<p class="fv fig"><span class="cold-text">{fmtTps(f.up!.v, lang)}</span> → <span class="hi">{fmtTps(f.ours!.v, lang)}</span>{'\u00a0'}t/s</p>
+									<p class="mono fk">{t.formatsKld} {num(f.kld.v, lang, 3)}{#if f.kld.v > 1}<span class="bad"> · {t.formatsBad}</span>{/if}</p>
+									{#if f.md5Same}<div class="frow"><span class="badge mono">{t.md5Same}</span></div>{/if}
+								</li>
+							{/each}
+						</ul>
+					</div>
+				{/if}
+
+				<!-- ============ QUALITY ============ -->
+				<div role="group" class="tile quality" aria-labelledby="q-{run.model}">
+					<p class="badge-q"><span class="chk" aria-hidden="true">✓</span> {t.quality}</p>
+					<h4 id="q-{run.model}" class="sr-only">{t.honesty}</h4>
+					<dl class="kld">
+						{#each ['saluki', 'bonsai'] as const as m (m)}
+							<div class="kpair">
+								<dt class="mono"><ModelMark model={m} /> {MODEL_STYLE[m].short}</dt>
+								<dd>
+									<span class="kb ours" style="--w:{(q[m].ours.v / kldMax) * 100}%"></span>
+									<span class="kv mono">{t.kldOurs} <b>{num(q[m].ours.v, lang, 5)}</b></span>
+								</dd>
+								<dd>
+									<span class="kb noise" style="--w:{(q[m].noise.v / kldMax) * 100}%"></span>
+									<span class="kv mono">{t.kldNoise} {num(q[m].noise.v, lang, 5)}</span>
+								</dd>
 							</div>
 						{/each}
 					</dl>
-					<span class="tile-src"><SourceTip {lang} src={barSrc} note={barNote} /></span>
+					{#if KLD_PENDING.includes(run.model)}<p class="pending mono">{t.kldPending(MODEL_STYLE[run.model].short)}</p>{/if}
+					<p class="row-links">
+						<a href={href(lang, '/methodology#quality')}>{t.methodology} →</a>
+						<SourceTip {lang} src={[SHEET.correctness.md5Diff, q.saluki.ours.src]} note={t.qualityBody} />
+					</p>
 				</div>
-			{/if}
-		</div>
-	</div>
-
-	<!-- ============ 500 WORDS ============ -->
-	{#if words.length && d && run.sameHarness}
-		<div role="group" class="tile words" aria-labelledby="words-{run.model}" use:race500.view>
-			<div class="t-head">
-				<h3 id="words-{run.model}" class="h hx-h">{t.words}</h3>
-				<span class="t-tools">
-					<SourceTip {lang} src={words.flatMap((w) => [w.before!.src, w.ours!.src])} note={words.some((w) => w.ours!.derived) ? t.wordsDerived : `${t.wordsLede} ${run.metric[lang]}`} />
-					<button type="button" class="ghost-btn mono" onclick={race500.replay} aria-label={t.wordsRun}><span aria-hidden="true">↻</span></button>
-				</span>
 			</div>
-			{#each words as w (w.wl)}
-				<div class="wrow">
-					<div class="wl">
-						<p class="mono" lang={w.wl}>{w.wl === 'pl' ? t.wordsPl : t.wordsEn}</p>
-					</div>
-					<TimeRace
-						lanes={[
-							{ label: variantLabel(run, run.before)[lang], seconds: w.before!.v, hot: false },
-							{ label: variantLabel(run, run.ours)[lang], seconds: w.ours!.v, hot: true }
-						]}
-						run={race500.on}
-						runKey={String(race500.n)}
-						{lang}
-						labels={{ done: t.wordsDone, saved: t.wordsSaved }}
-					/>
-				</div>
-			{/each}
-		</div>
-	{/if}
-
-	<!-- ============ RACE (same script only) ============ -->
-	{#if run.sameHarness && lanes.length > 1}
-		<div role="group" class="tile race" aria-labelledby="race-{run.model}">
-			<div class="t-head">
-				<h3 id="race-{run.model}" class="h hx-h">{t.race}</h3>
-				<p class="fine">{t.raceLede}</p>
-			</div>
-			<RaceLanes {lanes} text={t.raceText} {lang} loop={false} {summary} runKey="{card.id}-{run.model}" tacho="all" />
-		</div>
-	{/if}
-
-	<!-- ============ INSTRUMENTS ============ -->
-	{#if instruments.length || run.kernels}
-		<div role="group" class="tile inst-tile" aria-labelledby="inst-{run.model}">
-			<div class="t-head">
-				<h3 id="inst-{run.model}" class="h hx-h">{t.instruments}</h3>
-				<span class="t-tools">
-					<p class="fine">{variantLabel(run, run.before)[lang]} → {variantLabel(run, run.ours)[lang]}</p>
-					<SourceTip {lang} src={instSrc} note={instNote} />
-				</span>
-			</div>
-			<ul class="inst" role="list">
-				{#each instruments as m (m.k)}
-					{@const top = Math.max(m.b.v, m.o.v)}
-					<li class="cell">
-						<p class="cl">{m.label}</p>
-						<p class="cv fig">
-							<span class="cold-text">{show(m.k, m.b, false)}</span>
-							<span class="arr" aria-hidden="true">→</span>
-							<span class="hi" class:hx-num={m.v === 'better'}>{show(m.k, m.o)}</span>
-						</p>
-						<div class="mini" aria-hidden="true">
-							<i class="b" style="--w:{(m.b.v / top) * 100}%"></i>
-							<i class="o" style="--w:{(m.o.v / top) * 100}%"></i>
-						</div>
-						<p class="vd vd--{m.v}">{t.verdict[m.v]}</p>
-					</li>
-				{/each}
-				{#if run.kernels}
-					{@const kv = verdict('kernels', run.kernels.up.v, run.kernels.ours.v)}
-					<li class="cell">
-						<p class="cl">{t.kernels}</p>
-						<p class="cv fig">
-							<span class="cold-text">{num(run.kernels.up.v, lang, 0)}</span>
-							<span class="arr" aria-hidden="true">→</span>
-							<span class="hi" class:hx-num={kv === 'better'}>{num(run.kernels.ours.v, lang, 0)}</span>
-						</p>
-						<div class="mini" aria-hidden="true">
-							<i class="b" style="--w:100%"></i>
-							<i class="o" style="--w:{(run.kernels.ours.v / run.kernels.up.v) * 100}%"></i>
-						</div>
-						<p class="vd vd--{kv}">{t.verdict[kv]}</p>
-					</li>
-				{/if}
-			</ul>
-		</div>
-	{/if}
-
-	<!-- ============ LONG CONTEXT ============ -->
-	{#if long}
-		<div role="group" class="tile long" aria-labelledby="long-{run.model}">
-			<div class="t-head">
-				<h3 id="long-{run.model}" class="h hx-h">{t.longCtx}</h3>
-				<SourceTip {lang} src={[...new Set([...long.up.map((n) => n.src), ...long.ours.map((n) => n.src)])]} note="{t.longCtxLede}{long.kv ? ` ${long.kv}.` : ''}" />
-			</div>
-			<LongCtxChart depths={long.depths} up={long.up} ours={long.ours} {lang} title="{t.longCtx}, {info.name}" labels={{ up: bonsai ? variantLabel(run, run.flags)[lang] : t.upstream, ours: t.ours, depth: t.depth }} />
-		</div>
-	{/if}
-
-	<!-- ============ WHERE THE GAIN COMES FROM ============ -->
-	{#if run.gain?.flags && run.gain.engine && run.gain.total && d?.flags?.decode}
-		<div role="group" class="tile gain" aria-labelledby="why-{run.model}">
-			<div class="t-head">
-				<h3 id="why-{run.model}" class="h hx-h">{t.why}</h3>
-			</div>
-			<GainStack gain={run.gain} text={run.gainText?.[lang]} before={d.before.decode!} flags={d.flags.decode} ours={d.ours.decode!} {lang} labels={{ before: variantLabel(run, run.before)[lang], flags: t.whyFlags, engine: t.whyEngine, total: t.gain, none: t.whyNone }} />
-		</div>
-	{/if}
-
-	<!-- ============ OTHER LFM FORMATS (5060 Ti) ============ -->
-	{#if formats.length}
-		<div role="group" class="tile formats-tile" aria-labelledby="fmt-{run.model}">
-			<div class="t-head">
-				<h3 id="fmt-{run.model}" class="h hx-h">{t.formats}</h3>
-				<span class="t-tools">
-					<p class="fine">{t.formatsLede}</p>
-					<SourceTip {lang} src={formats.flatMap((f) => [f.gb.src, f.up!.src, f.kld.src])} note={formats.map((f) => `${f.file}, ${fmtGB(f.gb.v, 'GB', lang).text}`).join(' · ')} />
-				</span>
-			</div>
-			<ul class="formats" role="list">
-				{#each formats as f (f.file)}
-					<li>
-						<p class="fn">{lang === 'en' ? f.file.replace('oficjalny', 'official').replace('społeczność', 'community') : f.file}</p>
-						<p class="fv fig"><span class="cold-text">{fmtTps(f.up!.v, lang)}</span> → <span class="hi">{fmtTps(f.ours!.v, lang)}</span>{'\u00a0'}t/s</p>
-						<p class="mono fk">{t.formatsKld} {num(f.kld.v, lang, 3)}{#if f.kld.v > 1}<span class="bad"> · {t.formatsBad}</span>{/if}</p>
-						{#if f.md5Same}<div class="frow"><span class="badge mono">{t.md5Same}</span></div>{/if}
-					</li>
-				{/each}
-			</ul>
-		</div>
-	{/if}
-
-	<!-- ============ QUALITY ============ -->
-	<div role="group" class="tile quality" aria-labelledby="q-{run.model}">
-		<p class="badge-q"><span class="chk" aria-hidden="true">✓</span> {t.quality}</p>
-		<h3 id="q-{run.model}" class="sr-only">{t.honesty}</h3>
-		<dl class="kld">
-			{#each ['saluki', 'bonsai'] as const as m (m)}
-				<div class="kpair">
-					<dt class="mono"><ModelMark model={m} /> {MODEL_STYLE[m].short}</dt>
-					<dd>
-						<span class="kb ours" style="--w:{(q[m].ours.v / kldMax) * 100}%"></span>
-						<span class="kv mono">{t.kldOurs} <b>{num(q[m].ours.v, lang, 5)}</b></span>
-					</dd>
-					<dd>
-						<span class="kb noise" style="--w:{(q[m].noise.v / kldMax) * 100}%"></span>
-						<span class="kv mono">{t.kldNoise} {num(q[m].noise.v, lang, 5)}</span>
-					</dd>
-				</div>
-			{/each}
-		</dl>
-		{#if KLD_PENDING.includes(run.model)}<p class="pending mono">{t.kldPending(MODEL_STYLE[run.model].short)}</p>{/if}
-		<p class="row-links">
-			<a href={href(lang, '/methodology#quality')}>{t.methodology} →</a>
-			<SourceTip {lang} src={[SHEET.correctness.md5Diff, q.saluki.ours.src]} note={t.qualityBody} />
-		</p>
-	</div>
-
-	<!-- ============ CONDITIONS ============ -->
-	<div role="group" class="tile cond" aria-labelledby="c-{run.model}">
-		<h3 id="c-{run.model}" class="eyebrow">{t.conditions}</h3>
-		<ul class="chips" role="list">
-			{#each condChips as c (c)}<li class="chip mono">{localizeDecimals(c, lang)}</li>{/each}
-			<li class="chip mono metric">{run.sameHarness ? 'spec_sweep · T=1 · 400 tok' : t.scriptsWarn}</li>
-		</ul>
-		<SourceTip
-			{lang}
-			src={[run.conditionsSrc, card.hwSrc, ...checks.map((c) => c.file)]}
-			note={[run.metric[lang], card.hwLine ? localizeDecimals(card.hwLine[lang], lang) : '', ...checks.map((c) => t.checkNote(num(c.sheet, lang), num(c.scorecard, lang, 2)))].filter(Boolean).join(' · ')}
-		/>
-	</div>
-
-	<!-- ============ MODEL ============ -->
-	<div role="group" class="tile model" aria-labelledby="m-{run.model}">
-		<h3 id="m-{run.model}" class="m-name"><ModelMark model={run.model} size="0.9em" /> {#each info.name.split(' ') as w, i (i)}{i ? ' ' : ''}<span class="nw">{w}</span>{/each}</h3>
-		{#if isPick}<p class="pick"><span class="star" aria-hidden="true">★</span> {t.pickBadge}</p>{/if}
-		<p class="body">{info.what[lang]}</p>
-		<ul class="chips" role="list">
-			<li class="chip mono">{run.quant}</li>
-			{#if run.file}<li class="chip mono">{fmtGB(run.file.v, run.file.unit, lang).text}</li>{/if}
-			{#each info.good as g (g.en)}<li class="chip">{g[lang]}</li>{/each}
-		</ul>
-		<p class="lic fine">{t.license}: {info.license[lang]}</p>
-		<SourceTip {lang} src={[info.src, info.licenseSrc, ...(run.file ? [run.file.src] : [])]} note={isPick ? localizeDecimals(card.pick.why[lang], lang) : ''} />
-	</div>
-</div>
+		</details>
+</article>
 
 <style>
-	/* ---------- bento: related data in one dense grid of tiles ---------- */
+	/* ---------- one ranked model: header strip, the main tiles, then the disclosure ---------- */
+	.block {
+		--rim: var(--v, 255 122 26);
+		display: grid;
+		grid-template-columns: minmax(0, 1fr);
+		gap: var(--sp-3);
+		scroll-margin-top: 6rem;
+	}
+	.bh {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto auto;
+		align-items: center;
+		gap: var(--sp-2) clamp(0.75rem, 2vw, 1.5rem);
+		padding: clamp(0.85rem, 1.6vw, 1.15rem) clamp(1rem, 2vw, 1.6rem);
+		border-radius: var(--r-xl);
+		background:
+			radial-gradient(70% 140% at 0% 50%, rgb(var(--rim) / 0.16), transparent 70%),
+			linear-gradient(90deg, color-mix(in srgb, var(--mc) 10%, transparent), transparent 60%),
+			linear-gradient(180deg, rgb(17 17 19 / 0.94), rgb(8 8 9 / 0.94));
+		box-shadow:
+			inset 0 0 0 1px rgb(var(--rim) / 0.3),
+			inset 0 1px 0 rgb(255 255 255 / 0.06);
+	}
+	.rank {
+		font-size: clamp(2rem, 1.2rem + 2.4vw, 3.25rem);
+		line-height: 0.9;
+		color: rgb(var(--rim) / 0.9);
+		text-shadow: 0 0 0.5em rgb(var(--rim) / 0.45);
+	}
+	.bh-id {
+		display: grid;
+		gap: 0.3rem;
+		min-width: 0;
+	}
+	.bh-name {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0 0.45em;
+		font-size: clamp(1.35rem, 1rem + 1.2vw, 2rem);
+		font-weight: 800;
+		font-stretch: 110%;
+		letter-spacing: -0.025em;
+		line-height: 1.05;
+		color: var(--text-hi);
+	}
+	.bh-meta {
+		margin: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.2rem 0.9rem;
+		font-size: var(--fs-2xs);
+		color: var(--text-mute);
+	}
+	.bh-x {
+		margin: 0;
+		line-height: 0.9;
+	}
 	.bento {
 		display: grid;
 		grid-template-columns: repeat(12, minmax(0, 1fr));
 		gap: var(--sp-3);
-		padding-top: var(--sp-4);
 	}
 	.tile {
 		position: relative;
@@ -386,36 +449,36 @@
 		gap: var(--sp-4);
 		align-content: start;
 		padding: clamp(1rem, 2vw, 1.6rem);
-		border: 1px solid rgb(255 122 26 / 0.2);
+		border: 1px solid rgb(var(--rim) / 0.2);
 		border-radius: var(--r-xl);
 		background:
 			radial-gradient(90% 60% at 0% 0%, color-mix(in srgb, var(--mc) 8%, transparent), transparent 60%),
-			radial-gradient(80% 70% at 100% 100%, rgb(255 122 26 / 0.08), transparent 60%),
-			linear-gradient(180deg, rgb(17 15 14 / 0.94), rgb(7 7 8 / 0.94));
+			radial-gradient(80% 70% at 100% 100%, rgb(var(--rim) / 0.08), transparent 60%),
+			linear-gradient(180deg, rgb(17 16 16 / 0.94), rgb(7 7 8 / 0.94));
 		box-shadow: var(--shadow-2);
 		overflow: hidden;
 		transition:
-			border-color var(--dur-3),
-			box-shadow var(--dur-3) var(--ease-out);
+			border-color 0.45s var(--ease-out),
+			box-shadow 0.45s var(--ease-out);
 	}
-	/* hover lights the rim and raises an ember glow under the tile */
+	/* hover lights the rim in the maker's colour and raises a glow under the tile */
 	.tile:is(:hover, :focus-within) {
-		border-color: rgb(255 122 26 / 0.6);
+		border-color: rgb(var(--rim) / 0.6);
 		box-shadow:
 			var(--shadow-2),
-			0 0 30px -10px rgb(255 122 26 / 0.4),
-			0 26px 60px -30px rgb(226 64 28 / 0.75);
+			0 0 30px -10px rgb(var(--rim) / 0.4),
+			0 26px 60px -30px rgb(var(--rim) / 0.55);
 	}
-	/* a heat line along the bottom of every tile, the model colour along the top */
+	/* a maker line along the bottom of every tile, the model colour along the top */
 	.tile::after {
 		content: '';
 		position: absolute;
 		inset: auto 8% 0;
 		height: 1px;
-		background: var(--hx-line-c);
-		opacity: 0.55;
+		background: linear-gradient(90deg, transparent, rgb(var(--rim) / 0.9) 40%, transparent);
+		opacity: 0.5;
 		pointer-events: none;
-		transition: opacity var(--dur-3);
+		transition: opacity 0.45s var(--ease-out);
 	}
 	.tile:is(:hover, :focus-within)::after {
 		opacity: 1;
@@ -443,44 +506,110 @@
 	.long {
 		grid-column: span 7;
 	}
-	.gain {
+	.gain,
+	.quality {
 		grid-column: span 5;
 	}
-	.quality,
 	.cond,
 	.model {
-		grid-column: span 4;
+		grid-column: span 6;
 	}
-	/* no speed-words pairing (different scripts): speed takes the row */
-	.speed:last-child,
+	/* no 500-word tile (a metric is missing): speed takes the row */
 	.speed:not(:has(+ .words)) {
 		grid-column: 1 / -1;
 	}
-	.long:not(:has(+ .gain)) {
+	/* in the disclosure: quality pairs with long context; alone it takes the row */
+	.gain ~ .quality,
+	.inst-tile + .quality,
+	.formats-tile + .quality,
+	.quality:first-child {
 		grid-column: 1 / -1;
 	}
 	@media (max-width: 64rem) {
 		.speed,
 		.words,
 		.long,
-		.gain {
+		.gain,
+		.quality {
 			grid-column: 1 / -1;
 		}
-		.quality,
-		.cond {
-			grid-column: span 6;
-		}
+	}
+	@media (max-width: 48rem) {
+		.cond,
 		.model {
 			grid-column: 1 / -1;
+		}
+		.bh {
+			grid-template-columns: auto minmax(0, 1fr) auto;
+		}
+		.bh .pick {
+			grid-column: 2 / -1;
+			grid-row: 2;
 		}
 	}
 	@media (max-width: 40rem) {
 		.bento {
 			gap: var(--sp-2);
 		}
-		.quality,
-		.cond {
-			grid-column: 1 / -1;
+	}
+	/* everything else measured: a full-width disclosure bar, the same for every model */
+	.more > summary {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--sp-3);
+		min-height: 3rem;
+		padding: 0 clamp(1rem, 2vw, 1.6rem);
+		border: 1px solid rgb(var(--rim) / 0.22);
+		border-radius: var(--r-xl);
+		background: rgb(255 255 255 / 0.015);
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text);
+		cursor: pointer;
+		list-style: none;
+		transition:
+			border-color 0.4s var(--ease-out),
+			color 0.4s var(--ease-out),
+			background-color 0.4s var(--ease-out);
+	}
+	.more > summary::-webkit-details-marker {
+		display: none;
+	}
+	.more > summary:hover {
+		border-color: rgb(var(--rim) / 0.6);
+		background: rgb(var(--rim) / 0.05);
+		color: var(--text-hi);
+	}
+	.more > summary:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 3px;
+	}
+	.chev {
+		width: 0.55rem;
+		height: 0.55rem;
+		border-right: 1.5px solid currentColor;
+		border-bottom: 1.5px solid currentColor;
+		transform: translateY(-25%) rotate(45deg);
+		transition: transform 0.45s var(--ease-out);
+	}
+	.more[open] .chev {
+		transform: translateY(15%) rotate(225deg);
+	}
+	.more > .bento {
+		padding-top: var(--sp-3);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.more[open] > .bento {
+			animation: more-in 0.5s var(--ease-out);
+		}
+	}
+	@keyframes more-in {
+		from {
+			opacity: 0;
+			transform: translate3d(0, -0.5rem, 0);
 		}
 	}
 	/* source chips keep their own width inside grid tiles */
@@ -612,40 +741,6 @@
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 		justify-self: start;
-	}
-	.apart {
-		margin: 0;
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
-		gap: var(--sp-3);
-	}
-	.apart div:hover {
-		border-color: rgb(255 122 26 / 0.55);
-	}
-	.apart div {
-		padding: var(--sp-4);
-		border: 1px solid rgb(255 122 26 / 0.16);
-		transition:
-			border-color var(--dur-2),
-			background-color var(--dur-2);
-		border-radius: var(--r-lg);
-	}
-	.apart dt {
-		color: var(--text);
-		font-weight: 600;
-		font-size: var(--fs-sm);
-	}
-	.apart dd {
-		margin: var(--sp-2) 0 0;
-	}
-	.apart .big {
-		font-size: var(--fs-2xl);
-		color: var(--text-hi);
-	}
-	.u {
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		color: var(--text-mute);
 	}
 
 	/* ---------- words ---------- */
@@ -947,21 +1042,14 @@
 		font-size: var(--fs-2xs);
 		color: var(--text);
 	}
-	.chip.metric {
-		border-style: dashed;
-	}
-	.m-name {
+	.metric-line {
 		margin: 0;
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0 0.5rem;
-		font-size: var(--fs-xl);
-		font-weight: 800;
-		font-stretch: 108%;
-		letter-spacing: -0.02em;
-		line-height: 1.1;
-		color: var(--text-hi);
+		line-height: 1.5;
+	}
+	.why {
+		margin: 0;
+		padding-left: var(--sp-3);
+		border-left: 2px solid var(--mc);
 	}
 	.pick {
 		margin: 0;
@@ -973,6 +1061,7 @@
 		font-size: var(--fs-xs);
 		font-weight: 650;
 		color: var(--text-hi);
+		white-space: nowrap;
 	}
 	.star {
 		color: var(--mc);
@@ -982,9 +1071,6 @@
 		color: var(--text);
 		font-size: var(--fs-sm);
 		line-height: 1.5;
-	}
-	.lic {
-		margin: 0;
 	}
 	.model {
 		background:

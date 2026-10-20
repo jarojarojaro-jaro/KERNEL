@@ -7,6 +7,7 @@
 	import { cardsCopy } from './copy';
 	import { EST_SRC, GPU_SRC, MEASURED, queueEstimate, splitName } from './explorer';
 	import { Play } from './play.svelte';
+	import VendorTheme from './VendorTheme.svelte';
 
 	let { gpu }: { gpu: Gpu } = $props();
 
@@ -20,7 +21,8 @@
 	const share = (v: number) => `${Math.round((v / gpu.vram!) * 100)}`;
 </script>
 
-<CardHead id={gpu.id} {prefix} {short} vendor={gpu.vendor} vram={gpu.vram ?? null} heat={0} queued spec="{gpu.vram ? `${gpu.vram} GB · ` : ''}{gpu.arch}">
+<VendorTheme vendor={gpu.vendor}>
+<CardHead id={gpu.id} {prefix} {short} vendor={gpu.vendor} vram={gpu.vram ?? null} heat={0} queued spec="{gpu.vram ? `${gpu.vram} GB · ` : ''}{gpu.arch}">
 	<div class="q">
 		<p class="qt hx-h">{t.queueTitle}</p>
 		<p class="lede">{t.queueLede}</p>
@@ -37,7 +39,6 @@
 				<span class="r0 mono">0</span>
 				<span class="r1 mono">{scale} t/s</span>
 			</div>
-			<SourceTip {lang} src={[EST_SRC, GPU_SRC, 'app/landing/src/lib/data/models.json']} note={t.estimateLede} />
 		</div>
 	{/if}
 </CardHead>
@@ -52,7 +53,6 @@
 		</div>
 		<div><dt>{t.hw.arch}</dt><dd class="txt">{gpu.arch}</dd></div>
 	</dl>
-	<SourceTip {lang} src={GPU_SRC} note={gpu.bwSource === 'spec' ? t.vendorSpec : ''} />
 </section>
 
 <section class="wrap est" aria-labelledby="est-title" use:fill.view>
@@ -102,6 +102,7 @@
 		{/each}
 	</ul>
 </section>
+</VendorTheme>
 
 <style>
 	.wrap {
@@ -133,11 +134,11 @@
 		width: 100%;
 		margin-top: var(--sp-4);
 		padding: var(--sp-5);
-		border: 1px dashed rgb(255 122 26 / 0.5);
+		border: 1px dashed rgb(var(--v) / 0.5);
 		border-radius: var(--r-lg);
 		background:
-			radial-gradient(80% 70% at 0% 0%, rgb(255 122 26 / 0.1), transparent 65%),
-			repeating-linear-gradient(135deg, rgb(255 122 26 / 0.025) 0 6px, transparent 6px 12px),
+			radial-gradient(80% 70% at 0% 0%, rgb(var(--v) / 0.1), transparent 65%),
+			repeating-linear-gradient(135deg, rgb(var(--v) / 0.025) 0 6px, transparent 6px 12px),
 			rgb(10 9 9 / 0.9);
 	}
 	.he-n {
@@ -204,13 +205,13 @@
 		margin: 0;
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
-		border: 1px solid rgb(255 122 26 / 0.22);
+		border: 1px solid rgb(var(--v) / 0.25);
 		border-radius: var(--r-lg);
 		overflow: hidden;
 	}
 	.strip div {
 		padding: var(--sp-4);
-		border-right: 1px solid rgb(255 122 26 / 0.14);
+		border-right: 1px solid rgb(var(--v) / 0.16);
 	}
 	.strip div:last-child {
 		border-right: 0;
@@ -292,11 +293,11 @@
 	.track {
 		position: relative;
 		height: 3.25rem;
-		border: 1px dashed rgb(255 122 26 / 0.45);
+		border: 1px dashed rgb(var(--v) / 0.45);
 		border-radius: var(--r-md);
 		background:
-			repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--cells) - 1px), rgb(255 122 26 / 0.07) calc(100% / var(--cells) - 1px) calc(100% / var(--cells))),
-			linear-gradient(90deg, rgb(255 122 26 / 0.05), transparent),
+			repeating-linear-gradient(90deg, transparent 0 calc(100% / var(--cells) - 1px), rgb(var(--v) / 0.07) calc(100% / var(--cells) - 1px) calc(100% / var(--cells))),
+			linear-gradient(90deg, rgb(var(--v) / 0.05), transparent),
 			#09080a;
 	}
 	.need {
