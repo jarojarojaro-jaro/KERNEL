@@ -1,0 +1,418 @@
+0.00.119.038 I srv  llama_server: initializing ...
+0.00.119.058 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.119.214 I srv  init_listene: The UI is disabled
+0.00.119.215 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.119.358 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.124.481 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-Q2_K_XL.gguf'
+0.04.446.958 I cmn          init: llama threadpool init, n_threads = 6
+0.04.579.884 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-Q2_K_XL.gguf'
+0.04.644.417 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 36864, kv_unified = 'false'
+1.16.507.147 I spec common_spec_: context lookup: mode 3, width 16, tail match >= 6, log ''
+1.16.628.431 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+1.16.628.502 I srv  llama_server: model loaded
+1.16.628.508 I srv  llama_server: listening on http://127.0.0.1:18741
+1.17.370.854 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+1.17.370.980 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.18.570.883 I slot print_timing: id  0 | task 0 | prompt eval time =     919.41 ms /    41 tokens (   22.42 ms per token,    44.59 tokens per second)
+1.18.570.894 I slot print_timing: id  0 | task 0 |        eval time =     280.42 ms /    16 tokens (   18.69 ms per token,    53.49 tokens per second)
+1.18.570.897 I slot print_timing: id  0 | task 0 |       total time =    1199.84 ms /    57 tokens
+1.18.570.906 I slot print_timing: id  0 | task 0 |    graphs reused =          2
+1.18.570.918 hostgap[request]: 8 steps, 9265.291 ms/step wall
+hostgap  llm.sync.out       -> llm.dec.in         n       1 mean 71928274.94 us max 71928274.9 us 8991034.37 us/step
+hostgap  llm.sync.out       -> srv.update         n       1 mean 754357.56 us max   754357.6 us 94294.70 us/step
+hostgap  cuda.gc.in         -> cuda.direct        n      15 mean  31147.92 us max   239172.8 us 58402.36 us/step
+hostgap  llm.sync.out       -> llm.sync.in        n     149 mean   2330.59 us max   106159.5 us 43407.26 us/step
+hostgap  srv.update         -> llm.sync.in        n       2 mean 125269.11 us max   125412.9 us 31317.28 us/step
+hostgap  llm.sync.in        -> llm.sync.out       n     188 mean    712.02 us max    27263.1 us 16732.54 us/step
+hostgap  llm.sync.out       -> llm.dec.prep       n       3 mean  30645.11 us max    48509.6 us 11491.92 us/step
+hostgap  llm.dec.prep       -> llm.graph          n      22 mean   4094.58 us max    15326.8 us 11260.08 us/step
+hostgap  llm.inputs         -> cuda.gc.in         n      22 mean    625.83 us max     5192.8 us  1721.02 us/step
+hostgap  llm.compute        -> llm.dec.out        n      22 mean    606.09 us max     3662.8 us  1666.75 us/step
+hostgap  cuda.cap.in        -> cuda.cap.out       n       3 mean   2861.81 us max     7591.3 us  1073.18 us/step
+hostgap  cuda.cap.out       -> cuda.exec          n       3 mean   2244.57 us max     5833.3 us   841.71 us/step
+hostgap  llm.dec.out        -> llm.sync.in        n      16 mean    278.96 us max     3638.9 us   557.92 us/step
+hostgap  llm.dec.in         -> llm.dec.prep       n      19 mean    206.01 us max      890.4 us   489.28 us/step
+hostgap  llm.graph          -> llm.inputs         n      22 mean     87.38 us max      191.8 us   240.30 us/step
+hostgap  que.work.end       -> srv.dec.out        n       8 mean    133.60 us max      207.3 us   133.60 us/step
+hostgap  mtp.proc.dec       -> llm.dec.in         n       8 mean    126.70 us max      791.3 us   126.70 us/step
+hostgap  que.work.end       -> srv.spec.out       n       8 mean    111.04 us max      180.9 us   111.04 us/step
+hostgap  cuda.exec          -> llm.compute        n       7 mean     83.02 us max      399.4 us    72.65 us/step
+hostgap  que.work.end       -> srv.draft.out      n       4 mean    107.76 us max      127.9 us    53.88 us/step
+hostgap  llm.sync.out       -> srv.render         n       2 mean    134.15 us max      139.0 us    33.54 us/step
+hostgap  llm.sync.out       -> srv.post.out       n       5 mean     42.82 us max       46.5 us    26.76 us/step
+hostgap  cuda.gc.in         -> cuda.exec          n       4 mean     36.62 us max      115.0 us    18.31 us/step
+hostgap  llm.dec.in         -> llm.sync.in        n       3 mean     45.68 us max       65.6 us    17.13 us/step
+hostgap  srv.dec.in         -> llm.dec.in         n       8 mean     16.84 us max       25.3 us    16.84 us/step
+hostgap  cuda.gc.in         -> cuda.cap.in        n       3 mean     44.00 us max      106.1 us    16.50 us/step
+hostgap  srv.draft.out      -> srv.render         n       4 mean     25.76 us max       31.6 us    12.88 us/step
+hostgap  srv.post.out       -> srv.update         n       7 mean     14.56 us max       24.6 us    12.74 us/step
+hostgap  srv.post.in        -> llm.sync.in        n       6 mean     15.15 us max       58.2 us    11.36 us/step
+hostgap  srv.draft.in       -> mtp.chain.in       n       4 mean     20.45 us max       22.3 us    10.23 us/step
+hostgap  srv.spec.in        -> llm.sync.in        n       8 mean     10.21 us max       21.9 us    10.21 us/step
+hostgap  llm.sync.out       -> mtp.proc.out       n       8 mean      6.26 us max        9.4 us     6.26 us/step
+hostgap  srv.update         -> srv.render         n       2 mean     24.85 us max       38.6 us     6.21 us/step
+hostgap  llm.sync.out       -> mtp.proc.dec       n       8 mean      6.16 us max       19.4 us     6.16 us/step
+hostgap  mtp.chain.in       -> llm.dec.in         n       4 mean     10.31 us max       11.6 us     5.16 us/step
+hostgap  llm.dec.out        -> mtp.chain.dec      n       4 mean      7.94 us max       12.8 us     3.97 us/step
+hostgap  srv.update         -> srv.draft.in       n       4 mean      7.62 us max       14.4 us     3.81 us/step
+hostgap  mtp.chain.tok      -> que.work.end       n       4 mean      7.54 us max        9.9 us     3.77 us/step
+hostgap  srv.render         -> srv.dec.in         n       8 mean      2.78 us max        8.6 us     2.78 us/step
+hostgap  cuda.direct        -> llm.compute        n      15 mean      1.02 us max        2.2 us     1.91 us/step
+hostgap  srv.dec.out        -> srv.spec.in        n       8 mean      1.40 us max        2.4 us     1.40 us/step
+hostgap  llm.dec.out        -> que.work.end       n       2 mean      5.11 us max        5.9 us     1.28 us/step
+hostgap  srv.post.in        -> srv.post.out       n       2 mean      4.35 us max        5.7 us     1.09 us/step
+hostgap  srv.spec.out       -> srv.post.in        n       8 mean      1.08 us max        1.9 us     1.08 us/step
+hostgap  llm.sync.out       -> que.work.end       n       6 mean      1.24 us max        1.6 us     0.93 us/step
+hostgap  mtp.chain.dec      -> llm.sync.in        n       4 mean      1.39 us max        3.8 us     0.70 us/step
+hostgap  llm.sync.out       -> mtp.chain.tok      n       4 mean      1.33 us max        2.3 us     0.66 us/step
+hostgap  mtp.proc.out       -> que.work.end       n       8 mean      0.62 us max        1.4 us     0.62 us/step
+I slot print_timing: id  0 | task 0 | draft acceptance = 0.66667 (   10 accepted /    15 generated), mean len =  3.50
+1.18.570.928 I spec  print_stats: context lookup: 4 steps, lookup proposed at 0, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 0.039 ms
+1.18.571.055 I slot      release: id  0 | task 0 | stop processing: n_tokens = 56, truncated = 0
+1.18.579.462 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.284 (> 0.100 thold), f_keep = 0.589
+1.18.579.578 I slot launch_slot_: id  0 | task 9 | processing task, is_child = 0
+1.19.197.796 I spec  print_stats: context lookup: 4 steps, lookup proposed at 0, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 0.039 ms
+1.22.199.734 I slot print_timing: id  0 | task 9 | n_gen =    255, tg =  84.62 t/s, tg_3s =  84.95 t/s
+1.24.493.807 I slot print_timing: id  0 | task 9 | prompt eval time =     618.40 ms /   116 tokens (    5.33 ms per token,   187.58 tokens per second)
+1.24.493.815 I slot print_timing: id  0 | task 9 |        eval time =    5295.79 ms /   400 tokens (   13.27 ms per token,    75.34 tokens per second)
+1.24.493.816 I slot print_timing: id  0 | task 9 |       total time =    5914.19 ms /   516 tokens
+1.24.493.818 I slot print_timing: id  0 | task 9 |    graphs reused =        164
+1.24.493.825 I slot print_timing: id  0 | task 9 | draft acceptance = 0.35878 (  235 accepted /   655 generated), mean len =  2.43
+1.24.493.829 I spec  print_stats: context lookup: 168 steps, lookup proposed at 3, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 0.818 ms
+1.24.493.988 I slot      release: id  0 | task 9 | stop processing: n_tokens = 515, truncated = 0
+hostgap[request]: 167 steps, 35.464 ms/step wall
+hostgap  llm.sync.in        -> llm.sync.out       n    3836 mean   1158.46 us max    29918.9 us 26609.96 us/step
+hostgap  llm.compute        -> llm.dec.out        n     498 mean   1202.97 us max     3709.5 us  3587.30 us/step
+hostgap  srv.update         -> llm.sync.in        n       2 mean 123660.74 us max   123742.6 us  1480.97 us/step
+hostgap  llm.sync.out       -> llm.sync.in        n    3006 mean     53.31 us max    77312.4 us   959.53 us/step
+hostgap  cuda.gc.in         -> cuda.direct        n      12 mean   9910.19 us max    47410.7 us   712.11 us/step
+hostgap  llm.inputs         -> cuda.gc.in         n     498 mean    176.47 us max      878.6 us   526.24 us/step
+hostgap  llm.dec.prep       -> llm.graph          n     498 mean     80.54 us max    10584.4 us   240.17 us/step
+hostgap  llm.graph          -> llm.inputs         n     498 mean     77.41 us max      356.7 us   230.85 us/step
+hostgap  llm.dec.in         -> llm.dec.prep       n     498 mean     69.84 us max     2412.0 us   208.26 us/step
+hostgap  srv.update         -> srv.render         n       1 mean  27382.24 us max    27382.2 us   163.97 us/step
+hostgap  cuda.gc.in         -> cuda.exec          n     483 mean     43.84 us max      481.1 us   126.79 us/step
+hostgap  que.work.end       -> srv.dec.out        n     167 mean    100.11 us max      210.4 us   100.11 us/step
+hostgap  que.work.end       -> srv.draft.out      n     164 mean     86.99 us max      211.4 us    85.43 us/step
+hostgap  que.work.end       -> srv.spec.out       n     167 mean     82.60 us max      200.5 us    82.60 us/step
+hostgap  srv.post.out       -> srv.update         n     167 mean     60.19 us max     8100.5 us    60.19 us/step
+hostgap  cuda.exec          -> llm.compute        n     486 mean     17.34 us max       99.4 us    50.48 us/step
+hostgap  cuda.cap.in        -> cuda.cap.out       n       3 mean   2463.82 us max     6402.1 us    44.26 us/step
+hostgap  mtp.proc.dec       -> llm.dec.in         n     167 mean     42.51 us max     2048.3 us    42.51 us/step
+hostgap  llm.sync.out       -> srv.post.out       n     165 mean     33.51 us max       72.7 us    33.11 us/step
+hostgap  srv.draft.in       -> mtp.chain.in       n     164 mean     20.49 us max       58.7 us    20.12 us/step
+hostgap  srv.draft.out      -> srv.render         n     164 mean     15.17 us max       34.6 us    14.90 us/step
+hostgap  llm.dec.out        -> llm.sync.in        n     332 mean      5.85 us max      931.7 us    11.62 us/step
+hostgap  mtp.chain.in       -> llm.dec.in         n     164 mean      9.93 us max       25.4 us     9.76 us/step
+hostgap  srv.dec.in         -> llm.dec.in         n     167 mean      9.43 us max       54.2 us     9.43 us/step
+hostgap  cuda.cap.out       -> cuda.exec          n       3 mean    417.59 us max      733.0 us     7.50 us/step
+hostgap  srv.spec.in        -> llm.sync.in        n     167 mean      6.88 us max       21.6 us     6.88 us/step
+hostgap  llm.sync.out       -> mtp.proc.out       n     167 mean      6.07 us max       25.1 us     6.07 us/step
+hostgap  srv.post.in        -> llm.sync.in        n     165 mean      6.01 us max       64.8 us     5.94 us/step
+hostgap  srv.update         -> srv.draft.in       n     164 mean      5.28 us max        8.8 us     5.18 us/step
+hostgap  llm.sync.out       -> mtp.proc.dec       n     167 mean      4.01 us max       30.6 us     4.01 us/step
+hostgap  llm.dec.out        -> mtp.chain.dec      n     164 mean      4.08 us max       14.8 us     4.00 us/step
+hostgap  mtp.chain.tok      -> que.work.end       n     164 mean      3.93 us max       11.3 us     3.86 us/step
+hostgap  llm.sync.out       -> srv.render         n       2 mean    168.06 us max      195.7 us     2.01 us/step
+hostgap  srv.render         -> srv.dec.in         n     167 mean      1.32 us max        9.8 us     1.32 us/step
+hostgap  llm.sync.out       -> que.work.end       n     165 mean      1.28 us max        5.6 us     1.26 us/step
+hostgap  srv.dec.out        -> srv.spec.in        n     167 mean      1.02 us max        5.6 us     1.02 us/step
+hostgap  cuda.gc.in         -> cuda.cap.in        n       3 mean     46.50 us max      114.5 us     0.84 us/step
+hostgap  srv.spec.out       -> srv.post.in        n     167 mean      0.83 us max        1.3 us     0.83 us/step
+hostgap  llm.sync.out       -> mtp.chain.tok      n     164 mean      0.54 us max        1.4 us     0.53 us/step
+hostgap  mtp.proc.out       -> que.work.end       n     167 mean      0.48 us max        1.6 us     0.48 us/step
+hostgap  mtp.chain.dec      -> llm.sync.in        n     164 mean      0.31 us max        0.7 us     0.30 us/step
+hostgap  cuda.direct        -> llm.compute        n      12 mean      0.96 us max        1.8 us     0.07 us/step
+hostgap  llm.dec.out        -> que.work.end       n       2 mean      4.15 us max        4.3 us     0.05 us/step
+hostgap  srv.post.in        -> srv.post.out       n       2 mean      2.84 us max        2.9 us     0.03 us/step
+1.24.502.079 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.327 (> 0.100 thold), f_keep = 0.064
+1.25.020.631 I slot launch_slot_: id  0 | task 177 | processing task, is_child = 0
+1.25.627.182 I spec  print_stats: context lookup: 168 steps, lookup proposed at 3, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 0.818 ms
+1.28.650.450 I slot print_timing: id  0 | task 177 | n_gen =    306, tg = 100.90 t/s, tg_3s = 101.23 t/s
+1.29.621.577 I slot print_timing: id  0 | task 177 | prompt eval time =     606.86 ms /   101 tokens (    6.01 ms per token,   166.43 tokens per second)
+1.29.621.584 I slot print_timing: id  0 | task 177 |        eval time =    3994.04 ms /   400 tokens (   10.01 ms per token,    99.90 tokens per second)
+1.29.621.586 I slot print_timing: id  0 | task 177 |       total time =    4600.89 ms /   501 tokens
+1.29.621.587 I slot print_timing: id  0 | task 177 |    graphs reused =        284
+1.29.621.596 I slot print_timing: id  0 | task 177 | draft acceptance = 0.56557 (  276 accepted /   488 generated), mean len =  3.26
+1.29.621.600 I spec  print_stats: context lookup: 290 steps, lookup proposed at 14, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 1.509 ms
+1.29.621.750 I slot      release: id  0 | task 177 | stop processing: n_tokens = 500, truncated = 0
+hostgap[request]: 126 steps, 40.693 ms/step wall
+hostgap  llm.sync.in        -> llm.sync.out       n    3492 mean    956.74 us max    27941.3 us 26515.23 us/step
+hostgap  llm.compute        -> llm.dec.out        n     374 mean   1196.93 us max     6324.2 us  3552.79 us/step
+hostgap  srv.post.out       -> llm.sync.in        n       1 mean 443178.96 us max   443179.0 us  3517.29 us/step
+hostgap  llm.sync.out       -> llm.sync.in        n    2867 mean     83.08 us max    82456.3 us  1890.35 us/step
+hostgap  srv.update         -> llm.sync.in        n       2 mean 118843.90 us max   119279.5 us  1886.41 us/step
+hostgap  cuda.gc.in         -> cuda.direct        n      12 mean   9647.18 us max    42634.4 us   918.78 us/step
+hostgap  llm.inputs         -> cuda.gc.in         n     374 mean    181.75 us max      755.1 us   539.49 us/step
+hostgap  llm.dec.prep       -> llm.graph          n     374 mean     92.32 us max     5489.8 us   274.02 us/step
+hostgap  llm.graph          -> llm.inputs         n     374 mean     81.51 us max      291.6 us   241.96 us/step
+hostgap  srv.update         -> srv.render         n       2 mean  13977.64 us max    27942.8 us   221.87 us/step
+hostgap  llm.dec.in         -> llm.dec.prep       n     374 mean     72.50 us max     1483.4 us   215.19 us/step
+hostgap  cuda.cap.in        -> cuda.cap.out       n       6 mean   3613.61 us max     7101.7 us   172.08 us/step
+hostgap  cuda.gc.in         -> cuda.exec          n     356 mean     45.33 us max      176.7 us   128.07 us/step
+hostgap  que.work.end       -> srv.dec.out        n     126 mean    109.56 us max      225.1 us   109.56 us/step
+hostgap  que.work.end       -> srv.spec.out       n     126 mean     87.83 us max      213.2 us    87.83 us/step
+hostgap  que.work.end       -> srv.draft.out      n     122 mean     88.49 us max      184.4 us    85.68 us/step
+hostgap  cuda.cap.out       -> cuda.exec          n       6 mean   1422.58 us max     5515.5 us    67.74 us/step
+hostgap  cuda.exec          -> llm.compute        n     362 mean     18.97 us max      426.3 us    54.49 us/step
+hostgap  mtp.proc.dec       -> llm.dec.in         n     126 mean     37.15 us max      481.2 us    37.15 us/step
+hostgap  llm.sync.out       -> srv.post.out       n     124 mean     33.87 us max       63.6 us    33.33 us/step
+hostgap  srv.draft.in       -> mtp.chain.in       n     122 mean     20.47 us max       46.4 us    19.82 us/step
+hostgap  cuda.gc.in         -> cuda.cap.in        n       6 mean    332.76 us max     1719.0 us    15.85 us/step
+hostgap  srv.draft.out      -> srv.render         n     122 mean     15.53 us max       30.7 us    15.03 us/step
+hostgap  srv.post.out       -> srv.update         n     125 mean     11.84 us max       21.9 us    11.75 us/step
+hostgap  mtp.chain.in       -> llm.dec.in         n     122 mean     10.42 us max       44.3 us    10.09 us/step
+hostgap  srv.dec.in         -> llm.dec.in         n     126 mean      9.95 us max       52.8 us     9.95 us/step
+hostgap  llm.dec.out        -> llm.sync.in        n     250 mean      4.78 us max      264.0 us     9.49 us/step
+hostgap  srv.spec.in        -> llm.sync.in        n     126 mean      7.39 us max       27.7 us     7.39 us/step
+hostgap  srv.post.in        -> llm.sync.in        n     124 mean      7.17 us max      171.0 us     7.05 us/step
+hostgap  llm.sync.out       -> mtp.proc.out       n     126 mean      6.00 us max       17.5 us     6.00 us/step
+hostgap  srv.update         -> srv.draft.in       n     122 mean      5.35 us max        8.3 us     5.18 us/step
+hostgap  llm.sync.out       -> srv.update         n       1 mean    582.29 us max      582.3 us     4.62 us/step
+hostgap  llm.sync.out       -> mtp.proc.dec       n     126 mean      4.15 us max       17.5 us     4.15 us/step
+hostgap  mtp.chain.tok      -> que.work.end       n     122 mean      3.96 us max       11.9 us     3.83 us/step
+hostgap  llm.dec.out        -> mtp.chain.dec      n     122 mean      3.80 us max        9.5 us     3.68 us/step
+hostgap  llm.sync.out       -> srv.render         n       2 mean    148.78 us max      179.9 us     2.36 us/step
+hostgap  srv.render         -> srv.dec.in         n     126 mean      1.43 us max       10.3 us     1.43 us/step
+hostgap  llm.sync.out       -> que.work.end       n     124 mean      1.33 us max        6.9 us     1.31 us/step
+hostgap  srv.dec.out        -> srv.spec.in        n     126 mean      1.06 us max        5.7 us     1.06 us/step
+hostgap  srv.spec.out       -> srv.post.in        n     126 mean      0.88 us max        2.0 us     0.88 us/step
+hostgap  llm.sync.out       -> mtp.chain.tok      n     122 mean      0.53 us max        1.4 us     0.51 us/step
+hostgap  mtp.proc.out       -> que.work.end       n     126 mean      0.50 us max        1.4 us     0.50 us/step
+hostgap  mtp.chain.dec      -> llm.sync.in        n     122 mean      0.30 us max        0.7 us     0.29 us/step
+hostgap  cuda.direct        -> llm.compute        n      12 mean      0.93 us max        1.8 us     0.09 us/step
+hostgap  llm.dec.out        -> que.work.end       n       2 mean      4.78 us max        5.4 us     0.08 us/step
+hostgap  srv.post.in        -> srv.post.out       n       2 mean      2.83 us max        2.8 us     0.04 us/step
+1.29.627.619 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.434 (> 0.100 thold), f_keep = 0.066
+1.30.296.133 I slot launch_slot_: id  0 | task 304 | processing task, is_child = 0
+1.30.890.113 I spec  print_stats: context lookup: 290 steps, lookup proposed at 14, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 1.509 ms
+1.33.910.449 I slot print_timing: id  0 | task 304 | n_gen =    303, tg = 100.00 t/s, tg_3s = 100.33 t/s
+1.35.018.917 I slot print_timing: id  0 | task 304 | prompt eval time =     594.28 ms /    76 tokens (    7.82 ms per token,   127.89 tokens per second)
+1.35.018.924 I hostgap[request]: 130 steps, 41.514 ms/step wall
+hostgap  llm.sync.in        -> llm.sync.out       n    3500 mean    982.58 us max    27160.6 us 26454.02 us/step
+hostgap  srv.post.out       -> llm.sync.in        n       1 mean 584518.82 us max   584518.8 us  4496.30 us/step
+hostgap  llm.compute        -> llm.dec.out        n     387 mean   1196.00 us max     3660.3 us  3560.41 us/step
+hostgap  llm.sync.out       -> llm.sync.in        n    2854 mean     85.98 us max    88848.9 us  1887.58 us/step
+hostgap  srv.update         -> llm.sync.in        n       2 mean 121218.62 us max   121301.8 us  1864.90 us/step
+hostgap  cuda.gc.in         -> cuda.direct        n      13 mean   9077.30 us max    36112.6 us   907.73 us/step
+hostgap  llm.inputs         -> cuda.gc.in         n     387 mean    175.66 us max      528.7 us   522.92 us/step
+slot print_timing: id  0 | task 304 |        eval time =    4128.45 ms /   400 tokens (   10.35 ms per token,    96.65 tokens per second)
+1.35.018.926 I slot print_timing: id  0 | task 304 |       total time =    4722.73 ms /   476 tokens
+1.35.018.927 I slot print_timing: id  0 | task 304 |    graphs reused =        408
+1.35.018.943 I slot print_timing: id  0 | task 304 | draft acceptance = 0.53861 (  272 accepted /   505 generated), mean len =  3.14
+1.35.018.947 hostgap  llm.dec.prep       -> llm.graph          n     387 mean    111.03 us max    13478.3 us   330.52 us/step
+hostgap  srv.update         -> srv.render         n       1 mean  35180.73 us max    35180.7 us   270.62 us/step
+hostgap  llm.graph          -> llm.inputs         n     387 mean     78.58 us max      234.7 us   233.94 us/step
+hostgap  llm.dec.in         -> llm.dec.prep       n     387 mean     68.88 us max      897.1 us   205.05 us/step
+hostgap  cuda.gc.in         -> cuda.exec          n     369 mean     43.06 us max      477.8 us   122.23 us/step
+hostgap  cuda.cap.in        -> cuda.cap.out       n       5 mean   3162.14 us max     7855.7 us   121.62 us/step
+hostgap  que.work.end       -> srv.dec.out        n     130 mean    105.60 us max      240.1 us   105.60 us/step
+hostgap  que.work.end       -> srv.draft.out      n     127 mean     87.14 us max      187.2 us    85.13 us/step
+hostgap  que.work.end       -> srv.spec.out       n     130 mean     81.51 us max      211.6 us    81.51 us/step
+hostgap  cuda.exec          -> llm.compute        n     374 mean     17.03 us max       92.7 us    49.00 us/step
+hostgap  mtp.proc.dec       -> llm.dec.in         n     130 mean     33.49 us max      210.5 us    33.49 us/step
+hostgap  llm.sync.out       -> srv.post.out       n     128 mean     32.25 us max       51.8 us    31.76 us/step
+hostgap  cuda.cap.out       -> cuda.exec          n       5 mean    593.47 us max     1479.0 us    22.83 us/step
+hostgap  srv.draft.in       -> mtp.chain.in       n     127 mean     21.05 us max       45.8 us    20.57 us/step
+hostgap  srv.draft.out      -> srv.render         n     127 mean     15.23 us max       35.7 us    14.88 us/step
+hostgap  srv.post.out       -> srv.update         n     129 mean     12.07 us max       21.8 us    11.98 us/step
+hostgap  mtp.chain.in       -> llm.dec.in         n     127 mean     10.41 us max       24.1 us    10.17 us/step
+hostgap  srv.dec.in         -> llm.dec.in         n     130 mean      9.64 us max       51.8 us     9.64 us/step
+hostgap  srv.post.in        -> llm.sync.in        n     128 mean      7.47 us max      219.7 us     7.35 us/step
+hostgap  llm.dec.out        -> llm.sync.in        n     258 mean      3.47 us max       91.4 us     6.88 us/step
+hostgap  srv.spec.in        -> llm.sync.in        n     130 mean      6.85 us max       11.4 us     6.85 us/step
+hostgap  llm.sync.out       -> mtp.proc.out       n     130 mean      6.01 us max       18.2 us     6.01 us/step
+hostgap  srv.update         -> srv.draft.in       n     127 mean      5.42 us max        8.2 us     5.29 us/step
+hostgap  llm.sync.out       -> srv.update         n       1 mean    595.56 us max      595.6 us     4.58 us/step
+hostgap  llm.dec.out        -> mtp.chain.dec      n     127 mean      4.11 us max       12.8 us     4.02 us/step
+hostgap  mtp.chain.tok      -> que.work.end       n     127 mean      4.03 us max        9.8 us     3.93 us/step
+hostgap  llm.sync.out       -> mtp.proc.dec       n     130 mean      3.91 us max       10.8 us     3.91 us/step
+hostgap  llm.sync.out       -> srv.render         n       2 mean    139.90 us max      151.1 us     2.15 us/step
+hostgap  cuda.gc.in         -> cuda.cap.in        n       5 mean     53.89 us max      121.3 us     2.07 us/step
+hostgap  srv.render         -> srv.dec.in         n     130 mean      1.27 us max        4.1 us     1.27 us/step
+hostgap  llm.sync.out       -> que.work.end       n     128 mean      1.23 us max        2.3 us     1.21 us/step
+hostgap  srv.dec.out        -> srv.spec.in        n     130 mean      0.99 us max        1.8 us     0.99 us/step
+hostgap  srv.spec.out       -> srv.post.in        n     130 mean      0.86 us max        1.5 us     0.86 us/step
+hostgap  mtp.proc.out       -> que.work.end       n     130 mean      0.59 us max       12.5 us     0.59 us/step
+hostgap  llm.sync.out       -> mtp.chain.tok      n     127 mean      0.56 us max        1.6 us     0.54 us/step
+hostgap  mtp.chain.dec      -> llm.sync.in        n     127 mean      0.39 us max        5.6 us     0.38 us/step
+hostgap  cuda.direct        -> llm.compute        n      13 mean      0.89 us max        1.7 us     0.09 us/step
+hostgap  llm.dec.out        -> que.work.end       n       2 mean      4.45 us max        4.9 us     0.07 us/step
+hostgap  srv.post.in        -> srv.post.out       n       2 mean      2.89 us max        3.3 us     0.04 us/step
+I spec  print_stats: context lookup: 417 steps, lookup proposed at 20, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 2.294 ms
+1.35.019.007 I slot      release: id  0 | task 304 | stop processing: n_tokens = 475, truncated = 0
+1.35.025.566 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.550 (> 0.100 thold), f_keep = 0.069
+1.35.671.257 I slot launch_slot_: id  0 | task 435 | processing task, is_child = 0
+1.36.260.680 I spec  print_stats: context lookup: 417 steps, lookup proposed at 20, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 2.294 ms
+1.39.268.234 I slot print_timing: id  0 | task 435 | n_gen =    238, tg =  78.81 t/s, tg_3s =  79.14 t/s
+1.41.005.450 I slot print_timing: id  0 | task 435 | prompt eval time =     589.65 ms /    60 tokens (    9.83 ms per token,   101.76 tokens per second)
+1.41.005.457 I slot print_timing: id  0 | task 435 |        eval time =    4744.49 ms /   371 tokens (   12.82 ms per token,    77.99 tokens per second)
+1.41.005.458 I slot print_timing: id  0 | task 435 |       total time =    5334.14 ms /   431 tokens
+1.41.005.459 I slot print_timing: id  0 | task 435 |    graphs reused =        553
+1.41.005.466 I slot print_timing: id  0 | task 435 | draft acceptance = 0.37925 (  223 accepted /   588 generated), mean len =  2.52
+1.41.005.469 I spec  print_stats: context lookup: 564 steps, lookup proposed at 22, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 2.970 ms
+1.41.005.537 I hostgap[request]: 150 steps, 39.907 ms/step wall
+hostgap  llm.sync.in        -> llm.sync.out       n    3473 mean   1150.46 us max    27116.1 us 26636.94 us/step
+hostgap  srv.post.out       -> llm.sync.in        n       1 mean 552019.94 us max   552019.9 us  3680.13 us/step
+hostgap  llm.compute        -> llm.dec.out        n     447 mean   1200.19 us max     3659.1 us  3576.58 us/step
+hostgap  llm.sync.out       -> llm.sync.in        n    2727 mean     93.69 us max    99163.3 us  1703.33 us/step
+hostgap  srv.update         -> llm.sync.in        n       2 mean 120957.94 us max   121351.1 us  1612.77 us/step
+hostgap  cuda.gc.in         -> cuda.direct        n      10 mean   8493.96 us max    30819.9 us   566.26 us/step
+hostgap  llm.inputs         -> cuda.gc.in         n     447 mean    171.74 us max      475.5 us   511.79 us/step
+hostgap  srv.update         -> srv.render         n       1 mean  34666.55 us max    34666.5 us   231.11 us/step
+hostgap  llm.graph          -> llm.inputs         n     447 mean     75.07 us max      144.8 us   223.71 us/step
+hostgap  llm.dec.in         -> llm.dec.prep       n     447 mean     63.50 us max      718.5 us   189.22 us/step
+hostgap  llm.dec.prep       -> llm.graph          n     447 mean     60.66 us max     4540.3 us   180.75 us/step
+hostgap  cuda.cap.in        -> cuda.cap.out       n       6 mean   3450.90 us max     7064.3 us   138.04 us/step
+hostgap  cuda.gc.in         -> cuda.exec          n     431 mean     42.99 us max      140.8 us   123.52 us/step
+hostgap  que.work.end       -> srv.dec.out        n     150 mean    105.19 us max      204.1 us   105.19 us/step
+hostgap  que.work.end       -> srv.draft.out      n     147 mean     86.82 us max      160.3 us    85.09 us/step
+hostgap  que.work.end       -> srv.spec.out       n     150 mean     84.73 us max      172.1 us    84.73 us/step
+hostgap  cuda.exec          -> llm.compute        n     437 mean     16.93 us max       82.3 us    49.32 us/step
+hostgap  llm.sync.out       -> srv.post.out       n     148 mean     34.09 us max       70.4 us    33.63 us/step
+hostgap  mtp.proc.dec       -> llm.dec.in         n     150 mean     31.47 us max      258.1 us    31.47 us/step
+hostgap  srv.draft.in       -> mtp.chain.in       n     147 mean     19.25 us max       49.0 us    18.87 us/step
+hostgap  cuda.cap.out       -> cuda.exec          n       6 mean    451.51 us max      924.1 us    18.06 us/step
+hostgap  srv.draft.out      -> srv.render         n     147 mean     15.55 us max       37.5 us    15.23 us/step
+hostgap  srv.post.out       -> srv.update         n     149 mean     11.35 us max       24.7 us    11.27 us/step
+hostgap  mtp.chain.in       -> llm.dec.in         n     147 mean      9.84 us max       21.9 us     9.65 us/step
+slot      release: id  0 | task 435 | stop processing: n_tokens = 430, truncated = 0
+hostgap  srv.dec.in         -> llm.dec.in         n     150 mean      8.87 us max       35.7 us     8.87 us/step
+hostgap  cuda.gc.in         -> cuda.cap.in        n       6 mean    177.50 us max      815.0 us     7.10 us/step
+hostgap  llm.dec.out        -> llm.sync.in        n     298 mean      3.40 us max      177.7 us     6.76 us/step
+hostgap  srv.spec.in        -> llm.sync.in        n     150 mean      6.54 us max       11.2 us     6.54 us/step
+hostgap  srv.post.in        -> llm.sync.in        n     148 mean      6.49 us max      142.2 us     6.40 us/step
+hostgap  llm.sync.out       -> mtp.proc.out       n     150 mean      5.72 us max        9.2 us     5.72 us/step
+hostgap  srv.update         -> srv.draft.in       n     147 mean      5.19 us max       17.9 us     5.08 us/step
+hostgap  llm.sync.out       -> srv.update         n       1 mean    593.88 us max      593.9 us     3.96 us/step
+hostgap  mtp.chain.tok      -> que.work.end       n     147 mean      3.99 us max        8.0 us     3.91 us/step
+hostgap  llm.sync.out       -> mtp.proc.dec       n     150 mean      3.85 us max       25.8 us     3.85 us/step
+hostgap  llm.dec.out        -> mtp.chain.dec      n     147 mean      3.92 us max       10.4 us     3.84 us/step
+hostgap  llm.sync.out       -> srv.render         n       2 mean    144.72 us max      170.7 us     1.93 us/step
+hostgap  srv.render         -> srv.dec.in         n     150 mean      1.28 us max        7.1 us     1.28 us/step
+hostgap  llm.sync.out       -> que.work.end       n     148 mean      1.26 us max        4.8 us     1.24 us/step
+hostgap  srv.dec.out        -> srv.spec.in        n     150 mean      0.97 us max        1.8 us     0.97 us/step
+hostgap  srv.spec.out       -> srv.post.in        n     150 mean      0.84 us max        1.2 us     0.84 us/step
+hostgap  llm.sync.out       -> mtp.chain.tok      n     147 mean      0.56 us max        1.6 us     0.55 us/step
+hostgap  mtp.proc.out       -> que.work.end       n     150 mean      0.47 us max        1.4 us     0.47 us/step
+hostgap  mtp.chain.dec      -> llm.sync.in        n     147 mean      0.31 us max        0.7 us     0.30 us/step
+hostgap  cuda.direct        -> llm.compute        n      10 mean      0.84 us max        1.7 us     0.06 us/step
+hostgap  llm.dec.out        -> que.work.end       n       2 mean      4.03 us max        4.4 us     0.05 us/step
+hostgap  srv.post.in        -> srv.post.out       n       2 mean      2.95 us max        3.0 us     0.04 us/step
+1.41.013.553 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.418 (> 0.100 thold), f_keep = 0.077
+1.41.648.173 I slot launch_slot_: id  0 | task 586 | processing task, is_child = 0
+1.42.255.824 I spec  print_stats: context lookup: 564 steps, lookup proposed at 22, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 2.970 ms
+1.45.271.924 I slot print_timing: id  0 | task 586 | n_gen =    283, tg =  93.51 t/s, tg_3s =  93.84 t/s
+1.46.471.964 I slot print_timing: id  0 | task 586 | prompt eval time =     607.92 ms /    79 tokens (    7.70 ms per token,   129.95 tokens per second)
+1.46.471.971 I slot print_timing: id  0 | task 586 |        eval time =    4215.81 ms /   400 tokens (   10.57 ms per token,    94.64 tokens per second)
+1.46.471.973 I slot print_timing: id  0 | task 586 |       total time =    4823.73 ms /   479 tokens
+1.46.471.974 I hostgap[request]: 133 steps, 41.099 ms/step wall
+hostgap  llm.sync.in        -> llm.sync.out       n    3527 mean   1004.29 us max    27333.9 us 26632.63 us/step
+hostgap  srv.post.out       -> llm.sync.in        n       1 mean 539755.26 us max   539755.3 us  4058.31 us/step
+hostgap  llm.compute        -> llm.dec.out        n     396 mean   1196.77 us max     3655.3 us  3563.31 us/step
+hostgap  llm.sync.out       -> llm.sync.in        n    2866 mean     94.56 us max   101889.2 us  2037.69 us/step
+hostgap  srv.update         -> llm.sync.in        n       2 mean 126126.73 us max   130701.9 us  1896.64 us/step
+hostgap  cuda.gc.in         -> cuda.direct        n      11 mean   7938.54 us max    31795.6 us   656.57 us/step
+hostgap  llm.inputs         -> cuda.gc.in         n     396 mean    172.43 us max      667.0 us   513.40 us/step
+hostgap  srv.update         -> srv.render         n       1 mean  35136.19 us max    35136.2 us   264.18 us/step
+hostgap  llm.graph          -> llm.inputs         n     396 mean     76.93 us max      231.9 us   229.06 us/step
+hostgap  llm.dec.prep       -> llm.graph          n     396 mean     69.91 us max     4771.5 us   208.17 us/step
+hostgap  llm.dec.in         -> llm.dec.prep       n     396 mean     69.37 us max      767.0 us   206.54 us/step
+hostgap  cuda.cap.in        -> cuda.cap.out       n       6 mean   3249.68 us max     6211.9 us   146.60 us/step
+hostgap  cuda.gc.in         -> cuda.exec          n     379 mean     42.39 us max      814.9 us   120.81 us/step
+slot print_timing: id  0 | task 586 |    graphs reused =        681
+1.46.471.981 I slot print_timing: id  0 | task 586 | draft acceptance = 0.52031 (  269 accepted /   517 generated), mean len =  3.07
+1.46.471.985 I spec  print_stats: context lookup: 694 steps, lookup proposed at 28, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 3.729 ms
+hostgap  que.work.end       -> srv.dec.out        n     133 mean    105.70 us max      215.0 us   105.70 us/step
+hostgap  que.work.end       -> srv.draft.out      n     130 mean     88.94 us max      169.2 us    86.94 us/step
+hostgap  que.work.end       -> srv.spec.out       n     133 mean     83.84 us max      171.6 us    83.84 us/step
+hostgap  cuda.exec          -> llm.compute        n     385 mean     17.76 us max      361.3 us    51.40 us/step
+hostgap  cuda.cap.out       -> cuda.exec          n       6 mean   1000.72 us max     4182.4 us    45.15 us/step
+hostgap  mtp.proc.dec       -> llm.dec.in         n     133 mean     34.16 us max      301.0 us    34.16 us/step
+hostgap  llm.sync.out       -> srv.post.out       n     131 mean     30.83 us max       58.7 us    30.37 us/step
+hostgap  srv.draft.in       -> mtp.chain.in       n     130 mean     21.09 us max       92.1 us    20.62 us/step
+hostgap  srv.draft.out      -> srv.render         n     130 mean     15.22 us max       30.6 us    14.87 us/step
+hostgap  srv.post.out       -> srv.update         n     132 mean     12.32 us max       58.3 us    12.22 us/step
+1.46.472.076 I slot      release: id  0 | task 586 | stop processing: n_tokens = 478, truncated = 0
+hostgap  mtp.chain.in       -> llm.dec.in         n     130 mean     10.03 us max       21.2 us     9.80 us/step
+hostgap  srv.dec.in         -> llm.dec.in         n     133 mean      9.52 us max       46.9 us     9.52 us/step
+hostgap  llm.dec.out        -> llm.sync.in        n     264 mean      3.64 us max      107.1 us     7.22 us/step
+hostgap  srv.spec.in        -> llm.sync.in        n     133 mean      6.93 us max       15.0 us     6.93 us/step
+hostgap  srv.post.in        -> llm.sync.in        n     131 mean      6.97 us max      135.0 us     6.86 us/step
+hostgap  llm.sync.out       -> mtp.proc.out       n     133 mean      5.82 us max        9.7 us     5.82 us/step
+hostgap  srv.update         -> srv.draft.in       n     130 mean      5.39 us max        8.4 us     5.27 us/step
+hostgap  llm.sync.out       -> srv.update         n       1 mean    553.66 us max      553.7 us     4.16 us/step
+hostgap  llm.dec.out        -> mtp.chain.dec      n     130 mean      3.99 us max        9.9 us     3.90 us/step
+hostgap  llm.sync.out       -> mtp.proc.dec       n     133 mean      3.89 us max        9.0 us     3.89 us/step
+hostgap  mtp.chain.tok      -> que.work.end       n     130 mean      3.85 us max        7.6 us     3.77 us/step
+hostgap  cuda.gc.in         -> cuda.cap.in        n       6 mean     63.56 us max      126.3 us     2.87 us/step
+hostgap  llm.sync.out       -> srv.render         n       2 mean    160.60 us max      181.4 us     2.41 us/step
+hostgap  srv.render         -> srv.dec.in         n     133 mean      1.26 us max        4.4 us     1.26 us/step
+hostgap  llm.sync.out       -> que.work.end       n     131 mean      1.26 us max        4.5 us     1.24 us/step
+hostgap  srv.dec.out        -> srv.spec.in        n     133 mean      1.04 us max        6.0 us     1.04 us/step
+hostgap  srv.spec.out       -> srv.post.in        n     133 mean      0.86 us max        3.8 us     0.86 us/step
+hostgap  llm.sync.out       -> mtp.chain.tok      n     130 mean      0.54 us max        1.8 us     0.53 us/step
+hostgap  mtp.proc.out       -> que.work.end       n     133 mean      0.49 us max        1.5 us     0.49 us/step
+hostgap  mtp.chain.dec      -> llm.sync.in        n     130 mean      0.31 us max        0.7 us     0.30 us/step
+hostgap  srv.post.in        -> srv.post.out       n       2 mean      4.61 us max        6.2 us     0.07 us/step
+hostgap  llm.dec.out        -> que.work.end       n       2 mean      4.49 us max        4.6 us     0.07 us/step
+hostgap  cuda.direct        -> llm.compute        n      11 mean      0.81 us max        1.7 us     0.07 us/step
+1.46.481.869 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.429 (> 0.100 thold), f_keep = 0.069
+1.47.118.978 I slot launch_slot_: id  0 | task 720 | processing task, is_child = 0
+1.47.709.488 I spec  print_stats: context lookup: 694 steps, lookup proposed at 28, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 3.729 ms
+1.50.723.546 I slot print_timing: id  0 | task 720 | n_gen =    288, tg =  95.23 t/s, tg_3s =  95.56 t/s
+1.51.718.386 I slot print_timing: id  0 | task 720 | prompt eval time =     590.74 ms /    77 tokens (    7.67 ms per token,   130.35 tokens per second)
+hostgap[request]: 127 steps, 41.306 ms/step wall
+hostgap  llm.sync.in        -> llm.sync.out       n    3477 mean    972.14 us max    27223.4 us 26615.15 us/step
+hostgap  srv.post.out       -> llm.sync.in        n       1 mean 543568.05 us max   543568.0 us  4280.06 us/step
+hostgap  llm.compute        -> llm.dec.out        n     378 mean   1197.61 us max     3674.3 us  3564.54 us/step
+hostgap  llm.sync.out       -> llm.sync.in        n    2846 mean     91.12 us max   102167.4 us  2041.98 us/step
+hostgap  srv.update         -> llm.sync.in        n       2 mean 121720.68 us max   121830.0 us  1916.86 us/step
+hostgap  cuda.gc.in         -> cuda.direct        n      11 mean   8060.95 us max    32227.3 us   698.19 us/step
+hostgap  llm.inputs         -> cuda.gc.in         n     378 mean    169.94 us max      533.5 us   505.81 us/step
+hostgap  srv.update         -> srv.render         n       1 mean  35125.24 us max    35125.2 us   276.58 us/step
+hostgap  llm.graph          -> llm.inputs         n     378 mean     75.89 us max      223.7 us   225.88 us/step
+hostgap  llm.dec.prep       -> llm.graph          n     378 mean     75.35 us max     5463.5 us   224.28 us/step
+hostgap  llm.dec.in         -> llm.dec.prep       n     378 mean     67.01 us max      874.4 us   199.46 us/step
+hostgap  cuda.gc.in         -> cuda.exec          n     362 mean     47.75 us max     1734.4 us   136.09 us/step
+hostgap  cuda.cap.in        -> cuda.cap.out       n       5 mean   2824.76 us max     6378.8 us   111.21 us/step
+hostgap  que.work.end       -> srv.dec.out        n     127 mean     99.60 us max      176.8 us    99.60 us/step
+hostgap  que.work.end       -> srv.spec.out       n     127 mean     81.78 us max      169.2 us    81.78 us/step
+hostgap  que.work.end       -> srv.draft.out      n     124 mean     82.45 us max      117.3 us    80.50 us/step
+hostgap  cuda.exec          -> llm.compute        n     367 mean     16.79 us max       83.0 us    48.51 us/step
+hostgap  llm.sync.out       -> srv.post.out       n     125 mean     32.58 us max       49.9 us    32.07 us/step
+hostgap  mtp.proc.dec       -> llm.dec.in         n     127 mean     31.52 us max      212.6 us    31.52 us/step
+hostgap  srv.draft.in       -> mtp.chain.in       n     124 mean     20.07 us max       54.1 us    19.60 us/step
+hostgap  srv.draft.out      -> srv.render         n     124 mean     15.11 us max       33.3 us    14.75 us/step
+hostgap  cuda.cap.out       -> cuda.exec          n       5 mean    362.63 us max      492.6 us    14.28 us/step
+hostgap  srv.post.out       -> srv.update         n     126 mean     11.26 us max       16.7 us    11.17 us/step
+hostgap  mtp.chain.in       -> llm.dec.in         n     124 mean      9.86 us max       25.5 us     9.62 us/step
+hostgap  srv.dec.in         -> llm.dec.in         n     127 mean      8.80 us max       42.6 us     8.80 us/step
+hostgap  srv.post.in        -> llm.sync.in        n     125 mean      6.69 us max      143.0 us     6.59 us/step
+hostgap  srv.spec.in        -> llm.sync.in        n     127 mean      6.44 us max       11.5 us     6.44 us/step
+hostgap  llm.dec.out        -> llm.sync.in        n     252 mean      3.15 us max       71.1 us     6.25 us/step
+hostgap  llm.sync.out       -> mtp.proc.out       n     127 mean      5.94 us max        9.2 us     5.94 us/step
+hostgap  srv.update         -> srv.draft.in       n     124 mean      5.34 us max       15.9 us     5.21 us/step
+hostgap  llm.sync.out       -> srv.update         n       1 mean    593.11 us max      593.1 us     4.67 us/step
+hostgap  llm.dec.out        -> mtp.chain.dec      n     124 mean      3.99 us max       20.2 us     3.89 us/step
+hostgap  mtp.chain.tok      -> que.work.end       n     124 mean      3.89 us max        8.3 us     3.80 us/step
+hostgap  llm.sync.out       -> mtp.proc.dec       n     127 mean      3.60 us max        8.8 us     3.60 us/step
+hostgap  llm.sync.out       -> srv.render         n       2 mean    158.86 us max      168.7 us     2.50 us/step
+hostgap  cuda.gc.in         -> cuda.cap.in        n       5 mean     52.05 us max      115.4 us     2.05 us/step
+hostgap  srv.render         -> srv.dec.in         n     127 mean      1.23 us max        4.2 us     1.23 us/step
+hostgap  llm.sync.out       -> que.work.end       n     125 mean      1.18 us max        1.8 us     1.16 us/step
+hostgap  srv.dec.out        -> srv.spec.in        n     127 mean      0.95 us max        1.8 us     0.95 us/step
+hostgap  srv.spec.out       -> srv.post.in        n     127 mean      0.83 us max        1.3 us     0.83 us/step
+hostgap  llm.sync.out       -> mtp.chain.tok      n     124 mean      0.55 us max        1.6 us     0.54 us/step
+hostgap  mtp.proc.out       -> que.work.end       n     127 mean      0.48 us max        1.4 us     0.48 us/step
+hostgap  mtp.chain.dec      -> llm.sync.in        n     124 mean      0.30 us max        0.7 us     0.30 us/step
+hostgap  llm.dec.out        -> que.work.end       n       2 mean      5.05 us max        5.5 us     0.08 us/step
+hostgap  cuda.direct        -> llm.compute        n      11 mean      0.85 us max        1.7 us     0.07 us/step
+hostgap  srv.post.in        -> srv.post.out       n       2 mean      2.99 us max        3.1 us     0.05 us/step
+1.51.718.397 I slot print_timing: id  0 | task 720 |        eval time =    4008.61 ms /   400 tokens (   10.05 ms per token,    99.54 tokens per second)
+1.51.718.398 I slot print_timing: id  0 | task 720 |       total time =    4599.35 ms /   477 tokens
+1.51.718.400 I slot print_timing: id  0 | task 720 |    graphs reused =        803
+1.51.718.406 I slot print_timing: id  0 | task 720 | draft acceptance = 0.55781 (  275 accepted /   493 generated), mean len =  3.22
+1.51.718.409 I spec  print_stats: context lookup: 818 steps, lookup proposed at 43, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 4.354 ms
+1.51.718.492 I slot      release: id  0 | task 720 | stop processing: n_tokens = 476, truncated = 0
+1.51.740.526 I srv    operator(): operator(): cleaning up before exit...

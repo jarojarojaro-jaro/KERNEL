@@ -1,0 +1,8 @@
+tbo GUMBEL_MAX rc=0   152/152 tests passed
+tbo TOP_K rc=0   533/533 tests passed
+tbo GET_ROWS rc=0   222/222 tests passed
+tbo SUM_ROWS rc=0   10/10 tests passed
+=== 16:58:21 gate coupled TENV='LLAMA_SPEC_COUPLED=1' TV=1 TK=/root/src/nv/b89/bin
+=== 17:01:56 gate coupled rows=22
+=== 17:01:56 gate coupledgv0 TENV='LLAMA_SPEC_COUPLED=1' TV=0 TK=/root/src/nv/b89/bin
+=== 17:05:52 gate coupledgv0 rows=22

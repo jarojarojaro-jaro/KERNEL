@@ -1,0 +1,51 @@
+0.00.139.034 I srv  llama_server: initializing ...
+0.00.139.061 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.139.214 I srv  init_listene: The UI is disabled
+0.00.139.218 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.139.372 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.144.586 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-IQ3_XXS.gguf'
+0.05.824.545 I cmn          init: llama threadpool init, n_threads = 6
+0.05.970.718 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-IQ3_XXS.gguf'
+0.06.001.822 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 32768, kv_unified = 'false'
+0.07.211.371 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 170.00 MiB on device 0: cudaMalloc failed: out of memory
+0.07.211.389 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 178257920
+0.07.211.392 W requant_mtp: could not convert draft_head (q4_K) to iq4_xs, kept
+0.38.268.638 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 45.16 MiB on device 0: cudaMalloc failed: out of memory
+0.38.268.655 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 47349760
+0.38.268.659 W requant_mtp: could not convert blk.64.ffn_up.weight (q6_K) to iq4_xs, kept
+0.38.268.986 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 45.16 MiB on device 0: cudaMalloc failed: out of memory
+0.38.268.993 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 47349760
+0.38.268.997 W requant_mtp: could not convert blk.64.ffn_down.weight (q6_K) to iq4_xs, kept
+0.46.813.933 I spec common_spec_: context lookup: mode 3, width 16, tail match >= 6, log ''
+0.46.886.471 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+0.46.886.568 I srv  llama_server: model loaded
+0.46.886.575 I srv  llama_server: listening on http://127.0.0.1:18741
+0.49.599.901 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+0.49.600.128 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+../ggml/src/ggml-cuda/ggml-cuda.cu:111: CUDA error
+0.49.732.422 E CUDA error: out of memory
+0.49.732.435 E   current device: 0, in function alloc at ../ggml/src/ggml-cuda/ggml-cuda.cu:585
+0.49.732.436 E   cuMemCreate(&handle, reserve_size, &prop, 0)
+/root/src/nv/b89/bin/libggml-base.so.0(+0x1d7db)[0x7b18dc0267db]
+/root/src/nv/b89/bin/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7b18dc026c5c]
+/root/src/nv/b89/bin/libggml-base.so.0(ggml_abort+0x15b)[0x7b18dc026e3b]
+/root/src/nv/b89/bin/libggml-cuda.so.0(_Z15ggml_cuda_errorPKcS0_S0_iS0_+0xb7)[0x7b18d7efb957]
+/root/src/nv/b89/bin/libggml-cuda.so.0(_ZN18ggml_cuda_pool_vmm5allocEmPm+0x48c)[0x7b18d7f1e72c]
+/root/src/nv/b89/bin/libggml-cuda.so.0(+0xa51fe5)[0x7b18d863efe5]
+/root/src/nv/b89/bin/libggml-cuda.so.0(_Z19ggml_cuda_mul_mat_qR25ggml_backend_cuda_contextPK11ggml_tensorS3_S3_PS1_+0x1001)[0x7b18d7f648d1]
+/root/src/nv/b89/bin/libggml-cuda.so.0(+0x321b70)[0x7b18d7f0eb70]
+/root/src/nv/b89/bin/libggml-cuda.so.0(+0x32cac3)[0x7b18d7f19ac3]
+/root/src/nv/b89/bin/libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x414)[0x7b18dc045d34]
+/root/src/nv/b89/bin/libllama.so.0(_ZN13llama_context13graph_computeEP11ggml_cgraphb+0xdb)[0x7b18dc30954b]
+/root/src/nv/b89/bin/libllama.so.0(_ZN13llama_context14process_ubatchERK12llama_ubatch14llm_graph_typeP22llama_memory_context_iR11ggml_status+0x19e)[0x7b18dc30dc0e]
+/root/src/nv/b89/bin/libllama.so.0(_ZN13llama_context6decodeERK15llama_batch_ext+0x6c4)[0x7b18dc3165c4]
+/root/src/nv/b89/bin/libllama-server-impl.so(_ZNSt17_Function_handlerIFvvEZN19server_context_impl6decodeERiiEUlvE_E9_M_invokeERKSt9_Any_data+0x52)[0x7b18dd20b3f2]
+/root/src/nv/b89/bin/libllama-server-impl.so(_ZN12server_queue14yield_to_queueEOSt8functionIFvvEE+0xca)[0x7b18dd1c457a]
+/root/src/nv/b89/bin/libllama-server-impl.so(_ZN19server_context_impl6decodeERii+0x19c)[0x7b18dd221fec]
+/root/src/nv/b89/bin/libllama-server-impl.so(_ZN19server_context_impl12update_slotsEv+0x4d9)[0x7b18dd223ce9]
+/root/src/nv/b89/bin/libllama-server-impl.so(_ZN12server_queue10start_loopEl+0x125)[0x7b18dd1c6265]
+/root/src/nv/b89/bin/libllama-server-impl.so(_Z12llama_serverR13common_paramsiPPcR12server_child+0x3f33)[0x7b18dd176b73]
+/root/src/nv/b89/bin/libllama-server-impl.so(_Z12llama_serveriPPc+0x131)[0x7b18dd177831]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7b18dcbf81ca]
+/usr/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7b18dcbf828b]
+/root/src/nv/b89/bin/llama-server(+0x12a5)[0x55a2133cb2a5]

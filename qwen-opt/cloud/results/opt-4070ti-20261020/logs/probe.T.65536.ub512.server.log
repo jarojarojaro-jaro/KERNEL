@@ -1,0 +1,43 @@
+0.00.111.068 I srv  llama_server: initializing ...
+0.00.111.255 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.111.443 I srv  init_listene: The UI is disabled
+0.00.111.481 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.111.681 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.117.696 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-Q2_K_XL.gguf'
+0.14.634.897 I cmn          init: llama threadpool init, n_threads = 6
+0.14.809.816 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-Q2_K_XL.gguf'
+0.14.910.483 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 65536, kv_unified = 'false'
+0.16.179.207 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 170.00 MiB on device 0: cudaMalloc failed: out of memory
+0.16.179.298 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 178257920
+0.16.179.304 W requant_mtp: could not convert draft_head (q4_K) to iq4_xs, kept
+0.33.583.106 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 45.16 MiB on device 0: cudaMalloc failed: out of memory
+0.33.583.131 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 47349760
+0.33.583.134 W requant_mtp: could not convert blk.64.ffn_gate.weight (q6_K) to iq4_xs, kept
+0.33.583.364 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 45.16 MiB on device 0: cudaMalloc failed: out of memory
+0.33.583.369 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 47349760
+0.33.583.370 W requant_mtp: could not convert blk.64.ffn_up.weight (q6_K) to iq4_xs, kept
+0.33.583.596 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 45.16 MiB on device 0: cudaMalloc failed: out of memory
+0.33.583.600 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 47349760
+0.33.583.602 W requant_mtp: could not convert blk.64.ffn_down.weight (q6_K) to iq4_xs, kept
+0.42.169.492 I spec common_spec_: context lookup: mode 3, width 16, tail match >= 6, log ''
+../ggml/src/ggml-cuda/ggml-cuda.cu:111: CUDA error
+0.42.283.229 E CUDA error: out of memory
+0.42.283.242 E   current device: 0, in function ggml_backend_cuda_set_tensor_async at ../ggml/src/ggml-cuda/ggml-cuda.cu:2636
+0.42.283.242 E   cudaMalloc((void **) &b.dev, 2*batch_t::half_size)
+/root/src/nv/b89/bin/libggml-base.so.0(+0x1d7db)[0x778bc43b57db]
+/root/src/nv/b89/bin/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x778bc43b5c5c]
+/root/src/nv/b89/bin/libggml-base.so.0(ggml_abort+0x15b)[0x778bc43b5e3b]
+/root/src/nv/b89/bin/libggml-cuda.so.0(_Z15ggml_cuda_errorPKcS0_S0_iS0_+0xb7)[0x778bc028a957]
+/root/src/nv/b89/bin/libggml-cuda.so.0(+0x319572)[0x778bc0295572]
+/root/src/nv/b89/bin/libggml-base.so.0(+0x3c8ce)[0x778bc43d48ce]
+/root/src/nv/b89/bin/libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x11d)[0x778bc43d4a3d]
+/root/src/nv/b89/bin/libllama.so.0(_ZN13llama_context13graph_computeEP11ggml_cgraphb+0xdb)[0x778bc469854b]
+/root/src/nv/b89/bin/libllama.so.0(_ZN13llama_context14process_ubatchERK12llama_ubatch14llm_graph_typeP22llama_memory_context_iR11ggml_status+0x19e)[0x778bc469cc0e]
+/root/src/nv/b89/bin/libllama.so.0(_ZN13llama_context6decodeERK15llama_batch_ext+0x6c4)[0x778bc46a55c4]
+/root/src/nv/b89/bin/libllama-common.so.0(_Z25common_context_can_seq_rmP13llama_context+0xd4)[0x778bc4cb0864]
+/root/src/nv/b89/bin/libllama-server-impl.so(_ZN19server_context_impl10load_modelER13common_params+0xd86)[0x778bc55b91c6]
+/root/src/nv/b89/bin/libllama-server-impl.so(_Z12llama_serverR13common_paramsiPPcR12server_child+0x36ef)[0x778bc550532f]
+/root/src/nv/b89/bin/libllama-server-impl.so(_Z12llama_serveriPPc+0x131)[0x778bc5506831]
+/usr/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x778bc4f871ca]
+/usr/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x778bc4f8728b]
+/root/src/nv/b89/bin/llama-server(+0x12a5)[0x59eacbdaa2a5]

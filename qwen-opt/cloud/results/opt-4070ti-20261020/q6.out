@@ -1,0 +1,19 @@
+=== 17:05:52 gate rpb8 TENV='GGML_CUDA_MMVQ_RPB=8' TV=1 TK=/root/src/nvc/b89/bin
+=== 17:09:16 gate rpb8 rows=22
+=== 17:09:16 ab.final.A.p1 TENV='' TARGS='' TK=/root/src/nvc/b89/bin
+{"label":"ab.final.A.p1","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"17:10:37"}
+ab.final.A.p1 T=1.0: median  95.7 t/s, 31.84 ms/step | pl-proza  76.2 (2.42 tok/step)  pl-tech  97.4 (3.10 tok/step)  pl-kod  95.2 (3.03 tok/step)  en-chat  72.7 (2.31 tok/step)  en-tech  96.9 (3.12 tok/step)  en-code  96.2 (3.07 tok/step)
+ab.final.A.p1 T=0.0: median 294.2 t/s | mvs-pad.cu 286.7 (14.03t 48.92ms)  mvs-ngram-cache.h 297.2 (14.22t 47.86ms)  mvs-sampling.h 299.5 (14.42t 48.16ms)  mvs-lazy.py 291.1 (14.42t 49.54ms)
+=== 17:12:14 ab.final.B.p2 TENV='GGML_CUDA_MMVQ_RPB=8 LLAMA_SERVER_YIELD_FAST=2 LLAMA_SPEC_COUPLED=1' TARGS='' TK=/root/src/nvc/b89/bin
+{"label":"ab.final.B.p2","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"17:13:32"}
+ab.final.B.p2 T=1.0: median  99.3 t/s, 31.95 ms/step | pl-proza  84.8 (2.73 tok/step)  pl-tech 101.8 (3.28 tok/step)  pl-kod 102.8 (3.28 tok/step)  en-chat  80.0 (2.55 tok/step)  en-tech 100.8 (3.23 tok/step)  en-code  97.8 (3.11 tok/step)
+ab.final.B.p2 T=0.0: median 296.6 t/s | mvs-pad.cu 290.1 (14.03t 48.35ms)  mvs-ngram-cache.h 298.9 (14.22t 47.58ms)  mvs-sampling.h 303.8 (14.42t 47.47ms)  mvs-lazy.py 294.4 (14.42t 48.99ms)
+=== 17:15:06 ab.final.B.p3 TENV='GGML_CUDA_MMVQ_RPB=8 LLAMA_SERVER_YIELD_FAST=2 LLAMA_SPEC_COUPLED=1' TARGS='' TK=/root/src/nvc/b89/bin
+{"label":"ab.final.B.p3","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"17:16:24"}
+ab.final.B.p3 T=1.0: median  99.3 t/s, 31.94 ms/step | pl-proza  84.9 (2.73 tok/step)  pl-tech 101.6 (3.28 tok/step)  pl-kod 102.8 (3.28 tok/step)  en-chat  80.1 (2.55 tok/step)  en-tech 100.8 (3.23 tok/step)  en-code  97.8 (3.11 tok/step)
+ab.final.B.p3 T=0.0: median 297.4 t/s | mvs-pad.cu 289.7 (14.03t 48.42ms)  mvs-ngram-cache.h 299.9 (14.22t 47.43ms)  mvs-sampling.h 303.8 (14.42t 47.48ms)  mvs-lazy.py 294.9 (14.42t 48.90ms)
+=== 17:17:58 ab.final.A.p4 TENV='' TARGS='' TK=/root/src/nvc/b89/bin
+{"label":"ab.final.A.p4","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"17:19:16"}
+ab.final.A.p4 T=1.0: median  95.1 t/s, 31.86 ms/step | pl-proza  76.1 (2.42 tok/step)  pl-tech  97.3 (3.10 tok/step)  pl-kod  95.1 (3.03 tok/step)  en-chat  72.6 (2.31 tok/step)  en-tech  95.9 (3.12 tok/step)  en-code  95.1 (3.07 tok/step)
+ab.final.A.p4 T=0.0: median 293.3 t/s | mvs-pad.cu 284.4 (14.03t 49.32ms)  mvs-ngram-cache.h 294.4 (14.22t 48.31ms)  mvs-sampling.h 299.4 (14.42t 48.18ms)  mvs-lazy.py 292.2 (14.42t 49.36ms)
+=== 17:20:53 ab final done

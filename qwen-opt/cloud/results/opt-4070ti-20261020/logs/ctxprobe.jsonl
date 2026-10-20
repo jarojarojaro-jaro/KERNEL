@@ -1,0 +1,11 @@
+{"label":"probe.T.32768","start":false}
+{"label":"probe.T.49152","start":false}
+{"label":"probe.T.32768.ub256","start":false}
+{"label":"probe.T.32768.ub128","ctx":32768,"vram_load_mb":11873,"vram_peak_mb":11873,"total_mb":12282,"alive":true,"bufs":""}
+{"label":"probe.T.40960.ub128","start":false}
+{"label":"probe.T.32768.ub128","ctx":32768,"vram_load_mb":11873,"vram_peak_mb":11875,"total_mb":12282,"alive":true,"bufs":""}
+{"label":"probe.T.65536.ub512","start":false}
+{"label":"probe.T.49152.ub512","ctx":49152,"vram_load_mb":11731,"vram_peak_mb":11875,"total_mb":12282,"alive":true,"bufs":""}
+{"label":"probe.T.40960.ub512","ctx":40960,"vram_load_mb":11499,"vram_peak_mb":11807,"total_mb":12282,"alive":true,"bufs":""}
+{"label":"probe.T.36864.ub512","ctx":36864,"vram_load_mb":11383,"vram_peak_mb":11817,"total_mb":12282,"alive":true,"bufs":""}
+{"label":"probe.T.32768.ub512","ctx":32768,"vram_load_mb":11265,"vram_peak_mb":11545,"total_mb":12282,"alive":true,"bufs":""}

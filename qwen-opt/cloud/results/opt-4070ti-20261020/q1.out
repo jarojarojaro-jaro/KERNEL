@@ -1,0 +1,38 @@
+=== 15:50:01 gate base TENV='' TV=1 TK=/root/src/nv/b89/bin
+=== 15:53:25 gate base rows=22
+=== 15:53:25 ab.yfast.A.p1 TENV='' TARGS='' TK=/root/src/nv/b89/bin
+{"label":"ab.yfast.A.p1","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"15:54:43"}
+ab.yfast.A.p1 T=1.0: median  95.0 t/s, 31.94 ms/step | pl-proza  76.1 (2.42 tok/step)  pl-tech  96.9 (3.10 tok/step)  pl-kod  95.1 (3.03 tok/step)  en-chat  72.8 (2.31 tok/step)  en-tech  96.6 (3.12 tok/step)  en-code  94.8 (3.07 tok/step)
+ab.yfast.A.p1 T=0.0: median 293.4 t/s | mvs-pad.cu 283.2 (14.03t 49.52ms)  mvs-ngram-cache.h 294.6 (14.22t 48.27ms)  mvs-sampling.h 300.4 (14.42t 48.01ms)  mvs-lazy.py 292.1 (14.42t 49.38ms)
+=== 15:56:21 ab.yfast.B.p2 TENV='LLAMA_SERVER_YIELD_FAST=2' TARGS='' TK=/root/src/nv/b89/bin
+{"label":"ab.yfast.B.p2","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"15:57:39"}
+ab.yfast.B.p2 T=1.0: median  96.4 t/s, 31.61 ms/step | pl-proza  76.8 (2.42 tok/step)  pl-tech  98.1 (3.10 tok/step)  pl-kod  95.9 (3.03 tok/step)  en-chat  73.2 (2.31 tok/step)  en-tech  97.9 (3.12 tok/step)  en-code  96.9 (3.07 tok/step)
+ab.yfast.B.p2 T=0.0: median 296.9 t/s | mvs-pad.cu 289.8 (14.03t 48.41ms)  mvs-ngram-cache.h 299.1 (14.22t 47.55ms)  mvs-sampling.h 302.9 (14.42t 47.61ms)  mvs-lazy.py 294.7 (14.42t 48.94ms)
+=== 15:59:17 ab.yfast.B.p3 TENV='LLAMA_SERVER_YIELD_FAST=2' TARGS='' TK=/root/src/nv/b89/bin
+{"label":"ab.yfast.B.p3","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"16:00:35"}
+ab.yfast.B.p3 T=1.0: median  96.5 t/s, 31.57 ms/step | pl-proza  76.9 (2.42 tok/step)  pl-tech  98.3 (3.10 tok/step)  pl-kod  95.9 (3.03 tok/step)  en-chat  73.3 (2.31 tok/step)  en-tech  98.0 (3.12 tok/step)  en-code  97.0 (3.07 tok/step)
+ab.yfast.B.p3 T=0.0: median 297.2 t/s | mvs-pad.cu 289.4 (14.03t 48.47ms)  mvs-ngram-cache.h 299.0 (14.22t 47.57ms)  mvs-sampling.h 303.0 (14.42t 47.60ms)  mvs-lazy.py 295.4 (14.42t 48.82ms)
+=== 16:02:11 ab.yfast.A.p4 TENV='' TARGS='' TK=/root/src/nv/b89/bin
+{"label":"ab.yfast.A.p4","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"16:03:38"}
+ab.yfast.A.p4 T=1.0: median  95.7 t/s, 31.84 ms/step | pl-proza  76.2 (2.42 tok/step)  pl-tech  97.0 (3.10 tok/step)  pl-kod  95.2 (3.03 tok/step)  en-chat  72.8 (2.31 tok/step)  en-tech  97.3 (3.12 tok/step)  en-code  96.2 (3.07 tok/step)
+ab.yfast.A.p4 T=0.0: median 294.7 t/s | mvs-pad.cu 287.1 (14.03t 48.87ms)  mvs-ngram-cache.h 297.8 (14.22t 47.76ms)  mvs-sampling.h 300.1 (14.42t 48.06ms)  mvs-lazy.py 291.6 (14.42t 49.46ms)
+=== 16:05:15 ab yfast done
+=== 16:05:15 ab.coupled.A.p1 TENV='' TARGS='' TK=/root/src/nv/b89/bin
+{"label":"ab.coupled.A.p1","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"16:06:45"}
+ab.coupled.A.p1 T=1.0: median  95.7 t/s, 31.87 ms/step | pl-proza  76.1 (2.42 tok/step)  pl-tech  97.2 (3.10 tok/step)  pl-kod  95.2 (3.03 tok/step)  en-chat  72.7 (2.31 tok/step)  en-tech  97.2 (3.12 tok/step)  en-code  96.1 (3.07 tok/step)
+ab.coupled.A.p1 T=0.0: median 293.8 t/s | mvs-pad.cu 286.2 (14.03t 49.02ms)  mvs-ngram-cache.h 296.5 (14.22t 47.96ms)  mvs-sampling.h 301.0 (14.42t 47.92ms)  mvs-lazy.py 291.1 (14.42t 49.55ms)
+=== 16:08:22 ab.coupled.B.p2 TENV='LLAMA_SPEC_COUPLED=1' TARGS='' TK=/root/src/nv/b89/bin
+{"label":"ab.coupled.B.p2","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"16:09:42"}
+ab.coupled.B.p2 T=1.0: median  99.1 t/s, 32.01 ms/step | pl-proza  84.8 (2.73 tok/step)  pl-tech 101.5 (3.28 tok/step)  pl-kod 102.6 (3.28 tok/step)  en-chat  80.1 (2.55 tok/step)  en-tech 100.7 (3.23 tok/step)  en-code  97.5 (3.11 tok/step)
+ab.coupled.B.p2 T=0.0: median 294.9 t/s | mvs-pad.cu 287.5 (14.03t 48.79ms)  mvs-ngram-cache.h 297.8 (14.22t 47.75ms)  mvs-sampling.h 300.6 (14.42t 47.99ms)  mvs-lazy.py 292.0 (14.42t 49.40ms)
+=== 16:11:15 ab.coupled.B.p3 TENV='LLAMA_SPEC_COUPLED=1' TARGS='' TK=/root/src/nv/b89/bin
+{"label":"ab.coupled.B.p3","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"16:12:35"}
+ab.coupled.B.p3 T=1.0: median  99.1 t/s, 32.01 ms/step | pl-proza  84.8 (2.73 tok/step)  pl-tech 101.7 (3.28 tok/step)  pl-kod 102.6 (3.28 tok/step)  en-chat  80.0 (2.55 tok/step)  en-tech 100.6 (3.23 tok/step)  en-code  97.7 (3.11 tok/step)
+ab.coupled.B.p3 T=0.0: median 293.9 t/s | mvs-pad.cu 286.6 (14.03t 48.94ms)  mvs-ngram-cache.h 296.3 (14.22t 48.00ms)  mvs-sampling.h 299.8 (14.42t 48.10ms)  mvs-lazy.py 291.5 (14.42t 49.47ms)
+=== 16:14:10 ab.coupled.A.p4 TENV='' TARGS='' TK=/root/src/nv/b89/bin
+{"label":"ab.coupled.A.p4","vram_mb":11383,"n_ctx":"36864","ctx_req":36864,"t":"16:15:28"}
+ab.coupled.A.p4 T=1.0: median  95.6 t/s, 31.90 ms/step | pl-proza  76.1 (2.42 tok/step)  pl-tech  97.2 (3.10 tok/step)  pl-kod  94.9 (3.03 tok/step)  en-chat  72.6 (2.31 tok/step)  en-tech  96.9 (3.12 tok/step)  en-code  96.2 (3.07 tok/step)
+ab.coupled.A.p4 T=0.0: median 294.7 t/s | mvs-pad.cu 287.2 (14.03t 48.84ms)  mvs-ngram-cache.h 297.2 (14.22t 47.85ms)  mvs-sampling.h 300.9 (14.42t 47.93ms)  mvs-lazy.py 292.2 (14.42t 49.36ms)
+=== 16:17:05 ab coupled done
+=== 16:17:05 gate yfast TENV='LLAMA_SERVER_YIELD_FAST=2' TV=1 TK=/root/src/nv/b89/bin
+=== 16:20:28 gate yfast rows=22

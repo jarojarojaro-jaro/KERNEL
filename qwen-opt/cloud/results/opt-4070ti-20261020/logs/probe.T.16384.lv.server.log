@@ -1,0 +1,14 @@
+0.00.139.567 I srv  llama_server: initializing ...
+0.00.139.600 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.139.758 I srv  init_listene: The UI is disabled
+0.00.139.762 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.139.937 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.145.339 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-IQ3_XXS.gguf'
+0.06.073.192 I cmn          init: llama threadpool init, n_threads = 6
+0.06.221.524 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-IQ3_XXS.gguf'
+0.06.275.786 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 16384, kv_unified = 'false'
+2.07.532.691 I spec common_spec_: context lookup: mode 3, width 16, tail match >= 6, log ''
+2.07.621.072 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+2.07.621.146 I srv  llama_server: model loaded
+2.07.621.154 I srv  llama_server: listening on http://127.0.0.1:18741
+2.10.502.885 I srv    operator(): operator(): cleaning up before exit...

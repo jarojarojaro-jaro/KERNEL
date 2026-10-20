@@ -1,0 +1,16 @@
+0.00.112.526 I srv  llama_server: initializing ...
+0.00.112.561 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.112.751 I srv  init_listene: The UI is disabled
+0.00.112.758 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.112.980 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.121.200 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-IQ3_XXS.gguf'
+0.06.323.581 I cmn          init: llama threadpool init, n_threads = 6
+0.06.474.609 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-IQ3_XXS.gguf'
+0.06.492.814 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 320.28 MiB on device 0: cudaMalloc failed: out of memory
+0.06.492.829 E ggml_gallocr_reserve_n_impl: failed to allocate CUDA0 buffer of size 335839360
+0.06.492.830 E graph_reserve: failed to allocate compute buffers
+0.06.496.081 E llama_init_from_model: failed to initialize the context: failed to allocate compute pp buffers
+0.06.496.093 E common_speculative_init_result: failed to create MTP context
+0.06.496.100 E srv    load_model: failed to create MTP context
+0.06.496.110 I srv    operator(): operator(): cleaning up before exit...
+0.06.497.605 E srv  llama_server: exiting due to model loading error

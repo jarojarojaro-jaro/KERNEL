@@ -1,0 +1,50 @@
+0.00.365.293 I srv  llama_server: initializing ...
+0.00.365.317 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.365.473 I srv  init_listene: The UI is disabled
+0.00.365.477 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.365.623 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.370.638 I srv    load_model: loading model '/root/models/Qwen3.8-27B-UD-Q2_K_XL.gguf'
+0.04.519.398 I cmn          init: llama threadpool init, n_threads = 6
+0.04.656.715 I common_speculative_init_result: creating MTP draft context against the target model '/root/models/Qwen3.8-27B-UD-Q2_K_XL.gguf'
+0.04.716.878 I srv    load_model: initializing, n_slots = 1, n_ctx_slot = 36864, kv_unified = 'false'
+1.16.273.811 I spec common_spec_: context lookup: mode 3, width 16, tail match >= 6, log ''
+1.16.392.800 W srv          init: chat template supports preserving reasoning, it is enabled by default (may use more tokens, disable via --no-reasoning-preserve)
+1.16.392.882 I srv  llama_server: model loaded
+1.16.392.892 I srv  llama_server: listening on http://127.0.0.1:18741
+1.16.892.732 I slot get_availabl: id  0 | task -1 | selected slot by LRU, t_last = -1
+1.16.892.869 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0
+1.18.123.858 I slot print_timing: id  0 | task 0 | prompt eval time =     930.87 ms /    41 tokens (   22.70 ms per token,    44.04 tokens per second)
+1.18.123.866 I slot print_timing: id  0 | task 0 |        eval time =     299.81 ms /    16 tokens (   19.99 ms per token,    50.03 tokens per second)
+1.18.123.867 I slot print_timing: id  0 | task 0 |       total time =    1230.68 ms /    57 tokens
+1.18.123.874 I slot print_timing: id  0 | task 0 |    graphs reused =          2
+1.18.123.882 I slot print_timing: id  0 | task 0 | draft acceptance = 0.66667 (   10 accepted /    15 generated), mean len =  3.50
+1.18.123.888 I spec  print_stats: context lookup: 4 steps, lookup proposed at 0, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 0.035 ms
+1.18.124.008 I slot      release: id  0 | task 0 | stop processing: n_tokens = 56, truncated = 0
+1.18.132.280 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.429 (> 0.100 thold), f_keep = 0.589
+1.18.132.395 I slot launch_slot_: id  0 | task 9 | processing task, is_child = 0
+1.18.714.752 I spec  print_stats: context lookup: 4 steps, lookup proposed at 0, tails 0 (0/0 tokens accepted), chains 0 (0/0), lost history 0, host 0.035 ms
+1.21.722.758 I slot print_timing: id  0 | task 9 | n_gen =    269, tg =  89.10 t/s, tg_3s =  89.44 t/s
+1.23.101.420 I slot print_timing: id  0 | task 9 | prompt eval time =     582.60 ms /    77 tokens (    7.57 ms per token,   132.17 tokens per second)
+1.23.101.427 I slot print_timing: id  0 | task 9 |        eval time =    4386.38 ms /   400 tokens (   10.99 ms per token,    90.96 tokens per second)
+1.23.101.429 I slot print_timing: id  0 | task 9 |       total time =    4968.98 ms /   477 tokens
+1.23.101.430 I slot print_timing: id  0 | task 9 |    graphs reused =        123
+1.23.101.437 I slot print_timing: id  0 | task 9 | draft acceptance = 0.54563 (  275 accepted /   504 generated), mean len =  3.22
+1.23.101.441 I spec  print_stats: context lookup: 128 steps, lookup proposed at 14, tails 1 (0/11 tokens accepted), chains 0 (0/0), lost history 0, host 0.503 ms
+1.23.101.503 I slot      release: id  0 | task 9 | stop processing: n_tokens = 476, truncated = 0
+1.23.107.974 I slot get_availabl: id  0 | task -1 | selected slot by LCP similarity, f_sim_best = 0.355 (> 0.100 thold), f_keep = 0.069
+1.23.707.811 I slot launch_slot_: id  0 | task 137 | processing task, is_child = 0
+1.24.328.151 I spec  print_stats: context lookup: 128 steps, lookup proposed at 14, tails 1 (0/11 tokens accepted), chains 0 (0/0), lost history 0, host 0.503 ms
+1.27.357.413 I slot print_timing: id  0 | task 137 | n_gen =    219, tg =  71.97 t/s, tg_3s =  72.30 t/s
+1.30.207.497 I slot print_timing: id  0 | task 137 | prompt eval time =     620.59 ms /    93 tokens (    6.67 ms per token,   149.86 tokens per second)
+1.30.207.503 I slot print_timing: id  0 | task 137 |        eval time =    5879.03 ms /   400 tokens (   14.73 ms per token,    67.87 tokens per second)
+1.30.207.505 I slot print_timing: id  0 | task 137 |       total time =    6499.63 ms /   493 tokens
+1.30.207.508 I slot print_timing: id  0 | task 137 |    graphs reused =        291
+1.30.207.515 I slot print_timing: id  0 | task 137 | draft acceptance = 0.33826 (  229 accepted /   677 generated), mean len =  2.35
+1.30.207.518 I spec  print_stats: context lookup: 298 steps, lookup proposed at 17, tails 1 (0/11 tokens accepted), chains 0 (0/0), lost history 0, host 1.324 ms
+1.30.207.630 I slot      release: id  0 | task 137 | stop processing: n_tokens = 492, truncated = 0
+1.30.227.219 I srv    operator(): operator(): cleaning up before exit...
+Collecting data...
+Generating '/tmp/nsys-report-438a.qdstrm'
+[1/1] [0%                          ] T0.nsys-rep[1/1] [0%                          ] T0.nsys-rep[1/1] [0%                          ] T0.nsys-rep[1/1] [14%                         ] T0.nsys-rep[1/1] [12%                         ] T0.nsys-rep[1/1] [10%                         ] T0.nsys-rep[1/1] [9%                          ] T0.nsys-rep[1/1] [8%                          ] T0.nsys-rep[1/1] [7%                          ] T0.nsys-rep[1/1] [14%                         ] T0.nsys-rep[1/1] [13%                         ] T0.nsys-rep[1/1] [12%                         ] T0.nsys-rep[1/1] [11%                         ] T0.nsys-rep[1/1] [10%                         ] T0.nsys-rep[1/1] [9%                          ] T0.nsys-rep[1/1] [8%                          ] T0.nsys-rep[1/1] [7%                          ] T0.nsys-rep[1/1] [6%                          ] T0.nsys-rep[1/1] [9%                          ] T0.nsys-rep[1/1] [11%                         ] T0.nsys-rep[1/1] [14%                         ] T0.nsys-rep[1/1] [=16%                        ] T0.nsys-rep[1/1] [==18%                       ] T0.nsys-rep[1/1] [==21%                       ] T0.nsys-rep[1/1] [===24%                      ] T0.nsys-rep[1/1] [====26%                     ] T0.nsys-rep[1/1] [=====29%                    ] T0.nsys-rep[1/1] [=====32%                    ] T0.nsys-rep[1/1] [======34%                   ] T0.nsys-rep[1/1] [=======36%                  ] T0.nsys-rep[1/1] [=======39%                  ] T0.nsys-rep[1/1] [========41%                 ] T0.nsys-rep[1/1] [=========43%                ] T0.nsys-rep[1/1] [=========46%                ] T0.nsys-rep[1/1] [==========48%               ] T0.nsys-rep[1/1] [===========50%              ] T0.nsys-rep[1/1] [===========52%              ] T0.nsys-rep[1/1] [============55%             ] T0.nsys-rep[1/1] [============57%             ] T0.nsys-rep[1/1] [=============58%            ] T0.nsys-rep[1/1] [========================100%] T0.nsys-rep[1/1] [========================100%] T0.nsys-rep
+Generated:
+    /root/results/opt-4070ti-20261020/prof/T0.nsys-rep
