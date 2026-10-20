@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (34)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (35)
 - [[modele/_hub|modele]] — Modele i kwanty (17)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (22)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-20 [[raport-24r-mmvq-pasmo|Raport 24r: pasmo MMVQ weryfikacji n=5 – sufit 926 GB/s]]
 - 2026-10-20 [[raport-24q-adaptacyjna-spekulacja|Raport 24q: adaptacyjna spekulacja – bramka ogona i głębokość MTP z akceptacji]]
 
-Razem 573 notatek. Wygenerowano 2026-10-20 przez `tools/wiki.py index`.
+Razem 574 notatek. Wygenerowano 2026-10-20 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

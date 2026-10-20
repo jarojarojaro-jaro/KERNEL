@@ -14,7 +14,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (34)
+## Notatki (35)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -45,6 +45,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-19-wentylator-100-przy-pracy|2026-10-19: wentylator XTX 100%, gdy GPU pracuje]] — Użytkownik zdecydował (2026-10-19, 00:00 UTC): gdy GPU pracuje, wentylator RX 7900 XTX chodzi na 100% (`FAN=100` w `fan.sh`, wcześniej 90%).
 - [[2026-10-19-najlepiej-bez-pytania|2026-10-19: wszystko jak najlepiej i jak najszybciej, bez pytania]] — Użytkownik (2026-10-19): „Wszystko jak najlepiej i jak najszybciej. Jeśli coś poprawia, dodajemy; jeśli dodanie psuje coś innego, nie dodajemy. Nie pytaj mnie – po prostu zrób najlepiej, jak się da.”
 - [[2026-10-20-karta-fabrycznie|2026-10-20: karta zostaje na ustawieniach fabrycznych]] — Decyzja użytkownika (2026-10-20): żadnego podkręcania pamięci ani rdzenia, żadnych zmian taktowań, napięć ani limitu mocy dla zysku prędkości – przyspieszamy wyłącznie programowo.
+- [[2026-10-20-bez-publikacji-localmaxxing|2026-10-20: localmaxxing tylko do czytania, ciągły wywiad konkurencji]] — Użytkownik (2026-10-20): „na localmaxxing nie chcę na razie publikować — takie rzeczy mamy wyciągać” (np. NInfer 510,7 t/s na 5090, tqLLM 156,2 t/s na 5060 Ti). Nie zgłaszamy naszych wyników; bazę i repozytoria konkurencji czytamy stale i każdą nowość przekuwamy w eksperyment.
 - [[2026-10-20-auth-bez-backendu|2026-10-20: logowanie bez backendu – `PUBLIC_AUTH_PROVIDER=none`, wymienne Supabase / Auth.js]] — Nie ma jeszcze backendu ani domeny, więc landing buduje się z `PUBLIC_AUTH_PROVIDER=none`: przyciski Google/GitHub widoczne, ale wyłączone, a pole e-mail zapisuje na listę oczekujących; backend wybieramy później przez zmianę jednej zmiennej (`supabase` albo `authjs`).
 - [[2026-10-20-uncensored-poza-strona|2026-10-20: Qwen3.8-27B Uncensored nie pojawia się na stronie produktu (licencja otwarta)]] — Qwen3.8-27B Uncensored zostaje poza stroną produktu, dopóki kwestia licencji jest otwarta; mierzymy go wewnętrznie (rekordy, raporty), ale landing i katalog pokazują tylko modele bez usuniętych zabezpieczeń.
 - [[2026-10-20-szybkie-iteracje|2026-10-20: szybkie iteracje – ≤ 10 min GPU na pomysł, ≤ 20 min pracy na próbę]] — Decyzja użytkownika (2026-10-20): test GPU jednego pomysłu maksymalnie 10 minut łącznie (krótka bramka + krótkie A/B, 2–3 seedy), jedna próba optymalizacji maksymalnie 20 minut pracy do pierwszego testu; nie wygrywa wyraźnie → odrzucamy i dalej.
