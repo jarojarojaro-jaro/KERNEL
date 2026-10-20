@@ -57,6 +57,8 @@
 	/** The cluster's entrance, once the page is idle and the cluster is on screen: the field runs
 	 * hot for a moment and a bloom sweeps the hero once. Reduced motion: the final state at once. */
 	let go = $state(false);
+	/* the bloom sweeps once, then leaves the DOM: a resting screen-blended layer over the whole hero would be composited every frame */
+	let bloomed = $state(false);
 	let heat = $state(false);
 	let idle = $state(false);
 	let dashOn = $state(false);
@@ -77,7 +79,7 @@
 <section class="hero" class:hot={heat} aria-labelledby="hero-title">
 	<HeatField heat={heat ? 1 : 0.7} boost={heat ? 1 : 0} />
 	<div class="veil" aria-hidden="true"></div>
-	{#if go && idle}<div class="bloom" aria-hidden="true"></div>{/if}
+	{#if go && idle && !bloomed}<div class="bloom" aria-hidden="true" onanimationend={() => (bloomed = true)}></div>{/if}
 	<div class="inner">
 		<h1 id="hero-title" class="title">
 			<Kin lines={c.title} wide={[1]} heat={[1]} cold={[0]} delays={[0, 120]} />

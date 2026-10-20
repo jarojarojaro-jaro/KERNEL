@@ -65,9 +65,12 @@ export function plural(n: number, forms: [string, string, string], lang: Lang = 
 	return forms[2];
 }
 
+/** One Intl.NumberFormat per (lang, digits): `toLocaleString` with options builds a new formatter on every call. */
+const NUM_FMT = new Map<string, Intl.NumberFormat>();
+
 export function num(v: number, lang: Lang, digits = 1): string {
-	return v.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', {
-		minimumFractionDigits: digits,
-		maximumFractionDigits: digits
-	});
+	const k = lang + digits;
+	let f = NUM_FMT.get(k);
+	if (!f) NUM_FMT.set(k, (f = new Intl.NumberFormat(lang === 'pl' ? 'pl-PL' : 'en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits })));
+	return f.format(v);
 }

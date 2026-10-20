@@ -1215,14 +1215,14 @@
 
 	/* maker to maker: the band's colour crossfades, the product slides, the segment glides */
 	:global(::view-transition-group(vendor-seg)) {
-		animation-duration: 0.55s;
+		animation-duration: 0.35s;
 		animation-timing-function: var(--ease-spring);
 	}
 	:global(::view-transition-old(vendor-stage)) {
-		animation: 0.25s ease-in both vs-out;
+		animation: 0.15s ease-in both vs-out;
 	}
 	:global(::view-transition-new(vendor-stage)) {
-		animation: 0.45s var(--ease-out) both vs-in;
+		animation: 0.3s var(--ease-out) both vs-in;
 	}
 	@keyframes -global-vs-out {
 		to {

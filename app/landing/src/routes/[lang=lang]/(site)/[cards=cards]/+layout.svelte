@@ -173,21 +173,34 @@
 			radial-gradient(70% 60% at 100% 100%, rgb(226 64 28 / 0.06), transparent 60%),
 			var(--bg-2);
 	}
+	/*
+	 * The transition never holds the page. The root is not captured, so the new page is on screen
+	 * and clickable at once; only the named pieces (wordmark, render, card name, maker switch) fly
+	 * above it, and the overlay lets clicks through (a captured root or the default
+	 * ::view-transition swallows every click until the animation ends). Budget (PERF.md): the new
+	 * page is interactive < 500 ms after the click.
+	 */
+	:global(:root) {
+		view-transition-name: none;
+	}
+	:global(::view-transition) {
+		pointer-events: none;
+	}
 	:global(::view-transition-group(*)) {
-		animation-duration: 0.6s;
+		animation-duration: 0.3s;
 		animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 	}
 	/* the card itself flies with a heavier curve and flares as it lands */
 	:global(::view-transition-group(*.gpu)) {
-		animation-duration: 0.8s;
-		animation-timing-function: cubic-bezier(0.7, 0, 0.15, 1);
+		animation-duration: 0.4s;
+		animation-timing-function: cubic-bezier(0.5, 0, 0.15, 1);
 		z-index: 2;
 	}
 	:global(::view-transition-new(*.gpu)) {
-		animation: vt-flare 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+		animation: vt-flare 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
 	}
 	:global(::view-transition-old(*.gpu)) {
-		animation: vt-out 0.35s ease-out both;
+		animation: vt-out 0.2s ease-out both;
 	}
 	@keyframes -global-vt-flare {
 		from {
@@ -201,22 +214,9 @@
 			filter: none;
 		}
 	}
-	/* the new page is on screen at once (it lies above the old one) and settles with a short rise:
-	   no fade-in, no delay, so the next page never seems to lag behind the click */
-	:global(::view-transition-old(root)) {
-		animation: 0.2s ease-out both vt-out;
-	}
-	:global(::view-transition-new(root)) {
-		animation: 0.35s cubic-bezier(0.16, 1, 0.3, 1) both vt-in;
-	}
 	@keyframes -global-vt-out {
 		to {
 			opacity: 0;
-		}
-	}
-	@keyframes -global-vt-in {
-		from {
-			transform: translateY(8px);
 		}
 	}
 </style>

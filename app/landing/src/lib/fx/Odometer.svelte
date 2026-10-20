@@ -7,6 +7,7 @@
  * aria-hidden and not selectable.
 	 */
 	import { onMount, untrack } from 'svelte';
+	import { num } from '$lib/i18n';
 	import { easeOutExpo, onFinish, onFrame, reducedMotion } from './motion';
 
 	let {
@@ -116,7 +117,9 @@
 		}
 		return out;
 	});
-	const text = $derived(value.toLocaleString(lang === 'pl' ? 'pl-PL' : 'en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals }));
+	const text = $derived(num(value, lang, decimals));
+	/** A reel is one text node, one digit per line: 1 element per drum instead of 12 (hydration, layout). */
+	const REEL = '0\n1\n2\n3\n4\n5\n6\n7\n8\n9\n0';
 </script>
 
 <span class="odo" aria-label={label ? `${label}: ${text}` : undefined} role={label ? 'img' : undefined}>
@@ -127,9 +130,7 @@
 			{#if decimals > 0 && i === drums.length - decimals}<span class="sep">{sep}</span>{/if}
 			<!-- a reel is a rolling window (masked edges): qa:clip ignores it -->
 			<span class="drum" class:lead={d.lead && !pad} class:ghost={d.lead && pad} data-clip-ok>
-				<span class="strip" style="transform: translate3d(0, {-d.pos}em, 0)">
-					{#each [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0] as n, j (j)}<span>{n}</span>{/each}
-				</span>
+				<span class="strip" style="transform: translateY({-d.pos}em)">{REEL}</span>
 			</span>
 		{/each}
 	</span>
@@ -164,14 +165,11 @@
 	.drum.ghost {
 		opacity: 0;
 	}
+	/* a plain 2D transform: the reels are not promoted to layers (a page shows dozens of drums) */
 	.strip {
-		display: flex;
-		flex-direction: column;
-		will-change: transform;
-	}
-	.strip span {
 		display: block;
-		height: 1em;
+		white-space: pre;
+		line-height: 1;
 		text-align: center;
 	}
 	/* Martian Mono's comma is a full 1ch cell: centre it in a narrower slot, clipped sideways only

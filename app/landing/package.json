@@ -9,7 +9,8 @@
 		"build": "bun scripts/sync-results.ts && vite build",
 		"preview": "bun scripts/serve.ts 18433",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"qa:clip": "bun scripts/qa/clip.ts"
+		"qa:clip": "bun scripts/qa/clip.ts",
+		"qa:perf": "bun scripts/qa/perf.ts"
 	},
 	"devDependencies": {
 		"@sveltejs/adapter-static": "3.0.10",
