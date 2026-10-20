@@ -107,6 +107,12 @@ Sprawdzenie, że to nie błąd kodu: zmienia się tylko długość draftu. Tekst
 4. Pomiar fb-lcb17 (1 przebieg, 256 tokenów) ma szum ±3–6%. Porównania ogona i MTP na nim opierać na ms/krok i liczbie kroków z logu per krok (`as_steps.py`), nie na samym t/s.
 5. Zostaje do sprawdzenia [INFERENCE]: stała głębokość 6 na długich podsumowaniach dokumentów. Model daje +8%, ale to zmiana konfiguracji, a nie adaptacja, i też zmienia tekst greedy (inna szerokość).
 
+**Krok na rano (GPU, dziś w nocy zakaz testów na XTX; nic nie jest w kolejce).** Jedyny brakujący pomiar to rozstrzygnięcie [INFERENCE] z §2: krótki dokument nie ma logu per krok, więc jego +7…8% pochodzi z modelu.
+- Najtańsza forma (~4 min, 2 serwery): `as_lcb.sh` z `DEPTHS=2000`, ramiona A vs D.
+  - Skrypt robi log per krok `as-lcb-*.lk.jsonl`, a `as_steps.py` liczy z niego ms/krok i liczbę kroków.
+  - Tekst greedy będzie się różnił, więc porównanie opiera się tylko na t/s i ms/krok, a bramka PASS wymaga obejścia (ręcznie utworzyć `/tmp/adaptspec/PASS`).
+- Uruchamiać tylko wtedy, gdy ktoś rozważa `batch-invariant` jako bazę. Na topce wynik i tak nie zmieni werdyktu (md5).
+
 ## Do bazy wiedzy
 
 | folder | tytuł | treść | liczby (źródło) |
