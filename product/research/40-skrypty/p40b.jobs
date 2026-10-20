@@ -1,0 +1,2 @@
+# report 40 (ProseAccept): mtp_extract on 40 E0 outputs (T=1 seeds 1-4 + T=0), production model, no server
+p40-extract|600|~/qwen-opt/prose-accept|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash pa_extract.sh e0x

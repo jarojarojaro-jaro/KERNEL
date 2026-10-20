@@ -1,0 +1,2 @@
+# report 40 (ProseAccept): per-step draft log on the E0 prose set, production ~/llama-topka, T=1 seeds 1..8 + T=0
+p40-e0log|600|~/qwen-opt/prose-accept|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; bash pa_arm.sh p40-n4

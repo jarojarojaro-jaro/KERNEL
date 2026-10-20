@@ -1,0 +1,2178 @@
+{
+ "T1": {
+  "requests": 64,
+  "tokens": 25600,
+  "steps": 11772,
+  "tok_per_step": 2.1747,
+  "tok_per_step_model": 2.1669,
+  "S": [
+   0.6549,
+   0.3282,
+   0.1331,
+   0.0507
+  ],
+  "cond": [
+   0.6549,
+   0.5025,
+   0.4068,
+   0.3822
+  ],
+  "alive": [
+   11772,
+   7690,
+   3852,
+   1562
+  ],
+  "kinds": {
+   "0": 11772
+  },
+  "kind_accepted": {
+   "0": 13737
+  },
+  "t_s": 77.11,
+  "ms_step": 28.203,
+  "break_class": {
+   "oov": 0.1045,
+   "nl": 0.003,
+   "punct": 0.0487,
+   "digit": 0.0012,
+   "wstart": 0.6959,
+   "cont": 0.1444,
+   "other": 0.0024
+  },
+  "break_depth": {
+   "1": 0.3647,
+   "2": 0.3434,
+   "3": 0.205,
+   "4": 0.0868
+  },
+  "break_same_stem_or_ending": 0.1421,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.6004
+   ],
+   [
+    "cont<-cont",
+    0.1323
+   ],
+   [
+    "wstart<-punct",
+    0.0703
+   ],
+   [
+    "oov<-wstart",
+    0.065
+   ],
+   [
+    "oov<-cont",
+    0.0306
+   ],
+   [
+    "punct<-wstart",
+    0.0267
+   ],
+   [
+    "wstart<-cont",
+    0.0188
+   ],
+   [
+    "punct<-punct",
+    0.0155
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0467,
+   "nl": 0.009,
+   "punct": 0.1102,
+   "digit": 0.003,
+   "wstart": 0.5826,
+   "cont": 0.2446,
+   "other": 0.0039
+  }
+ },
+ "T1/pl": {
+  "requests": 32,
+  "tokens": 12800,
+  "steps": 6197,
+  "tok_per_step": 2.0655,
+  "tok_per_step_model": 2.0581,
+  "S": [
+   0.6347,
+   0.2918,
+   0.1018,
+   0.0299
+  ],
+  "cond": [
+   0.6347,
+   0.4605,
+   0.35,
+   0.2955
+  ],
+  "alive": [
+   6197,
+   3926,
+   1803,
+   626
+  ],
+  "kinds": {
+   "0": 6197
+  },
+  "kind_accepted": {
+   "0": 6557
+  },
+  "t_s": 72.97,
+  "ms_step": 28.307,
+  "break_class": {
+   "oov": 0.1398,
+   "nl": 0.0023,
+   "punct": 0.0435,
+   "digit": 0.0005,
+   "wstart": 0.5759,
+   "cont": 0.2374,
+   "other": 0.0007
+  },
+  "break_depth": {
+   "1": 0.3778,
+   "2": 0.3529,
+   "3": 0.1956,
+   "4": 0.0737
+  },
+  "break_same_stem_or_ending": 0.2255,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.4545
+   ],
+   [
+    "cont<-cont",
+    0.2193
+   ],
+   [
+    "wstart<-punct",
+    0.0844
+   ],
+   [
+    "oov<-wstart",
+    0.0742
+   ],
+   [
+    "oov<-cont",
+    0.0513
+   ],
+   [
+    "wstart<-cont",
+    0.0316
+   ],
+   [
+    "punct<-wstart",
+    0.0209
+   ],
+   [
+    "punct<-punct",
+    0.0144
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0668,
+   "nl": 0.0059,
+   "punct": 0.1009,
+   "digit": 0.0008,
+   "wstart": 0.4057,
+   "cont": 0.4193,
+   "other": 0.0006
+  },
+  "examples_draft_vs_target": [
+   [
+    ",",
+    " w",
+    25
+   ],
+   [
+    ".",
+    ",",
+    25
+   ],
+   [
+    ",",
+    ".",
+    23
+   ],
+   [
+    " w",
+    " na",
+    20
+   ],
+   [
+    ",",
+    " i",
+    18
+   ],
+   [
+    " w",
+    ",",
+    17
+   ],
+   [
+    ",",
+    " z",
+    16
+   ],
+   [
+    ",",
+    " na",
+    15
+   ],
+   [
+    " się",
+    " w",
+    11
+   ],
+   [
+    ",",
+    " od",
+    11
+   ],
+   [
+    ",",
+    " się",
+    10
+   ],
+   [
+    ".",
+    " w",
+    9
+   ],
+   [
+    ",",
+    " –",
+    9
+   ],
+   [
+    " i",
+    ",",
+    9
+   ],
+   [
+    " w",
+    " z",
+    9
+   ],
+   [
+    " w",
+    " się",
+    8
+   ],
+   [
+    ",",
+    " o",
+    7
+   ],
+   [
+    ".",
+    " i",
+    7
+   ],
+   [
+    " W",
+    " Dzi",
+    7
+   ],
+   [
+    ",",
+    " jak",
+    7
+   ],
+   [
+    "za",
+    "zał",
+    6
+   ],
+   [
+    " z",
+    ",",
+    6
+   ],
+   [
+    ",",
+    " teraz",
+    6
+   ],
+   [
+    ",",
+    " k",
+    6
+   ],
+   [
+    "ła",
+    "ł",
+    6
+   ],
+   [
+    "łem",
+    "łam",
+    6
+   ],
+   [
+    " w",
+    " do",
+    6
+   ],
+   [
+    ",",
+    " czyt",
+    6
+   ],
+   [
+    " w",
+    " przy",
+    6
+   ],
+   [
+    " o",
+    ",",
+    5
+   ]
+  ]
+ },
+ "T1/pl-latarnik": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1600,
+  "tok_per_step": 2.0,
+  "tok_per_step_model": 1.9931,
+  "S": [
+   0.6212,
+   0.2581,
+   0.0906,
+   0.0231
+  ],
+  "cond": [
+   0.6212,
+   0.4168,
+   0.3519,
+   0.2569
+  ],
+  "alive": [
+   1600,
+   991,
+   412,
+   144
+  ],
+  "kinds": {
+   "0": 1600
+  },
+  "kind_accepted": {
+   "0": 1589
+  },
+  "t_s": 70.1,
+  "ms_step": 28.532,
+  "break_class": {
+   "oov": 0.1215,
+   "nl": 0.0039,
+   "punct": 0.0501,
+   "digit": 0.0,
+   "wstart": 0.572,
+   "cont": 0.2519,
+   "other": 0.0006
+  },
+  "break_depth": {
+   "1": 0.3882,
+   "2": 0.3715,
+   "3": 0.1716,
+   "4": 0.0688
+  },
+  "break_same_stem_or_ending": 0.2436,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.4608
+   ],
+   [
+    "cont<-cont",
+    0.2346
+   ],
+   [
+    "wstart<-punct",
+    0.0656
+   ],
+   [
+    "oov<-cont",
+    0.0585
+   ],
+   [
+    "oov<-wstart",
+    0.0553
+   ],
+   [
+    "wstart<-cont",
+    0.0373
+   ],
+   [
+    "punct<-wstart",
+    0.0231
+   ],
+   [
+    "punct<-punct",
+    0.0174
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0597,
+   "nl": 0.0063,
+   "punct": 0.1053,
+   "digit": 0.0,
+   "wstart": 0.3958,
+   "cont": 0.4326,
+   "other": 0.0003
+  }
+ },
+ "T1/pl-esej": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1459,
+  "tok_per_step": 2.1933,
+  "tok_per_step_model": 2.1857,
+  "S": [
+   0.6683,
+   0.3509,
+   0.1234,
+   0.0432
+  ],
+  "cond": [
+   0.6683,
+   0.5251,
+   0.3536,
+   0.3539
+  ],
+  "alive": [
+   1459,
+   975,
+   509,
+   178
+  ],
+  "kinds": {
+   "0": 1459
+  },
+  "kind_accepted": {
+   "0": 1730
+  },
+  "t_s": 77.78,
+  "ms_step": 28.2,
+  "break_class": {
+   "oov": 0.1758,
+   "nl": 0.0014,
+   "punct": 0.0375,
+   "digit": 0.0,
+   "wstart": 0.5749,
+   "cont": 0.2089,
+   "other": 0.0014
+  },
+  "break_depth": {
+   "1": 0.348,
+   "2": 0.3321,
+   "3": 0.237,
+   "4": 0.0829
+  },
+  "break_same_stem_or_ending": 0.1931,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.4388
+   ],
+   [
+    "cont<-cont",
+    0.1873
+   ],
+   [
+    "wstart<-punct",
+    0.1009
+   ],
+   [
+    "oov<-wstart",
+    0.0994
+   ],
+   [
+    "oov<-cont",
+    0.0504
+   ],
+   [
+    "wstart<-cont",
+    0.0274
+   ],
+   [
+    "oov<-punct",
+    0.0252
+   ],
+   [
+    "punct<-wstart",
+    0.0209
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.078,
+   "nl": 0.0063,
+   "punct": 0.0924,
+   "digit": 0.0,
+   "wstart": 0.397,
+   "cont": 0.4244,
+   "other": 0.0019
+  }
+ },
+ "T1/pl-list": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1535,
+  "tok_per_step": 2.0847,
+  "tok_per_step_model": 2.0762,
+  "S": [
+   0.6293,
+   0.3036,
+   0.114,
+   0.0293
+  ],
+  "cond": [
+   0.6293,
+   0.4824,
+   0.3763,
+   0.2586
+  ],
+  "alive": [
+   1535,
+   966,
+   465,
+   174
+  ],
+  "kinds": {
+   "0": 1535
+  },
+  "kind_accepted": {
+   "0": 1652
+  },
+  "t_s": 73.94,
+  "ms_step": 28.195,
+  "break_class": {
+   "oov": 0.1322,
+   "nl": 0.004,
+   "punct": 0.0492,
+   "digit": 0.002,
+   "wstart": 0.6116,
+   "cont": 0.2009,
+   "other": 0.0
+  },
+  "break_depth": {
+   "1": 0.3837,
+   "2": 0.3351,
+   "3": 0.1942,
+   "4": 0.087
+  },
+  "break_same_stem_or_ending": 0.1841,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.4902
+   ],
+   [
+    "cont<-cont",
+    0.1814
+   ],
+   [
+    "wstart<-punct",
+    0.0924
+   ],
+   [
+    "oov<-wstart",
+    0.0802
+   ],
+   [
+    "oov<-cont",
+    0.0351
+   ],
+   [
+    "wstart<-cont",
+    0.0263
+   ],
+   [
+    "punct<-wstart",
+    0.0229
+   ],
+   [
+    "punct<-punct",
+    0.0196
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0629,
+   "nl": 0.0082,
+   "punct": 0.1183,
+   "digit": 0.0031,
+   "wstart": 0.4508,
+   "cont": 0.3567,
+   "other": 0.0
+  }
+ },
+ "T1/pl-opis": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1603,
+  "tok_per_step": 1.9963,
+  "tok_per_step_model": 1.9894,
+  "S": [
+   0.6226,
+   0.2601,
+   0.0817,
+   0.025
+  ],
+  "cond": [
+   0.6226,
+   0.4195,
+   0.3141,
+   0.3077
+  ],
+  "alive": [
+   1603,
+   994,
+   417,
+   130
+  ],
+  "kinds": {
+   "0": 1603
+  },
+  "kind_accepted": {
+   "0": 1586
+  },
+  "t_s": 70.57,
+  "ms_step": 28.287,
+  "break_class": {
+   "oov": 0.1331,
+   "nl": 0.0,
+   "punct": 0.0367,
+   "digit": 0.0,
+   "wstart": 0.5466,
+   "cont": 0.283,
+   "other": 0.0006
+  },
+  "break_depth": {
+   "1": 0.3884,
+   "2": 0.3698,
+   "3": 0.1839,
+   "4": 0.0579
+  },
+  "break_same_stem_or_ending": 0.2759,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.4283
+   ],
+   [
+    "cont<-cont",
+    0.2688
+   ],
+   [
+    "wstart<-punct",
+    0.081
+   ],
+   [
+    "oov<-wstart",
+    0.065
+   ],
+   [
+    "oov<-cont",
+    0.0605
+   ],
+   [
+    "wstart<-cont",
+    0.0347
+   ],
+   [
+    "punct<-wstart",
+    0.0167
+   ],
+   [
+    "punct<-cont",
+    0.0135
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0666,
+   "nl": 0.0028,
+   "punct": 0.0877,
+   "digit": 0.0,
+   "wstart": 0.3791,
+   "cont": 0.4634,
+   "other": 0.0003
+  }
+ },
+ "T1/en": {
+  "requests": 32,
+  "tokens": 12800,
+  "steps": 5575,
+  "tok_per_step": 2.296,
+  "tok_per_step_model": 2.2879,
+  "S": [
+   0.6773,
+   0.3688,
+   0.1679,
+   0.0739
+  ],
+  "cond": [
+   0.6773,
+   0.5462,
+   0.4568,
+   0.4402
+  ],
+  "alive": [
+   5575,
+   3764,
+   2049,
+   936
+  ],
+  "kinds": {
+   "0": 5575
+  },
+  "kind_accepted": {
+   "0": 7180
+  },
+  "t_s": 81.74,
+  "ms_step": 28.087,
+  "break_class": {
+   "oov": 0.0633,
+   "nl": 0.0037,
+   "punct": 0.0547,
+   "digit": 0.0019,
+   "wstart": 0.8358,
+   "cont": 0.036,
+   "other": 0.0045
+  },
+  "break_depth": {
+   "1": 0.3495,
+   "2": 0.3324,
+   "3": 0.2161,
+   "4": 0.1021
+  },
+  "break_same_stem_or_ending": 0.0448,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.7703
+   ],
+   [
+    "oov<-wstart",
+    0.0544
+   ],
+   [
+    "wstart<-punct",
+    0.0538
+   ],
+   [
+    "punct<-wstart",
+    0.0335
+   ],
+   [
+    "cont<-cont",
+    0.031
+   ],
+   [
+    "punct<-punct",
+    0.0168
+   ],
+   [
+    "oov<-cont",
+    0.0064
+   ],
+   [
+    "wstart<-nl",
+    0.0056
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0266,
+   "nl": 0.0121,
+   "punct": 0.1194,
+   "digit": 0.0052,
+   "wstart": 0.7596,
+   "cont": 0.07,
+   "other": 0.0072
+  }
+ },
+ "T1/en-story": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1428,
+  "tok_per_step": 2.2409,
+  "tok_per_step_model": 2.2325,
+  "S": [
+   0.6667,
+   0.362,
+   0.145,
+   0.0588
+  ],
+  "cond": [
+   0.6667,
+   0.5442,
+   0.4019,
+   0.4058
+  ],
+  "alive": [
+   1428,
+   950,
+   515,
+   207
+  ],
+  "kinds": {
+   "0": 1428
+  },
+  "kind_accepted": {
+   "0": 1760
+  },
+  "t_s": 79.92,
+  "ms_step": 28.04,
+  "break_class": {
+   "oov": 0.0643,
+   "nl": 0.0097,
+   "punct": 0.0718,
+   "digit": 0.0022,
+   "wstart": 0.7876,
+   "cont": 0.0583,
+   "other": 0.006
+  },
+  "break_depth": {
+   "1": 0.3545,
+   "2": 0.3231,
+   "3": 0.2304,
+   "4": 0.092
+  },
+  "break_same_stem_or_ending": 0.0651,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.7248
+   ],
+   [
+    "oov<-wstart",
+    0.0546
+   ],
+   [
+    "cont<-cont",
+    0.0516
+   ],
+   [
+    "wstart<-punct",
+    0.0501
+   ],
+   [
+    "punct<-wstart",
+    0.0344
+   ],
+   [
+    "punct<-punct",
+    0.0277
+   ],
+   [
+    "nl<-wstart",
+    0.009
+   ],
+   [
+    "oov<-cont",
+    0.0075
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0274,
+   "nl": 0.0173,
+   "punct": 0.1437,
+   "digit": 0.0047,
+   "wstart": 0.6987,
+   "cont": 0.0943,
+   "other": 0.0138
+  }
+ },
+ "T1/en-essay": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1351,
+  "tok_per_step": 2.3686,
+  "tok_per_step_model": 2.3597,
+  "S": [
+   0.6958,
+   0.3938,
+   0.188,
+   0.0822
+  ],
+  "cond": [
+   0.6958,
+   0.5678,
+   0.4783,
+   0.437
+  ],
+  "alive": [
+   1351,
+   937,
+   531,
+   254
+  ],
+  "kinds": {
+   "0": 1351
+  },
+  "kind_accepted": {
+   "0": 1837
+  },
+  "t_s": 84.48,
+  "ms_step": 28.037,
+  "break_class": {
+   "oov": 0.0657,
+   "nl": 0.0,
+   "punct": 0.0487,
+   "digit": 0.0,
+   "wstart": 0.8612,
+   "cont": 0.0187,
+   "other": 0.0057
+  },
+  "break_depth": {
+   "1": 0.3336,
+   "2": 0.3279,
+   "3": 0.2224,
+   "4": 0.1161
+  },
+  "break_same_stem_or_ending": 0.0357,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.8068
+   ],
+   [
+    "oov<-wstart",
+    0.0544
+   ],
+   [
+    "wstart<-punct",
+    0.0455
+   ],
+   [
+    "punct<-wstart",
+    0.0317
+   ],
+   [
+    "cont<-cont",
+    0.017
+   ],
+   [
+    "punct<-punct",
+    0.0146
+   ],
+   [
+    "oov<-cont",
+    0.0073
+   ],
+   [
+    "wstart<-nl",
+    0.0057
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.027,
+   "nl": 0.0053,
+   "punct": 0.1069,
+   "digit": 0.0013,
+   "wstart": 0.8003,
+   "cont": 0.0516,
+   "other": 0.0075
+  }
+ },
+ "T1/en-letter": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1405,
+  "tok_per_step": 2.2776,
+  "tok_per_step_model": 2.269,
+  "S": [
+   0.6719,
+   0.3559,
+   0.1665,
+   0.0747
+  ],
+  "cond": [
+   0.6719,
+   0.5313,
+   0.4689,
+   0.4487
+  ],
+  "alive": [
+   1405,
+   941,
+   499,
+   234
+  ],
+  "kinds": {
+   "0": 1405
+  },
+  "kind_accepted": {
+   "0": 1783
+  },
+  "t_s": 80.93,
+  "ms_step": 28.144,
+  "break_class": {
+   "oov": 0.0456,
+   "nl": 0.0046,
+   "punct": 0.0464,
+   "digit": 0.0054,
+   "wstart": 0.86,
+   "cont": 0.0356,
+   "other": 0.0023
+  },
+  "break_depth": {
+   "1": 0.355,
+   "2": 0.3411,
+   "3": 0.2042,
+   "4": 0.0998
+  },
+  "break_same_stem_or_ending": 0.0394,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.7927
+   ],
+   [
+    "wstart<-punct",
+    0.0541
+   ],
+   [
+    "oov<-wstart",
+    0.0402
+   ],
+   [
+    "cont<-cont",
+    0.0302
+   ],
+   [
+    "punct<-wstart",
+    0.0278
+   ],
+   [
+    "punct<-punct",
+    0.0155
+   ],
+   [
+    "wstart<-cont",
+    0.007
+   ],
+   [
+    "digit<-digit",
+    0.0054
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0192,
+   "nl": 0.0192,
+   "punct": 0.1085,
+   "digit": 0.0148,
+   "wstart": 0.773,
+   "cont": 0.0629,
+   "other": 0.0025
+  }
+ },
+ "T1/en-travel": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1391,
+  "tok_per_step": 2.3005,
+  "tok_per_step_model": 2.294,
+  "S": [
+   0.6758,
+   0.3645,
+   0.1733,
+   0.0805
+  ],
+  "cond": [
+   0.6758,
+   0.5417,
+   0.4782,
+   0.4647
+  ],
+  "alive": [
+   1391,
+   936,
+   504,
+   241
+  ],
+  "kinds": {
+   "0": 1391
+  },
+  "kind_accepted": {
+   "0": 1800
+  },
+  "t_s": 81.79,
+  "ms_step": 28.127,
+  "break_class": {
+   "oov": 0.0779,
+   "nl": 0.0,
+   "punct": 0.0511,
+   "digit": 0.0,
+   "wstart": 0.8371,
+   "cont": 0.0299,
+   "other": 0.0039
+  },
+  "break_depth": {
+   "1": 0.3541,
+   "2": 0.3375,
+   "3": 0.2069,
+   "4": 0.1015
+  },
+  "break_same_stem_or_ending": 0.0378,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.76
+   ],
+   [
+    "oov<-wstart",
+    0.0685
+   ],
+   [
+    "wstart<-punct",
+    0.0653
+   ],
+   [
+    "punct<-wstart",
+    0.0401
+   ],
+   [
+    "cont<-cont",
+    0.0236
+   ],
+   [
+    "punct<-punct",
+    0.0087
+   ],
+   [
+    "wstart<-nl",
+    0.0071
+   ],
+   [
+    "oov<-cont",
+    0.0071
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.033,
+   "nl": 0.0066,
+   "punct": 0.1184,
+   "digit": 0.0,
+   "wstart": 0.7663,
+   "cont": 0.071,
+   "other": 0.0047
+  }
+ },
+ "T0": {
+  "requests": 8,
+  "tokens": 3200,
+  "steps": 1413,
+  "tok_per_step": 2.2647,
+  "tok_per_step_model": 2.2576,
+  "S": [
+   0.6851,
+   0.3595,
+   0.15,
+   0.063
+  ],
+  "cond": [
+   0.6851,
+   0.527,
+   0.4173,
+   0.4218
+  ],
+  "alive": [
+   1413,
+   964,
+   508,
+   211
+  ],
+  "kinds": {
+   "0": 1413
+  },
+  "kind_accepted": {
+   "0": 1777
+  },
+  "t_s": 81.34,
+  "ms_step": 27.843,
+  "break_class": {
+   "oov": 0.1109,
+   "nl": 0.0038,
+   "punct": 0.0516,
+   "digit": 0.0,
+   "wstart": 0.7244,
+   "cont": 0.1078,
+   "other": 0.0015
+  },
+  "break_depth": {
+   "1": 0.3371,
+   "2": 0.3455,
+   "3": 0.2248,
+   "4": 0.0926
+  },
+  "break_same_stem_or_ending": 0.1124,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.6287
+   ],
+   [
+    "cont<-cont",
+    0.101
+   ],
+   [
+    "wstart<-punct",
+    0.0774
+   ],
+   [
+    "oov<-wstart",
+    0.0676
+   ],
+   [
+    "oov<-cont",
+    0.0364
+   ],
+   [
+    "punct<-wstart",
+    0.0273
+   ],
+   [
+    "punct<-punct",
+    0.0182
+   ],
+   [
+    "wstart<-cont",
+    0.0121
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0468,
+   "nl": 0.0101,
+   "punct": 0.1141,
+   "digit": 0.0044,
+   "wstart": 0.5927,
+   "cont": 0.2285,
+   "other": 0.0035
+  }
+ },
+ "T0/pl": {
+  "requests": 4,
+  "tokens": 1600,
+  "steps": 750,
+  "tok_per_step": 2.1333,
+  "tok_per_step_model": 2.1267,
+  "S": [
+   0.6747,
+   0.3227,
+   0.1,
+   0.0293
+  ],
+  "cond": [
+   0.6747,
+   0.4811,
+   0.3099,
+   0.2933
+  ],
+  "alive": [
+   750,
+   503,
+   242,
+   75
+  ],
+  "kinds": {
+   "0": 750
+  },
+  "kind_accepted": {
+   "0": 845
+  },
+  "t_s": 76.65,
+  "ms_step": 27.83,
+  "break_class": {
+   "oov": 0.1464,
+   "nl": 0.0014,
+   "punct": 0.0539,
+   "digit": 0.0,
+   "wstart": 0.6271,
+   "cont": 0.1713,
+   "other": 0.0
+  },
+  "break_depth": {
+   "1": 0.3356,
+   "2": 0.3605,
+   "3": 0.2307,
+   "4": 0.0732
+  },
+  "break_same_stem_or_ending": 0.1657,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.4972
+   ],
+   [
+    "cont<-cont",
+    0.1588
+   ],
+   [
+    "wstart<-punct",
+    0.1036
+   ],
+   [
+    "oov<-wstart",
+    0.0773
+   ],
+   [
+    "oov<-cont",
+    0.0566
+   ],
+   [
+    "punct<-punct",
+    0.0221
+   ],
+   [
+    "punct<-wstart",
+    0.0221
+   ],
+   [
+    "wstart<-cont",
+    0.0207
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0679,
+   "nl": 0.0075,
+   "punct": 0.1119,
+   "digit": 0.0,
+   "wstart": 0.4148,
+   "cont": 0.396,
+   "other": 0.0019
+  }
+ },
+ "T0/pl-latarnik": {
+  "requests": 1,
+  "tokens": 400,
+  "steps": 190,
+  "tok_per_step": 2.1053,
+  "tok_per_step_model": 2.1,
+  "S": [
+   0.6526,
+   0.3211,
+   0.1,
+   0.0263
+  ],
+  "cond": [
+   0.6526,
+   0.4959,
+   0.3115,
+   0.2632
+  ],
+  "alive": [
+   190,
+   123,
+   61,
+   19
+  ],
+  "kinds": {
+   "0": 190
+  },
+  "kind_accepted": {
+   "0": 209
+  },
+  "t_s": 75.7,
+  "ms_step": 27.81,
+  "break_class": {
+   "oov": 0.1196,
+   "nl": 0.0054,
+   "punct": 0.0435,
+   "digit": 0.0,
+   "wstart": 0.6413,
+   "cont": 0.1902,
+   "other": 0.0
+  },
+  "break_depth": {
+   "1": 0.3587,
+   "2": 0.337,
+   "3": 0.2283,
+   "4": 0.0761
+  },
+  "break_same_stem_or_ending": 0.1848,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.5054
+   ],
+   [
+    "cont<-cont",
+    0.1739
+   ],
+   [
+    "wstart<-punct",
+    0.0978
+   ],
+   [
+    "oov<-cont",
+    0.0815
+   ],
+   [
+    "wstart<-cont",
+    0.0272
+   ],
+   [
+    "oov<-wstart",
+    0.0272
+   ],
+   [
+    "punct<-punct",
+    0.0163
+   ],
+   [
+    "punct<-wstart",
+    0.0163
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0553,
+   "nl": 0.0101,
+   "punct": 0.1106,
+   "digit": 0.0,
+   "wstart": 0.402,
+   "cont": 0.4171,
+   "other": 0.005
+  }
+ },
+ "T0/pl-esej": {
+  "requests": 1,
+  "tokens": 400,
+  "steps": 176,
+  "tok_per_step": 2.2727,
+  "tok_per_step_model": 2.267,
+  "S": [
+   0.7102,
+   0.375,
+   0.125,
+   0.0568
+  ],
+  "cond": [
+   0.7102,
+   0.5323,
+   0.3333,
+   0.4545
+  ],
+  "alive": [
+   176,
+   124,
+   66,
+   22
+  ],
+  "kinds": {
+   "0": 176
+  },
+  "kind_accepted": {
+   "0": 223
+  },
+  "t_s": 81.51,
+  "ms_step": 27.883,
+  "break_class": {
+   "oov": 0.1758,
+   "nl": 0.0,
+   "punct": 0.0485,
+   "digit": 0.0,
+   "wstart": 0.6242,
+   "cont": 0.1515,
+   "other": 0.0
+  },
+  "break_depth": {
+   "1": 0.3091,
+   "2": 0.3515,
+   "3": 0.2667,
+   "4": 0.0727
+  },
+  "break_same_stem_or_ending": 0.1576,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.503
+   ],
+   [
+    "cont<-cont",
+    0.1515
+   ],
+   [
+    "oov<-wstart",
+    0.1273
+   ],
+   [
+    "wstart<-punct",
+    0.103
+   ],
+   [
+    "punct<-wstart",
+    0.0364
+   ],
+   [
+    "oov<-cont",
+    0.0242
+   ],
+   [
+    "oov<-punct",
+    0.0242
+   ],
+   [
+    "wstart<-nl",
+    0.0121
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0779,
+   "nl": 0.0075,
+   "punct": 0.1055,
+   "digit": 0.0,
+   "wstart": 0.402,
+   "cont": 0.4045,
+   "other": 0.0025
+  }
+ },
+ "T0/pl-list": {
+  "requests": 1,
+  "tokens": 400,
+  "steps": 187,
+  "tok_per_step": 2.139,
+  "tok_per_step_model": 2.1337,
+  "S": [
+   0.6845,
+   0.3209,
+   0.0963,
+   0.0321
+  ],
+  "cond": [
+   0.6845,
+   0.4724,
+   0.3,
+   0.3333
+  ],
+  "alive": [
+   187,
+   127,
+   60,
+   18
+  ],
+  "kinds": {
+   "0": 187
+  },
+  "kind_accepted": {
+   "0": 212
+  },
+  "t_s": 77.11,
+  "ms_step": 27.741,
+  "break_class": {
+   "oov": 0.1389,
+   "nl": 0.0,
+   "punct": 0.0611,
+   "digit": 0.0,
+   "wstart": 0.6667,
+   "cont": 0.1333,
+   "other": 0.0
+  },
+  "break_depth": {
+   "1": 0.3278,
+   "2": 0.3722,
+   "3": 0.2333,
+   "4": 0.0667
+  },
+  "break_same_stem_or_ending": 0.1222,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.5556
+   ],
+   [
+    "cont<-cont",
+    0.1167
+   ],
+   [
+    "oov<-wstart",
+    0.1056
+   ],
+   [
+    "wstart<-punct",
+    0.1
+   ],
+   [
+    "punct<-punct",
+    0.0389
+   ],
+   [
+    "oov<-cont",
+    0.0333
+   ],
+   [
+    "punct<-wstart",
+    0.0222
+   ],
+   [
+    "cont<-punct",
+    0.0167
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0628,
+   "nl": 0.0075,
+   "punct": 0.1407,
+   "digit": 0.0,
+   "wstart": 0.4824,
+   "cont": 0.3065,
+   "other": 0.0
+  }
+ },
+ "T0/pl-opis": {
+  "requests": 1,
+  "tokens": 400,
+  "steps": 197,
+  "tok_per_step": 2.0305,
+  "tok_per_step_model": 2.0203,
+  "S": [
+   0.6548,
+   0.2792,
+   0.0812,
+   0.0051
+  ],
+  "cond": [
+   0.6548,
+   0.4264,
+   0.2909,
+   0.0625
+  ],
+  "alive": [
+   197,
+   129,
+   55,
+   16
+  ],
+  "kinds": {
+   "0": 197
+  },
+  "kind_accepted": {
+   "0": 201
+  },
+  "t_s": 72.81,
+  "ms_step": 27.889,
+  "break_class": {
+   "oov": 0.1538,
+   "nl": 0.0,
+   "punct": 0.0615,
+   "digit": 0.0,
+   "wstart": 0.5795,
+   "cont": 0.2051,
+   "other": 0.0
+  },
+  "break_depth": {
+   "1": 0.3436,
+   "2": 0.3795,
+   "3": 0.2,
+   "4": 0.0769
+  },
+  "break_same_stem_or_ending": 0.1949,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.4308
+   ],
+   [
+    "cont<-cont",
+    0.1897
+   ],
+   [
+    "wstart<-punct",
+    0.1128
+   ],
+   [
+    "oov<-cont",
+    0.0821
+   ],
+   [
+    "oov<-wstart",
+    0.0564
+   ],
+   [
+    "wstart<-cont",
+    0.0359
+   ],
+   [
+    "punct<-punct",
+    0.0256
+   ],
+   [
+    "punct<-cont",
+    0.0205
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0756,
+   "nl": 0.005,
+   "punct": 0.0907,
+   "digit": 0.0,
+   "wstart": 0.3728,
+   "cont": 0.4559,
+   "other": 0.0
+  }
+ },
+ "T0/en": {
+  "requests": 4,
+  "tokens": 1600,
+  "steps": 663,
+  "tok_per_step": 2.4133,
+  "tok_per_step_model": 2.4057,
+  "S": [
+   0.6968,
+   0.4012,
+   0.2066,
+   0.1011
+  ],
+  "cond": [
+   0.6968,
+   0.577,
+   0.515,
+   0.4926
+  ],
+  "alive": [
+   663,
+   461,
+   266,
+   136
+  ],
+  "kinds": {
+   "0": 663
+  },
+  "kind_accepted": {
+   "0": 932
+  },
+  "t_s": 86.63,
+  "ms_step": 27.858,
+  "break_class": {
+   "oov": 0.0675,
+   "nl": 0.0067,
+   "punct": 0.0489,
+   "digit": 0.0,
+   "wstart": 0.8432,
+   "cont": 0.0304,
+   "other": 0.0034
+  },
+  "break_depth": {
+   "1": 0.339,
+   "2": 0.3272,
+   "3": 0.2175,
+   "4": 0.1164
+  },
+  "break_same_stem_or_ending": 0.0472,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.7892
+   ],
+   [
+    "oov<-wstart",
+    0.0556
+   ],
+   [
+    "wstart<-punct",
+    0.0455
+   ],
+   [
+    "punct<-wstart",
+    0.0337
+   ],
+   [
+    "cont<-cont",
+    0.0304
+   ],
+   [
+    "punct<-punct",
+    0.0135
+   ],
+   [
+    "oov<-cont",
+    0.0118
+   ],
+   [
+    "nl<-wstart",
+    0.0051
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0258,
+   "nl": 0.0126,
+   "punct": 0.1163,
+   "digit": 0.0088,
+   "wstart": 0.7706,
+   "cont": 0.061,
+   "other": 0.005
+  }
+ },
+ "T0/en-story": {
+  "requests": 1,
+  "tokens": 400,
+  "steps": 165,
+  "tok_per_step": 2.4242,
+  "tok_per_step_model": 2.4121,
+  "S": [
+   0.7333,
+   0.3758,
+   0.1939,
+   0.1091
+  ],
+  "cond": [
+   0.7333,
+   0.5124,
+   0.5161,
+   0.5625
+  ],
+  "alive": [
+   165,
+   121,
+   62,
+   32
+  ],
+  "kinds": {
+   "0": 165
+  },
+  "kind_accepted": {
+   "0": 233
+  },
+  "t_s": 86.8,
+  "ms_step": 27.93,
+  "break_class": {
+   "oov": 0.0959,
+   "nl": 0.0205,
+   "punct": 0.0411,
+   "digit": 0.0,
+   "wstart": 0.7877,
+   "cont": 0.0548,
+   "other": 0.0
+  },
+  "break_depth": {
+   "1": 0.3014,
+   "2": 0.3973,
+   "3": 0.2055,
+   "4": 0.0959
+  },
+  "break_same_stem_or_ending": 0.0685,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.7329
+   ],
+   [
+    "oov<-wstart",
+    0.089
+   ],
+   [
+    "cont<-cont",
+    0.0548
+   ],
+   [
+    "wstart<-punct",
+    0.0411
+   ],
+   [
+    "punct<-wstart",
+    0.0205
+   ],
+   [
+    "punct<-punct",
+    0.0205
+   ],
+   [
+    "nl<-wstart",
+    0.0137
+   ],
+   [
+    "wstart<-nl",
+    0.0137
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0378,
+   "nl": 0.0176,
+   "punct": 0.1184,
+   "digit": 0.0202,
+   "wstart": 0.7078,
+   "cont": 0.0907,
+   "other": 0.0076
+  }
+ },
+ "T0/en-essay": {
+  "requests": 1,
+  "tokens": 400,
+  "steps": 163,
+  "tok_per_step": 2.454,
+  "tok_per_step_model": 2.4479,
+  "S": [
+   0.7117,
+   0.4172,
+   0.2209,
+   0.0982
+  ],
+  "cond": [
+   0.7117,
+   0.5862,
+   0.5294,
+   0.4444
+  ],
+  "alive": [
+   163,
+   116,
+   68,
+   36
+  ],
+  "kinds": {
+   "0": 163
+  },
+  "kind_accepted": {
+   "0": 236
+  },
+  "t_s": 88.32,
+  "ms_step": 27.784,
+  "break_class": {
+   "oov": 0.0612,
+   "nl": 0.0,
+   "punct": 0.034,
+   "digit": 0.0,
+   "wstart": 0.8844,
+   "cont": 0.0136,
+   "other": 0.0068
+  },
+  "break_depth": {
+   "1": 0.3197,
+   "2": 0.3265,
+   "3": 0.2177,
+   "4": 0.1361
+  },
+  "break_same_stem_or_ending": 0.034,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.8435
+   ],
+   [
+    "oov<-wstart",
+    0.0544
+   ],
+   [
+    "wstart<-punct",
+    0.034
+   ],
+   [
+    "punct<-wstart",
+    0.0272
+   ],
+   [
+    "cont<-cont",
+    0.0136
+   ],
+   [
+    "oov<-cont",
+    0.0068
+   ],
+   [
+    "wstart<-cont",
+    0.0068
+   ],
+   [
+    "punct<-punct",
+    0.0068
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0226,
+   "nl": 0.005,
+   "punct": 0.108,
+   "digit": 0.0,
+   "wstart": 0.8141,
+   "cont": 0.0427,
+   "other": 0.0075
+  }
+ },
+ "T0/en-letter": {
+  "requests": 1,
+  "tokens": 400,
+  "steps": 168,
+  "tok_per_step": 2.381,
+  "tok_per_step_model": 2.375,
+  "S": [
+   0.6786,
+   0.4286,
+   0.2024,
+   0.0655
+  ],
+  "cond": [
+   0.6786,
+   0.6316,
+   0.4722,
+   0.3333
+  ],
+  "alive": [
+   168,
+   114,
+   72,
+   33
+  ],
+  "kinds": {
+   "0": 168
+  },
+  "kind_accepted": {
+   "0": 231
+  },
+  "t_s": 85.55,
+  "ms_step": 27.833,
+  "break_class": {
+   "oov": 0.0449,
+   "nl": 0.0064,
+   "punct": 0.0641,
+   "digit": 0.0,
+   "wstart": 0.8333,
+   "cont": 0.0449,
+   "other": 0.0064
+  },
+  "break_depth": {
+   "1": 0.3462,
+   "2": 0.2692,
+   "3": 0.2436,
+   "4": 0.141
+  },
+  "break_same_stem_or_ending": 0.0577,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.7564
+   ],
+   [
+    "wstart<-punct",
+    0.0705
+   ],
+   [
+    "cont<-cont",
+    0.0449
+   ],
+   [
+    "punct<-wstart",
+    0.0385
+   ],
+   [
+    "oov<-wstart",
+    0.0321
+   ],
+   [
+    "punct<-punct",
+    0.0192
+   ],
+   [
+    "oov<-cont",
+    0.0128
+   ],
+   [
+    "nl<-wstart",
+    0.0064
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0176,
+   "nl": 0.0226,
+   "punct": 0.1156,
+   "digit": 0.0151,
+   "wstart": 0.7638,
+   "cont": 0.0603,
+   "other": 0.005
+  }
+ },
+ "T0/en-travel": {
+  "requests": 1,
+  "tokens": 400,
+  "steps": 167,
+  "tok_per_step": 2.3952,
+  "tok_per_step_model": 2.3892,
+  "S": [
+   0.6647,
+   0.3832,
+   0.2096,
+   0.1317
+  ],
+  "cond": [
+   0.6647,
+   0.5818,
+   0.5469,
+   0.6286
+  ],
+  "alive": [
+   167,
+   110,
+   64,
+   35
+  ],
+  "kinds": {
+   "0": 167
+  },
+  "kind_accepted": {
+   "0": 232
+  },
+  "t_s": 85.9,
+  "ms_step": 27.884,
+  "break_class": {
+   "oov": 0.0694,
+   "nl": 0.0,
+   "punct": 0.0556,
+   "digit": 0.0,
+   "wstart": 0.8681,
+   "cont": 0.0069,
+   "other": 0.0
+  },
+  "break_depth": {
+   "1": 0.3889,
+   "2": 0.3194,
+   "3": 0.2014,
+   "4": 0.0903
+  },
+  "break_same_stem_or_ending": 0.0278,
+  "break_pairs_top": [
+   [
+    "wstart<-wstart",
+    0.8264
+   ],
+   [
+    "oov<-wstart",
+    0.0486
+   ],
+   [
+    "punct<-wstart",
+    0.0486
+   ],
+   [
+    "wstart<-punct",
+    0.0347
+   ],
+   [
+    "oov<-cont",
+    0.0208
+   ],
+   [
+    "wstart<-nl",
+    0.0069
+   ],
+   [
+    "cont<-cont",
+    0.0069
+   ],
+   [
+    "punct<-punct",
+    0.0069
+   ]
+  ],
+  "gen_class": {
+   "oov": 0.0251,
+   "nl": 0.005,
+   "punct": 0.1231,
+   "digit": 0.0,
+   "wstart": 0.7965,
+   "cont": 0.0503,
+   "other": 0.0
+  }
+ }
+}

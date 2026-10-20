@@ -1,0 +1,5 @@
+# report 40 (ProseAccept): draft depth on pure prose, E0 seeds 1,2, production ~/llama-topka, ABBA n=4 | n=3 | n=3 | n=4
+p40-d4a|300|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 LOGDIR=~/qwen-opt/prose-accept/logs bash p100_arm.sh p40-d4a prose
+p40-d3a|300|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 LOGDIR=~/qwen-opt/prose-accept/logs XENV="DRAFT_N=3" bash p100_arm.sh p40-d3a prose
+p40-d3b|300|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 LOGDIR=~/qwen-opt/prose-accept/logs XENV="DRAFT_N=3" bash p100_arm.sh p40-d3b prose
+p40-d4b|300|~/qwen-opt/xtxroadmap|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; SEEDS=1,2 LOGDIR=~/qwen-opt/prose-accept/logs bash p100_arm.sh p40-d4b prose
