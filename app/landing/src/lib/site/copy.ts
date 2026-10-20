@@ -56,17 +56,18 @@ const raw = {
 			ctaSecondary: 'Jak mierzymy',
 			race: {
 				cold: 'Typowa aplikacja',
-				coldSub: 'llama.cpp, ustawienia domyślne',
 				hot: 'Podkręt',
-				hotSub: 'nasz silnik, ten sam plik',
 				faster: 'szybciej',
-				note: '{card} · {model} {quant} · ten sam skrypt pomiarowy po obu stronach (ABBA) · tekst przykładowy, tempo zmierzone',
+				answer: 'Odpowiedź',
+				tokens: 'tokenów',
+				done: 'Gotowe',
+				note: '{card} · {model} {quant} · ten sam skrypt pomiarowy po obu stronach (ABBA) · odpowiedź {tok} tokenów, tekst przykładowy, tempo zmierzone',
 				pause: 'Wstrzymaj animację',
 				resume: 'Wznów animację',
 				/** The token highway's first paragraph (written until the rest, home/stream/pl.ts, has loaded). */
 				opening: 'Kraków najlepiej poznawać bez pośpiechu, choć jeden weekend wystarczy, żeby złapać jego rytm. Zacznij wcześnie rano na Kazimierzu, kiedy kawiarnie dopiero wystawiają stoliki, a na Placu Nowym przy Okrąglaku sprzedawcy szykują pierwsze zapiekanki. Ulice Szeroka, Józefa i Miodowa są wtedy prawie puste i można spokojnie zajrzeć w podwórka, do synagog i małych galerii, zanim pojawią się wycieczki.',
 				text: 'Rano kawa na Kazimierzu, zanim zrobi się tłoczno, potem bulwarami pod Wawel; dziedziniec jest bezpłatny. Na obiad pierogi w barze mlecznym przy Starym Mieście. Po południu Sukiennice i Rynek, a jeśli pada, Muzeum pod Rynkiem. Wieczorem kolacja na Podgórzu, zarezerwowana dzień wcześniej. Wygodne buty obowiązkowo.',
-				summary: 'Animacja: {card}, {model} {quant}. Ten sam tekst pisany bez przerwy w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Ten sam skrypt pomiarowy po obu stronach.'
+				summary: 'Animacja: {card}, {model} {quant}. Ta sama odpowiedź ({tok} tokenów) pisana bez przerwy w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Nasz silnik kończy ją w {t2}, typowa aplikacja w {t0}. Ten sam skrypt pomiarowy po obu stronach.'
 			}
 		},
 		how: {
@@ -289,17 +290,18 @@ const raw = {
 			ctaSecondary: 'How we measure',
 			race: {
 				cold: 'Typical app',
-				coldSub: 'llama.cpp, default settings',
 				hot: 'Podkręt',
-				hotSub: 'our engine, same file',
 				faster: 'faster',
-				note: '{card} · {model} {quant} · the same measurement script on both sides (ABBA) · example text, measured pace',
+				answer: 'Answer',
+				tokens: 'tokens',
+				done: 'Done',
+				note: '{card} · {model} {quant} · the same measurement script on both sides (ABBA) · a {tok}-token answer, example text, measured pace',
 				pause: 'Pause the animation',
 				resume: 'Resume the animation',
 				/** The token highway's first paragraph (written until the rest, home/stream/en.ts, has loaded). */
 				opening: 'Kraków is best explored without hurrying, although a single weekend is enough to catch its rhythm. Start early in the morning in Kazimierz, when the cafés are only just setting out their tables and the vendors at the Okrąglak on Plac Nowy are getting the first zapiekanki ready. Szeroka, Józefa and Miodowa streets are almost empty then, so you can take your time looking into courtyards, synagogues and small galleries before the tour groups arrive.',
 				text: 'Start with coffee in Kazimierz before it gets busy, then walk the boulevards up to Wawel; the courtyard is free. Lunch: pierogi at a milk bar near the Old Town. In the afternoon, the Cloth Hall and the Main Square, or the Rynek Underground if it rains. Dinner in Podgórze, booked a day ahead. Comfortable shoes are a must.',
-				summary: 'Animation: {card}, {model} {quant}. The same text written nonstop at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. The same measurement script on both sides.'
+				summary: 'Animation: {card}, {model} {quant}. The same {tok}-token answer written nonstop at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. Our engine finishes it in {t2}, the typical app in {t0}. The same measurement script on both sides.'
 			}
 		},
 		how: {

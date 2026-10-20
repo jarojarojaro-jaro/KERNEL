@@ -17,7 +17,7 @@
 	import HeatField from '$lib/fx/HeatField.svelte';
 	import Highway from '$lib/fx/Highway.svelte';
 	import { reducedMotion, whenIdle } from '$lib/fx/motion';
-	import { fmtTps } from '$lib/format';
+	import { fmtSec, fmtTps } from '$lib/format';
 	import { cardsHref, href, num, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
 	import { fill, heroDial, RACE_CARD, RACE_MODEL, RACE_RUN, RACE_V } from './data';
@@ -33,11 +33,22 @@
 	const gain = hot / cold;
 	/** Tokens accepted per step = measured t/s × measured ms per step (MTP steps; 1 without MTP). */
 	const burstOf = (v: typeof RACE_V.ours) => (v.msStep ? Math.max(1, (v.decode!.v * v.msStep.v) / 1000) : 1);
-	const lanes = [
-		{ id: 'cold' as const, tps: cold, burst: burstOf(RACE_V.before) },
-		{ id: 'hot' as const, tps: hot, burst: burstOf(RACE_V.ours) }
-	];
-	const vars = $derived({ card: RACE_CARD.name, model: RACE_MODEL, quant: RACE_RUN.quant, a0: fmtTps(cold, lang), a2: fmtTps(hot, lang) });
+	const lanes = $derived([
+		{ id: 'cold' as const, name: r.cold, tps: cold, burst: burstOf(RACE_V.before) },
+		{ id: 'hot' as const, name: r.hot, tps: hot, burst: burstOf(RACE_V.ours) }
+	]);
+	/** The demo answer's length (tokens); the finish times follow from the measured t/s. */
+	const ANSWER = 500;
+	const vars = $derived({
+		card: RACE_CARD.name,
+		model: RACE_MODEL,
+		quant: RACE_RUN.quant,
+		a0: fmtTps(cold, lang),
+		a2: fmtTps(hot, lang),
+		tok: num(ANSWER, lang, 0),
+		t0: fmtSec(ANSWER / cold, lang),
+		t2: fmtSec(ANSWER / hot, lang)
+	});
 	/** The rest of the highway's long text: a separate chunk per language, loaded once the page is idle. */
 	const more = (l: Lang) => () => (l === 'pl' ? import('./stream/pl') : import('./stream/en')).then((m) => m.default);
 
@@ -87,10 +98,8 @@
 		<div class="road">
 			<!-- keyed: the highway caches its text rows, so a language switch mounts a fresh one -->
 			{#key lang}
-				<Highway {lanes} opening={r.opening} more={more(lang)} {lang} {playing} keepClear={cluster} />
+				<Highway {lanes} opening={r.opening} more={more(lang)} {lang} answer={ANSWER} labels={r} {playing} keepClear={cluster} />
 			{/key}
-			<p class="lane lane--cold" aria-hidden="true"><b>{r.cold}</b><span>{r.coldSub}</span><span class="v">{num(cold, lang, 1)} t/s</span></p>
-			<p class="lane lane--hot" aria-hidden="true"><b>{r.hot}</b><span>{r.hotSub}</span><span class="v">{num(hot, lang, 1)} t/s</span></p>
 		</div>
 		<div class="dash" bind:this={cluster} aria-hidden="true" use:visible={(v) => (dashOn = v)}>
 			<Cluster max={dial.max} redline={dial.redline} {cold} {hot} {gain} {lang} unit="t/s" faster={r.faster} {go} still={!playing} />
@@ -349,7 +358,7 @@
 	.drive {
 		position: relative;
 		flex: 1 0 auto;
-		min-height: clamp(24rem, 56svh, 46rem);
+		min-height: clamp(21rem, 50svh, 46rem);
 		display: grid;
 	}
 	.road {
@@ -358,57 +367,14 @@
 		/* the glow at the end of the road */
 		background: radial-gradient(40% 30% at 50% 4%, rgb(255 122 26 / 0.14), transparent 70%);
 	}
-	/* lane names in the top corners, out of the converging road */
-	.lane {
-		position: absolute;
-		top: 0.25rem;
-		margin: 0;
-		display: grid;
-		gap: 0.2rem;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
-		color: var(--text-mute);
-	}
-	.lane b {
-		font-family: var(--font-display);
-		font-size: var(--fs-md);
-		font-weight: 720;
-		letter-spacing: -0.01em;
-		text-transform: none;
-	}
-	.lane .v {
-		font-weight: 600;
-		letter-spacing: 0.04em;
-	}
-	.lane--cold {
-		left: var(--gutter);
-		color: var(--before);
-	}
-	.lane--cold b {
-		color: var(--text);
-	}
-	.lane--hot {
-		right: var(--gutter);
-		justify-items: end;
-		text-align: right;
-		color: var(--heat-4);
-	}
-	.lane--hot b {
-		color: var(--heat-5);
-		text-shadow: 0 0 18px rgb(255 122 26 / 0.6);
-	}
-	.lane--hot .v {
-		color: var(--heat-5);
-	}
 	/* the cluster sits low on the median, like the instruments in front of the driver */
 	.dash {
 		position: absolute;
 		z-index: 1;
 		left: 50%;
-		bottom: 2.75rem;
-		width: clamp(17rem, 28vw, 25rem);
+		bottom: 2.9rem;
+		/* never taller than the first screen leaves for it (1024 × 768: the whole dial above the fold) */
+		width: min(clamp(17rem, 28vw, 25rem), 46svh - 3rem);
 		translate: -50% 0;
 	}
 	/* the small print reads on a dark floor: the nearest rows dissolve into it */
@@ -434,8 +400,13 @@
 		gap: var(--sp-3);
 	}
 	.note {
+		flex: 1;
 		margin: 0;
 		min-width: 0;
+		/* centred under the dial (the pause button's width balanced on the left) */
+		padding-left: calc(2rem + var(--sp-3));
+		text-align: center;
+		text-wrap: balance;
 		font-family: var(--font-mono);
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.03em;
@@ -495,6 +466,10 @@
 		.drive::after {
 			display: none;
 		}
+		.note {
+			padding-left: 0;
+			text-align: left;
+		}
 		.foot {
 			position: static;
 			grid-row: 3;
@@ -502,14 +477,7 @@
 			padding-bottom: var(--sp-4);
 		}
 	}
-	@media (max-width: 520px) {
-		.lane span:not(.v) {
-			display: none;
-		}
-		.lane b {
-			font-size: var(--fs-sm);
-		}
-	}
+
 	@media (prefers-reduced-motion: no-preference) {
 		/* the headline lands first; the CTAs follow, then the drive rises */
 		:global(html.js) .actions {

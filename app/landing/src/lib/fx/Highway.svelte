@@ -1,6 +1,8 @@
 <script lang="ts" module>
 	export interface HighwayLane {
 		id: 'cold' | 'hot';
+		/** The lane's name on its HUD chip. */
+		name: string;
 		/** Measured decode speed (t/s, the median). */
 		tps: number;
 		/** Measured tokens accepted per step (MTP); 1 without speculation. */
@@ -11,20 +13,29 @@
 <script lang="ts">
 	/**
 	 * The token highway: two lanes of generated text on a road that runs to a vanishing point and
-	 * flows toward the viewer. Each lane writes the same long text at its measured median t/s (in
-	 * steps of the measured MTP tokens per step): the newest row is written at the horizon and the
-	 * road moves one row per row written, so the typical app's text crawls and ours rushes past
-	 * 3,2× faster. Rows brighten as they come closer; ours flare white-hot near the camera with a
-	 * short motion smear, and light dashes run along the lane edges at each lane's own speed.
+	 * flows toward the viewer, as a race. Both lanes write the same text, cut into answers of
+	 * `answer` tokens, at their measured median t/s (in steps of the measured MTP tokens per step):
+	 * the newest row is written at the horizon and the road moves one row per row written. So the
+	 * typical app's road crawls and ours rushes past 3,2× faster: its painted speed lettering, its
+	 * edge dashes and every finished answer's chequered finish line come by 3,2× as often.
+	 *
+	 * Speed, ours only: rows near the camera smear back up the road and flare white-hot, warp
+	 * streaks fly out of the vanishing point over our lane. The typical lane is dimmer and still.
+	 *
+	 * HUD chips at the lanes' near ends: the name, the answer number, a live token counter and a
+	 * progress bar; when a lane finishes an answer, a stamp „Gotowe · 4,4 s” (answer ÷ measured t/s)
+	 * flashes once and the next answer starts. Lanes loop independently; nothing resets.
 	 *
 	 * One 2D canvas (devicePixelRatio ≤ 1,5). Each row is rendered once into a pooled bitmap and then
-	 * only scaled per frame (no text layout per frame); rows that pass the camera are recycled. The
-	 * frame loop runs only after the page is idle, while on screen and not paused, and continues
-	 * where it stopped. Reduced motion: one still frame of a filled road. `keepClear`: an element
-	 * laid over the scene's bottom centre (the gauge); the lanes leave the median free for it.
+	 * only scaled per frame; rows that pass the camera are recycled. The loop runs only after the
+	 * page is idle, while on screen and not paused, and continues where it stopped. Server HTML, no
+	 * JS and reduced motion: the finish of the slower answer (both lanes' finish times on the chips,
+	 * one still frame of the road). `keepClear`: an element laid over the scene's bottom centre (the
+	 * gauge); the lanes leave the median free for it.
 	 */
 	import { onMount, untrack } from 'svelte';
 	import { TOK_PER_WORD } from '$lib/estimator';
+	import { num } from '$lib/i18n';
 	import { visible } from './actions';
 	import { onFrame, reducedMotion, whenIdle } from './motion';
 
@@ -33,6 +44,8 @@
 		opening,
 		more,
 		lang,
+		answer,
+		labels,
 		playing = true,
 		keepClear
 	}: {
@@ -43,6 +56,9 @@
 		/** The rest of the text, paragraph by paragraph (loaded once the page is idle). */
 		more?: () => Promise<string[]>;
 		lang: 'pl' | 'en';
+		/** Tokens per answer (the demo answer's length). */
+		answer: number;
+		labels: { answer: string; tokens: string; done: string };
 		playing?: boolean;
 		keepClear?: HTMLElement;
 	} = $props();
@@ -50,9 +66,11 @@
 	/** Far/near depth ratio: the horizon row is 1/K the size of the nearest one. */
 	const K = 3.4;
 	const DPR = typeof devicePixelRatio === 'number' ? Math.min(1.5, devicePixelRatio) : 1;
-	const COLD = '#9aa3ae';
+	const COLD = '#8f98a3';
 	const HOT = '#ffad4a';
 	const WHITE = '#fff6e4';
+	/** Painted speed lettering every MARK rows. */
+	const MARK = 13;
 
 	/** A paragraph as words of token-sized pieces (piece count ≈ words × TOK_PER_WORD). */
 	function words(text: string): string[][] {
@@ -71,22 +89,36 @@
 	let paras: string[][][] = [words(opening)];
 
 	type Row = { idx: number; text: string; ends: number[]; start: number; n: number; bmp?: HTMLCanvasElement; glow?: HTMLCanvasElement };
-	type Lane = { tps: number; burst: number; hot: boolean; tau: number; origin: number; built: number; next: number; pi: number; wi: number; rows: Row[]; cur: number };
+	type Lane = { tps: number; burst: number; hot: boolean; tau: number; origin: number; built: number; next: number; pi: number; wi: number; rows: Row[]; cur: number; mark?: HTMLCanvasElement };
 	// svelte-ignore state_referenced_locally
 	const road: Lane[] = lanes.map((l) => ({ tps: l.tps, burst: l.burst, hot: l.id === 'hot', tau: 0, origin: 0, built: 0, next: 0, pi: 0, wi: 0, rows: [], cur: 0 }));
+	/** Seconds per answer: the answer's tokens ÷ the measured t/s. */
+	// svelte-ignore state_referenced_locally
+	const finish = lanes.map((l) => answer / l.tps);
+	const sec = (s: number) => `${num(s, lang, 1)}\u00a0s`;
 
 	/** Scene geometry (CSS px), recomputed on resize. */
-	const G = { W: 0, H: 0, vx: 0, yH: 0, Hs: 0, R: 40, fN: 16, cw: 0.6, chars: 30, bw: 0, bh: 0, family: 'monospace', lane: [0, 0] as number[], wl: 0 };
+	const G = { W: 0, H: 0, vx: 0, yH: 0, Hs: 0, R: 40, fN: 16, cw: 0.6, chars: 30, bw: 0, bh: 0, family: 'monospace', display: 'sans-serif', lane: [0, 0] as number[], wl: 0, m: 12 };
 	let canvas: HTMLCanvasElement | undefined = $state();
 	let ctx: CanvasRenderingContext2D | null = null;
 	let pool: HTMLCanvasElement[] = [];
 	let started = $state(false);
 	let onScreen = $state(false);
+	/** The server/static frame (both answers finished) until the race starts. */
+	let still = $state(true);
+	/** Answers finished per lane (a change replays the lane's stamp). */
+	let done = $state([0, 0]);
+	let counts: HTMLElement[] = $state([]);
+	let bars: HTMLElement[] = $state([]);
+	let nums: HTMLElement[] = $state([]);
+	const shown = [-1, -1];
 
 	const aOf = (d: number) => 1 / (1 + ((G.R - d) * (K - 1)) / G.R);
 	const yOf = (a: number) => G.yH + G.Hs * a;
 	const xOf = (x: number, a: number) => G.vx + (x - G.vx) * a;
 	const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
+	/** Tokens a lane has written since the race started (whole MTP steps). */
+	const writtenOf = (L: Lane) => Math.floor(Math.floor((L.tps * L.tau) / L.burst) * L.burst);
 
 	function take(): HTMLCanvasElement {
 		const c = pool.pop() ?? document.createElement('canvas');
@@ -110,6 +142,28 @@
 		x.textBaseline = 'alphabetic';
 		x.fillText(text, 2, G.bh * 0.76);
 		return c;
+	}
+	/** The lane's speed, painted on the road like asphalt lettering (one bitmap per layout). */
+	function paintMark(L: Lane, tps: number) {
+		const c = L.mark ?? document.createElement('canvas');
+		const text = `${num(tps, lang, 1)} t/s`;
+		const x = c.getContext('2d')!;
+		const base = 100;
+		x.font = `800 ${base}px ${G.display}`;
+		const fs = (base * G.wl * 0.84) / x.measureText(text).width;
+		c.width = Math.ceil(G.wl * 0.86 * DPR);
+		c.height = Math.ceil(fs * 1.05 * DPR);
+		x.font = `800 ${fs * DPR}px ${G.display}`;
+		x.textBaseline = 'alphabetic';
+		if (L.hot) {
+			const g = x.createLinearGradient(0, 0, c.width, 0);
+			g.addColorStop(0, '#e2401c');
+			g.addColorStop(0.55, '#ff7a1a');
+			g.addColorStop(1, '#ffc15a');
+			x.fillStyle = g;
+		} else x.fillStyle = '#8d97a4';
+		x.fillText(text, 2, c.height * 0.86);
+		L.mark = c;
 	}
 
 	/** The next row of a lane: whole words up to the line length; a paragraph ends a row. */
@@ -143,8 +197,9 @@
 		L.cur = 0;
 		const fill = Math.ceil(G.R);
 		while (L.rows.length < fill + 2) build(L);
-		// the newest row sits at the horizon, unwritten; everything behind it is written
-		L.origin = L.rows[fill].start - L.tps * L.tau;
+		// the newest row sits at the horizon; everything behind it is written. The race clock
+		// (tau) is kept, so the answers and the HUD go on where they were.
+		L.origin = L.rows[fill].start - Math.floor(L.tps * L.tau);
 		L.cur = fill;
 	}
 
@@ -171,11 +226,14 @@
 			const c = canvas.getBoundingClientRect();
 			if (k.width && k.bottom > c.top + H * 0.5 && k.top < c.bottom) m = k.width / 2 + 16;
 		}
+		G.m = m;
 		const pad = W < 600 ? 10 : 24;
 		const wl = Math.max(80, Math.min(W / 2 - m - pad, 620));
 		G.wl = wl;
 		G.lane = [G.vx - m - wl, G.vx + m];
-		G.family = getComputedStyle(canvas).fontFamily || 'monospace';
+		const cs = getComputedStyle(canvas);
+		G.family = cs.fontFamily || 'monospace';
+		G.display = cs.getPropertyValue('--font-sans').trim() || 'sans-serif';
 		const fN = Math.max(11.5, Math.min(21, wl / 23));
 		const probe = canvas.getContext('2d')!;
 		probe.font = `${fN}px ${G.family}`;
@@ -187,10 +245,12 @@
 		Object.assign(G, { fN, cw, chars, R });
 		G.bw = Math.ceil((chars + 1) * cw * fN * DPR) + 4;
 		G.bh = Math.ceil(fN * 1.3 * DPR);
+		road.forEach((L, i) => paintMark(L, lanes[i].tps));
 		if (relaid) {
 			pool = [];
 			for (const L of road) reset(L);
 		}
+		warpSeed();
 		draw();
 	}
 
@@ -203,13 +263,24 @@
 		}
 	}
 
+	/** A quad across the lane between depths a0 (near) and a1 (far), from lane fraction u0 to u1. */
+	function quad(c: CanvasRenderingContext2D, x0: number, a0: number, a1: number, u0: number, u1: number) {
+		const xa = x0 + G.wl * u0;
+		const xb = x0 + G.wl * u1;
+		c.moveTo(xOf(xa, a0), yOf(a0));
+		c.lineTo(xOf(xb, a0), yOf(a0));
+		c.lineTo(xOf(xb, a1), yOf(a1));
+		c.lineTo(xOf(xa, a1), yOf(a1));
+		c.closePath();
+	}
+
 	function drawLane(c: CanvasRenderingContext2D, L: Lane, li: number) {
 		const P = L.origin + L.tps * L.tau;
-		const written = L.origin + Math.floor(Math.floor((L.tps * L.tau) / L.burst) * L.burst);
+		const written = L.origin + writtenOf(L);
 		ensure(L, P);
 		const head = L.rows[L.cur];
 		const Q = head.idx + (P - head.start) / head.n;
-		while (L.rows.length && L.rows[0].idx < Q - G.R - 2) {
+		while (L.rows.length && L.rows[0].idx < Q - G.R - 4) {
 			release(L.rows.shift()!);
 			L.cur--;
 		}
@@ -220,29 +291,26 @@
 		// the lane's floor
 		const g = c.createLinearGradient(0, G.yH, 0, G.H);
 		g.addColorStop(0, 'rgb(0 0 0 / 0)');
-		g.addColorStop(1, L.hot ? 'rgb(255 122 26 / 0.09)' : 'rgb(125 135 148 / 0.05)');
+		g.addColorStop(1, L.hot ? 'rgb(255 122 26 / 0.11)' : 'rgb(125 135 148 / 0.04)');
 		c.fillStyle = g;
 		c.beginPath();
-		c.moveTo(xOf(x0, far), yOf(far));
-		c.lineTo(xOf(x1, far), yOf(far));
-		c.lineTo(xOf(x1, near), yOf(near));
-		c.lineTo(xOf(x0, near), yOf(near));
+		quad(c, x0, near, far, 0, 1);
 		c.fill();
 		// the lane's edges
 		for (const x of [x0, x1]) {
 			const e = c.createLinearGradient(0, G.yH, 0, G.H);
 			e.addColorStop(0, 'rgb(0 0 0 / 0)');
-			e.addColorStop(1, L.hot ? 'rgb(255 160 70 / 0.75)' : 'rgb(140 150 162 / 0.35)');
+			e.addColorStop(1, L.hot ? 'rgb(255 160 70 / 0.85)' : 'rgb(140 150 162 / 0.28)');
 			c.strokeStyle = e;
-			c.lineWidth = L.hot ? 1.6 : 1;
+			c.lineWidth = L.hot ? 1.8 : 1;
 			c.beginPath();
 			c.moveTo(xOf(x, far), yOf(far));
 			c.lineTo(xOf(x, near), yOf(near));
 			c.stroke();
 		}
-		// light dashes on the edges, at the lane's own speed
+		// light dashes on the edges, at the lane's own speed: ours long light trails, the typical crawl
 		const step = L.hot ? 2 : 4;
-		const len = L.hot ? 1.1 : 0.7;
+		const len = L.hot ? 1.5 : 0.6;
 		for (let i = Math.ceil(Q - G.R - 1); i <= Q; i++) {
 			if (i % step) continue;
 			const d = Q - i;
@@ -252,23 +320,59 @@
 			const f = clamp01((a0 - 0.4) / 0.25);
 			for (const x of [x0, x1]) {
 				if (L.hot) {
-					c.globalAlpha = 0.22 * f;
+					c.globalAlpha = 0.25 * f;
 					c.strokeStyle = '#ff7a1a';
-					c.lineWidth = 2 + 9 * a0;
+					c.lineWidth = 2 + 10 * a0;
 					c.beginPath();
 					c.moveTo(xOf(x, a0), yOf(a0));
 					c.lineTo(xOf(x, a1), yOf(a1));
 					c.stroke();
 				}
-				c.globalAlpha = (L.hot ? 0.95 : 0.45) * f;
-				c.strokeStyle = L.hot ? WHITE : '#b8c0ca';
-				c.lineWidth = L.hot ? 0.8 + 2.6 * a0 : 0.6 + 1.4 * a0;
+				c.globalAlpha = (L.hot ? 0.95 : 0.32) * f;
+				c.strokeStyle = L.hot ? WHITE : '#a9b1bc';
+				c.lineWidth = L.hot ? 0.8 + 2.8 * a0 : 0.6 + 1.2 * a0;
 				c.beginPath();
 				c.moveTo(xOf(x, a0), yOf(a0));
 				c.lineTo(xOf(x, a1), yOf(a1));
 				c.stroke();
 			}
 		}
+		c.globalAlpha = 1;
+		// chequered finish lines: one after every finished answer, on the far side of its last row
+		const first = L.rows[0].start;
+		for (let j = Math.max(1, Math.ceil((first - L.origin) / answer)); L.origin + j * answer <= written; j++) {
+			const B = L.origin + j * answer;
+			const r = L.rows.find((x) => x.start <= B - 1 && B - 1 < x.start + x.n);
+			if (!r) continue;
+			const d = Q - r.idx;
+			const a0 = aOf(d - 0.5);
+			const a1 = aOf(d - 1.05);
+			if (a1 > 1.2 || a0 < far) continue;
+			const f = clamp01((a0 - far) / 0.12);
+			const am = aOf(d - 0.78);
+			c.globalAlpha = (L.hot ? 0.95 : 0.5) * f;
+			c.fillStyle = L.hot ? WHITE : '#c9cfd8';
+			c.beginPath();
+			quad(c, x0, a0, a1, 0, 1);
+			c.fill();
+			c.fillStyle = '#050506';
+			c.beginPath();
+			const n = 14;
+			for (let k = 0; k < n; k++) {
+				quad(c, x0, k % 2 ? a0 : am, k % 2 ? am : a1, k / n, (k + 1) / n);
+			}
+			c.fill();
+			if (L.hot) {
+				c.globalAlpha = 0.35 * f;
+				c.strokeStyle = '#ff7a1a';
+				c.lineWidth = 4 + 10 * a0;
+				c.beginPath();
+				c.moveTo(xOf(x0, a0), yOf(a0));
+				c.lineTo(xOf(x1, a0), yOf(a0));
+				c.stroke();
+			}
+		}
+		c.globalAlpha = 1;
 		// the text rows, from the horizon toward the camera
 		const tx = x0 + G.wl * 0.04;
 		const rowK = (G.Hs * (K - 1)) / G.R;
@@ -279,34 +383,99 @@
 			if (a > 1.2) continue;
 			const wr = Math.min(r.n, Math.max(0, written - r.start));
 			if (!wr) continue;
-			const shown = r.ends[wr - 1];
+			const shownChars = r.ends[wr - 1];
 			if (!r.bmp) {
 				r.bmp = paint(r.text, L.hot ? HOT : COLD);
 				if (L.hot) r.glow = paint(r.text, WHITE);
 			}
-			const sw = Math.min(G.bw, Math.ceil(shown * G.cw * G.fN * DPR) + 3);
+			const sw = Math.min(G.bw, Math.ceil(shownChars * G.cw * G.fN * DPR) + 3);
 			const h = rowK * a * a * 0.74;
 			const w = (sw / DPR) * a;
 			const x = xOf(tx, a);
 			const top = yOf(a) - h;
 			const f = clamp01((a - far) / 0.09);
 			if (L.hot) {
-				const n = clamp01((a - 0.55) / 0.5);
+				const n = clamp01((a - 0.45) / 0.5);
 				if (n > 0) {
-					// the smear it leaves behind: the same row, stretched back up the road
-					c.globalAlpha = 0.16 * n;
-					c.drawImage(r.bmp, 0, 0, sw, G.bh, x, top - h * 1.4, w, h * 2.4);
+					// directional motion blur: the row smeared back up the road, toward the vanishing point
+					const xs = xOf(tx, a * 0.985);
+					c.globalAlpha = 0.07 * n;
+					c.drawImage(r.bmp, 0, 0, sw, G.bh, xs, top - h * 3.4, w * 0.985, h * 4.4);
+					c.globalAlpha = 0.17 * n;
+					c.drawImage(r.bmp, 0, 0, sw, G.bh, x, top - h * 1.5, w, h * 2.5);
 				}
-				c.globalAlpha = f * (0.55 + 0.45 * a);
+				c.globalAlpha = f * (0.6 + 0.4 * a);
 				c.drawImage(r.bmp, 0, 0, sw, G.bh, x, top, w, h);
 				if (n > 0 && r.glow) {
 					c.globalAlpha = f * n;
 					c.drawImage(r.glow, 0, 0, sw, G.bh, x, top, w, h);
 				}
 			} else {
-				c.globalAlpha = f * (0.4 + 0.5 * a);
+				c.globalAlpha = f * (0.3 + 0.4 * a);
 				c.drawImage(r.bmp, 0, 0, sw, G.bh, x, top, w, h);
 			}
+		}
+		// the speed painted on the road over the rows, every MARK rows (ours passes it 3,2× as often)
+		if (L.mark) {
+			const span = 3.4;
+			for (let i = Math.ceil(Q - G.R - 1); i <= Q; i++) {
+				if (((i % MARK) + MARK) % MARK) continue;
+				const d = Q - i;
+				const an = aOf(d);
+				const af = aOf(d - span);
+				if (an < 0.36 || af > 1.25) continue;
+				const am = aOf(d - span / 2);
+				const yn = yOf(an);
+				const yf = yOf(af);
+				c.globalAlpha = (L.hot ? 0.5 : 0.2) * clamp01((an - 0.36) / 0.2);
+				c.drawImage(L.mark, xOf(x0 + G.wl * 0.07, am), yf, (L.mark.width / DPR) * am, yn - yf);
+			}
+			c.globalAlpha = 1;
+		}
+		c.globalAlpha = 1;
+	}
+
+	/** Warp streaks over our lane: out of the vanishing point, faster the farther out. */
+	type Streak = { dx: number; dy: number; D: number; s: number };
+	let warp: Streak[] = [];
+	function spawn(st: Streak, fresh: boolean) {
+		// a ray from the vanishing point to a point on our lane's near end
+		const tx = G.vx + G.m + G.wl * (0.04 + 0.92 * Math.random());
+		const ty = G.H * (0.82 + 0.25 * Math.random());
+		const dx = tx - G.vx;
+		const dy = ty - G.yH;
+		const D = Math.hypot(dx, dy);
+		st.dx = dx / D;
+		st.dy = dy / D;
+		st.D = D;
+		st.s = fresh ? 0.15 + Math.random() * 1.1 : 0.12 + Math.random() * 0.12;
+	}
+	function warpSeed() {
+		warp = Array.from({ length: G.W < 600 ? 12 : 22 }, () => {
+			const st = { dx: 0, dy: 0, D: 1, s: 0 };
+			spawn(st, true);
+			return st;
+		});
+	}
+	function warpStep(dt: number) {
+		for (const st of warp) {
+			st.s += st.s * 1.5 * dt;
+			if (st.s > 1.5) spawn(st, false);
+		}
+	}
+	function warpDraw(c: CanvasRenderingContext2D) {
+		c.strokeStyle = '#ffd9a8';
+		for (const st of warp) {
+			const s1 = st.s * st.D;
+			const s0 = s1 * 0.8;
+			const f = clamp01((st.s - 0.25) / 0.35) * clamp01((1.5 - st.s) / 0.3);
+			if (f <= 0) continue;
+			c.globalAlpha = 0.28 * f;
+			c.lineWidth = 0.6 + 1.4 * st.s;
+			c.beginPath();
+			c.moveTo(G.vx + st.dx * s0, G.yH + st.dy * s0);
+			c.lineTo(G.vx + st.dx * s1, G.yH + st.dy * s1);
+			c.stroke();
 		}
 		c.globalAlpha = 1;
 	}
@@ -317,9 +486,29 @@
 		c.setTransform(DPR, 0, 0, DPR, 0, 0);
 		c.clearRect(0, 0, G.W, G.H);
 		road.forEach((L, i) => drawLane(c, L, i));
+		warpDraw(c);
+	}
+
+	/** The HUD: answer number, counter, progress bar, and a stamp when an answer is done. */
+	function hud() {
+		road.forEach((L, i) => {
+			const w = writtenOf(L);
+			const k = Math.floor(w / answer);
+			const p = w - k * answer;
+			if (p !== shown[i]) {
+				shown[i] = p;
+				if (counts[i]) counts[i].textContent = num(p, lang, 0);
+				if (bars[i]) bars[i].style.transform = `scaleX(${(p / answer).toFixed(4)})`;
+				if (nums[i]) nums[i].textContent = String(k + 1);
+			}
+			if (k !== done[i]) done[i] = k;
+		});
 	}
 
 	onMount(() => {
+		const rm = reducedMotion();
+		// the static frame: the moment the slower lane finishes its answer
+		if (rm) for (const L of road) L.tau = Math.max(...finish);
 		layout();
 		const ro = new ResizeObserver(() => layout());
 		if (canvas) ro.observe(canvas);
@@ -329,7 +518,10 @@
 			G.bw = 0;
 			layout();
 		});
-		if (reducedMotion()) return () => ro.disconnect();
+		if (rm) return () => ro.disconnect();
+		// the race starts at 0 / answer on both lanes
+		still = false;
+		hud();
 		const cancel = whenIdle(() => {
 			started = true;
 			more?.()
@@ -351,16 +543,40 @@
 			onFrame((dt) => {
 				const d = Math.min(dt, 0.1);
 				for (const L of road) L.tau += d;
+				warpStep(d);
 				draw();
+				hud();
 			})
 		);
 	});
 </script>
 
-<canvas class="highway" bind:this={canvas} aria-hidden="true" use:visible={(v) => (onScreen = v)}></canvas>
+<div class="hw" class:run={started && playing && onScreen}>
+	<canvas bind:this={canvas} aria-hidden="true" use:visible={(v) => (onScreen = v)}></canvas>
+	{#each lanes as l, i (l.id)}
+		<div class="chip {l.id}" aria-hidden="true">
+			{#key done[i]}
+				{#if still || done[i] > 0}
+					<p class="stamp" class:keep={still}><b>{labels.done}</b><span>{sec(finish[i])}</span></p>
+				{/if}
+			{/key}
+			<p class="name">{l.name}</p>
+			<p class="count"><span><b bind:this={counts[i]}>{num(answer, lang, 0)}</b> / {num(answer, lang, 0)} {labels.tokens}</span><span class="ans">{labels.answer} <span bind:this={nums[i]}>1</span></span></p>
+			<span class="track"><span class="bar" bind:this={bars[i]}></span></span>
+		</div>
+	{/each}
+</div>
 
 <style>
-	.highway {
+	.hw {
+		position: absolute;
+		inset: 0;
+		/* ours: the field of view pushes in on the right, the typical side sits in shade */
+		background:
+			linear-gradient(90deg, rgb(5 5 6 / 0.35), transparent 38%),
+			radial-gradient(55% 70% at 78% 85%, rgb(255 122 26 / 0.08), transparent 70%);
+	}
+	canvas {
 		position: absolute;
 		inset: 0;
 		width: 100%;
@@ -368,7 +584,180 @@
 		display: block;
 		font-family: var(--font-mono);
 		/* the far road dissolves into the haze; the nearest rows leave through a soft bottom edge */
-		-webkit-mask-image: linear-gradient(180deg, transparent, #000 9%, #000 76%, transparent);
-		mask-image: linear-gradient(180deg, transparent, #000 9%, #000 76%, transparent);
+		-webkit-mask-image: linear-gradient(180deg, transparent, #000 9%, #000 74%, transparent);
+		mask-image: linear-gradient(180deg, transparent, #000 9%, #000 74%, transparent);
+	}
+	/* HUD chips at the lanes' near ends */
+	.chip {
+		position: absolute;
+		bottom: var(--chip-bottom, 3.5rem);
+		width: min(17rem, 30%);
+		display: grid;
+		gap: 0.35rem;
+		padding: 0.75rem 0.9rem 0.85rem;
+		border-radius: 0.9rem;
+		background: rgb(8 8 10 / 0.72);
+		box-shadow:
+			inset 0 0 0 1px rgb(255 255 255 / 0.08),
+			0 18px 40px -18px rgb(0 0 0 / 0.8);
+		-webkit-backdrop-filter: blur(6px);
+		backdrop-filter: blur(6px);
+		font-variant-numeric: tabular-nums lining-nums;
+	}
+	.chip p {
+		margin: 0;
+	}
+	.chip.cold {
+		left: var(--gutter);
+	}
+	.chip.hot {
+		right: var(--gutter);
+		box-shadow:
+			inset 0 0 0 1px rgb(255 122 26 / 0.45),
+			0 0 40px -10px rgb(255 122 26 / 0.55),
+			0 18px 40px -18px rgb(0 0 0 / 0.8);
+	}
+	.name {
+		font-family: var(--font-display);
+		font-size: var(--fs-md);
+		font-weight: 720;
+		letter-spacing: -0.01em;
+		color: var(--text);
+	}
+	.hot .name {
+		color: var(--heat-5);
+	}
+	.ans {
+		font-size: var(--fs-xs);
+		font-weight: 500;
+		letter-spacing: 0;
+		color: var(--text-mute);
+		white-space: nowrap;
+	}
+	.count {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0 0.75rem;
+		font-size: var(--fs-sm);
+		color: var(--text-mute);
+	}
+	.count b {
+		font-family: var(--font-display);
+		font-size: 1.35rem;
+		font-weight: 760;
+		letter-spacing: -0.02em;
+		color: var(--before);
+	}
+	.hot .count b {
+		color: var(--heat-4);
+		text-shadow: 0 0 14px rgb(255 122 26 / 0.5);
+	}
+	.track {
+		display: block;
+		height: 3px;
+		border-radius: 3px;
+		overflow: hidden;
+		background: rgb(255 255 255 / 0.08);
+	}
+	.bar {
+		display: block;
+		height: 100%;
+		transform-origin: 0 50%;
+		background: var(--before);
+	}
+	.hot .bar {
+		background: linear-gradient(90deg, var(--heat-2), var(--heat-4), var(--heat-5));
+		box-shadow: 0 0 10px rgb(255 122 26 / 0.7);
+	}
+	/* the finish: a stamp over the chip, flashing once per finished answer */
+	.stamp {
+		position: absolute;
+		left: 0.9rem;
+		bottom: calc(100% + 0.5rem);
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		white-space: nowrap;
+		font-family: var(--font-display);
+		line-height: 1;
+		pointer-events: none;
+	}
+	.hot .stamp {
+		left: auto;
+		right: 0.9rem;
+	}
+	.stamp b {
+		font-size: var(--fs-sm);
+		font-weight: 700;
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text);
+	}
+	.stamp span {
+		font-size: clamp(1.6rem, 1rem + 1.6vw, 2.4rem);
+		font-weight: 820;
+		letter-spacing: -0.03em;
+		color: var(--before);
+	}
+	.hot .stamp b {
+		color: var(--heat-5);
+	}
+	.hot .stamp span {
+		background: linear-gradient(180deg, #fff 10%, var(--heat-4) 60%, var(--heat-3));
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+		filter: drop-shadow(0 0 14px rgb(255 122 26 / 0.6));
+		padding: 0.05em 0.08em 0.12em 0;
+	}
+	.stamp:not(.keep) {
+		opacity: 0;
+		animation: stamp 2.2s var(--ease-out) both;
+	}
+	@keyframes stamp {
+		0% {
+			opacity: 0;
+			transform: translate3d(0, 0.4rem, 0) scale(1.12);
+		}
+		12%,
+		70% {
+			opacity: 1;
+			transform: none;
+		}
+		100% {
+			opacity: 0;
+			transform: translate3d(0, -0.3rem, 0);
+		}
+	}
+	/* phones: the two chips side by side under the lanes, compact */
+	@media (max-width: 900px) {
+		.chip {
+			--chip-bottom: 0.5rem;
+			width: calc(50% - var(--gutter) - 0.35rem);
+			padding: 0.55rem 0.65rem 0.65rem;
+			gap: 0.25rem;
+		}
+		.name {
+			font-size: var(--fs-sm);
+		}
+		.count {
+			font-size: var(--fs-xs);
+		}
+		.count b {
+			font-size: 1.05rem;
+		}
+	}
+	@media (max-width: 420px) {
+		.ans {
+			display: none;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.stamp:not(.keep) {
+			animation: none;
+			opacity: 1;
+		}
 	}
 </style>
