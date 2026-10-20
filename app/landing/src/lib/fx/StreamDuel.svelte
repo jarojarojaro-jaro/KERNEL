@@ -30,8 +30,11 @@
 	 * step (alternating sign), the typical app wobbles ±3% slowly; both are zero-mean, so the
 	 * needle's average is exactly the measured median.
 	 *
-	 * `seam` (the hero): each rate sits in its header's top-right corner and the speed-up is one
-	 * glowing badge on the seam between the panes (stacked panes on phones: between them).
+	 * `verdict` (the hero): each rate sits in its header's top-right corner, and above the panes a
+	 * band states the result: two speed bars on one scale (the typical app's 35,9 is 31% of our
+	 * 114,8) with the speed-up in large heat numerals at the tip of ours. The bars draw in once and
+	 * one slow light sweep runs along ours when the stream starts; then everything stays still.
+	 * Phones: the panes stack under the band.
 	 */
 	import type { Snippet } from 'svelte';
 	import { onMount, untrack } from 'svelte';
@@ -52,7 +55,7 @@
 		caption,
 		dial,
 		countUp = false,
-		seam = false,
+		verdict = false,
 		onstart
 	}: {
 		/** [cold, hot]. */
@@ -70,8 +73,8 @@
 		dial?: { max: number; redline: number };
 		/** Count the speed-up up from 1× when the stream first runs. */
 		countUp?: boolean;
-		/** Rates in the header corners, the speed-up as a badge between the panes. */
-		seam?: boolean;
+		/** Rates in the header corners, the speed-up as a bar band above the panes. */
+		verdict?: boolean;
 		/** The stream ran its first frame (e.g. a one-time flare). */
 		onstart?: () => void;
 	} = $props();
@@ -126,10 +129,6 @@
 	/** Per lane: MTP steps seen and the step twitch (alternating sign, decays in ~40 ms). */
 	const stepsSeen = [0, 0];
 	const kick = [0, 0];
-	/** The speed-up badge's burst pulse (0..1) and its layers (seam mode). */
-	let pulse = 0;
-	let coreEl: HTMLElement | undefined = $state();
-	let bloomEl: HTMLElement | undefined = $state();
 
 	function measure() {
 		feeds.forEach((f, i) => {
@@ -237,17 +236,10 @@
 					if (l.id === 'hot' && steps > stepsSeen[i]) {
 						const sign = steps % 2 ? 1 : -1;
 						kick[i] = sign * 0.025 * l.tps * (0.7 + 0.3 * Math.abs(Math.sin(steps * 1.7)));
-						// the speed-up badge fires with our bursts (every 6th step, ~6 Hz: visible, not a buzz)
-						if (steps % 6 === 0) pulse = 1;
 					}
 					stepsSeen[i] = steps;
 					kick[i] *= Math.exp(-d / 0.04);
 					dials[i]?.set(Math.max(0, s.x + kick[i]));
-				}
-				if (coreEl && bloomEl) {
-					pulse *= Math.exp(-d / 0.11);
-					coreEl.style.transform = `scale(${(1 + 0.045 * pulse).toFixed(4)})`;
-					bloomEl.style.opacity = (0.6 + 0.4 * pulse).toFixed(3);
 				}
 			})
 		);
@@ -256,14 +248,26 @@
 
 <figure class="duel" class:run={playing && onScreen && !rm} use:visible={(v) => (onScreen = v)}>
 	<p class="sr-only">{summary}</p>
-	<div class="panes" class:seam aria-hidden="true">
+	{#if verdict}
+		{@const c = lanes[0]}
+		<div class="verdict" class:drawn={ran} style="--share:{((100 * c.tps) / hot.tps).toFixed(2)}%" aria-hidden="true">
+			<div class="bars">
+				<p class="vl vc"><span>{c.tag}</span><b>{num(c.tps, lang)} t/s</b></p>
+				<div class="track tc"><span class="bar"></span></div>
+				<p class="vl vh"><span>{hot.tag}</span><b>{num(hot.tps, lang)} t/s</b></p>
+				<div class="track th"><span class="trail"></span><span class="bar"></span></div>
+			</div>
+			<p class="x"><span class="fx">{labels.faster}</span><Ratio value={gain} {lang} size="xl" replay={countUp && ran ? 1 : 0} duration={1400} /></p>
+		</div>
+	{/if}
+	<div class="panes" class:stacked={verdict} aria-hidden="true">
 		{#each lanes as l, i (l.id)}
 			{@const d = headOf(first[i])}
 			<div class="pane {l.id}">
 				{#if l.id === 'hot'}<span class="edge"></span>{/if}
 				<div class="face">
 					<header class="ph">
-						<div class="row" class:dialed={!!dial} class:corner={seam}>
+						<div class="row" class:dialed={!!dial} class:corner={verdict}>
 							{#if dial}
 								<div class="gauge">
 									<Speedo bind:this={dials[i]} value={l.tps} max={dial.max} redline={dial.redline} {step} tone={l.id} compact />
@@ -272,10 +276,10 @@
 							<div class="info">
 								<p class="tag"><span class="dot"></span>{l.tag}</p>
 								<p class="who">{l.who}</p>
-								{#if !seam}<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>{/if}
-								{#if l.id === 'hot' && !seam}<p class="gain"><Ratio value={gain} {lang} size="sm" replay={countUp && ran ? 1 : 0} duration={1400} /><span>{labels.faster}</span></p>{/if}
+								{#if !verdict}<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>{/if}
+								{#if l.id === 'hot' && !verdict}<p class="gain"><Ratio value={gain} {lang} size="sm" replay={countUp && ran ? 1 : 0} duration={1400} /><span>{labels.faster}</span></p>{/if}
 							</div>
-							{#if seam}<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>{/if}
+							{#if verdict}<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>{/if}
 						</div>
 					</header>
 					<div class="win" data-clip-ok>
@@ -294,15 +298,6 @@
 				</div>
 			</div>
 		{/each}
-		{#if seam}
-			<p class="seamgain">
-				<span class="pill">
-					<span class="bloom" bind:this={bloomEl}></span>
-					<span class="ring"></span>
-					<span class="core" bind:this={coreEl}><Ratio value={gain} {lang} size="md" replay={countUp && ran ? 1 : 0} duration={1400} /><span class="fx">{labels.faster}</span></span>
-				</span>
-			</p>
-		{/if}
 	</div>
 	<figcaption class="cap">
 		{#if caption}{@render caption()}{/if}
@@ -643,23 +638,9 @@
 		.pp {
 			display: none;
 		}
-		.ring::before {
-			animation: none;
-		}
 	}
 
-	/* ---- seam layout (the hero): rates in the header corners, the speed-up between the panes ---- */
-	.panes.seam {
-		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-	}
-	.seam .pane.cold {
-		grid-column: 1;
-		grid-row: 1 / span 3;
-	}
-	.seam .pane.hot {
-		grid-column: 3;
-		grid-row: 1 / span 3;
-	}
+	/* ---- verdict mode (the hero): rates in the header corners, the result band above the panes ---- */
 	.row.corner {
 		grid-template-columns: auto minmax(0, 1fr) auto;
 		align-items: center;
@@ -689,111 +670,107 @@
 			gap: 0.3rem;
 		}
 	}
-	/* the speed-up: the hero's loudest element after the headline. A dark plate with a white-hot
-	 * core and a heat bloom that fires with our bursts; the seam line runs dim steel into the
-	 * typical pane and bright heat into ours. */
-	.seamgain {
-		grid-column: 2;
-		grid-row: 1 / span 3;
-		align-self: center;
-		position: relative;
-		z-index: 1;
+	/* the result: two bars on one scale, the speed-up in large numerals at the tip of ours */
+	.verdict {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		align-items: end;
+		column-gap: clamp(0.75rem, 1.5vw, 1.5rem);
+		margin-bottom: clamp(0.75rem, 2vh, 1.5rem);
+	}
+	.bars {
+		display: grid;
+		gap: 0.3rem;
+		min-width: 0;
+		padding-bottom: 0.15rem;
+	}
+	.vl {
 		margin: 0;
-		display: grid;
-		place-items: center;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0 0.6rem;
+		align-items: baseline;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+		color: var(--text-mute);
 	}
-	.seamgain::before,
-	.seamgain::after {
-		content: '';
-		position: absolute;
-		z-index: -1;
-		top: 50%;
+	.vl span,
+	.vl b {
+		white-space: nowrap;
 	}
-	.seamgain::before {
-		left: calc(-1 * var(--cg));
-		right: 50%;
-		height: 1px;
-		background: linear-gradient(90deg, rgb(125 135 148 / 0.35), rgb(125 135 148 / 0.7));
+	.vl b {
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		color: var(--before);
 	}
-	.seamgain::after {
-		left: 50%;
-		right: calc(-1 * var(--cg));
-		height: 3px;
-		margin-top: -1px;
-		border-radius: 3px;
-		background: linear-gradient(90deg, var(--heat-3), var(--heat-5));
-		box-shadow:
-			0 0 8px var(--heat-4),
-			0 0 22px rgb(255 122 26 / 0.8);
+	.vl.vh {
+		margin-top: 0.45rem;
+		color: var(--heat-4);
 	}
-	.pill {
+	.vl.vh b {
+		color: var(--heat-5);
+	}
+	.track {
 		position: relative;
-		isolation: isolate;
-		display: grid;
-		padding: 1rem 1.5rem 0.9rem;
-		border-radius: 1.5rem;
+		height: 6px;
+		display: flex;
+		align-items: center;
+		background: linear-gradient(rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.07)) 0 50% / 100% 1px no-repeat;
+	}
+	.bar {
+		display: block;
+		height: 3px;
+		border-radius: 3px;
+		transform-origin: 0 50%;
+	}
+	.tc .bar {
+		width: var(--share);
+		background: linear-gradient(90deg, rgb(125 135 148 / 0.35), var(--before));
+	}
+	/* ours: a heat streak ending in a white-hot tip, right under the numerals */
+	.th .bar {
+		position: relative;
+		width: 100%;
+		height: 5px;
+		overflow: hidden;
+		background: linear-gradient(90deg, rgb(226 64 28 / 0.15), var(--heat-2) 30%, var(--heat-3) 65%, var(--heat-4) 90%, var(--heat-5));
 		box-shadow:
-			0 0 0 1px rgb(255 193 90 / 0.45),
-			0 0 70px -4px rgb(255 122 26 / 0.75),
-			0 24px 60px -24px rgb(226 64 28 / 0.9);
+			0 0 10px rgb(255 122 26 / 0.55),
+			6px 0 18px rgb(255 243 214 / 0.35);
 	}
-	/* the halo around the plate (opacity only: it fires with the bursts) */
-	.bloom {
+	/* the speed lines it left behind: two hairlines above and below, fading towards the start */
+	.trail {
 		position: absolute;
-		z-index: -2;
-		inset: -45% -35%;
-		border-radius: 50%;
-		background: radial-gradient(closest-side, rgb(255 193 90 / 0.55), rgb(255 122 26 / 0.3) 45%, rgb(226 64 28 / 0.12) 70%, transparent);
-		opacity: 0.6;
-		pointer-events: none;
-		will-change: opacity;
+		inset: -5px 0;
+		background:
+			linear-gradient(90deg, transparent 45%, rgb(255 193 90 / 0.5)) 0 0 / 100% 1px no-repeat,
+			linear-gradient(90deg, transparent 62%, rgb(255 193 90 / 0.4)) 0 100% / 100% 1px no-repeat;
+		transform-origin: 0 50%;
 	}
-	/* a turning heat edge (compositor only) around a near-black plate */
-	.ring {
+	/* one slow sweep of light along our bar when the stream starts, then still */
+	.th .bar::after {
+		content: '';
 		position: absolute;
 		inset: 0;
-		z-index: -1;
-		overflow: hidden;
-		border-radius: inherit;
+		background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.9) 50%, transparent);
+		transform: translate3d(-100%, 0, 0);
 	}
-	.ring::before {
-		content: '';
-		position: absolute;
-		left: 50%;
-		top: 50%;
-		width: 200%;
-		aspect-ratio: 1;
-		translate: -50% -50%;
-		background: conic-gradient(var(--heat-2), var(--heat-3) 10%, var(--heat-5) 17%, var(--heat-4) 24%, rgb(255 122 26 / 0.25) 40%, rgb(255 122 26 / 0.15) 75%, var(--heat-2));
-		animation: turn 2.6s linear infinite paused;
-		will-change: transform;
-	}
-	.run .ring::before {
-		animation-play-state: running;
-	}
-	.ring::after {
-		content: '';
-		position: absolute;
-		inset: 2px;
-		border-radius: calc(1.5rem - 2px);
-		background:
-			radial-gradient(60% 55% at 50% 42%, rgb(255 243 214 / 0.16), rgb(255 122 26 / 0.12) 55%, transparent 80%),
-			#060403;
-	}
-	.core {
+	.x {
+		margin: 0;
 		display: grid;
-		justify-items: center;
-		gap: 0.35rem;
+		justify-items: start;
 		line-height: 1;
-		will-change: transform;
 	}
-	/* the factor: twice the size of a pane rate, white-hot to heat, with its own glow */
-	.pill .core :global(.speedup) {
-		--rx-fs: clamp(3rem, 1.6rem + 3.6vw, 5.75rem);
-		background: linear-gradient(180deg, #fff 8%, var(--heat-5) 32%, var(--heat-4) 58%, var(--heat-3) 82%, var(--heat-2));
+	.verdict .x :global(.speedup) {
+		--rx-fs: clamp(3.25rem, 1.6rem + 4.2vw, 6.25rem);
+		background: linear-gradient(180deg, #fff 6%, var(--heat-5) 30%, var(--heat-4) 55%, var(--heat-3) 80%, var(--heat-2));
 		-webkit-background-clip: text;
 		background-clip: text;
-		filter: drop-shadow(0 0 6px rgb(255 243 214 / 0.55)) drop-shadow(0 0 22px rgb(255 122 26 / 0.7));
+		filter: drop-shadow(0 0 18px rgb(255 122 26 / 0.45));
+		/* the numerals sit on the line of our bar */
+		margin-bottom: -0.12em;
 	}
 	.fx {
 		font-family: var(--font-mono);
@@ -801,49 +778,37 @@
 		font-weight: 600;
 		letter-spacing: 0.18em;
 		text-transform: uppercase;
-		color: var(--heat-5);
-		text-shadow: 0 0 10px rgb(255 122 26 / 0.8);
+		color: var(--heat-4);
+		padding-left: 0.2em;
 	}
-	/* phones and small tablets: the panes stack; the badge sits between them */
-	@media (max-width: 720px) {
-		.panes.seam {
-			grid-template-columns: minmax(0, 1fr);
-			grid-template-rows: repeat(7, auto);
+	@media (prefers-reduced-motion: no-preference) {
+		:global(html.js) .verdict:not(.drawn) :is(.bar, .trail) {
+			transform: scaleX(0);
 		}
-		.seam .pane.cold {
-			grid-column: 1;
+		.drawn :is(.bar, .trail) {
+			transition: transform 1.4s var(--ease-out);
+		}
+		.drawn .th .bar::after {
+			animation: sweep 1.6s var(--ease-in-out) 1.2s both;
+		}
+	}
+	@keyframes sweep {
+		to {
+			transform: translate3d(100%, 0, 0);
+		}
+	}
+	/* phones and small tablets: the panes stack under the band */
+	@media (max-width: 720px) {
+		.panes.stacked {
+			grid-template-columns: minmax(0, 1fr);
+			grid-template-rows: repeat(6, auto);
+		}
+		.stacked .pane.cold {
 			grid-row: 1 / span 3;
 		}
-		.seam .pane.hot {
-			grid-column: 1;
-			grid-row: 5 / span 3;
-		}
-		.seamgain {
-			grid-column: 1;
-			grid-row: 4;
-			padding-block: 1.25rem;
-		}
-		/* stacked: the seam runs vertically, dim up into the typical pane, bright down into ours */
-		.seamgain::before,
-		.seamgain::after {
-			left: 50%;
-			right: auto;
-			margin: 0;
-		}
-		.seamgain::before {
-			top: 0;
-			bottom: 50%;
-			width: 1px;
-			height: auto;
-			background: linear-gradient(180deg, rgb(125 135 148 / 0.35), rgb(125 135 148 / 0.7));
-		}
-		.seamgain::after {
-			top: 50%;
-			bottom: 0;
-			width: 3px;
-			height: auto;
-			margin-left: -1px;
-			background: linear-gradient(180deg, var(--heat-3), var(--heat-5));
+		.stacked .pane.hot {
+			grid-row: 4 / span 3;
+			margin-top: var(--sp-4);
 		}
 	}
 	/* a narrow header: the dial sits above the header text */

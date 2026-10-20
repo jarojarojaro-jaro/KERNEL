@@ -6,7 +6,7 @@
 	 * duel (fx/StreamDuel, shared with the final CTA): two terminals stream the same answer nonstop,
 	 * without Podkręt (steel) and with it (heat), each with a small live speedometer in its header,
 	 * on our lab card (RX 7900 XTX × Qwen3.8-27B, upstream llama.cpp default vs our engine, one
-	 * script, ABBA); MTP bursts from the measured step time; the speed-up counts up once.
+	 * script, ABBA); MTP bursts from the measured step time; above the panes a result band (two bars on one scale, the speed-up at the tip of ours).
 	 * No caption or source pill here: conditions and sources live on /metodologia (the „Jak mierzymy”
 	 * link), in the boost section and on the card page.
 	 * Redline flare: when the stream starts, the heat field runs hot, a bloom sweeps the hero once and
@@ -73,7 +73,7 @@
 			<div class="lines"><SpeedLines /></div>
 			<!-- keyed: the duel caches its text nodes, so a language switch mounts a fresh one -->
 			{#key lang}
-				<StreamDuel {lanes} {gain} text={r.stream} {lang} labels={dl} {summary} {dial} countUp seam {onstart} />
+				<StreamDuel {lanes} {gain} text={r.stream} {lang} labels={dl} {summary} {dial} countUp verdict {onstart} />
 			{/key}
 		</div>
 	</div>
