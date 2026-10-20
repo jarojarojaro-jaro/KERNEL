@@ -22,9 +22,13 @@
 	 * Speed, ours only: rows near the camera smear back up the road and flare white-hot, warp
 	 * streaks fly out of the vanishing point over our lane. The typical lane is dimmer and still.
 	 *
-	 * HUD chips at the lanes' near ends: the name, the answer number, a live token counter and a
-	 * progress bar; when a lane finishes an answer, a stamp „Gotowe · 4,4 s” (answer ÷ measured t/s)
-	 * flashes once and the next answer starts. Lanes loop independently; nothing resets.
+	 * The near end (`.near`, in the page flow): two glass windshields, one per lane, each with the
+	 * lane's name, the answer number, a live token counter, a progress bar and the answer itself,
+	 * readable, written token by token at the lane's measured rate behind a caret (four lines, the
+	 * newest at the bottom). When a lane finishes an answer, a stamp „Gotowe · 4,4 s” (answer ÷
+	 * measured t/s) flashes once and the next answer starts in an empty panel. Lanes loop
+	 * independently; nothing resets. `center` renders between the panels (the gauge). The canvas is
+	 * absolutely positioned against the caller's positioned ancestor (full bleed behind the hero).
 	 *
 	 * One 2D canvas (devicePixelRatio ≤ 1,5). Each row is rendered once into a pooled bitmap and then
 	 * only scaled per frame; rows that pass the camera are recycled. The loop runs only after the
@@ -33,6 +37,7 @@
 	 * one still frame of the road). `keepClear`: an element laid over the scene's bottom centre (the
 	 * gauge); the lanes leave the median free for it.
 	 */
+	import type { Snippet } from 'svelte';
 	import { onMount, untrack } from 'svelte';
 	import { TOK_PER_WORD } from '$lib/estimator';
 	import { num } from '$lib/i18n';
@@ -47,7 +52,8 @@
 		answer,
 		labels,
 		playing = true,
-		keepClear
+		keepClear,
+		center
 	}: {
 		/** [cold, hot]. */
 		lanes: HighwayLane[];
@@ -61,6 +67,8 @@
 		labels: { answer: string; tokens: string; done: string };
 		playing?: boolean;
 		keepClear?: HTMLElement;
+		/** Between the two panels (the gauge). */
+		center?: Snippet;
 	} = $props();
 
 	/** Far/near depth ratio: the horizon row is 1/K the size of the nearest one. */
@@ -88,7 +96,7 @@
 	// svelte-ignore state_referenced_locally
 	let paras: string[][][] = [words(opening)];
 
-	type Row = { idx: number; text: string; ends: number[]; start: number; n: number; bmp?: HTMLCanvasElement; glow?: HTMLCanvasElement };
+	type Row = { idx: number; text: string; pieces: string[]; ends: number[]; start: number; n: number; bmp?: HTMLCanvasElement; glow?: HTMLCanvasElement };
 	type Lane = { tps: number; burst: number; hot: boolean; tau: number; origin: number; built: number; next: number; pi: number; wi: number; rows: Row[]; cur: number; mark?: HTMLCanvasElement };
 	// svelte-ignore state_referenced_locally
 	const road: Lane[] = lanes.map((l) => ({ tps: l.tps, burst: l.burst, hot: l.id === 'hot', tau: 0, origin: 0, built: 0, next: 0, pi: 0, wi: 0, rows: [], cur: 0 }));
@@ -111,7 +119,12 @@
 	let counts: HTMLElement[] = $state([]);
 	let bars: HTMLElement[] = $state([]);
 	let nums: HTMLElement[] = $state([]);
+	let says: HTMLElement[] = $state([]);
 	const shown = [-1, -1];
+	/** The live answer in each panel: one text node, the answer it shows, tokens appended so far. */
+	const said: (Text | null)[] = [null, null];
+	const saidK = [-1, -1];
+	const saidT = [0, 0];
 
 	const aOf = (d: number) => 1 / (1 + ((G.R - d) * (K - 1)) / G.R);
 	const yOf = (a: number) => G.yH + G.Hs * a;
@@ -187,7 +200,7 @@
 				break;
 			}
 		}
-		L.rows.push({ idx: L.next++, text: pieces.join('').trimEnd(), ends, start: L.built, n: pieces.length });
+		L.rows.push({ idx: L.next++, text: pieces.join('').trimEnd(), pieces, ends, start: L.built, n: pieces.length });
 		L.built += pieces.length;
 	}
 	/** Lay the road out again (new size or font): the text goes on, the road is filled with rows. */
@@ -214,9 +227,9 @@
 		G.W = W;
 		G.H = H;
 		G.vx = W / 2;
-		// the farthest row near the top of the scene (higher on phones, where nothing covers it), the
-		// nearest at the bottom; the vanishing point itself sits above the scene
-		const yFar = H * (W < 900 ? 0.05 : 0.15);
+		// the farthest row behind the headline, the nearest at the bottom: the road runs out from
+		// under the headline toward the viewer
+		const yFar = H * (W < 900 ? 0.24 : 0.2);
 		G.Hs = (H * 0.99 - yFar) / (1 - 1 / K);
 		G.yH = yFar - G.Hs / K;
 		// the median: clear for the gauge when it sits over the scene's lower half
@@ -502,7 +515,26 @@
 				if (nums[i]) nums[i].textContent = String(k + 1);
 			}
 			if (k !== done[i]) done[i] = k;
+			// the panel: the current answer, token by token (a new answer starts an empty panel)
+			const node = said[i];
+			if (!node) return;
+			if (k !== saidK[i]) {
+				saidK[i] = k;
+				saidT[i] = k * answer;
+				node.data = '';
+			}
+			let add = '';
+			for (; saidT[i] < w; saidT[i]++) add += pieceAt(L, L.origin + saidT[i]);
+			if (add) node.appendData(add);
 		});
+	}
+	/** The piece at absolute token index `g` (rows are kept back to the camera). */
+	function pieceAt(L: Lane, g: number): string {
+		for (let j = L.rows.length - 1; j >= 0; j--) {
+			const r = L.rows[j];
+			if (r.start <= g) return g < r.start + r.n ? r.pieces[g - r.start] : '';
+		}
+		return '';
 	}
 
 	onMount(() => {
@@ -519,8 +551,13 @@
 			layout();
 		});
 		if (rm) return () => ro.disconnect();
-		// the race starts at 0 / answer on both lanes
+		// the race starts at 0 / answer on both lanes, with empty panels
 		still = false;
+		says.forEach((el, i) => {
+			if (!el) return;
+			el.textContent = '';
+			said[i] = el.appendChild(document.createTextNode(''));
+		});
 		hud();
 		const cancel = whenIdle(() => {
 			started = true;
@@ -551,73 +588,92 @@
 	});
 </script>
 
-<div class="hw" class:run={started && playing && onScreen}>
-	<canvas bind:this={canvas} aria-hidden="true" use:visible={(v) => (onScreen = v)}></canvas>
+<canvas class="scene" class:run={started && playing && onScreen} bind:this={canvas} aria-hidden="true" use:visible={(v) => (onScreen = v)}></canvas>
+<div class="near" class:run={started && playing && onScreen}>
 	{#each lanes as l, i (l.id)}
-		<div class="chip {l.id}" aria-hidden="true">
+		<div class="pane {l.id}" aria-hidden="true">
 			{#key done[i]}
 				{#if still || done[i] > 0}
 					<p class="stamp" class:keep={still}><b>{labels.done}</b><span>{sec(finish[i])}</span></p>
 				{/if}
 			{/key}
-			<p class="name">{l.name}</p>
-			<p class="count"><span><b bind:this={counts[i]}>{num(answer, lang, 0)}</b> / {num(answer, lang, 0)} {labels.tokens}</span><span class="ans">{labels.answer} <span bind:this={nums[i]}>1</span></span></p>
+			<div class="head">
+				<p class="name"><span class="dot"></span>{l.name}<span class="ans">{labels.answer} <span bind:this={nums[i]}>1</span></span></p>
+				<p class="count"><b bind:this={counts[i]}>{num(answer, lang, 0)}</b> / {num(answer, lang, 0)} {labels.tokens}</p>
+			</div>
+			<!-- a window on the answer being written: the newest line at the bottom -->
+			<div class="win" data-clip-ok><p class="say" bind:this={says[i]}>{opening}</p></div>
 			<span class="track"><span class="bar" bind:this={bars[i]}></span></span>
 		</div>
+		{#if i === 0 && center}<div class="center">{@render center()}</div>{/if}
 	{/each}
 </div>
 
 <style>
-	.hw {
+	/* the road: full bleed behind the whole hero (the hero is its containing block) */
+	.scene {
 		position: absolute;
 		inset: 0;
-		/* ours: the field of view pushes in on the right, the typical side sits in shade */
-		background:
-			linear-gradient(90deg, rgb(5 5 6 / 0.35), transparent 38%),
-			radial-gradient(55% 70% at 78% 85%, rgb(255 122 26 / 0.08), transparent 70%);
-	}
-	canvas {
-		position: absolute;
-		inset: 0;
+		z-index: -1;
 		width: 100%;
 		height: 100%;
 		display: block;
 		font-family: var(--font-mono);
-		/* the far road dissolves into the haze; the nearest rows leave through a soft bottom edge */
-		-webkit-mask-image: linear-gradient(180deg, transparent, #000 9%, #000 74%, transparent);
-		mask-image: linear-gradient(180deg, transparent, #000 9%, #000 74%, transparent);
+		/* the far road dissolves into the dark behind the headline; the nearest rows into the floor */
+		-webkit-mask-image: linear-gradient(180deg, transparent 12%, #000 34%, #000 84%, transparent);
+		mask-image: linear-gradient(180deg, transparent 12%, #000 34%, #000 84%, transparent);
 	}
-	/* HUD chips at the lanes' near ends */
-	.chip {
-		position: absolute;
-		bottom: var(--chip-bottom, 3.5rem);
-		width: min(17rem, 30%);
+	/* the near end: two glass windshields with the live answers, the gauge between them */
+	.near {
+		position: relative;
+		width: min(100% - 2 * var(--gutter), 90rem);
+		margin-inline: auto;
 		display: grid;
-		gap: 0.35rem;
-		padding: 0.75rem 0.9rem 0.85rem;
-		border-radius: 0.9rem;
-		background: rgb(8 8 10 / 0.72);
+		grid-template-columns: minmax(0, 32rem) auto minmax(0, 32rem);
+		justify-content: space-between;
+		align-items: end;
+		column-gap: var(--sp-4);
+	}
+	.center {
+		align-self: end;
+	}
+	.pane {
+		position: relative;
+		display: grid;
+		gap: 0.6rem;
+		padding: 0.85rem 1rem 0.9rem;
+		border-radius: 1rem;
+		background: linear-gradient(180deg, rgb(20 20 24 / 0.62), rgb(8 8 10 / 0.78));
 		box-shadow:
+			inset 0 1px 0 rgb(255 255 255 / 0.07),
 			inset 0 0 0 1px rgb(255 255 255 / 0.08),
-			0 18px 40px -18px rgb(0 0 0 / 0.8);
-		-webkit-backdrop-filter: blur(6px);
-		backdrop-filter: blur(6px);
+			0 24px 50px -24px rgb(0 0 0 / 0.9);
+		-webkit-backdrop-filter: blur(10px) saturate(1.2);
+		backdrop-filter: blur(10px) saturate(1.2);
 		font-variant-numeric: tabular-nums lining-nums;
 	}
-	.chip p {
+	.pane.hot {
+		background: linear-gradient(180deg, rgb(32 18 10 / 0.62), rgb(12 7 4 / 0.8));
+		box-shadow:
+			inset 0 1px 0 rgb(255 243 214 / 0.12),
+			inset 0 0 0 1px rgb(255 122 26 / 0.5),
+			0 0 50px -14px rgb(255 122 26 / 0.6),
+			0 24px 50px -24px rgb(0 0 0 / 0.9);
+	}
+	.pane p {
 		margin: 0;
 	}
-	.chip.cold {
-		left: var(--gutter);
-	}
-	.chip.hot {
-		right: var(--gutter);
-		box-shadow:
-			inset 0 0 0 1px rgb(255 122 26 / 0.45),
-			0 0 40px -10px rgb(255 122 26 / 0.55),
-			0 18px 40px -18px rgb(0 0 0 / 0.8);
+	.head {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 0.2rem 0.75rem;
 	}
 	.name {
+		display: inline-flex;
+		align-items: baseline;
+		gap: 0.5rem;
 		font-family: var(--font-display);
 		font-size: var(--fs-md);
 		font-weight: 720;
@@ -627,6 +683,17 @@
 	.hot .name {
 		color: var(--heat-5);
 	}
+	.dot {
+		align-self: center;
+		width: 0.45rem;
+		height: 0.45rem;
+		border-radius: 50%;
+		background: var(--before);
+	}
+	.hot .dot {
+		background: var(--heat-3);
+		box-shadow: 0 0 10px var(--heat-3);
+	}
 	.ans {
 		font-size: var(--fs-xs);
 		font-weight: 500;
@@ -635,17 +702,13 @@
 		white-space: nowrap;
 	}
 	.count {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: baseline;
-		justify-content: space-between;
-		gap: 0 0.75rem;
 		font-size: var(--fs-sm);
 		color: var(--text-mute);
+		white-space: nowrap;
 	}
 	.count b {
 		font-family: var(--font-display);
-		font-size: 1.35rem;
+		font-size: 1.3rem;
 		font-weight: 760;
 		letter-spacing: -0.02em;
 		color: var(--before);
@@ -653,6 +716,43 @@
 	.hot .count b {
 		color: var(--heat-4);
 		text-shadow: 0 0 14px rgb(255 122 26 / 0.5);
+	}
+	/* four lines of the answer; older lines leave through the top */
+	.win {
+		--lh: 1.55em;
+		height: calc(4 * var(--lh));
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+		font-family: var(--font-mono);
+		font-size: clamp(0.8rem, 0.7rem + 0.25vw, 0.95rem);
+		contain: strict;
+		-webkit-mask-image: linear-gradient(transparent, #000 1.1em);
+		mask-image: linear-gradient(transparent, #000 1.1em);
+	}
+	.say {
+		line-height: var(--lh);
+		color: #a3a9b2;
+		overflow-wrap: anywhere;
+	}
+	.hot .say {
+		color: #ffe2bd;
+		text-shadow: 0 0 12px rgb(255 122 26 / 0.35);
+	}
+	/* the caret after the newest token */
+	.say::after {
+		content: '';
+		display: inline-block;
+		width: 0.55em;
+		height: 1.05em;
+		margin-left: 0.1em;
+		vertical-align: -0.15em;
+		background: var(--before);
+	}
+	.hot .say::after {
+		background: var(--heat-4);
+		box-shadow: 0 0 10px var(--heat-3);
 	}
 	.track {
 		display: block;
@@ -671,10 +771,10 @@
 		background: linear-gradient(90deg, var(--heat-2), var(--heat-4), var(--heat-5));
 		box-shadow: 0 0 10px rgb(255 122 26 / 0.7);
 	}
-	/* the finish: a stamp over the chip, flashing once per finished answer */
+	/* the finish: a stamp over the panel, flashing once per finished answer */
 	.stamp {
 		position: absolute;
-		left: 0.9rem;
+		left: 1rem;
 		bottom: calc(100% + 0.5rem);
 		display: flex;
 		align-items: baseline;
@@ -686,7 +786,7 @@
 	}
 	.hot .stamp {
 		left: auto;
-		right: 0.9rem;
+		right: 1rem;
 	}
 	.stamp b {
 		font-size: var(--fs-sm);
@@ -731,27 +831,44 @@
 			transform: translate3d(0, -0.3rem, 0);
 		}
 	}
-	/* phones: the two chips side by side under the lanes, compact */
+	/* tablets and phones: the two panels stacked (ours second), the gauge after them */
 	@media (max-width: 900px) {
-		.chip {
-			--chip-bottom: 0.5rem;
-			width: calc(50% - var(--gutter) - 0.35rem);
-			padding: 0.55rem 0.65rem 0.65rem;
-			gap: 0.25rem;
+		.near {
+			grid-template-columns: minmax(0, 1fr);
+			row-gap: var(--sp-3);
+		}
+		.center {
+			order: 3;
+			justify-self: center;
+		}
+		.pane {
+			padding: 0.6rem 0.8rem 0.7rem;
+			gap: 0.4rem;
 		}
 		.name {
 			font-size: var(--fs-sm);
 		}
-		.count {
-			font-size: var(--fs-xs);
-		}
 		.count b {
 			font-size: 1.05rem;
 		}
-	}
-	@media (max-width: 420px) {
-		.ans {
-			display: none;
+		.win {
+			height: calc(3 * var(--lh));
+			font-size: 0.75rem;
+		}
+		/* inside the panel, over the answer's bottom right */
+		.stamp {
+			bottom: 1.3rem;
+			left: auto;
+			right: 0.8rem;
+			padding: 0.25rem 0.45rem;
+			border-radius: 0.5rem;
+			background: rgb(8 8 10 / 0.88);
+		}
+		.stamp span {
+			font-size: 1.25rem;
+		}
+		.hot .stamp {
+			right: 0.8rem;
 		}
 	}
 	@media (prefers-reduced-motion: reduce) {

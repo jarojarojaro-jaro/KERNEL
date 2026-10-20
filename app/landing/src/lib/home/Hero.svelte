@@ -3,11 +3,12 @@
 	 * Hero (design/REDESIGN.md §6): heat field, a two-tier headline (CSS only: it is the LCP) — the
 	 * steel line "Ten sam sprzęt. Ten sam model." over the focal, much larger heat line "Po prostu
 	 * szybciej." — one custom primary CTA with a slowly turning heat edge plus a text link, then the
-	 * drive, full bleed: the token highway (fx/Highway), two lanes of the same text flowing toward the
-	 * viewer at the measured speeds on our lab card (RX 7900 XTX × Qwen3.8-27B, upstream llama.cpp
-	 * default vs our engine, one script, ABBA; MTP steps from the measured step time), and over its
-	 * median the instrument cluster (fx/Cluster): ours on a heat arc, the typical app as a ghost
-	 * needle, the speed-up as the cluster's loudest figure. The conditions in small print under it.
+	 * race, as one full screen: the token highway (fx/Highway) runs full bleed behind everything, out
+	 * from under the headline toward the viewer, two lanes of the same text at the measured speeds on
+	 * our lab card (RX 7900 XTX × Qwen3.8-27B, upstream llama.cpp default vs our engine, one script,
+	 * ABBA; MTP steps from the measured step time). The headline sits around the middle on a soft dark
+	 * halo; at the near end two glass windshields show each lane's live answer, readable, and between
+	 * them the instrument cluster (fx/Cluster). The conditions in small print at the very bottom.
 	 * When the page is idle and the cluster on screen, it makes its one entrance: the heat field
 	 * runs hot, a bloom sweeps the hero once and the heat line flares.
 	 */
@@ -80,6 +81,7 @@
 	<HeatField heat={heat ? 1 : 0.7} boost={heat ? 1 : 0} />
 	<div class="veil" aria-hidden="true"></div>
 	{#if go && idle && !bloomed}<div class="bloom" aria-hidden="true" onanimationend={() => (bloomed = true)}></div>{/if}
+	<p class="sr-only">{fill(r.summary, vars)}</p>
 	<div class="inner">
 		<h1 id="hero-title" class="title">
 			<Kin lines={c.title} wide={[1]} heat={[1]} cold={[0]} delays={[0, 120]} />
@@ -95,34 +97,35 @@
 			</a>
 		</div>
 	</div>
-	<div class="drive">
-		<p class="sr-only">{fill(r.summary, vars)}</p>
-		<div class="road">
-			<!-- keyed: the highway caches its text rows, so a language switch mounts a fresh one -->
-			{#key lang}
-				<Highway {lanes} opening={r.opening} more={more(lang)} {lang} answer={ANSWER} labels={r} {playing} keepClear={cluster} />
-			{/key}
-		</div>
-		<div class="dash" bind:this={cluster} aria-hidden="true" use:visible={(v) => (dashOn = v)}>
-			<Cluster max={dial.max} redline={dial.redline} {cold} {hot} {gain} {lang} unit="t/s" faster={r.faster} {go} still={!playing} />
-		</div>
-		<div class="foot">
-			<p class="note">{fill(r.note, vars)}</p>
-			<button type="button" class="pp" aria-pressed={!playing} aria-label={playing ? r.pause : r.resume} title={playing ? r.pause : r.resume} onclick={() => (playing = !playing)}>
-				{#if playing}<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.4" height="8" rx="0.6" /><rect x="7.1" y="2" width="2.4" height="8" rx="0.6" /></svg>
-				{:else}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 2.2v7.6L10 6z" /></svg>{/if}
-			</button>
-		</div>
+	<!-- keyed: the highway caches its text rows, so a language switch mounts a fresh one -->
+	{#key lang}
+		<Highway {lanes} opening={r.opening} more={more(lang)} {lang} answer={ANSWER} labels={r} {playing} keepClear={cluster}>
+			{#snippet center()}
+				<div class="dash" bind:this={cluster} aria-hidden="true" use:visible={(v) => (dashOn = v)}>
+					<Cluster max={dial.max} redline={dial.redline} {cold} {hot} {gain} {lang} unit="t/s" faster={r.faster} {go} still={!playing} />
+				</div>
+			{/snippet}
+		</Highway>
+	{/key}
+	<div class="foot">
+		<p class="note">{fill(r.note, vars)}</p>
+		<button type="button" class="pp" aria-pressed={!playing} aria-label={playing ? r.pause : r.resume} title={playing ? r.pause : r.resume} onclick={() => (playing = !playing)}>
+			{#if playing}<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.4" height="8" rx="0.6" /><rect x="7.1" y="2" width="2.4" height="8" rx="0.6" /></svg>
+			{:else}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 2.2v7.6L10 6z" /></svg>{/if}
+		</button>
 	</div>
 </section>
 
 <style>
+	/* one full screen: the headline around the middle, the race's near end below, the small print at the bottom */
 	.hero {
 		position: relative;
 		min-height: 100vh;
 		min-height: 100svh;
-		display: flex;
-		flex-direction: column;
+		display: grid;
+		grid-template-rows: minmax(0, 1fr) auto auto;
+		row-gap: clamp(0.75rem, 2svh, 1.5rem);
+		padding-top: clamp(4.75rem, 3rem + 4svh, 6rem);
 		isolation: isolate;
 		overflow: clip;
 		background: var(--bg-0);
@@ -174,13 +177,28 @@
 		}
 	}
 	.inner {
+		position: relative;
+		z-index: 1;
+		align-self: center;
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
-		padding-block: clamp(5.5rem, 3rem + 5vh, 7rem) clamp(0.75rem, 0.25rem + 1.5vh, 1.5rem);
+		padding-block: clamp(0.5rem, 3svh, 2rem);
 		display: grid;
 		justify-items: center;
 		gap: clamp(1.25rem, 0.5rem + 2.4vh, 2.4rem);
 		text-align: center;
+	}
+	/* the headline reads over the road: a soft dark halo behind it, a deep shadow under the letters */
+	.inner::before {
+		content: '';
+		position: absolute;
+		inset: -14% -4% -22%;
+		z-index: -1;
+		pointer-events: none;
+		background: radial-gradient(closest-side, rgb(5 5 6 / 0.85), rgb(5 5 6 / 0.6) 60%, transparent);
+	}
+	.title {
+		filter: drop-shadow(0 10px 28px rgb(0 0 0 / 0.75));
 	}
 	/* two tiers: the steel line, then the focal heat line much larger (font-size = heat line) */
 	.title {
@@ -356,56 +374,23 @@
 		outline-offset: 4px;
 		border-radius: 4px;
 	}
-	/* ---- the drive: the token highway, full bleed, with the cluster over its median ---- */
-	.drive {
-		position: relative;
-		flex: 1 0 auto;
-		min-height: clamp(21rem, 50svh, 46rem);
-		display: grid;
-	}
-	.road {
-		position: absolute;
-		inset: 0;
-		/* the glow at the end of the road */
-		background: radial-gradient(40% 30% at 50% 4%, rgb(255 122 26 / 0.14), transparent 70%);
-	}
-	/* the cluster sits low on the median, like the instruments in front of the driver */
+	/* the gauge between the windshields, small: it never fights the headline */
 	.dash {
-		position: absolute;
-		z-index: 1;
-		left: 50%;
-		bottom: 2.9rem;
-		/* never taller than the first screen leaves for it (1024 × 768: the whole dial above the fold) */
-		width: min(clamp(17rem, 28vw, 25rem), 46svh - 3rem);
-		translate: -50% 0;
-	}
-	/* the small print reads on a dark floor: the nearest rows dissolve into it */
-	.drive::after {
-		content: '';
-		position: absolute;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		height: 4.5rem;
-		pointer-events: none;
-		background: linear-gradient(transparent, rgb(5 5 6 / 0.9) 70%);
+		width: min(clamp(10.5rem, 14vw, 15rem), 28svh);
 	}
 	.foot {
-		position: absolute;
-		z-index: 1;
-		left: var(--gutter);
-		right: var(--gutter);
-		bottom: 0.75rem;
+		width: min(100% - 2 * var(--gutter), 90rem);
+		margin-inline: auto;
+		padding-bottom: 0.75rem;
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		gap: var(--sp-3);
 	}
 	.note {
 		flex: 1;
 		margin: 0;
 		min-width: 0;
-		/* centred under the dial (the pause button's width balanced on the left) */
+		/* centred (the pause button's width balanced on the left) */
 		padding-left: calc(2rem + var(--sp-3));
 		text-align: center;
 		text-wrap: balance;
@@ -443,53 +428,25 @@
 		height: 0.75rem;
 		fill: currentColor;
 	}
-	/* tablets and phones: the cluster on top, the road under it, the small print below */
 	@media (max-width: 900px) {
-		.drive {
-			min-height: 0;
-			grid-template-rows: auto clamp(21rem, 58svh, 34rem) auto;
-			justify-items: center;
-			row-gap: var(--sp-3);
-		}
 		.dash {
-			position: relative;
-			left: auto;
-			bottom: auto;
-			translate: none;
-			width: min(19rem, 100% - 2 * var(--gutter));
-			grid-row: 1;
-		}
-		.road {
-			position: relative;
-			inset: auto;
-			grid-row: 2;
-			width: 100%;
-		}
-		.drive::after {
-			display: none;
+			width: min(15rem, 80vw);
 		}
 		.note {
 			padding-left: 0;
 			text-align: left;
 		}
-		.foot {
-			position: static;
-			grid-row: 3;
-			width: calc(100% - 2 * var(--gutter));
-			padding-bottom: var(--sp-4);
-		}
 	}
-
 	@media (prefers-reduced-motion: no-preference) {
-		/* the headline lands first; the CTAs follow, then the drive rises */
+		/* the headline lands first; the CTAs follow, then the windshields rise */
 		:global(html.js) .actions {
 			animation: fade-up 0.6s var(--ease-out) 0.25s both;
 		}
-		:global(html.js) .drive {
+		:global(html.js) .hero :global(.near) {
 			animation: rise 0.7s var(--ease-out) 0.35s both;
 		}
 	}
-	/* transform-only: the CTAs and the drive are visible from the first painted frame */
+	/* transform-only: the CTAs and the windshields are visible from the first painted frame */
 	@keyframes fade-up {
 		from {
 			transform: translate3d(0, 0.75rem, 0);
@@ -501,11 +458,14 @@
 		}
 	}
 	@media (max-width: 640px) {
+		/* phones: the headline in the upper half, the two windshields right under the CTAs */
 		.hero {
-			min-height: 0;
+			grid-template-rows: auto auto auto;
+			padding-top: 5rem;
 		}
 		.inner {
-			padding-top: 5.25rem;
+			align-self: start;
+			padding-block: 0;
 			gap: var(--sp-4);
 		}
 		/* condensed cut: steel on two lines, the heat line on two big lines */
