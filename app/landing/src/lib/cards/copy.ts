@@ -15,11 +15,11 @@ const pl = {
 		compareDescription: 'Dwie karty, ten sam model, te same skrypty pomiarowe. Generowanie, czas odpowiedzi i pamięć obok siebie.'
 	},
 	gallery: {
-		eyebrow: 'Twoja karta',
-		title: 'Na czym liczysz?',
+		eyebrow: 'Karty',
+		title: 'Jaką masz kartę?',
 		pickVendor: 'Wybierz producenta',
 		lede: 'Każda karta, którą zmierzyliśmy: przed i po naszym silniku, na tym samym modelu i tym samym skrypcie. Karty z kolejki pomiarów mają jasno podpisany szacunek.',
-		measuredCount: (n: number) => `${n}\u00a0zmierzone`,
+		measuredCount: (n: number) => `${n}\u00a0${n === 1 ? 'zmierzona' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'zmierzone' : 'zmierzonych'}`,
 		queuedCount: (n: number) => `${n}\u00a0w\u00a0kolejce`,
 		vendorMeasured: (n: number) => `${n}\u00a0${n === 1 ? 'zmierzona' : n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14) ? 'zmierzone' : 'zmierzonych'}`,
 		vendorQueued: (n: number) => `${n}\u00a0w\u00a0kolejce`,
@@ -217,8 +217,8 @@ const en: Copy = {
 		compareDescription: 'Two cards, the same model, the same benchmark scripts. Generation, answer time and memory side by side.'
 	},
 	gallery: {
-		eyebrow: 'Your card',
-		title: 'What are you running on?',
+		eyebrow: 'Cards',
+		title: 'Which card do you have?',
 		pickVendor: 'Pick a maker',
 		lede: 'Every card we measured: before and after our engine, on the same model and the same script. Cards in the measurement queue carry a clearly labelled estimate.',
 		measuredCount: (n: number) => `${n}\u00a0measured`,
