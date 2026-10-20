@@ -113,6 +113,21 @@
                  "kv cache", "kv-cache", "mmvq", "gdn", "decode", "tok/s", "t/s", "faster", "speedup", "perf"]
   },
 
+  "feeds": [
+    {"name": "llm-speed", "type": "llm_speed", "url": "https://llm-speed.com/data/open-dataset.json", "home": "https://llm-speed.com/data",
+     "licence": "CC BY 4.0", "attribution": "Cytowanie: llm-speed. Measured LLM inference benchmarks, https://llm-speed.com/data, CC BY 4.0.",
+     "w": 1.0, "daily_max": 2},
+    {"name": "kyuz0 (local-llm-benchmarks.dev)", "type": "kyuz0", "url": "https://local-llm-benchmarks.dev/data/results.json", "home": "https://local-llm-benchmarks.dev",
+     "licence": "brak licencji (sprawdzone 2026-10-20: strona i repo kyuz0 bez LICENSE; robots.txt brak) – tylko analiza wewnętrzna, link zamiast republikacji",
+     "w": 0.9, "daily_max": 1},
+    {"name": "llmcheck.net", "type": "llmcheck", "url": "https://llmcheck.net/data/v1/benchmarks.json", "home": "https://llmcheck.net",
+     "licence": "CC BY 4.0", "attribution": "Dane: LLMCheck (llmcheck.net), CC BY 4.0; bierzemy tylko wiersze `sourced` i `community`, bez estymat.",
+     "w": 0.6, "daily_max": 1},
+    {"name": "LLM Configurator", "type": "llmconf", "url": "https://llmconfigurator.com/measured-benchmarks.json", "home": "https://llmconfigurator.com",
+     "licence": "CC BY 4.0", "attribution": "Dane: LLM Configurator (llmconfigurator.com, Jakub Rusinowski), CC BY 4.0; pierwotne źródło wiersza w linku.",
+     "w": 0.5, "daily_max": 1}
+  ],
+
   "hf": {
     "authors": ["unsloth", "bartowski", "ggml-org"],
     "limit": 200

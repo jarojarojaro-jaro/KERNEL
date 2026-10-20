@@ -524,6 +524,246 @@ def hf_scan(cfg: dict, state: dict, items: list[Item], report: dict, first: bool
                           "sprawdzić kwanty/KLD i czy zmienia wybór pliku dla karty"))
 
 
+# ---------------------------------------------------------------- otwarte rankingi (feeds)
+# Każdy adapter zwraca wiersze w jednym formacie:
+# {id, date, tok, model, gpu, multi, engine, quant, cond, url}; `cond` opisuje warunki pomiaru źródła
+# (trafia do linii „jabłka do jabłek”).
+
+def feed_get(feed: dict, url: str, fs: dict, report: dict, tag: str = "") -> tuple[object | None, bool]:
+    """GET z ETag/If-Modified-Since, limitem dziennym źródła i surową kopią w ~/.cache/compwatch/feeds/<nazwa>/.
+    Zwraca (dane, zmienione). Przy 304 albo wyczerpanym limicie czyta ostatnią kopię."""
+    day = TODAY.isoformat()
+    used = fs.setdefault("requests", {})
+    for d in [d for d in used if d < (TODAY - dt.timedelta(days=30)).isoformat()]:
+        del used[d]
+    cache = fs.setdefault("cache", {}).setdefault(url, {})
+    raw_dir = CACHE / "feeds" / re.sub(r"[^A-Za-z0-9.-]+", "-", feed["name"]).strip("-")
+    raw_dir.mkdir(parents=True, exist_ok=True)
+    last = Path(cache["raw"]) if cache.get("raw") else None
+    load_last = lambda: (json.loads(last.read_text()), False) if last and last.exists() else (None, False)
+    if used.get(day, 0) >= feed.get("daily_max", 1):
+        return load_last()
+    hdr = {}
+    if cache.get("etag") and last and last.exists():
+        hdr["If-None-Match"] = cache["etag"]
+    if cache.get("last_modified") and last and last.exists():
+        hdr["If-Modified-Since"] = cache["last_modified"]
+    used[day] = used.get(day, 0) + 1
+    report["feed_requests"][feed["name"]] = report["feed_requests"].get(feed["name"], 0) + 1
+    try:
+        data, h = http_json(url, hdr, timeout=180)
+    except urllib.error.HTTPError as e:
+        if e.code == 304:
+            return load_last()
+        report["notes"].append(f"{feed['name']}: HTTP {e.code} dla {url}.")
+        return load_last()
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as e:
+        report["notes"].append(f"{feed['name']}: błąd {one_line(str(e), 120)}.")
+        return load_last()
+    f = raw_dir / f"{day}{tag}.json"
+    f.write_text(json.dumps(data))
+    for old in sorted(raw_dir.glob("*.json")):
+        if old.stem[:10] < (TODAY - dt.timedelta(days=30)).isoformat():
+            old.unlink()
+    cache.update(raw=str(f), etag=h.get("ETag") or h.get("Etag"), last_modified=h.get("Last-Modified"))
+    return data, True
+
+
+def feed_llm_speed(feed: dict, fs: dict, report: dict) -> tuple[list[dict], str]:
+    ptr, _ = feed_get(feed, feed["url"], fs, report, ".pointer")
+    if not ptr:
+        return [], ""
+    version = ptr.get("version", "?")
+    data_url = urllib.parse.urljoin(feed["url"], ptr["files"]["json"])
+    if fs.get("version") == version and fs.get("cache", {}).get(data_url, {}).get("raw"):
+        data = json.loads(Path(fs["cache"][data_url]["raw"]).read_text())
+    else:
+        data, _ = feed_get(feed, data_url, fs, report, ".data")
+    if not data:
+        return [], version
+    fs["version"] = version
+    out = []
+    for r in data.get("rows", []):
+        if r.get("batch_size") not in (None, 1) or r.get("workload") == "concurrent-decode" or not r.get("decode_tps"):
+            continue
+        hw = r.get("hardware") or ""
+        mtp = "wł." if re.search(r"mtp-on", r.get("model") or "", re.I) else "nie zapisane (pole MTP brak)"
+        out.append({
+            "id": f"{r['run_id']}:{r['workload']}:{r.get('prompt_tokens')}", "date": r.get("date"), "tok": r["decode_tps"], "model": r.get("model"),
+            "gpu": hw.split(" + ")[0], "multi": bool(re.match(r"\s*\d+\s*[x×]", hw)),
+            "engine": f"{r.get('runtime') or '?'}", "engine_raw": one_line(f"{r.get('runtime') or ''} {r.get('runtime_version') or ''}", 50),
+            "quant": r.get("quant"), "url": r.get("run_url"),
+            "cond": (f"llm-speed {r['workload']} ({r.get('prompt_tokens')}→{r.get('output_tokens')} tok., stałe prompty), "
+                     f"{r.get('runtime')} {r.get('runtime_version') or ''}, {r.get('quant') or '?'}, MTP {mtp}, podpisany run, licznik klienta"),
+        })
+    return out, version
+
+
+def feed_llmcheck(feed: dict, fs: dict, report: dict) -> tuple[list[dict], str]:
+    data, _ = feed_get(feed, feed["url"], fs, report)
+    if not data:
+        return [], ""
+    out = []
+    for r in data.get("benchmarks", []):
+        if r.get("provenance") not in ("sourced", "community") or not r.get("tps"):
+            continue
+        key = "|".join(str(r.get(k)) for k in ("model", "quant", "chip", "ram", "engine", "date", "tps", "source"))
+        out.append({
+            "id": hashlib.sha1(key.encode()).hexdigest()[:16], "date": r.get("date"), "tok": r["tps"], "model": r.get("model"),
+            "gpu": f"{r.get('chip') or ''}", "multi": False, "engine": (r.get("engine") or "?").lower(), "engine_raw": r.get("engine") or "?",
+            "quant": r.get("quant"), "url": r.get("source"),
+            "cond": f"llmcheck {r.get('provenance')} ({r.get('ram')} GB), {r.get('engine')}, {r.get('quant') or '?'}, warunki wg źródła (prompt/ctx/T nieznane)",
+        })
+    return out, data.get("version", "?")
+
+
+def feed_llmconf(feed: dict, fs: dict, report: dict) -> tuple[list[dict], str]:
+    data, _ = feed_get(feed, feed["url"], fs, report)
+    if not data:
+        return [], ""
+    out = []
+    for r in data.get("entries", []):
+        if not r.get("tokS"):
+            continue
+        out.append({
+            "id": r["id"], "date": r.get("date") or r.get("reviewedAt"), "tok": r["tokS"], "model": r.get("variantId"),
+            "gpu": (r.get("gpuId") or "").replace("-", " "), "multi": False,
+            "engine": (r.get("runtime") or "?").split()[0].lower(), "engine_raw": r.get("runtime") or "?",
+            "quant": r.get("quant"), "url": r.get("sourceUrl"),
+            "cond": (f"{r.get('publisher') or r.get('provenance')} przez LLM Configurator, {r.get('runtime')}, ctx {r.get('contextLength')}, "
+                     f"{r.get('quant') or '?'}, {r.get('offloadState') or ''}"),
+        })
+    return out, data.get("generatedAt", "?")[:10]
+
+
+def feed_kyuz0(feed: dict, fs: dict, report: dict) -> tuple[list[dict], str]:
+    data, _ = feed_get(feed, feed["url"], fs, report)
+    if not data:
+        return [], ""
+    out = []
+    for j in data.get("jobs", []):
+        if j.get("status") != "complete":
+            continue
+        gen = sorted((p for p in j.get("points", []) if p.get("series") == "generation"), key=lambda p: p.get("starting_depth") or 0)
+        if not gen:
+            continue
+        b, st, sv, sub = j.get("benchmark") or {}, j.get("stack") or {}, j.get("serving") or {}, j.get("subject") or {}
+        spec = sv.get("speculative_method") or "bez spekulacji"
+        if sv.get("draft_tokens"):
+            spec += f" n={sv['draft_tokens']}"
+        deep = gen[-1]
+        out.append({
+            "id": j["id"], "date": (j.get("completed_at") or "")[:10], "tok": gen[0]["mean"], "model": sub.get("model"),
+            "gpu": (j.get("platform") or {}).get("hardware_label") or "", "multi": False,
+            "engine": (st.get("engine_name") or "?").lower(), "engine_raw": one_line(f"{st.get('engine_name')} {st.get('engine_version') or ''}", 50),
+            "quant": sub.get("quant"), "url": feed["home"],
+            "cond": (f"kyuz0 {b.get('workload_label') or b.get('workload_id')}: T={(b.get('sampling') or {}).get('temperature')}, "
+                     f"gen {b.get('tg')} tok. przy pustym kontekście (przy {deep.get('starting_depth')}: {deep['mean']:.1f} t/s), "
+                     f"{spec}, {st.get('runtime_name')} {st.get('runtime_version') or ''}, {sub.get('quant')}, licznik klienta API"),
+        })
+    return out, max((x["date"] for x in out), default="?")
+
+
+FEED_ADAPTERS = {"llm_speed": feed_llm_speed, "llmcheck": feed_llmcheck, "llmconf": feed_llmconf, "kyuz0": feed_kyuz0}
+
+
+def feeds_scan(cfg: dict, state: dict, items: list[Item], report: dict) -> None:
+    cards = {c["key"]: c for c in cfg["cards"]}
+    ours = {(o["card"], o["model"]): o for o in cfg["nasze"]}
+    fstate = state.setdefault("feeds", {})
+    for feed in cfg.get("feeds", []):
+        fs = fstate.setdefault(feed["name"], {})
+        seen: dict = fs.setdefault("seen", {})
+        engines = set(fs.get("engines", []))
+        baseline = not fs.get("baseline_done")
+        rows, version = FEED_ADAPTERS[feed["type"]](feed, fs, report)
+        fw = feed.get("w", 1.0)
+        fresh, beat_seen, matched, ids = [], set(), [], set()
+        for r in rows:
+            card = None if r["multi"] else card_of({"gpuName": r["gpu"]}, cfg["cards"])
+            model = model_of([r["model"] or ""], cfg["models"])
+            if not card and not model:
+                continue
+            r["card"] = card["key"] if card else None
+            r["mkey"] = model["key"] if model else r["model"]
+            r["tier"] = model["tier"] if model else "other"
+            matched.append(r)
+            if r["id"] not in seen and r["id"] not in ids and isinstance(r.get("tok"), (int, float)):
+                ids.add(r["id"])
+                fresh.append(r)
+        rows = matched
+        src = f"[{feed['name']}]({feed['home']})"
+        desc = lambda r: (f"{r['tok']:.1f} t/s · {r['engine_raw']} · {r['quant'] or '?'} · {r['date']}"
+                          + (f" · [run]({r['url']})" if r.get("url") and r["url"] != feed["home"] else "") + f" · źródło {src}")
+        pool = list(seen.values())
+        for r in sorted(fresh, key=lambda x: -x["tok"]):
+            card = cards.get(r["card"]) if r["card"] else None
+            tw = TIER_W.get(r["tier"], 0.3)
+            o = ours.get((r["card"], r["mkey"]))
+            cav = f"Jabłka do jabłek: oni: {r['cond']}; " + (f"my: {o['metric']} ({o['tok']} t/s, `{o['src']}`)." if o else "nasz pomiar na tej karcie: brak.")
+            if card and o and r["tok"] > o["tok"]:
+                pct = 100.0 * (r["tok"] / o["tok"] - 1)
+                dup = (r["card"], r["mkey"], r["engine"]) in beat_seen
+                beat_seen.add((r["card"], r["mkey"], r["engine"]))
+                items.append(Item((60 + min(60, pct)) * card["w"] * tw * fw * (0.3 if dup else 1.0), "feeds",
+                                  f"**{card['label']} / {r['mkey']}: {r['tok']:.1f} t/s > nasze {o['tok']} (+{pct:.0f}%)** — {desc(r)}", cav,
+                                  "rozłożyć warunki (prompt, kwant, spekulacja); jeśli porównywalne – sprawdzić dźwignię u nas"))
+            if card and not baseline:
+                prev = max((x for x in pool if x.get("card") == r["card"] and x.get("mkey") == r["mkey"]), key=lambda x: x["tok"], default=None)
+                if prev is None or r["tok"] > prev["tok"]:
+                    was = f"poprzednio {prev['tok']:.1f} ({prev['engine']})" if prev else "pierwszy wiersz dla tej pary"
+                    items.append(Item(45 * card["w"] * tw * fw, "feeds", f"Nowy top {card['label']} / {r['mkey']}: {desc(r)}; {was}", cav,
+                                      "sprawdzić warunki źródła; czy da się odtworzyć u nas"))
+            if not baseline and r["engine"] not in engines:
+                engines.add(r["engine"])
+                items.append(Item(25 * fw, "feeds", f"Nowy silnik w {src}: **{r['engine_raw']}** ({r['gpu']} / {r['mkey']}) — {desc(r)}", cav,
+                                  "przeczytać opis silnika; czy działa na gfx1100 / sm_86"))
+            pool.append({"card": r["card"], "mkey": r["mkey"], "tok": r["tok"], "engine": r["engine"]})
+        for r in fresh:
+            seen[r["id"]] = {"card": r["card"], "mkey": r["mkey"], "tok": r["tok"], "engine": r["engine"], "date": r["date"]}
+            engines.add(r["engine"])
+        fs["engines"] = sorted(engines)
+        fs["baseline_done"] = True
+        # Tabela najlepszych wierszy per (karta, model) ze zbioru – w przebiegu bazowym źródła i przy nowych wierszach.
+        tops = []
+        if rows and (baseline or fresh):
+            best: dict = {}
+            for r in rows:
+                if not r.get("card") or r.get("tier") not in ("core", "catalog") or not isinstance(r.get("tok"), (int, float)):
+                    continue
+                k = (r["card"], r["mkey"])
+                if k not in best or r["tok"] > best[k]["tok"]:
+                    best[k] = r
+            order = {c["key"]: i for i, c in enumerate(cfg["cards"])}
+            tops = [(cards[k[0]], k[1], v, ours.get(k)) for k, v in sorted(best.items(), key=lambda kv: (order[kv[0][0]], kv[0][1]))]
+        report["feeds"].append({"feed": feed, "version": version, "rows": len(rows), "fresh": fresh, "baseline": baseline, "tops": tops})
+
+
+def render_feeds(cfg: dict, report: dict, top: list[Item], ranked: list[Item]) -> list[str]:
+    L = ["## Otwarte rankingi", ""]
+    L.append("Zapytania dziś: " + ", ".join(f"{f['name']} {report['feed_requests'].get(f['name'], 0)} (limit {f.get('daily_max', 1)})" for f in cfg.get("feeds", []))
+             + ". Pobrania warunkowe (ETag) – niezmieniony plik nie jest ściągany ponownie.")
+    L.append("")
+    rest = [x for x in ranked if x.section == "feeds" and x not in top]
+    if rest:
+        L += ["Pozostałe pozycje:", ""] + [f"- {x.title}" + (f"\n  - {x.caveat}" if x.caveat else "") for x in rest] + [""]
+    for fr in report["feeds"]:
+        f = fr["feed"]
+        L += [f"### {f['name']}", "", f"Źródło: [{f['home']}]({f['home']}), wersja {fr['version'] or '?'}; licencja: {f['licence']}. {f.get('attribution', '')}".rstrip(), ""]
+        L.append(f"Wiersze (nasze karty lub modele): {fr['rows']}; nowe względem stanu: {len(fr['fresh'])}" + (" (przebieg bazowy źródła)." if fr["baseline"] else "."))
+        L.append("")
+        if fr["tops"]:
+            L += ["| karta | model | najlepszy wiersz | warunki źródła | nasz pomiar (inne warunki!) |", "|---|---|---|---|---|"]
+            for card, mk, r, o in fr["tops"]:
+                L.append(f"| {card['label']} | {mk} | {r['tok']:.1f} · {one_line(r['engine_raw'], 40)} · {r['quant'] or '?'} · {r['date']} | {one_line(r['cond'], 140)} | "
+                         + (f"{o['tok']} ({one_line(o['metric'], 60)})" if o else "brak") + " |")
+            L.append("")
+        if fr["fresh"] and not fr["baseline"]:
+            L += [f"- {r['gpu']} / {r['mkey']}: {r['tok']:.1f} t/s · {r['engine_raw']} · {r['quant'] or '?'} · {r['date']}" for r in sorted(fr["fresh"], key=lambda x: -x["tok"])[:15]]
+            L.append("")
+    return L
+
+
 # ---------------------------------------------------------------- raport
 
 def files_digest(cfg: dict) -> dict[str, str]:
@@ -617,6 +857,10 @@ def render(cfg: dict, items: list[Item], report: dict, first: bool) -> str:
     else:
         L += ["Brak zmian.", ""]
 
+    # Otwarte rankingi
+    if report.get("feeds"):
+        L += render_feeds(cfg, report, top, ranked)
+
     # HF
     L += ["## Hugging Face: nowe repo GGUF (" + ", ".join(cfg["hf"]["authors"]) + ")", ""]
     if report.get("hf"):
@@ -638,10 +882,10 @@ def update_index(top: list[Item], fname: str, n: int) -> Path:
             "Raporty dzienne `tools/compwatch/compwatch.py` (cron 06:30, `nice -n 19`). Jedna linia na raport; "
             "pierwsza pozycja „Do sprawdzenia” w skrócie.\n\n")
     lines = idx.read_text().splitlines() if idx.exists() else head.rstrip("\n").split("\n") + [""]
-    date = fname[:10]
-    lines = [ln for ln in lines if not ln.startswith(f"- [{date}]")]
+    label = fname.removesuffix(".md")
+    lines = [ln for ln in lines if not ln.startswith(f"- [{label}](")]
     lead = re.sub(r"\*\*|\[|\]\([^)]*\)", "", top[0].title) if top else "brak pozycji"
-    lines.append(f"- [{date}]({fname}): {n} pozycji; top: {one_line(lead, 160)}")
+    lines.append(f"- [{label}]({fname}): {n} pozycji; top: {one_line(lead, 160)}")
     idx.write_text("\n".join(lines).rstrip("\n") + "\n")
     return idx
 
@@ -691,7 +935,7 @@ def main() -> int:
     sf = CACHE / "state.json"
     state = json.loads(sf.read_text()) if sf.exists() else {"version": 1}
     first = not state.get("last_report")
-    report = {"notes": [], "lmx_requests": 0, "gh_calls": 0, "hf_calls": 0}
+    report = {"notes": [], "lmx_requests": 0, "gh_calls": 0, "hf_calls": 0, "feed_requests": {}, "feeds": []}
     items: list[Item] = []
 
     dig = files_digest(cfg)
@@ -705,27 +949,35 @@ def main() -> int:
     lmx_analyze(cfg, state, rows, items, report, first)
     github_scan(cfg, state, items, report, first)
     hf_scan(cfg, state, items, report, first)
+    feeds_scan(cfg, state, items, report)
 
     significant = any(x.score >= cfg["report_min_score"] for x in items)
     last = dt.date.fromisoformat(state["last_report"]) if state.get("last_report") else None
     digest = bool(items) and last is not None and (TODAY - last).days >= cfg["digest_days"]
     write = first or significant or digest or a.force
-    log(f"pozycje: {len(items)}, istotne: {significant}, lmx zapytań: {report['lmx_requests']}, gh: {report['gh_calls']}, hf: {report['hf_calls']}")
+    log(f"pozycje: {len(items)}, istotne: {significant}, lmx zapytań: {report['lmx_requests']}, gh: {report['gh_calls']}, hf: {report['hf_calls']}, "
+        f"feeds: {report['feed_requests']}")
 
     if a.dry_run:
         sys.stdout.write(render(cfg, items, report, first))
         return 0
     if not write:
-        # Zapisujemy tylko licznik zapytań LocalMaxxing; drobne delty kumulują się do raportu.
+        # Zapisujemy tylko liczniki zapytań (LocalMaxxing, feeds); drobne delty kumulują się do raportu.
         old = json.loads(sf.read_text()) if sf.exists() else {"version": 1}
         old.setdefault("lmx", {})["requests"] = state["lmx"]["requests"]
+        for name, fs in state.get("feeds", {}).items():
+            old.setdefault("feeds", {}).setdefault(name, {})["requests"] = fs.get("requests", {})
         old["last_run"] = NOW.isoformat()
         sf.write_text(json.dumps(old, ensure_ascii=False, indent=1))
         log("brak istotnej delty – bez raportu")
         return 0
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
-    fname = f"{TODAY.isoformat()}.md"
+    # Drugi raport tego samego dnia (np. nowe źródło) nie nadpisuje pierwszego.
+    fname, n = f"{TODAY.isoformat()}.md", 1
+    while state.get("last_report") == TODAY.isoformat() and (OUT_DIR / fname).exists():
+        n += 1
+        fname = f"{TODAY.isoformat()}-{n}.md"
     (OUT_DIR / fname).write_text(render(cfg, items, report, first))
     ranked = sorted(items, key=lambda x: -x.score)
     idx = update_index(ranked, fname, len(items))

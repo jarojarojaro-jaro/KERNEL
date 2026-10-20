@@ -2,7 +2,7 @@
 
 Decyzja: [`wiki/decyzje/2026-10-20-bez-publikacji-localmaxxing.md`](../../wiki/decyzje/2026-10-20-bez-publikacji-localmaxxing.md). Nie publikujemy na LocalMaxxing. Czytamy, co osiągają inni, i każdą nowość zamieniamy w eksperyment.
 
-Skrypt `compwatch.py` uruchamia się raz dziennie i zbiera trzy rodzaje danych:
+Skrypt `compwatch.py` uruchamia się raz dziennie i zbiera cztery rodzaje danych:
 
 1. **LocalMaxxing** (publiczne API do odczytu, [R32d](../../product/research/32d-localmaxxing.md)). Pobiera runy dla naszych kart i modeli i porównuje je ze stanem z poprzedniego raportu. Wykrywa:
    - runy szybsze od naszych liczb (`config.json → nasze`, liczby z `wiki/REKORDY.md` i raportów `31-*`);
@@ -10,6 +10,16 @@ Skrypt `compwatch.py` uruchamia się raz dziennie i zbiera trzy rodzaje danych:
    - silniki, których wcześniej nie było w bazie (także forki, rozpoznawane po `engineRepository`).
 2. **GitHub**. Dla śledzonych repo sprawdza wydania, tagi i HEAD domyślnej gałęzi. Porównuje je z commitem zapisanym w `wiki/ZRODLA.md` albo w sekcji „Do bazy wiedzy” raportów `product/research/*.md` (liczy się najnowszy commit, który istnieje w repo) i z HEAD z ostatniego raportu. Do raportu trafiają fragmenty notatek wydań i nagłówki commitów zawierające słowa kluczowe.
 3. **Hugging Face**. Nowe repo GGUF od `unsloth`, `bartowski` i `ggml-org` dla modeli z `config.json → models`. W raporcie jest tylko tytuł i data.
+4. **Otwarte rankingi** ([R34](../../product/research/34-zrodla-benchmarkow.md)). To otwarte zbiory danych z publicznym odczytem. Logika różnicowania jest ta sama co dla LocalMaxxing: nowe wiersze dla naszych kart i modeli, nowy najlepszy wiersz dla pary karta/model, wynik lepszy od `nasze` oraz nowy silnik. Każda sekcja raportu podaje źródło i licencję.
+
+   | źródło | plik | licencja | zapytań dziennie |
+   |---|---|---|---|
+   | llm-speed.com | `data/open-dataset.json` (wskaźnik wersji), potem `data/llm-speed-runs-<wersja>.json` tylko przy nowej wersji | CC BY 4.0 | 1–2 |
+   | local-llm-benchmarks.dev (kyuz0; R9700, Strix Halo) | `data/results.json` (4.4 MB, pobieranie warunkowe przez ETag) | brak (strona i repo bez LICENSE): tylko analiza wewnętrzna, w raporcie link zamiast republikacji | 1 |
+   | llmcheck.net (Apple Silicon) | `data/v1/benchmarks.json`, tylko wiersze `sourced` i `community` (bez estymat) | CC BY 4.0 | 1 |
+   | LLM Configurator | `measured-benchmarks.json` | CC BY 4.0 | 1 |
+
+   Pominięte źródła z R34 to te bez API odczytu albo bez zgody w regulaminie: llm-bench.io (`/api` zabronione w robots), llamabench.ai (brak API odczytu), asiai (403), oMLX (brak JSON), OpenBenchmarking (brak licencji, główna domena 403), Anubis (dane bez licencji, metadane niewiarygodne) i Token Atlas (agregat cudzych danych bez licencji).
 
 Wynik to `product/research/watch/YYYY-MM-DD.md` plus jedna linia w `product/research/watch/INDEX.md`. Pliki powstają tylko wtedy, gdy jest delta. Potem skrypt robi `git pull --rebase --autostash` (tylko gdy origin jest do przodu), commit tych dwóch plików i push. Na górze raportu jest sekcja **„Do sprawdzenia”** z rankingiem według wagi. Każda liczba wydajności dostaje jedną linię „Jabłka do jabłek” z warunkami po obu stronach.
 
@@ -39,6 +49,7 @@ Harmonogram użytkownika to crontab, codziennie o 06:30 czasu lokalnego, z niski
 - **LocalMaxxing:** najwyżej `daily_max` (10) zapytań na dobę. Licznik jest w stanie, a między zapytaniami są 2 s przerwy. Dziś zapytań jest 7. Dane należą do autorów i nie mają licencji, więc służą tylko do wewnętrznej analizy i nie trafiają do produktu (R32d §2).
 - **GitHub:** potrzebny jest zalogowany `gh` (`~/.local/bin/gh`). Przebieg to około 10 zapytań GraphQL w paczkach. Bez logowania sekcja GitHub jest pomijana z adnotacją w raporcie, bo limit 60 zapytań na godzinę nie wystarcza na pełny przegląd.
 - **HF:** 3 zapytania do publicznego API (`/api/models?author=…&filter=gguf&sort=createdAt`).
+- **Otwarte rankingi:** najwyżej 5 zapytań dziennie łącznie (limit `daily_max` dla każdego źródła w `feeds`). Pobieranie jest warunkowe (`If-None-Match` / `If-Modified-Since`). Surowe pliki leżą w `~/.cache/compwatch/feeds/<źródło>/` i są kasowane po 30 dniach.
 - Kiedy powstaje raport:
   - pierwszy przebieg (stan bazowy);
   - dowolna pozycja z wagą ≥ `report_min_score`;
@@ -59,7 +70,8 @@ Wszystko jest w `config.json`. Kodu nie trzeba ruszać.
 - **Model:** dopisz do `models` wpis `{"key", "re", "tier"}`, gdzie `tier` to `core`, `catalog` albo `candidate`. Ten sam regex działa dla LocalMaxxing (`hfId` modelu bazowego) i dla HF (id repo i tag `base_model`). Modele z katalogu produktu (`app/landing/src/lib/data/models.json`), które nie pasują do żadnego wzorca, są wypisywane w sekcji „Uwagi”.
 - **Nasz pomiar:** dopisz do `nasze` wpis `{"card", "model", "tok", "metric", "src"}`. `metric` opisuje warunki i trafia do linii „Jabłka do jabłek”, a `src` ma postać `plik:linia`.
 - **Zapytanie LocalMaxxing:** dopisz do `localmaxxing.queries` wpis `{"name", "params"}`. Parametry są takie jak w `GET /api/leaderboard`: `hfId`, `hardwareName`, `verifiedRun`, `since`, `limit` ≤ 200. Łącznie najwyżej 10 dziennie.
-- **Nowy typ źródła** (np. otwarty zbiór JSON innego rankingu): dopisz funkcję `*_scan(cfg, state, items, report, first)` wzorem `hf_scan`. Ma tworzyć obiekty `Item(waga, sekcja, tytuł, linia_jabłka_do_jabłek, następny_krok)` i trzymać stan w `state[<klucz>]`. Wywołaj ją w `main()`. Przed dodaniem sprawdź licencję i `robots.txt` źródła.
+- **Otwarty ranking (JSON):** dopisz do `feeds` wpis `{"name", "type", "url", "home", "licence", "attribution", "w", "daily_max"}`. Jeśli żaden istniejący adapter nie pasuje, dopisz `feed_<typ>(feed, fs, report)` w `compwatch.py` i zarejestruj go w `FEED_ADAPTERS`. Adapter pobiera dane przez `feed_get` i zwraca wiersze `{id, date, tok, model, gpu, multi, engine, engine_raw, quant, cond, url}`, gdzie `cond` to warunki pomiaru źródła używane w linii „jabłka do jabłek”. Przed dodaniem sprawdź licencję i `robots.txt` źródła.
+- **Nowy typ źródła** (inny niż ranking z wierszami pomiarów): dopisz funkcję `*_scan(cfg, state, items, report, first)` wzorem `hf_scan`. Ma tworzyć obiekty `Item(waga, sekcja, tytuł, linia_jabłka_do_jabłek, następny_krok)` i trzymać stan w `state[<klucz>]`. Wywołaj ją w `main()`.
 
 ## Wagi („Do sprawdzenia”)
 
@@ -72,5 +84,6 @@ Wszystko jest w `config.json`. Kodu nie trzeba ruszać.
 | wydanie w repo | tier (A 50, B 30, C 15) + 2 za każde słowo kluczowe (max +15) |
 | same commity | 0.4 × tier + 3 za każdy nagłówek ze słowem kluczowym (max +20) |
 | nowe repo GGUF (core / catalog / candidate) | 30 / 15 / 10 |
+| otwarty ranking: wynik lepszy od `nasze` / nowy najlepszy wiersz / nowy silnik | jak dla LocalMaxxing × waga źródła `w` (llm-speed 1.0, kyuz0 0.9, llmcheck 0.6, LLM Configurator 0.5) / 45 × karta × tier × `w` / 25 × `w` |
 
 Tier modelu: core 1.0, catalog 0.6, candidate 0.4.
