@@ -362,9 +362,7 @@
 		border-radius: 3px;
 	}
 	.nm {
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		overflow-wrap: anywhere;
 	}
 	.ms {
 		color: var(--text-mute);

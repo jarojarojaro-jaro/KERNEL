@@ -422,7 +422,9 @@
 		font-size: clamp(2.6rem, 2rem + 2vw, 3.8rem);
 		font-weight: 650;
 		letter-spacing: -0.05em;
-		line-height: 1;
+		line-height: 1.1;
+		/* room for the ink of the last digit (negative tracking) */
+		padding-inline-end: 0.1em;
 		background: var(--heat-ramp-hot);
 		-webkit-background-clip: text;
 		background-clip: text;

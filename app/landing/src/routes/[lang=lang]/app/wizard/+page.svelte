@@ -583,7 +583,10 @@
 	}
 	@media (max-width: 480px) {
 		.lbl {
+			min-width: 0;
 			font-size: var(--fs-xs);
+			overflow-wrap: anywhere;
+			hyphens: auto;
 		}
 	}
 </style>

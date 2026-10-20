@@ -125,9 +125,11 @@
 		font-weight: 650;
 		color: var(--text-hi);
 		text-wrap: balance;
+		overflow-wrap: break-word;
+		hyphens: auto;
 	}
 	.hero .ch-title {
-		font-size: clamp(2.4rem, 1.4rem + 4.4vw, 5.2rem);
+		font-size: clamp(2rem, 0.9rem + 5.5vw, 5.2rem);
 		max-width: 18ch;
 	}
 	.ch-lead {

@@ -47,7 +47,7 @@
 	<section class="stack sec" aria-labelledby="tui-title" style="--stack: var(--sp-3)">
 		<h2 id="tui-title" class="overline">{t.preview}</h2>
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable region must be keyboard-focusable, WCAG 2.1.1) -->
-		<pre class="tui" tabindex="0" aria-label={t.previewNote}><code>{lang === 'pl' ? tuiPl : tuiEn}</code></pre>
+		<pre class="tui" tabindex="0" aria-label={t.previewNote} data-clip-ok><code>{lang === 'pl' ? tuiPl : tuiEn}</code></pre>
 		<p class="source">{t.previewNote} <a href={href(lang, '/methodology')}>{ob[lang].result.howTitle} →</a></p>
 	</section>
 </Shell>
@@ -87,6 +87,7 @@
 	}
 	.then dt code {
 		color: var(--accent-ink);
+		overflow-wrap: anywhere;
 	}
 	.then dd {
 		margin: 0;

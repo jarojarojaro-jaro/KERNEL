@@ -113,9 +113,7 @@
 	.cd {
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
+		overflow-wrap: anywhere;
 	}
 	.bars {
 		display: grid;

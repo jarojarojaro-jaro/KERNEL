@@ -88,6 +88,8 @@
 
 	.stage {
 		display: grid;
+		/* a wide child (TUI preview) must scroll, not widen the column */
+		grid-template-columns: minmax(0, 1fr);
 		justify-items: center;
 		gap: var(--sp-10);
 	}

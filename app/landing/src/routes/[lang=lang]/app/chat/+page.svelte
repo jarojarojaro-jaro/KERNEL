@@ -165,6 +165,7 @@
 	}
 	.chat {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		gap: var(--sp-3);
 		min-width: 0;
 		padding: var(--sp-5);
@@ -331,6 +332,20 @@
 	@media (max-width: 520px) {
 		.ai {
 			grid-template-columns: auto 1fr;
+		}
+		.chat {
+			padding: var(--sp-4);
+		}
+		.chat-bar .segmented {
+			display: flex;
+			width: 100%;
+		}
+		.chat-bar .segmented label {
+			flex: 1 1 auto;
+		}
+		.chat-bar .segmented span {
+			padding-inline: 0.5rem;
+			text-align: center;
 		}
 		.dismiss {
 			grid-column: 2;
