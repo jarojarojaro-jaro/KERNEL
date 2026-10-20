@@ -1,8 +1,8 @@
 ---
 typ: meta
 tags: [meta]
-aktualizacja: 2026-10-19
-zrodlo: wiki/tools/wiki.py
+aktualizacja: 2026-10-20
+zrodlo: wiki/tools/wiki.py; wiki/tools/site/build.py
 status: aktualne
 ---
 # Konwencje wiki
@@ -44,6 +44,7 @@ Treść 50–200 słów: liczby z datą i warunkami pomiaru.
 4. **Nowy najlepszy wynik → od razu wiersz w [[REKORDY]]** (data, warunki: skrypt, T, kontekst, flagi, build/commit; źródło `plik:wiersz`; czy w produkcji) – decyzja użytkownika 2026-10-19.
 5. Nowa liczba w notatce → wiersz w [[AUDYT]] (notatka, liczba, wiersz źródła, OK/poprawione); `AUDYT.md`, `REKORDY.md`, `ZRODLA.md` i `log.md` są zwolnione z limitu słów.
 6. **Nie badamy drugi raz tego samego** (decyzja użytkownika 2026-10-19). Przed każdym researchem: `kb search <nazwa/URL>` + rejestr źródeł [[ZRODLA]]. Jeśli źródło już było badane → tylko DELTA od zapisanej wersji/commitu/daty (co nowego), bez powtarzania wniosków. Po researchu dopisz wiersz do [[ZRODLA]] (źródło, wersja/commit, data, raport, werdykt, co sprawdzić następnym razem).
+7. Aplikacja WWW bazy (strona główna, kategorie, wyszukiwarka, oś czasu, graf, raporty): `python3 tools/site/build.py` (kilka sekund) → `~/.cache/wiki-graph` (serwowane w LAN); cron przebudowuje ją codziennie zaraz po compwatch.
 
 ## Powiązane
 - [[index|Strona główna]]

@@ -170,6 +170,9 @@ Nowe: [[rtx-4060-ti]], [[raport-29-4060ti]], [[raport-24w-pair2]], [[2026-10-20-
 ## [2026-10-20] update | Wyniki rano: topka-next zainstalowana, PAIR2 odrzucone
 [[2026-10-20-podsumowanie-nocy]]: topka-next jako `~/llama-topka` (host-gap dla Qwen), `mvs` 420.2 → 433.0 t/s (+3.0%), md5 OK. [[raport-24w-pair2]]: +0.4% → odrzucone; [[wyniki-negatywne]], [[lekcja-wyrazna-wygrana-albo-nic]]. [[REKORDY]]: XTX `mvs` 433.0 i czat 114.6 (`hg_ab.sh`), oba w produkcji. [[AUDYT]] uzupełniony.
 
+## [2026-10-20] narzędzia | Aplikacja WWW bazy zamiast graph.py
+`tools/site/build.py` (dashboard, kategorie, notatki z backlinkami i lokalnym grafem, wyszukiwarka, oś czasu, graf skupisk, tabele REKORDY/ZRODLA, jasny/ciemny, telefon) → `~/.cache/wiki-graph`; `tools/graph.py` usunięty, cron codziennie 6:40. Zrzuty: `app/screens/kb/`. [[KONWENCJE]] → Utrzymanie.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
