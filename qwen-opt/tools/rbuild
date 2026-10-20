@@ -61,6 +61,23 @@ cmake_opts() {
 }
 
 build_local() {
+    # 2026-10-19: silent local fallbacks held the shared quiet lock for ~20-50 min and stalled the whole GPU queue
+    # twice. Local builds now only on explicit request (--local or RBUILD_LOCAL_OK=1); otherwise fail loudly.
+    if [ "$1" != "--local" ] && [ "${RBUILD_LOCAL_OK:-0}" != 1 ]; then
+        echo "rbuild: $1 -> NOT building locally. Bring the build server up: ~/qwen-opt/cloud/buildfarm.sh find, then" \
+             "~/qwen-opt/cloud/buildfarm.sh up <offer>; retry. (Local anyway: --local or RBUILD_LOCAL_OK=1.)" >&2
+        exit 3
+    fi
+    # 2026-10-20: `flock /tmp/quiet.lock rbuild --local …` deadlocked (outer exclusive lock vs cpuheavy's shared one) and
+    # stalled the GPU queue; refuse when an ancestor already holds quiet.lock through flock.
+    local p=$$
+    while [ "$p" -gt 1 ]; do
+        if tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -q '^flock .*quiet\.lock'; then
+            echo "rbuild: an ancestor (pid $p) holds /tmp/quiet.lock via flock -> would deadlock with cpuheavy; run rbuild WITHOUT flock" >&2
+            exit 4
+        fi
+        p=$(awk '{print $4}' "/proc/$p/stat" 2>/dev/null || echo 1)
+    done
     say "building LOCALLY ($1): cpuheavy --quiet, -j2"
     [ -f "$bd/CMakeCache.txt" ] && [ ${#extra[@]} -eq 0 ] || { mapfile -t o < <(cmake_opts); cpuheavy cmake -S "$wt" -B "$bd" "${o[@]}"; }
     local tgt=(); [ ${#targets[@]} -eq 0 ] || tgt=(--target "${targets[@]}")
