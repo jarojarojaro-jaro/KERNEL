@@ -19,3 +19,4 @@ Konsekwencje:
 - [[2026-10-20-szybkie-iteracje]]
 - [[lekcja-vast-transfer-kosztuje]]
 - [[qwen3-8-27b]]
+- [[2026-10-20-chmura-wstrzymana]]
