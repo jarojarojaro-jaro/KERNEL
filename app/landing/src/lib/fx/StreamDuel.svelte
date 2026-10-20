@@ -18,23 +18,13 @@
 	 * steel) and with it (hot, a turning heat edge), at exactly the measured median t/s; the hot side
 	 * emits in steps of the measured MTP tokens per step. Each pane follows its newest line and wraps
 	 * from the end of the answer straight into the next copy, so the stream is endless; under it a
-	 * counter of tokens written grows, ours at the measured ratio, with our live lead. Used by the
-	 * hero (with a small speedometer in each header, `dial`) and the final CTA.
+	 * counter of tokens written grows, ours at the measured ratio, with our live lead. The final CTA.
 	 *
 	 * The text is an example, the pace is measured. Every token is laid out from the first frame
 	 * (two stacked copies per pane); writing only toggles classes, the window moves by transform.
 	 * The loop runs only while on screen and not paused, and continues where it stopped. SSR, no JS
 	 * and reduced motion: one static frame `T0` seconds in (ours has written as much more as it is
-	 * faster), no loop. With JS the dials read 0 until the loop first runs, then climb to the
-	 * measured speed and stay there, never still: ours swings ±7% fast with a twitch on every MTP
-	 * step (alternating sign), the typical app wobbles ±3% slowly; both are zero-mean, so the
-	 * needle's average is exactly the measured median.
-	 *
-	 * `verdict` (the hero): each rate sits in its header's top-right corner, and above the panes a
-	 * band states the result: two speed bars on one scale (the typical app's 35,9 is 31% of our
-	 * 114,8) with the speed-up in large heat numerals at the tip of ours. The bars draw in once and
-	 * one slow light sweep runs along ours when the stream starts; then everything stays still.
-	 * Phones: the panes stack under the band.
+	 * faster), no loop.
 	 */
 	import type { Snippet } from 'svelte';
 	import { onMount, untrack } from 'svelte';
@@ -42,8 +32,7 @@
 	import { TOK_PER_WORD } from '$lib/estimator';
 	import { num } from '$lib/i18n';
 	import { visible } from './actions';
-	import { onFrame, reducedMotion, Spring } from './motion';
-	import Speedo from './Speedo.svelte';
+	import { onFrame, reducedMotion } from './motion';
 
 	let {
 		lanes,
@@ -52,11 +41,7 @@
 		lang,
 		labels,
 		summary,
-		caption,
-		dial,
-		countUp = false,
-		verdict = false,
-		onstart
+		caption
 	}: {
 		/** [cold, hot]. */
 		lanes: DuelLane[];
@@ -69,14 +54,6 @@
 		summary: string;
 		/** Left of the pause button, e.g. card · model · a note. */
 		caption?: Snippet;
-		/** A small speedometer in each pane header, on this scale. */
-		dial?: { max: number; redline: number };
-		/** Count the speed-up up from 1× when the stream first runs. */
-		countUp?: boolean;
-		/** Rates in the header corners, the speed-up as a bar band above the panes. */
-		verdict?: boolean;
-		/** The stream ran its first frame (e.g. a one-time flare). */
-		onstart?: () => void;
 	} = $props();
 
 	/** The answer as token-sized pieces (count ≈ words × TOK_PER_WORD). */
@@ -102,15 +79,10 @@
 	/** The static frame: ours is 90% through the answer, the slower side further back. */
 	const T0 = $derived((0.9 * N) / hot.tps);
 	const first = $derived(lanes.map((l) => written(l, T0)));
-	const step = $derived(dial ? (dial.max <= 120 ? 20 : dial.max <= 250 ? 50 : 100) : 20);
-
 	let playing = $state(true);
 	let onScreen = $state(false);
-	/** The loop has run at least one frame (count-up, dial climb). */
-	let ran = $state(false);
 	let feeds: HTMLElement[] = $state([]);
 	let counts: HTMLElement[] = $state([]);
-	let dials: Speedo[] = $state([]);
 	let aheadEl: HTMLElement | undefined = $state();
 
 	// per lane: spans, their line tops (cached on resize), lit count, window shift
@@ -123,12 +95,6 @@
 	let shown: number[] = [];
 	let y: number[] = [0, 0];
 	let clock = 0;
-	let live = 0;
-	// svelte-ignore state_referenced_locally
-	const springs = lanes.map((l) => (l.id === 'hot' ? new Spring(0, 320, 16) : new Spring(0, 30, 10)));
-	/** Per lane: MTP steps seen and the step twitch (alternating sign, decays in ~40 ms). */
-	const stepsSeen = [0, 0];
-	const kick = [0, 0];
 
 	function measure() {
 		feeds.forEach((f, i) => {
@@ -182,16 +148,6 @@
 			place(i);
 		});
 	}
-	/** Dial target: the median × (1 + a × m), m ∈ [−1, 1] from three sines (zero mean); ours ±7%
-	 * at ~1–5 Hz, the typical app ±3% at ~0.1–0.7 Hz. */
-	function readout(i: number, time: number) {
-		const p = i * 2.1 + 0.7;
-		const hot = lanes[i].id === 'hot';
-		const [a, w] = hot ? [0.07, 6.3] : [0.03, 0.9];
-		const m = 0.5 * Math.sin(time * w + p) + 0.3 * Math.sin(time * w * 2.13 + 2 * p) + 0.2 * Math.sin(time * w * 4.7 + 3 * p);
-		return lanes[i].tps * (1 + a * m);
-	}
-
 	const rm = typeof window !== 'undefined' && reducedMotion();
 	onMount(() => {
 		spans = feeds.map((f) => Array.from(f.querySelectorAll<HTMLElement>('.tk')));
@@ -200,8 +156,6 @@
 		clock = T0;
 		measure();
 		seek(T0, true);
-		// reduced motion: the dials rest on the measured speed; otherwise they read 0 until the loop runs
-		dials.forEach((d, i) => d?.set(rm ? lanes[i].tps : 0));
 		const ro = new ResizeObserver(() => {
 			measure();
 			lanes.forEach((_, i) => {
@@ -219,28 +173,8 @@
 		return untrack(() =>
 			onFrame((dt) => {
 				const d = Math.min(dt, 0.1);
-				if (!ran) {
-					ran = true;
-					onstart?.();
-				}
 				clock += d;
-				live += d;
 				seek(clock, false, d);
-				for (let i = 0; i < dials.length; i++) {
-					const l = lanes[i];
-					const s = springs[i];
-					s.target = readout(i, live);
-					s.step(d);
-					// our side twitches on every MTP step: ±2,5%, alternating, so it averages out
-					const steps = Math.floor((l.tps * live) / l.burst);
-					if (l.id === 'hot' && steps > stepsSeen[i]) {
-						const sign = steps % 2 ? 1 : -1;
-						kick[i] = sign * 0.025 * l.tps * (0.7 + 0.3 * Math.abs(Math.sin(steps * 1.7)));
-					}
-					stepsSeen[i] = steps;
-					kick[i] *= Math.exp(-d / 0.04);
-					dials[i]?.set(Math.max(0, s.x + kick[i]));
-				}
 			})
 		);
 	});
@@ -248,38 +182,18 @@
 
 <figure class="duel" class:run={playing && onScreen && !rm} use:visible={(v) => (onScreen = v)}>
 	<p class="sr-only">{summary}</p>
-	{#if verdict}
-		{@const c = lanes[0]}
-		<div class="verdict" class:drawn={ran} style="--share:{((100 * c.tps) / hot.tps).toFixed(2)}%" aria-hidden="true">
-			<div class="bars">
-				<p class="vl vc"><span>{c.tag}</span><b>{num(c.tps, lang)} t/s</b></p>
-				<div class="track tc"><span class="bar"></span></div>
-				<p class="vl vh"><span>{hot.tag}</span><b>{num(hot.tps, lang)} t/s</b></p>
-				<div class="track th"><span class="trail"></span><span class="bar"></span></div>
-			</div>
-			<p class="x"><span class="fx">{labels.faster}</span><Ratio value={gain} {lang} size="xl" replay={countUp && ran ? 1 : 0} duration={1400} /></p>
-		</div>
-	{/if}
-	<div class="panes" class:stacked={verdict} aria-hidden="true">
+	<div class="panes" aria-hidden="true">
 		{#each lanes as l, i (l.id)}
 			{@const d = headOf(first[i])}
 			<div class="pane {l.id}">
 				{#if l.id === 'hot'}<span class="edge"></span>{/if}
 				<div class="face">
 					<header class="ph">
-						<div class="row" class:dialed={!!dial} class:corner={verdict}>
-							{#if dial}
-								<div class="gauge">
-									<Speedo bind:this={dials[i]} value={l.tps} max={dial.max} redline={dial.redline} {step} tone={l.id} compact />
-								</div>
-							{/if}
-							<div class="info">
-								<p class="tag"><span class="dot"></span>{l.tag}</p>
-								<p class="who">{l.who}</p>
-								{#if !verdict}<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>{/if}
-								{#if l.id === 'hot' && !verdict}<p class="gain"><Ratio value={gain} {lang} size="sm" replay={countUp && ran ? 1 : 0} duration={1400} /><span>{labels.faster}</span></p>{/if}
-							</div>
-							{#if verdict}<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>{/if}
+						<div class="info">
+							<p class="tag"><span class="dot"></span>{l.tag}</p>
+							<p class="who">{l.who}</p>
+							<p class="rate"><b>{num(l.tps, lang)}</b><span>t/s</span></p>
+							{#if l.id === 'hot'}<p class="gain"><Ratio value={gain} {lang} size="sm" /><span>{labels.faster}</span></p>{/if}
 						</div>
 					</header>
 					<div class="win" data-clip-ok>
@@ -388,18 +302,8 @@
 	.ph {
 		padding: var(--sp-4) var(--sp-4) var(--sp-3);
 		border-bottom: 1px solid rgb(255 255 255 / 0.07);
-		/* the big rate and the dial scale with the header (not on .pane: containment breaks its subgrid) */
+		/* the big rate scales with the header (not on .pane: containment breaks its subgrid) */
 		container-type: inline-size;
-	}
-	/* with a dial: the small speedometer left of the header text */
-	.row.dialed {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		align-items: center;
-		gap: var(--sp-3) var(--sp-4);
-	}
-	.gauge {
-		width: clamp(3.75rem, 20cqi, 5.75rem);
 	}
 	.info {
 		display: flex;
@@ -493,10 +397,7 @@
 		letter-spacing: 0.1em;
 		color: var(--text-mute);
 	}
-	/* with a dial the rate has less room: it scales with the header text column instead */
-	.dialed .rate b {
-		font-size: clamp(1.6rem, 12cqi, 3.2rem);
-	}
+
 
 	/* the stream window: the newest line sits at the bottom, older lines fade out at the top */
 	.win {
@@ -640,190 +541,7 @@
 		}
 	}
 
-	/* ---- verdict mode (the hero): rates in the header corners, the result band above the panes ---- */
-	.row.corner {
-		grid-template-columns: auto minmax(0, 1fr) auto;
-		align-items: center;
-	}
-	.corner .rate {
-		align-self: start;
-		justify-self: end;
-		margin-top: 0 !important;
-		flex-direction: column;
-		align-items: flex-end;
-		gap: 0.1rem;
-	}
-	.corner .rate b {
-		font-size: clamp(1.4rem, 8.5cqi, 2.5rem);
-		min-width: 0;
-	}
-	/* a narrow header (tablets): tighter gaps and tracking, so the labels never reach the rate */
-	@container (max-width: 18rem) {
-		.row.corner {
-			column-gap: var(--sp-2);
-		}
-		.corner .gauge {
-			width: 3.25rem;
-		}
-		.corner .tag {
-			letter-spacing: 0.05em;
-			gap: 0.3rem;
-		}
-	}
-	/* the result: two bars on one scale, the speed-up in large numerals at the tip of ours */
-	.verdict {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		align-items: end;
-		column-gap: clamp(0.75rem, 1.5vw, 1.5rem);
-		margin-bottom: clamp(0.75rem, 2vh, 1.5rem);
-	}
-	.bars {
-		display: grid;
-		gap: 0.3rem;
-		min-width: 0;
-		padding-bottom: 0.15rem;
-	}
-	.vl {
-		margin: 0;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 0 0.6rem;
-		align-items: baseline;
-		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-		color: var(--text-mute);
-	}
-	.vl span,
-	.vl b {
-		white-space: nowrap;
-	}
-	.vl b {
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		color: var(--before);
-	}
-	.vl.vh {
-		margin-top: 0.45rem;
-		color: var(--heat-4);
-	}
-	.vl.vh b {
-		color: var(--heat-5);
-	}
-	.track {
-		position: relative;
-		height: 6px;
-		display: flex;
-		align-items: center;
-		background: linear-gradient(rgb(255 255 255 / 0.07), rgb(255 255 255 / 0.07)) 0 50% / 100% 1px no-repeat;
-	}
-	.bar {
-		display: block;
-		height: 3px;
-		border-radius: 3px;
-		transform-origin: 0 50%;
-	}
-	.tc .bar {
-		width: var(--share);
-		background: linear-gradient(90deg, rgb(125 135 148 / 0.35), var(--before));
-	}
-	/* ours: a heat streak ending in a white-hot tip, right under the numerals */
-	.th .bar {
-		position: relative;
-		width: 100%;
-		height: 5px;
-		overflow: hidden;
-		background: linear-gradient(90deg, rgb(226 64 28 / 0.15), var(--heat-2) 30%, var(--heat-3) 65%, var(--heat-4) 90%, var(--heat-5));
-		box-shadow:
-			0 0 10px rgb(255 122 26 / 0.55),
-			6px 0 18px rgb(255 243 214 / 0.35);
-	}
-	/* the speed lines it left behind: two hairlines above and below, fading towards the start */
-	.trail {
-		position: absolute;
-		inset: -5px 0;
-		background:
-			linear-gradient(90deg, transparent 45%, rgb(255 193 90 / 0.5)) 0 0 / 100% 1px no-repeat,
-			linear-gradient(90deg, transparent 62%, rgb(255 193 90 / 0.4)) 0 100% / 100% 1px no-repeat;
-		transform-origin: 0 50%;
-	}
-	/* one slow sweep of light along our bar when the stream starts, then still */
-	.th .bar::after {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.9) 50%, transparent);
-		transform: translate3d(-100%, 0, 0);
-	}
-	.x {
-		margin: 0;
-		display: grid;
-		justify-items: start;
-		line-height: 1;
-	}
-	.verdict .x :global(.speedup) {
-		--rx-fs: clamp(3.25rem, 1.6rem + 4.2vw, 6.25rem);
-		background: linear-gradient(180deg, #fff 6%, var(--heat-5) 30%, var(--heat-4) 55%, var(--heat-3) 80%, var(--heat-2));
-		-webkit-background-clip: text;
-		background-clip: text;
-		filter: drop-shadow(0 0 18px rgb(255 122 26 / 0.45));
-		/* the numerals sit on the line of our bar */
-		margin-bottom: -0.12em;
-	}
-	.fx {
-		font-family: var(--font-mono);
-		font-size: var(--fs-xs);
-		font-weight: 600;
-		letter-spacing: 0.18em;
-		text-transform: uppercase;
-		color: var(--heat-4);
-		padding-left: 0.2em;
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		:global(html.js) .verdict:not(.drawn) :is(.bar, .trail) {
-			transform: scaleX(0);
-		}
-		.drawn :is(.bar, .trail) {
-			transition: transform 1.4s var(--ease-out);
-		}
-		.drawn .th .bar::after {
-			animation: sweep 1.6s var(--ease-in-out) 1.2s both;
-		}
-	}
-	@keyframes sweep {
-		to {
-			transform: translate3d(100%, 0, 0);
-		}
-	}
-	/* phones and small tablets: the panes stack under the band */
-	@media (max-width: 720px) {
-		.panes.stacked {
-			grid-template-columns: minmax(0, 1fr);
-			grid-template-rows: repeat(6, auto);
-		}
-		.stacked .pane.cold {
-			grid-row: 1 / span 3;
-		}
-		.stacked .pane.hot {
-			grid-row: 4 / span 3;
-			margin-top: var(--sp-4);
-		}
-	}
-	/* a narrow header: the dial sits above the header text */
-	@container (max-width: 14rem) {
-		.row.dialed {
-			grid-template-columns: minmax(0, 1fr);
-			justify-items: start;
-		}
-		.gauge {
-			width: 4.25rem;
-		}
-		.dialed .rate b {
-			font-size: clamp(1.6rem, 15cqi, 3.2rem);
-		}
-	}
+
 	@media (max-width: 520px) {
 		.ph {
 			padding: var(--sp-3);

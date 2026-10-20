@@ -55,8 +55,16 @@ const raw = {
 			cta: 'Sprawdź swoją kartę',
 			ctaSecondary: 'Jak mierzymy',
 			race: {
-				/** The hero duel's answer (an example text; the pace is measured). */
-				stream: 'Kraków najlepiej poznawać bez pośpiechu, choć jeden weekend wystarczy, żeby złapać jego rytm. Zacznij wcześnie rano na Kazimierzu, kiedy kawiarnie dopiero wystawiają stoliki, a na Placu Nowym przy Okrąglaku sprzedawcy szykują pierwsze zapiekanki. Ulice Szeroka, Józefa i Miodowa są wtedy prawie puste i można spokojnie zajrzeć w podwórka, do synagog i małych galerii, zanim pojawią się wycieczki. Na Kazimierzu warto zatrzymać się dłużej. Przez stulecia było to osobne miasto, a od końca piętnastego wieku centrum życia krakowskich Żydów. Przy ulicy Szerokiej stoi Stara Synagoga, dziś oddział Muzeum Krakowa, a kilka kroków dalej synagoga Remuh i przylegający do niej stary cmentarz z renesansowymi macewami. Wieczorem te same ulice wypełniają się muzyką i rozmowami z ogródków, ale rano słychać tylko kroki i dzwonki rowerów. Z Kazimierza dobrze zejść nad Wisłę i bulwarami ruszyć w stronę Wawelu. Spacer zajmuje kwadrans, a po drodze mija się barki, rowerzystów i wędkarzy, którzy siedzą tu bez względu na pogodę. Pod samym wzgórzem stoi smok wawelski z brązu, który co kilka minut zieje ogniem, ku radości dzieci i zaskoczeniu dorosłych. Na wzgórze wchodzi się przez Bramę Herbową. Dziedziniec zamku jest dostępny bez biletu, a już sam widok arkadowych krużganków wynagradza wspinaczkę. Bilety do komnat i skarbca lepiej kupić wcześniej, bo w sezonie szybko znikają. Katedra wawelska była miejscem koronacji i pochówku polskich królów. Warto wspiąć się na wieżę Zygmuntowską, gdzie wisi dzwon Zygmunt, w który bije się tylko w najważniejsze święta i przy wyjątkowych okazjach. Schody są wąskie i strome, ale z góry widać całe Stare Miasto i szerokie zakole Wisły. W kryptach spoczywają królowie, a także poeci i bohaterowie narodowi, co dobrze pokazuje, jak ważne jest to wzgórze dla polskiej pamięci.',
+				cold: 'Typowa aplikacja',
+				coldSub: 'llama.cpp, ustawienia domyślne',
+				hot: 'Podkręt',
+				hotSub: 'nasz silnik, ten sam plik',
+				faster: 'szybciej',
+				note: '{card} · {model} {quant} · ten sam skrypt pomiarowy po obu stronach (ABBA) · tekst przykładowy, tempo zmierzone',
+				pause: 'Wstrzymaj animację',
+				resume: 'Wznów animację',
+				/** The token highway's first paragraph (written until the rest, home/stream/pl.ts, has loaded). */
+				opening: 'Kraków najlepiej poznawać bez pośpiechu, choć jeden weekend wystarczy, żeby złapać jego rytm. Zacznij wcześnie rano na Kazimierzu, kiedy kawiarnie dopiero wystawiają stoliki, a na Placu Nowym przy Okrąglaku sprzedawcy szykują pierwsze zapiekanki. Ulice Szeroka, Józefa i Miodowa są wtedy prawie puste i można spokojnie zajrzeć w podwórka, do synagog i małych galerii, zanim pojawią się wycieczki.',
 				text: 'Rano kawa na Kazimierzu, zanim zrobi się tłoczno, potem bulwarami pod Wawel; dziedziniec jest bezpłatny. Na obiad pierogi w barze mlecznym przy Starym Mieście. Po południu Sukiennice i Rynek, a jeśli pada, Muzeum pod Rynkiem. Wieczorem kolacja na Podgórzu, zarezerwowana dzień wcześniej. Wygodne buty obowiązkowo.',
 				summary: 'Animacja: {card}, {model} {quant}. Ten sam tekst pisany bez przerwy w zmierzonym tempie: typowa aplikacja {a0} tokenu na sekundę, nasz silnik {a2} tokenu na sekundę. Ten sam skrypt pomiarowy po obu stronach.'
 			}
@@ -214,7 +222,7 @@ const raw = {
 				]
 			]
 		},
-		/** The two-terminal stream duel (fx/StreamDuel): hero and final CTA. */
+		/** The two-terminal stream duel (fx/StreamDuel): the final CTA. */
 		duel: {
 			without: 'Bez Podkrętu',
 			with: 'Z Podkrętem',
@@ -280,8 +288,16 @@ const raw = {
 			cta: 'Check your card',
 			ctaSecondary: 'How we measure',
 			race: {
-				/** The hero duel's answer (an example text; the pace is measured). */
-				stream: 'Kraków is best explored without hurrying, although a single weekend is enough to catch its rhythm. Start early in the morning in Kazimierz, when the cafés are only just setting out their tables and the vendors at the Okrąglak on Plac Nowy are getting the first zapiekanki ready. Szeroka, Józefa and Miodowa streets are almost empty then, so you can take your time looking into courtyards, synagogues and small galleries before the tour groups arrive. Kazimierz deserves more than a quick look. For centuries it was a separate town, and from the end of the fifteenth century it was the heart of Jewish life in Kraków. On Szeroka Street stands the Old Synagogue, now a branch of the Museum of Kraków, and a few steps away the Remuh Synagogue with its old cemetery of Renaissance headstones. In the evening the same streets fill with music and the chatter of beer gardens, but in the morning all you hear is footsteps and bicycle bells. From Kazimierz, head down to the Vistula and follow the riverside boulevards towards Wawel. The walk takes a quarter of an hour, past barges, cyclists and anglers who sit here whatever the weather. At the foot of the hill stands the bronze Wawel Dragon, which breathes fire every few minutes, to the delight of children and the surprise of their parents. You enter the hill through the Heraldic Gate. The castle courtyard is free, and the arcaded galleries alone are worth the climb. Tickets for the state rooms and the treasury are best bought in advance, as they sell out quickly in season. Wawel Cathedral was where Polish kings were crowned and buried. It is worth climbing the Sigismund Tower, home of the Sigismund Bell, which rings only on the most important holidays and on exceptional occasions. The stairs are narrow and steep, but from the top you can see the whole Old Town and the wide bend of the Vistula. The crypts hold kings as well as poets and national heroes, which says a lot about what this hill means to Polish memory.',
+				cold: 'Typical app',
+				coldSub: 'llama.cpp, default settings',
+				hot: 'Podkręt',
+				hotSub: 'our engine, same file',
+				faster: 'faster',
+				note: '{card} · {model} {quant} · the same measurement script on both sides (ABBA) · example text, measured pace',
+				pause: 'Pause the animation',
+				resume: 'Resume the animation',
+				/** The token highway's first paragraph (written until the rest, home/stream/en.ts, has loaded). */
+				opening: 'Kraków is best explored without hurrying, although a single weekend is enough to catch its rhythm. Start early in the morning in Kazimierz, when the cafés are only just setting out their tables and the vendors at the Okrąglak on Plac Nowy are getting the first zapiekanki ready. Szeroka, Józefa and Miodowa streets are almost empty then, so you can take your time looking into courtyards, synagogues and small galleries before the tour groups arrive.',
 				text: 'Start with coffee in Kazimierz before it gets busy, then walk the boulevards up to Wawel; the courtyard is free. Lunch: pierogi at a milk bar near the Old Town. In the afternoon, the Cloth Hall and the Main Square, or the Rynek Underground if it rains. Dinner in Podgórze, booked a day ahead. Comfortable shoes are a must.',
 				summary: 'Animation: {card}, {model} {quant}. The same text written nonstop at the measured pace: the typical app at {a0} tokens per second, our engine at {a2} tokens per second. The same measurement script on both sides.'
 			}
@@ -439,7 +455,7 @@ const raw = {
 				]
 			]
 		},
-		/** The two-terminal stream duel (fx/StreamDuel): hero and final CTA. */
+		/** The two-terminal stream duel (fx/StreamDuel): the final CTA. */
 		duel: {
 			without: 'Without Podkręt',
 			with: 'With Podkręt',

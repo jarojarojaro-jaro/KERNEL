@@ -3,22 +3,22 @@
 	 * Hero (design/REDESIGN.md §6): heat field, a two-tier headline (CSS only: it is the LCP) — the
 	 * steel line "Ten sam sprzęt. Ten sam model." over the focal, much larger heat line "Po prostu
 	 * szybciej." — one custom primary CTA with a slowly turning heat edge plus a text link, then the
-	 * duel (fx/StreamDuel, shared with the final CTA): two terminals stream the same answer nonstop,
-	 * without Podkręt (steel) and with it (heat), each with a small live speedometer in its header,
-	 * on our lab card (RX 7900 XTX × Qwen3.8-27B, upstream llama.cpp default vs our engine, one
-	 * script, ABBA); MTP bursts from the measured step time; above the panes a result band (two bars on one scale, the speed-up at the tip of ours).
-	 * No caption or source pill here: conditions and sources live on /metodologia (the „Jak mierzymy”
-	 * link), in the boost section and on the card page.
-	 * Redline flare: when the stream starts, the heat field runs hot, a bloom sweeps the hero once and
-	 * the heat line flares.
+	 * drive, full bleed: the token highway (fx/Highway), two lanes of the same text flowing toward the
+	 * viewer at the measured speeds on our lab card (RX 7900 XTX × Qwen3.8-27B, upstream llama.cpp
+	 * default vs our engine, one script, ABBA; MTP steps from the measured step time), and over its
+	 * median the instrument cluster (fx/Cluster): ours on a heat arc, the typical app as a ghost
+	 * needle, the speed-up as the cluster's loudest figure. The conditions in small print under it.
+	 * When the page is idle and the cluster on screen, it makes its one entrance: the heat field
+	 * runs hot, a bloom sweeps the hero once and the heat line flares.
 	 */
-	import { magnetic } from '$lib/fx/actions';
+	import { onMount } from 'svelte';
+	import { magnetic, visible } from '$lib/fx/actions';
+	import Cluster from '$lib/fx/Cluster.svelte';
 	import HeatField from '$lib/fx/HeatField.svelte';
-	import SpeedLines from '$lib/fx/SpeedLines.svelte';
-	import StreamDuel from '$lib/fx/StreamDuel.svelte';
-	import { variantLabel } from '$lib/data/measurements';
+	import Highway from '$lib/fx/Highway.svelte';
+	import { reducedMotion, whenIdle } from '$lib/fx/motion';
 	import { fmtTps } from '$lib/format';
-	import { cardsHref, href, type Lang } from '$lib/i18n';
+	import { cardsHref, href, num, type Lang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
 	import { fill, heroDial, RACE_CARD, RACE_MODEL, RACE_RUN, RACE_V } from './data';
 	import Kin from './Kin.svelte';
@@ -26,35 +26,47 @@
 	let { lang }: { lang: Lang } = $props();
 	const c = $derived(copy[lang].hero);
 	const r = $derived(c.race);
-	const dl = $derived(copy[lang].duel);
 
-	const cold = RACE_V.before;
-	const hot = RACE_V.ours;
-	const dial = heroDial(hot.decode!.v);
-	const gain = hot.decode!.v / cold.decode!.v;
-	/** Tokens accepted per step = measured t/s × measured ms per step (MTP bursts; 1 without MTP). */
-	const burstOf = (v: typeof hot) => (v.msStep ? Math.max(1, (v.decode!.v * v.msStep.v) / 1000) : 1);
-	const summary = $derived(
-		fill(r.summary, { card: RACE_CARD.name, model: RACE_MODEL, quant: RACE_RUN.quant, a0: fmtTps(cold.decode!.v, lang), a2: fmtTps(hot.decode!.v, lang) })
-	);
-	const lanes = $derived([
-		{ id: 'cold' as const, tag: dl.without, who: variantLabel(RACE_RUN, cold.key)[lang], tps: cold.decode!.v, burst: burstOf(cold) },
-		{ id: 'hot' as const, tag: dl.with, who: variantLabel(RACE_RUN, hot.key)[lang], tps: hot.decode!.v, burst: burstOf(hot) }
-	]);
+	const cold = RACE_V.before.decode!.v;
+	const hot = RACE_V.ours.decode!.v;
+	const dial = heroDial(hot);
+	const gain = hot / cold;
+	/** Tokens accepted per step = measured t/s × measured ms per step (MTP steps; 1 without MTP). */
+	const burstOf = (v: typeof RACE_V.ours) => (v.msStep ? Math.max(1, (v.decode!.v * v.msStep.v) / 1000) : 1);
+	const lanes = [
+		{ id: 'cold' as const, tps: cold, burst: burstOf(RACE_V.before) },
+		{ id: 'hot' as const, tps: hot, burst: burstOf(RACE_V.ours) }
+	];
+	const vars = $derived({ card: RACE_CARD.name, model: RACE_MODEL, quant: RACE_RUN.quant, a0: fmtTps(cold, lang), a2: fmtTps(hot, lang) });
+	/** The rest of the highway's long text: a separate chunk per language, loaded once the page is idle. */
+	const more = (l: Lang) => () => (l === 'pl' ? import('./stream/pl') : import('./stream/en')).then((m) => m.default);
 
-	/** The stream start: the field runs hot for a moment, one bloom sweep and one heat-line flare. */
+	let playing = $state(true);
+	let cluster: HTMLElement | undefined = $state();
+	/** The cluster's entrance, once the page is idle and the cluster is on screen: the field runs
+	 * hot for a moment and a bloom sweeps the hero once. Reduced motion: the final state at once. */
+	let go = $state(false);
 	let heat = $state(false);
-	let bloomed = $state(false);
-	function onstart() {
-		heat = bloomed = true;
+	let idle = $state(false);
+	let dashOn = $state(false);
+	onMount(() => {
+		if (reducedMotion()) {
+			go = true;
+			return;
+		}
+		return whenIdle(() => (idle = true));
+	});
+	$effect(() => {
+		if (go || !idle || !dashOn) return;
+		go = heat = true;
 		setTimeout(() => (heat = false), 2600);
-	}
+	});
 </script>
 
 <section class="hero" class:hot={heat} aria-labelledby="hero-title">
-	<HeatField heat={heat ? 1 : 0.8} boost={heat ? 1 : 0.35} />
+	<HeatField heat={heat ? 1 : 0.7} boost={heat ? 1 : 0} />
 	<div class="veil" aria-hidden="true"></div>
-	{#if bloomed}<div class="bloom" aria-hidden="true"></div>{/if}
+	{#if go && idle}<div class="bloom" aria-hidden="true"></div>{/if}
 	<div class="inner">
 		<h1 id="hero-title" class="title">
 			<Kin lines={c.title} wide={[1]} heat={[1]} cold={[0]} delays={[0, 120]} />
@@ -69,12 +81,26 @@
 				<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
 			</a>
 		</div>
-		<div class="race">
-			<div class="lines"><SpeedLines /></div>
-			<!-- keyed: the duel caches its text nodes, so a language switch mounts a fresh one -->
+	</div>
+	<div class="drive">
+		<p class="sr-only">{fill(r.summary, vars)}</p>
+		<div class="road">
+			<!-- keyed: the highway caches its text rows, so a language switch mounts a fresh one -->
 			{#key lang}
-				<StreamDuel {lanes} {gain} text={r.stream} {lang} labels={dl} {summary} {dial} countUp verdict {onstart} />
+				<Highway {lanes} opening={r.opening} more={more(lang)} {lang} {playing} keepClear={cluster} />
 			{/key}
+			<p class="lane lane--cold" aria-hidden="true"><b>{r.cold}</b><span>{r.coldSub}</span><span class="v">{num(cold, lang, 1)} t/s</span></p>
+			<p class="lane lane--hot" aria-hidden="true"><b>{r.hot}</b><span>{r.hotSub}</span><span class="v">{num(hot, lang, 1)} t/s</span></p>
+		</div>
+		<div class="dash" bind:this={cluster} aria-hidden="true" use:visible={(v) => (dashOn = v)}>
+			<Cluster max={dial.max} redline={dial.redline} {cold} {hot} {gain} {lang} unit="t/s" faster={r.faster} {go} still={!playing} />
+		</div>
+		<div class="foot">
+			<p class="note">{fill(r.note, vars)}</p>
+			<button type="button" class="pp" aria-pressed={!playing} aria-label={playing ? r.pause : r.resume} title={playing ? r.pause : r.resume} onclick={() => (playing = !playing)}>
+				{#if playing}<svg viewBox="0 0 12 12" aria-hidden="true"><rect x="2.5" y="2" width="2.4" height="8" rx="0.6" /><rect x="7.1" y="2" width="2.4" height="8" rx="0.6" /></svg>
+				{:else}<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3.5 2.2v7.6L10 6z" /></svg>{/if}
+			</button>
 		</div>
 	</div>
 </section>
@@ -84,8 +110,8 @@
 		position: relative;
 		min-height: 100vh;
 		min-height: 100svh;
-		display: grid;
-		align-items: center;
+		display: flex;
+		flex-direction: column;
 		isolation: isolate;
 		overflow: clip;
 		background: var(--bg-0);
@@ -139,7 +165,7 @@
 	.inner {
 		width: min(100% - 2 * var(--gutter), 90rem);
 		margin-inline: auto;
-		padding-block: clamp(5.5rem, 3rem + 5vh, 7rem) clamp(1.5rem, 1rem + 2vh, 2.5rem);
+		padding-block: clamp(5.5rem, 3rem + 5vh, 7rem) clamp(0.75rem, 0.25rem + 1.5vh, 1.5rem);
 		display: grid;
 		justify-items: center;
 		gap: clamp(1.25rem, 0.5rem + 2.4vh, 2.4rem);
@@ -319,31 +345,181 @@
 		outline-offset: 4px;
 		border-radius: 4px;
 	}
-	/* the speed lines run the full width of the screen behind the duel (the hero clips them) */
-	.lines {
-		position: absolute;
-		z-index: -1;
-		inset: -14% calc(50% - 50vw) -10%;
-	}
-	.race {
+	/* ---- the drive: the token highway, full bleed, with the cluster over its median ---- */
+	.drive {
 		position: relative;
-		width: min(100%, 72rem);
+		flex: 1 0 auto;
+		min-height: clamp(24rem, 56svh, 46rem);
+		display: grid;
+	}
+	.road {
+		position: absolute;
+		inset: 0;
+		/* the glow at the end of the road */
+		background: radial-gradient(40% 30% at 50% 4%, rgb(255 122 26 / 0.14), transparent 70%);
+	}
+	/* lane names in the top corners, out of the converging road */
+	.lane {
+		position: absolute;
+		top: 0.25rem;
+		margin: 0;
+		display: grid;
+		gap: 0.2rem;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+	}
+	.lane b {
+		font-family: var(--font-display);
+		font-size: var(--fs-md);
+		font-weight: 720;
+		letter-spacing: -0.01em;
+		text-transform: none;
+	}
+	.lane .v {
+		font-weight: 600;
+		letter-spacing: 0.04em;
+	}
+	.lane--cold {
+		left: var(--gutter);
+		color: var(--before);
+	}
+	.lane--cold b {
+		color: var(--text);
+	}
+	.lane--hot {
+		right: var(--gutter);
+		justify-items: end;
+		text-align: right;
+		color: var(--heat-4);
+	}
+	.lane--hot b {
+		color: var(--heat-5);
+		text-shadow: 0 0 18px rgb(255 122 26 / 0.6);
+	}
+	.lane--hot .v {
+		color: var(--heat-5);
+	}
+	/* the cluster sits low on the median, like the instruments in front of the driver */
+	.dash {
+		position: absolute;
+		z-index: 1;
+		left: 50%;
+		bottom: 2.75rem;
+		width: clamp(17rem, 28vw, 25rem);
+		translate: -50% 0;
+	}
+	/* the small print reads on a dark floor: the nearest rows dissolve into it */
+	.drive::after {
+		content: '';
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		height: 4.5rem;
+		pointer-events: none;
+		background: linear-gradient(transparent, rgb(5 5 6 / 0.9) 70%);
+	}
+	.foot {
+		position: absolute;
+		z-index: 1;
+		left: var(--gutter);
+		right: var(--gutter);
+		bottom: 0.75rem;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--sp-3);
+	}
+	.note {
+		margin: 0;
 		min-width: 0;
-		text-align: left;
-		/* the stream windows: as tall as the first screen allows (stacked on phones: short) */
-		--duel-win: clamp(7.5rem, 30svh - 6rem, 12rem);
-		--duel-win-sm: 6.6rem;
+		font-family: var(--font-mono);
+		font-size: var(--fs-2xs);
+		letter-spacing: 0.03em;
+		color: var(--text-mute);
+	}
+	.pp {
+		flex: none;
+		display: inline-grid;
+		place-items: center;
+		width: 2rem;
+		height: 2rem;
+		padding: 0;
+		border: 1px solid var(--line-strong);
+		border-radius: 50%;
+		background: rgb(5 5 6 / 0.6);
+		color: var(--text);
+		cursor: pointer;
+		transition:
+			border-color var(--dur-2),
+			color var(--dur-2);
+	}
+	.pp:hover {
+		border-color: var(--text-hi);
+		color: var(--text-hi);
+	}
+	.pp:focus-visible {
+		outline: 2px solid var(--focus);
+		outline-offset: 2px;
+	}
+	.pp svg {
+		width: 0.75rem;
+		height: 0.75rem;
+		fill: currentColor;
+	}
+	/* tablets and phones: the cluster on top, the road under it, the small print below */
+	@media (max-width: 900px) {
+		.drive {
+			min-height: 0;
+			grid-template-rows: auto clamp(21rem, 58svh, 34rem) auto;
+			justify-items: center;
+			row-gap: var(--sp-3);
+		}
+		.dash {
+			position: relative;
+			left: auto;
+			bottom: auto;
+			translate: none;
+			width: min(19rem, 100% - 2 * var(--gutter));
+			grid-row: 1;
+		}
+		.road {
+			position: relative;
+			inset: auto;
+			grid-row: 2;
+			width: 100%;
+		}
+		.drive::after {
+			display: none;
+		}
+		.foot {
+			position: static;
+			grid-row: 3;
+			width: calc(100% - 2 * var(--gutter));
+			padding-bottom: var(--sp-4);
+		}
+	}
+	@media (max-width: 520px) {
+		.lane span:not(.v) {
+			display: none;
+		}
+		.lane b {
+			font-size: var(--fs-sm);
+		}
 	}
 	@media (prefers-reduced-motion: no-preference) {
-		/* the headline lands first; the CTAs follow, then the race rises */
+		/* the headline lands first; the CTAs follow, then the drive rises */
 		:global(html.js) .actions {
 			animation: fade-up 0.6s var(--ease-out) 0.25s both;
 		}
-		:global(html.js) .race {
+		:global(html.js) .drive {
 			animation: rise 0.7s var(--ease-out) 0.35s both;
 		}
 	}
-	/* transform-only: the CTAs and the race are visible from the first painted frame */
+	/* transform-only: the CTAs and the drive are visible from the first painted frame */
 	@keyframes fade-up {
 		from {
 			transform: translate3d(0, 0.75rem, 0);
@@ -356,7 +532,6 @@
 	}
 	@media (max-width: 640px) {
 		.hero {
-			align-items: start;
 			min-height: 0;
 		}
 		.inner {
@@ -412,6 +587,9 @@
 		.ignite::before,
 		.ignite::after {
 			animation: none;
+		}
+		.pp {
+			display: none;
 		}
 	}
 </style>
