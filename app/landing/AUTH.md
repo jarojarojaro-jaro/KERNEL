@@ -10,7 +10,7 @@ The build-time env `PUBLIC_AUTH_PROVIDER` picks the backend:
 
 | Value | File | What happens |
 |---|---|---|
-| `none` (default, committed in `.env`) | `src/lib/auth/none.ts` | **Preview.** The card looks and behaves as final: all three provider buttons and the password form are active and validated in the browser (consent, username format, password ≥ 10 characters, matching repeat). Every call answers `unavailable`, and the step continues to `/<lang>/start/paths/`. Nothing is sent or stored, and the `onboarding` sessionStorage entry is cleared. The page never shows "Zalogowano jako". |
+| `none` (default, committed in `.env`) | `src/lib/auth/none.ts` | **Preview.** The page looks and behaves as final, with no prototype chip. All three provider tiles and the password form are active and validated in the browser: username format, password ≥ 10 characters, matching repeat, and the Terms checkbox for "Załóż konto". The provider tiles carry an implied-consent line. Every call answers `unavailable`, and the step continues to `/<lang>/start/paths/`. Nothing is sent or stored, and the `onboarding` sessionStorage entry is cleared by the next steps. The page never shows "Zalogowano jako". |
 | `authjs` | `src/lib/auth/authjs.ts` | Auth.js (`@auth/sveltekit`) on this app's own Node server (adapter-node). |
 
 Any other value fails the build. A live backend needs **a real domain over https**. Google rejects redirect URIs on raw IP addresses (including private ones such as `192.168.10.230`) and plain `http`, except on `localhost`. For local testing, see [Local testing over an SSH tunnel](#local-testing-over-an-ssh-tunnel).

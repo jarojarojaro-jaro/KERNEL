@@ -1,12 +1,11 @@
 <script lang="ts">
 	/**
-	 * Onboarding frame: an optional quiet back link, the step's big headline (*accent* words via Hl)
-	 * with a one-line lede, the step content, and a small prototype chip under it. The stage slides in
-	 * once; under reduced motion it renders in its final state.
+	 * Onboarding frame: an optional quiet back link, the step's big headline with a one-line lede, the
+	 * step content, and a small prototype chip under it. The stage slides in once; under reduced motion
+	 * it renders in its final state.
 	 */
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
-	import Hl from '$lib/home/Hl.svelte';
 	import { currentLang, href } from '$lib/i18n';
 	import { ob } from './copy';
 	import { loadSession, session } from './session.svelte';
@@ -32,7 +31,7 @@
 	<div class="stage container" class:wide>
 		{#if back}<a class="back" href={href(lang, back)}><span aria-hidden="true">←</span> {t.back}</a>{/if}
 		<header class="head">
-			<h1 class="giga title"><Hl text={title} /></h1>
+			<h1 class="giga title">{title}</h1>
 			<p class="lede">{lead}</p>
 		</header>
 		<div class="body">
