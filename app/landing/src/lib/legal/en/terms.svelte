@@ -65,10 +65,10 @@
 	<h2 id="account" class="h2">5. Your account</h2>
 	<ul>
 		<li>An Account is optional and free. The free edition of the App works without one.</li>
-		<li>You can sign up with an e-mail address (confirmed by a link) or with Google or GitHub. With Google or GitHub we request only the minimum: your account identifier and e-mail address.</li>
+		<li>You can sign up with Google, GitHub or Hugging Face, or with just a username and password, without an e-mail address. With an outside provider we request only the minimum: your account identifier, username and, if the provider shares it, your e-mail address. An Account without an e-mail address cannot be recovered if you lose the password.</li>
 		<li>Keep your sign-in details to yourself.</li>
 		<li>You can delete your Account at any time with one click in the Account settings. No reason needed; deletion ends the Account agreement immediately.</li>
-		<li>We may terminate the Account agreement for a serious reason (a material breach of section 8) on 14 days’ notice, telling you why by e-mail.</li>
+		<li>We may terminate the Account agreement for a serious reason (a material breach of section 8) on 14 days’ notice, telling you why by e-mail or, if the Account has no e-mail address, with a notice after sign-in.</li>
 	</ul>
 	<h2 id="editions" class="h2">6. Free and paid editions</h2>
 	<ul>
@@ -113,7 +113,7 @@
 	<p>Polish law applies. If you are a consumer, this does not deprive you of the protection of mandatory rules of the country where you habitually live (Article 6(2) of the Rome I Regulation).</p>
 	<p>Disputes with non-consumers go to the court with jurisdiction over our registered office.</p>
 	<h2 id="changes" class="h2">14. Changes to these Terms</h2>
-	<p>We may change these Terms for a valid reason, such as a change in the law, in the scope of the services, or in security requirements. Account holders will get an e-mail at least 14 days before a change takes effect and may delete their Account before then if they disagree.</p>
+	<p>We may change these Terms for a valid reason, such as a change in the law, in the scope of the services, or in security requirements. Account holders will be told at least 14 days before a change takes effect (by e-mail if the Account has one, otherwise with a notice after sign-in) and may delete their Account before then if they disagree.</p>
 	<p>Changes do not affect rights you acquired before they take effect.</p>
 </article>
 

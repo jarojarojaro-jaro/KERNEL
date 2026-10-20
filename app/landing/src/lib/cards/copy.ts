@@ -173,7 +173,6 @@ const pl = {
 		estimateNeed: 'potrzebna pamięć, szacunek',
 		soonNoVram: 'Pamięć wspólna z systemem: zależy od ilości RAM, więc nie szacujemy. Wkrótce zmierzymy.',
 		soonNoFit: 'Wkrótce.',
-		waitlist: 'Zapisz się na start',
 		measuredOthers: 'Zmierzone karty'
 	},
 	compare: {
@@ -370,7 +369,6 @@ const en: Copy = {
 		estimateNeed: 'memory needed, estimate',
 		soonNoVram: 'Memory shared with the system: it depends on the RAM, so we do not estimate. Measurements soon.',
 		soonNoFit: 'Soon.',
-		waitlist: 'Join the launch list',
 		measuredOthers: 'Measured cards'
 	},
 	compare: {

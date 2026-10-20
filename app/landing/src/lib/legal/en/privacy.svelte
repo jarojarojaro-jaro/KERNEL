@@ -44,7 +44,12 @@
 	<p>If you join the waitlist, we process your e-mail address and the price option you picked. You confirm your sign-up through a link we e-mail you (double opt-in). The legal basis is your consent (Art. 6(1)(a) GDPR). You can withdraw it at any time via the link in every e-mail or by writing to us; this does not affect processing that took place before.</p>
 	<p><strong>Current status:</strong> the form’s backend is not live, so the form on the Website currently sends nothing.</p>
 	<h2 id="account" class="h2">5. Your account</h2>
-	<p>For an Account we process your e-mail address, and if you sign in with Google or GitHub, your account identifier with that provider and your e-mail address. We request only minimal scopes (for example <code>openid email</code> on Google and <code>user:email</code> on GitHub). We never access your contacts, repositories or anything else.</p>
+	<p>You can create an Account in two ways:</p>
+	<ul>
+		<li><strong>Sign in with Google, GitHub or Hugging Face</strong> — we process your account identifier with that provider, your username (GitHub, Hugging Face) and your e-mail address if the provider shares it (Google, GitHub; Hugging Face does not). We request only minimal scopes: <code>openid email</code> on Google, <code>user:email</code> on GitHub, <code>openid profile</code> on Hugging Face. We never access your contacts, repositories, models or anything else.</li>
+		<li><strong>Username and password, no e-mail</strong> — we process only the username you choose and a hash of your password (argon2id with a random salt). We never store or know the password itself. We ask for no e-mail address or other data, so if you lose your password we cannot restore access to the Account.</li>
+	</ul>
+	<p>To protect Accounts against password guessing, we count failed sign-in attempts per username and IP address and temporarily block sign-in once a limit is reached. These records are deleted after 24 hours at the latest (legitimate interests — security, Art. 6(1)(f) GDPR).</p>
 	<h2 id="scan" class="h2">6. The hardware scan</h2>
 	<p>The scan runs locally and sends nothing on its own. It produces a single-line code that you can read in full. If you paste that code into the form on our Website, it is processed only in your browser and never reaches our server.</p>
 	<div class="table-wrap">
@@ -72,12 +77,12 @@
 	<h2 id="recipients" class="h2">8. Recipients and processors</h2>
 	<ul>
 		<li>a hosting provider with its seat and servers in the EEA — <span class="badge badge--soon">to be chosen</span>; bound by a data processing agreement under Art. 28 GDPR;</li>
-		<li>an e-mail delivery provider (waitlist, Account) — <span class="badge badge--soon">to be chosen</span>, preferably in the EEA;</li>
-		<li>Google and GitHub — only if you choose to sign in with them; they act as separate controllers for their own services;</li>
+		<li>an e-mail delivery provider (waitlist) — <span class="badge badge--soon">to be chosen</span>, preferably in the EEA;</li>
+		<li>Google, GitHub and Hugging Face — only if you choose to sign in with them; they act as separate controllers for their own services;</li>
 		<li>a planned Merchant of Record payment provider such as Paddle — only once sales begin; it is a separate controller for payment data.</li>
 	</ul>
 	<h2 id="transfers" class="h2">9. Transfers outside the EEA</h2>
-	<p>Signing in with Google or GitHub may involve transferring data to the United States. Such transfers rely on the European Commission’s adequacy decision for the EU-US Data Privacy Framework where the provider is certified, and otherwise on standard contractual clauses. If you would rather avoid this, sign in with your e-mail address.</p>
+	<p>Signing in with Google, GitHub or Hugging Face may involve transferring data to the United States. Such transfers rely on the European Commission’s adequacy decision for the EU-US Data Privacy Framework where the provider is certified, and otherwise on standard contractual clauses. If you would rather avoid this, create an Account with a username and password.</p>
 	<h2 id="retention" class="h2">10. How long we keep data</h2>
 	<div class="table-wrap">
 		<table class="table">
@@ -86,7 +91,8 @@
 			<tbody>
 				<tr><td>Website (server logs)</td><td>IP address, date and time, requested URL, status code, user agent</td><td>security and availability — legitimate interests (Art. 6(1)(f) GDPR)</td><td>up to 14 days, then deleted (to be confirmed with the hosting provider)</td></tr>
 				<tr><td>Waitlist</td><td>e-mail address, chosen price option, consent date and confirmation (double opt-in)</td><td>release notification and pricing research — consent (Art. 6(1)(a))</td><td>until you withdraw consent or 30 days after the paid edition launches; unconfirmed sign-ups — 7 days</td></tr>
-				<tr><td>Account</td><td>e-mail address, Google/GitHub account ID, creation date</td><td>running your Account — performance of a contract (Art. 6(1)(b))</td><td>until you delete the Account; backups overwritten within 30 days</td></tr>
+				<tr><td>Account</td><td>Google, GitHub or Hugging Face account ID, username and e-mail address (if the provider shares it), or username and password hash (argon2id); creation date</td><td>running your Account — performance of a contract (Art. 6(1)(b))</td><td>until you delete the Account; backups overwritten within 30 days</td></tr>
+				<tr><td>Sign-in protection</td><td>username, IP address, number of failed attempts and lockout time</td><td>protection against password guessing — legitimate interests (Art. 6(1)(f))</td><td>up to 24 hours</td></tr>
 				<tr><td>Crash reports (optional)</td><td>stack trace, App version, OS, GPU model — after you preview them</td><td>fixing bugs — consent (Art. 6(1)(a))</td><td>90 days</td></tr>
 				<tr><td>Acceleration profile (optional)</td><td>GPU model, driver, Model, settings and benchmark result; no IP, no installation ID</td><td>building the profile database — consent (Art. 6(1)(a)); once anonymised it is no longer personal data</td><td>indefinitely, as anonymous data</td></tr>
 				<tr><td>Complaints and correspondence</td><td>contact details, your message</td><td>handling it — legal obligation and legal claims (Art. 6(1)(c) and (f))</td><td>until the limitation period for claims expires</td></tr>
@@ -109,7 +115,7 @@
 	<h2 id="automated" class="h2">12. Automated decision-making</h2>
 	<p>We do not make decisions based solely on automated processing, including profiling, that produce legal or similarly significant effects for you (Art. 22 GDPR). The hardware-based model recommendation is only a suggestion you can override.</p>
 	<h2 id="changes" class="h2">13. Changes to this policy</h2>
-	<p>We will announce material changes on the Website and e-mail Account holders in advance.</p>
+	<p>We will announce material changes on the Website and tell Account holders in advance: by e-mail where we have one, otherwise with a notice after sign-in.</p>
 </article>
 
 <style>

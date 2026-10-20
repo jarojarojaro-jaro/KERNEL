@@ -44,7 +44,12 @@
 	<p>Jeśli zapiszesz się na listę oczekujących, przetwarzamy Twój adres e-mail oraz wybraną opcję cenową. Zapis wymaga potwierdzenia linkiem wysłanym e-mailem (double opt-in). Podstawą jest Twoja zgoda (art. 6 ust. 1 lit. a RODO), którą możesz wycofać w każdej chwili linkiem w każdej wiadomości lub e-mailem, bez wpływu na zgodność z prawem wcześniejszego przetwarzania.</p>
 	<p><strong>Stan obecny:</strong> zaplecze formularza nie zostało uruchomione — formularz na stronie nie wysyła obecnie żadnych danych.</p>
 	<h2 id="konto" class="h2">5. Konto</h2>
-	<p>Przy zakładaniu Konta przetwarzamy adres e-mail, a przy logowaniu przez Google lub GitHub — identyfikator konta u tego dostawcy i adres e-mail. Żądamy wyłącznie minimalnych zakresów uprawnień (np. <code>openid email</code> w Google, <code>user:email</code> w GitHub). Nie pobieramy listy kontaktów, repozytoriów ani innych danych.</p>
+	<p>Konto możesz założyć na dwa sposoby:</p>
+	<ul>
+		<li><strong>Logowanie przez Google, GitHub lub Hugging Face</strong> — przetwarzamy identyfikator konta u tego dostawcy, nazwę użytkownika (GitHub, Hugging Face) oraz adres e-mail, jeśli dostawca go przekaże (Google, GitHub; Hugging Face go nie przekazuje). Żądamy wyłącznie minimalnych zakresów uprawnień: <code>openid email</code> w Google, <code>user:email</code> w GitHub, <code>openid profile</code> w Hugging Face. Nie pobieramy listy kontaktów, repozytoriów, modeli ani innych danych.</li>
+		<li><strong>Nazwa użytkownika i hasło, bez adresu e-mail</strong> — przetwarzamy wyłącznie wybraną nazwę użytkownika i skrót hasła (argon2id z losową solą). Samego hasła nie zapisujemy i nie znamy. Nie żądamy adresu e-mail ani innych danych, dlatego po utracie hasła nie możemy odzyskać dostępu do Konta.</li>
+	</ul>
+	<p>Aby chronić Konta przed odgadywaniem haseł, liczymy nieudane próby logowania dla nazwy użytkownika i adresu IP i po ich przekroczeniu czasowo blokujemy logowanie. Te zapisy usuwamy najpóźniej po 24 godzinach (prawnie uzasadniony interes — bezpieczeństwo, art. 6 ust. 1 lit. f RODO).</p>
 	<h2 id="skan" class="h2">6. Skan sprzętu</h2>
 	<p>Skan wykonuje się lokalnie i sam w sobie niczego nie wysyła. Wynikiem jest jednolinijkowy kod, który widzisz w całości. Jeśli wkleisz go do formularza na stronie, jest on przetwarzany wyłącznie w Twojej przeglądarce i nie trafia na nasz serwer.</p>
 	<div class="table-wrap">
@@ -72,12 +77,12 @@
 	<h2 id="odbiorcy" class="h2">8. Odbiorcy i podmioty przetwarzające</h2>
 	<ul>
 		<li>dostawca hostingu z siedzibą i serwerami w EOG — <span class="badge badge--soon">do wyboru</span>; dane powierzymy na podstawie umowy z art. 28 RODO;</li>
-		<li>dostawca wysyłki e-maili (lista oczekujących, Konto) — <span class="badge badge--soon">do wyboru</span>, preferencyjnie w EOG;</li>
-		<li>Google i GitHub — wyłącznie jeśli wybierzesz logowanie przez nich; działają jako odrębni administratorzy w zakresie własnych usług;</li>
+		<li>dostawca wysyłki e-maili (lista oczekujących) — <span class="badge badge--soon">do wyboru</span>, preferencyjnie w EOG;</li>
+		<li>Google, GitHub i Hugging Face — wyłącznie jeśli wybierzesz logowanie przez nich; działają jako odrębni administratorzy w zakresie własnych usług;</li>
 		<li>planowany pośrednik płatności działający jako sprzedawca (Merchant of Record), np. Paddle — dopiero po rozpoczęciu sprzedaży; jest odrębnym administratorem danych płatniczych.</li>
 	</ul>
 	<h2 id="transfer" class="h2">9. Przekazywanie danych poza EOG</h2>
-	<p>Logowanie przez Google lub GitHub może wiązać się z przekazaniem danych do USA. Przekazanie opiera się na decyzji Komisji Europejskiej stwierdzającej odpowiedni stopień ochrony (EU-US Data Privacy Framework), o ile dostawca jest certyfikowany, a w pozostałym zakresie — na standardowych klauzulach umownych. Jeśli tego nie chcesz, użyj logowania adresem e-mail.</p>
+	<p>Logowanie przez Google, GitHub lub Hugging Face może wiązać się z przekazaniem danych do USA. Przekazanie opiera się na decyzji Komisji Europejskiej stwierdzającej odpowiedni stopień ochrony (EU-US Data Privacy Framework), o ile dostawca jest certyfikowany, a w pozostałym zakresie — na standardowych klauzulach umownych. Jeśli tego nie chcesz, załóż Konto z nazwą użytkownika i hasłem.</p>
 	<h2 id="okresy" class="h2">10. Okresy przechowywania</h2>
 	<div class="table-wrap">
 		<table class="table">
@@ -86,7 +91,8 @@
 			<tbody>
 				<tr><td>Strona (logi serwera)</td><td>adres IP, data i godzina, żądany adres, kod odpowiedzi, User-Agent</td><td>bezpieczeństwo i ciągłość działania — prawnie uzasadniony interes (art. 6 ust. 1 lit. f RODO)</td><td>do 14 dni, następnie usunięcie (do potwierdzenia z dostawcą hostingu)</td></tr>
 				<tr><td>Lista oczekujących</td><td>adres e-mail, wybrana opcja cenowa, data i potwierdzenie zgody (double opt-in)</td><td>powiadomienie o wydaniu i badanie cen — zgoda (art. 6 ust. 1 lit. a RODO)</td><td>do wycofania zgody albo do 30 dni po wydaniu edycji płatnej; niepotwierdzone zapisy — 7 dni</td></tr>
-				<tr><td>Konto</td><td>adres e-mail, identyfikator konta Google/GitHub, data utworzenia</td><td>prowadzenie Konta — wykonanie umowy (art. 6 ust. 1 lit. b RODO)</td><td>do usunięcia Konta; kopie zapasowe nadpisywane w ciągu 30 dni</td></tr>
+				<tr><td>Konto</td><td>identyfikator konta Google, GitHub lub Hugging Face, nazwa użytkownika i adres e-mail (jeśli dostawca go przekaże) albo nazwa użytkownika i skrót hasła (argon2id); data utworzenia</td><td>prowadzenie Konta — wykonanie umowy (art. 6 ust. 1 lit. b RODO)</td><td>do usunięcia Konta; kopie zapasowe nadpisywane w ciągu 30 dni</td></tr>
+				<tr><td>Ochrona logowania</td><td>nazwa użytkownika, adres IP, liczba nieudanych prób i czas blokady</td><td>ochrona przed odgadywaniem haseł — prawnie uzasadniony interes (art. 6 ust. 1 lit. f RODO)</td><td>do 24 godzin</td></tr>
 				<tr><td>Raporty awarii (opcjonalne)</td><td>zrzut stosu, wersja Aplikacji, system, model GPU — po podglądzie przez Ciebie</td><td>usuwanie błędów — zgoda (art. 6 ust. 1 lit. a RODO)</td><td>90 dni</td></tr>
 				<tr><td>Profil przyspieszenia (opcjonalny)</td><td>model GPU, sterownik, Model, parametry i wynik pomiaru; bez IP i bez ID instalacji</td><td>rozwój bazy profili — zgoda (art. 6 ust. 1 lit. a RODO); po anonimizacji dane przestają być osobowe</td><td>bezterminowo jako dane anonimowe</td></tr>
 				<tr><td>Reklamacje i korespondencja</td><td>dane kontaktowe, treść zgłoszenia</td><td>rozpatrzenie — obowiązek prawny i ustalenie, dochodzenie lub obrona roszczeń (art. 6 ust. 1 lit. c i f RODO)</td><td>do upływu terminu przedawnienia roszczeń</td></tr>
@@ -109,7 +115,7 @@
 	<h2 id="automatyzacja" class="h2">12. Zautomatyzowane podejmowanie decyzji</h2>
 	<p>Nie podejmujemy decyzji opartych wyłącznie na zautomatyzowanym przetwarzaniu, w tym profilowaniu, które wywoływałyby wobec Ciebie skutki prawne lub w podobny sposób istotnie na Ciebie wpływały (art. 22 RODO). Dobór Modelu do sprzętu jest rekomendacją, którą możesz zmienić.</p>
 	<h2 id="zmiany" class="h2">13. Zmiany polityki</h2>
-	<p>O istotnych zmianach poinformujemy na stronie, a posiadaczy Konta — e-mailem, z wyprzedzeniem.</p>
+	<p>O istotnych zmianach poinformujemy na stronie, a posiadaczy Konta — z wyprzedzeniem: e-mailem, jeśli go znamy, a pozostałych komunikatem po zalogowaniu.</p>
 </article>
 
 <style>

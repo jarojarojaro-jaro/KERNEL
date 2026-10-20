@@ -1,171 +1,200 @@
 <script lang="ts">
 	/**
-	 * Account step (1 of 4). Google / GitHub / e-mail magic link through `$lib/auth`. With
-	 * `PUBLIC_AUTH_PROVIDER=none` (no backend yet) the provider buttons stay visible but disabled, an
-	 * honest "sign-in soon" note points to the e-mail field, and that field becomes the waitlist
-	 * sign-up (kept in this tab only, like every prototype step).
+	 * Account step: one centred sign-in card. Google / GitHub / Hugging Face, or a username + password
+	 * account with no e-mail at all (sign in | create). Everything goes through `$lib/auth`; with
+	 * `PUBLIC_AUTH_PROVIDER=none` (preview, no backend) every method answers `unavailable` and the step
+	 * simply continues to /start/paths: nothing is sent or stored.
 	 *
 	 * Brand marks: the Google "G" is Google's own asset (static/brand/google-g.svg, cut from the
 	 * Sign in with Google bundle, unaltered) on the button colours from Google's branding guidelines;
-	 * GitHub uses the Primer mark-github in pure white / black. Both buttons share size and weight
-	 * (Google's equal-prominence rule).
+	 * GitHub uses the Primer mark-github in pure white / black; Hugging Face uses the official hf-logo
+	 * (static/brand/huggingface.svg, huggingface/brand-assets). All three share one button shell, so
+	 * Google is "at least as prominent" as the others.
 	 */
 	import { goto } from '$app/navigation';
 	import { tick } from 'svelte';
-	import { auth, signInWith, signInWithEmail, type OAuthProvider } from '$lib/auth';
+	import { signInWith, signInWithPassword, signUpWithPassword, type AuthErrorCode, type AuthResult, type OAuthProvider } from '$lib/auth';
 	import { currentLang, href } from '$lib/i18n';
 	import { ob } from '$lib/onboarding/copy';
-	import { saveSession, session } from '$lib/onboarding/session.svelte';
 	import Shell from '$lib/onboarding/Shell.svelte';
 
 	const lang = $derived(currentLang());
 	const t = $derived(ob[lang].account);
-	const live = auth.live;
 
-	let email = $state('');
+	let mode = $state<'login' | 'register'>('register');
+	let username = $state('');
+	let password = $state('');
+	let password2 = $state('');
+	let reveal = $state(false);
 	let terms = $state(false);
-	let marketing = $state(false);
 	/** What the visitor last tried; drives which errors show. */
-	let tried = $state<'oauth' | 'email' | null>(null);
-	let busy = $state<OAuthProvider | 'email' | null>(null);
-	let sentTo = $state<string | null>(null);
-	let failed = $state(false);
+	let tried = $state<'oauth' | 'password' | null>(null);
+	let busy = $state<OAuthProvider | 'password' | null>(null);
+	let failure = $state<AuthErrorCode | null>(null);
 	let form: HTMLFormElement | undefined = $state();
-	let emailInput: HTMLInputElement | undefined = $state();
-	const emailOk = $derived(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim()));
-	const termsBad = $derived(tried !== null && !terms);
-	const emailBad = $derived(tried === 'email' && !emailOk);
+
+	const register = $derived(mode === 'register');
+	const userOk = $derived(/^[A-Za-z0-9._-]{3,32}$/.test(username.trim()));
+	const passOk = $derived(password.length >= 10);
+	const pw = $derived(tried === 'password');
+	const userBad = $derived(pw && !userOk);
+	const passBad = $derived(pw && !passOk);
+	const matchBad = $derived(pw && register && password2 !== password);
+	// Consent is needed whenever an account may be created: any provider, or "Załóż konto".
+	const termsBad = $derived((tried === 'oauth' || (pw && register)) && !terms);
+	const failMsg = $derived(failure && { invalid: t.errInvalid, taken: t.errTaken, locked: t.errLocked, failed: t.errAuth }[failure]);
 
 	const providers = $derived([
 		{ id: 'google' as const, label: t.google },
-		{ id: 'github' as const, label: t.github }
+		{ id: 'github' as const, label: t.github },
+		{ id: 'huggingface' as const, label: t.huggingface }
 	]);
 
-	async function proceed(method: OAuthProvider | 'email') {
-		tried = method === 'email' ? 'email' : 'oauth';
-		failed = false;
-		sentTo = null;
-		if (!terms || (method === 'email' && !emailOk)) {
-			await tick();
-			form?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+	async function run(kind: OAuthProvider | 'password') {
+		tried = kind === 'password' ? 'password' : 'oauth';
+		failure = null;
+		await tick();
+		const invalid = form?.querySelector<HTMLElement>('[aria-invalid="true"]');
+		if (invalid) {
+			invalid.focus();
 			return;
 		}
 		const next = href(lang, '/start/paths');
-		session.marketing = marketing;
-		if (!live) {
-			// No backend: the e-mail goes on the waitlist (this tab only, nothing is sent).
-			session.account = { method: 'waitlist', email: email.trim() };
-			saveSession();
-			goto(next);
-			return;
-		}
-		saveSession();
-		busy = method;
-		const res = method === 'email' ? await signInWithEmail(email.trim(), { redirectTo: next }) : await signInWith(method, { redirectTo: next });
+		busy = kind;
+		let res: AuthResult;
+		if (kind !== 'password') res = await signInWith(kind, { redirectTo: next });
+		else if (register) res = await signUpWithPassword(username.trim(), password, { redirectTo: next });
+		else res = await signInWithPassword(username.trim(), password, { redirectTo: next });
 		if (res.status === 'redirecting') return;
 		busy = null;
-		if (res.status === 'email-sent') sentTo = email.trim();
-		else failed = true;
-	}
-
-	function toWaitlist(e: MouseEvent) {
-		e.preventDefault();
-		emailInput?.focus({ preventScroll: true });
-		emailInput?.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+		if (res.status === 'unavailable') goto(next);
+		else failure = res.code;
 	}
 </script>
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell title={t.heading} lead={t.lead} step={1} wide>
-	<div class="acct">
-		<form class="card heat-card panel" bind:this={form} novalidate aria-busy={busy !== null} onsubmit={(e) => (e.preventDefault(), proceed('email'))}>
-			<div class="oauth rise" style="--d:0ms">
-				{#each providers as p (p.id)}
-					<button class="oa" type="button" disabled={!live || busy !== null} aria-describedby={live ? undefined : 'auth-soon'} onclick={() => proceed(p.id)}>
-						<span class="mark" aria-hidden="true">
-							{#if p.id === 'google'}
-								<img src="/brand/google-g.svg" width="20" height="20" alt="" />
-							{:else}
-								<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943" /></svg>
-							{/if}
-						</span>
-						<span class="oa-label">{busy === p.id ? t.busy : p.label}</span>
-						{#if !live}<span class="soon-tag mono">{t.soonBadge}</span>{/if}
-					</button>
-				{/each}
+<Shell title={t.heading} lead={t.lead}>
+	<div class="halo" aria-hidden="true"></div>
+	<form class="card heat-card panel" bind:this={form} novalidate aria-busy={busy !== null} onsubmit={(e) => (e.preventDefault(), run('password'))}>
+		<div class="oauth rise" style="--d:0ms">
+			{#each providers as p (p.id)}
+				<button class="oa" type="button" disabled={busy !== null} onclick={() => run(p.id)}>
+					<span class="mark" aria-hidden="true">
+						{#if p.id === 'google'}
+							<img src="/brand/google-g.svg" width="20" height="20" alt="" />
+						{:else if p.id === 'huggingface'}
+							<img src="/brand/huggingface.svg" width="20" height="20" alt="" />
+						{:else}
+							<svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M10.226 17.284c-2.965-.36-5.054-2.493-5.054-5.256 0-1.123.404-2.336 1.078-3.144-.292-.741-.247-2.314.09-2.965.898-.112 2.111.36 2.83 1.01.853-.269 1.752-.404 2.853-.404 1.1 0 1.999.135 2.807.382.696-.629 1.932-1.1 2.83-.988.315.606.36 2.179.067 2.942.72.854 1.101 2 1.101 3.167 0 2.763-2.089 4.852-5.098 5.234.763.494 1.28 1.572 1.28 2.807v2.336c0 .674.561 1.056 1.235.786 4.066-1.55 7.255-5.615 7.255-10.646C23.5 6.188 18.334 1 11.978 1 5.62 1 .5 6.188.5 12.545c0 4.986 3.167 9.12 7.435 10.669.606.225 1.19-.18 1.19-.786V20.63a2.9 2.9 0 0 1-1.078.224c-1.483 0-2.359-.808-2.987-2.313-.247-.607-.517-.966-1.034-1.033-.27-.023-.359-.135-.359-.27 0-.27.45-.471.898-.471.652 0 1.213.404 1.797 1.235.45.651.921.943 1.483.943.561 0 .92-.202 1.437-.719.382-.381.674-.718.944-.943" /></svg>
+						{/if}
+					</span>
+					<span class="oa-label">{busy === p.id ? t.busy : p.label}</span>
+					<span class="arrow" aria-hidden="true">→</span>
+				</button>
+			{/each}
+		</div>
+
+		<p class="or rise" style="--d:90ms"><span>{t.or}</span></p>
+
+		<fieldset class="pw rise" style="--d:150ms">
+			<legend class="pw-title">{t.pwTitle}</legend>
+			<div class="segmented mode">
+				<label><input type="radio" name="mode" value="login" bind:group={mode} /><span>{t.login}</span></label>
+				<label><input type="radio" name="mode" value="register" bind:group={mode} /><span>{t.register}</span></label>
 			</div>
 
-			{#if !live}
-				<div class="soon rise" style="--d:90ms" id="auth-soon">
-					<span class="pulse" aria-hidden="true"></span>
-					<div>
-						<p class="soon-t">{t.soonTitle}</p>
-						<p class="soon-b">{t.soonBody}</p>
-						<a class="soon-cta" href="#acc-email" onclick={toWaitlist}>{t.soonCta} <span class="arrow" aria-hidden="true">↓</span></a>
-					</div>
+			<div class="field">
+				<label for="acc-user">{t.username}</label>
+				<input
+					id="acc-user"
+					class="input"
+					name="username"
+					autocomplete="username"
+					autocapitalize="none"
+					spellcheck="false"
+					maxlength="32"
+					bind:value={username}
+					aria-invalid={userBad}
+					aria-describedby={userBad ? 'acc-user-err' : register ? 'acc-user-hint' : undefined}
+				/>
+				{#if userBad}<span class="error-text" id="acc-user-err">{t.errUsername}</span>{:else if register}<span class="hint" id="acc-user-hint">{t.usernameHint}</span>{/if}
+			</div>
+
+			<div class="field">
+				<label for="acc-pass">{t.password}</label>
+				<div class="pass">
+					<input
+						id="acc-pass"
+						class="input"
+						name="password"
+						type={reveal ? 'text' : 'password'}
+						autocomplete={register ? 'new-password' : 'current-password'}
+						minlength="10"
+						bind:value={password}
+						aria-invalid={passBad}
+						aria-describedby={passBad ? 'acc-pass-err' : register ? 'acc-pass-hint' : undefined}
+					/>
+					<button class="eye" type="button" aria-label={t.show} aria-pressed={reveal} aria-controls={register ? 'acc-pass acc-pass2' : 'acc-pass'} onclick={() => (reveal = !reveal)}>
+						<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+							<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Z" /><circle cx="12" cy="12" r="3" />
+							{#if reveal}<path d="M4 4l16 16" />{/if}
+						</svg>
+					</button>
+				</div>
+				{#if passBad}<span class="error-text" id="acc-pass-err">{t.errPassword}</span>{:else if register}<span class="hint" id="acc-pass-hint">{t.passwordHint}</span>{/if}
+			</div>
+
+			{#if register}
+				<div class="field">
+					<label for="acc-pass2">{t.password2}</label>
+					<input
+						id="acc-pass2"
+						class="input"
+						name="password-repeat"
+						type={reveal ? 'text' : 'password'}
+						autocomplete="new-password"
+						bind:value={password2}
+						aria-invalid={matchBad}
+						aria-describedby={matchBad ? 'acc-pass2-err' : undefined}
+					/>
+					{#if matchBad}<span class="error-text" id="acc-pass2-err">{t.errMatch}</span>{/if}
 				</div>
 			{/if}
 
-			<p class="or rise" style="--d:150ms"><span>{live ? t.or : t.orWaitlist}</span></p>
-
-			<div class="field rise" style="--d:210ms">
-				<label for="acc-email" class="sr-only">{t.email}</label>
-				<div class="magic" class:bad={emailBad}>
-					<svg class="mail" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" /><path d="m4 7 8 6 8-6" /></svg>
-					<input
-						id="acc-email"
-						type="email"
-						autocomplete="email"
-						placeholder={t.email}
-						bind:this={emailInput}
-						bind:value={email}
-						aria-invalid={emailBad}
-						aria-describedby={emailBad ? 'acc-email-hint acc-email-err' : 'acc-email-hint'}
-					/>
-					<button class="send" type="submit" disabled={busy !== null}>{busy === 'email' ? t.busy : live ? t.submit : t.waitSubmit} <span class="arrow" aria-hidden="true">→</span></button>
-				</div>
-				<span class="hint" id="acc-email-hint">{live ? t.emailHint : t.waitHint}</span>
-				{#if emailBad}<span class="error-text" id="acc-email-err">{t.errEmail}</span>{/if}
-			</div>
-
-			<div class="consent rise" style="--d:270ms">
-				<label class="check">
-					<input type="checkbox" bind:checked={terms} aria-invalid={termsBad} aria-describedby={termsBad ? 'terms-err' : undefined} />
-					<span>{t.terms} <a href={href(lang, '/legal/terms')}>{t.termsLink}</a> {t.and} <a href={href(lang, '/legal/privacy')}>{t.privacyLink}</a>.</span>
-				</label>
-				{#if termsBad}<span class="error-text" id="terms-err">{live ? t.errTerms : t.errTermsWait}</span>{/if}
-				<label class="check opt"><input type="checkbox" bind:checked={marketing} /> <span>{t.marketing}</span></label>
-			</div>
-
-			<p class="status" role="status">
-				{#if sentTo}<span class="ok">{t.sent(sentTo)}</span>{:else if failed}<span class="error-text">{t.errAuth}</span>{/if}
+			<p class="recovery">
+				<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10.5" width="16" height="10" rx="2.5" /><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5" /></svg>
+				<span>{t.noRecovery}</span>
 			</p>
-		</form>
 
-		<aside class="store rise" style="--d:180ms" aria-labelledby="why-title">
-			<h2 id="why-title" class="eyebrow">{t.why}</h2>
-			<ul class="yes" role="list">
-				{#each t.storeList as w (w)}<li><span class="ic" aria-hidden="true">✓</span><span>{w}</span></li>{/each}
-			</ul>
-			<div class="never">
-				<p class="never-t"><span class="ic no" aria-hidden="true">✕</span>{t.neverTitle}</p>
-				<ul class="chips" role="list">{#each t.neverList as w (w)}<li>{w}</li>{/each}</ul>
-			</div>
-			<p class="foot">{t.deletion}</p>
-			<p class="source">{t.scopes}</p>
-		</aside>
-	</div>
+			<button class="send" type="submit" disabled={busy !== null}>{busy === 'password' ? t.busy : register ? t.register : t.login} <span class="arrow" aria-hidden="true">→</span></button>
+		</fieldset>
+
+		<div class="consent rise" style="--d:210ms">
+			<label class="check">
+				<input type="checkbox" bind:checked={terms} aria-invalid={termsBad} aria-describedby={termsBad ? 'terms-err' : undefined} />
+				<span>{t.terms} <a href={href(lang, '/legal/terms')}>{t.termsLink}</a> {t.and} <a href={href(lang, '/legal/privacy')}>{t.privacyLink}</a>.</span>
+			</label>
+			{#if termsBad}<span class="error-text" id="terms-err">{t.errTerms}</span>{/if}
+		</div>
+
+		<p class="status" role="status">{#if failMsg}<span class="error-text">{failMsg}</span>{/if}</p>
+	</form>
 </Shell>
 
 <style>
-	.acct {
-		display: grid;
-		grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-		gap: var(--sp-6);
-		align-items: start;
-		width: min(100%, 62rem);
-		margin-inline: auto;
+	/* ember light pooled under the card; the card sits centred in the Shell's 40rem column */
+	.halo {
+		position: absolute;
+		left: 50%;
+		width: min(46rem, 120vw);
+		height: 34rem;
+		margin-top: 4rem;
+		transform: translateX(-50%);
+		z-index: -1;
+		pointer-events: none;
+		background: radial-gradient(50% 50% at 50% 50%, color-mix(in srgb, var(--heat-3) 16%, transparent), transparent 70%);
+		filter: blur(10px);
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		.rise {
@@ -179,13 +208,14 @@
 		}
 	}
 
-	/* ---------- the sign-in card ---------- */
 	.panel {
 		position: relative;
 		display: grid;
 		gap: var(--sp-5);
-		padding: clamp(1.25rem, 0.8rem + 2vw, 2.25rem);
-		border-radius: var(--r-xl);
+		width: min(100%, 32rem);
+		margin-inline: auto;
+		padding: clamp(1.25rem, 0.6rem + 2.6vw, 2.5rem);
+		border-radius: calc(var(--r-xl) + 4px);
 	}
 	.oauth {
 		display: grid;
@@ -194,8 +224,8 @@
 	/*
 	 * Provider buttons, Google's custom-button spec scaled 1.3× (40 → 52 px, G 20 → 26 px, 12 / 10 px
 	 * padding → 16 / 13 px): dark fill #131314, 1 px #8E918F stroke, #E3E3E3 text; light theme
-	 * #FFFFFF / #747775 / #1F1F1F. GitHub gets the identical shell (equal prominence). The heat ring
-	 * on hover sits outside the stroke, so neither brand surface is recoloured.
+	 * #FFFFFF / #747775 / #1F1F1F. GitHub and Hugging Face get the identical shell (equal prominence).
+	 * The heat ring on hover sits outside the stroke, so no brand surface is recoloured.
 	 */
 	.oa {
 		--oa-fill: #131314;
@@ -207,7 +237,7 @@
 		gap: 0.8125rem;
 		width: 100%;
 		min-height: 3.25rem;
-		padding: 0 1rem;
+		padding: 0 1.25rem 0 1rem;
 		border: 1px solid var(--oa-stroke);
 		border-radius: var(--r-pill);
 		background: var(--oa-fill);
@@ -228,17 +258,21 @@
 		--oa-ink: #1f1f1f;
 		--oa-mark: #000000;
 	}
-	.oa:not(:disabled):hover {
+	.oa:hover {
 		box-shadow:
 			0 0 0 3px color-mix(in srgb, var(--heat-3) 35%, transparent),
 			0 14px 40px -16px color-mix(in srgb, var(--heat-3) 90%, transparent);
 	}
-	.oa:not(:disabled):active {
+	.oa:active {
 		transform: scale(0.985);
 	}
 	.oa:focus-visible {
 		outline: 2px solid var(--heat-3);
 		outline-offset: 3px;
+	}
+	.oa:disabled,
+	.send:disabled {
+		cursor: progress;
 	}
 	.mark {
 		flex: none;
@@ -257,92 +291,17 @@
 		flex: 1;
 		min-width: 0;
 	}
-	/* Google's own disabled state: content at 38 %, the stroke stays */
-	.oa:disabled {
-		cursor: not-allowed;
-	}
-	.oa:disabled .mark,
-	.oa:disabled .oa-label {
-		opacity: 0.38;
-	}
-	.soon-tag {
+	.oa .arrow {
 		flex: none;
-		padding: 0.15rem 0.55rem;
-		border: 1px solid color-mix(in srgb, var(--heat-3) 55%, transparent);
-		border-radius: var(--r-pill);
-		color: var(--heat-4);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.08em;
-		text-transform: uppercase;
+		opacity: 0.55;
+		transition:
+			transform var(--dur-3) var(--ease-out),
+			opacity var(--dur-2);
 	}
-	:global(:root[data-theme='light']) .soon-tag {
-		color: var(--oa-ink);
-	}
-
-	/* ---------- honest "sign-in soon" note ---------- */
-	.soon {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		gap: var(--sp-3);
-		padding: var(--sp-4) var(--sp-5);
-		border: 1px solid color-mix(in srgb, var(--heat-3) 35%, var(--line));
-		border-radius: var(--r-lg);
-		background:
-			radial-gradient(80% 120% at 0% 0%, color-mix(in srgb, var(--heat-3) 12%, transparent), transparent 70%),
-			var(--bg-1);
-	}
-	.pulse {
-		position: relative;
-		width: 0.55rem;
-		height: 0.55rem;
-		margin-top: 0.45rem;
-		border-radius: 50%;
-		background: var(--heat-3);
-		box-shadow: 0 0 10px var(--heat-3);
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		.pulse::after {
-			content: '';
-			position: absolute;
-			inset: 0;
-			border-radius: 50%;
-			background: var(--heat-3);
-			animation: pulse 2.4s var(--ease-out) infinite;
-		}
-	}
-	@keyframes pulse {
-		to {
-			transform: scale(3);
-			opacity: 0;
-		}
-	}
-	.soon-t {
-		color: var(--text-hi);
-		font-weight: 650;
-	}
-	.soon-b {
-		margin-top: var(--sp-1);
-		font-size: var(--fs-sm);
-		color: var(--text);
-	}
-	.soon-cta {
-		display: inline-flex;
-		align-items: center;
-		gap: 0.4rem;
-		margin-top: var(--sp-3);
-		color: var(--text-hi);
-		font-size: var(--fs-sm);
-		font-weight: 650;
-		text-decoration: underline;
-		text-decoration-color: color-mix(in srgb, var(--heat-3) 70%, transparent);
-		text-underline-offset: 0.25em;
-	}
-	.soon-cta .arrow {
-		display: inline-block;
-		transition: transform var(--dur-3) var(--ease-out);
-	}
-	.soon-cta:hover .arrow {
-		transform: translateY(3px);
+	.oa:hover .arrow,
+	.oa:focus-visible .arrow {
+		opacity: 1;
+		transform: translateX(4px);
 	}
 
 	.or {
@@ -366,55 +325,102 @@
 		background: linear-gradient(90deg, var(--line-strong), transparent);
 	}
 
-	/* ---------- magic-link / waitlist field: one pill, heat ring on focus ---------- */
-	.magic {
-		display: flex;
-		align-items: center;
-		gap: var(--sp-3);
-		padding: 0.35rem 0.35rem 0.35rem var(--sp-5);
-		border: 1px solid var(--line-strong);
-		border-radius: var(--r-pill);
-		background: var(--bg-1);
-		transition:
-			border-color var(--dur-2) var(--ease-out),
-			box-shadow var(--dur-3) var(--ease-out);
+	/* ---------- username + password (no e-mail) ---------- */
+	.pw {
+		display: grid;
+		gap: var(--sp-4);
+		margin: 0;
+		padding: 0;
+		border: 0;
+		min-width: 0;
 	}
-	.magic:focus-within {
+	.pw-title {
+		float: left; /* lets the legend sit in the grid flow instead of on the fieldset border */
+		width: 100%;
+		margin-bottom: calc(-1 * var(--sp-1));
+		color: var(--text-hi);
+		font-weight: 650;
+		font-size: var(--fs-base);
+	}
+	.mode {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+	}
+	.mode span {
+		text-align: center;
+		padding-block: 0.55rem;
+	}
+	.mode label:hover span {
+		color: var(--text-hi);
+	}
+	.mode input:checked + span {
+		background: var(--text-hi);
+		color: var(--text-inv);
+	}
+	.mode input:focus-visible + span {
+		outline-color: var(--heat-3);
+	}
+	.pw .input {
+		min-height: 3rem;
+		border-radius: var(--r-md);
+		font-size: var(--fs-md);
+	}
+	.pw .input:focus-visible {
 		border-color: var(--heat-3);
-		box-shadow:
-			0 0 0 3px color-mix(in srgb, var(--heat-3) 28%, transparent),
-			0 0 34px -6px color-mix(in srgb, var(--heat-3) 70%, transparent);
 	}
-	.magic.bad {
-		border-color: var(--danger-ink);
+	.pass {
+		position: relative;
 	}
-	.mail {
-		flex: none;
+	.pass .input {
+		padding-right: 3.25rem;
+	}
+	.eye {
+		position: absolute;
+		top: 50%;
+		right: 0.35rem;
+		display: grid;
+		place-items: center;
+		width: 2.5rem;
+		height: 2.5rem;
+		transform: translateY(-50%);
+		border: 0;
+		border-radius: var(--r-sm);
+		background: transparent;
 		color: var(--text-mute);
+		cursor: pointer;
 	}
-	.magic:focus-within .mail {
+	.eye:hover,
+	.eye[aria-pressed='true'] {
+		color: var(--text-hi);
+	}
+	.eye:focus-visible {
+		outline: 2px solid var(--heat-3);
+		outline-offset: 0;
+	}
+	.recovery {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: var(--sp-2);
+		align-items: start;
+		padding: var(--sp-3) var(--sp-4);
+		border: 1px solid color-mix(in srgb, var(--heat-3) 30%, var(--line));
+		border-radius: var(--r-md);
+		background: color-mix(in srgb, var(--heat-3) 6%, transparent);
+		color: var(--text);
+		font-size: var(--fs-xs);
+		line-height: 1.5;
+	}
+	.recovery svg {
+		margin-top: 0.05rem;
 		color: var(--accent-ink);
 	}
-	.magic input {
-		flex: 1;
-		min-width: 0;
-		min-height: 2.9rem;
-		border: 0;
-		background: transparent;
-		color: var(--text-hi);
-		font: inherit;
-		font-size: var(--fs-md);
-		outline: none;
-	}
-	.magic input::placeholder {
-		color: var(--text-mute);
-	}
 	.send {
-		flex: none;
 		display: inline-flex;
 		align-items: center;
+		justify-content: center;
 		gap: var(--sp-2);
-		min-height: 2.9rem;
+		width: 100%;
+		min-height: 3.25rem;
 		padding: 0 var(--sp-5);
 		border: 0;
 		border-radius: var(--r-pill);
@@ -422,14 +428,20 @@
 		color: var(--text-inv);
 		font: inherit;
 		font-weight: 650;
-		font-size: var(--fs-sm);
+		font-size: var(--fs-base);
 		cursor: pointer;
-		transition: box-shadow var(--dur-3);
+		transition:
+			box-shadow var(--dur-3),
+			transform var(--dur-2) var(--ease-out);
 	}
 	.send:hover {
-		box-shadow: 0 8px 30px -10px color-mix(in srgb, var(--heat-3) 90%, transparent);
+		box-shadow: 0 10px 34px -10px color-mix(in srgb, var(--heat-3) 90%, transparent);
+	}
+	.send:active {
+		transform: scale(0.99);
 	}
 	.send:focus-visible {
+		outline: 2px solid var(--heat-3);
 		outline-offset: 3px;
 	}
 	.send .arrow {
@@ -439,23 +451,12 @@
 	.send:hover .arrow {
 		transform: translateX(3px);
 	}
-	.field {
-		display: grid;
-		gap: var(--sp-2);
-	}
-	.field .hint,
-	.field .error-text {
-		padding-left: var(--sp-5);
-	}
+
 	.consent {
 		display: grid;
-		gap: var(--sp-3);
+		gap: var(--sp-2);
 		padding-top: var(--sp-4);
 		border-top: 1px solid var(--line);
-	}
-	.opt {
-		color: var(--text-mute);
-		font-size: var(--fs-xs);
 	}
 	.check input {
 		accent-color: var(--heat-3);
@@ -466,123 +467,10 @@
 	.status {
 		font-size: var(--fs-sm);
 	}
-	.ok {
-		color: var(--text-hi);
-	}
 
-	/* ---------- compact "what we store" panel ---------- */
-	.store {
-		display: grid;
-		gap: var(--sp-4);
-		padding: var(--sp-6);
-		border: 1px solid var(--line);
-		border-radius: var(--r-xl);
-		background:
-			radial-gradient(90% 60% at 100% 0%, color-mix(in srgb, var(--heat-2) 10%, transparent), transparent 70%),
-			color-mix(in srgb, var(--bg-1) 82%, transparent);
-		backdrop-filter: blur(10px);
-	}
-	.store ul {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-	}
-	.yes {
-		display: grid;
-		gap: var(--sp-3);
-		font-size: var(--fs-sm);
-		color: var(--text);
-	}
-	.yes li {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr);
-		gap: var(--sp-3);
-		align-items: baseline;
-	}
-	.ic {
-		display: inline-grid;
-		place-items: center;
-		width: 1.35rem;
-		height: 1.35rem;
-		border-radius: 50%;
-		background: color-mix(in srgb, var(--heat-3) 18%, transparent);
-		color: var(--accent-ink);
-		font-size: 0.72rem;
-		font-weight: 700;
-		transform: translateY(0.15em);
-	}
-	.ic.no {
-		background: var(--bg-3);
-		color: var(--text-hi);
-	}
-	.never {
-		display: grid;
-		gap: var(--sp-2);
-		padding-top: var(--sp-4);
-		border-top: 1px solid var(--line);
-	}
-	.never-t {
-		display: flex;
-		gap: var(--sp-3);
-		align-items: baseline;
-		color: var(--text-hi);
-		font-size: var(--fs-sm);
-		font-weight: 650;
-	}
-	.chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: var(--sp-2);
-	}
-	.chips li {
-		padding: 0.15rem 0.65rem;
-		border: 1px solid var(--line-strong);
-		border-radius: var(--r-pill);
-		color: var(--text);
-		font-size: var(--fs-xs);
-		text-decoration: line-through;
-		text-decoration-color: color-mix(in srgb, var(--heat-2) 70%, transparent);
-	}
-	.foot {
-		font-size: var(--fs-xs);
-		color: var(--text-mute);
-	}
-	.store .source {
-		margin-top: calc(-1 * var(--sp-3));
-	}
-
-	@media (max-width: 900px) {
-		.acct {
-			grid-template-columns: minmax(0, 1fr);
-			width: min(100%, 40rem);
-		}
-	}
 	@media (max-width: 560px) {
-		.magic {
-			flex-wrap: wrap;
-			border-radius: var(--r-xl);
-			padding: var(--sp-2) var(--sp-2) var(--sp-2) var(--sp-4);
-		}
-		.send {
-			width: 100%;
-			justify-content: center;
-		}
-		.field .hint,
-		.field .error-text {
-			padding-left: var(--sp-2);
-		}
-		.soon {
-			padding: var(--sp-4);
-		}
-		/* one line per provider: the note right under the buttons already says "soon" */
-		.soon-tag {
-			display: none;
-		}
 		.oa {
 			font-size: var(--fs-base);
-		}
-		.store {
-			padding: var(--sp-5);
 		}
 	}
 </style>

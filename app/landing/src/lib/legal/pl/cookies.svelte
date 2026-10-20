@@ -36,11 +36,13 @@
 			<tbody>
 				<tr><td><code>theme</code> — localStorage</td><td>zapamiętanie motywu jasnego lub ciemnego; zapisywany dopiero po kliknięciu przełącznika motywu</td><td>do usunięcia danych strony w przeglądarce lub ponownej zmiany</td><td>żądanie użytkownika — niezbędne</td></tr>
 				<tr><td><code>consent</code> — localStorage</td><td>zapis Twojej decyzji z banera zgody (wersja, kategoria analityczna tak/nie, data)</td><td>do usunięcia danych strony lub zmiany wersji banera</td><td>niezbędne do respektowania Twojego wyboru</td></tr>
-				<tr><td>stan prototypu onboardingu — sessionStorage</td><td>zachowanie kroków prototypu aplikacji przy przechodzeniu między ekranami</td><td>do zamknięcia karty przeglądarki</td><td>żądanie użytkownika — niezbędne</td></tr>
+				<tr><td><code>authjs.session-token</code> — cookie (HttpOnly, na https z prefiksem <code>__Secure-</code>) <span class="badge badge--soon">po uruchomieniu kont</span></td><td>utrzymanie zalogowania na Koncie; ustawiane dopiero po zalogowaniu</td><td>30 dni albo do wylogowania</td><td>żądanie użytkownika — niezbędne</td></tr>
+				<tr><td><code>authjs.csrf-token</code>, <code>authjs.callback-url</code>, <code>authjs.state</code>, <code>authjs.pkce.code_verifier</code>, <code>authjs.nonce</code> — cookies <span class="badge badge--soon">po uruchomieniu kont</span></td><td>ochrona formularza logowania przed CSRF, bezpieczne logowanie przez Google, GitHub lub Hugging Face i powrót na właściwą stronę</td><td>do zamknięcia przeglądarki; cookies logowania przez dostawcę — 15 minut</td><td>żądanie użytkownika — niezbędne</td></tr>
+				<tr><td><code>onboarding</code> — sessionStorage <span class="badge badge--soon">po uruchomieniu kont</span></td><td>nazwa zalogowanego Konta pokazywana pod krokami „Sprawdź swój sprzęt”</td><td>do zamknięcia karty przeglądarki</td><td>żądanie użytkownika — niezbędne</td></tr>
 			</tbody>
 		</table>
 	</div>
-	<p>Żaden z tych wpisów nie jest przesyłany na nasz serwer ani do podmiotów trzecich.</p>
+	<p>Cookies logowania trafiają wyłącznie na nasz serwer, żeby rozpoznać zalogowane Konto. Pozostałe wpisy nie są przesyłane na nasz serwer ani do podmiotów trzecich.</p>
 	<h2 id="analityka" class="h2">4. Kategoria „analityka”</h2>
 	<p>Baner zgody zawiera kategorię „analityka”, abyśmy w przyszłości mogli zapytać o zgodę we właściwy sposób. <strong>Obecnie nie jest zainstalowane żadne narzędzie analityczne</strong>: ani przed, ani po wyrażeniu zgody nic się nie ładuje. Jeśli wybierzemy takie narzędzie, najpierw wymienimy je w tej polityce (dostawca, zapisywane dane, okres, ewentualny transfer poza EOG) i ponownie zapytamy o zgodę.</p>
 	<h2 id="zmiana" class="h2">5. Jak zmienić decyzję</h2>

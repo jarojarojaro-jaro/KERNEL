@@ -65,10 +65,10 @@
 	<h2 id="konto" class="h2">§ 5. Konto</h2>
 	<ol>
 		<li>Założenie Konta jest dobrowolne i nieodpłatne. Aplikacja w edycji bezpłatnej działa bez Konta.</li>
-		<li>Konto można założyć, podając adres e-mail (z potwierdzeniem linkiem) albo logując się przez Google lub GitHub. Przy logowaniu zewnętrznym pobieramy wyłącznie minimalny zakres danych: identyfikator konta u dostawcy i adres e-mail.</li>
+		<li>Konto można założyć, logując się przez Google, GitHub lub Hugging Face, albo podając wyłącznie nazwę użytkownika i hasło, bez adresu e-mail. Przy logowaniu zewnętrznym pobieramy wyłącznie minimalny zakres danych: identyfikator konta u dostawcy, nazwę użytkownika i — jeśli dostawca go przekaże — adres e-mail. Do Konta bez adresu e-mail nie da się odzyskać dostępu po utracie hasła.</li>
 		<li>Użytkownik zobowiązuje się nie udostępniać danych dostępowych osobom trzecim.</li>
 		<li>Użytkownik może w każdej chwili usunąć Konto jednym przyciskiem w ustawieniach Konta, bez podawania przyczyny. Usunięcie Konta jest równoznaczne z rozwiązaniem umowy o prowadzenie Konta ze skutkiem natychmiastowym.</li>
-		<li>Usługodawca może rozwiązać umowę o prowadzenie Konta z zachowaniem 14-dniowego terminu wypowiedzenia z ważnych przyczyn (rażące naruszenie § 8), informując o przyczynie na adres e-mail Użytkownika.</li>
+		<li>Usługodawca może rozwiązać umowę o prowadzenie Konta z zachowaniem 14-dniowego terminu wypowiedzenia z ważnych przyczyn (rażące naruszenie § 8), informując o przyczynie na adres e-mail Użytkownika, a jeśli Konto go nie ma — komunikatem po zalogowaniu.</li>
 	</ol>
 	<h2 id="edycje" class="h2">§ 6. Edycja bezpłatna i edycja płatna</h2>
 	<ol>
@@ -113,7 +113,7 @@
 	<p>Do umów stosuje się prawo polskie. Wybór prawa nie pozbawia Konsumenta ochrony przysługującej mu na podstawie przepisów, których nie można wyłączyć w drodze umowy, prawa państwa jego zwykłego pobytu (art. 6 ust. 2 rozporządzenia Rzym I).</p>
 	<p>Spory z Użytkownikami niebędącymi Konsumentami rozstrzyga sąd właściwy dla siedziby Usługodawcy.</p>
 	<h2 id="zmiany" class="h2">§ 14. Zmiany Regulaminu</h2>
-	<p>Usługodawca może zmienić Regulamin z ważnych przyczyn: zmiany przepisów, zmiany zakresu Usług lub wymogów bezpieczeństwa. O zmianie Użytkownicy posiadający Konto zostaną powiadomieni e-mailem co najmniej 14 dni przed jej wejściem w życie. Użytkownik, który nie akceptuje zmian, może usunąć Konto przed tym dniem.</p>
+	<p>Usługodawca może zmienić Regulamin z ważnych przyczyn: zmiany przepisów, zmiany zakresu Usług lub wymogów bezpieczeństwa. O zmianie Użytkownicy posiadający Konto zostaną powiadomieni co najmniej 14 dni przed jej wejściem w życie: e-mailem, jeśli Konto ma adres e-mail, a w pozostałych przypadkach komunikatem po zalogowaniu. Użytkownik, który nie akceptuje zmian, może usunąć Konto przed tym dniem.</p>
 	<p>Zmiany nie naruszają praw nabytych przed ich wejściem w życie.</p>
 </article>
 

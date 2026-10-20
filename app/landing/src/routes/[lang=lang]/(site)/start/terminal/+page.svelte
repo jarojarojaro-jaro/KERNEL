@@ -26,7 +26,7 @@
 
 <svelte:head><title>{t.title}</title></svelte:head>
 
-<Shell title={t.title} lead={t.lead} step={3} wide back="/start/paths">
+<Shell title={t.title} lead={t.lead} wide back="/start/paths">
 	<div class="stack installs" style="--stack: var(--sp-4)">
 		{#each installs as i (i.os)}
 			<div class="codeblock">

@@ -1,9 +1,8 @@
 <script lang="ts">
 	/**
-	 * Onboarding frame: an optional quiet back link, the step rail (Konto → Droga → Sprzęt → Wynik),
-	 * the step's big headline (*accent* words via Hl) with a one-line lede, the step content, and a
-	 * small prototype chip under it. The stage slides in once; under reduced motion it renders in its
-	 * final state.
+	 * Onboarding frame: an optional quiet back link, the step's big headline (*accent* words via Hl)
+	 * with a one-line lede, the step content, and a small prototype chip under it. The stage slides in
+	 * once; under reduced motion it renders in its final state.
 	 */
 	import type { Snippet } from 'svelte';
 	import { onMount } from 'svelte';
@@ -15,13 +14,11 @@
 	let {
 		title,
 		lead,
-		/** 1-based position in `ob[lang].steps`: account 1, paths 2, hardware/download/terminal 3, result 4. */
-		step,
 		wide = false,
 		/** Path of the previous step (e.g. '/start/paths'); omitted on the first step. */
 		back,
 		children
-	}: { title: string; lead: string; step: number; wide?: boolean; back?: string; children: Snippet } = $props();
+	}: { title: string; lead: string; wide?: boolean; back?: string; children: Snippet } = $props();
 	const lang = $derived(currentLang());
 	const t = $derived(ob[lang]);
 
@@ -35,16 +32,6 @@
 	<div class="stage container" class:wide>
 		{#if back}<a class="back" href={href(lang, back)}><span aria-hidden="true">←</span> {t.back}</a>{/if}
 		<header class="head">
-			<nav class="rail" aria-label={t.progress}>
-				<ol role="list">
-					{#each t.steps as name, i (name)}
-						<li class:done={i + 1 < step} class:now={i + 1 === step} aria-current={i + 1 === step ? 'step' : undefined}>
-							<span class="seg" aria-hidden="true"><i></i></span>
-							<span class="lbl"><span class="n mono" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span><span class="sr-only">{t.stepOf(i + 1, t.steps.length)}: </span><span class="name">{name}</span></span>
-						</li>
-					{/each}
-				</ol>
-			</nav>
 			<h1 class="giga title"><Hl text={title} /></h1>
 			<p class="lede">{lead}</p>
 		</header>
@@ -57,7 +44,7 @@
 				<p>{t.prototype}</p>
 			</details>
 			{#if session.account}
-				<p class="who">{session.account.method === 'waitlist' ? t.account.listedAs : t.account.signedAs} <strong>{session.account.email ?? session.account.method}</strong></p>
+				<p class="who">{t.account.signedAs} <strong>{session.account.name ?? session.account.email ?? session.account.method}</strong></p>
 			{/if}
 		</div>
 	</div>
@@ -126,91 +113,6 @@
 		gap: var(--sp-4);
 		text-align: center;
 		max-width: 46rem;
-	}
-	/* ---------- step rail: four segments, heat fills up to the current step ---------- */
-	.rail {
-		width: min(100%, 30rem);
-		margin-bottom: var(--sp-2);
-	}
-	.rail ol {
-		list-style: none;
-		margin: 0;
-		padding: 0;
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: var(--sp-2);
-	}
-	.rail li {
-		display: grid;
-		gap: var(--sp-2);
-		justify-items: start;
-		color: var(--text-mute);
-		font-size: var(--fs-xs);
-		text-align: left;
-	}
-	.seg {
-		position: relative;
-		width: 100%;
-		height: 3px;
-		border-radius: var(--r-pill);
-		background: var(--line);
-		overflow: hidden;
-	}
-	.seg i {
-		position: absolute;
-		inset: 0;
-		border-radius: inherit;
-		background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 70%, var(--heat-4));
-		transform: scaleX(0);
-		transform-origin: left;
-	}
-	.done .seg i,
-	.now .seg i {
-		transform: none;
-	}
-	.now .seg {
-		box-shadow: 0 0 14px color-mix(in srgb, var(--heat-3) 60%, transparent);
-	}
-	.lbl {
-		display: inline-flex;
-		align-items: baseline;
-		gap: 0.4rem;
-		white-space: nowrap;
-	}
-	.n {
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.06em;
-	}
-	.done .n {
-		color: var(--accent-ink);
-	}
-	.now {
-		color: var(--text-hi);
-		font-weight: 600;
-	}
-	.now .n {
-		color: var(--accent-ink);
-	}
-	@media (prefers-reduced-motion: no-preference) {
-		.now .seg i {
-			animation: rail-fill 1.1s var(--ease-out) 0.35s both;
-		}
-	}
-	@keyframes rail-fill {
-		from {
-			transform: scaleX(0);
-		}
-	}
-	/* narrow phones: only the current step keeps its name; numbers and segments carry the rest */
-	@media (max-width: 480px) {
-		.rail li:not(.now) .name {
-			position: absolute;
-			width: 1px;
-			height: 1px;
-			overflow: hidden;
-			clip-path: inset(50%);
-			white-space: nowrap;
-		}
 	}
 	.title {
 		position: relative;

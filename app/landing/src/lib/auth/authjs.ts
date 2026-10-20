@@ -5,20 +5,22 @@
  * `handle` hook, the session callback) is set up as described in AUTH.md.
  *
  * Integration points:
- * - `BASE` is the Auth.js `basePath` (default `/auth`); OAuth callbacks land on `/auth/callback/<id>`.
- * - `EMAIL_PROVIDER` is the id of the Auth.js e-mail provider configured on the server
- *   (`nodemailer` for any SMTP relay; `resend`, `sendgrid`, … if one of those is used instead).
- * - `getSession` expects the server's `callbacks.session` to copy `user.id` and the sign-in
- *   `provider` onto the session (AUTH.md, Auth.js step 4); without it the id falls back to the
- *   e-mail and the method to `email`.
+ * - `BASE` is the Auth.js `basePath` (default `/auth`); OAuth callbacks land on `/auth/callback/<id>`
+ *   with ids `google`, `github`, `huggingface`.
+ * - Two Credentials providers on the server: `password` (sign in) and `register` (create + sign in),
+ *   both taking `username` + `password`. They report failures by throwing `CredentialsSignin`
+ *   subclasses whose `code` (`invalid` | `taken` | `locked`) Auth.js appends to the error URL.
+ * - `getSession` expects the server's `callbacks.session` to put `user.id`, `user.name` and the
+ *   sign-in `provider` on the session (AUTH.md); the Credentials ids map to the `password` method.
  */
-import type { AuthClient, AuthSession, OAuthProvider, SignInOptions } from './types';
+import type { AuthClient, AuthErrorCode, AuthResult, AuthSession, SignInMethod, SignInOptions } from './types';
 
 const BASE = '/auth';
-const EMAIL_PROVIDER = 'nodemailer';
+const CODES: Record<string, AuthErrorCode> = { invalid: 'invalid', taken: 'taken', locked: 'locked' };
+const OAUTH_METHODS: Record<string, SignInMethod> = { google: 'google', github: 'github', huggingface: 'huggingface' };
 
-const record = (v: unknown): Record<string, unknown> | null => (v && typeof v === 'object' ? (v as Record<string, unknown>) : null);
-const str = (v: unknown): string | null => (typeof v === 'string' ? v : null);
+const record = (v: unknown): Record<string, unknown> | null => (v && typeof v === 'object' ? { ...v } : null);
+const str = (v: unknown): string | null => (typeof v === 'string' && v !== '' ? v : null);
 
 async function getJson(path: string, init?: RequestInit): Promise<Record<string, unknown> | null> {
 	const res = await fetch(`${BASE}/${path}`, { credentials: 'same-origin', ...init });
@@ -40,17 +42,16 @@ async function action(path: string, fields: Record<string, string>): Promise<URL
 	return new URL(url, location.origin);
 }
 
-/** Runs a sign-in action and maps `?error=` on the returned url and thrown failures to AuthResult. */
-async function signIn(path: string, fields: Record<string, string>, options: SignInOptions | undefined, redirect: boolean) {
+/** Runs a sign-in action; follows the returned URL unless it carries `?error=` (then maps `code`). */
+async function signIn(path: string, fields: Record<string, string>, options?: SignInOptions): Promise<AuthResult> {
 	try {
 		const url = await action(path, { ...fields, callbackUrl: new URL(options?.redirectTo ?? location.pathname, location.origin).href });
 		const error = url.searchParams.get('error');
-		if (error) return { status: 'error', message: error } as const;
-		if (!redirect) return { status: 'email-sent' } as const;
+		if (error) return { status: 'error', code: CODES[url.searchParams.get('code') ?? ''] ?? (error === 'CredentialsSignin' ? 'invalid' : 'failed'), message: error };
 		location.assign(url);
-		return { status: 'redirecting' } as const;
+		return { status: 'redirecting' };
 	} catch (e) {
-		return { status: 'error', message: e instanceof Error ? e.message : String(e) } as const;
+		return { status: 'error', code: 'failed', message: e instanceof Error ? e.message : String(e) };
 	}
 }
 
@@ -58,10 +59,9 @@ export const authjsClient: AuthClient = {
 	backend: 'authjs',
 	live: true,
 
-	signInWith: (provider: OAuthProvider, options?: SignInOptions) => signIn(`signin/${provider}`, {}, options, true),
-
-	// The server mails the link and answers with its verify-request page, which we do not open.
-	signInWithEmail: (email: string, options?: SignInOptions) => signIn(`signin/${EMAIL_PROVIDER}`, { email }, options, false),
+	signInWith: (provider, options) => signIn(`signin/${provider}`, {}, options),
+	signInWithPassword: (username, password, options) => signIn('callback/password', { username, password }, options),
+	signUpWithPassword: (username, password, options) => signIn('callback/register', { username, password }, options),
 
 	async getSession(): Promise<AuthSession | null> {
 		let s: Record<string, unknown> | null;
@@ -71,12 +71,11 @@ export const authjsClient: AuthClient = {
 			return null;
 		}
 		const user = record(s?.user);
-		if (!user) return null;
-		const email = str(user.email);
-		const provider = str(user.provider);
+		const id = str(user?.id);
+		if (!user || !id) return null;
 		const expires = str(s?.expires);
 		return {
-			user: { id: str(user.id) ?? email ?? '', email, method: provider === 'google' || provider === 'github' ? provider : 'email' },
+			user: { id, email: str(user.email), name: str(user.name), method: OAUTH_METHODS[str(user.provider) ?? ''] ?? 'password' },
 			expiresAt: expires ? Date.parse(expires) : null
 		};
 	},
