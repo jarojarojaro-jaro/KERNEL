@@ -14,6 +14,7 @@
 	 */
 	import { magnetic } from '$lib/fx/actions';
 	import HeatField from '$lib/fx/HeatField.svelte';
+	import SpeedLines from '$lib/fx/SpeedLines.svelte';
 	import StreamDuel from '$lib/fx/StreamDuel.svelte';
 	import { variantLabel } from '$lib/data/measurements';
 	import { fmtTps } from '$lib/format';
@@ -51,7 +52,7 @@
 </script>
 
 <section class="hero" class:hot={heat} aria-labelledby="hero-title">
-	<HeatField heat={heat ? 1 : 0.62} boost={heat ? 1 : 0} />
+	<HeatField heat={heat ? 1 : 0.8} boost={heat ? 1 : 0.35} />
 	<div class="veil" aria-hidden="true"></div>
 	{#if bloomed}<div class="bloom" aria-hidden="true"></div>{/if}
 	<div class="inner">
@@ -69,6 +70,7 @@
 			</a>
 		</div>
 		<div class="race">
+			<div class="lines"><SpeedLines /></div>
 			<!-- keyed: the duel caches its text nodes, so a language switch mounts a fresh one -->
 			{#key lang}
 				<StreamDuel {lanes} {gain} text={r.stream} {lang} labels={dl} {summary} {dial} countUp seam {onstart} />
@@ -317,7 +319,14 @@
 		outline-offset: 4px;
 		border-radius: 4px;
 	}
+	/* the speed lines run the full width of the screen behind the duel (the hero clips them) */
+	.lines {
+		position: absolute;
+		z-index: -1;
+		inset: -14% calc(50% - 50vw) -10%;
+	}
 	.race {
+		position: relative;
 		width: min(100%, 72rem);
 		min-width: 0;
 		text-align: left;

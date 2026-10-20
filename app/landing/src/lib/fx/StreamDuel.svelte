@@ -126,6 +126,10 @@
 	/** Per lane: MTP steps seen and the step twitch (alternating sign, decays in ~40 ms). */
 	const stepsSeen = [0, 0];
 	const kick = [0, 0];
+	/** The speed-up badge's burst pulse (0..1) and its layers (seam mode). */
+	let pulse = 0;
+	let coreEl: HTMLElement | undefined = $state();
+	let bloomEl: HTMLElement | undefined = $state();
 
 	function measure() {
 		feeds.forEach((f, i) => {
@@ -233,10 +237,17 @@
 					if (l.id === 'hot' && steps > stepsSeen[i]) {
 						const sign = steps % 2 ? 1 : -1;
 						kick[i] = sign * 0.025 * l.tps * (0.7 + 0.3 * Math.abs(Math.sin(steps * 1.7)));
+						// the speed-up badge fires with our bursts (every 6th step, ~6 Hz: visible, not a buzz)
+						if (steps % 6 === 0) pulse = 1;
 					}
 					stepsSeen[i] = steps;
 					kick[i] *= Math.exp(-d / 0.04);
 					dials[i]?.set(Math.max(0, s.x + kick[i]));
+				}
+				if (coreEl && bloomEl) {
+					pulse *= Math.exp(-d / 0.11);
+					coreEl.style.transform = `scale(${(1 + 0.045 * pulse).toFixed(4)})`;
+					bloomEl.style.opacity = (0.6 + 0.4 * pulse).toFixed(3);
 				}
 			})
 		);
@@ -286,8 +297,9 @@
 		{#if seam}
 			<p class="seamgain">
 				<span class="pill">
+					<span class="bloom" bind:this={bloomEl}></span>
 					<span class="ring"></span>
-					<span class="core"><Ratio value={gain} {lang} size="md" replay={countUp && ran ? 1 : 0} duration={1400} /><span class="fx">{labels.faster}</span></span>
+					<span class="core" bind:this={coreEl}><Ratio value={gain} {lang} size="md" replay={countUp && ran ? 1 : 0} duration={1400} /><span class="fx">{labels.faster}</span></span>
 				</span>
 			</p>
 		{/if}
@@ -677,7 +689,9 @@
 			gap: 0.3rem;
 		}
 	}
-	/* the speed-up: one glowing badge on the seam, a heat line running through it into both panes */
+	/* the speed-up: the hero's loudest element after the headline. A dark plate with a white-hot
+	 * core and a heat bloom that fires with our bursts; the seam line runs dim steel into the
+	 * typical pane and bright heat into ours. */
 	.seamgain {
 		grid-column: 2;
 		grid-row: 1 / span 3;
@@ -688,30 +702,53 @@
 		display: grid;
 		place-items: center;
 	}
-	.seamgain::before {
+	.seamgain::before,
+	.seamgain::after {
 		content: '';
 		position: absolute;
 		z-index: -1;
 		top: 50%;
+	}
+	.seamgain::before {
 		left: calc(-1 * var(--cg));
+		right: 50%;
+		height: 1px;
+		background: linear-gradient(90deg, rgb(125 135 148 / 0.35), rgb(125 135 148 / 0.7));
+	}
+	.seamgain::after {
+		left: 50%;
 		right: calc(-1 * var(--cg));
-		height: 2px;
+		height: 3px;
 		margin-top: -1px;
-		background: linear-gradient(90deg, var(--before), var(--heat-2) 35%, var(--heat-4));
-		box-shadow: 0 0 12px rgb(255 122 26 / 0.6);
+		border-radius: 3px;
+		background: linear-gradient(90deg, var(--heat-3), var(--heat-5));
+		box-shadow:
+			0 0 8px var(--heat-4),
+			0 0 22px rgb(255 122 26 / 0.8);
 	}
 	.pill {
 		position: relative;
 		isolation: isolate;
 		display: grid;
-		padding: 0.85rem 1rem 0.75rem;
-		border-radius: 1.25rem;
+		padding: 1rem 1.5rem 0.9rem;
+		border-radius: 1.5rem;
 		box-shadow:
-			0 0 0 1px rgb(255 122 26 / 0.3),
-			0 0 48px -6px rgb(255 122 26 / 0.65),
-			0 20px 50px -24px rgb(226 64 28 / 0.8);
+			0 0 0 1px rgb(255 193 90 / 0.45),
+			0 0 70px -4px rgb(255 122 26 / 0.75),
+			0 24px 60px -24px rgb(226 64 28 / 0.9);
 	}
-	/* a turning heat edge (compositor only) around a dark core */
+	/* the halo around the plate (opacity only: it fires with the bursts) */
+	.bloom {
+		position: absolute;
+		z-index: -2;
+		inset: -45% -35%;
+		border-radius: 50%;
+		background: radial-gradient(closest-side, rgb(255 193 90 / 0.55), rgb(255 122 26 / 0.3) 45%, rgb(226 64 28 / 0.12) 70%, transparent);
+		opacity: 0.6;
+		pointer-events: none;
+		will-change: opacity;
+	}
+	/* a turning heat edge (compositor only) around a near-black plate */
 	.ring {
 		position: absolute;
 		inset: 0;
@@ -727,8 +764,8 @@
 		width: 200%;
 		aspect-ratio: 1;
 		translate: -50% -50%;
-		background: conic-gradient(var(--heat-2), var(--heat-3) 10%, var(--heat-5) 17%, var(--heat-4) 24%, rgb(255 122 26 / 0.18) 40%, rgb(255 122 26 / 0.1) 75%, var(--heat-2));
-		animation: turn 3.2s linear infinite paused;
+		background: conic-gradient(var(--heat-2), var(--heat-3) 10%, var(--heat-5) 17%, var(--heat-4) 24%, rgb(255 122 26 / 0.25) 40%, rgb(255 122 26 / 0.15) 75%, var(--heat-2));
+		animation: turn 2.6s linear infinite paused;
 		will-change: transform;
 	}
 	.run .ring::before {
@@ -737,26 +774,37 @@
 	.ring::after {
 		content: '';
 		position: absolute;
-		inset: 1.5px;
-		border-radius: calc(1.25rem - 1.5px);
+		inset: 2px;
+		border-radius: calc(1.5rem - 2px);
 		background:
-			radial-gradient(80% 70% at 50% 30%, rgb(255 122 26 / 0.22), transparent 70%),
-			#0d0907;
+			radial-gradient(60% 55% at 50% 42%, rgb(255 243 214 / 0.16), rgb(255 122 26 / 0.12) 55%, transparent 80%),
+			#060403;
 	}
 	.core {
 		display: grid;
 		justify-items: center;
-		gap: 0.25rem;
+		gap: 0.35rem;
 		line-height: 1;
+		will-change: transform;
+	}
+	/* the factor: twice the size of a pane rate, white-hot to heat, with its own glow */
+	.pill .core :global(.speedup) {
+		--rx-fs: clamp(3rem, 1.6rem + 3.6vw, 5.75rem);
+		background: linear-gradient(180deg, #fff 8%, var(--heat-5) 32%, var(--heat-4) 58%, var(--heat-3) 82%, var(--heat-2));
+		-webkit-background-clip: text;
+		background-clip: text;
+		filter: drop-shadow(0 0 6px rgb(255 243 214 / 0.55)) drop-shadow(0 0 22px rgb(255 122 26 / 0.7));
 	}
 	.fx {
 		font-family: var(--font-mono);
-		font-size: var(--fs-2xs);
-		letter-spacing: 0.14em;
+		font-size: var(--fs-xs);
+		font-weight: 600;
+		letter-spacing: 0.18em;
 		text-transform: uppercase;
-		color: var(--heat-4);
+		color: var(--heat-5);
+		text-shadow: 0 0 10px rgb(255 122 26 / 0.8);
 	}
-	/* phones and small tablets: the panes stack; the badge sits between them, the heat line across */
+	/* phones and small tablets: the panes stack; the badge sits between them */
 	@media (max-width: 720px) {
 		.panes.seam {
 			grid-template-columns: minmax(0, 1fr);
@@ -773,11 +821,29 @@
 		.seamgain {
 			grid-column: 1;
 			grid-row: 4;
-			padding-block: 0.8rem;
+			padding-block: 1.25rem;
+		}
+		/* stacked: the seam runs vertically, dim up into the typical pane, bright down into ours */
+		.seamgain::before,
+		.seamgain::after {
+			left: 50%;
+			right: auto;
+			margin: 0;
 		}
 		.seamgain::before {
-			left: 0;
-			right: 0;
+			top: 0;
+			bottom: 50%;
+			width: 1px;
+			height: auto;
+			background: linear-gradient(180deg, rgb(125 135 148 / 0.35), rgb(125 135 148 / 0.7));
+		}
+		.seamgain::after {
+			top: 50%;
+			bottom: 0;
+			width: 3px;
+			height: auto;
+			margin-left: -1px;
+			background: linear-gradient(180deg, var(--heat-3), var(--heat-5));
 		}
 	}
 	/* a narrow header: the dial sits above the header text */
