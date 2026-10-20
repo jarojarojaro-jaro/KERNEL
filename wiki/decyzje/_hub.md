@@ -14,7 +14,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (33)
+## Notatki (34)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -48,5 +48,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-20-auth-bez-backendu|2026-10-20: logowanie bez backendu – `PUBLIC_AUTH_PROVIDER=none`, wymienne Supabase / Auth.js]] — Nie ma jeszcze backendu ani domeny, więc landing buduje się z `PUBLIC_AUTH_PROVIDER=none`: przyciski Google/GitHub widoczne, ale wyłączone, a pole e-mail zapisuje na listę oczekujących; backend wybieramy później przez zmianę jednej zmiennej (`supabase` albo `authjs`).
 - [[2026-10-20-uncensored-poza-strona|2026-10-20: Qwen3.8-27B Uncensored nie pojawia się na stronie produktu (licencja otwarta)]] — Qwen3.8-27B Uncensored zostaje poza stroną produktu, dopóki kwestia licencji jest otwarta; mierzymy go wewnętrznie (rekordy, raporty), ale landing i katalog pokazują tylko modele bez usuniętych zabezpieczeń.
 - [[2026-10-20-szybkie-iteracje|2026-10-20: szybkie iteracje – ≤ 10 min GPU na pomysł, ≤ 20 min pracy na próbę]] — Decyzja użytkownika (2026-10-20): test GPU jednego pomysłu maksymalnie 10 minut łącznie (krótka bramka + krótkie A/B, 2–3 seedy), jedna próba optymalizacji maksymalnie 20 minut pracy do pierwszego testu; nie wygrywa wyraźnie → odrzucamy i dalej.
+- [[2026-10-20-kontekst-min-131k|2026-10-20: testy na kontekście minimum 131k]] — Użytkownik (2026-10-20): „ma być kontekst minimum 131k do testów, 32k to nie benchmark”. Każdy pomiar karty (U0/U1/T) idzie przy `-c ≥ 131072`, KV q4_0; reguła „≥32k” z kampanii opt-* 2026-10-20 jest nieaktualna.
 - [[2026-10-09-limit-mocy-odlozony|Limit mocy GPU odłożony (na prośbę użytkownika)]] — Optymalizacja limitu mocy (np. −20% mocy kosztem ≤5% t/s) została odłożona na prośbę użytkownika; karta pracuje z limitem 285 W.
 <!-- AUTO:END -->
