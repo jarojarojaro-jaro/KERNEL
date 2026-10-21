@@ -99,3 +99,43 @@ Rdzeń FreeToken, czyli offload ekspertów i q\*, **nie dotyczy** Qwen3.8-27B de
   4. Skrypt (numpy w venv): q4_0 (blok 32, skala fp16, symetryczny −8..7) kontra „q4_b16” (blok 16, skala e4m3 oraz int8-log2, te same 4.5 bpw). Metryki: MSE/rel-err rekonstrukcji K i V, błąd logitów `QKᵀ/√d` i KL softmaxu uwagi per głowa, osobno dla K i V.
   5. Kryterium: wdrażać tylko przy spadku błędu uwagi (KL) o ≥ 10%.
 - Werdykt ≥ 10%: **nieznany** `[niezweryfikowane]`.
+
+## 10. Dodatek 2026-10-21 (2): pomiar KV blok 16 + skala 8-bit vs q4_0 na prawdziwych K/V
+
+**Setup (CPU, bez GPU, bez pobierania):**
+
+- Osobny worktree `~/qwen-opt/research/kvdump-wt` (topka-int `cf927413b`).
+- `examples/eval-callback` przerobiony na zrzut fp32 `Qcur/Kcur/Vcur` po RoPE i normie. Build CPU przez `cpuheavy`, 2 wątki.
+- Model `~/models/Qwen3.8-27B-UD-Q4_K_XL.gguf`, 16 warstw pełnej uwagi (3, 7, …, 63), Hq = 24, Hk = 4, dim 256.
+- Dwa prompty: proza (1054 tok.) i kod C++ (1377 tok.).
+- Skrypt `kvq_compare.py`: symulacja kwantyzacji w numpy; KL uwagi kauzalnej z GQA (tylko K~) i błąd wyjścia uwagi (K~ i V~ naraz).
+
+**Formaty (wszystkie 4.5 bpw):**
+
+- `q4_0`: ggml, blok 32, skala fp16;
+- `b16_e4m3`: blok 16, kody int4 jak w q4_0, skala e4m3 względem globalnej fp32 per (warstwa, głowa);
+- `b16_u8`: blok 16, skala uint8 liniowo względem maksimum per (warstwa, głowa);
+- `nvfp4`: blok 16, kody e2m1, skala e4m3 i skala globalna.
+
+| prompt | format | relMSE K | relMSE V | KL uwagi | błąd wyjścia | ΔKL vs q4_0 |
+|---|---|---|---|---|---|---|
+| proza | q4_0 | 1.079e-2 | 1.072e-2 | 1.835e-2 | 8.93e-3 | 0 |
+| proza | b16_e4m3 | 7.61e-3 | 7.75e-3 | 1.384e-2 | 6.45e-3 | **−24.6%** |
+| proza | b16_u8 | 7.34e-3 | 7.52e-3 | 1.242e-2 | 5.90e-3 | **−32.3%** |
+| proza | nvfp4 | 8.69e-3 | 8.63e-3 | 1.662e-2 | 7.26e-3 | −9.4% |
+| kod | q4_0 | 1.091e-2 | 1.069e-2 | 1.977e-2 | 8.38e-3 | 0 |
+| kod | b16_e4m3 | 7.69e-3 | 7.75e-3 | 1.519e-2 | 6.12e-3 | **−23.1%** |
+| kod | b16_u8 | 7.42e-3 | 7.51e-3 | 1.362e-2 | 5.63e-3 | **−31.1%** |
+| kod | nvfp4 | 8.67e-3 | 8.65e-3 | 1.828e-2 | 7.05e-3 | −7.5% |
+
+b16_e4m3 i b16_u8 mają niższe KL niż q4_0 w **16/16 warstw** na obu promptach. nvfp4 wygrywa w 10/16.
+
+**Werdykt: tak, KL uwagi spada o ≥ 10% przy tych samych 4.5 bpw.** Wariant e4m3 daje −23…−25%, wariant uint8 −31…−32%. Prawdziwy NVFP4 (e2m1) daje tylko −7…−9%, poniżej progu. Zysk bierze się z bloku 16 i int4, nie z kodów FP4.
+
+**Zastrzeżenia:**
+
+1. Skala globalna per głowa liczona po całej sekwencji jest niekauzalna. W prawdziwym cache trzeba ją ustalić z góry (kalibracja per warstwa/głowa) albo per wiersz (per token × głowa, 256 elementów), co kosztuje +32 bity na 256 elementów, czyli +0.125 bpw. Wtedy zysk może być mniejszy `[INFERENCE]`.
+2. Tylko 2 prompty po ~1k tokenów i wagi Q4_K_XL. KL dotyczy pojedynczej warstwy uwagi, nie KLD całego modelu.
+3. Przed kernelem trzeba zmierzyć KLD/PPL end-to-end z symulowanym formatem (np. fake-quant K/V w CPU) oraz wariant z globalem per wiersz.
+
+**Następny krok:** wariant „per-row global” w `kvq_compare.py` (30 min CPU). Jeśli nadal ≥ 10%, zaprojektować typ KV `q4_b16` dla FA (dequant: int4 × u8 × fp32 per wiersz). Wysiłek 2–3 dni na XTX.
