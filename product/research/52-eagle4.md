@@ -37,7 +37,7 @@ Data: 2026-10-21. Autor: podagent Res52Eagle4. Tylko CPU, bez GPU, bez wydatków
 |---|---|---|
 | Drafter Qwen3.8-27B | `LlamaForCausalLMEagle4`, 1 warstwa Llama, hidden 5120, **MHA 40/40 głów** ×128, FFN 16384, `sliding_window` 4096, RoPE θ=1e7 | `config.json` |
 | Cechy celu | `eagle_aux_hidden_state_layer_ids` [3, 31, 59] (wyjścia warstw z 64), `fc` 15360→5120, **3 osobne RMSNorm** `fc_norm.{0,1,2}` (EAGLE-3.1), `norm_output` | config + nagłówek |
-| Embed | `embed_tokens` [248320, 5120] **bitowo równy embedowi celu** (4/4 wiersze), więc można go współdzielić | range-request, `rowcmp.py` |
+| Embed | `embed_tokens` [248320, 5120] **bitowo równy embedowi celu** (4/4 wiersze), więc można go współdzielić | range-request, `52-skrypty/rowcmp.py` |
 | LM head | własny `lm_head` [248320, 5120], **cos ≈ 0 z `lm_head` celu** (4/4 wiersze), więc NIE da się go współdzielić z `output.weight` | jw. |
 | Efficient head | `efficient_lm_head_down_proj` [128, 5120] + `efficient_lm_head` [248320, 128], K = 128 kandydatów | nagłówek |
 | Rozmiar | 6.18 GB BF16, 3.089 mld param. (warstwa 0.435, fc 0.079, embed 1.27, lm_head 1.27, low-rank 0.032) | nagłówek |
@@ -85,7 +85,7 @@ Ich wersja: z̃ = A(Bh) (A: V×r, B: r×d), C = TopK(z̃, K), z_C = W_C h. Koszt
 
 Model kosztu (36/40): krok(n) = 21.78 + n·1.40 ms (n=4 → 27.38), poziom = przebieg draftu 0.55 + wiersz 0.85.
 Akceptacja warunkowa MTP na E0: PL 0.635/0.461/0.350/0.296, EN 0.677/0.546/0.457/0.440.
-Skrypt: `/tmp/e4model.py` (wynik niżej, n=3 i n=4).
+Skrypt: `52-skrypty/e4model.py` (wynik niżej, n=3 i n=4).
 
 ### 4.1 Ich drafter zamiast MTP (łańcuch, bez drzewa)
 
