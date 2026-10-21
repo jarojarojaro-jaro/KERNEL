@@ -28,9 +28,11 @@ Gałąź `mmvq-q5k` (worktree `~/wt/mmvq-q5k`, baza `mmvq-big` 69f14108b). Kandy
   - pipe głębokość 2: +4…+11%, 205 VGPR → 7 fal;
   - cel 10 fal przy pipe: +1.8…+6%, 161 VGPR → 9 fal;
   - goły pipe z 46 (MmvqBig3, n0 big): mieszany −1.6…+2.3%; para 2×17408 +0.6…+0.9%, czyli w m1 nie powtórzył −1.6% z raportu 46.
-- **Nie zmierzone (zakolejkowane, m3 w `g50b2-mb`):** pętla z pierścieniem rejestrów (`mmvq_ring_step`, wzorzec MmvqIQ4XS 862cdfbcc).
-  - Switch `MMVQ_R3_Q5K_RING`, domyślnie 0, commit 556eae3f6.
-  - Obecnie ma 244 VGPR → 5 fal. Wymaga jeszcze rpb 2 (jak IQ4_XS), żeby wrócić do 8 fal. To główny kierunek dla 5120 wierszy.
+- **Pierścień rejestrów — KILL** (`mmvq_ring_step`, wzorzec MmvqIQ4XS 862cdfbcc; switch `MMVQ_R3_Q5K_RING`, domyślnie 0, commit 556eae3f6).
+  - 244 VGPR → 5 fal.
+  - m3 (`g50b2-mb`): para −1.5%, up −0.6%, para qkvz −1.2%, 16384 +0.8%, 12288 +4.1%.
+  - Ten sam przebieg, share+pipe bez pierścienia: −1.6 / −2.4 / −2.1 / −2.8 / −2.9%. To powtarza m1.
+  - Żeby pierścień miał sens, trzeba zejść do 8 fal (np. rpb 2 jak IQ4_XS). To nadal główny kierunek dla 5120 wierszy.
 
 ## Pasmo (cache-cold, n=5, mediana 9 rund ABAB, sufit 926 GB/s; po = `big_rows` dla > 6144)
 
@@ -53,14 +55,33 @@ Gałąź `mmvq-q5k` (worktree `~/wt/mmvq-q5k`, baza `mmvq-big` 69f14108b). Kandy
   - share+pipe: 183/184 VGPR, 8 fal, 33/34 VMEM;
   - goły pipe: 190/191 VGPR, 8 fal, 46/47 VMEM.
 
-## Status bramek
+## Status (stop GPU 2026-10-21 ~04:10)
 
-- `g50b2.jobs` (bilet 1126493), build `~/wt/mmvqbig` @ fd7dff630:
-  1. mikrobench m3 (pierścień);
-  2. smoke PM4=0 z env;
-  3. md5 PM4=1, ramiona `""` i `GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144`: Qwen c4708318 / 6f14e814, LFM 894e56e4 → `/tmp/p100-gate/mmvq50b.PASS`;
-  4. ABBA E0 prose+mvs, seedy 1,2, ten sam binarny: A = bez env, B = env (`~/qwen-opt/mmvqq5k/logs`).
-- Wyniki w `~/qwen-opt/queue/logs/g50b2-*.log`. W chwili pisania: w kolejce.
+- **Zrobione i zmierzone:**
+  - mikrobench m1 (wszystkie warianty) i m3 (pierścień), bitowo zgodne;
+  - **md5 PASS** (`g50b2-gate`, build `~/wt/mmvqbig` @ fd7dff630, PM4=1 WA=2 GUARD=1 SVM=0). Ramiona `""` i `GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144` dają to samo: Qwen c4708318 / MTP 6f14e814, LFM 894e56e4. Smoke PM4=0 z env też c4708318 / 6f14e814.
+- **Niezrobione:** ABBA E0. Przebieg g50b2 został ucięty po bramce, a powtórka g50b3 anulowana przy stopie GPU.
+- **Gałęzie (lokalne):**
+  - `mmvq-q5k` @ 556eae3f6 (kandydat fd7dff630 + switch RING=0);
+  - `mmvq-q5k-int` @ ce4df1917 = topka-int 0e7e3fc16 + 3 commity Q5_K, bez pipe Q4_K. Sprawdzona tylko składniowo, bez buildu. Przekazana IntegTopka3.
+
+### Rano
+
+1. Nie przebudowywać `~/wt/mmvqbig`: binarny dla jobów to `~/wt/mmvqbig/build-hip/bin` @ fd7dff630.
+2. `~/qwen-opt/queue/run-jobs.sh ~/qwen-opt/mmvqq5k/g50b-morning.jobs`.
+   - Zawiera bramkę md5 (tag `mmvq50bm`) i ABBA A1 B1 B2 A2 (prose+mvs, seedy 1,2).
+   - Ten sam binarny: A bez env, B z `GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144`.
+   - Logi: `~/qwen-opt/queue/logs/g50bm-*.log` i `~/qwen-opt/mmvqq5k/logs`.
+   - Czas ~35 min GPU.
+3. Oczekiwane:
+   - md5 PASS jak w nocy;
+   - ms/krok B ≈ A − 0.1 ms (~−0.4%). To leży na granicy szumu ABBA przy 2 seedach, więc rozstrzyga głównie brak regresji.
+   - Ważność przebiegu: czas hosta ~7 ms, dryf A1/A2 < 1%. Inaczej przebieg jest nieważny i trzeba go powtórzyć.
+4. **Reguła adopcji:**
+   - md5 PASS;
+   - ABBA bez regresji: B nie wolniejsze niż A o więcej niż szum A1/A2;
+   - wtedy IntegTopka3 bierze `mmvq-q5k-int` ce4df1917 na topka-int i ustawia env `GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144` w configu topki.
+   - Po scaleniu potrzebna bramka md5 na buildzie topka-int z env (baza tam jest bez pipe Q4_K).
 
 ## Do bazy wiedzy
 
