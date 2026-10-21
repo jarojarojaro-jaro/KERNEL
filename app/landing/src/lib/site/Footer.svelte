@@ -145,10 +145,10 @@
 		--wm-s1: var(--heat-3);
 		--wm-s2: var(--heat-4);
 		--wm-s3: var(--heat-5);
-		--wm-edge: 0.55;
-		--wm-f0: rgb(255 122 26 / 0.11);
-		--wm-f1: rgb(255 122 26 / 0.015);
-		--wm-glow: rgb(255 122 26 / 0.5);
+		--wm-edge: 0.8;
+		--wm-f0: rgb(255 122 26 / 0.17);
+		--wm-f1: rgb(255 122 26 / 0.035);
+		--wm-glow: rgb(255 122 26 / 0.6);
 		--wm-sweep: rgb(255 200 140 / 0.14);
 		--wm-hot: var(--heat-5);
 		/* the text on top keeps a solid ring of the page colour (eight 1 px offsets dilate the glyph,
@@ -171,10 +171,10 @@
 		--wm-s1: var(--accent);
 		--wm-s2: #f08a2c;
 		--wm-s3: #f5a54a;
-		--wm-edge: 0.6;
-		--wm-f0: rgb(226 84 26 / 0.09);
-		--wm-f1: rgb(226 84 26 / 0.01);
-		--wm-glow: rgb(226 84 26 / 0.35);
+		--wm-edge: 0.8;
+		--wm-f0: rgb(226 84 26 / 0.13);
+		--wm-f1: rgb(226 84 26 / 0.025);
+		--wm-glow: rgb(226 84 26 / 0.42);
 		--wm-sweep: rgb(255 150 70 / 0.16);
 		--wm-hot: #b4380a;
 		background:
@@ -206,7 +206,7 @@
 		pointer-events: none;
 		user-select: none;
 		/* letters fade upward into the content, full strength in the clear band */
-		mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.3), rgb(0 0 0 / 0.55) 30%, #000 64%);
+		mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.42), rgb(0 0 0 / 0.68) 30%, #000 60%);
 	}
 	.wm-two {
 		display: none;
@@ -253,7 +253,7 @@
 	}
 	.edge {
 		fill: none;
-		stroke-width: 1.25px;
+		stroke-width: 1.6px;
 		stroke-opacity: var(--wm-edge);
 		vector-effect: non-scaling-stroke;
 	}
@@ -386,7 +386,25 @@
 		padding: 0;
 		margin: var(--sp-5) 0 0;
 		display: grid;
+		justify-items: start;
 		gap: var(--sp-3);
+	}
+	/* the lower links stand on the letters' crowns: each sits on its own feathered pad of the page
+	   colour (as wide as the link), so no stroke runs through a word */
+	li {
+		position: relative;
+		isolation: isolate;
+	}
+	li::before {
+		content: '';
+		position: absolute;
+		inset: -0.15rem -0.45rem;
+		z-index: -1;
+		border-radius: var(--r-md);
+		background: var(--bg-0);
+		box-shadow: 0 0 10px 6px var(--bg-0);
+		opacity: 0.88;
+		pointer-events: none;
 	}
 	nav a,
 	.linklike {

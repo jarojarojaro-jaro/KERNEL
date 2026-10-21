@@ -306,7 +306,7 @@ Then open `http://localhost:18433/pl/start/` on the laptop. The Auth.js `handle`
 
 ## Switch-on checklist
 
-- [ ] Domain with https in place. `SITE_ORIGIN` is set for the build (`svelte.config.js`).
+- [ ] Domain with https in place. `PUBLIC_SITE_ORIGIN` is set for the build (`src/lib/site/public.ts`).
 - [ ] Google client, GitHub app and Hugging Face app created with the redirect URLs above. The Google app is **In production**.
 - [ ] `PUBLIC_AUTH_PROVIDER=authjs` and the secrets are set on the build or server, not in git. `AUTH_DB` is on a backed-up disk.
 - [ ] Legal pages. Privacy policy §5, §8, §9 and §10, the Terms (§ 5, § 14) and the Cookie Policy already describe Hugging Face, username + argon2id accounts without e-mail, the 24 h sign-in protection records and the Auth.js cookies. Remove the "po uruchomieniu kont" / "once accounts launch" badges in the cookie tables, and name the host in §8.

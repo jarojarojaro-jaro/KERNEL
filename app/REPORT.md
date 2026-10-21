@@ -106,7 +106,7 @@ Wszystko jest lokalnie w `~/KERNEL/app/`. Nic nie zostało wdrożone ani opublik
    - status platformy ODR;
    - kiedy zakładamy spółkę (dane firmy są dziś celowo puste).
 6. **Numer portu lokalnego API:** 11500 to propozycja z prototypu (stała `BRAND.apiPort`).
-7. **Domena:** `SITE_ORIGIN` ustawia adresy `hreflang` i `canonical`. Bez niej build wskazuje na `127.0.0.1:18433`.
+7. **Domena:** `PUBLIC_SITE_ORIGIN` (np. `https://srv124947.seohost.com.pl`) ustawia absolutne adresy `hreflang`, `canonical` i `og:url`. Bez niej (podgląd LAN) linki są względne, a `og:url` nie ma; `deploy-ftp.py` odmawia wysyłki buildu bez absolutnego `canonical`.
 
 ## 6. Co zostało do zrobienia
 

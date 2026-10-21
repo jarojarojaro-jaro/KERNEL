@@ -3,6 +3,8 @@ import { defineConfig, type Plugin } from 'vite';
 
 /** Public (online) build: no methodology pages, no internal source paths (src/lib/site/public.ts). */
 const SITE_PUBLIC = process.env.PUBLIC_SITE_PUBLIC === '1';
+/** Absolute site origin for canonical/hreflang/og:url (public build: PUBLIC_SITE_ORIGIN=https://…); '' = relative URLs (LAN). */
+const SITE_ORIGIN = (process.env.PUBLIC_SITE_ORIGIN ?? '').replace(/\/+$/, '');
 
 /** Public build: the methodology route compiles to an empty page; nothing links to it, so it is never prerendered. */
 const dropMethodology = (): Plugin => ({
@@ -54,7 +56,7 @@ const stripSources = (): Plugin => ({
 });
 export default defineConfig({
 	plugins: [...(SITE_PUBLIC ? [dropMethodology(), stripSources()] : []), sveltekit()],
-	define: { __SITE_PUBLIC__: JSON.stringify(SITE_PUBLIC) },
+	define: { __SITE_PUBLIC__: JSON.stringify(SITE_PUBLIC), __SITE_ORIGIN__: JSON.stringify(SITE_ORIGIN) },
 	// Large JSON must stay a plain object literal (not JSON.parse("…")) so stripSources sees each string.
 	json: SITE_PUBLIC ? { stringify: false } : undefined,
 	server: { port: 18433, strictPort: true, fs: { allow: ['..'] } },

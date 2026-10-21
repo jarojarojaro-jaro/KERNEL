@@ -43,8 +43,8 @@ const config = {
 		adapter: publicAdapter(adapter({ pages: 'build', assets: 'build', fallback: undefined, strict: true })),
 		alias: { $design: '../design' },
 		prerender: {
-			// Absolute origin for hreflang/canonical. Set SITE_ORIGIN when a domain exists (no domain yet: PLAN §7).
-			origin: process.env.SITE_ORIGIN ?? 'http://127.0.0.1:18433',
+			// Absolute URLs (canonical/hreflang/og:url) come from PUBLIC_SITE_ORIGIN via src/lib/site/public.ts, not page.url.origin.
+			...(process.env.PUBLIC_SITE_ORIGIN ? { origin: process.env.PUBLIC_SITE_ORIGIN.replace(/\/+$/, '') } : {}),
 			handleHttpError: 'fail',
 			handleMissingId: 'fail',
 			// Public build (PUBLIC_SITE_PUBLIC=1, vite.config.ts): the methodology route is unlinked and not built.

@@ -135,6 +135,19 @@
 		{ key: 'ttft', label: t.ttft, unit: 's', decimals: 1, a: r(dA?.ours.ttft?.v), b: r(dB?.ours.ttft?.v), better: 'lo' },
 		{ key: 'vram', label: t.vram, unit: 'GB', decimals: 1, a: r(dA?.ours.vram?.v), b: r(dB?.ours.vram?.v), better: null, aSub: `/ ${A.vramGB}${NB}GB`, bSub: `/ ${B.vramGB}${NB}GB` }
 	]);
+	/**
+	 * Phones: a corner is a sideways strip, so the picked tile can sit past its edge (B by default).
+	 * Centre it in its strip (the strip scrolls, never the page). A tile the user taps is already in
+	 * view, so this only moves the strip on load (default or ?a=…&b=…) and when B is bumped off A.
+	 */
+	const keepInView = (id: string) => (strip: HTMLElement) => {
+		const tile = strip.querySelector<HTMLElement>(`[data-id="${id}"]`);
+		if (!tile || strip.scrollWidth <= strip.clientWidth) return;
+		const s = strip.getBoundingClientRect();
+		const r = tile.getBoundingClientRect();
+		if (r.left >= s.left && r.right <= s.right) return;
+		strip.scrollTo({ left: strip.scrollLeft + r.left - s.left - (s.width - r.width) / 2, behavior: 'instant' });
+	};
 	const glow = $derived.by(() => {
 		const va = VENDOR[vendorOf(A.vendor)];
 		const vb = VENDOR[vendorOf(B.vendor)];
@@ -180,11 +193,11 @@
 {#snippet roster(side: 'a' | 'b', legend: string)}
 	<fieldset class="roster roster-{side}" aria-describedby="cmp-hint">
 		<legend><span class="tag">{side === 'a' ? 'A' : 'B'}</span>{legend}</legend>
-		<div class="tiles">
+		<div class="tiles" {@attach keepInView(side === 'a' ? a : b)}>
 			{#each MEASURED as e (e.id)}
 				{@const taken = side === 'a' ? e.id === b : e.id === a}
 				{@const on = side === 'a' ? e.id === a : e.id === b}
-				<label class="tile" class:on class:taken style={vendorVars(e.card.vendor)}>
+				<label class="tile" class:on class:taken style={vendorVars(e.card.vendor)} data-id={e.id}>
 					{#if side === 'a'}
 						<input type="radio" name="cmp-a" value={e.id} bind:group={a} disabled={taken} />
 					{:else}
