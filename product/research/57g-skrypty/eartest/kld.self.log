@@ -1,0 +1,60 @@
+warning: no usable GPU found, --gpu-layers option will be ignored
+warning: one possible reason is that llama.cpp was compiled without GPU support
+warning: consult docs/build.md for compilation instructions
+0.01.308.468 I cmn          init: llama threadpool init, n_threads = 2
+0.01.387.899 I 
+0.01.387.985 I system_info: n_threads = 2 (n_threads_batch = 2) / 16 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+0.01.418.377 I kl_divergence: computing over 8 chunks, n_ctx=512, batch_size=2048, n_seq=4
+0.45.890.168 I kl_divergence: 44.47 seconds per pass - ETA 1.47 minutes
+
+chunk             PPL               ln(PPL(Q)/PPL(base))          KL Divergence              Δp RMS            Same top p
+   1      80.4220 ±   20.3354       0.00178 ±    0.00178      -0.00000 ±    0.00000     0.000 ±  0.000 %    100.000 ±  0.000 %
+   2      43.1954 ±    7.2484       0.00178 ±    0.00126       0.00000 ±    0.00000     0.000 ±  0.000 %    100.000 ±  0.000 %
+   3      44.1383 ±    6.1434       0.00152 ±    0.00090      -0.00000 ±    0.00000     0.000 ±  0.000 %    100.000 ±  0.000 %
+   4      58.1648 ±    7.0257       0.00114 ±    0.00068      -0.00000 ±    0.00000     0.000 ±  0.000 %    100.000 ±  0.000 %
+   5      63.0055 ±    6.9214       0.00204 ±    0.00126      -0.00000 ±    0.00000     0.000 ±  0.000 %    100.000 ±  0.000 %
+   6      59.6841 ±    6.0126       0.00198 ±    0.00108      -0.00000 ±    0.00000     0.000 ±  0.000 %    100.000 ±  0.000 %
+   7      55.7600 ±    5.1691       0.00170 ±    0.00093      -0.00000 ±    0.00000     0.000 ±  0.000 %    100.000 ±  0.000 %
+   8      52.2174 ±    4.5476       0.00154 ±    0.00081      -0.00000 ±    0.00000     0.000 ±  0.000 %    100.000 ±  0.000 %
+
+====== Perplexity statistics ======
+Mean PPL(Q)                   :  52.217414 ±   4.547563
+Mean PPL(base)                :  52.137006 ±   4.534868
+Cor(ln(PPL(Q)), ln(PPL(base))): 100.00%
+Mean ln(PPL(Q)/PPL(base))     :   0.001541 ±   0.000815
+Mean PPL(Q)/PPL(base)         :   1.001542 ±   0.000816
+Mean PPL(Q)-PPL(base)         :   0.080409 ±   0.044005
+
+====== KL divergence statistics ======
+Mean    KLD:  -0.000000 ±   0.000000
+Maximum KLD:   0.000048
+99.9%   KLD:   0.000043
+99.0%   KLD:   0.000031
+95.0%   KLD:   0.000019
+90.0%   KLD:   0.000014
+Median  KLD:  -0.000000
+10.0%   KLD:  -0.000013
+ 5.0%   KLD:  -0.000020
+ 1.0%   KLD:  -0.000036
+ 0.1%   KLD:  -0.000049
+Minimum KLD:  -0.000055
+
+====== Token probability statistics ======
+Mean    Δp:  0.000 ± 0.000 %
+Maximum Δp:  0.005%
+99.9%   Δp:  0.005%
+99.0%   Δp:  0.002%
+95.0%   Δp:  0.000%
+90.0%   Δp:  0.000%
+75.0%   Δp:  0.000%
+Median  Δp:  0.000%
+25.0%   Δp: -0.000%
+10.0%   Δp: -0.000%
+ 5.0%   Δp: -0.000%
+ 1.0%   Δp: -0.001%
+ 0.1%   Δp: -0.003%
+Minimum Δp: -0.004%
+RMS Δp    :  0.000 ± 0.000 %
+Same top p: 100.000 ± 0.000 %
+Mean EAR  : 99.99853 ± 0.00003 %   (sum_i min(p,q) = 1 - TV)
+

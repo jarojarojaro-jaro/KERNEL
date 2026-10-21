@@ -1,0 +1,51 @@
+diff --git a/tools/perplexity/perplexity.cpp b/tools/perplexity/perplexity.cpp
+index 601361acd..29b3ebc30 100644
+--- a/tools/perplexity/perplexity.cpp
++++ b/tools/perplexity/perplexity.cpp
+@@ -185,6 +185,8 @@ struct kl_divergence_result {
+     double sum_p_diff4      = 0.0;
+     float  max_p_diff       = 0.0f;
+     size_t n_same_top       = 0.0;
++    double sum_ear          = 0.0; // EAR = sum_i min(p_i, q_i) = 1 - TV(p, q) (SLQ, arXiv 2605.02404)
++    double sum_ear2         = 0.0;
+     size_t count            = 0.0;
+ };
+ 
+@@ -219,6 +221,7 @@ static std::pair<double, float> log_softmax(int n_vocab, const float * logits, c
+ 
+     max_logit += log_sum_exp;
+     double sum = 0;
++    double ear = 0;
+     int imax_base = -1;
+     float p_log_base_max = 0;
+     for (int i = 0; i < n_vocab; ++i) {
+@@ -231,7 +234,10 @@ static std::pair<double, float> log_softmax(int n_vocab, const float * logits, c
+             const float p_base = expf(p_log_base);
+             sum += p_base * (p_log_base - logits[i] + max_logit);
+         }
++        ear += expf(std::min(p_log_base, logits[i] - max_logit));
+     }
++    kld.sum_ear  += ear;
++    kld.sum_ear2 += ear*ear;
+     kld.sum_kld  += sum;
+     kld.sum_kld2 += sum*sum;
+     ++kld.count;
+@@ -274,6 +280,8 @@ static void process_logits(int n_vocab, const float * logits, const int * tokens
+                 kld.sum_p_diff2      += local_kld.sum_p_diff2;
+                 kld.sum_p_diff4      += local_kld.sum_p_diff4;
+                 kld.n_same_top       += local_kld.n_same_top;
++                kld.sum_ear          += local_kld.sum_ear;
++                kld.sum_ear2         += local_kld.sum_ear2;
+                 kld.max_p_diff        = std::max(kld.max_p_diff, local_kld.max_p_diff);
+                 kld.count            += local_kld.count;
+                 break;
+@@ -1980,6 +1988,9 @@ static void kl_divergence(llama_context * ctx, const common_params & params) {
+ 
+     const double same_top_p = 1.0*kld.n_same_top/kld.count;
+     LOG("Same top p: %6.3lf ± %5.3lf %%\n", 100.0*same_top_p, 100.0*sqrt(same_top_p*(1.0 - same_top_p)/(kld.count - 1)));
++
++    auto ear = mean_and_uncertainty(kld.sum_ear, kld.sum_ear2, kld.count);
++    LOG("Mean EAR  : %8.5lf ± %7.5lf %%   (sum_i min(p,q) = 1 - TV)\n", 100.0*ear.first, 100.0*ear.second);
+ }
+ 
+ // satisfies -Wmissing-declarations

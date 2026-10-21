@@ -161,6 +161,10 @@ Kolejność: #1 teraz (tanie, CPU). #2 tylko jako zadanie poboczne przy najbliż
 
 Zarys #2 (do przygotowania na CPU, bez uruchamiania): `kt`-job z wariantami `U4`, `R-0.8GB`, `R-1.3GB`, `R-eq` (ten sam rozmiar). Metryki: KLD/EAR na PL prozie, czacie i kodzie (protokół R16e), t/s E0 i czat z MTP. Bramka: front Pareto (GB, KLD-PL) musi pobić U4 co najmniej w jednym punkcie o ≥ 5% bajtów przy ≤ +10% KLD-PL.
 
+**Ciąg dalszy: [57g](57g-quantalloc-ear.md) (2026-10-21).**
+- #1 zrobione: EAR na gałęzi `kld-ear`, wyjście bajtowo identyczne.
+- #2 przygotowane jako research, bez adopcji: 3 alokacje, predykcja +4.2…+8.5 % t/s z bajtów, `qa.jobs` i `buildA.sh` nieuruchomione. Blokada: brak BF16 na dysku i zakaz pobierania.
+
 ## 7. Do bazy wiedzy
 
 - **Fakt:** GSQ-RCO = GSQ (Gumbel-Softmax PTQ: przypisania do siatki + skale, Lion, start z GPTQ/GGUF) + RCO (typ per tensor pod dokładny budżet, rozmaitość Riemanna w logitach, Gumbel-STE + plecak DP). Wynik to standardowy GGUF. ISTA-DASLab (Alistarh).

@@ -1,0 +1,26 @@
+# R57g quantalloc: KLD/EAR + E0 ABBA for 3 fast-MMVQ allocations vs UD-Q4_K_XL (U4). NOT QUEUED (research only:
+# user rule 2026-10-19 "no quant change for speed"; any adoption needs the user's explicit OK, it swaps the model file).
+# Prerequisites (none satisfied on 2026-10-21, see 57a §9):
+#   P1 candidates ~/models/quantalloc/Qwen3.8-27B-qa{1,2,3}.gguf (+ .sha256), built by buildA.sh from BF16 + imatrix
+#      (needs BF16 54.7 GB: cloud (buildfarm, needs user OK) or a non-SIM link; no download over SIM)
+#   P2 BF16 reference logits ~/models/quantalloc/kb/bf16-{plprose,code}.bin (buildA.sh `kbase`, or job qa-kbase-* below
+#      if the BF16 GGUF is local: 54.7 GB, partial offload -ngl 24, 62 GB RAM)
+#   P3 run-llm.sh model override: one line `gguf=${QWEN_GGUF:-$models/Qwen3.8-27B-UD-Q4_K_XL.gguf}` (production script,
+#      not edited by R57g; without it the B arms silently run U4 -> qa_sum.py checks the model path in the server log)
+#   P4 HIP build of branch kld-ear (EAR line): ~/qwen-opt/tools/rbuild ~/wt/kld-ear llama-perplexity
+# Corpora (16e protocol, md5): plprose cae78980 ~/qwen-opt/hipfire/corp/plprose.txt, code b2191461
+#   ~/qwen-opt/quantkld/corpora/code.txt; -c 2048 --chunks 10 (base files ~10 GB each).
+# Gate (qa_sum.py gate): arm passes if streamed bytes <= U4 - 0.9 GB AND KLD-PL <= 1.10 x U4 AND same-top-PL >= U4 - 1.0 pp
+#   AND EAR-PL >= U4 - 0.5 pp -> /tmp/quantalloc/<arm>.PASS. Stop rule: no arm passes -> idea dropped, ABBA not run.
+# ABBA: labels <x>Aa/<x>Ba/<x>Bb/<x>Ab, A = U4, B = candidate; p100_arm.sh (graceful stop: idle wait, one SIGTERM, 45 s).
+qa-pre|60|~/qwen-opt/quantalloc|for f in ~/models/quantalloc/Qwen3.8-27B-qa1.gguf ~/models/quantalloc/Qwen3.8-27B-qa2.gguf ~/models/quantalloc/Qwen3.8-27B-qa3.gguf; do [ -s "$f" ] && (cd "$(dirname $f)" && sha256sum -c "$(basename $f).sha256") || exit 1; done; [ -x ~/wt/kld-ear/build-hip/bin/llama-perplexity ] && grep -q 'QWEN_GGUF' ~/qwen-opt/run-llm.sh && mkdir -p /tmp/quantalloc && touch /tmp/quantalloc/pre.PASS
+qa-kbase-plprose|1800|~/qwen-opt/quantalloc|[ -e /tmp/quantalloc/pre.PASS ] || exit 1; [ -s ~/models/quantalloc/kb/bf16-plprose.bin ] && exit 0; export GGML_HIP_PM4=0; ~/wt/kld-ear/build-hip/bin/llama-perplexity -m ~/models/quantalloc/bf16/Qwen3.8-27B-BF16-00001-of-00002.gguf -f ~/qwen-opt/hipfire/corp/plprose.txt -c 2048 --chunks 10 -b 2048 -ub 512 -fa on -ngl 24 --kl-divergence-base ~/models/quantalloc/kb/bf16-plprose.bin
+qa-kbase-code|1800|~/qwen-opt/quantalloc|[ -e /tmp/quantalloc/pre.PASS ] || exit 1; [ -s ~/models/quantalloc/kb/bf16-code.bin ] && exit 0; export GGML_HIP_PM4=0; ~/wt/kld-ear/build-hip/bin/llama-perplexity -m ~/models/quantalloc/bf16/Qwen3.8-27B-BF16-00001-of-00002.gguf -f ~/qwen-opt/quantkld/corpora/code.txt -c 2048 --chunks 10 -b 2048 -ub 512 -fa on -ngl 24 --kl-divergence-base ~/models/quantalloc/kb/bf16-code.bin
+qa-kld|900|~/qwen-opt/quantalloc|[ -e /tmp/quantalloc/pre.PASS ] || exit 1; export GGML_HIP_PM4=0; mkdir -p logs; for arm in U4 qa1 qa2 qa3; do m=~/models/quantalloc/Qwen3.8-27B-$arm.gguf; [ $arm = U4 ] && m=~/models/Qwen3.8-27B-UD-Q4_K_XL.gguf; for c in plprose code; do f=~/qwen-opt/hipfire/corp/plprose.txt; [ $c = code ] && f=~/qwen-opt/quantkld/corpora/code.txt; ~/wt/kld-ear/build-hip/bin/llama-perplexity -m $m -f $f -c 2048 --chunks 10 -b 2048 -ub 512 -fa on -ngl 99 --kl-divergence-base ~/models/quantalloc/kb/bf16-$c.bin --kl-divergence > logs/kld.$arm.$c.log 2>&1 || exit 1; done; done
+qa-gate|60|~/qwen-opt/quantalloc|[ -e /tmp/quantalloc/pre.PASS ] || exit 1; ~/qwen-opt/.venv/bin/python qa_sum.py gate
+# ABBA, only for arms that passed the gate (qa1 shown; copy the 4 lines for qa2/qa3 with their own PASS marker)
+qa1Aa|420|~/qwen-opt/xtxroadmap|[ -e /tmp/quantalloc/qa1.PASS ] || exit 0; SEEDS=1,2 LOGDIR=~/qwen-opt/quantalloc/logs bash p100_arm.sh qa1Aa prose
+qa1Ba|420|~/qwen-opt/xtxroadmap|[ -e /tmp/quantalloc/qa1.PASS ] || exit 0; QWEN_GGUF=$HOME/models/quantalloc/Qwen3.8-27B-qa1.gguf SEEDS=1,2 LOGDIR=~/qwen-opt/quantalloc/logs bash p100_arm.sh qa1Ba prose
+qa1Bb|420|~/qwen-opt/xtxroadmap|[ -e /tmp/quantalloc/qa1.PASS ] || exit 0; QWEN_GGUF=$HOME/models/quantalloc/Qwen3.8-27B-qa1.gguf SEEDS=1,2 LOGDIR=~/qwen-opt/quantalloc/logs bash p100_arm.sh qa1Bb prose
+qa1Ab|420|~/qwen-opt/xtxroadmap|[ -e /tmp/quantalloc/qa1.PASS ] || exit 0; SEEDS=1,2 LOGDIR=~/qwen-opt/quantalloc/logs bash p100_arm.sh qa1Ab prose
+qa-sum|60|~/qwen-opt/quantalloc|~/qwen-opt/.venv/bin/python qa_sum.py abba && touch /tmp/quantalloc/sum.PASS
