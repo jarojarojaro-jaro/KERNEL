@@ -88,3 +88,18 @@ Bez PASS md5 i ABBA nie adoptować.
 - Przy n=5 mniej wierszy na blok (2 zamiast 4) wygrywa mimo 2× więcej loadów y na bajt wag. Y siedzi w L2/L0, a liczy się MLP wag i liczba fal.
 - Szybka pętla: jeden binarny mikrobench z N wariantami (namespace per wariant, `#undef` przełączników między include'ami) kompiluje się w ~7 s i mierzy wszystko w jednym slocie kolejki.
 - Uwaga dla Q4_K/Q5_K/Q6_K: ta sama poprawka pipeliningu (pierścień, y-first, jednolity trip count) jest gotowa do przeniesienia (`mmvq_ring_step` jest generyczny po typie z `mmvq_xraw`). Nie mierzono.
+
+## Przeniesienie na topkę (2026-10-21, RingRebase): gałąź `mmvq-ring-int`
+
+Worktree `~/wt/mmvq-ring-int`, baza topka-int6 `cf927413b` (GDN bank + Q5K big_rows + spec-route). Obie zmiany tylko w `mmvq.cu`, obie domyślnie wyłączone i niezależne:
+- `c41e3911c` + `da3044756` = MmvqQ4K (f33a96476 + 130cd006c, raport 50a). Przełącznik `GGML_HIP_MMVQ_Q4K_STREAM=1`. `mmvq_r3_stream` nie zależy już od `mmvq_r3_pipeline`, bo pipe Q4K (69f14108b) nie jest na topce. Hak w `switch_fusion` pomija instancje `rows_override`/`big_rows`.
+- `ac9cff64c` = MmvqIQ4XS (862cdfbcc; 5fb07a00b „default on” pominięty). Pierścień + 2 wiersze na blok to teraz instancja big_rows IQ4_XS, wkompilowana (`MMVQ_R3_PIPE_IQ4XS=1`). Włącza ją w runtime `GGML_HIP_MMVQ_IQ4XS_BIG_ROWS=1`: 0 = wyłączone, N = launche o więcej niż N wierszach, czyli tak jak Q5K/Q6K. `calc_rows_per_block` i `calc_launch_params` dostały `big_rows` (`MMVQ_R3_RPB_IQ4XS=2`). Gdy przełącznik jest wyłączony, domyślna instancja jest taka sama jak w topce.
+- `c6225c656` = test-backend-ops: kształty produkcyjne Q4_K/IQ4_XS przy n=5 (plain, residual ADD, para), w trybie eval i perf.
+
+Build: `rbuild --local`, kopia w `~/qwen-opt/mmvq-ring-int/inst`. `fix-runpath --check` = 0, `ldd` bez `/wt/`. Bramka **nie uruchomiona** (GPU wstrzymane): `~/qwen-opt/mmvq-ring-int/r7.jobs`, kolejno:
+1. tbo eval (off|q4k|iq4|oba);
+2. tbo perf;
+3. md5 PM4=1 Qwen + LFM z oboma przełącznikami;
+4. ABBA prose+mvs w palindromie A Q I B | B I Q A, z GDN_BANK=1 i Q5K 6144 we wszystkich ramionach.
+
+Marker błędu: `/tmp/integ/FAILr7`. Podsumowanie: `prose_sum.py …/logs/prose.jsonl r7- A`. Nie adoptować bez PASS.
