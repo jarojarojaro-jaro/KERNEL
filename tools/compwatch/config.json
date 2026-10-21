@@ -106,7 +106,8 @@
       {"slug": "noonghunna/club-3090",            "tier": "B", "name": "club-3090 (BENCHMARKS.md 3090/4090/5090)"},
       {"slug": "victoralcazardev/rx7900xtx-local-llm", "tier": "B", "name": "rx7900xtx-local-llm (pomiary XTX)"},
       {"slug": "vijay-14/qwen3-8-rocm-bench",     "tier": "B", "name": "qwen3-8-rocm-bench (XTX ROCm)"},
-      {"slug": "NVIDIA/flare-local-inference",    "tier": "B", "name": "NVIDIA Flare (SM120/121, Rust serving)"}
+      {"slug": "NVIDIA/flare-local-inference",    "tier": "B", "name": "NVIDIA Flare (SM120/121, Rust serving)"},
+      {"slug": "eagle-hq/EAGLE-4",                "tier": "A", "name": "EAGLE-4 (eagle-harness, drafter Qwen3.8-27B; R52)"}
     ],
     "keywords": ["rocm", "hip", "gfx11", "gfx1100", "gfx12", "rdna", "radeon", "7900", "r9700", "vulkan",
                  "sm_86", "sm_89", "sm_120", "3090", "4090", "5090", "5060", "mtp", "speculative", "spec-", "draft",

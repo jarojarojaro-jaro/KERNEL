@@ -135,6 +135,7 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Prace z R18 (multi-stream, KV jednoprzejściowe, ~40 pozycji arXiv) | R18 10-19 | [[raport-18-nastepna-fala]] | Mnożniki: więcej tokenów na odczyt wag. | plain 57.1 t/s roofline | – |
 | Prace z R21b (FlashAttention-2 2307.08691, online softmax 1805.02867, 2512.22219) | R21b | [[raport-21b-gpu-perf-zasoby]] | Większość technik już mamy. | – | – |
 | DFloat11 / ZipNN (bezstratna kompresja wag) | 10-20 | [R24t](../product/research/24t-entropia-wag.md), [[raport-24t-entropia-wag]] | Dla K-quant/IQ4 sufit ≈ 5%, kodek ≤ 0.9% – kill. | Q4_K 3.865/4 b, Q5_K 4.864/5 | tylko dla BF16/FP8/NVFP4 |
+| EAGLE-4 (paper `EAGLE4_Paper.pdf`, github eagle-hq/EAGLE-4 `7b7b5a5`, blog.eagle.ai/blog/introducing-eagle-4) | 2026-10-20 | [R52](../product/research/52-eagle4.md) | Bierzemy pomysły (głowica low-rank + dokładne przeliczenie, koszt/pewność); kod i wagi tylko do ewaluacji (licencja). | 863.8 t/s (B300 TP4, T=0), MTP 534.5; Nemotron łańcuch vs łańcuch MTP ×1.14 | publiczny PR #3 TokenSpeed (961.6), dane treningowe, drafter Gemma/fork llama.cpp |
 
 ## Modele, kwanty i drafery (Hugging Face)
 
@@ -155,6 +156,7 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Gyro-S (Strata, trellis + Hadamard, TQ1_0/TQ2_0/TQ3_0 dla Qwen3.8-Flash-Next) | R21n 2026-10-19 (nagłówki GGUF zakresem bajtów) | [R21n](../product/research/21n-strata-020-gyro.md) | Zły plik dla nas (próg 32 GB); przy 86 GB IQ3_S. | KLD 0.27–0.40; XTX szac. ~50–75 t/s bez MTP | tylko jako test progu „32 GB PC”; najpierw IQ3_S w forku |
 | Laya / laya-mlx | R10 | [[laya-mlx]] | Za wolne do decyzji per token. | 322–421M | – |
 | Bielik 11B v3 (+DFlash), MiniCPM5, Mistral Small 4, gpt-oss-120b, Kimi K3, GLM-5.2 | R04, R06, R15a, R21f | [[raport-04-sprzet]], [[raport-06-produkt]] | Katalog modeli produktu; bez badania wydajności. | – | – |
+| EAGLE-Corp/Qwen3.8-27B-EAGLE4 (drafter EAGLE-4) | HF 2026-10-19 (nagłówek safetensors zakresem bajtów) | [R52](../product/research/52-eagle4.md) | Jedyny EAGLE dla 27B; EAGLE-3.1 + low-rank r=128, pełny słownik 248k. Licencja eagle-4: produkt = Competing Offering. | 6.18 GB BF16, 3.09 mld param. (warstwa 0.435 mld, lm_head własny 1.27 mld, embed = embed celu) | akceptacja w lustrze na E0 (R52 §5) |
 
 ## Dokumentacja producentów, runtime i RE
 
