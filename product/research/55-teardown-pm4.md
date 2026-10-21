@@ -83,3 +83,11 @@ Kryterium: fix 40/40 bez faultu, w logu `received signal ... again` → `GPU dra
 - `lekcje/` „Nigdy `exit()` z handlera sygnału w procesie z GPU”: `exit` uruchamia `atexit`, w tym destruktory modułów HIP (wyładowanie kodu), podczas gdy inny wątek ma pracę na GPU. W handlerze tylko zapis do pipe'a, a wymuszone wyjście dopiero po drenażu i przez `_Exit`.
 - `kernele/pm4-replay`: taśma nie posiada code objectów (`code_entry` z modułów HIP), więc jej życie musi się skończyć przed wyładowaniem modułów. Drenaż: `ggml_hip_pm4_shutdown` / `ggml_backend_quiesce`.
 - `eksperymenty/` 2026-10-21 „55 teardown PM4”: gałąź `pm4-teardown`, `~/qwen-opt/teardown/` (`td.sh`, `td.jobs`, `inst/`).
+
+## Dopisek 2026-10-21 (rodzic): cancel.sh nie dokłada drugiego SIGTERM
+Nowy `cancel.sh` z 12:50 sam wysyłał SIGTERM do serwera po zatrzymaniu klientów — a trap EXIT skryptu ramienia
+wysyła już jeden, więc dokładał dokładnie ten drugi sygnał, który odpala `exit()` w handlerze. Poprawka: cancel.sh
+nigdy nie wysyła serwerowi TERM; zatrzymuje klientów/wrappery (ich trapy wysyłają jeden SIGTERM), czeka do 90 s,
+a jeśli serwer żyje — SIGKILL (handler nie działa, `exit()` się nie wykonuje). Smoke na sztucznym drzewie procesów
+(fake `bin/llama-server` liczący sygnały): serwer dostał **1** SIGTERM, zero osieroconych procesów.
+`sr_arm.sh`: stop() czeka na bezczynne sloty, potem jeden SIGTERM i do 45 s.
