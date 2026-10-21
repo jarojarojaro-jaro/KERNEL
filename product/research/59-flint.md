@@ -5,8 +5,66 @@ QAT NVFP4). Obsługa w llama.cpp = upstream PR #30928 (otwarty, niezmergowany).
 
 ## XTX
 
-**Stan: build gotowy (branch `flint`, port PR #30928 na topka + 4 poprawki), testy GPU przygotowane (`fl.jobs`),
-jeszcze nieuruchomione — plik modelu się pobiera.**
+**Stan (22:5x): Flint na XTX porzucony decyzją użytkownika. Macierz base → now zmierzona; poprawność przy długim
+kontekście NIEROZSTRZYGNIĘTA (igła 150k nie przeszła, patrz niżej) → nic nie jest adoptowane.**
+
+### Wyniki XTX (RX 7900 XTX 24 560 MB, KV q4_0, FA on; base = upstream 1b44e3077 + tylko fix jinja `\x`, now = branch
+`flint`: kvq z sinks + pool1d MAX warp/wiersz + PM4=1; base nie ma kodu PM4)
+
+Skrypt `~/qwen-opt/flint/flint_matrix.sh` (ten sam co na 3090), A/B przeplatane per głębokość, `-ub 1024 -b 2048`,
+`-r 3` (`-r 2` od 100k, bez pp8192 od 131k). Dane: `~/qwen-opt/flint/results/xtx/{base,now}/`, `matrix.md/json`.
+
+llama-bench (t/s; base → now):
+
+| depth | pp512 | pp2048 | pp8192 | tg128 |
+|---|---|---|---|---|
+| 0 | 2279.4 → 2555.3 (+12.1%) | 3229.0 → 3687.4 (+14.2%) | 3558.8 → 3580.0 (+0.6%) | 92.8 → 174.7 (+88.2%) |
+| 4096 | 2017.9 → 2262.4 (+12.1%) | 2991.9 → 3404.3 (+13.8%) | 3329.7 → 3348.5 (+0.6%) | 89.7 → 170.3 (+89.9%) |
+| 16384 | 1744.8 → 1956.1 (+12.1%) | 2545.2 → 2854.7 (+12.2%) | 2790.2 → 2803.7 (+0.5%) | 83.5 → 166.5 (+99.4%) |
+| 32768 | 1469.8 → 1628.0 (+10.8%) | 2083.6 → 2298.5 (+10.3%) | 2274.7 → 2285.5 (+0.5%) | 75.7 → 162.3 (+114.3%) |
+| 65536 | 1116.8 → 1221.0 (+9.3%) | 1553.4 → 1683.9 (+8.4%) | 1678.4 → 1681.9 (+0.2%) | 64.0 → 152.4 (+138.2%) |
+| 100000 | 1004.5 → 1010.6 (+0.6%) | 1177.1 → 1291.2 (+9.7%) | 1311.6 → 1314.8 (+0.2%) | 50.9 → 128.4 (+152.4%) |
+| 131072 | 846.7 → 848.7 (+0.2%) | 993.2 → 1075.8 (+8.3%) | — | 46.8 → 137.4 (+193.5%) |
+| 160000 | 736.1 → 741.4 (+0.7%) | 870.7 → 937.9 (+7.7%) | — | 41.9 → 131.3 (+213.6%) |
+| 196000 | 628.0 → 632.8 (+0.8%) | 752.2 → 805.8 (+7.1%) | — | 35.5 → 110.1 (+210.5%) |
+
+llama-server e2e (ctx 200 000, ub 1024, `--jinja`, T=0, 512 tok, prompt = prawdziwy tekst z `corpus.txt`, średnia z 2):
+
+| prompt | TTFT s | prefill t/s | decode t/s |
+|---|---|---|---|
+| 8192 | 2.5 → 2.5 (+0.7%) | 3310.2 → 3339.6 (+0.9%) | 83.4 → 148.1 (+77.5%) |
+| 32768 | 11.4 → 11.3 (+1.0%) | 2906.6 → 2936.3 (+1.0%) | 72.1 → 152.9 (+112.1%) |
+| 65536 | 27.8 → 27.5 (+0.9%) | 2367.3 → 2388.8 (+0.9%) | 60.5 → 146.9 (+142.7%) |
+| 131072 | 77.0 → 76.4 (+0.7%) | 1715.8 → 1728.3 (+0.7%) | 45.3 → 119.7 (+164.1%) |
+| 190000 | 137.9 → 137.0 (+0.6%) | 1382.5 → 1390.8 (+0.6%) | 36.7 → 109.6 (+198.3%) |
+
+- Zysk decode rośnie z głębokością: kvq czyta K/V raz na głowę KV (GQA 8) zamiast vec ×8; przy d0 część zysku to PM4
+  (smoke czatu: now PM4=0 113.7 → PM4=1 163.5 t/s). Rozbicie kod vs PM4 w llama-bench (fl3) nie zostało uruchomione.
+- Prefill: pp512/pp2048 +8–14% (pool1d), pp8192 i e2e prefill/TTFT bez zmian (±1%).
+
+Mieszczenie (pełny prefill do ctx−4096, wolne VRAM wg `amd-smi`):
+
+| ctx | ub | wolne po loadzie | wolne po pełnym prefillu | wynik |
+|---|---|---|---|---|
+| 262 144 | 1024 | — | — | segfault przy loadzie (OOM nieobsłużony) — base: abort |
+| 250 000 | 1024 | 145 | 27 | mieści się, za mały zapas |
+| 240 000 | 1024 | 260 | 143 | j.w. |
+| **230 000** | **1024** | 376 | 259 | **OK** (base i now identycznie) |
+| **262 144** | **512** | 307 | 207 | **OK** (now; prefill 903 vs 1 256 t/s przy ub 1024) |
+| 200 000 | 1024 | 724 | 605 (po e2e 190k) | OK (base = now) |
+
+Max przy q4_0: now 262 144 (ub 512) / 230 000 (ub 1024); base 230 000 (ub 1024), 262 144 @ ub 512 ładuje się
+(307 MB), pełny prefill nieukończony (anulowane). Profil `flint` czyta `flint/ctx-max`=262144, `flint/ub`=512.
+
+### Poprawność — NIEROZSTRZYGNIĘTA
+- test-backend-ops na XTX: FA q4_0 z sinks (w tym przypadki Flint D128 GQA 8, kv do 8192, nb 1/4/16), POOL_1D
+  (cały wiersz), MUL_MAT/MUL_MAT_ID NVFP4 — wszystkie OK.
+- Smoke (now, ctx 262 144, ub 512, PM4 0 i 1): czat OK („Warsaw”), tool call w 2 turach OK.
+- **Igła ~150k (sekret na początku, pytanie na końcu, T=0, max_tokens 1024): content pusty w obu ramionach PM4.**
+  Nie sprawdzono, czy to limit tokenów (model myśli) czy błąd długiego kontekstu; base vs now na tej samej igle,
+  KV q8_0/f16 przy 64k i tożsamość greedy base vs now (8k/32k/64k) przygotowane w `fl4.jobs`
+  (`fl_correct.sh/.py`, z analizą near-tie), ale **nie uruchomione** (decyzja: koniec Flint na XTX).
+- Nie zrobione: profil kerneli (rocprofv3, `fl-prof`), rozbicie PM4 (`fl3`).
 
 ### Nagłówek GGUF (odczytany z częściowego pobrania)
 - 49 warstw (2 dense + 47 MoE), n_embd 2048, 256 ekspertów top-6 sigmoid (norm wag = true), 2 shared (n_ff_shexp 1024),
@@ -67,7 +125,7 @@ Wagi na GPU ≈ 21.2 GiB (bez `token_embd` BF16 0.6 GB na CPU), KV q4_0 full-att
 - `fl.jobs`: czekanie na plik → `test-backend-ops` (FA q4_0 z sinks, NVFP4 MUL_MAT/MUL_MAT_ID, POOL_1D) → sweep max ctx
   (262 144 → 200 000, ub 2048 i 512, pełny prefill, zapas ≥ 200 MB) → smoke PM4=0 (czat greedy, tool call 2 tury,
   igła ~150k na początku) → smoke PM4=1 → ABBA PM4 0/1: E0 decode + prefill/decode na głębokości 8k/64k/150k.
-- Wyniki: do uzupełnienia po przebiegu kolejki.
+- Wyniki: wyżej (sekcja „Wyniki XTX”).
 
 ## RTX 3090
 
