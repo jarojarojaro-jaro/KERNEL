@@ -103,6 +103,7 @@
       {"slug": "LottoLottoLotto/localmaxxing-cli","tier": "B"},
       {"slug": "halo-box/strix-llama.cpp",        "tier": "B"},
       {"slug": "z-lab/dflash",                    "tier": "B"},
+      {"slug": "incoai/splash",                   "tier": "B", "name": "Splash (Inco AI, Mac, DFlash2; R57e)"},
       {"slug": "noonghunna/club-3090",            "tier": "B", "name": "club-3090 (BENCHMARKS.md 3090/4090/5090)"},
       {"slug": "victoralcazardev/rx7900xtx-local-llm", "tier": "B", "name": "rx7900xtx-local-llm (pomiary XTX)"},
       {"slug": "vijay-14/qwen3-8-rocm-bench",     "tier": "B", "name": "qwen3-8-rocm-bench (XTX ROCm)"},
