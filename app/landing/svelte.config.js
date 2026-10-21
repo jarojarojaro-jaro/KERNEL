@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readFileSync, rmSync } from 'node:fs';
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 
@@ -24,17 +24,34 @@ const cardPages = [
 	['en', 'cards', 'compare']
 ].flatMap(([l, seg, cmp]) => [`/${l}/${seg}/`, `/${l}/${seg}/${cmp}/`, ...vendors.map((v) => `/${l}/${seg}/${v}/`), ...cardIds.map((id) => `/${l}/${seg}/${id}/`)]);
 
+/** Public build (PUBLIC_SITE_PUBLIC=1): the methodology loops ship with no page, so drop them from build/. */
+const publicAdapter = (inner) =>
+	process.env.PUBLIC_SITE_PUBLIC === '1'
+		? {
+				...inner,
+				async adapt(builder) {
+					await inner.adapt(builder);
+					rmSync(new URL('./build/media/methodology', import.meta.url), { recursive: true, force: true });
+				}
+			}
+		: inner;
+
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
 	preprocess: vitePreprocess(),
 	kit: {
-		adapter: adapter({ pages: 'build', assets: 'build', fallback: undefined, strict: true }),
+		adapter: publicAdapter(adapter({ pages: 'build', assets: 'build', fallback: undefined, strict: true })),
 		alias: { $design: '../design' },
 		prerender: {
 			// Absolute origin for hreflang/canonical. Set SITE_ORIGIN when a domain exists (no domain yet: PLAN §7).
 			origin: process.env.SITE_ORIGIN ?? 'http://127.0.0.1:18433',
 			handleHttpError: 'fail',
 			handleMissingId: 'fail',
+			// Public build (PUBLIC_SITE_PUBLIC=1, vite.config.ts): the methodology route is unlinked and not built.
+			handleUnseenRoutes: ({ routes }) => {
+				const unseen = routes.filter((r) => !(process.env.PUBLIC_SITE_PUBLIC === '1' && r.endsWith('/methodology')));
+				if (unseen.length) throw new Error(`Routes not prerendered: ${unseen.join(', ')}`);
+			},
 			// Onboarding steps are reached through form submits (goto), so the crawler needs them listed;
 			// the cards explorer is listed in full so no card page depends on being linked.
 			entries: ['*', ...['pl', 'en'].flatMap((l) => ['paths', 'result', 'download', 'terminal'].map((s) => `/${l}/start/${s}/`)), ...cardPages]

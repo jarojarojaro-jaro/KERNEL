@@ -1,4 +1,4 @@
- ◆ Podkręt   1 skan  2 dobór  3 kalibracja [4 wynik] 5 noc                               PL
+ ◆ Enigma LABZ   1 skan  2 dobór  3 kalibracja [4 wynik] 5 noc                           PL
 
  ╭─ PRZED → PO ────────────────────────────────────────── ten sam sprzęt · ten sam model ─╮
  │ Qwen3.8-27B UD-Q4_K_XL · RX 7900 XTX 24 GiB                                            │

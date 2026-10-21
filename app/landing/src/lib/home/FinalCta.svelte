@@ -1,7 +1,8 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	/**
 	 * Final CTA: the closing statement is a token stream, side by side, that never stops (StreamDuel,
-	 * shared with the hero): the same answer flows without Podkręt (the typical app, a0) and with it
+	 * shared with the hero): the same answer flows without Enigma LABZ (the typical app, a0) and with it
 	 * (our engine, a2), RTX 3090 × Qwen3.8-27B, at exactly the measured median t/s; our side emits in
 	 * steps of the measured MTP tokens per step, a counter of tokens written grows under each pane.
 	 * The text is an example, the pace is measured.
@@ -44,7 +45,7 @@
 		</div>
 		<div class="ctas">
 			<a class="cta cta--bone" href={cardsHref(lang)} use:magnetic>{c.cards} <span class="arrow" aria-hidden="true">→</span></a>
-			<a class="cta cta--line" href={href(lang, '/methodology')} use:magnetic>{c.method}</a>
+			{#if !SITE_PUBLIC}<a class="cta cta--line" href={href(lang, '/methodology')} use:magnetic>{c.method}</a>{/if}
 		</div>
 	</div>
 </section>

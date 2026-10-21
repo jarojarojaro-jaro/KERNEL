@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	import { BRAND } from '$lib/brand';
 	import { cardsHref, currentLang, href } from '$lib/i18n';
 	import { page } from '$app/state';
@@ -26,7 +27,7 @@
 				<li><a href={href(lang, '/#how')}>{t.nav.how}</a></li>
 				<li><a href={href(lang, '/#results')}>{t.nav.results}</a></li>
 				<li><a href={cardsHref(lang)}>{t.nav.cards}</a></li>
-				<li><a href={href(lang, '/methodology')}>{t.nav.methodology}</a></li>
+				{#if !SITE_PUBLIC}<li><a href={href(lang, '/methodology')}>{t.nav.methodology}</a></li>{/if}
 				<li><a href={href(lang, '/scan')}>{t.privacy.scanLink}</a></li>
 				<li><a href={href(lang, '/start')}>{t.nav.start}</a></li>
 				<li><a href={href(lang, '/app')}>{t.footer.prototype}</a></li>
@@ -48,7 +49,7 @@
 	<p class="word" aria-hidden="true">{BRAND.name}</p>
 	<div class="wrap base">
 		<p>{t.footer.draftNote} {t.footer.company}</p>
-		<p>{t.footer.name} © 2026 {BRAND.company.legalName ?? BRAND.name}</p>
+		<p>© 2026 {BRAND.company.legalName ?? BRAND.name}</p>
 	</div>
 </footer>
 
@@ -133,8 +134,9 @@
 		padding: 0.08em 0.06em 0.24em;
 		text-align: center;
 		font-family: var(--font-display);
-		/* ~4em wide: 20vw keeps it inside the gutters down to 320 px */
-		font-size: clamp(3rem, 20vw, 22rem);
+		/* ~7.5em wide ("Enigma LABZ"): 11vw keeps it inside the gutters down to 320 px */
+		font-size: clamp(2rem, 11vw, 13rem);
+		white-space: nowrap;
 		font-weight: 860;
 		font-stretch: 125%;
 		letter-spacing: -0.06em;

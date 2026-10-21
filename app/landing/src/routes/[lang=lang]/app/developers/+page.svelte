@@ -13,7 +13,7 @@
 	const d = $derived(t.dev);
 
 	const BASE = `http://127.0.0.1:${BRAND.apiPort}`;
-	const ENV = `${BRAND.ascii.toUpperCase()}_TOKEN`;
+	const ENV = `${BRAND.ascii.toUpperCase().replace(/-/g, '_')}_TOKEN`;
 	const MODEL = 'qwen3.8-27b';
 
 	// ---------- token (random, client-side, never a real secret) ----------

@@ -1,14 +1,13 @@
 /**
- * Central brand configuration. The product name is an OPEN DECISION (PLAN §12 pt 7):
- * candidates from report 06 §3.1: Podkręt, Nocna Zmiana / NightShift, Turbina, Rozpęd, Tuned.
+ * Central brand configuration.
  * Change it here and every page, meta tag, legal draft and the desktop prototype follows.
  */
 export const BRAND = {
-	name: 'Podkręt',
+	name: 'Enigma LABZ',
 	/** Used where diacritics are unsafe (file names, CLI binary, User-Agent). */
-	ascii: 'podkret',
+	ascii: 'enigma-labz',
 	/** CLI binary name shown in terminal examples. */
-	cli: 'podkret',
+	cli: 'enigma',
 	/** No domain is registered yet; pages that need an origin use the current one at runtime. */
 	domain: null as string | null,
 	/** Company data stays empty until the company exists (PLAN §7). Never fill with placeholders. */
@@ -23,5 +22,3 @@ export const BRAND = {
 	/** Local API default port of the desktop daemon (prototype value, see APP-ARCHITECTURE.md §2). */
 	apiPort: 11500
 } as const;
-
-export const NAME_CANDIDATES = ['Podkręt', 'Nocna Zmiana / NightShift', 'Turbina', 'Rozpęd', 'Tuned'] as const;

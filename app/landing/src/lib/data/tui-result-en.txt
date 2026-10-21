@@ -1,4 +1,4 @@
- ◆ Podkręt   1 scan  2 pick  3 calibrate [4 result] 5 night                              EN
+ ◆ Enigma LABZ   1 scan  2 pick  3 calibrate [4 result] 5 night                          EN
 
  ╭─ BEFORE → AFTER ────────────────────────────────────────── same hardware · same model ─╮
  │ Qwen3.8-27B UD-Q4_K_XL · RX 7900 XTX 24 GiB                                            │

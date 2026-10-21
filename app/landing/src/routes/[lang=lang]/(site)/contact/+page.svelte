@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	import { cardsHref, currentLang, href } from '$lib/i18n';
 	import { BRAND } from '$lib/brand';
 	import CompanyData from '$lib/legal/CompanyData.svelte';
@@ -36,7 +37,7 @@
 			<CompanyData {lang} fields={['email', 'legalName', 'address']} />
 		</div>
 		<p class="links">
-			<a class="btn btn--secondary" href={href(lang, '/methodology')}>{t.methodology}</a>
+			{#if !SITE_PUBLIC}<a class="btn btn--secondary" href={href(lang, '/methodology')}>{t.methodology}</a>{/if}
 			<a class="btn btn--primary" href={cardsHref(lang)}>{t.cards} <span class="arrow" aria-hidden="true">→</span></a>
 		</p>
 	</div>

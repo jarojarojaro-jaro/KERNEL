@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	import { BRAND } from '$lib/brand';
 	import { href, type Lang } from '$lib/i18n';
 	import DraftBanner from '../DraftBanner.svelte';
@@ -52,7 +53,7 @@
 	<h2 id="services" class="h2">3. The services</h2>
 	<p>We provide:</p>
 	<ul>
-		<li>the Website, including product information, benchmark results and the <a href={href(L, '/methodology')}>Methodology</a> page;</li>
+		<li>the Website, including product information, benchmark results and the {#if SITE_PUBLIC}Methodology{:else}<a href={href(L, '/methodology')}>Methodology</a>{/if} page;</li>
 		<li>a waitlist form — <em>at the moment the form sends nothing anywhere, because its backend is not live yet</em>;</li>
 		<li>a model picker that runs entirely in your browser, using details you type in or a pasted hardware-scan code;</li>
 		<li>the Account;</li>
@@ -92,7 +93,7 @@
 	</ul>
 	<h2 id="ai" class="h2">9. AI and honest performance claims</h2>
 	<p>The App is an AI system. Model outputs can be wrong, incomplete or out of date, and they are not legal, medical or financial advice. See the <a href={href(L, '/legal/ai')}>AI Notice</a>.</p>
-	<p>In line with the EU Unfair Commercial Practices Directive (2005/29/EC) and its Polish implementation, every speed claim we make is a measurement on named hardware, with its source, configuration and method documented on the <a href={href(L, '/methodology')}>Methodology</a> page. Anything untested is labelled as an estimate or “soon”. Your results may differ.</p>
+	<p>In line with the EU Unfair Commercial Practices Directive (2005/29/EC) and its Polish implementation, every speed claim we make is a measurement on named hardware, with its source, configuration and method documented on the {#if SITE_PUBLIC}Methodology{:else}<a href={href(L, '/methodology')}>Methodology</a>{/if} page. Anything untested is labelled as an estimate or “soon”. Your results may differ.</p>
 	<h2 id="liability" class="h2">10. Liability</h2>
 	<ul>
 		<li>We take reasonable care to keep the services running, apart from maintenance windows.</li>

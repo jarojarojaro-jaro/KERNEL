@@ -56,7 +56,7 @@ const raw = {
 			ctaSecondary: 'Jak mierzymy',
 			race: {
 				cold: 'Typowa aplikacja',
-				hot: 'Podkręt',
+				hot: N,
 				faster: 'szybciej',
 				answer: 'Odpowiedź',
 				tokens: 'tokenów',
@@ -224,8 +224,8 @@ const raw = {
 		},
 		/** The two-terminal stream duel (fx/StreamDuel): the final CTA. */
 		duel: {
-			without: 'Bez Podkrętu',
-			with: 'Z Podkrętem',
+			without: 'Bez Enigma LABZ',
+			with: 'Z Enigma LABZ',
 			faster: 'szybciej',
 			tokens: 'tokenów',
 			pause: 'Wstrzymaj strumień',
@@ -237,7 +237,7 @@ const raw = {
 			cards: 'Sprawdź swoją kartę',
 			method: 'Metodologia',
 			note: 'tekst przykładowy, tempo zmierzone',
-			summary: '{card}, {model} {quant}: ta sama odpowiedź płynie bez Podkrętu z prędkością {a0} tokenu na sekundę, a z Podkrętem {a2} tokenu na sekundę.',
+			summary: '{card}, {model} {quant}: ta sama odpowiedź płynie bez Enigma LABZ z prędkością {a0} tokenu na sekundę, a z Enigma LABZ {a2} tokenu na sekundę.',
 			text: 'Cześć! Przesuwam jutrzejsze spotkanie zespołu z rana na popołudnie, bo wypadła mi wizyta u klienta. Sala i link do rozmowy zostają te same. Jeśli komuś nie pasuje nowa pora, dajcie znać do wieczora, a poszukam innego terminu. Przygotujcie proszę krótkie podsumowanie tygodnia, po dwa zdania na osobę. Dzięki i do jutra!'
 		},
 		footer: {
@@ -250,8 +250,7 @@ const raw = {
 			draftNote: 'Dokumenty prawne to projekty do weryfikacji przez prawnika.',
 			company: 'Dane firmy zostaną uzupełnione po rejestracji spółki.',
 			credit: 'Silnik oparty na llama.cpp i ggml (MIT, © The ggml authors).',
-			aiMedia: 'Część grafik i wideo dekoracyjnych oraz zdjęcia sprzętu w katalogu kart wygenerowano AI (Higgsfield, OpenAI).',
-			name: `Nazwa „${N}” jest robocza.`
+			aiMedia: 'Część grafik i wideo dekoracyjnych oraz zdjęcia sprzętu w katalogu kart wygenerowano AI (Higgsfield, OpenAI).'
 		},
 		cookies: {
 			title: 'Prywatność na tej stronie',
@@ -289,7 +288,7 @@ const raw = {
 			ctaSecondary: 'How we measure',
 			race: {
 				cold: 'Typical app',
-				hot: 'Podkręt',
+				hot: N,
 				faster: 'faster',
 				answer: 'Answer',
 				tokens: 'tokens',
@@ -457,8 +456,8 @@ const raw = {
 		},
 		/** The two-terminal stream duel (fx/StreamDuel): the final CTA. */
 		duel: {
-			without: 'Without Podkręt',
-			with: 'With Podkręt',
+			without: 'Without Enigma LABZ',
+			with: 'With Enigma LABZ',
 			faster: 'faster',
 			tokens: 'tokens',
 			pause: 'Pause the stream',
@@ -470,7 +469,7 @@ const raw = {
 			cards: 'Check your card',
 			method: 'Methodology',
 			note: 'example text, measured pace',
-			summary: '{card}, {model} {quant}: the same answer streams at {a0} tokens per second without Podkręt and at {a2} tokens per second with Podkręt.',
+			summary: '{card}, {model} {quant}: the same answer streams at {a0} tokens per second without Enigma LABZ and at {a2} tokens per second with Enigma LABZ.',
 			text: 'Hi all! I’m moving tomorrow’s team meeting from the morning to the afternoon, because a client visit came up. The room and the call link stay the same. If the new time doesn’t work for you, let me know by tonight and I’ll find another slot. Please bring a short summary of your week, two sentences each. Thanks, and see you tomorrow!'
 		},
 		footer: {
@@ -483,8 +482,7 @@ const raw = {
 			draftNote: 'Legal documents are drafts to be reviewed by a lawyer.',
 			company: 'Company details will be added once the company is registered.',
 			credit: 'Engine based on llama.cpp and ggml (MIT, © The ggml authors).',
-			aiMedia: 'Some decorative images and videos, and the hardware photos in the card catalogue, were generated with AI (Higgsfield, OpenAI).',
-			name: `“${N}” is a working name.`
+			aiMedia: 'Some decorative images and videos, and the hardware photos in the card catalogue, were generated with AI (Higgsfield, OpenAI).'
 		},
 		cookies: {
 			title: 'Privacy on this site',

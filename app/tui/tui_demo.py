@@ -23,7 +23,7 @@ import sys
 import textwrap
 import time
 
-BRAND = "Podkręt"  # single place to rename the product (mirror of landing/src/lib/brand.ts)
+BRAND = "Enigma LABZ"  # single place to rename the product (mirror of landing/src/lib/brand.ts)
 
 # ---------------------------------------------------------------- palette (tokens.css)
 BG0 = (7, 8, 13)          # --bg-0 page

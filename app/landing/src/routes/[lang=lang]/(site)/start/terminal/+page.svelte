@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	import { BRAND } from '$lib/brand';
 	import { currentLang, href } from '$lib/i18n';
 	import CopyButton from '$lib/ui/CopyButton.svelte';
@@ -48,7 +49,7 @@
 		<h2 id="tui-title" class="overline">{t.preview}</h2>
 		<!-- svelte-ignore a11y_no_noninteractive_tabindex (scrollable region must be keyboard-focusable, WCAG 2.1.1) -->
 		<pre class="tui" tabindex="0" aria-label={t.previewNote} data-clip-ok><code>{lang === 'pl' ? tuiPl : tuiEn}</code></pre>
-		<p class="source">{t.previewNote} <a href={href(lang, '/methodology')}>{ob[lang].result.howTitle} →</a></p>
+		<p class="source">{t.previewNote}{#if !SITE_PUBLIC} <a href={href(lang, '/methodology')}>{ob[lang].result.howTitle} →</a>{/if}</p>
 	</section>
 </Shell>
 

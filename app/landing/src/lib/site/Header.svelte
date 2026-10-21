@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	import { afterNavigate } from '$app/navigation';
 	import { page } from '$app/state';
 	import { magnetic } from '$lib/fx/actions';
@@ -42,7 +43,7 @@
 		{ label: t.how, to: href(lang, '/#how') },
 		{ label: t.results, to: resultsHref(lang) },
 		{ label: t.cards, to: cardsHref(lang) },
-		{ label: t.methodology, to: href(lang, '/methodology') },
+		...(SITE_PUBLIC ? [] : [{ label: t.methodology, to: href(lang, '/methodology') }]),
 		{ label: t.contact, to: href(lang, '/contact') }
 	]);
 	const current = (to: string) => !to.includes('#') && page.url.pathname.startsWith(to);
@@ -538,6 +539,16 @@
 		}
 		.capsule {
 			padding-left: 0.9rem;
+		}
+	}
+	/* "Enigma LABZ" plus the controls needs ~330 px; tighten the wordmark on the narrowest phones */
+	@media (max-width: 380px) {
+		.brand :global(.word) {
+			font-size: 1rem;
+			letter-spacing: -0.035em;
+		}
+		.brand :global(.logo) {
+			gap: 0.4rem;
 		}
 	}
 </style>

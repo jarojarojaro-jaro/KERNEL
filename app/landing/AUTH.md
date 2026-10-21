@@ -1,6 +1,6 @@
 # Accounts: Google, GitHub, Hugging Face and username + password
 
-The account step (`/pl/start/`, `/en/start/`) talks only to `src/lib/auth`:
+The account step is two pages: sign in (`/pl/start/`, `/en/start/`, the default) and sign up (`/pl/start/register/`, `/en/start/register/`). Both talk only to `src/lib/auth` (through `src/lib/account/flow.ts`):
 
 - `signInWith('google' | 'github' | 'huggingface')`
 - `signInWithPassword(username, password)` and `signUpWithPassword(username, password)`
@@ -10,12 +10,12 @@ The build-time env `PUBLIC_AUTH_PROVIDER` picks the backend:
 
 | Value | File | What happens |
 |---|---|---|
-| `none` (default, committed in `.env`) | `src/lib/auth/none.ts` | **Preview.** The page looks and behaves as final, with no prototype chip. All three provider tiles and the password form are active and validated in the browser: username format, password ≥ 10 characters, matching repeat, and the Terms checkbox for "Załóż konto". The provider tiles carry an implied-consent line. Every call answers `unavailable`, and the step continues to `/<lang>/start/paths/`. Nothing is sent or stored, and the `onboarding` sessionStorage entry is cleared by the next steps. The page never shows "Zalogowano jako". |
+| `none` (default, committed in `.env`) | `src/lib/auth/none.ts` | **Preview.** The pages look and behave as final, with no prototype chip. All three provider tiles and both password forms are active and validated in the browser: sign-in checks the username format and a non-empty password; sign-up checks the username format, password ≥ 10 characters, matching repeat, and the Terms checkbox for "Załóż konto". The provider tiles carry an implied-consent line. Every call answers `unavailable`, and the step continues to `/<lang>/start/paths/`. Nothing is sent or stored, and the `onboarding` sessionStorage entry is cleared by the next steps. The pages never show "Zalogowano jako". |
 | `authjs` | `src/lib/auth/authjs.ts` | Auth.js (`@auth/sveltekit`) on this app's own Node server (adapter-node). |
 
 Any other value fails the build. A live backend needs **a real domain over https**. Google rejects redirect URIs on raw IP addresses (including private ones such as `192.168.10.230`) and plain `http`, except on `localhost`. For local testing, see [Local testing over an SSH tunnel](#local-testing-over-an-ssh-tunnel).
 
-Placeholders below: `<domain>` is the production host (for example `podkret.pl`).
+Placeholders below: `<domain>` is the production host (for example `enigmalabz.com`).
 
 ## Why Auth.js (and not Supabase)
 
@@ -43,7 +43,7 @@ That is why `src/lib/auth` has no Supabase backend.
 | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | ID no / secret **yes** | Google OAuth client |
 | `AUTH_GITHUB_ID` / `AUTH_GITHUB_SECRET` | ID no / secret **yes** | GitHub OAuth App |
 | `AUTH_HUGGINGFACE_ID` / `AUTH_HUGGINGFACE_SECRET` | ID no / secret **yes** | Hugging Face OAuth app |
-| `AUTH_DB` | no | path of the SQLite file, e.g. `/var/lib/podkret/auth.sqlite`; back it up and keep it out of `build/` |
+| `AUTH_DB` | no | path of the SQLite file, e.g. `/var/lib/enigma-labz/auth.sqlite`; back it up and keep it out of `build/` |
 | `AUTH_TRUST_HOST` | no | `true` (behind the reverse proxy) |
 | `ORIGIN` | no | `https://<domain>` (adapter-node) |
 
@@ -56,13 +56,13 @@ That is why `src/lib/auth` has no Supabase backend.
 | GitHub: Authorization callback URL | `https://<domain>/auth/callback/github` | second app with `http://localhost:18433/auth/callback/github` |
 | Hugging Face: Redirect URI | `https://<domain>/auth/callback/huggingface` | `http://localhost/auth/callback/huggingface` (any port is accepted on loopback) |
 
-Username + password needs no redirect URL (`POST /auth/callback/password` and `/auth/callback/register` on our own server). After any sign-in, the app returns the user to `/<lang>/start/paths/` (`redirectTo` in `+page.svelte`).
+Username + password needs no redirect URL (`POST /auth/callback/password` and `/auth/callback/register` on our own server). After any sign-in, the app returns the user to `/<lang>/start/paths/` (`redirectTo` in `src/lib/account/flow.ts`).
 
 ## 1. Google Cloud Console
 
-1. Open <https://console.cloud.google.com/>. In the project picker, choose **New project** and name it `Podkret`. Select it.
+1. Open <https://console.cloud.google.com/>. In the project picker, choose **New project** and name it `Enigma LABZ`. Select it.
 2. Go to **APIs & Services → OAuth consent screen**, which opens the Google Auth Platform. Click **Get started**:
-   - **App information**: app name `Podkręt`, plus a user support e-mail.
+   - **App information**: app name `Enigma LABZ`, plus a user support e-mail.
    - **Audience**: **External**.
    - **Contact information**: your e-mail. Accept the policy, then **Create**.
 3. In **Branding**, set:
@@ -74,7 +74,7 @@ Username + password needs no redirect URL (`POST /auth/callback/password` and `/
 4. In **Data Access → Add or remove scopes**, pick only `openid` and `.../auth/userinfo.email`. These are non-sensitive scopes, so no security assessment is needed. They match privacy policy §5.
 5. **Audience → Test users**: while the app is in **Testing**, add the accounts allowed to sign in. When ready, click **Publish app** to move to **In production**.
 6. In **Clients → Create client**:
-   - **Application type**: **Web application**, name `Podkret web`.
+   - **Application type**: **Web application**, name `Enigma LABZ web`.
    - **Authorized JavaScript origins**: `https://<domain>`. For dev, also add `http://localhost:18433`.
    - **Authorized redirect URIs**: `https://<domain>/auth/callback/google`. For dev, also add `http://localhost:18433/auth/callback/google`.
    - Click **Create**. Copy the **Client ID** and **Client secret** right away; the new console shows the secret only once.
@@ -85,19 +85,19 @@ Google rejects redirect URIs that use an IP address (private or public), `http` 
 
 1. Go to GitHub **Settings → Developer settings → OAuth Apps → New OAuth App**. For an app owned by the organization, start from **Organization settings → Developer settings → OAuth Apps** instead.
 2. Fill in:
-   - **Application name**: `Podkręt`.
+   - **Application name**: `Enigma LABZ`.
    - **Homepage URL**: `https://<domain>`.
    - **Authorization callback URL**: `https://<domain>/auth/callback/github`.
    - Leave **Enable Device Flow** off.
 3. Click **Register application**. Copy the **Client ID**, then **Generate a new client secret** and copy it at once; GitHub shows it only once.
-4. An OAuth App has exactly one callback URL. For local testing, register a second app (`Podkręt (dev)`) with callback `http://localhost:18433/auth/callback/github`.
+4. An OAuth App has exactly one callback URL. For local testing, register a second app (`Enigma LABZ (dev)`) with callback `http://localhost:18433/auth/callback/github`.
 5. Scope: `user:email` only (set in `src/auth.ts` below; privacy policy §5).
 
 ## 3. Hugging Face OAuth app
 
 1. Open <https://huggingface.co/settings/applications/new>. Owning it from an organization works the same way, under the organization's settings.
 2. Fill in:
-   - **Application name**: `Podkręt`.
+   - **Application name**: `Enigma LABZ`.
    - **Homepage URL**: `https://<domain>`.
    - Optionally, a **Logo URL**.
    - **Scopes**: tick only `openid` and `profile` (username and avatar; no e-mail, no repositories). These match privacy policy §5.

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	import { BRAND } from '$lib/brand';
 	import { href, type Lang } from '$lib/i18n';
 	import DraftBanner from '../DraftBanner.svelte';
@@ -52,7 +53,7 @@
 	<h2 id="zakres" class="h2">§ 3. Rodzaje i zakres Usług</h2>
 	<p>Usługodawca świadczy następujące Usługi:</p>
 	<ol>
-		<li>udostępnianie treści Serwisu, w tym opisów produktu, wyników pomiarów i strony <a href={href(L, '/methodology')}>Metodologia</a>;</li>
+		<li>udostępnianie treści Serwisu, w tym opisów produktu, wyników pomiarów i strony {#if SITE_PUBLIC}Metodologia{:else}<a href={href(L, '/methodology')}>Metodologia</a>{/if};</li>
 		<li>formularz listy oczekujących (zapis na powiadomienie o wydaniu) — <em>obecnie formularz nie przesyła żadnych danych, ponieważ zaplecze techniczne nie zostało uruchomione</em>;</li>
 		<li>narzędzie doboru Modelu działające w przeglądarce na podstawie danych wpisanych przez Użytkownika lub wklejonego kodu Skanu sprzętu;</li>
 		<li>prowadzenie Konta;</li>
@@ -92,7 +93,7 @@
 	</ol>
 	<h2 id="ai" class="h2">§ 9. Sztuczna inteligencja i rzetelność deklaracji wydajności</h2>
 	<p>Aplikacja jest systemem sztucznej inteligencji. Odpowiedzi Modeli mogą być nieprawdziwe, niepełne lub nieaktualne; nie stanowią porady prawnej, medycznej ani finansowej. Szczegóły zawiera <a href={href(L, '/legal/ai')}>Informacja o AI</a>.</p>
-	<p>Zgodnie z zakazem nieuczciwych praktyk rynkowych (ustawa z dnia 23 sierpnia 2007 r. o przeciwdziałaniu nieuczciwym praktykom rynkowym, dyrektywa 2005/29/WE) każda deklaracja dotycząca szybkości jest pomiarem na wskazanym sprzęcie, z podaniem źródła, konfiguracji i metody, opisanej na stronie <a href={href(L, '/methodology')}>Metodologia</a>. Wartości nieprzetestowane oznaczamy jako szacunek albo „wkrótce”. Wynik na sprzęcie Użytkownika może się różnić.</p>
+	<p>Zgodnie z zakazem nieuczciwych praktyk rynkowych (ustawa z dnia 23 sierpnia 2007 r. o przeciwdziałaniu nieuczciwym praktykom rynkowym, dyrektywa 2005/29/WE) każda deklaracja dotycząca szybkości jest pomiarem na wskazanym sprzęcie, z podaniem źródła, konfiguracji i metody, opisanej na stronie {#if SITE_PUBLIC}Metodologia{:else}<a href={href(L, '/methodology')}>Metodologia</a>{/if}. Wartości nieprzetestowane oznaczamy jako szacunek albo „wkrótce”. Wynik na sprzęcie Użytkownika może się różnić.</p>
 	<h2 id="odpowiedzialnosc" class="h2">§ 10. Odpowiedzialność</h2>
 	<ol>
 		<li>Usługodawca dokłada staranności, aby Usługi działały nieprzerwanie, z zastrzeżeniem przerw technicznych.</li>

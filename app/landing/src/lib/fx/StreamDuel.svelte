@@ -1,7 +1,7 @@
 <script lang="ts" module>
 	export interface DuelLane {
 		id: 'cold' | 'hot';
-		/** "Bez Podkrętu" / "Z Podkrętem". */
+		/** "Bez Enigma LABZ" / "Z Enigma LABZ". */
 		tag: string;
 		/** The variant's name ("Typowa aplikacja" / "Nasz silnik"). */
 		who: string;
@@ -14,7 +14,7 @@
 
 <script lang="ts">
 	/**
-	 * Two terminal panes, side by side, streaming the same answer nonstop: without Podkręt (cold,
+	 * Two terminal panes, side by side, streaming the same answer nonstop: without Enigma LABZ (cold,
 	 * steel) and with it (hot, a turning heat edge), at exactly the measured median t/s; the hot side
 	 * emits in steps of the measured MTP tokens per step. Each pane follows its newest line and wraps
 	 * from the end of the answer straight into the next copy, so the stream is endless; under it a

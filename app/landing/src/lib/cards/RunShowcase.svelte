@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	/**
 	 * Everything measured for one card × model: speed bars and the gain, a replay at real speed,
 	 * 500-word stopwatches, instruments (tokens/step, prefill, TTFT, memory, kernels), long context,
@@ -369,7 +370,7 @@
 					</dl>
 					{#if KLD_PENDING.includes(run.model)}<p class="pending mono">{t.kldPending(MODEL_STYLE[run.model].short)}</p>{/if}
 					<p class="row-links">
-						<a href={href(lang, '/methodology#quality')}>{t.methodology} →</a>
+						{#if !SITE_PUBLIC}<a href={href(lang, '/methodology#quality')}>{t.methodology} →</a>{/if}
 						<SourceTip {lang} src={[SHEET.correctness.md5Diff, q.saluki.ours.src]} note={t.qualityBody} />
 					</p>
 				</div>

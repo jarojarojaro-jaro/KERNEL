@@ -29,5 +29,6 @@
 		font-stretch: 118%;
 		font-size: 1.125rem;
 		letter-spacing: -0.02em;
+		white-space: nowrap;
 	}
 </style>

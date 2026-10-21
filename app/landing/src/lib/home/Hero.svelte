@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { SITE_PUBLIC } from '$lib/site/public';
 	/**
 	 * Hero (design/REDESIGN.md §6): heat field, a two-tier headline (CSS only: it is the LCP) — the
 	 * steel line "Ten sam sprzęt. Ten sam model." over the focal, much larger heat line "Po prostu
@@ -93,10 +94,12 @@
 				<span class="ig-label">{c.cta}</span>
 				<svg class="ig-arrow" viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M3 10h13M11 4.5 16.5 10 11 15.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
 			</a>
+			{#if !SITE_PUBLIC}
 			<a class="mlink" href={href(lang, '/methodology')}>
 				<span class="ml-label">{c.ctaSecondary}</span>
 				<svg viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><path d="M4.5 11.5 11.5 4.5M6 4.5h5.5V10" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" /></svg>
 			</a>
+			{/if}
 		</div>
 	</div>
 	<!-- keyed: the highway caches its text rows, so a language switch mounts a fresh one -->
