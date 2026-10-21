@@ -120,3 +120,7 @@ Przełączenie, liczone jako wyjście + zwolnienie VRAM + ready:
 - **Start Qwen topka to w 83% konwersja MTP do iq4_xs na CPU, nie ładowanie wag.** Cache na dysku skraca ready z 38.5 s do 6.55 s, bez zmiany md5.
 - **Rozgrzewka w serwerze jest bezstratna tylko z pełnym resetem:** `llama_memory_clear(data=true)` na tgt i dft oraz przebudowa slotów i spekulacji. Zysk na pierwszym żądaniu (−0.2 do −0.44 s) jest mniejszy niż koszt przed READY.
 - **TTFT tury agenta zależy głównie od kopii checkpointów (~440 z ~580 ms), nie od szablonu ani tokenizacji.**
+
+## Adopcja
+
+IntegTopka2 (raport 43): `~/llama-topka` = `f9b84bcfa` (latency-tmpl + latency). Domyślnie w `run-topka.sh`: `LLAMA_CHAT_NATIVE=1`, `LLAMA_CHAT_LATE_SYSTEM=1`, `LLAMA_MTP_REQUANT_CACHE=~/.cache/llama-mtp` (qwen). md5 on == off we wszystkich trzech, listening 39.8 s → 6.5 s. `LLAMA_SERVER_WARMUP_PROMPT` zostaje opt-in.
