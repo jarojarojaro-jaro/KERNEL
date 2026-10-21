@@ -164,6 +164,35 @@ Ranking według stosunku zysku do wysiłku.
    - scorer QSA: 27B nie ma QSA;
    - zestaw promptów iGPU 780M i role kart: pojedyncza karta.
 
+## 6a. Audyt: wzorzec Straty `86d10ed8` w naszej topce (przegląd kodu, CPU)
+
+Zakres: `~/wt/topka-int` @ `cf927413b`, czyli `ggml/src/ggml-cuda/hip-pm4.cu` (taśma PM4, `LAZY_EXEC`, guard, hostgap), ścieżka `LLAMA_GPU_VERIFY` (`src/llama-context.cpp`), `LLAMA_SERVER_YIELD_FAST` (`tools/server/server-queue.cpp`, `server-context.cpp`), stos wejść `GGML_HIP_INPUT_BATCH` i zdarzenia strumieni (`ggml-cuda.cu`), `allreduce.cu`. Szukałem miejsc, w których GPU czeka (WAIT_REG_MEM, czekanie na sygnał, kernel kręcący się w pętli) na pamięć, którą host zapisuje dopiero po submit/doorbell.
+
+**Werdykt: wzorca nie ma.** Taśma PM4 nie zawiera żadnego pakietu czekającego na pamięć. Jej słownik to `SET_SH_REG`, `DISPATCH_DIRECT`, `EVENT_WRITE` CS_PARTIAL_FLUSH, `ACQUIRE_MEM`, `COPY_DATA` (znacznik czasu) i `INDIRECT_BUFFER` (`hip-pm4.cu:714-745`); `WAIT_REG_MEM` w ogóle w niej nie występuje. Cała synchronizacja odbywa się na hoście: przed taśmą `cudaStreamSynchronize`, a po niej host czeka na sygnał HSA zapisywany przez GPU. Kod nie ma też ani jednego `hipStreamWaitValue`. Jedyna pętla wirująca na GPU jest w `allreduce.cu`, a to ścieżka wyłącznie dla wielu GPU.
+
+| # | Miejsce | Kto czeka / na co | Kto zapisuje i kiedy względem submitu | Werdykt |
+|---|---|---|---|---|
+| 1 | `hip-pm4.cu:1099-1103`: bit BARRIER pakietu AQL (PM4_IB) | CP czeka na zakończenie poprzednich pakietów **własnej** kolejki HSA | stan GPU; poprzednie taśmy są już zakończone, bo host czekał na nie w pkt 4 | OK |
+| 2 | `hip-pm4.cu:734, 926, 974`: `EVENT_WRITE` CS_PARTIAL_FLUSH między dispatchami | CP czeka, aż skończą się wcześniejsze dispatche | stan GPU | OK |
+| 3 | `hip-pm4.cu:736-741`: `ACQUIRE_MEM` (L0/K$/GL1; system) | operacje na cache, bez porównywania wartości | — | OK |
+| 4 | `hip-pm4.cu:1106`: `hsa_signal_wait_scacquire(d.signal < 1)` | **host** czeka na GPU (kierunek odwrotny), z limitem 10 s i potem `GGML_ABORT` | CP dekrementuje sygnał po taśmie | OK. Czeka w trybie aktywnym (ACTIVE), czyli pali CPU, ale to nie błąd |
+| 5 | Zapisy hosta przed taśmą: `cudaStreamSynchronize` (1069), naprawa kernargów synchronicznym `cudaMemcpy` (1075), `memset(prog)` (1079), `signal = 1` (1085), treść pakietu i sygnał (1096-1098), potem nagłówek `__atomic_store_n(..., RELEASE)` (1102) → doorbell `screlease` (1103) | — | **wszystkie przed doorbellem**; nagłówek z release publikuje pakiet na końcu | OK, kolejność jest dokładnie odwrotna niż w błędzie Straty |
+| 6 | Naprawa IB przez guard (`hip-pm4.cu:1055-1060`) | CP czyta IB z pamięci hosta | host przed doorbellem; pula hosta jest fine-grained (`:580-581`), więc GPU nie trzyma IB w L2 `[INFERENCE]` | OK |
+| 7 | `GGML_HIP_PM4_MIN_DISPATCH` (`:275-279`): krótki graf jako asynchroniczny HIP graph, potem taśma | taśma musi poczekać na wcześniejszą pracę na strumieniu HIP | porządkuje to `cudaStreamSynchronize` w pkt 5 | OK |
+| 8 | `LAZY_EXEC` / `exec_stale` (`ggml-cuda.cu:5923-5935, 6011-6012`) | instancja HIP graph powstaje dopiero przy fallbacku | host, synchronicznie przed launchem | OK (to sprawa cyklu życia grafu, nie czekania) |
+| 9 | `GGML_HIP_INPUT_BATCH` (`ggml-cuda.cu:2591-2655`): podwójny bufor stagingu | host czeka (`cudaEventSynchronize`, `:2643`), zanim nadpisze połówkę; GPU czyta połówkę po `cudaMemcpyAsync` | host pisze do połówki dopiero po zakończeniu jej poprzedniej kopii; flush przed każdym grafem/taśmą (`:5977`) | OK, kolejność zapis-po-odczycie jest zachowana |
+| 10 | Fork/join strumieni (`ggml-cuda.cu:5712, 5800`), `event_wait` (`:6047`) | `hipStreamWaitEvent` na zdarzeniach **nagranych przez GPU** | `EventRecord` jest kolejkowany przez ten sam wątek przed czekaniem | OK |
+| 11 | `LLAMA_GPU_VERIFY` `gv_fetch` (`llama-context.cpp:1002-1015`) | host: `synchronize()` i potem blokujący `tensor_get` | wiersze logitów żyją do następnego dekodu (`gv_drop`, `:1653, :1902`) | OK |
+| 12 | `LLAMA_SERVER_YIELD_FAST` (`server-queue.cpp:185-217, 266-318`; `server-context.cpp:4320`) | tylko wątki hosta (zmienne warunkowe) | cały ggml liczy się na jednym wątku (`server-queue.cpp:296`) | OK, w ogóle bez czekania po stronie GPU |
+| 13 | `allreduce.cu:157-176`: kernel kręci się na `arrival_other` w zmapowanej pamięci hosta | GPU czeka na **drugie GPU** (zapis volatile + `__threadfence_system`), a nie na hosta | oba kernele są kolejkowane bez czekania hosta pomiędzy nimi; brak limitu czasu | nie dotyczy pojedynczego XTX; kod z upstreamu. Na 2 GPU zawiesi się, jeśli launch peera nie nastąpi |
+
+**Ryzyko utajone (nie jest błędem przy obecnym użyciu):** `ggml_hip_pm4_launch` (`hip-pm4.cu:1039-1119`) nie bierze `g_mutex` (`:257`; lock jest tylko w build/watch), a jeden `d.signal` służy wszystkim taśmom urządzenia.
+- Gdyby dwa wątki (np. dwa konteksty na jednym GPU) uruchamiały taśmy równolegle, wątek B ustawiłby `signal = 1` w trakcie czekania A. Wtedy któryś z nich mógłby uznać, że jego taśma skończyła się, kiedy skończyła się cudza, i czytać wyniki za wcześnie (wyścig, nie zawieszenie).
+- Dziś wszystkie obliczenia ggml idą z jednego wątku, więc to nie występuje.
+- Poprawka, gdyby kiedyś było trzeba: `std::lock_guard` na `d` w launchu albo sygnał per taśma (`hsa_signal_create` w `ggml_hip_pm4_build`).
+
+**Wniosek:** nasza architektura (taśma zawsze synchroniczna względem hosta, zero oczekiwań GPU na pamięć hosta) nie ma klasy błędów z `86d10ed8`. Lekcja Straty staje się regułą projektową na przyszłość: jeśli kiedyś dodamy asynchroniczne taśmy z `WAIT_REG_MEM` na fladze hosta (np. żeby nałożyć hosta na GPU), flagę trzeba zapisać przed doorbellem, a czekanie musi mieć limit czasu.
+
 ## 7. Do bazy wiedzy
 
 - `repo/strata.md`, dopisać: 0.2.2 (`011c9e60`, 10-21, silnik 0.1.47): Gyro na Arc/Mac, trellis NVIDIA +17% (3060) i P100 +30%, pula CPU per NUMA, role kart Main/Helper/Off, pakiety RX 6000 (nieuruchamiane). Silnik to ~11% zmian od 0.2.0-beta. Dla gfx1100 nic do prędkości. 29.6k gwiazdek.
