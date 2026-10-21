@@ -1,0 +1,27 @@
+#!/bin/bash
+# Run a CPU-heavy command politely: one of 2 slots (2 cores each: 0-1 or 2-3), nice 19.
+#   cpuheavy [--quiet] <cmd...>
+# --quiet: also hold /tmp/quiet.lock SHARED (builds must not overlap GPU measurements),
+#          taken only AFTER the CPU slot, so a queued build never blocks GPU jobs.
+# Lock files are never deleted or recreated.
+set -u
+quiet=0
+[ "${1:-}" = "--quiet" ] && { quiet=1; shift; }
+[ $# -gt 0 ] || { echo "usage: cpuheavy [--quiet] <cmd...>" >&2; exit 2; }
+slot=""
+while [ -z "$slot" ]; do
+    for s in 0 1; do
+        exec {fd}>>"/tmp/cpuheavy.$s.lock"
+        if flock -n "$fd"; then slot=$s; break; fi
+        exec {fd}>&-
+    done
+    [ -z "$slot" ] && sleep 3
+done
+cores=$((slot * 2))-$((slot * 2 + 1))
+if [ "$quiet" = 1 ]; then
+    # 2026-10-21: a stream of per-file compiles kept the shared lock held and starved the GPU queue (writer). A queue
+    # runner at the head of the FIFO writes its pid to /tmp/gpu-wanted; new quiet work waits until it has the lock.
+    while [ -f /tmp/gpu-wanted ] && kill -0 "$(cat /tmp/gpu-wanted 2>/dev/null)" 2>/dev/null; do sleep 2; done
+    exec flock -s /tmp/quiet.lock nice -n 19 taskset -c "$cores" "$@"
+fi
+exec nice -n 19 taskset -c "$cores" "$@"

@@ -40,8 +40,13 @@ while :; do
     [ "$(head -1 "$T" | cut -d' ' -f1)" = "$$" ] && break
     sleep 2
 done
+# head of the line: tell cpuheavy --quiet to stop starting new shared-lock work, so the exclusive quiet lock is not
+# starved by a stream of per-file compiles (2026-10-21: the GPU sat idle for 20+ min twice)
+echo $$ > /tmp/gpu-wanted
+trap '[ "$(cat /tmp/gpu-wanted 2>/dev/null)" = "$$" ] && rm -f /tmp/gpu-wanted' EXIT
 exec 8>>/tmp/gpu.lock 9>>/tmp/quiet.lock
 flock 8; flock 9
+rm -f /tmp/gpu-wanted
 ticket drop
 log "queue: locks held, stopping topka"
 # Wait for the process to EXIT, not just the port to close: VRAM is freed only at exit (2026-10-19 20:26 the first
