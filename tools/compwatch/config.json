@@ -110,6 +110,10 @@
       {"slug": "NVIDIA/flare-local-inference",    "tier": "B", "name": "NVIDIA Flare (SM120/121, Rust serving)"},
       {"slug": "FlashML-org/FreeToken",           "tier": "B", "name": "FreeToken (MoE offload, NVFP4, eksp. gfx1100; R57d)"},
       {"slug": "MiaAI-Lab/Qwen3.8-Flash-Next-Single-DGX-Spark-TensorFold", "tier": "B", "name": "Mia's AI Lab: Flash-Next na 1x Spark (R57c)"},
+      {"slug": "IST-DASLab/GSQ",                  "tier": "B", "name": "ISTA GSQ (czekamy na kod GGUF K-quant/IQ; R57a)"},
+      {"slug": "IST-DASLab/RCO",                  "tier": "C", "name": "ISTA RCO (alokacja pod budżet; R57a)"},
+      {"slug": "IST-DASLab/SLQ",                  "tier": "C", "name": "ISTA SLQ (EAR, statystycznie bezstratne; R57a)"},
+      {"slug": "IST-DASLab/gptq-gguf-toolkit",    "tier": "C", "name": "ISTA GPTQ→K-quant + EvoPress (bez licencji; R57a)"},
       {"slug": "eagle-hq/EAGLE-4",                "tier": "A", "name": "EAGLE-4 (eagle-harness, drafter Qwen3.8-27B; R52)"}
     ],
     "keywords": ["rocm", "hip", "gfx11", "gfx1100", "gfx12", "rdna", "radeon", "7900", "r9700", "vulkan",
@@ -134,7 +138,7 @@
   ],
 
   "hf": {
-    "authors": ["unsloth", "bartowski", "ggml-org"],
+    "authors": ["unsloth", "bartowski", "ggml-org", "ISTA-DASLab"],
     "limit": 200
   }
 }
