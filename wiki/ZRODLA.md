@@ -203,6 +203,7 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | REA-Prompts | `390f0c1` (10-20) | R39d, [[raport-39d-rea-prompts]] | Sterowniki, nie GPU; 6 wskazówek metody. | – | – |
 | TorchTPU | PyPI 0.2.0 | R39e, [[raport-39e-torchtpu]] | Bez znaczenia dla decode. | – | TRC |
 | NVIDIA Flare | `47581cc` (10-20) | R39f, [[nvidia-flare]] | Tylko NVIDIA, bez spekulacji dla 27B. | 27B NVFP4 20.15 GB | N1X Windows |
+| Strata 0.2.2 + Qwen3.8-Flash (API) vs Flash-Next | `011c9e60` v0.2.2 (10-21, silnik 0.1.47) | [R57b](../product/research/57b-strata-qwen38-flash.md), [[strata]] | Dla gfx1100 nic; lekcja: flaga hosta przed graphLaunch (deadlock HIP). Flash = API, wag brak. | XTX IQ3_S 62.3 t/s (społ.); prefill 128K 926 → 1687 (hipBLASLt) | >v0.2.2: tylko HIP/gfx1100, obsługa 27B |
 
 ## Powiązane
 - [[KONWENCJE]]
