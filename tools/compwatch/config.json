@@ -107,6 +107,8 @@
       {"slug": "victoralcazardev/rx7900xtx-local-llm", "tier": "B", "name": "rx7900xtx-local-llm (pomiary XTX)"},
       {"slug": "vijay-14/qwen3-8-rocm-bench",     "tier": "B", "name": "qwen3-8-rocm-bench (XTX ROCm)"},
       {"slug": "NVIDIA/flare-local-inference",    "tier": "B", "name": "NVIDIA Flare (SM120/121, Rust serving)"},
+      {"slug": "FlashML-org/FreeToken",           "tier": "B", "name": "FreeToken (MoE offload, NVFP4, eksp. gfx1100; R57d)"},
+      {"slug": "MiaAI-Lab/Qwen3.8-Flash-Next-Single-DGX-Spark-TensorFold", "tier": "B", "name": "Mia's AI Lab: Flash-Next na 1x Spark (R57c)"},
       {"slug": "eagle-hq/EAGLE-4",                "tier": "A", "name": "EAGLE-4 (eagle-harness, drafter Qwen3.8-27B; R52)"}
     ],
     "keywords": ["rocm", "hip", "gfx11", "gfx1100", "gfx12", "rdna", "radeon", "7900", "r9700", "vulkan",
