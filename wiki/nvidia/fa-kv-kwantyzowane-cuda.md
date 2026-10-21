@@ -17,6 +17,13 @@ status: aktualne
 - Otwarte issues #29371 i #29826: bufor konwersji f16 zjada 8.7–13.3% oszczędności VRAM z kwantyzacji KV przy 131k.
 - **Luka zamknięta w forku (2026-10-16, raport 16c):** kvq-mma na Ampere+; 5060 Ti sm_120 Qwen q8_0 tg@64k +24.6%, LFM +30.0%, jądro ~92% pasma 448 GB/s. Zobacz [[2026-10-16-kvq-cuda]].
 
+## OrcaCyber-Nano-1.0 na 3090, 2026-10-21 (pomiar q4_0 vs f16)
+Przy KV q4_0 decode na głębokości 14.7k: **75.4 t/s**, f16: **86.5 t/s** (+15%), q8_0: 65.7 (−13% vs q4_0).
+Prefill identyczny dla wszystkich typów (~920 t/s) — czyli na CUDA q4_0 KV kosztuje ~13% decode, a q8_0 wypada
+gorzej niż q4_0 (ścieżka vec). Przy 262 144 tokenach tylko q4_0 się mieści (f16 = 16 GiB KV).
+`kvq-mma` (`01d6c6955`, Ampere+) **nie było w linii `topka`** — przeniesione na `orca-kvq`; pomiar w
+[[raport-56-orca-3090]].
+
 ## Powiązane
 - [[nvidia/_hub|NVIDIA]]
 - [[cuda-stos]]

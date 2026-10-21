@@ -65,11 +65,11 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (35)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (59)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (99)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (100)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (72)
-- [[research/_hub|research]] — Streszczenia raportów (143)
+- [[research/_hub|research]] — Streszczenia raportów (146)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (30)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
@@ -78,6 +78,9 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-21 [[raporty-2026-10-20-21|Przegląd raportów 31–54 (2026-10-20/21)]]
 - 2026-10-21 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne]]
 - 2026-10-21 [[raport-plan-nv-v2|PLAN-NV-V2: kampania NVIDIA v2 (ctx ≥ 131k)]]
+- 2026-10-21 [[raport-57g-quantalloc-ear|Raport 57g: EAR w llama-perplexity + alokacja per tensor dla 24 GB (research)]]
+- 2026-10-21 [[raport-57a-gsq-rco|Raport 57a: GSQ-RCO (ISTA-DASLab), autor i transfer na 24 GB]]
+- 2026-10-21 [[raport-56-orca-3090|Raport 56: OrcaCyber-Nano-1.0 na RTX 3090 — 262k na KV q4_0, MTP n=2 72.8 t/s]]
 - 2026-10-21 [[raport-54-mniej-granic|Raport 54: mniej granic dispatchy w kroku weryfikacji]]
 - 2026-10-21 [[raport-53-draft-shortlist|Raport 53: shortlist w głowicy draftu MTP (E52b)]]
 - 2026-10-21 [[raport-52-eagle4|Raport 52: EAGLE-4 – co bierzemy]]
@@ -87,9 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-21 [[raport-50b-mmvq-q5k|Raport 50b: MMVQ Q5_K n=5 – instancja big_rows]]
 - 2026-10-21 [[raport-50a-mmvq-q4k|Raport 50a: MMVQ Q4_K n=5 – kernel strumieniowy]]
 - 2026-10-21 [[raport-49-mmvq-ogon-1024|Raport 49: MMVQ n=5 – ogon 1024-wierszowych k/v]]
-- 2026-10-21 [[raport-48-norma-gdn-bank|Raport 48: rms_norm 4 vs 5 wierszy, drugi bank stanu GDN]]
-- 2026-10-21 [[raport-47-kernel-lab|Raport 47: kernel lab (klab)]]
-- 2026-10-21 [[raport-46-mmvq-big|Raport 46: MMVQ n=5 na dużych kształtach (mmvq-big)]]
 
-Razem 637 notatek. Wygenerowano 2026-10-21 przez `tools/wiki.py index`.
+Razem 641 notatek. Wygenerowano 2026-10-21 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

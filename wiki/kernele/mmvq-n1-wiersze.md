@@ -24,6 +24,13 @@ Ta sama bitowa ścieżka „2/4 wiersze na blok” udostępniona na CUDA dla Q4_
 Dla Nemotron 3.5 Bolt (2026-10-16) dołożono `GGML_CUDA_MMVQ_N1_IQ2`: IQ2_XXS w ścieżce 2 wierszy na blok na sm_80–87, bitowo neutralne (część zysku tg128 91.1 → 96.7 razem z `TOPK_MOE_NP2`).
 Wniosek: przełącznik tylko z predykatem per arch w manifeście (sm_80–87 tak, Blackwell nie); Ada sm_89 do ustalenia.
 
+## OrcaCyber-Nano-1.0 (IQ4_XS) na 3090, 2026-10-21
+W linii `topka` przełącznika brakowało — dołożony (`6cf6ced`, `GGML_CUDA_MMVQ_N1_ROWS`, domyślnie 0 = tabela, IQ4_XS
+włączony do ścieżki). Zmierzone: tg128 40.32 → 43.43 t/s (+7.7%) na VN, 46.19 → 47.35 (+2.5%) na QC; `=4` gorzej
+(40.93 / 44.98). `test-backend-ops -o MUL_MAT` (iq4_xs): 2/2 backendy OK, wynik bitowo ten sam.
+**Na serwerze z MTP zysku nie ma** (72.7 vs 72.5): hot spotem jest verify batch (ncols=3, ścieżka multi-column),
+a nie jednokolumnowy decode. Szczegóły: [[raport-56-orca-3090]].
+
 23b (2026-10-19): ścieżka n=1 nadal ładuje upstreamowo – 18 `global_load_b32`/`d16` na iterację (Q4_K, 3.3 B na instrukcję); kandydat: loader `mmvq_ld` z wielokolumnowej (b128, bitowo zgodny), szacunek plain +2–5%, LFM +2–5% ([[raport-23b-re-kernele-amd]]).
 
 ## Powiązane
