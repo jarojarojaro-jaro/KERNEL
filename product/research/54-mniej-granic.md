@@ -43,11 +43,12 @@ pracy w PM4=0 zamienione na 1 launch 160 bloków). [INFERENCE — niezmierzone]
   `flash_attn_combine_results` (zapis wyjścia FA), warpy w < D/64 `fwht_row_warp<64>` do wyjścia FWHT, potem każdy lane
   `sigmoid(gate)·fwht` (to samo wyrażenie co `unary_gated_op_kernel<op_sigmoid>`) + `quantize_q8_1_group` w tej samej
   kolejności lane'ów. Matcher `ggml_cuda_try_fa_fwht_gate` (FA → FWHT64 → para SIGMOID+MUL przez `ggml_cuda_can_fuse`,
-  kształty, brak nakładania wyjść/bramki), q8_1 dla o-proj przez `ggml_cuda_q8_1_producer_target`.
+  kształty, brak nakładania wyjść i bramki), q8_1 dla o-proj przez `ggml_cuda_q8_1_producer_target`.
 - Bitowość: każda wartość liczona tym samym kodem/wyrażeniem co zastępowane kernele (te same funkcje device, ta sama
   kolejność redukcji); dowód = md5 on==off (poniżej, rano). Test: `test-backend-ops -o ATTN_PREP`, nowy
   `test_attn_prep_qwen` (n_tokens 1/5, kv 512/2048, q4_0, Hadamard 256/64, bramka sigmoid).
-- Build: `rbuild --local ~/wt/launch-cut ggml-hip test-backend-ops` (+ `llama-server` jeśli zdążył; patrz §4).
+- Build: `rbuild --local ~/wt/launch-cut ggml-hip test-backend-ops` — **kompiluje się** (rc=0, lib nowszy od źródeł).
+  `llama-server` budowany w tle przez noc (`nohup rbuild --local ~/wt/launch-cut llama-server`, log `/tmp/lc_build3.log`).
 
 ## 3. Zmierzone
 
