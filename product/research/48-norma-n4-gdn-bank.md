@@ -38,3 +38,21 @@ T=1 prose has the same tokens with bank off/on (bit-exact), so the loss is ms/st
 (replay + extra full-state write, 3.1 MB/layer) cost more than the full-accept steps save. On code (mvs, T=0, long accepts) it gains ~0.2 ms/step.
 **Not adopted (regresses E0 prose).** Next variant, if anyone continues: write the full state only when the previous step kept all its rows
 (streak predictor) - then a post-rollback step costs exactly what it costs today and prose should be >= 0.
+
+## v3: conditional full-state write (GdnBank3)
+Commit 635999886 (branch xtx-re). `rs_last_n[cell]` = rows of the last ubatch; `kept` = rs_pend_n == rs_last_n. The full state (bit 5/7) is written
+only when kept; rs_bank_n is set only when it was written. A ubatch after a rollback: replay + one state write (as with bank off);
+the first ubatch after it (kept) replays once more and writes the full state; the next one reads it.
+Gates: tbo GATED_DELTA_NET / _LAG 2/2, smoke PM4=0 6f14e814 / c4708318, gate PM4=1 Qwen c4708318 / 6f14e814, LFM 894e56e4, bank 0 == 1. **Bit-exact.**
+
+E0 ABBA (round g5, `~/qwen-opt/xtxre/g5.jobs`, inst-bank3, seeds 1,2, PM4=1 WA=2 GUARD=1 SVM=0):
+
+| | A1 (off) | B1 (on) | B2 (on) | A2 (off) |
+|---|---|---|---|---|
+| prose t/s | 76.01 | 76.28 | 76.58 | 77.93 |
+| mvs median | 401.2 | 333.9 | 411.9 | 432.9 |
+
+**Inconclusive: the round was disturbed** (host contention: prose 76-78 vs 79 in v1/v2, host lookup 13-15 ms vs 6.9 ms in A2,
+mvs 334-433 within one config; A1->A2 drift +2.5% exceeds any effect). Formally B vs A: prose -0.7%, mvs -10% (dominated by B1);
+B2 vs A1 neighbours: prose +0.7%. Needs a repeat ABBA on a quiet card before any decision; **not adopted**, default off.
+Variant 2 (bank per spec-route profile) not started: no evidence yet that v3 is a loss on prose.
