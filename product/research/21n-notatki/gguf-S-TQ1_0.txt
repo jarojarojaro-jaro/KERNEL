@@ -1,0 +1,115 @@
+version 3 tensors 1224 kv 76 data_offset 11042688
+ KV general.architecture = qwen4exp
+ KV general.type = model
+ KV general.sampling.top_k = 20
+ KV general.sampling.top_p = 0.949999988079071
+ KV general.sampling.temp = 1.0
+ KV general.name = Qwen3.8-Flash-Next Gyro-S
+ KV general.description = A Preview of the Qwen4 Architecture
+ KV general.size_label = 512x56B
+ KV qwen4exp.block_count = 48
+ KV qwen4exp.context_length = 262144
+ KV qwen4exp.embedding_length = 2560
+ KV qwen4exp.attention.head_count = 24
+ KV qwen4exp.attention.head_count_kv = 2
+ KV qwen4exp.rope.dimension_sections = [11, 11, 10, 0]
+ KV qwen4exp.rope.freq_base = 10000000.0
+ KV qwen4exp.attention.layer_norm_rms_epsilon = 9.999999974752427e-07
+ KV qwen4exp.expert_count = 512
+ KV qwen4exp.expert_used_count = 10
+ KV qwen4exp.attention.key_length = 256
+ KV qwen4exp.attention.value_length = 256
+ KV qwen4exp.expert_feed_forward_length = 640
+ KV qwen4exp.expert_shared_feed_forward_length = 640
+ KV qwen4exp.ssm.conv_kernel = 4
+ KV qwen4exp.ssm.state_size = 128
+ KV qwen4exp.ssm.group_count = 16
+ KV qwen4exp.ssm.time_step_rank = 48
+ KV qwen4exp.ssm.inner_size = 6144
+ KV qwen4exp.full_attention_interval = 4
+ KV qwen4exp.rope.dimension_count = 64
+ KV qwen4exp.hyper_connection.count = 4
+ KV qwen4exp.hyper_connection.low_rank = 320
+ KV qwen4exp.attention.indexer.head_count = 4
+ KV qwen4exp.attention.indexer.key_length = 128
+ KV qwen4exp.attention.indexer.top_k = 2048
+ KV qwen4exp.attention.compress_ratios = <arr type5 n=48 first=[0, 0, 0, 4, 0, 0]>
+ KV qwen4exp.ple.layers = [1]
+ KV qwen4exp.ple.ngram_size = 3
+ KV qwen4exp.ple.heads_per_ngram = 8
+ KV qwen4exp.ple.conv_kernel = 4
+ KV qwen4exp.ple.eos_token_id = 248044
+ KV qwen4exp.embedding_length_per_layer_input = 160
+ KV qwen4exp.ple.layer_multipliers = [23703573157769, 20109073645365, 8052911324071]
+ KV qwen4exp.ple.head_offsets = [0, 20000003, 40000026, 60000059, 80000106, 100000165, 120000228, 140000297, 160000374, 180000455, 200000548, 220000655, 240000802, 260000955, 280001114, 300001275]
+ KV qwen4exp.ple.head_vocab_sizes = [20000003, 20000023, 20000033, 20000047, 20000059, 20000063, 20000069, 20000077, 20000081, 20000093, 20000107, 20000147, 20000153, 20000159, 20000161, 20000171]
+ 
+ KV qwen4exp.ple.image_token_id = 248056
+ KV general.quantized_by = Agention
+ KV general.repo_url = https://huggingface.co/agentionai
+ KV general.tags = ['agentionai', 'experimental']
+ KV general.quantization_version = 2
+ KV general.file_type = 25
+ KV quantize.imatrix.dataset = Agention calibration (see model card)
+ KV prism.hadamard.version = 1
+ KV prism.hadamard.block_size = 128
+ KV prism.hadamard.transform = normalized-sylvester-walsh-hadamard
+ KV prism.hadamard.axis = input-last-dimension
+ KV prism.hadamard.sign_mode = explicit
+ KV prism.hadamard.sign_widths = [640, 2560]
+ KV prism.hadamard.weight_names = <arr type8 n=144 first=['blk.0.ffn_down_exps.weight', 'blk.1.ffn_down_exps.weight', 'blk.2.ffn_down_exps.weight', 'blk.3.ffn_down_exps.weight', 'blk.4.ffn_down_exps.weight', 'blk.5.ffn_down_exps.weigh
+ KV agention.trellis.state_bits = 15
+ KV agention.encoder = Agention rotor encoder (APR), Gyro-S release 2026-10-01
+ KV general.basename = Qwen3.8-Flash-Next
+ KV general.base_model.count = 1
+ KV general.base_model.0.name = Qwen3.8 Flash Next
+ KV general.base_model.0.organization = Qwen
+ KV general.base_model.0.repo_url = https://huggingface.co/Qwen/Qwen3.8-Flash-Next
+per_layer_token_embd.weight                             IQ4_NL   x  1 dims=[160, 320001536]   26.822 GiB  bpw= 4.500  params= 51.200B
+blk.N.ffn_down_exps.weight                              type146  x 48 dims=[640, 2560, 512]    8.789 GiB  bpw= 1.875  params= 40.265B
+blk.N.ffn_gate_exps.weight                              type145  x 48 dims=[2560, 640, 512]    7.617 GiB  bpw= 1.625  params= 40.265B
+blk.N.ffn_up_exps.weight                                type145  x 48 dims=[2560, 640, 512]    7.617 GiB  bpw= 1.625  params= 40.265B
+blk.N.attn_qkv.weight                                   Q5_K     x 36 dims=[2560, 10240]    0.604 GiB  bpw= 5.500  params=  0.944B
+output.weight                                           Q6_K     x  1 dims=[2560, 248320]    0.486 GiB  bpw= 6.562  params=  0.636B
+token_embd.weight                                       Q6_K     x  1 dims=[2560, 248320]    0.486 GiB  bpw= 6.562  params=  0.636B
+blk.N.attn_gate.weight                                  Q5_K     x 36 dims=[2560, 6144]    0.363 GiB  bpw= 5.500  params=  0.566B
+blk.N.ssm_out.weight                                    Q5_K     x 36 dims=[6144, 2560]    0.363 GiB  bpw= 5.500  params=  0.566B
+blk.N.attn_q.weight                                     Q5_K     x 12 dims=[2560, 12288]    0.242 GiB  bpw= 5.500  params=  0.377B
+blk.N.hc_attn_up.weight                                 Q8_0     x 48 dims=[320, 10240]    0.156 GiB  bpw= 8.500  params=  0.157B
+blk.N.hc_ffn_up.weight                                  Q8_0     x 48 dims=[320, 10240]    0.156 GiB  bpw= 8.500  params=  0.157B
+blk.N.attn_output.weight                                Q5_K     x 12 dims=[6144, 2560]    0.121 GiB  bpw= 5.500  params=  0.189B
+blk.N.hc_attn_down.weight                               Q6_K     x 48 dims=[10240, 320]    0.120 GiB  bpw= 6.562  params=  0.157B
+blk.N.hc_ffn_down.weight                                Q6_K     x 48 dims=[10240, 320]    0.120 GiB  bpw= 6.562  params=  0.157B
+blk.N.ffn_gate_inp.weight                               BF16     x 48 dims=[2560, 512]    0.117 GiB  bpw=16.000  params=  0.063B
+blk.N.ffn_down_shexp.weight                             Q8_0     x 48 dims=[640, 2560]    0.078 GiB  bpw= 8.500  params=  0.079B
+blk.N.ffn_gate_shexp.weight                             Q5_K     x 48 dims=[2560, 640]    0.050 GiB  bpw= 5.500  params=  0.079B
+blk.N.ffn_up_shexp.weight                               Q5_K     x 48 dims=[2560, 640]    0.050 GiB  bpw= 5.500  params=  0.079B
+blk.N.indexer.q_proj.weight                             BF16     x 12 dims=[2560, 512]    0.029 GiB  bpw=16.000  params=  0.016B
+blk.N.ple_key.weight                                    Q6_K     x  1 dims=[2560, 10240]    0.020 GiB  bpw= 6.562  params=  0.026B
+blk.N.attn_k.weight                                     Q5_K     x 12 dims=[2560, 512]    0.010 GiB  bpw= 5.500  params=  0.016B
+blk.N.attn_v.weight                                     Q5_K     x 12 dims=[2560, 512]    0.010 GiB  bpw= 5.500  params=  0.016B
+blk.N.indexer.k_proj.weight                             BF16     x 12 dims=[2560, 128]    0.007 GiB  bpw=16.000  params=  0.004B
+blk.N.ssm_conv1d.weight                                 F32      x 36 dims=[4, 10240]    0.005 GiB  bpw=32.000  params=  0.001B
+blk.N.ple_value.weight                                  Q6_K     x  1 dims=[2560, 2560]    0.005 GiB  bpw= 6.562  params=  0.007B
+blk.N.ssm_alpha.weight                                  Q5_K     x 36 dims=[2560, 48]    0.003 GiB  bpw= 5.500  params=  0.004B
+blk.N.ssm_beta.weight                                   Q5_K     x 36 dims=[2560, 48]    0.003 GiB  bpw= 5.500  params=  0.004B
+blk.N.hc_attn_norm.weight                               F32      x 48 dims=[10240]    0.002 GiB  bpw=32.000  params=  0.000B
+blk.N.hc_ffn_norm.weight                                F32      x 48 dims=[10240]    0.002 GiB  bpw=32.000  params=  0.000B
+output_hc_down.weight                                   IQ4_NL   x  1 dims=[10240, 320]    0.002 GiB  bpw= 4.500  params=  0.003B
+output_hc_up.weight                                     IQ4_NL   x  1 dims=[320, 10240]    0.002 GiB  bpw= 4.500  params=  0.003B
+blk.N.hc_attn_inject.weight                             Q6_K     x 48 dims=[10240, 4]    0.002 GiB  bpw= 6.562  params=  0.002B
+blk.N.hc_ffn_inject.weight                              Q6_K     x 48 dims=[10240, 4]    0.002 GiB  bpw= 6.562  params=  0.002B
+blk.N.ffn_gate_inp_shexp.weight                         F32      x 48 dims=[2560]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.ple_conv1d.weight                                 F16      x  1 dims=[4, 10240]    0.000 GiB  bpw=16.000  params=  0.000B
+output_hc_norm.weight                                   F32      x  1 dims=[10240]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.ple_norm_conv.weight                              F32      x  1 dims=[10240]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.ple_norm_key.weight                               F32      x  1 dims=[10240]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.ple_norm_query.weight                             F32      x  1 dims=[10240]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.ssm_norm.weight                                   F32      x 36 dims=[128]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.attn_k_norm.weight                                F32      x 12 dims=[256]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.attn_q_norm.weight                                F32      x 12 dims=[256]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.ssm_a                                             F32      x 36 dims=[48]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.ssm_dt.bias                                       F32      x 36 dims=[48]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.indexer.k_norm.weight                             F32      x 12 dims=[128]    0.000 GiB  bpw=32.000  params=  0.000B
+blk.N.indexer.q_norm.weight                             F32      x 12 dims=[128]    0.000 GiB  bpw=32.000  params=  0.000B
+TOTAL 54.459993839263916 GiB 58.47597312 GB

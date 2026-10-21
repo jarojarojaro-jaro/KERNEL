@@ -1,0 +1,26 @@
+# Strata v0.2.0-beta (3d1fb480) tq_cpu_parity, built CPU-only against agentionai/llama.cpp 9aa51ce4 (STRATA_GGML_DIR)
+# host: Ryzen 7 5700X (Zen 3, AVX2, no AVX-512), run via `cpuheavy` = taskset 2 cores, nice 19; 2026-10-19
+# parity: "0 failures" (scalar/avx2 groups 1..8 bitwise equal; vs ggml-cpu vec_dot rel 8.77e-08; vs double to_float rel 1.12e-05)
+
+type   kernel                   us/expert   ns/blk  cyc/blk     GB/s | x3: us/tok  cyc/blk
+tqk6   strata scalar               2833.0     73.8    342.0     0.35 |     2376.0    861.8   (15/15 steady)
+tqk6   strata avx2                  565.1     14.7     68.2     1.77 |      240.8     87.2   (15/15 steady)
+tqk6   ggml-cpu vec_dot            1183.2     30.8    142.9     0.84 |     1181.8    428.4   (15/15 steady)
+tqk7   strata scalar               2643.8     68.8    319.1     0.44 |     2135.1    773.7   (15/15 steady)
+tqk7   strata avx2                  569.5     14.8     68.8     2.02 |      243.8     88.3   (15/15 steady)
+tqk7   ggml-cpu vec_dot            1083.1     28.2    130.7     1.06 |     1081.2    391.6   (15/15 steady)
+tq2_t  strata scalar               2627.2     68.4    317.1     0.50 |     2234.1    809.6   (15/15 steady)
+tq2_t  strata avx2                  574.0     14.9     69.3     2.27 |      242.0     87.7   (15/15 steady)
+tq2_t  ggml-cpu vec_dot            1383.0     36.0    166.9     0.94 |     1374.8    497.7   (15/15 steady)
+q2_0   strata Q2_0 avx2             207.1      5.4     25.0     6.67 |      122.6     44.4   (15/15 steady)
+
+4 threads at once (on 2 pinned cores), cold experts, one token: aggregate weight GB/s (us per expert per thread)
+tqk6   strata avx2                  3.50 GB/s ( 1141.1 us per expert per thread)
+tqk6   ggml-cpu vec_dot             1.67 GB/s ( 2388.3 us per expert per thread)
+tqk7   strata avx2                  3.99 GB/s ( 1154.2 us per expert per thread)
+tqk7   ggml-cpu vec_dot             2.08 GB/s ( 2214.4 us per expert per thread)
+tq2_t  strata avx2                  4.47 GB/s ( 1168.7 us per expert per thread)
+tq2_t  ggml-cpu vec_dot             1.89 GB/s ( 2760.5 us per expert per thread)
+q2_0   strata Q2_0 avx2            13.32 GB/s (  415.2 us per expert per thread)
+
+Hadamard rotation of one 2560-wide activation (block 128): 4.51 us
