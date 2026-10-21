@@ -85,3 +85,15 @@ Główny wniosek: na Sparku (273 GB/s) Qwen3.8-27B dense robi 34 t/s (atlas). Na
 - <https://github.com/ashhart/TensorFold/tree/zig-flashnext>
 - <https://huggingface.co/nvidia/Qwen3.8-Flash-Next-FP4-Local>
 - X: <https://x.com/MiaAI_lab/status/2111540267840901174>, <https://x.com/MiaAI_lab/status/2112105974546694249>, <https://x.com/MiaAI_lab/status/2112812782508794105> (treść tylko ze snippetów wyszukiwarki)
+
+## 9. Dodatek 2026-10-21: czy nasz serwer już robi „stan N−1”? (sprawdzenie kodu, `~/wt/topka-int`)
+
+**Werdykt: tak. Robi to w wariancie N−4, a przejście na N−1 nic by nie dało.**
+
+- `tools/server/server-context.cpp:4174-4193`: przy `do_checkpoint` prefill łamie batch tak, żeby checkpoint powstał **4 + n_ubatch** oraz **4** tokeny przed końcem promptu (`checkpoint_offsets[] = {4 + n_ubatch, 4}`, wzorzec upstream PR #20288). Checkpoint tworzy się przed `llama_decode` (`:4246-4250`, `create_checkpoint` `:2655`), a `LLAMA_CKPT_VRAM` robi szybki snapshot (`:2716-2719`).
+- `:3850`: `pos_min_thold = pos_next − n_swa − (has_new_tokens ? 0 : 1)`. Przy dokładnej powtórce (brak nowych tokenów) próg wymusza checkpoint sprzed końca.
+- `:3902-3942`: przywracany jest najgłębszy checkpoint z `pos_min < pos_min_thold` (dla GDN to ten sprzed 4 tokenów).
+- `:3977-3981` [TAG_PROMPT_LOGITS]: `n_past--`, czyli zawsze liczy się ≥ 1 token, żeby były logity.
+- Wynik: dokładna powtórka lub regeneracja przelicza **~4 tokeny w jednym ubatchu** zamiast całego promptu. N−1 zamiast N−4 to wciąż jeden forward, więc różnica wynosi 3 wiersze w MMVQ/MMQ przy N ≤ 8, czyli praktycznie zero `[INFERENCE]`.
+- Jedyna różnica wobec Mii: jej stan „N−1” jest trwały per prompt (repeat-cache), a nasz checkpoint może zostać wyrzucony z kolejki `n_ctx_checkpoints` (`:2677-2685`) albo przez min-step (`:2662-2670`). To nie jest powód do zmian. `cache_share` nie występuje w `topka-int` (grep pusty).
+- **Nie wdrażamy.** Pomysł #1 z §6 jest zamknięty jako „już mamy”.

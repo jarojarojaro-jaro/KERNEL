@@ -86,3 +86,16 @@ Rdzeń FreeToken, czyli offload ekspertów i q\*, **nie dotyczy** Qwen3.8-27B de
 - <https://andy-yang-1.github.io/>
 - <https://www.infoq.com/news/2026/08/freetoken-local-inference>
 - X: <https://x.com/Andy_ShuoYang/status/2090856976880472439>, <https://x.com/Andy_ShuoYang/status/2090856978428145761>, <https://x.com/Andy_ShuoYang/status/2095579850367262872> (tylko snippety)
+
+## 9. Dodatek 2026-10-21: KV blok 16 + skala 8-bit vs q4_0 (pomysł #2)
+
+**Status: niewykonane, bo nie mamy zrzutów K/V.**
+
+- `kb search "kv dump"` nic nie zwraca. W `~/qwen-opt` i `~/KERNEL` nie ma plików z K/V: `prose-accept/*.npz` to cechy akceptacji draftów, nie K/V. Lokalnie są tylko GGUF-y (bez BF16 safetensors 27B), a na hoście nie ma numpy.
+- Zgodnie z poleceniem przerywam na tym etapie. **Jak zdobyć zrzuty (CPU, ~30–60 min):**
+  1. `cpuheavy --quiet cmake --build` CPU-only `llama-eval-callback` z `~/wt/topka-int/examples/eval-callback` (osobny katalog build, nie współdzielony worktree).
+  2. Zmienić callback, żeby zapisywał surowe fp32 tensorów `Kcur-<il>` (po RoPE) i `Vcur-<il>` dla 16 warstw pełnej uwagi (4 głowy KV × 256) do `.bin` oraz `Qcur-<il>` do metryki uwagi.
+  3. Uruchomić `-ngl 0 -c 2048` na UD-Q4_K_XL dla 3 promptów (proza E0, kod, chat), po ~1–2k tokenów każdy.
+  4. Skrypt (numpy w venv): q4_0 (blok 32, skala fp16, symetryczny −8..7) kontra „q4_b16” (blok 16, skala e4m3 oraz int8-log2, te same 4.5 bpw). Metryki: MSE/rel-err rekonstrukcji K i V, błąd logitów `QKᵀ/√d` i KL softmaxu uwagi per głowa, osobno dla K i V.
+  5. Kryterium: wdrażać tylko przy spadku błędu uwagi (KL) o ≥ 10%.
+- Werdykt ≥ 10%: **nieznany** `[niezweryfikowane]`.
