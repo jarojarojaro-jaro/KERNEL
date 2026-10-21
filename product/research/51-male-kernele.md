@@ -112,6 +112,23 @@ kernelu, bo n_tokens=5 < 32), siatka (48,1,8) × (32,4) = 384 bloki, 84 VGPR, 5.
   `slc|dlc` w MMVQ n=1 Q5_K pogorszył sam MMVQ (12.9 → 14.4 µs). Nie warto.
 - Hipoteza zimnego kodu (I$/L2) dla normy — obalona (B i C jak A).
 
+## 6. Kontynuacja (SmallOps2, 2026-10-21 noc) — stan: nic nie zmierzone
+
+- Rundy `r2`/`r3` stały w kolejce (pozycje 8 i 10 z 13) i zostały anulowane decyzją użytkownika (stop GPU na noc,
+  `~/qwen-opt/queue/STOPPED-2026-10-21.txt`). Logów `so2-*`/`so3-norm` brak. Żadnego zwycięzcy, nic do IntegTopka3.
+- Gotowe: gałąź `smallops` (worktree `~/wt/smallops`) od `topka-int` HEAD `cf927413b`, bez zmian (port czeka na pomiar).
+  `fa/fattn-kvq.cu.orig` = plik z `topka-int` bajt w bajt, więc port `VAR` to przeniesienie diffu (157 linii).
+- **Rano, krok 1:** `~/qwen-opt/queue/run-jobs.sh ~/qwen-opt/smallops/morning.jobs` (= r2 + r3, PM4=0, same
+  mikrobenche, ~10 min GPU). Oczekiwane: FA `VAR=1` −3…−5 µs/launch przy `bitexact=1` (model workera), GDN v1/v12
+  −0.3…−1.2 µs, norma: podział czasu q8_1-ogon vs bariera.
+- **Reguła przyjęcia:** wariant idzie do portu tylko gdy `bitexact=1` we wszystkich wierszach i zysk ≥0.5 µs/launch
+  na ciepło i na zimno (n=5). `skip_epi` i `NORMV_SKIP_*` to tylko atrybucja, nie port.
+- **Krok 2 (po wygranej):** port do `~/wt/smallops` za przełącznikiem env (domyślnie off): `GGML_HIP_FAKVQ_EPI=1|2`
+  (instancja szablonu `VAR`), `GGML_HIP_GDN_V=1|12`; build `rbuild --local`; jeden plik jobs: test-backend-ops
+  `FLASH_ATTN_EXT`/`GATED_DELTA_NET` (PM4=0), md5 Qwen c4708318 / 6f14e814 i LFM 894e56e4 on==off (env PM4 produkcyjny),
+  E0 prose ABBA (`xtxroadmap/prose_bench.py`) + mvs. Zysk e2e oczekiwany ≤0.1 ms/krok (FA) + ≤0.06 (GDN) — na granicy
+  szumu ABBA; przyjąć przy md5 równym i ABBA nieujemnym.
+
 ## Pliki
 
 - `~/qwen-opt/smallops/cold/` — `cold.hip`, `mk.sh` (przez `cpuheavy`), `cold.py` (parser rocprof), `norm_v.cu`
@@ -128,3 +145,4 @@ kernelu, bo n_tokens=5 < 32), siatka (48,1,8) × (32,4) = 384 bloki, 84 VGPR, 5.
 | wyniki | FA kvq: stały koszt ~18–20 µs/launch to epilog | `flash_attn_ext_kvq<256,8,q4_0>`: 30 KB kodu, epilog łączenia warpów 59 % instrukcji, 8 faz z 1 aktywnym warpem na barierę. Wariant bitowy (`VAR=1/2`, kawałki po 64 D, jedna bariera) w `~/qwen-opt/smallops/fa` — niezmierzony w tym oknie (raport 51 §2) |
 | metody | Luki między dispatchami w śladzie PM4=0 | 3.28 µs p50 niezależnie od poprzednika (po dużym MMVQ i po małym kernelu), 945 dispatchy/krok = 3.17 ms/krok; czasy kerneli w rocprofv3 ich nie zawierają (raport 51 §4) |
 | metody | Mikrobench małego kernela z kodem topki | `#include "norm.cu"` (albo innego .cu) w benchu + link `-lggml-hip -lggml-base` z `~/llama-topka/bin`; flagi z `build-hip/.../flags.make`; scenariusze rozdzielone kernelem-znacznikiem `marker_k<S>` i parsowane z rocprofv3 (`smallops/cold/cold.py`) |
+| wyniki-negatywne | Kontynuacja SmallOps2 niezmierzona | r2/r3 (FA VAR, GDN v1–v12, fazy normy) anulowane przed startem (stop GPU na noc); plik na rano `~/qwen-opt/smallops/morning.jobs` (raport 51 §6) |
