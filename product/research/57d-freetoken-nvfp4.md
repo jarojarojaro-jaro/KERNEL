@@ -139,3 +139,69 @@ b16_e4m3 i b16_u8 mają niższe KL niż q4_0 w **16/16 warstw** na obu promptach
 3. Przed kernelem trzeba zmierzyć KLD/PPL end-to-end z symulowanym formatem (np. fake-quant K/V w CPU) oraz wariant z globalem per wiersz.
 
 **Następny krok:** wariant „per-row global” w `kvq_compare.py` (30 min CPU). Jeśli nadal ≥ 10%, zaprojektować typ KV `q4_b16` dla FA (dequant: int4 × u8 × fp32 per wiersz). Wysiłek 2–3 dni na XTX.
+
+## 11. Dodatek 2026-10-21 (3): warianty kauzalne (wdrażalne w cache)
+
+Skrypt `~/qwen-opt/research/kvdump-wt/kvq_causal.py`, te same zrzuty co w §10. Warianty:
+
+- `row_*`: skala globalna fp32 per wiersz (token × głowa KV, 256 elementów), **4.625 bpw**;
+- `calib_*`: stała skala per (warstwa, głowa KV) skalibrowana na **drugim** prompcie (proza ↔ kod), skale obcinane do zakresu kodu, **4.5 bpw**.
+
+| eval / kalibracja | format | relMSE K | relMSE V | KL uwagi | błąd wyjścia | ΔKL vs q4_0 | warstwy lepsze |
+|---|---|---|---|---|---|---|---|
+| proza / kod | q4_0 | 1.079e-2 | 1.072e-2 | 1.835e-2 | 8.93e-3 | 0 | – |
+| proza / kod | row_e4m3 | 7.55e-3 | 7.70e-3 | 1.326e-2 | 6.23e-3 | **−27.7%** | 16/16 |
+| proza / kod | row_u8 | 7.33e-3 | 7.47e-3 | 1.240e-2 | 5.88e-3 | **−32.4%** | 16/16 |
+| proza / kod | calib_e4m3 | 7.61e-3 | 7.77e-3 | 1.377e-2 | 6.40e-3 | **−24.9%** | 16/16 |
+| proza / kod | calib_u8 | 7.34e-3 | 7.53e-3 | 1.246e-2 | 5.95e-3 | **−32.1%** | 16/16 |
+| kod / proza | q4_0 | 1.091e-2 | 1.069e-2 | 1.977e-2 | 8.38e-3 | 0 | – |
+| kod / proza | row_e4m3 | 7.63e-3 | 7.70e-3 | 1.470e-2 | 6.01e-3 | **−25.7%** | 16/16 |
+| kod / proza | row_u8 | 7.41e-3 | 7.47e-3 | 1.361e-2 | 5.60e-3 | **−31.1%** | 16/16 |
+| kod / proza | calib_e4m3 | 7.69e-3 | 7.76e-3 | 1.533e-2 | 6.17e-3 | **−22.5%** | 16/16 |
+| kod / proza | calib_u8 | 7.42e-3 | 7.52e-3 | 1.364e-2 | 5.65e-3 | **−31.0%** | 16/16 |
+
+**Werdykt: próg ≥ 10% spełniony we wszystkich wariantach kauzalnych**, w każdej warstwie. Kalibracja przenosi się między prozą a kodem prawie bez straty: −0.1…−3 p.p. wobec skali per wiersz.
+
+**Zastrzeżenie do wariantu u8:** symulacja zachowuje znak skali bloku (ggml-style `d = m/−8`, gdzie *m* to element o największym module ze znakiem), a samo uint8 znaku nie ma. Do wdrożenia są więc dwie opcje:
+
+- **e4m3**, które ma bit znaku (zmierzone: −22.5…−27.7%);
+- u8 z kodami symetrycznymi `amax/7` (−7..7), czyli bez znaku `[niezweryfikowane]`; prawdopodobnie między e4m3 a u8.
+
+**Rekomendacja: `calib_e4m3`** (4.5 bpw, zmierzone −22…−25% KL, rozmiar bloku identyczny z q4_0).
+
+### Notatka projektowa: typ KV `q4_b16` dla FA na gfx1100 (bez implementacji)
+
+**Layout.** Blok 32 elementów, 18 B, **tyle samo co `block_q4_0`**:
+
+```c
+typedef struct { uint8_t s[2]; uint8_t qs[16]; } block_q4_b16; // s[0]: elem 0-15, s[1]: elem 16-31, e4m3
+```
+
+- Nibble jak w q4_0: bajt *j* low = element *j*, high = element *j+16*. Pod-blok 0 to młodsze nibble, pod-blok 1 starsze, więc istniejący `shift` w kernelu **sam wybiera skalę**: `s[shift != 0]`.
+- Skala globalna fp32 per (warstwa, głowa KV) w osobnym małym tensorze, statycznym, skalibrowanym offline jak w §11, np. jako metadane GGUF albo plik obok. Rozmiar: 16 warstw × 4 głowy × 2 (K, V) × 4 B = 512 B.
+- Strides, wyrównanie (`ggml_cuda_memcpy_1<…,2>`) i `n_ctx` × bajty bez zmian, więc budżet VRAM KV jest **identyczny** jak dla q4_0.
+
+**KQ (`vec_dot_fattn_vec_KQ_q4_0`, `fattn-common.cuh:149-177`).**
+
+- Dziś na każdy `int` (4 bajty, 8 nibbli, połowa wybierana `shift`): load, shift, and, `dp4a`, a potem `d_fp16 · (sumi·Q_d − 8/QI8_1·Q_sum32)`.
+- W `q4_b16` dwie połówki bloku mają różne skale, więc korekta „−8” potrzebuje **sumy Q per 16**, a nie per 32. Dwie opcje:
+  - (a) przy kwantyzacji Q (raz na kernel) zapisać `Q_ds` jako (d, sum_lo16, sum_hi16). Pętla wewnętrzna ma wtedy tyle samo instrukcji co q4_0; zamiast `v_cvt_f32_f16` jest odczyt bajtu e4m3 i konwersja przez LUT w LDS albo `v_cvt` przez bit-manipulację, ~3–4 VALU `[INFERENCE]`. Koszt: +1 float `Q_ds` na każdą iterację `k_KQ_0` na wątek, co przy D = 256 daje **+4…8 VGPR** `[INFERENCE]`;
+  - (b) zostawić `Q_ds` i liczyć `dp4a(0x01010101, u)` w pętli: **+1 `v_dot4` na int**, 0 VGPR.
+- Skala globalna jest stała per głowa, więc mnożymy przez nią **raz po pętli** (0 kosztu w pętli).
+- Pętla KQ dla D = 256 przy 1 tokenie zapytania jest ograniczona pasmem (K 144 B/wiersz), więc +1 VALU na 8 elementów powinno się schować `[INFERENCE]`. Zacząć od (b), bo nie rusza VGPR.
+- Uwaga: gfx1100 nie ma sprzętowego FP8 cvt, więc e4m3 → f32 to kilka VALU albo LUT 256 × f32 w LDS (1 KB). Tańszy byłby wariant u8 z kodami symetrycznymi (`v_cvt_f32_ubyte{0,1}`, 1 instrukcja), ale trzeba go najpierw zmierzyć (zob. zastrzeżenie).
+
+**V (`dequantize_V_q4_0`, `:409-450`).**
+
+- Zamiana `d = x[ib].d` na `d = g_head · e4m3(x[ib].s[shift])`; reszta (vsub4 i mnożenie half2) bez zmian.
+- `sched_group_barrier` na HIP (`:422`) zostaje. Odczyt skali to bajt zamiast półsłowa, ten sam bufor bloku, bez dodatkowego VMEM.
+
+**Zapis (set_rows / cpy f32 → q4_b16).** Per 16 elementów: *m* = element o największym module ze znakiem, `d = m/−8`, `s = e4m3(d/g)` (ze znakiem), kody `clip(floor(x/(s·g) + 8.5), 0, 15)`. Kalibracja *g*: `g = max_t |d| / 448` per (warstwa, głowa) na korpusie kalibracyjnym, z zapasem ×2 na outliery (do sprawdzenia, bo obcinanie ≥ 448 jest w symulacji).
+
+**Plan i koszt.**
+
+1. KLD/PPL całego modelu z fake-quant K/V na CPU (eval-callback, zapis zmodyfikowanego K/V), ~0.5 dnia.
+2. Typ ggml + quantize + `vec_dot`/`dequantize_V` (wariant b), ~1.5 dnia.
+3. Gate na XTX: KLD vs q4_0 (oczekiwany spadek) i t/s E0 ±1% (oczekiwane 0, bo te same bajty).
+
+Razem **2–3 dni**. Zysk: jakość KV przy tym samym rozmiarze, bez zysku t/s.
