@@ -6,11 +6,11 @@ Punkt wyjścia (raport 41, X1 ATT): MMVQ spędza 70–82% czasu w `s_waitcnt vmc
 
 ## Werdykt
 
-- **Q4_K n=5: software pipelining (wagi następnej iteracji ładowane przed bieżącym dot) + cel 8 fal/SIMD — wygrana, bitowo zgodna.**
+- **Q4_K n=5: software pipelining (wagi następnej iteracji ładowane przed bieżącym dot) + cel 8 fal/SIMD — wygrana na niefuzowanych kształtach, bitowo zgodna, ale NIEADOPTOWANA (patrz Adopcja).**
   - 17408×5120 −15%, 16384×5120 −6%, 10240×5120 −3% (mikrobench cache-cold).
   - Szacunek na krok `[SZACUNEK]`: −0.18 ms/krok (~0.6%), z czasów Q4_K w trasie klab (0.85 + 0.61 + 0.51 ms/krok).
   - W kodzie: `MMVQ_R3_PIPE_Q4K=1`, `MMVQ_R3_WAVES_Q4K_PIPE=8` (compile-time, jak istniejące `MMVQ_R3_PIPE_Q6K`).
-  - Status: bramka md5 + ABBA E0 zakolejkowane (`g46.jobs`, uruchamia je `chain46.sh` po buildzie `rbuild --local`). Wyniki: `~/qwen-opt/queue/logs/g46-*.log`, `~/qwen-opt/mmvqbig/logs/x46-*`.
+  - Status: **odrzucone przez IntegTopka2** (merge cofnięty w topka-int 03f7fc7e1). ABBA mvs bez zysku, a uruchomienia fuzowane Q4_K tracą (pomiar MmvqQ4K). Szczegóły w sekcji Adopcja.
 - **Q5_K: pipelining jest mieszany → bez zmian.** Przy 8 falach wygrywa na >5120 wierszach (−1.6…−2.8%), ale przegrywa +1.4% na 5120-wierszowych down/out, a te dominują (73.6 uruchomień/krok, 3.9 ms). Netto ok. −0.05 ms `[SZACUNEK]`. Pełny zysk (~−0.15 ms) wymagałby wyboru instancji po liczbie wierszy w launcherze.
 - **IQ4_XS: pipelining przegrywa** (up 17408 +4.4%) → bez zmian.
 - **Q6_K: obecna konfiguracja jest optimum.** Bez pipeliningu: +7…+31%. 8 fal: +5…+15%.
@@ -71,7 +71,12 @@ ISA (`kst.sh`, scratch 0 wszędzie). Bazowo: Q4_K 140 VGPR / occ 10, Q5_K 142 / 
   2. Smoke greedy z PM4=0.
   3. md5 PM4=1: Qwen c4708318 / MTP 6f14e814, LFM 894e56e4.
   4. ABBA E0 prose+mvs, seedy 1,2: A = `~/llama-topka`, B = `~/qwen-opt/mmvqbig/inst`.
-- Po PASS bramki md5 i braku regresji w ABBA → IntegTopka2 cherry-pick 69f14108b na topkę.
+- **Wynik: NIEADOPTOWANE.**
+  - ABBA mvs: A 431.4 / 428.8, B 418.9 / 432.0 t/s. Bez zysku, B1 odstaje.
+  - MmvqQ4K zmierzył regresje uruchomień fuzowanych Q4_K: para qkv+gate +13.8%, down z biasem +15.7%, out z biasem +6%, para ffn +5.9%. Netto ≈ 0.
+  - Mój mikrobench nie miał przypadków Q4_K pary ani Q4_K z biasem; miałem tylko Q4_K bez fuzji. Cel 8 fal działa na każdą instancję Q4_K n=5, także fuzowaną.
+  - Merge cofnięty w topka-int (03f7fc7e1). Q4_K dalej prowadzi MmvqQ4K (`~/qwen-opt/mmvqbig3`).
+  - Wniosek: pipelining + niższy cel fal tylko dla instancji bez fuzji (`!has_fusion`) i dopiero z ABBA z wyraźnym zyskiem.
 
 ## Do bazy wiedzy
 
