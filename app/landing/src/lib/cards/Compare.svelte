@@ -1,11 +1,12 @@
 <script lang="ts">
 	/**
 	 * Versus: two measured cards face to face on a shared model (each card's pick when they share
-	 * none), as a title-fight face-off (Versus.svelte): each card in its maker's colour field, the
-	 * fields colliding on an energy seam under a heavy VS, stat bars clashing from both edges. A stat
-	 * has a winner only when both runs come from the same model, script and conditions (`comparable`);
-	 * otherwise the arena says there is no verdict. The fighters are picked below like a fighter
-	 * select (photo chips in the makers' colours). Then the 500-word race and the token race.
+	 * none), as a full-bleed title-fight face-off (Versus.svelte) with a round-by-round scoreboard
+	 * (a stat only when both cards have it). A stat has a winner only when both runs come from the
+	 * same model, script and conditions (`comparable`); otherwise the board says there is no verdict.
+	 * The fighters are picked below like a fighter select (portrait tiles in the makers' colours,
+	 * corner A over corner B; the selection hint is for screen readers only). Then the 500-word race
+	 * and the token race.
 	 *
 	 * State lives in the query string (?a=…&b=…&m=…), read on the client: the prerendered page is the
 	 * default pair. The arena plays its entrance from the first paint; changing a card replays its
@@ -15,12 +16,12 @@
 	import { untrack } from 'svelte';
 	import RaceLanes, { type Lane } from '$lib/fx/RaceLanes.svelte';
 	import { findCard, MODEL_INFO, words500, type ModelKey } from '$lib/data/measurements';
-	import { fmtTps } from '$lib/format';
-	import { cardsHref, currentLang, num } from '$lib/i18n';
+	import { fmtTps, ratioDigits } from '$lib/format';
+	import { cardsHref, currentLang } from '$lib/i18n';
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import Choice from './Choice.svelte';
 	import { cardsCopy } from './copy';
-	import { comparable, duel, heatOf, MEASURED, roundTo, runOf, sharedModels } from './explorer';
+	import { comparable, duel, heatOf, LINEUP, MEASURED, roundTo, runOf, sharedModels } from './explorer';
 	import GpuArt from './GpuArt.svelte';
 	import Kinetic from './Kinetic.svelte';
 	import { Play } from './play.svelte';
@@ -112,7 +113,8 @@
 				id: s.card.id,
 				vendor: s.card.vendor,
 				name: s.card.short,
-				sub: [`${s.card.vramGB}${NB}GB`, `${num(s.card.bwGBs.v, lang, 0)}${NB}GB/s`, MODEL_INFO[s.run.model].name, s.run.quant],
+				line: LINEUP[s.card.vendor as keyof typeof LINEUP],
+				sub: [`${s.card.vramGB}${NB}GB`, MODEL_INFO[s.run.model].name, s.run.quant],
 				photo: photoOf(s.card.id),
 				vram: s.card.vramGB,
 				heat: heatOf(s.d?.ratio),
@@ -122,13 +124,16 @@
 			})
 		)
 	);
-	const r1 = (v: number | undefined) => (v == null ? null : roundTo(v, 1));
+	const r = (v: number | null | undefined, digits = 1) => (v == null ? null : roundTo(v, digits));
+	const xDigits = $derived(ratioDigits(Math.min(dA?.ratio ?? 9, dB?.ratio ?? 9)));
+	/* measured numbers only; Versus shows a row only when both cards have it */
 	const stats = $derived<VsStat[]>([
-		{ key: 'ours', label: t.decode, unit: 't/s', decimals: 1, a: r1(dA?.ours.decode?.v), b: r1(dB?.ours.decode?.v), better: 'hi' },
-		{ key: 'words', label: t.words, unit: 's', decimals: 1, a: r1(sides[0].w?.v), b: r1(sides[1].w?.v), better: 'lo' },
-		{ key: 'ttft', label: t.ttft, unit: 's', decimals: 1, a: r1(dA?.ours.ttft?.v), b: r1(dB?.ours.ttft?.v), better: 'lo' },
-		{ key: 'before', label: t.before, unit: 't/s', decimals: 1, a: r1(dA?.before.decode?.v), b: r1(dB?.before.decode?.v), better: 'hi' },
-		{ key: 'vram', label: t.vram, unit: 'GB', decimals: 1, a: r1(dA?.ours.vram?.v), b: r1(dB?.ours.vram?.v), better: null, aSub: `/ ${A.vramGB}${NB}GB`, bSub: `/ ${B.vramGB}${NB}GB` }
+		{ key: 'ours', label: t.decode, unit: 't/s', decimals: 1, a: r(dA?.ours.decode?.v), b: r(dB?.ours.decode?.v), better: 'hi' },
+		{ key: 'before', label: t.before, unit: 't/s', decimals: 1, a: r(dA?.before.decode?.v), b: r(dB?.before.decode?.v), better: 'hi' },
+		{ key: 'ratio', label: t.ratio, unit: '×', decimals: xDigits, a: r(dA?.ratio, xDigits), b: r(dB?.ratio, xDigits), better: 'hi' },
+		{ key: 'words', label: t.words, unit: 's', decimals: 1, a: r(sides[0].w?.v), b: r(sides[1].w?.v), better: 'lo' },
+		{ key: 'ttft', label: t.ttft, unit: 's', decimals: 1, a: r(dA?.ours.ttft?.v), b: r(dB?.ours.ttft?.v), better: 'lo' },
+		{ key: 'vram', label: t.vram, unit: 'GB', decimals: 1, a: r(dA?.ours.vram?.v), b: r(dB?.ours.vram?.v), better: null, aSub: `/ ${A.vramGB}${NB}GB`, bSub: `/ ${B.vramGB}${NB}GB` }
 	]);
 	const glow = $derived.by(() => {
 		const va = VENDOR[vendorOf(A.vendor)];
@@ -150,40 +155,51 @@
 	<a class="back mono" href={cardsHref(lang)}><span aria-hidden="true">←</span> {tc.back}</a>
 	<p class="eyebrow">{t.eyebrow}</p>
 	<Kinetic id="cmp-title" lines={[t.title]} class="giga hx-h" />
-	<p class="lede">{t.lede}</p>
 </section>
 
-<section class="wrap arena" aria-label="{A.name} {t.vs} {B.name}" aria-live="polite">
-	<Versus a={fighters[0]} b={fighters[1]} {stats} verdict={sameScript} {lang} winLabel={t.win} missingLabel={t.missing} mode="intro">
+<section class="arena" aria-label="{A.name} {t.vs} {B.name}" aria-live="polite">
+	<Versus
+		a={fighters[0]}
+		b={fighters[1]}
+		{stats}
+		verdict={sameScript}
+		{lang}
+		winLabel={t.win}
+		boardTag={sameScript ? t.verdict : t.noVerdictTag}
+		boardNote={sameScript ? undefined : shared.length ? t.noVerdict : t.noVerdictModels}
+		mode="intro"
+	>
 		{#snippet foot()}
-			<p class="verdict">
-				{#if lead}<Ratio value={lead.x} {lang} size="md" /> <span>{t.leadLine(lead.hi.card.short, lead.lo.card.short)}</span>{:else}<span class="nv">{shared.length ? t.noVerdict : t.noRaceModels}</span>{/if}
-			</p>
+			{#if lead}
+				<p class="verdict wrap"><Ratio value={lead.x} {lang} size="md" /> <span>{t.leadLine(lead.hi.card.short, lead.lo.card.short)}</span></p>
+			{/if}
 		{/snippet}
 	</Versus>
 </section>
 
 {#snippet roster(side: 'a' | 'b', legend: string)}
-	<fieldset class="roster roster-{side}">
+	<fieldset class="roster roster-{side}" aria-describedby="cmp-hint">
 		<legend><span class="tag">{side === 'a' ? 'A' : 'B'}</span>{legend}</legend>
-		<div class="chips">
+		<div class="tiles">
 			{#each MEASURED as e (e.id)}
 				{@const taken = side === 'a' ? e.id === b : e.id === a}
 				{@const on = side === 'a' ? e.id === a : e.id === b}
-				<label class="chip" class:on class:taken style={vendorVars(e.card.vendor)}>
+				<label class="tile" class:on class:taken style={vendorVars(e.card.vendor)}>
 					{#if side === 'a'}
 						<input type="radio" name="cmp-a" value={e.id} bind:group={a} disabled={taken} />
 					{:else}
 						<input type="radio" name="cmp-b" value={e.id} bind:group={b} disabled={taken} />
 					{/if}
-					<span class="thumb" aria-hidden="true">
-						{#if photoOf(e.id)}<ProductPhoto id={photoOf(e.id)!} sizes="7rem" />{:else}<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} flat />{/if}
+					<span class="t-ph" aria-hidden="true">
+						{#if photoOf(e.id)}<ProductPhoto id={photoOf(e.id)!} sizes="(max-width: 40rem) 40vw, 14rem" />{:else}<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} flat />{/if}
 					</span>
 					<span class="who">
 						<span class="mk" class:upright={e.card.vendor !== 'nvidia' && e.card.vendor !== 'amd'}>{VENDOR[vendorOf(e.card.vendor)].name}</span>
 						<span class="nm">{e.card.short}</span>
 						<span class="vr mono">{e.card.vramGB}{NB}GB</span>
 					</span>
+					{#if on}<span class="t-tag" aria-hidden="true">{side === 'a' ? 'A' : 'B'}</span>{/if}
+					{#if taken}<span class="t-tag t-tag--other" aria-hidden="true">{side === 'a' ? 'B' : 'A'}</span>{/if}
 				</label>
 			{/each}
 		</div>
@@ -192,6 +208,7 @@
 
 <section class="wrap pick" aria-labelledby="cmp-select">
 	<h2 id="cmp-select" class="pick-h">{t.select}</h2>
+	<p id="cmp-hint" class="sr-only">{t.pickHint}</p>
 	<div class="rosters">
 		{@render roster('a', t.a)}
 		{@render roster('b', t.b)}
@@ -250,19 +267,19 @@
 	.mono {
 		font-family: var(--font-mono);
 	}
+	/* a tight head, so the face-off below fits the first screen */
 	.hero {
 		display: grid;
-		gap: var(--sp-3);
+		gap: var(--sp-1);
 		justify-items: start;
-		padding: calc(4.25rem + clamp(1rem, 3vh, 2.25rem)) 0 clamp(1.25rem, 2.5vw, 2rem);
+		padding: calc(4.25rem + clamp(0.5rem, 1.5svh, 1.25rem)) 0 clamp(0.75rem, 2svh, 1.25rem);
 	}
 	.hero :global(h1),
-	.hero .lede,
 	.hero .eyebrow {
 		margin: 0;
 	}
 	.hero :global(h1) {
-		font-size: var(--fs-display);
+		font-size: clamp(2rem, 1rem + 3.2vw, 4rem);
 	}
 	.back {
 		display: inline-flex;
@@ -283,14 +300,10 @@
 		align-items: baseline;
 		justify-content: center;
 		gap: 0.2rem 0.75rem;
-		margin: var(--sp-4) auto 0;
-		max-width: 52rem;
+		margin-top: var(--sp-4);
 		text-align: center;
 		font-size: var(--fs-sm);
 		color: var(--text);
-	}
-	.nv {
-		color: var(--text-mute);
 	}
 
 	/* ---------- fighter select ---------- */
@@ -310,10 +323,10 @@
 		text-transform: uppercase;
 		color: var(--text-hi);
 	}
+	/* the two corners, A over B, each a strip of big portrait tiles (A from the left, B from the right) */
 	.rosters {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-		gap: var(--sp-4) clamp(1rem, 3vw, 2.5rem);
+		gap: var(--sp-4);
 	}
 	.roster {
 		margin: 0;
@@ -350,89 +363,170 @@
 		font-style: italic;
 		letter-spacing: 0;
 	}
-	.chips {
+	.tiles {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: var(--sp-2);
+		grid-auto-flow: column;
+		grid-auto-columns: minmax(9rem, 14.5rem);
+		gap: var(--sp-3);
+		padding: 0.4rem 0.2rem 0.6rem;
+		overflow-x: auto;
+		scroll-snap-type: x proximity;
+		scrollbar-width: thin;
 	}
-	/* a fighter chip: the card's photo on its maker's colour; picked = lit rim and lift */
-	.chip {
+	.roster-b .tiles {
+		justify-content: safe end;
+	}
+	/* a fighter tile: the card in its maker's light, the name below; picked = lit rim, the card steps
+	   forward, the corner letter pops in */
+	.tile {
 		--text-hi: #edeae3;
 		--text-mute: #8e8a83;
+		--turn: -7deg;
 		position: relative;
 		display: grid;
-		grid-template-columns: 5.5rem minmax(0, 1fr);
-		align-items: center;
-		gap: var(--sp-2);
-		min-height: 4.25rem;
-		padding: 0.4rem 0.75rem 0.4rem 0.4rem;
+		grid-template-rows: minmax(0, 1fr) auto;
+		aspect-ratio: 10 / 11;
+		padding: 0.6rem 0.8rem 0.75rem;
 		border-radius: var(--r-lg);
-		background: linear-gradient(110deg, rgb(var(--v) / 0.3), rgb(var(--v) / 0.06) 55%), linear-gradient(180deg, var(--v-deep), #070708);
-		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.3);
+		background:
+			radial-gradient(80% 60% at 50% 0%, rgb(var(--v) / 0.45), transparent 70%),
+			linear-gradient(180deg, var(--v-deep), #070708 85%);
+		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.28);
 		color: var(--text-hi);
 		cursor: pointer;
 		user-select: none;
+		scroll-snap-align: start;
+		overflow: hidden;
 		transition:
 			transform 0.45s var(--ease-spring),
 			box-shadow 0.3s,
 			opacity 0.3s;
 	}
-	.chip:hover:not(.taken) {
-		transform: translate3d(0, -2px, 0);
+	.roster-b .tile {
+		--turn: 7deg;
+	}
+	/* a beam from above, brighter when picked */
+	.tile::before {
+		content: '';
+		position: absolute;
+		inset: -10% 25% 30%;
+		background: linear-gradient(180deg, rgb(var(--v) / 0.5), transparent 85%);
+		clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%);
+		opacity: 0.35;
+		transition: opacity 0.4s;
+		pointer-events: none;
+	}
+	.t-ph {
+		position: relative;
+		display: grid;
+		place-items: center;
+		min-height: 0;
+		transform: rotate(var(--turn)) scale(0.92);
+		transition: transform 0.55s var(--ease-spring);
+		filter: drop-shadow(0 0 1px rgb(var(--v) / 0.9)) drop-shadow(0 6px 14px rgb(0 0 0 / 0.6));
+	}
+	.tile:hover:not(.taken) {
+		transform: translate3d(0, -3px, 0);
 		box-shadow: inset 0 0 0 1px rgb(var(--v) / 0.7);
 	}
-	.chip.on {
-		transform: translate3d(0, -2px, 0);
+	.tile:hover:not(.taken) .t-ph {
+		transform: rotate(var(--turn)) scale(1);
+	}
+	.tile.on {
+		transform: translate3d(0, -4px, 0);
 		box-shadow:
 			inset 0 0 0 2px rgb(var(--v)),
-			0 0 28px -6px rgb(var(--v) / 0.8);
+			0 0 34px -6px rgb(var(--v) / 0.85);
 	}
-	.chip.taken {
-		opacity: 0.35;
+	.tile.on::before {
+		opacity: 1;
+	}
+	.tile.on .t-ph {
+		transform: rotate(calc(var(--turn) * 0.4)) scale(1.08) translate3d(0, -3%, 0);
+	}
+	.tile.taken {
+		opacity: 0.32;
 		cursor: not-allowed;
 	}
-	.chip:has(input:focus-visible) {
+	.tile:has(input:focus-visible) {
 		outline: 2px solid var(--focus);
 		outline-offset: 3px;
 	}
-	.chip input {
+	.tile input {
 		position: absolute;
 		opacity: 0;
 		width: 1px;
 		height: 1px;
 		pointer-events: none;
 	}
-	.thumb {
-		display: block;
-		filter: drop-shadow(0 0 6px rgb(var(--v) / 0.5));
+	.t-tag {
+		position: absolute;
+		top: 0.5rem;
+		left: 0.5rem;
+		display: grid;
+		place-items: center;
+		width: 1.7rem;
+		height: 1.7rem;
+		border-radius: var(--r-sm);
+		background: #fff3d6;
+		color: #1a1205;
+		font-family: var(--font-display);
+		font-weight: 900;
+		font-style: italic;
+		box-shadow: 0 0 18px rgb(var(--v) / 0.9);
+	}
+	.roster-b .t-tag {
+		left: auto;
+		right: 0.5rem;
+	}
+	.t-tag--other {
+		background: rgb(255 255 255 / 0.12);
+		color: var(--text-hi);
+		box-shadow: none;
 	}
 	.who {
+		position: relative;
 		display: grid;
 		min-width: 0;
-		line-height: 1.1;
+		line-height: 1.05;
 	}
 	.mk {
 		padding-right: 0.2em;
 		font-family: var(--font-display);
-		font-size: 0.7rem;
+		font-size: 0.75rem;
 		font-weight: 900;
 		font-style: italic;
 		letter-spacing: 0.06em;
 		color: var(--v-hi);
+		text-shadow: 0 0 12px rgb(var(--v) / 0.7);
 	}
 	.mk.upright {
 		font-style: normal;
 	}
 	.nm {
+		padding-right: 0.08em;
 		font-family: var(--font-display);
-		font-size: var(--fs-lg);
-		font-weight: 850;
-		font-stretch: 110%;
-		letter-spacing: -0.02em;
+		font-size: clamp(1.25rem, 0.8rem + 1.2vw, 1.9rem);
+		font-weight: 900;
+		font-style: italic;
+		font-stretch: 118%;
+		letter-spacing: -0.035em;
+		white-space: nowrap;
 	}
 	.vr {
 		font-size: var(--fs-2xs);
 		color: var(--text-mute);
+	}
+	@media (prefers-reduced-motion: no-preference) {
+		.t-tag:not(.t-tag--other) {
+			animation: tag-pop 0.45s cubic-bezier(0.3, 1.6, 0.5, 1);
+		}
+	}
+	@keyframes tag-pop {
+		from {
+			opacity: 0;
+			transform: scale(0.3) rotate(-12deg);
+		}
 	}
 	.pk-m {
 		justify-self: center;
@@ -472,21 +566,20 @@
 		margin: 0;
 	}
 
-	@media (max-width: 52rem) {
-		.hero .lede {
-			display: none;
+	/* phones: the corners scroll sideways, a tile and a bit of the next one in view */
+	@media (max-width: 40rem) {
+		.tiles {
+			grid-auto-columns: 8.75rem;
+			gap: var(--sp-2);
+			margin-inline: calc(-1 * var(--gutter));
+			padding-inline: var(--gutter);
+			scroll-padding-inline: var(--gutter);
 		}
-		.chips {
-			grid-template-columns: minmax(0, 1fr);
+		.roster-b .tiles {
+			justify-content: start;
 		}
-	}
-	@media (max-width: 30rem) {
-		.chip {
-			grid-template-columns: 3.75rem minmax(0, 1fr);
-			padding-right: 0.5rem;
-		}
-		.nm {
-			font-size: var(--fs-md);
+		.tile {
+			padding: 0.5rem 0.6rem 0.6rem;
 		}
 	}
 </style>

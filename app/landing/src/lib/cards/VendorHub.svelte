@@ -11,9 +11,9 @@
 	 * a light sweep crosses the block. Transforms and opacity only; reduced motion: all static.
 	 */
 	import { tilt } from '$lib/fx/actions';
-	import { fmtTps } from '$lib/format';
+	import { fmtTps, ratioDigits } from '$lib/format';
 	import { cardsHref, currentLang, href } from '$lib/i18n';
-	import { MODEL_INFO } from '$lib/data/measurements';
+	import { MODEL_INFO, words500 } from '$lib/data/measurements';
 	import { cardsCopy } from './copy';
 	import { comparable, ENTRIES, entryVendor, GROUPS, headline, heatOf, LINEUP, matches, MEASURED, QUEUED, roundTo, splitName, VENDORS, type Entry } from './explorer';
 	import GpuArt from './GpuArt.svelte';
@@ -44,22 +44,32 @@
 			id: card.id,
 			vendor: card.vendor,
 			name: card.short,
-			sub: [LINEUP[card.vendor], `${card.vramGB}${NB}GB`, ...(d ? [MODEL_INFO[d.run.model].name, d.run.quant] : [])],
+			line: LINEUP[card.vendor],
+			sub: [`${card.vramGB}${NB}GB`, ...(d ? [MODEL_INFO[d.run.model].name, d.run.quant] : [])],
 			photo: photoOf(card.id),
 			vram: card.vramGB,
 			heat: heatOf(d?.ratio)
 		})
 	);
 	const vsComparable = pair[0].d && pair[1].d ? comparable(pair[0].d.run, pair[1].d.run) : false;
+	/* measured numbers only; Versus shows a row only when both cards have it */
+	const [dA, dB] = [pair[0].d, pair[1].d];
+	const r = (v: number | null | undefined, digits = 1) => (v == null ? null : roundTo(v, digits));
+	const xDigits = ratioDigits(Math.min(dA?.ratio ?? 9, dB?.ratio ?? 9));
 	const vsStats = $derived<VsStat[]>([
+		{ key: 'ours', label: tcmp.decode, unit: 't/s', decimals: 1, a: r(dA?.ours.decode?.v), b: r(dB?.ours.decode?.v), better: 'hi' },
+		{ key: 'ratio', label: tcmp.ratio, unit: '×', decimals: xDigits, a: r(dA?.ratio, xDigits), b: r(dB?.ratio, xDigits), better: 'hi' },
+		{ key: 'words', label: tcmp.words, unit: 's', decimals: 1, a: r(words500(dA?.ours, 'pl')?.v), b: r(words500(dB?.ours, 'pl')?.v), better: 'lo' },
 		{
-			key: 'ours',
-			label: tcmp.decode,
-			unit: 't/s',
+			key: 'vram',
+			label: tcmp.vram,
+			unit: 'GB',
 			decimals: 1,
-			a: pair[0].d ? roundTo(pair[0].d.ours.decode!.v, 1) : null,
-			b: pair[1].d ? roundTo(pair[1].d.ours.decode!.v, 1) : null,
-			better: 'hi'
+			a: r(dA?.ours.vram?.v),
+			b: r(dB?.ours.vram?.v),
+			better: null,
+			aSub: `/ ${pair[0].card.vramGB}${NB}GB`,
+			bSub: `/ ${pair[1].card.vramGB}${NB}GB`
 		}
 	]);
 </script>
@@ -155,11 +165,23 @@
 	</div>
 </section>
 
-<section class="wrap vsb" aria-labelledby="cmp-title">
-	<Versus a={vsFighters[0]} b={vsFighters[1]} stats={vsStats} verdict={vsComparable} {lang} winLabel={tcmp.win} missingLabel={tcmp.missing} mode="view" size="teaser" nameTag="p">
+<section class="vsb" aria-labelledby="cmp-title">
+	<Versus
+		a={vsFighters[0]}
+		b={vsFighters[1]}
+		stats={vsStats}
+		verdict={vsComparable}
+		{lang}
+		winLabel={tcmp.win}
+		boardTag={vsComparable ? tcmp.verdict : tcmp.noVerdictTag}
+		boardNote={vsComparable ? undefined : tcmp.noVerdict}
+		mode="view"
+		size="teaser"
+		nameTag="p"
+	>
 		{#snippet center()}
 			<h2 id="cmp-title" class="vsb-t">{t.compareTitle}</h2>
-			<p class="vsb-l">{t.compareLede}{#if !vsComparable}<span class="vsb-n"> {tcmp.noVerdict}</span>{/if}</p>
+			<p class="vsb-l">{t.compareLede}</p>
 			<a class="cta cta--bone" href={cmpHref}>{t.compareCta} <span class="arrow" aria-hidden="true">→</span></a>
 		{/snippet}
 	</Versus>
@@ -659,11 +681,8 @@
 		max-width: 40rem;
 		color: var(--text);
 	}
-	.vsb-n {
-		display: block;
-		margin-top: 0.25rem;
-		font-size: var(--fs-sm);
-		color: var(--text-mute);
+	.vsb :global(.cta) {
+		margin-top: var(--sp-1);
 	}
 
 	@media (max-width: 64rem) {

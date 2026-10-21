@@ -178,7 +178,7 @@ const pl = {
 	compare: {
 		eyebrow: 'Porównanie',
 		title: 'Dwie karty, jeden model.',
-		lede: 'Zmierzone generowanie, czas odpowiedzi i pamięć na wspólnym modelu. Wybierz karty strzałkami lub kliknięciem.',
+		pickHint: 'Wybierz karty strzałkami lub kliknięciem.',
 		a: 'Karta A',
 		b: 'Karta B',
 		model: 'Model',
@@ -187,6 +187,7 @@ const pl = {
 		quantNote: 'Każda karta ma największy plik, który się w niej mieści, więc kwantyzacje mogą się różnić.',
 		decode: 'Generowanie, nasz silnik',
 		before: 'Typowa aplikacja',
+		ratio: 'Zysk vs typowa aplikacja',
 		words: '500 słów po polsku',
 		ttft: 'Pierwszy token',
 		vram: 'Pamięć zajęta',
@@ -197,8 +198,10 @@ const pl = {
 		same: 'ta sama karta',
 		open: 'Szczegóły karty',
 		win: 'WIN',
-		missing: 'brak pomiaru',
-		noVerdict: 'Bez werdyktu: te pomiary pochodzą z różnych skryptów, więc nikt tu nie wygrywa.',
+		verdict: 'Werdykt: ten sam model, skrypt i warunki',
+		noVerdictTag: 'Bez werdyktu',
+		noVerdict: 'te pomiary pochodzą z różnych skryptów, więc nikt tu nie wygrywa.',
+		noVerdictModels: 'na tych kartach mierzyliśmy różne modele, więc nikt tu nie wygrywa.',
 		select: 'Wybierz zawodników',
 		ours: 'nasz silnik'
 	}
@@ -379,7 +382,7 @@ const en: Copy = {
 	compare: {
 		eyebrow: 'Compare',
 		title: 'Two cards, one model.',
-		lede: 'Measured generation, answer time and memory on a model both cards ran. Pick the cards with the arrow keys or a click.',
+		pickHint: 'Pick the cards with the arrow keys or a click.',
 		a: 'Card A',
 		b: 'Card B',
 		model: 'Model',
@@ -388,6 +391,7 @@ const en: Copy = {
 		quantNote: 'Each card runs the largest file that fits in it, so the quantisations may differ.',
 		decode: 'Generation, our engine',
 		before: 'Typical app',
+		ratio: 'Gain vs typical app',
 		words: '500 words in Polish',
 		ttft: 'First token',
 		vram: 'Memory used',
@@ -398,8 +402,10 @@ const en: Copy = {
 		same: 'same card',
 		open: 'Card details',
 		win: 'WIN',
-		missing: 'not measured',
-		noVerdict: 'No verdict: these measurements come from different scripts, so nobody wins here.',
+		verdict: 'Verdict: same model, script and conditions',
+		noVerdictTag: 'No verdict',
+		noVerdict: 'these measurements come from different scripts, so nobody wins here.',
+		noVerdictModels: 'we measured different models on these cards, so nobody wins here.',
 		select: 'Pick the fighters',
 		ours: 'our engine'
 	}
