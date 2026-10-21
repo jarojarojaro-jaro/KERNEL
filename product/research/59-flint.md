@@ -233,3 +233,57 @@ Prefill (pp2048): `mul_mat_q<NVFP4>` 75%, FA mma 4%, stream-k fixup 3%, pool1d 2
 Oferta $0.4017/h (GPU $0.373 + dysk 90 GB) × 0.863 h = $0.35; pobieranie 24.6 GB × $2.6/TB = $0.06; wysyłka ~0.1 GB
 < $0.001. **Razem ≈ $0.41** (limit $1.50). Trzy wcześniejsze próby wynajmu (oferty TH/CA/UT) odrzucone przez Vast
 (`no_such_ask`, oferty zniknęły) — $0.
+
+## RTX 3090 — pełna macierz
+
+Druga instancja: Vast 57113529 (Ontario, RTX 3090, limit 300 W, Xeon E5-2680 v4), 1.70 h. Host się dławił termicznie
+(`clocks_event_reasons` 0x20 = SW thermal slowdown, SM do 810 MHz przy 74 °C), więc bezwzględne t/s są niższe niż na
+pierwszej 3090 (tg d0 110 vs 130). Porównuj tylko base → now w tej sesji. Skrypt wspólny z XTX: `~/qwen-opt/flint/flint_matrix.sh`.
+- **base** = PR #30928 head 1906989de (runtime = 1b44e3077, późniejsze commity zmieniają tylko `conversion/*.py`)
+  + cherry-pick #30929 (fix jinja `\x`) → `93ebbbac8`;
+- **now** = base + pool1d whole-row MAX (`b0218e483`, ten sam co `c586593cf` w branchu flint).
+- Plik modelu: sha256 `97cc8009…8bde` (zgodny z HF).
+
+llama-bench: FA on, KV q4_0, `-ub 1024 -b 2048`, `-r 3` (d < 100k) / `-r 2` (d ≥ 100k), bez pp8192 od 131k.
+Przeplatane per głębokość (base, potem now). Komórki: base → now t/s (zmiana).
+
+| głębokość | pp512 | pp2048 | pp8192 | tg128 |
+|---|---|---|---|---|
+| 0 | 2540 → 2303 (−9.3%)\* | 3253 → 2925 (−10.1%)\* | 2842 → 2272 (−20.0%)\* | 110.1 → 126.8 (**+15.2%**) |
+| 4 096 | 1864 → 1553 (−16.7%)\* | 2267 → 2116 (−6.6%)\* | 1925 → 1887 (−2.0%) | 90.9 → 104.2 (**+14.6%**) |
+| 16 384 | 1376 → 1353 (−1.7%) | 1686 → 1665 (−1.3%) | 1540 → 1541 (+0.1%) | 79.3 → 89.0 (**+12.2%**) |
+| 32 768 | 1200 → 1202 (+0.1%) | 1375 → 1372 (−0.2%) | 1287 → 1287 (0.0%) | 67.5 → 69.7 (+3.3%) |
+| 65 536 | 967 → 963 (−0.4%) | 1026 → 1040 (+1.4%) | 980 → 975 (−0.6%) | 42.2 → 42.1 (−0.3%) |
+| 100 000 | 803 → 801 (−0.3%) | 791 → 844 (+6.6%) | 764 → 789 (+3.3%) | 29.8 → 30.8 (+3.5%) |
+| 131 072 | 686 → 693 (+0.9%) | 705 → 706 (+0.2%) | — | 25.2 → 24.9 (−1.0%) |
+| 160 000 | 598 → 603 (+0.8%) | 610 → 612 (+0.3%) | — | 21.0 → 20.9 (−0.7%) |
+| 196 000 | 537 → 530 (−1.4%) | OOM | — | OOM |
+
+\* Efekt kolejności i temperatury, nie kodu. Kontrola przy d0 w odwrotnej kolejności (now, potem base) dała base → now:
+pp512 1672 → 1685 (+0.8%), pp2048 2219 → 2239 (+0.9%), pp8192 1894 → 1962 (+3.6%), tg128 97.6 → 112.7 (+15.5%).
+Odchylenia standardowe są w `matrix.md`/`matrix.json`. Przy d196000 llama-bench kończy pp2048 i tg128 na OOM
+(ctx ≥ 196 128, ub 1024), działa tylko pp512.
+
+e2e: llama-server, ctx 200 000, KV q4_0, ub 1024, `--jinja`, T=0, 512 tokenów, średnia z 2 runów. Base i now szły po kolei,
+bez przeplatania. TTFT: mniej = lepiej.
+
+| prompt | TTFT s | prefill t/s | decode t/s |
+|---|---|---|---|
+| 8 192 | 4.1 → 4.1 | 2060 → 2053 (−0.3%) | 79.6 → 90.1 (**+13.2%**) |
+| 32 768 | 20.4 → 21.0 | 1629 → 1578 (−3.1%) | 63.4 → 63.4 (0.0%) |
+| 65 536 | 50.5 → 51.4 | 1303 → 1280 (−1.8%) | 40.0 → 39.6 (−0.9%) |
+| 131 072 | 133.6 → 135.3 | 990 → 977 (−1.3%) | 23.0 → 22.7 (−1.2%) |
+| 190 000 | 233.6 → 235.7 | 817 → 810 (−0.9%) | 16.4 → 16.1 (−1.9%) |
+
+Mieszczenie (KV q4_0), base = now (pool1d nie zmienia buforów):
+- ctx 200 000 przy ub 1024: zajęte 23 973 MiB, wolne 161 MiB (131 MiB po prompcie 190k);
+- max ctx przy ub 1024 (start serwera): **210 000** (43 MiB wolne), 215 000 nie startuje;
+- z pierwszej 3090 (pełne wypełnienie): 235 000 przy ub 512 i 250 000 przy ub 128.
+
+Wniosek: pool1d daje +12–15% decode do ~16k kontekstu. Od 32k zysk znika w szumie hosta: ~1 ms/token oszczędności przy
+15–60 ms/token, a pierwsza 3090 przy d65536 miała 60.7 → 63.7 (+5%). Prefill bez zmian. Przy długim kontekście
+decode ogranicza FA vec na kwantowanym KV (pomysł 3 wyżej), nie pool1d.
+
+Koszt: 1.696 h × $0.3123 = $0.53; pobieranie 25.3 GB × $0.65/TB = $0.016; wysyłka 0.34 GB < $0.001. **Razem $0.55.**
+Obie instancje 3090: **$0.96** (limit $1.50). Wyniki: `~/qwen-opt/cloud/results/flint-3090-matrix-20261021/`
+(`matrix.json`, `matrix.md`, `3090/{base,now}/*.jsonl`, `extra-*`, `maxctx.jsonl`, skrypty).
