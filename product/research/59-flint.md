@@ -37,7 +37,9 @@ PR bazuje na nowszym upstream (269 commitów przed naszą bazą). Konflikty: `ll
 - SWA + warstwy bez RoPE: maska + pominięcie `rope_ext`; K-shift tylko gdy jakaś warstwa ma RoPE (z PR).
 - MoE: fuzja topk-moe obsługuje sigmoid; NVFP4 `MUL_MAT_ID` przez MMQ (q8_1) i MMVQ; skale per-ekspert = `ggml_mul`.
 - amax: ABS, POOL_1D (MAX), SCALE, LOG, CEIL, CLAMP, EXP, DIV, MUL — wszystkie na HIP. **Koszt**: ~10 małych
-  kerneli na warstwę MoE (×47) w decode; kandydat do fuzji w kwantyzację q8_1 (do zmierzenia).
+  kerneli na warstwę MoE (×47) w decode. POOL_1D (1 wątek/wiersz) zastąpiony warpem na wiersz tylko dla MAX z k0 =
+  długość wiersza (patch z 3090: tg 129.8 → 146.7 t/s, greedy identyczne; commit `c586593cf`). Reszta łańcucha
+  (7 launchy ×47) — kandydat do fuzji (~+7% na 3090). Wyłączenie amax zmienia greedy przy 8k → nie wyłączać.
 - Żaden op nie powinien spadać na CPU ani abortować (`[INFERENCE]` z `supports_op`; potwierdzi `graph splits`
   w logu serwera i `fl-tbo`).
 
