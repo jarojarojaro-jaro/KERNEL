@@ -14,7 +14,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (34)
+## Notatki (35)
 
 - [[aob-v1|`aob-v1` (AMD-Opt Bench): benchmark regresji RSI-F z naszej historii (projekt)]] — Własny benchmark w formacie Harbor-lite (`task.toml`, `instruction.md`, `environment/`, ukryte `tests/`, `solution/oracle.patch` + `null.patch`) z fabryką jako weryfikatorem i podziałem dev (łatki 0001–0047) / test (0048–0070 + negatywy); przy naszym budżecie GPU to test regresji i postępu RSI-F, nie leaderboard – przy 10 zadaniach SE ≈ 0.15 (raport 21i, 2026-10-19).
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
@@ -28,6 +28,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[koszt-szerokosci-weryfikacji|Krzywa kosztu szerokości weryfikacji V(w, kontekst) na XTX]] — Pomiar E2 z 16b (`llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 1,5,8,9,16 -n 0 -d …`, mediana powtórzeń 3–5, Qwen3.8-27B): V16 − V5 = 6.40 / 7.13 / 9.50 / 12.45 ms przy 2k / 8k / 32k / 64k – hipoteza 15b „≤ 12 ms przy 32k” potwierdzona (2026-10-18).
 - [[ksztalt-ruchu-agentowego|Kształt ruchu agentowego wg śladów AgentX]] — Korpus AgentX v1.0 256k (393 sesje Claude Code, 06-2026): wejście p50 88 768 / p90 204 288 tokenów, wyjście p50 376 / p90 1845 – stosunek 117:1; limit kontekstu 128k zostawia 66.3% zapytań, 64k 35.3%; przy współdzieleniu prefiksów nietrafionych w cache jest radix 3.8%, lane 8.5%, single 20.6% wejścia (2026-10-19).
 - [[loo|Leave-one-out łatek (LOO)]] — Wyłączamy po jednej łatce i mierzymy, czy bez niej jest wolniej; łatka bez mierzalnego zysku jest kandydatem do usunięcia.
+- [[metryka-prozy-e0|Metryka prozy E0 (XTX, Qwen3.8-27B)]] — E0 = 8 promptów prozy (4 PL, 4 EN) × seedy 1–8, 400 tokenów, T=1, `enable_thinking: false`, świeży serwer na ramię; baza produkcyjna 78.93 t/s [75.69, 82.21], 2.158 tok/krok, 27.34 ms/krok (2026-10-20).
 - [[mikrobench-granicy-kernela|Mikrobenchmark granicy kernela]] — Zanim zainwestujemy w fuzje albo nowy sposób wysyłania pracy, mierzymy, ile kosztuje sama granica między kernelami na danym stosie.
 - [[model-kosztu-weryfikacji-moe|Model kosztu weryfikacji MoE (LFM2.5)]] — Weryfikacja N tokenów w MoE czyta sumę ekspertów wszystkich N tokenów: przy niezależnym routingu u(N) = 64·(1 − (60/64)^N) ekspertów na warstwę, B(N) = 0.761 + 0.254·u(N) GB, T(N) ≈ 1.45 ms + B(N)/0.9 GB/ms; kalibracja T(1) = 3.42 ms vs zmierzone 3.40 (raport 18, 2026-10-19, `[SZACUNEK]`).
 - [[ms-na-krok|ms/krok jako główna metryka spekulacji]] — Przy dekodowaniu spekulacyjnym t/s = (tokeny na krok) / (czas kroku); kernel zmienia tylko czas kroku, więc to ms/krok mierzy łatkę, a t/s miesza ją z losowością tekstu.

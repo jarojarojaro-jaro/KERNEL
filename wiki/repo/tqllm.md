@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, spekulacja, cuda, determinizm]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,125-148; ~/KERNEL/product/research/15c-nowe-silniki.md:23-27,68-80,166-186,362; ~/KERNEL/product/research/15f-agentowa-nauka.md:58-63
+aktualizacja: 2026-10-21
+zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,125-148; ~/KERNEL/product/research/15c-nowe-silniki.md:23-27,68-80,166-186,362; ~/KERNEL/product/research/15f-agentowa-nauka.md:58-63; ~/KERNEL/product/research/32f-ninfer-tqllm-dflash2.md:14-22
 status: do-sprawdzenia
 ---
 # tqLLM (turbo-tan): silnik CUDA dla Qwen3.8
@@ -16,6 +16,9 @@ Repo `turbo-tan/tqllm` @ `23af3c9`, ~57 tys. linii, 15★.
 - Inne: DFlash2 blok 8 + drzewo z 8 węzłów; MoE per-expert w pinned RAM (`--moe-host-mb`); prefill int8 IMMA na Ampere (pp 2,258 t/s przy 2K vs nasze 1,378–1,410).
 - Bramka „near-tie”: pierwszy rozjazd greedy akceptowany, gdy wybrany token jest drugim w FP32 przy marginesie ≤ 0.1 logita (`tests/golden_check.py:1-25`) – kandydat na bramkę fork vs upstream.
 - „Agenci zastępują samych siebie”: `[NIEZWERYFIKOWANE]` (repo: 80 commitów, 3 autorów).
+
+## Aktualizacja 2026-10-21
+- Rekord 3090 273.1 t/s nieporównywalny (T=0, reasoning-v1, TQ3_4S z KLD gorszym niż UD-Q4_K_XL); luka ×2.2 rozłożona w [[raport-32f-ninfer-tqllm]].
 
 ## Powiązane
 - [[repo/_hub|repo]]

@@ -56,40 +56,40 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (37)
-- [[modele/_hub|modele]] — Modele i kwanty (17)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (38)
+- [[modele/_hub|modele]] — Modele i kwanty (19)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (22)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (34)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (35)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (59)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (92)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (99)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (68)
-- [[research/_hub|research]] — Streszczenia raportów (99)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (28)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (72)
+- [[research/_hub|research]] — Streszczenia raportów (143)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (30)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
 ## Ostatnio aktualizowane
 
-- 2026-10-20 [[raporty-2026-10-19-20|Raporty 2026-10-19/20 (20–30, WYNIKI-XTX): przegląd]]
-- 2026-10-20 [[raport-wyniki-xtx-2026-10-19|Wyniki RX 7900 XTX 2026-10-19/20: upstream → topka (ten sam skrypt, ABBA)]]
-- 2026-10-20 [[raport-30-intel-apple|Raport 30: dostęp do Intel Arc i Apple Silicon + plan testów na M1 Pro]]
-- 2026-10-20 [[raport-29-4060ti|Raport 29: RTX 4060 Ti 16 GB – przed/po (Qwen Q3_K_XL, LFM QAD-Q4_0)]]
-- 2026-10-20 [[raport-28-moe-offload|Raport 28: silniki MoE-offload TideLM i Xolotl – stratne z założenia]]
-- 2026-10-20 [[raport-27-3090-final|Raport 27: RTX 3090 i 3060 – finał przed/po (Qwen, Uncensored, Saluki)]]
-- 2026-10-20 [[raport-26-kolejka-gpu|Raport 26: kolejka GPU 2026-10-19 wieczorem – testy odłożone przez pauzę]]
-- 2026-10-20 [[raport-25-buildfarm|Raport 25: zdalny serwer buildów (Vast) i `rbuild`]]
-- 2026-10-20 [[raport-24w-pair2|Raport 24w: PAIR2 (para MMVQ dla mieszanych typów) na topce – odrzucone (+0.4%)]]
-- 2026-10-20 [[raport-24v-prefill-fa|Raport 24v: FA D=256 w prefillu Qwena – spille usunięte, zysk za mały]]
-- 2026-10-20 [[raport-24u-norm-quant|Raport 24u: osobny kernel rms_norm × w + quantize q8_1 – stop, zysk ≈ 0]]
-- 2026-10-20 [[raport-24t-entropia-wag|Raport 24t: bezstratna kompresja entropijna wag GGUF (DFloat11/ZipNN) – kill]]
-- 2026-10-20 [[raport-24s-drzewa-proza|Raport 24s: drzewa draftu MTP i temperatura draftu na prozie – sufit offline]]
-- 2026-10-20 [[raport-24r-mmvq-pasmo|Raport 24r: pasmo MMVQ weryfikacji n=5 – sufit 926 GB/s]]
-- 2026-10-20 [[raport-24q-adaptacyjna-spekulacja|Raport 24q: adaptacyjna spekulacja – bramka ogona i głębokość MTP z akceptacji]]
+- 2026-10-21 [[raporty-2026-10-20-21|Przegląd raportów 31–54 (2026-10-20/21)]]
+- 2026-10-21 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne]]
+- 2026-10-21 [[raport-plan-nv-v2|PLAN-NV-V2: kampania NVIDIA v2 (ctx ≥ 131k)]]
+- 2026-10-21 [[raport-54-mniej-granic|Raport 54: mniej granic dispatchy w kroku weryfikacji]]
+- 2026-10-21 [[raport-53-draft-shortlist|Raport 53: shortlist w głowicy draftu MTP (E52b)]]
+- 2026-10-21 [[raport-52-eagle4|Raport 52: EAGLE-4 – co bierzemy]]
+- 2026-10-21 [[raport-51-male-kernele|Raport 51: małe kernele weryfikacji – rms_norm, FA kvq, GDN]]
+- 2026-10-21 [[raport-50d-mmvq-iq4xs|Raport 50d: MMVQ IQ4_XS n=5 – pierścień rejestrów + 2 wiersze na blok]]
+- 2026-10-21 [[raport-50c-mmvq-q6k|Raport 50c: MMVQ Q6_K n=5 – potok ping-pong]]
+- 2026-10-21 [[raport-50b-mmvq-q5k|Raport 50b: MMVQ Q5_K n=5 – instancja big_rows]]
+- 2026-10-21 [[raport-50a-mmvq-q4k|Raport 50a: MMVQ Q4_K n=5 – kernel strumieniowy]]
+- 2026-10-21 [[raport-49-mmvq-ogon-1024|Raport 49: MMVQ n=5 – ogon 1024-wierszowych k/v]]
+- 2026-10-21 [[raport-48-norma-gdn-bank|Raport 48: rms_norm 4 vs 5 wierszy, drugi bank stanu GDN]]
+- 2026-10-21 [[raport-47-kernel-lab|Raport 47: kernel lab (klab)]]
+- 2026-10-21 [[raport-46-mmvq-big|Raport 46: MMVQ n=5 na dużych kształtach (mmvq-big)]]
 
-Razem 576 notatek. Wygenerowano 2026-10-20 przez `tools/wiki.py index`.
+Razem 637 notatek. Wygenerowano 2026-10-21 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

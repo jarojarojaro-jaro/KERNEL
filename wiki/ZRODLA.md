@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, zrodla, research, rejestr, inferencex, agentx, strata, tensorfold, magnitude, hipfire, dflash, lucebox]
-aktualizacja: 2026-10-20
+aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14; ~/KERNEL/product/research/{21n,21o,24e,24g,24t,30}-*.md
 status: aktualne
 ---
@@ -187,6 +187,22 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Darkbloom (darkbloom.dev, Eigen Labs, `Layr-Labs/d-inference`) | [R30](../product/research/30-intel-apple-dostep.md) 10-20 | Nie wynajem: API inferencji (OpenAI) na cudzych Makach, bez SSH; public alpha od 2026-04-15. | tylko jako konkurencja (prywatna inferencja Apple) |
 | AMD, NVIDIA, Hugging Face, Liquid AI, Unsloth, Thinking Machines | [[firma-amd]], [[firma-nvidia]], [[hugging-face]], [[liquidai]], [[unsloth]], [[thinking-machines]] | Profile firm. | – |
 | AI Act, licencje, prawo (eur-lex, twobirds) | R06, [[raport-06-produkt]] | Jesteśmy providerem aplikacji czatu. | – |
+
+## Nowe źródła 2026-10-20/21 (raporty 32–52)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| Project Maya | v1.1.17 `8d9a9b5`, v1.1.19 `3bf6867` (10-20) | R32a, R39a, [[project-maya]] | Bez kerneli dla nas; rozgrzewka przed READY. | #318 ×1.5 DeepSeek | v1.1.20+ |
+| Strata | `cbfd5b92` v0.2.1.3 | R32a, [[raport-32a-maya-strata-gyro]] | Delta bez dźwigni. | – | >v0.2.1.3 |
+| DeepInfer / deepseek-recipe | `774ce24` / `935817c` (10-20) | R32b, R39c, [[deepinfer]] | Klaster sm_100; bierzemy tokenizację i parser. | 91k 64.8 → 9.6 ms | nowe commity |
+| SAGE-EXL3, cuteafd | `c852150e`, v3.0.1 `9098781` | R32c, [[raport-32c-sage-exl3]] | Metoda nieopublikowana, metryki zawyżone. | ~1.6 bita | publikacja metody |
+| LocalMaxxing API (delta) | 10-20, 1 864 wiersze | R32d, [[raport-32d-localmaxxing]] | Verified = spójność, XTX 0 verified. | 318.2 t/s XTX | verified na XTX |
+| NInfer, tqLLM | `a928f899`, `d617986` | R32f, [[ninfer]], [[tqllm]] | Wiarygodne, nieporównywalne (T=0 reasoning-v1). | 273.1 t/s 3090 | nowe rekordy |
+| llm-speed, llm-bench.io, llamabench.ai, club-3090, Token Atlas | 10-20 | R34, [[raport-34-zrodla-benchmarkow]] | Nowe półki rankingów; w compwatch. | XTX mediana 73.3 | dane XTX |
+| FlashMap (arXiv 2610.24365) | `cd5b45b` (10-20) | R39b, [[raport-39b-flashmap]] | Bezstratny, dla prozy PL na minusie. | czat 2.28–2.44× | drafter PL |
+| REA-Prompts | `390f0c1` (10-20) | R39d, [[raport-39d-rea-prompts]] | Sterowniki, nie GPU; 6 wskazówek metody. | – | – |
+| TorchTPU | PyPI 0.2.0 | R39e, [[raport-39e-torchtpu]] | Bez znaczenia dla decode. | – | TRC |
+| NVIDIA Flare | `47581cc` (10-20) | R39f, [[nvidia-flare]] | Tylko NVIDIA, bez spekulacji dla 27B. | 27B NVFP4 20.15 GB | N1X Windows |
 
 ## Powiązane
 - [[KONWENCJE]]

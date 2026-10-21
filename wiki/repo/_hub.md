@@ -14,12 +14,14 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (68)
+## Notatki (72)
 
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
 - [[atrex-kernel-agent|alibaba/atrex-kernel-agent (AKA)]] — Orkiestrator agentów kodujących dla jednego operatora naraz (HEAD `5ad94ff`, 2026-10-14, v0.3.0); bierzemy narzędzia pomiarowe; werdykt: średnia (narzędzia).
+- [[deepinfer|DeepInfer i deepseek-recipe (deepseek-ai)]] — DeepInfer `774ce24` działa tylko na sm_100/Ascend 950 z DeepSeek-V4.1-Flash; deepseek-recipe `935817c` dało nam wzorzec tokenizacji po zakresach i parsera z rodzajem tokenu (SAFE_SPECIAL/SAFE_TOOLS).
 - [[deepgemm|deepseek-ai/DeepGEMM]] — Biblioteka kerneli tensor-core DeepSeek (HEAD `1fc9c66`, 2026-10-14); bierzemy harmonogram „Mega MoE” i potok kafli; werdykt: średnia.
 - [[auto-gpu-kernel|Dogacel/auto-gpu-kernel (i fork ludoo)]] — Harness agenta do pisania kerneli (upstream `db02153`, 2026-09-12) i fork `ludoo` z GDN o geometrii naszego Qwena; werdykt: średnia.
+- [[eagle-4|EAGLE-4 (eagle-hq/EAGLE-4)]] — Paper + harness + drafter Qwen3.8-27B-EAGLE4 (`7b7b5a5`, 2026-10-20); dla nas przydatny Efficient LM Head (low-rank wyszukiwanie kandydatów), drafter licencyjnie tylko do ewaluacji.
 - [[mixbench|ekondis/mixbench]] — Mikrobenchmark „mixed operational intensity” (master `a8cab0c`, 2026-08-04) jako plan pomiaru sufitu pasma; werdykt: średnia.
 - [[exllamav3|ExLlamaV3 (EXL3)]] — Silnik z formatem EXL3 pochodnym od QTIP (trellis), z ROCm in-tree od 2026-10 i obsługą Qwen3.8-27B; w niezależnym teście przy ~140k kontekstu wypadł najlepiej end-to-end.
 - [[falkon|FalkonML/falkon]] — Biblioteka regresji z jądrem (Nyström + PCG) liczona blokami, także out-of-core (HEAD `04f168e`, 2026-05-13); werdykt: brak.
@@ -59,6 +61,8 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[smokinggun|morluto/smokinggun: nie stosuje się do naszej pracy]] — Mimo nazwy narzędzie nie szuka przyczyn regresji: to statyczny skaner wzorców złożoności w pętlach kodu CPU (tree-sitter, 13 języków, bez `.cu`/`.cuh`/`.hip`) plus porównanie zaimportowanych wyników benchmarków (hyperfine, pyperf, Google Benchmark, criterion, JMH, pprof, Perfetto) z gate'em eligible/blocked/inconclusive; MIT, TypeScript/Node, ostatni commit 2026-08-29 (raport 21k, 2026-10-19).
 - [[mtplx|MTPLX: współbieżny MTP dla wielu agentów]] — Silnik z MTP w kohortach (3/8 strumieni) deklaruje 1.6–2.25× na strumień dla 2 agentów względem zwykłego batchingu AR; wspiera LFM2 (wydanie 2.6.0, stan 2026-10-19).
 - [[llama-cpp-fork|Nasz fork llama.cpp: repozytoria, gałęzie i worktree]] — Cała praca kernelowa żyje w jednym repo git `~/llama-master` z worktree w `~/wt/`; gałąź produkcyjna to `amd-opt` (70 commitów na upstream `e60eff95f`), a jej odpowiednik na v0.7.0 to `amd-opt-v070`.
+- [[ninfer|NInfer (Neroued/ninfer)]] — Silnik z rekordami LocalMaxxing na NVIDIA; klon `a928f899` (dev, 2026-10-21) – liczby wiarygodne, ale mierzone przy T=0 na `reasoning-v1`, nieporównywalne z naszym czatem T=1.
+- [[nvidia-flare|NVIDIA Flare (flare-local-inference)]] — Apache-2.0, `47581cc` (2026-10-20): graf CUDA całego kroku, podpisane pakiety; Qwen3.8-27B tylko NVFP4 20.15 GB bez spekulacji, tylko NVIDIA – słaba konkurencja na naszych kartach, śledzona w compwatch (tier B).
 - [[cuda-rust|NVIDIA/cuda-rust]] — Oficjalna platforma NVIDIA „CUDA dla Rusta” (HEAD `bc46b1f`, 2026-10-12); daje tylko liczbę odniesienia; werdykt: brak.
 - [[cutile-python|NVIDIA/cutile-python (cuTile)]] — Kafelkowy DSL NVIDIA kompilowany do Tile IR (commit `d9d8520`, 2026-10-13); bierzemy odpowiednik PDL na AMD; werdykt: niska–średnia.
 - [[nvidia-open-gpu-kernel-modules|NVIDIA/open-gpu-kernel-modules]] — Otwarte moduły jądra NVIDIA (commit `ca2d03e`, wydanie 615.78.08, 2026-10-07) czytane pod kątem zarządzania VRAM; werdykt: średnia.

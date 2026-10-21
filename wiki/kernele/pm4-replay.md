@@ -1,8 +1,8 @@
 ---
 typ: kernel
 tags: [kernele, pm4, rocr]
-aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:6-14,18-57,81-99; ~/KERNEL/qwen-opt/NOTES.md:372-376; ~/KERNEL/product/research/08-analiza-platformy-latek.md:14-21; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:135-136,473; ~/KERNEL/product/research/15a-monokernel.md:179-183,196,233-242; ~/KERNEL/product/research/16a-pm4-pdl.md:145-150; ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:142-150; komunikat Main do WikiIngest 2026-10-19; ~/KERNEL/product/research/17-gpu-page-fault.md:104-153; ~/KERNEL/product/research/17-gpu-page-fault.md:210-425
+aktualizacja: 2026-10-21
+zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:6-14,18-57,81-99; ~/KERNEL/qwen-opt/NOTES.md:372-376; ~/KERNEL/product/research/08-analiza-platformy-latek.md:14-21; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:135-136,473; ~/KERNEL/product/research/15a-monokernel.md:179-183,196,233-242; ~/KERNEL/product/research/16a-pm4-pdl.md:145-150; ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:142-150; komunikat Main do WikiIngest 2026-10-19; ~/KERNEL/product/research/17-gpu-page-fault.md:104-153; ~/KERNEL/product/research/17-gpu-page-fault.md:210-425; ~/KERNEL/product/research/37-proza-100.md:13-24; ~/KERNEL/product/research/54-mniej-granic.md:8-27
 status: aktualne
 ---
 # Replay grafu dekodowania jako bufor PM4 (0060, 0061, 0063)
@@ -26,6 +26,9 @@ Pomysł: taśma PM4 bez pakietów granicy (`CS_PARTIAL_FLUSH` + `ACQUIRE_MEM`) m
 PM4-PDL (16a, 2026-10-18): zamknięte – synchronizacja przez pamięć kosztuje prawie tyle co granica ([[lekcja-handoff-rdna3]]); `GGML_HIP_PM4_UB` (gałąź `pm4-pdl`) daje szybką górną granicę dla pomysłów „mniej granic”.
 
 **Awarie (16–19.10, raport 17):** 8 resetów GPU w serwerze Qwen MTP (SQC fault @0 w taśmie, potem mode1 reset), kandydat: brak `PRIV=1` (obejście GFX11) przy ewikcji kolejki w środku taśmy `[INFERENCE]`; prototypy `GGML_HIP_PM4_WA`, `GUARD`, `EVICT_TEST_MS` (`b7fb3fe85`), testy S1–S6 ([[2026-10-19-pm4-priv-analiza]]); rekomendacja `GGML_HIP_PM4=0` w serwerach do czasu testu – decyzja użytkownika ([[2026-10-19-page-faulty-gpu-analiza]]).
+
+## Aktualizacja 2026-10-21
+- [[raport-37-proza-100]], [[raport-54-mniej-granic]], [[lekcja-nie-zabijaj-pm4-w-trakcie]].
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

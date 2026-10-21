@@ -173,6 +173,9 @@ Nowe: [[rtx-4060-ti]], [[raport-29-4060ti]], [[raport-24w-pair2]], [[2026-10-20-
 ## [2026-10-20] narzędzia | Aplikacja WWW bazy zamiast graph.py
 `tools/site/build.py` (dashboard, kategorie, notatki z backlinkami i lokalnym grafem, wyszukiwarka, oś czasu, graf skupisk, tabele REKORDY/ZRODLA, jasny/ciemny, telefon) → `~/.cache/wiki-graph`; `tools/graph.py` usunięty, cron codziennie 6:40. Zrzuty: `app/screens/kb/`. [[KONWENCJE]] → Utrzymanie.
 
+## [2026-10-21] ingest | Raporty 31–54, watch, PLAN-NV-V2 (wszystkie bez notatki)
+Nowe `raport-*` (43): 31 (3060/3080, 3090, 4060 Ti, 4070 Ti, 5060 Ti), 32a–32f, 33–38, 39a–39f, 40–48, 49, 50a–50d, 51–54, compwatch, PLAN-NV-V2; przegląd [[raporty-2026-10-20-21]]. Nowe notatki tematyczne: [[opoznienia-ttft]], [[bezpieczenstwo-tokenow-specjalnych]], [[qwen3-6-35b-a3b]], [[gemma-4]], [[ninfer]], [[eagle-4]], [[nvidia-flare]], [[deepinfer]], [[metryka-prozy-e0]]. Lekcje: [[lekcja-kolejka-fifo-bilety]], [[lekcja-higiena-pomiaru]], [[lekcja-qa-clip-blokuje-gpu]], [[lekcja-rbuild-pod-flock]], [[lekcja-proza-e0-vs-myslenie]], [[lekcja-zmiana-draftu-zmienia-md5]]; podlinkowana [[lekcja-nie-zabijaj-pm4-w-trakcie]]. Decyzja: [[2026-10-21-enigma-labz]]. Aktualizacje: [[mmvq-multikolumnowe]], [[pamiec-stanu-gdn]], [[rmsnorm-dpp]], [[fattn-kvq]], [[pm4-replay]], [[glowica-mtp]], [[app-landing]], [[vast-ai]], [[tqllm]], [[project-maya]], [[qwen3-8-27b]]. [[REKORDY]]: E0 78.93 t/s (definicja metryki), topka f9b84bcfa (mvs 433.8, start 38.5 → 6.55 s, tura agenta 687/579 → 197 ms, 2k TTFT −22%), NVIDIA 31-*. [[ZRODLA]] i [[AUDYT]] uzupełnione.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

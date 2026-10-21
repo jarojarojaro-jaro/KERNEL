@@ -1,8 +1,8 @@
 ---
 typ: model
 tags: [modele, mtp, spekulacja]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/qwen-opt/mtp-train/RESULTS.md:1-10,52-127; ~/KERNEL/qwen-opt/NOTES.md:128-146,233,317; ~/KERNEL/qwen-opt/research/drafters.md:9-13; git -C ~/llama.cpp log mtp-train -1; ~/KERNEL/product/research/11-mtp-pl-pilot.md:3-9,24-30,66-93
+aktualizacja: 2026-10-21
+zrodlo: ~/KERNEL/qwen-opt/mtp-train/RESULTS.md:1-10,52-127; ~/KERNEL/qwen-opt/NOTES.md:128-146,233,317; ~/KERNEL/qwen-opt/research/drafters.md:9-13; git -C ~/llama.cpp log mtp-train -1; ~/KERNEL/product/research/11-mtp-pl-pilot.md:3-9,24-30,66-93; ~/KERNEL/product/research/40-akceptacja-prozy.md:9-20; ~/KERNEL/product/research/52-eagle4.md:14-22; ~/KERNEL/product/research/53-draft-shortlist.md:1-20
 status: aktualne
 ---
 # Głowica MTP Qwen3.8-27B (spekulacja bez osobnego draftera)
@@ -22,6 +22,11 @@ Wnioski z `mtp-train/RESULTS.md`:
 **Pilot douczania (2026-10-16, raport 11) – wynik negatywny:** na 1.7 M tokenów (0.39 M on-policy) głowica zmienia tok/krok o ±2% (offline najlepiej +0.2%; online n=4 PL-proza +2.3%, reszta 0 do −1.7%). Na held-out fabryczna głowica ma 3.266 tok/krok przy n=4, wyrocznia 3.960 (+21%), ale trening jej nie przybliża. W pliku głowica jest w Q6_K/Q8_0/F32 (351 008 768 B); IQ4_XS powstaje dopiero przy ładowaniu (−0.45% tok/krok offline). Nie skalujemy tego do 10 M tokenów.
 
 Publicznie (drafters.md): nie ma EAGLE-3, Medusa ani przetrenowanej głowicy MTP dla Qwen3.8-27B. Gałąź `mtp-train` (2026-10-16) dodaje narzędzie `llama-mtp-extract`.
+
+## Aktualizacja 2026-10-21
+- Proza E0: akceptacja 0.655/0.503/0.407/0.382, PL gorzej; jedyna dźwignia ≥ +25% to lepsza głowica ([[raport-40-akceptacja-prozy]]).
+- Shortlist low-rank po 248k (EAGLE Efficient LM Head): kod gotowy, recall nie przeszedł ([[raport-52-eagle4]], [[raport-53-draft-shortlist]]).
+- DRAFT_N=5 jako profil opt-in ([[raport-35-xtx-eksperymenty]]); routing głębokości per żądanie ([[raport-44-spec-route]]).
 
 ## Powiązane
 - [[modele/_hub|Modele]]

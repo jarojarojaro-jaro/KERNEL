@@ -1,8 +1,8 @@
 ---
 typ: meta
 tags: [meta, rekordy, wyniki]
-aktualizacja: 2026-10-20
-zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5; ~/KERNEL/product/research/29-4060ti.md:56-81; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:10; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:44-47
+aktualizacja: 2026-10-21
+zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5; ~/KERNEL/product/research/29-4060ti.md:56-81; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:10; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:44-47; ~/KERNEL/product/research/{31-*,37,38,43,45}*.md
 status: aktualne
 ---
 # Rekordy: najlepsze zmierzone wyniki
@@ -116,6 +116,25 @@ Zweryfikowane w źródłach 2026-10-20. Uwaga: strona produktu pokazuje 114.8 / 
 | 4060 Ti / Qwen Q3_K_XL | decode po 16k T=0 / T=1 | **40.1 / 35.8 t/s** | 2026-10-20 | j.w. | `29-4060ti.md:62` | nie |
 | 4060 Ti / LFM2.5 QAD-Q4_0 | spec_sweep T=1 | **149.4 t/s** (U0 114.4); tg128 155.1 | 2026-10-20 | j.w., GPU verify | `29-4060ti.md:77,81` | nie |
 | 3060 / Saluki 27B IQ2-mix + MTP Kujiry | spec_sweep T=1 | **38.2 t/s** (33.1) | 2026-10-20 | topka MTP n=2 + lookup + GPU verify, 170 W | `27-3090-final.md:33,168` | nie |
+
+## Nowe rekordy 2026-10-20/21 (raporty 31, 37, 38, 43, 45)
+
+Zweryfikowane w źródłach 2026-10-21. E0 to nowa metryka (definicja w [[metryka-prozy-e0]]), nie porównywać ze starą „pl-prozą” z myśleniem.
+
+| karta / model | obciążenie / metryka | rekord (poprzedni) | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|---|
+| XTX / Qwen UD-Q4_K_XL | **proza E0** T=1, 8 promptów × 8 seedów, thinking off (definicja metryki) | **78.93 t/s** [75.69, 82.21], 2.158 tok/krok, 27.34 ms/krok | 2026-10-20 | topka 9056cea22 + host-gap, MTP n=4 + lookup W16, coupled, GPU verify, PM4 WA=2 GUARD | `37-proza-100.md:13,38` | tak |
+| XTX / Qwen | code-edit `mvs` T=0, zainstalowana topka **f9b84bcfa** (etap 3) | **433.8 t/s** (P 9056cea22 433.8–434.6, w szumie) | 2026-10-21 | safe-special + ckpt-vram=2 + safe-io + CHAT_NATIVE + MTP_REQUANT_CACHE; md5 c4708318/6f14e814/894e56e4 on == off | `43-integracja-2026-10-20.md:24,47` | tak |
+| XTX / Qwen | start serwera → listening/ready | **6.55 s** (38.5 s; integracja 39.8 → 6.5 s) | 2026-10-21 | `LLAMA_MTP_REQUANT_CACHE`, ciepły cache | `45-opoznienia.md:19,106-107`; `43-integracja-2026-10-20.md:48` | tak |
+| XTX / Qwen | TTFT tury agenta S2-turn2, prompt_ms | **197 ms** (687/579) | 2026-10-20 | `LLAMA_CKPT_VRAM=2` (pinned); =1: 160 ms | `38-checkpointy-vram.md:16` | tak |
+| XTX / Qwen | TTFT świeżego promptu 2k, wall | **2160 ms** (2941/2617, −22%) | 2026-10-20 | `LLAMA_CKPT_VRAM=2` | `38-checkpointy-vram.md:12` | tak |
+| XTX / Qwen ↔ LFM | przełączenie LFM → Qwen | **6.9 s** (38.9 s) | 2026-10-21 | cache MTP | `45-opoznienia.md:113` | tak |
+| RTX 3080 10 GB / Qwen UD-IQ2_XXS + MTP graft | czat T=1 / mvs | **74.5 / 271.8 t/s** (U0 45.7 / 45.2) | 2026-10-20 | T' = cuda-topka2 + COUPLED + draft n 2, c 32768 KV q4_0 | `31-3060-3080.md:9` | nie (chmura) |
+| RTX 3060 12 GB / Qwen UD-Q2_K_XL | czat T=1 / mvs | **38.6 / 153.1 t/s** (U0 20.6 / 20.3) | 2026-10-20 | T', draft n 3, c 36864 | `31-3060-3080.md:10` | nie |
+| RTX 3090 / Qwen UD-Q6_K_M | czat T=1 / mvs | **73.2 / 300.5 t/s** (U0 33.9 / 33.7) | 2026-10-20 | T, c 32768 KV q4_0 | `31-3090.md:11-13` | nie |
+| RTX 4060 Ti / Qwen UD-IQ4_XS | czat T=1 / mvs | **50.8 / 188.6 t/s** (U1 38.5 / 58.7) | 2026-10-20 | T', c 32768 KV q4_0 | `31-4060ti.md:12-14` | nie |
+| RTX 4070 Ti 12 GB / Qwen UD-Q2_K_XL | czat T=1 / mvs | **93.3 / 295.0 t/s** (U0 40.8 / 40.3); T' +6.81% czat | 2026-10-20 | T, c 36864 KV q4_0 | `31-4070ti.md:11-14` | nie |
+| RTX 5060 Ti / Qwen UD-IQ4_XS | czat T=1 / mvs | **62.6 / 244.2 t/s** (U0 26.7 / 26.5) | 2026-10-20 | T, c 32768 KV q4_0 | `31-5060ti.md:10-11` | nie |
 
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.

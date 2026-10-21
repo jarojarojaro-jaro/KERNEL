@@ -1,8 +1,8 @@
 ---
 typ: kernel
 tags: [kernele, mmvq, spekulacja]
-aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:38-47,59-78,89,241-256; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:76-77,96-97; ~/KERNEL/product/research/08-analiza-platformy-latek.md:24; ~/KERNEL/product/research/patch-manifest.json (0001, 0002, 0021, 0022); ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:89-95,240; ~/KERNEL/product/research/21l-reverse-engineering-gpu.md:40-41; ~/KERNEL/product/research/21l-skrypty/rga-livereg-mmvq-q4k-ncols5.txt
+aktualizacja: 2026-10-21
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:38-47,59-78,89,241-256; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:76-77,96-97; ~/KERNEL/product/research/08-analiza-platformy-latek.md:24; ~/KERNEL/product/research/patch-manifest.json (0001, 0002, 0021, 0022); ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:89-95,240; ~/KERNEL/product/research/21l-reverse-engineering-gpu.md:40-41; ~/KERNEL/product/research/21l-skrypty/rga-livereg-mmvq-q4k-ncols5.txt; ~/KERNEL/product/research/47-kernel-lab.md:14-18; ~/KERNEL/product/research/50a-mmvq-q4k.md:9-14; ~/KERNEL/product/research/50b-mmvq-q5k.md:5-16; ~/KERNEL/product/research/50c-mmvq-q6k.md:5-20; ~/KERNEL/product/research/50d-mmvq-iq4xs.md:15-26
 status: aktualne
 ---
 # MMVQ wielokolumnowe (weryfikacja spekulacji)
@@ -20,6 +20,12 @@ Poprawność: bitowo identyczne (`test-backend-ops -o MUL_MAT` 2444/2444). Wył�
 Wzorzec z Magnitude (2026-10-16): swap-AB GEMV na `mma.m16n8k16` (wagi jako A, wiersze aktywacji jako N=8), wynik wiersza niezależny od M, więc M = 1..16 bitowo jak M = 1 – warunek weryfikacji W16 w trybie bitexact ([[raport-16i-magnitude]], technika #5).
 
 Klif VGPR (21l, 2026-10-19): MMVQ Q4_K 4 kolumny 88–89 VGPR (16 fal/SIMD), 5 kolumn 140–141 (10 fal), 8 kolumn 190–191; szczyt 136 żywych VGPR w bloku `v_dot4_i32_iu8`. Kandydat: ncols=5 ≤ 120 VGPR (12 fal) albo weryfikacja jako 4+1 ([[co-stats]]).
+
+## Aktualizacja 2026-10-21
+- Profil klab topki: Q5_K 1.65 ms/krok (84% pasma), IQ4_XS 0.91, Q4_K 0.65, Q6_K 0.59 ([[raport-47-kernel-lab]]).
+- Q4_K: pipe + 8 fal odrzucone ([[raport-46-mmvq-big]]); kernel strumieniowy −0.28 ms/krok `[SZACUNEK]` ([[raport-50a-mmvq-q4k]]).
+- Q5_K: `big_rows` −1.3…−3.5% ([[raport-50b-mmvq-q5k]]); Q6_K: potok ping-pong −0.15 ms `[SZACUNEK]` ([[raport-50c-mmvq-q6k]]); IQ4_XS: `ryp2` −0.16 ms ([[raport-50d-mmvq-iq4xs]]); k/v 1024 wierszy −0.03 ms ([[raport-49-mmvq-ogon-1024]]).
+- Wszystkie bitowo zgodne, żaden bez bramki md5/ABBA E0 (GPU stop 2026-10-21).
 
 ## Powiązane
 - [[kernele/_hub|Kernele]]

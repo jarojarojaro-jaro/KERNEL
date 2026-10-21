@@ -14,12 +14,13 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (28)
+## Notatki (30)
 
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
 - [[aplikacja-w-budowie|Aplikacja (~/KERNEL/app): stan prototypu]] — Pierwsze elementy produktu zbudowane lokalnie przez AppStudio (2026-10-16, commit `9f96ff4`): system projektowy „Tacho”, statyczna strona SvelteKit PL/EN (47 stron), prototyp onboardingu, skrypty skanu, prototyp aplikacji desktop (8 ekranów), makieta TUI i dokument architektury; nic nie jest wdrożone.
 - [[produkt-architektura|Architektura systemu i silnik]] — Komputer użytkownika (GUI Tauri, TUI, daemon Rust `appd`, llama-server jako proces potomny, tuner, updater Ed25519) + mały backend (katalog, baza profili, kolejka) + fabryka przepisów.
+- [[bezpieczenstwo-tokenow-specjalnych|Bezpieczeństwo: SAFE_SPECIAL (wejście) i SAFE_TOOLS (wyjście)]] — Dwie dziury lustrzane: tekst z żądania stawał się tokenami sterującymi (32e), a tekst modelu udający marker otwierał prawdziwy tool call (39c); obie zamknięte i domyślnie włączone w `run-topka.sh` od 2026-10-21.
 - [[produkt-biznes-edycje|Biznes: edycje, model kodu, wejście na rynek]] — Hipotezy (nie decyzje): Free, Turbo (149 zł/rok lub 299 zł dożywotnio), Business (~8 €/stanowisko/mies.), OEM (1–3 € za urządzenie), Tuning Lab (od 5 k€); kod w modelu open core.
 - [[produkt-budzet|Budżet (rząd wielkości)]] — GPU w chmurze: faza 0 ~$50–150 łącznie, faza 1 ~$500–600/mies., faza 2 ~$1.2–1.5k/mies., faza 3 ~$2.5–3.5k/mies.; tokeny agentów prawdopodobnie największy koszt fabryki.
 - [[kv-na-dysku-polityka|Cache KV na dysku: polityka warstw i budżet zużycia SSD]] — Dysk zabija tylko naiwna polityka: pełny zapis slotu po każdej turze w formacie E5 to ~582 GB na sesję 150k i ~4.7 TB/dzień (dysk 300 TBW w ~64 dni), a polityka „najpierw RAM/tmpfs, na dysk tylko przy shutdown lub presji RAM, top-2 sesje” to ~7 GB/dzień pod twardym limitem 10 GB/dzień (raport 21d, 2026-10-19).
@@ -30,6 +31,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[produkt-landing-i-onboarding|Landing page i ścieżka użytkownika]] — Hero „Ten sam sprzęt. Ten sam model. Po prostu szybciej.” z animacją prędkości, potem konto na początku i trzy drogi: formularz sprzętu (z komendą „skan”), aplikacja desktop, terminal (pomysł z 2026-10-16).
 - [[produkt-ryzyka|Największe ryzyka]] — Dziewięć ryzyk z odpowiedziami; najgroźniejsze: zysk nie przenosi się poza 7900 XTX/Linux oraz wbudowanie auto-tuningu przez LM Studio, Ollamę, Jana lub NVIDIA.
 - [[produkt-optymalizacja-u-uzytkownika|Optymalizacja u użytkownika: kalibracja i noc]] — Zawsze szybka kalibracja 1–5 min; opcjonalnie noc za zgodą (zasilacz, bezczynność, limity), z bramką md5 i ABBA; nigdy agentów ani kompilacji na komputerze użytkownika.
+- [[opoznienia-ttft|Opóźnienia: TTFT, start i przełączanie modeli (topka)]] — Stan po f9b84bcfa: start Qwen 38.5 → 6.55 s (cache MTP), tura agenta S2-turn2 687/579 → 197 ms (CKPT_VRAM=2), świeży 2k −22% (2026-10-21).
 - [[otwarte-decyzje-produktu|Otwarte decyzje produktu (po prototypie aplikacji)]] — Pytania AppStudio do użytkownika z 2026-10-16, wciąż bez decyzji: nazwa, kolor akcentu, ceny w teście fake-door, konto przed pobraniem, sprawy prawne, port lokalnego API 11500 i domena.
 - [[otwarte-decyzje-techniczne|Otwarte decyzje techniczne (silnik, flagi, wydatki)]] — Rekomendacje agentów, które czekają na decyzję użytkownika: zmiany flag `run-llm.sh`, scalenie łatek do `amd-opt`, testy GPU z ryzykiem i wydatki na chmurę; po decyzji wiersz przechodzi do [[decyzje/_hub|decyzji]].
 - [[produkt-platformy-i-lab|Platformy, sprzęt i lab]] — Rozwój na Linuksie, projekt od początku na Win/Linux/macOS; wolumen to NVIDIA (76% Steam), wyróżnik AMD; popularne karty kupujemy, rzadkie (3090, 4090, 5090) wynajmujemy.

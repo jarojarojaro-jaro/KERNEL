@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, audyt]
-aktualizacja: 2026-10-20
+aktualizacja: 2026-10-21
 zrodlo: zrodlo każdej notatki (kolumna „wiersz źródła”); wiki/tools/wiki.py
 status: aktualne
 ---
@@ -2821,6 +2821,85 @@ Automat: tokeny liczbowe (≥ 2 znaki) z nowych notatek i z nowych akapitów w n
 | [[rtx-4060-ti]], [[raport-29-4060ti]], [[raport-24w-pair2]], [[2026-10-20-podsumowanie-nocy]] (runda 2) | 76 | `29-4060ti.md`, `24w-pair2.md`, `PODSUMOWANIE-NOC-2026-10-20.md` | OK (automat + ręcznie) |
 | [[2026-10-20-podsumowanie-nocy]] (wyniki rano), [[raport-24w-pair2]], [[REKORDY]] 114.6 / 433.0 | 27 | `ab_summary.py` (hg-mvs, p2-), `m-md5-*.log`, `p2-md5.log`, `run-topka.sh:41,47,60-61` | OK (sprawdzone na żywo 2026-10-20) |
 | [[REKORDY]] (sekcja 2026-10-19/20) | 17 wierszy | `WYNIKI-XTX:44-86`, `24p:31-32`, `27:20-33,59-68,168`, `hg-sweep1.log:2,5`, `hg-mvs.log:2,5` | OK |
+
+## Ingest 2026-10-21 (raporty 31–54, watch, PLAN-NV-V2)
+Automat jak 2026-10-20: tokeny liczbowe (≥ 2 znaki) z nowych notatek, z sekcji „Aktualizacja 2026-10-21” w notatkach aktualizowanych i z nowych sekcji REKORDY/ZRODLA szukane w plikach z `zrodlo` (+ `git show` dla commitów). Razem 914 tokenów w 73 notatkach; nieznalezione przejrzane ręcznie – wyłącznie identyfikatory (numery raportów, commity, wersje, wiersze `plik:linia`, nazwa „Qwen3.8”), żadna liczba pomiarowa. Błędnych: 0.
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[REKORDY]] | 109 | cytowane wiersze + plik | OK (identyfikatory: 20,59, 22,65,68, 33,168, 56,59, 77,81) |
+| [[ZRODLA]] | 44 | cytowane wiersze + plik | OK (identyfikatory: 1.1.20, 2610.24365, 3.0.1, 390, 617986, 6867, 852150, 9098781) |
+| [[vast-ai]] | 6 | cytowane wiersze + plik | OK |
+| [[2026-10-21-enigma-labz]] | 6 | cytowane wiersze + plik | OK |
+| [[fattn-kvq]] | 9 | cytowane wiersze + plik | OK |
+| [[mmvq-multikolumnowe]] | 15 | cytowane wiersze + plik | OK |
+| [[pamiec-stanu-gdn]] | 8 | cytowane wiersze + plik | OK |
+| [[pm4-replay]] | 7 | cytowane wiersze + plik | OK |
+| [[rmsnorm-dpp]] | 5 | cytowane wiersze + plik | OK |
+| [[lekcja-higiena-pomiaru]] | 8 | cytowane wiersze + plik | OK |
+| [[lekcja-kolejka-fifo-bilety]] | 7 | cytowane wiersze + plik | OK |
+| [[lekcja-proza-e0-vs-myslenie]] | 8 | cytowane wiersze + plik | OK |
+| [[lekcja-qa-clip-blokuje-gpu]] | 1 | cytowane wiersze + plik | OK |
+| [[lekcja-rbuild-pod-flock]] | 3 | cytowane wiersze + plik | OK |
+| [[lekcja-zmiana-draftu-zmienia-md5]] | 4 | cytowane wiersze + plik | OK |
+| [[metryka-prozy-e0]] | 13 | cytowane wiersze + plik | OK (identyfikatory: 3.8) |
+| [[gemma-4]] | 14 | cytowane wiersze + plik | OK |
+| [[glowica-mtp]] | 9 | cytowane wiersze + plik | OK |
+| [[qwen3-6-35b-a3b]] | 20 | cytowane wiersze + plik | OK |
+| [[qwen3-8-27b]] | 7 | cytowane wiersze + plik | OK |
+| [[app-landing]] | 3 | cytowane wiersze + plik | OK |
+| [[bezpieczenstwo-tokenow-specjalnych]] | 11 | cytowane wiersze + plik | OK |
+| [[opoznienia-ttft]] | 25 | cytowane wiersze + plik | OK |
+| [[deepinfer]] | 6 | cytowane wiersze + plik | OK |
+| [[eagle-4]] | 12 | cytowane wiersze + plik | OK |
+| [[ninfer]] | 5 | cytowane wiersze + plik | OK |
+| [[nvidia-flare]] | 8 | cytowane wiersze + plik | OK |
+| [[project-maya]] | 8 | cytowane wiersze + plik | OK |
+| [[tqllm]] | 6 | cytowane wiersze + plik | OK |
+| [[raport-31-3060-3080]] | 26 | cytowane wiersze + plik | OK (identyfikatory: 131) |
+| [[raport-31-3090]] | 21 | cytowane wiersze + plik | OK (identyfikatory: 849) |
+| [[raport-31-4060ti]] | 18 | cytowane wiersze + plik | OK |
+| [[raport-31-4070ti]] | 19 | cytowane wiersze + plik | OK |
+| [[raport-31-5060ti]] | 22 | cytowane wiersze + plik | OK |
+| [[raport-32a-maya-strata-gyro]] | 15 | cytowane wiersze + plik | OK |
+| [[raport-32b-deepinfer]] | 8 | cytowane wiersze + plik | OK |
+| [[raport-32c-sage-exl3]] | 13 | cytowane wiersze + plik | OK |
+| [[raport-32d-localmaxxing]] | 15 | cytowane wiersze + plik | OK |
+| [[raport-32e-safe-special]] | 3 | cytowane wiersze + plik | OK |
+| [[raport-32f-ninfer-tqllm]] | 13 | cytowane wiersze + plik | OK |
+| [[raport-33-modele-na-karty]] | 21 | cytowane wiersze + plik | OK |
+| [[raport-34-zrodla-benchmarkow]] | 16 | cytowane wiersze + plik | OK (identyfikatory: 2333) |
+| [[raport-35-xtx-eksperymenty]] | 15 | cytowane wiersze + plik | OK |
+| [[raport-36-xtx-roadmap]] | 15 | cytowane wiersze + plik | OK |
+| [[raport-37-proza-100]] | 17 | cytowane wiersze + plik | OK |
+| [[raport-38-ckpt-vram]] | 14 | cytowane wiersze + plik | OK (identyfikatory: 481254) |
+| [[raport-39a-maya-1119]] | 11 | cytowane wiersze + plik | OK |
+| [[raport-39b-flashmap]] | 9 | cytowane wiersze + plik | OK |
+| [[raport-39c-deepseek-deploy]] | 9 | cytowane wiersze + plik | OK (identyfikatory: 42) |
+| [[raport-39d-rea-prompts]] | 1 | cytowane wiersze + plik | OK |
+| [[raport-39e-torchtpu]] | 5 | cytowane wiersze + plik | OK |
+| [[raport-39f-nvidia-flare]] | 6 | cytowane wiersze + plik | OK |
+| [[raport-40-akceptacja-prozy]] | 19 | cytowane wiersze + plik | OK |
+| [[raport-41-re-kerneli]] | 7 | cytowane wiersze + plik | OK |
+| [[raport-42-safe-io]] | 7 | cytowane wiersze + plik | OK |
+| [[raport-43-integracja]] | 18 | cytowane wiersze + plik | OK |
+| [[raport-44-spec-route]] | 7 | cytowane wiersze + plik | OK (identyfikatory: 2504) |
+| [[raport-45-opoznienia]] | 11 | cytowane wiersze + plik | OK |
+| [[raport-46-mmvq-big]] | 9 | cytowane wiersze + plik | OK |
+| [[raport-47-kernel-lab]] | 14 | cytowane wiersze + plik | OK |
+| [[raport-48-norma-gdn-bank]] | 6 | cytowane wiersze + plik | OK |
+| [[raport-49-mmvq-ogon-1024]] | 9 | cytowane wiersze + plik | OK |
+| [[raport-50a-mmvq-q4k]] | 6 | cytowane wiersze + plik | OK |
+| [[raport-50b-mmvq-q5k]] | 6 | cytowane wiersze + plik | OK |
+| [[raport-50c-mmvq-q6k]] | 4 | cytowane wiersze + plik | OK |
+| [[raport-50d-mmvq-iq4xs]] | 9 | cytowane wiersze + plik | OK |
+| [[raport-51-male-kernele]] | 9 | cytowane wiersze + plik | OK |
+| [[raport-52-eagle4]] | 7 | cytowane wiersze + plik | OK |
+| [[raport-53-draft-shortlist]] | 10 | cytowane wiersze + plik | OK |
+| [[raport-54-mniej-granic]] | 12 | cytowane wiersze + plik | OK |
+| [[raport-plan-nv-v2]] | 20 | cytowane wiersze + plik | OK |
+| [[raport-watch-compwatch]] | 10 | cytowane wiersze + plik | OK |
+| [[raporty-2026-10-20-21]] | 15 | cytowane wiersze + plik | OK (identyfikatory: 979) |
 
 ## Powiązane
 - [[index|Strona główna]]
