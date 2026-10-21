@@ -124,3 +124,6 @@ nigdy nie wysyła serwerowi TERM; zatrzymuje klientów/wrappery (ich trapy wysy�
 a jeśli serwer żyje — SIGKILL (handler nie działa, `exit()` się nie wykonuje). Smoke na sztucznym drzewie procesów
 (fake `bin/llama-server` liczący sygnały): serwer dostał **1** SIGTERM, zero osieroconych procesów.
 `sr_arm.sh`: stop() czeka na bezczynne sloty, potem jeden SIGTERM i do 45 s.
+
+## Runda 2 — wynik GPU (td2.jobs)
+1× SIGTERM w trakcie generacji, poprawiona binarka (`e52b38014`): **10/10 czysto**. Wyjście po ~1.3 s, rc 0, bez SIGKILL, kernel log czysty. Do mergu do `topka-int` idzie `pm4-teardown` HEAD `e52b38014` (MorningRun).
