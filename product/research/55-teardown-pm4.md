@@ -1,8 +1,12 @@
 # 55: page fault przy zatrzymaniu serwera PM4 w trakcie generacji (XTX), 2026-10-21
 
-**Werdykt: przyczyną jest `exit(1)` wołane z handlera sygnału przy DRUGIM SIGTERM. `exit()` uruchamia destruktory modułów HIP i zwalnia code objecty, a wątek główny w tym czasie czeka na taśmę PM4, która wciąż wykonuje się na GPU. Poprawka jest w gałęzi `pm4-teardown`: sygnał obsługuje zwykły wątek, a GPU jest drenowane przed jakimkolwiek zwalnianiem. Działa domyślnie, bez przełącznika. Nie zmienia generacji (md5 greedy niezmienione z konstrukcji). Testu na GPU jeszcze nie było: jobs `~/qwen-opt/teardown/td.jobs`.**
-- Gałąź `pm4-teardown` (commit `a13fa3034`, worktree `~/wt/pm4-teardown`) na `topka` `cf927413b` (linia produkcyjna f9b84bcfa). Build: `~/qwen-opt/teardown/inst/bin/llama-server` (`rbuild --local`, rc 0, bez ostrzeżeń w zmienionych plikach; RUNPATH na `~/wt/pm4-teardown/build-hip/bin`).
-- Pliki: `tools/server/server.cpp`, `ggml/src/ggml-cuda/hip-pm4.cu`, `hip-pm4.cuh`, `ggml-cuda.cu`.
+**Werdykt: przyczyną jest `exit(1)` wołane z handlera sygnału przy DRUGIM SIGTERM. `exit()` uruchamia destruktory modułów HIP i zwalnia code objecty, a wątek główny w tym czasie czeka na taśmę PM4, która wciąż wykonuje się na GPU. Poprawka jest w gałęzi `pm4-teardown`: sygnał obsługuje zwykły wątek, a GPU jest drenowane przed jakimkolwiek zwalnianiem. Działa domyślnie, bez przełącznika.**
+- **GPU, runda 1** (`td.jobs`, 13:26–13:57):
+  - md5 greedy SAME (`e97a0d66…`, base = fix);
+  - 3× SIGTERM: 20/20 bez faultu, wyjście po ~0.3 s;
+  - 1× SIGTERM: 20/20 bez faultu, ale serwer sam nie wychodził: 20/20 SIGKILL po ~61 s. Przyczyna i poprawka w sekcji „Runda 2”, test w `td2.jobs`.
+- Gałąź `pm4-teardown` (commity `a13fa3034` + `e52b38014`, worktree `~/wt/pm4-teardown`) na `topka` `cf927413b` (linia produkcyjna f9b84bcfa). Build: `~/qwen-opt/teardown/inst/bin/llama-server` (`rbuild --local`, rc 0, bez ostrzeżeń w zmienionych plikach; `fix-runpath.py` → `$ORIGIN`, `--check` 0).
+- Pliki: `tools/server/server.cpp`, `server-http.cpp`, `server-http.h`, `ggml/src/ggml-cuda/hip-pm4.cu`, `hip-pm4.cuh`, `ggml-cuda.cu`.
 
 ## Zdarzenia
 | | 04:07:21 | 12:46:18 |
@@ -59,7 +63,7 @@ Własność obiektów: IB taśmy (`hsa_amd_memory_pool_alloc`, pula hosta), kern
 
 Potwierdzenie na GPU: job `td-md5-*` w `td.jobs`.
 
-## Plan reprodukcji i weryfikacji (`~/qwen-opt/teardown/td.jobs`, nieuruchomione)
+## Plan reprodukcji i weryfikacji (`~/qwen-opt/teardown/td.jobs`; runda 1 wykonana 13:26–13:57, `td-old-3sig` nie uruchomiony)
 `td.sh` ustawia jawnie PM4=1, WA=2, GUARD=1, HSA_USE_SVM=0, `LLAMA_SERVER_YIELD_FAST=2`, `GGML_HIP_PM4_MIN_DISPATCH=16` i `GGML_HIP_PM4_LAZY_EXEC=1`, kasuje `QUEUE_PM4_SAFETY` i używa produkcyjnej konfiguracji `run-topka.sh qwen`. Base to `~/wt/topka-int/build-hip`, to samo drzewo bez poprawki.
 1. `td-md5-base`, `td-md5-fix`, `td-md5-cmp`: greedy T=0, 400 tokenów, porównanie `cmp`.
 2. `td-fix-3sig`: 20 iteracji, w każdej:
@@ -73,6 +77,35 @@ Potwierdzenie na GPU: job `td-md5-*` w `td.jobs`.
 4. `td-old-3sig`, **ostatni**: base z 3× SIGTERM. Oczekiwany fault przy pierwszych iteracjach potwierdza, że reprodukcja trafia w błąd. Kończy się na pierwszym faulcie, a kolejka staje (reguła sprzętowa), dlatego nic po nim nie biegnie.
 
 Kryterium: fix 40/40 bez faultu, w logu `received signal ... again` → `GPU drained ...`, rc 1 po drenażu; base faultuje. Jeśli base nie faultuje w 20 próbach, wynik fixu nie jest rozstrzygający: zwiększyć N albo dodać sygnały.
+
+## Runda 2: jeden SIGTERM nie kończył procesu (td-fix-1sig)
+Log każdej iteracji (`~/qwen-opt/teardown/logs/td-fix-1sig-*.server.log`):
+- `received signal 15` o +9.949 s;
+- `GPU drained before teardown (0.1 ms)` o +9.965 s, czyli pętla stanęła na granicy kroku po 16 ms;
+- `cleaning up before exit...`, a potem cisza do SIGKILL po 60 s.
+
+Pierwszy sygnał działał więc poprawnie: krok, drenaż i wyłączenie PM4 przeszły. Wątek drenażu niczego nie blokował. Zawieszenie było PO drenażu, w `ctx_http.join()` (`server.cpp`), które zamyka pulę wątków HTTP i czeka na handlery:
+- handler `/v1/chat/completions` (bez streamu) czeka w `rd.wait_for_all(req.should_stop)` (`server-context.cpp:5108`), a ta funkcja odpytuje co 1 s `server_response_reader::next` (`server-queue.cpp:617-624`);
+- `should_stop` było wyłącznie `req.is_connection_closed` (`server-http.cpp:685/736/757`);
+- klient wciąż był podłączony, a zatrzymana pętla nie wyśle już wyniku, więc handler czekał w nieskończoność.
+
+To samo jest w starym kodzie [INFERENCE: base z 1 sygnałem nie testowany]. Właśnie to w praktyce prowokowało drugi sygnał, a z nim `exit(1)` i fault.
+
+Poprawka (`e52b38014`):
+- **`server_http_context::stop()` ustawia flagę `stopping`**, a `should_stop` każdego żądania to teraz „połączenie zamknięte LUB serwer się zatrzymuje”:
+  - `server_http_req::should_stop` jest wartością, nie referencją;
+  - lambda `request_should_stop` w `server-http.cpp`;
+  - `clean_up()` woła `ctx_http.stop()` przed `join()`, więc handler wraca przy najbliższym odpytaniu (≤ 1 s) i `join()` się kończy;
+  - asercje `GGML_ASSERT(req.should_stop())` w ścieżkach streamu pozostają prawdziwe.
+- **Watchdog pierwszego sygnału** (`server.cpp`, `on_shutdown_signal`) to siatka bezpieczeństwa:
+  - 5 s po drenażu wywołuje `_Exit(1)` z logiem `teardown still running 5 s after the GPU drain...`;
+  - bez drenażu w 30 s również `_Exit` z logiem;
+  - GPU jest wtedy bezczynne i nie biegną destruktory modułów HIP;
+  - wspólne `force_exit()` (jeden wywołujący, flush logu) obsługuje też kolejny sygnał.
+
+Oczekiwane w `td2.jobs` (10× jeden SIGTERM, tylko poprawiona binarka): `received signal 15` → `GPU drained` → wyjście < 5 s, rc 0, bez SIGKILL, kernel log czysty.
+
+Uwaga build: cel `llama-server` ma krok „Provisioning UI assets”, który sam próbuje pobrać web UI z HF (b11634: sha256 failed, potem „latest”). Ja tego nie uruchamiałem ręcznie. Na przyszłość warto budować bez pobierania UI.
 
 ## Otwarte
 - SIGKILL w trakcie taśmy: jądro (KFD) zdejmuje kolejki przed zwolnieniem BO. [INFERENCE] to bezpieczne, ale nie było testowane osobno. Poprawka w user space SIGKILL-a nie dotyczy.
