@@ -1,7 +1,7 @@
 # 55: page fault przy zatrzymaniu serwera PM4 w trakcie generacji (XTX), 2026-10-21
 
 **Werdykt: przyczyną jest `exit(1)` wołane z handlera sygnału przy DRUGIM SIGTERM. `exit()` uruchamia destruktory modułów HIP i zwalnia code objecty, a wątek główny w tym czasie czeka na taśmę PM4, która wciąż wykonuje się na GPU. Poprawka jest w gałęzi `pm4-teardown`: sygnał obsługuje zwykły wątek, a GPU jest drenowane przed jakimkolwiek zwalnianiem. Działa domyślnie, bez przełącznika. Nie zmienia generacji (md5 greedy niezmienione z konstrukcji). Testu na GPU jeszcze nie było: jobs `~/qwen-opt/teardown/td.jobs`.**
-- Gałąź `pm4-teardown` (worktree `~/wt/pm4-teardown`) na `topka` `cf927413b` (linia produkcyjna f9b84bcfa). Build: `~/qwen-opt/teardown/inst/bin/llama-server` (`rbuild --local`).
+- Gałąź `pm4-teardown` (commit `a13fa3034`, worktree `~/wt/pm4-teardown`) na `topka` `cf927413b` (linia produkcyjna f9b84bcfa). Build: `~/qwen-opt/teardown/inst/bin/llama-server` (`rbuild --local`, rc 0, bez ostrzeżeń w zmienionych plikach; RUNPATH na `~/wt/pm4-teardown/build-hip/bin`).
 - Pliki: `tools/server/server.cpp`, `ggml/src/ggml-cuda/hip-pm4.cu`, `hip-pm4.cuh`, `ggml-cuda.cu`.
 
 ## Zdarzenia
