@@ -32,3 +32,17 @@ Zakres: pliki zadań MorningRun po `td.jobs` (s53m, lc-morning, g50c, g49c, smal
 Stan /tmp po restarcie: każdy marker używany przez ramiona (`/tmp/p100-gate/*.PASS`, `/tmp/x44/GATE_PASS`, `/tmp/integ/*`, `draft-shortlist/md5/GATE_PASS`) jest tworzony przez joba-bramkę w tym samym pliku i kasowany na jego początku.
 
 Ważność ABBA: host w logu każdego ramienia (`context lookup … host N ms`, p100_arm) i w prose_sum; dryf bazy w prose_sum. Timeouty: ramiona 420–900 s (prose+mvs seedy 1–2 / 1–3 / 1–4), bramki 900–1800 s.
+
+## Przeliczenie wcześniejszych werdyktów (błąd etykiet A1/B1/B2/A2)
+
+**Wynik: żaden werdykt się nie zmienia.** Wcześniejsze raporty liczyły ABBA ręcznie, per instancja (tabele A1/B1/B2/A2), a nie przez `prose_sum.py` z bazą `A`. Przeliczone liczby zgadzają się z nimi co do ±0.05 pp. Uwaga: GDN bank v3 (`LLAMA_GDN_BANK=1`, przyjęty do int4–int6 w raporcie 43) **nie ma ważnego ABBA** — x48-bank3 ma dryf −2.46% i host 13–15 ms. Wiarygodny pomiar da dopiero i43f (dzisiejsza kolejka; ABBA 0|1|1|0, bramka PASS, etykiety A1a/B1a/B1b/A1b scalają się poprawnie).
+
+Zakres: wszystkie `prose.jsonl` z 19–21.10 z etykietami `…[AB][12]`: `prose100/logs` (x41-pf, x48-bank, x48-bank2, x48-bank3), `mmvqbig/logs` (x46). `s53-A1` to pojedyncze ramię, nie ABBA. p37-* (A1a/A1b) scalały się poprawnie. Pozostałe jsonl z A1/B1 (spec_sweep/copy_bench/ttft/reason: pair2, lookup e3/e4, gpuverify, hostgap, l45, x44) nie przechodzą przez `prose_sum.py`, więc błąd ich nie dotyczy. norm-n4 (48, lead 1) nie miał ABBA. Q5K big_rows (50b), Q4K (50a/r5–r6) i IQ4XS (50d) nie mają jeszcze danych E0 (logi puste); prefill FA nie ma danych E0 z A1/B1. Przeliczenie: etykiety A1→Aa, B1→Ba, B2→Bb, A2→Ab, potem poprawiony `prose_sum.py` (bootstrap 95% po promptach).
+
+| raport | pozycja | stary werdykt / Δ | przeliczona Δ prose t/s [CI] | mvs Δ t/s | dryf A | host ms (Aa/Ab/Ba/Bb) | zmiana werdyktu |
+|---|---|---|---|---|---|---|---|
+| 41/48 G2 | GDN prefetch (`GGML_HIP_GDN_PREFETCH=1`) | −0.1%, szum → nieprzyjęte | −0.13% [−0.15, −0.11] | +1.54% | −0.07% OK | 4.5/3.9/4.1/4.0 | nie |
+| 48 | GDN bank v1 | −0.42% → nieprzyjęte | −0.41% [−0.42, −0.40] | +0.65% | +0.04% OK | 3.5/3.7/4.2/3.8 | nie |
+| 48 | GDN bank v2 | −0.38% → nieprzyjęte | −0.38% [−0.51, −0.27] | +0.36% | +0.17% OK | 4.9/5.3/4.2/5.8 | nie |
+| 48 | GDN bank v3 | nierozstrzygnięte (zakłócone) | −0.68% [−1.05, −0.26] | −10.5% | −2.46% **NIEWAŻNE** | 13.3/6.9/15.1/13.3 **NIEWAŻNE** | nie (dalej nieważne; decyzja w i43f) |
+| 46 | MMVQ Q4_K pipelining (mmvqbig 69f14108b) | brak zysku → odrzucone | 0.00% [−0.07, +0.06] | −1.12% | +0.08% OK | 6.3/7.06/7.3/6.3 (Ab, Ba > 7 ms) | nie |
