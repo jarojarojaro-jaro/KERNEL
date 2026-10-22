@@ -89,6 +89,12 @@ jako wymagający osobnej integracji** (cache + snapshoty + l2_qk), gałąź `orc
 
 ub1024 wchodzi (24 026 MiB, +1.8% prefill, ~550 MiB zapasu), ub2048 nie wchodzi → zostaje ub512.
 
+## Ostatnia runda knobów (Oregon)
+Powtarzalność produkcji: 90.4 / 88.5 / 88.9 t/s (**89.3 ±1.1%**). Zamknięte negatywnie: `LLAMA_SPEC_LOOKUP_W=32`
+(−1.1% ABBA), `LLAMA_GPU_VERIFY_M` 32/64 (neutralne), `-np 4` (nie startuje z MTP), MMQ IQ4_XS occupancy 2
+(**−11.5% prefill**, PPL bez zmian). TTFT @262k na tym hoście: 23.4k → 20.0 s, 58.5k → 61.7 s, 117k → **153.2 s**.
+**Średnie: decode 78.7 t/s (n=17), prefill 1055 t/s (n=10), ctx 262 144.**
+
 ## Pułapki pomiarowe
 - **Zimny page cache**: pierwszy prefill po starcie to ~3.8 mln page faultów (mmap): zmierzone 0.39-1.1 t/s na
   pierwszych 42 tokenach; ten sam serwer po rozgrzaniu 856-1000 t/s. Przed pomiarami trzeba `dd if=model of=/dev/null`.
