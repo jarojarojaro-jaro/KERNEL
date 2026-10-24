@@ -107,7 +107,8 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   macOS 0 ponad budżet pamięci zunifikowanej; CUDA +200 MiB (pula K/V rośnie z promptem, zmierzona do 55.6k).
   Kalibracja: `test/catalog.measured.json`.
 - `why[]` / `rejected[].reason` = kody `kod` albo `kod:wartość`: why — `quality_best`, `speed_measured:<t/s>`,
-  `speed_estimated:<t/s>`, `mtp_head`, `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
+  `speed_estimated:<t/s>`, `mtp_head`, `mtp_no_memory` (plik ma głowicę MTP, ale kontekst draftu się nie mieści; opcja
+  bez 'mtp' w features), `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
   `ub512_for_ctx` (ub 512: osiąga min. kontekst albo daje ≥ 8% więcej; wolniejszy prefill, decode bez zmian),
   `unified_memory`, `windows_reserve`, `cpu_only`, `license_conditional`; rejected — `ctx_max_below_min:<ctxMax>`,
   `weights_too_big:<GiB>/<budżet GiB>`, `ctx_below_min:<max ctx>`, `engine_too_old:b<N>` (przypięty upstream w
@@ -138,6 +139,6 @@ konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko
 - `Candidate.id`: `enigma` | `ub-512` | `ub-1024` | `ub-2048` (bez bieżącego ub) | `mtp` | `lookup`.
 - `Candidate.reason` = kod (`kod` albo `kod:wartość`; UI tłumaczy, nieznany pokazuje surowo):
   `no_enigma_engine:<arch|vendor>-<backend>-<os>-<arch>` (np. `cpu-linux-x64`, `sm_86-cuda-windows-x64`) |
-  `enigma_no_profile:<modelId>` | `enigma_not_published:<engineId>` | `ub_no_fit:<ub>` | `no_mtp_head` | `engine_no_mtp` |
+  `enigma_no_profile:<modelId>` | `enigma_not_published:<engineId>` | `ub_no_fit:<ub>` | `no_mtp_head` | `mtp_no_memory` | `engine_no_mtp` |
   `engine_no_lookup` | `ctx_not_fit` | `prefill_loss:<pct>` | `decode_not_faster:<pct>` | `slower_than:<candidateId>` |
   `oom` | `start_failed:<pierwsza linia>` | `failed:<pierwsza linia>`. Kandydat `kept` nie ma `reason`.

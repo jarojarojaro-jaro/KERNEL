@@ -62,7 +62,10 @@ export function planCandidates(hw: Hw, option: Option, base: ResolvedEngine): Pl
         en: "The model drafts the next tokens with its own MTP head; the server verifies them in one step.",
       },
       status: hasMtp && engineMtp ? 'pending' : 'rejected',
-      ...(hasMtp && engineMtp ? {} : { reason: hasMtp ? 'engine_no_mtp' : 'no_mtp_head' }),
+      ...(hasMtp && engineMtp ? {} : {
+        // the catalog drops 'mtp' from features when the head exists but its draft context does not fit (why code)
+        reason: hasMtp ? 'engine_no_mtp' : option.why.includes('mtp_no_memory') ? 'mtp_no_memory' : 'no_mtp_head',
+      }),
     },
     recipe: hasMtp && engineMtp ? { kind: 'spec', spec: 'mtp' } : null,
   });
