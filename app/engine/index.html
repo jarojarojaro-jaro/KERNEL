@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="pl" data-theme="dark">
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<meta name="color-scheme" content="dark light" />
+		<meta name="theme-color" content="#050506" />
+		<title>Enigma</title>
+		<link rel="icon" href="./src/ui/assets/favicon.svg" type="image/svg+xml" />
+		<script>
+			// Theme and language before the first paint (no flash). Stored only after the user picks them.
+			(function () {
+				var d = document.documentElement;
+				try {
+					var t = localStorage.getItem('enigma.theme');
+					d.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+					var l = localStorage.getItem('enigma.lang');
+					if (l === 'en' || l === 'pl') d.setAttribute('lang', l);
+				} catch (e) {
+					d.setAttribute('data-theme', 'dark');
+				}
+			})();
+		</script>
+	</head>
+	<body>
+		<div id="app"></div>
+		<noscript>Enigma wymaga JavaScriptu. / Enigma needs JavaScript.</noscript>
+		<script type="module" src="./src/ui/main.ts"></script>
+	</body>
+</html>

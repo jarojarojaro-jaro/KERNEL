@@ -1,0 +1,312 @@
+/* App layer: layout and the few patterns every screen shares. Tokens and components come from the site copies. */
+
+html,
+body {
+	min-height: 100%;
+}
+body {
+	background:
+		radial-gradient(70rem 32rem at 50% -14rem, color-mix(in srgb, var(--heat-3) 13%, transparent), transparent 70%),
+		radial-gradient(40rem 22rem at 88% -6rem, color-mix(in srgb, var(--heat-2) 8%, transparent), transparent 70%),
+		var(--bg-0);
+	background-attachment: fixed;
+}
+:root[data-theme='light'] body {
+	background:
+		radial-gradient(70rem 30rem at 50% -14rem, color-mix(in srgb, var(--heat-4) 30%, transparent), transparent 70%),
+		var(--bg-0);
+	background-attachment: fixed;
+}
+
+.wrap {
+	width: min(100% - 2 * var(--gutter), 76rem);
+	margin-inline: auto;
+}
+
+/* ---------- screen head ---------- */
+.screen {
+	display: grid;
+	gap: var(--sp-8);
+	padding-block: var(--sp-8) var(--sp-16);
+}
+.screen-head {
+	display: grid;
+	gap: var(--sp-4);
+	max-width: 52rem;
+}
+.eyebrow {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.6rem;
+	font-family: var(--font-mono);
+	font-size: var(--fs-2xs);
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.12em;
+	color: var(--text-mute);
+}
+.eyebrow::before {
+	content: '';
+	width: 1.6rem;
+	height: 1px;
+	background: currentColor;
+	opacity: 0.6;
+}
+.title {
+	font-size: clamp(2rem, 1.1rem + 3.2vw, 3.4rem);
+	font-weight: 780;
+	font-stretch: 108%;
+	line-height: 1;
+	letter-spacing: -0.03em;
+}
+.title .hx-accent {
+	display: inline;
+}
+:root[data-theme='light'] .title .hx-accent {
+	background: linear-gradient(90deg, #c2330f, #d94a14 85%);
+	-webkit-background-clip: text;
+	background-clip: text;
+}
+.lede {
+	font-size: clamp(1rem, 0.95rem + 0.3vw, 1.2rem);
+	line-height: 1.5;
+	color: var(--text);
+	max-width: 44rem;
+	text-wrap: pretty;
+}
+
+/* ---------- surfaces ---------- */
+.panel {
+	position: relative;
+	padding: clamp(var(--sp-5), 3vw, var(--sp-8));
+	border-radius: 1.5rem;
+	border: 1px solid var(--line);
+	background:
+		linear-gradient(180deg, color-mix(in srgb, var(--text-hi) 3%, transparent), transparent 40%),
+		color-mix(in srgb, var(--bg-2) 92%, transparent);
+	box-shadow: var(--shadow-2);
+}
+.panel--heat {
+	border-color: transparent;
+	background:
+		radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--heat-3) 9%, transparent), transparent 60%) padding-box,
+		linear-gradient(var(--bg-2), var(--bg-2)) padding-box,
+		linear-gradient(160deg, color-mix(in srgb, var(--heat-3) 70%, transparent), var(--line) 40%, var(--line) 70%, color-mix(in srgb, var(--heat-2) 45%, transparent)) border-box;
+	box-shadow:
+		var(--shadow-2),
+		0 40px 120px -60px color-mix(in srgb, var(--heat-3) 70%, transparent);
+}
+:root[data-theme='light'] .panel--heat {
+	background:
+		radial-gradient(120% 60% at 50% 0%, color-mix(in srgb, var(--heat-4) 16%, transparent), transparent 60%) padding-box,
+		linear-gradient(var(--bg-2), var(--bg-2)) padding-box,
+		linear-gradient(160deg, color-mix(in srgb, var(--heat-3) 60%, transparent), var(--line) 40%, var(--line) 70%, color-mix(in srgb, var(--heat-4) 70%, transparent)) border-box;
+}
+.panel-title {
+	color: var(--text-hi);
+	font-size: var(--fs-md);
+	font-weight: 680;
+	letter-spacing: -0.01em;
+}
+
+/* ---------- facts list (label / value rows like the site's scan card) ---------- */
+.facts {
+	display: grid;
+	grid-template-columns: minmax(7rem, auto) 1fr;
+	margin: 0;
+}
+.facts > div {
+	display: contents;
+}
+.facts dt,
+.facts dd {
+	margin: 0;
+	padding: 0.7rem 0;
+	border-top: 1px solid var(--line);
+}
+.facts > div:first-child > * {
+	border-top: 0;
+}
+.facts dt {
+	font-family: var(--font-mono);
+	font-size: var(--fs-2xs);
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	color: var(--text-mute);
+	padding-right: var(--sp-4);
+	padding-top: 0.95rem;
+}
+.facts dd {
+	color: var(--text-hi);
+	font-weight: 620;
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.facts dd .sub {
+	display: block;
+	margin-top: 0.15rem;
+	font-family: var(--font-mono);
+	font-size: var(--fs-xs);
+	font-weight: 400;
+	color: var(--text-mute);
+}
+
+/* ---------- chips ---------- */
+.chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--sp-2);
+	padding: 0;
+	margin: 0;
+	list-style: none;
+}
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.4rem;
+	min-height: 1.9rem;
+	padding: 0.2rem 0.75rem;
+	border-radius: var(--r-pill);
+	border: 1px solid var(--line-strong);
+	background: var(--bg-1);
+	color: var(--text-hi);
+	font-size: var(--fs-xs);
+	font-weight: 560;
+}
+.chip--mono {
+	font-family: var(--font-mono);
+	letter-spacing: 0.02em;
+}
+
+/* ---------- row of actions ---------- */
+.actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--sp-3);
+}
+
+/* Primary go button: the site's ember submit (dark ink on heat, >= 4.5:1 across the ramp). */
+.go {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--sp-2);
+	min-height: 3.1rem;
+	padding: 0 var(--sp-6);
+	border: 0;
+	border-radius: var(--r-pill);
+	background: linear-gradient(90deg, var(--heat-2), var(--heat-3) 70%, var(--heat-4));
+	color: #1a0a03;
+	font: inherit;
+	font-weight: 720;
+	font-size: var(--fs-base);
+	text-decoration: none;
+	cursor: pointer;
+	overflow: hidden;
+	box-shadow: 0 14px 40px -18px color-mix(in srgb, var(--heat-3) 95%, transparent);
+	transition:
+		transform var(--dur-2) var(--ease-out),
+		box-shadow var(--dur-3) var(--ease-out);
+}
+.go::after {
+	content: '';
+	position: absolute;
+	inset: 0 -40%;
+	background: linear-gradient(105deg, transparent 40%, rgb(255 255 255 / 0.45) 50%, transparent 60%);
+	transform: translate3d(-70%, 0, 0);
+	pointer-events: none;
+}
+.go:not(:disabled):hover {
+	box-shadow: 0 18px 50px -16px var(--heat-3);
+}
+.go:not(:disabled):hover::after {
+	transform: translate3d(70%, 0, 0);
+	transition: transform 0.8s var(--ease-out);
+}
+.go:active:not(:disabled) {
+	transform: scale(0.98);
+}
+.go:focus-visible {
+	outline: 2px solid var(--focus);
+	outline-offset: 3px;
+}
+.go:disabled {
+	cursor: not-allowed;
+	background: var(--bg-3);
+	color: var(--text-mute);
+	box-shadow: none;
+}
+.go .arrow {
+	transition: transform var(--dur-3) var(--ease-out);
+}
+.go:not(:disabled):hover .arrow {
+	transform: translateX(3px);
+}
+
+/* ---------- busy ring (rotation, never a pulse; reduced motion: a still ring) ---------- */
+.ring {
+	display: inline-block;
+	flex: none;
+	width: 1em;
+	height: 1em;
+	border-radius: 50%;
+	border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+	border-top-color: currentColor;
+	vertical-align: -0.15em;
+}
+@media (prefers-reduced-motion: no-preference) {
+	.ring {
+		animation: ring-spin 0.9s linear infinite;
+	}
+}
+@keyframes ring-spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.go,
+	.go::after,
+	.go .arrow {
+		transition: none !important;
+	}
+	.go:not(:disabled):hover::after {
+		transform: translate3d(-70%, 0, 0);
+	}
+}
+
+.busy {
+	display: flex;
+	align-items: center;
+	gap: var(--sp-3);
+	color: var(--text);
+}
+
+/* Speed figures (our engine) use heat ink; "before" uses cold steel. */
+.speed {
+	color: var(--accent-ink);
+}
+.before {
+	color: var(--before);
+}
+:root[data-theme='light'] .speed {
+	color: var(--accent-ink);
+}
+
+.grid-2 {
+	display: grid;
+	gap: var(--sp-6);
+	grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr));
+}
+
+@media (max-width: 600px) {
+	.panel {
+		border-radius: 1.15rem;
+	}
+	.facts {
+		grid-template-columns: minmax(6rem, auto) 1fr;
+	}
+}
