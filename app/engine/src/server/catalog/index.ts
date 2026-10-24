@@ -122,6 +122,7 @@ function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: numb
 
   const why: string[] = [speed.measured ? `speed_measured:${speed.tps.toFixed(0)}` : `speed_estimated:${speed.tps.toFixed(0)}`];
   if (spec) why.push('mtp_head');
+  else if (mtpCapable(m, d)) why.push('mtp_no_memory'); // the file has an MTP head, its draft context does not fit
   if (m.kind === 'moe' && m.activeB <= 4) why.push('moe_fast');
   why.push(ctx === m.ctxMax ? 'ctx_model_max' : 'ctx_memory_limit', `kv_${kvType}`);
   if (ub === 512) why.push('ub512_for_ctx');

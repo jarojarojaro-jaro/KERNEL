@@ -12,7 +12,8 @@
 //              context (CUDA with speculation: 3.77, 3090 Qwen T 21380 → 22198 MiB after a 55.6k prompt; HIP with
 //              speculation: 1.2, bounded by the XTX peak 23878 MiB after ~32k prompts and the production 204800 context
 //              that holds a ~196k prefill);
-//   overhead = driver context, BLAS handles and pools at load (CUDA 150 + 8 MiB/GiB VRAM: 338 MiB on the 3090; HIP 300,
+//   overhead = driver context, BLAS handles and pools at load (CUDA 100 + 0.4 × VRAM_GiB² MiB, fitted on fitcalc's per-card
+//              values 3060 174 / 4060 Ti 184 / 5060 Ti 194 / 3090 338 and our Vast runs of the app; HIP 300,
 //              between the Flint/Qwen XTX loads and the LFM XTX reading).
 import type { Backend, MemPlan } from '../../shared/types.ts';
 import type { CatalogModel, KvType, QuantFile } from './data.ts';
@@ -40,7 +41,7 @@ const GROWTH: Record<Backend, { plain: number; spec: number }> = {
 
 export function overheadMiB(backend: Backend, vramGiB: number): number {
   switch (backend) {
-    case 'cuda': return 150 + 8 * vramGiB;
+    case 'cuda': return 100 + 0.4 * vramGiB * vramGiB;
     case 'rocm': return 300;
     case 'vulkan': return 300;
     case 'metal': return 200;

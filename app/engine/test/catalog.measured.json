@@ -467,6 +467,66 @@
    "prompt": 32768,
    "usedMiB": 19089,
    "source": "wiki/eksperymenty/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
+  },
+  {
+   "id": "4060ti-qwen-q3-131072-ub1024",
+   "gpu": "rtx-4060-ti-16",
+   "backend": "cuda",
+   "vramGiB": 16,
+   "modelId": "qwen38-27b",
+   "quant": "UD-Q3_K_XL",
+   "ctx": 131072,
+   "kvType": "q4_0",
+   "ub": 1024,
+   "spec": false,
+   "prompt": 32635,
+   "usedMiB": 15284,
+   "source": "qwen-opt/cloud/results/enigma-4060ti-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak of the baseline phase)"
+  },
+  {
+   "id": "4060ti-qwen-q3-131072-ub512",
+   "gpu": "rtx-4060-ti-16",
+   "backend": "cuda",
+   "vramGiB": 16,
+   "modelId": "qwen38-27b",
+   "quant": "UD-Q3_K_XL",
+   "ctx": 131072,
+   "kvType": "q4_0",
+   "ub": 512,
+   "spec": false,
+   "prompt": 32635,
+   "usedMiB": 15046,
+   "source": "qwen-opt/cloud/results/enigma-4060ti-20261024 (Enigma app run, candidate ub-512, nvidia-smi peak)"
+  },
+  {
+   "id": "3060-gemma12-262144-ub1024",
+   "gpu": "rtx-3060-12",
+   "backend": "cuda",
+   "vramGiB": 12,
+   "modelId": "gemma4-12b",
+   "quant": "UD-Q4_K_XL",
+   "ctx": 262144,
+   "kvType": "q8_0",
+   "ub": 1024,
+   "spec": false,
+   "prompt": 32599,
+   "usedMiB": 10954,
+   "source": "qwen-opt/cloud/results/enigma-3060-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak of the baseline phase)"
+  },
+  {
+   "id": "3060-gemma12-262144-ub512",
+   "gpu": "rtx-3060-12",
+   "backend": "cuda",
+   "vramGiB": 12,
+   "modelId": "gemma4-12b",
+   "quant": "UD-Q4_K_XL",
+   "ctx": 262144,
+   "kvType": "q8_0",
+   "ub": 512,
+   "spec": false,
+   "prompt": 32599,
+   "usedMiB": 10436,
+   "source": "qwen-opt/cloud/results/enigma-3060-20261024 (Enigma app run, candidate ub-512, nvidia-smi peak)"
   }
  ]
 }
