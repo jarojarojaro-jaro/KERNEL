@@ -79,6 +79,47 @@ const pl = {
 		next: 'Dalej'
 	},
 
+	welcome: {
+		eyebrow: 'Enigma LABZ · silnik lokalny',
+		title: 'Gotowy, żeby przyspieszyć?',
+		accent: 'Twój sprzęt. Szybciej.',
+		lead: 'Skanujemy komputer, dobieramy najlepszy model z największym kontekstem (co najmniej 131 tys. tokenów), pobieramy go, mierzymy i podkręcamy. Ten sam sprzęt, ten sam model. Po prostu szybciej.',
+		go: 'Zaczynamy',
+		keyLabel: 'Masz klucz? Wklej go',
+		keyPlaceholder: 'ENIGMA-…',
+		keyCheck: 'Sprawdź',
+		keyHint: 'Sprawdzamy go od razu po wklejeniu, na tym komputerze.',
+		validUntil: 'ważny do',
+		buy: 'Nie masz klucza? Kup na enigmalabz.com',
+		noKeyNote: 'Skan i dobór modelu działają bez klucza.',
+		changeKey: 'Zmień klucz',
+		stepsTitle: 'Co się wydarzy',
+		steps: [
+			{ t: 'Skan sprzętu', d: 'Karta, pamięć, procesor, dysk. Lokalnie, bez wysyłania.' },
+			{ t: 'Model i kontekst', d: 'Najlepszy model, który się mieści, z kontekstem od 131 tys. tokenów.' },
+			{ t: 'Benchmark', d: 'Pomiar na oficjalnym llama.cpp: czytanie, pisanie, długi kontekst.' },
+			{ t: 'Optymalizacja', d: 'Szukamy szybszej konfiguracji i zostawiamy tylko to, co zmierzone.' }
+		],
+		duel: {
+			title: 'Zmierzone w naszym labie',
+			typical: 'Typowa aplikacja',
+			typicalSub: 'oficjalny llama.cpp, ustawienia domyślne',
+			ours: 'Enigma',
+			oursSub: 'nasz silnik + spekulacja MTP',
+			faster: 'szybciej',
+			measured: 'Zmierzone',
+			note: 'Radeon RX 7900 XTX · Qwen3.8-27B UD-Q4_K_XL · pisanie, ten sam skrypt (spec_sweep: 6 promptów × 3 seedy, mediana) · 19.10.2026',
+			sr: (a: string, b: string, x: string) => `Typowa aplikacja: ${a} tokenów na sekundę. Enigma: ${b} tokenów na sekundę, ${x} szybciej.`
+		}
+	},
+
+	hi: {
+		decode: 'Pisanie',
+		faster: 'szybciej niż na starcie',
+		same: 'tyle samo co na starcie',
+		slower: 'wolniej niż na starcie'
+	},
+
 	hw: {
 		overline: '02 · Twój sprzęt',
 		title: 'Najpierw czytamy',
@@ -230,6 +271,8 @@ const pl = {
 		overline: '07 · Gotowe',
 		title: 'Gotowe.',
 		titleAccent: 'Model działa lokalnie.',
+		titleGain: 'Gotowe. Twój model pisze',
+		titleGainAccent: (p: string) => `szybciej o ${p}.`,
 		lead: 'Endpoint jest zgodny z API OpenAI. Każdy program, który umie rozmawiać z OpenAI, umie rozmawiać z Enigmą.',
 		endpoint: 'Endpoint',
 		model: 'Model',
@@ -347,6 +390,47 @@ const en: Dict = {
 		scanFirstHint: 'Scanning and the recommendation work without a key. Downloading and optimisation need a subscription.',
 		change: 'Change key',
 		next: 'Next'
+	},
+
+	welcome: {
+		eyebrow: 'Enigma LABZ · local engine',
+		title: 'Ready to go faster?',
+		accent: 'Your hardware. Faster.',
+		lead: 'We scan your computer, pick the best model with the largest context (at least 131k tokens), download it, measure it and tune it. Same hardware, same model. Just faster.',
+		go: 'Let’s go',
+		keyLabel: 'Got a key? Paste it',
+		keyPlaceholder: 'ENIGMA-…',
+		keyCheck: 'Check',
+		keyHint: 'We check it the moment you paste it, on this computer.',
+		validUntil: 'valid until',
+		buy: 'No key yet? Get one at enigmalabz.com',
+		noKeyNote: 'Scanning and the model pick work without a key.',
+		changeKey: 'Change key',
+		stepsTitle: 'What happens next',
+		steps: [
+			{ t: 'Hardware scan', d: 'Graphics card, memory, processor, disk. Locally, nothing leaves.' },
+			{ t: 'Model and context', d: 'The best model that fits, with at least 131k tokens of context.' },
+			{ t: 'Benchmark', d: 'Measured on official llama.cpp: reading, writing, long context.' },
+			{ t: 'Optimisation', d: 'We look for a faster setup and keep only what we measured.' }
+		],
+		duel: {
+			title: 'Measured in our lab',
+			typical: 'Typical app',
+			typicalSub: 'official llama.cpp, default settings',
+			ours: 'Enigma',
+			oursSub: 'our engine + MTP speculation',
+			faster: 'faster',
+			measured: 'Measured',
+			note: 'Radeon RX 7900 XTX · Qwen3.8-27B UD-Q4_K_XL · writing speed, same script (spec_sweep: 6 prompts × 3 seeds, median) · 2026-10-19',
+			sr: (a, b, x) => `Typical app: ${a} tokens per second. Enigma: ${b} tokens per second, ${x} faster.`
+		}
+	},
+
+	hi: {
+		decode: 'Writing',
+		faster: 'faster than at the start',
+		same: 'the same as at the start',
+		slower: 'slower than at the start'
 	},
 
 	hw: {
@@ -500,6 +584,8 @@ const en: Dict = {
 		overline: '07 · Ready',
 		title: 'Ready.',
 		titleAccent: 'The model runs locally.',
+		titleGain: 'Ready. Your model now writes',
+		titleGainAccent: (p) => `${p} faster.`,
 		lead: 'The endpoint speaks the OpenAI API. Anything that can talk to OpenAI can talk to Enigma.',
 		endpoint: 'Endpoint',
 		model: 'Model',

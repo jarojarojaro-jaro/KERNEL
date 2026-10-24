@@ -1,10 +1,12 @@
 <script lang="ts">
 	import Chat from '../components/Chat.svelte';
 	import CopyButton from '../components/CopyButton.svelte';
+	import GainHero from '../components/GainHero.svelte';
 	import Headline from '../components/Headline.svelte';
 	import ScreenHead from '../components/ScreenHead.svelte';
 	import { api } from '../lib/api';
-	import { int } from '../lib/i18n';
+	import { gainPct } from '../lib/bench';
+	import { int, num } from '../lib/i18n';
 	import { store } from '../lib/store.svelte';
 
 	const t = $derived(store.t.ready);
@@ -16,6 +18,8 @@
 	const model = $derived(ready?.model ?? s?.chosen?.name ?? '');
 	const ctx = $derived(ready?.ctx ?? s?.best?.config.ctx ?? s?.chosen?.ctx ?? 0);
 	const windows = $derived(s?.hw?.os === 'windows');
+	/** Measured writing-speed gain over the baseline (null before both exist). */
+	const gain = $derived(s?.baseline ? gainPct(s.baseline.decode.tps, (s.best ?? s.baseline).decode.tps) : null);
 
 	type Tab = 'omp' | 'sdk' | 'curl';
 	const TABS: Tab[] = ['omp', 'sdk', 'curl'];
@@ -71,7 +75,11 @@
 </script>
 
 <section class="screen" aria-labelledby="ready-title">
-	<ScreenHead id="ready-title" overline={t.overline} title={t.title} accent={t.titleAccent} lead={t.lead} />
+	{#if gain !== null && gain >= 1}
+		<ScreenHead id="ready-title" overline={t.overline} title={t.titleGain} accent={t.titleGainAccent(lang === 'pl' ? `${num(gain, lang, 0)}\u00a0%` : `${num(gain, lang, 0)}%`)} lead={t.lead} />
+	{:else}
+		<ScreenHead id="ready-title" overline={t.overline} title={t.title} accent={t.titleAccent} lead={t.lead} />
+	{/if}
 
 	<div class="panel panel--heat ep">
 		<div class="ep-top">
@@ -99,6 +107,7 @@
 	{#if s?.baseline && (s.best ?? s.baseline)}
 		<div class="block">
 			<h2 class="panel-title">{t.gains}</h2>
+			<GainHero base={s.baseline} now={s.best ?? s.baseline} />
 			<Headline base={s.baseline} now={s.best ?? s.baseline} />
 		</div>
 	{/if}

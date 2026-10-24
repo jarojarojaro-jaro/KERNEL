@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Candidate } from '../../shared/types';
+	import GainHero from '../components/GainHero.svelte';
 	import Headline from '../components/Headline.svelte';
 	import ScreenHead from '../components/ScreenHead.svelte';
 	import { api } from '../lib/api';
@@ -44,6 +45,7 @@
 					{/if}
 				</p>
 			</div>
+			<GainHero {base} {now} />
 			<Headline {base} {now} />
 		</div>
 	{/if}

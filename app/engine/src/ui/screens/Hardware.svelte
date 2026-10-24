@@ -38,6 +38,13 @@
 	{#if !hw}
 		<div class="panel busy" role="status"><span class="ring" aria-hidden="true"></span>{t.scanning}</div>
 	{:else}
+		<div class="hwhero">
+			<p class="hw-name">{main ? main.name : hw.cpu.name}</p>
+			<p class="hw-num num">
+				<span class="big">{num(main ? main.vramGiB : hw.ramGiB, lang, 0)}</span>
+				<span class="unit">GB {main ? (main.unified ? t.unified : 'VRAM') : 'RAM'}</span>
+			</p>
+		</div>
 		<div class="panel panel--heat scan">
 			<div class="visual">
 				<GpuArt gpu={main} cpuName={hw.cpu.name} />
@@ -86,6 +93,48 @@
 </section>
 
 <style>
+	.hwhero {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: var(--sp-2) var(--sp-8);
+	}
+	.hw-name {
+		margin: 0;
+		font-size: clamp(1.8rem, 1.1rem + 2.6vw, 3.2rem);
+		font-weight: 780;
+		font-stretch: 106%;
+		letter-spacing: -0.03em;
+		line-height: 1.05;
+		color: var(--text-hi);
+	}
+	.hw-num {
+		display: flex;
+		align-items: baseline;
+		gap: 0.5rem;
+		margin: 0;
+	}
+	.hw-num .big {
+		font-size: clamp(3rem, 1.8rem + 4.6vw, 5.6rem);
+		font-weight: 560;
+		line-height: 0.9;
+		letter-spacing: -0.05em;
+		background: linear-gradient(180deg, #ffffff, #b9b5ad);
+		-webkit-background-clip: text;
+		background-clip: text;
+		color: transparent;
+	}
+	:global(:root[data-theme='light']) .hw-num .big {
+		background: none;
+		color: var(--text-hi);
+	}
+	.hw-num .unit {
+		font-size: var(--fs-xs);
+		letter-spacing: 0.12em;
+		text-transform: uppercase;
+		color: var(--text-mute);
+	}
 	.scan {
 		display: grid;
 		grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);

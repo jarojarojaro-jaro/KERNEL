@@ -26,7 +26,9 @@
 
 	/** A step the user opened from the stepper; null follows the backend. */
 	let view = $state<Step | null>(null);
-	const shown = $derived<Step | 'error'>(view ?? (failed ? 'error' : current));
+	/** Keeps the welcome screen up for a moment after a valid key, so the plan badge is seen before the scan. */
+	let hold = $state<Step | null>(null);
+	const shown = $derived<Step | 'error'>(view ?? hold ?? (failed ? 'error' : current));
 
 	// A new backend phase takes the screen back from whatever the user was looking at.
 	let lastPhase: Phase | null = null;
@@ -34,6 +36,10 @@
 		const p = phase;
 		untrack(() => {
 			if (p !== lastPhase) {
+				if (lastPhase === 'license' && view === null) {
+					hold = 'license';
+					setTimeout(() => (hold = null), 1400);
+				}
 				lastPhase = p;
 				view = null;
 			}
@@ -139,7 +145,7 @@
 		{#if shown === 'error'}
 			<ErrorScreen onview={open} />
 		{:else if shown === 'license'}
-			<License onscanfirst={scanFirst} />
+			<License onscanfirst={scanFirst} onnext={() => ((view = null), (hold = null))} />
 		{:else if shown === 'scan'}
 			<Hardware onnext={showRecommendation} />
 		{:else if shown === 'recommend'}
