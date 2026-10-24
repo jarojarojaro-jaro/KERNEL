@@ -45,7 +45,8 @@ Bez ważnego klucza: etapy skanu i rekomendacji działają; pobieranie/benchmark
   czeka na `/api/start`. `/api/scan` i `/api/recommend` są idempotentne i działają też bez klucza (wypełniają `hw`/
   `recommendation`, `phase` zostaje `license`); `/api/start` bez ważnej licencji → 403.
 - Retry po `error`: ponowne `POST /api/start {optionId: chosen.id}` (pobrane pliki są reużywane). Po restarcie aplikacji
-  przerwana faza `download`/`baseline`/`optimize` wznawia się sama.
+  przerwana faza `download`/`baseline`/`optimize` wznawia się sama. `/api/cancel` kończy bieżącą fazę jako
+  `phase='error'`, `error.message === 'Cancelled.'` (stały string; UI pokazuje „Przerwano” + „Wznów”).
 - `ready != null` ⇔ serwer modelu działa (`phase='ready'`); po `/api/engine/stop` `ready=null`, `/v1/*` → 503.
 - `Progress.label` (klucze, UI tłumaczy): `engine` | `model` | `verify` | `extract` | `reuse:model` | `reuse:engine` |
   `bench:start` | `bench:prefill` | `bench:decode` | `bench:deep`. Błędy HTTP: `{error: string}` + kod 4xx/5xx.
@@ -126,3 +127,9 @@ konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko
   lookup, MTP dla Qwen3.8, coupled, host-gap; wierne odwzorowanie `run-llm.sh`);
 - `-ub/-b` (512/1024/2048) w granicach pamięci; MTP (jeśli model ma głowicę i silnik obsługuje); lookup n-gram.
 - `sameOutput` = md5 decode == baseline (spekulacja może zmienić bity → pokazujemy jasno, nie ukrywamy).
+- `Candidate.id`: `enigma` | `ub-512` | `ub-1024` | `ub-2048` (bez bieżącego ub) | `mtp` | `lookup`.
+- `Candidate.reason` = kod (`kod` albo `kod:wartość`; UI tłumaczy, nieznany pokazuje surowo):
+  `no_enigma_engine:<arch|vendor>-<backend>-<os>-<arch>` (np. `cpu-linux-x64`, `sm_86-cuda-windows-x64`) |
+  `enigma_no_profile:<modelId>` | `enigma_not_published:<engineId>` | `ub_no_fit:<ub>` | `no_mtp_head` | `engine_no_mtp` |
+  `engine_no_lookup` | `ctx_not_fit` | `prefill_loss:<pct>` | `decode_not_faster:<pct>` | `slower_than:<candidateId>` |
+  `oom` | `start_failed:<pierwsza linia>` | `failed:<pierwsza linia>`. Kandydat `kept` nie ma `reason`.

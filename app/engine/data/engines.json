@@ -1,0 +1,372 @@
+{
+  "upstream": {
+    "repo": "ggml-org/llama.cpp",
+    "release": "nightly",
+    "tag": "b11856",
+    "publishedAt": "2026-10-24T15:06:48Z",
+    "pinnedAt": "2026-10-24"
+  },
+  "engines": [
+    {
+      "id": "upstream-linux-x64-cpu",
+      "kind": "upstream",
+      "label": "llama.cpp CPU (Ubuntu x64)",
+      "version": "b11856",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "cpu",
+      "envKey": "UPSTREAM_CPU",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-ubuntu-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-ubuntu-x64.tar.gz",
+          "sizeBytes": 22439524,
+          "sha256": "71b660dd4a90c13db899acdef59862226f7ec8d27907b7c107febc99904c00be"
+        }
+      ]
+    },
+    {
+      "id": "upstream-linux-x64-vulkan",
+      "kind": "upstream",
+      "label": "llama.cpp Vulkan (Ubuntu x64)",
+      "version": "b11856",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "vulkan",
+      "envKey": "UPSTREAM_VULKAN",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-ubuntu-vulkan-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-ubuntu-vulkan-x64.tar.gz",
+          "sizeBytes": 35086070,
+          "sha256": "8248b4041fccbd4ab594117a5a0147ec9b9a7d1781df3216328e77feb7d9fd53"
+        }
+      ]
+    },
+    {
+      "id": "upstream-linux-x64-rocm",
+      "kind": "upstream",
+      "label": "llama.cpp ROCm 10.0 (Ubuntu x64)",
+      "version": "b11856",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "rocm",
+      "envKey": "UPSTREAM_ROCM",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-ubuntu-rocm-10.0-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-ubuntu-rocm-10.0-x64.tar.gz",
+          "sizeBytes": 250021108,
+          "sha256": "2c8007cbacb4c70382b2da46a925bf962c2f4cb7bec4aa6e052ebf3d582a3331"
+        }
+      ]
+    },
+    {
+      "id": "upstream-linux-x64-cuda",
+      "kind": "upstream",
+      "label": "llama.cpp CUDA 12.8 (Ubuntu x64)",
+      "version": "b11856",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "cuda",
+      "envKey": "UPSTREAM_CUDA",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 178004297,
+          "sha256": "f4bdfc97f091e0b3ed6eb6bdd4db41896f1cc9bf80b924efca7f681404329517"
+        },
+        {
+          "name": "cudart-llama-b11856-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/cudart-llama-b11856-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 594377308,
+          "sha256": "c556e09d0a4b0be3537de5212cb05416326f8b1f40e8859e55c9169046d1ad55"
+        }
+      ]
+    },
+    {
+      "id": "upstream-windows-x64-cpu",
+      "kind": "upstream",
+      "label": "llama.cpp CPU (Windows x64)",
+      "version": "b11856",
+      "os": "windows",
+      "arch": "x64",
+      "backend": "cpu",
+      "envKey": "UPSTREAM_CPU",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-win-cpu-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-win-cpu-x64.zip",
+          "sizeBytes": 24173159,
+          "sha256": "b0be608ec81c811029406430796dfcd16b8d83dc152705a6682f0d47834a2f3b"
+        }
+      ]
+    },
+    {
+      "id": "upstream-windows-x64-vulkan",
+      "kind": "upstream",
+      "label": "llama.cpp Vulkan (Windows x64)",
+      "version": "b11856",
+      "os": "windows",
+      "arch": "x64",
+      "backend": "vulkan",
+      "envKey": "UPSTREAM_VULKAN",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-win-vulkan-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-win-vulkan-x64.zip",
+          "sizeBytes": 36970834,
+          "sha256": "09e9640df272f20dfe5d0dcc97294c44804d6a6a7dd6ef76c0030bd04fb6f4f0"
+        }
+      ]
+    },
+    {
+      "id": "upstream-windows-x64-cuda",
+      "kind": "upstream",
+      "label": "llama.cpp CUDA 12.4 (Windows x64)",
+      "version": "b11856",
+      "os": "windows",
+      "arch": "x64",
+      "backend": "cuda",
+      "envKey": "UPSTREAM_CUDA",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-win-cuda-12.4-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-win-cuda-12.4-x64.zip",
+          "sizeBytes": 272434110,
+          "sha256": "71d4ff57c9b59ce960ca5e9c28d0e26d8e631075c4d13af0c34f7f3a4fa1f094"
+        },
+        {
+          "name": "cudart-llama-bin-win-cuda-12.4-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/cudart-llama-bin-win-cuda-12.4-x64.zip",
+          "sizeBytes": 391443627,
+          "sha256": "8c79a9b226de4b3cacfd1f83d24f962d0773be79f1e7b75c6af4ded7e32ae1d6"
+        }
+      ]
+    },
+    {
+      "id": "upstream-windows-x64-rocm",
+      "kind": "upstream",
+      "label": "llama.cpp HIP/ROCm 10.0 (Windows x64)",
+      "version": "b11856",
+      "os": "windows",
+      "arch": "x64",
+      "backend": "rocm",
+      "envKey": "UPSTREAM_ROCM",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-win-rocm-10.0-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-win-rocm-10.0-x64.zip",
+          "sizeBytes": 263570983,
+          "sha256": "2419b2130d221e934f981c3921d65820b17454bfefc66882b7482912626ee46f"
+        }
+      ]
+    },
+    {
+      "id": "upstream-macos-arm64-metal",
+      "kind": "upstream",
+      "label": "llama.cpp Metal (macOS arm64)",
+      "version": "b11856",
+      "os": "macos",
+      "arch": "arm64",
+      "backend": "metal",
+      "envKey": "UPSTREAM_METAL",
+      "distribution": "download",
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-macos-arm64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-macos-arm64.tar.gz",
+          "sizeBytes": 16244700,
+          "sha256": "f961fd5a488a22177c4942765b7ba8371f7025b53320656d46c06aed6ca43738"
+        }
+      ]
+    },
+    {
+      "id": "enigma-rocm-gfx1100",
+      "kind": "enigma",
+      "label": "Enigma ROCm (topka) for RDNA3 gfx1100",
+      "version": "topka-int f9b84bcfa",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "rocm",
+      "envKey": "ENIGMA_ROCM",
+      "distribution": "local",
+      "gpuArchs": [
+        "gfx1100"
+      ],
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [],
+      "note": "Distribution URL not published yet: available only from a local directory (ENIGMA_ENGINE_DIR_ENIGMA_ROCM). Profiles mirror ~/qwen-opt/run-topka.sh + run-llm.sh.",
+      "profiles": [
+        {
+          "id": "qwen38-mtp",
+          "match": "qwen3\\.8-27b",
+          "spec": "mtp",
+          "b": 2048,
+          "ub": 512,
+          "needs": [
+            "draftVocab"
+          ],
+          "env": {
+            "LD_LIBRARY_PATH": "{engineDir}/lib{pathSep}{rocmLib}",
+            "LLAMA_SPEC_LOOKUP": "3",
+            "LLAMA_SPEC_LOOKUP_W": "16",
+            "LLAMA_SERVER_CACHE_SHARE_MIN": "1024",
+            "LLAMA_MTP_REQUANT_CACHE": "{mtpCache}",
+            "GGML_HIP_PM4": "1",
+            "GGML_HIP_PM4_WA": "2",
+            "GGML_HIP_PM4_GUARD": "1",
+            "HSA_USE_SVM": "0",
+            "LLAMA_GPU_VERIFY": "1",
+            "LLAMA_SPEC_COUPLED": "1",
+            "LLAMA_SERVER_YIELD_FAST": "2",
+            "GGML_HIP_PM4_MIN_DISPATCH": "16",
+            "GGML_HIP_PM4_LAZY_EXEC": "1",
+            "DRAFT_N": "4",
+            "LLAMA_SERVER_SAFE_SPECIAL": "1",
+            "LLAMA_SERVER_SAFE_TOOLS": "1",
+            "LLAMA_TOKENIZE_PAR": "8",
+            "LLAMA_CKPT_VRAM": "2",
+            "LLAMA_CHAT_NATIVE": "1",
+            "LLAMA_CHAT_LATE_SYSTEM": "1",
+            "LLAMA_SERVER_REASONING_CONTROL": "0"
+          },
+          "args": [
+            "--jinja",
+            "--cache-ram",
+            "16384",
+            "--reasoning-effort",
+            "low",
+            "--spec-type",
+            "draft-mtp",
+            "--spec-draft-n-max",
+            "4",
+            "--spec-draft-vocab",
+            "{draftVocab}",
+            "--spec-draft-vocab-n",
+            "65536",
+            "--spec-draft-head-type",
+            "iq4_xs",
+            "--spec-mtp-type",
+            "iq4_xs",
+            "-ctkd",
+            "{kv}",
+            "-ctvd",
+            "{kv}"
+          ]
+        },
+        {
+          "id": "lfm24",
+          "match": "lfm2\\.5-24b",
+          "spec": "none",
+          "b": 2048,
+          "ub": 2048,
+          "needs": [],
+          "env": {
+            "LD_LIBRARY_PATH": "{engineDir}/lib{pathSep}{rocmLib}",
+            "LLAMA_SPEC_LOOKUP": "0",
+            "LLAMA_SPEC_LOOKUP_W": "16",
+            "LLAMA_SERVER_CACHE_SHARE_MIN": "1024",
+            "GGML_HIP_PM4": "1",
+            "GGML_HIP_PM4_WA": "2",
+            "GGML_HIP_PM4_GUARD": "1",
+            "HSA_USE_SVM": "0",
+            "LLAMA_GPU_VERIFY": "1",
+            "LLAMA_SPEC_COUPLED": "0",
+            "DRAFT_N": "4",
+            "LLAMA_SERVER_SAFE_SPECIAL": "1",
+            "LLAMA_SERVER_SAFE_TOOLS": "1",
+            "LLAMA_TOKENIZE_PAR": "8",
+            "LLAMA_CKPT_VRAM": "2",
+            "LLAMA_CHAT_NATIVE": "1",
+            "LLAMA_CHAT_LATE_SYSTEM": "1",
+            "LLAMA_SERVER_REASONING_CONTROL": "0"
+          },
+          "args": [
+            "--jinja",
+            "--cache-ram",
+            "16384"
+          ]
+        },
+        {
+          "id": "generic",
+          "match": "^(?!.*flint)",
+          "spec": "none",
+          "needs": [],
+          "env": {
+            "LD_LIBRARY_PATH": "{engineDir}/lib{pathSep}{rocmLib}",
+            "LLAMA_SPEC_LOOKUP": "0",
+            "LLAMA_SPEC_LOOKUP_W": "16",
+            "LLAMA_SERVER_CACHE_SHARE_MIN": "1024",
+            "GGML_HIP_PM4": "1",
+            "GGML_HIP_PM4_WA": "2",
+            "GGML_HIP_PM4_GUARD": "1",
+            "HSA_USE_SVM": "0",
+            "LLAMA_GPU_VERIFY": "1",
+            "LLAMA_SPEC_COUPLED": "0",
+            "LLAMA_SERVER_SAFE_SPECIAL": "1",
+            "LLAMA_SERVER_SAFE_TOOLS": "1",
+            "LLAMA_TOKENIZE_PAR": "8",
+            "LLAMA_CKPT_VRAM": "2",
+            "LLAMA_CHAT_NATIVE": "1",
+            "LLAMA_CHAT_LATE_SYSTEM": "1",
+            "LLAMA_SERVER_REASONING_CONTROL": "0"
+          },
+          "args": [
+            "--jinja",
+            "--cache-ram",
+            "16384"
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+ "cpuinfo": "processor\t: 0\nmodel name\t: Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz\nphysical id\t: 0\ncore id\t\t: 0\n\nprocessor\t: 1\nmodel name\t: Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz\nphysical id\t: 0\ncore id\t\t: 0\n\nprocessor\t: 2\nmodel name\t: Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz\nphysical id\t: 0\ncore id\t\t: 1\n\nprocessor\t: 3\nmodel name\t: Intel(R) Core(TM) i9-10900K CPU @ 3.70GHz\nphysical id\t: 0\ncore id\t\t: 1\n",
+ "memTotalBytes": 67335548928,
+ "pci": [
+  { "slot": "0000:00:02.0", "vendor": "0x8086", "device": "0x9bc5", "revision": "0x05", "driver": "i915", "vramTotal": null, "gttTotal": null, "intelVram": null, "productName": null },
+  { "slot": "0000:01:00.0", "vendor": "0x10de", "device": "0x2204", "revision": "0xa1", "driver": "nvidia", "vramTotal": null, "gttTotal": null, "intelVram": null, "productName": null }
+ ],
+ "kfdNodes": [],
+ "lspci": "0000:00:02.0 VGA compatible controller [0300]: Intel Corporation CometLake-S GT2 [UHD Graphics 630] [8086:9bc5] (rev 05)\n0000:01:00.0 VGA compatible controller [0300]: NVIDIA Corporation GA102 [GeForce RTX 3090] [10de:2204] (rev a1)",
+ "nvidiaSmi": "NVIDIA GeForce RTX 3090, 24576, 580.95.05, 8.6\n"
+}

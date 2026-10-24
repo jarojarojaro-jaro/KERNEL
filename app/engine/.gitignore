@@ -1,0 +1,3 @@
+node_modules/
+dist/
+src/server/enigma.gen.ts
