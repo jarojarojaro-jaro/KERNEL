@@ -214,6 +214,11 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | AKV (arXiv 2610.28577, thu-nics/AKV) | `c567a42` (10-21), v1 10-20 | R60d, [[akv-cache-agentow]] | Repos odpada przy IMROPE; drop tylko w atencji, drogi. | −27.7% kosztu (centy API); 1.18× wyjścia | wsparcie modeli liniowych/hybryd |
 | dphnAI/sonar PR #1788 (all-reduce PCIe) | `f653ba4e` (OPEN, 10-21) | R60d | Tylko sm_120, TP=4, P2P; nie dotyczy. | 290.4 → 327.2 t/s (4× RTX PRO 6000) | scalenie, sm_86 bez P2P |
 | Project Maya | v1.1.21 `451f9cb` … v1.1.26 `f26d8ba` (10-21…23) | R60d, [[project-maya]] | Tylko DeepSeek; nic dla gfx1100/Qwena; #382 na 2× XTX bez zysku. | prefill AMD 2.35–2.53×; FAT_ROWS 1.3–1.56× (V100) | >v1.1.26: gęsty 27B, pomiar XTX |
+| oMLX (jundot/omlx) 0.7.2 | `c4bb311e` (10-24), release 10-21 | [R60b](../product/research/60b-apple-engines-bonsai.md), [[omlx]] | Lightning MTP = MTP głębokości k z adaptacją z pomiaru; CED = Causal Encoder-Decoder DS-V4.1; nie dotyczy 27B/XTX. | Qwen3.6-27B 42.8 → 55.1 tok/s (M3 Ultra) | >0.7.2: zmiany w weryfikacji GDN |
+| Locals (Generated-Computers) + arXiv 2610.09139 | `c0f9baa` (10-24) | R60b, [[locals]] | „Przełom” dotyczy gramatyki, nie DeltaNet; kernel GDN 1 launch (+1.9%) już mamy. | 8 żądań 87 → 271 tok/s (M2 Pro) | gramatyka na GPU dla agentów (produkt) |
+| Konkurs cuda.fast / mlx.fast Bonsai 2 9B (Layr-Labs, PrismML) | CUDA `759629b`, MLX `8cee3ef`; zamknięty 10-22 | R60b, [[bonsai-fast-contest]] | Potwierdza naszą ścieżkę; nowe: sito głowicy draftu, L2 evict_first (3090), taśma delt GDN, drzewo W16. | CUDA 85.9 → 576.7, MLX 144.8 → 959.6 tok/s | nowy konkurs Nemotron 3.5 Lightning (te same repo-wzorce) |
+| Flapping Airplanes | strona 10-24, seria A 10-21 | R60b, [[flapping-airplanes]] | Megakernele, brak kodu. | $180M seed, $1B seria A | publikacja frameworka |
+| Blog thelastone07 „Making CUDA less overwhelming” | 10-20 | R60b | Wstęp dla początkujących, nic nowego. | – | – |
 
 ## Powiązane
 - [[KONWENCJE]]

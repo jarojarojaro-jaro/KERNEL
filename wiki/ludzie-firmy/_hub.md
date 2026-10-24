@@ -14,11 +14,12 @@ Dostawcy chmury są w [[chmura/_hub|Chmurze]], projekty open source w [[repo/_hu
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (27)
+## Notatki (28)
 
 - [[actual-computer|Actual Computer (silnik „e”, relay)]] — Firma z silnikiem „e” (host w asemblerze AArch64 + cubiny sm_103a, tylko DGX Station GB300) i relayem na AWS Nitro; na sprzęcie konsumenckim uruchamia vendored llama.cpp albo silnik „malibu”.
 - [[firma-amd|AMD]] — Producent naszej karty RX 7900 XTX i stosu ROCm; dla produktu raczej kanał dystrybucji niż konkurent.
 - [[conway-research|ConwayResearch (Underdog)]] — Autor Underdog Saluki 27B: IQ2-mix Qwen3.8-27B (7.89 GB) na bazie ISTA GSQ-RCO, strojony pod zachowanie tool callingu.
+- [[flapping-airplanes|Flapping Airplanes]] — Laboratorium „efektywności AI” (Aidan Smith, Asher i Ben Spector) z „najpełniejszym frameworkiem megakerneli”; seed $180M, seria A $1B (~$6B, 2026-10-21); kodu i liczb publicznie brak.
 - [[ggml-org|ggml-org / llama.cpp]] — Upstream naszego silnika: llama.cpp wydaje ok. 24 buildy dziennie i od 2026-10-15 linię semver (v0.7.0); polityka AI zakazuje automatycznych PR-ów.
 - [[gigagpu|GigaGPU (UK)]] — Brytyjski dostawca dedyków w abonamencie miesięcznym z rootem: RX 9070 XT, R9700, Ryzen AI Max+ 395 i Intel Arc Pro B60/B70.
 - [[hostkey|Hostkey]] — Dostawca bare metal z rootem: RX 7900 XTX (pre-order) i Radeon AI PRO R9700 (RDNA4, gfx1201) za €0.471/h.

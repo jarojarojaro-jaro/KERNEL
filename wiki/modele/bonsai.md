@@ -1,7 +1,7 @@
 ---
 typ: model
 tags: [modele, kwanty, qwen]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-10-24
 zrodlo: ~/KERNEL/product/research/10-post-training.md:140,329-331,389; ~/qwen-opt/cloud/runs/3060/pre/bonsai-README.md:44,63-86; ~/KERNEL/product/research/09-chmura-3060.md:30-62,86-107,120-127,177-179,194-223; ~/KERNEL/product/research/16e-kwanty-kld.md:34-46,63
 status: aktualne
 ---
@@ -18,6 +18,8 @@ status: aktualne
 
 E1 (2026-10-18): KLD do Qwen BF16 wiki 0.352, PL 0.508 (najgorszy, PL/wiki 1.44); nadal najszybszy na 12 GB (PTQ1_0 Prism 44.9 t/s).
 
+Bonsai 2 9B (2026-10-15, geometria Qwen3.5-9B, PQ2_0 + MTP Q8_0 + drafter DFlash2): konkurs cuda.fast / mlx.fast podniósł decode z 85.9 do 576.7 tok/s (DGX Spark, llama.cpp) i z 144.8 do 959.6 tok/s (M5 Max) ([[bonsai-fast-contest]], raport 60b).
+
 ## Powiązane
 - [[modele/_hub|Modele]]
 - [[saluki]]
@@ -25,3 +27,4 @@ E1 (2026-10-18): KLD do Qwen BF16 wiki 0.352, PL 0.508 (najgorszy, PL/wiki 1.44)
 - [[rtx-3060]]
 - [[prism-llama-cpp]]
 - [[raport-09-chmura-3060]]
+- [[bonsai-fast-contest]]

@@ -14,7 +14,7 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (74)
+## Notatki (77)
 
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
 - [[atrex-kernel-agent|alibaba/atrex-kernel-agent (AKA)]] — Orkiestrator agentów kodujących dla jednego operatora naraz (HEAD `5ad94ff`, 2026-10-14, v0.3.0); bierzemy narzędzia pomiarowe; werdykt: średnia (narzędzia).
@@ -51,9 +51,11 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[kernelguard|KernelGuard (GPU MODE)]] — Zestaw 62 deterministycznych detektorów oszustw w zgłoszeniach kerneli, każdy z fixture’em historycznego hacka, plus „physics floor” z roofline’u; odsetek oszukanych zgłoszeń spadł z 3.45% do 0.37% w 32 dni.
 - [[kernel-tuner-repo|KernelTuner/kernel_tuner]] — Pythonowy framework autotuningu (commit `8e71bbf`, 2026-10-08, v1.5.0) jako silnik przeszukiwania tablic per kształt; werdykt: średnia.
 - [[knlp-lm-head|knlp: certyfikowana głowica LM przy dekodowaniu]] — Metoda: słownik w 256 blokach, offline baza PCA stanów (r ≈ 0.36·d), cień int8 `W_U·B` i normy reszt wierszy; w dekodowaniu górna granica każdego logitu z Cauchy'ego–Schwarza, a bloki otwiera się, aż najlepszy dokładny logit przewyższy granice reszty – bezstratnie. U nich na W7900 (gfx1100) głowica Qwen2.5-7B ×1.97 przy batch 1, ~5× mniej bajtów, batch 4/8 ×1.36/×1.41.
+- [[bonsai-fast-contest|Konkurs cuda.fast / mlx.fast: Bonsai 2 9B]] — Tygodniowy konkurs Yukon + PrismML (zamknięty 2026-10-22): Ternary Bonsai 2 9B single-stream; CUDA (llama.cpp, DGX Spark) 85.9 → 576.7 tok/s, MLX (M5 Max) 144.8 → 959.6 tok/s; techniki w opisach PR, większość już mamy.
 - [[laya-mlx|laya-mlx i Laya (model decyzyjny)]] — Laya (Convai Innovations) to nieautoregresywny encoder decyzyjny 322–421M, a laya-mlx (mizorewww) jego port MLX; za wolne do decyzji per token.
 - [[how-to-optimize-in-gpu|Liu-xiandong/How_to_optimize_in_GPU]] — Dydaktyczne „drabiny optymalizacji” CUDA dla V100 (HEAD `5d2def3e`, 2023-07-29); werdykt: niska.
 - [[llama-moe-cache-mib|llama.cpp `--moe-cache-mib`: cache ekspertów MoE w VRAM]] — Upstream PR #29887 (scalony 2026-10-07, port z qvac-fabric) dodaje cache LRU ekspertów MoE w VRAM przy modelu w RAM: Flash-Next Q4_0 na 4090 25.0 → 40.7 t/s, na 5090 30.8 → 67.8 t/s; jest w bazie naszego forka (`common/arg.cpp:2795`) (raport 21g, 2026-10-19).
+- [[locals|Locals (Generated-Computers/Locals)]] — Serwer MLX dla agentów; „przełom w złożoności” dotyczy automatów gramatyki, nie DeltaNet, a kernel GDN to jeden launch na krok wart 1–2% – na nasze kernele HIP nic nie przenosi (raport 60b).
 - [[lucebox|Luce-Org/lucebox]] — Serwer inferencji C++ z forkiem ggml i spekulacją DFlash2 (HEAD `54132ca`, 2026-10-14) na tym samym modelu i drafterze co my; werdykt: średnia.
 - [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]] — Własny silnik w Ruście z językiem kerneli „Seismic” (Metal, CUDA, Vulkan, CPU; bez HIP/ROCm), który stroi kernele 60 s przy pierwszym załadowaniu z bramką błędu α = 8 (nie bitową); najbliższy bezpośredni konkurent, ale bez AMD natywnie, bez bitowej bramki i bez MoE offload.
 - [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]] — Hazy Megakernels (interpreter instrukcji per SM ze stronicowanym SMEM) i MPK/Mirage (kompilator tGraph) osiągają 71–80% pasma przy batch 1, wobec ≤ 50% kernel-per-op; na RDNA3 publicznego megakernela nie ma.
@@ -68,6 +70,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[cutile-python|NVIDIA/cutile-python (cuTile)]] — Kafelkowy DSL NVIDIA kompilowany do Tile IR (commit `d9d8520`, 2026-10-13); bierzemy odpowiednik PDL na AMD; werdykt: niska–średnia.
 - [[nvidia-open-gpu-kernel-modules|NVIDIA/open-gpu-kernel-modules]] — Otwarte moduły jądra NVIDIA (commit `ca2d03e`, wydanie 615.78.08, 2026-10-07) czytane pod kątem zarządzania VRAM; werdykt: średnia.
 - [[tilegym|NVIDIA/TileGym]] — Przykładowe kernele NVIDIA w CUDA Tile (commit `c742afc`, 2026-10-09), z łatkami dla Qwen3.5 i LFM2; werdykt: niska.
+- [[omlx|oMLX (jundot/omlx)]] — Serwer MLX na Maca z „Lightning MTP” (natywne MTP głębokości k z adaptacyjną głębokością z pomiaru), DFlash, Splash dla GGUF i klastrem Maców; dla Qwen3.8-27B na XTX bez nowej techniki (raport 60b).
 - [[blocksparse|openai/blocksparse]] — Biblioteka kerneli blokowo-rzadkich OpenAI (HEAD `89074c5`, 2020-07-13), martwa od 2020; werdykt: niska.
 - [[tokamax|openxla/tokamax]] — Kernele Google/DeepMind w JAX + Pallas (HEAD `b500ee4`, 2026-10-14), kod inference tylko pod TPU; werdykt: niska.
 - [[pplx-kernels|perplexityai/pplx-kernels i pplx-garden/lily]] — Kernele MoE all-to-all Perplexity (porzucone, HEAD `f70d1eb7`) i następca `lily` (MoE decode na jednym GPU); werdykt: niska.

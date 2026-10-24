@@ -68,28 +68,28 @@ Audyt liczb: [[AUDYT]].
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (100)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (74)
-- [[research/_hub|research]] — Streszczenia raportów (148)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (77)
+- [[research/_hub|research]] — Streszczenia raportów (149)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (30)
-- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
+- [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
 
 - 2026-10-24 [[raport-60d-serving-kernels-cache|Raport 60d: Humming, SGLang HiCache, AKV, sonar #1788, Maya v1.1.21–1.1.26]]
 - 2026-10-24 [[raport-60c-quant-3090|Raport 60c: Gyro-Coder, tqLLM 1.2, DCQ, posty @superalesha, Nemotron-3.5-Bolt-E4B]]
+- 2026-10-24 [[raport-60b-apple-bonsai|Raport 60b: oMLX, Locals, konkurs Bonsai 2 9B, Flapping Airplanes]]
 - 2026-10-24 [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]]
 - 2026-10-24 [[sglang-hicache|SGLang HiCache + Unified Radix Cache: cache prefiksów GPU/CPU/storage z modelami hybrydowymi]]
 - 2026-10-24 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
+- 2026-10-24 [[omlx|oMLX (jundot/omlx)]]
+- 2026-10-24 [[locals|Locals (Generated-Computers/Locals)]]
 - 2026-10-24 [[hyperqwen|HyperQwen (syv-ai, dawniej qwen38-27b-rtx3090)]]
 - 2026-10-24 [[humming|Humming (vLLM + Ant Group): kernele GEMM dla kwantów, tylko CUDA]]
+- 2026-10-24 [[bonsai-fast-contest|Konkurs cuda.fast / mlx.fast: Bonsai 2 9B]]
 - 2026-10-24 [[nemotron-3-5-bolt-e4b|NVIDIA Nemotron-3.5-Bolt-E4B (Gemma-4-E4B po RL)]]
 - 2026-10-24 [[gyro-coder|Gyro-Coder (Qwen3.8-Flash-Next, 256/512 ekspertów) i format Gyro TQ]]
+- 2026-10-24 [[bonsai|Ternary Bonsai 2 27B (PrismML)]]
 - 2026-10-24 [[dcq-kotwica-stanu-gdn|DCQ: błąd stanu GDN w stracie kwantyzacji]]
-- 2026-10-24 [[akv-cache-agentow|AKV: agent/harness edytuje własne KV (drop + repozycjonowanie RoPE)]]
-- 2026-10-21 [[raporty-2026-10-20-21|Przegląd raportów 31–54 (2026-10-20/21)]]
-- 2026-10-21 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne]]
-- 2026-10-21 [[raport-plan-nv-v2|PLAN-NV-V2: kampania NVIDIA v2 (ctx ≥ 131k)]]
-- 2026-10-21 [[raport-57g-quantalloc-ear|Raport 57g: EAR w llama-perplexity + alokacja per tensor dla 24 GB (research)]]
 
-Razem 649 notatek. Wygenerowano 2026-10-24 przez `tools/wiki.py index`.
+Razem 654 notatek. Wygenerowano 2026-10-24 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

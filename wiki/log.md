@@ -185,3 +185,6 @@ Nowe: [[raport-60d-serving-kernels-cache]], [[humming]], [[sglang-hicache]], [[a
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
+
+## [2026-10-24] ingest | Raport 60b: oMLX 0.7.2, Locals, konkurs Bonsai 2 9B, Flapping Airplanes
+Nowe notatki [[omlx]], [[locals]], [[bonsai-fast-contest]], [[flapping-airplanes]], [[raport-60b-apple-bonsai]]; uzupełnione [[gdn-replay]], [[bonsai]], [[ZRODLA]]; 6 pomysłów w `product/DO-PRZETESTOWANIA.md`; 4 repo w compwatch.

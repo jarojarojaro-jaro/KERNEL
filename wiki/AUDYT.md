@@ -2922,6 +2922,18 @@ Automat jak 2026-10-20: tokeny liczbowe (≥ 2 znaki) z nowych notatek, z sekcji
 | [[akv-cache-agentow]] | 9 | arXiv 2610.28577 Tab. 1–2, §5.1, `capabilities.py` | OK |
 | [[project-maya]] (aktualizacja) | 14 | release notes v1.1.21–v1.1.26, PR #344/#369/#370/#382 | OK |
 
+## Ingest 2026-10-24 (raport 60b)
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[raport-60b-apple-bonsai]] | 4 | `60b-apple-engines-bonsai.md` TL;DR, §4 | OK |
+| [[omlx]] | 6 | release v0.7.2, commit `8a9b1972`, `batch_policy.py:8-9,34` | OK |
+| [[locals]] | 9 | arXiv 2610.09139 (abstrakt), README:120-128,175-188, `why-faster:31-41` | OK |
+| [[bonsai-fast-contest]] | 16 | tablice yukon.org (bonsai2-9b), cudafast PR #9/#24/#74, mlxfast PR #227/#231/#424/#467 | OK |
+| [[flapping-airplanes]] | 3 | bundel JS strony, TechCrunch 2026-10-21 | OK |
+| [[gdn-replay]] (aktualizacja) | 4 | cudafast PR #9, mlxfast PR #467 | OK |
+| [[bonsai]] (aktualizacja) | 4 | tablice yukon.org | OK |
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
