@@ -2912,6 +2912,16 @@ Automat jak 2026-10-20: tokeny liczbowe (≥ 2 znaki) z nowych notatek, z sekcji
 | [[tqllm]] (aktualizacja) | 7 | tqllm.com/performance, `CHANGELOG.md` 1.2.0, karta YTan2000 | OK |
 | [[hyperqwen]] (aktualizacja) | 3 | X 2111885825218838905 (fxtwitter) | OK |
 
+## Ingest 2026-10-24 (raport 60d)
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[raport-60d-serving-kernels-cache]] | 6 | `60d-serving-kernels-cache.md` §4 + PR #382, #1788 | OK |
+| [[humming]] | 10 | `benchmarks/results/4090/*.json`, `tune/base.py`, issue #111, blog | OK |
+| [[sglang-hicache]] | 7 | blog HiCache, PR #33639, `2026-10-18-cache-promptu-agenta` | OK |
+| [[akv-cache-agentow]] | 9 | arXiv 2610.28577 Tab. 1–2, §5.1, `capabilities.py` | OK |
+| [[project-maya]] (aktualizacja) | 14 | release notes v1.1.21–v1.1.26, PR #344/#369/#370/#382 | OK |
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

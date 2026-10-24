@@ -179,6 +179,9 @@ Nowe `raport-*` (43): 31 (3060/3080, 3090, 4060 Ti, 4070 Ti, 5060 Ti), 32a–32f
 ## [2026-10-24] ingest | Raport 60c: Gyro-Coder, tqLLM 1.2, DCQ, @superalesha, Bolt-E4B
 Nowe: [[raport-60c-quant-3090]], [[gyro-coder]], [[dcq-kotwica-stanu-gdn]], [[nemotron-3-5-bolt-e4b]]. Aktualizacje: [[tqllm]] (1.2.x), [[hyperqwen]] („4.6×”). Testy dopisane do `product/DO-PRZETESTOWANIA.md`; CompWatch: `syv-ai/HyperQwen`, `fraserprice/dspark-vllm`, autorzy HF `agentionai`, `YTan2000`.
 
+## [2026-10-24] ingest | Raport 60d: Humming, SGLang HiCache, AKV, sonar #1788, Maya v1.1.21–1.1.26
+Nowe: [[raport-60d-serving-kernels-cache]], [[humming]], [[sglang-hicache]], [[akv-cache-agentow]]. Aktualizacja: [[project-maya]] (v1.1.21–1.1.26). Rejestr [[ZRODLA]] (5 wierszy). Testy T1–T7 dopisane do `product/DO-PRZETESTOWANIA.md`; CompWatch: `vllm-project/humming`, `thu-nics/AKV`, `dphnAI/sonar`.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

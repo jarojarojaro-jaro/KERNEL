@@ -79,6 +79,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-24 [[raport-60c-quant-3090|Raport 60c: Gyro-Coder, tqLLM 1.2, DCQ, posty @superalesha, Nemotron-3.5-Bolt-E4B]]
 - 2026-10-24 [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]]
 - 2026-10-24 [[sglang-hicache|SGLang HiCache + Unified Radix Cache: cache prefiksów GPU/CPU/storage z modelami hybrydowymi]]
+- 2026-10-24 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
 - 2026-10-24 [[hyperqwen|HyperQwen (syv-ai, dawniej qwen38-27b-rtx3090)]]
 - 2026-10-24 [[humming|Humming (vLLM + Ant Group): kernele GEMM dla kwantów, tylko CUDA]]
 - 2026-10-24 [[nemotron-3-5-bolt-e4b|NVIDIA Nemotron-3.5-Bolt-E4B (Gemma-4-E4B po RL)]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-10-21 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne]]
 - 2026-10-21 [[raport-plan-nv-v2|PLAN-NV-V2: kampania NVIDIA v2 (ctx ≥ 131k)]]
 - 2026-10-21 [[raport-57g-quantalloc-ear|Raport 57g: EAR w llama-perplexity + alokacja per tensor dla 24 GB (research)]]
-- 2026-10-21 [[raport-57a-gsq-rco|Raport 57a: GSQ-RCO (ISTA-DASLab), autor i transfer na 24 GB]]
 
 Razem 649 notatek. Wygenerowano 2026-10-24 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
