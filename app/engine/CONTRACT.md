@@ -103,7 +103,9 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
 - `recommend(hw, minCtx = 131072): Recommendation` (synchronicznie); `replan(option, hw, {ub?, ctx?, kvType?, spec?})` i
   `planFor(hw, modelId, quant, {ctx, kvType, ub, spec, backend, gpuIndex})` → `{mem: MemPlan, fits}` (te same zapasy).
 - Pamięć = wagi + KV + compute + narzut, dla pełnego kontekstu (prompt = ctx), z rezerwą na kontekst MTP, gdy
-  `features` zawiera `mtp`. `fits` = zostaje ≥ 300 MiB (Windows ≥ 1 GiB). Kalibracja: `test/catalog.measured.json`.
+  `features` zawiera `mtp`. `fits` = zostaje zapas: Linux 100 MiB (zmierzona produkcja XTX 204800), Windows 512 MiB,
+  macOS 0 ponad budżet pamięci zunifikowanej; CUDA +200 MiB (pula K/V rośnie z promptem, zmierzona do 55.6k).
+  Kalibracja: `test/catalog.measured.json`.
 - `why[]` / `rejected[].reason` = kody `kod` albo `kod:wartość`: why — `quality_best`, `speed_measured:<t/s>`,
   `speed_estimated:<t/s>`, `mtp_head`, `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
   `ub512_for_ctx` (ub 512: osiąga min. kontekst albo daje ≥ 8% więcej; wolniejszy prefill, decode bez zmian),

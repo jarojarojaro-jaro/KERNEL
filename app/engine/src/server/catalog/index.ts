@@ -9,9 +9,13 @@ import engines from '../../../data/engines.json';
 export { CATALOG } from './data.ts';
 export const DEFAULT_MIN_CTX = 131072;
 const CTX_STEP = 4096;
-/** Headroom left free: other desktop apps; Windows adds the compositor (DWM) and WDDM's share [INFERENCE]. */
-const MARGIN_MIB = 300;
-const WINDOWS_EXTRA_MIB = 700;
+/** Headroom left free after the full-context plan. Linux: 100 MiB, what our measured production run proves safe
+ *  (XTX, Qwen3.8-27B 204800 / ub 512 / MTP / full prompt: 23.84 of 23.95 GiB). Windows: 512 MiB for the compositor
+ *  (DWM) and WDDM [INFERENCE]. macOS: none on top of the unified-memory budget (already 66–75% of RAM). */
+const MARGIN_MIB: Record<Hw['os'], number> = { linux: 100, windows: 512, macos: 0 };
+/** CUDA's K/V conversion pool grows with the prompt and is measured only up to a 55.6k prompt (3090: OOM at 204800 with
+ *  633 MiB free after load, report 27); full-context CUDA plans keep this extra headroom (3090 Qwen + MTP: 131072). */
+const CUDA_POOL_MARGIN_MIB = 200;
 /** f16 KV only with this much memory left at the chosen context. */
 const F16_HEADROOM_MIB = 2048;
 /** Driver/firmware share of VRAM that is never allocatable (3090: 24576 total, 24126–24134 usable; XTX: 24560 total). */
@@ -37,7 +41,7 @@ interface Device {
 }
 
 function devices(hw: Hw): Device[] {
-  const marginMiB = MARGIN_MIB + (hw.os === 'windows' ? WINDOWS_EXTRA_MIB : 0);
+  const marginMiB = MARGIN_MIB[hw.os];
   const out: Device[] = [];
   hw.gpus.forEach((gpu, i) => {
     const spec = matchGpu(gpu.name, gpu.vramGiB);
@@ -45,7 +49,8 @@ function devices(hw: Hw): Device[] {
       ? hw.ramGiB * unifiedShare(hw.ramGiB) * 1024
       : gpu.vramGiB * 1024 * (1 - VRAM_RESERVE[gpu.vendor]);
     for (const backend of BACKEND_ORDER.filter((b) => gpu.backends.includes(b))) {
-      out.push({ backend, gpuIndex: i, gpu, spec, budgetMiB, marginMiB, vramGiB: gpu.unified ? hw.ramGiB : gpu.vramGiB });
+      const margin = marginMiB + (backend === 'cuda' ? CUDA_POOL_MARGIN_MIB : 0);
+      out.push({ backend, gpuIndex: i, gpu, spec, budgetMiB, marginMiB: margin, vramGiB: gpu.unified ? hw.ramGiB : gpu.vramGiB });
     }
   });
   if (out.length === 0) {

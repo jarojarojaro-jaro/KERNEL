@@ -73,8 +73,9 @@ describe('recommend on typical machines', () => {
       expect(pick.ctx).toBeGreaterThanOrEqual(131072);
       expect(pick.ctx).toBeLessThanOrEqual(pick.ctxMax);
       expect(pick.ctx % 4096 === 0 || pick.ctx === pick.ctxMax).toBe(true);
-      // ≥ 300 MiB headroom (1 GiB on Windows) left after the full-context plan
-      expect(pick.mem.freeGiB).toBeGreaterThanOrEqual(hw.os === 'windows' ? 0.97 : 0.29);
+      // headroom after the full-context plan: Linux 100 MiB, Windows 512 MiB, macOS 0; CUDA +200 MiB
+      const margin = { linux: 100, windows: 512, macos: 0 }[hw.os] + (pick.backend === 'cuda' ? 200 : 0);
+      expect(pick.mem.freeGiB * 1024).toBeGreaterThanOrEqual(margin - 10);
       expect(r.alternatives.length).toBeLessThanOrEqual(3);
       const ids = [pick.modelId, ...r.alternatives.map((a) => a.modelId)];
       expect(new Set(ids).size).toBe(ids.length);
@@ -85,19 +86,15 @@ describe('recommend on typical machines', () => {
     });
   }
 
-  test('RX 7900 XTX: Qwen3.8-27B UD-Q4_K_XL + MTP at ~200k, KV q4_0, ub 512 for the larger context', () => {
+  test('RX 7900 XTX: Qwen3.8-27B UD-Q4_K_XL + MTP at 204800, KV q4_0, ub 512 (measured production)', () => {
     const pick = recommend(machine('RX 7900 XTX 24 GB')).pick;
-    expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', kvType: 'q4_0', ub: 512, backend: 'rocm', gpuIndex: 0 });
+    expect(pick).toMatchObject({
+      modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 204800, kvType: 'q4_0', ub: 512, backend: 'rocm', gpuIndex: 0,
+    });
     expect(pick?.features).toContain('mtp');
     expect(pick?.why).toContain('ub512_for_ctx');
-    expect(pick?.ctx).toBeGreaterThanOrEqual(192512);
-    expect(pick?.ctx).toBeLessThanOrEqual(204800);
-    // the production configuration (ub 512, MTP, 204800, full prefill) fits the card on our headless server; the
-    // recommender's extra 300 MiB desktop headroom is what moves the pick a little below it
-    const prod = planFor(machine('RX 7900 XTX 24 GB'), 'qwen38-27b', 'UD-Q4_K_XL',
-      { ctx: 204800, kvType: 'q4_0', ub: 512, spec: true, backend: 'rocm', gpuIndex: 0 });
-    expect(prod.mem.freeGiB).toBeGreaterThan(0);
-    expect(prod.mem.totalGiB).toBeLessThanOrEqual(prod.mem.budgetGiB);
+    // the production configuration, full prefill: 23.84 of 23.95 GiB
+    expect(pick?.mem.totalGiB).toBeCloseTo(23.84, 1);
   });
 
   test('RTX 3090: Qwen3.8-27B UD-Q4_K_XL with MTP at 131072; 204800 only without MTP (MTP OOM measured)', () => {
@@ -106,7 +103,7 @@ describe('recommend on typical machines', () => {
     if (!pick) throw new Error('no pick');
     expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', kvType: 'q4_0', backend: 'cuda' });
     expect(pick.features).toContain('mtp');
-    expect(pick.ctx).toBeGreaterThanOrEqual(131072);
+    expect(pick.ctx).toBe(131072); // our published NVIDIA 24 GB setting with MTP (measured peak 22.2 GB at 60k)
     expect(replan(pick, hw, { ctx: 204800, ub: 512 }).fits).toBe(false);
     expect(replan(pick, hw, { ctx: 204800, ub: 512, spec: false }).fits).toBe(true);
   });
