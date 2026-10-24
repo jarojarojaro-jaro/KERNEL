@@ -518,7 +518,7 @@
     "tools",
     "reasoning"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": false,
    "arch": {
     "source": "gguf:Qwen3.8-27B-UD-Q4_K_XL.gguf",
@@ -643,7 +643,7 @@
     "tools",
     "reasoning"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": false,
    "arch": {
     "source": "gguf:Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
@@ -746,8 +746,8 @@
     "tools",
     "reasoning"
    ],
-   "engine": "pr",
-   "engineNote": "llama.cpp PR #30928 (unmerged); long-context correctness unresolved on RDNA3 (report 59)",
+   "minUpstreamBuild": 11803,
+   "engineNote": "llama.cpp b11803 = PR #30928 merge (a37cc4610); long-context correctness unresolved on RDNA3 (report 59)",
    "cpuTier": false,
    "arch": {
     "source": "gguf:flint-nvfp4.gguf",
@@ -809,7 +809,7 @@
    "features": [
     "tools"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": false,
    "arch": {
     "source": "gguf:LFM2.5-24B-A2B-Q5_K_M.gguf",
@@ -910,7 +910,7 @@
     "tools",
     "reasoning"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": false,
    "arch": {
     "source": "config:google/gemma-4-31B-it",
@@ -993,7 +993,7 @@
     "tools",
     "reasoning"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": false,
    "arch": {
     "source": "config:google/gemma-4-26B-A4B-it",
@@ -1076,7 +1076,7 @@
     "tools",
     "reasoning"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": false,
    "arch": {
     "source": "config:google/gemma-4-12B-it",
@@ -1159,7 +1159,7 @@
     "tools",
     "reasoning"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": true,
    "arch": {
     "source": "config:Qwen/Qwen3.5-9B",
@@ -1242,7 +1242,7 @@
     "tools",
     "reasoning"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": false,
    "arch": {
     "source": "config:openai/gpt-oss-20b",
@@ -1305,7 +1305,7 @@
     "tools",
     "reasoning"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": true,
    "arch": {
     "source": "config:Qwen/Qwen3.5-4B",
@@ -1377,7 +1377,7 @@
    "features": [
     "tools"
    ],
-   "engine": "upstream",
+   "minUpstreamBuild": 0,
    "cpuTier": true,
    "arch": {
     "source": "gguf:LFM2.5-2.6B-QAD-Q4_0.gguf",

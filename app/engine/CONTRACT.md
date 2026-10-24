@@ -103,8 +103,10 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   `features` zawiera `mtp`. `fits` = zostaje ≥ 300 MiB (Windows ≥ 1 GiB). Kalibracja: `test/catalog.measured.json`.
 - `why[]` / `rejected[].reason` = kody `kod` albo `kod:wartość`: why — `quality_best`, `speed_measured:<t/s>`,
   `speed_estimated:<t/s>`, `mtp_head`, `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
-  `ub_512`, `unified_memory`, `windows_reserve`, `cpu_only`, `license_conditional`; rejected — `ctx_max_below_min:<ctxMax>`,
-  `weights_too_big:<GiB>/<budżet GiB>`, `ctx_below_min:<max ctx>`, `engine_unsupported`, `not_cpu_tier`.
+  `ub512_for_ctx` (ub 512: osiąga min. kontekst albo daje ≥ 8% więcej; wolniejszy prefill, decode bez zmian),
+  `unified_memory`, `windows_reserve`, `cpu_only`, `license_conditional`; rejected — `ctx_max_below_min:<ctxMax>`,
+  `weights_too_big:<GiB>/<budżet GiB>`, `ctx_below_min:<max ctx>`, `engine_too_old:b<N>` (przypięty upstream w
+  `data/engines.json` starszy niż build obsługujący model), `not_cpu_tier`.
 - `data/catalog.json` odświeża `ENIGMA_MODELS_DIR=~/models bun src/server/catalog/refresh.ts` (HF tree API + nagłówki
   lokalnych GGUF / `config.json`; nic nie pobiera poza JSON i nagłówkami).
 

@@ -62,8 +62,9 @@ export interface CatalogModel {
   license: string;
   ctxMax: number;
   features: string[];
-  /** `upstream`: official llama.cpp releases run it; `pr`: needs an unmerged llama.cpp PR (not offered). */
-  engine: 'upstream' | 'pr';
+  /** First upstream llama.cpp build (`b<N>`) that runs the model; 0 = every release we pin. Compared with the pinned
+   *  upstream tag in data/engines.json; older pins reject the model (`engine_too_old:b<N>`). */
+  minUpstreamBuild: number;
   engineNote?: string;
   /** Small enough to offer on CPU-only machines. */
   cpuTier: boolean;

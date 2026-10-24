@@ -80,16 +80,18 @@ describe('recommend on typical machines', () => {
       expect(new Set(ids).size).toBe(ids.length);
       for (const a of r.alternatives) expect(a.score).toBeLessThanOrEqual(pick.score);
       expect(pick.why.some((w) => w.startsWith('speed_'))).toBe(true);
-      expect(r.rejected.some((x) => x.modelId === 'flint-40b-a2.5b' && x.reason === 'engine_unsupported')).toBe(true);
+      // Flint needs upstream ≥ b11803 (PR #30928 merge); the pinned engine (data/engines.json) is newer
+      expect(r.rejected.some((x) => x.reason.startsWith('engine_too_old'))).toBe(false);
     });
   }
 
-  test('RX 7900 XTX: Qwen3.8-27B UD-Q4_K_XL at ~200k with KV q4_0 (production 204800)', () => {
+  test('RX 7900 XTX: Qwen3.8-27B UD-Q4_K_XL + MTP at ~200k, KV q4_0, ub 512 for the larger context', () => {
     const pick = recommend(machine('RX 7900 XTX 24 GB')).pick;
-    expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', kvType: 'q4_0', backend: 'rocm', gpuIndex: 0 });
+    expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', kvType: 'q4_0', ub: 512, backend: 'rocm', gpuIndex: 0 });
     expect(pick?.features).toContain('mtp');
-    expect(pick?.ctx).toBeGreaterThanOrEqual(172032);
-    expect(pick?.ctx).toBeLessThanOrEqual(212992);
+    expect(pick?.why).toContain('ub512_for_ctx');
+    expect(pick?.ctx).toBeGreaterThanOrEqual(192512);
+    expect(pick?.ctx).toBeLessThanOrEqual(204800);
     // the production configuration (ub 512, MTP, 204800, full prefill) fits the card on our headless server; the
     // recommender's extra 300 MiB desktop headroom is what moves the pick a little below it
     const prod = planFor(machine('RX 7900 XTX 24 GB'), 'qwen38-27b', 'UD-Q4_K_XL',
@@ -98,13 +100,21 @@ describe('recommend on typical machines', () => {
     expect(prod.mem.totalGiB).toBeLessThanOrEqual(prod.mem.budgetGiB);
   });
 
-  test('RTX 3090: Qwen3.8-27B UD-Q4_K_XL with MTP at ≥ 131072, but not 204800 (OOM measured)', () => {
+  test('RTX 3090: Qwen3.8-27B UD-Q4_K_XL with MTP at 131072; 204800 only without MTP (MTP OOM measured)', () => {
     const hw = machine('RTX 3090 24 GB');
     const pick = recommend(hw).pick;
     if (!pick) throw new Error('no pick');
     expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', kvType: 'q4_0', backend: 'cuda' });
+    expect(pick.features).toContain('mtp');
     expect(pick.ctx).toBeGreaterThanOrEqual(131072);
     expect(replan(pick, hw, { ctx: 204800, ub: 512 }).fits).toBe(false);
+    expect(replan(pick, hw, { ctx: 204800, ub: 512, spec: false }).fits).toBe(true);
+  });
+
+  test('Flint (minUpstreamBuild 11803) is offered on 24 GB with the pinned engine; quality below Qwen3.8-27B', () => {
+    const r = recommend(machine('RX 7900 XTX 24 GB'));
+    expect(r.alternatives.some((a) => a.modelId === 'flint-40b-a2.5b')).toBe(true);
+    expect(model('flint-40b-a2.5b').quality).toBeLessThan(model('qwen38-27b').quality);
   });
 
   test('LFM2.5-24B Q5_K_M fits 131072 with KV q8_0 on the XTX (production)', () => {

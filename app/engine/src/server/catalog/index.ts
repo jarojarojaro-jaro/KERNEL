@@ -4,6 +4,7 @@ import type { Backend, Gpu, Hw, MemPlan, Option, Recommendation } from '../../sh
 import { CATALOG, type CatalogModel, type GpuSpec, type KvType, type QuantFile } from './data.ts';
 import { memParts, memPlan, type MemConfig } from './memory.ts';
 import { decodeSpeed, matchGpu, score } from './score.ts';
+import engines from '../../../data/engines.json';
 
 export { CATALOG } from './data.ts';
 export const DEFAULT_MIN_CTX = 131072;
@@ -19,6 +20,10 @@ const VRAM_RESERVE: Record<Gpu['vendor'], number> = { nvidia: 0.018, amd: 0.002,
 const unifiedShare = (ramGiB: number): number => (ramGiB > 36 ? 0.75 : 0.66);
 const CPU_SHARE = 0.7;
 const BACKEND_ORDER: Backend[] = ['cuda', 'rocm', 'metal', 'vulkan'];
+/** ub 512 is chosen when it buys at least this much more context than ub 1024. */
+const UB512_GAIN = 1.08;
+/** Build number of the pinned upstream llama.cpp release (data/engines.json `upstream.tag`, "b<N>"). */
+const PINNED_BUILD = Number(/^b(\d+)$/.exec(engines.upstream.tag)?.[1] ?? 0);
 
 interface Device {
   backend: Backend;
@@ -77,15 +82,15 @@ type Rejection = Recommendation['rejected'][number];
 
 interface Plan { ctx: number; kvType: KvType; ub: number; spec: boolean }
 
-/** ub 1024 by default, 512 only when 1024 misses the minimum; then the best KV type at that context. */
+/** ub 1024 by default; 512 when it reaches the minimum that 1024 misses or ≥ 8% more context (prefill slower, decode
+ *  unchanged). Then the best KV type at that context. */
 function plan(m: CatalogModel, q: QuantFile, d: Device, minCtx: number, spec: boolean): Plan | { ctx: number } {
-  let ub = 1024;
-  let ctx = maxCtx(m, q, d, 'q4_0', ub, spec);
-  if (ctx < minCtx) {
-    ub = 512;
-    ctx = maxCtx(m, q, d, 'q4_0', ub, spec);
-  }
-  if (ctx < minCtx) return { ctx };
+  const ctx1024 = maxCtx(m, q, d, 'q4_0', 1024, spec);
+  const ctx512 = maxCtx(m, q, d, 'q4_0', 512, spec);
+  const use512 = ctx512 >= minCtx && (ctx1024 < minCtx || ctx512 >= ctx1024 * UB512_GAIN);
+  const ub = use512 ? 512 : 1024;
+  const ctx = use512 ? ctx512 : ctx1024;
+  if (ctx < minCtx) return { ctx: Math.max(ctx1024, ctx512) };
   let kvType: KvType = 'q4_0';
   if (freeMiB(m, q, d, config(d, ctx, 'f16', ub, spec)) >= F16_HEADROOM_MIB) kvType = 'f16';
   else if (freeMiB(m, q, d, config(d, ctx, 'q8_0', ub, spec)) >= 0) kvType = 'q8_0';
@@ -94,7 +99,7 @@ function plan(m: CatalogModel, q: QuantFile, d: Device, minCtx: number, spec: bo
 
 function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: number): Option | Rejection {
   const reject = (reason: string): Rejection => ({ modelId: m.id, quant: q.quant, reason });
-  if (m.engine !== 'upstream') return reject('engine_unsupported');
+  if (m.minUpstreamBuild > PINNED_BUILD) return reject(`engine_too_old:b${m.minUpstreamBuild}`);
   if (d.backend === 'cpu' && !m.cpuTier) return reject('not_cpu_tier');
   if (m.ctxMax < minCtx) return reject(`ctx_max_below_min:${m.ctxMax}`);
   const empty = memParts(m, q, config(d, 0, 'q4_0', 512, false));
@@ -114,7 +119,7 @@ function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: numb
   if (spec) why.push('mtp_head');
   if (m.kind === 'moe' && m.activeB <= 4) why.push('moe_fast');
   why.push(ctx === m.ctxMax ? 'ctx_model_max' : 'ctx_memory_limit', `kv_${kvType}`);
-  if (ub === 512) why.push('ub_512');
+  if (ub === 512) why.push('ub512_for_ctx');
   if (d.gpu?.unified) why.push('unified_memory');
   if (d.backend === 'cpu') why.push('cpu_only');
   if (hw.os === 'windows' && d.backend !== 'cpu') why.push('windows_reserve');
