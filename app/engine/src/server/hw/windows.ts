@@ -1,6 +1,6 @@
 // Windows hardware detection: the logic of app/scan/scan.ps1 (CIM + display-class registry for 64-bit VRAM) + nvidia-smi.
 import type { Gpu } from '../../shared/types.ts';
-import { amdArchFromDevice, amdIsDiscrete, backendsFor, intelIsDiscrete, parseNvidiaSmi, toGiB } from './common.ts';
+import { NVIDIA_SMI_QUERY, amdArchFromDevice, amdIsDiscrete, backendsFor, intelIsDiscrete, parseNvidiaSmi, toGiB } from './common.ts';
 import { runText } from './run.ts';
 
 export interface WinVideoController { Name: string; DriverVersion: string; AdapterCompatibility: string; PNPDeviceID: string }
@@ -126,7 +126,7 @@ export function buildWindowsGpus(raw: WindowsRaw): Gpu[] {
 
 export async function collectWindowsRaw(): Promise<WindowsRaw> {
   const out = await runText(['powershell.exe', '-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-Command', WINDOWS_PROBE], 60_000);
-  const smi = await runText(['nvidia-smi', '--query-gpu=name,memory.total,driver_version,compute_cap', '--format=csv,noheader,nounits']);
+  const smi = await runText(NVIDIA_SMI_QUERY);
   if (!out) return { os: null, cpu: [], vc: [], reg: [], nvidiaSmi: smi };
   return parseWindowsProbe(out, smi);
 }

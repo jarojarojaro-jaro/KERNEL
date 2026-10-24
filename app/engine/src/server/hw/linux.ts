@@ -4,7 +4,7 @@ import { basename, join } from 'node:path';
 import type { Gpu } from '../../shared/types.ts';
 import {
   amdArchFromDevice, amdBoardName, amdIsDiscrete, backendsFor, GIB, gfxFromTargetVersion, intelIsDiscrete,
-  parseNvidiaSmi, toGiB, vendorFromPciId,
+  NVIDIA_SMI_QUERY, parseNvidiaSmi, toGiB, vendorFromPciId,
 } from './common.ts';
 import { runText } from './run.ts';
 
@@ -103,6 +103,9 @@ export function buildLinuxGpus(raw: LinuxRaw): Gpu[] {
   const kfd = raw.kfdNodes.map(parseKfdNode).filter((n): n is NonNullable<typeof n> => n !== null);
   const smi = raw.nvidiaSmi ? parseNvidiaSmi(raw.nvidiaSmi) : [];
   let nvIndex = 0;
+  // sysfs lists every board of the host, also the ones a container (Docker --gpus, Vast, cloud) cannot use;
+  // nvidia-smi lists only the visible ones. Matched by PCI address; boards it does not list are skipped.
+  const smiByBus = smi.every((s) => s.busId !== undefined) && smi.length > 0;
   const gpus: Gpu[] = [];
   for (const dev of raw.pci) {
     const vendor = vendorFromPciId(dev.vendor);
@@ -130,7 +133,8 @@ export function buildLinuxGpus(raw: LinuxRaw): Gpu[] {
       if (dev.driver) g.driver = dev.driver;
       gpus.push(g);
     } else if (vendor === 'nvidia') {
-      const s = smi[nvIndex++];
+      const s = smiByBus ? smi.find((x) => x.busId === dev.slot.toLowerCase()) : smi[nvIndex++];
+      if (smiByBus && !s) continue;
       const name = s?.name ?? pciName ?? `PCI 10de:${devId}`;
       const g: Gpu = {
         vendor, name: vendorPrefix(vendor, name), vramGiB: s ? toGiB(s.vramMiB * 1024 * 1024) : 0, unified: false,
@@ -168,8 +172,19 @@ function numOpt(p: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Reads the live system into a LinuxRaw. */
-export async function collectLinuxRaw(memTotalBytes: number): Promise<LinuxRaw> {
+/** The cgroup memory limit of this process (v2 `memory.max`, v1 `memory.limit_in_bytes`), null when unlimited. */
+function cgroupMemLimit(): number | null {
+  for (const p of ['/sys/fs/cgroup/memory.max', '/sys/fs/cgroup/memory/memory.limit_in_bytes']) {
+    const n = numOpt(p); // "max" (v2 unlimited) is not a number; v1 unlimited is a huge page-rounded value
+    if (n !== null && n > 0 && n < 2 ** 60) return n;
+  }
+  return null;
+}
+
+/** Reads the live system into a LinuxRaw; RAM is capped by the cgroup limit (containers see the host's MemTotal). */
+export async function collectLinuxRaw(hostMemBytes: number): Promise<LinuxRaw> {
+  const limit = cgroupMemLimit();
+  const memTotalBytes = limit === null ? hostMemBytes : Math.min(hostMemBytes, limit);
   const pciRoot = '/sys/bus/pci/devices';
   const pci: LinuxPciGpu[] = [];
   for (const slot of existsSync(pciRoot) ? readdirSync(pciRoot) : []) {
@@ -207,8 +222,6 @@ export async function collectLinuxRaw(memTotalBytes: number): Promise<LinuxRaw> 
     pci,
     kfdNodes,
     lspci: (await runText(['lspci', '-nn', '-D'])) ?? '',
-    nvidiaSmi: hasNvidia
-      ? await runText(['nvidia-smi', '--query-gpu=name,memory.total,driver_version,compute_cap', '--format=csv,noheader,nounits'])
-      : null,
+    nvidiaSmi: hasNvidia ? await runText(NVIDIA_SMI_QUERY) : null,
   };
 }

@@ -102,21 +102,32 @@ export function smFromComputeCap(cc: string): string | undefined {
   return m ? `sm_${m[1]}${m[2]}` : undefined;
 }
 
-export interface NvidiaSmiGpu { name: string; vramMiB: number; driver: string; arch?: string }
+export interface NvidiaSmiGpu { name: string; vramMiB: number; driver: string; arch?: string; busId?: string }
 
-/** `nvidia-smi --query-gpu=name,memory.total,driver_version,compute_cap --format=csv,noheader,nounits` */
+/** The one nvidia-smi query every OS runs; `parseNvidiaSmi` reads its columns in this order. */
+export const NVIDIA_SMI_QUERY = ['nvidia-smi', '--query-gpu=name,memory.total,driver_version,compute_cap,pci.bus_id', '--format=csv,noheader,nounits'];
+
+/** PCI address in the sysfs form `0000:81:00.0` (nvidia-smi prints `00000000:81:00.0`). */
+export function normPciAddr(addr: string): string | undefined {
+  const m = /^([0-9a-f]+):([0-9a-f]{2}):([0-9a-f]{2})\.([0-7])$/i.exec(addr.trim());
+  return m ? `${parseInt(m[1] as string, 16).toString(16).padStart(4, '0')}:${m[2]}:${m[3]}.${m[4]}`.toLowerCase() : undefined;
+}
+
+/** CSV of `NVIDIA_SMI_QUERY` (older 4-column captures without `pci.bus_id` parse too). */
 export function parseNvidiaSmi(csv: string): NvidiaSmiGpu[] {
   const out: NvidiaSmiGpu[] = [];
   for (const line of csv.split(/\r?\n/)) {
     if (!line.trim()) continue;
     const parts = line.split(',').map((s) => s.trim());
     if (parts.length < 3) continue;
-    const [name, mem, driver, cc] = parts;
+    const [name, mem, driver, cc, bus] = parts;
     const vramMiB = Number(mem);
     if (!name || !Number.isFinite(vramMiB)) continue;
     const g: NvidiaSmiGpu = { name, vramMiB, driver: driver ?? '' };
     const arch = cc ? smFromComputeCap(cc) : undefined;
     if (arch) g.arch = arch;
+    const busId = bus ? normPciAddr(bus) : undefined;
+    if (busId) g.busId = busId;
     out.push(g);
   }
   return out;

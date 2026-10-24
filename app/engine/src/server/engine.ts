@@ -169,6 +169,7 @@ export async function ensureEngine(entry: EngineEntry, opts: { signal?: AbortSig
   if (existsSync(marker)) {
     const bin = findServerBin(dir);
     if (bin) {
+      await prepareRuntime(entry, bin, opts);
       opts.onProgress?.('reuse:engine', { done: 1, total: 1, rate: 0, etaS: 0 });
       return { entry, dir: engineRoot(bin), serverBin: bin, version: entry.version, local: false };
     }
@@ -211,6 +212,7 @@ export async function ensureEngine(entry: EngineEntry, opts: { signal?: AbortSig
   const finalBin = findServerBin(dir);
   if (!finalBin) throw new Error(`${entry.id}: install failed`);
   log.info(`engine ${entry.id} ${entry.version} installed in ${dir}`);
+  await prepareRuntime(entry, finalBin, opts);
   return { entry, dir: engineRoot(finalBin), serverBin: finalBin, version: entry.version, local: false };
 }
 
@@ -218,6 +220,112 @@ export async function ensureEngine(entry: EngineEntry, opts: { signal?: AbortSig
 function engineRoot(bin: string): string {
   const d = dirname(bin);
   return d.endsWith('/bin') || d.endsWith('\\bin') ? dirname(d) : d;
+}
+
+// ---- runtime libraries (Linux) ------------------------------------------------------------------------------------
+
+const SHARED_LIB = /\.so(\.\d+)*$/;
+
+/**
+ * System libraries the official Linux builds link but a minimal system (server, container) may lack, fetched into the
+ * engine directory (no root needed). libgomp: GCC's OpenMP runtime, pinned conda-forge build (glibc >= 2.17).
+ */
+const RUNTIME_LIBS: Record<string, { url: string; sizeBytes: number; sha256: string; member: string }> = {
+  'libgomp.so.1': {
+    url: 'https://conda.anaconda.org/conda-forge/linux-64/libgomp-14.4.0-he0feb66_7.conda',
+    sizeBytes: 590068,
+    sha256: '76b34fc094732e38055df85f99acdfc668eacbe38aaa81b100ddea454c0e29df',
+    member: 'lib/libgomp.so.1.0.0',
+  },
+};
+
+/** Install hints for libraries we do not fetch (`apt` / `dnf` package names). */
+const LIB_HINTS: Record<string, string> = {
+  'libcuda.so.1': 'the NVIDIA driver (its user-space library libcuda.so.1)',
+  'libvulkan.so.1': 'libvulkan1 (apt) / vulkan-loader (dnf)',
+  'libgomp.so.1': 'libgomp1 (apt) / libgomp (dnf)',
+  'libstdc++.so.6': 'libstdc++6 (apt) / libstdc++ (dnf)',
+};
+
+/**
+ * Release archives with several assets unpack side by side (llama-b…/ and cudart-llama-…/): the CUDA runtime must sit
+ * next to libggml-cuda.so, or ggml cannot load the CUDA backend and silently runs on the CPU.
+ */
+export function gatherLibs(root: string, binDir: string): void {
+  const walk = (d: string): void => {
+    for (const e of readdirSync(d, { withFileTypes: true })) {
+      const p = join(d, e.name);
+      if (p === binDir) continue;
+      if (e.isDirectory()) walk(p);
+      else if (SHARED_LIB.test(e.name) && !existsSync(join(binDir, e.name))) renameSync(p, join(binDir, e.name));
+    }
+  };
+  walk(root);
+}
+
+/** Shared libraries that neither the system nor the engine directory provides (`ldd` over the server + backends). */
+async function missingLibs(bin: string, rocm: boolean): Promise<string[]> {
+  const dir = dirname(bin);
+  const files = [bin, ...readdirSync(dir).filter((f) => f.startsWith('libggml') && SHARED_LIB.test(f)).map((f) => join(dir, f))];
+  const missing = new Set<string>();
+  for (const f of files) {
+    let out = '';
+    try {
+      const proc = Bun.spawn(['ldd', f], { stdout: 'pipe', stderr: 'ignore', env: { ...process.env, LD_LIBRARY_PATH: libPath(bin, rocm) } });
+      out = await new Response(proc.stdout).text();
+      await proc.exited;
+    } catch {
+      return []; // no ldd (non-glibc system): let the server start report it
+    }
+    for (const m of out.matchAll(/^\s*(\S+) => not found/gm)) missing.add(m[1] as string);
+  }
+  return [...missing];
+}
+
+/** Fetches one RUNTIME_LIBS entry into the engine directory: .conda (zip) → pkg-*.tar.zst → the library file. */
+async function fetchRuntimeLib(name: string, binDir: string, opts: { signal?: AbortSignal; onProgress?: (label: string, p: TransferProgress) => void }): Promise<void> {
+  const lib = RUNTIME_LIBS[name];
+  if (!lib) throw new Error(`no download for ${name}`);
+  const dl = join(paths().downloads, 'runtime');
+  mkdirSync(dl, { recursive: true });
+  const pkg = join(dl, basename(lib.url));
+  log.info(`${name} is missing on this system: fetching it into the engine directory from ${lib.url}`);
+  if (!existsSync(pkg)) {
+    await downloadFile({
+      url: lib.url, dest: pkg, sizeBytes: lib.sizeBytes, sha256: lib.sha256,
+      ...(opts.signal ? { signal: opts.signal } : {}), onProgress: (p) => opts.onProgress?.('engine', p),
+    });
+  }
+  const tmp = join(dl, `${name}.tmp-${process.pid}`);
+  rmSync(tmp, { recursive: true, force: true });
+  try {
+    extractZip(pkg, tmp);
+    const zst = readdirSync(tmp).find((f) => f.startsWith('pkg-') && f.endsWith('.tar.zst'));
+    if (!zst) throw new Error(`${pkg}: no pkg-*.tar.zst inside`);
+    writeFileSync(join(tmp, 'pkg.tar'), Bun.zstdDecompressSync(readFileSync(join(tmp, zst))));
+    const proc = Bun.spawn(['tar', '-xf', join(tmp, 'pkg.tar'), '-C', tmp, lib.member], { stdout: 'ignore', stderr: 'pipe' });
+    const err = await new Response(proc.stderr).text();
+    if ((await proc.exited) !== 0) throw new Error(`tar failed for ${pkg}: ${err.trim()}`);
+    renameSync(join(tmp, lib.member), join(binDir, name));
+  } finally {
+    rmSync(tmp, { recursive: true, force: true });
+  }
+}
+
+/** Linux: makes a downloaded engine loadable (libraries side by side, missing system libraries fetched or reported). */
+async function prepareRuntime(entry: EngineEntry, bin: string, opts: { signal?: AbortSignal; onProgress?: (label: string, p: TransferProgress) => void }): Promise<void> {
+  if (entry.os !== 'linux' || process.platform !== 'linux') return;
+  const binDir = dirname(bin);
+  gatherLibs(installDir(entry), binDir);
+  const rocm = entry.backend === 'rocm';
+  let missing = await missingLibs(bin, rocm);
+  const fetchable = missing.filter((m) => RUNTIME_LIBS[m]);
+  for (const m of fetchable) await fetchRuntimeLib(m, binDir, opts);
+  if (fetchable.length) missing = await missingLibs(bin, rocm);
+  if (missing.length) {
+    throw new Error(`${entry.label} cannot load: missing system libraries ${missing.join(', ')}. Install ` +
+      missing.map((m) => LIB_HINTS[m] ?? m).join('; ') + ', then press Retry.');
+  }
 }
 
 // ---- archives -----------------------------------------------------------------------------------------------------
@@ -425,6 +533,39 @@ async function gracefulStop(proc: Subprocess, url: string, apiKey: string): Prom
 
 export interface StartOptions { signal?: AbortSignal; timeoutMs?: number; label?: string }
 
+const devicesChecked = new Set<string>();
+
+/**
+ * A GPU backend that fails to load (missing runtime library, driver too old) makes ggml fall back to the CPU without an
+ * error. `llama-server --list-devices` (once per binary) must list a GPU device, or the run is refused.
+ */
+async function checkGpuDevices(engine: ResolvedEngine, env: Record<string, string>): Promise<void> {
+  if (engine.entry.backend === 'cpu' || devicesChecked.has(engine.serverBin)) return;
+  let out = '';
+  let code: number | null = null;
+  try {
+    const proc = Bun.spawn([engine.serverBin, '--list-devices'], { env, stdin: 'ignore', stdout: 'pipe', stderr: 'pipe', cwd: dirname(engine.serverBin) });
+    const [o, e] = await Promise.all([new Response(proc.stdout).text(), new Response(proc.stderr).text()]);
+    code = await proc.exited;
+    out = o + e;
+  } catch (e) {
+    log.warn(`${engine.serverBin} --list-devices failed: ${errMsg(e)}`);
+    return;
+  }
+  const list = out.slice(out.indexOf('Available devices:'));
+  if (code !== 0 || !out.includes('Available devices:')) {
+    log.warn(`${engine.serverBin} --list-devices: exit ${code}, no device list; GPU use not verified`);
+    return;
+  }
+  const devices = list.split('\n').slice(1).filter((l) => /^\s+\S+: /.test(l) && !/^\s+CPU\b/.test(l)).map((l) => l.trim());
+  if (devices.length === 0) {
+    throw new Error(`${engine.entry.label}: no GPU device visible to the engine (the ${engine.entry.backend} backend did not load or the driver ` +
+      `is missing/too old); it would run on the CPU. ${out.trim().split('\n').slice(-3).join(' ')}`);
+  }
+  log.info(`engine devices: ${devices.join('; ')}`);
+  devicesChecked.add(engine.serverBin);
+}
+
 /** Spawns llama-server on 127.0.0.1 with a random port and API key; resolves when /health is OK. */
 export async function startServer(engine: ResolvedEngine, cfg: EngineConfig, opts: StartOptions = {}): Promise<RunningServer> {
   const port = await freePort();
@@ -437,6 +578,7 @@ export async function startServer(engine: ResolvedEngine, cfg: EngineConfig, opt
   const env: Record<string, string> = { ...(process.env as Record<string, string>), ...cfg.env };
   // a profile's LD_LIBRARY_PATH is used verbatim (run-llm.sh sets it, nothing inherited)
   env.LD_LIBRARY_PATH = cfg.env.LD_LIBRARY_PATH ?? libPath(engine.serverBin, engine.entry.backend === 'rocm');
+  await checkGpuDevices(engine, env);
   const shown = args.map((a) => (a === apiKey ? '***' : a));
   const envShown = Object.entries(cfg.env).map(([k, v]) => `${k}=${v}`).join(' ');
   log.info(`start ${opts.label ?? engine.entry.id}: ${envShown ? envShown + ' ' : ''}${engine.serverBin} ${shown.join(' ')}`);

@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { deflateRawSync } from 'node:zlib';
 import type { Hw, Option } from '../src/shared/types.ts';
 import {
-  baselineConfig, baselineEngineFor, ENGINES, engineById, enigmaConfig, enigmaEngineFor, extractZip, findServerBin,
+  baselineConfig, baselineEngineFor, ENGINES, engineById, enigmaConfig, enigmaEngineFor, extractZip, findServerBin, gatherLibs,
   serverArgs, type ResolvedEngine,
 } from '../src/server/engine.ts';
 
@@ -169,5 +169,21 @@ describe('baseline config and install helpers', () => {
     const z = join(dir, 'evil.zip');
     makeZip(z, { '../evil.txt': 'x' });
     expect(() => extractZip(z, join(dir, 'evil-out'))).toThrow('unsafe path');
+  });
+
+  test('CUDA runtime unpacked beside the release dir is moved next to llama-server', () => {
+    const root = join(dir, 'cuda-install');
+    const bin = join(root, 'llama-b1');
+    const rt = join(root, 'cudart-llama-b1');
+    mkdirSync(bin, { recursive: true });
+    mkdirSync(rt, { recursive: true });
+    writeFileSync(join(bin, 'llama-server'), '');
+    writeFileSync(join(bin, 'libggml-cuda.so'), 'ours');
+    for (const f of ['libcudart.so.12', 'libcublas.so.12', 'LICENSE', 'libggml-cuda.so']) writeFileSync(join(rt, f), 'rt');
+    gatherLibs(root, bin);
+    expect(readFileSync(join(bin, 'libcudart.so.12'), 'utf8')).toBe('rt');
+    expect(readFileSync(join(bin, 'libcublas.so.12'), 'utf8')).toBe('rt');
+    expect(readFileSync(join(bin, 'libggml-cuda.so'), 'utf8')).toBe('ours'); // never overwrites the engine's own
+    expect(readFileSync(join(rt, 'LICENSE'), 'utf8')).toBe('rt'); // only shared libraries move
   });
 });

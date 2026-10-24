@@ -37,8 +37,10 @@ function stream(body: Uint8Array, cutAt?: number, delayMs = 0): ReadableStream<U
   });
 }
 
+const prevHome = process.env.ENIGMA_HOME;
 beforeAll(() => {
   dir = mkdtempSync(join(tmpdir(), 'enigma-dl-'));
+  process.env.ENIGMA_HOME = join(dir, 'home'); // the digest cache (hashes.json) must not land in the real ~/.enigma
   server = Bun.serve({
     port: 0,
     hostname: '127.0.0.1',
@@ -63,6 +65,8 @@ beforeAll(() => {
 
 afterAll(() => {
   server.stop(true);
+  if (prevHome === undefined) delete process.env.ENIGMA_HOME;
+  else process.env.ENIGMA_HOME = prevHome;
   rmSync(dir, { recursive: true, force: true });
 });
 

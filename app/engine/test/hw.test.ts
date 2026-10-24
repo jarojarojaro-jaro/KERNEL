@@ -58,6 +58,23 @@ describe('linux (recorded on our Ryzen 7 5700X + RX 7900 XTX)', () => {
     expect(parseCpuinfo('processor : 0\nmodel name : X\nprocessor : 1\n')).toEqual({ name: 'X', cores: 2, threads: 2 });
   });
 
+  test('container: sysfs shows 4 host boards, nvidia-smi only ours (recorded on a Vast RTX 3060 box)', () => {
+    const board = (slot: string, device: string) => ({
+      slot, vendor: '0x10de', device, revision: '0xa1', driver: null, vramTotal: null, gttTotal: null, intelVram: null, productName: null,
+    });
+    const raw: LinuxRaw = {
+      cpuinfo: 'processor : 0\nmodel name : Xeon\n', memTotalBytes: 64822968320, kfdNodes: [], lspci: '',
+      pci: [board('0000:02:00.0', '0x2504'), board('0000:03:00.0', '0x2487'), board('0000:81:00.0', '0x2504'), board('0000:82:00.0', '0x2487')],
+      nvidiaSmi: 'NVIDIA GeForce RTX 3060, 12288, 570.133.07, 8.6, 00000000:81:00.0\n',
+    };
+    const hw = buildHw({ os: 'linux', raw }, host, 1);
+    expect(hw.gpus).toEqual([{
+      vendor: 'nvidia', name: 'NVIDIA GeForce RTX 3060', vramGiB: 12, unified: false, backends: ['cuda', 'vulkan'],
+      arch: 'sm_86', driver: '570.133.07',
+    }]);
+    expect(hw.ramGiB).toBe(60.4);
+  });
+
   test('nvidia-smi parser', () => {
     expect(parseNvidiaSmi('NVIDIA GeForce RTX 4090, 24564, 580.82.07, 8.9\nNVIDIA RTX A6000, 49140, 580.82.07, 8.6\n')).toEqual([
       { name: 'NVIDIA GeForce RTX 4090', vramMiB: 24564, driver: '580.82.07', arch: 'sm_89' },

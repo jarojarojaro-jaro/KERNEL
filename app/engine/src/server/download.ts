@@ -40,6 +40,7 @@ export class Meter {
   private lastT = 0;
   private lastDone = 0;
   private rate = 0;
+  private primed = false;
   constructor(private readonly fn: ProgressFn | undefined, private total: number, startDone = 0) {
     this.lastT = performance.now();
     this.lastDone = startDone;
@@ -52,10 +53,12 @@ export class Meter {
     const now = performance.now();
     const dt = (now - this.lastT) / 1000;
     if (!force && dt < 0.25) return;
-    if (dt > 0) {
+    // the first sample after construction includes connect/redirect/prefix-hash time, not transfer: only re-base
+    if (dt > 0 && this.primed) {
       const inst = (done - this.lastDone) / dt;
       this.rate = this.rate === 0 ? inst : this.rate * 0.7 + inst * 0.3;
     }
+    this.primed = true;
     this.lastT = now;
     this.lastDone = done;
     const left = Math.max(0, this.total - done);
@@ -162,6 +165,7 @@ export async function downloadFile(o: DownloadOptions): Promise<DownloadResult> 
     throw new Error(`sha256 mismatch for ${basename(o.dest)}: got ${sha256}, expected ${o.sha256}`);
   }
   renameSync(part, o.dest);
+  rememberHash(o.dest, sha256); // a later reuse (retry, restart) must not hash the whole file again
   return { path: o.dest, bytes: size, sha256 };
 }
 
@@ -245,16 +249,20 @@ function readHashCache(): Record<string, HashCacheEntry> {
   }
 }
 
+function rememberHash(path: string, sha256: string): void {
+  const st = statSync(path);
+  const cache = readHashCache();
+  cache[path] = { size: st.size, mtimeMs: st.mtimeMs, sha256 };
+  mkdirSync(dirname(hashCacheFile()), { recursive: true });
+  writeFileSync(hashCacheFile(), JSON.stringify(cache, null, 1));
+}
+
 /** sha256 of a file, cached by path+size+mtime (verifying a 20 GB file once is enough). */
 export async function cachedHash(path: string, onProgress?: ProgressFn, signal?: AbortSignal): Promise<string> {
   const st = statSync(path);
-  const cache = readHashCache();
-  const hit = cache[path];
+  const hit = readHashCache()[path];
   if (hit && hit.size === st.size && hit.mtimeMs === st.mtimeMs) return hit.sha256;
   const sha256 = await hashFile(path, onProgress, signal);
-  const fresh = readHashCache();
-  fresh[path] = { size: st.size, mtimeMs: st.mtimeMs, sha256 };
-  mkdirSync(dirname(hashCacheFile()), { recursive: true });
-  writeFileSync(hashCacheFile(), JSON.stringify(fresh, null, 1));
+  rememberHash(path, sha256);
   return sha256;
 }

@@ -121,9 +121,11 @@ konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko
 
 ## Benchmark (jeden protokół dla baseline i kandydatów)
 1. Start llama-server (`127.0.0.1`, losowy port, `--api-key` losowy), `-c ctx` — start = kontekst się mieści (`ctxOk`).
-2. Prefill: prompt ~4096 tokenów (stały korpus w repo), `cache_prompt:false`, mierzone `timings.prompt_per_second`.
-3. Decode: 256 tokenów, `temperature 0`, `seed 1`, `timings.predicted_per_second`; md5 tekstu = `outputMd5`.
-4. Deep: prompt ~32k tokenów + 128 tokenów decode (pokazuje zachowanie przy długim kontekście).
+2. Prefill: prompt ~4096 tokenów (stały korpus w repo, surowy tekst), `cache_prompt:false`, mierzone `timings.prompt_per_second`.
+3. Decode: 256 tokenów, `temperature 0`, `seed 1`, bez `ignore_eos`, `timings.predicted_per_second`, na zadaniach czatu
+   (szablon modelu przez `/apply-template`): oryginalne opowiadanie PL i EN; md5 tekstów = `outputMd5`. Nie ciągnięcie
+   korpusu: model go kopiuje, a lookup/MTP akceptują wtedy prawie wszystko (zawyżony decode).
+4. Deep: korpus ~32k tokenów jako dokument w wiadomości + pytanie wymagające własnej odpowiedzi, 128 tokenów decode.
 5. Powtórzenia 2×, mediana. Zatrzymanie serwera: czekaj na wolne `/slots`, **jeden** SIGTERM, 45 s, potem SIGKILL.
 
 ## Optymalizacja (kandydaci, każdy mierzony tym samym benchmarkiem; zostaje najlepszy decode bez straty prefill > 5%)

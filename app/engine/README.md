@@ -106,9 +106,13 @@ pobieranie, benchmark i optymalizacja są zablokowane (API 403 z komunikatem).
 
 ## Benchmark i optymalizacja
 
-Protokół z `CONTRACT.md`: prompt ~4096 tokenów ze stałego korpusu (`data/corpus.txt`, PL+EN, napisany na potrzeby
-projektu, domena publiczna; generator `bun tools/corpus-gen.ts`), dokładna liczba tokenów przez `/tokenize` serwera,
-`cache_prompt:false`; decode 256 tokenów greedy (seed 1, md5 tekstu); deep ~32k + 128; 2× mediana.
+Protokół z `CONTRACT.md`: prefill = prompt ~4096 tokenów ze stałego korpusu (`data/corpus.txt`, PL+EN, napisany na
+potrzeby projektu, domena publiczna; generator `bun tools/corpus-gen.ts`), dokładna liczba tokenów przez `/tokenize`
+serwera, `cache_prompt:false`; decode = 256 tokenów greedy (seed 1, bez `ignore_eos`; przy wcześniejszym końcu liczone
+faktyczne tokeny) na dwóch zadaniach czatu (szablon modelu przez `/apply-template`: oryginalne opowiadanie PL + EN,
+md5 obu tekstów); deep = korpus ~32k jako dokument + pytanie o własny esej, 128 tokenów; 2× mediana. Ciągnięcie surowego
+korpusu zawyżało decode spekulacji (model kopiował tekst, lookup/MTP akceptowały prawie wszystko). Akceptacja draftów
+(`draft_n_accepted/draft_n`) idzie do logu, gdy serwer ją podaje.
 Kandydaci: silnik Enigma (jeśli jest), `-ub 512/1024/2048` (gdy mieści się w pamięci wg katalogu), MTP (model z głowicą
 MTP), lookup n-gram (`--spec-default`). Zostaje najszybszy decode ze stratą prefill ≤ 5%; `sameOutput` = md5 decode
 równe baseline. Wyniki: `~/.enigma/results/*.json`.

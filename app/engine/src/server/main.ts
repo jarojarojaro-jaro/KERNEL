@@ -46,13 +46,15 @@ function openBrowser(url: string): void {
   }
 }
 
-function installSignals(app: App): void {
+/** Ctrl-C / SIGTERM: graceful stop. The UI app exits 0 (that is how it is closed); an interrupted headless run
+ *  exits 130 / 143 so scripts never mistake it for "ready" (exit 0). */
+function installSignals(app: App, headless: boolean): void {
   let stopping = false;
-  const stop = (): void => {
+  const stop = (sig: NodeJS.Signals): void => {
     if (stopping) return;
     stopping = true;
     console.error('\nstopping (waiting for the model server to finish)…');
-    app.shutdown().finally(() => process.exit(0));
+    app.shutdown().finally(() => process.exit(headless ? (sig === 'SIGINT' ? 130 : 143) : 0));
   };
   process.on('SIGINT', stop);
   process.on('SIGTERM', stop);
@@ -108,7 +110,7 @@ async function runHeadless(argv: string[]): Promise<number> {
   }
   onLog((l) => console.log(`[${ts()}] ${l.level === 'info' ? '' : l.level.toUpperCase() + ' '}${l.msg}`));
   const app = new App();
-  installSignals(app);
+  installSignals(app, true);
   let lastKey = '';
   let lastT = 0;
   app.onProgress((p) => {
@@ -130,13 +132,17 @@ async function runHeadless(argv: string[]): Promise<number> {
     console.error('--license-file is required');
     return 2;
   }
+  const licensedAt = Date.now();
   const lic = await app.setLicense(readFileSync(values['license-file'], 'utf8'));
   if (!lic.valid) {
     console.error(`license invalid: ${lic.reason}`);
     return 3;
   }
-  if (!app.state.hw) await app.scan();
-  const rec = app.state.recommendation?.minCtx === minCtx ? app.state.recommendation : await app.recommend(minCtx);
+  // a first run scans + recommends inside setLicense; a saved state may come from other hardware or an older
+  // scanner, so it is scanned and recommended again
+  const fresh = app.state.hw !== null && app.state.hw.scannedAt >= licensedAt;
+  if (!fresh) await app.scan();
+  const rec = fresh && app.state.recommendation?.minCtx === minCtx ? app.state.recommendation : await app.recommend(minCtx);
   const options = [rec.pick, ...rec.alternatives].filter((o) => o !== null);
   for (const o of options) {
     console.log(`[${ts()}]   option ${o.id}: ${o.name} ${o.quant} ctx ${o.ctx} KV ${o.kvType} ${o.backend} ${o.mem.totalGiB}/${o.mem.budgetGiB} GiB score ${o.score}`);
@@ -192,7 +198,7 @@ async function runHeadless(argv: string[]): Promise<number> {
 
 async function runApp(): Promise<number> {
   const app = new App();
-  installSignals(app);
+  installSignals(app, false);
   const server = serveApi(app, uiPort());
   const url = `http://127.0.0.1:${server.port}/`;
   console.log(`Enigma ${VERSION}: ${url} (data ${enigmaHome()})`);
