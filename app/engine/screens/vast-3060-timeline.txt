@@ -1,0 +1,25 @@
+[18:45:23 +7s] shot 01-license
+[18:45:26 +10s] shot 02-license-ok
+[18:45:27 +10s] phase recommend; gpus ["NVIDIA GeForce RTX 3060 12"]
+[18:45:28 +12s] shot 03-hardware
+[18:45:30 +14s] shot 04-recommend
+[18:45:30 +14s] pick "gemma4-12b/UD-Q4_K_XL/cuda/0"
+[18:45:32 +16s] phase download
+[18:45:32 +16s] shot 05-download-1
+[18:45:32 +16s]   scan 100.0% 0.0 MiB/s
+[18:46:20 +64s] shot 05-download-2
+[18:46:20 +64s]   engine 19.6% 9.4 MiB/s
+[18:47:07 +111s] shot 05-download-3
+[18:47:07 +111s]   engine 81.8% 12.5 MiB/s
+[18:47:54 +158s] shot 05-download-4
+[18:47:54 +158s]   verify 26.0% 167.7 MiB/s
+[18:48:26 +190s] phase baseline
+[18:48:26 +190s] shot 06-baseline-bench-start
+[18:49:27 +251s] shot 06-baseline-bench-deep
+[18:50:28 +311s] shot 06-baseline-bench-deep
+[18:50:35 +319s] phase optimize
+[18:50:35 +319s] shot 07-optimize-4
+[18:52:05 +409s] shot 07-optimize-4
+[18:53:38 +502s] shot 07-optimize-4
+[18:54:55 +579s] phase ready
+[18:54:57 +581s] shot 08-ready
