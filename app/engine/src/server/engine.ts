@@ -183,6 +183,7 @@ export async function ensureEngine(entry: EngineEntry, opts: { signal?: AbortSig
     const known = asset.sha256 ?? digests[asset.name];
     const archive = join(dl, asset.name);
     if (!existsSync(archive)) {
+      log.info(`will download ${asset.name} (${(asset.sizeBytes / 1024 ** 3).toFixed(2)} GiB) from ${asset.url}`);
       const res = await downloadFile({
         url: asset.url, dest: archive, sizeBytes: asset.sizeBytes, ...(known ? { sha256: known } : {}),
         ...(opts.signal ? { signal: opts.signal } : {}), onProgress: (p) => opts.onProgress?.('engine', p),

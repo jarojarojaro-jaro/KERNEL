@@ -29,7 +29,9 @@ app/engine/
   sha256 sprawdzane, jeśli katalog je zna). Na naszym serwerze: `~/models` (rekurencyjnie, płytko 2 poziomy).
 - `ENIGMA_ENGINE_DIR_<ID>` — lokalny katalog silnika (np. `ENIGMA_ENGINE_DIR_ENIGMA_ROCM=~/llama-topka`,
   `ENIGMA_ENGINE_DIR_UPSTREAM_ROCM=~/llama-base`) zamiast pobierania.
-- `ENIGMA_PORT` (UI/API, domyślnie 11500), `ENIGMA_NO_BROWSER=1`.
+- `ENIGMA_PORT` (UI/API, domyślnie **11525**; 11500 zajmuje omp). Zajęty → backend próbuje 20 kolejnych portów i wypisuje
+  faktyczny URL; UI bierze port z `location` (jest serwowane przez ten sam serwer), a snippety z `ready.endpoint`.
+  `ENIGMA_NO_BROWSER=1`.
 - Pobieranie przez sieć tylko w aplikacji użytkownika; w naszym labie testy NIE pobierają modeli (nadpisania wyżej).
 
 ## Licencja / subskrypcja

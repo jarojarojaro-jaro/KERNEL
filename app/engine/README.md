@@ -3,7 +3,7 @@
 Pobierasz Enigmę → podpinasz subskrypcję (klucz licencji) → aplikacja skanuje sprzęt → wybiera najlepszy model
 z największym kontekstem (**min. 131 072 tokenów**) → pobiera model i silnik → mierzy benchmark startowy (prefill,
 decode, kontekst) na oficjalnym llama.cpp → uruchamia optymalizację → gotowe: lokalny endpoint zgodny z OpenAI
-(`http://127.0.0.1:11500/v1`).
+(`http://127.0.0.1:11525/v1`; gdy port zajęty — kolejny wolny z 20 następnych, adres wypisywany i w `ready.endpoint`).
 
 Kontrakt (nazwy, typy, API, układ katalogów): [`CONTRACT.md`](CONTRACT.md). Stos: Bun (backend `Bun.serve`) +
 Svelte 5/Vite (UI w przeglądarce na 127.0.0.1), jedna binarka z `bun build --compile`.
@@ -14,7 +14,7 @@ Svelte 5/Vite (UI w przeglądarce na 127.0.0.1), jedna binarka z `bun build --co
 export PATH=~/KERNEL/app/.tools:$PATH     # bun 1.4.3
 bun install
 bun run build:ui                          # UI → dist/ui (serwowane pod /)
-bun src/server/main.ts                    # UI + API na 127.0.0.1:11500, otwiera przeglądarkę
+bun src/server/main.ts                    # UI + API na 127.0.0.1:11525 (lub kolejnym wolnym), otwiera przeglądarkę
 ```
 
 Bez UI (pełny przebieg, wypisuje postęp; kod wyjścia 0 = gotowe):
@@ -120,7 +120,7 @@ równe baseline. Wyniki: `~/.enigma/results/*.json`.
 | `ENIGMA_HOME` | dane (domyślnie `~/.enigma`, Windows `%LOCALAPPDATA%\Enigma`): `config.json` (klucz licencji, 600), `state.json` (faza, wznawialna po restarcie), `models/`, `engines/`, `downloads/`, `logs/` (`enigma.log`, `server-*.log`), `results/`, `hashes.json` (cache sha256) |
 | `ENIGMA_MODELS_DIR` | dodatkowy katalog z GGUF (2 poziomy w głąb): ta sama nazwa i rozmiar = bez pobierania; sha256 sprawdzane (na wątku roboczym, z postępem), gdy katalog je zna |
 | `ENIGMA_ENGINE_DIR_<KEY>` | lokalny silnik zamiast pobierania: `UPSTREAM_CPU`, `UPSTREAM_VULKAN`, `UPSTREAM_ROCM`, `UPSTREAM_CUDA`, `UPSTREAM_METAL`, `ENIGMA_ROCM` |
-| `ENIGMA_PORT` | port UI/API (domyślnie 11500) |
+| `ENIGMA_PORT` | preferowany port UI/API (domyślnie 11525, bo 11500 zajmuje omp); zajęty → kolejne 20 portów, faktyczny adres w logu i w `ready.endpoint` |
 | `ENIGMA_NO_BROWSER=1` | nie otwieraj przeglądarki |
 | `ENIGMA_DEV_CPU=1` | planuj tylko pod CPU |
 | `ENIGMA_BENCH_PREFILL`, `_DECODE`, `_DEEP`, `_REPS` | rozmiary benchmarku (domyślnie 4096 / 256 / 32768 / 2) |

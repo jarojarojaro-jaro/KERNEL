@@ -45,6 +45,8 @@ export class App {
   private abort: AbortController | null = null;
   private running: Promise<void> | null = null;
   server: RunningServer | null = null;
+  /** The port the API actually listens on (serveApi sets it; the preferred one may be taken). */
+  apiPort = uiPort();
 
   constructor() {
     ensureDirs();
@@ -291,7 +293,7 @@ export class App {
       throw new Error(`Not enough disk space: the model needs ${needGiB.toFixed(1)} GiB, ${hw.diskFreeGiB} GiB free in ${paths().models}.`);
     }
     const url = hfUrl(option.file.repo, option.file.path);
-    log.info(`model: downloading ${url} → ${dest}`);
+    log.info(`will download ${name} (${needGiB.toFixed(1)} GiB) from ${url} → ${dest}`);
     await downloadFile({
       url, dest, sizeBytes: option.file.sizeBytes, signal, onProgress: this.transfer('download', 'model'),
       ...(option.file.sha256 ? { sha256: option.file.sha256 } : {}),
@@ -319,7 +321,7 @@ export class App {
     this.server = await startServer(engine, best.config, { label: 'ready' });
     this.changed({
       phase: 'ready', error: null, progress: null,
-      ready: { endpoint: `http://127.0.0.1:${uiPort()}/v1`, model: option.name, ctx: best.config.ctx },
+      ready: { endpoint: `http://127.0.0.1:${this.apiPort}/v1`, model: option.name, ctx: best.config.ctx },
     });
   }
 

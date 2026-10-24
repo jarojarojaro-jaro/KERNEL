@@ -1,7 +1,11 @@
 import { describe, expect, test } from 'bun:test';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { BenchResult, Candidate } from '../src/shared/types.ts';
 import { decide, failureCode, recipeFor } from '../src/server/optimize.ts';
-import { hostAllowed } from '../src/server/api.ts';
+import { hostAllowed, serveApi } from '../src/server/api.ts';
+import { App } from '../src/server/state.ts';
 
 function bench(prefill: number, decode: number, md5 = 'a', ctxOk = true): BenchResult {
   return {
@@ -70,5 +74,28 @@ describe('failureCode', () => {
     expect(failureCode('llama-server exited (1) while loading:\nggml_backend_cuda_buffer_type_alloc_buffer: allocating 9000 MiB on device 0: cudaMalloc failed: out of memory')).toBe('oom');
     expect(failureCode('llama-server exited (1) while loading:\nerror: unknown argument')).toBe('start_failed:llama-server exited (1) while loading:');
     expect(failureCode('/completion HTTP 500: x')).toBe('failed:/completion HTTP 500: x');
+  });
+});
+
+describe('serveApi port fallback', () => {
+  test('a taken port moves to the next free one and ready.endpoint follows', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'enigma-port-'));
+    const prev = process.env.ENIGMA_HOME;
+    process.env.ENIGMA_HOME = home;
+    const blocker = Bun.serve({ hostname: '127.0.0.1', port: 0, fetch: () => new Response('omp') });
+    const app = new App();
+    const server = serveApi(app, blocker.port as number);
+    try {
+      expect(server.port).toBeGreaterThan(blocker.port as number);
+      expect(app.apiPort).toBe(server.port as number);
+      const r = await fetch(`http://127.0.0.1:${server.port}/api/state`);
+      expect(((await r.json()) as { phase: string }).phase).toBe('license');
+    } finally {
+      server.stop(true);
+      blocker.stop(true);
+      if (prev === undefined) delete process.env.ENIGMA_HOME;
+      else process.env.ENIGMA_HOME = prev;
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 });

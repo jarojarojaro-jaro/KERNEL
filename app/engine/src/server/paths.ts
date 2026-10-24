@@ -54,7 +54,12 @@ export function devCpu(): boolean {
   return process.env.ENIGMA_DEV_CPU === '1';
 }
 
+export const DEFAULT_PORT = 11525;
+/** How many ports after the preferred one are tried when it is taken. */
+export const PORT_FALLBACKS = 20;
+
+/** Preferred UI/API port (ENIGMA_PORT, default 11525; 11500 is used by omp). */
 export function uiPort(): number {
-  const v = Number(process.env.ENIGMA_PORT ?? '11500');
-  return Number.isInteger(v) && v > 0 && v < 65536 ? v : 11500;
+  const v = Number(process.env.ENIGMA_PORT ?? DEFAULT_PORT);
+  return Number.isInteger(v) && v > 0 && v < 65536 ? v : DEFAULT_PORT;
 }

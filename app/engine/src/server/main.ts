@@ -27,7 +27,7 @@ Usage:
 
 Environment:
   ENIGMA_HOME                data directory (default ~/.enigma, Windows %LOCALAPPDATA%\\Enigma): ${enigmaHome()}
-  ENIGMA_PORT                UI/API port (default 11500)
+  ENIGMA_PORT                UI/API port (default 11525; when taken, the next 20 ports are tried)
   ENIGMA_NO_BROWSER=1        do not open the browser
   ENIGMA_MODELS_DIR          extra directory with ready GGUF files (same name and size = no download)
   ENIGMA_ENGINE_DIR_<KEY>    local engine directory instead of downloading (e.g. ENIGMA_ENGINE_DIR_UPSTREAM_CPU,

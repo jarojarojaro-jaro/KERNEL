@@ -5,6 +5,7 @@ import type { Server } from 'bun';
 import type { AppState, Progress } from '../shared/types.ts';
 import { App, HttpError } from './state.ts';
 import { errMsg, log, onLog, type LogLine } from './log.ts';
+import { PORT_FALLBACKS } from './paths.ts';
 
 /** UI files embedded by tools/build.ts (path without leading slash -> embedded file path); empty in dev. */
 const embeddedUi = new Map<string, string>();
@@ -191,21 +192,38 @@ async function route(app: App, req: Request, url: URL): Promise<Response> {
   }
 }
 
+async function handle(app: App, req: Request): Promise<Response> {
+  if (!hostAllowed(req)) return fail(403, 'forbidden host/origin');
+  const url = new URL(req.url);
+  try {
+    return await route(app, req, url);
+  } catch (e) {
+    if (e instanceof HttpError) return fail(e.status, e.message);
+    log.error(`${req.method} ${url.pathname}: ${errMsg(e)}`);
+    return fail(500, errMsg(e));
+  }
+}
+
+/**
+ * Serves the API on 127.0.0.1:`port`, or on the next free port of the following PORT_FALLBACKS when it is taken
+ * (11500 belongs to omp on many machines). The bound port is stored in `app.apiPort` (ready.endpoint uses it).
+ */
 export function serveApi(app: App, port: number): Server<undefined> {
-  return Bun.serve({
-    hostname: '127.0.0.1',
-    port,
-    idleTimeout: 0, // SSE and long generations through /v1
-    async fetch(req) {
-      if (!hostAllowed(req)) return fail(403, 'forbidden host/origin');
-      const url = new URL(req.url);
-      try {
-        return await route(app, req, url);
-      } catch (e) {
-        if (e instanceof HttpError) return fail(e.status, e.message);
-        log.error(`${req.method} ${url.pathname}: ${errMsg(e)}`);
-        return fail(500, errMsg(e));
-      }
-    },
-  });
+  for (let p = port; p <= Math.min(65535, port + PORT_FALLBACKS); p++) {
+    try {
+      const server = Bun.serve({
+        hostname: '127.0.0.1',
+        port: p,
+        idleTimeout: 0, // SSE and long generations through /v1
+        fetch: (req) => handle(app, req),
+      });
+      if (p !== port) log.warn(`port ${port} is taken; using ${p}`);
+      app.apiPort = server.port ?? p;
+      return server;
+    } catch (e) {
+      const inUse = e instanceof Error && 'code' in e && e.code === 'EADDRINUSE';
+      if (!inUse) throw e;
+    }
+  }
+  throw new Error(`ports ${port}-${port + PORT_FALLBACKS} are all taken; set ENIGMA_PORT`);
 }
