@@ -40,3 +40,14 @@ Wymagania: karta ≥12 GB, 46–64 GB+ RAM, NVMe z 257 GB wolnego. Pliki muszą 
 
 ## RTX 5060 Ti 16 GB
 Pakiet CUDA 13 obejmuje RTX 30/40/50; testowane przez autorów: 3060, 5070, A4000. 5060 Ti nie jest wymieniona przy DeepSeeku (jest w benchmarkach społeczności dla Qwena). sm_120 jak 5070 → powinno działać; do potwierdzenia.
+
+## Szybsze wyniki z forków i innych silników (sprawdzone 2026-10-24, wszystko self-reported)
+| Projekt | Sprzęt | Kwant | Decode | Prefill |
+|---|---|---|---|---|
+| [Xolotl / Strata-DSV4.1](https://github.com/Indras-Mirror/Strata-DSV4.1) (fork Straty) | RTX 4090 24 GB, **Ryzen 7 5700X, 90 GB DDR4**, 1 NVMe | GSQ-Uncensored 142–152 GiB | **26.8 tok/s** | 180–320 tok/s |
+| [lxe/dsx](https://github.com/lxe/dsx) (Rust+CUDA) | 2× RTX 3090 + 128 GB RAM | własny 2-bit | 30–37 tok/s | — |
+| [PolyStrata #21](https://github.com/VecSzn/PolyStrata/issues/21) | RTX 5090 D 24 GB, i7-14700KF, 128 GB DDR5 | UD-IQ2_XXS 90.9 GB (V4 Flash 0731, nie 4.1) | 29–36 tok/s @32K | 470–805 tok/s |
+| Xolotl na tej samej maszynie co wyżej | 5090 D + 128 GB | V4.1-1017 163 GB | 12–13 tok/s | — |
+| [JigSawPT llama.cpp fork](https://github.com/JigSawPT/deepseek-v41-flash-on-5090) | RTX 5090 + 125.7 GiB | — | 5.1 (nowa treść) / 21 (z cache) | — |
+
+Xolotl: 16 GB karta „should load but untested”, mniej niż 16 GB nie działa; GSQ-RCO od ISTA-DASLab testowane tylko na CPU. Oficjalna Strata 0.2.4 jest wolniejsza (5–10 tok/s na 12 GB kartach z 46–64 GB RAM), bo większość ekspertów idzie z SSD.
