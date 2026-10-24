@@ -178,7 +178,7 @@ export class App {
     if (this.server) await this.stopEngine();
     const same = this.state.chosen?.id === option.id;
     this.changed({
-      chosen: option, phase: 'download', error: null, ready: null,
+      chosen: option, phase: 'download', error: null, ready: null, progress: null, // not the scan's 100% under "download"
       ...(same ? {} : { baseline: null, candidates: [], best: null }),
     });
     if (!same) this.modelPath = null;
