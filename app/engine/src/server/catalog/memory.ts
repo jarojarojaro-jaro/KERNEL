@@ -58,6 +58,10 @@ export interface MemConfig {
   vramGiB: number;
   /** Reserve the MTP draft context (model has an MTP head and speculation will be tried). */
   spec: boolean;
+  /** Speculation runs in our engine (enigma, e.g. topka): + its reduced draft-vocab buffers. Upstream llama.cpp MTP has
+   *  none (3090 b11856 MTP: 21342 MiB at load). Prompt growth with speculation stays at GROWTH.spec for both: upstream
+   *  grew 6 MiB up to a 32.6k prompt, but nothing longer is measured, while our fork OOMed at 55.6k (3090, 204800). */
+  enigmaSpec: boolean;
   /** Tokens already in the context; the recommender plans for a full context (prompt = ctx). */
   prompt: number;
 }
@@ -82,7 +86,7 @@ export function memParts(m: CatalogModel, q: QuantFile, c: MemConfig): MemParts 
   const perCtx = c.ctx * (f16Layer + 2 * c.ub);
   const g = GROWTH[c.backend];
   let compute = perCtx + c.ub * ACT_MAIN * a.nEmbd + c.prompt * f16Layer * (spec ? g.spec : g.plain);
-  if (spec) compute += perCtx + c.ub * ACT_DRAFT * a.nEmbd + a.mtpExtraMiB * MiB;
+  if (spec) compute += perCtx + c.ub * ACT_DRAFT * a.nEmbd + (c.enigmaSpec ? a.mtpExtraMiB * MiB : 0);
 
   const weights = q.sizeBytes - q.hostEmbdBytes;
   const overhead = overheadMiB(c.backend, c.vramGiB) * MiB;

@@ -6,6 +6,7 @@
   "bTokGB": "bytes read per decoded token: dense = file - host token_embd; MoE = file x active/total params (rough, as estimator.ts)",
   "gpus": "bandwidth table copied from landing/src/lib/data/gpus.json (report 04 §2.1.6)",
   "eligible": "only ctxMax >= minCtx (default 131072) is offered",
+  "evidence": "memory plans: measured fits are test/catalog.measured.json (XTX Qwen3.8-27B 204800 + MTP full prefill; 3090/4060 Ti/3060 app runs up to a ~32.6k prompt); contexts beyond the measured prompt (e.g. 3090 Qwen3.8-27B + upstream MTP ~160k) come from the memory model with the conservative prompt-growth term",
   "refreshed": "2026-10-24"
  },
  "gpus": [

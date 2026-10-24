@@ -14,7 +14,7 @@ const CTX_STEP = 4096;
  *  (DWM) and WDDM [INFERENCE]. macOS: none on top of the unified-memory budget (already 66–75% of RAM). */
 const MARGIN_MIB: Record<Hw['os'], number> = { linux: 100, windows: 512, macos: 0 };
 /** CUDA's K/V conversion pool grows with the prompt and is measured only up to a 55.6k prompt (3090: OOM at 204800 with
- *  633 MiB free after load, report 27); full-context CUDA plans keep this extra headroom (3090 Qwen + MTP: 131072). */
+ *  633 MiB free after load, report 27); full-context CUDA plans keep this extra headroom. */
 const CUDA_POOL_MARGIN_MIB = 200;
 /** f16 KV only with this much memory left at the chosen context. */
 const F16_HEADROOM_MIB = 2048;
@@ -38,6 +38,8 @@ interface Device {
   budgetMiB: number;
   marginMiB: number;
   vramGiB: number;
+  /** Speculation would run in one of our engines (data/engines.json kind "enigma" with MTP for this GPU). */
+  enigmaMtp: boolean;
 }
 
 function devices(hw: Hw): Device[] {
@@ -45,16 +47,25 @@ function devices(hw: Hw): Device[] {
   const out: Device[] = [];
   hw.gpus.forEach((gpu, i) => {
     const spec = matchGpu(gpu.name, gpu.vramGiB);
+    const enigmaFor = (backend: Backend): boolean =>
+      engines.engines.some((e) => e.kind === 'enigma' && e.backend === backend && e.os === hw.os && e.features.includes('mtp')
+        && (!('gpuArchs' in e) || (gpu.arch !== undefined && (e.gpuArchs ?? []).includes(gpu.arch))));
     const budgetMiB = gpu.unified
       ? hw.ramGiB * unifiedShare(hw.ramGiB) * 1024
       : gpu.vramGiB * 1024 * (1 - VRAM_RESERVE[gpu.vendor]);
     for (const backend of BACKEND_ORDER.filter((b) => gpu.backends.includes(b))) {
       const margin = marginMiB + (backend === 'cuda' ? CUDA_POOL_MARGIN_MIB : 0);
-      out.push({ backend, gpuIndex: i, gpu, spec, budgetMiB, marginMiB: margin, vramGiB: gpu.unified ? hw.ramGiB : gpu.vramGiB });
+      out.push({
+        backend, gpuIndex: i, gpu, spec, budgetMiB, marginMiB: margin, vramGiB: gpu.unified ? hw.ramGiB : gpu.vramGiB,
+        enigmaMtp: enigmaFor(backend),
+      });
     }
   });
   if (out.length === 0) {
-    out.push({ backend: 'cpu', gpuIndex: null, gpu: null, spec: null, budgetMiB: hw.ramGiB * CPU_SHARE * 1024, marginMiB, vramGiB: 0 });
+    out.push({
+      backend: 'cpu', gpuIndex: null, gpu: null, spec: null, budgetMiB: hw.ramGiB * CPU_SHARE * 1024, marginMiB, vramGiB: 0,
+      enigmaMtp: false,
+    });
   }
   return out;
 }
@@ -64,7 +75,7 @@ const mtpCapable = (m: CatalogModel, d: Device): boolean =>
   d.backend !== 'cpu' && m.features.includes('mtp') && m.arch.nextn.layers > 0;
 
 function config(d: Device, ctx: number, kvType: KvType, ub: number, spec: boolean): MemConfig {
-  return { ctx, kvType, ub, backend: d.backend, vramGiB: d.vramGiB, spec, prompt: ctx };
+  return { ctx, kvType, ub, backend: d.backend, vramGiB: d.vramGiB, spec, enigmaSpec: d.enigmaMtp, prompt: ctx };
 }
 
 const freeMiB = (m: CatalogModel, q: QuantFile, d: Device, c: MemConfig): number =>

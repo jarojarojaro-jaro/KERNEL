@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "note": "Measured VRAM (MiB) of llama-server on our cards; memory-model predictions must be within \u00b10.4 GiB (oom points: prediction above the limit)."
+  "note": "Measured VRAM (MiB) of llama-server on our cards; memory-model predictions must be within \u00b10.4 GiB (oom points: prediction above the limit). enigmaSpec = speculation in our engine (fork), else upstream MTP."
  },
  "points": [
   {
@@ -14,6 +14,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": true,
+   "enigmaSpec": true,
    "prompt": 0,
    "usedMiB": 23359,
    "source": "product/research/38-checkpointy-vram.md:19 (amd-smi, topka MTP, load / peak after ~32k prompts)"
@@ -29,6 +30,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": true,
+   "enigmaSpec": true,
    "prompt": 32768,
    "usedMiB": 23878,
    "source": "product/research/38-checkpointy-vram.md:19 (amd-smi, topka MTP, load / peak after ~32k prompts)"
@@ -44,6 +46,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": true,
+   "enigmaSpec": true,
    "prompt": 0,
    "usedMiB": 21380,
    "source": "product/research/27-3090-final.md:207,211 (nvidia-smi, cuda-topka2 arm T, MTP)"
@@ -59,6 +62,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": true,
+   "enigmaSpec": true,
    "prompt": 55569,
    "usedMiB": 22198,
    "source": "product/research/27-3090-final.md:207,211 (nvidia-smi, cuda-topka2 arm T, MTP)"
@@ -74,6 +78,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": true,
+   "enigmaSpec": true,
    "prompt": 0,
    "usedMiB": 23493,
    "source": "product/research/27-3090-final.md:207,211 (nvidia-smi, cuda-topka2 arm T, MTP)"
@@ -89,6 +94,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": true,
+   "enigmaSpec": true,
    "prompt": 55569,
    "oomAboveMiB": 24126,
    "source": "product/research/27-3090-final.md:207,211 (nvidia-smi, cuda-topka2 arm T, MTP): cudaMalloc OOM in prefill, 24126 MiB usable"
@@ -104,6 +110,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 23954,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -119,6 +126,7 @@
    "kvType": "q4_0",
    "ub": 2048,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 23894,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -134,6 +142,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24032,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -149,6 +158,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 225000,
    "usedMiB": 24058,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -164,6 +174,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24084,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -179,6 +190,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 232000,
    "usedMiB": 24110,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -194,6 +206,7 @@
    "kvType": "q4_0",
    "ub": 256,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24052,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -209,6 +222,7 @@
    "kvType": "q4_0",
    "ub": 128,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24026,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -224,6 +238,7 @@
    "kvType": "q4_0",
    "ub": 128,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 247000,
    "usedMiB": 24072,
    "source": "product/research/59-flint.md:137-147 (3090 #1, used = 24126 usable - nvidia-smi free)"
@@ -239,6 +254,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 23973,
    "source": "product/research/59-flint.md:278-280 (3090 #2, nvidia-smi used; used + free = 24134)"
@@ -254,6 +270,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 190000,
    "usedMiB": 24003,
    "source": "product/research/59-flint.md:278-280 (3090 #2, nvidia-smi used; used + free = 24134)"
@@ -269,6 +286,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24091,
    "source": "product/research/59-flint.md:278-280 (3090 #2, nvidia-smi used; used + free = 24134)"
@@ -284,6 +302,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24415,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -299,6 +318,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 245904,
    "usedMiB": 24533,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -314,6 +334,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24300,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -329,6 +350,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 235904,
    "usedMiB": 24417,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -344,6 +366,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24184,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -359,6 +382,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 225904,
    "usedMiB": 24301,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -374,6 +398,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 24253,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -389,6 +414,7 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 258048,
    "usedMiB": 24353,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -404,6 +430,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 0,
    "usedMiB": 23836,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -419,6 +446,7 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 190000,
    "usedMiB": 23955,
    "source": "product/research/59-flint.md:47-54 (XTX, used = 24560 - amd-smi free; fill = prompt ctx-4096)"
@@ -434,6 +462,7 @@
    "kvType": "q8_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 32768,
    "usedMiB": 18591,
    "source": "wiki/eksperymenty/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
@@ -449,6 +478,7 @@
    "kvType": "q8_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 32768,
    "usedMiB": 18765,
    "source": "wiki/eksperymenty/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
@@ -464,12 +494,13 @@
    "kvType": "q8_0",
    "ub": 2048,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 32768,
    "usedMiB": 19089,
    "source": "wiki/eksperymenty/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
   },
   {
-   "id": "4060ti-qwen-q3-131072-ub1024",
+   "id": "vast-4060ti-qwen-q3-131072-ub1024",
    "gpu": "rtx-4060-ti-16",
    "backend": "cuda",
    "vramGiB": 16,
@@ -479,12 +510,13 @@
    "kvType": "q4_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 32635,
    "usedMiB": 15284,
-   "source": "qwen-opt/cloud/results/enigma-4060ti-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak of the baseline phase)"
+   "source": "qwen-opt/cloud/results/enigma-4060ti-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak per phase)"
   },
   {
-   "id": "4060ti-qwen-q3-131072-ub512",
+   "id": "vast-4060ti-qwen-q3-131072-ub512",
    "gpu": "rtx-4060-ti-16",
    "backend": "cuda",
    "vramGiB": 16,
@@ -494,12 +526,13 @@
    "kvType": "q4_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 32635,
    "usedMiB": 15046,
-   "source": "qwen-opt/cloud/results/enigma-4060ti-20261024 (Enigma app run, candidate ub-512, nvidia-smi peak)"
+   "source": "qwen-opt/cloud/results/enigma-4060ti-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak per phase)"
   },
   {
-   "id": "3060-gemma12-262144-ub1024",
+   "id": "vast-3060-gemma12-262144-ub1024",
    "gpu": "rtx-3060-12",
    "backend": "cuda",
    "vramGiB": 12,
@@ -509,12 +542,13 @@
    "kvType": "q8_0",
    "ub": 1024,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 32599,
    "usedMiB": 10954,
-   "source": "qwen-opt/cloud/results/enigma-3060-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak of the baseline phase)"
+   "source": "qwen-opt/cloud/results/enigma-3060-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak per phase)"
   },
   {
-   "id": "3060-gemma12-262144-ub512",
+   "id": "vast-3060-gemma12-262144-ub512",
    "gpu": "rtx-3060-12",
    "backend": "cuda",
    "vramGiB": 12,
@@ -524,9 +558,58 @@
    "kvType": "q8_0",
    "ub": 512,
    "spec": false,
+   "enigmaSpec": false,
    "prompt": 32599,
    "usedMiB": 10436,
-   "source": "qwen-opt/cloud/results/enigma-3060-20261024 (Enigma app run, candidate ub-512, nvidia-smi peak)"
+   "source": "qwen-opt/cloud/results/enigma-3060-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak per phase)"
+  },
+  {
+   "id": "vast-3090-qwen-131072-ub1024",
+   "gpu": "rtx-3090",
+   "backend": "cuda",
+   "vramGiB": 24,
+   "modelId": "qwen38-27b",
+   "quant": "UD-Q4_K_XL",
+   "ctx": 131072,
+   "kvType": "q4_0",
+   "ub": 1024,
+   "spec": false,
+   "enigmaSpec": false,
+   "prompt": 32642,
+   "usedMiB": 19486,
+   "source": "qwen-opt/cloud/results/enigma-3090-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak per phase)"
+  },
+  {
+   "id": "vast-3090-qwen-131072-ub512",
+   "gpu": "rtx-3090",
+   "backend": "cuda",
+   "vramGiB": 24,
+   "modelId": "qwen38-27b",
+   "quant": "UD-Q4_K_XL",
+   "ctx": 131072,
+   "kvType": "q4_0",
+   "ub": 512,
+   "spec": false,
+   "enigmaSpec": false,
+   "prompt": 32642,
+   "usedMiB": 19250,
+   "source": "qwen-opt/cloud/results/enigma-3090-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak per phase)"
+  },
+  {
+   "id": "vast-3090-qwen-131072-ub1024-mtp",
+   "gpu": "rtx-3090",
+   "backend": "cuda",
+   "vramGiB": 24,
+   "modelId": "qwen38-27b",
+   "quant": "UD-Q4_K_XL",
+   "ctx": 131072,
+   "kvType": "q4_0",
+   "ub": 1024,
+   "spec": true,
+   "enigmaSpec": false,
+   "prompt": 32642,
+   "usedMiB": 21348,
+   "source": "qwen-opt/cloud/results/enigma-3090-20261024 (Enigma app run, upstream b11856 CUDA, nvidia-smi peak per phase); upstream MTP --spec-type draft-mtp --spec-draft-n-max 4"
   }
  ]
 }

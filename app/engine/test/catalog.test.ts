@@ -52,7 +52,7 @@ describe('memory model vs our measurements (±0.4 GiB)', () => {
       if (!q) throw new Error(`${p.modelId} has no ${p.quant}`);
       const r = memParts(m, q, {
         ctx: p.ctx, kvType: p.kvType as KvType, ub: p.ub, backend: p.backend as Backend, vramGiB: p.vramGiB,
-        spec: p.spec, prompt: p.prompt,
+        spec: p.spec, enigmaSpec: p.enigmaSpec, prompt: p.prompt,
       });
       const used: number | undefined = 'usedMiB' in p ? p.usedMiB : undefined;
       const oom: number | undefined = 'oomAboveMiB' in p ? p.oomAboveMiB : undefined;
@@ -97,13 +97,15 @@ describe('recommend on typical machines', () => {
     expect(pick?.mem.totalGiB).toBeCloseTo(23.84, 1);
   });
 
-  test('RTX 3090: Qwen3.8-27B UD-Q4_K_XL with MTP at 131072; 204800 only without MTP (MTP OOM measured)', () => {
+  test('RTX 3090: Qwen3.8-27B UD-Q4_K_XL with upstream MTP at ~160k; 204800 only without MTP (fork MTP OOM measured)', () => {
     const hw = machine('RTX 3090 24 GB');
     const pick = recommend(hw).pick;
     if (!pick) throw new Error('no pick');
     expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', kvType: 'q4_0', backend: 'cuda' });
     expect(pick.features).toContain('mtp');
-    expect(pick.ctx).toBe(131072); // our published NVIDIA 24 GB setting with MTP (measured peak 22.2 GB at 60k)
+    // fit measured to a 32.6k prompt (Vast, upstream b11856 MTP 21348 MiB at 131072); the full context is the model
+    expect(pick.ctx).toBeGreaterThan(131072);
+    expect(pick.ctx).toBeLessThan(204800);
     expect(replan(pick, hw, { ctx: 204800, ub: 512 }).fits).toBe(false);
     expect(replan(pick, hw, { ctx: 204800, ub: 512, spec: false }).fits).toBe(true);
   });
@@ -124,7 +126,8 @@ describe('recommend on typical machines', () => {
     const m = model('flint-40b-a2.5b');
     const q = m.quants[0];
     if (!q) throw new Error('no flint quant');
-    const at = (ub: number) => memParts(m, q, { ctx: 262144, kvType: 'q4_0', ub, backend: 'rocm', vramGiB: 24, spec: false, prompt: 0 });
+    const at = (ub: number) =>
+      memParts(m, q, { ctx: 262144, kvType: 'q4_0', ub, backend: 'rocm', vramGiB: 24, spec: false, enigmaSpec: false, prompt: 0 });
     expect(at(1024).totalMiB).toBeGreaterThan(24560);
     expect(24560 - at(512).totalMiB).toBeLessThan(300);
   });
