@@ -103,12 +103,16 @@ const CANDIDATE: Record<string, Record<Lang, Render>> = {
 	engine_no_lookup: { pl: () => 'Ten silnik nie obsługuje lookup.', en: () => 'This engine does not support lookup.' },
 	ctx_not_fit: { pl: () => 'Pełny kontekst się nie zmieścił.', en: () => 'The full context did not fit.' },
 	prefill_loss: {
-		pl: (v, l) => `Czytanie zmieniło się o ${pct(Number(v), l)} (dopuszczamy najwyżej −5 %).`,
-		en: (v, l) => `Reading changed by ${pct(Number(v), l)} (we allow at most −5%).`
+		pl: (v, l) => `Czytanie zmieniło się o ${pct(Number(v), l)} (dopuszczamy −5 %, a −15 % przy pisaniu szybszym o 20 %+).`,
+		en: (v, l) => `Reading changed by ${pct(Number(v), l)} (we allow −5%, or −15% when writing is 20%+ faster).`
 	},
 	decode_not_faster: {
 		pl: (v, l) => `Pisanie nie jest szybsze niż punkt wyjścia (${pct(Number(v), l)}).`,
 		en: (v, l) => `Writing is not faster than the starting point (${pct(Number(v), l)}).`
+	},
+	gain_too_small: {
+		pl: (v, l) => `Zysk ${pct(Number(v), l)} jest za mały, żeby zmieniać tekst odpowiedzi (wymagamy co najmniej +3 %).`,
+		en: (v, l) => `A ${pct(Number(v), l)} gain is too small to change the answer text (we require at least +3%).`
 	},
 	slower_than: { pl: (v) => `Wolniej niż „${v}”.`, en: (v) => `Slower than “${v}”.` },
 	oom: { pl: () => 'Zabrakło pamięci.', en: () => 'Out of memory.' },

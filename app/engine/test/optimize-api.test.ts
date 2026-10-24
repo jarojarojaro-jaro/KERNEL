@@ -24,13 +24,26 @@ function cand(id: string, r?: BenchResult, status: Candidate['status'] = 'pendin
 describe('decide', () => {
   const base = bench(1000, 100);
 
-  test('fastest decode with prefill loss <= 5% wins', () => {
-    const cs = [cand('a', bench(960, 120)), cand('b', bench(900, 150)), cand('c', bench(1100, 110)), cand('d', undefined, 'rejected')];
+  test('fastest decode wins; prefill loss <= 5%, or <= 15% when decode gains >= 20%', () => {
+    const cs = [cand('a', bench(960, 120)), cand('b', bench(800, 150)), cand('c', bench(1100, 110)), cand('d', undefined, 'rejected'),
+      cand('e', bench(900, 115))];
     const best = decide(cs, base);
     expect(best?.id).toBe('a');
-    expect(cs.map((c) => c.status)).toEqual(['kept', 'rejected', 'rejected', 'rejected']);
-    expect(cs[1]?.reason).toBe('prefill_loss:-10');
+    expect(cs.map((c) => c.status)).toEqual(['kept', 'rejected', 'rejected', 'rejected', 'rejected']);
+    expect(cs[1]?.reason).toBe('prefill_loss:-20');
     expect(cs[2]?.reason).toBe('slower_than:a');
+    expect(cs[4]?.reason).toBe('prefill_loss:-10');
+  });
+
+  test('a big decode gain may cost up to 15% prefill (MTP on the 3090: decode +40%, prefill -11%)', () => {
+    const cs = [cand('lookup', bench(1000, 102, 'x')), cand('mtp', bench(890, 140, 'y'))];
+    expect(decide(cs, base)?.id).toBe('mtp');
+  });
+
+  test('a text-changing candidate needs >= 3% decode gain; an identical-output one does not', () => {
+    const cs = [cand('lookup', bench(1000, 102, 'x')), cand('ub', bench(1000, 101.5, 'a'))];
+    expect(decide(cs, base)?.id).toBe('ub');
+    expect(cs[0]?.reason).toBe('gain_too_small:2');
   });
 
   test('nothing beats the baseline: keep baseline', () => {

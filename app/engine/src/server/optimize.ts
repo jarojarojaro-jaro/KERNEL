@@ -1,5 +1,5 @@
 // Optimisation: candidates (CONTRACT.md "Optymalizacja"), each measured with the same benchmark as the baseline.
-// Kept: the best decode whose prefill is at most 5% below the baseline. sameOutput = decode md5 equals the baseline's.
+// Kept: the fastest decode within the guards of decide() (prefill loss, minimum gain for text changes). sameOutput = decode md5 equals the baseline's.
 import type { BenchResult, Candidate, EngineConfig, Hw, Option } from '../shared/types.ts';
 import { benchEngine, type BenchProgress } from './bench.ts';
 import { replan } from './catalog/index.ts';
@@ -7,6 +7,11 @@ import { enigmaConfig, enigmaEngineFor, ensureEngine, type ResolvedEngine } from
 import { errMsg, log } from './log.ts';
 
 export const PREFILL_LOSS_MAX = 0.05;
+/** Prefill loss allowed when decode gains at least BIG_DECODE_GAIN. */
+export const PREFILL_LOSS_MAX_BIG = 0.15;
+export const BIG_DECODE_GAIN = 0.2;
+/** Minimum decode gain for a candidate whose output text differs from the baseline. */
+export const MIN_GAIN_TEXT_CHANGE = 0.03;
 const UB_STEPS = [512, 1024, 2048] as const;
 
 /** How a candidate's config is built; kept out of the persisted Candidate (rebuilt from the id on resume). */
@@ -184,17 +189,24 @@ export async function optimize(ctx: OptimizeContext): Promise<OptimizeResult> {
 
 /**
  * Marks every measured candidate kept/rejected (in place) and returns the winner: the fastest decode among candidates
- * whose context fit, whose prefill lost at most 5% and whose decode beats the baseline. Null = keep the baseline.
+ * whose context fit and whose decode beats the baseline, under two guards:
+ *  - prefill may drop at most 5%, or at most 15% when decode gains ≥ 20% (decode is what users feel on every reply;
+ *    prefill only moves the first-token wait — 2026-10-24: MTP on the 3090 gave decode +40.5%, deep +102%, prefill −11%);
+ *  - a candidate that changes the output text (sameOutput false) must gain at least 3% decode (no text change for noise).
+ * Null = keep the baseline.
  */
 export function decide(cands: Candidate[], base: BenchResult): Candidate | null {
   let best: Candidate | null = null;
   for (const c of cands) {
     if (!c.result || c.status === 'failed') continue;
     c.status = 'rejected';
+    const gain = c.result.decode.tps / base.decode.tps - 1;
+    const prefillFloor = base.prefill.tps * (1 - (gain >= BIG_DECODE_GAIN ? PREFILL_LOSS_MAX_BIG : PREFILL_LOSS_MAX));
+    const changesText = c.result.outputMd5 !== base.outputMd5;
     if (!c.result.ctxOk) c.reason = 'ctx_not_fit';
-    else if (c.result.prefill.tps < base.prefill.tps * (1 - PREFILL_LOSS_MAX)) {
-      c.reason = `prefill_loss:${pct(c.result.prefill.tps, base.prefill.tps)}`;
-    } else if (c.result.decode.tps <= base.decode.tps) c.reason = `decode_not_faster:${pct(c.result.decode.tps, base.decode.tps)}`;
+    else if (c.result.prefill.tps < prefillFloor) c.reason = `prefill_loss:${pct(c.result.prefill.tps, base.prefill.tps)}`;
+    else if (gain <= 0) c.reason = `decode_not_faster:${pct(c.result.decode.tps, base.decode.tps)}`;
+    else if (changesText && gain < MIN_GAIN_TEXT_CHANGE) c.reason = `gain_too_small:${pct(c.result.decode.tps, base.decode.tps)}`;
     else {
       delete c.reason;
       if (!best || c.result.decode.tps > (best.result?.decode.tps ?? 0)) best = c;

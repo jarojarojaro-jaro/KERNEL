@@ -131,7 +131,7 @@ konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko
    żądanie odtworzyłoby poprzednią odpowiedź). Zatrzymanie serwera: czekaj na wolne `/slots`, **jeden** SIGTERM, 45 s,
    potem SIGKILL.
 
-## Optymalizacja (kandydaci, każdy mierzony tym samym benchmarkiem; zostaje najlepszy decode bez straty prefill > 5%)
+## Optymalizacja (kandydaci, każdy mierzony tym samym benchmarkiem; zostaje najlepszy decode; prefill może spaść ≤ 5%, albo ≤ 15% gdy decode rośnie ≥ 20%; kandydat zmieniający tekst musi dać ≥ 3% decode)
 - silnik `enigma-*` dla platformy, jeśli jest (na AMD gfx1100: topka z flagami jak `~/qwen-opt/run-topka.sh` — PM4,
   lookup, MTP dla Qwen3.8, coupled, host-gap; wierne odwzorowanie `run-llm.sh`);
 - `-ub/-b` (512/1024/2048) w granicach pamięci; MTP (jeśli model ma głowicę i silnik obsługuje); lookup n-gram.
@@ -140,5 +140,5 @@ konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko
 - `Candidate.reason` = kod (`kod` albo `kod:wartość`; UI tłumaczy, nieznany pokazuje surowo):
   `no_enigma_engine:<arch|vendor>-<backend>-<os>-<arch>` (np. `cpu-linux-x64`, `sm_86-cuda-windows-x64`) |
   `enigma_no_profile:<modelId>` | `enigma_not_published:<engineId>` | `ub_no_fit:<ub>` | `no_mtp_head` | `mtp_no_memory` | `engine_no_mtp` |
-  `engine_no_lookup` | `ctx_not_fit` | `prefill_loss:<pct>` | `decode_not_faster:<pct>` | `slower_than:<candidateId>` |
+  `engine_no_lookup` | `ctx_not_fit` | `prefill_loss:<pct>` | `decode_not_faster:<pct>` | `gain_too_small:<pct>` | `slower_than:<candidateId>` |
   `oom` | `start_failed:<pierwsza linia>` | `failed:<pierwsza linia>`. Kandydat `kept` nie ma `reason`.
