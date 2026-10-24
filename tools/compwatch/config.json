@@ -114,7 +114,20 @@
       {"slug": "IST-DASLab/RCO",                  "tier": "C", "name": "ISTA RCO (alokacja pod budżet; R57a)"},
       {"slug": "IST-DASLab/SLQ",                  "tier": "C", "name": "ISTA SLQ (EAR, statystycznie bezstratne; R57a)"},
       {"slug": "IST-DASLab/gptq-gguf-toolkit",    "tier": "C", "name": "ISTA GPTQ→K-quant + EvoPress (bez licencji; R57a)"},
-      {"slug": "eagle-hq/EAGLE-4",                "tier": "A", "name": "EAGLE-4 (eagle-harness, drafter Qwen3.8-27B; R52)"}
+      {"slug": "eagle-hq/EAGLE-4",                "tier": "A", "name": "EAGLE-4 (eagle-harness, drafter Qwen3.8-27B; R52)"},
+      {"slug": "vllm-project/humming",            "tier": "B", "name": "Humming (vLLM+Ant, kernele kwantów, tylko CUDA; R60d)"},
+      {"slug": "thu-nics/AKV",                    "tier": "C", "name": "AKV (agent zarządza swoim KV; R60d)"},
+      {"slug": "dphnAI/sonar",                    "tier": "C", "name": "sonar (fork Aphrodite, all-reduce PCIe #1788; R60d)"},
+      {"slug": "syv-ai/HyperQwen",                "tier": "B", "name": "HyperQwen (vLLM 3090, źródło „4.6x” @superalesha; R60c)"},
+      {"slug": "fraserprice/dspark-vllm",         "tier": "C", "name": "dspark-vllm (DSpark dla DeepSeek V4 Flash, RTX Pro 6000; R60c)"},
+      {"slug": "Zagitta/gpu-unlock",              "tier": "B", "name": "gpu-unlock (pełna akumulacja FP32 w tensor core GeForce Ampere; R60a)"},
+      {"slug": "JustAResearcher/gpu-unlock-ada",  "tier": "C", "name": "gpu-unlock-ada (port na RTX 4090/AD103; R60a)"},
+      {"slug": "aikitoria/open-gpu-kernel-modules", "tier": "C", "name": "P2P BAR1 dla GeForce 30/40/50 (R60a)"},
+      {"slug": "keylase/nvidia-patch",            "tier": "C", "name": "NVENC/NvFBC limit sesji (R60a, nie dotyczy inferencji)"},
+      {"slug": "jundot/omlx",                     "tier": "B", "name": "oMLX (Lightning MTP, DFlash, Splash; R60b)"},
+      {"slug": "Generated-Computers/Locals",      "tier": "C", "name": "Locals (MLX, GDN decode, gramatyka na GPU; R60b)"},
+      {"slug": "Layr-Labs/cudafast-bonsai2-9b-engine", "tier": "A", "name": "cuda.fast Bonsai 2 9B (llama.cpp CUDA: GDN lazy rollback, weryfikacja DFlash15; R60b)"},
+      {"slug": "Layr-Labs/mlxfast-bonsai2-9b-engine",  "tier": "B", "name": "mlx.fast Bonsai 2 9B (drzewo 15 węzłów, delta replay GDN; R60b)"}
     ],
     "keywords": ["rocm", "hip", "gfx11", "gfx1100", "gfx12", "rdna", "radeon", "7900", "r9700", "vulkan",
                  "sm_86", "sm_89", "sm_120", "3090", "4090", "5090", "5060", "mtp", "speculative", "spec-", "draft",
@@ -138,7 +151,7 @@
   ],
 
   "hf": {
-    "authors": ["unsloth", "bartowski", "ggml-org", "ISTA-DASLab"],
+    "authors": ["unsloth", "bartowski", "ggml-org", "ISTA-DASLab", "agentionai", "YTan2000"],
     "limit": 200
   }
 }

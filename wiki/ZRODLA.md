@@ -204,6 +204,16 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | TorchTPU | PyPI 0.2.0 | R39e, [[raport-39e-torchtpu]] | Bez znaczenia dla decode. | – | TRC |
 | NVIDIA Flare | `47581cc` (10-20) | R39f, [[nvidia-flare]] | Tylko NVIDIA, bez spekulacji dla 27B. | 27B NVFP4 20.15 GB | N1X Windows |
 | Strata 0.2.2 + Qwen3.8-Flash (API) vs Flash-Next | `011c9e60` v0.2.2 (10-21, silnik 0.1.47) | [R57b](../product/research/57b-strata-qwen38-flash.md), [[strata]] | Dla gfx1100 nic; lekcja: flaga hosta przed graphLaunch (deadlock HIP). Flash = API, wag brak. | XTX IQ3_S 62.3 t/s (społ.); prefill 128K 926 → 1687 (hipBLASLt) | >v0.2.2: tylko HIP/gfx1100, obsługa 27B |
+| Gyro-Coder (HF agentionai) + `agention-gyro` (spec, Apache-2.0) | karta 10-22/24; `587a526` (10-24); fork `9aa51ce` | [R60c](../product/research/60c-quant-and-3090-engines.md), [[gyro-coder]] | 256/512 ekspertów, TQ2_T, 19.92 GiB; tylko fork Vulkan; dla 24 GB nie dotyczy. | Python KLD 0.165, 13/16 zadań | Strata/HIP obsługa, produkcyjny enkoder |
+| tqLLM 1.2.0–1.2.3 | `c2163c2` v1.2.3 (10-22) | R60c, [[tqllm]] | Kod otwarty, tylko CUDA; Flash-Next 3090 ≈ nasz czat 27B; „32 GB RAM” nieprawda (≥ 64 GB). | 77.1 vs 47.2 t/s po 128K | ROCm, nowy plik Flash-Next |
+| DCQ (HF Akahsizrr, MiMo-V2.6-Distill-Qwen-9B) | 10-2x, bez wersji | R60c, [[dcq-kotwica-stanu-gdn]] | Pomysł (stan GDN w stracie) przenośny; dowody słabe (n=20, JSON ≠ karta). | qkv stan 25× wyjście | artykuł / większa ewaluacja |
+| @superalesha (X 2111885825218838905, 2113131231168831637), @fraserpricee 2112111199454454169 | 10-18/19/22 | R60c, [[hyperqwen]] | 4.6× = cytowanie 25K (czat 1.6×); 574 t/s DeepSeek: źródło mówi 500+, 4× RTX Pro 6000. | 82 → 382 t/s | przepis megakernela Frasera |
+| Nemotron-3.5-Bolt-E4B (NVIDIA, unsloth GGUF) | HF 10-23 | R60c, [[nemotron-3-5-bolt-e4b]] | Telefon/edge; nie drafter Qwena (słownik 262 144). | Q4_K_M 6.18 GB | katalog 6–8 GB |
+| Humming (vllm-project/humming, vLLM + Ant Group) | `db930af` (10-22), blog 10-21 | [R60d](../product/research/60d-serving-kernels-cache.md), [[humming]] | Tylko CUDA, bez GGUF; batch 1 ≈ Marlin, poniżej naszego MMVQ. | 4090 W4A16 M=1 610 GB/s (60%); E2E +14…43% (8× H20) | port HIP, ścieżka GEMV małego M |
+| SGLang HiCache + Unified Radix Cache (blogi, PR #21259 #30393 #33639 #34798) | blog 10-2x; PR do 2026-08-19 | R60d, [[sglang-hicache]] | Wzorce dla cache sesji: pinned I/O, snapshot GDN na granicy prefiksu, session_id. | L3 9.4K → 145.5K tok/s; odzysk 1/10 → 10/10 | write-back dla snapshotów, nowe PR hybryd |
+| AKV (arXiv 2610.28577, thu-nics/AKV) | `c567a42` (10-21), v1 10-20 | R60d, [[akv-cache-agentow]] | Repos odpada przy IMROPE; drop tylko w atencji, drogi. | −27.7% kosztu (centy API); 1.18× wyjścia | wsparcie modeli liniowych/hybryd |
+| dphnAI/sonar PR #1788 (all-reduce PCIe) | `f653ba4e` (OPEN, 10-21) | R60d | Tylko sm_120, TP=4, P2P; nie dotyczy. | 290.4 → 327.2 t/s (4× RTX PRO 6000) | scalenie, sm_86 bez P2P |
+| Project Maya | v1.1.21 `451f9cb` … v1.1.26 `f26d8ba` (10-21…23) | R60d, [[project-maya]] | Tylko DeepSeek; nic dla gfx1100/Qwena; #382 na 2× XTX bez zysku. | prefill AMD 2.35–2.53×; FAT_ROWS 1.3–1.56× (V100) | >v1.1.26: gęsty 27B, pomiar XTX |
 
 ## Powiązane
 - [[KONWENCJE]]

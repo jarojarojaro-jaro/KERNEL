@@ -2901,6 +2901,17 @@ Automat jak 2026-10-20: tokeny liczbowe (≥ 2 znaki) z nowych notatek, z sekcji
 | [[raport-watch-compwatch]] | 10 | cytowane wiersze + plik | OK |
 | [[raporty-2026-10-20-21]] | 15 | cytowane wiersze + plik | OK (identyfikatory: 979) |
 
+## Ingest 2026-10-24 (raport 60c)
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[raport-60c-quant-3090]] | 8 | `60c-quant-and-3090-engines.md:42-66` + karty HF / tqllm.com | OK |
+| [[gyro-coder]] | 14 | karta Gyro-Coder, `agention-gyro/README.md`, `21n-notatki/gguf-M-TQ2_0.txt` | OK |
+| [[dcq-kotwica-stanu-gdn]] | 10 | `results/sens_table.json`, `results/*_20.json`, `tools/quant_learned.py:227-247` | OK |
+| [[nemotron-3-5-bolt-e4b]] | 14 | `config.json` BF16, karta unsloth | OK |
+| [[tqllm]] (aktualizacja) | 7 | tqllm.com/performance, `CHANGELOG.md` 1.2.0, karta YTan2000 | OK |
+| [[hyperqwen]] (aktualizacja) | 3 | X 2111885825218838905 (fxtwitter) | OK |
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

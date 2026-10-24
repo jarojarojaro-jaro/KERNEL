@@ -57,39 +57,39 @@ Audyt liczb: [[AUDYT]].
 ## Kategorie
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (38)
-- [[modele/_hub|modele]] — Modele i kwanty (19)
+- [[modele/_hub|modele]] — Modele i kwanty (21)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (22)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (35)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (37)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (59)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (100)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (72)
-- [[research/_hub|research]] — Streszczenia raportów (146)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (74)
+- [[research/_hub|research]] — Streszczenia raportów (148)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (30)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (27)
 
 ## Ostatnio aktualizowane
 
+- 2026-10-24 [[raport-60d-serving-kernels-cache|Raport 60d: Humming, SGLang HiCache, AKV, sonar #1788, Maya v1.1.21–1.1.26]]
+- 2026-10-24 [[raport-60c-quant-3090|Raport 60c: Gyro-Coder, tqLLM 1.2, DCQ, posty @superalesha, Nemotron-3.5-Bolt-E4B]]
+- 2026-10-24 [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]]
+- 2026-10-24 [[sglang-hicache|SGLang HiCache + Unified Radix Cache: cache prefiksów GPU/CPU/storage z modelami hybrydowymi]]
+- 2026-10-24 [[hyperqwen|HyperQwen (syv-ai, dawniej qwen38-27b-rtx3090)]]
+- 2026-10-24 [[humming|Humming (vLLM + Ant Group): kernele GEMM dla kwantów, tylko CUDA]]
+- 2026-10-24 [[nemotron-3-5-bolt-e4b|NVIDIA Nemotron-3.5-Bolt-E4B (Gemma-4-E4B po RL)]]
+- 2026-10-24 [[gyro-coder|Gyro-Coder (Qwen3.8-Flash-Next, 256/512 ekspertów) i format Gyro TQ]]
+- 2026-10-24 [[dcq-kotwica-stanu-gdn|DCQ: błąd stanu GDN w stracie kwantyzacji]]
+- 2026-10-24 [[akv-cache-agentow|AKV: agent/harness edytuje własne KV (drop + repozycjonowanie RoPE)]]
 - 2026-10-21 [[raporty-2026-10-20-21|Przegląd raportów 31–54 (2026-10-20/21)]]
 - 2026-10-21 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne]]
 - 2026-10-21 [[raport-plan-nv-v2|PLAN-NV-V2: kampania NVIDIA v2 (ctx ≥ 131k)]]
 - 2026-10-21 [[raport-57g-quantalloc-ear|Raport 57g: EAR w llama-perplexity + alokacja per tensor dla 24 GB (research)]]
 - 2026-10-21 [[raport-57a-gsq-rco|Raport 57a: GSQ-RCO (ISTA-DASLab), autor i transfer na 24 GB]]
-- 2026-10-21 [[raport-56-orca-3090|Raport 56: OrcaCyber-Nano-1.0 na RTX 3090 — 262k na KV q4_0, MTP n=2 72.8 t/s]]
-- 2026-10-21 [[raport-54-mniej-granic|Raport 54: mniej granic dispatchy w kroku weryfikacji]]
-- 2026-10-21 [[raport-53-draft-shortlist|Raport 53: shortlist w głowicy draftu MTP (E52b)]]
-- 2026-10-21 [[raport-52-eagle4|Raport 52: EAGLE-4 – co bierzemy]]
-- 2026-10-21 [[raport-51-male-kernele|Raport 51: małe kernele weryfikacji – rms_norm, FA kvq, GDN]]
-- 2026-10-21 [[raport-50d-mmvq-iq4xs|Raport 50d: MMVQ IQ4_XS n=5 – pierścień rejestrów + 2 wiersze na blok]]
-- 2026-10-21 [[raport-50c-mmvq-q6k|Raport 50c: MMVQ Q6_K n=5 – potok ping-pong]]
-- 2026-10-21 [[raport-50b-mmvq-q5k|Raport 50b: MMVQ Q5_K n=5 – instancja big_rows]]
-- 2026-10-21 [[raport-50a-mmvq-q4k|Raport 50a: MMVQ Q4_K n=5 – kernel strumieniowy]]
-- 2026-10-21 [[raport-49-mmvq-ogon-1024|Raport 49: MMVQ n=5 – ogon 1024-wierszowych k/v]]
 
-Razem 641 notatek. Wygenerowano 2026-10-21 przez `tools/wiki.py index`.
+Razem 649 notatek. Wygenerowano 2026-10-24 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

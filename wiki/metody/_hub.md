@@ -14,13 +14,15 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (35)
+## Notatki (37)
 
 - [[aob-v1|`aob-v1` (AMD-Opt Bench): benchmark regresji RSI-F z naszej historii (projekt)]] — Własny benchmark w formacie Harbor-lite (`task.toml`, `instruction.md`, `environment/`, ukryte `tests/`, `solution/oracle.patch` + `null.patch`) z fabryką jako weryfikatorem i podziałem dev (łatki 0001–0047) / test (0048–0070 + negatywy); przy naszym budżecie GPU to test regresji i postępu RSI-F, nie leaderboard – przy 10 zadaniach SE ≈ 0.15 (raport 21i, 2026-10-19).
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
 - [[agr-lookup-zgodny-z-mtp|AGR: wybór kandydata lookupu zgodnego z draftami MTP]] — Reguła bez treningu i bezstratna: spośród kandydatów lookupu (sufiks ≥ 2 albo ≥ 4 tokenów) zostawić tych, których pierwsze 4 tokeny kontynuacji równają się 4 draftom MTP, potem najdłuższy sufiks, potem najnowszy; w symulacji AGR2 daje +3.7% t/s na agencie (2/3 sufitu idealnego pointera) i +0.6% na czacie (raport 21c, 2026-10-19).
+- [[akv-cache-agentow|AKV: agent/harness edytuje własne KV (drop + repozycjonowanie RoPE)]] — AKV (Tsinghua NICS, arXiv 2610.28577, Apache-2.0, łatany SGLang) usuwa KV starych wyników narzędzi i przenumerowuje klucze K ← R(q)R(p)⁻¹K bez re-prefillu: −27.7% kosztu w centach API, jakość +1.3…+2.1 pkt średnio, 1.18× wyjścia i 1.53× wejścia przy szczycie (GPT-OSS-120B, 8× A800) (raport 60d, 2026-10-24).
 - [[analiza-platformy|Analiza platformy (obowiązkowy krok)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; bez niej nie trafia do produktu (decyzja z 2026-10-15).
 - [[bramka-kld-kanarki|Bramka KLD z kanarkami]] — Zmianę numeryki przepuszczamy tylko, gdy KLD względem referencji f16-KV mieści się w 2σ bazy, a celowo zepsute warianty („kanarki”) bramka musi odrzucić.
+- [[dcq-kotwica-stanu-gdn|DCQ: błąd stanu GDN w stracie kwantyzacji]] — DCQ (Drift-Correcting Quantisation) uczy zaokrąglenia wag przez STE i dodaje do straty błąd końcowego stanu rekurencyjnego Gated DeltaNet. Pomysł jest przenośny, ale dowody autora są bardzo słabe.
 - [[fabryka-v1|Fabryka v1: role, ledger, kaskada bramek]] — Propozycja raportu 15f: fabryka przepisów jako role z rozdzielonymi uprawnieniami, karta twierdzenia zapisywana przed pomiarem, `ledger.jsonl` z łańcuchem hashy pisany tylko przez deterministyczny weryfikator i kaskada bramek G0–G7.
 - [[kernel-tuner|Kernel Tuner: strojenie parametrów kerneli]] — Przeszukujemy parametry prawdziwych kerneli ggml (warpy, wiersze na blok) i przyjmujemy tylko konfiguracje bitowo równe produkcji.
 - [[kld-po-polsku|KLD kwantów na polskim tekście (protokół 16e)]] — Referencja to prawdziwe BF16 (na 48 GB z `-fit on`, offload do RAM, 54–240 s na korpus), a ocena idzie na pięciu korpusach o stałych md5, w tym trzech polskich; KLD-PL/KLD-wiki pokazuje, czy kwant ma „angielski” imatrix.

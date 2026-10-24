@@ -14,7 +14,7 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (72)
+## Notatki (74)
 
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
 - [[atrex-kernel-agent|alibaba/atrex-kernel-agent (AKA)]] — Orkiestrator agentów kodujących dla jednego operatora naraz (HEAD `5ad94ff`, 2026-10-14, v0.3.0); bierzemy narzędzia pomiarowe; werdykt: średnia (narzędzia).
@@ -43,6 +43,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[keops|getkeops/keops]] — Biblioteka symbolicznych redukcji map-reduce na GPU (HEAD `ef72bc90`, 2026-06-24), prekursor online-LSE; werdykt: niska.
 - [[pygpubench|gpu-mode/pygpubench]] — Biblioteka do mierzenia krótkich kerneli niezaufanego kodu (HEAD `286841bf`, 2026-08-18); daje eksperyment z bitem DLC na RDNA3; werdykt: średnia.
 - [[gpu-mode-reference-kernels|gpu-mode/reference-kernels]] — Definicje zadań i harness KernelBota GPU MODE (commit `f3295bb6`, 2026-09-17); ranking 2026 to nie źródło technik; werdykt: niska.
+- [[humming|Humming (vLLM + Ant Group): kernele GEMM dla kwantów, tylko CUDA]] — Biblioteka JIT (Apache-2.0, `humming-kernels`, domyślna w vLLM ≥ 0.29 na CUDA) dla WnA16/W8A8/W4A8/W4A4, dense i MoE. Brak HIP/ROCm i GGUF. Przy M=1 osiąga 610 GB/s = 60% pasma RTX 4090 (W4A16 8192², zimne L2), tyle co Marlin; nasze MMVQ na XTX ma 75.7% (raport 60d, 2026-10-24).
 - [[hyperqwen|HyperQwen (syv-ai, dawniej qwen38-27b-rtx3090)]] — vLLM z łatkami dla Qwen3.8-27B na RTX 3090 (250 W): lookup sufiksu z kontekstu (LABD), blok 16, łańcuchy i prefix cache dla hybryd; 381 t/s dotyczy kopiowania dokumentu verbatim, a dla nas to głównie górny pułap dla 3090.
 - [[ik-llama-cpp|ik_llama.cpp (ikawrakow)]] — Trwały fork llama.cpp (MIT, od 2024-06) z kwantami IQK/trellis (KT), mocny na CPU i MoE; pełne wsparcie tylko CPU i CUDA, Vulkan i HIP częściowo, port IQK do upstreamu odrzucony.
 - [[inferrous|inferrous (bitemyapp): silnik w Ruście z kernelami w Ruście]] — Badawczy silnik (Apache-2.0/MIT, 2 commity, 3 gwiazdki) z 31 kernelami napisanymi w Ruście (cuda-oxide → PTX, sm_120), tylko Qwen3-8B W8A8 na RTX PRO 6000 Max-Q: 182.3 / 178.2 / 170.5 t/s (prompt 5 / 129 / 512) wobec vLLM Humming 144.4 / 143.3 / 142.9 – rzetelne 84% pasma, ale bez porównania z llama.cpp i z własną bramką zgodności z PyTorch, która nie przechodzi (rel. L2 logitów 9–11%) (raport 21g, 2026-10-19).
@@ -75,6 +76,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[rsr-27b|RSR-27B (IntelligenceLab): Qwen3.8-27B po RSR + RL]] — Wydany model `IntelligenceLab/RSR-27B` (Apache-2.0, `qwen3_5`, 64 warstwy, 27.78 mld parametrów BF16) to Qwen3.8-27B dostrojony na przepisanych trajektoriach RSR + „dodatkowe RL”; tensory `mtp.*` (15) i `model.visual.*` są skopiowane z bazy (`model-missing-from-origin-*.safetensors`), więc głowica MTP nie pasuje do zmienionego pnia (2026-10-19).
 - [[sakana-agentic-scientist|Sakana AI-Scientist-v3 (Agentic Scientist)]] — Orkiestracja agentów do badań, w której kod wymusza izolację ewaluacji (harness, hashe, osobne kontenery), a naukę rozstrzyga LLM; brak jakiejkolwiek statystyki istotności.
 - [[kernelbench|ScalingIntelligence/KernelBench]] — Benchmark kerneli pisanych przez LLM (HEAD `423217d9`, 2026-03-05); bierzemy lepszą bramkę poprawności; werdykt: średnia (proces).
+- [[sglang-hicache|SGLang HiCache + Unified Radix Cache: cache prefiksów GPU/CPU/storage z modelami hybrydowymi]] — Cache prefiksów w trzech poziomach (HBM → DRAM → 3FS/Mooncake) ze stanem rekurencyjnym (Mamba/GDN) i stanem draftu MTP; L3 daje 9.4K → 145.5K tok/s efektywnego wejścia przy ~98% trafień (DeepSeek-V4-Flash, 4× H200), a backup snapshotu na końcu wspólnego prefiksu podnosi odzyskanie 1/10 → 10/10 (Qwen3-Next-80B, #33639) (raport 60d, 2026-10-24).
 - [[strata|Strata (Niko1221/Strata)]] — Silnik C++/CUDA/HIP pod jeden model MoE z offloadem (HEAD `a0116b27`, 2026-10-12, tag v0.1.43.1), studiowany jako wzór metodologii autora.
 - [[suffixdecoding|SuffixDecoding / ArcticInference: globalne drzewa sufiksów]] — Spekulacja bez modelu draftującego z drzew sufiksów budowanych z promptów i wcześniejszych wyjść (także między żądaniami); na workloadach agentowych do ×5.3, ×2.8 względem EAGLE-2/3 (arXiv 2411.04975, w vLLM jako „suffix”).
 - [[tensara|tensara/tensara]] — Platforma zawodów w pisaniu kerneli (commit `fae96618`, 2026-07-21) z silnikiem oceny na Modal; werdykt: niska.
