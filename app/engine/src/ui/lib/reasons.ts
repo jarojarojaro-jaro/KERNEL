@@ -25,6 +25,10 @@ const WHY: Record<string, Record<Lang, Render>> = {
 		pl: () => 'Model ma głowicę MTP; optymalizacja spróbuje zgadywania kilku tokenów naprzód.',
 		en: () => 'The model has an MTP head; optimisation will try drafting a few tokens ahead.'
 	},
+	mtp_no_memory: {
+		pl: () => 'Model ma głowicę MTP, ale przy tym kontekście brakuje pamięci na kontekst draftu (bez spekulacji MTP).',
+		en: () => 'The model has an MTP head, but its draft context does not fit at this context (no MTP speculation).'
+	},
 	moe_fast: {
 		pl: () => 'Mieszanka ekspertów: na każdy token pracuje mała część parametrów, więc pisze szybko.',
 		en: () => 'Mixture of experts: only a small part of the parameters works per token, so it writes fast.'
