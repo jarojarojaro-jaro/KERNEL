@@ -36,7 +36,7 @@ afterAll(() => fake.stop(true));
 
 const server = { url: `http://127.0.0.1:${fake.port}`, apiKey: 'k' } as RunningServer;
 
-test('decode and deep prompts are chat-formatted, prefill is the raw corpus, no ignore_eos', async () => {
+test('decode and deep prompts are chat-formatted and never repeated, prefill is the raw corpus, no ignore_eos', async () => {
   const plan = { prefillTokens: 512, decodeTokens: 256, deepTokens: 4096, deepDecode: 128, reps: 2 };
   const run = await measure(server, 8192, plan);
   const calls = seen.filter((c) => c.body.n_predict !== 4); // drop the warm-up
@@ -45,17 +45,21 @@ test('decode and deep prompts are chat-formatted, prefill is the raw corpus, no 
   const deep = calls.filter((c) => c.body.n_predict === 128);
   expect(prefill).toHaveLength(2);
   for (const c of prefill) expect(Array.isArray(c.prompt) && c.prompt.length === 512).toBe(true);
-  expect(decode).toHaveLength(2 * DECODE_TASKS.length);
+  expect(decode).toHaveLength(2 * 2); // PL + EN per repetition
+  const tasks = DECODE_TASKS.flat();
   for (const c of decode) {
     expect(typeof c.prompt).toBe('string');
     expect(c.prompt as string).toStartWith('<|im_start|>user\n');
-    expect(DECODE_TASKS.some((t) => c.prompt === TEMPLATE(t))).toBe(true);
+    expect(tasks.some((t) => c.prompt === TEMPLATE(t))).toBe(true);
   }
+  // the server's n-gram cache survives between requests: an identical request would replay the previous answer
+  expect(new Set(decode.map((c) => c.prompt)).size).toBe(decode.length);
   expect(deep).toHaveLength(2);
   for (const c of deep) {
     expect(c.prompt as string).toStartWith('<|im_start|>user\n');
     expect(c.prompt as string).toContain(`DOC(${4096 - 256})`);
   }
+  expect(deep[0]?.prompt).not.toBe(deep[1]?.prompt);
   for (const c of seen) {
     expect(c.body.ignore_eos).toBeUndefined();
     expect(c.body.temperature).toBe(0);

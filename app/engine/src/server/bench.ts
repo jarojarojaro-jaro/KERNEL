@@ -55,22 +55,40 @@ export async function corpusTokens(s: RunningServer, n: number, signal?: AbortSi
 }
 
 /**
- * Decode tasks: a chat request for a long ORIGINAL text, formatted by the model's own chat template. A raw
+ * Decode tasks: chat requests for a long ORIGINAL text (PL + EN), formatted by the model's own chat template. A raw
  * continuation of the corpus (the old protocol) makes the model loop or copy the corpus, so n-gram lookup and MTP
- * accept nearly every draft and the decode speed is inflated far beyond real use.
+ * accept nearly every draft. Every repetition gets its own pair: llama-server keeps the n-gram cache across requests,
+ * so an identical second request replays the first answer from it (measured: 21 → 80 t/s on a 4060 Ti, 204/256
+ * drafts accepted) — speed that no real conversation gets.
  */
-export const DECODE_TASKS: readonly string[] = [
-  'Napisz oryginalne opowiadanie (ok. 600 słów) o latarniku z małej wyspy na Bałtyku, który pewnej zimowej nocy ' +
+export const DECODE_TASKS: readonly (readonly [string, string])[] = [
+  ['Napisz oryginalne opowiadanie (ok. 600 słów) o latarniku z małej wyspy na Bałtyku, który pewnej zimowej nocy ' +
     'odbiera przez radio wiadomość od statku, którego nie ma w żadnym rejestrze. Pisz prozą, bez list i nagłówków.',
   'Write an original short story (about 600 words) about a clockmaker in a mountain village who discovers that one ' +
-    'of her clocks runs exactly one day ahead. Write in prose, no lists or headings.',
+    'of her clocks runs exactly one day ahead. Write in prose, no lists or headings.'],
+  ['Napisz oryginalne opowiadanie (ok. 600 słów) o pszczelarce z Podlasia, która znajduje w ulu list sprzed ' +
+    'pięćdziesięciu lat zaadresowany do niej samej. Pisz prozą, bez list i nagłówków.',
+  'Write an original short story (about 600 words) about a night-shift bus driver who notices the same silent ' +
+    'passenger boarding at a stop that was demolished years ago. Write in prose, no lists or headings.'],
+  ['Napisz oryginalne opowiadanie (ok. 600 słów) o młodym kartografie, który odkrywa, że jedna z jego map pokazuje ' +
+    'ulicę, której jeszcze nie zbudowano. Pisz prozą, bez list i nagłówków.',
+  'Write an original short story (about 600 words) about a retired astronaut who starts receiving postcards ' +
+    'from a town on the far side of the Moon. Write in prose, no lists or headings.'],
 ];
 
-/** The deep task: the long corpus as a document plus a question that needs a fresh answer, not a copy. */
-export function deepQuestion(document: string): string {
-  return 'Poniżej jest długi dokument.\n\n<dokument>\n' + document + '\n</dokument>\n\n' +
-    'Na podstawie dokumentu napisz własnymi słowami oryginalny esej (ok. 400 słów): jakie trzy myśli z tego tekstu ' +
-    'uważasz za najważniejsze i dlaczego. Nie cytuj dokumentu, pisz prozą.';
+const DEEP_TASKS: readonly string[] = [
+  'Na podstawie dokumentu napisz własnymi słowami oryginalny esej (ok. 400 słów): jakie trzy myśli z tego tekstu ' +
+    'uważasz za najważniejsze i dlaczego. Nie cytuj dokumentu, pisz prozą.',
+  'Based on the document, write an original essay (about 400 words) in your own words: what does the text say about ' +
+    'patience and work, and do you agree? Do not quote the document; write in prose.',
+  'Na podstawie dokumentu napisz własnymi słowami list (ok. 400 słów) do jednej z opisanych postaci, w którym ' +
+    'opowiadasz jej, co zmieniło się w miasteczku. Nie cytuj dokumentu, pisz prozą.',
+];
+
+/** The deep task of repetition `rep`: the long corpus as a document plus a question that needs a fresh answer. */
+export function deepQuestion(document: string, rep = 0): string {
+  return 'Poniżej jest długi dokument. / Below is a long document.\n\n<dokument>\n' + document + '\n</dokument>\n\n' +
+    (DEEP_TASKS[rep % DEEP_TASKS.length] as string);
 }
 
 /** Token budget reserved for the deep question and the chat template around the document. */
@@ -111,28 +129,25 @@ export async function measure(s: RunningServer, ctx: number, plan: BenchPlan, pr
   const deepFits = ctx >= plan.deepTokens + plan.deepDecode + 8;
   const prefillN = Math.min(plan.prefillTokens, ctx - 8);
   const all = await corpusTokens(s, Math.max(prefillN, deepFits ? plan.deepTokens - DEEP_OVERHEAD : 0), signal);
-  const decodePrompts = await Promise.all(DECODE_TASKS.map((t) => chatPrompt(s, t, signal)));
+  if (plan.reps > DECODE_TASKS.length) log.warn(`${plan.reps} repetitions > ${DECODE_TASKS.length} distinct tasks: later ones repeat a request (n-gram cache replay)`);
   // warm-up: first graph allocation and kernel loading are not part of the numbers
   await complete(s, all.slice(0, 32), 4, signal);
   const pre: Timings[] = [];
   const dec: Timings[] = [];
-  const md5s: string[] = [];
+  const h = createHash('md5'); // all decode texts of all repetitions (same prompts for baseline and candidates)
   for (let r = 0; r < plan.reps; r++) {
     // prefill: the raw corpus (a fixed, exact token count), one token generated
     progress?.('bench:prefill', r, plan.reps);
     pre.push((await complete(s, all.slice(0, prefillN), 1, signal)).timings);
-    // decode: every chat task, the md5 of all texts of this repetition
+    // decode: this repetition's own chat tasks (never a request the server has already answered)
     progress?.('bench:decode', r, plan.reps);
-    const h = createHash('md5');
-    for (const p of decodePrompts) {
-      const res = await complete(s, p, plan.decodeTokens, signal);
+    for (const task of DECODE_TASKS[r % DECODE_TASKS.length] as readonly string[]) {
+      const res = await complete(s, await chatPrompt(s, task, signal), plan.decodeTokens, signal);
       dec.push(res.timings);
       h.update(res.content);
     }
-    md5s.push(h.digest('hex'));
     progress?.('bench:decode', r + 1, plan.reps);
   }
-  if (new Set(md5s).size > 1) log.warn(`decode text differs between repetitions (${md5s.join(', ')}): the engine is not deterministic here`);
   const short = dec.filter((t) => t.predicted_n < plan.decodeTokens);
   if (short.length) log.info(`decode: ${short.length}/${dec.length} answers stopped early (${short.map((t) => t.predicted_n).join(', ')} tokens)`);
   const decAcc = acceptance(dec);
@@ -144,15 +159,15 @@ export async function measure(s: RunningServer, ctx: number, plan: BenchPlan, pr
       ttftS: median(pre.map((t) => t.prompt_ms / 1000)),
     },
     decode: { tokens: Math.round(median(dec.map((t) => t.predicted_n))), tps: median(dec.map((t) => t.predicted_per_second)) },
-    outputMd5: md5s[0] ?? '',
+    outputMd5: h.digest('hex'),
   };
   if (deepFits) {
     const { content: document } = await call<{ content: string }>(s, '/detokenize', { tokens: all.slice(0, plan.deepTokens - DEEP_OVERHEAD) }, signal);
-    const deepPrompt = await chatPrompt(s, deepQuestion(document), signal);
     const deep: Timings[] = [];
     for (let r = 0; r < plan.reps; r++) {
       progress?.('bench:deep', r, plan.reps);
-      deep.push((await complete(s, deepPrompt, plan.deepDecode, signal)).timings);
+      const prompt = await chatPrompt(s, deepQuestion(document, r), signal);
+      deep.push((await complete(s, prompt, plan.deepDecode, signal)).timings);
     }
     progress?.('bench:deep', plan.reps, plan.reps);
     const deepAcc = acceptance(deep);

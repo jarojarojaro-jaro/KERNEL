@@ -126,7 +126,9 @@ konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko
    (szablon modelu przez `/apply-template`): oryginalne opowiadanie PL i EN; md5 tekstów = `outputMd5`. Nie ciągnięcie
    korpusu: model go kopiuje, a lookup/MTP akceptują wtedy prawie wszystko (zawyżony decode).
 4. Deep: korpus ~32k tokenów jako dokument w wiadomości + pytanie wymagające własnej odpowiedzi, 128 tokenów decode.
-5. Powtórzenia 2×, mediana. Zatrzymanie serwera: czekaj na wolne `/slots`, **jeden** SIGTERM, 45 s, potem SIGKILL.
+5. Powtórzenia 2×, mediana; każde powtórzenie z innymi zadaniami (cache n-gramów serwera przeżywa żądania — identyczne
+   żądanie odtworzyłoby poprzednią odpowiedź). Zatrzymanie serwera: czekaj na wolne `/slots`, **jeden** SIGTERM, 45 s,
+   potem SIGKILL.
 
 ## Optymalizacja (kandydaci, każdy mierzony tym samym benchmarkiem; zostaje najlepszy decode bez straty prefill > 5%)
 - silnik `enigma-*` dla platformy, jeśli jest (na AMD gfx1100: topka z flagami jak `~/qwen-opt/run-topka.sh` — PM4,
