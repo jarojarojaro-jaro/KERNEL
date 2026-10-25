@@ -17,7 +17,8 @@ afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 const hwXtx: Hw = {
   os: 'linux', arch: 'x64', cpu: { name: 'AMD Ryzen 7 5700X 8-Core Processor', cores: 8, threads: 16 }, ramGiB: 62.7,
-  gpus: [{ vendor: 'amd', name: 'AMD Radeon RX 7900 XTX', vramGiB: 24, unified: false, arch: 'gfx1100', driver: 'amdgpu', backends: ['rocm', 'vulkan'] }],
+  memory: { totalGiB: 62.7, type: 'DDR4', speedMTs: 3200, channels: 2, modules: 4, bandwidthGBs: 51.2, source: 'detected' },
+  gpus: [{ vendor: 'amd', name: 'AMD Radeon RX 7900 XTX', kind: 'discrete', vramGiB: 24, arch: 'gfx1100', driver: 'amdgpu', backends: ['rocm', 'vulkan'] }],
   diskFreeGiB: 100, scannedAt: 1,
 };
 

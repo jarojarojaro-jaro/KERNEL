@@ -1,9 +1,11 @@
 // Recommender: for every device (GPU × backend, or the CPU) and every model × quant, the largest context that fits
 // (step 4096, ≤ ctxMax), then the best KV type at that context and the ubatch; options are scored by quality × speed.
+// Machines without a discrete GPU (integrated graphics or none) are RAM-bound: the model lives in system RAM, speed comes
+// from the RAM bandwidth (`ramSpeed`), and options too slow to use are rejected.
 import type { Backend, Gpu, Hw, MemPlan, Option, Recommendation } from '../../shared/types.ts';
 import { CATALOG, type CatalogModel, type GpuSpec, type KvType, type QuantFile } from './data.ts';
 import { memParts, memPlan, type MemConfig } from './memory.ts';
-import { decodeSpeed, matchGpu, score } from './score.ts';
+import { decodeSpeed, matchGpu, MIN_DECODE_TPS, ramSpeed, score, type RamSpeed } from './score.ts';
 import engines from '../../../data/engines.json';
 
 export { CATALOG } from './data.ts';
@@ -22,12 +24,26 @@ const F16_HEADROOM_MIB = 2048;
 const VRAM_RESERVE: Record<Gpu['vendor'], number> = { nvidia: 0.018, amd: 0.002, intel: 0.02, apple: 0 };
 /** Apple: recommendedMaxWorkingSetSize ≈ 66% of RAM on smaller machines, 75% above 36 GB (report 04 §2.1.3). */
 const unifiedShare = (ramGiB: number): number => (ramGiB > 36 ? 0.75 : 0.66);
-const CPU_SHARE = 0.7;
+/** RAM-bound machines: RAM kept for the system and the user's programs (browser, editor) while the model is loaded:
+ *  Windows at least 8 GB or 25% (a 32 GB box keeps 8), Linux/macOS at least 6 GB or 20% [SZACUNEK]. */
+const RAM_RESERVE: Record<Hw['os'], { minGiB: number; share: number }> = {
+  windows: { minGiB: 8, share: 0.25 }, linux: { minGiB: 6, share: 0.2 }, macos: { minGiB: 6, share: 0.2 },
+};
+/** System RAM an integrated GPU may map when the scan could not read it (Windows WDDM: ½ RAM; amdgpu GTT default). */
+const IGPU_SHARED_DEFAULT = 0.5;
 const BACKEND_ORDER: Backend[] = ['cuda', 'rocm', 'metal', 'vulkan'];
 /** ub 512 is chosen when it buys at least this much more context than ub 1024. */
 const UB512_GAIN = 1.08;
 /** Build number of the pinned upstream llama.cpp release (data/engines.json `upstream.tag`, "b<N>"). */
 const PINNED_BUILD = Number(/^b(\d+)$/.exec(engines.upstream.tag)?.[1] ?? 0);
+
+/** A RAM-bound device: integrated graphics or the CPU, weights in system RAM. */
+interface RamDevice {
+  bwGBs: number;
+  reserveGiB: number;
+  /** CPU device on a machine with integrated graphics: the RAM that graphics can map (GiB); null without one. */
+  igpuPoolGiB: number | null;
+}
 
 interface Device {
   backend: Backend;
@@ -40,31 +56,57 @@ interface Device {
   vramGiB: number;
   /** Speculation would run in one of our engines (data/engines.json kind "enigma" with MTP for this GPU). */
   enigmaMtp: boolean;
+  ram: RamDevice | null;
+}
+
+export function ramReserveGiB(hw: Hw): number {
+  const r = RAM_RESERVE[hw.os];
+  return Math.round(Math.max(r.minGiB, hw.ramGiB * r.share) * 10) / 10;
 }
 
 function devices(hw: Hw): Device[] {
   const marginMiB = MARGIN_MIB[hw.os];
   const out: Device[] = [];
+  const ownMemory = hw.gpus.some((g) => g.kind !== 'integrated');
+  const reserveGiB = ramReserveGiB(hw);
+  const ramFreeGiB = Math.max(0, hw.ramGiB - reserveGiB);
+  let igpuPoolGiB: number | null = null;
   hw.gpus.forEach((gpu, i) => {
     const spec = matchGpu(gpu.name, gpu.vramGiB);
+    if (gpu.kind === 'integrated') {
+      // With a discrete GPU the iGPU only drives the display. Without one it computes in RAM: what the driver lets it
+      // map (carve-out + shared/GTT; llama.cpp's Vulkan backend sums these heaps for an integrated GPU), capped by
+      // the RAM left after the system reserve. Strix Halo-class chips are in the bandwidth table; the rest run at RAM speed.
+      if (ownMemory) return;
+      const poolGiB = gpu.vramGiB + (gpu.sharedGiB ?? hw.ramGiB * IGPU_SHARED_DEFAULT);
+      const budgetGiB = Math.min(poolGiB, gpu.vramGiB + ramFreeGiB);
+      for (const backend of BACKEND_ORDER.filter((b) => gpu.backends.includes(b))) {
+        igpuPoolGiB = Math.max(igpuPoolGiB ?? 0, budgetGiB);
+        out.push({
+          backend, gpuIndex: i, gpu, spec, budgetMiB: budgetGiB * 1024, marginMiB, vramGiB: gpu.vramGiB, enigmaMtp: false,
+          ram: { bwGBs: spec?.unified ? spec.bwGBs : hw.memory.bandwidthGBs, reserveGiB, igpuPoolGiB: null },
+        });
+      }
+      return;
+    }
     const enigmaFor = (backend: Backend): boolean =>
       engines.engines.some((e) => e.kind === 'enigma' && e.backend === backend && e.os === hw.os && e.features.includes('mtp')
         && (!('gpuArchs' in e) || (gpu.arch !== undefined && (e.gpuArchs ?? []).includes(gpu.arch))));
-    const budgetMiB = gpu.unified
+    const budgetMiB = gpu.kind === 'apple'
       ? hw.ramGiB * unifiedShare(hw.ramGiB) * 1024
       : gpu.vramGiB * 1024 * (1 - VRAM_RESERVE[gpu.vendor]);
     for (const backend of BACKEND_ORDER.filter((b) => gpu.backends.includes(b))) {
       const margin = marginMiB + (backend === 'cuda' ? CUDA_POOL_MARGIN_MIB : 0);
       out.push({
-        backend, gpuIndex: i, gpu, spec, budgetMiB, marginMiB: margin, vramGiB: gpu.unified ? hw.ramGiB : gpu.vramGiB,
-        enigmaMtp: enigmaFor(backend),
+        backend, gpuIndex: i, gpu, spec, budgetMiB, marginMiB: margin, vramGiB: gpu.kind === 'apple' ? hw.ramGiB : gpu.vramGiB,
+        enigmaMtp: enigmaFor(backend), ram: null,
       });
     }
   });
-  if (out.length === 0) {
+  if (!ownMemory || out.length === 0) {
     out.push({
-      backend: 'cpu', gpuIndex: null, gpu: null, spec: null, budgetMiB: hw.ramGiB * CPU_SHARE * 1024, marginMiB, vramGiB: 0,
-      enigmaMtp: false,
+      backend: 'cpu', gpuIndex: null, gpu: null, spec: null, budgetMiB: ramFreeGiB * 1024, marginMiB, vramGiB: 0,
+      enigmaMtp: false, ram: { bwGBs: hw.memory.bandwidthGBs, reserveGiB, igpuPoolGiB },
     });
   }
   return out;
@@ -113,34 +155,66 @@ function plan(m: CatalogModel, q: QuantFile, d: Device, minCtx: number, spec: bo
   return { ctx, kvType, ub, spec };
 }
 
+/** "1 decimal, no trailing .0" for codes: 3 -> "3", 2.2 -> "2.2". */
+const dec = (v: number): string => String(Math.round(v * 10) / 10);
+
+/** Measured decode of this model on 16–24 GB cards in our catalog vs the RAM estimate, as "<lo>-<hi>" times faster;
+ *  null without such a measurement (no claim without a number behind it). */
+function gpuFaster(m: CatalogModel, s: RamSpeed): string | null {
+  const tps = m.measured
+    .filter((x) => CATALOG.gpus.some((g) => g.id === x.gpu && !g.unified && g.vramGiB !== null && g.vramGiB >= 16 && g.vramGiB <= 24))
+    .map((x) => x.decodeTps);
+  if (tps.length === 0) return null;
+  const lo = Math.min(...tps) / s.hi;
+  const hi = Math.max(...tps) / s.lo;
+  return lo >= 1.5 ? `${Math.floor(lo)}-${Math.ceil(hi)}` : null;
+}
+
 function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: number): Option | Rejection {
   const reject = (reason: string): Rejection => ({ modelId: m.id, quant: q.quant, reason });
   if (m.minUpstreamBuild > PINNED_BUILD) return reject(`engine_too_old:b${m.minUpstreamBuild}`);
-  if (d.backend === 'cpu' && !m.cpuTier) return reject('not_cpu_tier');
   if (m.ctxMax < minCtx) return reject(`ctx_max_below_min:${m.ctxMax}`);
   const empty = memParts(m, q, config(d, 0, 'q4_0', 512, false));
   const usable = d.budgetMiB - d.marginMiB;
   if (empty.totalMiB > usable) return reject(`weights_too_big:${(empty.totalMiB / 1024).toFixed(1)}/${(usable / 1024).toFixed(1)}`);
 
+  const ram = d.ram ? ramSpeed(m, q, d.ram.bwGBs, hw.cpu.cores) : null;
+  const gpuSpeed = !ram && d.gpu ? decodeSpeed(m, q, d.gpu, d.spec, d.backend) : null;
+  const tps = ram?.tps ?? gpuSpeed?.tps ?? 0;
+  // usability first: a model that writes slower than this is not offered, however good it is
+  if (tps < MIN_DECODE_TPS) return reject(`too_slow_on_this_hw:${tps.toFixed(1)}`);
+
   // With an MTP head, plan the draft context too (so the MTP candidate runs at the same context); without it the
   // plain plan may reach a larger context. Both are scored, the better one is offered.
-  const speed = decodeSpeed(m, q, d.gpu, d.spec, d.backend);
   const plans = (mtpCapable(m, d) ? [true, false] : [false]).map((spec) => plan(m, q, d, minCtx, spec));
   const ok = plans.filter((p): p is Plan => 'kvType' in p);
-  const best = ok.sort((a, b) => score(m, q, speed.tps, b.spec) - score(m, q, speed.tps, a.spec) || b.ctx - a.ctx)[0];
+  const best = ok.sort((a, b) => score(m, q, tps, b.spec) - score(m, q, tps, a.spec) || b.ctx - a.ctx)[0];
   if (!best) return reject(`ctx_below_min:${Math.max(...plans.map((p) => p.ctx))}`);
   const { ctx, kvType, ub, spec } = best;
 
-  const why: string[] = [speed.measured ? `speed_measured:${speed.tps.toFixed(0)}` : `speed_estimated:${speed.tps.toFixed(0)}`];
+  const why: string[] = [];
+  if (ram && d.ram) {
+    // no discrete GPU: say so, which processor computes, the speed range and what a long prompt costs
+    why.push('no_dgpu_ram');
+    if (d.backend !== 'cpu') why.push(`igpu_backend:${d.backend}`);
+    else why.push(d.ram.igpuPoolGiB !== null ? `cpu_igpu_pool:${dec(d.ram.igpuPoolGiB)}` : 'cpu_only');
+    const range = `${Math.round(ram.lo)}-${Math.round(ram.hi)}`;
+    why.push(m.kind === 'moe' ? `speed_ram_moe:${dec(m.activeB)}/${range}` : `speed_ram_dense:${dec(m.paramsB)}/${range}`);
+    why.push(`prefill_ram:${Math.round(ram.prefillLo)}-${Math.round(ram.prefillHi)}/${minCtx}`);
+    why.push(`ram_reserve:${dec(d.ram.reserveGiB)}/${dec(d.budgetMiB / 1024)}`);
+  } else {
+    why.push(gpuSpeed?.measured ? `speed_measured:${tps.toFixed(0)}` : `speed_estimated:${tps.toFixed(0)}`);
+  }
   if (spec) why.push('mtp_head');
   else if (mtpCapable(m, d)) why.push('mtp_no_memory'); // the file has an MTP head, its draft context does not fit
-  if (m.kind === 'moe' && m.activeB <= 4) why.push('moe_fast');
+  if (!ram && m.kind === 'moe' && m.activeB <= 4) why.push('moe_fast');
   why.push(ctx === m.ctxMax ? 'ctx_model_max' : 'ctx_memory_limit', `kv_${kvType}`);
   if (ub === 512) why.push('ub512_for_ctx');
-  if (d.gpu?.unified) why.push('unified_memory');
-  if (d.backend === 'cpu') why.push('cpu_only');
-  if (hw.os === 'windows' && d.backend !== 'cpu') why.push('windows_reserve');
+  if (d.gpu?.kind === 'apple') why.push('unified_memory');
+  if (hw.os === 'windows' && !ram) why.push('windows_reserve');
   if (CATALOG.licenses[m.license]?.commercial === 'conditional') why.push('license_conditional');
+  const faster = ram ? gpuFaster(m, ram) : null;
+  if (faster) why.push(`gpu_faster:${faster}`);
 
   return {
     id: `${m.id}/${q.quant}/${d.backend}${d.gpuIndex === null ? '' : `/${d.gpuIndex}`}`,
@@ -149,7 +223,7 @@ function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: numb
     ctx, ctxMax: m.ctxMax, kvType, ub, backend: d.backend, gpuIndex: d.gpuIndex,
     mem: memPlan(m, q, config(d, ctx, kvType, ub, spec), d.budgetMiB / 1024),
     features: m.features.filter((f) => f !== 'mtp' || spec),
-    score: Math.round(score(m, q, speed.tps, spec) * 100) / 100,
+    score: Math.round(score(m, q, tps, spec) * 100) / 100,
     why,
   };
 }
@@ -158,19 +232,23 @@ const better = (a: Option, b: Option): number => b.score - a.score || b.ctx - a.
 
 export function recommend(hw: Hw, minCtx: number = DEFAULT_MIN_CTX): Recommendation {
   const options = new Map<string, Option>();
-  const rejected = new Map<string, Rejection>();
+  const rejected = new Map<string, Rejection & { budgetMiB: number }>();
   for (const d of devices(hw)) {
     for (const m of CATALOG.models) {
       for (const q of m.quants) {
         const key = `${m.id}/${q.quant}`;
         const r = evaluate(m, q, d, hw, minCtx);
         if ('reason' in r) {
-          if (!rejected.has(key)) rejected.set(key, r);
+          // the reason from the device with the most memory says the most (an iGPU's small pool vs the CPU's RAM)
+          const prev = rejected.get(key);
+          if (!prev || d.budgetMiB > prev.budgetMiB) rejected.set(key, { ...r, budgetMiB: d.budgetMiB });
           continue;
         }
         // Same model × quant: on one GPU the preferred backend wins (devices come in BACKEND_ORDER: our engines are
-        // CUDA/ROCm/Metal builds); across GPUs the better option wins.
+        // CUDA/ROCm/Metal builds); integrated graphics wins over the CPU (same RAM speed; its prompt reading is usually
+        // faster [INFERENCE: not measured on our hardware]); across GPUs the better option wins.
         const prev = options.get(key);
+        if (prev && r.backend === 'cpu') continue;
         if (!prev || (prev.gpuIndex !== r.gpuIndex && better(r, prev) < 0)) options.set(key, r);
       }
     }
@@ -191,7 +269,7 @@ export function recommend(hw: Hw, minCtx: number = DEFAULT_MIN_CTX): Recommendat
     seen.add(o.modelId);
     alternatives.push(o);
   }
-  return { minCtx, pick, alternatives, rejected: [...rejected.values()] };
+  return { minCtx, pick, alternatives, rejected: [...rejected.values()].map(({ modelId, quant, reason }) => ({ modelId, quant, reason })) };
 }
 
 function qualityOf(o: Option): number {

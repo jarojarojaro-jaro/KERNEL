@@ -32,7 +32,7 @@ export function buildMacGpus(sysctl: Record<string, string>): Gpu[] {
   const brand = sysctl['machdep.cpu.brand_string'] ?? 'Apple Silicon';
   const chip = /Apple (M\d+)/.exec(brand)?.[1];
   const g: Gpu = {
-    vendor: 'apple', name: brand, unified: true,
+    vendor: 'apple', name: brand, kind: 'apple',
     vramGiB: toGiB(appleGpuBudgetBytes(mem, Number(sysctl['iogpu.wired_limit_mb'] ?? 0))),
     backends: backendsFor('apple', 'macos', { driver: true }),
   };

@@ -41,16 +41,32 @@ ENIGMA_HOME=/tmp/enigma-e2e/home ENIGMA_MODELS_DIR=~/models \
 ENIGMA_ENGINE_DIR_UPSTREAM_CPU=~/wt/upstream/build-cpu ENIGMA_DEV_CPU=1 ENIGMA_PORT=11540 \
 ENIGMA_BENCH_PREFILL=512 ENIGMA_BENCH_DECODE=64 ENIGMA_BENCH_DEEP=2048 \
 cpuheavy --quiet bun src/server/main.ts run --headless --license-file ~/.secrets/enigma-test-license.txt \
-    --min-ctx 128000 --model lfm25-2.6b/QAD-Q4_0/cpu --exit-when-ready
+    --model qwen36-35b-a3b/UD-IQ4_XS/cpu --exit-when-ready
 ```
 
-LFM2.5-2.6B ma natywny kontekst 128 000 (`lfm2.context_length` w GGUF), więc przy domyślnym minimum 131 072
-katalog wybiera na CPU Qwen3.5-9B/4B (w labie ich nie ma, a pobierać nie wolno); stąd `--min-ctx 128000` w teście
-dev. Zapis przebiegu: [`test/e2e/cpu-dev-transcript.txt`](test/e2e/cpu-dev-transcript.txt).
+Na CPU katalog wybiera teraz MoE z małą liczbą aktywnych parametrów (patrz niżej); w labie (62 GB DDR4-3200) top 4 to
+Flint 40B-A2.5B, Qwen3.6-35B-A3B UD-IQ4_XS, Gemma 4 26B-A4B, LFM2.5-24B-A2B, a `--model` musi być jedną z nich
+(Qwen3.6 leży w `~/models/q36`). Wcześniejszy zapis przebiegu (jeszcze z regułą „tylko małe modele na CPU”, LFM2.5-2.6B
+przy `--min-ctx 128000`): [`test/e2e/cpu-dev-transcript.txt`](test/e2e/cpu-dev-transcript.txt).
 
 Build CPU llama.cpp (raz): `cd ~/wt/upstream && cpuheavy --quiet cmake -S . -B build-cpu -DCMAKE_BUILD_TYPE=Release
 -DGGML_HIP=OFF -DGGML_CUDA=OFF -DLLAMA_CURL=OFF -DLLAMA_USE_PREBUILT_UI=OFF && cpuheavy --quiet cmake --build
 build-cpu -j2 --target llama-server llama-bench`.
+
+### Komputery bez osobnej karty graficznej (APU, iGPU, sam CPU)
+
+Skan rozróżnia `gpus[].kind`: `discrete` / `integrated` / `apple`. Grafika zintegrowana (AMD APU „Radeon(TM) Graphics”,
+780M…, Intel UHD/Iris Xe/Arc Graphics) to nie karta: `vramGiB` = część RAM wydzielona przez BIOS (zwykle 0,5–2 GB),
+`sharedGiB` = RAM, który może zmapować (Windows: ½ RAM, Linux: GTT z sysfs). `Hw.memory` = typ, szybkość i kanały RAM
+(Windows `Win32_PhysicalMemory`, Linux `/run/udev/data/+dmi:id`, bez roota; potem EDAC; inaczej ostrożny domyślny dla
+generacji CPU, oznaczony `source: 'default'`) i przepustowość = MT/s × 8 B × kanały.
+
+Bez karty z własną pamięcią model żyje w RAM: budżet = RAM − zapas na system i programy (Windows ≥ 8 GB lub 25%,
+Linux ≥ 6 GB lub 20%); grafika zintegrowana (Vulkan) dostaje najwyżej to, co może zmapować, procesor (CPU) — cały
+budżet; ten sam model × kwant woli grafikę zintegrowaną. Prędkość pisania = η × przepustowość RAM / bajty na token
+(aktywne wagi + KV), skalibrowana pomiarami na naszym CPU (Ryzen 7 5700X, DDR4-3200 ×2, `ramMeasured` w katalogu:
+Qwen3.6-35B-A3B IQ4_XS 13,1 t/s, LFM2.5-24B Q5_K_M 23,0, Qwen3.8-27B Q4_K_XL 2,3); pokazywana jako zakres. Opcje
+poniżej 8 t/s są odrzucane (`too_slow_on_this_hw`).
 
 ## Build binarek
 
@@ -128,7 +144,7 @@ równe baseline. Wyniki: `~/.enigma/results/*.json`.
 | `ENIGMA_ENGINE_DIR_<KEY>` | lokalny silnik zamiast pobierania: `UPSTREAM_CPU`, `UPSTREAM_VULKAN`, `UPSTREAM_ROCM`, `UPSTREAM_CUDA`, `UPSTREAM_METAL`, `ENIGMA_ROCM` |
 | `ENIGMA_PORT` | preferowany port UI/API (domyślnie 11525, bo 11500 zajmuje omp); zajęty → kolejne 20 portów, faktyczny adres w logu i w `ready.endpoint` |
 | `ENIGMA_NO_BROWSER=1` | nie otwieraj przeglądarki |
-| `ENIGMA_DEV_CPU=1` | planuj tylko pod CPU |
+| `ENIGMA_DEV_CPU=1` | planuj tylko pod CPU (skan zwraca `gpus=[]`) |
 | `ENIGMA_BENCH_PREFILL`, `_DECODE`, `_DEEP`, `_REPS` | rozmiary benchmarku (domyślnie 4096 / 256 / 32768 / 2) |
 | `HF_ENDPOINT` | mirror Hugging Face (domyślnie `https://huggingface.co`; pliki z `/<repo>/resolve/main/<ścieżka>`) |
 

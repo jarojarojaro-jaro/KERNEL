@@ -48,6 +48,15 @@ export interface MeasuredSpeed {
   source: string;
 }
 
+/** Upstream llama.cpp on a CPU, weights in system RAM (llama-bench tg / pp512, -ngl 0): calibrates the RAM-bound
+ *  speed model for integrated graphics and CPU-only machines (decode scales with RAM bandwidth, prefill with cores). */
+export interface RamMeasured {
+  quant: string; cpu: string; cores: number;
+  /** Theoretical bandwidth of the RAM it ran on, GB/s (MT/s × 8 B × channels). */
+  ramBwGBs: number;
+  decodeTps: number; prefillTps: number; source: string;
+}
+
 export interface CatalogModel {
   id: string;
   name: string;
@@ -66,11 +75,10 @@ export interface CatalogModel {
    *  upstream tag in data/engines.json; older pins reject the model (`engine_too_old:b<N>`). */
   minUpstreamBuild: number;
   engineNote?: string;
-  /** Small enough to offer on CPU-only machines. */
-  cpuTier: boolean;
   arch: ModelArch;
   quants: QuantFile[];
   measured: MeasuredSpeed[];
+  ramMeasured?: RamMeasured[];
   /** HF repo whose config.json describes the architecture when no local GGUF is available. */
   configRepo: string;
   /** The GGUF files carry MTP/NextN blocks (used only when no local GGUF can confirm it). */

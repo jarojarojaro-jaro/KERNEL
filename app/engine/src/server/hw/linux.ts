@@ -1,11 +1,13 @@
-// Linux hardware detection: sysfs PCI + amdgpu, KFD topology (gfx arch), lspci names, nvidia-smi, /proc.
+// Linux hardware detection: sysfs PCI + amdgpu, KFD topology (gfx arch), lspci names, nvidia-smi, /proc, RAM modules
+// from udev's DMI record (readable without root) or EDAC.
 import { readdirSync, readFileSync, readlinkSync, existsSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import type { Gpu } from '../../shared/types.ts';
+import type { Gpu, RamInfo } from '../../shared/types.ts';
 import {
-  amdArchFromDevice, amdBoardName, amdIsDiscrete, backendsFor, GIB, gfxFromTargetVersion, intelIsDiscrete,
+  amdApuName, amdArchFromDevice, amdBoardName, amdIsIntegrated, backendsFor, gfxFromTargetVersion, intelIsDiscrete,
   NVIDIA_SMI_QUERY, parseNvidiaSmi, toGiB, vendorFromPciId,
 } from './common.ts';
+import { ramFromModules, type RamModule } from './ram.ts';
 import { runText } from './run.ts';
 
 /** One PCI display device (class 0x03xxxx) as read from sysfs. */
@@ -29,6 +31,49 @@ export interface LinuxRaw {
   kfdNodes: string[]; // /sys/class/kfd/kfd/topology/nodes/*/properties
   lspci: string; // `lspci -nn -D` (may be empty)
   nvidiaSmi: string | null; // nvidia-smi csv, null if not available
+  /** /run/udev/data/+dmi:id: systemd's copy of SMBIOS type 17 (`E:MEMORY_DEVICE_<n>_*`); absent in older recordings. */
+  dmi?: string;
+  /** /sys/devices/system/edac/mc/mc*\/dimm*: `dimm_mem_type` ("Unbuffered-DDR4"), `size` (MiB), `dimm_label`. */
+  edac?: { type: string; sizeMiB: number; label: string }[];
+}
+
+/** udev DMI record -> memory modules (empty slots have no SIZE). */
+export function parseUdevDmiMemory(text: string): RamModule[] {
+  const dev = new Map<string, Record<string, string>>();
+  for (const line of text.split('\n')) {
+    const m = /^E:MEMORY_DEVICE_(\d+)_([A-Z_]+)=(.*)$/.exec(line.trim());
+    if (!m) continue;
+    const [, n = '', key = '', value = ''] = m;
+    const rec = dev.get(n) ?? {};
+    rec[key] = value;
+    dev.set(n, rec);
+  }
+  const out: RamModule[] = [];
+  for (const d of dev.values()) {
+    const size = Number(d.SIZE ?? 0);
+    if (!size) continue;
+    const mod: RamModule = { sizeBytes: size, locator: `${d.BANK_LOCATOR ?? ''} ${d.LOCATOR ?? ''}`.trim() };
+    const type = /^(LP)?DDR\d/.exec(d.TYPE ?? '')?.[0];
+    if (type) mod.type = type.replace(/X$/, '');
+    const speed = Number(d.CONFIGURED_SPEED_MTS ?? d.SPEED_MTS ?? 0);
+    if (speed) mod.speedMTs = speed;
+    const width = Number(d.DATA_WIDTH ?? 0);
+    if (width) mod.dataWidth = width;
+    out.push(mod);
+  }
+  return out;
+}
+
+/** RAM from udev DMI, else EDAC (type and module count, no speed); null when neither is readable. */
+export function buildLinuxRam(raw: LinuxRaw, totalGiB: number): RamInfo | null {
+  const dmi = ramFromModules(totalGiB, parseUdevDmiMemory(raw.dmi ?? ''));
+  if (dmi) return dmi;
+  return ramFromModules(totalGiB, (raw.edac ?? []).map((d) => {
+    const mod: RamModule = { sizeBytes: d.sizeMiB * 1024 * 1024, locator: d.label };
+    const type = /(LP)?DDR\d/.exec(d.type)?.[0];
+    if (type) mod.type = type;
+    return mod;
+  }));
 }
 
 export interface CpuInfo { name: string; cores: number; threads: number }
@@ -117,17 +162,16 @@ export function buildLinuxGpus(raw: LinuxRaw): Gpu[] {
       const node = loc ? kfd.find((n) => n.locationId === loc.locationId && n.domain === loc.domain) : undefined;
       const arch = node?.gfx ?? amdArchFromDevice(devId);
       const rawName = dev.productName?.trim() || pciName || `PCI 1002:${devId}`;
-      const vram = dev.vramTotal ?? 0;
-      // name rule as scan.ps1; with no name at all, a large carve-out means a discrete board
-      const discrete = amdIsDiscrete(rawName) || (!dev.productName && !pciName && vram >= 4 * GIB);
-      const unified = !discrete;
-      // APUs: the GPU can use the carve-out plus GTT (system RAM); report the larger usable pool
-      const usable = unified ? Math.max(vram, dev.gttTotal ?? 0) : vram;
-      const vramGiB = toGiB(usable);
-      const name = amdBoardName(devId, vramGiB) ?? rawName;
+      const vramGiB = toGiB(dev.vramTotal ?? 0);
+      // APU id / iGPU name / ≤ 2 GiB carve-out without a board name; then it computes in RAM: carve-out + GTT
+      const integrated = amdIsIntegrated(rawName, devId, vramGiB);
+      const name = integrated
+        ? (dev.productName?.trim() || (pciName && /\[|Radeon/.test(pciName) ? pciName : amdApuName(devId)) || rawName)
+        : amdBoardName(devId, vramGiB) ?? rawName;
       const g: Gpu = {
-        vendor, name: vendorPrefix(vendor, name), vramGiB, unified,
-        backends: backendsFor('amd', 'linux', { driver: dev.driver === 'amdgpu', ...(arch ? { arch } : {}) }),
+        vendor, name: vendorPrefix(vendor, name), kind: integrated ? 'integrated' : 'discrete', vramGiB,
+        ...(integrated && dev.gttTotal ? { sharedGiB: toGiB(dev.gttTotal) } : {}),
+        backends: backendsFor('amd', 'linux', { driver: dev.driver === 'amdgpu', integrated, ...(arch ? { arch } : {}) }),
       };
       if (arch) g.arch = arch;
       if (dev.driver) g.driver = dev.driver;
@@ -137,7 +181,7 @@ export function buildLinuxGpus(raw: LinuxRaw): Gpu[] {
       if (smiByBus && !s) continue;
       const name = s?.name ?? pciName ?? `PCI 10de:${devId}`;
       const g: Gpu = {
-        vendor, name: vendorPrefix(vendor, name), vramGiB: s ? toGiB(s.vramMiB * 1024 * 1024) : 0, unified: false,
+        vendor, name: vendorPrefix(vendor, name), kind: 'discrete', vramGiB: s ? toGiB(s.vramMiB * 1024 * 1024) : 0,
         backends: backendsFor('nvidia', 'linux', { driver: s !== undefined }),
       };
       if (s?.arch) g.arch = s.arch;
@@ -147,8 +191,9 @@ export function buildLinuxGpus(raw: LinuxRaw): Gpu[] {
       const name = pciName ?? `PCI 8086:${devId}`;
       const discrete = intelIsDiscrete(name);
       const g: Gpu = {
-        vendor, name: vendorPrefix(vendor, name), vramGiB: discrete && dev.intelVram ? toGiB(dev.intelVram) : 0,
-        unified: !discrete, backends: dev.driver ? backendsFor('intel', 'linux', { driver: true }) : [],
+        vendor, name: vendorPrefix(vendor, name), kind: discrete ? 'discrete' : 'integrated',
+        vramGiB: discrete && dev.intelVram ? toGiB(dev.intelVram) : 0,
+        backends: dev.driver ? backendsFor('intel', 'linux', { driver: true }) : [],
       };
       if (dev.driver) g.driver = dev.driver;
       gpus.push(g);
@@ -215,6 +260,15 @@ export async function collectLinuxRaw(hostMemBytes: number): Promise<LinuxRaw> {
     const t = readOpt(join(kfdRoot, n, 'properties'));
     if (t) kfdNodes.push(t);
   }
+  const edacRoot = '/sys/devices/system/edac/mc';
+  const edac: NonNullable<LinuxRaw['edac']> = [];
+  for (const mc of existsSync(edacRoot) ? readdirSync(edacRoot).filter((d) => d.startsWith('mc')) : []) {
+    for (const dimm of readdirSync(join(edacRoot, mc)).filter((d) => /^(dimm|rank)\d+$/.test(d))) {
+      const dir = join(edacRoot, mc, dimm);
+      const sizeMiB = numOpt(join(dir, 'size')) ?? 0;
+      if (sizeMiB > 0) edac.push({ type: readOpt(join(dir, 'dimm_mem_type')) ?? '', sizeMiB, label: readOpt(join(dir, 'dimm_label')) ?? '' });
+    }
+  }
   const hasNvidia = pci.some((p) => vendorFromPciId(p.vendor) === 'nvidia');
   return {
     cpuinfo: readOpt('/proc/cpuinfo') ?? '',
@@ -223,5 +277,7 @@ export async function collectLinuxRaw(hostMemBytes: number): Promise<LinuxRaw> {
     kfdNodes,
     lspci: (await runText(['lspci', '-nn', '-D'])) ?? '',
     nvidiaSmi: hasNvidia ? await runText(NVIDIA_SMI_QUERY) : null,
+    dmi: readOpt('/run/udev/data/+dmi:id') ?? '',
+    edac,
   };
 }

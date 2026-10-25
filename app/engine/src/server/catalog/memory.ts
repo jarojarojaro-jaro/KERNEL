@@ -68,16 +68,22 @@ export interface MemConfig {
 
 export interface MemParts { weightsMiB: number; kvMiB: number; computeMiB: number; overheadMiB: number; totalMiB: number }
 
-export function memParts(m: CatalogModel, q: QuantFile, c: MemConfig): MemParts {
+/** KV cache + recurrent state, bytes, with `ctx` cells (decode reads all of it once per generated token). */
+export function kvBytes(m: CatalogModel, ctx: number, kvType: KvType, ub: number, withSpec: boolean): number {
   const a = m.arch;
-  const bpe = KV_BYTES[c.kvType];
   const fullTok = a.full.layers * a.full.kvHeads * (a.full.keyLen + a.full.valueLen);
   const swaTok = a.swa.layers * a.swa.kvHeads * (a.swa.keyLen + a.swa.valueLen);
-  const swaCells = a.swa.layers ? Math.min(c.ctx, Math.ceil((a.swa.window + c.ub) / 256) * 256) : 0;
-  const spec = c.spec && a.nextn.layers > 0;
+  const swaCells = a.swa.layers ? Math.min(ctx, Math.ceil((a.swa.window + ub) / 256) * 256) : 0;
+  const spec = withSpec && a.nextn.layers > 0;
   const nextnTok = spec ? a.nextn.layers * a.nextn.kvHeads * (a.nextn.keyLen + a.nextn.valueLen) : 0;
   const state = a.stateMiB * MiB * (spec ? STATE_SPEC : 1);
-  const kv = (c.ctx * (fullTok + nextnTok) + swaCells * swaTok) * bpe + state;
+  return (ctx * (fullTok + nextnTok) + swaCells * swaTok) * KV_BYTES[kvType] + state;
+}
+
+export function memParts(m: CatalogModel, q: QuantFile, c: MemConfig): MemParts {
+  const a = m.arch;
+  const spec = c.spec && a.nextn.layers > 0;
+  const kv = kvBytes(m, c.ctx, c.kvType, c.ub, c.spec);
 
   // One full-attention layer's K+V in F16 per token (the FA prefill view); SWA-only models use their window layer.
   const f16Layer = a.full.layers

@@ -1,8 +1,9 @@
 <script lang="ts">
 	/**
 	 * Stylised render of the scanned hardware: a graphics card (fan count from VRAM, one memory package
-	 * per 2 GB along the board edge, the die tagged with its architecture), an Apple SoC package, or a
-	 * bare CPU package when there is no GPU. Decorative: every fact is also in the text list next to it.
+	 * per 2 GB along the board edge, the die tagged with its architecture), a processor package with its
+	 * graphics on the die (Apple SoC, AMD/Intel integrated graphics), or a bare CPU package when there is no GPU.
+	 * Decorative: every fact is also in the text list next to it.
 	 * Vendor rim light is product identity, never the heat hues (heat means speed).
 	 */
 	import type { Gpu } from '../../shared/types';
@@ -10,7 +11,7 @@
 	let { gpu, cpuName = '' }: { gpu: Gpu | null; cpuName?: string } = $props();
 
 	const RIM: Record<Gpu['vendor'], string> = { nvidia: '#a6e34a', amd: '#ff3b4f', intel: '#3ea8ff', apple: '#d8dde6' };
-	const kind = $derived(!gpu ? 'cpu' : gpu.vendor === 'apple' || gpu.unified ? 'soc' : 'card');
+	const kind = $derived(!gpu ? 'cpu' : gpu.kind === 'discrete' ? 'card' : 'soc');
 	const rim = $derived(gpu ? RIM[gpu.vendor] : '#b4c4d6');
 	const fans = $derived(gpu && gpu.vramGiB >= 20 ? 3 : 2);
 	const chips = $derived(Math.max(2, Math.min(12, Math.round((gpu?.vramGiB ?? 8) / 2))));

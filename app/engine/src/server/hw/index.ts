@@ -2,11 +2,12 @@
 import { cpus, totalmem, availableParallelism } from 'node:os';
 import { statfsSync, existsSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Hw, Gpu } from '../../shared/types.ts';
+import type { Hw, Gpu, RamInfo } from '../../shared/types.ts';
 import { sortGpus, toGiB } from './common.ts';
-import { buildLinuxGpus, collectLinuxRaw, parseCpuinfo, type LinuxRaw } from './linux.ts';
-import { buildWindowsGpus, collectWindowsRaw, type WindowsRaw } from './windows.ts';
+import { buildLinuxGpus, buildLinuxRam, collectLinuxRaw, parseCpuinfo, type LinuxRaw } from './linux.ts';
+import { buildWindowsGpus, buildWindowsRam, collectWindowsRaw, type WindowsRaw } from './windows.ts';
 import { buildMacGpus, collectSysctl } from './macos.ts';
+import { defaultRam } from './ram.ts';
 import { devCpu, paths } from '../paths.ts';
 
 export function hostOs(): Hw['os'] {
@@ -40,11 +41,13 @@ export function buildHw(scan: RawScan, host: HostFacts, now: number): Hw {
   let gpus: Gpu[] = [];
   let cpu = { name: host.cpuName, cores: host.threads, threads: host.threads };
   let ramBytes = host.ramBytes;
+  let memory: RamInfo | null = null;
   if (scan.os === 'linux') {
     gpus = buildLinuxGpus(scan.raw);
     const c = parseCpuinfo(scan.raw.cpuinfo);
     cpu = { name: c.name, cores: c.cores, threads: c.threads || host.threads };
     ramBytes = scan.raw.memTotalBytes;
+    memory = buildLinuxRam(scan.raw, toGiB(ramBytes));
   } else if (scan.os === 'windows') {
     gpus = buildWindowsGpus(scan.raw);
     const c0 = scan.raw.cpu[0];
@@ -56,6 +59,7 @@ export function buildHw(scan: RawScan, host: HostFacts, now: number): Hw {
       };
     }
     if (scan.raw.os?.TotalVisibleMemorySize) ramBytes = scan.raw.os.TotalVisibleMemorySize * 1024;
+    memory = buildWindowsRam(scan.raw, toGiB(ramBytes));
   } else {
     gpus = buildMacGpus(scan.raw);
     cpu = {
@@ -65,8 +69,9 @@ export function buildHw(scan: RawScan, host: HostFacts, now: number): Hw {
     };
     if (scan.raw['hw.memsize']) ramBytes = Number(scan.raw['hw.memsize']);
   }
+  const ramGiB = toGiB(ramBytes);
   return {
-    os: scan.os, arch: host.arch, cpu, ramGiB: toGiB(ramBytes), gpus: sortGpus(gpus),
+    os: scan.os, arch: host.arch, cpu, ramGiB, memory: memory ?? defaultRam(ramGiB, cpu.name), gpus: sortGpus(gpus),
     diskFreeGiB: host.diskFreeGiB, scannedAt: now,
   };
 }

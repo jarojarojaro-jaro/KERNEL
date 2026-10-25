@@ -138,8 +138,11 @@ export class App {
   async scan(): Promise<Hw> {
     this.progress('scan', 'scan', 0, 1);
     const hw = await scanHw();
-    const g = hw.gpus.map((x) => `${x.name} ${x.vramGiB} GiB [${x.backends.join('+')}]`).join(', ') || 'none (CPU)';
-    log.info(`scan: ${hw.cpu.name} (${hw.cpu.cores}c/${hw.cpu.threads}t), RAM ${hw.ramGiB} GiB, GPU: ${g}, disk free ${hw.diskFreeGiB} GiB`);
+    const g = hw.gpus.map((x) => `${x.name} (${x.kind}) ${x.vramGiB} GiB${x.sharedGiB ? ` + ${x.sharedGiB} GiB shared` : ''} [${x.backends.join('+')}]`)
+      .join(', ') || 'none (CPU)';
+    const m = hw.memory;
+    const ram = `${m.type ?? ''}${m.speedMTs ? `-${m.speedMTs}` : ''}${m.channels ? ` ×${m.channels}` : ''} ≈ ${m.bandwidthGBs} GB/s (${m.source})`;
+    log.info(`scan: ${hw.cpu.name} (${hw.cpu.cores}c/${hw.cpu.threads}t), RAM ${hw.ramGiB} GiB ${ram}, GPU: ${g}, disk free ${hw.diskFreeGiB} GiB`);
     this.progress('scan', 'scan', 1, 1);
     const patch: Partial<AppState> = { hw };
     if (this.licensed && this.state.phase === 'scan') patch.phase = 'recommend';

@@ -19,14 +19,18 @@ const HIP_WINDOWS_ARCHS: Record<string, true> = {
 /**
  * Backends per GPU, preferred first:
  * AMD Linux rocm+vulkan; AMD Windows vulkan (+rocm when the HIP build supports the arch); NVIDIA cuda+vulkan
- * (vulkan only without a driver); Intel vulkan; Apple metal. A machine without GPUs plans for 'cpu'.
+ * (vulkan only without a driver); Intel vulkan; Apple metal. AMD integrated graphics: vulkan, ROCm only for the APUs
+ * the HIP builds target (Strix Point/Halo gfx1150/gfx1151); the official ROCm builds carry no kernels for older APUs
+ * (gfx90c, gfx1035, gfx1103 …). A machine without a discrete GPU also plans for 'cpu' (catalog).
  */
-export function backendsFor(vendor: Vendor, os: Os, opts: { arch?: string; driver: boolean }): Backend[] {
+export function backendsFor(vendor: Vendor, os: Os, opts: { arch?: string; driver: boolean; integrated?: boolean }): Backend[] {
   switch (vendor) {
-    case 'amd':
-      if (os === 'linux') return opts.driver ? ['rocm', 'vulkan'] : [];
-      if (os === 'windows') return opts.arch && HIP_WINDOWS_ARCHS[opts.arch] ? ['vulkan', 'rocm'] : ['vulkan'];
+    case 'amd': {
+      const hip = opts.arch !== undefined && HIP_WINDOWS_ARCHS[opts.arch] === true;
+      if (os === 'linux') return !opts.driver ? [] : opts.integrated && !hip ? ['vulkan'] : ['rocm', 'vulkan'];
+      if (os === 'windows') return hip ? ['vulkan', 'rocm'] : ['vulkan'];
       return [];
+    }
     case 'nvidia':
       if (os === 'macos') return [];
       return opts.driver ? ['cuda', 'vulkan'] : [];
@@ -53,8 +57,10 @@ const AMD_ARCH_BY_DEVICE: Record<string, string> = {
   '744c': 'gfx1100', '7448': 'gfx1100', '745e': 'gfx1100',
   '747e': 'gfx1101', '7470': 'gfx1101',
   '7480': 'gfx1102', '7483': 'gfx1102', '7489': 'gfx1102',
-  '15bf': 'gfx1103', '15c8': 'gfx1103',
+  '15bf': 'gfx1103', '15c8': 'gfx1103', '1900': 'gfx1103',
   '150e': 'gfx1150', '1586': 'gfx1151',
+  '15dd': 'gfx902', '15d8': 'gfx909', '1636': 'gfx90c', '1638': 'gfx90c', '164c': 'gfx90c', '15e7': 'gfx90c',
+  '163f': 'gfx1033', '1681': 'gfx1035', '164e': 'gfx1036', '13c0': 'gfx1036', '1506': 'gfx1037',
   '7590': 'gfx1200', '7550': 'gfx1201', '7551': 'gfx1201',
 };
 
@@ -84,11 +90,33 @@ export function amdBoardName(device: string, vramGiB: number): string | undefine
   return byVram?.[Math.round(vramGiB)];
 }
 
-/** AMD discrete by name (scan.ps1 rule): RX, Pro, VII, FirePro, Instinct, R5-R9 nnn, HD nnnn; the rest are APUs. */
+/** AMD discrete by name (scan.ps1 rule): RX, Pro, VII, FirePro, Instinct, R5-R9 nnn, HD nnnn. */
 const AMD_DISCRETE = /\bRX\s*\d|Vega\s*(56|64|Frontier)|Radeon(\s*\(TM\))?\s*(VII|Pro\b)|FirePro|Instinct|\bR[5-9]\s*\d{3}\b|\bHD\s*\d{4}(?![GD0-9])|Radeon(\s*\(TM\))?\s*\d{3}(?![0-9MS])/;
 
-export function amdIsDiscrete(name: string): boolean {
-  return AMD_DISCRETE.test(name);
+/** AMD APU graphics by PCI device id (Raven/Picasso, Renoir, Cezanne/Lucienne/Barcelo, Van Gogh, Rembrandt 680M,
+ *  Raphael/Granite Ridge, Mendocino, Phoenix/Hawk Point 780M/760M/740M, Strix Point 890M, Strix Halo 8060S). */
+const AMD_APU_NAME: Record<string, string> = {
+  '15dd': 'Radeon Vega Graphics', '15d8': 'Radeon Vega Graphics', '1636': 'Radeon Graphics', '1638': 'Radeon Graphics',
+  '164c': 'Radeon Graphics', '15e7': 'Radeon Graphics', '163f': 'Radeon Graphics (Van Gogh)', '1681': 'Radeon 680M',
+  '164e': 'Radeon Graphics', '13c0': 'Radeon Graphics', '1506': 'Radeon 610M', '15bf': 'Radeon 760M/780M Graphics',
+  '15c8': 'Radeon 740M Graphics', '1900': 'Radeon 760M/780M Graphics', '150e': 'Radeon 880M/890M Graphics',
+  '1586': 'Radeon 8060S Graphics',
+};
+
+/** Marketing name of an AMD APU's graphics (lspci only knows codenames such as "Phoenix1"). */
+export function amdApuName(device: string): string | undefined {
+  return AMD_APU_NAME[device.toLowerCase().replace(/^0x/, '')];
+}
+/** iGPU names: "Radeon(TM) Graphics", "Radeon Vega 8 Graphics", "Radeon 780M Graphics", "Radeon 8060S", codenames (lspci). */
+const AMD_IGPU_NAME = /Radeon(\s*\(TM\))?\s*(Graphics|Vega\b|\d{3,4}[MS]\b)|Vega\s*\d+\s*Graphics|Raven|Picasso|Renoir|Cezanne|Lucienne|Barcelo|Van\s*Gogh|Rembrandt|Raphael|Granite Ridge|Mendocino|Phoenix|Strix/i;
+/** AMD carve-out at or below this (GiB) with no discrete name = an APU (BIOS UMA frame buffer is 512 MB–2 GB). */
+const APU_CARVEOUT_GIB = 2;
+
+/** AMD graphics that computes in system RAM: an APU device id, an iGPU name, or a small carve-out without a board name. */
+export function amdIsIntegrated(name: string, device: string, vramGiB: number): boolean {
+  if (amdApuName(device)) return true;
+  if (AMD_DISCRETE.test(name)) return false;
+  return AMD_IGPU_NAME.test(name) || vramGiB <= APU_CARVEOUT_GIB;
 }
 
 /** Intel discrete: Arc A/B series, Xe MAX, Data Center GPU. Everything else is integrated. */
@@ -135,5 +163,5 @@ export function parseNvidiaSmi(csv: string): NvidiaSmiGpu[] {
 
 /** Sort GPUs: discrete with most VRAM first (index 0 = the card the planner prefers). */
 export function sortGpus(gpus: Gpu[]): Gpu[] {
-  return [...gpus].sort((a, b) => Number(a.unified) - Number(b.unified) || b.vramGiB - a.vramGiB);
+  return [...gpus].sort((a, b) => Number(a.kind === 'integrated') - Number(b.kind === 'integrated') || b.vramGiB - a.vramGiB);
 }

@@ -4,16 +4,32 @@ export type Phase = 'license' | 'scan' | 'recommend' | 'download' | 'baseline' |
 
 export interface LicenseInfo { valid: boolean; plan?: string; sub?: string; expiresAt?: number; reason?: string }
 
+/** discrete = own VRAM; integrated = iGPU of an AMD/Intel processor, computing in system RAM; apple = Apple Silicon. */
+export type GpuKind = 'discrete' | 'integrated' | 'apple';
+
 export interface Gpu {
-  vendor: 'nvidia' | 'amd' | 'intel' | 'apple'; name: string; vramGiB: number; unified: boolean;
+  vendor: 'nvidia' | 'amd' | 'intel' | 'apple'; name: string; kind: GpuKind;
+  /** discrete: VRAM; integrated: the part of RAM the firmware reserves for it (BIOS "UMA frame buffer");
+   *  apple: the Metal working-set budget. */
+  vramGiB: number;
+  /** integrated only: system RAM the GPU may map on top of `vramGiB` (Windows shared GPU memory = ½ RAM,
+   *  Linux amdgpu GTT). */
+  sharedGiB?: number;
   arch?: string /* gfx1100, sm_86, … */; driver?: string; backends: Backend[];
 }
 
 export type Backend = 'cuda' | 'rocm' | 'vulkan' | 'metal' | 'cpu';
 
+/** System RAM. Bandwidth = MT/s × 8 B × 64-bit channels; `source` 'detected' when type/speed/channels were read
+ *  (Windows Win32_PhysicalMemory, Linux udev DMI), 'default' = a conservative value for the CPU generation. */
+export interface RamInfo {
+  totalGiB: number; type?: string /* DDR4, DDR5, LPDDR5 … */; speedMTs?: number; channels?: number; modules?: number;
+  bandwidthGBs: number; source: 'detected' | 'default';
+}
+
 export interface Hw {
   os: 'linux' | 'windows' | 'macos'; arch: 'x64' | 'arm64'; cpu: { name: string; cores: number; threads: number };
-  ramGiB: number; gpus: Gpu[]; diskFreeGiB: number; scannedAt: number;
+  ramGiB: number; memory: RamInfo; gpus: Gpu[]; diskFreeGiB: number; scannedAt: number;
 }
 
 export interface MemPlan {

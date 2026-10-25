@@ -11,8 +11,15 @@
 	const t = $derived(store.t.hw);
 	const lang = $derived(store.lang);
 	const hw = $derived<Hw | null>(store.state?.hw ?? null);
-	const gpus = $derived(hw ? [...hw.gpus].sort((a, b) => b.vramGiB - a.vramGiB) : []);
+	/** Discrete cards first (the scan sorts them). */
+	const gpus = $derived(hw?.gpus ?? []);
 	const main = $derived(gpus[0] ?? null);
+	/** No discrete card and no Apple GPU: the model runs from RAM (integrated graphics or the CPU). */
+	const noDgpu = $derived(gpus.every((g) => g.kind === 'integrated'));
+	const igpu = $derived(gpus.find((g) => g.kind === 'integrated') ?? null);
+	const ramSpec = $derived(
+		hw ? t.ramSpec(hw.memory.type ?? 'RAM', hw.memory.speedMTs, hw.memory.channels, num(hw.memory.bandwidthGBs, lang, 0), hw.memory.source === 'default') : ''
+	);
 	const OS: Record<Hw['os'], string> = { linux: 'Linux', windows: 'Windows', macos: 'macOS' };
 	const BACKEND: Record<Backend, string> = { cuda: 'CUDA', rocm: 'ROCm', vulkan: 'Vulkan', metal: 'Metal', cpu: 'CPU' };
 
@@ -39,10 +46,17 @@
 		<div class="panel busy" role="status"><span class="ring" aria-hidden="true"></span>{t.scanning}</div>
 	{:else}
 		<div class="hwhero">
-			<p class="hw-name">{main ? main.name : hw.cpu.name}</p>
+			{#if noDgpu}
+				<div>
+					<p class="hw-name">{t.noDgpuTitle}</p>
+					<p class="hw-sub">{t.noDgpuSub(igpu ? igpu.name : null, `${num(hw.ramGiB, lang, 0)} GB RAM (${ramSpec})`)}</p>
+				</div>
+			{:else}
+				<p class="hw-name">{main ? main.name : hw.cpu.name}</p>
+			{/if}
 			<p class="hw-num num">
-				<span class="big">{num(main ? main.vramGiB : hw.ramGiB, lang, 0)}</span>
-				<span class="unit">GB {main ? (main.unified ? t.unified : 'VRAM') : 'RAM'}</span>
+				<span class="big">{num(main && !noDgpu ? main.vramGiB : hw.ramGiB, lang, 0)}</span>
+				<span class="unit">GB {main && !noDgpu ? (main.kind === 'apple' ? t.unified : 'VRAM') : 'RAM'}</span>
 			</p>
 		</div>
 		<div class="panel panel--heat scan">
@@ -52,14 +66,24 @@
 			<div class="list">
 				{#if gpus.length === 0}
 					<p class="notice notice--warn"><span class="notice__icon" aria-hidden="true">!</span><span>{t.noGpu}</span></p>
+				{:else if noDgpu}
+					<p class="notice notice--warn"><span class="notice__icon" aria-hidden="true">!</span><span>{t.igpuNote}</span></p>
 				{/if}
 				{#each gpus as g, i (i)}
 					{#if gpus.length > 1}<p class="eyebrow gpu-n">{t.gpuN(i + 1)}</p>{/if}
 					<dl class="facts">
-						<div><dt>{t.gpu}</dt><dd>{g.name}{#if g.arch}<span class="sub">{g.arch}</span>{/if}</dd></div>
+						<div><dt>{g.kind === 'integrated' ? t.igpu : t.gpu}</dt><dd>{g.name}{#if g.arch}<span class="sub">{g.arch}</span>{/if}</dd></div>
 						<div>
-							<dt>{t.vram}</dt>
-							<dd><span class="num">{num(g.vramGiB, lang, g.vramGiB % 1 ? 1 : 0)} GB</span>{#if g.unified}<span class="sub">{t.unified}</span>{/if}</dd>
+							{#if g.kind === 'integrated'}
+								<dt>{t.igpuMem}</dt>
+								<dd>
+									<span class="num">{t.igpuCarve(num(g.vramGiB, lang, g.vramGiB % 1 ? 1 : 0))}</span>
+									{#if g.sharedGiB}<span class="sub">{t.igpuShared(num(g.vramGiB + g.sharedGiB, lang, 1))}</span>{/if}
+								</dd>
+							{:else}
+								<dt>{t.vram}</dt>
+								<dd><span class="num">{num(g.vramGiB, lang, g.vramGiB % 1 ? 1 : 0)} GB</span>{#if g.kind === 'apple'}<span class="sub">{t.unified}</span>{/if}</dd>
+							{/if}
 						</div>
 						{#if g.driver}<div><dt>{t.driver}</dt><dd>{g.driver}</dd></div>{/if}
 						<div>
@@ -74,7 +98,7 @@
 				{/each}
 				<dl class="facts" class:sys={gpus.length > 0}>
 					<div><dt>{t.cpu}</dt><dd>{hw.cpu.name}<span class="sub">{t.cores(hw.cpu.cores, hw.cpu.threads)}</span></dd></div>
-					<div><dt>{t.ram}</dt><dd class="num">{num(hw.ramGiB, lang, 0)} GB</dd></div>
+					<div><dt>{t.ram}</dt><dd><span class="num">{num(hw.ramGiB, lang, 0)} GB</span><span class="sub">{ramSpec}</span></dd></div>
 					<div><dt>{t.disk}</dt><dd class="num">{num(hw.diskFreeGiB, lang, 0)} GB</dd></div>
 					<div><dt>{t.system}</dt><dd>{OS[hw.os]} · {hw.arch}<span class="sub">{t.scannedAt} {time(hw.scannedAt, lang)}</span></dd></div>
 				</dl>
@@ -108,6 +132,11 @@
 		letter-spacing: -0.03em;
 		line-height: 1.05;
 		color: var(--text-hi);
+	}
+	.hw-sub {
+		margin: var(--sp-2) 0 0;
+		font-size: var(--fs-lg);
+		color: var(--text);
 	}
 	.hw-num {
 		display: flex;

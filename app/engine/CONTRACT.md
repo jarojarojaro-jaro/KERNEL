@@ -71,11 +71,16 @@ Bez ważnego klucza: etapy skanu i rekomendacji działają; pobieranie/benchmark
 ```ts
 type Phase = 'license'|'scan'|'recommend'|'download'|'baseline'|'optimize'|'ready'|'error';
 interface LicenseInfo { valid: boolean; plan?: string; sub?: string; expiresAt?: number; reason?: string }
-interface Gpu { vendor:'nvidia'|'amd'|'intel'|'apple'; name:string; vramGiB:number; unified:boolean;
+type GpuKind = 'discrete'|'integrated'|'apple';
+interface Gpu { vendor:'nvidia'|'amd'|'intel'|'apple'; name:string; kind:GpuKind;
+  vramGiB:number /* discrete: VRAM; integrated: część RAM wydzielona przez BIOS; apple: budżet Metal */;
+  sharedGiB?:number /* integrated: RAM, który GPU może zmapować (Windows ½ RAM, Linux GTT) */;
   arch?:string /* gfx1100, sm_86, … */; driver?:string; backends:Backend[] }
 type Backend = 'cuda'|'rocm'|'vulkan'|'metal'|'cpu';
+interface RamInfo { totalGiB:number; type?:string /* DDR4, DDR5, LPDDR5 */; speedMTs?:number; channels?:number;
+  modules?:number; bandwidthGBs:number /* MT/s × 8 B × kanały 64-bit */; source:'detected'|'default' }
 interface Hw { os:'linux'|'windows'|'macos'; arch:'x64'|'arm64'; cpu:{name:string; cores:number; threads:number};
-  ramGiB:number; gpus:Gpu[]; diskFreeGiB:number; scannedAt:number }
+  ramGiB:number; memory:RamInfo; gpus:Gpu[]; diskFreeGiB:number; scannedAt:number }
 interface MemPlan { weightsGiB:number; kvGiB:number; computeGiB:number; overheadGiB:number; totalGiB:number;
   budgetGiB:number; freeGiB:number }
 interface Option { id:string; modelId:string; name:string; family:string; params:string; quant:string;
@@ -106,13 +111,25 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   `features` zawiera `mtp`. `fits` = zostaje zapas: Linux 100 MiB (zmierzona produkcja XTX 204800), Windows 512 MiB,
   macOS 0 ponad budżet pamięci zunifikowanej; CUDA +200 MiB (pula K/V rośnie z promptem, zmierzona do 55.6k).
   Kalibracja: `test/catalog.measured.json`.
+- Bez karty z własną pamięcią (wszystkie `gpus[].kind === 'integrated'` albo brak GPU) maszyna jest „RAM-bound”:
+  urządzenia = grafika zintegrowana × backend (Vulkan; ROCm tylko gfx1150/gfx1151) z budżetem min(`vramGiB + sharedGiB`,
+  `vramGiB` + RAM − zapas) oraz zawsze CPU z budżetem RAM − zapas (zapas: Windows ≥ 8 GB lub 25% RAM, Linux/macOS ≥ 6 GB
+  lub 20%); ten sam model × kwant woli grafikę zintegrowaną. Z kartą dyskretną (lub Apple) iGPU i CPU nie są planowane.
+  Prędkość: `ramSpeed` w `score.ts` — η × `memory.bandwidthGBs` / (bajty/token + KV przy 4096 tokenach), η z pomiarów
+  modelu na naszym CPU (`ramMeasured` w katalogu, ±15/10%) albo dense 0,6–0,75 / MoE 0,4–0,7; prefill = pomiar/rdzeń ×
+  rdzenie (inaczej 75 GFLOP/s/rdzeń), dolna granica × 0,6 (długi prompt). Decode < 8 t/s (środek zakresu, także na
+  kartach) → `too_slow_on_this_hw:<t/s>`.
 - `why[]` / `rejected[].reason` = kody `kod` albo `kod:wartość`: why — `quality_best`, `speed_measured:<t/s>`,
   `speed_estimated:<t/s>`, `mtp_head`, `mtp_no_memory` (plik ma głowicę MTP, ale kontekst draftu się nie mieści; opcja
   bez 'mtp' w features), `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
   `ub512_for_ctx` (ub 512: osiąga min. kontekst albo daje ≥ 8% więcej; wolniejszy prefill, decode bez zmian),
-  `unified_memory`, `windows_reserve`, `cpu_only`, `license_conditional`; rejected — `ctx_max_below_min:<ctxMax>`,
-  `weights_too_big:<GiB>/<budżet GiB>`, `ctx_below_min:<max ctx>`, `engine_too_old:b<N>` (przypięty upstream w
-  `data/engines.json` starszy niż build obsługujący model), `not_cpu_tier`.
+  `unified_memory` (Apple), `windows_reserve`, `license_conditional`; RAM-bound — `no_dgpu_ram`, `igpu_backend:<backend>`,
+  `cpu_igpu_pool:<GiB>` (liczy CPU, bo model nie mieści się w pamięci grafiki zintegrowanej), `cpu_only`,
+  `speed_ram_moe:<aktywne B>/<lo>-<hi>` | `speed_ram_dense:<parametry B>/<lo>-<hi>` (t/s), `prefill_ram:<lo>-<hi>/<minCtx>`,
+  `ram_reserve:<zapas GiB>/<budżet GiB>`, `gpu_faster:<lo>-<hi>` (tylko gdy katalog ma pomiar tego modelu na karcie
+  16–24 GB); rejected — `ctx_max_below_min:<ctxMax>`, `weights_too_big:<GiB>/<budżet GiB>`, `ctx_below_min:<max ctx>`,
+  `engine_too_old:b<N>` (przypięty upstream w `data/engines.json` starszy niż build obsługujący model),
+  `too_slow_on_this_hw:<t/s>`. Przy kilku urządzeniach powód pochodzi z tego, które ma najwięcej pamięci.
 - `data/catalog.json` odświeża `ENIGMA_MODELS_DIR=~/models bun src/server/catalog/refresh.ts` (HF tree API + nagłówki
   lokalnych GGUF / `config.json`; nic nie pobiera poza JSON i nagłówkami).
 

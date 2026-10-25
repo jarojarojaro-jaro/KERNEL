@@ -39,7 +39,15 @@
 		}
 	}
 
-	const mainGpu = $derived(hw ? [...hw.gpus].sort((a, b) => b.vramGiB - a.vramGiB)[0] : undefined);
+	/** Discrete cards first (the scan sorts them); integrated graphics is never presented as a card. */
+	const mainGpu = $derived(hw?.gpus[0]);
+	const ramType = $derived(hw?.memory.type ? `${hw.memory.type}${hw.memory.speedMTs ? `-${hw.memory.speedMTs}` : ''}` : '');
+	/** Memory bar title: a card's VRAM, Apple's unified memory, or RAM shared with the system (iGPU / CPU). */
+	function memTitle(o: Option): string {
+		const g = o.gpuIndex === null ? undefined : hw?.gpus[o.gpuIndex];
+		if (!g || g.kind === 'integrated') return t.memRam;
+		return g.kind === 'apple' ? t.memUnified : t.mem;
+	}
 </script>
 
 <section class="screen" aria-labelledby="rec-title">
@@ -48,7 +56,10 @@
 	{#if hw}
 		<p class="hwline">
 			<button type="button" class="hwbtn" onclick={onhw}>
-				<span>{mainGpu ? `${mainGpu.name} · ${num(mainGpu.vramGiB, lang, 0)} GB` : hw.cpu.name} <span class="mute">· {num(hw.ramGiB, lang, 0)} GB RAM</span> <span aria-hidden="true">→</span></span>
+				<span>
+					{#if mainGpu && mainGpu.kind !== 'integrated'}{mainGpu.name} · {num(mainGpu.vramGiB, lang, 0)} GB{:else if mainGpu}{t.hwIgpu(mainGpu.name)}{:else}{hw.cpu.name}{/if}
+					<span class="mute">· {num(hw.ramGiB, lang, 0)} GB RAM{ramType ? ` (${ramType})` : ''}</span> <span aria-hidden="true">→</span>
+				</span>
 			</button>
 		</p>
 	{/if}
@@ -95,7 +106,7 @@
 					</ul>
 				{/if}
 
-				<MemBar mem={o.mem} title={o.gpuIndex === null ? t.memRam : t.mem} />
+				<MemBar mem={o.mem} title={memTitle(o)} />
 
 				<div class="cols">
 					{#if o.why.length}

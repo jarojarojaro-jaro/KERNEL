@@ -520,7 +520,6 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": false,
    "arch": {
     "source": "gguf:Qwen3.8-27B-UD-Q4_K_XL.gguf",
     "arch": "qwen35",
@@ -625,6 +624,17 @@
      "source": "report 27-3090-final.md:100 (U0 tg128)"
     }
    ],
+   "ramMeasured": [
+    {
+     "quant": "UD-Q4_K_XL",
+     "cpu": "AMD Ryzen 7 5700X",
+     "cores": 8,
+     "ramBwGBs": 51.2,
+     "decodeTps": 2.29,
+     "prefillTps": 19.3,
+     "source": "lab 2026-10-24: Ryzen 7 5700X, 4x16 GB DDR4-3200 (2 channels, 51.2 GB/s), llama-bench b11742 CPU -ngl 0, -t 8, tg64/tg32 + pp512"
+    }
+   ],
    "configRepo": "Qwen/Qwen3.8-27B",
    "mtpInFile": true
   },
@@ -645,7 +655,6 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": false,
    "arch": {
     "source": "gguf:Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
     "arch": "qwen35moe",
@@ -728,6 +737,17 @@
     }
    ],
    "measured": [],
+   "ramMeasured": [
+    {
+     "quant": "UD-IQ4_XS",
+     "cpu": "AMD Ryzen 7 5700X",
+     "cores": 8,
+     "ramBwGBs": 51.2,
+     "decodeTps": 13.09,
+     "prefillTps": 102.8,
+     "source": "lab 2026-10-24: Ryzen 7 5700X, 4x16 GB DDR4-3200 (2 channels, 51.2 GB/s), llama-bench b11742 CPU -ngl 0, -t 8, tg64/tg32 + pp512"
+    }
+   ],
    "configRepo": "Qwen/Qwen3.6-35B-A3B",
    "mtpInFile": false
   },
@@ -749,7 +769,6 @@
    ],
    "minUpstreamBuild": 11803,
    "engineNote": "llama.cpp b11803 = PR #30928 merge (a37cc4610); long-context correctness unresolved on RDNA3 (report 59)",
-   "cpuTier": false,
    "arch": {
     "source": "gguf:flint-nvfp4.gguf",
     "arch": "flint",
@@ -811,7 +830,6 @@
     "tools"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": false,
    "arch": {
     "source": "gguf:LFM2.5-24B-A2B-Q5_K_M.gguf",
     "arch": "lfm2moe",
@@ -892,6 +910,17 @@
      "source": "landing measurements.ts lfmUpstreamTg128 (upstream ROCm tg128)"
     }
    ],
+   "ramMeasured": [
+    {
+     "quant": "Q5_K_M",
+     "cpu": "AMD Ryzen 7 5700X",
+     "cores": 8,
+     "ramBwGBs": 51.2,
+     "decodeTps": 23,
+     "prefillTps": 184.4,
+     "source": "lab 2026-10-24: Ryzen 7 5700X, 4x16 GB DDR4-3200 (2 channels, 51.2 GB/s), llama-bench b11742 CPU -ngl 0, -t 8, tg64/tg32 + pp512"
+    }
+   ],
    "configRepo": "LiquidAI/LFM2.5-24B-A2B",
    "mtpInFile": false
   },
@@ -912,7 +941,6 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": false,
    "arch": {
     "source": "config:google/gemma-4-31B-it",
     "arch": "gemma4",
@@ -995,7 +1023,6 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": false,
    "arch": {
     "source": "config:google/gemma-4-26B-A4B-it",
     "arch": "gemma4",
@@ -1078,7 +1105,6 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": false,
    "arch": {
     "source": "config:google/gemma-4-12B-it",
     "arch": "gemma4",
@@ -1161,7 +1187,6 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": true,
    "arch": {
     "source": "config:Qwen/Qwen3.5-9B",
     "arch": "qwen35",
@@ -1244,7 +1269,6 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": false,
    "arch": {
     "source": "config:openai/gpt-oss-20b",
     "arch": "gpt-oss",
@@ -1307,7 +1331,6 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": true,
    "arch": {
     "source": "config:Qwen/Qwen3.5-4B",
     "arch": "qwen35",
@@ -1379,7 +1402,6 @@
     "tools"
    ],
    "minUpstreamBuild": 0,
-   "cpuTier": true,
    "arch": {
     "source": "gguf:LFM2.5-2.6B-QAD-Q4_0.gguf",
     "arch": "lfm2",
@@ -1432,6 +1454,17 @@
     }
    ],
    "measured": [],
+   "ramMeasured": [
+    {
+     "quant": "QAD-Q4_0",
+     "cpu": "AMD Ryzen 7 5700X",
+     "cores": 8,
+     "ramBwGBs": 51.2,
+     "decodeTps": 22.96,
+     "prefillTps": 164.2,
+     "source": "lab 2026-10-24: Ryzen 7 5700X, 4x16 GB DDR4-3200 (2 channels, 51.2 GB/s), llama-bench b11742 CPU -ngl 0, -t 16, tg64/tg32 + pp512"
+    }
+   ],
    "configRepo": "LiquidAI/LFM2.5-2.6B",
    "mtpInFile": false
   }

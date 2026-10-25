@@ -10,6 +10,19 @@ type Render = (v: string, lang: Lang) => string;
 const tps = (v: string, lang: Lang) => num(Number(v), lang, 1);
 const gib = (v: string, lang: Lang) => num(Number(v), lang, 1);
 const tok = (v: string, lang: Lang) => new Intl.NumberFormat(lang === 'pl' ? 'pl-PL' : 'en-GB').format(Number(v));
+/** "11-14" -> "11–14". */
+const range = (v: string) => v.replace('-', '–');
+/** "<head>/<rest>" (split on the first '/'). */
+function split2(v: string): [string, string] {
+	const i = v.indexOf('/');
+	return i < 0 ? [v, ''] : [v.slice(0, i), v.slice(i + 1)];
+}
+/** Minutes to read `tokens` at "<lo>-<hi>" t/s: "11–18". */
+function fillMinutes(tps: string, tokens: string): string {
+	const [lo = 0, hi = 0] = tps.split('-').map(Number);
+	const n = Number(tokens);
+	return lo > 0 && hi > 0 ? `${Math.round(n / hi / 60)}–${Math.round(n / lo / 60)}` : '?';
+}
 
 const WHY: Record<string, Record<Lang, Render>> = {
 	quality_best: { pl: () => 'Najlepsza jakość, która się mieści.', en: () => 'The best quality that fits.' },
@@ -34,7 +47,7 @@ const WHY: Record<string, Record<Lang, Render>> = {
 		en: () => 'Mixture of experts: only a small part of the parameters works per token, so it writes fast.'
 	},
 	ctx_model_max: { pl: () => 'Kontekst to maksimum, które obsługuje model.', en: () => 'The context is the maximum the model supports.' },
-	ctx_memory_limit: { pl: () => 'Kontekst ograniczony pamięcią karty.', en: () => 'The context is limited by the card’s memory.' },
+	ctx_memory_limit: { pl: () => 'Kontekst ograniczony dostępną pamięcią.', en: () => 'The context is limited by the available memory.' },
 	kv_q8_0: { pl: () => 'Pamięć kontekstu skompresowana do q8_0 (praktycznie bez straty).', en: () => 'Context memory compressed to q8_0 (practically lossless).' },
 	kv_q4_0: { pl: () => 'Pamięć kontekstu skompresowana do q4_0, żeby zmieścić długi kontekst.', en: () => 'Context memory compressed to q4_0 to fit a long context.' },
 	kv_f16: { pl: () => 'Pamięć kontekstu bez kompresji (f16).', en: () => 'Context memory uncompressed (f16).' },
@@ -42,11 +55,70 @@ const WHY: Record<string, Record<Lang, Render>> = {
 		pl: () => 'Mniejsza paczka prefill (512) daje więcej kontekstu; czytanie trochę wolniejsze, pisanie bez zmian.',
 		en: () => 'A smaller prefill batch (512) buys more context; reading is a little slower, writing is unchanged.'
 	},
-	unified_memory: { pl: () => 'Pamięć wspólna: budżet to część RAM.', en: () => 'Unified memory: the budget is part of the RAM.' },
+	unified_memory: {
+		pl: () => 'Pamięć wspólna (Apple): budżet to część RAM, którą macOS daje grafice.',
+		en: () => 'Unified memory (Apple): the budget is the part of the RAM macOS gives the GPU.'
+	},
 	windows_reserve: { pl: () => 'Zostawiamy zapas pamięci dla kompozytora Windows.', en: () => 'We leave memory headroom for the Windows compositor.' },
+	no_dgpu_ram: {
+		pl: () => 'Nie masz osobnej karty graficznej, więc model liczy się w pamięci RAM.',
+		en: () => 'You have no separate graphics card, so the model runs from system RAM.'
+	},
+	igpu_backend: {
+		pl: (v) => `Liczy grafika zintegrowana (${v === 'vulkan' ? 'Vulkan' : v.toUpperCase()}). Czytanie promptu zwykle idzie jej szybciej niż samemu procesorowi (tego nie mierzyliśmy); pisanie i tak ogranicza przepustowość RAM.`,
+		en: (v) => `The integrated graphics computes (${v === 'vulkan' ? 'Vulkan' : v.toUpperCase()}). It usually reads the prompt faster than the processor alone (we have not measured this); writing is limited by the RAM bandwidth either way.`
+	},
+	cpu_igpu_pool: {
+		pl: (v, l) => `Liczy procesor (CPU): grafika zintegrowana może użyć najwyżej ${gib(v, l)} GB RAM, a ten model z kontekstem potrzebuje więcej.`,
+		en: (v, l) => `The processor (CPU) computes: the integrated graphics may use at most ${gib(v, l)} GB of RAM, and this model with its context needs more.`
+	},
 	cpu_only: {
-		pl: () => 'Brak karty graficznej: model pobiegnie na procesorze; długi prompt może zająć minuty.',
-		en: () => 'No graphics card: the model runs on the processor; a long prompt can take minutes.'
+		pl: () => 'Brak karty graficznej: liczy procesor (CPU).',
+		en: () => 'No graphics card: the processor (CPU) computes.'
+	},
+	speed_ram_moe: {
+		pl: (v, l) => {
+			const [a, r] = split2(v);
+			return `Wybraliśmy model MoE (${num(Number(a), l, Number(a) % 1 ? 1 : 0)}B aktywnych), bo na pamięci RAM tylko taki pisze z sensowną prędkością (szacunek ${range(r)} t/s).`;
+		},
+		en: (v, l) => {
+			const [a, r] = split2(v);
+			return `We chose an MoE model (${num(Number(a), l, Number(a) % 1 ? 1 : 0)}B active), because from RAM only such a model writes at a usable speed (estimate ${range(r)} t/s).`;
+		}
+	},
+	speed_ram_dense: {
+		pl: (v, l) => {
+			const [p, r] = split2(v);
+			return `Wybraliśmy mały model (${num(Number(p), l, Number(p) % 1 ? 1 : 0)}B), bo na pamięci RAM tylko małe modele i MoE piszą z sensowną prędkością (szacunek ${range(r)} t/s).`;
+		},
+		en: (v, l) => {
+			const [p, r] = split2(v);
+			return `We chose a small model (${num(Number(p), l, Number(p) % 1 ? 1 : 0)}B), because from RAM only small and MoE models write at a usable speed (estimate ${range(r)} t/s).`;
+		}
+	},
+	prefill_ram: {
+		pl: (v, l) => {
+			const [r, n] = split2(v);
+			return `Czytanie długiego tekstu jest tu wolne: szacunek ${range(r)} t/s. Wypełnienie ${tok(n, l)} tokenów kontekstu zajmie ok. ${fillMinutes(r, n)} min; krótkie pytanie dostaje odpowiedź po kilku sekundach.`;
+		},
+		en: (v, l) => {
+			const [r, n] = split2(v);
+			return `Reading long text is slow here: estimate ${range(r)} t/s. Filling ${tok(n, l)} tokens of context takes about ${fillMinutes(r, n)} min; a short question is answered within seconds.`;
+		}
+	},
+	ram_reserve: {
+		pl: (v, l) => {
+			const [keep, budget] = split2(v);
+			return `Zostawiamy ${gib(keep, l)} GB RAM dla systemu i programów; model ma do dyspozycji ${gib(budget, l)} GB.`;
+		},
+		en: (v, l) => {
+			const [keep, budget] = split2(v);
+			return `We keep ${gib(keep, l)} GB of RAM for the system and your programs; the model gets ${gib(budget, l)} GB.`;
+		}
+	},
+	gpu_faster: {
+		pl: (v) => `Z kartą graficzną 16–24 GB ten model pisałby ${range(v)}× szybciej (nasze pomiary na takich kartach).`,
+		en: (v) => `With a 16–24 GB graphics card this model would write ${range(v)}× faster (our measurements on such cards).`
 	},
 	license_conditional: {
 		pl: () => 'Licencja LFM: użycie komercyjne do 10 mln USD przychodu rocznie.',
@@ -77,7 +149,10 @@ const REJECTED: Record<string, Record<Lang, Render>> = {
 		pl: (v) => `Oficjalny llama.cpp w wersji ${v} jeszcze nie obsługuje tego modelu.`,
 		en: (v) => `Official llama.cpp ${v} does not support this model yet.`
 	},
-	not_cpu_tier: { pl: () => 'Za duży, by działać rozsądnie na samym procesorze.', en: () => 'Too large to run sensibly on the processor alone.' }
+	too_slow_on_this_hw: {
+		pl: (v, l) => `Za wolny na tym sprzęcie: szacunek ok. ${tps(v, l)} t/s pisania (wymagamy co najmniej 8 t/s).`,
+		en: (v, l) => `Too slow on this hardware: about ${tps(v, l)} t/s writing speed estimated (we require at least 8 t/s).`
+	}
 };
 
 /** Optimisation candidates (`Candidate.reason`); `slower_than` gets the other candidate's label. */
