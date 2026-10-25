@@ -120,6 +120,10 @@ const WHY: Record<string, Record<Lang, Render>> = {
 		pl: (v) => `Z kartą graficzną 16–24 GB ten model pisałby ${range(v)}× szybciej (nasze pomiary na takich kartach).`,
 		en: (v) => `With a 16–24 GB graphics card this model would write ${range(v)}× faster (our measurements on such cards).`
 	},
+	tight_memory: {
+		pl: () => 'Mało zapasu: zostaje mniej niż 3% pamięci, więc stawiamy ten wariant niżej (system i Twoje programy dzielą ten sam RAM).',
+		en: () => 'Little headroom: under 3% of the memory stays free, so we rank this option lower (the system and your programs share the same RAM).'
+	},
 	license_conditional: {
 		pl: () => 'Licencja LFM: użycie komercyjne do 10 mln USD przychodu rocznie.',
 		en: () => 'LFM licence: commercial use up to USD 10 million annual revenue.'

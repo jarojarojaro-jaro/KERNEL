@@ -119,11 +119,14 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   modelu na naszym CPU (`ramMeasured` w katalogu, ±15/10%) albo dense 0,6–0,75 / MoE 0,4–0,7; prefill = pomiar/rdzeń ×
   rdzenie (inaczej 75 GFLOP/s/rdzeń), dolna granica × 0,6 (długi prompt). Decode < 8 t/s (środek zakresu, także na
   kartach) → `too_slow_on_this_hw:<t/s>`.
+- Ranking (`Option.score`): jakość × współczynnik kwantu × użyteczność prędkości, potem prędkość zmierzona na tej klasie
+  sprzętu (punkt `measured` dla tej karty; na RAM-bound `ramMeasured` modelu) wygrywa z szacowaną, chyba że szacowana ma
+  wynik wyższy o > 20% (szacunek / 1,2); na RAM-bound plan z < 3% wolnego budżetu × 0,8 (`tight_memory`).
 - `why[]` / `rejected[].reason` = kody `kod` albo `kod:wartość`: why — `quality_best`, `speed_measured:<t/s>`,
   `speed_estimated:<t/s>`, `mtp_head`, `mtp_no_memory` (plik ma głowicę MTP, ale kontekst draftu się nie mieści; opcja
   bez 'mtp' w features), `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
   `ub512_for_ctx` (ub 512: osiąga min. kontekst albo daje ≥ 8% więcej; wolniejszy prefill, decode bez zmian),
-  `unified_memory` (Apple), `windows_reserve`, `license_conditional`; RAM-bound — `no_dgpu_ram`, `igpu_backend:<backend>`,
+  `unified_memory` (Apple), `windows_reserve`, `license_conditional`, `tight_memory`; RAM-bound — `no_dgpu_ram`, `igpu_backend:<backend>`,
   `cpu_igpu_pool:<GiB>` (liczy CPU, bo model nie mieści się w pamięci grafiki zintegrowanej), `cpu_only`,
   `speed_ram_moe:<aktywne B>/<lo>-<hi>` | `speed_ram_dense:<parametry B>/<lo>-<hi>` (t/s), `prefill_ram:<lo>-<hi>/<minCtx>`,
   `ram_reserve:<zapas GiB>/<budżet GiB>`, `gpu_faster:<lo>-<hi>` (tylko gdy katalog ma pomiar tego modelu na karcie

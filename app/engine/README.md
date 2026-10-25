@@ -44,10 +44,10 @@ cpuheavy --quiet bun src/server/main.ts run --headless --license-file ~/.secrets
     --model qwen36-35b-a3b/UD-IQ4_XS/cpu --exit-when-ready
 ```
 
-Na CPU katalog wybiera teraz MoE z małą liczbą aktywnych parametrów (patrz niżej); w labie (62 GB DDR4-3200) top 4 to
-Flint 40B-A2.5B, Qwen3.6-35B-A3B UD-IQ4_XS, Gemma 4 26B-A4B, LFM2.5-24B-A2B, a `--model` musi być jedną z nich
-(Qwen3.6 leży w `~/models/q36`). Wcześniejszy zapis przebiegu (jeszcze z regułą „tylko małe modele na CPU”, LFM2.5-2.6B
-przy `--min-ctx 128000`): [`test/e2e/cpu-dev-transcript.txt`](test/e2e/cpu-dev-transcript.txt).
+Na CPU katalog wybiera MoE z małą liczbą aktywnych parametrów (patrz niżej); w labie (62 GB DDR4-3200) czwórka to
+Flint 40B-A2.5B, Qwen3.6-35B-A3B UD-IQ4_XS, LFM2.5-24B-A2B, Gemma 4 26B-A4B, a `--model` musi być jedną z nich (Qwen3.6
+leży w `~/models/q36`). Przebieg skompilowaną binarką (`dist/bin/enigma-linux-x64`, `ENIGMA_BENCH_REPS=1`, ~8 min,
+exit 0, 262 144 ctx, decode 9,1 t/s na 2 rdzeniach `cpuheavy`): [`test/e2e/cpu-dev-transcript.txt`](test/e2e/cpu-dev-transcript.txt).
 
 Build CPU llama.cpp (raz): `cd ~/wt/upstream && cpuheavy --quiet cmake -S . -B build-cpu -DCMAKE_BUILD_TYPE=Release
 -DGGML_HIP=OFF -DGGML_CUDA=OFF -DLLAMA_CURL=OFF -DLLAMA_USE_PREBUILT_UI=OFF && cpuheavy --quiet cmake --build
@@ -66,7 +66,9 @@ Linux ≥ 6 GB lub 20%); grafika zintegrowana (Vulkan) dostaje najwyżej to, co 
 budżet; ten sam model × kwant woli grafikę zintegrowaną. Prędkość pisania = η × przepustowość RAM / bajty na token
 (aktywne wagi + KV), skalibrowana pomiarami na naszym CPU (Ryzen 7 5700X, DDR4-3200 ×2, `ramMeasured` w katalogu:
 Qwen3.6-35B-A3B IQ4_XS 13,1 t/s, LFM2.5-24B Q5_K_M 23,0, Qwen3.8-27B Q4_K_XL 2,3); pokazywana jako zakres. Opcje
-poniżej 8 t/s są odrzucane (`too_slow_on_this_hw`).
+poniżej 8 t/s są odrzucane (`too_slow_on_this_hw`). W rankingu prędkość zmierzona na tej klasie sprzętu wygrywa z
+szacowaną, chyba że szacowana opcja ma wynik wyższy o > 20%; plan z < 3% wolnego budżetu RAM jest obniżany
+(`tight_memory`). Przykład: APU z 31 GB DDR4-3200 → Qwen3.6-35B-A3B UD-IQ4_XS, 262 144 ctx, CPU, 11–14 t/s.
 
 ## Build binarek
 

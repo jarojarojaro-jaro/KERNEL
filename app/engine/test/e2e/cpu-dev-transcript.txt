@@ -1,98 +1,84 @@
-$ enigma-linux-x64 --help | head -3
-Enigma 0.1.0 — local LLM inference, tuned for your hardware.
-
-Usage:
-$ ENIGMA_HOME=… ENIGMA_MODELS_DIR=~/models ENIGMA_ENGINE_DIR_UPSTREAM_CPU=~/wt/upstream/build-cpu ENIGMA_DEV_CPU=1 ENIGMA_PORT=11540 ENIGMA_BENCH_PREFILL=512 ENIGMA_BENCH_DECODE=64 ENIGMA_BENCH_DEEP=2048 cpuheavy --quiet enigma-linux-x64 run --headless --license-file ~/.secrets/enigma-test-license.txt --min-ctx 128000 --model lfm25-2.6b/QAD-Q4_0/cpu --exit-when-ready
-[17:35:05] Enigma 0.1.0 API on http://127.0.0.1:11540 (data /tmp/enigma-e2e/home)
-[17:35:05] license OK: plan pro, valid until 2026-11-23
-[17:35:05] progress scan scan 0.0% (0/1)
-[17:35:05] scan: AMD Ryzen 7 5700X 8-Core Processor (8c/16t), RAM 62.7 GiB, GPU: none (CPU), disk free 125.4 GiB
-[17:35:05] progress scan scan 100.0% (1/1)
-[17:35:05] recommend: Qwen3.5-9B Q4_K_M, ctx 262144, KV f16, cpu (1 alternatives, 27 rejected)
-[17:35:05] recommend: Qwen3.5-9B Q4_K_M, ctx 262144, KV f16, cpu (2 alternatives, 25 rejected)
-[17:35:05]   option qwen35-9b/Q4_K_M/cpu: Qwen3.5-9B Q4_K_M ctx 262144 KV f16 cpu 14.71/43.89 GiB score 3.48
-[17:35:05]   option qwen35-4b/Q4_K_M/cpu: Qwen3.5-4B Q4_K_M ctx 262144 KV f16 cpu 12.45/43.89 GiB score 3.03
-[17:35:05]   option lfm25-2.6b/QAD-Q4_0/cpu: LFM2.5-2.6B QAD-Q4_0 ctx 128000 KV f16 cpu 4.25/43.89 GiB score 2.29
-[17:35:05]   rejected qwen38-27b UD-Q3_K_XL: not_cpu_tier
-[17:35:05]   rejected qwen38-27b UD-Q4_K_XL: not_cpu_tier
-[17:35:05]   rejected qwen38-27b UD-Q5_K_XL: not_cpu_tier
-[17:35:05]   rejected qwen38-27b UD-Q6_K: not_cpu_tier
-[17:35:05]   rejected qwen38-27b Q8_0: not_cpu_tier
-[17:35:05]   rejected qwen36-35b-a3b UD-Q3_K_XL: not_cpu_tier
-[17:35:05]   rejected qwen36-35b-a3b UD-IQ4_XS: not_cpu_tier
-[17:35:05]   rejected qwen36-35b-a3b UD-Q4_K_XL: not_cpu_tier
-[17:35:05]   rejected qwen36-35b-a3b UD-Q5_K_XL: not_cpu_tier
-[17:35:05]   rejected qwen36-35b-a3b Q8_0: not_cpu_tier
-[17:35:05]   rejected flint-40b-a2.5b NVFP4: not_cpu_tier
-[17:35:05]   rejected lfm25-24b-a2b Q4_K_M: not_cpu_tier
-[17:35:05] chosen: lfm25-2.6b/QAD-Q4_0/cpu (LFM2.5-2.6B QAD-Q4_0, ctx 128000)
-[17:35:05] progress download reuse:engine 100.0% (1/1)
-[17:35:05] progress download verify 47.2% (752091136/1593894944) 1792.3 MiB/s ETA 0 s
-[17:35:06] progress download verify 100.0% (1593894944/1593894944) 1818.4 MiB/s
-[17:35:06] model: reusing /home/jaro/models/lfm/LFM2.5-2.6B-QAD-Q4_0.gguf (sha256 verified)
-[17:35:06] progress download reuse:model 100.0% (1593894944/1593894944)
-[17:35:06] progress baseline bench:start 0.0% (0/1)
-[17:35:06] start baseline upstream-linux-x64-cpu: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/lfm/LFM2.5-2.6B-QAD-Q4_0.gguf -c 128000 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 1024 -np 1 --host 127.0.0.1 --port 45263 --api-key *** -t 2 --jinja
-[17:35:09] llama-server ready on http://127.0.0.1:45263 (pid 83165, log /tmp/enigma-e2e/home/logs/server-upstream-linux-x64-cpu-2026-10-24T17-35-06-122Z.log)
-[17:35:09] progress baseline bench:start 100.0% (1/1)
-[17:35:10] progress baseline bench:prefill 0.0% (0/2)
-[17:35:25] progress baseline bench:decode 50.0% (1/2)
-[17:35:25] progress baseline bench:prefill 50.0% (1/2)
-[17:35:39] progress baseline bench:decode 100.0% (2/2)
-[17:35:39] progress baseline bench:deep 0.0% (0/2)
-[17:36:30] progress baseline bench:deep 50.0% (1/2)
-[17:37:21] progress baseline bench:deep 100.0% (2/2)
-[17:37:21] bench baseline upstream-linux-x64-cpu: prefill 48.1 t/s, decode 16.7 t/s, deep 2048 tok: 47.3 / 16.3 t/s, md5 60a9f678
-[17:37:21] progress optimize bench:start 0.0% (0/1)
-[17:37:21] start candidate ub-512: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/lfm/LFM2.5-2.6B-QAD-Q4_0.gguf -c 128000 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 512 -np 1 --host 127.0.0.1 --port 36457 --api-key *** -t 2 --jinja
-[17:37:24] llama-server ready on http://127.0.0.1:36457 (pid 84246, log /tmp/enigma-e2e/home/logs/server-upstream-linux-x64-cpu-2026-10-24T17-37-21-489Z.log)
-[17:37:24] progress optimize bench:start 100.0% (1/1)
-[17:37:25] progress optimize bench:prefill 0.0% (0/2)
-[17:37:39] progress optimize bench:decode 50.0% (1/2)
-[17:37:39] progress optimize bench:prefill 50.0% (1/2)
-[17:37:53] progress optimize bench:decode 100.0% (2/2)
-[17:37:53] progress optimize bench:deep 0.0% (0/2)
-[17:38:43] progress optimize bench:deep 50.0% (1/2)
-[17:39:35] progress optimize bench:deep 100.0% (2/2)
-[17:39:35] bench candidate ub-512: prefill 48.3 t/s, decode 18.8 t/s, deep 2048 tok: 47.9 / 15.9 t/s, md5 60a9f678
-[17:39:35] progress optimize bench:start 0.0% (0/1)
-[17:39:35] start candidate ub-2048: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/lfm/LFM2.5-2.6B-QAD-Q4_0.gguf -c 128000 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 2048 -np 1 --host 127.0.0.1 --port 40527 --api-key *** -t 2 --jinja
-[17:39:38] llama-server ready on http://127.0.0.1:40527 (pid 85510, log /tmp/enigma-e2e/home/logs/server-upstream-linux-x64-cpu-2026-10-24T17-39-35-244Z.log)
-[17:39:38] progress optimize bench:start 100.0% (1/1)
-[17:39:39] progress optimize bench:prefill 0.0% (0/2)
-[17:39:52] progress optimize bench:decode 50.0% (1/2)
-[17:39:52] progress optimize bench:prefill 50.0% (1/2)
-[17:40:06] progress optimize bench:decode 100.0% (2/2)
-[17:40:06] progress optimize bench:deep 0.0% (0/2)
-[17:40:56] progress optimize bench:deep 50.0% (1/2)
-[17:41:49] progress optimize bench:deep 100.0% (2/2)
-[17:41:49] bench candidate ub-2048: prefill 48.9 t/s, decode 19.8 t/s, deep 2048 tok: 47.3 / 15.6 t/s, md5 60a9f678
-[17:41:49] progress optimize bench:start 0.0% (0/1)
-[17:41:49] start candidate lookup: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/lfm/LFM2.5-2.6B-QAD-Q4_0.gguf -c 128000 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 1024 -np 1 --host 127.0.0.1 --port 39323 --api-key *** -t 2 --jinja --spec-default
-[17:41:53] llama-server ready on http://127.0.0.1:39323 (pid 86768, log /tmp/enigma-e2e/home/logs/server-upstream-linux-x64-cpu-2026-10-24T17-41-49-845Z.log)
-[17:41:53] progress optimize bench:start 100.0% (1/1)
-[17:41:54] progress optimize bench:prefill 0.0% (0/2)
-[17:42:08] progress optimize bench:decode 50.0% (1/2)
-[17:42:08] progress optimize bench:prefill 50.0% (1/2)
-[17:42:20] progress optimize bench:decode 100.0% (2/2)
-[17:42:20] progress optimize bench:deep 0.0% (0/2)
-[17:43:09] progress optimize bench:deep 50.0% (1/2)
-[17:43:59] progress optimize bench:deep 100.0% (2/2)
-[17:43:59] bench candidate lookup: prefill 48.6 t/s, decode 27.0 t/s, deep 2048 tok: 47.8 / 19.5 t/s, md5 60a9f678
-[17:43:59] optimize: kept lookup: decode 16.7 → 27.0 t/s (61.1%), prefill 1.1%, same output: true
-[17:43:59] results saved to /tmp/enigma-e2e/home/results/2026-10-24T17-43-59-520Z.json
-[17:43:59] start ready: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/lfm/LFM2.5-2.6B-QAD-Q4_0.gguf -c 128000 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 1024 -np 1 --host 127.0.0.1 --port 43127 --api-key *** -t 2 --jinja --spec-default
-[17:44:02] llama-server ready on http://127.0.0.1:43127 (pid 88176, log /tmp/enigma-e2e/home/logs/server-upstream-linux-x64-cpu-2026-10-24T17-43-59-526Z.log)
+$ ENIGMA_HOME=… ENIGMA_MODELS_DIR=~/models ENIGMA_ENGINE_DIR_UPSTREAM_CPU=~/wt/upstream/build-cpu ENIGMA_DEV_CPU=1 ENIGMA_PORT=11540 ENIGMA_NO_BROWSER=1 ENIGMA_BENCH_PREFILL=512 ENIGMA_BENCH_DECODE=64 ENIGMA_BENCH_DEEP=2048 ENIGMA_BENCH_REPS=1 cpuheavy --quiet dist/bin/enigma-linux-x64 run --headless --license-file ~/.secrets/enigma-test-license.txt --model qwen36-35b-a3b/UD-IQ4_XS/cpu --exit-when-ready
+# 2026-10-25, compiled binary, CPU only (cpuheavy: 2 cores, so -t 2; decode 9 t/s here vs 13.1 t/s with 8 threads), exit 0
+[00:04:38] Enigma 0.1.0 API on http://127.0.0.1:11540 (data /tmp/enigma-cpu-dev/home)
+[00:04:38] license OK: plan pro, valid until 2026-11-23
+[00:04:38] progress scan scan 0.0% (0/1)
+[00:04:38] scan: AMD Ryzen 7 5700X 8-Core Processor (8c/16t), RAM 62.7 GiB DDR4-3200 ×2 ≈ 51.2 GB/s (detected), GPU: none (CPU), disk free 125.2 GiB
+[00:04:38] progress scan scan 100.0% (1/1)
+[00:04:38] recommend: Flint 40B-A2.5B NVFP4, ctx 262144, KV f16, cpu (3 alternatives, 19 rejected)
+[00:04:38]   option flint-40b-a2.5b/NVFP4/cpu: Flint 40B-A2.5B NVFP4 ctx 262144 KV f16 cpu 29.17/50.2 GiB score 9.17
+[00:04:38]   option qwen36-35b-a3b/UD-IQ4_XS/cpu: Qwen3.6-35B-A3B UD-IQ4_XS ctx 262144 KV f16 cpu 22.4/50.2 GiB score 7.89
+[00:04:38]   option lfm25-24b-a2b/Q4_K_M/cpu: LFM2.5-24B-A2B Q4_K_M ctx 131072 KV f16 cpu 16.86/50.2 GiB score 6.37
+[00:04:38]   option gemma4-26b-a4b/UD-IQ4_XS/cpu: Gemma 4 26B-A4B UD-IQ4_XS ctx 262144 KV f16 cpu 19.91/50.2 GiB score 5.41
+[00:04:38]   rejected qwen38-27b UD-Q3_K_XL: too_slow_on_this_hw:3.0
+[00:04:38]   rejected qwen38-27b UD-Q4_K_XL: too_slow_on_this_hw:2.2
+[00:04:38]   rejected qwen38-27b UD-Q5_K_XL: too_slow_on_this_hw:1.9
+[00:04:38]   rejected qwen38-27b UD-Q6_K: too_slow_on_this_hw:1.8
+[00:04:38]   rejected qwen38-27b Q8_0: too_slow_on_this_hw:1.4
+[00:04:38]   rejected qwen36-35b-a3b Q8_0: too_slow_on_this_hw:6.4
+[00:04:38]   rejected gemma4-31b UD-Q3_K_XL: too_slow_on_this_hw:2.1
+[00:04:38]   rejected gemma4-31b UD-Q4_K_XL: too_slow_on_this_hw:1.8
+[00:04:38]   rejected gemma4-31b Q6_K: too_slow_on_this_hw:1.3
+[00:04:38]   rejected gemma4-26b-a4b UD-Q6_K: too_slow_on_this_hw:7.6
+[00:04:38]   rejected gemma4-12b UD-Q4_K_XL: too_slow_on_this_hw:4.5
+[00:04:38]   rejected gemma4-12b Q6_K: too_slow_on_this_hw:3.4
+[00:04:38] chosen: qwen36-35b-a3b/UD-IQ4_XS/cpu (Qwen3.6-35B-A3B UD-IQ4_XS, ctx 262144)
+[00:04:38] progress download reuse:engine 100.0% (1/1)
+[00:04:47] model: reusing /home/jaro/models/q36/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf (sha256 verified)
+[00:04:47] progress download reuse:model 100.0% (17730509792/17730509792)
+[00:04:47] progress baseline bench:start 0.0% (0/1)
+[00:04:47] start baseline upstream-linux-x64-cpu: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/q36/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf -c 262144 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 1024 -np 1 --host 127.0.0.1 --port 35461 --api-key *** --alias Qwen3.6-35B-A3B-UD-IQ4_XS -t 2 --jinja
+[00:04:53] llama-server ready on http://127.0.0.1:35461 (pid 267507, log /tmp/enigma-cpu-dev/home/logs/server-upstream-linux-x64-cpu-2026-10-25T00-04-47-956Z.log)
+[00:04:53] progress baseline bench:start 100.0% (1/1)
+[00:04:55] progress baseline bench:prefill 0.0% (0/1)
+[00:05:11] progress baseline bench:decode 0.0% (0/1)
+[00:05:31] progress baseline bench:decode 100.0% (1/1)
+[00:05:31] progress baseline bench:deep 0.0% (0/1)
+[00:06:43] progress baseline bench:deep 100.0% (1/1)
+[00:06:43] bench baseline upstream-linux-x64-cpu: prefill 32.3 t/s, decode 9.1 t/s, deep 1880 tok: 33.5 / 8.3 t/s, md5 c4dda256
+[00:06:44] progress optimize bench:start 0.0% (0/1)
+[00:06:44] start candidate ub-512: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/q36/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf -c 262144 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 512 -np 1 --host 127.0.0.1 --port 38817 --api-key *** --alias Qwen3.6-35B-A3B-UD-IQ4_XS -t 2 --jinja
+[00:06:49] llama-server ready on http://127.0.0.1:38817 (pid 268599, log /tmp/enigma-cpu-dev/home/logs/server-upstream-linux-x64-cpu-2026-10-25T00-06-44-240Z.log)
+[00:06:49] progress optimize bench:start 100.0% (1/1)
+[00:06:52] progress optimize bench:prefill 0.0% (0/1)
+[00:07:08] progress optimize bench:decode 0.0% (0/1)
+[00:07:28] progress optimize bench:decode 100.0% (1/1)
+[00:07:28] progress optimize bench:deep 0.0% (0/1)
+[00:08:43] progress optimize bench:deep 100.0% (1/1)
+[00:08:43] bench candidate ub-512: prefill 32.1 t/s, decode 9.2 t/s, deep 1880 tok: 31.2 / 8.2 t/s, md5 c4dda256
+[00:08:44] progress optimize bench:start 0.0% (0/1)
+[00:08:44] start candidate ub-2048: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/q36/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf -c 262144 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 2048 -np 1 --host 127.0.0.1 --port 37285 --api-key *** --alias Qwen3.6-35B-A3B-UD-IQ4_XS -t 2 --jinja
+[00:08:50] llama-server ready on http://127.0.0.1:37285 (pid 269495, log /tmp/enigma-cpu-dev/home/logs/server-upstream-linux-x64-cpu-2026-10-25T00-08-44-680Z.log)
+[00:08:50] progress optimize bench:start 100.0% (1/1)
+[00:08:52] progress optimize bench:prefill 0.0% (0/1)
+[00:09:08] progress optimize bench:decode 0.0% (0/1)
+[00:09:28] progress optimize bench:decode 100.0% (1/1)
+[00:09:28] progress optimize bench:deep 0.0% (0/1)
+[00:10:38] progress optimize bench:deep 100.0% (1/1)
+[00:10:38] bench candidate ub-2048: prefill 32.0 t/s, decode 9.1 t/s, deep 1880 tok: 34.8 / 8.3 t/s, md5 c4dda256
+[00:10:38] progress optimize bench:start 0.0% (0/1)
+[00:10:38] start candidate lookup: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/q36/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf -c 262144 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 1024 -np 1 --host 127.0.0.1 --port 45717 --api-key *** --alias Qwen3.6-35B-A3B-UD-IQ4_XS -t 2 --jinja --spec-default
+[00:10:44] llama-server ready on http://127.0.0.1:45717 (pid 270367, log /tmp/enigma-cpu-dev/home/logs/server-upstream-linux-x64-cpu-2026-10-25T00-10-38-859Z.log)
+[00:10:44] progress optimize bench:start 100.0% (1/1)
+[00:10:46] progress optimize bench:prefill 0.0% (0/1)
+[00:11:02] progress optimize bench:decode 0.0% (0/1)
+[00:11:22] progress optimize bench:decode 100.0% (1/1)
+[00:11:22] progress optimize bench:deep 0.0% (0/1)
+[00:12:34] progress optimize bench:deep 100.0% (1/1)
+[00:12:34] bench candidate lookup: prefill 32.1 t/s, decode 9.1 t/s, deep 1880 tok: 33.4 / 8.4 t/s, md5 c4dda256
+[00:12:35] optimize: kept ub-512: decode 9.1 → 9.2 t/s (0.7%), prefill -0.7%, same output: true
+[00:12:35] results saved to /tmp/enigma-cpu-dev/home/results/2026-10-25T00-12-35-309Z.json
+[00:12:35] start ready: /home/jaro/wt/upstream/build-cpu/bin/llama-server -m /home/jaro/models/q36/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf -c 262144 -ngl 0 -fa on -ctk f16 -ctv f16 -b 2048 -ub 512 -np 1 --host 127.0.0.1 --port 42975 --api-key *** --alias Qwen3.6-35B-A3B-UD-IQ4_XS -t 2 --jinja
+[00:12:40] llama-server ready on http://127.0.0.1:42975 (pid 271262, log /tmp/enigma-cpu-dev/home/logs/server-upstream-linux-x64-cpu-2026-10-25T00-12-35-315Z.log)
 results (baseline upstream-linux-x64-cpu 0.7.0-dev (build 11742, commit 4c3c5810f) → now upstream-linux-x64-cpu 0.7.0-dev (build 11742, commit 4c3c5810f)):
-  prefill               48.1 →      48.6 t/s  +1.1%
-  decode                16.7 →      27.0 t/s  +61.1%
-  deep prefill 2k       47.3 →      47.8 t/s  +1.0%
-  deep decode           16.3 →      19.5 t/s  +19.5%
-  context          128000 tokens (fits: true), same output as baseline: true
-  candidate enigma   rejected — No Enigma-optimised engine for CPU (linux x64) yet; the official llama.cpp engine is used.
-  candidate ub-512   rejected decode 18.8 t/s (12%), prefill 48.3 t/s (0.6%), same output true — slower decode than lookup
-  candidate ub-2048  rejected decode 19.8 t/s (18.5%), prefill 48.9 t/s (1.8%), same output true — slower decode than lookup
-  candidate mtp      rejected — this model has no MTP head
-  candidate lookup   kept     decode 27.0 t/s (61.1%), prefill 48.6 t/s (1.1%), same output true
-[17:44:06] ready: http://127.0.0.1:11540/v1 (model LFM2.5-2.6B, ctx 128000); POST /v1/chat/completions → HTTP 200 in 3.5 s: "(reasoning) The user wants a one-word reply to \"ready\". This is a simple instruction. I should respond with exactly one "
-EXIT 0
+  prefill               32.3 →      32.1 t/s  -0.7%
+  decode                 9.1 →       9.2 t/s  +0.7%
+  deep prefill 2k       33.5 →      31.2 t/s  -6.7%
+  deep decode            8.3 →       8.2 t/s  -0.8%
+  context          262144 tokens (fits: true), same output as baseline: true
+  candidate enigma   rejected — no_enigma_engine:cpu-linux-x64
+  candidate ub-512   kept     decode 9.2 t/s (0.7%), prefill 32.1 t/s (-0.7%), same output true
+  candidate ub-2048  rejected decode 9.1 t/s (0.1%), prefill 32.0 t/s (-0.9%), same output true — slower_than:ub-512
+  candidate mtp      rejected — no_mtp_head
+  candidate lookup   rejected decode 9.1 t/s (0.3%), prefill 32.1 t/s (-0.5%), same output true — slower_than:ub-512
+[00:12:48] ready: http://127.0.0.1:11540/v1 (model Qwen3.6-35B-A3B, ctx 262144); POST /v1/chat/completions → HTTP 200 in 7.8 s: "(reasoning) Here's a thinking process:\n\n1.  **Analyze User Input:**\n   - User says: \"Reply with one word: ready\"\n   - Co"

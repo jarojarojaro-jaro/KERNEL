@@ -34,6 +34,11 @@ const IGPU_SHARED_DEFAULT = 0.5;
 const BACKEND_ORDER: Backend[] = ['cuda', 'rocm', 'metal', 'vulkan'];
 /** ub 512 is chosen when it buys at least this much more context than ub 1024. */
 const UB512_GAIN = 1.08;
+/** A measured speed beats an estimated one unless the estimate's score is more than 20% higher. */
+const UNMEASURED_MARGIN = 1.2;
+/** RAM-bound plans with less than 3% of the budget free are demoted by this factor (`tight_memory`). */
+const TIGHT_FREE = 0.03;
+const TIGHT_DEMOTE = 0.8;
 /** Build number of the pinned upstream llama.cpp release (data/engines.json `upstream.tag`, "b<N>"). */
 const PINNED_BUILD = Number(/^b(\d+)$/.exec(engines.upstream.tag)?.[1] ?? 0);
 
@@ -216,14 +221,23 @@ function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: numb
   const faster = ram ? gpuFaster(m, ram) : null;
   if (faster) why.push(`gpu_faster:${faster}`);
 
+  // Ranking: a speed we measured on this hardware class (this GPU; for RAM-bound machines our CPU run of the model)
+  // beats an estimate unless the estimate's score is more than UNMEASURED_MARGIN higher; on RAM-bound machines a plan
+  // that leaves under TIGHT_FREE of its budget free is demoted (the system and the user's programs share that RAM).
+  const mem = memPlan(m, q, config(d, ctx, kvType, ub, spec), d.budgetMiB / 1024);
+  const measured = ram ? (m.ramMeasured?.length ?? 0) > 0 : gpuSpeed?.measured === true;
+  const tight = ram !== null && mem.freeGiB < mem.budgetGiB * TIGHT_FREE;
+  if (tight) why.push('tight_memory');
+  const rank = score(m, q, tps, spec) / (measured ? 1 : UNMEASURED_MARGIN) * (tight ? TIGHT_DEMOTE : 1);
+
   return {
     id: `${m.id}/${q.quant}/${d.backend}${d.gpuIndex === null ? '' : `/${d.gpuIndex}`}`,
     modelId: m.id, name: m.name, family: m.family, params: m.params, quant: q.quant,
     file: { repo: q.repo, path: q.path, sizeBytes: q.sizeBytes, sha256: q.sha256 },
     ctx, ctxMax: m.ctxMax, kvType, ub, backend: d.backend, gpuIndex: d.gpuIndex,
-    mem: memPlan(m, q, config(d, ctx, kvType, ub, spec), d.budgetMiB / 1024),
+    mem,
     features: m.features.filter((f) => f !== 'mtp' || spec),
-    score: Math.round(score(m, q, tps, spec) * 100) / 100,
+    score: Math.round(rank * 100) / 100,
     why,
   };
 }

@@ -218,7 +218,17 @@ describe('machines without a discrete GPU (integrated graphics or none): the mod
     expect(pick.backend).toBe('cpu');
     expect(pick.mem.budgetGiB).toBe(23);
     expect(pick.why).toContain('cpu_igpu_pool:16.5');
-    expect(pick.ctx).toBeGreaterThanOrEqual(131072);
+    // measured beats estimated: Qwen3.6-35B-A3B (13.1 t/s measured on the same CPU class) over the unmeasured Flint,
+    // whose 22.5 of 23 GB plan also leaves < 3% free (tight_memory)
+    expect(pick).toMatchObject({ modelId: 'qwen36-35b-a3b', quant: 'UD-IQ4_XS', ctx: 262144, backend: 'cpu', gpuIndex: null });
+    const flint = r.alternatives.find((o) => o.modelId === 'flint-40b-a2.5b');
+    const flintRejected = r.rejected.find((x) => x.modelId === 'flint-40b-a2.5b');
+    expect(flint !== undefined || flintRejected !== undefined).toBe(true);
+    if (flint) {
+      expect(flint.why).toContain('tight_memory');
+      expect(flint.score).toBeLessThan(pick.score);
+    }
+    expect(pick.why).not.toContain('tight_memory');
     for (const o of r.alternatives.filter((x) => x.backend === 'vulkan')) expect(o.mem.budgetGiB).toBe(16.5);
     // dense Qwen3.8-27B: ~2–3 t/s on DDR4 dual channel (we measured 2.29 for Q4_K_XL on a Ryzen 7 5700X)
     const dense = r.rejected.find((x) => x.modelId === 'qwen38-27b' && x.quant === 'UD-Q3_K_XL')?.reason ?? '';
