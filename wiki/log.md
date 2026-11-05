@@ -188,3 +188,6 @@ Nowe: [[raport-60d-serving-kernels-cache]], [[humming]], [[sglang-hicache]], [[a
 
 ## [2026-10-24] ingest | Raport 60b: oMLX 0.7.2, Locals, konkurs Bonsai 2 9B, Flapping Airplanes
 Nowe notatki [[omlx]], [[locals]], [[bonsai-fast-contest]], [[flapping-airplanes]], [[raport-60b-apple-bonsai]]; uzupełnione [[gdn-replay]], [[bonsai]], [[ZRODLA]]; 6 pomysłów w `product/DO-PRZETESTOWANIA.md`; 4 repo w compwatch.
+
+## [2026-11-05] ingest | Raport 63: synteza 44 wątków, reguła „tylko bezstratne”, test termiczny eco
+Nowe: [[raport-63-synteza]], [[qwen-qsa-llama-cpp]], [[latent-sparse-attention]], [[rdna-fast]], [[yasakani]], [[qwen-warp]], [[colibri]], [[vllm-rocm-octave]], [[strata-kva]], [[fly-stratna-weryfikacja]], [[wspolny-poczatek-promptu]], [[reward-hacking-inferencji]], [[lekcja-rocm10-lds-128kb]], [[lekcja-gorzka-lekcja-tkcc]], [[lekcja-cache-ram-za-maly]]. Decyzje: [[2026-11-05-tylko-bezstratne]], [[2026-11-05-termika-eco-test]] (zmienia [[2026-10-20-karta-fabrycznie]]). Aktualizacje: [[strata]], [[project-maya]], [[hyperqwen]], [[tensorfold]], [[ninfer]], [[lekcja-higiena-pomiaru]], [[rocm-10-1]]. [[ZRODLA]]: sekcja „Raport 63” (51 wierszy). [[AUDYT]] uzupełniony. [[REKORDY]] bez zmian (brak nowych pomiarów). Synteza i plan: `product/research/63-SYNTEZA.md`, rejestr `63-WATKI.md`.

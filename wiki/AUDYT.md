@@ -2934,6 +2934,37 @@ Automat jak 2026-10-20: tokeny liczbowe (≥ 2 znaki) z nowych notatek, z sekcji
 | [[gdn-replay]] (aktualizacja) | 4 | cudafast PR #9, mlxfast PR #467 | OK |
 | [[bonsai]] (aktualizacja) | 4 | tablice yukon.org | OK |
 
+## Ingest 2026-11-05 (raport 63)
+
+Metoda: tokeny liczbowe (≥ 2 znaki) z treści każdej nowej notatki i z dopisanych akapitów wyszukane automatycznie w `63{a..e}-*.md`, `63-SYNTEZA.md`, `63-WATKI.md`; wszystkie znalezione. Kontekst sprawdzony ręcznie przy pisaniu.
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[raport-63-synteza]] | 24 | `63-SYNTEZA.md` §1–3, `63b` §0.1 | OK |
+| [[2026-11-05-tylko-bezstratne]] | 17 | `63-SYNTEZA.md` §3–4 | OK |
+| [[2026-11-05-termika-eco-test]] | 22 | `63-WATKI.md:50`, `63-SYNTEZA.md` #26 | OK |
+| [[qwen-qsa-llama-cpp]] | 36 | `63c` §3, §8 E1 | OK |
+| [[latent-sparse-attention]] | 23 | `63d` §0, §1 | OK |
+| [[rdna-fast]] | 29 | `63c` §2 | OK |
+| [[yasakani]] | 28 | `63a` TL;DR, §1, §9 | OK |
+| [[qwen-warp]] | 35 | `63a` §14, §17 | OK |
+| [[colibri]] | 10 | `63b` §1 | OK |
+| [[vllm-rocm-octave]] | 27 | `63c` §0, §6, §8 E2 | OK |
+| [[strata-kva]] | 28 | `63d` §3, `63a` §3 | OK |
+| [[fly-stratna-weryfikacja]] | 22 | `63d` §6.1, §9 E5 | OK |
+| [[wspolny-poczatek-promptu]] | 22 | `63b` TL;DR, §2.1, §4, §6 | OK |
+| [[reward-hacking-inferencji]] | 10 | `63e` §0, §5, §6 | OK |
+| [[lekcja-rocm10-lds-128kb]] | 20 | `63c` §0, §8 E4, checklista 10.1 | OK |
+| [[lekcja-gorzka-lekcja-tkcc]] | 17 | `63e` §0, §3 | OK |
+| [[lekcja-cache-ram-za-maly]] | 31 | `63b` TL;DR, §0, §0.1, §6 E1 | OK |
+| [[strata]] (aktualizacja) | 15 | `63a` §2–5 | OK |
+| [[project-maya]] (aktualizacja) | 19 | `63b` §2 | OK |
+| [[hyperqwen]] (aktualizacja) | 20 | `63a` §8 | OK |
+| [[tensorfold]] (aktualizacja) | 13 | `63a` §15 | OK |
+| [[ninfer]] (aktualizacja) | 8 | `63a` §11 | OK |
+| [[lekcja-higiena-pomiaru]] (aktualizacja) | 4 | `63a` §4 | OK |
+| [[rocm-10-1]] (aktualizacja) | 8 | `63c` checklista 10.1 | OK |
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

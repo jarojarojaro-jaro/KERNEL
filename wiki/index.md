@@ -56,40 +56,40 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (38)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (40)
 - [[modele/_hub|modele]] — Modele i kwanty (21)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (22)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (37)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (41)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (59)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (100)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (104)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (77)
-- [[research/_hub|research]] — Streszczenia raportów (149)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (84)
+- [[research/_hub|research]] — Streszczenia raportów (150)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (30)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
 
-- 2026-10-24 [[raport-60d-serving-kernels-cache|Raport 60d: Humming, SGLang HiCache, AKV, sonar #1788, Maya v1.1.21–1.1.26]]
-- 2026-10-24 [[raport-60c-quant-3090|Raport 60c: Gyro-Coder, tqLLM 1.2, DCQ, posty @superalesha, Nemotron-3.5-Bolt-E4B]]
-- 2026-10-24 [[raport-60b-apple-bonsai|Raport 60b: oMLX, Locals, konkurs Bonsai 2 9B, Flapping Airplanes]]
-- 2026-10-24 [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]]
-- 2026-10-24 [[sglang-hicache|SGLang HiCache + Unified Radix Cache: cache prefiksów GPU/CPU/storage z modelami hybrydowymi]]
-- 2026-10-24 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
-- 2026-10-24 [[omlx|oMLX (jundot/omlx)]]
-- 2026-10-24 [[locals|Locals (Generated-Computers/Locals)]]
-- 2026-10-24 [[hyperqwen|HyperQwen (syv-ai, dawniej qwen38-27b-rtx3090)]]
-- 2026-10-24 [[humming|Humming (vLLM + Ant Group): kernele GEMM dla kwantów, tylko CUDA]]
-- 2026-10-24 [[bonsai-fast-contest|Konkurs cuda.fast / mlx.fast: Bonsai 2 9B]]
-- 2026-10-24 [[nemotron-3-5-bolt-e4b|NVIDIA Nemotron-3.5-Bolt-E4B (Gemma-4-E4B po RL)]]
-- 2026-10-24 [[gyro-coder|Gyro-Coder (Qwen3.8-Flash-Next, 256/512 ekspertów) i format Gyro TQ]]
-- 2026-10-24 [[bonsai|Ternary Bonsai 2 27B (PrismML)]]
-- 2026-10-24 [[dcq-kotwica-stanu-gdn|DCQ: błąd stanu GDN w stracie kwantyzacji]]
+- 2026-11-05 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
+- 2026-11-05 [[raport-63-synteza|Raport 63: 44 wątki z pakietu 2026-11-03 (silniki, AMD, atencja, spekulacja, metodologia)]]
+- 2026-11-05 [[yasakani|YASAKANI: „1220 t/s” Qwen3.8-27B na RTX 5090]]
+- 2026-11-05 [[vllm-rocm-octave|vLLM `ROCM_OCTAVE`: natywny KV 3/4-bit na gfx1100]]
+- 2026-11-05 [[tensorfold|TensorFold (ashhart/TensorFold)]]
+- 2026-11-05 [[strata|Strata (Niko1221/Strata)]]
+- 2026-11-05 [[rdna-fast|RDNA-FAST (serrynaimo): fork llama.cpp/ROCmFPX dla RX 7900 XT]]
+- 2026-11-05 [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]]
+- 2026-11-05 [[qwen-qsa-llama-cpp|Qwen-QSA-llama.cpp (pentaCoxian): rzadka atencja QSA dla Qwen3.8-27B]]
+- 2026-11-05 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
+- 2026-11-05 [[ninfer|NInfer (Neroued/ninfer)]]
+- 2026-11-05 [[latent-sparse-attention|Latent Sparse Attention (Prefrontal AI + ETH)]]
+- 2026-11-05 [[hyperqwen|HyperQwen (syv-ai, dawniej qwen38-27b-rtx3090)]]
+- 2026-11-05 [[colibri|colibri (JustVugg): silnik w czystym C dla dużych MoE]]
+- 2026-11-05 [[wspolny-poczatek-promptu|Wspólny początek promptu i chude checkpointy (Maya #607, RTP-LLM #1574)]]
 
-Razem 654 notatek. Wygenerowano 2026-10-24 przez `tools/wiki.py index`.
+Razem 672 notatek. Wygenerowano 2026-11-05 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

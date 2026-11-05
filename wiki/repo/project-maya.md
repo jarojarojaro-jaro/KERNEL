@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, konkurencja, moe]
-aktualizacja: 2026-10-24
-zrodlo: ~/KERNEL/product/research/21g-nowe-silniki.md:158-216; ~/KERNEL/product/research/21g-notatki/maya.md; https://github.com/mw00/project-maya (`a4e1ff0`, v1.1.15; `f26d8ba`, v1.1.26); ~/KERNEL/product/research/32a-maya-1117-strata-020-gyro.md:14-20; ~/KERNEL/product/research/39a-maya-1119.md:14-30; ~/KERNEL/product/research/60d-serving-kernels-cache.md:196-213,232-239
+aktualizacja: 2026-11-05
+zrodlo: ~/KERNEL/product/research/21g-nowe-silniki.md:158-216; ~/KERNEL/product/research/21g-notatki/maya.md; https://github.com/mw00/project-maya (`a4e1ff0`, v1.1.15; `f26d8ba`, v1.1.26; `c167004`, v1.1.54); ~/KERNEL/product/research/32a-maya-1117-strata-020-gyro.md:14-20; ~/KERNEL/product/research/39a-maya-1119.md:14-30; ~/KERNEL/product/research/60d-serving-kernels-cache.md:196-213,232-239; ~/KERNEL/product/research/63b-colibri-maya-delta.md:166-220
 status: aktualne
 ---
 # Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash
@@ -24,6 +24,12 @@ status: aktualne
 - v1.1.22: TP bez P2P (copy engine → pinned host, `allreduce_dma`), 9 GPU PCIe 3.0: dekod 42.9 → 66.8 t/s; drafting 8.5 → 15.9 t/s (strumienie HIP).
 - **2× RX 7900 XTX (#382):** jeden launch kwantyzacji q8 zamiast wielu: 12.5 vs 13.1 t/s, bez zysku (gap 3.3 µs, praca ~2 µs). v1.1.25: sesje przeżywają restart (`MAYA_DS4_SLOT_KEEP=1`).
 - Dla Qwen3.8/gfx1100 nic do wzięcia ([[raport-60d-serving-kernels-cache]]).
+
+## Aktualizacja 2026-11-05 (v1.1.27–1.1.54, R63b)
+- Gęstego 27B dalej brak (GLM, DeepSeek, MiniMax, Flash-Next). Dla decode/prefill na gfx1100 nic.
+- Do wzięcia dla ścieżki agenta: **#607 „wspólny początek”** (system + narzędzia jako osobny mały wpis, nowa rozmowa 19× szybciej) → [[wspolny-poczatek-promptu]]; #639 punkty przywracania; `tools/agent_bench.py` (#406) jako benchmark.
+- Zasady: żadna warstwa pośrednia nie przepisuje prefiksu (#704: strażnik pętli psuł cache, 150K ~15× szybciej po poprawce); przerwanie nie gubi stanu (#573, #746). #625 stała kolejność narzędzi zmienia prompt, więc u nas tylko za zgodą ([[2026-11-05-tylko-bezstratne]]).
+- v1.1.54 „follow-up czytał całą rozmowę” na Qwenie: ten sam błąd klasy co colibri #2517 ([[colibri]]).
 
 ## Powiązane
 - [[repo/_hub|repo]]

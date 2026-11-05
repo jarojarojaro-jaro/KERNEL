@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, spekulacja, dflash, metal]
-aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/qwen-opt/research/tensorfold/README.md:1-25; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:41; ~/KERNEL/product/research/15c-nowe-silniki.md:34-37,93-102,210-221; ~/KERNEL/product/research/21g-nowe-silniki.md:90-157,284-289; ~/KERNEL/product/research/21g-notatki/tf-delta.md
+aktualizacja: 2026-11-05
+zrodlo: ~/KERNEL/qwen-opt/research/tensorfold/README.md:1-25; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:41; ~/KERNEL/product/research/15c-nowe-silniki.md:34-37,93-102,210-221; ~/KERNEL/product/research/21g-nowe-silniki.md:90-157,284-289; ~/KERNEL/product/research/21g-notatki/tf-delta.md; ~/KERNEL/product/research/63a-silniki-lokalne.md:409-445
 status: aktualne
 ---
 # TensorFold (ashhart/TensorFold)
@@ -22,6 +22,10 @@ Repo: 1560 commitów na `main`, 32 tagi w 18 dni, 552 PR-y, 235 issues. Rdzeń �
 - CUDA: Qwen3.8-27B + DFlash2; RTX 5090 chat T0 263.0 / code T0 366.8 t/s (≈ 141 / 196 na pasmo XTX `[INFERENCE]`, nasze 103–130) – przed ogłoszeniem przewagi na NVIDIA A/B na 3090.
 - Tablica: 45 przebiegów, 0 AMD, 0 „serial baseline”, 1 angielski prompt na klasę; „874 t/s” = wydanie 1.0.6.
 - Aplikacja (Mac): profile per model, „Serial baseline”, porównanie dwóch modeli, polski maszynowy ([[raport-21g-nowe-silniki]]).
+
+## v1.1.1–v1.2.2 (raport 63a, 2026-11-05, HEAD `cde4fe7`)
+- HIP ruszył, ale pod gfx1151/gfx1201: dekod atencji „cztery klucze na warp” +7.5–18.9% na gfx1151 przy 32/64K (#1932); gfx1100 nieuruchamiany, `--drafter` na HIP dalej odmawiany. Watch: `zig/kernels/hip/decode/plan.hip`.
+- Konkurs cuda.fast / mlx.fast Qwen3.8-27B: prompt to kopiowanie tekstu; najlepsze 2.759 (CUDA) / 1.810 (MLX); techniki już mamy ([[raport-63-synteza]]).
 
 ## Powiązane
 - [[repo/_hub|repo]]

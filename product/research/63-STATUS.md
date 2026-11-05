@@ -8,11 +8,11 @@
 |---|---|---|
 | 63c-amd-rocm-llamacpp.md | **gotowy** (44 KB) | QSA (`pentaCoxian/Qwen-QSA-llama.cpp`) — 255k: decode 114,7 vs 40,6 t/s na 4090; RDNA-FAST (4 rzeczy, których topka nie ma: f16 WMMA prefill, chunked GDN, dynamiczny słownik draftu, MTP lean reserve); pułapka ROCm 10 (`maxSharedMemoryPerMultiprocessor` 128 KB psuje heurystyki FA); vLLM `ROCM_OCTAVE` 3-bit KV na gfx1100 (−1,1 GiB przy 262k); llama.cpp v0.9.0 = nightly b12110 (254 commity od pinu Enigmy, 582 od bazy topki); audyt KV q5_1 (Enigma bezpieczna); LithosAI „2116 t/s” = 6/czas kroku przy założonej akceptacji 75% |
 | 63d-atencja-spec-kwant.md | **gotowy** (47 KB) | LSA nie dla nas (72,4× dotyczy 10M; przy 512k 0,68–1,03×); udział atencji: prefill 34% przy 128k, 51% przy 262k, decode 14–19% przy 128k; Strata KVA = −19…−22% TTFT ≥8k za 3–6 dni; MTP: najlepsze n zależy od karty (5090: 3, 4060: 1), a Enigma ma wpisane `--spec-draft-n-max 4`; Soft-MTP nic nie daje; FLy +5–8% na 27B; LFM2.5-24B-A2B-DSpark wyszedł (664 MB) i topka go obsługuje; Flash-Next NVFP4 nie dla 24 GB; REAP tylko dla klas 12–16 GB |
-| 63a-silniki-lokalne.md | **brak** — agent padł na limicie API (429) po 17 min, w trakcie MegaCapybara/YASAKANI | klony i notatki w `~/src/research63` (strata, basalt, elpis, hyperqwen, mc-1.39/1.40, ninfer, tensorfold, ignis, mkyt, lms, tf-v1.*) |
-| 63b-colibri-maya-delta.md | **brak** — 429 po 16 min | j.w. (`colibri`, `colibri_rel_top.txt`, `rel_*` JSON-y, `maya_rel_delta.txt`, `delta`) |
-| 63e-metodologia-agenci.md | **brak** — agent w toku (5 podagentów), potem 429 | j.w. |
+| 63a-silniki-lokalne.md | **gotowy** (wznowiony 2026-11-05) | YASAKANI/MegaCapybara po normalizacji = parytet z nami na edycji; qwen-warp ~96–105 t/s przy 190–262k (po przeskalowaniu) vs nasze 74.5 przy 199k → jedno przejście KV w `kvq`; Strata 0.2.3–0.2.11 dla gfx1100 nic; nadmiar KV 10.7 KiB/token do wyjaśnienia |
+| 63b-colibri-maya-delta.md | **gotowy** (wznowiony 2026-11-05) | 74% prefillu w logach to ponowne czytanie długich promptów: `--cache-ram 16384` za mały (wpisy 7–14 GB); Maya #607 „wspólny początek”; colibri „256k w szybkości 64k” = planer pamięci |
+| 63e-metodologia-agenci.md | **gotowy** (wznowiony 2026-11-05) | audyt benchmarku Enigmy (G1 krytyczne: kandydat renderuje inny prompt); reward hacking; gorzka lekcja TKCC; lista „jak myślą najlepsi” |
 
-**Wniosek:** 2 z 5 raportów gotowe i to te z największą liczbą konkretów dla naszej karty; 3 do wznowienia (materiał źródłowy już pobrany na dysk, więc wznowienie nie wymaga sieci poza `git fetch`).
+**Wniosek (aktualizacja 2026-11-05):** wszystkie 5 raportów gotowe; synteza, werdykty 44 wątków i plan bezstratnych akcji: [63-SYNTEZA.md](63-SYNTEZA.md). Reguła użytkownika z 2026-11-05: tylko optymalizacje bezstratne (QSA zaparkowane).
 
 ## 2. Prace na GPU — wstrzymane, nic nie w toku
 

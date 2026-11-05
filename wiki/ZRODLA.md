@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, zrodla, research, rejestr, inferencex, agentx, strata, tensorfold, magnitude, hipfire, dflash, lucebox]
-aktualizacja: 2026-10-21
+aktualizacja: 2026-11-05
 zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14; ~/KERNEL/product/research/{21n,21o,24e,24g,24t,30}-*.md
 status: aktualne
 ---
@@ -219,6 +219,64 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Konkurs cuda.fast / mlx.fast Bonsai 2 9B (Layr-Labs, PrismML) | CUDA `759629b`, MLX `8cee3ef`; zamknięty 10-22 | R60b, [[bonsai-fast-contest]] | Potwierdza naszą ścieżkę; nowe: sito głowicy draftu, L2 evict_first (3090), taśma delt GDN, drzewo W16. | CUDA 85.9 → 576.7, MLX 144.8 → 959.6 tok/s | nowy konkurs Nemotron 3.5 Lightning (te same repo-wzorce) |
 | Flapping Airplanes | strona 10-24, seria A 10-21 | R60b, [[flapping-airplanes]] | Megakernele, brak kodu. | $180M seed, $1B seria A | publikacja frameworka |
 | Blog thelastone07 „Making CUDA less overwhelming” | 10-20 | R60b | Wstęp dla początkujących, nic nowego. | – | – |
+
+## Raport 63 (2026-11-05, pakiet linków 2026-11-03)
+
+Synteza: [[raport-63-synteza]]; reguła [[2026-11-05-tylko-bezstratne]] (stratne pomysły odrzucone bez rankingu). Raporty: R63a–R63e = `product/research/63{a..e}-*.md`.
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| Strata (delta) | v0.2.3–v0.2.11, silnik 0.1.48 → 0.1.57, klon `9f7d977d` (11-05) | R63a §2–5, R63d §3, [[strata]], [[strata-kva]] | Dla gfx1100 i gęstego 27B nic; KVA stratny (odrzucony). | R9700 KVA prompt +28%, decode −11% | `git log 9f7d977d..` tylko HIP/gfx1100 i gęsty 27B |
+| Strata PR #4366 (`DS4_FAT_ROWS`) | zamknięty, w 0.2.8 opt-in | R63a §4, [[lekcja-higiena-pomiaru]] | +39% to ciepły vs zimny; realnie +2–6%. | 1400 → 1950 t/s (ogłoszone) | – |
+| basalt (jesdga95/basalt) | `dc047a7` (11-04), v0.2.1 | R63a §6 | Głowica Q8_0 w płaszczyznach dokładna; liczby z wejścia nieznalezione w repo. | 5090 IQ3_S 374.8 t/s | typ głowicy LFM (Q8_0?) |
+| elpis (gildrb/elpis) | `13e8b59` (10-29, finished) | R63a §7 | Najlepsza metoda (bramki przed danymi, lista porażek). | 262K 45.6 ms/rundę; geomean 125.7 t/s | – |
+| benchlab engines-27b-3090 | post 11-03, rerun 11-05 | R63a §8 | Rzetelny; turboderp MTP-7 ≈ DFlash2 na greedy. | 180 / 170 / 146 / 97 t/s | nowe silniki w zestawieniu |
+| HyperQwen (delta) | `6ab9bd0` (11-03), 163 commity od `95ee3b6` | R63a §8, [[hyperqwen]] | KV int8/fp8 dla długiego kontekstu tylko NVIDIA; port LSA. | +12.2% / +14.0% przy 66k/100k | >`6ab9bd0` |
+| YASAKANI (x.com/yasakani_dev 2117521489885090271, 2117529802844610956) | 11-03, bez kodu | R63a §9, [[yasakani]] | Klasa kopii/struktury; po normalizacji parytet na edycji. | 1220 t/s ≈ 11–12 tok/krok | publikacja kodu formatu |
+| MegaCapybara (perkel666) | v1.40 `bdfc1b8` (11-04), v1.39 (11-01), binarki | R63a §10 | Rekord z +20% OC pamięci; „draft forest”. | 540 (OC) vs 466 (stock) | kod źródłowy |
+| NInfer (delta) | master `a754fcf3` (11-02) | R63a §11, [[ninfer]] | Dla 27B nic (GLM, Spark). | – | `docs/performance/qwen3.8-27b.md` |
+| ignis (gpillon/ignis) | `df69a68` (11-05) | R63a §12 | Top-k draftera 3145 → 44 µs (+21%); trellis 12.5 GiB. | 5090 kod 367, proza 167 t/s | – |
+| mkyt (qwen3-27b-5090) | `eea3cbc` (11-03) | R63a §13 | Wzór decisions.md; pełne NVFP4 psuje równoległe tool-calle. | BFCL parallel 79 → 65.5% | – |
+| qwen-warp (tuan3w) | `146a654` (11-05) | R63a §14, [[qwen-warp]] | 262k na 3090; potwierdza jedno przejście KV. | 102 / 94 t/s przy 190k/262k | – |
+| TensorFold (delta) | v1.1.1–v1.2.2, HEAD `cde4fe7` (11-05) | R63a §15, [[tensorfold]] | HIP na gfx1151/1201, gfx1100 nie. | gfx1151 +7.5–18.9% (#1932) | `plan.hip` na gfx1100 |
+| Konkurs cuda.fast / mlx.fast Qwen3.8-27B TF (Layr-Labs) | CUDA `1af264e`, MLX `28c5b13` (11-05) | R63a §15 | Prompt = kopia; techniki znane. | 2.759 / 1.810 | – |
+| gpu.nz llm-vram-table | 10-20 | R63a §16 | f16 zgodne; pomija MTP i nasze +10.7 KiB/token. | 64 KiB/token f16 | – |
+| LocalMaxxing API (5090, Qwen3.8-27B, since 10-21) | 11-05, 1 GET | R63a §11 | tqLLM TQ_L 414/354 (10-27); NInfer bez nowych. | – | – |
+| colibri (JustVugg) | v2.1.0 `704a3f68` (10-31), kod `0a5504a1` | R63b §1, [[colibri]] | „256k w szybkości 64k” = planer + KV f16; `COLI_PREFIX_LOG` do skopiowania. | tura 86 → 4.9 s | wyniki 27B na GPU |
+| Project Maya (delta) | v1.1.27 `f027308` … v1.1.54 `c167004` (10-24…11-05) | R63b §2, [[project-maya]], [[wspolny-poczatek-promptu]] | #607 wspólny początek do portu; nic dla gfx1100. | nowa rozmowa 19× | >v1.1.54, gęsty 27B |
+| Delta Inference Engine (musicurgy) | `307437f` (11-04), release 0.9–0.92 | R63b §3 | Opakowanie DeepSeek na Windows; `REWIND_GAP` łapią nasze checkpointy. | Windows +12% (zasilanie, HAGS) | – |
+| RTP-LLM (alibaba) | HEAD `26711bad2`/`f81f777a1` (11-03/04), PR #1574 #1460 #1423 | R63b §4 | Wzorzec chudych checkpointów (ogon), CRC32C w oknie kopii. | – | – |
+| MNN (alibaba) | 3.6.2 `498882a27` (10-29) | R63b §5 | Mobile; dla topki nic. | DFlash 2.09× (M5) | Android/iPad w produkcie |
+| RDNA-FAST (serrynaimo) | `4426ca3` (11-05) | R63c §2, [[rdna-fast]] | Lean reserve, słownik dynamiczny, pułapki ROCm 10. | lean reserve 784 → 80 MiB | `git log 4426ca3..` |
+| pentacoxian_dev 2118071912882712590 + Qwen-QSA-llama.cpp | tweet 11-04; repo `fe08b16` (11-05) | R63c §3, [[qwen-qsa-llama-cpp]] | Przełom na 4090, zmienia wyjście → zaparkowane. | 255K 114.7 vs 40.6 t/s (4090) | KL długiego kontekstu |
+| HF higa2515/Qwen3.8-27B-QSA-BF16, pentacoxian-dev/…-QSA-GSQ-RCO-GGUF | 11-05 (indeksery `d61281f4…`) | R63c §3 | Karty modeli, bez pobierania. | 52.4M parametrów indekserów | – |
+| LithosAI blog (MI355X) | 10-27 | R63c §4 | 2116 t/s = 6 / krok przy założonej akceptacji. | 2.83 ms/krok | – |
+| llama.cpp v0.9.0 | `cd959ba` = b12110 (11-04) | R63c §5 | #30574 stan draftu w slocie; fuzje MMQ CUDA; Vulkan split-K. | 254 commity od pinu Enigmy | v0.10 / delta od b12110 |
+| vLLM v0.33.0 (ROCm, spec) | `4ba787e` (11-01), notatki rc3 (11-02) | R63c §6, R63d §6, [[vllm-rocm-octave]], [[fly-stratna-weryfikacja]] | Octave i FLy stratne; TRITON_ATTN +18% z adresowania buforów. | k3v3 216 B/slot | – |
+| cheaptokens: q5_1 KV | 10-30 (issue #28455, build 10791) | R63c §7 | Nieaktualne od #28079; Enigma bezpieczna poza Vulkanem bez subgroup ops. | 38 vs 1348 t/s (stary build) | – |
+| LSA (arXiv 2610.42147, Prefrontal-AI/latent-sparse-attention) | v2 11-03; `5ebea73` (11-04); wagi `d-lsa-weights-v1` (11-02) | R63d §1, [[latent-sparse-attention]] | 72.4× tylko przy 10M; ≤512k ~1×; odrzucone. | 512k TTFT 1.03× / 0.68× | – |
+| rapidmlx (X 2118074173323141191), Rapid-MLX | `e2114cf` (11-04), PR #3055 | R63d §2 | Kodu LSA brak; QSA prefill na Macu. | 64K −31.1% TTFT | – |
+| closedcircuit „MTP speculative decoding” | 10-28 | R63d §4 | Najlepsze n zależy od karty. | 4060: n=3 32 vs n=1 46 t/s | – |
+| Soft-MTP (arXiv 2610.38331, JaydenTeoh/Soft-MTP) | v1 10-28; `4e1cf66` (10-30) | R63d §5 | Dla zamrożonego pnia = nasza samodestylacja. | +1.4…1.5% | – |
+| LiquidAI/LFM2.5-24B-A2B-DSpark(-GGUF) | `9222226` (10-21), bf16 `e052e5b` | R63d §6.3 | Drafter LFM wyszedł; topka obsługuje; do zmierzenia. | 664 MB, 5.16 tok/krok (B300) | pomiar t(K) na XTX |
+| Anbeeld/Qwen3.8-27B-DSpark-GGUF (RadixArk v2) | `77843de` (09-06) | R63d §6.3 | Na czacie nie lepsze niż MTP. | AL 3.23–3.29 | – |
+| nvidia/Qwen3.8-Flash-Next-NVFP4 | `fc694b54` (09-05) | R63d §7 | Tylko B200/B300; nie dla nas. | 132.7 GB | – |
+| llm-compressor 0.15.0 | 10-29 | R63d §8 | HIGGS/QAD/REAP zmieniają wagi; odrzucone. | – | – |
+| Open Kernel Challenge llms.txt | 11-05 | R63e §2.1 | Lekcja dopasowania do sędziego. | >300 000 zgłoszeń | finał serwingu |
+| rohanarun/Auto-research-agent | `0230468` (11-04); PR #6 `7a14f0d`, PR #9 `b94e66e` | R63e §2.2–2.3 | Wiersze Gemini to nie pomiary agenta; PR #9 dobre reguły. | baseline 100.0 µs (syntetyczny) | – |
+| EAT (arXiv 2610.36848, caoshiyi/EAT) | v1 10-27; `0a90500` (11-02) | R63e §2.6 | Wzorzec zespołu + audytor pomiaru. | KDA MI350X 3.01× | – |
+| Together Compiler (TKCC) blog + paper | 11-04 | R63e §3, [[lekcja-gorzka-lekcja-tkcc]] | Gorzka lekcja; megakernel nie płaci. | −25–31% z bazą wiedzy | – |
+| Baseten X article (DeepSeek V4.1 Flash 1017) | 11-04 | R63e §4 | Nieczytelny; „1017” to wersja modelu. | – | treść artykułu |
+| SGLang „Beyond Day-0” i Low-Latency Mode | 09-28, 10-18 | R63e §4 | Liczba GB300 przy symulowanej akceptacji 5.4. | 1193 tok/s/user | – |
+| InferenceBench (arXiv 2607.20468), Overshoot, wafer field guide, GPU MODE NVFP4 hack, Decagon | 05-20 … 11-04 | R63e §5, [[reward-hacking-inferencji]] | Katalog hacków i obron. | prosta wyszukiwarka 11.53× vs agent 8.08× | – |
+| sf-tensor „Formalizing PTX” | 11-02 | R63e §7 | Brak AMD. | – | model AMDGPU |
+| Anthropic FlashProve | `9e2bdd8f` v0.16.0 (10-30), post 11-02 | R63e §8 | Lokalnie bez sensu (narzut ~70–95×). | dowód 18.8 MB / 1024 tok. | – |
+| gau-nernst B200 QR | 09-27, kod `fb291890` | R63e §9 | Zasady przenośne na RDNA3. | 1239 µs (2. miejsce) | – |
+| skyzh/tiny-llm | `17a8cc6` (10-31) | R63e §10.2 | Ledger 6 pytań. | – | – |
+| pavelsimo/100-days-of-inference-engineering | `18eef29` (11-04, dzień 7) | R63e §10.2 | Wstępne. | – | rozdziały o spekulacji |
+| navaneethkrishnansuresh/CUDA-and-Kernels | `7045333` (11-03) | R63e §10.2 | Puste tematy. | – | rozdziały 13–18 |
+| getsupers experiments | 11-05 | R63e §2.5 | Tylko H200. | – | – |
+| wafer-ai/gpu-perf-engineering-resources | `6aa00fc` (10-17) | R63e §1 | Bez zmian od R21b. | – | – |
 
 ## Powiązane
 - [[KONWENCJE]]

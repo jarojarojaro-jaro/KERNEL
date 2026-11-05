@@ -1,7 +1,7 @@
 ---
 typ: decyzja
 tags: [decyzje, sprzet, bezpieczenstwo, rx-7900-xtx]
-aktualizacja: 2026-10-20
+aktualizacja: 2026-11-05
 zrodlo: ~/AGENTS.md:18; ~/KERNEL/product/research/22-rsi-f.md:90
 status: aktualne
 ---
@@ -13,6 +13,7 @@ status: aktualne
 - Zysk z OC nie liczy się jako wynik projektu; rekordy w [[REKORDY]] są na ustawieniach sterownika.
 - Egzekucja w kodzie: bramka H7 fabryki hashuje OD_SCLK/OD_MCLK/OD_VDDGFX_OFFSET i `power1_cap` i odmawia pomiaru po zmianie (`22:90`); krzywa wentylatora jest wyłączona z hasha, bo wentylator ustawiamy dla bezpieczeństwa ([[2026-10-19-wentylator-100-przy-pracy]]).
 - Wcześniejszy kontekst: [[2026-10-09-limit-mocy-odlozony]].
+- **Zmiana 2026-11-05:** użytkownik dopuścił testy „eco” z capem taktowania rdzenia (pamięć bez zmian, bez undervoltu), wyniki osobno od rekordów ([[2026-11-05-termika-eco-test]]).
 
 ## Powiązane
 - [[decyzje/_hub|decyzje]]

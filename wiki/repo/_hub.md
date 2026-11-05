@@ -14,10 +14,11 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (77)
+## Notatki (84)
 
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
 - [[atrex-kernel-agent|alibaba/atrex-kernel-agent (AKA)]] — Orkiestrator agentów kodujących dla jednego operatora naraz (HEAD `5ad94ff`, 2026-10-14, v0.3.0); bierzemy narzędzia pomiarowe; werdykt: średnia (narzędzia).
+- [[colibri|colibri (JustVugg): silnik w czystym C dla dużych MoE]] — CPU/Vulkan/CUDA/Metal, eksperci w VRAM → RAM → NVMe, od v2.1.0 natywny GGUF; Qwen3.8-27B obsługiwany, bez liczb na GPU (2026-10-31).
 - [[deepinfer|DeepInfer i deepseek-recipe (deepseek-ai)]] — DeepInfer `774ce24` działa tylko na sm_100/Ascend 950 z DeepSeek-V4.1-Flash; deepseek-recipe `935817c` dało nam wzorzec tokenizacji po zakresach i parsera z rodzajem tokenu (SAFE_SPECIAL/SAFE_TOOLS).
 - [[deepgemm|deepseek-ai/DeepGEMM]] — Biblioteka kerneli tensor-core DeepSeek (HEAD `1fc9c66`, 2026-10-14); bierzemy harmonogram „Mega MoE” i potok kafli; werdykt: średnia.
 - [[auto-gpu-kernel|Dogacel/auto-gpu-kernel (i fork ludoo)]] — Harness agenta do pisania kerneli (upstream `db02153`, 2026-09-12) i fork `ludoo` z GDN o geometrii naszego Qwena; werdykt: średnia.
@@ -52,6 +53,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[kernel-tuner-repo|KernelTuner/kernel_tuner]] — Pythonowy framework autotuningu (commit `8e71bbf`, 2026-10-08, v1.5.0) jako silnik przeszukiwania tablic per kształt; werdykt: średnia.
 - [[knlp-lm-head|knlp: certyfikowana głowica LM przy dekodowaniu]] — Metoda: słownik w 256 blokach, offline baza PCA stanów (r ≈ 0.36·d), cień int8 `W_U·B` i normy reszt wierszy; w dekodowaniu górna granica każdego logitu z Cauchy'ego–Schwarza, a bloki otwiera się, aż najlepszy dokładny logit przewyższy granice reszty – bezstratnie. U nich na W7900 (gfx1100) głowica Qwen2.5-7B ×1.97 przy batch 1, ~5× mniej bajtów, batch 4/8 ×1.36/×1.41.
 - [[bonsai-fast-contest|Konkurs cuda.fast / mlx.fast: Bonsai 2 9B]] — Tygodniowy konkurs Yukon + PrismML (zamknięty 2026-10-22): Ternary Bonsai 2 9B single-stream; CUDA (llama.cpp, DGX Spark) 85.9 → 576.7 tok/s, MLX (M5 Max) 144.8 → 959.6 tok/s; techniki w opisach PR, większość już mamy.
+- [[latent-sparse-attention|Latent Sparse Attention (Prefrontal AI + ETH)]] — Klucze bez RoPE rzutowane do 64 wymiarów, klastrowane metodą Warda w kubełki; zapytanie wybiera top-1024 kubełków. Nagłówkowe 72.4× (prefill jednej warstwy) i TTFT ~1/9 dotyczą 10M tokenów na 8×H200; przy 512k TTFT 1.03× (H200) i 0.68× (B300) (2026-11-05).
 - [[laya-mlx|laya-mlx i Laya (model decyzyjny)]] — Laya (Convai Innovations) to nieautoregresywny encoder decyzyjny 322–421M, a laya-mlx (mizorewww) jego port MLX; za wolne do decyzji per token.
 - [[how-to-optimize-in-gpu|Liu-xiandong/How_to_optimize_in_GPU]] — Dydaktyczne „drabiny optymalizacji” CUDA dla V100 (HEAD `5d2def3e`, 2023-07-29); werdykt: niska.
 - [[llama-moe-cache-mib|llama.cpp `--moe-cache-mib`: cache ekspertów MoE w VRAM]] — Upstream PR #29887 (scalony 2026-10-07, port z qvac-fabric) dodaje cache LRU ekspertów MoE w VRAM przy modelu w RAM: Flash-Next Q4_0 na 4090 25.0 → 40.7 t/s, na 5090 30.8 → 67.8 t/s; jest w bazie naszego forka (`common/arg.cpp:2795`) (raport 21g, 2026-10-19).
@@ -76,6 +78,9 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[pplx-kernels|perplexityai/pplx-kernels i pplx-garden/lily]] — Kernele MoE all-to-all Perplexity (porzucone, HEAD `f70d1eb7`) i następca `lily` (MoE decode na jednym GPU); werdykt: niska.
 - [[prism-llama-cpp|PrismML-Eng/llama.cpp (fork pod Bonsai)]] — Fork llama.cpp od PrismML potrzebny do formatów PQ2_0 i PTQ1_0 modelu Ternary Bonsai 2 27B; u nas klon „prism” testowany na RTX 3060.
 - [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]] — Pochodna Straty (nie fork llama.cpp) uruchamiająca tylko GLM-5.3-Flash (321B, 18B aktywnych) z ekspertami w trzech warstwach VRAM → przypięty RAM → NVMe (O_DIRECT); 81 t/s na RTX PRO 6000 = 41% pasma; liczby z README to najlepsze wiersze z różnych wersji, bez llama.cpp (raport 21g, 2026-10-19).
+- [[qwen-qsa-llama-cpp|Qwen-QSA-llama.cpp (pentaCoxian): rzadka atencja QSA dla Qwen3.8-27B]] — Fork llama.cpp dokleja do 16 warstw pełnej atencji wyuczone indeksery (52.4M parametrów FP32, 300 kroków treningu); każde zapytanie czyta 2048 tokenów w blokach po 4. Na RTX 4090 przy 255K: decode 114.7 vs 40.6 t/s, prefill 2375 vs 1345 t/s (2026-11-05).
+- [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]] — Graf CUDA z fuzjami W4A16 (Swift-1.5 INT4), MTP k ≤ 3 + ogon prompt-lookup; decode 124 / 115 / 102 / 94 t/s przy 32k / 100k / 190k / 262k (2026-11-05).
+- [[rdna-fast|RDNA-FAST (serrynaimo): fork llama.cpp/ROCmFPX dla RX 7900 XT]] — Downstream llama.cpp + ROCmFPX na RX 7900 XT 20 GB, Windows, ROCm 10.1, Swift 1.5 IQ4_XS; większość trików decode mamy w topce mocniej, nowe są 4 rzeczy i lista pułapek ROCm 10 (2026-11-05).
 - [[rsr-27b|RSR-27B (IntelligenceLab): Qwen3.8-27B po RSR + RL]] — Wydany model `IntelligenceLab/RSR-27B` (Apache-2.0, `qwen3_5`, 64 warstwy, 27.78 mld parametrów BF16) to Qwen3.8-27B dostrojony na przepisanych trajektoriach RSR + „dodatkowe RL”; tensory `mtp.*` (15) i `model.visual.*` są skopiowane z bazy (`model-missing-from-origin-*.safetensors`), więc głowica MTP nie pasuje do zmienionego pnia (2026-10-19).
 - [[sakana-agentic-scientist|Sakana AI-Scientist-v3 (Agentic Scientist)]] — Orkiestracja agentów do badań, w której kod wymusza izolację ewaluacji (harness, hashe, osobne kontenery), a naukę rozstrzyga LLM; brak jakiejkolwiek statystyki istotności.
 - [[kernelbench|ScalingIntelligence/KernelBench]] — Benchmark kerneli pisanych przez LLM (HEAD `423217d9`, 2026-03-05); bierzemy lepszą bramkę poprawności; werdykt: średnia (proces).
@@ -88,9 +93,11 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[ako4all|TongmingLAIC/AKO4ALL i AKO4X]] — Protokół dla agenta optymalizującego kernele (commit `bbd0e1c`, 2026-09-15), nie kod kerneli; werdykt: średnia (proces).
 - [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]] — Własny silnik C++/CUDA tylko dla Qwen3.5/3.8 na NVIDIA (sm_86/89/120/121) z kwantem TQ3_4S, DFlash2 i dokładną spekulacją greedy; rekord 273.1 t/s na 3090 w LocalMaxxing przy T=0 z prywatnego buildu, a per bajt plain decode ma parytet z nami.
 - [[mkernel|uccl-project/mKernel]] — Wielo-GPU trwałe kernele z UC Berkeley (HEAD `97e916b`, 2026-10-01); zostają tylko wzorce synchronizacji; werdykt: niska.
+- [[vllm-rocm-octave|vLLM `ROCM_OCTAVE`: natywny KV 3/4-bit na gfx1100]] — vLLM v0.33.0 (PR #59774) ma KV 3-bitowy dla gfx1100 i gfx942: k3v3 = 216 B na slot przy head 256, czyli 75% naszego q4_0; produkcyjnie na 7900 XTX od 2026-10-02.
 - [[vllm-kimi-k3-specialized-decode|vLLM Kimi K3 „specialized decode” (nie megakernel)]] — Fuzja w CuTe DSL z komunikacją TP na 16×GB300: 23 → 13 kerneli na warstwę i 130 → 69 µs na warstwę, krok B1 bez spekulacji 7.38 → 3.90 ms (1.89×), czyli `[SZACUNEK]` 8% → 15% pasma HBM – reżim latencji i komunikacji, nie pasma (PR #61867, 2026-10).
 - [[vllm-monokernel|vLLM MonoKernel (RFC #60904)]] — Jeden trwały kernel na warstwę dekodera bez bariery siatki: siatka 256 CTA × 512 wątków (1 CTA na CU MI355X), zależności przez „tagged pairs”, wagi niezależne od wejścia ładowane przed czekaniem, bounded waits; na razie tylko ROCm.
 - [[speculators-specforge|vLLM speculators i SGLang SpecForge]] — Dwa narzędzia do trenowania drafterów (MTP, EAGLE-3); speculators to nasza ścieżka do fine-tune głowicy MTP.
 - [[vllm-xpu-kernels|vllm-project/vllm-xpu-kernels]] — Kernele vLLM na Intel GPU w SYCL (HEAD `6b30c9b9`, 2026-10-14); bierzemy pomysł fuzji q/k-norm + RoPE + zapis KV; werdykt: niska.
 - [[gpu-kernel-engineer-from-scratch|vukrosic/gpu-kernel-engineer-from-scratch]] — Niedokończony 48-tygodniowy kurs CUDA/Triton dla początkujących (HEAD `ba738db`, 2026-05-07); werdykt: brak.
+- [[yasakani|YASAKANI: „1220 t/s” Qwen3.8-27B na RTX 5090]] — Własny silnik i format (fast 11.7 GB) na 5090 stock; 1220 t/s na JSONL i 1241 na edycji pliku to ~11–12 tokenów na krok weryfikacji na tekście powtarzającym strukturę, nie nowy algorytm (2026-11-03, bez kodu).
 <!-- AUTO:END -->

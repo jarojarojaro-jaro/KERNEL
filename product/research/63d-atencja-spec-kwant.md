@@ -443,6 +443,16 @@ Na XTX REAP **nie przyspiesza** decode, bo czyta się tylu samych aktywnych eksp
 - **Kill:** KLD > 2× wobec Q4 pełnego albo PL < −2 pkt.
 - Wymaga BF16 w chmurze, czyli zgody na wydatek.
 
+### E7. Decode atencji w stylu LeanAttention/Stream-K przy 199k (pomysł z 63e §10.1, [arXiv 2405.10480](https://arxiv.org/abs/2405.10480))
+- **Stan kodu.** Podział KV już mamy. `fattn-common.cuh` dobiera `parallel_blocks` aż do `ntiles_KV` pod kątem wypełnienia fal (`:1149-1228`) i ma ścieżkę Stream-K z fixupem (`:1155-1196`, `:1278-1313`). Sama idea „rozłóż KV równo na wszystkie CU” niczego więc nie wnosi. Nie sprawdziłem, czy nasza ścieżka `fattn-kvq` (decode q4_0, D=256) używa tego samego doboru `[INFERENCE]`.
+- **Sufit.** Między 1.7k (136.5 t/s) a 199k (74.5 t/s, [REKORDY.md:107-108](../../wiki/REKORDY.md)) przybywa ~6.1 ms na token, czyli ~18 ms na krok przy ~3 tok/krok `[SZACUNEK]`.
+  - Odczyt KV q4_0 w weryfikacji to 16 warstw × 199k × 4 głowice × 256 × 2 × 0.5625 B ≈ 3.7 GB, czyli ~4 ms przy ~900 GB/s.
+  - Atencja warstwy MTP przy 4 przebiegach draftu to ~0.9 GB, czyli ~1 ms.
+  - Podłoga pasma wynosi więc ~5 ms z ~18 ms. **~13 ms to zapas niezwiązany z pasmem.** Kandydaci: maska KQ budowana na CPU w O(n_kv) ~6× na krok (F5 w [rr-prefill-kv.md:43](../../qwen-opt/research/v2/rr-prefill-kv.md), 1–3 ms przy 94k, więc ~2–6 ms przy 199k), kernel `kvq` poniżej pasma, combine/fixup.
+- **Eksperyment:** rocprofv3 (PM4 wyłączone) jednego kroku przy 199k vs 1.7k, rozbity na FA celu, FA draftu, maskę i combine.
+  - Baseline 74.5 t/s @199k → jeśli FA jest ≥ 2× nad podłogą pasma, nowy podział i (lub) maska na GPU dadzą do **+25…+40% @199k** `[SZACUNEK]`, bezstratnie.
+  - Kill: FA w granicach 1.3× podłogi pasma; wtedy zysk jest tylko z maski (F5).
+
 ### Lekcje do bazy wiedzy
 1. **„N× na warstwę przy 10M” nie przenosi się na ≤ 262k.** Najpierw liczyć udział atencji z własnego modelu T(N) = aN + bN²: u nas b·N² to 11% przy 32k i 51% przy 262k.
 2. **Stratny prefill sprawdzać ekstrakcją i agentem, nie needle.** Strata: split 24 przechodził needle w każdym wariancie, a dawał 0/10 agentów.

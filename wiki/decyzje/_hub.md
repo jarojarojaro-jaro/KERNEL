@@ -14,7 +14,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (38)
+## Notatki (40)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -53,5 +53,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-10-20-kontekst-min-131k|2026-10-20: testy na kontekście minimum 131k]] — Użytkownik (2026-10-20): „ma być kontekst minimum 131k do testów, 32k to nie benchmark”. Każdy pomiar karty (U0/U1/T) idzie przy `-c ≥ 131072`, KV q4_0; reguła „≥32k” z kampanii opt-* 2026-10-20 jest nieaktualna.
 - [[2026-10-20-chmura-wstrzymana|2026-10-20: testy w chmurze wstrzymane, priorytet XTX i research]] — Użytkownik (2026-10-20): „na razie testy cloud GPU odpuszczamy — robimy research z nowych tematów i patrzymy, jak zoptymalizować Qwena na XTX”. Plan v2 kampanii NVIDIA (PLAN-NV-V2.md, doładowanie $8 / wariant $3) czeka; nic nie wynajmujemy.
 - [[2026-10-21-enigma-labz|2026-10-21: rebrand na Enigma LABZ, publiczna strona na seohost bez metodologii]] — Landing nazywa się Enigma LABZ; publiczny build (`PUBLIC_SITE_PUBLIC=1`) nie zawiera metodologii ani wewnętrznych ścieżek źródeł i jest wdrażany na seohost przez `deploy-ftp.py` (FTPS).
+- [[2026-11-05-termika-eco-test|2026-11-05: test termiczny „eco” z capem taktowania rdzenia]] — Użytkownik zatwierdził (2026-11-05) testy z ograniczonym taktowaniem rdzenia GPU: pamięć bez zmian, bez undervoltu; wyniki opisane jako „eco”, osobno od rekordów stock. Zmienia to [[2026-10-20-karta-fabrycznie]] tylko w tym zakresie.
+- [[2026-11-05-tylko-bezstratne|2026-11-05: tylko optymalizacje bezstratne]] — Decyzja użytkownika (2026-11-05): „nie chcę zmieniać jakości – mieliśmy tylko optymalizować”; przyspieszenia wyłącznie bez zmiany wyjścia modelu.
 - [[2026-10-09-limit-mocy-odlozony|Limit mocy GPU odłożony (na prośbę użytkownika)]] — Optymalizacja limitu mocy (np. −20% mocy kosztem ≤5% t/s) została odłożona na prośbę użytkownika; karta pracuje z limitem 285 W.
 <!-- AUTO:END -->

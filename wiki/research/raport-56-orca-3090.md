@@ -3,7 +3,7 @@ typ: research
 tags: [research, 3090, orca, qwen35, mtp, dflash2, kvq, mmvq]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/56-orca-3090.md:1-130
-status: zmierzone
+status: aktualne
 ---
 # Raport 56: OrcaCyber-Nano-1.0 na RTX 3090 — 262k na KV q4_0, MTP n=2 72.8 t/s
 

@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, spekulacja, vllm, rtx-3090]
-aktualizacja: 2026-10-24
-zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:9-10,39-44,60-101; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:15,57-58,96-97,124; ~/KERNEL/product/research/60c-quant-and-3090-engines.md:178-181
+aktualizacja: 2026-11-05
+zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:9-10,39-44,60-101; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:15,57-58,96-97,124; ~/KERNEL/product/research/60c-quant-and-3090-engines.md:178-181; ~/KERNEL/product/research/63a-silniki-lokalne.md:220-245
 status: aktualne
 ---
 # HyperQwen (syv-ai, dawniej qwen38-27b-rtx3090)
@@ -18,6 +18,8 @@ Repo `syv-ai/HyperQwen` @ `95ee3b6` (2026-10-11).
 - Koszt kwantyzacji: lm_head GPTQ int4 PPL +0.6%, INT8_ACT w prefillu PPL +4.1%.
 Werdykt: mechanizm przenośny tylko jako „ogon” (EXT); nadpisywanie głowy u nas szkodzi.
 - 2026-10-24: wiralne „3090 runs Qwen3.8 27B up to 4.6x faster” (@superalesha, 10-18) to 82 → 382 t/s na cytowaniu dokumentu 25K. Sam autor pisze: „normal chat about 133 tok/s… 1.6x”. Repo nie jest nazwane, mechanizm się zgadza ([[raport-60c-quant-3090]]).
+
+- 2026-11-05 (`6ab9bd0`, 163 commity od `95ee3b6`, R63a): port na vLLM 0.32; kernel int8 KV przy MTP i długim kontekście +12.2% (~66k) / +14.0% (~100k) na sm_86; port LSA: TTFT −13% dopiero przy 137k, +19% wolniej przy 31k. Benchlab (3090, greedy): HyperQwen 180, TensorFold 170, exl3 146, llama.cpp 97 t/s; pierwsza wersja posta zawyżała przewagę przez wrapper serwera ([[raport-63-synteza]]).
 
 ## Powiązane
 - [[repo/_hub|repo]]
