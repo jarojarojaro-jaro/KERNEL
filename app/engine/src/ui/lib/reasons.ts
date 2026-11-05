@@ -185,13 +185,29 @@ const CANDIDATE: Record<string, Record<Lang, Render>> = {
 		pl: (v, l) => `Czytanie zmieniło się o ${pct(Number(v), l)} (dopuszczamy −5 %, a −15 % przy pisaniu szybszym o 20 %+).`,
 		en: (v, l) => `Reading changed by ${pct(Number(v), l)} (we allow −5%, or −15% when writing is 20%+ faster).`
 	},
+	deep_prefill_loss: {
+		pl: (v, l) => `Czytanie przy długim kontekście (~32k) zmieniło się o ${pct(Number(v), l)} (ta sama granica co dla czytania).`,
+		en: (v, l) => `Reading at a long context (~32k) changed by ${pct(Number(v), l)} (the same limit as for reading).`
+	},
+	deep_decode_loss: {
+		pl: (v, l) => `Pisanie przy długim kontekście (~32k) zmieniło się o ${pct(Number(v), l)} (dopuszczamy −5 %).`,
+		en: (v, l) => `Writing at a long context (~32k) changed by ${pct(Number(v), l)} (we allow −5%).`
+	},
 	decode_not_faster: {
 		pl: (v, l) => `Pisanie nie jest szybsze niż punkt wyjścia (${pct(Number(v), l)}).`,
 		en: (v, l) => `Writing is not faster than the starting point (${pct(Number(v), l)}).`
 	},
+	within_noise: {
+		pl: (v, l) => `Zysk ${pct(Number(v), l)} mieści się w szumie pomiaru (wymagamy więcej niż +2 %).`,
+		en: (v, l) => `A ${pct(Number(v), l)} gain is within measurement noise (we require more than +2%).`
+	},
 	gain_too_small: {
 		pl: (v, l) => `Zysk ${pct(Number(v), l)} jest za mały, żeby zmieniać tekst odpowiedzi (wymagamy co najmniej +3 %).`,
 		en: (v, l) => `A ${pct(Number(v), l)} gain is too small to change the answer text (we require at least +3%).`
+	},
+	not_confirmed: {
+		pl: (v, l) => `Powtórny pomiar obok nowego pomiaru punktu wyjścia nie potwierdził zysku (pisanie ${pct(Number(v), l)}).`,
+		en: (v, l) => `A repeat measurement next to a fresh run of the starting point did not confirm the gain (writing ${pct(Number(v), l)}).`
 	},
 	slower_than: { pl: (v) => `Wolniej niż „${v}”.`, en: (v) => `Slower than “${v}”.` },
 	oom: { pl: () => 'Zabrakło pamięci.', en: () => 'Out of memory.' },

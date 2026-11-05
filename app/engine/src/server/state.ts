@@ -4,9 +4,12 @@ import { existsSync, readFileSync, renameSync, writeFileSync, mkdirSync, unlinkS
 import { basename, dirname, join } from 'node:path';
 import type { AppState, BenchResult, Candidate, Hw, LicenseInfo, Option, Phase, Progress, Recommendation } from '../shared/types.ts';
 import { recommend as catalogRecommend } from './catalog/index.ts';
-import { benchEngine } from './bench.ts';
+import { benchBaseline, loadWorkload, saveWorkload, workloadKey, type BenchWorkload } from './bench.ts';
 import { CancelledError, cachedHash, downloadFile, findLocalFile, hfUrl, type TransferProgress } from './download.ts';
-import { baselineConfig, baselineEngineFor, engineById, ensureEngine, startServer, stopAllServers, type ResolvedEngine, type RunningServer } from './engine.ts';
+import {
+  baselineConfig, baselineEngineFor, engineById, ensureEngine, servedReasoningEffort, startServer, stopAllServers, type ResolvedEngine,
+  type RunningServer,
+} from './engine.ts';
 import { scanHw } from './hw/index.ts';
 import { storeLicenseKey, storedLicenseKey, verifyLicense } from './license.ts';
 import { errMsg, log } from './log.ts';
@@ -40,6 +43,8 @@ export class App {
   state: AppState = initialState();
   private modelPath: string | null = null;
   private minCtx = DEFAULT_MIN_CTX;
+  /** the baseline's benchmark requests (token ids); `paths().workload` on disk for resume */
+  private workload: BenchWorkload | null = null;
   private stateListeners = new Set<StateListener>();
   private progressListeners = new Set<ProgressListener>();
   private abort: AbortController | null = null;
@@ -244,21 +249,29 @@ export class App {
     const modelPath = this.modelPath ?? (await this.fetchModel(option, signal));
     this.modelPath = modelPath;
     const baseCfg = baselineConfig(base, option, modelPath, hw);
+    // every arm decodes the requests rendered on the baseline, with the reasoning effort the product serves
+    const key = workloadKey(base, baseCfg, servedReasoningEffort(hw, option));
+    if (this.workload && JSON.stringify(this.workload.key) !== JSON.stringify(key)) this.workload = null;
+    this.workload ??= loadWorkload(key);
 
-    if (this.state.phase === 'baseline' || !this.state.baseline) {
+    // no saved workload (older state, other settings): candidates cannot get the baseline's requests, measure it again
+    if (this.state.phase === 'baseline' || !this.state.baseline || !this.workload) {
       if (this.state.phase !== 'baseline') this.changed({ phase: 'baseline' });
-      const baseline = await benchEngine(base, baseCfg, {
+      const { result: baseline, workload } = await benchBaseline(base, baseCfg, key, {
         label: `baseline ${base.entry.id}`, signal, progress: (label, done, total) => this.progress('baseline', label, done, total),
       });
       if (!baseline.ctxOk) throw new Error(`The context ${option.ctx} does not fit with the official engine.`);
+      saveWorkload(workload);
+      this.workload = workload;
       this.changed({ baseline, phase: 'optimize', candidates: planCandidates(hw, option, base).map((p) => p.candidate) });
     }
     const baseline = this.state.baseline as BenchResult;
+    const workload = this.workload;
 
     if (this.state.phase === 'optimize') {
       if (this.state.candidates.length === 0) this.changed({ candidates: planCandidates(hw, option, base).map((p) => p.candidate) });
       const res = await optimize({
-        hw, option, modelPath, base, baseConfig: baseCfg, baseline, candidates: this.state.candidates, signal,
+        hw, option, modelPath, base, baseConfig: baseCfg, baseline, workload, candidates: this.state.candidates, signal,
         update: (c: Candidate[]) => this.changed({ candidates: c }),
         progress: (label, done, total) => this.progress('optimize', label, done, total),
       });

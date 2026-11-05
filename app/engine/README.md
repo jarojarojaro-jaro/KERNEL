@@ -124,24 +124,32 @@ pobieranie, benchmark i optymalizacja są zablokowane (API 403 z komunikatem).
 
 ## Benchmark i optymalizacja
 
-Protokół z `CONTRACT.md`: prefill = prompt ~4096 tokenów ze stałego korpusu (`data/corpus.txt`, PL+EN, napisany na
-potrzeby projektu, domena publiczna; generator `bun tools/corpus-gen.ts`), dokładna liczba tokenów przez `/tokenize`
-serwera, `cache_prompt:false`; decode = 256 tokenów greedy (seed 1, bez `ignore_eos`; przy wcześniejszym końcu liczone
-faktyczne tokeny) na zadaniach czatu (szablon modelu przez `/apply-template`: oryginalne opowiadanie PL + EN, md5
-wszystkich tekstów); deep = korpus ~32k jako dokument + pytanie o własny tekst, 128 tokenów; 2× mediana. Każde
-powtórzenie ma **własne** zadania: llama-server trzyma cache n-gramów między żądaniami, więc identyczne drugie żądanie
-odtwarza poprzednią odpowiedź (zmierzone na 4060 Ti: 21 → 80 t/s, 204/256 draftów przyjętych). Ciągnięcie surowego
-korpusu też zawyżało decode spekulacji (model kopiował tekst). Akceptacja draftów (`draft_n_accepted/draft_n`) idzie
-do logu, gdy serwer ją podaje.
+Protokół z `CONTRACT.md`. Wszystkie żądania renderuje **raz serwer baseline** (jego szablon czatu i tokenizer, z
+`reasoning_effort` serwowanym przez produkt — dla Qwen3.8 na topce `low` — jako `chat_template_kwargs`) i każde ramię
+dostaje do `/completion` te same id tokenów (`~/.enigma/bench-workload.json`). Wcześniej kandydat `enigma` renderował
+prompt własnym `/apply-template` (`--reasoning-effort low`, `LLAMA_CHAT_NATIVE`, `LLAMA_CHAT_LATE_SYSTEM`), więc
+porównywał inne obciążenie (XTX 2026-11-05: „decode +191,5%”, przy innym myśleniu i długości odpowiedzi).
+Prefill = prompt ~4096 tokenów ze stałego korpusu (`data/corpus.txt`, PL+EN, napisany na potrzeby projektu, domena
+publiczna; generator `bun tools/corpus-gen.ts`), `cache_prompt:false`; decode = 256 tokenów na zadaniach czatu
+(oryginalne opowiadanie PL + EN; bez `ignore_eos`, przy wcześniejszym końcu liczone faktyczne tokeny) w dwóch
+ramionach: greedy (T=0, seed 1, md5 tekstów = `sameOutput`) i próbkowane jak czat (T=1, top-k 40, top-p 0,95, min-p
+0,05 — to ono decyduje, bo spekulacja przy T=0 przyjmuje więcej draftów niż w rozmowie); deep = korpus ~32k jako
+dokument + pytanie o własny tekst, 128 tokenów; 2× mediana. Przed każdym mierzonym żądaniem krótkie żądanie budzące
+(karta z BACO, `power/control=auto`, usypia się po kilku sekundach). Każde powtórzenie i ramię ma **własne** zadania:
+llama-server trzyma cache n-gramów między żądaniami, więc identyczne drugie żądanie odtwarza poprzednią odpowiedź
+(zmierzone na 4060 Ti: 21 → 80 t/s, 204/256 draftów przyjętych). Ciągnięcie surowego korpusu też zawyżało decode
+spekulacji (model kopiował tekst). Akceptacja draftów (`draft_n_accepted/draft_n`) idzie do logu, gdy serwer ją podaje.
 Kandydaci: silnik Enigma (jeśli jest), `-ub 512/1024/2048` (gdy mieści się w pamięci wg katalogu), MTP (model z głowicą
-MTP), lookup n-gram (`--spec-default`). Zostaje najszybszy decode ze stratą prefill ≤ 5%; `sameOutput` = md5 decode
-równe baseline. Wyniki: `~/.enigma/results/*.json`.
+MTP), lookup n-gram (`--spec-default`). Zostaje najszybszy decode szybszy o więcej niż szum (2%), ze stratą prefill
+≤ 5% (≤ 15% przy decode ≥ +20%; deep prefill tak samo, deep decode ≤ 5%); zmiana tekstu wymaga ≥ 3%. Zwycięzca jest
+mierzony drugi raz obok ponownego pomiaru baseline i musi pobić max(2 × szum baseline, 2%); te liczby pokazuje UI.
+Wyniki: `~/.enigma/results/*.json`.
 
 ## Katalog danych i nadpisania
 
 | | |
 |---|---|
-| `ENIGMA_HOME` | dane (domyślnie `~/.enigma`, Windows `%LOCALAPPDATA%\Enigma`): `config.json` (klucz licencji, 600), `state.json` (faza, wznawialna po restarcie), `models/`, `engines/`, `downloads/`, `logs/` (`enigma.log`, `server-*.log`), `results/`, `hashes.json` (cache sha256) |
+| `ENIGMA_HOME` | dane (domyślnie `~/.enigma`, Windows `%LOCALAPPDATA%\Enigma`): `config.json` (klucz licencji, 600), `state.json` (faza, wznawialna po restarcie), `models/`, `engines/`, `downloads/`, `logs/` (`enigma.log`, `server-*.log`), `results/`, `bench-workload.json` (żądania benchmarku z baseline), `hashes.json` (cache sha256) |
 | `ENIGMA_MODELS_DIR` | dodatkowy katalog z GGUF (2 poziomy w głąb): ta sama nazwa i rozmiar = bez pobierania; sha256 sprawdzane (na wątku roboczym, z postępem), gdy katalog je zna |
 | `ENIGMA_ENGINE_DIR_<KEY>` | lokalny silnik zamiast pobierania: `UPSTREAM_CPU`, `UPSTREAM_VULKAN`, `UPSTREAM_ROCM`, `UPSTREAM_CUDA`, `UPSTREAM_METAL`, `ENIGMA_ROCM` |
 | `ENIGMA_PORT` | preferowany port UI/API (domyślnie 11525, bo 11500 zajmuje omp); zajęty → kolejne 20 portów, faktyczny adres w logu i w `ready.endpoint` |

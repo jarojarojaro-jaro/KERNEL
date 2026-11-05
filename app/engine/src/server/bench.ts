@@ -1,12 +1,18 @@
-// Benchmark protocol (CONTRACT.md "Benchmark"), one for the baseline and every candidate:
-// start llama-server (ctx fits = ctxOk) → warm-up → prefill ~4096 raw corpus tokens → decode 256 greedy (seed 1) on
-// chat tasks asking for an original text (PL + EN, md5 of the texts) → deep: ~32k-token document + question, 128
-// decode → 2 repetitions, median → graceful stop.
+// Benchmark protocol (CONTRACT.md "Benchmark"), one for the baseline and every candidate.
+// The workload is rendered ONCE, on the baseline server (official chat template and tokenizer, with the reasoning
+// effort the product serves): raw corpus tokens for prefill, chat prompts for decode and deep, all as token ids. Every
+// arm gets exactly these tokens via /completion, so a candidate with its own template flags (reasoning effort, native
+// chat, late system) decodes the same requests as the baseline. Per arm: start llama-server (ctx fits = ctxOk) →
+// warm-up → per repetition: prefill ~4096 tokens, decode 256 greedy (T=0, seed 1; md5 of the texts) and 256 sampled
+// (T=1, the speed that decides), deep ~32k document + question, 128 decode; a short wake-up request right before every
+// timed one (GPU runtime power-down after idle) → median → graceful stop.
 import { createHash } from 'node:crypto';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import type { BenchResult, EngineConfig, Phase } from '../shared/types.ts';
 import corpusText from '../../data/corpus.txt' with { type: 'text' };
 import { serverCtx, startServer, type ResolvedEngine, type RunningServer } from './engine.ts';
-import { log } from './log.ts';
+import { errMsg, log } from './log.ts';
+import { paths } from './paths.ts';
 
 export interface BenchPlan { prefillTokens: number; decodeTokens: number; deepTokens: number; deepDecode: number; reps: number }
 
@@ -55,11 +61,11 @@ export async function corpusTokens(s: RunningServer, n: number, signal?: AbortSi
 }
 
 /**
- * Decode tasks: chat requests for a long ORIGINAL text (PL + EN), formatted by the model's own chat template. A raw
+ * Decode tasks: chat requests for a long ORIGINAL text (PL + EN), formatted by the model's chat template. A raw
  * continuation of the corpus (the old protocol) makes the model loop or copy the corpus, so n-gram lookup and MTP
- * accept nearly every draft. Every repetition gets its own pair: llama-server keeps the n-gram cache across requests,
- * so an identical second request replays the first answer from it (measured: 21 → 80 t/s on a 4060 Ti, 204/256
- * drafts accepted) — speed that no real conversation gets.
+ * accept nearly every draft. Every repetition and arm (greedy, sampled) gets its own pair: llama-server keeps the
+ * n-gram cache across requests, so an identical second request replays the first answer from it (measured: 21 → 80
+ * t/s on a 4060 Ti, 204/256 drafts accepted) — speed that no real conversation gets.
  */
 export const DECODE_TASKS: readonly (readonly [string, string])[] = [
   ['Napisz oryginalne opowiadanie (ok. 600 słów) o latarniku z małej wyspy na Bałtyku, który pewnej zimowej nocy ' +
@@ -74,6 +80,11 @@ export const DECODE_TASKS: readonly (readonly [string, string])[] = [
     'ulicę, której jeszcze nie zbudowano. Pisz prozą, bez list i nagłówków.',
   'Write an original short story (about 600 words) about a retired astronaut who starts receiving postcards ' +
     'from a town on the far side of the Moon. Write in prose, no lists or headings.'],
+  ['Napisz oryginalne opowiadanie (ok. 600 słów) o stroicielce fortepianów z Krakowa, która w starym instrumencie ' +
+    'znajduje strunę grającą dźwięk, którego nie ma w żadnej skali. Pisz prozą, bez list i nagłówków.',
+  'Write an original short story (about 600 words) about a ferry operator on a northern lake who keeps a logbook ' +
+    'of every passenger and one morning finds an entry in his own handwriting for a crossing he does not remember. ' +
+    'Write in prose, no lists or headings.'],
 ];
 
 const DEEP_TASKS: readonly string[] = [
@@ -94,17 +105,101 @@ export function deepQuestion(document: string, rep = 0): string {
 /** Token budget reserved for the deep question and the chat template around the document. */
 const DEEP_OVERHEAD = 256;
 
-/** One user message rendered by the server's chat template (`/apply-template`), ready for `/completion`. */
-export async function chatPrompt(s: RunningServer, user: string, signal?: AbortSignal): Promise<string> {
-  const { prompt } = await call<{ prompt: string }>(s, '/apply-template', { messages: [{ role: 'user', content: user }] }, signal);
-  if (typeof prompt !== 'string' || prompt.length === 0) throw new Error('/apply-template returned no prompt');
-  return prompt;
+/** What a workload was rendered for; a different key (other model, engine, ctx, effort or plan) renders it again. */
+export interface WorkloadKey { modelPath: string; engine: string; ctx: number; reasoningEffort: string | null; plan: BenchPlan }
+
+/** The requests of the benchmark as token ids, rendered once on the baseline and sent unchanged to every arm. */
+export interface BenchWorkload {
+  key: WorkloadKey;
+  /** the first 32 corpus tokens: warm-up and wake-up requests */
+  warm: number[];
+  prefill: number[];
+  /** [repetition][task]: chat prompts of the greedy (md5) and the sampled decode arm, never the same task twice */
+  greedy: number[][][];
+  sampled: number[][][];
+  /** [repetition]; empty when the baseline context cannot hold the deep document */
+  deep: number[][];
 }
 
-/** Greedy, deterministic; no ignore_eos: an early stop counts the tokens actually generated (timings.predicted_n). */
-async function complete(s: RunningServer, prompt: number[] | string, nPredict: number, signal?: AbortSignal): Promise<CompletionResponse> {
+export function workloadKey(engine: ResolvedEngine, cfg: EngineConfig, reasoningEffort: string | null, plan = benchPlan()): WorkloadKey {
+  return { modelPath: cfg.modelPath, engine: `${engine.entry.id}@${engine.version}`, ctx: cfg.ctx, reasoningEffort, plan };
+}
+
+/** Persists the workload (resume measures candidates with the same tokens as the baseline). */
+export function saveWorkload(w: BenchWorkload): void {
+  writeFileSync(paths().workload, JSON.stringify(w));
+}
+
+/** The saved workload for `key`, or null (none, unreadable, or rendered for something else). */
+export function loadWorkload(key: WorkloadKey): BenchWorkload | null {
+  const file = paths().workload;
+  if (!existsSync(file)) return null;
+  try {
+    const w = JSON.parse(readFileSync(file, 'utf8')) as BenchWorkload;
+    return JSON.stringify(w.key) === JSON.stringify(key) ? w : null;
+  } catch (e) {
+    log.warn(`${file} unreadable: ${errMsg(e)}`);
+    return null;
+  }
+}
+
+/**
+ * One user message rendered by the baseline's chat template (`/apply-template`, the reasoning effort as a template
+ * kwarg like `--reasoning-effort`), tokenised the way /completion tokenises a string prompt (special tokens added and
+ * parsed).
+ */
+export async function chatTokens(s: RunningServer, user: string, reasoningEffort: string | null, signal?: AbortSignal): Promise<number[]> {
+  const { prompt } = await call<{ prompt: string }>(s, '/apply-template', {
+    messages: [{ role: 'user', content: user }],
+    ...(reasoningEffort ? { chat_template_kwargs: { reasoning_effort: reasoningEffort } } : {}),
+  }, signal);
+  if (typeof prompt !== 'string' || prompt.length === 0) throw new Error('/apply-template returned no prompt');
+  const { tokens } = await call<{ tokens: number[] }>(s, '/tokenize', { content: prompt, add_special: true, parse_special: true }, signal);
+  if (tokens.length === 0) throw new Error('tokenizer returned no tokens for a chat prompt');
+  return tokens;
+}
+
+/** Renders the workload on the baseline server (`ctx` = its allocated context). */
+export async function buildWorkload(s: RunningServer, ctx: number, key: WorkloadKey, signal?: AbortSignal): Promise<BenchWorkload> {
+  const plan = key.plan;
+  const deepFits = ctx >= plan.deepTokens + plan.deepDecode + 8;
+  const prefillN = Math.min(plan.prefillTokens, ctx - 8);
+  const all = await corpusTokens(s, Math.max(prefillN, 32, deepFits ? plan.deepTokens - DEEP_OVERHEAD : 0), signal);
+  if (2 * plan.reps > DECODE_TASKS.length) {
+    log.warn(`${plan.reps} repetitions need ${2 * plan.reps} task pairs, ${DECODE_TASKS.length} exist: later ones repeat a request (n-gram cache replay)`);
+  }
+  const chat = (user: string): Promise<number[]> => chatTokens(s, user, key.reasoningEffort, signal);
+  const pair = async (i: number): Promise<number[][]> => {
+    const out: number[][] = [];
+    for (const task of DECODE_TASKS[i % DECODE_TASKS.length] as readonly string[]) out.push(await chat(task));
+    return out;
+  };
+  const w: BenchWorkload = { key, warm: all.slice(0, 32), prefill: all.slice(0, prefillN), greedy: [], sampled: [], deep: [] };
+  for (let r = 0; r < plan.reps; r++) {
+    w.greedy.push(await pair(2 * r));
+    w.sampled.push(await pair(2 * r + 1));
+  }
+  if (deepFits) {
+    const { content: document } = await call<{ content: string }>(s, '/detokenize', { tokens: all.slice(0, plan.deepTokens - DEEP_OVERHEAD) }, signal);
+    for (let r = 0; r < plan.reps; r++) w.deep.push(await chat(deepQuestion(document, r)));
+  }
+  return w;
+}
+
+/** Greedy and deterministic: the arm whose texts give outputMd5 (sameOutput). */
+const GREEDY = { temperature: 0, seed: 1 } as const;
+/**
+ * The sampled arm: T=1 like a chat (speculative decoding accepts fewer drafts than at T=0); llama.cpp's default
+ * top-k/top-p/min-p sent explicitly so that no arm's server defaults differ. Its speed is `decode.tps`.
+ */
+const sampled = (rep: number) => ({ temperature: 1, top_k: 40, top_p: 0.95, min_p: 0.05, seed: 1 + rep });
+
+type Sampling = Record<string, number>;
+
+/** One /completion on token ids; no ignore_eos: an early stop counts the tokens actually generated (timings.predicted_n). */
+async function complete(s: RunningServer, prompt: number[], nPredict: number, sampling: Sampling, signal?: AbortSignal): Promise<CompletionResponse> {
   return call<CompletionResponse>(s, '/completion', {
-    prompt, n_predict: nPredict, temperature: 0, seed: 1, cache_prompt: false, stream: false,
+    prompt, n_predict: nPredict, ...sampling, cache_prompt: false, stream: false,
   }, signal);
 }
 
@@ -124,56 +219,69 @@ function acceptance(ts: Timings[]): string {
 
 export interface BenchRun { prefill: BenchResult['prefill']; decode: BenchResult['decode']; deep?: BenchResult['deep']; outputMd5: string }
 
-/** Runs the measurement part of the protocol on a started server. */
-export async function measure(s: RunningServer, ctx: number, plan: BenchPlan, progress?: BenchProgress, signal?: AbortSignal): Promise<BenchRun> {
-  const deepFits = ctx >= plan.deepTokens + plan.deepDecode + 8;
-  const prefillN = Math.min(plan.prefillTokens, ctx - 8);
-  const all = await corpusTokens(s, Math.max(prefillN, deepFits ? plan.deepTokens - DEEP_OVERHEAD : 0), signal);
-  if (plan.reps > DECODE_TASKS.length) log.warn(`${plan.reps} repetitions > ${DECODE_TASKS.length} distinct tasks: later ones repeat a request (n-gram cache replay)`);
+/** Runs the measurement part of the protocol on a started server (`ctx` = its allocated context). */
+export async function measure(s: RunningServer, ctx: number, w: BenchWorkload, progress?: BenchProgress, signal?: AbortSignal): Promise<BenchRun> {
+  const plan = w.key.plan;
+  const reps = w.greedy.length;
+  const wakeUp = w.warm.slice(0, 8);
+  // a GPU with runtime power management (amdgpu BACO, `power/control=auto`) parks VRAM after a few idle seconds; the
+  // short request right before every timed one makes sure the timed request never pays for the wake-up
+  const timed = async (prompt: number[], nPredict: number, sampling: Sampling): Promise<CompletionResponse> => {
+    await complete(s, wakeUp, 1, GREEDY, signal);
+    return complete(s, prompt, nPredict, sampling, signal);
+  };
   // warm-up: first graph allocation and kernel loading are not part of the numbers
-  await complete(s, all.slice(0, 32), 4, signal);
+  await complete(s, w.warm, 4, GREEDY, signal);
   const pre: Timings[] = [];
+  const greedy: Timings[] = [];
   const dec: Timings[] = [];
-  const h = createHash('md5'); // all decode texts of all repetitions (same prompts for baseline and candidates)
-  for (let r = 0; r < plan.reps; r++) {
+  const h = createHash('md5'); // all greedy decode texts of all repetitions (the same tokens for baseline and candidates)
+  for (let r = 0; r < reps; r++) {
     // prefill: the raw corpus (a fixed, exact token count), one token generated
-    progress?.('bench:prefill', r, plan.reps);
-    pre.push((await complete(s, all.slice(0, prefillN), 1, signal)).timings);
+    progress?.('bench:prefill', r, reps);
+    pre.push((await timed(w.prefill, 1, GREEDY)).timings);
     // decode: this repetition's own chat tasks (never a request the server has already answered)
-    progress?.('bench:decode', r, plan.reps);
-    for (const task of DECODE_TASKS[r % DECODE_TASKS.length] as readonly string[]) {
-      const res = await complete(s, await chatPrompt(s, task, signal), plan.decodeTokens, signal);
-      dec.push(res.timings);
+    progress?.('bench:decode', r, reps);
+    for (const p of w.greedy[r] ?? []) {
+      const res = await timed(p, plan.decodeTokens, GREEDY);
+      greedy.push(res.timings);
       h.update(res.content);
     }
-    progress?.('bench:decode', r + 1, plan.reps);
+    for (const p of w.sampled[r] ?? []) dec.push((await timed(p, plan.decodeTokens, sampled(r))).timings);
+    progress?.('bench:decode', r + 1, reps);
   }
-  const short = dec.filter((t) => t.predicted_n < plan.decodeTokens);
-  if (short.length) log.info(`decode: ${short.length}/${dec.length} answers stopped early (${short.map((t) => t.predicted_n).join(', ')} tokens)`);
-  const decAcc = acceptance(dec);
-  if (decAcc) log.info(`decode speculation: ${decAcc}`);
+  const short = [...greedy, ...dec].filter((t) => t.predicted_n < plan.decodeTokens);
+  if (short.length) log.info(`decode: ${short.length}/${greedy.length + dec.length} answers stopped early (${short.map((t) => t.predicted_n).join(', ')} tokens)`);
+  for (const [name, ts] of [['greedy', greedy], ['sampled', dec]] as const) {
+    const acc = acceptance(ts);
+    if (acc) log.info(`decode ${name} speculation: ${acc}`);
+  }
   const run: BenchRun = {
     prefill: {
-      tokens: pre[0]?.prompt_n ?? prefillN,
+      tokens: pre[0]?.prompt_n ?? w.prefill.length,
       tps: median(pre.map((t) => t.prompt_per_second)),
       ttftS: median(pre.map((t) => t.prompt_ms / 1000)),
     },
-    decode: { tokens: Math.round(median(dec.map((t) => t.predicted_n))), tps: median(dec.map((t) => t.predicted_per_second)) },
+    decode: {
+      tokens: Math.round(median(dec.map((t) => t.predicted_n))),
+      tps: median(dec.map((t) => t.predicted_per_second)),
+      greedyTps: median(greedy.map((t) => t.predicted_per_second)),
+    },
     outputMd5: h.digest('hex'),
   };
+  const deepFits = w.deep.length > 0 && w.deep.every((p) => p.length + plan.deepDecode + 8 <= ctx);
+  if (w.deep.length > 0 && !deepFits) log.warn(`deep: n_ctx ${ctx} cannot hold the ${w.deep[0]?.length}-token prompt, not measured`);
   if (deepFits) {
-    const { content: document } = await call<{ content: string }>(s, '/detokenize', { tokens: all.slice(0, plan.deepTokens - DEEP_OVERHEAD) }, signal);
     const deep: Timings[] = [];
-    for (let r = 0; r < plan.reps; r++) {
-      progress?.('bench:deep', r, plan.reps);
-      const prompt = await chatPrompt(s, deepQuestion(document, r), signal);
-      deep.push((await complete(s, prompt, plan.deepDecode, signal)).timings);
+    for (let r = 0; r < w.deep.length; r++) {
+      progress?.('bench:deep', r, w.deep.length);
+      deep.push((await timed(w.deep[r] as number[], plan.deepDecode, GREEDY)).timings);
     }
-    progress?.('bench:deep', plan.reps, plan.reps);
+    progress?.('bench:deep', w.deep.length, w.deep.length);
     const deepAcc = acceptance(deep);
     if (deepAcc) log.info(`deep speculation: ${deepAcc}`);
     run.deep = {
-      ctxTokens: deep[0]?.prompt_n ?? plan.deepTokens,
+      ctxTokens: deep[0]?.prompt_n ?? w.deep[0]?.length ?? 0,
       prefillTps: median(deep.map((t) => t.prompt_per_second)),
       decodeTps: median(deep.map((t) => t.predicted_per_second)),
     };
@@ -181,29 +289,49 @@ export async function measure(s: RunningServer, ctx: number, plan: BenchPlan, pr
   return run;
 }
 
-export interface BenchOptions { plan?: BenchPlan; progress?: BenchProgress; signal?: AbortSignal; label?: string; phase?: Phase }
+export interface BenchOptions { progress?: BenchProgress; signal?: AbortSignal; label?: string; phase?: Phase }
 
-/** Full protocol: start (ctx must fit), measure, graceful stop. */
-export async function benchEngine(engine: ResolvedEngine, cfg: EngineConfig, opts: BenchOptions = {}): Promise<BenchResult> {
-  const plan = opts.plan ?? benchPlan();
+/** Full protocol on one arm: start (ctx must fit), `prepare` the workload, measure it, graceful stop. */
+async function run(
+  engine: ResolvedEngine, cfg: EngineConfig, opts: BenchOptions,
+  prepare: (s: RunningServer, nCtx: number) => Promise<BenchWorkload>,
+): Promise<{ result: BenchResult; workload: BenchWorkload }> {
   opts.progress?.('bench:start', 0, 1);
   const s = await startServer(engine, cfg, { ...(opts.signal ? { signal: opts.signal } : {}), ...(opts.label ? { label: opts.label } : {}) });
   try {
     const nCtx = await serverCtx(s);
     const ctxOk = nCtx === null ? true : nCtx >= cfg.ctx;
     if (!ctxOk) log.warn(`server allocated n_ctx=${nCtx}, requested ${cfg.ctx}`);
+    const workload = await prepare(s, nCtx ?? cfg.ctx);
     opts.progress?.('bench:start', 1, 1);
-    const run = await measure(s, nCtx ?? cfg.ctx, plan, opts.progress, opts.signal);
+    const m = await measure(s, nCtx ?? cfg.ctx, workload, opts.progress, opts.signal);
     const result: BenchResult = {
       engine: { id: engine.entry.id, version: engine.version, backend: engine.entry.backend },
-      config: cfg, prefill: run.prefill, decode: run.decode, ctxOk, outputMd5: run.outputMd5, at: Date.now(),
+      config: cfg, prefill: m.prefill, decode: m.decode, ctxOk, outputMd5: m.outputMd5, at: Date.now(),
     };
-    if (run.deep) result.deep = run.deep;
-    log.info(`bench ${opts.label ?? engine.entry.id}: prefill ${run.prefill.tps.toFixed(1)} t/s, decode ${run.decode.tps.toFixed(1)} t/s` +
-      (run.deep ? `, deep ${run.deep.ctxTokens} tok: ${run.deep.prefillTps.toFixed(1)} / ${run.deep.decodeTps.toFixed(1)} t/s` : '') +
-      `, md5 ${run.outputMd5.slice(0, 8)}`);
-    return result;
+    if (m.deep) result.deep = m.deep;
+    log.info(`bench ${opts.label ?? engine.entry.id}: prefill ${m.prefill.tps.toFixed(1)} t/s, decode ${m.decode.tps.toFixed(1)} t/s ` +
+      `(greedy ${m.decode.greedyTps.toFixed(1)})` +
+      (m.deep ? `, deep ${m.deep.ctxTokens} tok: ${m.deep.prefillTps.toFixed(1)} / ${m.deep.decodeTps.toFixed(1)} t/s` : '') +
+      `, md5 ${m.outputMd5.slice(0, 8)}`);
+    return { result, workload };
   } finally {
     await s.stop();
   }
+}
+
+/** The baseline: renders the workload on its own server (`key`, see workloadKey), then measures it. */
+export async function benchBaseline(engine: ResolvedEngine, cfg: EngineConfig, key: WorkloadKey, opts: BenchOptions = {}): Promise<{ result: BenchResult; workload: BenchWorkload }> {
+  return run(engine, cfg, opts, async (s, nCtx) => {
+    const w = await buildWorkload(s, nCtx, key, opts.signal);
+    log.info(`bench workload rendered on ${opts.label ?? engine.entry.id}` +
+      `${key.reasoningEffort ? ` (reasoning effort ${key.reasoningEffort})` : ''}: prefill ${w.prefill.length}, ` +
+      `decode prompts ${[...w.greedy, ...w.sampled].flat().map((p) => p.length).join('/')}, deep ${w.deep.map((p) => p.length).join('/') || '-'} tokens`);
+    return w;
+  });
+}
+
+/** A candidate (or the baseline again): measures the baseline's workload, token for token. */
+export async function benchEngine(engine: ResolvedEngine, cfg: EngineConfig, workload: BenchWorkload, opts: BenchOptions = {}): Promise<BenchResult> {
+  return (await run(engine, cfg, opts, async () => workload)).result;
 }

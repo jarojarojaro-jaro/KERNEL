@@ -22,6 +22,8 @@ export function enigmaHome(): string {
 export interface Paths {
   home: string; config: string; state: string; models: string; engines: string; logs: string; results: string;
   downloads: string;
+  /** the benchmark requests rendered on the baseline (token ids), reused by every candidate and on resume */
+  workload: string;
 }
 
 export function paths(): Paths {
@@ -35,6 +37,7 @@ export function paths(): Paths {
     logs: join(home, 'logs'),
     results: join(home, 'results'),
     downloads: join(home, 'downloads'),
+    workload: join(home, 'bench-workload.json'),
   };
 }
 

@@ -54,7 +54,8 @@ export interface Progress { phase: Phase; label: string; done: number; total: nu
 
 export interface BenchResult {
   engine: { id: string; version: string; backend: Backend }; config: EngineConfig;
-  prefill: { tokens: number; tps: number; ttftS: number }; decode: { tokens: number; tps: number };
+  // decode.tps: the sampled arm (T=1), what decides; greedyTps: the greedy arm (T=0) whose texts give outputMd5
+  prefill: { tokens: number; tps: number; ttftS: number }; decode: { tokens: number; tps: number; greedyTps: number };
   deep?: { ctxTokens: number; prefillTps: number; decodeTps: number }; ctxOk: boolean; outputMd5: string; at: number;
 }
 

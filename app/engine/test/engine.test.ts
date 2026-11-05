@@ -6,7 +6,7 @@ import { deflateRawSync } from 'node:zlib';
 import type { Hw, Option } from '../src/shared/types.ts';
 import {
   baselineConfig, baselineEngineFor, ENGINES, engineById, enigmaConfig, enigmaEngineFor, extractZip, findServerBin, gatherLibs,
-  serverArgs, type ResolvedEngine,
+  servedReasoningEffort, serverArgs, type ResolvedEngine,
 } from '../src/server/engine.ts';
 
 let dir = '';
@@ -92,6 +92,15 @@ describe('enigma engine choice', () => {
     const flint = enigmaEngineFor(hwXtx, option('flint-40b-a2.5b', 'flint-nvfp4.gguf'));
     expect(flint.reason).toContain('has no profile');
     delete process.env.ENIGMA_ENGINE_DIR_ENIGMA_ROCM;
+  });
+
+  test('the bench renders every arm with the reasoning effort the Enigma profile serves (template default without one)', () => {
+    const qwen = option('qwen38-27b', 'Qwen3.8-27B-UD-Q4_K_XL.gguf');
+    process.env.ENIGMA_ENGINE_DIR_ENIGMA_ROCM = dir;
+    expect(servedReasoningEffort(hwXtx, qwen)).toBe('low');
+    expect(servedReasoningEffort(hwXtx, option('lfm25-24b-a2b', 'LFM2.5-24B-A2B-Q5_K_M.gguf'))).toBeNull();
+    delete process.env.ENIGMA_ENGINE_DIR_ENIGMA_ROCM;
+    expect(servedReasoningEffort(hwXtx, qwen)).toBeNull(); // no Enigma engine here: nothing serves 'low'
   });
 });
 

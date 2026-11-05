@@ -89,6 +89,18 @@ export function enigmaEngineFor(hw: Hw, option: Option): EnigmaChoice {
   return { entry, code: '', reason: '' };
 }
 
+/**
+ * The `--reasoning-effort` the Enigma engine serves this option with (from its profile), or null (template default).
+ * The benchmark renders every arm's chat prompts with it, so the reasoning setting never differs between the arms.
+ */
+export function servedReasoningEffort(hw: Hw, option: Option): string | null {
+  const { entry } = enigmaEngineFor(hw, option);
+  const args = (entry && profileFor(entry, option)?.args) || [];
+  const i = args.indexOf('--reasoning-effort');
+  const v = i >= 0 ? args[i + 1] : undefined;
+  return v && v !== 'default' ? v : null;
+}
+
 export function profileFor(entry: EngineEntry, option: Option): EngineProfile | undefined {
   const name = option.file.path.split('/').at(-1) ?? '';
   return entry.profiles?.find((p) => {

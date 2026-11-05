@@ -3,16 +3,19 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { BenchResult, Candidate } from '../src/shared/types.ts';
-import { decide, failureCode, recipeFor } from '../src/server/optimize.ts';
+import { confirm, decide, failureCode, recipeFor } from '../src/server/optimize.ts';
 import { hostAllowed, serveApi } from '../src/server/api.ts';
 import { App } from '../src/server/state.ts';
 
-function bench(prefill: number, decode: number, md5 = 'a', ctxOk = true): BenchResult {
-  return {
+function bench(prefill: number, decode: number, md5 = 'a', ctxOk = true, deep?: { prefill: number; decode: number }): BenchResult {
+  const r: BenchResult = {
     engine: { id: 'e', version: '1', backend: 'cpu' },
     config: { engineId: 'e', modelPath: '/m', ctx: 1, kvType: 'f16', ub: 512, b: 2048, flashAttn: true, extraArgs: [], env: {} },
-    prefill: { tokens: 4096, tps: prefill, ttftS: 1 }, decode: { tokens: 256, tps: decode }, ctxOk, outputMd5: md5, at: 1,
+    prefill: { tokens: 4096, tps: prefill, ttftS: 1 }, decode: { tokens: 256, tps: decode, greedyTps: decode }, ctxOk, outputMd5: md5,
+    at: 1,
   };
+  if (deep) r.deep = { ctxTokens: 32768, prefillTps: deep.prefill, decodeTps: deep.decode };
+  return r;
 }
 
 function cand(id: string, r?: BenchResult, status: Candidate['status'] = 'pending'): Candidate {
@@ -40,10 +43,30 @@ describe('decide', () => {
     expect(decide(cs, base)?.id).toBe('mtp');
   });
 
-  test('a text-changing candidate needs >= 3% decode gain; an identical-output one does not', () => {
-    const cs = [cand('lookup', bench(1000, 102, 'x')), cand('ub', bench(1000, 101.5, 'a'))];
+  test('a text-changing candidate needs >= 3% decode gain; an identical-output one only beats the noise floor', () => {
+    const cs = [cand('lookup', bench(1000, 102.8, 'x')), cand('ub', bench(1000, 102.5, 'a'))];
     expect(decide(cs, base)?.id).toBe('ub');
-    expect(cs[0]?.reason).toBe('gain_too_small:2');
+    expect(cs[0]?.reason).toBe('gain_too_small:2.8');
+  });
+
+  test('a gain within the noise threshold (2%, or what the caller measured) does not win', () => {
+    const cs = [cand('ub', bench(1000, 101.5)), cand('lookup', bench(1000, 104, 'x'))];
+    expect(decide(cs, base)?.id).toBe('lookup');
+    expect(cs[0]?.reason).toBe('within_noise:1.5');
+    expect(decide(cs, base, 0.05)).toBeNull();
+    expect(cs[1]?.reason).toBe('within_noise:4');
+  });
+
+  test('the deep (~32k) result is part of the decision', () => {
+    const b = bench(1000, 100, 'a', true, { prefill: 900, decode: 30 });
+    const cs = [
+      cand('kvcpu', bench(1000, 130, 'a', true, { prefill: 900, decode: 20 })),
+      cand('slowdeep', bench(1000, 110, 'a', true, { prefill: 700, decode: 30 })),
+      cand('ok', bench(1000, 105, 'a', true, { prefill: 880, decode: 29 })),
+    ];
+    expect(decide(cs, b)?.id).toBe('ok');
+    expect(cs[0]?.reason).toBe('deep_decode_loss:-33.3');
+    expect(cs[1]?.reason).toBe('deep_prefill_loss:-22.2');
   });
 
   test('nothing beats the baseline: keep baseline', () => {
@@ -59,11 +82,45 @@ describe('decide', () => {
     expect(cs[0]?.status).toBe('rejected');
   });
 
+  test('a failed confirmation stays rejected when deciding again', () => {
+    const cs = [cand('a', bench(1000, 130)), cand('b', bench(1000, 120))];
+    cs[0]!.reason = 'not_confirmed:1';
+    expect(decide(cs, base)?.id).toBe('b');
+    expect(cs[0]).toMatchObject({ status: 'rejected', reason: 'not_confirmed:1' });
+  });
+
   test('recipes rebuild from ids', () => {
     expect(recipeFor('ub-2048')).toEqual({ kind: 'ub', ub: 2048 });
     expect(recipeFor('mtp')).toEqual({ kind: 'spec', spec: 'mtp' });
     expect(recipeFor('enigma')).toEqual({ kind: 'enigma' });
     expect(recipeFor('x')).toBeNull();
+  });
+});
+
+describe('confirm', () => {
+  const base = bench(1000, 100);
+
+  test('the winner measured again next to a new baseline run: kept with the confirmation numbers', () => {
+    const c = cand('mtp', bench(1000, 140, 'x'), 'kept');
+    const again = bench(990, 141, 'x');
+    expect(confirm(c, again, base, bench(1000, 101))).toBe(true);
+    expect(c).toMatchObject({ status: 'kept', result: again, decodePct: 39.6, prefillPct: -1, sameOutput: false });
+    expect(c.reason).toBeUndefined();
+  });
+
+  test('a gain that does not beat 2 x the baseline run-to-run noise is not confirmed', () => {
+    const c = cand('ub', bench(1000, 104), 'kept');
+    // the baseline moved 3% between its runs: threshold 6%, the repeat shows +4.9%
+    expect(confirm(c, bench(1000, 108), base, bench(1000, 103))).toBe(false);
+    expect(c).toMatchObject({ status: 'rejected', reason: 'not_confirmed:4.9' });
+    const cs = [c, cand('lookup', bench(1000, 103, 'x'))];
+    expect(decide(cs, base)?.id).toBe('lookup');
+  });
+
+  test('the confirmation applies every guard of decide()', () => {
+    const c = cand('mtp', bench(1000, 140), 'kept');
+    expect(confirm(c, bench(800, 141), base, bench(1000, 100))).toBe(false);
+    expect(c.reason).toBe('not_confirmed:41');
   });
 });
 

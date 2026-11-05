@@ -24,7 +24,7 @@ app/engine/
 
 ## Katalog domowy i nadpisania
 - Dane: Linux/macOS `~/.enigma`, Windows `%LOCALAPPDATA%\Enigma`: `config.json`, `state.json`, `models/`, `engines/`,
-  `logs/`, `results/`. `ENIGMA_HOME` nadpisuje.
+  `logs/`, `results/`, `bench-workload.json` (żądania benchmarku wyrenderowane na baseline). `ENIGMA_HOME` nadpisuje.
 - `ENIGMA_MODELS_DIR` — dodatkowy katalog z gotowymi GGUF (plik o tej samej nazwie i rozmiarze = bez pobierania;
   sha256 sprawdzane, jeśli katalog je zna). Na naszym serwerze: `~/models` (rekurencyjnie, płytko 2 poziomy).
 - `ENIGMA_ENGINE_DIR_<ID>` — lokalny katalog silnika (np. `ENIGMA_ENGINE_DIR_ENIGMA_ROCM=~/llama-topka`,
@@ -91,7 +91,7 @@ interface Recommendation { minCtx:number; pick:Option|null; alternatives:Option[
   rejected:{modelId:string; quant:string; reason:string}[] }
 interface Progress { phase:Phase; label:string; done:number; total:number; rate?:number; etaS?:number }
 interface BenchResult { engine:{id:string; version:string; backend:Backend}; config:EngineConfig;
-  prefill:{tokens:number; tps:number; ttftS:number}; decode:{tokens:number; tps:number};
+  prefill:{tokens:number; tps:number; ttftS:number}; decode:{tokens:number; tps:number /* T=1 */; greedyTps:number /* T=0 */};
   deep?:{ctxTokens:number; prefillTps:number; decodeTps:number}; ctxOk:boolean; outputMd5:string; at:number }
 interface EngineConfig { engineId:string; modelPath:string; ctx:number; kvType:string; ub:number; b:number;
   flashAttn:boolean; threads?:number; spec?:'none'|'mtp'|'lookup'; extraArgs:string[]; env:Record<string,string> }
@@ -141,24 +141,42 @@ Każdy wynik pokazywany jako **baseline → teraz → przyrost %**. Baseline = u
 konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko zmierzone na maszynie użytkownika.
 
 ## Benchmark (jeden protokół dla baseline i kandydatów)
+0. Obciążenie renderowane **raz, na serwerze baseline** (jego szablon czatu przez `/apply-template` i jego tokenizer
+   przez `/tokenize`, `add_special` + `parse_special` jak `/completion` dla tekstu), z `reasoning_effort` serwowanym
+   przez produkt (`--reasoning-effort` z profilu silnika Enigma dla tej opcji, jako `chat_template_kwargs`; bez profilu
+   — domyślny szablonu). Każde ramię dostaje do `/completion` **te same id tokenów**; serwer kandydata niczego nie
+   renderuje ani nie tokenizuje (flagi szablonu kandydata, np. `LLAMA_CHAT_NATIVE`, nie zmieniają obciążenia).
+   Zapis w `bench-workload.json` (klucz: model, silnik baseline, ctx, effort, rozmiary); inny klucz przy wznowieniu →
+   baseline mierzony od nowa.
 1. Start llama-server (`127.0.0.1`, losowy port, `--api-key` losowy), `-c ctx` — start = kontekst się mieści (`ctxOk`).
+   Rozgrzewka 32/4 tokeny; przed **każdym** mierzonym żądaniem krótkie żądanie budzące (8 tokenów, 1 token): karta z
+   `power/control=auto` (BACO) usypia się po kilku sekundach bezczynności.
 2. Prefill: prompt ~4096 tokenów (stały korpus w repo, surowy tekst), `cache_prompt:false`, mierzone `timings.prompt_per_second`.
-3. Decode: 256 tokenów, `temperature 0`, `seed 1`, bez `ignore_eos`, `timings.predicted_per_second`, na zadaniach czatu
-   (szablon modelu przez `/apply-template`): oryginalne opowiadanie PL i EN; md5 tekstów = `outputMd5`. Nie ciągnięcie
-   korpusu: model go kopiuje, a lookup/MTP akceptują wtedy prawie wszystko (zawyżony decode).
-4. Deep: korpus ~32k tokenów jako dokument w wiadomości + pytanie wymagające własnej odpowiedzi, 128 tokenów decode.
-5. Powtórzenia 2×, mediana; każde powtórzenie z innymi zadaniami (cache n-gramów serwera przeżywa żądania — identyczne
-   żądanie odtworzyłoby poprzednią odpowiedź). Zatrzymanie serwera: czekaj na wolne `/slots`, **jeden** SIGTERM, 45 s,
-   potem SIGKILL.
+3. Decode: 256 tokenów, bez `ignore_eos`, `timings.predicted_per_second`, na zadaniach czatu (oryginalne opowiadanie PL
+   i EN), dwa ramiona z osobnymi zadaniami: greedy (`temperature 0`, `seed 1`; md5 tekstów = `outputMd5`,
+   `decode.greedyTps`) i próbkowane jak czat (`temperature 1`, `top_k 40`, `top_p 0.95`, `min_p 0.05`, `seed` = 1 +
+   powtórzenie; `decode.tps`, decyduje). Nie ciągnięcie korpusu: model go kopiuje, a lookup/MTP akceptują wtedy prawie
+   wszystko (zawyżony decode).
+4. Deep: korpus ~32k tokenów jako dokument w wiadomości + pytanie wymagające własnej odpowiedzi, 128 tokenów decode
+   (greedy); pomijany, gdy prompt nie mieści się w kontekście ramienia.
+5. Powtórzenia 2×, mediana; każde powtórzenie i ramię z innymi zadaniami (cache n-gramów serwera przeżywa żądania —
+   identyczne żądanie odtworzyłoby poprzednią odpowiedź). Zatrzymanie serwera: czekaj na wolne `/slots`, **jeden**
+   SIGTERM, 45 s, potem SIGKILL.
 
 ## Optymalizacja (kandydaci, każdy mierzony tym samym benchmarkiem; zostaje najlepszy decode; prefill może spaść ≤ 5%, albo ≤ 15% gdy decode rośnie ≥ 20%; kandydat zmieniający tekst musi dać ≥ 3% decode)
+- Reguły `decide()`: zysk decode > próg szumu (2%); deep prefill jak prefill, deep decode ≤ 5% straty (gdy oba mają
+  deep). Potwierdzenie: zwycięzca mierzony drugi raz obok ponownego pomiaru baseline; szum = |baseline₂/baseline − 1|,
+  próg = max(2 × szum, 2%), pozostałe reguły bez zmian. Potwierdzony: `kept`, `result`/`decodePct`/`prefillPct`/
+  `sameOutput` z pary potwierdzającej (wobec baseline₂). Niepotwierdzony: `not_confirmed:<pct>` i potwierdzany jest
+  następny najlepszy (ten sam baseline₂).
 - silnik `enigma-*` dla platformy, jeśli jest (na AMD gfx1100: topka z flagami jak `~/qwen-opt/run-topka.sh` — PM4,
   lookup, MTP dla Qwen3.8, coupled, host-gap; wierne odwzorowanie `run-llm.sh`);
 - `-ub/-b` (512/1024/2048) w granicach pamięci; MTP (jeśli model ma głowicę i silnik obsługuje); lookup n-gram.
-- `sameOutput` = md5 decode == baseline (spekulacja może zmienić bity → pokazujemy jasno, nie ukrywamy).
+- `sameOutput` = md5 decode greedy == baseline (spekulacja może zmienić bity → pokazujemy jasno, nie ukrywamy).
 - `Candidate.id`: `enigma` | `ub-512` | `ub-1024` | `ub-2048` (bez bieżącego ub) | `mtp` | `lookup`.
 - `Candidate.reason` = kod (`kod` albo `kod:wartość`; UI tłumaczy, nieznany pokazuje surowo):
   `no_enigma_engine:<arch|vendor>-<backend>-<os>-<arch>` (np. `cpu-linux-x64`, `sm_86-cuda-windows-x64`) |
   `enigma_no_profile:<modelId>` | `enigma_not_published:<engineId>` | `ub_no_fit:<ub>` | `no_mtp_head` | `mtp_no_memory` | `engine_no_mtp` |
-  `engine_no_lookup` | `ctx_not_fit` | `prefill_loss:<pct>` | `decode_not_faster:<pct>` | `gain_too_small:<pct>` | `slower_than:<candidateId>` |
+  `engine_no_lookup` | `ctx_not_fit` | `prefill_loss:<pct>` | `deep_prefill_loss:<pct>` | `deep_decode_loss:<pct>` |
+  `decode_not_faster:<pct>` | `within_noise:<pct>` | `gain_too_small:<pct>` | `not_confirmed:<pct>` | `slower_than:<candidateId>` |
   `oom` | `start_failed:<pierwsza linia>` | `failed:<pierwsza linia>`. Kandydat `kept` nie ma `reason`.
