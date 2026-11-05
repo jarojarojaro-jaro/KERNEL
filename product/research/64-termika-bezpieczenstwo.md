@@ -35,7 +35,7 @@ Nasz `fan.sh` sprawdza tylko odczyt z sysfs (pamięć podręczną sterownika), w
 | **Undervolt** (`vo`) | **NIE teraz** | niskie dla krzemu, **wysokie dla stabilności** (ciche złe wyniki, hang, potem reset GPU) | wysokie; przy limicie zegara i tak jest po cichu przycinany (§9) |
 | Zegar pamięci (`m`) | **NIGDY** | — | zgłoszenia crashy i hangów |
 
-Niezależnie od tego termika karty jest dziś zdrowa. Przy 283–288 W i wentylatorze 100%: hotspot 63–68 °C, edge 47–50 °C, różnica 15–18 °C, VRAM 70–74 °C. Stary alarm „106 °C i różnica 40 °C” pochodzi z 2026-10-09: fabryczny wentylator, prefill 196k. **Repaste nie jest dziś potrzebny.** Jedna kontrola z §12 rozstrzygnie, czy przy prefillu 196k różnica wraca.
+Niezależnie od tego termika karty jest dziś zdrowa. Przy 283–288 W i wentylatorze 100%: hotspot 63–68 °C, edge 47–50 °C, różnica 15–18 °C, VRAM 70–74 °C. Stary alarm „106 °C i różnica 40 °C” pochodzi z 2026-10-09: fabryczny wentylator, prefill 196k. **Repaste nie jest dziś potrzebny.** Jedna kontrola z §13 rozstrzygnie, czy przy prefillu 196k różnica wraca.
 
 ---
 
@@ -249,7 +249,7 @@ Odczyt pod obciążeniem (15:31): edge 49, hotspot 66, mem 72, VR 48–52 °C; g
   - Przy 285 W i ~1850 RPM: junction 85–88 (max 90), edge 64–67 (NOTES:146, 170).
   - 2026-10-18 przy wentylatorze ~3410 RPM: 252–295 W, edge 53–58, junction 72–80, mem 76–78, **różnica mediana 21, max 24 °C** ([`sweep-gpu.csv`](../../../qwen-opt/logs/sweep-gpu.csv)).
   - **Dziś** przy 3500 RPM, 278–288 W: edge 47–50, junction 63–68, mem 70–74, **różnica 15–18 °C** ([`q63-stock.csv`](../../../qwen-opt/thermal/q63-stock.csv)); na żywo 15:31: 283 W, edge 49, hotspot 66, mem 72, `pwm1` 255.
-  - Wniosek w §12.
+  - Wniosek w §13.
 
 ---
 
@@ -331,6 +331,8 @@ Optimum sprawności leży w **2000–2200 MHz**. Poniżej 1800 jest tylko chłod
 ## 10. Konkretne poprawki (do wdrożenia przez Main/użytkownika; tu tylko opis)
 
 ### 10.1 Zasada nadrzędna na jądrze 6.8: JEDEN zapisujący, JEDEN commit, wszystkie sekcje
+Wdrożone jako pliki w §12. W implementacji funkcja nazywa się `xtx_apply`, stan to `/run/xtx-eco/cap`, a blokada `/run/lock/xtx-od.lock`; odmowa commitu dotyczy faultów i resetów w całym bieżącym boocie. Szkic poniżej opisuje zasadę.
+
 Wspólna funkcja (np. w `fan.sh` albo osobnym `/usr/local/sbin/xtx-od`), wywoływana **wyłącznie pod `flock /run/xtx-od.lock`**, zarówno przez timer wentylatora, jak i przez `xtx-eco`:
 ```bash
 od_apply() {   # $1 = load|idle ; cap from /run/xtx-eco.sclk (missing = stock 2885)
@@ -386,7 +388,23 @@ Pod stałym obciążeniem (busy ≥ 90% przez ≥ 10 s):
 
 ---
 
-## 12. Termika niezależnie od limitu – czy potrzebny repaste?
+## 12. Wdrożenie (2026-11-05: tylko pliki, nic nie zainstalowane ani uruchomione)
+
+Pliki w `~/qwen-opt/thermal/` (poza repo). Wszystkie przeszły `bash -n` i ShellCheck 0.10.0 (zostały tylko świadome SC2015 `a && b || fail`). Logikę `xtx_verify` i `xtx_cap` oraz kolejność zapisów `xtx_apply` sprawdziłem na atrapach plików w `/tmp` (bez sysfs).
+
+| plik | rola |
+|---|---|
+| `xtx-od.sh` → `/usr/local/lib/xtx-od.sh` | **jedyny zapisujący OD**: `xtx_apply load\|idle [force]` pod `flock /run/lock/xtx-od.lock`; 5 punktów krzywej + `s 1 <cap>` + **jeden** `c` (§10.1); readback sterownika; `force` przełącza punkt 0 między 25 a 26 °C, żeby wymusić wysłanie (§3.2 C); `xtx_verify` = kontrola fizyczna z §10.4 (≥ 10 próbek przy busy ≥ 90%, mediana sclk ≤ cap + 50, ostatnie 5 próbek: `pwm1` ≥ 240 i ≥ 3200 RPM albo 0 RPM przy hotspot < 70 °C); limit trzymany w `/run/xtx-eco/cap` (tmpfs, więc restart = stock) |
+| `xtx-eco` → `/usr/local/sbin/xtx-eco` | `status`, `sclk 1600..2885`, `stock` (bez `r`), `verify`; po nieudanej kontroli jedno wymuszone wysłanie, potem `stock` i exit 3; brak kontroli przy braku obciążenia = exit 4; odmawia ustawienia limitu po jakimkolwiek faultcie lub resecie amdgpu w tym boocie; bez `profile`, `manual`, PPT i `r` |
+| `fan.sh.new` → `/usr/local/sbin/xtx-fan` | dotychczasowy `fan.sh` (te same krzywe i progi), ale każdy commit przez `xtx_apply` z bieżącym limitem; `p0` akceptuje 25 i 26 °C; nowe: przy obciążeniu, jeśli wentylator kręci się z `pwm1` < 230 przez 10 s, jedno wymuszone wysłanie na przebieg; `auto` = pełny `r` (zegar + wentylator). Różnice: `fan.sh.diff` (względem zainstalowanego `~/qwen-opt/tools/fan.sh`, który zostaje nietknięty) |
+| `sweep.sh` | ramiona `stock 2400 2200 2000 1800 2000 2400 stock`; warunki startu: nowy `xtx-fan`, `bugcheck.PASS`, brak faultów w boocie; uruchamia `gpu-guard`, jeśli go nie ma; po każdej zmianie limitu `xtx-eco verify` po 30 s i na końcu soaku; `journalctl -k` co 10 s i po każdym ramieniu; hotspot ≥ 90 / VRAM ≥ 85 °C → abort; abort = obciążenie off → `stock` → jeden SIGTERM; W i J/token osobno dla dekodowania i prefillu |
+| `bugcheck.sh` (+ `bugcheck.jobs`) | ~5 min, test §11 krok 1 na naszej karcie: stock (mediana ≥ 2300, czyli test rozróżnia), A: `sclk 2200` pod obciążeniem → wentylator dalej 100%, B: 30 s bezczynności → commity timera idle i load z limitem 2200 → limit dalej działa, A2: `sclk 2000`, C: `stock` → mediana ≥ 2300; naprawa w trakcie = FAIL; wynik w `bugcheck.PASS` / `bugcheck.FAIL` |
+| `INSTALL.sh` (sudo, raz) | backup do `/var/backups/xtx-eco/<czas>/`, instalacja trzech plików root:root, `tmpfiles.d` + `/run/xtx-eco`, reguła sudoers tylko dla `/usr/local/sbin/xtx-eco` (`visudo -cf` i `visudo -c`), `xtx-fan.service` przestawiony na `/usr/local/sbin/xtx-fan` (timer bez zmian), walidacja `xtx-eco status`; nie pisze do GPU |
+| `UNINSTALL.sh` (= `/usr/local/sbin/xtx-eco-uninstall`) | `xtx-eco stock`, przywrócenie najstarszego backupu (stan sprzed instalacji; fallback: dawny unit z `~/qwen-opt/tools/fan.sh`), usunięcie plików i reguły sudoers, `visudo -c`, restart usługi wentylatora |
+
+Kolejność dla użytkownika: `sudo ~/qwen-opt/thermal/INSTALL.sh` → `run-jobs.sh ~/qwen-opt/thermal/bugcheck.jobs` → (tylko przy PASS) `run-jobs.sh ~/qwen-opt/thermal/eco.jobs`. `go.sh` zostaje wyłączony.
+
+## 13. Termika niezależnie od limitu – czy potrzebny repaste?
 
 - Dziś przy 100% wentylatora i 285 W różnica hotspot−edge wynosi **15–18 °C** (q63-stock, na żywo 15:31), a 2026-10-18 maksymalnie 24 °C. To w normie: zdrowa karta referencyjna ma Δ13 °C ([TechSpot](https://www.techspot.com/news/97120-amd-aware-radeon-rx-7900-xtx-temperature-issues.html)); XTX w LLM przy 303 W ma Δ21, a przy długim prefillu Δ≈22 ([victoralcazardev](https://github.com/victoralcazardev/rx7900xtx-local-llm/blob/main/docs/measurements/thermals-power.md)); ≥ 30–40 °C to sygnał problemu z kontaktem lub komorą ([HotHardware](https://hothardware.com/news/overclocker-pinpoints-radeon-rx-7900-xtx-temperature-delta-flaw)).
 - 106 °C i Δ40 z 2026-10-09 to jedyny taki pomiar. Była wtedy fabryczna krzywa i ~2970 RPM. Z wentylatorem 100% tego obciążenia (prefill 196k) **jeszcze nie powtórzyliśmy**.
