@@ -26,6 +26,7 @@ Bajty na krok (raport 18, nagłówek GGUF): MLP 10.62 GB (4.96 bpw), głowica Q6
 
 ## Aktualizacja 2026-10-21
 - XTX: proza E0 78.93 t/s ([[metryka-prozy-e0]]); produkcja topka f9b84bcfa ([[raport-43-integracja]]); na 10–16 GB raport 33 woli [[qwen3-6-35b-a3b]].
+- **Od 2026-11-05 produkcja = topka-q63 c0576e3e8** (MTP lean reserve + poprawki MTP upstream #30141/#31350/#31368/#30574; backup `~/llama-topka.f9b84bcfa`). ABBA vs f9b: spec_sweep T=1 120.51/120.58 → 120.54/120.57 t/s (0%), md5 long 32k 20bfd0bb identyczny, VRAM 23359 → 22319 MB (−1.0 GiB), akceptacja MTP po odtworzeniu slotu 0.41 → 0.60, decode po odtworzeniu 91.0 → 116.1 t/s (+27.6%). Cap LDS FA: no-op (runtime podaje 64 KB). Źródło: `~/qwen-opt/q63/logs/summary.txt`, `~/qwen-opt/q63/logs-dep/`.
 
 ## Powiązane
 - [[modele/_hub|Modele]]
