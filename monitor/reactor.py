@@ -334,7 +334,7 @@ class App:
                  tfrac(tj)),
                 ("POWER", "%.0f" % pw, "W", pw / cap)]))
         C.row("LOAD", load / 100, [("%3.0f%%" % load, heat(load / 100)),
-                                   ("  mem %3.0f%%" % A["g.mbusy"], SUB)])
+                                   ("  vram-bus %3.0f%%" % A["g.mbusy"], SUB)])
         if gl:
             C.graph("gpu", gl, 100, "▲%3.0f%%" % h["gpu"].peak())
         tot = g.vram_total / GIB or 1
