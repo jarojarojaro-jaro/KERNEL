@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (41)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (63)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (64)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (108)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -81,6 +81,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-06 [[2026-11-06-xtx-eco-instalacja|xtx-eco: instalacja 2026-11-06 i fabryczny OD_SCLK zmienny między bootami]]
 - 2026-11-06 [[2026-11-06-eco-szybki-bench|Szybki bench produkcji: eco 2200 vs stock (2026-11-06)]]
 - 2026-11-06 [[2026-11-06-eco-sweep-sclk|Sweep eco: limit taktowania rdzenia XTX (2026-11-06)]]
+- 2026-11-06 [[2026-11-06-ctx-262k-fit|Pełny kontekst 262 144 na XTX (Qwen3.8-27B-Uncensored, 2026-11-06)]]
 - 2026-11-06 [[2026-11-06-profil-eco-2200|2026-11-06: stały profil eco 2200 MHz na XTX]]
 - 2026-11-05 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
 - 2026-11-05 [[init-user-pages-failed|`amdgpu: init_user_pages: Failed to get user pages: -1` przy starcie serwera]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-05 [[yasakani|YASAKANI: „1220 t/s” Qwen3.8-27B na RTX 5090]]
 - 2026-11-05 [[vllm-rocm-octave|vLLM `ROCM_OCTAVE`: natywny KV 3/4-bit na gfx1100]]
 - 2026-11-05 [[tensorfold|TensorFold (ashhart/TensorFold)]]
-- 2026-11-05 [[strata|Strata (Niko1221/Strata)]]
 
-Razem 684 notatek. Wygenerowano 2026-11-06 przez `tools/wiki.py index`.
+Razem 685 notatek. Wygenerowano 2026-11-06 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

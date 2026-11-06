@@ -209,3 +209,6 @@ Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzuca
 
 ## [2026-11-06] ingest | Szybki bench eco vs stock
 [[2026-11-06-eco-szybki-bench]]: greedy −2,0%, prefill −11%, −35 W, hotspot −6 °C, md5 identyczne.
+
+## [2026-11-06] ingest | Kontekst 262 144 na XTX
+[[2026-11-06-ctx-262k-fit]]: 254 977 tok. bez OOM, szczyt 23 367 MiB, decode 78,7 t/s na końcu; czat (uncensored) domyślnie 262 144.
