@@ -144,6 +144,19 @@ Zasobów (VRAM) tabela nie ma jako kategorii, więc −1.0 GiB VRAM topka-q63 pr
 |---|---|---|---|---|---|---|
 | XTX / Qwen UD-Q4_K_XL | spec_sweep T=1 (6 × 3 seedy), mediana | **120.58 t/s** (117.9); ramiona P f9b84bcfa 120.51/120.58, Q q63 120.54/120.57 (w szumie, zysk nie z q63) | 2026-11-05 | `run-topka.sh` qwen, ctx 204800, ub 512, ABBA deploy | `~/qwen-opt/q63/logs-dep/spec_sweep.jsonl:1-4` | tak (q63 = 120.57) |
 
+## FINAL MODE 2026-11-06: eco 2200 MHz + pełny kontekst 262 144 (tryb docelowy)
+
+Decyzja użytkownika 2026-11-06: tryb eco jest trybem docelowym; od teraz rekordy produkcji mierzone w final mode (eco 2200, [[2026-11-06-profil-eco-2200]]). Wiersze stock wyżej zostają jako historia. Notatka: [[2026-11-06-final-mode]].
+
+| karta / model | obciążenie / metryka | final mode (stock 204 800 przed) | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|---|
+| XTX / Qwen Uncensored Q4_K_M | kontekst | **262 144** (204 800, +28%) | 2026-11-06 | eco 2200, KV q4_0, ub 512, topka-q63; fill 254 977 tok. bez OOM, szczyt 23 367 MiB | `~/qwen-opt/queue/logs/ctx-262144.log` | tak (czat :8080) |
+| XTX / Qwen Uncensored Q4_K_M | spec_sweep T=1 (6 × 3 seedy), ms/krok | **26,91 ms** (26,32; +2,2%), mediana 118,3 t/s | 2026-11-06 | eco 2200, ctx 262 144 | `~/qwen-opt/thermal/final-unc.csv`, wynik w notatce | tak |
+| XTX / Qwen Uncensored Q4_K_M | greedy 256 tok. | **106,4 t/s** (108,4; −1,8%), md5 0221afd9 identyczne | 2026-11-06 | j.w. | j.w. | tak |
+| XTX / Qwen Uncensored Q4_K_M | waty przy pracy / hotspot | **241 W / 63,5 °C** (280 W / 67,9 °C; −13,9% / −4,4 °C) | 2026-11-06 | j.w., wiersze > 150 W | `~/qwen-opt/thermal/final-unc.csv` | tak |
+| XTX / Qwen Uncensored Q4_K_M | 255k w kontekście: prefill / decode | **465,1 / 78,7 t/s** (pierwszy pomiar) | 2026-11-06 | j.w. | `~/qwen-opt/queue/logs/ctx-262144.log` | tak |
+| XTX / Qwen UD-Q4_K_XL | ctx 262 144: spec_sweep T=1 / 255k prefill / decode | 118,1 t/s / 467,5 / 69,5 t/s; szczyt VRAM 24 224 MiB (zapas tylko 336 MiB) | 2026-11-06 | eco 2200 | `~/qwen-opt/queue/logs/final-qwen-262144.log` | nie (za mały zapas) |
+
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.
 2. Nowa para (karta, model, obciążenie, metryka) → nowy wiersz.

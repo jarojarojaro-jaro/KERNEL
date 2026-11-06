@@ -212,3 +212,6 @@ Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzuca
 
 ## [2026-11-06] ingest | Kontekst 262 144 na XTX
 [[2026-11-06-ctx-262k-fit]]: 254 977 tok. bez OOM, szczyt 23 367 MiB, decode 78,7 t/s na końcu; czat (uncensored) domyślnie 262 144.
+
+## [2026-11-06] ingest | FINAL MODE (eco 2200 + 262k)
+[[2026-11-06-final-mode]] i sekcja FINAL MODE w [[REKORDY]]: czat 262 144, −13,9% W, greedy −1,8%, md5 identyczne; UD-Q4_K_XL 262k mieści się z zapasem 336 MiB (niewdrożone).
