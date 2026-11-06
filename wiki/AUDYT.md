@@ -2982,10 +2982,10 @@ Metoda: liczby wpisane ręcznie z cytowanych wierszy (`q63/logs/summary.txt`, `l
 | [[lekcja-buildfarm-down-z-cloud]] | 3 | `watchdog-59279813.log`, `buildfarm.sh:3,82` | OK ($0.027 z komunikatu Main) |
 | [[rx-7900-xtx]], [[amdgpu-moc-i-termika]], [[vast-ai]], [[reward-hacking-inferencji]], [[lekcja-cache-ram-za-maly]] (aktualizacje) | 14 | j.w. | OK |
 | [[REKORDY]] (120.58 t/s) | 1 | `logs-dep/spec_sweep.jsonl:4` | OK |
+| [[2026-11-06-eco-sweep-sclk]] | 123,6, 121,3, 118,5, 114,8, 251, 235, 222, 280,5, 68,9, 61,5, 56,7, 54,6 | `~/qwen-opt/thermal/run-20261106T1221/results.csv` | OK (średnie z 2 ramion: stock, 2000) |
 
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
 - [[wiki-py]]
 - [[log]]
-| [[2026-11-06-eco-sweep-sclk]] | 123,6, 121,3, 118,5, 114,8, 251, 235, 222, 280,5, 68,9, 61,5, 56,7, 54,6 | `~/qwen-opt/thermal/run-20261106T1221/results.csv` | OK (średnie z 2 ramion: stock, 2000) |
