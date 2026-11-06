@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (62)
+## Notatki (63)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -77,5 +77,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-11-05-q63-topka|q63: topka-int7 → topka-q63 (c0576e3e8), wdrożone 2026-11-05]] — Trzy łatki z raportu 63c: cap occupancy FA okazał się no-opem, chuda rezerwa MTP oddała ~1 GiB VRAM, poprawki MTP upstream podniosły akceptację po odtworzeniu slotu 0.41 → 0.60; t/s bez zmian.
 - [[stan-2026-10-15|Stan zainstalowany 2026-10-15 (70 łatek)]] — Pomiar finalny po rundzie 6: Qwen3.8-27B 109.0 t/s, Uncensored 115.5, LFM2.5 293.7, LFM Uncensored 267.3; build `~/llama-opt`, gałąź `amd-opt` @ f61994f58.
 - [[2026-11-06-eco-sweep-sclk|Sweep eco: limit taktowania rdzenia XTX (2026-11-06)]] — Limit max sclk przy niezmienionym napięciu (offset 0 mV), pamięci i limicie mocy 285 W: 2000 MHz daje −4,1% pisania za −16% watów i −12 °C hotspot; md5 identyczne we wszystkich ramionach.
+- [[2026-11-06-eco-szybki-bench|Szybki bench produkcji: eco 2200 vs stock (2026-11-06)]] — Na serwerze czatu użytkownika (Qwen3.8-27B-Uncensored Q4_K_M, topka-q63, ctx 204800, cache-ram 40 GB) eco 2200 MHz kosztuje ok. 2% pisania i 10–12% prefillu za −35 W i −6 °C hotspot; greedy md5 identyczne.
 - [[2026-11-06-xtx-eco-instalacja|xtx-eco: instalacja 2026-11-06 i fabryczny OD_SCLK zmienny między bootami]] — Użytkownik zainstalował xtx-eco 2026-11-06 o 12:07 UTC (backup `/var/backups/xtx-eco/20261106T120738`); pierwszy commit xtx-fan (12:08:38) zapisał 2885 MHz jako „stock”, choć po starcie 12:00 fabryczny `OD_SCLK 1` wynosił 2935 MHz.
 <!-- AUTO:END -->

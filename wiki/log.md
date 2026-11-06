@@ -206,3 +206,6 @@ Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzuca
 
 ## [2026-11-06] decyzja | Profil eco 2200 MHz w produkcji
 [[2026-11-06-profil-eco-2200]]: limit sclk 2200 MHz na stałe (crontab @reboot); pod obciążeniem 2215 MHz, 233 W, hotspot 64 °C, wentylator 3578 RPM.
+
+## [2026-11-06] ingest | Szybki bench eco vs stock
+[[2026-11-06-eco-szybki-bench]]: greedy −2,0%, prefill −11%, −35 W, hotspot −6 °C, md5 identyczne.
