@@ -1,0 +1,67 @@
+#!/bin/bash
+# xtx-eco: the ONLY root action allowed for the thermal tests on the RX 7900 XTX (card0): a cap on the max shader clock.
+# Installed root-owned at /usr/local/sbin/xtx-eco by INSTALL.sh; sudoers allows exactly this file without a password.
+#   xtx-eco status        caps, clocks, temps, fan (no root needed)
+#   xtx-eco sclk MHZ      cap the max shader clock (OD_SCLK 1), MHZ in 1600..2885; refused after any amdgpu fault/reset
+#                         in this boot. Applies fan curve + cap in ONE commit, then (if the GPU is loaded) verifies.
+#   xtx-eco stock         back to the stock 2885 MHz the same way (never `r`, report 64 §3.3)
+#   xtx-eco verify        physical check under load (needs busy >= 90 %): one forced re-upload on failure, then stock
+# Exit: 0 ok, 2 usage, 3 failed (stock applied), 4 could not verify (no load), 5 apply failed.
+# Never touches: memory clock, voltage offset, power cap, power profile, performance level (report 64 §0, §10.2).
+set -u
+. /usr/local/lib/xtx-od.sh || { echo "missing /usr/local/lib/xtx-od.sh (run INSTALL.sh)" >&2; exit 5; }
+
+status() {
+    echo "sclk cap (state): $(xtx_cap)  OD_SCLK 1 (driver cache, not firmware): $(sed -n '/^OD_SCLK:/,/^OD_MCLK:/p' "$XTX_OD" | sed -n 3p)"
+    echo "sclk now: $(xtx_sclk_now) MHz  mclk: $(sed -n 's/^[0-9]*: \([0-9]*\)Mhz \*$/\1/p' "$XTX_DEV/pp_dpm_mclk") MHz  busy: $(cat "$XTX_DEV/gpu_busy_percent")%  vddgfx: $(cat "$XTX_HW/in0_input") mV"
+    echo "power: $(( $(cat "$XTX_HW/power1_average") / 1000000 )) W, cap $(( $(cat "$XTX_HW/power1_cap") / 1000000 )) W"
+    echo "temps: edge $(( $(cat "$XTX_HW/temp1_input") / 1000 )) hotspot $(( $(cat "$XTX_HW/temp2_input") / 1000 )) mem $(( $(cat "$XTX_HW/temp3_input") / 1000 )) C; fan $(cat "$XTX_HW/fan1_input") RPM, pwm1 $(cat "$XTX_HW/pwm1")/255; fan state $(xtx_fan_state), curve p0: $(sed -n 2p "$XTX_FC")"
+    echo "profile: $(grep '\*' "$XTX_DEV/pp_power_profile_mode" | head -1 | tr -s ' ')  perf level: $(cat "$XTX_DEV/power_dpm_force_performance_level")"
+}
+
+set_cap() {   # $1 = MHz or stock
+    [ -d "$XTX_STATE_DIR" ] || mkdir -m 0755 "$XTX_STATE_DIR" || return 1
+    if [ "$1" = stock ]; then rm -f "$XTX_CAP_F"; else echo "$1" > "$XTX_CAP_F.tmp" && mv "$XTX_CAP_F.tmp" "$XTX_CAP_F"; fi
+}
+to_stock() {  # forced upload so PMFW really gets curve + stock clock, whatever it dropped before
+    set_cap stock && xtx_apply "$(xtx_fan_state)" force && return 0
+    xtx_log "STOCK FAILED: check $XTX_OD / $XTX_FC by hand; a reboot always restores stock"; return 1
+}
+verify_or_stock() {
+    local rc
+    xtx_verify 40; rc=$?
+    [ $rc = 0 ] && return 0
+    [ $rc = 4 ] && return 4
+    xtx_log "verify failed (cap $(xtx_cap)); one forced re-upload"
+    xtx_apply "$(xtx_fan_state)" force || { to_stock; return 3; }
+    sleep 15
+    xtx_verify 40; rc=$?
+    [ $rc = 0 ] && return 0
+    [ $rc = 4 ] && return 4
+    xtx_log "verify failed twice -> stock"
+    to_stock; xtx_verify 40 >&2; return 3
+}
+
+cmd=${1:-status}
+[ "$cmd" = status ] && { status; exit 0; }
+[ "$(id -u)" = 0 ] || { echo "run via sudo" >&2; exit 2; }
+[ -e "$XTX_FC" ] || { echo "overdrive off (amdgpu.ppfeaturemask)" >&2; exit 5; }
+case $cmd in
+sclk)
+    m=${2:-}
+    [[ $m =~ ^[0-9]+$ ]] && [ "$m" -ge "$XTX_FLOOR" ] && [ "$m" -le "$XTX_STOCK" ] || { echo "MHz must be $XTX_FLOOR..$XTX_STOCK" >&2; exit 2; }
+    if xtx_gpu_faulted; then echo "amdgpu fault/reset in this boot: no cap commits (report 64 §10.2); xtx-eco stock only" >&2; exit 3; fi
+    set_cap "$m" || exit 5
+    if ! xtx_apply "$(xtx_fan_state)"; then to_stock; exit 5; fi
+    b=$(cat "$XTX_DEV/gpu_busy_percent" 2>/dev/null || echo 0)
+    if [ "$b" -ge 50 ]; then verify_or_stock; rc=$?; status; exit $rc; fi
+    status; echo "not loaded now: run 'xtx-eco verify' under load" >&2; exit 0 ;;
+stock)
+    to_stock || exit 5
+    b=$(cat "$XTX_DEV/gpu_busy_percent" 2>/dev/null || echo 0)
+    if [ "$b" -ge 50 ]; then xtx_verify 40; rc=$?; status; [ $rc = 3 ] && exit 3; exit 0; fi
+    status; exit 0 ;;
+verify)
+    verify_or_stock; rc=$?; status; exit $rc ;;
+*) echo "usage: xtx-eco status|sclk MHZ|stock|verify" >&2; exit 2 ;;
+esac

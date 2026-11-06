@@ -1,0 +1,99 @@
+--- /home/jaro/qwen-opt/tools/fan.sh	2026-10-19 00:01:31.268273416 +0000
++++ fan.sh.new	2026-11-05 15:49:55.736341588 +0000
+@@ -1,49 +1,50 @@
+ #!/bin/bash
+ # RX 7900 XTX fan control (RDNA3 overdrive; needs amdgpu.ppfeaturemask=0xfff7ffff).
+-# The systemd timer xtx-fan.timer (installed once with `sudo fan.sh install`) runs `fan.sh max quiet`
+-# as root every 30 s; that call follows the GPU load for ~28 s:
++# Installed root-owned at /usr/local/sbin/xtx-fan by ~/qwen-opt/thermal/INSTALL.sh; the systemd timer xtx-fan.timer
++# runs `xtx-fan max quiet` as root every 30 s; that call follows the GPU load for ~28 s:
+ #   GPU working (busy >= 10%)        -> fan curve 100% at every temperature (~3500 RPM), immediately
+ #   GPU idle (< 10% for 20 s in a row) -> idle curve: 40% below 50 C, 100% from 50 C
+-# The curve is re-committed only on a state change, or when a GPU reset has wiped it.
+-# Manual (sudo): fan.sh max | fan.sh install | fan.sh auto (driver defaults, timer removed)
++# The curve is re-committed only on a state change, when a GPU reset has wiped it, or when the firmware shows it
++# dropped it under load (pwm1 < 230 while the fan spins, 10 s in a row) -> forced re-upload.
++# Every commit goes through xtx_apply (/usr/local/lib/xtx-od.sh): all 5 points + `s 1 <current sclk cap>` + ONE `c`,
++# so a fan commit never drops the xtx-eco clock cap and a cap commit never drops the curve (report 64 §3.2, §10.1).
++# Manual (sudo): xtx-fan max | xtx-fan install | xtx-fan auto (driver defaults incl. stock clock, timer removed)
+ set -u
+-dev=/sys/class/drm/card0/device
++. /usr/local/lib/xtx-od.sh || { echo "missing /usr/local/lib/xtx-od.sh (run INSTALL.sh)"; exit 2; }
++dev=$XTX_DEV
+ od=$dev/gpu_od/fan_ctrl
+-hw=$(echo $dev/hwmon/hwmon*)
++hw=$XTX_HW
+ busy_f=$dev/gpu_busy_percent
+ arg=${1:-max}
+ quiet=${2:-}
+-FAN=100         # % ; full speed while the GPU works (~3500 RPM; 95% -> ~3480, 44% -> ~1800)
+ BUSY=10         # % GPU busy = "card is working" (idle reads 0–2%)
+ IDLE_HOLD=20    # s below BUSY before going back to the idle curve
+-state_f=/run/xtx-fan.state
++DROP_S=10       # s of "fan spinning but pwm1 < 230 at busy >= 50%" before a forced re-upload
++state_f=$XTX_FAN_STATE_F
+ [ "$(id -u)" = 0 ] || { echo "run with sudo"; exit 1; }
+ [ -e "$od/fan_curve" ] || { echo "overdrive off: add amdgpu.ppfeaturemask=0xfff7ffff to GRUB and reboot"; exit 2; }
+ 
+-# set_curve <load|idle>. SMU13 fan modes are exclusive (curve / acoustic / target temperature) and the
+-# last committed one wins, so only the curve is ever written.
++# set_curve <load|idle> [force]. SMU13 fan modes are exclusive (curve / acoustic / target temperature) and the
++# last committed one wins, so only the curve is ever written (plus the current sclk cap, in the same commit).
+ set_curve() {
+-    local i=0 t s
+-    for t in 25 40 50 65 80; do
+-        if [ "$1" = load ]; then s=$FAN; else s=$(( t < 50 ? 40 : FAN )); fi
+-        echo "$i $t $s" > "$od/fan_curve" || return 1; i=$((i+1))
+-    done
+-    echo c > "$od/fan_curve" && echo "$1" > "$state_f"
+-    logger -t xtx-fan "fan curve: $1 (${FAN}%)"
++    xtx_apply "$1" "${2:-}" || return 1
++    echo "$1" > "$state_f"
++    logger -t xtx-fan "fan curve: $1 (${XTX_FAN}%), sclk cap $(xtx_cap)${2:+ (forced)}"
+ }
+-# expected "point 0" line for a state; a GPU reset zeroes the curve, which this detects
+-p0() { [ "$1" = load ] && echo "0: 25C ${FAN}%" || echo "0: 25C 40%"; }
++# a GPU reset resets the curve to stock in sysfs too, which this detects (point 0 is 25 C, or 26 C after a forced upload)
+ ensure() {
+     local cur; cur=$(cat "$state_f" 2>/dev/null)
+-    if [ "$cur" != "$1" ] || ! grep -q "$(p0 "$1")" "$od/fan_curve"; then set_curve "$1"; fi
++    if [ "$cur" != "$1" ] || ! grep -qE "$(xtx_p0_re "$1")" "$od/fan_curve"; then set_curve "$1"; fi
+ }
+ 
+ case "$arg" in
+ auto)
+-    echo r > "$od/fan_curve"; echo c > "$od/fan_curve"; rm -f "$state_f"
++    # full driver defaults (clock AND fan) in one upload; drops any xtx-eco cap
++    rm -f "$XTX_CAP_F"
++    ( flock -w 20 9 && echo r > "$XTX_OD" ) 9> "$XTX_LOCK"; rm -f "$state_f"
+     systemctl disable --now xtx-fan.timer 2>/dev/null
+     rm -f /etc/systemd/system/xtx-fan.service /etc/systemd/system/xtx-fan.timer; systemctl daemon-reload
+-    echo "fan: driver defaults, timer removed"; exit 0 ;;
++    echo "fan + clock: driver defaults, timer removed"; exit 0 ;;
+ install)
+     cat > /etc/systemd/system/xtx-fan.service <<EOF
+ [Unit]
+@@ -71,7 +72,7 @@
+ fi
+ 
+ # timer call: follow the load for ~28 s, sampling every second
+-low=0
++low=0; drop=0; forced=0
+ [ "$(cat $state_f 2>/dev/null)" = idle ] && low=$IDLE_HOLD
+ for _ in $(seq 28); do
+     b=$(cat "$busy_f" 2>/dev/null || echo 100)
+@@ -80,6 +81,14 @@
+         low=$((low + 1))
+         if [ "$low" -ge "$IDLE_HOLD" ]; then ensure idle; else ensure "$(cat $state_f 2>/dev/null || echo load)"; fi
+     fi
++    # firmware dropped the 100% curve although sysfs still shows it (report 64 §3.2): pwm1 is the live duty cycle
++    if [ "$(cat $state_f 2>/dev/null)" = load ] && [ "$b" -ge 50 ] && [ "$(cat $hw/fan1_input)" -gt 0 ] && [ "$(cat $hw/pwm1)" -lt 230 ]; then
++        drop=$((drop + 1))
++    else drop=0; fi
++    if [ "$drop" -ge "$DROP_S" ] && [ "$forced" = 0 ]; then   # at most one forced upload per 28 s run
++        logger -t xtx-fan "curve dropped by firmware (pwm1 $(cat $hw/pwm1), $(cat $hw/fan1_input) RPM at ${b}% busy): forced re-upload"
++        set_curve load force; drop=0; forced=1
++    fi
+     sleep 1
+ done
+ exit 0
