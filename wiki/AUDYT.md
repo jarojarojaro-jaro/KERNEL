@@ -2986,6 +2986,16 @@ Metoda: liczby wpisane ręcznie z cytowanych wierszy (`q63/logs/summary.txt`, `l
 | [[2026-11-06-ctx-262k-fit]] | 254 977, 23 367, 1193, 465,1, 78,7, 22 954 | `~/qwen-opt/queue/logs/ctx-262144.log` | OK |
 | [[2026-11-06-final-mode]] | 26,91, 118,3, 106,4, 914,9, 241, 63,5, 72,8, 24 224, 118,1, 69,5 | `~/qwen-opt/thermal/final-unc.csv`, `~/qwen-opt/queue/logs/final-qwen-262144.log` | OK |
 
+## Ingest 2026-11-06 (REACTOR przez SSH)
+
+Metoda: liczby z README monitora (pomiar harnessem `script` 200x55, 10 s, `nice`; `--stats`) i `wc -l`.
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[reactor-monitor]] | 1467, 3087 | `wc -l ~/KERNEL/monitor/*.py` | OK |
+| [[reactor-monitor]] | 1006, 8 648, 94, 0,25, 100 | `monitor/README.md:18-33` | OK |
+| [[reactor-monitor]] | 1,79–1,81, 267–280, 3,0–3,3, 2,6–2,9, 0,07–0,10, 30, 1,82–1,88, 0,95–1,0, 5,9–6,9 | `monitor/README.md:123-129` | OK |
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
