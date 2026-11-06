@@ -69,13 +69,14 @@ Audyt liczb: [[AUDYT]].
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (84)
-- [[research/_hub|research]] — Streszczenia raportów (151)
+- [[research/_hub|research]] — Streszczenia raportów (152)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (31)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
 
 - 2026-11-06 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
+- 2026-11-06 [[raport-65-vram-rezerwa-mtp|Raport 65: 1 GiB VRAM z rezerwy MTP → kontekst 262 144]]
 - 2026-11-06 [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]]
 - 2026-11-06 [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]]
 - 2026-11-06 [[2026-11-06-xtx-eco-instalacja|xtx-eco: instalacja 2026-11-06 i fabryczny OD_SCLK zmienny między bootami]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-05 [[raport-64-termika|Raport 64: czy bezpiecznie obniżyć sclk na XTX]]
 - 2026-11-05 [[raport-63-synteza|Raport 63: 44 wątki z pakietu 2026-11-03 (silniki, AMD, atencja, spekulacja, metodologia)]]
 - 2026-11-05 [[yasakani|YASAKANI: „1220 t/s” Qwen3.8-27B na RTX 5090]]
-- 2026-11-05 [[vllm-rocm-octave|vLLM `ROCM_OCTAVE`: natywny KV 3/4-bit na gfx1100]]
 
-Razem 686 notatek. Wygenerowano 2026-11-06 przez `tools/wiki.py index`.
+Razem 687 notatek. Wygenerowano 2026-11-06 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

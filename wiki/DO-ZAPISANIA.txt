@@ -3,3 +3,4 @@
 # (+ REKORDY przy nowym rekordzie; to, co nie działa: wynik negatywny + usunięcie kodu/flag z produkcji).
 # Po zapisaniu usuń linię, lint 0 błędów, commit + push.
 2026-11-06 usunąć z topki martwy kod: cap LDS FA (57204db1e, no-op na ROCm 10.0 pre4) przy najbliższym buildzie; wynik negatywny już w 2026-11-05-q63-topka
+2026-11-06 sprawdzić rezerwę MTP w upstream llama.cpp na CUDA (Enigma, 3090/4060 Ti na Vast, -lv 4 sched_reserve): jeśli ~0,8–1 GiB, port lean reserve do silnika Enigmy (raport 65 §5)

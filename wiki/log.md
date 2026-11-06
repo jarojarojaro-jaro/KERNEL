@@ -215,3 +215,6 @@ Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzuca
 
 ## [2026-11-06] ingest | FINAL MODE (eco 2200 + 262k)
 [[2026-11-06-final-mode]] i sekcja FINAL MODE w [[REKORDY]]: czat 262 144, −13,9% W, greedy −1,8%, md5 identyczne; UD-Q4_K_XL 262k mieści się z zapasem 336 MiB (niewdrożone).
+
+## [2026-11-06] ingest | Raport 65: VRAM z rezerwy MTP
+[[raport-65-vram-rezerwa-mtp]]: −1,0 GiB → kontekst 262 144; akcja na CUDA/Enigmę w DO-ZAPISANIA.
