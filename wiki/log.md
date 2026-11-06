@@ -200,3 +200,6 @@ Nowe: [[2026-11-05-q63-topka]], [[lekcja-rezerwa-mtp-kopia-f16]], [[enigma-uczci
 
 ## [2026-11-06] meta | Wymuszenie zapisu wyników
 Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzucamy. `DO-ZAPISANIA.txt`: `run-jobs.sh` dopisuje każdą zakończoną kolejkę GPU, a `wiki.py lint` zgłasza każdą niezapisaną linię jako błąd, dopóki wyniki nie trafią do notatek. Reguła w `~/AGENTS.md`.
+
+## [2026-11-06] ingest | Sweep eco (limit sclk)
+[[2026-11-06-eco-sweep-sclk]]: 2200 MHz −1,9% pisania / −10,5% W; 2000 MHz −4,1% / −16,2% W / hotspot −12 °C; 1800 −7,1% / −20,9% W; md5 identyczne. Seria 1600 przerwana przez użytkownika.

@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (41)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (61)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (62)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (108)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -79,6 +79,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-06 [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]]
 - 2026-11-06 [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]]
 - 2026-11-06 [[2026-11-06-xtx-eco-instalacja|xtx-eco: instalacja 2026-11-06 i fabryczny OD_SCLK zmienny między bootami]]
+- 2026-11-06 [[2026-11-06-eco-sweep-sclk|Sweep eco: limit taktowania rdzenia XTX (2026-11-06)]]
 - 2026-11-05 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
 - 2026-11-05 [[init-user-pages-failed|`amdgpu: init_user_pages: Failed to get user pages: -1` przy starcie serwera]]
 - 2026-11-05 [[raport-64-termika|Raport 64: czy bezpiecznie obniżyć sclk na XTX]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-05 [[strata|Strata (Niko1221/Strata)]]
 - 2026-11-05 [[rdna-fast|RDNA-FAST (serrynaimo): fork llama.cpp/ROCmFPX dla RX 7900 XT]]
 - 2026-11-05 [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]]
-- 2026-11-05 [[qwen-qsa-llama-cpp|Qwen-QSA-llama.cpp (pentaCoxian): rzadka atencja QSA dla Qwen3.8-27B]]
 
-Razem 681 notatek. Wygenerowano 2026-11-06 przez `tools/wiki.py index`.
+Razem 682 notatek. Wygenerowano 2026-11-06 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

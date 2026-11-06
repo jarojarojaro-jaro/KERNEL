@@ -2988,3 +2988,4 @@ Metoda: liczby wpisane ręcznie z cytowanych wierszy (`q63/logs/summary.txt`, `l
 - [[KONWENCJE]]
 - [[wiki-py]]
 - [[log]]
+| [[2026-11-06-eco-sweep-sclk]] | 123,6, 121,3, 118,5, 114,8, 251, 235, 222, 280,5, 68,9, 61,5, 56,7, 54,6 | `~/qwen-opt/thermal/run-20261106T1221/results.csv` | OK (średnie z 2 ramion: stock, 2000) |
