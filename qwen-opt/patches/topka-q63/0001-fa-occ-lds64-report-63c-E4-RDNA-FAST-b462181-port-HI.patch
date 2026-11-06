@@ -1,0 +1,95 @@
+From 57204db1e9c6575b397016dce6d01be3a80da1bf Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 5 Nov 2026 14:44:42 +0000
+Subject: [PATCH 1/3] fa-occ-lds64 (report 63c E4, RDNA-FAST b462181 port): HIP
+ launch_fattn caps the occupancy query's LDS-bound block count at
+ sharedMemPerBlock (64 KB) per CU. The ROCm 10 runtime reports a whole WGP's
+ 128 KB as maxSharedMemoryPerMultiProcessor while multiProcessorCount counts
+ CUs, so hipOccupancyMaxActiveBlocksPerMultiprocessor returns up to 2-3x the
+ blocks of an LDS-heavy FA kernel and parallel_blocks / the stream-k block
+ count leave the shapes the heuristics were tuned on (RDNA-FAST, RX 7900 XT:
+ D=256 GQA 6 attention 13-15% slower, 512-token D=128 prompts 29%). No-op
+ where both figures are 64 KB. GGML_HIP_FA_OCC_RUNTIME=1 keeps the runtime
+ count, GGML_HIP_FA_OCC_LOG=1 logs runtime vs capped once per kernel/LDS size.
+ Kernel numerics unchanged; the split points of stream-k / parallel_blocks can
+ move (prefill FA only, KVQ decode/verify untouched). Unmeasured on the XTX
+ (probe + ABBA in ~/qwen-opt/q63/topka-q63.jobs)
+
+---
+ ggml/src/ggml-cuda/fattn-common.cuh | 53 +++++++++++++++++++++++++++++
+ 1 file changed, 53 insertions(+)
+
+diff --git a/ggml/src/ggml-cuda/fattn-common.cuh b/ggml/src/ggml-cuda/fattn-common.cuh
+index 551d864e9..001e583be 100644
+--- a/ggml/src/ggml-cuda/fattn-common.cuh
++++ b/ggml/src/ggml-cuda/fattn-common.cuh
+@@ -987,6 +987,54 @@ static __global__ void flash_attn_combine_results(
+     dst[tid] = flash_attn_combine_results_value<D>(VKQ_parts, VKQ_meta, meta, parallel_blocks, j_dst_unrolled, tid);
+ }
+ 
++#if defined(GGML_USE_HIP)
++// [GGML_HIP_FA_OCC_LDS64] (RDNA-FAST b462181, TAG_FATTN_OCC_LDS64; report 63c E4) The ROCm 10 HIP runtime reports the
++// LDS of a whole WGP (128 KB on RDNA3/RDNA4) as maxSharedMemoryPerMultiProcessor while multiProcessorCount still counts
++// CUs (96 on the 7900 XTX = 48 WGPs); ROCm 7.x and the driver runtime report the 64 KB a workgroup can address. The
++// occupancy query then returns up to 2-3x the blocks of an LDS-heavy kernel, and the split heuristics below
++// (parallel_blocks, stream-k block count), tuned on the 64 KB figure, pick other launch shapes (RX 7900 XT: D=256 GQA 6
++// decode attention +13-15% slower, 512-token D=128 prompts +29%). Cap the LDS-bound count at sharedMemPerBlock (64 KB)
++// per CU, i.e. 128 KB per WGP shared by its 2 CUs. A no-op where both figures are 64 KB (older runtimes, CDNA).
++// GGML_HIP_FA_OCC_RUNTIME=1 keeps the runtime's count; GGML_HIP_FA_OCC_LOG=1 logs both counts once per kernel/LDS size.
++static int ggml_hip_fattn_blocks_per_sm(const void * kernel, const int nthreads, const size_t nbytes_shared, const int max_blocks_per_sm) {
++    static const bool keep_runtime = [] { const char * e = getenv("GGML_HIP_FA_OCC_RUNTIME"); return e && atoi(e) != 0; }();
++    static const bool log_occ      = [] { const char * e = getenv("GGML_HIP_FA_OCC_LOG");     return e && atoi(e) != 0; }();
++    if (keep_runtime && !log_occ) {
++        return max_blocks_per_sm;
++    }
++
++    static std::mutex                                                mutex;
++    static std::unordered_map<const void *, size_t>                  static_lds; // kernel -> static LDS bytes
++    static std::unordered_map<const void *, std::unordered_map<size_t, int>> logged;
++
++    const size_t smpb = ggml_cuda_info().devices[ggml_cuda_get_device()].smpb;
++
++    size_t lds = 0;
++    bool   log_now = false;
++    {
++        std::lock_guard<std::mutex> lock(mutex);
++        auto it = static_lds.find(kernel);
++        if (it == static_lds.end()) {
++            hipFuncAttributes attr = {};
++            CUDA_CHECK(hipFuncGetAttributes(&attr, kernel));
++            it = static_lds.emplace(kernel, attr.sharedSizeBytes).first;
++        }
++        lds = it->second + nbytes_shared;
++        if (log_occ) {
++            log_now = logged[kernel].emplace(nbytes_shared, 1).second;
++        }
++    }
++
++    const int capped = lds == 0 ? max_blocks_per_sm : std::max(1, std::min(max_blocks_per_sm, (int) (smpb / lds)));
++    if (log_now) {
++        GGML_LOG_INFO("%s: FA kernel %p, %d threads, LDS %zu B (static %zu): runtime %d blocks/CU, 64 KB cap %d (smpb %zu)%s\n",
++                __func__, kernel, nthreads, lds, lds - nbytes_shared, max_blocks_per_sm, capped, smpb,
++                keep_runtime ? ", GGML_HIP_FA_OCC_RUNTIME=1: runtime count kept" : "");
++    }
++    return keep_runtime ? max_blocks_per_sm : capped;
++}
++#endif // defined(GGML_USE_HIP)
++
+ template <int DV, int ncols1, int ncols2>
+ void launch_fattn(
+     ggml_backend_cuda_context & ctx, ggml_tensor * dst, fattn_kernel_t fattn_kernel, const int nwarps, const size_t nbytes_shared,
+@@ -1146,6 +1194,11 @@ void launch_fattn(
+     int max_blocks_per_sm = 1; // Max. number of active blocks limited by occupancy.
+     CUDA_CHECK(cudaOccupancyMaxActiveBlocksPerMultiprocessor(&max_blocks_per_sm, fattn_kernel, block_dim.x * block_dim.y * block_dim.z, nbytes_shared));
+     GGML_ASSERT(max_blocks_per_sm > 0);
++#if defined(GGML_USE_HIP)
++    // [GGML_HIP_FA_OCC_LDS64] cap the LDS-bound block count at 64 KB per CU (see ggml_hip_fattn_blocks_per_sm)
++    max_blocks_per_sm = ggml_hip_fattn_blocks_per_sm((const void *) fattn_kernel, block_dim.x*block_dim.y*block_dim.z,
++            nbytes_shared, max_blocks_per_sm);
++#endif // defined(GGML_USE_HIP)
+     int parallel_blocks = max_blocks_per_sm;
+ 
+     const int64_t n_kv = use_sparse ? n_kv_max : K->ne[1];
+-- 
+2.43.0
+

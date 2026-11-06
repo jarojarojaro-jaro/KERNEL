@@ -1,0 +1,461 @@
+From c0576e3e8ba0bb994676bd02894dd2a23609ccd9 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 5 Nov 2026 14:44:42 +0000
+Subject: [PATCH 3/3] =?UTF-8?q?upstream=20MTP=20state/rollback=20fixes=20(?=
+ =?UTF-8?q?report=2063c=20=C2=A75,=20E8):=20#30141=20#31350=20#31368=20#30?=
+ =?UTF-8?q?574=20ported=20to=20topka?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- #30141 spec: draft-mtp get_state/set_state of the boundary hidden row (pending_h), so context checkpoints restore it
+  instead of leaving a stale row of whatever ran last
+- #31350 server: a partial acceptance of a draft longer than n_rs_seq restores its checkpoint (n_draft > n_rs_seq,
+  the same condition that creates it) instead of only when n_rollback > n_rs_seq. No-op in production
+  (n_rs_seq = max(draft n_max, lookup n_max) >= every draft)
+- #31368 memory: refuse rollbacks past the snapshots of the last ubatch. Recurrent cells record rs_max (n - 1 for a
+  ubatch of n <= n_rs_seq + 1 tokens, else 0); topka applies it to the rollbacks that read snapshot planes only (no
+  rs_lag, or no rs_conv_lag); the lagged states stay bounded by rs_pend_n (the replay covers long ubatches). DSV4 cache
+  as upstream (update_rs_for_ubatches)
+- #30574 server: the slot file ends with the live draft state (full draft context + speculative state, "SDFT"
+  appendix after the checkpoints); a draft state that does not fit is dropped, older files keep working. Upstream:
+  Qwen MTP acceptance after restore 37% -> 49%. Test test_slot_restore_draft_state ported
+---
+ common/speculative.cpp                    | 26 ++++++
+ src/llama-kv-cache-dsv4.cpp               | 32 +++++---
+ src/llama-kv-cache-dsv4.h                 |  6 +-
+ src/llama-memory-recurrent.cpp            |  8 +-
+ src/llama-memory-recurrent.h              |  6 ++
+ tools/server/server-context.cpp           | 97 ++++++++++++++++++++++-
+ tools/server/tests/unit/test_slot_save.py | 50 ++++++++++++
+ 7 files changed, 210 insertions(+), 15 deletions(-)
+
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index e92136f7a..8ea4f091b 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -2379,6 +2379,32 @@ struct common_speculative_impl_draft_mtp : public common_speculative_impl {
+         const size_t row_bytes = (size_t) n_embd * sizeof(float);
+         std::memcpy(pending_h[seq_id].data(), verify_h[seq_id].data() + (size_t) i_h * n_embd, row_bytes);
+     }
++
++    // upstream #30141: the boundary hidden row (pending_h) travels with the context checkpoints and the slot file, so
++    // a restored sequence pairs its next token with the target hidden state of the restored position instead of a
++    // stale row of whatever ran last; the verification rows are rebuilt by the next process()
++    bool get_state(llama_seq_id seq_id, std::vector<uint8_t> & data) const override {
++        if (seq_id < 0 || seq_id >= (llama_seq_id) n_seq) {
++            return false;
++        }
++
++        const size_t row_bytes = (size_t) n_embd * sizeof(float);
++        data.resize(row_bytes);
++        std::memcpy(data.data(), pending_h[seq_id].data(), row_bytes);
++        return true;
++    }
++
++    void set_state(llama_seq_id seq_id, const std::vector<uint8_t> & data) override {
++        if (seq_id < 0 || seq_id >= (llama_seq_id) n_seq) {
++            return;
++        }
++
++        const size_t row_bytes = (size_t) n_embd * sizeof(float);
++        if (data.size() != row_bytes) {
++            return;
++        }
++        std::memcpy(pending_h[seq_id].data(), data.data(), row_bytes);
++    }
+ };
+ 
+ // state of self-speculation (simple implementation, not ngram-map)
+diff --git a/src/llama-kv-cache-dsv4.cpp b/src/llama-kv-cache-dsv4.cpp
+index 5dd0b4591..7a1bcbed5 100644
+--- a/src/llama-kv-cache-dsv4.cpp
++++ b/src/llama-kv-cache-dsv4.cpp
+@@ -1231,7 +1231,8 @@ llama_kv_cache_dsv4::llama_kv_cache_dsv4(
+     hparams_lid(model.hparams),
+     n_seq_max(n_seq_max),
+     n_rs_seq(n_rs_seq),
+-    rs_idx(n_seq_max, 0) {
++    rs_idx(n_seq_max, 0),
++    rs_max(n_seq_max, 0) {
+ 
+     const layer_filter_cb filter_raw = [&](int32_t il) {
+         if (filter && !filter(il)) {
+@@ -1481,12 +1482,8 @@ bool llama_kv_cache_dsv4::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos p1
+             return res;
+         }
+ 
+-        if (n_rs_seq == 0) {
+-            return false;
+-        }
+-
+         const llama_pos rollback = pos_max - (p0 - 1);
+-        if (rollback < 1 || rollback > (llama_pos) n_rs_seq) {
++        if (rollback < 1 || rollback > (llama_pos) rs_max[seq_id]) {
+             return false;
+         }
+ 
+@@ -1526,6 +1523,7 @@ void llama_kv_cache_dsv4::seq_cp(llama_seq_id seq_id_src, llama_seq_id seq_id_ds
+ 
+     if (seq_id_src != seq_id_dst) {
+         rs_idx[seq_id_dst] = 0;
++        rs_max[seq_id_dst] = 0;
+     }
+ }
+ 
+@@ -1670,8 +1668,10 @@ void llama_kv_cache_dsv4::state_read(llama_io_read_i & io, llama_seq_id seq_id,
+     if (seq_id >= 0) {
+         GGML_ASSERT((uint32_t) seq_id < n_seq_max);
+         rs_idx[seq_id] = 0;
++        rs_max[seq_id] = 0;
+     } else {
+         std::fill(rs_idx.begin(), rs_idx.end(), 0);
++        std::fill(rs_max.begin(), rs_max.end(), 0);
+     }
+ }
+ 
+@@ -1711,20 +1711,32 @@ const std::vector<uint32_t> & llama_kv_cache_dsv4::get_rs_idx() const {
+     return rs_idx;
+ }
+ 
+-void llama_kv_cache_dsv4::reset_rs_idx_for_ubatches(const std::vector<llama_ubatch> & ubatches) {
++void llama_kv_cache_dsv4::update_rs_for_ubatches(const std::vector<llama_ubatch> & ubatches) {
+     if (n_rs_seq == 0) {
+         return;
+     }
+ 
++    std::vector<uint32_t> n_seq_tokens(n_seq_max);
++
+     for (const llama_ubatch & ubatch : ubatches) {
++        std::fill(n_seq_tokens.begin(), n_seq_tokens.end(), 0);
++
+         for (uint32_t i = 0; i < ubatch.n_tokens; ++i) {
+             for (int32_t s = 0; s < ubatch.n_seq_id[i]; ++s) {
+                 const llama_seq_id seq_id = ubatch.seq_id[i][s];
+                 if (seq_id >= 0 && (uint32_t) seq_id < n_seq_max) {
+-                    rs_idx[seq_id] = 0;
++                    n_seq_tokens[seq_id]++;
+                 }
+             }
+         }
++
++        // the ubatch consumes any pending rollback and leaves snapshots for its own tokens only
++        for (uint32_t seq_id = 0; seq_id < n_seq_max; ++seq_id) {
++            if (n_seq_tokens[seq_id] > 0) {
++                rs_idx[seq_id] = 0;
++                rs_max[seq_id] = std::min(n_seq_tokens[seq_id], n_rs_seq);
++            }
++        }
+     }
+ }
+ 
+@@ -1758,8 +1770,10 @@ void llama_kv_cache_dsv4::clear_compressed(llama_seq_id seq_id, bool data) {
+ 
+     if (seq_id >= 0) {
+         rs_idx[seq_id] = 0;
++        rs_max[seq_id] = 0;
+     } else {
+         std::fill(rs_idx.begin(), rs_idx.end(), 0);
++        std::fill(rs_max.begin(), rs_max.end(), 0);
+     }
+ }
+ 
+@@ -2086,7 +2100,7 @@ llama_kv_cache_dsv4_context::llama_kv_cache_dsv4_context(
+     hca_state(kv->get_hca_state()),
+     lid_state(kv->get_lid_state()),
+     status(ctx_raw->get_status()) {
+-    kv->reset_rs_idx_for_ubatches(this->ubatches);
++    kv->update_rs_for_ubatches(this->ubatches);
+ }
+ 
+ llama_kv_cache_dsv4_context::~llama_kv_cache_dsv4_context() = default;
+diff --git a/src/llama-kv-cache-dsv4.h b/src/llama-kv-cache-dsv4.h
+index ce39867c0..6acc5b864 100644
+--- a/src/llama-kv-cache-dsv4.h
++++ b/src/llama-kv-cache-dsv4.h
+@@ -150,7 +150,7 @@ public:
+ 
+     uint32_t get_n_rs_seq() const;
+     const std::vector<uint32_t> & get_rs_idx() const;
+-    void reset_rs_idx_for_ubatches(const std::vector<llama_ubatch> & ubatches);
++    void update_rs_for_ubatches(const std::vector<llama_ubatch> & ubatches);
+ 
+ private:
+     llama_hparams hparams_raw;
+@@ -163,6 +163,10 @@ private:
+ 
+     std::vector<uint32_t> rs_idx;
+ 
++    // [n_seq_max] largest rollback whose snapshot the last ubatch of the seq wrote: snapshot d is
++    // exact for d <= n tokens of the seq in that ubatch (d == n is the state before the ubatch)
++    std::vector<uint32_t> rs_max;
++
+     std::unique_ptr<llama_kv_cache_iswa> kv_raw;
+     std::unique_ptr<llama_kv_cache>      kv_csa;
+     std::unique_ptr<llama_kv_cache>      kv_hca;
+diff --git a/src/llama-memory-recurrent.cpp b/src/llama-memory-recurrent.cpp
+index 5e1fae611..2a2aea410 100644
+--- a/src/llama-memory-recurrent.cpp
++++ b/src/llama-memory-recurrent.cpp
+@@ -254,6 +254,7 @@ void llama_memory_recurrent::clear(bool data) {
+         cells[i].seq_id.clear();
+         cells[i].src = -1;
+         cells[i].tail = -1;
++        cells[i].rs_max = 0;
+     }
+ 
+     head = 0;
+@@ -304,7 +305,7 @@ bool llama_memory_recurrent::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos
+         if (tail_id >= 0) {
+             auto & cell = cells[tail_id];
+ 
+-            // partial rollback via per-token snapshot index (bounded by n_rs_seq)
++            // partial rollback via per-token snapshot index (bounded by the snapshots of the last ubatch, #31368)
+             if (0 < p0 && p0 <= cell.pos && p1 > cell.pos) {
+                 // a cell shared by several sequences cannot move back for only one of them
+                 if (cell.seq_id.size() > 1) {
+@@ -321,7 +322,9 @@ bool llama_memory_recurrent::seq_rm(llama_seq_id seq_id, llama_pos p0, llama_pos
+                 // the lagged delta-net state replays only the rows that are still pending
+                 const uint32_t row = cell.src >= 0 ? (uint32_t) cell.src : (uint32_t) tail_id;
+                 const bool lag_ok = !rs_lag || rollback <= (llama_pos) rs_pend_n[row];
+-                if (!pending && lag_ok && rollback >= 1 && rollback <= (llama_pos) n_rs_seq) {
++                // a rollback that reads a snapshot plane needs the last ubatch to have written it (upstream #31368)
++                const bool snap_ok = rs_conv_lag || rollback <= (llama_pos) cell.rs_max;
++                if (!pending && lag_ok && snap_ok && rollback >= 1 && rollback <= (llama_pos) n_rs_seq) {
+                     if (!rs_conv_lag) {
+                         set_rs_idx(seq_id, (uint32_t) rollback);
+                     }
+@@ -794,6 +797,7 @@ bool llama_memory_recurrent::find_slot(const llama_ubatch & ubatch) {
+                 __func__, last_pos, cell.pos, ubatch.seq_id[i][0], n_seq_tokens);
+         }
+         cell.pos = last_pos;
++        cell.rs_max = n_seq_tokens <= n_rs_seq + 1 ? n_seq_tokens - 1 : 0;
+         cell.seq_id.clear();
+         for (int32_t j = 0; j < ubatch.n_seq_id[i]; ++j) {
+             const llama_seq_id seq_id = ubatch.seq_id[i][j];
+diff --git a/src/llama-memory-recurrent.h b/src/llama-memory-recurrent.h
+index bb7bcbc0f..1a38111c8 100644
+--- a/src/llama-memory-recurrent.h
++++ b/src/llama-memory-recurrent.h
+@@ -122,6 +122,12 @@ public:
+         int32_t   src0 = -1; // like src, but only used when setting the inputs (allowing to copy once)
+         int32_t   tail = -1;
+ 
++        // upstream #31368: largest rollback whose snapshot the last ubatch guarantees: a ubatch of n <= n_rs_seq + 1
++        // tokens writes snapshots 0..n-1, a longer one only guarantees the final state. Bounds the rollbacks that read
++        // snapshot planes (the delta-net state without rs_lag, the conv history without rs_conv_lag); the lagged
++        // states are bounded by their pending rows instead (rs_pend_n)
++        uint32_t rs_max = 0;
++
+         std::set<llama_seq_id> seq_id;
+ 
+         bool has_seq_id(const llama_seq_id & id) const {
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index 3b9eefdd1..8577bc7a4 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -2864,6 +2864,88 @@ private:
+         return n_read;
+     }
+ 
++    // upstream #30574: the live draft state follows the checkpoints, the full draft context (the MTP layer's KV) and
++    // the speculative state (the MTP boundary hidden row, #30141); the llama state payload holds the target context
++    // only, so without it a restored slot drafted with an empty or stale draft KV until the cache refilled
++    static constexpr uint32_t SLOT_DRAFT_MAGIC   = 0x54464453; // "SDFT"
++    static constexpr uint32_t SLOT_DRAFT_VERSION = 1;
++
++    // returns false if the draft state could not be written completely
++    bool save_slot_draft(const std::string & filepath, const server_slot & slot, size_t & n_written) const {
++        n_written = 0;
++        std::vector<uint8_t> data_dft;
++        std::vector<uint8_t> data_spec;
++        if (ctx_dft != nullptr) {
++            data_dft.resize(llama_state_seq_get_size_ext(ctx_dft, slot.id, LLAMA_STATE_SEQ_FLAGS_NONE));
++            llama_state_seq_get_data_ext(ctx_dft, data_dft.data(), data_dft.size(), slot.id, LLAMA_STATE_SEQ_FLAGS_NONE);
++        }
++        common_speculative_get_state(spec.get(), slot.id, data_spec);
++        if (data_dft.empty() && data_spec.empty()) {
++            return true;
++        }
++        std::ofstream ofs(std::filesystem::u8path(filepath), std::ios::binary | std::ios::app);
++        if (!ofs) {
++            SLT_WRN(slot, "failed to append the draft state to '%s'\n", filepath.c_str());
++            return false;
++        }
++        const uint32_t magic   = SLOT_DRAFT_MAGIC;
++        const uint32_t version = SLOT_DRAFT_VERSION;
++        ckpt_write(ofs, &magic,   sizeof(magic),   n_written);
++        ckpt_write(ofs, &version, sizeof(version), n_written);
++        ckpt_write_buf(ofs, data_dft,  n_written);
++        ckpt_write_buf(ofs, data_spec, n_written);
++        ofs.flush();
++        if (!ofs) {
++            SLT_WRN(slot, "failed to append the draft state to '%s' - the draft state is incomplete\n", filepath.c_str());
++            return false;
++        }
++        SLT_INF(slot, "appended the draft state (%.3f MiB) to '%s'\n", (float) n_written / 1024 / 1024, filepath.c_str());
++        return true;
++    }
++
++    // returns the number of bytes consumed, 0 if there is no usable draft state
++    // the draft starts empty unless the file holds a draft state that fits the draft context
++    size_t load_slot_draft(const std::string & filepath, size_t offset, server_slot & slot) const {
++        if (ctx_dft != nullptr) {
++            llama_memory_seq_rm(llama_get_memory(ctx_dft), slot.id, -1, -1);
++        }
++        std::ifstream ifs(std::filesystem::u8path(filepath), std::ios::binary | std::ios::ate);
++        const size_t file_size = ifs ? (size_t) ifs.tellg() : 0;
++        if (!ifs || file_size < offset || !ifs.seekg(offset)) {
++            return 0;
++        }
++        const size_t n_avail = file_size - offset;
++        size_t n_read = 0;
++        uint32_t magic   = 0;
++        uint32_t version = 0;
++        if (!ckpt_read(ifs, &magic, sizeof(magic), n_read) || magic != SLOT_DRAFT_MAGIC) {
++            return 0;
++        }
++        std::vector<uint8_t> data_dft;
++        std::vector<uint8_t> data_spec;
++        if (!ckpt_read(ifs, &version, sizeof(version), n_read) || version != SLOT_DRAFT_VERSION ||
++            !ckpt_read_buf(ifs, data_dft,  n_avail, n_read) ||
++            !ckpt_read_buf(ifs, data_spec, n_avail, n_read)) {
++            SLT_WRN(slot, "invalid draft state in '%s' - ignored\n", filepath.c_str());
++            return 0;
++        }
++        if (!data_dft.empty()) {
++            if (ctx_dft == nullptr ||
++                llama_state_seq_set_data_ext(ctx_dft, data_dft.data(), data_dft.size(), slot.id, LLAMA_STATE_SEQ_FLAGS_NONE) != data_dft.size()) {
++                if (ctx_dft != nullptr) {
++                    llama_memory_seq_rm(llama_get_memory(ctx_dft), slot.id, -1, -1);
++                }
++                SLT_WRN(slot, "draft state in '%s' does not match the draft context - dropped\n", filepath.c_str());
++                return n_read;
++            }
++        }
++        if (!data_spec.empty()) {
++            common_speculative_set_state(spec.get(), slot.id, data_spec);
++        }
++        SLT_INF(slot, "restored the draft state (%.3f MiB) from '%s'\n", (float) n_read / 1024 / 1024, filepath.c_str());
++        return n_read;
++    }
++
+     // returns false to decline the task, it is offered again after the decode is done
+     bool process_single_task(server_task && task, bool is_yielding) {
+         // while yielding, an encode / decode is running and only reading the server state is safe
+@@ -3079,6 +3161,12 @@ private:
+                         break;
+                     }
+ 
++                    size_t nwrite_dft = 0;
++                    if (!save_slot_draft(filepath, *slot, nwrite_dft)) {
++                        send_error(task, "Unable to save slot: incomplete draft state", ERROR_TYPE_SERVER);
++                        break;
++                    }
++
+                     const int64_t t_end = ggml_time_us();
+                     const double t_save_ms = (t_end - t_start) / 1000.0;
+ 
+@@ -3088,7 +3176,7 @@ private:
+                     res->filename = filename;
+                     res->is_save  = true;
+                     res->n_tokens = slot->prompt.tokens.size();
+-                    res->n_bytes  = nwrite + nwrite_ckpt;
++                    res->n_bytes  = nwrite + nwrite_ckpt + nwrite_dft;
+                     res->t_ms     = t_save_ms;
+                     queue_results.send(std::move(res));
+                 } break;
+@@ -3146,6 +3234,7 @@ private:
+ 
+                     // nread is the end offset of the llama state payload within the file
+                     const size_t nread_ckpt = load_slot_checkpoints(filepath, nread, *slot);
++                    const size_t nread_dft  = load_slot_draft(filepath, nread + nread_ckpt, *slot);
+ 
+                     const int64_t t_end = ggml_time_us();
+                     const double t_restore_ms = (t_end - t_start) / 1000.0;
+@@ -3156,7 +3245,7 @@ private:
+                     res->filename = filename;
+                     res->is_save  = false;
+                     res->n_tokens = slot->prompt.tokens.size();
+-                    res->n_bytes  = nread + nread_ckpt;
++                    res->n_bytes  = nread + nread_ckpt + nread_dft;
+                     res->t_ms     = t_restore_ms;
+                     queue_results.send(std::move(res));
+                 } break;
+@@ -4641,9 +4730,11 @@ private:
+ 
+                 const uint32_t n_rollback = slot.spec_draft.size() + 1 - accepted.size();
+ 
++                // upstream #31350: the recurrent snapshots are only guaranteed for batches of up to n_rs_seq + 1 tokens,
++                // so a longer draft uses its checkpoint (created for exactly these drafts, see may_restore above)
+                 const bool use_ckpt_tgt =
+                     ctx_tgt_seq_rm_type == COMMON_CONTEXT_SEQ_RM_TYPE_FULL ||
+-                    (ctx_tgt_seq_rm_type == COMMON_CONTEXT_SEQ_RM_TYPE_RS && n_rollback > llama_n_rs_seq(ctx_tgt));
++                    (ctx_tgt_seq_rm_type == COMMON_CONTEXT_SEQ_RM_TYPE_RS && n_draft > llama_n_rs_seq(ctx_tgt));
+ 
+                 // check for partial draft acceptance
+                 if (n_rollback > 0) {
+diff --git a/tools/server/tests/unit/test_slot_save.py b/tools/server/tests/unit/test_slot_save.py
+index 33bcede93..0682db6cc 100644
+--- a/tools/server/tests/unit/test_slot_save.py
++++ b/tools/server/tests/unit/test_slot_save.py
+@@ -132,6 +132,56 @@ def test_slot_restore_legacy_token_list():
+     assert res.body["timings"]["prompt_n"] == 6  # only the different part is processed
+ 
+ 
++# the slot file carries the live draft state: a restored slot drafts like a slot that was never saved (upstream #30574)
++def test_slot_restore_draft_state():
++    global server
++    server.model_draft_hf_repo = server.model_hf_repo
++    server.spec_type = "draft-simple"
++    server.start()
++
++    prompt = "What is the capital of France?"
++    turn = {}
++    for id_slot in [0, 1]:
++        res = server.make_request("POST", "/completion", data={
++            "prompt": prompt,
++            "n_predict": 16,
++            "id_slot": id_slot,
++            "cache_prompt": True,
++        })
++        assert res.status_code == 200
++        turn[id_slot] = res.body["content"]
++    assert turn[0] == turn[1]
++
++    res = server.make_request("POST", "/slots/0?action=save", data={
++        "filename": "draft_slot0.bin",
++    })
++    assert res.status_code == 200
++
++    res = server.make_request("POST", "/slots/0?action=erase")
++    assert res.status_code == 200
++
++    res = server.make_request("POST", "/slots/0?action=restore", data={
++        "filename": "draft_slot0.bin",
++    })
++    assert res.status_code == 200
++
++    timings = {}
++    for id_slot in [0, 1]:
++        res = server.make_request("POST", "/completion", data={
++            "prompt": prompt + turn[id_slot] + " And",
++            "n_predict": 32,
++            "id_slot": id_slot,
++            "cache_prompt": True,
++        })
++        assert res.status_code == 200
++        timings[id_slot] = res.body["timings"]
++
++    assert timings[0]["prompt_n"] == timings[1]["prompt_n"]
++    assert timings[0]["draft_n_accepted"] > 0
++    assert timings[0]["draft_n"]          == timings[1]["draft_n"]
++    assert timings[0]["draft_n_accepted"] == timings[1]["draft_n_accepted"]
++
++
+ 
+ def test_slot_erase():
+     global server
+-- 
+2.43.0
+

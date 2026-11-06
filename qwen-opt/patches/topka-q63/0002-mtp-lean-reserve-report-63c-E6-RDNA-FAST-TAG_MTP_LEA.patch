@@ -1,0 +1,133 @@
+From 9044db0274f5f3f415926c5fcf096f3dfb40edc1 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Thu, 5 Nov 2026 14:44:42 +0000
+Subject: [PATCH 2/3] mtp-lean-reserve (report 63c E6, RDNA-FAST
+ TAG_MTP_LEAN_RESERVE port): the single-block Qwen3.5/3.8 MTP draft context
+ reserves the shapes it runs on its scheduler, the K/V-only catch-up (n_ubatch
+ tokens, no outputs: graph_mtp's no-attention path) and the one-token draft
+ step, instead of the stock n_ubatch-tokens-with-one-output worst case: an
+ n_ubatch x n_ctx f16 mask plus, with -ctkd/-ctvd q4_0, the f16 copy of the
+ whole draft KV for the MMA FA kernel (2 x n_ctx x 1024 x 2 B), a graph that
+ never runs. Estimate at ctx 204800: ub 512 ~1.07 GiB -> ~0.08 GiB VRAM (+
+ ~0.2 GiB pinned host), ub 2048 ~1.9 -> ~0.3 GiB (log lines sched_reserve
+ compute buffer size, -lv 4). The draft chain keeps its own scheduler
+ (LLAMA_MTP_CHAIN_SCHED). A larger ubatch with outputs still runs (the
+ scheduler grows the buffer) and is logged once. LLAMA_MTP_LEAN_RESERVE=0
+ restores the stock reserve. Allocation only, output identical
+
+---
+ src/llama-context.cpp | 39 ++++++++++++++++++++++++++++++++++++---
+ src/llama-context.h   |  9 +++++++++
+ 2 files changed, 45 insertions(+), 3 deletions(-)
+
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index a7e68a9a3..15546b050 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -305,6 +305,26 @@ llama_context::llama_context(
+         chain_sched = LLAMA_MTP_CHAIN_SCHED ? (atoi(LLAMA_MTP_CHAIN_SCHED) != 0) : chain_sched;
+     }
+ 
++    {
++        // [LLAMA_MTP_LEAN_RESERVE] (RDNA-FAST TAG_MTP_LEAN_RESERVE; report 63c E6) The draft context of a single-block
++        // Qwen3.5/3.8 MTP head runs two shapes on this scheduler: the catch-up over the prompt and verify batches,
++        // which has no output rows and takes the K/V-only graph of graph_mtp (no attention, no FFN, no LM head), and a
++        // draft step of one token per drafting sequence (the draft chain has its own scheduler, LLAMA_MTP_CHAIN_SCHED).
++        // The stock worst case, n_ubatch tokens with one output, reserves the attention of n_ubatch tokens over the
++        // whole draft KV instead: an n_ubatch x n_ctx f16 mask plus, for a quantized draft KV (-ctkd/-ctvd q4_0), the
++        // f16 copy of all of it that the MMA FA kernel needs (2 x n_ctx x 1024 x 2 B = 800 MiB at n_ctx 204800), for
++        // a graph that never runs. Reserve the two real shapes. A ubatch with outputs larger than a draft step still
++        // runs (the scheduler grows the buffer to fit it) and is logged once. LLAMA_MTP_LEAN_RESERVE=0: stock reserve.
++        const char * LLAMA_MTP_LEAN_RESERVE = getenv("LLAMA_MTP_LEAN_RESERVE");
++        mtp_lean_reserve = params.ctx_type == LLAMA_CONTEXT_TYPE_MTP && model.arch == LLM_ARCH_QWEN35 &&
++                model.hparams.n_layer_nextn == 1 && model.hparams.router_layer < 0 &&
++                !(LLAMA_MTP_LEAN_RESERVE && atoi(LLAMA_MTP_LEAN_RESERVE) == 0);
++        if (mtp_lean_reserve) {
++            LLAMA_LOG_INFO("%s: MTP draft context reserves the K/V-only catch-up and the one-token draft step "
++                    "(LLAMA_MTP_LEAN_RESERVE=0 reserves the full block)\n", __func__);
++        }
++    }
++
+     {
+         // [LLAMA_GPU_VERIFY] top-m candidates of the verify logits on the device (default off)
+         const char * LLAMA_GPU_VERIFY = getenv("LLAMA_GPU_VERIFY");
+@@ -704,7 +724,7 @@ void llama_context::sched_reserve() {
+     int n_inputs_tg        = -1;
+     int n_input_tensors_tg = -1;
+ 
+-    const uint32_t n_outputs_pp = std::min(n_tokens, cparams.n_outputs_max);
++    const uint32_t n_outputs_pp = reserve_n_outputs_pp(n_tokens);
+ 
+     // reserve pp (prompt processing) graph first so that buffers are only allocated once
+     {
+@@ -968,7 +988,7 @@ bool llama_context::memory_update(bool optimize) {
+         const uint32_t n_seqs = cparams.n_seq_max;
+         const uint32_t n_tokens = std::min(cparams.n_ctx, cparams.n_ubatch);
+ 
+-        const uint32_t n_outputs_max = std::min(n_tokens, cparams.n_outputs_max);
++        const uint32_t n_outputs_max = reserve_n_outputs_pp(n_tokens);
+ 
+         auto * gf = graph_reserve(n_tokens, n_seqs, n_outputs_max, mctx.get());
+         if (!gf) {
+@@ -2125,6 +2145,14 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+             n_outputs = n_outputs_new;
+         }
+ 
++        // [LLAMA_MTP_LEAN_RESERVE] the reserve covered draft steps of one token per sequence
++        if (mtp_lean_reserve && n_outputs > 0 && ubatch.n_tokens > cparams.n_seq_max && !mtp_lean_warned) {
++            mtp_lean_warned = true;
++            LLAMA_LOG_WARN("%s: MTP draft context: a ubatch of %u tokens with outputs is larger than the reserved draft "
++                    "step (%u tokens), the compute buffer grows to fit it (LLAMA_MTP_LEAN_RESERVE=0 reserves the full "
++                    "block)\n", __func__, ubatch.n_tokens, cparams.n_seq_max);
++        }
++
+         ggml_status status;
+ 
+         // [LLAMA_GPU_VERIFY] only when this ubatch has all the outputs of the batch (they stay on the device)
+@@ -2834,10 +2862,15 @@ static void ubatch_prepare_reserve(
+     }
+ }
+ 
++uint32_t llama_context::reserve_n_outputs_pp(uint32_t n_tokens) const {
++    // [LLAMA_MTP_LEAN_RESERVE] the prompt-sized ubatches of the MTP draft context are the catch-up, which has no outputs
++    return mtp_lean_reserve ? 0 : std::min(n_tokens, cparams.n_outputs_max);
++}
++
+ ggml_cgraph * llama_context::graph_reserve(
+         uint32_t n_tokens, uint32_t n_seqs, uint32_t n_outputs, const llama_memory_context_i * mctx, bool split_only, size_t * sizes) {
+     LLAMA_LOG_DEBUG("%s: reserving a graph for ubatch with n_tokens = %4u, n_seqs = %2u, n_outputs = %4u\n", __func__, n_tokens, n_seqs, n_outputs);
+-    GGML_ASSERT(n_outputs >= 1);
++    GGML_ASSERT(n_outputs >= 1 || mtp_lean_reserve); // [LLAMA_MTP_LEAN_RESERVE] the K/V-only catch-up has none
+ 
+     if (n_tokens % n_seqs != 0) {
+         n_tokens = ((n_tokens + (n_seqs - 1)) / n_seqs) * n_seqs; // round to next multiple of n_seqs
+diff --git a/src/llama-context.h b/src/llama-context.h
+index b3fc90672..48127fc51 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -279,6 +279,9 @@ public:
+     ggml_cgraph * graph_reserve(
+         uint32_t n_tokens, uint32_t n_seqs, uint32_t n_outputs, const llama_memory_context_i * mctx, bool split_only = false, size_t * sizes = nullptr);
+ 
++    // outputs of the prompt-sized worst-case reserve: none with mtp_lean_reserve (the K/V-only MTP catch-up)
++    uint32_t reserve_n_outputs_pp(uint32_t n_tokens) const;
++
+     bool set_sampler(llama_seq_id seq_id, llama_sampler * sampler);
+ 
+ private:
+@@ -462,6 +465,12 @@ private:
+     // env: LLAMA_MTP_CHAIN_SCHED (default on)
+     bool chain_sched = true;
+ 
++    // [LLAMA_MTP_LEAN_RESERVE] env LLAMA_MTP_LEAN_RESERVE (default on, 0 = the stock worst-case reserve): the
++    // single-block Qwen3.5/3.8 MTP draft context reserves the shapes it runs, the K/V-only catch-up (no outputs) and
++    // a draft step of one token per sequence (see the constructor)
++    bool mtp_lean_reserve = false;
++    bool mtp_lean_warned  = false;
++
+     // [LLAMA_GPU_VERIFY] env LLAMA_GPU_VERIFY=1 (default 0 = off): a decode of 2 .. gv_max_rows outputs in one ubatch
+     // (speculative verify, no backend samplers) computes a top-m set of every logits row on the device and copies only
+     // that (m = LLAMA_GPU_VERIFY_M, default 128) plus the row sums to the host; the full logits of a row are copied on
+-- 
+2.43.0
+
