@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Start the optimized llama-server on the RX 7900 XTX.
 #
-#   run-llm.sh [qwen|uncensored|lfm|lfm-uncensored] [mtp|dflash|none] [rocm|vulkan]
+#   run-llm.sh [qwen|uncensored|lfm|lfm-uncensored|flint] [mtp|dflash|none] [rocm|vulkan]
 #
 # Measured 2026-10-14 (ROCm, ctx 204800, KV q4_0, MTP n=4 + 64k draft vocab, IQ4_XS draft, 6 EN/PL prompts, T=1):
 #   qwen        mtp  rocm   ~109 t/s  (default; PM4 replay on, GGML_HIP_PM4=0 turns it off)
@@ -9,8 +9,11 @@
 #   qwen        mtp  vulkan optional backend, slower on long prompts
 #   lfm         none ~294 t/s LiquidAI LFM2.5-24B-A2B Q5_K_M (MoE, ~2B active, no MTP head), ctx 131072, KV q8_0
 #   lfm-uncensored    ~264 t/s, same settings; AtomicChat abliterated LFM2.5-24B-A2B AD-Q5_K_M (more Q8_0 tensors)
+#   flint       none (unmeasured) RecursiveSI Flint 40B-A2.5B official QAT NVFP4 GGUF (no MTP head), KV q4_0, ctx = max fit
+#               (14 full-attention layers: ~8 KiB/token); sampling from the model card (T 1.0, top-p 0.95, top-k 20);
+#               needs the flint branch build (run-topka.sh sets ROCM_DIR=~/qwen-opt/flint/inst)
 #
-# env: CTX (default 204800), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0; q8_0 for lfm),
+# env: CTX (default 204800; flint: ~/qwen-opt/flint/ctx-max, else 200000), PORT (default 8080), HOST (default 127.0.0.1), KV (default q4_0; q8_0 for lfm),
 #      EFFORT thinking length: low (default), medium, xhigh (model default, long thinking), off (no thinking)
 #      LOG server log file (default ~/qwen-opt/logs/server-<time>.log, newest linked as logs/latest.log)
 #      DRAFT_N max draft tokens (default: backend/drafter specific), P_MIN stop drafting below this draft confidence
@@ -22,11 +25,17 @@ model=${1:-qwen}
 extra_args_raw=${EXTRA_ARGS:-}
 extra_args=(${extra_args_raw//,/ })
 default_spec=mtp
-case $model in lfm|lfm-uncensored) default_spec=none ;; esac
+case $model in lfm|lfm-uncensored|flint) default_spec=none ;; esac
 spec=${2:-$default_spec}
 backend=${3:-rocm}
 ctx_default=204800
 case $model in lfm|lfm-uncensored) ctx_default=131072 ;; esac
+# uncensored (the user's chat): native 262144 since 2026-11-06 — topka-q63 MTP lean reserve freed 1.0 GiB; fill test
+# 254977 prompt tokens: peak VRAM 23367/24560 MiB (1193 MiB free, same headroom as 204800 before), decode 78.7 t/s,
+# no OOM/faults (~/qwen-opt/ctx262/run-262144). `qwen` stays 204800 (records are measured there; fit untested).
+case $model in uncensored) ctx_default=262144 ;; esac
+# Flint: the largest ctx that fits at KV q4_0, measured by ~/qwen-opt/flint/fl_ctx.sh (fallback 200000)
+case $model in flint) ctx_default=$(cat "$HOME/qwen-opt/flint/ctx-max" 2>/dev/null || echo 200000) ;; esac
 ctx=${CTX:-$ctx_default}
 port=${PORT:-8080}
 host=${HOST:-127.0.0.1}
@@ -45,7 +54,10 @@ case $effort in
     off) think_args=(--reasoning off) ;;
     *) echo "unknown EFFORT: $effort (low|medium|xhigh|off)" >&2; exit 2 ;;
 esac
-case $model in lfm|lfm-uncensored) think_args=() ;; esac
+case $model in lfm|lfm-uncensored|flint) think_args=() ;; esac  # Flint's template has no thinking switch
+# Flint model card sampling (the GGUF's general.sampling.* say the same)
+sampling_args=()
+case $model in flint) sampling_args=(--temp 1.0 --top-p 0.95 --top-k 20 --min-p 0) ;; esac
 
 models=$HOME/models
 drafter=$models/draft/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
@@ -57,7 +69,8 @@ case $model in
                 [ "${VISION:-0}" = 1 ] && extra_args=(--mmproj "$models/orca/mmproj-Qwen3.8-27B-Uncensored-f16.gguf") ;;
     lfm)        gguf=$models/lfm/LFM2.5-24B-A2B-Q5_K_M.gguf ;;
     lfm-uncensored) gguf=$models/lfm/LFM2.5-24B-A2B-Uncensored-AD-Q5_K_M.gguf ;;
-    *) echo "unknown model: $model (qwen|uncensored|lfm|lfm-uncensored)" >&2; exit 2 ;;
+    flint)      gguf=$models/flint/flint-nvfp4.gguf ;;
+    *) echo "unknown model: $model (qwen|uncensored|lfm|lfm-uncensored|flint)" >&2; exit 2 ;;
 esac
 
 case $backend in
@@ -105,6 +118,7 @@ fi
 # sampler and turns off the fast top-k sampling path (~0.5 ms/token on LFM). The server ignores that flag unless
 # REASONING_CONTROL=1; outputs are unchanged, only the stop-thinking button stops working.
 export LLAMA_SERVER_REASONING_CONTROL=${REASONING_CONTROL:-0}
-
-"$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja --cache-ram 16384 \
-    "${think_args[@]}" --host "$host" --port "$port" --log-file "$log" "${spec_args[@]}" "${extra_args[@]}"
+# --cache-ram 40960 (2026-11-05, report 63b): at 16384 one long Qwen conversation (7-14 GB entry) evicted the other;
+# 38 turns re-read >=20k-token prompts from scratch (74% of all prefill time, 85-200 s per turn). Override: CACHE_RAM.
+"$bin" -m "$gguf" -ngl 999 -fa on -ctk "$kv" -ctv "$kv" -c "$ctx" -np 1 --jinja --cache-ram "${CACHE_RAM:-40960}" \
+    "${think_args[@]}" "${sampling_args[@]}" --host "$host" --port "$port" --log-file "$log" "${spec_args[@]}" "${extra_args[@]}"

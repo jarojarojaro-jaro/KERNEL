@@ -51,6 +51,13 @@ ticket drop
 log "queue: locks held, stopping topka"
 # Wait for the process to EXIT, not just the port to close: VRAM is freed only at exit (2026-10-19 20:26 the first
 # job's server OOM'd at load because topka still held 15.7 GB right after its port closed).
+# model-swap.py (the user's qwen/lfm switcher on :8080) would restart a server on the next request, so stop it first
+# (its SIGTERM handler stops its backend gracefully); restart it afterwards with ~/qwen-opt/tools/model-swap.py.
+if pgrep -f 'qwen-opt/tools/model-swap.py' >/dev/null; then
+    pkill -TERM -f 'qwen-opt/tools/model-swap.py'
+    for _ in $(seq 90); do pgrep -f 'qwen-opt/tools/model-swap.py' >/dev/null || break; sleep 1; done
+    log "queue: model-swap stopped"
+fi
 pkill -f 'llama-topka/bin/llama-server'; for _ in $(seq 60); do pgrep -f 'llama-topka/bin/llama-server' >/dev/null || break; sleep 1; done
 for _ in $(seq 30); do [ "$(rocm-smi --showmemuse 2>/dev/null | grep -o 'VRAM%): [0-9]*' | grep -o '[0-9]*$')" -lt 10 ] 2>/dev/null && break; sleep 1; done
 log "queue: topka stopped, VRAM $(rocm-smi --showmemuse 2>/dev/null | grep -o 'VRAM%): [0-9]*')"
@@ -66,3 +73,5 @@ for j in "${JOBS[@]}"; do
     fi
 done
 log "queue $jobs: done"
+# 2026-11-06 (user): every finished queue must be written up in the wiki; lint stays red until it is.
+echo "$(date -u '+%F %T') kolejka $jobs: ${#JOBS[@]} jobów, logi $L (zapisać: notatka eksperymentu, log, AUDYT)" >> ~/KERNEL/wiki/DO-ZAPISANIA.txt
