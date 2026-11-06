@@ -2967,7 +2967,7 @@ Metoda: tokeny liczbowe (≥ 2 znaki) z treści każdej nowej notatki i z dopisa
 
 ## Ingest 2026-11-06 (q63, Enigma, termika, Vast)
 
-Metoda: liczby wpisane ręcznie z cytowanych wierszy (`q63/logs/summary.txt`, `logs-dep/*`, `enigma-xtx{2,3}.log`, raport 64 §0/§3.2, `watchdog-59279813.log`); telemetria stock przeliczona awk z `q63-stock.csv` (pełny plik daje junction do 89 °C; zakres 65–66 °C z komunikatu Main – nie odtworzony).
+Metoda: liczby wpisane ręcznie z cytowanych wierszy (`q63/logs/summary.txt`, `logs-dep/*`, `enigma-xtx{2,3}.log`, raport 64 §0/§3.2, `watchdog-59279813.log`); telemetria stock przeliczona awk z `q63-stock.csv` (errata 2026-11-06: 65–66 °C to próbka 30 s; wiersze ≥ 250 W: junction śr. 78 / maks. 89, mem 69/76, Δ hotspot−edge śr. 25.0, 7–38 °C).
 
 | notatka | liczb | gdzie szukane | wynik |
 |---|---|---|---|
@@ -2977,7 +2977,7 @@ Metoda: liczby wpisane ręcznie z cytowanych wierszy (`q63/logs/summary.txt`, `l
 | [[lekcja-benchmark-te-same-tokeny]] | 2 | j.w. | OK |
 | [[raport-64-termika]] | 12 | `64-termika-bezpieczenstwo.md:1-40` | OK |
 | [[lekcja-od-commit-gubi-krzywa]] | 4 | `64-…:161-173` | OK |
-| [[2026-11-06-xtx-eco-instalacja]] | 10 | komunikat Main; `q63-stock.csv` | do sprawdzenia (2935 MHz, 65–66 °C) |
+| [[2026-11-06-xtx-eco-instalacja]] | 10 | komunikat Main; `q63-stock.csv` (awk) | OK po erracie; 2935 MHz z komunikatu Main |
 | [[init-user-pages-failed]] | 2 | `log.md` 2026-11-05; `journalctl -k` | OK |
 | [[lekcja-buildfarm-down-z-cloud]] | 3 | `watchdog-59279813.log`, `buildfarm.sh:3,82` | OK ($0.027 z komunikatu Main) |
 | [[rx-7900-xtx]], [[amdgpu-moc-i-termika]], [[vast-ai]], [[reward-hacking-inferencji]], [[lekcja-cache-ram-za-maly]] (aktualizacje) | 14 | j.w. | OK |

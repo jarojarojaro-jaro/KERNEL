@@ -11,7 +11,7 @@ status: do-sprawdzenia
 
 - 2026-11-05 fabryczny `OD_SCLK 1` = 2885 MHz; 2026-11-06 zaraz po boocie = 2935 MHz. Wartość była wpisana na sztywno, więc „powrót do stock” obniżał limit o 50 MHz.
 - Wniosek: stock trzeba odczytać **przy każdym boocie**, przed pierwszym zapisem OD, i zapisać jako stan tego bootu. Poprawka w toku (agent główny) — status do sprawdzenia.
-- Telemetria stock 2026-11-05 (`q63-stock.csv`, wg Main, faza pomiarów q63): 281 W średnio przy capie 285 W, sclk średnio 2436 MHz, junction 65–66 °C, pamięć 71–74 °C, CPU 37 °C. Cały plik (14:41–16:32, wiersze ≥ 250 W, z prefillami 128k) daje junction do 89 °C.
+- Telemetria stock 2026-11-05 (`q63-stock.csv`, 14:41–16:32, 6567 wierszy): 3346 wierszy ≥ 250 W (cap 285 W, wentylator 100%): junction śr. 78 / maks. 89 °C, mem śr. 69 / maks. 76 °C, edge śr. 53 °C, Δ hotspot−edge śr. 25.0 °C (7–38). Wcześniejsze „junction 65–66 °C, mem 71–74 °C” to próbka pierwszych 30 s.
 
 ## Powiązane
 - [[eksperymenty/_hub|eksperymenty]]

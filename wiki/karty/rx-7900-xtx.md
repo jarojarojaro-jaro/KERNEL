@@ -21,7 +21,7 @@ Rynek (raport 05, 2026-10): używana mediana €837, nowa $1,821; 0.40% w Steam;
 
 Bezpieczeństwo (2026-10-19): twarda zasada użytkownika [[2026-10-19-bezpieczenstwo-sprzetu]], strażnik [[gpu-guard]]; page faulty SQC @0 w analizie ([[pm4-replay]]).
 
-**Termika i eco (2026-11-05/06):** raport 64 – limit `OD_SCLK` bezpieczny, ale na jądrze 6.8 commit OD gubi krzywą wentylatora ([[raport-64-termika]], [[lekcja-od-commit-gubi-krzywa]]). Stock 2026-11-05: 281 W przy capie 285 W, sclk ~2436 MHz, junction 65–66 °C. xtx-eco zainstalowane 2026-11-06 12:07 UTC; fabryczny `OD_SCLK 1` zmienia się między bootami (2885 → 2935 MHz) ([[2026-11-06-xtx-eco-instalacja]]). Produkcja Qwen od 2026-11-05: topka-q63, −1.0 GiB VRAM ([[2026-11-05-q63-topka]]).
+**Termika i eco (2026-11-05/06):** raport 64 – limit `OD_SCLK` bezpieczny, ale na jądrze 6.8 commit OD gubi krzywą wentylatora ([[raport-64-termika]], [[lekcja-od-commit-gubi-krzywa]]). Stock 2026-11-05 (14:41–16:32, ≥ 250 W, cap 285 W, wentylator 100%): junction śr. 78 / maks. 89 °C, Δ hotspot−edge śr. 25 °C (maks. 38); 65–66 °C to tylko próbka 30 s. xtx-eco zainstalowane 2026-11-06 12:07 UTC; fabryczny `OD_SCLK 1` zmienia się między bootami (2885 → 2935 MHz) ([[2026-11-06-xtx-eco-instalacja]]). Produkcja Qwen od 2026-11-05: topka-q63, −1.0 GiB VRAM ([[2026-11-05-q63-topka]]).
 
 ## Powiązane
 - [[karty/_hub|Karty]]
