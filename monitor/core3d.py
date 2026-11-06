@@ -45,7 +45,10 @@ def shades(hue):
 
 
 class Torus:
-    def __init__(self):
+    def __init__(self, shade_step=1):
+        """shade_step > 1 merges neighbouring shading levels: fewer colour changes per row,
+        i.e. fewer escape bytes per frame (used over SSH)."""
+        self.step = shade_step
         self._geo_key = None
         self.pts = []
         self._k1 = None
@@ -175,6 +178,7 @@ class Torus:
         ghost = tab[4]
         rows = []
         top = LEVELS - 1
+        step = self.step
         for r in range(h):
             parts = []
             last = None
@@ -183,6 +187,8 @@ class Torus:
                 bt = bits[base + c]
                 if bt:
                     lv = int(lum[base + c] * 15.0)
+                    if step > 1:
+                        lv = (lv + step // 2) // step * step
                     col = tab[lv if lv < top else top]
                 elif back[base + c]:
                     bt = back[base + c]

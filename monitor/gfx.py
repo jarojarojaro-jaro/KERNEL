@@ -143,6 +143,7 @@ class Line:
     def render(self, w):
         out = []
         n = 0
+        last = None                  # colour in effect; None after a pre-coloured segment
         for seg in self.segs:
             if len(seg) == 3:
                 _, s, k = seg
@@ -150,6 +151,7 @@ class Line:
                     break
                 out.append(s)
                 n += k
+                last = None
                 continue
             c, s = seg
             room = w - n
@@ -157,7 +159,9 @@ class Line:
                 break
             if len(s) > room:
                 s = s[:room]
-            out.append(c)
+            if c != last and (c or last is None):
+                out.append(c)
+                last = c
             out.append(s)
             n += len(s)
         if n < w:
