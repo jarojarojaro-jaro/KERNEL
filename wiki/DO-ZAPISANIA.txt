@@ -1,0 +1,6 @@
+# Wyniki czekające na zapis w wiki (dopisuje ~/qwen-opt/queue/run-jobs.sh po każdej kolejce GPU; ręcznie: każdy
+# test/wdrożenie/research). Linia = błąd lintu, dopóki wyniki nie są w notatce eksperymentu + log + AUDYT
+# (+ REKORDY przy nowym rekordzie; to, co nie działa: wynik negatywny + usunięcie kodu/flag z produkcji).
+# Po zapisaniu usuń linię, lint 0 błędów, commit + push.
+2026-11-06 12:16 kolejka ~/qwen-opt/thermal/all.jobs (bugcheck + eco sweep, w toku): wyniki do notatki 2026-11-06-xtx-eco-instalacja + nowy eksperyment eco
+2026-11-06 usunąć z topki martwy kod: cap LDS FA (57204db1e, no-op na ROCm 10.0 pre4) przy najbliższym buildzie; wynik negatywny już w 2026-11-05-q63-topka

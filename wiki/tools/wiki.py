@@ -219,6 +219,13 @@ def lint(only: str | None = None) -> int:
             errors.append(f"{f}/: brak _hub.md")
     if not (WIKI / "index.md").exists():
         errors.append("brak index.md")
+    # 2026-11-06 (user): every finished GPU queue / test is appended to DO-ZAPISANIA.txt by run-jobs.sh; an entry
+    # stays an ERROR until its results are written up (experiment note, lessons, log, AUDYT) and the line is removed.
+    todo = WIKI / "DO-ZAPISANIA.txt"
+    if todo.exists():
+        for line in todo.read_text(encoding="utf-8").splitlines():
+            if line.strip() and not line.lstrip().startswith("#"):
+                errors.append(f"niezapisany wynik (DO-ZAPISANIA.txt): {line.strip()}")
     if only:
         prefix = only.rstrip("/") + "/"
         errors = [x for x in errors if x.startswith(prefix)]

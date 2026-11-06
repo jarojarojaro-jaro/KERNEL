@@ -197,3 +197,6 @@ Produkcja `~/llama-topka` = topka-q63 c0576e3e8 (ABBA vs f9b84bcfa: t/s 0%, md5 
 
 ## [2026-11-06] ingest | q63, Enigma uczciwy benchmark, raport 64, xtx-eco, Vast
 Nowe: [[2026-11-05-q63-topka]], [[lekcja-rezerwa-mtp-kopia-f16]], [[enigma-uczciwy-benchmark]], [[lekcja-benchmark-te-same-tokeny]], [[raport-64-termika]], [[lekcja-od-commit-gubi-krzywa]], [[2026-11-06-xtx-eco-instalacja]] (fabryczny OD_SCLK 2885 → 2935 MHz między bootami), [[init-user-pages-failed]], [[lekcja-buildfarm-down-z-cloud]]. Aktualizacje: [[rx-7900-xtx]], [[amdgpu-moc-i-termika]], [[vast-ai]], [[reward-hacking-inferencji]], [[lekcja-enigma-apu-jako-karta]], [[lekcja-cache-ram-za-maly]] (wdrożone, efekt niezmierzony). [[REKORDY]]: spec_sweep 120.58 t/s; VRAM bez kategorii. [[ZRODLA]]: sekcja „Raport 64”. [[AUDYT]] uzupełniony.
+
+## [2026-11-06] meta | Wymuszenie zapisu wyników
+Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzucamy. `DO-ZAPISANIA.txt`: `run-jobs.sh` dopisuje każdą zakończoną kolejkę GPU, a `wiki.py lint` zgłasza każdą niezapisaną linię jako błąd, dopóki wyniki nie trafią do notatek. Reguła w `~/AGENTS.md`.
