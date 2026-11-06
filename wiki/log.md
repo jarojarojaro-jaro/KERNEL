@@ -203,3 +203,6 @@ Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzuca
 
 ## [2026-11-06] ingest | Sweep eco (limit sclk)
 [[2026-11-06-eco-sweep-sclk]]: 2200 MHz −1,9% pisania / −10,5% W; 2000 MHz −4,1% / −16,2% W / hotspot −12 °C; 1800 −7,1% / −20,9% W; md5 identyczne. Seria 1600 przerwana przez użytkownika.
+
+## [2026-11-06] decyzja | Profil eco 2200 MHz w produkcji
+[[2026-11-06-profil-eco-2200]]: limit sclk 2200 MHz na stałe (crontab @reboot); pod obciążeniem 2215 MHz, 233 W, hotspot 64 °C, wentylator 3578 RPM.
