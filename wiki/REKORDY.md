@@ -136,6 +136,14 @@ Zweryfikowane w źródłach 2026-10-21. E0 to nowa metryka (definicja w [[metryk
 | RTX 4070 Ti 12 GB / Qwen UD-Q2_K_XL | czat T=1 / mvs | **93.3 / 295.0 t/s** (U0 40.8 / 40.3); T' +6.81% czat | 2026-10-20 | T, c 36864 KV q4_0 | `31-4070ti.md:11-14` | nie |
 | RTX 5060 Ti / Qwen UD-IQ4_XS | czat T=1 / mvs | **62.6 / 244.2 t/s** (U0 26.7 / 26.5) | 2026-10-20 | T, c 32768 KV q4_0 | `31-5060ti.md:10-11` | nie |
 
+## Nowe rekordy 2026-11-05 (q63)
+
+Zasobów (VRAM) tabela nie ma jako kategorii, więc −1.0 GiB VRAM topka-q63 przy ctx 204800 (23360 → 22319 MB) jest tylko w [[2026-11-05-q63-topka]].
+
+| karta / model | obciążenie / metryka | rekord (poprzedni) | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|---|
+| XTX / Qwen UD-Q4_K_XL | spec_sweep T=1 (6 × 3 seedy), mediana | **120.58 t/s** (117.9); ramiona P f9b84bcfa 120.51/120.58, Q q63 120.54/120.57 (w szumie, zysk nie z q63) | 2026-11-05 | `run-topka.sh` qwen, ctx 204800, ub 512, ABBA deploy | `~/qwen-opt/q63/logs-dep/spec_sweep.jsonl:1-4` | tak (q63 = 120.57) |
+
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.
 2. Nowa para (karta, model, obciążenie, metryka) → nowy wiersz.

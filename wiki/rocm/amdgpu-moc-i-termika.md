@@ -1,8 +1,8 @@
 ---
 typ: rocm
 tags: [rocm, amdgpu, moc]
-aktualizacja: 2026-10-18
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:107-126,146,170; ~/KERNEL/qwen-opt/README.md:32-33; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:76-81
+aktualizacja: 2026-11-06
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:107-126,146,170; ~/KERNEL/qwen-opt/README.md:32-33; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:76-81; ~/KERNEL/product/research/64-termika-bezpieczenstwo.md:17-40
 status: aktualne
 ---
 # Sterownik amdgpu: limit mocy, termika, usypianie
@@ -22,6 +22,8 @@ Runtime suspend (BACO, 2026-10-10): bez monitora amdgpu usypia kartę po 5 s bez
 Limit mocy jako optymalizacja (−20% mocy za ≤5% t/s) odłożony na prośbę użytkownika.
 
 Objaw limitu 285 W przy optymalizacji kerneli: [[lekcja-limit-mocy-285w]] (2026-10-18).
+
+OverDrive na jądrze 6.8 (raport 64, 2026-11-05): `power1_cap` ≤ 303 W nie dotyka tablicy OD; commit `OD_SCLK` lub krzywej wentylatora po cichu resetuje drugą sekcję ([[lekcja-od-commit-gubi-krzywa]], [[raport-64-termika]]). Fabryczny `OD_SCLK 1` trzeba czytać przy każdym boocie ([[2026-11-06-xtx-eco-instalacja]]). Log jądra: [[init-user-pages-failed]].
 
 ## Powiązane
 - [[rocm/_hub|ROCm]]

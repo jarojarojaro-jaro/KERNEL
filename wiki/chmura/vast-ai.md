@@ -19,6 +19,7 @@ status: aktualne
 
 ## Aktualizacja 2026-10-21
 - Kampania 31-*: transfer $3.80 z $6.90 ([[lekcja-vast-transfer-kosztuje]]); plan v2 ([[raport-plan-nv-v2]]) czeka – [[2026-10-20-chmura-wstrzymana]].
+- 2026-11-05: buildfarm 59279813 (14:46–15:05) kosztował $0.027, zniszczony; `down` tylko z `~/qwen-opt/cloud`, `--download-gb` wymagane ([[lekcja-buildfarm-down-z-cloud]]).
 
 ## Powiązane
 - [[chmura/_hub|Chmura]]

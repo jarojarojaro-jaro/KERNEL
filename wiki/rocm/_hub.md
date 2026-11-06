@@ -14,8 +14,9 @@ ROCm jest domyślnym backendem od 2026-10-12 (Vulkan tylko jako opcja). Kernele 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (22)
+## Notatki (23)
 
+- [[init-user-pages-failed|`amdgpu: init_user_pages: Failed to get user pages: -1` przy starcie serwera]] — Każdy start llama-server na XTX wypisuje do logu jądra ~16 tys. wierszy `amdgpu: init_user_pages: Failed to get user pages: -1`; zjawisko trwa co najmniej od 2026-10-25, bez page faultów, resetów i wpływu na wyniki (md5 bramek zgodne).
 - [[amd-smi|AMD SMI (amd-smi)]] — Narzędzie i biblioteka AMD do telemetrii i sterowania GPU (moc, zegary, perf-level); w ROCm zastąpiło rocm-smi, działa na Linuksie, natywnego Windows brak.
 - [[dekodowanie-page-fault-amdgpu|Dekodowanie page faultu amdgpu (gfx11)]] — Jak czytać wpisy `[gfxhub] page fault` i `sq_intr` w `journalctl -k` na RX 7900 XTX: pola `GCVM_L2_PROTECTION_FAULT_STATUS`, typy przerwań SQ i komunikaty MES (raport 17, 2026-10-19).
 - [[kfd-ewikcja-kolejek-gfx11|Ewikcja i przywracanie kolejek KFD + MES na gfx11 (Linux 6.8)]] — KFD ewikuje wszystkie kolejki procesu przy unieważnieniu SVM lub userptr, ewikcji TTM i suspendzie; MES dostaje REMOVE_QUEUE, a przy restore ADD_QUEUE z tym samym MQD – pola dispatchu (`compute_pgm_*`, `user_data`, `restart`, `cp_hqd_ib_*`) zapisuje i odtwarza wyłącznie zamknięty firmware (raport 17 §9.2, 2026-10-19).

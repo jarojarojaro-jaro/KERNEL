@@ -14,7 +14,7 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (30)
+## Notatki (31)
 
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
@@ -27,6 +27,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[cache-sesji-na-dysku|Cache sesji na dysku (projekt z 16f E5)]] — Istniejący mechanizm llama-server `--slot-save-path` + `/slots/0?action=save|restore` (z checkpointami) przywraca sesję 53k z SSD 23–24× szybciej niż prefill: Qwen MTP 2.28 GiB w 2.51 s zamiast ~61.5 s, LFM 553 MiB w 0.53 s zamiast ~12.2 s (2026-10-18).
 - [[produkt-dla-kogo-i-ekrany|Dla kogo, przepływ laika i ekrany MVP]] — Trzy persony (gracz z dobrą kartą, entuzjasta, firma), cel „rozmowa w < 10 min” i siedem ekranów MVP z czatem opartym na web UI llama.cpp.
 - [[zawezenie-tezy-produktu|Do decyzji: zawężenie tezy PLAN §0.1 po Magnitude]] — Propozycja raportu 15c (do decyzji użytkownika): teza „żaden produkt nie robi naraz…” zostaje, ale „optymalizacja poza flagami” nie jest już wyróżnikiem; wyróżnikiem jest kombinacja weryfikacji (md5/KLD) + przed → po wobec tuned upstream + AMD natywnie.
+- [[enigma-uczciwy-benchmark|Enigma: uczciwy benchmark optymalizacji (G1–G4, G7) i E2E na XTX]] — Commit 1af7fd2 (2026-11-05) naprawił audyt 63e: jedno obciążenie renderowane na baseline (te same tokeny, ten sam reasoning effort) dla każdego ramienia, ramię decode T=1, rozgrzewka przed pomiarem, próg szumu, deep 32k w decyzji i potwierdzenie zwycięzcy.
 - [[produkt-fabryka|Fabryka przepisów (lab)]] — Fabryka zamienia nową parę (GPU, model) w zweryfikowane przyspieszenie: 10-krokowy playbook, istniejące narzędzia, bramki antyoszustwa i metryki (cel ≤ 7 dni od premiery modelu).
 - [[produkt-landing-i-onboarding|Landing page i ścieżka użytkownika]] — Hero „Ten sam sprzęt. Ten sam model. Po prostu szybciej.” z animacją prędkości, potem konto na początku i trzy drogi: formularz sprzętu (z komendą „skan”), aplikacja desktop, terminal (pomysł z 2026-10-16).
 - [[produkt-ryzyka|Największe ryzyka]] — Dziewięć ryzyk z odpowiedziami; najgroźniejsze: zysk nie przenosi się poza 7900 XTX/Linux oraz wbudowanie auto-tuningu przez LM Studio, Ollamę, Jana lub NVIDIA.

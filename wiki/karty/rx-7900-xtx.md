@@ -1,7 +1,7 @@
 ---
 typ: karta
 tags: [karty, amd, rdna3]
-aktualizacja: 2026-10-19
+aktualizacja: 2026-11-06
 zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:6-34,100-110; ~/KERNEL/qwen-opt/STATUS-NEXT.md:8-14; ~/KERNEL/qwen-opt/NOTES.md:126; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:117,239,305; ~/qwen-opt/tools/fan.sh:1-45; /proc/cmdline; komunikat Main do WikiIngest 2026-10-18; ~/qwen-opt/tools/fan.sh:1-40,66-90; /etc/systemd/system/xtx-fan.timer; komunikat Main do WikiIngest 2026-10-19 (decyzja użytkownika 00:00 UTC); ~/KERNEL/qwen-opt/tools/gpu-guard.sh:1-45
 status: aktualne
 ---
@@ -20,6 +20,8 @@ Rynek (raport 05, 2026-10): używana mediana €837, nowa $1,821; 0.40% w Steam;
 **Chłodzenie (2026-10-18):** overdrive przez `amdgpu.ppfeaturemask=0xfff7ffff` (GRUB, restart ~20:27 UTC). Wentylator idzie za obciążeniem: `fan.sh` z timera root `xtx-fan.timer` – GPU busy ≥ 10% → krzywa 100% przy każdej temperaturze (od 2026-10-19 decyzją użytkownika, [[2026-10-19-wentylator-100-przy-pracy]]; busy 95% → 3426 RPM), 20 s bezczynności → 40% poniżej 50 °C i 100% od 50 °C; krzywa ponownie zapisywana po resecie GPU. Przed: junction 86–87 °C, pamięć 89–90 °C przy 44%; po: busy 99% → 3320–3500 RPM w 12 s, hotspot 73 °C, pamięć 74 °C ([[lekcja-wentylator-rdna3]]). Vulkan bez sudo: `apt-get download libvulkan1 mesa-vulkan-drivers libllvm20 …` + `dpkg -x` do `~/.local/vk/root`, ICD ze ścieżką absolutną (RADV NAVI31, API 1.4.318; [[2026-10-18-magnitude-vulkan-xtx]]).
 
 Bezpieczeństwo (2026-10-19): twarda zasada użytkownika [[2026-10-19-bezpieczenstwo-sprzetu]], strażnik [[gpu-guard]]; page faulty SQC @0 w analizie ([[pm4-replay]]).
+
+**Termika i eco (2026-11-05/06):** raport 64 – limit `OD_SCLK` bezpieczny, ale na jądrze 6.8 commit OD gubi krzywą wentylatora ([[raport-64-termika]], [[lekcja-od-commit-gubi-krzywa]]). Stock 2026-11-05: 281 W przy capie 285 W, sclk ~2436 MHz, junction 65–66 °C. xtx-eco zainstalowane 2026-11-06 12:07 UTC; fabryczny `OD_SCLK 1` zmienia się między bootami (2885 → 2935 MHz) ([[2026-11-06-xtx-eco-instalacja]]). Produkcja Qwen od 2026-11-05: topka-q63, −1.0 GiB VRAM ([[2026-11-05-q63-topka]]).
 
 ## Powiązane
 - [[karty/_hub|Karty]]

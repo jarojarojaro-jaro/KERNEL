@@ -1,8 +1,8 @@
 ---
 typ: lekcja
 tags: [lekcje, enigma, aplikacja, testy, sprzet]
-aktualizacja: 2026-10-24
-zrodlo: zgłoszenie użytkownika (Windows, „AMD Radeon(TM) Graphics · 1 GB · 31 GB RAM”); `app/engine/test/catalog.fixtures.ts` (stan z commitu cba67ca)
+aktualizacja: 2026-11-05
+zrodlo: zgłoszenie użytkownika (Windows, „AMD Radeon(TM) Graphics · 1 GB · 31 GB RAM”); `app/engine/test/catalog.fixtures.ts` (stan z commitu cba67ca); git 143142b, 52d1af9
 status: aktualne
 ---
 # Enigma: zintegrowana grafika potraktowana jak karta graficzna
@@ -15,3 +15,11 @@ Dlaczego tego nie wyłapaliśmy:
 - Testy E2E na Vast to wyłącznie osobne karty NVIDIA; brak Windows/laptopów w labie.
 
 Reguła: macierz sprzętu do testów = **rozkład realnych klientów**, nie nasz lab: APU AMD (DDR4/DDR5), laptop Intel iGPU, CPU-only, osobne karty 8/12/16/24 GB, Mac. Każda nowa klasa sprzętu dostaje fixture z prawdziwego skanu przed wydaniem. Prędkość dla iGPU/CPU zawsze z przepustowości RAM (typ, MT/s, kanały), jako przedział z etykietą „szacunek”.
+
+Naprawione (143142b, 52d1af9): `gpus[].kind` + typ RAM, budżet = RAM − zapas, prędkość z przepustowości RAM.
+
+## Powiązane
+- [[lekcje/_hub|lekcje]]
+- [[lekcja-benchmark-te-same-tokeny]]
+- [[lekcja-baseline-wlasnego-silnika]]
+- [[enigma-uczciwy-benchmark]]

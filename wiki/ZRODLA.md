@@ -278,6 +278,13 @@ Synteza: [[raport-63-synteza]]; reguła [[2026-11-05-tylko-bezstratne]] (stratne
 | getsupers experiments | 11-05 | R63e §2.5 | Tylko H200. | – | – |
 | wafer-ai/gpu-perf-engineering-resources | `6aa00fc` (10-17) | R63e §1 | Bez zmian od R21b. | – | – |
 
+## Raport 64 (2026-11-05, termika XTX)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| Linux commit 6027db7db773 + 44d0d3031e47 (drm/amd#3625) | mainline v7.4-rc1; brak w Ubuntu 6.8.0-138/-149 | R64 §3.2, [[lekcja-od-commit-gubi-krzywa]] | Potwierdzony błąd maski OD na SMU 13.0.0. | – | czy backport trafi do Ubuntu 6.8.0-1xx |
+| smu_v13_0_0_ppt.c / amdgpu_pm.c @ Ubuntu-6.8.0-138.138 | 2026-11-05 | R64 §1–3, [[raport-64-termika]] | Limit sclk to czysta górna granica DPM. | OD 140 B | – |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

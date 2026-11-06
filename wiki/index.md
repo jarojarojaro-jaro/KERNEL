@@ -59,23 +59,29 @@ Audyt liczb: [[AUDYT]].
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (40)
 - [[modele/_hub|modele]] — Modele i kwanty (21)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
-- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (22)
+- [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (23)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (41)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (59)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (104)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (61)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (108)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (84)
-- [[research/_hub|research]] — Streszczenia raportów (150)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (30)
+- [[research/_hub|research]] — Streszczenia raportów (151)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (31)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
 
+- 2026-11-06 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
+- 2026-11-06 [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]]
+- 2026-11-06 [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]]
+- 2026-11-06 [[2026-11-06-xtx-eco-instalacja|xtx-eco: instalacja 2026-11-06 i fabryczny OD_SCLK zmienny między bootami]]
 - 2026-11-05 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
+- 2026-11-05 [[init-user-pages-failed|`amdgpu: init_user_pages: Failed to get user pages: -1` przy starcie serwera]]
+- 2026-11-05 [[raport-64-termika|Raport 64: czy bezpiecznie obniżyć sclk na XTX]]
 - 2026-11-05 [[raport-63-synteza|Raport 63: 44 wątki z pakietu 2026-11-03 (silniki, AMD, atencja, spekulacja, metodologia)]]
 - 2026-11-05 [[yasakani|YASAKANI: „1220 t/s” Qwen3.8-27B na RTX 5090]]
 - 2026-11-05 [[vllm-rocm-octave|vLLM `ROCM_OCTAVE`: natywny KV 3/4-bit na gfx1100]]
@@ -84,12 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-05 [[rdna-fast|RDNA-FAST (serrynaimo): fork llama.cpp/ROCmFPX dla RX 7900 XT]]
 - 2026-11-05 [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]]
 - 2026-11-05 [[qwen-qsa-llama-cpp|Qwen-QSA-llama.cpp (pentaCoxian): rzadka atencja QSA dla Qwen3.8-27B]]
-- 2026-11-05 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
-- 2026-11-05 [[ninfer|NInfer (Neroued/ninfer)]]
-- 2026-11-05 [[latent-sparse-attention|Latent Sparse Attention (Prefrontal AI + ETH)]]
-- 2026-11-05 [[hyperqwen|HyperQwen (syv-ai, dawniej qwen38-27b-rtx3090)]]
-- 2026-11-05 [[colibri|colibri (JustVugg): silnik w czystym C dla dużych MoE]]
-- 2026-11-05 [[wspolny-poczatek-promptu|Wspólny początek promptu i chude checkpointy (Maya #607, RTP-LLM #1574)]]
 
-Razem 672 notatek. Wygenerowano 2026-11-05 przez `tools/wiki.py index`.
+Razem 681 notatek. Wygenerowano 2026-11-06 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
