@@ -254,3 +254,6 @@ Model pamięci upstream: błąd ≤ 23 MiB, RS × (n+1), limit = suma CUDA. [[sa
 
 ## [2026-11-07] synteza | Enigma na NVIDIA: strona + nauki
 `product/SITE-NVIDIA.md` (materiał na enigmalabz.com) i [[jak-przyspieszylismy-nvidia]] (co dało ile, 9 nauk); nowe lekcje [[lekcja-zapas-doladowania-kerneli-cuda]], [[lekcja-paczka-march-native]], [[lekcja-pick-z-kalkulatora]], [[lekcja-licencja-modelu-sie-zmienia]]; [[lekcja-limit-mocy-hosta]] uzupełniona o 5090 450/575 W.
+
+## [2026-11-07] wdrożenie | silniki CUDA Enigmy opublikowane
+Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana, b12110lean, prism, słownik draftu; `engines.json` → download; planner domyślnie na silnikach Enigmy (Linux x64). Fork z poprawionym RUNPATH ([[lekcja-paczka-march-native]]).

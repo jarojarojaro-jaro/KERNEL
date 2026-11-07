@@ -7,7 +7,7 @@ Jeden dokument z wszystkim, co trafia na stronę: finalne zestawy per karta, wyn
 **Zasady publikacji (jak przy Flincie):**
 - tylko zmierzone liczby, każda z nazwaną kartą;
 - format **dziś → Enigma → przyrost**;
-- kolumnę „z silnikiem Enigmy” publikujemy dopiero, kiedy archiwa silników są na release (patrz §6), wcześniej jako „wkrótce”.
+- kolumna „z silnikiem Enigmy” działa od 2026-11-07 na **Linuksie** (silniki opublikowane, §6); na Windows i macOS obowiązuje kolumna „Enigma”.
 
 ## 1. Nagłówek
 
@@ -85,7 +85,7 @@ Pełna tabela z VRAM-em w szczycie: `wiki/produkt/final-recipes-nvidia.md`.
 
 ## 6. Zastrzeżenia (muszą być na stronie lub w przypisach)
 
-- **Kolumna „z silnikiem Enigmy” wymaga publikacji archiwów silników** (fork kvqlean, b12110lean, prism) i pliku `draft_vocab_qwen38.txt` na release Enigmy (`app/engine/CONTRACT.md`, sekcja „Silniki Enigma CUDA — brakujący krok”). Do tego czasu aplikacja używa zwykłego llama.cpp i daje wartości z kolumny „Enigma”.
+- **Kolumna „z silnikiem Enigmy” = Linux x64.** Silniki są opublikowane (wydanie `enigma-engines-cuda-2026-11-07`: https://github.com/jarojarojaro-jaro/KERNEL/releases/tag/enigma-engines-cuda-2026-11-07) i aplikacja pobiera je sama. Na Windows i macOS Enigma używa zwykłego llama.cpp, czyli wartości z kolumny „Enigma”. Silników dla Windows jeszcze nie budowaliśmy.
 - **Limity mocy wynajętych kart:** 4090 była przycięta do 250 W (domyślnie 450 W), 3090 340 W, 5060 Ti 160 W, 3060 140 W — liczby 4090 są zaniżone względem karty na pełnej mocy. Pisać „zmierzone na wynajętej karcie”.
 - **Pomiar 67c to 1 seed × 6 promptów;** porównania silników na 5090 robione naprzemiennie (A-B-B-A) na tym samym hoście.
 - **Fork CUDA dla 16 GB** nie jest wybierany (zmierzony tylko na 5060 Ti: 49,4 t/s przy 196 608).

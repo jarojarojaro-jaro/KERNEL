@@ -1,7 +1,8 @@
 // Our CUDA engines (data/engines.json): enigma-cuda-lean (upstream b12110 + lean MTP reserve: q4_0 draft KV),
 // enigma-cuda-prism (PrismML fork: PTQ1_0) and enigma-cuda-fork (cuda-topka2 + KVQ + lean reserve, Qwen3.8 MTP n 4).
-// All are local-only until their release assets are published; the planner uses them only where
-// ENIGMA_ENGINE_DIR_<envKey> makes them available (the fork only on cards with a measured configuration).
+// Published 2026-11-07 as the GitHub release enigma-engines-cuda-2026-11-07 (jarojarojaro-jaro/KERNEL): the planner
+// uses them by default (the fork only on cards with a measured configuration); ENIGMA_ENGINE_DIR_<envKey> still
+// overrides the download with a local directory.
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -50,21 +51,21 @@ const pickOf = (hw: Hw): Option => {
 const resolved = (id: string): ResolvedEngine => ({ entry: engineById(id)!, dir, serverBin: join(dir, 'llama-server'), version: 'x', local: true });
 
 describe('engines.json: our CUDA builds', () => {
-  test('local-only until published: exact release assets with sha256, ours without a URL', () => {
-    for (const id of ['enigma-cuda-lean', 'enigma-cuda-prism']) {
+  test('published: our archive from the KERNEL release, the CUDA runtime from the official b12110 release, all with sha256', () => {
+    const REL = 'https://github.com/jarojarojaro-jaro/KERNEL/releases/download/enigma-engines-cuda-2026-11-07/';
+    for (const id of ['enigma-cuda-lean', 'enigma-cuda-prism', 'enigma-cuda-fork']) {
       const e = engineById(id)!;
-      expect(e).toMatchObject({ kind: 'enigma', os: 'linux', arch: 'x64', backend: 'cuda', distribution: 'local', assets: [] });
-      expect(e.unpublishedAssets?.length).toBe(2);
-      for (const a of e.unpublishedAssets ?? []) expect(a.sha256).toMatch(/^[0-9a-f]{64}$/);
-      // our archive has no URL yet; the CUDA runtime is the official b12110 asset
-      expect(e.unpublishedAssets?.[0]?.url).toBeUndefined();
-      expect(e.unpublishedAssets?.[1]?.url).toStartWith('https://github.com/ggml-org/llama.cpp/releases/download/b12110/cudart-');
-      expect(engineAvailable(e)).toBe(false);
+      expect(e).toMatchObject({ kind: 'enigma', os: 'linux', arch: 'x64', backend: 'cuda', distribution: 'download' });
+      expect(e.unpublishedAssets).toBeUndefined();
+      for (const a of e.assets) expect(a.sha256).toMatch(/^[0-9a-f]{64}$/);
+      expect(e.assets[0]?.url).toBe(REL + e.assets[0]?.name);
+      expect(e.assets[1]?.url).toStartWith('https://github.com/ggml-org/llama.cpp/releases/download/b12110/cudart-');
+      expect(engineAvailable(e)).toBe(true);
     }
-    expect(engineById('enigma-cuda-lean')?.unpublishedAssets?.[0]).toMatchObject({
+    expect(engineById('enigma-cuda-lean')?.assets[0]).toMatchObject({
       name: 'llama-b12110lean-bin-ubuntu-cuda-12.8-x64.tar.gz', sha256: '1ea7532e9edd17216eab559494dfb653258fce9281d2d67a961666349cbe9798',
     });
-    expect(engineById('enigma-cuda-prism')?.unpublishedAssets?.[0]).toMatchObject({
+    expect(engineById('enigma-cuda-prism')?.assets[0]).toMatchObject({
       name: 'llama-prism-bin-ubuntu-cuda-12.8-x64.tar.gz', sha256: '4f6927ec8e2e6df311cee311584f5d0e8a6527caa942665a7a88474f100c23d9',
     });
     // lean has no sm_75 code; prism reaches the 2080 Ti through PTX JIT
@@ -86,12 +87,11 @@ describe('engines.json: our CUDA builds', () => {
     expect(prism.extraArgs).toEqual(['--jinja', '--spec-type', 'draft-mtp', '--spec-draft-n-max', '2', '--spec-draft-n-ubatch', '64']);
   });
 
-  test('without the local directory the enigma candidate says which engine is unpublished', () => {
+  test('without a local directory the published engines are resolved for download', () => {
     const hw = card('RTX 5080', 16303, 'sm_120');
-    const gsq = pickOf(hw);
-    expect(enigmaEngineFor(hw, gsq).code).toBe('enigma_not_published:enigma-cuda-lean');
-    // a model none of our CUDA engines has a profile for
-    expect(enigmaEngineFor(card('RTX 3090', 24576, 'sm_86'), pickOf(card('RTX 3090', 24576, 'sm_86'))).code).toBe('enigma_no_profile:qwen38-27b');
+    expect(enigmaEngineFor(hw, pickOf(hw)).entry?.id).toBe('enigma-cuda-lean');
+    const hw3090 = card('RTX 3090', 24576, 'sm_86');
+    expect(enigmaEngineFor(hw3090, pickOf(hw3090)).entry?.id).toBe('enigma-cuda-fork');
   });
 });
 
@@ -109,17 +109,6 @@ describe('memory model: our engines\' MTP draft', () => {
 });
 
 describe('planner with our CUDA engines available', () => {
-  test('nothing changes while they are not available: no PTQ1_0, no lean MTP', () => {
-    const r = recommend(card('RTX 4070', 12282, 'sm_89'));
-    expect(r.pick?.modelId).toBe('saluki-27b');
-    expect(r.rejected.find((x) => x.modelId === 'bonsai2-27b-mtp')?.reason).toBe('needs_engine:enigma-cuda-prism');
-    for (const [name, mib, arch] of SIXTEEN) {
-      const p = pickOf(card(name, mib, arch));
-      expect(p.features).not.toContain('mtp');
-      expect(p.mtpEngine).toBeUndefined();
-    }
-  });
-
   test('16 GB: Qwen3.8-27B GSQ IQ3_XXS + lean MTP n 2 at the measured context (4060 Ti / 5060 Ti 229376, 5080 217088)', () => {
     withEngines();
     for (const [name, mib, arch, ctx] of SIXTEEN) {
@@ -165,14 +154,10 @@ describe('planner with our CUDA engines available', () => {
     expect(r.rejected.some((x) => x.modelId === 'bonsai2-27b-mtp')).toBe(true);
   });
 
-  test('24/32 GB picks are unchanged', () => {
-    withEngines();
-    expect(pickOf(card('RTX 3090', 24576, 'sm_86'))).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 245760, ub: 256 });
-    expect(pickOf(card('RTX 4090', 24564, 'sm_89'))).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256 });
-    expect(pickOf(card('RTX 5090', 32607, 'sm_120'))).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q6_K', ctx: 262144 });
-    for (const [name, mib, arch] of [['RTX 3090', 24576, 'sm_86'], ['RTX 4090', 24564, 'sm_89'], ['RTX 5090', 32607, 'sm_120']] as const) {
-      expect(pickOf(card(name, mib, arch)).mtpEngine).toBeUndefined();
-    }
+  test('24/32 GB: the measured fork plans at 262144 (3090 and 4090 ub 256, 5090 ub 512)', () => {
+    expect(pickOf(card('RTX 3090', 24576, 'sm_86'))).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256, mtpEngine: 'enigma-cuda-fork' });
+    expect(pickOf(card('RTX 4090', 24564, 'sm_89'))).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256, mtpEngine: 'enigma-cuda-fork' });
+    expect(pickOf(card('RTX 5090', 32607, 'sm_120'))).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q6_K', ctx: 262144, ub: 512, mtpEngine: 'enigma-cuda-fork' });
   });
 });
 
@@ -181,17 +166,12 @@ describe('enigma-cuda-fork (cuda-topka2 + KVQ + lean MTP reserve)', () => {
 
   test('engines.json: portable build + official cudart + the draft vocabulary, planned only where measured', () => {
     const e = engineById('enigma-cuda-fork')!;
-    expect(e).toMatchObject({ distribution: 'local', planOnlyMeasured: true, gpuArchs: ['sm_86', 'sm_89', 'sm_120'] });
-    expect(e.unpublishedAssets?.map((a) => a.name)).toEqual([
+    expect(e).toMatchObject({ distribution: 'download', planOnlyMeasured: true, gpuArchs: ['sm_86', 'sm_89', 'sm_120'] });
+    expect(e.assets.map((a) => a.name)).toEqual([
       'llama-kvqleana-bin-ubuntu-cuda-12.8-x64.tar.gz', 'cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz', 'draft_vocab_qwen38.txt',
     ]);
-    expect(e.unpublishedAssets?.[0]?.sha256).toBe('3eb4adb1658ae2ccaef39ca52dc9b60c9d5b6053d64b8e35b6854927f35517c6');
-  });
-
-  test('not available: the 4090 pick and its engines are unchanged', () => {
-    const p = pickOf(hw4090);
-    expect(p).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256 });
-    expect(p.mtpEngine).toBeUndefined();
+    // the published portable build: RUNPATH set to $ORIGIN after the campaign (the tested build pointed at the build dir)
+    expect(e.assets[0]?.sha256).toBe('b63ec233f60a35a8407a5ad583fbfa14ab705470219c08849656c6e256b71df3');
   });
 
   test('available: the 4090 plan runs on it at the measured 262144 / ub 256 with the exact run config', () => {
@@ -229,26 +209,18 @@ describe('enigma-cuda-fork (cuda-topka2 + KVQ + lean MTP reserve)', () => {
     expect(enigmaEngineFor(hw, p).entry?.id).toBe('enigma-cuda-fork');
     // the 16 GB cards keep lean-upstream
     for (const [name, mib, arch] of SIXTEEN) expect(pickOf(card(name, mib, arch)).mtpEngine).toBe('enigma-cuda-lean');
-    delete process.env[FORK];
-    expect(pickOf(hw)).toMatchObject({ quant: 'UD-Q4_K_XL', ctx: 245760, ub: 256 });
-    expect(pickOf(hw).mtpEngine).toBeUndefined();
   });
 
   test('available: the 5090 plan runs on it at the measured 262144 / ub 512 (UD-Q6_K)', () => {
     process.env[FORK] = dir;
     const hw = card('RTX 5090', 32607, 'sm_120');
     expect(pickOf(hw)).toMatchObject({ quant: 'UD-Q6_K', ctx: 262144, ub: 512, mtpEngine: 'enigma-cuda-fork' });
-    delete process.env[FORK];
-    expect(pickOf(hw)).toMatchObject({ quant: 'UD-Q6_K', ctx: 262144, ub: 1024 });
   });
 
-  test('16 GB: the fork only where measured (5060 Ti 196608), and lean-upstream (earlier in engines.json) wins when both are there', () => {
-    process.env[FORK] = dir;
-    expect(pickOf(card('RTX 5060 Ti', 16311, 'sm_120'))).toMatchObject({ quant: 'GSQ-IQ3_XXS', ctx: 196608, mtpEngine: 'enigma-cuda-fork' });
-    expect(pickOf(card('RTX 4060 Ti', 16380, 'sm_89')).mtpEngine).toBeUndefined();
-    expect(pickOf(card('RTX 5080', 16303, 'sm_120')).mtpEngine).toBeUndefined();
-    process.env[LEAN] = dir;
-    expect(pickOf(card('RTX 5060 Ti', 16311, 'sm_120'))).toMatchObject({ ctx: 229376, mtpEngine: 'enigma-cuda-lean' });
+  test('16 GB: lean-upstream (earlier in engines.json) wins over the fork, which is measured there only on the 5060 Ti', () => {
+    expect(pickOf(card('RTX 5060 Ti', 16311, 'sm_120'))).toMatchObject({ quant: 'GSQ-IQ3_XXS', ctx: 229376, mtpEngine: 'enigma-cuda-lean' });
+    expect(pickOf(card('RTX 4060 Ti', 16380, 'sm_89')).mtpEngine).toBe('enigma-cuda-lean');
+    expect(pickOf(card('RTX 5080', 16303, 'sm_120')).mtpEngine).toBe('enigma-cuda-lean');
   });
 
   test('2080 Ti: prism Bonsai PTQ1_0 MTP n 2 at the measured 155648 / ub 512', () => {

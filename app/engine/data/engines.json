@@ -378,7 +378,7 @@
       "arch": "x64",
       "backend": "cuda",
       "envKey": "ENIGMA_CUDA_LEAN",
-      "distribution": "local",
+      "distribution": "download",
       "gpuArchs": [
         "sm_86",
         "sm_89",
@@ -389,10 +389,10 @@
         "lookup",
         "mtp-lean-reserve"
       ],
-      "assets": [],
-      "unpublishedAssets": [
+      "assets": [
         {
           "name": "llama-b12110lean-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/jarojarojaro-jaro/KERNEL/releases/download/enigma-engines-cuda-2026-11-07/llama-b12110lean-bin-ubuntu-cuda-12.8-x64.tar.gz",
           "sizeBytes": 132282409,
           "sha256": "1ea7532e9edd17216eab559494dfb653258fce9281d2d67a961666349cbe9798"
         },
@@ -403,7 +403,7 @@
           "sha256": "6f1d562086d84ae85df880d3711079ec225602b51d530608e5001600625067dd"
         }
       ],
-      "note": "Distribution URL not published yet: available only from a local directory (ENIGMA_ENGINE_DIR_ENIGMA_CUDA_LEAN = the extracted llama-b12110lean archive with the official b12110 cudart libraries next to llama-server). Upstream b12110 + qwen-opt/patches/nv67-lean-reserve (MTP draft context reserves the K/V-only catch-up and the one-token draft step, so -ctkd/-ctvd q4_0 cut the draft KV). SASS sm_86/sm_89/sm_120a.",
+      "note": "Published 2026-11-07 as GitHub release enigma-engines-cuda-2026-11-07 of jarojarojaro-jaro/KERNEL (campaign 67), RUNPATH $ORIGIN; install = the archive + the official b12110 cudart libraries next to llama-server (ENIGMA_ENGINE_DIR_* still overrides with a local directory). Upstream b12110 + qwen-opt/patches/nv67-lean-reserve (MTP draft context reserves the K/V-only catch-up and the one-token draft step, so -ctkd/-ctvd q4_0 cut the draft KV). SASS sm_86/sm_89/sm_120a.",
       "profiles": [
         {
           "id": "qwen38-gsq-mtp2-lean",
@@ -433,7 +433,7 @@
       "arch": "x64",
       "backend": "cuda",
       "envKey": "ENIGMA_CUDA_PRISM",
-      "distribution": "local",
+      "distribution": "download",
       "gpuArchs": [
         "sm_75",
         "sm_86",
@@ -445,10 +445,10 @@
         "lookup",
         "mtp-draft-kv-ctk"
       ],
-      "assets": [],
-      "unpublishedAssets": [
+      "assets": [
         {
           "name": "llama-prism-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/jarojarojaro-jaro/KERNEL/releases/download/enigma-engines-cuda-2026-11-07/llama-prism-bin-ubuntu-cuda-12.8-x64.tar.gz",
           "sizeBytes": 227217132,
           "sha256": "4f6927ec8e2e6df311cee311584f5d0e8a6527caa942665a7a88474f100c23d9"
         },
@@ -459,7 +459,7 @@
           "sha256": "6f1d562086d84ae85df880d3711079ec225602b51d530608e5001600625067dd"
         }
       ],
-      "note": "Distribution URL not published yet: available only from a local directory (ENIGMA_ENGINE_DIR_ENIGMA_CUDA_PRISM = the extracted llama-prism archive with the official b12110 cudart libraries next to llama-server). Our CUDA 12.8 build of the PrismML fork (release prism-b12128-d7b2896): runs PTQ1_0 (upstream outputs garbage on it). SASS sm_86/sm_89/sm_120, sm_75 through PTX JIT.",
+      "note": "Published 2026-11-07 as GitHub release enigma-engines-cuda-2026-11-07 of jarojarojaro-jaro/KERNEL (campaign 67), RUNPATH $ORIGIN; install = the archive + the official b12110 cudart libraries next to llama-server (ENIGMA_ENGINE_DIR_* still overrides with a local directory). Our CUDA 12.8 build of the PrismML fork (release prism-b12128-d7b2896): runs PTQ1_0 (upstream outputs garbage on it). SASS sm_86/sm_89/sm_120, sm_75 through PTX JIT.",
       "profiles": [
         {
           "id": "bonsai-ptq1-mtp2",
@@ -498,7 +498,7 @@
       "arch": "x64",
       "backend": "cuda",
       "envKey": "ENIGMA_CUDA_FORK",
-      "distribution": "local",
+      "distribution": "download",
       "gpuArchs": [
         "sm_86",
         "sm_89",
@@ -511,12 +511,12 @@
         "mtp-fork-draft"
       ],
       "planOnlyMeasured": true,
-      "assets": [],
-      "unpublishedAssets": [
+      "assets": [
         {
           "name": "llama-kvqleana-bin-ubuntu-cuda-12.8-x64.tar.gz",
-          "sizeBytes": 130085072,
-          "sha256": "3eb4adb1658ae2ccaef39ca52dc9b60c9d5b6053d64b8e35b6854927f35517c6"
+          "url": "https://github.com/jarojarojaro-jaro/KERNEL/releases/download/enigma-engines-cuda-2026-11-07/llama-kvqleana-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 130083180,
+          "sha256": "b63ec233f60a35a8407a5ad583fbfa14ab705470219c08849656c6e256b71df3"
         },
         {
           "name": "cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz",
@@ -526,11 +526,12 @@
         },
         {
           "name": "draft_vocab_qwen38.txt",
+          "url": "https://github.com/jarojarojaro-jaro/KERNEL/releases/download/enigma-engines-cuda-2026-11-07/draft_vocab_qwen38.txt",
           "sizeBytes": 1627130,
           "sha256": "ef23007d66b0aebb8baf65ef5440faa3daaeb42faf2d07b64be4ac5017ea3a9a"
         }
       ],
-      "note": "Distribution URL not published yet: available only from a local directory (ENIGMA_ENGINE_DIR_ENIGMA_CUDA_FORK = the extracted archive with the official b12110 cudart libraries next to llama-server and draft_vocab_qwen38.txt in share/ or next to the model). Our CUDA fork cuda-topka2 (2a261101b) + KVQ (nv-4060ti-kvq 007a6f813) + topka-q63 patch 0002 (MTP lean reserve), GGML_NATIVE=OFF, SASS sm_86/sm_89/sm_120. Ships the portable no-AVX2 (AVX/F16C) build: the downloader cannot choose by CPU flags; the AVX2 build is llama-kvqlean-bin-ubuntu-cuda-12.8-x64.tar.gz (130107716 B, sha256 504670186094280ec74a4943e5a2b0056c4df957b74c2873b11a590fa18385d0). Qwen3.8-27B family only (draft vocabulary). Planned only on cards with a measured configuration (planOnlyMeasured, catalog VERIFIED).",
+      "note": "Published 2026-11-07 as GitHub release enigma-engines-cuda-2026-11-07 of jarojarojaro-jaro/KERNEL (campaign 67), RUNPATH $ORIGIN; install = the archive + the official b12110 cudart libraries next to llama-server (ENIGMA_ENGINE_DIR_* still overrides with a local directory). Our CUDA fork cuda-topka2 (2a261101b) + KVQ (nv-4060ti-kvq 007a6f813) + topka-q63 patch 0002 (MTP lean reserve), GGML_NATIVE=OFF, SASS sm_86/sm_89/sm_120. Ships the portable no-AVX2 (AVX/F16C) build: the downloader cannot choose by CPU flags; the AVX2 build is llama-kvqlean-bin-ubuntu-cuda-12.8-x64.tar.gz (130105374 B, sha256 4fc0126af3150d022fbda3e9b051ed315f0f7ca69cc4a6966a1111e673f4f00e, same release). Qwen3.8-27B family only (draft vocabulary). Planned only on cards with a measured configuration (planOnlyMeasured, catalog VERIFIED).",
       "profiles": [
         {
           "id": "qwen38-kvq-mtp4",

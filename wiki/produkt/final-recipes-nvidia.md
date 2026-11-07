@@ -65,7 +65,7 @@ Licencje: Qwen3.8-27B, Qwen3.5-9B, ISTA GSQ, Bonsai – Apache-2.0; Saluki – C
 | Enigma dziś (silnik upstream) | [Qwen3.5-9B](https://huggingface.co/unsloth/Qwen3.5-9B-GGUF) Q4_K_M | 151 552 | pin b11856, ub 512 | **66,90** | 7 251 | Apache-2.0 |
 | alternatywa MoE (upstream) | [LFM2.5-24B-A2B](https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF) Q4_K_M | 131 072 | b12110, KV q8_0, ub 512, `--n-cpu-moe 26` | 8,92 (tylko prędkość) | 7 555 (load) | LFM Open 1.0 (< $10M) |
 
-Tekst na stronę (nagłówek, tabela, „jak to osiągnęliśmy”, zastrzeżenia): `product/SITE-NVIDIA.md`.
+Tekst na stronę (nagłówek, tabela, „jak to osiągnęliśmy”, zastrzeżenia): `product/SITE-NVIDIA.md`. Silniki Enigmy opublikowane 2026-11-07 (wydanie GitHub `enigma-engines-cuda-2026-11-07`, tylko Linux x64): wiersze „po publikacji archiwów” działają u użytkowników Linuksa.
 
 ## Powiązane
 - [[jak-przyspieszylismy-nvidia]]

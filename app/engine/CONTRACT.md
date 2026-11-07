@@ -180,27 +180,28 @@ n 3: 61.49 → +30%). Ten sam kwant, więc bez kompromisu jakości: wpis `VERIFI
 plan 3090 = XL 262144 / ub 256 na forku. Bez silników picki bez zmian. Model oceny się nie zmienia (bez liczenia
 zmierzonych prędkości MTP w wyniku); UD-Q4_K_M (78.97 t/s na forku) nie wchodzi do katalogu.
 
-## Silniki Enigma CUDA — brakujący krok (stan 2026-11-07)
-`enigma-cuda-lean`, `enigma-cuda-prism` i `enigma-cuda-fork` są w `data/engines.json` jako `distribution: "local"`
-(konwencja silników bez adresu dystrybucji, jak `enigma-rocm-gfx1100`): działają u nas przez
-`ENIGMA_ENGINE_DIR_ENIGMA_CUDA_LEAN` / `…_PRISM` / `…_FORK`, u użytkownika ich nie ma (planner ich nie używa, kandydat
-`enigma` → `enigma_not_published:<id>`, `bonsai2-27b-mtp` → `needs_engine:enigma-cuda-prism`). **Brakuje publikacji
-wydania** (upload archiwów, którego ta zmiana celowo nie robi):
-- `llama-b12110lean-bin-ubuntu-cuda-12.8-x64.tar.gz` — 132282409 B, sha256
-  `1ea7532e9edd17216eab559494dfb653258fce9281d2d67a961666349cbe9798` (upstream b12110 + patch nv67-lean-reserve);
-- `llama-prism-bin-ubuntu-cuda-12.8-x64.tar.gz` — 227217132 B, sha256
-  `4f6927ec8e2e6df311cee311584f5d0e8a6527caa942665a7a88474f100c23d9` (fork PrismML, prism-b12128-d7b2896);
-- `llama-kvqleana-bin-ubuntu-cuda-12.8-x64.tar.gz` — 130085072 B, sha256
-  `3eb4adb1658ae2ccaef39ca52dc9b60c9d5b6053d64b8e35b6854927f35517c6` (nasz fork: cuda-topka2 2a261101b + KVQ 007a6f813
-  + topka-q63 0002 lean reserve; build przenośny AVX/F16C bez AVX2 — pobieranie nie wybiera wariantu po flagach CPU;
-  wariant AVX2 `llama-kvqlean-…` 130107716 B, sha256 `504670186094280ec74a4943e5a2b0056c4df957b74c2873b11a590fa18385d0`)
-  oraz `draft_vocab_qwen38.txt` — 1627130 B, sha256 `ef23007d66b0aebb8baf65ef5440faa3daaeb42faf2d07b64be4ac5017ea3a9a`
-  (plik bez archiwum: `ensureEngine` kładzie go do `<silnik>/share`, skąd profil bierze `{draftVocab}`);
-- obok każdego: oficjalny `cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz` (594371477 B, sha256
-  `6f1d562086d84ae85df880d3711079ec225602b51d530608e5001600625067dd`, adres GitHub ggml-org już w `unpublishedAssets`).
-Po uploadzie: przenieść `unpublishedAssets` do `assets` z URL-em wydania i ustawić `distribution: "download"` —
-`ensureEngine` pobiera, weryfikuje sha256, rozpakowuje i składa cudart obok `libggml-cuda.so` (`gatherLibs`) jak dla
-oficjalnych buildów; planner zaczyna ich używać bez dalszych zmian.
+## Silniki Enigma CUDA — opublikowane (2026-11-07)
+`enigma-cuda-lean`, `enigma-cuda-prism` i `enigma-cuda-fork` mają w `data/engines.json` `distribution: "download"`:
+archiwa leżą na wydaniu GitHub **`enigma-engines-cuda-2026-11-07`** repozytorium `jarojarojaro-jaro/KERNEL`
+(https://github.com/jarojarojaro-jaro/KERNEL/releases/tag/enigma-engines-cuda-2026-11-07, plik `SHA256SUMS`), a runtime
+CUDA to oficjalny `cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz` z ggml-org/llama.cpp. `ensureEngine` pobiera,
+sprawdza sha256, rozpakowuje, kładzie `draft_vocab_qwen38.txt` do `<silnik>/share` i składa cudart obok
+`libggml-cuda.so`; planner używa ich domyślnie (fork tylko na kartach ze zmierzoną konfiguracją: 3090, 4090, 5090).
+`ENIGMA_ENGINE_DIR_ENIGMA_CUDA_*` dalej nadpisuje pobieranie lokalnym katalogiem.
+
+| Archiwum | Bajty | sha256 |
+|---|---:|---|
+| `llama-b12110lean-bin-ubuntu-cuda-12.8-x64.tar.gz` (upstream b12110 + `qwen-opt/patches/nv67-lean-reserve`) | 132282409 | `1ea7532e9edd17216eab559494dfb653258fce9281d2d67a961666349cbe9798` |
+| `llama-prism-bin-ubuntu-cuda-12.8-x64.tar.gz` (PrismML prism-b12128-d7b2896) | 227217132 | `4f6927ec8e2e6df311cee311584f5d0e8a6527caa942665a7a88474f100c23d9` |
+| `llama-kvqleana-bin-ubuntu-cuda-12.8-x64.tar.gz` (fork, bez AVX2; używany przez Enigmę) | 130083180 | `b63ec233f60a35a8407a5ad583fbfa14ab705470219c08849656c6e256b71df3` |
+| `llama-kvqlean-bin-ubuntu-cuda-12.8-x64.tar.gz` (fork, AVX2) | 130105374 | `4fc0126af3150d022fbda3e9b051ed315f0f7ca69cc4a6966a1111e673f4f00e` |
+| `draft_vocab_qwen38.txt` | 1627130 | `ef23007d66b0aebb8baf65ef5440faa3daaeb42faf2d07b64be4ac5017ea3a9a` |
+
+Fork przed publikacją dostał `RUNPATH=$ORIGIN` (`patchelf --set-rpath`, 8 plików): zmierzony build wskazywał na katalog
+budowania (`/home/…/build-cuda/bin`) i u użytkownika nie znalazłby własnych bibliotek. Kod i flagi bez zmian, stąd nowe
+sha256 (stare: kvqleana `3eb4adb1…`, kvqlean `50467018…`). Smoke 2026-11-07: instalacja forka przez `ensureEngine` z
+lokalnymi archiwami — wszystkie biblioteki rozwiązane obok `llama-server` (cudart, cublas, ggml), brak tylko
+`libcuda.so.1` sterownika (maszyna bez NVIDIA). **Tylko Linux x64:** na Windows i macOS Enigma dalej używa upstreamu.
 
 ## Benchmark (jeden protokół dla baseline i kandydatów)
 0. Obciążenie renderowane **raz, na serwerze baseline** (jego szablon czatu przez `/apply-template` i jego tokenizer

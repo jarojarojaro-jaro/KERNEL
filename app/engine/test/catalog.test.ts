@@ -76,8 +76,9 @@ describe('recommend on typical machines', () => {
       expect(pick.ctx).toBeGreaterThanOrEqual(131072);
       expect(pick.ctx).toBeLessThanOrEqual(pick.ctxMax);
       expect(pick.ctx % 4096 === 0 || pick.ctx === pick.ctxMax).toBe(true);
-      // headroom after the full-context plan: Linux 100 MiB, Windows 512 MiB, macOS 0; CUDA +200 MiB
-      const margin = { linux: 100, windows: 512, macos: 0 }[hw.os] + (pick.backend === 'cuda' ? 200 : 0);
+      // headroom after the full-context plan: Linux 100 MiB, Windows 512 MiB, macOS 0; CUDA +200 MiB. A plan on our
+      // engine is capped at the context measured with a full fill on that card, so only "fits" is required there.
+      const margin = pick.mtpEngine ? 0 : { linux: 100, windows: 512, macos: 0 }[hw.os] + (pick.backend === 'cuda' ? 200 : 0);
       expect(pick.mem.freeGiB * 1024).toBeGreaterThanOrEqual(margin - 10);
       expect(r.alternatives.length).toBeLessThanOrEqual(3);
       const ids = [pick.modelId, ...r.alternatives.map((a) => a.modelId)];
@@ -153,41 +154,37 @@ describe('recommend on typical machines', () => {
     expect(recommend(nvCard('RTX 4070', 12282, 'sm_89')).alternatives.some((a) => a.modelId === 'gemma4-12b')).toBe(true);
   });
 
-  test('16 GB: Qwen3.8-27B GSQ IQ3_XXS plain at the measured context (4060 Ti 217088, 5060 Ti 200704, 5080 208896)', () => {
+  test('16 GB: Qwen3.8-27B GSQ IQ3_XXS + lean MTP n 2 at the measured context (4060 Ti / 5060 Ti 229376, 5080 217088)', () => {
     for (const [name, mib, arch, ctx] of [
-      ['RTX 4060 Ti', 16380, 'sm_89', 217088], ['RTX 5060 Ti', 16311, 'sm_120', 200704], ['RTX 5080', 16303, 'sm_120', 208896],
+      ['RTX 4060 Ti', 16380, 'sm_89', 229376], ['RTX 5060 Ti', 16311, 'sm_120', 229376], ['RTX 5080', 16303, 'sm_120', 217088],
     ] as const) {
       const pick = recommend(nvCard(name, mib, arch)).pick;
-      expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx, kvType: 'q4_0', ub: 256, backend: 'cuda' });
-      // stock upstream MTP OOMed at the first long prompt on these cards: only the measured plain run is offered
-      expect(pick?.features).not.toContain('mtp');
+      expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx, kvType: 'q4_0', ub: 256, backend: 'cuda', mtpEngine: 'enigma-cuda-lean' });
+      // stock upstream MTP OOMed at the first long prompt on these cards; MTP runs only on our lean engine
+      expect(pick?.features).toContain('mtp');
     }
   });
 
-  test('12 GB: Saluki 27B IQ2-mix plain, never above the measured context (4070 151552, 3060 135168)', () => {
+  test('12 GB: Ternary Bonsai 2 PTQ1_0 + MTP on prism (Apache-2.0); Saluki (CC BY-NC) is an alternative only', () => {
     const r = recommend(nvCard('RTX 4070', 12282, 'sm_89'));
-    expect(r.pick).toMatchObject({ modelId: 'saluki-27b', quant: 'IQ2-mix', ctx: 151552, kvType: 'q4_0', ub: 256 });
-    expect(r.pick?.features).not.toContain('mtp');
-    // CC BY-NC 4.0: flagged as conditional (non-commercial)
-    expect(r.pick?.why).toContain('license_conditional:cc-by-nc-4.0');
+    expect(r.pick).toMatchObject({ modelId: 'bonsai2-27b-mtp', quant: 'PTQ1_0', ctx: 208896, ub: 256, mtpEngine: 'enigma-cuda-prism' });
+    expect(r.pick?.why.some((w) => w.startsWith('license_conditional'))).toBe(false);
     expect(CATALOG.licenses['cc-by-nc-4.0']?.commercial).toBe('conditional');
-    expect(r.alternatives.some((a) => a.modelId === 'bonsai2-27b')).toBe(true);
-    expect(recommend(nvCard('RTX 3060', 12288, 'sm_86')).pick).toMatchObject({ modelId: 'saluki-27b', ctx: 135168, ub: 256 });
+    expect(recommend(nvCard('RTX 3060', 12288, 'sm_86')).pick).toMatchObject({ modelId: 'bonsai2-27b-mtp', ctx: 204800, ub: 256 });
   });
 
-  test('11 GB (2080 Ti): Saluki does not reach 131072, Ternary Bonsai 2 27B Q2_0 does', () => {
+  test('11 GB (2080 Ti): Saluki does not reach 131072; Bonsai 2 PTQ1_0 + MTP on prism at the measured 155648', () => {
     const r = recommend(nvCard('RTX 2080 Ti', 11264, 'sm_75'));
-    expect(r.pick).toMatchObject({ modelId: 'bonsai2-27b', quant: 'Q2_0', backend: 'cuda' });
-    expect(r.pick?.ctx).toBeGreaterThanOrEqual(131072);
+    expect(r.pick).toMatchObject({ modelId: 'bonsai2-27b-mtp', backend: 'cuda', ctx: 155648, ub: 512, mtpEngine: 'enigma-cuda-prism' });
     expect(r.rejected.find((x) => x.modelId === 'saluki-27b')?.reason).toMatch(/^ctx_below_min:/);
   });
 
-  test('10 GB (3080) and 8 GB (3070): Qwen3.5-9B; 24/32 GB picks unchanged', () => {
+  test('10 GB (3080) and 8 GB (3070): Qwen3.5-9B; 24/32 GB: our fork at 262144', () => {
     expect(recommend(nvCard('RTX 3080', 10240, 'sm_86')).pick?.modelId).toBe('qwen35-9b');
     expect(recommend(nvCard('RTX 3070', 8192, 'sm_86')).pick).toMatchObject({ modelId: 'qwen35-9b', quant: 'Q4_K_M', ctx: 151552 });
-    expect(recommend(nvCard('RTX 3090', 24576, 'sm_86')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 245760, ub: 256 });
-    expect(recommend(nvCard('RTX 4090', 24564, 'sm_89')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256 });
-    expect(recommend(nvCard('RTX 5090', 32607, 'sm_120')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q6_K', ctx: 262144 });
+    expect(recommend(nvCard('RTX 3090', 24576, 'sm_86')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256, mtpEngine: 'enigma-cuda-fork' });
+    expect(recommend(nvCard('RTX 4090', 24564, 'sm_89')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256, mtpEngine: 'enigma-cuda-fork' });
+    expect(recommend(nvCard('RTX 5090', 32607, 'sm_120')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q6_K', ctx: 262144, mtpEngine: 'enigma-cuda-fork' });
   });
 
   test('LFM2.5-24B LFM Open License carries the conditional (< USD 10M revenue) flag, UD quants included', () => {

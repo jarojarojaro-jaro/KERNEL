@@ -11,6 +11,8 @@ status: aktualne
 
 Reguła: każda paczka, która ma trafić do użytkownika albo na wynajęty host, jest budowana przenośnie (`GGML_NATIVE=OFF`, lista architektur GPU podana jawnie, np. sm_86;89;120) i ma wariant bez AVX2; `-march=native` tylko dla buildów na własną maszynę. Przed testem: `grep -o avx2 /proc/cpuinfo` na hoście.
 
+Druga pułapka tej samej paczki (znaleziona przy publikacji): `RUNPATH` wskazywał na katalog budowania (`/home/…/build-cuda/bin`), więc u użytkownika `llama-server` nie znalazłby własnych bibliotek. Przed publikacją: `readelf -d llama-server | grep RUNPATH` ma pokazać `$ORIGIN` (poprawka: `patchelf --set-rpath '$ORIGIN'`).
+
 ## Powiązane
 - [[lekcje/_hub|lekcje]]
 - [[jak-przyspieszylismy-nvidia]]
