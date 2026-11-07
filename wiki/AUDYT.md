@@ -2996,6 +2996,30 @@ Metoda: liczby z README monitora (pomiar harnessem `script` 200x55, 10 s, `nice`
 | [[reactor-monitor]] | 1006, 8 648, 94, 0,25, 100 | `monitor/README.md:18-33` | OK |
 | [[reactor-monitor]] | 1,79–1,81, 267–280, 3,0–3,3, 2,6–2,9, 0,07–0,10, 30, 1,82–1,88, 0,95–1,0, 5,9–6,9 | `monitor/README.md:123-129` | OK |
 
+## Ingest 2026-11-07 (raport 66)
+
+Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z dopisanych sekcji, a potem sprawdził, czy występują w raportach podanych w `zrodlo` (66a–66f, 66-SYNTEZA, 24h, 24s, 54, 63-SYNTEZA). Brakujących: 0. Znaczenie liczb sprawdzone ręcznie przy pisaniu (wiersze niżej). Liczby GSQ-RCO i porównania Unsloth vs GSQ pochodzą z komunikatu Main (karta HF ISTA-DASLab, dokumentacja i wykresy Unsloth, odczyt 2026-11-06), nie były czytane ponownie. Reguły RAM Straty i `MemTotal` sprawdzone w klonie `146df3c4` i `/proc/meminfo`.
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[raport-66-synteza]] | 24 | `66-SYNTEZA.md` §1, §3 | OK |
+| [[kv-raz-na-weryfikacje]] | 32 | `66b:99-129`, `66d:63-78,157`, `66e:132-136`, `24h:9-14` | OK |
+| [[mmq-q6k-skale-lds]] | 29 | `66a:300-343` (tabela ISA) | OK |
+| [[maska-kq-host-dlugi-ctx]] | 36 | `66e:96-115` (mikrobench), `66d:122` | OK |
+| [[prog-draftu-od-kosztu-wiersza]] | 43 | `66a:355-365` | poprawione przy pisaniu: przy 15 766 slotach najlepsze 0.5 (+5.6%), nie 0.35 |
+| [[glowica-draftu-rerank]] | 19 | `66d:101-117,158` | OK |
+| [[drzewo-weryfikacji-gdn-wy]] | 20 | `66d:80-99,159`, `24s:8-21` | OK |
+| [[siatka-checkpointow-gdn]] | 23 | `66b:140-158,219-220`, `66a:221` | OK |
+| [[strumien-on-wyrocznia]] | 19 | `66e:61-75,117-123,186` | OK |
+| [[lekcja-tps-z-zalozonej-akceptacji]] | 29 | `66b:23-42,62-70`, `66c:34-41`, `63-SYNTEZA` #6 | OK |
+| [[lekcja-flaga-bez-dowodu-dzialania]] | 12 | `66a:345-353`, `66c:104`, `66e:154`, `66d:127-128` | OK |
+| [[hyperkernel]], [[budzet-megakernela-qwen-xtx]] | 20, 43 | `66c:11-127` | OK |
+| [[1cat-vllm]], [[tokenspeed]] | 41, 13 | `66b:7-129,186-194` | OK |
+| [[saber-engine]] | 26 | `66d:5-149` | OK |
+| [[qwen38-flash-next]] | 48 | `66f` (po aktualizacji), `66a:23-116`; Strata `setup.py:3710-3723`; `/proc/meminfo` 65768884 kB = 62.72 GiB | OK; korekta 66f: MTP w master llama.cpp (#29761), UD-IQ4_XS w Stracie w trybie budżetu, a nie „nie” |
+| [[strata]], [[project-maya]], [[tqllm]], [[megakernele-prior-art]], [[radeon-ai-pro-r9700]], [[lekcja-mikrobench-klamie]], [[fattn-kvq]] (aktualizacje) | 20, 20, 16, 28, 9, 10, 9 | 66a, 66b, 66c, 66d, 66e | OK |
+| [[raport-54-mniej-granic]] | 26 | `66c:104` (dane z `~/qwen-opt/launchcut/logs/`) | poprawione: „niezmierzone” → +0.24% / 0.0% |
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

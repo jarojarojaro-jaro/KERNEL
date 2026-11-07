@@ -285,6 +285,36 @@ Synteza: [[raport-63-synteza]]; reguła [[2026-11-05-tylko-bezstratne]] (stratne
 | Linux commit 6027db7db773 + 44d0d3031e47 (drm/amd#3625) | mainline v7.4-rc1; brak w Ubuntu 6.8.0-138/-149 | R64 §3.2, [[lekcja-od-commit-gubi-krzywa]] | Potwierdzony błąd maski OD na SMU 13.0.0. | – | czy backport trafi do Ubuntu 6.8.0-1xx |
 | smu_v13_0_0_ppt.c / amdgpu_pm.c @ Ubuntu-6.8.0-138.138 | 2026-11-05 | R64 §1–3, [[raport-64-termika]] | Limit sclk to czysta górna granica DPM. | OD 140 B | – |
 
+## Raport 66 (2026-11-06/07: Strata, Maya, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM, Flash-Next)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| Strata (delta), github.com/Niko1221/Strata/releases/tag/v0.2.12 | tag `123bad4a` (11-07), klon `146df3c4`, silnik 0.1.58 | R66a §0–3, [[strata]], [[prog-draftu-od-kosztu-wiersza]], [[qwen38-flash-next]] | Dostrojony DFlash2 tylko dla Flash-Next; Strix ×2 = stratny prefill F16; dla gfx1100 i 27B nic. | Mac +10.3…12.7%; drafty +11.4% | `git log 146df3c4..` tylko HIP/gfx1100, wynik RX 7900 z 0.2.12 |
+| Tweet x.com/coldniko/status/2118994582054559808 | 11-07 (snippet web_search, X bez logowania) | R66a §2.1 | Nagłówki nie zgadzają się z release notes (31%, „3× Linux”). | – | – |
+| HF incoai/Qwen3.8-Flash-Next-DFlash2; nazeshinjite/Qwen3.8-Flash-Next-DFlash2-GGUF | rev `a22a1744` | R66a §2.1, §3.2 | Drafter Flash-Next, z 27B nieużywalny. | 603 M | – |
+| Project Maya (delta), github.com/mw00/project-maya/releases/tag/v1.1.55, /v1.1.56 | `c4effee6` (11-05), `22fc101f` (11-06), klon `7645ddd5` | R66a §2.2, [[project-maya]] | #864 lekcja WMMA (bitowo); MEMO domyślnie; nic do portu dla 27B. | #864 −39% (XTX) | >v1.1.56, gęsty 27B |
+| github.com/mw00/project-maya/pull/864 | `4da0b6cc` (11-06) | R66a §3.4, [[mmq-q6k-skale-lds]] | Podawanie operandów WMMA, 108/108 bitowo; u nas audyt Q6_K MMQ. | −38.9…−39.7% | – |
+| llama.cpp PR #29761, #28243, #27836, #27742 | #29761 `c061df198` (10-01, b11330); #28243 zamknięty, HEAD `6fcaa16f` | R66a §0.3, [[qwen38-flash-next]] | MTP `qwen4exp` w master; gałąź danielhanchen martwa. | – | DFlash2 dla Flash-Next w llama.cpp |
+| 1Cat-vLLM, github.com/1CatAI/1Cat-vLLM (release v1.5.2) | main `c98a8d6` (11-06), wheel `9f970d628`, tag `2bb8c2b9` | R66b, [[1cat-vllm]], [[kv-raz-na-weryfikacje]], [[siatka-checkpointow-gdn]] | −18% przy 250K = rzadka QSA + host KV FP8; Pack-GQA48 bezstratny wzorzec dla planu #8. | 27B 501 → 268 (−47%); operator −20…21% | port Pack-GQA poza V100 |
+| TokenSpeed, github.com/lightseekorg/tokenspeed | `b941508` (11-07) | R66b §2.2, §3.8, [[tokenspeed]] | Brak gfx11; lekcja: obcinanie po stop-tokenie na GPU przy overlapie. | monokernel „580 vs 377”, CI 443 | gfx11/gfx1151 w backendzie |
+| Blogi TokenSpeed (lightseek.org, pytorch.org) | cytowane w README | R66b §7 | Nieczytane, liczby z CI w repo. | – | – |
+| Hyperkernel, github.com/Hyperstitioncc/Hyperkernel | `7048c586` (11-06) | R66c, [[hyperkernel]] | Tylko binaria B300, generatora brak, AMD brak. | +36.7% vs baza NVIDIA (nieporównywalne) | wydanie generatora, backend AMD |
+| Wątek x.com/hyperstition_cc/status/2118432349352595528 | 11-05 (mirror r.jina.ai) | R66c §2.1 | Twierdzenia producenta, baza przepisana z NVIDIA. | 1129.6 vs 826.5 tok/s/user | – |
+| Mirage MPK HIP, github.com/mirage-project/mirage/pull/820 | gałąź `mpk-amd-mi355x` @ `b6ef312b` (11-02) | R66c §5, [[megakernele-prior-art]] | Pierwszy otwarty megakernel w HIP, tylko gfx950. | Kimi K3 2.02× przy bs1 | backend RDNA |
+| NVIDIA mega na B200, github.com/caiovicentino/deepseek-v4.1-flash-megakernel-4x-b200; sgl-project/sgl-nvidia-mega | `8315e890` (10-21); plugin `7b6ff0e2c5` (11-07) | R66c §5, [[megakernele-prior-art]] | Działa, ale 2 zawieszenia w 12.5 h. | +40…56% przy 1–8 użytk.; KL 0.0044 | – |
+| Fleet arXiv 2604.15379; Ada-MK arXiv 2605.11581; Event Tensor (MLSys 2026) | 2026-04-15; 2026-05-12; tylko tytuł | R66c §5, [[megakernele-prior-art]] | Prior art megakerneli; dla RDNA3 tylko idee. | MI350 1.3–1.5×; L20 +23.6% | Event Tensor (nieczytane) |
+| Saber, github.com/GGZ14/saber-engine | `c8a1e84` (11-06) | R66d, [[saber-engine]], [[kv-raz-na-weryfikacje]], [[glowica-draftu-rerank]], [[drzewo-weryfikacji-gdn-wy]] | Tylko gfx1201, numeryka stratna; 4 przenośne projekty. | TP=1 67 / 148 / 231 tok/s (deklaracja) | wynik niezależny, port gfx11 |
+| Reddit r/LocalLLaMA 1xpicjz (Saber) | 11-07 | R66d §2 | Treść nieczytelna, tylko tytuł. | 6 645 pp / 316 decode (tytuł) | – |
+| lucebox.com/blog/qwen38-r9700 | 2026-08-21 | R66d §2, [[radeon-ai-pro-r9700]] | Punkt odniesienia R9700. | llama.cpp plain 29.7–30.9 tok/s | – |
+| github.com/GGZ14/vllm-mxfp4 | 2026-11 | R66d §2 | Stos referencyjny autora Sabera `[INFERENCE]`, nieczytany w głąb. | – | jeśli Saber zyska niezależny pomiar |
+| Kumar, „Anatomy of an LLM Serving Engine” (hiraditya.github.io) | 10-28 / 11-01; vLLM `5df63a7`, SGLang `baa9bef` | R66e §2.1, [[strumien-on-wyrocznia]] | Mapa 5 warstw; u nas IPC na krok = 0. | – | części 3–10 serii |
+| Kumar, „A Request's Life in vLLM V1” | 11-02 | R66e §2.1 | Sufit frontu vLLM. | 27 µs/token (Python), ~12 µs (Rust) | – |
+| vllm.ai/blog/2024-09-05-perf-update | 2024-09-05 | R66e §2.1 | Profil sprzed rozdzielenia procesów. | HTTP 33% / sched 29% / GPU 38% | – |
+| tqLLM 1.4.4, github.com/turbo-tan/tqllm, tqllm.com, /performance.html | `9a9e7e5` (11-07) | R66e §2.2, §3.5, [[tqllm]] | `--exact on` domyślnie; T(x) bitexact na Metalu; O(n) strumień; MRU-other. | cache ekspertów 0.5 → 77% trafień | ROCm |
+| HF unsloth/Qwen3.8-Flash-Next-GGUF; unsloth.ai/docs/models/qwen3.8-next | API tree 11-06 | R66f, [[qwen38-flash-next]] | Rozmiary v3.1; tabela KLD z poradnika ma inne rozmiary (inny protokół). | UD-IQ3_XXS 83.6 GB | – |
+| unsloth.ai/docs/basics/dynamic-3.0-ggufs/dynamic-3.1-ggufs.md + wykresy „final key 4.png”, „fully final.png” | odczyt 11-06 | R66f, [[qwen38-flash-next]] | Porównanie z GSQ-RCO przy równym rozmiarze (producent, stronnicze). | 83.6 GB: KLD ~0.052 vs ~0.065; odzysk 99.9 vs 99.0% | wspólny protokół KLD (nasz) |
+| HF ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF; ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF | README 11-06 | R66f, [[qwen38-flash-next]], [[ista-daslab]] | „Task-lossless” przy 3.5 bpw; nasze E1 i 15e temu przeczą. | IQ3_S 93.26 vs BF16 93.12 | tier ≥ 4 bpw |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

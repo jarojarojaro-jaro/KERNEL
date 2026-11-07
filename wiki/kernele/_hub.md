@@ -14,7 +14,7 @@ Klasy poprawności: *bitowo identyczne* (te same logity / greedy md5) albo *zmia
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (30)
+## Notatki (33)
 
 - [[argmax-dpp|Argmax z DPP (0026)]] — Argmax po słowniku w drafcie MTP: 16 ładowań w locie i wymiana między lane'ami przez DPP zamiast pamięci LDS; 16.8 → 4.3 µs na wywołanie.
 - [[bariera-lds-rdna3|Bariera tylko LDS na RDNA3 (bez `buffer_gl0_inv`)]] — Na gfx1100 `__syncthreads()` kompiluje się do `s_waitcnt lgkmcnt(0); s_barrier; buffer_gl0_inv`, a bariera z płotami `__builtin_amdgcn_fence(…, "workgroup", "local")` wokół `__builtin_amdgcn_s_barrier()` do samego `s_waitcnt lgkmcnt(0); s_barrier` – bez unieważniania L0, więc load globalny za barierą nie czeka; Strata #3064 zmierzyła −1.3…−5% czasu weryfikacji GDN na R9700, bitowo (raport 21g, ISA sprawdzone `hipcc -S`, 2026-10-19).
@@ -30,6 +30,9 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[gdn-fast|GDN fast (Gated DeltaNet, DPP) — nie scalony]] — Szybszy kernel rekurencji Gated DeltaNet Qwena (redukcje DPP zamiast ds_bpermute, nakładanie tokenów t/t+1); bitowo zgodny, ale zysk end-to-end w szumie, więc został na gałęzi `opt-gdn6`.
 - [[gdn-replay|GDN z opóźnieniem: cofanie przez przeliczenie (S4)]] — Zamiast zapisywać snapshot stanu rekurencyjnego po każdym tokenie weryfikacji, cache trzyma zatwierdzony stan i bufory wierszy oczekujących, a następna weryfikacja przelicza przyjęte wiersze.
 - [[conv-lag|Historia conv z opóźnieniem (T1, łatka 0038)]] — Stan konwolucji Qwena trzymany jak stan GDN w S4: okno wokół wierszy oczekujących zamiast snapshotów, co usunęło „klif” przy drafcie ≥ 8 tokenów.
+- [[kv-raz-na-weryfikacje|KV czytane raz na weryfikację (plan #8): trzy wzorce]] — Weryfikacja MTP-4 to 5 tokenów × 6 głów = 30 kolumn, a `kvq` ma kafel 16 kolumn, więc dziś czyta i dekwantuje KV q4_0 dwa razy na krok; 1Cat, Saber i tqLLM pokazują trzy sposoby na jeden odczyt, szacunek 199k 74.5 → 77–83 t/s (2026-11-07, `[SZACUNEK]`).
+- [[maska-kq-host-dlugi-ctx|Maska KQ na hoście przy długim kontekście]] — Topka buduje maskę KQ na CPU dla każdego grafu z atencją, w czasie liniowym od `n_kv`; mikrobench szybkiej ścieżki daje 0.25 ms na graf weryfikacji przy 199k (1 µs przy 2k), czyli ~0.5 ms na krok ≈ 1.1%, a nie 2–6 ms z hipotezy F5 (raport 66e, 2026-11-07).
+- [[mmq-q6k-skale-lds|MMQ Q6_K na gfx1100 czyta skale bajt po bajcie]] — W produkcyjnym `libggml-hip.so` (topka, 2026-11-05) kernel MMQ Q6_K ma 16× `ds_load_i8` i zero `ds_load_b128`, podczas gdy Q4_K/Q5_K/IQ4 ładują operandy 128-bitowo; poprawka ładowania bez zmiany kolejności iloczynów daje szacunkowo pp4096 +1.5…3% (UD-Q4_K_XL) i +2.5…5% (Q4_K_M), bitowo (raport 66a, `[SZACUNEK]`).
 - [[mmvq-n1-wiersze|MMVQ 1-kolumnowe: 2 wiersze na blok (0052, 0064)]] — Strojenie zwykłego matvec (dekodowanie bez spekulacji) pod gfx1100: blok liczy 2 wiersze zamiast jednego, najpierw dla K-quantów, potem także dla Q8_0.
 - [[mmvq-moe-gate-up-blok|MMVQ MoE gate+up: blok jednej grupy q8_1 (`GGML_HIP_MOE_GU_BLOCK`)]] — `mul_mat_vec_q_moe_gate_up_q5k<8>`: blok 16 fal liczy 32 wiersze jednej grupy q8_1 (każdy wiersz jak kernel 2-wierszowy), wagi następnej iteracji ładuje przed bieżącym iloczynem, a ogon q8_1 idzie przez LDS i jedną barierę zamiast fence + atomika ticketu; bitowo identyczny z produkcją.
 - [[mmvq-multikolumnowe|MMVQ wielokolumnowe (weryfikacja spekulacji)]] — Kernel matvec, który przy weryfikacji 2–8 tokenów rozpakowuje wagi raz i mnoży je przez wszystkie kolumny; podstawa całego przyspieszenia spekulacji MTP/DFlash na RX 7900 XTX.

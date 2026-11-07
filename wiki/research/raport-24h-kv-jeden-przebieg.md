@@ -1,8 +1,8 @@
 ---
 typ: research
 tags: [research, fa, kv, weryfikacja]
-aktualizacja: 2026-10-20
-zrodlo: ~/KERNEL/product/research/24h-kv-jeden-przebieg.md:3,9-14,20-28
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/product/research/24h-kv-jeden-przebieg.md:3,9-14,20-28; ~/KERNEL/product/research/66-SYNTEZA.md
 status: aktualne
 ---
 # Raport 24h: jeden przebieg KV w `fattn-kvq` dla weryfikacji MTP – nie teraz
@@ -12,6 +12,7 @@ status: aktualne
 - Mikrobench d98304: n 1/2/3/5/6/8/11/16 = 161/165/293/297/425/428/773/831 µs; koszt ~130 µs na kafel 16 wierszy (`ceil(6·W/16)`) + ~33 µs stałego, prawie szczyt pasma (`24h:11-13`).
 - Każdy kafel to osobny pełny odczyt KV (`24h:13-14`).
 - Kill dla „+8% MTP @94–113k”; ewentualny następca tylko dla W ≥ 6 po pomiarze udziału kroków lookup (`24h:27-28`).
+- 2026-11-07 (R66): plan #8 wraca z trzema wzorcami i bramką „profil kroku przy 199k”; ten sufit zostaje punktem odniesienia ([[kv-raz-na-weryfikacje]]).
 
 ## Powiązane
 - [[research/_hub|research]]

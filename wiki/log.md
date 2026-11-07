@@ -227,3 +227,9 @@ Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzuca
 
 ## [2026-11-06] research | 66f Flash-Next: dobór kwantu na XTX
 [[qwen38-flash-next]]: Strata + IQ3_S zalecane; UD-IQ4_XS najwyższy mieszczący się; UD-Q4_K_XL nie.
+
+## [2026-11-07] ingest | Raport 66: Strata 0.2.12, Maya 1.1.55–56, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM 1.4.4
+Nowe: [[raport-66-synteza]], [[kv-raz-na-weryfikacje]], [[mmq-q6k-skale-lds]], [[maska-kq-host-dlugi-ctx]], [[prog-draftu-od-kosztu-wiersza]], [[glowica-draftu-rerank]], [[drzewo-weryfikacji-gdn-wy]], [[siatka-checkpointow-gdn]], [[strumien-on-wyrocznia]], [[budzet-megakernela-qwen-xtx]], [[lekcja-tps-z-zalozonej-akceptacji]], [[lekcja-flaga-bez-dowodu-dzialania]], [[hyperkernel]], [[1cat-vllm]], [[tokenspeed]], [[saber-engine]]. Aktualizacje: [[strata]], [[project-maya]], [[tqllm]], [[megakernele-prior-art]], [[fattn-kvq]], [[radeon-ai-pro-r9700]], [[lekcja-mikrobench-klamie]], [[raport-24h-kv-jeden-przebieg]], [[raport-54-mniej-granic]] (pomiar x54 z 2026-10-21: proza +0.24%, `mvs` 0.0%). Synteza z rankingiem 20 bezstratnych pomysłów: `product/research/66-SYNTEZA.md`. [[ZRODLA]]: sekcja „Raport 66”. [[AUDYT]] uzupełniony. [[REKORDY]] bez zmian (brak nowych pomiarów GPU).
+
+## [2026-11-07] update | 66f Flash-Next: korekta z 66a, GSQ-RCO, Unsloth v3.1 vs GSQ
+[[qwen38-flash-next]]: MTP `qwen4exp` w llama.cpp master od b11330 (#29761), gałąź danielhanchen #28243 zamknięta bez scalenia. Strata ma dwie reguły RAM: ISTA „eksperci + ~10 GB”, Unsloth „eksperci + 16 GiB”, inaczej budżet RAM − 24 GB. UD-IQ4_XS w Stracie działa w trybie budżetu (~17 GiB z SSD). Kwant: UD-IQ3_XXS v3.1 (83.6 GB) najlepszy przy tym rozmiarze (KLD ~0.052 vs ~0.065 GSQ IQ3_S, wykres Unsloth, stronniczy); GSQ IQ3_S zostaje alternatywą w Stracie.

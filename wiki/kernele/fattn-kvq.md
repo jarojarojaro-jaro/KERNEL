@@ -1,8 +1,8 @@
 ---
 typ: kernel
 tags: [kernele, flash-attention, kv]
-aktualizacja: 2026-10-21
-zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058); ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,34-41,107; ~/KERNEL/product/research/15b-spekulacja-frontier.md:20,92,179; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54-55; ~/KERNEL/product/research/16c-kvq-cuda.md:7-15,190-198; ~/KERNEL/product/research/16c-kvq-cuda.md:191-221,245-252; ~/qwen-opt/cloud/results/kvq-cuda-20261016/kld-c5/; ~/KERNEL/product/research/51-male-kernele.md:10-12; ~/KERNEL/product/research/54-mniej-granic.md:15-27
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058); ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,34-41,107; ~/KERNEL/product/research/15b-spekulacja-frontier.md:20,92,179; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54-55; ~/KERNEL/product/research/16c-kvq-cuda.md:7-15,190-198; ~/KERNEL/product/research/16c-kvq-cuda.md:191-221,245-252; ~/qwen-opt/cloud/results/kvq-cuda-20261016/kld-c5/; ~/KERNEL/product/research/51-male-kernele.md:10-12; ~/KERNEL/product/research/54-mniej-granic.md:15-27; ~/KERNEL/product/research/66b-1cat-tokenspeed.md:129; ~/KERNEL/product/research/66c-hyperkernel-megakernele.md:104
 status: aktualne
 ---
 # FA `kvq`: atencja dekodowania na skwantyzowanym KV
@@ -31,9 +31,13 @@ Wyłączniki: 0011 brak (build), `GGML_HIP_KVQ_Q8`, `GGML_HIP_KVQ_FWHT`. Tylko g
 
 ## Aktualizacja 2026-10-21
 - `flash_attn_ext_kvq<256,8,q4_0>` 0.56 ms/krok; epilog 59% instrukcji, wariant bitowy szac. 0.06–0.10 ms/krok ([[raport-51-male-kernele]]).
-- Fuzja KVQ_FWHT_GATE (combine + FWHT64 + gate + q8_1) zaimplementowana, niezmierzona ([[raport-54-mniej-granic]]).
+- Fuzja KVQ_FWHT_GATE (combine + FWHT64 + gate + q8_1) zmierzona 2026-10-21 razem z ATTN_PREP_MT: proza +0.24% (szum) ([[raport-54-mniej-granic]]).
+
+## Aktualizacja 2026-11-07 (R66)
+- Przy MTP-4 (30 kolumn) `kvq` robi `ntiles_x = 2` bloki i każdy czyta cały KV; trzy wzorce jednego odczytu (1Cat, Saber, tqLLM) w [[kv-raz-na-weryfikacje]]. Dobór podziałów (2 bloki na WGP dla q4_0) był strojony na LFM2 D=64, do przeglądu dla D=256.
 
 ## Powiązane
+- [[kv-raz-na-weryfikacje]]
 - [[kernele/_hub|Kernele]]
 - [[prefill-mmq-fa]]
 - [[attn-prep-fwht]]

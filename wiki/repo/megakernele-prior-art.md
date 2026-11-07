@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, megakernel, cuda]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/product/research/15a-monokernel.md:43-46,94-116
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/product/research/15a-monokernel.md:43-46,94-116; ~/KERNEL/product/research/66c-hyperkernel-megakernele.md:128-139; ~/KERNEL/product/research/66b-1cat-tokenspeed.md:192
 status: aktualne
 ---
 # Megakernele: Hazy, MPK i inne (prior art)
@@ -15,6 +15,15 @@ status: aktualne
 - **TensorFold** (M5): megakernel z barierą siatki przegrał (4.6–18 µs/fazę vs 4.01 µs relaunchu).
 - **llama.cpp:** brak PR megakernela; PDL #22522 scalone (+5–13% tg na Blackwell); #28863 – brak megakernela na AMD.
 - HipKittens celuje w CDNA, nie RDNA.
+
+## Aktualizacja 2026-11-07 (R66c)
+- **Hyperkernel** (B300): rezydentny megakernel w stylu Hazy wygenerowany automatycznie, tylko binaria ([[hyperkernel]]).
+- **MPK HIP, PR #820** (2026-11-02, otwarty): pierwszy otwarty runtime megakernela w HIP, gfx950 (CDNA4), „static megakernel” na typ warstwy; Kimi K3 TP8 2.02× przy bs1, 1.24–1.28× przy bs64; GSM8K 0.954 vs 0.958. Na RDNA3 trzeba przepisać asm (sc0/sc1 → glc/dlc), wave64 → wave32, MFMA → WMMA.
+- **NVIDIA `sgl-nvidia-mega`** (port na B200, `8315e890`): +40…56% na użytkownika przy 1–8 równoległych, remis przy 9–32; KL 0.0044; **2 zawieszenia w 12.5 h**, produkcja wróciła na zwykłą ścieżkę.
+- **Fleet** (AMD Research, arXiv 2604.15379): trwały runtime z zadaniami per chiplet, MI350 Qwen3-8B 1.3–1.5× vs vLLM przy bs 1–8. Na RDNA3 (jeden die) przenosi się tylko lokalność cache.
+- **Ada-MK** (arXiv 2605.11581): harmonogram wyliczony offline, L20 +23.6% vs TRT-LLM przy bs1.
+- **TokenSpeed monokernel** (gfx950, jedno trwałe uruchomienie na warstwę): „580 vs 377 t/s”, CI 443 ([[tokenspeed]]).
+- Dla nas: [[budzet-megakernela-qwen-xtx]].
 
 ## Powiązane
 - [[repo/_hub|repo]]

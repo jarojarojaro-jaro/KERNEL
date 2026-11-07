@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, spekulacja, cuda, determinizm]
-aktualizacja: 2026-10-24
-zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,125-148; ~/KERNEL/product/research/15c-nowe-silniki.md:23-27,68-80,166-186,362; ~/KERNEL/product/research/15f-agentowa-nauka.md:58-63; ~/KERNEL/product/research/32f-ninfer-tqllm-dflash2.md:14-22; ~/KERNEL/product/research/60c-quant-and-3090-engines.md:138-160
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,125-148; ~/KERNEL/product/research/15c-nowe-silniki.md:23-27,68-80,166-186,362; ~/KERNEL/product/research/15f-agentowa-nauka.md:58-63; ~/KERNEL/product/research/32f-ninfer-tqllm-dflash2.md:14-22; ~/KERNEL/product/research/60c-quant-and-3090-engines.md:138-160; ~/KERNEL/product/research/66e-anatomia-serwowania-tqllm.md:28-57,117-164
 status: do-sprawdzenia
 ---
 # tqLLM (turbo-tan): silnik CUDA dla Qwen3.8
@@ -22,6 +22,15 @@ Repo `turbo-tan/tqllm` @ `23af3c9`, ~57 tys. linii, 15★.
 
 ## Aktualizacja 2026-10-24 (1.2.0–1.2.3, `c2163c2`)
 - Kod otwarty (Apache-2.0), tylko CUDA i MLX, bez ROCm. Flash-Next na 3090 (eksperci w RAM, banki slotów ekspertów w VRAM, MTP do 5 z progiem 0.9): 77.1 vs 47.2 t/s (Strata) po 128K, czat 96–103 t/s. Wymaga ≥ 64 GB RAM, pomiary na 128 GB. MTP na Qwen3.6-35B-A3B: 178–183 → 246–330 t/s. W 1.2.3 osadzenie per warstwa czytane wierszami z dysku kosztowało 15% dekodu ([[raport-60c-quant-3090]]).
+
+## Aktualizacja 2026-11-07 (1.4.4, `9a9e7e5`, R66e)
+- `--exact on` domyślnie: aktywacje i KV w FP16/BF16, prefill GEMM FP16 zamiast int8/FP8, „greedy output is the same from build to build”. Przybliżenia tylko jawnie, z `WARN`.
+- Metal: bitowo dokładna atencja drzewa i łańcucha (reguła T(x), wspólny „bulk” kluczy dla wierszy weryfikacji) → wzór dla [[kv-raz-na-weryfikacje]].
+- `StreamWriter` O(n) z wyrocznią O(n²) ([[strumien-on-wyrocznia]]).
+- Cache ekspertów: przy cyklicznym dostępie warstw LRU zawsze wyrzucał bank potrzebny za chwilę; polityka „najświeższy inny bank” podniosła trafienia 0.5% → 77% (3090, 128K: 5 → 27.7 t/s). Lekcja dla każdego cache'u cyklicznego.
+- GB10: `cudaMemGetInfo` liczy page cache jako zajęty; `MemAvailable` mieści 262K (dotyczy planera Enigmy na pamięci zunifikowanej).
+- 5090 Flash-Next bez ich grafów per warstwa: czat 128 → 154 t/s (na 3090 grafy −3%). Rejestr 55 flag env.
+- Stratne: TurboQuant TQ3/TQ4, KV tq3/turbo/tcq, ANE w prefillu.
 
 ## Powiązane
 - [[repo/_hub|repo]]

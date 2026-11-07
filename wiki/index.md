@@ -61,35 +61,35 @@ Audyt liczb: [[AUDYT]].
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (23)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
-- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (30)
+- [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (41)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (47)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (65)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (108)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (110)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (84)
-- [[research/_hub|research]] — Streszczenia raportów (152)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (88)
+- [[research/_hub|research]] — Streszczenia raportów (153)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (31)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
 
-- 2026-11-06 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
-- 2026-11-06 [[raport-65-vram-rezerwa-mtp|Raport 65: 1 GiB VRAM z rezerwy MTP → kontekst 262 144]]
-- 2026-11-06 [[tailscale|Tailscale: zdalny dostęp do serwera]]
-- 2026-11-06 [[reactor-monitor|REACTOR (monitor terminalowy)]]
-- 2026-11-06 [[qwen38-flash-next|Qwen3.8-Flash-Next (125B MoE, 6B aktywnych, zapowiedź architektury Qwen4)]]
-- 2026-11-06 [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]]
-- 2026-11-06 [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]]
-- 2026-11-06 [[2026-11-06-xtx-eco-instalacja|xtx-eco: instalacja 2026-11-06 i fabryczny OD_SCLK zmienny między bootami]]
-- 2026-11-06 [[2026-11-06-final-mode|Final mode: eco 2200 MHz + kontekst 262 144 (2026-11-06)]]
-- 2026-11-06 [[2026-11-06-eco-szybki-bench|Szybki bench produkcji: eco 2200 vs stock (2026-11-06)]]
-- 2026-11-06 [[2026-11-06-eco-sweep-sclk|Sweep eco: limit taktowania rdzenia XTX (2026-11-06)]]
-- 2026-11-06 [[2026-11-06-ctx-262k-fit|Pełny kontekst 262 144 na XTX (Qwen3.8-27B-Uncensored, 2026-11-06)]]
-- 2026-11-06 [[2026-11-06-profil-eco-2200|2026-11-06: stały profil eco 2200 MHz na XTX]]
-- 2026-11-05 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
-- 2026-11-05 [[init-user-pages-failed|`amdgpu: init_user_pages: Failed to get user pages: -1` przy starcie serwera]]
+- 2026-11-07 [[raport-66-synteza|Raport 66: Strata 0.2.12, Maya, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM, Flash-Next]]
+- 2026-11-07 [[raport-54-mniej-granic|Raport 54: mniej granic dispatchy w kroku weryfikacji]]
+- 2026-11-07 [[raport-24h-kv-jeden-przebieg|Raport 24h: jeden przebieg KV w `fattn-kvq` dla weryfikacji MTP – nie teraz]]
+- 2026-11-07 [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]]
+- 2026-11-07 [[tokenspeed|TokenSpeed (LightSeek Foundation)]]
+- 2026-11-07 [[strata|Strata (Niko1221/Strata)]]
+- 2026-11-07 [[saber-engine|Saber (GGZ14/saber-engine): silnik Rust + HIP dla R9700]]
+- 2026-11-07 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
+- 2026-11-07 [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]]
+- 2026-11-07 [[hyperkernel|Hyperkernel (Hyperstition): rezydentny megakernel na B300]]
+- 2026-11-07 [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]]
+- 2026-11-07 [[qwen38-flash-next|Qwen3.8-Flash-Next (125B MoE, 6B aktywnych, zapowiedź architektury Qwen4)]]
+- 2026-11-07 [[strumien-on-wyrocznia|Strumień O(n) z wyrocznią zamiast parsera O(n²)]]
+- 2026-11-07 [[siatka-checkpointow-gdn|Siatka checkpointów GDN, junction i fallback odtwarzania]]
+- 2026-11-07 [[prog-draftu-od-kosztu-wiersza|Próg draftu zależny od kosztu wiersza weryfikacji]]
 
-Razem 689 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
+Razem 705 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

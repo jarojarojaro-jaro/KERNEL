@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, spekulacja, moe, metodologia]
-aktualizacja: 2026-11-05
-zrodlo: ~/KERNEL/qwen-opt/research/strata/README.md:1-34,194; ~/KERNEL/qwen-opt/research/strata/issues.md:1-20; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:82; ~/KERNEL/product/research/21d-kv-na-dysku.md:76-88; ~/KERNEL/product/research/21g-nowe-silniki.md:218-272,291-297; ~/KERNEL/product/research/21n-strata-020-gyro.md:7-10; ~/KERNEL/product/research/63a-silniki-lokalne.md:29-32,69-169
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/qwen-opt/research/strata/README.md:1-34,194; ~/KERNEL/qwen-opt/research/strata/issues.md:1-20; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:82; ~/KERNEL/product/research/21d-kv-na-dysku.md:76-88; ~/KERNEL/product/research/21g-nowe-silniki.md:218-272,291-297; ~/KERNEL/product/research/21n-strata-020-gyro.md:7-10; ~/KERNEL/product/research/63a-silniki-lokalne.md:29-32,69-169; ~/KERNEL/product/research/66a-strata-maya.md:23-116,141-204,273-298,355-365
 status: aktualne
 ---
 # Strata (Niko1221/Strata)
@@ -20,6 +20,8 @@ v0.1.44.1–0.1.45 (21g, 2026-10-19): ścieżka Qwen3.6-35B-A3B, dekod R9700 83.
 0.2.1–0.2.2 (`011c9e60`, 10-21, silnik 0.1.47; R57b): Gyro na Arc/Mac, trellis NVIDIA +17% (3060) / P100 +30%, pula CPU per NUMA, role kart Main/Helper/Off; silnik ~11% zmian od 0.2.0-beta, dla gfx1100 nic do prędkości. Lekcja `86d10ed8`: flaga hosta podnoszona po `graphLaunch` = deadlock na HIP (8/41 → 0/46). Domyślne wagi = ISTA-DASLab GSQ-RCO GGUF. XTX (społeczność): IQ3_S 62.3 t/s, prefill 128K 926 → 1687 z tabelą hipBLASLt. „Qwen3.8-Flash” = hostowane API, lokalnie tylko Flash-Next ([R57b](../../product/research/57b-strata-qwen38-flash.md)).
 
 0.2.3–0.2.11 (klon `9f7d977d`, 2026-11-05, silnik 0.1.48 → 0.1.57; R63a): dla gfx1100 i gęstego 27B nic; paczka „Linux RX 7900” tylko zbudowana, nieuruchomiona. KVA (0.2.7) to stratny prefill przez stan późnych warstw ([[strata-kva]], odrzucony). PR #4366: ogłoszone +39% prefillu to ciepły vs zimny przebieg, realnie +2–6%. 0.2.10: DFlash2 domyślny (wygrywa na greedy kodzie, nie przy T=1), silnik TP „wszystkie karty”; „128K na 8 GB” = drabina degradacji mierzona na dużej karcie ograniczonej do 8 GB (wzór UX dla Enigmy). Synteza: [[raport-63-synteza]].
+
+0.2.12 (tag `123bad4a`, 2026-11-07, silnik 0.1.58; R66a): „newly trained DFlash2 drafter” to fine-tune drafteru Inco AI dla Flash-Next (603 M, na wyjściach kwantów UD-Q4_K_XL i UD-IQ4_XS-v31): +11.4% przyjętych draftów, +2.1…5.0% t/s; z 27B nieużywalny (inne tapy i format `.pack`). Tweet vs release notes: Mac +10.3…12.7%, nie +31%; Strix Halo ×1.77–2.12 to prefill 4K z fuzowanych kerneli F16 WMMA (stratne, tylko Windows), „prawie 3× na Linuksie” nie było mierzone; „3× low RAM” to poprawka błędu liczenia wolnej pamięci. Pułapka UMA: kopie z niezarejestrowanej areny hosta szły ~0.5 GB/s. Dla Enigmy: próg draftu rośnie z kosztem wiersza weryfikacji ([[prog-draftu-od-kosztu-wiersza]]). Flash-Next na XTX: tylko HIP (bez Vulkana), DFlash2 na gfx1100 niezmierzony, reguły RAM ISTA vs Unsloth w [[qwen38-flash-next]]. Synteza: [[raport-66-synteza]].
 
 ## Powiązane
 - [[repo/_hub|repo]]

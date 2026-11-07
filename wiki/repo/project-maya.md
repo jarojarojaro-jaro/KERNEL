@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, konkurencja, moe]
-aktualizacja: 2026-11-05
-zrodlo: ~/KERNEL/product/research/21g-nowe-silniki.md:158-216; ~/KERNEL/product/research/21g-notatki/maya.md; https://github.com/mw00/project-maya (`a4e1ff0`, v1.1.15; `f26d8ba`, v1.1.26; `c167004`, v1.1.54); ~/KERNEL/product/research/32a-maya-1117-strata-020-gyro.md:14-20; ~/KERNEL/product/research/39a-maya-1119.md:14-30; ~/KERNEL/product/research/60d-serving-kernels-cache.md:196-213,232-239; ~/KERNEL/product/research/63b-colibri-maya-delta.md:166-220
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/product/research/21g-nowe-silniki.md:158-216; ~/KERNEL/product/research/21g-notatki/maya.md; https://github.com/mw00/project-maya (`a4e1ff0`, v1.1.15; `f26d8ba`, v1.1.26; `c167004`, v1.1.54; `c4effee6`, v1.1.55; `22fc101f`, v1.1.56); ~/KERNEL/product/research/32a-maya-1117-strata-020-gyro.md:14-20; ~/KERNEL/product/research/39a-maya-1119.md:14-30; ~/KERNEL/product/research/60d-serving-kernels-cache.md:196-213,232-239; ~/KERNEL/product/research/63b-colibri-maya-delta.md:166-220; ~/KERNEL/product/research/66a-strata-maya.md:206-226,300-353
 status: aktualne
 ---
 # Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash
@@ -30,6 +30,12 @@ status: aktualne
 - Do wzięcia dla ścieżki agenta: **#607 „wspólny początek”** (system + narzędzia jako osobny mały wpis, nowa rozmowa 19× szybciej) → [[wspolny-poczatek-promptu]]; #639 punkty przywracania; `tools/agent_bench.py` (#406) jako benchmark.
 - Zasady: żadna warstwa pośrednia nie przepisuje prefiksu (#704: strażnik pętli psuł cache, 150K ~15× szybciej po poprawce); przerwanie nie gubi stanu (#573, #746). #625 stała kolejność narzędzi zmienia prompt, więc u nas tylko za zgodą ([[2026-11-05-tylko-bezstratne]]).
 - v1.1.54 „follow-up czytał całą rozmowę” na Qwenie: ten sam błąd klasy co colibri #2517 ([[colibri]]).
+
+## Aktualizacja 2026-11-07 (v1.1.55–1.1.56, R66a)
+- **#864 (XTX, ROCm 7.2.4):** kernele ekspertów EXL3 na WMMA −39% przy ≥ 128 wierszach na eksperta, 108/108 wyjść bitowo. Koszt był w podawaniu operandów: 2× `ds_load_b128` zamiast 8 słów, słowa kafla przez `v_permlane16`, LDS 57 → 24 KB. Nasz audyt ISA tej lekcji znalazł Q6_K w MMQ topki ([[mmq-q6k-skale-lds]]).
+- `MAYA_PROMPT_MEMO` domyślnie (przyrostowe przygotowanie promptu): follow-up po 115K −6%. Nasz odpowiednik `TOK_CACHE` jest w produkcji martwy ([[lekcja-flaga-bez-dowodu-dzialania]]).
+- #840: przy nieudanym wczytaniu slotu następny slot, potem checkpoint ([[siatka-checkpointow-gdn]]). Dla Enigmy: Codex CLI na `/v1/responses` (#726), odpowiedź biegnie do końca bez czytelnika.
+- Stratne (parked): GLM KV INT8 domyślnie, `DS4_CHUNK_GFX11=0`, #869/#870 RDNA2.
 
 ## Powiązane
 - [[repo/_hub|repo]]
