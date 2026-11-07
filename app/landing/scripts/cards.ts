@@ -1,20 +1,40 @@
 /**
  * Build step: turns the consolidated NVIDIA benchmark sheet into `src/lib/data/cards.json`.
  *
- * Source of truth: KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md (tables copied from the
- * campaign reports, raw data in ~/qwen-opt/cloud/results/<card>-20261016/). Every number keeps
- * the file:line it was read from. The parser is deliberately strict: each section, column and
- * row is named below, and a missing or reshaped table fails the build instead of guessing.
+ * Source of truth: <repo>/product/BENCHMARKI-NVIDIA-2026-10-16.md (tables copied from the
+ * campaign reports, raw data in <repo>/qwen-opt/cloud/results/<card>-20261016/, mirrored on the
+ * GPU server at ~/qwen-opt/cloud/results). Every number keeps the file:line it was read from.
+ * The parser is deliberately strict: each section, column and row is named below, and a missing
+ * or reshaped table fails the build instead of guessing.
  *
  * Cross-check: each decode median is compared with the matching cloud scorecard.json row;
  * a disagreement beyond the sheet's rounding is recorded in `checks` (shown on the methodology
  * page) and printed, never silently "fixed".
  */
 import { existsSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import type { CardHw, CardsFile, ModelKey, Num, NvidiaCard, Run, Variant, VariantKey } from '../src/lib/data/card-types';
 
+/** Repo root: this file lives in <repo>/app/landing/scripts/. */
+export const REPO_ROOT = resolve(import.meta.dir, '../../..');
+
+/**
+ * Path of a data file that is versioned in this repo. `homeRel` is the path as written on the
+ * methodology page / in the GPU-server layout (`KERNEL/product/...`, `qwen-opt/cloud/results`):
+ * the same string is shown in the generated JSON, so `source` fields do not change.
+ * `usable` decides whether the repo copy counts: the repo has a partial `qwen-opt/cloud/results`
+ * tree with no scorecards, so "directory exists" is not enough for that one. When the repo copy
+ * is unusable we fall back to `~` — the GPU server layout, which is the only place `homedir()`
+ * is still needed.
+ */
+export function dataFile(homeRel: string, usable: (path: string) => boolean = existsSync): string {
+	const inRepo = resolve(REPO_ROOT, homeRel.replace(/^KERNEL\//, ''));
+	// Fallback for the GPU server, where these files exist only under $HOME.
+	return usable(inRepo) ? inRepo : join(homedir(), homeRel);
+}
+
+/** Label kept in `source` / `file:` fields (what the methodology page displays). */
 const REL = 'KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md';
 
 const CARDS: {
@@ -162,7 +182,7 @@ const REPORT_RUNS: {
 ];
 
 function buildReportRun(cfg: (typeof REPORT_RUNS)[number], resultsDir: string, checks: CardsFile['checks']): Run | null {
-	const path = join(homedir(), cfg.file);
+	const path = dataFile(cfg.file);
 	if (!existsSync(path)) return null;
 	const lines = readFileSync(path, 'utf8').split('\n');
 	const src = (i: number) => `${cfg.file}:${i + 1}`;

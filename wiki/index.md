@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (48)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (67)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (115)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (116)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (88)
@@ -75,6 +75,7 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-11-08 [[lekcja-build-landing-nie-czyta-home|Build landingu czytał dane ze `$HOME`, więc klon repo się nie budował]]
 - 2026-11-07 [[raport-67-kampania-nvidia|Raport 67: kampania NVIDIA na Vast (Enigma) — trzy części]]
 - 2026-11-07 [[raport-66-synteza|Raport 66: Strata 0.2.12, Maya, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM, Flash-Next]]
 - 2026-11-07 [[raport-54-mniej-granic|Raport 54: mniej granic dispatchy w kroku weryfikacji]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-07 [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]]
 - 2026-11-07 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
 - 2026-11-07 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
-- 2026-11-07 [[backlog-testow-nvidia|Backlog testów NVIDIA (z całej bazy wiedzy), stan 2026-11-07]]
 
-Razem 717 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
+Razem 718 notatek. Wygenerowano 2026-11-08 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

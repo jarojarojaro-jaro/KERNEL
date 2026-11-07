@@ -1,20 +1,25 @@
 /**
  * Build step (runs before `vite build`):
- * 1. Collects cloud scorecards from ~/qwen-opt/cloud/results/<card>-<date>/scorecard.json
- *    (written by runs/<card>/scorecard.py) into src/lib/data/cloud-results.json. Cards without a
- *    scorecard stay "in progress" on the site: no numbers are shown until a scorecard exists.
+ * 1. Collects cloud scorecards into src/lib/data/cloud-results.json: by default from the repo copy
+ *    (`<repo>/qwen-opt/cloud/results/<card>-<date>/scorecard.json`), falling back to the GPU server
+ *    layout `~/qwen-opt/cloud/results` when the repo has no copy. Cards without a scorecard stay
+ *    "in progress" on the site: no numbers are shown until a scorecard exists.
  * 3. Renders the TUI result screen (app/tui/tui_demo.py --snapshot, colourless) for the terminal page.
  * 2. Copies the scan scripts from app/scan/ into static/scan/ so the site serves the exact files
  *    that live in the repo (single source of truth).
  */
 import { spawnSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { buildCards } from './cards';
+import { buildCards, dataFile } from './cards';
 
 const here = resolve(import.meta.dir, '..');
-const resultsDir = process.env.CLOUD_RESULTS ?? join(homedir(), 'qwen-opt/cloud/results');
+const RESULTS_REL = 'qwen-opt/cloud/results';
+/** A results directory counts only when at least one card has a scorecard (the repo tree is partial). */
+const hasScorecard = (dir: string) =>
+	existsSync(dir) &&
+	readdirSync(dir, { withFileTypes: true }).some((d) => d.isDirectory() && existsSync(join(dir, d.name, 'scorecard.json')));
+const resultsDir = process.env.CLOUD_RESULTS ?? dataFile(RESULTS_REL, hasScorecard);
 
 interface ScoreRow {
 	model: string;
@@ -47,7 +52,7 @@ writeFileSync(
 );
 console.log(`cloud scorecards: ${Object.keys(cards).length ? Object.keys(cards).join(', ') : 'none yet'}`);
 
-const sheet = process.env.NVIDIA_SHEET ?? join(homedir(), 'KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md');
+const sheet = process.env.NVIDIA_SHEET ?? dataFile('KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md');
 const cardsData = buildCards(sheet, resultsDir);
 writeFileSync(join(here, 'src/lib/data/cards.json'), JSON.stringify(cardsData, null, '\t') + '\n');
 console.log(`cards: ${cardsData.cards.map((c) => `${c.id} (${c.runs.length} models)`).join(', ')}`);

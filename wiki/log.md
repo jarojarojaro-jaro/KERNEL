@@ -260,3 +260,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-07] lekcja | czat wstał na starym silniku
 [[lekcja-restart-zlym-launcherem]]: po restarcie maszyny `run-llm.sh` zamiast `run-topka.sh` → ~6 h produkcji na llama-opt z 15.10; naprawione restartem przez run-topka.sh (topka-q63, PM4, lookup, GPU verify, n_ctx 262144).
+
+## [2026-11-08] lekcja | build landingu bez $HOME
+[[lekcja-build-landing-nie-czyta-home]]: `scripts/cards.ts` i `scripts/sync-results.ts` liczą ścieżki danych od roota repo (fallback do `~` zostaje dla serwera GPU); build w klonie z pustym `HOME` = kod 0, sha256 `cards.json`/`cloud-results.json` bez zmian.
