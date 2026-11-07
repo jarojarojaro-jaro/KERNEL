@@ -257,3 +257,6 @@ Model pamięci upstream: błąd ≤ 23 MiB, RS × (n+1), limit = suma CUDA. [[sa
 
 ## [2026-11-07] wdrożenie | silniki CUDA Enigmy opublikowane
 Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana, b12110lean, prism, słownik draftu; `engines.json` → download; planner domyślnie na silnikach Enigmy (Linux x64). Fork z poprawionym RUNPATH ([[lekcja-paczka-march-native]]).
+
+## [2026-11-07] lekcja | czat wstał na starym silniku
+[[lekcja-restart-zlym-launcherem]]: po restarcie maszyny `run-llm.sh` zamiast `run-topka.sh` → ~6 h produkcji na llama-opt z 15.10; naprawione restartem przez run-topka.sh (topka-q63, PM4, lookup, GPU verify, n_ctx 262144).
