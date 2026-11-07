@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import measured from './catalog.measured.json';
 import { MACHINES, RAM_MACHINES, windowsScan } from './catalog.fixtures.ts';
 import { CATALOG, type KvType } from '../src/server/catalog/data.ts';
-import { memParts } from '../src/server/catalog/memory.ts';
+import { memParts, MTP_N_MAX_DEFAULT } from '../src/server/catalog/memory.ts';
 import { planFor, recommend, replan } from '../src/server/catalog/index.ts';
 import { ramSpeed } from '../src/server/catalog/score.ts';
 import { ggufArch, readGgufHeader } from '../src/server/catalog/gguf.ts';
@@ -53,7 +53,7 @@ describe('memory model vs our measurements (±0.4 GiB)', () => {
       if (!q) throw new Error(`${p.modelId} has no ${p.quant}`);
       const r = memParts(m, q, {
         ctx: p.ctx, kvType: p.kvType as KvType, ub: p.ub, backend: p.backend as Backend, vramGiB: p.vramGiB,
-        spec: p.spec, enigmaSpec: p.enigmaSpec, prompt: p.prompt,
+        spec: p.spec, enigmaSpec: p.enigmaSpec, mtpN: p.mtpN ?? MTP_N_MAX_DEFAULT, ubd: p.ubd ?? p.ub, prompt: p.prompt,
       });
       const used: number | undefined = 'usedMiB' in p ? p.usedMiB : undefined;
       const oom: number | undefined = 'oomAboveMiB' in p ? p.oomAboveMiB : undefined;
@@ -98,17 +98,39 @@ describe('recommend on typical machines', () => {
     expect(pick?.mem.totalGiB).toBeCloseTo(23.84, 1);
   });
 
-  test('RTX 3090: Qwen3.8-27B UD-Q4_K_XL with upstream MTP at ~160k; 204800 only without MTP (fork MTP OOM measured)', () => {
+  test('RTX 3090: Qwen3.8-27B UD-Q4_K_XL with upstream MTP (n 3, ubd 64) above 229k; 262144 + MTP at ub 512 does not fit', () => {
     const hw = machine('RTX 3090 24 GB');
     const pick = recommend(hw).pick;
     if (!pick) throw new Error('no pick');
     expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', kvType: 'q4_0', backend: 'cuda' });
     expect(pick.features).toContain('mtp');
-    // fit measured to a 32.6k prompt (Vast, upstream b11856 MTP 21348 MiB at 131072); the full context is the model
-    expect(pick.ctx).toBeGreaterThan(131072);
-    expect(pick.ctx).toBeLessThan(204800);
-    expect(replan(pick, hw, { ctx: 204800, ub: 512 }).fits).toBe(false);
-    expect(replan(pick, hw, { ctx: 204800, ub: 512, spec: false }).fits).toBe(true);
+    // upstream barely grows while the context fills (campaign 67): no fork prompt growth, so far above the old ~160k
+    expect(pick.ctx).toBeGreaterThan(229376);
+    // 4090 (CUDA total 24082) at 262144 / ub 512 / MTP n 3 / ubd 64: cudaMalloc OOM; plain 22324 MiB
+    expect(replan(pick, hw, { ctx: 262144, ub: 512 }).fits).toBe(false);
+    expect(replan(pick, hw, { ctx: 262144, ub: 512, spec: false }).fits).toBe(true);
+  });
+
+  test('RTX 4090 on Windows does not take the headless 262144: the desktop reserve keeps it below', () => {
+    const pick = recommend(machine('RTX 4090 24 GB')).pick;
+    if (!pick) throw new Error('no pick');
+    expect(pick.ctx).toBeLessThan(262144);
+    // the plan it does reach must leave the 0.7 GiB the first long prompt needs (campaign-67 OOM at 0.5–0.66 GiB free)
+    expect(pick.mem.freeGiB * 1024).toBeGreaterThan(600);
+  });
+
+  test('RTX 5090 32 GB: Qwen3.8-27B UD-Q6_K reaches 262144 with MTP n 3', () => {
+    const pick = recommend(machine('RTX 5090 32 GB')).pick;
+    if (!pick) throw new Error('no pick');
+    expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q6_K', backend: 'cuda' });
+    expect(pick.features).toContain('mtp');
+    expect(pick.ctx).toBe(262144);
+  });
+
+  test('16 GB: a 27B MTP plan that leaves < 0.65 GiB free is refused (lazy CUDA kernels OOM on the first long prompt)', () => {
+    const at = planFor(machine('RTX 5060 Ti 16 GB'), 'qwen38-27b', 'UD-Q3_K_XL',
+      { ctx: 135168, kvType: 'q4_0', ub: 1024, spec: true, backend: 'cuda', gpuIndex: 0 });
+    expect(at.fits).toBe(false);
   });
 
   test('Flint (minUpstreamBuild 11803) is offered on 24 GB with the pinned engine; quality below Qwen3.8-27B', () => {
@@ -127,8 +149,9 @@ describe('recommend on typical machines', () => {
     const m = model('flint-40b-a2.5b');
     const q = m.quants[0];
     if (!q) throw new Error('no flint quant');
-    const at = (ub: number) =>
-      memParts(m, q, { ctx: 262144, kvType: 'q4_0', ub, backend: 'rocm', vramGiB: 24, spec: false, enigmaSpec: false, prompt: 0 });
+    const at = (ub: number) => memParts(m, q, {
+      ctx: 262144, kvType: 'q4_0', ub, backend: 'rocm', vramGiB: 24, spec: false, enigmaSpec: false, mtpN: 0, ubd: ub, prompt: 0,
+    });
     expect(at(1024).totalMiB).toBeGreaterThan(24560);
     expect(24560 - at(512).totalMiB).toBeLessThan(300);
   });

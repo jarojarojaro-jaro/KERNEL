@@ -140,9 +140,11 @@ llama-server trzyma cache n-gramów między żądaniami, więc identyczne drugie
 (zmierzone na 4060 Ti: 21 → 80 t/s, 204/256 draftów przyjętych). Ciągnięcie surowego korpusu też zawyżało decode
 spekulacji (model kopiował tekst). Akceptacja draftów (`draft_n_accepted/draft_n`) idzie do logu, gdy serwer ją podaje.
 Kandydaci: silnik Enigma (jeśli jest), `-ub 512/1024/2048` (gdy mieści się w pamięci wg katalogu), MTP (model z głowicą
-MTP), lookup n-gram (`--spec-default`). Zostaje najszybszy decode szybszy o więcej niż szum (2%), ze stratą prefill
-≤ 5% (≤ 15% przy decode ≥ +20%; deep prefill tak samo, deep decode ≤ 5%); zmiana tekstu wymaga ≥ 3%. Zwycięzca jest
-mierzony drugi raz obok ponownego pomiaru baseline i musi pobić max(2 × szum baseline, 2%); te liczby pokazuje UI.
+MTP: `--spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-n-ubatch 64`; mały batch draftu zmniejsza tylko jego bufor
+compute, 648 → 40 MiB przy 262 144), lookup n-gram (`--spec-default`). Zostaje najszybszy decode szybszy o więcej niż
+szum (2%), ze stratą prefill ≤ 5% (≤ 15% przy decode ≥ +20%; deep prefill tak samo, deep decode ≤ 5%); zmiana tekstu
+wymaga ≥ 3%. Zwycięzca jest mierzony drugi raz obok ponownego pomiaru baseline i musi pobić max(2 × szum baseline, 2%);
+te liczby pokazuje UI.
 Wyniki: `~/.enigma/results/*.json`.
 
 ## Katalog danych i nadpisania

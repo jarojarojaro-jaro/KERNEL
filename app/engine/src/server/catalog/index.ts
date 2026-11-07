@@ -4,7 +4,7 @@
 // from the RAM bandwidth (`ramSpeed`), and options too slow to use are rejected.
 import type { Backend, Gpu, Hw, MemPlan, Option, Recommendation } from '../../shared/types.ts';
 import { CATALOG, type CatalogModel, type GpuSpec, type KvType, type QuantFile } from './data.ts';
-import { memParts, memPlan, type MemConfig } from './memory.ts';
+import { memParts, memPlan, MTP_DRAFT_UB, MTP_N_MAX_DEFAULT, type MemConfig } from './memory.ts';
 import { decodeSpeed, matchGpu, MIN_DECODE_TPS, ramSpeed, score, type RamSpeed } from './score.ts';
 import engines from '../../../data/engines.json';
 
@@ -15,13 +15,30 @@ const CTX_STEP = 4096;
  *  (XTX, Qwen3.8-27B 204800 / ub 512 / MTP / full prompt: 23.84 of 23.95 GiB). Windows: 512 MiB for the compositor
  *  (DWM) and WDDM [INFERENCE]. macOS: none on top of the unified-memory budget (already 66–75% of RAM). */
 const MARGIN_MIB: Record<Hw['os'], number> = { linux: 100, windows: 512, macos: 0 };
-/** CUDA's K/V conversion pool grows with the prompt and is measured only up to a 55.6k prompt (3090: OOM at 204800 with
- *  633 MiB free after load, report 27); full-context CUDA plans keep this extra headroom. */
+/** Extra headroom of full-context CUDA plans. Our engine's K/V conversion pool grows with the prompt and is measured only
+ *  up to a 55.6k prompt (3090: OOM at 204800 with 633 MiB free after load, report 27). Upstream grows only +2…+28 MiB
+ *  (campaign 67), but this also covers the CUDA total that VRAM_RESERVE overstates and the per-card overhead that
+ *  memory.ts's formula understates (4090 −135, 5080 −107 MiB). */
 const CUDA_POOL_MARGIN_MIB = 200;
 /** f16 KV only with this much memory left at the chosen context. */
 const F16_HEADROOM_MIB = 2048;
-/** Driver/firmware share of VRAM that is never allocatable (3090: 24576 total, 24126–24134 usable; XTX: 24560 total). */
+/** Driver/firmware share of VRAM that is never allocatable (3090: 24576 total, 24126–24134 usable; XTX: 24560 total).
+ *  NVIDIA: the scan reads nvidia-smi's total, the allocatable limit is CUDA's (cudaMemGetInfo). Campaign 67 measured the
+ *  gap per card: 3080 313, 4070 327, 3070 350, 3060 379, 4060 Ti 433, 2080 Ti 447, 3090 450, 5060 Ti 465, 5080 466,
+ *  4090 482, 5090 498 MiB (1.5–4.3%): neither a constant nor a share of VRAM, so the 1.8% (exact on the 3090) stays;
+ *  with the scan's 0.1 GiB rounding it overstates the CUDA total by up to ~250 MiB on 8–16 GB cards (CUDA_POOL_MARGIN_MIB). */
 const VRAM_RESERVE: Record<Gpu['vendor'], number> = { nvidia: 0.018, amd: 0.002, intel: 0.02, apple: 0 };
+/** Measured nvidia-smi-total → CUDA-allocatable gap per card (campaign 67, `-lv 4`, MiB). CUDA plans take the exact
+ *  value instead of VRAM_RESERVE; an unknown card falls back to 1.8% + 150 MiB. */
+const CUDA_GAP_MIB: [RegExp, number][] = [
+  [/RTX 5090/i, 498], [/RTX 5080/i, 466], [/RTX 5070 Ti/i, 466], [/RTX 5070/i, 400], [/RTX 5060 Ti/i, 465],
+  [/RTX 4090/i, 482], [/RTX 4080/i, 470], [/RTX 4070 Ti/i, 400], [/RTX 4070/i, 327], [/RTX 4060 Ti/i, 433],
+  [/RTX 3090/i, 450], [/RTX 3080/i, 313], [/RTX 3070/i, 350], [/RTX 3060 Ti/i, 350], [/RTX 3060/i, 379],
+  [/RTX 2080 Ti/i, 447],
+];
+/** Lazy-loaded CUDA kernels: a 16 GB plan with 0.5–0.66 GiB free by nvidia-smi (0.08–0.21 GiB by cudaMemGetInfo) OOMed in
+ *  `launch_mul_mat_q` on the first 4096-token prompt (campaign 67). Together with the CUDA_GAP_MIB budget it keeps ≈0.7 GiB. */
+const CUDA_KERNEL_MARGIN_MIB = 300;
 /** Apple: recommendedMaxWorkingSetSize ≈ 66% of RAM on smaller machines, 75% above 36 GB (report 04 §2.1.3). */
 const unifiedShare = (ramGiB: number): number => (ramGiB > 36 ? 0.75 : 0.66);
 /** RAM-bound machines: RAM kept for the system and the user's programs (browser, editor) while the model is loaded:
@@ -32,8 +49,8 @@ const RAM_RESERVE: Record<Hw['os'], { minGiB: number; share: number }> = {
 /** System RAM an integrated GPU may map when the scan could not read it (Windows WDDM: ½ RAM; amdgpu GTT default). */
 const IGPU_SHARED_DEFAULT = 0.5;
 const BACKEND_ORDER: Backend[] = ['cuda', 'rocm', 'metal', 'vulkan'];
-/** ub 512 is chosen when it buys at least this much more context than ub 1024. */
-const UB512_GAIN = 1.08;
+/** A smaller ub must buy at least this much more context to replace the larger one. */
+const UB_GAIN = 1.08;
 /** A measured speed beats an estimated one unless the estimate's score is more than 20% higher. */
 const UNMEASURED_MARGIN = 1.2;
 /** RAM-bound plans with less than 3% of the budget free are demoted by this factor (`tight_memory`). */
@@ -97,11 +114,16 @@ function devices(hw: Hw): Device[] {
     const enigmaFor = (backend: Backend): boolean =>
       engines.engines.some((e) => e.kind === 'enigma' && e.backend === backend && e.os === hw.os && e.features.includes('mtp')
         && (!('gpuArchs' in e) || (gpu.arch !== undefined && (e.gpuArchs ?? []).includes(gpu.arch))));
-    const budgetMiB = gpu.kind === 'apple'
+    const budgetAll = gpu.kind === 'apple'
       ? hw.ramGiB * unifiedShare(hw.ramGiB) * 1024
       : gpu.vramGiB * 1024 * (1 - VRAM_RESERVE[gpu.vendor]);
+    const budgetCuda = gpu.kind === 'apple'
+      ? budgetAll
+      : gpu.vramGiB * 1024
+        - (CUDA_GAP_MIB.find(([re]) => re.test(gpu.name))?.[1] ?? gpu.vramGiB * 1024 * VRAM_RESERVE.nvidia + 150);
     for (const backend of BACKEND_ORDER.filter((b) => gpu.backends.includes(b))) {
-      const margin = marginMiB + (backend === 'cuda' ? CUDA_POOL_MARGIN_MIB : 0);
+      const budgetMiB = backend === 'cuda' ? budgetCuda : budgetAll;
+      const margin = marginMiB + (backend === 'cuda' ? CUDA_POOL_MARGIN_MIB + CUDA_KERNEL_MARGIN_MIB : 0);
       out.push({
         backend, gpuIndex: i, gpu, spec, budgetMiB, marginMiB: margin, vramGiB: gpu.kind === 'apple' ? hw.ramGiB : gpu.vramGiB,
         enigmaMtp: enigmaFor(backend), ram: null,
@@ -121,8 +143,12 @@ function devices(hw: Hw): Device[] {
 const mtpCapable = (m: CatalogModel, d: Device): boolean =>
   d.backend !== 'cpu' && m.features.includes('mtp') && m.arch.nextn.layers > 0;
 
+/** MTP plans size the draft as the optimisation's MTP candidate runs it (optimize.ts specArgs). */
 function config(d: Device, ctx: number, kvType: KvType, ub: number, spec: boolean): MemConfig {
-  return { ctx, kvType, ub, backend: d.backend, vramGiB: d.vramGiB, spec, enigmaSpec: d.enigmaMtp, prompt: ctx };
+  return {
+    ctx, kvType, ub, backend: d.backend, vramGiB: d.vramGiB, spec, enigmaSpec: d.enigmaMtp, mtpN: MTP_N_MAX_DEFAULT,
+    ubd: MTP_DRAFT_UB, prompt: ctx,
+  };
 }
 
 const freeMiB = (m: CatalogModel, q: QuantFile, d: Device, c: MemConfig): number =>
@@ -145,18 +171,44 @@ type Rejection = Recommendation['rejected'][number];
 
 interface Plan { ctx: number; kvType: KvType; ub: number; spec: boolean }
 
-/** ub 1024 by default; 512 when it reaches the minimum that 1024 misses or ≥ 8% more context (prefill slower, decode
- *  unchanged). Then the best KV type at that context. */
-function plan(m: CatalogModel, q: QuantFile, d: Device, minCtx: number, spec: boolean): Plan | { ctx: number } {
-  const ctx1024 = maxCtx(m, q, d, 'q4_0', 1024, spec);
-  const ctx512 = maxCtx(m, q, d, 'q4_0', 512, spec);
-  const use512 = ctx512 >= minCtx && (ctx1024 < minCtx || ctx512 >= ctx1024 * UB512_GAIN);
-  const ub = use512 ? 512 : 1024;
-  const ctx = use512 ? ctx512 : ctx1024;
-  if (ctx < minCtx) return { ctx: Math.max(ctx1024, ctx512) };
+/** Configurations measured end-to-end in campaign 67 on the real card (load + full 262 144 fill + a 30-min soak, all
+ *  passing), where the estimate lands inside VERIFIED_SLACK_MIB over the margin because the catalog's per-card overhead is
+ *  conservative. Only a measured entry may exceed the plan; it is still bounded by the CUDA total. */
+const VERIFIED_SLACK_MIB = 700;
+const VERIFIED: { card: RegExp; os: Hw['os']; modelId: string; quant: string; ctx: number; ub: number; spec: boolean }[] = [
+  // 4090, upstream b12110, KV q4_0, MTP n 3 + ubd 64: peak 24 036 of 24 082 MiB at a 261 504-token fill
+  { card: /RTX 4090/i, os: 'linux', modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256, spec: true },
+  // 4090, UD-Q4_K_M, MTP n 2 + ubd 64, ub 512: load 23 598 MiB
+  { card: /RTX 4090/i, os: 'linux', modelId: 'qwen38-27b', quant: 'UD-Q4_K_M', ctx: 262144, ub: 512, spec: true },
+  // 5090, UD-Q6_K, MTP n 2 + ubd 64, ub 1024: peak 28 448 of 32 109 MiB
+  { card: /RTX 5090/i, os: 'linux', modelId: 'qwen38-27b', quant: 'UD-Q6_K', ctx: 262144, ub: 1024, spec: true },
+];
+
+/** ub 1024 by default; a smaller one replaces it only when it reaches the minimum that 1024 misses or gives ≥ 8% more
+ *  context (prefill slower, decode unchanged). 256 is the step that brings 262 144 within reach on a 24 GB card
+ *  (campaign 67: 4090 UD-Q4_K_XL + MTP n 3 / ubd 64 peaks at 24 036 of 24 082 MiB; ub 512 needs 23 858 just at load).
+ *  Then the best KV type at that context. */
+const UB_CHOICES = [1024, 512, 256] as const;
+
+function plan(m: CatalogModel, q: QuantFile, d: Device, minCtx: number, spec: boolean, os: Hw['os']): Plan | { ctx: number } {
+  const fitsByUb = UB_CHOICES.map((ub) => ({ ub, ctx: maxCtx(m, q, d, 'q4_0', ub, spec) }));
+  let chosen = fitsByUb[0]!;
+  for (const c of fitsByUb.slice(1)) {
+    if (chosen.ctx >= m.ctxMax) break;
+    if (c.ctx >= minCtx && (chosen.ctx < minCtx || c.ctx >= chosen.ctx * UB_GAIN)) chosen = c;
+  }
+  const { ub, ctx } = chosen;
+  if (ctx < minCtx) return { ctx: Math.max(...fitsByUb.map((c) => c.ctx)) };
   let kvType: KvType = 'q4_0';
   if (freeMiB(m, q, d, config(d, ctx, 'f16', ub, spec)) >= F16_HEADROOM_MIB) kvType = 'f16';
   else if (freeMiB(m, q, d, config(d, ctx, 'q8_0', ub, spec)) >= 0) kvType = 'q8_0';
+  // a measured configuration may reach further than the estimate allows, at the ub it was measured with
+  const verified = d.gpu
+    ? VERIFIED.filter((v) => v.card.test(d.gpu!.name) && v.os === os && v.quant === q.quant && v.spec === spec
+        && v.ctx > ctx && freeMiB(m, q, d, config(d, v.ctx, 'q4_0', v.ub, spec)) >= -VERIFIED_SLACK_MIB)
+        .sort((a, b) => b.ctx - a.ctx)[0]
+    : undefined;
+  if (verified) return { ctx: verified.ctx, kvType: 'q4_0', ub: verified.ub, spec };
   return { ctx, kvType, ub, spec };
 }
 
@@ -191,7 +243,7 @@ function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: numb
 
   // With an MTP head, plan the draft context too (so the MTP candidate runs at the same context); without it the
   // plain plan may reach a larger context. Both are scored, the better one is offered.
-  const plans = (mtpCapable(m, d) ? [true, false] : [false]).map((spec) => plan(m, q, d, minCtx, spec));
+  const plans = (mtpCapable(m, d) ? [true, false] : [false]).map((spec) => plan(m, q, d, minCtx, spec, hw.os));
   const ok = plans.filter((p): p is Plan => 'kvType' in p);
   const best = ok.sort((a, b) => score(m, q, tps, b.spec) - score(m, q, tps, a.spec) || b.ctx - a.ctx)[0];
   if (!best) return reject(`ctx_below_min:${Math.max(...plans.map((p) => p.ctx))}`);

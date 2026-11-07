@@ -55,6 +55,7 @@ export const MACHINES: Record<string, Hw> = {
   'RTX 3060 12 GB': pc('linux', 32, [nv('NVIDIA GeForce RTX 3060', 12, 'sm_86')]),
   'RTX 4060 Ti 16 GB': pc('windows', 32, [nv('NVIDIA GeForce RTX 4060 Ti', 16, 'sm_89')]),
   'RTX 5060 Ti 16 GB': pc('linux', 32, [nv('NVIDIA GeForce RTX 5060 Ti', 16, 'sm_120')]),
+  'RTX 5080 16 GB': pc('linux', 32, [nv('NVIDIA GeForce RTX 5080', 16, 'sm_120')]),
   'RX 7800 XT 16 GB': pc('linux', 32, [amd('AMD Radeon RX 7800 XT', 16, 'gfx1101')]),
   'RX 7900 XTX 24 GB': pc('linux', 62, [amd('AMD Radeon RX 7900 XTX', 24, 'gfx1100')]),
   'RTX 3090 24 GB': pc('linux', 64, [nv('NVIDIA GeForce RTX 3090', 24, 'sm_86')]),

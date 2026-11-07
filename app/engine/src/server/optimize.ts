@@ -5,6 +5,7 @@
 import type { BenchResult, Candidate, EngineConfig, Hw, Option } from '../shared/types.ts';
 import { benchEngine, type BenchProgress, type BenchWorkload } from './bench.ts';
 import { replan } from './catalog/index.ts';
+import { MTP_DRAFT_UB, MTP_N_MAX_DEFAULT } from './catalog/memory.ts';
 import { enigmaConfig, enigmaEngineFor, ensureEngine, type ResolvedEngine } from './engine.ts';
 import { errMsg, log } from './log.ts';
 
@@ -18,13 +19,17 @@ export const MIN_GAIN_TEXT_CHANGE = 0.03;
 export const NOISE_FLOOR = 0.02;
 /** Decode at the deep (~32k) context may drop at most this much; deep prefill follows the prefill rule. */
 export const DEEP_DECODE_LOSS_MAX = 0.05;
-const UB_STEPS = [512, 1024, 2048] as const;
+/** Batch candidates. 256 is what makes 262 144 fit on 24 GB CUDA cards with MTP (campaign 67: 4090 UD-Q4_K_XL,
+ *  ub 256 / ubd 64 → peak 24 036 of 24 082 MiB; ub 512 needs 23858 at load, so it survives only without a monitor). */
+const UB_STEPS = [256, 512, 1024, 2048] as const;
 
-/** How a candidate's config is built; kept out of the persisted Candidate (rebuilt from the id on resume). */
+/** How a candidate's config is built; kept out of the persisted Candidate (rebuilt from the id on resume). `nMax` is the
+ *  MTP draft length; the catalog planner sizes the recurrent state with the same MTP_N_MAX_DEFAULT. */
 type Recipe =
   | { kind: 'enigma' }
   | { kind: 'ub'; ub: number }
-  | { kind: 'spec'; spec: 'mtp' | 'lookup' };
+  | { kind: 'spec'; spec: 'mtp'; nMax: number }
+  | { kind: 'spec'; spec: 'lookup' };
 
 export interface PlannedCandidate { candidate: Candidate; recipe: Recipe | null }
 
@@ -78,7 +83,7 @@ export function planCandidates(hw: Hw, option: Option, base: ResolvedEngine): Pl
         reason: hasMtp ? 'engine_no_mtp' : option.why.includes('mtp_no_memory') ? 'mtp_no_memory' : 'no_mtp_head',
       }),
     },
-    recipe: hasMtp && engineMtp ? { kind: 'spec', spec: 'mtp' } : null,
+    recipe: hasMtp && engineMtp ? { kind: 'spec', spec: 'mtp', nMax: MTP_N_MAX_DEFAULT } : null,
   });
   const engineLookup = base.entry.features.includes('lookup');
   out.push({
@@ -100,14 +105,18 @@ export function planCandidates(hw: Hw, option: Option, base: ResolvedEngine): Pl
 /** Rebuilds recipes for persisted candidates (resume after restart). */
 export function recipeFor(id: string): Recipe | null {
   if (id === 'enigma') return { kind: 'enigma' };
-  if (id === 'mtp' || id === 'lookup') return { kind: 'spec', spec: id };
+  if (id === 'mtp') return { kind: 'spec', spec: 'mtp', nMax: MTP_N_MAX_DEFAULT };
+  if (id === 'lookup') return { kind: 'spec', spec: 'lookup' };
   const m = /^ub-(\d+)$/.exec(id);
   return m ? { kind: 'ub', ub: Number(m[1]) } : null;
 }
 
-function specArgs(spec: 'mtp' | 'lookup'): string[] {
-  // upstream llama.cpp: MTP head drafting; n-gram drafting with the server's recommended settings (--spec-default)
-  return spec === 'mtp' ? ['--spec-type', 'draft-mtp', '--spec-draft-n-max', '4'] : ['--spec-default'];
+function specArgs(recipe: Extract<Recipe, { kind: 'spec' }>): string[] {
+  // upstream llama.cpp: MTP head drafting with a 64-token draft ubatch (sizes only the draft compute buffer: 648 → 40 MiB
+  // at 262144, same output); n-gram drafting with the server's recommended settings (--spec-default)
+  return recipe.spec === 'mtp'
+    ? ['--spec-type', 'draft-mtp', '--spec-draft-n-max', String(recipe.nMax), '--spec-draft-n-ubatch', String(MTP_DRAFT_UB)]
+    : ['--spec-default'];
 }
 
 export interface OptimizeContext {
@@ -146,7 +155,7 @@ async function configFor(ctx: OptimizeContext, recipe: Recipe): Promise<{ engine
   }
   return {
     engine: ctx.base,
-    config: { ...ctx.baseConfig, spec: recipe.spec, extraArgs: [...ctx.baseConfig.extraArgs, ...specArgs(recipe.spec)] },
+    config: { ...ctx.baseConfig, spec: recipe.spec, extraArgs: [...ctx.baseConfig.extraArgs, ...specArgs(recipe)] },
   };
 }
 

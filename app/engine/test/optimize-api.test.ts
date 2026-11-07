@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { BenchResult, Candidate } from '../src/shared/types.ts';
 import { confirm, decide, failureCode, recipeFor } from '../src/server/optimize.ts';
+import { MTP_N_MAX_DEFAULT } from '../src/server/catalog/memory.ts';
 import { hostAllowed, serveApi } from '../src/server/api.ts';
 import { App } from '../src/server/state.ts';
 
@@ -91,7 +92,8 @@ describe('decide', () => {
 
   test('recipes rebuild from ids', () => {
     expect(recipeFor('ub-2048')).toEqual({ kind: 'ub', ub: 2048 });
-    expect(recipeFor('mtp')).toEqual({ kind: 'spec', spec: 'mtp' });
+    expect(recipeFor('mtp')).toEqual({ kind: 'spec', spec: 'mtp', nMax: MTP_N_MAX_DEFAULT });
+    expect(recipeFor('lookup')).toEqual({ kind: 'spec', spec: 'lookup' });
     expect(recipeFor('enigma')).toEqual({ kind: 'enigma' });
     expect(recipeFor('x')).toBeNull();
   });

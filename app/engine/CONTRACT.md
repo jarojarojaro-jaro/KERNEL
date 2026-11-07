@@ -109,7 +109,11 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   `planFor(hw, modelId, quant, {ctx, kvType, ub, spec, backend, gpuIndex})` → `{mem: MemPlan, fits}` (te same zapasy).
 - Pamięć = wagi + KV + compute + narzut, dla pełnego kontekstu (prompt = ctx), z rezerwą na kontekst MTP, gdy
   `features` zawiera `mtp`. `fits` = zostaje zapas: Linux 100 MiB (zmierzona produkcja XTX 204800), Windows 512 MiB,
-  macOS 0 ponad budżet pamięci zunifikowanej; CUDA +200 MiB (pula K/V rośnie z promptem, zmierzona do 55.6k).
+  macOS 0 ponad budżet pamięci zunifikowanej; CUDA +200 MiB (pula K/V naszego silnika rośnie z promptem, zmierzona do
+  55.6k; pokrywa też zawyżoną sumę CUDA z nvidia-smi i niedoszacowany narzut kart 4090/5080).
+  Upstream na CUDA (kampania 67): plan bez MTP nie liczy bloku nextn w wagach (335 MiB na Qwen3.8-27B), z MTP liczy
+  KV draftu w f16, stan rekurencyjny × (n_max + 1) i bufor compute draftu przy `--spec-draft-n-ubatch 64`; brak
+  wzrostu z promptem ponad plain. Plan MTP = kandydat `mtp` (`MTP_N_MAX_DEFAULT`, `MTP_DRAFT_UB` w `memory.ts`).
   Kalibracja: `test/catalog.measured.json`.
 - Bez karty z własną pamięcią (wszystkie `gpus[].kind === 'integrated'` albo brak GPU) maszyna jest „RAM-bound”:
   urządzenia = grafika zintegrowana × backend (Vulkan; ROCm tylko gfx1150/gfx1151) z budżetem min(`vramGiB + sharedGiB`,
@@ -171,7 +175,8 @@ konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko
   następny najlepszy (ten sam baseline₂).
 - silnik `enigma-*` dla platformy, jeśli jest (na AMD gfx1100: topka z flagami jak `~/qwen-opt/run-topka.sh` — PM4,
   lookup, MTP dla Qwen3.8, coupled, host-gap; wierne odwzorowanie `run-llm.sh`);
-- `-ub/-b` (512/1024/2048) w granicach pamięci; MTP (jeśli model ma głowicę i silnik obsługuje); lookup n-gram.
+- `-ub/-b` (512/1024/2048) w granicach pamięci; MTP (jeśli model ma głowicę i silnik obsługuje: `--spec-type draft-mtp
+  --spec-draft-n-max 3 --spec-draft-n-ubatch 64`); lookup n-gram.
 - `sameOutput` = md5 decode greedy == baseline (spekulacja może zmienić bity → pokazujemy jasno, nie ukrywamy).
 - `Candidate.id`: `enigma` | `ub-512` | `ub-1024` | `ub-2048` (bez bieżącego ub) | `mtp` | `lookup`.
 - `Candidate.reason` = kod (`kod` albo `kod:wartość`; UI tłumaczy, nieznany pokazuje surowo):
