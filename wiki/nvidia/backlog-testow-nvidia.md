@@ -1,5 +1,5 @@
 ---
-typ: notatka
+typ: nvidia
 tags: [nvidia, cuda, testy, backlog]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/67c-nvidia-backlog-testow.md; 66-SYNTEZA; 63-SYNTEZA; ~/KERNEL/qwen-opt/cloud/CUDA-AUDIT.md
@@ -13,7 +13,7 @@ status: aktualne
 |---|---|---|---|
 | 0 | **kernel `kvq` na CUDA** (`GGML_CUDA_KVQ=1`) | **+25–37% decode przy 64k** (3090, 5060 Ti) | build `~/wt/nv-4060ti-kvq @ 007a6f813`; sm_89/sm_120 niezbudowane |
 | 1 ⚑ | typ KV q4_0 / q8_0 / f16 przy 64k | q8_0 na CUDA −13% vs q4_0 | planer woli f16 > q8_0 > q4_0 (`catalog/index.ts`) |
-| 2 ⚑ | topka2 vs upstream na każdej klasie | 93,3 vs 79 t/s (3090, 4090) | tylko pomiar 3090 z 2026-10-19 |
+| 2 ⚑ | topka2 vs upstream na każdej klasie | 93,3 t/s (3090, 19.10) vs 79,1 (4090, dziś, upstream) | brak pomiaru forka na sm_89/sm_120 |
 | 3 ⚑ | MTP n=1–4 per klasa | 4090 n3 79,1 vs n4 76,4; 5090 n2 86,9 | **wdrożone: n=3** |
 | 4 | `LLAMA_GPU_VERIFY` 0/1 | sm_89/sm_120 | – |
 | 5 | `GGML_CUDA_MMVQ_N1_ROWS=2` | sm_89 otwarte, sm_120 potwierdzić off | – |
