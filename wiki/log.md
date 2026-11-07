@@ -245,3 +245,6 @@ Nowe: [[raport-66-synteza]], [[kv-raz-na-weryfikacje]], [[mmq-q6k-skale-lds]], [
 - 11 GB: Bonsai. 8–10 GB: LFM2.5 Q4_K_M z `--n-cpu-moe`.
 
 Model pamięci upstream: błąd ≤ 23 MiB, RS × (n+1), limit = suma CUDA. [[saluki]]: licencja poprawiona.
+
+## [2026-11-07] eksperyment | kampania NVIDIA na Vast (17 kart)
+[[2026-11-07-kampania-nvidia-vast]]: 262 144 z MTP na 4090 79,1 t/s (+67,6 proc.) i 5090 86,9 (+44,7 proc.); 16 GB wymaga zapasu 0,7 GiB; poprawki memory.ts/optimize.ts/index.ts; koszt $3,47.

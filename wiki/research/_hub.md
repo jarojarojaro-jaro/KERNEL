@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (153)
+## Notatki (154)
 
 - [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]] — Link arXiv 2605.08513 podany przez użytkownika jako praca o InferenceX to „A Single Neuron Is Sufficient to Bypass Safety Alignment in LLMs” (Kazemi, Chegini, Safi, 2026-05-08): wyłączenie jednego neuronu odmowy omija alignment, a wzmocnienie neuronu pojęcia wywołuje szkodliwe treści; 7 modeli z 2 rodzin, 1.7B–70B, bez treningu.
 - [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]] — Zestawienie wszystkich zmierzonych liczb całej optymalizacji – upstream, wcześniejszy fork i produkcja – dla XTX (Qwen, Uncensored, LFM), nowych zmian poza produkcją, kart NVIDIA i Magnitude, każda ze źródłem `plik:wiersz` i oceną porównywalności (P / O / brak).
@@ -164,6 +164,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-64-termika|Raport 64: czy bezpiecznie obniżyć sclk na XTX]] — Research tylko do odczytu (2026-11-05, Sapphire PULSE RX 7900 XTX, jądro 6.8.0-138, PMFW 78.130.0): sam limit `OD_SCLK` nie szkodzi karcie, ale na jądrze 6.8 commit OD gubi krzywą wentylatora i odwrotnie.
 - [[raport-65-vram-rezerwa-mtp|Raport 65: 1 GiB VRAM z rezerwy MTP → kontekst 262 144]] — Rezerwa grafu kontekstu draftu MTP alokowała ~1068 MiB (kopia f16 KV draftu 800 + maska 200 + aktywacje) na graf, który nigdy się nie wykonuje; chuda rezerwa (40 MiB) zwolniła 1,0 GiB, co przy ~19,1 KiB/token KV q4_0 daje +57k tokenów: czat ma natywne 262 144 (+28%) bez zmian prędkości i odpowiedzi.
 - [[raport-66-synteza|Raport 66: Strata 0.2.12, Maya, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM, Flash-Next]] — Pakiet nie przynosi przełomu, ale trzy niezależne silniki (1Cat, Saber, tqLLM) pokazują, jak czytać KV raz na weryfikację (plan #8: 199k 74.5 → 77–83 t/s `[SZACUNEK]`); bramką jest 20-minutowy ślad kroku przy 199k, a nowy tani kandydat to Q6_K w MMQ (prefill +1.5…5%, bitowo) (2026-11-07).
+- [[raport-67-kampania-nvidia|Raport 67: kampania NVIDIA na Vast (Enigma) — trzy części]] — Trzy raporty jednej kampanii: 67 = wyniki z 17 wynajętych kart, 67b = wybór modeli i kontekstu per klasa VRAM, 67c = pełny backlog testów NVIDIA wyciągnięty z bazy wiedzy.
 - [[raporty-2026-10-19-20|Raporty 2026-10-19/20 (20–30, WYNIKI-XTX): przegląd]] — Spis raportów z 19–20 października 2026: wdrożone PM4 WA=2, GPU verify i (zalecone) sprzężone próbkowanie; większość pozostałych pomysłów odrzucona po krótkim A/B albo sufit-analizie.
 - [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]] — Trzy raporty rundy 6 (2026-10-15), wszystkie bez GPU: szybki kernel GDN bitowy z konstrukcji, epilog MMQ w VOPD oraz narzędzia LOO / kanarki KLD / Kernel Tuner.
 - [[star-elastic-2605-07182|Star Elastic (arXiv 2605.07182)]] — Praca NVIDIA o zagnieżdżonych podmodelach Nemotron Nano v3 (30B → 23B/12B z jednego post-trainingu) i osobnym podmodelu dla fazy myślenia; nie dotyczy kerneli, dla nas niska istotność.

@@ -158,6 +158,22 @@ Decyzja użytkownika 2026-11-06: tryb eco jest trybem docelowym; od teraz rekord
 | XTX / Qwen Uncensored Q4_K_M | prawdziwa sesja agentowa (omp), decode ważony tokenami | **120,8 t/s** całość (143 zadania, 125 658 tok.); 0–32k 127,2 · 32–64k 121,6 · 64–96k 116,6 · 96–128k 123,1 · 128–160k 95,8; szczyt pojedynczego zadania 219,5 | 2026-11-06 | final mode, kontekst do 139 160 | `~/qwen-opt/logs/server-2026-11-06_175345.log`, [[2026-11-06-sesja-uzytkownika-final-mode]] | tak |
 | XTX / Qwen UD-Q4_K_XL | ctx 262 144: spec_sweep T=1 / 255k prefill / decode | 118,1 t/s / 467,5 / 69,5 t/s; szczyt VRAM 24 224 MiB (zapas tylko 336 MiB) | 2026-11-06 | eco 2200 | `~/qwen-opt/queue/logs/final-qwen-262144.log` | nie (za mały zapas) |
 
+## KAMPANIA NVIDIA 2026-11-07 (Vast, Enigma)
+
+16 GB / 24 GB / 32 GB na wynajętych kartach; mediana spec_sweep T=1, KV q4_0, upstream b12110. Szczegóły: [[2026-11-07-kampania-nvidia-vast]].
+
+| karta / model | obciążenie / metryka | dziś → teraz | data | warunki | źródło |
+|---|---|---|---|---|---|
+| RTX 4090 / Qwen3.8-27B UD-Q4_K_XL | ctx 262 144, MTP n=3, ub 256 / decode | **79,1 t/s** (47,2 bez spekulacji; +67,6%) | 2026-11-07 | fill 261 504 tok., soak, szczyt 24 036/24 082 MiB | `results/nv67-4090-20261107/res-4090xl` |
+| RTX 4090 / Qwen3.8-27B UD-Q4_K_M | ctx 262 144, MTP n=2–4, ub 512 | 78,0–79,5 t/s (49,8) | 2026-11-07 | load 23 598 MiB | `results/nv67-4090-20261107/res-4090f` |
+| RTX 5090 / Qwen3.8-27B UD-Q6_K | ctx 262 144, MTP n=2 / decode | **86,9 t/s** (60,0; +44,7%) | 2026-11-07 | fill, soak, szczyt 28 446/32 109 MiB | `results/nv67-5090-20261107/res-5090f` |
+| RTX 5090 / Qwen3.6-35B-A3B Q5_K_XL | ctx 262 144, MTP n=2 | **319,5 t/s** (244,6; +30,6%) | 2026-11-07 | prefill 3 060 t/s, fill, soak | j.w. |
+| RTX 5080 / Qwen3.6-35B-A3B IQ4_XS | 131 072, 12 warstw ekspertów w RAM, MTP n=2 | 83,4 t/s (74,4; +12%) | 2026-11-07 | – | `results/nv67-5080-20261107` |
+| RTX 5060 Ti / ISTA IQ3_XXS-mtp | ctx 200 704, bez MTP | 33,3 t/s | 2026-11-07 | fill 200 064 tok., prefill 470 t/s | `results/nv67-5060ti-20261107/res-5060tif` |
+| RTX 4060 Ti / ISTA IQ3_XXS-mtp | ctx 217 088, bez MTP | 23,7 t/s | 2026-11-07 | fill 216 448 tok. | `results/nv67-4060ti-20261107/res-4060tif` |
+| RTX 4070 / Underdog Saluki + MTP n=1 | ctx 151 552 | 39,8 t/s | 2026-11-07 | fill 151 552 tok., soak | `results/nv67-4070-20261107/res-4070f` |
+| RTX 3080 / LFM2.5-24B Q4_K_M | 131 072, KV q8_0, ncm | 20,4 t/s | 2026-11-07 | ABBA | `results/nv67-3080-20261107/res-3080f` |
+
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.
 2. Nowa para (karta, model, obciążenie, metryka) → nowy wiersz.

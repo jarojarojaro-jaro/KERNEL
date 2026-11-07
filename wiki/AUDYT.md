@@ -3027,6 +3027,13 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 | [[final-modele-per-vram]] | 24 | `67b` §0–§1 (model pamięci z `/tmp/nv67live/*.jsonl` = `arms.jsonl` kampanii 67: load 29 158, 23 680, buffers) | OK |
 | [[saluki]] (licencja) | 1 | HF commits `ConwayResearch/Underdog-Saluki-27B-1.0` (2026-11-05) | poprawione: Apache-2.0 → CC BY-NC 4.0 |
 
+## Ingest 2026-11-07 (kampania 67 NVIDIA na Vast)
+
+- `product/research/67-nvidia-vast-kampania.md` — wyniki 17 kart: 262 144 z MTP na 4090 (79,1 t/s, +67,6%) i 5090 (86,9, +44,7%), MoE 35B-A3B 319,5 (+30,6%), 16 GB OOM przy MTP, b11856→b12110 ±1% (3070 −8%), `p-min` szkodzi; $3,47.
+- Notatki: [[2026-11-07-kampania-nvidia-vast]], [[raport-67-kampania-nvidia]]; wiersze w [[REKORDY]].
+- Enigma: `memory.ts` (upstream MTP, KV draftu f16, stan × (n+1)), `optimize.ts` (MTP n=3, `--spec-draft-n-ubatch 64`, batch 256), `catalog/index.ts` (odstęp nvidia-smi→CUDA per karta, 300 MiB na doładowanie kerneli, zmierzone plany 262 144).
+- Wersjonowane narzędzia kampanii: `qwen-opt/cloud/nv67/` (bez stanu, kluczy i adresów).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
