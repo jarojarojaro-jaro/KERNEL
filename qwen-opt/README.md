@@ -1,8 +1,25 @@
-# qwen-opt — Qwen3.8-27B i LFM2.5 na RX 7900 XTX (ROCm): Qwen 59 → 109 t/s przy 200k kontekstu, LFM 173 → 294 t/s
+# qwen-opt — Qwen3.8-27B i LFM2.5 na RX 7900 XTX (ROCm): Qwen 59 → 121 t/s w prawdziwej pracy przy pełnym kontekście 262 144, LFM 173 → 294 t/s
 
-Wyniki, diagnoza i wyniki negatywne: [`NOTES.md`](NOTES.md). Research: [`research/`](research/) (`v2/roadmap.md`, `strata/`, `tensorfold/`).
+Wyniki, diagnoza i wyniki negatywne: [`NOTES.md`](NOTES.md). Research: [`research/`](research/) (`v2/roadmap.md`, `strata/`, `tensorfold/`). Wszystkie rekordy: [`../wiki/REKORDY.md`](../wiki/REKORDY.md).
 
-Stan (2026-10-14, ROCm, ctx 204800, KV q4_0, MTP n=4 + słownik draftu 64k + draft IQ4_XS + KV draftu q4_0, limit mocy 285 W, 6 promptów PL/EN × 3 seedy, T=1):
+## Final mode (od 2026-11-06): eco 2200 MHz + kontekst 262 144
+
+Qwen3.8-27B-Uncensored Q4_K_M, KV q4_0, MTP n=4, silnik topka-q63 (lean rezerwa MTP: −1 GiB VRAM → +57k kontekstu), limit taktowania rdzenia 2200 MHz, limit mocy 285 W bez zmian.
+
+| Pomiar | Final mode | Przed (stock, ctx 204 800) |
+|---|---|---|
+| kontekst | **262 144** | 204 800 |
+| prawdziwa sesja agentowa, decode ważony (143 zadania, do 139k) | **120,8 t/s** | – |
+| — kontekst 0–32k / 32–64k / 64–96k / 96–128k / 128–160k | 127,2 / 121,6 / 116,6 / 123,1 / 95,8 t/s | – |
+| spec_sweep T=1 (6 promptów × 3 seedy) | 118,3 t/s, 26,91 ms/krok | 26,32 ms/krok |
+| greedy 256 tok. | 106,4 t/s (md5 identyczne) | 108,4 t/s |
+| 255k w kontekście: prefill / decode | **465,1 / 78,7 t/s** | – |
+| prefill promptów 4–12k | 795–929 t/s | – |
+| waty przy pracy / hotspot | **241 W / 63,5 °C** | 280 W / 67,9 °C |
+
+Szczegóły: [`wiki/eksperymenty/2026-11-06-final-mode.md`](../wiki/eksperymenty/2026-11-06-final-mode.md), [`wiki/eksperymenty/2026-11-06-sesja-uzytkownika-final-mode.md`](../wiki/eksperymenty/2026-11-06-sesja-uzytkownika-final-mode.md).
+
+## Historia: stan 2026-10-14 (ROCm, ctx 204800, KV q4_0, MTP n=4 + słownik draftu 64k + draft IQ4_XS + KV draftu q4_0, limit mocy 285 W, 6 promptów PL/EN × 3 seedy, T=1)
 
 | Model | t/s (mediana) | ms/krok | czat EN | proza PL | kod PL |
 |---|---|---|---|---|---|
