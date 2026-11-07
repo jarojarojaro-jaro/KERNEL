@@ -1,0 +1,27 @@
+{
+ "card": "4060ti",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab"
+ ],
+ "model": {
+  "file": "LFM2.5-24B-A2B-Q4_K_M.gguf",
+  "url": "https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF/resolve/main/LFM2.5-24B-A2B-Q4_K_M.gguf",
+  "sha": "d3334405b96228eb9908cdebb5c6194908f2da64282bda852afc3a3910c64e7d",
+  "size": 14526258464,
+  "id": "lfm25-24b-a2b/Q4_K_M"
+ },
+ "ctx": 131072,
+ "kv": "q8_0",
+ "ub": 512,
+ "mtp": null
+}

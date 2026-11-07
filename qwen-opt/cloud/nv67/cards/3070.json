@@ -1,0 +1,27 @@
+{
+ "card": "3070",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab"
+ ],
+ "model": {
+  "file": "Qwen3.5-9B-Q4_K_M.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.5-9B-GGUF/resolve/main/Qwen3.5-9B-Q4_K_M.gguf",
+  "sha": "03b74727a860a56338e042c4420bb3f04b2fec5734175f4cb9fa853daf52b7e8",
+  "size": 5680522464,
+  "id": "qwen35-9b/Q4_K_M"
+ },
+ "ctx": 184320,
+ "kv": "q4_0",
+ "ub": 512,
+ "mtp": null
+}

@@ -1,0 +1,27 @@
+{
+ "card": "4060ti",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab"
+ ],
+ "model": {
+  "file": "Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
+  "url": "https://huggingface.co/Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF/resolve/main/Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
+  "sha": "98f6ebb527917a2541df8e667d51c3ec8a8bb135b44c606d40cc6ed924e89e52",
+  "size": 8349689920,
+  "id": "saluki-27b-mtp/IQ2-mix"
+ },
+ "ctx": 262144,
+ "kv": "q4_0",
+ "ub": 256,
+ "mtp": "self"
+}

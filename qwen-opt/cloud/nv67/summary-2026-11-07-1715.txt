@@ -1,0 +1,184 @@
+# nv67-2080ti-20261107
+  P0                         b11856 ub512 c262144 ok=0 nctx=None load=None peak=9390 [] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 832.80 MiB on device 0: cudaMalloc failed: out of memory
+  N0                         b12110 ub512 c262144 ok=0 nctx=None load=None peak=9319 [] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 831.52 MiB on device 0: cudaMalloc failed: out of memory
+  P4                         b11856 ub512 c262144 ok=0 nctx=None load=None peak=9495 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 832.80 MiB on device 0: cudaMalloc failed: out of memory
+  N1                         b12110 ub512 c262144 ok=0 nctx=None load=None peak=9309 [n 1] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 831.52 MiB on device 0: cudaMalloc failed: out of memory
+  N1u                        b12110 ub512 c262144 ok=0 nctx=None load=None peak=9447 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 135.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256                     b12110 ub256 c262144 ok=0 nctx=None load=None peak=9352 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 671.64 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=10380 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 428.53 MiB on device 0: cudaMalloc failed: out of memory
+  N2                         b12110 ub512 c262144 ok=0 nctx=None load=None peak=9294 [n 2] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 831.52 MiB on device 0: cudaMalloc failed: out of memory
+  N2u                        b12110 ub512 c262144 ok=0 nctx=None load=None peak=9294 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 831.52 MiB on device 0: cudaMalloc failed: out of memory
+  N2u256                     b12110 ub256 c262144 ok=0 nctx=None load=None peak=9294 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 671.64 MiB on device 0: cudaMalloc failed: out of memory
+  N2u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=10356 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 428.53 MiB on device 0: cudaMalloc failed: out of memory
+  N3                         b12110 ub512 c262144 ok=0 nctx=None load=None peak=9292 [n 3] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 831.52 MiB on device 0: cudaMalloc failed: out of memory
+  N3u                        b12110 ub512 c262144 ok=0 nctx=None load=None peak=9434 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 831.52 MiB on device 0: cudaMalloc failed: out of memory
+  N3u256                     b12110 ub256 c262144 ok=0 nctx=None load=None peak=9166 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 671.64 MiB on device 0: cudaMalloc failed: out of memory
+  N3u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=10287 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 428.53 MiB on device 0: cudaMalloc failed: out of memory
+  N4                         b12110 ub512 c262144 ok=0 nctx=None load=None peak=9406 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 831.52 MiB on device 0: cudaMalloc failed: out of memory
+  N4u                        b12110 ub512 c262144 ok=0 nctx=None load=None peak=9528 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 135.00 MiB on device 0: cudaMalloc failed: out of memory
+  N4u256                     b12110 ub256 c262144 ok=0 nctx=None load=None peak=9431 [n ubd 64] ERR ggml_backend_cuda_buffer_type_alloc_buffer: allocating 10.62 MiB on device 0: cudaMalloc failed: out of memory
+  N4u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=10413 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 428.53 MiB on device 0: cudaMalloc failed: out of memory
+# nv67-3060-20261107
+  P0                         b11856 ub1024 c262144 ok=1 nctx=262144 load=10829 peak=10847 [] T1=35.24 acc=0.00 pp=1079 md5=87a925171304-017e2fb66480
+  N0                         b12110 ub1024 c262144 ok=1 nctx=262144 load=10851 peak=10871 [] T1=35.31 acc=0.00 pp=1072 md5=d2a276557ff7-5f24b8063671
+  P4                         b11856 ub1024 c262144 ok=0 nctx=None load=None peak=10809 [n] ERR ml_backend_cuda_buffer_type_alloc_buffer: allocating 1123.29 MiB on device 0: cudaMalloc failed: out of memory
+  N1                         b12110 ub1024 c262144 ok=0 nctx=None load=None peak=10831 [n 1] ERR ml_backend_cuda_buffer_type_alloc_buffer: allocating 1122.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=11837 peak=11877 [n 1 ubd 64] T1=52.59 acc=0.80 pp=1075 md5=3e23ac3c5e11-d49458e90cd0
+  N2u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=11837 peak=11877 [n 2 ubd 64] T1=55.52 acc=0.70 pp=1075 md5=684599ee125d-86003a2281f2
+  N3u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=11837 peak=11877 [n 3 ubd 64] T1=52.42 acc=0.60 pp=1076 md5=684599ee125d-9cfee990e706
+  N4u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=11837 peak=11877 [n ubd 64] T1=52.27 acc=0.53 pp=1073 md5=714709f0cd77-6d31ce0a1946
+  N2up5                      b12110 ub1024 c262144 ok=1 nctx=262144 load=11837 peak=11877 [n 2 ubd 64 pmin 0.5] T1=54.84 acc=0.73 pp=1077 md5=684599ee125d-7389a7085ef5
+# nv67-3070-20261107
+  P0                         b11856 ub512 c184320 ok=1 nctx=184320 load=7691 peak=7713 [] T1=32.69 acc=0.00 pp=1809 md5=0ff54943daf0-640f4ceed7a3
+  N0                         b12110 ub512 c184320 ok=1 nctx=184320 load=7695 peak=7719 [] T1=30.11 acc=0.00 pp=1618 md5=06512ee603ce-3229246da345
+  fill-P0                    b11856 ub512 c184320 ok=1 nctx=184320 load=7691 peak=7699 [] FILL pn=183680 pp=820 dec=10.6 after=7699 ok=True
+  stab-P0                    b11856 ub512 c184320 ok=1 nctx=184320 load=7691 peak=7697 [] md5=0ff54943daf0-640f4ceed7a3 STAB [28.28, 27.64, 30.13, 26.9, 27.13, 27.11] err=0 ok=True temps=['83', '82', '83', '78', '80', '83']
+# nv67-3070-20261107/res-3070f
+# nv67-3080-20261107
+  P0                         b11856 ub1024 c262144 ok=1 nctx=262144 load=9771 peak=9795 [] T1=67.98 acc=0.00 pp=2536 md5=914fbe3c0530-c7e6393f5a48
+  N0                         b12110 ub1024 c262144 ok=1 nctx=262144 load=9793 peak=9817 [] T1=69.29 acc=0.00 pp=2627 md5=c30099f53378-f476ced4b883
+  P4                         b11856 ub1024 c262144 ok=0 nctx=None load=None peak=9751 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 428.53 MiB on device 0: cudaMalloc failed: out of memory
+  N1                         b12110 ub1024 c262144 ok=0 nctx=None load=None peak=9773 [n 1] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 428.53 MiB on device 0: cudaMalloc failed: out of memory
+  N1u                        b12110 ub1024 c262144 ok=0 nctx=None load=None peak=9773 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 428.53 MiB on device 0: cudaMalloc failed: out of memory
+  N1u512                     b12110 ub512 c262144 ok=0 nctx=None load=None peak=9407 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 550.06 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256                     b12110 ub256 c262144 ok=0 nctx=None load=None peak=9225 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 550.03 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256c131k                b12110 ub256 c131072 ok=1 nctx=131072 load=9063 peak=9095 [n 1 ubd 64] T1=102.98 acc=0.80 pp=2389 md5=3a19f78a5f7b-aa6f41cd27c7
+  N2u256c131k                b12110 ub256 c131072 ok=1 nctx=131072 load=9063 peak=9095 [n 2 ubd 64] T1=119.09 acc=0.70 pp=2390 md5=1f3e8b4dab7d-9a42be11e84c
+  N3u256c131k                b12110 ub256 c131072 ok=1 nctx=131072 load=9063 peak=9095 [n 3 ubd 64] T1=117.03 acc=0.61 pp=2392 md5=1f3e8b4dab7d-9a42be11e84c
+  N4u256c131k                b12110 ub256 c131072 ok=1 nctx=131072 load=9063 peak=9095 [n ubd 64] T1=120.20 acc=0.53 pp=2387 md5=d75f8ba1c9f9-9dd073a2ed29
+  N4u256c131kp5              b12110 ub256 c131072 ok=1 nctx=131072 load=9063 peak=9095 [n ubd 64 pmin 0.5] T1=113.49 acc=0.58 pp=2390 md5=20381e840c3b-2dfa02088dd0
+  N4u256c131kp8              b12110 ub256 c131072 ok=1 nctx=131072 load=9063 peak=9087 [n ubd 64 pmin 0.8] T1=109.90 acc=0.72 pp=2390 md5=c26fb98a00f4-710370a9d106
+  N4u256c131k-B              b12110 ub256 c131072 ok=1 nctx=131072 load=9063 peak=9095 [n ubd 64] T1=120.00 acc=0.53 pp=2387 md5=d75f8ba1c9f9-9dd073a2ed29
+  P0-B                       b11856 ub1024 c262144 ok=1 nctx=262144 load=9771 peak=9795 [] T1=67.75 acc=0.00 pp=2538 md5=914fbe3c0530-c7e6393f5a48
+  fill-P0                    b11856 ub1024 c262144 ok=1 nctx=262144 load=9771 peak=9793 [] FILL pn=261504 pp=896 dec=31.8 after=9793 ok=True
+# nv67-3080-20261107/res-3080f
+# nv67-4060ti-20261107
+  P0                         b11856 ub1024 c135168 ok=1 nctx=135168 load=15356 peak=15384 [] T1=19.63 acc=0.00 pp=891 md5=2d0a976a1d0f-1878de7e1e8f
+  N0                         b12110 ub1024 c135168 ok=1 nctx=135168 load=15362 peak=15390 [] T1=19.67 acc=0.00 pp=896 md5=df524ee38ee3-838c244cae41
+  P4                         b11856 ub1024 c135168 ok=0 nctx=None load=None peak=12136 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.30 MiB on device 0: cudaMalloc failed: out of memory
+  N1                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=15828 [n 1] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12136 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12136 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12136 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256c131k                b12110 ub256 c131072 ok=0 nctx=131072 load=15930 peak=15930 [n 1 ubd 64] ERR /root/eng/b12110/llama-b12110/llama-server(+0x12a5)[0x608c52f242a5]
+  N2                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12136 [n 2] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N2u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12136 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N2u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12136 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N2u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12136 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N2u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12136 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 512.00 MiB on device 0: cudaMalloc failed: out of memory
+  N3                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12136 [n 3] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N3u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12136 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N3u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=15132 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N3u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12136 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N3u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12136 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 512.00 MiB on device 0: cudaMalloc failed: out of memory
+  N4                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12136 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N4u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12136 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N4u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12136 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 760.02 MiB on device 0: cudaMalloc failed: out of memory
+  N4u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12136 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N4u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12136 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 512.00 MiB on device 0: cudaMalloc failed: out of memory
+# nv67-4060ti-20261107/res-4060tif
+  P0                         b11856 ub256 c217088 ok=1 nctx=217088 load=14360 peak=14566 [] T1=23.70 acc=0.00 pp=834 md5=b7337524552d-fb6f023864ec
+# nv67-4070-20261107
+  P0                         b11856 ub1024 c262144 ok=1 nctx=262144 load=10875 peak=10897 [] T1=52.22 acc=0.00 pp=2351 md5=de8e70dd891c-a3da7e1f6430
+  N0                         b12110 ub1024 c262144 ok=1 nctx=262144 load=10897 peak=10919 [] T1=52.83 acc=0.00 pp=2391 md5=14ddfec6e3f8-ad4f6427cc7d
+  P4                         b11856 ub1024 c262144 ok=0 nctx=None load=None peak=10845 [n] ERR ml_backend_cuda_buffer_type_alloc_buffer: allocating 1123.29 MiB on device 0: cudaMalloc failed: out of memory
+  N1                         b12110 ub1024 c262144 ok=0 nctx=None load=None peak=9731 [n 1] ERR ml_backend_cuda_buffer_type_alloc_buffer: allocating 1122.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=11883 peak=11917 [n 1 ubd 64] T1=80.69 acc=0.79 pp=2416 md5=14ddfec6e3f8-722b66b91082
+  N2u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=11883 peak=11925 [n 2 ubd 64] T1=96.66 acc=0.69 pp=2407 md5=6850cb51b2aa-8729b4d8e636
+  N3u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=11883 peak=11925 [n 3 ubd 64] T1=98.98 acc=0.60 pp=2411 md5=6850cb51b2aa-8ef7d8372422
+  N4u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=11883 peak=11925 [n ubd 64] T1=101.52 acc=0.53 pp=2400 md5=14ddfec6e3f8-1fe2c37c9e93
+  N4up5                      b12110 ub1024 c262144 ok=1 nctx=262144 load=11883 peak=11925 [n ubd 64 pmin 0.5] T1=101.29 acc=0.59 pp=2403 md5=684599ee125d-5f199f28d274
+  N4up8                      b12110 ub1024 c262144 ok=1 nctx=262144 load=11883 peak=11925 [n ubd 64 pmin 0.8] T1=96.44 acc=0.71 pp=2411 md5=d2a276557ff7-eb0848572271
+  N4u-B                      b12110 ub1024 c262144 ok=1 nctx=262144 load=11883 peak=11925 [n ubd 64] T1=101.33 acc=0.53 pp=2406 md5=14ddfec6e3f8-1fe2c37c9e93
+  P0-B                       b11856 ub1024 c262144 ok=1 nctx=262144 load=10875 peak=10897 [] T1=52.25 acc=0.00 pp=2356 md5=de8e70dd891c-a3da7e1f6430
+# nv67-4070-20261107/res-4070f
+  P0                         b11856 ub256 c135168 ok=1 nctx=135168 load=10631 peak=10835 [] T1=39.83 acc=0.00 pp=1060 md5=b0faefee3c64-7ecbf1b04392
+# nv67-4090-20261107
+  P0                         b11856 ub512 c159744 ok=1 nctx=159744 load=20018 peak=20040 [] T1=46.87 acc=0.00 pp=3031 md5=9ff5690412ea-df475cbd5ce5
+  N0                         b12110 ub512 c159744 ok=1 nctx=159744 load=20024 peak=20046 [] T1=47.10 acc=0.00 pp=3038 md5=f96cd13201a3-6ba88062f673
+  P4                         b11856 ub512 c159744 ok=1 nctx=159744 load=21786 peak=21842 [n] T1=76.36 acc=0.38 pp=2497 md5=ca5c439cd50e-6bb7fd1f8dd8
+  N1                         b12110 ub512 c159744 ok=1 nctx=159744 load=21342 peak=21394 [n 1] T1=66.79 acc=0.71 pp=2471 md5=7d4472abac26-6ba88062f673
+  N2                         b12110 ub512 c159744 ok=1 nctx=159744 load=21492 peak=21548 [n 2] T1=76.46 acc=0.57 pp=2494 md5=241edc3496a2-141084d1f098
+  N3                         b12110 ub512 c159744 ok=1 nctx=159744 load=21642 peak=21698 [n 3] T1=78.79 acc=0.47 pp=2473 md5=241edc3496a2-141084d1f098
+# nv67-4090-20261107/res-4090xl
+  P0                         b11856 ub256 c262144 ok=1 nctx=262144 load=22140 peak=22162 [] T1=47.22 acc=0.00 pp=2699 md5=9ff5690412ea-df475cbd5ce5
+  N0                         b12110 ub256 c262144 ok=1 nctx=262144 load=22146 peak=22168 [] T1=47.37 acc=0.00 pp=2627 md5=f96cd13201a3-6ba88062f673
+  P4                         b11856 ub256 c262144 ok=0 nctx=None load=None peak=23012 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 162.01 MiB on device 0: cudaMalloc failed: out of memory
+  N1u                        b12110 ub256 c262144 ok=1 nctx=262144 load=23680 peak=23732 [n 1 ubd 64] T1=67.00 acc=0.71 pp=2282 md5=7d4472abac26-6ba88062f673
+  N2u                        b12110 ub256 c262144 ok=1 nctx=262144 load=23830 peak=23886 [n 2 ubd 64] T1=76.76 acc=0.57 pp=2287 md5=241edc3496a2-141084d1f098
+# nv67-5060ti-20261107
+  P0                         b11856 ub1024 c135168 ok=1 nctx=135168 load=15689 peak=15717 [] T1=28.74 acc=0.00 pp=1052 md5=531b19fd5e10-bf7ae92a3dea
+  N0                         b12110 ub1024 c135168 ok=1 nctx=135168 load=15695 peak=15725 [] T1=28.78 acc=0.00 pp=1059 md5=4a698f29496c-f37efa9ed111
+  P4                         b11856 ub1024 c135168 ok=0 nctx=None load=None peak=12483 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.30 MiB on device 0: cudaMalloc failed: out of memory
+  N1                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12481 [n 1] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N1u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12481 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N1u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12481 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 760.02 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12481 [n 1 ubd 64] ERR /root/eng/b12110/llama-b12110/llama-server(+0x12a5)[0x5ffbeef0d2a5]
+  N1u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12481 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 512.00 MiB on device 0: cudaMalloc failed: out of memory
+  N2                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12481 [n 2] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N2u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12481 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N2u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=15313 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 760.02 MiB on device 0: cudaMalloc failed: out of memory
+  N2u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12481 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 644.01 MiB on device 0: cudaMalloc failed: out of memory
+  N2u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12481 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 626.01 MiB on device 0: cudaMalloc failed: out of memory
+  N3                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12481 [n 3] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N3u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12481 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N3u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12481 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 760.02 MiB on device 0: cudaMalloc failed: out of memory
+  N3u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12481 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 644.01 MiB on device 0: cudaMalloc failed: out of memory
+  N3u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12481 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 626.01 MiB on device 0: cudaMalloc failed: out of memory
+  N4                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12481 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N4u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12481 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N4u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12481 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 760.02 MiB on device 0: cudaMalloc failed: out of memory
+  N4u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12481 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 644.01 MiB on device 0: cudaMalloc failed: out of memory
+  N4u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12481 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 626.01 MiB on device 0: cudaMalloc failed: out of memory
+  N0-B                       b12110 ub1024 c135168 ok=1 nctx=135168 load=15695 peak=15725 [] T1=28.80 acc=0.00 pp=1059 md5=4a698f29496c-f37efa9ed111
+  P0-B                       b11856 ub1024 c135168 ok=1 nctx=135168 load=15689 peak=15717 [] T1=28.74 acc=0.00 pp=1053 md5=531b19fd5e10-bf7ae92a3dea
+# nv67-5060ti-20261107/res-5060tif
+  P0                         b11856 ub256 c200704 ok=1 nctx=200704 load=14337 peak=14567 [] T1=33.26 acc=0.00 pp=959 md5=dc8d7f41d3e9-1c84409d8eac
+# nv67-5080-20261107
+  P0                         b11856 ub1024 c135168 ok=1 nctx=135168 load=15498 peak=15528 [] T1=55.00 acc=0.00 pp=2304 md5=a38aa5a74379-f3b19208e1c1
+  N0                         b12110 ub1024 c135168 ok=1 nctx=135168 load=15504 peak=15534 [] T1=55.35 acc=0.00 pp=2305 md5=d47e9e8d2c77-d974bf8c66a0
+  P4                         b11856 ub1024 c135168 ok=0 nctx=None load=None peak=12278 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.30 MiB on device 0: cudaMalloc failed: out of memory
+  N1                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12276 [n 1] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N1u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12276 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N1u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12276 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=14988 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N1u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12276 [n 1 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 512.00 MiB on device 0: cudaMalloc failed: out of memory
+  N2                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12276 [n 2] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N2u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12276 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N2u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12276 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 760.02 MiB on device 0: cudaMalloc failed: out of memory
+  N2u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12276 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 528.00 MiB on device 0: cudaMalloc failed: out of memory
+  N2u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12276 [n 2 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 512.00 MiB on device 0: cudaMalloc failed: out of memory
+  N3                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12276 [n 3] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N3u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12276 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N3u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12276 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 760.02 MiB on device 0: cudaMalloc failed: out of memory
+  N3u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12276 [n 3 ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 644.01 MiB on device 0: cudaMalloc failed: out of memory
+  N3u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12276 [n 3 ubd 64] ERR /root/eng/b12110/llama-b12110/llama-server(+0x12a5)[0x5c82fe5aa2a5]
+  N4                         b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12276 [n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N4u                        b12110 ub1024 c135168 ok=0 nctx=None load=None peak=12276 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 992.04 MiB on device 0: cudaMalloc failed: out of memory
+  N4u512                     b12110 ub512 c135168 ok=0 nctx=None load=None peak=12276 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 760.02 MiB on device 0: cudaMalloc failed: out of memory
+  N4u256                     b12110 ub256 c135168 ok=0 nctx=None load=None peak=12276 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 644.01 MiB on device 0: cudaMalloc failed: out of memory
+  N4u256c131k                b12110 ub256 c131072 ok=0 nctx=None load=None peak=12276 [n ubd 64] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 626.01 MiB on device 0: cudaMalloc failed: out of memory
+  N0-B                       b12110 ub1024 c135168 ok=1 nctx=135168 load=15504 peak=15534 [] T1=55.38 acc=0.00 pp=2308 md5=d47e9e8d2c77-d974bf8c66a0
+  P0-B                       b11856 ub1024 c135168 ok=1 nctx=135168 load=15498 peak=15528 [] T1=55.22 acc=0.00 pp=2303 md5=a38aa5a74379-f3b19208e1c1
+  fill-P0                    b11856 ub1024 c135168 ok=1 nctx=135168 load=15498 peak=15522 [] FILL pn=134528 pp=1360 dec=14.1 after=15522 ok=True
+  fill-N0                    b12110 ub1024 c135168 ok=1 nctx=135168 load=15504 peak=15528 [] FILL pn=134528 pp=1364 dec=14.0 after=15528 ok=True
+  ctx163840-N0               b12110 ub1024 c163840 ok=0 nctx=None load=None peak=11942 [] ERR ml_backend_cuda_buffer_type_alloc_buffer: allocating 1160.04 MiB on device 0: cudaMalloc failed: out of memory
+  ctx196608-N0               b12110 ub1024 c196608 ok=0 nctx=None load=None peak=15554 [] ERR ml_backend_cuda_buffer_type_alloc_buffer: allocating 1352.04 MiB on device 0: cudaMalloc failed: out of memory
+  stab-N0                    b12110 ub1024 c135168 ok=1 nctx=135168 load=15504 peak=15520 [] md5=d47e9e8d2c77-d974bf8c66a0 STAB [54.9, 54.89, 54.9, 54.9, 54.89, 54.91] err=0 ok=True temps=['67', '67', '68', '68', '67', '67']
+  moe-probe-ncm6             b12110 ub512 c131072 ok=0 nctx=None load=None peak=14974 [--n-cpu-moe 6 n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 314.06 MiB on device 0: cudaMalloc failed: out of memory
+  moe-probe-ncm8             b12110 ub512 c131072 ok=0 nctx=None load=None peak=14262 [--n-cpu-moe 8 n] ERR gml_backend_cuda_buffer_type_alloc_buffer: allocating 552.00 MiB on device 0: cudaMalloc failed: out of memory
+  moe-ncm12-plain            b12110 ub512 c131072 ok=1 nctx=131072 load=13810 peak=13884 [--n-cpu-moe 12] T1=74.38 acc=0.00
+# nv67-5090-20261107
+  P0                         b11856 ub1024 c237568 ok=1 nctx=237568 load=26116 peak=26142 [] T1=60.18 acc=0.00 pp=3118 md5=5397566dd752-0c20dc563808
+  N0                         b12110 ub1024 c237568 ok=1 nctx=237568 load=26122 peak=26148 [] T1=60.17 acc=0.00 pp=3176 md5=8fc64966f6ed-24fc0316d37c
+  P4                         b11856 ub1024 c237568 ok=1 nctx=237568 load=28582 peak=28632 [n] T1=81.12 acc=0.40 pp=2727 md5=5a8daa086a1d-f50506605d6c
+  N1                         b12110 ub1024 c237568 ok=1 nctx=237568 load=28138 peak=28188 [n 1] T1=80.82 acc=0.72 pp=2771 md5=f7eeffaa6ab8-24fc0316d37c
+  N2                         b12110 ub1024 c237568 ok=1 nctx=237568 load=28288 peak=28338 [n 2] T1=86.91 acc=0.57 pp=2772 md5=2ff4607bb8a7-9a9c63073b9b
+  N3                         b12110 ub1024 c237568 ok=1 nctx=237568 load=28438 peak=28488 [n 3] T1=83.76 acc=0.47 pp=2778 md5=2ff4607bb8a7-9a9c63073b9b
+  N4                         b12110 ub1024 c237568 ok=1 nctx=237568 load=28588 peak=28638 [n] T1=79.51 acc=0.39 pp=2769 md5=dc3a21d01c07-471ed536f703
+# nv67-5090-20261107/res-5090f
+  P0                         b11856 ub1024 c262144 ok=1 nctx=262144 load=26692 peak=26718 [] T1=60.00 acc=0.00 pp=3098 md5=5397566dd752-0c20dc563808
+  N0                         b12110 ub1024 c262144 ok=1 nctx=262144 load=26698 peak=26724 [] T1=60.03 acc=0.00 pp=3160 md5=8fc64966f6ed-24fc0316d37c
+  P4                         b11856 ub1024 c262144 ok=1 nctx=262144 load=29302 peak=29352 [n] T1=80.89 acc=0.40 pp=2707 md5=5a8daa086a1d-f50506605d6c
+  N1u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=28248 peak=28298 [n 1 ubd 64] T1=80.60 acc=0.72 pp=2742 md5=f7eeffaa6ab8-24fc0316d37c
+  N2u                        b12110 ub1024 c262144 ok=1 nctx=262144 load=28398 peak=28448 [n 2 ubd 64] T1=86.78 acc=0.57 pp=2728 md5=2ff4607bb8a7-9a9c63073b9b

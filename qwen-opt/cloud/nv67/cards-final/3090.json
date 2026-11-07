@@ -1,0 +1,47 @@
+{
+ "card": "3090",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab",
+  "moe"
+ ],
+ "model": {
+  "file": "Qwen3.8-27B-UD-Q4_K_M.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q4_K_M.gguf",
+  "sha": "322e194ff79741c7baa497c240f677f54b201b0efab44ca8e50f122b39123482",
+  "size": 16464440224,
+  "id": "qwen38-27b/UD-Q4_K_M"
+ },
+ "ctx": 262144,
+ "kv": "q4_0",
+ "ub": 512,
+ "mtp": "self",
+ "mem_ctx": [
+  262144
+ ],
+ "moe": {
+  "file": "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF/resolve/5bc3e238d916f48a861bac2f8a1990a0e9b7e98d/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
+  "sha": "df27a780435b7b45c2597536112ea3cb091f8544c3d0c3318d9f4258b31f7adf",
+  "size": 18209036576,
+  "id": "qwen36-35b-a3b-mtp/UD-IQ4_XS",
+  "ctx": 262144,
+  "kv": "q8_0",
+  "ub": 512,
+  "vram_limit_mib": 23998,
+  "ncmoe_try": [
+   0,
+   1,
+   2
+  ]
+ }
+}

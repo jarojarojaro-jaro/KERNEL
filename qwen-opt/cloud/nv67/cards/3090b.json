@@ -1,0 +1,42 @@
+{
+ "card": "3090xl",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "perf",
+  "abba",
+  "fill",
+  "stab"
+ ],
+ "model": {
+  "file": "Qwen3.8-27B-UD-Q4_K_XL.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+  "sha": "3f227079003add2511437e5b1e94812e363385225bf6a9b47b0054a72bc8b01e",
+  "size": 17559178144,
+  "id": "qwen38-27b/UD-Q4_K_XL"
+ },
+ "ctx": 262144,
+ "kv": "q4_0",
+ "ub": 256,
+ "mtp": "self",
+ "res": "/root/res-3090xl",
+ "spec_variants": [
+  [
+   "u",
+   "new",
+   [
+    "--spec-draft-n-ubatch",
+    "64"
+   ],
+   256,
+   262144
+  ]
+ ],
+ "spec_n": [
+  1,
+  2,
+  3
+ ]
+}

@@ -1,0 +1,85 @@
+{
+ "card": "3060g",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110",
+  "prism": "prism"
+ },
+ "blocks": [
+  "perf",
+  "abba",
+  "fill",
+  "stab"
+ ],
+ "model": {
+  "file": "Ternary-Bonsai-2-27B-Q2_0.gguf",
+  "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf/resolve/839bd57023c1558945afea70a74fa83c054f35f9/Ternary-Bonsai-2-27B-Q2_0.gguf",
+  "sha": "4f99aed01b8a877e153f9aa6569a4440fe17c59701cc0953e36d7f460549e70e",
+  "size": 7626008928,
+  "id": "bonsai2-27b/Q2_0"
+ },
+ "ctx": 217088,
+ "kv": "q4_0",
+ "ub": 256,
+ "mtp": null,
+ "res": "/root/res-3060g",
+ "soak_s": 1800,
+ "engine_base": {
+  "prism": "b12110"
+ },
+ "files": [
+  "pkg/llama-prism-bin-ubuntu-cuda-12.8-x64.tar.gz"
+ ],
+ "extra_models": [
+  {
+   "file": "Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+   "url": "https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf/resolve/839bd57023c1558945afea70a74fa83c054f35f9/Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+   "sha": "53107f530aa52eb00912263ab1ee29bd199261c87cd7b4ad4ca1318c1fe33ee3",
+   "size": 5946648928
+  }
+ ],
+ "graft": {
+  "target": "Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+  "donor": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/4ca720788d1e01f1bff70c033e0d0028fd02e502/Qwen3.8-27B-UD-Q4_K_XL.gguf",
+  "out": "Ternary-Bonsai-2-27B-PTQ1_0-MTP.gguf"
+ },
+ "fork_arms": [
+  {
+   "label": "XQ2",
+   "engine": "prism",
+   "extra": []
+  },
+  {
+   "label": "XT1",
+   "engine": "prism",
+   "extra": [],
+   "model": "Ternary-Bonsai-2-27B-PTQ1_0.gguf"
+  },
+  {
+   "label": "XT1m1",
+   "engine": "prism",
+   "extra": [
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "1",
+    "--spec-draft-n-ubatch",
+    "64"
+   ],
+   "model": "Ternary-Bonsai-2-27B-PTQ1_0-MTP.gguf"
+  },
+  {
+   "label": "XT1m2",
+   "engine": "prism",
+   "extra": [
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "2",
+    "--spec-draft-n-ubatch",
+    "64"
+   ],
+   "model": "Ternary-Bonsai-2-27B-PTQ1_0-MTP.gguf"
+  }
+ ]
+}

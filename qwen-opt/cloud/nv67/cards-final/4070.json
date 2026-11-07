@@ -1,0 +1,50 @@
+{
+ "card": "4070",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab",
+  "moe"
+ ],
+ "model": {
+  "file": "Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
+  "url": "https://huggingface.co/Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF/resolve/main/Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
+  "sha": "98f6ebb527917a2541df8e667d51c3ec8a8bb135b44c606d40cc6ed924e89e52",
+  "size": 8349689920,
+  "id": "saluki-27b-mtp/IQ2-mix"
+ },
+ "kv": "q4_0",
+ "ub": 256,
+ "mtp": "self",
+ "ctx": 135168,
+ "ctx_probe": [
+  151552
+ ],
+ "moe": {
+  "file": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF/resolve/5bc3e238d916f48a861bac2f8a1990a0e9b7e98d/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+  "sha": "55983c5a75a1ab969824077b3bb3de4146e82a9234072b48ad4e8f92ad3fe9f1",
+  "size": 22853663008,
+  "id": "qwen36-35b-a3b-mtp/UD-Q4_K_XL",
+  "ctx": 262144,
+  "kv": "q4_0",
+  "ub": 512,
+  "vram_limit_mib": 11827,
+  "ncmoe_try": [
+   27,
+   28,
+   29,
+   30,
+   31,
+   33
+  ]
+ }
+}

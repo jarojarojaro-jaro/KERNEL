@@ -1,0 +1,33 @@
+{
+ "card": "5090",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab"
+ ],
+ "model": {
+  "file": "Qwen3.8-27B-UD-Q6_K.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q6_K.gguf",
+  "sha": "c9c206812fbe4ac7b76a729e25928b63f2ae89d37f69da7a71c20aec763cd436",
+  "size": 21983677344,
+  "id": "qwen38-27b/UD-Q6_K"
+ },
+ "ctx": 237568,
+ "kv": "q4_0",
+ "ub": 1024,
+ "mtp": "self",
+ "ctx_probe": [
+  262144
+ ],
+ "mem_ctx": [
+  262144
+ ]
+}

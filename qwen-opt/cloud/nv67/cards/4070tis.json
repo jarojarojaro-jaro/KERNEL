@@ -1,0 +1,34 @@
+{
+ "card": "4070tis",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab"
+ ],
+ "model": {
+  "file": "Qwen3.8-27B-UD-Q3_K_XL.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q3_K_XL.gguf",
+  "sha": "8c2a45ff85e7674ca185ec8eb6cdeab0e617ed9d8018caed0b64380eb2a67a5e",
+  "size": 13146393504,
+  "id": "qwen38-27b/UD-Q3_K_XL"
+ },
+ "ctx": 135168,
+ "kv": "q4_0",
+ "ub": 1024,
+ "mtp": "self",
+ "ctx_probe": [
+  163840,
+  196608
+ ],
+ "mem_ctx": [
+  131072
+ ]
+}

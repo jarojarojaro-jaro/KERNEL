@@ -1,0 +1,27 @@
+{
+ "card": "4060ti",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab"
+ ],
+ "model": {
+  "file": "Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf",
+  "url": "https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF/resolve/main/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf",
+  "sha": "63f29a2189a6b4cc31f81e093d3856ad293a5583114439f41ae1ed7af4093262",
+  "size": 10442827840,
+  "id": "qwen38-27b-gsq/IQ3_XXS-mtp"
+ },
+ "ctx": 262144,
+ "kv": "q4_0",
+ "ub": 256,
+ "mtp": null
+}

@@ -1,0 +1,160 @@
+{
+ "card": "3090g",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110",
+  "topka2": "topka2"
+ },
+ "blocks": [
+  "perf",
+  "abba",
+  "fill",
+  "stab",
+  "moe"
+ ],
+ "model": {
+  "file": "Qwen3.8-27B-UD-Q4_K_M.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.8-27B-GGUF/resolve/main/Qwen3.8-27B-UD-Q4_K_M.gguf",
+  "sha": "322e194ff79741c7baa497c240f677f54b201b0efab44ca8e50f122b39123482",
+  "size": 16464440224,
+  "id": "qwen38-27b/UD-Q4_K_M"
+ },
+ "ctx": 262144,
+ "kv": "q4_0",
+ "ub": 512,
+ "mtp": "self",
+ "moe": {
+  "file": "Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF/resolve/5bc3e238d916f48a861bac2f8a1990a0e9b7e98d/Qwen3.6-35B-A3B-UD-IQ4_XS.gguf",
+  "sha": "df27a780435b7b45c2597536112ea3cb091f8544c3d0c3318d9f4258b31f7adf",
+  "size": 18209036576,
+  "id": "qwen36-35b-a3b-mtp/UD-IQ4_XS",
+  "ctx": 262144,
+  "kv": "q8_0",
+  "ub": 512,
+  "vram_limit_mib": 23998,
+  "ncmoe_try": [
+   0,
+   1,
+   2
+  ],
+  "grid": [
+   [
+    1,
+    0.0
+   ],
+   [
+    2,
+    0.0
+   ],
+   [
+    3,
+    0.0
+   ]
+  ]
+ },
+ "res": "/root/res-3090g",
+ "spec_variants": [
+  [
+   "u",
+   "new",
+   [
+    "--spec-draft-n-ubatch",
+    "64"
+   ],
+   512,
+   262144
+  ]
+ ],
+ "spec_n": [
+  1,
+  2,
+  3
+ ],
+ "engine_base": {
+  "topka2": "b12110"
+ },
+ "fork_arms": [
+  {
+   "label": "F131k",
+   "engine": "topka2",
+   "env": {
+    "LLAMA_SPEC_LOOKUP": "3",
+    "LLAMA_SPEC_LOOKUP_W": "16",
+    "LLAMA_SERVER_CACHE_SHARE_MIN": "1024",
+    "LLAMA_GPU_VERIFY": "1",
+    "LLAMA_SERVER_REASONING_CONTROL": "0"
+   },
+   "extra": [
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "4",
+    "-ctkd",
+    "q4_0",
+    "-ctvd",
+    "q4_0",
+    "--spec-draft-vocab",
+    "{nv}/draft_vocab_qwen38.txt",
+    "--spec-draft-vocab-n",
+    "65536",
+    "--spec-draft-head-type",
+    "iq4_xs",
+    "--spec-mtp-type",
+    "iq4_xs"
+   ],
+   "ub": 512,
+   "ctx": 131072
+  },
+  {
+   "label": "U131k-n3",
+   "engine": "new",
+   "extra": [
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "3",
+    "--spec-draft-n-ubatch",
+    "64"
+   ],
+   "ub": 512,
+   "ctx": 131072
+  },
+  {
+   "label": "F262k",
+   "engine": "topka2",
+   "env": {
+    "LLAMA_SPEC_LOOKUP": "3",
+    "LLAMA_SPEC_LOOKUP_W": "16",
+    "LLAMA_SERVER_CACHE_SHARE_MIN": "1024",
+    "LLAMA_GPU_VERIFY": "1",
+    "LLAMA_SERVER_REASONING_CONTROL": "0"
+   },
+   "extra": [
+    "--spec-type",
+    "draft-mtp",
+    "--spec-draft-n-max",
+    "4",
+    "-ctkd",
+    "q4_0",
+    "-ctvd",
+    "q4_0",
+    "--spec-draft-vocab",
+    "{nv}/draft_vocab_qwen38.txt",
+    "--spec-draft-vocab-n",
+    "65536",
+    "--spec-draft-head-type",
+    "iq4_xs",
+    "--spec-mtp-type",
+    "iq4_xs"
+   ],
+   "ub": 512,
+   "ctx": 262144
+  }
+ ],
+ "soak_s": 1800,
+ "files": [
+  "pkg/llama-topka2-bin-ubuntu-cuda-12.8-x64.tar.gz",
+  "pkg/draft_vocab_qwen38.txt"
+ ]
+}

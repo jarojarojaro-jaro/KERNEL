@@ -1,0 +1,33 @@
+{
+ "card": "3080-12",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab"
+ ],
+ "model": {
+  "file": "gemma-4-12b-it-Q6_K.gguf",
+  "url": "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/gemma-4-12b-it-Q6_K.gguf",
+  "sha": "6f394336500bb5409bd68c31aa9d75097b5e6104f6cf30c82a09a7b64df41faf",
+  "size": 9786022720,
+  "id": "gemma4-12b/Q6_K"
+ },
+ "ctx": 262144,
+ "kv": "q4_0",
+ "ub": 512,
+ "mtp": "drafter",
+ "draft": {
+  "file": "mtp-gemma-4-12b-it.gguf",
+  "url": "https://huggingface.co/unsloth/gemma-4-12b-it-GGUF/resolve/main/mtp-gemma-4-12b-it.gguf",
+  "sha": "145db9094bc0f85f1701e255a2ed216dcc9800fc8bc8631ad00905b456bd451b",
+  "size": 465109248
+ }
+}

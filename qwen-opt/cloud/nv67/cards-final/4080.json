@@ -1,0 +1,51 @@
+{
+ "card": "4080",
+ "engines": {
+  "pin": "b11856",
+  "new": "b12110"
+ },
+ "blocks": [
+  "mem",
+  "perf",
+  "pmin",
+  "abba",
+  "fill",
+  "ctxprobe",
+  "stab",
+  "moe"
+ ],
+ "model": {
+  "file": "Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf",
+  "url": "https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF/resolve/main/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf",
+  "sha": "63f29a2189a6b4cc31f81e093d3856ad293a5583114439f41ae1ed7af4093262",
+  "size": 10442827840,
+  "id": "qwen38-27b-gsq/IQ3_XXS-mtp"
+ },
+ "kv": "q4_0",
+ "ub": 256,
+ "mtp": "self",
+ "ctx": 208896,
+ "ctx_probe": [
+  233472,
+  262144
+ ],
+ "moe": {
+  "file": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+  "url": "https://huggingface.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF/resolve/5bc3e238d916f48a861bac2f8a1990a0e9b7e98d/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+  "sha": "55983c5a75a1ab969824077b3bb3de4146e82a9234072b48ad4e8f92ad3fe9f1",
+  "size": 22853663008,
+  "id": "qwen36-35b-a3b-mtp/UD-Q4_K_XL",
+  "ctx": 262144,
+  "kv": "q4_0",
+  "ub": 512,
+  "vram_limit_mib": 15709,
+  "ncmoe_try": [
+   19,
+   20,
+   21,
+   22,
+   23,
+   25
+  ]
+ }
+}
