@@ -66,7 +66,7 @@ Audyt liczb: [[AUDYT]].
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (41)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (65)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (108)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (28)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (84)
 - [[research/_hub|research]] — Streszczenia raportów (152)
@@ -77,6 +77,7 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-11-06 [[amdgpu-moc-i-termika|Sterownik amdgpu: limit mocy, termika, usypianie]]
 - 2026-11-06 [[raport-65-vram-rezerwa-mtp|Raport 65: 1 GiB VRAM z rezerwy MTP → kontekst 262 144]]
+- 2026-11-06 [[tailscale|Tailscale: zdalny dostęp do serwera]]
 - 2026-11-06 [[reactor-monitor|REACTOR (monitor terminalowy)]]
 - 2026-11-06 [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]]
 - 2026-11-06 [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-05 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
 - 2026-11-05 [[init-user-pages-failed|`amdgpu: init_user_pages: Failed to get user pages: -1` przy starcie serwera]]
 - 2026-11-05 [[raport-64-termika|Raport 64: czy bezpiecznie obniżyć sclk na XTX]]
-- 2026-11-05 [[raport-63-synteza|Raport 63: 44 wątki z pakietu 2026-11-03 (silniki, AMD, atencja, spekulacja, metodologia)]]
 
-Razem 687 notatek. Wygenerowano 2026-11-06 przez `tools/wiki.py index`.
+Razem 688 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

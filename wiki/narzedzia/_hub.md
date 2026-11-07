@@ -14,7 +14,7 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (28)
+## Notatki (29)
 
 - [[co-stats|`co_stats.py`: statyczny audyt kerneli (VGPR, spille, fale)]] — `21l-skrypty/co_stats.py OUT.csv <lib.so|*.co|*.hsaco>` czyta wszystkie kernele z bundli HIP (także skompresowanych CCOB) i zapisuje per kernel VGPR, SGPR, spille, LDS i fale/SIMD; reguła fal gfx1100 = min(16, ⌊1536 / ⌈VGPR⌉₂₄⌋), zgodna z kompilatorem i RGA (raport 21l, 2026-10-19).
 - [[hip-fatbin-extract|`tools/re/hip_fatbin_extract.py`: code objects z `.hip_fatbin`]] — Skrypt w czystym Pythonie (CPU) wyciąga z sekcji `.hip_fatbin` biblioteki HIP nieskompresowane bundle `__CLANG_OFFLOAD_BUNDLE__` (jeden na jednostkę kompilacji) i zapisuje każdy wpis `hipv4-amdgcn-*` jako `<outdir>/<idx>.<target>.co`; `--filter SUBSTR` zostawia tylko obiekty zawierające nazwę kernela (raport 23a, 2026-10-19).
@@ -42,6 +42,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[spec-sweep|spec_sweep — główny pomiar t/s i ms/krok]] — Standardowy benchmark projektu: restartuje serwer dla każdej konfiguracji i mierzy t/s, ms/krok, tokeny na krok i akceptację draftu na stałym zestawie promptów PL/EN.
 - [[ss-zrzut-ekranu|ss (zrzut ekranu z Windowsa na serwer)]] — Funkcja PowerShella `ss` w profilu użytkownika: zapisuje obrazek ze schowka jako PNG i kopiuje go przez `scp` do `/tmp` na serwerze, żeby agent mógł go przeczytać.
 - [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]] — Skrypt odpytuje co 2 s log jądra i sensory XTX; przy zagrożeniu zabija wszystkie `llama-server` / `llama-bench` / `llama-perplexity` / `test-backend-ops` / `magnitude-engine` poza produkcją na :8080, zapisuje powód do `gpu-guard.log` i kończy się kodem 3, który budzi agenta głównego.
+- [[tailscale|Tailscale: zdalny dostęp do serwera]] — Od 2026-11-06 serwer jest w sieci Tailscale użytkownika (MagicDNS włączony, `tailscaled` uruchamiany przy starcie); zdalnie: `ssh jaro@jaroserverai` z urządzenia zalogowanego na to samo konto.
 - [[umr-offline-pm4|umr offline: dekodowanie taśmy PM4 bez roota]] — umr zbudowany bez roota (`apt download` + `dpkg -x`) dekoduje offline pakiety PM4, AQL i pola rejestrów gfx1100: `umr -f gfx11_vm_test -df plik.bin`; nie dekoduje słowa inicjatora `DISPATCH_DIRECT` (Mesa `ac_parse_ib.c` też nie) (raport 21l, 2026-10-19).
 - [[wiki-py|wiki.py (narzędzie tej bazy wiedzy)]] — Skrypt tylko ze stdlib do utrzymania wiki: `lint` (błędy → kod wyjścia 1), `index` (odświeża listy w `_hub.md` i `index.md`), `search` (deleguje do [[kb]], gdy `kb` jest w PATH; bez niego tytuły, streszczenia, tagi).
 <!-- AUTO:END -->

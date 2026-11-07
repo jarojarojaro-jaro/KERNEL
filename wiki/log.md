@@ -221,3 +221,6 @@ Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzuca
 
 ## [2026-11-06] update | REACTOR: płynny przez SSH, prefill na żywo
 [[reactor-monitor]]: faza LLM na żywo (PREFILL t/s · tokeny · % z linii `prompt processing`, DECODE z `GET /slots`), dane co 0,25 s, renderer różnicowy na komórkach + kontrola przepływu sondą DSR, tryb `ssh-lite`. 200x55 przez SSH: 1,79–1,81 MB → 267–280 KB / 10 s; wolny terminal 40 KB/s: zaległość do 30 s → 0,07–0,10 s.
+
+## [2026-11-06] ingest | Tailscale na serwerze
+[[tailscale]]: zdalny SSH przez tailnet (MagicDNS), bez otwierania portów.
