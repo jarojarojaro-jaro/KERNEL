@@ -236,3 +236,12 @@ Nowe: [[raport-66-synteza]], [[kv-raz-na-weryfikacje]], [[mmq-q6k-skale-lds]], [
 
 ## [2026-11-07] eksperyment | prawdziwa sesja w final mode
 [[2026-11-06-sesja-uzytkownika-final-mode]]: 120,8 t/s ważone (143 zadania, do 139k), 95,8 t/s przy 128–160k; README i REKORDY zaktualizowane; serwer nie wstał sam po restarcie (brak usługi).
+
+## [2026-11-07] ingest | raport 67b: ostateczne modele per VRAM (NVIDIA)
+[[final-modele-per-vram]]:
+- 24 / 32 GB: Qwen3.8-27B przy 262 144 z MTP (UD-Q4_K_M / UD-Q6_K).
+- 16 GB: GSQ IQ3_XXS-mtp, 200–217k z MTP albo 262k bez MTP.
+- 12 GB: Saluki-MTP 135k (licencja od 11-05 CC BY-NC) albo Bonsai Q2_0 221k.
+- 11 GB: Bonsai. 8–10 GB: LFM2.5 Q4_K_M z `--n-cpu-moe`.
+
+Model pamięci upstream: błąd ≤ 23 MiB, RS × (n+1), limit = suma CUDA. [[saluki]]: licencja poprawiona.

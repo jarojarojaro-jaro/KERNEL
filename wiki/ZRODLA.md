@@ -315,6 +315,22 @@ Synteza: [[raport-63-synteza]]; reguła [[2026-11-05-tylko-bezstratne]] (stratne
 | unsloth.ai/docs/basics/dynamic-3.0-ggufs/dynamic-3.1-ggufs.md + wykresy „final key 4.png”, „fully final.png” | odczyt 11-06 | R66f, [[qwen38-flash-next]] | Porównanie z GSQ-RCO przy równym rozmiarze (producent, stronnicze). | 83.6 GB: KLD ~0.052 vs ~0.065; odzysk 99.9 vs 99.0% | wspólny protokół KLD (nasz) |
 | HF ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF; ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF | README 11-06 | R66f, [[qwen38-flash-next]], [[ista-daslab]] | „Task-lossless” przy 3.5 bpw; nasze E1 i 15e temu przeczą. | IQ3_S 93.26 vs BF16 93.12 | tier ≥ 4 bpw |
 
+## Raport 67b (2026-11-07, modele per klasa VRAM NVIDIA)
+
+Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-per-vram]]. Delta od R33 (2026-10-20); dane VRAM z `arms.jsonl` kampanii 67 (b11856/b12110, `-lv 4`).
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| HF API (sortowanie trending / createdAt; autorzy Qwen, unsloth, google, mistralai, nvidia, LiquidAI, ISTA-DASLab, bartowski i in.) | 11-07 | R67b §2 | Nowe ≤ 35B: Nanbeige4.3-33B, Arete-27B, Apex-35B, DSpine-b16; bez unsloth v3.1 dla 27B. | – | `createdAt` > 11-07 |
+| artificialanalysis.ai (artykuł Nanbeige 11-05, strony modeli, JSON `intelligenceIndex`) | AA v5.0.1, 11-07 | R67b §2 | Nanbeige 20.4 = Qwen3.8-27B 20.1; Qwen3.6 i Gemma 12B/26B bez v5. | Gemma 4 31B 4.4; Mistral Small 4 4.3 | v5 dla Qwen3.6-35B-A3B |
+| HF Nanbeige/Nanbeige4.3-33B (+ bartowski GGUF) | 10-24 / 10-28 | R67b §2 | Gęsty, 58.5 KB/token q4_0; na 5090 tylko 184k. | TB 4.0 30% vs 6% | nasze zadania agentowe |
+| HF NousResearch/Arete-27B | 11-06 | R67b §2 | SFT wartości Qwena; głowica MTP wyłączona przy treningu. | propaganda 22% → 0.9% | akceptacja MTP |
+| HF Apexintelligence-AI/Apex-35B-V1.0 | 10-28 | R67b §2 | Fine-tune Qwen3.6, liczby vendora. | GPQA 83.3 vs 75.8 | KLD / zadania |
+| HF tencent/Qwen3.8-27B-DSpine-b16 | 11-07 | R67b §2 | Tylko SGLang. | akceptacja 4.5–7.2 vs DFlash2 4.1–5.7 | port GGUF / llama.cpp |
+| HF ConwayResearch/Underdog-Saluki-27B-1.0 | commit 11-05 | R67b §2, [[saluki]] | **Licencja zmieniona na CC BY-NC 4.0.** | – | warunki licencji komercyjnej |
+| HF prism-ml/Ternary-Bonsai-2-27B-gguf | tree 11-07 | R67b §2, [[bonsai]] | Oficjalny upstream Q2_0 (repack zbędny). | 7 626 008 928 B | KLD oficjalnego Q2_0 vs nasz repack |
+| HF speakleash/Bielik-11B-v3.0-Instruct-GGUF | 11-05 | R67b §2 | ctx 32 768, więc nie spełnia 131k. | – | Bielik z długim ctx |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

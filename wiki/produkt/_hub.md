@@ -14,7 +14,7 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (31)
+## Notatki (32)
 
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
@@ -33,6 +33,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[produkt-ryzyka|Największe ryzyka]] — Dziewięć ryzyk z odpowiedziami; najgroźniejsze: zysk nie przenosi się poza 7900 XTX/Linux oraz wbudowanie auto-tuningu przez LM Studio, Ollamę, Jana lub NVIDIA.
 - [[produkt-optymalizacja-u-uzytkownika|Optymalizacja u użytkownika: kalibracja i noc]] — Zawsze szybka kalibracja 1–5 min; opcjonalnie noc za zgodą (zasilacz, bezczynność, limity), z bramką md5 i ABBA; nigdy agentów ani kompilacji na komputerze użytkownika.
 - [[opoznienia-ttft|Opóźnienia: TTFT, start i przełączanie modeli (topka)]] — Stan po f9b84bcfa: start Qwen 38.5 → 6.55 s (cache MTP), tura agenta S2-turn2 687/579 → 197 ms (CKPT_VRAM=2), świeży 2k −22% (2026-10-21).
+- [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]] — Na upstream llama.cpp b12110 Qwen3.8-27B mieści 262 144 z MTP na 24 GB (UD-Q4_K_M) i 32 GB (UD-Q6_K). Na 16 GB 262k mieści tylko IQ3_XXS bez MTP, a z MTP 200–217k. Na 12 GB 27B osiąga ≥ 131k tylko w 2 bitach. Na 8–10 GB wybór to LFM2.5 z `--n-cpu-moe`.
 - [[otwarte-decyzje-produktu|Otwarte decyzje produktu (po prototypie aplikacji)]] — Pytania AppStudio do użytkownika z 2026-10-16, wciąż bez decyzji: nazwa, kolor akcentu, ceny w teście fake-door, konto przed pobraniem, sprawy prawne, port lokalnego API 11500 i domena.
 - [[otwarte-decyzje-techniczne|Otwarte decyzje techniczne (silnik, flagi, wydatki)]] — Rekomendacje agentów, które czekają na decyzję użytkownika: zmiany flag `run-llm.sh`, scalenie łatek do `amd-opt`, testy GPU z ryzykiem i wydatki na chmurę; po decyzji wiersz przechodzi do [[decyzje/_hub|decyzji]].
 - [[produkt-platformy-i-lab|Platformy, sprzęt i lab]] — Rozwój na Linuksie, projekt od początku na Win/Linux/macOS; wolumen to NVIDIA (76% Steam), wyróżnik AMD; popularne karty kupujemy, rzadkie (3090, 4090, 5090) wynajmujemy.

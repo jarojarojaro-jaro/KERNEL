@@ -3020,6 +3020,13 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 | [[strata]], [[project-maya]], [[tqllm]], [[megakernele-prior-art]], [[radeon-ai-pro-r9700]], [[lekcja-mikrobench-klamie]], [[fattn-kvq]] (aktualizacje) | 20, 20, 16, 28, 9, 10, 9 | 66a, 66b, 66c, 66d, 66e | OK |
 | [[raport-54-mniej-granic]] | 26 | `66c:104` (dane z `~/qwen-opt/launchcut/logs/`) | poprawione: „niezmierzone” → +0.24% / 0.0% |
 
+## Ingest 2026-11-07 (raport 67b)
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[final-modele-per-vram]] | 24 | `67b` §0–§1 (model pamięci z `/tmp/nv67live/*.jsonl` = `arms.jsonl` kampanii 67: load 29 158, 23 680, buffers) | OK |
+| [[saluki]] (licencja) | 1 | HF commits `ConwayResearch/Underdog-Saluki-27B-1.0` (2026-11-05) | poprawione: Apache-2.0 → CC BY-NC 4.0 |
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

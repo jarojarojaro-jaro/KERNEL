@@ -70,7 +70,7 @@ Audyt liczb: [[AUDYT]].
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (88)
 - [[research/_hub|research]] — Streszczenia raportów (153)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (31)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (32)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
@@ -86,10 +86,10 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-07 [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]]
 - 2026-11-07 [[hyperkernel|Hyperkernel (Hyperstition): rezydentny megakernel na B300]]
 - 2026-11-07 [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]]
+- 2026-11-07 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
+- 2026-11-07 [[saluki|Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)]]
 - 2026-11-07 [[qwen38-flash-next|Qwen3.8-Flash-Next (125B MoE, 6B aktywnych, zapowiedź architektury Qwen4)]]
 - 2026-11-07 [[strumien-on-wyrocznia|Strumień O(n) z wyrocznią zamiast parsera O(n²)]]
-- 2026-11-07 [[siatka-checkpointow-gdn|Siatka checkpointów GDN, junction i fallback odtwarzania]]
-- 2026-11-07 [[prog-draftu-od-kosztu-wiersza|Próg draftu zależny od kosztu wiersza weryfikacji]]
 
-Razem 706 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
+Razem 707 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
