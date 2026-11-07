@@ -155,6 +155,7 @@ Decyzja użytkownika 2026-11-06: tryb eco jest trybem docelowym; od teraz rekord
 | XTX / Qwen Uncensored Q4_K_M | greedy 256 tok. | **106,4 t/s** (108,4; −1,8%), md5 0221afd9 identyczne | 2026-11-06 | j.w. | j.w. | tak |
 | XTX / Qwen Uncensored Q4_K_M | waty przy pracy / hotspot | **241 W / 63,5 °C** (280 W / 67,9 °C; −13,9% / −4,4 °C) | 2026-11-06 | j.w., wiersze > 150 W | `~/qwen-opt/thermal/final-unc.csv` | tak |
 | XTX / Qwen Uncensored Q4_K_M | 255k w kontekście: prefill / decode | **465,1 / 78,7 t/s** (pierwszy pomiar) | 2026-11-06 | j.w. | `~/qwen-opt/queue/logs/ctx-262144.log` | tak |
+| XTX / Qwen Uncensored Q4_K_M | prawdziwa sesja agentowa (omp), decode ważony tokenami | **120,8 t/s** całość (143 zadania, 125 658 tok.); 0–32k 127,2 · 32–64k 121,6 · 64–96k 116,6 · 96–128k 123,1 · 128–160k 95,8; szczyt pojedynczego zadania 219,5 | 2026-11-06 | final mode, kontekst do 139 160 | `~/qwen-opt/logs/server-2026-11-06_175345.log`, [[2026-11-06-sesja-uzytkownika-final-mode]] | tak |
 | XTX / Qwen UD-Q4_K_XL | ctx 262 144: spec_sweep T=1 / 255k prefill / decode | 118,1 t/s / 467,5 / 69,5 t/s; szczyt VRAM 24 224 MiB (zapas tylko 336 MiB) | 2026-11-06 | eco 2200 | `~/qwen-opt/queue/logs/final-qwen-262144.log` | nie (za mały zapas) |
 
 ## Jak dopisywać

@@ -233,3 +233,6 @@ Nowe: [[raport-66-synteza]], [[kv-raz-na-weryfikacje]], [[mmq-q6k-skale-lds]], [
 
 ## [2026-11-07] update | 66f Flash-Next: korekta z 66a, GSQ-RCO, Unsloth v3.1 vs GSQ
 [[qwen38-flash-next]]: MTP `qwen4exp` w llama.cpp master od b11330 (#29761), gałąź danielhanchen #28243 zamknięta bez scalenia. Strata ma dwie reguły RAM: ISTA „eksperci + ~10 GB”, Unsloth „eksperci + 16 GiB”, inaczej budżet RAM − 24 GB. UD-IQ4_XS w Stracie działa w trybie budżetu (~17 GiB z SSD). Kwant: UD-IQ3_XXS v3.1 (83.6 GB) najlepszy przy tym rozmiarze (KLD ~0.052 vs ~0.065 GSQ IQ3_S, wykres Unsloth, stronniczy); GSQ IQ3_S zostaje alternatywą w Stracie.
+
+## [2026-11-07] eksperyment | prawdziwa sesja w final mode
+[[2026-11-06-sesja-uzytkownika-final-mode]]: 120,8 t/s ważone (143 zadania, do 139k), 95,8 t/s przy 128–160k; README i REKORDY zaktualizowane; serwer nie wstał sam po restarcie (brak usługi).

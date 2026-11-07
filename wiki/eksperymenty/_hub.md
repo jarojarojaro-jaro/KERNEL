@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (65)
+## Notatki (66)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -76,6 +76,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-11-06-ctx-262k-fit|Pełny kontekst 262 144 na XTX (Qwen3.8-27B-Uncensored, 2026-11-06)]] — Po wdrożeniu topka-q63 (MTP lean reserve, −1,0 GiB) serwer czatu mieści natywne 262 144 tokenów: prompt 254 977 tok. przeszedł bez OOM, szczyt VRAM 23 367 / 24 560 MiB.
 - [[2026-10-19-plan-e1-rsr27b|Plan E1: RSR-27B vs Qwen3.8-27B w naszym silniku – niewykonany]] — Szkic (raport 21h §4.5): czy RSR-27B rozwiązuje więcej zadań niż Qwen3.8-27B przy tym samym kwancie (UD-Q4_K_XL, ten sam imatrix) i buildzie CUDA, także w harnessie omp, bez regresji PL i z zachowanym tok/krok po dopasowaniu głowicy MTP; ~$40–70 na wynajętych 3090, czeka na zgodę użytkownika na wydatek.
 - [[2026-10-19-plan-retro-rsr-0070|Plan: pilot P0/P1 pętli RSI-F (retro-RSR na łatce 0070) – niewykonany]] — Szkic (raport 21h §5.7): P0 – pierwszy prawdziwy przebieg fabryki na GPU (`./factory verify claims/2026-10-17-mmq-epi-0070.json`, ~20 min); P1 – playbook z łatki 0070 (epilog MMQ, pp4096 1099.5 → 1123.2 t/s, bitowo) przeniesiony przez świeżego agenta na inne cele, ~60–80 min GPU XTX, $0 chmury; czeka na decyzję użytkownika.
+- [[2026-11-06-sesja-uzytkownika-final-mode|Prawdziwa sesja użytkownika w final mode: 120,8 t/s średnio do 139k kontekstu (2026-11-06)]] — W prawdziwej pracy agentowej (omp, 145 zadań, 125 658 wygenerowanych tokenów, kontekst do 139 160) czat w final mode (eco 2200, ctx 262 144) pisał średnio 120,8 t/s, ważone tokenami. Do 128k utrzymywał 117–127 t/s, przy 128–160k spadał do 95,8 t/s.
 - [[2026-11-05-q63-topka|q63: topka-int7 → topka-q63 (c0576e3e8), wdrożone 2026-11-05]] — Trzy łatki z raportu 63c: cap occupancy FA okazał się no-opem, chuda rezerwa MTP oddała ~1 GiB VRAM, poprawki MTP upstream podniosły akceptację po odtworzeniu slotu 0.41 → 0.60; t/s bez zmian.
 - [[stan-2026-10-15|Stan zainstalowany 2026-10-15 (70 łatek)]] — Pomiar finalny po rundzie 6: Qwen3.8-27B 109.0 t/s, Uncensored 115.5, LFM2.5 293.7, LFM Uncensored 267.3; build `~/llama-opt`, gałąź `amd-opt` @ f61994f58.
 - [[2026-11-06-eco-sweep-sclk|Sweep eco: limit taktowania rdzenia XTX (2026-11-06)]] — Limit max sclk przy niezmienionym napięciu (offset 0 mV), pamięci i limicie mocy 285 W: 2000 MHz daje −4,1% pisania za −16% watów i −12 °C hotspot; md5 identyczne we wszystkich ramionach.

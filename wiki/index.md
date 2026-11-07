@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (47)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (65)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (66)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (110)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-07 [[siatka-checkpointow-gdn|Siatka checkpointów GDN, junction i fallback odtwarzania]]
 - 2026-11-07 [[prog-draftu-od-kosztu-wiersza|Próg draftu zależny od kosztu wiersza weryfikacji]]
 
-Razem 705 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
+Razem 706 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
