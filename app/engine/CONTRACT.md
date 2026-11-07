@@ -86,7 +86,9 @@ interface MemPlan { weightsGiB:number; kvGiB:number; computeGiB:number; overhead
 interface Option { id:string; modelId:string; name:string; family:string; params:string; quant:string;
   file:{repo:string; path:string; sizeBytes:number; sha256?:string}; ctx:number; ctxMax:number; kvType:'q4_0'|'q8_0'|'f16';
   ub:number; backend:Backend; gpuIndex:number|null; mem:MemPlan; features:string[] /* mtp, tools, reasoning, vision */;
-  score:number; why:string[] }
+  score:number; why:string[];
+  needsEngine?:string /* id z engines.json: oficjalny llama.cpp nie uruchamia pliku (PTQ1_0); baseline i kandydaci na nim */;
+  mtpEngine?:string /* id z engines.json, którego profil MTP zwymiarował plan (features ma 'mtp'); kandydat `enigma` */ }
 interface Recommendation { minCtx:number; pick:Option|null; alternatives:Option[];
   rejected:{modelId:string; quant:string; reason:string}[] }
 interface Progress { phase:Phase; label:string; done:number; total:number; rate?:number; etaS?:number }
@@ -115,6 +117,30 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   KV draftu w f16, stan rekurencyjny × (n_max + 1) i bufor compute draftu przy `--spec-draft-n-ubatch 64`; brak
   wzrostu z promptem ponad plain. Plan MTP = kandydat `mtp` (`MTP_N_MAX_DEFAULT`, `MTP_DRAFT_UB` w `memory.ts`).
   Kalibracja: `test/catalog.measured.json`.
+- Nasze silniki CUDA (`enigma-cuda-lean`, `enigma-cuda-prism`, `enigma-cuda-fork`, `data/engines.json`) wchodzą do planu tylko, gdy są
+  dostępne (`distribution: download` albo ustawione `ENIGMA_ENGINE_DIR_<envKey>`; `engineAvailable` w `engine.ts`).
+  Plan MTP pliku, dla którego dostępny silnik ma profil z `mtp` (`{nMax, ubd, draftKv?}`), jest liczony pod ten profil
+  (`Option.mtpEngine`, why `mtp_engine:<id>/<n>`): stan × (n + 1), bufor draftu przy ubd, KV draftu w typie efektywnym —
+  `-ctkd` profilu przy cesze `mtp-lean-reserve` (wtedy też maska draftu ctx × 2 B), typ `-ctk` przy cesze
+  `mtp-draft-kv-ctk` (prism, dopasowane do pomiarów 4070), inaczej f16; bez `ubd` w profilu draft liczy się przy `-ub`;
+  cecha `mtp-fork-draft` (nasz fork): stan × 1,686 (snapshoty) zamiast × (n + 1) + bufory słownika draftu
+  (`mtpExtraMiB`); nigdy powyżej `maxCtx` profilu (zmierzony pełny fill). Silnik z `planOnlyMeasured` (fork) wchodzi do
+  planu tylko na karcie z wpisem `VERIFIED` dla niego (4090 i 3090 UD-Q4_K_XL 262144 ub 256, 5090 UD-Q6_K 262144
+  ub 512, 5060 Ti GSQ 196608), a kandydat `enigma`
+  uruchamia go tylko dla planu, który go wybrał. Kilka dostępnych silników z profilem MTP dla pliku: wygrywa pierwszy w
+  `engines.json` (lean przed fork). Kandydat `mtp` (upstream n 3, KV draftu f16) liczy wtedy własne dopasowanie (`replan(…, {mtpEngine:
+  null})`), inaczej `mtp_no_memory`. Model z `engine` w katalogu (`bonsai2-27b-mtp` → `enigma-cuda-prism`) jest
+  oferowany tylko tam, gdzie ten silnik jest zbudowany dla karty i dostępny (inaczej rejected `needs_engine:<id>`), i
+  tylko jako plan profilu MTP tego silnika (zmierzona konfiguracja; plan plain bez pomiaru nie jest oferowany — 3080
+  10 GB: MTP się nie mieści → `ctx_below_min`, zostaje Qwen3.5-9B Q6_K). `Option.needsEngine` = baseline na nim (why
+  `engine_required:<id>`, `speed_measured:<t/s>/<id>`), `minUpstreamBuild` go nie dotyczy. Przy remisie wyniku
+  (plain ≥ 60 t/s) wygrywa plan MTP.
+- Konfiguracje zmierzone end-to-end na danej karcie (`VERIFIED` w `catalog/index.ts`; upstream CUDA albo `engine` =
+  nasz silnik, który ten plan uruchamia) zastępują szacunek dla tej karty × modelu × kwantu × silnika (mogą sięgać wyżej
+  o ≤ 700 MiB ponad zapas i ograniczają kontekst z góry), z ich ub, KV q4_0 i trybem spekulacji; drugi tryb nie jest tam
+  oferowany (np. upstream MTP na 16 GB: OOM przy pierwszym długim prompcie; MTP z `enigma-cuda-lean` to inny silnik).
+  Lean (kampania 67c, MTP n 2, ubd 64, KV draftu q4_0, ub 256): 4060 Ti i 5060 Ti 229376, 5080 217088 (229376 padło).
+- Model z `defaultPick: false` (Gemma 4 12B, odrzucona przez użytkownika) nigdy nie jest `pick`, zostaje w alternatywach.
 - Bez karty z własną pamięcią (wszystkie `gpus[].kind === 'integrated'` albo brak GPU) maszyna jest „RAM-bound”:
   urządzenia = grafika zintegrowana × backend (Vulkan; ROCm tylko gfx1150/gfx1151) z budżetem min(`vramGiB + sharedGiB`,
   `vramGiB` + RAM − zapas) oraz zawsze CPU z budżetem RAM − zapas (zapas: Windows ≥ 8 GB lub 25% RAM, Linux/macOS ≥ 6 GB
@@ -126,16 +152,17 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
 - Ranking (`Option.score`): jakość × współczynnik kwantu × użyteczność prędkości, potem prędkość zmierzona na tej klasie
   sprzętu (punkt `measured` dla tej karty; na RAM-bound `ramMeasured` modelu) wygrywa z szacowaną, chyba że szacowana ma
   wynik wyższy o > 20% (szacunek / 1,2); na RAM-bound plan z < 3% wolnego budżetu × 0,8 (`tight_memory`).
-- `why[]` / `rejected[].reason` = kody `kod` albo `kod:wartość`: why — `quality_best`, `speed_measured:<t/s>`,
+- `why[]` / `rejected[].reason` = kody `kod` albo `kod:wartość`: why — `quality_best`, `speed_measured:<t/s>[/<engineId>]`,
   `speed_estimated:<t/s>`, `mtp_head`, `mtp_no_memory` (plik ma głowicę MTP, ale kontekst draftu się nie mieści; opcja
-  bez 'mtp' w features), `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
+  bez 'mtp' w features), `engine_required:<engineId>`, `mtp_engine:<engineId>/<n>`, `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
   `ub512_for_ctx` (ub 512: osiąga min. kontekst albo daje ≥ 8% więcej; wolniejszy prefill, decode bez zmian),
-  `unified_memory` (Apple), `windows_reserve`, `license_conditional`, `tight_memory`; RAM-bound — `no_dgpu_ram`, `igpu_backend:<backend>`,
+  `unified_memory` (Apple), `windows_reserve`, `license_conditional:<id licencji z catalog.licenses>`, `tight_memory`; RAM-bound — `no_dgpu_ram`, `igpu_backend:<backend>`,
   `cpu_igpu_pool:<GiB>` (liczy CPU, bo model nie mieści się w pamięci grafiki zintegrowanej), `cpu_only`,
   `speed_ram_moe:<aktywne B>/<lo>-<hi>` | `speed_ram_dense:<parametry B>/<lo>-<hi>` (t/s), `prefill_ram:<lo>-<hi>/<minCtx>`,
   `ram_reserve:<zapas GiB>/<budżet GiB>`, `gpu_faster:<lo>-<hi>` (tylko gdy katalog ma pomiar tego modelu na karcie
   16–24 GB); rejected — `ctx_max_below_min:<ctxMax>`, `weights_too_big:<GiB>/<budżet GiB>`, `ctx_below_min:<max ctx>`,
   `engine_too_old:b<N>` (przypięty upstream w `data/engines.json` starszy niż build obsługujący model),
+  `needs_engine:<engineId>` (plik uruchamia tylko nasz silnik, niedostępny dla tej karty albo nieopublikowany),
   `too_slow_on_this_hw:<t/s>`. Przy kilku urządzeniach powód pochodzi z tego, które ma najwięcej pamięci.
 - `data/catalog.json` odświeża `ENIGMA_MODELS_DIR=~/models bun src/server/catalog/refresh.ts` (HF tree API + nagłówki
   lokalnych GGUF / `config.json`; nic nie pobiera poza JSON i nagłówkami).
@@ -143,6 +170,37 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
 ## Zasady wyników (reguła użytkownika)
 Każdy wynik pokazywany jako **baseline → teraz → przyrost %**. Baseline = upstream llama.cpp (oficjalne wydanie) z
 konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko zmierzone na maszynie użytkownika.
+Wyjątek: plik, którego oficjalny llama.cpp nie uruchamia (`Option.needsEngine`, PTQ1_0 → fork PrismML): baseline =
+ten silnik w tej samej konfiguracji „tylko pod mieszczenie” (bez spekulacji), bo upstream daje na nim śmieci.
+
+## Fork na RTX 3090 — rozstrzygnięte (kampania 67c)
+Zmierzone na dostarczanym silniku (`enigma-cuda-fork`, build przenośny): Qwen3.8-27B **UD-Q4_K_XL** 262144 / ub 256,
+KVQ=1 — load 23590, pełny fill 261504 tokenów, szczyt 23706 MiB, 79.97 t/s T=1 (pick bez forka: XL 245760, pin z MTP
+n 3: 61.49 → +30%). Ten sam kwant, więc bez kompromisu jakości: wpis `VERIFIED` jak 4090/5090, z dostępnym forkiem
+plan 3090 = XL 262144 / ub 256 na forku. Bez silników picki bez zmian. Model oceny się nie zmienia (bez liczenia
+zmierzonych prędkości MTP w wyniku); UD-Q4_K_M (78.97 t/s na forku) nie wchodzi do katalogu.
+
+## Silniki Enigma CUDA — brakujący krok (stan 2026-11-07)
+`enigma-cuda-lean`, `enigma-cuda-prism` i `enigma-cuda-fork` są w `data/engines.json` jako `distribution: "local"`
+(konwencja silników bez adresu dystrybucji, jak `enigma-rocm-gfx1100`): działają u nas przez
+`ENIGMA_ENGINE_DIR_ENIGMA_CUDA_LEAN` / `…_PRISM` / `…_FORK`, u użytkownika ich nie ma (planner ich nie używa, kandydat
+`enigma` → `enigma_not_published:<id>`, `bonsai2-27b-mtp` → `needs_engine:enigma-cuda-prism`). **Brakuje publikacji
+wydania** (upload archiwów, którego ta zmiana celowo nie robi):
+- `llama-b12110lean-bin-ubuntu-cuda-12.8-x64.tar.gz` — 132282409 B, sha256
+  `1ea7532e9edd17216eab559494dfb653258fce9281d2d67a961666349cbe9798` (upstream b12110 + patch nv67-lean-reserve);
+- `llama-prism-bin-ubuntu-cuda-12.8-x64.tar.gz` — 227217132 B, sha256
+  `4f6927ec8e2e6df311cee311584f5d0e8a6527caa942665a7a88474f100c23d9` (fork PrismML, prism-b12128-d7b2896);
+- `llama-kvqleana-bin-ubuntu-cuda-12.8-x64.tar.gz` — 130085072 B, sha256
+  `3eb4adb1658ae2ccaef39ca52dc9b60c9d5b6053d64b8e35b6854927f35517c6` (nasz fork: cuda-topka2 2a261101b + KVQ 007a6f813
+  + topka-q63 0002 lean reserve; build przenośny AVX/F16C bez AVX2 — pobieranie nie wybiera wariantu po flagach CPU;
+  wariant AVX2 `llama-kvqlean-…` 130107716 B, sha256 `504670186094280ec74a4943e5a2b0056c4df957b74c2873b11a590fa18385d0`)
+  oraz `draft_vocab_qwen38.txt` — 1627130 B, sha256 `ef23007d66b0aebb8baf65ef5440faa3daaeb42faf2d07b64be4ac5017ea3a9a`
+  (plik bez archiwum: `ensureEngine` kładzie go do `<silnik>/share`, skąd profil bierze `{draftVocab}`);
+- obok każdego: oficjalny `cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz` (594371477 B, sha256
+  `6f1d562086d84ae85df880d3711079ec225602b51d530608e5001600625067dd`, adres GitHub ggml-org już w `unpublishedAssets`).
+Po uploadzie: przenieść `unpublishedAssets` do `assets` z URL-em wydania i ustawić `distribution: "download"` —
+`ensureEngine` pobiera, weryfikuje sha256, rozpakowuje i składa cudart obok `libggml-cuda.so` (`gatherLibs`) jak dla
+oficjalnych buildów; planner zaczyna ich używać bez dalszych zmian.
 
 ## Benchmark (jeden protokół dla baseline i kandydatów)
 0. Obciążenie renderowane **raz, na serwerze baseline** (jego szablon czatu przez `/apply-template` i jego tokenizer
@@ -173,8 +231,9 @@ konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko
   próg = max(2 × szum, 2%), pozostałe reguły bez zmian. Potwierdzony: `kept`, `result`/`decodePct`/`prefillPct`/
   `sameOutput` z pary potwierdzającej (wobec baseline₂). Niepotwierdzony: `not_confirmed:<pct>` i potwierdzany jest
   następny najlepszy (ten sam baseline₂).
-- silnik `enigma-*` dla platformy, jeśli jest (na AMD gfx1100: topka z flagami jak `~/qwen-opt/run-topka.sh` — PM4,
-  lookup, MTP dla Qwen3.8, coupled, host-gap; wierne odwzorowanie `run-llm.sh`);
+- silnik `enigma-*` dla platformy, jeśli jest (przy kilku dla karty: ten z profilem dla pliku, dostępny najpierw; na AMD
+  gfx1100: topka z flagami jak `~/qwen-opt/run-topka.sh` — PM4, lookup, MTP dla Qwen3.8, coupled, host-gap; wierne
+  odwzorowanie `run-llm.sh`; na CUDA: lean/prism z flagami MTP z `profile.mtp`, `--jinja`);
 - `-ub/-b` (512/1024/2048) w granicach pamięci; MTP (jeśli model ma głowicę i silnik obsługuje: `--spec-type draft-mtp
   --spec-draft-n-max 3 --spec-draft-n-ubatch 64`); lookup n-gram.
 - `sameOutput` = md5 decode greedy == baseline (spekulacja może zmienić bity → pokazujemy jasno, nie ukrywamy).

@@ -54,6 +54,8 @@ describe('memory model vs our measurements (±0.4 GiB)', () => {
       const r = memParts(m, q, {
         ctx: p.ctx, kvType: p.kvType as KvType, ub: p.ub, backend: p.backend as Backend, vramGiB: p.vramGiB,
         spec: p.spec, enigmaSpec: p.enigmaSpec, mtpN: p.mtpN ?? MTP_N_MAX_DEFAULT, ubd: p.ubd ?? p.ub, prompt: p.prompt,
+        draftKv: ('draftKv' in p ? p.draftKv : 'f16') as KvType, leanReserve: 'leanReserve' in p && p.leanReserve === true,
+        forkDraft: 'forkDraft' in p && p.forkDraft === true,
       });
       const used: number | undefined = 'usedMiB' in p ? p.usedMiB : undefined;
       const oom: number | undefined = 'oomAboveMiB' in p ? p.oomAboveMiB : undefined;
@@ -131,6 +133,67 @@ describe('recommend on typical machines', () => {
     const at = planFor(machine('RTX 5060 Ti 16 GB'), 'qwen38-27b', 'UD-Q3_K_XL',
       { ctx: 135168, kvType: 'q4_0', ub: 1024, spec: true, backend: 'cuda', gpuIndex: 0 });
     expect(at.fits).toBe(false);
+  });
+
+  // campaign-67 cards (nvidia-smi total → scan GiB), Linux, upstream CUDA
+  const nvCard = (name: string, mib: number, arch: string): Hw => ({
+    ...machine('RTX 3060 12 GB'),
+    gpus: [{ vendor: 'nvidia', name: `NVIDIA GeForce ${name}`, kind: 'discrete', vramGiB: Math.round((mib / 1024) * 10) / 10, backends: ['cuda', 'vulkan'], arch }],
+  });
+
+  test('Gemma 4 12B is never the default pick (user rejected it); it may stay among the alternatives', () => {
+    expect(model('gemma4-12b').defaultPick).toBe(false);
+    const cards: [string, number, string][] = [
+      ['RTX 2080 Ti', 11264, 'sm_75'], ['RTX 3060', 12288, 'sm_86'], ['RTX 3070', 8192, 'sm_86'], ['RTX 3080', 10240, 'sm_86'],
+      ['RTX 4070', 12282, 'sm_89'], ['RTX 4060 Ti', 16380, 'sm_89'],
+    ];
+    for (const [name, mib, arch] of cards) expect(recommend(nvCard(name, mib, arch)).pick?.modelId).not.toBe('gemma4-12b');
+    for (const hw of Object.values(MACHINES)) expect(recommend(hw).pick?.modelId).not.toBe('gemma4-12b');
+    // still ranked: on a 12 GB card it is offered as an alternative
+    expect(recommend(nvCard('RTX 4070', 12282, 'sm_89')).alternatives.some((a) => a.modelId === 'gemma4-12b')).toBe(true);
+  });
+
+  test('16 GB: Qwen3.8-27B GSQ IQ3_XXS plain at the measured context (4060 Ti 217088, 5060 Ti 200704, 5080 208896)', () => {
+    for (const [name, mib, arch, ctx] of [
+      ['RTX 4060 Ti', 16380, 'sm_89', 217088], ['RTX 5060 Ti', 16311, 'sm_120', 200704], ['RTX 5080', 16303, 'sm_120', 208896],
+    ] as const) {
+      const pick = recommend(nvCard(name, mib, arch)).pick;
+      expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx, kvType: 'q4_0', ub: 256, backend: 'cuda' });
+      // stock upstream MTP OOMed at the first long prompt on these cards: only the measured plain run is offered
+      expect(pick?.features).not.toContain('mtp');
+    }
+  });
+
+  test('12 GB: Saluki 27B IQ2-mix plain, never above the measured context (4070 151552, 3060 135168)', () => {
+    const r = recommend(nvCard('RTX 4070', 12282, 'sm_89'));
+    expect(r.pick).toMatchObject({ modelId: 'saluki-27b', quant: 'IQ2-mix', ctx: 151552, kvType: 'q4_0', ub: 256 });
+    expect(r.pick?.features).not.toContain('mtp');
+    // CC BY-NC 4.0: flagged as conditional (non-commercial)
+    expect(r.pick?.why).toContain('license_conditional:cc-by-nc-4.0');
+    expect(CATALOG.licenses['cc-by-nc-4.0']?.commercial).toBe('conditional');
+    expect(r.alternatives.some((a) => a.modelId === 'bonsai2-27b')).toBe(true);
+    expect(recommend(nvCard('RTX 3060', 12288, 'sm_86')).pick).toMatchObject({ modelId: 'saluki-27b', ctx: 135168, ub: 256 });
+  });
+
+  test('11 GB (2080 Ti): Saluki does not reach 131072, Ternary Bonsai 2 27B Q2_0 does', () => {
+    const r = recommend(nvCard('RTX 2080 Ti', 11264, 'sm_75'));
+    expect(r.pick).toMatchObject({ modelId: 'bonsai2-27b', quant: 'Q2_0', backend: 'cuda' });
+    expect(r.pick?.ctx).toBeGreaterThanOrEqual(131072);
+    expect(r.rejected.find((x) => x.modelId === 'saluki-27b')?.reason).toMatch(/^ctx_below_min:/);
+  });
+
+  test('10 GB (3080) and 8 GB (3070): Qwen3.5-9B; 24/32 GB picks unchanged', () => {
+    expect(recommend(nvCard('RTX 3080', 10240, 'sm_86')).pick?.modelId).toBe('qwen35-9b');
+    expect(recommend(nvCard('RTX 3070', 8192, 'sm_86')).pick).toMatchObject({ modelId: 'qwen35-9b', quant: 'Q4_K_M', ctx: 151552 });
+    expect(recommend(nvCard('RTX 3090', 24576, 'sm_86')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 245760, ub: 256 });
+    expect(recommend(nvCard('RTX 4090', 24564, 'sm_89')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256 });
+    expect(recommend(nvCard('RTX 5090', 32607, 'sm_120')).pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'UD-Q6_K', ctx: 262144 });
+  });
+
+  test('LFM2.5-24B LFM Open License carries the conditional (< USD 10M revenue) flag, UD quants included', () => {
+    const m = model('lfm25-24b-a2b');
+    expect(CATALOG.licenses[m.license]?.commercial).toBe('conditional');
+    expect(m.quants.map((q) => q.quant)).toEqual(expect.arrayContaining(['UD-IQ3_XXS', 'UD-Q3_K_XL']));
   });
 
   test('Flint (minUpstreamBuild 11803) is offered on 24 GB with the pinned engine; quality below Qwen3.8-27B', () => {

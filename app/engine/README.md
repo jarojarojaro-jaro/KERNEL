@@ -118,6 +118,22 @@ pobieranie, benchmark i optymalizacja są zablokowane (API 403 z komunikatem).
   lookup 3/16, PM4 + guard, coupled, host-gap, ckpt/chat/safety, `--reasoning-effort low`, `--cache-ram 16384`),
   LFM2.5-24B (`-b/-ub 2048`, KV q8_0, lookup 0, bez coupled/host-gap). Nie odwzorowane: `--log-file` (log idzie
   ze stdout/stderr do `~/.enigma/logs`) i keep-awake BACO (na serwerze robi to `gpu-powercap.service`).
+- **Enigma CUDA** (kampania 67c, Linux x64, CUDA 12.8; wszystkie `distribution: "local"` do czasu publikacji, dokładne
+  pliki wydania + sha256 w `unpublishedAssets`; brakujący krok: upload wydania, patrz CONTRACT.md):
+  - `enigma-cuda-lean` (`ENIGMA_ENGINE_DIR_ENIGMA_CUDA_LEAN`): upstream b12110 + `qwen-opt/patches/nv67-lean-reserve`
+    (cecha `mtp-lean-reserve`: draft MTP rezerwuje tylko catch-up K/V i krok jednotokenowy, więc `-ctkd/-ctvd q4_0`
+    tnie KV draftu), sm_86/89/120. Profil: Qwen3.8 GSQ-IQ3_XXS-mtp, MTP n 2, ubd 64, KV draftu q4_0, `maxCtx` 229376.
+  - `enigma-cuda-prism` (`ENIGMA_ENGINE_DIR_ENIGMA_CUDA_PRISM`): nasz build forka PrismML (prism-b12128-d7b2896),
+    sm_75 (PTX JIT)/86/89/120; jedyny, który uruchamia PTQ1_0 (model `bonsai2-27b-mtp`, `engine` w katalogu: baseline
+    też na nim). Cecha `mtp-draft-kv-ctk`: KV draftu = `-ctk` (dopasowanie do pomiarów 4070). Profile: Bonsai
+    PTQ1_0-mtp-lean (MTP n 2, ubd 64, `maxCtx` 229376), Bonsai Q2_0 (bez spekulacji; 53.8 vs 49.4 t/s upstream).
+  - `enigma-cuda-fork` (`ENIGMA_ENGINE_DIR_ENIGMA_CUDA_FORK`): nasz fork cuda-topka2 + KVQ + lean reserve topka-q63,
+    sm_86/89/120, build przenośny bez AVX2. Profil Qwen3.8: MTP n 4, KV draftu q4_0, słownik draftu 64k (iq4_xs,
+    `draft_vocab_qwen38.txt` w `share/`), `GGML_CUDA_KVQ=1`, lookup 3/16. `planOnlyMeasured`: tylko na kartach z
+    pomiarem (4090 UD-Q4_K_XL 262144 / ub 256: 101.27 t/s vs 76.4 na pinie z MTP n 3; 5090 UD-Q6_K 262144 / ub 512:
+    148.57 vs 100.90; 5060 Ti GSQ 196608: 49.44, ale `enigma-cuda-lean` wcześniej w `engines.json` ma pierwszeństwo —
+    229376, 43.4; 3090 UD-Q4_K_XL 262144 / ub 256: 79.97 vs 61.49 na picku bez forka).
+  - Katalog lokalny = rozpakowane archiwum + biblioteki z oficjalnego `cudart-llama-b12110-…` obok `llama-server`.
 - Serwer modelu: `llama-server` na 127.0.0.1, losowy port, losowy `--api-key`; aplikacja wystawia go jako `/v1`
   (proxy ze streamingiem, bez klucza po stronie klienta). Zatrzymanie: czekanie na wolne `/slots`, **jeden** SIGTERM,
   45 s, dopiero potem SIGKILL.
@@ -153,7 +169,7 @@ Wyniki: `~/.enigma/results/*.json`.
 |---|---|
 | `ENIGMA_HOME` | dane (domyślnie `~/.enigma`, Windows `%LOCALAPPDATA%\Enigma`): `config.json` (klucz licencji, 600), `state.json` (faza, wznawialna po restarcie), `models/`, `engines/`, `downloads/`, `logs/` (`enigma.log`, `server-*.log`), `results/`, `bench-workload.json` (żądania benchmarku z baseline), `hashes.json` (cache sha256) |
 | `ENIGMA_MODELS_DIR` | dodatkowy katalog z GGUF (2 poziomy w głąb): ta sama nazwa i rozmiar = bez pobierania; sha256 sprawdzane (na wątku roboczym, z postępem), gdy katalog je zna |
-| `ENIGMA_ENGINE_DIR_<KEY>` | lokalny silnik zamiast pobierania: `UPSTREAM_CPU`, `UPSTREAM_VULKAN`, `UPSTREAM_ROCM`, `UPSTREAM_CUDA`, `UPSTREAM_METAL`, `ENIGMA_ROCM` |
+| `ENIGMA_ENGINE_DIR_<KEY>` | lokalny silnik zamiast pobierania: `UPSTREAM_CPU`, `UPSTREAM_VULKAN`, `UPSTREAM_ROCM`, `UPSTREAM_CUDA`, `UPSTREAM_METAL`, `ENIGMA_ROCM`, `ENIGMA_CUDA_LEAN`, `ENIGMA_CUDA_PRISM`, `ENIGMA_CUDA_FORK` (silniki `local` liczą się w planie dopiero, gdy zmienna jest ustawiona) |
 | `ENIGMA_PORT` | preferowany port UI/API (domyślnie 11525, bo 11500 zajmuje omp); zajęty → kolejne 20 portów, faktyczny adres w logu i w `ready.endpoint` |
 | `ENIGMA_NO_BROWSER=1` | nie otwieraj przeglądarki |
 | `ENIGMA_DEV_CPU=1` | planuj tylko pod CPU (skan zwraca `gpus=[]`) |

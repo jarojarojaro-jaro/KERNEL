@@ -43,6 +43,10 @@ export interface Option {
   kvType: 'q4_0' | 'q8_0' | 'f16';
   ub: number; backend: Backend; gpuIndex: number | null; mem: MemPlan; features: string[] /* mtp, tools, reasoning, vision */;
   score: number; why: string[];
+  /** data/engines.json id the model needs (the official llama.cpp cannot run its files): baseline + candidates run on it */
+  needsEngine?: string;
+  /** data/engines.json id whose MTP profile sized the plan (`mtp` in features); the optimisation's `enigma` candidate */
+  mtpEngine?: string;
 }
 
 export interface Recommendation {

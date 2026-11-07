@@ -7,7 +7,7 @@ import { recommend as catalogRecommend } from './catalog/index.ts';
 import { benchBaseline, loadWorkload, saveWorkload, workloadKey, type BenchWorkload } from './bench.ts';
 import { CancelledError, cachedHash, downloadFile, findLocalFile, hfUrl, type TransferProgress } from './download.ts';
 import {
-  baselineConfig, baselineEngineFor, engineById, ensureEngine, servedReasoningEffort, startServer, stopAllServers, type ResolvedEngine,
+  baselineConfig, baselineEngineForOption, engineById, ensureEngine, servedReasoningEffort, startServer, stopAllServers, type ResolvedEngine,
   type RunningServer,
 } from './engine.ts';
 import { scanHw } from './hw/index.ts';
@@ -236,8 +236,8 @@ export class App {
     const option = this.state.chosen;
     const hw = this.state.hw;
     if (!option || !hw) throw new Error('no option chosen');
-    const baseEntry = baselineEngineFor(hw.os, hw.arch, option.backend);
-    if (!baseEntry) throw new Error(`No official llama.cpp build for ${hw.os} ${hw.arch} ${option.backend}.`);
+    const baseEntry = baselineEngineForOption(hw, option);
+    if (!baseEntry) throw new Error(`No ${option.needsEngine ?? 'official llama.cpp'} build for ${hw.os} ${hw.arch} ${option.backend}.`);
 
     // download: engine + model
     if (this.state.phase === 'download') {
@@ -260,7 +260,7 @@ export class App {
       const { result: baseline, workload } = await benchBaseline(base, baseCfg, key, {
         label: `baseline ${base.entry.id}`, signal, progress: (label, done, total) => this.progress('baseline', label, done, total),
       });
-      if (!baseline.ctxOk) throw new Error(`The context ${option.ctx} does not fit with the official engine.`);
+      if (!baseline.ctxOk) throw new Error(`The context ${option.ctx} does not fit with the baseline engine ${base.entry.id}.`);
       saveWorkload(workload);
       this.workload = workload;
       this.changed({ baseline, phase: 'optimize', candidates: planCandidates(hw, option, base).map((p) => p.candidate) });

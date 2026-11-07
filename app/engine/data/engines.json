@@ -243,6 +243,7 @@
         "mtp",
         "lookup"
       ],
+      "memory": "fork",
       "assets": [],
       "note": "Distribution URL not published yet: available only from a local directory (ENIGMA_ENGINE_DIR_ENIGMA_ROCM). Profiles mirror ~/qwen-opt/run-topka.sh + run-llm.sh.",
       "profiles": [
@@ -365,6 +366,204 @@
             "--cache-ram",
             "16384"
           ]
+        }
+      ]
+    },
+    {
+      "id": "enigma-cuda-lean",
+      "kind": "enigma",
+      "label": "Enigma CUDA 12.8 (lean MTP reserve, upstream b12110) for Ampere/Ada/Blackwell",
+      "version": "b12110lean 55933253f",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "cuda",
+      "envKey": "ENIGMA_CUDA_LEAN",
+      "distribution": "local",
+      "gpuArchs": [
+        "sm_86",
+        "sm_89",
+        "sm_120"
+      ],
+      "features": [
+        "mtp",
+        "lookup",
+        "mtp-lean-reserve"
+      ],
+      "assets": [],
+      "unpublishedAssets": [
+        {
+          "name": "llama-b12110lean-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 132282409,
+          "sha256": "1ea7532e9edd17216eab559494dfb653258fce9281d2d67a961666349cbe9798"
+        },
+        {
+          "name": "cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12110/cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 594371477,
+          "sha256": "6f1d562086d84ae85df880d3711079ec225602b51d530608e5001600625067dd"
+        }
+      ],
+      "note": "Distribution URL not published yet: available only from a local directory (ENIGMA_ENGINE_DIR_ENIGMA_CUDA_LEAN = the extracted llama-b12110lean archive with the official b12110 cudart libraries next to llama-server). Upstream b12110 + qwen-opt/patches/nv67-lean-reserve (MTP draft context reserves the K/V-only catch-up and the one-token draft step, so -ctkd/-ctvd q4_0 cut the draft KV). SASS sm_86/sm_89/sm_120a.",
+      "profiles": [
+        {
+          "id": "qwen38-gsq-mtp2-lean",
+          "match": "GSQ-RCO-IQ3_XXS-mtp\\.gguf$",
+          "spec": "mtp",
+          "needs": [],
+          "env": {},
+          "args": [
+            "--jinja"
+          ],
+          "mtp": {
+            "nMax": 2,
+            "ubd": 64,
+            "draftKv": "q4_0"
+          },
+          "maxCtx": 229376,
+          "maxCtxSource": "campaign 67c, ub 256, MTP n 2, ubd 64, draft KV q4_0: full fills at 229376 on the RTX 4060 Ti (peak 15736 MiB, 36.3 t/s T=1) and 5060 Ti (peak 15762, 43.4 t/s); RTX 5080 217088 (peak 15632, 81.6 t/s; plain upstream 208896 ~63 t/s), its 229376 crashed (per-card cap in catalog VERIFIED)"
+        }
+      ]
+    },
+    {
+      "id": "enigma-cuda-prism",
+      "kind": "enigma",
+      "label": "Enigma CUDA 12.8 (PrismML llama.cpp fork) for Turing/Ampere/Ada/Blackwell",
+      "version": "prism-b12128 d7b2896",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "cuda",
+      "envKey": "ENIGMA_CUDA_PRISM",
+      "distribution": "local",
+      "gpuArchs": [
+        "sm_75",
+        "sm_86",
+        "sm_89",
+        "sm_120"
+      ],
+      "features": [
+        "mtp",
+        "lookup",
+        "mtp-draft-kv-ctk"
+      ],
+      "assets": [],
+      "unpublishedAssets": [
+        {
+          "name": "llama-prism-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 227217132,
+          "sha256": "4f6927ec8e2e6df311cee311584f5d0e8a6527caa942665a7a88474f100c23d9"
+        },
+        {
+          "name": "cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12110/cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 594371477,
+          "sha256": "6f1d562086d84ae85df880d3711079ec225602b51d530608e5001600625067dd"
+        }
+      ],
+      "note": "Distribution URL not published yet: available only from a local directory (ENIGMA_ENGINE_DIR_ENIGMA_CUDA_PRISM = the extracted llama-prism archive with the official b12110 cudart libraries next to llama-server). Our CUDA 12.8 build of the PrismML fork (release prism-b12128-d7b2896): runs PTQ1_0 (upstream outputs garbage on it). SASS sm_86/sm_89/sm_120, sm_75 through PTX JIT.",
+      "profiles": [
+        {
+          "id": "bonsai-ptq1-mtp2",
+          "match": "Ternary-Bonsai-2-27B-PTQ1_0-mtp",
+          "spec": "mtp",
+          "needs": [],
+          "env": {},
+          "args": [
+            "--jinja"
+          ],
+          "mtp": {
+            "nMax": 2,
+            "ubd": 64
+          },
+          "maxCtx": 229376,
+          "maxCtxSource": "campaign 67c, RTX 4070, ub 256, KV q4_0, ubd 64: full fill at 229376 OK with MTP n 1 (load 11383, peak 11423 MiB), 262144 OOM; n 2 adds one recurrent-state copy, which the planner sizes. T=1 at 65536: 4070 n 2 94.8 / n 1 87.7 (plain 66.3), 3060 n 2 58.7 / n 1 60.1"
+        },
+        {
+          "id": "bonsai-q2",
+          "match": "Ternary-Bonsai-2-27B-Q2_0",
+          "spec": "none",
+          "needs": [],
+          "env": {},
+          "args": [
+            "--jinja"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "enigma-cuda-fork",
+      "kind": "enigma",
+      "label": "Enigma CUDA 12.8 (our fork: cuda-topka2 + KVQ + lean MTP reserve) for Ampere/Ada/Blackwell",
+      "version": "kvqlean 2a261101b+007a6f813",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "cuda",
+      "envKey": "ENIGMA_CUDA_FORK",
+      "distribution": "local",
+      "gpuArchs": [
+        "sm_86",
+        "sm_89",
+        "sm_120"
+      ],
+      "features": [
+        "mtp",
+        "lookup",
+        "mtp-lean-reserve",
+        "mtp-fork-draft"
+      ],
+      "planOnlyMeasured": true,
+      "assets": [],
+      "unpublishedAssets": [
+        {
+          "name": "llama-kvqleana-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 130085072,
+          "sha256": "3eb4adb1658ae2ccaef39ca52dc9b60c9d5b6053d64b8e35b6854927f35517c6"
+        },
+        {
+          "name": "cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12110/cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 594371477,
+          "sha256": "6f1d562086d84ae85df880d3711079ec225602b51d530608e5001600625067dd"
+        },
+        {
+          "name": "draft_vocab_qwen38.txt",
+          "sizeBytes": 1627130,
+          "sha256": "ef23007d66b0aebb8baf65ef5440faa3daaeb42faf2d07b64be4ac5017ea3a9a"
+        }
+      ],
+      "note": "Distribution URL not published yet: available only from a local directory (ENIGMA_ENGINE_DIR_ENIGMA_CUDA_FORK = the extracted archive with the official b12110 cudart libraries next to llama-server and draft_vocab_qwen38.txt in share/ or next to the model). Our CUDA fork cuda-topka2 (2a261101b) + KVQ (nv-4060ti-kvq 007a6f813) + topka-q63 patch 0002 (MTP lean reserve), GGML_NATIVE=OFF, SASS sm_86/sm_89/sm_120. Ships the portable no-AVX2 (AVX/F16C) build: the downloader cannot choose by CPU flags; the AVX2 build is llama-kvqlean-bin-ubuntu-cuda-12.8-x64.tar.gz (130107716 B, sha256 504670186094280ec74a4943e5a2b0056c4df957b74c2873b11a590fa18385d0). Qwen3.8-27B family only (draft vocabulary). Planned only on cards with a measured configuration (planOnlyMeasured, catalog VERIFIED).",
+      "profiles": [
+        {
+          "id": "qwen38-kvq-mtp4",
+          "match": "qwen3\\.8-27b",
+          "spec": "mtp",
+          "needs": [
+            "draftVocab"
+          ],
+          "env": {
+            "LLAMA_SPEC_LOOKUP": "3",
+            "LLAMA_SPEC_LOOKUP_W": "16",
+            "LLAMA_SERVER_CACHE_SHARE_MIN": "1024",
+            "LLAMA_GPU_VERIFY": "1",
+            "LLAMA_SERVER_REASONING_CONTROL": "0",
+            "GGML_CUDA_KVQ": "1"
+          },
+          "args": [
+            "--jinja",
+            "--spec-draft-vocab",
+            "{draftVocab}",
+            "--spec-draft-vocab-n",
+            "65536",
+            "--spec-draft-head-type",
+            "iq4_xs",
+            "--spec-mtp-type",
+            "iq4_xs"
+          ],
+          "mtp": {
+            "nMax": 4,
+            "draftKv": "q4_0"
+          },
+          "maxCtx": 262144,
+          "maxCtxSource": "campaign 67c, ub 256 (5090: 512), KV q4_0, MTP n 4, draft KV q4_0, KVQ=1: RTX 4090 UD-Q4_K_XL load 23732 MiB, full fill 261504 tokens peak 23852 MiB, 101.27 t/s T=1 (pinned upstream MTP n 3 at the same context: 76.4); RTX 5090 UD-Q6_K load 28126, fill peak 28232, 148.57 t/s (pin MTP n 3: 100.90)"
         }
       ]
     }

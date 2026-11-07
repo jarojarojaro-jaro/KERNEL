@@ -64,7 +64,11 @@ function embdBpw(quant: string): number {
   if (/Q8|MXFP4/.test(quant)) return 8.5;
   if (/Q6/.test(quant)) return 6.5625;
   if (/Q5/.test(quant)) return 5.5;
+  if (/IQ3_XXS/.test(quant)) return 2.5625; // ISTA GSQ IQ3_XXS header: token_embd in IQ3_XXS
   if (/Q3/.test(quant)) return 3.4375;
+  if (/Q2_0/.test(quant)) return 2.25; // Bonsai 2 Q2_0 header: token_embd in Q2_0
+  if (/PTQ1_0/.test(quant)) return 1.75; // Bonsai 2 PTQ1_0 header: token_embd in PrismML's PTQ1_0 (type 143, 1.75 bpw)
+  if (/IQ2/.test(quant)) return 1.75; // Saluki IQ2-mix header: token_embd in IQ1_M
   return 4.5;
 }
 

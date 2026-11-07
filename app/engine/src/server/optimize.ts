@@ -69,6 +69,9 @@ export function planCandidates(hw: Hw, option: Option, base: ResolvedEngine): Pl
   }
   const hasMtp = option.features.includes('mtp');
   const engineMtp = base.entry.features.includes('mtp');
+  // a plan sized for our engine's MTP profile (e.g. q4_0 draft KV): the default MTP on the baseline engine must fit itself
+  const mtpFits = !option.mtpEngine || replan(option, hw, { mtpEngine: null }).fits;
+  const mtpOk = hasMtp && engineMtp && mtpFits;
   out.push({
     candidate: {
       id: 'mtp',
@@ -77,13 +80,13 @@ export function planCandidates(hw: Hw, option: Option, base: ResolvedEngine): Pl
         pl: 'Model sam podpowiada kolejne tokeny swoją głowicą MTP; serwer weryfikuje je w jednym kroku.',
         en: "The model drafts the next tokens with its own MTP head; the server verifies them in one step.",
       },
-      status: hasMtp && engineMtp ? 'pending' : 'rejected',
-      ...(hasMtp && engineMtp ? {} : {
+      status: mtpOk ? 'pending' : 'rejected',
+      ...(mtpOk ? {} : {
         // the catalog drops 'mtp' from features when the head exists but its draft context does not fit (why code)
-        reason: hasMtp ? 'engine_no_mtp' : option.why.includes('mtp_no_memory') ? 'mtp_no_memory' : 'no_mtp_head',
+        reason: hasMtp ? (engineMtp ? 'mtp_no_memory' : 'engine_no_mtp') : option.why.includes('mtp_no_memory') ? 'mtp_no_memory' : 'no_mtp_head',
       }),
     },
-    recipe: hasMtp && engineMtp ? { kind: 'spec', spec: 'mtp', nMax: MTP_N_MAX_DEFAULT } : null,
+    recipe: mtpOk ? { kind: 'spec', spec: 'mtp', nMax: MTP_N_MAX_DEFAULT } : null,
   });
   const engineLookup = base.entry.features.includes('lookup');
   out.push({

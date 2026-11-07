@@ -1,6 +1,6 @@
 // Engines: catalogue (data/engines.json), install (download + extract or a local ENIGMA_ENGINE_DIR_<KEY>),
 // configs (upstream baseline, enigma profiles), and the llama-server process (spawn, health, graceful stop).
-import { chmodSync, closeSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs';
+import { chmodSync, closeSync, copyFileSync, existsSync, mkdirSync, openSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync, writeSync } from 'node:fs';
 import { availableParallelism, homedir } from 'node:os';
 import { basename, delimiter, dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
@@ -16,6 +16,17 @@ import { expandHome, extraModelsDir, paths } from './paths.ts';
 
 export interface EngineAsset { name: string; url: string; sizeBytes: number; sha256?: string }
 
+/** Upstream-style MTP of an enigma profile (`--spec-type draft-mtp`); the catalog planner sizes the draft with it. */
+export interface ProfileMtp {
+  /** --spec-draft-n-max */
+  nMax: number;
+  /** --spec-draft-n-ubatch; absent: not passed (the draft batch is -ub; our fork has no such flag) */
+  ubd?: number;
+  /** -ctkd/-ctvd; absent: not passed, the engine's own draft cache type applies (upstream f16; feature
+   *  `mtp-draft-kv-ctk`: -ctk/-ctv). Quantized only with the `mtp-lean-reserve` feature (stock reserve adds F16 copies). */
+  draftKv?: 'q4_0' | 'q8_0' | 'f16';
+}
+
 /** Model-specific settings of an enigma engine (args/env mirror the production launch scripts). */
 export interface EngineProfile {
   id: string;
@@ -28,6 +39,12 @@ export interface EngineProfile {
   needs: string[];
   env: Record<string, string>;
   args: string[];
+  /** upstream-style MTP flags, appended by enigmaConfig (profiles with their own spec args leave it out) */
+  mtp?: ProfileMtp;
+  /** largest context this profile ran end-to-end; the planner never plans its MTP above it */
+  maxCtx?: number;
+  /** the measurement behind maxCtx (campaign, card, peak) */
+  maxCtxSource?: string;
 }
 
 export interface EngineEntry {
@@ -44,6 +61,15 @@ export interface EngineEntry {
   features: string[];
   assets: EngineAsset[];
   gpuArchs?: string[];
+  /** "fork": MTP memory follows our fork's calibration (catalog/memory.ts enigmaSpec); absent: upstream llama.cpp's */
+  memory?: 'fork';
+  /** Release assets of a `local` engine that are not published yet: ours have no URL until the release upload, official
+   *  ones (CUDA runtime) carry theirs. Publishing = upload, then move them to `assets` and set `distribution: download`.
+   *  Assets that are not archives (e.g. a draft vocabulary) are installed into `<engine>/share`. */
+  unpublishedAssets?: { name: string; url?: string; sizeBytes: number; sha256: string }[];
+  /** The planner sizes MTP plans with this engine only on cards with a measured configuration of it (catalog VERIFIED),
+   *  and the optimisation runs it only for such plans (`Option.mtpEngine`). */
+  planOnlyMeasured?: boolean;
   note?: string;
   profiles?: EngineProfile[];
 }
@@ -63,24 +89,43 @@ export function baselineEngineFor(os: Hw['os'], arch: Hw['arch'], backend: Backe
   return ENGINES.engines.find((e) => e.kind === 'upstream' && e.os === os && e.arch === arch && e.backend === backend);
 }
 
+/** The engine the baseline runs on: the one the model needs (`Option.needsEngine`, the official build cannot run its
+ *  files), else the official llama.cpp build for this platform. */
+export function baselineEngineForOption(hw: Hw, option: Option): EngineEntry | undefined {
+  return option.needsEngine ? engineById(option.needsEngine) : baselineEngineFor(hw.os, hw.arch, option.backend);
+}
+
+/** A `download` engine is always available; a `local` one when ENIGMA_ENGINE_DIR_<envKey> points at it. */
+export function engineAvailable(entry: EngineEntry): boolean {
+  return entry.distribution === 'download' || envDir(entry) !== null;
+}
+
+/** Enigma engines built for this platform, backend and GPU architecture (published or not), in engines.json order. */
+export function enigmaEnginesFor(os: Hw['os'], arch: Hw['arch'], backend: Backend, gpuArch: string | undefined): EngineEntry[] {
+  return ENGINES.engines.filter((e) => e.kind === 'enigma' && e.os === os && e.arch === arch && e.backend === backend
+    && (!e.gpuArchs || (gpuArch !== undefined && e.gpuArchs.includes(gpuArch))));
+}
+
 /** `code` is the machine-readable reason (Candidate.reason, translated by the UI); `reason` is the log text. */
 export interface EnigmaChoice { entry: EngineEntry | null; code: string; reason: string }
 
-/** The optimised engine for this machine and option, or a plain reason why there is none. */
+/** The optimised engine for this machine and option, or a plain reason why there is none. With several engines for the
+ *  GPU, the one with a profile for the model wins (an available one first). */
 export function enigmaEngineFor(hw: Hw, option: Option): EnigmaChoice {
   const gpu = option.gpuIndex === null ? undefined : hw.gpus[option.gpuIndex];
-  const forPlatform = ENGINES.engines.filter((e) => e.kind === 'enigma' && e.os === hw.os && e.arch === hw.arch);
-  const fits = forPlatform.filter((e) => e.backend === option.backend && (!e.gpuArchs || (gpu?.arch !== undefined && e.gpuArchs.includes(gpu.arch))));
-  const entry = fits[0];
-  if (!entry) {
+  const fits = enigmaEnginesFor(hw.os, hw.arch, option.backend, gpu?.arch);
+  if (fits.length === 0) {
     const platform = `${gpu ? `${gpu.arch ?? gpu.vendor}-${option.backend}` : 'cpu'}-${hw.os}-${hw.arch}`;
     const what = gpu ? `${gpu.name}${gpu.arch ? ` (${gpu.arch})` : ''}, ${option.backend}` : `CPU (${hw.os} ${hw.arch})`;
     return { entry: null, code: `no_enigma_engine:${platform}`, reason: `No Enigma-optimised engine for ${what} yet; the official llama.cpp engine is used.` };
   }
-  if (!profileFor(entry, option)) {
-    return { entry: null, code: `enigma_no_profile:${option.modelId}`, reason: `The Enigma engine ${entry.id} has no profile for ${option.name}.` };
+  // an engine planned only where it was measured runs only for the plan that chose it
+  const withProfile = fits.filter((e) => profileFor(e, option) && (!e.planOnlyMeasured || option.mtpEngine === e.id));
+  const entry = withProfile.find(engineAvailable) ?? withProfile[0];
+  if (!entry) {
+    return { entry: null, code: `enigma_no_profile:${option.modelId}`, reason: `The Enigma engine ${fits[0]!.id} has no profile for ${option.name}.` };
   }
-  if (entry.distribution === 'local' && !envDir(entry)) {
+  if (!engineAvailable(entry)) {
     return {
       entry: null, code: `enigma_not_published:${entry.id}`,
       reason: `The Enigma engine ${entry.id} is not published for download yet (set ENIGMA_ENGINE_DIR_${entry.envKey}).`,
@@ -102,11 +147,24 @@ export function servedReasoningEffort(hw: Hw, option: Option): string | null {
 }
 
 export function profileFor(entry: EngineEntry, option: Option): EngineProfile | undefined {
-  const name = option.file.path.split('/').at(-1) ?? '';
+  return profileMatch(entry, option.modelId, option.file.path);
+}
+
+/** The profile whose `match` hits the model id or the file name (case-insensitive). */
+export function profileMatch(entry: EngineEntry, modelId: string, filePath: string): EngineProfile | undefined {
+  const name = filePath.split('/').at(-1) ?? '';
   return entry.profiles?.find((p) => {
     const re = new RegExp(p.match, 'i');
-    return re.test(option.modelId) || re.test(name);
+    return re.test(modelId) || re.test(name);
   });
+}
+
+/** Upstream llama.cpp flags of a profile's MTP draft. */
+export function mtpArgs(mtp: ProfileMtp): string[] {
+  const args = ['--spec-type', 'draft-mtp', '--spec-draft-n-max', String(mtp.nMax)];
+  if (mtp.ubd !== undefined) args.push('--spec-draft-n-ubatch', String(mtp.ubd));
+  if (mtp.draftKv) args.push('-ctkd', mtp.draftKv, '-ctvd', mtp.draftKv);
+  return args;
 }
 
 // ---- install ------------------------------------------------------------------------------------------------------
@@ -192,6 +250,7 @@ export async function ensureEngine(entry: EngineEntry, opts: { signal?: AbortSig
   const tmp = `${dir}.tmp-${process.pid}`;
   rmSync(tmp, { recursive: true, force: true });
   mkdirSync(tmp, { recursive: true });
+  const plain: string[] = [];
   for (const asset of entry.assets) {
     const known = asset.sha256 ?? digests[asset.name];
     const archive = join(dl, asset.name);
@@ -209,6 +268,11 @@ export async function ensureEngine(entry: EngineEntry, opts: { signal?: AbortSig
         throw new Error(`${asset.name}: sha256 mismatch (file removed; retry downloads it again)`);
       }
     }
+    // a plain file (draft vocabulary) is placed into <engine>/share once the server binary is found
+    if (!/\.(tar\.gz|tgz|zip)$/.test(asset.name)) {
+      plain.push(archive);
+      continue;
+    }
     opts.onProgress?.('extract', { done: 0, total: 1, rate: 0, etaS: 0 });
     await extractArchive(archive, tmp);
     opts.onProgress?.('extract', { done: 1, total: 1, rate: 0, etaS: 0 });
@@ -218,6 +282,11 @@ export async function ensureEngine(entry: EngineEntry, opts: { signal?: AbortSig
   const bin = findServerBin(tmp);
   if (!bin) throw new Error(`${entry.id}: llama-server not found in the release archive`);
   if (process.platform !== 'win32') chmodSync(bin, 0o755);
+  if (plain.length) {
+    const share = join(engineRoot(bin), 'share');
+    mkdirSync(share, { recursive: true });
+    for (const f of plain) copyFileSync(f, join(share, basename(f)));
+  }
   rmSync(dir, { recursive: true, force: true });
   renameSync(tmp, dir);
   writeFileSync(marker, new Date().toISOString());
@@ -455,7 +524,7 @@ export function enigmaConfig(engine: ResolvedEngine, option: Option, modelPath: 
   return {
     config: {
       engineId: engine.entry.id, modelPath, ctx: option.ctx, kvType: option.kvType, ub, b: profile.b ?? Math.max(2048, ub),
-      flashAttn: true, spec: profile.spec, extraArgs: profile.args.map(sub), env,
+      flashAttn: true, spec: profile.spec, extraArgs: [...profile.args.map(sub), ...(profile.mtp ? mtpArgs(profile.mtp) : [])], env,
     },
     reason: '',
   };

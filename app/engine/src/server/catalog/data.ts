@@ -43,7 +43,7 @@ export interface QuantFile {
 
 export interface MeasuredSpeed {
   gpu: string; backend: Backend; quant: string;
-  /** Upstream llama.cpp plain decode (tg128 / server), t/s. */
+  /** Plain decode (tg128 / server) of the baseline engine: upstream llama.cpp, or the model's `engine`; t/s. */
   decodeTps: number;
   source: string;
 }
@@ -75,6 +75,12 @@ export interface CatalogModel {
    *  upstream tag in data/engines.json; older pins reject the model (`engine_too_old:b<N>`). */
   minUpstreamBuild: number;
   engineNote?: string;
+  /** data/engines.json id of the engine the files need (the official build cannot run them, e.g. PTQ1_0 → the PrismML
+   *  fork): offered only on a GPU that engine is built for and where it is available (`needs_engine:<id>`); the baseline
+   *  runs on it, and `minUpstreamBuild` does not apply. */
+  engine?: string;
+  /** false: never the default pick (the user rejected the model), still offered as an alternative. */
+  defaultPick?: boolean;
   arch: ModelArch;
   quants: QuantFile[];
   measured: MeasuredSpeed[];

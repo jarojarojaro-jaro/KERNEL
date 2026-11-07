@@ -27,8 +27,15 @@ function fillMinutes(tps: string, tokens: string): string {
 const WHY: Record<string, Record<Lang, Render>> = {
 	quality_best: { pl: () => 'Najlepsza jakość, która się mieści.', en: () => 'The best quality that fits.' },
 	speed_measured: {
-		pl: (v, l) => `Zmierzyliśmy ${tps(v, l)} t/s pisania na takiej karcie (oficjalny llama.cpp).`,
-		en: (v, l) => `We measured ${tps(v, l)} t/s writing speed on this card (official llama.cpp).`
+		// "<t/s>" (official llama.cpp) or "<t/s>/<engine id>" (the engine the model needs)
+		pl: (v, l) => {
+			const [t, engine] = split2(v);
+			return `Zmierzyliśmy ${tps(t, l)} t/s pisania na takiej karcie (${engine ? `silnik ${engine}` : 'oficjalny llama.cpp'}).`;
+		},
+		en: (v, l) => {
+			const [t, engine] = split2(v);
+			return `We measured ${tps(t, l)} t/s writing speed on this card (${engine ? `engine ${engine}` : 'official llama.cpp'}).`;
+		}
 	},
 	speed_estimated: {
 		pl: (v, l) => `Szacunek: ok. ${tps(v, l)} t/s pisania, z przepustowości pamięci.`,
@@ -37,6 +44,20 @@ const WHY: Record<string, Record<Lang, Render>> = {
 	mtp_head: {
 		pl: () => 'Model ma głowicę MTP; optymalizacja spróbuje zgadywania kilku tokenów naprzód.',
 		en: () => 'The model has an MTP head; optimisation will try drafting a few tokens ahead.'
+	},
+	engine_required: {
+		pl: (v) => `Ten plik działa tylko w silniku ${v} (oficjalny llama.cpp go nie obsługuje); punkt wyjścia i optymalizacja też na nim.`,
+		en: (v) => `This file runs only in the ${v} engine (official llama.cpp cannot run it); the starting point and the optimisation use it too.`
+	},
+	mtp_engine: {
+		pl: (v) => {
+			const [engine, n] = split2(v);
+			return `Pamięć zaplanowana pod MTP w silniku ${engine} (${n} tokeny naprzód); optymalizacja go zmierzy.`;
+		},
+		en: (v) => {
+			const [engine, n] = split2(v);
+			return `Memory planned for MTP in the ${engine} engine (${n} tokens ahead); the optimisation measures it.`;
+		}
 	},
 	mtp_no_memory: {
 		pl: () => 'Model ma głowicę MTP, ale przy tym kontekście brakuje pamięci na kontekst draftu (bez spekulacji MTP).',
@@ -125,8 +146,14 @@ const WHY: Record<string, Record<Lang, Render>> = {
 		en: () => 'Little headroom: under 3% of the memory stays free, so we rank this option lower (the system and your programs share the same RAM).'
 	},
 	license_conditional: {
-		pl: () => 'Licencja LFM: użycie komercyjne do 10 mln USD przychodu rocznie.',
-		en: () => 'LFM licence: commercial use up to USD 10 million annual revenue.'
+		pl: (v) =>
+			v === 'cc-by-nc-4.0'
+				? 'Licencja CC BY-NC 4.0: tylko użycie niekomercyjne (komercyjne wymaga licencji od autora).'
+				: 'Licencja LFM: użycie komercyjne do 10 mln USD przychodu rocznie.',
+		en: (v) =>
+			v === 'cc-by-nc-4.0'
+				? 'CC BY-NC 4.0 licence: non-commercial use only (commercial use needs a licence from the author).'
+				: 'LFM licence: commercial use up to USD 10 million annual revenue.'
 	}
 };
 
@@ -152,6 +179,10 @@ const REJECTED: Record<string, Record<Lang, Render>> = {
 	engine_too_old: {
 		pl: (v) => `Oficjalny llama.cpp w wersji ${v} jeszcze nie obsługuje tego modelu.`,
 		en: (v) => `Official llama.cpp ${v} does not support this model yet.`
+	},
+	needs_engine: {
+		pl: (v) => `Wymaga silnika ${v}, który nie jest dostępny dla tej karty albo nie jest jeszcze opublikowany.`,
+		en: (v) => `Needs the ${v} engine, which is not available for this GPU or not published yet.`
 	},
 	too_slow_on_this_hw: {
 		pl: (v, l) => `Za wolny na tym sprzęcie: szacunek ok. ${tps(v, l)} t/s pisania (wymagamy co najmniej 8 t/s).`,

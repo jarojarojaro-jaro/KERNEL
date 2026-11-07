@@ -211,6 +211,14 @@
    "unified": false
   },
   {
+   "id": "rtx-2080-ti",
+   "name": "GeForce RTX 2080 Ti",
+   "vendor": "nvidia",
+   "vramGiB": 11,
+   "bwGBs": 616,
+   "unified": false
+  },
+  {
    "id": "gtx-1650",
    "name": "GeForce GTX 1650",
    "vendor": "nvidia",
@@ -499,6 +507,14 @@
     "pl": "Komercyjnie tylko poniżej 10 mln USD rocznego przychodu (całej grupy). Dla osób prywatnych bez ograniczeń.",
     "en": "Commercial use only below USD 10M annual revenue (whole group). No limits for private use."
    }
+  },
+  "cc-by-nc-4.0": {
+   "name": "CC BY-NC 4.0",
+   "commercial": "conditional",
+   "note": {
+    "pl": "Tylko do użytku niekomercyjnego; użycie komercyjne wymaga osobnej licencji od autora (Conway Research).",
+    "en": "Non-commercial use only; commercial use needs a separate licence from the author (Conway Research)."
+   }
   }
  },
  "models": [
@@ -550,6 +566,16 @@
     "mtpExtraMiB": 827.7
    },
    "quants": [
+    {
+     "quant": "GSQ-IQ3_XXS",
+     "repo": "ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF",
+     "path": "Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf",
+     "sizeBytes": 10442827840,
+     "sha256": "63f29a2189a6b4cc31f81e093d3856ad293a5583114439f41ae1ed7af4093262",
+     "hostEmbdBytes": 407244800,
+     "bTokGB": 10.04,
+     "qualityFactor": 0.85
+    },
     {
      "quant": "UD-Q3_K_XL",
      "repo": "unsloth/Qwen3.8-27B-GGUF",
@@ -622,6 +648,48 @@
      "quant": "UD-Q4_K_XL",
      "decodeTps": 43.1,
      "source": "report 27-3090-final.md:100 (U0 tg128)"
+    },
+    {
+     "gpu": "rtx-4060-ti-16",
+     "backend": "cuda",
+     "quant": "GSQ-IQ3_XXS",
+     "decodeTps": 23.7,
+     "source": "campaign 67 (upstream b12110 CUDA, KV q4_0, ub 256, plain, ctx 217088, T=1 median; full 216k fill OK)"
+    },
+    {
+     "gpu": "rtx-5060-ti-16",
+     "backend": "cuda",
+     "quant": "GSQ-IQ3_XXS",
+     "decodeTps": 33.3,
+     "source": "campaign 67 (upstream b12110 CUDA, KV q4_0, ub 256, plain, ctx 200704, T=1 median; full 200k fill OK)"
+    },
+    {
+     "gpu": "rtx-5080",
+     "backend": "cuda",
+     "quant": "GSQ-IQ3_XXS",
+     "decodeTps": 62.7,
+     "source": "campaign 67 (upstream b12110 CUDA, KV q4_0, ub 256, plain, ctx 208896, T=1 median)"
+    },
+    {
+     "gpu": "rtx-4060-ti-16",
+     "backend": "cuda",
+     "quant": "UD-Q3_K_XL",
+     "decodeTps": 19.6,
+     "source": "campaign 67 (upstream CUDA, KV q4_0, ub 1024, plain, ctx 135168, T=1 median)"
+    },
+    {
+     "gpu": "rtx-5060-ti-16",
+     "backend": "cuda",
+     "quant": "UD-Q3_K_XL",
+     "decodeTps": 28.7,
+     "source": "campaign 67 (upstream CUDA, KV q4_0, ub 1024, plain, ctx 135168, T=1 median)"
+    },
+    {
+     "gpu": "rtx-5080",
+     "backend": "cuda",
+     "quant": "UD-Q3_K_XL",
+     "decodeTps": 55,
+     "source": "campaign 67 (upstream CUDA, KV q4_0, ub 1024, plain, ctx 135168, T=1 median; full 134k fill OK)"
     }
    ],
    "ramMeasured": [
@@ -633,6 +701,242 @@
      "decodeTps": 2.29,
      "prefillTps": 19.3,
      "source": "lab 2026-10-24: Ryzen 7 5700X, 4x16 GB DDR4-3200 (2 channels, 51.2 GB/s), llama-bench b11742 CPU -ngl 0, -t 8, tg64/tg32 + pp512"
+    }
+   ],
+   "configRepo": "Qwen/Qwen3.8-27B",
+   "mtpInFile": true
+  },
+  {
+   "id": "saluki-27b",
+   "name": "Underdog Saluki 27B",
+   "family": "Qwen",
+   "params": "27.8B",
+   "paramsB": 27.78,
+   "activeB": 27.78,
+   "kind": "hybrid",
+   "quality": 34,
+   "qualitySource": "[SZACUNEK] Qwen3.8-27B fine-tune (ConwayResearch/Underdog-Saluki-27B-1.0), no AA page: base model's AA v4.3.2 index; the 2-bit file's loss is in qualityFactor (our KLD-wiki 0.257 to Qwen BF16, research 33 §3 / 67b)",
+   "license": "cc-by-nc-4.0",
+   "ctxMax": 262144,
+   "features": [
+    "mtp",
+    "tools",
+    "reasoning"
+   ],
+   "minUpstreamBuild": 0,
+   "arch": {
+    "source": "gguf:Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
+    "arch": "qwen35",
+    "nLayer": 64,
+    "nEmbd": 5120,
+    "nVocab": 248320,
+    "tiedEmbd": false,
+    "full": {
+     "layers": 16,
+     "kvHeads": 4,
+     "keyLen": 256,
+     "valueLen": 256
+    },
+    "swa": {
+     "layers": 0,
+     "kvHeads": 0,
+     "keyLen": 0,
+     "valueLen": 0,
+     "window": 0
+    },
+    "nextn": {
+     "layers": 1,
+     "kvHeads": 4,
+     "keyLen": 256,
+     "valueLen": 256
+    },
+    "stateMiB": 149.63,
+    "mtpExtraMiB": 592.7
+   },
+   "quants": [
+    {
+     "quant": "IQ2-mix",
+     "repo": "Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF",
+     "path": "Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
+     "sizeBytes": 8349689920,
+     "sha256": "98f6ebb527917a2541df8e667d51c3ec8a8bb135b44c606d40cc6ed924e89e52",
+     "hostEmbdBytes": 278118400,
+     "bTokGB": 8.07,
+     "qualityFactor": 0.8
+    }
+   ],
+   "measured": [
+    {
+     "gpu": "rtx-4070",
+     "backend": "cuda",
+     "quant": "IQ2-mix",
+     "decodeTps": 44.35,
+     "source": "campaign 67c (pinned upstream b11856 CUDA, KV q4_0, ub 256, plain, ctx 151552 = Enigma's default pick, T=1 median; full fill OK, peak 11201 MiB; b12110 at 135168: 39.8)"
+    },
+    {
+     "gpu": "rtx-3060-12",
+     "backend": "cuda",
+     "quant": "IQ2-mix",
+     "decodeTps": 19.6,
+     "source": "campaign 67 (upstream b12110 CUDA, KV q4_0, ub 256, plain, ctx 135168, T=1 median; host capped at 105 W)"
+    }
+   ],
+   "configRepo": "Qwen/Qwen3.8-27B",
+   "mtpInFile": true
+  },
+  {
+   "id": "bonsai2-27b",
+   "name": "Ternary Bonsai 2 27B",
+   "family": "Bonsai",
+   "params": "27.8B",
+   "paramsB": 27.78,
+   "activeB": 27.78,
+   "kind": "hybrid",
+   "quality": 34,
+   "qualitySource": "[SZACUNEK] ternary Qwen3.8-27B (PrismML), no AA page: base model's AA v4.3.2 index (vendor: 98.2% of FP16 on 14 benchmarks); the loss is in qualityFactor (our KLD-wiki 0.352 to Qwen BF16, research 33 §3 / 67b)",
+   "license": "apache-2.0",
+   "ctxMax": 262144,
+   "features": [
+    "tools",
+    "reasoning"
+   ],
+   "minUpstreamBuild": 11555,
+   "engineNote": "Q2_0 with the Bonsai 2 Hadamard runtime from upstream b11555 (older builds load the file and output gibberish, docs.prismml.com/download/formats); PTQ1_0 needs the PrismML fork: offered as bonsai2-27b-mtp where that engine is available",
+   "arch": {
+    "source": "gguf:Ternary-Bonsai-2-27B-Q2_0.gguf",
+    "arch": "qwen35",
+    "nLayer": 64,
+    "nEmbd": 5120,
+    "nVocab": 248320,
+    "tiedEmbd": false,
+    "full": {
+     "layers": 16,
+     "kvHeads": 4,
+     "keyLen": 256,
+     "valueLen": 256
+    },
+    "swa": {
+     "layers": 0,
+     "kvHeads": 0,
+     "keyLen": 0,
+     "valueLen": 0,
+     "window": 0
+    },
+    "nextn": {
+     "layers": 0,
+     "kvHeads": 0,
+     "keyLen": 0,
+     "valueLen": 0
+    },
+    "stateMiB": 149.63,
+    "mtpExtraMiB": 0
+   },
+   "quants": [
+    {
+     "quant": "Q2_0",
+     "repo": "prism-ml/Ternary-Bonsai-2-27B-gguf",
+     "path": "Ternary-Bonsai-2-27B-Q2_0.gguf",
+     "sizeBytes": 7626008928,
+     "sha256": "4f99aed01b8a877e153f9aa6569a4440fe17c59701cc0953e36d7f460549e70e",
+     "hostEmbdBytes": 357580800,
+     "bTokGB": 7.27,
+     "qualityFactor": 0.7
+    }
+   ],
+   "measured": [
+    {
+     "gpu": "rtx-4070",
+     "backend": "cuda",
+     "quant": "Q2_0",
+     "decodeTps": 49.4,
+     "source": "campaign 67 (upstream b12110 CUDA, KV q4_0, plain, ctx 65536, T=1 median; load 8785 MiB)"
+    },
+    {
+     "gpu": "rtx-2080-ti",
+     "backend": "cuda",
+     "quant": "Q2_0",
+     "decodeTps": 39.6,
+     "source": "campaign 67c (upstream CUDA, KV q4_0, ub 256, plain, ctx 131072 = Enigma's default pick, T=1 median; full fill OK, peak 10243 MiB; our PrismML build on Q2_0: 43.8)"
+    }
+   ],
+   "configRepo": "Qwen/Qwen3.8-27B",
+   "mtpInFile": false
+  },
+  {
+   "id": "bonsai2-27b-mtp",
+   "name": "Ternary Bonsai 2 27B MTP",
+   "family": "Bonsai",
+   "params": "27.8B",
+   "paramsB": 27.78,
+   "activeB": 27.78,
+   "kind": "hybrid",
+   "quality": 34,
+   "qualitySource": "[SZACUNEK] ternary Qwen3.8-27B (PrismML), no AA page: base model's AA v4.3.2 index (vendor: 98.2% of FP16 on 14 benchmarks); qualityFactor as Bonsai Q2_0 (same ternary weights; no KLD of our own on PTQ1_0)",
+   "license": "apache-2.0",
+   "ctxMax": 262144,
+   "features": [
+    "mtp",
+    "tools",
+    "reasoning"
+   ],
+   "minUpstreamBuild": 0,
+   "engineNote": "PTQ1_0 runs only in the PrismML fork (upstream llama.cpp outputs garbage on it); prism-ml's PTQ1_0 weights plus a lean MTP block (sudoingx/Ternary-Bonsai-2-27B-PTQ1_0-MTP-GGUF, Apache-2.0)",
+   "engine": "enigma-cuda-prism",
+   "arch": {
+    "source": "gguf:Ternary-Bonsai-2-27B-PTQ1_0-mtp-lean.gguf",
+    "arch": "qwen35",
+    "nLayer": 64,
+    "nEmbd": 5120,
+    "nVocab": 248320,
+    "tiedEmbd": false,
+    "full": {
+     "layers": 16,
+     "kvHeads": 4,
+     "keyLen": 256,
+     "valueLen": 256
+    },
+    "swa": {
+     "layers": 0,
+     "kvHeads": 0,
+     "keyLen": 0,
+     "valueLen": 0,
+     "window": 0
+    },
+    "nextn": {
+     "layers": 1,
+     "kvHeads": 4,
+     "keyLen": 256,
+     "valueLen": 256
+    },
+    "stateMiB": 149.63,
+    "mtpExtraMiB": 525.2
+   },
+   "quants": [
+    {
+     "quant": "PTQ1_0",
+     "repo": "sudoingx/Ternary-Bonsai-2-27B-PTQ1_0-MTP-GGUF",
+     "path": "Ternary-Bonsai-2-27B-PTQ1_0-mtp-lean.gguf",
+     "sizeBytes": 6297658848,
+     "sha256": "1e33c571a5ce7a9a3e42474d66192923d5a6d77da7fb3a22986dc809522b5685",
+     "hostEmbdBytes": 278118400,
+     "bTokGB": 6.02,
+     "qualityFactor": 0.7
+    }
+   ],
+   "measured": [
+    {
+     "gpu": "rtx-4070",
+     "backend": "cuda",
+     "quant": "PTQ1_0",
+     "decodeTps": 66.3,
+     "source": "campaign 67c (PrismML fork prism-b12128 CUDA 12.8, KV q4_0, ub 256, plain, ctx 65536, T=1 median; prism-ml's PTQ1_0 file = the same weights without the MTP block)"
+    },
+    {
+     "gpu": "rtx-2080-ti",
+     "backend": "cuda",
+     "quant": "PTQ1_0",
+     "decodeTps": 61.2,
+     "source": "campaign 67c (PrismML fork prism-b12128 CUDA 12.8 via PTX JIT, KV q4_0, plain, ctx 65536, T=1 median; prism-ml's PTQ1_0 file)"
     }
    ],
    "configRepo": "Qwen/Qwen3.8-27B",
@@ -861,6 +1165,26 @@
    },
    "quants": [
     {
+     "quant": "UD-IQ3_XXS",
+     "repo": "unsloth/LFM2.5-24B-A2B-GGUF",
+     "path": "LFM2.5-24B-A2B-UD-IQ3_XXS.gguf",
+     "sizeBytes": 8959328480,
+     "sha256": "e06694b1f0bb322ecfde6bf9af260d2f2047ed1b30bbfdd04d97bf55472bfeec",
+     "hostEmbdBytes": 0,
+     "bTokGB": 0.82,
+     "qualityFactor": 0.85
+    },
+    {
+     "quant": "UD-Q3_K_XL",
+     "repo": "unsloth/LFM2.5-24B-A2B-GGUF",
+     "path": "LFM2.5-24B-A2B-UD-Q3_K_XL.gguf",
+     "sizeBytes": 10947100928,
+     "sha256": "d54834c785c7e265f1cb7375e47aa6f55a0b7cfab75816254c4d2e0c82fd5efc",
+     "hostEmbdBytes": 0,
+     "bTokGB": 1,
+     "qualityFactor": 0.88
+    },
+    {
      "quant": "Q4_K_M",
      "repo": "LiquidAI/LFM2.5-24B-A2B-GGUF",
      "path": "LFM2.5-24B-A2B-Q4_K_M.gguf",
@@ -908,6 +1232,20 @@
      "quant": "Q5_K_M",
      "decodeTps": 169.3,
      "source": "landing measurements.ts lfmUpstreamTg128 (upstream ROCm tg128)"
+    },
+    {
+     "gpu": "rtx-4070",
+     "backend": "cuda",
+     "quant": "UD-IQ3_XXS",
+     "decodeTps": 179.3,
+     "source": "campaign 67c (upstream b12110 CUDA, fully in VRAM, KV q8_0, ub 512, ctx 131072, T=1 median; full fill OK, load 10501 / peak 10525 MiB; UD-Q3_K_XL OOM at load)"
+    },
+    {
+     "gpu": "rtx-5060-ti-16",
+     "backend": "cuda",
+     "quant": "Q4_K_M",
+     "decodeTps": 139.48,
+     "source": "campaign 67c (upstream CUDA, fully in VRAM, KV q8_0, ub 512, ctx 131072, T=1 median; full fill peak 15820 MiB)"
     }
    ],
    "ramMeasured": [
@@ -1105,6 +1443,7 @@
     "reasoning"
    ],
    "minUpstreamBuild": 0,
+   "defaultPick": false,
    "arch": {
     "source": "config:google/gemma-4-12B-it",
     "arch": "gemma4",
@@ -1248,7 +1587,15 @@
      "qualityFactor": 1
     }
    ],
-   "measured": [],
+   "measured": [
+    {
+     "gpu": "rtx-3080",
+     "backend": "cuda",
+     "quant": "Q6_K",
+     "decodeTps": 85.2,
+     "source": "campaign 67c (upstream CUDA, KV q4_0, ub 512, plain, ctx 192512 = Enigma's default pick, T=1 median; full fill OK, peak 9345 MiB)"
+    }
+   ],
    "configRepo": "Qwen/Qwen3.5-9B",
    "mtpInFile": false
   },

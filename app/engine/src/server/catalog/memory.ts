@@ -23,8 +23,13 @@
 // report 67b §1; error −3…+23 MiB on 19 `-lv 4` buffer sets) instead of the fork calibration above:
 //   weights  − the nextn (MTP) block when no MTP draft runs (upstream loads it only with --spec-type draft-mtp);
 //   state    × (n_max + 1) with an MTP draft (one sequence per draft position: 299 / 598 / 748 MiB at n 1 / 3 / 4);
-//   draft KV = ctx × nextn K+V in F16 (upstream's default draft cache type, whatever -ctk/-ctv: 1024 MiB at 262144);
+//   draft KV = ctx × nextn K+V at the draft cache type: F16 in upstream (its default, whatever -ctk/-ctv: 1024 MiB at
+//              262144); -ctkd/-ctvd in our lean-reserve build (enigma-cuda-lean); -ctk/-ctv in the PrismML fork
+//              (enigma-cuda-prism: the 4070 Bonsai MTP points at 65536 / 229376 fit q4_0 within +6…+190 MiB, F16 overshoots
+//              by 840 MiB at 229376) [INFERENCE: from the fit, not from the fork's source];
 //   draft compute = ctx × 2 × ubd + ubd × 32 B × n_embd (ubd = --spec-draft-n-ubatch; 40 MiB at 262144 with ubd 64);
+//              lean reserve: the catch-up stores K/V only and the draft step is one token, so the mask is ctx × 2 B
+//              (stock reserve with a quantized -ctkd would add F16 copies of all of it, so only lean passes -ctkd q4_0);
 //   growth   = the plain CUDA value with or without MTP (upstream +2…+28 MiB while the context fills: the F16 K/V copy
 //              lives in the compute buffer reserved at load).
 import type { Backend, MemPlan } from '../../shared/types.ts';
@@ -89,6 +94,16 @@ export interface MemConfig {
   mtpN: number;
   /** Upstream `--spec-draft-n-ubatch` (draft compute buffer with upstream MTP on CUDA); llama.cpp's default is `ub`. */
   ubd: number;
+  /** Effective draft context KV type with upstream-style MTP on CUDA (default f16, upstream's); the planner derives it
+   *  from the engine (catalog/index.ts config). */
+  draftKv?: KvType;
+  /** The engine's MTP draft context reserves the K/V-only catch-up and the one-token draft step (engine feature
+   *  `mtp-lean-reserve`, data/engines.json). */
+  leanReserve?: boolean;
+  /** Our CUDA fork's MTP (enigma-cuda-fork, feature `mtp-fork-draft`) on the campaign-67 CUDA fit: rollback snapshots of
+   *  the recurrent state (× STATE_SPEC) instead of a state copy per draft position, plus the reduced draft-vocab buffers
+   *  (mtpExtraMiB). 4090 UD-Q4_K_XL 262144 / ub 256 / n 4 / q4_0 draft / lean / KVQ: −119 MiB at load, −168 at a full fill. */
+  forkDraft?: boolean;
   /** Tokens already in the context; the recommender plans for a full context (prompt = ctx). */
   prompt: number;
 }
@@ -126,8 +141,9 @@ export function memParts(m: CatalogModel, q: QuantFile, c: MemConfig): MemParts 
     compute += c.prompt * f16Layer * g.plain;
     if (spec) {
       const nextnTok = a.nextn.layers * a.nextn.kvHeads * (a.nextn.keyLen + a.nextn.valueLen);
-      kv += c.ctx * nextnTok * KV_BYTES.f16 + a.stateMiB * MiB * c.mtpN;
-      compute += c.ctx * 2 * c.ubd + c.ubd * ACT_DRAFT * a.nEmbd;
+      const state = c.forkDraft ? STATE_SPEC - 1 : c.mtpN;
+      kv += c.ctx * nextnTok * KV_BYTES[c.draftKv ?? 'f16'] + a.stateMiB * MiB * state;
+      compute += c.ctx * 2 * (c.leanReserve ? 1 : c.ubd) + c.ubd * ACT_DRAFT * a.nEmbd + (c.forkDraft ? a.mtpExtraMiB * MiB : 0);
     } else {
       weights -= NEXTN_MIB_5120 * MiB * a.nextn.layers * (a.nEmbd / 5120) ** 2;
     }
