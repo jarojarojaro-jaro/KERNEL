@@ -57,7 +57,7 @@ Audyt liczb: [[AUDYT]].
 ## Kategorie
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (41)
-- [[modele/_hub|modele]] — Modele i kwanty (21)
+- [[modele/_hub|modele]] — Modele i kwanty (22)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (23)
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (9)
@@ -79,6 +79,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-06 [[raport-65-vram-rezerwa-mtp|Raport 65: 1 GiB VRAM z rezerwy MTP → kontekst 262 144]]
 - 2026-11-06 [[tailscale|Tailscale: zdalny dostęp do serwera]]
 - 2026-11-06 [[reactor-monitor|REACTOR (monitor terminalowy)]]
+- 2026-11-06 [[qwen38-flash-next|Qwen3.8-Flash-Next (125B MoE, 6B aktywnych, zapowiedź architektury Qwen4)]]
 - 2026-11-06 [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]]
 - 2026-11-06 [[rx-7900-xtx|AMD Radeon RX 7900 XTX (główna karta)]]
 - 2026-11-06 [[2026-11-06-xtx-eco-instalacja|xtx-eco: instalacja 2026-11-06 i fabryczny OD_SCLK zmienny między bootami]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-06 [[2026-11-06-profil-eco-2200|2026-11-06: stały profil eco 2200 MHz na XTX]]
 - 2026-11-05 [[rocm-10-1|ROCm 10.1: co daje na gfx1100]]
 - 2026-11-05 [[init-user-pages-failed|`amdgpu: init_user_pages: Failed to get user pages: -1` przy starcie serwera]]
-- 2026-11-05 [[raport-64-termika|Raport 64: czy bezpiecznie obniżyć sclk na XTX]]
 
-Razem 688 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
+Razem 689 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

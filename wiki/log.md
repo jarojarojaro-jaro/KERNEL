@@ -224,3 +224,6 @@ Użytkownik: wszystko, co działa, zapisujemy; wszystko, co nie działa, wyrzuca
 
 ## [2026-11-06] ingest | Tailscale na serwerze
 [[tailscale]]: zdalny SSH przez tailnet (MagicDNS), bez otwierania portów.
+
+## [2026-11-06] research | 66f Flash-Next: dobór kwantu na XTX
+[[qwen38-flash-next]]: Strata + IQ3_S zalecane; UD-IQ4_XS najwyższy mieszczący się; UD-Q4_K_XL nie.
