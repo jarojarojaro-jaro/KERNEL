@@ -14,9 +14,10 @@ Większość łatek powstała pod HIP/RDNA3; tu jest, co z tego działa na CUDA 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (9)
+## Notatki (10)
 
 - [[sm-86-89-120|Architektury NVIDIA: sm_86, sm_89, sm_120]] — Celujemy w trzy generacje kart konsumenckich: Ampere sm_86 (RTX 3060, 3090), Ada sm_89 (RTX 4060 Ti) i Blackwell sm_120 (RTX 5060 Ti); różnią się m.in. obsługą PDL.
+- [[backlog-testow-nvidia|Backlog testów NVIDIA (z całej bazy wiedzy), stan 2026-11-07]] — 15 tematów uszeregowanych zyskiem, wyciągniętych z wiki, raportów 15d/16c/24e/27/29/56/57/60/63/65/66/67 i łatkach; ⚑ = poprawia domyślne ustawienia Enigmy.
 - [[fa-kv-kwantyzowane-cuda|Flash attention na KV q4_0/q8_0 w upstream CUDA]] — Upstream CUDA dla skwantyzowanego KV wybiera kernel VEC tylko przy n=1 (Ampere) albo n ≤ 2 (Ada+), a w pozostałych przypadkach MMA_F16 z buforem f16 całego K/V; vec czyta KV osobno dla każdej głowy Q w grupie GQA.
 - [[cuda-compat|Gałąź cuda-compat: poprawki forka dla NVIDIA]] — `amd-opt` nie kompilował się dla CUDA; gałąź `cuda-compat` @ `7b2680760` dodaje 4 commity (2 kompilacyjne, 2 semantyczne), a kod GPU dla gfx1100 zostaje bit w bit ten sam.
 - [[karty-nvidia-parametry|Karty NVIDIA (i XTX): pasmo, L2, SM – liczby do rachunków]] — Parametry do modeli kosztu: XTX 960 GB/s, 6 MB L2 + 96 MB MALL, 96 CU; 3090 936 GB/s, 6 MB, 82 SM; 4090 1008 GB/s, 72 MB, 128 SM; 5060 Ti 448 GB/s, 32 MB, 36 SM; 5090 1792 GB/s, 96 MB (persist ≤ 60 MB), 170 SM (raport 21b, 2026-10-19).
