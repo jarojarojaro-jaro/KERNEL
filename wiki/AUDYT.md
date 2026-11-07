@@ -3044,6 +3044,12 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 | [[backlog-testow-nvidia]] (kolumna stanu) | 34 | `nv67c-summary.txt` (res-4090g/k, res-5080g/k, res-5090ab, res-*l, res-*b) | OK |
 | [[rtx-3060]], [[rtx-3090]], [[rtx-4060-ti]], [[rtx-5060-ti]], [[inne-karty-nvidia]] | 9, 7, 6, 6, 20 | `nv67c-summary.txt`; limity mocy z nagłówków hostów | OK |
 
+## Ingest 2026-11-07 (synteza NVIDIA na stronę)
+
+- `product/SITE-NVIDIA.md` — jeden dokument na enigmalabz.com: nagłówek, tabela 11 kart (dziś → Enigma → silnik Enigmy), modele z licencjami, flagi, „jak to osiągnęliśmy”, zastrzeżenia (publikacja archiwów, limity mocy hostów, 1 seed).
+- [[jak-przyspieszylismy-nvidia]] — co dało ile w 7 krokach i 9 nauk; lekcje: [[lekcja-zapas-doladowania-kerneli-cuda]], [[lekcja-paczka-march-native]], [[lekcja-pick-z-kalkulatora]], [[lekcja-licencja-modelu-sie-zmienia]]; aktualizacja [[lekcja-limit-mocy-hosta]].
+- Research 67 §7.4: zmiany w Enigmie są w commicie `e584d42` (wcześniej opisane jako niezacommitowane).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

@@ -114,7 +114,7 @@ Fork = `cuda-topka2` 2a261101b + kvq 007a6f813, MTP n4, KV draftu q4_0, słownik
 - **12 GB w całości w VRAM** (4070, b12110, 131 072, KV q8_0, ub 512): UD-IQ3_XXS **179,32 t/s**, fill PASS (prefill 2 602 t/s, dec 87,6), peak 10 525; UD-Q3_K_XL OOM przy ładowaniu. 5060 Ti Q4_K_M w całości w VRAM (131 072, q8_0, ub 512): **139,48 t/s**, fill PASS, peak 15 820. 3060 (140 W) UD-IQ3_XXS w VRAM (131 072, q8_0, ub 512): **102,47 t/s**, fill PASS (prefill 1 417, dec 40,6), peak 10 463; UD-Q3_K_XL OOM przy ładowaniu. Saluki MTP n3 @135 168 na 3060: OOM przy ładowaniu.
 - **`--n-cpu-moe`** Q4_K_M 131 072 q8_0: 3080 (10 GB) ncm 12–18 OOM, **ncm 20 40,83**, ncm 24 35,66; 3070 (8 GB) ncm 20–24 OOM, **ncm 26 8,92**, ncm 30 7,74.
 
-### 7.4 Zmiany w Enigmie (`app/engine`, niezacommitowane; 200 testów pass)
+### 7.4 Zmiany w Enigmie (`app/engine`, commit `e584d42`; 213 testów pass, `tsc` czysty)
 
 - **Katalog:** Gemma 4 12B `defaultPick:false`; nowe kwanty/modele: `qwen38-27b` `GSQ-IQ3_XXS` (ISTA, Apache-2.0), `saluki-27b` IQ2-mix (CC BY-NC 4.0 → `license_conditional:cc-by-nc-4.0`, w UI „tylko niekomercyjnie”), `bonsai2-27b` Q2_0 (Apache-2.0, min. build b11555), `bonsai2-27b-mtp` PTQ1_0 (tylko silnik prism), LFM2.5 UD-IQ3_XXS / UD-Q3_K_XL (`lfm-open-1.0`, < $10M przychodu). GPU `rtx-2080-ti`. Zmierzone konfiguracje (VERIFIED) per karta i punkty kalibracji pamięci.
 - **Picki domyślne:** 2080 Ti Bonsai Q2_0 131 072; 3060 Saluki 135 168; 4070 Saluki 151 552; 3070 Qwen3.5-9B Q4_K_M 151 552; 3080 Qwen3.5-9B Q6_K 192 512; 4060 Ti ISTA 217 088; 5060 Ti ISTA 200 704; 5080 ISTA 208 896; 3090 UD-Q4_K_XL 245 760 MTP; 4090 UD-Q4_K_XL 262 144 MTP; 5090 UD-Q6_K 262 144 MTP.
@@ -122,6 +122,7 @@ Fork = `cuda-topka2` 2a261101b + kvq 007a6f813, MTP n4, KV draftu q4_0, słownik
 - **Brakujący krok: upload archiwów na release** (`app/engine/CONTRACT.md`, „Silniki Enigma CUDA — brakujący krok”). Do tego czasu kandydat `enigma` kończy się `enigma_not_published:<id>`, a `bonsai2-27b-mtp` → `needs_engine:enigma-cuda-prism`; kolumna „z silnikiem Enigmy” w §1 to stan po publikacji.
 
 ## Powiązane
+- Materiał na stronę: [`product/SITE-NVIDIA.md`](../SITE-NVIDIA.md); jak to osiągnęliśmy: `wiki/metody/jak-przyspieszylismy-nvidia.md`
 - [[raport-67b-wybor-modeli-nvidia]]
 - [[raport-67c-nvidia-backlog-testow]]
 - [[raport-27-3090-final]], [[raport-56-orca-3090]], [[raport-29-4060ti]]

@@ -251,3 +251,6 @@ Model pamięci upstream: błąd ≤ 23 MiB, RS × (n+1), limit = suma CUDA. [[sa
 
 ## [2026-11-07] eksperyment | kampania NVIDIA 67c (wznowienie)
 [[2026-11-07-kampania-nvidia-vast]] (sekcja 67c), nowa [[final-recipes-nvidia]]: walidacja picków Enigmy wszystkie PASS (5090 102,19, 4090 76,44, 3090 61,49 t/s); fork+kvq+lean na 4090 262 144 **101,27 t/s**; lean MTP n2 na 16 GB 217–229k (5080 81,62); prism Bonsai 4070 94,81; LFM 4070 w VRAM 179,3; pin b11856 zostaje (5090 ABBA). Aktualizacje: [[REKORDY]], [[backlog-testow-nvidia]] (A1/A5/A6/A7/A11/A13, B1–B4, B14, D1/D3/D4, E2), [[rtx-3060]], [[rtx-3090]], [[rtx-4060-ti]], [[rtx-5060-ti]], [[inne-karty-nvidia]], [[final-modele-per-vram]].
+
+## [2026-11-07] synteza | Enigma na NVIDIA: strona + nauki
+`product/SITE-NVIDIA.md` (materiał na enigmalabz.com) i [[jak-przyspieszylismy-nvidia]] (co dało ile, 9 nauk); nowe lekcje [[lekcja-zapas-doladowania-kerneli-cuda]], [[lekcja-paczka-march-native]], [[lekcja-pick-z-kalkulatora]], [[lekcja-licencja-modelu-sie-zmienia]]; [[lekcja-limit-mocy-hosta]] uzupełniona o 5090 450/575 W.
