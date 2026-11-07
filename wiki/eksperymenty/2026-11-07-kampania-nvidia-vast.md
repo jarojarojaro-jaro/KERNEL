@@ -2,7 +2,7 @@
 typ: eksperyment
 tags: [eksperymenty, nvidia, cuda, vast, enigma, mtp]
 aktualizacja: 2026-11-07
-zrodlo: ~/qwen-opt/cloud/results/nv67-*; ~/qwen-opt/cloud/runs/nv67 (kopiowane do ~/KERNEL/qwen-opt/cloud/nv67); product/research/67-nvidia-vast-kampania.md
+zrodlo: ~/qwen-opt/cloud/results/nv67-*; ~/qwen-opt/cloud/results/nv67c-summary.txt; ~/qwen-opt/cloud/runs/nv67 (kopiowane do ~/KERNEL/qwen-opt/cloud/nv67); product/research/67-nvidia-vast-kampania.md
 status: aktualne
 ---
 # Kampania NVIDIA na Vast: 17 kart, 262 144 z MTP na 24 i 32 GB (2026-11-07)
@@ -33,12 +33,29 @@ Warunki: upstream llama.cpp b11856 (pin Enigmy) i b12110, KV q4_0, `-fa`, median
 
 **Błąd planera (naprawiony):** 16 GB z MTP przy 135 168 nie ładuje się; przy IQ3_XXS-mtp 200–217k ładuje się z 0,5–0,66 GiB wolnym i wywala przy pierwszym prefillu 4 096 tok. (`launch_mul_mat_q`). W Enigmie: dokładny odstęp `nvidia-smi`→CUDA per karta (447–498 MiB), zapas 300 MiB na doładowanie kerneli, zmierzone plany 262 144 dla 4090 i 5090, batch 256, MTP n=3 + `--spec-draft-n-ubatch 64`.
 
-**Nie dokończone:** Bonsai 2 (silnik PrismML + doszczep MTP gotowe, nieuruchomione), 3090 + fork cuda-topka2, kernel `kvq` na CUDA, port lean na kartach, 2080 Ti (obcy proces na karcie).
+**Nie dokończone w części 1 (domknięte w 67c, niżej):** Bonsai 2 (silnik PrismML + doszczep MTP gotowe, nieuruchomione), 3090 + fork cuda-topka2, kernel `kvq` na CUDA, port lean na kartach, 2080 Ti (obcy proces na karcie).
 
 **Koszt:** $3,47 z $10,51 kredytu (17 maszyn, od $0,056 do $0,48/h), wszystkie skasowane.
+
+## Kampania 67c (wznowienie, wieczór 2026-11-07)
+
+Seed 1, T=1, fill = prompt ctx−640 + 128 tok.; dokładne flagi Enigmy (pin b11856). Pełna tabela: `product/research/67-nvidia-vast-kampania.md` §1, §7.
+
+- **Walidacja picków Enigmy – wszystkie PASS:** 5090 Q6_K 262 144 MTP n3 62,49 → **102,19** (+63,5%); 4090 (250 W) UD-Q4_K_XL 262 144 46,94 → **76,44** (+62,8%); 3090 245 760 40,93 → **61,49**; 16 GB ISTA plain: 5080 208 896 58,81, 5060 Ti 200 704 31,42; 4070 Saluki 151 552 44,35; 3060 Saluki 135 168 22,23; 3080 Qwen3.5-9B Q6_K 192 512 85,20; 3070 66,90; 4060 Ti ISTA 217 088 24,02; 2080 Ti Bonsai Q2_0 131 072 39,57.
+- **Fork+kvq+lean (4090):** 262 144 ub 256 **101,27 t/s**, fill PASS, peak 23 852 MiB (+32,5% vs pick). kvq: +3,3% na sm_89, −4,4% na sm_120 (5080), ale pozwala na długi ctx.
+- **Lean (b12110lean) MTP n2 na 16 GB:** 5080 217 088 **81,62**, 5060 Ti 229 376 43,40, 4060 Ti 229 376 36,30 (fill PASS).
+- **Fork+kvq+lean:** 5090 Q6_K 262 144 **148,57** (+47,4% vs pick 100,90, PASS); 3090 UD-Q4_K_XL 262 144 **79,97** (+30% vs pick 61,49, PASS); 5060 Ti ISTA 196 608 49,44.
+- **Bonsai prism:** 3060 n2 204 800 **58,31** PASS; 2080 Ti n2 155 648 **77,96** PASS; 4070 PTQ1_0+MTP n2 **94,81** @64k; 208 896 PASS 94,73.
+- **LFM2.5:** 4070 UD-IQ3_XXS w VRAM **179,32 t/s**, 5060 Ti Q4_K_M w VRAM 139,48 (131 072); `--n-cpu-moe` 3080 ncm 20 40,83, 3070 ncm 26 8,92.
+- **Pin vs b12110 (5090 ABBA):** 99,8 vs 91,7 → pin zostaje. Grupa A (KV, GRAPH_OPT, `-t`, PDL) w szumie, wyłączenie grafów na 3090 −5,3%; `-np 2` +30–36% agregatu (3090, 4090, 5080).
+- **Koszt 67c:** kredyt $6,89 → $1,89, czyli $5,00 (w tym ok. $0,35 za obce instancje spoza kampanii); wszystkie hosty kampanii skasowane.
+
+Przepisy na stronę: [[final-recipes-nvidia]].
 
 ## Powiązane
 - [[eksperymenty/_hub|eksperymenty]]
 - [[raport-67-kampania-nvidia]]
 - [[2026-11-06-final-mode]]
 - [[glowica-mtp]]
+- [[final-recipes-nvidia]]
+- [[backlog-testow-nvidia]]

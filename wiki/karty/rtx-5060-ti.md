@@ -1,8 +1,8 @@
 ---
 typ: karta
 tags: [karty, nvidia, sm-120]
-aktualizacja: 2026-10-16
-zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:36-46,105; ~/KERNEL/product/PLAN.md:287; ~/KERNEL/product/research/09-chmura-5060ti.md:1-20,59-89,119-124,166-186,191; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:17,104,305; ~/qwen-opt/cloud/results/quantkld-20261016/5060ti/speed.md:3-5
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:36-46,105; ~/KERNEL/product/PLAN.md:287; ~/KERNEL/product/research/09-chmura-5060ti.md:1-20,59-89,119-124,166-186,191; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:17,104,305; ~/qwen-opt/cloud/results/quantkld-20261016/5060ti/speed.md:3-5; ~/qwen-opt/cloud/results/nv67c-summary.txt
 status: aktualne
 ---
 # NVIDIA RTX 5060 Ti 16 GB (lokalnie + wynajem)
@@ -18,6 +18,8 @@ status: aktualne
 - NVFP4: prefill +65–81%, decode bez zysku. Koszt instancji ≈ $1.05.
 
 E1 (2026-10-18, ctx 32k): U3 MTP 51.7 vs I4/W4 50.0 t/s, plain 29.1 vs 30.3; U3 wygrywa z MTP wyższą akceptacją (0.59 vs 0.55).
+
+Kampania 67c (2026-11-07, host 160/180 W): stary pick UD-Q3_K_XL 135 168 PASS 27,48; nowy ISTA IQ3_XXS-mtp 200 704 plain PASS **31,42** (14 230 MiB; pin MTP n3 ładuje się, 39,68, bez filla). Lean MTP n2 **229 376 PASS 43,40 t/s** (15 762 MiB). Fork+kvq+lean ISTA: 196 608 PASS **49,44** (15 416 MiB; 229 376 crash, 262 144 OOM); UD-Q3_K_XL 98 304 PASS 54,33. LFM2.5 Q4_K_M w VRAM 131 072 q8_0: **139,48 t/s**, peak 15 820. Przepisy: [[final-recipes-nvidia]].
 
 ## Powiązane
 - [[karty/_hub|Karty]]

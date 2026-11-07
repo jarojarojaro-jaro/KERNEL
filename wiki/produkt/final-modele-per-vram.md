@@ -18,7 +18,7 @@ status: do-sprawdzenia
 | 11 GB | Bonsai Q2_0 | 163 840 | – |
 | 8–10 GB | LFM2.5 Q4_K_M, KV q8_0, ncm 26 / 20 | 131 072 | licencja < US$10M |
 
-Gemma 4 12B odrzucona przez użytkownika. Qwen3.6-35B-A3B to opcja MoE (262k, RAM ≥ 32 GB).
+Zmierzone przepisy po kampanii 67c (flagi, t/s, VRAM, licencje): [[final-recipes-nvidia]]. Gemma 4 12B odrzucona przez użytkownika. Qwen3.6-35B-A3B to opcja MoE (262k, RAM ≥ 32 GB).
 
 Model pamięci (błąd ≤ 23 MiB na 19 punktach):
 - RS × (n_max+1);
@@ -33,6 +33,7 @@ Rezerwa MTP w upstream CUDA (punkt z DO-ZAPISANIA z 11-06): bufor draftu to ctx 
 
 ## Powiązane
 - [[produkt/_hub|Produkt]]
+- [[final-recipes-nvidia]]
 - [[raport-33-modele-na-karty]]
 - [[raport-65-vram-rezerwa-mtp]]
 - [[qwen3-8-27b]]

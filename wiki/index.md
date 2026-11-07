@@ -70,7 +70,7 @@ Audyt liczb: [[AUDYT]].
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (88)
 - [[research/_hub|research]] — Streszczenia raportów (154)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (32)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (33)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
@@ -87,9 +87,9 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-07 [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]]
 - 2026-11-07 [[hyperkernel|Hyperkernel (Hyperstition): rezydentny megakernel na B300]]
 - 2026-11-07 [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]]
+- 2026-11-07 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
 - 2026-11-07 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
 - 2026-11-07 [[backlog-testow-nvidia|Backlog testów NVIDIA (z całej bazy wiedzy), stan 2026-11-07]]
-- 2026-11-07 [[saluki|Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)]]
 
-Razem 710 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
+Razem 711 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

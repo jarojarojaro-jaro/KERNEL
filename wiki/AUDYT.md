@@ -3034,6 +3034,16 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - Enigma: `memory.ts` (upstream MTP, KV draftu f16, stan × (n+1)), `optimize.ts` (MTP n=3, `--spec-draft-n-ubatch 64`, batch 256), `catalog/index.ts` (odstęp nvidia-smi→CUDA per karta, 300 MiB na doładowanie kerneli, zmierzone plany 262 144).
 - Wersjonowane narzędzia kampanii: `qwen-opt/cloud/nv67/` (bez stanu, kluczy i adresów).
 
+## Ingest 2026-11-07 (kampania 67c NVIDIA)
+
+| notatka | liczb | gdzie szukane | wynik |
+|---|---|---|---|
+| [[final-recipes-nvidia]] | ~60 | `~/qwen-opt/cloud/results/nv67c-summary.txt` (res-*v, *w, *l, *fll, *x, *lfm, *m); repo HF i licencje z `app/engine/data/catalog.json`; flagi forka z `data/engines.json` | OK; pozycje `[w toku]` czekały na wyniki kampanii |
+| [[2026-11-07-kampania-nvidia-vast]] (sekcja 67c) | 22 | `nv67c-summary.txt` | OK |
+| [[REKORDY]] (tabela 67c) | 40 | `nv67c-summary.txt` | OK; 5090 102,19 zastępuje 86,9 (inny host: 575 vs 450 W, pin vs b12110) |
+| [[backlog-testow-nvidia]] (kolumna stanu) | 34 | `nv67c-summary.txt` (res-4090g/k, res-5080g/k, res-5090ab, res-*l, res-*b) | OK |
+| [[rtx-3060]], [[rtx-3090]], [[rtx-4060-ti]], [[rtx-5060-ti]], [[inne-karty-nvidia]] | 9, 7, 6, 6, 20 | `nv67c-summary.txt`; limity mocy z nagłówków hostów | OK |
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

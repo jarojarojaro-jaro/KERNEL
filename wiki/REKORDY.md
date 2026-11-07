@@ -1,8 +1,8 @@
 ---
 typ: meta
 tags: [meta, rekordy, wyniki]
-aktualizacja: 2026-10-21
-zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5; ~/KERNEL/product/research/29-4060ti.md:56-81; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:10; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:44-47; ~/KERNEL/product/research/{31-*,37,38,43,45}*.md
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5; ~/KERNEL/product/research/29-4060ti.md:56-81; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:10; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:44-47; ~/KERNEL/product/research/{31-*,37,38,43,45}*.md; ~/qwen-opt/cloud/results/nv67c-summary.txt
 status: aktualne
 ---
 # Rekordy: najlepsze zmierzone wyniki
@@ -173,6 +173,35 @@ Decyzja użytkownika 2026-11-06: tryb eco jest trybem docelowym; od teraz rekord
 | RTX 4060 Ti / ISTA IQ3_XXS-mtp | ctx 217 088, bez MTP | 23,7 t/s | 2026-11-07 | fill 216 448 tok. | `results/nv67-4060ti-20261107/res-4060tif` |
 | RTX 4070 / Underdog Saluki + MTP n=1 | ctx 151 552 | 39,8 t/s | 2026-11-07 | fill 151 552 tok., soak | `results/nv67-4070-20261107/res-4070f` |
 | RTX 3080 / LFM2.5-24B Q4_K_M | 131 072, KV q8_0, ncm | 20,4 t/s | 2026-11-07 | ABBA | `results/nv67-3080-20261107/res-3080f` |
+
+Kampania 67c (wieczór 2026-11-07): T1 = mediana `spec_sweep` seed 1, fill = prompt ctx−640 + 128 tok.; limity mocy hostów w `product/research/67-nvidia-vast-kampania.md` §2.
+
+| karta / model | obciążenie / metryka | wynik (poprzedni) | data | warunki | źródło |
+|---|---|---|---|---|---|
+| RTX 5090 / Qwen3.8-27B UD-Q6_K | ctx 262 144, fork+kvq+lean (`kvqlean`), MTP n4, ub 512 / T1 | **148,57 t/s** (pick Enigmy na tym samym hoście 100,90; +47,4%) | 2026-11-07 | 67c; fill 261 504 tok. PASS (dec 167), peak 28 232 MiB | `results/nv67-5090-20261107` |
+| RTX 3060 (140 W) / LFM2.5-24B UD-IQ3_XXS | 131 072, KV q8_0, w całości w VRAM / T1 | **102,47 t/s** | 2026-11-07 | 67c; fill PASS, peak 10 463 MiB | `results/nv67-3060-20261107` |
+| RTX 4090 (250 W) / Qwen3.8-27B UD-Q4_K_XL | ctx 262 144, fork+kvq+lean (`kvqlean`), MTP n4 + słownik 64k, ub 256 / T1 | **101,27 t/s** (pick Enigmy 76,44; +32,5%) | 2026-11-07 | 67c, seed 1; fill 261 504 tok. PASS, peak 23 852 MiB | `results/nv67-4090-20261107/res-4090fll` |
+| RTX 4090 (250 W) / Qwen3.8-27B UD-Q4_K_XL | ctx 262 144, pin b11856 MTP n3, ub 256 (pick Enigmy) / T1 | 76,44 t/s (46,94 bez MTP; +62,8%) | 2026-11-07 | 67c; fill PASS, peak 24 028 MiB | `results/nv67-4090-20261107/res-4090v` |
+| RTX 4090 (250 W) / Qwen3.8-27B UD-Q4_K_XL | `-np 2`, 2 równoległe żądania, b12110 MTP n3, 65 536 / agregat | **94,35 t/s** (69,46 przy `-np 1`; +36%) | 2026-11-07 | 67c, A13 | `results/nv67-4090-20261107/res-4090g` |
+| RTX 5090 / Qwen3.8-27B UD-Q6_K | ctx 262 144, pin b11856 MTP n3, ub 1024 / T1 | **102,19 t/s** (62,49 bez MTP; +63,5%; poprzednio 86,9 b12110 n2 na hoście 450 W) | 2026-11-07 | 67c; fill PASS, peak 28 592 MiB; ABBA pin 99,81/99,75 vs b12110 91,58/91,86 | `results/nv67-5090-20261107/res-5090v`, `res-5090ab` |
+| RTX 3090 (340 W) / Qwen3.8-27B UD-Q4_K_XL | ctx 245 760, pin MTP n3, ub 256 / T1 | 61,49 t/s (40,93; +50,2%) | 2026-11-07 | 67c; fill 245 120 tok. PASS, peak 23 448 MiB | `results/nv67-3090-20261107/res-3090v` |
+| RTX 5080 (250 W) / ISTA IQ3_XXS-mtp | ctx 217 088, b12110lean MTP n2, ub 256 / T1 | **81,62 t/s** (plain 208 896: 58,81) | 2026-11-07 | 67c; fill PASS, peak 15 632 MiB | `results/nv67-5080-20261107/res-5080l` |
+| RTX 5060 Ti (160 W) / ISTA IQ3_XXS-mtp | ctx 229 376, b12110lean MTP n2 / T1 | **43,40 t/s** (33,3 plain 200 704) | 2026-11-07 | 67c; fill PASS, peak 15 762 MiB | `results/nv67-5060ti-20261107/res-5060til` |
+| RTX 4060 Ti / ISTA IQ3_XXS-mtp | ctx 229 376, b12110lean MTP n2 / T1 | **36,30 t/s** (23,7 plain 217 088) | 2026-11-07 | 67c; fill PASS, peak 15 736 MiB | `results/nv67-4060ti-20261107/res-4060til` |
+| RTX 4070 / Bonsai 2 27B PTQ1_0 (sudoingx -mtp-lean) | prism, MTP n2, 65 536 / T1 | **94,81 t/s** (upstream Q2_0 49,43) | 2026-11-07 | 67c; 208 896 n2: 94,73, fill PASS, peak 11 163 MiB | `results/nv67-4070-20261107/res-4070b`, `res-4070x` |
+| RTX 4070 / Underdog Saluki 27B IQ2-mix | ctx 151 552, pin, bez MTP, ub 256 / T1 | 44,35 t/s (39,8 z MTP n1, inny host) | 2026-11-07 | 67c; fill PASS, peak 11 201 MiB | `results/nv67-4070-20261107/res-4070w` |
+| RTX 4070 / LFM2.5-24B UD-IQ3_XXS | 131 072, KV q8_0, w całości w VRAM, b12110 / T1 | **179,3 t/s** | 2026-11-07 | 67c; fill PASS (prefill 2 602 t/s), peak 10 525 MiB | `results/nv67-4070-20261107/res-4070lfm` |
+| RTX 3080 (260 W) / Qwen3.5-9B Q6_K | ctx 192 512, pin, ub 512 / T1 | **85,20 t/s** | 2026-11-07 | 67c; fill PASS, peak 9 345 MiB | `results/nv67-3080-20261107/res-3080w` |
+| RTX 3080 / LFM2.5-24B Q4_K_M | 131 072, KV q8_0, `--n-cpu-moe 20` / T1 | **40,83 t/s** (20,4 z poprzedniego ncm) | 2026-11-07 | 67c | `results/nv67-3080-20261107/res-3080m` |
+| RTX 3070 / Qwen3.5-9B Q4_K_M | ctx 151 552, pin, ub 512 / T1 | 66,90 t/s | 2026-11-07 | 67c; fill PASS, peak 7 251 MiB | `results/nv67-3070-20261107/res-3070v` |
+| RTX 3070 / LFM2.5-24B Q4_K_M | 131 072, KV q8_0, `--n-cpu-moe 26` / T1 | 8,92 t/s (7,1) | 2026-11-07 | 67c | `results/nv67-3070-20261107/res-3070m` |
+| RTX 3090 (340 W) / Qwen3.8-27B UD-Q4_K_XL | ctx 262 144, fork+kvq+lean (`kvqleana`, bez AVX2), ub 256 / T1 | **79,97 t/s** (pick Enigmy 61,49; +30%; UD-Q4_K_M 78,97) | 2026-11-07 | 67c; fill PASS, peak 23 706 MiB | `results/nv67-3090-20261107` |
+| RTX 5060 Ti (160 W) / ISTA IQ3_XXS-mtp | ctx 196 608, fork+kvq+lean / T1 | **49,44 t/s** | 2026-11-07 | 67c; fill PASS, peak 15 416 MiB | `results/nv67-5060ti-20261107` |
+| RTX 5060 Ti / LFM2.5-24B Q4_K_M | 131 072, KV q8_0, w całości w VRAM / T1 | **139,48 t/s** | 2026-11-07 | 67c; fill PASS, peak 15 820 MiB | `results/nv67-5060ti-20261107` |
+| RTX 4060 Ti / ISTA IQ3_XXS-mtp | ctx 217 088, pin, bez MTP (pick) / T1 | 24,02 t/s (23,7) | 2026-11-07 | 67c; fill PASS, peak 14 566 MiB | `results/nv67-4060ti-20261107` |
+| RTX 3060 (140 W) / Bonsai 2 27B PTQ1_0-mtp-lean | ctx 204 800, prism MTP n2, ub 256 / T1 | **58,31 t/s** (Saluki pick 22,23) | 2026-11-07 | 67c; fill PASS, peak 11 015 MiB | `results/nv67-3060-20261107` |
+| RTX 2080 Ti / Bonsai 2 27B PTQ1_0-mtp-lean | ctx 155 648, prism MTP n2, ub 512 (pick z silnikiem Enigmy) / T1 | **77,96 t/s** | 2026-11-07 | 67c; fill PASS, peak 10 151 MiB | `results/nv67-2080ti-20261107` |
+| RTX 2080 Ti / Bonsai 2 27B PTQ1_0 | prism MTP n1, 65 536 / T1 | **76,88 t/s** (prism Q2_0 43,76; upstream Q2_0 @131 072: 39,57, fill PASS) | 2026-11-07 | 67c, czysty host | `results/nv67-2080ti-20261107/res-2080tib` |
 
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.

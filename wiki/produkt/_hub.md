@@ -14,7 +14,7 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (32)
+## Notatki (33)
 
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
@@ -29,6 +29,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[zawezenie-tezy-produktu|Do decyzji: zawężenie tezy PLAN §0.1 po Magnitude]] — Propozycja raportu 15c (do decyzji użytkownika): teza „żaden produkt nie robi naraz…” zostaje, ale „optymalizacja poza flagami” nie jest już wyróżnikiem; wyróżnikiem jest kombinacja weryfikacji (md5/KLD) + przed → po wobec tuned upstream + AMD natywnie.
 - [[enigma-uczciwy-benchmark|Enigma: uczciwy benchmark optymalizacji (G1–G4, G7) i E2E na XTX]] — Commit 1af7fd2 (2026-11-05) naprawił audyt 63e: jedno obciążenie renderowane na baseline (te same tokeny, ten sam reasoning effort) dla każdego ramienia, ramię decode T=1, rozgrzewka przed pomiarem, próg szumu, deep 32k w decyzji i potwierdzenie zwycięzcy.
 - [[produkt-fabryka|Fabryka przepisów (lab)]] — Fabryka zamienia nową parę (GPU, model) w zweryfikowane przyspieszenie: 10-krokowy playbook, istniejące narzędzia, bramki antyoszustwa i metryki (cel ≤ 7 dni od premiery modelu).
+- [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]] — Zmierzone przepisy Enigmy z kampanii 67c (2026-11-07): dziś na silniku upstream (pin b11856) 24–32 GB daje 61–102 t/s przy 245–262k, a z silnikami Enigmy (lean / prism / fork, po publikacji archiwów) 5090 148,6, 4090 101,3, 3090 80,0 t/s przy 262 144, 16 GB MTP przy 217–229k (+57–84%), 12 GB Bonsai 58–95 t/s.
 - [[produkt-landing-i-onboarding|Landing page i ścieżka użytkownika]] — Hero „Ten sam sprzęt. Ten sam model. Po prostu szybciej.” z animacją prędkości, potem konto na początku i trzy drogi: formularz sprzętu (z komendą „skan”), aplikacja desktop, terminal (pomysł z 2026-10-16).
 - [[produkt-ryzyka|Największe ryzyka]] — Dziewięć ryzyk z odpowiedziami; najgroźniejsze: zysk nie przenosi się poza 7900 XTX/Linux oraz wbudowanie auto-tuningu przez LM Studio, Ollamę, Jana lub NVIDIA.
 - [[produkt-optymalizacja-u-uzytkownika|Optymalizacja u użytkownika: kalibracja i noc]] — Zawsze szybka kalibracja 1–5 min; opcjonalnie noc za zgodą (zasilacz, bezczynność, limity), z bramką md5 i ABBA; nigdy agentów ani kompilacji na komputerze użytkownika.
