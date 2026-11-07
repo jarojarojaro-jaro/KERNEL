@@ -21,6 +21,8 @@ status: do-sprawdzenia
 - To niewykonany cel „T1: epilog Q6_K” z [[2026-10-19-plan-retro-rsr-0070]].
 - Bramka: rocprofv3 `llama-bench -p 4096`, kill jeśli Q6_K < 5% prefillu; ABBA kill < +1%; md5.
 
+**Test 2026-11-07 (final mode): 0,0% — KILL** (pp4096 1000,7 → 1000,6, prefill 12k 933,1 → 933,0, md5 identyczne); szczegóły [[2026-11-07-q6k-mmq-skale]]. Łatka usunięta.
+
 ## Powiązane
 - [[kernele/_hub|kernele]]
 - [[mmq-epilog]]

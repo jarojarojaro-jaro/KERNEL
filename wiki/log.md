@@ -260,3 +260,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-07] lekcja | czat wstał na starym silniku
 [[lekcja-restart-zlym-launcherem]]: po restarcie maszyny `run-llm.sh` zamiast `run-topka.sh` → ~6 h produkcji na llama-opt z 15.10; naprawione restartem przez run-topka.sh (topka-q63, PM4, lookup, GPU verify, n_ctx 262144).
+
+## [2026-11-07] eksperyment | Q6_K MMQ skale — KILL
+[[2026-11-07-q6k-mmq-skale]]: pp4096 1000,7 → 1000,6 t/s, prefill 12k 933,1 → 933,0, md5 =; łatka 0004 usunięta. Research 68a–d + synteza 68.

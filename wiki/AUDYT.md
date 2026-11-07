@@ -3050,6 +3050,11 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[jak-przyspieszylismy-nvidia]] — co dało ile w 7 krokach i 9 nauk; lekcje: [[lekcja-zapas-doladowania-kerneli-cuda]], [[lekcja-paczka-march-native]], [[lekcja-pick-z-kalkulatora]], [[lekcja-licencja-modelu-sie-zmienia]]; aktualizacja [[lekcja-limit-mocy-hosta]].
 - Research 67 §7.4: zmiany w Enigmie są w commicie `e584d42` (wcześniej opisane jako niezacommitowane).
 
+## Ingest 2026-11-07 (research 68 + Q6_K)
+
+- `product/research/68a-rdna3-kernele.md`, `68b-spekulacja-nowe.md`, `68c-dlugi-kontekst-gdn.md`, `68d-swieze-od-spolecznosci.md`, `68-SYNTEZA.md` — ranking 10 bezstratnych pomysłów dla XTX w final mode; decode GEMV na szczycie (81–88% pasma), rezerwy w atencji weryfikacji, prefillu FA, kosztach hosta i dynamicznej głębokości draftu.
+- [[2026-11-07-q6k-mmq-skale]] — wynik negatywny (0,0%), łatka usunięta; [[mmq-q6k-skale-lds]] zamknięta.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

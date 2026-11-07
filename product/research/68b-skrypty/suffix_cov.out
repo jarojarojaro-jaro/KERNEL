@@ -1,0 +1,12 @@
+global corpus: 400 sessions, 49803435 tokens, 9015801 3-grams
+text           tokens    3614  session  17.0%  global-only   2.2%  tail>4: session   1.8%  global-only   0.1%
+thinking       tokens   52995  session  21.5%  global-only   4.3%  tail>4: session   4.1%  global-only   0.0%
+tool:ask       tokens       4  session   0.0%  global-only   0.0%  tail>4: session   0.0%  global-only   0.0%
+tool:bash      tokens    9481  session  48.8%  global-only   5.4%  tail>4: session  15.4%  global-only   0.2%
+tool:edit      tokens    9957  session  72.7%  global-only   1.1%  tail>4: session  29.8%  global-only   0.0%
+tool:grep      tokens      25  session  28.0%  global-only   0.0%  tail>4: session   4.0%  global-only   0.0%
+tool:read      tokens     153  session  29.4%  global-only   3.3%  tail>4: session   5.9%  global-only   0.0%
+tool:todo      tokens     157  session  44.6%  global-only   0.0%  tail>4: session  14.6%  global-only   0.0%
+tool:wait      tokens       5  session   0.0%  global-only   0.0%  tail>4: session   0.0%  global-only   0.0%
+tool:write     tokens   12626  session  39.4%  global-only   6.5%  tail>4: session  11.6%  global-only   0.2%
+ALL            tokens   89017  session  32.5%  global-only   4.3%  tail>4: session   9.1%  global-only   0.1%

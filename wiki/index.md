@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (48)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (67)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (68)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (115)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -91,5 +91,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-07 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
 - 2026-11-07 [[backlog-testow-nvidia|Backlog testów NVIDIA (z całej bazy wiedzy), stan 2026-11-07]]
 
-Razem 717 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
+Razem 718 notatek. Wygenerowano 2026-11-07 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
