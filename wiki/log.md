@@ -263,3 +263,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-07] eksperyment | Q6_K MMQ skale — KILL
 [[2026-11-07-q6k-mmq-skale]]: pp4096 1000,7 → 1000,6 t/s, prefill 12k 933,1 → 933,0, md5 =; łatka 0004 usunięta. Research 68a–d + synteza 68.
+
+## [2026-11-08] lekcja | cpuheavy w jobie kolejki
+[[lekcja-cpuheavy-w-jobie-kolejki]]: zakleszczenie kvq-once2 (quiet.lock); kolejność biletów GPU ustawiona wg wartości.
