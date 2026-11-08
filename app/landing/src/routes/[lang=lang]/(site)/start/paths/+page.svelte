@@ -13,9 +13,12 @@
 		// Hint only: a terminal user on Linux, everyone else the app. Never blocks a choice.
 		suggested = /Linux/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent) ? 'terminal' : 'download';
 	});
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head><title>{t.title}</title></svelte:head>
+<Seo title={t.title} description={t.lead} />
+
 
 <Shell title={t.title} lead={t.lead} wide back="/start">
 	<ul class="paths" role="list">

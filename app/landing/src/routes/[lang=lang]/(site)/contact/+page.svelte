@@ -9,6 +9,8 @@
 		pl: {
 			title: 'Kontakt',
 			lead: 'Pytanie o Twoją kartę, wynik pomiaru albo współpracę? Napisz do nas.',
+			/** Meta description differs from the on-page lead on the live site. */
+			description: 'Pytanie o\u00a0Twoją kartę, wynik pomiaru albo współpracę? Napisz do zespołu Enigma LABZ.',
 			company: 'Dane firmy',
 			methodology: 'Jak mierzymy',
 			cards: 'Sprawdź swoją kartę'
@@ -16,15 +18,19 @@
 		en: {
 			title: 'Contact',
 			lead: 'A question about your card, a measurement or working together? Write to us.',
+			description: 'A question about your card, a measurement or working together? Write to us.',
 			company: 'Company details',
 			methodology: 'How we measure',
 			cards: 'Check your card'
 		}
 	} as const;
 	const t = $derived(T[lang]);
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
-<svelte:head><title>{t.title} · {BRAND.name}</title><meta name="description" content={t.lead} /></svelte:head>
+<svelte:head><title>{t.title} · {BRAND.name}</title><meta name="description" content={t.description} /></svelte:head>
+
+<Seo title={`${t.title} · ${BRAND.name}`} description={t.description} />
 
 <section class="section heat-scope">
 	<div class="container container--narrow">

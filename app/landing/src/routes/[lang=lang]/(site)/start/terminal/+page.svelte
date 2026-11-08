@@ -23,9 +23,12 @@
 		[`${cli} tune --overnight --resume`, t.tune],
 		[`${cli} tune status`, t.status]
 	]);
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head><title>{t.title}</title></svelte:head>
+<Seo title={t.title} description={t.lead} />
+
 
 <Shell title={t.title} lead={t.lead} wide back="/start/paths">
 	<div class="stack installs" style="--stack: var(--sp-4)">

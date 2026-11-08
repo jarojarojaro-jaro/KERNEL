@@ -7,9 +7,12 @@
 	const lang = $derived(currentLang());
 	const t = $derived(ob[lang].scan);
 	const p = $derived(copy[lang].privacy);
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
-<svelte:head><title>{t.title}</title><meta name="description" content={t.lead} /></svelte:head>
+<svelte:head><title>{t.metaTitle}</title><meta name="description" content={t.lead} /></svelte:head>
+
+<Seo title={t.metaTitle} description={t.lead} />
 
 <div class="container section stack page">
 	<header class="stack head">

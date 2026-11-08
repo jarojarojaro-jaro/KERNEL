@@ -3,7 +3,7 @@
 	import { href, type Lang } from '$lib/i18n';
 	import DraftBanner from '../DraftBanner.svelte';
 	import CompanyData from '../CompanyData.svelte';
-	import { LEGAL_VERSION } from '../docs';
+	import { LEGAL_VERSION_PRIVACY } from '../docs';
 
 	/** The document is written in one language; `lang` is accepted for a uniform registry API. */
 	let { lang: _lang }: { lang?: Lang } = $props();
@@ -11,9 +11,9 @@
 </script>
 
 <article class="prose legal">
-	<DraftBanner lang={L} />
+	<DraftBanner lang={L} version={LEGAL_VERSION_PRIVACY} />
 	<h1 class="h1">Privacy Policy</h1>
-	<p class="source">{LEGAL_VERSION[L]}</p>
+	<p class="source">{LEGAL_VERSION_PRIVACY[L]}</p>
 	<nav aria-labelledby="toc-title" class="card card--inset toc">
 		<h2 id="toc-title" class="h3">Contents</h2>
 		<ol>
@@ -37,9 +37,9 @@
 	<CompanyData lang={L} fields={['legalName', 'address', 'krs', 'nip', 'email', 'dpo']} />
 	<p>We will assess whether we must appoint a data protection officer (Art. 37 GDPR); with the current, minimal processing we probably do not.</p>
 	<h2 id="principle" class="h2">2. Our principle: as little data as possible</h2>
-	<p>The product is built to run locally. Models, prompts and conversations stay on your device and never reach us. Telemetry in the App is off by default. The Website uses no analytics and no trackers.</p>
+	<p>The product is built to run locally. Models, prompts and conversations stay on your device and never reach us. Telemetry in the App is off by default. The Website uses no trackers; our own page-view statistics run only after you consent (section 3).</p>
 	<h2 id="website" class="h2">3. The website</h2>
-	<p>We use no analytics, no ad pixels and no profiling. Our hosting server keeps technical request logs, including your IP address. Because an IP address can be personal data (CJEU, 19 October 2016, C-582/14, <em>Breyer</em>), we treat these logs as personal data. For browser storage, see the <a href={href(L, '/legal/cookies')}>Cookie Policy</a>.</p>
+	<p>We use no ad pixels and no profiling. If you accept the “analytics” category in the cookie banner, the site sends our own page-view statistics to our server, with no cookies and no third parties: the page address and title, the referring domain or campaign tag, screen width, browser language, device type, browser, operating system and time spent on the page. The statistics do not store your IP address: a visitor is recognised only within one day, by a hash of the IP address and browser mixed with a random daily salt that is deleted after two days. The legal basis is your consent (Art. 6(1)(a) GDPR), which you can withdraw under “Cookie settings” in the footer. Our hosting server keeps technical request logs, including your IP address. Because an IP address can be personal data (CJEU, 19 October 2016, C-582/14, <em>Breyer</em>), we treat these logs as personal data. For browser storage, see the <a href={href(L, '/legal/cookies')}>Cookie Policy</a>.</p>
 	<h2 id="waitlist" class="h2">4. The waitlist</h2>
 	<p>If you join the waitlist, we process your e-mail address and the price option you picked. You confirm your sign-up through a link we e-mail you (double opt-in). The legal basis is your consent (Art. 6(1)(a) GDPR). You can withdraw it at any time via the link in every e-mail or by writing to us; this does not affect processing that took place before.</p>
 	<p><strong>Current status:</strong> the form’s backend is not live, so the form on the Website currently sends nothing.</p>

@@ -53,12 +53,15 @@
 		if (invalid) return invalid.focus();
 		run({ mode: 'signin', username: username.trim(), password });
 	}
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{s.title}</title>
-	<meta name="description" content={s.lead} />
+	<meta name="description" content={s.metaDescription} />
 </svelte:head>
+
+<Seo title={s.title} description={s.metaDescription} />
 
 <Scene labelledby="signin-title">
 	<div class="wrap">

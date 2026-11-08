@@ -3,7 +3,7 @@
 	import { href, type Lang } from '$lib/i18n';
 	import DraftBanner from '../DraftBanner.svelte';
 	import CompanyData from '../CompanyData.svelte';
-	import { LEGAL_VERSION } from '../docs';
+	import { LEGAL_VERSION_COOKIES } from '../docs';
 
 	/** The document is written in one language; `lang` is accepted for a uniform registry API. */
 	let { lang: _lang }: { lang?: Lang } = $props();
@@ -11,9 +11,9 @@
 </script>
 
 <article class="prose legal">
-	<DraftBanner lang={L} />
+	<DraftBanner lang={L} version={LEGAL_VERSION_COOKIES} />
 	<h1 class="h1">Cookie Policy</h1>
-	<p class="source">{LEGAL_VERSION[L]}</p>
+	<p class="source">{LEGAL_VERSION_COOKIES[L]}</p>
 	<nav aria-labelledby="toc-title" class="card card--inset toc">
 		<h2 id="toc-title" class="h3">Contents</h2>
 		<ol>
@@ -25,7 +25,7 @@
 		</ol>
 	</nav>
 	<h2 id="summary" class="h2">1. In short</h2>
-	<p>The {BRAND.name} website sets no tracking cookies and uses no analytics or advertising tools. The only things we store in your browser are the few technical entries listed below, each either strictly necessary or something you asked for.</p>
+	<p>The {BRAND.name} website sets no tracking cookies and uses no advertising tools. Our own page-view statistics, which use no cookies, run only after you consent (section 4). The only things we store in your browser are the few technical entries listed below, each either strictly necessary or something you asked for.</p>
 	<h2 id="basis" class="h2">2. Legal basis</h2>
 	<p>Storing or accessing information on your device needs your consent unless it is strictly necessary to provide a service you explicitly requested (Article 5(3) of the ePrivacy Directive 2002/58/EC; Article 399 of the Polish Electronic Communications Law). Every entry in section 3 falls under that exemption. The rule covers localStorage and sessionStorage as well as cookies.</p>
 	<h2 id="list" class="h2">3. What we store</h2>
@@ -39,12 +39,13 @@
 				<tr><td><code>authjs.session-token</code> — cookie (HttpOnly, <code>__Secure-</code> prefix on https) <span class="badge badge--soon">once accounts launch</span></td><td>keeps you signed in to your Account; set only after you sign in</td><td>30 days or until you sign out</td><td>requested by you — strictly necessary</td></tr>
 				<tr><td><code>authjs.csrf-token</code>, <code>authjs.callback-url</code>, <code>authjs.state</code>, <code>authjs.pkce.code_verifier</code>, <code>authjs.nonce</code> — cookies <span class="badge badge--soon">once accounts launch</span></td><td>protect the sign-in form against CSRF, secure sign-in with Google, GitHub or Hugging Face, and return you to the right page</td><td>until you close the browser; provider sign-in cookies — 15 minutes</td><td>requested by you — strictly necessary</td></tr>
 				<tr><td><code>onboarding</code> — sessionStorage <span class="badge badge--soon">once accounts launch</span></td><td>the signed-in Account name shown under the “Check your hardware” steps</td><td>until you close the browser tab</td><td>requested by you — strictly necessary</td></tr>
+				<tr><td><code>ruch.pomin</code> — localStorage</td><td>turns off counting your own visits in the statistics; written only when you open a page with <code>?nieliczmnie</code> while statistics are on</td><td>until you clear site data or open a page with <code>?licztez</code></td><td>requested by you — strictly necessary</td></tr>
 			</tbody>
 		</table>
 	</div>
 	<p>Sign-in cookies go only to our own server, so it can recognise your Account. No other entry is ever sent to our server or to third parties.</p>
 	<h2 id="analytics" class="h2">4. The “analytics” category</h2>
-	<p>The consent banner includes an “analytics” category so that we can ask properly if we ever need to. <strong>No analytics tool is installed today</strong>: nothing loads before you consent and nothing loads after. If we choose a tool, we will first list it here (provider, data stored, duration, any transfer outside the EEA) and ask you again.</p>
+	<p>The consent banner includes an “analytics” category. <strong>Only after you click “Accept” does the site load our own page-view statistics</strong> (the <code>/ruch.js</code> script, sending data to our server at enigmalabz.com). They use no cookies and no third-party tools, and the data is not passed on beyond our hosting server. For each page view we record the page address and title, the referring domain or campaign tag, screen width, browser language, device type, browser, operating system and time spent on the page. We do not store your IP address: a visitor is recognised only within one day, by a hash of the IP address and browser mixed with a random daily salt that is deleted after two days. Without consent nothing loads; after you withdraw consent the script stops sending data.</p>
 	<h2 id="change" class="h2">5. Changing your mind</h2>
 	<p>Every page has a “Cookie settings” link in the footer. It reopens the consent banner, where you can change or withdraw your choice; rejecting is as easy as accepting. You can also clear the site’s data in your browser settings at any time, and the banner will appear again.</p>
 	<p>For everything else about personal data, see the <a href={href(L, '/legal/privacy')}>Privacy Policy</a>.</p>

@@ -14,6 +14,9 @@
 	import { reducedMotion } from '$lib/fx/motion';
 	import { fmtTps } from '$lib/format';
 	import { cardsHref, currentLang, num } from '$lib/i18n';
+	import { BRAND } from '$lib/brand';
+	import Seo from '$lib/site/Seo.svelte';
+	import { breadcrumbs, CARD_CRUMBS } from '$lib/site/jsonld';
 	import ModelMark from '$lib/ModelMark.svelte';
 	import { MODEL_INFO, variantLabel } from '$lib/data/measurements';
 	import { cardsCopy } from './copy';
@@ -75,6 +78,14 @@
 		const a = g.measured.length ? g.face.id : GROUPS.nvidia.face.id;
 		return cardsHref(lang, `${lang === 'pl' ? 'porownaj' : 'compare'}/?a=${a}&b=${rival.face.id}`);
 	});
+	/** BreadcrumbList, as on the live maker pages: home → Twoja karta → Karty <maker>. */
+	const ld = $derived(
+		breadcrumbs([
+			{ name: BRAND.name, path: `/${lang}/` },
+			{ name: CARD_CRUMBS[lang].root, path: cardsHref(lang) },
+			{ name: CARD_CRUMBS[lang].maker(name), path: `${cardsHref(lang)}${vendor}/` }
+		])
+	);
 	const others = $derived(VENDORS.filter((v) => v !== vendor));
 	const prefixOf = (n: string, short: string) => n.split(short)[0].trim();
 </script>
@@ -82,9 +93,9 @@
 <svelte:head>
 	<title>{tv.metaTitle(name)}</title>
 	<meta name="description" content={tv.metaDescription(name)} />
-	<meta property="og:title" content={tv.metaTitle(name)} />
-	<meta property="og:description" content={tv.metaDescription(name)} />
 </svelte:head>
+
+<Seo title={tv.metaTitle(name)} description={tv.metaDescription(name)} jsonld={ld ?? undefined} />
 
 {#snippet product(eager: boolean)}
 	<ProductPhoto id={MAKER_PHOTO[vendor]} sizes="(max-width: 56rem) min(92vw, 34rem), 46vw" {eager}>

@@ -70,11 +70,12 @@ Audyt liczb: [[AUDYT]].
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (88)
 - [[research/_hub|research]] — Streszczenia raportów (154)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (33)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (34)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
 
+- 2026-11-08 [[strona-zrodlo-rowna-zywej|Strona: źródło = żywa (krok 0 przed zmianami treści)]]
 - 2026-11-08 [[lekcja-build-landing-nie-czyta-home|Build landingu czytał dane ze `$HOME`, więc klon repo się nie budował]]
 - 2026-11-07 [[raport-67-kampania-nvidia|Raport 67: kampania NVIDIA na Vast (Enigma) — trzy części]]
 - 2026-11-07 [[raport-66-synteza|Raport 66: Strata 0.2.12, Maya, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM, Flash-Next]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-07 [[hyperkernel|Hyperkernel (Hyperstition): rezydentny megakernel na B300]]
 - 2026-11-07 [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]]
 - 2026-11-07 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
-- 2026-11-07 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
 
-Razem 718 notatek. Wygenerowano 2026-11-08 przez `tools/wiki.py index`.
+Razem 719 notatek. Wygenerowano 2026-11-08 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

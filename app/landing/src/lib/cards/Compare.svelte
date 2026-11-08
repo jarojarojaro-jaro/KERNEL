@@ -18,6 +18,9 @@
 	import { findCard, MODEL_INFO, words500, type ModelKey } from '$lib/data/measurements';
 	import { fmtTps, ratioDigits } from '$lib/format';
 	import { cardsHref, currentLang } from '$lib/i18n';
+	import { BRAND } from '$lib/brand';
+	import Seo from '$lib/site/Seo.svelte';
+	import { breadcrumbs, CARD_CRUMBS } from '$lib/site/jsonld';
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import Choice from './Choice.svelte';
 	import { cardsCopy } from './copy';
@@ -35,6 +38,14 @@
 	const t = $derived(cardsCopy[lang].compare);
 	const tc = $derived(cardsCopy[lang].card);
 	const meta = $derived(cardsCopy[lang].meta);
+	/** BreadcrumbList, as on the live versus page (home → Twoja karta → Porównaj karty). */
+	const ld = $derived(
+		breadcrumbs([
+			{ name: BRAND.name, path: `/${lang}/` },
+			{ name: CARD_CRUMBS[lang].root, path: cardsHref(lang) },
+			{ name: CARD_CRUMBS[lang].compare, path: `${cardsHref(lang)}${lang === 'pl' ? 'porownaj' : 'compare'}/` }
+		])
+	);
 
 	const IDS = MEASURED.map((e) => e.id);
 	let a = $state('rtx-3090');
@@ -158,9 +169,9 @@
 <svelte:head>
 	<title>{meta.compareTitle}</title>
 	<meta name="description" content={meta.compareDescription} />
-	<meta property="og:title" content={meta.compareTitle} />
-	<meta property="og:description" content={meta.compareDescription} />
 </svelte:head>
+
+<Seo title={meta.compareTitle} description={meta.compareDescription} jsonld={ld ?? undefined} />
 
 <div class="amb" style={glow} aria-hidden="true"></div>
 

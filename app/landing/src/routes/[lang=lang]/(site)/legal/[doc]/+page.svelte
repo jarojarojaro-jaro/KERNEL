@@ -7,12 +7,15 @@
 	const lang = $derived(currentLang());
 	const doc = $derived(findLegalDoc(data.slug)!);
 	const Doc = $derived(doc.component[lang]);
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{doc.title[lang]} · {BRAND.name}</title>
 	<meta name="description" content={doc.description[lang]} />
 </svelte:head>
+
+<Seo title={`${doc.title[lang]} · ${BRAND.name}`} description={doc.description[lang]} />
 
 <section class="section heat-scope">
 	<div class="container container--narrow">

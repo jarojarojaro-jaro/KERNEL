@@ -73,9 +73,12 @@
 	const howL1 = $derived(
 		t.howL1(`${num(L1_MTP_BAND.lo, lang, 1)}–${fmtRatio(L1_MTP_BAND.hi, lang)}`, fmtRatio(L1B.value / L1A.value, lang), num(L1A.value, lang, 1), num(L1B.value, lang, 1))
 	);
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
-<svelte:head><title>{t.title}</title></svelte:head>
+<svelte:head><title>{t.metaTitle}</title><meta name="robots" content="noindex, follow" /></svelte:head>
+<Seo title={t.metaTitle} description={t.lead} />
+
 
 <Shell title={t.title} lead={t.lead} wide back="/start/hardware">
 	{#if ready && (!hw || !rec || !primaryF || !b)}

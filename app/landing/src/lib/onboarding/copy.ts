@@ -12,6 +12,8 @@ export const ob = {
 				title: `Zaloguj się · ${N}`,
 				heading: `Zaloguj się do *${N}*`,
 				lead: 'Jedno konto dla strony, aplikacji i terminala.',
+				/** Meta description is longer than the on-page lead on the live site. */
+				metaDescription: 'Zaloguj się do Enigma LABZ. Jedno konto dla strony, aplikacji i\u00a0terminala.',
 				via: 'Kontynuuj z',
 				submit: 'Zaloguj się',
 				noAccount: 'Nie masz konta?',
@@ -22,6 +24,8 @@ export const ob = {
 				kicker: 'Nowe konto',
 				heading: `Załóż konto *${N}*`,
 				lead: 'Minuta, bez e-maila. Potem od razu dobierzemy model do Twojego sprzętu.',
+				/** The live meta description repeats the lead; kept explicit so both languages match. */
+				metaDescription: 'Minuta, bez e-maila. Potem od razu dobierzemy model do Twojego sprzętu.',
 				points: ['Jedno konto dla strony, aplikacji i terminala', 'Bez e-maila i bez danych osobowych', 'Google, GitHub, Hugging Face albo nazwa i hasło'],
 				via: 'Załóż konto przez',
 				submit: 'Załóż konto',
@@ -65,6 +69,7 @@ export const ob = {
 		},
 		hw: {
 			title: 'Twój sprzęt',
+			metaTitle: 'Twój sprzęt: wpisz kartę graficzną\u00a0· Enigma LABZ',
 			lead: 'Wpisz kartę graficzną, a resztę uzupełnimy. Liczymy wszystko w przeglądarce.',
 			gpu: 'Karta graficzna',
 			gpuPh: 'np. RTX 4070, RX 7900 XTX, Apple M4 Pro',
@@ -90,6 +95,7 @@ export const ob = {
 		},
 		result: {
 			title: 'Twój wynik',
+			metaTitle: 'Twój wynik: polecany model i\u00a0prognoza\u00a0· Enigma LABZ',
 			lead: 'Polecany model i prognoza prędkości. Liczby zmierzone oznaczamy jako zmierzone, resztę jako szacunek z przedziałem.',
 			machine: 'Twój komputer',
 			edit: 'Zmień sprzęt',
@@ -190,6 +196,7 @@ export const ob = {
 		},
 		scan: {
 			title: 'Skan sprzętu',
+			metaTitle: 'Skan sprzętu pod lokalne AI: Windows, Linux, macOS',
 			lead: 'Jedna komenda wypisuje specyfikację Twojego komputera i krótki kod do wklejenia w formularz. Nic nie wysyła, nie wymaga administratora, nie zapisuje plików.',
 			tabs: { linux: 'Linux', windows: 'Windows', macos: 'macOS' },
 			oneLiner: 'Jedna linia',
@@ -218,6 +225,8 @@ export const ob = {
 				title: `Sign in · ${N}`,
 				heading: `Sign in to *${N}*`,
 				lead: 'One account for the website, the app and the terminal.',
+				/** Meta description is longer than the on-page lead on the live site. */
+				metaDescription: 'Sign in to Enigma LABZ. One account for the website, the app and the terminal.',
 				via: 'Continue with',
 				submit: 'Sign in',
 				noAccount: 'No account yet?',
@@ -228,6 +237,8 @@ export const ob = {
 				kicker: 'New account',
 				heading: `Create your *${N}* account`,
 				lead: 'One minute, no email. Right after, we match a model to your hardware.',
+				/** Meta description is longer than the on-page lead on the live site. */
+				metaDescription: 'Create an Enigma LABZ account in one minute, no email. Right after, we match a\u00a0model to your hardware.',
 				points: ['One account for the website, the app and the terminal', 'No email, no personal data', 'Google, GitHub, Hugging Face or a username and password'],
 				via: 'Sign up with',
 				submit: 'Create account',
@@ -271,6 +282,7 @@ export const ob = {
 		},
 		hw: {
 			title: 'Your hardware',
+			metaTitle: 'Your hardware: enter your graphics card\u00a0· Enigma LABZ',
 			lead: 'Type your graphics card and we fill in the rest. Everything is computed in your browser.',
 			gpu: 'Graphics card',
 			gpuPh: 'e.g. RTX 4070, RX 7900 XTX, Apple M4 Pro',
@@ -296,6 +308,7 @@ export const ob = {
 		},
 		result: {
 			title: 'Your result',
+			metaTitle: 'Your result: recommended model and forecast\u00a0· Enigma LABZ',
 			lead: 'Recommended model and speed forecast. Measured numbers are marked as measured; everything else is an estimate with a range.',
 			machine: 'Your computer',
 			edit: 'Change hardware',
@@ -396,6 +409,7 @@ export const ob = {
 		},
 		scan: {
 			title: 'Hardware scan',
+			metaTitle: 'Hardware scan for local AI: Windows, Linux, macOS',
 			lead: 'One command prints your computer’s specs and a short code to paste into the form. It sends nothing, needs no admin rights and writes no files.',
 			tabs: { linux: 'Linux', windows: 'Windows', macos: 'macOS' },
 			oneLiner: 'One line',

@@ -14,9 +14,12 @@
 		const ua = navigator.userAgent;
 		detected = /Mac OS X/.test(ua) ? 'macos' : /Linux/.test(ua) && !/Android/.test(ua) ? 'linux' : 'windows';
 	});
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head><title>{t.title}</title></svelte:head>
+<Seo title={t.title} description={t.lead} />
+
 
 <Shell title={t.title} lead={t.lead} wide back="/start/paths">
 	<ul class="oses" role="list">

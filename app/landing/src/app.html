@@ -42,6 +42,40 @@
 			})();
 		</script>
 		%sveltekit.head%
+		<!-- Icons at the root are declared here (not at the top of <head>) because that is where the
+		     live page has them; markup otherwise identical (see web-krok0b/klasy-html.py). -->
+		<link rel="icon" href="/favicon.ico" sizes="32x32">
+		<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+		<!-- Server-side overlays, kept as plain static files (not bundled): the live site loads them
+		     this way and `?v=` is the cache-bump rule — bump it whenever the file changes. -->
+		<link rel="stylesheet" href="/poprawki.css?v=3" />
+		<script src="/poprawki.js?v=1" defer></script>
+		<script>
+			// Analytics loads only after an explicit "accept" (ePrivacy art. 5(3)); /ruch.js is a
+			// shared script served from the host, not part of this build.
+			(function () {
+				function z() {
+					try {
+						var c = JSON.parse(localStorage.getItem('consent') || 'null');
+						return !!(c && c.v === 1 && c.analytics === true);
+					} catch (e) {
+						return false;
+					}
+				}
+				window.RuchZgoda = z;
+				var w = 0;
+				function l() {
+					if (w || !z()) return;
+					w = 1;
+					var s = document.createElement('script');
+					s.src = '/ruch.js?v=2';
+					document.head.appendChild(s);
+				}
+				l();
+				addEventListener('click', function () { setTimeout(l, 0); }, true);
+				addEventListener('storage', l);
+			})();
+		</script>
 	</head>
 	<body data-sveltekit-preload-data="hover">
 		<div style="display: contents">%sveltekit.body%</div>

@@ -53,12 +53,15 @@
 		if (invalid) return invalid.focus();
 		run({ mode: 'signup', username: username.trim(), password });
 	}
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{s.title}</title>
-	<meta name="description" content={s.lead} />
+	<meta name="description" content={s.metaDescription} />
 </svelte:head>
+
+<Seo title={s.title} description={s.metaDescription} />
 
 <Scene labelledby="signup-title" focus="62% 50%">
 	<Glass width="62rem">

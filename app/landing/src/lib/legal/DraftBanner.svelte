@@ -2,17 +2,21 @@
 	import type { Lang } from '$lib/i18n';
 	import { LEGAL_VERSION } from './docs';
 
-	let { lang }: { lang: Lang } = $props();
+	/**
+	 * The version is per document (docs.ts): privacy and cookies are ahead of the rest, so the
+	 * banner must not read a global constant. Defaults to the v0.1 baseline for the older drafts.
+	 */
+	let { lang, version = LEGAL_VERSION }: { lang: Lang; version?: Record<Lang, string> } = $props();
 </script>
 
 <div class="notice notice--warn draft" role="note">
 	<span class="notice__icon" aria-hidden="true">!</span>
 	<div class="stack">
 		{#if lang === 'pl'}
-			<p><strong>Projekt do weryfikacji przez prawnika.</strong> {LEGAL_VERSION.pl}. Treść nie jest jeszcze wiążąca i nie stanowi porady prawnej.</p>
+			<p><strong>Projekt do weryfikacji przez prawnika.</strong> {version.pl}. Treść nie jest jeszcze wiążąca i nie stanowi porady prawnej.</p>
 			<p>Spółka nie została jeszcze zarejestrowana, dlatego pola z danymi administratora i dostawcy są celowo puste. <span class="badge badge--soon wrap">Dane firmy zostaną uzupełnione po rejestracji spółki (sp. z o.o.)</span></p>
 		{:else}
-			<p><strong>Draft — to be reviewed by a lawyer.</strong> {LEGAL_VERSION.en}. This text is not yet binding and is not legal advice.</p>
+			<p><strong>Draft — to be reviewed by a lawyer.</strong> {version.en}. This text is not yet binding and is not legal advice.</p>
 			<p>The company has not been registered yet, so the controller and provider data fields are intentionally empty. <span class="badge badge--soon wrap">Company details will be added once the company (sp. z o.o.) is registered</span></p>
 		{/if}
 	</div>

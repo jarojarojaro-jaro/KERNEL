@@ -14,9 +14,12 @@ export function currentLang(): Lang {
  * `href('en', '/start')` → `/en/start/`, `href('pl', '/#faq')` → `/pl/#faq`.
  */
 export function href(lang: Lang, path = '/'): string {
-	const [p, hash] = path.split('#');
+	const [p0, hash] = path.split('#');
+	const [p, query] = p0.split('?');
 	const clean = p.replace(/^\/+|\/+$/g, '');
-	return `/${lang}/${clean ? `${clean}/` : ''}${hash ? `#${hash}` : ''}`;
+	const tail = clean ? `${clean}/` : '';
+	const q = query ? `?${query}` : '';
+	return `/${lang}/${tail}${q}${hash ? `#${hash}` : ''}`;
 }
 
 /** Localised first path segment of the cards explorer: `/pl/karty/`, `/en/cards/`. */

@@ -91,9 +91,12 @@
 		if (!gpu.unified && !gpu.cpuOnly) q.set('vram', String(vram));
 		goto(`${href(lang, '/start/result')}?${q}`);
 	}
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
-<svelte:head><title>{t.title}</title></svelte:head>
+<svelte:head><title>{t.metaTitle}</title></svelte:head>
+<Seo title={t.metaTitle} description={t.lead} />
+
 
 <Shell title={t.title} lead={t.lead} wide back="/start/paths">
 	<div class="grid">

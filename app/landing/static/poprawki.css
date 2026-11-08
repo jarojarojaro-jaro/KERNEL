@@ -1,0 +1,126 @@
+/* Poprawki enigmalabz.com (głównie mobile), 21.10.2026.
+   Nakładka na zbudowaną stronę: przy następnym buildzie ze źródeł przenieść do komponentów Svelte. */
+
+/* Przyciski „Odtwórz ponownie” – usunięte wszędzie */
+.replay.svelte-yax2fz { display: none !important; }
+
+/* Menu mobilne: backdrop-filter na .capsule robił z niej blok zawierający dla nav{position:fixed},
+   panel menu miał więc wysokość kapsuły i strona prześwitywała spod linków */
+.site-header.open .capsule.svelte-eotu6o { -webkit-backdrop-filter: none; backdrop-filter: none; }
+.site-header.open .nav.svelte-eotu6o { background: rgb(5 5 6 / .98); }
+
+/* Liczby na bębnach (odometr): na ekranach dotykowych pokazujemy gotową wartość zamiast animowanych
+   bębnów – w Safari na iOS bębny potrafiły zatrzymać się w pół obrotu */
+@media (hover: none) {
+  .odo.svelte-eaiust .drums.svelte-eaiust { display: none !important; }
+  .odo.svelte-eaiust > .sr-only {
+    position: static !important; width: auto !important; height: auto !important;
+    margin: 0 !important; padding: 0 !important; overflow: visible !important;
+    clip: auto !important; clip-path: none !important; white-space: nowrap !important;
+  }
+}
+
+/* „Sprawdź swoją kartę” na końcu strony: ten sam płonący przycisk co w hero */
+@property --ig { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+@keyframes enx-ig-turn { to { --ig: 360deg; } }
+section.final .cta.cta--bone {
+  isolation: isolate; gap: .8rem; min-height: 3.4rem; padding: 0 1.4rem 0 1.6rem;
+  border: 0; border-radius: 14px;
+  background: linear-gradient(180deg, #17171b, #0b0b0d);
+  box-shadow: inset 0 1px #ffffff14, 0 16px 40px -18px #ff7a1a8c;
+  color: var(--text-hi); font-weight: 680; letter-spacing: -.01em;
+}
+section.final .cta.cta--bone:hover,
+section.final .cta.cta--bone:focus-visible {
+  background: linear-gradient(180deg, #1c1c21, #0e0e10);
+  box-shadow: inset 0 1px #ffffff1f, 0 18px 44px -16px #ff7a1aa6;
+  color: var(--text-hi);
+}
+section.final .cta.cta--bone::before,
+section.final .cta.cta--bone::after {
+  content: ""; position: absolute; border-radius: inherit; pointer-events: none;
+  background: conic-gradient(from var(--ig), var(--heat-2), var(--heat-3) 12%, var(--heat-5) 20%,
+    var(--heat-4) 28%, rgb(255 122 26 / .18) 42%, rgb(255 122 26 / .12) 78%, var(--heat-2));
+  animation: enx-ig-turn 5.5s linear infinite;
+}
+section.final .cta.cta--bone::before {
+  inset: 0; padding: 1.5px;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+}
+section.final .cta.cta--bone::after { inset: -3px; z-index: -1; filter: blur(14px); opacity: .4; transition: opacity .35s var(--ease-out); }
+section.final .cta.cta--bone:hover::after,
+section.final .cta.cta--bone:focus-visible::after { opacity: .85; }
+section.final .cta.cta--bone:focus-visible { outline: 2px solid var(--heat-4); outline-offset: 4px; }
+@media (prefers-reduced-motion: reduce) {
+  section.final .cta.cta--bone::before, section.final .cta.cta--bone::after { animation: none; }
+}
+
+/* Pojedynek na końcu strony: bez podpisu i bez przycisku start/stop */
+section.final figcaption.cap.svelte-tdtsk { display: none; }
+.pp.svelte-tdtsk { display: none !important; }
+
+/* Nagłówek „Z 35,9 do 114,8 t/s”: liczba zawsze razem z jednostką */
+#engine .statement .hx-accent { white-space: nowrap; }
+
+/* Hero: „Ten sam sprzęt. Ten sam model. Po prostu szybciej.” trochę większe (desktop i tablet) */
+@media (min-width: 641px) {
+  /* górna granica z szerokości: „Po prostu szybciej.” musi zmieścić się w jednej linii */
+  .title.svelte-y3oet3 { font-size: min(calc((100vw - 8rem) / 9.2), 19svh, 9.6rem); }
+  .title.svelte-y3oet3 .kin--cold { font-size: .46em; }
+  /* „3,2×” przesuwa skrypt poprawki.js pod przycisk – nad pasem z odpowiedziami */
+  section.hero .near .center { position: relative; z-index: 2; }
+}
+
+@media (max-width: 760px) {
+  /* Kroki 01–03: mniej pustego miejsca nad kolejnymi krokami */
+  .layout.svelte-1vn2szq, .layout.svelte-ulvy76, .layout.svelte-1hdrw4m { padding-top: 3rem; }
+
+  /* Nagłówek kroku wyraźnie mniejszy od nagłówka sekcji („Trzy kroki. Każdy zmierzony.”) */
+  #how .sh h3.duo { font-size: 1.7rem; line-height: 1.08; letter-spacing: -.025em; }
+
+  /* Krok 03: etykieta linii „70 t/s” nachodziła na wartość 42,9 – przeniesiona na prawą krawędź */
+  .redzone.svelte-1hdrw4m { z-index: 3; }
+  .redzone.svelte-1hdrw4m > span { left: auto; right: .25rem; padding: 0 .3rem; border-radius: 4px; background: rgb(10 10 12 / .8); }
+
+  /* „Ten sam model, ta sama jakość”: powiększenie nie nachodzi na podpis „nasz silnik i szum llama.cpp”
+     (margines zapada się z margin-bottom wykresu, więc musi być od niego większy) */
+  #quality .inset.svelte-1d47tnu { margin-top: 4.75rem; }
+
+  /* „Z 35,9 do 114,8 t/s”: zamiast listy zmian jeden znacznik – przyrost wobec typowej aplikacji (35,9 t/s) */
+  #engine .did.svelte-21gjal { display: none !important; }
+  #engine .step.svelte-21gjal { justify-content: space-between; flex-wrap: nowrap; }
+  #engine .step.svelte-21gjal::after {
+    flex: none; min-width: 4.4rem; text-align: center; padding: .15rem .55rem; border-radius: var(--r-pill);
+    border: 1px solid rgb(255 122 26 / .45); background: #ff7a1a1a;
+    font-size: var(--fs-2xs); font-weight: 700; line-height: 1.25; color: var(--text-hi);
+    font-variant-numeric: tabular-nums;
+  }
+  #engine .step.svelte-21gjal:nth-child(1)::after { content: "0%"; border-color: var(--line-strong); background: transparent; color: var(--text-mute); }
+  #engine .step.svelte-21gjal:nth-child(2)::after { content: "+67%"; }
+  #engine .step.svelte-21gjal:nth-child(3)::after { content: "+108%"; }
+  #engine .step.svelte-21gjal:nth-child(4)::after { content: "+204%"; }
+  #engine .step.svelte-21gjal:nth-child(5)::after { content: "+220%"; border-color: var(--heat-4); background: #ffc15a29; }
+
+  /* „Przyspieszenia nie zmieniają tekstu”: trzy równe kafelki w jednym rzędzie */
+  #quality .same .sl.svelte-1d47tnu { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .5rem; }
+  #quality .same .sl.svelte-1d47tnu > li {
+    display: grid; justify-items: center; align-content: center; gap: .35rem; min-height: 4.6rem;
+    margin: 0; padding: .7rem .4rem; border-radius: 14px; text-align: center;
+  }
+  #quality .same .sl.svelte-1d47tnu .ok { font-size: 1rem; line-height: 1; }
+  #quality .same .sl.svelte-1d47tnu .sn { font-size: .8rem; line-height: 1.2; text-wrap: balance; }
+
+  /* „Sprawdź swoją kartę” na końcu strony: na środku */
+  section.final .ctas.svelte-1lo44zh { justify-content: center; }
+
+  /* Stopka kończy się napisem ENIGMA LABZ */
+  .f-bar.svelte-1wz1f3u { display: none; }
+}
+
+@media (max-width: 640px) {
+  /* „Zmierzone, karta po karcie”: nasza RX 7900 XTX jako pierwsza */
+  #cards .grid.svelte-1sj2cjk > li:has(a[href*="rx-7900-xtx"]) { order: -1; }
+}

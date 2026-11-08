@@ -21,6 +21,11 @@
 	const share = (v: number) => `${Math.round((v / gpu.vram!) * 100)}`;
 </script>
 
+<svelte:head>
+	<!-- A queued card has an estimate, not a measurement: keep it out of the index, follow the links. -->
+	<meta name="robots" content="noindex, follow" />
+</svelte:head>
+
 <VendorTheme vendor={gpu.vendor}>
 <CardHead id={gpu.id} {prefix} {short} vendor={gpu.vendor} vram={gpu.vram ?? null} heat={0} queued spec="{gpu.vram ? `${gpu.vram} GB · ` : ''}{gpu.arch}">
 	<div class="q">

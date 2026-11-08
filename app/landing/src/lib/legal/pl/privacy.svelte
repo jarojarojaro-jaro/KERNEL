@@ -3,7 +3,7 @@
 	import { href, type Lang } from '$lib/i18n';
 	import DraftBanner from '../DraftBanner.svelte';
 	import CompanyData from '../CompanyData.svelte';
-	import { LEGAL_VERSION } from '../docs';
+	import { LEGAL_VERSION_PRIVACY } from '../docs';
 
 	/** The document is written in one language; `lang` is accepted for a uniform registry API. */
 	let { lang: _lang }: { lang?: Lang } = $props();
@@ -11,9 +11,9 @@
 </script>
 
 <article class="prose legal">
-	<DraftBanner lang={L} />
+	<DraftBanner lang={L} version={LEGAL_VERSION_PRIVACY} />
 	<h1 class="h1">Polityka prywatności</h1>
-	<p class="source">{LEGAL_VERSION[L]}</p>
+	<p class="source">{LEGAL_VERSION_PRIVACY[L]}</p>
 	<nav aria-labelledby="toc-title" class="card card--inset toc">
 		<h2 id="toc-title" class="h3">Spis treści</h2>
 		<ol>
@@ -37,9 +37,9 @@
 	<CompanyData lang={L} fields={['legalName', 'address', 'krs', 'nip', 'email', 'dpo']} />
 	<p>Ocenimy, czy wyznaczenie inspektora ochrony danych jest obowiązkowe (art. 37 RODO); przy obecnym zakresie przetwarzania prawdopodobnie nie jest.</p>
 	<h2 id="zasada" class="h2">2. Zasada: przetwarzamy jak najmniej</h2>
-	<p>Produkt jest projektowany tak, aby działać lokalnie. Modele, polecenia (prompty) i rozmowy pozostają na Twoim urządzeniu i nigdy do nas nie trafiają. Telemetria w Aplikacji jest domyślnie wyłączona. Strona nie używa narzędzi analitycznych ani śledzących.</p>
+	<p>Produkt jest projektowany tak, aby działać lokalnie. Modele, polecenia (prompty) i rozmowy pozostają na Twoim urządzeniu i nigdy do nas nie trafiają. Telemetria w Aplikacji jest domyślnie wyłączona. Strona nie używa narzędzi śledzących, a własne statystyki odwiedzin włączamy tylko po Twojej zgodzie (punkt 3).</p>
 	<h2 id="strona" class="h2">3. Strona internetowa</h2>
-	<p>Nie stosujemy analityki, pikseli reklamowych ani profilowania. Serwer hostingu zapisuje techniczne logi żądań, w tym adres IP. Adres IP może stanowić daną osobową (wyrok TSUE z 19 października 2016 r., C-582/14, Breyer), dlatego traktujemy logi jako dane osobowe. Szczegóły dotyczące pamięci przeglądarki: <a href={href(L, '/legal/cookies')}>Polityka cookies</a>.</p>
+	<p>Nie stosujemy pikseli reklamowych ani profilowania. Po zgodzie na kategorię „analityka” w banerze cookies strona wysyła na nasz serwer własne statystyki odwiedzin, bez plików cookies i bez podmiotów trzecich: adres i tytuł odwiedzonej strony, domenę strony, z której przychodzisz, albo tag kampanii, szerokość ekranu, język przeglądarki, rodzaj urządzenia, przeglądarkę, system i czas spędzony na stronie. Adresu IP w statystykach nie zapisujemy: odwiedzającego rozpoznajemy tylko w obrębie jednego dnia, po skrócie (hash) adresu IP i przeglądarki zmieszanym z losową dzienną solą, którą usuwamy po dwóch dniach. Podstawą jest Twoja zgoda (art. 6 ust. 1 lit. a RODO), którą wycofasz w „Ustawieniach cookies” w stopce strony. Serwer hostingu zapisuje techniczne logi żądań, w tym adres IP. Adres IP może stanowić daną osobową (wyrok TSUE z 19 października 2016 r., C-582/14, Breyer), dlatego traktujemy logi jako dane osobowe. Szczegóły dotyczące pamięci przeglądarki: <a href={href(L, '/legal/cookies')}>Polityka cookies</a>.</p>
 	<h2 id="lista" class="h2">4. Lista oczekujących</h2>
 	<p>Jeśli zapiszesz się na listę oczekujących, przetwarzamy Twój adres e-mail oraz wybraną opcję cenową. Zapis wymaga potwierdzenia linkiem wysłanym e-mailem (double opt-in). Podstawą jest Twoja zgoda (art. 6 ust. 1 lit. a RODO), którą możesz wycofać w każdej chwili linkiem w każdej wiadomości lub e-mailem, bez wpływu na zgodność z prawem wcześniejszego przetwarzania.</p>
 	<p><strong>Stan obecny:</strong> zaplecze formularza nie zostało uruchomione — formularz na stronie nie wysyła obecnie żadnych danych.</p>

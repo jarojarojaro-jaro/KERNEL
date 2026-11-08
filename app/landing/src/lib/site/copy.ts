@@ -30,7 +30,7 @@ function deepNb<T>(v: T): T {
 const raw = {
 	pl: {
 		meta: {
-			title: `${N} — Ten sam sprzęt. Ten sam model. Po prostu szybciej.`,
+			title: `${N} — Ten sam sprzęt i model. Po prostu szybciej.`,
 			description: `${N} dobiera model AI do Twojej karty graficznej, mierzy go uczciwie i przyspiesza silnik. Lokalnie, bez wysyłania rozmów. Każda liczba ze źródłem.`
 		},
 		nav: {
@@ -249,8 +249,8 @@ const raw = {
 			prototype: 'Prototyp aplikacji',
 			draftNote: 'Dokumenty prawne to projekty do weryfikacji przez prawnika.',
 			company: 'Dane firmy zostaną uzupełnione po rejestracji spółki.',
-			credit: 'Silnik oparty na llama.cpp i ggml (MIT, © The ggml authors).',
-			aiMedia: 'Część grafik i wideo dekoracyjnych oraz zdjęcia sprzętu w katalogu kart wygenerowano AI (Higgsfield, OpenAI).'
+			credit: '',
+			aiMedia: ''
 		},
 		cookies: {
 			title: 'Prywatność na tej stronie',
@@ -263,7 +263,7 @@ const raw = {
 	en: {
 		meta: {
 			title: `${N} — Same hardware. Same model. Just faster.`,
-			description: `${N} picks the right AI model for your graphics card, measures it honestly and speeds up the engine. Local, your chats never leave your PC. Every number has a source.`
+			description: `${N} picks the right AI model for your graphics card, measures it honestly and speeds up the engine. Local: your chats never leave your PC.`
 		},
 		nav: {
 			how: 'How it works',
@@ -481,8 +481,8 @@ const raw = {
 			prototype: 'App prototype',
 			draftNote: 'Legal documents are drafts to be reviewed by a lawyer.',
 			company: 'Company details will be added once the company is registered.',
-			credit: 'Engine based on llama.cpp and ggml (MIT, © The ggml authors).',
-			aiMedia: 'Some decorative images and videos, and the hardware photos in the card catalogue, were generated with AI (Higgsfield, OpenAI).'
+			credit: '',
+			aiMedia: ''
 		},
 		cookies: {
 			title: 'Privacy on this site',

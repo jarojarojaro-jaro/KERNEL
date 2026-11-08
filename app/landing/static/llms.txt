@@ -1,0 +1,12 @@
+# Enigma LABZ
+> Silnik do lokalnego uruchamiania modeli językowych, który na tym samym sprzęcie i tym samym modelu daje więcej tokenów na sekundę niż zwykła konfiguracja. Projekt jest w fazie prototypu.
+
+Zmierzone wyniki (ten sam skrypt pomiarowy po obu stronach, metoda ABBA, odpowiedź 500 tokenów): Radeon RX 7900 XTX 35,9 → 114,8 t/s (3,2×), GeForce RTX 3090 42,9 → 93,3 t/s (2,2×), model Qwen3.8-27B. Skan sprzętu działa na Windows, Linux i macOS.
+
+## Najważniejsze strony
+- [Wyniki pomiarów](https://enigmalabz.com/pl/wyniki/): metoda i liczby
+- [Karty graficzne](https://enigmalabz.com/pl/karty/): zmierzone i oczekujące karty
+- [RX 7900 XTX](https://enigmalabz.com/pl/karty/rx-7900-xtx/): pomiar przed i po
+- [RTX 3090](https://enigmalabz.com/pl/karty/rtx-3090/): pomiar przed i po
+- [Skan sprzętu](https://enigmalabz.com/pl/scan/): komendy dla Windows, Linux, macOS
+- [English](https://enigmalabz.com/en/): wersja angielska

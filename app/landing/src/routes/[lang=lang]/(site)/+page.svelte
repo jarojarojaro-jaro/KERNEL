@@ -14,19 +14,20 @@
 	import SceneScan from '$lib/home/SceneScan.svelte';
 	import { currentLang } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
+	import Seo from '$lib/site/Seo.svelte';
+	import { homeGraph } from '$lib/site/jsonld';
 
 	const lang = $derived(currentLang());
 	const c = $derived(copy[lang]);
+	const ld = $derived(homeGraph(lang));
 </script>
 
 <svelte:head>
 	<title>{c.meta.title}</title>
 	<meta name="description" content={c.meta.description} />
-	<meta property="og:title" content={c.meta.title} />
-	<meta property="og:description" content={c.meta.description} />
-	<meta property="og:type" content="website" />
-	<meta property="og:locale" content={lang === 'pl' ? 'pl_PL' : 'en_US'} />
 </svelte:head>
+
+<Seo title={c.meta.title} description={c.meta.description} jsonld={ld ?? undefined} />
 
 <div class="grain" aria-hidden="true"></div>
 <div class="nav-fade" aria-hidden="true"></div>

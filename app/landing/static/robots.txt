@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /pl/app/
+Disallow: /en/app/
+
+Sitemap: https://enigmalabz.com/sitemap.xml

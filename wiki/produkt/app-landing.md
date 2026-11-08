@@ -27,6 +27,7 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 
 ## Powiązane
 - [[produkt/_hub|produkt]]
+- [[strona-zrodlo-rowna-zywej]]
 - [[app-system-projektowy]]
 - [[app-onboarding-prototyp]]
 - [[produkt-landing-i-onboarding]]

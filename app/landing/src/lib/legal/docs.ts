@@ -16,6 +16,19 @@ export const LEGAL_VERSION: Record<Lang, string> = {
 	en: 'Draft v0.1, 2026-10-16'
 };
 
+/**
+ * The version is per document, not global: on the live site only the privacy policy and the cookie
+ * policy are v0.2 (23.10), the other documents and the legal index are still v0.1 (16.10). v0.1
+ * claimed "no analytics is installed", which is no longer true — v0.2 describes the consent-gated
+ * page-view statistics, so those two documents must stay ahead of the rest.
+ */
+export const LEGAL_VERSION_PRIVACY: Record<Lang, string> = {
+	pl: 'Projekt v0.2, 2026-10-23',
+	en: 'Draft v0.2, 2026-10-23'
+};
+
+export const LEGAL_VERSION_COOKIES: Record<Lang, string> = LEGAL_VERSION_PRIVACY;
+
 export type LegalSlug = 'terms' | 'privacy' | 'cookies' | 'ai' | 'imprint';
 
 export interface LegalDoc {
@@ -44,7 +57,7 @@ export const LEGAL_DOCS: readonly LegalDoc[] = [
 			pl: 'Jakie dane przetwarzamy (niewiele), dlaczego, jak długo i jakie masz prawa (RODO).',
 			en: 'What data we process (very little), why, for how long, and your GDPR rights.'
 		},
-		version: LEGAL_VERSION,
+		version: LEGAL_VERSION_PRIVACY,
 		component: { pl: PrivacyPl, en: PrivacyEn }
 	},
 	{
@@ -54,7 +67,7 @@ export const LEGAL_DOCS: readonly LegalDoc[] = [
 			pl: 'Bez śledzących cookies. Pełna lista tego, co strona zapisuje w przeglądarce.',
 			en: 'No tracking cookies. A complete list of what the site stores in your browser.'
 		},
-		version: LEGAL_VERSION,
+		version: LEGAL_VERSION_COOKIES,
 		component: { pl: CookiesPl, en: CookiesEn }
 	},
 	{
