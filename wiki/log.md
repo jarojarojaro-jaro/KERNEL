@@ -272,3 +272,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-08] eksperyment | zapis prompt cache bez zerowania (#30137) + THP — niezmierzone
 [[2026-11-08-cachesave-30137]]: port #30137 + `LLAMA_SERVER_CACHE_HUGE=1` (THP, ponowne użycie bufora po eksmisji) na `l1-cachesave` 3152b0bfa, łatka topka-q63/0004; nie zbudowane ani zmierzone (koniec testów), job `qwen-opt/cachesave/` gotowy do wznowienia.
+
+## [2026-11-08] update | kvq-once: koniec testów
+[[2026-11-08-kvq-once-profil]]: ONCE=2 i okno uwagi draftu MTP przy 94k/199k nie zmierzone (joby anulowane przed startem); sekcja „Stan / do wznowienia”.

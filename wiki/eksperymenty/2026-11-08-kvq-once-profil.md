@@ -60,11 +60,17 @@ md5 krótkiego greedy zależy od tego, czy cache promptu zna już prefiks szablo
 
 Domyślne 2 bloki/SM najlepsze → KILL, KLD zbędne.
 
-## ONCE=2 (K też raz) — przerwany
+## ONCE=2 (K też raz) — nie zmierzone
 
-Wariant 47b6be451: każda fala pary dekwantuje połowę każdego bloku K i liczy KQ dla obu kafli (łańcuch WMMA `KQ_part[g]`), częściowe KQ drugiego kafla przez bufor VT 0 w LDS; bitowo z konstrukcji, 236 VGPR, LDS 54.0 KB. Pierwszy job (`kvq-once2.jobs`, 00:54) zakleszczył się na etapie budowania: `cpuheavy` w jobie czekał na slot CPU zajęty przez `cpuheavy --quiet`, które czekały na quiet.lock trzymany przez kolejkę ([[lekcja-cpuheavy-w-jobie-kolejki]]); job przerwany (BUILD FAILED, serwer odtworzony), ponowiony jako `kvq-once2b.jobs`.
+Wariant 47b6be451: każda fala pary dekwantuje połowę każdego bloku K i liczy KQ dla obu kafli (łańcuch WMMA `KQ_part[g]`), częściowe KQ drugiego kafla przez bufor VT 0 w LDS; bitowo z konstrukcji, 236 VGPR, 0 spilli, LDS 54.0 KB, zbudowany w `~/wt/kvq-once/build-hip`. Pierwszy job (`kvq-once2.jobs`, 00:54) zakleszczył się na etapie budowania: `cpuheavy` w jobie czekał na slot CPU zajęty przez `cpuheavy --quiet`, które czekały na quiet.lock trzymany przez kolejkę ([[lekcja-cpuheavy-w-jobie-kolejki]]); przerwany (BUILD FAILED, serwer odtworzony). Ponowienie `kvq-once2b.jobs` anulowane przed startem (koniec testów 2026-11-08, decyzja użytkownika). **Nie zmierzone.**
 
-Okno uwagi draftu MTP (`--spec-mtp-window`, łatka 0046, [[latki-spekulacji]]) już istnieje i przegrało przy 27k/62k; ponowny pomiar przy 94k/199k w `mtpw.jobs`.
+Okno uwagi draftu MTP: już istnieje (`--spec-mtp-window`, łatka 0046, [[latki-spekulacji]]) i przegrało przy 27k/62k (W=8192: akceptacja 3.31 → 2.78, 105 → 90 t/s). Ponowny pomiar przy 94k/199k (`mtpw.jobs`, xtxbench t1, W 4k/16k/64k) anulowany przed startem. **Nie zmierzone.**
+
+## Stan / do wznowienia
+- Gałąź `kvq-once` w `~/wt/kvq-once` (1d0fa32bb ONCE=1, 47b6be451 ONCE=2), build `build-hip` aktualny; łatki i skrypty w `qwen-opt/patches/kvq-once/` i `qwen-opt/kvq-once/` (KERNEL). Produkcja nietknięta (oba przełączniki domyślnie wyłączone, nic nie wdrożone).
+- Wznowienie ONCE=2: `run-jobs.sh ~/qwen-opt/kvq-once/kvq-once2b.jobs` (~50 min: check + fa_hash, kperf ONCE 0/1/2, pmc odczyt DRAM, md5 + spec ABBA, long 199k ABBA). Bramka: FA ≥ −10% przy 199k i bitowo =. Cel dla nb5 przy 98k: ~172 µs (czas nb1).
+- Wznowienie okna MTP: `run-jobs.sh ~/qwen-opt/kvq-once/mtpw.jobs`; kill, jeśli akceptacja spada > 1–2% (zysk maks. ~1.3 ms na krok przy 199k).
+- Profil: kolejne cele z tego pomiaru to atencja draftu MTP (~1.3 ms przy 199k) i maska KQ na hoście (355 µs przy 199k).
 
 ## Powiązane
 - [[eksperymenty/_hub|eksperymenty]]
