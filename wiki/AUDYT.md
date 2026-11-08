@@ -3060,6 +3060,10 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[2026-11-08-kvq-once-profil]] — `~/qwen-opt/kvq-once/run-1107-2315/summary.txt` (check, kperf + przegląd podziałów, md5/spec ABBA, long ABBA, hostgap, rocprofv3 N0/N1), `run2-1108-0054/summary.txt` (przerwany: BUILD FAILED); liczby przepisane z summary, hostgap z poprawionego parsera (`hg-parsed.txt`; summary miało przesunięte etykiety głębokości).
 - [[kv-raz-na-weryfikacje]] — sekcja Wynik, status aktualne.
 
+## Ingest 2026-11-08 (cachesave #30137)
+
+- [[2026-11-08-cachesave-30137]] — źródło: diff upstream e152332a1, branch l1-cachesave 3152b0bfa; brak pomiarów (job anulowany), status w notatce „niezmierzone”.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

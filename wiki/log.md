@@ -269,3 +269,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-08] eksperyment | kvq KV raz na weryfikację + profil 199k — KILL
 [[2026-11-08-kvq-once-profil]]: FA = 100% nachylenia kroku 1.7k→199k (11.3 ms, 30% GPU); `GGML_HIP_KVQ_ONCE=1` bitowo = (md5 1.7k/94k/199k), FA −6.1% przy 199k (próg −10%) → KILL, e2e 199k +1.79%, 94k +0.89%; podziały kvq: 2 bloki/SM najlepsze → KILL. ONCE=2 (job przerwany zakleszczeniem cpuheavy) ponowiony.
+
+## [2026-11-08] eksperyment | zapis prompt cache bez zerowania (#30137) + THP — niezmierzone
+[[2026-11-08-cachesave-30137]]: port #30137 + `LLAMA_SERVER_CACHE_HUGE=1` (THP, ponowne użycie bufora po eksmisji) na `l1-cachesave` 3152b0bfa, łatka topka-q63/0004; nie zbudowane ani zmierzone (koniec testów), job `qwen-opt/cachesave/` gotowy do wznowienia.
