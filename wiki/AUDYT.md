@@ -3055,6 +3055,11 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - `product/research/68a-rdna3-kernele.md`, `68b-spekulacja-nowe.md`, `68c-dlugi-kontekst-gdn.md`, `68d-swieze-od-spolecznosci.md`, `68-SYNTEZA.md` — ranking 10 bezstratnych pomysłów dla XTX w final mode; decode GEMV na szczycie (81–88% pasma), rezerwy w atencji weryfikacji, prefillu FA, kosztach hosta i dynamicznej głębokości draftu.
 - [[2026-11-07-q6k-mmq-skale]] — wynik negatywny (0,0%), łatka usunięta; [[mmq-q6k-skale-lds]] zamknięta.
 
+## Ingest 2026-11-08 (kvq-once, profil kroku)
+
+- [[2026-11-08-kvq-once-profil]] — `~/qwen-opt/kvq-once/run-1107-2315/summary.txt` (check, kperf + przegląd podziałów, md5/spec ABBA, long ABBA, hostgap, rocprofv3 N0/N1), `run2-1108-0054/summary.txt` (przerwany: BUILD FAILED); liczby przepisane z summary, hostgap z poprawionego parsera (`hg-parsed.txt`; summary miało przesunięte etykiety głębokości).
+- [[kv-raz-na-weryfikacje]] — sekcja Wynik, status aktualne.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

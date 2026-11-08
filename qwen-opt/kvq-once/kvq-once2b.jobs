@@ -1,0 +1,3 @@
+# kvq-once follow-up, resubmitted (2026-11-08): the first try deadlocked in its build stage (cpuheavy waited for a CPU slot held by
+# cpuheavy --quiet jobs that wait for the queue's quiet lock). Build now runs plain nice/taskset (link only, already done).
+kvq-once2b|5400|~/qwen-opt/kvq-once|bash job2b.sh

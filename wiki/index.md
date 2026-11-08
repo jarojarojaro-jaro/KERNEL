@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (48)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (68)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (69)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (116)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -76,6 +76,8 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-08 [[lekcja-cpuheavy-w-jobie-kolejki|`cpuheavy` wywołany z wnętrza joba kolejki GPU = zakleszczenie]]
+- 2026-11-08 [[kv-raz-na-weryfikacje|KV czytane raz na weryfikację (plan #8): trzy wzorce]]
+- 2026-11-08 [[2026-11-08-kvq-once-profil|kvq: KV raz na weryfikację MTP (`GGML_HIP_KVQ_ONCE`) i profil kroku przy długim kontekście (2026-11-07/08)]]
 - 2026-11-07 [[raport-67-kampania-nvidia|Raport 67: kampania NVIDIA na Vast (Enigma) — trzy części]]
 - 2026-11-07 [[raport-66-synteza|Raport 66: Strata 0.2.12, Maya, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM, Flash-Next]]
 - 2026-11-07 [[raport-54-mniej-granic|Raport 54: mniej granic dispatchy w kroku weryfikacji]]
@@ -88,8 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-07 [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]]
 - 2026-11-07 [[hyperkernel|Hyperkernel (Hyperstition): rezydentny megakernel na B300]]
 - 2026-11-07 [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]]
-- 2026-11-07 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
-- 2026-11-07 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
 
-Razem 719 notatek. Wygenerowano 2026-11-08 przez `tools/wiki.py index`.
+Razem 720 notatek. Wygenerowano 2026-11-08 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -266,3 +266,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-08] lekcja | cpuheavy w jobie kolejki
 [[lekcja-cpuheavy-w-jobie-kolejki]]: zakleszczenie kvq-once2 (quiet.lock); kolejność biletów GPU ustawiona wg wartości.
+
+## [2026-11-08] eksperyment | kvq KV raz na weryfikację + profil 199k — KILL
+[[2026-11-08-kvq-once-profil]]: FA = 100% nachylenia kroku 1.7k→199k (11.3 ms, 30% GPU); `GGML_HIP_KVQ_ONCE=1` bitowo = (md5 1.7k/94k/199k), FA −6.1% przy 199k (próg −10%) → KILL, e2e 199k +1.79%, 94k +0.89%; podziały kvq: 2 bloki/SM najlepsze → KILL. ONCE=2 (job przerwany zakleszczeniem cpuheavy) ponowiony.

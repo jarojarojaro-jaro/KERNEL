@@ -1,8 +1,8 @@
-From f3f4703d761170d32209f66e42313b20ba581294 Mon Sep 17 00:00:00 2001
+From 1d0fa32bbe6b381439a4802d202c5be1b7c077be Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
 Date: Sat, 7 Nov 2026 22:42:48 +0000
-Subject: [PATCH] kvq-once (report 66 items 2-3): GGML_HIP_KVQ_ONCE=1 reads the
- q4_0 KV once per MTP verify; kvq split knobs
+Subject: [PATCH 1/2] kvq-once (report 66 items 2-3): GGML_HIP_KVQ_ONCE=1 reads
+ the q4_0 KV once per MTP verify; kvq split knobs
 
 flash_attn_ext_kvq gets an ngroups template parameter. ngroups == 2 (q4_0, D 256, an even number of 16-column Q tiles:
 Qwen3.5/3.8 verify of 3-5, 9-10 or 14-16 tokens at GQA 6) runs one block of 2 x 8 warps per 2 adjacent Q tiles: warp w
@@ -20,12 +20,12 @@ rows per split) are sweep knobs; unset = the old split. Other split points chang
 
 test-backend-ops: q4_0 GQA 6 eval cases with nb 10 and 16 (4 and 6 tiles), perf cases at kv 196608.
 ---
- ggml/src/ggml-cuda/fattn-kvq.cu | 188 ++++++++++++++++++++++++--------
+ ggml/src/ggml-cuda/fattn-kvq.cu | 191 +++++++++++++++++++++++++-------
  tests/test-backend-ops.cpp      |   6 +-
- 2 files changed, 148 insertions(+), 46 deletions(-)
+ 2 files changed, 151 insertions(+), 46 deletions(-)
 
 diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
-index 1476ba4f2..8f73eb1fb 100644
+index 1476ba4f2..c04227030 100644
 --- a/ggml/src/ggml-cuda/fattn-kvq.cu
 +++ b/ggml/src/ggml-cuda/fattn-kvq.cu
 @@ -71,11 +71,17 @@ static constexpr __host__ __device__ int fattn_kvq_lane_words() {
@@ -212,7 +212,7 @@ index 1476ba4f2..8f73eb1fb 100644
              const char * VT_src = VT_lds + (ib % 2)*fattn_kvq_nbytes_VT;
  #pragma unroll
              for (int tt = 0; tt < 4; ++tt) {
-@@ -502,8 +535,47 @@ static __global__ void flash_attn_ext_kvq(
+@@ -502,8 +535,50 @@ static __global__ void flash_attn_ext_kvq(
                  const fattn_kvq_u8 A = {v0.x, v0.y, v0.z, v0.w, v1.x, v1.y, v1.z, v1.w};
                  VKQ[t] = fattn_kvq_wmma(A, B_P, VKQ[t]);
              }
@@ -238,18 +238,21 @@ index 1476ba4f2..8f73eb1fb 100644
 +                fattn_kvq_pair_wait(pair_sync + 2 + (grp ^ 1), pair_step + ib - 1);
 +                V_to_lds(ib);
 +                fattn_kvq_pair_post(pair_sync + ib % 2, (pair_step + ib)/2 + 1);
-+                if (ib % nblocks_v == nblocks_v - 1) {
-+                    // all V blocks of the warp are in shared memory: the registers take the next KV rows
-+                    fattn_kvq_load<V_bytes, V_align>(V_raw, V_row + k0_next*nb21);
-+                }
 +            };
 +            if (grp == 0) {
 +                produce(0);
 +            }
 +#pragma unroll
 +            for (int ib = 0; ib < nblocks_l; ++ib) {
-+                if (ib + 1 < nblocks_l && (ib + 1)/nblocks_v == grp) {
-+                    produce(ib + 1);
++                if (ib + 1 < nblocks_l) {
++                    if ((ib + 1)/nblocks_v == grp) {
++                        produce(ib + 1);
++                    }
++                } else {
++                    // Both groups have their V blocks in shared memory: the registers take the next KV rows. The load is
++                    // issued by both groups at the same point (as for ngroups == 1, after the K load of the next rows),
++                    // so the waits for the K and V data are counted exactly.
++                    fattn_kvq_load<V_bytes, V_align>(V_raw, V_row + k0_next*nb21);
 +                }
 +                fattn_kvq_pair_wait(pair_sync + ib % 2, (pair_step + ib)/2 + 1);
 +                VT_mma(ib);
@@ -261,7 +264,7 @@ index 1476ba4f2..8f73eb1fb 100644
      }
  
      // Each half of the wave summed up the KQ values of half of the KV rows:
-@@ -511,8 +583,9 @@ static __global__ void flash_attn_ext_kvq(
+@@ -511,8 +586,9 @@ static __global__ void flash_attn_ext_kvq(
  
      // Combine the results of the warps in shared memory:
      __syncthreads();
@@ -273,7 +276,7 @@ index 1476ba4f2..8f73eb1fb 100644
  
      if (h == 0) {
          meta_lds[warp*ncols + r] = make_float2(KQ_max, KQ_sum);
-@@ -545,7 +618,7 @@ static __global__ void flash_attn_ext_kvq(
+@@ -545,7 +621,7 @@ static __global__ void flash_attn_ext_kvq(
      for (int i = warp*WARP_SIZE + lane; i < ncols*D; i += nwarps*WARP_SIZE) {
          const int c   = i / D;
          const int d   = i % D;
@@ -282,7 +285,7 @@ index 1476ba4f2..8f73eb1fb 100644
          if (col >= ncols_total) {
              break;
          }
-@@ -612,7 +685,14 @@ static __global__ void flash_attn_kvq_combine_fwht(
+@@ -612,7 +688,14 @@ static __global__ void flash_attn_kvq_combine_fwht(
      }
  }
  
@@ -297,7 +300,7 @@ index 1476ba4f2..8f73eb1fb 100644
  template <int nwarps>
  static int ggml_cuda_fattn_kvq_nsplit(const ggml_tensor * dst, const int nsm, int & units_per_split) {
      const ggml_tensor * Q = dst->src[0];
-@@ -626,16 +706,24 @@ static int ggml_cuda_fattn_kvq_nsplit(const ggml_tensor * dst, const int nsm, in
+@@ -626,16 +709,24 @@ static int ggml_cuda_fattn_kvq_nsplit(const ggml_tensor * dst, const int nsm, in
      // combining the results. q8_0: 1 block per WGP, the twice as large K/V rows saturate the memory with fewer streams
      // (LFM2 decode, D 64, 8 KV heads, in the model: 129 us at 98k context with 1 block per WGP, 147 us with 2 or 3,
      // 162 us with 8 splits = unbalanced; 32k: 47 vs 53 us).
@@ -324,7 +327,7 @@ index 1476ba4f2..8f73eb1fb 100644
  static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, ggml_tensor * dst,
                                                float * fwht_dst, block_q8_1 * fwht_q8) {
      const ggml_tensor * Q    = dst->src[0];
-@@ -652,7 +740,7 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+@@ -652,7 +743,7 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
      memcpy(&scale, (const float *) dst->op_params + 0, sizeof(float));
  
      constexpr int    ncols         = fattn_kvq_ncols;
@@ -333,7 +336,7 @@ index 1476ba4f2..8f73eb1fb 100644
  
      const int id  = ggml_cuda_get_device();
      const int nsm = ggml_cuda_info().devices[id].nsm;
-@@ -662,8 +750,9 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+@@ -662,8 +753,9 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
      const int ncols_total = Q->ne[1] * gqa_ratio;
      const int ntiles_x    = (ncols_total + ncols - 1) / ncols;
      const int nblocks_z   = K->ne[2] * Q->ne[3];
@@ -344,7 +347,7 @@ index 1476ba4f2..8f73eb1fb 100644
  
      int units_per_split;
      const int nsplit       = ggml_cuda_fattn_kvq_nsplit<nwarps>(dst, nsm, units_per_split);
-@@ -678,8 +767,8 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+@@ -678,8 +770,8 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
          dst_tmp_meta.alloc(size_t(nsplit)*ggml_nrows(dst));
      }
  
@@ -355,7 +358,7 @@ index 1476ba4f2..8f73eb1fb 100644
      ggml_cuda_kernel_launch_params launch_params(blocks_num, block_dim, nbytes_shared, stream);
      ggml_cuda_kernel_launch(kernel, launch_params,
          (const char *) Q->data, (const char *) K->data, (const char *) V->data,
-@@ -783,13 +872,26 @@ static constexpr int fattn_kvq_nwarps = 8;
+@@ -783,13 +875,26 @@ static constexpr int fattn_kvq_nwarps = 8;
  void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst, float * fwht_dst, block_q8_1 * fwht_q8) {
      constexpr int nwarps = fattn_kvq_nwarps;
      const bool q8 = dst->src[1]->type == GGML_TYPE_Q8_0;

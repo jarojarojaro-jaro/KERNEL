@@ -1,0 +1,3 @@
+# 66-SYNTEZA items 1-3 (2026-11-07, XtxKvOnce): kvq KV-once verify (GGML_HIP_KVQ_ONCE) + split sweep + step profile, final mode.
+# ~2 h of GPU; STAGES=check,kperf,md5,long,hostgap,prof (subset: prefix the command with STAGES=...).
+kvq-once|10800|~/qwen-opt/kvq-once|bash job.sh
