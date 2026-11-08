@@ -128,11 +128,20 @@ def stamp_generation(build: Path, n: int) -> int:
     return changed
 
 
+def absolutize(data: str) -> str:
+    """SvelteKit prerenders /404/ with `../` because the page sits one level deep, but Apache's
+    `ErrorDocument 404 /404.html` serves that markup from the root for ANY missing URL, so every
+    relative reference would resolve against the requested path and 404 again. The live page uses
+    absolute `/` references; this does the same. Only resource references exist in that file
+    (`href`/`src`, dynamic `import()`, CSS `url()`), never text."""
+    return data.replace('"../', '"/').replace('(../', '(/').replace("'../", "'/")
+
+
 def copy_404(build: Path) -> bool:
     """`ErrorDocument 404 /404.html` needs the prerendered page at the root."""
     src = build / "404" / "index.html"
     if src.exists():
-        (build / "404.html").write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+        (build / "404.html").write_text(absolutize(src.read_text(encoding="utf-8")), encoding="utf-8")
         return True
     return (build / "404.html").exists()
 

@@ -11,7 +11,7 @@ status: aktualne
 
 Ręczne dodatki z 23–24.10 są teraz w źródle, nie tylko na serwerze: `poprawki.css` i `poprawki.js` (ładowane z `?v=`, bump po każdej zmianie pliku), skrypt zgody + `/ruch.js`, favicony, `og-pl.jpg`/`og-en.jpg`, `robots.txt`, `llms.txt`, trasa `/404` prerenderowana do `404.html`, `.htaccess` w `scripts/deploy-ftp.py`.
 
-Kluczowe: `deploy-ftp.py` zmienia nazwę `_app/immutable` na `_app/i<N>` i przepisuje 88 HTML, bo `.htaccess` cache'uje `^/_app/i\d+/` na rok; `N` z `scripts/.generation` (start 4, żywa ma i2/i3). Poprawki w źródle przy okazji tej roboty: `href()` w `i18n.ts` doklejał `/` po query stringu (`/en/cards/compare/?a=x&b=y/` zamiast `...b=y`), a `<link>` ikon trafił w to samo miejsce `<head>`, co na żywej.
+Kluczowe: `deploy-ftp.py` zmienia nazwę `_app/immutable` na `_app/i<N>` i przepisuje 88 HTML, bo `.htaccess` cache'uje `^/_app/i\d+/` na rok; `N` z `scripts/.generation` (start 4, żywa ma i2/i3). `copy_404()` dodatkowo zamienia w `404.html` odwołania `../` na `/` (`absolutize()`), bo `ErrorDocument 404 /404.html` serwuje ten plik pod dowolnym brakującym adresem — ze ścieżką względną przeglądarka żądała `/<żądany-katalog>/_app/iN/...` i wszystkie zasoby wracały 404 (zmierzone: 26/27, pusty ekran). Po poprawce 53/53 zasobów < 400 pod `/pl/karty/rx-7900-xtx/nie-ma/`. Poprawki w źródle przy okazji tej roboty: `href()` w `i18n.ts` doklejał `/` po query stringu (`/en/cards/compare/?a=x&b=y/` zamiast `...b=y`), a `<link>` ikon trafił w to samo miejsce `<head>`, co na żywej.
 
 Build: `PUBLIC_SITE_PUBLIC=1 PUBLIC_SITE_ORIGIN=https://enigmalabz.com bun x vite build` — nie `bun run build`, bo `sync-results` w klonie bez `scorecard.json` wyciera liczby z `cards.json`.
 
