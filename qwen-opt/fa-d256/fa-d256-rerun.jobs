@@ -1,0 +1,11 @@
+# rerun 2026-11-09 (XtxRunner): first run failed in gate (test-backend-ops rc=127, libhipblas not in RUNPATH; fixed in common.sh). Build already done -> no fa-build step.
+fa-stop8080|200|~/qwen-opt/fa-d256|./chat8080.sh stop
+fa-isa|120|~/qwen-opt/fa-d256|[ -f BUILD_OK ] && ./isa.sh
+fa-gate|3600|~/qwen-opt/fa-d256|./gate.sh
+fa-micro|2400|~/qwen-opt/fa-d256|./micro.sh
+fa-md5|3000|~/qwen-opt/fa-d256|./md5.sh
+fa-select|60|~/qwen-opt/fa-d256|python3 ./select.py
+fa-bench|2700|~/qwen-opt/fa-d256|./bench.sh
+fa-armA|2400|~/qwen-opt/fa-d256|./arm.sh A 0
+fa-armB|2400|~/qwen-opt/fa-d256|./arm.sh B BEST
+fa-restore8080|400|~/qwen-opt/fa-d256|./chat8080.sh restore
