@@ -14,8 +14,9 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (33)
+## Notatki (34)
 
+- [[amd-adrenalin-zapisy-ssd|AMD Adrenalin: ciągłe zapisy SSD przez `atieclxx.exe` (Windows)]] — Usługa AMD External Events Utility (`atieclxx.exe`) w sterownikach 26.6.4–26.10.2 stale zapisuje na dysk systemowy, typowo 0.3–1.5 MB/s (26–130 GB/dzień); nasz serwer Linux nie jest dotknięty, a Enigma na Windows+AMD powinna ostrzegać na podstawie pomiaru i nigdy nie radzić wyłączania ReBAR (2026-11-09).
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
 - [[aplikacja-w-budowie|Aplikacja (~/KERNEL/app): stan prototypu]] — Pierwsze elementy produktu zbudowane lokalnie przez AppStudio (2026-10-16, commit `9f96ff4`): system projektowy „Tacho”, statyczna strona SvelteKit PL/EN (47 stron), prototyp onboardingu, skrypty skanu, prototyp aplikacji desktop (8 ekranów), makieta TUI i dokument architektury; nic nie jest wdrożone.

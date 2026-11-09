@@ -14,10 +14,11 @@ Liczby t/s zawsze z datą i warunkami (kwant, KV, MTP/DFlash, prompt, T). Aktual
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (22)
+## Notatki (23)
 
+- [[astra-stop|Astra-Stop: rank-1 edycja, która skraca myślenie Qwen3.8-27B]] — Jedna macierz `layers.63.mlp.down_proj` zmieniona wzorem `W' = (I + u uᵀ)W` (u = odczyt tokena `</think>` przez głowicę LM, cos 0.9998 na naszym GGUF): mediana myślenia −35.5% przy effort xhigh, ale `</think>` przecieka do odpowiedzi w 11/32 – to zmiana zachowania, nie bezstratna optymalizacja (2026-11-09).
 - [[drafter-dflash|Drafter DFlash2 dla Qwen3.8-27B]] — Osobny mały model draftujący (z-lab / incoai, 5 warstw) — świetny na angielski kod przy T=0, ale na szerszym zestawie i po polsku nie bije głowicy MTP, więc domyślnie używamy MTP.
-- [[drafter-dspine|Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem]] — Drafter z rodziny DFlash (5 warstw, blok 16, K/V z cech 5 warstw celu, wspólny embedding i LM head) z trzema zmianami: atencja w bloku przyczynowa, po każdej warstwie bramkowana wiadomość z przewidywanej cechy poprzednika (przestrzeń 1024-d z wybielonych wierszy LM head celu) i wybór tokenu warunkowany poprzednikiem („transition cache”, K=16) (arXiv 2609.36173v2, 2026-10-10).
+- [[drafter-dspine|Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem]] — Drafter z rodziny DFlash (5 warstw, blok 16, K/V z cech 5 warstw celu) z przyczynową atencją w bloku, wiadomością z przewidywanej cechy poprzednika i wyborem tokenu warunkowanym poprzednikiem (arXiv 2609.36173v2); wersja 27B wyszła 2026-11-07, na XTX ma sens najwyżej jako drafter klasy „nowy kod” przy ctx ≤ 16k.
 - [[gemma-4|Gemma 4 (26B-A4B, 31B, 12B)]] — Gemma 4 ma iSWA (okno 1024: 25/30 warstw SWA w 26B, 50/60 w 31B, 40/48 w 12B), co fitcalc v2 uwzględnia; w raporcie 33 nie wygrała żadnej klasy kart.
 - [[gyro-coder|Gyro-Coder (Qwen3.8-Flash-Next, 256/512 ekspertów) i format Gyro TQ]] — AgentionAI przyciął Flash-Next do 256 z 512 ekspertów w każdej warstwie, zapisał ich w trellisie TQ2_T (2.125 bpw) i zmieścił model w 19.92 GiB GPU. Do tego dochodzi 50.7 GiB tabeli n-gramów na NVMe.
 - [[glowica-mtp|Głowica MTP Qwen3.8-27B (spekulacja bez osobnego draftera)]] — Wbudowana warstwa `blk.64` (nextn) zgaduje kolejne tokeny, a główny model weryfikuje je jednym przebiegiem; to podstawa naszego 109 t/s, z ~3 tokenami na krok.

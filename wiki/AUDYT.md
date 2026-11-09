@@ -3087,6 +3087,15 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 
 - [[2026-11-08-l1-tokenizacja-parser]], [[2026-11-08-kvq-once-profil]], [[xtxbench-szybki-ab]], 68-SYNTEZA — źródło: decyzja użytkownika przekazana przez Main 2026-11-09 (próg adopcji, anulowanie l1tok-rest i mtpw); queue.log 01:40 (l1-A2 przerwane).
 
+## Ingest 2026-11-09 (raport 69)
+
+- [[drafter-dspine]] — źródło `product/research/69a-dspine-27b.md`: SWA 8192, 2.03 B, warstwy [1,16,31,46,61], ~47 MB KV (:48-53); port 323 linie `d493f84` (:76-82); 28.2 / 50.6 / 90.1 / 1.68× / 40.93 / 94–132 / c=8 (:24-31,100-141); krok 37.5–43.5 ms, τ 1.39–1.62×, zakresy per klasa, +0…+4% (:21-22,185-213); −35% przy 13k (:129); 1.26 GB (:37). Liczby 8B przeniesione bez zmian z poprzedniej wersji notatki (21a). OK.
+- [[qwen-warp]] — źródło `69b-tensorfold-qwen-warp.md`: 1.15–1.4 GiB, 21.0 / 18.6 / 2.50 ms, 4.48 vs 2.98 (:19-21); 183.9 → 276.7, ×1.34, ×1.07, ×0.96 (proza 113.4/118.0), −31% 230 vs 334 (:7,22,24); 20 KiB/token, ~125k (:25); 154/278/425/441 (:29); 94–133 (:31); ×1.5–2 [INFERENCE] (:37). OK.
+- [[tensorfold]] — źródło `69b`: #1694, 51 → 75 t/s, #2477 (:44-46); 0.72–1.33 vs 1.78–2.10 s (:54); ±0.002 (:56). OK.
+- [[astra-stop]] — źródło `69c-astra-stop.md`: cos 0.9947/0.9998/0.014, 20 608 B, `27c08370`, 1.4% (:14-17,28-29,46-50,60-64); 27 346 → 17 156, 694 zadania, 95.2% (:19-21); 26 254 → 16 930, −35.5%, CI95, 22/24, 32 → 31/32, 11/32, −30% (:22-27,90-96); 73 113 600 B (:141); 1.76× / 2.005× (:173-175); 90 KB, 0.03–0.04% (:31-33,157,163); przesłuch ≤ 0.27 (:71). OK.
+- [[amd-adrenalin-zapisy-ssd]] — źródło `69d-amd-sterownik-ssd.md`: 0.3–1.5 MB/s, 432 GB/dzień, 26.6.4–26.10.2, „26.11.1” niepotwierdzone (:7-9); 26–130 GB/dzień, 2.6–13×, 10 GB/dzień (:41-42); BAR0 32 GiB (:32); 256 MB (:35); próg 0.2 MB/s, 30 s (:47-48). OK.
+- [[raport-69-synteza]], `product/research/69-SYNTEZA.md` — liczby powtórzone z notatek wyżej i z 68b (:12, +3.9% / +4.8%); 19.48 GB i 3.85 GB z 69b (:73-74). OK.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

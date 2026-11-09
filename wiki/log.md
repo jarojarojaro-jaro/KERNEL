@@ -290,3 +290,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-09] decyzja | próg adopcji ≥ 3–5% / ≥ 1 s na turę; l1tok i mtpw zamknięte
 Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: bezstratne, −85 ms/turę, nie wdrażamy (A2/C anulowane). [[2026-11-08-kvq-once-profil]]: ONCE=1/2 KILL, okno MTP nie mierzone (anulowane, oczekiwany KILL). Próg w syntezie 68 i [[xtxbench-szybki-ab]].
+
+## [2026-11-09] ingest | raport 69: DSpine-27B, qwen-warp/TensorFold, Astra-Stop, AMD Adrenalin
+[[raport-69-synteza]] (synteza `product/research/69-SYNTEZA.md`). Zaktualizowane: [[drafter-dspine]] (27B: SWA 8192, port Ajay9o9 `d493f84`, twierdzenia vs fakty, model XTX per klasa), [[qwen-warp]] (v0.8.0: DFlash2 w grafie, multiuser), [[tensorfold]] (v1.2.5+: gfx1100 dalej brak). Nowe: [[astra-stop]] (zmiana zachowania, nie bezstratna; przeciek `</think>` 11/32; LoRA 90 KB), [[amd-adrenalin-zapisy-ssd]] (serwer nie dotyczy; nigdy nie radzić wyłączania ReBAR). [[ZRODLA]]: sekcja „Raport 69” + wiersze dublowania DSpine/qwen-warp/TensorFold. Wszystkie testy czekają na decyzję użytkownika (6 punktów w syntezie).
