@@ -77,10 +77,10 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-11-09 [[xtxbench-szybki-ab|xtxbench: szybki A/B silnika produkcyjnego XTX (cel ~10 min na wariant zamiast 40–120)]]
 - 2026-11-09 [[2026-11-08-l1-tokenizacja-parser|Cache tokenizacji na ścieżce SAFE_SPECIAL + parser przyrostowy: tokenizacja 14,0 → 6,6 ms, wyjście identyczne (2026-11-08, pomiar częściowy)]]
+- 2026-11-09 [[2026-11-08-kvq-once-profil|kvq: KV raz na weryfikację MTP (`GGML_HIP_KVQ_ONCE`) i profil kroku przy długim kontekście (2026-11-07/08)]]
 - 2026-11-09 [[2026-11-08-fa-d256-prefill|Prefill FA D256 dla RDNA3 (#31746 + układ V w LDS): kod gotowy, niezmierzony (2026-11-08)]]
 - 2026-11-08 [[lekcja-cpuheavy-w-jobie-kolejki|`cpuheavy` wywołany z wnętrza joba kolejki GPU = zakleszczenie]]
 - 2026-11-08 [[kv-raz-na-weryfikacje|KV czytane raz na weryfikację (plan #8): trzy wzorce]]
-- 2026-11-08 [[2026-11-08-kvq-once-profil|kvq: KV raz na weryfikację MTP (`GGML_HIP_KVQ_ONCE`) i profil kroku przy długim kontekście (2026-11-07/08)]]
 - 2026-11-08 [[2026-11-08-cachesave-30137|Zapis prompt cache bez zerowania (#30137) + THP dla `--cache-ram` — niezmierzone (2026-11-08)]]
 - 2026-11-07 [[raport-67-kampania-nvidia|Raport 67: kampania NVIDIA na Vast (Enigma) — trzy części]]
 - 2026-11-07 [[raport-66-synteza|Raport 66: Strata 0.2.12, Maya, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM, Flash-Next]]

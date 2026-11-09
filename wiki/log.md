@@ -284,3 +284,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-09] update | xtxbench: md5 tylko z pierwszego restore + wyciek stanu
 [[xtxbench-szybki-ab]]: werdykt md5 tylko z pierwszej rundy po świeżym starcie serwera, `--var-switch` → md5 n/a (same-server); selftest 7/7 z modelem wycieku. Znalezisko w [[2026-11-08-kvq-once-profil]] i syntezie 68: drugi restore slotu ≠ świeży prefill (podejrzenie: reset MTP/rekurencji, por. #30574).
+
+## [2026-11-09] eksperyment | kvq ONCE=2 (K raz na parę fal) — KILL
+[[2026-11-08-kvq-once-profil]]: bitowo = (fa_hash 18/18, tbo 381/381, md5 199k efdb8053), FA 196k nb5 623,4 → 625,7 µs (+0,4%; ONCE=1 574,0), 98k 321,2 → 325,6; e2e 199k 95,09 → 94,73 t/s (−0,38%), spec_sweep 121,05 → 120,9; PMC FETCH_SIZE = 0 (licznik nie działa).

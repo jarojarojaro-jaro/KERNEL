@@ -3079,6 +3079,10 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 
 - [[xtxbench-szybki-ab]], [[2026-11-08-kvq-once-profil]] — źródło `results.jsonl` walidacji (md5 per runda: B1/A2 = świeży prefill, A0/A0′/B2 inne); kod `qwen-opt/xtxbench/xtxbench.py`, selftest 7/7 (CPU).
 
+## Ingest 2026-11-09 (kvq ONCE=2)
+
+- [[2026-11-08-kvq-once-profil]] — źródło `~/qwen-opt/kvq-once/run2b-1109-0103/summary.txt`; tabela kperf/e2e/md5, werdykt KILL; synteza 68 poz. 1.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
