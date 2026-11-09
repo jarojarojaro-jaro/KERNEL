@@ -3122,6 +3122,11 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[2026-11-09-evalplus-qwen-uncensored]] — pass@1 i tok/odp. z `qwen-opt/evalplus/uncensored-low/summary.md` (160/164, 152/164, 351/378, 303/378; 786, 704; 0 uciętych), wall z `gen-wall.txt` (808, 1819, 2627 s), CI Wilsona przeliczone (z=1,96), prędkość z `speed.md`, narzut z `overhead.py` (wynik w notatce; zgodny z wstępnymi liczbami Main dla HE+). Liczby publiczne: LocalMaxxing (90,9 / 92,1 / 91,0), EvalPlus `results.json` (Qwen2.5-Coder-32B-Instruct 92,1/87,2/90,5/77,0), karta Qwen3.8-27B (LCB v6 90,3), sprawdzone 2026-11-09. OK.
 - [[evalplus-jakosc-kodu]] — test piaskownicy (163/164, curl rc 7) z sesji EvalPlusQwen 2026-11-09. OK.
 
+## Ingest 2026-11-09 (jakość-mini, Qwen uncensored)
+
+- [[2026-11-09-jakosc-mini-qwen-unc]] — trafności, CI, tok/odp., sparsowane/ucięte z `qwen-opt/jakosc-mini/results/qwen-unc-low-s20261109/summary.md` (wiersze kategorii i „razem”, makro 91.3); 2253 s, build `b11647-3191b25f4`, n_ctx 262144 z `runs/.../meta.json`; porażki (MMLU-Pro 11632 length 32 768, HE 124/151 plus fail, BFCL multiple_193 `value_error:string`) z `scored.jsonl` i `humaneval_plus_eval.json`; tabela prędkości z `speed.md`, zakresy per dziedzina z `speed-mmlu-pro-domains.md`; 119.3 t/s z [[qwen3-8-27b]]. Restore z `queue/logs/jakosc-qwen-unc-restore8080.log`. OK.
+- [[jakosc-mini]] — rewizje HF z `subsets/s20261109/manifest.json`, liczności (1319, 12 032, 14 042, 400/200/200) z plików danych; przedziały Wilsona przy 80% przeliczone `run.wilson` (67.0–88.8, 58.4–91.9, 49.0–94.3, 75.0–84.2); brak `pl` w Global-MMLU-Lite sprawdzony w API HF 2026-11-09. OK.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

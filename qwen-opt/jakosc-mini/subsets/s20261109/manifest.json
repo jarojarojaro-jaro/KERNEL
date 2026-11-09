@@ -1,0 +1,56 @@
+{
+ "seed": 20261109,
+ "created": "2026-11-09T02:14:36+00:00",
+ "selection": "random.Random(f'{seed}:{tag}').sample per category (MMLU-Pro: per domain, tag mmlu_pro:<domain>; BFCL: per sub-category, tag bfcl:<cat>), indices sorted, file row order",
+ "counts": {
+  "gsm8k": 50,
+  "mmlu_pro": 140,
+  "pl_mmlu": 50,
+  "humaneval_plus": 30,
+  "bfcl": 20
+ },
+ "sources": {
+  "gsm8k": {
+   "repo": "huggingface.co/datasets/openai/gsm8k",
+   "revision": "740312add88f781978c0658806c59bc2815b9866",
+   "files": {
+    "main/test-00000-of-00001.parquet": "ee7b8da9e381df27b9e3f7758a159ab2bdaa4dbaa910546cbbc47e0cb44e4f59"
+   },
+   "subset_sha256": "ff00a3b600536c0830b45509cdb94ea37d5074a7f5bc4113c233e0b2cdef2df7"
+  },
+  "mmlu_pro": {
+   "repo": "huggingface.co/datasets/TIGER-Lab/MMLU-Pro",
+   "revision": "b189ec765aa7ed75c8acfea42df31fdae71f97be",
+   "files": {
+    "data/test-00000-of-00001.parquet": "0e24a191921c2f453518a537a8b2117bd137e7714d4ef1565e9ba06c1ecb9ad8"
+   },
+   "subset_sha256": "09ae2e088e5b277657f52783a04b739d541ad1d648ddd53564239d663e37c725"
+  },
+  "pl_mmlu": {
+   "repo": "huggingface.co/datasets/CohereLabs/Global-MMLU",
+   "revision": "0e619dbeb34206cd48705a1a0ea7fb21cae09993",
+   "files": {
+    "pl/test-00000-of-00001.parquet": "b7d3670fc9f0dc98661fd817c33b26b2a5a38010417fc4509c7e7d199253b3a9"
+   },
+   "subset_sha256": "5636b3cd210ed20e23c360f3b6896544a7976d6cbeb4faecfe4b98caa531dc63"
+  },
+  "bfcl": {
+   "repo": "huggingface.co/datasets/gorilla-llm/Berkeley-Function-Calling-Leaderboard",
+   "revision": "61fc0608cfd831fcfbbaa676ebdfef0ed963eeda",
+   "files": {
+    "BFCL_v3_simple.json": "fbc37b2ad252bf9af985582e0e07b456173fe627d957491472ea9cef5fb83158",
+    "possible_answer/BFCL_v3_simple.json": "2911a2bc00df82c4f999ffa64fedb0164cb88e96212ffa5972087eb91fd496ee",
+    "BFCL_v3_multiple.json": "aef168155ebd74b7ac2401198b201343bc7d16d7a3d7e0d4e6d8ee82c6969b2a",
+    "possible_answer/BFCL_v3_multiple.json": "244e00ce9395df948bcafc7bee64e8f9c87ef70887587d83cae45b13699f3047",
+    "BFCL_v3_parallel.json": "fad375d68295776efb63e5aa331dd884f8635e7bb50e05908113c74f14281c3c",
+    "possible_answer/BFCL_v3_parallel.json": "3af54bf04e5b7640b03a9b6a82440f52474feb24b398f94435fd2b155c7727de"
+   },
+   "subset_sha256": "a6f09db596864faaa36d292919f404f4ee15f70cbb9a47e4613082f8bd2ca504"
+  },
+  "humaneval_plus": {
+   "package": "evalplus 0.3.1",
+   "dataset": "HumanEvalPlus-v0.1.10 (evalplus default)",
+   "subset_sha256": "b3d4e47b78973a3e49dfdb249251a0bafe15316de1f080c9a0621b0ad5059ff1"
+  }
+ }
+}

@@ -1,0 +1,4 @@
+# jakość-mini qwen-unc: run-topka.sh uncensored, effort low, seed 20261109, own port 8098 (2026-11-09 02:15:26, local.sh submit).
+# HumanEval+ code runs afterwards on CPU in the sandbox (local.sh eval), outside the queue.
+jakosc-qwen-unc-gen|21600|/home/jaro/qwen-opt/jakosc-mini|./local.sh --profile uncensored --port 8098 --effort low --label qwen-unc --seed 20261109 --reuse-humaneval /home/jaro/qwen-opt/evalplus/runs/uncensored-low gen
+jakosc-qwen-unc-restore8080|600|/home/jaro/qwen-opt/jakosc-mini|./local.sh --label qwen-unc --effort low --seed 20261109 restore

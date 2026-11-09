@@ -316,3 +316,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-09] eksperyment | EvalPlus: Qwen3.8-27B-Uncensored, produkcja XTX, effort low
 [[2026-11-09-evalplus-qwen-uncensored]]: greedy pass@1 HumanEval 97,6 / HumanEval+ 92,7 / MBPP 92,9 / MBPP+ 80,2 % (topka-q70 `3191b25f4`, port 8097, 786/704 tok/odp., 0 uciętych, gen 2627 s); dekod 174,2 / 156,7 t/s (T=0), narzut stały ~230 ms/żądanie. Effort low vs wyższy niezmierzony. Nowa metoda [[evalplus-jakosc-kodu]] (`qwen-opt/evalplus/jakosc-mini.sh`, piaskownica Landlock).
+
+## [2026-11-09] eksperyment | jakość-mini: Qwen3.8-27B-Uncensored, produkcja XTX, effort low
+[[2026-11-09-jakosc-mini-qwen-unc]]: 255/290 = 87,9% (CI 83,7–91,2), makro 91,3%; GSM8K 50/50, MMLU-Pro 115/140, PL 43/50, HumanEval+ 28/30 (z biegu EvalPlus), BFCL 19/20; topka-q70 `3191b25f4`, T=0, gen 2253 s, 1 ucięta (32 768 tok). Prędkość na zadaniach: dekod ważony 142,4 t/s (PL 120,1 … HumanEval+ 174,8). Nowa metoda [[jakosc-mini]] (`qwen-opt/jakosc-mini/`, podzbiory seed 20261109, 5 źródeł w [[ZRODLA]]).
