@@ -3083,6 +3083,10 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 
 - [[2026-11-08-kvq-once-profil]] — źródło `~/qwen-opt/kvq-once/run2b-1109-0103/summary.txt`; tabela kperf/e2e/md5, werdykt KILL; synteza 68 poz. 1.
 
+## Ingest 2026-11-09 (decyzje 09.11)
+
+- [[2026-11-08-l1-tokenizacja-parser]], [[2026-11-08-kvq-once-profil]], [[xtxbench-szybki-ab]], 68-SYNTEZA — źródło: decyzja użytkownika przekazana przez Main 2026-11-09 (próg adopcji, anulowanie l1tok-rest i mtpw); queue.log 01:40 (l1-A2 przerwane).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

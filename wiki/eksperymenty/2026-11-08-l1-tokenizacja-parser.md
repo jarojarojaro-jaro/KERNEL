@@ -24,11 +24,10 @@ Warunki: final mode (eco 2200), produkcja `~/llama-topka` (A) vs `~/wt/l1-tokpar
 
 Dowody CPU (2026-11-07): `test-tok-cache` 257 prawdziwych zapytań do 284k — 0 rozbieżności, przy 90k+ pełna tokenizacja 123–187 ms → z cache 1,3–2,1 ms (pojedynczy wątek; w produkcji `TOKENIZE_PAR=8` już skraca pełną do ~14 ms); `test-chat-stream-inc` 1 237 wyjść / 746k tokenów — wyrocznia 0 rozbieżności, 574/574 tool calli, CPU parsera 36,1 → 0,98 s.
 
-**Werdykt:** bezstratne i spełnia kryterium „B nie wolniejsze”; zysk na turze agenta to ~85 ms przy 80–120k (głównie tokenizacja), decode bez zmian. Kryterium z NOTE („tokenizacja ≥ 10 ms niżej”) nie jest spełnione przy `TOKENIZE_PAR=8` (−7,4 ms), więc do wdrożenia tylko jako ulga CPU, po dokończeniu A2 (ABBA) i ramienia kontrolnego C (`=2`, wyrocznia na GPU).
+**Werdykt (2026-11-09): bezstratne, mały zysk (−85 ms/turę, tokenizacja 14 → 6,6 ms); nie wdrażamy teraz.** Ramiona A2 i C (`l1tok-rest.jobs`) niedokończone — anulowane decyzją użytkownika (zysk za mały wobec progu adopcji ≥ 3–5% decode/prefill albo ≥ 1 s na turę agenta, [[xtxbench-szybki-ab]]). Kryterium z NOTE („tokenizacja ≥ 10 ms niżej”) i tak niespełnione przy `TOKENIZE_PAR=8` (−7,4 ms).
 
-## Stan / do wznowienia
-- `run-jobs.sh ~/qwen-opt/l1tok/l1tok.jobs` z samymi ramionami A2 i C (A1/B1/B2 są w `results.jsonl`); build gotowy.
-- Nic nie wdrożone; przełączniki domyślnie wyłączone.
+## Stan
+- Gałąź `l1-tokparse` 8a18c3077 i łatki zostają; przełączniki domyślnie wyłączone, nic nie wdrożone. Wznowienie tylko, jeśli zmieni się koszt tokenizacji (np. bez `TOKENIZE_PAR`).
 
 ## Powiązane
 - [[eksperymenty/_hub|eksperymenty]]

@@ -36,12 +36,15 @@ A = B = produkcja `~/llama-topka`, B na osobnym serwerze (restore między proces
 - **md5 decode z migawek — FAIL:** pierwszy restore na świeżym serwerze (B1, A2) daje md5 świeżego prefillu (3f26f79c / 90aca3e8 / 05fa2a47), kolejne restore na tym samym serwerze (A0, A0′, B2) inne (1,7k i 94k powtarzalnie 3dd78584 / fbe67aba, 199k za każdym razem inne); pojedyncze zimne żądanie (inny podział prefillu) daje jeszcze inne md5. Stan slotu/draftu MTP przecieka między żądaniami, więc A/A zwróciło fałszywy „KILL (md5 changed)”. Poprawka poniżej.
 - Smoke runtime-switch pominięty (`~/wt/xtxbench/build-hip` nie zbudowany).
 
+## Próg adopcji (decyzja użytkownika 2026-11-09)
+Pojedyncza zmiana jest warta testu tylko przy oczekiwanym zysku **≥ 3–5% decode lub prefill albo ≥ 1 s na turę agenta**; ułamki procenta nie są celem. Test A/A (szum) to kalibracja harnessu, nie wynik optymalizacji.
+
 ## Poprawka (2026-11-09, tylko CPU)
 - **Znalezisko:** drugi restore slotu na tym samym serwerze rozjeżdża się ze świeżym prefillem (wyciek stanu między żądaniami); prawdopodobnie kontekst draftu MTP / stan rekurencyjny nie jest w pełni resetowany przy restore (por. upstream #30574, port w topka-q63 0003). Może dotyczyć sesji agenta odtwarzających wpisy cache — pozycja otwarta w syntezie 68.
 - **xtxbench:** md5 T=0 werdyktu tylko z pierwszej rundy po świeżym starcie serwera każdego ramienia (`md5_fresh`), porównywane też z dowodem „świeży prefill + decode”; późniejsze restore tylko dla t/s. `--var-switch` (jeden serwer): „md5: n/a (same-server)”, `md5_na` w result.json — potrzebne osobne ramię ze świeżym startem. Fake serwer selftestu modeluje wyciek; selftest CPU 7/7 OK. Ponowna interpretacja walidacji: B1 i A2 (pierwsze restore) = świeży prefill na 1,7k/94k/199k → dowód PASS.
 
 ## Stan / do wznowienia
-- Joby t1 (`mtpw.jobs`) korzystają już z poprawionej reguły md5 (każde ramię `--var-args` startuje własny serwer).
+- `mtpw.jobs` anulowany (oczekiwany KILL); kolejne joby t1 korzystają z poprawionej reguły md5.
 - Smoke runtime-switch czeka na build `~/wt/xtxbench/build-hip`.
 
 ## Powiązane

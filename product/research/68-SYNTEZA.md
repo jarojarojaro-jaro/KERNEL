@@ -4,14 +4,16 @@
 
 Raporty: [68a](68a-rdna3-kernele.md) (kernele RDNA3), [68b](68b-spekulacja-nowe.md) (spekulacja), [68c](68c-dlugi-kontekst-gdn.md) (długi kontekst / GDN), [68d](68d-swieze-od-spolecznosci.md) (świeże od społeczności). Wszystkie zyski poniżej to szacunki; status = stan w chwili pisania.
 
+**Próg adopcji (decyzja użytkownika 2026-11-09):** testujemy tylko zmiany z oczekiwanym zyskiem ≥ 3–5% decode lub prefill albo ≥ 1 s na turę agenta; ułamki procenta odrzucamy bez pomiaru. A/A xtxbench = kalibracja, nie wynik.
+
 ## Ranking (bezstratne)
 
 | # | Pomysł | Źródła | Szacunek dla nas | Status |
 |---|---|---|---|---|
-| 1 | **Atencja weryfikacji MTP do czasu pojedynczego kafla** (`kvq` ONCE=1 → ONCE=2: K dekwantowane raz, para warpów) | 66, 68a, 68c | atencja przy 98k 318,8 → cel ~172 µs/warstwę; decode 196–255k sufit +12…16% | ONCE=1 zmierzone: bit-identyczne, FA przy 199k −6,1% (KILL jako cel kernela), e2e 94k +0,9%, 199k +1,8%; ONCE=2 (2026-11-09): bitowo =, kernel +0,4…1,4% (wolniej), e2e 199k −0,38% → **KILL** (`eksperymenty/2026-11-08-kvq-once-profil`) |
+| 1 | **Atencja weryfikacji MTP do czasu pojedynczego kafla** (`kvq` ONCE=1 → ONCE=2: K dekwantowane raz, para warpów) | 66, 68a, 68c | atencja przy 98k 318,8 → cel ~172 µs/warstwę; decode 196–255k sufit +12…16% | ONCE=1 zmierzone: bit-identyczne, FA przy 199k −6,1% (KILL jako cel kernela), e2e 94k +0,9%, 199k +1,8%; ONCE=2 (2026-11-09): bitowo =, kernel +0,4…1,4% (wolniej), e2e 199k −0,38% → **KILL**; ONCE=1 i ONCE=2 nie wdrażamy (`eksperymenty/2026-11-08-kvq-once-profil`) |
 | 2 | **Prefill FA D256 dla RDNA3** (#31746 + sweep 24v + V/K w układzie WMMA przy konwersji) | 68a #1, 68c #1, 68d #1 | fill 255k 465 → ~490–570 t/s (+5…22%) | kod gotowy (`fa-d256` 32292cc0a, `GGML_HIP_FA_D256_VAR`), **niezmierzony** (`eksperymenty/2026-11-08-fa-d256-prefill`) |
 | 3 | **Huge pages dla `--cache-ram` + #30137 (bez zero-fill zapisu)** | 68c #3, 68d #3 | −2…5 s i −0,1…0,35 s na przełączenie wątku agenta | kod gotowy (`l1-cachesave` 3152b0bfa, `LLAMA_SERVER_CACHE_HUGE`), **niezbudowany i niezmierzony** (`eksperymenty/2026-11-08-cachesave-30137`) |
-| 4 | **Cache tokenizacji + parser O(n)** | 66, XtxHostL1 | tokenizacja przy 90k+ 123–187 → 1,3–2,1 ms; parser CPU 36,1 → 0,98 s | GPU A→B (bez A2): tokenizacja 14,0 → 6,6 ms, tura −85 ms, md5 =, decode 0% (`eksperymenty/2026-11-08-l1-tokenizacja-parser`) |
+| 4 | **Cache tokenizacji + parser O(n)** | 66, XtxHostL1 | tokenizacja przy 90k+ 123–187 → 1,3–2,1 ms; parser CPU 36,1 → 0,98 s | bezstratne, mały zysk (−85 ms/turę, tokenizacja 14,0 → 6,6 ms); **nie wdrażamy teraz**, A2/C anulowane decyzją użytkownika (zysk za mały) (`eksperymenty/2026-11-08-l1-tokenizacja-parser`) |
 | 5 | **Dynamiczna głębokość draftu MTP** (luka Gumbela, decyzja przed weryfikacją) | 68b #1 | +3,9% ogółem (czat PL +4,8%) | **czeka na decyzję użytkownika**: bramka „wymuszanie tokenów + KLD” zamiast md5 (68b #2) |
 | 6 | Natywne q4_0 K/V w prefillu FA (#31802) | 68a #3, 68d #2 | −~1 GiB VRAM przy 262k, prefill ≥128k +1…3% | w zakresie XtxFaPrefill, jeśli tani |
 | 7 | Pochodna maska KQ w kernelu (rdna-boosts) | 68c #2, 66 poz. 9 | decode 199–255k +0,5…1,5%, −256 MiB VRAM i pinned RAM | do zlecenia |
@@ -22,7 +24,7 @@ Raporty: [68a](68a-rdna3-kernele.md) (kernele RDNA3), [68b](68b-spekulacja-nowe.
 Tanie sprawdzenia (bez zmian w kodzie): FCLK pod obciążeniem w eco trzyma 2000 MHz (porównać log stock vs eco — bez dotykania napięć), `amd-evicted-vram` w fdinfo przy 262k, licznik odczytów KV w `kvq` (rocprofv3).
 
 ## Stan po zakończeniu testów (2026-11-08 01:30, polecenie użytkownika)
-Zmierzone: Q6_K (KILL), profil kroku, ONCE=1, podziały `kvq` (KILL), L1 (A→B bez A2). Gotowe, niezmierzone: ONCE=2 (`kvq-once2b.jobs`), FA D256 (`fa-d256.jobs`), cachesave (`cachesave.jobs`, wymaga buildu), okno draftu (`mtpw.jobs`, spodziewany KILL — przegrało 14.10), xtxbench (`validate.jobs`). Nic nie wdrożone.
+Zmierzone: Q6_K (KILL), profil kroku, ONCE=1, podziały `kvq` (KILL), L1 (A→B bez A2). Gotowe, niezmierzone: ONCE=2 (`kvq-once2b.jobs`), FA D256 (`fa-d256.jobs`), cachesave (`cachesave.jobs`, wymaga buildu), okno draftu (`mtpw.jobs`: nie mierzone — anulowane 2026-11-09, oczekiwany KILL, test z 14.10), xtxbench (`validate.jobs`). Nic nie wdrożone.
 
 2026-11-09: xtxbench zwalidowany — czas OK (A/A szum ≤0,15% decode, 3,9 min/wariant), md5 decode z migawek wiarygodne tylko z pierwszego restore po starcie serwera (xtxbench poprawiony, `wiki/metody/xtxbench-szybki-ab`).
 

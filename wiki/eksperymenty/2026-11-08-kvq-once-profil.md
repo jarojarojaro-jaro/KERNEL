@@ -76,7 +76,7 @@ Wariant 47b6be451 (każda fala pary dekwantuje połowę bloku K i liczy KQ dla o
 
 **Werdykt: KILL** — kernel ONCE=2 wolniejszy od bazowego (+0.4…1.4%) i od ONCE=1 (−6…8%); podział K między fale pary kosztuje więcej (synchronizacja + LDS) niż oszczędza dekwant. Bramka FA ≤ −10% przy 199k niespełniona. Licznik PMC `FETCH_SIZE` zwrócił 0 dla wszystkich dispatchy (licznik nie zbiera się dla tego kernela w rocprofv3 — pomiar amplifikacji odczytu KV nieudany, bez wpływu na werdykt). Kod zostaje na gałęzi, produkcja bez zmian.
 
-Okno uwagi draftu MTP: już istnieje (`--spec-mtp-window`, łatka 0046, [[latki-spekulacji]]) i przegrało przy 27k/62k (W=8192: akceptacja 3.31 → 2.78, 105 → 90 t/s). Ponowny pomiar przy 94k/199k (`mtpw.jobs`, xtxbench t1, W 4k/16k/64k) anulowany przed startem. **Nie zmierzone.**
+Okno uwagi draftu MTP: już istnieje (`--spec-mtp-window`, łatka 0046, [[latki-spekulacji]]) i przegrało przy 27k/62k (W=8192: akceptacja 3.31 → 2.78, 105 → 90 t/s). Ponowny pomiar przy 94k/199k (`mtpw.jobs`, xtxbench t1, W 4k/16k/64k): **nie mierzone — anulowane (oczekiwany KILL, test z 14.10)**, ponownie anulowane 2026-11-09 decyzją użytkownika.
 
 ## Znalezisko: wyciek stanu przy restore slotu (2026-11-09)
 Walidacja xtxbench ([[xtxbench-szybki-ab]], A/A produkcji): drugi restore slotu na tym samym serwerze daje inne md5 T=0 niż świeży prefill (1,7k/94k powtarzalnie, 199k za każdym razem inne); pierwszy restore po starcie serwera = świeży prefill. Prawdopodobnie kontekst draftu MTP / stan rekurencyjny GDN nie jest w pełni resetowany przy restore (por. upstream #30574, port w topka-q63 0003). Dla md5 w tej notatce bez znaczenia (każde ramię lc.py = świeży serwer i zimne żądanie), ale może dotyczyć sesji agenta odtwarzających wpisy cache — otwarte w syntezie 68.
@@ -84,7 +84,8 @@ Walidacja xtxbench ([[xtxbench-szybki-ab]], A/A produkcji): drugi restore slotu 
 ## Stan / do wznowienia
 - Gałąź `kvq-once` w `~/wt/kvq-once` (1d0fa32bb ONCE=1, 47b6be451 ONCE=2), build `build-hip` aktualny; łatki i skrypty w `qwen-opt/patches/kvq-once/` i `qwen-opt/kvq-once/` (KERNEL). Produkcja nietknięta (oba przełączniki domyślnie wyłączone, nic nie wdrożone).
 - ONCE=2 zmierzone 2026-11-09: KILL (powyżej). Cel nb5 przy 98k ~172 µs (czas nb1) dalej otwarty — potrzebny inny układ niż para fal.
-- Wznowienie okna MTP: `run-jobs.sh ~/qwen-opt/kvq-once/mtpw.jobs`; kill, jeśli akceptacja spada > 1–2% (zysk maks. ~1.3 ms na krok przy 199k).
+- Okno MTP: nie mierzone — anulowane (oczekiwany KILL, test z 14.10); zysk maks. ~1.3 ms na krok przy 199k, poniżej progu adopcji.
+- **Decyzja (2026-11-09): ONCE=1 i ONCE=2 — KILL, nie wdrażamy** (zyski e2e +0,9…1,8% / −0,4%, poniżej progu adopcji ≥ 3–5%).
 - Profil: kolejne cele z tego pomiaru to atencja draftu MTP (~1.3 ms przy 199k) i maska KQ na hoście (355 µs przy 199k).
 
 ## Powiązane

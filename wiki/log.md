@@ -287,3 +287,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-09] eksperyment | kvq ONCE=2 (K raz na parę fal) — KILL
 [[2026-11-08-kvq-once-profil]]: bitowo = (fa_hash 18/18, tbo 381/381, md5 199k efdb8053), FA 196k nb5 623,4 → 625,7 µs (+0,4%; ONCE=1 574,0), 98k 321,2 → 325,6; e2e 199k 95,09 → 94,73 t/s (−0,38%), spec_sweep 121,05 → 120,9; PMC FETCH_SIZE = 0 (licznik nie działa).
+
+## [2026-11-09] decyzja | próg adopcji ≥ 3–5% / ≥ 1 s na turę; l1tok i mtpw zamknięte
+Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: bezstratne, −85 ms/turę, nie wdrażamy (A2/C anulowane). [[2026-11-08-kvq-once-profil]]: ONCE=1/2 KILL, okno MTP nie mierzone (anulowane, oczekiwany KILL). Próg w syntezie 68 i [[xtxbench-szybki-ab]].
