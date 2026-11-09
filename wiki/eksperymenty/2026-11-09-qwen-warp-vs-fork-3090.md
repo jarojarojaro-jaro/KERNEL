@@ -32,7 +32,7 @@ Warunki: Vast RTX 3090, limit 350 W = domyślny, mediana mocy pod obciążeniem 
 4. **Cały cykl spekulacji jako jeden graf CUDA** (2 cykle na synchronizację hosta): koszt bardzo wysoki, bo trzeba przebudować pętlę serwera.
 5. Atencja przy długim kontekście nie jest źródłem przewagi: warp traci −40% między 16k a 262k, fork −33%.
 
-Koszt: $0.51 (instancja ~85 min × $0.358/h). Wliczone są: pierwszy host zniszczony po 4 min, bo miał 250 W, a domyślnie 390 (~$0.01), oraz ~42 min bezczynności po końcu łańcucha (~$0.25, zawieszone odpytywanie). Na końcu 0 instancji.
+Koszt: $0.53 (różnica kredytu po rozliczeniu; instancja ~85 min × $0.358/h + dysk). Wliczone są: pierwszy host zniszczony po 4 min, bo miał 250 W, a domyślnie 390 (~$0.01), oraz ~42 min bezczynności po końcu łańcucha (~$0.25, zawieszone odpytywanie). Na końcu 0 instancji.
 
 ## Powiązane
 - [[eksperymenty/_hub|eksperymenty]]
