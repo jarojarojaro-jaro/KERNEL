@@ -3071,6 +3071,10 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[2026-11-08-fa-d256-prefill]], [[xtxbench-szybki-ab]] — kod gotowy, niezmierzone; patche `qwen-opt/patches/{fa-d256,l1-tokparse,xtxbench}`, skrypty `qwen-opt/{fa-d256,l1tok,xtxbench}` (korpus fa-d256 poza repo: zawiera adresy IP).
 - `product/research/68-SYNTEZA.md` — status każdej pozycji i lista jobów do wznowienia.
 
+## Ingest 2026-11-09 (xtxbench walidacja)
+
+- [[xtxbench-szybki-ab]] — źródło `~/qwen-opt/xtxbench/runs/1109-004040-t1-aa-validate/{summary.txt,results.jsonl,xtxbench.log}`; tabela A/A, czasy etapów, analiza md5 per runda z results.jsonl.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
