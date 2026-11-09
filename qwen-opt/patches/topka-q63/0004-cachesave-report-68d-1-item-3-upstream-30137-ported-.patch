@@ -1,6 +1,6 @@
-From 3152b0bfa406f817b5f70b657e11bb4485093d74 Mon Sep 17 00:00:00 2001
+From 17d1671e899ab77e32b1984c5cd0cf42b5638e66 Mon Sep 17 00:00:00 2001
 From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
-Date: Sat, 7 Nov 2026 23:45:04 +0000
+Date: Mon, 9 Nov 2026 01:58:54 +0000
 Subject: [PATCH] =?UTF-8?q?cachesave=20(report=2068d=20=C2=A71=20item=203)?=
  =?UTF-8?q?:=20upstream=20#30137=20ported=20to=20topka=20=E2=80=94=20promp?=
  =?UTF-8?q?t-cache=20checkpoints=20shared=20via=20shared=5Fptr<const>=20in?=
@@ -17,15 +17,15 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 
 ---
- common/common.cpp               | 44 ++++++++++++++++++
+ common/common.cpp               | 52 +++++++++++++++++++--
  common/common.h                 | 28 +++++++++++-
  tools/server/server-context.cpp | 80 ++++++++++++++++++++-------------
  tools/server/server-task.cpp    | 16 +++++--
  tools/server/server-task.h      |  9 ++--
- 5 files changed, 135 insertions(+), 42 deletions(-)
+ 5 files changed, 139 insertions(+), 46 deletions(-)
 
 diff --git a/common/common.cpp b/common/common.cpp
-index ed97d6537..9ac009c17 100644
+index ed97d6537..96905701a 100644
 --- a/common/common.cpp
 +++ b/common/common.cpp
 @@ -61,6 +61,9 @@
@@ -86,6 +86,38 @@ index ed97d6537..9ac009c17 100644
  size_t common_prompt_checkpoint::size() const {
      return data_tgt.size() + size_dft() + data_spec.size() + (snap_tgt ? llama_state_snap_size(snap_tgt.get()) : 0);
  }
+@@ -2590,7 +2634,7 @@ static void common_checkpoint_update(
+         llama_seq_id seq_id,
+         llama_state_seq_flags flags,
+         bool vram,
+-        std::vector<uint8_t> & data,
++        common_state_data & data,
+         std::shared_ptr<llama_state_snap> & snap) {
+     snap.reset();
+ 
+@@ -2616,7 +2660,7 @@ static bool common_checkpoint_load(
+         llama_context * ctx,
+         llama_seq_id seq_id,
+         llama_state_seq_flags flags,
+-        const std::vector<uint8_t> & data,
++        const common_state_data & data,
+         const std::shared_ptr<llama_state_snap> & snap) {
+     if (ctx == nullptr) {
+         return true;
+@@ -2673,11 +2717,11 @@ bool common_prompt_checkpoint::load_dft(
+ }
+ 
+ std::vector<uint8_t> common_prompt_checkpoint::get_tgt() const {
+-    return snap_tgt ? snap_blob(snap_tgt) : data_tgt;
++    return snap_tgt ? snap_blob(snap_tgt) : std::vector<uint8_t>(data_tgt.begin(), data_tgt.end());
+ }
+ 
+ std::vector<uint8_t> common_prompt_checkpoint::get_dft() const {
+-    return snap_dft ? snap_blob(snap_dft) : data_dft;
++    return snap_dft ? snap_blob(snap_dft) : std::vector<uint8_t>(data_dft.begin(), data_dft.end());
+ }
+ 
+ void common_prompt_checkpoint::clear_tgt() {
 diff --git a/common/common.h b/common/common.h
 index 185e960af..0a1647bfb 100644
 --- a/common/common.h
