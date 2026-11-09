@@ -313,3 +313,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-09] wdrozenie | topka-q70 w produkcji XTX
 [[2026-11-09-wdrozenie-topka-q70]]: `~/llama-topka` = topka-q70 (q63 c0576e3e8 + cachesave #30137/huge pages + FA D256 VAR 83, env domyślne w `run-topka.sh`), zamiana 15:00:16 UTC, backup `~/llama-topka.c0576e3e8`. md5 long 32k / fill 255k / przełączanie =; fill 255k 466,3 → 492,5 t/s (+5,6%), tura agenta 76–112k 13 413 → 12 029 ms (−10,3%), spec_sweep 119,3 bez zmian. [[REKORDY]] nowy wiersz tury agenta, fill 255k „prod. tak”; [[qwen3-8-27b]] linia produkcji; raport 70 §6 wykonany. Łatki `qwen-opt/patches/topka-q70/`, skrypty `qwen-opt/deploy-q70/`, narzędzie `qwen-opt/speed_real.py`.
+
+## [2026-11-09] eksperyment | EvalPlus: Qwen3.8-27B-Uncensored, produkcja XTX, effort low
+[[2026-11-09-evalplus-qwen-uncensored]]: greedy pass@1 HumanEval 97,6 / HumanEval+ 92,7 / MBPP 92,9 / MBPP+ 80,2 % (topka-q70 `3191b25f4`, port 8097, 786/704 tok/odp., 0 uciętych, gen 2627 s); dekod 174,2 / 156,7 t/s (T=0), narzut stały ~230 ms/żądanie. Effort low vs wyższy niezmierzony. Nowa metoda [[evalplus-jakosc-kodu]] (`qwen-opt/evalplus/jakosc-mini.sh`, piaskownica Landlock).

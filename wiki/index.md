@@ -63,8 +63,8 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (10)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (50)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (74)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (52)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (75)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (117)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -83,11 +83,13 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[astra-stop|Astra-Stop: rank-1 edycja, która skraca myślenie Qwen3.8-27B]]
 - 2026-11-09 [[xtxbench-szybki-ab|xtxbench: szybki A/B silnika produkcyjnego XTX (cel ~10 min na wariant zamiast 40–120)]]
 - 2026-11-09 [[sweep-wariantow-kernela|Sweep wariantów kernela: jedna binarka, maska env, bramka bitowa, ABBA przy głębokości]]
+- 2026-11-09 [[jakosc-mini|jakość-mini: 290 pytań jakości dla dowolnego modelu za llama-server]]
+- 2026-11-09 [[evalplus-jakosc-kodu|jakość-mini: bramka jakości kodu EvalPlus]]
 - 2026-11-09 [[lekcja-zysk-rosnie-z-glebokoscia|Zysk kernela FA rośnie z głębokością: wynik negatywny ważny tylko w swoim reżimie]]
 - 2026-11-09 [[2026-11-09-wdrozenie-topka-q70|Wdrożenie topka-q70 na RX 7900 XTX: tura agenta −10,3%, fill 255k +5,6%, bitowo = (2026-11-09) — PASS, w produkcji]]
 - 2026-11-09 [[2026-11-09-qwen-warp-vs-fork-3090|qwen-warp v0.8.0 kontra nasz fork CUDA na jednej RTX 3090 (2026-11-09)]]
+- 2026-11-09 [[2026-11-09-evalplus-qwen-uncensored|EvalPlus: Qwen3.8-27B-Uncensored Q4_K_M, produkcja XTX, effort low (2026-11-09)]]
 - 2026-11-09 [[2026-11-08-l1-tokenizacja-parser|Cache tokenizacji na ścieżce SAFE_SPECIAL + parser przyrostowy: tokenizacja 14,0 → 6,6 ms, wyjście identyczne (2026-11-08, pomiar częściowy)]]
-- 2026-11-09 [[2026-11-08-kvq-once-profil|kvq: KV raz na weryfikację MTP (`GGML_HIP_KVQ_ONCE`) i profil kroku przy długim kontekście (2026-11-07/08)]]
 
-Razem 732 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
+Razem 735 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

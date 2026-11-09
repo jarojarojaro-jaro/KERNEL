@@ -14,7 +14,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (50)
+## Notatki (52)
 
 - [[aob-v1|`aob-v1` (AMD-Opt Bench): benchmark regresji RSI-F z naszej historii (projekt)]] — Własny benchmark w formacie Harbor-lite (`task.toml`, `instruction.md`, `environment/`, ukryte `tests/`, `solution/oracle.patch` + `null.patch`) z fabryką jako weryfikatorem i podziałem dev (łatki 0001–0047) / test (0048–0070 + negatywy); przy naszym budżecie GPU to test regresji i postępu RSI-F, nie leaderboard – przy 10 zadaniach SE ≈ 0.15 (raport 21i, 2026-10-19).
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
@@ -29,6 +29,8 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[fly-stratna-weryfikacja|FLy: stratna weryfikacja z bramką entropii (vLLM)]] — Odrzucony token draftu zostaje przyjęty, gdy entropia top-3 celu ≥ 0.3 i W następnych draftów przechodzi weryfikację; rozkład celu nie jest zachowany (vLLM PR #53987, 2026-10-19).
 - [[glowica-draftu-rerank|Głowica draftu: grube przejście + dokładny rerank top-K]] — Saber liczy głowicę draftu w int2 (kandydaci = maksima bloków po 64 kolumny, KCAND 8), a potem dokładnie przelicza tylko kandydatów na wierszach pełnej precyzji („kilkaset KB wobec 0.167 GiB”); u nas ten sam trik może odzyskać −2–3% akceptacji, które kosztuje głowica MTP w IQ4_XS (łatka 0032) (raport 66d, 2026-11-07).
 - [[jak-przyspieszylismy-nvidia|Jak przyspieszyliśmy Enigmę na NVIDIA: 262 144 przy 101–149 t/s (kampania 67)]] — Największe zyski nie przyszły z nowych kerneli pisanych pod NVIDIA, tylko z przeniesienia tego, czego nauczyliśmy się na AMD (zwolniona rezerwa MTP, kernel `kvq`, fork z MTP n=4 i słownikiem draftu), z poprawnego modelu pamięci i z wyboru modelu z pomiarów zamiast z kalkulatora; RTX 5090 62,5 → 148,6 t/s, RTX 4090 46,9 → 101,3 t/s, obie przy pełnym 262 144 (2026-11-07).
+- [[jakosc-mini|jakość-mini: 290 pytań jakości dla dowolnego modelu za llama-server]] — Stały zestaw 290 pytań (5 kategorii) przez `/v1/chat/completions` z szablonem serwera, T=0, ścisłe parsery, trafność z 95% CI Wilsona, tokeny i czas na odpowiedź.
+- [[evalplus-jakosc-kodu|jakość-mini: bramka jakości kodu EvalPlus]] — Jedna komenda mierzy greedy pass@1 modelu z profilu `run-topka.sh` na HumanEval+ (164) i MBPP+ (378); generacja na GPU przez kolejkę, wykonanie niezaufanego kodu na CPU w piaskownicy Landlock.
 - [[kernel-tuner|Kernel Tuner: strojenie parametrów kerneli]] — Przeszukujemy parametry prawdziwych kerneli ggml (warpy, wiersze na blok) i przyjmujemy tylko konfiguracje bitowo równe produkcji.
 - [[kld-po-polsku|KLD kwantów na polskim tekście (protokół 16e)]] — Referencja to prawdziwe BF16 (na 48 GB z `-fit on`, offload do RAM, 54–240 s na korpus), a ocena idzie na pięciu korpusach o stałych md5, w tym trzech polskich; KLD-PL/KLD-wiki pokazuje, czy kwant ma „angielski” imatrix.
 - [[kontroler-szerokosci-draftu|Kontroler szerokości draftu (wzorzec Magnitude)]] — Magnitude (`draft_control.rs`, domyślnie włączony) co rundę wybiera parę (wydraftowane, zweryfikowane) o największej liczbie tokenów na sekundę z drabinki szerokości wypełniających klasy wierszy 2/4/8/16; u nich propozycji/krok waha się od 0.23 (9B pl-proza) do 6.75 (27B pl-kod).

@@ -3117,6 +3117,11 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[2026-11-09-wdrozenie-topka-q70]] — liczby z wyników wdrożenia (ticket 22938, `cachesave/summarize.py` grupa Q, ramiona `fa-d256/arm.sh` na kopii q70); procenty przeliczone: 1 384 / 13 413 = 10,3%, 492,5 / 466,3 = +5,6%, 550,7 / 526,7 = +4,6%, 285,9 / 1 055,5 = −73%, 463,0 / 1 321,7 = −65%. Baseline fill 255k z [[2026-11-08-fa-d256-prefill]]. OK.
 - [[REKORDY]], [[qwen3-8-27b]], raport 70 §6 — liczby powtórzone z notatki wyżej. OK.
 
+## Ingest 2026-11-09 (EvalPlus uncensored)
+
+- [[2026-11-09-evalplus-qwen-uncensored]] — pass@1 i tok/odp. z `qwen-opt/evalplus/uncensored-low/summary.md` (160/164, 152/164, 351/378, 303/378; 786, 704; 0 uciętych), wall z `gen-wall.txt` (808, 1819, 2627 s), CI Wilsona przeliczone (z=1,96), prędkość z `speed.md`, narzut z `overhead.py` (wynik w notatce; zgodny z wstępnymi liczbami Main dla HE+). Liczby publiczne: LocalMaxxing (90,9 / 92,1 / 91,0), EvalPlus `results.json` (Qwen2.5-Coder-32B-Instruct 92,1/87,2/90,5/77,0), karta Qwen3.8-27B (LCB v6 90,3), sprawdzone 2026-11-09. OK.
+- [[evalplus-jakosc-kodu]] — test piaskownicy (163/164, curl rc 7) z sesji EvalPlusQwen 2026-11-09. OK.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

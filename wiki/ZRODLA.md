@@ -117,6 +117,11 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | SPEED-Bench (arXiv 2604.09557) | R21f | R21f | Źródło „golden AL” AgentX. | – | – |
 | Terminal-Bench (tbench.ai) | R21h | R21h | Benchmark RSI; TB 2.1 51.7 → 86.5%. | – | – |
 | sol-execbench (nvidia), ncu-report-skill-rtx-5090, kekzl/imp | R21b | R21b | Materiały pomocnicze do 5090. | – | – |
+| HF openai/gsm8k (`main`, test) | `740312ad` (11-09) | [[jakosc-mini]] | 50 zadań w jakość-mini (seed 20261109). | test 1319 | – |
+| HF TIGER-Lab/MMLU-Pro (test) | `b189ec76` (11-09) | [[jakosc-mini]] | 10 pytań × 14 dziedzin w jakość-mini, zero-shot CoT. | test 12 032, do 10 opcji | – |
+| HF CohereLabs/Global-MMLU (`pl`, test) | `0e619dbe` (11-09) | [[jakosc-mini]] | `pl` istnieje (MT + poprawki społeczności), więc zadania SpeakLeash niepotrzebne. | test 14 042; Lite bez `pl` | ludzkie PL MCQ (SpeakLeash) |
+| evalplus HumanEval+ (pakiet evalplus 0.3.1) | HumanEvalPlus v0.1.10 | [[jakosc-mini]], [[evalplus-jakosc-kodu]] | 30 z 164 zadań w jakość-mini, ta sama piaskownica. | – | – |
+| HF gorilla-llm/Berkeley-Function-Calling-Leaderboard (v3 simple/multiple/parallel) + checker AST gorilla | `61fc0608` (11-09); gorilla `6ea57973` | [[jakosc-mini]] | 8+6+6 przypadków FC, checker AST skopiowany bez zmian logiki. | simple 400, multiple 200, parallel 200 | BFCL v4 / live |
 
 ## Prace naukowe
 
@@ -351,6 +356,14 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 | notwitcheer/llm-bench-rig (astra-stop) | `f732402` (11-08) | R69c, [[astra-stop]] | Preregistrowana replikacja Q4_K_M bez MTP; `</think>` w treści 11/32. | 26 254 → 16 930 (−35.5%); SVG 32 → 31/32 | surowe ślady, test z MTP |
 | honnibal.dev „Astra read/write misleading” | 11-03 | R69c | Krytyka WSP: agent używał Pythona i przebiegów modelu. | – | – |
 | AMD Adrenalin `atieclxx.exe` (wccftech, windowsforum/Comss, Neowin, forum AMD) | 11-08 | R69d, [[amd-adrenalin-zapisy-ssd]] | Tylko Windows; serwer nie dotyczy; UX ostrzeżenie Enigmy. | 0.3–1.5 MB/s typowo; wersje 26.6.4–26.10.2 | release notes z poprawką (numer) |
+
+## EvalPlus (2026-11-09, bramka jakość-mini)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| evalplus (PyPI) + HumanEvalPlus v0.1.10 / MbppPlus v0.2.0 | 0.3.1 (11-09) | [[evalplus-jakosc-kodu]] | Harness przyjęty; backend openai ma 100 s alarm z nieskończonym retry → własny dekoder na pętli evalplus. | 164 / 378 zadań | nowa wersja danych / EvalPerf |
+| EvalPlus leaderboard `results.json` | 11-09 | [[2026-11-09-evalplus-qwen-uncensored]] | Brak Qwen3.x. | Qwen2.5-Coder-32B-Instruct 92,1/87,2/90,5/77,0 | wpis Qwen3.8 |
+| LocalMaxxing HumanEval+ | 11-09 | [[2026-11-09-evalplus-qwen-uncensored]] | Inny harness (shardy), orientacyjnie. | Qwen3.8-27B Q4_K_XL 90,9, Q6_K_XL 92,1, Q4_K_M 91,0 (100/164) | MBPP+ / uncensored |
 
 ## Powiązane
 - [[KONWENCJE]]
