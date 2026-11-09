@@ -1,0 +1,13 @@
+# cachesave (XtxCacheSave): upstream #30137 port (shared_ptr checkpoints, no zero-fill of cache buffers) + THP/reuse arm.
+# Run: ~/qwen-opt/queue/run-jobs.sh ~/qwen-opt/cachesave/cachesave.jobs
+# A = production ~/llama-topka, B = ~/wt/l1-cachesave/build-hip, C = B with LLAMA_SERVER_CACHE_HUGE=1.
+cs-build|1800|~/wt/l1-cachesave|nice -n 19 cmake --build build-hip -j4 --target llama-server && git log --oneline -1
+cs-stop8080|200|~/qwen-opt/cachesave|~/qwen-opt/l1tok/chat8080.sh stop
+cs-A1|2400|~/qwen-opt/cachesave|./arm.sh A1 ~/llama-topka switch,md5,sweep
+cs-B1|2400|~/qwen-opt/cachesave|./arm.sh B1 ~/wt/l1-cachesave/build-hip switch,md5,sweep
+cs-C1|2400|~/qwen-opt/cachesave|./arm.sh C1 ~/wt/l1-cachesave/build-hip switch,md5,sweep LLAMA_SERVER_CACHE_HUGE=1
+cs-C2|2400|~/qwen-opt/cachesave|./arm.sh C2 ~/wt/l1-cachesave/build-hip switch,md5 LLAMA_SERVER_CACHE_HUGE=1
+cs-B2|2400|~/qwen-opt/cachesave|./arm.sh B2 ~/wt/l1-cachesave/build-hip switch,md5
+cs-A2|2400|~/qwen-opt/cachesave|./arm.sh A2 ~/llama-topka switch,md5
+cs-restore8080|400|~/qwen-opt/cachesave|~/qwen-opt/l1tok/chat8080.sh restore && test "$(readlink -f /proc/$(pgrep -f 'llama-server.*--port 8080( |$)' | head -1)/exe)" = "$HOME/llama-topka/bin/llama-server"
+cs-summary|60|~/qwen-opt/cachesave|~/qwen-opt/.venv/bin/python summarize.py results.jsonl

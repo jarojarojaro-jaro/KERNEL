@@ -93,11 +93,14 @@
 		clearInterval(timer);
 		calStates = Array(6).fill('wait');
 	});
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{t.shell.title(w.title)}</title>
 </svelte:head>
+
+<Seo title={t.shell.title(w.title)} description={t.shell.descriptions.wizard} />
 
 <ScreenHead overline={w.overline} title={w.title} />
 

@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, spekulacja, dflash, metal]
-aktualizacja: 2026-11-05
-zrodlo: ~/KERNEL/qwen-opt/research/tensorfold/README.md:1-25; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:41; ~/KERNEL/product/research/15c-nowe-silniki.md:34-37,93-102,210-221; ~/KERNEL/product/research/21g-nowe-silniki.md:90-157,284-289; ~/KERNEL/product/research/21g-notatki/tf-delta.md; ~/KERNEL/product/research/63a-silniki-lokalne.md:409-445
+aktualizacja: 2026-11-09
+zrodlo: ~/KERNEL/qwen-opt/research/tensorfold/README.md:1-25; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:41; ~/KERNEL/product/research/15c-nowe-silniki.md:34-37,93-102,210-221; ~/KERNEL/product/research/21g-nowe-silniki.md:90-157,284-289; ~/KERNEL/product/research/21g-notatki/tf-delta.md; ~/KERNEL/product/research/63a-silniki-lokalne.md:409-445; ~/KERNEL/product/research/69b-tensorfold-qwen-warp.md:10,40-57
 status: aktualne
 ---
 # TensorFold (ashhart/TensorFold)
@@ -26,6 +26,11 @@ Repo: 1560 commitów na `main`, 32 tagi w 18 dni, 552 PR-y, 235 issues. Rdzeń �
 ## v1.1.1–v1.2.2 (raport 63a, 2026-11-05, HEAD `cde4fe7`)
 - HIP ruszył, ale pod gfx1151/gfx1201: dekod atencji „cztery klucze na warp” +7.5–18.9% na gfx1151 przy 32/64K (#1932); gfx1100 nieuruchamiany, `--drafter` na HIP dalej odmawiany. Watch: `zig/kernels/hip/decode/plan.hip`.
 - Konkurs cuda.fast / mlx.fast Qwen3.8-27B: prompt to kopiowanie tekstu; najlepsze 2.759 (CUDA) / 1.810 (MLX); techniki już mamy ([[raport-63-synteza]]).
+
+## v1.2.3–v1.2.5 (raport 69b, 2026-11-09, HEAD `abc39af1`)
+- gfx1100 dalej nieuruchamiany („as we have no AMD GPU”, #1694); HIP rośnie na gfx1151/gfx1201 (27B przy 16 strumieniach 51 → 75 t/s na gfx1151). DFlash2 na HIP ładowany (#2477), ale serwer go nie używa.
+- Brak nowych liczb 27B na 3090/4090/5090. `TF_QWEN_REQUEST_STARTS=1` (GB10): tury 2–6 0.72–1.33 s zamiast 1.78–2.10 s, ale odpowiedź może się różnić (nie bezstratne).
+- Spine w stylu DSpine w ich treningu: ±0.002 kontroli – słaby sygnał przeciw [[drafter-dspine]]. Werdykt: nic do adopcji ([[raport-69-synteza]]).
 
 ## Powiązane
 - [[repo/_hub|repo]]

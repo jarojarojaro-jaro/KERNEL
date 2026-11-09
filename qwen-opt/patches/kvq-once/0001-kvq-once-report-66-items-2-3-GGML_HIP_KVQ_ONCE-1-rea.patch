@@ -1,0 +1,420 @@
+From 1d0fa32bbe6b381439a4802d202c5be1b7c077be Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Sat, 7 Nov 2026 22:42:48 +0000
+Subject: [PATCH 1/2] kvq-once (report 66 items 2-3): GGML_HIP_KVQ_ONCE=1 reads
+ the q4_0 KV once per MTP verify; kvq split knobs
+
+flash_attn_ext_kvq gets an ngroups template parameter. ngroups == 2 (q4_0, D 256, an even number of 16-column Q tiles:
+Qwen3.5/3.8 verify of 3-5, 9-10 or 14-16 tokens at GQA 6) runs one block of 2 x 8 warps per 2 adjacent Q tiles: warp w
+of group g computes tile 2*blockIdx.x + g over exactly the KV rows warp w of the ngroups == 1 kernel handles, so the
+K/V bytes of a block are fetched for both tiles at once (the second K read hits the cache), and every q4_0 block of V
+is dequantized once into the transposed LDS tile of the warp pair (group g dequantizes blocks [2g, 2g+2) of its lane's
+half row, 36 bytes, 4-byte loads). The pair synchronizes through 4 LDS counters per pair with LDS-only release/acquire
+fences (a workgroup fence on all address spaces would also wait for the K/V loads in flight). The KV split is still
+computed from the number of 16-column tiles, the per-column KQ/softmax/VKQ arithmetic and the warp combine order are
+those of the default kernel: bit-identical output by construction. LDS 53.9 KB, 242 VGPRs, no spills; ngroups == 1 keeps
+its arithmetic (D 256: 255 VGPRs, only setup scheduling differs). Default off until the GPU numbers are in.
+
+GGML_HIP_KVQ_BLOCKS_PER_SM=N (blocks per SM for the split, every KV type) and GGML_HIP_KVQ_MIN_SPLIT=T (at least T KV
+rows per split) are sweep knobs; unset = the old split. Other split points change the order of the sums (KLD gate).
+
+test-backend-ops: q4_0 GQA 6 eval cases with nb 10 and 16 (4 and 6 tiles), perf cases at kv 196608.
+---
+ ggml/src/ggml-cuda/fattn-kvq.cu | 191 +++++++++++++++++++++++++-------
+ tests/test-backend-ops.cpp      |   6 +-
+ 2 files changed, 151 insertions(+), 46 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
+index 1476ba4f2..c04227030 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cu
++++ b/ggml/src/ggml-cuda/fattn-kvq.cu
+@@ -71,11 +71,17 @@ static constexpr __host__ __device__ int fattn_kvq_lane_words() {
+     return type == GGML_TYPE_Q8_0 && n % 4 != 0 ? (n + 2 + 3)/4 : (n + 3)/4;
+ }
+ 
+-template <int D, int nwarps>
++// [GGML_HIP_KVQ_ONCE] ngroups == 2: a block holds 2 groups of nwarps warps that work on 2 adjacent tiles of 16 Q columns
++// (group g on tile 2*blockIdx.x + g) over the same KV rows, so the K/V data of a block is fetched for both tiles at once:
++// warp w of either group handles the KV rows that warp w of the ngroups == 1 kernel handles. Each pair of warps (one per
++// group) shares the transposed V tiles of its KV rows: every quantized block of V is dequantized once, by one of the two
++// warps, into a buffer that both read. The pair synchronizes through counters in shared memory (4 ints per pair).
++template <int D, int nwarps, int ngroups = 1>
+ static constexpr __host__ __device__ size_t fattn_kvq_nbytes_shared() {
+     constexpr int ncols = fattn_kvq_ncols;
+-    constexpr size_t nbytes_loop = size_t(ncols) * (D + 8) * sizeof(half) + size_t(nwarps) * 2*fattn_kvq_nbytes_VT;
+-    constexpr size_t nbytes_comb = size_t(nwarps) * ncols * sizeof(float2) + size_t(ncols) * (D + 1) * sizeof(float);
++    constexpr size_t nbytes_loop = size_t(ngroups) * ncols * (D + 8) * sizeof(half) + size_t(nwarps) * 2*fattn_kvq_nbytes_VT +
++        (ngroups > 1 ? size_t(nwarps) * 4*sizeof(int) : 0);
++    constexpr size_t nbytes_comb = size_t(ngroups) * (size_t(nwarps) * ncols * sizeof(float2) + size_t(ncols) * (D + 1) * sizeof(float));
+     return nbytes_loop > nbytes_comb ? nbytes_loop : nbytes_comb;
+ }
+ 
+@@ -219,11 +225,25 @@ static __device__ __forceinline__ void fattn_kvq_wave_sync() {
+     __builtin_amdgcn_wave_barrier();
+     __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "wavefront");
+ }
++
++// [GGML_HIP_KVQ_ONCE] counters shared by the 2 warps of a pair, ordered with the shared memory accesses only ("local"):
++// a workgroup scope fence on all address spaces would also wait for the K/V loads in flight.
++static __device__ __forceinline__ void fattn_kvq_pair_post(int * counter, const int value) {
++    __builtin_amdgcn_fence(__ATOMIC_RELEASE, "workgroup", "local");
++    __hip_atomic_store(counter, value, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP);
++}
++
++static __device__ __forceinline__ void fattn_kvq_pair_wait(const int * counter, const int value) {
++    while (__builtin_amdgcn_readfirstlane(__hip_atomic_load(counter, __ATOMIC_RELAXED, __HIP_MEMORY_SCOPE_WORKGROUP)) < value) {
++        __builtin_amdgcn_s_sleep(1);
++    }
++    __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "workgroup", "local");
++}
+ #endif // FATTN_KVQ_AVAILABLE
+ 
+-// A block works on 16 Q columns, VKQ is accumulated as f32.
+-template <int D, int nwarps, ggml_type type_KV>
+-__launch_bounds__(WARP_SIZE*nwarps, 1)
++// A block works on ngroups tiles of 16 Q columns, VKQ is accumulated as f32.
++template <int D, int nwarps, ggml_type type_KV, int ngroups>
++__launch_bounds__(WARP_SIZE*nwarps*ngroups, 1)
+ static __global__ void flash_attn_ext_kvq(
+         const char * __restrict__ Q,
+         const char * __restrict__ K,
+@@ -255,27 +275,39 @@ static __global__ void flash_attn_ext_kvq(
+     constexpr int stride_Q    = D + 8;              // halves
+     static_assert(nblocks % 2 == 0, "bad D");
+     static_assert(lane_bytes == nblocks_l*block_bytes, "bad lane_bytes");
++    // ngroups == 2: each warp of a pair loads and dequantizes the V blocks [g*nblocks_v, (g + 1)*nblocks_v) of its lane's
++    // half row (one contiguous 4 byte aligned range, so q4_0 only and nblocks_v even: D 256)
++    static_assert(ngroups == 1 || ngroups == 2, "bad ngroups");
++    static_assert(ngroups == 1 || (type_KV == GGML_TYPE_Q4_0 && nblocks_l % 4 == 0), "ngroups 2: q4_0 with D % 256 == 0 only");
++    constexpr int nblocks_v   = nblocks_l/ngroups;  // V blocks per lane that a warp dequantizes.
++    constexpr int V_bytes     = ngroups == 1 ? load_bytes : nblocks_v*block_bytes;
++    constexpr int V_align     = ngroups == 1 ? lane_align : (V_bytes % 16 == 0 ? 16 : (V_bytes % 8 == 0 ? 8 : 4));
++    constexpr int V_words     = ngroups == 1 ? lane_words : V_bytes/4;
+ 
+     extern __shared__ char smem[];
+     half * Q_lds  = (half *) smem;
+-    char * VT_lds = smem + ncols*stride_Q*sizeof(half) + threadIdx.y*(2*fattn_kvq_nbytes_VT);
+ 
+     const int lane = threadIdx.x;
+-    const int warp = threadIdx.y;
++    // ngroups == 2: scalar (wave-uniform) warp and group indices, so the branches on the group are uniform
++    const int warp = ngroups == 1 ? (int) threadIdx.y : __builtin_amdgcn_readfirstlane((int) threadIdx.y % nwarps); // KV rows
++    const int grp  = ngroups == 1 ? 0 : __builtin_amdgcn_readfirstlane((int) threadIdx.y / nwarps);              // Q tile
++    char * VT_lds = smem + ngroups*ncols*stride_Q*sizeof(half) + (ngroups == 1 ? threadIdx.y : (unsigned) warp)*(2*fattn_kvq_nbytes_VT);
++    // ngroups == 2: [0], [1] tiles written into VT buffer 0 / 1, [2 + g] tiles read by group g (counted per pair)
++    int * pair_sync = (int *) (smem + ngroups*ncols*stride_Q*sizeof(half) + nwarps*(2*fattn_kvq_nbytes_VT)) + 4*warp;
+     const int r    = lane % 16;
+     const int h    = lane / 16;
+     const bool lane_A = (r & 1) == h; // Whether WMMA reads A from this lane.
+ 
+     const int sequence    = blockIdx.z / ne12;
+     const int head_kv     = blockIdx.z % ne12;
+-    const int col0        = blockIdx.x*ncols;
++    const int col0        = blockIdx.x*(ngroups*ncols);
+     const int ncols_total = ne01*gqa_ratio;
+ 
+     // The softmax is done in the log2 domain, KQ_max is converted back to the natural domain for combining.
+     const float scale_log2 = scale*fattn_kvq_log2e;
+ 
+     // Q -> shared memory as f16, pre-scaled:
+-    for (int i = warp*WARP_SIZE + lane; i < ncols*(D/4); i += nwarps*WARP_SIZE) {
++    for (int i = (int) threadIdx.y*WARP_SIZE + lane; i < ngroups*ncols*(D/4); i += ngroups*nwarps*WARP_SIZE) {
+         const int c   = i / (D/4);
+         const int d4  = i % (D/4);
+         const int col = col0 + c;
+@@ -292,7 +324,7 @@ static __global__ void flash_attn_ext_kvq(
+ 
+     const _Float16 * mask_row = nullptr;
+     if (mask) {
+-        const int col = col0 + r;
++        const int col = col0 + grp*ncols + r;
+         const int j   = col < ncols_total ? col / gqa_ratio : 0;
+         mask_row = (const _Float16 *) (mask + (sequence % ne33)*nb33 + j*nb31);
+     }
+@@ -302,7 +334,7 @@ static __global__ void flash_attn_ext_kvq(
+     const char * K_row = K + sequence*nb13 + head_kv*nb12 + r*nb11 + (lane_A ? 0 : nblocks_l)*block_bytes - (K_sh ? 2 : 0);
+     // For V the halves of the wave split the blocks of the row:
+     const bool   V_sh  = lane_sh && h;
+-    const char * V_row = V + sequence*nb23 + head_kv*nb22 + r*nb21 + h*nblocks_l*block_bytes - (V_sh ? 2 : 0);
++    const char * V_row = V + sequence*nb23 + head_kv*nb22 + r*nb21 + (h*nblocks_l + grp*nblocks_v)*block_bytes - (V_sh ? 2 : 0);
+ 
+     // V is written to shared memory transposed, as pairs of rows (r, r+2) in the order [0 2 4 ... 14 | 1 3 5 ... 15].
+     // The lane with (r & 2) == 0 writes the first 16 values of the block (q4_0: low nibbles) for both rows, its partner
+@@ -324,6 +356,13 @@ static __global__ void flash_attn_ext_kvq(
+     float KQ_max = -FLT_MAX/2.0f;
+     float KQ_sum = 0.0f;
+ 
++    if constexpr (ngroups > 1) {
++        static_assert(4*nwarps <= WARP_SIZE, "bad nwarps");
++        if (threadIdx.y == 0 && lane < 4*nwarps) {
++            ((int *) (smem + ngroups*ncols*stride_Q*sizeof(half) + nwarps*(2*fattn_kvq_nbytes_VT)))[lane] = 0;
++        }
++    }
++
+     __syncthreads();
+ 
+     const int kv_begin = blockIdx.y*kv_per_split;
+@@ -331,16 +370,17 @@ static __global__ void flash_attn_ext_kvq(
+ 
+     const int k0_start = kv_begin + warp*fattn_kvq_nkv;
+     uint32_t K_raw[lane_words];
+-    uint32_t V_raw[lane_words];
++    uint32_t V_raw[V_words];
+     if (k0_start < kv_end) {
+         fattn_kvq_load<load_bytes, lane_align>(K_raw, K_row + k0_start*nb11);
+-        fattn_kvq_load<load_bytes, lane_align>(V_raw, V_row + k0_start*nb21);
++        fattn_kvq_load<V_bytes, V_align>(V_raw, V_row + k0_start*nb21);
+     }
+ 
+-    // Dequantize quantized block ib of V of the lane into the transposed f16 tile in buffer ib % 2:
++    // Dequantize quantized block ib of V of the lane into the transposed f16 tile in buffer ib % 2
++    // (ngroups == 2: only by the warp of group ib / nblocks_v, which holds the block at ib % nblocks_v):
+     auto V_to_lds = [&](const int ib) {
+         char * VT_dst = VT_lds + (ib % 2)*fattn_kvq_nbytes_VT;
+-        const int o = ib*block_bytes;
++        const int o = (ib % nblocks_v)*block_bytes;
+         const uint32_t d_self = type_KV == GGML_TYPE_Q8_0 ? fattn_kvq_get_u16(V_raw, o, V_sh) : fattn_kvq_get_u16(V_raw, o);
+         const uint32_t d_pair = fattn_kvq_xor2(d_self);
+         const _Float16 d_a  = __builtin_bit_cast(_Float16, (uint16_t) (V_row_lo ? d_self : d_pair));
+@@ -383,6 +423,8 @@ static __global__ void flash_attn_ext_kvq(
+         }
+     };
+ 
++    int pair_step = 0; // ngroups == 2: V tiles of the pair so far
++
+ #pragma unroll 1
+     for (int k0 = k0_start; k0 < kv_end; k0 += nwarps*fattn_kvq_nkv) {
+         // The K/V data for the next iteration is loaded as soon as the registers are free, memory loads complete in order.
+@@ -420,7 +462,7 @@ static __global__ void flash_attn_ext_kvq(
+ #pragma unroll
+                 for (int part = 0; part < 2; ++part) {
+                     const int i0 = ((other ? nblocks_l : 0) + ib)*QK4_0 + 16*part;
+-                    const uint4 * Q_src = (const uint4 *) (Q_lds + r*stride_Q + i0);
++                    const uint4 * Q_src = (const uint4 *) (Q_lds + (grp*ncols + r)*stride_Q + i0);
+                     const uint4 q0 = Q_src[0];
+                     const uint4 q1 = Q_src[1];
+                     const fattn_kvq_u8 B = {q0.x, q0.y, q0.z, q0.w, q1.x, q1.y, q1.z, q1.w};
+@@ -482,16 +524,7 @@ static __global__ void flash_attn_ext_kvq(
+         // VKQ, one quantized block of V per lane at a time: dequantize into a transposed f16 tile in shared memory, then
+         // read the WMMA A fragments for its 4 tiles of 16 values of the head dimension.
+         // The tile of the next block is written to the other buffer before reading the current one.
+-        V_to_lds(0);
+-#pragma unroll
+-        for (int ib = 0; ib < nblocks_l; ++ib) {
+-            fattn_kvq_wave_sync();
+-            if (ib + 1 < nblocks_l) {
+-                V_to_lds(ib + 1);
+-            } else {
+-                fattn_kvq_load<load_bytes, lane_align>(V_raw, V_row + k0_next*nb21);
+-            }
+-
++        const auto VT_mma = [&](const int ib) {
+             const char * VT_src = VT_lds + (ib % 2)*fattn_kvq_nbytes_VT;
+ #pragma unroll
+             for (int tt = 0; tt < 4; ++tt) {
+@@ -502,8 +535,50 @@ static __global__ void flash_attn_ext_kvq(
+                 const fattn_kvq_u8 A = {v0.x, v0.y, v0.z, v0.w, v1.x, v1.y, v1.z, v1.w};
+                 VKQ[t] = fattn_kvq_wmma(A, B_P, VKQ[t]);
+             }
++        };
++        if constexpr (ngroups == 1) {
++            V_to_lds(0);
++#pragma unroll
++            for (int ib = 0; ib < nblocks_l; ++ib) {
++                fattn_kvq_wave_sync();
++                if (ib + 1 < nblocks_l) {
++                    V_to_lds(ib + 1);
++                } else {
++                    fattn_kvq_load<V_bytes, V_align>(V_raw, V_row + k0_next*nb21);
++                }
++                VT_mma(ib);
++            }
++            fattn_kvq_wave_sync();
++        } else {
++            // Tile pair_step + ib of the pair = V block ib (and nblocks_l + ib) of the 16 KV rows, in buffer ib % 2. It is
++            // written by group ib / nblocks_v once the other group has read the previous tile of that buffer (the writer
++            // itself read it before), the next tile of a group's own is written before reading the current one.
++            const auto produce = [&](const int ib) {
++                fattn_kvq_pair_wait(pair_sync + 2 + (grp ^ 1), pair_step + ib - 1);
++                V_to_lds(ib);
++                fattn_kvq_pair_post(pair_sync + ib % 2, (pair_step + ib)/2 + 1);
++            };
++            if (grp == 0) {
++                produce(0);
++            }
++#pragma unroll
++            for (int ib = 0; ib < nblocks_l; ++ib) {
++                if (ib + 1 < nblocks_l) {
++                    if ((ib + 1)/nblocks_v == grp) {
++                        produce(ib + 1);
++                    }
++                } else {
++                    // Both groups have their V blocks in shared memory: the registers take the next KV rows. The load is
++                    // issued by both groups at the same point (as for ngroups == 1, after the K load of the next rows),
++                    // so the waits for the K and V data are counted exactly.
++                    fattn_kvq_load<V_bytes, V_align>(V_raw, V_row + k0_next*nb21);
++                }
++                fattn_kvq_pair_wait(pair_sync + ib % 2, (pair_step + ib)/2 + 1);
++                VT_mma(ib);
++                fattn_kvq_pair_post(pair_sync + 2 + grp, pair_step + ib + 1);
++            }
++            pair_step += nblocks_l;
+         }
+-        fattn_kvq_wave_sync();
+     }
+ 
+     // Each half of the wave summed up the KQ values of half of the KV rows:
+@@ -511,8 +586,9 @@ static __global__ void flash_attn_ext_kvq(
+ 
+     // Combine the results of the warps in shared memory:
+     __syncthreads();
+-    float2 * meta_lds = (float2 *) smem;                                  // [nwarps][ncols]
+-    float  * VKQ_lds  = (float *) (smem + nwarps*ncols*sizeof(float2));  // [ncols][D + 1]
++    char   * comb_lds = smem + grp*(nwarps*ncols*sizeof(float2) + ncols*(D + 1)*sizeof(float)); // per group
++    float2 * meta_lds = (float2 *) comb_lds;                                  // [nwarps][ncols]
++    float  * VKQ_lds  = (float *) (comb_lds + nwarps*ncols*sizeof(float2));  // [ncols][D + 1]
+ 
+     if (h == 0) {
+         meta_lds[warp*ncols + r] = make_float2(KQ_max, KQ_sum);
+@@ -545,7 +621,7 @@ static __global__ void flash_attn_ext_kvq(
+     for (int i = warp*WARP_SIZE + lane; i < ncols*D; i += nwarps*WARP_SIZE) {
+         const int c   = i / D;
+         const int d   = i % D;
+-        const int col = col0 + c;
++        const int col = col0 + grp*ncols + c;
+         if (col >= ncols_total) {
+             break;
+         }
+@@ -612,7 +688,14 @@ static __global__ void flash_attn_kvq_combine_fwht(
+     }
+ }
+ 
++// Integer environment knob read once by the caller (static), 0 if unset.
++static int ggml_cuda_fattn_kvq_env_int(const char * name) {
++    const char * env = getenv(name);
++    return env == nullptr ? 0 : atoi(env);
++}
++
+ // The number of KV splits (blocks along y) and the KV units (nwarps*16 rows) per split.
++// The split does not depend on GGML_HIP_KVQ_ONCE (ngroups): both kernels give the same results per Q column.
+ template <int nwarps>
+ static int ggml_cuda_fattn_kvq_nsplit(const ggml_tensor * dst, const int nsm, int & units_per_split) {
+     const ggml_tensor * Q = dst->src[0];
+@@ -626,16 +709,24 @@ static int ggml_cuda_fattn_kvq_nsplit(const ggml_tensor * dst, const int nsm, in
+     // combining the results. q8_0: 1 block per WGP, the twice as large K/V rows saturate the memory with fewer streams
+     // (LFM2 decode, D 64, 8 KV heads, in the model: 129 us at 98k context with 1 block per WGP, 147 us with 2 or 3,
+     // 162 us with 8 splits = unbalanced; 32k: 47 vs 53 us).
++    // [GGML_HIP_KVQ_BLOCKS_PER_SM=N] N blocks per SM for every KV type, [GGML_HIP_KVQ_MIN_SPLIT=T] at least T KV rows per
++    // split (rounded to whole units of nwarps*16 rows); sweep knobs for the Qwen q4_0 D 256 shapes, unset = as above.
++    // Other split points change the order of the sums (KLD gate, not md5).
++    static const int env_blocks_per_sm = ggml_cuda_fattn_kvq_env_int("GGML_HIP_KVQ_BLOCKS_PER_SM");
++    static const int env_min_split     = ggml_cuda_fattn_kvq_env_int("GGML_HIP_KVQ_MIN_SPLIT");
+     const int kv_unit = nwarps*fattn_kvq_nkv;
+     const int nunits  = K->ne[1] / kv_unit;
+-    const int blocks_per_sm = K->type == GGML_TYPE_Q8_0 ? 1 : 2;
++    const int blocks_per_sm = env_blocks_per_sm > 0 ? env_blocks_per_sm : (K->type == GGML_TYPE_Q8_0 ? 1 : 2);
+     int nsplit = std::max(1, blocks_per_sm*nsm / (ntiles_x*nblocks_z));
++    if (env_min_split > 0) {
++        nsplit = std::min(nsplit, std::max(1, nunits*kv_unit / env_min_split));
++    }
+     nsplit = std::min(nsplit, nunits);
+     units_per_split = (nunits + nsplit - 1) / nsplit;
+     return (nunits + units_per_split - 1) / units_per_split;
+ }
+ 
+-template <int D, int nwarps, ggml_type type_KV>
++template <int D, int nwarps, ggml_type type_KV, int ngroups>
+ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, ggml_tensor * dst,
+                                               float * fwht_dst, block_q8_1 * fwht_q8) {
+     const ggml_tensor * Q    = dst->src[0];
+@@ -652,7 +743,7 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+     memcpy(&scale, (const float *) dst->op_params + 0, sizeof(float));
+ 
+     constexpr int    ncols         = fattn_kvq_ncols;
+-    constexpr size_t nbytes_shared = fattn_kvq_nbytes_shared<D, nwarps>();
++    constexpr size_t nbytes_shared = fattn_kvq_nbytes_shared<D, nwarps, ngroups>();
+ 
+     const int id  = ggml_cuda_get_device();
+     const int nsm = ggml_cuda_info().devices[id].nsm;
+@@ -662,8 +753,9 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+     const int ncols_total = Q->ne[1] * gqa_ratio;
+     const int ntiles_x    = (ncols_total + ncols - 1) / ncols;
+     const int nblocks_z   = K->ne[2] * Q->ne[3];
++    GGML_ASSERT(ntiles_x % ngroups == 0);
+ 
+-    const auto kernel = flash_attn_ext_kvq<D, nwarps, type_KV>;
++    const auto kernel = flash_attn_ext_kvq<D, nwarps, type_KV, ngroups>;
+ 
+     int units_per_split;
+     const int nsplit       = ggml_cuda_fattn_kvq_nsplit<nwarps>(dst, nsm, units_per_split);
+@@ -678,8 +770,8 @@ static void ggml_cuda_flash_attn_ext_kvq_case(ggml_backend_cuda_context & ctx, g
+         dst_tmp_meta.alloc(size_t(nsplit)*ggml_nrows(dst));
+     }
+ 
+-    const dim3 blocks_num(ntiles_x, nsplit, nblocks_z);
+-    const dim3 block_dim(WARP_SIZE, nwarps, 1);
++    const dim3 blocks_num(ntiles_x/ngroups, nsplit, nblocks_z);
++    const dim3 block_dim(WARP_SIZE, nwarps*ngroups, 1);
+     ggml_cuda_kernel_launch_params launch_params(blocks_num, block_dim, nbytes_shared, stream);
+     ggml_cuda_kernel_launch(kernel, launch_params,
+         (const char *) Q->data, (const char *) K->data, (const char *) V->data,
+@@ -783,13 +875,26 @@ static constexpr int fattn_kvq_nwarps = 8;
+ void ggml_cuda_flash_attn_ext_kvq(ggml_backend_cuda_context & ctx, ggml_tensor * dst, float * fwht_dst, block_q8_1 * fwht_q8) {
+     constexpr int nwarps = fattn_kvq_nwarps;
+     const bool q8 = dst->src[1]->type == GGML_TYPE_Q8_0;
++    // [GGML_HIP_KVQ_ONCE=1] q4_0 D 256 with an even number of 16-column Q tiles (Qwen3.5/3.8 verify of 3-5, 9-10 or 14-16
++    // tokens at GQA 6): one block per 2 tiles, the K/V data is fetched and V dequantized once for both (see
++    // fattn_kvq_nbytes_shared). Same split and per-column arithmetic as the default kernel. Default off until measured.
++    static const bool once = ggml_cuda_fattn_kvq_env_int("GGML_HIP_KVQ_ONCE") != 0;
+     switch (dst->src[1]->ne[0]) {
+-        case  64: q8 ? ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q8_0>(ctx, dst, fwht_dst, fwht_q8)
+-                     : ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q4_0>(ctx, dst, fwht_dst, fwht_q8); break;
+-        case 128: q8 ? ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q8_0>(ctx, dst, fwht_dst, fwht_q8)
+-                     : ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q4_0>(ctx, dst, fwht_dst, fwht_q8); break;
+-        case 256: GGML_ASSERT(!q8);
+-                  ggml_cuda_flash_attn_ext_kvq_case<256, nwarps, GGML_TYPE_Q4_0>(ctx, dst, fwht_dst, fwht_q8); break;
++        case  64: q8 ? ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q8_0, 1>(ctx, dst, fwht_dst, fwht_q8)
++                     : ggml_cuda_flash_attn_ext_kvq_case< 64, nwarps, GGML_TYPE_Q4_0, 1>(ctx, dst, fwht_dst, fwht_q8); break;
++        case 128: q8 ? ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q8_0, 1>(ctx, dst, fwht_dst, fwht_q8)
++                     : ggml_cuda_flash_attn_ext_kvq_case<128, nwarps, GGML_TYPE_Q4_0, 1>(ctx, dst, fwht_dst, fwht_q8); break;
++        case 256: {
++            GGML_ASSERT(!q8);
++            const ggml_tensor * Q = dst->src[0];
++            const int64_t ncols_total = Q->ne[1] * (Q->ne[2] / dst->src[1]->ne[2]);
++            const int64_t ntiles_x    = (ncols_total + fattn_kvq_ncols - 1) / fattn_kvq_ncols;
++            if (once && ntiles_x % 2 == 0) {
++                ggml_cuda_flash_attn_ext_kvq_case<256, nwarps, GGML_TYPE_Q4_0, 2>(ctx, dst, fwht_dst, fwht_q8);
++            } else {
++                ggml_cuda_flash_attn_ext_kvq_case<256, nwarps, GGML_TYPE_Q4_0, 1>(ctx, dst, fwht_dst, fwht_q8);
++            }
++        } break;
+         default: GGML_ABORT("fatal error");
+     }
+ }
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index f1fade538..452b2d9c4 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -12584,8 +12584,8 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_flash_attn_ext(256, 256, 2, {16, 1}, 16384,   1, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q8_0, GGML_TYPE_Q8_0));
+ 
+     // q4_0 KV, small batches with GQA (decode and speculative verify), also in the KV cache layout and at multiple sequences:
+-    // flattened tokens x GQA heads with 1-3 tiles of 16 Q columns
+-    for (int64_t nb : { 1, 2, 3, 5, 6, 8 }) {
++    // flattened tokens x GQA heads with 1-6 tiles of 16 Q columns (RDNA3 GGML_HIP_KVQ_ONCE=1: D 256 with 2, 4 or 6 tiles)
++    for (int64_t nb : { 1, 2, 3, 5, 6, 8, 10, 16 }) {
+         test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 1024, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
+         test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 4096, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0, {0, 2, 1, 3}));
+         test_cases.emplace_back(new test_flash_attn_ext(128, 128, 2, {8, 2}, 768, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
+@@ -13307,7 +13307,7 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+     test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, 131072, 512, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_F16, GGML_TYPE_F16));
+ 
+     // Qwen3.5/3.6-27B decode and speculative verify on a q4_0 KV cache: GQA 6, small batches, long context
+-    for (int64_t kv : { 2048, 32768, 98304 }) {
++    for (int64_t kv : { 2048, 32768, 98304, 196608 }) {
+         for (int64_t nb : { 1, 2, 5, 8 }) {
+             test_cases.emplace_back(new test_flash_attn_ext(256, 256, 4, {6, 1}, kv, nb, true, false, 0, 0, GGML_PREC_F32, GGML_TYPE_Q4_0, GGML_TYPE_Q4_0));
+         }
+-- 
+2.43.0
+

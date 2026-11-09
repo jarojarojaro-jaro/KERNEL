@@ -7,11 +7,14 @@
 
 	const lang = $derived(currentLang());
 	const t = $derived(T[lang]);
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{t.shell.title(t.nav.overview)}</title>
 </svelte:head>
+
+<Seo title={t.shell.title(t.nav.overview)} description={t.shell.descriptions.overview} />
 
 <ScreenHead overline={t.overview.overline} title={t.overview.title} lead={t.overview.lead}>
 	{#snippet actions()}

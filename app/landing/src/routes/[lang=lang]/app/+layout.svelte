@@ -1,14 +1,17 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { afterNavigate } from '$app/navigation';
 	import TitleBar from '$lib/desktop/TitleBar.svelte';
 	import Sidebar from '$lib/desktop/Sidebar.svelte';
 	import StatusStrip from '$lib/desktop/StatusStrip.svelte';
 	import { currentLang } from '$lib/i18n';
-	import { T } from '$lib/desktop/i18n';
+	import { T, type DesktopDict } from '$lib/desktop/i18n';
 
 	let { children } = $props();
 	const lang = $derived(currentLang());
 	const t = $derived(T[lang]);
+	// '/pl/app/' → overview, '/pl/app/chat/' → chat
+	const screen = $derived((page.url.pathname.split('/')[3] || 'overview') as keyof DesktopDict['shell']['descriptions']);
 	// hooks.server sets <html lang> for the prerendered page; keep it right after client-side switches.
 	$effect(() => {
 		document.documentElement.lang = lang;
@@ -26,6 +29,7 @@
 
 <svelte:head>
 	<meta name="robots" content="noindex" />
+	<meta name="description" content={t.shell.descriptions[screen]} />
 </svelte:head>
 
 <div class="desk bg-grid heat-scope">

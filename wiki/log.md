@@ -261,5 +261,45 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 ## [2026-11-07] lekcja | czat wstał na starym silniku
 [[lekcja-restart-zlym-launcherem]]: po restarcie maszyny `run-llm.sh` zamiast `run-topka.sh` → ~6 h produkcji na llama-opt z 15.10; naprawione restartem przez run-topka.sh (topka-q63, PM4, lookup, GPU verify, n_ctx 262144).
 
+## [2026-11-07] eksperyment | Q6_K MMQ skale — KILL
+[[2026-11-07-q6k-mmq-skale]]: pp4096 1000,7 → 1000,6 t/s, prefill 12k 933,1 → 933,0, md5 =; łatka 0004 usunięta. Research 68a–d + synteza 68.
+
+## [2026-11-08] lekcja | cpuheavy w jobie kolejki
+[[lekcja-cpuheavy-w-jobie-kolejki]]: zakleszczenie kvq-once2 (quiet.lock); kolejność biletów GPU ustawiona wg wartości.
+
+## [2026-11-08] eksperyment | kvq KV raz na weryfikację + profil 199k — KILL
+[[2026-11-08-kvq-once-profil]]: FA = 100% nachylenia kroku 1.7k→199k (11.3 ms, 30% GPU); `GGML_HIP_KVQ_ONCE=1` bitowo = (md5 1.7k/94k/199k), FA −6.1% przy 199k (próg −10%) → KILL, e2e 199k +1.79%, 94k +0.89%; podziały kvq: 2 bloki/SM najlepsze → KILL. ONCE=2 (job przerwany zakleszczeniem cpuheavy) ponowiony.
+
+## [2026-11-08] eksperyment | zapis prompt cache bez zerowania (#30137) + THP — niezmierzone
+[[2026-11-08-cachesave-30137]]: port #30137 + `LLAMA_SERVER_CACHE_HUGE=1` (THP, ponowne użycie bufora po eksmisji) na `l1-cachesave` 3152b0bfa, łatka topka-q63/0004; nie zbudowane ani zmierzone (koniec testów), job `qwen-opt/cachesave/` gotowy do wznowienia.
+
+## [2026-11-08] update | kvq-once: koniec testów
+[[2026-11-08-kvq-once-profil]]: ONCE=2 i okno uwagi draftu MTP przy 94k/199k nie zmierzone (joby anulowane przed startem); sekcja „Stan / do wznowienia”.
+
+## [2026-11-09] zamknięcie | testy XTX z 07–08.11 spisane
+[[2026-11-08-l1-tokenizacja-parser]] (tokenizacja 14,0 → 6,6 ms, md5 =, pomiar A→B bez A2), [[2026-11-08-fa-d256-prefill]] i [[xtxbench-szybki-ab]] (kod gotowy, niezmierzone), synteza 68 ze stanem wznowienia; czat po restarcie maszyny 09.11 00:30 uruchomiony przez run-topka.sh + autostart w crontabie (@reboot).
+
+## [2026-11-09] eksperyment | xtxbench t1: walidacja A/A na GPU
+[[xtxbench-szybki-ab]]: pomiar czasu działa (szum decode 0,02–0,15%, prefill 0,03–0,33%, A/A NULL, 3,9 min/wariant vs ~38 min), ale md5 decode z migawek niewiarygodne — tylko pierwszy restore na świeżym serwerze = świeży prefill, kolejne inne (fałszywy KILL w A/A); do poprawki przed bramką md5.
+
+## [2026-11-09] update | xtxbench: md5 tylko z pierwszego restore + wyciek stanu
+[[xtxbench-szybki-ab]]: werdykt md5 tylko z pierwszej rundy po świeżym starcie serwera, `--var-switch` → md5 n/a (same-server); selftest 7/7 z modelem wycieku. Znalezisko w [[2026-11-08-kvq-once-profil]] i syntezie 68: drugi restore slotu ≠ świeży prefill (podejrzenie: reset MTP/rekurencji, por. #30574).
+
+## [2026-11-09] eksperyment | kvq ONCE=2 (K raz na parę fal) — KILL
+[[2026-11-08-kvq-once-profil]]: bitowo = (fa_hash 18/18, tbo 381/381, md5 199k efdb8053), FA 196k nb5 623,4 → 625,7 µs (+0,4%; ONCE=1 574,0), 98k 321,2 → 325,6; e2e 199k 95,09 → 94,73 t/s (−0,38%), spec_sweep 121,05 → 120,9; PMC FETCH_SIZE = 0 (licznik nie działa).
+
+## [2026-11-09] decyzja | próg adopcji ≥ 3–5% / ≥ 1 s na turę; l1tok i mtpw zamknięte
+Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: bezstratne, −85 ms/turę, nie wdrażamy (A2/C anulowane). [[2026-11-08-kvq-once-profil]]: ONCE=1/2 KILL, okno MTP nie mierzone (anulowane, oczekiwany KILL). Próg w syntezie 68 i [[xtxbench-szybki-ab]].
+
+## [2026-11-09] ingest | raport 69: DSpine-27B, qwen-warp/TensorFold, Astra-Stop, AMD Adrenalin
+[[raport-69-synteza]] (synteza `product/research/69-SYNTEZA.md`). Zaktualizowane: [[drafter-dspine]] (27B: SWA 8192, port Ajay9o9 `d493f84`, twierdzenia vs fakty, model XTX per klasa), [[qwen-warp]] (v0.8.0: DFlash2 w grafie, multiuser), [[tensorfold]] (v1.2.5+: gfx1100 dalej brak). Nowe: [[astra-stop]] (zmiana zachowania, nie bezstratna; przeciek `</think>` 11/32; LoRA 90 KB), [[amd-adrenalin-zapisy-ssd]] (serwer nie dotyczy; nigdy nie radzić wyłączania ReBAR). [[ZRODLA]]: sekcja „Raport 69” + wiersze dublowania DSpine/qwen-warp/TensorFold. Wszystkie testy czekają na decyzję użytkownika (6 punktów w syntezie).
+
+## [2026-11-09] decyzja | po rundzie 69
+[[2026-11-09-decyzje-runda-69]]: DSpine odpuszczony (64k), Astra-Stop odłożony (temat na fine-tuning), publikacja rankingów wkrótce, jakość-mini dla 12–16 GB.
+
 ## [2026-11-08] lekcja | build landingu bez $HOME
 [[lekcja-build-landing-nie-czyta-home]]: `scripts/cards.ts` i `scripts/sync-results.ts` liczą ścieżki danych od roota repo (fallback do `~` zostaje dla serwera GPU); build w klonie z pustym `HOME` = kod 0, sha256 `cards.json`/`cloud-results.json` bez zmian.
+
+## [2026-11-09] produkt | landing przebazowany na KERNEL main 8307d36, równy żywej d3054d2
+[[strona-zrodlo-rowna-zywej]]: gałąź `nvidia-2026-11` przebazowana bez `--force` na `main` `8307d36`; konflikt tylko w meta — meta z maina (`metaTitle`/`metaDescription`) + `<Seo>` z misji, twarde spacje z żywej wróciły do źródła; ekrany `/app/` dostały OG/Twitter. Pomiar: head 86/86 i tekst 86/86 bez różnic, markup 0 realnych różnic, `leaks` CZYSTO, `bun run check` 0/0, `404.html` 0 `../` i 53/53 zasobów < 400. Odstępstwo: nazwy chunków `_app/i4` inne (źródło ma dodatkowe moduły), `version.json` z definicji.
+

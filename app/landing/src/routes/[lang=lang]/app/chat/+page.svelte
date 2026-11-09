@@ -56,11 +56,14 @@
 		await tick();
 		composer?.focus();
 	}
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{t.shell.title(c.title)}</title>
 </svelte:head>
+
+<Seo title={t.shell.title(c.title)} description={t.shell.descriptions.chat} />
 
 <div class="wrap">
 	<section class="chat" aria-labelledby="chat-h">

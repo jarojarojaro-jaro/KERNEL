@@ -9,23 +9,21 @@ export const ob = {
 		back: 'Wstecz',
 		account: {
 			signin: {
-				title: `Zaloguj się · ${N}`,
+				title: `Zaloguj się do konta ${N}`,
 				heading: `Zaloguj się do *${N}*`,
 				lead: 'Jedno konto dla strony, aplikacji i terminala.',
-				/** Meta description is longer than the on-page lead on the live site. */
-				metaDescription: 'Zaloguj się do Enigma LABZ. Jedno konto dla strony, aplikacji i\u00a0terminala.',
+				description: `Zaloguj się do ${N}. Jedno konto dla strony, aplikacji i\u00a0terminala.`,
 				via: 'Kontynuuj z',
 				submit: 'Zaloguj się',
 				noAccount: 'Nie masz konta?',
 				create: 'Załóż konto'
 			},
 			signup: {
-				title: `Załóż konto · ${N}`,
+				title: `Załóż konto ${N}: minuta, bez e-maila`,
 				kicker: 'Nowe konto',
 				heading: `Załóż konto *${N}*`,
 				lead: 'Minuta, bez e-maila. Potem od razu dobierzemy model do Twojego sprzętu.',
-				/** The live meta description repeats the lead; kept explicit so both languages match. */
-				metaDescription: 'Minuta, bez e-maila. Potem od razu dobierzemy model do Twojego sprzętu.',
+				description: 'Minuta, bez e-maila. Potem od razu dobierzemy model do Twojego sprzętu.',
 				points: ['Jedno konto dla strony, aplikacji i terminala', 'Bez e-maila i bez danych osobowych', 'Google, GitHub, Hugging Face albo nazwa i hasło'],
 				via: 'Załóż konto przez',
 				submit: 'Załóż konto',
@@ -59,6 +57,7 @@ export const ob = {
 		},
 		paths: {
 			title: 'Jak chcesz zacząć?',
+			metaTitle: `Jak chcesz zacząć? · ${N}`,
 			lead: 'Wybierz drogę. Każda kończy się tym samym: polecanym modelem i uczciwą prognozą prędkości.',
 			recommended: 'polecane dla Twojego systemu',
 			items: [
@@ -69,7 +68,7 @@ export const ob = {
 		},
 		hw: {
 			title: 'Twój sprzęt',
-			metaTitle: 'Twój sprzęt: wpisz kartę graficzną\u00a0· Enigma LABZ',
+			metaTitle: `Twój sprzęt: wpisz kartę graficzną\u00a0· ${N}`,
 			lead: 'Wpisz kartę graficzną, a resztę uzupełnimy. Liczymy wszystko w przeglądarce.',
 			gpu: 'Karta graficzna',
 			gpuPh: 'np. RTX 4070, RX 7900 XTX, Apple M4 Pro',
@@ -95,7 +94,7 @@ export const ob = {
 		},
 		result: {
 			title: 'Twój wynik',
-			metaTitle: 'Twój wynik: polecany model i\u00a0prognoza\u00a0· Enigma LABZ',
+			metaTitle: `Twój wynik: polecany model i\u00a0prognoza\u00a0· ${N}`,
 			lead: 'Polecany model i prognoza prędkości. Liczby zmierzone oznaczamy jako zmierzone, resztę jako szacunek z przedziałem.',
 			machine: 'Twój komputer',
 			edit: 'Zmień sprzęt',
@@ -162,6 +161,7 @@ export const ob = {
 		},
 		download: {
 			title: 'Pobierz aplikację',
+			metaTitle: `Pobierz aplikację: Windows, Linux, macOS · ${N}`,
 			lead: 'Podpisany instalator z wbudowanym silnikiem. Paczka dla Twojej karty dociąga się po wykryciu sprzętu.',
 			notYet: 'jeszcze niedostępne',
 			target: 'cel: instalator < 60 MB',
@@ -184,6 +184,7 @@ export const ob = {
 		},
 		terminal: {
 			title: 'Instalacja z terminala',
+			metaTitle: `Instalacja z terminala: CLI i TUI · ${N}`,
 			lead: 'Jedna komenda, potem CLI i TUI. Polecenia poniżej to projekt: zaczną działać, gdy opublikujemy paczki (z sumą kontrolną i podpisem).',
 			notYet: 'projekt, jeszcze nie działa',
 			then: 'Potem',
@@ -222,23 +223,21 @@ export const ob = {
 		back: 'Back',
 		account: {
 			signin: {
-				title: `Sign in · ${N}`,
+				title: `Sign in to your ${N} account`,
 				heading: `Sign in to *${N}*`,
 				lead: 'One account for the website, the app and the terminal.',
-				/** Meta description is longer than the on-page lead on the live site. */
-				metaDescription: 'Sign in to Enigma LABZ. One account for the website, the app and the terminal.',
+				description: `Sign in to ${N}. One account for the website, the app and the terminal.`,
 				via: 'Continue with',
 				submit: 'Sign in',
 				noAccount: 'No account yet?',
 				create: 'Create one'
 			},
 			signup: {
-				title: `Create account · ${N}`,
+				title: `Create an ${N} account: one minute, no email`,
 				kicker: 'New account',
 				heading: `Create your *${N}* account`,
 				lead: 'One minute, no email. Right after, we match a model to your hardware.',
-				/** Meta description is longer than the on-page lead on the live site. */
-				metaDescription: 'Create an Enigma LABZ account in one minute, no email. Right after, we match a\u00a0model to your hardware.',
+				description: `Create an ${N} account in one minute, no email. Right after, we match a\u00a0model to your hardware.`,
 				points: ['One account for the website, the app and the terminal', 'No email, no personal data', 'Google, GitHub, Hugging Face or a username and password'],
 				via: 'Sign up with',
 				submit: 'Create account',
@@ -272,6 +271,7 @@ export const ob = {
 		},
 		paths: {
 			title: 'How would you like to start?',
+			metaTitle: `How would you like to start? · ${N}`,
 			lead: 'Pick a path. Each one ends the same way: a recommended model and an honest speed forecast.',
 			recommended: 'recommended for your system',
 			items: [
@@ -282,7 +282,7 @@ export const ob = {
 		},
 		hw: {
 			title: 'Your hardware',
-			metaTitle: 'Your hardware: enter your graphics card\u00a0· Enigma LABZ',
+			metaTitle: `Your hardware: enter your graphics card\u00a0· ${N}`,
 			lead: 'Type your graphics card and we fill in the rest. Everything is computed in your browser.',
 			gpu: 'Graphics card',
 			gpuPh: 'e.g. RTX 4070, RX 7900 XTX, Apple M4 Pro',
@@ -308,7 +308,7 @@ export const ob = {
 		},
 		result: {
 			title: 'Your result',
-			metaTitle: 'Your result: recommended model and forecast\u00a0· Enigma LABZ',
+			metaTitle: `Your result: recommended model and forecast\u00a0· ${N}`,
 			lead: 'Recommended model and speed forecast. Measured numbers are marked as measured; everything else is an estimate with a range.',
 			machine: 'Your computer',
 			edit: 'Change hardware',
@@ -375,6 +375,7 @@ export const ob = {
 		},
 		download: {
 			title: 'Download the app',
+			metaTitle: `Download the app: Windows, Linux, macOS · ${N}`,
 			lead: 'A signed installer with the engine built in. The package for your card is fetched once your hardware is detected.',
 			notYet: 'not available yet',
 			target: 'target: installer < 60 MB',
@@ -397,6 +398,7 @@ export const ob = {
 		},
 		terminal: {
 			title: 'Install from the terminal',
+			metaTitle: `Install from the terminal: CLI and TUI · ${N}`,
 			lead: 'One command, then the CLI and TUI. The commands below are a design: they start working once we publish the packages (with a checksum and signature).',
 			notYet: 'design, not live yet',
 			then: 'Then',

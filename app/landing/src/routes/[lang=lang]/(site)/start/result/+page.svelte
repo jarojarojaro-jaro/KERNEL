@@ -77,8 +77,8 @@
 </script>
 
 <svelte:head><title>{t.metaTitle}</title><meta name="robots" content="noindex, follow" /></svelte:head>
-<Seo title={t.metaTitle} description={t.lead} />
 
+<Seo title={t.metaTitle} description={t.lead} />
 
 <Shell title={t.title} lead={t.lead} wide back="/start/hardware">
 	{#if ready && (!hw || !rec || !primaryF || !b)}

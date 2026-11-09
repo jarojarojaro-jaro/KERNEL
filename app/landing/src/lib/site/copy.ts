@@ -118,7 +118,7 @@ const raw = {
 		},
 		results: {
 			meta: {
-				title: `Wyniki — ${N}`,
+				title: `Wyniki: zmierzone przyspieszenie na kartach — ${N}`,
 				description: 'Zmierzone przyspieszenie na każdej karcie i każdym modelu: typowa aplikacja, najlepsze flagi i nasz silnik, z warunkami i źródłem każdej liczby.'
 			},
 			teaser: {
@@ -350,7 +350,7 @@ const raw = {
 		},
 		results: {
 			meta: {
-				title: `Results — ${N}`,
+				title: `Results: measured speed-ups on every card — ${N}`,
 				description: 'Measured speed-ups on every card and model: the typical app, the best flags and our engine, with the conditions and source of every number.'
 			},
 			teaser: {

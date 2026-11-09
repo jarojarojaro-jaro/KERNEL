@@ -95,8 +95,8 @@
 </script>
 
 <svelte:head><title>{t.metaTitle}</title></svelte:head>
-<Seo title={t.metaTitle} description={t.lead} />
 
+<Seo title={t.metaTitle} description={t.lead} />
 
 <Shell title={t.title} lead={t.lead} wide back="/start/paths">
 	<div class="grid">

@@ -8,17 +8,18 @@
 	const T = {
 		pl: {
 			title: 'Kontakt',
+			metaTitle: 'Kontakt: karty, pomiary, współpraca',
 			lead: 'Pytanie o Twoją kartę, wynik pomiaru albo współpracę? Napisz do nas.',
-			/** Meta description differs from the on-page lead on the live site. */
-			description: 'Pytanie o\u00a0Twoją kartę, wynik pomiaru albo współpracę? Napisz do zespołu Enigma LABZ.',
+			metaDescription: `Pytanie o\u00a0Twoją kartę, wynik pomiaru albo współpracę? Napisz do zespołu ${BRAND.name}.`,
 			company: 'Dane firmy',
 			methodology: 'Jak mierzymy',
 			cards: 'Sprawdź swoją kartę'
 		},
 		en: {
 			title: 'Contact',
+			metaTitle: 'Contact: cards, measurements, collaboration',
 			lead: 'A question about your card, a measurement or working together? Write to us.',
-			description: 'A question about your card, a measurement or working together? Write to us.',
+			metaDescription: 'A question about your card, a measurement or working together? Write to us.',
 			company: 'Company details',
 			methodology: 'How we measure',
 			cards: 'Check your card'
@@ -28,9 +29,9 @@
 	import Seo from '$lib/site/Seo.svelte';
 </script>
 
-<svelte:head><title>{t.title} · {BRAND.name}</title><meta name="description" content={t.description} /></svelte:head>
+<svelte:head><title>{t.metaTitle} · {BRAND.name}</title><meta name="description" content={t.metaDescription} /></svelte:head>
 
-<Seo title={`${t.title} · ${BRAND.name}`} description={t.description} />
+<Seo title={`${t.metaTitle} · ${BRAND.name}`} description={t.metaDescription} />
 
 <section class="section heat-scope">
 	<div class="container container--narrow">

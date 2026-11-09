@@ -36,11 +36,14 @@
 		no: 'badge--danger'
 	};
 	const conditional = Object.values(LICENSES).filter((l) => l.commercial !== 'yes');
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{t.shell.title(md.title)}</title>
 </svelte:head>
+
+<Seo title={t.shell.title(md.title)} description={t.shell.descriptions.models} />
 
 <ScreenHead overline={md.overline} title={md.title} lead={md.lead(num(DEMO.vramGiB, lang), num(DEMO.ramGiB, lang))} />
 

@@ -14,8 +14,9 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (34)
+## Notatki (35)
 
+- [[amd-adrenalin-zapisy-ssd|AMD Adrenalin: ciągłe zapisy SSD przez `atieclxx.exe` (Windows)]] — Usługa AMD External Events Utility (`atieclxx.exe`) w sterownikach 26.6.4–26.10.2 stale zapisuje na dysk systemowy, typowo 0.3–1.5 MB/s (26–130 GB/dzień); nasz serwer Linux nie jest dotknięty, a Enigma na Windows+AMD powinna ostrzegać na podstawie pomiaru i nigdy nie radzić wyłączania ReBAR (2026-11-09).
 - [[produkt-analiza-platformy|Analiza platformy (PLAN §4.5)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; wynik idzie do manifestu jako predykat (np. `os: [linux]`, `runtime: rocr`).
 - [[produkt-anatomia-l0-l3|Anatomia „przed → po”: warstwy L0–L3]] — Zysk dzieli się na cztery warstwy: L0 naprawy (do ×20, gdy coś zepsute), L1 konfiguracja (×1.5–2.2), L2 strojenie nocne (+0–15%), L3 przepis z labu (+30–70%).
 - [[aplikacja-w-budowie|Aplikacja (~/KERNEL/app): stan prototypu]] — Pierwsze elementy produktu zbudowane lokalnie przez AppStudio (2026-10-16, commit `9f96ff4`): system projektowy „Tacho”, statyczna strona SvelteKit PL/EN (47 stron), prototyp onboardingu, skrypty skanu, prototyp aplikacji desktop (8 ekranów), makieta TUI i dokument architektury; nic nie jest wdrożone.
@@ -47,7 +48,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[app-skrypty-skanu|Skrypty skanu sprzętu (scan.sh, scan-macos.sh, scan.ps1)]] — Trzy skrypty tylko do odczytu wypisują specyfikację i czytelny kod `HW1;os=…;gpu=…;sum=XXXX` do wklejenia w formularz; na Linuksie `strace` uruchomienia przez `sh` pokazał 0 otwarć `/dev/*`.
 - [[produkt-stack|Stack technologiczny]] — llama.cpp jako cienka nakładka, daemon i TUI w Rust (ratatui), GUI w Tauri 2 z web UI llama.cpp, API OpenAI/Anthropic/Ollama tylko na 127.0.0.1 z tokenem.
 - [[app-landing|Strona (landing) PL/EN]] — Statyczna strona w SvelteKit 2.70 + Svelte 5 (adapter-static), 47 stron PL i EN: hero z animacją „pojedynek prędkości” 38,8 → 109,0 t/s, metodologia z surowymi liczbami, dokumenty prawne i baner cookies.
-- [[strona-zrodlo-rowna-zywej|Strona: źródło = żywa (krok 0 przed zmianami treści)]] — Build z `app/landing` daje stronę równą żywej enigmalabz.com: 86/86 stron z identycznym `<head>`, 86/86 z identycznym widocznym tekstem, 88/88 HTML bez realnej różnicy treści, zero wycieków ze `.strona.json` (2026-11-08).
+- [[strona-zrodlo-rowna-zywej|Strona: źródło = żywa (krok 0 przed zmianami treści)]] — Build z `app/landing` (gałąź `nvidia-2026-11`, przebazowana na KERNEL `main` = `8307d36`) daje stronę równą żywej enigmalabz.com z 2026-11-09 (`d3054d2`): 86/86 stron z identycznym `<head>`, 86/86 z identycznym widocznym tekstem, 88/88 HTML bez realnej różnicy treści, zero wycieków ze `.strona.json`.
 - [[app-system-projektowy|System projektowy „telemetria w nocy” i znak Tacho]] — Tokeny (kolor, typografia, przestrzeń, ruch), motyw ciemny i jasny, komponenty i znak „Tacho”: grafitowe tło `#07080D` i jeden kolor sygnałowy volt `#C8FF3D`, który znaczy „po” i „nasze”.
 - [[werdykt|Werdykt planu produktu]] — Produkt da się zrobić, a luka jest realna, ale duży skok (np. Qwen 40 → 109 t/s) daje konfiguracja i przepisy z naszego labu, nie „noc u użytkownika” (PLAN, stan 2026-10-15).
 <!-- AUTO:END -->

@@ -14,7 +14,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (41)
+## Notatki (42)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -56,5 +56,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-11-05-termika-eco-test|2026-11-05: test termiczny „eco” z capem taktowania rdzenia]] — Użytkownik zatwierdził (2026-11-05) testy z ograniczonym taktowaniem rdzenia GPU: pamięć bez zmian, bez undervoltu; wyniki opisane jako „eco”, osobno od rekordów stock. Zmienia to [[2026-10-20-karta-fabrycznie]] tylko w tym zakresie.
 - [[2026-11-05-tylko-bezstratne|2026-11-05: tylko optymalizacje bezstratne]] — Decyzja użytkownika (2026-11-05): „nie chcę zmieniać jakości – mieliśmy tylko optymalizować”; przyspieszenia wyłącznie bez zmiany wyjścia modelu.
 - [[2026-11-06-profil-eco-2200|2026-11-06: stały profil eco 2200 MHz na XTX]] — Użytkownik (2026-11-06 ~13:50 UTC): „−10% w chuj się opłaca, tracimy dosłownie nic”. Produkcja XTX ma limit max sclk 2200 MHz.
+- [[2026-11-09-decyzje-runda-69|2026-11-09: decyzje po rundzie 69 (DSpine, Astra-Stop, publikacja, jakość-mini)]] — Użytkownik (2026-11-09): DSpine odpuszczamy (nie schodzimy do 64k kontekstu), Astra-Stop na razie odpuszczamy (ciekawy kierunek na przyszłe fine-tuningi i benchmarki), rankingi prędkości dalej tylko czytamy, ale „wkrótce” zaczniemy publikować; robimy porównanie jakości kandydatów 12–16 GB (Bonsai, Saluki, ISTA, LFM) zestawem „jakość-mini”; uruchomione: EvalPlus na naszym Qwenie i qwen-warp vs nasz fork na 3090.
 - [[2026-10-09-limit-mocy-odlozony|Limit mocy GPU odłożony (na prośbę użytkownika)]] — Optymalizacja limitu mocy (np. −20% mocy kosztem ≤5% t/s) została odłożona na prośbę użytkownika; karta pracuje z limitem 285 W.
 <!-- AUTO:END -->

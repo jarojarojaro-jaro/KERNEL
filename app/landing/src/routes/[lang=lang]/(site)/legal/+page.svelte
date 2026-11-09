@@ -6,24 +6,16 @@
 
 	const lang = $derived(currentLang());
 	const T = {
-		pl: {
-			title: 'Dokumenty prawne',
-			lead: 'Regulamin, prywatność, cookies, informacja o AI i dane firmy.',
-			description: 'Dokumenty prawne Enigma LABZ: regulamin, prywatność, cookies, informacja o\u00a0AI i\u00a0dane firmy.'
-		},
-		en: {
-			title: 'Legal documents',
-			lead: 'Terms, privacy, cookies, AI notice and company details.',
-			description: 'Enigma LABZ legal documents: terms, privacy, cookies, AI notice and company details.'
-		}
+		pl: { title: 'Dokumenty prawne', metaTitle: 'Dokumenty prawne: regulamin i prywatność', metaDescription: `Dokumenty prawne ${BRAND.name}: regulamin, prywatność, cookies, informacja o\u00a0AI i\u00a0dane firmy.`, lead: 'Regulamin, prywatność, cookies, informacja o AI i dane firmy.' },
+		en: { title: 'Legal documents', metaTitle: 'Legal documents: terms and privacy', metaDescription: `${BRAND.name} legal documents: terms, privacy, cookies, AI notice and company details.`, lead: 'Terms, privacy, cookies, AI notice and company details.' }
 	} as const;
 	const t = $derived(T[lang]);
 	import Seo from '$lib/site/Seo.svelte';
 </script>
 
-<svelte:head><title>{t.title} · {BRAND.name}</title><meta name="description" content={t.description} /></svelte:head>
+<svelte:head><title>{t.metaTitle} · {BRAND.name}</title><meta name="description" content={t.metaDescription} /></svelte:head>
 
-<Seo title={`${t.title} · ${BRAND.name}`} description={t.description} />
+<Seo title={`${t.metaTitle} · ${BRAND.name}`} description={t.metaDescription} />
 
 <section class="section heat-scope">
 	<div class="container container--narrow">

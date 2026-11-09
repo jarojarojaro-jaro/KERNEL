@@ -72,11 +72,14 @@
 		a.remove();
 		setTimeout(() => URL.revokeObjectURL(url), 1000);
 	}
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{t.shell.title(r.title)}</title>
 </svelte:head>
+
+<Seo title={t.shell.title(r.title)} description={t.shell.descriptions.result} />
 
 <ScreenHead overline={r.overline} title={r.title} lead={r.lead}>
 	{#snippet actions()}

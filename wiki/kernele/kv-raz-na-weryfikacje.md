@@ -1,9 +1,9 @@
 ---
 typ: kernel
 tags: [kernele, flash-attention, kv, weryfikacja]
-aktualizacja: 2026-11-07
-zrodlo: ~/KERNEL/product/research/66b-1cat-tokenspeed.md:99-129,216-217; ~/KERNEL/product/research/66d-saber-engine-rdna.md:63-78,157; ~/KERNEL/product/research/66e-anatomia-serwowania-tqllm.md:132-136,192; ~/KERNEL/product/research/24h-kv-jeden-przebieg.md:9-14
-status: do-sprawdzenia
+aktualizacja: 2026-11-08
+zrodlo: ~/KERNEL/product/research/66b-1cat-tokenspeed.md:99-129,216-217; ~/KERNEL/product/research/66d-saber-engine-rdna.md:63-78,157; ~/KERNEL/product/research/66e-anatomia-serwowania-tqllm.md:132-136,192; ~/KERNEL/product/research/24h-kv-jeden-przebieg.md:9-14; ~/qwen-opt/kvq-once/run-1107-2315/summary.txt
+status: aktualne
 ---
 # KV czytane raz na weryfikację (plan #8): trzy wzorce
 
@@ -18,6 +18,12 @@ status: do-sprawdzenia
 - Górna granica z naszego 24h: +3.0…6.6% e2e przy 94k, ≤ 2.3% przy 32k (kafel ~130 µs przy d98304).
 - Kolejność: profil kroku przy 199k (plan #3) → przegląd `blocks_per_sm` (1Cat: 1 → 2 CTA/SM = −21% operatora) → wariant Sabera. Kill: FA < −10% w rocprofv3.
 - Ryzyko: podwójny LDS kontra cap 64 KB (occupancy).
+
+## Wynik (2026-11-08, [[2026-11-08-kvq-once-profil]])
+- Wariant Sabera zbudowany jako `GGML_HIP_KVQ_ONCE=1` (gałąź kvq-once): bitowo identyczny (fa_hash, md5 1.7k/94k/199k), LDS 53.9 KB, 242 VGPR.
+- Drugi odczyt KV nie był wąskim gardłem: kernel nb5 jest ograniczony obliczeniami (355 GB/s wobec 658 GB/s dla nb1). FA −6.2% przy 98k, −7.3% przy 196k (kernel), −6.1% w rocprofv3 przy 199k → **KILL** wg progu −10%; e2e 199k +1.79%, 94k +0.89%.
+- Przegląd podziałów: 2 bloki/SM optymalne (1 → +25…30%), KILL.
+- W toku: `ONCE=2` (K też dekwantowane raz na parę fal, bitowo).
 
 ## Powiązane
 - [[kernele/_hub|kernele]]

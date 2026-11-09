@@ -26,11 +26,14 @@
 	const asleep = M.bacoAsleep;
 	const awake = M.bacoAwake;
 	const range = (r: { lo: number; hi: number }) => `${r.lo}–${r.hi}`;
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{t.shell.title(c.title)}</title>
 </svelte:head>
+
+<Seo title={t.shell.title(c.title)} description={t.shell.descriptions.computer} />
 
 <ScreenHead overline={c.overline} title={c.title} lead={c.lead} />
 

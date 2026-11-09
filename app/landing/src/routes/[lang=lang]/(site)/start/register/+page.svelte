@@ -58,10 +58,10 @@
 
 <svelte:head>
 	<title>{s.title}</title>
-	<meta name="description" content={s.metaDescription} />
+	<meta name="description" content={s.description} />
 </svelte:head>
 
-<Seo title={s.title} description={s.metaDescription} />
+<Seo title={s.title} description={s.description} />
 
 <Scene labelledby="signup-title" focus="62% 50%">
 	<Glass width="62rem">

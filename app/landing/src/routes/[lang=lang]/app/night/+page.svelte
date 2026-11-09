@@ -25,11 +25,14 @@
 
 	const range = (r: { lo: number; hi: number }) => `${r.lo}–${r.hi}`;
 	const cli = `${BRAND.cli} tune --overnight --resume\n${BRAND.cli} tune status`;
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{t.shell.title(n.title)}</title>
 </svelte:head>
+
+<Seo title={t.shell.title(n.title)} description={t.shell.descriptions.night} />
 
 <ScreenHead overline={n.overline} title={n.title} lead={n.lead} />
 

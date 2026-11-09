@@ -1,0 +1,16 @@
+# 66-SYNTEZA items 7+8 (XtxHostL1): TOK_CACHE on the SAFE_SPECIAL path + chat parser once per MTP step, incremental.
+# Run: ~/qwen-opt/queue/run-jobs.sh ~/qwen-opt/l1tok/l1tok.jobs     (GPU window; ~50 min, short version per Main)
+# A = production ~/llama-topka (flags off), B = ~/wt/l1-tokparse/build-hip with TOK_CACHE=1 PARSE_INC=1 STREAM_STEP=1,
+# C = B in check mode (TOK_CACHE=2, PARSE_INC=2: full tokenization / full re-parse compared, MISMATCH lines must be 0).
+# Replay ABBA (A1 B1 B2 A2); stream on/off 12k + md5 + short spec_sweep (seed 1) in A1 and B1 only.
+# Every arm: run-topka.sh uncensored on :8093 (eco 2200 verified, ctx 262144, AP_TIMING=1). Results: l1tok/results.jsonl
+# l1-build: no-op when the build already finished (arms B/C must run HEAD of l1-tokparse)
+l1-build|1800|~/wt/l1-tokparse|nice -n 19 cmake --build build-hip -j4 --target llama-server && git log --oneline -1
+l1-stop8080|200|~/qwen-opt/l1tok|./chat8080.sh stop
+l1-A1|2400|~/qwen-opt/l1tok|./arm.sh A1 ~/llama-topka replay,stream,md5,sweep
+l1-B1|2400|~/qwen-opt/l1tok|./arm.sh B1 ~/wt/l1-tokparse/build-hip replay,stream,md5,sweep LLAMA_SERVER_TOK_CACHE=1 LLAMA_SERVER_PARSE_INC=1 LLAMA_SERVER_STREAM_STEP=1
+l1-B2|1500|~/qwen-opt/l1tok|./arm.sh B2 ~/wt/l1-tokparse/build-hip replay LLAMA_SERVER_TOK_CACHE=1 LLAMA_SERVER_PARSE_INC=1 LLAMA_SERVER_STREAM_STEP=1
+l1-A2|1500|~/qwen-opt/l1tok|./arm.sh A2 ~/llama-topka replay
+l1-C|1800|~/qwen-opt/l1tok|./arm.sh C ~/wt/l1-tokparse/build-hip replay,stream LLAMA_SERVER_TOK_CACHE=2 LLAMA_SERVER_PARSE_INC=2 LLAMA_SERVER_STREAM_STEP=1 "SUITE_ARGS=--stream-modes true --gen-tokens 4096"
+l1-restore8080|400|~/qwen-opt/l1tok|./chat8080.sh restore
+l1-summary|60|~/qwen-opt/l1tok|~/qwen-opt/.venv/bin/python summarize.py results.jsonl

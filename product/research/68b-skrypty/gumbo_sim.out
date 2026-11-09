@@ -1,0 +1,62 @@
+/tmp/r68b/gumbo_sim.py:49: RuntimeWarning: invalid value encountered in subtract
+  Gt = y - loc
+== all n=36270 coupled chain-4 tok/step 2.7849 (chain-5 2.9176, net +1.64%)
+   chain4 + Gumbel-gap sibling tau=0.0    rows  5.000 tok 2.7849 dtok  +0.00%  ms  27.60  net  +0.00%
+   chain4 + Gumbel-gap sibling tau=0.25   rows  5.262 tok 2.8218 dtok  +1.33%  ms  27.82  net  +0.52%
+   chain4 + Gumbel-gap sibling tau=0.5    rows  5.499 tok 2.8534 dtok  +2.46%  ms  28.02  net  +0.91%
+   chain4 + Gumbel-gap sibling tau=0.75   rows  5.712 tok 2.8799 dtok  +3.41%  ms  28.21  net  +1.19%
+   chain4 + Gumbel-gap sibling tau=1.0    rows  5.905 tok 2.9022 dtok  +4.21%  ms  28.37  net  +1.39%
+   chain4 + Gumbel-gap sibling tau=1.5    rows  6.233 tok 2.9360 dtok  +5.43%  ms  28.65  net  +1.57%
+   chain4 + Gumbel-gap sibling tau=2.0    rows  6.492 tok 2.9587 dtok  +6.24%  ms  28.87  net  +1.57%
+   chain4 + Gumbel-gap sibling tau=3.0    rows  6.847 tok 2.9830 dtok  +7.11%  ms  29.17  net  +1.35%
+   chain4 + Gumbel-gap sibling tau=1000000000.0 rows  7.182 tok 2.9980 dtok  +7.65%  ms  29.45  net  +0.88%
+== en-chat n=8728 coupled chain-4 tok/step 2.8447 (chain-5 2.9849, net +1.79%)
+   chain4 + Gumbel-gap sibling tau=0.0    rows  5.000 tok 2.8447 dtok  +0.00%  ms  27.60  net  +0.00%
+   chain4 + Gumbel-gap sibling tau=0.25   rows  5.252 tok 2.8875 dtok  +1.50%  ms  27.81  net  +0.72%
+   chain4 + Gumbel-gap sibling tau=0.5    rows  5.484 tok 2.9243 dtok  +2.80%  ms  28.01  net  +1.29%
+   chain4 + Gumbel-gap sibling tau=0.75   rows  5.696 tok 2.9551 dtok  +3.88%  ms  28.19  net  +1.70%
+   chain4 + Gumbel-gap sibling tau=1.0    rows  5.889 tok 2.9811 dtok  +4.79%  ms  28.36  net  +2.00%
+   chain4 + Gumbel-gap sibling tau=1.5    rows  6.222 tok 3.0211 dtok  +6.20%  ms  28.64  net  +2.35%
+   chain4 + Gumbel-gap sibling tau=2.0    rows  6.489 tok 3.0469 dtok  +7.11%  ms  28.87  net  +2.41%
+   chain4 + Gumbel-gap sibling tau=3.0    rows  6.859 tok 3.0748 dtok  +8.09%  ms  29.18  net  +2.24%
+   chain4 + Gumbel-gap sibling tau=1000000000.0 rows  7.213 tok 3.0910 dtok  +8.66%  ms  29.48  net  +1.73%
+== en-prose n=7758 coupled chain-4 tok/step 2.6254 (chain-5 2.7213, net +0.56%)
+   chain4 + Gumbel-gap sibling tau=0.0    rows  5.000 tok 2.6254 dtok  +0.00%  ms  27.60  net  +0.00%
+   chain4 + Gumbel-gap sibling tau=0.25   rows  5.280 tok 2.6661 dtok  +1.55%  ms  27.84  net  +0.68%
+   chain4 + Gumbel-gap sibling tau=0.5    rows  5.533 tok 2.7011 dtok  +2.88%  ms  28.05  net  +1.22%
+   chain4 + Gumbel-gap sibling tau=0.75   rows  5.763 tok 2.7302 dtok  +3.99%  ms  28.25  net  +1.61%
+   chain4 + Gumbel-gap sibling tau=1.0    rows  5.970 tok 2.7553 dtok  +4.95%  ms  28.42  net  +1.90%
+   chain4 + Gumbel-gap sibling tau=1.5    rows  6.323 tok 2.7926 dtok  +6.37%  ms  28.72  net  +2.20%
+   chain4 + Gumbel-gap sibling tau=2.0    rows  6.605 tok 2.8175 dtok  +7.32%  ms  28.96  net  +2.26%
+   chain4 + Gumbel-gap sibling tau=3.0    rows  6.994 tok 2.8436 dtok  +8.31%  ms  29.29  net  +2.05%
+   chain4 + Gumbel-gap sibling tau=1000000000.0 rows  7.361 tok 2.8595 dtok  +8.92%  ms  29.61  net  +1.53%
+== pl-chat n=9850 coupled chain-4 tok/step 3.0842 (chain-5 3.2901, net +3.49%)
+   chain4 + Gumbel-gap sibling tau=0.0    rows  5.000 tok 3.0842 dtok  +0.00%  ms  27.60  net  +0.00%
+   chain4 + Gumbel-gap sibling tau=0.25   rows  5.221 tok 3.1168 dtok  +1.06%  ms  27.79  net  +0.37%
+   chain4 + Gumbel-gap sibling tau=0.5    rows  5.421 tok 3.1446 dtok  +1.96%  ms  27.96  net  +0.65%
+   chain4 + Gumbel-gap sibling tau=0.75   rows  5.603 tok 3.1676 dtok  +2.70%  ms  28.11  net  +0.83%
+   chain4 + Gumbel-gap sibling tau=1.0    rows  5.765 tok 3.1868 dtok  +3.33%  ms  28.25  net  +0.95%
+   chain4 + Gumbel-gap sibling tau=1.5    rows  6.044 tok 3.2161 dtok  +4.28%  ms  28.49  net  +1.03%
+   chain4 + Gumbel-gap sibling tau=2.0    rows  6.266 tok 3.2364 dtok  +4.94%  ms  28.68  net  +1.00%
+   chain4 + Gumbel-gap sibling tau=3.0    rows  6.573 tok 3.2586 dtok  +5.66%  ms  28.94  net  +0.77%
+   chain4 + Gumbel-gap sibling tau=1000000000.0 rows  6.866 tok 3.2734 dtok  +6.14%  ms  29.19  net  +0.37%
+== pl-prose n=9934 coupled chain-4 tok/step 2.5601 (chain-5 2.6423, net +0.13%)
+   chain4 + Gumbel-gap sibling tau=0.0    rows  5.000 tok 2.5601 dtok  +0.00%  ms  27.60  net  +0.00%
+   chain4 + Gumbel-gap sibling tau=0.25   rows  5.296 tok 2.5931 dtok  +1.29%  ms  27.85  net  +0.38%
+   chain4 + Gumbel-gap sibling tau=0.5    rows  5.561 tok 2.6215 dtok  +2.40%  ms  28.08  net  +0.66%
+   chain4 + Gumbel-gap sibling tau=0.75   rows  5.797 tok 2.6453 dtok  +3.33%  ms  28.28  net  +0.85%
+   chain4 + Gumbel-gap sibling tau=1.0    rows  6.008 tok 2.6654 dtok  +4.11%  ms  28.46  net  +0.98%
+   chain4 + Gumbel-gap sibling tau=1.5    rows  6.358 tok 2.6955 dtok  +5.29%  ms  28.75  net  +1.06%
+   chain4 + Gumbel-gap sibling tau=2.0    rows  6.630 tok 2.7159 dtok  +6.09%  ms  28.99  net  +1.02%
+   chain4 + Gumbel-gap sibling tau=3.0    rows  6.995 tok 2.7379 dtok  +6.95%  ms  29.30  net  +0.76%
+   chain4 + Gumbel-gap sibling tau=1000000000.0 rows  7.329 tok 2.7515 dtok  +7.48%  ms  29.58  net  +0.29%
+== prose n=17692 coupled chain-4 tok/step 2.5887 (chain-5 2.6770, net +0.32%)
+   chain4 + Gumbel-gap sibling tau=0.0    rows  5.000 tok 2.5887 dtok  +0.00%  ms  27.60  net  +0.00%
+   chain4 + Gumbel-gap sibling tau=0.25   rows  5.289 tok 2.6251 dtok  +1.41%  ms  27.85  net  +0.51%
+   chain4 + Gumbel-gap sibling tau=0.5    rows  5.549 tok 2.6564 dtok  +2.61%  ms  28.07  net  +0.91%
+   chain4 + Gumbel-gap sibling tau=0.75   rows  5.782 tok 2.6825 dtok  +3.63%  ms  28.26  net  +1.19%
+   chain4 + Gumbel-gap sibling tau=1.0    rows  5.991 tok 2.7048 dtok  +4.48%  ms  28.44  net  +1.39%
+   chain4 + Gumbel-gap sibling tau=1.5    rows  6.343 tok 2.7381 dtok  +5.77%  ms  28.74  net  +1.57%
+   chain4 + Gumbel-gap sibling tau=2.0    rows  6.619 tok 2.7605 dtok  +6.63%  ms  28.98  net  +1.57%
+   chain4 + Gumbel-gap sibling tau=3.0    rows  6.994 tok 2.7842 dtok  +7.55%  ms  29.30  net  +1.33%
+   chain4 + Gumbel-gap sibling tau=1000000000.0 rows  7.343 tok 2.7989 dtok  +8.12%  ms  29.59  net  +0.84%

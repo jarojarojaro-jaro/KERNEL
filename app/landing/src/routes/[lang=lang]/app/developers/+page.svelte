@@ -111,11 +111,14 @@ console.log(data.choices[0].message.content);`
 		[`${BRAND.cli} tune --overnight --resume`, d.cli.tune]
 	]);
 	const cliText = $derived(cliRows.map(([c]) => c).join('\n'));
+	import Seo from '$lib/site/Seo.svelte';
 </script>
 
 <svelte:head>
 	<title>{t.shell.title(d.title)}</title>
 </svelte:head>
+
+<Seo title={t.shell.title(d.title)} description={t.shell.descriptions.developers} />
 
 <ScreenHead overline={d.overline} title={d.title} lead={d.lead} />
 

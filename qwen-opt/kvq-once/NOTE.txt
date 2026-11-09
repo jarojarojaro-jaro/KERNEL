@@ -1,0 +1,20 @@
+kvq-once (66-SYNTEZA items 1-3), 2026-11-07 — branch kvq-once (~/wt/kvq-once, off topka-q63 c0576e3e8),
+build ~/wt/kvq-once/build-hip (HIP gfx1100, no CUDA), patch ~/KERNEL/qwen-opt/patches/kvq-once/, job kvq-once.jobs.
+
+What: GGML_HIP_KVQ_ONCE=1 (default off). MTP n4 verify = 5 tokens x GQA 6 = 30 Q columns = 2 tiles of 16; the default
+kvq launches one block per tile and each reads + dequantizes the whole q4_0 KV of its split. ONCE: one block of
+2 x 8 warps per 2 tiles, same split, same KV rows per warp, V dequantized once into a pair-shared LDS tile, K fetched
+by both groups at the same time (second read from cache). Bit-identical by construction (per-column arithmetic and
+combine order unchanged); checked by fa_hash ONCE 0 vs 1 and md5 (short greedy 0221afd9 + 1.7k/94k/199k greedy text).
+Knobs for item 3: GGML_HIP_KVQ_BLOCKS_PER_SM=N, GGML_HIP_KVQ_MIN_SPLIT=T (split change = order of sums -> KLD gate).
+
+Expected (q63 test-backend-ops, kv 98304: nb 1 163 us, nb 2 176 us, nb 5 301 us -> the 2nd tile costs ~125 us, i.e.
+the second KV pass is not served by the cache): FA nb5 at 98k/196k -25..-40% if the kernel stays bandwidth-bound
+(lower bound: V dequant halved only, ~-10%). 16 FA layers per verify: 98k ~4.8 ms/step of FA -> -1.2..-1.9 ms,
+199k ~9-10 ms -> -2.5..-4 ms. Decode: 94k +3..6%, 199k +5..11%, short ctx (1.7k) ~0; spec_sweep (short) 0..+1%.
+Split sweep: 0..-10% FA at 199k (blocks_per_sm 1 removes the second round of blocks: 2 x 96 CUs blocks vs 48 WGPs).
+
+Kill: FA (kvq + combine, rocprofv3 ms per verify step) at 199k not lower by >= 10% with ONCE, or any md5 / fa_hash
+difference, or a new test-backend-ops failure. Also no adoption if long-ctx decode at 94k/199k is within noise (< +1%).
+Split knobs: adoption only after KLD = 0 is not possible (order changes) -> report KLD; KLD > 0 = rejected (rule
+2026-11-05), so item 3 can only win as information for ONCE's default split or if KLD is exactly 0.

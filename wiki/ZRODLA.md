@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, zrodla, research, rejestr, inferencex, agentx, strata, tensorfold, magnitude, hipfire, dflash, lucebox]
-aktualizacja: 2026-11-05
+aktualizacja: 2026-11-09
 zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14; ~/KERNEL/product/research/{21n,21o,24e,24g,24t,30}-*.md
 status: aktualne
 ---
@@ -18,10 +18,12 @@ Legenda: **2×/3×/4×** = źródło badane wielokrotnie; kolumna „delta” m�
 | źródło | podejścia | co dodało każde kolejne |
 |---|---|---|
 | Strata | Q:strata (10-13, `a0116b27` v0.1.43.1) → Q:strata/update-v0.1.44 (10-13, `ed4773eb`) → R21d/R21g (10-19, v0.1.44.1 `296b59d2`, v0.1.45 `477ac13c`) + R23e (RE kerneli) + R01/R03/R04 (konkurencja) → R21n (10-19, v0.2.0-beta `3d1fb480`, Gyro-S) | 2.: ścieżka Qwen3.6-35B-A3B, f-latency; 3.: KV na dysku, R9700 ×1.42, bariera LDS #3064, Flash-Next na XTX ~80 t/s; 4.: ISA pętli – nic lepszego niż nasze; 5.: 0.2.0 to w 55% aplikacja, silnik v0.1.45.3 – dla gfx1100 nic nowego (R21g mówił „0.2.0 nie istnieje” – wyszła później) |
-| TensorFold | R01/R03 (10-15) → Q:tensorfold (10-13, `0efbd447` v1.0.8) → update-v1.0.11 (10-14, `2984ea01`) → R15c (v1.0.12 `833bbfcb`) → R21g (v1.1.0 `76aafcf2`) → R23e | każde podejście = nowa wersja; od v1.0.11 HIP zamrożony (1.1.0: 6 plików HIP, zero zmian) – dalej sprawdzać tylko NVIDIA + DFlash2 |
+| TensorFold | R01/R03 (10-15) → Q:tensorfold (10-13, `0efbd447` v1.0.8) → update-v1.0.11 (10-14, `2984ea01`) → R15c (v1.0.12 `833bbfcb`) → R21g (v1.1.0 `76aafcf2`) → R23e → R63a (`cde4fe7`) → R69b (`abc39af1` v1.2.5+) | każde podejście = nowa wersja; od v1.0.11 HIP zamrożony (1.1.0: 6 plików HIP, zero zmian) – dalej sprawdzać tylko NVIDIA + DFlash2; R63a/R69b: HIP tylko gfx1151/gfx1201, gfx1100 dalej brak |
 | Magnitude | R15c (`1f54d5b7`) → R16d (head-to-head 3090/5060 Ti) → R16i (kod 0.2.9 `954d677d`) → R16j (Vulkan na XTX) → R16k (sprzężone próbkowanie) → R23e | 2.: liczby; 3.: przewaga = sufit DFlash2 + kontroler szerokości; 4.: na AMD ×1.42–×2.24 dla nas; 5.: port próbkowania; 6.: brak przewagi ISA |
 | hipfire | R03 (warpfront/hipfire, v0.4.0) → Q:repos/30 (`1ff5182` v0.4.2) → R22-lucebox wzmianka → R23e (RE, 54.3 vs 43.2 t/s) | 3.: przewaga z formatu 4.25 bpw i fuzji, nie z ISA |
 | DFlash / DFlash2 (z-lab) | R03 → Q:drafters (10-10) → Q:v2 → R14 (Nemotron) → R15b/R16d/R16i (u Magnitude) → R21a (DSpine vs DFlash2) | każde podejście ponownie opisuje drafter; nowa wiedza: tylko sufit bloku (7.3–7.8 tok/krok u Magnitude) i +4–7% τ DSpine |
+| DSpine (Tencent) | R21a (8B, `07f326a`) → R67b (wydanie 27B, 11-07) → R69a (27B config, port Ajay9o9 `d493f84`) | 2.: tylko data i τ z karty; 3.: SWA 8192, port 323 linie, model XTX per klasa, krytyka liczb portu |
+| qwen-warp | R63a §14 (`146a654`) → R69b (`689901c` v0.8.0) | 2.: DFlash2 w grafie, multiuser, agent z kopiowaniem −31% |
 | lucebox | R01/R03 → Q:repos/22 (`54132ca`) → R15d (`6f2b179`, PFlash) | 3.: PFlash v2 stratny, KVFlash odrzucony |
 | HyperQwen | R15b (`95ee3b6`) → R15d | 2.: prefill/łańcuchy; wynik ten sam |
 | tqLLM | R15b → R15c (`23af3c9`) → R15f → R23e | 2.: audyt rekordu 273.1 t/s; 4.: ISA |
@@ -48,7 +50,7 @@ Legenda: **2×/3×/4×** = źródło badane wielokrotnie; kolumna „delta” m�
 | MTPLX (mtplx.com, github.com/youssofal/MTPLX) **2×** | 2.6.0 (R18) | R01, R18, [[mtplx]] | MTP w kohortach; obsługuje LFM2. | 1.6–2.25× na strumień (2 agenci) | czy jest linux/ROCm |
 | Project Maya (github.com/mw00/project-maya) **2×** | `a4e1ff0` 1.1.14–1.1.15 → `abc09c7` v1.1.16 (10-19, release notes) | R21g, [[project-maya]] | Pochodna Straty; 1.1.16 = DeepSeek-V4.1-Flash 748B z SSD/RAM offload, nic dla naszych modeli. | 81 t/s RTX PRO 6000 = 41% pasma; Maya-S 178 GB, top-1 92.6%, KL 0.12 (stratny) | tylko jeśli dodadzą gęsty 27B lub pomiar XTX |
 | Strata (github.com/Niko1221/Strata) **6×** | `a0116b27` v0.1.43.1 → `ed4773eb` v0.1.44 → `296b59d2` v0.1.44.1 → `477ac13c` v0.1.45 (10-17) → `3d1fb480` v0.2.0-beta (silnik v0.1.45.3) → `e88ee39d` (10-19, +12 commitów: CI, dokumentacja, instalatory RX 7000/Strix Halo) | Q:strata/*, R21d, R21g, R23e, [R21n](../product/research/21n-strata-020-gyro.md), [[strata]] | Wzór metodologii; 0.2.0 = aplikacja (konkurent UX), dla gfx1100 nic; tylko Qwen3.8-Flash-Next (125B), DeepSeek nie obsługuje. | R9700 83.2 → 117.8 t/s; 0.2.0: +219k linii, silnik 6% | `git log e88ee39d..`; tylko HIP/gfx1100, KV, nowe modele; do sprawdzenia u nas: wątki = rdzenie fizyczne, rozgrzewka hipBLAS (TTFT) |
-| TensorFold (github.com/ashhart/TensorFold) **5×** | `0efbd447` v1.0.8 → `2984ea01` v1.0.11 → `833bbfcb` v1.0.12 → `76aafcf2` v1.1.0 (10-18) | Q:tensorfold/*, R15c, R21g, R23e, [[tensorfold]] | Kontrakt „drafted == plain”; HIP zamrożony, AMD nasze. | 1.1.0: 901 commitów, HIP +12/−9 | `git log 76aafcf2..` tylko HIP + Qwen3.8-27B DFlash2 na NVIDIA |
+| TensorFold (github.com/ashhart/TensorFold) **7×** | `0efbd447` v1.0.8 → `2984ea01` v1.0.11 → `833bbfcb` v1.0.12 → `76aafcf2` v1.1.0 (10-18) → `cde4fe7` (11-05) → `abc39af1` v1.2.5+ (11-08) | Q:tensorfold/*, R15c, R21g, R23e, R63a, R69b, [[tensorfold]] | Kontrakt „drafted == plain”; HIP zamrożony, AMD nasze. | 1.1.0: 901 commitów, HIP +12/−9 | `git log abc39af1..` tylko HIP gfx1100 + Qwen3.8-27B DFlash2 na NVIDIA |
 | tqLLM (github.com/turbo-tan/tqllm, tqllm.com) **4×** | `23af3c9` (R15c), `8c12e1a` | R15b, R15c, R15f, R23e, [[tqllm]] | Per bajt parytet z nami; rekord z prywatnego buildu. | 273.1 t/s na 3090 (T=0) | publiczny build rekordu |
 | TideLM (github.com/raspy135/tideLM; przodek 0xBakeer/deepseek-v41-flash-spark `45a0caff`) | `92e1b186` (10-19) | [R28](../product/research/28-moe-offload-silniki.md) | Stratne podstawianie ekspertów; dla nas tylko dynamiczna głębokość MTP. | DS-V4.1 25.9/42.8 t/s na 2× Spark; GLM KL 0.11–0.17, top-1 ~89% | docs/gotchas.md (odrzucone), spec_depth.py |
 | Xolotl (github.com/Indras-Mirror/Xolotl, fork Strata) | `c3324f89` (10-19) | [R28](../product/research/28-moe-offload-silniki.md) | 27 t/s = bias routingu + 2.4 bpw; stratne. | 552B 26.8 t/s 4090; dokładny routing 3.5 t/s; ppl 2.38→2.87 | tylko jeśli opublikują pomiar przy dokładnym routingu |
@@ -122,7 +124,7 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 |---|---|---|---|---|---|
 | CPLM, Godey & Artzi (arXiv 2610.19247) | 2026-10-13 | R21c, [[raport-21c-cplm]] | Architektura od pretrainingu; bierzemy tylko regułę AGR. | dekod −1.0…3.8% | – |
 | Declarative Attention (arXiv 2609.02737, github itsnamgyu/declarative-attention) | R21m | R21m, [[raport-21m-declarative-attention]] | U nas dekod −25…30%; odrzucone. | −19.6% KV, −2.10 pp | – |
-| DSpine (arXiv 2609.36173, github tencent/dspine) | `07f326a` | R21a, [[raport-21a-dspine]] | +4–7% τ vs DFlash2; tylko jako drafter „nowy kod”. | – | wydany checkpoint dla 27B |
+| DSpine (arXiv 2609.36173, github tencent/dspine) | `07f326a` → `0cc92d8` (11-08) | R21a, R69a, [[raport-21a-dspine]], [[drafter-dspine]] | +4–7% τ vs DFlash2; tylko jako drafter „nowy kod”. | – | 27B wydany 11-07 → R69a |
 | KV między modelami (arXiv 2608.03893, 2411.02820, 2406.11717) | R21e | R21e, [[raport-21e-kv-miedzy-modelami]] | Nie pasuje do hybryd. | – | – |
 | RSR (arXiv 2610.02826) + model RSR-27B | HF API 10-19 | R21h, [[rsr-27b]], [[tencent-terminal-rsi]] | Adoptować i zmierzyć RSR-27B; MTP niedopasowane. | 27.78 mld param. | E1: pomiar RSR-27B |
 | Terminal-RSI (arXiv 2610.22192) | R21h | R21h, [[raport-21h-rsi]] | Expert iteration + PPO; wynik realny, pokazany korzystnie. | TB 4.0 0 → 19.84% | wydanie Terminal-RSI-27B |
@@ -330,6 +332,24 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 | HF ConwayResearch/Underdog-Saluki-27B-1.0 | commit 11-05 | R67b §2, [[saluki]] | **Licencja zmieniona na CC BY-NC 4.0.** | – | warunki licencji komercyjnej |
 | HF prism-ml/Ternary-Bonsai-2-27B-gguf | tree 11-07 | R67b §2, [[bonsai]] | Oficjalny upstream Q2_0 (repack zbędny). | 7 626 008 928 B | KLD oficjalnego Q2_0 vs nasz repack |
 | HF speakleash/Bielik-11B-v3.0-Instruct-GGUF | 11-05 | R67b §2 | ctx 32 768, więc nie spełnia 131k. | – | Bielik z długim ctx |
+
+## Raport 69 (2026-11-09: DSpine-27B, qwen-warp, TensorFold, Astra-Stop, AMD Adrenalin)
+
+[[raport-69-synteza]]; raporty `product/research/69a…69d`.
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| HF tencent/Qwen3.8-27B-DSpine-b16 + github Tencent/DSpine | HF `ea909c0` (11-07), repo `0cc92d8` (11-08) | R69a, [[drafter-dspine]] | SWA 8192, b16 vs DFlash2 b8; SGLang c=8; dane 27B nieujawnione. | τ T=1 vs DFlash2: MT-Bench +3.6%, kod +8.5…+12.9% | dane treningu / wersja PL |
+| Ajay9o9/llama.cpp `dspine` + HF aj9o9/Qwen3.8-27B-DSpine-b16-GGUF | `d493f84` na upstream `a691b23`; HF `62e9241` | R69a, [[drafter-dspine]] | 323 linie, tylko graf; baza bez MTP, AR 3090 zaniżone. | 3090: AR 28.2, DFlash2 50.6, DSpine 80.4 (T=1) / 90.1 (T=0); krok 1.68× AR | PR do upstreamu; wynik T1 na HIP |
+| llama.cpp PR #31533 (few-row MMQ, CUDA) | otwarty (11-09) | R69a | Weryfikacja 8–16 kolumn na NVIDIA tańsza. | 3090 Ti DFlash2 58.87 → 43.81 ms/krok | merge → przeliczyć przepisy Enigmy |
+| SpecForge PR #1038 (trening DSpine) | 11-09 (odwołanie z README) | R69a | Kod treningu jest; treści PR nie czytano. | – | PL-fine-tune DSpine |
+| qwen-warp (tuan3w) **2×** | `689901c` v0.8.0 (11-07) | R69b, [[qwen-warp]] | DFlash2 w grafie: czat ×1.34, agent/kopia −31%; 262k się nie mieści. | 3090 350 W: kod 276.7, czat MTP 155; multiuser 441 t/s | ring buffer draftera, router kopii |
+| TensorFold (delta) | `abc39af1` v1.2.5+ (11-08) | R69b, [[tensorfold]] | gfx1100 dalej brak; HIP DFlash2 ładowany, nieużywany. | gfx1151 27B 16 strumieni 51 → 75 t/s | gfx1100 / `--drafter` na HIP |
+| HF incoai/Qwen3.8-27B-DFlash2 | 11-09 (API) | R69b | Drafter używany przez qwen-warp i HyperQwen. | 3.85 GB | port GGUF |
+| HF jarrodwatts/Qwen3.8-27B-Astra-Stop | rev `27c08370` (11-04) | R69c, [[astra-stop]] | Rank-1 ×2 na `blk.63.ffn_down`; zmiana zachowania, nie bezstratna. | −37% mediany (bf16, n=16); 694 zadania −3% tokenów | wynik przy effort low, przeciek `</think>` |
+| notwitcheer/llm-bench-rig (astra-stop) | `f732402` (11-08) | R69c, [[astra-stop]] | Preregistrowana replikacja Q4_K_M bez MTP; `</think>` w treści 11/32. | 26 254 → 16 930 (−35.5%); SVG 32 → 31/32 | surowe ślady, test z MTP |
+| honnibal.dev „Astra read/write misleading” | 11-03 | R69c | Krytyka WSP: agent używał Pythona i przebiegów modelu. | – | – |
+| AMD Adrenalin `atieclxx.exe` (wccftech, windowsforum/Comss, Neowin, forum AMD) | 11-08 | R69d, [[amd-adrenalin-zapisy-ssd]] | Tylko Windows; serwer nie dotyczy; UX ostrzeżenie Enigmy. | 0.3–1.5 MB/s typowo; wersje 26.6.4–26.10.2 | release notes z poprawką (numer) |
 
 ## Powiązane
 - [[KONWENCJE]]

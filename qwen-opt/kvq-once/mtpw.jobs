@@ -1,0 +1,5 @@
+# MTP draft attention window (Main, 2026-11-08): existing --spec-mtp-window (0046, S3 2026-10-14 negative at 27k/62k: W=8192 acc 3.31->2.78)
+# re-measured at 94k/199k on production ~/llama-topka via xtxbench t1 (snapshot restore). Draft-only change: T=0 md5 must stay.
+mtpw-64k|2700|~/qwen-opt/xtxbench|python3 xtxbench.py t1 --label mtpw-64k --var-args=--spec-mtp-window,65536 --depths 94000,199000
+mtpw-16k|2700|~/qwen-opt/xtxbench|python3 xtxbench.py t1 --label mtpw-16k --var-args=--spec-mtp-window,16384 --depths 94000,199000
+mtpw-4k|2700|~/qwen-opt/xtxbench|python3 xtxbench.py t1 --label mtpw-4k --var-args=--spec-mtp-window,4096 --depths 94000,199000
