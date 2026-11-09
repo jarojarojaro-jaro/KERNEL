@@ -3065,6 +3065,12 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 
 - [[2026-11-08-cachesave-30137]] — źródło: diff upstream e152332a1, branch l1-cachesave 3152b0bfa; brak pomiarów (job anulowany), status w notatce „niezmierzone”.
 
+## Ingest 2026-11-09 (zamknięcie testów XTX 07–08.11)
+
+- [[2026-11-08-l1-tokenizacja-parser]] — TOK_CACHE + PARSE_INC: tokenizacja 14,0 → 6,6 ms, tura −85 ms, md5 i tekst strumienia identyczne, decode 0% (A→B, bez A2).
+- [[2026-11-08-fa-d256-prefill]], [[xtxbench-szybki-ab]] — kod gotowy, niezmierzone; patche `qwen-opt/patches/{fa-d256,l1-tokparse,xtxbench}`, skrypty `qwen-opt/{fa-d256,l1tok,xtxbench}` (korpus fa-d256 poza repo: zawiera adresy IP).
+- `product/research/68-SYNTEZA.md` — status każdej pozycji i lista jobów do wznowienia.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

@@ -1,0 +1,1668 @@
+From 8a18c3077817dc62d7e4fb6fd8d084680d4b1d8f Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Sat, 7 Nov 2026 23:08:38 +0000
+Subject: [PATCH] l1-tokparse (report 66 items 7, 8): LLAMA_SERVER_TOK_CACHE on
+ the SAFE_SPECIAL path (plain ranges: reuse only up to a boundary before the
+ first byte where the range lists differ, occurrences inside a range are text;
+ =2 compares with the full tokenization), LLAMA_SERVER_PARSE_INC=1 incremental
+ stream parser (common_chat_parse_inc: input kept with the generation prompt,
+ until() scans resumed through common_peg_parse_memo; =2 parses the old way
+ too and logs MISMATCH, tqLLM update_reference pattern),
+ LLAMA_SERVER_STREAM_STEP=1 one partial result per speculative step. All off
+ by default. Tests: test-tok-cache (agent replay, 0 mismatches),
+ test-chat-stream-inc (recorded outputs, oracle per update, per-step text and
+ tool calls identical).
+
+---
+ common/chat.cpp                 | 115 ++++++--
+ common/chat.h                   |  22 ++
+ common/peg-parser.cpp           |  45 ++-
+ common/peg-parser.h             |  18 ++
+ tests/CMakeLists.txt            |  10 +
+ tests/test-chat-stream-inc.cpp  | 486 ++++++++++++++++++++++++++++++++
+ tests/test-tok-cache.cpp        | 241 ++++++++++++++++
+ tools/server/server-common.cpp  | 176 +++++++++---
+ tools/server/server-common.h    |  15 +-
+ tools/server/server-context.cpp |  81 +++++-
+ tools/server/server-task.cpp    |  60 +++-
+ tools/server/server-task.h      |  15 +-
+ 12 files changed, 1174 insertions(+), 110 deletions(-)
+ create mode 100644 tests/test-chat-stream-inc.cpp
+ create mode 100644 tests/test-tok-cache.cpp
+
+diff --git a/common/chat.cpp b/common/chat.cpp
+index 53e30f156..b4b83bc32 100644
+--- a/common/chat.cpp
++++ b/common/chat.cpp
+@@ -1629,36 +1629,15 @@ common_chat_msg common_chat_parse(const common_chat_input &         input,
+     return common_chat_peg_parse(params.parser, input, is_partial, params);
+ }
+ 
+-common_chat_msg common_chat_peg_parse(const common_peg_arena &          src_parser,
+-                                      const common_chat_input &         input,
+-                                      bool                              is_partial,
+-                                      const common_chat_parser_params & params) {
+-    const common_peg_arena & parser = src_parser.empty() ?
+-        build_chat_peg_parser([](common_chat_peg_builder & p) { return p.content(p.rest()) + p.end(); }) :
+-        src_parser;
+-
+-    if (src_parser.empty()) {
+-        LOG_DBG("No parser definition detected, assuming pure content parser.");
+-    }
+-
+-    common_chat_input effective_input = input;
+-    effective_input.prepend(params.generation_prompt);
+-
+-    //LOG_DBG("Parsing PEG input with format %s: %s\n", common_chat_format_name(params.format), effective_input.text.c_str());
+-
+-    common_peg_parse_flags flags = COMMON_PEG_PARSE_FLAG_LENIENT;
+-    if (params.debug) {
+-        flags |= COMMON_PEG_PARSE_FLAG_DEBUG;
+-    }
++static common_peg_arena chat_peg_parser_content_only() {
++    return build_chat_peg_parser([](common_chat_peg_builder & p) { return p.content(p.rest()) + p.end(); });
++}
+ 
+-    common_peg_parse_context ctx(std::move(effective_input.text), std::move(effective_input.tokens), flags);
+-    // token-aware only when the model output carries its token ids; a generation prompt without them is matched by text
+-    const auto has_ids = [](auto b, auto e) { return std::any_of(b, e, [](llama_token t) { return t != LLAMA_TOKEN_NULL; }); };
+-    if (params.specials && (input.empty() || has_ids(input.tokens.begin(), input.tokens.end()))) {
+-        const auto & gp = params.generation_prompt.tokens;
+-        ctx.specials      = params.specials.get();
+-        ctx.specials_from = has_ids(gp.begin(), gp.end()) ? 0 : params.generation_prompt.size();
+-    }
++// the parse of a filled context (input = generation prompt + model output, specials set) into a message
++static common_chat_msg chat_peg_parse_ctx(const common_peg_arena &          parser,
++                                          common_peg_parse_context &        ctx,
++                                          bool                              is_partial,
++                                          const common_chat_parser_params & params) {
+     auto result = parser.parse(ctx);
+ 
+     if (result.fail()) {
+@@ -1713,6 +1692,84 @@ common_chat_msg common_chat_peg_parse(const common_peg_arena &          src_pars
+     return msg;
+ }
+ 
++static bool chat_has_ids(const std::vector<llama_token> & tokens) {
++    return std::any_of(tokens.begin(), tokens.end(), [](llama_token t) { return t != LLAMA_TOKEN_NULL; });
++}
++
++static common_peg_parse_flags chat_peg_flags(const common_chat_parser_params & params) {
++    common_peg_parse_flags flags = COMMON_PEG_PARSE_FLAG_LENIENT;
++    if (params.debug) {
++        flags |= COMMON_PEG_PARSE_FLAG_DEBUG;
++    }
++    return flags;
++}
++
++common_chat_msg common_chat_peg_parse(const common_peg_arena &          src_parser,
++                                      const common_chat_input &         input,
++                                      bool                              is_partial,
++                                      const common_chat_parser_params & params) {
++    const common_peg_arena & parser = src_parser.empty() ? chat_peg_parser_content_only() : src_parser;
++
++    if (src_parser.empty()) {
++        LOG_DBG("No parser definition detected, assuming pure content parser.");
++    }
++
++    common_chat_input effective_input = input;
++    effective_input.prepend(params.generation_prompt);
++
++    //LOG_DBG("Parsing PEG input with format %s: %s\n", common_chat_format_name(params.format), effective_input.text.c_str());
++
++    common_peg_parse_context ctx(std::move(effective_input.text), std::move(effective_input.tokens), chat_peg_flags(params));
++    // token-aware only when the model output carries its token ids; a generation prompt without them is matched by text
++    if (params.specials && (input.empty() || chat_has_ids(input.tokens))) {
++        const auto & gp = params.generation_prompt.tokens;
++        ctx.specials      = params.specials.get();
++        ctx.specials_from = chat_has_ids(gp) ? 0 : params.generation_prompt.size();
++    }
++    return chat_peg_parse_ctx(parser, ctx, is_partial, params);
++}
++
++common_chat_parse_inc::common_chat_parse_inc(const common_chat_parser_params & params)
++    : ctx(params.generation_prompt.text, params.generation_prompt.tokens, chat_peg_flags(params)),
++      n_prompt(params.generation_prompt.size()),
++      prompt_has_ids(chat_has_ids(params.generation_prompt.tokens)) {
++    if (params.parser.empty()) {
++        parser_default = chat_peg_parser_content_only();
++    }
++}
++
++void common_chat_parse_inc::append(const common_chat_input & chunk) {
++    ctx.input += chunk.text;
++    ctx.tokens.insert(ctx.tokens.end(), chunk.tokens.begin(), chunk.tokens.end());
++    output_has_ids = output_has_ids || chat_has_ids(chunk.tokens);
++}
++
++common_chat_msg common_chat_parse_inc::parse(bool is_partial, const common_chat_parser_params & params) {
++    const common_peg_arena & parser = params.parser.empty() ? parser_default : params.parser;
++    if (params.parser.empty()) {
++        LOG_DBG("No parser definition detected, assuming pure content parser.");
++    }
++
++    // as common_chat_peg_parse: token-aware only when the model output carries its token ids
++    const common_peg_special_tokens * specials = nullptr;
++    size_t specials_from = 0;
++    if (params.specials && (ctx.input.size() == n_prompt || output_has_ids)) {
++        specials      = params.specials.get();
++        specials_from = prompt_has_ids ? 0 : n_prompt;
++    }
++    // the memo holds for one arena (its keys are parser addresses) and one way of matching markers
++    if (memo_arena != &parser || specials != ctx.specials || specials_from != ctx.specials_from) {
++        memo.until.clear();
++        memo_arena = &parser;
++    }
++    ctx.specials      = specials;
++    ctx.specials_from = specials_from;
++    ctx.ast.clear();
++    ctx.parse_depth = 0;
++    ctx.memo        = &memo;
++    return chat_peg_parse_ctx(parser, ctx, is_partial, params);
++}
++
+ std::map<std::string, bool> common_chat_templates_get_caps(const common_chat_templates * chat_templates) {
+     GGML_ASSERT(chat_templates != nullptr);
+     GGML_ASSERT(chat_templates->template_default != nullptr);
+diff --git a/common/chat.h b/common/chat.h
+index 054018283..c8082beae 100644
+--- a/common/chat.h
++++ b/common/chat.h
+@@ -375,6 +375,28 @@ const char *    common_chat_format_name(common_chat_format format);
+ common_chat_msg common_chat_parse(const common_chat_input & input, bool is_partial, const common_chat_parser_params & params);
+ common_chat_msg common_chat_peg_parse(const common_peg_arena & src_parser, const common_chat_input & input, bool is_partial, const common_chat_parser_params & params);
+ 
++// A model output parsed while it grows (the server's stream, LLAMA_SERVER_PARSE_INC): append() each new chunk, parse()
++// returns what common_chat_parse(<everything appended>, is_partial, params) returns, or throws what it throws, for the
++// same params on every call. The input is kept in the parse context with the generation prompt in front instead of
++// being copied for every parse, and the until() scans of free text resume where the previous parse could no longer
++// change (common_peg_parse_memo), so n bytes streamed in k chunks cost O(n) scanning instead of O(n * k).
++class common_chat_parse_inc {
++  public:
++    explicit common_chat_parse_inc(const common_chat_parser_params & params);
++
++    void append(const common_chat_input & chunk);
++    common_chat_msg parse(bool is_partial, const common_chat_parser_params & params);
++
++  private:
++    common_peg_arena         parser_default;      // when params.parser is empty
++    common_peg_parse_context ctx;
++    common_peg_parse_memo    memo;
++    const common_peg_arena * memo_arena = nullptr;
++    size_t                   n_prompt;            // generation prompt bytes in front of the output
++    bool                     prompt_has_ids;
++    bool                     output_has_ids = false;
++};
++
+ // used by arg and server
+ const char *            common_reasoning_format_name(common_reasoning_format format);
+ common_reasoning_format common_reasoning_format_from_name(const std::string & format);
+diff --git a/common/peg-parser.cpp b/common/peg-parser.cpp
+index 73f2808cf..7dfdf1a01 100644
+--- a/common/peg-parser.cpp
++++ b/common/peg-parser.cpp
+@@ -759,12 +759,47 @@ struct parser_executor {
+         size_t last_valid_pos = start_pos;
+         std::vector<common_peg_invalid_utf8> invalid_utf8;
+ 
++        // common_peg_parse_memo: resume the scan of an earlier parse of the shorter input. A check at pos reads at
++        // most reach bytes (a delimiter, a token id under it, a code point), so the outcome at every pos <= final_end
++        // can no longer change by appending; the last such pos reached is saved for the next parse.
++        common_peg_parse_memo::until_scan * memo = nullptr;
++        size_t final_end = 0;
++        size_t memo_pos  = 0;
++        size_t memo_n_invalid = 0;
++        if (ctx.memo != nullptr) {
++            memo = &ctx.memo->until[{ &p, start_pos }];
++            if (memo->pos > start_pos) {
++                pos = last_valid_pos = memo->pos;
++                invalid_utf8 = memo->invalid_utf8;
++            }
++            size_t reach = 4;
++            for (const auto & d : p.delimiters) {
++                reach = std::max(reach, d.size());
++            }
++            final_end = ctx.input.size() >= reach ? ctx.input.size() - reach : 0;
++            memo_pos = pos;
++            memo_n_invalid = invalid_utf8.size();
++        }
++        const auto finish = [&](common_peg_parse_result_type type, size_t end) {
++            if (memo != nullptr && memo_pos > memo->pos) {
++                memo->pos = memo_pos;
++                memo->invalid_utf8.assign(invalid_utf8.begin(), invalid_utf8.begin() + memo_n_invalid);
++            }
++            return common_peg_parse_result(type, start_pos, end, {}, std::move(invalid_utf8));
++        };
++
+         while (pos < ctx.input.size()) {
++            // here last_valid_pos == pos and no delimiter starts in [start_pos, pos)
++            if (memo != nullptr && pos <= final_end) {
++                memo_pos = pos;
++                memo_n_invalid = invalid_utf8.size();
++            }
++
+             auto utf8_result = common_parse_utf8_codepoint(ctx.input, pos);
+ 
+             if (utf8_result.status == utf8_parse_result::INCOMPLETE && ctx.is_lenient()) {
+                 // The rest of the sequence may still arrive, return what we have so far
+-                return common_peg_parse_result(COMMON_PEG_PARSE_RESULT_NEED_MORE_INPUT, start_pos, last_valid_pos, {}, std::move(invalid_utf8));
++                return finish(COMMON_PEG_PARSE_RESULT_NEED_MORE_INPUT, last_valid_pos);
+             }
+ 
+             if (utf8_result.status != utf8_parse_result::SUCCESS) {
+@@ -784,12 +819,12 @@ struct parser_executor {
+ 
+             if (match == common_trie::COMPLETE_MATCH) {
+                 // Found a complete delimiter, return everything before it
+-                return common_peg_parse_result(COMMON_PEG_PARSE_RESULT_SUCCESS, start_pos, pos, {}, std::move(invalid_utf8));
++                return finish(COMMON_PEG_PARSE_RESULT_SUCCESS, pos);
+             }
+ 
+             if (match == common_trie::PARTIAL_MATCH) {
+                 // Found a partial match extending to end of input, return everything before it
+-                return common_peg_parse_result(COMMON_PEG_PARSE_RESULT_SUCCESS, start_pos, pos, {}, std::move(invalid_utf8));
++                return finish(COMMON_PEG_PARSE_RESULT_SUCCESS, pos);
+             }
+ 
+             pos += utf8_result.bytes_consumed;
+@@ -798,9 +833,9 @@ struct parser_executor {
+ 
+         if (last_valid_pos == ctx.input.size() && ctx.is_lenient()) {
+             // Reached the end of a partial stream, there might still be more input that we need to consume.
+-            return common_peg_parse_result(COMMON_PEG_PARSE_RESULT_NEED_MORE_INPUT, start_pos, last_valid_pos, {}, std::move(invalid_utf8));
++            return finish(COMMON_PEG_PARSE_RESULT_NEED_MORE_INPUT, last_valid_pos);
+         }
+-        return common_peg_parse_result(COMMON_PEG_PARSE_RESULT_SUCCESS, start_pos, last_valid_pos, {}, std::move(invalid_utf8));
++        return finish(COMMON_PEG_PARSE_RESULT_SUCCESS, last_valid_pos);
+     }
+ 
+     // a delimiter starts at pos (whole, or up to the end of the input) and every token text in it is that token
+diff --git a/common/peg-parser.h b/common/peg-parser.h
+index 34040b383..11ca68c43 100644
+--- a/common/peg-parser.h
++++ b/common/peg-parser.h
+@@ -4,6 +4,7 @@
+ #include "json.h"
+ #include "llama.h"
+ 
++#include <map>
+ #include <memory>
+ #include <set>
+ #include <unordered_map>
+@@ -198,6 +199,22 @@ struct common_peg_special_tokens {
+     std::vector<std::pair<size_t, llama_token>> find_in(const std::string & text) const;
+ };
+ 
++// Resumable scans for parsing an input that only grows between parses (common_chat_parse_inc, the server's stream):
++// an until() parser that ran from the same start on an earlier, shorter version of the input resumes at the last
++// position its scan had reached with every check there reading only bytes (and token ids) that already existed, so
++// appending cannot change any decision before it: no delimiter starts there, and the invalid UTF-8 runs found are
++// kept. The parse result is the same as without the memo; the scan of a growing free-text region (reasoning,
++// content, a tool argument) costs O(appended bytes) instead of O(region). Valid only while the input before the old
++// end, its token ids, the arena and the context's specials stay the same.
++struct common_peg_parse_memo {
++    struct until_scan {
++        size_t pos = 0; // resume here (a code point boundary, no delimiter before it)
++        std::vector<common_peg_invalid_utf8> invalid_utf8; // found in [start, pos)
++    };
++    // key: the until parser (its address in the arena) and its start position
++    std::map<std::pair<const void *, size_t>, until_scan> until;
++};
++
+ struct common_peg_parse_context {
+     std::string input;               // [h,   e,  l,  l,  o,  _,  w,  o,  r,  l,  d]
+     std::vector<llama_token> tokens; // [id, -1, -1, -1, -1, id, -1, -1, -1, -1, -1]
+@@ -211,6 +228,7 @@ struct common_peg_parse_context {
+     const common_peg_special_tokens * specials = nullptr;
+     size_t specials_from = 0;
+     std::unordered_map<const std::string *, std::vector<std::pair<size_t, llama_token>>> specials_in; // per literal
++    common_peg_parse_memo * memo = nullptr; // resumable scans of a growing input, off when null
+ 
+     common_peg_parse_context(common_peg_parse_flags flags = COMMON_PEG_PARSE_FLAG_NONE)
+         : flags(flags), parse_depth(0) {}
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 17dfd5b33..cf79d7f72 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -172,6 +172,16 @@ if (NOT WIN32 OR NOT BUILD_SHARED_LIBS)
+         ARGS models/ggml-vocab-qwen35.gguf models/templates/Qwen3.5-4B.jinja models/templates/LFM2.5-Instruct.jinja)
+     target_include_directories(test-chat-safe-tools PRIVATE ${PROJECT_SOURCE_DIR}/tools/server)
+     target_link_libraries(test-chat-safe-tools PRIVATE server-context)
++    # LLAMA_SERVER_PARSE_INC / LLAMA_SERVER_STREAM_STEP diff test, built-in outputs (recorded outputs: see the file)
++    llama_build_and_test(test-chat-stream-inc.cpp WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
++        ARGS models/ggml-vocab-qwen35.gguf --template models/templates/Qwen3.8-27B-UD.jinja)
++    target_include_directories(test-chat-stream-inc PRIVATE ${PROJECT_SOURCE_DIR}/tools/server)
++    target_link_libraries(test-chat-stream-inc PRIVATE server-context)
++    # LLAMA_SERVER_TOK_CACHE with LLAMA_SERVER_SAFE_SPECIAL plain ranges, built-in conversations (agent replay: see the file)
++    llama_build_and_test(test-tok-cache.cpp WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
++        ARGS models/ggml-vocab-qwen35.gguf --template models/templates/Qwen3.8-27B-UD.jinja)
++    target_include_directories(test-tok-cache PRIVATE ${PROJECT_SOURCE_DIR}/tools/server)
++    target_link_libraries(test-tok-cache PRIVATE server-context)
+     # LLAMA_CHAT_NATIVE golden test, synthetic requests (the real-corpus run: see tests/test-chat-native.cpp)
+     llama_build(test-chat-native.cpp)
+     target_include_directories(test-chat-native PRIVATE ${PROJECT_SOURCE_DIR}/tools/server)
+diff --git a/tests/test-chat-stream-inc.cpp b/tests/test-chat-stream-inc.cpp
+new file mode 100644
+index 000000000..9d9d3934b
+--- /dev/null
++++ b/tests/test-chat-stream-inc.cpp
+@@ -0,0 +1,486 @@
++// LLAMA_SERVER_PARSE_INC / LLAMA_SERVER_STREAM_STEP: the streamed chat output parsed incrementally (common_chat_parse_inc)
++// and once per decode step gives the same message and tool calls as the full re-parse per token it replaces (CPU,
++// vocab-only model).
++//
++//   test-chat-stream-inc VOCAB.gguf [MSGS.jsonl [TOOLS.json]] [--template FILE.jinja] [--bench KIB]
++//
++// Model outputs: every recorded assistant message of MSGS.jsonl (one JSON object per line: reasoning, content,
++// tool_calls [{name, arguments}]; e.g. omp sessions run on the local Qwen3.8), rendered by the chat template (the
++// model's own, or --template)
++// after one user message (the bytes after the generation prompt, up to the end-of-turn token) and tokenized with
++// special tokens as the model writes them; without MSGS.jsonl a few built-in outputs. TOOLS.json: OpenAI "tools"
++// array the requests carry (default: one permissive tool per name seen in the outputs). Parsed as the server parses
++// with LLAMA_SERVER_SAFE_TOOLS=1, for every output:
++//   - reference: the old algorithm, one full common_chat_parse of the whole output per token (task_result_state
++//     parse_mode 0);
++//   - incremental, token by token (parse_mode 2): every update must equal the full parse of the same prefix (the
++//     oracle inside task_result_state counts any difference) and every update's deltas must equal the reference's;
++//   - incremental in decode-step chunks of 1..5 tokens (MTP n4, fixed seed), parse_mode 1: the final message and tool
++//     calls must equal the reference's, and the streamed deltas must add up to the same reasoning, content and tool
++//     call arguments as the reference's.
++// --bench KIB: one long output (~KIB KiB of recorded reasoning + content + a write tool call) streamed old per token
++// vs incremental per step (3.3 tokens): CPU time of the parsing, total and per token over the last 2k tokens.
++#include "chat.h"
++#include "common.h"
++#include "llama.h"
++#include "server-common.h"
++#include "server-task.h"
++
++#include <algorithm>
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <fstream>
++#include <random>
++#include <sstream>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++static int n_fail = 0;
++
++#define CHECK(cond, ...)                                    \
++    do {                                                    \
++        if (!(cond)) {                                      \
++            fprintf(stderr, "FAIL %s:%d: ", __FILE__, __LINE__); \
++            fprintf(stderr, __VA_ARGS__);                   \
++            fprintf(stderr, "\n");                          \
++            n_fail++;                                       \
++        }                                                   \
++    } while (0)
++
++using pieces_t = std::vector<std::pair<std::string, llama_token>>;
++
++static std::string read_file(const std::string & path) {
++    std::ifstream f(path);
++    if (!f) {
++        throw std::runtime_error("cannot read " + path);
++    }
++    std::stringstream ss;
++    ss << f.rdbuf();
++    return ss.str();
++}
++
++// the streamed message rebuilt from the deltas, and the deltas of every update
++struct streamed {
++    common_chat_msg final_msg;
++    std::string     reasoning;
++    std::string     content;
++    std::vector<common_chat_tool_call> calls;
++    std::vector<std::string> updates; // the deltas of every update, serialized
++    size_t          n_oracle_mismatch = 0;
++    bool            ok = true;
++    std::string     error;
++    double          ms_total = 0;     // parsing CPU time
++    double          ms_tail  = 0;     // of the updates in the last 2k tokens
++    size_t          n_tail   = 0;     // tokens in the last 2k
++};
++
++static std::string dump_diffs(const std::vector<common_chat_msg_diff> & diffs) {
++    std::string s;
++    for (const auto & d : diffs) {
++        s += json({ { "r", d.reasoning_content_delta }, { "c", d.content_delta }, { "i", (long long) d.tool_call_index },
++                    { "n", d.tool_call_delta.name }, { "a", d.tool_call_delta.arguments } }).dump();
++    }
++    return s;
++}
++
++// streams toks through a task_result_state in the given chunks (sizes, cycled), as the server's HTTP thread does
++static streamed stream(const pieces_t & toks, const std::vector<size_t> & chunks, int parse_mode,
++                       const common_chat_parser_params & pp) {
++    streamed r;
++    task_result_state state(pp);
++    state.parse_mode = parse_mode;
++    const auto add = [&](const std::vector<common_chat_msg_diff> & diffs) {
++        for (const auto & d : diffs) {
++            r.reasoning += d.reasoning_content_delta;
++            r.content += d.content_delta;
++            if (d.tool_call_index != std::string::npos) {
++                if (r.calls.size() <= d.tool_call_index) {
++                    r.calls.resize(d.tool_call_index + 1);
++                }
++                r.calls[d.tool_call_index].name += d.tool_call_delta.name;
++                r.calls[d.tool_call_index].arguments += d.tool_call_delta.arguments;
++            }
++        }
++        r.updates.push_back(dump_diffs(diffs));
++    };
++    const size_t tail_from = toks.size() > 2048 ? toks.size() - 2048 : 0;
++    try {
++        size_t c = 0;
++        for (size_t i = 0; i < toks.size(); c++) {
++            const size_t n = std::min(chunks[c % chunks.size()], toks.size() - i);
++            common_chat_input in;
++            for (size_t j = i; j < i + n; j++) {
++                in.append(toks[j].first, toks[j].second);
++            }
++            std::vector<common_chat_msg_diff> diffs;
++            const auto t0 = std::chrono::steady_clock::now();
++            state.update_chat_msg(in, true, diffs);
++            const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
++            r.ms_total += ms;
++            if (i >= tail_from) {
++                r.ms_tail += ms;
++                r.n_tail  += n;
++            }
++            add(diffs);
++            if (getenv("TEST_STREAM_INC_DUMP") != nullptr && parse_mode == 0) {
++                printf("  +%s -> calls %zu, updates %s\n", json(in.text).dump().c_str(), state.chat_msg.tool_calls.size(),
++                       r.updates.back().c_str());
++            }
++            i += n;
++        }
++        std::vector<common_chat_msg_diff> diffs;
++        const auto t0 = std::chrono::steady_clock::now();
++        r.final_msg = state.update_chat_msg(common_chat_input(), false, diffs);
++        r.ms_total += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
++        for (auto & tc : r.final_msg.tool_calls) {
++            tc.id.clear(); // random per state
++        }
++        add(diffs);
++    } catch (const std::exception & e) {
++        r.ok    = false;
++        r.error = e.what();
++    }
++    r.n_oracle_mismatch = state.n_oracle_mismatch;
++    return r;
++}
++
++struct setup {
++    llama_model *             model = nullptr;
++    const llama_vocab *       vocab = nullptr;
++    common_chat_templates_ptr tmpls;
++    json                      tools;
++    common_chat_parser_params pp;
++    std::string               gp; // generation prompt text
++};
++
++static common_chat_msg msg_of(const json & rec) {
++    common_chat_msg m;
++    m.role              = "assistant";
++    m.reasoning_content = rec.value("reasoning", "");
++    m.content           = rec.value("content", "");
++    for (const auto & tc : rec.value("tool_calls", json::array())) {
++        common_chat_tool_call c;
++        c.name      = tc.at("name").get<std::string>();
++        c.arguments = tc.at("arguments").is_string() ? tc.at("arguments").get<std::string>() : tc.at("arguments").dump();
++        m.tool_calls.push_back(c);
++    }
++    return m;
++}
++
++static common_chat_msg user_msg() {
++    common_chat_msg u;
++    u.role    = "user";
++    u.content = "Do the task.";
++    return u;
++}
++
++// the bytes the model writes for message m: the render of [user, m] after the generation prompt, up to <|im_end|>
++static bool render_output(const setup & s, const common_chat_msg & m, std::string & out) {
++    common_chat_templates_inputs in;
++    in.messages              = { user_msg(), m };
++    in.tools                 = common_chat_tools_parse_oaicompat(s.tools);
++    in.add_generation_prompt = false;
++    in.reasoning_format      = COMMON_REASONING_FORMAT_DEEPSEEK;
++    in.enable_thinking       = true;
++    std::string full;
++    try {
++        full = common_chat_templates_apply(s.tmpls.get(), in).prompt;
++    } catch (const std::exception &) {
++        return false;
++    }
++    in.messages              = { user_msg() };
++    in.add_generation_prompt = true;
++    const std::string head   = common_chat_templates_apply(s.tmpls.get(), in).prompt;
++    if (full.compare(0, head.size(), head) != 0) {
++        return false;
++    }
++    out = full.substr(head.size());
++    const size_t e = out.rfind("<|im_end|>");
++    if (e != std::string::npos) {
++        out.resize(e);
++    }
++    return true;
++}
++
++static pieces_t tokenize(const setup & s, const std::string & text) {
++    pieces_t out;
++    for (llama_token t : common_tokenize(s.vocab, text, false, true)) {
++        out.emplace_back(common_token_to_piece(s.vocab, t, true), t);
++    }
++    return out;
++}
++
++static bool same_calls(const std::vector<common_chat_tool_call> & a, const std::vector<common_chat_tool_call> & b) {
++    if (a.size() != b.size()) {
++        return false;
++    }
++    for (size_t i = 0; i < a.size(); i++) {
++        if (a[i].name != b[i].name || a[i].arguments != b[i].arguments) {
++            return false;
++        }
++    }
++    return true;
++}
++
++static std::vector<size_t> mtp_chunks(uint32_t seed, size_t n) {
++    // accepted tokens per verification step with MTP n4: 1 + accepted drafts (0..4), ~3.3 on average
++    std::mt19937 rng(seed);
++    std::discrete_distribution<int> d({ 8, 10, 14, 20, 48 });
++    std::vector<size_t> c(n);
++    for (auto & x : c) {
++        x = 1 + d(rng);
++    }
++    return c;
++}
++
++struct counts {
++    size_t outputs = 0, skipped = 0, tokens = 0, with_calls = 0, calls_match_record = 0, ref_failed = 0;
++    size_t ref_inconsistent = 0; // the reference's per-token deltas do not add up to its final message
++    size_t step_ok_ref_failed = 0; // the reference stream threw (a transient state it diffed against), per step did not
++    double ms_old = 0, ms_inc_tok = 0, ms_inc_step = 0;
++};
++
++static void check_output(const setup & s, const std::string & name, const pieces_t & toks, const common_chat_msg * record,
++                         counts & cnt) {
++    const std::vector<size_t> one = { 1 };
++    const streamed ref  = stream(toks, one, 0, s.pp);
++    const streamed inc1 = stream(toks, one, 2, s.pp);
++    const streamed incs = stream(toks, mtp_chunks((uint32_t) toks.size(), 4096), 1, s.pp);
++    cnt.outputs++;
++    cnt.tokens += toks.size();
++    cnt.ms_old += ref.ms_total;
++    cnt.ms_inc_tok += inc1.ms_total;
++    cnt.ms_inc_step += incs.ms_total;
++
++    // token by token: the same result as the old algorithm, failures included
++    CHECK(inc1.ok == ref.ok && inc1.error == ref.error, "%s: ok %d / inc %d (%s | %s)", name.c_str(), ref.ok, inc1.ok,
++          ref.error.c_str(), inc1.error.c_str());
++    CHECK(inc1.n_oracle_mismatch == 0, "%s: %zu incremental parses differ from the full parse", name.c_str(), inc1.n_oracle_mismatch);
++    CHECK(inc1.updates == ref.updates, "%s: per-token deltas differ", name.c_str());
++    if (!ref.ok) {
++        // the stream sees fewer intermediate states per step, so it can miss the one the reference failed on, or
++        // fail on the same check with other states in the message
++        const auto kind = [](const std::string & e) { return e.substr(0, e.find('\n')); };
++        cnt.ref_failed++;
++        cnt.step_ok_ref_failed += incs.ok;
++        CHECK(incs.ok || kind(incs.error) == kind(ref.error), "%s: per step fails differently (%s | %s)", name.c_str(),
++              ref.error.c_str(), incs.error.c_str());
++        return;
++    }
++    CHECK(incs.ok, "%s: per step failed (%s)", name.c_str(), incs.error.c_str());
++    CHECK(inc1.final_msg == ref.final_msg, "%s: incremental final message differs", name.c_str());
++    CHECK(incs.final_msg == ref.final_msg, "%s: per-step final message differs", name.c_str());
++    CHECK(same_calls(incs.final_msg.tool_calls, ref.final_msg.tool_calls), "%s: per-step tool calls differ", name.c_str());
++    CHECK(incs.reasoning == ref.reasoning && incs.content == ref.content, "%s: per-step streamed text differs", name.c_str());
++    CHECK(same_calls(incs.calls, ref.calls), "%s: per-step streamed tool calls differ", name.c_str());
++    if (!(ref.reasoning == ref.final_msg.reasoning_content && ref.content == ref.final_msg.content &&
++          same_calls(ref.calls, ref.final_msg.tool_calls))) {
++        cnt.ref_inconsistent++;
++    }
++    if (record != nullptr && !record->tool_calls.empty()) {
++        cnt.with_calls++;
++        bool match = record->tool_calls.size() == ref.final_msg.tool_calls.size();
++        for (size_t i = 0; match && i < record->tool_calls.size(); i++) {
++            match = record->tool_calls[i].name == ref.final_msg.tool_calls[i].name &&
++                    json::parse(record->tool_calls[i].arguments) == json::parse(ref.final_msg.tool_calls[i].arguments);
++        }
++        cnt.calls_match_record += match;
++    }
++}
++
++static void bench(const setup & s, const std::vector<common_chat_msg> & recs, size_t kib) {
++    // reasoning and content from the recorded messages, then one write tool call with recorded content as its body
++    common_chat_msg m;
++    m.role = "assistant";
++    std::string body;
++    for (const auto & r : recs) {
++        if (m.reasoning_content.size() < kib * 1024 / 3) {
++            m.reasoning_content += r.reasoning_content + "\n";
++        } else if (m.content.size() < kib * 1024 / 3) {
++            m.content += r.content + "\n";
++        } else if (body.size() < kib * 1024 / 3) {
++            body += r.content + r.reasoning_content + "\n";
++        }
++    }
++    common_chat_tool_call c;
++    c.name      = "write";
++    c.arguments = json({ { "path", "notes.md" }, { "content", body } }).dump();
++    m.tool_calls.push_back(c);
++    std::string out;
++    if (!render_output(s, m, out)) {
++        fprintf(stderr, "bench: render failed\n");
++        n_fail++;
++        return;
++    }
++    const pieces_t toks = tokenize(s, out);
++    const std::vector<size_t> one = { 1 };
++    const streamed ref  = stream(toks, one, 0, s.pp);
++    const streamed inc1 = stream(toks, one, 1, s.pp);
++    const streamed incs = stream(toks, mtp_chunks(1, 8192), 1, s.pp);
++    const streamed olds = stream(toks, mtp_chunks(1, 8192), 0, s.pp);
++    printf("bench: %zu tokens, %zu KiB, final: reasoning %zu B, content %zu B, %zu tool calls\n", toks.size(), out.size() / 1024,
++           ref.final_msg.reasoning_content.size(), ref.final_msg.content.size(), ref.final_msg.tool_calls.size());
++    const auto row = [&](const char * name, const streamed & r) {
++        printf("  %-28s total %9.1f ms   last 2k tokens: %7.1f us/token   %s\n", name, r.ms_total,
++               r.n_tail ? 1000.0 * r.ms_tail / r.n_tail : 0.0, r.ok ? "" : r.error.c_str());
++    };
++    row("old, per token (today)", ref);
++    row("old, per step", olds);
++    row("incremental, per token", inc1);
++    row("incremental, per step", incs);
++    CHECK(ref.ok && incs.ok && inc1.ok, "bench: stream failed");
++    CHECK(incs.final_msg == ref.final_msg && inc1.final_msg == ref.final_msg, "bench: final message differs");
++    CHECK(inc1.updates == ref.updates, "bench: per-token deltas differ");
++    CHECK(incs.reasoning == ref.reasoning && incs.content == ref.content && same_calls(incs.calls, ref.calls),
++          "bench: per-step streamed output differs");
++}
++
++int main(int argc, char ** argv) {
++    if (argc < 2) {
++        fprintf(stderr, "usage: %s VOCAB.gguf [MSGS.jsonl [TOOLS.json]] [--template FILE.jinja] [--bench KIB]\n", argv[0]);
++        return 1;
++    }
++    std::vector<std::string> pos;
++    size_t bench_kib = 0;
++    std::string tmpl_src;
++    for (int i = 1; i < argc; i++) {
++        if (strcmp(argv[i], "--bench") == 0 && i + 1 < argc) {
++            bench_kib = std::stoul(argv[++i]);
++        } else if (strcmp(argv[i], "--template") == 0 && i + 1 < argc) {
++            tmpl_src = read_file(argv[++i]);
++        } else {
++            pos.push_back(argv[i]);
++        }
++    }
++    setenv("LLAMA_SERVER_SAFE_TOOLS", "1", 1);
++    common_log_set_verbosity_thold(-1);
++    llama_log_set([](ggml_log_level, const char *, void *) {}, nullptr);
++    llama_backend_init();
++
++    setup s;
++    auto mparams = llama_model_default_params();
++    mparams.vocab_only = true;
++    s.model = llama_model_load_from_file(pos[0].c_str(), mparams);
++    if (!s.model) {
++        fprintf(stderr, "failed to load %s\n", pos[0].c_str());
++        return 1;
++    }
++    s.vocab = llama_model_get_vocab(s.model);
++    s.tmpls = common_chat_templates_init(s.model, tmpl_src);
++
++    // recorded outputs
++    std::vector<json> recs;
++    if (pos.size() > 1) {
++        std::ifstream f(pos[1]);
++        for (std::string line; std::getline(f, line);) {
++            if (!line.empty()) {
++                recs.push_back(json::parse(line));
++            }
++        }
++    } else {
++        recs.push_back({ { "reasoning", "The user wants the build cleaned.\nI will run make clean." }, { "content", "" },
++                         { "tool_calls", json::array({ { { "name", "bash" }, { "arguments", { { "command", "make clean" } } } } }) } });
++        recs.push_back({ { "reasoning", "Short." }, { "content", "Done: the build directory is clean.\n\n- a\n- b" },
++                         { "tool_calls", json::array() } });
++        recs.push_back({ { "reasoning", "Two edits.\n" }, { "content", "Editing both files." },
++                         { "tool_calls", json::array({
++                             { { "name", "write" }, { "arguments", { { "path", "a.txt" }, { "content", "line 1\n<tag>\n</think> as text\n" } } } },
++                             { { "name", "bash" }, { "arguments", { { "command", "cat a.txt | wc -l" } } } } }) } });
++    }
++
++    if (pos.size() > 2) {
++        s.tools = json::parse(read_file(pos[2]));
++    } else {
++        // one tool per name seen, with every argument seen as a property of the JSON type it had
++        std::vector<std::string> names;
++        std::vector<json>        props;
++        for (const auto & r : recs) {
++            for (const auto & tc : r.value("tool_calls", json::array())) {
++                const std::string n = tc.at("name").get<std::string>();
++                size_t k = std::find(names.begin(), names.end(), n) - names.begin();
++                if (k == names.size()) {
++                    names.push_back(n);
++                    props.push_back(json::object());
++                }
++                const json args = tc.at("arguments").is_string() ? json::parse(tc.at("arguments").get<std::string>()) : tc.at("arguments");
++                for (auto it = args.begin(); it != args.end(); ++it) {
++                    const json & v = it.value();
++                    const char * type = v.is_string() ? "string" : v.is_boolean() ? "boolean" : v.is_number_integer() ? "integer" :
++                                        v.is_number() ? "number" : v.is_array() ? "array" : "object";
++                    props[k][it.key()] = { { "type", type } };
++                }
++            }
++        }
++        s.tools = json::array();
++        for (size_t k = 0; k < names.size(); k++) {
++            s.tools.push_back({ { "type", "function" }, { "function", { { "name", names[k] }, { "description", names[k] },
++                                { "parameters", { { "type", "object" }, { "properties", props[k] } } } } } });
++        }
++    }
++
++    // the parser params of a chat request, as the server builds them (LLAMA_SERVER_SAFE_TOOLS=1)
++    server_chat_params opt;
++    opt.use_jinja         = true;
++    opt.prefill_assistant = true;
++    opt.reasoning_format  = COMMON_REASONING_FORMAT_DEEPSEEK;
++    opt.tmpls             = common_chat_templates_init(s.model, tmpl_src);
++    opt.allow_image       = false;
++    opt.allow_audio       = false;
++    opt.allow_video       = false;
++    opt.enable_thinking   = common_chat_templates_support_enable_thinking(opt.tmpls.get());
++    json body = { { "messages", json::array({ { { "role", "user" }, { "content", "Do the task." } } }) }, { "tools", s.tools } };
++    std::vector<raw_buffer> files;
++    const json parsed = oaicompat_chat_params_parse(body, opt, files);
++    s.pp.format           = static_cast<common_chat_format>(parsed.at("chat_format").get<int>());
++    s.pp.reasoning_format = opt.reasoning_format;
++    s.gp                  = parsed.at("generation_prompt").get<std::string>();
++    s.pp.generation_prompt = common_chat_input_tokenize(s.vocab, s.gp);
++    s.pp.parser.load(parsed.at("chat_parser").get<std::string>());
++    s.pp.specials = server_safe_tools_specials(s.vocab);
++    printf("format %s, generation prompt %s, %zu tools, %zu recorded outputs\n", common_chat_format_name(s.pp.format),
++           json(s.gp).dump().c_str(), s.tools.size(), recs.size());
++
++    std::vector<common_chat_msg> msgs;
++    for (const auto & r : recs) {
++        msgs.push_back(msg_of(r));
++    }
++
++    counts cnt;
++    for (size_t i = 0; i < msgs.size(); i++) {
++        std::string out;
++        if (!render_output(s, msgs[i], out)) {
++            cnt.skipped++;
++            continue;
++        }
++        const pieces_t toks = tokenize(s, out);
++        if (getenv("TEST_STREAM_INC_DUMP") != nullptr) {
++            printf("output %zu: %s\n", i, json(out).dump().c_str());
++        }
++        check_output(s, "output " + std::to_string(i), toks, &msgs[i], cnt);
++        // the same output cut short (a stream stopped by max_tokens / the client): partial structures at the end
++        if (toks.size() > 8) {
++            const pieces_t cut(toks.begin(), toks.begin() + toks.size() * 2 / 3);
++            check_output(s, "output " + std::to_string(i) + " (cut)", cut, nullptr, cnt);
++        }
++    }
++    printf("outputs %zu (skipped %zu: template render), tokens %zu, reference stream threw %zu (of those per step did not: %zu), reference deltas not adding up %zu\n",
++           cnt.outputs, cnt.skipped, cnt.tokens, cnt.ref_failed, cnt.step_ok_ref_failed, cnt.ref_inconsistent);
++    printf("tool calls: %zu outputs with calls, %zu parsed back as recorded\n", cnt.with_calls, cnt.calls_match_record);
++    printf("parsing CPU: old per token %.1f ms, incremental per token (with oracle) %.1f ms, incremental per step %.1f ms\n",
++           cnt.ms_old, cnt.ms_inc_tok, cnt.ms_inc_step);
++
++    if (bench_kib > 0) {
++        bench(s, msgs, bench_kib);
++    }
++
++    llama_model_free(s.model);
++    if (n_fail == 0) {
++        printf("OK\n");
++    } else {
++        printf("%d FAILED\n", n_fail);
++    }
++    return n_fail == 0 ? 0 : 1;
++}
+diff --git a/tests/test-tok-cache.cpp b/tests/test-tok-cache.cpp
+new file mode 100644
+index 000000000..28ffb2cb0
+--- /dev/null
++++ b/tests/test-tok-cache.cpp
+@@ -0,0 +1,241 @@
++// LLAMA_SERVER_TOK_CACHE on the LLAMA_SERVER_SAFE_SPECIAL path: the cached tokenization of a chat prompt with plain
++// ranges (server_tokenize_cached) equals its full tokenization (common_tokenize_plain_ranges), token for token, on
++// agent conversations replayed as the server sees them (CPU, vocab-only model).
++//
++//   test-tok-cache VOCAB.gguf [CONVS.json] [--template FILE.jinja] [--threads N] [--from T --to T]
++//
++// CONVS.json: [{name, tools, messages}] in OpenAI chat format (e.g. omp sessions run on the local Qwen3.8); every
++// prefix of a conversation that ends before an assistant message is one request, the first N conversations are
++// interleaved request by request (N agent threads on one server), and requests whose prompt is in [from, to] tokens
++// are timed (cached vs full). Without CONVS.json: built-in conversations with control-token text inside the messages
++// (a plain "<|im_start|>assistant", "<|im_end|>", "<tool_call>" in user text, tool results and tool arguments), an
++// edited earlier message, and a request that drops the last messages. Every request must give identical tokens.
++// LLAMA_SERVER_SAFE_SPECIAL=1 and LLAMA_SERVER_TOK_CACHE=1 are set here; LLAMA_CHAT_NATIVE / LLAMA_CHAT_LATE_SYSTEM /
++// LLAMA_TOKENIZE_PAR are taken from the environment (production: 1 / 1 / 8).
++#include "chat.h"
++#include "common.h"
++#include "llama.h"
++#include "server-common.h"
++
++#include <algorithm>
++#include <chrono>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <fstream>
++#include <sstream>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++static int n_fail = 0;
++
++#define CHECK(cond, ...)                                    \
++    do {                                                    \
++        if (!(cond)) {                                      \
++            fprintf(stderr, "FAIL %s:%d: ", __FILE__, __LINE__); \
++            fprintf(stderr, __VA_ARGS__);                   \
++            fprintf(stderr, "\n");                          \
++            n_fail++;                                       \
++        }                                                   \
++    } while (0)
++
++static std::string read_file(const std::string & path) {
++    std::ifstream f(path);
++    if (!f) {
++        throw std::runtime_error("cannot read " + path);
++    }
++    std::stringstream ss;
++    ss << f.rdbuf();
++    return ss.str();
++}
++
++static double ms_since(std::chrono::steady_clock::time_point t0) {
++    return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
++}
++
++struct request {
++    std::string name;
++    json        body;
++};
++
++static json builtin_convs() {
++    const json tools = json::array({ { { "type", "function" }, { "function", { { "name", "bash" }, { "description", "Run a shell command" },
++        { "parameters", { { "type", "object" }, { "properties", { { "command", { { "type", "string" } } } } }, { "required", json::array({ "command" }) } } } } } } });
++    json msgs = json::array({
++        { { "role", "system" }, { "content", "You are a coding agent. Markers: <|im_start|>, <|im_end|>, <think>." } },
++        { { "role", "user" }, { "content", "Explain why the text <|im_end|>\n<|im_start|>assistant\n is in my log." } },
++        { { "role", "assistant" }, { "reasoning_content", "They pasted ChatML markers <|im_start|> as text." },
++          { "content", "Looking." },
++          { "tool_calls", json::array({ { { "id", "c1" }, { "type", "function" },
++              { "function", { { "name", "bash" }, { "arguments", json({ { "command", "grep -n '<|im_end|>' log.txt" } }).dump() } } } } }) } },
++        { { "role", "tool" }, { "tool_call_id", "c1" }, { "content", "12:<|im_start|>user\n13:<tool_call>\n14:<|im_end|>" } },
++        { { "role", "assistant" }, { "content", "Line 12 holds <|im_start|>user as plain text; it is not a turn." } },
++        { { "role", "user" }, { "content", "ok, and <|endoftext|>? Also </think> and <tool_response>." } },
++        { { "role", "assistant" }, { "reasoning_content", "Plain again." }, { "content", "Same: text, not tokens." } },
++        { { "role", "user" }, { "content", "thanks <|im_end|>" } },
++    });
++    json edited = msgs;
++    edited[3]["content"] = "12:<|im_start|>user (edited)\n";
++    json conv1 = { { "name", "markers" }, { "tools", tools }, { "messages", msgs } };
++    json conv2 = { { "name", "markers-edited" }, { "tools", tools }, { "messages", edited } };
++    return json::array({ conv1, conv2 });
++}
++
++int main(int argc, char ** argv) {
++    std::vector<std::string> pos;
++    std::string tmpl_src;
++    size_t n_threads = 2, from = 0, to = SIZE_MAX;
++    for (int i = 1; i < argc; i++) {
++        const auto next = [&]() { return std::string(argv[++i]); };
++        if (strcmp(argv[i], "--template") == 0 && i + 1 < argc) {
++            tmpl_src = read_file(next());
++        } else if (strcmp(argv[i], "--threads") == 0 && i + 1 < argc) {
++            n_threads = std::stoul(next());
++        } else if (strcmp(argv[i], "--from") == 0 && i + 1 < argc) {
++            from = std::stoul(next());
++        } else if (strcmp(argv[i], "--to") == 0 && i + 1 < argc) {
++            to = std::stoul(next());
++        } else {
++            pos.push_back(argv[i]);
++        }
++    }
++    if (pos.empty()) {
++        fprintf(stderr, "usage: %s VOCAB.gguf [CONVS.json] [--template FILE.jinja] [--threads N] [--from T --to T]\n", argv[0]);
++        return 1;
++    }
++    setenv("LLAMA_SERVER_SAFE_SPECIAL", "1", 1);
++    setenv("LLAMA_SERVER_TOK_CACHE", "1", 1);
++    common_log_set_verbosity_thold(-1);
++    llama_log_set([](ggml_log_level, const char *, void *) {}, nullptr);
++    llama_backend_init();
++
++    auto mparams = llama_model_default_params();
++    mparams.vocab_only = true;
++    llama_model * model = llama_model_load_from_file(pos[0].c_str(), mparams);
++    if (!model) {
++        fprintf(stderr, "failed to load %s\n", pos[0].c_str());
++        return 1;
++    }
++    const llama_vocab * vocab = llama_model_get_vocab(model);
++
++    server_chat_params opt;
++    opt.use_jinja         = true;
++    opt.prefill_assistant = true;
++    opt.reasoning_format  = COMMON_REASONING_FORMAT_DEEPSEEK;
++    opt.tmpls             = common_chat_templates_init(model, tmpl_src);
++    opt.allow_image       = false;
++    opt.allow_audio       = false;
++    opt.allow_video       = false;
++    opt.enable_thinking   = common_chat_templates_support_enable_thinking(opt.tmpls.get());
++
++    json convs = pos.size() > 1 ? json::parse(read_file(pos[1])) : builtin_convs();
++    // the same session can sit in two directories
++    {
++        json uniq = json::array();
++        std::vector<std::string> names;
++        for (auto & c : convs) {
++            const std::string n = c.at("name").get<std::string>();
++            if (std::find(names.begin(), names.end(), n) == names.end()) {
++                names.push_back(n);
++                uniq.push_back(c);
++            }
++        }
++        convs = uniq;
++    }
++    if (pos.size() == 1) {
++        n_threads = convs.size();
++    }
++    n_threads = std::min(n_threads, convs.size());
++
++    // the requests of each thread: every prefix that ends before an assistant message, plus (built-in) one that
++    // drops the last two messages again
++    std::vector<std::vector<request>> threads(n_threads);
++    for (size_t t = 0; t < n_threads; t++) {
++        const json & c = convs[t];
++        const json & msgs = c.at("messages");
++        const auto prefix = [&](size_t k) {
++            json m = json::array();
++            for (size_t i = 0; i < k; i++) {
++                m.push_back(msgs[i]);
++            }
++            return json { { "messages", m }, { "tools", c.at("tools") } };
++        };
++        for (size_t k = 1; k < msgs.size(); k++) {
++            if (msgs[k].at("role") == "assistant" && msgs[k - 1].at("role") != "assistant") {
++                threads[t].push_back({ c.at("name").get<std::string>() + " #" + std::to_string(k), prefix(k) });
++            }
++        }
++        if (pos.size() == 1 && msgs.size() > 4) {
++            threads[t].push_back({ c.at("name").get<std::string>() + " (shorter)", prefix(msgs.size() - 2) });
++        }
++    }
++
++    size_t n_req = 0, n_timed = 0, n_mismatch = 0, n_no_ranges = 0;
++    double ms_full = 0, ms_cached = 0, ms_render = 0;
++    std::vector<double> full_ms, cached_ms;
++    for (size_t r = 0;; r++) {
++        bool any = false;
++        for (size_t t = 0; t < n_threads; t++) {
++            if (r >= threads[t].size()) {
++                continue;
++            }
++            any = true;
++            const request & q = threads[t][r];
++            std::vector<raw_buffer> files;
++            auto t0 = std::chrono::steady_clock::now();
++            json body = q.body;
++            json parsed = oaicompat_chat_params_parse(body, opt, files);
++            ms_render += ms_since(t0);
++            std::vector<std::pair<size_t, size_t>> ranges;
++            if (!server_prompt_plain_ranges(parsed, ranges)) {
++                n_no_ranges++;
++            }
++            const std::string prompt = parsed.at("prompt").get<std::string>();
++
++            t0 = std::chrono::steady_clock::now();
++            const llama_tokens full = common_tokenize_plain_ranges(vocab, prompt, ranges, true);
++            const double f_ms = ms_since(t0);
++            t0 = std::chrono::steady_clock::now();
++            const llama_tokens cached = server_tokenize_cached(vocab, prompt, true, &ranges);
++            const double c_ms = ms_since(t0);
++
++            n_req++;
++            if (cached != full) {
++                n_mismatch++;
++                CHECK(false, "%s: cached tokenization differs (%zu vs %zu tokens)", q.name.c_str(), cached.size(), full.size());
++            }
++            if (full.size() >= from && full.size() <= to) {
++                n_timed++;
++                ms_full += f_ms;
++                ms_cached += c_ms;
++                full_ms.push_back(f_ms);
++                cached_ms.push_back(c_ms);
++                printf("  %-60s %7zu tokens %4zu ranges  full %7.2f ms  cached %7.2f ms\n", q.name.c_str(), full.size(),
++                       ranges.size(), f_ms, c_ms);
++            }
++        }
++        if (!any) {
++            break;
++        }
++    }
++    const auto median = [](std::vector<double> v) {
++        if (v.empty()) {
++            return 0.0;
++        }
++        std::sort(v.begin(), v.end());
++        return v[v.size() / 2];
++    };
++    printf("requests %zu (%zu without plain ranges), mismatches %zu; timed %zu in [%zu, %zu] tokens: full %.1f ms (median %.2f), cached %.1f ms (median %.2f); render %.1f ms\n",
++           n_req, n_no_ranges, n_mismatch, n_timed, from, to == SIZE_MAX ? (size_t) 0 : to, ms_full, median(full_ms), ms_cached,
++           median(cached_ms), ms_render);
++    CHECK(n_no_ranges < n_req, "no request had plain ranges (LLAMA_SERVER_SAFE_SPECIAL inactive?)");
++
++    llama_model_free(model);
++    if (n_fail == 0) {
++        printf("OK\n");
++    } else {
++        printf("%d FAILED\n", n_fail);
++    }
++    return n_fail == 0 ? 0 : 1;
++}
+diff --git a/tools/server/server-common.cpp b/tools/server/server-common.cpp
+index aeb4a90f7..5bae3ec14 100644
+--- a/tools/server/server-common.cpp
++++ b/tools/server/server-common.cpp
+@@ -948,25 +948,37 @@ llama_tokens tokenize_mixed(const llama_vocab * vocab, const json & json_prompt,
+ }
+ 
+ //
+-// LLAMA_SERVER_TOK_CACHE=1: incremental tokenization of string prompts (parse_special = true)
++// LLAMA_SERVER_TOK_CACHE=1: incremental tokenization of string prompts (parse_special = true), also of chat prompts
++// with the plain ranges of LLAMA_SERVER_SAFE_SPECIAL
+ //
+ // An agent turn re-sends the whole conversation, so the rendered prompt repeats the previous one up to a few
+ // messages from the end. The tokenizer first splits the text at special tokens and then tokenizes every text
+ // fragment on its own, so the tokens left of a special token X do not depend on the text right of it, provided
+-// that no other special token can overlap X (contain it, or start / end inside it). For such boundary tokens
+-// (and BPE vocabs without added BOS / EOS) tokenize(text) == tokens(prefix up to X) + tokenize(text from X), so a
+-// cached tokenization of an earlier prompt is reused up to its last boundary inside the common byte prefix and
+-// only the rest is tokenized. =2 also tokenizes in full and logs any difference (test mode).
++// that no other special token can overlap X (contain it, or start / end inside it) and X cannot overlap itself. For
++// such boundary tokens (and BPE vocabs without added BOS / EOS) tokenize(text) == tokens(prefix up to X) +
++// tokenize(text from X), so a cached tokenization of an earlier prompt is reused up to its last boundary inside the
++// common byte prefix and only the rest is tokenized.
++//
++// With plain ranges a special token is matched only where it overlaps no range (llama_tokenize_plain_ranges), so an
++// occurrence of X inside a range is text, not a boundary, and every match left of a boundary is decided by the
++// ranges that start left of its end. A cached prompt is therefore reused only up to a boundary that ends at or before
++// the first byte where the two range lists start to differ (tok_cache_ranges_diff), and the rest is tokenized with the
++// ranges right of the boundary, shifted (none crosses it: X there is a token, so no range overlaps it).
++//
++// =2 also tokenizes in full and logs any difference (test mode).
+ //
+ 
+ namespace {
+ 
++using plain_ranges_t = std::vector<std::pair<size_t, size_t>>;
++
+ struct tok_cache_entry {
+-    std::string  text;
+-    llama_tokens tokens;
+-    std::vector<size_t> bound_off; // byte offset of every boundary token in text, ascending
+-    std::vector<size_t> bound_idx; // its index in tokens
+-    uint64_t     used = 0;
++    std::string    text;
++    plain_ranges_t ranges;           // as given (empty: no plain ranges)
++    llama_tokens   tokens;
++    std::vector<size_t> bound_off;   // byte offset of every boundary token in text, ascending
++    std::vector<size_t> bound_idx;   // its index in tokens
++    uint64_t       used = 0;
+ };
+ 
+ struct tok_cache_state {
+@@ -989,6 +1001,43 @@ int tok_cache_mode() {
+     return v;
+ }
+ 
++llama_tokens tok_cache_tokenize(const llama_vocab * vocab, const std::string & text, const plain_ranges_t & ranges, bool add_special) {
++    return ranges.empty() ? common_tokenize(vocab, text, add_special, true)
++                          : common_tokenize_plain_ranges(vocab, text, ranges, add_special);
++}
++
++// the first byte whose plain-range coverage can differ between the sorted, non-overlapping range lists a and b, so
++// that a special token match ending at or before it is decided the same way under both; SIZE_MAX when they are equal
++size_t tok_cache_ranges_diff(const plain_ranges_t & a, const plain_ranges_t & b) {
++    size_t i = 0;
++    for (; i < a.size() && i < b.size(); ++i) {
++        if (a[i] == b[i]) {
++            continue;
++        }
++        // the later ranges start at or after the end of range i, so below min(end) only range i can overlap a match,
++        // and it does under both lists when the starts are equal
++        if (a[i].first == b[i].first) {
++            return std::min(a[i].second, b[i].second);
++        }
++        return std::min(a[i].first, b[i].first);
++    }
++    if (i < a.size()) {
++        return a[i].first;
++    }
++    if (i < b.size()) {
++        return b[i].first;
++    }
++    return SIZE_MAX;
++}
++
++// true when [b, e) overlaps a range (as llama_tokenize_plain_ranges decides it)
++bool tok_cache_in_ranges(const plain_ranges_t & ranges, size_t b, size_t e) {
++    // first range whose end is > b
++    const auto it = std::upper_bound(ranges.begin(), ranges.end(), b,
++            [](size_t v, const std::pair<size_t, size_t> & r) { return v < r.second; });
++    return it != ranges.end() && it->first < e;
++}
++
+ void tok_cache_init_vocab(tok_cache_state & st, const llama_vocab * vocab) {
+     st.vocab = vocab;
+     st.entries.clear();
+@@ -1014,7 +1063,16 @@ void tok_cache_init_vocab(tok_cache_state & st, const llama_vocab * vocab) {
+             continue;
+         }
+         bool ok = true;
++        // x overlapping itself (a proper suffix is a prefix): its occurrences could share bytes
++        for (size_t l = 1; ok && l < x.size(); ++l) {
++            if (x.compare(x.size() - l, l, x, 0, l) == 0) {
++                ok = false;
++            }
++        }
+         for (const auto & [id_y, y] : specials) {
++            if (!ok) {
++                break;
++            }
+             if (id_y == id || y.empty()) {
+                 continue;
+             }
+@@ -1027,9 +1085,6 @@ void tok_cache_init_vocab(tok_cache_state & st, const llama_vocab * vocab) {
+                     ok = false;
+                 }
+             }
+-            if (!ok) {
+-                break;
+-            }
+         }
+         if (ok) {
+             st.bound_ids.push_back(id);
+@@ -1040,19 +1095,22 @@ void tok_cache_init_vocab(tok_cache_state & st, const llama_vocab * vocab) {
+     SRV_INF("tokenize cache: %zu boundary tokens\n", st.bound_ids.size());
+ }
+ 
+-// boundary offsets of a tokenized text; false when they cannot be matched to the tokens (the entry is then not reused)
+-bool tok_cache_bounds(const tok_cache_state & st, tok_cache_entry & e) {
++// appends the boundaries of e found at byte offsets >= off_from, matched to e.tokens from index idx_from (the
++// boundaries before are already in e); false when they cannot be matched to the tokens (the entry is then not reused)
++bool tok_cache_bounds(const tok_cache_state & st, tok_cache_entry & e, size_t off_from, size_t idx_from) {
+     std::vector<std::pair<size_t, llama_token>> occ;
+     for (size_t b = 0; b < st.bound_ids.size(); ++b) {
+         const std::string & x = st.bound_texts[b];
+-        for (size_t p = e.text.find(x); p != std::string::npos; p = e.text.find(x, p + x.size())) {
+-            occ.emplace_back(p, st.bound_ids[b]);
++        for (size_t p = e.text.find(x, off_from); p != std::string::npos; p = e.text.find(x, p + x.size())) {
++            if (e.ranges.empty() || !tok_cache_in_ranges(e.ranges, p, p + x.size())) {
++                occ.emplace_back(p, st.bound_ids[b]);
++            }
+         }
+     }
+     std::sort(occ.begin(), occ.end());
+ 
+     size_t j = 0;
+-    for (size_t i = 0; i < e.tokens.size(); ++i) {
++    for (size_t i = idx_from; i < e.tokens.size(); ++i) {
+         const llama_token t = e.tokens[i];
+         if (std::find(st.bound_ids.begin(), st.bound_ids.end(), t) == st.bound_ids.end()) {
+             continue;
+@@ -1069,15 +1127,19 @@ bool tok_cache_bounds(const tok_cache_state & st, tok_cache_entry & e) {
+ 
+ } // namespace
+ 
+-llama_tokens server_tokenize_cached(const llama_vocab * vocab, const std::string & text, bool add_special) {
++llama_tokens server_tokenize_cached(const llama_vocab * vocab, const std::string & text, bool add_special,
++                                    const std::vector<std::pair<size_t, size_t>> * plain_ranges) {
++    static const plain_ranges_t no_ranges;
++    const plain_ranges_t & ranges = plain_ranges ? *plain_ranges : no_ranges;
++
+     const int mode = tok_cache_mode();
+     if (mode == 0) {
+-        return common_tokenize(vocab, text, add_special, true);
++        return tok_cache_tokenize(vocab, text, ranges, add_special);
+     }
+ 
+     static tok_cache_state st;
+ 
+-    llama_tokens result;
++    tok_cache_entry e;            // the new entry
+     size_t n_reused   = 0;
+     size_t off_reused = 0;
+     {
+@@ -1086,48 +1148,70 @@ llama_tokens server_tokenize_cached(const llama_vocab * vocab, const std::string
+             tok_cache_init_vocab(st, vocab);
+         }
+         if (!st.usable) {
+-            return common_tokenize(vocab, text, add_special, true);
+-        }
+-
+-        // the cached prompt sharing the longest prefix, and its last boundary token fully inside that prefix:
+-        // its tokens before that boundary are the tokens of the text before it
+-        for (const auto & e : st.entries) {
+-            const size_t n   = std::min(e.text.size(), text.size());
+-            const size_t lcp = std::mismatch(e.text.begin(), e.text.begin() + n, text.begin()).first - e.text.begin();
+-            for (size_t k = e.bound_off.size(); k-- > 0; ) {
+-                const size_t off = e.bound_off[k];
+-                if (off + strlen(llama_vocab_get_text(vocab, e.tokens[e.bound_idx[k]])) <= lcp) {
+-                    if (off > off_reused && e.bound_idx[k] > 0) {
++            return tok_cache_tokenize(vocab, text, ranges, add_special);
++        }
++
++        // the cached prompt sharing the longest prefix, and its last boundary token fully inside that prefix and
++        // before the first byte where the plain ranges differ: its tokens before that boundary are the tokens of the
++        // text before it
++        const tok_cache_entry * best = nullptr;
++        size_t k_best = 0;
++        for (const auto & c : st.entries) {
++            const size_t n   = std::min(c.text.size(), text.size());
++            const size_t lcp = std::mismatch(c.text.begin(), c.text.begin() + n, text.begin()).first - c.text.begin();
++            const size_t lim = std::min(lcp, tok_cache_ranges_diff(c.ranges, ranges));
++            for (size_t k = c.bound_off.size(); k-- > 0; ) {
++                const size_t off = c.bound_off[k];
++                if (off + strlen(llama_vocab_get_text(vocab, c.tokens[c.bound_idx[k]])) <= lim) {
++                    if (off > off_reused && c.bound_idx[k] > 0) {
+                         off_reused = off;
+-                        n_reused = e.bound_idx[k];
+-                        result.assign(e.tokens.begin(), e.tokens.begin() + n_reused);
++                        n_reused   = c.bound_idx[k];
++                        best       = &c;
++                        k_best     = k;
+                     }
+                     break;
+                 }
+             }
+         }
++        if (best != nullptr) {
++            e.tokens.assign(best->tokens.begin(), best->tokens.begin() + n_reused);
++            e.bound_off.assign(best->bound_off.begin(), best->bound_off.begin() + k_best);
++            e.bound_idx.assign(best->bound_idx.begin(), best->bound_idx.begin() + k_best);
++        }
+     }
+ 
+     if (n_reused > 0) {
+-        llama_tokens rest = common_tokenize(vocab, text.substr(off_reused), false, true);
+-        result.insert(result.end(), rest.begin(), rest.end());
++        plain_ranges_t rest_ranges;
++        for (const auto & [b, en] : ranges) {
++            if (en > off_reused) {
++                rest_ranges.emplace_back(std::max(b, off_reused) - off_reused, en - off_reused);
++            }
++        }
++        const llama_tokens rest = tok_cache_tokenize(vocab, text.substr(off_reused), rest_ranges, false);
++        e.tokens.insert(e.tokens.end(), rest.begin(), rest.end());
+     } else {
+-        result = common_tokenize(vocab, text, add_special, true);
++        e.tokens = tok_cache_tokenize(vocab, text, ranges, add_special);
+     }
+ 
+     if (mode == 2) {
+-        const llama_tokens full = common_tokenize(vocab, text, add_special, true);
+-        if (full != result) {
+-            SRV_ERR("tokenize cache: MISMATCH (reused %zu tokens, %zu vs %zu tokens)\n", n_reused, result.size(), full.size());
++        const llama_tokens full = tok_cache_tokenize(vocab, text, ranges, add_special);
++        if (full != e.tokens) {
++            size_t i = 0;
++            while (i < full.size() && i < e.tokens.size() && full[i] == e.tokens[i]) {
++                ++i;
++            }
++            SRV_ERR("tokenize cache: MISMATCH (reused %zu tokens, %zu vs %zu tokens, first difference at token %zu, %zu plain ranges)\n",
++                    n_reused, e.tokens.size(), full.size(), i, ranges.size());
+         } else {
+-            SRV_INF("tokenize cache: ok (reused %zu of %zu tokens)\n", n_reused, result.size());
++            SRV_INF("tokenize cache: ok (reused %zu of %zu tokens, %zu plain ranges)\n", n_reused, e.tokens.size(), ranges.size());
+         }
+     }
+ 
+-    tok_cache_entry e;
++    llama_tokens result = e.tokens;
+     e.text   = text;
+-    e.tokens = result;
+-    const bool ok = tok_cache_bounds(st, e);
++    e.ranges = ranges;
++    // the boundaries of the reused part are those of the cached entry; only the rest is searched
++    const bool ok = tok_cache_bounds(st, e, off_reused, n_reused);
+ 
+     std::lock_guard<std::mutex> lock(st.mtx);
+     if (!ok) {
+@@ -1312,7 +1396,7 @@ server_tokens tokenize_prompt_plain_ranges(
+         const mtmd_helper_init_opt & init_opt,
+         bool is_placeholder) {
+     if (mctx == nullptr) {
+-        return server_tokens(common_tokenize_plain_ranges(vocab, prompt, plain_ranges, true), false);
++        return server_tokens(server_tokenize_cached(vocab, prompt, true, &plain_ranges), false);
+     }
+ 
+     // as mtmd_tokenize(): the text is split at every media marker, the text parts are tokenized on their own, each
+diff --git a/tools/server/server-common.h b/tools/server/server-common.h
+index 2cb337d48..4bbd7de93 100644
+--- a/tools/server/server-common.h
++++ b/tools/server/server-common.h
+@@ -279,9 +279,12 @@ json json_get_nested_values(const std::vector<std::string> & paths, const json &
+  */
+ llama_tokens tokenize_mixed(const llama_vocab * vocab, const json & json_prompt, bool add_special, bool parse_special);
+ 
+-// common_tokenize(vocab, text, add_special, parse_special = true), reusing the tokens of a recent prompt with the
+-// same prefix when LLAMA_SERVER_TOK_CACHE=1 (identical result, see server-common.cpp)
+-llama_tokens server_tokenize_cached(const llama_vocab * vocab, const std::string & text, bool add_special);
++// common_tokenize(vocab, text, add_special, parse_special = true), or with plain_ranges
++// common_tokenize_plain_ranges(vocab, text, *plain_ranges, add_special) (LLAMA_SERVER_SAFE_SPECIAL chat prompts),
++// reusing the tokens of a recent prompt with the same prefix when LLAMA_SERVER_TOK_CACHE=1 (identical result, see
++// server-common.cpp; =2 also tokenizes in full and logs any difference)
++llama_tokens server_tokenize_cached(const llama_vocab * vocab, const std::string & text, bool add_special,
++                                    const std::vector<std::pair<size_t, size_t>> * plain_ranges = nullptr);
+ 
+ // return the last index of character that can form a valid string
+ // if the last character is potentially cut in half, return the index before the cut
+@@ -315,9 +318,9 @@ bool server_prompt_plain_ranges(const json & data, std::vector<std::pair<size_t,
+ // (common_chat_parser_params::specials), built once; null when the switch is off, see server-common.cpp
+ std::shared_ptr<const common_peg_special_tokens> server_safe_tools_specials(const llama_vocab * vocab);
+ 
+-// the tokens of a chat prompt with plain ranges (common_tokenize_plain_ranges, add_special = true); with mctx the
+-// prompt is split at the media markers as process_mtmd_prompt() does and the text between them is tokenized with the
+-// ranges
++// the tokens of a chat prompt with plain ranges (common_tokenize_plain_ranges, add_special = true; without mctx through
++// server_tokenize_cached, so LLAMA_SERVER_TOK_CACHE applies); with mctx the prompt is split at the media markers as
++// process_mtmd_prompt() does and the text between them is tokenized with the ranges
+ server_tokens tokenize_prompt_plain_ranges(
+                                         const llama_vocab * vocab,
+                                         mtmd_context * mctx,
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index 8577bc7a4..11dae2253 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -290,6 +290,13 @@ struct server_slot {
+     llama_tokens generated_tokens;
+     size_t n_sent_text = 0; // number of sent text character (i.e. handle partial UTF-8 on streaming)
+ 
++    // LLAMA_SERVER_STREAM_STEP: the stream chunks of the tokens accepted in one speculative step, sent as one partial
++    // result after the step (send_partial_step) instead of one per token
++    bool              stream_step_defer = false;
++    common_chat_input stream_step_content;
++    llama_tokens      stream_step_tokens;
++    bool              stream_step_stats = false; // the last token's chunk would have carried the stats
++
+     std::vector<completion_token_output> generated_token_probs;
+ 
+     bool has_next_token = true;
+@@ -2139,7 +2146,14 @@ private:
+ 
+             slot.add_token(result);
+             if (slot.task->params.stream) {
+-                send_partial_response(slot, result, false);
++                if (slot.stream_step_defer) {
++                    // the chunk send_partial_response would send now, kept for the step's partial result
++                    slot.stream_step_content.append(slot.generated.substr(slot.n_sent_text - result.text_to_send.size(), result.text_to_send.size()));
++                    slot.stream_step_tokens.push_back(result.tok);
++                    slot.stream_step_stats = slot.stop != STOP_TYPE_NONE || slot.task->params.timings_per_token;
++                } else {
++                    send_partial_response(slot, result, false);
++                }
+             }
+         }
+ 
+@@ -2308,12 +2322,29 @@ private:
+         queue_results.send(std::move(res));
+     }
+ 
+-    void send_partial_response(server_slot & slot, const completion_token_output & tkn, bool is_progress, bool is_begin = false) {
++    // the fields of a partial result every chunk carries
++    std::unique_ptr<server_task_result_cmpl_partial> make_partial_response(const server_slot & slot) const {
+         auto res = std::make_unique<server_task_result_cmpl_partial>();
+ 
+         res->id    = slot.task->id;
+         res->index = slot.task->index;
+ 
++        res->n_decoded             = slot.stats.n_gen;
++        res->n_prompt_tokens       = slot.task->n_tokens();
++        res->n_prompt_tokens_cache = slot.stats.n_prompt_cached;
++        res->post_sampling_probs   = slot.task->params.post_sampling_probs;
++
++        res->verbose           = slot.task->params.verbose;
++        res->res_type          = slot.task->params.res_type;
++        res->oaicompat_model   = slot.task->params.oaicompat_model;
++        res->oaicompat_cmpl_id = slot.task->params.oaicompat_cmpl_id;
++
++        return res;
++    }
++
++    void send_partial_response(server_slot & slot, const completion_token_output & tkn, bool is_progress, bool is_begin = false) {
++        auto res = make_partial_response(slot);
++
+         if (is_progress) {
+             res->is_progress        = true;
+             res->progress.total     = slot.task->n_tokens();
+@@ -2328,16 +2359,6 @@ private:
+             res->tokens.assign(1, tkn.tok);
+         }
+ 
+-        res->n_decoded             = slot.stats.n_gen;
+-        res->n_prompt_tokens       = slot.task->n_tokens();
+-        res->n_prompt_tokens_cache = slot.stats.n_prompt_cached;
+-        res->post_sampling_probs   = slot.task->params.post_sampling_probs;
+-
+-        res->verbose           = slot.task->params.verbose;
+-        res->res_type          = slot.task->params.res_type;
+-        res->oaicompat_model   = slot.task->params.oaicompat_model;
+-        res->oaicompat_cmpl_id = slot.task->params.oaicompat_cmpl_id;
+-
+         // populate res.probs_output
+         if (slot.task->params.sampling.n_probs > 0) {
+             res->prob_output = tkn; // copy the token probs
+@@ -2351,6 +2372,37 @@ private:
+         queue_results.send(std::move(res));
+     }
+ 
++    // LLAMA_SERVER_STREAM_STEP=1 (default 0): a streamed request (without n_probs) gets one partial result per
++    // speculative step, holding the chunks of all its accepted tokens, instead of one per token, so the HTTP thread
++    // parses the output once per step (2-4x fewer parses with MTP). The streamed text is the same bytes, in fewer
++    // chunks; the final message and tool calls are unchanged.
++    static bool stream_step_enabled() {
++        static const bool v = [] {
++            const char * env = getenv("LLAMA_SERVER_STREAM_STEP");
++            return env != nullptr && atoi(env) != 0;
++        }();
++        return v;
++    }
++
++    // sends the chunks deferred during a step as one partial result and ends the deferral
++    void send_partial_step(server_slot & slot) {
++        slot.stream_step_defer = false;
++        if (slot.stream_step_tokens.empty()) {
++            return;
++        }
++        auto res = make_partial_response(slot);
++        res->content = std::move(slot.stream_step_content);
++        res->tokens  = std::move(slot.stream_step_tokens);
++        if (slot.stream_step_stats) {
++            res->stats = slot.stats;
++        }
++        slot.stream_step_content = common_chat_input();
++        slot.stream_step_tokens.clear();
++        slot.stream_step_stats = false;
++
++        queue_results.send(std::move(res));
++    }
++
+     void send_final_response(server_slot & slot) {
+         auto res = std::make_unique<server_task_result_cmpl_final>();
+ 
+@@ -4810,6 +4862,8 @@ private:
+ 
+             slot.mem.seq_rm(slot.id, slot.prompt.tokens.pos_next(), -1);
+ 
++            slot.stream_step_defer = stream_step_enabled() && slot.task->params.stream && slot.task->params.sampling.n_probs == 0;
++
+             for (size_t i = 0; i < ids.size(); ++i) {
+                 completion_token_output result;
+ 
+@@ -4822,6 +4876,7 @@ private:
+                 slot.stats.n_gen += 1;
+ 
+                 if (!process_token(result, slot)) {
++                    send_partial_step(slot);
+                     slot.print_timings();
+                     send_final_response(slot);
+                     slot.release();
+@@ -4830,6 +4885,8 @@ private:
+                 }
+             }
+ 
++            send_partial_step(slot);
++
+             slot.print_timings_tg();
+ 
+             SLT_DBG(slot, "accepted %d/%d draft tokens, new n_tokens = %d\n", (int) n_accepted, (int) n_draft, slot.prompt.n_tokens());
+diff --git a/tools/server/server-task.cpp b/tools/server/server-task.cpp
+index d6aebf22a..15553256f 100644
+--- a/tools/server/server-task.cpp
++++ b/tools/server/server-task.cpp
+@@ -145,6 +145,14 @@ json task_params::to_json(bool only_metrics) const {
+     };
+ }
+ 
++int server_parse_inc_mode() {
++    static const int v = [] {
++        const char * env = getenv("LLAMA_SERVER_PARSE_INC");
++        return env ? atoi(env) : 0;
++    }();
++    return v;
++}
++
+ //
+ // task_result_state
+ //
+@@ -159,22 +167,54 @@ task_result_state::task_result_state(const common_chat_parser_params & chat_pars
+     }
+ }
+ 
+-common_chat_msg task_result_state::update_chat_msg(
++const common_chat_msg & task_result_state::update_chat_msg(
+         const common_chat_input & added,
+         bool is_partial,
+         std::vector<common_chat_msg_diff> & diffs,
+         bool filter_tool_calls) {
+-    generated_input.append(added);
+-    auto msg_prv_copy = chat_msg;
+-    //SRV_DBG("Parsing chat message: %s\n", generated_input.text.c_str());
+-    auto new_msg = common_chat_parse(
+-        generated_input,
+-        is_partial,
+-        chat_parser_params);
++    common_chat_msg new_msg;
++    if (parse_mode == 0) {
++        generated_input.append(added);
++        //SRV_DBG("Parsing chat message: %s\n", generated_input.text.c_str());
++        new_msg = common_chat_parse(generated_input, is_partial, chat_parser_params);
++    } else {
++        if (!parse_inc) {
++            parse_inc = std::make_unique<common_chat_parse_inc>(chat_parser_params);
++        }
++        parse_inc->append(added);
++        if (parse_mode == 2) {
++            // the old algorithm as the oracle: its result (or exception) is the one used
++            generated_input.append(added);
++            common_chat_msg inc_msg;
++            std::string inc_err;
++            try {
++                inc_msg = parse_inc->parse(is_partial, chat_parser_params);
++            } catch (const std::exception & e) {
++                inc_err = e.what();
++            }
++            std::string ref_err;
++            try {
++                new_msg = common_chat_parse(generated_input, is_partial, chat_parser_params);
++            } catch (const std::exception & e) {
++                ref_err = e.what();
++            }
++            if (inc_err != ref_err || (ref_err.empty() && !(inc_msg == new_msg))) {
++                n_oracle_mismatch++;
++                SRV_ERR("PARSE_INC: MISMATCH at %zu bytes (partial %d): incremental %s, full %s\n", generated_input.size(),
++                        is_partial, inc_err.empty() ? "ok" : inc_err.c_str(), ref_err.empty() ? "ok" : ref_err.c_str());
++            }
++            if (!ref_err.empty()) {
++                throw std::runtime_error(ref_err);
++            }
++        } else {
++            new_msg = parse_inc->parse(is_partial, chat_parser_params);
++        }
++    }
+     if (!new_msg.empty()) {
+         new_msg.set_tool_call_ids(generated_tool_call_ids, gen_tool_call_id);
+-        chat_msg = new_msg;
+-        auto all_diffs = common_chat_msg_diff::compute_diffs(msg_prv_copy, chat_msg);
++        const common_chat_msg msg_prv = std::move(chat_msg);
++        chat_msg = std::move(new_msg);
++        auto all_diffs = common_chat_msg_diff::compute_diffs(msg_prv, chat_msg);
+ 
+         if (!filter_tool_calls) {
+             diffs = std::move(all_diffs);
+diff --git a/tools/server/server-task.h b/tools/server/server-task.h
+index f96f1e1cf..188da8825 100644
+--- a/tools/server/server-task.h
++++ b/tools/server/server-task.h
+@@ -116,16 +116,27 @@ struct task_params {
+     json to_json(bool only_metrics = false) const;
+ };
+ 
++// LLAMA_SERVER_PARSE_INC (default 0): how a streamed result's output is parsed (task_result_state::update_chat_msg)
++//   0: the whole output again on every update, common_chat_parse (O(n) per update, O(n^2) per stream)
++//   1: incrementally, common_chat_parse_inc (same messages, O(n) scanning per stream)
++//   2: as 1, and every update also parsed the old way and compared (test oracle, as tqLLM's update_reference): a
++//      difference is logged and counted in n_oracle_mismatch, and the old result is used
++int server_parse_inc_mode();
++
+ // struct for tracking the state of a task (e.g., for streaming)
+ struct task_result_state {
+     // tracking diffs for partial tool calls
+     std::vector<common_chat_msg_diff> diffs;
+     common_chat_parser_params chat_parser_params;
+     common_chat_msg chat_msg;
+-    common_chat_input generated_input; // append new chunks of generated text here
++    common_chat_input generated_input; // append new chunks of generated text here (parse_mode 0 and 2)
+     std::vector<std::string> generated_tool_call_ids;
+     std::unordered_set<size_t> sent_tool_call_names;
+ 
++    int parse_mode = server_parse_inc_mode();       // LLAMA_SERVER_PARSE_INC, see above
++    std::unique_ptr<common_chat_parse_inc> parse_inc; // parse_mode > 0, created on the first update
++    size_t n_oracle_mismatch = 0;                     // parse_mode 2
++
+     // for OpenAI Responses and Anthropic streaming API:
+     // track output item / content block state across chunks
+     bool thinking_block_started = false;
+@@ -141,7 +152,7 @@ struct task_result_state {
+     task_result_state(const common_chat_parser_params & chat_parser_params);
+ 
+     // parse partial tool calls and update the internal state
+-    common_chat_msg update_chat_msg(
++    const common_chat_msg & update_chat_msg(
+         const common_chat_input & added,
+         bool is_partial,
+         std::vector<common_chat_msg_diff> & diffs,
+-- 
+2.43.0
+

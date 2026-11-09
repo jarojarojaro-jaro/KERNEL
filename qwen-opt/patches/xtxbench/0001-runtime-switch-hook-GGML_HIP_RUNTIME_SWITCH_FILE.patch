@@ -1,0 +1,450 @@
+xtxbench runtime switch hook (branch xtxbench off topka-q63 c0576e3e8, commit d5454e084); apply: git apply
+
+xtxbench runtime switch hook: GGML_HIP_RUNTIME_SWITCH_FILE (off by default) lets the graph-build-time kernel switches flip between requests
+
+GGML_CUDA_RT_SWITCH(NAME, def) replaces the static const env reads of the kernel switches (ARGMAX_FAST, KVQ_Q8,
+CONV_MUL, Q8_IDS, MOE_DOWN_REDUCE, NORM_ROUTER, INPROJ_CONV, ATTN_PREP, KVQ_FWHT, GATE_UP_Q8, MMVQ_PAIR, NORM_GATE,
+GDN_CONV_AB, MMQ_EPI, MMVQ_N1_Q8_0, MMVQ_N1_ROWS, MMVQ_Q5K_BIG_ROWS, MMVQ_IQ4XS_BIG_ROWS, MMVQ_Q4K_STREAM, CONV_ROWS4,
+NORM_FAST, GDN_PREFETCH). Without the env variable each site resolves once from the environment to the value of the
+old static read (lossless, one relaxed atomic compare per call). With GGML_HIP_RUNTIME_SWITCH_FILE=<path> graph_compute
+stats the file at most every 20 ms; a changed NAME=VALUE set bumps the switch generation, the sites re-resolve (file >
+env > default), and each context synchronizes and drops its captured HIP graphs + PM4 tapes (the idle-eviction path),
+so the next capture uses the new kernels. GGML_HIP_PM4 and GGML_HIP_INPUT_BATCH stay process-level.
+
+---
+ ggml/src/ggml-cuda/argmax.cu          |   2 +-
+ ggml/src/ggml-cuda/common.cuh         |  36 +++++++++++
+ ggml/src/ggml-cuda/fattn-kvq.cu       |   2 +-
+ ggml/src/ggml-cuda/gated_delta_net.cu |   2 +-
+ ggml/src/ggml-cuda/ggml-cuda.cu       | 110 ++++++++++++++++++++++++++++++----
+ ggml/src/ggml-cuda/mmq.cuh            |   2 +-
+ ggml/src/ggml-cuda/mmvq.cu            |  32 +++-------
+ ggml/src/ggml-cuda/norm.cu            |   2 +-
+ 8 files changed, 149 insertions(+), 39 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/argmax.cu b/ggml/src/ggml-cuda/argmax.cu
+index 02f3b7425..b8e55e6aa 100644
+--- a/ggml/src/ggml-cuda/argmax.cu
++++ b/ggml/src/ggml-cuda/argmax.cu
+@@ -131,7 +131,7 @@ void ggml_cuda_argmax(ggml_backend_cuda_context & ctx, ggml_tensor * dst) {
+     const dim3 blocks_num(num_blocks, 1, 1);
+ 
+     // GGML_HIP_ARGMAX_FAST=0: the plain one-load-at-a-time loop and shuffles
+-    static const bool fast = ggml_cuda_env_switch("GGML_HIP_ARGMAX_FAST");
++    const bool fast = GGML_CUDA_RT_SWITCH("GGML_HIP_ARGMAX_FAST", 1) != 0;
+     if (fast) {
+         argmax_f32<true><<<blocks_num, blocks_dim, 0, stream>>>(src0_d, dst_d, ne00);
+     } else {
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index 78aae3f89..ef4a01168 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -23,6 +23,7 @@
+ #include "ggml-common.h"
+ 
+ #include <array>
++#include <atomic>
+ #include <algorithm>
+ #include <cassert>
+ #include <cfloat>
+@@ -1583,6 +1584,7 @@ struct ggml_backend_cuda_context {
+     std::unordered_map<const void *, std::unique_ptr<ggml_cuda_graph>> cuda_graphs;
+ 
+     int64_t last_graph_eviction_sweep = 0;
++    uint32_t rt_switch_gen = 0;  // [GGML_HIP_RUNTIME_SWITCH_FILE] the switch generation the graphs above were captured at
+ 
+     ggml_cuda_graph * cuda_graph(const void * first_node_ptr) {
+         const int64_t time_now = ggml_time_us();
+@@ -1758,11 +1760,45 @@ struct ggml_backend_cuda_context {
+ };
+ 
+ // Default-on speed switch, read from the environment by the caller once (static): GGML_HIP_<NAME>=0 turns it off for A/B.
++// Kernel switches read at graph-build time use GGML_CUDA_RT_SWITCH(NAME, 1) below instead (runtime-switchable); this
++// static form stays for the process-level ones (GGML_HIP_PM4, GGML_HIP_INPUT_BATCH).
+ static inline bool ggml_cuda_env_switch(const char * name) {
+     const char * env = getenv(name);
+     return env == nullptr || atoi(env) != 0;
+ }
+ 
++// [GGML_HIP_RUNTIME_SWITCH_FILE] (xtxbench) named switches that can flip between requests without a server restart.
++// Off by default: without the env variable every GGML_CUDA_RT_SWITCH site resolves once, from the environment, to the
++// value its old `static const` read gave (lossless). With GGML_HIP_RUNTIME_SWITCH_FILE=<path>, graph_compute polls the
++// file (stat, at most every 20 ms; lines NAME=VALUE, '#' comments); when its content changes the switch generation is
++// bumped, every converted site re-resolves (file > environment > default) on its next call, and each context waits
++// for its streams and drops its captured graphs and PM4 tapes (the 10 s idle eviction path), so the next graph is
++// captured with the new kernels.
++extern std::atomic<uint32_t> ggml_cuda_rt_switch_gen;
++int  ggml_cuda_rt_switch_value(const char * name, int def);  // file > environment (atoi) > def
++void ggml_cuda_rt_switch_poll();
++
++struct ggml_cuda_rt_switch {
++    const char * name;
++    int def;
++    std::atomic<uint32_t> gen{UINT32_MAX};
++    std::atomic<int> val{0};
++
++    ggml_cuda_rt_switch(const char * name, int def) : name(name), def(def) {}
++
++    int get() {
++        const uint32_t g = ggml_cuda_rt_switch_gen.load(std::memory_order_acquire);
++        if (gen.load(std::memory_order_relaxed) != g) {
++            val.store(ggml_cuda_rt_switch_value(name, def), std::memory_order_relaxed);
++            gen.store(g, std::memory_order_relaxed);
++        }
++        return val.load(std::memory_order_relaxed);
++    }
++};
++
++// int value of switch NAME (def when unset); ggml_cuda_env_switch(NAME) == (GGML_CUDA_RT_SWITCH(NAME, 1) != 0)
++#define GGML_CUDA_RT_SWITCH(name, def) ([]() -> int { static ggml_cuda_rt_switch s_rt_switch_(name, def); return s_rt_switch_.get(); }())
++
+ struct ggml_cuda_mm_fusion_args_host {
+     const ggml_tensor * x_bias = nullptr;
+     const ggml_tensor * gate = nullptr;
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
+index 1476ba4f2..98a7d374c 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cu
++++ b/ggml/src/ggml-cuda/fattn-kvq.cu
+@@ -736,7 +736,7 @@ bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * ds
+     // [GGML_HIP_KVQ_Q8] q8_0 K/V as well (otherwise the vec kernel); different numerics from the vec kernel (f16 Q and
+     // WMMA instead of q8_1 Q and int8 dot products, f32 instead of f16 VKQ accumulators). Not D 256: the q8_0 kernel
+     // spills registers there.
+-    static const bool kvq_q8 = ggml_cuda_env_switch("GGML_HIP_KVQ_Q8");
++    const bool kvq_q8 = GGML_CUDA_RT_SWITCH("GGML_HIP_KVQ_Q8", 1) != 0;
+     const bool type_ok = (K->type == GGML_TYPE_Q4_0 && V->type == GGML_TYPE_Q4_0) ||
+         (kvq_q8 && K->type == GGML_TYPE_Q8_0 && V->type == GGML_TYPE_Q8_0 && K->ne[0] <= 128);
+     if (!type_ok || Q->type != GGML_TYPE_F32 || dst->type != GGML_TYPE_F32) {
+diff --git a/ggml/src/ggml-cuda/gated_delta_net.cu b/ggml/src/ggml-cuda/gated_delta_net.cu
+index b4765de72..4ee5055a2 100644
+--- a/ggml/src/ggml-cuda/gated_delta_net.cu
++++ b/ggml/src/ggml-cuda/gated_delta_net.cu
+@@ -746,7 +746,7 @@ static void ggml_cuda_op_gated_delta_net_impl(
+     // GGML_HIP_GDN_PREFETCH=1: the variant that loads the inputs of token t + 1 during token t (scalar-gate kernels);
+     // =2 also loads q/k (and the pending k) as one float4 per lane through LDS when S_v is 128 on a 32-wide warp and
+     // every such vector is 16-byte aligned (else =1)
+-    static const int pf = [] { const char * e = getenv("GGML_HIP_GDN_PREFETCH"); return e != nullptr ? atoi(e) : 0; }();
++    const int pf = GGML_CUDA_RT_SWITCH("GGML_HIP_GDN_PREFETCH", 0);
+     const auto a16 = [](const void * p) { return reinterpret_cast<uintptr_t>(p) % 16 == 0; };
+     bool qkb = pf == 2 && S_v == 128 && ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size == 32 &&
+                a16(q_d) && a16(k_d) && sq1 % 4 == 0 && sq2 % 4 == 0 && sq3 % 4 == 0;
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index c7441284e..08107c4b2 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -83,6 +83,8 @@
+ #include <cstddef>
+ #include <cstdint>
+ #include <cfloat>
++#include <filesystem>
++#include <fstream>
+ #include <initializer_list>
+ #include <limits>
+ #include <map>
+@@ -3794,7 +3796,7 @@ struct ggml_cuda_ssm_conv_plan {
+ // copy of y for the out_proj MMVQ. Same products as the two MUL launches. Both MULs or none.
+ static void ggml_cuda_ssm_conv_plan_fold_muls(const ggml_cgraph * cgraph, int conv_idx, ggml_cuda_ssm_conv_plan & plan,
+                                               const ggml_tensor * X, const ggml_tensor * S) {
+-    static const bool conv_mul = ggml_cuda_env_switch("GGML_HIP_CONV_MUL");
++    const bool conv_mul = GGML_CUDA_RT_SWITCH("GGML_HIP_CONV_MUL", 1) != 0;
+     const ggml_tensor * conv = cgraph->nodes[conv_idx];
+     if (!conv_mul || plan.silu || plan.bias_add || X->op != GGML_OP_TRANSPOSE || X->view_src == nullptr ||
+             X->view_offs != 0 || X->view_src->op != GGML_OP_MUL || (conv->flags & GGML_TENSOR_FLAG_OUTPUT) ||
+@@ -4277,7 +4279,7 @@ static block_q8_1 * ggml_cuda_q8_1_producer_target(ggml_backend_cuda_context * c
+     }
+     // GGML_HIP_Q8_IDS: the consumer may also be a single-token MUL_MAT_ID (MoE gate/up on the FFN norm); F32 MUL_MATs
+     // reading the same output first (the MoE router) are passed over
+-    static const bool q8_ids = ggml_cuda_env_switch("GGML_HIP_Q8_IDS");
++    const bool q8_ids = GGML_CUDA_RT_SWITCH("GGML_HIP_Q8_IDS", 1) != 0;
+     const ggml_tensor * mm = nullptr;
+     for (int j = out_idx + 1; j < std::min(cgraph->n_nodes, out_idx + 33) && mm == nullptr; ++j) {
+         const ggml_tensor * n = cgraph->nodes[j];
+@@ -4326,7 +4328,7 @@ static block_q8_1 * ggml_cuda_q8_1_producer_target(ggml_backend_cuda_context * c
+ // residual ADD (after only views or elided nodes, e.g. the next layer's state gather) in one launch
+ // (ggml_cuda_mmvq_moe_down_reduce), which writes the ADD node ahead of its position. Returns the nodes to skip, 0: no.
+ static int ggml_cuda_try_moe_down_reduce(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
+-    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_MOE_DOWN_REDUCE");
++    const bool enabled = GGML_CUDA_RT_SWITCH("GGML_HIP_MOE_DOWN_REDUCE", 1) != 0;
+     const ggml_tensor * mm = cgraph->nodes[i];
+     if (!enabled || mm->op != GGML_OP_MUL_MAT_ID || i + 1 >= cgraph->n_nodes || cuda_ctx->curr_stream_no != 0 ||
+             !cuda_ctx->stream_context().concurrent_events.empty()) {
+@@ -4480,7 +4482,7 @@ static unsigned int * ggml_cuda_tickets(ggml_backend_cuda_context * ctx) {
+ // every router block forms the norm itself, the last one to finish does the top-k. Bitwise as the three launches
+ // (rms_norm*mul, mul_mat_vec_f, topk_moe). Returns the nodes to skip, 0: no.
+ static int ggml_cuda_try_norm_router_topk(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
+-    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_NORM_ROUTER");
++    const bool enabled = GGML_CUDA_RT_SWITCH("GGML_HIP_NORM_ROUTER", 1) != 0;
+     if (!enabled || cuda_ctx->curr_stream_no != 0 || !cuda_ctx->stream_context().concurrent_events.empty() ||
+             i + 3 >= cgraph->n_nodes || !ggml_cuda_can_fuse(cgraph, i, { GGML_OP_RMS_NORM, GGML_OP_MUL }, {})) {
+         return 0;
+@@ -4535,7 +4537,7 @@ static int ggml_cuda_try_norm_router_topk(ggml_backend_cuda_context * cuda_ctx,
+ // conv of each 32-channel group runs as the tail of the in_proj block that completes the group. Every node between
+ // the MUL_MAT and the folded output MUL runs no kernel. Returns the nodes to skip, 0: no.
+ static int ggml_cuda_try_inproj_conv(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
+-    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_INPROJ_CONV");
++    const bool enabled = GGML_CUDA_RT_SWITCH("GGML_HIP_INPROJ_CONV", 1) != 0;
+     ggml_tensor * mm = cgraph->nodes[i];
+     if (!enabled || mm->op != GGML_OP_MUL_MAT || cuda_ctx->curr_stream_no != 0 ||
+             !cuda_ctx->stream_context().concurrent_events.empty()) {
+@@ -4633,7 +4635,7 @@ static bool ggml_cuda_match_rms_norm_mul_rope_fwht(const ggml_cgraph * cgraph, i
+ // position), then one launch does both rope groups, the v FWHT and the two SET_ROWS (ggml_cuda_op_attn_prep); every
+ // node after the q group is marked as computed ahead. Returns the nodes to skip, 0: no.
+ static int ggml_cuda_try_attn_prep(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph * cgraph, int i) {
+-    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_ATTN_PREP");
++    const bool enabled = GGML_CUDA_RT_SWITCH("GGML_HIP_ATTN_PREP", 1) != 0;
+     if (!enabled || cuda_ctx->curr_stream_no != 0 || !cuda_ctx->stream_context().concurrent_events.empty() ||
+             !ggml_cuda_match_rms_norm_mul_rope_fwht(cgraph, i)) {
+         return 0;
+@@ -4738,7 +4740,7 @@ static int ggml_cuda_try_attn_prep(ggml_backend_cuda_context * cuda_ctx, ggml_cg
+ // that only it reads: the kvq attention applies the FWHT (and writes the q8_1 copy for the next matvec) in its combine
+ // launch. Returns the nodes to skip, 0: no.
+ static int ggml_cuda_try_fa_fwht(ggml_backend_cuda_context * cuda_ctx, const ggml_cgraph * cgraph, int i) {
+-    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_KVQ_FWHT");
++    const bool enabled = GGML_CUDA_RT_SWITCH("GGML_HIP_KVQ_FWHT", 1) != 0;
+     ggml_tensor * fa = cgraph->nodes[i];
+     if (!enabled || fa->op != GGML_OP_FLASH_ATTN_EXT || cuda_ctx->curr_stream_no != 0 ||
+             !cuda_ctx->stream_context().concurrent_events.empty() || (fa->flags & GGML_TENSOR_FLAG_OUTPUT) ||
+@@ -5329,7 +5331,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+ 
+                 // [GGML_HIP_GATE_UP_Q8] one token: the q8_1 copy of the GLU output for the down projection, written by
+                 // the blocks that complete its 32-row groups (instead of a quantize_q8_1 launch in front of the down)
+-                static const bool gate_up_q8 = ggml_cuda_env_switch("GGML_HIP_GATE_UP_Q8");
++                const bool gate_up_q8 = GGML_CUDA_RT_SWITCH("GGML_HIP_GATE_UP_Q8", 1) != 0;
+                 const bool one_token = op == GGML_OP_MUL_MAT_ID ? src1->ne[2] == 1 && glu->ne[2] == 1 : src1->ne[1] == 1;
+                 if (gate_up_q8 && one_token && glu->type == GGML_TYPE_F32 && ggml_is_contiguous(glu) && glu->ne[3] == 1 &&
+                         glu->ne[0] % QK8_1 == 0 && ggml_nelements(glu) / QK8_1 <= ggml_backend_cuda_context::n_tickets &&
+@@ -5446,7 +5448,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+     // Pair launch: two consecutive MUL_MATs of the same weight type and K on the same src1 (ffn up/gate, GDN qkv/z) run
+     // as one multi-column MMVQ grid whose blocks past the first matrix compute the second. Same per-block code and order
+     // as two launches (bitwise), one kernel boundary fewer, no extra registers.
+-    static const bool mmvq_pair = ggml_cuda_env_switch("GGML_HIP_MMVQ_PAIR");
++    const bool mmvq_pair = GGML_CUDA_RT_SWITCH("GGML_HIP_MMVQ_PAIR", 1) != 0;
+     if (mmvq_pair && node->op == GGML_OP_MUL_MAT && i + 1 < cgraph->n_nodes) {
+         ggml_tensor * n1 = cgraph->nodes[i + 1];
+         const ggml_tensor * w0 = node->src[0];
+@@ -5593,7 +5595,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+ 
+     // gated output norm of a GDN layer: silu(z) * (rms_norm(x) * w) (+ its q8_1 copy) in one launch; the reshape of z
+     // may sit between the MUL and the SILU
+-    static const bool norm_gate = ggml_cuda_env_switch("GGML_HIP_NORM_GATE");
++    const bool norm_gate = GGML_CUDA_RT_SWITCH("GGML_HIP_NORM_GATE", 1) != 0;
+     if (norm_gate && node->op == GGML_OP_RMS_NORM) {
+         int k = i + 2;
+         while (k < cgraph->n_nodes && k < i + 5 && ggml_cuda_is_view_or_noop(cgraph->nodes[k])) {
+@@ -5634,7 +5636,7 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         if (ggml_cuda_ssm_conv_cache_plan(cgraph, i, plan)) {
+             // GDN layer: the alpha/beta projections follow after views and nodes the GDN prologue elides; they are
+             // independent of the conv, so both run in one grid (GGML_HIP_GDN_CONV_AB=0: two launches)
+-            static const bool conv_ab = ggml_cuda_env_switch("GGML_HIP_GDN_CONV_AB");
++            const bool conv_ab = GGML_CUDA_RT_SWITCH("GGML_HIP_GDN_CONV_AB", 1) != 0;
+             if (conv_ab && plan.silu != nullptr) {
+                 int j = i + 1 + plan.n_fused;
+                 while (j < cgraph->n_nodes && j < i + 16 &&
+@@ -5982,6 +5984,79 @@ static bool ggml_cuda_graph_set_enabled(ggml_backend_cuda_context * cuda_ctx, co
+ }
+ #endif // USE_CUDA_GRAPH
+ 
++// [GGML_HIP_RUNTIME_SWITCH_FILE] see common.cuh
++std::atomic<uint32_t> ggml_cuda_rt_switch_gen{0};
++static std::mutex ggml_cuda_rt_switch_mutex;
++static std::map<std::string, std::string> ggml_cuda_rt_switch_file_values;  // NAME -> VALUE of the last file read
++
++int ggml_cuda_rt_switch_value(const char * name, int def) {
++    {
++        std::lock_guard<std::mutex> lock(ggml_cuda_rt_switch_mutex);
++        const auto it = ggml_cuda_rt_switch_file_values.find(name);
++        if (it != ggml_cuda_rt_switch_file_values.end()) {
++            return atoi(it->second.c_str());
++        }
++    }
++    const char * env = getenv(name);
++    return env != nullptr ? atoi(env) : def;
++}
++
++void ggml_cuda_rt_switch_poll() {
++    static const char * path = getenv("GGML_HIP_RUNTIME_SWITCH_FILE");
++    if (path == nullptr || path[0] == '\0') {
++        return;
++    }
++    std::lock_guard<std::mutex> lock(ggml_cuda_rt_switch_mutex);  // uncontended: one lock per graph_compute
++    static int64_t t_last = INT64_MIN / 2;
++    static std::filesystem::file_time_type mtime_last;
++    static uintmax_t size_last = UINTMAX_MAX;
++    const int64_t t_now = ggml_time_us();
++    if (t_now - t_last < 20000) {
++        return;
++    }
++    t_last = t_now;
++
++    std::error_code ec;
++    std::filesystem::file_time_type mtime{};
++    uintmax_t size = 0;
++    if (std::filesystem::exists(path, ec)) {
++        mtime = std::filesystem::last_write_time(path, ec);
++        size  = std::filesystem::file_size(path, ec);
++    }
++    if (mtime == mtime_last && size == size_last) {
++        return;
++    }
++    mtime_last = mtime;
++    size_last  = size;
++
++    std::map<std::string, std::string> values;
++    std::ifstream f(path);
++    for (std::string line; std::getline(f, line); ) {
++        const size_t eq = line.find('=');
++        if (line.empty() || line[0] == '#' || eq == std::string::npos || eq == 0) {
++            continue;
++        }
++        std::string value = line.substr(eq + 1);
++        while (!value.empty() && (value.back() == '\r' || value.back() == ' ')) {
++            value.pop_back();
++        }
++        values[line.substr(0, eq)] = value;
++    }
++
++    if (values == ggml_cuda_rt_switch_file_values) {
++        return;
++    }
++    ggml_cuda_rt_switch_file_values = std::move(values);
++    const uint32_t gen = ggml_cuda_rt_switch_gen.fetch_add(1, std::memory_order_acq_rel) + 1;
++    std::string desc;
++    for (const auto & [k, v] : ggml_cuda_rt_switch_file_values) {
++        desc += " " + k + "=" + v;
++    }
++    // stderr, as ggml_hip_pm4 does: the server log filters ggml INFO lines; xtxbench confirms each flip from this line
++    fprintf(stderr, "ggml_cuda_rt_switch: gen %u from %s:%s\n", gen, path, desc.empty() ? " (empty)" : desc.c_str());
++    fflush(stderr);
++}
++
+ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend, ggml_cgraph * cgraph) {
+     ggml_backend_cuda_context * cuda_ctx = (ggml_backend_cuda_context *) backend->context;
+ 
+@@ -5989,6 +6064,19 @@ static enum ggml_status ggml_backend_cuda_graph_compute(ggml_backend_t backend,
+     ggml_cuda_set_device(cuda_ctx->device);
+     ggml_cuda_h2d_batch_flush(cuda_ctx); // the staged input uploads, before any capture
+ 
++    // [GGML_HIP_RUNTIME_SWITCH_FILE] a changed switch file: nothing captured under the old values may replay
++    ggml_cuda_rt_switch_poll();
++#ifdef USE_CUDA_GRAPH
++    {
++        const uint32_t rt_gen = ggml_cuda_rt_switch_gen.load(std::memory_order_acquire);
++        if (rt_gen != cuda_ctx->rt_switch_gen) {
++            cuda_ctx->rt_switch_gen = rt_gen;
++            CUDA_CHECK(cudaDeviceSynchronize());
++            cuda_ctx->cuda_graphs.clear();
++        }
++    }
++#endif // USE_CUDA_GRAPH
++
+     bool use_cuda_graph             = false;
+     bool cuda_graph_update_required = false;
+     const void * graph_key = nullptr;
+diff --git a/ggml/src/ggml-cuda/mmq.cuh b/ggml/src/ggml-cuda/mmq.cuh
+index 1cb4f0e2e..cf213937c 100644
+--- a/ggml/src/ggml-cuda/mmq.cuh
++++ b/ggml/src/ggml-cuda/mmq.cuh
+@@ -1425,7 +1425,7 @@ static void launch_mul_mat_q(ggml_backend_cuda_context & ctx, const mmq_args & a
+     // [GGML_HIP_MMQ_EPI] RDNA3 Q4_K/Q5_K MMA, J >= 48: scale epilogue in VOPD-pairable f32 ops (bitwise the same sums,
+     // see ggml_cuda_mmq_vec_dot_q8_1_q8_1_mma); =0: the old kernels
+     if constexpr (!epi && ggml_cuda_mmq_epi_config(type, J, fallback) && prec_src1 == GGML_PREC_Q8) {
+-        static const bool epi_enabled = ggml_cuda_env_switch("GGML_HIP_MMQ_EPI");
++        const bool epi_enabled = GGML_CUDA_RT_SWITCH("GGML_HIP_MMQ_EPI", 1) != 0;
+         if (epi_enabled && GGML_CUDA_CC_IS_RDNA3(cc) && config.use_mma_data_layout(cc)) {
+             launch_mul_mat_q<type, J, fallback, prec_src1, true>(ctx, args, stream);
+             return;
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index ca9b88479..894d43f12 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1480,15 +1480,12 @@ static constexpr bool mmvq_n1_rows_type(ggml_type type) {
+     return type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K || type == GGML_TYPE_Q8_0;
+ }
+ static bool mmvq_n1_rows_on(ggml_type type) {
+-    static const bool q8_0 = ggml_cuda_env_switch("GGML_HIP_MMVQ_N1_Q8_0");
++    const bool q8_0 = GGML_CUDA_RT_SWITCH("GGML_HIP_MMVQ_N1_Q8_0", 1) != 0;
+     return type != GGML_TYPE_Q8_0 || q8_0;
+ }
+ static int mmvq_n1_rows(const int64_t nrows_x) {
+-    static const int rows = [] {
+-        const char * env = getenv("GGML_HIP_MMVQ_N1_ROWS");
+-        const int forced = env ? atoi(env) : 2;
+-        return forced == 2 || forced == 4 ? forced : 1;
+-    }();
++    const int forced = GGML_CUDA_RT_SWITCH("GGML_HIP_MMVQ_N1_ROWS", 2);
++    const int rows = forced == 2 || forced == 4 ? forced : 1;
+     return nrows_x % rows == 0 ? rows : 1;
+ }
+ 
+@@ -1623,18 +1620,10 @@ static constexpr bool mmvq_r3_has_big_rows(ggml_type type, int ncols_dst) {
+ static int mmvq_r3_big_rows_min(ggml_type type) {
+     switch (type) {
+         case GGML_TYPE_Q5_K: {
+-            static const int rows = [] {
+-                const char * env = getenv("GGML_HIP_MMVQ_Q5K_BIG_ROWS");
+-                return env ? atoi(env) : MMVQ_R3_PIPE_Q5K_ROWS;
+-            }();
+-            return rows;
++            return GGML_CUDA_RT_SWITCH("GGML_HIP_MMVQ_Q5K_BIG_ROWS", MMVQ_R3_PIPE_Q5K_ROWS);
+         }
+         case GGML_TYPE_IQ4_XS: {
+-            static const int rows = [] {
+-                const char * env = getenv("GGML_HIP_MMVQ_IQ4XS_BIG_ROWS");
+-                return env ? atoi(env) : 0;
+-            }();
+-            return rows;
++            return GGML_CUDA_RT_SWITCH("GGML_HIP_MMVQ_IQ4XS_BIG_ROWS", 0);
+         }
+         default:
+             return 0;
+@@ -2630,10 +2619,7 @@ static void mul_mat_vec_q_switch_fusion(
+     const bool has_fusion = mmvq_fusion_any(fusion);
+     if constexpr (mmvq_r3_stream(type, c_ncols_dst) && !small_k && !halve_iters && rows_override == 0 && !big_rows) {
+         // Q4_K at 5 columns on RDNA3: the weight-stream kernel (bitwise identical results)
+-        static const bool enabled = [] {
+-            const char * env = getenv("GGML_HIP_MMVQ_Q4K_STREAM");
+-            return env != nullptr && atoi(env) != 0;
+-        }();
++        const bool enabled = GGML_CUDA_RT_SWITCH("GGML_HIP_MMVQ_Q4K_STREAM", 0) != 0;
+         const int device = ggml_cuda_get_device();
+         if (enabled && get_device_table_id(ggml_cuda_info().devices[device].cc) == MMVQ_PARAMETERS_RDNA3_0 &&
+             fusion.gate == nullptr && fusion.gate_bias == nullptr && fusion.x_scale == nullptr && fusion.gate_scale == nullptr) {
+@@ -3976,7 +3962,7 @@ void ggml_cuda_mmvq_moe_down_reduce(ggml_backend_cuda_context & ctx, const ggml_
+     GGML_ASSERT(src0->nb[0] == ggml_type_size(src0->type));
+ 
+     // the q8_1 input as the MMVQ ids path quantizes (and caches) it
+-    static const bool q8_ids = ggml_cuda_env_switch("GGML_HIP_Q8_IDS");
++    const bool q8_ids = GGML_CUDA_RT_SWITCH("GGML_HIP_Q8_IDS", 1) != 0;
+     ggml_cuda_pool_alloc<char> src1_q8_1_pool(ctx.pool());
+     const block_q8_1 * y = (const block_q8_1 *) mmvq_src1_q8_1(ctx, src1, src0->type, q8_ids, src1_q8_1_pool);
+ 
+@@ -4155,7 +4141,7 @@ void ggml_cuda_mmvq_conv(ggml_backend_cuda_context & ctx, const ggml_tensor * sr
+     // 16); such grids run 13.6 or 14.6 us per process instead of 12.2 us for the same bytes in 2560 blocks (streaming
+     // read microbenchmark), and the conv kernel took 17.7 instead of 14.4 us in 2 of 3 processes. With 4 rows (1536
+     // blocks) it is 14.5 us in every process. GGML_HIP_CONV_ROWS4=0: rows as the plain launch.
+-    static const bool conv_rows4 = ggml_cuda_env_switch("GGML_HIP_CONV_ROWS4");
++    const bool conv_rows4 = GGML_CUDA_RT_SWITCH("GGML_HIP_CONV_ROWS4", 1) != 0;
+     const auto launch_rows = [&](auto type_tag, auto nc_tag) {
+         constexpr ggml_type t = decltype(type_tag)::value;
+         const bool rdna3_rows = mmvq_n1_rows_type(t) && mmvq_n1_rows_on(t) && table_id == MMVQ_PARAMETERS_RDNA3_0;
+@@ -4309,7 +4295,7 @@ void ggml_cuda_mul_mat_vec_q(
+     ggml_cuda_pool_alloc<char> src1_q8_1_pool(ctx.pool());
+     // GGML_HIP_Q8_IDS: a single-token MUL_MAT_ID may read (and fill) the q8_1 cache too, so that the q8_1 activations a
+     // producer wrote (ggml_cuda_q8_1_producer_target) are used
+-    static const bool q8_ids = ggml_cuda_env_switch("GGML_HIP_Q8_IDS");
++    const bool q8_ids = GGML_CUDA_RT_SWITCH("GGML_HIP_Q8_IDS", 1) != 0;
+     const bool allow_cache = !ids || (q8_ids && ne12 == 1 && ne13 == 1);
+     const char * src1_q8_1 = mmvq_src1_q8_1(ctx, src1, src0->type, allow_cache, src1_q8_1_pool);
+ 
+diff --git a/ggml/src/ggml-cuda/norm.cu b/ggml/src/ggml-cuda/norm.cu
+index 5b47265f0..8fb6fb01e 100644
+--- a/ggml/src/ggml-cuda/norm.cu
++++ b/ggml/src/ggml-cuda/norm.cu
+@@ -284,7 +284,7 @@ static __global__ void rms_norm_mul_f32_unrolled(const float * x,
+ 
+ // GGML_HIP_NORM_FAST=0: rms_norm*mul rows of 2048..8192 columns take rms_norm_f32<1024, true> instead
+ static bool rms_norm_mul_unrolled_enabled() {
+-    static const bool enabled = ggml_cuda_env_switch("GGML_HIP_NORM_FAST");
++    const bool enabled = GGML_CUDA_RT_SWITCH("GGML_HIP_NORM_FAST", 1) != 0;
+     return enabled;
+ }
+ 

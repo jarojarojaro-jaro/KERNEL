@@ -1,0 +1,4 @@
+# xtxbench t1 validation (XtxBench, 2026-11-08): baseline vs baseline on production ~/llama-topka (run-topka.sh uncensored),
+# snapshot creation 1.7k/94k/199k + md5 restore proof (restore+decode vs fresh prefill+decode vs cold single request),
+# adaptive A/A (noise pair, then A->B), stage timings in runs/<ts>-t1/timings.jsonl. ~30 min. Results: runs/*/summary.txt
+xtxbench-t1|5400|~/qwen-opt/xtxbench|bash validate.sh

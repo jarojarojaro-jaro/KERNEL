@@ -275,3 +275,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-08] update | kvq-once: koniec testów
 [[2026-11-08-kvq-once-profil]]: ONCE=2 i okno uwagi draftu MTP przy 94k/199k nie zmierzone (joby anulowane przed startem); sekcja „Stan / do wznowienia”.
+
+## [2026-11-09] zamknięcie | testy XTX z 07–08.11 spisane
+[[2026-11-08-l1-tokenizacja-parser]] (tokenizacja 14,0 → 6,6 ms, md5 =, pomiar A→B bez A2), [[2026-11-08-fa-d256-prefill]] i [[xtxbench-szybki-ab]] (kod gotowy, niezmierzone), synteza 68 ze stanem wznowienia; czat po restarcie maszyny 09.11 00:30 uruchomiony przez run-topka.sh + autostart w crontabie (@reboot).

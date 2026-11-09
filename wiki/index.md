@@ -63,8 +63,8 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (10)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (48)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (69)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (49)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (72)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (116)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -75,9 +75,13 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-11-09 [[xtxbench-szybki-ab|xtxbench: szybki A/B silnika produkcyjnego XTX (cel ~10 min na wariant zamiast 40–120)]]
+- 2026-11-09 [[2026-11-08-l1-tokenizacja-parser|Cache tokenizacji na ścieżce SAFE_SPECIAL + parser przyrostowy: tokenizacja 14,0 → 6,6 ms, wyjście identyczne (2026-11-08, pomiar częściowy)]]
+- 2026-11-09 [[2026-11-08-fa-d256-prefill|Prefill FA D256 dla RDNA3 (#31746 + układ V w LDS): kod gotowy, niezmierzony (2026-11-08)]]
 - 2026-11-08 [[lekcja-cpuheavy-w-jobie-kolejki|`cpuheavy` wywołany z wnętrza joba kolejki GPU = zakleszczenie]]
 - 2026-11-08 [[kv-raz-na-weryfikacje|KV czytane raz na weryfikację (plan #8): trzy wzorce]]
 - 2026-11-08 [[2026-11-08-kvq-once-profil|kvq: KV raz na weryfikację MTP (`GGML_HIP_KVQ_ONCE`) i profil kroku przy długim kontekście (2026-11-07/08)]]
+- 2026-11-08 [[2026-11-08-cachesave-30137|Zapis prompt cache bez zerowania (#30137) + THP dla `--cache-ram` — niezmierzone (2026-11-08)]]
 - 2026-11-07 [[raport-67-kampania-nvidia|Raport 67: kampania NVIDIA na Vast (Enigma) — trzy części]]
 - 2026-11-07 [[raport-66-synteza|Raport 66: Strata 0.2.12, Maya, 1Cat, TokenSpeed, Hyperkernel, Saber, tqLLM, Flash-Next]]
 - 2026-11-07 [[raport-54-mniej-granic|Raport 54: mniej granic dispatchy w kroku weryfikacji]]
@@ -86,10 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-07 [[tokenspeed|TokenSpeed (LightSeek Foundation)]]
 - 2026-11-07 [[strata|Strata (Niko1221/Strata)]]
 - 2026-11-07 [[saber-engine|Saber (GGZ14/saber-engine): silnik Rust + HIP dla R9700]]
-- 2026-11-07 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
-- 2026-11-07 [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]]
-- 2026-11-07 [[hyperkernel|Hyperkernel (Hyperstition): rezydentny megakernel na B300]]
-- 2026-11-07 [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]]
 
-Razem 720 notatek. Wygenerowano 2026-11-08 przez `tools/wiki.py index`.
+Razem 724 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -14,7 +14,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (48)
+## Notatki (49)
 
 - [[aob-v1|`aob-v1` (AMD-Opt Bench): benchmark regresji RSI-F z naszej historii (projekt)]] — Własny benchmark w formacie Harbor-lite (`task.toml`, `instruction.md`, `environment/`, ukryte `tests/`, `solution/oracle.patch` + `null.patch`) z fabryką jako weryfikatorem i podziałem dev (łatki 0001–0047) / test (0048–0070 + negatywy); przy naszym budżecie GPU to test regresji i postępu RSI-F, nie leaderboard – przy 10 zadaniach SE ≈ 0.15 (raport 21i, 2026-10-19).
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
@@ -59,6 +59,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[wspolny-poczatek-promptu|Wspólny początek promptu i chude checkpointy (Maya #607, RTP-LLM #1574)]] — Mały osobny wpis cache z samym system promptem i narzędziami (Maya #607: nowa rozmowa 19× szybciej) oraz stan liniowy trzymany tylko na granicach wiadomości i ogonie (RTP #1574) to dwie formy tej samej zasady: mały stan na granicach wiadomości zamiast kopii całej sesji.
 - [[wyniki-negatywne|Wyniki negatywne zapisujemy z liczbami]] — Każda próba, która nie dała zysku, trafia do NOTES z liczbami i powodem, żeby nikt nie wracał do niej bez nowego pomysłu.
 - [[wylacznik-w-kazdej-latce|Wyłącznik w każdej łatce]] — Każda łatka z prędkością ma przełącznik `GGML_HIP_*=0` / `LLAMA_*=0`, który przywraca starą ścieżkę w tej samej binarce, więc A/B nie miesza zmiennej „inny build”.
+- [[xtxbench-szybki-ab|xtxbench: szybki A/B silnika produkcyjnego XTX (cel ~10 min na wariant zamiast 40–120)]] — Harness A/B dla produkcji (`run-topka.sh uncensored`) mierzy decode z migawek kontekstu 1,7k/94k/199k (T=0, md5 tekstu) i prefill 4k/32k, z adaptacyjną regułą stopu: szum raz na sesję, jedna para A→B, ABBA tylko przy wyniku niejednoznacznym; CPU self-test 7/7 OK, walidacja na GPU nie odbyła się (koniec testów 2026-11-08), więc oszczędność czasu jest na razie szacunkiem.
 - [[dowod-z-profilu|Zasady uczciwego dowodu z profilu]] — Każde podsumowanie trace'u/profilu musi mówić, ile pokrywa: liczba wierszy razem, zachowanych i wyciętych (z oknem w ns), liczba kolejek i strumieni, union-busy vs sum-busy (różnica > 0.1% → ostrzeżenie); pusty selektor albo 0 dopasowań to INCOMPLETE z kodem ≠ 0, a profil z `GGML_HIP_PM4` ≠ 0 jest odrzucany (P2 z raportu 21j, 2026-10-19).
 - [[zestaw-odlozony|Zestaw odłożony i klątwa zwycięzcy]] — Decyzje konfiguracji spekulacji wybrane na 6 promptach spec_sweep nie przenoszą się na prompt odłożony (przewaga +2.22% → −4.34%, zmiana znaku w 3/5 przypadków), więc twierdzenia o konfiguracji wymagają zapieczętowanego zestawu promptów spoza selekcji.
 - [[zestaw-copy-mvs|Zestawy kopii i edycji: `copy`, `mvs`, `long`]] — Trzy zestawy z 16b do mierzenia spekulacji na ruchu agentowym (kopia i edycja), uzupełniające `spec_sweep` (nowe pisanie): `copy` (6 promptów), `mvs` (4 pliki code-edit z MagnitudeVs) i `long` (~30k tokenów).
