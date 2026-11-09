@@ -33,7 +33,8 @@ $X t1 --label foo --base ~/wt/xtxbench/build-hip --snap-compat --var-switch GGML
 $X t2 --label foo --var ~/wt/foo/build-hip                          # walidacja przed wdrożeniem
 ```
 
-Opcje werdyktu: `--target decode|prefill|any` (grupa, która musi zyskać; domyślnie decode), `--pass 1.0` (próg PASS, %),
+Opcje werdyktu: `--target decode|prefill|any|none` (grupa, która musi zyskać; domyślnie decode; `none` = sama bramka
+regresji dla funkcji po stronie hosta: PASS przy braku LOSS/MIXED i identycznym md5), `--pass 1.0` (próg PASS, %),
 `--pass-mode max|mean`, `--max-loss 0.5` (tolerowana strata po ABBA, %), `--win-floor 0.5`, `--noise-floor 0.1`,
 `--noise-ttl-h 12`, `--renoise`, `--t0 auto|gain|none`, `--own-snap`, `--snap-compat`, `--prove`, `--aa`.
 
@@ -75,10 +76,18 @@ MTP) jest bitowo dokładny. (4) może się różnić: zimne żądanie tnie promp
 `n − 516` i `n − 4` tokenów przed końcem promptu dla checkpointów), więc to różnica kolejności sum prefillu, nie restore.
 Na CPU (LFM2.5-2.6B, hybryda conv, build topka 098ce134d) przy 0.6k (1) ≠ (4), przy 2k (1) = (4) — zgodnie z tym.
 
+**Wyciek stanu między żądaniami (GPU A/A 2026-11-09, run `1109-004040-t1-aa-validate`):** (2) ≠ (1): restore na serwerze,
+który obsłużył już inne żądania (tworzenie zestawu, zimne żądania, prefill bez cache, greedy czatu), daje inne md5 niż
+świeży prefill; pierwszy restore na świeżo uruchomionym serwerze (B1, A2) = (1) na każdej głębokości. Prawdopodobnie stan
+draftu MTP / rekurencyjny nie jest w pełni resetowany przy restore (por. upstream #30574, port w topka-q63 0003). Dlatego
+**md5 T=0 werdyktu pochodzi tylko z pierwszej rundy po starcie serwera każdego ramienia** (`md5_fresh` w results.jsonl);
+późniejsze restore na tym samym serwerze służą tylko do t/s. Przy `--var-switch` (jeden serwer) md5 B to `n/a
+(same-server)` — potrzebne osobne ramię ze świeżym startem. Fake serwer selftestu modeluje ten wyciek (`FAKE_LEAK=1`).
+
 ## Przełącznik bez restartu (`GGML_HIP_RUNTIME_SWITCH_FILE`)
 
 topka czyta przełączniki kerneli raz (`static const ... = ggml_cuda_env_switch(...)` / `getenv` w lambdzie `static`,
-22 miejsca w `ggml-cuda/`), więc zmiana env wymaga restartu. Łatka w `~/wt/xtxbench` (gałąź `xtxbench` z topka-q63,
+25 miejsc / 22 nazwy w `ggml-cuda/`), więc zmiana env wymaga restartu. Łatka w `~/wt/xtxbench` (gałąź `xtxbench` z topka-q63,
 commit w `git -C ~/wt/xtxbench log -1`; **nie wdrożona** do `~/llama-topka`):
 
 - `GGML_CUDA_RT_SWITCH(NAME, def)` zastępuje te odczyty: bez zmiennej env każde miejsce rozwiązuje się raz ze
@@ -108,7 +117,7 @@ commit w `git -C ~/wt/xtxbench log -1`; **nie wdrożona** do `~/llama-topka`):
      zysk bez straty = WIN, strata bez zysku = LOSS, oba = MIXED, nic = NULL.
 3. Prefill: jeden pomiar na rozmiar (4k, 32k); powtórka tylko gdy niejednoznaczny według tej samej reguły.
 4. **Werdykt PASS** = grupa docelowa WIN z zyskiem ≥ `--pass` (domyślnie +1,0%, najlepsza znacząca metryka), żadna
-   grupa LOSS/MIXED, md5 T=0 identyczne we wszystkich rundach i greedy md5 czatu identyczne; inaczej **KILL** z powodem.
+   grupa LOSS/MIXED, md5 T=0 identyczne w pierwszych rundach świeżych serwerów (i z dowodem (1)) oraz greedy md5 czatu identyczne; inaczej **KILL** z powodem.
 5. Raport: tabela `baseline → teraz → %` z szumem i progiem, liczba pomiarów A/B na metrykę, rundy, starty serwera,
    minuty: wariant (A0 + B1 [+ B2 + A2] + restarty), sesja (serwer A, para szumu, :8080), raz na silnik (snapshoty,
    dowód) i szacunek starej metody (4 ramiona × (start + zimne żądanie na głębokość + prefill + md5)).

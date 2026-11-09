@@ -283,6 +283,7 @@ class Server:
         self.logfile = os.path.join(run.dir, f"srv-{tag}.log")
         self.proc = self.pid = None
         self.start_s = None
+        self.n_req = 0  # completions since start: md5 is only trusted on the first round of a fresh server
 
     def start(self):
         if not TEST and os.path.exists(VRAM_OK) and subprocess.run([VRAM_OK]).returncode != 0:
@@ -321,6 +322,7 @@ class Server:
             raise RuntimeError(f"server {self.tag} not healthy in 300 s: {self.tail()}")
         self.pid = find_server_pid(self.port) or self.proc.pid
         self.start_s = time.time() - t
+        self.n_req = 0
         self.run.log(f"server {self.tag} up in {self.start_s:.1f} s (pid {self.pid}): {self.arm.describe()}")
 
     def tail(self, n=5):
@@ -359,6 +361,7 @@ class Server:
         body = {"prompt": tokens, "n_predict": n_predict, "temperature": temp, "seed": seed,
                 "cache_prompt": cache_prompt, "stream": False}
         t = time.time()
+        self.n_req += 1
         r = self.call("/completion", body)
         wall = time.time() - t
         tm = {k: (v if v is not None else 0.0) for k, v in r["timings"].items()}  # inf/NaN arrive as null
@@ -684,7 +687,7 @@ class Bench:
                                "rollback?) - snapshots unusable for this config")
 
     # ---------------------------------------------------------------- measurements
-    def m_decode(self, srv, arm, temp, seed, prefix):
+    def m_decode(self, srv, arm, temp, seed, prefix, fresh=False):
         key, man = self.snaps[arm.name]
         out = {}
         for d in self.depths:
@@ -696,6 +699,7 @@ class Bench:
             rec = srv.complete(T, self.a.tokens, temp, seed, True)
             self.check_suffix(rec, f"restored {label_n(d)}")
             rec["restore_ms"] = round(r["timings"]["restore_ms"], 1)
+            rec["md5_fresh"] = fresh  # first round after a fresh server start: the only md5 the verdict uses
             rec["value"] = rec["decode_tps"]
             out[f"{prefix}@{label_n(d)}"] = rec
         srv.slot("erase")
@@ -733,11 +737,14 @@ class Bench:
 
     def measure(self, srv, arm, rid, groups, cat):
         with self.run.stage(f"round {rid} ({','.join(groups)})", cat):
+            # a second slot restore on the same server diverges from a fresh prefill (state leaks between requests,
+            # GPU A/A 2026-11-09), so only the first round on a freshly started server carries a valid decode md5
+            fresh = srv.n_req == 0
             self.flip(srv, arm)
             t = time.time()
             res = {}
             if "decode" in groups:
-                res.update(self.m_decode(srv, arm, 0.0, 1, "decode"))
+                res.update(self.m_decode(srv, arm, 0.0, 1, "decode", fresh))
             if "decodeT1" in groups:
                 res.update(self.m_decode(srv, arm, 1.0, 42, "decodeT1"))
             if "prefill" in groups:
@@ -918,24 +925,36 @@ class Bench:
             p(f"{'':<16}-> {g}: {dec} ({why})")
         p("")
         md5_ok = True
+        fresh_rounds, md5_na = [], False
         for d in self.depths:
-            ms = sorted({rec[f"decode@{label_n(d)}"]["md5"] for _, _, rec, *_ in self.rounds if f"decode@{label_n(d)}" in rec})
-            same = len(ms) == 1
-            md5_ok &= same
+            m = f"decode@{label_n(d)}"
+            recs = [(rid, arm, rec[m]) for rid, arm, rec, *_ in self.rounds if m in rec]
+            seen = sorted({r["md5"] for _, _, r in recs})
+            fresh = {arm: sorted({r["md5"] for _, a2, r in recs if a2 == arm and r.get("md5_fresh")}) for arm in ("A", "B")}
+            fresh_rounds += [rid for rid, _, r in recs if r.get("md5_fresh") and rid not in fresh_rounds]
             pr = self.snaps["A"][1]["depths"].get(str(d), {})
-            extra = ""
-            if pr.get("proof_mem"):
-                extra = (f"; proof: fresh prefill+decode {pr['proof_mem']['md5']}"
-                         f" {'==' if pr['proof_mem']['md5'] in ms and same else '!='} restore"
-                         + (f", cold single request {pr['proof_cold']['md5']}" if pr.get("proof_cold") else ""))
-            p(f"md5 T=0 decode@{label_n(d)}: {'identical ' + ms[0] if same else 'DIFFERENT ' + ','.join(ms)}{extra}")
+            ref = pr["proof_mem"]["md5"] if pr.get("proof_mem") else None
+            info = f"; all restores {','.join(seen)} (later restores on the same server leak state: t/s only)"
+            if not fresh["B"]:
+                p(f"md5 T=0 {m}: n/a ({'same-server' if self.switching else 'no fresh-start B round'}; a separate "
+                  f"fresh-start md5 arm is needed){info}")
+                md5_na = True
+                continue
+            cand = sorted(set(fresh["A"]) | set(fresh["B"]) | ({ref} if ref else set()))
+            same = len(cand) == 1
+            md5_ok &= same
+            extra = (f"; A {','.join(fresh['A']) or '-'} B {','.join(fresh['B'])}"
+                     + (f", fresh prefill+decode {ref}" if ref else "")
+                     + (f", cold single request {pr['proof_cold']['md5']}" if pr.get("proof_cold") else ""))
+            p(f"md5 T=0 {m} (first restore per fresh server): {'identical ' + cand[0] if same else 'DIFFERENT'}{extra}{info}")
         proofs = [(d, self.snaps["A"][1]["depths"].get(str(d), {}).get("proof_mem")) for d in self.depths]
         if all(pm for _, pm in proofs):
-            bad = [label_n(d) for d, pm in proofs if {pm["md5"]} != {rec[f"decode@{label_n(d)}"]["md5"] for _, _, rec, *_ in
-                                                                    self.rounds if f"decode@{label_n(d)}" in rec}]
-            p("md5 restore proof: " + ("PASS: restore + decode == fresh prefill + decode at every depth (rounds "
-                                       f"{' '.join(r for r, *_ in self.rounds if any(k.startswith('decode@') for k in _[1]))})"
-                                       if not bad else f"FAIL at {','.join(bad)}"))
+            fr = {d: {rec[f"decode@{label_n(d)}"]["md5"] for _, _, rec, *_ in self.rounds
+                      if f"decode@{label_n(d)}" in rec and rec[f"decode@{label_n(d)}"].get("md5_fresh")} for d, _ in proofs}
+            bad = [label_n(d) for d, pm in proofs if fr[d] and {pm["md5"]} != fr[d]]
+            p("md5 restore proof: " + ("n/a (no fresh-start round)" if not any(fr.values()) else
+                                       f"PASS: first restore + decode on a fresh server == fresh prefill + decode at every "
+                                       f"depth (rounds {' '.join(fresh_rounds)})" if not bad else f"FAIL at {','.join(bad)}"))
         gm = sorted({full for _, (_, full) in self.greedy.values()})
         md5_ok &= len(gm) == 1
         p(f"greedy md5 (chat, fresh prefill; content/reasoning+content): "
@@ -945,7 +964,7 @@ class Bench:
                   for d in self.depths}
             p("md5 T=1 seed 42 (informational): " + "  ".join(f"{label_n(d)} {'same' if len(v) == 1 else 'diff'}" for d, v in t1.items()))
         # verdict
-        tgt = [self.a.target] if self.a.target != "any" else [g for g in ("decode", "prefill") if g in self.groups]
+        tgt = {"any": [g for g in ("decode", "prefill") if g in self.groups], "none": []}.get(self.a.target, [self.a.target])
         reasons, best = [], None
         for g in self.groups:
             d = self.decisions[g][0]
@@ -966,11 +985,13 @@ class Bench:
                     best = max(best, gbest) if best else gbest
         if not md5_ok and not self.a.allow_md5_change:
             reasons.append("md5 changed (not lossless)")
-        if best is None or best[0] * 100 < self.a.pass_:
+        if tgt and (best is None or best[0] * 100 < self.a.pass_):
             reasons.append(f"no significant {'/'.join(tgt)} gain >= +{self.a.pass_}%"
                            + (f" (best {100 * best[0]:+.2f}% {best[1]})" if best else ""))
         verdict = "PASS" if not reasons else "KILL"
-        p(f"VERDICT: {verdict}" + (f" ({best[1]} {100 * best[0]:+.2f}% >= +{self.a.pass_}%, md5 ok)" if verdict == "PASS"
+        mtxt = "md5 n/a (same-server: needs a fresh-start md5 arm)" if md5_na else "md5 ok"
+        p(f"VERDICT: {verdict}" + (f" ({best[1]} {100 * best[0]:+.2f}% >= +{self.a.pass_}%, {mtxt})" if verdict == "PASS" and tgt
+                                   else f" (regression gate: no LOSS/MIXED, {mtxt})" if verdict == "PASS"
                                    else f" ({'; '.join(reasons)})"))
         if self.a.aa:  # A/A run: any WIN/LOSS/MIXED or md5 change is a false positive of the harness
             fp = [g for g, (d, _) in self.decisions.items() if d in ("WIN", "LOSS", "MIXED")]
@@ -997,7 +1018,7 @@ class Bench:
             f.write(text + "\n")
         save_json(os.path.join(self.run.dir, "result.json"), {
             "mode": self.mode, "label": self.a.label, "verdict": verdict, "reasons": reasons, "key": self.key,
-            "decisions": self.decisions, "noise": self.noise, "md5_ok": md5_ok, "stages": self.run.stages,
+            "decisions": self.decisions, "noise": self.noise, "md5_ok": md5_ok, "md5_na": md5_na, "stages": self.run.stages,
             "minutes": {k: round(v / 60, 2) for k, v in cats.items()}, "rounds": [r for r, *_ in self.rounds],
             "old_min": round(old / 60, 1) if old else None})
 
@@ -1176,7 +1197,8 @@ def main():
     ap.add_argument("--fill", type=int, default=255000, help="t2: prompt tokens of the fill test")
     ap.add_argument("--tokens", type=int, default=256)
     ap.add_argument("--port", type=int, default=18794)
-    ap.add_argument("--target", choices=["decode", "prefill", "any"], default="decode", help="group that must gain")
+    ap.add_argument("--target", choices=["decode", "prefill", "any", "none"], default="decode",
+                    help="group that must gain; none = regression gate only (host-side features)")
     ap.add_argument("--pass", dest="pass_", type=float, default=1.0, help="PASS threshold, %% gain")
     ap.add_argument("--pass-mode", choices=["max", "mean"], default="max")
     ap.add_argument("--max-loss", type=float, default=0.5, help="%% loss tolerated after A B B A")

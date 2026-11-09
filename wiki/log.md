@@ -281,3 +281,6 @@ Wydanie GitHub `enigma-engines-cuda-2026-11-07` (KERNEL): fork kvqlean/kvqleana,
 
 ## [2026-11-09] eksperyment | xtxbench t1: walidacja A/A na GPU
 [[xtxbench-szybki-ab]]: pomiar czasu działa (szum decode 0,02–0,15%, prefill 0,03–0,33%, A/A NULL, 3,9 min/wariant vs ~38 min), ale md5 decode z migawek niewiarygodne — tylko pierwszy restore na świeżym serwerze = świeży prefill, kolejne inne (fałszywy KILL w A/A); do poprawki przed bramką md5.
+
+## [2026-11-09] update | xtxbench: md5 tylko z pierwszego restore + wyciek stanu
+[[xtxbench-szybki-ab]]: werdykt md5 tylko z pierwszej rundy po świeżym starcie serwera, `--var-switch` → md5 n/a (same-server); selftest 7/7 z modelem wycieku. Znalezisko w [[2026-11-08-kvq-once-profil]] i syntezie 68: drugi restore slotu ≠ świeży prefill (podejrzenie: reset MTP/rekurencji, por. #30574).

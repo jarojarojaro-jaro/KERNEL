@@ -66,6 +66,9 @@ Wariant 47b6be451: każda fala pary dekwantuje połowę każdego bloku K i liczy
 
 Okno uwagi draftu MTP: już istnieje (`--spec-mtp-window`, łatka 0046, [[latki-spekulacji]]) i przegrało przy 27k/62k (W=8192: akceptacja 3.31 → 2.78, 105 → 90 t/s). Ponowny pomiar przy 94k/199k (`mtpw.jobs`, xtxbench t1, W 4k/16k/64k) anulowany przed startem. **Nie zmierzone.**
 
+## Znalezisko: wyciek stanu przy restore slotu (2026-11-09)
+Walidacja xtxbench ([[xtxbench-szybki-ab]], A/A produkcji): drugi restore slotu na tym samym serwerze daje inne md5 T=0 niż świeży prefill (1,7k/94k powtarzalnie, 199k za każdym razem inne); pierwszy restore po starcie serwera = świeży prefill. Prawdopodobnie kontekst draftu MTP / stan rekurencyjny GDN nie jest w pełni resetowany przy restore (por. upstream #30574, port w topka-q63 0003). Dla md5 w tej notatce bez znaczenia (każde ramię lc.py = świeży serwer i zimne żądanie), ale może dotyczyć sesji agenta odtwarzających wpisy cache — otwarte w syntezie 68.
+
 ## Stan / do wznowienia
 - Gałąź `kvq-once` w `~/wt/kvq-once` (1d0fa32bb ONCE=1, 47b6be451 ONCE=2), build `build-hip` aktualny; łatki i skrypty w `qwen-opt/patches/kvq-once/` i `qwen-opt/kvq-once/` (KERNEL). Produkcja nietknięta (oba przełączniki domyślnie wyłączone, nic nie wdrożone).
 - Wznowienie ONCE=2: `run-jobs.sh ~/qwen-opt/kvq-once/kvq-once2b.jobs` (~50 min: check + fa_hash, kperf ONCE 0/1/2, pmc odczyt DRAM, md5 + spec ABBA, long 199k ABBA). Bramka: FA ≥ −10% przy 199k i bitowo =. Cel dla nb5 przy 98k: ~172 µs (czas nb1).

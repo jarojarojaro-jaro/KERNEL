@@ -29,6 +29,7 @@ class State:
     switch_vals: dict = {}
     switch_mtime = None
     gen = 0
+    dirty = False  # GPU A/A 2026-11-09: after a non-cached request, a later restore + decode diverges from a fresh prefill
 
 
 def knob(name, default):
@@ -72,8 +73,11 @@ def complete(prompt, n_predict, temp, seed, cache_prompt):
     jit = lambda: 1 + random.gauss(0, noise)  # noqa: E731
     pp = 700.0 * gain * jit()
     tg = (125.0 - len(prompt) / 6000.0) * gain * jit()
+    leak = State.dirty and cache_prompt and os.environ.get("FAKE_LEAK", "1") == "1"
     text = hashlib.sha256(json.dumps([prompt[-64:], len(prompt), temp, seed if temp > 0 else 0,
-                                      State.switch_vals.get("FAKE_SALT", os.environ.get("FAKE_SALT", ""))]).encode()).hexdigest()
+                                      State.switch_vals.get("FAKE_SALT", os.environ.get("FAKE_SALT", "")),
+                                      "leak" if leak else ""]).encode()).hexdigest()
+    State.dirty = State.dirty or not cache_prompt
     State.slot = list(prompt) + [1] * max(0, n_predict - 1)
     time.sleep(0.002)
     return {"content": text, "timings": {"prompt_n": prompt_n, "cache_n": n_past, "prompt_ms": 1000 * prompt_n / pp,
@@ -193,14 +197,15 @@ def main():
     results = [
         run("A/A restart, first run: snapshots + proof + noise pair", ["t1", "--label", "aa", "--force-restart", "--aa"],
             lambda r, out: r["verdict"] == "KILL" and "A/A: OK" in out and "A0'" in r["rounds"] and r["md5_ok"]
-            and "proof: fresh prefill+decode" in out and "snapshot create" in out),
+            and "md5 restore proof: PASS" in out and "snapshot create" in out),
         run("A/A again: snapshots + noise reused", ["t1", "--label", "aa2", "--force-restart", "--aa"],
             lambda r, out: "A0'" not in r["rounds"] and "snapshot create" not in out and "A/A: OK" in out),
         run("restart variant +3%: WIN at once", ["t1", "--label", "fast", "--var", b_fast],
             lambda r, out: r["verdict"] == "PASS" and r["rounds"] == ["A0", "B1"] and r["decisions"]["decode"][0] == "WIN"),
         run("switch variant +0.3%: ambiguous -> A B B A", ["t1", "--label", "sw", "--var-switch", "FAKE_GAIN=1.003",
                                                          "--renoise"],
-            lambda r, out: "B2" in r["rounds"] and "A2" in r["rounds"] and "switches -> arm B" in out),
+            lambda r, out: "B2" in r["rounds"] and "A2" in r["rounds"] and "switches -> arm B" in out
+            and r["md5_na"] and "n/a (same-server" in out),
         run("salted variant: md5 change -> KILL", ["t1", "--label", "salt", "--var", b_salt],
             lambda r, out: r["verdict"] == "KILL" and not r["md5_ok"]),
         run("t0 perf A B B A", ["t0", "--label", "fast", "--op", "OP", "--perf", "--var", b_fast],

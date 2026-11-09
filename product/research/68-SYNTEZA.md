@@ -24,7 +24,9 @@ Tanie sprawdzenia (bez zmian w kodzie): FCLK pod obciążeniem w eco trzyma 2000
 ## Stan po zakończeniu testów (2026-11-08 01:30, polecenie użytkownika)
 Zmierzone: Q6_K (KILL), profil kroku, ONCE=1, podziały `kvq` (KILL), L1 (A→B bez A2). Gotowe, niezmierzone: ONCE=2 (`kvq-once2b.jobs`), FA D256 (`fa-d256.jobs`), cachesave (`cachesave.jobs`, wymaga buildu), okno draftu (`mtpw.jobs`, spodziewany KILL — przegrało 14.10), xtxbench (`validate.jobs`). Nic nie wdrożone.
 
-2026-11-09: xtxbench zwalidowany — czas OK (A/A szum ≤0,15% decode, 3,9 min/wariant), md5 decode z migawek niewiarygodne (`wiki/metody/xtxbench-szybki-ab`). Profil (§ notatka kvq-once): stała część kroku 26,3 ms, FA = 100% nachylenia (0,66 / 5,70 / 11,32 ms przy 1,7k / 94k / 199k), FA draftu ~1,3 ms, maska KQ na hoście 355 µs przy 199k.
+2026-11-09: xtxbench zwalidowany — czas OK (A/A szum ≤0,15% decode, 3,9 min/wariant), md5 decode z migawek wiarygodne tylko z pierwszego restore po starcie serwera (xtxbench poprawiony, `wiki/metody/xtxbench-szybki-ab`).
+
+**Otwarte (2026-11-09): wyciek stanu przy restore slotu** — drugi restore na tym samym serwerze ≠ świeży prefill (md5 T=0); prawdopodobnie kontekst draftu MTP / stan rekurencyjny niezresetowany przy restore (por. upstream #30574, nasz port topka-q63 0003). Może zmieniać wyjście sesji agenta odtwarzających wpisy cache; do zbadania (CPU repro + porównanie z #30574). Profil (§ notatka kvq-once): stała część kroku 26,3 ms, FA = 100% nachylenia (0,66 / 5,70 / 11,32 ms przy 1,7k / 94k / 199k), FA draftu ~1,3 ms, maska KQ na hoście 355 µs przy 199k.
 
 ## Wyniki negatywne tej rundy
 - Dobór podziałów `kvq` (blocks_per_sm, min. tokenów na podział): domyślne 2 bloki/SM optymalne, reszta +0…30% wolniej (XtxKvOnce).

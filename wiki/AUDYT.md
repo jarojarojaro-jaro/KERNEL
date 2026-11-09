@@ -3075,6 +3075,10 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 
 - [[xtxbench-szybki-ab]] — źródło `~/qwen-opt/xtxbench/runs/1109-004040-t1-aa-validate/{summary.txt,results.jsonl,xtxbench.log}`; tabela A/A, czasy etapów, analiza md5 per runda z results.jsonl.
 
+## Ingest 2026-11-09 (xtxbench poprawka md5)
+
+- [[xtxbench-szybki-ab]], [[2026-11-08-kvq-once-profil]] — źródło `results.jsonl` walidacji (md5 per runda: B1/A2 = świeży prefill, A0/A0′/B2 inne); kod `qwen-opt/xtxbench/xtxbench.py`, selftest 7/7 (CPU).
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]
