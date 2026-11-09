@@ -307,3 +307,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 [[2026-11-08-cachesave-30137]]: #30137 + huge pages — tura przełączenia wątku −972 ms (−7,2
 ## [2026-11-09] eksperyment | cachesave PASS
 [[2026-11-08-cachesave-30137]]: #30137 + huge pages — tura przełączenia wątku −972 ms (−7,2 proc.), zapis cache 1 056 → 267 ms, md5 =; EvalPlus i jakość-mini wstrzymane na polecenie użytkownika.
+
+## [2026-11-09] eksperyment | qwen-warp vs fork CUDA na wynajętym 3090 (R69b Q1)
+[[2026-11-09-qwen-warp-vs-fork-3090]]: ta sama karta 350 W, 6 promptów, streaming, oba przy 262 144. qwen-warp ×1.46/×1.61 (krótki), ×1.48/×1.81 (16k), ×1.58/×1.59 (64k), ×1.60/×1.65 (128k), ×1.34/×1.52 (262k) T=0/T=1 → kill < ×1.15 nie zachodzi; ~×1.24 to lżejsze wagi [SZACUNEK]. Oba mieszczą 262 144. Zaktualizowane [[qwen-warp]]. Koszt $0.51, 0 instancji.

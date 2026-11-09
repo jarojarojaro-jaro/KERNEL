@@ -3107,6 +3107,11 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[lekcja-zysk-rosnie-z-glebokoscia]] — 0,878×, +0,5 / +1,9 / +5,8% (`bench.txt`, `fill.txt`), +0,84% (24v), udziały 4 / 24 / 56% (rachunek z 24v, raport 70 §3.5). OK.
 - [[2026-11-08-fa-d256-prefill]] — nowy punkt „Post-mortem”: −3,6% / −6,1%, +2,4% (`select.txt`), 220 VGPR (`isa.txt`). OK.
 
+## Ingest 2026-11-09 (qwen-warp vs fork, 3090)
+
+- [[2026-11-09-qwen-warp-vs-fork-3090]] — tabela z `qwen-opt/cloud/nv69q/summary.txt` (mediany `MEDIAN` w `bench.jsonl`): krótki 82.9/76.9 vs 121.2/124.0; 16k 76.8/66.7 vs 114.0/121.0; 64k 69.5/63.7 vs 110.1/101.4; 128k 59.4/54.3 vs 95.2/89.6; 262k 51.1/45.1 vs 68.3/68.6; powtórka 81.8/76.6; Wdef 128.0/116.9, 112.8/120.1; prefill 881/1087 vs 864/1223 (cold1/cold2), głęboki 131 143 tok./312.5 s = 420, 134 522/262.8 s = 512; VRAM 23 726 / 23 208 MiB (smi.csv); 345 W (smi.csv); koszt $0.51 = różnica kredytu przed i po. ×1.24 = szacunek z config.json Swift (24.33 G par. × 4.125 b/w + głowica int4) i typów tensorów GGUF (output Q6_K, token_embd Q4_K). OK.
+- [[qwen-warp]] — liczby powtórzone z notatki wyżej. OK.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

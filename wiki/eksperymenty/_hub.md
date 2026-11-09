@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (72)
+## Notatki (73)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -83,6 +83,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-11-08-fa-d256-prefill|Prefill FA D256 dla RDNA3 (#31746 + układ V w LDS): wariant 83, fill 255k +5,8%, bitowo = (2026-11-09) — PASS]] — Wariant `GGML_HIP_FA_D256_VAR=83` (bezstratny z konstrukcji) przyspiesza prefill przy głębokim kontekście: fill 255k 466,3 → 493,4 t/s (+5,8%, −30 s), llama-bench d128k +5,8%, d32k +1,9%, d4k +0,5%; md5 tekstu identyczne (krótki greedy, 32k, 255k), decode bez zmian. Kandydat do wdrożenia — czeka na OK użytkownika; nic nie wdrożone.
 - [[2026-11-05-q63-topka|q63: topka-int7 → topka-q63 (c0576e3e8), wdrożone 2026-11-05]] — Trzy łatki z raportu 63c: cap occupancy FA okazał się no-opem, chuda rezerwa MTP oddała ~1 GiB VRAM, poprawki MTP upstream podniosły akceptację po odtworzeniu slotu 0.41 → 0.60; t/s bez zmian.
 - [[2026-11-07-q6k-mmq-skale|Q6_K MMQ na gfx11: skale jednym `int` zamiast 16 odczytów bajtowych — 0,0% (KILL, 2026-11-07)]] — Łatka `GGML_HIP_Q6K_WIDE` (skale wiersza czytane jednym `int` na pół-k01, 16× `ds_load_i8` → 0, 222 VGPR, 0 spilli) nie zmieniła prefillu: pp4096 1000,7 → 1000,6 t/s (−0,01%), prompt 12k 933,1 → 933,0 t/s; md5 identyczne (0221afd9) — odczyty skal nie były wąskim gardłem kernela, więc łatka odrzucona i usunięta.
+- [[2026-11-09-qwen-warp-vs-fork-3090|qwen-warp v0.8.0 kontra nasz fork CUDA na jednej RTX 3090 (2026-11-09)]] — Na tej samej karcie (350 W), tych samych 6 promptach i tym samym kliencie qwen-warp jest ×1.34–×1.81 szybszy od `enigma-cuda-fork` przy każdej głębokości, więc reguła kill (< ×1.15) nie zachodzi: temat portu zostaje. Ok. ×1.24 z tego to lżejsze wagi (W4 g128 wobec UD-Q4_K_XL) [SZACUNEK].
 - [[stan-2026-10-15|Stan zainstalowany 2026-10-15 (70 łatek)]] — Pomiar finalny po rundzie 6: Qwen3.8-27B 109.0 t/s, Uncensored 115.5, LFM2.5 293.7, LFM Uncensored 267.3; build `~/llama-opt`, gałąź `amd-opt` @ f61994f58.
 - [[2026-11-06-eco-sweep-sclk|Sweep eco: limit taktowania rdzenia XTX (2026-11-06)]] — Limit max sclk przy niezmienionym napięciu (offset 0 mV), pamięci i limicie mocy 285 W: 2000 MHz daje −4,1% pisania za −16% watów i −12 °C hotspot; md5 identyczne we wszystkich ramionach.
 - [[2026-11-06-eco-szybki-bench|Szybki bench produkcji: eco 2200 vs stock (2026-11-06)]] — Na serwerze czatu użytkownika (Qwen3.8-27B-Uncensored Q4_K_M, topka-q63, ctx 204800, cache-ram 40 GB) eco 2200 MHz kosztuje ok. 2% pisania i 10–12% prefillu za −35 W i −6 °C hotspot; greedy md5 identyczne.
