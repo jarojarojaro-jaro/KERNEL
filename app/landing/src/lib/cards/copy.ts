@@ -2,6 +2,7 @@
  * Copy of the cards explorer (/pl/karty/, /en/cards/). Words only: every number is read from
  * measurements.ts or estimator.ts by the components, never typed here.
  */
+import { BRAND } from '$lib/brand';
 import type { Lang } from '$lib/i18n';
 
 const pl = {
@@ -10,7 +11,7 @@ const pl = {
 		description: 'Wybierz producenta i swoją kartę graficzną: zmierzone przyspieszenie, modele, które się mieszczą, generowanie tokenów przed i po naszym silniku.',
 		cardTitle: (name: string) => `${name}: zmierzone przed i po`,
 		cardDescription: (name: string) => `Co działa na ${name}, ile zajmuje pamięci i jak szybko pisze: przed i po naszym silniku. Same pomiary.`,
-		queueTitle: (name: string) => `${name}: w kolejce pomiarów`,
+		queueTitle: (name: string) => `${name}: w kolejce pomiarów · ${BRAND.name}`,
 		compareTitle: 'Porównaj karty: zmierzone obok siebie',
 		compareDescription: 'Dwie karty, ten sam model, te same skrypty pomiarowe. Generowanie, czas odpowiedzi i pamięć obok siebie.'
 	},
@@ -215,7 +216,7 @@ const en: Copy = {
 		description: 'Pick your maker and your graphics card: the measured speed-up, models that fit, token generation before and after our engine.',
 		cardTitle: (name: string) => `${name}: measured before and after`,
 		cardDescription: (name: string) => `What runs on the ${name}, how much memory it takes and how fast it writes: before and after our engine. Measurements only.`,
-		queueTitle: (name: string) => `${name}: in the measurement queue`,
+		queueTitle: (name: string) => `${name}: in the measurement queue · ${BRAND.name}`,
 		compareTitle: 'Compare cards: measured side by side',
 		compareDescription: 'Two cards, the same model, the same benchmark scripts. Generation, answer time and memory side by side.'
 	},

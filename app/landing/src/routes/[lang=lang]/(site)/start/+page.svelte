@@ -57,7 +57,7 @@
 
 <svelte:head>
 	<title>{s.title}</title>
-	<meta name="description" content={s.lead} />
+	<meta name="description" content={s.description} />
 </svelte:head>
 
 <Scene labelledby="signin-title">

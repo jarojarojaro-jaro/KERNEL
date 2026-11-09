@@ -9,7 +9,18 @@ import { plural, type Lang } from '$lib/i18n';
 const pl = {
 	shell: {
 		skip: 'Przejdź do treści',
-		title: (screen: string) => `${screen} · ${BRAND.name} (prototyp)`,
+		title: (screen: string) => `${screen} · ${BRAND.name} (prototyp aplikacji)`,
+		/** <meta name="description"> per screen (route segment; '' = overview), set in app/+layout.svelte. */
+		descriptions: {
+			overview: `Klikalna makieta aplikacji ${BRAND.name}. Liczby pochodzą z pomiarów na RX 7900 XTX w naszym labie albo z estymatora, każda z przypisem źródła.`,
+			chat: `Ekran czatu w prototypie aplikacji ${BRAND.name}: lokalny model liczy na GPU, a ekran pokazuje, jak szybko pisze, ze źródłem pomiaru.`,
+			computer: `Ekran „Mój komputer” w prototypie aplikacji ${BRAND.name}: co odczytał skan sprzętu na maszynie labu z Radeonem RX 7900 XTX.`,
+			developers: `Dla programistów, prototyp aplikacji ${BRAND.name}: API działa tylko na tym komputerze, zgodne z OpenAI, Anthropic i Ollamą.`,
+			models: `Ekran modeli w prototypie aplikacji ${BRAND.name}: które modele zmieszczą się na komputerze z RX 7900 XTX, z rozmiarem pobrania, licencją i szybkością.`,
+			night: `Optymalizacja nocna w prototypie aplikacji ${BRAND.name}: silnik dostrajany, kiedy nie używasz komputera; każdy wariant przechodzi bramkę md5.`,
+			result: `Ekran wyniku w prototypie aplikacji ${BRAND.name}: ten sam model na tej samej karcie RX 7900 XTX i jego szybkość po kolejnych warstwach optymalizacji.`,
+			wizard: `Kreator pierwszego uruchomienia w prototypie aplikacji ${BRAND.name}: język i zgoda, skan sprzętu, rekomendacja i kalibracja w czterech krokach.`
+		},
 		protoLong: 'Prototyp UI — dane z pomiarów RX 7900 XTX, bez działającego silnika',
 		protoShort: 'Prototyp UI',
 		protoTitle: 'Klikalna makieta aplikacji. Liczby pochodzą z pomiarów na RX 7900 XTX w naszym labie; silnik nie działa.',
@@ -504,7 +515,17 @@ export type DesktopDict = typeof pl;
 const en: DesktopDict = {
 	shell: {
 		skip: 'Skip to content',
-		title: (screen: string) => `${screen} · ${BRAND.name} (prototype)`,
+		title: (screen: string) => `${screen} · ${BRAND.name} (app prototype)`,
+		descriptions: {
+			overview: `A clickable mock-up of the ${BRAND.name} app. Numbers come from RX 7900 XTX measurements in our lab or from the estimator, each with a source.`,
+			chat: `Chat screen of the ${BRAND.name} app prototype: a local model runs on the GPU and the screen shows how fast it writes, with a source.`,
+			computer: `My computer screen of the ${BRAND.name} app prototype: what the hardware scan read on our lab machine with a Radeon RX 7900 XTX.`,
+			developers: `For developers, ${BRAND.name} app prototype: a local API on this computer, compatible with OpenAI, Anthropic and Ollama.`,
+			models: `Models screen of the ${BRAND.name} app prototype: which models fit a computer with an RX 7900 XTX, with download size, licence and speed.`,
+			night: `Overnight tuning in the ${BRAND.name} app prototype: the engine is tuned while you are not using the computer; every variant passes an md5 gate.`,
+			result: `Result screen of the ${BRAND.name} app prototype: the same model on the same RX 7900 XTX card, and how fast it writes after each optimisation layer.`,
+			wizard: `First-run setup in the ${BRAND.name} app prototype: language and consent, hardware scan, recommendation and calibration in four steps.`
+		},
 		protoLong: 'UI prototype — data from RX 7900 XTX measurements, no running engine',
 		protoShort: 'UI prototype',
 		protoTitle: 'Clickable app mock-up. Numbers come from RX 7900 XTX measurements in our lab; the engine does not run.',

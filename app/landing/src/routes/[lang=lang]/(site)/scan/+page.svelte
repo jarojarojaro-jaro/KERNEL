@@ -9,7 +9,7 @@
 	const p = $derived(copy[lang].privacy);
 </script>
 
-<svelte:head><title>{t.title}</title><meta name="description" content={t.lead} /></svelte:head>
+<svelte:head><title>{t.metaTitle}</title><meta name="description" content={t.lead} /></svelte:head>
 
 <div class="container section stack page">
 	<header class="stack head">

@@ -10,7 +10,7 @@
 </script>
 
 <svelte:head>
-	<title>{doc.title[lang]} · {BRAND.name}</title>
+	<title>{doc.title[lang]} · {lang === 'pl' ? 'Dokumenty prawne' : 'Legal documents'} · {BRAND.name}</title>
 	<meta name="description" content={doc.description[lang]} />
 </svelte:head>
 

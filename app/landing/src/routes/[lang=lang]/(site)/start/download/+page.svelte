@@ -16,7 +16,7 @@
 	});
 </script>
 
-<svelte:head><title>{t.title}</title></svelte:head>
+<svelte:head><title>{t.metaTitle}</title></svelte:head>
 
 <Shell title={t.title} lead={t.lead} wide back="/start/paths">
 	<ul class="oses" role="list">

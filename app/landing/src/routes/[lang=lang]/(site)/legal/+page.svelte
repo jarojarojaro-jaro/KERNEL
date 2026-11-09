@@ -6,13 +6,13 @@
 
 	const lang = $derived(currentLang());
 	const T = {
-		pl: { title: 'Dokumenty prawne', lead: 'Regulamin, prywatność, cookies, informacja o AI i dane firmy.' },
-		en: { title: 'Legal documents', lead: 'Terms, privacy, cookies, AI notice and company details.' }
+		pl: { title: 'Dokumenty prawne', metaTitle: 'Dokumenty prawne: regulamin i prywatność', metaDescription: `Dokumenty prawne ${BRAND.name}: regulamin, prywatność, cookies, informacja o AI i dane firmy.`, lead: 'Regulamin, prywatność, cookies, informacja o AI i dane firmy.' },
+		en: { title: 'Legal documents', metaTitle: 'Legal documents: terms and privacy', metaDescription: `${BRAND.name} legal documents: terms, privacy, cookies, AI notice and company details.`, lead: 'Terms, privacy, cookies, AI notice and company details.' }
 	} as const;
 	const t = $derived(T[lang]);
 </script>
 
-<svelte:head><title>{t.title} · {BRAND.name}</title><meta name="description" content={t.lead} /></svelte:head>
+<svelte:head><title>{t.metaTitle} · {BRAND.name}</title><meta name="description" content={t.metaDescription} /></svelte:head>
 
 <section class="section heat-scope">
 	<div class="container container--narrow">

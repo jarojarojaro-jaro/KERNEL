@@ -8,14 +8,18 @@
 	const T = {
 		pl: {
 			title: 'Kontakt',
+			metaTitle: 'Kontakt: karty, pomiary, współpraca',
 			lead: 'Pytanie o Twoją kartę, wynik pomiaru albo współpracę? Napisz do nas.',
+			metaDescription: `Pytanie o Twoją kartę, wynik pomiaru albo współpracę? Napisz do zespołu ${BRAND.name}.`,
 			company: 'Dane firmy',
 			methodology: 'Jak mierzymy',
 			cards: 'Sprawdź swoją kartę'
 		},
 		en: {
 			title: 'Contact',
+			metaTitle: 'Contact: cards, measurements, collaboration',
 			lead: 'A question about your card, a measurement or working together? Write to us.',
+			metaDescription: 'A question about your card, a measurement or working together? Write to us.',
 			company: 'Company details',
 			methodology: 'How we measure',
 			cards: 'Check your card'
@@ -24,7 +28,7 @@
 	const t = $derived(T[lang]);
 </script>
 
-<svelte:head><title>{t.title} · {BRAND.name}</title><meta name="description" content={t.lead} /></svelte:head>
+<svelte:head><title>{t.metaTitle} · {BRAND.name}</title><meta name="description" content={t.metaDescription} /></svelte:head>
 
 <section class="section heat-scope">
 	<div class="container container--narrow">
