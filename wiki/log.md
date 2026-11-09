@@ -293,3 +293,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-09] ingest | raport 69: DSpine-27B, qwen-warp/TensorFold, Astra-Stop, AMD Adrenalin
 [[raport-69-synteza]] (synteza `product/research/69-SYNTEZA.md`). Zaktualizowane: [[drafter-dspine]] (27B: SWA 8192, port Ajay9o9 `d493f84`, twierdzenia vs fakty, model XTX per klasa), [[qwen-warp]] (v0.8.0: DFlash2 w grafie, multiuser), [[tensorfold]] (v1.2.5+: gfx1100 dalej brak). Nowe: [[astra-stop]] (zmiana zachowania, nie bezstratna; przeciek `</think>` 11/32; LoRA 90 KB), [[amd-adrenalin-zapisy-ssd]] (serwer nie dotyczy; nigdy nie radzić wyłączania ReBAR). [[ZRODLA]]: sekcja „Raport 69” + wiersze dublowania DSpine/qwen-warp/TensorFold. Wszystkie testy czekają na decyzję użytkownika (6 punktów w syntezie).
+
+## [2026-11-09] decyzja | po rundzie 69
+[[2026-11-09-decyzje-runda-69]]: DSpine odpuszczony (64k), Astra-Stop odłożony (temat na fine-tuning), publikacja rankingów wkrótce, jakość-mini dla 12–16 GB.

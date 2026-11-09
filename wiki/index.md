@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (41)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (42)
 - [[modele/_hub|modele]] — Modele i kwanty (23)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (23)
@@ -85,11 +85,11 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[2026-11-08-l1-tokenizacja-parser|Cache tokenizacji na ścieżce SAFE_SPECIAL + parser przyrostowy: tokenizacja 14,0 → 6,6 ms, wyjście identyczne (2026-11-08, pomiar częściowy)]]
 - 2026-11-09 [[2026-11-08-kvq-once-profil|kvq: KV raz na weryfikację MTP (`GGML_HIP_KVQ_ONCE`) i profil kroku przy długim kontekście (2026-11-07/08)]]
 - 2026-11-09 [[2026-11-08-fa-d256-prefill|Prefill FA D256 dla RDNA3 (#31746 + układ V w LDS): kod gotowy, niezmierzony (2026-11-08)]]
+- 2026-11-09 [[2026-11-09-decyzje-runda-69|2026-11-09: decyzje po rundzie 69 (DSpine, Astra-Stop, publikacja, jakość-mini)]]
 - 2026-11-09 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
 - 2026-11-08 [[lekcja-cpuheavy-w-jobie-kolejki|`cpuheavy` wywołany z wnętrza joba kolejki GPU = zakleszczenie]]
 - 2026-11-08 [[kv-raz-na-weryfikacje|KV czytane raz na weryfikację (plan #8): trzy wzorce]]
 - 2026-11-08 [[2026-11-08-cachesave-30137|Zapis prompt cache bez zerowania (#30137) + THP dla `--cache-ram` — niezmierzone (2026-11-08)]]
-- 2026-11-07 [[raport-67-kampania-nvidia|Raport 67: kampania NVIDIA na Vast (Enigma) — trzy części]]
 
-Razem 727 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
+Razem 728 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
