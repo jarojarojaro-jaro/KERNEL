@@ -3096,6 +3096,10 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[amd-adrenalin-zapisy-ssd]] — źródło `69d-amd-sterownik-ssd.md`: 0.3–1.5 MB/s, 432 GB/dzień, 26.6.4–26.10.2, „26.11.1” niepotwierdzone (:7-9); 26–130 GB/dzień, 2.6–13×, 10 GB/dzień (:41-42); BAR0 32 GiB (:32); 256 MB (:35); próg 0.2 MB/s, 30 s (:47-48). OK.
 - [[raport-69-synteza]], `product/research/69-SYNTEZA.md` — liczby powtórzone z notatek wyżej i z 68b (:12, +3.9% / +4.8%); 19.48 GB i 3.85 GB z 69b (:73-74). OK.
 
+## Ingest 2026-11-09 (fa-d256)
+
+- [[2026-11-08-fa-d256-prefill]] — źródło `~/qwen-opt/fa-d256/res/{select,tbo,bench,long_md5,fill}.txt`, logi `queue/logs/fa-*.log`; tabela baseline → teraz, werdykt PASS; [[REKORDY]] wiersz fill 255k; synteza 68 poz. 2.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

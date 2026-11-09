@@ -296,3 +296,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-09] decyzja | po rundzie 69
 [[2026-11-09-decyzje-runda-69]]: DSpine odpuszczony (64k), Astra-Stop odłożony (temat na fine-tuning), publikacja rankingów wkrótce, jakość-mini dla 12–16 GB.
+
+## [2026-11-09] eksperyment | FA D256 prefill RDNA3 (VAR 83) — PASS, rekord
+[[2026-11-08-fa-d256-prefill]]: fill 255k 466,3 → 493,4 t/s (+5,8%, −30 s), llama-bench d128k 459,5 → 486,3 (+5,8%), d32k +1,9%, d4k +0,5%; md5 12k/32k/255k =, spec_sweep 119,2 = 119,2. Kandydat do wdrożenia (czeka na OK). Pierwszy przebieg padł na rc=127 (LD_LIBRARY_PATH), ponowiony. [[REKORDY]].

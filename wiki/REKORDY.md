@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, rekordy, wyniki]
-aktualizacja: 2026-11-07
+aktualizacja: 2026-11-09
 zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5; ~/KERNEL/product/research/29-4060ti.md:56-81; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:10; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:44-47; ~/KERNEL/product/research/{31-*,37,38,43,45}*.md; ~/qwen-opt/cloud/results/nv67c-summary.txt
 status: aktualne
 ---
@@ -26,6 +26,7 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 | decode MTP, prompt 1.7k (T=0) | **130.2 t/s** | 2026-10-14 | long_ctx_bench, przed PM4, KV draftu q4_0 | `NOTES.md:331` | był (nie powtarzane po PM4) |
 | decode MTP 6.6k / 29.5k / 94k | 118.5 / 105.2 / **100.6 t/s** | 2026-10-14 | j.w. | `NOTES.md:331` | był |
 | decode MTP, prompt 27 327 tok. | 113.2 t/s (nowe drzewo), prod 111.85 | 2026-10-17 | `365af3e5e`, T=0, 256 tok. | `12-bit-exact-spekulacja.md:326` | prod 111.85 tak |
+| prefill fill 255k (final mode, serwer) | **493.4 t/s** (516.8 s; baseline 466.3 t/s) | 2026-11-09 | `run-topka.sh uncensored`, Uncensored Q4_K_M, ctx 262144, KV q4_0, eco 2200, `GGML_HIP_FA_D256_VAR=83` (`~/wt/fa-d256` 32292cc0a), md5 = | `~/qwen-opt/fa-d256/res/fill.txt`; [[2026-11-08-fa-d256-prefill]] | nie (kandydat) |
 | code-edit (`mvs`), T=0 | **400.9 t/s** (14.0–14.4 tok/krok) | 2026-10-18 | copy_bench, `LLAMA_SPEC_LOOKUP=3 W=16`, `lookup-tail` @ `586f1d596` | `16b-lookup-tail.md:13-17,102` | nie |
 | code-edit (`mvs`), T=0, PM4 wył. | 396.9 t/s (391.1–405.8) | 2026-10-19 | build `topka` @ `22e2b0f55`, `run-topka.sh qwen` (W16 + `CACHE_SHARE_MIN`, `GGML_HIP_PM4=0`), 1 przebieg | `20-build-topka.md:16,65` | nie (topka) |
 | code-edit (`mvs`), T=1 | 375.8 t/s | 2026-10-18 | j.w. | `16b-lookup-tail.md:103` | nie |
