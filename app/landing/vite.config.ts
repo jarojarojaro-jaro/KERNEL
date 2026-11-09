@@ -17,6 +17,9 @@ const dropMethodology = (): Plugin => ({
 
 /** Names an internal file: a repo path, a research report, a log or a JSONL dump. */
 const INTERNAL = /KERNEL\/|qwen-opt\/|[\w-]+\.(?:md|log|jsonl)\b/;
+/** A whole absolute link to the public GitHub repo: public on its own, never an internal path leak. */
+const PUBLIC_GH_URL = /^https:\/\/github\.com\/\S+$/;
+const namesInternal = (s: string) => !PUBLIC_GH_URL.test(s) && INTERNAL.test(s);
 
 type Node = { type: string; start: number; end: number; value?: unknown; expressions?: unknown[]; quasis?: { value: { cooked: string } }[] };
 
@@ -29,10 +32,10 @@ function internalLiterals(node: unknown, out: Node[]): Node[] {
 	}
 	const n = node as Node;
 	if (n.type === 'Literal' && typeof n.value === 'string') {
-		if (INTERNAL.test(n.value)) out.push(n);
+		if (namesInternal(n.value)) out.push(n);
 		return out;
 	}
-	if (n.type === 'TemplateLiteral' && n.quasis!.some((q) => INTERNAL.test(q.value.cooked))) {
+	if (n.type === 'TemplateLiteral' && n.quasis!.some((q) => namesInternal(q.value.cooked))) {
 		out.push(n);
 		return out;
 	}
