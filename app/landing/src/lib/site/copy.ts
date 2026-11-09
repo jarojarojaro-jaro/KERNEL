@@ -254,7 +254,7 @@ const raw = {
 		},
 		cookies: {
 			title: 'Prywatność na tej stronie',
-			body: 'Bez śledzenia i reklam. Zapisujemy tylko motyw i ten wybór.',
+			body: 'Bez reklam i bez sprzedaży danych. Własne statystyki odwiedzin liczymy tylko po Twojej zgodzie.',
 			accept: 'Akceptuję',
 			necessaryOnly: 'Tylko niezbędne',
 			policy: 'Polityka cookies'
@@ -486,7 +486,7 @@ const raw = {
 		},
 		cookies: {
 			title: 'Privacy on this site',
-			body: 'No tracking, no ads. We only store your theme and this choice.',
+			body: 'No ads and no selling of data. We count our own visitor statistics only with your consent.',
 			accept: 'Accept',
 			necessaryOnly: 'Necessary only',
 			policy: 'Cookie policy'

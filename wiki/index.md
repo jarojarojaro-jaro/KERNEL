@@ -70,7 +70,7 @@ Audyt liczb: [[AUDYT]].
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (88)
 - [[research/_hub|research]] — Streszczenia raportów (155)
-- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (35)
+- [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (36)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
@@ -79,6 +79,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[tensorfold|TensorFold (ashhart/TensorFold)]]
 - 2026-11-09 [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]]
 - 2026-11-09 [[strona-zrodlo-rowna-zywej|Strona: źródło = żywa (krok 0 przed zmianami treści)]]
+- 2026-11-09 [[strona-wynikow-nvidia|Strona wyników NVIDIA `/pl/nvidia/` i `/en/nvidia/`]]
 - 2026-11-09 [[amd-adrenalin-zapisy-ssd|AMD Adrenalin: ciągłe zapisy SSD przez `atieclxx.exe` (Windows)]]
 - 2026-11-09 [[drafter-dspine|Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem]]
 - 2026-11-09 [[astra-stop|Astra-Stop: rank-1 edycja, która skraca myślenie Qwen3.8-27B]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[2026-11-09-decyzje-runda-69|2026-11-09: decyzje po rundzie 69 (DSpine, Astra-Stop, publikacja, jakość-mini)]]
 - 2026-11-09 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
 - 2026-11-08 [[lekcja-cpuheavy-w-jobie-kolejki|`cpuheavy` wywołany z wnętrza joba kolejki GPU = zakleszczenie]]
-- 2026-11-08 [[lekcja-build-landing-nie-czyta-home|Build landingu czytał dane ze `$HOME`, więc klon repo się nie budował]]
 
-Razem 730 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
+Razem 731 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

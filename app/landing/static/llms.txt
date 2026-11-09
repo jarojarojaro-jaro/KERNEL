@@ -3,10 +3,21 @@
 
 Zmierzone wyniki (ten sam skrypt pomiarowy po obu stronach, metoda ABBA, odpowiedź 500 tokenów): Radeon RX 7900 XTX 35,9 → 114,8 t/s (3,2×), GeForce RTX 3090 42,9 → 93,3 t/s (2,2×), model Qwen3.8-27B. Skan sprzętu działa na Windows, Linux i macOS.
 
+Wyniki na kartach NVIDIA (mediana 6 promptów PL/EN, T=1; „z silnikiem” to nasze silniki CUDA na Linuksie x64, wydanie enigma-engines-cuda-2026-11-07): RTX 5090 62,5 → 102,2 → 148,6 t/s przy kontekście 262 144, RTX 4090 46,9 → 76,4 → 101,3 t/s, RTX 3090 40,9 → 61,5 → 80,0 t/s. Pełna tabela 11 kart, modele, licencje i gotowe ustawienia: https://enigmalabz.com/pl/nvidia/
+
 ## Najważniejsze strony
+- [Wyniki NVIDIA: 11 kart](https://enigmalabz.com/pl/nvidia/): tabela od RTX 2080 Ti do RTX 5090, modele, licencje, ustawienia
 - [Wyniki pomiarów](https://enigmalabz.com/pl/wyniki/): metoda i liczby
 - [Karty graficzne](https://enigmalabz.com/pl/karty/): zmierzone i oczekujące karty
+- [Karty NVIDIA](https://enigmalabz.com/pl/karty/nvidia/): lista kart producenta
 - [RX 7900 XTX](https://enigmalabz.com/pl/karty/rx-7900-xtx/): pomiar przed i po
 - [RTX 3090](https://enigmalabz.com/pl/karty/rtx-3090/): pomiar przed i po
 - [Skan sprzętu](https://enigmalabz.com/pl/scan/): komendy dla Windows, Linux, macOS
 - [English](https://enigmalabz.com/en/): wersja angielska
+
+## English
+- [NVIDIA results: 11 cards](https://enigmalabz.com/en/nvidia/): table from RTX 2080 Ti to RTX 5090, models, licences, ready settings
+- [Measurement results](https://enigmalabz.com/en/results/): method and numbers
+- [Graphics cards](https://enigmalabz.com/en/cards/): measured and queued cards
+- [NVIDIA cards](https://enigmalabz.com/en/cards/nvidia/): the maker list
+- [Hardware scan](https://enigmalabz.com/en/scan/): commands for Windows, Linux, macOS

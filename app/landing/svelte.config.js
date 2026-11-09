@@ -54,7 +54,15 @@ const config = {
 			},
 			// Onboarding steps are reached through form submits (goto), so the crawler needs them listed;
 			// the cards explorer is listed in full so no card page depends on being linked.
-			entries: ['*', ...['pl', 'en'].flatMap((l) => ['paths', 'result', 'download', 'terminal'].map((s) => `/${l}/start/${s}/`)), ...cardPages]
+			// The NVIDIA results pages are listed too: they are reached from the maker page, but the
+			// crawler must not depend on that link staying in the markup.
+			entries: [
+				'*',
+				...['pl', 'en'].flatMap((l) => ['paths', 'result', 'download', 'terminal'].map((s) => `/${l}/start/${s}/`)),
+				...cardPages,
+				'/pl/nvidia/',
+				'/en/nvidia/'
+			]
 		},
 		// New deploy detection: client navigations after a deploy do a full page load (no stale chunks).
 		version: { pollInterval: 300000 },

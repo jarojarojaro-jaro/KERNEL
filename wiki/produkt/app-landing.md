@@ -25,6 +25,9 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 ## Aktualizacja 2026-10-21
 - [[2026-10-21-enigma-labz]].
 
+## Aktualizacja 2026-11-09
+- Nowa trasa `/pl/nvidia/` i `/en/nvidia/`: [[strona-wynikow-nvidia]].
+
 ## Powiązane
 - [[produkt/_hub|produkt]]
 - [[strona-zrodlo-rowna-zywej]]

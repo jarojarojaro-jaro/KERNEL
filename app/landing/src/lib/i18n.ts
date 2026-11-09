@@ -37,6 +37,16 @@ export function resultsHref(lang: Lang): string {
 	return href(lang, `/${RESULTS_SEG[lang]}/`);
 }
 
+/**
+ * The NVIDIA results page (`/pl/nvidia/`, `/en/nvidia/`). The segment is the same in both
+ * languages on purpose: it is the product name, not a translated word.
+ */
+export const NVIDIA_SEG = 'nvidia';
+
+export function nvidiaHref(lang: Lang): string {
+	return href(lang, `/${NVIDIA_SEG}/`);
+}
+
 /** `pathname` translated to another language: swaps the lang prefix and localised segments. */
 export function localizePath(pathname: string, to: Lang): string {
 	const parts = pathname.split('/');
