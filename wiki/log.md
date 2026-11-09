@@ -302,3 +302,8 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-09] research | raport 70: post-mortem FA D256 VAR 83
 `product/research/70-fa-d256-jak-to-zrobilismy.md`: oś czasu pomysłu (0042 → 24v → #31746 → 68a/c/d → XtxFaPrefill), rozkład maski 83 (bariery KQ/V + V^T w LDS + `nbatch_V2` 32; spille 220 → 0, LDS bez zmian), efekty izolowane wariantów, model udziału FA od głębokości, metoda i porażki (rc=127 RUNPATH z cichą kaskadą rc=0, `cpuheavy` w jobie), macierz reprodukowalności (MMQ, autotune Enigmy per arch, inne kształty FA, `kvq`, CUDA, GDN, upstream) i przepis wdrożenia. Nowe: [[sweep-wariantow-kernela]], [[lekcja-zysk-rosnie-z-glebokoscia]]; link w [[2026-11-08-fa-d256-prefill]].
+
+## [2026-11-09] eksperyment | cachesave PASS
+[[2026-11-08-cachesave-30137]]: #30137 + huge pages — tura przełączenia wątku −972 ms (−7,2
+## [2026-11-09] eksperyment | cachesave PASS
+[[2026-11-08-cachesave-30137]]: #30137 + huge pages — tura przełączenia wątku −972 ms (−7,2 proc.), zapis cache 1 056 → 267 ms, md5 =; EvalPlus i jakość-mini wstrzymane na polecenie użytkownika.
