@@ -299,3 +299,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-09] eksperyment | FA D256 prefill RDNA3 (VAR 83) — PASS, rekord
 [[2026-11-08-fa-d256-prefill]]: fill 255k 466,3 → 493,4 t/s (+5,8%, −30 s), llama-bench d128k 459,5 → 486,3 (+5,8%), d32k +1,9%, d4k +0,5%; md5 12k/32k/255k =, spec_sweep 119,2 = 119,2. Kandydat do wdrożenia (czeka na OK). Pierwszy przebieg padł na rc=127 (LD_LIBRARY_PATH), ponowiony. [[REKORDY]].
+
+## [2026-11-09] research | raport 70: post-mortem FA D256 VAR 83
+`product/research/70-fa-d256-jak-to-zrobilismy.md`: oś czasu pomysłu (0042 → 24v → #31746 → 68a/c/d → XtxFaPrefill), rozkład maski 83 (bariery KQ/V + V^T w LDS + `nbatch_V2` 32; spille 220 → 0, LDS bez zmian), efekty izolowane wariantów, model udziału FA od głębokości, metoda i porażki (rc=127 RUNPATH z cichą kaskadą rc=0, `cpuheavy` w jobie), macierz reprodukowalności (MMQ, autotune Enigmy per arch, inne kształty FA, `kvq`, CUDA, GDN, upstream) i przepis wdrożenia. Nowe: [[sweep-wariantow-kernela]], [[lekcja-zysk-rosnie-z-glebokoscia]]; link w [[2026-11-08-fa-d256-prefill]].

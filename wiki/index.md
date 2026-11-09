@@ -63,9 +63,9 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (10)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (49)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (50)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (72)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (116)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (117)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (88)
@@ -82,14 +82,12 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[drafter-dspine|Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem]]
 - 2026-11-09 [[astra-stop|Astra-Stop: rank-1 edycja, która skraca myślenie Qwen3.8-27B]]
 - 2026-11-09 [[xtxbench-szybki-ab|xtxbench: szybki A/B silnika produkcyjnego XTX (cel ~10 min na wariant zamiast 40–120)]]
+- 2026-11-09 [[sweep-wariantow-kernela|Sweep wariantów kernela: jedna binarka, maska env, bramka bitowa, ABBA przy głębokości]]
+- 2026-11-09 [[lekcja-zysk-rosnie-z-glebokoscia|Zysk kernela FA rośnie z głębokością: wynik negatywny ważny tylko w swoim reżimie]]
 - 2026-11-09 [[2026-11-08-l1-tokenizacja-parser|Cache tokenizacji na ścieżce SAFE_SPECIAL + parser przyrostowy: tokenizacja 14,0 → 6,6 ms, wyjście identyczne (2026-11-08, pomiar częściowy)]]
 - 2026-11-09 [[2026-11-08-kvq-once-profil|kvq: KV raz na weryfikację MTP (`GGML_HIP_KVQ_ONCE`) i profil kroku przy długim kontekście (2026-11-07/08)]]
-- 2026-11-09 [[2026-11-08-fa-d256-prefill|Prefill FA D256 dla RDNA3 (#31746 + układ V w LDS): kod gotowy, niezmierzony (2026-11-08)]]
+- 2026-11-09 [[2026-11-08-fa-d256-prefill|Prefill FA D256 dla RDNA3 (#31746 + układ V w LDS): wariant 83, fill 255k +5,8%, bitowo = (2026-11-09) — PASS]]
 - 2026-11-09 [[2026-11-09-decyzje-runda-69|2026-11-09: decyzje po rundzie 69 (DSpine, Astra-Stop, publikacja, jakość-mini)]]
-- 2026-11-09 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
-- 2026-11-08 [[lekcja-cpuheavy-w-jobie-kolejki|`cpuheavy` wywołany z wnętrza joba kolejki GPU = zakleszczenie]]
-- 2026-11-08 [[kv-raz-na-weryfikacje|KV czytane raz na weryfikację (plan #8): trzy wzorce]]
-- 2026-11-08 [[2026-11-08-cachesave-30137|Zapis prompt cache bez zerowania (#30137) + THP dla `--cache-ram` — niezmierzone (2026-11-08)]]
 
-Razem 728 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
+Razem 730 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

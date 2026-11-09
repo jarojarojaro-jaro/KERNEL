@@ -3100,6 +3100,13 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 
 - [[2026-11-08-fa-d256-prefill]] — źródło `~/qwen-opt/fa-d256/res/{select,tbo,bench,long_md5,fill}.txt`, logi `queue/logs/fa-*.log`; tabela baseline → teraz, werdykt PASS; [[REKORDY]] wiersz fill 255k; synteza 68 poz. 2.
 
+## Ingest 2026-11-09 (raport 70, post-mortem fa-d256)
+
+- `product/research/70-fa-d256-jak-to-zrobilismy.md` — sprawdzone ze źródłem: tabela TL;DR (`res/select.txt` 37 231 / 32 674 µs, 0,878; `perf-1-0.log` / `perf-14-83.log` 44,26 / 50,47 TFLOPS, 1,65 TFLOP; `bench.txt` wszystkie 12 wierszy, średnie ABBA +1,8% / +5,7% policzone; `fill.txt` 466,3 / 493,4 t/s, 546,8 / 516,8 s, 31b6525a, 23 446 / 23 414 MiB; `long_md5.txt` 849,8 / 860,8, e460e3b6; `spec_sweep.txt` A/B 119,2, 26,92 / 26,91 ms); tabela §3.3: 16 wierszy × 6 komórek z `select.txt`, VGPR/spill/scratch z `isa.txt`, md5 z `md5.txt`; czasy kroków z `queue.log` 01:41–02:58 (419 / 256 / 764 / 295 / 1035 / 668 / 639 s); profil 24v (2,2% / 13% / 24%, 131 z 547 ms, 256 VGPR / 512 B → 232 / 0, +0,84%, 2192 LDS); #31746 0,695× / 0,783× (68a §2.1, 68d §2.3); kvq 30%, 11,3 ms, 658 / 355 GB/s, −6,1%, +0,4…1,4%, 236 VGPR (`2026-11-08-kvq-once-profil`). LDS 54 784 B, przewidywania Amdahla (+0,7 / +2,8 / +7,3%) i udziały z pomiaru (3 / 17 / 45%) to rachunek, oznaczony `[INFERENCE]`. OK.
+- [[sweep-wariantow-kernela]] — liczby powtórzone z raportu 70 (+5,8%, 62 min, 7 min, −5,0% / −12,2%). OK.
+- [[lekcja-zysk-rosnie-z-glebokoscia]] — 0,878×, +0,5 / +1,9 / +5,8% (`bench.txt`, `fill.txt`), +0,84% (24v), udziały 4 / 24 / 56% (rachunek z 24v, raport 70 §3.5). OK.
+- [[2026-11-08-fa-d256-prefill]] — nowy punkt „Post-mortem”: −3,6% / −6,1%, +2,4% (`select.txt`), 220 VGPR (`isa.txt`). OK.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

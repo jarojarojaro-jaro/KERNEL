@@ -14,7 +14,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (49)
+## Notatki (50)
 
 - [[aob-v1|`aob-v1` (AMD-Opt Bench): benchmark regresji RSI-F z naszej historii (projekt)]] — Własny benchmark w formacie Harbor-lite (`task.toml`, `instruction.md`, `environment/`, ukryte `tests/`, `solution/oracle.patch` + `null.patch`) z fabryką jako weryfikatorem i podziałem dev (łatki 0001–0047) / test (0048–0070 + negatywy); przy naszym budżecie GPU to test regresji i postępu RSI-F, nie leaderboard – przy 10 zadaniach SE ≈ 0.15 (raport 21i, 2026-10-19).
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
@@ -55,6 +55,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[strata-kva|Strata KVA: prefill przez sam stan późnych warstw]] — `STRATA_KVA=1` (Strata 0.2.7): dla zimnego promptu ≥ 4096 tokenów warstwy powyżej podziału liczą tylko stan (K/V, rekurencja GDN, conv), a wejściem jest residual z granicy; ostatnie 2048 pozycji i decode są dokładne. To SwiftKV bez destylacji (2026-10-27).
 - [[strumien-on-wyrocznia|Strumień O(n) z wyrocznią zamiast parsera O(n²)]] — Wątek HTTP llama-server robi pełny `common_chat_parse` całego wygenerowanego tekstu dla każdego przyjętego tokenu (0.07 → 0.52 ms/token przy 1k → 12.8k tokenów, raport 39c), a przy MTP 2–4 razy na krok; tqLLM dokleja bajty raz, ponownie ogląda tylko niestabilny ogon, a stary algorytm zostawia jako wyrocznię testową (raport 66e, 2026-11-07).
 - [[sufit-pasma-i-mapa-czasu|Sufit pasma i mapa czasu kroku]] — Zanim cokolwiek zmienimy, liczymy, ile bajtów musi przeczytać krok (sufit pasma) i gdzie naprawdę idzie czas (profil rocprofv3 w modelu).
+- [[sweep-wariantow-kernela|Sweep wariantów kernela: jedna binarka, maska env, bramka bitowa, ABBA przy głębokości]] — Pomysły na kernel kodujemy jako bity jednej maski env w jednej binarce. Przepuszczamy je przez bramkę bitową, mierzymy wszystkie kombinacje na kształtach produkcji, wybieramy automatycznie i potwierdzamy ABBA w reżimie pain pointu. Tak powstał FA D256 VAR 83: fill 255k +5,8%, bitowo = (2026-11-09).
 - [[emulator-isa|Symboliczny emulator ISA (dowód bitowości offline)]] — Gdy GPU było niedostępne, bitowość nowego kernela GDN udowodniliśmy, emulując symbolicznie skompilowane ISA gfx11 i porównując grafy operacji float z bazą.
 - [[wspolny-poczatek-promptu|Wspólny początek promptu i chude checkpointy (Maya #607, RTP-LLM #1574)]] — Mały osobny wpis cache z samym system promptem i narzędziami (Maya #607: nowa rozmowa 19× szybciej) oraz stan liniowy trzymany tylko na granicach wiadomości i ogonie (RTP #1574) to dwie formy tej samej zasady: mały stan na granicach wiadomości zamiast kopii całej sesji.
 - [[wyniki-negatywne|Wyniki negatywne zapisujemy z liczbami]] — Każda próba, która nie dała zysku, trafia do NOTES z liczbami i powodem, żeby nikt nie wracał do niej bez nowego pomysłu.
