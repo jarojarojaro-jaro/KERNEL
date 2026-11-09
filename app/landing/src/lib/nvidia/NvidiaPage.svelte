@@ -404,12 +404,12 @@
 	.stat-k {
 		margin: 0;
 		font-size: var(--fs-sm);
-		line-height: 1.4;
-		color: var(--text);
+		line-height: 1.45;
+		color: var(--text-hi);
 	}
 	.stat-m {
 		margin: 0;
-		font-size: var(--fs-2xs);
+		font-size: var(--fs-xs);
 		line-height: 1.5;
 		color: var(--text-mute);
 	}
