@@ -199,9 +199,9 @@
 			<table class="table lic-table">
 				<thead>
 					<tr>
-						<th scope="col">{c.models.cols.model}</th>
-						<th scope="col">{c.models.cols.licence}</th>
-						<th scope="col">{c.models.cols.file}</th>
+						<th scope="col" class="col-name">{c.models.cols.model}</th>
+						<th scope="col" class="col-lic">{c.models.cols.licence}</th>
+						<th scope="col" class="col-file">{c.models.cols.file}</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -482,6 +482,33 @@
 		line-height: 1.35;
 		color: var(--text-mute);
 	}
+	/* Tablets and small laptops: six columns need 1026 px, but the container only passes that
+	   a bit below 1100 px, so the same folding as on phones applies until then. */
+	@media (min-width: 48rem) and (max-width: 68.99rem) {
+		.nv-table .col-model,
+		.nv-table .col-ctx {
+			display: none;
+		}
+		.nv-table .mini {
+			display: block;
+		}
+		.nv-table .lbl-long {
+			display: none;
+		}
+		.nv-table .lbl-short {
+			display: inline;
+		}
+		.nv-table th,
+		.nv-table td {
+			padding-inline: var(--sp-2);
+		}
+		.nv-table tbody th {
+			white-space: normal;
+		}
+		.nv-table .mini {
+			word-break: break-word;
+		}
+	}
 	@media (max-width: 47.99rem) {
 		.nv-table .col-model,
 		.nv-table .col-ctx {
@@ -506,6 +533,8 @@
 		}
 		.nv-table thead th {
 			font-size: var(--fs-2xs);
+			white-space: normal;
+			letter-spacing: 0.04em;
 		}
 		.nv-table .model {
 			min-width: 0;
@@ -529,6 +558,7 @@
 		.nv-table .speed small {
 			display: block;
 			margin-left: 0;
+			overflow-wrap: anywhere;
 		}
 	}
 	.lbl-short {
@@ -666,6 +696,36 @@
 		margin-inline: 0.35em;
 		color: var(--text-mute);
 	}
+	/* Phones: three columns fit only if the badge wraps and the Hugging Face paths break
+	   anywhere — without this the licence table needs 510 px in a 341 px box. */
+	@media (max-width: 47.99rem) {
+		.lic-table {
+			table-layout: fixed;
+			width: 100%;
+		}
+		.lic-table th,
+		.lic-table td {
+			padding-inline: var(--sp-2);
+		}
+		.lic-table thead th {
+			white-space: normal;
+		}
+		.lic-table .col-name {
+			width: 40%;
+		}
+		.lic-table .col-lic {
+			width: 34%;
+		}
+		.lic-table .col-file {
+			width: 26%;
+		}
+		.lic {
+			white-space: normal;
+		}
+		.lic-table .links {
+			overflow-wrap: anywhere;
+		}
+	}
 	.lic-note {
 		max-width: 82ch;
 		margin-top: var(--sp-4);
@@ -700,6 +760,53 @@
 		overflow-x: auto;
 		white-space: pre-wrap;
 		word-break: break-word;
+		overflow-wrap: anywhere;
+	}
+	/* The flags column has a 320 px min-content width from the longest flag, which pushes the
+	   recipes table 300 px past a phone; let the column shrink and wrap instead. */
+	@media (max-width: 47.99rem) {
+		.advanced .table-wrap table {
+			table-layout: fixed;
+			width: 100%;
+		}
+		.advanced .table-wrap th,
+		.advanced .table-wrap td {
+			padding-inline: var(--sp-2);
+		}
+		.advanced .flags code {
+			padding-inline: var(--sp-1);
+			font-size: var(--fs-2xs);
+		}
+		.advanced .table-wrap .flags {
+			width: 32%;
+		}
+		.advanced .table-wrap th:first-child,
+		.advanced .table-wrap td:first-child {
+			width: 22%;
+		}
+		.advanced .table-wrap th:nth-child(2),
+		.advanced .table-wrap td:nth-child(2) {
+			width: 24%;
+		}
+		.advanced .table-wrap td.mono {
+			overflow-wrap: anywhere;
+		}
+		.advanced .table-wrap thead th {
+			white-space: normal;
+		}
+	}
+	/* Very small phones (320 px): three speed columns plus their gain tags need a bit more room
+	   than the 57 px the fixed layout hands out at that width. */
+	@media (max-width: 22.49rem) {
+		.nv-table .speed {
+			font-size: var(--fs-2xs);
+		}
+		.nv-table .speed b {
+			font-size: 1.05em;
+		}
+		.nv-table .speed small {
+			letter-spacing: -0.02em;
+		}
 	}
 	.advanced {
 		border: 1px solid var(--line);
@@ -754,6 +861,7 @@
 		margin-top: var(--sp-2);
 		font-size: var(--fs-2xs);
 		color: var(--accent-ink);
+		overflow-wrap: anywhere;
 	}
 	.blk--alt > .fine {
 		margin-top: var(--sp-4);
