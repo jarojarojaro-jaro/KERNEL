@@ -310,3 +310,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-09] eksperyment | qwen-warp vs fork CUDA na wynajętym 3090 (R69b Q1)
 [[2026-11-09-qwen-warp-vs-fork-3090]]: ta sama karta 350 W, 6 promptów, streaming, oba przy 262 144. qwen-warp ×1.46/×1.61 (krótki), ×1.48/×1.81 (16k), ×1.58/×1.59 (64k), ×1.60/×1.65 (128k), ×1.34/×1.52 (262k) T=0/T=1 → kill < ×1.15 nie zachodzi; ~×1.24 to lżejsze wagi [SZACUNEK]. Oba mieszczą 262 144. Zaktualizowane [[qwen-warp]]. Koszt $0.53, 0 instancji.
+
+## [2026-11-09] wdrozenie | topka-q70 w produkcji XTX
+[[2026-11-09-wdrozenie-topka-q70]]: `~/llama-topka` = topka-q70 (q63 c0576e3e8 + cachesave #30137/huge pages + FA D256 VAR 83, env domyślne w `run-topka.sh`), zamiana 15:00:16 UTC, backup `~/llama-topka.c0576e3e8`. md5 long 32k / fill 255k / przełączanie =; fill 255k 466,3 → 492,5 t/s (+5,6%), tura agenta 76–112k 13 413 → 12 029 ms (−10,3%), spec_sweep 119,3 bez zmian. [[REKORDY]] nowy wiersz tury agenta, fill 255k „prod. tak”; [[qwen3-8-27b]] linia produkcji; raport 70 §6 wykonany. Łatki `qwen-opt/patches/topka-q70/`, skrypty `qwen-opt/deploy-q70/`, narzędzie `qwen-opt/speed_real.py`.

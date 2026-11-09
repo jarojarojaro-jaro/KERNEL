@@ -1,0 +1,49 @@
+From 6f4ae419864faa70534b516420af34373e3d5807 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Mon, 9 Nov 2026 01:58:50 +0000
+Subject: [PATCH 2/3] cachesave: common_checkpoint_update/load take
+ common_state_data (fix compile)
+
+---
+ common/common.cpp | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/common/common.cpp b/common/common.cpp
+index 9ac009c17..96905701a 100644
+--- a/common/common.cpp
++++ b/common/common.cpp
+@@ -2634,7 +2634,7 @@ static void common_checkpoint_update(
+         llama_seq_id seq_id,
+         llama_state_seq_flags flags,
+         bool vram,
+-        std::vector<uint8_t> & data,
++        common_state_data & data,
+         std::shared_ptr<llama_state_snap> & snap) {
+     snap.reset();
+ 
+@@ -2660,7 +2660,7 @@ static bool common_checkpoint_load(
+         llama_context * ctx,
+         llama_seq_id seq_id,
+         llama_state_seq_flags flags,
+-        const std::vector<uint8_t> & data,
++        const common_state_data & data,
+         const std::shared_ptr<llama_state_snap> & snap) {
+     if (ctx == nullptr) {
+         return true;
+@@ -2717,11 +2717,11 @@ bool common_prompt_checkpoint::load_dft(
+ }
+ 
+ std::vector<uint8_t> common_prompt_checkpoint::get_tgt() const {
+-    return snap_tgt ? snap_blob(snap_tgt) : data_tgt;
++    return snap_tgt ? snap_blob(snap_tgt) : std::vector<uint8_t>(data_tgt.begin(), data_tgt.end());
+ }
+ 
+ std::vector<uint8_t> common_prompt_checkpoint::get_dft() const {
+-    return snap_dft ? snap_blob(snap_dft) : data_dft;
++    return snap_dft ? snap_blob(snap_dft) : std::vector<uint8_t>(data_dft.begin(), data_dft.end());
+ }
+ 
+ void common_prompt_checkpoint::clear_tgt() {
+-- 
+2.43.0
+

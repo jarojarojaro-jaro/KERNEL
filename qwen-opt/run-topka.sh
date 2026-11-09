@@ -34,6 +34,11 @@
 #                                               476 KiB 108.6 -> 8.8 ms), late system -> user turn (report 45)
 #   LLAMA_MTP_REQUANT_CACHE=~/.cache/llama-mtp  (qwen) on-disk cache of the iq4_xs MTP head/block conversion: server
 #                                               listening 39.8 -> 6.5 s, same spec stats/steps (reports 45, 43)
+#   GGML_HIP_FA_D256_VAR=83                     (qwen) FA D=256 prompt kernel variant 83 (barriers + transposed V tile
+#                                               + V2 chunk 64, topka-q70): 128k prefill 459.5 -> 486.3 t/s (+5.8%),
+#                                               255k fill -30 s, decode =, md5 =; KV q4_0 only (f16 KV -2.4%) (report 70)
+#   LLAMA_SERVER_CACHE_HUGE=1                   prompt-cache entries in huge pages + buffer reuse (topka-q70, #30137):
+#                                               agent thread switch 13.41 -> 12.44 s, cache save 1056 -> 267 ms, md5 =
 # LFM profile (lfm|lfm-uncensored; no MTP head, run-llm.sh <model> none rocm):
 #   -b 2048 -ub 2048 (EXTRA_ARGS)               prefill pp4096 6108 -> 7148 t/s (+17%), TTFT 8k/32k -15%, +0.5 GB VRAM
 #                                               (report 16f E1). KLD ub 2048 vs 512 = 0.068, the same as between ANY two
@@ -61,21 +66,26 @@ spec=mtp
 lookup_default=3
 coupled_default=1   # LLAMA_SPEC_COUPLED: Gumbel-coupled draft sampling, T=1 +3.5% (CI +1.8..+5.3), same distribution, T=0 md5 unchanged (report 24p)
 hostgap_default=1   # host-gap switches (report 24o): chat T=1 113.0 -> 114.6 t/s on topka-next (coupled both arms), md5 on == off
+fa_var_default=83  # GGML_HIP_FA_D256_VAR: tuned on gfx1100 with KV q4_0 (report 70); other profiles keep the stock kernel
 case $model in
     lfm|lfm-uncensored)
         spec=none
+        fa_var_default=0
         lookup_default=0
         coupled_default=0
         hostgap_default=0
         export EXTRA_ARGS=${EXTRA_ARGS:-"-b,2048,-ub,${UB:-2048}"} ;;
     flint)
         spec=none
+        fa_var_default=0
         coupled_default=0
         hostgap_default=0
         export ROCM_DIR=${ROCM_DIR:-$HOME/qwen-opt/flint/inst}
         export EXTRA_ARGS=${EXTRA_ARGS:-"-b,2048,-ub,${UB:-$(cat "$HOME/qwen-opt/flint/ub" 2>/dev/null || echo 1024)}"} ;;
 esac
 export ROCM_DIR=${ROCM_DIR:-$HOME/llama-topka}
+export GGML_HIP_FA_D256_VAR=${GGML_HIP_FA_D256_VAR:-$fa_var_default}
+export LLAMA_SERVER_CACHE_HUGE=${LLAMA_SERVER_CACHE_HUGE:-1}
 export LLAMA_SPEC_LOOKUP=${LLAMA_SPEC_LOOKUP:-$lookup_default}
 export LLAMA_SPEC_LOOKUP_W=${LLAMA_SPEC_LOOKUP_W:-16}
 export LLAMA_SERVER_CACHE_SHARE_MIN=${LLAMA_SERVER_CACHE_SHARE_MIN:-1024}

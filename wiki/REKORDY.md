@@ -26,7 +26,7 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 | decode MTP, prompt 1.7k (T=0) | **130.2 t/s** | 2026-10-14 | long_ctx_bench, przed PM4, KV draftu q4_0 | `NOTES.md:331` | był (nie powtarzane po PM4) |
 | decode MTP 6.6k / 29.5k / 94k | 118.5 / 105.2 / **100.6 t/s** | 2026-10-14 | j.w. | `NOTES.md:331` | był |
 | decode MTP, prompt 27 327 tok. | 113.2 t/s (nowe drzewo), prod 111.85 | 2026-10-17 | `365af3e5e`, T=0, 256 tok. | `12-bit-exact-spekulacja.md:326` | prod 111.85 tak |
-| prefill fill 255k (final mode, serwer) | **493.4 t/s** (516.8 s; baseline 466.3 t/s) | 2026-11-09 | `run-topka.sh uncensored`, Uncensored Q4_K_M, ctx 262144, KV q4_0, eco 2200, `GGML_HIP_FA_D256_VAR=83` (`~/wt/fa-d256` 32292cc0a), md5 = | `~/qwen-opt/fa-d256/res/fill.txt`; [[2026-11-08-fa-d256-prefill]] | nie (kandydat) |
+| prefill fill 255k (final mode, serwer) | **493.4 t/s** (516.8 s; baseline 466.3 t/s) | 2026-11-09 | `run-topka.sh uncensored`, Uncensored Q4_K_M, ctx 262144, KV q4_0, eco 2200, `GGML_HIP_FA_D256_VAR=83` (`~/wt/fa-d256` 32292cc0a), md5 = | `~/qwen-opt/fa-d256/res/fill.txt`; [[2026-11-08-fa-d256-prefill]] | tak od 2026-11-09 (topka-q70: 492.5 t/s, 517.7 s; [[2026-11-09-wdrozenie-topka-q70]]) |
 | code-edit (`mvs`), T=0 | **400.9 t/s** (14.0–14.4 tok/krok) | 2026-10-18 | copy_bench, `LLAMA_SPEC_LOOKUP=3 W=16`, `lookup-tail` @ `586f1d596` | `16b-lookup-tail.md:13-17,102` | nie |
 | code-edit (`mvs`), T=0, PM4 wył. | 396.9 t/s (391.1–405.8) | 2026-10-19 | build `topka` @ `22e2b0f55`, `run-topka.sh qwen` (W16 + `CACHE_SHARE_MIN`, `GGML_HIP_PM4=0`), 1 przebieg | `20-build-topka.md:16,65` | nie (topka) |
 | code-edit (`mvs`), T=1 | 375.8 t/s | 2026-10-18 | j.w. | `16b-lookup-tail.md:103` | nie |
@@ -144,6 +144,12 @@ Zasobów (VRAM) tabela nie ma jako kategorii, więc −1.0 GiB VRAM topka-q63 pr
 | karta / model | obciążenie / metryka | rekord (poprzedni) | data | warunki | źródło | prod. |
 |---|---|---|---|---|---|---|
 | XTX / Qwen UD-Q4_K_XL | spec_sweep T=1 (6 × 3 seedy), mediana | **120.58 t/s** (117.9); ramiona P f9b84bcfa 120.51/120.58, Q q63 120.54/120.57 (w szumie, zysk nie z q63) | 2026-11-05 | `run-topka.sh` qwen, ctx 204800, ub 512, ABBA deploy | `~/qwen-opt/q63/logs-dep/spec_sweep.jsonl:1-4` | tak (q63 = 120.57) |
+
+## Nowe rekordy 2026-11-09 (topka-q70, prefill/agent)
+
+| karta / model | obciążenie / metryka | rekord (poprzedni) | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|---|
+| XTX / Qwen Uncensored Q4_K_M | tura agenta przy głębokości 76–112k (2 wątki naprzemiennie, `switch.py`, 14 tur), mediana wall | **12 029 ms** (13 413; −1 384 ms, −10.3%); suma 187.9 → 168.5 s, prefill na turę 526.7 → 550.7 t/s | 2026-11-09 | final mode eco 2200, ctx 262144, KV q4_0, MTP n4, topka-q70 (cachesave + FA D256 VAR 83), md5 ea3bda5b = | `~/qwen-opt/cachesave/summarize.py` (grupa Q); [[2026-11-09-wdrozenie-topka-q70]] | tak |
 
 ## FINAL MODE 2026-11-06: eco 2200 MHz + pełny kontekst 262 144 (tryb docelowy)
 

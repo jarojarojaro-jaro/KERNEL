@@ -196,7 +196,7 @@ Kolejność: **1** (gotowe, czeka na OK) → **2** (największy niezagospodarowa
 
 ## 6. Przepis wdrożenia
 
-Stan: kandydat, czeka na OK użytkownika. Produkcja `~/llama-topka` = topka-q63 `c0576e3e8`, VAR 0.
+Stan: **wykonane 2026-11-09** (wdrożenie 15:00:16 UTC, ticket 22938). Produkcja `~/llama-topka` = topka-q70 (topka-q63 `c0576e3e8` + cachesave `3152b0bfa`/`6f4ae4198` + fa-d256 `3191b25f4`, cherry-pick `32292cc0a`); backup `~/llama-topka.c0576e3e8`. Faktyczna metoda: wariant A (domyślne w launcherze, nie w kodzie): `run-topka.sh` eksportuje `GGML_HIP_FA_D256_VAR=${…:-83}` tylko dla qwen/uncensored (`fa_var_default=0` dla lfm/flint) i `LLAMA_SERVER_CACHE_HUGE=1`; binarka to pełny build `~/wt/l1-cachesave/build-hip` skopiowany jako `~/llama-topka.q70` (RUNPATH → `$ORIGIN`), ramiona na kopii, bramka md5, zamiana. Wyniki (final mode, Uncensored): long 32k md5 e460e3b6 =, fill 255k 466,3 → 492,5 t/s (+5,6%, 546,8 → 517,7 s) md5 31b6525a =, spec_sweep 119,3 t/s (bez zmian), szczyt VRAM 23 446 → 23 398 MiB, tura agenta 76–112k 13 413 → 12 029 ms (−10,3%). Wariant B (domyślne w kodzie) nadal otwarty. Notatka: `wiki/eksperymenty/2026-11-09-wdrozenie-topka-q70.md`. Poniżej przepis w brzmieniu sprzed wdrożenia.
 
 ### 6.1 Wariant A: zero zmian w kodzie (najszybszy, rekomendowany na dziś)
 1. Build `~/wt/fa-d256` (`32292cc0a`) już istnieje i jest zmierzony: A/B w ramionach to ta binarka. Zainstalować go jako produkcję w jobie kolejki: `mv ~/llama-topka ~/llama-topka.c0576e3e8 && mkdir ~/llama-topka && cp -a ~/wt/fa-d256/build-hip/bin ~/llama-topka/` (tylko `bin/`, jak dotąd; `run-topka.sh` bierze `$ROCM_DIR/bin`, a ramiona B działały z `ROCM_DIR=~/wt/fa-d256/build-hip`).
