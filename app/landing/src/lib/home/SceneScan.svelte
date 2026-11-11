@@ -79,7 +79,15 @@
 
 	/** Typing progress of step `i`. */
 	const kOf = (i: number) => clamp01((p - START[i] - at(0.12)) / at(0.22));
-	const bwNow = $derived(`${num(Math.round(C.bwGBs.v * (1 - (1 - kOf(3)) ** 3)), lang, 0)}\u00a0GB/s`);
+	/**
+	 * Bandwidth log line. While its step plays the number counts up from 0; in every resting state
+	 * (before the play, paused, `prefers-reduced-motion`, after the play) it shows the card's real
+	 * 960 GB/s — a spec line must never read „0 GB/s” next to the 960 GB/s description.
+	 */
+	const bwStep = $derived(kOf(3));
+	const bwNow = $derived(
+		`${num(bwStep > 0 ? Math.max(1, Math.round(C.bwGBs.v * (1 - (1 - bwStep) ** 3))) : C.bwGBs.v, lang, 0)}\u00a0GB/s`
+	);
 	const lines = $derived(
 		[
 			{ part: 'gpu', key: c.gpu, value: `AMD ${C.name}`, sub: `${B.chip.v} · ${gfx}` },
