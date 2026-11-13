@@ -9,7 +9,7 @@ status: aktualne
 
 **Jeden wiersz na każde zewnętrzne źródło, które było przedmiotem badania (repo, silnik, praca, model, strona, wpis – np. InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash), z wersją, raportem, werdyktem i podpowiedzią, co sprawdzić przy następnym podejściu.**
 
-Zasada (użytkownik 2026-10-19, [[KONWENCJE]]): **nie badamy drugi raz tego samego.** Przed researchem: `kb search <nazwa/URL>` + ten rejestr. Źródło już jest → badamy tylko DELTA od zapisanej wersji/commitu/daty. Po researchu dopisz albo zaktualizuj wiersz. Rekordy wydajności: [[REKORDY]]; podręcznik: [[podrecznik-gpu]].
+Zasada (użytkownik 2026-10-19, [[KONWENCJE]]): **nie badamy drugi raz tego samego.** Przed researchem: `kb search <nazwa/URL>` + ten rejestr. Źródło już jest → badamy tylko DELTA od zapisanej wersji/commitu/daty. Po researchu dopisz albo zaktualizuj wiersz. Pomysły warte pomiaru na karcie trafiają jako pozycje `K-…` do [[KOLEJKA-TESTOW]]. Rekordy wydajności: [[REKORDY]]; podręcznik: [[podrecznik-gpu]].
 
 Legenda: **2×/3×/4×** = źródło badane wielokrotnie; kolumna „delta” mówi, co dodało kolejne podejście (tu widać dublowanie pracy). Daty = data raportu. Raporty: `R21f` = `product/research/21f-*.md`; `Q:` = `qwen-opt/research/`. Zakres: przedmioty badania; linki cytowane tylko jako przypis (newsy, dokumentacja API, fora) zostają w raportach – szukaj ich `kb search <domena>`.
 

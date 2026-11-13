@@ -319,3 +319,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-09] eksperyment | jakość-mini: Qwen3.8-27B-Uncensored, produkcja XTX, effort low
 [[2026-11-09-jakosc-mini-qwen-unc]]: 255/290 = 87,9% (CI 83,7–91,2), makro 91,3%; GSM8K 50/50, MMLU-Pro 115/140, PL 43/50, HumanEval+ 28/30 (z biegu EvalPlus), BFCL 19/20; topka-q70 `3191b25f4`, T=0, gen 2253 s, 1 ucięta (32 768 tok). Prędkość na zadaniach: dekod ważony 142,4 t/s (PL 120,1 … HumanEval+ 174,8). Nowa metoda [[jakosc-mini]] (`qwen-opt/jakosc-mini/`, podzbiory seed 20261109, 5 źródeł w [[ZRODLA]]).
+
+## [2026-11-13] meta | Kolejka testów na karcie
+[[KOLEJKA-TESTOW]]: nowa jedna kolejka pomysłów do sprawdzenia na karcie (jaroserverai: XTX + RTX 5060 Ti), zebrana z raportów (15–70, SYNTEZY 63/66/68/69/70, 67c), wiki (eksperymenty, decyzje, metody, STAN-PRAC, REKORDY) i archiwum rozmów 2026-09-15 … 2026-11-13: 75 pozycji „Czeka” (17 czeka na decyzję właściciela), 27 „Odrzucone” (zmieniają odpowiedzi, zakazy właściciela, zmierzone KILL). Wpis z `DO-ZAPISANIA.txt` (martwy kod capu LDS FA `57204db1e`) przeniesiony do kolejki jako K-055. Indeks i rejestr źródeł linkują kolejkę; `tools/wiki.py` zwalnia ją z limitu słów jak REKORDY/ZRODLA.

@@ -9,7 +9,7 @@ status: aktualne
 
 **Wiedza projektu w jednym miejscu: szybkie lokalne LLM na RX 7900 XTX i kartach NVIDIA, nasze kernele i łatki llama.cpp oraz plan produktu.**
 
-Notatki streszczają źródła i do nich linkują; źródła (NOTES.md, PLAN.md, raporty, manifest łatek) zostają tam, gdzie są. **Rekordy (najlepsze zmierzone wyniki): [[REKORDY]]. Podręcznik optymalizacji GPU: [[podrecznik-gpu]]. Rejestr przebadanych źródeł (przed każdym researchem): [[ZRODLA]].** Zasady pisania: [[KONWENCJE]]. Historia zmian wiki: [[log]]. Decyzje użytkownika w [[decyzje/_hub|decyzje/]] są wiążące.
+Notatki streszczają źródła i do nich linkują; źródła (NOTES.md, PLAN.md, raporty, manifest łatek) zostają tam, gdzie są. **Rekordy (najlepsze zmierzone wyniki): [[REKORDY]]. Podręcznik optymalizacji GPU: [[podrecznik-gpu]]. Rejestr przebadanych źródeł (przed każdym researchem): [[ZRODLA]]. Kolejka testów na karcie (co sprawdzić, gdy jaroserverai działa): [[KOLEJKA-TESTOW]].** Zasady pisania: [[KONWENCJE]]. Historia zmian wiki: [[log]]. Decyzje użytkownika w [[decyzje/_hub|decyzje/]] są wiążące.
 
 ## Stan na dziś
 
@@ -75,6 +75,7 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-11-13 [[KOLEJKA-TESTOW|Kolejka testów na karcie]]
 - 2026-11-09 [[raport-69-synteza|Raport 69: DSpine-27B, qwen-warp/TensorFold, Astra-Stop, sterownik AMD a SSD]]
 - 2026-11-09 [[tensorfold|TensorFold (ashhart/TensorFold)]]
 - 2026-11-09 [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[2026-11-09-wdrozenie-topka-q70|Wdrożenie topka-q70 na RX 7900 XTX: tura agenta −10,3%, fill 255k +5,6%, bitowo = (2026-11-09) — PASS, w produkcji]]
 - 2026-11-09 [[2026-11-09-qwen-warp-vs-fork-3090|qwen-warp v0.8.0 kontra nasz fork CUDA na jednej RTX 3090 (2026-11-09)]]
 - 2026-11-09 [[2026-11-09-jakosc-mini-qwen-unc|jakość-mini na produkcyjnym Qwen3.8-27B-Uncensored (2026-11-09)]]
-- 2026-11-09 [[2026-11-09-evalplus-qwen-uncensored|EvalPlus: Qwen3.8-27B-Uncensored Q4_K_M, produkcja XTX, effort low (2026-11-09)]]
 
-Razem 736 notatek. Wygenerowano 2026-11-09 przez `tools/wiki.py index`.
+Razem 736 notatek. Wygenerowano 2026-11-13 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
