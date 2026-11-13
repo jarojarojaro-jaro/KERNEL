@@ -118,6 +118,13 @@
         "a": 1,
         "rgb": 12634675
       }
+    },
+    {
+      "query": "path:llm/",
+      "color": {
+        "a": 1,
+        "rgb": 12815359
+      }
     }
   ],
   "collapse-display": true,

@@ -36,6 +36,7 @@ FOLDERS: dict[str, tuple[str, str]] = {
     "research": ("research", "Streszczenia raportów"),
     "produkt": ("produkt", "Plan produktu i decyzje produktowe"),
     "ludzie-firmy": ("firma", "Firmy, dostawcy, ludzie"),
+    "llm": ("llm", "LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika)"),
 }
 STATUSES = {"aktualne", "do-sprawdzenia", "nieaktualne"}
 REQUIRED = ("typ", "tags", "aktualizacja", "zrodlo", "status")

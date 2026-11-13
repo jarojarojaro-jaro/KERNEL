@@ -9,7 +9,7 @@ status: aktualne
 
 **Wiedza projektu w jednym miejscu: szybkie lokalne LLM na RX 7900 XTX i kartach NVIDIA, nasze kernele i łatki llama.cpp oraz plan produktu.**
 
-Notatki streszczają źródła i do nich linkują; źródła (NOTES.md, PLAN.md, raporty, manifest łatek) zostają tam, gdzie są. **Rekordy (najlepsze zmierzone wyniki): [[REKORDY]]. Podręcznik optymalizacji GPU: [[podrecznik-gpu]]. Rejestr przebadanych źródeł (przed każdym researchem): [[ZRODLA]]. Kolejka testów na karcie (co sprawdzić, gdy jaroserverai działa): [[KOLEJKA-TESTOW]].** Zasady pisania: [[KONWENCJE]]. Historia zmian wiki: [[log]]. Decyzje użytkownika w [[decyzje/_hub|decyzje/]] są wiążące.
+Notatki streszczają źródła i do nich linkują; źródła (NOTES.md, PLAN.md, raporty, manifest łatek) zostają tam, gdzie są. **Rekordy (najlepsze zmierzone wyniki): [[REKORDY]]. Podręcznik optymalizacji GPU: [[podrecznik-gpu]]. Rejestr przebadanych źródeł (przed każdym researchem): [[ZRODLA]]. Kolejka testów na karcie (co sprawdzić, gdy jaroserverai działa): [[KOLEJKA-TESTOW]]. LLM jako takie (trening, dostrajanie, jakość modeli), osobno od optymalizacji silnika: [[llm/_hub|llm]].** Zasady pisania: [[KONWENCJE]]. Historia zmian wiki: [[log]]. Decyzje użytkownika w [[decyzje/_hub|decyzje/]] są wiążące.
 
 ## Stan na dziś
 
@@ -72,10 +72,12 @@ Audyt liczb: [[AUDYT]].
 - [[research/_hub|research]] — Streszczenia raportów (155)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (34)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
+- [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (1)
 
 ## Ostatnio aktualizowane
 
 - 2026-11-13 [[sglang-unified-memory|SGLang Unified Memory: jedna arena VRAM dla KV, okna SWA i stanu rekurencyjnego]]
+- 2026-11-13 [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]]
 - 2026-11-13 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
 - 2026-11-13 [[KOLEJKA-TESTOW|Kolejka testów na karcie]]
 - 2026-11-09 [[raport-69-synteza|Raport 69: DSpine-27B, qwen-warp/TensorFold, Astra-Stop, sterownik AMD a SSD]]
@@ -89,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[jakosc-mini|jakość-mini: 290 pytań jakości dla dowolnego modelu za llama-server]]
 - 2026-11-09 [[evalplus-jakosc-kodu|jakość-mini: bramka jakości kodu EvalPlus]]
 - 2026-11-09 [[lekcja-zysk-rosnie-z-glebokoscia|Zysk kernela FA rośnie z głębokością: wynik negatywny ważny tylko w swoim reżimie]]
-- 2026-11-09 [[2026-11-09-wdrozenie-topka-q70|Wdrożenie topka-q70 na RX 7900 XTX: tura agenta −10,3%, fill 255k +5,6%, bitowo = (2026-11-09) — PASS, w produkcji]]
 
-Razem 737 notatek. Wygenerowano 2026-11-13 przez `tools/wiki.py index`.
+Razem 738 notatek. Wygenerowano 2026-11-13 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

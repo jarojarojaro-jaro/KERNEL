@@ -325,3 +325,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-13] research | Telegram „gpu”: SGLang Unified Memory
 [[sglang-unified-memory]]: jedna arena VRAM dla KV, okna SWA i stanu GDN w SGLang (blog LMSYS 2026-11-11); zysk tylko przy wielu żądaniach naraz (H200: do +26%, 1000 vs 618 żądań), domyślnie szum (5830 vs 5880 tok/s). Werdykt: nie warto, topka ma 1 slot bez podziału pul; brak pozycji w [[KOLEJKA-TESTOW]].
+
+## [2026-11-13] meta | Nowa sekcja llm/ (trening i jakość LLM)
+Na prośbę właściciela (Telegram „gpu”): folder [[llm/_hub|llm]] na trening, dostrajanie, edycje wag i jakość modeli, oddzielony od optymalizacji silnika; mapa [[trening-llm-mapa]] zbiera dotychczasowe wyniki (pilot głowicy MTP ±0,2%, fine-tune DFlash2 bez zysku, Uncensored i Astra-Stop jako edycje wag, EvalPlus/jakość-mini). Starsze notatki zostały na miejscu, mapa do nich linkuje. `tools/wiki.py` i [[KONWENCJE]]: nowy typ `llm`.
