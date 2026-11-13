@@ -322,3 +322,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-13] meta | Kolejka testów na karcie
 [[KOLEJKA-TESTOW]]: nowa jedna kolejka pomysłów do sprawdzenia na karcie (jaroserverai: XTX + RTX 5060 Ti), zebrana z raportów (15–70, SYNTEZY 63/66/68/69/70, 67c), wiki (eksperymenty, decyzje, metody, STAN-PRAC, REKORDY) i archiwum rozmów 2026-09-15 … 2026-11-13: 75 pozycji „Czeka” (17 czeka na decyzję właściciela), 27 „Odrzucone” (zmieniają odpowiedzi, zakazy właściciela, zmierzone KILL). Wpis z `DO-ZAPISANIA.txt` (martwy kod capu LDS FA `57204db1e`) przeniesiony do kolejki jako K-055. Indeks i rejestr źródeł linkują kolejkę; `tools/wiki.py` zwalnia ją z limitu słów jak REKORDY/ZRODLA.
+
+## [2026-11-13] research | Telegram „gpu”: SGLang Unified Memory
+[[sglang-unified-memory]]: jedna arena VRAM dla KV, okna SWA i stanu GDN w SGLang (blog LMSYS 2026-11-11); zysk tylko przy wielu żądaniach naraz (H200: do +26%, 1000 vs 618 żądań), domyślnie szum (5830 vs 5880 tok/s). Werdykt: nie warto, topka ma 1 slot bez podziału pul; brak pozycji w [[KOLEJKA-TESTOW]].

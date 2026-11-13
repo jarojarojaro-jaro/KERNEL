@@ -68,13 +68,15 @@ Audyt liczb: [[AUDYT]].
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (117)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (88)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (89)
 - [[research/_hub|research]] — Streszczenia raportów (155)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (34)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 
 ## Ostatnio aktualizowane
 
+- 2026-11-13 [[sglang-unified-memory|SGLang Unified Memory: jedna arena VRAM dla KV, okna SWA i stanu rekurencyjnego]]
+- 2026-11-13 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
 - 2026-11-13 [[KOLEJKA-TESTOW|Kolejka testów na karcie]]
 - 2026-11-09 [[raport-69-synteza|Raport 69: DSpine-27B, qwen-warp/TensorFold, Astra-Stop, sterownik AMD a SSD]]
 - 2026-11-09 [[tensorfold|TensorFold (ashhart/TensorFold)]]
@@ -88,8 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[evalplus-jakosc-kodu|jakość-mini: bramka jakości kodu EvalPlus]]
 - 2026-11-09 [[lekcja-zysk-rosnie-z-glebokoscia|Zysk kernela FA rośnie z głębokością: wynik negatywny ważny tylko w swoim reżimie]]
 - 2026-11-09 [[2026-11-09-wdrozenie-topka-q70|Wdrożenie topka-q70 na RX 7900 XTX: tura agenta −10,3%, fill 255k +5,6%, bitowo = (2026-11-09) — PASS, w produkcji]]
-- 2026-11-09 [[2026-11-09-qwen-warp-vs-fork-3090|qwen-warp v0.8.0 kontra nasz fork CUDA na jednej RTX 3090 (2026-11-09)]]
-- 2026-11-09 [[2026-11-09-jakosc-mini-qwen-unc|jakość-mini na produkcyjnym Qwen3.8-27B-Uncensored (2026-11-09)]]
 
-Razem 736 notatek. Wygenerowano 2026-11-13 przez `tools/wiki.py index`.
+Razem 737 notatek. Wygenerowano 2026-11-13 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

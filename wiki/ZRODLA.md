@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, zrodla, research, rejestr, inferencex, agentx, strata, tensorfold, magnitude, hipfire, dflash, lucebox]
-aktualizacja: 2026-11-09
+aktualizacja: 2026-11-13
 zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14; ~/KERNEL/product/research/{21n,21o,24e,24g,24t,30}-*.md
 status: aktualne
 ---
@@ -218,6 +218,7 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Nemotron-3.5-Bolt-E4B (NVIDIA, unsloth GGUF) | HF 10-23 | R60c, [[nemotron-3-5-bolt-e4b]] | Telefon/edge; nie drafter Qwena (słownik 262 144). | Q4_K_M 6.18 GB | katalog 6–8 GB |
 | Humming (vllm-project/humming, vLLM + Ant Group) | `db930af` (10-22), blog 10-21 | [R60d](../product/research/60d-serving-kernels-cache.md), [[humming]] | Tylko CUDA, bez GGUF; batch 1 ≈ Marlin, poniżej naszego MMVQ. | 4090 W4A16 M=1 610 GB/s (60%); E2E +14…43% (8× H20) | port HIP, ścieżka GEMV małego M |
 | SGLang HiCache + Unified Radix Cache (blogi, PR #21259 #30393 #33639 #34798) | blog 10-2x; PR do 2026-08-19 | R60d, [[sglang-hicache]] | Wzorce dla cache sesji: pinned I/O, snapshot GDN na granicy prefiksu, session_id. | L3 9.4K → 145.5K tok/s; odzysk 1/10 → 10/10 | write-back dla snapshotów, nowe PR hybryd |
+| SGLang Unified Memory (blog LMSYS + wpis @ChengWan17, Telegram „gpu”) | blog 2026-11-11, SGLang `daa171846f` | [[sglang-unified-memory]] | Nie dla nas: jedna arena zamiast podziału pul KV/SWA/stan liczy się tylko przy wielu żądaniach; topka ma 1 slot. | H200: 1000 vs 618 żądań w locie, do +26% przepustowości; domyślnie 5830 vs 5880 tok/s | wsparcie poza CUDA, tryb domyślny |
 | AKV (arXiv 2610.28577, thu-nics/AKV) | `c567a42` (10-21), v1 10-20 | R60d, [[akv-cache-agentow]] | Repos odpada przy IMROPE; drop tylko w atencji, drogi. | −27.7% kosztu (centy API); 1.18× wyjścia | wsparcie modeli liniowych/hybryd |
 | dphnAI/sonar PR #1788 (all-reduce PCIe) | `f653ba4e` (OPEN, 10-21) | R60d | Tylko sm_120, TP=4, P2P; nie dotyczy. | 290.4 → 327.2 t/s (4× RTX PRO 6000) | scalenie, sm_86 bez P2P |
 | Project Maya | v1.1.21 `451f9cb` … v1.1.26 `f26d8ba` (10-21…23) | R60d, [[project-maya]] | Tylko DeepSeek; nic dla gfx1100/Qwena; #382 na 2× XTX bez zysku. | prefill AMD 2.35–2.53×; FAT_ROWS 1.3–1.56× (V100) | >v1.1.26: gęsty 27B, pomiar XTX |
