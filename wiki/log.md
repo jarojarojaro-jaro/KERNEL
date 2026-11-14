@@ -331,3 +331,6 @@ Na prośbę właściciela (Telegram „gpu”): folder [[llm/_hub|llm]] na treni
 
 ## [2026-11-14] research | Telegram „gpu”: silnik pod DeepSeek, InferenceForge, vstack
 [[telegram-2026-11-14-silniki-agenci]]: 4 linki. Silnik Rust+CUDA pod DeepSeek-V4.1-Flash (Baseten, 4× B300 ~1740 TPS, +15% vs SGLang) potwierdza K-014 (dopisane źródło), InferenceForge (+43% na AgentX, brak źródła pierwotnego) i vstack (TLA+/Z3, 17 błędów w vLLM/SGLang) dotyczą serwowania wielu żądań. Werdykt: nic nowego do testu na karcie; 3 wiersze w [[ZRODLA]].
+
+## [2026-11-14] research | Telegram „gpu”: PearlQuant, llama.cpp v1.0.0
+[[telegram-2026-11-14-pearlquant-llamacpp-v1]]: PearlQuant (KV E8, 3,2 bita) stratne → K-079, metoda oceny → K-007. llama.cpp v1.0.0 (b12359): #31533 few-row MMQ scalone (Qwen3.8-27B spec-dec na NVIDIA +16,7…34,9% tok/s) → nowa K-103 (Enigma NVIDIA na v1.0.0, priorytet wysoki) i K-013 podniesione; #30541 (kopia stanu skwantowanego KV) jako hipoteza K-001; K-056 cel rebase v1.0.0.

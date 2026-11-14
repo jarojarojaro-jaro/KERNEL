@@ -24,6 +24,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
 - źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)
+- hipoteza (2026-11-14): upstream #30541 (w llama.cpp v1.0.0) naprawia kopię stanu „on device” dla skwantowanego KV: liczba elementów liczona jako bloki, więc dla q4_0 kopiowane było 1/32 zakresu → zły stan po restore. Topka (baza b11528) tej poprawki nie ma, a my mamy KV q4_0 [INFERENCE: czy ścieżka `LLAMA_STATE_SEQ_FLAGS_ON_DEVICE` jest używana przez cache/checkpointy topki — sprawdzić w kodzie na CPU przed testem] ([[telegram-2026-11-14-pearlquant-llamacpp-v1]])
 - test: najpierw repro na CPU (LFM2.5-2.6B pokazał wzór przy 0,6k). Potem XTX, port testowy, `run-topka.sh uncensored`: restore migawki 1,7k → md5 T=0 → inne żądanie → drugi restore → md5, porównanie z `md5_fresh` (xtxbench t1 A/A). Bez 199k ≤ 10 min.
 - zysk: poprawność, nie szybkość. Cachesave i `--cache-ram` odtwarzają wpisy w sesjach agenta, więc produkcja może dziś po cichu zmieniać odpowiedzi. Bez naprawy werdykty md5 xtxbench są pewne tylko przy pierwszym restore.
 - ryzyko karty: brak
@@ -53,6 +54,23 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: wysoki (Enigma NVIDIA, tani pierwszy pomiar)
 
+### K-103 · Enigma NVIDIA: silnik na llama.cpp v1.0.0 (few-row MMQ #31533) zamiast pinu b11856, z MTP
+- data: 2026-11-14
+- źródło: [[telegram-2026-11-14-pearlquant-llamacpp-v1]]; PR #31533 (Qwen3.8-27B + DFlash2, 7 draftów: 3090 Ti 57,6 → 77,7 tok/s, +34,9%; RTX PRO 6000 +16,7%; 5090 +20,6%; 80/80 rozmów szybciej, KLD jak master); pin b11856 został, bo b12110 był ~9% wolniejszy z MTP na sm_120 ([[final-recipes-nvidia]])
+- test: 5060 Ti lokalnie: spec_sweep T=1 + `mvs`, MTP n 2/4, pin b11856 vs v1.0.0 (b12359), ABBA ≤ 10 min; `llama-bench -p 576 -n 0 -ub 4,8,16` przed/po; KLD vs upstream jak w kampanii 67
+- zysk: weryfikacja MTP/DFlash na NVIDIA +10…35% tok/s (dane autora); jeśli regresja b12110 z MTP nie wróci, nowe przepisy Enigmy dla wszystkich kart NVIDIA
+- ryzyko karty: brak
+- priorytet: wysoki (duży zmierzony zysk, tani test lokalnie)
+
+### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)
+- data: 2026-11-07
+- źródło: `R/68d-swieze-od-spolecznosci.md:140`, `R/69-SYNTEZA.md:30` (W3), [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 3), `R/67c-nvidia-backlog-testow.md:131` (C14)
+- test: XTX `llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 1,5,8,9,16 -n 0 -d 2048,32768` przed/po (krzywa V(w)), potem `mvs` + czat ABBA i md5; ≤ 10 min. NVIDIA: `test-backend-ops MUL_MAT` n=8/16 na 5060 Ti.
+- nowe (2026-11-14): #31533 scalone w llama.cpp v1.0.0. Na NVIDIA spec-dec Qwen3.8-27B +16,7…34,9% tok/s (3090 Ti 57,6 → 77,7), KLD jak master; port HIP (`6ad15f48`, am17an) na RDNA3.5 z DFlash2: 21 → 37 tok/s. Weryfikacja MTP n=5 (5 kolumn) też w zakresie 2–24. Inny kernel = inna kolejność sum, więc md5 T=0 się zmieni: wdrożenie na XTX wymaga bramki K-007 albo decyzji właściciela.
+- zysk: V16 − V5 = 6,4 ms przy 2k; połowa tego → kroki W16 −9%, tury agenta z kopiowaniem +5…10% [SZACUNEK]; czat 0. Warunek dla drzew (K-075).
+- ryzyko karty: nowy kernel w PM4
+- priorytet: wysoki (zmierzone +17…35% u autora, ten sam model)
+
 ### K-005 · Siatka checkpointów GDN co ~8192 tokenów + checkpoint w punkcie rozwidlenia + łańcuch fallbacku (edycja, regeneracja, kompaktowanie omp)
 - data: 2026-10-15 (STATUS-NEXT §4), ponownie 2026-11-07 (66 poz. 6)
 - źródło: [[siatka-checkpointow-gdn]], `Q/STATUS-NEXT.md:44`, `R/66-SYNTEZA.md:57`, `R/67c-nvidia-backlog-testow.md:116` (B22)
@@ -73,6 +91,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-07 (kanarki: 2026-10-15)
 - status: **czeka na decyzję** właściciela (decyzja 6 z rundy 69: czy dopuścić „te same tokeny + KLD” zamiast md5)
 - źródło: `R/68b-spekulacja-nowe.md:161`, `R/69-SYNTEZA.md:33,41`, [[raport-69-synteza]], [[bramka-kld-kanarki]] (`:27`, nigdy nieuruchomione na GPU), `Q/tools/kld_canary.sh`
+- wzór oceny (2026-11-14): PearlQuant ma 3 warstwy: KLD, benchmarki, cechy tekstu (liczba „Wait” na 1000 słów, ślepy sędzia = sam model), a do tego celowo zepsute konfiguracje jako kontrola pozytywna ([[telegram-2026-11-14-pearlquant-llamacpp-v1]])
 - test: skrypt teacher-forced na CPU. XTX: topka vs topka (szum), DRAFT_N=5 (powinno przejść), wstrzyknięty bias logitu (musi odpaść), 6 promptów × 2k tok. T=0. Kanarki po jednym na job ≤ 10 min.
 - zysk: 0% sama; odblokowuje K-008, K-017 i K-046 (+3…7%)
 - ryzyko karty: brak
@@ -118,14 +137,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: sufit +12…16% decode przy 196–255k; realnie +1,5…3% przy ≥ 94k [SZACUNEK]
 - ryzyko karty: nowy kernel w taśmie PM4 (bramka `test-backend-ops` przed serwerem)
 - priorytet: średni (duży sufit, dwa nieudane podejścia)
-
-### K-013 · Tańsza weryfikacja 9–17 kolumn (kroki lookup W16): kernel „few-row” iu8 WMMA wzorem upstream #31533
-- data: 2026-11-07
-- źródło: `R/68d-swieze-od-spolecznosci.md:140`, `R/69-SYNTEZA.md:30` (W3), [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 3), `R/67c-nvidia-backlog-testow.md:131` (C14)
-- test: XTX `llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 1,5,8,9,16 -n 0 -d 2048,32768` przed/po (krzywa V(w)), potem `mvs` + czat ABBA i md5; ≤ 10 min. NVIDIA: `test-backend-ops MUL_MAT` n=8/16 na 5060 Ti.
-- zysk: V16 − V5 = 6,4 ms przy 2k; połowa tego → kroki W16 −9%, tury agenta z kopiowaniem +5…10% [SZACUNEK]; czat 0. Warunek dla drzew (K-075).
-- ryzyko karty: nowy kernel w PM4
-- priorytet: średni (agent dużo kopiuje)
 
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
@@ -469,9 +480,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (przy okazji)
 
-### K-056 · Rebase łatek topki na nowszy upstream (baza b11528, ~667 commitów za b12193)
+### K-056 · Rebase łatek topki na nowszy upstream (baza b11528 → llama.cpp v1.0.0 = b12359)
 - data: 2026-10-16, ostatnio 2026-11-07
 - źródło: [[2026-10-16-rebase-v070]], `R/68d-swieze-od-spolecznosci.md:14,18` (#31247 przesunie md5)
+- nowe (2026-11-14): v1.0.0 zawiera już u nas portowane #30137, a do tego #30541 (kopia stanu dla skwantowanego KV, K-001), #31533 (few-row MMQ CUDA, K-013/K-103), #31927 (MTP czyta stan celu z bufora na urządzeniu), #32078 (tylko fuzowany GDN), #32009/#32089 (ponowne użycie schedulera), #31838 (ROCm: stały workspace BLAS); API: `defrag_thold` usunięte, NextN w `llama.h`
 - test: build (CPU), XTX greedy md5 vs baza, `test-backend-ops`, spec_sweep A/B ≤ 10 min/ramię; zmiana md5 przez #31247 → bramka KLD
 - zysk: poprawki upstream; prędkość ~0 (68d: „prawie wszystko topka ma mocniej”)
 - ryzyko karty: nowe kernele w PM4
@@ -657,7 +669,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-078 · Zmiana kwantu dla prędkości (lżejszy GGUF wzorem qwen-warp ×1,24, IQ4_XS/Q4_0, mieszanki per tensor, LFM Q4_K_M/QAD-Q4_0, EXL3, NVFP4, Flash-Next, DCQ)
 - powód: zmienia odpowiedzi; zakaz właściciela „nie zmieniamy kwantów, żeby przyspieszyć” ([[dcq-kotwica-stanu-gdn]], [[2026-11-09-qwen-warp-vs-fork-3090]]).
 
-### K-079 · Stratna atencja i KV: QSA, LSA, KVA, FLy, KV 3-bit / FP8 / blok 16, stan GDN fp16/bf16/int8, Nucleus SD, `--cache-reuse-hybrid`, HIP fast-math, chunked GDN bf16, `kvq` CUDA P·V f32
+### K-079 · Stratna atencja i KV: QSA, LSA, KVA, FLy, KV 3-bit / FP8 / blok 16, PearlQuant (E8, 3,2 bita), stan GDN fp16/bf16/int8, Nucleus SD, `--cache-reuse-hybrid`, HIP fast-math, chunked GDN bf16, `kvq` CUDA P·V f32
 - powód: zmienia odpowiedzi (KLD ≠ 0); decyzja „tylko bezstratne” ([[2026-11-05-tylko-bezstratne]]).
 
 ### K-080 · FA D256: 83 + `exp2f` (maska 91), config #31746, `nbatch_fa` 32
