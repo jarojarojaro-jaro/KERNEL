@@ -408,7 +408,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-047 · GDN w weryfikacji: forma chunkwise/WY w fp32 albo fuzja conv + rekurencja + gated RMSNorm ze stanem w VGPR
 - data: 2026-11-05 (63 #21)
 - status: **czeka na decyzję** (inna kolejność redukcji fp32 → bramka KLD, nie md5)
-- źródło: `R/68b-spekulacja-nowe.md:162`, `R/68-SYNTEZA.md:20`
+- źródło: `R/68b-spekulacja-nowe.md:162`, `R/68-SYNTEZA.md:20`; ta sama fuzja (conv1d + SiLU + norma Q/K + rekurencja) w kernelu weryfikacji KDA u TokenSpeed ([[tokenspeed]], 2026-11-14)
 - test: XTX `test-backend-ops perf -o GATED_DELTA_NET` (n 5/8/16), spec_sweep ABBA, KLD + md5 plain; ≤ 10 min/krok
 - zysk: +1,1…1,7% na każdym kontekście [SZACUNEK]; tańszy wiersz dla drzew (K-075)
 - ryzyko karty: brak

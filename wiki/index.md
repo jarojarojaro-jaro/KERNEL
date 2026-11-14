@@ -78,6 +78,7 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-11-14 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
 - 2026-11-14 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
+- 2026-11-14 [[tokenspeed|TokenSpeed (LightSeek Foundation)]]
 - 2026-11-14 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
 - 2026-11-14 [[KOLEJKA-TESTOW|Kolejka testów na karcie]]
 - 2026-11-13 [[sglang-unified-memory|SGLang Unified Memory: jedna arena VRAM dla KV, okna SWA i stanu rekurencyjnego]]
@@ -90,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[astra-stop|Astra-Stop: rank-1 edycja, która skraca myślenie Qwen3.8-27B]]
 - 2026-11-09 [[xtxbench-szybki-ab|xtxbench: szybki A/B silnika produkcyjnego XTX (cel ~10 min na wariant zamiast 40–120)]]
 - 2026-11-09 [[sweep-wariantow-kernela|Sweep wariantów kernela: jedna binarka, maska env, bramka bitowa, ABBA przy głębokości]]
-- 2026-11-09 [[jakosc-mini|jakość-mini: 290 pytań jakości dla dowolnego modelu za llama-server]]
 
 Razem 740 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

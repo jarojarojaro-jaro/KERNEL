@@ -334,3 +334,6 @@ Na prośbę właściciela (Telegram „gpu”): folder [[llm/_hub|llm]] na treni
 
 ## [2026-11-14] research | Telegram „gpu”: PearlQuant, llama.cpp v1.0.0
 [[telegram-2026-11-14-pearlquant-llamacpp-v1]]: PearlQuant (KV E8, 3,2 bita) stratne → K-079, metoda oceny → K-007. llama.cpp v1.0.0 (b12359): #31533 few-row MMQ scalone (Qwen3.8-27B spec-dec na NVIDIA +16,7…34,9% tok/s) → nowa K-103 (Enigma NVIDIA na v1.0.0, priorytet wysoki) i K-013 podniesione; #30541 (kopia stanu skwantowanego KV) jako hipoteza K-001; K-056 cel rebase v1.0.0.
+
+## [2026-11-14] research | Telegram „gpu”: TokenSpeed Kimi K3 na AgentX
+[[tokenspeed]] (delta): blog Kimi K3 331 tok/s/GPU na 32× GB300 (1,92× DCP8) przez DWDP prefill, DEP16 dekod i wspólną pamięć hosta 5,45 TB; skala klastra, dla jednej karty 0%, nic nowego do kolejki (źródło dopisane do K-047).
