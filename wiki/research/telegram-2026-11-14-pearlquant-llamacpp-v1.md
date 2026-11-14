@@ -2,7 +2,7 @@
 typ: research
 tags: [research, telegram, kv-cache, kwantyzacja, llamacpp, upstream, mmq]
 aktualizacja: 2026-11-14
-zrodlo: https://pearlresearch.ai/research/blog/pearlquant (2026-11-12); https://x.com/WeinsteinOmri/status/2120888055556948106; https://huggingface.co/blog/ggml-org/llama-cpp-v1 (2026-11-13); https://github.com/ggml-org/llama.cpp/releases/tag/v1.0.0 (`b1b770d`, nightly b12359); https://github.com/ggml-org/llama.cpp/pull/31533; https://github.com/ggml-org/llama.cpp/pull/30541
+zrodlo: https://pearlresearch.ai/research/blog/pearlquant (2026-11-12); https://x.com/WeinsteinOmri/status/2120888055556948106; https://x.com/ggerganov/status/2121246103312212124; https://huggingface.co/blog/ggml-org/llama-cpp-v1 (2026-11-13); https://github.com/ggml-org/llama.cpp/releases/tag/v1.0.0 (`b1b770d`, nightly b12359); https://github.com/ggml-org/llama.cpp/pull/31533; https://github.com/ggml-org/llama.cpp/pull/30541
 status: aktualne
 ---
 # Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0

@@ -2,7 +2,7 @@
 typ: repo
 tags: [repo, silnik, spekulacja, megakernel]
 aktualizacja: 2026-11-14
-zrodlo: ~/KERNEL/product/research/66b-1cat-tokenspeed.md:53-70,186-194,222-223; https://github.com/lightseekorg/tokenspeed (b941508); https://lightseek.org/blog/tokenspeed-kimi-k3-agentx.html (2026-11-10, Telegram „gpu” 2026-11-14)
+zrodlo: ~/KERNEL/product/research/66b-1cat-tokenspeed.md:53-70,186-194,222-223; https://github.com/lightseekorg/tokenspeed (b941508); https://lightseek.org/blog/tokenspeed-kimi-k3-agentx.html (2026-11-10); https://x.com/zainhas/status/2120806646356295682 (Telegram „gpu” 2026-11-14)
 status: aktualne
 ---
 # TokenSpeed (LightSeek Foundation)

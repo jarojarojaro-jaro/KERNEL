@@ -340,3 +340,6 @@ Na prośbę właściciela (Telegram „gpu”): folder [[llm/_hub|llm]] na treni
 
 ## [2026-11-14] research | Telegram „gpu”: llama.cpp v1.0.0 (ponownie)
 Ten sam link co rano ([[telegram-2026-11-14-pearlquant-llamacpp-v1]], commit `b88ec25`); najnowsze wydanie nadal v1.0.0 (b12359), delta brak. Działania w kolejce bez zmian: K-103, K-013, K-001, K-056.
+
+## [2026-11-14] meta | ZRODLA: adresy x.com dla dwóch wpisów z Telegrama
+Na prośbę właściciela: dopisane URL https://x.com/zainhas/status/2120806646356295682 (TokenSpeed Kimi K3 AgentX, także w [[tokenspeed]]) i https://x.com/ggerganov/status/2121246103312212124 (llama.cpp v1.0.0, także w [[telegram-2026-11-14-pearlquant-llamacpp-v1]]).
