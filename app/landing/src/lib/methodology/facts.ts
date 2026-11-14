@@ -18,7 +18,6 @@ export const GATES_SRC = `KERNEL/qwen-opt/STATUS-NEXT.md:15; ${R}/26-kolejka-gpu
 const Q = SHEET.correctness.quality;
 /** KLD of our engine vs upstream, next to upstream's own run-to-run noise (RTX 3060). */
 export const KLD = [
-	{ id: 'saluki', model: 'Saluki 27B', ours: Q.saluki.ours.v, noise: Q.saluki.noise.v, src: Q.saluki.ours.src },
 	{ id: 'bonsai', model: 'Ternary Bonsai 2 27B', ours: Q.bonsai.ours.v, noise: Q.bonsai.noise.v, src: Q.bonsai.ours.src }
 ];
 

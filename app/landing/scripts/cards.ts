@@ -66,7 +66,6 @@ const CARDS: {
 		heading: '## RTX 3060',
 		scorecard: '3060-20261016',
 		sections: [
-			{ model: 'saluki', heading: '### Underdog Saluki', cols: ['a0', 'a1', 'ours'], before: 'a0', flags: 'a1', ours: 'ours', quant: 'IQ2-mix', scorecardModel: /^Underdog Saluki/, scorecardVariants: { a0: 'A0', a1: 'A1', ours: 'A2t' }, gainRow: '3060 Saluki' },
 			{ model: 'bonsai', heading: '### Ternary Bonsai', cols: ['a0', 'alt', 'a1', 'ours'], before: 'a0', flags: 'a1', ours: 'ours', quant: 'Q2_0 (PQ2_0 repack)', scorecardModel: /^Ternary Bonsai/, scorecardVariants: { a0: 'A0', alt: 'A1', a1: 'A1q', ours: 'A2t' }, gainRow: '3060 Bonsai' }
 		]
 	}
@@ -354,8 +353,8 @@ export function buildCards(sheetPath: string, resultsDir: string): CardsFile {
 	const kldI = find((l) => /KLD nasz vs upstream na 3060/.test(l));
 	const kld = lines[kldI]?.match(/Saluki ([\d.]+), Bonsai ([\d.]+)\).*?\(([\d.]+) \/ ([\d.]+)\)/);
 	if (!kld) fail('KLD line not found');
+	// Underdog Saluki (CC BY-NC 4.0) is off the site (owner, 2026-11-14): only Bonsai's pair is kept.
 	const quality = {
-		saluki: { ours: { v: Number(kld[1]), src: src(kldI) }, noise: { v: Number(kld[3]), src: src(kldI) } },
 		bonsai: { ours: { v: Number(kld[2]), src: src(kldI) }, noise: { v: Number(kld[4]), src: src(kldI) } }
 	};
 	const md5I = find((l) => l.includes('Greedy md5 nasz ≠ upstream'));

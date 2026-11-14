@@ -365,7 +365,7 @@
 					<p class="source">{SHEET.correctness.md5Diff}</p>
 					<p>{t.kldLead}</p>
 					<div class="kld" role="list">
-						{#each [['Saluki 27B', Q.saluki], ['Ternary Bonsai 2 27B', Q.bonsai]] as const as [name, q] (name)}
+						{#each [['Ternary Bonsai 2 27B', Q.bonsai]] as const as [name, q] (name)}
 							<div class="kld-row" role="listitem">
 								<p class="kld-m">{name} <span class="mute">· RTX 3060</span></p>
 								<p class="kld-v"><span class="mono big">{kld(q.ours.v)}</span><span class="k">{t.kldOurs}</span></p>

@@ -20,7 +20,6 @@
 	import ModelMark from '$lib/ModelMark.svelte';
 	import { MODEL_INFO, variantLabel } from '$lib/data/measurements';
 	import { cardsCopy } from './copy';
-	import NvidiaBanner from '$lib/nvidia/NvidiaBanner.svelte';
 	import { GROUPS, headline, heatOf, LINEUP, MEASURED, queueEstimate, splitName, VENDORS } from './explorer';
 	import EstTag from './EstTag.svelte';
 	import Hl from '$lib/home/Hl.svelte';
@@ -45,6 +44,9 @@
 	/* the headline: the maker's best measured card and run, else the first card in the queue */
 	const faceCard = $derived(MEASURED.find((e) => e.id === g.face.id)?.card ?? null);
 	const hd = $derived(faceCard ? headline(faceCard) : null);
+	/* The hero shows the card its number was measured on: that card's own photo, else its render. The
+	   maker photo stands in only while nothing of this maker is measured (Intel, Apple). */
+	const heroPhoto = $derived(g.measured.length ? photoOf(g.face.id) : MAKER_PHOTO[vendor]);
 	const hdTop = $derived(hd ? Math.max(hd.before.decode!.v, hd.ours.decode!.v) : 1);
 	const nextGpu = $derived(g.measured.length ? null : (g.queued[0]?.gpu ?? null));
 	const nextEst = $derived(nextGpu ? (queueEstimate(nextGpu)[0] ?? null) : null);
@@ -99,9 +101,13 @@
 <Seo title={tv.metaTitle(name)} description={tv.metaDescription(name)} jsonld={ld ?? undefined} />
 
 {#snippet product(eager: boolean)}
-	<ProductPhoto id={MAKER_PHOTO[vendor]} sizes="(max-width: 56rem) min(92vw, 34rem), 46vw" {eager}>
-		{#snippet fallback()}<GpuArt label={g.face.label} {vendor} vram={g.face.vram} heat={heatOf(g.face.ratio)} live={onScreen} />{/snippet}
-	</ProductPhoto>
+	{#if heroPhoto}
+		<ProductPhoto id={heroPhoto} sizes="(max-width: 56rem) min(92vw, 34rem), 46vw" {eager}>
+			{#snippet fallback()}<GpuArt label={g.face.label} {vendor} vram={g.face.vram} heat={heatOf(g.face.ratio)} live={onScreen} />{/snippet}
+		</ProductPhoto>
+	{:else}
+		<GpuArt label={g.face.label} {vendor} vram={g.face.vram} heat={heatOf(g.face.ratio)} live={onScreen} />
+	{/if}
 {/snippet}
 
 <VendorTheme {vendor}>
@@ -174,11 +180,6 @@
 			</nav>
 		</div>
 	</section>
-
-	{#if vendor === 'nvidia'}
-		<!-- The maker list is the short view; the results page holds the full table (task decyzja 1). -->
-		<NvidiaBanner {lang} />
-	{/if}
 
 	{#if g.measured.length}
 		<section class="wrap blk" aria-labelledby="v-measured">

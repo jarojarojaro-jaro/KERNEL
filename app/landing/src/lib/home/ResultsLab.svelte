@@ -10,7 +10,7 @@
 	import HeatBar from '$lib/fx/HeatBar.svelte';
 	import RaceLanes from '$lib/fx/RaceLanes.svelte';
 	import SourceTip from '$lib/fx/SourceTip.svelte';
-	import { MODEL_INFO, variantLabel, variantOf, words500 } from '$lib/data/measurements';
+	import { findCard, MODEL_INFO, variantLabel, variantOf, words500 } from '$lib/data/measurements';
 	import { cardsHref, num, type Lang } from '$lib/i18n';
 	import { TOK_PER_WORD } from '$lib/estimator';
 	import { copy } from '$lib/site/copy';
@@ -25,8 +25,8 @@
 	const c = $derived(copy[lang].results);
 	const raceText = $derived(copy[lang].hero.race.text);
 
-	let gpu = $state(CARDS[0].id);
-	let model = $state(CARDS[0].pick.model as string);
+	let gpu = $state('rtx-3090');
+	let model = $state(findCard('rtx-3090')!.pick.model as string);
 	/** Bars and counters rest on the measured values; entering view replays them once from 0. */
 	let seen = $state(false);
 	let rep = $state(0);
@@ -41,7 +41,8 @@
 		if (k && !k.runs.some((r) => r.model === model)) model = k.pick.model;
 	}
 
-	const gpuOptions = CARDS.map((k) => ({ id: k.id, label: k.short, sub: `${k.vramGB} GB` }));
+	/** Only cards with a same-script before/after: a single measured setting has nothing to show here. */
+	const gpuOptions = CARDS.filter((k) => k.runs.some((r) => duel(r)?.ratio)).map((k) => ({ id: k.id, label: k.short, sub: `${k.vramGB} GB` }));
 	const modelOptions = $derived(card.runs.map((r) => ({ id: r.model as string, label: MODEL_STYLE[r.model].short, mark: r.model, sub: r.quant.replace(/\s*\(.*\)$/, '') })));
 
 	const cols = $derived(columns(run));

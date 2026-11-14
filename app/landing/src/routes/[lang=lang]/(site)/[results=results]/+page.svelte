@@ -1,7 +1,6 @@
 <script lang="ts">
 	import CursorGlow from '$lib/fx/CursorGlow.svelte';
 	import ResultsLab from '$lib/home/ResultsLab.svelte';
-	import NvidiaBanner from '$lib/nvidia/NvidiaBanner.svelte';
 	import { BRAND } from '$lib/brand';
 	import { currentLang, resultsHref } from '$lib/i18n';
 	import { copy } from '$lib/site/copy';
@@ -30,7 +29,6 @@
 <CursorGlow />
 
 <div class="page">
-	<NvidiaBanner {lang} id="nv-results-t" />
 	<ResultsLab {lang} />
 </div>
 

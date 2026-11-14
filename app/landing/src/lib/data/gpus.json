@@ -39,6 +39,7 @@
 		{ "id": "rtx-3070", "name": "GeForce RTX 3070", "vendor": "nvidia", "arch": "Ampere sm_86", "vram": 8, "bw": 448, "bwSource": "spec", "lab": null },
 		{ "id": "rtx-3060-ti", "name": "GeForce RTX 3060 Ti", "vendor": "nvidia", "arch": "Ampere sm_86", "vram": 8, "bw": 448, "bwSource": "spec", "lab": null },
 		{ "id": "rtx-3060-12", "name": "GeForce RTX 3060 12GB", "vendor": "nvidia", "arch": "Ampere sm_86", "vram": 12, "bw": 360, "bwSource": "r04", "lab": "in-progress", "labDir": "3060-20261016" },
+		{ "id": "rtx-2080-ti", "name": "GeForce RTX 2080 Ti", "vendor": "nvidia", "arch": "Turing sm_75", "vram": 11, "bw": 616, "bwSource": "spec", "lab": "measured" },
 		{ "id": "gtx-1650", "name": "GeForce GTX 1650", "vendor": "nvidia", "arch": "Turing sm_75", "vram": 4, "bw": 128, "bwSource": "spec", "lab": null },
 		{ "id": "rx-9070-xt", "name": "Radeon RX 9070 XT", "vendor": "amd", "arch": "RDNA4 gfx1201", "vram": 16, "bw": 640, "bwSource": "r04", "lab": "planned" },
 		{ "id": "rx-9070", "name": "Radeon RX 9070", "vendor": "amd", "arch": "RDNA4 gfx1201", "vram": 16, "bw": 640, "bwSource": "spec", "lab": null },

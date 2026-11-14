@@ -60,7 +60,7 @@ export { CARDS };
 /**
  * The hero race cycles through these measured pairs: the run's "before" vs our engine, and only
  * runs where both come from the same script (`sameHarness`). XTX × Qwen (different scripts) and the
- * 3060 runs (Saluki ≈ even, Bonsai: Prism beats us) are never raced.
+ * 3060 runs (Bonsai: Prism beats us) are never raced.
  */
 const PAIR_IDS: [string, ModelKey][] = [
 	// first: a pair whose whole gain is our engine (no speculation), then alternate models

@@ -43,7 +43,7 @@ export interface Variant {
 	scorecard?: { file: string; variant: string; decode: number };
 }
 
-export type ModelKey = 'qwen38' | 'lfm25' | 'saluki' | 'bonsai' | 'nemotron';
+export type ModelKey = 'qwen38' | 'qwen35' | 'lfm25' | 'bonsai' | 'nemotron';
 
 export interface LongCtx {
 	depths: number[];
@@ -81,6 +81,8 @@ export interface Run {
 	longCtx?: LongCtx;
 	kernels?: Kernels;
 	gain?: Gain;
+	/** Column names of this run when they differ from the sheet's (e.g. a better file instead of better flags). */
+	labels?: Partial<Record<VariantKey, { pl: string; en: string }>>;
 }
 
 export interface CardHw {
@@ -109,7 +111,7 @@ export interface CardsFile {
 		md5Diff: string;
 		tbo3090: string;
 		tbo5060: string;
-		quality: Record<'saluki' | 'bonsai', { ours: Num; noise: Num }>;
+		quality: Record<'bonsai', { ours: Num; noise: Num }>;
 	};
 	lfmFormats5060: { file: string; gb: Num; up: Num | null; ours: Num | null; kld: Num; md5Same: boolean | null }[];
 	/** Sheet values that disagree with the cloud scorecard beyond rounding. */

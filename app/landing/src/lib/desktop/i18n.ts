@@ -308,8 +308,8 @@ const pl = {
 		gainSoon: 'wkrótce',
 		qualityTitle: 'Ten sam model, ta sama jakość — zmierzone',
 		qualityBadge: 'KLD w szumie upstreamu',
-		qualityBody: (sOurs: string, sNoise: string, bOurs: string, bNoise: string) =>
-			`Zwykły tryb greedy naszego silnika nie daje dokładnie tego samego tekstu co upstream (łatki 0001/0002/0013: wielokolumnowe MMVQ i fuzja prologu GDN). Dlatego jakość mierzymy KLD. Na RTX 3060 rozbieżność wobec upstreamu mieści się w szumie samego upstreamu: Saluki ${sOurs} przy szumie ${sNoise}, Bonsai ${bOurs} przy ${bNoise}. LFM w formatach QAD-Q4_0 i NVFP4 daje md5 identyczne z upstreamem.`,
+		qualityBody: (bOurs: string, bNoise: string) =>
+			`Zwykły tryb greedy naszego silnika nie daje dokładnie tego samego tekstu co upstream (łatki 0001/0002/0013: wielokolumnowe MMVQ i fuzja prologu GDN). Dlatego jakość mierzymy KLD. Na RTX 3060 rozbieżność wobec upstreamu mieści się w szumie samego upstreamu: Bonsai ${bOurs} przy szumie ${bNoise}. LFM w formatach QAD-Q4_0 i NVFP4 daje md5 identyczne z upstreamem.`,
 		md5Regression: (a: string, b: string, c: string) =>
 			`Greedy md5 to u nas test regresji: po instalacji 70 łatek skróty odpowiedzi są równe zapisanemu wzorcowi naszego silnika (Qwen bez spekulacji ${a}…, z MTP ${b}…, LFM ${c}…). To nie jest zgodność z upstreamem.`,
 		mtpNote:
@@ -813,8 +813,8 @@ const en: DesktopDict = {
 		gainSoon: 'soon',
 		qualityTitle: 'Same model, same quality — measured',
 		qualityBadge: 'KLD within upstream noise',
-		qualityBody: (sOurs: string, sNoise: string, bOurs: string, bNoise: string) =>
-			`In plain greedy mode our engine does not produce exactly the same text as upstream (patches 0001/0002/0013: multi-column MMVQ and the fused GDN prologue). So we measure quality with KLD. On the RTX 3060 the divergence from upstream stays within upstream’s own noise: Saluki ${sOurs} with noise ${sNoise}, Bonsai ${bOurs} with ${bNoise}. LFM in the QAD-Q4_0 and NVFP4 formats gives an md5 identical to upstream.`,
+		qualityBody: (bOurs: string, bNoise: string) =>
+			`In plain greedy mode our engine does not produce exactly the same text as upstream (patches 0001/0002/0013: multi-column MMVQ and the fused GDN prologue). So we measure quality with KLD. On the RTX 3060 the divergence from upstream stays within upstream’s own noise: Bonsai ${bOurs} with noise ${bNoise}. LFM in the QAD-Q4_0 and NVFP4 formats gives an md5 identical to upstream.`,
 		md5Regression: (a: string, b: string, c: string) =>
 			`For us, greedy md5 is a regression test: after installing the 70 patches the answer hashes equal our engine’s stored reference (Qwen without speculation ${a}…, with MTP ${b}…, LFM ${c}…). That is not identity with upstream.`,
 		mtpNote:

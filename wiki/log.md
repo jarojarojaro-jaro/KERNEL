@@ -359,5 +359,5 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 ## [2026-11-14] llm | Telegram „gpu”: techniki PEFT
 [[peft-lora-warianty]]: ściąga LoRA / LoRA-FA / VeRA / Delta-LoRA / LoRA+ (prace źródłowe zweryfikowane na arXiv) w sekcji [[llm/_hub|llm]]; lekcja: metoda PEFT zmienia koszt treningu, a koszt inferencji zależy od scalenia adaptera. Bez testu na karcie.
 
-## [2026-11-14] produkt | Strona NVIDIA: przegląd przed publikacją
-[[strona-wynikow-nvidia]]: gałąź `nvidia-2026-11` scalona z `main`; nagłówek z oboma porównaniami (2,4× / +47%), poprawki układu, baner na Wynikach, licencje HF 14.11 bez zmian. Podgląd dla właściciela; publikacja po jego „tak”.
+## [2026-11-14] produkt | Karty NVIDIA z kampanii 67 na stronie
+[[karty-nvidia-na-stronie]]: właściciel odrzucił osobną stronę z tabelą 11 kart; każda karta dostaje stronę jak RTX 3090 (5090, 4090, 5080, 4070, 2080 Ti, 3080, 3070 nowe, 3060 z nowymi danymi). Underdog Saluki (CC BY-NC) usunięty ze strony. Kciuk wyboru karty na Wynikach naprawiony dla wielu rzędów.

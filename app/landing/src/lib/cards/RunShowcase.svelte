@@ -28,7 +28,8 @@
 	const d = $derived(duel(run));
 	const info = $derived(MODEL_INFO[run.model]);
 	const isPick = $derived(card.pick.model === run.model);
-	const bonsai = $derived(run.model === 'bonsai');
+	/** Another fork beats our engine on this run (the October Bonsai sheet): say so instead of a ratio. */
+	const forkFaster = $derived((variantOf(run, 'alt')?.decode?.v ?? 0) > (variantOf(run, run.ours)?.decode?.v ?? Infinity));
 	const hasGain = $derived(!!(run.gain?.flags && run.gain.engine && run.gain.total));
 
 
@@ -42,12 +43,12 @@
 
 
 	/* ---- race ---- */
-	const raceKeys = $derived<VariantKey[]>(bonsai ? ['a1', 'ours', 'alt'] : [run.before, run.ours]);
+	const raceKeys = $derived<VariantKey[]>(forkFaster ? ['a1', 'ours', 'alt'] : [...new Set([run.before, run.ours])]);
 	const lanes = $derived<Lane[]>(
 		raceKeys
 			.map((k) => ({ k, v: variantOf(run, k) }))
 			.filter((x) => x.v?.decode)
-			.map(({ k, v }) => ({ id: k, label: variantLabel(run, k)[lang], sub: k === 'alt' ? undefined : run.quant, tps: v!.decode!.v, hot: k === run.ours }))
+			.map(({ k, v }) => ({ id: k, label: variantLabel(run, k)[lang], sub: k === 'alt' || (run.labels && k !== run.ours) ? undefined : run.quant, tps: v!.decode!.v, hot: k === run.ours }))
 	);
 	const summary = $derived(`${lanes.map((l) => `${l.label}: ${num(l.tps, lang)} t/s`).join(', ')}. ${run.metric[lang]}`);
 
@@ -122,7 +123,7 @@
 	const checks = $derived(SHEET.checks.filter((c) => c.card === card.id && c.model === run.model));
 	const formats = $derived(card.id === 'rtx-5060-ti-16' && run.model === 'lfm25' ? SHEET.lfmFormats5060.filter((f) => f.up && f.ours) : []);
 	const q = SHEET.correctness.quality;
-	const kldMax = Math.max(...(['saluki', 'bonsai'] as const).flatMap((m) => [q[m].ours.v, q[m].noise.v]));
+	const kldMax = Math.max(...(['bonsai'] as const).flatMap((m) => [q[m].ours.v, q[m].noise.v]));
 
 	/*
 	 * Each counter, bar and race plays when its tile enters the view. At rest (SSR, reduced motion,
@@ -135,7 +136,7 @@
 	const condChips = $derived(run.conditions[lang].split(/;\s*|,\s*(?![^()]*\))/).filter(Boolean));
 	const barSrc = $derived(bars.flatMap((v) => [v.decode!.src, ...(v.scorecard ? [`${v.scorecard.file} (${v.scorecard.variant}: ${v.scorecard.decode})`] : [])]));
 	const barNote = $derived(`${run.sameHarness ? bars.map((v) => hintNote(v.key)).join(' · ') + ' · ' : ''}${run.metric[lang]}`);
-	const hintNote = (k: VariantKey) => (bonsai ? variantLabel(run, k)[lang] : `${variantLabel(run, k)[lang]}: ${hint(k)[lang]}`);
+	const hintNote = (k: VariantKey) => (forkFaster ? variantLabel(run, k)[lang] : `${variantLabel(run, k)[lang]}: ${hint(k)[lang]}`);
 </script>
 
 <article class="block" id="model-{run.model}" style="--mc:{MODEL_STYLE[run.model].color}" aria-labelledby="mh-{run.model}">
@@ -160,17 +161,19 @@
 			<h4 id="speed-{run.model}" class="eyebrow">{t.speed}</h4>
 			<div class="speed-in">
 				<div class="speed-head">
-					{#if bonsai}
+					{#if forkFaster}
 						<p class="honest-title">{t.bonsaiTitle}</p>
 					{:else if d?.ratio}
 						<p class="ratio">
 							<Ratio value={d.ratio} {lang} size="xl" replay={speed.n} />
 							<span class="rw">{t.faster}</span>
 						</p>
+					{:else if run.before === run.ours}
+						<p class="honest-title">{t.measuredOnly}</p>
 					{:else}
 						<p class="warn mono">{t.scriptsWarn}</p>
 					{/if}
-					<p class="fine sub">{run.sameHarness ? t.speedLede : run.metric[lang]}</p>
+					<p class="fine sub">{run.before === run.ours ? t.measuredOnlyBody : run.sameHarness ? t.speedLede : run.metric[lang]}</p>
 					{#if run.note}
 						<details class="honest">
 							<summary class="mono">{t.honestMore}</summary>
@@ -312,7 +315,7 @@
 							<h4 id="long-{run.model}" class="h hx-h">{t.longCtx}</h4>
 							<SourceTip {lang} src={[...new Set([...long.up.map((n) => n.src), ...long.ours.map((n) => n.src)])]} note="{t.longCtxLede}{long.kv ? ` ${long.kv}.` : ''}" />
 						</div>
-						<LongCtxChart depths={long.depths} up={long.up} ours={long.ours} {lang} title="{t.longCtx}, {info.name}" labels={{ up: bonsai ? variantLabel(run, run.flags)[lang] : t.upstream, ours: t.ours, depth: t.depth }} />
+						<LongCtxChart depths={long.depths} up={long.up} ours={long.ours} {lang} title="{t.longCtx}, {info.name}" labels={{ up: forkFaster ? variantLabel(run, run.flags)[lang] : t.upstream, ours: t.ours, depth: t.depth }} />
 					</div>
 				{/if}
 
@@ -354,7 +357,7 @@
 					<p class="badge-q"><span class="chk" aria-hidden="true">✓</span> {t.quality}</p>
 					<h4 id="q-{run.model}" class="sr-only">{t.honesty}</h4>
 					<dl class="kld">
-						{#each ['saluki', 'bonsai'] as const as m (m)}
+						{#each ['bonsai'] as const as m (m)}
 							<div class="kpair">
 								<dt class="mono"><ModelMark model={m} /> {MODEL_STYLE[m].short}</dt>
 								<dd>
@@ -371,7 +374,7 @@
 					{#if KLD_PENDING.includes(run.model)}<p class="pending mono">{t.kldPending(MODEL_STYLE[run.model].short)}</p>{/if}
 					<p class="row-links">
 						{#if !SITE_PUBLIC}<a href={href(lang, '/methodology#quality')}>{t.methodology} →</a>{/if}
-						<SourceTip {lang} src={[SHEET.correctness.md5Diff, q.saluki.ours.src]} note={t.qualityBody} />
+						<SourceTip {lang} src={[SHEET.correctness.md5Diff, q.bonsai.ours.src]} note={t.qualityBody} />
 					</p>
 				</div>
 			</div>

@@ -16,6 +16,12 @@
 
 	let root: HTMLDivElement | undefined = $state();
 	const idx = $derived(Math.max(0, options.findIndex((o) => o.id === value)));
+	/* Up to 6 options sit in one row; more wrap into rows of equal width. The thumb is one cell of
+	   that grid, so it must know the row count too (5 options on a phone = 3 rows, not 2). */
+	const dc = $derived(options.length <= 6 ? options.length : Math.ceil(options.length / 2));
+	const grid = $derived(
+		`--n:${options.length}; --i:${idx}; --dc:${dc}; --dcol:${idx % dc}; --drow:${Math.floor(idx / dc)}; --drows:${Math.ceil(options.length / dc)}; --col:${idx % 2}; --row:${Math.floor(idx / 2)}; --rows:${Math.ceil(options.length / 2)}`
+	);
 
 	async function key(e: KeyboardEvent) {
 		const n = options.length;
@@ -32,7 +38,7 @@
 	}
 </script>
 
-<div bind:this={root} class="seg seg--{size}" role="radiogroup" aria-label={label} tabindex="-1" onkeydown={key} style="--n:{options.length}; --i:{idx}; --col:{idx % 2}; --row:{Math.floor(idx / 2)}">
+<div bind:this={root} class="seg seg--{size}" role="radiogroup" aria-label={label} tabindex="-1" onkeydown={key} style={grid}>
 	<span class="thumb" aria-hidden="true"></span>
 	{#each options as o, i (o.id)}
 		<button type="button" role="radio" aria-checked={i === idx} tabindex={i === idx ? 0 : -1} onclick={() => (value = o.id)}>
@@ -46,7 +52,7 @@
 	.seg {
 		position: relative;
 		display: grid;
-		grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+		grid-template-columns: repeat(var(--dc), minmax(0, 1fr));
 		padding: 5px;
 		border: 1px solid var(--line);
 		border-radius: var(--r-lg);
@@ -60,9 +66,9 @@
 	.thumb {
 		position: absolute;
 		top: 5px;
-		bottom: 5px;
 		left: 5px;
-		width: calc((100% - 10px) / var(--n));
+		width: calc((100% - 10px) / var(--dc));
+		height: calc((100% - 10px) / var(--drows));
 		border-radius: calc(var(--r-lg) - 4px);
 		/* selected = bone fill: heat colour is reserved for speed */
 		background: linear-gradient(180deg, #f4f1ea, #dcd8cf);
@@ -70,7 +76,7 @@
 			0 1px 0 rgb(255 255 255 / 0.6) inset,
 			0 8px 22px -10px rgb(237 234 227 / 0.45),
 			0 2px 6px rgb(0 0 0 / 0.6);
-		transform: translate3d(calc(var(--i) * 100%), 0, 0);
+		transform: translate3d(calc(var(--dcol) * 100%), calc(var(--drow) * 100%), 0);
 		transition: transform 0.45s var(--ease-spring);
 		z-index: -1;
 	}
@@ -133,8 +139,7 @@
 		}
 		.seg--lg .thumb {
 			width: calc((100% - 10px) / 2);
-			height: calc((100% - 10px) / 2);
-			bottom: auto;
+			height: calc((100% - 10px) / var(--rows));
 			transform: translate3d(calc(var(--col) * 100%), calc(var(--row) * 100%), 0);
 		}
 		/* long model names: stack the options vertically */
@@ -150,7 +155,6 @@
 		.seg--md .thumb {
 			width: calc(100% - 10px);
 			height: calc((100% - 10px) / var(--n));
-			bottom: auto;
 			transform: translate3d(0, calc(var(--i) * 100%), 0);
 		}
 	}

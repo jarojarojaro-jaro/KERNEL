@@ -25,7 +25,7 @@
 	const where = findCard('rtx-3060-12')?.name ?? '';
 	const where5060 = findCard('rtx-5060-ti-16')?.name ?? '';
 
-	const ours = (['saluki', 'bonsai'] as const).map((k) => ({ k, name: MODEL_INFO[k].name, ...q[k] }));
+	const ours = (['bonsai'] as const).map((k) => ({ k, name: MODEL_INFO[k].name, ...q[k] }));
 	/** The smallest format change with a same-text check: QAD-Q4_0 vs Q8_0 on LFM2.5. */
 	const fmt = SHEET.lfmFormats5060.filter((r) => r.md5Same !== null).reduce((a, b) => (b.kld.v < a.kld.v ? b : a));
 	const fmtName = fmt.file.replace(/\s*\(.*\)$/, '');

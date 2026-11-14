@@ -229,8 +229,8 @@
 		<h2 id="q-h" class="h3">{r.qualityTitle}</h2>
 		<span class="badge badge--ok">{r.qualityBadge}</span>
 	</div>
-	<p>{r.qualityBody(kld(Q.saluki.ours.v), kld(Q.saluki.noise.v), kld(Q.bonsai.ours.v), kld(Q.bonsai.noise.v))}</p>
-	<Src src={[SHEET.correctness.md5Diff, Q.saluki.ours.src]} />
+	<p>{r.qualityBody(kld(Q.bonsai.ours.v), kld(Q.bonsai.noise.v))}</p>
+	<Src src={[SHEET.correctness.md5Diff, Q.bonsai.ours.src]} />
 	<p class="small">{r.md5Regression(MD5.qwenPlain, MD5.qwenMtp, MD5.lfm)}</p>
 	<p class="notice notice--info"><span class="notice__icon" aria-hidden="true">i</span><span>{r.mtpNote}</span></p>
 	<Src src={MD5_SRC} />
@@ -240,7 +240,7 @@
 		<div class="disclosure__body details">
 			<p class="small">{r.kldIntro}</p>
 			<ul class="kld">
-				{#each KLD_EXCEPTIONS as k (k.source)}
+				{#each KLD_EXCEPTIONS as k, i (i)}
 					<li>
 						<strong>{k.what[lang]}</strong>
 						<span class="num small">{k.result[lang]}</span>

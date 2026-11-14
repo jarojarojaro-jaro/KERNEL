@@ -168,7 +168,7 @@ const raw = {
 			fmtSub: 'LFM2.5: {fmt} wobec Q8_0',
 			times: 'większa różnica',
 			zoomTitle: 'to samo miejsce w powiększeniu',
-			caption: 'Skala liniowa. Miara: KLD, czyli o ile różnią się prawdopodobieństwa kolejnego słowa (0 = identycznie). Szum llama.cpp: ten sam llama.cpp z inną wielkością paczki (ubatch 256 i 512). Saluki i Bonsai mierzone na {card}; zmiana formatu to inny model (LFM2.5 na {card2}), pokazany dla skali.',
+			caption: 'Skala liniowa. Miara: KLD, czyli o ile różnią się prawdopodobieństwa kolejnego słowa (0 = identycznie). Szum llama.cpp: ten sam llama.cpp z inną wielkością paczki (ubatch 256 i 512). Bonsai mierzony na {card}; zmiana formatu to inny model (LFM2.5 na {card2}), pokazany dla skali.',
 			same: {
 				title: 'Przyspieszenia nie zmieniają tekstu',
 				note: 'Włączone czy wyłączone, dają przy wyborze zachłannym ten sam tekst, bit w bit (testy md5). Od llama.cpp różni nas tylko kolejność części mnożeń, na poziomie szumu; stąd KLD.',
@@ -400,7 +400,7 @@ const raw = {
 			fmtSub: 'LFM2.5: {fmt} vs Q8_0',
 			times: 'bigger difference',
 			zoomTitle: 'the same spot, magnified',
-			caption: 'Linear scale. Metric: KLD, how much the next-word probabilities differ (0 = identical). llama.cpp noise: the same llama.cpp with a different batch size (ubatch 256 vs 512). Saluki and Bonsai measured on the {card}; the format change is another model (LFM2.5 on the {card2}), shown for scale.',
+			caption: 'Linear scale. Metric: KLD, how much the next-word probabilities differ (0 = identical). llama.cpp noise: the same llama.cpp with a different batch size (ubatch 256 vs 512). Bonsai measured on the {card}; the format change is another model (LFM2.5 on the {card2}), shown for scale.',
 			same: {
 				title: 'Speed-ups don’t change the text',
 				note: 'On or off, they give the same greedy text, bit for bit (md5 checks). We differ from llama.cpp only in the order of some multiplications, at noise level; hence KLD.',

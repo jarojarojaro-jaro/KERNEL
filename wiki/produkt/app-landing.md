@@ -26,7 +26,7 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 - [[2026-10-21-enigma-labz]].
 
 ## Aktualizacja 2026-11-09
-- Nowa trasa `/pl/nvidia/` i `/en/nvidia/`: [[strona-wynikow-nvidia]].
+- Karty NVIDIA z kampanii 67 jako zmierzone strony kart: [[karty-nvidia-na-stronie]].
 
 ## Powiązane
 - [[produkt/_hub|produkt]]

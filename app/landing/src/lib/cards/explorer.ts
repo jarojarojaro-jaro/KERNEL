@@ -42,6 +42,8 @@ export interface Duel {
 }
 
 export function duel(run: RunView): Duel | null {
+	// One measured setting (no engine for this card yet): nothing to compare, no ratio.
+	if (run.ours === run.before) return null;
 	const before = variantOf(run, run.before);
 	const ours = variantOf(run, run.ours);
 	if (!before?.decode || !ours?.decode) return null;
