@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, rekordy, wyniki]
-aktualizacja: 2026-11-09
+aktualizacja: 2026-11-14
 zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5-13; ~/KERNEL/qwen-opt/NOTES.md:322,331,339,354,368,375,397; ~/qwen-opt/spec_sweep.jsonl (wiersze podane w tabelach); ~/KERNEL/product/research/16b-lookup-tail.md; ~/KERNEL/product/research/16f-xtx-szybkie.md; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md; ~/KERNEL/product/research/16c-kvq-cuda.md; ~/KERNEL/product/research/16e-kwanty-kld.md; ~/KERNEL/product/research/14-nemotron-3090.md; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md; ~/KERNEL/product/research/20-build-topka.md:15-17,61-68,82-84; ~/qwen-opt/topka/logs/copy_bench.jsonl; ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:44-86; ~/KERNEL/product/research/24p-sprzezone-t1.md:31-32; ~/KERNEL/product/research/27-3090-final.md:20-33,59-68,168; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; ~/qwen-opt/queue/logs/hg-mvs.log:2,5; ~/KERNEL/product/research/29-4060ti.md:56-81; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:10; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:44-47; ~/KERNEL/product/research/{31-*,37,38,43,45}*.md; ~/qwen-opt/cloud/results/nv67c-summary.txt
 status: aktualne
 ---
@@ -23,7 +23,8 @@ Skrypty: **spec_sweep** = serwer, 6 promptów PL/EN × 3 seedy (1–3), T=1, 400
 | spec_sweep per prompt | pl-proza 99.8, pl-tech 118.6, **pl-kod 125.3**, en-chat 87.8, en-tech 108.1, en-code 110.0 t/s | 2026-10-15 | j.w. | `spec_sweep.jsonl:189` | tak |
 | spec_sweep, run 4 bit-exact (porównanie) | prod 107.7 / 107.6, nowe drzewo 109.0, bitexact 108.3 t/s | 2026-10-17 | `365af3e5e`, ABBA | `12-bit-exact-spekulacja.md:325` | nie (bitexact) |
 | spec_sweep, wariant poza produkcją | DRAFT_N=6: 111.0 (pl-kod 124.7); DRAFT_N=5: 111.7 | 2026-10-13/14 | przed PM4, inne n | `spec_sweep.jsonl:113,86` | nie |
-| decode MTP, prompt 1.7k (T=0) | **130.2 t/s** | 2026-10-14 | long_ctx_bench, przed PM4, KV draftu q4_0 | `NOTES.md:331` | był (nie powtarzane po PM4) |
+| decode MTP, prompt 1.7k (T=0) | 130.2 t/s | 2026-10-14 | long_ctx_bench, przed PM4, KV draftu q4_0 | `NOTES.md:331` | był (zastąpione 2026-11-14, wiersz niżej) |
+| decode MTP, prompt 1.7k (T=0, 256 tok., restore slotu) | **133.9 t/s** (świeży prefill 130.4); bez PM4 125.2 / 122.6 (PM4 +6.4%) | 2026-11-14 | topka-q70 produkcyjna (`run-topka.sh uncensored`, eco 2200), `k001.py` na porcie testowym | [[2026-11-14-k001-wyciek-stanu-restore]]; `qwen-opt/k001/res/xtxbench.log` | tak |
 | decode MTP 6.6k / 29.5k / 94k | 118.5 / 105.2 / **100.6 t/s** | 2026-10-14 | j.w. | `NOTES.md:331` | był |
 | decode MTP, prompt 27 327 tok. | 113.2 t/s (nowe drzewo), prod 111.85 | 2026-10-17 | `365af3e5e`, T=0, 256 tok. | `12-bit-exact-spekulacja.md:326` | prod 111.85 tak |
 | prefill fill 255k (final mode, serwer) | **493.4 t/s** (516.8 s; baseline 466.3 t/s) | 2026-11-09 | `run-topka.sh uncensored`, Uncensored Q4_K_M, ctx 262144, KV q4_0, eco 2200, `GGML_HIP_FA_D256_VAR=83` (`~/wt/fa-d256` 32292cc0a), md5 = | `~/qwen-opt/fa-d256/res/fill.txt`; [[2026-11-08-fa-d256-prefill]] | tak od 2026-11-09 (topka-q70: 492.5 t/s, 517.7 s; [[2026-11-09-wdrozenie-topka-q70]]) |

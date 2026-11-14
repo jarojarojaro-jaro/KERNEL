@@ -373,3 +373,6 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 
 ## [2026-11-14] eksperyment | K-103 na Vast (RTX 5060 Ti)
 [[2026-11-14-k103-llamacpp-v1-nvidia]]: llama.cpp v1.0.0 vs pin b11856, Qwen3.8-27B ISTA IQ3_XXS-mtp MTP n2: spec_sweep T=1 43,95 → 45,6 t/s (+3,5%, ABBA), przebieg weryfikacji ub 8 +12,1%, ub 16 +9,8%; brak regresji b12110. Koszt ~0,10 USD, 0 instancji. Nowa K-105 (szersza weryfikacja, 24/32 GB, decyzja o pinie).
+
+## [2026-11-14] rekord | decode 1,7k na produkcji (PM4)
+[[REKORDY]]: decode MTP 1,7k T=0 topka-q70 133,9 t/s (świeży prefill 130,4; bez PM4 125,2/122,6 → PM4 +6,4%), zastępuje 130,2 z 2026-10-14. PM4 jest w produkcji od 2026-10-21 (`run-topka.sh`: `GGML_HIP_PM4=1 WA=2 GUARD=1`), nic do wdrożenia.
