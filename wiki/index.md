@@ -78,6 +78,7 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-11-14 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
 - 2026-11-14 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
+- 2026-11-14 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne i zwiad]]
 - 2026-11-14 [[tokenspeed|TokenSpeed (LightSeek Foundation)]]
 - 2026-11-14 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
 - 2026-11-14 [[otwarte-decyzje-techniczne|Otwarte decyzje techniczne (silnik, flagi, wydatki)]]
@@ -90,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-14 [[2026-11-14-k104-krotki-ogon-promptu|2026-11-14: K-104 — krótki ogon promptu w jednym przebiegu: KILL (0 ms zysku, zmienia md5, −5,5% dekodu)]]
 - 2026-11-14 [[2026-11-14-k103-llamacpp-v1-nvidia|2026-11-14: K-103 — llama.cpp v1.0.0 vs pin Enigmy b11856 na RTX 5060 Ti (Qwen3.8-27B ISTA IQ3_XXS-mtp, MTP n2)]]
 - 2026-11-14 [[2026-11-14-k002-k003-k013-xtx|2026-11-14: K-002, K-003, K-013 na XTX (topka-q70, eco 2200)]]
-- 2026-11-14 [[2026-11-14-k001-wyciek-stanu-restore|2026-11-14: K-001 — „wyciek stanu” przy restore to zależność od historii serwera, nie od lookupu, sprzężenia ani PM4]]
 
 Razem 749 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -3,6 +3,7 @@
   "report_min_score": 20,
   "digest_days": 7,
   "top_items": 12,
+  "report_section_max": 10,
   "first_run_days": 14,
 
   "cards": [
@@ -127,7 +128,10 @@
       {"slug": "jundot/omlx",                     "tier": "B", "name": "oMLX (Lightning MTP, DFlash, Splash; R60b)"},
       {"slug": "Generated-Computers/Locals",      "tier": "C", "name": "Locals (MLX, GDN decode, gramatyka na GPU; R60b)"},
       {"slug": "Layr-Labs/cudafast-bonsai2-9b-engine", "tier": "A", "name": "cuda.fast Bonsai 2 9B (llama.cpp CUDA: GDN lazy rollback, weryfikacja DFlash15; R60b)"},
-      {"slug": "Layr-Labs/mlxfast-bonsai2-9b-engine",  "tier": "B", "name": "mlx.fast Bonsai 2 9B (drzewo 15 węzłów, delta replay GDN; R60b)"}
+      {"slug": "Layr-Labs/mlxfast-bonsai2-9b-engine",  "tier": "B", "name": "mlx.fast Bonsai 2 9B (drzewo 15 węzłów, delta replay GDN; R60b)"},
+      {"slug": "NVIDIA/TensorRT-LLM",             "tier": "B", "name": "TensorRT-LLM (NVIDIA, kernele i spekulacja na CUDA)"},
+      {"slug": "mlc-ai/mlc-llm",                  "tier": "B", "name": "MLC LLM (TVM, ROCm/Vulkan/Metal)"},
+      {"slug": "EricLBuehler/mistral.rs",         "tier": "B", "name": "mistral.rs (Rust, CUDA/Metal, kwanty ISQ)"}
     ],
     "keywords": ["rocm", "hip", "gfx11", "gfx1100", "gfx12", "rdna", "radeon", "7900", "r9700", "vulkan",
                  "sm_86", "sm_89", "sm_120", "3090", "4090", "5090", "5060", "mtp", "speculative", "spec-", "draft",
@@ -149,6 +153,61 @@
      "licence": "CC BY 4.0", "attribution": "Dane: LLM Configurator (llmconfigurator.com, Jakub Rusinowski), CC BY 4.0; pierwotne źródło wiersza w linku.",
      "w": 0.5, "daily_max": 1}
   ],
+
+  "research_keywords": [
+    ["speculative decod\\w*|draft(er| model)s?\\b|\\bmtp\\b|multi-token prediction|\\beagle-?\\d?\\b|\\bmedusa\\b|lookahead decoding|dflash", 12],
+    ["kv[- ]cache", 10],
+    ["attention kernels?|flash-?attention|paged ?attention|flashinfer|flash-?decoding", 10],
+    ["llama\\.cpp|\\bgguf\\b|\\bggml\\b", 15],
+    ["\\brocm\\b|\\bhip\\b|\\brdna ?\\d?\\b|gfx1[012]\\d\\d|\\bradeon\\b|amd gpus?|\\bmi[234]\\d\\dx?\\b", 12],
+    ["consumer gpus?|single gpu|\\brtx ?\\d{4}|on-device|edge devices?|local inference|laptop", 10],
+    ["cuda kernels?|\\bgemv\\b|\\bgemm\\b|kernel fusion|fused kernels?|megakernel|persistent kernel|\\btriton\\b|cutlass|tensor cores?", 8],
+    ["\\bmoe\\b|mixture[- ]of[- ]experts", 8],
+    ["quantiz\\w*", 6],
+    ["\\b(int4|int8|fp4|fp8|nvfp4|mxfp4|w4a16|w4a8|[1-4]-bit)\\b", 4],
+    ["\\bqwen|\\bgemma\\b|\\blfm\\d?|gpt-oss|deepseek|\\bmistral\\b|nemotron", 4],
+    ["\\blora\\b|\\bpeft\\b|fine-?tun\\w*|distill\\w*", 4],
+    ["\\binference\\b|\\bserving\\b|\\bdecod(e|ing)\\b|throughput|latency|tokens?/s", 3]
+  ],
+
+  "arxiv": {
+    "api": "https://export.arxiv.org/api/query",
+    "categories": ["cs.LG", "cs.DC", "cs.PF", "cs.AR", "cs.CL"],
+    "query_terms": ["speculative decoding", "KV cache", "quantization kernel", "attention kernel", "MoE inference",
+                    "llama.cpp", "GGUF", "ROCm", "HIP", "CUDA kernel", "LLM inference", "LLM serving", "inference serving",
+                    "multi-token prediction", "consumer GPU"],
+    "page_size": 100,
+    "max_pages": 4,
+    "spacing_s": 3.0,
+    "first_days": 3,
+    "overlap_days": 3,
+    "max_days": 10,
+    "seen_days": 60,
+    "min_strong": 8,
+    "min_score": 14,
+    "code_bonus": 5,
+    "max_score": 60
+  },
+
+  "rss": {
+    "first_days": 7,
+    "max_age_days": 30,
+    "min_strong": 8,
+    "min_score": 14,
+    "all_base": 15,
+    "max_score": 50,
+    "feeds": [
+      {"name": "vLLM blog",            "url": "https://vllm.ai/blog/atom.xml",              "home": "https://vllm.ai/blog",                     "w": 1.0, "all": true},
+      {"name": "Tri Dao",              "url": "https://tridao.me/feed.xml",                 "home": "https://tridao.me",                        "w": 1.0, "all": true},
+      {"name": "PyTorch blog",         "url": "https://pytorch.org/feed/",                  "home": "https://pytorch.org/blog",                 "w": 1.0},
+      {"name": "ROCm blogs (AMD)",     "url": "https://rocm.blogs.amd.com/blog/atom.xml",   "home": "https://rocm.blogs.amd.com",               "w": 1.0},
+      {"name": "NVIDIA Technical Blog","url": "https://developer.nvidia.com/blog/feed",     "home": "https://developer.nvidia.com/blog",        "w": 0.8},
+      {"name": "Hugging Face blog",    "url": "https://huggingface.co/blog/feed.xml",       "home": "https://huggingface.co/blog",              "w": 0.8},
+      {"name": "Together AI blog",     "url": "https://www.together.ai/blog/rss.xml",       "home": "https://www.together.ai/blog",             "w": 0.8},
+      {"name": "Modular blog",         "url": "https://www.modular.com/blog/rss.xml",       "home": "https://www.modular.com/blog",             "w": 0.7},
+      {"name": "Chips and Cheese",     "url": "https://chipsandcheese.com/feed/",           "home": "https://chipsandcheese.com",               "w": 0.7}
+    ]
+  },
 
   "hf": {
     "authors": ["unsloth", "bartowski", "ggml-org", "ISTA-DASLab", "agentionai", "YTan2000"],

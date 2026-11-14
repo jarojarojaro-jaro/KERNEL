@@ -385,3 +385,6 @@ K-103: zysk przy MTP n2 to +3,8% (mediany 43,95 → 45,62 t/s; parami +3,5 / +4,
 
 ## [2026-11-14] eksperyment | K-104 KILL, K-013 build w toku
 [[2026-11-14-k104-krotki-ogon-promptu]]: `LLAMA_SERVER_SHORT_TAIL=32` — prompt krótkiej tury 148,7 → 148,5 ms (0%), zmienia md5, decode 1,7k 135,4 → 128,0 t/s → odrzucone; nic nie wdrożone. K-013: build upstream few-row MMQ HIP (6ad15f48) dla gfx1100 i automatyczny pomiar V(w) w kolejce po buildzie (odłączone).
+
+## [2026-11-14] update | Zwiad: compwatch na serwerze 24/7 + arXiv i blogi RSS
+[[raport-watch-compwatch]]: compwatch przeniesiony na serwer bez GPU (timer systemd 06:30, `Persistent=true`, `nice 15`, `CPUQuota=50%`); błąd jednego źródła nie kończy przebiegu. Nowe źródła: TensorRT-LLM, MLC LLM, mistral.rs (tier B), arXiv (`cs.LG/DC/PF/AR/CL`, 1 zapytanie na 3 s, duplikaty po id), 9 blogów RSS/Atom. Raport z nowościami → wiadomość `[Zwiad · data]` dla sesji Kernel; próba 14.11: 87 pozycji (przebieg bazowy) w 47 s, drugi przebieg 0 nowych.
