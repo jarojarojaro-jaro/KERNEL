@@ -165,18 +165,30 @@ describe('recommend on typical machines', () => {
     }
   });
 
-  test('12 GB: Ternary Bonsai 2 PTQ1_0 + MTP on prism (Apache-2.0); Saluki (CC BY-NC) is an alternative only', () => {
+  test('12 GB: Ternary Bonsai 2 (Apache-2.0): PTQ1_0 + MTP on prism (Linux), Q2_0 on plain llama.cpp elsewhere', () => {
     const r = recommend(nvCard('RTX 4070', 12282, 'sm_89'));
     expect(r.pick).toMatchObject({ modelId: 'bonsai2-27b-mtp', quant: 'PTQ1_0', ctx: 208896, ub: 256, mtpEngine: 'enigma-cuda-prism' });
     expect(r.pick?.why.some((w) => w.startsWith('license_conditional'))).toBe(false);
-    expect(CATALOG.licenses['cc-by-nc-4.0']?.commercial).toBe('conditional');
     expect(recommend(nvCard('RTX 3060', 12288, 'sm_86')).pick).toMatchObject({ modelId: 'bonsai2-27b-mtp', ctx: 204800, ub: 256 });
+    for (const [name, mib, arch] of [['RTX 4070', 12282, 'sm_89'], ['RTX 3060', 12288, 'sm_86']] as const) {
+      expect(recommend({ ...nvCard(name, mib, arch), os: 'windows' }).pick).toMatchObject({ modelId: 'bonsai2-27b', quant: 'Q2_0' });
+      // Linux, upstream engine: the measured full fill (campaign 67c) is offered as the plain alternative
+      expect(recommend(nvCard(name, mib, arch)).alternatives.find((a) => a.modelId === 'bonsai2-27b')).toMatchObject({ quant: 'Q2_0', ctx: 196608 });
+    }
   });
 
-  test('11 GB (2080 Ti): Saluki does not reach 131072; Bonsai 2 PTQ1_0 + MTP on prism at the measured 155648', () => {
+  test('Saluki (CC BY-NC 4.0) is gone: no catalog entry, no non-commercial licence, never ranked (owner, 2026-11-14)', () => {
+    expect(CATALOG.models.some((m) => /saluki/i.test(m.id))).toBe(false);
+    expect(Object.values(CATALOG.licenses).some((l) => l.commercial === 'conditional' && /BY-NC/i.test(l.name))).toBe(false);
+    for (const hw of [...Object.values(MACHINES), nvCard('RTX 4070', 12282, 'sm_89'), nvCard('RTX 3060', 12288, 'sm_86')]) {
+      const r = recommend(hw);
+      expect([r.pick, ...r.alternatives, ...r.rejected].some((x) => x && /saluki/i.test(x.modelId))).toBe(false);
+    }
+  });
+
+  test('11 GB (2080 Ti): Bonsai 2 PTQ1_0 + MTP on prism at the measured 155648', () => {
     const r = recommend(nvCard('RTX 2080 Ti', 11264, 'sm_75'));
     expect(r.pick).toMatchObject({ modelId: 'bonsai2-27b-mtp', backend: 'cuda', ctx: 155648, ub: 512, mtpEngine: 'enigma-cuda-prism' });
-    expect(r.rejected.find((x) => x.modelId === 'saluki-27b')?.reason).toMatch(/^ctx_below_min:/);
   });
 
   test('10 GB (3080) and 8 GB (3070): Qwen3.5-9B; 24/32 GB: our fork at 262144', () => {

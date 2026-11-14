@@ -507,14 +507,6 @@
     "pl": "Komercyjnie tylko poniżej 10 mln USD rocznego przychodu (całej grupy). Dla osób prywatnych bez ograniczeń.",
     "en": "Commercial use only below USD 10M annual revenue (whole group). No limits for private use."
    }
-  },
-  "cc-by-nc-4.0": {
-   "name": "CC BY-NC 4.0",
-   "commercial": "conditional",
-   "note": {
-    "pl": "Tylko do użytku niekomercyjnego; użycie komercyjne wymaga osobnej licencji od autora (Conway Research).",
-    "en": "Non-commercial use only; commercial use needs a separate licence from the author (Conway Research)."
-   }
   }
  },
  "models": [
@@ -707,84 +699,6 @@
    "mtpInFile": true
   },
   {
-   "id": "saluki-27b",
-   "name": "Underdog Saluki 27B",
-   "family": "Qwen",
-   "params": "27.8B",
-   "paramsB": 27.78,
-   "activeB": 27.78,
-   "kind": "hybrid",
-   "quality": 34,
-   "qualitySource": "[SZACUNEK] Qwen3.8-27B fine-tune (ConwayResearch/Underdog-Saluki-27B-1.0), no AA page: base model's AA v4.3.2 index; the 2-bit file's loss is in qualityFactor (our KLD-wiki 0.257 to Qwen BF16, research 33 §3 / 67b)",
-   "license": "cc-by-nc-4.0",
-   "ctxMax": 262144,
-   "features": [
-    "mtp",
-    "tools",
-    "reasoning"
-   ],
-   "minUpstreamBuild": 0,
-   "arch": {
-    "source": "gguf:Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
-    "arch": "qwen35",
-    "nLayer": 64,
-    "nEmbd": 5120,
-    "nVocab": 248320,
-    "tiedEmbd": false,
-    "full": {
-     "layers": 16,
-     "kvHeads": 4,
-     "keyLen": 256,
-     "valueLen": 256
-    },
-    "swa": {
-     "layers": 0,
-     "kvHeads": 0,
-     "keyLen": 0,
-     "valueLen": 0,
-     "window": 0
-    },
-    "nextn": {
-     "layers": 1,
-     "kvHeads": 4,
-     "keyLen": 256,
-     "valueLen": 256
-    },
-    "stateMiB": 149.63,
-    "mtpExtraMiB": 592.7
-   },
-   "quants": [
-    {
-     "quant": "IQ2-mix",
-     "repo": "Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF",
-     "path": "Underdog-Saluki-27B-1.0-IQ2-mix-MTP.gguf",
-     "sizeBytes": 8349689920,
-     "sha256": "98f6ebb527917a2541df8e667d51c3ec8a8bb135b44c606d40cc6ed924e89e52",
-     "hostEmbdBytes": 278118400,
-     "bTokGB": 8.07,
-     "qualityFactor": 0.8
-    }
-   ],
-   "measured": [
-    {
-     "gpu": "rtx-4070",
-     "backend": "cuda",
-     "quant": "IQ2-mix",
-     "decodeTps": 44.35,
-     "source": "campaign 67c (pinned upstream b11856 CUDA, KV q4_0, ub 256, plain, ctx 151552 = Enigma's default pick, T=1 median; full fill OK, peak 11201 MiB; b12110 at 135168: 39.8)"
-    },
-    {
-     "gpu": "rtx-3060-12",
-     "backend": "cuda",
-     "quant": "IQ2-mix",
-     "decodeTps": 19.6,
-     "source": "campaign 67 (upstream b12110 CUDA, KV q4_0, ub 256, plain, ctx 135168, T=1 median; host capped at 105 W)"
-    }
-   ],
-   "configRepo": "Qwen/Qwen3.8-27B",
-   "mtpInFile": true
-  },
-  {
    "id": "bonsai2-27b",
    "name": "Ternary Bonsai 2 27B",
    "family": "Bonsai",
@@ -849,7 +763,14 @@
      "backend": "cuda",
      "quant": "Q2_0",
      "decodeTps": 49.4,
-     "source": "campaign 67 (upstream b12110 CUDA, KV q4_0, plain, ctx 65536, T=1 median; load 8785 MiB)"
+     "source": "campaign 67 (upstream b12110 CUDA, KV q4_0, plain, ctx 65536, T=1 median; load 8785 MiB; full fill OK at 196608, 229376 OOM)"
+    },
+    {
+     "gpu": "rtx-3060-12",
+     "backend": "cuda",
+     "quant": "Q2_0",
+     "decodeTps": 32.2,
+     "source": "campaign 67c (upstream CUDA, KV q4_0, ub 256, plain, ctx 65536, T=1 median, host capped at 140 W; full fill OK at 196608)"
     },
     {
      "gpu": "rtx-2080-ti",

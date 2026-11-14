@@ -361,3 +361,6 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 
 ## [2026-11-14] produkt | Karty NVIDIA z kampanii 67 na stronie
 [[karty-nvidia-na-stronie]]: właściciel odrzucił osobną stronę z tabelą 11 kart; każda karta dostaje stronę jak RTX 3090 (5090, 4090, 5080, 4070, 2080 Ti, 3080, 3070 nowe, 3060 z nowymi danymi). Underdog Saluki (CC BY-NC) usunięty ze strony. Kciuk wyboru karty na Wynikach naprawiony dla wielu rzędów.
+
+## [2026-11-14] decyzja | Saluki usunięty z aplikacji Enigma; na stronie zawsze najnowsze pomiary
+[[2026-11-14-saluki-usuniety]]: aplikacja Enigma bez Saluki (katalog, planer, UI, testy 208/208 + tsc + svelte-check 0 błędów); 12 GB = Bonsai 2 (prism PTQ1_0+MTP 94,73/58,31 t/s, upstream Q2_0 196 608 zmierzone); [[saluki]] → nieaktualne; SITE-NVIDIA, [[final-recipes-nvidia]], [[final-modele-per-vram]] poprawione. Stała reguła: po kampanii zgłaszać karty do odświeżenia na stronie.

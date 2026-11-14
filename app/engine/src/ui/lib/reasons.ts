@@ -146,14 +146,8 @@ const WHY: Record<string, Record<Lang, Render>> = {
 		en: () => 'Little headroom: under 3% of the memory stays free, so we rank this option lower (the system and your programs share the same RAM).'
 	},
 	license_conditional: {
-		pl: (v) =>
-			v === 'cc-by-nc-4.0'
-				? 'Licencja CC BY-NC 4.0: tylko użycie niekomercyjne (komercyjne wymaga licencji od autora).'
-				: 'Licencja LFM: użycie komercyjne do 10 mln USD przychodu rocznie.',
-		en: (v) =>
-			v === 'cc-by-nc-4.0'
-				? 'CC BY-NC 4.0 licence: non-commercial use only (commercial use needs a licence from the author).'
-				: 'LFM licence: commercial use up to USD 10 million annual revenue.'
+		pl: () => 'Licencja LFM: użycie komercyjne do 10 mln USD przychodu rocznie.',
+		en: () => 'LFM licence: commercial use up to USD 10 million annual revenue.'
 	}
 };
 

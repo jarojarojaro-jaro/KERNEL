@@ -36,8 +36,8 @@ t/s = tempo pisania, mediana 6 promptów PL/EN przy T=1 (sampling jak w czacie).
 | **RTX 5080** (16 GB) | Qwen3.8-27B ISTA IQ3_XXS | 208 896 → 217 088 | 52,1 | **58,8** (+13%) | **81,6** (+57%) |
 | **RTX 5060 Ti** (16 GB) | Qwen3.8-27B ISTA IQ3_XXS | 200 704 → 229 376 | 27,5 | **31,4** (+14%) | **43,4** (+58%) |
 | **RTX 4060 Ti** (16 GB) | Qwen3.8-27B ISTA IQ3_XXS | 217 088 → 229 376 | 19,8 | **24,0** (+21%) | **36,3** (+84%) |
-| **RTX 4070** (12 GB) | Qwen3.8-27B (Bonsai 2 / Saluki) | 151 552 → 208 896 | – | Saluki **44,4** | Bonsai 2 + MTP **94,7** |
-| **RTX 3060** (12 GB) | Qwen3.8-27B (Bonsai 2 / Saluki) | 135 168 → 204 800 | – | Saluki **22,2** | Bonsai 2 + MTP **58,3** (×2,6) |
+| **RTX 4070** (12 GB) | Qwen3.8-27B Bonsai 2 | 196 608 → 208 896 | – | Bonsai 2 Q2_0 **49,4** | Bonsai 2 + MTP **94,7** (×1,9) |
+| **RTX 3060** (12 GB) | Qwen3.8-27B Bonsai 2 | 196 608 → 204 800 | – | Bonsai 2 Q2_0 **32,2** | Bonsai 2 + MTP **58,3** (×1,8) |
 | **RTX 2080 Ti** (11 GB) | Qwen3.8-27B Bonsai 2 | 131 072 → 155 648 | – | **39,6** | **78,0** (×2,0) |
 | **RTX 3080** (10 GB) | Qwen3.5-9B Q6_K | 192 512 | – | **85,2** | – |
 | **RTX 3070** (8 GB) | Qwen3.5-9B Q4_K_M | 151 552 | – | **66,9** | – |
@@ -56,7 +56,6 @@ Przy 12 GB i mniej „dziś” było innym modelem (Gemma 4 12B), dlatego bez pr
 | Qwen3.8-27B ISTA GSQ-RCO IQ3_XXS-mtp | https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF | Apache-2.0 |
 | Ternary Bonsai 2 27B (PrismML), Q2_0 | https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf | Apache-2.0 |
 | Bonsai 2 27B PTQ1_0 + głowica MTP | https://huggingface.co/sudoingx/Ternary-Bonsai-2-27B-PTQ1_0-MTP-GGUF | Apache-2.0 |
-| Underdog Saluki 27B + MTP | https://huggingface.co/Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF | **CC BY-NC 4.0 — tylko niekomercyjnie** (od 2026-11-05) |
 | Qwen3.5-9B | https://huggingface.co/unsloth/Qwen3.5-9B-GGUF | Apache-2.0 |
 | LFM2.5-24B-A2B | https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF, https://huggingface.co/unsloth/LFM2.5-24B-A2B-GGUF | LFM Open 1.0 (firmy < $10M przychodu) |
 
@@ -89,5 +88,5 @@ Pełna tabela z VRAM-em w szczycie: `wiki/produkt/final-recipes-nvidia.md`.
 - **Limity mocy wynajętych kart:** 4090 była przycięta do 250 W (domyślnie 450 W), 3090 340 W, 5060 Ti 160 W, 3060 140 W — liczby 4090 są zaniżone względem karty na pełnej mocy. Pisać „zmierzone na wynajętej karcie”.
 - **Pomiar 67c to 1 seed × 6 promptów;** porównania silników na 5090 robione naprzemiennie (A-B-B-A) na tym samym hoście.
 - **Fork CUDA dla 16 GB** nie jest wybierany (zmierzony tylko na 5060 Ti: 49,4 t/s przy 196 608).
-- **Saluki:** tylko do użytku niekomercyjnego; w wersji komercyjnej 12 GB = Bonsai 2.
+- **Saluki usunięty** ze strony i z aplikacji Enigma (CC BY-NC 4.0, tylko niekomercyjnie; decyzja właściciela 2026-11-14). 12 GB = Bonsai 2; kolumna „Enigma” (upstream) dla 4070/3060 to Bonsai 2 Q2_0 zmierzone przy 65 536 (pełne wypełnienie 196 608 PASS).
 - Bonsai 2 to inna kwantyzacja Qwen3.8-27B (2 bity, trytowe), czyli słabszy w jakości niż 4-bitowy 27B na większych kartach. Na stronie nie porównywać jakości między klasami.

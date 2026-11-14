@@ -1,7 +1,7 @@
 ---
 typ: produkt
 tags: [produkt, nvidia, przepisy, enigma, vram]
-aktualizacja: 2026-11-07
+aktualizacja: 2026-11-14
 zrodlo: ~/qwen-opt/cloud/results/nv67c-summary.txt; product/research/67-nvidia-vast-kampania.md §1, §7; app/engine/data/catalog.json; app/engine/data/engines.json; app/engine/CONTRACT.md:174-194
 status: aktualne
 ---
@@ -11,7 +11,7 @@ status: aktualne
 
 Wspólne flagi: `llama-server -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c <ctx> -ub <ub> --jinja`. MTP upstream: `--spec-type draft-mtp --spec-draft-n-max 3 --spec-draft-n-ubatch 64`. Lean: to samo z `--spec-draft-n-max 2 -ctkd q4_0 -ctvd q4_0`. Fork: `--spec-draft-n-max 4 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab <draft_vocab_qwen38.txt> --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs` + env `GGML_CUDA_KVQ=1 LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_CACHE_SHARE_MIN=1024`. t/s = mediana `spec_sweep` T=1 (6 promptów, seed 1), na nazwanej karcie i jej limicie mocy; peak = szczyt VRAM po pełnym wypełnieniu kontekstu (fill PASS, jeśli nie napisano inaczej). Wiersze „po publikacji” działają u użytkownika dopiero po uploadzie archiwów (`app/engine/CONTRACT.md`, „brakujący krok”).
 
-Licencje: Qwen3.8-27B, Qwen3.5-9B, ISTA GSQ, Bonsai – Apache-2.0; Saluki – CC BY-NC 4.0 (**tylko niekomercyjnie**); LFM2.5 – LFM Open 1.0 (firmy < $10M przychodu).
+Licencje: Qwen3.8-27B, Qwen3.5-9B, ISTA GSQ, Bonsai – Apache-2.0; LFM2.5 – LFM Open 1.0 (firmy < $10M przychodu).
 
 ## 32 GB (RTX 5090, 575 W)
 
@@ -40,7 +40,7 @@ Licencje: Qwen3.8-27B, Qwen3.5-9B, ISTA GSQ, Bonsai – Apache-2.0; Saluki – C
 
 | wariant | model, kwant | ctx | silnik, flagi | t/s | peak MiB | licencja |
 |---|---|---|---|---|---|---|
-| Enigma dziś (silnik upstream) | [Underdog Saluki 27B](https://huggingface.co/Kujira/Underdog-Saluki-27B-1.0-MTP-GGUF) IQ2-mix | 4070 151 552, 3060 135 168 | pin b11856, bez MTP, ub 256 | 4070 **44,35**, 3060 **22,23** | 11 201 / 10 781 | CC BY-NC 4.0 – tylko niekomercyjnie |
+| Enigma dziś (silnik upstream) | [Bonsai 2 27B](https://huggingface.co/prism-ml/Ternary-Bonsai-2-27B-gguf) Q2_0 | 4070 196 608, 3060 196 608 (pełne wypełnienie PASS) | upstream, bez MTP, ub 256 | 4070 **49,43**, 3060 **32,23** (przy 65 536) | – | Apache-2.0 |
 | z silnikiem Enigmy (prism) – po publikacji archiwów | [Bonsai 2 27B PTQ1_0-mtp-lean](https://huggingface.co/sudoingx/Ternary-Bonsai-2-27B-PTQ1_0-MTP-GGUF) | 4070 208 896, 3060 204 800 | prism-b12128, MTP n2, ub 256 | 4070 **94,73**, 3060 **58,31** | 11 163 / 11 015 | Apache-2.0 |
 | alternatywa MoE (upstream) | [LFM2.5-24B-A2B](https://huggingface.co/unsloth/LFM2.5-24B-A2B-GGUF) UD-IQ3_XXS | 131 072 | b12110, KV q8_0, ub 512, w całości w VRAM | 4070 **179,32**, 3060 **102,47** | 10 525 / 10 463 | LFM Open 1.0 (< $10M) |
 

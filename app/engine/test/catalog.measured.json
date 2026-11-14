@@ -852,38 +852,6 @@
    "source": "campaign 67 res-4060tif fill-P0 (upstream b12110 CUDA, nvidia-smi peak after a 216 448-token fill)"
   },
   {
-   "id": "nv67-4070-saluki-135168-ub256-plain-fill",
-   "gpu": "rtx-4070",
-   "backend": "cuda",
-   "vramGiB": 12,
-   "modelId": "saluki-27b",
-   "quant": "IQ2-mix",
-   "ctx": 135168,
-   "kvType": "q4_0",
-   "ub": 256,
-   "spec": false,
-   "enigmaSpec": false,
-   "prompt": 134528,
-   "usedMiB": 10831,
-   "source": "campaign 67 res-4070f fill-P0 (upstream b12110 CUDA, nvidia-smi peak after a 134 528-token fill)"
-  },
-  {
-   "id": "nv67-4070-saluki-151552-ub256-plain-fill",
-   "gpu": "rtx-4070",
-   "backend": "cuda",
-   "vramGiB": 12,
-   "modelId": "saluki-27b",
-   "quant": "IQ2-mix",
-   "ctx": 151552,
-   "kvType": "q4_0",
-   "ub": 256,
-   "spec": false,
-   "enigmaSpec": false,
-   "prompt": 150912,
-   "usedMiB": 11197,
-   "source": "campaign 67 res-4070f ctx151552-N0 (upstream b12110 CUDA, nvidia-smi peak after a 150 912-token fill)"
-  },
-  {
    "id": "nv67-5080-qwen-q3-135168-ub1024-plain-fill",
    "gpu": "rtx-5080",
    "backend": "cuda",
@@ -1191,24 +1159,6 @@
    "prompt": 0,
    "oomAboveMiB": 11955,
    "source": "campaign 67c (upstream b12110 CUDA, OOM at load, CUDA total 12282 - 327)"
-  },
-  {
-   "id": "nv67c-4070-saluki-151552-ub256-mtp3-ubd64-oom",
-   "gpu": "rtx-4070",
-   "backend": "cuda",
-   "vramGiB": 12,
-   "modelId": "saluki-27b",
-   "quant": "IQ2-mix",
-   "ctx": 151552,
-   "kvType": "q4_0",
-   "ub": 256,
-   "spec": true,
-   "enigmaSpec": false,
-   "mtpN": 3,
-   "ubd": 64,
-   "prompt": 0,
-   "oomAboveMiB": 11955,
-   "source": "campaign 67c (pinned upstream b11856 CUDA, --spec-draft-n-max 3 --spec-draft-n-ubatch 64, OOM at load, CUDA total 12282 - 327)"
   },
   {
    "id": "nv67c-3080-qwen35-9b-q6k-192512-ub512-fill",

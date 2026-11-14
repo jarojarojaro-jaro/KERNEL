@@ -1,7 +1,7 @@
 ---
 typ: produkt
 tags: [produkt, nvidia, modele, vram, kontekst]
-aktualizacja: 2026-11-07
+aktualizacja: 2026-11-14
 zrodlo: product/research/67b-wybor-modeli-nvidia.md; ~/qwen-opt/cloud/runs/nv67/mkcards_final.py; arms.jsonl kampanii 67 (b11856/b12110, -lv 4, 2026-11-07)
 status: do-sprawdzenia
 ---
@@ -14,7 +14,7 @@ status: do-sprawdzenia
 | 32 GB | 27B UD-Q6_K, KV q4_0, MTP 3 | 262 144 | 2.9 GiB wolne (zmierz. load 29 158 MiB) |
 | 24 GB | 27B UD-Q4_K_M, MTP 2, ubd 64 | 262 144 | 1.1–1.3 GiB wolne; UD-Q4_K_XL MTP 1: 402 MiB |
 | 16 GB | GSQ IQ3_XXS-mtp (ISTA), MTP 1 | 200–217k (plain 262k) | KLD 0.119 vs 0.039 dla UD-Q3_K_XL (164k plain) |
-| 12 GB | Saluki-MTP 135k / Bonsai Q2_0 221k | – | Saluki od 2026-11-05 na CC BY-NC 4.0 |
+| 12 GB | Bonsai 2 PTQ1_0 + MTP (prism) 205–209k / Bonsai Q2_0 197k (upstream) | – | Saluki usunięty 2026-11-14 (CC BY-NC 4.0) |
 | 11 GB | Bonsai Q2_0 | 163 840 | – |
 | 8–10 GB | LFM2.5 Q4_K_M, KV q8_0, ncm 26 / 20 | 131 072 | licencja < US$10M |
 
