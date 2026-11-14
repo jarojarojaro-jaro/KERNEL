@@ -44,7 +44,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-14
 - źródło: K-103 ([[2026-11-14-k103-llamacpp-v1-nvidia]]): few-row MMQ daje +10…12% na przebieg przy 8–16 kolumnach, a przy MTP n2 (3 kolumny) ~0
 - test: 5060 Ti w jaroserverai (gdy online) lub 3090 z wynajmu: b11856 vs v1.0.0, MTP n 3/4, spec_sweep T=1 ABBA; 24 GB z UD-Q4_K_XL n3
-- stan po bramce K-103: przy MTP n2/n3 upstream v1.0.0 daje +3,5% / +0,6%, KLD ~2σ ponad szumem. Few-row MMQ opłaci się dopiero przy szerokiej weryfikacji (fork z lookupem W16, n4), więc sens ma port #31533 do naszego forka CUDA (bramka KLD vs fork), a nie zmiana pinu.
+- stan po bramce K-103: przy MTP n2/n3 upstream v1.0.0 daje +3,8% / +0,6%, KLD ~2σ ponad szumem. Few-row MMQ opłaci się dopiero przy szerokiej weryfikacji (fork z lookupem W16, n4), więc sens ma port #31533 do naszego forka CUDA (bramka KLD vs fork), a nie zmiana pinu.
 - zysk: +5…12% decode na NVIDIA przy szerokiej weryfikacji [SZACUNEK]
 - ryzyko karty: brak
 - priorytet: średni (zysk tylko w forku z szeroką weryfikacją)
@@ -659,7 +659,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: weryfikacja MTP/DFlash na NVIDIA +10…35% tok/s (dane autora); jeśli regresja b12110 z MTP nie wróci, nowe przepisy Enigmy dla wszystkich kart NVIDIA
 - ryzyko karty: brak
 - priorytet: wysoki (duży zmierzony zysk, tani test lokalnie)
-- wynik 2026-11-14 (Vast 5060 Ti, 150 W, ~0,10 USD): spec_sweep T=1 MTP n2 b11856 43,95 → v1.0.0 45,6 t/s (+3,5%, ABBA), ms/krok bez zmian; przebieg weryfikacji ub 8 +12,1%, ub 16 +9,8%, ub 4 +2,8%; brak regresji b12110. Bramka (druga instancja): KLD vs b11856 0,000700 ± 0,000026 przy szumie upstreamu 0,000569–0,000615 (~2σ ponad), MTP n3 39,94 → 40,17 t/s (+0,6%) → **pin zostaje b11856** (nie bezstratne, poniżej progu, +48 MiB VRAM przy zapasie 4090 46 MiB) ([[2026-11-14-k103-llamacpp-v1-nvidia]])
+- wynik 2026-11-14 (Vast 5060 Ti, 150 W, ~0,10 USD): spec_sweep T=1 MTP n2 b11856 43,95 → v1.0.0 45,62 t/s (+3,8%, mediany ABBA; parami +3,5 / +4,2%), ms/krok bez zmian; przebieg weryfikacji ub 8 +12,1%, ub 16 +9,8%, ub 4 +2,8%; brak regresji b12110. Bramka (druga instancja): KLD vs b11856 0,000700 ± 0,000026 przy szumie upstreamu 0,000569–0,000615 (~2σ ponad), MTP n3 39,94 → 40,17 t/s (+0,6%) → **pin zostaje b11856** (nie bezstratne, poniżej progu, +48 MiB VRAM przy zapasie 4090 46 MiB) ([[2026-11-14-k103-llamacpp-v1-nvidia]])
 
 ### K-003 · Rozłożyć stały koszt ~210–230 ms na każde żądanie (TTFT krótkich promptów) i dokończyć tańszy zapis stanu GDN (stash `opt-s4`)
 - wynik 2026-11-14: koszt stały to serwer, nie HTTP: ściana 258 ms = prompt 139 (restore checkpointu GDN 11–32, 2 checkpointy 2×11, prefill 5–8 tok. w 2–3 przebiegach ~80–100) + dekod 8 tok. 105 + poza serwerem 2 ms; dawne ~75 ms to harness klienta. Kontynuacja: K-104. [[2026-11-14-k002-k003-k013-xtx]]

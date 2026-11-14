@@ -372,10 +372,13 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 [[2026-11-14-k001-wyciek-stanu-restore]]: md5 po restore zależy od historii serwera (R1 = świeży, R2/R3/F2 inne) niezależnie od lookupu, sprzężenia i PM4; podejrzany `v_heads`, #30541 odpada. [[2026-11-14-k002-k003-k013-xtx]]: K-002 odrzucone (lookup 130,4 vs 131,2 t/s, w szumie); K-003 koszt stały = 139 ms serwera (checkpointy GDN + prefill w 2–3 przebiegach) → nowa K-104; K-013 baseline V16 − V5 = 7,1 / 10,1 ms (2k / 32k). PM4 przy 1,7k: 122,6 → 130,4 t/s (+6,4%). Produkcja :8080 po testach: topka-q70, n_ctx 262144, health ok.
 
 ## [2026-11-14] eksperyment | K-103 na Vast (RTX 5060 Ti)
-[[2026-11-14-k103-llamacpp-v1-nvidia]]: llama.cpp v1.0.0 vs pin b11856, Qwen3.8-27B ISTA IQ3_XXS-mtp MTP n2: spec_sweep T=1 43,95 → 45,6 t/s (+3,5%, ABBA), przebieg weryfikacji ub 8 +12,1%, ub 16 +9,8%; brak regresji b12110. Koszt ~0,10 USD, 0 instancji. Nowa K-105 (szersza weryfikacja, 24/32 GB, decyzja o pinie).
+[[2026-11-14-k103-llamacpp-v1-nvidia]]: llama.cpp v1.0.0 vs pin b11856, Qwen3.8-27B ISTA IQ3_XXS-mtp MTP n2: spec_sweep T=1 43,95 → 45,62 t/s (+3,8%, ABBA; poprawione 2026-11-14, wcześniej +3,5% = sama para A1→B1), przebieg weryfikacji ub 8 +12,1%, ub 16 +9,8%; brak regresji b12110. Koszt ~0,10 USD, 0 instancji. Nowa K-105 (szersza weryfikacja, 24/32 GB, decyzja o pinie).
 
 ## [2026-11-14] rekord | decode 1,7k na produkcji (PM4)
 [[REKORDY]]: decode MTP 1,7k T=0 topka-q70 133,9 t/s (świeży prefill 130,4; bez PM4 125,2/122,6 → PM4 +6,4%), zastępuje 130,2 z 2026-10-14. PM4 jest w produkcji od 2026-10-21 (`run-topka.sh`: `GGML_HIP_PM4=1 WA=2 GUARD=1`), nic do wdrożenia.
 
 ## [2026-11-14] decyzja | pin Enigmy zostaje b11856 (bramka K-103)
 [[2026-11-14-k103-llamacpp-v1-nvidia]]: oficjalne binarki b12359 (v1.0.0) vs b11856 na 5060 Ti: KLD 0,000700 vs szum upstreamu 0,000569–0,000615 (~2σ ponad), MTP n3 +0,6%, VRAM +48 MiB (zapas 4090 upstream 46 MiB) → zgoda właściciela na wdrożenie „jak lepsze”, ale v1.0.0 nie jest bezstratny ani ponad progiem; pin bez zmian. PM4 już w produkcji. K-105 przeformułowane na port #31533 do forka. Vast łącznie ~0,15 USD, 0 instancji.
+
+## [2026-11-14] poprawka | K-103 i K-003 (uwagi Jarva)
+K-103: zysk przy MTP n2 to +3,8% (mediany 43,95 → 45,62 t/s; parami +3,5 / +4,2%), nie +3,5%; poprawione w [[2026-11-14-k103-llamacpp-v1-nvidia]], [[KOLEJKA-TESTOW]] i wpisie wyżej. K-003: reszta poza serwerem to 2,0 ms w każdym żądaniu (1,7–2,3); „brakujące” 12 ms to efekt sumowania median — w [[2026-11-14-k002-k003-k013-xtx]] dodana kolumna średnich, które się domykają (147,2 + 106,7 + 2,0 = 255,9).
