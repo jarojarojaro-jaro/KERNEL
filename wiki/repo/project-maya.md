@@ -1,8 +1,8 @@
 ---
 typ: repo
 tags: [repo, konkurencja, moe]
-aktualizacja: 2026-11-07
-zrodlo: ~/KERNEL/product/research/21g-nowe-silniki.md:158-216; ~/KERNEL/product/research/21g-notatki/maya.md; https://github.com/mw00/project-maya (`a4e1ff0`, v1.1.15; `f26d8ba`, v1.1.26; `c167004`, v1.1.54; `c4effee6`, v1.1.55; `22fc101f`, v1.1.56); ~/KERNEL/product/research/32a-maya-1117-strata-020-gyro.md:14-20; ~/KERNEL/product/research/39a-maya-1119.md:14-30; ~/KERNEL/product/research/60d-serving-kernels-cache.md:196-213,232-239; ~/KERNEL/product/research/63b-colibri-maya-delta.md:166-220; ~/KERNEL/product/research/66a-strata-maya.md:206-226,300-353
+aktualizacja: 2026-11-14
+zrodlo: ~/KERNEL/product/research/21g-nowe-silniki.md:158-216; ~/KERNEL/product/research/21g-notatki/maya.md; https://github.com/mw00/project-maya (`a4e1ff0`, v1.1.15; `f26d8ba`, v1.1.26; `c167004`, v1.1.54; `c4effee6`, v1.1.55; `22fc101f`, v1.1.56; `30145b8`, v1.1.62 + CHANGELOG do v1.1.63, 2026-11-14; https://x.com/PeasantSmith/status/2121371735157264831); ~/KERNEL/product/research/32a-maya-1117-strata-020-gyro.md:14-20; ~/KERNEL/product/research/39a-maya-1119.md:14-30; ~/KERNEL/product/research/60d-serving-kernels-cache.md:196-213,232-239; ~/KERNEL/product/research/63b-colibri-maya-delta.md:166-220; ~/KERNEL/product/research/66a-strata-maya.md:206-226,300-353
 status: aktualne
 ---
 # Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash
@@ -36,6 +36,11 @@ status: aktualne
 - `MAYA_PROMPT_MEMO` domyślnie (przyrostowe przygotowanie promptu): follow-up po 115K −6%. Nasz odpowiednik `TOK_CACHE` jest w produkcji martwy ([[lekcja-flaga-bez-dowodu-dzialania]]).
 - #840: przy nieudanym wczytaniu slotu następny slot, potem checkpoint ([[siatka-checkpointow-gdn]]). Dla Enigmy: Codex CLI na `/v1/responses` (#726), odpowiedź biegnie do końca bez czytelnika.
 - Stratne (parked): GLM KV INT8 domyślnie, `DS4_CHUNK_GFX11=0`, #869/#870 RDNA2.
+
+- **Delta v1.1.57–v1.1.63 (2026-11-09…14, Telegram „gpu”):**
+  - **Główna nowość v1.1.62:** APU AMD Halo (ROCm) i karta NVIDIA (CUDA) liczą jeden model w jednym procesie, ze wspólną kopią wag w pamięci APU. Między kartami idą tylko aktywacje. Na NVIDIA trafia atencja, KV, draft i najczęstsze eksperty. Wyniki: GLM-5.3-Flash prefill 32K 293 → 901 t/s, dekod +21%; DeepSeek dekod +18%. Maya trzyma ten tryb tylko wtedy, gdy daje > 3%.
+  - **Pozostałe:** GLM-5.3 744B, kwant Maya-XS ~1,6 bita, ablacja odmowy przełączana per żądanie, lookup promptu dla MiniMax (+6% na kodzie, mamy od 10.10), szybsze eksperty CPU.
+  - **Werdykt:** dla gęstego Qwen 27B na XTX nic nowego. Zysk mieszanego trybu bierze się z MoE: atencja i gorące eksperty idą na szybszą kartę, a reszta wag zostaje w pamięci, której szybka karta nie ma. U nas cały model mieści się w XTX (960 GB/s). Dołożenie 5060 Ti (448 GB/s) przy podziale warstw dekod tylko spowolni ([[rtx-5060-ti]]). Ablacja per żądanie to ten sam pomysł co odrzucona K-082 w [[KOLEJKA-TESTOW]]. Nic do kolejki.
 
 ## Powiązane
 - [[repo/_hub|repo]]

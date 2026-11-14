@@ -343,3 +343,6 @@ Ten sam link co rano ([[telegram-2026-11-14-pearlquant-llamacpp-v1]], commit `b8
 
 ## [2026-11-14] meta | ZRODLA: adresy x.com dla dwóch wpisów z Telegrama
 Na prośbę właściciela: dopisane URL https://x.com/zainhas/status/2120806646356295682 (TokenSpeed Kimi K3 AgentX, także w [[tokenspeed]]) i https://x.com/ggerganov/status/2121246103312212124 (llama.cpp v1.0.0, także w [[telegram-2026-11-14-pearlquant-llamacpp-v1]]).
+
+## [2026-11-14] research | Telegram „gpu”: Project Maya v1.1.62
+[[project-maya]] (delta v1.1.57–v1.1.63): APU AMD + NVIDIA liczą jeden model MoE (GLM-5.3-Flash prefill 32K 293 → 901 t/s, DeepSeek dekod +18%); dla gęstego Qwen 27B na XTX nic, 5060 Ti przy podziale warstw tylko spowolni dekod. Bez pozycji w kolejce.
