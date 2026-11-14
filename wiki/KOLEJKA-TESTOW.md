@@ -30,7 +30,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: wysoki (bezstratność produkcji)
 - wynik 2026-11-14: wzór R1 = R1b = świeży (3f26f79c), R2/R3/F2 inne; identyczny przy `LLAMA_SPEC_LOOKUP=0`, `LLAMA_SPEC_COUPLED=0`, `GGML_HIP_PM4=0`, a F2 (bez restore) też się różni → to zależność od historii serwera, nie od pliku slotu ([[2026-11-14-k001-wyciek-stanu-restore]]). #30541 odpada (topka nie używa `FLAGS_ON_DEVICE`).
-- następny test: zerowanie `v_heads` przy pustej sekwencji (hipoteza: rozmieszczenie komórek KV → inne `n_kv` w FA); jeden job ≤ 10 min po buildzie
+- następny test: log `n_kv` / `used_max_p1` / komórek GDN przy R1 vs R2 (`v_heads` odpada, `seq_rm` go zeruje); jeden job ≤ 10 min
 
 ### K-104 · Krótki ogon promptu w jednym przebiegu zamiast 2–3 (granice checkpointów GDN)
 - data: 2026-11-14

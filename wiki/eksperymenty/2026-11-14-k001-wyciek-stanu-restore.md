@@ -21,11 +21,14 @@ status: aktualne
 **Wnioski:**
 - **Źródłem nie jest restore pliku.** F2 (bez restore) też się różni. Nie są nim też lookup, sprzężone losowanie ani taśma PM4: w każdej z 4 konfiguracji te same md5 w tych samych krokach.
 - **Stan draftu z pliku jest ładowany poprawnie.** `load_slot_draft` czyści KV draftu (`seq_rm`) i wczytuje go z pliku.
-- **Podejrzany [INFERENCE]:** rozmieszczenie komórek KV po wcześniejszych żądaniach. Wskaźnik `v_heads` nie jest zerowany przy `seq_rm`, więc nowy prompt trafia w inne komórki. FA liczy wtedy na innym `n_kv` / innym podziale, logity różnią się w ostatnich bitach, a od tego zmieniają się akceptacje draftu i szerokości weryfikacji. Takie odpowiedzi są tak samo „poprawne” (greedy celu przy innej kolejności sum), ale nie są powtarzalne.
+- **Hipotezy otwarte [INFERENCE]:**
+  - Wskaźnik `v_heads` odpada: `seq_rm` całego slotu ustawia `head` na najniższą zwolnioną komórkę (`src/llama-kv-cache.cpp`, sprawdzone w kodzie).
+  - Zostają trzy kandydaci: `n_kv` z `used_max_p1` po wcześniejszych żądaniach, czyli inny zakres FA; komórki pamięci rekurencyjnej GDN; stan `common_speculative` spoza pliku slotu.
+  - Mechanizm: drobna różnica numeryczna zmienia akceptację draftu i szerokość weryfikacji, a od tego zmienia się tekst. Odpowiedzi są tak samo poprawne, ale nie są powtarzalne.
 - **Poprawka #30541 (llama.cpp v1.0.0) tu nie pomoże:** dotyczy `LLAMA_STATE_SEQ_FLAGS_ON_DEVICE`, a topka zapisuje sloty z `FLAGS_NONE`.
 - **Prędkość przy okazji:** decode T=0 przy 1,7k produkcja 130,4 t/s, bez PM4 122,6 t/s (PM4 daje +6,4%).
 
-**Następny krok (CPU + 1 job ≤ 10 min):** test hipotezy `v_heads`. Ramię z zerowaniem `v_heads` przy pustej sekwencji (`seq_rm` całego slotu): jeśli R2/R3/F2 = F, to poprawka jest jednolinijkowa i bezstratna (ta sama numeryka co świeży serwer). Do tego czasu xtxbench bierze md5 tylko z pierwszej rundy po starcie (zasada bez zmian).
+**Następny krok (1 job ≤ 10 min):** log `n_kv`, `used_max_p1` i indeksów komórek GDN przy R1 i R2 (`-lv 4` albo jednolinijkowy log w topce). Jeśli różnią się tylko `n_kv`, to poprawka jest bezstratna: zerować `used_max` przy pustym slocie, wtedy numeryka jest jak na świeżym serwerze. Do tego czasu xtxbench bierze md5 tylko z pierwszej rundy po starcie (zasada bez zmian).
 
 ## Powiązane
 - [[KOLEJKA-TESTOW]]
