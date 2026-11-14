@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (42)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty użytkownika (wiążące) (43)
 - [[modele/_hub|modele]] — Modele i kwanty (23)
 - [[karty/_hub|karty]] — Karty GPU: używane i planowane (12)
 - [[rocm/_hub|rocm]] — Stos AMD: ROCm, HIP, ROCr, PM4, rocprof (23)
@@ -80,17 +80,17 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-14 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
 - 2026-11-14 [[tokenspeed|TokenSpeed (LightSeek Foundation)]]
 - 2026-11-14 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
+- 2026-11-14 [[otwarte-decyzje-techniczne|Otwarte decyzje techniczne (silnik, flagi, wydatki)]]
 - 2026-11-14 [[karty-nvidia-na-stronie|Karty NVIDIA z kampanii 67 na stronie]]
+- 2026-11-14 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
+- 2026-11-14 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
+- 2026-11-14 [[saluki|Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)]]
 - 2026-11-14 [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]]
 - 2026-11-14 [[peft-lora-warianty|PEFT: LoRA i warianty (LoRA-FA, VeRA, Delta-LoRA, LoRA+)]]
+- 2026-11-14 [[2026-11-14-saluki-usuniety|2026-11-14: Saluki usunięty całkowicie; na stronie zawsze najnowsze pomiary]]
 - 2026-11-14 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
 - 2026-11-14 [[KOLEJKA-TESTOW|Kolejka testów na karcie]]
 - 2026-11-13 [[sglang-unified-memory|SGLang Unified Memory: jedna arena VRAM dla KV, okna SWA i stanu rekurencyjnego]]
-- 2026-11-09 [[raport-69-synteza|Raport 69: DSpine-27B, qwen-warp/TensorFold, Astra-Stop, sterownik AMD a SSD]]
-- 2026-11-09 [[tensorfold|TensorFold (ashhart/TensorFold)]]
-- 2026-11-09 [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]]
-- 2026-11-09 [[strona-zrodlo-rowna-zywej|Strona: źródło = żywa (krok 0 przed zmianami treści)]]
-- 2026-11-09 [[amd-adrenalin-zapisy-ssd|AMD Adrenalin: ciągłe zapisy SSD przez `atieclxx.exe` (Windows)]]
 
-Razem 744 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
+Razem 745 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

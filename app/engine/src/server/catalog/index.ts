@@ -224,10 +224,10 @@ const VERIFIED: { card: RegExp; os: Hw['os']; modelId: string; quant: string; ct
   { card: /RTX 4060 Ti/i, os: 'linux', modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx: 217088, ub: 256, spec: false },
   { card: /RTX 5060 Ti/i, os: 'linux', modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx: 200704, ub: 256, spec: false },
   { card: /RTX 5080/i, os: 'linux', modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx: 208896, ub: 256, spec: false },
-  // 12 GB, Saluki IQ2-mix plain, ub 256: 4070 fill 150 912 tokens peak 11 197 MiB (135 168: fill + soak);
-  // 3060 load + T=1 runs at 135 168
-  { card: /RTX 4070(?! Ti| SUPER)/i, os: 'linux', modelId: 'saluki-27b', quant: 'IQ2-mix', ctx: 151552, ub: 256, spec: false },
-  { card: /RTX 3060(?! Ti)/i, os: 'linux', modelId: 'saluki-27b', quant: 'IQ2-mix', ctx: 135168, ub: 256, spec: false },
+  // 12 GB, Ternary Bonsai 2 Q2_0 plain on upstream, ub 256 (campaign 67c): full fills 4070 and 3060 at 196 608
+  // (229 376 OOM on the 4070); 49.43 / 32.23 t/s T=1 at 65 536. Saluki (CC BY-NC 4.0) left the catalog (owner, 2026-11-14).
+  { card: /RTX 4070(?! Ti| SUPER)/i, os: 'linux', modelId: 'bonsai2-27b', quant: 'Q2_0', ctx: 196608, ub: 256, spec: false },
+  { card: /RTX 3060(?! Ti)/i, os: 'linux', modelId: 'bonsai2-27b', quant: 'Q2_0', ctx: 196608, ub: 256, spec: false },
   // enigma-cuda-lean (b12110 + lean reserve), GSQ IQ3_XXS, MTP n 2 + ubd 64, draft KV q4_0, ub 256 (campaign 67c): full
   // fills 4060 Ti 229 376 (peak 15 736 MiB, 36.3 t/s T=1), 5060 Ti 229 376 (15 762, 43.4), 5080 217 088 (15 632, 81.6;
   // 229 376 crashed there)

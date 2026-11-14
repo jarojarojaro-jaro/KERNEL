@@ -144,7 +144,6 @@
 	--model-qwen38: #5ec8c2; /* teal */
 	--model-lfm25: #a99bff; /* violet */
 	--model-nemotron: #79a8e8; /* sky */
-	--model-saluki: #d79bd0; /* orchid */
 	--model-bonsai: #93c47d; /* moss */
 
 	/* ======================= DARK (default) ======================= */
@@ -235,7 +234,6 @@
 	--model-qwen38: #13706b;
 	--model-lfm25: #5b48c9;
 	--model-nemotron: #2d5f9e;
-	--model-saluki: #8e3f86;
 	--model-bonsai: #356a24;
 	--before-soft: rgb(94 104 116 / 0.16);
 

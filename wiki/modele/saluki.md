@@ -1,13 +1,16 @@
 ---
 typ: model
 tags: [modele, kwanty, qwen]
-aktualizacja: 2026-11-07
+aktualizacja: 2026-11-14
 zrodlo: ~/qwen-opt/cloud/runs/3060/pre/saluki-README.md; ~/qwen-opt/cloud/runs/3060/pre/saluki-head.json; ~/KERNEL/product/research/10-post-training.md:45,52,139,337,389,453; ~/KERNEL/product/research/09-chmura-3060.md:21-29,41-82,109-127,202-223; ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:52-55,91,154-157; ~/KERNEL/product/research/16e-kwanty-kld.md:34-46
-status: aktualne
+status: nieaktualne
 ---
 # Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)
 
 **Qwen3.8-27B skwantyzowany do 7.90 GB (IQ2-mix na bazie ISTA GSQ-RCO), strojony pod tool calling; na RTX 3060 działa z czystym upstreamem, ma najlepsze PPL i polszczyznę wśród naszych 2-bitowych 27B, ale bez MTP i z prędkością ~23 t/s.**
+
+
+> **Usunięty z produktu 2026-11-14** (decyzja właściciela: „saluki wypierdalamy już totalnie”): licencja CC BY-NC 4.0 = tylko niekomercyjnie. Nie ma go na enigmalabz.com ani w aplikacji Enigma ([[2026-11-14-saluki-usuniety]]). Notatka zostaje jako historia pomiarów.
 
 - Autor: ConwayResearch / Underdog; baza `Qwen/Qwen3.8-27B` i `ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF`. **Licencja: od 2026-11-05 CC BY-NC 4.0** (commit HF „Switch the license to CC BY-NC 4.0”; wcześniej Apache-2.0), więc do produktu tylko z licencją od Conway ([[final-modele-per-vram]]). Deklaracje autora: tool calling 88 vs 84 pełny model; raport 10: AIME 2025 79.2 vs 96.7.
 - Plik: same standardowe typy (IQ2_XXS 34% elementów, IQ3_S 11%, IQ1_M 11%, Q2_K 10%…), `token_embd` w IQ1_M; **brak tensorów MTP**. Istnieje społeczny wariant z MTP (`Kujira/…-MTP-…`).
