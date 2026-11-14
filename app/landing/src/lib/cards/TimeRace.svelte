@@ -62,7 +62,10 @@
 				<div class="end" style="left:{(l.seconds / max) * 100}%"></div>
 				<!-- one playhead runs across both tracks; the running time rides under the bottom one -->
 				{#if t < max}
-					<div class="head" style="left:{(t / max) * 100}%">{#if i === lanes.length - 1}<span class="mono">{num(t, lang)} s</span>{/if}</div>
+					<!-- the rail spans the track and slides (transform, no layout per frame); the line sits at its left edge -->
+					<div class="rail" style="transform:translateX({(t / max) * 100}%)">
+						<div class="head">{#if i === lanes.length - 1}<span class="mono">{num(t, lang)} s</span>{/if}</div>
+					</div>
 				{/if}
 				{#if l.seconds > fast}
 					<div class="gap" class:on={gapOn} style="left:{(fast / max) * 100}%; width:{((l.seconds - fast) / max) * 100}%">
@@ -112,8 +115,14 @@
 	.hot.done .clock {
 		color: var(--text-hi);
 	}
+	.rail {
+		position: absolute;
+		inset: 0;
+		pointer-events: none;
+	}
 	.head {
 		position: absolute;
+		left: 0;
 		top: -0.5rem;
 		bottom: -0.5rem;
 		width: 1px;

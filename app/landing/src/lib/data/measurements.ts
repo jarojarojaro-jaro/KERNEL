@@ -676,6 +676,7 @@ const RTX_3090: CardView = card67({
 			model: 'qwen38',
 			title: 'Qwen3.8-27B UD-Q4_K_XL',
 			quant: 'UD-Q4_K_XL',
+			file: { v: 17.56, src: 'app/landing/src/lib/data/models.json (raport 04 §2.3.1)', unit: 'GB' },
 			src: r67('15'),
 			before: 'a0',
 			flags: 'a1',

@@ -188,7 +188,7 @@
 	<div class="lanes" aria-hidden="true">
 		{#each lanes as l, i (l.id)}
 			{@const s = ls[i]}
-			<div class="lane" class:hot={l.hot} class:done={s.done} class:running={s.running} class:behind={!l.hot && s.running && hotDone} style="--prog:{totalTok ? s.tok / totalTok : 0}">
+			<div class="lane" class:hot={l.hot} class:done={s.done} class:running={s.running} class:behind={!l.hot && s.running && hotDone}>
 				<div class="head">
 					<span class="label">{l.label}</span>
 					{#if l.sub}<span class="sub">{l.sub}</span>{/if}
@@ -220,7 +220,8 @@
 						{#if s.running}<span class="caret"></span>{/if}
 					</p>
 				</div>
-				<div class="track"><span class="trail"></span></div>
+				<!-- progress on the bar itself: a tick restyles one element, not the lane (dial included) -->
+				<div class="track"><span class="trail" style="--prog:{totalTok ? s.tok / totalTok : 0}"></span></div>
 				<div class="foot">
 					<span class="tok">{s.tok} / {totalTok} {t.tok}</span>
 					<span class="status">

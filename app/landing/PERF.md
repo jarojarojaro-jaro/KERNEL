@@ -42,6 +42,20 @@ For a cause, take a trace in the same Chrome (`page.tracing.start` with `devtool
   One-shot effects (the hero bloom) leave the DOM when their animation ends.
 - **Small DOM per repeated widget.** An odometer reel is one text node, not 11 spans.
 - **Loops pause off screen** (`visible` action, `onFrame` ticker) and on a hidden tab.
+- **Per-frame values go on the element that uses them.** A custom property changed on a section
+  root every frame restyles its whole subtree (the card hero: 222 elements a frame, now ~14). Layers
+  that change every frame (hero heat, the rolling figure, GpuArt glow) are composited only while
+  the timeline runs (`moving`), so a frame changes opacity/transform instead of repainting the hero.
+  In software compositing the repaints were the cost: raster threads starved the main thread.
+- **Endless decoration runs on the compositor.** Transform/opacity keyframes only, never an
+  animated custom property (the cookie button's turning edge is a rotating square, not `--angle`).
+- **Phones lay out only what is near the screen.** Below the card hero, model blocks, the memory
+  fit and the closing section have `content-visibility: auto` with a reserved height; the drawn
+  renders of the other cards are not in the server HTML and are drawn when the list comes near.
+- **Pointer effects read the box once per hover** (tilt, magnetic, header light), never after a
+  write in the same frame.
+- **Touch screens do not roll odometers**: `static/poprawki.css` shows them as text there, so a roll
+  would be invisible work (and a counting text in the hero jittered the line).
 - **Format numbers through `num()`** (`$lib/i18n`): it reuses one `Intl.NumberFormat` per
   (language, digits); `toLocaleString` with options builds a new formatter on every call.
 - Preload: `data-sveltekit-preload-data="hover"` on `<body>` (code and data load on hover/touchstart).

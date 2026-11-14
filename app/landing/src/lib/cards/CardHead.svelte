@@ -25,7 +25,8 @@
 		plate,
 		charge = null,
 		rpm = 0,
-		kick = 0
+		kick = 0,
+		moving = false
 	}: {
 		id: string;
 		prefix: string;
@@ -42,6 +43,8 @@
 		rpm?: number;
 		/** Becomes > 0 when the driven heat-up lands: a short kick and settle of the card. */
 		kick?: number;
+		/** The driven heat-up is running (charge changes every frame). */
+		moving?: boolean;
 	} = $props();
 
 	const lang = $derived(currentLang());
@@ -62,9 +65,12 @@
 	});
 </script>
 
-<section class="head" class:queued aria-labelledby="card-title" style="--hh:{heat * (charge ?? 1)}; --cc:{charge == null ? 0 : 1 - charge}">
+<section class="head" class:queued class:moving aria-labelledby="card-title">
 	<!-- the maker's band: its colour washes the top of the page and draws the line under the head -->
 	<div class="band" aria-hidden="true"></div>
+	<!-- heat glow and cold cast: own elements, so the per-frame opacity restyles only them -->
+	<div class="heat" aria-hidden="true" style="--hh:{heat * (charge ?? 1)}"></div>
+	<div class="cast" aria-hidden="true" style="--cc:{charge == null ? 0 : 1 - charge}"></div>
 	<div class="wrap">
 		<a class="back mono" href={cardsHref(lang)}><span aria-hidden="true">←</span> {t.back}</a>
 	</div>
@@ -125,31 +131,39 @@
 	}
 	/* The card's heat spills onto the page: a wide heat-ramp glow behind the render whose opacity is
 	   the measured gain × the current charge (opacity only, so it composites); during the cold start
-	   a steel cast takes its place. */
-	.head::before,
-	.head::after {
-		content: '';
+	   a steel cast takes its place. The box runs from 10% above the head to 35% below it; it is laid
+	   out from the head's top and lifted by a transform, so when the head grows (a web font arrives)
+	   its layout position stays put: no layout shift for a box bigger than the screen. */
+	.heat,
+	.cast {
 		position: absolute;
-		inset: -10% 0 -35%;
+		inset: 0 0 auto;
+		height: 145%;
+		translate: 0 calc(-100% / 14.5);
 		z-index: -1;
 		pointer-events: none;
 	}
-	.head::before {
+	.heat {
 		background:
 			radial-gradient(48% 46% at 72% 42%, rgb(var(--amber-rgb, 255 193 90) / 0.22), transparent 60%),
 			radial-gradient(75% 70% at 72% 45%, rgb(var(--hot-rgb, 255 122 26) / 0.3), transparent 72%),
 			radial-gradient(110% 90% at 70% 50%, rgb(var(--ember-rgb, 226 64 28) / 0.14), transparent 80%);
 		opacity: var(--hh);
 	}
-	.head::after {
+	.cast {
 		background: radial-gradient(60% 55% at 72% 45%, rgb(125 135 148 / 0.14), transparent 70%);
 		opacity: var(--cc);
 	}
-	.queued::before {
+	.queued .heat {
 		opacity: 0;
 	}
-	.queued::after {
+	.queued .cast {
 		opacity: 0.6;
+	}
+	/* while the heat-up runs, both layers are composited: a new opacity is not a repaint of the head */
+	.moving .heat,
+	.moving .cast {
+		will-change: opacity;
 	}
 	@media (prefers-reduced-motion: no-preference) {
 		.art.kicked {

@@ -364,3 +364,6 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 
 ## [2026-11-14] decyzja | Saluki usunięty z aplikacji Enigma; na stronie zawsze najnowsze pomiary
 [[2026-11-14-saluki-usuniety]]: aplikacja Enigma bez Saluki (katalog, planer, UI, testy 208/208 + tsc + svelte-check 0 błędów); 12 GB = Bonsai 2 (prism PTQ1_0+MTP 94,73/58,31 t/s, upstream Q2_0 196 608 zmierzone); [[saluki]] → nieaktualne; SITE-NVIDIA, [[final-recipes-nvidia]], [[final-modele-per-vram]] poprawione. Stała reguła: po kampanii zgłaszać karty do odświeżenia na stronie.
+
+## [2026-11-14] produkt | Karty 3090, 5060 Ti, 4060 Ti z listopada; lżejsze strony kart
+[[karty-nvidia-na-stronie]]: decyzja właściciela „najnowsze dane wygrywają”: 3090 (40,93 → 61,49 → 79,97 t/s), 5060 Ti (27,48 → 31,42 → 43,40) i 4060 Ti (19,78 → 24,02 → 36,30) z raportu 67; LFM2.5/Nemotron bez nowszych pomiarów zostają z października z opisem hosta. Strony kart lżejsze na telefonach (TBT ~100 ms, mobile z kompresją 82/85, bez kompresji 64/66). Gałęzie `karty-r5` (KERNEL) i `nvidia-r5` (strona, build `_app/i6`).

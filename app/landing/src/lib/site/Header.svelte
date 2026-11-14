@@ -6,6 +6,7 @@
 	import { onFrame, reducedMotion, Spring } from '$lib/fx/motion';
 	import { cardsHref, currentLang, href, resultsHref, switchLangHref } from '$lib/i18n';
 	import { tick, untrack } from 'svelte';
+	import { MediaQuery } from 'svelte/reactivity';
 	import { copy } from './copy';
 	import Logo from './Logo.svelte';
 
@@ -63,33 +64,46 @@
 	const sw = new Spring(0, 260, 26);
 	let alpha = 0;
 	let shown = false;
+	/** The pill exists only in the wide bar (the phone menu hides it): no measuring, no frames below. */
+	const wide = new MediaQuery('(min-width: 1021px)');
 
 	$effect(() => {
 		const idx = target;
 		const hovering = hoverIdx !== null;
-		if (!list || !pill) return;
+		if (!list || !pill || !wide.current) return;
 		const a = list.querySelectorAll<HTMLAnchorElement>(':scope > li:not(.m-only) > a')[idx];
 		const wantAlpha = idx >= 0 && a ? (hovering ? 1 : 0.55) : 0;
+		const still = reducedMotion();
 		if (a) {
 			const r = a.getBoundingClientRect();
 			const l = list.getBoundingClientRect();
 			sx.target = r.left - l.left;
 			sw.target = r.width;
-			if (!shown || reducedMotion()) {
+			if (!shown || still) {
 				sx.snap();
 				sw.snap();
 			}
 		}
 		const p = pill;
+		const paint = () => {
+			p.style.transform = `translate3d(${sx.x.toFixed(2)}px, 0, 0)`;
+			p.style.width = `${Math.max(0, sw.x).toFixed(2)}px`;
+			p.style.opacity = alpha.toFixed(3);
+		};
+		// reduced motion: the final state at once, no frame loop
+		if (still) {
+			alpha = wantAlpha;
+			shown = alpha > 0.02;
+			paint();
+			return;
+		}
 		return untrack(() =>
 			onFrame((dt) => {
 				sx.step(dt);
 				sw.step(dt);
 				alpha += (wantAlpha - alpha) * Math.min(1, dt * 12);
 				shown = alpha > 0.02;
-				p.style.transform = `translate3d(${sx.x.toFixed(2)}px, 0, 0)`;
-				p.style.width = `${Math.max(0, sw.x).toFixed(2)}px`;
-				p.style.opacity = alpha.toFixed(3);
+				paint();
 				if (sx.settled && sw.settled && Math.abs(wantAlpha - alpha) < 0.01) return false;
 			})
 		);
@@ -103,10 +117,12 @@
 		if (i >= 0) hoverIdx = i;
 	}
 
-	// Light inside the capsule that follows the cursor (fine pointers only).
+	// Light inside the capsule that follows the cursor (fine pointers only). The capsule's box is read
+	// once per hover (a read after the last move's writes would force a layout on every move).
+	let capBox: DOMRect | null = null;
 	function light(e: PointerEvent) {
 		if (!capsule || e.pointerType !== 'mouse') return;
-		const r = capsule.getBoundingClientRect();
+		const r = (capBox ??= capsule.getBoundingClientRect());
 		capsule.style.setProperty('--cx', `${e.clientX - r.left}px`);
 		capsule.style.setProperty('--cy', `${e.clientY - r.top}px`);
 	}
@@ -139,6 +155,7 @@
 	});
 
 	function onScroll() {
+		capBox = null;
 		scrolled = scrollY > 24;
 		const max = document.documentElement.scrollHeight - innerHeight;
 		progress = max > 0 ? Math.min(1, scrollY / max) : 0;
@@ -153,12 +170,12 @@
 	}
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && open && toggle()} onscroll={onScroll} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && open && toggle()} onscroll={onScroll} onresize={() => (capBox = null)} />
 
 <a class="skip-link" href="#main">{t.skip}</a>
 <header class="site-header" class:scrolled class:showcase class:open>
 	<!-- svelte-ignore a11y_no_static_element_interactions (decorative cursor light only) -->
-	<div class="capsule" bind:this={capsule} onpointermove={light}>
+	<div class="capsule" bind:this={capsule} onpointermove={light} onpointerleave={() => (capBox = null)}>
 		<a class="brand" href={href(lang)}>
 			<Logo />
 		</a>

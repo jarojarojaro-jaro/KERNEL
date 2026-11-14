@@ -27,6 +27,8 @@
 	}: { value: number; decimals?: number; lang?: 'pl' | 'en'; duration?: number; minInt?: number; label?: string; overshoot?: number; pad?: boolean; replay?: number } = $props();
 
 	const ease = (k: number) => (overshoot > 0 ? 1 + (overshoot + 1) * (k - 1) ** 3 + overshoot * (k - 1) ** 2 : easeOutExpo(k));
+	/** No roll: reduced motion, or a touch screen, where the value shows as text, not drums (static/poprawki.css). */
+	const still = () => reducedMotion() || matchMedia('(hover: none)').matches;
 
 	// svelte-ignore state_referenced_locally
 	let shown = $state(value);
@@ -52,11 +54,11 @@
 		const r = replay;
 		const again = r !== lastReplay;
 		lastReplay = r;
-		if (again && !reducedMotion() && duration > 0) {
+		if (again && !still() && duration > 0) {
 			first = false;
 			untrack(() => (shown = 0));
 		}
-		else if (first || duration === 0 || reducedMotion()) {
+		else if (first || duration === 0 || still()) {
 			first = false;
 			stop?.();
 			shown = v;

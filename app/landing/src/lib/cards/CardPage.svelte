@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { MODEL_STYLE } from '$lib/modelStyle';
 	import { onDestroy, onMount } from 'svelte';
-	import { visible } from '$lib/fx/actions';
+	import { near, visible } from '$lib/fx/actions';
 	import { onFrame, reducedMotion, whenIdle } from '$lib/fx/motion';
 	import Odometer from '$lib/fx/Odometer.svelte';
 	import { variantLabel, words500, type CardView, type ModelKey } from '$lib/data/measurements';
@@ -42,16 +42,22 @@
 	let tp = $state(hot);
 	let rpm = $state(0);
 	let landed = $state(0);
+	/** The counter and the heat change every frame (cold start → lock): their layers are composited. */
+	let moving = $state(false);
 	let started = false;
 	let stop: (() => void) | null = null;
+	/** The fans only exist on the drawn render: a product photo has none, so the timeline ends at the lock. */
+	const fans = $derived(!photoOf(card.id));
 	const easeOutCubic = (k: number) => 1 - (1 - k) ** 3;
 	const easeInOut = (k: number) => (k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2);
 	function rev() {
 		if (!d || reducedMotion()) return;
 		const o = hot;
 		const b = cold;
+		const spin = fans;
 		let t = 0;
 		stop?.();
+		moving = true;
 		stop = onFrame((dt) => {
 			t += dt;
 			if (t < 0.45) tp = o - (o - b) * easeInOut(t / 0.45);
@@ -62,8 +68,11 @@
 				const k = Math.min(1, (t - 0.7) / 1.7);
 				const lock = Math.min(1, easeOutCubic(k) / 0.96);
 				tp = lock >= 1 ? o : Math.min(o, b + (o - b) * lock);
-				rpm = k < 1 ? 0.25 + 0.75 * easeOutCubic(k) : Math.max(0, 1 - (t - 2.4) / 2.6);
-				if (lock >= 1 && landed === 0) landed = 1;
+				if (spin) rpm = k < 1 ? 0.25 + 0.75 * easeOutCubic(k) : Math.max(0, 1 - (t - 2.4) / 2.6);
+				if (lock >= 1 && landed === 0) {
+					landed = 1;
+					moving = false;
+				}
 				if (k >= 1 && rpm === 0) {
 					stop = null;
 					return false;
@@ -76,8 +85,8 @@
 		if (!stop) return;
 		stop();
 		stop = null;
+		moving = false;
 		tp = hot;
-		rpm = 0;
 	}
 	/**
 	 * Start once the hero is on screen, after load, when the main thread is idle (keeps TBT low);
@@ -96,7 +105,14 @@
 		started = true;
 		cancelIdle = whenIdle(() => heroOn && !document.hidden && rev(), 400);
 	}
+	/**
+	 * Touch screens show figures as plain text instead of drums (static/poprawki.css). A counting
+	 * text changes width every frame (the face has no tabular digits): the line would jitter and
+	 * relayout, so there the figure keeps its measured value and only the card replays its heat.
+	 */
+	let plain = $state(false);
 	onMount(() => {
+		plain = matchMedia('(hover: none)').matches;
 		const hide = () => document.hidden && finish();
 		const show = (e: PageTransitionEvent) => e.persisted && finish();
 		document.addEventListener('visibilitychange', hide);
@@ -114,6 +130,11 @@
 	const heat = $derived(heatOf(d?.ratio));
 
 	const others = $derived(MEASURED.filter((e) => e.id !== card.id));
+	/**
+	 * The drawn renders of the other cards (decoration, ~10 KB of SVG each) are not in the server
+	 * HTML: they are drawn when the list comes near the screen, into boxes of the same size.
+	 */
+	let othersArt = $state(false);
 	const prefix = $derived(card.name.split(card.short)[0].trim());
 
 	/* plate under the render: facts about the headline run, as many as were measured */
@@ -135,9 +156,9 @@
 </script>
 
 <VendorTheme vendor={card.vendor}>
-<CardHead id={card.id} {prefix} short={card.short} vendor={card.vendor} vram={card.vramGB} {heat} kick={landed} spec="{card.vramGB} GB · {card.arch} · {num(card.bwGBs.v, lang, 0)} GB/s" charge={d ? charge : null} {rpm}>
+<CardHead id={card.id} {prefix} short={card.short} vendor={card.vendor} vram={card.vramGB} {heat} kick={landed} {moving} spec="{card.vramGB} GB · {card.arch} · {num(card.bwGBs.v, lang, 0)} GB/s" charge={d ? charge : null} {rpm}>
 	{#if d}
-		<div class="speedline hx-bt" class:landed={landed > 0} style="--g:{heat * charge}" use:visible={startWhenIdle}>
+		<div class="speedline hx-bt" class:landed={landed > 0} class:moving use:visible={startWhenIdle}>
 			<p class="hl-m mono">{t.headline(`${MODEL_STYLE[d.run.model].short} ${d.run.quant}`)}</p>
 			<!-- one line: typical → ours · the speed-up (wraps only on narrow phones) -->
 			<div class="hl-n">
@@ -148,7 +169,7 @@
 				<span class="arrow" aria-hidden="true">→</span>
 				<span class="b">
 					<span class="lbl">{variantLabel(d.run, d.run.ours)[lang]}</span>
-					<span class="v hot fig"><Odometer value={roundTo(tp, 1)} decimals={1} {lang} duration={0} label={variantLabel(d.run, d.run.ours)[lang]} /><span class="u">t/s</span></span>
+					<span class="v hot fig" style="--g:{heat * charge}"><Odometer value={plain ? hot : roundTo(tp, 1)} decimals={1} {lang} duration={0} label={variantLabel(d.run, d.run.ours)[lang]} /><span class="u">t/s</span></span>
 				</span>
 				{#if d.ratio}
 					<span class="b stamp">
@@ -220,14 +241,14 @@
 		</div>
 	</div>
 	<h3 class="others-h eyebrow">{t.measuredOthers}</h3>
-	<ul class="others" role="list">
+	<ul class="others" role="list" use:near={{ onnear: () => (othersArt = true) }}>
 		{#each others as e (e.id)}
 			{@const od = headline(e.card)}
 			{@const op = photoOf(e.id)}
 			<li>
 				<a href={cardsHref(lang, `${e.id}/`)} class="other hx-ring hx-surface" style={vendorVars(e.card.vendor)}>
 					<span class="o-art">
-						{#if op}<ProductPhoto id={op} sizes="8rem" />{:else}<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(od?.ratio)} flat />{/if}
+						{#if op}<ProductPhoto id={op} sizes="8rem" />{:else if othersArt}<GpuArt label={e.card.short} vendor={e.card.vendor} vram={e.card.vramGB} heat={heatOf(od?.ratio)} flat />{:else}<span class="o-ph"></span>{/if}
 					</span>
 					<span class="o-name">{e.card.short}</span>
 					<span class="o-x">{#if od?.ratio}<Ratio value={od.ratio} {lang} size="sm" />{/if}<span class="mono">{e.card.vramGB} GB</span></span>
@@ -294,6 +315,10 @@
 		font-size: clamp(2.2rem, 1.2rem + 2.6vw, 3.6rem);
 		color: var(--text-hi);
 		filter: drop-shadow(0 0 calc(4px + var(--g) * 22px) rgb(var(--hot-rgb, 255 122 26) / calc(var(--g) * 0.75)));
+	}
+	/* the rolling figure is its own layer while it counts: its frames repaint only itself */
+	.moving .v.hot {
+		will-change: transform;
 	}
 	.u {
 		font-size: var(--fs-xs);
@@ -415,6 +440,20 @@
 	}
 	.rank-list > li {
 		min-width: 0;
+	}
+	/*
+	 * Phones: each model's block and the closing section are laid out and painted only when they come
+	 * near the screen. The reserved height is about a phone's real one; `auto` keeps the measured one.
+	 */
+	@media (max-width: 56rem) {
+		.rank-list > li {
+			content-visibility: auto;
+			contain-intrinsic-block-size: auto 3100px;
+		}
+		.next {
+			content-visibility: auto;
+			contain-intrinsic-block-size: auto 1550px;
+		}
 	}
 
 	/* fingerprint: one compact strip */
@@ -611,6 +650,11 @@
 	}
 	.o-art {
 		grid-row: 1 / span 2;
+	}
+	/* the box of a GpuArt (640 × 300) until it is drawn */
+	.o-ph {
+		display: block;
+		aspect-ratio: 640 / 300;
 	}
 	.o-name {
 		font-size: var(--fs-xl);

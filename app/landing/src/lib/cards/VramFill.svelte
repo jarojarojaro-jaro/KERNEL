@@ -95,6 +95,13 @@
 			radial-gradient(80% 60% at 0% 0%, rgb(255 255 255 / 0.03), transparent 60%),
 			linear-gradient(180deg, var(--bg-1), #070708);
 	}
+	/* phones: below the hero, laid out and painted only when it comes near the screen */
+	@media (max-width: 56rem) {
+		.fit {
+			content-visibility: auto;
+			contain-intrinsic-block-size: auto 480px;
+		}
+	}
 	.intro {
 		display: flex;
 		flex-wrap: wrap;

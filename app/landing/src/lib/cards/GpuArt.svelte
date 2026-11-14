@@ -131,19 +131,25 @@
 	const blades = Array.from({ length: 11 }, (_, i) => (i * 360) / 11);
 	const h = $derived(Math.max(0, Math.min(1, heat)));
 	const c = $derived(charge == null ? 1 : Math.max(0, Math.min(1, charge)));
+	/** Driven and mid-timeline: the heat or the fans change every frame. */
+	const moving = $derived(charge != null && (c < 1 || rpm > 0));
 
 	/** Fan angle, integrated from rpm on the shared frame loop (up to ~7 turns/s, read as a blur). */
 	let angle = $state(0);
+	// subscribed once per spin (rpm is read inside the frame, so a new rpm does not resubscribe)
+	const spinning = $derived(rpm > 0);
 	$effect(() => {
-		if (rpm <= 0) return;
+		if (!spinning) return;
 		return onFrame((dt) => {
 			angle = (angle + rpm * 2500 * dt) % 360;
 		});
 	});
 </script>
 
-<div class="art" class:live class:flat class:ignite={ignite && charge == null} class:driven={charge != null} class:cold={h === 0} style="--h:{h}; --c:{c}; --rpm:{rpm}; --fl:{light.c}; {box}" aria-hidden="true">
-	<div class="glow"></div>
+<div class="art" class:live class:flat class:ignite={ignite && charge == null} class:driven={charge != null} class:moving class:cold={h === 0} style="--h:{h}; --fl:{light.c}; {box}" aria-hidden="true">
+	<!-- the charge (--c) and fan speed are set on the elements that use them, not on this root:
+	     a driven frame then restyles a handful of leaves instead of the whole render -->
+	<div class="glow" style="--c:{c}"></div>
 	<div class="floor"></div>
 	<div class="body">
 		{#if apple}
@@ -165,7 +171,7 @@
 				{/each}
 				<rect x="236" y="66" width="168" height="168" rx="14" fill="url(#die-{uid})" stroke="#2c2c33" />
 				<text x="320" y="164" text-anchor="middle" class="engrave apple">{label.replace(/^Apple\s+/i, "")}</text>
-				<rect class="strip" x="236" y="242" width="168" height="3" rx="1.5" />
+				<rect class="strip" x="236" y="242" width="168" height="3" rx="1.5" style="--c:{c}" />
 			</svg>
 		{:else}
 			<svg viewBox="0 0 640 300" class="sh-{spec.shroud}">
@@ -307,12 +313,12 @@
 						<circle cx={f.cx} cy="132" r={f.r + 8} fill="url(#rim-{uid})" />
 						<circle cx={f.cx} cy="132" r={f.r + 3} fill="#050506" />
 						<circle cx={f.cx} cy="132" r={f.r} fill="url(#fan-{uid})" />
-						<g class="fan" style="--d:{0.9 + i * 0.13}s" transform={charge != null ? `rotate(${(angle + i * 40) % 360} ${f.cx} 132)` : undefined}>
+						<g class="fan" style="--d:{0.9 + i * 0.13}s{charge != null ? `; opacity: ${1 - rpm * 0.55}` : ''}" transform={charge != null ? `rotate(${(angle + i * 40) % 360} ${f.cx} 132)` : undefined}>
 							{#each blades as a (a)}
 								<path transform="translate({f.cx} 132) rotate({a})" d="M0 -{f.r * 0.24} C {f.r * 0.32} -{f.r * 0.42}, {f.r * 0.5} -{f.r * 0.78}, {f.r * 0.2} -{f.r * 0.96} L -{f.r * 0.06} -{f.r * 0.9} C {f.r * 0.14} -{f.r * 0.7}, {f.r * 0.04} -{f.r * 0.46}, -{f.r * 0.12} -{f.r * 0.27} Z" fill="url(#bl-{uid})" stroke="rgb(255 255 255 / 0.07)" stroke-width="0.8" />
 							{/each}
 						</g>
-						{#if charge != null}<circle class="blur" cx={f.cx} cy="132" r={f.r * 0.97} fill="url(#smear-{uid})" />{/if}
+						{#if charge != null}<circle class="blur" cx={f.cx} cy="132" r={f.r * 0.97} fill="url(#smear-{uid})" style="opacity: {rpm * 0.85}" />{/if}
 						<circle cx={f.cx} cy="132" r={f.r * 0.26} fill="#111114" stroke={spec.shroud === 'arc' ? '#8d8e95' : '#34343c'} stroke-width="1.5" />
 						<circle cx={f.cx} cy="132" r={f.r * 0.14} fill="none" stroke="#24242a" />
 						<circle cx={f.cx} cy="132" r="2.5" fill="#4a4a52" />
@@ -347,11 +353,11 @@
 				{/if}
 				<!-- light strip: as long and as hot as the measured speed-up -->
 				<rect x={x0 + 16} y="226" width={spec.len - 32} height="3" rx="1.5" fill="#1a1a1e" />
-				<rect class="strip" x={x0 + 16} y="226" width={spec.len - 32} height="3" rx="1.5" fill="url(#ramp-{uid})" />
+				<rect class="strip" x={x0 + 16} y="226" width={spec.len - 32} height="3" rx="1.5" fill="url(#ramp-{uid})" style="--c:{c}" />
 			</svg>
 		{/if}
-		<div class="under" class:apple></div>
-		<div class="sheen" class:apple></div>
+		<div class="under" class:apple style="--c:{c}"></div>
+		<div class="sheen" class:apple style="--c:{c}"></div>
 	</div>
 </div>
 
@@ -448,7 +454,9 @@
 		position: absolute;
 		inset: 10% 6% -8%;
 		border-radius: 50%;
-		background: radial-gradient(closest-side, rgb(var(--hot-rgb, 255 122 26) / calc((0.08 + var(--h) * 0.38) * var(--c))), rgb(var(--ember-rgb, 226 64 28) / calc(var(--h) * 0.12 * var(--c))) 55%, transparent);
+		/* the charge scales every stop's alpha: the same as the layer's opacity, which composites */
+		background: radial-gradient(closest-side, rgb(var(--hot-rgb, 255 122 26) / calc(0.08 + var(--h) * 0.38)), rgb(var(--ember-rgb, 226 64 28) / calc(var(--h) * 0.12)) 55%, transparent);
+		opacity: var(--c);
 		filter: blur(18px);
 		transform: scale(0.92);
 		transition:
@@ -458,6 +466,7 @@
 	/* not measured yet: no heat, the family's own light behind the card */
 	.cold .glow {
 		background: radial-gradient(closest-side, color-mix(in srgb, var(--fl, #7d8794) 13%, transparent), transparent);
+		opacity: 1;
 	}
 	.live .glow {
 		transform: scale(1.04);
@@ -498,6 +507,12 @@
 	.driven .under {
 		opacity: calc((0.15 + var(--h) * 0.55) * var(--c));
 	}
+	/* while the parent's timeline runs, the glow and the underglow are layers of their own: a new
+	   charge changes only their opacity/transform (no repaint of the blur) */
+	.moving .glow,
+	.moving .under {
+		will-change: opacity, transform;
+	}
 	/* the backplate itself warms up: a heat wash across the shroud, as strong as the measured gain */
 	.driven .sheen {
 		opacity: 1;
@@ -506,9 +521,8 @@
 			linear-gradient(0deg, rgb(var(--hot-rgb, 255 122 26) / calc(var(--h) * var(--c) * 0.3)), transparent 60%),
 			linear-gradient(180deg, rgb(125 135 148 / calc((1 - var(--c)) * 0.16)), rgb(30 52 72 / calc((1 - var(--c)) * 0.12)));
 	}
-	/* motion blur: the blades fade into a smeared disc as the fans speed up */
+	/* motion blur: the blades fade into a smeared disc as the fans speed up (opacities inline, from rpm) */
 	.blur {
-		opacity: calc(var(--rpm) * 0.85);
 		pointer-events: none;
 	}
 	/* driven fans rotate through their SVG transform attribute (about the fan centre), so the CSS
@@ -516,7 +530,6 @@
 	.driven .fan {
 		transform-box: view-box;
 		transform-origin: 0 0;
-		opacity: calc(1 - var(--rpm) * 0.55);
 	}
 	.cold .strip,
 	.driven.cold .strip {

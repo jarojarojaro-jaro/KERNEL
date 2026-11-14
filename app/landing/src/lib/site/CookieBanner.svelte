@@ -25,17 +25,12 @@
 		</p>
 		<div class="buttons">
 			<button class="btn btn--secondary btn--sm" type="button" onclick={() => saveConsent(false)}>{t.necessaryOnly}</button>
-			<button class="accept" type="button" onclick={() => saveConsent(true)}>{t.accept}</button>
+			<button class="accept" type="button" onclick={() => saveConsent(true)}><span class="edge" aria-hidden="true"><span></span></span>{t.accept}</button>
 		</div>
 	</section>
 {/if}
 
 <style>
-	@property --ck {
-		syntax: '<angle>';
-		inherits: false;
-		initial-value: 0deg;
-	}
 	/* One line at the bottom: glass bar with a heat-gradient hairline on top. */
 	.cookie {
 		position: fixed;
@@ -117,26 +112,38 @@
 			transform var(--dur-2) var(--ease-out),
 			box-shadow var(--dur-3) var(--ease-out);
 	}
-	.accept::after {
-		content: '';
+	/*
+	 * The edge: a conic heat gradient blurred around the pill. The gradient turns as a rotating square
+	 * (transform only, so the compositor runs it with no main-thread frames) clipped to the pill.
+	 */
+	.edge {
 		position: absolute;
 		inset: -4px;
 		z-index: -1;
 		border-radius: inherit;
-		background: conic-gradient(from var(--ck), var(--heat-2), var(--heat-4) 20%, var(--heat-5) 28%, var(--heat-3) 45%, transparent 60%, var(--heat-2));
+		overflow: hidden;
 		filter: blur(10px);
 		opacity: 0.55;
-		animation: ck-turn 4.5s linear infinite;
 		transition: opacity var(--dur-3) var(--ease-out);
 		pointer-events: none;
+	}
+	.edge > span {
+		position: absolute;
+		left: -25%;
+		top: 50%;
+		width: 150%;
+		aspect-ratio: 1;
+		margin-top: -75%;
+		background: conic-gradient(var(--heat-2), var(--heat-4) 20%, var(--heat-5) 28%, var(--heat-3) 45%, transparent 60%, var(--heat-2));
+		animation: ck-turn 4.5s linear infinite;
 	}
 	.accept:hover {
 		box-shadow:
 			inset 0 1px 0 rgb(255 255 255 / 0.45),
 			0 14px 40px -10px var(--heat-3);
 	}
-	.accept:hover::after,
-	.accept:focus-visible::after {
+	.accept:hover .edge,
+	.accept:focus-visible .edge {
 		opacity: 0.95;
 	}
 	.accept:active {
@@ -148,7 +155,7 @@
 	}
 	@keyframes ck-turn {
 		to {
-			--ck: 360deg;
+			transform: rotate(1turn);
 		}
 	}
 	@keyframes ck-in {
@@ -179,7 +186,7 @@
 	}
 	@media (prefers-reduced-motion: reduce) {
 		.cookie,
-		.accept::after {
+		.edge > span {
 			animation: none;
 		}
 	}

@@ -8,6 +8,25 @@ import { onFinish, reducedMotion } from './motion';
 const finePointer = () => typeof matchMedia !== 'undefined' && matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 /**
+ * The node's box, read once per hover instead of on every pointer frame (a read right after the
+ * last frame's style writes forces a synchronous layout). Leaving, scrolling or resizing drops it.
+ */
+function hoverBox(node: HTMLElement) {
+	let box: DOMRect | null = null;
+	const drop = () => (box = null);
+	addEventListener('scroll', drop, { passive: true, capture: true });
+	addEventListener('resize', drop, { passive: true });
+	return {
+		get: () => (box ??= node.getBoundingClientRect()),
+		drop,
+		destroy() {
+			removeEventListener('scroll', drop, { capture: true });
+			removeEventListener('resize', drop);
+		}
+	};
+}
+
+/**
  * Hover tilt with glare. Sets --rx/--ry (deg) and --gx/--gy (%) on the node; the `.tilt` class in
  * showcase.css turns them into a 3D transform and a glare highlight.
  */
@@ -15,11 +34,12 @@ export const tilt: Action<HTMLElement, { max?: number } | undefined> = (node, op
 	if (reducedMotion() || !finePointer()) return;
 	const max = opts?.max ?? 6;
 	node.classList.add('tilt');
+	const box = hoverBox(node);
 	let frame = 0;
 	const move = (e: PointerEvent) => {
 		cancelAnimationFrame(frame);
 		frame = requestAnimationFrame(() => {
-			const r = node.getBoundingClientRect();
+			const r = box.get();
 			const x = (e.clientX - r.left) / r.width;
 			const y = (e.clientY - r.top) / r.height;
 			node.style.setProperty('--ry', `${((x - 0.5) * 2 * max).toFixed(2)}deg`);
@@ -31,6 +51,7 @@ export const tilt: Action<HTMLElement, { max?: number } | undefined> = (node, op
 	};
 	const leave = () => {
 		cancelAnimationFrame(frame);
+		box.drop();
 		node.style.setProperty('--rx', '0deg');
 		node.style.setProperty('--ry', '0deg');
 		delete node.dataset.hover;
@@ -39,6 +60,8 @@ export const tilt: Action<HTMLElement, { max?: number } | undefined> = (node, op
 	node.addEventListener('pointerleave', leave);
 	return {
 		destroy() {
+			cancelAnimationFrame(frame);
+			box.destroy();
 			node.removeEventListener('pointermove', move);
 			node.removeEventListener('pointerleave', leave);
 		}
@@ -50,14 +73,16 @@ export const magnetic: Action<HTMLElement, { max?: number } | undefined> = (node
 	if (reducedMotion() || !finePointer()) return;
 	const max = opts?.max ?? 6;
 	node.classList.add('magnetic');
+	const box = hoverBox(node);
 	const move = (e: PointerEvent) => {
-		const r = node.getBoundingClientRect();
+		const r = box.get();
 		const dx = (e.clientX - (r.left + r.width / 2)) / (r.width / 2);
 		const dy = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
 		node.style.setProperty('--mx', `${(dx * max).toFixed(2)}px`);
 		node.style.setProperty('--my', `${(dy * max).toFixed(2)}px`);
 	};
 	const leave = () => {
+		box.drop();
 		node.style.setProperty('--mx', '0px');
 		node.style.setProperty('--my', '0px');
 	};
@@ -65,6 +90,7 @@ export const magnetic: Action<HTMLElement, { max?: number } | undefined> = (node
 	node.addEventListener('pointerleave', leave);
 	return {
 		destroy() {
+			box.destroy();
 			node.removeEventListener('pointermove', move);
 			node.removeEventListener('pointerleave', leave);
 		}
@@ -105,6 +131,27 @@ export const visible: Action<HTMLElement, (on: boolean) => void> = (node, cb) =>
 		return;
 	}
 	const io = new IntersectionObserver(([e]) => cb(e.isIntersecting), { threshold: 0 });
+	io.observe(node);
+	return { destroy: () => io.disconnect() };
+};
+
+/**
+ * Fires `onnear` once, when the node comes within `margin` of the viewport. For work the page does
+ * not need before then (decorative renders far down the page are not in the server HTML).
+ */
+export const near: Action<HTMLElement, { onnear: () => void; margin?: string }> = (node, opts) => {
+	if (typeof IntersectionObserver === 'undefined') {
+		opts.onnear();
+		return;
+	}
+	const io = new IntersectionObserver(
+		([e]) => {
+			if (!e.isIntersecting) return;
+			io.disconnect();
+			opts.onnear();
+		},
+		{ rootMargin: opts.margin ?? '600px 0px' }
+	);
 	io.observe(node);
 	return { destroy: () => io.disconnect() };
 };
