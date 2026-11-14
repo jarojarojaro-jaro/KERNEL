@@ -376,3 +376,6 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 
 ## [2026-11-14] rekord | decode 1,7k na produkcji (PM4)
 [[REKORDY]]: decode MTP 1,7k T=0 topka-q70 133,9 t/s (świeży prefill 130,4; bez PM4 125,2/122,6 → PM4 +6,4%), zastępuje 130,2 z 2026-10-14. PM4 jest w produkcji od 2026-10-21 (`run-topka.sh`: `GGML_HIP_PM4=1 WA=2 GUARD=1`), nic do wdrożenia.
+
+## [2026-11-14] decyzja | pin Enigmy zostaje b11856 (bramka K-103)
+[[2026-11-14-k103-llamacpp-v1-nvidia]]: oficjalne binarki b12359 (v1.0.0) vs b11856 na 5060 Ti: KLD 0,000700 vs szum upstreamu 0,000569–0,000615 (~2σ ponad), MTP n3 +0,6%, VRAM +48 MiB (zapas 4090 upstream 46 MiB) → zgoda właściciela na wdrożenie „jak lepsze”, ale v1.0.0 nie jest bezstratny ani ponad progiem; pin bez zmian. PM4 już w produkcji. K-105 przeformułowane na port #31533 do forka. Vast łącznie ~0,15 USD, 0 instancji.

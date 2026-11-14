@@ -2,7 +2,7 @@
 typ: eksperyment
 tags: [eksperymenty, nvidia, rtx-5060-ti, enigma, mtp, upstream, kolejka]
 aktualizacja: 2026-11-14
-zrodlo: ~/KERNEL/qwen-opt/cloud/k103/{run.sh,summ.py,collect.sh,res/*}; Vast instancja 60693822 (RTX 5060 Ti 16 GB, Tajwan, limit mocy 150 W z 180 W fabrycznych), 2026-11-14 20:36–21:20 UTC
+zrodlo: ~/KERNEL/qwen-opt/cloud/k103/{run.sh,run2.sh,summ.py,collect.sh,collect2.sh,res/*,res2/*}; Vast instancja 60693822 (RTX 5060 Ti 16 GB, Tajwan, limit mocy 150 W z 180 W fabrycznych), 2026-11-14 20:36–21:20 UTC
 status: aktualne
 ---
 # 2026-11-14: K-103 — llama.cpp v1.0.0 vs pin Enigmy b11856 na RTX 5060 Ti (Qwen3.8-27B ISTA IQ3_XXS-mtp, MTP n2)
@@ -21,11 +21,30 @@ status: aktualne
 | pp576, ub 16 | 278,98 | 306,41 | **+9,8%** |
 | VRAM po załadowaniu / szczyt | 13 281 / 13 509 MiB | 13 329 / 13 557 | +48 MiB |
 
-**Wnioski i rekomendacja dla Enigmy:**
-- Pin b11856 można podnieść do v1.0.0 na 16 GB: działa szybciej, a regresja z b12110 zniknęła. Przed zmianą trzeba jeszcze sprawdzić 24/32 GB z MTP n3 (tam pin wygrywał z b12110) i nasz silnik lean.
+**Wnioski (pierwsza instancja):**
+- Regresja z b12110 zniknęła, a przy n2 jest +3,5%. Bramka niżej rozstrzyga jednak, że pin zostaje.
 - Pełny zysk #31533 (+10…12% na przebieg) pojawi się dopiero przy szerszej weryfikacji: MTP n ≥ 4, lookup W16 albo fork. To następny test, kartą 3090/4090 albo 5060 Ti w jaroserverai.
 - Zastrzeżenia: limit mocy karty z wynajmu 150 W (fabrycznie 180 W) jest ten sam w obu ramionach; jeden seed × 6 promptów; tok/krok pl-kod różni się między wersjami, czyli zmieniła się polityka draftu, nie tylko kernel.
 - **Koszt Vast:** ~0,10 USD (kredyt 0,65 → 0,55), instancja zniszczona o 21:20 UTC, 0 instancji. Pierwsza próba zostawiła instancję pustą na ~15 min, bo podagenci skończyli razem z turą.
+
+## Bramka przed zmianą pinu (2026-11-14 21:33–21:45 UTC, druga instancja 60698445, 5060 Ti 160 W)
+
+Oficjalne binarki z wydań (to, co pobiera Enigma): b11856 vs b12359 (= v1.0.0). Model ten sam, KV q4_0.
+
+| pomiar | b11856 | b12359 (v1.0.0) | werdykt |
+|---|---|---|---|
+| KLD vs logity b11856 ub 512 (wikitext-2, 20 × 512) | ub 256: 0,000569; ub 8: 0,000615 (szum podziału batcha) | ub 512: **0,000700 ± 0,000026**; ub 8: 0,000693 | ~2σ **ponad** szumem; KLD ≠ 0, md5 ≠ |
+| ta sama najlepsza pozycja | 98,88 / 98,67% | 98,53 / 98,63% | – |
+| spec_sweep T=1, MTP n3 (przepis 24/32 GB), A B B A | 39,92 / 39,96 t/s | 40,02 / 40,32 | **+0,6%**, poniżej progu |
+| ms na krok | 56,06 / 56,01 | 55,55 / 55,38 | −1,0% |
+
+**Decyzja: pinu Enigmy nie zmieniamy (zostaje b11856).** Cztery powody:
+1. v1.0.0 nie jest bezstratny względem pinu. KLD przekracza szum samego upstreamu, czyli nie spełnia reguły „md5 albo KLD = 0”, nawet w luźnej wersji z kampanii 67 („w szumie upstreamu”).
+2. Zysk przy MTP n3 (24/32 GB) to tylko +0,6%. Przy n2 (16 GB) +3,5%, ale prawie w całości z pl-kod: zmieniła się polityka draftu, nie kernel.
+3. VRAM +48 MiB przy załadowaniu. Plan 4090 upstream 262 144 z MTP n3 miał szczyt 24 036 z 24 082 MiB (46 MiB zapasu), więc na Windows grozi OOM bez nowego pomiaru wypełnienia.
+4. Pin jest wspólny dla CPU, Vulkan, ROCm i macOS. Tych backendów nie mierzyliśmy.
+
+Koszt obu instancji: 0,65 → 0,50 USD (~0,15 USD), 0 instancji. Kontynuacja w K-105 w [[KOLEJKA-TESTOW]].
 
 ## Powiązane
 - [[KOLEJKA-TESTOW]]

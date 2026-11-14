@@ -1,0 +1,4 @@
+A1-b11856-mtp3 T=1.0: median  39.9 t/s, 56.06 ms/step | pl-proza  38.6 (2.19 tok/step)  pl-tech  42.4 (2.38 tok/step)  pl-kod  39.0 (2.19 tok/step)  en-chat  43.0 (2.41 tok/step)  en-tech  38.9 (2.17 tok/step)  en-code  40.8 (2.29 tok/step)
+B1-b12359-mtp3 T=1.0: median  40.0 t/s, 55.55 ms/step | pl-proza  38.8 (2.15 tok/step)  pl-tech  40.8 (2.31 tok/step)  pl-kod  47.1 (2.61 tok/step)  en-chat  39.8 (2.25 tok/step)  en-tech  40.3 (2.22 tok/step)  en-code  38.9 (2.16 tok/step)
+B2-b12359-mtp3 T=1.0: median  40.3 t/s, 55.38 ms/step | pl-proza  38.8 (2.15 tok/step)  pl-tech  41.8 (2.31 tok/step)  pl-kod  46.9 (2.61 tok/step)  en-chat  40.6 (2.25 tok/step)  en-tech  40.1 (2.22 tok/step)  en-code  39.3 (2.16 tok/step)
+A2-b11856-mtp3 T=1.0: median  40.0 t/s, 56.01 ms/step | pl-proza  39.0 (2.19 tok/step)  pl-tech  42.4 (2.38 tok/step)  pl-kod  39.2 (2.19 tok/step)  en-chat  43.2 (2.41 tok/step)  en-tech  38.9 (2.17 tok/step)  en-code  40.7 (2.29 tok/step)

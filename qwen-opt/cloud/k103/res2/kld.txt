@@ -1,0 +1,4 @@
+a256 chunk PPL ln(PPL(Q)/PPL(base)) KL Divergence Δp RMS Same top p Mean KLD: 0.000569 ± 0.000019 Same top p: 98.882 ± 0.147 % 
+a8 chunk PPL ln(PPL(Q)/PPL(base)) KL Divergence Δp RMS Same top p Mean KLD: 0.000615 ± 0.000029 Same top p: 98.667 ± 0.161 % 
+b512 chunk PPL ln(PPL(Q)/PPL(base)) KL Divergence Δp RMS Same top p Mean KLD: 0.000700 ± 0.000026 Same top p: 98.529 ± 0.169 % 
+b8 chunk PPL ln(PPL(Q)/PPL(base)) KL Divergence Δp RMS Same top p Mean KLD: 0.000693 ± 0.000026 Same top p: 98.627 ± 0.163 % 
