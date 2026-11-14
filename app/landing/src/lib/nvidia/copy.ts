@@ -10,16 +10,16 @@ import type { Lang } from '$lib/i18n';
 
 const pl = {
 	meta: {
-		title: 'Wyniki NVIDIA: 11 kart, do 2× szybciej',
+		title: 'Wyniki NVIDIA: 11 kart, do 2,4× szybciej',
 		description:
-			'Enigma na 11 kartach NVIDIA, od RTX 2080 Ti do RTX 5090: do 2× szybciej i pełny kontekst 262 144 tokenów. Liczby, modele, licencje i gotowe ustawienia.',
+			'Enigma na 11 kartach NVIDIA, od RTX 2080 Ti do RTX 5090: do 2,4× szybciej niż zwykły llama.cpp, pełny kontekst 262 144 tokenów. Liczby, modele, licencje.',
 		crumbs: { cards: 'Twoja karta', nvidia: 'Wyniki NVIDIA' }
 	},
 	hero: {
 		eyebrow: '11 kart NVIDIA · od RTX 2080 Ti do RTX 5090',
 		/** The headline as the source material words it (SITE-NVIDIA.md:14-15). */
 		title: ['Ta sama karta, ten sam model,', 'ta sama jakość odpowiedzi.'],
-		titleTail: 'Do 2× szybciej i z pełnym kontekstem 262 144 tokenów.',
+		titleTail: 'Do 2,4× szybciej niż zwykły llama.cpp (o 47% szybciej niż llama.cpp z MTP), z pełnym kontekstem 262\u00a0144 tokenów.',
 		lead: 'Sprawdziliśmy Enigmę na 11 kartach NVIDIA, od RTX 2080 Ti do RTX 5090. Każde ustawienie przeszło test pełnego wypełnienia kontekstu na prawdziwej karcie.',
 		statsLabel: 'Liczby, które wyróżniamy',
 		stats: {
@@ -61,7 +61,7 @@ const pl = {
 	models: {
 		kicker: 'Modele',
 		title: 'Modele i licencje',
-		lead: 'Każdy model z linkiem do plików. Licencje sprawdzone na Hugging Face 8 listopada 2026.',
+		lead: 'Każdy model z linkiem do plików. Licencje sprawdzone na Hugging Face 14 listopada 2026.',
 		cols: { model: 'Model', licence: 'Licencja', file: 'Plik' },
 		salukiNote: 'Saluki nadaje się tylko do użytku niekomercyjnego. W wersji komercyjnej 12 GB to Bonsai 2.',
 		lfmNote:
@@ -158,15 +158,15 @@ const pl = {
 
 const en = {
 	meta: {
-		title: 'NVIDIA results: 11 cards, up to 2× faster',
+		title: 'NVIDIA results: 11 cards, up to 2.4× faster',
 		description:
-			'Enigma on 11 NVIDIA cards, from RTX 2080 Ti to RTX 5090: up to 2× faster and the full 262 144-token context. Numbers, models, licences and ready settings.',
+			'Enigma on 11 NVIDIA cards, RTX 2080 Ti to RTX 5090: up to 2.4× faster than plain llama.cpp, full 262 144-token context. Numbers, models, licences.',
 		crumbs: { cards: 'Your card', nvidia: 'NVIDIA results' }
 	},
 	hero: {
 		eyebrow: '11 NVIDIA cards · RTX 2080 Ti to RTX 5090',
 		title: ['Same card, same model,', 'same answer quality.'],
-		titleTail: 'Up to 2× faster and with the full 262 144-token context.',
+		titleTail: 'Up to 2.4× faster than plain llama.cpp (47% over llama.cpp with MTP), with the full 262\u00a0144-token context.',
 		lead: 'We checked Enigma on 11 NVIDIA cards, from RTX 2080 Ti to RTX 5090. Every setting passed a full-context fill test on a real card.',
 		statsLabel: 'The numbers we single out',
 		stats: {
@@ -201,13 +201,13 @@ const en = {
 	moe: {
 		kicker: 'Alternative',
 		title: 'A fast MoE alternative',
-		lead: 'When speed is what matters and 24 billion parameters in MoE mode are enough: the whole model fits in VRAM, context 131,072.',
+		lead: 'When speed is what matters and 24 billion parameters in MoE mode are enough: the whole model fits in VRAM, context 131 072.',
 		cols: { card: 'Card', model: 'Model', ctx: 'Context', tps: 'Speed' }
 	},
 	models: {
 		kicker: 'Models',
 		title: 'Models and licences',
-		lead: 'Every model with a link to its files. Licences checked on Hugging Face on 8 November 2026.',
+		lead: 'Every model with a link to its files. Licences checked on Hugging Face on 14 November 2026.',
 		cols: { model: 'Model', licence: 'Licence', file: 'File' },
 		salukiNote: 'Saluki is for non-commercial use only. For commercial work on 12 GB, use Bonsai 2.',
 		lfmNote:

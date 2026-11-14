@@ -358,3 +358,6 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 
 ## [2026-11-14] llm | Telegram „gpu”: techniki PEFT
 [[peft-lora-warianty]]: ściąga LoRA / LoRA-FA / VeRA / Delta-LoRA / LoRA+ (prace źródłowe zweryfikowane na arXiv) w sekcji [[llm/_hub|llm]]; lekcja: metoda PEFT zmienia koszt treningu, a koszt inferencji zależy od scalenia adaptera. Bez testu na karcie.
+
+## [2026-11-14] produkt | Strona NVIDIA: przegląd przed publikacją
+[[strona-wynikow-nvidia]]: gałąź `nvidia-2026-11` scalona z `main`; nagłówek z oboma porównaniami (2,4× / +47%), poprawki układu, baner na Wynikach, licencje HF 14.11 bez zmian. Podgląd dla właściciela; publikacja po jego „tak”.

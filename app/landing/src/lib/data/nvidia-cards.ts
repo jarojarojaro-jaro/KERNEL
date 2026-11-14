@@ -210,14 +210,16 @@ export const MODEL_MIX = { saluki: 'Saluki 27B', bonsai: 'Bonsai 2 27B' } as con
 export type HeroStat =
 	| { readonly key: 'r5090' | 'r4090'; readonly kind: 'tps'; readonly v: number; readonly model: string; readonly ctx: number }
 	| { readonly key: 'vsllama'; readonly kind: 'pct'; readonly v: number; readonly model: string }
-	| { readonly key: 'r3060'; readonly kind: 'x'; readonly v: number; readonly model: string }
+	| { readonly key: 'r3060'; readonly kind: 'x'; readonly v: number; readonly model: string; readonly from: number; readonly to: number }
 	| { readonly key: 'ctx'; readonly kind: 'ctx'; readonly v: number; readonly model: string };
 
 export const HERO_STATS: readonly HeroStat[] = [
 	{ key: 'r5090', kind: 'tps', v: 148.6, model: 'RTX 5090 · Qwen3.8-27B (Q6_K)', ctx: 262144 /* SITE-NVIDIA.md:21 */ },
 	{ key: 'r4090', kind: 'tps', v: 101.3, model: 'RTX 4090 · Qwen3.8-27B (Q4_K_XL)', ctx: 262144 /* SITE-NVIDIA.md:22 */ },
 	{ key: 'vsllama', kind: 'pct', v: 47, model: 'RTX 5090 · Qwen3.8-27B · MTP' /* SITE-NVIDIA.md:23 */ },
-	{ key: 'r3060', kind: 'x', v: 2.6, model: 'RTX 3060 · 12 GB · 22.2 → 58.3' /* SITE-NVIDIA.md:24 */ },
+	/* Two different 27B builds (Saluki → Bonsai 2 + MTP, SITE-NVIDIA.md:40): the caption names both, so the
+	   ×2.6 is never read as "same model" under the headline. Numbers formatted per locale by the page. */
+	{ key: 'r3060', kind: 'x', v: 2.6, model: 'RTX 3060 · 12 GB', from: 22.2, to: 58.3 /* SITE-NVIDIA.md:24 */ },
 	{ key: 'ctx', kind: 'ctx', v: 262144, model: 'Qwen3.8-27B' /* SITE-NVIDIA.md:25 */ }
 ] as const;
 
@@ -233,7 +235,8 @@ export const MOE = {
 	]
 } as const;
 
-/** SITE-NVIDIA.md:53-61 — model files and licences; licences re-checked on Hugging Face 2026-11-08. */
+/** SITE-NVIDIA.md:53-61 — model files and licences; licences re-checked on Hugging Face 2026-11-08 and 2026-11-14 (unchanged; Saluki base
+ * ConwayResearch/Underdog-Saluki-27B-1.0 still cc-by-nc-4.0). */
 export interface NvidiaModel {
 	readonly name: string;
 	/** One or two Hugging Face links (the source sometimes lists a mirror). */

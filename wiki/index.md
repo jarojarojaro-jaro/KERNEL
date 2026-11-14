@@ -80,6 +80,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-14 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
 - 2026-11-14 [[tokenspeed|TokenSpeed (LightSeek Foundation)]]
 - 2026-11-14 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
+- 2026-11-14 [[strona-wynikow-nvidia|Strona wyników NVIDIA `/pl/nvidia/` i `/en/nvidia/`]]
 - 2026-11-14 [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]]
 - 2026-11-14 [[peft-lora-warianty|PEFT: LoRA i warianty (LoRA-FA, VeRA, Delta-LoRA, LoRA+)]]
 - 2026-11-14 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
@@ -89,7 +90,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[tensorfold|TensorFold (ashhart/TensorFold)]]
 - 2026-11-09 [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]]
 - 2026-11-09 [[strona-zrodlo-rowna-zywej|Strona: źródło = żywa (krok 0 przed zmianami treści)]]
-- 2026-11-09 [[strona-wynikow-nvidia|Strona wyników NVIDIA `/pl/nvidia/` i `/en/nvidia/`]]
 - 2026-11-09 [[amd-adrenalin-zapisy-ssd|AMD Adrenalin: ciągłe zapisy SSD przez `atieclxx.exe` (Windows)]]
 
 Razem 744 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.

@@ -89,11 +89,11 @@
 						{:else if s.kind === 'x'}
 							{num(s.v, lang, 1)}<small>×</small>
 						{:else}
-							{num(s.v, lang, 0)}<small> {c.table.cols.ctx.toLowerCase()}</small>
+							{num(s.v, lang, 0)}<small class="stat-u">{c.table.cols.ctx.toLowerCase()}</small>
 						{/if}
 					</p>
 					<p class="stat-k">{c.hero.stats[s.key]}</p>
-					<p class="stat-m mono">{s.model}{#if s.kind === 'tps'}{NB}· {num(s.ctx, lang, 0)}{NB}{c.table.cols.ctx.toLowerCase()}{/if}{#if s.kind === 'ctx'}{NB}· {num(s.v, lang, 0)}{NB}{c.table.cols.ctx.toLowerCase()}{/if}</p>
+					<p class="stat-m mono">{s.model}{#if s.kind === 'tps'}{NB}· {num(s.ctx, lang, 0)}{NB}{c.table.cols.ctx.toLowerCase()}{/if}{#if s.kind === 'x'}{NB}· {c.table.mixSaluki}{NB}{num(s.from, lang, 1)} → {c.table.mixBonsai}{NB}{num(s.to, lang, 1)}{/if}</p>
 				</li>
 			{/each}
 		</ul>
@@ -383,10 +383,14 @@
 	}
 	.stats > li {
 		display: grid;
+		grid-template-columns: minmax(0, 1fr);
 		align-content: start;
 		gap: var(--sp-2);
 		padding: var(--sp-5);
 		background: var(--bg-1);
+		/* Without it a grid item grows to its longest unbreakable line ("262 144 kontekst") and the
+		   list's overflow: hidden cuts the last column at 1440 px. */
+		min-width: 0;
 	}
 	.stat-v {
 		margin: 0;
@@ -400,6 +404,11 @@
 		font-size: 0.42em;
 		letter-spacing: 0;
 		color: var(--text-mute);
+	}
+	/* "262 144" already fills a fifth of the 1440 px row; the word goes under it, not beside it. */
+	.stat-v .stat-u {
+		display: block;
+		margin-top: var(--sp-1);
 	}
 	.stat-k {
 		margin: 0;
@@ -603,6 +612,7 @@
 		color: var(--text-mute);
 	}
 	.nv-table .mix {
+		margin-right: 0.4em;
 		font-size: var(--fs-2xs);
 		letter-spacing: 0.02em;
 		color: var(--text-mute);
