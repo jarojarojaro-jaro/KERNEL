@@ -337,3 +337,6 @@ Na prośbę właściciela (Telegram „gpu”): folder [[llm/_hub|llm]] na treni
 
 ## [2026-11-14] research | Telegram „gpu”: TokenSpeed Kimi K3 na AgentX
 [[tokenspeed]] (delta): blog Kimi K3 331 tok/s/GPU na 32× GB300 (1,92× DCP8) przez DWDP prefill, DEP16 dekod i wspólną pamięć hosta 5,45 TB; skala klastra, dla jednej karty 0%, nic nowego do kolejki (źródło dopisane do K-047).
+
+## [2026-11-14] research | Telegram „gpu”: llama.cpp v1.0.0 (ponownie)
+Ten sam link co rano ([[telegram-2026-11-14-pearlquant-llamacpp-v1]], commit `b88ec25`); najnowsze wydanie nadal v1.0.0 (b12359), delta brak. Działania w kolejce bez zmian: K-103, K-013, K-001, K-056.
