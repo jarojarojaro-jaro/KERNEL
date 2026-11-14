@@ -48,6 +48,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: odzysk 7–13% przy T=1 na NVIDIA (3090: 76,9 vs 82,9 t/s przy krótkim kontekście); wszyscy użytkownicy Enigmy z NVIDIA
 - ryzyko karty: brak
 - priorytet: wysoki (Enigma NVIDIA, tani pierwszy pomiar)
+- zwiad 2026-11-14: tqLLM 1.5.0 robi dokładne próbkowanie MTP przy T>0 (3090, T=0,7: 50 → 104–117 t/s), wzór do portu ([[zwiad-2026-11-14]])
 
 ### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)
 - data: 2026-11-07
@@ -58,7 +59,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: nowy kernel w PM4
 - priorytet: wysoki (zmierzone +17…35% u autora, ten sam model)
 - baseline 2026-11-14 (produkcja, r=3): V16 − V5 = 7,1 ms przy 2k, 10,1 ms przy 32k; V5 26,8 / 28,3 ms ([[2026-11-14-k002-k003-k013-xtx]]); port HIP #31533 jeszcze niezbudowany
-- w toku 2026-11-14 ~22:05 UTC: build upstream 6ad15f48 (#31533 + port HIP RDNA3 WMMA; Q4_K/Q5_K/Q6_K/Q8_0/IQ4_NL) dla gfx1100 na jaroserverai (`~/wt/fewrow-hip`, cpuheavy 2 rdzenie), potem automatycznie job kolejki `k013-fewrow` (V(w) na tym samym modelu) przez `~/qwen-opt/k013/after-build.sh`; wynik w następnej turze
+- (zakończone) build upstream 6ad15f48 (#31533 + port HIP RDNA3 WMMA; Q4_K/Q5_K/Q6_K/Q8_0/IQ4_NL) dla gfx1100 na jaroserverai (`~/wt/fewrow-hip`, cpuheavy 2 rdzenie), potem automatycznie job kolejki `k013-fewrow` (V(w) na tym samym modelu) przez `~/qwen-opt/k013/after-build.sh`; wynik w następnej turze
+- wynik 2026-11-14 (całe silniki, nie sam kernel): upstream 6ad15f48 z few-row MMQ HIP vs topka-q70, `llama-bench -p 1,5,8,9,16 -d 2048,32768`: V5 26,8 → 37,9 ms (+41%), V16 33,9 → 47,0 (+39%) przy 2k; V1 też +3…31% → upstream bez naszych łatek jest wolniejszy, więc few-row nie jest szybszy niż nasza ścieżka weryfikacji. Do rozstrzygnięcia tylko poziom kernela: `test-backend-ops perf -o MUL_MAT` (q4_K, n 5/8/16) obu buildów ([[2026-11-14-k002-k003-k013-xtx]])
 
 ### K-005 · Siatka checkpointów GDN co ~8192 tokenów + checkpoint w punkcie rozwidlenia + łańcuch fallbacku (edycja, regeneracja, kompaktowanie omp)
 - data: 2026-10-15 (STATUS-NEXT §4), ponownie 2026-11-07 (66 poz. 6)
@@ -126,6 +128,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: sufit +12…16% decode przy 196–255k; realnie +1,5…3% przy ≥ 94k [SZACUNEK]
 - ryzyko karty: nowy kernel w taśmie PM4 (bramka `test-backend-ops` przed serwerem)
 - priorytet: średni (duży sufit, dwa nieudane podejścia)
+- zwiad 2026-11-14: hipfire #989 (WMMA split-K verify attention, gfx1100, numeryczne) zszedł do 309,5 µs przy 100k i 4 wierszach, czyli tyle co nasz `kvq` przy nb5 i 98k (~319 µs); bitowa droga musi zejść niżej ([[zwiad-2026-11-14]])
 
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
@@ -504,6 +507,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0 t/s (marketing); szacunek ~147 t/s w ich warunkach
 - ryzyko karty: brak
 - priorytet: niski (nie wydajność)
+- zwiad 2026-11-14: XTX top verified na LocalMaxxing nadal 97,2 t/s (llama.cpp IQ3_S MTP); szacunek topki w ich warunkach ~147 ([[zwiad-2026-11-14]])
 
 ### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
 - data: 2026-10-19 (21h)

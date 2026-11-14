@@ -388,3 +388,6 @@ K-103: zysk przy MTP n2 to +3,8% (mediany 43,95 → 45,62 t/s; parami +3,5 / +4,
 
 ## [2026-11-14] update | Zwiad: compwatch na serwerze 24/7 + arXiv i blogi RSS
 [[raport-watch-compwatch]]: compwatch przeniesiony na serwer bez GPU (timer systemd 06:30, `Persistent=true`, `nice 15`, `CPUQuota=50%`); błąd jednego źródła nie kończy przebiegu. Nowe źródła: TensorRT-LLM, MLC LLM, mistral.rs (tier B), arXiv (`cs.LG/DC/PF/AR/CL`, 1 zapytanie na 3 s, duplikaty po id), 9 blogów RSS/Atom. Raport z nowościami → wiadomość `[Zwiad · data]` dla sesji Kernel; próba 14.11: 87 pozycji (przebieg bazowy) w 47 s, drugi przebieg 0 nowych.
+
+## [2026-11-14] zwiad | compwatch przebieg bazowy
+[[zwiad-2026-11-14]] (raport `product/research/watch/2026-11-14.md`): hipfire 0.4.4 na XTX dogonił topkę przy krótkim kontekście (127–131 t/s) numerycznymi kernelami weryfikacji (#987/#989), my bitowo jesteśmy na tym samym poziomie; LocalMaxxing XTX top verified nadal 97,2; tqLLM dokładne próbkowanie MTP T>0 → K-004; TensorFold wznowienie po usunięciu rozumowania (do sprawdzenia w omp); 6 wierszy ZRODLA, źródła dopisane do K-004/K-012/K-059. K-013 (zlecenie właściciela z 14.11): upstream few-row 26–81% wolniejszy od topki na V5–V16, few-row bez darmowego zysku.

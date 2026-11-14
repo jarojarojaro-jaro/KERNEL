@@ -1,7 +1,7 @@
 ---
 typ: repo
 tags: [repo, spekulacja, cuda, determinizm]
-aktualizacja: 2026-11-07
+aktualizacja: 2026-11-14
 zrodlo: ~/KERNEL/product/research/15b-spekulacja-frontier.md:22-26,125-148; ~/KERNEL/product/research/15c-nowe-silniki.md:23-27,68-80,166-186,362; ~/KERNEL/product/research/15f-agentowa-nauka.md:58-63; ~/KERNEL/product/research/32f-ninfer-tqllm-dflash2.md:14-22; ~/KERNEL/product/research/60c-quant-and-3090-engines.md:138-160; ~/KERNEL/product/research/66e-anatomia-serwowania-tqllm.md:28-57,117-164
 status: do-sprawdzenia
 ---
@@ -31,6 +31,8 @@ Repo `turbo-tan/tqllm` @ `23af3c9`, ~57 tys. linii, 15★.
 - GB10: `cudaMemGetInfo` liczy page cache jako zajęty; `MemAvailable` mieści 262K (dotyczy planera Enigmy na pamięci zunifikowanej).
 - 5090 Flash-Next bez ich grafów per warstwa: czat 128 → 154 t/s (na 3090 grafy −3%). Rejestr 55 flag env.
 - Stratne: TurboQuant TQ3/TQ4, KV tq3/turbo/tcq, ANE w prefillu.
+
+- **Delta v1.5.0–v1.6.0 (2026-11-10…13, zwiad 2026-11-14):** dokładne próbkowanie spekulacyjne MTP przy T>0 (3090, T=0,7: 50 → 104–117 t/s); QSA (stratne, KLD 0,05–0,26); int8 prefill IQ4_XS (KLD 0,0079 → 0,0103) ([[zwiad-2026-11-14]]).
 
 ## Powiązane
 - [[repo/_hub|repo]]
