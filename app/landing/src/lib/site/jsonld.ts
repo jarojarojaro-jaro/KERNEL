@@ -12,14 +12,14 @@ import type { Lang } from '$lib/i18n';
 
 const ORIGIN = SITE_ORIGIN;
 
-/** Home page: Organization + WebSite + SoftwareApplication (the live block, verbatim). */
+/** Home page: Organization + WebSite + SoftwareApplication (3090 numbers: report 67, as on its card). */
 export function homeGraph(lang: Lang): object[] | null {
 	if (!ORIGIN) return null;
 	const inLanguage = lang === 'pl' ? 'pl-PL' : 'en';
 	const description =
 		lang === 'pl'
-			? 'Silnik do lokalnego uruchamiania modeli językowych, który na tym samym sprzęcie i tym samym modelu daje więcej tokenów na sekundę niż typowa aplikacja. Projekt w fazie prototypu, instalatory nie są jeszcze dostępne. Zmierzone (metoda ABBA, odpowiedź 500 tokenów, model Qwen3.8-27B): Radeon RX 7900 XTX 35,9 → 114,8 t/s (3,2×), GeForce RTX 3090 42,9 → 93,3 t/s (2,2×).'
-			: 'An engine for running language models locally that gets more tokens per second than a typical app on the same hardware and the same model. The project is a prototype; installers are not available yet. Measured (ABBA method, 500-token answer, Qwen3.8-27B model): Radeon RX 7900 XTX 35.9 → 114.8 t/s (3.2×), GeForce RTX 3090 42.9 → 93.3 t/s (2.2×).';
+			? 'Silnik do lokalnego uruchamiania modeli językowych, który na tym samym sprzęcie i tym samym modelu daje więcej tokenów na sekundę niż typowa aplikacja. Projekt w fazie prototypu, instalatory nie są jeszcze dostępne. Zmierzone tym samym skryptem po obu stronach, model Qwen3.8-27B: Radeon RX 7900 XTX 35,9 → 114,8 t/s (3,2×, metoda ABBA, odpowiedź 500 tokenów), GeForce RTX 3090 40,93 → 79,97 t/s (2,0×, kontekst 262 144).'
+			: 'An engine for running language models locally that gets more tokens per second than a typical app on the same hardware and the same model. The project is a prototype; installers are not available yet. Measured with the same script on both sides, Qwen3.8-27B model: Radeon RX 7900 XTX 35.9 → 114.8 t/s (3.2×, ABBA method, 500-token answer), GeForce RTX 3090 40.93 → 79.97 t/s (2.0×, 262,144 context).';
 	return [
 		{
 			'@type': 'Organization',

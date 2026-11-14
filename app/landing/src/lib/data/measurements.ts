@@ -399,140 +399,70 @@ const SHEET_EN: [RegExp, string][] = [
 const toEn = (s: string) => SHEET_EN.reduce((t, [re, en]) => t.replace(re, en), s);
 
 /**
- * A newer same-script session that replaces the sheet's run for one model completely (variants,
- * gain, long context); only fields of the sheet run that the session did not measure again and that
- * do not depend on the build (title, file, kernel profile) are kept.
+ * Runs read from the October sheet (cards.json) for models report 67 did not measure again on that
+ * card; each gets its run conditions (small print) and an optional note.
  */
-interface Final {
-	variants: Variant[];
-	before: VariantKey;
-	flags: VariantKey;
-	ours: VariantKey;
-	src: string;
-	metric: L;
-	gain?: Run['gain'];
-	longCtx?: Run['longCtx'];
-	kernels?: Run['kernels'];
-}
-
-function nvidia(
-	id: string,
-	meta: Pick<CardView, 'name' | 'short' | 'vramGB' | 'arch' | 'pick'>,
-	conditions: Partial<Record<ModelKey, { c: L; src: string; note?: L; final?: Final }>>
-): CardView {
-	const c = sheetCard(id);
-	return {
-		id,
-		vendor: 'nvidia',
-		...meta,
-		bwGBs: c.hw.bwGBs,
-		powerW: c.hw.powerW,
-		pcie: c.hw.pcie,
-		hwLine: { pl: c.hw.line, en: toEn(c.hw.line) },
-		hwSrc: c.hw.src,
-		runs: c.runs.filter((sheet) => conditions[sheet.model]).map((sheet) => {
+function sheetRuns(id: string, conditions: Partial<Record<ModelKey, { c: L; src: string; note?: L }>>): RunView[] {
+	return sheetCard(id)
+		.runs.filter((sheet) => conditions[sheet.model])
+		.map((sheet) => {
 			const k = conditions[sheet.model]!;
-			const f = k.final;
-			const r: Run = f ? { model: sheet.model, title: sheet.title, quant: sheet.quant, file: sheet.file, kernels: sheet.kernels, ...f } : sheet;
 			return {
-				...r,
-				metric: f?.metric ?? SPEC_SWEEP,
+				...sheet,
+				metric: SPEC_SWEEP,
 				sameHarness: true,
 				conditions: k.c,
 				conditionsSrc: k.src,
-				...(r.gain ? { gainText: { pl: r.gain.text, en: r.gain.text.map(toEn) as [string, string, string] } } : {}),
+				...(sheet.gain ? { gainText: { pl: sheet.gain.text, en: sheet.gain.text.map(toEn) as [string, string, string] } } : {}),
 				...(k.note ? { note: k.note } : {})
 			};
-		})
-	};
+		});
 }
 
 /*
- * RTX 3090 final session (2026-10-19/20, report 27): upstream default (U0), upstream
- * with production flags + its own MTP (U1) and our engine (T), fresh servers in ABBA order; values are
- * the mean of the two passes. Logs are copied into the repo under qwen-opt/cloud/results/nv-final-*.
+ * The NVIDIA campaign on rented cards (report 67, 2026-11-06/07): eleven cards, each with the
+ * settings Enigma ships today. One seed per setting (6 PL/EN prompts × 400 tokens, T=1, median);
+ * every final setting passed a full-context fill (prompt = context − 640 tokens) on that card.
+ * "Typical app" = plain llama.cpp without speculation (the pick Enigma ran before the campaign),
+ * "best flags" = plain llama.cpp with MTP, "our engine" = the CUDA engines of the
+ * enigma-engines-cuda-2026-11-07 release (fork + kvq + lean, lean, Prism + MTP head; Linux x64).
+ * Power limits are the rented hosts' (§2), so cards capped below default read low.
  */
+const R67 = 'KERNEL/product/research/67-nvidia-vast-kampania.md';
+const r67 = (lines: string) => `${R67}:${lines}`;
+const SPEC_67: L = {
+	pl: 'spec_sweep przez serwer, ten sam skrypt po obu stronach: czat, 6 promptów PL/EN, 1 seed, T=1, odpowiedź 400 tokenów, mediana; każde końcowe ustawienie przeszło test pełnego wypełnienia kontekstu',
+	en: 'spec_sweep through the server, the same script on both sides: chat, 6 PL/EN prompts, 1 seed, T=1, 400-token answers, median; every final setting passed a full-context fill test'
+};
+const BONSAI_67_LABELS: Run['labels'] = {
+	a1: { pl: 'Typowa aplikacja', en: 'Typical app' },
+	alt: { pl: 'Fork Prism, plik PTQ1_0', en: 'Prism fork, PTQ1_0 file' },
+	ours: { pl: 'Nasz silnik', en: 'Our engine' }
+};
+/** A ratio with its arithmetic as the source, the way the 4060 Ti card states its gain. */
+const x = (a: number, b: number, line: string): Num => ({ v: a / b, src: `${r67(line)} (${a} / ${b})` });
+/** Shared shape of a card measured only in report 67. */
+function card67(meta: Omit<CardView, 'vendor' | 'hwSrc'> & { hwLines: string }): CardView {
+	const { hwLines, ...rest } = meta;
+	return { vendor: 'nvidia', hwSrc: r67(hwLines), ...rest };
+}
+/** One measured setting and nothing to compare it with (no engine of ours for this card yet). */
+function single67(model: ModelKey, title: string, quant: string, decode: Num, vram: Num, c: L, line: string): RunView {
+	return { model, title, quant, src: r67(line), variants: [{ key: 'a0', decode, vram }], before: 'a0', flags: 'a0', ours: 'a0', metric: SPEC_67, sameHarness: true, conditions: c, conditionsSrc: r67(line) };
+}
+
+/** October RTX 3090 final session (report 27), cited where the November card compares with it. */
 const R27 = 'KERNEL/product/research/27-3090-final.md';
-const NV3090 = 'KERNEL/qwen-opt/cloud/results/nv-final-3090-qwen-20261019/logs';
-const NV3090L = 'KERNEL/qwen-opt/cloud/results/nv-final-3090-qwen60k-20261020/logs';
-const s3090 = (log: string, line: number) => `${NV3090}/${log}; ${R27}:${line}`;
 /** nvidia-smi MiB after load as GiB (shown as GB with the site's GiB note). */
 const mib = (v: number, src: string): Num => ({ v: Math.round((v / 1024) * 10) / 10, src: `${src} (${v} MiB)`, unit: 'GiB' });
 const SPEC_SWEEP_ABBA: L = {
 	pl: 'spec_sweep przez serwer, ten sam skrypt po obu stronach: czat, 6 promptów × 3 seedy, T=1, świeży serwer, mediana; kolejność ABBA, średnia z dwóch przebiegów',
 	en: 'spec_sweep through the server, the same script on both sides: chat, 6 prompts × 3 seeds, T=1, fresh server, median; ABBA order, mean of the two passes'
 };
-const LB = (u: string, t: string) => `${NV3090}/${u} / ${t}`;
-const FINAL_3090_QWEN: Final = {
-	src: s3090('spec_sweep.jsonl', 59),
-	before: 'a0',
-	flags: 'a1',
-	ours: 'a2',
-	metric: SPEC_SWEEP_ABBA,
-	variants: [
-		{
-			key: 'a0',
-			decode: { v: 42.9, src: s3090('spec_sweep.jsonl (qwen.U0.p1/p2)', 59) },
-			msStep: { v: 23.29, src: s3090('spec_sweep.jsonl', 60) },
-			tokStep: { v: 1, src: s3090('spec_sweep.jsonl', 61) },
-			pp512: { v: 1584.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:98` },
-			pp4096: { v: 1581.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:99` },
-			ttft: { v: 1.23, src: s3090('long.jsonl (prompt 1747 tok)', 90), unit: 's' },
-			tg128: { v: 43.1, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:100` },
-			vram: mib(22545, s3090('vram.jsonl', 104))
-		},
-		{
-			key: 'a1',
-			decode: { v: 75.3, src: s3090('spec_sweep.jsonl (qwen.U1.p1/p2)', 59) },
-			msStep: { v: 43.4, src: s3090('spec_sweep.jsonl', 60) },
-			tokStep: { v: 3.27, src: s3090('spec_sweep.jsonl', 61) },
-			pp512: { v: 1584.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:98 (U1 = U0, the same binary)` },
-			pp4096: { v: 1581.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:99 (U1 = U0, the same binary)` },
-			ttft: { v: 1.43, src: s3090('long.jsonl (prompt 1747 tok)', 90), unit: 's' },
-			vram: mib(23129, s3090('vram.jsonl', 104))
-		},
-		{
-			key: 'a2',
-			decode: { v: 93.3, src: s3090('spec_sweep.jsonl (qwen.T.p1/p2)', 59) },
-			msStep: { v: 32.36, src: s3090('spec_sweep.jsonl', 60) },
-			tokStep: { v: 3.03, src: s3090('spec_sweep.jsonl', 61) },
-			pp512: { v: 1540.4, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:98` },
-			pp4096: { v: 1542.5, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:99` },
-			ttft: { v: 1.6, src: s3090('long.jsonl (prompt 1747 tok)', 90), unit: 's' },
-			tg128: { v: 45.9, src: `${LB('lb.qwen.U.r1,r4.jsonl', 'lb.qwen.T.r2,r3.jsonl')}; ${R27}:100` },
-			vram: mib(23493, s3090('vram.jsonl', 104))
-		}
-	],
-	gain: {
-		flags: { v: 75.3 / 42.9, src: `${R27}:59 (75.3 / 42.9)` },
-		engine: { v: 93.3 / 75.3, src: `${R27}:59 (93.3 / 75.3)` },
-		total: { v: 93.3 / 42.9, src: `${R27}:59 (93.3 / 42.9)` },
-		text: ['×1.76 (MTP)', '×1.24 (lookup W16, share, GPU verify)', '×2.17'],
-		src: `${R27}:20,59`
-	},
-	/** llama-bench tg128 at a filled context, no speculation (upstream vs ours, the same binary as U0/U1). */
-	longCtx: {
-		depths: [0, 16384, 32768, 65536],
-		up: [
-			{ v: 43.1, src: `${NV3090}/lb.qwen.U.r1,r4.jsonl; ${R27}:100` },
-			{ v: 39.1, src: `${NV3090}/lbd.qwen.U.r1,r4.jsonl; ${R27}:101` },
-			{ v: 35.7, src: `${NV3090}/lbd.qwen.U.r1,r4.jsonl; ${R27}:102` },
-			{ v: 30.4, src: `${NV3090}/lbd.qwen.U.r1,r4.jsonl; ${R27}:103` }
-		],
-		ours: [
-			{ v: 45.9, src: `${NV3090}/lb.qwen.T.r2,r3.jsonl; ${R27}:100` },
-			{ v: 41.4, src: `${NV3090}/lbd.qwen.T.r2,r3.jsonl; ${R27}:101` },
-			{ v: 37.7, src: `${NV3090}/lbd.qwen.T.r2,r3.jsonl; ${R27}:102` },
-			{ v: 31.9, src: `${NV3090}/lbd.qwen.T.r2,r3.jsonl; ${R27}:103` }
-		],
-		kv: 'KV q4_0'
-	}
-};
 /*
- * RTX 4060 Ti 16 GB (report 29, 2026-10-20): the nv-final harness of report 27 on a rented card
- * (power limit 100 W set by the host, PCIe gen3 x8), U0 / U1 / T in ABBA order, mean of the two
- * passes; the same GGUF files as the 5060 Ti. Not in the 10-16 sheet, so the card is written out
- * here instead of going through nvidia().
+ * RTX 4060 Ti 16 GB: Qwen from report 67 (November, rented card at 165 W). LFM2.5 is still the
+ * October run of report 29 (the nv-final harness of report 27, power limit 100 W set by that host,
+ * PCIe gen3 x8, U0 / U1 / T in ABBA order, mean of the two passes): report 67 did not measure LFM here.
  */
 const R29 = 'KERNEL/product/research/29-4060ti.md';
 const NV4060 = 'KERNEL/qwen-opt/cloud/results/nv-final-4060ti-20261020/logs';
@@ -542,94 +472,47 @@ const COND_4060: L = {
 	pl: 'najlepsze flagi i nasz silnik: kontekst 32k (-c 32768), KV q8_0, -fit off, -fa on; nasz dodatkowo GPU verify; A0: samo -m (domyślny -fit, KV f16); karta z limitem mocy 100 W, PCIe gen3 x8',
 	en: 'best flags and our engine: 32k context (-c 32768), KV q8_0, -fit off, -fa on; ours adds GPU verify; A0: plain -m (default -fit, KV f16); card power-limited to 100 W, PCIe gen3 x8'
 };
-const RTX_4060TI: CardView = {
+const RTX_4060TI: CardView = card67({
 	id: 'rtx-4060-ti-16',
 	name: 'GeForce RTX 4060 Ti 16 GB',
 	short: '4060 Ti',
-	vendor: 'nvidia',
 	vramGB: 16,
 	arch: 'Ada sm_89',
 	bwGBs: { v: 288, src: `${R29}:25; app/landing/src/lib/data/gpus.json` },
-	powerW: { v: 100, src: `${R29}:25-26` },
-	pcie: 'gen3 x8',
-	hwLine: {
-		pl: 'limit mocy 100 W (host; domyślnie 165 W), PCIe gen3 x8, GDDR6 288 GB/s, CPU hosta Ryzen 9 3950X, sterownik 595.84',
-		en: 'power limit 100 W (host; default 165 W), PCIe gen3 x8, GDDR6 288 GB/s, host CPU Ryzen 9 3950X, driver 595.84'
-	},
-	hwSrc: `${R29}:25-28`,
-	pick: { model: 'qwen38', why: { pl: 'Qwen w Q3 mieści się w 16 GB z kontekstem 32k i jest tu 1,9× szybszy niż typowa aplikacja.', en: 'Qwen at Q3 fits in 16 GB with a 32k context and is 1.9× faster here than the typical app.' } },
+	powerW: { v: 165, src: r67('46') },
+	hwLine: { pl: 'limit mocy 165 W (domyślnie 165 W), wynajęta karta (Vast)', en: 'power limit 165 W (default 165 W), rented card (Vast)' },
+	hwLines: '46',
+	pick: { model: 'qwen38', why: { pl: 'Qwen3.8-27B w 3 bitach mieści się w 16 GB z kontekstem ponad 200 000 tokenów: 1,8× szybciej niż wcześniej.', en: 'Qwen3.8-27B at 3 bits fits in 16 GB with a context above 200,000 tokens: 1.8× faster than before.' } },
 	runs: [
 		{
 			model: 'qwen38',
-			title: 'Qwen3.8-27B UD-Q3_K_XL (13.15 GB)',
-			quant: 'UD-Q3_K_XL',
-			file: { v: 13.15, src: `${R29}:52`, unit: 'GB' },
-			src: s4060('spec_sweep.jsonl', 56),
+			title: 'Qwen3.8-27B ISTA GSQ IQ3_XXS',
+			quant: 'IQ3_XXS (ISTA)',
+			src: r67('18'),
 			before: 'a0',
 			flags: 'a1',
-			ours: 'a2',
+			ours: 'ours',
+			labels: {
+				a0: { pl: 'Typowa aplikacja (plik UD-Q3_K_XL)', en: 'Typical app (UD-Q3_K_XL file)' },
+				a1: { pl: 'Lepszy plik (ISTA), bez MTP', en: 'Better file (ISTA), no MTP' }
+			},
 			variants: [
-				{
-					key: 'a0',
-					decode: { v: 18.6, src: s4060('spec_sweep.jsonl (qwen.U0.p1/p2)', 56) },
-					msStep: { v: 53.67, src: s4060('spec_sweep.jsonl', 57) },
-					tokStep: { v: 1, src: s4060('spec_sweep.jsonl', 58) },
-					pp512: { v: 793.7, src: LB4060('qwen', 66) },
-					pp4096: { v: 788.4, src: LB4060('qwen', 67) },
-					tg128: { v: 18.8, src: LB4060('qwen', 68) },
-					vram: mib(14354, s4060('vram.jsonl', 70))
-				},
-				{
-					key: 'a1',
-					decode: { v: 30.6, src: s4060('spec_sweep.jsonl (qwen.U1.p1/p2)', 56) },
-					msStep: { v: 97.74, src: s4060('spec_sweep.jsonl', 57) },
-					tokStep: { v: 2.99, src: s4060('spec_sweep.jsonl', 58) },
-					vram: mib(14570, s4060('vram.jsonl', 70))
-				},
-				{
-					key: 'a2',
-					decode: { v: 35.4, src: s4060('spec_sweep.jsonl (qwen.T.p1/p2)', 56) },
-					msStep: { v: 81.56, src: s4060('spec_sweep.jsonl', 57) },
-					tokStep: { v: 2.88, src: s4060('spec_sweep.jsonl', 58) },
-					pp512: { v: 762.7, src: LB4060('qwen', 66) },
-					pp4096: { v: 760.7, src: LB4060('qwen', 67) },
-					tg128: { v: 18.7, src: LB4060('qwen', 68) },
-					vram: mib(14848, s4060('vram.jsonl', 70))
-				}
+				{ key: 'a0', decode: { v: 19.78, src: r67('18') } },
+				{ key: 'a1', decode: { v: 24.02, src: r67('18') }, vram: mib(14566, r67('18')) },
+				{ key: 'ours', decode: { v: 36.3, src: r67('18,71') }, vram: mib(15736, r67('18,71')) }
 			],
-			gain: {
-				flags: { v: 30.6 / 18.6, src: `${R29}:56 (30.6 / 18.6)` },
-				engine: { v: 35.4 / 30.6, src: `${R29}:56 (35.4 / 30.6)` },
-				total: { v: 35.4 / 18.6, src: `${R29}:56 (35.4 / 18.6)` },
-				text: ['×1.65 (MTP)', '×1.16 (słownik draftu 64k, lookup W16, GPU verify)', '×1.90'],
-				src: `${R29}:9-11,56`
-			},
-			gainText: {
-				pl: ['×1,65 (MTP)', '×1,16 (słownik draftu 64k, lookup W16, GPU verify)', '×1,90'],
-				en: ['×1.65 (MTP)', '×1.16 (64k draft vocabulary, lookup W16, GPU verify)', '×1.90']
-			},
-			longCtx: {
-				depths: [0, 16384],
-				up: [
-					{ v: 18.8, src: LB4060('qwen', 68) },
-					{ v: 16.8, src: `${NV4060}/lbd.qwen.U.r1,r4.jsonl; ${R29}:69` }
-				],
-				ours: [
-					{ v: 18.7, src: LB4060('qwen', 68) },
-					{ v: 16.8, src: `${NV4060}/lbd.qwen.T.r2,r3.jsonl; ${R29}:69` }
-				],
-				kv: 'KV q8_0'
-			},
-			metric: SPEC_SWEEP_ABBA,
+			gain: { flags: x(24.02, 19.78, '18'), engine: x(36.3, 24.02, '18'), total: x(36.3, 19.78, '18'), text: ['×1,21 (plik ISTA)', '×1,51 (lean + MTP n=2)', '×1,84'], src: r67('18,71') },
+			gainText: { pl: ['×1,21 (plik ISTA)', '×1,51 (lean + MTP n=2)', '×1,84'], en: ['×1.21 (ISTA file)', '×1.51 (lean + MTP n=2)', '×1.84'] },
+			metric: SPEC_67,
 			sameHarness: true,
 			conditions: {
-				pl: `${COND_4060.pl}; MTP n=4, nasz: słownik draftu 64k, głowice IQ4_XS, lookup W16`,
-				en: `${COND_4060.en}; MTP n=4, ours: 64k draft vocabulary, IQ4_XS heads, lookup W16`
+				pl: 'KV q4_0, -fa on, -ub 256; typowa aplikacja (plik UD-Q3_K_XL, kontekst 143 360, bez spekulacji); lepszy plik (ISTA IQ3_XXS, kontekst 217 088, bez spekulacji); nasz silnik (lean + MTP n=2, kontekst 229 376); karta 165 W',
+				en: 'KV q4_0, -fa on, -ub 256; typical app (UD-Q3_K_XL file, -c 143360, no speculation); better file (ISTA IQ3_XXS, -c 217088, no speculation); our engine (lean + MTP n=2, -c 229376); card at 165 W'
 			},
-			conditionsSrc: `${R29}:37-47; ${NV4060}/vram.jsonl`,
+			conditionsSrc: r67('18,46,50,71'),
 			note: {
-				pl: 'Ten sam skrypt, inne zadania: edycja kodu (T=0) 18,5 → 50,0 → 170,9 t/s; generowanie po 16k kontekstu (T=0) 17,6 → 33,3 → 40,1 t/s. Uczciwie: zysk nad najlepszymi flagami to krótszy krok (81,6 wobec 97,7 ms), nie więcej tokenów na krok; prefill jest u nas o 3,5–3,9% wolniejszy, a bez spekulacji (llama-bench tg128) tempo jest takie samo.',
-				en: 'The same script, other tasks: code edits (T=0) 18.5 → 50.0 → 170.9 t/s; generation after a 16k context (T=0) 17.6 → 33.3 → 40.1 t/s. Honestly: the gain over the best flags is a shorter step (81.6 vs 97.7 ms), not more tokens per step; our prefill is 3.5–3.9% slower, and without speculation (llama-bench tg128) the pace is the same.'
+				pl: 'Zwykły llama.cpp z MTP n=3 nie mieści się tu w 16 GB przy tym kontekście; nasz silnik (lean) zwalnia pamięć bufora spekulacji i mieści MTP przy 229 376 tokenach. Ze starszym plikiem UD-Q3_K_XL nasz silnik mieści 131 072 tokeny i daje 31,54 t/s. Jeden seed na pomiar.',
+				en: 'Plain llama.cpp with MTP n=3 does not fit in 16 GB at this context; our engine (lean) frees the speculation buffer and fits MTP at 229,376 tokens. With the older UD-Q3_K_XL file our engine fits 131,072 tokens and does 31.54 t/s. One seed per measurement.'
 			}
 		},
 		{
@@ -681,42 +564,14 @@ const RTX_4060TI: CardView = {
 			metric: SPEC_SWEEP_ABBA,
 			sameHarness: true,
 			conditions: { pl: `${COND_4060.pl}; bez spekulacji, -b 2048 -ub 2048`, en: `${COND_4060.en}; no speculation, -b 2048 -ub 2048` },
-			conditionsSrc: `${R29}:37-47; ${NV4060}/vram.jsonl`
+			conditionsSrc: `${R29}:37-47; ${NV4060}/vram.jsonl`,
+			note: {
+				pl: 'Pomiar z października (raport 29) na innym wynajętym hoście z limitem 100 W; w kampanii listopadowej tego modelu na tej karcie nie mierzyliśmy.',
+				en: 'An October measurement (report 29) on another rented host capped at 100 W; the November campaign did not measure this model on this card.'
+			}
 		}
 	]
-};
-
-/*
- * The NVIDIA campaign on rented cards (report 67, 2026-11-06/07): eleven cards, each with the
- * settings Enigma ships today. One seed per setting (6 PL/EN prompts × 400 tokens, T=1, median);
- * every final setting passed a full-context fill (prompt = context − 640 tokens) on that card.
- * "Typical app" = plain llama.cpp without speculation (the pick Enigma ran before the campaign),
- * "best flags" = plain llama.cpp with MTP, "our engine" = the CUDA engines of the
- * enigma-engines-cuda-2026-11-07 release (fork + kvq + lean, lean, Prism + MTP head; Linux x64).
- * Power limits are the rented hosts' (§2), so cards capped below default read low.
- */
-const R67 = 'KERNEL/product/research/67-nvidia-vast-kampania.md';
-const r67 = (lines: string) => `${R67}:${lines}`;
-const SPEC_67: L = {
-	pl: 'spec_sweep przez serwer, ten sam skrypt po obu stronach: czat, 6 promptów PL/EN, 1 seed, T=1, odpowiedź 400 tokenów, mediana; każde końcowe ustawienie przeszło test pełnego wypełnienia kontekstu',
-	en: 'spec_sweep through the server, the same script on both sides: chat, 6 PL/EN prompts, 1 seed, T=1, 400-token answers, median; every final setting passed a full-context fill test'
-};
-const BONSAI_67_LABELS: Run['labels'] = {
-	a1: { pl: 'Typowa aplikacja', en: 'Typical app' },
-	alt: { pl: 'Fork Prism, plik PTQ1_0', en: 'Prism fork, PTQ1_0 file' },
-	ours: { pl: 'Nasz silnik', en: 'Our engine' }
-};
-/** A ratio with its arithmetic as the source, the way the 4060 Ti card states its gain. */
-const x = (a: number, b: number, line: string): Num => ({ v: a / b, src: `${r67(line)} (${a} / ${b})` });
-/** Shared shape of a card measured only in report 67. */
-function card67(meta: Omit<CardView, 'vendor' | 'hwSrc'> & { hwLines: string }): CardView {
-	const { hwLines, ...rest } = meta;
-	return { vendor: 'nvidia', hwSrc: r67(hwLines), ...rest };
-}
-/** One measured setting and nothing to compare it with (no engine of ours for this card yet). */
-function single67(model: ModelKey, title: string, quant: string, decode: Num, vram: Num, c: L, line: string): RunView {
-	return { model, title, quant, src: r67(line), variants: [{ key: 'a0', decode, vram }], before: 'a0', flags: 'a0', ours: 'a0', metric: SPEC_67, sameHarness: true, conditions: c, conditionsSrc: r67(line) };
-}
+});
 
 const RTX_5090: CardView = card67({
 	id: 'rtx-5090',
@@ -802,6 +657,69 @@ const RTX_4090: CardView = card67({
 	]
 });
 
+const RTX_3090: CardView = card67({
+	id: 'rtx-3090',
+	name: 'GeForce RTX 3090',
+	short: '3090',
+	vramGB: 24,
+	arch: 'Ampere sm_86',
+	bwGBs: { v: 936, src: 'app/landing/src/lib/data/gpus.json (raport 04 §2.1.6)' },
+	powerW: { v: 340, src: r67('46') },
+	hwLine: {
+		pl: 'limit mocy 340 W (domyślnie 390 W), PCIe 3, CPU hosta Xeon E3-1245 v2 (bez AVX2), wynajęta karta (Vast)',
+		en: 'power limit 340 W (default 390 W), PCIe 3, host CPU Xeon E3-1245 v2 (no AVX2), rented card (Vast)'
+	},
+	hwLines: '46',
+	pick: { model: 'qwen38', why: { pl: 'Pełny kontekst 262 144 tokenów na 24 GB z naszym silnikiem: 2,0× szybciej niż typowa aplikacja.', en: 'The full 262,144-token context on 24 GB with our engine: 2.0× faster than the typical app.' } },
+	runs: [
+		{
+			model: 'qwen38',
+			title: 'Qwen3.8-27B UD-Q4_K_XL',
+			quant: 'UD-Q4_K_XL',
+			src: r67('15'),
+			before: 'a0',
+			flags: 'a1',
+			ours: 'ours',
+			variants: [
+				{ key: 'a0', decode: { v: 40.93, src: r67('15') } },
+				{ key: 'a1', decode: { v: 61.49, src: r67('15') }, vram: mib(23448, r67('15')) },
+				{ key: 'ours', decode: { v: 79.97, src: r67('15,69') }, vram: mib(23706, r67('15,69')) }
+			],
+			gain: { flags: x(61.49, 40.93, '15'), engine: x(79.97, 61.49, '15'), total: x(79.97, 40.93, '15'), text: ['×1,50 (MTP n=3)', '×1,30 (fork + kvq + lean)', '×1,95'], src: r67('15,69') },
+			gainText: { pl: ['×1,50 (MTP n=3)', '×1,30 (fork + kvq + lean)', '×1,95'], en: ['×1.50 (MTP n=3)', '×1.30 (fork + kvq + lean)', '×1.95'] },
+			metric: SPEC_67,
+			sameHarness: true,
+			conditions: {
+				pl: 'KV q4_0, -fa on, -ub 256; typowa aplikacja (llama.cpp bez spekulacji); najlepsze flagi (MTP n=3, kontekst 245 760); nasz silnik (fork CUDA + kvq + lean, MTP n=4, KV draftu q4_0, słownik draftu 64k, kontekst 262 144, build bez AVX2); karta 340 W',
+				en: 'KV q4_0, -fa on, -ub 256; typical app (llama.cpp without speculation); best flags (MTP n=3, -c 245760); our engine (CUDA fork + kvq + lean, MTP n=4, draft KV q4_0, 64k draft vocabulary, -c 262144, build without AVX2); card at 340 W'
+			},
+			conditionsSrc: `${r67('15,46,69,85')}; ${R27}:59`,
+			note: {
+				pl: 'Najlepsze flagi mierzone przy kontekście 245 760 (tyle mieści zwykły llama.cpp z MTP), nasz silnik przy pełnych 262 144; pełne wypełnienie kontekstu przeszło na obu. Host miał stary procesor bez AVX2 i limit 340 W zamiast 390 W. Z plikiem UD-Q4_K_M nasz silnik daje 78,97 t/s przy 22 662 MiB. Jeden seed na pomiar. W październiku, na innym hoście (3 seedy, ABBA, kontekst 204 800), ten sam model dał 42,9 → 75,3 → 93,3 t/s.',
+				en: 'Best flags were measured at a 245,760 context (what plain llama.cpp with MTP fits), our engine at the full 262,144; a full-context fill passed on both. The host had an old CPU without AVX2 and a 340 W limit instead of 390 W. With the UD-Q4_K_M file our engine does 78.97 t/s at 22,662 MiB. One seed per measurement. In October, on another host (3 seeds, ABBA, 204,800 context), the same model did 42.9 → 75.3 → 93.3 t/s.'
+			}
+		},
+		...sheetRuns('rtx-3090', {
+			lfm25: {
+				c: { pl: 'kontekst 64k (-c 65536), KV q8_0, bez spekulacji; inny host (październik, karta 300 W)', en: '64k context (-c 65536), KV q8_0, no speculation; other host (October, card at 300 W)' },
+				src: `${BS}:18-21`,
+				note: { pl: 'Pomiar z października na innym wynajętym hoście (limit 300 W, CPU i7-4790); w kampanii listopadowej tego modelu na 3090 nie mierzyliśmy.', en: 'An October measurement on another rented host (300 W limit, i7-4790 CPU); the November campaign did not measure this model on the 3090.' }
+			},
+			nemotron: {
+				c: {
+					pl: 'kontekst 64k (-c 65536), KV q8_0, spekulacja DFlash n_max 5 (drafter NVFP4, 1 GB); A0: samo -m (-fit: 4 sloty × 104k, KV f16); inny host (październik, karta 350 W)',
+					en: '64k context (-c 65536), KV q8_0, DFlash speculation n_max 5 (NVFP4 drafter, 1 GB); A0: plain -m (-fit: 4 slots × 104k, KV f16); other host (October, card at 350 W)'
+				},
+				src: `${NR}:17; ${NR}:73; ${NR}:224`,
+				note: {
+					pl: 'Pomiar z października (raport 14) na innym wynajętym hoście; w kampanii listopadowej tego modelu nie mierzyliśmy. Uczciwie: sam nasz fork z tymi flagami (A2) dał 129,0 t/s, czyli mniej niż upstream (131,4): krok jest krótszy, ale draft trafia rzadziej. Wersja „nasz silnik” to fork z nowymi łatkami (141,1), która przywraca trafność draftu. KLD dla tego modelu jeszcze nie zmierzone; 500 słów liczone współczynnikiem tokenizera Qwena.',
+					en: 'An October measurement (report 14) on another rented host; the November campaign did not measure this model. Honestly: our fork alone with these flags (A2) gave 129.0 t/s, less than upstream (131.4): the step is shorter but the draft hits less often. "Our engine" is the fork with new patches (141.1), which restores draft acceptance. KLD for this model is not measured yet; 500-word times use the Qwen tokenizer ratio.'
+				}
+			}
+		})
+	]
+});
+
 const RTX_5080: CardView = card67({
 	id: 'rtx-5080',
 	name: 'GeForce RTX 5080',
@@ -843,6 +761,68 @@ const RTX_5080: CardView = card67({
 			note: {
 				pl: 'Zwykły llama.cpp z MTP n=3 nie mieści się tu w 16 GB przy tym kontekście; nasz silnik (lean) zwalnia pamięć bufora spekulacji i mieści MTP przy 217 088 tokenach. Przy kontekście 65 536 nasz fork CUDA daje 93,94 t/s. Jeden seed na pomiar.',
 				en: 'Plain llama.cpp with MTP n=3 does not fit in 16 GB at this context; our engine (lean) frees the speculation buffer and fits MTP at 217,088 tokens. At a 65,536 context our CUDA fork does 93.94 t/s. One seed per measurement.'
+			}
+		}
+	]
+});
+
+const RTX_5060TI: CardView = card67({
+	id: 'rtx-5060-ti-16',
+	name: 'GeForce RTX 5060 Ti 16 GB',
+	short: '5060 Ti',
+	vramGB: 16,
+	arch: 'Blackwell sm_120',
+	bwGBs: { v: 448, src: 'app/landing/src/lib/data/gpus.json (raport 04 §2.1.6)' },
+	powerW: { v: 160, src: r67('46') },
+	hwLine: { pl: 'limit mocy 160 W (domyślnie 180 W), wynajęta karta (Vast)', en: 'power limit 160 W (default 180 W), rented card (Vast)' },
+	hwLines: '46',
+	pick: { model: 'qwen38', why: { pl: 'Qwen3.8-27B w 3 bitach mieści się w 16 GB z kontekstem ponad 200 000 tokenów: 1,6× szybciej niż wcześniej.', en: 'Qwen3.8-27B at 3 bits fits in 16 GB with a context above 200,000 tokens: 1.6× faster than before.' } },
+	runs: [
+		{
+			model: 'qwen38',
+			title: 'Qwen3.8-27B ISTA GSQ IQ3_XXS',
+			quant: 'IQ3_XXS (ISTA)',
+			src: r67('17'),
+			before: 'a0',
+			flags: 'a1',
+			ours: 'ours',
+			labels: {
+				a0: { pl: 'Typowa aplikacja (plik UD-Q3_K_XL)', en: 'Typical app (UD-Q3_K_XL file)' },
+				a1: { pl: 'Lepszy plik (ISTA), bez MTP', en: 'Better file (ISTA), no MTP' }
+			},
+			variants: [
+				{ key: 'a0', decode: { v: 27.48, src: r67('17') } },
+				{ key: 'a1', decode: { v: 31.42, src: r67('17') }, vram: mib(14230, r67('17')) },
+				{ key: 'ours', decode: { v: 43.4, src: r67('17,71') }, vram: mib(15762, r67('17,71')) }
+			],
+			gain: { flags: x(31.42, 27.48, '17'), engine: x(43.4, 31.42, '17'), total: x(43.4, 27.48, '17'), text: ['×1,14 (plik ISTA)', '×1,38 (lean + MTP n=2)', '×1,58'], src: r67('17,71') },
+			gainText: { pl: ['×1,14 (plik ISTA)', '×1,38 (lean + MTP n=2)', '×1,58'], en: ['×1.14 (ISTA file)', '×1.38 (lean + MTP n=2)', '×1.58'] },
+			metric: SPEC_67,
+			sameHarness: true,
+			conditions: {
+				pl: 'KV q4_0, -fa on, -ub 256; typowa aplikacja (plik UD-Q3_K_XL, kontekst 135 168, bez spekulacji); lepszy plik (ISTA IQ3_XXS, kontekst 200 704, bez spekulacji); nasz silnik (lean + MTP n=2, kontekst 229 376); karta 160 W',
+				en: 'KV q4_0, -fa on, -ub 256; typical app (UD-Q3_K_XL file, -c 135168, no speculation); better file (ISTA IQ3_XXS, -c 200704, no speculation); our engine (lean + MTP n=2, -c 229376); card at 160 W'
+			},
+			conditionsSrc: r67('17,46,50,71,97'),
+			note: {
+				pl: 'Zwykły llama.cpp z MTP nie mieści się tu w 16 GB przy tak długim kontekście; nasz silnik (lean) zwalnia pamięć bufora spekulacji i mieści MTP przy 229 376 tokenach. Nasz fork CUDA (fork + kvq + lean) daje 49,44 t/s przy krótszym kontekście 196 608 (przy 229 376 się wywala). Jeden seed na pomiar.',
+				en: 'Plain llama.cpp with MTP does not fit in 16 GB at such a long context; our engine (lean) frees the speculation buffer and fits MTP at 229,376 tokens. Our CUDA fork (fork + kvq + lean) does 49.44 t/s at a shorter 196,608 context (it crashes at 229,376). One seed per measurement.'
+			}
+		},
+		{
+			...single67(
+				'lfm25',
+				'LFM2.5-24B-A2B Q4_K_M',
+				'Q4_K_M',
+				{ v: 139.48, src: r67('114') },
+				mib(15820, r67('114')),
+				{ pl: 'cały model w pamięci karty, kontekst 131 072, KV q8_0, -ub 512, bez spekulacji; karta 160 W', en: 'the whole model in card memory, 128k context (-c 131072), KV q8_0, -ub 512, no speculation; card at 160 W' },
+				'114'
+			),
+			conditionsSrc: `${r67('46,114')}; ${BS}:86`,
+			note: {
+				pl: 'Naszego silnika z tym modelem na tej karcie w listopadzie nie mierzyliśmy. W październiku, na innym hoście (180 W, kontekst 32 768), typowa aplikacja dała 147,69 t/s, a nasz silnik z profilem karty 207,86 t/s.',
+				en: 'We did not measure our engine with this model on this card in November. In October, on another host (180 W, 32,768 context), the typical app did 147.69 t/s and our engine with the card profile 207.86 t/s.'
 			}
 		}
 	]
@@ -1074,49 +1054,9 @@ export const XTX_BOARD = {
 export const CARDS: CardView[] = [
 	RTX_5090,
 	RTX_4090,
-	nvidia(
-		'rtx-3090',
-		{ name: 'GeForce RTX 3090', short: '3090', vramGB: 24, arch: 'Ampere sm_86', pick: { model: 'qwen38', why: { pl: 'Najlepsza jakość, która mieści się w 24 GB: 2,2× szybciej niż typowa aplikacja.', en: 'The best quality that fits in 24 GB: 2.2× faster than the typical app.' } } },
-		{
-			qwen38: {
-				c: {
-					pl: 'najlepsze flagi i nasz silnik: kontekst 200k (-c 204800), KV q4_0, MTP n=4, -fa on; nasz dodatkowo słownik draftu 64k, lookup W16, GPU verify; A0: samo -m (-fit: kontekst 90k, KV f16); karta 335 W',
-					en: 'best flags and our engine: 200k context (-c 204800), KV q4_0, MTP n=4, -fa on; ours adds the 64k draft vocabulary, lookup W16, GPU verify; A0: plain -m (-fit: 90k context, KV f16); card at 335 W'
-				},
-				src: `${R27}:10-14,62-79,109,207,211-212; ${NV3090}/vram.jsonl; ${NV3090L}/vram.jsonl`,
-				note: {
-					pl: 'Ten sam skrypt, inne zadania: czat zachłanny (T=0) 42,3 → 76,7 → 103,4 t/s; edycja kodu 42,0 → 109,5 → 348,9 t/s; kopiowanie 41,8 → 108,4 → 343,8 t/s; generowanie po 32k kontekstu 39,1 → 64,0 → 79,9 t/s. Uczciwie: nasz silnik z kontekstem 200k nie zmieścił promptu ~55,6k tokenów w 24 GB; na kartach NVIDIA 24 GB ustawiamy kontekst ≤ 131 072 (szczyt 22,2 GB przy 60k).',
-					en: 'The same script, other tasks: greedy chat (T=0) 42.3 → 76.7 → 103.4 t/s; code edits 42.0 → 109.5 → 348.9 t/s; copying 41.8 → 108.4 → 343.8 t/s; generation after a 32k context 39.1 → 64.0 → 79.9 t/s. Honestly: with a 200k context our engine did not fit a ~55.6k-token prompt in 24 GB; on 24 GB NVIDIA cards we set the context to ≤ 131,072 (22.2 GB peak at 60k).'
-				},
-				final: FINAL_3090_QWEN
-			},
-			lfm25: { c: { pl: 'kontekst 64k (-c 65536), KV q8_0, bez spekulacji', en: '64k context (-c 65536), KV q8_0, no speculation' }, src: `${BS}:19-21` },
-			nemotron: {
-				c: {
-					pl: 'kontekst 64k (-c 65536), KV q8_0, spekulacja DFlash n_max 5 (drafter NVFP4, 1 GB); A0: samo -m (-fit: 4 sloty × 104k, KV f16)',
-					en: '64k context (-c 65536), KV q8_0, DFlash speculation n_max 5 (NVFP4 drafter, 1 GB); A0: plain -m (-fit: 4 slots × 104k, KV f16)'
-				},
-				src: `${NR}:73; ${NR}:224`,
-				note: {
-					pl: 'Uczciwie: sam nasz fork z tymi flagami (A2) dał 129,0 t/s, czyli mniej niż upstream (131,4): krok jest krótszy, ale draft trafia rzadziej. Wersja „nasz silnik” to fork z nowymi łatkami (141,1), która przywraca trafność draftu. KLD dla tego modelu jeszcze nie zmierzone; 500 słów liczone współczynnikiem tokenizera Qwena.',
-					en: 'Honestly: our fork alone with these flags (A2) gave 129.0 t/s, less than upstream (131.4): the step is shorter but the draft hits less often. "Our engine" is the fork with new patches (141.1), which restores draft acceptance. KLD for this model is not measured yet; 500-word times use the Qwen tokenizer ratio.'
-				}
-			}
-		}
-	),
+	RTX_3090,
 	RTX_5080,
-	nvidia(
-		'rtx-5060-ti-16',
-		{ name: 'GeForce RTX 5060 Ti 16 GB', short: '5060 Ti', vramGB: 16, arch: 'Blackwell sm_120', pick: { model: 'qwen38', why: { pl: 'Qwen w Q3 to największy model, który mieści się w 16 GB z kontekstem 32k.', en: 'Qwen at Q3 is the largest model that fits in 16 GB with a 32k context.' } } },
-		{
-			qwen38: {
-				c: { pl: 'kontekst 32k, KV q8_0, MTP n=4, -fit off; A0: domyślny -fit, KV f16', en: '32k context, KV q8_0, MTP n=4, -fit off; A0: default -fit, KV f16' },
-				src: `${BS}:65-69`,
-				note: { pl: 'Q4 nie mieści się w 16 GB. Upstream MTP z domyślnym -fit spada tu do 7,7 t/s.', en: 'Q4 does not fit in 16 GB. Upstream MTP with the default -fit drops to 7.7 t/s here.' }
-			},
-			lfm25: { c: { pl: 'kontekst 32k, KV q8_0, bez spekulacji; A0: domyślny -fit, KV f16', en: '32k context, KV q8_0, no speculation; A0: default -fit, KV f16' }, src: `${BS}:65-69`, note: { pl: 'Q5 nie mieści się w 16 GB.', en: 'Q5 does not fit in 16 GB.' } }
-		}
-	),
+	RTX_5060TI,
 	RTX_4060TI,
 	RTX_4070,
 	RTX_3060,

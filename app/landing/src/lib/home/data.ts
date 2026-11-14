@@ -12,16 +12,17 @@ const must = <T>(v: T | null | undefined, what: string): T => {
 	return v;
 };
 
-/** The hero card and run: RTX 3090 × Qwen3.8-27B UD-Q4_K_XL (same script in every column). */
+/** The hero card and run: RTX 3090 × Qwen3.8-27B UD-Q4_K_XL (report 67, same script in every column). */
 export const HERO_CARD = must(findCard('rtx-3090'), 'rtx-3090');
 export const HERO_RUN = must(
 	HERO_CARD.runs.find((r) => r.model === 'qwen38'),
 	'rtx-3090 qwen38'
 );
+/** The run's three columns: typical app (a0), best flags (a1) and our engine (a2 = the run's `ours`). */
 export const HERO_V = {
-	a0: must(variantOf(HERO_RUN, 'a0'), 'a0'),
-	a1: must(variantOf(HERO_RUN, 'a1'), 'a1'),
-	a2: must(variantOf(HERO_RUN, 'a2'), 'a2')
+	a0: must(variantOf(HERO_RUN, HERO_RUN.before), 'before'),
+	a1: must(variantOf(HERO_RUN, HERO_RUN.flags), 'flags'),
+	a2: must(variantOf(HERO_RUN, HERO_RUN.ours), 'ours')
 };
 
 /** The scan scene reads our lab card: Sapphire PULSE RX 7900 XTX (board spec + registry entry). */
@@ -35,7 +36,6 @@ export const SCAN_RUN = must(
 export const SCAN_USED = must(variantOf(SCAN_RUN, SCAN_RUN.ours)?.vram, `${XTX_BOARD.card} vram`);
 export const HERO_MODEL = MODEL_INFO[HERO_RUN.model].name;
 export const HERO_GAIN = must(HERO_RUN.gain, 'gain');
-export const HERO_KERNELS = must(HERO_RUN.kernels, 'kernels');
 
 /**
  * The hero race reads our lab card: RX 7900 XTX × Qwen3.8-27B UD-Q4_K_XL, the typical app (upstream
@@ -59,8 +59,9 @@ export { CARDS };
 
 /**
  * The hero race cycles through these measured pairs: the run's "before" vs our engine, and only
- * runs where both come from the same script (`sameHarness`). XTX × Qwen (different scripts) and the
- * 3060 runs (Bonsai: Prism beats us) are never raced.
+ * runs where both come from the same script (`sameHarness`). XTX × Qwen (different scripts), the
+ * 3060 runs (Bonsai: Prism beats us) and single settings (5060 Ti × LFM2.5 in report 67: no engine
+ * of ours measured) are never raced.
  */
 const PAIR_IDS: [string, ModelKey][] = [
 	// first: a pair whose whole gain is our engine (no speculation), then alternate models
@@ -68,7 +69,6 @@ const PAIR_IDS: [string, ModelKey][] = [
 	['rtx-3090', 'qwen38'],
 	['rx-7900-xtx', 'lfm25'],
 	['rtx-5060-ti-16', 'qwen38'],
-	['rtx-5060-ti-16', 'lfm25'],
 	['rtx-3090', 'nemotron']
 ];
 export interface HeroPair {
@@ -98,7 +98,7 @@ export { fmtRatio };
 
 /**
  * One redline for the page (design/REDESIGN.md §6): every dial and bar for dense models runs to
- * 100 t/s with the red zone from 70 t/s, so the 3090 Qwen run (93,3) visibly crosses it.
+ * 100 t/s with the red zone from 70 t/s, so the 3090 Qwen run (79,97) visibly crosses it.
  */
 export const REDLINE = 70;
 export const DIAL_MAX = 100;
