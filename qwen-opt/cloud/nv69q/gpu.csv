@@ -1,0 +1,2 @@
+name, memory.total [MiB], memory.used [MiB], driver_version, pcie.link.gen.max, pcie.link.width.max, power.limit [W], power.default_limit [W], clocks.max.sm [MHz]
+NVIDIA GeForce RTX 3090, 24576 MiB, 10 MiB, 595.91.07, 4, 16, 350.00 W, 350.00 W, 2100 MHz

@@ -27,6 +27,7 @@ Bajty na krok (raport 18, nagłówek GGUF): MLP 10.62 GB (4.96 bpw), głowica Q6
 ## Aktualizacja 2026-10-21
 - XTX: proza E0 78.93 t/s ([[metryka-prozy-e0]]); produkcja topka f9b84bcfa ([[raport-43-integracja]]); na 10–16 GB raport 33 woli [[qwen3-6-35b-a3b]].
 - **Od 2026-11-05 produkcja = topka-q63 c0576e3e8** (MTP lean reserve + poprawki MTP upstream #30141/#31350/#31368/#30574; backup `~/llama-topka.f9b84bcfa`). ABBA vs f9b: spec_sweep T=1 120.51/120.58 → 120.54/120.57 t/s (0%), md5 long 32k 20bfd0bb identyczny, VRAM 23359 → 22319 MB (−1.0 GiB), akceptacja MTP po odtworzeniu slotu 0.41 → 0.60, decode po odtworzeniu 91.0 → 116.1 t/s (+27.6%). Cap LDS FA: no-op (runtime podaje 64 KB). Źródło: `~/qwen-opt/q63/logs/summary.txt`, `~/qwen-opt/q63/logs-dep/`.
+- **Od 2026-11-09 produkcja = topka-q70** (topka-q63 c0576e3e8 + cachesave #30137/`LLAMA_SERVER_CACHE_HUGE=1` + FA D256 wariant 83; env domyślne w `run-topka.sh`, VAR 83 tylko qwen/uncensored; backup `~/llama-topka.c0576e3e8`). Final mode, Uncensored: tura agenta przy 76–112k 13 413 → 12 029 ms (−10.3%), fill 255k 466.3 → 492.5 t/s (+5.6%), spec_sweep 119.3 t/s bez zmian, md5 identyczne. [[2026-11-09-wdrozenie-topka-q70]].
 
 ## Powiązane
 - [[modele/_hub|Modele]]

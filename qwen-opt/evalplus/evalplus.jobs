@@ -1,0 +1,4 @@
+# jakość-mini EvalPlus gate: Qwen3.8-27B-Uncensored Q4_K_M, production topka config, effort low, own port 8097
+# (2026-11-09, EvalPlusQwen). Code execution (eval) runs afterwards on CPU in the sandbox, outside the queue.
+evalplus-uncensored-low-gen|21600|~/qwen-opt/evalplus|./jakosc-mini.sh --model uncensored --port 8097 --effort low --tag uncensored-low gen
+evalplus-restore8080|600|~/qwen-opt/evalplus|./jakosc-mini.sh --tag uncensored-low restore

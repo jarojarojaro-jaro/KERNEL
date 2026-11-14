@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, zrodla, research, rejestr, inferencex, agentx, strata, tensorfold, magnitude, hipfire, dflash, lucebox]
-aktualizacja: 2026-11-09
+aktualizacja: 2026-11-14
 zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14; ~/KERNEL/product/research/{21n,21o,24e,24g,24t,30}-*.md
 status: aktualne
 ---
@@ -9,7 +9,7 @@ status: aktualne
 
 **Jeden wiersz na każde zewnętrzne źródło, które było przedmiotem badania (repo, silnik, praca, model, strona, wpis – np. InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash), z wersją, raportem, werdyktem i podpowiedzią, co sprawdzić przy następnym podejściu.**
 
-Zasada (użytkownik 2026-10-19, [[KONWENCJE]]): **nie badamy drugi raz tego samego.** Przed researchem: `kb search <nazwa/URL>` + ten rejestr. Źródło już jest → badamy tylko DELTA od zapisanej wersji/commitu/daty. Po researchu dopisz albo zaktualizuj wiersz. Rekordy wydajności: [[REKORDY]]; podręcznik: [[podrecznik-gpu]].
+Zasada (użytkownik 2026-10-19, [[KONWENCJE]]): **nie badamy drugi raz tego samego.** Przed researchem: `kb search <nazwa/URL>` + ten rejestr. Źródło już jest → badamy tylko DELTA od zapisanej wersji/commitu/daty. Po researchu dopisz albo zaktualizuj wiersz. Pomysły warte pomiaru na karcie trafiają jako pozycje `K-…` do [[KOLEJKA-TESTOW]]. Rekordy wydajności: [[REKORDY]]; podręcznik: [[podrecznik-gpu]].
 
 Legenda: **2×/3×/4×** = źródło badane wielokrotnie; kolumna „delta” mówi, co dodało kolejne podejście (tu widać dublowanie pracy). Daty = data raportu. Raporty: `R21f` = `product/research/21f-*.md`; `Q:` = `qwen-opt/research/`. Zakres: przedmioty badania; linki cytowane tylko jako przypis (newsy, dokumentacja API, fora) zostają w raportach – szukaj ich `kb search <domena>`.
 
@@ -117,6 +117,11 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | SPEED-Bench (arXiv 2604.09557) | R21f | R21f | Źródło „golden AL” AgentX. | – | – |
 | Terminal-Bench (tbench.ai) | R21h | R21h | Benchmark RSI; TB 2.1 51.7 → 86.5%. | – | – |
 | sol-execbench (nvidia), ncu-report-skill-rtx-5090, kekzl/imp | R21b | R21b | Materiały pomocnicze do 5090. | – | – |
+| HF openai/gsm8k (`main`, test) | `740312ad` (11-09) | [[jakosc-mini]] | 50 zadań w jakość-mini (seed 20261109). | test 1319 | – |
+| HF TIGER-Lab/MMLU-Pro (test) | `b189ec76` (11-09) | [[jakosc-mini]] | 10 pytań × 14 dziedzin w jakość-mini, zero-shot CoT. | test 12 032, do 10 opcji | – |
+| HF CohereLabs/Global-MMLU (`pl`, test) | `0e619dbe` (11-09) | [[jakosc-mini]] | `pl` istnieje (MT + poprawki społeczności), więc zadania SpeakLeash niepotrzebne. | test 14 042; Lite bez `pl` | ludzkie PL MCQ (SpeakLeash) |
+| evalplus HumanEval+ (pakiet evalplus 0.3.1) | HumanEvalPlus v0.1.10 | [[jakosc-mini]], [[evalplus-jakosc-kodu]] | 30 z 164 zadań w jakość-mini, ta sama piaskownica. | – | – |
+| HF gorilla-llm/Berkeley-Function-Calling-Leaderboard (v3 simple/multiple/parallel) + checker AST gorilla | `61fc0608` (11-09); gorilla `6ea57973` | [[jakosc-mini]] | 8+6+6 przypadków FC, checker AST skopiowany bez zmian logiki. | simple 400, multiple 200, parallel 200 | BFCL v4 / live |
 
 ## Prace naukowe
 
@@ -213,6 +218,15 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Nemotron-3.5-Bolt-E4B (NVIDIA, unsloth GGUF) | HF 10-23 | R60c, [[nemotron-3-5-bolt-e4b]] | Telefon/edge; nie drafter Qwena (słownik 262 144). | Q4_K_M 6.18 GB | katalog 6–8 GB |
 | Humming (vllm-project/humming, vLLM + Ant Group) | `db930af` (10-22), blog 10-21 | [R60d](../product/research/60d-serving-kernels-cache.md), [[humming]] | Tylko CUDA, bez GGUF; batch 1 ≈ Marlin, poniżej naszego MMVQ. | 4090 W4A16 M=1 610 GB/s (60%); E2E +14…43% (8× H20) | port HIP, ścieżka GEMV małego M |
 | SGLang HiCache + Unified Radix Cache (blogi, PR #21259 #30393 #33639 #34798) | blog 10-2x; PR do 2026-08-19 | R60d, [[sglang-hicache]] | Wzorce dla cache sesji: pinned I/O, snapshot GDN na granicy prefiksu, session_id. | L3 9.4K → 145.5K tok/s; odzysk 1/10 → 10/10 | write-back dla snapshotów, nowe PR hybryd |
+| SGLang Unified Memory (blog LMSYS + wpis @ChengWan17, Telegram „gpu”) | blog 2026-11-11, SGLang `daa171846f` | [[sglang-unified-memory]] | Nie dla nas: jedna arena zamiast podziału pul KV/SWA/stan liczy się tylko przy wielu żądaniach; topka ma 1 slot. | H200: 1000 vs 618 żądań w locie, do +26% przepustowości; domyślnie 5830 vs 5880 tok/s | wsparcie poza CUDA, tryb domyślny |
+| Baseten deepseek-ultrafast (Rust + CUDA, DeepSeek-V4.1-Flash; @saltyph, @waterloo_intern, Telegram „gpu”) | wpisy 2026-11-13 | [[telegram-2026-11-14-silniki-agenci]] | Silnik pod jeden model; dla nas tylko potwierdza K-014 (krok spec-dec w jednym grafie CUDA). | 4× B300 ~1740 TPS, 8× B300 2060; +15% vs SGLang; 1M prefill ~12 s | kod grafu spec-dec (weryfikacja 7 tok.) |
+| InferenceForge (@kaiwei_chang, Telegram „gpu”) | wpis 2026-11-13; pracy/repo nie znaleziono | [[telegram-2026-11-14-silniki-agenci]] | Agent stroi serwer pod AgentX; przepustowość wielu sesji, nie nasz przypadek. | +43% przepustowości przy tym samym SLA | praca / repo |
+| vstack (hao-ai-lab/vstack, Telegram „gpu”) | README 2026-11-14 | [[telegram-2026-11-14-silniki-agenci]] | Weryfikacja formalna (TLA+/Z3) dla agentów; 17 błędów w vLLM/SGLang. Dla nas opcja przy K-001. | 17 błędów, VeriServe +0,18% p50 TPOT | spec cyklu życia slotu, jeśli K-001 utknie |
+| PearlQuant (Pearl Research, blog + @WeinsteinOmri, Telegram „gpu”) | blog 2026-11-12 | [[telegram-2026-11-14-pearlquant-llamacpp-v1]] | Stratne KV (KLD 0,057 vs FP8), zysk przy wielu sesjach; odpada (K-079). Metoda oceny 3 warstw → K-007. | 3,2 bita/wartość, −65% vs FP8; p90 TTFT 144 → 7 s przy 128 sesjach | – |
+| llama.cpp v1.0.0 (blog HF ggml-org + https://x.com/ggerganov/status/2121246103312212124, Telegram „gpu”) | `b1b770d` = b12359 (11-13) | [[telegram-2026-11-14-pearlquant-llamacpp-v1]] | Semver API; dla nas #31533, #30541 (kopia stanu KV q4_0 → K-001), #31927, #32078. FP8 KV stratne. | delta od v0.9.0 (b12110) | rebase topki (K-056), silnik Enigmy (K-103) |
+| Project Maya (delta), github.com/mw00/project-maya/releases/tag/v1.1.62 + CHANGELOG do v1.1.63, https://x.com/PeasantSmith/status/2121371735157264831 (Telegram „gpu”) | v1.1.57 … v1.1.63, `30145b8` (11-13) | [[project-maya]] | APU AMD + NVIDIA w jednym procesie (ROCm + CUDA) dla MoE; dla gęstego 27B na XTX nic; ablacja per żądanie = odrzucona K-082. | GLM-5.3-Flash prefill 32K 293 → 901 t/s; DeepSeek dekod +18% | >v1.1.63, gęsty model lub gfx1100 |
+| Infrathon (arXiv 2611.11995, github.com/InfrathonX/Infrathon; https://x.com/HuggingPapers/status/2121515797671768333, Telegram „gpu”) | v1 2026-11-09 | – (sam wiersz, bez notatki) | Benchmark agentów (25 zadań infra, H100, 24 h na przebieg); „19,86× KV” to stratny kodek dla Quant-VideoGen, nie dla LLM. Dla nas tylko lekcja metody: długie przebiegi dalej poprawiają (135/150), błędy agentów = łamanie zadania, zawodne testy, przedwczesne „gotowe” — to samo pilnują nasze bramki md5/KLD. | 6 modeli, 150 przebiegów, >10 000 GPU-h | zadania inference na AMD |
+| Wpis o 5 technikach PEFT (https://x.com/DailyDoseOfDS_/status/2121536126662128023, Telegram „gpu”) + prace LoRA 2106.09685, LoRA-FA 2308.03303, VeRA 2310.11454, Delta-LoRA 2309.02411, LoRA+ 2402.12354 | 2026-11-14 | [[peft-lora-warianty]] | Wiedza do sekcji llm/ (przyszłe fine-tuningi); nie przyspiesza; niescalony adapter spowalnia dekod, scalony zmienia odpowiedzi. | – | pomiar kosztu `--lora` na XTX przy teście Astra-Stop T1 |
 | AKV (arXiv 2610.28577, thu-nics/AKV) | `c567a42` (10-21), v1 10-20 | R60d, [[akv-cache-agentow]] | Repos odpada przy IMROPE; drop tylko w atencji, drogi. | −27.7% kosztu (centy API); 1.18× wyjścia | wsparcie modeli liniowych/hybryd |
 | dphnAI/sonar PR #1788 (all-reduce PCIe) | `f653ba4e` (OPEN, 10-21) | R60d | Tylko sm_120, TP=4, P2P; nie dotyczy. | 290.4 → 327.2 t/s (4× RTX PRO 6000) | scalenie, sm_86 bez P2P |
 | Project Maya | v1.1.21 `451f9cb` … v1.1.26 `f26d8ba` (10-21…23) | R60d, [[project-maya]] | Tylko DeepSeek; nic dla gfx1100/Qwena; #382 na 2× XTX bez zysku. | prefill AMD 2.35–2.53×; FAT_ROWS 1.3–1.56× (V100) | >v1.1.26: gęsty 27B, pomiar XTX |
@@ -299,7 +313,7 @@ Synteza: [[raport-63-synteza]]; reguła [[2026-11-05-tylko-bezstratne]] (stratne
 | llama.cpp PR #29761, #28243, #27836, #27742 | #29761 `c061df198` (10-01, b11330); #28243 zamknięty, HEAD `6fcaa16f` | R66a §0.3, [[qwen38-flash-next]] | MTP `qwen4exp` w master; gałąź danielhanchen martwa. | – | DFlash2 dla Flash-Next w llama.cpp |
 | 1Cat-vLLM, github.com/1CatAI/1Cat-vLLM (release v1.5.2) | main `c98a8d6` (11-06), wheel `9f970d628`, tag `2bb8c2b9` | R66b, [[1cat-vllm]], [[kv-raz-na-weryfikacje]], [[siatka-checkpointow-gdn]] | −18% przy 250K = rzadka QSA + host KV FP8; Pack-GQA48 bezstratny wzorzec dla planu #8. | 27B 501 → 268 (−47%); operator −20…21% | port Pack-GQA poza V100 |
 | TokenSpeed, github.com/lightseekorg/tokenspeed | `b941508` (11-07) | R66b §2.2, §3.8, [[tokenspeed]] | Brak gfx11; lekcja: obcinanie po stop-tokenie na GPU przy overlapie. | monokernel „580 vs 377”, CI 443 | gfx11/gfx1151 w backendzie |
-| Blogi TokenSpeed (lightseek.org, pytorch.org) | cytowane w README | R66b §7 | Nieczytane, liczby z CI w repo. | – | – |
+| Blogi TokenSpeed (lightseek.org, pytorch.org; wpis https://x.com/zainhas/status/2120806646356295682 cytujący https://x.com/lightseekorg/status/2120237880769650770) | cytowane w README; blog Kimi K3 AgentX 2026-11-10 przeczytany 11-14 (Telegram „gpu”) | R66b §7, [[tokenspeed]] | Kimi K3 na 32× GB300: DWDP prefill + DEP16 dekod + wspólna pamięć hosta 5,45 TB; skala klastra, dla nas 0%. Fuzja conv+KDA w weryfikacji → K-047. | 331 tok/s/GPU = 1,92× DCP8; TTFT 13–14 s vs 1 s | – |
 | Hyperkernel, github.com/Hyperstitioncc/Hyperkernel | `7048c586` (11-06) | R66c, [[hyperkernel]] | Tylko binaria B300, generatora brak, AMD brak. | +36.7% vs baza NVIDIA (nieporównywalne) | wydanie generatora, backend AMD |
 | Wątek x.com/hyperstition_cc/status/2118432349352595528 | 11-05 (mirror r.jina.ai) | R66c §2.1 | Twierdzenia producenta, baza przepisana z NVIDIA. | 1129.6 vs 826.5 tok/s/user | – |
 | Mirage MPK HIP, github.com/mirage-project/mirage/pull/820 | gałąź `mpk-amd-mi355x` @ `b6ef312b` (11-02) | R66c §5, [[megakernele-prior-art]] | Pierwszy otwarty megakernel w HIP, tylko gfx950. | Kimi K3 2.02× przy bs1 | backend RDNA |
@@ -341,15 +355,24 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 |---|---|---|---|---|---|
 | HF tencent/Qwen3.8-27B-DSpine-b16 + github Tencent/DSpine | HF `ea909c0` (11-07), repo `0cc92d8` (11-08) | R69a, [[drafter-dspine]] | SWA 8192, b16 vs DFlash2 b8; SGLang c=8; dane 27B nieujawnione. | τ T=1 vs DFlash2: MT-Bench +3.6%, kod +8.5…+12.9% | dane treningu / wersja PL |
 | Ajay9o9/llama.cpp `dspine` + HF aj9o9/Qwen3.8-27B-DSpine-b16-GGUF | `d493f84` na upstream `a691b23`; HF `62e9241` | R69a, [[drafter-dspine]] | 323 linie, tylko graf; baza bez MTP, AR 3090 zaniżone. | 3090: AR 28.2, DFlash2 50.6, DSpine 80.4 (T=1) / 90.1 (T=0); krok 1.68× AR | PR do upstreamu; wynik T1 na HIP |
-| llama.cpp PR #31533 (few-row MMQ, CUDA) | otwarty (11-09) | R69a | Weryfikacja 8–16 kolumn na NVIDIA tańsza. | 3090 Ti DFlash2 58.87 → 43.81 ms/krok | merge → przeliczyć przepisy Enigmy |
+| llama.cpp PR #31533 (few-row MMQ, CUDA) | **scalone w v1.0.0 (11-13)**; otwarty 11-09 | R69a, [[telegram-2026-11-14-pearlquant-llamacpp-v1]] | Weryfikacja 2–24 kolumn na NVIDIA tańsza; port HIP RDNA3.5 21 → 37 tok/s. Kolejka K-103 (Enigma), K-013 (XTX). | 3090 Ti DFlash2 57,6 → 77,7 tok/s (+34,9%), 5090 +20,6% | wynik K-103; port HIP `6ad15f48` |
 | SpecForge PR #1038 (trening DSpine) | 11-09 (odwołanie z README) | R69a | Kod treningu jest; treści PR nie czytano. | – | PL-fine-tune DSpine |
 | qwen-warp (tuan3w) **2×** | `689901c` v0.8.0 (11-07) | R69b, [[qwen-warp]] | DFlash2 w grafie: czat ×1.34, agent/kopia −31%; 262k się nie mieści. | 3090 350 W: kod 276.7, czat MTP 155; multiuser 441 t/s | ring buffer draftera, router kopii |
 | TensorFold (delta) | `abc39af1` v1.2.5+ (11-08) | R69b, [[tensorfold]] | gfx1100 dalej brak; HIP DFlash2 ładowany, nieużywany. | gfx1151 27B 16 strumieni 51 → 75 t/s | gfx1100 / `--drafter` na HIP |
 | HF incoai/Qwen3.8-27B-DFlash2 | 11-09 (API) | R69b | Drafter używany przez qwen-warp i HyperQwen. | 3.85 GB | port GGUF |
+| HF ukisai/Swift-1.5-Qwen3.8-27b-INT4 + qwen-warp `689901c` (pomiar) | rev `81a28ee` (09-24); 11-09 | [[2026-11-09-qwen-warp-vs-fork-3090]], [[qwen-warp]] | AWQ+GPTQ W4A16 g128, 19.45 GB; zmierzone na 3090 obok forka: ×1.34–×1.81, kill nie zachodzi. | 16k 114.0/121.0 vs 76.8/66.7; 262k 68.3/68.6 vs 51.1/45.1 | fork z lżejszym GGUF (IQ4_XS/Q4_0) + KLD; próbkowanie spekulacyjne T=1 |
 | HF jarrodwatts/Qwen3.8-27B-Astra-Stop | rev `27c08370` (11-04) | R69c, [[astra-stop]] | Rank-1 ×2 na `blk.63.ffn_down`; zmiana zachowania, nie bezstratna. | −37% mediany (bf16, n=16); 694 zadania −3% tokenów | wynik przy effort low, przeciek `</think>` |
 | notwitcheer/llm-bench-rig (astra-stop) | `f732402` (11-08) | R69c, [[astra-stop]] | Preregistrowana replikacja Q4_K_M bez MTP; `</think>` w treści 11/32. | 26 254 → 16 930 (−35.5%); SVG 32 → 31/32 | surowe ślady, test z MTP |
 | honnibal.dev „Astra read/write misleading” | 11-03 | R69c | Krytyka WSP: agent używał Pythona i przebiegów modelu. | – | – |
 | AMD Adrenalin `atieclxx.exe` (wccftech, windowsforum/Comss, Neowin, forum AMD) | 11-08 | R69d, [[amd-adrenalin-zapisy-ssd]] | Tylko Windows; serwer nie dotyczy; UX ostrzeżenie Enigmy. | 0.3–1.5 MB/s typowo; wersje 26.6.4–26.10.2 | release notes z poprawką (numer) |
+
+## EvalPlus (2026-11-09, bramka jakość-mini)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| evalplus (PyPI) + HumanEvalPlus v0.1.10 / MbppPlus v0.2.0 | 0.3.1 (11-09) | [[evalplus-jakosc-kodu]] | Harness przyjęty; backend openai ma 100 s alarm z nieskończonym retry → własny dekoder na pętli evalplus. | 164 / 378 zadań | nowa wersja danych / EvalPerf |
+| EvalPlus leaderboard `results.json` | 11-09 | [[2026-11-09-evalplus-qwen-uncensored]] | Brak Qwen3.x. | Qwen2.5-Coder-32B-Instruct 92,1/87,2/90,5/77,0 | wpis Qwen3.8 |
+| LocalMaxxing HumanEval+ | 11-09 | [[2026-11-09-evalplus-qwen-uncensored]] | Inny harness (shardy), orientacyjnie. | Qwen3.8-27B Q4_K_XL 90,9, Q6_K_XL 92,1, Q4_K_M 91,0 (100/164) | MBPP+ / uncensored |
 
 ## Powiązane
 - [[KONWENCJE]]

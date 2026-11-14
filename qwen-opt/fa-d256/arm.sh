@@ -9,7 +9,7 @@ label=$1; var=$2
 [ -f "$D/res/BEST" ] || { echo "no BEST: skipped"; exit 0; }
 [ "$var" = BEST ] && var=$(cat "$D/res/BEST")
 port=18790; out=$D/logs/$label; mkdir -p "$out"
-export ROCM_DIR=$HOME/wt/fa-d256/build-hip CTX=262144 PORT=$port LOG=$out/server.log GGML_HIP_FA_D256_VAR=$var
+export ROCM_DIR=${ARM_ROCM_DIR:-$HOME/wt/fa-d256/build-hip} CTX=262144 PORT=$port LOG=$out/server.log GGML_HIP_FA_D256_VAR=$var
 export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; unset QUEUE_PM4_SAFETY
 grep -q '^1: 2200Mhz' < <(sed -n '/^OD_SCLK:/,/^OD_MCLK:/p' /sys/class/drm/card0/device/pp_od_clk_voltage) \
     && echo "eco: OD_SCLK 2200" || echo "WARNING: OD_SCLK is not 2200 (not touched by this job)"

@@ -3096,6 +3096,37 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[amd-adrenalin-zapisy-ssd]] — źródło `69d-amd-sterownik-ssd.md`: 0.3–1.5 MB/s, 432 GB/dzień, 26.6.4–26.10.2, „26.11.1” niepotwierdzone (:7-9); 26–130 GB/dzień, 2.6–13×, 10 GB/dzień (:41-42); BAR0 32 GiB (:32); 256 MB (:35); próg 0.2 MB/s, 30 s (:47-48). OK.
 - [[raport-69-synteza]], `product/research/69-SYNTEZA.md` — liczby powtórzone z notatek wyżej i z 68b (:12, +3.9% / +4.8%); 19.48 GB i 3.85 GB z 69b (:73-74). OK.
 
+## Ingest 2026-11-09 (fa-d256)
+
+- [[2026-11-08-fa-d256-prefill]] — źródło `~/qwen-opt/fa-d256/res/{select,tbo,bench,long_md5,fill}.txt`, logi `queue/logs/fa-*.log`; tabela baseline → teraz, werdykt PASS; [[REKORDY]] wiersz fill 255k; synteza 68 poz. 2.
+
+## Ingest 2026-11-09 (raport 70, post-mortem fa-d256)
+
+- `product/research/70-fa-d256-jak-to-zrobilismy.md` — sprawdzone ze źródłem: tabela TL;DR (`res/select.txt` 37 231 / 32 674 µs, 0,878; `perf-1-0.log` / `perf-14-83.log` 44,26 / 50,47 TFLOPS, 1,65 TFLOP; `bench.txt` wszystkie 12 wierszy, średnie ABBA +1,8% / +5,7% policzone; `fill.txt` 466,3 / 493,4 t/s, 546,8 / 516,8 s, 31b6525a, 23 446 / 23 414 MiB; `long_md5.txt` 849,8 / 860,8, e460e3b6; `spec_sweep.txt` A/B 119,2, 26,92 / 26,91 ms); tabela §3.3: 16 wierszy × 6 komórek z `select.txt`, VGPR/spill/scratch z `isa.txt`, md5 z `md5.txt`; czasy kroków z `queue.log` 01:41–02:58 (419 / 256 / 764 / 295 / 1035 / 668 / 639 s); profil 24v (2,2% / 13% / 24%, 131 z 547 ms, 256 VGPR / 512 B → 232 / 0, +0,84%, 2192 LDS); #31746 0,695× / 0,783× (68a §2.1, 68d §2.3); kvq 30%, 11,3 ms, 658 / 355 GB/s, −6,1%, +0,4…1,4%, 236 VGPR (`2026-11-08-kvq-once-profil`). LDS 54 784 B, przewidywania Amdahla (+0,7 / +2,8 / +7,3%) i udziały z pomiaru (3 / 17 / 45%) to rachunek, oznaczony `[INFERENCE]`. OK.
+- [[sweep-wariantow-kernela]] — liczby powtórzone z raportu 70 (+5,8%, 62 min, 7 min, −5,0% / −12,2%). OK.
+- [[lekcja-zysk-rosnie-z-glebokoscia]] — 0,878×, +0,5 / +1,9 / +5,8% (`bench.txt`, `fill.txt`), +0,84% (24v), udziały 4 / 24 / 56% (rachunek z 24v, raport 70 §3.5). OK.
+- [[2026-11-08-fa-d256-prefill]] — nowy punkt „Post-mortem”: −3,6% / −6,1%, +2,4% (`select.txt`), 220 VGPR (`isa.txt`). OK.
+
+## Ingest 2026-11-09 (qwen-warp vs fork, 3090)
+
+- [[2026-11-09-qwen-warp-vs-fork-3090]] — tabela z `qwen-opt/cloud/nv69q/summary.txt` (mediany `MEDIAN` w `bench.jsonl`): krótki 82.9/76.9 vs 121.2/124.0; 16k 76.8/66.7 vs 114.0/121.0; 64k 69.5/63.7 vs 110.1/101.4; 128k 59.4/54.3 vs 95.2/89.6; 262k 51.1/45.1 vs 68.3/68.6; powtórka 81.8/76.6; Wdef 128.0/116.9, 112.8/120.1; prefill 881/1087 vs 864/1223 (cold1/cold2), głęboki 131 143 tok./312.5 s = 420, 134 522/262.8 s = 512; VRAM 23 726 / 23 208 MiB (smi.csv); 345 W (smi.csv); koszt $0.53 = różnica kredytu przed i po rozliczeniu. ×1.24 = szacunek z config.json Swift (24.33 G par. × 4.125 b/w + głowica int4) i typów tensorów GGUF (output Q6_K, token_embd Q4_K). OK.
+- [[qwen-warp]] — liczby powtórzone z notatki wyżej. OK.
+
+## Ingest 2026-11-09 (wdrożenie topka-q70)
+
+- [[2026-11-09-wdrozenie-topka-q70]] — liczby z wyników wdrożenia (ticket 22938, `cachesave/summarize.py` grupa Q, ramiona `fa-d256/arm.sh` na kopii q70); procenty przeliczone: 1 384 / 13 413 = 10,3%, 492,5 / 466,3 = +5,6%, 550,7 / 526,7 = +4,6%, 285,9 / 1 055,5 = −73%, 463,0 / 1 321,7 = −65%. Baseline fill 255k z [[2026-11-08-fa-d256-prefill]]. OK.
+- [[REKORDY]], [[qwen3-8-27b]], raport 70 §6 — liczby powtórzone z notatki wyżej. OK.
+
+## Ingest 2026-11-09 (EvalPlus uncensored)
+
+- [[2026-11-09-evalplus-qwen-uncensored]] — pass@1 i tok/odp. z `qwen-opt/evalplus/uncensored-low/summary.md` (160/164, 152/164, 351/378, 303/378; 786, 704; 0 uciętych), wall z `gen-wall.txt` (808, 1819, 2627 s), CI Wilsona przeliczone (z=1,96), prędkość z `speed.md`, narzut z `overhead.py` (wynik w notatce; zgodny z wstępnymi liczbami Main dla HE+). Liczby publiczne: LocalMaxxing (90,9 / 92,1 / 91,0), EvalPlus `results.json` (Qwen2.5-Coder-32B-Instruct 92,1/87,2/90,5/77,0), karta Qwen3.8-27B (LCB v6 90,3), sprawdzone 2026-11-09. OK.
+- [[evalplus-jakosc-kodu]] — test piaskownicy (163/164, curl rc 7) z sesji EvalPlusQwen 2026-11-09. OK.
+
+## Ingest 2026-11-09 (jakość-mini, Qwen uncensored)
+
+- [[2026-11-09-jakosc-mini-qwen-unc]] — trafności, CI, tok/odp., sparsowane/ucięte z `qwen-opt/jakosc-mini/results/qwen-unc-low-s20261109/summary.md` (wiersze kategorii i „razem”, makro 91.3); 2253 s, build `b11647-3191b25f4`, n_ctx 262144 z `runs/.../meta.json`; porażki (MMLU-Pro 11632 length 32 768, HE 124/151 plus fail, BFCL multiple_193 `value_error:string`) z `scored.jsonl` i `humaneval_plus_eval.json`; tabela prędkości z `speed.md`, zakresy per dziedzina z `speed-mmlu-pro-domains.md`; 119.3 t/s z [[qwen3-8-27b]]. Restore z `queue/logs/jakosc-qwen-unc-restore8080.log`. OK.
+- [[jakosc-mini]] — rewizje HF z `subsets/s20261109/manifest.json`, liczności (1319, 12 032, 14 042, 400/200/200) z plików danych; przedziały Wilsona przy 80% przeliczone `run.wilson` (67.0–88.8, 58.4–91.9, 49.0–94.3, 75.0–84.2); brak `pl` w Global-MMLU-Lite sprawdzony w API HF 2026-11-09. OK.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[KONWENCJE]]

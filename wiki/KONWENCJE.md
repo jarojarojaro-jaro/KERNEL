@@ -12,7 +12,7 @@ status: aktualne
 ## Notatka
 ```
 ---
-typ: model|karta|rocm|nvidia|kernel|latka|metoda|eksperyment|lekcja|narzedzie|chmura|repo|research|produkt|firma|decyzja
+typ: model|karta|rocm|nvidia|kernel|latka|metoda|eksperyment|lekcja|narzedzie|chmura|repo|research|produkt|firma|decyzja|llm
 tags: [<folder>, temat-1, temat-2]
 aktualizacja: RRRR-MM-DD
 zrodlo: ścieżka:linie; URL

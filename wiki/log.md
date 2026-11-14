@@ -303,3 +303,58 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 ## [2026-11-09] produkt | landing przebazowany na KERNEL main 8307d36, równy żywej d3054d2
 [[strona-zrodlo-rowna-zywej]]: gałąź `nvidia-2026-11` przebazowana bez `--force` na `main` `8307d36`; konflikt tylko w meta — meta z maina (`metaTitle`/`metaDescription`) + `<Seo>` z misji, twarde spacje z żywej wróciły do źródła; ekrany `/app/` dostały OG/Twitter. Pomiar: head 86/86 i tekst 86/86 bez różnic, markup 0 realnych różnic, `leaks` CZYSTO, `bun run check` 0/0, `404.html` 0 `../` i 53/53 zasobów < 400. Odstępstwo: nazwy chunków `_app/i4` inne (źródło ma dodatkowe moduły), `version.json` z definicji.
 
+## [2026-11-09] eksperyment | FA D256 prefill RDNA3 (VAR 83) — PASS, rekord
+[[2026-11-08-fa-d256-prefill]]: fill 255k 466,3 → 493,4 t/s (+5,8%, −30 s), llama-bench d128k 459,5 → 486,3 (+5,8%), d32k +1,9%, d4k +0,5%; md5 12k/32k/255k =, spec_sweep 119,2 = 119,2. Kandydat do wdrożenia (czeka na OK). Pierwszy przebieg padł na rc=127 (LD_LIBRARY_PATH), ponowiony. [[REKORDY]].
+
+## [2026-11-09] research | raport 70: post-mortem FA D256 VAR 83
+`product/research/70-fa-d256-jak-to-zrobilismy.md`: oś czasu pomysłu (0042 → 24v → #31746 → 68a/c/d → XtxFaPrefill), rozkład maski 83 (bariery KQ/V + V^T w LDS + `nbatch_V2` 32; spille 220 → 0, LDS bez zmian), efekty izolowane wariantów, model udziału FA od głębokości, metoda i porażki (rc=127 RUNPATH z cichą kaskadą rc=0, `cpuheavy` w jobie), macierz reprodukowalności (MMQ, autotune Enigmy per arch, inne kształty FA, `kvq`, CUDA, GDN, upstream) i przepis wdrożenia. Nowe: [[sweep-wariantow-kernela]], [[lekcja-zysk-rosnie-z-glebokoscia]]; link w [[2026-11-08-fa-d256-prefill]].
+
+## [2026-11-09] eksperyment | cachesave PASS
+[[2026-11-08-cachesave-30137]]: #30137 + huge pages — tura przełączenia wątku −972 ms (−7,2
+## [2026-11-09] eksperyment | cachesave PASS
+[[2026-11-08-cachesave-30137]]: #30137 + huge pages — tura przełączenia wątku −972 ms (−7,2 proc.), zapis cache 1 056 → 267 ms, md5 =; EvalPlus i jakość-mini wstrzymane na polecenie użytkownika.
+
+## [2026-11-09] eksperyment | qwen-warp vs fork CUDA na wynajętym 3090 (R69b Q1)
+[[2026-11-09-qwen-warp-vs-fork-3090]]: ta sama karta 350 W, 6 promptów, streaming, oba przy 262 144. qwen-warp ×1.46/×1.61 (krótki), ×1.48/×1.81 (16k), ×1.58/×1.59 (64k), ×1.60/×1.65 (128k), ×1.34/×1.52 (262k) T=0/T=1 → kill < ×1.15 nie zachodzi; ~×1.24 to lżejsze wagi [SZACUNEK]. Oba mieszczą 262 144. Zaktualizowane [[qwen-warp]]. Koszt $0.53, 0 instancji.
+
+## [2026-11-09] wdrozenie | topka-q70 w produkcji XTX
+[[2026-11-09-wdrozenie-topka-q70]]: `~/llama-topka` = topka-q70 (q63 c0576e3e8 + cachesave #30137/huge pages + FA D256 VAR 83, env domyślne w `run-topka.sh`), zamiana 15:00:16 UTC, backup `~/llama-topka.c0576e3e8`. md5 long 32k / fill 255k / przełączanie =; fill 255k 466,3 → 492,5 t/s (+5,6%), tura agenta 76–112k 13 413 → 12 029 ms (−10,3%), spec_sweep 119,3 bez zmian. [[REKORDY]] nowy wiersz tury agenta, fill 255k „prod. tak”; [[qwen3-8-27b]] linia produkcji; raport 70 §6 wykonany. Łatki `qwen-opt/patches/topka-q70/`, skrypty `qwen-opt/deploy-q70/`, narzędzie `qwen-opt/speed_real.py`.
+
+## [2026-11-09] eksperyment | EvalPlus: Qwen3.8-27B-Uncensored, produkcja XTX, effort low
+[[2026-11-09-evalplus-qwen-uncensored]]: greedy pass@1 HumanEval 97,6 / HumanEval+ 92,7 / MBPP 92,9 / MBPP+ 80,2 % (topka-q70 `3191b25f4`, port 8097, 786/704 tok/odp., 0 uciętych, gen 2627 s); dekod 174,2 / 156,7 t/s (T=0), narzut stały ~230 ms/żądanie. Effort low vs wyższy niezmierzony. Nowa metoda [[evalplus-jakosc-kodu]] (`qwen-opt/evalplus/jakosc-mini.sh`, piaskownica Landlock).
+
+## [2026-11-09] eksperyment | jakość-mini: Qwen3.8-27B-Uncensored, produkcja XTX, effort low
+[[2026-11-09-jakosc-mini-qwen-unc]]: 255/290 = 87,9% (CI 83,7–91,2), makro 91,3%; GSM8K 50/50, MMLU-Pro 115/140, PL 43/50, HumanEval+ 28/30 (z biegu EvalPlus), BFCL 19/20; topka-q70 `3191b25f4`, T=0, gen 2253 s, 1 ucięta (32 768 tok). Prędkość na zadaniach: dekod ważony 142,4 t/s (PL 120,1 … HumanEval+ 174,8). Nowa metoda [[jakosc-mini]] (`qwen-opt/jakosc-mini/`, podzbiory seed 20261109, 5 źródeł w [[ZRODLA]]).
+
+## [2026-11-13] meta | Kolejka testów na karcie
+[[KOLEJKA-TESTOW]]: nowa jedna kolejka pomysłów do sprawdzenia na karcie (jaroserverai: XTX + RTX 5060 Ti), zebrana z raportów (15–70, SYNTEZY 63/66/68/69/70, 67c), wiki (eksperymenty, decyzje, metody, STAN-PRAC, REKORDY) i archiwum rozmów 2026-09-15 … 2026-11-13: 75 pozycji „Czeka” (17 czeka na decyzję właściciela), 27 „Odrzucone” (zmieniają odpowiedzi, zakazy właściciela, zmierzone KILL). Wpis z `DO-ZAPISANIA.txt` (martwy kod capu LDS FA `57204db1e`) przeniesiony do kolejki jako K-055. Indeks i rejestr źródeł linkują kolejkę; `tools/wiki.py` zwalnia ją z limitu słów jak REKORDY/ZRODLA.
+
+## [2026-11-13] research | Telegram „gpu”: SGLang Unified Memory
+[[sglang-unified-memory]]: jedna arena VRAM dla KV, okna SWA i stanu GDN w SGLang (blog LMSYS 2026-11-11); zysk tylko przy wielu żądaniach naraz (H200: do +26%, 1000 vs 618 żądań), domyślnie szum (5830 vs 5880 tok/s). Werdykt: nie warto, topka ma 1 slot bez podziału pul; brak pozycji w [[KOLEJKA-TESTOW]].
+
+## [2026-11-13] meta | Nowa sekcja llm/ (trening i jakość LLM)
+Na prośbę właściciela (Telegram „gpu”): folder [[llm/_hub|llm]] na trening, dostrajanie, edycje wag i jakość modeli, oddzielony od optymalizacji silnika; mapa [[trening-llm-mapa]] zbiera dotychczasowe wyniki (pilot głowicy MTP ±0,2%, fine-tune DFlash2 bez zysku, Uncensored i Astra-Stop jako edycje wag, EvalPlus/jakość-mini). Starsze notatki zostały na miejscu, mapa do nich linkuje. `tools/wiki.py` i [[KONWENCJE]]: nowy typ `llm`.
+
+## [2026-11-14] research | Telegram „gpu”: silnik pod DeepSeek, InferenceForge, vstack
+[[telegram-2026-11-14-silniki-agenci]]: 4 linki. Silnik Rust+CUDA pod DeepSeek-V4.1-Flash (Baseten, 4× B300 ~1740 TPS, +15% vs SGLang) potwierdza K-014 (dopisane źródło), InferenceForge (+43% na AgentX, brak źródła pierwotnego) i vstack (TLA+/Z3, 17 błędów w vLLM/SGLang) dotyczą serwowania wielu żądań. Werdykt: nic nowego do testu na karcie; 3 wiersze w [[ZRODLA]].
+
+## [2026-11-14] research | Telegram „gpu”: PearlQuant, llama.cpp v1.0.0
+[[telegram-2026-11-14-pearlquant-llamacpp-v1]]: PearlQuant (KV E8, 3,2 bita) stratne → K-079, metoda oceny → K-007. llama.cpp v1.0.0 (b12359): #31533 few-row MMQ scalone (Qwen3.8-27B spec-dec na NVIDIA +16,7…34,9% tok/s) → nowa K-103 (Enigma NVIDIA na v1.0.0, priorytet wysoki) i K-013 podniesione; #30541 (kopia stanu skwantowanego KV) jako hipoteza K-001; K-056 cel rebase v1.0.0.
+
+## [2026-11-14] research | Telegram „gpu”: TokenSpeed Kimi K3 na AgentX
+[[tokenspeed]] (delta): blog Kimi K3 331 tok/s/GPU na 32× GB300 (1,92× DCP8) przez DWDP prefill, DEP16 dekod i wspólną pamięć hosta 5,45 TB; skala klastra, dla jednej karty 0%, nic nowego do kolejki (źródło dopisane do K-047).
+
+## [2026-11-14] research | Telegram „gpu”: llama.cpp v1.0.0 (ponownie)
+Ten sam link co rano ([[telegram-2026-11-14-pearlquant-llamacpp-v1]], commit `b88ec25`); najnowsze wydanie nadal v1.0.0 (b12359), delta brak. Działania w kolejce bez zmian: K-103, K-013, K-001, K-056.
+
+## [2026-11-14] meta | ZRODLA: adresy x.com dla dwóch wpisów z Telegrama
+Na prośbę właściciela: dopisane URL https://x.com/zainhas/status/2120806646356295682 (TokenSpeed Kimi K3 AgentX, także w [[tokenspeed]]) i https://x.com/ggerganov/status/2121246103312212124 (llama.cpp v1.0.0, także w [[telegram-2026-11-14-pearlquant-llamacpp-v1]]).
+
+## [2026-11-14] research | Telegram „gpu”: Project Maya v1.1.62
+[[project-maya]] (delta v1.1.57–v1.1.63): APU AMD + NVIDIA liczą jeden model MoE (GLM-5.3-Flash prefill 32K 293 → 901 t/s, DeepSeek dekod +18%); dla gęstego Qwen 27B na XTX nic, 5060 Ti przy podziale warstw tylko spowolni dekod. Bez pozycji w kolejce.
+
+## [2026-11-14] research | Telegram „gpu”: Infrathon
+Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentów nad infrastrukturą AI na H100; wynik 19,86× to stratny kodek KV dla modelu wideo. Dla nas brak testu na karcie; wniosek o metodzie (bramki przeciw „przedwczesnemu gotowe” i zawodnym testom) już stosujemy.
+
+## [2026-11-14] llm | Telegram „gpu”: techniki PEFT
+[[peft-lora-warianty]]: ściąga LoRA / LoRA-FA / VeRA / Delta-LoRA / LoRA+ (prace źródłowe zweryfikowane na arXiv) w sekcji [[llm/_hub|llm]]; lekcja: metoda PEFT zmienia koszt treningu, a koszt inferencji zależy od scalenia adaptera. Bez testu na karcie.

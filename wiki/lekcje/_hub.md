@@ -14,7 +14,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (117)
+## Notatki (118)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]] — Analiza 704 żądań z `~/qwen-opt/logs/server-*.log` (2026-11-05): z 4753 s prefillu 3536 s (74%) to 38 tur, w których prompt ≥ 20k był czytany od zera lub od ≤ 8k; najgorsze tury trwały 150–200 s.
@@ -126,6 +126,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-zmiana-draftu-zmienia-md5|Zmiana draftu zmienia md5 MTP T=0]] — Weryfikacja zależy od szerokości/wzoru akceptacji, więc każda zmiana draftu (głębokość, shortlist) zmienia md5 MTP (6f14e814 → 5f5b378f), choć plain c4708318 stoi; przyjmujemy to jako zmianę konfigu z warunkami.
 - [[lekcja-glebokosc-zmienia-tekst|Zmienna głębokość draftu = inny tekst greedy, dopóki weryfikacja zależy od szerokości]] — Adaptacyjna głębokość MTP (24q) nie jest md5-identyczna: zmienia szerokość weryfikacji (3…7 wierszy), a numeryka weryfikacji zależy od szerokości – greedy dał `d217c1a0`/`888170e6` zamiast `6f14e814`, rozjazd na znaku 130 (2026-10-20).
 - [[lekcja-zombie-serwery|Zombie serwery i współdzielony VRAM]] — DFlash wisiał na SIGTERM, a wynik MTP spadł do 5.6 t/s; serwer agenta K4 na porcie 8097 trzymał VRAM.
+- [[lekcja-zysk-rosnie-z-glebokoscia|Zysk kernela FA rośnie z głębokością: wynik negatywny ważny tylko w swoim reżimie]] — Ten sam kernel 0,878× daje +0,5% przy d4k, +1,9% przy d32k i +5,8% przy d128k oraz w fillu 255k (2026-11-09). Bariery z raportu 24v odrzucono 2026-10-20 przy d32k (+0,84%), a przy 128k były częścią wygranej.
 - [[lekcja-limit-mocy-285w|Zysk kernela ≠ zysk tokena przy limicie mocy 285 W]] — Szybszy gate+up LFM (−0.5 µs/wywołanie w trybie szybkim, −2.2 µs w wolnym) spowolnił inne kernele (out_proj 5.48 → 5.76–5.84 µs × 39 wywołań), więc LFM zyskał tylko +0.33%; ten sam objaw dały 3 wiersze w rundzie 4 (down 12.92 → 13.20, out_proj 5.44 → 5.84, FA 8.88 → 9.48 µs) (2026-10-18).
 - [[lekcja-markdown-puste-linie|Łącząc bloki Markdown, zachowuj puste linie]] — W `kb` łączenie bloków Markdown w fragmenty gubiło puste linie, przez co numery linii w wynikach przesuwały się o 1 – ścisły recall@5 (linia oczekiwana w zwróconym fragmencie) spadł przez to o 1.3 pkt (raport 19, 2026-10-19).
 - [[lekcja-lm-head-bottleneck|„LM head bottleneck” w pracach treningowych ≠ koszt LM head w dekodowaniu]] — W pracach treningowych (np. CPLM) „LM head bottleneck” znaczy utratę gradientu przy rzutowaniu V logitów do D wymiarów (> 99% normy przy V ≫ D) i niski rząd softmaksu – nie koszt czytania LM head przy dekodowaniu, którego te metody nie zmniejszają (CPLM dokłada 1–4%) (raport 21c, 2026-10-19).

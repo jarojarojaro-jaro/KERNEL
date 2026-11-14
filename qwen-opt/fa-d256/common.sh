@@ -9,3 +9,5 @@ VARS_ALL="0 1 2 3 7 11 15 16 19 23 35 51 67 83 131 147"
 # bit-identical by construction (no 4/8 bit)
 VARS_LOSSLESS="1 2 3 16 19 35 51 67 83 131 147"
 export GGML_HIP_PM4=0
+# the build's RUNPATH has no ROCm lib dir: without this test-backend-ops dies with rc=127 (libhipblas.so.3), 2026-11-09
+export LD_LIBRARY_PATH=$BIN:/opt/rocm/core-10.0/lib

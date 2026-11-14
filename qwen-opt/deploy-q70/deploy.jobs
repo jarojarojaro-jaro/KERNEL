@@ -1,0 +1,8 @@
+# deploy topka-q70 (2026-11-09, user OK): FA D256 VAR 83 + cachesave HUGE. Arms on the staged copy ~/llama-topka.q70,
+# md5 gate against production references, swap, restore :8080 (run-topka.sh defaults now set VAR 83 + CACHE_HUGE 1).
+q70-stop8080|200|~/qwen-opt/cachesave|~/qwen-opt/l1tok/chat8080.sh stop
+q70-fa|2400|~/qwen-opt/fa-d256|ARM_ROCM_DIR=$HOME/llama-topka.q70 ./arm.sh Q70 83
+q70-switch|2400|~/qwen-opt/cachesave|./arm.sh Q70 $HOME/llama-topka.q70 switch,md5
+q70-check|60|~/qwen-opt/deploy-q70|./check.sh
+q70-swap|60|~/qwen-opt/deploy-q70|./swap.sh
+q70-restore8080|400|~/qwen-opt/cachesave|~/qwen-opt/l1tok/chat8080.sh restore && test "$(readlink -f /proc/$(pgrep -f 'llama-server.*--port 8080( |$)' | head -1)/exe)" = "$HOME/llama-topka/bin/llama-server"

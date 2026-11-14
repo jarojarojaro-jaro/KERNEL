@@ -14,7 +14,7 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (88)
+## Notatki (89)
 
 - [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]] — „Flash-Next przy 250K tylko −18% względem 1K” to własność modelu (natywna rzadka QSA z budżetem 2048 tokenów) plus stratny host KV FP8, a nie trik kernela; ich gęsty 27B traci −47% (501 → 268 t/s), tyle co my −45% (136.5 → 74.5 przy 199k) (raport 66b, 2026-11-07).
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
@@ -88,6 +88,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[sakana-agentic-scientist|Sakana AI-Scientist-v3 (Agentic Scientist)]] — Orkiestracja agentów do badań, w której kod wymusza izolację ewaluacji (harness, hashe, osobne kontenery), a naukę rozstrzyga LLM; brak jakiejkolwiek statystyki istotności.
 - [[kernelbench|ScalingIntelligence/KernelBench]] — Benchmark kerneli pisanych przez LLM (HEAD `423217d9`, 2026-03-05); bierzemy lepszą bramkę poprawności; werdykt: średnia (proces).
 - [[sglang-hicache|SGLang HiCache + Unified Radix Cache: cache prefiksów GPU/CPU/storage z modelami hybrydowymi]] — Cache prefiksów w trzech poziomach (HBM → DRAM → 3FS/Mooncake) ze stanem rekurencyjnym (Mamba/GDN) i stanem draftu MTP; L3 daje 9.4K → 145.5K tok/s efektywnego wejścia przy ~98% trafień (DeepSeek-V4-Flash, 4× H200), a backup snapshotu na końcu wspólnego prefiksu podnosi odzyskanie 1/10 → 10/10 (Qwen3-Next-80B, #33639) (raport 60d, 2026-10-24).
+- [[sglang-unified-memory|SGLang Unified Memory: jedna arena VRAM dla KV, okna SWA i stanu rekurencyjnego]] — SGLang (`--enable-unified-memory`, eksperymentalne) zastępuje stały podział VRAM między pule (pełne KV, okno SWA, stan Mamby/GDN) jedną areną z kompaktowaniem i układem „jeden wpis na token” (KV celu i draftu razem). Zysk dotyczy tylko serwowania wielu żądań naraz: na jednej H200 przy 64–1024 współbieżnych żądaniach do +26% przepustowości i 1000 zamiast 618 żądań w locie. Przy domyślnych proporcjach różnica to szum: 5830 vs 5880 tok/s (2026-11-13).
 - [[strata|Strata (Niko1221/Strata)]] — Silnik C++/CUDA/HIP pod jeden model MoE z offloadem (HEAD `a0116b27`, 2026-10-12, tag v0.1.43.1), studiowany jako wzór metodologii autora.
 - [[suffixdecoding|SuffixDecoding / ArcticInference: globalne drzewa sufiksów]] — Spekulacja bez modelu draftującego z drzew sufiksów budowanych z promptów i wcześniejszych wyjść (także między żądaniami); na workloadach agentowych do ×5.3, ×2.8 względem EAGLE-2/3 (arXiv 2411.04975, w vLLM jako „suffix”).
 - [[tensara|tensara/tensara]] — Platforma zawodów w pisaniu kerneli (commit `fae96618`, 2026-07-21) z silnikiem oceny na Modal; werdykt: niska.

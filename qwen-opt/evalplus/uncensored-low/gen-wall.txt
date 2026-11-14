@@ -1,0 +1,3 @@
+humaneval codegen 808 s
+mbpp codegen 1819 s
+total codegen 2627 s

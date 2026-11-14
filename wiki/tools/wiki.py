@@ -36,6 +36,7 @@ FOLDERS: dict[str, tuple[str, str]] = {
     "research": ("research", "Streszczenia raportów"),
     "produkt": ("produkt", "Plan produktu i decyzje produktowe"),
     "ludzie-firmy": ("firma", "Firmy, dostawcy, ludzie"),
+    "llm": ("llm", "LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika)"),
 }
 STATUSES = {"aktualne", "do-sprawdzenia", "nieaktualne"}
 REQUIRED = ("typ", "tags", "aktualizacja", "zrodlo", "status")
@@ -208,7 +209,7 @@ def lint(only: str | None = None) -> int:
             if s in n.text:
                 e("zawiera prawdziwy klucz z ~/.vast lub ~/.runpod")
         words = len(re.findall(r"\w+", n.body))
-        if not n.is_hub and n.rel not in ("AUDYT.md", "log.md", "REKORDY.md", "ZRODLA.md") and words > 450:  # AUDYT/REKORDY/ZRODLA: tabele; log.md: dziennik tylko do dopisywania
+        if not n.is_hub and n.rel not in ("AUDYT.md", "log.md", "REKORDY.md", "ZRODLA.md", "KOLEJKA-TESTOW.md") and words > 450:  # AUDYT/REKORDY/ZRODLA/KOLEJKA-TESTOW: tabele i rejestry; log.md: dziennik tylko do dopisywania
             warnings.append(f"{n.rel}: {words} słów (cel 50–200)")
 
     for n in notes:

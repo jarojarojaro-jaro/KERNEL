@@ -1,0 +1,71 @@
+block | T | F262k | F262k-re | W262k | Wdef | W262k/F262k
+short | 0.0 | 82.9 (6) | 81.8 (6) | 121.2 (6) | 128.0 (6) | 1.462
+short | 1.0 | 76.9 (6) | 76.6 (6) | 124.0 (6) | 116.9 (6) | 1.613
+depth:15872 | 0.0 | 76.8 (6) | - | 114.0 (6) | 112.8 (6) | 1.483
+depth:15872 | 1.0 | 66.7 (6) | - | 121.0 (6) | 120.1 (6) | 1.814
+depth:65024 | 0.0 | 69.5 (6) | - | 110.1 (6) | - | 1.583
+depth:65024 | 1.0 | 63.7 (6) | - | 101.4 (6) | - | 1.592
+depth:130560 | 0.0 | 59.4 (6) | - | 95.2 (6) | - | 1.601
+depth:130560 | 1.0 | 54.3 (6) | - | 89.6 (6) | - | 1.650
+depth:261444 | 0.0 | 51.1 (6) | - | 68.3 (6) | - | 1.338
+depth:261444 | 1.0 | 45.1 (6) | - | 68.6 (6) | - | 1.520
+
+per prompt (tps; tokens n):
+('F262k', 'depth:130560', 0.0) pl-proza=59.6/400 pl-tech=69.0/400 pl-kod=54.9/400 en-chat=59.3/320 en-tech=57.4/400 en-code=64.0/400
+('F262k', 'depth:130560', 1.0) pl-proza=52.9/400 pl-tech=57.3/400 pl-kod=54.4/400 en-chat=54.1/336 en-tech=50.2/400 en-code=56.0/400
+('F262k', 'depth:15872', 0.0) pl-proza=75.0/400 pl-tech=88.2/400 pl-kod=83.1/400 en-chat=78.7/311 en-tech=71.8/400 en-code=71.9/400
+('F262k', 'depth:15872', 1.0) pl-proza=66.6/400 pl-tech=91.6/400 pl-kod=63.6/400 en-chat=95.4/400 en-tech=61.6/400 en-code=66.8/400
+('F262k', 'depth:261444', 0.0) pl-proza=50.7/400 pl-tech=51.5/400 pl-kod=43.8/400 en-chat=52.1/332 en-tech=53.0/400 en-code=47.2/400
+('F262k', 'depth:261444', 1.0) pl-proza=45.0/400 pl-tech=44.4/400 pl-kod=48.6/400 en-chat=45.3/289 en-tech=39.3/400 en-code=46.7/400
+('F262k', 'depth:65024', 0.0) pl-proza=70.6/400 pl-tech=82.5/400 pl-kod=63.5/400 en-chat=76.9/271 en-tech=65.5/400 en-code=68.5/400
+('F262k', 'depth:65024', 1.0) pl-proza=64.7/400 pl-tech=73.4/400 pl-kod=64.3/400 en-chat=63.1/272 en-tech=61.0/400 en-code=60.5/400
+('F262k', 'short', 0.0) pl-proza=72.1/400 pl-tech=94.5/400 pl-kod=82.1/400 en-chat=83.8/181 en-tech=93.0/400 en-code=81.4/400
+('F262k', 'short', 1.0) pl-proza=69.2/400 pl-tech=77.3/400 pl-kod=92.2/400 en-chat=76.5/159 en-tech=75.0/400 en-code=89.1/400
+('F262k-re', 'short', 0.0) pl-proza=70.6/400 pl-tech=92.7/400 pl-kod=81.4/400 en-chat=82.2/181 en-tech=91.9/400 en-code=80.7/400
+('F262k-re', 'short', 1.0) pl-proza=68.6/400 pl-tech=76.6/400 pl-kod=90.9/400 en-chat=76.5/159 en-tech=74.5/400 en-code=89.1/400
+('W262k', 'depth:130560', 0.0) pl-proza=69.1/400 pl-tech=84.1/400 pl-kod=103.6/400 en-chat=100.8/187 en-tech=92.3/400 en-code=98.0/400
+('W262k', 'depth:130560', 1.0) pl-proza=85.4/400 pl-tech=89.9/400 pl-kod=69.1/400 en-chat=198.7/17 en-tech=90.1/400 en-code=89.2/400
+('W262k', 'depth:15872', 0.0) pl-proza=91.3/400 pl-tech=107.0/400 pl-kod=110.1/400 en-chat=117.8/255 en-tech=120.4/400 en-code=119.8/400
+('W262k', 'depth:15872', 1.0) pl-proza=115.5/400 pl-tech=108.0/400 pl-kod=133.9/400 en-chat=128.1/222 en-tech=103.3/400 en-code=126.4/400
+('W262k', 'depth:261444', 0.0) pl-proza=50.8/400 pl-tech=65.2/400 pl-kod=72.0/400 en-chat=69.1/254 en-tech=67.6/400 en-code=78.8/400
+('W262k', 'depth:261444', 1.0) pl-proza=55.1/400 pl-tech=64.0/400 pl-kod=65.5/400 en-chat=80.4/167 en-tech=76.5/400 en-code=71.7/400
+('W262k', 'depth:65024', 0.0) pl-proza=78.7/400 pl-tech=93.4/400 pl-kod=136.1/400 en-chat=110.0/306 en-tech=110.3/400 en-code=110.1/400
+('W262k', 'depth:65024', 1.0) pl-proza=85.4/400 pl-tech=90.9/400 pl-kod=91.0/400 en-chat=115.7/185 en-tech=111.8/400 en-code=112.0/400
+('W262k', 'short', 0.0) pl-proza=97.4/400 pl-tech=111.2/400 pl-kod=101.5/400 en-chat=135.9/154 en-tech=131.3/400 en-code=145.2/400
+('W262k', 'short', 1.0) pl-proza=91.6/400 pl-tech=115.1/400 pl-kod=115.5/400 en-chat=132.4/191 en-tech=133.1/400 en-code=133.1/400
+('Wdef', 'depth:15872', 0.0) pl-proza=90.3/400 pl-tech=108.7/400 pl-kod=99.6/400 en-chat=120.8/289 en-tech=116.9/400 en-code=128.1/400
+('Wdef', 'depth:15872', 1.0) pl-proza=88.2/400 pl-tech=120.2/400 pl-kod=139.4/400 en-chat=124.5/400 en-tech=92.3/400 en-code=120.1/400
+('Wdef', 'short', 0.0) pl-proza=98.5/400 pl-tech=116.6/400 pl-kod=104.6/400 en-chat=140.7/157 en-tech=143.6/400 en-code=139.4/400
+('Wdef', 'short', 1.0) pl-proza=98.1/400 pl-tech=110.5/400 pl-kod=104.8/400 en-chat=138.7/161 en-tech=123.3/400 en-code=127.6/400
+
+prime / prefill / cached:
+F262k depth:15872 PRIME prompt_tokens 15927 ttft 13.672 prefill_tps None vram 23690 
+F262k depth:65024 PRIME prompt_tokens 65079 ttft 53.609 prefill_tps None vram 23712 
+F262k depth:130560 PRIME prompt_tokens 130615 ttft 102.802 prefill_tps None vram 23714 
+F262k depth:261444 PRIME prompt_tokens 261498 ttft 312.495 prefill_tps None vram 23720 
+F262k prefill:16000 cold1 prompt_tokens 16060 ttft 18.233 prefill_tps 880.8 vram 23726 
+F262k prefill:16000 cold2 prompt_tokens 16060 ttft 14.781 prefill_tps 1086.5 vram 23726 
+W262k depth:15872 PRIME prompt_tokens 15927 ttft 12.429 prefill_tps None vram 23044 
+W262k depth:65024 PRIME prompt_tokens 65079 ttft 51.462 prefill_tps None vram 23188 
+W262k depth:130560 PRIME prompt_tokens 130615 ttft 92.177 prefill_tps None vram 23188 
+W262k depth:261444 PRIME prompt_tokens 261498 ttft 262.849 prefill_tps None vram 23188 
+W262k prefill:16000 cold1 prompt_tokens 16060 ttft 18.59 prefill_tps 863.9 vram 23206 
+W262k prefill:16000 cold2 prompt_tokens 16060 ttft 13.127 prefill_tps 1223.4 vram 23208 
+Wdef depth:15872 PRIME prompt_tokens 15927 ttft 12.469 prefill_tps None vram 23014 
+
+cached tokens of the depth prompts (first of each block):
+('F262k', 'depth:15872') prompt_tokens 16001 cached 15915 ttft 0.485
+('F262k', 'depth:65024') prompt_tokens 65153 cached 65067 ttft 0.756
+('F262k', 'depth:130560') prompt_tokens 130689 cached 130603 ttft 1.052
+('F262k', 'depth:261444') prompt_tokens 261572 cached 261486 ttft 1.68
+('W262k', 'depth:15872') prompt_tokens 16001 cached 15917 ttft 0.187
+('W262k', 'depth:65024') prompt_tokens 65153 cached 65069 ttft 0.34
+('W262k', 'depth:130560') prompt_tokens 130689 cached 130605 ttft 0.583
+('W262k', 'depth:261444') prompt_tokens 261572 cached 261488 ttft 1.084
+('Wdef', 'depth:15872') prompt_tokens 16001 cached 15917 ttft 0.182
+
+phase: peak VRAM MiB, median power W under load (>150 W samples), power limit, median SM clock under load
+F262k 23726.0 345.1 350.00 W 1740.0
+W262k 23208.0 345.51 350.00 W 1770.0
+F262k-re 23686.0 345.55 350.00 W 1590
+Wdef 23158.0 346.35 350.00 W 1770.0
