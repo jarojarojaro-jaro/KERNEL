@@ -69,17 +69,18 @@ Audyt liczb: [[AUDYT]].
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (89)
-- [[research/_hub|research]] — Streszczenia raportów (155)
+- [[research/_hub|research]] — Streszczenia raportów (156)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (34)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 - [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (1)
 
 ## Ostatnio aktualizowane
 
+- 2026-11-14 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
+- 2026-11-14 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
+- 2026-11-14 [[KOLEJKA-TESTOW|Kolejka testów na karcie]]
 - 2026-11-13 [[sglang-unified-memory|SGLang Unified Memory: jedna arena VRAM dla KV, okna SWA i stanu rekurencyjnego]]
 - 2026-11-13 [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]]
-- 2026-11-13 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
-- 2026-11-13 [[KOLEJKA-TESTOW|Kolejka testów na karcie]]
 - 2026-11-09 [[raport-69-synteza|Raport 69: DSpine-27B, qwen-warp/TensorFold, Astra-Stop, sterownik AMD a SSD]]
 - 2026-11-09 [[tensorfold|TensorFold (ashhart/TensorFold)]]
 - 2026-11-09 [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]]
@@ -90,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-09 [[sweep-wariantow-kernela|Sweep wariantów kernela: jedna binarka, maska env, bramka bitowa, ABBA przy głębokości]]
 - 2026-11-09 [[jakosc-mini|jakość-mini: 290 pytań jakości dla dowolnego modelu za llama-server]]
 - 2026-11-09 [[evalplus-jakosc-kodu|jakość-mini: bramka jakości kodu EvalPlus]]
-- 2026-11-09 [[lekcja-zysk-rosnie-z-glebokoscia|Zysk kernela FA rośnie z głębokością: wynik negatywny ważny tylko w swoim reżimie]]
 
-Razem 738 notatek. Wygenerowano 2026-11-13 przez `tools/wiki.py index`.
+Razem 739 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

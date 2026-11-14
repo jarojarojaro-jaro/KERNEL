@@ -328,3 +328,6 @@ Użytkownik: ułamki procenta to nie cel. [[2026-11-08-l1-tokenizacja-parser]]: 
 
 ## [2026-11-13] meta | Nowa sekcja llm/ (trening i jakość LLM)
 Na prośbę właściciela (Telegram „gpu”): folder [[llm/_hub|llm]] na trening, dostrajanie, edycje wag i jakość modeli, oddzielony od optymalizacji silnika; mapa [[trening-llm-mapa]] zbiera dotychczasowe wyniki (pilot głowicy MTP ±0,2%, fine-tune DFlash2 bez zysku, Uncensored i Astra-Stop jako edycje wag, EvalPlus/jakość-mini). Starsze notatki zostały na miejscu, mapa do nich linkuje. `tools/wiki.py` i [[KONWENCJE]]: nowy typ `llm`.
+
+## [2026-11-14] research | Telegram „gpu”: silnik pod DeepSeek, InferenceForge, vstack
+[[telegram-2026-11-14-silniki-agenci]]: 4 linki. Silnik Rust+CUDA pod DeepSeek-V4.1-Flash (Baseten, 4× B300 ~1740 TPS, +15% vs SGLang) potwierdza K-014 (dopisane źródło), InferenceForge (+43% na AgentX, brak źródła pierwotnego) i vstack (TLA+/Z3, 17 błędów w vLLM/SGLang) dotyczą serwowania wielu żądań. Werdykt: nic nowego do testu na karcie; 3 wiersze w [[ZRODLA]].

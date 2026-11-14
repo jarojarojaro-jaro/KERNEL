@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (155)
+## Notatki (156)
 
 - [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]] — Link arXiv 2605.08513 podany przez użytkownika jako praca o InferenceX to „A Single Neuron Is Sufficient to Bypass Safety Alignment in LLMs” (Kazemi, Chegini, Safi, 2026-05-08): wyłączenie jednego neuronu odmowy omija alignment, a wzmocnienie neuronu pojęcia wywołuje szkodliwe treści; 7 modeli z 2 rodzin, 1.7B–70B, bez treningu.
 - [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]] — Zestawienie wszystkich zmierzonych liczb całej optymalizacji – upstream, wcześniejszy fork i produkcja – dla XTX (Qwen, Uncensored, LFM), nowych zmian poza produkcją, kart NVIDIA i Magnitude, każda ze źródłem `plik:wiersz` i oceną porównywalności (P / O / brak).
@@ -169,6 +169,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raporty-2026-10-19-20|Raporty 2026-10-19/20 (20–30, WYNIKI-XTX): przegląd]] — Spis raportów z 19–20 października 2026: wdrożone PM4 WA=2, GPU verify i (zalecone) sprzężone próbkowanie; większość pozostałych pomysłów odrzucona po krótkim A/B albo sufit-analizie.
 - [[runda-6-raporty|Runda 6: raporty GDN, MMQ i narzędzi]] — Trzy raporty rundy 6 (2026-10-15), wszystkie bez GPU: szybki kernel GDN bitowy z konstrukcji, epilog MMQ w VOPD oraz narzędzia LOO / kanarki KLD / Kernel Tuner.
 - [[star-elastic-2605-07182|Star Elastic (arXiv 2605.07182)]] — Praca NVIDIA o zagnieżdżonych podmodelach Nemotron Nano v3 (30B → 23B/12B z jednego post-trainingu) i osobnym podmodelu dla fazy myślenia; nie dotyczy kerneli, dla nas niska istotność.
+- [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]] — Z czterech linków nic nie daje nowego zysku na naszej karcie. Silnik w Rust + CUDA pod jeden model (Baseten „deepseek-ultrafast”, ~1740 TPS na 4× B300, +15% vs SGLang) potwierdza kierunek, który już mamy w kolejce: cały krok spekulacji w jednym grafie (K-014). InferenceForge (+43% przepustowości na AgentX) i vstack (weryfikacja formalna serwerów) dotyczą serwowania wielu żądań w centrach danych.
 - [[raport-wyniki-xtx-2026-10-19|Wyniki RX 7900 XTX 2026-10-19/20: upstream → topka (ten sam skrypt, ABBA)]] — Topka `f2217bac7` vs upstream `4c3c5810f` na XTX: Qwen czat T=1 35.8 → 114.8 t/s (×3.21; upstream z MTP 60.1), code-edit 35.5 → 419.9 (×11.8), ~32k decode 32.7 → 111.6 (×3.41); Uncensored czat 111.4, mvs 434.9; LFM czat 146.8 → 274.1 t/s (2026-10-19/20).
 - [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne]] — Codzienny `tools/compwatch/compwatch.py` (cron 06:30): bazowy 2026-10-20 – 41 pozycji, top 3090/Qwen 273.1 t/s tqLLM vs nasze 93.3 (nieporównywalne, raport 32f); drugi przebieg 1 pozycja (sglang).
 <!-- AUTO:END -->

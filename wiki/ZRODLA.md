@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, zrodla, research, rejestr, inferencex, agentx, strata, tensorfold, magnitude, hipfire, dflash, lucebox]
-aktualizacja: 2026-11-13
+aktualizacja: 2026-11-14
 zrodlo: ~/KERNEL/product/research/01-konkurencja.md … 24b-draft-pelny-slownik.md (nagłówki, TL;DR, werdykty); ~/KERNEL/qwen-opt/research/{PLAN,drafters,algorithms,training,stepcost}.md; ~/KERNEL/qwen-opt/research/{repos,strata,tensorfold,v2,round6}/; ~/KERNEL/wiki/repo/*.md; ~/KERNEL/wiki/ludzie-firmy/*.md; ~/KERNEL/wiki/research/*.md; ~/AGENTS.md:14; ~/KERNEL/product/research/{21n,21o,24e,24g,24t,30}-*.md
 status: aktualne
 ---
@@ -219,6 +219,9 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Humming (vllm-project/humming, vLLM + Ant Group) | `db930af` (10-22), blog 10-21 | [R60d](../product/research/60d-serving-kernels-cache.md), [[humming]] | Tylko CUDA, bez GGUF; batch 1 ≈ Marlin, poniżej naszego MMVQ. | 4090 W4A16 M=1 610 GB/s (60%); E2E +14…43% (8× H20) | port HIP, ścieżka GEMV małego M |
 | SGLang HiCache + Unified Radix Cache (blogi, PR #21259 #30393 #33639 #34798) | blog 10-2x; PR do 2026-08-19 | R60d, [[sglang-hicache]] | Wzorce dla cache sesji: pinned I/O, snapshot GDN na granicy prefiksu, session_id. | L3 9.4K → 145.5K tok/s; odzysk 1/10 → 10/10 | write-back dla snapshotów, nowe PR hybryd |
 | SGLang Unified Memory (blog LMSYS + wpis @ChengWan17, Telegram „gpu”) | blog 2026-11-11, SGLang `daa171846f` | [[sglang-unified-memory]] | Nie dla nas: jedna arena zamiast podziału pul KV/SWA/stan liczy się tylko przy wielu żądaniach; topka ma 1 slot. | H200: 1000 vs 618 żądań w locie, do +26% przepustowości; domyślnie 5830 vs 5880 tok/s | wsparcie poza CUDA, tryb domyślny |
+| Baseten deepseek-ultrafast (Rust + CUDA, DeepSeek-V4.1-Flash; @saltyph, @waterloo_intern, Telegram „gpu”) | wpisy 2026-11-13 | [[telegram-2026-11-14-silniki-agenci]] | Silnik pod jeden model; dla nas tylko potwierdza K-014 (krok spec-dec w jednym grafie CUDA). | 4× B300 ~1740 TPS, 8× B300 2060; +15% vs SGLang; 1M prefill ~12 s | kod grafu spec-dec (weryfikacja 7 tok.) |
+| InferenceForge (@kaiwei_chang, Telegram „gpu”) | wpis 2026-11-13; pracy/repo nie znaleziono | [[telegram-2026-11-14-silniki-agenci]] | Agent stroi serwer pod AgentX; przepustowość wielu sesji, nie nasz przypadek. | +43% przepustowości przy tym samym SLA | praca / repo |
+| vstack (hao-ai-lab/vstack, Telegram „gpu”) | README 2026-11-14 | [[telegram-2026-11-14-silniki-agenci]] | Weryfikacja formalna (TLA+/Z3) dla agentów; 17 błędów w vLLM/SGLang. Dla nas opcja przy K-001. | 17 błędów, VeriServe +0,18% p50 TPOT | spec cyklu życia slotu, jeśli K-001 utknie |
 | AKV (arXiv 2610.28577, thu-nics/AKV) | `c567a42` (10-21), v1 10-20 | R60d, [[akv-cache-agentow]] | Repos odpada przy IMROPE; drop tylko w atencji, drogi. | −27.7% kosztu (centy API); 1.18× wyjścia | wsparcie modeli liniowych/hybryd |
 | dphnAI/sonar PR #1788 (all-reduce PCIe) | `f653ba4e` (OPEN, 10-21) | R60d | Tylko sm_120, TP=4, P2P; nie dotyczy. | 290.4 → 327.2 t/s (4× RTX PRO 6000) | scalenie, sm_86 bez P2P |
 | Project Maya | v1.1.21 `451f9cb` … v1.1.26 `f26d8ba` (10-21…23) | R60d, [[project-maya]] | Tylko DeepSeek; nic dla gfx1100/Qwena; #382 na 2× XTX bez zysku. | prefill AMD 2.35–2.53×; FAT_ROWS 1.3–1.56× (V100) | >v1.1.26: gęsty 27B, pomiar XTX |

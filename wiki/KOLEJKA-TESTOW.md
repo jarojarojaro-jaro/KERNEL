@@ -1,7 +1,7 @@
 ---
 typ: meta
 tags: [meta, kolejka, testy, gpu, xtx, nvidia]
-aktualizacja: 2026-11-13
+aktualizacja: 2026-11-14
 zrodlo: ~/KERNEL/product/research/{15,63,66,68,69}-SYNTEZA.md, 68a-d, 69a-d, 70-fa-d256-jak-to-zrobilismy.md, 67c-nvidia-backlog-testow.md; ~/KERNEL/qwen-opt/STATUS-NEXT.md; ~/KERNEL/STAN-PRAC.md; ~/KERNEL/wiki/{eksperymenty,decyzje,metody,kernele,produkt,nvidia,rocm}/; ~/KERNEL/wiki/DO-ZAPISANIA.txt; ~/kernel/archiwum (sesje 2026-09-15 … 2026-11-13, rg)
 status: aktualne
 ---
@@ -129,7 +129,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
-- źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`)
+- źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
 - test: 5060 Ti lokalnie: spec_sweep T=1 + ms/krok z rozbiciem host/GPU, fork vs fork+graf; ≤ 10 min/ramię. Kod: tygodnie.
 - zysk: +10–20% decode na 3090 [SZACUNEK]; część przewagi qwen-warp ×1,34–1,81
 - ryzyko karty: brak
