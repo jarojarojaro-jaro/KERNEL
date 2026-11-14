@@ -346,3 +346,6 @@ Na prośbę właściciela: dopisane URL https://x.com/zainhas/status/21208066463
 
 ## [2026-11-14] research | Telegram „gpu”: Project Maya v1.1.62
 [[project-maya]] (delta v1.1.57–v1.1.63): APU AMD + NVIDIA liczą jeden model MoE (GLM-5.3-Flash prefill 32K 293 → 901 t/s, DeepSeek dekod +18%); dla gęstego Qwen 27B na XTX nic, 5060 Ti przy podziale warstw tylko spowolni dekod. Bez pozycji w kolejce.
+
+## [2026-11-14] research | Telegram „gpu”: Infrathon
+Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentów nad infrastrukturą AI na H100; wynik 19,86× to stratny kodek KV dla modelu wideo. Dla nas brak testu na karcie; wniosek o metodzie (bramki przeciw „przedwczesnemu gotowe” i zawodnym testom) już stosujemy.
