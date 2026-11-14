@@ -1,7 +1,7 @@
 ---
 typ: llm
 tags: [llm, trening, fine-tuning, lora, mtp, jakosc]
-aktualizacja: 2026-11-13
+aktualizacja: 2026-11-14
 zrodlo: wiki/eksperymenty/2026-10-12-mtp-trening-faza1.md; wiki/eksperymenty/2026-10-16-mtp-pl-pilot.md; wiki/research/raport-10-post-training.md; wiki/research/raport-11-mtp-pl-pilot.md; wiki/modele/astra-stop.md; wiki/modele/uncensored-ablacja-kierunku.md; ~/KERNEL/product/research/62-weight-space-programming.md; ~/KERNEL/qwen-opt/research/training.md; ~/KERNEL/qwen-opt/research/tensorfold/qwen27.md:399; wiki/metody/jakosc-mini.md; wiki/metody/evalplus-jakosc-kodu.md
 status: aktualne
 ---
@@ -15,6 +15,7 @@ status: aktualne
 | Fine-tune DFlash2 (372k tokenów celu) | bez zysku (TensorFold) | [[drafter-dflash]], [[tensorfold]], `qwen-opt/research/training.md` |
 | Narzędzia do treningu drafterów | speculators (nasza ścieżka dla MTP), SpecForge (trening DSpine) | [[speculators-specforge]], [[drafter-dspine]] |
 | Uncensored = edycja wag bez treningu | Qwen: jeden globalny kierunek odmowy rzutowany ze strumienia; LFM: kierunek per warstwa | [[uncensored-ablacja-kierunku]], [[single-neuron-safety-2605-08513]] |
+| Metody PEFT (LoRA, LoRA-FA, VeRA, Delta-LoRA, LoRA+): ściąga | co się trenuje, koszt scalonego i niescalonego adaptera | [[peft-lora-warianty]] |
 | Astra-Stop: LoRA rank-1 skracająca myślenie | myślenie −35,5%, ale przeciek `</think>` 11/32; odłożone jako temat przyszłych fine-tuningów | [[astra-stop]], [[2026-11-09-decyzje-runda-69]] |
 | Weight-space programming / Neuron Tuning (raport 62) | to fine-tuning Adamem kilku kolumn `down_proj`, nie „bez gradientów” | `product/research/62-weight-space-programming.md` |
 | Kwantyzacja z treningiem (DCQ, Bonsai, Swift) | zmiana kwantu, poza produkcją | [[dcq-kotwica-stanu-gdn]], [[bonsai]], [[swift-1-5]] |

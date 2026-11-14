@@ -349,3 +349,6 @@ Na prośbę właściciela: dopisane URL https://x.com/zainhas/status/21208066463
 
 ## [2026-11-14] research | Telegram „gpu”: Infrathon
 Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentów nad infrastrukturą AI na H100; wynik 19,86× to stratny kodek KV dla modelu wideo. Dla nas brak testu na karcie; wniosek o metodzie (bramki przeciw „przedwczesnemu gotowe” i zawodnym testom) już stosujemy.
+
+## [2026-11-14] llm | Telegram „gpu”: techniki PEFT
+[[peft-lora-warianty]]: ściąga LoRA / LoRA-FA / VeRA / Delta-LoRA / LoRA+ (prace źródłowe zweryfikowane na arXiv) w sekcji [[llm/_hub|llm]]; lekcja: metoda PEFT zmienia koszt treningu, a koszt inferencji zależy od scalenia adaptera. Bez testu na karcie.
