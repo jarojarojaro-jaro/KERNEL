@@ -40,6 +40,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak; ryzyko md5 (inny podział ubatchy)
 - priorytet: wysoki (każda tura agenta)
 
+### K-105 · Enigma NVIDIA: v1.0.0 z szerszą weryfikacją (MTP n 3/4, lookup W16) i na 24/32 GB, przed podniesieniem pinu
+- data: 2026-11-14
+- źródło: K-103 ([[2026-11-14-k103-llamacpp-v1-nvidia]]): few-row MMQ daje +10…12% na przebieg przy 8–16 kolumnach, a przy MTP n2 (3 kolumny) ~0
+- test: 5060 Ti w jaroserverai (gdy online) lub 3090 z wynajmu: b11856 vs v1.0.0, MTP n 3/4, spec_sweep T=1 ABBA; 24 GB z UD-Q4_K_XL n3
+- zysk: +5…12% decode na NVIDIA przy szerokiej weryfikacji [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: wysoki (decyzja o pinie Enigmy)
+
 ### K-004 · Fork CUDA: dokładne próbkowanie spekulacyjne na GPU przy T=1 (jak qwen-warp)
 - data: 2026-11-09
 - źródło: [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 2: fork traci przy T=1 7–13%, warp nie traci), `R/69b-tensorfold-qwen-warp.md` §3
@@ -639,6 +647,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## W toku
 
+(pusto)
+
+## Zrobione
+
 ### K-103 · Enigma NVIDIA: silnik na llama.cpp v1.0.0 (few-row MMQ #31533) zamiast pinu b11856, z MTP
 - data: 2026-11-14
 - źródło: [[telegram-2026-11-14-pearlquant-llamacpp-v1]]; PR #31533 (Qwen3.8-27B + DFlash2, 7 draftów: 3090 Ti 57,6 → 77,7 tok/s, +34,9%; RTX PRO 6000 +16,7%; 5090 +20,6%; 80/80 rozmów szybciej, KLD jak master); pin b11856 został, bo b12110 był ~9% wolniejszy z MTP na sm_120 ([[final-recipes-nvidia]])
@@ -646,10 +658,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: weryfikacja MTP/DFlash na NVIDIA +10…35% tok/s (dane autora); jeśli regresja b12110 z MTP nie wróci, nowe przepisy Enigmy dla wszystkich kart NVIDIA
 - ryzyko karty: brak
 - priorytet: wysoki (duży zmierzony zysk, tani test lokalnie)
-- status: w toku od 2026-11-14 ~21:40 (jaroserverai włączony, zgoda właściciela „rób testy”; Vast, budżet 0,70 USD)
-
-
-## Zrobione
+- wynik 2026-11-14 (Vast 5060 Ti, 150 W, ~0,10 USD): spec_sweep T=1 MTP n2 b11856 43,95 → v1.0.0 45,6 t/s (+3,5%, ABBA), ms/krok bez zmian; przebieg weryfikacji ub 8 +12,1%, ub 16 +9,8%, ub 4 +2,8%; brak regresji b12110 → pin można podnieść na 16 GB po sprawdzeniu 24/32 GB ([[2026-11-14-k103-llamacpp-v1-nvidia]])
 
 ### K-003 · Rozłożyć stały koszt ~210–230 ms na każde żądanie (TTFT krótkich promptów) i dokończyć tańszy zapis stanu GDN (stash `opt-s4`)
 - wynik 2026-11-14: koszt stały to serwer, nie HTTP: ściana 258 ms = prompt 139 (restore checkpointu GDN 11–32, 2 checkpointy 2×11, prefill 5–8 tok. w 2–3 przebiegach ~80–100) + dekod 8 tok. 105 + poza serwerem 2 ms; dawne ~75 ms to harness klienta. Kontynuacja: K-104. [[2026-11-14-k002-k003-k013-xtx]]

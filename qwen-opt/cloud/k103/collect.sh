@@ -10,4 +10,4 @@ done
 timeout 120 /tmp/k103-ssh.sh --get /root/res ~/qwen-opt/cloud/k103/ >/dev/null 2>&1; echo "$(date -u +%T) copied rc=$?"
 ls ~/qwen-opt/cloud/k103/res | head -20
 python3 ~/qwen-opt/cloud/k103/summ.py ~/qwen-opt/cloud/k103/res > ~/qwen-opt/cloud/k103/summary.txt 2>&1; cat ~/qwen-opt/cloud/k103/summary.txt
-./down.sh 60693822; echo "$(date -u +%T) down rc=$?"
+./down.sh 60693822 --go; echo "$(date -u +%T) down rc=$?"

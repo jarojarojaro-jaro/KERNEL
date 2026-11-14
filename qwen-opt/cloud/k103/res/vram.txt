@@ -1,0 +1,8 @@
+A1-b11856-mtp2 load_vram_MiB 13281
+A1-b11856-mtp2 peak_vram_MiB 13509
+B1-v1.0.0-mtp2 load_vram_MiB 13329
+B1-v1.0.0-mtp2 peak_vram_MiB 13557
+B2-v1.0.0-mtp2 load_vram_MiB 13329
+B2-v1.0.0-mtp2 peak_vram_MiB 13557
+A2-b11856-mtp2 load_vram_MiB 13281
+A2-b11856-mtp2 peak_vram_MiB 13509
