@@ -1,0 +1,2 @@
+k104-ab|1500|~/qwen-opt/k104|python3 k104.py
+k104-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -32,14 +32,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - wynik 2026-11-14: wzór R1 = R1b = świeży (3f26f79c), R2/R3/F2 inne; identyczny przy `LLAMA_SPEC_LOOKUP=0`, `LLAMA_SPEC_COUPLED=0`, `GGML_HIP_PM4=0`, a F2 (bez restore) też się różni → to zależność od historii serwera, nie od pliku slotu ([[2026-11-14-k001-wyciek-stanu-restore]]). #30541 odpada (topka nie używa `FLAGS_ON_DEVICE`).
 - następny test: log `n_kv` / `used_max_p1` / komórek GDN przy R1 vs R2 (`v_heads` odpada, `seq_rm` go zeruje); jeden job ≤ 10 min
 
-### K-104 · Krótki ogon promptu w jednym przebiegu zamiast 2–3 (granice checkpointów GDN)
-- data: 2026-11-14
-- źródło: K-003 ([[2026-11-14-k002-k003-k013-xtx]]): krótkie żądanie = 139 ms po stronie serwera, z czego ~80–100 ms to prefill 5–8 tokenów w 2–3 przebiegach + 2 checkpointy po 11 ms
-- test: XTX, k003.py (40 żądań) produkcja vs wariant „ogon < 64 tok. w jednym ubatchu, checkpoint tylko na końcu”; md5 greedy + T=0 1,7k; ≤ 10 min
-- zysk: −40…−55 ms na każde żądanie (~15–20% TTFT krótkich tur agenta) [SZACUNEK]
-- ryzyko karty: brak; ryzyko md5 (inny podział ubatchy)
-- priorytet: wysoki (każda tura agenta)
-
 ### K-105 · Enigma NVIDIA: few-row MMQ (#31533) w naszym forku CUDA (szeroka weryfikacja: lookup W16, MTP n4)
 - data: 2026-11-14
 - źródło: K-103 ([[2026-11-14-k103-llamacpp-v1-nvidia]]): few-row MMQ daje +10…12% na przebieg przy 8–16 kolumnach, a przy MTP n2 (3 kolumny) ~0
@@ -66,6 +58,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: nowy kernel w PM4
 - priorytet: wysoki (zmierzone +17…35% u autora, ten sam model)
 - baseline 2026-11-14 (produkcja, r=3): V16 − V5 = 7,1 ms przy 2k, 10,1 ms przy 32k; V5 26,8 / 28,3 ms ([[2026-11-14-k002-k003-k013-xtx]]); port HIP #31533 jeszcze niezbudowany
+- w toku 2026-11-14 ~22:05 UTC: build upstream 6ad15f48 (#31533 + port HIP RDNA3 WMMA; Q4_K/Q5_K/Q6_K/Q8_0/IQ4_NL) dla gfx1100 na jaroserverai (`~/wt/fewrow-hip`, cpuheavy 2 rdzenie), potem automatycznie job kolejki `k013-fewrow` (V(w) na tym samym modelu) przez `~/qwen-opt/k013/after-build.sh`; wynik w następnej turze
 
 ### K-005 · Siatka checkpointów GDN co ~8192 tokenów + checkpoint w punkcie rozwidlenia + łańcuch fallbacku (edycja, regeneracja, kompaktowanie omp)
 - data: 2026-10-15 (STATUS-NEXT §4), ponownie 2026-11-07 (66 poz. 6)
@@ -666,6 +659,9 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-104 · Krótki ogon promptu w jednym przebiegu zamiast 2–3 (granice checkpointów GDN)
+- powód: 2026-11-14 A/B (świeże serwery, P/C/V/P2): prompt krótkiej tury 148,7 → 148,5 ms (0%), a `SHORT_TAIL=32` zmienia md5 (greedy, 1,7k) i obniża decode 1,7k 135,4 → 128,0 t/s; diagnoza K-003 o 2–3 przebiegach była błędna ([[2026-11-14-k104-krotki-ogon-promptu]])
 
 ### K-002 · Sprawdzić, czy ogon lookupu W16 spowalnia pisanie przy krótkim kontekście
 - powód: 2026-11-14 przy 1,7k T=0 produkcja 130,4 t/s vs bez lookupu 131,2 (R1 128,2 vs 129,2; R1b 133,9 = 133,9), te same drafty i md5 → lookup W16 nie spowalnia krótkiego kontekstu ([[2026-11-14-k002-k003-k013-xtx]])

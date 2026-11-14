@@ -1,0 +1,2 @@
+k013-fewrow|900|~/qwen-opt/k013|bash k013-fewrow.sh
+k013f-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

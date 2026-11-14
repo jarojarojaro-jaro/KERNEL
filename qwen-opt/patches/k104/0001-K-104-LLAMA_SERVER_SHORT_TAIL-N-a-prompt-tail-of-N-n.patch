@@ -1,0 +1,52 @@
+From 5bbc8d44270751477d2d4b1f131799c76abdd057 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Sat, 14 Nov 2026 21:52:40 +0000
+Subject: [PATCH] K-104: LLAMA_SERVER_SHORT_TAIL=N - a prompt tail of <= N new
+ tokens is processed in one batch (no user-start / n-4 checkpoint cuts);
+ default off
+
+---
+ tools/server/server-context.cpp | 13 +++++++++++--
+ 1 file changed, 11 insertions(+), 2 deletions(-)
+
+diff --git a/tools/server/server-context.cpp b/tools/server/server-context.cpp
+index df439bcb5..74e91489d 100644
+--- a/tools/server/server-context.cpp
++++ b/tools/server/server-context.cpp
+@@ -4225,6 +4225,15 @@ private:
+                     const auto & spans = slot.task->params.message_spans;
+                     const auto last_user_pos = spans.last_user_message_pos();
+ 
++                    // K-104 (LLAMA_SERVER_SHORT_TAIL=N): a prompt tail of at most N new tokens goes in one batch instead of
++                    // being cut at the last user message and 4 tokens before the end for checkpoints: a short agent/chat
++                    // turn costs one forward pass instead of 2-3 (the older checkpoint is at most N tokens behind)
++                    static const int short_tail_max = [] {
++                        const char * env = getenv("LLAMA_SERVER_SHORT_TAIL");
++                        return env ? atoi(env) : 0;
++                    }();
++                    const bool short_tail = short_tail_max > 0 && slot.task->n_tokens() - slot.prompt.n_tokens() <= short_tail_max;
++
+                     const int32_t n_decision_first = slot.task->type == SERVER_TASK_TYPE_DECISION ? slot.task->decision.pos_first() : -1;
+ 
+                     // add prompt tokens for processing in the current batch
+@@ -4267,7 +4276,7 @@ private:
+                         slot.prompt.tokens.push_back(cur_tok);
+ 
+                         // break at the last user message, or at user messages at least min step past the last checkpoint
+-                        if (do_checkpoint && spans.is_user_start(slot.prompt.n_tokens())) {
++                        if (do_checkpoint && !short_tail && spans.is_user_start(slot.prompt.n_tokens())) {
+                             const auto pos = slot.prompt.n_tokens();
+                             const auto & checkpoints = slot.prompt.checkpoints;
+ 
+@@ -4281,7 +4290,7 @@ private:
+                         //  - 4 + n_ubatch
+                         //  - 4
+                         // ref: https://github.com/ggml-org/llama.cpp/pull/20288
+-                        if (do_checkpoint) {
++                        if (do_checkpoint && !short_tail) {
+                             static const int checkpoint_offsets[] = {4 + n_ubatch, 4};
+ 
+                             bool should_break = false;
+-- 
+2.43.0
+

@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (52)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (79)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (80)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (118)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -87,10 +87,10 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-14 [[saluki|Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)]]
 - 2026-11-14 [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]]
 - 2026-11-14 [[peft-lora-warianty|PEFT: LoRA i warianty (LoRA-FA, VeRA, Delta-LoRA, LoRA+)]]
+- 2026-11-14 [[2026-11-14-k104-krotki-ogon-promptu|2026-11-14: K-104 — krótki ogon promptu w jednym przebiegu: KILL (0 ms zysku, zmienia md5, −5,5% dekodu)]]
 - 2026-11-14 [[2026-11-14-k103-llamacpp-v1-nvidia|2026-11-14: K-103 — llama.cpp v1.0.0 vs pin Enigmy b11856 na RTX 5060 Ti (Qwen3.8-27B ISTA IQ3_XXS-mtp, MTP n2)]]
 - 2026-11-14 [[2026-11-14-k002-k003-k013-xtx|2026-11-14: K-002, K-003, K-013 na XTX (topka-q70, eco 2200)]]
 - 2026-11-14 [[2026-11-14-k001-wyciek-stanu-restore|2026-11-14: K-001 — „wyciek stanu” przy restore to zależność od historii serwera, nie od lookupu, sprzężenia ani PM4]]
-- 2026-11-14 [[2026-11-14-saluki-usuniety|2026-11-14: Saluki usunięty całkowicie; na stronie zawsze najnowsze pomiary]]
 
-Razem 748 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
+Razem 749 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

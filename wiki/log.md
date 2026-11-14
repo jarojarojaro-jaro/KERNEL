@@ -382,3 +382,6 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 
 ## [2026-11-14] poprawka | K-103 i K-003 (uwagi Jarva)
 K-103: zysk przy MTP n2 to +3,8% (mediany 43,95 → 45,62 t/s; parami +3,5 / +4,2%), nie +3,5%; poprawione w [[2026-11-14-k103-llamacpp-v1-nvidia]], [[KOLEJKA-TESTOW]] i wpisie wyżej. K-003: reszta poza serwerem to 2,0 ms w każdym żądaniu (1,7–2,3); „brakujące” 12 ms to efekt sumowania median — w [[2026-11-14-k002-k003-k013-xtx]] dodana kolumna średnich, które się domykają (147,2 + 106,7 + 2,0 = 255,9).
+
+## [2026-11-14] eksperyment | K-104 KILL, K-013 build w toku
+[[2026-11-14-k104-krotki-ogon-promptu]]: `LLAMA_SERVER_SHORT_TAIL=32` — prompt krótkiej tury 148,7 → 148,5 ms (0%), zmienia md5, decode 1,7k 135,4 → 128,0 t/s → odrzucone; nic nie wdrożone. K-013: build upstream few-row MMQ HIP (6ad15f48) dla gfx1100 i automatyczny pomiar V(w) w kolejce po buildzie (odłączone).

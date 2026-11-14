@@ -1,0 +1,9 @@
+21:53:27 server a-P up in 6.1 s (pid 58232): ~/llama-topka
+21:53:54 [P] wall med 471.4 mean 466.7 | prompt_ms med 148.7 mean 150.6 | pred med 253.3 | 40-turn md5 2796eeae | greedy 7dfc9b71/76ba8207 | 1.7k md5 3f26f79c 135.423 t/s
+21:54:01 server a-C up in 6.1 s (pid 58758): ~/wt/l1-cachesave/build-hip LLAMA_SERVER_SHORT_TAIL=0
+21:54:28 [C] wall med 471.8 mean 467.5 | prompt_ms med 149.6 mean 151.6 | pred med 253.2 | 40-turn md5 2796eeae | greedy 7dfc9b71/76ba8207 | 1.7k md5 3f26f79c 135.564 t/s
+21:54:36 server a-V up in 6.1 s (pid 59303): ~/wt/l1-cachesave/build-hip LLAMA_SERVER_SHORT_TAIL=32
+21:55:02 [V] wall med 470.1 mean 467.0 | prompt_ms med 148.5 mean 150.8 | pred med 253.3 | 40-turn md5 2796eeae | greedy a0dde0fa/456a8b51 | 1.7k md5 67daa383 127.985 t/s
+21:55:10 server a-P2 up in 6.1 s (pid 59961): ~/llama-topka
+21:55:37 [P2] wall med 472.5 mean 467.5 | prompt_ms med 149.3 mean 151.1 | pred med 253.3 | 40-turn md5 2796eeae | greedy 7dfc9b71/76ba8207 | 1.7k md5 3f26f79c 135.54 t/s
+21:55:38 done, results ~/qwen-opt/xtxbench/runs/1114-215321-k104-short-tail/k104.json
