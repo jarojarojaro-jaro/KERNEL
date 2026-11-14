@@ -1,0 +1,2 @@
+k013-vw|900|~/qwen-opt/k013|bash k013.sh
+k013-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

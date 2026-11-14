@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (52)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (76)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (78)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (118)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -87,10 +87,10 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-14 [[saluki|Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)]]
 - 2026-11-14 [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]]
 - 2026-11-14 [[peft-lora-warianty|PEFT: LoRA i warianty (LoRA-FA, VeRA, Delta-LoRA, LoRA+)]]
+- 2026-11-14 [[2026-11-14-k002-k003-k013-xtx|2026-11-14: K-002, K-003, K-013 na XTX (topka-q70, eco 2200)]]
+- 2026-11-14 [[2026-11-14-k001-wyciek-stanu-restore|2026-11-14: K-001 — „wyciek stanu” przy restore to zależność od historii serwera, nie od lookupu, sprzężenia ani PM4]]
 - 2026-11-14 [[2026-11-14-saluki-usuniety|2026-11-14: Saluki usunięty całkowicie; na stronie zawsze najnowsze pomiary]]
 - 2026-11-14 [[ZRODLA|Rejestr źródeł: co już przebadaliśmy (InferenceX, Strata, TensorFold, Magnitude, hipfire, DFlash…)]]
-- 2026-11-14 [[KOLEJKA-TESTOW|Kolejka testów na karcie]]
-- 2026-11-13 [[sglang-unified-memory|SGLang Unified Memory: jedna arena VRAM dla KV, okna SWA i stanu rekurencyjnego]]
 
-Razem 745 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
+Razem 747 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

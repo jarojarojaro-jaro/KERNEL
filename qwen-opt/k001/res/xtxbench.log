@@ -1,0 +1,45 @@
+20:52:35 server s0 up in 6.1 s (pid 17332): ~/llama-topka
+20:52:40 S0: prefill 1712 tok, saved 683 MiB; fresh F md5 3f26f79c prompt_n 33 130.433 t/s
+20:52:47 server v-prod up in 6.1 s (pid 17554): ~/llama-topka
+20:52:50 [prod] R1: md5 3f26f79c prompt_n 33 128.231 t/s draft 276/185
+20:52:52 [prod] R1b: md5 3f26f79c prompt_n 33 133.907 t/s draft 276/185
+20:52:55 [prod] U1 greedy chat md5 d36768ee / 424a3a1f
+20:52:57 [prod] R2: md5 38028947 prompt_n 33 131.489 t/s draft 282/184
+20:53:34 [prod] U2 cold 32k prefill 32768 tok 871.06 t/s
+20:53:37 [prod] R3: md5 3dd78584 prompt_n 33 130.398 t/s draft 286/183
+20:53:41 [prod] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+20:53:41 [prod] SUMMARY F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+20:53:47 server s0-LLAMA_SPEC_LOOKUP0 up in 6.1 s (pid 18334): ~/llama-topka LLAMA_SPEC_LOOKUP=0
+20:53:53 [LLAMA_SPEC_LOOKUP=0] own snapshot; fresh F md5 3f26f79c 131.169 t/s draft 276/185
+20:54:00 server v-LLAMA_SPEC_LOOKUP0 up in 6.1 s (pid 18616): ~/llama-topka LLAMA_SPEC_LOOKUP=0
+20:54:02 [LLAMA_SPEC_LOOKUP=0] R1: md5 3f26f79c prompt_n 33 129.226 t/s draft 276/185
+20:54:04 [LLAMA_SPEC_LOOKUP=0] R1b: md5 3f26f79c prompt_n 33 133.917 t/s draft 276/185
+20:54:07 [LLAMA_SPEC_LOOKUP=0] U1 greedy chat md5 d36768ee / 424a3a1f
+20:54:09 [LLAMA_SPEC_LOOKUP=0] R2: md5 38028947 prompt_n 33 132.196 t/s draft 282/184
+20:54:47 [LLAMA_SPEC_LOOKUP=0] U2 cold 32k prefill 32768 tok 866.3 t/s
+20:54:49 [LLAMA_SPEC_LOOKUP=0] R3: md5 3dd78584 prompt_n 33 130.256 t/s draft 286/183
+20:54:53 [LLAMA_SPEC_LOOKUP=0] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+20:54:54 [LLAMA_SPEC_LOOKUP=0] SUMMARY F=3f26f79c F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+20:55:00 server s0-LLAMA_SPEC_COUPLED0 up in 6.1 s (pid 19239): ~/llama-topka LLAMA_SPEC_COUPLED=0
+20:55:06 [LLAMA_SPEC_COUPLED=0] own snapshot; fresh F md5 3f26f79c 130.573 t/s draft 276/185
+20:55:12 server v-LLAMA_SPEC_COUPLED0 up in 6.1 s (pid 19416): ~/llama-topka LLAMA_SPEC_COUPLED=0
+20:55:15 [LLAMA_SPEC_COUPLED=0] R1: md5 3f26f79c prompt_n 33 128.287 t/s draft 276/185
+20:55:17 [LLAMA_SPEC_COUPLED=0] R1b: md5 3f26f79c prompt_n 33 133.94 t/s draft 276/185
+20:55:20 [LLAMA_SPEC_COUPLED=0] U1 greedy chat md5 d36768ee / 424a3a1f
+20:55:22 [LLAMA_SPEC_COUPLED=0] R2: md5 38028947 prompt_n 33 131.374 t/s draft 282/184
+20:56:00 [LLAMA_SPEC_COUPLED=0] U2 cold 32k prefill 32768 tok 870.64 t/s
+20:56:02 [LLAMA_SPEC_COUPLED=0] R3: md5 3dd78584 prompt_n 33 130.378 t/s draft 286/183
+20:56:06 [LLAMA_SPEC_COUPLED=0] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+20:56:07 [LLAMA_SPEC_COUPLED=0] SUMMARY F=3f26f79c F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+20:56:13 server s0-GGML_HIP_PM40 up in 6.1 s (pid 20050): ~/llama-topka GGML_HIP_PM4=0
+20:56:19 [GGML_HIP_PM4=0] own snapshot; fresh F md5 3f26f79c 122.57 t/s draft 276/185
+20:56:25 server v-GGML_HIP_PM40 up in 6.1 s (pid 20232): ~/llama-topka GGML_HIP_PM4=0
+20:56:28 [GGML_HIP_PM4=0] R1: md5 3f26f79c prompt_n 33 122.349 t/s draft 276/185
+20:56:31 [GGML_HIP_PM4=0] R1b: md5 3f26f79c prompt_n 33 125.155 t/s draft 276/185
+20:56:33 [GGML_HIP_PM4=0] U1 greedy chat md5 d36768ee / 424a3a1f
+20:56:36 [GGML_HIP_PM4=0] R2: md5 38028947 prompt_n 33 122.83 t/s draft 282/184
+20:57:13 [GGML_HIP_PM4=0] U2 cold 32k prefill 32768 tok 869.99 t/s
+20:57:16 [GGML_HIP_PM4=0] R3: md5 3dd78584 prompt_n 33 122.278 t/s draft 286/183
+20:57:20 [GGML_HIP_PM4=0] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+20:57:20 [GGML_HIP_PM4=0] SUMMARY F=3f26f79c F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+20:57:21 done in 292 s, results ~/qwen-opt/xtxbench/runs/1114-205229-k001-aa/k001.json

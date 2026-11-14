@@ -367,3 +367,6 @@ Infrathon (arXiv 2611.11995, [[ZRODLA]]): benchmark długich przebiegów agentó
 
 ## [2026-11-14] produkt | Karty 3090, 5060 Ti, 4060 Ti z listopada; lżejsze strony kart
 [[karty-nvidia-na-stronie]]: decyzja właściciela „najnowsze dane wygrywają”: 3090 (40,93 → 61,49 → 79,97 t/s), 5060 Ti (27,48 → 31,42 → 43,40) i 4060 Ti (19,78 → 24,02 → 36,30) z raportu 67; LFM2.5/Nemotron bez nowszych pomiarów zostają z października z opisem hosta. Strony kart lżejsze na telefonach (TBT ~100 ms, mobile z kompresją 82/85, bez kompresji 64/66). Gałęzie `karty-r5` (KERNEL) i `nvidia-r5` (strona, build `_app/i6`).
+
+## [2026-11-14] eksperyment | kolejka na XTX: K-001, K-002, K-003, K-013
+[[2026-11-14-k001-wyciek-stanu-restore]]: md5 po restore zależy od historii serwera (R1 = świeży, R2/R3/F2 inne) niezależnie od lookupu, sprzężenia i PM4; podejrzany `v_heads`, #30541 odpada. [[2026-11-14-k002-k003-k013-xtx]]: K-002 odrzucone (lookup 130,4 vs 131,2 t/s, w szumie); K-003 koszt stały = 139 ms serwera (checkpointy GDN + prefill w 2–3 przebiegach) → nowa K-104; K-013 baseline V16 − V5 = 7,1 / 10,1 ms (2k / 32k). PM4 przy 1,7k: 122,6 → 130,4 t/s (+6,4%). Produkcja :8080 po testach: topka-q70, n_ctx 262144, health ok.

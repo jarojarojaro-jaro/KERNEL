@@ -21,6 +21,25 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
+- data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
+- źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)
+- hipoteza (2026-11-14): upstream #30541 (w llama.cpp v1.0.0) naprawia kopię stanu „on device” dla skwantowanego KV: liczba elementów liczona jako bloki, więc dla q4_0 kopiowane było 1/32 zakresu → zły stan po restore. Topka (baza b11528) tej poprawki nie ma, a my mamy KV q4_0 [INFERENCE: czy ścieżka `LLAMA_STATE_SEQ_FLAGS_ON_DEVICE` jest używana przez cache/checkpointy topki — sprawdzić w kodzie na CPU przed testem] ([[telegram-2026-11-14-pearlquant-llamacpp-v1]])
+- test: najpierw repro na CPU (LFM2.5-2.6B pokazał wzór przy 0,6k). Potem XTX, port testowy, `run-topka.sh uncensored`: restore migawki 1,7k → md5 T=0 → inne żądanie → drugi restore → md5, porównanie z `md5_fresh` (xtxbench t1 A/A). Bez 199k ≤ 10 min.
+- zysk: poprawność, nie szybkość. Cachesave i `--cache-ram` odtwarzają wpisy w sesjach agenta, więc produkcja może dziś po cichu zmieniać odpowiedzi. Bez naprawy werdykty md5 xtxbench są pewne tylko przy pierwszym restore.
+- ryzyko karty: brak
+- priorytet: wysoki (bezstratność produkcji)
+- wynik 2026-11-14: wzór R1 = R1b = świeży (3f26f79c), R2/R3/F2 inne; identyczny przy `LLAMA_SPEC_LOOKUP=0`, `LLAMA_SPEC_COUPLED=0`, `GGML_HIP_PM4=0`, a F2 (bez restore) też się różni → to zależność od historii serwera, nie od pliku slotu ([[2026-11-14-k001-wyciek-stanu-restore]]). #30541 odpada (topka nie używa `FLAGS_ON_DEVICE`).
+- następny test: zerowanie `v_heads` przy pustej sekwencji (hipoteza: rozmieszczenie komórek KV → inne `n_kv` w FA); jeden job ≤ 10 min po buildzie
+
+### K-104 · Krótki ogon promptu w jednym przebiegu zamiast 2–3 (granice checkpointów GDN)
+- data: 2026-11-14
+- źródło: K-003 ([[2026-11-14-k002-k003-k013-xtx]]): krótkie żądanie = 139 ms po stronie serwera, z czego ~80–100 ms to prefill 5–8 tokenów w 2–3 przebiegach + 2 checkpointy po 11 ms
+- test: XTX, k003.py (40 żądań) produkcja vs wariant „ogon < 64 tok. w jednym ubatchu, checkpoint tylko na końcu”; md5 greedy + T=0 1,7k; ≤ 10 min
+- zysk: −40…−55 ms na każde żądanie (~15–20% TTFT krótkich tur agenta) [SZACUNEK]
+- ryzyko karty: brak; ryzyko md5 (inny podział ubatchy)
+- priorytet: wysoki (każda tura agenta)
+
 ### K-004 · Fork CUDA: dokładne próbkowanie spekulacyjne na GPU przy T=1 (jak qwen-warp)
 - data: 2026-11-09
 - źródło: [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 2: fork traci przy T=1 7–13%, warp nie traci), `R/69b-tensorfold-qwen-warp.md` §3
@@ -28,6 +47,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: odzysk 7–13% przy T=1 na NVIDIA (3090: 76,9 vs 82,9 t/s przy krótkim kontekście); wszyscy użytkownicy Enigmy z NVIDIA
 - ryzyko karty: brak
 - priorytet: wysoki (Enigma NVIDIA, tani pierwszy pomiar)
+
+### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)
+- data: 2026-11-07
+- źródło: `R/68d-swieze-od-spolecznosci.md:140`, `R/69-SYNTEZA.md:30` (W3), [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 3), `R/67c-nvidia-backlog-testow.md:131` (C14)
+- test: XTX `llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 1,5,8,9,16 -n 0 -d 2048,32768` przed/po (krzywa V(w)), potem `mvs` + czat ABBA i md5; ≤ 10 min. NVIDIA: `test-backend-ops MUL_MAT` n=8/16 na 5060 Ti.
+- nowe (2026-11-14): #31533 scalone w llama.cpp v1.0.0. Na NVIDIA spec-dec Qwen3.8-27B +16,7…34,9% tok/s (3090 Ti 57,6 → 77,7), KLD jak master; port HIP (`6ad15f48`, am17an) na RDNA3.5 z DFlash2: 21 → 37 tok/s. Weryfikacja MTP n=5 (5 kolumn) też w zakresie 2–24. Inny kernel = inna kolejność sum, więc md5 T=0 się zmieni: wdrożenie na XTX wymaga bramki K-007 albo decyzji właściciela.
+- zysk: V16 − V5 = 6,4 ms przy 2k; połowa tego → kroki W16 −9%, tury agenta z kopiowaniem +5…10% [SZACUNEK]; czat 0. Warunek dla drzew (K-075).
+- ryzyko karty: nowy kernel w PM4
+- priorytet: wysoki (zmierzone +17…35% u autora, ten sam model)
+- baseline 2026-11-14 (produkcja, r=3): V16 − V5 = 7,1 ms przy 2k, 10,1 ms przy 32k; V5 26,8 / 28,3 ms ([[2026-11-14-k002-k003-k013-xtx]]); port HIP #31533 jeszcze niezbudowany
 
 ### K-005 · Siatka checkpointów GDN co ~8192 tokenów + checkpoint w punkcie rozwidlenia + łańcuch fallbacku (edycja, regeneracja, kompaktowanie omp)
 - data: 2026-10-15 (STATUS-NEXT §4), ponownie 2026-11-07 (66 poz. 6)
@@ -610,44 +639,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## W toku
 
-### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
-- data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
-- źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)
-- hipoteza (2026-11-14): upstream #30541 (w llama.cpp v1.0.0) naprawia kopię stanu „on device” dla skwantowanego KV: liczba elementów liczona jako bloki, więc dla q4_0 kopiowane było 1/32 zakresu → zły stan po restore. Topka (baza b11528) tej poprawki nie ma, a my mamy KV q4_0 [INFERENCE: czy ścieżka `LLAMA_STATE_SEQ_FLAGS_ON_DEVICE` jest używana przez cache/checkpointy topki — sprawdzić w kodzie na CPU przed testem] ([[telegram-2026-11-14-pearlquant-llamacpp-v1]])
-- test: najpierw repro na CPU (LFM2.5-2.6B pokazał wzór przy 0,6k). Potem XTX, port testowy, `run-topka.sh uncensored`: restore migawki 1,7k → md5 T=0 → inne żądanie → drugi restore → md5, porównanie z `md5_fresh` (xtxbench t1 A/A). Bez 199k ≤ 10 min.
-- zysk: poprawność, nie szybkość. Cachesave i `--cache-ram` odtwarzają wpisy w sesjach agenta, więc produkcja może dziś po cichu zmieniać odpowiedzi. Bez naprawy werdykty md5 xtxbench są pewne tylko przy pierwszym restore.
-- ryzyko karty: brak
-- priorytet: wysoki (bezstratność produkcji)
-- status: w toku od 2026-11-14 ~21:40 (jaroserverai włączony, zgoda właściciela „rób testy”; XTX)
-
-### K-002 · Sprawdzić, czy ogon lookupu W16 spowalnia pisanie przy krótkim kontekście
-- data: 2026-10-19
-- źródło: [[REKORDY]] (`:108`: 1,7k sam MTP 136,5 vs topka W16 123,7 t/s, „nie w produkcji”), `product/WYNIKI-XTX-2026-10-19.md:82`. Jeden przebieg, przed coupled/host-gap/eco, nigdy nie powtórzony.
-- test: XTX, xtxbench t1 `--var-env LLAMA_SPEC_LOOKUP=0` vs produkcja, decode 1,7k/94k T=0 + spec_sweep 1 seed (~4 min/wariant).
-- zysk: jeśli się potwierdzi, krótkie prompty +5…10%. Bezstratna poprawka: wyższy próg dopasowania ogona przy krótkim kontekście (zmienia tylko drafty).
-- ryzyko karty: brak
-- priorytet: wysoki (tani, potencjalnie ≥ 3%)
-- status: w toku od 2026-11-14 ~21:40 (jaroserverai włączony, zgoda właściciela „rób testy”; XTX)
-
-### K-003 · Rozłożyć stały koszt ~210–230 ms na każde żądanie (TTFT krótkich promptów) i dokończyć tańszy zapis stanu GDN (stash `opt-s4`)
-- data: 2026-11-09 (stash `opt-s4`: 2026-10-13)
-- źródło: [[2026-11-09-evalplus-qwen-uncensored]] (`:37`: `prompt_ms ≈ 155 ms + 0,98 ms/tok`, ~75 ms poza prompt/predict; BFCL TTFT 625 ms przy 416 tok.), [[2026-11-09-jakosc-mini-qwen-unc]], [[2026-10-13-s2-s4]] (`:22`, +10–15 ms/żądanie)
-- test: XTX, port testowy, `LLAMA_SERVER_AP_TIMING=1` + rozbicie na 50 krótkich promptach HE+ (checkpoint GDN, hak/dogonienie MTP, zapis cache, render/tokenizacja). Potem A/B poprawki + md5. ≤ 10 min.
-- zysk: 4,3–4,7% średniego czasu odpowiedzi (4,8–4,9 s); w agencie ~0,2 s na każde wywołanie narzędzia
-- ryzyko karty: brak
-- priorytet: wysoki (każda tura, mieści się w progu 3–5%)
-- status: w toku od 2026-11-14 ~21:40 (jaroserverai włączony, zgoda właściciela „rób testy”; XTX)
-
-### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)
-- data: 2026-11-07
-- źródło: `R/68d-swieze-od-spolecznosci.md:140`, `R/69-SYNTEZA.md:30` (W3), [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 3), `R/67c-nvidia-backlog-testow.md:131` (C14)
-- test: XTX `llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 1,5,8,9,16 -n 0 -d 2048,32768` przed/po (krzywa V(w)), potem `mvs` + czat ABBA i md5; ≤ 10 min. NVIDIA: `test-backend-ops MUL_MAT` n=8/16 na 5060 Ti.
-- nowe (2026-11-14): #31533 scalone w llama.cpp v1.0.0. Na NVIDIA spec-dec Qwen3.8-27B +16,7…34,9% tok/s (3090 Ti 57,6 → 77,7), KLD jak master; port HIP (`6ad15f48`, am17an) na RDNA3.5 z DFlash2: 21 → 37 tok/s. Weryfikacja MTP n=5 (5 kolumn) też w zakresie 2–24. Inny kernel = inna kolejność sum, więc md5 T=0 się zmieni: wdrożenie na XTX wymaga bramki K-007 albo decyzji właściciela.
-- zysk: V16 − V5 = 6,4 ms przy 2k; połowa tego → kroki W16 −9%, tury agenta z kopiowaniem +5…10% [SZACUNEK]; czat 0. Warunek dla drzew (K-075).
-- ryzyko karty: nowy kernel w PM4
-- priorytet: wysoki (zmierzone +17…35% u autora, ten sam model)
-- status: w toku od 2026-11-14 ~21:40 (jaroserverai włączony, zgoda właściciela „rób testy”; XTX)
-
 ### K-103 · Enigma NVIDIA: silnik na llama.cpp v1.0.0 (few-row MMQ #31533) zamiast pinu b11856, z MTP
 - data: 2026-11-14
 - źródło: [[telegram-2026-11-14-pearlquant-llamacpp-v1]]; PR #31533 (Qwen3.8-27B + DFlash2, 7 draftów: 3090 Ti 57,6 → 77,7 tok/s, +34,9%; RTX PRO 6000 +16,7%; 5090 +20,6%; 80/80 rozmów szybciej, KLD jak master); pin b11856 został, bo b12110 był ~9% wolniejszy z MTP na sm_120 ([[final-recipes-nvidia]])
@@ -660,9 +651,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Zrobione
 
-(pusto; pierwsze wyniki z tej kolejki trafią tutaj z liczbami baseline → teraz → przyrost i linkiem do eksperymentu. Wcześniejsze wdrożenia: [[REKORDY]], np. topka-q70 z 2026-11-09: [[2026-11-09-wdrozenie-topka-q70]])
+### K-003 · Rozłożyć stały koszt ~210–230 ms na każde żądanie (TTFT krótkich promptów) i dokończyć tańszy zapis stanu GDN (stash `opt-s4`)
+- wynik 2026-11-14: koszt stały to serwer, nie HTTP: ściana 258 ms = prompt 139 (restore checkpointu GDN 11–32, 2 checkpointy 2×11, prefill 5–8 tok. w 2–3 przebiegach ~80–100) + dekod 8 tok. 105 + poza serwerem 2 ms; dawne ~75 ms to harness klienta. Kontynuacja: K-104. [[2026-11-14-k002-k003-k013-xtx]]
+
 
 ## Odrzucone
+
+### K-002 · Sprawdzić, czy ogon lookupu W16 spowalnia pisanie przy krótkim kontekście
+- powód: 2026-11-14 przy 1,7k T=0 produkcja 130,4 t/s vs bez lookupu 131,2 (R1 128,2 vs 129,2; R1b 133,9 = 133,9), te same drafty i md5 → lookup W16 nie spowalnia krótkiego kontekstu ([[2026-11-14-k002-k003-k013-xtx]])
 
 ### K-076 · Astra-Stop (LoRA rank-1 skracająca myślenie)
 - powód: zmienia zachowanie, przeciek `</think>` 11/32; decyzja właściciela 2026-11-09 ([[2026-11-09-decyzje-runda-69]], [[astra-stop]]). Wraca tylko jako temat fine-tuningu z benchmarkami.

@@ -1,0 +1,5 @@
+# 2026-11-14 owner OK (Telegram): K-001 bisection (lookup / coupled / PM4 off, own snapshots) + K-002 data, K-003 TTFT, K-013 V(w)
+k001-bisect|1500|~/qwen-opt/k001|python3 k001.py LLAMA_SPEC_LOOKUP=0 LLAMA_SPEC_COUPLED=0 GGML_HIP_PM4=0
+k003-ttft|600|~/qwen-opt/k003|python3 k003.py
+k013-vw|900|~/qwen-opt/k013|bash k013.sh
+k1114-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
