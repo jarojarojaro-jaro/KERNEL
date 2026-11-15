@@ -394,3 +394,6 @@ K-103: zysk przy MTP n2 to +3,8% (mediany 43,95 → 45,62 t/s; parami +3,5 / +4,
 
 ## [2026-11-15] zwiad | compwatch (delta, 15 pozycji)
 [[zwiad-2026-11-14]] (delta 11-15, raport `product/research/watch/2026-11-15.md`): TensorFold 1.2.9 (Metal/TP/gfx1151), 1Cat-vLLM T>0 bez sync hosta (warunkowy graf CUDA → źródło K-014), sglang reset GDN bez sync; nic do testu na karcie; 3 wiersze ZRODLA.
+
+## [2026-11-15] research | Telegram „gpu”: architektura GPU (wpis edukacyjny)
+Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [[sufit-pasma-i-mapa-czasu]]; bez testu, wiersz w [[ZRODLA]].
