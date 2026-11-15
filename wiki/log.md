@@ -391,3 +391,6 @@ K-103: zysk przy MTP n2 to +3,8% (mediany 43,95 → 45,62 t/s; parami +3,5 / +4,
 
 ## [2026-11-14] zwiad | compwatch przebieg bazowy
 [[zwiad-2026-11-14]] (raport `product/research/watch/2026-11-14.md`): hipfire 0.4.4 na XTX dogonił topkę przy krótkim kontekście (127–131 t/s) numerycznymi kernelami weryfikacji (#987/#989), my bitowo jesteśmy na tym samym poziomie; LocalMaxxing XTX top verified nadal 97,2; tqLLM dokładne próbkowanie MTP T>0 → K-004; TensorFold wznowienie po usunięciu rozumowania (do sprawdzenia w omp); 6 wierszy ZRODLA, źródła dopisane do K-004/K-012/K-059. K-013 (zlecenie właściciela z 14.11): upstream few-row 26–81% wolniejszy od topki na V5–V16, few-row bez darmowego zysku.
+
+## [2026-11-15] zwiad | compwatch (delta, 15 pozycji)
+[[zwiad-2026-11-14]] (delta 11-15, raport `product/research/watch/2026-11-15.md`): TensorFold 1.2.9 (Metal/TP/gfx1151), 1Cat-vLLM T>0 bez sync hosta (warunkowy graf CUDA → źródło K-014), sglang reset GDN bez sync; nic do testu na karcie; 3 wiersze ZRODLA.

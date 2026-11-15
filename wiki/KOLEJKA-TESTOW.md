@@ -137,6 +137,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: +10–20% decode na 3090 [SZACUNEK]; część przewagi qwen-warp ×1,34–1,81
 - ryzyko karty: brak
 - priorytet: średni (duży, drogi w kodzie)
+- zwiad 2026-11-15: 1Cat-vLLM `a013fb3dc` — próbkowanie T>0 bez synchronizacji hosta przez warunkowy graf CUDA (B=1..4) + fuzja top-K, kolejny wzór ([[zwiad-2026-11-14]])
 
 ### K-015 · Regresja `kvq` na sm_120 przy krótkim kontekście (−4,4% na 5080, −4,7% na 3090) i przegląd `GGML_CUDA_KVQ_BPSM` 1/2/3/4/6
 - data: 2026-11-07
