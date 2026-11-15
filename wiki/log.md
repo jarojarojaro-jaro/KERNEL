@@ -397,3 +397,6 @@ K-103: zysk przy MTP n2 to +3,8% (mediany 43,95 → 45,62 t/s; parami +3,5 / +4,
 
 ## [2026-11-15] research | Telegram „gpu”: architektura GPU (wpis edukacyjny)
 Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [[sufit-pasma-i-mapa-czasu]]; bez testu, wiersz w [[ZRODLA]].
+
+## [2026-11-15] llm | Mapa inżynierii inferencji (roadmapa z Telegrama)
+[[mapa-inferencji-roadmap]]: 114 tematów roadmapy „LLM Inference Engineering” zestawione z wiki: 79 zmierzonych u nas, 15 opisanych, 20 luk; ranking luk; nowe K-106 (interferencja prefill–decode, XTX) i K-107 (XTX + 5060 Ti) w [[KOLEJKA-TESTOW]]. Notatka zwolniona z limitu słów (tabela) w `tools/wiki.py`.

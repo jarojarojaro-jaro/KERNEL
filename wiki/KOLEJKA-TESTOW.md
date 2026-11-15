@@ -62,6 +62,22 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - (zakończone) build upstream 6ad15f48 (#31533 + port HIP RDNA3 WMMA; Q4_K/Q5_K/Q6_K/Q8_0/IQ4_NL) dla gfx1100 na jaroserverai (`~/wt/fewrow-hip`, cpuheavy 2 rdzenie), potem automatycznie job kolejki `k013-fewrow` (V(w) na tym samym modelu) przez `~/qwen-opt/k013/after-build.sh`; wynik w następnej turze
 - wynik 2026-11-14 (całe silniki, nie sam kernel): upstream 6ad15f48 z few-row MMQ HIP vs topka-q70, `llama-bench -p 1,5,8,9,16 -d 2048,32768`: V5 26,8 → 37,9 ms (+41%), V16 33,9 → 47,0 (+39%) przy 2k; V1 też +3…31% → upstream bez naszych łatek jest wolniejszy, więc few-row nie jest szybszy niż nasza ścieżka weryfikacji. Do rozstrzygnięcia tylko poziom kernela: `test-backend-ops perf -o MUL_MAT` (q4_K, n 5/8/16) obu buildów ([[2026-11-14-k002-k003-k013-xtx]])
 
+### K-106 · Interferencja prefill–decode przy agentach: ile pisanie jednego wątku traci, gdy drugi wątek wysyła długi prompt
+- data: 2026-11-15
+- źródło: [[mapa-inferencji-roadmap]] (luka #1); agenci mają przez 37% czasu ≥ 2 żądania w locie, prefill to 58% zegara sesji ([[2026-10-19-workload-omp]])
+- test: XTX, produkcja na porcie testowym (`-np 1`): strumień A dekoduje 512 tok. przy 1,7k, w trakcie wchodzi żądanie B z promptem 32k. Mierzyć: czas do kolejnego tokena A (blokada), sumaryczną ścianę A i B vs sekwencyjnie, md5 obu. ≤ 10 min
+- zysk: wiedza; jeśli A stoi przez cały prefill B (~40 s przy 32k), kandydat na podział prefillu na kawałki przeplatane z dekodem (bezstratne dla A) [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: średni (agenci, tani pomiar)
+
+### K-107 · Dwie karty w jednym komputerze: XTX + RTX 5060 Ti (podział warstw `-sm layer` przez Vulkan albo dwa niezależne serwery dla roju agentów)
+- data: 2026-11-15
+- źródło: [[mapa-inferencji-roadmap]] (luki #3–#6, #10); plan z `hardware/rx-7900-xtx.md` §2 („do przetestowania”)
+- test: gdy 5060 Ti online w jaroserverai: (a) dwa serwery (XTX Qwen 27B + 5060 Ti LFM albo Qwen IQ3) i fan-out omp, ściana sesji; (b) Vulkan `-sm layer` Qwen 27B na 40 GB: decode/prefill vs sam XTX; ≤ 10 min na ramię
+- zysk: (a) przepustowość roju agentów; (b) tylko pojemność (większy model), decode wolniejszy [SZACUNEK]; reguła dla Enigmy „kiedy druga karta pomaga”
+- ryzyko karty: brak (bez PM4 na Vulkan)
+- priorytet: średni (5060 Ti offline)
+
 ### K-005 · Siatka checkpointów GDN co ~8192 tokenów + checkpoint w punkcie rozwidlenia + łańcuch fallbacku (edycja, regeneracja, kompaktowanie omp)
 - data: 2026-10-15 (STATUS-NEXT §4), ponownie 2026-11-07 (66 poz. 6)
 - źródło: [[siatka-checkpointow-gdn]], `Q/STATUS-NEXT.md:44`, `R/66-SYNTEZA.md:57`, `R/67c-nvidia-backlog-testow.md:116` (B22)

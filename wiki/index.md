@@ -72,11 +72,12 @@ Audyt liczb: [[AUDYT]].
 - [[research/_hub|research]] — Streszczenia raportów (158)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (36)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
-- [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (2)
+- [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (3)
 
 ## Ostatnio aktualizowane
 
-- 2026-11-14 [[zwiad-2026-11-14|Zwiad 2026-11-14 (przebieg bazowy compwatch): hipfire dogonił nas na XTX, ale stratnie]]
+- 2026-11-15 [[zwiad-2026-11-14|Zwiad 2026-11-14 (przebieg bazowy compwatch): hipfire dogonił nas na XTX, ale stratnie]]
+- 2026-11-15 [[mapa-inferencji-roadmap|Mapa inżynierii inferencji LLM: 114 tematów roadmapy a nasza wiedza]]
 - 2026-11-14 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
 - 2026-11-14 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
 - 2026-11-14 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne i zwiad]]
@@ -90,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-14 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
 - 2026-11-14 [[saluki|Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)]]
 - 2026-11-14 [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]]
-- 2026-11-14 [[peft-lora-warianty|PEFT: LoRA i warianty (LoRA-FA, VeRA, Delta-LoRA, LoRA+)]]
 
-Razem 750 notatek. Wygenerowano 2026-11-14 przez `tools/wiki.py index`.
+Razem 751 notatek. Wygenerowano 2026-11-15 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
