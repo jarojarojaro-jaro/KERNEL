@@ -6,3 +6,4 @@ Raporty dzienne `tools/compwatch/compwatch.py` (timer systemd 06:30, `nice`). Je
 - [2026-10-20-2](2026-10-20-2.md): 1 pozycji; top: sgl-project/sglang: +1 commitów od ostatniego raportu
 - [2026-11-14](2026-11-14.md): 87 pozycji; top: RTX 3090 / Qwen3.8-27B: 274.2 t/s > nasze 93.3 (+194%) — 274.2 t/s · exllamav3 1.5.0 + elpis patches · EXL3-4.00bpw · DFlash2 n=7 mal 5.82 · Sandberg · 2026-10…
 - [2026-11-15](2026-11-15.md): 15 pozycji; top: ashhart/TensorFold wydanie v1.2.9 (2026-11-15): TensorFold 1.2.9
+- [2026-11-16](2026-11-16.md): 29 pozycji; top: Niko1221/Strata wydanie v0.2.14 (2026-11-15): Strata 0.2.14

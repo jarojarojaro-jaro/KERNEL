@@ -400,3 +400,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-15] llm | Mapa inżynierii inferencji (roadmapa z Telegrama)
 [[mapa-inferencji-roadmap]]: 114 tematów roadmapy „LLM Inference Engineering” zestawione z wiki: 79 zmierzonych u nas, 15 opisanych, 20 luk; ranking luk; nowe K-106 (interferencja prefill–decode, XTX) i K-107 (XTX + 5060 Ti) w [[KOLEJKA-TESTOW]]. Notatka zwolniona z limitu słów (tabela) w `tools/wiki.py`.
+
+## [2026-11-16] zwiad | compwatch (delta, 29 pozycji)
+[[zwiad-2026-11-14]] (delta 11-16): hipfire 0.4.7 patch, Strata 0.2.14 własne kernele prefillu (stratnie), Maya 1.1.64–65 stabilność; arXiv: energia na rozwiązane zadanie (wzór dla Enigmy), Superfluid (priorytet interaktywnych żądań → K-106). Nic na kartę; 6 wierszy ZRODLA.

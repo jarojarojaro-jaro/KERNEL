@@ -69,6 +69,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: wiedza; jeśli A stoi przez cały prefill B (~40 s przy 32k), kandydat na podział prefillu na kawałki przeplatane z dekodem (bezstratne dla A) [SZACUNEK]
 - ryzyko karty: brak
 - priorytet: średni (agenci, tani pomiar)
+- zwiad 2026-11-16: Superfluid (arXiv 2611.17753) przesuwa interaktywne żądania przed pracę agentów w jednym harmonogramie, czyli kandydat na rozwiązanie, jeśli K-106 pokaże długą blokadę ([[zwiad-2026-11-14]])
 
 ### K-107 · Dwie karty w jednym komputerze: XTX + RTX 5060 Ti (podział warstw `-sm layer` przez Vulkan albo dwa niezależne serwery dla roju agentów)
 - data: 2026-11-15
