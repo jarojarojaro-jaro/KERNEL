@@ -65,17 +65,18 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (58)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (80)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (118)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (119)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (30)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (89)
-- [[research/_hub|research]] — Streszczenia raportów (158)
+- [[research/_hub|research]] — Streszczenia raportów (159)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (36)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 - [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (3)
 
 ## Ostatnio aktualizowane
 
+- 2026-11-17 [[zwiad-2026-11-17|Zwiad 2026-11-17: rekord 594,7 t/s na R9700 jest fizycznie niemożliwy, draft KV q4 potwierdzony, lookup „najnowsze dopasowanie” potwierdzony]]
 - 2026-11-17 [[skill-io-skrypty|Skrypty skill-io (bench.py, ceiling.py, queue.sh, mem.sh): co robią linia po linii i co bierzemy]]
 - 2026-11-17 [[skill-io-sufity|Sufity wg skill-io (ceilings.md + ceiling.py): nasz Qwen3.8-27B Q4_K_M na XTX i 34 kartach AMD, NVIDIA, Apple, Intel i Tenstorrent]]
 - 2026-11-17 [[skill-io-pulapki|Pułapki silników i sprzętu wg skill-io (gotchas.md) a nasze lekcje]]
@@ -83,14 +84,13 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-17 [[skill-io-przeglad|Skill „inference-optimisation” (Sybil Solutions): wspinaczka po prędkości serwera LLM — przegląd i lekcje]]
 - 2026-11-17 [[skill-io-metodyka|Metodyka pomiaru wg skill-io (methodology.md + zasady SKILL.md) a nasza praktyka]]
 - 2026-11-17 [[skill-io-dzwignie|Dźwignie wg skill-io (levers.md): każda z naszym statusem i spodziewanym zyskiem na XTX]]
+- 2026-11-17 [[lekcja-vastai-destroy-pyta|Lekcja: `vastai destroy instance` w CLI 1.11 pyta o potwierdzenie, więc watchdog bez `-y` nic nie usuwa]]
 - 2026-11-16 [[zwiad-2026-11-14|Zwiad 2026-11-14 (przebieg bazowy compwatch): hipfire dogonił nas na XTX, ale stratnie]]
 - 2026-11-15 [[mapa-inferencji-roadmap|Mapa inżynierii inferencji LLM: 114 tematów roadmapy a nasza wiedza]]
 - 2026-11-14 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
 - 2026-11-14 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
 - 2026-11-14 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne i zwiad]]
 - 2026-11-14 [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]]
-- 2026-11-14 [[tokenspeed|TokenSpeed (LightSeek Foundation)]]
-- 2026-11-14 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
 
-Razem 758 notatek. Wygenerowano 2026-11-17 przez `tools/wiki.py index`.
+Razem 760 notatek. Wygenerowano 2026-11-17 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

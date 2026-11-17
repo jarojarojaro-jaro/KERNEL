@@ -415,3 +415,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] research | skill-io: wszystkie firmy (Apple, Intel, Tenstorrent)
 [[skill-io-sufity]]: +15 kart (M3 Max, M4 Pro/Max, M5/Pro/Max, Arc A770/B580/Pro B70, Lunar/Panther Lake iGPU, Gaudi 3, Wormhole n150/n300, Blackhole p150), razem 34 w `karty.py`; wniosek: weryfikacja MTP na Apple M1–M4 ograniczona obliczeniami (M4 Pro 63 ms vs 59 ms bajtów) → krótki draft; B70 llama.cpp Q4_K_M 25,0 t/s = 23% sufitu MTP. [[skill-io-dzwignie]]: dźwignie per architektura + „czego brakuje naszemu silnikowi” (upstream `9581154`: GDN/FA są w Metal, SYCL, Vulkan, OpenVINO; Tenstorrent i Gaudi bez backendu ggml). Pułapki, metodyka, skrypty uzupełnione. Vast (K-114) dalej wstrzymany: jaroserverai wyłączony.
+
+## [2026-11-17] zwiad | compwatch 2026-11-17
+[[zwiad-2026-11-17]]: rekord kyuz0 R9700 Qwen3.8-27B 594,7 t/s niefizyczny (≤ 190 t/s z sufitu 640 GB/s przy 8 tok./krok); arXiv 2611.20565 (KV draftu K4V4 −1,36% akceptacji; my q4_0 od dawna), 2611.19455 (lookup: najnowsze dopasowanie = nasz lookup); llama.cpp #31327 GDN mma na CDNA, #32308 MMVQ RDNA3.5; Strata 0.2.15, vLLM v0.34.0 bez wpływu. Lekcja [[lekcja-vastai-destroy-pyta]].
