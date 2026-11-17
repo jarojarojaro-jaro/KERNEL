@@ -7,6 +7,14 @@ status: aktualne
 ---
 # 2026-11-17 K-114: nasz silnik CUDA na 3090, 5060 Ti i 3060 względem sufitu — czas kroku zjadają drafty, a na Vaście limity hosta
 
+**Na Vaście (koszt $0,33) 5060 Ti osiągnęła 61% sufitu dekodu, a wyniki 3090 (23%) i 3060 (42%) to dolne granice z ograniczonych hostów, nie pomiar kart; draft MTP kosztuje 4–15 × swoje bajty.**
+
+Ograniczenia hostów (właściciel 2026-11-17: takich kart nie bierzemy):
+- 3090: limit 250 z 420 W, pamięć pod obciążeniem 5001 z 9751 MHz;
+- 3060: 135 z 170 W, 85 °C.
+
+Nie trafiają do tabel jako wynik karty. Powtórka na hostach z pełną mocą: K-118. Reguła: [[lekcja-vast-tylko-pelna-moc]].
+
 **Zmierzone (Vast, $0,33):**
 - 5060 Ti: 51–54 t/s, czyli 51–61% sufitu.
 - 3060: 28–31 t/s, czyli 34–43% sufitu.
@@ -31,8 +39,8 @@ status: aktualne
 | karta (host) | limit mocy / pamięć pod obciążeniem | plain t/s (% sufitu) | MTP n2 T=0 / T=1 t/s (% sufitu) | MTP n4 T=0 / T=1 t/s (% sufitu) | prefill ~3,2k / ~11k t/s (% sufitu) |
 |---|---|---|---|---|---|
 | RTX 5060 Ti (VN) | 180 W (141 W zużyte), 13 801 MHz = pełna | 31,9 (74%) | **54,2 / 51,0** (60% / 61%) | 53,9 / 49,4 (52% / 51%) | 788 / 828 (43% / 47%) |
-| RTX 3060 (VN) | **135 W z 170, przyklejone**, 85 °C, SM 1537 MHz | 18,4 (53%) | **30,8 / 28,6** (43% / 42%) | 30,9 / 28,0 (38% / 35%) | 461 / 442 (47% / 46%) |
-| RTX 3090 (TW) | **250 W z 420; pamięć 5001 z 9751 MHz** | 30,6 (34%) | – (pominięte, opis niżej) | 47,1 / 44,4 (22% / 23%) | 319 / 696 (12% / 26%) |
+| RTX 3060 (VN) — **dolna granica** | **135 W z 170, przyklejone**, 85 °C, SM 1537 MHz | 18,4 (53%) | **30,8 / 28,6** (43% / 42%) | 30,9 / 28,0 (38% / 35%) | 461 / 442 (47% / 46%) |
+| RTX 3090 (TW) — **dolna granica** | **250 W z 420; pamięć 5001 z 9751 MHz** | 30,6 (34%) | – (pominięte, opis niżej) | 47,1 / 44,4 (22% / 23%) | 319 / 696 (12% / 26%) |
 
 **Czas kroku** (n4, T=0):
 - 5060 Ti: 51,1 ms = cel 31,3 + 4 drafty × 4,8–5,2 ms;
@@ -66,3 +74,4 @@ Bajty jednego draftu (warstwa MTP + głowica 64k ≈ 0,4 GB) to 0,9 / 1,1 / 0,4 
 - [[final-recipes-nvidia]]
 - [[2026-11-09-qwen-warp-vs-fork-3090]]
 - [[lekcja-limit-mocy-hosta]]
+- [[lekcja-vast-tylko-pelna-moc]]

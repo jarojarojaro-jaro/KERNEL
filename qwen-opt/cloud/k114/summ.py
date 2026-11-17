@@ -45,4 +45,9 @@ for d in sys.argv[1:]:
     smi = [r for r in csv.reader(open(f"{d}/smi.csv")) if len(r) > 6 and "%" in r[6] and int(r[6].strip(" %")) > 80]
     if smi:
         p = [float(r[1].split()[0]) for r in smi]; c = [int(r[4].split()[0]) for r in smi]
-        print(f"  under load (util>80%, n={len(smi)}): power median {st.median(p):.0f} W / limit {smi[0][2].strip()}, sm clock median {st.median(c)} MHz")
+        m = st.median(int(r[5].split()[0]) for r in smi)
+        g = open(f"{d}/gpu.csv").read().splitlines()[-1].split(",")
+        pl, pdl, mmax = float(g[3].split()[0]), float(g[4].split()[0]), int(g[6].split()[0])
+        lim = [w for w, bad in ((f"power {pl:.0f}/{pdl:.0f} W", pl < 0.95 * pdl), (f"mem under load {m}/{mmax} MHz", m < 0.95 * mmax)) if bad]
+        print(f"  under load (util>80%, n={len(smi)}): power median {st.median(p):.0f} W / limit {smi[0][2].strip()}, sm clock median {st.median(c)} MHz, mem {m} MHz"
+              + (f"\n  ** LIMITED HOST ({'; '.join(lim)}): lower bound, not a card result" if lim else ""))

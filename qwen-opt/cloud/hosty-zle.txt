@@ -1,0 +1,8 @@
+# Hosty Vast pomijane przy wyborze ofert (machine_id; czytane przez cloud/hostguard.sh hg_pick).
+# Reguła właściciela 2026-11-17: limit mocy < 95% fabrycznego, zegar pamięci < 95% specyfikacji albo >= 80 °C bez obciążenia.
+# machine_id	data	karta	powód
+55636	2026-11-17	RTX 3090	limit mocy 250 z 420 W; pamięć pod obciążeniem 5001 z 9751 MHz (K-114: 23% sufitu)
+27243	2026-11-17	RTX 3060	limit mocy 135 z 170 W; 85 °C pod obciążeniem (K-114)
+76499	2026-11-17	RTX 3060	pobieranie z HF ~3 MB/s (nie moc)
+140773	2026-11-17	RTX 3060	SSH odrzuca zarejestrowany klucz (nie moc)
+59321	2026-11-17	RTX 3060	instancja utknęła w "loading" > 10 min (nie moc)

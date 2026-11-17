@@ -349,5 +349,17 @@
    664,
    "BLOCKFP8 664; FP16 ~1/2 [INFERENCE]"
   ]
- ]
+ ],
+ "mem_clock_mhz": {
+  "_opis": "maks. zegar pamięci wg nvidia-smi clocks.max.mem przy specyfikacji producenta (Gbps / 2 dla GDDR6/GDDR6X/GDDR7); hostguard.sh porównuje z tym",
+  "RTX 3060": 7501,
+  "RTX 3090": 9751,
+  "RTX 3090 Ti": 10501,
+  "RTX 4060 Ti": 9001,
+  "RTX 4070": 10501,
+  "RTX 4090": 10501,
+  "RTX 5060 Ti": 14001,
+  "RTX 5080": 15001,
+  "RTX 5090": 14001
+ }
 }

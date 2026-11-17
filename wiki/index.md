@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (58)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (81)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (119)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (120)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (30)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (89)
@@ -85,12 +85,12 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-17 [[skill-io-metodyka|Metodyka pomiaru wg skill-io (methodology.md + zasady SKILL.md) a nasza praktyka]]
 - 2026-11-17 [[skill-io-dzwignie|Dźwignie wg skill-io (levers.md): każda z naszym statusem i spodziewanym zyskiem na XTX]]
 - 2026-11-17 [[lekcja-vastai-destroy-pyta|Lekcja: `vastai destroy instance` w CLI 1.11 pyta o potwierdzenie, więc watchdog bez `-y` nic nie usuwa]]
+- 2026-11-17 [[lekcja-vast-tylko-pelna-moc|Lekcja: na Vaście bierzemy tylko karty z pełną mocą — sprawdzenie przed pobraniem modelu, zły host na czarną listę]]
 - 2026-11-17 [[2026-11-17-k114-nvidia-sufit|2026-11-17 K-114: nasz silnik CUDA na 3090, 5060 Ti i 3060 względem sufitu — czas kroku zjadają drafty, a na Vaście limity hosta]]
 - 2026-11-16 [[zwiad-2026-11-14|Zwiad 2026-11-14 (przebieg bazowy compwatch): hipfire dogonił nas na XTX, ale stratnie]]
 - 2026-11-15 [[mapa-inferencji-roadmap|Mapa inżynierii inferencji LLM: 114 tematów roadmapy a nasza wiedza]]
 - 2026-11-14 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
 - 2026-11-14 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
-- 2026-11-14 [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne i zwiad]]
 
-Razem 761 notatek. Wygenerowano 2026-11-17 przez `tools/wiki.py index`.
+Razem 762 notatek. Wygenerowano 2026-11-17 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

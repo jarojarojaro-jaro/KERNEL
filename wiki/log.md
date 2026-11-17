@@ -421,3 +421,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] eksperyment | K-114 NVIDIA na Vast (3090, 5060 Ti, 3060), $0,33
 [[2026-11-17-k114-nvidia-sufit]]: 5060 Ti n2 T=1 51,0 t/s (61% sufitu), 3060 28,6 (42%), 3090 44,4 (23%, host 250 W i pamięć 5001 MHz); draft MTP kosztuje 4–15 × swoje bajty (37–40% kroku) → K-116; T=1 nie wydłuża kroku; start 12 min na słabym CPU → K-117. Instancje usunięte, kredyt $0,16.
+
+## [2026-11-17] lekcja | Vast: tylko karty z pełną mocą (właściciel)
+[[lekcja-vast-tylko-pelna-moc]]: bramka `qwen-opt/cloud/hostguard.sh` (moc ≥ 95%, zegar pamięci ≥ 95% specyfikacji z karty.json, < 80 °C bez obciążenia) w `k114/launch.sh`, czarna lista `hosty-zle.txt` (5 hostów), flaga LIMITED HOST w `summ.py`; K-114 3090/3060 oznaczone jako dolne granice; K-118 powtórka po doładowaniu.

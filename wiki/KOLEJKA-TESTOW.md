@@ -70,6 +70,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni
 
+### K-118 · Powtórka K-114 dla 3090 i 3060 na hostach z pełną mocą (dzisiejsze wyniki to dolne granice)
+- data: 2026-11-17
+- źródło: [[2026-11-17-k114-nvidia-sufit]] (3090: 250 z 420 W, pamięć 5001 z 9751 MHz → 23% sufitu; 3060: 135 z 170 W, 85 °C → 42%); [[lekcja-vast-tylko-pelna-moc]]
+- hipoteza: na pełnej mocy 3090 osiąga ≥ 50% sufitu dekodu (jak 5060 Ti 61%), plain ≥ 70% pasma; 3060 ~50%; rozkład kroku (draft 4–15 × bajty) bez zmian
+- test: `qwen-opt/cloud/k114/launch.sh "RTX 3090" qwenbench-k118-3090` i to samo dla „RTX 3060” (hostguard przed pobraniem, hosty z `hosty-zle.txt` pomijane), ten sam model GSQ IQ3_XXS-mtp i runner; `summ.py` bez flagi LIMITED HOST; host z mocnym CPU (start: requant 12 min na słabym)
+- miara: t/s n2/n4 T=0/T=1, plain, prefill ~3k/~11k i % sufitu vs dolne granice 44,4 / 28,6 t/s
+- koszt: ~$0,15–0,25 za obie karty [INFERENCE: 3090 ~$0,22/h, 3060 ~$0,07/h, ~40 min]; **nie wynajmować przy kredycie $0,16** — czeka na doładowanie i zgodę właściciela
+- ryzyko karty: brak (wynajem)
+- priorytet: średni
+
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)

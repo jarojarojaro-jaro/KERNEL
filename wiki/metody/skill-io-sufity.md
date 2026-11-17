@@ -94,8 +94,8 @@ Pomiary NVIDIA mają MTP n3 i inny harness, więc to przybliżenie (K-113 zrobi 
 
 **Pomiar 1:1 z 2026-11-17 (K-114, ten sam model GSQ IQ3_XXS-mtp i ten sam silnik na trzech kartach, [[2026-11-17-k114-nvidia-sufit]]):**
 - 5060 Ti: 51,0 t/s (61% sufitu), prefill 43–47%;
-- 3060 (host 135 W): 28,6 (42%), prefill 46–47%;
-- 3090 (host 250 W, pamięć 5001 MHz): 44,4 (23%), prefill 12–26%.
+- 3060 (host 135 W, **dolna granica, nie pomiar karty**): 28,6 (42%), prefill 46–47%;
+- 3090 (host 250 W, pamięć 5001 MHz, **dolna granica, nie pomiar karty**): 44,4 (23%), prefill 12–26%. Powtórka na pełnej mocy: K-118.
 
 Przyczyny luki:
 - 4–15 × droższy draft niż jego bajty (K-116);
