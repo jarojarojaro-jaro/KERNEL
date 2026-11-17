@@ -1,24 +1,200 @@
-{"_zrodla": {
+{
+ "_zrodla": {
   "amd_radeon": "amd.com/en/products/graphics/desktops/radeon/{6000,7000,9000}-series/<karta>.html (odczyt 2026-11-17)",
   "amd_instinct": "amd.com/en/products/accelerators/instinct/{mi200/mi250,mi300/mi300x,mi300/mi325x,mi350/mi355x}.html",
   "nvidia_geforce": "images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf (tabela 3090/4090/5090, gęste); 5060 Ti: nvidia.com 50-series/rtx-5060-family 759 AI TOPS (FP4 rzadkie) -> pochodne",
-  "nvidia_dc": "nvidia.com/en-us/data-center/{a100,h100,h200,hgx} (wartości rzadkie /2 = gęste)"},
+  "nvidia_dc": "nvidia.com/en-us/data-center/{a100,h100,h200,hgx} (wartości rzadkie /2 = gęste)"
+ },
  "karty": [
-  ["AMD","RX 6800","RDNA2 gfx1030",16,512,32.33,64.7,"FP16 wektor; INT8 dot4 = 2x FP16 [wyprowadzone]"],
-  ["AMD","RX 6900 XT","RDNA2 gfx1030",16,512,46.08,92.2,"j.w."],
-  ["AMD","RX 7900 GRE","RDNA3 gfx1100",16,576,92,92,"WMMA FP16 = INT8"],
-  ["AMD","RX 7900 XT","RDNA3 gfx1100",20,800,103,103,"WMMA"],
-  ["AMD","RX 7900 XTX","RDNA3 gfx1100",24,960,123,123,"WMMA; zmierzone 926 GB/s"],
-  ["AMD","RX 9070 XT","RDNA4 gfx1201",16,640,195,389,"WMMA, FP8 389"],
-  ["AMD","MI250","CDNA2 gfx90a",128,3277,362.1,362.1,"MFMA, 2 GCD (pasmo na całość)"],
-  ["AMD","MI300X","CDNA3 gfx942",192,5300,1307.4,2614.9,"MFMA, FP8 2615"],
-  ["AMD","MI325X","CDNA3 gfx942",256,6000,1307.4,2614.9,"MFMA"],
-  ["AMD","MI355X","CDNA4 gfx950",288,8000,2500,5000,"MFMA, FP8 5000, MXFP4 10100"],
-  ["NVIDIA","RTX 3090","Ampere sm_86",24,936,71.2,284.7,"FP16 akum. FP32 (akum. FP16: 142,3)"],
-  ["NVIDIA","RTX 4090","Ada sm_89",24,1008,165.2,660.6,"akum. FP16: 330,3; FP8 660,6"],
-  ["NVIDIA","RTX 5060 Ti 16GB","Blackwell sm_120",16,448,47.4,189.8,"z 759 AI TOPS FP4 rzadkie [wyprowadzone]"],
-  ["NVIDIA","RTX 5090","Blackwell sm_120",32,1792,209.5,838,"akum. FP16: 419; FP4 1676"],
-  ["NVIDIA","A100 80GB SXM","Ampere sm_80",80,2039,312,624,"bez FP8"],
-  ["NVIDIA","H100 SXM","Hopper sm_90",80,3350,989.5,1979,"FP8 1979"],
-  ["NVIDIA","H200 SXM","Hopper sm_90",141,4800,989.5,1979,"FP8 1979"],
-  ["NVIDIA","B200","Blackwell sm_100",180,8000,2250,4500,"FP8 4500, FP4 9000"]]}
+  [
+   "AMD",
+   "RX 6800",
+   "RDNA2 gfx1030",
+   16,
+   512,
+   32.33,
+   64.7,
+   "FP16 wektor; INT8 dot4 = 2x FP16 [wyprowadzone]"
+  ],
+  [
+   "AMD",
+   "RX 6900 XT",
+   "RDNA2 gfx1030",
+   16,
+   512,
+   46.08,
+   92.2,
+   "j.w."
+  ],
+  [
+   "AMD",
+   "RX 7900 GRE",
+   "RDNA3 gfx1100",
+   16,
+   576,
+   92,
+   92,
+   "WMMA FP16 = INT8"
+  ],
+  [
+   "AMD",
+   "RX 7900 XT",
+   "RDNA3 gfx1100",
+   20,
+   800,
+   103,
+   103,
+   "WMMA"
+  ],
+  [
+   "AMD",
+   "RX 7900 XTX",
+   "RDNA3 gfx1100",
+   24,
+   960,
+   123,
+   123,
+   "WMMA; zmierzone 926 GB/s"
+  ],
+  [
+   "AMD",
+   "RX 9070 XT",
+   "RDNA4 gfx1201",
+   16,
+   640,
+   195,
+   389,
+   "WMMA, FP8 389"
+  ],
+  [
+   "AMD",
+   "MI250",
+   "CDNA2 gfx90a",
+   128,
+   3277,
+   362.1,
+   362.1,
+   "MFMA, 2 GCD (pasmo na całość)"
+  ],
+  [
+   "AMD",
+   "MI300X",
+   "CDNA3 gfx942",
+   192,
+   5300,
+   1307.4,
+   2614.9,
+   "MFMA, FP8 2615"
+  ],
+  [
+   "AMD",
+   "MI325X",
+   "CDNA3 gfx942",
+   256,
+   6000,
+   1307.4,
+   2614.9,
+   "MFMA"
+  ],
+  [
+   "AMD",
+   "MI355X",
+   "CDNA4 gfx950",
+   288,
+   8000,
+   2500,
+   5000,
+   "MFMA, FP8 5000, MXFP4 10100"
+  ],
+  [
+   "NVIDIA",
+   "RTX 3060 12GB",
+   "Ampere sm_86",
+   12,
+   360,
+   25.5,
+   101.9,
+   "wyprowadzone: 28 SM x 1,777 GHz; FP16 akum. FP32 = 512 FLOP/clk/SM (jak 3090: 82 SM x 1,695 = 71,2), INT8 = 4x; NVIDIA: 101 Tensor TFLOPS (rzadkie FP16) / 360 GB/s"
+  ],
+  [
+   "NVIDIA",
+   "RTX 3090",
+   "Ampere sm_86",
+   24,
+   936,
+   71.2,
+   284.7,
+   "FP16 akum. FP32 (akum. FP16: 142,3)"
+  ],
+  [
+   "NVIDIA",
+   "RTX 4090",
+   "Ada sm_89",
+   24,
+   1008,
+   165.2,
+   660.6,
+   "akum. FP16: 330,3; FP8 660,6"
+  ],
+  [
+   "NVIDIA",
+   "RTX 5060 Ti 16GB",
+   "Blackwell sm_120",
+   16,
+   448,
+   47.4,
+   189.8,
+   "z 759 AI TOPS FP4 rzadkie [wyprowadzone]"
+  ],
+  [
+   "NVIDIA",
+   "RTX 5090",
+   "Blackwell sm_120",
+   32,
+   1792,
+   209.5,
+   838,
+   "akum. FP16: 419; FP4 1676"
+  ],
+  [
+   "NVIDIA",
+   "A100 80GB SXM",
+   "Ampere sm_80",
+   80,
+   2039,
+   312,
+   624,
+   "bez FP8"
+  ],
+  [
+   "NVIDIA",
+   "H100 SXM",
+   "Hopper sm_90",
+   80,
+   3350,
+   989.5,
+   1979,
+   "FP8 1979"
+  ],
+  [
+   "NVIDIA",
+   "H200 SXM",
+   "Hopper sm_90",
+   141,
+   4800,
+   989.5,
+   1979,
+   "FP8 1979"
+  ],
+  [
+   "NVIDIA",
+   "B200",
+   "Blackwell sm_100",
+   180,
+   8000,
+   2250,
+   4500,
+   "FP8 4500, FP4 9000"
+  ]
+ ]
+}

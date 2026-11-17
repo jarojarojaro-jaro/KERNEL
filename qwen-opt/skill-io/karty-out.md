@@ -10,6 +10,7 @@
 | AMD | MI300X | CDNA3 gfx942 | 192 | 5300 | 1307.4 / 2614.9 | 328 | 955 | 842 | 12570 / 25141 | 22682 | 12726 | tak |
 | AMD | MI325X | CDNA3 gfx942 | 256 | 6000 | 1307.4 / 2614.9 | 371 | 1081 | 953 | 12570 / 25141 | 22682 | 12726 | tak |
 | AMD | MI355X | CDNA4 gfx950 | 288 | 8000 | 2500 / 5000 | 495 | 1441 | 1271 | 24036 / 48072 | 43371 | 24333 | tak |
+| NVIDIA | RTX 3060 12GB | Ampere sm_86 | 12 | 360 | 25.5 / 101.9 | 22 | 65 | 57 | 245 / 980 | 884 | 496 | nie (wagi > VRAM) |
 | NVIDIA | RTX 3090 | Ampere sm_86 | 24 | 936 | 71.2 / 284.7 | 58 | 169 | 149 | 685 / 2737 | 2470 | 1386 | tak |
 | NVIDIA | RTX 4090 | Ada sm_89 | 24 | 1008 | 165.2 / 660.6 | 62 | 182 | 160 | 1588 / 6351 | 5730 | 3215 | tak |
 | NVIDIA | RTX 5060 Ti 16GB | Blackwell sm_120 | 16 | 448 | 47.4 / 189.8 | 28 | 81 | 71 | 456 / 1825 | 1646 | 924 | nie (wagi > VRAM) |
@@ -24,3 +25,4 @@ RTX 3090     sufit a=3,2    160  zmierzone   80.0    50%  (UD-Q4_K_XL, fork kvql
 RTX 4090     sufit a=3,2    172  zmierzone  101.3    59%  (UD-Q4_K_XL, fork kvqlean)
 RTX 5090     sufit a=3,2    251  zmierzone  148.6    59%  (UD-Q6_K, fork kvqlean)
 RTX 5060 Ti  sufit a=3,2    120  zmierzone   49.4    41%  (IQ3_XXS GSQ, fork kvqlean 196k)
+RTX 3060 [Bonsai] sufit a=3,2    151  zmierzone   58.3    39%  (Bonsai 2 27B PTQ1_0, prism MTP n2; a=3,2 i drafty Qwena = przybliżenie)

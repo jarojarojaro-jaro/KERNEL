@@ -60,11 +60,26 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: temperatury (krótki GEMM), eco 2200 bez zmian
 - priorytet: średni (tani, porządkuje kolejkę)
 
-### K-114 · NVIDIA: rozłożyć krok MTP na 5060 Ti (lokalnie) i 3090 (wynajem) względem sufitu — fork jest na 41–59% sufitu dekodu, XTX na 69–71%
+### K-114 · NVIDIA: rozłożyć krok MTP na 3090, 5060 Ti i 3060 względem sufitu — fork jest na 41–59% sufitu dekodu, XTX na 69–71% (+ K-112 prefill w tym samym runie)
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (tabela „zmierzone a sufit”: 3090 80,0 z 160, 4090 101,3 z 172, 5090 148,6 z 251, 5060 Ti 49,4 z 120); metoda jak K-111
 - hipoteza: luka do sufitu na NVIDIA to głównie (a) próbkowanie CPU przy T=1 (K-004, 7–13%), (b) kroki draftu MTP n2/n3 z małymi kernelami, (c) limit mocy hosta; MMVQ CUDA blisko pasma
-- test: 5060 Ti w jaroserverai (fork `kvqlean`, IQ3_XXS GSQ): `nsys` 30 s dekodu przy 2k, grafy CUDA wyłączone do rozbicia + czas replay; `nvidia-smi -q -d POWER,CLOCK` zapisane; ≤ 10 min. Potem to samo na 3090 z Vast (osobna zgoda na wydatek, ~$0,10)
+- **wstępna odpowiedź z danych, które już mamy** (2026-11-17, bez nowego pomiaru), z R69b na wynajętej 3090 przy limicie mocy 350 W, czyli fabrycznym (`qwen-opt/cloud/nv69q/gpu.csv`, `summary.txt`):
+  - (c) limit mocy odpada dla 3090;
+  - (a) próbkowanie przy T=1 to 82,9 → 76,9 t/s, czyli −7%;
+  - **qwen-warp na tej samej karcie robi 121–124 t/s przy 82,9/76,9 forka (× 1,46–1,61), choć czyta więcej bajtów** (INT4 18,6 GB + MTP 0,85 vs Q4_K_XL 16,8). Większość luki to więc silnik: kernele weryfikacji i draftu oraz host między krokami, czyli (b). Sprzęt ani pasmo nie są przyczyną.
+  - Wniosek: nowy run ma rozbić (b) na składniki.
+- **zgoda właściciela 2026-11-17 02:31:** wynajem 3090, 5060 Ti i 3060 na Vast, łącznie ≤ $1. Wstrzymane, bo jaroserverai jest wyłączony, a na serwerze Jarva nie ma klucza Vast ani CLI.
+- runner gotowy: `qwen-opt/cloud/k114/run.sh` + `k114/bench.py` (kopia `nv69q/bench.py`). Ten sam model na trzech kartach (GSQ IQ3_XXS-mtp 10,44 GB, mieści się w 12 GB przy ctx 16k), fork `kvqlean`/`kvqleana`. Mierzy:
+  - limit mocy i zegary;
+  - tg128 (czas przebiegu celu → GB/s vs sufit);
+  - pp5 ub5 (koszt weryfikacji);
+  - pp4096/pp16384 (prefill, K-112);
+  - serwer MTP n4/n2/n4 przy T=0/T=1.
+
+  Krok = weryfikacja + drafty + host.
+- uruchomienie (z jaroserverai): `up.sh <oferta> --hours 1.5 --disk 40 --label qwenbench-k114-<karta> --download-gb 11 --go`, scp `k114/*` do `/root/k114/`, `setsid nohup bash /root/k114/run.sh &`, znacznik `/root/res/DONE`, `down.sh <id> --go`. Szacunek: ~45 min, ~$0,35–0,50 za trzy karty [INFERENCE: ceny ofert z listopada]
+- test: jak w runnerze wyżej, po jednej instancji na kartę; ≤ 10 min pomiaru na ramię
 - miara przed/po: tabela grupa kerneli → ms / GB/s / % sufitu bajtowego; ms na host między krokami
 - zysk: diagnostyka; wskazuje dźwignię dla wszystkich użytkowników Enigmy z NVIDIA (spodziewane +10…25%, bo luka do poziomu XTX to 10–28 pp sufitu)
 - ryzyko karty: brak (5060 Ti 160 W)

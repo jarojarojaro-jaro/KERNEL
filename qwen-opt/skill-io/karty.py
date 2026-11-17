@@ -21,7 +21,8 @@ for n, bw, verify_gb, meas, opis in [
     ("RTX 3090", 936, 16.84 + 0.30, 79.97, "UD-Q4_K_XL, fork kvqleana, final-recipes"),
     ("RTX 4090", 1008, 16.84 + 0.30, 101.27, "UD-Q4_K_XL, fork kvqlean"),
     ("RTX 5090", 1792, 20.94 + 0.30, 148.57, "UD-Q6_K, fork kvqlean"),
-    ("RTX 5060 Ti", 448, 10.04 + 0.30, 49.44, "IQ3_XXS GSQ, fork kvqlean 196k")]:
+    ("RTX 5060 Ti", 448, 10.04 + 0.30, 49.44, "IQ3_XXS GSQ, fork kvqlean 196k"),
+    ("RTX 3060 [Bonsai]", 360, 6.02, 58.31, "Bonsai 2 27B PTQ1_0, prism MTP n2; a=3,2 i drafty Qwena = przybliżenie")]:
     m = dict(base, bandwidth_gbs=bw, dense_gb=verify_gb - base["lm_head_gb"])
     c = decode_ceiling(m, 4, 3.2, 2048)
     print(f"{n:12s} sufit a=3,2 {c:6.0f}  zmierzone {meas:6.1f}  {100*meas/c:4.0f}%  ({opis})")

@@ -47,6 +47,7 @@ status: aktualne
 
 **Wartości wyprowadzone:**
 - 5060 Ti: z 759 AI TOPS FP4 rzadkich ÷ 16;
+- RTX 3060 12 GB (dopisana 2026-11-17): 28 SM × 1,777 GHz × 512 FLOP/clk/SM = 25,5 TFLOPS FP16 z akumulacją FP32, INT8 101,9. Ta sama reguła na 3090 daje 71,2 jak whitepaper. Zgadza się też ze stroną NVIDIA (101 Tensor TFLOPS rzadkie); pasmo 360 GB/s.
 - INT8 na RDNA2: dot4 = 2 × FP16.
 
 **Skrypt i dane:** `qwen-opt/skill-io/karty.py` + `karty.json` (źródła w polu `_zrodla`), wynik w `karty-out.md`.
@@ -68,6 +69,7 @@ status: aktualne
 | AMD | MI300X | CDNA3 gfx942 | 192 | 5300 | 1307 / 2615 | 328 | 955 | 842 | 12 570 / 25 141 | 22 682 | 12 726 | tak |
 | AMD | MI325X | CDNA3 gfx942 | 256 | 6000 | 1307 / 2615 | 371 | 1081 | 953 | 12 570 / 25 141 | 22 682 | 12 726 | tak |
 | AMD | MI355X | CDNA4 gfx950 | 288 | 8000 | 2500 / 5000 | 495 | 1441 | 1271 | 24 036 / 48 072 | 43 371 | 24 333 | tak |
+| NVIDIA | **RTX 3060 12 GB** | Ampere sm_86 | 12 | 360 | 25,5 / 101,9 | 22 | **65** | 57 | 245 / 980 | 884 | 496 | nie |
 | NVIDIA | **RTX 3090** | Ampere sm_86 | 24 | 936 | 71,2 / 284,7 | 58 | **169** | 149 | 685 / 2737 | 2470 | 1386 | tak |
 | NVIDIA | RTX 4090 | Ada sm_89 | 24 | 1008 | 165,2 / 660,6 | 62 | 182 | 160 | 1588 / 6351 | 5730 | 3215 | tak |
 | NVIDIA | **RTX 5060 Ti 16 GB** | Blackwell sm_120 | 16 | 448 | 47,4 / 189,8 | 28 | **81** | 71 | 456 / 1825 | 1646 | 924 | nie |
@@ -86,6 +88,7 @@ status: aktualne
 | RTX 5090 | UD-Q6_K, fork kvqlean | 251 | 148,6 | 59% |
 | RTX 3090 (340 W) | UD-Q4_K_XL, fork kvqleana | 160 | 80,0 | 50% |
 | RTX 5060 Ti (160 W) | IQ3_XXS GSQ, fork kvqlean, 196k | 120 | 49,4 | 41% |
+| RTX 3060 (140 W) | Bonsai 2 27B PTQ1_0, prism MTP n2 (6,02 GB/krok) | 107–129 (a = 2,0–2,4; draft ~0,35 GB/krok) [INFERENCE] | 58,3 | 45–54% |
 
 Pomiary NVIDIA mają MTP n3 i inny harness, więc to przybliżenie (K-113 zrobi to 1:1). XTX pp4096 1123 t/s (UD-Q4_K_XL, [[REKORDY]]) to 95% sufitu prefillu.
 

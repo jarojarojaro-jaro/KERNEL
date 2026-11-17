@@ -409,3 +409,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] research | skill-io pod kątem AMD i NVIDIA (zakres: wszystkie karty obu firm)
 [[skill-io-sufity]]: sufity `ceiling.py` dla 18 kart (RX 6800/6900 XT, 7900 GRE/XT/XTX, 9070 XT, MI250/300X/325X/355X, RTX 3090/4090/5060 Ti/5090, A100/H100/H200/B200) ze specyfikacji producentów (`qwen-opt/skill-io/karty.py`); zmierzone vs sufit: XTX 69–71%, 4090/5090 59%, 3090 50%, 5060 Ti 41%. Sekcje per firma w [[skill-io-dzwignie]], [[skill-io-pulapki]], [[skill-io-metodyka]], [[skill-io-publikacja]], [[skill-io-skrypty]], [[skill-io-przeglad]]. Kolejka: K-112 (pasmo/GEMM/prefill NVIDIA), K-113 (bench.py 1:1 trzy karty), K-114 (rozkład kroku NVIDIA), K-115 (igły NVIDIA).
+
+## [2026-11-17] telegram | zgoda na Vast (3090, 5060 Ti, 3060 ≤ $1) — wstrzymane: brak klucza Vast tutaj, jaroserverai wyłączony
+[[skill-io-sufity]]: dopisana RTX 3060 12 GB (360 GB/s, 25,5/101,9 TFLOPS; sufit MTP Qwen 65 t/s; Bonsai 58,3 t/s = 45–54% sufitu [INFERENCE]). K-114: wstępna odpowiedź z R69b (3090 przy 350 W: limit mocy odpada, T=1 −7%, qwen-warp ×1,46–1,61 na tej samej karcie → luka w silniku), runner `qwen-opt/cloud/k114/run.sh` gotowy (K-112 + K-114 jednym runem).
