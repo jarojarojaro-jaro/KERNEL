@@ -37,6 +37,7 @@ status: aktualne
 **Wnioski:**
 - **Krok MTP:** sufit 19,2 ms przy 2k, mierzymy 26,9 ms. Te 7,7 ms to nasz realny zapas w dekodzie, a nie akceptacja draftu. Zgodne z [[lekcja-bledny-roofline]] i [[sufit-pasma-i-mapa-czasu]]. Rozkład luki na składniki: K-111.
 - **Prefill** jest blisko sufitu przy 50% MFU. Dalsze zyski tylko przez wyższe MFU kernela (FA wariant 83 robi 50,5 TFLOPS przy 131k).
+- Modele z pętlą warstw (SenseNova-Loop-9B, Ouro): bajty bloku × liczba przejść, KV i stan per wykonanie; plik 5,3 GB czyta ~7,7 GB/token ([[sensenova-loop-9b]]).
 - `ceiling.py` nie liczy stanu GDN (dodałem do „dense”) ani drugiego przejścia KV przy N=5 (flaga `kv_per_verify_row`).
 
 ## Sufity dla kart AMD i NVIDIA (ten sam model i kwant, 2026-11-17)

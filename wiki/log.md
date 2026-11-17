@@ -427,3 +427,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] poprawka | próg pełnej mocy na Vaście 85% (było 95%)
 [[lekcja-vast-tylko-pelna-moc]]: `hostguard.sh` i `summ.py` na 0.85; dzisiejsze 3090 (60% mocy, pamięć 51%) i 3060 (79% mocy) dalej poniżej progu = dolne granice.
+
+## [2026-11-17] telegram | SenseNova-Loop-9B (SenseTime)
+[[sensenova-loop-9b]]: pętla warstw 32→56 wykonań, ~7,7 GB/token przy Q4_K_M (plik 5,3 GB) → sufit ~2,1 × Qwen3.8-27B; jakość tylko wg producenta (NL2Repo 41,36 vs 44,60); llama.cpp #31571 otwarte; lekcja: ceiling.py dla pętli liczy wykonania; LoopSkim = darmowy drafter; K-119.
