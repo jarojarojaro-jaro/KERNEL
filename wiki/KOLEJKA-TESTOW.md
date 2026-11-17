@@ -60,6 +60,46 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: temperatury (krótki GEMM), eco 2200 bez zmian
 - priorytet: średni (tani, porządkuje kolejkę)
 
+### K-114 · NVIDIA: rozłożyć krok MTP na 5060 Ti (lokalnie) i 3090 (wynajem) względem sufitu — fork jest na 41–59% sufitu dekodu, XTX na 69–71%
+- data: 2026-11-17
+- źródło: [[skill-io-sufity]] (tabela „zmierzone a sufit”: 3090 80,0 z 160, 4090 101,3 z 172, 5090 148,6 z 251, 5060 Ti 49,4 z 120); metoda jak K-111
+- hipoteza: luka do sufitu na NVIDIA to głównie (a) próbkowanie CPU przy T=1 (K-004, 7–13%), (b) kroki draftu MTP n2/n3 z małymi kernelami, (c) limit mocy hosta; MMVQ CUDA blisko pasma
+- test: 5060 Ti w jaroserverai (fork `kvqlean`, IQ3_XXS GSQ): `nsys` 30 s dekodu przy 2k, grafy CUDA wyłączone do rozbicia + czas replay; `nvidia-smi -q -d POWER,CLOCK` zapisane; ≤ 10 min. Potem to samo na 3090 z Vast (osobna zgoda na wydatek, ~$0,10)
+- miara przed/po: tabela grupa kerneli → ms / GB/s / % sufitu bajtowego; ms na host między krokami
+- zysk: diagnostyka; wskazuje dźwignię dla wszystkich użytkowników Enigmy z NVIDIA (spodziewane +10…25%, bo luka do poziomu XTX to 10–28 pp sufitu)
+- ryzyko karty: brak (5060 Ti 160 W)
+- priorytet: wysoki
+
+### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
+- data: 2026-11-17
+- źródło: [[skill-io-sufity]] (sufit prefillu 3090 z INT8 MMQ 2737 t/s przy 4k = 2,3 × XTX; prefillu NVIDIA nigdy nie mierzyliśmy); [[skill-io-metodyka]] (narzędzia CUDA)
+- hipoteza: zmierzone pasmo ≥ 90% specyfikacji (3090 ≥ 840, 5060 Ti ≥ 400 GB/s); prefill forka na NVIDIA < 50% sufitu INT8 → dźwignia TTFT dla Enigmy
+- test: `nvbandwidth` / `cudaMemcpy` D2D 4 GB; `cublasLt` f16 i i8 4096³ i 8192³ (min z N); `llama-bench -p 4096,32768 -n 0` fork vs upstream b11856 (ABBA, ten sam host); ≤ 10 min na kartę
+- miara: GB/s, TFLOPS/TOPS, pp t/s i % sufitu; przeliczenie `karty.py` ze zmierzonymi wartościami
+- zysk: sufity NVIDIA z pomiaru zamiast specyfikacji; decyzja, czy prefill NVIDIA jest dźwignią
+- ryzyko karty: brak
+- priorytet: średni
+
+### K-113 · `bench.py` skill-io 1:1 na XTX, 5060 Ti i 3090 (ta sama konfiguracja) — pierwsza tabela między firmami z jednego harnessu
+- data: 2026-11-17
+- źródło: [[skill-io-skrypty]]; ich 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`); K-110 (część XTX)
+- hipoteza: na 3090 nasz fork (UD-Q4_K_XL) da ~80 t/s prozy przy ich panelu; porównanie z ich 96,2 (3 bpw = mniej bajtów, inny silnik) pokaże, ile z różnicy to bajty, a ile silnik
+- test: `bench.py run` z `config-existing-server.json` (T 0,6, c1 6 × 512, prefill 4k/16k, `--long` 65 536 z igłami), te same 3 serwery: topka (XTX), fork kvqlean (5060 Ti lokalnie, 3090 Vast); ≤ 10 min na kartę
+- miara: c1 mediana, prefill, TTFT, retrieval k/3 + % sufitu karty
+- zysk: porównywalne liczby dla Enigmy i publikacji; 0 t/s
+- ryzyko karty: brak
+- priorytet: średni
+
+### K-115 · Bramka igieł (K-109) na NVIDIA: 5060 Ti (IQ3_XXS, 196k) i 3090 (UD-Q4_K_XL, 245k) z przepisami Enigmy
+- data: 2026-11-17
+- źródło: [[skill-io-publikacja]] (bramka 5: igła ~85% okna); [[final-recipes-nvidia]] (konteksty przepisów)
+- hipoteza: 3/3 kody przy 50% i 85% okna; jeśli nie, przepis Enigmy obiecuje kontekst, którego model nie czyta (KV q4_0 + mały kwant)
+- test: `bench.py run --long <0,5·ctx>` i osobny job `--long <0,85·ctx>` na każdej karcie; fill 167k (85% z 196k) na 5060 Ti: 3 min przy suficie prefillu 924 t/s, ~10 min przy 30% sufitu [INFERENCE: prefillu 5060 Ti nie mierzyliśmy, K-112 najpierw]; jeśli > 10 min, bramka 85% jako jedyny job tej sesji
+- miara: retrieval k/3, TTFT, szczyt VRAM vs przepis
+- zysk: poprawność przepisów Enigmy NVIDIA; 0 t/s
+- ryzyko karty: brak
+- priorytet: średni
+
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
 - źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)

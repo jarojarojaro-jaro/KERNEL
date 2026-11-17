@@ -47,9 +47,38 @@ status: aktualne
 
 U nas to samo wychodzi z sufitów: luka 26,9 vs 19,2 ms/krok leży w kernelach i drafcie, nie w akceptacji (K-111).
 
+## Dźwignie na AMD i NVIDIA (zakres: obie firmy, 2026-11-17)
+
+**Jednostki macierzowe** (strony producentów, sufity w [[skill-io-sufity]]):
+- **RDNA3:** WMMA, wave32, FP16 = INT8.
+- **RDNA4:** WMMA z FP8, INT8 = 2 × FP16.
+- **CDNA2/3/4:** MFMA, wave64; FP8 od CDNA3, MXFP4/6 na CDNA4.
+- **NVIDIA:** `mma.sync` (Ampere/Ada/Blackwell GeForce), `wgmma` (Hopper), `tcgen05` (B200). FP8 od Ady, FP4 na Blackwellu. GeForce liczy FP16 z akumulacją FP32 o połowę wolniej.
+
+**Cache i biblioteki:**
+- Cache ostatniego poziomu: Infinity Cache (RDNA2 128 MB, XTX 96 MB, 9070 XT 64 MB, MI355X 256 MB) kontra L2 (3090 6 MB, 4090 72 MB, 5090 96 MB).
+- Biblioteki: rocBLAS/hipBLASLt + CK/aiter kontra cuBLAS/cuBLASLt + FlashAttention 2/3/4.
+
+| dźwignia | AMD | NVIDIA | różnica | zysk (zmierzony / spodziewany) |
+|---|---|---|---|---|
+| grafy dekodu | grafy HIP; taśma PM4 tylko nasza i tylko gfx1100 | grafy CUDA domyślnie w llama.cpp, dojrzałe | PM4 nie przenosi się na RDNA4/CDNA bez testu; na NVIDIA odpowiednikiem są grafy CUDA | XTX PM4 +6,4% (1,7k); NVIDIA już w bazie |
+| MTP + przycięta głowica draftu 64k | tak (topka) | tak (fork kvqlean) | niezależna od architektury | XTX wykorzystane; NVIDIA upstream MTP n2 v1.0.0 +3,8% (K-103) |
+| długość draftu per kontekst | n4 stałe | n3 (upstream) / n2 (lean) | zależna od pasma: słabsza karta → krótszy draft (`levers.md:34`) | sweep per karta; 5060 Ti (448 GB/s) najbardziej wrażliwa |
+| weryfikacja atencją dekodu (`kvq`) | gfx1100 | fork na sm_86/89/120 | ten sam kod, różne kafle | fork (kvq + lean) vs upstream: 3090 61,5 → 80,0 t/s (+30%), 4090 76,4 → 101,3 (+32%) |
+| próbkowanie na GPU | `GPU_VERIFY=1` działa | fork traci 7–13% przy T=1 (qwen-warp nie traci) | brak dokładnego próbkowania spekulacyjnego na GPU w ścieżce CUDA forka, nie ograniczenie sprzętu | NVIDIA +7…13% do odzyskania (K-004) |
+| natywne formaty (FP8/FP4) | FP8: RDNA4, CDNA3/4; MXFP4: CDNA4 | FP8: Ada, Hopper, Blackwell; NVFP4: Blackwell | 3090 i XTX bez FP8 | zakaz zmiany kwantu; dotyczy tylko wyboru kwantu w Enigmie |
+| wątki i kafle per karta | wave32 (RDNA) vs wave64 (CDNA); LDS 64 KB, CDNA4 160 KB | warp 32; smem ~100 KB (sm_86/89/120), 228 KB (sm_90) | warianty FA/MMQ strojone pod gfx1100 nie pasują do CDNA ani NVIDIA | per karta +2…10% (`levers.md:40-42`: 48,5 → 56,9) |
+| szybsza biblioteka atencji | FA w llama.cpp (rocWMMA), CK/aiter na CDNA | FA w llama.cpp (mma), FA3 Hopper, FA4 Blackwell | na RDNA3 nie ma FA3/FA4 | XTX FA83 +5,8% przy 128k |
+| prefill INT8 (MMQ q8_1) | RDNA3 bez zysku INT8 nad FP16 | GeForce INT8 = 4 × FP16 (akum. FP32) | ścieżka INT8 to domyślna arytmetyka llama.cpp, nie zmiana kwantu | NVIDIA sufit 2,3 × XTX; niezmierzone (K-112) |
+| cache prefiksów, lean reserve, chunk prefillu, profil po etapach | tak | tak | niezależne od architektury | jak na XTX |
+| fuzja pod grafami | ~0 (LaunchCut, x54) | ~0 wg skill-io (`levers.md:43`) | – | 0 |
+
+**Lekcja:** dźwignie bajtowe (spekulacja, głowica, `kvq`, cache) przenoszą się między firmami 1:1. Dźwignie kernelowe (warianty, PM4, kafle) trzeba stroić od nowa na każdą architekturę, bo różnią się wave32/64, LDS/smem i typami danych jednostek macierzowych.
+
 ## Powiązane
 - [[skill-io-przeglad]]
 - [[skill-io-sufity]]
 - [[KOLEJKA-TESTOW]]
 - [[2026-11-08-fa-d256-prefill]]
+- [[final-recipes-nvidia]]
 - [[2026-11-14-k002-k003-k013-xtx]]

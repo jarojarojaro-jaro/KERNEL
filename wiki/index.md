@@ -77,7 +77,7 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-17 [[skill-io-skrypty|Skrypty skill-io (bench.py, ceiling.py, queue.sh, mem.sh): co robią linia po linii i co bierzemy]]
-- 2026-11-17 [[skill-io-sufity|Sufity wg skill-io (ceilings.md + ceiling.py) i nasz sufit Qwen3.8-27B Q4_K_M na XTX]]
+- 2026-11-17 [[skill-io-sufity|Sufity wg skill-io (ceilings.md + ceiling.py): nasz Qwen3.8-27B Q4_K_M na XTX i 18 kartach AMD i NVIDIA]]
 - 2026-11-17 [[skill-io-pulapki|Pułapki silników i sprzętu wg skill-io (gotchas.md) a nasze lekcje]]
 - 2026-11-17 [[skill-io-publikacja|Kwalifikacja i publikacja wg skill-io (publishing.md) a nasze wdrożenia topki i Enigmy]]
 - 2026-11-17 [[skill-io-przeglad|Skill „inference-optimisation” (Sybil Solutions): wspinaczka po prędkości serwera LLM — przegląd i lekcje]]

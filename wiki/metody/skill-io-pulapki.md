@@ -33,8 +33,24 @@ status: aktualne
 
 **Lekcja ogólna:** ich lista pułapek pokrywa się z naszymi lekcjami z października. To potwierdza, że sztywne zasady karty (kolejka, jeden SIGTERM, dziennik jądra) są uniwersalne, a nie nasza nadgorliwość.
 
+## Pułapki per firma (AMD i NVIDIA, 2026-11-17)
+
+| firma, architektura | pułapka | źródło / nasza lekcja |
+|---|---|---|
+| AMD RDNA3 (gfx1100) | PM4 bez `GGML_HIP_PM4` ustawionego jawnie może zresetować kartę | [[lekcja-pm4-zamienia-fault-w-reset]] |
+| AMD wszystkie | build musi zawierać właściwy target (`gfx1030`, `gfx1100`, `gfx1201`, `gfx90a`, `gfx942`, `gfx950`); kernel strojony pod wave32 RDNA nie działa optymalnie na wave64 CDNA | AMD ROCm docs; nasze warianty FA tylko gfx1100 |
+| AMD ROCm (ExLlama) | grafy HIP wyciekały aż do crasha (`gotchas.md:46`) | nasze grafy HIP + PM4: soak S6 bez wycieku |
+| AMD Radeon | „efektywne pasmo” ze strony producenta (XTX 3500 GB/s) to Infinity Cache, nie sufit dekodu | [[skill-io-sufity]] |
+| NVIDIA GeForce | FP16 z akumulacją FP32 o połowę wolniej niż FP16/FP16 (3090 71 vs 142, 4090 165 vs 330) | whitepaper RTX Blackwell |
+| NVIDIA Ampere | brak FP8; INT4 wygrywa przy ograniczeniu pasmem (`gotchas.md:57`) | dotyczy wyboru kwantu w Enigmie |
+| NVIDIA Blackwell sm_120 | potrzebny CUDA ≥ 12.8 i build z `sm_120` | [[lekcja-build-cuda-0057-0070]] |
+| NVIDIA na Vast | limit mocy hosta zaniża wynik (4090 250 W, 3090 340 W, 5060 Ti 160 W) | [[lekcja-limit-mocy-hosta]], [[lekcja-limit-mocy-285w]] |
+| NVIDIA na Vast | CPU hosta bez AVX2 (3090 → wariant `kvqleana`); limit CPU kontenera | [[lekcja-limit-cpu-kontenera]] |
+| obie | zajęte CPU kosztuje dekod (107 → 75 t/s, `gotchas.md:47`); na Vast host współdzielony | przeplot A/B na tym samym hoście |
+
 ## Powiązane
 - [[skill-io-przeglad]]
 - [[lekcja-pkill-wlasna-powloka]]
 - [[lekcja-pm4-zamienia-fault-w-reset]]
+- [[lekcja-limit-mocy-hosta]]
 - [[gpu-guard]]

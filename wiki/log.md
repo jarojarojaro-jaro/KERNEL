@@ -406,3 +406,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] research | skill „inference-optimisation” (Sybil Solutions) — przestudiowany w całości
 [[skill-io-przeglad]] + [[skill-io-sufity]], [[skill-io-metodyka]], [[skill-io-dzwignie]], [[skill-io-pulapki]], [[skill-io-publikacja]], [[skill-io-skrypty]]: 17 plików @ fda968e; nasz sufit z ceiling.py (dekod czatu 167 t/s przy 2k → produkcja 71–77%, krok 19,2 vs 26,9 ms; prefill 92–95%); 19 z 29 dźwigni stosujemy; nowe K-108 (FLOPS XTX), K-109 (bramka igieł), K-110 (ich bench.py 1:1), K-111 (rozkład luki kroku).
+
+## [2026-11-17] research | skill-io pod kątem AMD i NVIDIA (zakres: wszystkie karty obu firm)
+[[skill-io-sufity]]: sufity `ceiling.py` dla 18 kart (RX 6800/6900 XT, 7900 GRE/XT/XTX, 9070 XT, MI250/300X/325X/355X, RTX 3090/4090/5060 Ti/5090, A100/H100/H200/B200) ze specyfikacji producentów (`qwen-opt/skill-io/karty.py`); zmierzone vs sufit: XTX 69–71%, 4090/5090 59%, 3090 50%, 5060 Ti 41%. Sekcje per firma w [[skill-io-dzwignie]], [[skill-io-pulapki]], [[skill-io-metodyka]], [[skill-io-publikacja]], [[skill-io-skrypty]], [[skill-io-przeglad]]. Kolejka: K-112 (pasmo/GEMM/prefill NVIDIA), K-113 (bench.py 1:1 trzy karty), K-114 (rozkład kroku NVIDIA), K-115 (igły NVIDIA).

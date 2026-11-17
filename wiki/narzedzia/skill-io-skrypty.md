@@ -48,6 +48,12 @@ status: aktualne
 3. Test igieł z `document()` → bramka długiego kontekstu w deployu (K-109).
 4. `looping()` → flaga w `spec_sweep` i jakość-mini (zmiana harnessu, nie modelu).
 
+## Obie firmy (2026-11-17)
+
+- **`ceiling.py` jest niezależny od firmy.** Nasz `karty.py` (`qwen-opt/skill-io/`) liczy go dla 18 kart AMD i NVIDIA ze specyfikacji producentów ([[skill-io-sufity]]).
+- **`bench.py`** mówi tylko OpenAI API, więc ten sam plik działa na XTX i na 3090/5060 Ti w Vast. To podstawa porównań między firmami (K-110, K-113).
+- **`mem.sh`** ma gałąź NVIDIA (`nvidia-smi` per PID). Na AMD dyskretnym `drm-resident` w fdinfo działa tak samo jak na iGPU, tylko liczy VRAM.
+
 ## Powiązane
 - [[skill-io-przeglad]]
 - [[skill-io-sufity]]

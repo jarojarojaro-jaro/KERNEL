@@ -41,6 +41,20 @@ status: aktualne
 
 Wszystkie mamy (kolejka, `gpu-guard`, jeden SIGTERM, [[lekcja-pm4-zamienia-fault-w-reset]]) poza bramką igieł z punktu 6.
 
+## Ta sama metodyka na AMD i NVIDIA (2026-11-17)
+
+| krok | AMD (ROCm) | NVIDIA (CUDA) |
+|---|---|---|
+| pasmo (`ceilings.md:3`) | `hipMemcpy` D2D / `rocm-bandwidth-test` | `nvbandwidth` / `cudaMemcpy` D2D |
+| szczyt GEMM | `rocblas-bench` / `hipblaslt-bench` f16 i i8, 4096³ + 8192³ | `cublasLt` matmul (f16, i8), te same rozmiary |
+| profil kerneli (`methodology.md:52`) | `rocprofv3` (PM4=0, potem czas taśmy) | `nsys` + `ncu` (grafy CUDA wyłączone do rozbicia) |
+| stan środowiska (zasada 3) | `rocm-smi`: sclk eco 2200, temperatury, `gpu-guard` | `nvidia-smi -q -d POWER,CLOCK`: zapisać limit mocy hosta i zegary |
+| pamięć | `mem_info_vram_used` | `nvidia-smi --query-compute-apps` (jak `mem.sh`) |
+| przeplot | ABBA na tej samej karcie | ABBA na **tym samym hoście Vast** (hosty różnią się limitem mocy i CPU) |
+| harness | `spec_sweep`, xtxbench, `bench.py` | te same skrypty (OpenAI API), bez zmian |
+
+**Reguła:** liczba z NVIDIA i liczba z XTX trafiają do jednej tabeli tylko wtedy, gdy pochodzą z tego samego harnessu, panelu promptów, temperatury i głębokości draftu. Przy każdej podajemy % sufitu karty.
+
 ## Powiązane
 - [[skill-io-przeglad]]
 - [[pomiar-abba]]

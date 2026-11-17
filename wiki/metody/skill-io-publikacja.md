@@ -42,6 +42,22 @@ status: aktualne
 
 **Format raportu z PROMPT.md** (`:50-77`): tabela „metryka | baseline | teraz | **sufit** | jak mierzone”, potem co dało zysk, co ogranicza (z dowodem: profil, akceptacja per głębokość, % sufitu), znane ograniczenia, zmieniony stan systemu, czego nie zweryfikowano. **Przyjmujemy kolumnę „sufit”** do naszych raportów i notatek eksperymentów.
 
+## Przypinanie i bramki per firma (2026-11-17)
+
+**AMD:**
+- wersja ROCm (u nas 10.0);
+- lista `gfx` w fatbinie;
+- `GGML_HIP_PM4` jawnie;
+- sterownik amdgpu i wersja jądra.
+
+**NVIDIA:**
+- wersja CUDA (u nas 12.8);
+- lista `sm_` (86/89/120) i PTX;
+- minimalny sterownik;
+- dla wydań Enigmy wariant CPU hosta (AVX2 tak/nie).
+
+**Sześć bramek bez zmian dla obu firm.** Bramka prędkości ma osobny próg per karta: % sufitu z [[skill-io-sufity]], a nie jedną liczbę t/s. Igła ~85% okna na kartach 16 GB dotyczy ich krótszego kontekstu (196–229k).
+
 ## Powiązane
 - [[skill-io-przeglad]]
 - [[2026-11-09-wdrozenie-topka-q70]]

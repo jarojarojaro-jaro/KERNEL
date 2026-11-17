@@ -41,6 +41,15 @@ status: aktualne
 - K-110: ich `bench.py` na XTX 1:1.
 - K-111: rozkład luki kroku 26,9 vs 19,2 ms na kernele.
 
+**Zakres: AMD i NVIDIA (właściciel 2026-11-17).** Wszystkie notatki skill-io mają sekcję dla obu firm:
+- sufity 18 kart (RDNA2/3/4, CDNA2/3/4, Ampere, Ada, Blackwell, Hopper): [[skill-io-sufity]];
+- dźwignie per architektura: [[skill-io-dzwignie]];
+- pułapki per firma: [[skill-io-pulapki]];
+- narzędzia pomiaru ROCm i CUDA: [[skill-io-metodyka]];
+- przypinanie: [[skill-io-publikacja]].
+
+**Kluczowa liczba:** XTX jest na 69–71% sufitu dekodu, karty NVIDIA z naszym forkiem na 41–59%. Tam leży największy zapas. Testy NVIDIA w kolejce: K-112…K-115.
+
 ## Powiązane
 - [[metody/_hub|metody]]
 - [[mapa-inferencji-roadmap]]
