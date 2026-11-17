@@ -436,3 +436,6 @@ K-119 przepisane na zwykły test modelu (panel ręczny, jakość-mini, EvalPlus,
 
 ## [2026-11-17] telegram | Project Maya v1.1.66 (delta)
 [[project-maya]]: GLM APU+NVIDIA +19% (weryfikacja czyta wagi raz, jedno wywołanie na warstwę zamiast na token; auto-wybór kolejności tylko przy identycznych odpowiedziach); dla gęstego 27B na XTX nic; lekcja zgodna z K-116.
+
+## [2026-11-18] telegram | Qwen3.8-27B-pi-adapted (HF harness-hub)
+[[qwen38-27b-pi-adapter]]: LoRA r32 RL (AsyncGRPO, nagroda + bonus za mniej wywołań, safeagents) na Qwen3.8-27B pod pi: SWE-bench Pro hard 51 29,4 → 62,7%, TB 2.1 39,5 → 55,8%; omp = fork pi; koszt LoRA bez scalania i MTP po scaleniu do sprawdzenia; K-120; pomysł: adapter pod omp z naszych sesji.

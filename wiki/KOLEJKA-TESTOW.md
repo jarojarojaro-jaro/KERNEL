@@ -91,6 +91,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (wynajem)
 - priorytet: średni (prośba właściciela; koszt wynajmu ~$0,10–0,20, czeka na kredyt)
 
+### K-120 · Qwen3.8-27B-pi-adapted (LoRA RL pod pi) w naszym stosie: czy pomaga w omp, ile kosztuje w dekodzie, co z MTP
+- data: 2026-11-18
+- źródło: [[qwen38-27b-pi-adapter]] (pod pi: SWE-bench Pro hard 51 29,4 → 62,7%, Terminal-Bench 2.1 39,5 → 55,8%, −55…62% wywołań narzędzi); adapter GGUF F16 dla llama.cpp (`--lora`)
+- hipoteza: (a) w omp adapter też skraca zadania (mniej wywołań, ≥ tyle samo rozwiązanych); (b) `--lora` bez scalania kosztuje > 4% dekodu (małe kernele, K-114); (c) po scaleniu + Q4_K_M akceptacja MTP spada, bo blk.64 nietrenowany
+- test: (1) bez karty: zestaw 20 zadań agentowych z naszych sesji omp (`~/kernel/archiwum`) lub `agentx-harness`, myślenie wyłączone jak w treningu; (2) karta (XTX po zgodzie albo Vast ≥ 24 GB z hostguardem): baza Qwen3.8-27B Q4_K_M vs ta sama + `--lora` F16 vs scalone i skwantowane; spec_sweep T=1 (t/s, tok/krok), md5 nie dotyczy (inny model); zadania omp: rozwiązane, wywołania, czas. Pobrania: baza ~17 GB + adapter 0,6 GB (zgoda właściciela)
+- miara: rozwiązane/20 i wywołania na zadanie (baza → adapter); t/s i tok/krok (baza → LoRA → scalone)
+- zysk: krótsze sesje agenta (u nich −55…62% wywołań = mniej tur, każda tura ~1 s+); zmiana modelu = decyzja właściciela
+- ryzyko karty: brak
+- priorytet: średni
+
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)
