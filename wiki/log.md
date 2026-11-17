@@ -433,3 +433,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] telegram | SenseNova-Loop-9B: cel = pobrać i przetestować (nie optymalizować)
 K-119 przepisane na zwykły test modelu (panel ręczny, jakość-mini, EvalPlus, igła 128k; AWQ w SGLang/vLLM na Vast albo GGUF po obsłudze w llama.cpp), priorytet średni, czeka na kredyt.
+
+## [2026-11-17] telegram | Project Maya v1.1.66 (delta)
+[[project-maya]]: GLM APU+NVIDIA +19% (weryfikacja czyta wagi raz, jedno wywołanie na warstwę zamiast na token; auto-wybór kolejności tylko przy identycznych odpowiedziach); dla gęstego 27B na XTX nic; lekcja zgodna z K-116.

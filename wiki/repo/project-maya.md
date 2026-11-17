@@ -42,6 +42,17 @@ status: aktualne
   - **Pozostałe:** GLM-5.3 744B, kwant Maya-XS ~1,6 bita, ablacja odmowy przełączana per żądanie, lookup promptu dla MiniMax (+6% na kodzie, mamy od 10.10), szybsze eksperty CPU.
   - **Werdykt:** dla gęstego Qwen 27B na XTX nic nowego. Zysk mieszanego trybu bierze się z MoE: atencja i gorące eksperty idą na szybszą kartę, a reszta wag zostaje w pamięci, której szybka karta nie ma. U nas cały model mieści się w XTX (960 GB/s). Dołożenie 5060 Ti (448 GB/s) przy podziale warstw dekod tylko spowolni ([[rtx-5060-ti]]). Ablacja per żądanie to ten sam pomysł co odrzucona K-082 w [[KOLEJKA-TESTOW]]. Nic do kolejki.
 
+## Aktualizacja 2026-11-17 (v1.1.66, Telegram „gpu”)
+
+Delta od v1.1.65:
+- **GLM na parze APU AMD + NVIDIA: dekod +19%** (A/B na tym samym PC, V100 obok APU, te same odpowiedzi). Dwie przyczyny:
+  - karta NVIDIA czytała każdą wagę dwa razy podczas weryfikacji draftów, teraz raz;
+  - para wymienia całą warstwę weryfikacji jednym wywołaniem zamiast wywołania na token.
+- **Strojenie w trakcie działania:** Maya mierzy obie kolejności na pierwszych odpowiedziach i zostawia szybszą, ale tylko tam, gdzie obie dają te same odpowiedzi.
+- Reszta to poprawki (DeepSeek: dwa rozmiary obok siebie, eksperci draftu w profilu; uśpienie bezczynnego CPU jako ustawienie; diagnostyka faultów prefillu).
+
+Dla gęstego 27B na XTX nic nowego do portu. Lekcja zgodna z naszym K-114/K-116: narzut wywołań na token w weryfikacji i drafcie kosztuje więcej niż bajty. U nas weryfikacja czyta wagi raz (MMVQ N=5), więc pierwszego błędu nie mamy.
+
 ## Powiązane
 - [[repo/_hub|repo]]
 - [[strata]]
