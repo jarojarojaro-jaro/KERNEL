@@ -1,0 +1,40 @@
+---
+typ: metoda
+tags: [metody, pulapki, rocm, llamacpp, bezpieczenstwo, skill-io]
+aktualizacja: 2026-11-17
+zrodlo: ~/kernel/zrodla/inference-optimisation-skill @ fda968e — references/gotchas.md:1-58
+status: aktualne
+---
+# Pułapki silników i sprzętu wg skill-io (gotchas.md) a nasze lekcje
+
+**Z 32 pułapek 9 przerobiliśmy sami, każdą z własną lekcją. Na nasz stos (llama.cpp, ROCm, AMD dyskretna) nowe są dwie: wolne KV q8_0 przy modelach z małą liczbą warstw KV (jest w naszym wyborze q4_0 + `kvq`) i wyciek grafów HIP w ExLlama na ROCm. Reszta dotyczy vLLM/SGLang/Intel/Apple albo pamięci zunifikowanej.**
+
+| pułapka (gotchas.md) | u nas |
+|---|---|
+| drugi silnik / zabłąkany bench na tym samym GPU połowi wynik albo psuje oba (`:7`) | tak: kolejka `run-jobs.sh` + `/tmp/gpu.lock`, orphan-guard |
+| „device lost” → najpierw dziennik jądra (B70: AER, link PCIe, 8× w 3 dni) (`:8`) | tak: `run-jobs.sh` sprawdza dziennik po każdym jobie pod kątem faultów amdgpu |
+| wymuszony stop w długim prefillu → page fault GPU (`:9`) | tak: jeden SIGTERM, 60 s, potem SIGKILL; [[lekcja-pm4-zamienia-fault-w-reset]] |
+| duże obrazy wywalają enkoder wizji (`:10`) | n/d (bez wizji) |
+| timeouty bramek/proxy 600 s ucinają testy długiego kontekstu; testować prosto w silnik, nie ponawiać po timeoucie (`:11`) | tak: testy bezpośrednio na porcie testowym |
+| `pkill -f` zabija własną powłokę, `pgrep -f` czeka na siebie (`:12`) | tak: [[lekcja-pkill-wlasna-powloka]] |
+| restart agenta zabija procesy dzieci → `setsid nohup`, wznawialność (`:13`) | tak, i to boleśnie: 2026-11-14 podagenci zginęli z końcem tury, a instancja Vast stała pusta |
+| vLLM: cache prefiksów wyłączony dla hybryd, MTP wiele tokenów w kawałku, mmap wolny (`:17-21`) | n/d; odpowiednik u nas: `--cache-reuse` niebezstratny dla qwen35 (stan GDN) |
+| SGLang: liczniki akceptacji tylko po zakończeniu, `--max-mamba-cache-size`, błędy backendu XPU (`:25-36`) | n/d |
+| llama.cpp: KV q8_0 dużo wolniejsze przy małej liczbie warstw KV (`:40`) | wiedza: Qwen ma KV w 16 z 64 warstw; produkcja q4_0 z `kvq` |
+| llama.cpp: MTP/draft poniżej bazowej prędkości na trudnych promptach (`:41`) | u nas nie: spekulacja zawsze ponad plain (43 → 120 t/s) |
+| rozmiary work-group w kernelach backendu (SYCL WG=1 ×7,8) (`:42`) | ogólnie: sweepy wariantów kerneli ([[sweep-wariantow-kernela]]) |
+| ExLlama na ROCm: grafy HIP wyciekały aż do crasha (`:46`) | nasza taśma PM4 to inny mechanizm; soak S6 1205 żądań bez wycieku |
+| zajęte CPU kosztuje dekod GPU (107 → 75 t/s) (`:47`) | tak: `taskset`, cpuheavy, nice; serwer testowy na `taskset -c 2-5` |
+| Intel Xe: topk segfault, płoty, OUT_OF_RESOURCES (`:51-54`) | n/d |
+| pamięć zunifikowana niewidoczna dla cgroup; bateria −8…10% (`:55`) | n/d |
+| Apple: głęboka spekulacja przegrywa na słabym paśmie (`:56`) | n/d (wiedza dla Enigmy na Mac) |
+| Ampere bez FP8 → INT4 wygrywa (`:57`) | wiedza dla Enigmy NVIDIA (3090) |
+| stan GDN w fp16 dawał „!!!” (`:58`) | u nas stan f32, bf16 odrzucone (stratne) |
+
+**Lekcja ogólna:** ich lista pułapek pokrywa się z naszymi lekcjami z października. To potwierdza, że sztywne zasady karty (kolejka, jeden SIGTERM, dziennik jądra) są uniwersalne, a nie nasza nadgorliwość.
+
+## Powiązane
+- [[skill-io-przeglad]]
+- [[lekcja-pkill-wlasna-powloka]]
+- [[lekcja-pm4-zamienia-fault-w-reset]]
+- [[gpu-guard]]

@@ -403,3 +403,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-16] zwiad | compwatch (delta, 29 pozycji)
 [[zwiad-2026-11-14]] (delta 11-16): hipfire 0.4.7 patch, Strata 0.2.14 własne kernele prefillu (stratnie), Maya 1.1.64–65 stabilność; arXiv: energia na rozwiązane zadanie (wzór dla Enigmy), Superfluid (priorytet interaktywnych żądań → K-106). Nic na kartę; 6 wierszy ZRODLA.
+
+## [2026-11-17] research | skill „inference-optimisation” (Sybil Solutions) — przestudiowany w całości
+[[skill-io-przeglad]] + [[skill-io-sufity]], [[skill-io-metodyka]], [[skill-io-dzwignie]], [[skill-io-pulapki]], [[skill-io-publikacja]], [[skill-io-skrypty]]: 17 plików @ fda968e; nasz sufit z ceiling.py (dekod czatu 167 t/s przy 2k → produkcja 71–77%, krok 19,2 vs 26,9 ms; prefill 92–95%); 19 z 29 dźwigni stosujemy; nowe K-108 (FLOPS XTX), K-109 (bramka igieł), K-110 (ich bench.py 1:1), K-111 (rozkład luki kroku).

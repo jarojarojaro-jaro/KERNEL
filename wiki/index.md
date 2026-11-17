@@ -63,10 +63,10 @@ Audyt liczb: [[AUDYT]].
 - [[nvidia/_hub|nvidia]] — Stos NVIDIA: CUDA, sm_xx, poprawki zgodności (10)
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (52)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (58)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (80)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (118)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (29)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (30)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (89)
 - [[research/_hub|research]] — Streszczenia raportów (158)
@@ -76,7 +76,14 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
-- 2026-11-15 [[zwiad-2026-11-14|Zwiad 2026-11-14 (przebieg bazowy compwatch): hipfire dogonił nas na XTX, ale stratnie]]
+- 2026-11-17 [[skill-io-skrypty|Skrypty skill-io (bench.py, ceiling.py, queue.sh, mem.sh): co robią linia po linii i co bierzemy]]
+- 2026-11-17 [[skill-io-sufity|Sufity wg skill-io (ceilings.md + ceiling.py) i nasz sufit Qwen3.8-27B Q4_K_M na XTX]]
+- 2026-11-17 [[skill-io-pulapki|Pułapki silników i sprzętu wg skill-io (gotchas.md) a nasze lekcje]]
+- 2026-11-17 [[skill-io-publikacja|Kwalifikacja i publikacja wg skill-io (publishing.md) a nasze wdrożenia topki i Enigmy]]
+- 2026-11-17 [[skill-io-przeglad|Skill „inference-optimisation” (Sybil Solutions): wspinaczka po prędkości serwera LLM — przegląd i lekcje]]
+- 2026-11-17 [[skill-io-metodyka|Metodyka pomiaru wg skill-io (methodology.md + zasady SKILL.md) a nasza praktyka]]
+- 2026-11-17 [[skill-io-dzwignie|Dźwignie wg skill-io (levers.md): każda z naszym statusem i spodziewanym zyskiem na XTX]]
+- 2026-11-16 [[zwiad-2026-11-14|Zwiad 2026-11-14 (przebieg bazowy compwatch): hipfire dogonił nas na XTX, ale stratnie]]
 - 2026-11-15 [[mapa-inferencji-roadmap|Mapa inżynierii inferencji LLM: 114 tematów roadmapy a nasza wiedza]]
 - 2026-11-14 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
 - 2026-11-14 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
@@ -84,13 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-14 [[tqllm|tqLLM (turbo-tan): silnik CUDA dla Qwen3.8]]
 - 2026-11-14 [[tokenspeed|TokenSpeed (LightSeek Foundation)]]
 - 2026-11-14 [[project-maya|Project Maya (mw00): silnik jednego modelu GLM-5.3-Flash]]
-- 2026-11-14 [[hipfire|Kaden-Schutt/hipfire]]
-- 2026-11-14 [[otwarte-decyzje-techniczne|Otwarte decyzje techniczne (silnik, flagi, wydatki)]]
-- 2026-11-14 [[karty-nvidia-na-stronie|Karty NVIDIA z kampanii 67 na stronie]]
-- 2026-11-14 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
-- 2026-11-14 [[final-modele-per-vram|Ostateczne modele per klasa VRAM (NVIDIA, Enigma)]]
-- 2026-11-14 [[saluki|Underdog Saluki 27B 1.0 (Qwen3.8-27B w 2 bitach)]]
-- 2026-11-14 [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]]
 
-Razem 751 notatek. Wygenerowano 2026-11-15 przez `tools/wiki.py index`.
+Razem 758 notatek. Wygenerowano 2026-11-17 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

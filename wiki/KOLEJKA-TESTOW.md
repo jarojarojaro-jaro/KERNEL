@@ -21,6 +21,45 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-111 · Rozłożyć lukę kroku MTP do sufitu: 26,9 ms zmierzone vs 19,2 ms sufitu pasma przy 2k (dekod czatu na 71–77% sufitu)
+- data: 2026-11-17
+- źródło: [[skill-io-sufity]] (ceiling.py na naszych rozmiarach: weryfikacja 16,1 GB + 4 drafty × 0,4 GB ÷ 926 GB/s); [[raport-24r-mmvq-pasmo]] (weryfikacja N=5 osiąga 762 z 926 GB/s); profil kroku 26,3 ms stałej części ([[2026-11-08-kvq-once-profil]])
+- hipoteza: luka 7,7 ms to (a) MMVQ weryfikacji poniżej pasma (~82%), (b) 4 sekwencyjne kroki draftu z małymi kernelami, (c) głowica LM, (d) przerwy hosta; największa część to (a)+(b)
+- test: XTX, rocprofv3 na kroku przy 1,7k (`GGML_HIP_PM4=0` do rozbicia, potem czas taśmy PM4): ms i GB/s na grupę kerneli vs ich sufit bajtowy; ≤ 10 min
+- miara przed/po: tabela grupa → ms zmierzone / ms sufitu / % ; wybór dźwigni o największej luce (×prawdopodobieństwo)
+- zysk: diagnostyka; każda 1 ms z kroku = +3,7% dekodu
+- ryzyko karty: brak
+- priorytet: wysoki (wskazuje, gdzie leży 30% zapasu dekodu)
+
+### K-109 · Bramka igieł długiego kontekstu (3 kody przy 50% i ~85–100% z 262k), dokładna odpowiedź — warunek „najlepsze” i część bramki wdrożenia
+- data: 2026-11-17
+- źródło: [[skill-io-metodyka]] (`methodology.md:37-38`, SKILL.md:95-98), [[skill-io-publikacja]] (bramka 5 przy 85% okna); `bench.py document()` (`:107-119`)
+- hipoteza: topka-q70 (KV q4_0, FA83) znajduje 3/3 kody przy 131k i 223k; jeśli nie, KV q4_0 przy długim kontekście psuje odczyt (fill md5 tego nie wykrywa)
+- test: XTX, produkcja na porcie testowym, `bench.py run --long 131072` i osobno `--long 223000` (fill ~8 min każdy → 2 joby kolejki)
+- miara: retrieval k/3 per głębokość, TTFT, decode po fillu, szczyt VRAM; po PASS dopisać do `deploy-q70`/przyszłych bramek
+- zysk: poprawność (dowód 262k), 0 t/s
+- ryzyko karty: temperatury przy fillu (junction < 95 °C, eco 2200)
+- priorytet: wysoki (luka w bramce produkcji)
+
+### K-110 · Ich `bench.py` bez zmian na XTX (port testowy): liczby 1:1 z ich 3090/B70 i z LocalMaxxing-like warunkami
+- data: 2026-11-17
+- źródło: [[skill-io-skrypty]]; ich wyniki 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`)
+- test: config jak `examples/config-existing-server.json` (temperatura 0,6, prefill 4k/16k, c1 6 × 512 tok.); produkcja na porcie testowym; ≤ 10 min
+- miara: c1 mediana, prefill 4k/16k, TTFT krótkiego promptu; porównanie z ich tabelą i z naszym spec_sweep (inny harness, opisać różnice)
+- zysk: publikowalna liczba porównawcza; 0 t/s
+- ryzyko karty: brak
+- priorytet: średni (marketing i kalibracja harnessów)
+
+### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
+- data: 2026-11-17
+- źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)
+- hipoteza: zmierzony szczyt 90–110 TFLOPS; wtedy prefill 4k–255k jest na 84–95% praktycznego sufitu i K-009/K-010 dają najwyżej kilka %
+- test: XTX, `rocblas-bench`/`hipblaslt-bench` gemm f16 4096 i 8192 (min z N), `hipMemcpy` 4 GB D2D; `GGML_HIP_PM4=0`; ≤ 10 min
+- miara: TFLOPS 4096/8192, GB/s; przeliczenie `ceiling-qwen27b-unc-xtx.json`
+- zysk: priorytety prefillu oparte na liczbie; 0 t/s
+- ryzyko karty: temperatury (krótki GEMM), eco 2200 bez zmian
+- priorytet: średni (tani, porządkuje kolejkę)
+
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
 - źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)
