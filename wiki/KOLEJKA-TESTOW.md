@@ -99,6 +99,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - miara: rozwiązane/20 i wywołania na zadanie (baza → adapter); t/s i tok/krok (baza → LoRA → scalone)
 - zysk: krótsze sesje agenta (u nich −55…62% wywołań = mniej tur, każda tura ~1 s+); zmiana modelu = decyzja właściciela
 - ryzyko karty: brak
+- właściciel 2026-11-18 00:32: „super fajne pomysły” (K-120 i adapter pod omp z naszych sesji); start czeka na zgodę na pobranie ~17 GB i kredyt Vast
 - priorytet: średni
 
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device

@@ -442,3 +442,6 @@ K-119 przepisane na zwykły test modelu (panel ręczny, jakość-mini, EvalPlus,
 
 ## [2026-11-18] telegram | „dlaczego KV bez Q” (Akshay) — podstawy, nic nowego
 ZRODLA: wiersz; lekcja dla nas tylko przypomnienie: w hybrydzie GDN poza KV cache trzymamy stan rekurencyjny (checkpointy, K-001), a przy weryfikacji spekulacji N wierszy Q naraz.
+
+## [2026-11-18] telegram | właściciel: „super fajne pomysły” (K-120, adapter pod omp)
+Odnotowane w K-120; start po zgodzie na pobranie ~17 GB i doładowaniu Vast.
