@@ -43,7 +43,7 @@ Względem wersji Preview: GAIA 37,86 → 69,90, Terminal-Bench 2.1 40,45 → 59,
 - SGLang: PR #47281. LightLLM: tak.
 - Oficjalne AWQ 4-bit: ~4,9 GB.
 
-**Co dalej:** K-119 w [[KOLEJKA-TESTOW]] (wymaga obsługi w silniku i zgody na pobranie > 2 GB). Zmiana modelu w produkcji lub w Enigmie to decyzja właściciela.
+**Co dalej:** właściciel (2026-11-17): model nie jest do optymalizacji, tylko do pobrania i sprawdzenia, jak naprawdę działa. Plan: K-119 w [[KOLEJKA-TESTOW]] (AWQ 4-bit w SGLang/vLLM na wynajętej karcie albo GGUF z llama.cpp, gdy będzie obsługa; ręczny panel + jakość-mini + EvalPlus). Zmiana modelu w produkcji lub w Enigmie to decyzja właściciela.
 
 ## Powiązane
 - [[trening-llm-mapa]]

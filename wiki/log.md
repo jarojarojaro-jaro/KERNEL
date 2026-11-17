@@ -430,3 +430,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] telegram | SenseNova-Loop-9B (SenseTime)
 [[sensenova-loop-9b]]: pętla warstw 32→56 wykonań, ~7,7 GB/token przy Q4_K_M (plik 5,3 GB) → sufit ~2,1 × Qwen3.8-27B; jakość tylko wg producenta (NL2Repo 41,36 vs 44,60); llama.cpp #31571 otwarte; lekcja: ceiling.py dla pętli liczy wykonania; LoopSkim = darmowy drafter; K-119.
+
+## [2026-11-17] telegram | SenseNova-Loop-9B: cel = pobrać i przetestować (nie optymalizować)
+K-119 przepisane na zwykły test modelu (panel ręczny, jakość-mini, EvalPlus, igła 128k; AWQ w SGLang/vLLM na Vast albo GGUF po obsłudze w llama.cpp), priorytet średni, czeka na kredyt.

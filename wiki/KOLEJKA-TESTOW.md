@@ -80,15 +80,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (wynajem)
 - priorytet: średni
 
-### K-119 · SenseNova-Loop-9B (pętla warstw) jako kandydat Enigmy na 8–16 GB: obsługa w silniku, prędkość vs sufit, jakość vs Qwen3.8-27B
+### K-119 · SenseNova-Loop-9B: pobrać i sprawdzić, jak naprawdę działa (jakość, zachowanie, prędkość), bez optymalizacji
 - data: 2026-11-17
+- **cel (właściciel 2026-11-17 18:17):** „nie wszystko musimy optymalizować, wysłałem, żebyśmy pamiętali, pobrali i przetestowali, jak to rzeczywiście wygląda”. Najpierw zwykły test modelu: odpowiedzi PL/EN, kod, narzędzia, długi kontekst, obraz. Prędkość mierzymy przy okazji, bez kerneli
 - źródło: [[sensenova-loop-9b]] (sufit bez spekulacji ~2,1 × Qwen3.8-27B: 5060 Ti 58 vs 28 t/s, 3060 47 vs 22; jakość wg producenta NL2Repo 41,36 vs 44,60, AIDABench 65,31 vs 65,01); llama.cpp #31571 otwarte, łatany build AtomicChat (GGUF Preview)
 - hipoteza: na 12–16 GB Loop-9B Q4_K_M (~5,3 GB) z KV q4_0 przy 128–256K jest szybszy niż obecne przepisy (5060 Ti 51 t/s z GSQ IQ3_XXS + MTP; 3060 Bonsai 58 t/s) przy jakości ≥ 90% Qwen3.8-27B w naszej bramce (EvalPlus HE+, jakość-mini)
-- test: (1) CPU: przegląd łatki AtomicChat / PR upstream, gdy się pojawi, i port do forka (pętla = ponowne wykonanie zakresu warstw z osobnym KV/stanem); (2) 5060 Ti (Vast, hostguard): plain t/s i % sufitu 58, prefill, igła 128k; (3) jakość: EvalPlus + jakość-mini vs Qwen3.8-27B. Pobranie ~5–6 GB wymaga zgody właściciela
+- test: najprościej, czym działa dziś: oficjalne AWQ 4-bit (~4,9 GB) w SGLang (PR #47281) albo vLLM na wynajętej karcie ≥ 16 GB z hostguardem, albo GGUF Preview z łatanym llama.cpp, gdy obsługa trafi do upstream. Sprawdzić: (1) ręczny panel 10 promptów PL/EN (rozmowa, kod, narzędzia, obraz) z wyjściami w notatce; (2) jakość-mini + EvalPlus HE+ vs Qwen3.8-27B (92,7 / 87,9%); (3) igła 128k; (4) t/s i % sufitu przy okazji. Wagi są gated na HF (trzeba zaakceptować warunki na koncie)
 - miara: t/s i % sufitu, HE+ i jakość-mini vs 92,7 / 87,9% (Qwen3.8-27B Uncensored)
 - zysk: Enigma 8–16 GB: do ~2 × dekodu w zasięgu sufitu, kontekst 256K w 12 GB [INFERENCE]; zmiana modelu = decyzja właściciela
 - ryzyko karty: brak (wynajem)
-- priorytet: niski (najpierw obsługa w llama.cpp)
+- priorytet: średni (prośba właściciela; koszt wynajmu ~$0,10–0,20, czeka na kredyt)
 
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
