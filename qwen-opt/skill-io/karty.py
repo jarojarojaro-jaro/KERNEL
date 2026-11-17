@@ -5,7 +5,7 @@ exec(open("ceiling.py").read().split("def main")[0])
 base = json.load(open("ceiling-qwen27b-unc-xtx.json"))
 K = json.load(open("karty.json"))["karty"]
 GB_GPU = 16.13 + 0.40 + 1.0   # wagi na GPU + MTP + bufory obliczeń [INFERENCE ~1 GB]
-print("| firma | karta | arch | VRAM | GB/s | FP16 / INT8 T | plain 2k | MTP a=3,2 2k | 128k | prefill 4k FP16 / INT8 | 32k | 256k śr. | mieści 262k? |")
+print("| firma | karta | arch | pamięć GB | GB/s | FP16 / INT8 T | plain 2k | MTP a=3,2 2k | 128k | prefill 4k FP16 / INT8 | 32k | 256k śr. | mieści 262k? |")
 print("|---|---|---|---|---|---|---|---|---|---|---|---|---|")
 for f, n, a, vram, bw, fp16, i8, uw in K:
     m = dict(base, bandwidth_gbs=bw)
@@ -22,6 +22,7 @@ for n, bw, verify_gb, meas, opis in [
     ("RTX 4090", 1008, 16.84 + 0.30, 101.27, "UD-Q4_K_XL, fork kvqlean"),
     ("RTX 5090", 1792, 20.94 + 0.30, 148.57, "UD-Q6_K, fork kvqlean"),
     ("RTX 5060 Ti", 448, 10.04 + 0.30, 49.44, "IQ3_XXS GSQ, fork kvqlean 196k"),
+    ("Arc Pro B70 [skill-io]", 608, 16.13, 25.0, "Q4_K_M llama.cpp (README skill-io:31), tryb spekulacji nieznany"),
     ("RTX 3060 [Bonsai]", 360, 6.02, 58.31, "Bonsai 2 27B PTQ1_0, prism MTP n2; a=3,2 i drafty Qwena = przybliżenie")]:
     m = dict(base, bandwidth_gbs=bw, dense_gb=verify_gb - base["lm_head_gb"])
     c = decode_ceiling(m, 4, 3.2, 2048)

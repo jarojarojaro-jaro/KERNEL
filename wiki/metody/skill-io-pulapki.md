@@ -48,6 +48,21 @@ status: aktualne
 | NVIDIA na Vast | CPU hosta bez AVX2 (3090 → wariant `kvqleana`); limit CPU kontenera | [[lekcja-limit-cpu-kontenera]] |
 | obie | zajęte CPU kosztuje dekod (107 → 75 t/s, `gotchas.md:47`); na Vast host współdzielony | przeplot A/B na tym samym hoście |
 
+## Pułapki: Apple, Intel, Tenstorrent (2026-11-17)
+
+| firma | pułapka | źródło |
+|---|---|---|
+| Apple M1–M4 | głęboka spekulacja przegrywa (M4 6,35 → 3,25 t/s przy 3 draftach): weryfikacja N=5 ograniczona obliczeniami | `gotchas.md:56`, `levers.md:35`; nasze liczenie w [[skill-io-sufity]] |
+| Apple | limit pamięci GPU `iogpu.wired_limit_mb` (domyślnie ~75% RAM); pamięć niewidoczna w cgroup i MemAvailable | `gotchas.md:56`, `methodology.md:46` |
+| Apple | Neural Accelerators (M5) wymagają nowej ścieżki Metal 4 (tensor API) — stare kernele `simdgroup_matrix` ich nie używają [INFERENCE] | Apple newsroom M5 |
+| Intel XPU (PyTorch) | `torch.topk` segfault powyżej ~2–8K kolumn; split-K na Xe3 wymaga niekeszowanych zapisów i płotu; `UR_RESULT_ERROR_OUT_OF_RESOURCES` = za duże lub kawałkowe grafy | `gotchas.md:51-54` |
+| Intel Arc | nadmierna alokacja pamięci urządzenia → livelock maszyny; trzymać ≥ 1,5 GB wolne | `levers.md:58` |
+| Intel B70 | crashe „device lost” to były zrywy łącza PCIe (AER) — najpierw dziennik jądra | `gotchas.md:8` |
+| Intel iGPU | bateria i profil zasilania −8…10% | `gotchas.md:55` |
+| Intel SYCL (llama.cpp) | work-group 1 w kernelu kopiowania × 7,8 wolniej | `gotchas.md:42` |
+| Tenstorrent | brak backendu ggml/llama.cpp w upstream (grep `ggml/src` 2026-11-17); GGUF K-quanty niewspierane, wagi trzeba przekonwertować na BFP4/BFP8 (inne liczby niż nasz plik) | [[skill-io-dzwignie]] |
+| Tenstorrent n300 | 2 chipy po 12 GB: model 16,6 GB wymaga podziału tensorów (TP=2) po łączu Ethernet między chipami | specyfikacja Tenstorrent |
+
 ## Powiązane
 - [[skill-io-przeglad]]
 - [[lekcja-pkill-wlasna-powloka]]

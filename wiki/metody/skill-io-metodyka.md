@@ -55,6 +55,23 @@ Wszystkie mamy (kolejka, `gpu-guard`, jeden SIGTERM, [[lekcja-pm4-zamienia-fault
 
 **Reguła:** liczba z NVIDIA i liczba z XTX trafiają do jednej tabeli tylko wtedy, gdy pochodzą z tego samego harnessu, panelu promptów, temperatury i głębokości draftu. Przy każdej podajemy % sufitu karty.
 
+**Pozostałe firmy:**
+- **Apple:**
+  - pasmo: STREAM na GPU (Metal) albo `mlx` benchmark kopii;
+  - GEMM: `mx.matmul` f16 4096³;
+  - profil: Xcode Instruments / Metal System Trace;
+  - pamięć: `vm_stat`, limit `iogpu.wired_limit_mb`;
+  - stan: zasilanie sieciowe (`pmset -g batt`, jak `on_ac()` w `bench.py`).
+- **Intel:**
+  - pasmo i GEMM: `sycl` stream / oneMKL GEMM, `xpu-smi`;
+  - profil: VTune / `unitrace`;
+  - pamięć iGPU: `drm-resident-*` (jak `mem.sh unified`).
+- **Tenstorrent:**
+  - `tt-smi` (zegary, temperatura, DRAM);
+  - profil: Tracy + profiler urządzenia TT-Metalium;
+  - pasmo i GEMM: testy TT-NN (`ttnn.matmul`).
+- Harness OpenAI (`bench.py`, `spec_sweep`) działa bez zmian wszędzie tam, gdzie jest serwer zgodny z OpenAI: llama-server, MLX-LM server, fork vLLM Tenstorrent.
+
 ## Powiązane
 - [[skill-io-przeglad]]
 - [[pomiar-abba]]

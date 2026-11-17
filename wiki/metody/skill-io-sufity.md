@@ -5,7 +5,7 @@ aktualizacja: 2026-11-17
 zrodlo: ~/kernel/zrodla/inference-optimisation-skill @ fda968e — skills/inference-optimisation/references/ceilings.md:1-79, SKILL.md:60-76, scripts/ceiling.py:1-51; nasze wejście i wynik ~/KERNEL/qwen-opt/skill-io/{ceiling-qwen27b-unc-xtx.json,ceiling-out.txt}
 status: aktualne
 ---
-# Sufity wg skill-io (ceilings.md + ceiling.py): nasz Qwen3.8-27B Q4_K_M na XTX i 18 kartach AMD i NVIDIA
+# Sufity wg skill-io (ceilings.md + ceiling.py): nasz Qwen3.8-27B Q4_K_M na XTX i 34 kartach AMD, NVIDIA, Apple, Intel i Tenstorrent
 
 **Dekod jest ograniczony pasmem: sufit = zmierzone pasmo ÷ bajty na wyemitowany token. Prefill jest ograniczony obliczeniami: sufit = 50% zmierzonego szczytu FLOPS ÷ FLOP na token. Dla naszej produkcji wychodzi: czat T=1 (3,2 tok/krok) 167 t/s przy 2k, a mierzymy 119–127, czyli 71–77%. Prefill przy głębokości 128k: 521 t/s, a mierzymy 486, czyli 93% (2026-11-17).**
 
@@ -106,6 +106,56 @@ Pomiary NVIDIA mają MTP n3 i inny harness, więc to przybliżenie (K-113 zrobi 
    Sufit prefillu 3090 (2737 przy 4k) jest więc 2,3 × wyższy niż XTX (1183), choć dekod mają równy. Prefillu NVIDIA nigdy nie zmierzyliśmy (K-112).
 4. **Karty 16 GB nie mieszczą Q4_K_M** (16,6 GB wag + MTP), dlatego Enigma daje im IQ3_XXS. Kwant wybieramy tam, żeby model się zmieścił, nie dla prędkości.
 5. **Karty centrów danych (MI300X, H100 i nowsze)** mają sufit c1 600–1400 t/s, czyli krok 2–5 ms. Tam koszt hosta i startu kerneli dominuje, a llama.cpp nie jest silnikiem c1. Ich sens to współbieżność (wagi czytane raz na krok dla N strumieni, `ceilings.md:28`). Tych kart nie mamy.
+
+## Apple, Intel, Tenstorrent (zakres: wszystkie firmy, 2026-11-17)
+
+**Model i metoda bez zmian.** Źródła producentów są w `karty.json → _zrodla`.
+
+**Apple** nie publikuje TFLOPS, więc wartości są wyprowadzone:
+- FP16 = rdzenie GPU × 128 ALU × 2 × zegar;
+- M5: × 4 względem M4, bo Apple podaje „> 4× szczytu GPU dla AI” dzięki Neural Accelerators w każdym rdzeniu;
+- pasmo z newsroomu Apple (M3 Max 400, M4 Pro 273, M4 Max 546, M5 153, M5 Pro 307, M5 Max 614 GB/s).
+
+**Pamięć użyteczna:**
+- Apple: ~75% RAM (limit `iogpu.wired_limit_mb`);
+- iGPU Intela: ~50–70% [INFERENCE].
+
+**Kolumna INT8 w zależności od firmy:**
+- Apple: = FP16, bo Metal w llama.cpp liczy prefill w f16 (`simdgroup_matrix`);
+- Tenstorrent: = BLOCKFP8.
+
+| firma | karta | arch | pamięć GB | GB/s | FP16 / INT8 TFLOPS | plain 2k | MTP 2k | MTP 128k | prefill 4k FP16 / INT8 | 32k | 256k | 262k? |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Apple | M3 Max 40c (128 GB) | Apple GPU / Metal | 96 | 400 | 14,3 / 14,3 | 25 | 72 | 64 | 137 / 137 | 124 | 70 | tak |
+| Apple | M4 Pro 20c (48 GB) | Apple GPU / Metal | 36 | 273 | 8,1 / 8,1 | 17 | 49 | 43 | 78 / 78 | 70 | 39 | tak |
+| Apple | M4 Max 40c (128 GB) | Apple GPU / Metal | 96 | 546 | 16,2 / 16,2 | 34 | 98 | 87 | 156 / 156 | 141 | 79 | tak |
+| Apple | M5 10c (32 GB) | GPU + Neural Accelerators | 24 | 153 | ~16 / ~16 | 9 | 28 | 24 | 158 / 158 | 142 | 80 | tak |
+| Apple | M5 Pro 20c (64 GB) | GPU + Neural Accelerators | 48 | 307 | ~33 / ~33 | 19 | 55 | 49 | 312 / 312 | 282 | 158 | tak |
+| Apple | M5 Max 40c (128 GB) | GPU + Neural Accelerators | 96 | 614 | ~65 / ~65 | 38 | 111 | 98 | 625 / 625 | 564 | 316 | tak |
+| Intel | Arc A770 16 GB | Xe-HPG | 16 | 560 | 131 / 262 | 35 | 101 | 89 | 1259 / 2519 | 2273 | 1275 | nie |
+| Intel | Arc B580 12 GB | Xe2 | 12 | 456 | 116,5 / 233 | 28 | 82 | 72 | 1120 / 2240 | 2021 | 1134 | nie |
+| Intel | Arc Pro B70 32 GB | Xe2 | 32 | 608 | 183,5 / 367 | 38 | 110 | 97 | 1764 / 3528 | 3183 | 1786 | tak |
+| Intel | Lunar Lake Arc 140V (32 GB) | Xe2 iGPU | ~16 | 136,5 | 33,5 / 67 | 8 | 25 | 22 | 322 / 644 | 581 | 326 | nie |
+| Intel | Panther Lake Arc B390 (64 GB) | Xe3 iGPU | ~46 | 153,6 (zmierzone 115) | 60 / 120 (zmierzone FP16 35,8) | 9 | 28 | 24 | 577 / 1154 | 1041 | 584 | tak |
+| Intel | Gaudi 3 | MME | 128 | 3700 | 1678 / 1678 | 229 | 667 | 588 | 16 133 | 14 555 | 8166 | tak |
+| Tenstorrent | Wormhole n150 | Tensix | 12 | 288 | ~74 / 148 | 18 | 52 | 46 | 711 / 1423 | 1284 | 720 | nie |
+| Tenstorrent | Wormhole n300 (2 chipy) | Tensix | 24 | 576 | ~131 / 262 | 36 | 104 | 92 | 1259 / 2519 | 2273 | 1275 | tak (TP=2) |
+| Tenstorrent | Blackhole p150 | Tensix | 32 | 512 | ~332 / 664 | 32 | 92 | 81 | 3192 / 6384 | 5760 | 3231 | tak |
+
+**Jedyny pomiar 1:1 (ten sam kwant Q4_K_M):** Arc Pro B70 z llama.cpp robi 25,0 t/s (`README.md:31` skill-io). To 66% sufitu bez spekulacji (37,7) i 23% sufitu MTP. Ten sam model w vLLM z ich kernelami XPU (EXL3 4 bpw) robi 91,2 t/s. Na Intelu llama.cpp zostawia więc ~3,6 × prędkości.
+
+**Wnioski:**
+1. **Weryfikacja MTP na Apple M1–M4 jest ograniczona obliczeniami, nie pasmem.**
+   - Weryfikacja N = 5 to 2 × 25,6 G × 5 = 256 GFLOP na krok. Przy 50% szczytu FP16 zajmuje to 63 ms na M4 Pro, a odczyt bajtów 59 ms; na M4 Max 32 ms obliczeń i 30 ms bajtów.
+   - Dla porównania XTX: 4 ms obliczeń i 17 ms bajtów.
+   - Wyjaśnia to pułapkę skill-io „M4: 6,35 → 3,25 t/s z 3 draftami” (`levers.md:35`).
+   - **Na Apple przed M5 tylko krótki draft (n1–2).** M5 z Neural Accelerators (~4 × FP16) przywraca przewagę pasma (M5 Max: 8 ms obliczeń vs 26 ms bajtów).
+2. **Pasmo:**
+   - M5 Max (614 GB/s) ma sufit dekodu 111 t/s, czyli 64% XTX;
+   - M4 Max ma 98;
+   - iGPU Intela (136–154 GB/s) mają 25–28 t/s, czyli tyle co M5 base.
+3. **Intel dyskretny i Tenstorrent mają sufity prefillu jak NVIDIA** (B70: 3528 t/s przy 4k, p150: 6384), a dekod jak XTX lub niżej (110 / 92).
+4. **Karty 12–16 GB** (B580, A770, n150, Lunar Lake) **nie mieszczą Q4_K_M**. To ta sama reguła co w Enigmie: mniejszy kwant tylko po to, żeby model się zmieścił.
 
 ## Powiązane
 - [[skill-io-przeglad]]

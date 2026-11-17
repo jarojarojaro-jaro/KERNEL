@@ -41,14 +41,19 @@ status: aktualne
 - K-110: ich `bench.py` na XTX 1:1.
 - K-111: rozkład luki kroku 26,9 vs 19,2 ms na kernele.
 
-**Zakres: AMD i NVIDIA (właściciel 2026-11-17).** Wszystkie notatki skill-io mają sekcję dla obu firm:
-- sufity 18 kart (RDNA2/3/4, CDNA2/3/4, Ampere, Ada, Blackwell, Hopper): [[skill-io-sufity]];
-- dźwignie per architektura: [[skill-io-dzwignie]];
+**Zakres: wszystkie firmy (właściciel 2026-11-17).** Wszystkie notatki skill-io mają sekcje dla AMD, NVIDIA, Apple, Intela i Tenstorrent:
+- sufity 34 kart: [[skill-io-sufity]];
+- dźwignie per architektura oraz „czego brakuje naszemu silnikowi”: [[skill-io-dzwignie]];
 - pułapki per firma: [[skill-io-pulapki]];
-- narzędzia pomiaru ROCm i CUDA: [[skill-io-metodyka]];
+- narzędzia pomiaru: [[skill-io-metodyka]];
 - przypinanie: [[skill-io-publikacja]].
 
-**Kluczowa liczba:** XTX jest na 69–71% sufitu dekodu, karty NVIDIA z naszym forkiem na 41–59%. Tam leży największy zapas. Testy NVIDIA w kolejce: K-112…K-115.
+**Kluczowe liczby:**
+- XTX jest na 69–71% sufitu dekodu, NVIDIA z naszym forkiem na 41–59%, Intel B70 z llama.cpp na 23% (66% bez spekulacji).
+- Apple M1–M4 mają weryfikację MTP ograniczoną obliczeniami, więc tylko krótki draft.
+- Tenstorrent nie ma backendu ggml.
+
+Testy NVIDIA w kolejce: K-112…K-115.
 
 ## Powiązane
 - [[metody/_hub|metody]]

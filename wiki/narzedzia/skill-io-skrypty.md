@@ -48,9 +48,10 @@ status: aktualne
 3. Test igieł z `document()` → bramka długiego kontekstu w deployu (K-109).
 4. `looping()` → flaga w `spec_sweep` i jakość-mini (zmiana harnessu, nie modelu).
 
-## Obie firmy (2026-11-17)
+## Wszystkie firmy (2026-11-17)
 
-- **`ceiling.py` jest niezależny od firmy.** Nasz `karty.py` (`qwen-opt/skill-io/`) liczy go dla 18 kart AMD i NVIDIA ze specyfikacji producentów ([[skill-io-sufity]]).
+- **`ceiling.py` jest niezależny od firmy.** Nasz `karty.py` (`qwen-opt/skill-io/`) liczy go dla 34 kart: AMD, NVIDIA, Apple, Intel i Tenstorrent. Dane pochodzą ze specyfikacji producentów, a źródła są w `karty.json → _zrodla` ([[skill-io-sufity]]). Pamięć Apple i iGPU wpisana jako użyteczna (~75% / ~50–70% RAM).
+- **`mem.sh` w trybie `unified`** (suma `drm-resident-*`) jest właściwy dla iGPU Intela pod Linuksem. Na Apple zamiast niego `vm_stat`/`ioreg` (`SKILL.md:94`). Tenstorrent: `tt-smi`.
 - **`bench.py`** mówi tylko OpenAI API, więc ten sam plik działa na XTX i na 3090/5060 Ti w Vast. To podstawa porównań między firmami (K-110, K-113).
 - **`mem.sh`** ma gałąź NVIDIA (`nvidia-smi` per PID). Na AMD dyskretnym `drm-resident` w fdinfo działa tak samo jak na iGPU, tylko liczy VRAM.
 

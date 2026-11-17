@@ -412,3 +412,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] telegram | zgoda na Vast (3090, 5060 Ti, 3060 ≤ $1) — wstrzymane: brak klucza Vast tutaj, jaroserverai wyłączony
 [[skill-io-sufity]]: dopisana RTX 3060 12 GB (360 GB/s, 25,5/101,9 TFLOPS; sufit MTP Qwen 65 t/s; Bonsai 58,3 t/s = 45–54% sufitu [INFERENCE]). K-114: wstępna odpowiedź z R69b (3090 przy 350 W: limit mocy odpada, T=1 −7%, qwen-warp ×1,46–1,61 na tej samej karcie → luka w silniku), runner `qwen-opt/cloud/k114/run.sh` gotowy (K-112 + K-114 jednym runem).
+
+## [2026-11-17] research | skill-io: wszystkie firmy (Apple, Intel, Tenstorrent)
+[[skill-io-sufity]]: +15 kart (M3 Max, M4 Pro/Max, M5/Pro/Max, Arc A770/B580/Pro B70, Lunar/Panther Lake iGPU, Gaudi 3, Wormhole n150/n300, Blackhole p150), razem 34 w `karty.py`; wniosek: weryfikacja MTP na Apple M1–M4 ograniczona obliczeniami (M4 Pro 63 ms vs 59 ms bajtów) → krótki draft; B70 llama.cpp Q4_K_M 25,0 t/s = 23% sufitu MTP. [[skill-io-dzwignie]]: dźwignie per architektura + „czego brakuje naszemu silnikowi” (upstream `9581154`: GDN/FA są w Metal, SYCL, Vulkan, OpenVINO; Tenstorrent i Gaudi bez backendu ggml). Pułapki, metodyka, skrypty uzupełnione. Vast (K-114) dalej wstrzymany: jaroserverai wyłączony.

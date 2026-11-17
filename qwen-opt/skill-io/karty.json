@@ -3,7 +3,10 @@
   "amd_radeon": "amd.com/en/products/graphics/desktops/radeon/{6000,7000,9000}-series/<karta>.html (odczyt 2026-11-17)",
   "amd_instinct": "amd.com/en/products/accelerators/instinct/{mi200/mi250,mi300/mi300x,mi300/mi325x,mi350/mi355x}.html",
   "nvidia_geforce": "images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf (tabela 3090/4090/5090, gęste); 5060 Ti: nvidia.com 50-series/rtx-5060-family 759 AI TOPS (FP4 rzadkie) -> pochodne",
-  "nvidia_dc": "nvidia.com/en-us/data-center/{a100,h100,h200,hgx} (wartości rzadkie /2 = gęste)"
+  "nvidia_dc": "nvidia.com/en-us/data-center/{a100,h100,h200,hgx} (wartości rzadkie /2 = gęste)",
+  "apple": "apple.com/newsroom: M3 (2023-10, Max 400 GB/s), M4 Pro/Max (2024-10, 273/546 GB/s), M5 (2025-10, 153 GB/s, >4x szczyt GPU AI vs M4), M5 Pro/Max (2026-03, 307/614 GB/s, >4x vs poprzednia generacja); Apple nie publikuje TFLOPS -> FP16 wyprowadzone: rdzenie GPU x 128 ALU x 2 x zegar, M5 x4 wg Apple",
+  "intel": "B580: Intel media deck (456 GB/s, 233 TOPS INT8 dense); Arc Pro B70: datasheet/PCMag (608 GB/s, 367 TOPS); A770: 512 XMX x 256 op/clk x 2,0 GHz = 262 TOPS [wyprowadzone], 560 GB/s; Lunar Lake Arc 140V 67 TOPS GPU, LPDDR5X-8533 128-bit; Panther Lake B390 120 TOPS GPU, LPDDR5X-9600 (skill-io zmierzone 115 GB/s, 35,8 TFLOPS); Gaudi 3 whitepaper cdrdv2 817486 (1678 TFLOPS BF16/FP8 MME, 3,7 TB/s)",
+  "tenstorrent": "tenstorrent.com/hardware/blackhole (p150: 32 GB, 512 GB/s, 664 TFLOPS BLOCKFP8); Wormhole n150/n300: Tenstorrent deck (n300 576 GB/s, 466 FP8 / 262 BLOCKFP8; n150 288 GB/s, 262 FP8 / 148 BLOCKFP8)"
  },
  "karty": [
   [
@@ -195,6 +198,156 @@
    2250,
    4500,
    "FP8 4500, FP4 9000"
+  ],
+  [
+   "Apple",
+   "M3 Max 40c (128 GB)",
+   "Apple GPU g15 / Metal",
+   96,
+   400,
+   14.3,
+   14.3,
+   "pamiec uzyteczna ~75% (iogpu.wired_limit); FP16 wyprowadzone"
+  ],
+  [
+   "Apple",
+   "M4 Pro 20c (48 GB)",
+   "Apple GPU g16 / Metal",
+   36,
+   273,
+   8.1,
+   8.1,
+   "j.w."
+  ],
+  [
+   "Apple",
+   "M4 Max 40c (128 GB)",
+   "Apple GPU g16 / Metal",
+   96,
+   546,
+   16.2,
+   16.2,
+   "j.w."
+  ],
+  [
+   "Apple",
+   "M5 10c (32 GB)",
+   "Apple GPU + Neural Accelerators",
+   24,
+   153,
+   16.4,
+   16.4,
+   "FP16 = 4 x M4 wg Apple [wyprowadzone]"
+  ],
+  [
+   "Apple",
+   "M5 Pro 20c (64 GB)",
+   "Apple GPU + Neural Accelerators",
+   48,
+   307,
+   32.5,
+   32.5,
+   "j.w."
+  ],
+  [
+   "Apple",
+   "M5 Max 40c (128 GB)",
+   "Apple GPU + Neural Accelerators",
+   96,
+   614,
+   65.0,
+   65.0,
+   "j.w."
+  ],
+  [
+   "Intel",
+   "Arc A770 16GB",
+   "Xe-HPG (Alchemist)",
+   16,
+   560,
+   131,
+   262,
+   "XMX; INT8 = 2x FP16"
+  ],
+  [
+   "Intel",
+   "Arc B580 12GB",
+   "Xe2 (Battlemage)",
+   12,
+   456,
+   116.5,
+   233,
+   "XMX"
+  ],
+  [
+   "Intel",
+   "Arc Pro B70 32GB",
+   "Xe2 (Battlemage)",
+   32,
+   608,
+   183.5,
+   367,
+   "XMX"
+  ],
+  [
+   "Intel",
+   "Lunar Lake Arc 140V (32 GB)",
+   "Xe2 iGPU",
+   16,
+   136.5,
+   33.5,
+   67,
+   "pamiec wspolna; uzyteczna ~50% [INFERENCE]"
+  ],
+  [
+   "Intel",
+   "Panther Lake Arc B390 (64 GB)",
+   "Xe3 iGPU",
+   46,
+   153.6,
+   60,
+   120,
+   "skill-io zmierzone: 115 GB/s, 35,8 TFLOPS FP16"
+  ],
+  [
+   "Intel",
+   "Gaudi 3",
+   "Gaudi (MME)",
+   128,
+   3700,
+   1678,
+   1678,
+   "bez llama.cpp; vLLM/optimum-habana"
+  ],
+  [
+   "Tenstorrent",
+   "Wormhole n150",
+   "Tensix (Wormhole)",
+   12,
+   288,
+   74,
+   148,
+   "kolumna INT8 = BLOCKFP8; FP16 ~1/2 [INFERENCE]"
+  ],
+  [
+   "Tenstorrent",
+   "Wormhole n300 (2 chipy)",
+   "Tensix (Wormhole)",
+   24,
+   576,
+   131,
+   262,
+   "2 x 12 GB, wymaga TP=2"
+  ],
+  [
+   "Tenstorrent",
+   "Blackhole p150",
+   "Tensix (Blackhole)",
+   32,
+   512,
+   332,
+   664,
+   "BLOCKFP8 664; FP16 ~1/2 [INFERENCE]"
   ]
  ]
 }

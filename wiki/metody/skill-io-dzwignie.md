@@ -75,6 +75,51 @@ U nas to samo wychodzi z sufitów: luka 26,9 vs 19,2 ms/krok leży w kernelach i
 
 **Lekcja:** dźwignie bajtowe (spekulacja, głowica, `kvq`, cache) przenoszą się między firmami 1:1. Dźwignie kernelowe (warianty, PM4, kafle) trzeba stroić od nowa na każdą architekturę, bo różnią się wave32/64, LDS/smem i typami danych jednostek macierzowych.
 
+## Dźwignie na Apple, Intel i Tenstorrent + czego brakuje naszemu silnikowi (2026-11-17)
+
+**Stan upstream llama.cpp** (`9581154`, 2026-11-17, grep w `ggml/src`, klon w `~/kernel/zrodla/llama.cpp-upstream`). Op GATED_DELTA_NET (warstwy GDN Qwena) oraz SSM_CONV i FLASH_ATTN_EXT mają:
+- CUDA/HIP, Metal, SYCL, Vulkan, OpenVINO i OpenCL;
+- **backendu Tenstorrent i Gaudi nie ma.**
+
+Upstream ma też `--backend-sampling` (`common/arg.cpp:2286`), czyli próbkowanie w grafie ggml.
+
+**Jednostki i biblioteki:**
+- **Apple:** `simdgroup_matrix` 8×8 (M1–M4), Neural Accelerators w rdzeniu GPU (M5, Metal 4 tensor API); threadgroup memory 32 KB; MLX/MLX-LM.
+- **Intel:**
+  - XMX (Xe-HPG 1024-bit, Xe2/Xe3 2048-bit; INT8 = 2 × FP16);
+  - SLM 64–128 KB na Xe-core, sub-group 16/32;
+  - oneAPI/SYCL (oneMKL, oneDNN), Vulkan z `VK_KHR_cooperative_matrix`, OpenVINO;
+  - IPEX-LLM [INFERENCE: status projektu sprawdzić przed użyciem].
+- **Tenstorrent:** Tensix z kafelkiem 32 × 32, 1,5 MB SRAM L1 na rdzeń, NoC, formaty BFP8/BFP4 (`bfloat8_b`, `bfloat4_b`); stos TT-Metalium → TT-NN → tt-transformers / fork vLLM; kompilator tt-mlir.
+
+| dźwignia skill-io | Apple | Intel | Tenstorrent |
+|---|---|---|---|
+| grafy dekodu | Metal: bufory komend kodowane co token, brak „replay” jak w CUDA; MLX `mx.compile` | grafy SYCL (`ext_oneapi_graph`); skill-io B70: 14,4 → 28,4 t/s z grafami XPU (`levers.md:22`) | Metal Trace (zapis i odtwarzanie programu) = odpowiednik grafów, w tt-transformers obowiązkowy dla dekodu |
+| MTP + przycięta głowica | działa (backend-agnostyczne); **na M1–M4 tylko n1–2** (weryfikacja ograniczona obliczeniami, [[skill-io-sufity]]); M5 n3–4 | działa; B70 przycinanie +27% (`levers.md:27`) | brak MTP dla Qwen3.8 w tt-transformers [INFERENCE] |
+| weryfikacja atencją dekodu (`kvq`) | Metal ma FA z KV q4_0 (87 trafień w grepie, ścieżka `vec` dla małych N) — sprawdzić, czy N=5 idzie ścieżką dekodu | SYCL: FA z KV q4_0 tylko częściowo (2 trafienia); Vulkan: brak trafień → ryzyko wolnej weryfikacji | własny kernel atencji w TT-NN |
+| próbkowanie na GPU | `--backend-sampling` w upstream [INFERENCE: działa na Metal] | j.w. (SYCL/Vulkan) | na urządzeniu w tt-transformers |
+| wątki i kafle per karta | simdgroup 32, TG mem 32 KB: kafle z CUDA nie pasują | sub-group 16 vs 32, SLM; skill-io: WG=1 w kernelu SYCL kosztował × 7,8 (`gotchas.md:42`), 4096 → 1024 wątków +17% | siatka rdzeni 8 × 10 / 13 × 10, podział macierzy na rdzenie (sharding L1) |
+| prefill INT8 | M1–M4 bez zysku (FP16 = INT8); M5 Neural Accelerators [INFERENCE: INT8 nie potwierdzone] | XMX INT8 = 2 × FP16 (MMQ/DPAS) | BFP8 / LoFi = szczyt 664 (p150) |
+| fuzja | ~0 pod grafami (ogólne) | 3 × 0% na B390 (`levers.md:43`) | fuzja op-ów w TT-NN ma znaczenie, bo każde wyjście idzie przez DRAM/L1 [INFERENCE] |
+| cache prefiksów, cachesave, lookup | backend-agnostyczne (server/common) | j.w. | w forku vLLM: prefix caching vLLM |
+| pamięć | pamięć zunifikowana: limit wired, MemAvailable kłamie (`methodology.md:46`) | iGPU: to samo; dyskretne ≥ 1,5 GB zapasu, bo livelock na Arc (`levers.md:58`) | DRAM 12–32 GB na chip, n300 = 2 × 12 |
+
+**Czego brakuje naszemu silnikowi (fork topka/Enigma), żeby ruszył i wygrywał:**
+
+| element naszego silnika | gdzie dziś | Apple (Metal) | Intel (SYCL / Vulkan) | Tenstorrent |
+|---|---|---|---|---|
+| baza: Qwen3.8 (GDN + MTP) w llama.cpp | upstream | **działa** (ops są) | **działa** (ops są) | **brak backendu ggml.** Potrzebny port modelu do tt-transformers (GDN, MTP) i konwersja wag na BFP4/BFP8, czyli zmiana formatu wag (u nas zakazane jako dźwignia prędkości) |
+| `kvq` (weryfikacja N ≤ 16 jako dekod) | ggml-cuda (CUDA + HIP) | port do `ggml-metal` (MSL) | port do `ggml-sycl` i Vulkan (GLSL) | n/d |
+| FA D256 wariant 83, PM4, lean reserve | HIP / CUDA | n/d (PM4 tylko AMD); odpowiednik: strojenie kafli FA Metal | strojenie FA SYCL/Vulkan pod XMX | n/d |
+| dokładne próbkowanie spekulacyjne (`GPU_VERIFY`) | łatki w `common/sampling.cpp`, `speculative.cpp` na ops ggml | sprawdzić na Metal [INFERENCE: powinno działać, jeśli ops są] | j.w. | n/d |
+| słownik draftu 64k, lookup W16, cachesave | common/server | działa bez zmian [INFERENCE] | działa bez zmian [INFERENCE] | trzeba przepisać w forku vLLM |
+| harness i bramki (spec_sweep, bench.py, igły) | OpenAI API | działa | działa | działa (serwer vLLM) |
+
+**Lekcja:**
+- Najtaniej rozszerzyć się na Apple i Intela, bo upstream już tam działa. Brakuje „tylko” naszych kerneli `kvq` i strojenia FA na Metal i SYCL/Vulkan.
+- Tenstorrent i Gaudi to inny silnik (TT-NN / vLLM), czyli osobny projekt, a nie port.
+- Testu na tych kartach nie mamy jak zrobić: brak sprzętu, a na Vast nie ma Apple/Intel/Tenstorrent. Zostaje wiedza i przygotowany kod.
+
 ## Powiązane
 - [[skill-io-przeglad]]
 - [[skill-io-sufity]]
