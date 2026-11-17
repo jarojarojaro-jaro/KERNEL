@@ -424,3 +424,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] lekcja | Vast: tylko karty z pełną mocą (właściciel)
 [[lekcja-vast-tylko-pelna-moc]]: bramka `qwen-opt/cloud/hostguard.sh` (moc ≥ 95%, zegar pamięci ≥ 95% specyfikacji z karty.json, < 80 °C bez obciążenia) w `k114/launch.sh`, czarna lista `hosty-zle.txt` (5 hostów), flaga LIMITED HOST w `summ.py`; K-114 3090/3060 oznaczone jako dolne granice; K-118 powtórka po doładowaniu.
+
+## [2026-11-17] poprawka | próg pełnej mocy na Vaście 85% (było 95%)
+[[lekcja-vast-tylko-pelna-moc]]: `hostguard.sh` i `summ.py` na 0.85; dzisiejsze 3090 (60% mocy, pamięć 51%) i 3060 (79% mocy) dalej poniżej progu = dolne granice.

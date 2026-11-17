@@ -9,7 +9,7 @@ status: aktualne
 
 **Na Vaście (koszt $0,33) 5060 Ti osiągnęła 61% sufitu dekodu, a wyniki 3090 (23%) i 3060 (42%) to dolne granice z ograniczonych hostów, nie pomiar kart; draft MTP kosztuje 4–15 × swoje bajty.**
 
-Ograniczenia hostów (właściciel 2026-11-17: takich kart nie bierzemy):
+Ograniczenia hostów (właściciel 2026-11-17: takich kart nie bierzemy; próg: limit mocy i zegar pamięci ≥ 85% fabrycznych):
 - 3090: limit 250 z 420 W, pamięć pod obciążeniem 5001 z 9751 MHz;
 - 3060: 135 z 170 W, 85 °C.
 

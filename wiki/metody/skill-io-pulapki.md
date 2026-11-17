@@ -44,7 +44,7 @@ status: aktualne
 | NVIDIA GeForce | FP16 z akumulacją FP32 o połowę wolniej niż FP16/FP16 (3090 71 vs 142, 4090 165 vs 330) | whitepaper RTX Blackwell |
 | NVIDIA Ampere | brak FP8; INT4 wygrywa przy ograniczeniu pasmem (`gotchas.md:57`) | dotyczy wyboru kwantu w Enigmie |
 | NVIDIA Blackwell sm_120 | potrzebny CUDA ≥ 12.8 i build z `sm_120` | [[lekcja-build-cuda-0057-0070]] |
-| NVIDIA na Vast | limit mocy hosta zaniża wynik (4090 250 W, 3090 340 W, 5060 Ti 160 W; 2026-11-17: 3090 250 z 420 W i pamięć 5001 z 9751 MHz → 23% sufitu, 3060 135 z 170 W) | [[lekcja-limit-mocy-hosta]], [[lekcja-limit-mocy-285w]], [[lekcja-vast-tylko-pelna-moc]]; bramka `qwen-opt/cloud/hostguard.sh` |
+| NVIDIA na Vast | limit mocy hosta zaniża wynik (4090 250 W, 3090 340 W, 5060 Ti 160 W; 2026-11-17: 3090 250 z 420 W i pamięć 5001 z 9751 MHz → 23% sufitu, 3060 135 z 170 W) | [[lekcja-limit-mocy-hosta]], [[lekcja-limit-mocy-285w]], [[lekcja-vast-tylko-pelna-moc]]; bramka `qwen-opt/cloud/hostguard.sh`: limit mocy i zegar pamięci ≥ 85% fabrycznych, < 80 °C bez obciążenia (próg właściciela 2026-11-17) |
 | NVIDIA na Vast | CPU hosta bez AVX2 (3090 → wariant `kvqleana`); limit CPU kontenera | [[lekcja-limit-cpu-kontenera]] |
 | obie | zajęte CPU kosztuje dekod (107 → 75 t/s, `gotchas.md:47`); na Vast host współdzielony | przeplot A/B na tym samym hoście |
 

@@ -2,7 +2,7 @@
 # launch.sh <offer_id | "GPU name"> <label> : rent one Vast offer from the Jarvo server (vastai in ~/.local/bin, key
 # ~/.ssh/vast_kernel), arm two kill timers (on-instance self-destruct via CONTAINER_API_KEY after LIFE_S+600 s, local
 # watchdog after LIFE_S), then BEFORE any download check the host with ../hostguard.sh (owner rule 2026-11-17: power
-# limit and max memory clock >= 95% of factory, idle < 80 C). A failed host is destroyed, its machine_id goes to
+# limit and max memory clock >= 85% of factory, idle < 80 C). A failed host is destroyed, its machine_id goes to
 # ../hosty-zle.txt, and with a GPU name the next offer is tried (max 3; hosty-zle.txt machines are never picked).
 # Hosts stuck in loading > 10 min or refusing SSH are destroyed and listed too. Then copies the runner and starts it
 # detached. Destroy by id only: vastai destroy instance <id> -y.
