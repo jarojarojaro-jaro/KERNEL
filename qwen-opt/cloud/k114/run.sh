@@ -15,9 +15,9 @@ nvidia-smi -q -d POWER,CLOCK > "$R/power.txt"; nproc > "$R/nproc.txt"
 grep -q -w avx2 /proc/cpuinfo && V=kvqlean || V=kvqleana; echo "$V" > "$R/variant.txt"
 (nvidia-smi --query-gpu=timestamp,power.draw,power.limit,temperature.gpu,clocks.sm,clocks.mem,utilization.gpu,memory.used --format=csv,noheader -l 1 > "$R/smi.csv") &
 SMI=$!
-apt-get update -qq > /dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl python3 ca-certificates > "$R/apt.log" 2>&1
+apt-get update -qq > /dev/null 2>&1; DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl python3 ca-certificates libgomp1 > "$R/apt.log" 2>&1
 REL=https://github.com/jarojarojaro-jaro/KERNEL/releases/download/enigma-engines-cuda-2026-11-07
-dl https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF/resolve/main/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf "$M" 10442827840 &
+[ "$(stat -c %s "$M" 2>/dev/null)" = 10442827840 ] || bash /root/k114/pdl.sh https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF/resolve/main/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-mtp.gguf "$M" 10442827840 16 &
 DL=$!
 curl -fsSL --retry 5 -o "$F/fork.tar.gz" "$REL/llama-$V-bin-ubuntu-cuda-12.8-x64.tar.gz"
 curl -fsSL --retry 5 -o "$F/cudart.tar.gz" https://github.com/ggml-org/llama.cpp/releases/download/b12110/cudart-llama-b12110-bin-ubuntu-cuda-12.8-x64.tar.gz
@@ -32,17 +32,19 @@ wait $DL || { ph "model download failed"; kill $SMI; touch "$R/DONE"; exit 1; }
 ph "ready variant=$V"
 
 # 1) llama-bench: plain decode (target pass), verify-sized batch, prefill
+export GGML_CUDA_KVQ=1   # same attention path as the server (verify-sized batches go through kvq)
 BENCH=(-m "$M" -ngl 999 -fa 1 -ctk q4_0 -ctv q4_0 -r 3 -o jsonl)
 [ -x "$B/llama-bench" ] && {
     timeout 300 "$B/llama-bench" "${BENCH[@]}" -p 0 -n 128 > "$R/bench-tg.jsonl" 2> "$R/logs/bench-tg.err"; ph "bench tg128"
     timeout 300 "$B/llama-bench" "${BENCH[@]}" -p 5 -n 0 -ub 5 -b 5 > "$R/bench-pp5.jsonl" 2> "$R/logs/bench-pp5.err"; ph "bench pp5"
-    timeout 600 "$B/llama-bench" "${BENCH[@]}" -p 4096,16384 -n 0 -ub 512 > "$R/bench-pp.jsonl" 2> "$R/logs/bench-pp.err"; ph "bench pp"
+    timeout 300 "$B/llama-bench" "${BENCH[@]}" -p 4096 -n 0 -ub 512 > "$R/bench-pp4k.jsonl" 2> "$R/logs/bench-pp4k.err"; ph "bench pp4096"
+    timeout 400 "$B/llama-bench" "${BENCH[@]}" -p 16384 -n 0 -ub 512 -r 2 > "$R/bench-pp16k.jsonl" 2> "$R/logs/bench-pp16k.err"; ph "bench pp16384"
 } || ph "no llama-bench in archive"
 
 # 2) server: MTP n4 and n2, T=0/T=1 (bench.py "short" runs both temperatures, 6 prompts)
 arm() {  # label n_max
     env GGML_CUDA_KVQ=1 LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_GPU_VERIFY=1 LLAMA_SERVER_CACHE_SHARE_MIN=1024 \
-        "$B/llama-server" -m "$M" -c 16384 -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -ub 256 -np 1 --jinja --alias k114 \
+        "$B/llama-server" -m "$M" -c 8192 -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -ub 256 -np 1 --jinja --alias k114 \
         --spec-type draft-mtp --spec-draft-n-max "$2" -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab "$F/vocab.txt" \
         --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs \
         --host 127.0.0.1 --port 8090 --no-webui > "$R/logs/server-$1.log" 2>&1 < /dev/null &

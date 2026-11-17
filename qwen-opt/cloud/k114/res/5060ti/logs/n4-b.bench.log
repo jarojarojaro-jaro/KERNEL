@@ -1,0 +1,14 @@
+{"engine": "n4-b", "block": "short", "prompt": "pl-proza", "temp": 0.0, "tps": 46.38, "n": 400, "ttft_s": 0.558, "prompt_tokens": 128, "cached": 42, "srv_tps": 46.39, "md5": "c6596ace", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "pl-tech", "temp": 0.0, "tps": 56.06, "n": 400, "ttft_s": 0.987, "prompt_tokens": 113, "cached": 42, "srv_tps": 56.06, "md5": "a0697216", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "pl-kod", "temp": 0.0, "tps": 49.49, "n": 400, "ttft_s": 0.939, "prompt_tokens": 88, "cached": 42, "srv_tps": 49.49, "md5": "1e3f6e38", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "en-chat", "temp": 0.0, "tps": 65.07, "n": 123, "ttft_s": 0.93, "prompt_tokens": 72, "cached": 42, "srv_tps": 63.34, "md5": "a8514faa", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "en-tech", "temp": 0.0, "tps": 63.63, "n": 400, "ttft_s": 1.017, "prompt_tokens": 91, "cached": 42, "srv_tps": 63.63, "md5": "04ff19f8", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "en-code", "temp": 0.0, "tps": 51.73, "n": 400, "ttft_s": 0.939, "prompt_tokens": 89, "cached": 42, "srv_tps": 51.73, "md5": "ce6a7914", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "MEDIAN", "temp": 0.0, "tps": 53.894999999999996, "n": null, "ttft_s": null, "prompt_tokens": null, "cached": null, "srv_tps": null, "md5": null, "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "pl-proza", "temp": 1.0, "tps": 49.36, "n": 400, "ttft_s": 0.986, "prompt_tokens": 128, "cached": 42, "srv_tps": 49.36, "md5": "9096e4a1", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "pl-tech", "temp": 1.0, "tps": 48.71, "n": 400, "ttft_s": 0.968, "prompt_tokens": 113, "cached": 42, "srv_tps": 48.71, "md5": "bc7c3f53", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "pl-kod", "temp": 1.0, "tps": 61.53, "n": 400, "ttft_s": 1.025, "prompt_tokens": 88, "cached": 42, "srv_tps": 61.53, "md5": "de55af5e", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "en-chat", "temp": 1.0, "tps": 50.16, "n": 262, "ttft_s": 0.783, "prompt_tokens": 72, "cached": 68, "srv_tps": 49.67, "md5": "88761cae", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "en-tech", "temp": 1.0, "tps": 49.32, "n": 400, "ttft_s": 0.939, "prompt_tokens": 91, "cached": 42, "srv_tps": 49.32, "md5": "5c8e0b75", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "en-code", "temp": 1.0, "tps": 45.28, "n": 400, "ttft_s": 0.938, "prompt_tokens": 89, "cached": 42, "srv_tps": 45.28, "md5": "e2bb0fd3", "error": null}
+{"engine": "n4-b", "block": "short", "prompt": "MEDIAN", "temp": 1.0, "tps": 49.34, "n": null, "ttft_s": null, "prompt_tokens": null, "cached": null, "srv_tps": null, "md5": null, "error": null}

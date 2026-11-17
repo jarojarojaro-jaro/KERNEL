@@ -1,0 +1,6 @@
+0.00.449.997 I srv  llama_server: initializing ...
+0.00.450.114 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.450.971 I srv  init_listene: The UI is disabled
+0.00.450.995 I srv  init_listene: Use --ui/--no-ui (or deprecated --webui/--no-webui) to enable/disable
+0.00.452.375 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)
+0.00.518.635 I srv    load_model: loading model '/root/m.gguf'

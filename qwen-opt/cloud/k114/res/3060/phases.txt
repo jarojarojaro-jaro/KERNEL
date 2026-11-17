@@ -1,0 +1,10 @@
+1794920903 start
+1794921047 ready variant=kvqlean
+1794921047 no llama-bench in archive
+1794921231 arm n4-a
+1794921420 arm n2
+1794921607 arm n4-b
+1794921607 done
+1794921740 arm plain
+1794921811 prefill
+1794921811 done2

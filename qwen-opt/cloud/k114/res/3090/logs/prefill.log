@@ -1,0 +1,4 @@
+{'words': 3000, 'rep': 1, 'prompt_n': 3212, 'prompt_ms': 12390.515, 'pp_tps': 259.2, 'wall_s': 13.46}
+{'words': 3000, 'rep': 2, 'prompt_n': 3187, 'prompt_ms': 8396.239, 'pp_tps': 379.6, 'wall_s': 14.85}
+{'words': 10500, 'rep': 1, 'prompt_n': 10985, 'prompt_ms': 15926.133, 'pp_tps': 689.7, 'wall_s': 23.1}
+{'words': 10500, 'rep': 2, 'prompt_n': 11004, 'prompt_ms': 15646.958, 'pp_tps': 703.3, 'wall_s': 24.09}

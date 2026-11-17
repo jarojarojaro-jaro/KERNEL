@@ -90,7 +90,16 @@ status: aktualne
 | RTX 5060 Ti (160 W) | IQ3_XXS GSQ, fork kvqlean, 196k | 120 | 49,4 | 41% |
 | RTX 3060 (140 W) | Bonsai 2 27B PTQ1_0, prism MTP n2 (6,02 GB/krok) | 107–129 (a = 2,0–2,4; draft ~0,35 GB/krok) [INFERENCE] | 58,3 | 45–54% |
 
-Pomiary NVIDIA mają MTP n3 i inny harness, więc to przybliżenie (K-113 zrobi to 1:1). XTX pp4096 1123 t/s (UD-Q4_K_XL, [[REKORDY]]) to 95% sufitu prefillu.
+Pomiary NVIDIA mają MTP n3 i inny harness, więc to przybliżenie (K-113 zrobi to 1:1).
+
+**Pomiar 1:1 z 2026-11-17 (K-114, ten sam model GSQ IQ3_XXS-mtp i ten sam silnik na trzech kartach, [[2026-11-17-k114-nvidia-sufit]]):**
+- 5060 Ti: 51,0 t/s (61% sufitu), prefill 43–47%;
+- 3060 (host 135 W): 28,6 (42%), prefill 46–47%;
+- 3090 (host 250 W, pamięć 5001 MHz): 44,4 (23%), prefill 12–26%.
+
+Przyczyny luki:
+- 4–15 × droższy draft niż jego bajty (K-116);
+- limity hostów Vast. XTX pp4096 1123 t/s (UD-Q4_K_XL, [[REKORDY]]) to 95% sufitu prefillu.
 
 **Wnioski dla obu firm:**
 1. **Dekod zależy tylko od pasma.**

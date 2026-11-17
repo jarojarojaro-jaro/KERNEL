@@ -50,6 +50,26 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (marketing i kalibracja harnessów)
 
+### K-116 · NVIDIA (i XTX): draft MTP kosztuje 4–15 × swoje bajty — graf CUDA/HIP na całą pętlę draftu i fuzja kroku draftu
+- data: 2026-11-17
+- źródło: [[2026-11-17-k114-nvidia-sufit]] (krok n4 5060 Ti 51,1 ms = cel 31,3 + 4 × ~5 ms; bajty draftu ~0,9 ms); na XTX ten sam pomiar to K-111
+- hipoteza: narzut pętli draftu (osobne launche: warstwa MTP, głowica 64k, argmax/sampling, synchronizacja hosta po każdym kroku) dominuje; jedna sekwencja grafu na n draftów zbliży koszt draftu do bajtów
+- test: 5060 Ti (Vast ~$0,10 albo lokalnie w jaroserverai): `nsys` jednego kroku n4 (fork `kvqlean`), czas draftu na kernel i przerwy hosta; po prototypie grafu ABBA spec_sweep T=0/T=1, md5 T=0 bez zmian; ≤ 10 min na ramię
+- miara przed/po: ms/draft (5060 Ti 4,8–5,2 ms → cel ≤ 2 ms), t/s n4 T=1 49,4 → cel ≥ 60
+- zysk: do +40% dekodu na NVIDIA [INFERENCE: jeśli draft = bajty], podobnie na XTX; wszyscy użytkownicy Enigmy
+- ryzyko karty: brak
+- priorytet: wysoki
+
+### K-117 · Fork CUDA: cache skwantowanej głowicy draftu i MTP (`LLAMA_MTP_REQUANT_CACHE` jak na XTX) — start na słabym CPU 12 min → sekundy
+- data: 2026-11-17
+- źródło: [[2026-11-17-k114-nvidia-sufit]] (host 3090 TW: 12 min od „initializing” do gotowości; 5060 Ti na 64 rdzeniach 32 s); XTX: start 39,8 → 6,5 s z cache ([[REKORDY]])
+- hipoteza: port przełącznika z topki do forka CUDA (kod w `common/`, nie w kernelach) skraca każdy kolejny start do < 10 s; bitowo te same wagi draftu
+- test: CPU (budowa) + dowolna karta NVIDIA: start zimny vs ciepły, md5 T=0 identyczne
+- miara: s do `/health` przy drugim starcie
+- zysk: start Enigmy na NVIDIA ze słabym CPU: minuty → sekundy (UX, 0 t/s)
+- ryzyko karty: brak
+- priorytet: średni
+
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)
@@ -60,31 +80,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: temperatury (krótki GEMM), eco 2200 bez zmian
 - priorytet: średni (tani, porządkuje kolejkę)
 
-### K-114 · NVIDIA: rozłożyć krok MTP na 3090, 5060 Ti i 3060 względem sufitu — fork jest na 41–59% sufitu dekodu, XTX na 69–71% (+ K-112 prefill w tym samym runie)
-- data: 2026-11-17
-- źródło: [[skill-io-sufity]] (tabela „zmierzone a sufit”: 3090 80,0 z 160, 4090 101,3 z 172, 5090 148,6 z 251, 5060 Ti 49,4 z 120); metoda jak K-111
-- hipoteza: luka do sufitu na NVIDIA to głównie (a) próbkowanie CPU przy T=1 (K-004, 7–13%), (b) kroki draftu MTP n2/n3 z małymi kernelami, (c) limit mocy hosta; MMVQ CUDA blisko pasma
-- **wstępna odpowiedź z danych, które już mamy** (2026-11-17, bez nowego pomiaru), z R69b na wynajętej 3090 przy limicie mocy 350 W, czyli fabrycznym (`qwen-opt/cloud/nv69q/gpu.csv`, `summary.txt`):
-  - (c) limit mocy odpada dla 3090;
-  - (a) próbkowanie przy T=1 to 82,9 → 76,9 t/s, czyli −7%;
-  - **qwen-warp na tej samej karcie robi 121–124 t/s przy 82,9/76,9 forka (× 1,46–1,61), choć czyta więcej bajtów** (INT4 18,6 GB + MTP 0,85 vs Q4_K_XL 16,8). Większość luki to więc silnik: kernele weryfikacji i draftu oraz host między krokami, czyli (b). Sprzęt ani pasmo nie są przyczyną.
-  - Wniosek: nowy run ma rozbić (b) na składniki.
-- **zgoda właściciela 2026-11-17 02:31:** wynajem 3090, 5060 Ti i 3060 na Vast, łącznie ≤ $1. Wstrzymane, bo jaroserverai jest wyłączony, a na serwerze Jarva nie ma klucza Vast ani CLI.
-- runner gotowy: `qwen-opt/cloud/k114/run.sh` + `k114/bench.py` (kopia `nv69q/bench.py`). Ten sam model na trzech kartach (GSQ IQ3_XXS-mtp 10,44 GB, mieści się w 12 GB przy ctx 16k), fork `kvqlean`/`kvqleana`. Mierzy:
-  - limit mocy i zegary;
-  - tg128 (czas przebiegu celu → GB/s vs sufit);
-  - pp5 ub5 (koszt weryfikacji);
-  - pp4096/pp16384 (prefill, K-112);
-  - serwer MTP n4/n2/n4 przy T=0/T=1.
-
-  Krok = weryfikacja + drafty + host.
-- uruchomienie (z jaroserverai): `up.sh <oferta> --hours 1.5 --disk 40 --label qwenbench-k114-<karta> --download-gb 11 --go`, scp `k114/*` do `/root/k114/`, `setsid nohup bash /root/k114/run.sh &`, znacznik `/root/res/DONE`, `down.sh <id> --go`. Szacunek: ~45 min, ~$0,35–0,50 za trzy karty [INFERENCE: ceny ofert z listopada]
-- test: jak w runnerze wyżej, po jednej instancji na kartę; ≤ 10 min pomiaru na ramię
-- miara przed/po: tabela grupa kerneli → ms / GB/s / % sufitu bajtowego; ms na host między krokami
-- zysk: diagnostyka; wskazuje dźwignię dla wszystkich użytkowników Enigmy z NVIDIA (spodziewane +10…25%, bo luka do poziomu XTX to 10–28 pp sufitu)
-- ryzyko karty: brak (5060 Ti 160 W)
-- priorytet: wysoki
-
 ### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (sufit prefillu 3090 z INT8 MMQ 2737 t/s przy 4k = 2,3 × XTX; prefillu NVIDIA nigdy nie mierzyliśmy); [[skill-io-metodyka]] (narzędzia CUDA)
@@ -92,6 +87,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test: `nvbandwidth` / `cudaMemcpy` D2D 4 GB; `cublasLt` f16 i i8 4096³ i 8192³ (min z N); `llama-bench -p 4096,32768 -n 0` fork vs upstream b11856 (ABBA, ten sam host); ≤ 10 min na kartę
 - miara: GB/s, TFLOPS/TOPS, pp t/s i % sufitu; przeliczenie `karty.py` ze zmierzonymi wartościami
 - zysk: sufity NVIDIA z pomiaru zamiast specyfikacji; decyzja, czy prefill NVIDIA jest dźwignią
+- częściowo zrobione 2026-11-17 (K-114): prefill przez serwer 5060 Ti 788–828 t/s (43–47% sufitu INT8), 3060 442–461 (46–47%), 3090 na ograniczonym hoście 319–696; pasmo i GEMM dalej niezmierzone (archiwum forka bez `llama-bench`)
 - ryzyko karty: brak
 - priorytet: średni
 
@@ -760,6 +756,36 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-114 · NVIDIA: rozłożyć krok MTP na 3090, 5060 Ti i 3060 względem sufitu — fork jest na 41–59% sufitu dekodu, XTX na 69–71% (+ K-112 prefill w tym samym runie)
+- data: 2026-11-17
+- źródło: [[skill-io-sufity]] (tabela „zmierzone a sufit”: 3090 80,0 z 160, 4090 101,3 z 172, 5090 148,6 z 251, 5060 Ti 49,4 z 120); metoda jak K-111
+- hipoteza: luka do sufitu na NVIDIA to głównie (a) próbkowanie CPU przy T=1 (K-004, 7–13%), (b) kroki draftu MTP n2/n3 z małymi kernelami, (c) limit mocy hosta; MMVQ CUDA blisko pasma
+- **wstępna odpowiedź z danych, które już mamy** (2026-11-17, bez nowego pomiaru), z R69b na wynajętej 3090 przy limicie mocy 350 W, czyli fabrycznym (`qwen-opt/cloud/nv69q/gpu.csv`, `summary.txt`):
+  - (c) limit mocy odpada dla 3090;
+  - (a) próbkowanie przy T=1 to 82,9 → 76,9 t/s, czyli −7%;
+  - **qwen-warp na tej samej karcie robi 121–124 t/s przy 82,9/76,9 forka (× 1,46–1,61), choć czyta więcej bajtów** (INT4 18,6 GB + MTP 0,85 vs Q4_K_XL 16,8). Większość luki to więc silnik: kernele weryfikacji i draftu oraz host między krokami, czyli (b). Sprzęt ani pasmo nie są przyczyną.
+  - Wniosek: nowy run ma rozbić (b) na składniki.
+- **zgoda właściciela 2026-11-17 02:31:** wynajem 3090, 5060 Ti i 3060 na Vast, łącznie ≤ $1. Wstrzymane, bo jaroserverai jest wyłączony, a na serwerze Jarva nie ma klucza Vast ani CLI.
+- runner gotowy: `qwen-opt/cloud/k114/run.sh` + `k114/bench.py` (kopia `nv69q/bench.py`). Ten sam model na trzech kartach (GSQ IQ3_XXS-mtp 10,44 GB, mieści się w 12 GB przy ctx 16k), fork `kvqlean`/`kvqleana`. Mierzy:
+  - limit mocy i zegary;
+  - tg128 (czas przebiegu celu → GB/s vs sufit);
+  - pp5 ub5 (koszt weryfikacji);
+  - pp4096/pp16384 (prefill, K-112);
+  - serwer MTP n4/n2/n4 przy T=0/T=1.
+
+  Krok = weryfikacja + drafty + host.
+- uruchomienie (z jaroserverai): `up.sh <oferta> --hours 1.5 --disk 40 --label qwenbench-k114-<karta> --download-gb 11 --go`, scp `k114/*` do `/root/k114/`, `setsid nohup bash /root/k114/run.sh &`, znacznik `/root/res/DONE`, `down.sh <id> --go`. Szacunek: ~45 min, ~$0,35–0,50 za trzy karty [INFERENCE: ceny ofert z listopada]
+- test: jak w runnerze wyżej, po jednej instancji na kartę; ≤ 10 min pomiaru na ramię
+- miara przed/po: tabela grupa kerneli → ms / GB/s / % sufitu bajtowego; ms na host między krokami
+- zysk: diagnostyka; wskazuje dźwignię dla wszystkich użytkowników Enigmy z NVIDIA (spodziewane +10…25%, bo luka do poziomu XTX to 10–28 pp sufitu)
+- ryzyko karty: brak (5060 Ti 160 W)
+- priorytet: wysoki
+- **wynik 2026-11-17** ([[2026-11-17-k114-nvidia-sufit]], Vast $0,33):
+  - 5060 Ti n2 T=1 51,0 t/s (61% sufitu), n4 49,4 (51%), plain 74%, prefill 788–828 t/s (43–47%);
+  - 3060 (135 W) n2 28,6 (42%), n4 28,0 (35%), plain 53%, prefill 442–461 (46–47%);
+  - 3090 (host 250 W, pamięć 5001 MHz) n4 44,4 (23%), plain 34%, prefill 319–696 (12–26%).
+- **odpowiedź na hipotezę:** (b) tak, draft 4,8–9 ms vs ~1 ms bajtów, 37–40% kroku → K-116; (a) nie, krok przy T=1 bez zmian, strata to akceptacja; (c) tak na hostach Vast 3090/3060. Start 12 min na słabym CPU → K-117.
 
 ### K-103 · Enigma NVIDIA: silnik na llama.cpp v1.0.0 (few-row MMQ #31533) zamiast pinu b11856, z MTP
 - data: 2026-11-14

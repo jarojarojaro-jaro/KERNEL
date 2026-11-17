@@ -21,7 +21,9 @@ status: aktualne
 **Reguła:**
 - Dwa niezależne timery: lokalny watchdog z `-y` oraz samozniszczenie na instancji przez `CONTAINER_API_KEY`.
 - Po każdym usunięciu kontrola listą instancji.
-- Za wolny host (pobieranie < 20 MB/s przy 10 GB) usuwamy od razu i bierzemy inną ofertę. Deklarowane `inet_down` nie gwarantuje prędkości z HF.
+- Za wolny host (pobieranie < 20 MB/s przy 10 GB) usuwamy od razu i bierzemy inną ofertę. Deklarowane `inet_down` nie gwarantuje prędkości z HF (2026-11-17: 1–3 MB/s na 3 z 5 hostów).
+- Pobieranie modelu z HF przez `qwen-opt/cloud/k114/pdl.sh` (16 równoległych zakresów): 2 → 16 MB/s na tym samym hoście.
+- Przy wyborze hosta patrz też na CPU: słaby CPU = minuty ponownej kwantyzacji draftu przy każdym starcie serwera (K-117).
 
 ## Powiązane
 - [[lekcja-vast-transfer-kosztuje]]

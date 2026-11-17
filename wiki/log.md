@@ -418,3 +418,6 @@ Wpis @akshay_pachaar o pasmie pamięci vs obliczeniach: znane podstawy, już w [
 
 ## [2026-11-17] zwiad | compwatch 2026-11-17
 [[zwiad-2026-11-17]]: rekord kyuz0 R9700 Qwen3.8-27B 594,7 t/s niefizyczny (≤ 190 t/s z sufitu 640 GB/s przy 8 tok./krok); arXiv 2611.20565 (KV draftu K4V4 −1,36% akceptacji; my q4_0 od dawna), 2611.19455 (lookup: najnowsze dopasowanie = nasz lookup); llama.cpp #31327 GDN mma na CDNA, #32308 MMVQ RDNA3.5; Strata 0.2.15, vLLM v0.34.0 bez wpływu. Lekcja [[lekcja-vastai-destroy-pyta]].
+
+## [2026-11-17] eksperyment | K-114 NVIDIA na Vast (3090, 5060 Ti, 3060), $0,33
+[[2026-11-17-k114-nvidia-sufit]]: 5060 Ti n2 T=1 51,0 t/s (61% sufitu), 3060 28,6 (42%), 3090 44,4 (23%, host 250 W i pamięć 5001 MHz); draft MTP kosztuje 4–15 × swoje bajty (37–40% kroku) → K-116; T=1 nie wydłuża kroku; start 12 min na słabym CPU → K-117. Instancje usunięte, kredyt $0,16.

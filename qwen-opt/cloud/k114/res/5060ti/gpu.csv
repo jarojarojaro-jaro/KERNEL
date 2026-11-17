@@ -1,0 +1,2 @@
+name, memory.total [MiB], driver_version, power.limit [W], power.default_limit [W], clocks.max.sm [MHz], clocks.max.memory [MHz], pcie.link.gen.current, pcie.link.width.current
+NVIDIA GeForce RTX 5060 Ti, 16311 MiB, 570.169, 180.00 W, 180.00 W, 3090 MHz, 14001 MHz, 1, 8
