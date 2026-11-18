@@ -451,3 +451,6 @@ Odnotowane w K-120; start po zgodzie na pobranie ~17 GB i doładowaniu Vast.
 
 ## [2026-11-18] zwiad | compwatch 2026-11-18
 [[zwiad-2026-11-18]]: Splash 1.7 (drzewo + lookup, Qwen3.8-27B Mac 1,22–1,46 ×, stratny stan INT8 i niedeterministyczny domyślnie; nasz werdykt drzewa ≤ +5% bez zmian); drafter NVIDIA 0,8B do 27B (droższy niż MTP; lekcja: destylacja draftera PL); llama.cpp stream-k GCN; kyuz0 R9700 514,9 dalej niefizyczne.
+
+## [2026-11-18] telegram | ml-systems-notes (Jino Rohit) — notatki edukacyjne
+Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka uruchomień CUDA ~1024 kernele (4060 Ti) → uwaga w K-116; SGLang 0.5.9 radix na hybrydzie wyłącza overlap schedule (dotyczy K-119).

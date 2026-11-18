@@ -53,6 +53,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-116 · NVIDIA (i XTX): draft MTP kosztuje 4–15 × swoje bajty — graf CUDA/HIP na całą pętlę draftu i fuzja kroku draftu
 - data: 2026-11-17
 - źródło: [[2026-11-17-k114-nvidia-sufit]] (krok n4 5060 Ti 51,1 ms = cel 31,3 + 4 × ~5 ms; bajty draftu ~0,9 ms); na XTX ten sam pomiar to K-111
+- dodatkowo (2026-11-18): kolejka uruchomień CUDA ma ~1024 kernele (pomiar 4060 Ti, [[skill-io-pulapki]]); w `nsys` sprawdzić, czy krok z 4 draftami bez grafu nie dobija do tego limitu (host czeka na GPU)
 - hipoteza: narzut pętli draftu (osobne launche: warstwa MTP, głowica 64k, argmax/sampling, synchronizacja hosta po każdym kroku) dominuje; jedna sekwencja grafu na n draftów zbliży koszt draftu do bajtów
 - test: 5060 Ti (Vast ~$0,10 albo lokalnie w jaroserverai): `nsys` jednego kroku n4 (fork `kvqlean`), czas draftu na kernel i przerwy hosta; po prototypie grafu ABBA spec_sweep T=0/T=1, md5 T=0 bez zmian; ≤ 10 min na ramię
 - miara przed/po: ms/draft (5060 Ti 4,8–5,2 ms → cel ≤ 2 ms), t/s n4 T=1 49,4 → cel ≥ 60

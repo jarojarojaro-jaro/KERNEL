@@ -310,6 +310,7 @@ Synteza: [[raport-63-synteza]]; reguła [[2026-11-05-tylko-bezstratne]] (stratne
 | incoai/splash 1.7.0 (zwiad 2026-11-18) | 1.7.0 `61f6d5164` (11-17) | [[zwiad-2026-11-18]] | Drzewo + lookup w jednym przebiegu; stan GDN INT8 i niedeterministyczne domyślnie. | Qwen3.8-27B M5 Pro dekod 1,22–1,46 × (vs 1.6.2) | czy podadzą tryb exact z liczbami |
 | nvidia/Qwen3.5-0.8B-Qwen3.8-27B-Draft (+ bartowski GGUF; zwiad 2026-11-18) | v1.0 (ModelOpt 0.48rc0), 11-17 | [[zwiad-2026-11-18]] | Drafter 0,8B destylowany z odpowiedzi 27B; u nas droższy niż MTP. | brak akceptacji w karcie | akceptacja/SPEED-Bench vs MTP |
 | ggml-org/llama.cpp #30022 (`2e53a0bab`) | 11-17 | [[zwiad-2026-11-18]] | Stream-k MMQ dla GCN; RDNA3 nie dotyczy. | – | – |
+| JINO-ROHIT/ml-systems-notes (Telegram „gpu” 2026-11-18; brak licencji, tylko odnośnik) | `7331d72` (push 10-26) | [[skill-io-pulapki]] | Notatki edukacyjne (FLOPy, grafy CUDA, spec dec, Dynamo); 2 pomiary warte zapisu: kolejka CUDA ~1024 kernele, radix SGLang na hybrydzie. | 4060 Ti: 1200 kernel → 36,7 ms wstawiania | – |
 | EAT (arXiv 2610.36848, caoshiyi/EAT) | v1 10-27; `0a90500` (11-02) | R63e §2.6 | Wzorzec zespołu + audytor pomiaru. | KDA MI350X 3.01× | – |
 | Together Compiler (TKCC) blog + paper | 11-04 | R63e §3, [[lekcja-gorzka-lekcja-tkcc]] | Gorzka lekcja; megakernel nie płaci. | −25–31% z bazą wiedzy | – |
 | Baseten X article (DeepSeek V4.1 Flash 1017) | 11-04 | R63e §4 | Nieczytelny; „1017” to wersja modelu. | – | treść artykułu |

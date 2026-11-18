@@ -46,6 +46,8 @@ status: aktualne
 | NVIDIA Blackwell sm_120 | potrzebny CUDA ≥ 12.8 i build z `sm_120` | [[lekcja-build-cuda-0057-0070]] |
 | NVIDIA na Vast | limit mocy hosta zaniża wynik (4090 250 W, 3090 340 W, 5060 Ti 160 W; 2026-11-17: 3090 250 z 420 W i pamięć 5001 z 9751 MHz → 23% sufitu, 3060 135 z 170 W) | [[lekcja-limit-mocy-hosta]], [[lekcja-limit-mocy-285w]], [[lekcja-vast-tylko-pelna-moc]]; bramka `qwen-opt/cloud/hostguard.sh`: limit mocy i zegar pamięci ≥ 85% fabrycznych, < 80 °C bez obciążenia (próg właściciela 2026-11-17) |
 | NVIDIA na Vast | CPU hosta bez AVX2 (3090 → wariant `kvqleana`); limit CPU kontenera | [[lekcja-limit-cpu-kontenera]] |
+| NVIDIA CUDA | kolejka uruchomień ma ~1024 kernele: na 4060 Ti po ~1040 wstawionych matmulach 512² host czeka na GPU (1000 → 1,74 ms, 1200 → 36,7 ms wstawiania); długie kroki bez grafu tracą „bieg do przodu” CPU | github.com/JINO-ROHIT/ml-systems-notes `cuda_stream_and_queue` (pomiar autora); dotyczy K-116 |
+| SGLang 0.5.9 | radix cache na hybrydzie Mamba/GDN po cichu wyłącza overlap schedule: Qwen3.5-0.8B na A100 szybszy bez radix w prawie każdym scenariuszu (+9% z radix tylko przy identycznych promptach 2000 tok.) | j.w. `sglang/kv_cache` (pomiar autora); ważne dla K-119 (SenseNova w SGLang) |
 | obie | zajęte CPU kosztuje dekod (107 → 75 t/s, `gotchas.md:47`); na Vast host współdzielony | przeplot A/B na tym samym hoście |
 
 ## Pułapki: Apple, Intel, Tenstorrent (2026-11-17)
