@@ -445,3 +445,6 @@ ZRODLA: wiersz; lekcja dla nas tylko przypomnienie: w hybrydzie GDN poza KV cach
 
 ## [2026-11-18] telegram | właściciel: „super fajne pomysły” (K-120, adapter pod omp)
 Odnotowane w K-120; start po zgodzie na pobranie ~17 GB i doładowaniu Vast.
+
+## [2026-11-18] telegram | Rohan Arun: GA z wyścigami do kerneli (delta R63e)
+[[ga-racing-rohanarun]]: silnik 847 linii, eliminacja na log-ratio do mediany żywych, bramka rel < 0,997 i CI < 1 na świeżych danych, pending → czarna lista; demo działa tu (1,4 s, syntetyczne); K-121 adapter do naszych sweepów.

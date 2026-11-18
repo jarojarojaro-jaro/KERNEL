@@ -102,6 +102,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - właściciel 2026-11-18 00:32: „super fajne pomysły” (K-120 i adapter pod omp z naszych sesji); start czeka na zgodę na pobranie ~17 GB i kredyt Vast
 - priorytet: średni
 
+### K-121 · Adapter GA z wyścigami (Rohan Arun) do naszych sweepów wariantów: test-backend-ops perf na XTX i na NVIDIA (kernele draftu K-116)
+- data: 2026-11-18
+- źródło: [[ga-racing-rohanarun]] (`Auto-research-agent` @ `9367733`, eliminacja na log-ratio do mediany żywych, bramka rel < 0,997 i CI < 1 na świeżych danych, `pending` → czarna lista); demo działa tu na CPU (1,4 s, syntetyczne)
+- hipoteza: automatyczny wyścig znajduje w tym samym czasie GPU co nasza siatka tego samego zwycięzcę (FA D256 wariant 83) albo lepszego, przy mniejszej liczbie pomiarów; na NVIDIA wybierze kafle/wątki kerneli draftu MTP
+- test: CPU: adapter `hip_tbo.py` (komórki = kształty z profilu kroku, geny = zmienne `GGML_HIP_FA_D256_VAR` / warianty MMQ, pomiar = `test-backend-ops -o perf` na kształcie, build = sprawdzenie `test-backend-ops` bitowo); karta: XTX przez `run-jobs.sh`, `GGML_HIP_PM4=0`, ≤ 10 min; potem to samo na 5060 Ti (Vast, hostguard)
+- miara: zwycięzca i jego czas vs nasz wybór z siatki; liczba pomiarów do decyzji
+- zysk: szybsze strojenie per architektura (dźwignie kernelowe trzeba stroić osobno na każdą kartę); 0 t/s samo w sobie
+- ryzyko karty: reset przy wariancie z faultem → tylko PM4=0, nadzór, kolejka
+- priorytet: niski
+
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)
