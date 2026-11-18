@@ -462,4 +462,4 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 [[lekcja-czas-optymalizacji-to-metryka]]: bodziec RightNow (Hy4 flash < 2 h, bez danych do sprawdzenia); nasze czasy: FA83 ~27 h ściany / 62 min GPU, K-114 ~2 h / ~25 min GPU; reguła: znaczniki etapów w każdej kampanii, wiersz czasu w notatce; dopisane do K-119, K-120, skill-io-metodyka.
 
 ## [2026-11-18] telegram | adapter Qwen3.8-27B pod OpenCode (harness-hub, v2)
-[[qwen38-27b-pi-adapter]]: bez myślenia dorównuje bazie z myśleniem xhigh przy 6–8×% mniej tokenów (SWE-bench Pro 31,8k → 3,9k; ~265 s → ~33 s dekodu przy 120 t/s); słabsza istotność niż pi (p = 0,057 / 0,38); skrypt TRL publiczny; K-120: miara tokeny i czas na zadanie.
+[[qwen38-27b-pi-adapter]]: bez myślenia dorównuje bazie z myśleniem xhigh przy 6–8 × mniej tokenów (SWE-bench Pro 31,8k → 3,9k; ~265 s → ~33 s dekodu przy 120 t/s); słabsza istotność niż pi (p = 0,057 / 0,38); skrypt TRL publiczny; K-120: miara tokeny i czas na zadanie.
