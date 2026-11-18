@@ -8,3 +8,4 @@ Raporty dzienne `tools/compwatch/compwatch.py` (timer systemd 06:30, `nice`). Je
 - [2026-11-15](2026-11-15.md): 15 pozycji; top: ashhart/TensorFold wydanie v1.2.9 (2026-11-15): TensorFold 1.2.9
 - [2026-11-16](2026-11-16.md): 29 pozycji; top: Niko1221/Strata wydanie v0.2.14 (2026-11-15): Strata 0.2.14
 - [2026-11-17](2026-11-17.md): 43 pozycji; top: Niko1221/Strata wydanie v0.2.15 (2026-11-16): Strata 0.2.15
+- [2026-11-18](2026-11-18.md): 29 pozycji; top: mw00/project-maya wydanie v1.1.66 (2026-11-17): v1.1.66

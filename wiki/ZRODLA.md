@@ -307,6 +307,9 @@ Synteza: [[raport-63-synteza]]; reguła [[2026-11-05-tylko-bezstratne]] (stratne
 | Open Kernel Challenge llms.txt | 11-05 | R63e §2.1 | Lekcja dopasowania do sędziego. | >300 000 zgłoszeń | finał serwingu |
 | rohanarun/Auto-research-agent | `0230468` (11-04); PR #6 `7a14f0d`, PR #9 `b94e66e` | R63e §2.2–2.3 | Wiersze Gemini to nie pomiary agenta; PR #9 dobre reguły. | baseline 100.0 µs (syntetyczny) | – |
 | rohanarun/Auto-research-agent — GA z wyścigami (delta; Telegram „gpu” 2026-11-18) | `9367733` (PR #22 `7ecb410`, #23; 11-18) | [[ga-racing-rohanarun]] | Kod GA: wyścigi na log-ratio, bramka CI na świeżych danych, czarna lista crashy; demo działa. | – (czasy demo syntetyczne) | adapter HIP, wyniki na realnym GPU |
+| incoai/splash 1.7.0 (zwiad 2026-11-18) | 1.7.0 `61f6d5164` (11-17) | [[zwiad-2026-11-18]] | Drzewo + lookup w jednym przebiegu; stan GDN INT8 i niedeterministyczne domyślnie. | Qwen3.8-27B M5 Pro dekod 1,22–1,46 × (vs 1.6.2) | czy podadzą tryb exact z liczbami |
+| nvidia/Qwen3.5-0.8B-Qwen3.8-27B-Draft (+ bartowski GGUF; zwiad 2026-11-18) | v1.0 (ModelOpt 0.48rc0), 11-17 | [[zwiad-2026-11-18]] | Drafter 0,8B destylowany z odpowiedzi 27B; u nas droższy niż MTP. | brak akceptacji w karcie | akceptacja/SPEED-Bench vs MTP |
+| ggml-org/llama.cpp #30022 (`2e53a0bab`) | 11-17 | [[zwiad-2026-11-18]] | Stream-k MMQ dla GCN; RDNA3 nie dotyczy. | – | – |
 | EAT (arXiv 2610.36848, caoshiyi/EAT) | v1 10-27; `0a90500` (11-02) | R63e §2.6 | Wzorzec zespołu + audytor pomiaru. | KDA MI350X 3.01× | – |
 | Together Compiler (TKCC) blog + paper | 11-04 | R63e §3, [[lekcja-gorzka-lekcja-tkcc]] | Gorzka lekcja; megakernel nie płaci. | −25–31% z bazą wiedzy | – |
 | Baseten X article (DeepSeek V4.1 Flash 1017) | 11-04 | R63e §4 | Nieczytelny; „1017” to wersja modelu. | – | treść artykułu |

@@ -448,3 +448,6 @@ Odnotowane w K-120; start po zgodzie na pobranie ~17 GB i doładowaniu Vast.
 
 ## [2026-11-18] telegram | Rohan Arun: GA z wyścigami do kerneli (delta R63e)
 [[ga-racing-rohanarun]]: silnik 847 linii, eliminacja na log-ratio do mediany żywych, bramka rel < 0,997 i CI < 1 na świeżych danych, pending → czarna lista; demo działa tu (1,4 s, syntetyczne); K-121 adapter do naszych sweepów.
+
+## [2026-11-18] zwiad | compwatch 2026-11-18
+[[zwiad-2026-11-18]]: Splash 1.7 (drzewo + lookup, Qwen3.8-27B Mac 1,22–1,46 ×, stratny stan INT8 i niedeterministyczny domyślnie; nasz werdykt drzewa ≤ +5% bez zmian); drafter NVIDIA 0,8B do 27B (droższy niż MTP; lekcja: destylacja draftera PL); llama.cpp stream-k GCN; kyuz0 R9700 514,9 dalej niefizyczne.

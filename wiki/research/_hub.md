@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (159)
+## Notatki (160)
 
 - [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]] — Link arXiv 2605.08513 podany przez użytkownika jako praca o InferenceX to „A Single Neuron Is Sufficient to Bypass Safety Alignment in LLMs” (Kazemi, Chegini, Safi, 2026-05-08): wyłączenie jednego neuronu odmowy omija alignment, a wzmocnienie neuronu pojęcia wywołuje szkodliwe treści; 7 modeli z 2 rodzin, 1.7B–70B, bez treningu.
 - [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]] — Zestawienie wszystkich zmierzonych liczb całej optymalizacji – upstream, wcześniejszy fork i produkcja – dla XTX (Qwen, Uncensored, LFM), nowych zmian poza produkcją, kart NVIDIA i Magnitude, każda ze źródłem `plik:wiersz` i oceną porównywalności (P / O / brak).
@@ -175,4 +175,5 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[raport-watch-compwatch|Wywiad konkurencji (compwatch) – raporty dzienne i zwiad]] — Codzienny `tools/compwatch/compwatch.py`: bazowy 2026-10-20 – 41 pozycji, top 3090/Qwen 273.1 t/s tqLLM vs nasze 93.3 (nieporównywalne, raport 32f); drugi przebieg 1 pozycja (sglang). Od 2026-11-14 to poranny zwiad sesji Kernel: także arXiv i blogi RSS/Atom.
 - [[zwiad-2026-11-14|Zwiad 2026-11-14 (przebieg bazowy compwatch): hipfire dogonił nas na XTX, ale stratnie]] — Najważniejsze: hipfire 0.4.4 ma dwa nowe kernele weryfikacji MTP na XTX (gfx1100), zmieniające wynik numerycznie z bramką KLD.
 - [[zwiad-2026-11-17|Zwiad 2026-11-17: rekord 594,7 t/s na R9700 jest fizycznie niemożliwy, draft KV q4 potwierdzony, lookup „najnowsze dopasowanie” potwierdzony]] — Nic, co zmienia produkcję. Trzy lekcje.
+- [[zwiad-2026-11-18|Zwiad 2026-11-18: Splash 1.7 (drzewo draftu + lookup w jednym przebiegu), drafter NVIDIA 0,8B do Qwen3.8-27B — nic do wdrożenia u nas]] — Splash 1.7 przyspieszył dekod Qwen3.8-27B na Macu 1,22–1,46 × dzięki drzewu draftu i łańcuchowi lookup weryfikowanym razem. Robi to jednak stratnie (stan GDN w cache jako INT8) i domyślnie niedeterministycznie. Na XTX nasz werdykt o drzewie (sufit ≤ +5%) zostaje. NVIDIA wydała osobny drafter 0,8B do Qwen3.8-27B; przy naszym koszcie draftu (K-114) będzie wolniejszy od MTP.
 <!-- AUTO:END -->
