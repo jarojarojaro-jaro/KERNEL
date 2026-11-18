@@ -23,6 +23,13 @@ v0.1.44.1–0.1.45 (21g, 2026-10-19): ścieżka Qwen3.6-35B-A3B, dekod R9700 83.
 
 0.2.12 (tag `123bad4a`, 2026-11-07, silnik 0.1.58; R66a): „newly trained DFlash2 drafter” to fine-tune drafteru Inco AI dla Flash-Next (603 M, na wyjściach kwantów UD-Q4_K_XL i UD-IQ4_XS-v31): +11.4% przyjętych draftów, +2.1…5.0% t/s; z 27B nieużywalny (inne tapy i format `.pack`). Tweet vs release notes: Mac +10.3…12.7%, nie +31%; Strix Halo ×1.77–2.12 to prefill 4K z fuzowanych kerneli F16 WMMA (stratne, tylko Windows), „prawie 3× na Linuksie” nie było mierzone; „3× low RAM” to poprawka błędu liczenia wolnej pamięci. Pułapka UMA: kopie z niezarejestrowanej areny hosta szły ~0.5 GB/s. Dla Enigmy: próg draftu rośnie z kosztem wiersza weryfikacji ([[prog-draftu-od-kosztu-wiersza]]). Flash-Next na XTX: tylko HIP (bez Vulkana), DFlash2 na gfx1100 niezmierzony, reguły RAM ISTA vs Unsloth w [[qwen38-flash-next]]. Synteza: [[raport-66-synteza]].
 
+## Aktualizacja 2026-11-19 (v0.2.16, silniki 0.1.62; Telegram „gpu”)
+
+- **Własny kod silnika na wszystkich platformach** (NVIDIA, AMD, Intel Arc, Mac, DGX Spark), bez ggml i bez kerneli macierzowych llama.cpp. Te same tokeny co w 0.2.15 na 10 promptach: R9700 10/10, P100 10/10, M5 Max 10/10, Arc A750 9/9. Nowych liczb prędkości dla gfx1100 i gęstego 27B brak.
+- **Lekcja (wszystkie firmy):** w 0.2.15 na Apple M1–M4 z UD-Q4_K_XL liczyła się tylko ćwiartka kolumn w części warstw (160 z 640), **a tekst dalej brzmiał płynnie**. KL pierwszego tokena 0,303 → 0,0068 po poprawce; top-1 różny w 3/6 → 1/6 promptów. Krótka odpowiedź tego nie pokazuje. Potrzebna jest bramka KL/md5 na każdej architekturze, nie „czy brzmi dobrze”. Dla nas: Enigma na nowych kartach zawsze z bramką KLD.
+- **Blackwell, CUDA 12:** pierwsza odpowiedź 173,0 s → 0,34 s po dodaniu natywnego kodu dla karty (wcześniej kompilacja JIT z PTX). Enigma ma natywne `sm_120` (CUDA 12.8), ale to warto sprawdzić przy każdym nowym wydaniu.
+- Prefill starszych NVIDIA: V100 26k tokenów 17 464 → 15 068 ms (−13,7%), 2080 Ti ×1,088 vs 0.1.58.
+
 ## Powiązane
 - [[repo/_hub|repo]]
 - [[tensorfold]]

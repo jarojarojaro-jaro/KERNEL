@@ -466,3 +466,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-19] telegram | DaisyRose-27B (RadixArk, pełny RL na Qwen3.8-27B)
 [[daisyrose-27b]]: 144 H200 × 18 dni ≈ 62k GPU-h; TB 4.1 5,6 → 12,0%, reszta +0,4…4 pp; drop-in GGUF; lekcja: celowany LoRA w jednym harnessie ma dużo lepszy stosunek zysku do kosztu; dopisany do K-120 (tokeny, czas, akceptacja MTP).
+
+## [2026-11-19] telegram | Strata v0.2.16 (delta)
+[[strata]]: własny silnik bez ggml na wszystkich platformach (te same tokeny); lekcja do [[skill-io-pulapki]]: błąd M1–M4 liczył 1/4 kolumn przy płynnym tekście (KL 0,303 → 0,0068), JIT Blackwell 173 → 0,34 s; nic dla 27B na XTX.

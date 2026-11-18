@@ -55,6 +55,8 @@ status: aktualne
 | firma | pułapka | źródło |
 |---|---|---|
 | Apple M1–M4 | głęboka spekulacja przegrywa (M4 6,35 → 3,25 t/s przy 3 draftach): weryfikacja N=5 ograniczona obliczeniami | `gotchas.md:56`, `levers.md:35`; nasze liczenie w [[skill-io-sufity]] |
+| Apple M1–M4 | błąd kernela liczący 1/4 kolumn dawał płynny tekst (Strata 0.2.15: KL 0,303, top-1 różny w 3/6) — płynność nie dowodzi poprawności, bramka KL/md5 per architektura | [[strata]] (v0.2.16) |
+| NVIDIA Blackwell | brak natywnego kodu `sm_120` → JIT z PTX przy pierwszej odpowiedzi (173 s → 0,34 s po poprawce) | [[strata]] (v0.2.16) |
 | Apple | limit pamięci GPU `iogpu.wired_limit_mb` (domyślnie ~75% RAM); pamięć niewidoczna w cgroup i MemAvailable | `gotchas.md:56`, `methodology.md:46` |
 | Apple | Neural Accelerators (M5) wymagają nowej ścieżki Metal 4 (tensor API) — stare kernele `simdgroup_matrix` ich nie używają [INFERENCE] | Apple newsroom M5 |
 | Intel XPU (PyTorch) | `torch.topk` segfault powyżej ~2–8K kolumn; split-K na Xe3 wymaga niekeszowanych zapisów i płotu; `UR_RESULT_ERROR_OUT_OF_RESOURCES` = za duże lub kawałkowe grafy | `gotchas.md:51-54` |
