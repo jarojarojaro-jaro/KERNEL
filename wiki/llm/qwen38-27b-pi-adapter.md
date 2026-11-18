@@ -38,6 +38,29 @@ Uczciwie raportowane: przedziały, test znaku, osobny podzbiór niewybierany do 
    - Po scaleniu i ponownej kwantyzacji koszt jest zerowy, ale to nowy plik wag, a głowica MTP (blk.64) nie była trenowana. Akceptacja draftu może spaść.
 4. **Pomysł treningowy:** ten sam przepis na naszych sesjach omp (`~/kernel/archiwum`, tysiące tur agenta) dałby adapter „pod omp”. Koszt: 2 × B200 kilka godzin [INFERENCE]. Najpierw K-120, czyli sprawdzić, czy gotowy adapter pi w ogóle pomaga w omp.
 
+## Aktualizacja 2026-11-18: adapter pod OpenCode (przepis v2)
+
+Źródło: huggingface.co/harness-hub/Qwen3.8-27B-opencode-adapted; x.com/yb2698/status/2123043263041155473. Właściciel: „mega ważne”.
+
+**Najważniejsze dla nas: adapter bez myślenia dorównuje bazie z myśleniem na maksymalnym wysiłku (`xhigh`), ale generuje 6–8 × mniej tokenów.** Przy dekodzie ograniczonym pasmem tokeny to czas. Przykład:
+- mediana na zadanie SWE-bench Pro: 31,8k → 3,9k tokenów, czyli przy naszych ~120 t/s ~265 s → ~33 s samego dekodu;
+- Terminal-Bench: 15,8k → 2,6k tokenów;
+- wywołania modelu: 44 → 18 i 14 → 12.
+
+Taki zysk daje sam model, bez żadnego kernela.
+
+| test (OpenCode, 1 próba, 100 kroków) | baza | baza z myśleniem | adapter | adapter z myśleniem |
+|---|---|---|---|---|
+| SWE-bench Pro (hard 51) | 35,3% | 47,1% | **51,0%** | 54,9% |
+| Terminal-Bench 2.1 | 47,0% | 55,4% | **53,0%** | 56,6% |
+
+**Uczciwie:**
+- parowane różnice z bazą: SWE-bench Pro +15,7 ± 13,9 pp (p = 0,057), Terminal-Bench +6,0 ± 10,7 (p = 0,38), na 66 zadaniach niewybieranych do checkpointu +13,6 (p = 0,035);
+- słabiej niż pi (tam p < 0,002);
+- myślenie włączone w adapterze nic istotnego nie dodaje (8/6, 13/10), a daje ~6 × więcej tokenów.
+
+**Przepis:** ten sam co pi (AsyncGRPO, LoRA r 32, lr 2e-5, nagroda + 0,1 za oszczędność wywołań, 2 × B200, 150 kroków), harness OpenCode 2.2.7. Skrypt jest już publiczny w TRL: `examples/async_grpo_harbor`. Bariera dla naszego własnego adaptera pod omp to dziś koszt GPU, nie kod.
+
 **Zmiana modelu na produkcji (topka, Enigma) to decyzja właściciela.** Test: K-120 w [[KOLEJKA-TESTOW]].
 
 ## Powiązane

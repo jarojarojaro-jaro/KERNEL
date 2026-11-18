@@ -96,6 +96,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-120 · Qwen3.8-27B-pi-adapted (LoRA RL pod pi) w naszym stosie: czy pomaga w omp, ile kosztuje w dekodzie, co z MTP
 - data: 2026-11-18
 - źródło: [[qwen38-27b-pi-adapter]] (pod pi: SWE-bench Pro hard 51 29,4 → 62,7%, Terminal-Bench 2.1 39,5 → 55,8%, −55…62% wywołań narzędzi); adapter GGUF F16 dla llama.cpp (`--lora`)
+- 2026-11-18: doszedł adapter OpenCode (v2): bez myślenia = baza z myśleniem `xhigh` przy 6–8 × mniej tokenów (SWE-bench Pro mediana 31,8k → 3,9k); omp to fork pi, więc testujemy oba adaptery i bazę z myśleniem; główna miara: **tokeny wygenerowane i czas ściany na zadanie** (nie tylko t/s)
 - hipoteza: (a) w omp adapter też skraca zadania (mniej wywołań, ≥ tyle samo rozwiązanych); (b) `--lora` bez scalania kosztuje > 4% dekodu (małe kernele, K-114); (c) po scaleniu + Q4_K_M akceptacja MTP spada, bo blk.64 nietrenowany
 - test: (1) bez karty: zestaw 20 zadań agentowych z naszych sesji omp (`~/kernel/archiwum`) lub `agentx-harness`, myślenie wyłączone jak w treningu; (2) karta (XTX po zgodzie albo Vast ≥ 24 GB z hostguardem): baza Qwen3.8-27B Q4_K_M vs ta sama + `--lora` F16 vs scalone i skwantowane; spec_sweep T=1 (t/s, tok/krok), md5 nie dotyczy (inny model); zadania omp: rozwiązane, wywołania, czas. Pobrania: baza ~17 GB + adapter 0,6 GB (zgoda właściciela)
 - miara: rozwiązane/20 i wywołania na zadanie (baza → adapter); t/s i tok/krok (baza → LoRA → scalone)
