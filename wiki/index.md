@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (58)
 - [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (81)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (120)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (121)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (31)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (90)
@@ -80,6 +80,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-18 [[llamampere|llamAmpere (JakeATX): fork llama.cpp pod RTX 30xx — szybki, ale domyślnie niebezstratny]]
 - 2026-11-18 [[ga-racing-rohanarun|GA z wyścigami (Rohan Arun, Open Kernel Challenge): statystyczny wybór wariantu kernela, bez zależności]]
 - 2026-11-18 [[qwen38-27b-pi-adapter|Qwen3.8-27B-pi-adapted: LoRA wytrenowana RL-em pod agenta pi — nasz model bazowy, dużo mniej wywołań narzędzi]]
+- 2026-11-18 [[lekcja-czas-optymalizacji-to-metryka|Lekcja: czas od nowego modelu lub pomysłu do zmierzonego wyniku to osobna metryka, którą mierzymy i skracamy]]
 - 2026-11-17 [[zwiad-2026-11-17|Zwiad 2026-11-17: rekord 594,7 t/s na R9700 jest fizycznie niemożliwy, draft KV q4 potwierdzony, lookup „najnowsze dopasowanie” potwierdzony]]
 - 2026-11-17 [[skill-io-skrypty|Skrypty skill-io (bench.py, ceiling.py, queue.sh, mem.sh): co robią linia po linii i co bierzemy]]
 - 2026-11-17 [[skill-io-sufity|Sufity wg skill-io (ceilings.md + ceiling.py): nasz Qwen3.8-27B Q4_K_M na XTX i 34 kartach AMD, NVIDIA, Apple, Intel i Tenstorrent]]
@@ -90,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-17 [[skill-io-dzwignie|Dźwignie wg skill-io (levers.md): każda z naszym statusem i spodziewanym zyskiem na XTX]]
 - 2026-11-17 [[sensenova-loop-9b|SenseNova-Loop-9B: model z pętlą warstw — pamięć jak 9B, pasmo jak ~14B, jakość wg producenta blisko Qwen3.8-27B]]
 - 2026-11-17 [[lekcja-vastai-destroy-pyta|Lekcja: `vastai destroy instance` w CLI 1.11 pyta o potwierdzenie, więc watchdog bez `-y` nic nie usuwa]]
-- 2026-11-17 [[lekcja-vast-tylko-pelna-moc|Lekcja: na Vaście bierzemy tylko karty z pełną mocą — sprawdzenie przed pobraniem modelu, zły host na czarną listę]]
 
-Razem 767 notatek. Wygenerowano 2026-11-18 przez `tools/wiki.py index`.
+Razem 768 notatek. Wygenerowano 2026-11-18 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

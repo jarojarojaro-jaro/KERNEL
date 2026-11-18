@@ -457,3 +457,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-18] telegram | llamAmpere v0.7 (fork Ampere)
 [[llamampere]]: nagłówki stratne (mb-MTP domyślnie, LSA na 12/8 GB +40–51%, własne kwanty); bezstratne: drafter DFlash2 ×3,4 po usunięciu podwójnego kroku (wzorzec K-116), weryfikacja 4 użytkowników równolegle ×2,1; K-122 porównanie w trybie dokładnym z forkiem na 3090 (razem z K-118).
+
+## [2026-11-18] lekcja | czas optymalizacji to metryka (właściciel)
+[[lekcja-czas-optymalizacji-to-metryka]]: bodziec RightNow (Hy4 flash < 2 h, bez danych do sprawdzenia); nasze czasy: FA83 ~27 h ściany / 62 min GPU, K-114 ~2 h / ~25 min GPU; reguła: znaczniki etapów w każdej kampanii, wiersz czasu w notatce; dopisane do K-119, K-120, skill-io-metodyka.

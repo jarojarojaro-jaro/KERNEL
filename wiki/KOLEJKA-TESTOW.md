@@ -90,6 +90,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - miara: t/s i % sufitu, HE+ i jakość-mini vs 92,7 / 87,9% (Qwen3.8-27B Uncensored)
 - zysk: Enigma 8–16 GB: do ~2 × dekodu w zasięgu sufitu, kontekst 256K w 12 GB [INFERENCE]; zmiana modelu = decyzja właściciela
 - ryzyko karty: brak (wynajem)
+- zegar (2026-11-18): znaczniki etapów od pobrania do tabeli „zmierzone vs sufit”, wiersz „czas: ściana / GPU / najwolniejszy etap” ([[lekcja-czas-optymalizacji-to-metryka]])
 - priorytet: średni (prośba właściciela; koszt wynajmu ~$0,10–0,20, czeka na kredyt)
 
 ### K-120 · Qwen3.8-27B-pi-adapted (LoRA RL pod pi) w naszym stosie: czy pomaga w omp, ile kosztuje w dekodzie, co z MTP
@@ -101,6 +102,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: krótsze sesje agenta (u nich −55…62% wywołań = mniej tur, każda tura ~1 s+); zmiana modelu = decyzja właściciela
 - ryzyko karty: brak
 - właściciel 2026-11-18 00:32: „super fajne pomysły” (K-120 i adapter pod omp z naszych sesji); start czeka na zgodę na pobranie ~17 GB i kredyt Vast
+- zegar (2026-11-18): znaczniki etapów od pobrania do tabeli „zmierzone vs sufit”, wiersz „czas: ściana / GPU / najwolniejszy etap” ([[lekcja-czas-optymalizacji-to-metryka]])
 - priorytet: średni
 
 ### K-121 · Adapter GA z wyścigami (Rohan Arun) do naszych sweepów wariantów: test-backend-ops perf na XTX i na NVIDIA (kernele draftu K-116)
