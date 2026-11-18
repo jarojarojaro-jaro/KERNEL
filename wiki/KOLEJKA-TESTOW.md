@@ -113,6 +113,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: reset przy wariancie z faultem → tylko PM4=0, nadzór, kolejka
 - priorytet: niski
 
+### K-122 · llamAmpere v0.7 w trybie dokładnym vs nasz fork na pełnej mocy 3090, ten sam plik wag (łączyć z K-118 na jednej instancji)
+- data: 2026-11-18
+- źródło: [[llamampere]] (nagłówkowe 110+ t/s przy T=1 w trybie mb-MTP, czyli nie dokładnym; drafter DFlash2 ×3,4 po usunięciu podwójnego kroku); [[2026-11-17-k114-nvidia-sufit]]
+- hipoteza: w trybie dokładnym (`--no-spec-mb-mtp`, bez rzadkiej atencji, MTP) na UD-Q4_K_XL llamAmpere jest szybszy od forka (80 t/s) o ≥ 15%; różnica to narzut kroku draftu (K-116), a nie kernele głównego GEMV
+- test: jedna instancja 3090 z hostguardem (ta sama co K-118): wydanie v0.7 (binarka znver3 — host z AMD Zen3+, inaczej build z tagu) i fork `kvqleana`/`kvqlean`, UD-Q4_K_XL, spec_sweep T=0/T=1 ABBA, `nsys` jednego kroku w każdym; KLD vs wyjście bazowe na 1280 pozycjach
+- miara: t/s (fork → llamAmpere dokładny), ms kroku i ms/draft, KLD
+- zysk: wskazuje gotowe rozwiązanie dla K-116 (port do Enigmy NVIDIA); koszt ~$0,15 razem z K-118 [INFERENCE]
+- ryzyko karty: brak (wynajem)
+- priorytet: średni (czeka na kredyt)
+
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)

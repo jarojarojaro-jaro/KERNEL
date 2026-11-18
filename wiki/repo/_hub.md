@@ -14,7 +14,7 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (89)
+## Notatki (90)
 
 - [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]] — „Flash-Next przy 250K tylko −18% względem 1K” to własność modelu (natywna rzadka QSA z budżetem 2048 tokenów) plus stratny host KV FP8, a nie trik kernela; ich gęsty 27B traci −47% (501 → 268 t/s), tyle co my −45% (136.5 → 74.5 przy 199k) (raport 66b, 2026-11-07).
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
@@ -59,6 +59,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[laya-mlx|laya-mlx i Laya (model decyzyjny)]] — Laya (Convai Innovations) to nieautoregresywny encoder decyzyjny 322–421M, a laya-mlx (mizorewww) jego port MLX; za wolne do decyzji per token.
 - [[how-to-optimize-in-gpu|Liu-xiandong/How_to_optimize_in_GPU]] — Dydaktyczne „drabiny optymalizacji” CUDA dla V100 (HEAD `5d2def3e`, 2023-07-29); werdykt: niska.
 - [[llama-moe-cache-mib|llama.cpp `--moe-cache-mib`: cache ekspertów MoE w VRAM]] — Upstream PR #29887 (scalony 2026-10-07, port z qvac-fabric) dodaje cache LRU ekspertów MoE w VRAM przy modelu w RAM: Flash-Next Q4_0 na 4090 25.0 → 40.7 t/s, na 5090 30.8 → 67.8 t/s; jest w bazie naszego forka (`common/arg.cpp:2795`) (raport 21g, 2026-10-19).
+- [[llamampere|llamAmpere (JakeATX): fork llama.cpp pod RTX 30xx — szybki, ale domyślnie niebezstratny]] — Fork llama.cpp v1.0 pod Ampere (3090, 3080 Ti, 3060): presety per karta, własne kwanty „AI+”, MTP. Nagłówkowe liczby (3090 „110+ t/s przy 100K generacji, T=1”) pochodzą jednak z trybów, które zmieniają wyjście. Bezstratnych dźwigni do przeniesienia jest mało; najważniejszy dla nas jest kolejny dowód, że w drafcie siedzi zbędna praca (drafter DFlash2 ×3,4 po usunięciu podwójnego kroku).
 - [[locals|Locals (Generated-Computers/Locals)]] — Serwer MLX dla agentów; „przełom w złożoności” dotyczy automatów gramatyki, nie DeltaNet, a kernel GDN to jeden launch na krok wart 1–2% – na nasze kernele HIP nic nie przenosi (raport 60b).
 - [[lucebox|Luce-Org/lucebox]] — Serwer inferencji C++ z forkiem ggml i spekulacją DFlash2 (HEAD `54132ca`, 2026-10-14) na tym samym modelu i drafterze co my; werdykt: średnia.
 - [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]] — Własny silnik w Ruście z językiem kerneli „Seismic” (Metal, CUDA, Vulkan, CPU; bez HIP/ROCm), który stroi kernele 60 s przy pierwszym załadowaniu z bramką błędu α = 8 (nie bitową); najbliższy bezpośredni konkurent, ale bez AMD natywnie, bez bitowej bramki i bez MoE offload.

@@ -454,3 +454,6 @@ Odnotowane w K-120; start po zgodzie na pobranie ~17 GB i doładowaniu Vast.
 
 ## [2026-11-18] telegram | ml-systems-notes (Jino Rohit) — notatki edukacyjne
 Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka uruchomień CUDA ~1024 kernele (4060 Ti) → uwaga w K-116; SGLang 0.5.9 radix na hybrydzie wyłącza overlap schedule (dotyczy K-119).
+
+## [2026-11-18] telegram | llamAmpere v0.7 (fork Ampere)
+[[llamampere]]: nagłówki stratne (mb-MTP domyślnie, LSA na 12/8 GB +40–51%, własne kwanty); bezstratne: drafter DFlash2 ×3,4 po usunięciu podwójnego kroku (wzorzec K-116), weryfikacja 4 użytkowników równolegle ×2,1; K-122 porównanie w trybie dokładnym z forkiem na 3090 (razem z K-118).
