@@ -463,3 +463,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-18] telegram | adapter Qwen3.8-27B pod OpenCode (harness-hub, v2)
 [[qwen38-27b-pi-adapter]]: bez myślenia dorównuje bazie z myśleniem xhigh przy 6–8 × mniej tokenów (SWE-bench Pro 31,8k → 3,9k; ~265 s → ~33 s dekodu przy 120 t/s); słabsza istotność niż pi (p = 0,057 / 0,38); skrypt TRL publiczny; K-120: miara tokeny i czas na zadanie.
+
+## [2026-11-19] telegram | DaisyRose-27B (RadixArk, pełny RL na Qwen3.8-27B)
+[[daisyrose-27b]]: 144 H200 × 18 dni ≈ 62k GPU-h; TB 4.1 5,6 → 12,0%, reszta +0,4…4 pp; drop-in GGUF; lekcja: celowany LoRA w jednym harnessie ma dużo lepszy stosunek zysku do kosztu; dopisany do K-120 (tokeny, czas, akceptacja MTP).
