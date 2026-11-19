@@ -2,7 +2,8 @@
 # GPU safety guard for the local RX 7900 XTX.
 # Stops every GPU test process (llama-server / llama-bench / llama-perplexity / test-backend-ops / magnitude-engine,
 # matched by exact process name, never by command line: `pgrep -f` also matches agent shells, lekcja-pkill-wlasna-
-# powloka) except production (listening on :8080, or the ~/llama-topka binary while it still loads) and exits 3 on:
+# powloka) except production: the server listening on :8080, or one started with `--port 8080` that is still loading
+# (a test server from the same ~/llama-topka binary on another port IS stopped). Exits 3 on:
 #   - a new amdgpu page fault, ring timeout or GPU reset in the kernel log
 #   - hotspot >= 100 C or VRAM >= 98 C
 #   - fan below 2500 RPM at >= 50% busy for 20 s while the card is hot (hotspot >= 80 C or VRAM >= 82 C)
@@ -22,14 +23,12 @@ trap 'kill $follower 2>/dev/null; pkill -P $$ 2>/dev/null; rm -f "$hits"' EXIT
 slowfan=0; lastwarn=0
 # exact comm names (the kernel truncates comm to 15 characters)
 NAMES='^(llama-server|llama-bench|llama-perplexit|test-backend-op|magnitude-engin)$'
-topka=$(readlink -f "$HOME/llama-topka")   # /proc/<pid>/exe is the resolved path
 victims() {
-    local keep p exe
+    local keep p
     keep=$(ss -ltnp 'sport = :8080' 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2)
     for p in $(pgrep "$NAMES"); do
         [ -n "$keep" ] && [ "$p" = "$keep" ] && continue
-        exe=$(readlink "/proc/$p/exe" 2>/dev/null)
-        case $exe in "$HOME"/llama-topka/*|"$topka"/*) continue ;; esac
+        tr '\0' ' ' < "/proc/$p/cmdline" 2>/dev/null | grep -qE -- '--port 8080( |$)' && continue
         echo "$p"
     done
 }
