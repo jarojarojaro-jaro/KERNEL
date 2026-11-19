@@ -515,3 +515,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-19] telegram | WavePP (arXiv 2609.35263): prefill PP4 na klastrze, ×2–2,9 przy ponownym użyciu prefiksu; lekcja do K-107
 
 ## [2026-11-19] telegram | KernelBench-CUDA Neon #2: lekcje (bramka top-k, PDL), bez nowego testu
+
+## [2026-11-19] telegram | Maya v1.1.68: Hy4-Flash 220B (kwanty top-1 88,5–96,6%), bez liczb t/s; nie nasz model
