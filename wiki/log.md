@@ -473,3 +473,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 ## [2026-11-19] telegram | blog „Quantization, finally explained” — wstęp dla laików, nic nowego
 
 ## [2026-11-19] telegram | TensorTonic llm-optimization-handbook — spis tematów z linkami, nic nowego
+
+## [2026-11-19] zwiad | compwatch 2026-11-19
+[[zwiad-2026-11-19]]: oMLX prefill z pomocnikiem (Qwen3.8-27B 64K 352 → 1879 t/s) → K-107c; TensorFold wiersze draftu parami (+24–29% Mac); Maya 1.1.67 (zegar iGPU = nasz keepawake); strix-llama.cpp: rejekcja przyjmowała drafty po EOG → K-123 (wysoki, przegląd kodu); ROCm 10.2 AITER na Radeonach.

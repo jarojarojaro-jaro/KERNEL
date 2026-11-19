@@ -21,6 +21,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-123 · Czy nasza weryfikacja spekulacyjna (GPU_VERIFY / sprzężona) przyjmuje drafty po EOG — błąd naprawiony w strix-llama.cpp `4b43cfb96`
+- data: 2026-11-19
+- źródło: [[zwiad-2026-11-19]] (rejekcja bez przerwania po EOG zostawia drafty w slocie, następna tura je czyta; upstream `9581154` ma przerwanie tylko w ścieżce greedy, `common/sampling.cpp:709`)
+- hipoteza: nasza ścieżka T=1 (`LLAMA_GPU_VERIFY=1`, `LLAMA_SPEC_COUPLED`) nie przerywa po EOG → po turze w slocie zostają tokeny po końcu odpowiedzi; to może też dokładać do zależności md5 od historii serwera (K-001) [INFERENCE, mała szansa: K-001 mierzone przy T=0]
+- test: CPU, gdy jaroserverai online: przegląd kodu weryfikacji w gałęzi `topka-q70` i w forku CUDA (`kvqlean`); jeśli błąd jest: test na porcie testowym — tura T=1 kończąca się EOG z aktywnym draftem, `n_past` slotu vs długość odpowiedzi; poprawka = przerwanie po EOG jak w greedy
+- miara: liczba tokenów w slocie po turze (oczekiwane = prompt + odpowiedź); md5/rozkład następnej tury
+- zysk: poprawność (agent nie czyta śmieci po końcu odpowiedzi), 0 t/s
+- ryzyko karty: brak
+- priorytet: wysoki (poprawność, tani przegląd kodu)
+
 ### K-111 · Rozłożyć lukę kroku MTP do sufitu: 26,9 ms zmierzone vs 19,2 ms sufitu pasma przy 2k (dekod czatu na 71–77% sufitu)
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (ceiling.py na naszych rozmiarach: weryfikacja 16,1 GB + 4 drafty × 0,4 GB ÷ 926 GB/s); [[raport-24r-mmvq-pasmo]] (weryfikacja N=5 osiąga 762 z 926 GB/s); profil kroku 26,3 ms stałej części ([[2026-11-08-kvq-once-profil]])
@@ -222,7 +232,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-15
 - źródło: [[mapa-inferencji-roadmap]] (luki #3–#6, #10); plan z `hardware/rx-7900-xtx.md` §2 („do przetestowania”)
 - test: gdy 5060 Ti online w jaroserverai: (a) dwa serwery (XTX Qwen 27B + 5060 Ti LFM albo Qwen IQ3) i fan-out omp, ściana sesji; (b) Vulkan `-sm layer` Qwen 27B na 40 GB: decode/prefill vs sam XTX; ≤ 10 min na ramię
-- zysk: (a) przepustowość roju agentów; (b) tylko pojemność (większy model), decode wolniejszy [SZACUNEK]; reguła dla Enigmy „kiedy druga karta pomaga”
+- (c) dodane 2026-11-19 ([[zwiad-2026-11-19]]): prefill dzielony warstwami jak oMLX „Prefill Accelerator” (Qwen3.8-27B 64K 352 → 1879 t/s z 2 × A6000): 5060 Ti liczy pierwsze k warstw chunku promptu, XTX resztę i dekod; KV/stan GDN warstw k przesyłany przez PCIe; miara: fill 64k/255k t/s vs sam XTX (493 t/s przy 255k), md5 dekodu po fillu
+- zysk: (a) przepustowość roju agentów; (b) tylko pojemność (większy model), decode wolniejszy [SZACUNEK]; (c) prefill, jeśli udział warstw na 5060 Ti i koszt PCIe na to pozwolą [INFERENCE]; reguła dla Enigmy „kiedy druga karta pomaga”
 - ryzyko karty: brak (bez PM4 na Vulkan)
 - priorytet: średni (5060 Ti offline)
 
