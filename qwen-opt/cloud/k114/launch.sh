@@ -1,24 +1,26 @@
 #!/usr/bin/env bash
 # launch.sh <offer_id | "GPU name"> <label> : rent one Vast offer from the Jarvo server (vastai in ~/.local/bin, key
-# ~/.ssh/vast_kernel), arm two kill timers (on-instance self-destruct via CONTAINER_API_KEY after LIFE_S+600 s, local
-# watchdog after LIFE_S), then BEFORE any download check the host with ../hostguard.sh (owner rule 2026-11-17: power
-# limit and max memory clock >= 85% of factory, idle < 80 C). A failed host is destroyed, its machine_id goes to
-# ../hosty-zle.txt, and with a GPU name the next offer is tried (max 3; hosty-zle.txt machines are never picked).
-# Hosts stuck in loading > 10 min or refusing SSH are destroyed and listed too. Then copies the runners, starts
-# run.sh; run2.sh; run3.sh detached and starts fetch.sh locally (copies /root/res to res/<label>/ when DONE3 appears,
-# then destroys the instance). Destroy by id only: vastai destroy instance <id> -y.
+# ~/.ssh/vast_kernel) with the instance-side cost guard (../onstart-guard.sh: deletes itself when the runner is gone,
+# the GPU idles 15 min after "ready", 10 min after FINISHED, or after LIFE_S), then BEFORE any download check the host
+# with ../hostguard.sh (owner rule 2026-11-17: power limit and max memory clock >= 85% of factory, idle < 80 C). A failed
+# host is destroyed, its machine_id goes to ../hosty-zle.txt, and with a GPU name the next offer is tried (max 3;
+# hosty-zle.txt machines are never picked). Hosts stuck in loading > 10 min or refusing SSH are destroyed and listed too.
+# Then copies the runners and starts run.sh; run2.sh; run3.sh; touch FINISHED detached. Collecting the results and
+# destroying the instance is ../vast-reaper.sh (systemd --user timer, every 2 min, independent of any agent session;
+# owner 2026-11-19: cards never sit idle). Destroy by id only: vastai destroy instance <id> -y.
+# Run launch.sh itself with systemd-run --user (a launch started from an agent tool session dies with the session).
 set -euo pipefail
 export PATH=$HOME/.local/bin:$PATH
 target=$1 label=$2 LIFE_S=${LIFE_S:-4200}
+systemctl --user is-active -q vast-reaper.timer || { echo "vast-reaper.timer is not active: refusing to rent (nobody would collect and destroy)" >&2; exit 3; }
 D=$(cd "$(dirname "$0")" && pwd); ST=$D/state; mkdir -p "$ST"
 . "$D/../hostguard.sh"
 KEY=$HOME/.ssh/vast_kernel
 S=(-i "$KEY" -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile="$ST/known_hosts" -o ConnectTimeout=20)
 
-drop() {  # iid reason : destroy, stop its watchdog, list the machine
+drop() {  # iid reason : destroy, list the machine
     local mid; mid=$(vastai show instance "$1" --raw 2>/dev/null | jq -r '.machine_id // empty')
     vastai destroy instance "$1" -y > /dev/null || true
-    pkill -f "vastai destroy instance $1 -y" || true
     [ -n "$mid" ] && printf '%s\t%s\t%s\t%s\n' "$mid" "$(date +%F)" "$label" "$2" >> "$HG_BAD"
     echo "dropped $1: $2"
 }
@@ -26,18 +28,14 @@ drop() {  # iid reason : destroy, stop its watchdog, list the machine
 try_offer() {  # offer -> 0 started, 2 bad host (try next), 1 create failed
     local offer=$1 out iid j H P
     hg_offer_ok "$offer" 11 || return 2   # transfer-cost + blacklist gate, as up.sh (download ~10.4 GB model + ~0.7 GB engine)
-    cat > "$ST/onstart-$label.sh" <<EOF
-env | grep -E '^(CONTAINER_ID|CONTAINER_API_KEY)=' >> /etc/environment
-command -v curl > /dev/null || { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates; } > /root/onstart-curl.log 2>&1
-nohup setsid bash -c 'sleep $((LIFE_S + 600)); curl -fsS -X DELETE -H "Authorization: Bearer \$CONTAINER_API_KEY" "https://console.vast.ai/api/v0/instances/\$CONTAINER_ID/"' > /root/self-destruct.log 2>&1 < /dev/null &
-EOF
+    { printf 'LIFE_S=%s IDLE_S=%s GRACE_S=%s SETUP_S=%s\n' "$LIFE_S" "${IDLE_S:-900}" "${GRACE_S:-600}" "${SETUP_S:-1500}"
+      cat "$D/../onstart-guard.sh"; } > "$ST/onstart-$label.sh"
     out=$(vastai create instance "$offer" --image nvidia/cuda:12.8.1-base-ubuntu24.04 --disk 30 --ssh --direct \
           --label "$label" --cancel-unavail --onstart "$ST/onstart-$label.sh" --raw) || true
     iid=$(jq -r '.new_contract // empty' <<<"$out" 2>/dev/null || true)
     [ -n "$iid" ] || { echo "create failed for offer $offer: $out" >&2; return 1; }
     echo "$iid" > "$ST/$label.iid"
-    systemd-run --user --collect -q --unit="vast-watchdog-$iid" bash -c "sleep $LIFE_S; $HOME/.local/bin/vastai destroy instance $iid -y"
-    echo "instance $iid ($label, offer $offer), local watchdog in ${LIFE_S}s"
+    echo "instance $iid ($label, offer $offer); on-instance guard + vast-reaper.timer"
     for _ in $(seq 60); do
         j=$(vastai show instance "$iid" --raw 2>/dev/null || true)
         [ "$(jq -r '.actual_status // ""' <<<"$j")" = running ] && break; sleep 10
@@ -48,14 +46,11 @@ EOF
     echo "$H $P" > "$ST/$label.ssh"
     local ok=0; for _ in $(seq 30); do ssh "${S[@]}" -p "$P" root@"$H" true 2>/dev/null && { ok=1; break; }; sleep 10; done
     [ $ok = 1 ] || { drop "$iid" "SSH refuses the registered key"; return 2; }
-    hg_check "$iid" "$H" "$P" "${S[@]}" || { pkill -f "vastai destroy instance $iid -y" || true; return 2; }
+    hg_check "$iid" "$H" "$P" "${S[@]}" || return 2
     ssh "${S[@]}" -p "$P" root@"$H" 'mkdir -p /root/k114'
     scp "${S[@]}" -P "$P" "$D/run.sh" "$D/run2.sh" "$D/run3.sh" "$D/bench.py" "$D/pf.py" "$D/lp.py" "$D/pdl.sh" root@"$H":/root/k114/
-    ssh -n "${S[@]}" -p "$P" root@"$H" 'setsid nohup bash -c "bash /root/k114/run.sh; bash /root/k114/run2.sh; bash /root/k114/run3.sh" > /dev/null 2>&1 < /dev/null & sleep 5; cat /root/res/phases.txt'
-    # systemd-run, not setsid nohup: jobs started from the agent's tool session die with it (2026-11-19: fetch.sh and
-    # the local watchdogs were killed, 4 instances sat idle ~70 min until destroyed by hand)
-    systemd-run --user --collect -q --unit="fetch-$label-$iid" -E LIFE_S="$LIFE_S" "$D/fetch.sh" "$label"
-    echo "started on $iid (fetch.sh collects and destroys)"
+    ssh -n "${S[@]}" -p "$P" root@"$H" 'setsid nohup bash -c "bash /root/k114/run.sh; bash /root/k114/run2.sh; bash /root/k114/run3.sh; touch /root/res/FINISHED" > /dev/null 2>&1 < /dev/null & sleep 5; cat /root/res/phases.txt; pgrep -f "[/]root/guard.sh" > /dev/null && echo "guard alive" || echo "GUARD MISSING"'
+    echo "started on $iid (vast-reaper collects and destroys)"
 }
 
 if [[ $target =~ ^[0-9]+$ ]]; then

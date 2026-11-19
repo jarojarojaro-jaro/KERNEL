@@ -1,0 +1,8 @@
+[Unit]
+Description=Vast reaper: collect finished Kernel instances and destroy them (owner 2026-11-19: cards never sit idle)
+
+[Service]
+Type=oneshot
+ExecStart=%h/dev/KERNEL/qwen-opt/cloud/vast-reaper.sh
+Nice=10
+TimeoutStartSec=900

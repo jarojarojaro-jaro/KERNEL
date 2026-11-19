@@ -58,7 +58,12 @@ Różnica mieści się w szumie (≤ 1,4%). **Zostaje `kvqleana` dla wszystkich.
 
 ## Lekcja z przebiegu
 
-Procesy odpalone `setsid nohup` z sesji narzędzia agenta zginęły razem z nią: `fetch.sh`, lokalne watchdogi i jeden `launch.sh`. Instancje skończyły pracę o 18:31–18:40, a stały do 19:45, kiedy usunąłem je ręcznie. Strata to ~$0,8. Zostały samozniszczenie na instancji (90 min) i ręczne sprzątanie. Poprawka w `launch.sh`: watchdog i `fetch.sh` idą przez `systemd-run --user` (linger włączony), a sam `launch.sh` też trzeba odpalać przez `systemd-run`. Zob. [[lekcja-tlo-z-sesji-agenta-ginie]].
+Procesy odpalone `setsid nohup` z sesji narzędzia agenta zginęły razem z nią: `fetch.sh`, lokalne watchdogi i jeden `launch.sh`. Instancje skończyły pracę o 18:31–18:40, a stały do 19:45, kiedy usunąłem je ręcznie. Strata to ~$0,8. Poprawka (wdrożona i przetestowana 19.11 wieczorem):
+- timer systemowy `vast-reaper` co 2 min zbiera wyniki, usuwa instancję i zostawia raport w skrzynce Kernela;
+- strażnik na samej instancji usuwa ją, gdy jest bezczynna;
+- `launch.sh` bez działającego timera odmawia wynajmu.
+
+Zob. [[lekcja-tlo-z-sesji-agenta-ginie]].
 
 ## Powiązane
 - [[2026-11-17-k114-nvidia-sufit]]

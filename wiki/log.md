@@ -506,3 +506,6 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 [[2026-11-19-k118-nvidia-pelna-moc]], [[lekcja-tlo-z-sesji-agenta-ginie]]. Wydane $1,11 z $2 (~$0,8 bezczynne instancje: fetch.sh zginął z sesją; launch.sh przechodzi na systemd-run).
 
 ## [2026-11-19] telegram | ROCm 10.2 (AMD): powtórka ze zwiadu; delta dopisana w ZRODLA, K-130 (A/B kompilatora, niski)
+
+## [2026-11-19] vast | karty nigdy nie stoją: vast-reaper (timer systemd co 2 min: FINISHED/padnięty runner/GPU idle 10 min → wyniki, destroy, raport przez skrzynkę), onstart-guard na instancji, launch.sh bez timera nie wynajmuje; test na 2 × 3060 OK
+[[lekcja-tlo-z-sesji-agenta-ginie]], AGENTS.md zasada z 2026-10-16 zaostrzona.
