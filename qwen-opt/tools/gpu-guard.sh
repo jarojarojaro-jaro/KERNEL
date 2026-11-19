@@ -1,7 +1,8 @@
 #!/bin/bash
 # GPU safety guard for the local RX 7900 XTX.
-# Stops (kills every llama-server / llama-bench / llama-perplexity / test-backend-ops / magnitude-engine
-# except the user's server on :8080... no: except processes listening on 8080) and exits 3 on:
+# Stops every GPU test process (llama-server / llama-bench / llama-perplexity / test-backend-ops / magnitude-engine,
+# matched by exact process name, never by command line: `pgrep -f` also matches agent shells, lekcja-pkill-wlasna-
+# powloka) except production (listening on :8080, or the ~/llama-topka binary while it still loads) and exits 3 on:
 #   - a new amdgpu page fault, ring timeout or GPU reset in the kernel log
 #   - hotspot >= 100 C or VRAM >= 98 C
 #   - fan below 2500 RPM at >= 50% busy for 20 s while the card is hot (hotspot >= 80 C or VRAM >= 82 C)
@@ -19,16 +20,32 @@ journalctl -k -f -n 0 -o short-iso --no-pager 2>/dev/null \
 follower=$!
 trap 'kill $follower 2>/dev/null; pkill -P $$ 2>/dev/null; rm -f "$hits"' EXIT
 slowfan=0; lastwarn=0
+# exact comm names (the kernel truncates comm to 15 characters)
+NAMES='^(llama-server|llama-bench|llama-perplexit|test-backend-op|magnitude-engin)$'
+topka=$(readlink -f "$HOME/llama-topka")   # /proc/<pid>/exe is the resolved path
+victims() {
+    local keep p exe
+    keep=$(ss -ltnp 'sport = :8080' 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2)
+    for p in $(pgrep "$NAMES"); do
+        [ -n "$keep" ] && [ "$p" = "$keep" ] && continue
+        exe=$(readlink "/proc/$p/exe" 2>/dev/null)
+        case $exe in "$HOME"/llama-topka/*|"$topka"/*) continue ;; esac
+        echo "$p"
+    done
+}
+# One SIGTERM, wait up to 60 s for the processes to exit, then SIGKILL the rest (owner's rule: a forced kill in the
+# middle of a PM4 replay can turn a fault into a reset; lekcja-pm4-zamienia-fault-w-reset).
 stop() {
     echo "$(date -u '+%F %T') STOP: $1" | tee -a "$log"
-    keep=$(ss -ltnp 'sport = :8080' 2>/dev/null | grep -o 'pid=[0-9]*' | cut -d= -f2)
-    for sig in TERM KILL; do
-        for p in $(pgrep -f 'llama-server|llama-bench|llama-perplexity|test-backend-ops|magnitude-engine'); do
-            [ -n "$keep" ] && [ "$p" = "$keep" ] && continue
-            kill -$sig "$p" 2>/dev/null
-        done
-        sleep 3
+    local ps left
+    ps=$(victims)
+    [ -n "$ps" ] && kill -TERM $ps 2>/dev/null
+    for _ in $(seq 60); do
+        left=$(for p in $ps; do kill -0 "$p" 2>/dev/null && echo "$p"; done)
+        [ -z "$left" ] && break
+        sleep 1
     done
+    [ -n "${left:-}" ] && { echo "$(date -u '+%F %T') SIGKILL after 60 s: $left" >> "$log"; kill -KILL $left 2>/dev/null; }
     exit 3
 }
 echo "$(date -u '+%F %T') guard started" >> "$log"
