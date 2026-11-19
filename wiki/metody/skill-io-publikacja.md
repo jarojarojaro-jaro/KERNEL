@@ -24,7 +24,7 @@ status: aktualne
    | czat ze stop | tak (greedy md5) |
    | rozumowanie oddzielone od treści | **brak w bramce** (jest w EvalPlus/jakość-mini) |
    | narzędzia: pełny round trip | **brak** (BFCL jest offline, bez wykonania) |
-   | igła ~85% okna | **brak** (K-109) |
+   | igła ~85% okna | **tak od 2026-11-19**: 3/3 przy 221 728 tok. ([[2026-11-19-k109-k110-k106-xtx]]) |
    | prędkość: 30 s dekodu, liczona tokenizerem serwera | tak (spec_sweep) |
 
    Do tego wizja i soak współbieżny, jeśli dotyczy. Bramki z rozgrzewką powtarzać, nigdy nie publikować z jednej fali.

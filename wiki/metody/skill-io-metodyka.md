@@ -22,7 +22,7 @@ status: aktualne
 | porównanie silników (`:23`) | bootstrap 95% CI mediana(B)/mediana(A) > 1 | **brak** (mamy Wilson tylko dla jakości) |
 | odrzucać zimne pierwsze runy (`:24`) | JIT/cache (36 vs 90 t/s) | tak: rozgrzewka w harnessach |
 | spekulacja (`:29-33`) | t/s = a ÷ czas kroku; wyższa akceptacja może być wolniejsza (3,26 vs 2,85, −11…14%); rozjazd greedy przy innych M to numeryka, nie błąd | tak: raportujemy tok/krok i ms/krok; [[2026-11-14-k001-wyciek-stanu-restore]] |
-| długi kontekst (`:37-38`) | osobny run; **3 igły** na różnych głębokościach, odpowiedź dokładna | **częściowo**: fill 255k z md5, bez igieł (K-109) |
+| długi kontekst (`:37-38`) | osobny run; **3 igły** na różnych głębokościach, odpowiedź dokładna | **tak od 2026-11-19**: 3 igły przy 130k i 222k, 3/3 ([[2026-11-19-k109-k110-k106-xtx]]) |
 | zdrowie wyjścia (`:42`) | flagować pętle, błędy, bezczynne GPU; „rekord 117 t/s” był pętlą listy | **częściowo**: pętlę wykryliśmy ręcznie (MMLU-Pro 32 768 tok.) |
 | pamięć (`:46-48`) | na pamięci zunifikowanej `drm-resident-*` + anon | XTX dyskretny: `mem_info_vram_used`; fdinfo w K-011 |
 | profilowanie (`:52-55`) | graf wyłączony do rozbicia na kernele; czytać ISA | tak: rocprofv3 przy PM4=0, `isa.sh` |

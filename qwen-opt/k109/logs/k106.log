@@ -1,0 +1,12 @@
+server pid 31404 up 16:20:02
+together1 A: start 0.00s end 4.18s ttft 2.24s prompt 1808 n 512 gap max 89 ms p99 33 ms md5 4c4febeb
+together1 B: start 1.50s end 40.80s ttft 39.20s prompt 31884 n 16 gap max 35 ms p99 32 ms md5 0a02ccfa
+alone1 A: start 0.00s end 4.08s ttft 2.20s prompt 1808 n 512 gap max 38 ms p99 32 ms md5 4c4febeb
+alone1 B: start 0.00s end 36.65s ttft 36.56s prompt 31884 n 16 gap max 33 ms p99 32 ms md5 0a02ccfa
+rep1: wall together 40.80s vs sequential 40.73s; A md5 same, B md5 same
+together2 A: start 0.00s end 4.08s ttft 2.20s prompt 1808 n 512 gap max 39 ms p99 32 ms md5 4c4febeb
+together2 B: start 1.50s end 40.72s ttft 39.12s prompt 31884 n 16 gap max 33 ms p99 32 ms md5 0a02ccfa
+alone2 A: start 0.00s end 4.08s ttft 2.20s prompt 1808 n 512 gap max 39 ms p99 32 ms md5 4c4febeb
+alone2 B: start 0.00s end 36.65s ttft 36.55s prompt 31884 n 16 gap max 33 ms p99 32 ms md5 0a02ccfa
+rep2: wall together 40.72s vs sequential 40.72s; A md5 same, B md5 same
+server stopped 16:22:47

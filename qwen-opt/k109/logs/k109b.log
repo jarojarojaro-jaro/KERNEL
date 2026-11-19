@@ -1,0 +1,23 @@
+server pid 11808 up 16:12:39
+calib: document(16000) = 10563 tokens
+16:12:44 c1 median 144.32 [144.32]
+16:19:45 long {'prompt_tokens': 221728, 'ttft_s': 420.7, 'prefill': 527.0, 'decode': 86.27, 'retrieval': '3/3'}
+{
+ "name": "k109-needles",
+ "time": "2026-11-19T16:12:40",
+ "ttft_short_ms": 133.2,
+ "c1_decode": 144.32,
+ "c1_all": [
+  144.32
+ ],
+ "long": {
+  "prompt_tokens": 221728,
+  "ttft_s": 420.7,
+  "prefill": 527.0,
+  "decode": 86.27,
+  "retrieval": "3/3"
+ },
+ "ok": true,
+ "flags": []
+}
+server stopped 16:19:46

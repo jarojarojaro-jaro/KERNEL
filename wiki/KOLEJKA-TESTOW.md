@@ -21,45 +21,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-123 · Czy nasza weryfikacja spekulacyjna (GPU_VERIFY / sprzężona) przyjmuje drafty po EOG — błąd naprawiony w strix-llama.cpp `4b43cfb96`
-- data: 2026-11-19
-- źródło: [[zwiad-2026-11-19]] (rejekcja bez przerwania po EOG zostawia drafty w slocie, następna tura je czyta; upstream `9581154` ma przerwanie tylko w ścieżce greedy, `common/sampling.cpp:709`)
-- hipoteza: nasza ścieżka T=1 (`LLAMA_GPU_VERIFY=1`, `LLAMA_SPEC_COUPLED`) nie przerywa po EOG → po turze w slocie zostają tokeny po końcu odpowiedzi; to może też dokładać do zależności md5 od historii serwera (K-001) [INFERENCE, mała szansa: K-001 mierzone przy T=0]
-- test: CPU, gdy jaroserverai online: przegląd kodu weryfikacji w gałęzi `topka-q70` i w forku CUDA (`kvqlean`); jeśli błąd jest: test na porcie testowym — tura T=1 kończąca się EOG z aktywnym draftem, `n_past` slotu vs długość odpowiedzi; poprawka = przerwanie po EOG jak w greedy
-- miara: liczba tokenów w slocie po turze (oczekiwane = prompt + odpowiedź); md5/rozkład następnej tury
-- zysk: poprawność (agent nie czyta śmieci po końcu odpowiedzi), 0 t/s
-- ryzyko karty: brak
-- priorytet: wysoki (poprawność, tani przegląd kodu)
-
-### K-111 · Rozłożyć lukę kroku MTP do sufitu: 26,9 ms zmierzone vs 19,2 ms sufitu pasma przy 2k (dekod czatu na 71–77% sufitu)
-- data: 2026-11-17
-- źródło: [[skill-io-sufity]] (ceiling.py na naszych rozmiarach: weryfikacja 16,1 GB + 4 drafty × 0,4 GB ÷ 926 GB/s); [[raport-24r-mmvq-pasmo]] (weryfikacja N=5 osiąga 762 z 926 GB/s); profil kroku 26,3 ms stałej części ([[2026-11-08-kvq-once-profil]])
-- hipoteza: luka 7,7 ms to (a) MMVQ weryfikacji poniżej pasma (~82%), (b) 4 sekwencyjne kroki draftu z małymi kernelami, (c) głowica LM, (d) przerwy hosta; największa część to (a)+(b)
-- test: XTX, rocprofv3 na kroku przy 1,7k (`GGML_HIP_PM4=0` do rozbicia, potem czas taśmy PM4): ms i GB/s na grupę kerneli vs ich sufit bajtowy; ≤ 10 min
-- miara przed/po: tabela grupa → ms zmierzone / ms sufitu / % ; wybór dźwigni o największej luce (×prawdopodobieństwo)
-- zysk: diagnostyka; każda 1 ms z kroku = +3,7% dekodu
-- ryzyko karty: brak
-- priorytet: wysoki (wskazuje, gdzie leży 30% zapasu dekodu)
-
-### K-109 · Bramka igieł długiego kontekstu (3 kody przy 50% i ~85–100% z 262k), dokładna odpowiedź — warunek „najlepsze” i część bramki wdrożenia
-- data: 2026-11-17
-- źródło: [[skill-io-metodyka]] (`methodology.md:37-38`, SKILL.md:95-98), [[skill-io-publikacja]] (bramka 5 przy 85% okna); `bench.py document()` (`:107-119`)
-- hipoteza: topka-q70 (KV q4_0, FA83) znajduje 3/3 kody przy 131k i 223k; jeśli nie, KV q4_0 przy długim kontekście psuje odczyt (fill md5 tego nie wykrywa)
-- test: XTX, produkcja na porcie testowym, `bench.py run --long 131072` i osobno `--long 223000` (fill ~8 min każdy → 2 joby kolejki)
-- miara: retrieval k/3 per głębokość, TTFT, decode po fillu, szczyt VRAM; po PASS dopisać do `deploy-q70`/przyszłych bramek
-- zysk: poprawność (dowód 262k), 0 t/s
-- ryzyko karty: temperatury przy fillu (junction < 95 °C, eco 2200)
-- priorytet: wysoki (luka w bramce produkcji)
-
-### K-110 · Ich `bench.py` bez zmian na XTX (port testowy): liczby 1:1 z ich 3090/B70 i z LocalMaxxing-like warunkami
-- data: 2026-11-17
-- źródło: [[skill-io-skrypty]]; ich wyniki 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`)
-- test: config jak `examples/config-existing-server.json` (temperatura 0,6, prefill 4k/16k, c1 6 × 512 tok.); produkcja na porcie testowym; ≤ 10 min
-- miara: c1 mediana, prefill 4k/16k, TTFT krótkiego promptu; porównanie z ich tabelą i z naszym spec_sweep (inny harness, opisać różnice)
-- zysk: publikowalna liczba porównawcza; 0 t/s
-- ryzyko karty: brak
-- priorytet: średni (marketing i kalibracja harnessów)
-
 ### K-116 · NVIDIA (i XTX): draft MTP kosztuje 4–15 × swoje bajty — graf CUDA/HIP na całą pętlę draftu i fuzja kroku draftu
 - data: 2026-11-17
 - źródło: [[2026-11-17-k114-nvidia-sufit]] (krok n4 5060 Ti 51,1 ms = cel 31,3 + 4 × ~5 ms; bajty draftu ~0,9 ms); na XTX ten sam pomiar to K-111
@@ -267,15 +228,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - baseline 2026-11-14 (produkcja, r=3): V16 − V5 = 7,1 ms przy 2k, 10,1 ms przy 32k; V5 26,8 / 28,3 ms ([[2026-11-14-k002-k003-k013-xtx]]); port HIP #31533 jeszcze niezbudowany
 - (zakończone) build upstream 6ad15f48 (#31533 + port HIP RDNA3 WMMA; Q4_K/Q5_K/Q6_K/Q8_0/IQ4_NL) dla gfx1100 na jaroserverai (`~/wt/fewrow-hip`, cpuheavy 2 rdzenie), potem automatycznie job kolejki `k013-fewrow` (V(w) na tym samym modelu) przez `~/qwen-opt/k013/after-build.sh`; wynik w następnej turze
 - wynik 2026-11-14 (całe silniki, nie sam kernel): upstream 6ad15f48 z few-row MMQ HIP vs topka-q70, `llama-bench -p 1,5,8,9,16 -d 2048,32768`: V5 26,8 → 37,9 ms (+41%), V16 33,9 → 47,0 (+39%) przy 2k; V1 też +3…31% → upstream bez naszych łatek jest wolniejszy, więc few-row nie jest szybszy niż nasza ścieżka weryfikacji. Do rozstrzygnięcia tylko poziom kernela: `test-backend-ops perf -o MUL_MAT` (q4_K, n 5/8/16) obu buildów ([[2026-11-14-k002-k003-k013-xtx]])
-
-### K-106 · Interferencja prefill–decode przy agentach: ile pisanie jednego wątku traci, gdy drugi wątek wysyła długi prompt
-- data: 2026-11-15
-- źródło: [[mapa-inferencji-roadmap]] (luka #1); agenci mają przez 37% czasu ≥ 2 żądania w locie, prefill to 58% zegara sesji ([[2026-10-19-workload-omp]])
-- test: XTX, produkcja na porcie testowym (`-np 1`): strumień A dekoduje 512 tok. przy 1,7k, w trakcie wchodzi żądanie B z promptem 32k. Mierzyć: czas do kolejnego tokena A (blokada), sumaryczną ścianę A i B vs sekwencyjnie, md5 obu. ≤ 10 min
-- zysk: wiedza; jeśli A stoi przez cały prefill B (~40 s przy 32k), kandydat na podział prefillu na kawałki przeplatane z dekodem (bezstratne dla A) [SZACUNEK]
-- ryzyko karty: brak
-- priorytet: średni (agenci, tani pomiar)
-- zwiad 2026-11-16: Superfluid (arXiv 2611.17753) przesuwa interaktywne żądania przed pracę agentów w jednym harmonogramie, czyli kandydat na rozwiązanie, jeśli K-106 pokaże długą blokadę ([[zwiad-2026-11-14]])
 
 ### K-107 · Dwie karty w jednym komputerze: XTX + RTX 5060 Ti (podział warstw `-sm layer` przez Vulkan albo dwa niezależne serwery dla roju agentów)
 - data: 2026-11-15
@@ -873,6 +825,59 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-123 · Czy nasza weryfikacja spekulacyjna (GPU_VERIFY / sprzężona) przyjmuje drafty po EOG — błąd naprawiony w strix-llama.cpp `4b43cfb96`
+- data: 2026-11-19
+- źródło: [[zwiad-2026-11-19]] (rejekcja bez przerwania po EOG zostawia drafty w slocie, następna tura je czyta; upstream `9581154` ma przerwanie tylko w ścieżce greedy, `common/sampling.cpp:709`)
+- hipoteza: nasza ścieżka T=1 (`LLAMA_GPU_VERIFY=1`, `LLAMA_SPEC_COUPLED`) nie przerywa po EOG → po turze w slocie zostają tokeny po końcu odpowiedzi; to może też dokładać do zależności md5 od historii serwera (K-001) [INFERENCE, mała szansa: K-001 mierzone przy T=0]
+- test: CPU, gdy jaroserverai online: przegląd kodu weryfikacji w gałęzi `topka-q70` i w forku CUDA (`kvqlean`); jeśli błąd jest: test na porcie testowym — tura T=1 kończąca się EOG z aktywnym draftem, `n_past` slotu vs długość odpowiedzi; poprawka = przerwanie po EOG jak w greedy
+- miara: liczba tokenów w slocie po turze (oczekiwane = prompt + odpowiedź); md5/rozkład następnej tury
+- zysk: poprawność (agent nie czyta śmieci po końcu odpowiedzi), 0 t/s
+- ryzyko karty: brak
+- priorytet: wysoki (poprawność, tani przegląd kodu)
+- **wynik 2026-11-19** ([[2026-11-19-k111-k123-krok-xtx]]): przegląd kodu 3191b25f4 — produkcja (MTP + coupled) i forki CUDA (draft greedy) idą ścieżką `sample_and_accept_n` z przerwaniem po EOG; ścieżka rejekcji ma ten sam brak co strix-llama.cpp, ale działa tylko przy `--spec-draft-sampling probabilistic` bez coupled; poprawka obronna przy najbliższym buildzie
+
+### K-111 · Rozłożyć lukę kroku MTP do sufitu: 26,9 ms zmierzone vs 19,2 ms sufitu pasma przy 2k (dekod czatu na 71–77% sufitu)
+- data: 2026-11-17
+- źródło: [[skill-io-sufity]] (ceiling.py na naszych rozmiarach: weryfikacja 16,1 GB + 4 drafty × 0,4 GB ÷ 926 GB/s); [[raport-24r-mmvq-pasmo]] (weryfikacja N=5 osiąga 762 z 926 GB/s); profil kroku 26,3 ms stałej części ([[2026-11-08-kvq-once-profil]])
+- hipoteza: luka 7,7 ms to (a) MMVQ weryfikacji poniżej pasma (~82%), (b) 4 sekwencyjne kroki draftu z małymi kernelami, (c) głowica LM, (d) przerwy hosta; największa część to (a)+(b)
+- test: XTX, rocprofv3 na kroku przy 1,7k (`GGML_HIP_PM4=0` do rozbicia, potem czas taśmy PM4): ms i GB/s na grupę kerneli vs ich sufit bajtowy; ≤ 10 min
+- miara przed/po: tabela grupa → ms zmierzone / ms sufitu / % ; wybór dźwigni o największej luce (×prawdopodobieństwo)
+- zysk: diagnostyka; każda 1 ms z kroku = +3,7% dekodu
+- ryzyko karty: brak
+- priorytet: wysoki (wskazuje, gdzie leży 30% zapasu dekodu)
+- **wynik 2026-11-19** ([[2026-11-19-k111-k123-krok-xtx]], bez karty, ślad rocprofv3 z 2026-11-07): krok 27 ms = MMVQ weryfikacji 20,2 ms (800 GB/s, 86%) + MMVQ draftów 1,9 ms (~830 GB/s; na XTX draft ≈ bajty) + ~3,5 ms małych kerneli (normy 1,07, GDN 0,82, kvq 0,66, reszta ~1); dźwignie: sprawność MMVQ (+~5%), pakiet norma+bramka+zapis KV (+~5,5% [INFERENCE])
+
+### K-109 · Bramka igieł długiego kontekstu (3 kody przy 50% i ~85–100% z 262k), dokładna odpowiedź — warunek „najlepsze” i część bramki wdrożenia
+- data: 2026-11-17
+- źródło: [[skill-io-metodyka]] (`methodology.md:37-38`, SKILL.md:95-98), [[skill-io-publikacja]] (bramka 5 przy 85% okna); `bench.py document()` (`:107-119`)
+- hipoteza: topka-q70 (KV q4_0, FA83) znajduje 3/3 kody przy 131k i 223k; jeśli nie, KV q4_0 przy długim kontekście psuje odczyt (fill md5 tego nie wykrywa)
+- test: XTX, produkcja na porcie testowym, `bench.py run --long 131072` i osobno `--long 223000` (fill ~8 min każdy → 2 joby kolejki)
+- miara: retrieval k/3 per głębokość, TTFT, decode po fillu, szczyt VRAM; po PASS dopisać do `deploy-q70`/przyszłych bramek
+- zysk: poprawność (dowód 262k), 0 t/s
+- ryzyko karty: temperatury przy fillu (junction < 95 °C, eco 2200)
+- priorytet: wysoki (luka w bramce produkcji)
+- **wynik 2026-11-19** ([[2026-11-19-k109-k110-k106-xtx]]): topka-q70 3/3 igły przy 130 376 i 221 728 tokenach (50% i 85% okna), prefill 650,8 / 527,0 t/s, dekod po fillu 105,9 / 86,3 t/s — PASS
+
+### K-110 · Ich `bench.py` bez zmian na XTX (port testowy): liczby 1:1 z ich 3090/B70 i z LocalMaxxing-like warunkami
+- data: 2026-11-17
+- źródło: [[skill-io-skrypty]]; ich wyniki 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`)
+- test: config jak `examples/config-existing-server.json` (temperatura 0,6, prefill 4k/16k, c1 6 × 512 tok.); produkcja na porcie testowym; ≤ 10 min
+- miara: c1 mediana, prefill 4k/16k, TTFT krótkiego promptu; porównanie z ich tabelą i z naszym spec_sweep (inny harness, opisać różnice)
+- zysk: publikowalna liczba porównawcza; 0 t/s
+- ryzyko karty: brak
+- priorytet: średni (marketing i kalibracja harnessów)
+- **wynik 2026-11-19** ([[2026-11-19-k109-k110-k106-xtx]]): c1 110,3 t/s (T 0,6, 6 × 512), prefill 839 t/s @2,8k i 933 t/s @10,9k, TTFT 140 ms
+
+### K-106 · Interferencja prefill–decode przy agentach: ile pisanie jednego wątku traci, gdy drugi wątek wysyła długi prompt
+- data: 2026-11-15
+- źródło: [[mapa-inferencji-roadmap]] (luka #1); agenci mają przez 37% czasu ≥ 2 żądania w locie, prefill to 58% zegara sesji ([[2026-10-19-workload-omp]])
+- test: XTX, produkcja na porcie testowym (`-np 1`): strumień A dekoduje 512 tok. przy 1,7k, w trakcie wchodzi żądanie B z promptem 32k. Mierzyć: czas do kolejnego tokena A (blokada), sumaryczną ścianę A i B vs sekwencyjnie, md5 obu. ≤ 10 min
+- zysk: wiedza; jeśli A stoi przez cały prefill B (~40 s przy 32k), kandydat na podział prefillu na kawałki przeplatane z dekodem (bezstratne dla A) [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: średni (agenci, tani pomiar)
+- zwiad 2026-11-16: Superfluid (arXiv 2611.17753) przesuwa interaktywne żądania przed pracę agentów w jednym harmonogramie, czyli kandydat na rozwiązanie, jeśli K-106 pokaże długą blokadę ([[zwiad-2026-11-14]])
+- **wynik 2026-11-19** ([[2026-11-19-k109-k110-k106-xtx]]): przy `-np 1` A nie stoi (maks. przerwa 39–89 ms), B czeka na resztę A (TTFT 39,2 vs 36,6 s), ściana = sekwencyjnie, md5 te same; przeplot prefillu ma sens tylko przy `-np > 1` (odrzucone K-086) — zamknięte
 
 ### K-114 · NVIDIA: rozłożyć krok MTP na 3090, 5060 Ti i 3060 względem sufitu — fork jest na 41–59% sufitu dekodu, XTX na 69–71% (+ K-112 prefill w tym samym runie)
 - data: 2026-11-17

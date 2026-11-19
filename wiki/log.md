@@ -487,3 +487,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-19] audyt | Gemini: całe repo KERNEL
 [[audyt-gemini-2026-11-19]]: bezpieczeństwo prawdziwe i naprawione (gpu-guard exit 4, pgrep -f, 3 s SIGKILL; run-jobs bez strażnika; bramka transferu Vast, down.sh --all); naprawione też spec_sweep (pętle, md5), summ.py, run-llm/run-topka, profil Enigmy ROCm = topka-q70; 8 pomysłów było już odrzuconych, zyski zwykle 2–10× zawyżone; kolejka: K-004/K-116/K-118 poprawione, nowe K-125–K-128.
+
+## [2026-11-19] kolejka | XTX: K-109, K-110, K-106 (GPU), K-111, K-123 (bez karty)
+[[2026-11-19-k109-k110-k106-xtx]]: igły 3/3 przy 130k i 222k (PASS), bench.py skill-io c1 110,3 t/s, prefill 839/933, -np 1 bez blokady dekodu (B czeka +2,6 s); [[2026-11-19-k111-k123-krok-xtx]]: krok 27 ms = MMVQ weryf. 20,2 (86%) + draft 1,9 (≈ bajty) + małe kernele 3,5; EOG w rejekcji nie dotyczy produkcji. Strażnik GPU w kolejce działał (0 WARN), produkcja przywrócona, 0 faultów.

@@ -1,0 +1,25 @@
+server pid 6910 up 16:08:13
+16:08:43 c1 median 110.28 [125.81, 112.8, 94.95, 107.76, 129.34, 103.55]
+16:08:46 prefill ~4096 838.6 tok/s over 2827 tokens
+16:08:58 prefill ~16384 932.9 tok/s over 10873 tokens
+{
+ "name": "k110-xtx-topka-q70",
+ "time": "2026-11-19T16:08:13",
+ "ttft_short_ms": 139.7,
+ "c1_decode": 110.28,
+ "c1_all": [
+  125.81,
+  112.8,
+  94.95,
+  107.76,
+  129.34,
+  103.55
+ ],
+ "prefill_4096": 838.6,
+ "prefill_4096_tokens": 2827,
+ "prefill_16384": 932.9,
+ "prefill_16384_tokens": 10873,
+ "ok": true,
+ "flags": []
+}
+server stopped 16:08:59

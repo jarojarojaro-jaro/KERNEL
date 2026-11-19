@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (58)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (81)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (83)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (121)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (31)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
@@ -80,6 +80,8 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-19 [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]]
 - 2026-11-19 [[megakernel-zoo|megakernel-zoo (Xingyu Dang, Princeton): agent (Claude) pisze osobny megakernel dekodu dla każdego modelu i karty]]
 - 2026-11-19 [[daisyrose-27b|DaisyRose-27B (RadixArk): pełny RL na Qwen3.8-27B, 144 × H200 przez 18 dni — duży koszt, mały zysk poza Terminal-Bench 4.1]]
+- 2026-11-19 [[2026-11-19-k111-k123-krok-xtx|2026-11-19 K-111 i K-123: gdzie ucieka krok MTP na XTX (bez karty, z istniejącego śladu) i błąd EOG w rejekcji]]
+- 2026-11-19 [[2026-11-19-k109-k110-k106-xtx|2026-11-19 K-109, K-110, K-106 na XTX: igły 3/3 przy 130k i 222k, `bench.py` skill-io 1:1, prefill drugiego żądania nie blokuje dekodu]]
 - 2026-11-18 [[zwiad-2026-11-18|Zwiad 2026-11-18: Splash 1.7 (drzewo draftu + lookup w jednym przebiegu), drafter NVIDIA 0,8B do Qwen3.8-27B — nic do wdrożenia u nas]]
 - 2026-11-18 [[llamampere|llamAmpere (JakeATX): fork llama.cpp pod RTX 30xx — szybki, ale domyślnie niebezstratny]]
 - 2026-11-18 [[ga-racing-rohanarun|GA z wyścigami (Rohan Arun, Open Kernel Challenge): statystyczny wybór wariantu kernela, bez zależności]]
@@ -89,8 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-17 [[skill-io-skrypty|Skrypty skill-io (bench.py, ceiling.py, queue.sh, mem.sh): co robią linia po linii i co bierzemy]]
 - 2026-11-17 [[skill-io-sufity|Sufity wg skill-io (ceilings.md + ceiling.py): nasz Qwen3.8-27B Q4_K_M na XTX i 34 kartach AMD, NVIDIA, Apple, Intel i Tenstorrent]]
 - 2026-11-17 [[skill-io-pulapki|Pułapki silników i sprzętu wg skill-io (gotchas.md) a nasze lekcje]]
-- 2026-11-17 [[skill-io-publikacja|Kwalifikacja i publikacja wg skill-io (publishing.md) a nasze wdrożenia topki i Enigmy]]
-- 2026-11-17 [[skill-io-przeglad|Skill „inference-optimisation” (Sybil Solutions): wspinaczka po prędkości serwera LLM — przegląd i lekcje]]
 
-Razem 772 notatek. Wygenerowano 2026-11-19 przez `tools/wiki.py index`.
+Razem 774 notatek. Wygenerowano 2026-11-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

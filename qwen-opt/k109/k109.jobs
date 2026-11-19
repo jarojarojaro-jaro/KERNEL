@@ -1,0 +1,5 @@
+# K-110 (skill-io bench.py 1:1) + K-109 (needles 131k/223k) on topka-q70, test port 18794; then production :8080 back
+k110|900|~/qwen-opt/k109|./k109.sh k110
+k109a|900|~/qwen-opt/k109|./k109.sh k109a
+k109b|900|~/qwen-opt/k109|./k109.sh k109b
+k109-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

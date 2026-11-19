@@ -1,0 +1,2 @@
+{"name": "k110-xtx-topka-q70", "base_url": "http://127.0.0.1:18794", "model": "default", "concurrency": 1,
+ "prefill_lengths": [4096, 16384], "temperature": 0.6}

@@ -1,0 +1,3 @@
+# K-106 prefill-decode interference (-np 1), production config on 18794; then :8080 back
+k106|600|~/qwen-opt/k109|./k109.sh k106
+k106-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
