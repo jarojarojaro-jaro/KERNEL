@@ -493,3 +493,5 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-19] telegram | topka kolejki + 5 linków
 KOLEJKA: sekcja TOPKA (K-001, K-125, K-013, K-007→K-008, K-004, K-116) na górze Czeka. Linki: adapter Hermes (dopisany do [[qwen38-27b-pi-adapter]]), Kinetic (4,5× = powtórzona edycja), 2× B70 (1,3–1,5×), Speedy (Flash-Next, Q2_0), DNeo (już zrobione).
+
+## [2026-11-19] telegram | TensorTonic handbook (powtórka) i lista materiałów do nauki (kipp.ly, FlashAttention, vLLM, SGLang) — nic nowego
