@@ -490,3 +490,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-19] kolejka | XTX: K-109, K-110, K-106 (GPU), K-111, K-123 (bez karty)
 [[2026-11-19-k109-k110-k106-xtx]]: igły 3/3 przy 130k i 222k (PASS), bench.py skill-io c1 110,3 t/s, prefill 839/933, -np 1 bez blokady dekodu (B czeka +2,6 s); [[2026-11-19-k111-k123-krok-xtx]]: krok 27 ms = MMVQ weryf. 20,2 (86%) + draft 1,9 (≈ bajty) + małe kernele 3,5; EOG w rejekcji nie dotyczy produkcji. Strażnik GPU w kolejce działał (0 WARN), produkcja przywrócona, 0 faultów.
+
+## [2026-11-19] telegram | topka kolejki + 5 linków
+KOLEJKA: sekcja TOPKA (K-001, K-125, K-013, K-007→K-008, K-004, K-116) na górze Czeka. Linki: adapter Hermes (dopisany do [[qwen38-27b-pi-adapter]]), Kinetic (4,5× = powtórzona edycja), 2× B70 (1,3–1,5×), Speedy (Flash-Next, Q2_0), DNeo (już zrobione).

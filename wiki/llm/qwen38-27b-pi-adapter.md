@@ -61,6 +61,20 @@ Taki zysk daje sam model, bez żadnego kernela.
 
 **Przepis:** ten sam co pi (AsyncGRPO, LoRA r 32, lr 2e-5, nagroda + 0,1 za oszczędność wywołań, 2 × B200, 150 kroków), harness OpenCode 2.2.7. Skrypt jest już publiczny w TRL: `examples/async_grpo_harbor`. Bariera dla naszego własnego adaptera pod omp to dziś koszt GPU, nie kod.
 
+## Aktualizacja 2026-11-19: adapter pod Hermes (Nous Research)
+
+Źródło: huggingface.co/harness-hub/Qwen3.8-27B-hermes-adapted; x.com/yb2698/status/2123421903784136769.
+
+| test (Hermes, 1 próba) | baza | baza z myśleniem | adapter | adapter z myśleniem |
+|---|---|---|---|---|
+| SWE-bench Pro (hard 51) | 29,4% | 45,1% | **43,1%** | 51,0% |
+| Terminal-Bench 2.1 | 44,7% | 58,8% | **58,8%** | 57,6% |
+
+- Parowane różnice: SWE +13,7 ± 13,3 pp (p = 0,092), TB +14,1 ± 11,4 (p = 0,029).
+- Bez myślenia adapter jest jak baza z myśleniem `xhigh`, przy 3,5–4,4 × mniej tokenów.
+- To trzeci harness z tym samym przepisem: pi, OpenCode, Hermes. Wzorzec się powtarza: celowany LoRA zastępuje myślenie i tnie tokeny.
+- Dla K-120: do porównania w omp wybieramy najbliższy harness, czyli pi (omp to jego fork).
+
 **Zmiana modelu na produkcji (topka, Enigma) to decyzja właściciela.** Test: K-120 w [[KOLEJKA-TESTOW]].
 
 ## Powiązane
