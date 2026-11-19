@@ -511,3 +511,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 [[lekcja-tlo-z-sesji-agenta-ginie]], AGENTS.md zasada z 2026-10-16 zaostrzona.
 
 ## [2026-11-19] telegram | Basalt v0.5.0: delta od v0.2.1 = model Hy4-flash (MoE, NVFP4, stratny KLD 0,201), nie Qwen; lekcje do K-008/K-111 w ZRODLA
+
+## [2026-11-19] telegram | WavePP (arXiv 2609.35263): prefill PP4 na klastrze, ×2–2,9 przy ponownym użyciu prefiksu; lekcja do K-107
