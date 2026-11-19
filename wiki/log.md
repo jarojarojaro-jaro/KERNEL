@@ -479,3 +479,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-19] telegram | megakernel-zoo (agent pisze megakernel per model)
 [[megakernel-zoo]]: Qwen3.8-27B B200 SGLang 9,52 → 8,44 ms (tor A, ~63 h agenta) → 7,17 (12-bit BF16, bitowo); ewaluator (FP64, ukryty zbiór, odwrócenie batcha, audyt) dopisany do [[skill-io-metodyka]]; audyt: pętla powtórzeń dawała fałszywe 0,415 ms/token; K-124 megakernel pętli draftu (najpierw NVIDIA).
+
+## [2026-11-19] telegram | DNeo (drafter dyfuzyjny, Cerebras)
+[[drafter-dflash]]: 1,3 × vs DFlash2 na Qwen3-4B/H100 (pamięć odrzuconych propozycji, MoFA); brak wag 27B i llama.cpp; u nas DFlash2 przegrywa z MTP (PL, T=1), więc bez testu; lekcja do douczania MTP.

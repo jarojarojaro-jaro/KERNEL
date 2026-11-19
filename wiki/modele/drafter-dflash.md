@@ -24,6 +24,19 @@ Magnitude (2026-10-16): DFlash2 27B blok 8 (7 propozycji), okno 2048, Q8_0 2.06 
 
 Następca z tej rodziny: [[drafter-dspine]] (przyczynowy kręgosłup, +3.7…+6.9% τ nad DFlash2 przy tych samych danych).
 
+## Aktualizacja 2026-11-19: DNeo (arXiv 2611.21925, Cerebras; Telegram „gpu”)
+
+- Następca DFlash/DSpark tej samej rodziny (drafter równoległy warunkowany cechami celu). Zmiany:
+  - MoFA: koder cech bez „mieszania residuum”;
+  - pamięć robocza odrzuconych propozycji;
+  - konwolucje 2-tap, cross-attention tylko do prefiksu;
+  - nierównomierny wybór warstw celu.
+- Wynik autorów: 1,3 × szybciej niż DFlash2 przy tym samym rozmiarze draftera; bezstratnie (standardowa rejekcja). Pomiar na H100, Qwen3-4B, b = 15.
+- Wagi: tylko `J-sandler/Qwen3-4B-DNeo`; **brak wersji dla Qwen3.8-27B i brak llama.cpp**.
+- Dla nas bez zmian: DFlash2 przegrywa u nas z MTP po polsku i przy T=1 (powyżej). Nawet +30% względem DFlash2 nie gwarantuje wygranej z MTP n4.
+- Lekcja treningowa: pamięć odrzuconych propozycji to pomysł niezależny od architektury. Do sprawdzenia przy douczaniu naszej głowicy MTP (akceptacja PL 0,64 na głębokości 1).
+- Wraca, gdy pojawią się wagi dla Qwen3.8-27B.
+
 ## Powiązane
 - [[modele/_hub|Modele]]
 - [[glowica-mtp]]
