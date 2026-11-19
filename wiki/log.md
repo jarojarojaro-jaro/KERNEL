@@ -471,3 +471,5 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 [[strata]]: własny silnik bez ggml na wszystkich platformach (te same tokeny); lekcja do [[skill-io-pulapki]]: błąd M1–M4 liczył 1/4 kolumn przy płynnym tekście (KL 0,303 → 0,0068), JIT Blackwell 173 → 0,34 s; nic dla 27B na XTX.
 
 ## [2026-11-19] telegram | blog „Quantization, finally explained” — wstęp dla laików, nic nowego
+
+## [2026-11-19] telegram | TensorTonic llm-optimization-handbook — spis tematów z linkami, nic nowego
