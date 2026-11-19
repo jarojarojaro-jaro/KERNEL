@@ -1,0 +1,27 @@
+From 25efea51e2aed12eb240bc84eb458bbaa2615578 Mon Sep 17 00:00:00 2001
+From: kernel
+Date: Thu, 19 Nov 2026 16:45:28 +0000
+Subject: [PATCH 3/4] K-125: GGML_HIP_KVQ_OFF is off unless set
+ (ggml_cuda_env_switch defaults to on)
+
+---
+ ggml/src/ggml-cuda/fattn-kvq.cu | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
+index 0f745a909..385a5da62 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cu
++++ b/ggml/src/ggml-cuda/fattn-kvq.cu
+@@ -734,7 +734,8 @@ bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * ds
+         return false;
+     }
+     // [GGML_HIP_KVQ_OFF] K-125: the stock vec/tile path instead of kvq, for the KLD comparison of kvq vs the upstream kernel
+-    static const bool kvq_off = ggml_cuda_env_switch("GGML_HIP_KVQ_OFF");
++    // (not ggml_cuda_env_switch: that one is on when the variable is unset)
++    static const bool kvq_off = [] { const char * e = getenv("GGML_HIP_KVQ_OFF"); return e != nullptr && atoi(e) != 0; }();
+     if (kvq_off) {
+         return false;
+     }
+-- 
+2.43.0
+

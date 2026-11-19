@@ -495,3 +495,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 KOLEJKA: sekcja TOPKA (K-001, K-125, K-013, K-007→K-008, K-004, K-116) na górze Czeka. Linki: adapter Hermes (dopisany do [[qwen38-27b-pi-adapter]]), Kinetic (4,5× = powtórzona edycja), 2× B70 (1,3–1,5×), Speedy (Flash-Next, Q2_0), DNeo (już zrobione).
 
 ## [2026-11-19] telegram | TensorTonic handbook (powtórka) i lista materiałów do nauki (kipp.ly, FlashAttention, vLLM, SGLang) — nic nowego
+
+## [2026-11-19] eksperyment | kolejka XTX: K-125 PASS (kvq KLD 0,004522 → 0,003862 vs standardowy kernel), K-001 bisekcja (pamięć, host, kvq odpadają)
+[[2026-11-19-k125-k001-xtx]], [[lekcja-env-switch-domyslnie-wlaczony]]; K-123 poprawka gotowa w gałęzi k123-eog. Produkcja :8080 przywrócona, 0 błędów karty.

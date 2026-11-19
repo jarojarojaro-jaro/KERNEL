@@ -1,0 +1,75 @@
+From 71fe8e8e886f2a6bfd0b11078ee06c1ee4156c2c Mon Sep 17 00:00:00 2001
+From: kernel
+Date: Thu, 19 Nov 2026 16:40:36 +0000
+Subject: [PATCH 2/4] K-001: LLAMA_K001_LOG logs KV placement (cell-pos offset,
+ n_kv, used_max_p1) and recurrent cells on change
+
+---
+ src/llama-kv-cache.cpp         | 19 +++++++++++++++++++
+ src/llama-memory-recurrent.cpp | 13 +++++++++++++
+ 2 files changed, 32 insertions(+)
+
+diff --git a/src/llama-kv-cache.cpp b/src/llama-kv-cache.cpp
+index efc0f4185..aba265bd9 100644
+--- a/src/llama-kv-cache.cpp
++++ b/src/llama-kv-cache.cpp
+@@ -6,6 +6,9 @@
+ #include "llama-context.h"
+ 
+ #include <algorithm>
++#include <array>
++#include <cstdlib>
++#include <map>
+ #include <cassert>
+ #include <cmath>
+ #include <cstring>
+@@ -1142,6 +1145,22 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch &
+         return;
+     }
+ 
++    // [LLAMA_K001_LOG] K-001: where a ubatch lands (cell - pos of its first token), n_kv and used_max_p1, logged on change
++    static const bool k001_log = getenv("LLAMA_K001_LOG") != nullptr;
++    if (k001_log && sinfo.n_stream() > 0 && sinfo.size() > 0) {
++        static std::map<const void *, std::array<int64_t, 3>> k001_last;
++        const auto & cells0 = v_cells[sinfo.strm[0]];
++        const uint32_t idx0 = sinfo.idxs[0][0];
++        const std::array<int64_t, 3> cur = { (int64_t) get_n_kv(sinfo), (int64_t) idx0 - ubatch.pos[0], (int64_t) cells0.used_max_p1() };
++        auto & last = k001_last[this];
++        if (last != cur) {
++            LLAMA_LOG_INFO("k001 kv %p n_tokens=%u pos0=%d cell0=%u off=%lld n_kv=%lld used_max_p1=%lld used=%u size=%u\n",
++                (const void *) this, ubatch.n_tokens, ubatch.pos[0], idx0, (long long) cur[1], (long long) cur[0],
++                (long long) cur[2], cells0.get_used(), cells0.size());
++            last = cur;
++        }
++    }
++
+     // keep track of the max sequence position that we would overwrite with this ubatch
+     // for non-SWA cache, this would be always empty
+     llama_seq_id seq_pos_max_rm[LLAMA_MAX_SEQ];
+diff --git a/src/llama-memory-recurrent.cpp b/src/llama-memory-recurrent.cpp
+index 2a2aea410..6081eed10 100644
+--- a/src/llama-memory-recurrent.cpp
++++ b/src/llama-memory-recurrent.cpp
+@@ -825,6 +825,19 @@ bool llama_memory_recurrent::find_slot(const llama_ubatch & ubatch) {
+             }
+         }
+ 
++        // [LLAMA_K001_LOG] K-001: which recurrent cell holds seq 0 and which one is the zeroed state, logged on change
++        static const bool k001_log = getenv("LLAMA_K001_LOG") != nullptr;
++        if (k001_log) {
++            static std::map<const void *, std::array<int32_t, 3>> k001_last;
++            const std::array<int32_t, 3> cur = { cells[0].tail, rs_z, (int32_t) used };
++            auto & last = k001_last[this];
++            if (last != cur) {
++                LLAMA_LOG_INFO("k001 rs %p tail0=%d rs_z=%d used=%d min=%d max=%d head=%u\n",
++                    (const void *) this, cur[0], cur[1], cur[2], min, max, head);
++                last = cur;
++            }
++        }
++
+         for (int i = min; i <= max; ++i) {
+             if (cells[i].src < 0) {
+                 GGML_ASSERT(rs_z >= 0);
+-- 
+2.43.0
+

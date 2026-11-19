@@ -1,0 +1,6 @@
+# 2026-11-19 owner OK ("rob kolejne testy na 7900xtx"). K-125 rerun: KLD kvq vs stock kernel (the first run had the switch
+# inverted: ggml_cuda_env_switch is on when unset, so both arms ran without kvq). Then K-001 instrumented, then :8080 back.
+k125-ref|900|~/qwen-opt/k125|./k125.sh ref
+k125-arms|1500|~/qwen-opt/k125|./k125.sh arms
+k001-log|1200|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/inst LLAMA_K001_LOG=1 K001_LABEL=log python3 k001b.py
+k125-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

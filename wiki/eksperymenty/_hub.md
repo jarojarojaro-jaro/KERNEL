@@ -14,7 +14,7 @@ Werdykty: scalone / wycofane / negatywne. Wyniki negatywne zapisujemy, żeby do 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (83)
+## Notatki (84)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -79,6 +79,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-11-17-k114-nvidia-sufit|2026-11-17 K-114: nasz silnik CUDA na 3090, 5060 Ti i 3060 względem sufitu — czas kroku zjadają drafty, a na Vaście limity hosta]] — Na Vaście (koszt $0,33) 5060 Ti osiągnęła 61% sufitu dekodu, a wyniki 3090 (23%) i 3060 (42%) to dolne granice z ograniczonych hostów, nie pomiar kart; draft MTP kosztuje 4–15 × swoje bajty.
 - [[2026-11-19-k109-k110-k106-xtx|2026-11-19 K-109, K-110, K-106 na XTX: igły 3/3 przy 130k i 222k, `bench.py` skill-io 1:1, prefill drugiego żądania nie blokuje dekodu]] — Wyniki:
 - [[2026-11-19-k111-k123-krok-xtx|2026-11-19 K-111 i K-123: gdzie ucieka krok MTP na XTX (bez karty, z istniejącego śladu) i błąd EOG w rejekcji]] — K-111:
+- [[2026-11-19-k125-k001-xtx|2026-11-19: K-125 (KLD ścieżki kvq) i K-001 (wyciek stanu): XTX, topka-q70, Qwen3.8-27B-Uncensored Q4_K_M]] — K-125 PASS: produkcyjna ścieżka atencji `kvq` jest BLIŻEJ referencji f16 niż standardowy kernel llama.cpp: średnie KLD 0,004522 → 0,003862 (−14,6%, −3,4 σ), zgodność top-1 97,06 → 97,60%, 99,9% KLD 0,170 → 0,138. Jest też deterministyczna (powtórka bit w bit).
 - [[2026-11-08-l1-tokenizacja-parser|Cache tokenizacji na ścieżce SAFE_SPECIAL + parser przyrostowy: tokenizacja 14,0 → 6,6 ms, wyjście identyczne (2026-11-08, pomiar częściowy)]] — Na prawdziwym replayu 2 wątków agenta (82–119k kontekstu, 16 tur na ramię) `LLAMA_SERVER_TOK_CACHE=1` + `LLAMA_SERVER_PARSE_INC=1` skróciły tokenizację z mediany 14,0 do 6,6 ms i czas tury poza prefillem z 1 704 do 1 619 ms (−85 ms), przy identycznym md5 greedy, identycznym tekście strumienia i 0 rozbieżności tokenów; decode bez zmian (spec_sweep 110,0 → 110,1 t/s). Pomiar przerwany przed ramieniem A2 (koniec testów na polecenie użytkownika), więc to jedna para A→B, nie pełne ABBA.
 - [[2026-11-09-evalplus-qwen-uncensored|EvalPlus: Qwen3.8-27B-Uncensored Q4_K_M, produkcja XTX, effort low (2026-11-09)]] — Produkcyjny model czatu ma greedy pass@1 HumanEval 97,6 / HumanEval+ 92,7 / MBPP 92,9 / MBPP+ 80,2 %, przy ~750 tokenach i ~4,9 s na odpowiedź; to pierwszy przebieg bramki [[evalplus-jakosc-kodu|jakość-mini]].
 - [[2026-11-06-final-mode|Final mode: eco 2200 MHz + kontekst 262 144 (2026-11-06)]] — Tryb docelowy czatu (Qwen3.8-27B-Uncensored): +28% kontekstu (262 144), −14% watów i −4 °C hotspot za −1,8% pisania; odpowiedzi greedy bitowo te same.

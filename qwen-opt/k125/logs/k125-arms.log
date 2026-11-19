@@ -1,0 +1,14 @@
+16:54:12 base
+16:55:45 base rc=0
+16:55:45 cand
+16:57:15 cand rc=0
+16:57:15 cand2
+16:58:44 cand2 rc=0
+base: mean KLD 0.004522 ± 0.000154  99.9% KLD 0.1697  same top p 97.057 ± 0.187 %  RMS dp 2.068 %  PPL ratio 1.0041
+cand: mean KLD 0.003862 ± 0.000117  99.9% KLD 0.1377  same top p 97.595 ± 0.169 %  RMS dp 1.882 %  PPL ratio 1.0034
+dKLD -0.000660 (-3.41 sd)  dtop +0.538 % (+2.13 sd)  99.9% x0.812  dRMSdp -0.186 %  dPPLratio -0.0006
+PASS
+base: mean KLD 0.003862 ± 0.000117  99.9% KLD 0.1377  same top p 97.595 ± 0.169 %  RMS dp 1.882 %  PPL ratio 1.0034
+cand: mean KLD 0.003862 ± 0.000117  99.9% KLD 0.1377  same top p 97.595 ± 0.169 %  RMS dp 1.882 %  PPL ratio 1.0034
+dKLD +0.000000 (+0.00 sd)  dtop +0.000 % (+0.00 sd)  99.9% x1.000  dRMSdp +0.000 %  dPPLratio +0.0000
+IDENTICAL

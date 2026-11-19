@@ -1,0 +1,23 @@
+17:09:15 server s0 up in 6.1 s (pid 77599): ~/qwen-opt/k001/inst
+17:09:20 S0: prefill 1712 tok, saved 683 MiB; fresh F md5 3f26f79c prompt_n 33 130.383 t/s
+17:09:27 server v-prod up in 6.1 s (pid 77829): ~/qwen-opt/k001/inst
+17:09:30 [prod] R1: md5 3f26f79c prompt_n 33 128.412 t/s draft 276/185
+17:09:32 [prod] R1b: md5 3f26f79c prompt_n 33 134.002 t/s draft 276/185
+17:09:35 [prod] U1 greedy chat md5 d36768ee / 424a3a1f
+17:09:37 [prod] R2: md5 38028947 prompt_n 33 131.434 t/s draft 282/184
+17:10:15 [prod] U2 cold 32k prefill 32768 tok 870.33 t/s
+17:10:17 [prod] R3: md5 3dd78584 prompt_n 33 130.227 t/s draft 286/183
+17:10:21 [prod] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+17:10:21 [prod] SUMMARY F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+17:10:28 server s0-GGML_HIP_KVQ_OFF1 up in 6.1 s (pid 78669): ~/qwen-opt/k001/inst GGML_HIP_KVQ_OFF=1
+17:10:33 [GGML_HIP_KVQ_OFF=1] own snapshot; fresh F md5 c141fb1d 120.899 t/s draft 290/181
+17:10:40 server v-GGML_HIP_KVQ_OFF1 up in 6.1 s (pid 78905): ~/qwen-opt/k001/inst GGML_HIP_KVQ_OFF=1
+17:10:43 [GGML_HIP_KVQ_OFF=1] R1: md5 c141fb1d prompt_n 33 119.108 t/s draft 290/181
+17:10:46 [GGML_HIP_KVQ_OFF=1] R1b: md5 c141fb1d prompt_n 33 123.107 t/s draft 294/180
+17:10:48 [GGML_HIP_KVQ_OFF=1] U1 greedy chat md5 a0dde0fa / 456a8b51
+17:10:50 [GGML_HIP_KVQ_OFF=1] R2: md5 3f26f79c prompt_n 33 130.173 t/s draft 280/184
+17:11:28 [GGML_HIP_KVQ_OFF=1] U2 cold 32k prefill 32768 tok 870.38 t/s
+17:11:30 [GGML_HIP_KVQ_OFF=1] R3: md5 3068e15b prompt_n 33 124.5 t/s draft 293/181
+17:11:34 [GGML_HIP_KVQ_OFF=1] F2 fresh prefill on used server: md5 3f26f79c prompt_n 33
+17:11:35 [GGML_HIP_KVQ_OFF=1] SUMMARY F=3f26f79c F=c141fb1d R1=c141fb1d R1b=c141fb1d R2=3f26f79c R3=3068e15b F2=3f26f79c
+17:11:35 done in 146 s, results ~/qwen-opt/xtxbench/runs/1119-170909-k001-kvqoff/k001.json

@@ -1,0 +1,37 @@
+From bfe9d21a0b77dcdafa584f5656881e4ea87f6b46 Mon Sep 17 00:00:00 2001
+From: kernel
+Date: Thu, 19 Nov 2026 16:43:49 +0000
+Subject: [PATCH] K-123: rejection sampling stops drafting after an accepted
+ EOG, like the matching path
+
+---
+ common/sampling.cpp | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/common/sampling.cpp b/common/sampling.cpp
+index cacb54020..ab2181eca 100644
+--- a/common/sampling.cpp
++++ b/common/sampling.cpp
+@@ -1181,6 +1181,8 @@ std::vector<llama_token> common_sampler_sample_and_accept_n_rejection(struct com
+ 
+     std::vector<llama_token_data> cand; // candidate array masked by the grammar, if there is one
+ 
++    const llama_vocab * vocab = llama_model_get_vocab(llama_get_model(ctx));
++
+     size_t i = 0;
+     for (; i < draft.size(); i++) {
+         // leaves the target distribution in the candidate array
+@@ -1229,6 +1231,10 @@ std::vector<llama_token> common_sampler_sample_and_accept_n_rejection(struct com
+         if (q_x > 0.0f && (p_x >= q_x || uni(gsmpl->rng) < p_x / q_x)) {
+             common_sampler_accept(gsmpl, draft[i], true);
+             result.push_back(draft[i]);
++            // as in common_sampler_sample_and_accept_n: no draft tokens after an accepted EOG (K-123)
++            if (llama_vocab_is_eog(vocab, draft[i]) && i + 1 < draft.size()) {
++                break;
++            }
+             continue;
+         }
+ 
+-- 
+2.43.0
+

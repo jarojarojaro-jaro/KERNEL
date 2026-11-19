@@ -1,0 +1,4 @@
+# 2026-11-19 K-001 bisection 2: KV placement / n_kv / GDN cell are identical in R1 and R2 (k001-log2), so test the host
+# side: no RAM prompt cache (CACHE_RAM=0) and no pinned checkpoint staging (LLAMA_CKPT_VRAM=0); then :8080 back
+k001-var|1500|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/inst LLAMA_K001_LOG=1 K001_LABEL=var python3 k001b.py CACHE_RAM=0 LLAMA_CKPT_VRAM=0 CACHE_RAM=0,LLAMA_CKPT_VRAM=0
+k001-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

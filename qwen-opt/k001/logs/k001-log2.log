@@ -1,0 +1,12 @@
+17:00:56 server s0 up in 6.1 s (pid 69270): ~/qwen-opt/k001/inst
+17:01:01 S0: prefill 1712 tok, saved 683 MiB; fresh F md5 3f26f79c prompt_n 33 130.569 t/s
+17:01:08 server v-prod up in 6.1 s (pid 69463): ~/qwen-opt/k001/inst
+17:01:11 [prod] R1: md5 3f26f79c prompt_n 33 128.349 t/s draft 276/185
+17:01:13 [prod] R1b: md5 3f26f79c prompt_n 33 134.027 t/s draft 276/185
+17:01:15 [prod] U1 greedy chat md5 d36768ee / 424a3a1f
+17:01:18 [prod] R2: md5 38028947 prompt_n 33 131.517 t/s draft 282/184
+17:01:55 [prod] U2 cold 32k prefill 32768 tok 870.09 t/s
+17:01:58 [prod] R3: md5 3dd78584 prompt_n 33 130.245 t/s draft 286/183
+17:02:02 [prod] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+17:02:02 [prod] SUMMARY F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+17:02:02 done in 73 s, results ~/qwen-opt/xtxbench/runs/1119-170049-k001-log2/k001.json

@@ -1,0 +1,4 @@
+# 2026-11-19 K-001 bisection 3: host side (RAM prompt cache, checkpoint staging) ruled out; does the pattern follow the
+# kvq attention kernel? (GGML_HIP_KVQ_OFF=1 = stock vec/tile kernel); then :8080 back
+k001-kvqoff|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/inst K001_LABEL=kvqoff python3 k001b.py GGML_HIP_KVQ_OFF=1
+k001-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

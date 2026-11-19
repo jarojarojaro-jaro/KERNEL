@@ -1,0 +1,29 @@
+From 96394b3f9496c089d1102df34471fa5963aa3b9e Mon Sep 17 00:00:00 2001
+From: kernel
+Date: Thu, 19 Nov 2026 16:36:27 +0000
+Subject: [PATCH 1/4] K-125: GGML_HIP_KVQ_OFF=1 disables the kvq kernel (KLD
+ comparison only; default unchanged)
+
+---
+ ggml/src/ggml-cuda/fattn-kvq.cu | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/ggml/src/ggml-cuda/fattn-kvq.cu b/ggml/src/ggml-cuda/fattn-kvq.cu
+index 1476ba4f2..0f745a909 100644
+--- a/ggml/src/ggml-cuda/fattn-kvq.cu
++++ b/ggml/src/ggml-cuda/fattn-kvq.cu
+@@ -733,6 +733,11 @@ bool ggml_cuda_flash_attn_ext_kvq_supported(const int cc, const ggml_tensor * ds
+     if (!GGML_CUDA_CC_IS_RDNA3_0(cc)) {
+         return false;
+     }
++    // [GGML_HIP_KVQ_OFF] K-125: the stock vec/tile path instead of kvq, for the KLD comparison of kvq vs the upstream kernel
++    static const bool kvq_off = ggml_cuda_env_switch("GGML_HIP_KVQ_OFF");
++    if (kvq_off) {
++        return false;
++    }
+     // [GGML_HIP_KVQ_Q8] q8_0 K/V as well (otherwise the vec kernel); different numerics from the vec kernel (f16 Q and
+     // WMMA instead of q8_1 Q and int8 dot products, f32 instead of f16 VKQ accumulators). Not D 256: the q8_0 kernel
+     // spills registers there.
+-- 
+2.43.0
+

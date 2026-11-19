@@ -22,7 +22,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ## Czeka
 
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
-1. K-001 wyciek stanu po restore (poprawność produkcji). 2. K-125 KLD ścieżki `kvq` (poprawność). 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 (największa dźwignia dekodu z K-111: MMVQ weryfikacji 20,2 ms przy 86% pasma). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6–7. K-004 i K-116 na NVIDIA (Enigma, po doładowaniu Vast).
+1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 (największa dźwignia dekodu z K-111: MMVQ weryfikacji 20,2 ms przy 86% pasma). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6–7. K-004 i K-116 na NVIDIA (Enigma, po doładowaniu Vast).
 
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
@@ -33,16 +33,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: wysoki (bezstratność produkcji)
 - wynik 2026-11-14: wzór R1 = R1b = świeży (3f26f79c), R2/R3/F2 inne; identyczny przy `LLAMA_SPEC_LOOKUP=0`, `LLAMA_SPEC_COUPLED=0`, `GGML_HIP_PM4=0`, a F2 (bez restore) też się różni → to zależność od historii serwera, nie od pliku slotu ([[2026-11-14-k001-wyciek-stanu-restore]]). #30541 odpada (topka nie używa `FLAGS_ON_DEVICE`).
-- następny test: log `n_kv` / `used_max_p1` / komórek GDN przy R1 vs R2 (`v_heads` odpada, `seq_rm` go zeruje); jeden job ≤ 10 min
-
-### K-125 · KLD ścieżki `kvq` (łatka 0011) dla Qwena na XTX — nigdy niezmierzona, a `kvq` zmienia tekst greedy
-- data: 2026-11-19
-- źródło: audyt Gemini (C.2.3a) potwierdzony: [[fattn-kvq]] (`:21`, md5 inne, KLD dla Qwena na RDNA3 brak), `08-analiza-platformy-latek.md:395`; bramka [[bramka-kld-kanarki]]
-- test: XTX przez kolejkę, `GGML_HIP_PM4=0`: `llama-perplexity --kl-divergence` topka (kvq) vs ta sama binarka bez kvq (referencja f16 KV), 5 × 8192 tokenów, porównanie z szumem bazowym (2σ); ≤ 10 min na ramię
-- miara: średnie KLD, 99,9% KLD, top-1 vs szum
-- zysk: poprawność (dowód, że produkcyjna ścieżka atencji mieści się w szumie); 0 t/s
-- ryzyko karty: brak (PM4=0)
-- priorytet: średni
+- wynik 2026-11-19 ([[2026-11-19-k125-k001-xtx]]): build z logiem `LLAMA_K001_LOG` (gałąź `k001-log`). Przesunięcie komórka − pozycja = 0, `used_max_p1 == used`, `n_kv` i komórka GDN takie same w R1 i R2, więc **pamięć odpada**. Wzór jest identyczny przy `CACHE_RAM=0` i `LLAMA_CKPT_VRAM=0` (**host odpada**) i przy `GGML_HIP_KVQ_OFF=1` (F c141fb1d, R2 = F2 = 3f26f79c), więc **kernel atencji odpada**. Zostają GPU-owe bufory poza KV/GDN (pula, scratch, przechowywany graf) i `common_speculative`.
+- następny test: zrzut top-2 logitów pierwszych ~40 kroków R1 vs R2 (`LLAMA_K001_LOG` + `n_probs`): pierwszy rozjazd i jego wielkość (1e-6 na remisie = kolejność redukcji; duża = niezainicjowany stan); jeden job ≤ 5 min
 
 ### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)
 - data: 2026-11-07
@@ -828,6 +820,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-125 · KLD ścieżki `kvq` (łatka 0011) dla Qwena na XTX — kvq jest BLIŻEJ referencji f16 niż standardowy kernel
+- data: 2026-11-19 (zgłoszone i zrobione tego samego dnia)
+- źródło: audyt Gemini (C.2.3a): [[fattn-kvq]], `08-analiza-platformy-latek.md:395`; bramka [[bramka-kld-kanarki]]
+- test: `llama-perplexity --kl-divergence`, Qwen3.8-27B-Uncensored Q4_K_M, wikitext-2, `-c 8192 --chunks 2 -ub 5`, PM4=0; referencja KV f16; base = KV q4_0 z `GGML_HIP_KVQ_OFF=1`, cand = KV q4_0 z kvq (produkcja), cand2 = powtórka
+- wynik: base → kvq: średnie KLD 0,004522 → 0,003862 (−14,6%, −3,4 σ), top-1 97,06 → 97,60%, 99,9% KLD 0,170 → 0,138, maks. 0,61 → 0,36; powtórka identyczna co do bitu; PASS ([[2026-11-19-k125-k001-xtx]])
+- przy okazji: pierwszy przebieg nieważny (wyłącznik przez `ggml_cuda_env_switch` był włączony domyślnie) → [[lekcja-env-switch-domyslnie-wlaczony]]
 
 ### K-123 · Czy nasza weryfikacja spekulacyjna (GPU_VERIFY / sprzężona) przyjmuje drafty po EOG — błąd naprawiony w strix-llama.cpp `4b43cfb96`
 - data: 2026-11-19

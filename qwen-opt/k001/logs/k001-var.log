@@ -1,0 +1,45 @@
+17:03:44 server s0 up in 6.1 s (pid 72437): ~/qwen-opt/k001/inst
+17:03:50 S0: prefill 1712 tok, saved 683 MiB; fresh F md5 3f26f79c prompt_n 33 130.71 t/s
+17:03:57 server v-prod up in 6.1 s (pid 72646): ~/qwen-opt/k001/inst
+17:03:59 [prod] R1: md5 3f26f79c prompt_n 33 128.279 t/s draft 276/185
+17:04:02 [prod] R1b: md5 3f26f79c prompt_n 33 133.922 t/s draft 276/185
+17:04:04 [prod] U1 greedy chat md5 d36768ee / 424a3a1f
+17:04:06 [prod] R2: md5 38028947 prompt_n 33 131.431 t/s draft 282/184
+17:04:44 [prod] U2 cold 32k prefill 32768 tok 870.91 t/s
+17:04:46 [prod] R3: md5 3dd78584 prompt_n 33 130.249 t/s draft 286/183
+17:04:50 [prod] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+17:04:51 [prod] SUMMARY F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+17:04:57 server s0-CACHE_RAM0 up in 6.1 s (pid 73624): ~/qwen-opt/k001/inst CACHE_RAM=0
+17:05:03 [CACHE_RAM=0] own snapshot; fresh F md5 3f26f79c 130.483 t/s draft 276/185
+17:05:10 server v-CACHE_RAM0 up in 6.1 s (pid 73780): ~/qwen-opt/k001/inst CACHE_RAM=0
+17:05:12 [CACHE_RAM=0] R1: md5 3f26f79c prompt_n 33 128.204 t/s draft 276/185
+17:05:15 [CACHE_RAM=0] R1b: md5 3f26f79c prompt_n 33 133.843 t/s draft 276/185
+17:05:17 [CACHE_RAM=0] U1 greedy chat md5 d36768ee / 424a3a1f
+17:05:19 [CACHE_RAM=0] R2: md5 38028947 prompt_n 33 131.38 t/s draft 282/184
+17:05:57 [CACHE_RAM=0] U2 cold 32k prefill 32768 tok 871.01 t/s
+17:05:59 [CACHE_RAM=0] R3: md5 3dd78584 prompt_n 33 130.31 t/s draft 286/183
+17:06:03 [CACHE_RAM=0] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+17:06:04 [CACHE_RAM=0] SUMMARY F=3f26f79c F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+17:06:10 server s0-LLAMA_CKPT_VRAM0 up in 6.1 s (pid 74667): ~/qwen-opt/k001/inst LLAMA_CKPT_VRAM=0
+17:06:16 [LLAMA_CKPT_VRAM=0] own snapshot; fresh F md5 3f26f79c 130.605 t/s draft 276/185
+17:06:23 server v-LLAMA_CKPT_VRAM0 up in 6.1 s (pid 74837): ~/qwen-opt/k001/inst LLAMA_CKPT_VRAM=0
+17:06:25 [LLAMA_CKPT_VRAM=0] R1: md5 3f26f79c prompt_n 33 128.14 t/s draft 276/185
+17:06:27 [LLAMA_CKPT_VRAM=0] R1b: md5 3f26f79c prompt_n 33 134.176 t/s draft 276/185
+17:06:30 [LLAMA_CKPT_VRAM=0] U1 greedy chat md5 d36768ee / 424a3a1f
+17:06:32 [LLAMA_CKPT_VRAM=0] R2: md5 38028947 prompt_n 33 131.533 t/s draft 282/184
+17:07:10 [LLAMA_CKPT_VRAM=0] U2 cold 32k prefill 32768 tok 868.38 t/s
+17:07:12 [LLAMA_CKPT_VRAM=0] R3: md5 3dd78584 prompt_n 33 130.46 t/s draft 286/183
+17:07:16 [LLAMA_CKPT_VRAM=0] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+17:07:17 [LLAMA_CKPT_VRAM=0] SUMMARY F=3f26f79c F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+17:07:23 server s0-CACHE_RAM0_LLAMA_CKPT_VRAM0 up in 6.1 s (pid 75682): ~/qwen-opt/k001/inst CACHE_RAM=0 LLAMA_CKPT_VRAM=0
+17:07:29 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] own snapshot; fresh F md5 3f26f79c 130.589 t/s draft 276/185
+17:07:36 server v-CACHE_RAM0_LLAMA_CKPT_VRAM0 up in 6.1 s (pid 75890): ~/qwen-opt/k001/inst CACHE_RAM=0 LLAMA_CKPT_VRAM=0
+17:07:38 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] R1: md5 3f26f79c prompt_n 33 128.052 t/s draft 276/185
+17:07:41 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] R1b: md5 3f26f79c prompt_n 33 134.167 t/s draft 276/185
+17:07:43 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] U1 greedy chat md5 d36768ee / 424a3a1f
+17:07:45 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] R2: md5 38028947 prompt_n 33 131.467 t/s draft 282/184
+17:08:23 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] U2 cold 32k prefill 32768 tok 868.51 t/s
+17:08:26 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] R3: md5 3dd78584 prompt_n 33 130.423 t/s draft 286/183
+17:08:30 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] F2 fresh prefill on used server: md5 501b8c06 prompt_n 33
+17:08:30 [CACHE_RAM=0,LLAMA_CKPT_VRAM=0] SUMMARY F=3f26f79c F=3f26f79c R1=3f26f79c R1b=3f26f79c R2=38028947 R3=3dd78584 F2=501b8c06
+17:08:30 done in 292 s, results ~/qwen-opt/xtxbench/runs/1119-170338-k001-var/k001.json

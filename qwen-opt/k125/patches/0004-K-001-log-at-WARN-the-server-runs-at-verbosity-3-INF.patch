@@ -1,0 +1,40 @@
+From 816fe915ec62a87f747704219aef1d6f4d7aeb49 Mon Sep 17 00:00:00 2001
+From: kernel
+Date: Thu, 19 Nov 2026 17:00:30 +0000
+Subject: [PATCH 4/4] K-001: log at WARN (the server runs at verbosity 3, INFO
+ from libllama is dropped)
+
+---
+ src/llama-kv-cache.cpp         | 2 +-
+ src/llama-memory-recurrent.cpp | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/llama-kv-cache.cpp b/src/llama-kv-cache.cpp
+index aba265bd9..443b14865 100644
+--- a/src/llama-kv-cache.cpp
++++ b/src/llama-kv-cache.cpp
+@@ -1154,7 +1154,7 @@ void llama_kv_cache::apply_ubatch(const slot_info & sinfo, const llama_ubatch &
+         const std::array<int64_t, 3> cur = { (int64_t) get_n_kv(sinfo), (int64_t) idx0 - ubatch.pos[0], (int64_t) cells0.used_max_p1() };
+         auto & last = k001_last[this];
+         if (last != cur) {
+-            LLAMA_LOG_INFO("k001 kv %p n_tokens=%u pos0=%d cell0=%u off=%lld n_kv=%lld used_max_p1=%lld used=%u size=%u\n",
++            LLAMA_LOG_WARN("k001 kv %p n_tokens=%u pos0=%d cell0=%u off=%lld n_kv=%lld used_max_p1=%lld used=%u size=%u\n",
+                 (const void *) this, ubatch.n_tokens, ubatch.pos[0], idx0, (long long) cur[1], (long long) cur[0],
+                 (long long) cur[2], cells0.get_used(), cells0.size());
+             last = cur;
+diff --git a/src/llama-memory-recurrent.cpp b/src/llama-memory-recurrent.cpp
+index 6081eed10..e2392c3fb 100644
+--- a/src/llama-memory-recurrent.cpp
++++ b/src/llama-memory-recurrent.cpp
+@@ -832,7 +832,7 @@ bool llama_memory_recurrent::find_slot(const llama_ubatch & ubatch) {
+             const std::array<int32_t, 3> cur = { cells[0].tail, rs_z, (int32_t) used };
+             auto & last = k001_last[this];
+             if (last != cur) {
+-                LLAMA_LOG_INFO("k001 rs %p tail0=%d rs_z=%d used=%d min=%d max=%d head=%u\n",
++                LLAMA_LOG_WARN("k001 rs %p tail0=%d rs_z=%d used=%d min=%d max=%d head=%u\n",
+                     (const void *) this, cur[0], cur[1], cur[2], min, max, head);
+                 last = cur;
+             }
+-- 
+2.43.0
+

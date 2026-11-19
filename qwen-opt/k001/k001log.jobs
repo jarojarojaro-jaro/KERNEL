@@ -1,0 +1,4 @@
+# 2026-11-19 owner OK ("rob kolejne testy na 7900xtx"): K-001 instrumented build k001-log (LLAMA_K001_LOG: KV cell
+# offset / n_kv / used_max_p1 and recurrent cells, logged on change), production config on the test port; then :8080 back
+k001-log2|1200|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/inst LLAMA_K001_LOG=1 K001_LABEL=log2 python3 k001b.py
+k001-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

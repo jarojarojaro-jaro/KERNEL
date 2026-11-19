@@ -18,11 +18,11 @@ Problem (2026-10-12): przy KV q4_0 i 5 tokenach llama.cpp wybierał kernel tile,
 | 0058 | combine robi FWHT wyjścia + q8_1 | 3.928 → 3.879 ms |
 
 Poprawność:
-- 0011 zmienia tekst greedy Qwena, a **KLD dla Qwena nigdy nie zmierzono** (luka wg raportu 07);
+- 0011 zmienia tekst greedy Qwena; **KLD zmierzone 2026-11-19 (K-125): kvq jest bliżej f16 niż standardowy kernel**: KLD 0,004522 → 0,003862 (−14,6%), top-1 97,06 → 97,60%, 99,9% KLD 0,170 → 0,138, przy Qwen3.8-27B Q4_K_M, KV q4_0, `-ub 5`, 8192 tokenów; deterministyczne ([[2026-11-19-k125-k001-xtx]]);
 - 0055: KLD vs f16 KV 0.044196 wobec 0.044171 starego kernela q8_0, PASS bramki ([[bramka-kld-kanarki]]);
 - 0058 bitowa.
 
-Wyłączniki: 0011 brak (build), `GGML_HIP_KVQ_Q8`, `GGML_HIP_KVQ_FWHT`. Tylko gfx110x; RDNA4 wymaga portu (inny układ WMMA gfx12).
+Wyłączniki: 0011 `GGML_HIP_KVQ_OFF=1` tylko w gałęzi testowej `k001-log` (topka bez niego), `GGML_HIP_KVQ_Q8`, `GGML_HIP_KVQ_FWHT`. Tylko gfx110x; RDNA4 wymaga portu (inny układ WMMA gfx12).
 
 ## CUDA (raporty 15b, 15d, 16c)
 - Luka upstreamu: vec czyta KV osobno dla każdej głowy Q, przy n ≥ 2 na Ampere MMA_F16 z konwersją do f16 ([[fa-kv-kwantyzowane-cuda]]). Na XTX kvq czyta KV raz na kafel 16 wierszy (`ceil(6·W/16)` kafli).
