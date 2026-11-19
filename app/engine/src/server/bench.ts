@@ -166,7 +166,8 @@ export async function buildWorkload(s: RunningServer, ctx: number, key: Workload
   const prefillN = Math.min(plan.prefillTokens, ctx - 8);
   const all = await corpusTokens(s, Math.max(prefillN, 32, deepFits ? plan.deepTokens - DEEP_OVERHEAD : 0), signal);
   if (2 * plan.reps > DECODE_TASKS.length) {
-    log.warn(`${plan.reps} repetitions need ${2 * plan.reps} task pairs, ${DECODE_TASKS.length} exist: later ones repeat a request (n-gram cache replay)`);
+    // a repeated request hits the server's n-gram cache and inflates decode (21 -> 80 t/s, see DECODE_TASKS): refuse
+    throw new Error(`${plan.reps} repetitions need ${2 * plan.reps} task pairs, only ${DECODE_TASKS.length} exist (a repeated request replays the n-gram cache)`);
   }
   const chat = (user: string): Promise<number[]> => chatTokens(s, user, key.reasoningEffort, signal);
   const pair = async (i: number): Promise<number[][]> => {

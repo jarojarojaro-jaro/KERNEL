@@ -64,6 +64,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-17
 - źródło: [[2026-11-17-k114-nvidia-sufit]] (krok n4 5060 Ti 51,1 ms = cel 31,3 + 4 × ~5 ms; bajty draftu ~0,9 ms); na XTX ten sam pomiar to K-111
 - dodatkowo (2026-11-18): kolejka uruchomień CUDA ma ~1024 kernele (pomiar 4060 Ti, [[skill-io-pulapki]]); w `nsys` sprawdzić, czy krok z 4 draftami bez grafu nie dobija do tego limitu (host czeka na GPU)
+- **metodyka (audyt 2026-11-19):** K-114 przypisał całe 51,1 − 31,3 ms czterem draftom, bez odjęcia krańcowego kosztu weryfikacji N=5 względem N=1 (w archiwum nie było `llama-bench`). Najpierw zmierzyć V(5) − V(1) (`llama-bench -p 1,5 -ub 1/5 -n 0` z buildu z llama-bench), dopiero potem `nsys` i ms/draft
 - hipoteza: narzut pętli draftu (osobne launche: warstwa MTP, głowica 64k, argmax/sampling, synchronizacja hosta po każdym kroku) dominuje; jedna sekwencja grafu na n draftów zbliży koszt draftu do bajtów
 - test: 5060 Ti (Vast ~$0,10 albo lokalnie w jaroserverai): `nsys` jednego kroku n4 (fork `kvqlean`), czas draftu na kernel i przerwy hosta; po prototypie grafu ABBA spec_sweep T=0/T=1, md5 T=0 bez zmian; ≤ 10 min na ramię
 - miara przed/po: ms/draft (5060 Ti 4,8–5,2 ms → cel ≤ 2 ms), t/s n4 T=1 49,4 → cel ≥ 60
@@ -86,6 +87,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - źródło: [[2026-11-17-k114-nvidia-sufit]] (3090: 250 z 420 W, pamięć 5001 z 9751 MHz → 23% sufitu; 3060: 135 z 170 W, 85 °C → 42%); [[lekcja-vast-tylko-pelna-moc]]
 - hipoteza: na pełnej mocy 3090 osiąga ≥ 50% sufitu dekodu (jak 5060 Ti 61%), plain ≥ 70% pasma; 3060 ~50%; rozkład kroku (draft 4–15 × bajty) bez zmian
 - test: `qwen-opt/cloud/k114/launch.sh "RTX 3090" qwenbench-k118-3090` i to samo dla „RTX 3060” (hostguard przed pobraniem, hosty z `hosty-zle.txt` pomijane), ten sam model GSQ IQ3_XXS-mtp i runner; `summ.py` bez flagi LIMITED HOST; host z mocnym CPU (start: requant 12 min na słabym)
+- dodatkowo (audyt 2026-11-19): K-114 szedł przy ctx 8192, czyli diagnostyka, nie wynik karty (decyzja ≥ 131k); w K-118 dodać ramię ≥ 131k (plain + n2 przy głębokości ~128k)
 - miara: t/s n2/n4 T=0/T=1, plain, prefill ~3k/~11k i % sufitu vs dolne granice 44,4 / 28,6 t/s
 - koszt: ~$0,15–0,25 za obie karty [INFERENCE: 3090 ~$0,22/h, 3060 ~$0,07/h, ~40 min]; **nie wynajmować przy kredycie $0,16** — czeka na doładowanie i zgodę właściciela
 - ryzyko karty: brak (wynajem)
@@ -146,6 +148,42 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: Enigma NVIDIA do +40% [INFERENCE]; dowód, czy agentowa praca nad kernelem skraca nasze 40–70 osobodni do dni
 - ryzyko karty: zawieszenia kernela rezydentnego (na Vast bez ryzyka dla naszej karty; na XTX dopiero po PoC-A z [[budzet-megakernela-qwen-xtx]])
 - priorytet: średni (decyzja właściciela: budżet agent-godzin i GPU)
+
+### K-125 · KLD ścieżki `kvq` (łatka 0011) dla Qwena na XTX — nigdy niezmierzona, a `kvq` zmienia tekst greedy
+- data: 2026-11-19
+- źródło: audyt Gemini (C.2.3a) potwierdzony: [[fattn-kvq]] (`:21`, md5 inne, KLD dla Qwena na RDNA3 brak), `08-analiza-platformy-latek.md:395`; bramka [[bramka-kld-kanarki]]
+- test: XTX przez kolejkę, `GGML_HIP_PM4=0`: `llama-perplexity --kl-divergence` topka (kvq) vs ta sama binarka bez kvq (referencja f16 KV), 5 × 8192 tokenów, porównanie z szumem bazowym (2σ); ≤ 10 min na ramię
+- miara: średnie KLD, 99,9% KLD, top-1 vs szum
+- zysk: poprawność (dowód, że produkcyjna ścieżka atencji mieści się w szumie); 0 t/s
+- ryzyko karty: brak (PM4=0)
+- priorytet: średni
+
+### K-126 · Enigma Windows NVIDIA: wydanie z CUDA 13.4 dla Blackwell (sm_120) zamiast CUDA 12.4
+- data: 2026-11-19
+- źródło: audyt Gemini (C.1.4b) potwierdzony: `app/engine/data/engines.json:155-182` pinuje `win-cuda-12.4`; release b11856 ma `llama-b11856-bin-win-cuda-13.4-x64.zip` (sha256 `06478e0f…`) i `cudart-…-13.4` (`738f8c25…`); `baselineEngineFor` (`engine.ts:88-90`) bierze pierwszy wpis i nie patrzy na architekturę GPU; JIT z PTX: Strata 173 s → 0,34 s ([[strata]])
+- test: CPU: wpis `upstream-windows-x64-cuda13` z `gpuArchs: [sm_120]`, wybór po architekturze w `baselineEngineFor`, rozmiary z API GitHub, testy `bun test`; potem pomiar pierwszej odpowiedzi na Windows z kartą 50xx (nie mamy: Vast nie ma Windows) [INFERENCE: CUDA 13 wymaga sterownika ≥ R580, sprawdzać przy wykrywaniu]
+- miara: czas do pierwszego tokena przy pierwszym starcie, t/s 12.4 vs 13.4
+- zysk: najpopularniejsze karty (RTX 5070 6,15% Steam) bez minut JIT przy pierwszym starcie
+- ryzyko karty: brak
+- priorytet: średni
+
+### K-127 · Fork CUDA: build z AVX2 (`kvqlean`) vs bez (`kvqleana`) — czy pobieracz ma wybierać wariant po flagach CPU
+- data: 2026-11-19
+- źródło: audyt Gemini (C.1.4d) potwierdzony: `engines.json:516,534` wysyła wszystkim `kvqleana`, bo „the downloader cannot choose by CPU flags”; `app/engine/src/hw/linux.ts:274` już czyta cpuinfo
+- test: 5060 Ti (Vast, hostguard, host z AVX2): spec_sweep T=1 ABBA kvqlean vs kvqleana, md5 T=0
+- miara: t/s, czas startu (requant draftu na CPU)
+- zysk: jeśli ≥ 3% albo krótszy start → wybór po flagach w pobieraczu; inaczej zostaje
+- ryzyko karty: brak
+- priorytet: niski (można połączyć z K-004 na jednej instancji)
+
+### K-128 · Czy klient (omp) obcina `<think>` z historii i przez to psuje trafienia prompt-cache w turach agenta (analiza logów, bez karty)
+- data: 2026-11-19
+- źródło: audyt Gemini (H.9) i [[zwiad-2026-11-14]] (TensorFold: „[INFERENCE: sprawdzić na surowych logach omp]”)
+- test: CPU: surowe logi serwera/omp z sesji agentowych (`~/kernel/archiwum`, logi topki, gdy jaroserverai online): `cache_n` vs `prompt_n` per tura, czy prefiks rozjeżdża się na granicy bloku myślenia
+- miara: udział tokenów promptu z cache per tura; jeśli dziury > 10% → poprawka po stronie szablonu/serwera
+- zysk: TTFT tur agenta (jeśli problem istnieje); 0 t/s dekodu
+- ryzyko karty: brak
+- priorytet: średni
 
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
@@ -211,8 +249,9 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-004 · Fork CUDA: dokładne próbkowanie spekulacyjne na GPU przy T=1 (jak qwen-warp)
 - data: 2026-11-09
 - źródło: [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 2: fork traci przy T=1 7–13%, warp nie traci), `R/69b-tensorfold-qwen-warp.md` §3
-- test: najpierw 5060 Ti lokalnie: fork (`kvqleana`) spec_sweep T=0 vs T=1, `LLAMA_SPEC_COUPLED` 0/1 (≤ 10 min). Po porcie: ABBA 6 × 3 seedy, md5 T=0 bez zmian; potwierdzenie na 3090 (wynajem, metoda `nv69q`).
-- zysk: odzysk 7–13% przy T=1 na NVIDIA (3090: 76,9 vs 82,9 t/s przy krótkim kontekście); wszyscy użytkownicy Enigmy z NVIDIA
+- **poprawka planu (audyt 2026-11-19):** wydany fork `kvqlean`/`kvqleana` (cuda-topka2 + kvq `007a6f813`) **nie ma** sprzężonego próbkowania `7cdc0121b`, więc `LLAMA_SPEC_COUPLED` 0/1 na nim nic nie zmieni [INFERENCE: potwierdzić `strings llama-server | grep LLAMA_SPEC_COUPLED`]. Zmierzone sprzężone na CUDA: +5,3…5,5% (3060/3080, `31-3060-3080.md:146`), +5,4% (4060 Ti), 5060 Ti +1,9% z CI [−4,9; +8,3]. Strata „7–13%” to spadek T=0 → T=1 z akceptacji (K-114), nie cały do odzyskania
+- test: (1) CPU: build kvqlean + merge `7cdc0121b` (merge-tree bez konfliktów), `test-backend-ops`; (2) 5060 Ti (Vast + hostguard) spec_sweep T=1 ABBA COUPLED 0/1, 6 promptów × seedy 1–4, md5 T=0 6/6; (3) dopisać `LLAMA_SPEC_COUPLED=1` do profilu Enigmy dopiero z nową binarką. Stary plan: Po porcie: ABBA 6 × 3 seedy, md5 T=0 bez zmian; potwierdzenie na 3090 (wynajem, metoda `nv69q`).
+- zysk: +5…5,5% przy T=1 na NVIDIA (zmierzone na sm_86/89); wszyscy użytkownicy Enigmy z NVIDIA
 - ryzyko karty: brak
 - priorytet: wysoki (Enigma NVIDIA, tani pierwszy pomiar)
 - zwiad 2026-11-14: tqLLM 1.5.0 robi dokładne próbkowanie MTP przy T>0 (3090, T=0,7: 50 → 104–117 t/s), wzór do portu ([[zwiad-2026-11-14]])

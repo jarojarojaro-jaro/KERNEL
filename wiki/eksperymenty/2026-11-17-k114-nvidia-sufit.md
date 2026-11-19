@@ -47,7 +47,7 @@ Nie trafiają do tabel jako wynik karty. Powtórka na hostach z pełną mocą: K
 - 3060: 87,8 ms = 54,4 + 4 × 7,6–9,1;
 - 3090: 58,5 ms = 32,7 + 4 × 6,5.
 
-Bajty jednego draftu (warstwa MTP + głowica 64k ≈ 0,4 GB) to 0,9 / 1,1 / 0,4 ms. **Draft kosztuje 4–15 × swoje bajty**, czyli krok jest zdominowany przez narzut małych kerneli i synchronizacji pętli draftu. Na XTX ten sam problem rozkłada K-111.
+Bajty jednego draftu (warstwa MTP + głowica 64k ≈ 0,4 GB) to 0,9 / 1,1 / 0,4 ms. **Draft kosztuje 4–15 × swoje bajty**, czyli krok jest zdominowany przez narzut małych kerneli i synchronizacji pętli draftu. **Zastrzeżenie (audyt 2026-11-19):** różnica „krok − przebieg celu” zawiera też krańcowy koszt weryfikacji 5 wierszy zamiast 1 (V5 − V1), którego tu nie zmierzono (brak `llama-bench` w archiwum). „4–15 ×” to więc górna granica; K-116 mierzy V5 − V1 najpierw. Pomiar przy ctx 8192 to diagnostyka, nie wynik karty (decyzja ≥ 131k). Na XTX ten sam problem rozkłada K-111.
 
 **Wnioski:**
 1. **Hipoteza K-114 (b) potwierdzona.**

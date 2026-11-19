@@ -484,3 +484,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 [[drafter-dflash]]: 1,3 × vs DFlash2 na Qwen3-4B/H100 (pamięć odrzuconych propozycji, MoFA); brak wag 27B i llama.cpp; u nas DFlash2 przegrywa z MTP (PL, T=1), więc bez testu; lekcja do douczania MTP.
 
 ## [2026-11-19] telegram | Helion (DSL kerneli PyTorch) — narzędzie do nauki/prototypów, nie do naszego silnika
+
+## [2026-11-19] audyt | Gemini: całe repo KERNEL
+[[audyt-gemini-2026-11-19]]: bezpieczeństwo prawdziwe i naprawione (gpu-guard exit 4, pgrep -f, 3 s SIGKILL; run-jobs bez strażnika; bramka transferu Vast, down.sh --all); naprawione też spec_sweep (pętle, md5), summ.py, run-llm/run-topka, profil Enigmy ROCm = topka-q70; 8 pomysłów było już odrzuconych, zyski zwykle 2–10× zawyżone; kolejka: K-004/K-116/K-118 poprawione, nowe K-125–K-128.

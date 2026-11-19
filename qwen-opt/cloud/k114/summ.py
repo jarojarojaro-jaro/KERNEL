@@ -24,7 +24,10 @@ for d in sys.argv[1:]:
         dn = sum(x.get("draft") or 0 for x in rs); da = sum(x.get("acc") or 0 for x in rs); n = sum(x["n"] for x in rs)
         steps = n - da if dn else n  # each verify step emits accepted + 1
         tok_step = n / steps if steps else 1
-        step_ms = 1000 * tok_step / srv
+        # step time per prompt, then the median (audit 2026-11-19: pooled tok/step over a per-prompt median t/s mixed
+        # two different averages)
+        step_ms = st.median(1000 * (x["n"] / (x["n"] - (x.get("acc") or 0)) if x.get("draft") else 1)
+                            / (x.get("srv_tps") or x["tps"]) for x in rs)
         if eng == "plain":
             plain_ms = 1000 / srv
         nd = {"n4-a": 4, "n4-b": 4, "n2": 2}.get(eng, 0)

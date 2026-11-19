@@ -14,9 +14,10 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (161)
+## Notatki (162)
 
 - [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]] — Link arXiv 2605.08513 podany przez użytkownika jako praca o InferenceX to „A Single Neuron Is Sufficient to Bypass Safety Alignment in LLMs” (Kazemi, Chegini, Safi, 2026-05-08): wyłączenie jednego neuronu odmowy omija alignment, a wzmocnienie neuronu pojęcia wywołuje szkodliwe treści; 7 modeli z 2 rodzin, 1.7B–70B, bez treningu.
+- [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]] — Bezpieczeństwo karty: oba główne zarzuty prawdziwe i naprawione tego samego dnia.
 - [[benchmarki-przed-po-2026-10-19|Benchmarki przed → po (stan 2026-10-19)]] — Zestawienie wszystkich zmierzonych liczb całej optymalizacji – upstream, wcześniejszy fork i produkcja – dla XTX (Qwen, Uncensored, LFM), nowych zmian poza produkcją, kart NVIDIA i Magnitude, każda ze źródłem `plik:wiersz` i oceną porównywalności (P / O / brak).
 - [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]] — Dobry spis lektur, ale nie przepis na nasz problem: 5 z 6 działów dotyczy serwerów z dużym batchem, Hoppera/B200 i rozproszenia (NVLink, DeepEP, EPLB, disaggregation), dział AMD to tylko CDNA/Instinct, a o RDNA3, batch 1 na kartach konsumenckich i skwantyzowanym GEMV nie ma nic (raport 21b, 2026-10-19).
 - [[raport-plan-nv-v2|PLAN-NV-V2: kampania NVIDIA v2 (ctx ≥ 131k)]] — Karty 10–16 GB dostają Qwen3.6-35B-A3B z ekspertami w RAM, 24/32 GB Qwen3.8-27B + MTP; twarde bramki J1–J5 (KLD ≤0.05/0.07, `-c ≥ 131072`, ≥20 t/s po 64k, TTFT 32k ≤ 120 s); start po bramce KLD E7. Kampania wstrzymana ([[2026-10-20-chmura-wstrzymana]]).

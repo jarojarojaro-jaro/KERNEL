@@ -66,7 +66,7 @@ draft_vocab=$models/draft/draft_vocab_qwen38.txt
 case $model in
     qwen)       gguf=$models/Qwen3.8-27B-UD-Q4_K_XL.gguf ;;
     uncensored) gguf=$models/orca/Qwen3.8-27B-Uncensored-Q4_K_M.gguf
-                [ "${VISION:-0}" = 1 ] && extra_args=(--mmproj "$models/orca/mmproj-Qwen3.8-27B-Uncensored-f16.gguf") ;;
+                [ "${VISION:-0}" = 1 ] && extra_args+=(--mmproj "$models/orca/mmproj-Qwen3.8-27B-Uncensored-f16.gguf") ;;
     lfm)        gguf=$models/lfm/LFM2.5-24B-A2B-Q5_K_M.gguf ;;
     lfm-uncensored) gguf=$models/lfm/LFM2.5-24B-A2B-Uncensored-AD-Q5_K_M.gguf ;;
     flint)      gguf=$models/flint/flint-nvfp4.gguf ;;
@@ -83,6 +83,9 @@ case $backend in
         mtp_n=5 ;;
     rocm)
         rocm_dir=${ROCM_DIR:-$HOME/llama-opt}
+        # every build of our fork runs PM4 replay when GGML_HIP_PM4 is unset, in the unsafe WA=0 mode (report 17,
+        # reset 2026-10-19): set it explicitly; run-topka.sh exports the production PM4=1 WA=2 GUARD=1 before this
+        export GGML_HIP_PM4=${GGML_HIP_PM4:-0}
         bin=$rocm_dir/bin/llama-server
         export LD_LIBRARY_PATH=$rocm_dir/lib:/opt/rocm/core-10.0/lib
         mtp_n=4 ;;

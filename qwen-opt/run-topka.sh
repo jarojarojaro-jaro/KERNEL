@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# "Topka" build of the Qwen3.8-27B server: ~/llama-topka = topka-int f9b84bcfa (topka 9056cea22 + safe-special + ckpt-vram
-# + safe-io + latency-tmpl + latency), installed 2026-10-21 02:5x (report 43; backups ~/llama-topka.{9056cea22,481254bd3,c5ba24f8f})
-# branch topka in ~/wt/topka. Wraps run-llm.sh (same flags, same port 8080)
-# and only adds the switches below; the production build ~/llama-opt and run-llm.sh are untouched.
+# Production Qwen3.8-27B server: ~/llama-topka = topka-q70 (topka-q63 c0576e3e8 + cachesave #30137 + FA D256 VAR 83),
+# branch topka-q70 in ~/wt/l1-cachesave @ 3191b25f4, installed 2026-11-09 (wiki 2026-11-09-wdrozenie-topka-q70; backup
+# ~/llama-topka.c0576e3e8). Wraps run-llm.sh (same flags, same port 8080)
+# and only adds the switches below; run-llm.sh alone (default ~/llama-opt, PM4 off) is the old amd-opt build, not production.
 #
 #   run-topka.sh [qwen|uncensored|lfm|lfm-uncensored|flint]
 #
@@ -54,7 +54,8 @@
 #   LLAMA_SPEC_LOOKUP=3                         n-gram context lookup without a drafter
 # Every switch can be overridden from the environment (e.g. LLAMA_SPEC_LOOKUP=0); other run-llm.sh variables
 # (PORT, CTX, EFFORT, LOG, ...) pass through.
-# Stop: Ctrl-C, or `pkill -f 'llama-topka/bin/llama-server'`. Back to production: ~/qwen-opt/run-llm.sh qwen
+# Stop: Ctrl-C, or `pkill -f 'llama-topka/bin/llama-server'`. Production: ~/qwen-opt/run-topka.sh uncensored (restarted only by
+# tools/topka-keeper.sh; never run-llm.sh, lekcja-restart-zlym-launcherem)
 set -euo pipefail
 # The live server must never inherit a lock fd from whoever (re)started it: an agent restarting topka
 # inside its `flock /tmp/gpu.lock …` hold made this long-running server hold the GPU lock forever and
