@@ -9,6 +9,7 @@ usage: spec_sweep.py --label NAME [--port 8080] [--tokens 400] [--temps 1.0] [--
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import statistics
 import time
@@ -24,14 +25,25 @@ PROMPTS = {
 }
 
 
+def looping(text: str, n: int = 8, thresh: float = 0.5) -> bool:
+    """Degenerate output: more than half of the word 8-grams repeat (skill-io bench.py:100-104). A looping answer is
+    easy to draft, so it inflates acceptance and t/s (megakernel-zoo audit: 0.415 vs 3.71 ms/token)."""
+    w = text.split()
+    grams = [tuple(w[i:i + n]) for i in range(max(0, len(w) - n))]
+    return len(grams) > 50 and 1 - len(set(grams)) / len(grams) > thresh
+
+
 def chat(port: int, prompt: str, tokens: int, temp: float, seed: int) -> dict:
     body = {"messages": [{"role": "user", "content": prompt}], "max_tokens": tokens, "temperature": temp,
             "seed": seed, "cache_prompt": False}
     req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/chat/completions", data=json.dumps(body).encode(),
                                  headers={"Content-Type": "application/json"})
-    t = json.load(urllib.request.urlopen(req, timeout=600))["timings"]
+    r = json.load(urllib.request.urlopen(req, timeout=600))
+    t, msg = r["timings"], r["choices"][0]["message"]
+    text = (msg.get("reasoning_content") or "") + (msg.get("content") or "")
     return {"tps": t["predicted_per_second"], "n": t["predicted_n"],
-            "draft": t.get("draft_n", 0), "accepted": t.get("draft_n_accepted", 0), "ms": t["predicted_ms"]}
+            "draft": t.get("draft_n", 0), "accepted": t.get("draft_n_accepted", 0), "ms": t["predicted_ms"],
+            "md5": hashlib.md5(text.encode()).hexdigest()[:8], "loop": looping(text)}
 
 
 def main() -> None:
@@ -54,13 +66,19 @@ def main() -> None:
                 # each verify step emits its accepted drafts plus one target token
                 steps = n - ac
                 per[name] = {"tps": 1000 * n / ms, "acc": ac / dr if dr else 0.0,
-                             "ms_step": ms / steps, "tok_step": n / steps}
-            med = statistics.median(r["tps"] for r in per.values())
-            ms_step = statistics.median(r["ms_step"] for r in per.values())
-            cells = "  ".join(f"{k} {r['tps']:5.1f} ({r['tok_step']:.2f} tok/step)" for k, r in per.items())
-            print(f"{a.label} T={temp}: median {med:5.1f} t/s, {ms_step:5.2f} ms/step | {cells}", flush=True)
+                             "ms_step": ms / steps, "tok_step": n / steps,
+                             "md5": [r["md5"] for r in runs], "loop": any(r["loop"] for r in runs)}
+            # a looping prompt is reported but kept out of the medians (it is not a speed of this engine)
+            ok = {k: r for k, r in per.items() if not r["loop"]} or per
+            loops = [k for k, r in per.items() if r["loop"]]
+            med = statistics.median(r["tps"] for r in ok.values())
+            ms_step = statistics.median(r["ms_step"] for r in ok.values())
+            cells = "  ".join(f"{k} {r['tps']:5.1f} ({r['tok_step']:.2f} tok/step){' LOOP' if r['loop'] else ''}"
+                              for k, r in per.items())
+            print(f"{a.label} T={temp}: median {med:5.1f} t/s, {ms_step:5.2f} ms/step"
+                  f"{' [LOOP: ' + ','.join(loops) + ' excluded]' if loops else ''} | {cells}", flush=True)
             log.write(json.dumps({"label": a.label, "time": time.time(), "temp": temp, "median_tps": med,
-                                  "median_ms_step": ms_step, "prompts": per}) + "\n")
+                                  "median_ms_step": ms_step, "loops": loops, "prompts": per}) + "\n")
 
 
 if __name__ == "__main__":
