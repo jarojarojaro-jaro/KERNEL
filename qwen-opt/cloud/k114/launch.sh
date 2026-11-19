@@ -4,8 +4,9 @@
 # watchdog after LIFE_S), then BEFORE any download check the host with ../hostguard.sh (owner rule 2026-11-17: power
 # limit and max memory clock >= 85% of factory, idle < 80 C). A failed host is destroyed, its machine_id goes to
 # ../hosty-zle.txt, and with a GPU name the next offer is tried (max 3; hosty-zle.txt machines are never picked).
-# Hosts stuck in loading > 10 min or refusing SSH are destroyed and listed too. Then copies the runner and starts it
-# detached. Destroy by id only: vastai destroy instance <id> -y.
+# Hosts stuck in loading > 10 min or refusing SSH are destroyed and listed too. Then copies the runners, starts
+# run.sh; run2.sh; run3.sh detached and starts fetch.sh locally (copies /root/res to res/<label>/ when DONE3 appears,
+# then destroys the instance). Destroy by id only: vastai destroy instance <id> -y.
 set -euo pipefail
 export PATH=$HOME/.local/bin:$PATH
 target=$1 label=$2 LIFE_S=${LIFE_S:-4200}
@@ -49,16 +50,17 @@ EOF
     [ $ok = 1 ] || { drop "$iid" "SSH refuses the registered key"; return 2; }
     hg_check "$iid" "$H" "$P" "${S[@]}" || { pkill -f "vastai destroy instance $iid -y" || true; return 2; }
     ssh "${S[@]}" -p "$P" root@"$H" 'mkdir -p /root/k114'
-    scp "${S[@]}" -P "$P" "$D/run.sh" "$D/run2.sh" "$D/bench.py" "$D/pf.py" "$D/pdl.sh" root@"$H":/root/k114/
-    ssh "${S[@]}" -p "$P" root@"$H" 'setsid nohup bash -c "bash /root/k114/run.sh; bash /root/k114/run2.sh" > /dev/null 2>&1 < /dev/null & sleep 5; cat /root/res/phases.txt'
-    echo "started on $iid"
+    scp "${S[@]}" -P "$P" "$D/run.sh" "$D/run2.sh" "$D/run3.sh" "$D/bench.py" "$D/pf.py" "$D/lp.py" "$D/pdl.sh" root@"$H":/root/k114/
+    ssh -n "${S[@]}" -p "$P" root@"$H" 'setsid nohup bash -c "bash /root/k114/run.sh; bash /root/k114/run2.sh; bash /root/k114/run3.sh" > /dev/null 2>&1 < /dev/null & sleep 5; cat /root/res/phases.txt'
+    LIFE_S=$LIFE_S setsid nohup "$D/fetch.sh" "$label" > /dev/null 2>&1 < /dev/null &
+    echo "started on $iid (fetch.sh collects and destroys)"
 }
 
 if [[ $target =~ ^[0-9]+$ ]]; then
     try_offer "$target"; exit $?
 fi
 n=0
-for offer in $(hg_pick "$target"); do
+for offer in $(hg_pick "$target" ${HG_EXTRA:-}); do   # HG_EXTRA: extra vastai search filters, e.g. cpu_cores_effective>=8
     n=$((n + 1)); [ $n -le 3 ] || break
     rc=0; try_offer "$offer" || rc=$?
     [ $rc = 0 ] && exit 0

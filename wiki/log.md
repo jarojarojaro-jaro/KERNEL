@@ -498,3 +498,6 @@ KOLEJKA: sekcja TOPKA (K-001, K-125, K-013, K-007→K-008, K-004, K-116) na gór
 
 ## [2026-11-19] eksperyment | kolejka XTX: K-125 PASS (kvq KLD 0,004522 → 0,003862 vs standardowy kernel), K-001 bisekcja (pamięć, host, kvq odpadają)
 [[2026-11-19-k125-k001-xtx]], [[lekcja-env-switch-domyslnie-wlaczony]]; K-123 poprawka gotowa w gałęzi k123-eog. Produkcja :8080 przywrócona, 0 błędów karty.
+
+## [2026-11-19] vast | K-118/K-116a/K-127 na 4 kartach naraz (3090, 3060, 4080 SUPER, 5060 Ti), budżet $2
+run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh zbiera i usuwa instancje. hostguard odrzucił 3090 (250/420 W) i 5070 (175/250 W).

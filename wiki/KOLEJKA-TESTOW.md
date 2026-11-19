@@ -817,7 +817,9 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## W toku
 
-(pusto)
+- **2026-11-19 ~17:50, Vast (zgoda i budżet właściciela $2, „tanie karty, kilka naraz”):** 4 instancje naraz, runner `qwen-opt/cloud/k114` (run.sh + run2.sh + nowy run3.sh, `fetch.sh` sam zbiera wyniki i usuwa instancję):
+  - karty: RTX 3090 $0,256/h, RTX 3060 $0,075/h, RTX 5060 Ti $0,118/h, RTX 5070 $0,166/h (≈ $0,62/h, watchdog 80 min);
+  - pozycje: K-118 (pełna moc, ramię ~122k na kartach ≥ 15 GB), K-116a (V(n) z upstream llama-bench), K-127 (kvqleana vs kvqlean na hoście z AVX2).
 
 ## Zrobione
 
