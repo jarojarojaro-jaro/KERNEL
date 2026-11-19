@@ -504,3 +504,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 
 ## [2026-11-19] vast | K-118 wyniki: 3090 n4 86,6 t/s (+84% vs dolna granica), 4080 SUPER 107,3; K-116 odrzucone (draft ≈ bajty, weryfikacja V(5)/V(1) 1,26–1,64); K-127 bez różnicy; K-129 DRAFT_N=2 nowe
 [[2026-11-19-k118-nvidia-pelna-moc]], [[lekcja-tlo-z-sesji-agenta-ginie]]. Wydane $1,11 z $2 (~$0,8 bezczynne instancje: fetch.sh zginął z sesją; launch.sh przechodzi na systemd-run).
+
+## [2026-11-19] telegram | ROCm 10.2 (AMD): powtórka ze zwiadu; delta dopisana w ZRODLA, K-130 (A/B kompilatora, niski)

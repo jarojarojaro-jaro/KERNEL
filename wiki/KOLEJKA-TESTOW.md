@@ -791,6 +791,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: nowe kernele GDN w PM4
 - priorytet: niski (zależne od K-013 i K-007)
 
+### K-130 · Topka zbudowana ROCm 10.2 (hipcc/LLVM) vs 10.0: czy nowy kompilator przyspiesza nasze kernele
+- data: 2026-11-19
+- źródło: blog ROCm 10.2.0 (Telegram „gpu” 2026-11-19); wcześniej 10.1 nic nie dało ([[raport-13-rocm-10-1]])
+- test: ROCm 10.2 w osobnym katalogu na jaroserverai (bez ruszania /opt/rocm 10.0 produkcji), rbuild topki tym samym commitem; `test-backend-ops` MUL_MAT/FA bitowo + xtxbench ABBA dekod 1,7k i prefill 32k, md5 T=0; ≤ 10 min karty
+- zysk: nieznany (AMD nie wymienia gfx1100 GEMV/FA); próg przyjęcia ≥ 3%
+- ryzyko karty: brak (PM4=0 w teście); ryzyko systemu: druga instalacja ROCm, tylko za zgodą właściciela (~3 GB)
+- priorytet: niski
+
 ## W toku
 
 (pusto)
