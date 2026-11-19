@@ -519,3 +519,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-19] telegram | Maya v1.1.68: Hy4-Flash 220B (kwanty top-1 88,5–96,6%), bez liczb t/s; nie nasz model
 
 ## [2026-11-19] telegram | QuixiInfer: DeepSeek 284B IQ2 na 5090 (26–32 t/s), drafty z korpusu między żądaniami (znane: SuffixDecoding) + lekcja o prywatności
+
+## [2026-11-20] telegram | TensorFold v1.3.0: cp.async +24% GLM NVFP4 na sm_120; HIP bez gfx1100; K-131 (MMVQ 3090 58% pasma)

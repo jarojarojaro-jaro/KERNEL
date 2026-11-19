@@ -799,6 +799,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (PM4=0 w teście); ryzyko systemu: druga instalacja ROCm, tylko za zgodą właściciela (~3 GB)
 - priorytet: niski
 
+### K-131 · Fork CUDA na Ampere: MMVQ celu tylko 58% pasma na 3090 (4080 SUPER 78%) — strumieniowanie wag przez `cp.async`
+- data: 2026-11-20
+- źródło: [[2026-11-19-k118-nvidia-pelna-moc]] (plain 3090 19,2 ms = 540 GB/s z 936; 3060 60%; 4080S 78%); TensorFold v1.3.0 #2266: rura `cp.async` per warp w dekodzie ekspertów NVFP4 +24% na sm_120, bity te same
+- test: CPU: `ncu` niedostępne bez karty, więc najpierw przegląd kodu MMVQ IQ3_XXS/IQ4_XS forka (szerokość ładowań, wypełnienie SM); potem Vast 3090 (reaper, ≤ 10 min): `llama-bench -p 0 -n 128` i `test-backend-ops MUL_MAT` n=1, wariant z `cp.async`/ładowaniami 128-bit vs fork, md5 T=0
+- zysk: do +30% dekodu plain na 3090 [INFERENCE: 58 → 75% pasma], spekulacja proporcjonalnie (weryfikacja to ten sam kernel, łączy się z K-013)
+- ryzyko karty: brak (wynajem)
+- priorytet: średni
+
 ## W toku
 
 (pusto)
