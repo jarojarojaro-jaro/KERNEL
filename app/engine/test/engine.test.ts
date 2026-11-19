@@ -126,6 +126,7 @@ describe('enigma profiles reproduce run-topka.sh + run-llm.sh', () => {
       LLAMA_SPEC_COUPLED: '1', LLAMA_SERVER_YIELD_FAST: '2', GGML_HIP_PM4_MIN_DISPATCH: '16', GGML_HIP_PM4_LAZY_EXEC: '1',
       DRAFT_N: '4', LLAMA_SERVER_SAFE_SPECIAL: '1', LLAMA_SERVER_SAFE_TOOLS: '1', LLAMA_TOKENIZE_PAR: '8',
       LLAMA_CKPT_VRAM: '2', LLAMA_CHAT_NATIVE: '1', LLAMA_CHAT_LATE_SYSTEM: '1', LLAMA_SERVER_REASONING_CONTROL: '0',
+      GGML_HIP_FA_D256_VAR: '83', LLAMA_SERVER_CACHE_HUGE: '1',
     });
     expect(c.env.LD_LIBRARY_PATH).toStartWith(`${join(dir, 'llama-topka')}/lib:`);
     const args = serverArgs(engine(), c, 8080, 'k');

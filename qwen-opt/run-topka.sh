@@ -84,6 +84,9 @@ case $model in
         export EXTRA_ARGS=${EXTRA_ARGS:-"-b,2048,-ub,${UB:-$(cat "$HOME/qwen-opt/flint/ub" 2>/dev/null || echo 1024)}"} ;;
 esac
 export ROCM_DIR=${ROCM_DIR:-$HOME/llama-topka}
+# variant 83 was tuned and gated with KV q4_0 only; with another KV type (e.g. KV=f16, −2.4% at 131k, report 70) keep
+# the stock kernel unless the caller sets it (audit 2026-11-19)
+[ "${KV:-q4_0}" != q4_0 ] && fa_var_default=0
 export GGML_HIP_FA_D256_VAR=${GGML_HIP_FA_D256_VAR:-$fa_var_default}
 export LLAMA_SERVER_CACHE_HUGE=${LLAMA_SERVER_CACHE_HUGE:-1}
 export LLAMA_SPEC_LOOKUP=${LLAMA_SPEC_LOOKUP:-$lookup_default}
@@ -114,5 +117,6 @@ export LLAMA_CHAT_LATE_SYSTEM=${LLAMA_CHAT_LATE_SYSTEM:-1}
 echo "run-topka: $model ROCM_DIR=$ROCM_DIR LLAMA_SPEC_LOOKUP=$LLAMA_SPEC_LOOKUP LLAMA_SPEC_LOOKUP_W=$LLAMA_SPEC_LOOKUP_W" \
      "LLAMA_SERVER_CACHE_SHARE_MIN=$LLAMA_SERVER_CACHE_SHARE_MIN GGML_HIP_PM4=$GGML_HIP_PM4 WA=$GGML_HIP_PM4_WA" \
      "GUARD=$GGML_HIP_PM4_GUARD HSA_USE_SVM=$HSA_USE_SVM LLAMA_GPU_VERIFY=$LLAMA_GPU_VERIFY COUPLED=$LLAMA_SPEC_COUPLED DRAFT_N=$DRAFT_N spec=$spec" \
+     "FA_D256_VAR=$GGML_HIP_FA_D256_VAR CACHE_HUGE=$LLAMA_SERVER_CACHE_HUGE KV=${KV:-default}" \
      "EXTRA_ARGS=${EXTRA_ARGS:-} port ${PORT:-8080}" >&2
 exec "$HOME/qwen-opt/run-llm.sh" "$model" "$spec" rocm

@@ -230,7 +230,7 @@
       "id": "enigma-rocm-gfx1100",
       "kind": "enigma",
       "label": "Enigma ROCm (topka) for RDNA3 gfx1100",
-      "version": "topka-int f9b84bcfa",
+      "version": "topka-q70 3191b25f4",
       "os": "linux",
       "arch": "x64",
       "backend": "rocm",
@@ -278,7 +278,9 @@
             "LLAMA_CKPT_VRAM": "2",
             "LLAMA_CHAT_NATIVE": "1",
             "LLAMA_CHAT_LATE_SYSTEM": "1",
-            "LLAMA_SERVER_REASONING_CONTROL": "0"
+            "LLAMA_SERVER_REASONING_CONTROL": "0",
+            "GGML_HIP_FA_D256_VAR": "83",
+            "LLAMA_SERVER_CACHE_HUGE": "1"
           },
           "args": [
             "--jinja",
