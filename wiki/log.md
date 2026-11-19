@@ -509,3 +509,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 
 ## [2026-11-19] vast | karty nigdy nie stoją: vast-reaper (timer systemd co 2 min: FINISHED/padnięty runner/GPU idle 10 min → wyniki, destroy, raport przez skrzynkę), onstart-guard na instancji, launch.sh bez timera nie wynajmuje; test na 2 × 3060 OK
 [[lekcja-tlo-z-sesji-agenta-ginie]], AGENTS.md zasada z 2026-10-16 zaostrzona.
+
+## [2026-11-19] telegram | Basalt v0.5.0: delta od v0.2.1 = model Hy4-flash (MoE, NVFP4, stratny KLD 0,201), nie Qwen; lekcje do K-008/K-111 w ZRODLA
