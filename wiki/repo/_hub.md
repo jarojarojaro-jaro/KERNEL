@@ -14,7 +14,7 @@ Cudze projekty: co robią i co od nich wzięliśmy. Nasze: fork `~/llama.cpp`, g
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (90)
+## Notatki (91)
 
 - [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]] — „Flash-Next przy 250K tylko −18% względem 1K” to własność modelu (natywna rzadka QSA z budżetem 2048 tokenów) plus stratny host KV FP8, a nie trik kernela; ich gęsty 27B traci −47% (501 → 268 t/s), tyle co my −45% (136.5 → 74.5 przy 199k) (raport 66b, 2026-11-07).
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
@@ -63,6 +63,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[locals|Locals (Generated-Computers/Locals)]] — Serwer MLX dla agentów; „przełom w złożoności” dotyczy automatów gramatyki, nie DeltaNet, a kernel GDN to jeden launch na krok wart 1–2% – na nasze kernele HIP nic nie przenosi (raport 60b).
 - [[lucebox|Luce-Org/lucebox]] — Serwer inferencji C++ z forkiem ggml i spekulacją DFlash2 (HEAD `54132ca`, 2026-10-14) na tym samym modelu i drafterze co my; werdykt: średnia.
 - [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]] — Własny silnik w Ruście z językiem kerneli „Seismic” (Metal, CUDA, Vulkan, CPU; bez HIP/ROCm), który stroi kernele 60 s przy pierwszym załadowaniu z bramką błędu α = 8 (nie bitową); najbliższy bezpośredni konkurent, ale bez AMD natywnie, bez bitowej bramki i bez MoE offload.
+- [[megakernel-zoo|megakernel-zoo (Xingyu Dang, Princeton): agent (Claude) pisze osobny megakernel dekodu dla każdego modelu i karty]] — Agent dostaje checkpoint, kartę GPU i budżet godzin, a pisze jeden kernel, który robi całą pętlę dekodu bez powrotu do hosta. Wyniki przy batch 1:
 - [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]] — Hazy Megakernels (interpreter instrukcji per SM ze stronicowanym SMEM) i MPK/Mirage (kompilator tGraph) osiągają 71–80% pasma przy batch 1, wobec ≤ 50% kernel-per-op; na RDNA3 publicznego megakernela nie ma.
 - [[kernelagent|meta-pytorch/KernelAgent]] — Wieloagentowy system Meta zamieniający PyTorch na kernele Triton (HEAD `e0647170`, 2026-07-15); bierzemy strukturę pętli; werdykt: średnia (proces).
 - [[flameox|morluto/flameox: orkiestrator profilerów dla agentów (MCP)]] — MIT, wersja 0.2.9 (HEAD `c7ea167`, 2026-10-11), 523 commity w 79 dni, 400/400 issues od autora, Devin współautorem 9 commitów, 210 gwiazdek; 26 operacji / 51 narzędzi MCP; na naszym CPU 649 testów OK, 11 pominiętych w 98 s; obsługa rocprofv3 ma jeden test, sprawdzający tylko argumenty (raport 21j, 2026-10-19).

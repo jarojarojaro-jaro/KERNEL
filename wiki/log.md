@@ -476,3 +476,6 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-19] zwiad | compwatch 2026-11-19
 [[zwiad-2026-11-19]]: oMLX prefill z pomocnikiem (Qwen3.8-27B 64K 352 → 1879 t/s) → K-107c; TensorFold wiersze draftu parami (+24–29% Mac); Maya 1.1.67 (zegar iGPU = nasz keepawake); strix-llama.cpp: rejekcja przyjmowała drafty po EOG → K-123 (wysoki, przegląd kodu); ROCm 10.2 AITER na Radeonach.
+
+## [2026-11-19] telegram | megakernel-zoo (agent pisze megakernel per model)
+[[megakernel-zoo]]: Qwen3.8-27B B200 SGLang 9,52 → 8,44 ms (tor A, ~63 h agenta) → 7,17 (12-bit BF16, bitowo); ewaluator (FP64, ukryty zbiór, odwrócenie batcha, audyt) dopisany do [[skill-io-metodyka]]; audyt: pętla powtórzeń dawała fałszywe 0,415 ms/token; K-124 megakernel pętli draftu (najpierw NVIDIA).

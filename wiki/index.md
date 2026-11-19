@@ -68,7 +68,7 @@ Audyt liczb: [[AUDYT]].
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów (121)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (31)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
-- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (90)
+- [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (91)
 - [[research/_hub|research]] — Streszczenia raportów (161)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (36)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
@@ -77,6 +77,7 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-19 [[zwiad-2026-11-19|Zwiad 2026-11-19: prefill przez drugą kartę (oMLX ×5,3 dla Qwen3.8-27B), sparowana weryfikacja draftów (TensorFold +24–29% na Macu), błąd EOG w rejekcji]]
+- 2026-11-19 [[megakernel-zoo|megakernel-zoo (Xingyu Dang, Princeton): agent (Claude) pisze osobny megakernel dekodu dla każdego modelu i karty]]
 - 2026-11-19 [[daisyrose-27b|DaisyRose-27B (RadixArk): pełny RL na Qwen3.8-27B, 144 × H200 przez 18 dni — duży koszt, mały zysk poza Terminal-Bench 4.1]]
 - 2026-11-18 [[zwiad-2026-11-18|Zwiad 2026-11-18: Splash 1.7 (drzewo draftu + lookup w jednym przebiegu), drafter NVIDIA 0,8B do Qwen3.8-27B — nic do wdrożenia u nas]]
 - 2026-11-18 [[llamampere|llamAmpere (JakeATX): fork llama.cpp pod RTX 30xx — szybki, ale domyślnie niebezstratny]]
@@ -90,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-17 [[skill-io-publikacja|Kwalifikacja i publikacja wg skill-io (publishing.md) a nasze wdrożenia topki i Enigmy]]
 - 2026-11-17 [[skill-io-przeglad|Skill „inference-optimisation” (Sybil Solutions): wspinaczka po prędkości serwera LLM — przegląd i lekcje]]
 - 2026-11-17 [[skill-io-metodyka|Metodyka pomiaru wg skill-io (methodology.md + zasady SKILL.md) a nasza praktyka]]
-- 2026-11-17 [[skill-io-dzwignie|Dźwignie wg skill-io (levers.md): każda z naszym statusem i spodziewanym zyskiem na XTX]]
 
-Razem 770 notatek. Wygenerowano 2026-11-19 przez `tools/wiki.py index`.
+Razem 771 notatek. Wygenerowano 2026-11-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

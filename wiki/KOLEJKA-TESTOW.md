@@ -137,6 +137,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (wynajem)
 - priorytet: średni (czeka na kredyt)
 
+### K-124 · Agentowy megakernel pętli draftu MTP + weryfikacji (metoda megakernel-zoo) — najpierw fork CUDA (5060 Ti/3090), potem XTX (HIP)
+- data: 2026-11-19
+- źródło: [[megakernel-zoo]] (Qwen3.8-27B B200: SGLang 9,52 → 8,44 ms, ~63 h agenta; ewaluator FP64 + ukryty zbiór + odwrócenie batcha + audyt); [[2026-11-17-k114-nvidia-sufit]] (draft 4–15 × droższy niż bajty, 37–40% kroku); [[budzet-megakernela-qwen-xtx]] (+4…9,5% za 40–70 osobodni)
+- hipoteza: trwały kernel dla n kroków draftu (warstwa MTP + głowica 64k + argmax w pętli bez powrotu do hosta) zbliża koszt draftu do bajtów: na 5060 Ti krok n4 51 → ~36 ms (+40%) [INFERENCE]; na XTX mniej (PM4 już tnie granice)
+- test: po K-116 (`nsys`): agent w pętli autoresearch z ewaluatorem jak w zoo (odniesienie = obecny fork, tokeny T=0 bitowo + KLD T=1, ukryty zbiór promptów PL/EN/kod, odwrócenie kolejności, audyt drugim agentem); 5060 Ti na Vast z hostguardem, budżet godzin agenta i GPU ustalony z właścicielem; zegar etapów
+- miara: ms/draft i t/s n4 T=1 (49,4 → ?), md5 T=0, godziny agenta do pierwszego wyniku przechodzącego ewaluator
+- zysk: Enigma NVIDIA do +40% [INFERENCE]; dowód, czy agentowa praca nad kernelem skraca nasze 40–70 osobodni do dni
+- ryzyko karty: zawieszenia kernela rezydentnego (na Vast bez ryzyka dla naszej karty; na XTX dopiero po PoC-A z [[budzet-megakernela-qwen-xtx]])
+- priorytet: średni (decyzja właściciela: budżet agent-godzin i GPU)
+
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)

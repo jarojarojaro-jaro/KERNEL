@@ -53,6 +53,8 @@ Wszystkie mamy (kolejka, `gpu-guard`, jeden SIGTERM, [[lekcja-pm4-zamienia-fault
 | przeplot | ABBA na tej samej karcie | ABBA na **tym samym hoście Vast** (hosty różnią się limitem mocy i CPU) |
 | harness | `spec_sweep`, xtxbench, `bench.py` | te same skrypty (OpenAI API), bez zmian |
 
+**Ewaluator przy pracy autonomicznej agenta** (z [[megakernel-zoo]]): odniesienie wysokiej precyzji z tolerancją kalibrowaną na zwykłej implementacji, ukryty zbiór promptów (agent zna tylko zdał/nie zdał), logity z przebiegu pomiarowego sprawdzane po fakcie, odwrócona kolejność batcha = bitowo, audyt kodu drugim agentem, naturalny tekst do pomiaru prędkości (pętle powtórzeń fałszują t/s).
+
 **Czas optymalizacji jako metryka** (właściciel 2026-11-18, [[lekcja-czas-optymalizacji-to-metryka]]): każda kampania zapisuje znaczniki etapów (`phases.txt`), a raport podaje ścianę, czas GPU i najwolniejszy etap.
 
 **Reguła:** liczba z NVIDIA i liczba z XTX trafiają do jednej tabeli tylko wtedy, gdy pochodzą z tego samego harnessu, panelu promptów, temperatury i głębokości draftu. Przy każdej podajemy % sufitu karty.
