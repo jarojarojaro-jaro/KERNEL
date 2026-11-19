@@ -43,7 +43,8 @@ done
 # head of the line: tell cpuheavy --quiet to stop starting new shared-lock work, so the exclusive quiet lock is not
 # starved by a stream of per-file compiles (2026-10-21: the GPU sat idle for 20+ min twice)
 echo $$ > /tmp/gpu-wanted
-trap '[ "$(cat /tmp/gpu-wanted 2>/dev/null)" = "$$" ] && rm -f /tmp/gpu-wanted' EXIT
+guard=
+trap '[ "$(cat /tmp/gpu-wanted 2>/dev/null)" = "$$" ] && rm -f /tmp/gpu-wanted; [ -n "$guard" ] && kill "$guard" 2>/dev/null' EXIT
 exec 8>>/tmp/gpu.lock 9>>/tmp/quiet.lock
 flock 8; flock 9
 rm -f /tmp/gpu-wanted
@@ -61,6 +62,15 @@ fi
 pkill -f 'llama-topka/bin/llama-server'; for _ in $(seq 60); do pgrep -f 'llama-topka/bin/llama-server' >/dev/null || break; sleep 1; done
 for _ in $(seq 30); do [ "$(rocm-smi --showmemuse 2>/dev/null | grep -o 'VRAM%): [0-9]*' | grep -o '[0-9]*$')" -lt 10 ] 2>/dev/null && break; sleep 1; done
 log "queue: topka stopped, VRAM $(rocm-smi --showmemuse 2>/dev/null | grep -o 'VRAM%): [0-9]*')"
+# GPU guard for the whole queue (2026-11-19 audit: the queue never started it). Not holding fds 8/9. If a guard is
+# already running (bugcheck/sweep or a manual one) reuse it. A guard STOP kills the job's processes and exits 3; the
+# queue then stops after that job.
+if ! pgrep -f 'tools/gpu-guard.sh' >/dev/null; then
+    ~/qwen-opt/tools/gpu-guard.sh > "$L/gpu-guard.out" 2>&1 8>&- 9>&- &
+    guard=$!
+    log "queue: gpu-guard started (pid $guard)"
+fi
+guard_alive() { pgrep -f 'tools/gpu-guard.sh' >/dev/null; }
 for j in "${JOBS[@]}"; do
     IFS='|' read -r name to dir cmd <<<"$j"
     since=$(date '+%F %T'); t0=$(date +%s)
@@ -70,6 +80,9 @@ for j in "${JOBS[@]}"; do
     log "END   $name rc=$rc $(( $(date +%s) - t0 ))s  $(rocm-smi --showtemp 2>/dev/null | grep -m1 -o 'junction) (C): [0-9.]*')"
     if journalctl -k --since "$since" --no-pager 2>/dev/null | grep -qiE 'amdgpu.*(page fault|fault|ring .* timeout|gpu reset|reset begin)'; then
         log "GPU FAULT after $name -> queue stopped"; journalctl -k --since "$since" --no-pager | grep -iE amdgpu | tail -20 >> "$L/queue.log"; exit 3
+    fi
+    if ! guard_alive; then
+        log "GPU GUARD not running after $name (STOP or crash: $(tail -1 ~/qwen-opt/tools/gpu-guard.log 2>/dev/null)) -> queue stopped"; exit 3
     fi
 done
 log "queue $jobs: done"

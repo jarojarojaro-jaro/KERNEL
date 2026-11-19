@@ -24,6 +24,7 @@ drop() {  # iid reason : destroy, stop its watchdog, list the machine
 
 try_offer() {  # offer -> 0 started, 2 bad host (try next), 1 create failed
     local offer=$1 out iid j H P
+    hg_offer_ok "$offer" 11 || return 2   # transfer-cost + blacklist gate, as up.sh (download ~10.4 GB model + ~0.7 GB engine)
     cat > "$ST/onstart-$label.sh" <<EOF
 env | grep -E '^(CONTAINER_ID|CONTAINER_API_KEY)=' >> /etc/environment
 command -v curl > /dev/null || { apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -y -qq curl ca-certificates; } > /root/onstart-curl.log 2>&1
