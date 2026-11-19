@@ -1,0 +1,1 @@
+{'label': 'n2', 'prompt_n': 95569, 'prompt_ms': 108771.878, 'pp_tps': 878.6, 'predicted_n': 256, 'tg_tps': 71.82400583605256, 'draft_n': 230, 'draft_n_accepted': 146, 'wall_s': 112.5}

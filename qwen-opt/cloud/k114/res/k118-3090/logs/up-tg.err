@@ -1,0 +1,5 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 24123 MiB):
+  Device 0: NVIDIA GeForce RTX 3090, compute capability 8.6, VMM: yes, VRAM: 24123 MiB
+load_backend: loaded CUDA backend from /root/up/x/llama-b12110/libggml-cuda.so
+load_backend: loaded RPC backend from /root/up/x/llama-b12110/libggml-rpc.so
+load_backend: loaded CPU backend from /root/up/x/llama-b12110/libggml-cpu-alderlake.so

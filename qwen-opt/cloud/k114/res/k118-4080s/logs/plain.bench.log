@@ -1,0 +1,7 @@
+{"engine": "plain", "block": "short", "prompt": "pl-proza", "temp": 0.0, "tps": 56.05, "n": 400, "ttft_s": 0.374, "prompt_tokens": 128, "cached": 42, "srv_tps": 56.05, "md5": "81d05b61", "error": null}
+{"engine": "plain", "block": "short", "prompt": "pl-tech", "temp": 0.0, "tps": 55.82, "n": 400, "ttft_s": 0.728, "prompt_tokens": 113, "cached": 42, "srv_tps": 55.82, "md5": "633be363", "error": null}
+{"engine": "plain", "block": "short", "prompt": "pl-kod", "temp": 0.0, "tps": 55.61, "n": 400, "ttft_s": 0.928, "prompt_tokens": 88, "cached": 42, "srv_tps": 55.6, "md5": "6bda5182", "error": null}
+{"engine": "plain", "block": "short", "prompt": "en-chat", "temp": 0.0, "tps": 55.87, "n": 120, "ttft_s": 0.918, "prompt_tokens": 72, "cached": 42, "srv_tps": 55.4, "md5": "d5841753", "error": null}
+{"engine": "plain", "block": "short", "prompt": "en-tech", "temp": 0.0, "tps": 55.64, "n": 400, "ttft_s": 0.907, "prompt_tokens": 91, "cached": 42, "srv_tps": 55.64, "md5": "64e2ed67", "error": null}
+{"engine": "plain", "block": "short", "prompt": "en-code", "temp": 0.0, "tps": 55.58, "n": 400, "ttft_s": 0.916, "prompt_tokens": 89, "cached": 42, "srv_tps": 55.58, "md5": "35c6277e", "error": null}
+{"engine": "plain", "block": "short", "prompt": "MEDIAN", "temp": 0.0, "tps": 55.730000000000004, "n": null, "ttft_s": null, "prompt_tokens": null, "cached": null, "srv_tps": null, "md5": null, "error": null}

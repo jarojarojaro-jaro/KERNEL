@@ -1,0 +1,5 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 11907 MiB):
+  Device 0: NVIDIA GeForce RTX 3060, compute capability 8.6, VMM: yes, VRAM: 11907 MiB
+load_backend: loaded CUDA backend from /root/up/x/llama-b12110/libggml-cuda.so
+load_backend: loaded RPC backend from /root/up/x/llama-b12110/libggml-rpc.so
+load_backend: loaded CPU backend from /root/up/x/llama-b12110/libggml-cpu-haswell.so

@@ -9,6 +9,8 @@ status: aktualne
 
 **Na Vaście (koszt $0,33) 5060 Ti osiągnęła 61% sufitu dekodu, a wyniki 3090 (23%) i 3060 (42%) to dolne granice z ograniczonych hostów, nie pomiar kart; draft MTP kosztuje 4–15 × swoje bajty.**
 
+> **Korekta 2026-11-19 ([[2026-11-19-k118-nvidia-pelna-moc]]):** wniosek „draft kosztuje 4–15 × swoje bajty” był błędny. Pomiar V(n) upstreamowym `llama-bench` pokazuje, że draft ≈ bajty (0,5–0,9 ms). Różnicę zjada weryfikacja 5 tokenów: V(5)/V(1) = 1,26–1,64. K-116 odrzucone, dźwignią jest K-013.
+
 Ograniczenia hostów (właściciel 2026-11-17: takich kart nie bierzemy; próg: limit mocy i zegar pamięci ≥ 85% fabrycznych):
 - 3090: limit 250 z 420 W, pamięć pod obciążeniem 5001 z 9751 MHz;
 - 3060: 135 z 170 W, 85 °C.

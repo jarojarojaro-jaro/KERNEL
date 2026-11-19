@@ -22,7 +22,15 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ## Czeka
 
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
-1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 (największa dźwignia dekodu z K-111: MMVQ weryfikacji 20,2 ms przy 86% pasma). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6–7. K-004 i K-116 na NVIDIA (Enigma, po doładowaniu Vast).
+1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
+
+### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
+- data: 2026-11-19
+- źródło: [[2026-11-19-k118-nvidia-pelna-moc]]: n2 vs n4 T=1 3090 +7,9%, 3060 +4,3%, 5060 Ti +3,2% (K-114); T=0 +3,0…3,3%; 4080 SUPER bez różnicy
+- test: CPU: wpis w `app/engine/data/engines.json` (DRAFT_N per architektura: sm_86 i sm_120 → 2, sm_89 → 4), `bun test`; potwierdzenie na 1 karcie Vast z md5 T=0 vs n4 (spekulacja bezstratna, tekst może się różnić tylko numerycznie)
+- zysk: +3…8% dekodu dla użytkowników Enigmy z 30xx i 5060 Ti
+- ryzyko karty: brak
+- priorytet: wysoki (tanie, zmierzone na 3 kartach)
 
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
@@ -77,18 +85,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: wysoki (Enigma NVIDIA, tani pierwszy pomiar)
 - zwiad 2026-11-14: tqLLM 1.5.0 robi dokładne próbkowanie MTP przy T>0 (3090, T=0,7: 50 → 104–117 t/s), wzór do portu ([[zwiad-2026-11-14]])
 
-### K-116 · NVIDIA (i XTX): draft MTP kosztuje 4–15 × swoje bajty — graf CUDA/HIP na całą pętlę draftu i fuzja kroku draftu
-- data: 2026-11-17
-- źródło: [[2026-11-17-k114-nvidia-sufit]] (krok n4 5060 Ti 51,1 ms = cel 31,3 + 4 × ~5 ms; bajty draftu ~0,9 ms); na XTX ten sam pomiar to K-111
-- dodatkowo (2026-11-18): kolejka uruchomień CUDA ma ~1024 kernele (pomiar 4060 Ti, [[skill-io-pulapki]]); w `nsys` sprawdzić, czy krok z 4 draftami bez grafu nie dobija do tego limitu (host czeka na GPU)
-- **metodyka (audyt 2026-11-19):** K-114 przypisał całe 51,1 − 31,3 ms czterem draftom, bez odjęcia krańcowego kosztu weryfikacji N=5 względem N=1 (w archiwum nie było `llama-bench`). Najpierw zmierzyć V(5) − V(1) (`llama-bench -p 1,5 -ub 1/5 -n 0` z buildu z llama-bench), dopiero potem `nsys` i ms/draft
-- hipoteza: narzut pętli draftu (osobne launche: warstwa MTP, głowica 64k, argmax/sampling, synchronizacja hosta po każdym kroku) dominuje; jedna sekwencja grafu na n draftów zbliży koszt draftu do bajtów
-- test: 5060 Ti (Vast ~$0,10 albo lokalnie w jaroserverai): `nsys` jednego kroku n4 (fork `kvqlean`), czas draftu na kernel i przerwy hosta; po prototypie grafu ABBA spec_sweep T=0/T=1, md5 T=0 bez zmian; ≤ 10 min na ramię
-- miara przed/po: ms/draft (5060 Ti 4,8–5,2 ms → cel ≤ 2 ms), t/s n4 T=1 49,4 → cel ≥ 60
-- zysk: do +40% dekodu na NVIDIA [INFERENCE: jeśli draft = bajty], podobnie na XTX; wszyscy użytkownicy Enigmy
-- ryzyko karty: brak
-- priorytet: wysoki
-
 ### K-117 · Fork CUDA: cache skwantowanej głowicy draftu i MTP (`LLAMA_MTP_REQUANT_CACHE` jak na XTX) — start na słabym CPU 12 min → sekundy
 - data: 2026-11-17
 - źródło: [[2026-11-17-k114-nvidia-sufit]] (host 3090 TW: 12 min od „initializing” do gotowości; 5060 Ti na 64 rdzeniach 32 s); XTX: start 39,8 → 6,5 s z cache ([[REKORDY]])
@@ -97,17 +93,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - miara: s do `/health` przy drugim starcie
 - zysk: start Enigmy na NVIDIA ze słabym CPU: minuty → sekundy (UX, 0 t/s)
 - ryzyko karty: brak
-- priorytet: średni
-
-### K-118 · Powtórka K-114 dla 3090 i 3060 na hostach z pełną mocą (dzisiejsze wyniki to dolne granice)
-- data: 2026-11-17
-- źródło: [[2026-11-17-k114-nvidia-sufit]] (3090: 250 z 420 W, pamięć 5001 z 9751 MHz → 23% sufitu; 3060: 135 z 170 W, 85 °C → 42%); [[lekcja-vast-tylko-pelna-moc]]
-- hipoteza: na pełnej mocy 3090 osiąga ≥ 50% sufitu dekodu (jak 5060 Ti 61%), plain ≥ 70% pasma; 3060 ~50%; rozkład kroku (draft 4–15 × bajty) bez zmian
-- test: `qwen-opt/cloud/k114/launch.sh "RTX 3090" qwenbench-k118-3090` i to samo dla „RTX 3060” (hostguard przed pobraniem, hosty z `hosty-zle.txt` pomijane), ten sam model GSQ IQ3_XXS-mtp i runner; `summ.py` bez flagi LIMITED HOST; host z mocnym CPU (start: requant 12 min na słabym)
-- dodatkowo (audyt 2026-11-19): K-114 szedł przy ctx 8192, czyli diagnostyka, nie wynik karty (decyzja ≥ 131k); w K-118 dodać ramię ≥ 131k (plain + n2 przy głębokości ~128k)
-- miara: t/s n2/n4 T=0/T=1, plain, prefill ~3k/~11k i % sufitu vs dolne granice 44,4 / 28,6 t/s
-- koszt: ~$0,15–0,25 za obie karty [INFERENCE: 3090 ~$0,22/h, 3060 ~$0,07/h, ~40 min]; **nie wynajmować przy kredycie $0,16** — czeka na doładowanie i zgodę właściciela
-- ryzyko karty: brak (wynajem)
 - priorytet: średni
 
 ### K-119 · SenseNova-Loop-9B: pobrać i sprawdzić, jak naprawdę działa (jakość, zachowanie, prędkość), bez optymalizacji
@@ -174,15 +159,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: najpopularniejsze karty (RTX 5070 6,15% Steam) bez minut JIT przy pierwszym starcie
 - ryzyko karty: brak
 - priorytet: średni
-
-### K-127 · Fork CUDA: build z AVX2 (`kvqlean`) vs bez (`kvqleana`) — czy pobieracz ma wybierać wariant po flagach CPU
-- data: 2026-11-19
-- źródło: audyt Gemini (C.1.4d) potwierdzony: `engines.json:516,534` wysyła wszystkim `kvqleana`, bo „the downloader cannot choose by CPU flags”; `app/engine/src/hw/linux.ts:274` już czyta cpuinfo
-- test: 5060 Ti (Vast, hostguard, host z AVX2): spec_sweep T=1 ABBA kvqlean vs kvqleana, md5 T=0
-- miara: t/s, czas startu (requant draftu na CPU)
-- zysk: jeśli ≥ 3% albo krótszy start → wybór po flagach w pobieraczu; inaczej zostaje
-- ryzyko karty: brak
-- priorytet: niski (można połączyć z K-004 na jednej instancji)
 
 ### K-128 · Czy klient (omp) obcina `<think>` z historii i przez to psuje trafienia prompt-cache w turach agenta (analiza logów, bez karty)
 - data: 2026-11-19
@@ -817,11 +793,31 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## W toku
 
-- **2026-11-19 ~17:50, Vast (zgoda i budżet właściciela $2, „tanie karty, kilka naraz”):** 4 instancje naraz, runner `qwen-opt/cloud/k114` (run.sh + run2.sh + nowy run3.sh, `fetch.sh` sam zbiera wyniki i usuwa instancję):
-  - karty: RTX 3090 $0,256/h, RTX 3060 $0,075/h, RTX 5060 Ti $0,118/h, RTX 5070 $0,166/h (≈ $0,62/h, watchdog 80 min);
-  - pozycje: K-118 (pełna moc, ramię ~122k na kartach ≥ 15 GB), K-116a (V(n) z upstream llama-bench), K-127 (kvqleana vs kvqlean na hoście z AVX2).
+(pusto)
 
 ## Zrobione
+
+### K-118 · Powtórka K-114 dla 3090 i 3060 na hostach z pełną mocą (dzisiejsze wyniki to dolne granice)
+- data: 2026-11-17
+- źródło: [[2026-11-17-k114-nvidia-sufit]] (3090: 250 z 420 W, pamięć 5001 z 9751 MHz → 23% sufitu; 3060: 135 z 170 W, 85 °C → 42%); [[lekcja-vast-tylko-pelna-moc]]
+- hipoteza: na pełnej mocy 3090 osiąga ≥ 50% sufitu dekodu (jak 5060 Ti 61%), plain ≥ 70% pasma; 3060 ~50%; rozkład kroku (draft 4–15 × bajty) bez zmian
+- test: `qwen-opt/cloud/k114/launch.sh "RTX 3090" qwenbench-k118-3090` i to samo dla „RTX 3060” (hostguard przed pobraniem, hosty z `hosty-zle.txt` pomijane), ten sam model GSQ IQ3_XXS-mtp i runner; `summ.py` bez flagi LIMITED HOST; host z mocnym CPU (start: requant 12 min na słabym)
+- dodatkowo (audyt 2026-11-19): K-114 szedł przy ctx 8192, czyli diagnostyka, nie wynik karty (decyzja ≥ 131k); w K-118 dodać ramię ≥ 131k (plain + n2 przy głębokości ~128k)
+- miara: t/s n2/n4 T=0/T=1, plain, prefill ~3k/~11k i % sufitu vs dolne granice 44,4 / 28,6 t/s
+- koszt: ~$0,15–0,25 za obie karty [INFERENCE: 3090 ~$0,22/h, 3060 ~$0,07/h, ~40 min]; **nie wynajmować przy kredycie $0,16** — czeka na doładowanie i zgodę właściciela
+- ryzyko karty: brak (wynajem)
+- priorytet: średni
+- **wynik 2026-11-19 ([[2026-11-19-k118-nvidia-pelna-moc]]):** pełna moc: 3090 n4 T=0 47,1 → 86,6 t/s (+84% vs dolna granica), n2 89,5 / 79,6; 3060 33,0 (+7%), n2 34,0 / 31,8; nowa 4080 SUPER n4 107,3 / 91,2. Plain 58–78% pasma; prefill 3090 1349–1386, 4080S 1554–1862 t/s. Ramię 95,6k: 3090 plain 30,2 → n2 71,8 t/s, prefill 925 t/s
+
+### K-127 · Fork CUDA: build z AVX2 (`kvqlean`) vs bez (`kvqleana`) — czy pobieracz ma wybierać wariant po flagach CPU
+- data: 2026-11-19
+- źródło: audyt Gemini (C.1.4d) potwierdzony: `engines.json:516,534` wysyła wszystkim `kvqleana`, bo „the downloader cannot choose by CPU flags”; `app/engine/src/hw/linux.ts:274` już czyta cpuinfo
+- test: 5060 Ti (Vast, hostguard, host z AVX2): spec_sweep T=1 ABBA kvqlean vs kvqleana, md5 T=0
+- miara: t/s, czas startu (requant draftu na CPU)
+- zysk: jeśli ≥ 3% albo krótszy start → wybór po flagach w pobieraczu; inaczej zostaje
+- ryzyko karty: brak
+- priorytet: niski (można połączyć z K-004 na jednej instancji)
+- **wynik 2026-11-19:** różnica ≤ 1,4% (szum) na 3090, 3060 i 4080 SUPER, start 10–26 s w obu → zostaje `kvqleana` dla wszystkich ([[2026-11-19-k118-nvidia-pelna-moc]])
 
 ### K-125 · KLD ścieżki `kvq` (łatka 0011) dla Qwena na XTX — kvq jest BLIŻEJ referencji f16 niż standardowy kernel
 - data: 2026-11-19 (zgłoszone i zrobione tego samego dnia)
@@ -927,6 +923,19 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-116 · NVIDIA (i XTX): draft MTP kosztuje 4–15 × swoje bajty — graf CUDA/HIP na całą pętlę draftu i fuzja kroku draftu
+- data: 2026-11-17
+- źródło: [[2026-11-17-k114-nvidia-sufit]] (krok n4 5060 Ti 51,1 ms = cel 31,3 + 4 × ~5 ms; bajty draftu ~0,9 ms); na XTX ten sam pomiar to K-111
+- dodatkowo (2026-11-18): kolejka uruchomień CUDA ma ~1024 kernele (pomiar 4060 Ti, [[skill-io-pulapki]]); w `nsys` sprawdzić, czy krok z 4 draftami bez grafu nie dobija do tego limitu (host czeka na GPU)
+- **metodyka (audyt 2026-11-19):** K-114 przypisał całe 51,1 − 31,3 ms czterem draftom, bez odjęcia krańcowego kosztu weryfikacji N=5 względem N=1 (w archiwum nie było `llama-bench`). Najpierw zmierzyć V(5) − V(1) (`llama-bench -p 1,5 -ub 1/5 -n 0` z buildu z llama-bench), dopiero potem `nsys` i ms/draft
+- hipoteza: narzut pętli draftu (osobne launche: warstwa MTP, głowica 64k, argmax/sampling, synchronizacja hosta po każdym kroku) dominuje; jedna sekwencja grafu na n draftów zbliży koszt draftu do bajtów
+- test: 5060 Ti (Vast ~$0,10 albo lokalnie w jaroserverai): `nsys` jednego kroku n4 (fork `kvqlean`), czas draftu na kernel i przerwy hosta; po prototypie grafu ABBA spec_sweep T=0/T=1, md5 T=0 bez zmian; ≤ 10 min na ramię
+- miara przed/po: ms/draft (5060 Ti 4,8–5,2 ms → cel ≤ 2 ms), t/s n4 T=1 49,4 → cel ≥ 60
+- zysk: do +40% dekodu na NVIDIA [INFERENCE: jeśli draft = bajty], podobnie na XTX; wszyscy użytkownicy Enigmy
+- ryzyko karty: brak
+- priorytet: wysoki
+- **odrzucone 2026-11-19 ([[2026-11-19-k118-nvidia-pelna-moc]]):** V(n) z upstream llama-bench: draft kosztuje 0,5–0,9 ms ≈ swoje bajty (3090, 3060, 4080 SUPER). Luka kroku to weryfikacja V(5)/V(1) = 1,26–1,64, nie pętla draftu; dźwignia przechodzi do K-013
 
 ### K-104 · Krótki ogon promptu w jednym przebiegu zamiast 2–3 (granice checkpointów GDN)
 - powód: 2026-11-14 A/B (świeże serwery, P/C/V/P2): prompt krótkiej tury 148,7 → 148,5 ms (0%), a `SHORT_TAIL=32` zmienia md5 (greedy, 1,7k) i obniża decode 1,7k 135,4 → 128,0 t/s; diagnoza K-003 o 2–3 przebiegach była błędna ([[2026-11-14-k104-krotki-ogon-promptu]])

@@ -1,0 +1,10 @@
+1795108727 start
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+1795108933 ready variant=kvqlean
+1795108933 no llama-bench in archive
+1795109103 arm n4-a
+1795109274 arm n2
+1795109443 arm n4-b
+1795109443 done

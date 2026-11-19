@@ -1,0 +1,2 @@
+name, memory.total [MiB], driver_version, power.limit [W], power.default_limit [W], clocks.max.sm [MHz], clocks.max.memory [MHz], pcie.link.gen.current, pcie.link.width.current
+NVIDIA GeForce RTX 4080 SUPER, 16376 MiB, 610.57.04, 280.00 W, 320.00 W, 3105 MHz, 11501 MHz, 1, 16

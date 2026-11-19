@@ -1,0 +1,12 @@
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+1795109586 upstream V(n) + tg128
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+cp: warning: behavior of -n is non-portable and may change in future; use --update=none instead
+1795109698 arm n4-noavx2
+1795109788 arm n4-c
+1795109872 long plain
+1795109980 long n2
+1795109980 done3

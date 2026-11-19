@@ -36,7 +36,7 @@ EOF
     iid=$(jq -r '.new_contract // empty' <<<"$out" 2>/dev/null || true)
     [ -n "$iid" ] || { echo "create failed for offer $offer: $out" >&2; return 1; }
     echo "$iid" > "$ST/$label.iid"
-    setsid nohup bash -c "sleep $LIFE_S; $HOME/.local/bin/vastai destroy instance $iid -y" > "$ST/watchdog-$iid.log" 2>&1 < /dev/null &
+    systemd-run --user --collect -q --unit="vast-watchdog-$iid" bash -c "sleep $LIFE_S; $HOME/.local/bin/vastai destroy instance $iid -y"
     echo "instance $iid ($label, offer $offer), local watchdog in ${LIFE_S}s"
     for _ in $(seq 60); do
         j=$(vastai show instance "$iid" --raw 2>/dev/null || true)
@@ -52,7 +52,9 @@ EOF
     ssh "${S[@]}" -p "$P" root@"$H" 'mkdir -p /root/k114'
     scp "${S[@]}" -P "$P" "$D/run.sh" "$D/run2.sh" "$D/run3.sh" "$D/bench.py" "$D/pf.py" "$D/lp.py" "$D/pdl.sh" root@"$H":/root/k114/
     ssh -n "${S[@]}" -p "$P" root@"$H" 'setsid nohup bash -c "bash /root/k114/run.sh; bash /root/k114/run2.sh; bash /root/k114/run3.sh" > /dev/null 2>&1 < /dev/null & sleep 5; cat /root/res/phases.txt'
-    LIFE_S=$LIFE_S setsid nohup "$D/fetch.sh" "$label" > /dev/null 2>&1 < /dev/null &
+    # systemd-run, not setsid nohup: jobs started from the agent's tool session die with it (2026-11-19: fetch.sh and
+    # the local watchdogs were killed, 4 instances sat idle ~70 min until destroyed by hand)
+    systemd-run --user --collect -q --unit="fetch-$label-$iid" -E LIFE_S="$LIFE_S" "$D/fetch.sh" "$label"
     echo "started on $iid (fetch.sh collects and destroys)"
 }
 

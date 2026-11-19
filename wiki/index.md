@@ -64,8 +64,8 @@ Audyt liczb: [[AUDYT]].
 - [[kernele/_hub|kernele]] — Nasze kernele: rodziny, zysk, poprawność, wyłącznik (33)
 - [[latki/_hub|latki]] — Łatki llama.cpp i gałęzie (8)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki, pomiar (58)
-- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (84)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów (122)
+- [[eksperymenty/_hub|eksperymenty]] — Rundy i pomiary z datą (85)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów (123)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (31)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (91)
@@ -80,8 +80,10 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-19 [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]]
 - 2026-11-19 [[megakernel-zoo|megakernel-zoo (Xingyu Dang, Princeton): agent (Claude) pisze osobny megakernel dekodu dla każdego modelu i karty]]
 - 2026-11-19 [[daisyrose-27b|DaisyRose-27B (RadixArk): pełny RL na Qwen3.8-27B, 144 × H200 przez 18 dni — duży koszt, mały zysk poza Terminal-Bench 4.1]]
+- 2026-11-19 [[lekcja-tlo-z-sesji-agenta-ginie|Procesy w tle odpalone z sesji agenta giną razem z nią: strażników kosztów uruchamiaj przez `systemd-run --user`]]
 - 2026-11-19 [[lekcja-env-switch-domyslnie-wlaczony|`ggml_cuda_env_switch` jest włączony, gdy zmiennej nie ma: nie używaj go do wyłączników]]
 - 2026-11-19 [[2026-11-19-k125-k001-xtx|2026-11-19: K-125 (KLD ścieżki kvq) i K-001 (wyciek stanu): XTX, topka-q70, Qwen3.8-27B-Uncensored Q4_K_M]]
+- 2026-11-19 [[2026-11-19-k118-nvidia-pelna-moc|2026-11-19 K-118 / K-116a / K-127: fork CUDA Enigmy na 3090, 3060 i 4080 SUPER z pełną mocą]]
 - 2026-11-19 [[2026-11-19-k111-k123-krok-xtx|2026-11-19 K-111 i K-123: gdzie ucieka krok MTP na XTX (bez karty, z istniejącego śladu) i błąd EOG w rejekcji]]
 - 2026-11-19 [[2026-11-19-k109-k110-k106-xtx|2026-11-19 K-109, K-110, K-106 na XTX: igły 3/3 przy 130k i 222k, `bench.py` skill-io 1:1, prefill drugiego żądania nie blokuje dekodu]]
 - 2026-11-18 [[zwiad-2026-11-18|Zwiad 2026-11-18: Splash 1.7 (drzewo draftu + lookup w jednym przebiegu), drafter NVIDIA 0,8B do Qwen3.8-27B — nic do wdrożenia u nas]]
@@ -89,8 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-18 [[ga-racing-rohanarun|GA z wyścigami (Rohan Arun, Open Kernel Challenge): statystyczny wybór wariantu kernela, bez zależności]]
 - 2026-11-18 [[qwen38-27b-pi-adapter|Qwen3.8-27B-pi-adapted: LoRA wytrenowana RL-em pod agenta pi — nasz model bazowy, dużo mniej wywołań narzędzi]]
 - 2026-11-18 [[lekcja-czas-optymalizacji-to-metryka|Lekcja: czas od nowego modelu lub pomysłu do zmierzonego wyniku to osobna metryka, którą mierzymy i skracamy]]
-- 2026-11-17 [[zwiad-2026-11-17|Zwiad 2026-11-17: rekord 594,7 t/s na R9700 jest fizycznie niemożliwy, draft KV q4 potwierdzony, lookup „najnowsze dopasowanie” potwierdzony]]
-- 2026-11-17 [[skill-io-skrypty|Skrypty skill-io (bench.py, ceiling.py, queue.sh, mem.sh): co robią linia po linii i co bierzemy]]
 
-Razem 776 notatek. Wygenerowano 2026-11-19 przez `tools/wiki.py index`.
+Razem 778 notatek. Wygenerowano 2026-11-19 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

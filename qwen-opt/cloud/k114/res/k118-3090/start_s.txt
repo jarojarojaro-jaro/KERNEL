@@ -1,0 +1,4 @@
+n4-noavx2 10
+n4-c 11
+long-plain 2
+long-n2 10

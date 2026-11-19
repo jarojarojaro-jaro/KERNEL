@@ -5,11 +5,11 @@ step ms = tok_per_step / tps, target pass ms from the plain arm, prefill t/s, po
 import csv, json, statistics as st, sys
 
 GB = 10.04 + 0.30  # GSQ IQ3_XXS target bytes per pass (catalog bTokGB + GDN state rw)
-BW = {"3090": 936, "3060": 360, "5060ti": 448}
-INT8 = {"3090": 284.7, "3060": 101.9, "5060ti": 189.8}  # dense INT8 tensor TOPS (skill-io karty.json)
+BW = {"3090": 936, "3060": 360, "5060ti": 448, "4080s": 736}
+INT8 = {"3090": 284.7, "3060": 101.9, "5060ti": 189.8, "4080s": 418.0}  # dense INT8 tensor TOPS (skill-io karty.json; 4080 SUPER spec 836 sparse)
 DRAFT_GB = 0.40  # MTP layer + 64k IQ4_XS head per draft step [INFERENCE, as in skill-io-sufity]
 for d in sys.argv[1:]:
-    card = d.rstrip("/").split("/")[-1].rstrip("abc")
+    card = d.rstrip("/").split("/")[-1].removeprefix("k118-").rstrip("abc")
     rows = [json.loads(l) for l in open(f"{d}/bench.jsonl") if l.strip()]
     print(f"\n== {card}  ({open(f'{d}/gpu.csv').read().splitlines()[-1]})")
     arms = {}
@@ -30,7 +30,7 @@ for d in sys.argv[1:]:
                             / (x.get("srv_tps") or x["tps"]) for x in rs)
         if eng == "plain":
             plain_ms = 1000 / srv
-        nd = {"n4-a": 4, "n4-b": 4, "n2": 2}.get(eng, 0)
+        nd = {"n4-a": 4, "n4-b": 4, "n4-c": 4, "n4-noavx2": 4, "n2": 2}.get(eng, 0)
         ceil = BW[card] / ((GB + nd * DRAFT_GB) / tok_step)
         print(f"  {eng:6s} T={t:.0f}  ceiling {ceil:5.1f}  -> {100 * srv / ceil:3.0f}%  tps {tps:6.1f} (srv {srv:6.1f})  tok/step {tok_step:4.2f}  step {step_ms:5.1f} ms"
               + (f"  acc {da}/{dn} = {da / dn:.2f}" if dn else ""))

@@ -1,0 +1,2 @@
+name, memory.total [MiB], driver_version, power.limit [W], power.default_limit [W], clocks.max.sm [MHz], clocks.max.memory [MHz], pcie.link.gen.current, pcie.link.width.current
+NVIDIA GeForce RTX 3060, 12288 MiB, 610.43.02, 160.00 W, 170.00 W, 2130 MHz, 7501 MHz, 2, 16
