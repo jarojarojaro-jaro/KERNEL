@@ -482,3 +482,5 @@ Nic nowego w teorii; zapisane 2 pomiary autora w [[skill-io-pulapki]]: kolejka u
 
 ## [2026-11-19] telegram | DNeo (drafter dyfuzyjny, Cerebras)
 [[drafter-dflash]]: 1,3 × vs DFlash2 na Qwen3-4B/H100 (pamięć odrzuconych propozycji, MoFA); brak wag 27B i llama.cpp; u nas DFlash2 przegrywa z MTP (PL, T=1), więc bez testu; lekcja do douczania MTP.
+
+## [2026-11-19] telegram | Helion (DSL kerneli PyTorch) — narzędzie do nauki/prototypów, nie do naszego silnika
