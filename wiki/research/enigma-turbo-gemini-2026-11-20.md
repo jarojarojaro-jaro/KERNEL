@@ -185,6 +185,7 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | ogon lookupu W=16 kluczowany kontekstem + draftami (Gemini r9, dokończony przez Kernela) | `--bench-copy` T=0 / T=0,7 222,5 / 200,3 t/s | 275,9 / 244,3 t/s | +24% / +22%, bit w bit |
 | ODRZUCONE: attention dekodu z K/V współdzielonym przez 6 głów (`k_attn_wg`) | dekod 200 / 4000 ctx 45,52 / 44,51 t/s | 43,74 / 43,14 | −4% / −3% (bit w bit, ale 4× mniej bloków) |
 | ODRZUCONE: GDN prefillu kolumnowo (192 fale bez barier) | prefill 2k 847 t/s | 814 | −4%, logity nie bit w bit |
+| `k_gemv_wide`: 2 kafle po 16 wierszy na falę (aktywacje ładowane raz na 2 WMMA) | weryfikacja 16 tok. 51,2 ms; bench-copy T=0 275,9 t/s | 48,2 ms; 289,8 t/s | +5%, bit w bit (4 kafle: 74 ms, rejestry; wagi w LDS: −17%; zamiana ról WMMA: −7%) |
 | **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
