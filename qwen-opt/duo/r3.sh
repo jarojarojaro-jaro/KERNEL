@@ -43,3 +43,10 @@ case ${1:-} in
        env GGML_HIP_MMQ_GLU=1 GGML_HIP_GDN_CHUNK=1 LD_LIBRARY_PATH=$NEW:$R GGML_HIP_PM4=0 $NEW/llama-perplexity -m $M -f $T -c 8192 --chunks 2 -b 8192 -ngl 999 -fa on -ub 512 -ctk q4_0 -ctv q4_0 --kl-divergence-base ref.kld --kl-divergence > r5on512.log 2>&1
        echo "== ub 512 GLU+CHUNK vs fix"; python3 ~/qwen-opt/tools/kld_gate.py compare fix512.log r5on512.log ;;
 esac
+case ${1:-} in
+  r6test) env GGML_HIP_GDN_CHUNK=1 LD_LIBRARY_PATH=$NEW:$R timeout 400 $NEW/test-backend-ops test -o GATED_DELTA_NET_LAG 2>&1 | grep -E "FAIL|passed|Backend ROCm0" | tail -4
+          env GGML_HIP_GDN_CHUNK=1 LD_LIBRARY_PATH=$NEW:$R timeout 200 $NEW/test-backend-ops test -o GATED_DELTA_NET 2>&1 | grep -E "FAIL|passed|Backend ROCm0" | tail -4 ;;
+  r6kld) cd ~/qwen-opt/duo; T=~/wt/lfm3-prof/wikitext-2-raw/wiki.test.raw
+       env GGML_HIP_GDN_CHUNK=1 LD_LIBRARY_PATH=$NEW:$R GGML_HIP_PM4=0 $NEW/llama-perplexity -m $M -f $T -c 8192 --chunks 2 -b 8192 -ngl 999 -fa on -ub 512 -ctk q4_0 -ctv q4_0 --kl-divergence-base ref.kld --kl-divergence > r6on512.log 2>&1
+       echo "== ub 512 CHUNK(lag) vs fix"; python3 ~/qwen-opt/tools/kld_gate.py compare fix512.log r6on512.log ;;
+esac

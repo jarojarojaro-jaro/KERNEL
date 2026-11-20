@@ -1,0 +1,5 @@
+# 2026-11-20 owner OK ("tak, działaj"): Gemini r6 GGML_HIP_GDN_CHUNK on GATED_DELTA_NET_LAG — unit tests, server prefill/decode xbench 0/1 ABAB, KLD ub 512; then :8080 back
+duo-r6-test|700|~/qwen-opt/duo|./r3.sh r6test
+duo-r6-xb|1800|~/qwen-opt/duo|env VAR=GGML_HIP_GDN_CHUNK ARMS="0 1 0 1" XB_LABEL=gdnchunk python3 r1c.py
+duo-r6-kld|900|~/qwen-opt/duo|./r3.sh r6kld
+duo-r6-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
