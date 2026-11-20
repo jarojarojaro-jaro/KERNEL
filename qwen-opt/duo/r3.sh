@@ -50,3 +50,17 @@ case ${1:-} in
        env GGML_HIP_GDN_CHUNK=1 LD_LIBRARY_PATH=$NEW:$R GGML_HIP_PM4=0 $NEW/llama-perplexity -m $M -f $T -c 8192 --chunks 2 -b 8192 -ngl 999 -fa on -ub 512 -ctk q4_0 -ctv q4_0 --kl-divergence-base ref.kld --kl-divergence > r6on512.log 2>&1
        echo "== ub 512 CHUNK(lag) vs fix"; python3 ~/qwen-opt/tools/kld_gate.py compare fix512.log r6on512.log ;;
 esac
+case ${1:-} in
+  r7test) for e in "GGML_HIP_MMVQ_Q6FR=1" "GGML_HIP_GDN_FUSED=1"; do echo "== $e"
+            for o in MUL_MAT GATED_DELTA_NET FLASH_ATTN_EXT_MASKED_TAIL; do env $e LD_LIBRARY_PATH=$NEW:$R timeout 280 $NEW/test-backend-ops test -o $o 2>&1 | grep -E "FAIL|passed|Backend ROCm0" | tail -2 | tr '\n' ' '; echo " ($o)"; done; done
+          for q in 0 1; do echo "== perf Q6FR=$q"; env GGML_HIP_MMVQ_Q6FR=$q LD_LIBRARY_PATH=$NEW:$R timeout 280 $NEW/test-backend-ops perf -o MUL_MAT 2>&1 | grep -E "type_a=q6_K,type_b=f32,m=(248320|5120),n=(1|2),k=(5120|17408)" | sed -E 's/ +/ /g; s/,bs=.*://' ; done ;;
+  r7bench) for b in OLD NEW OLD NEW; do B=${!b}
+          echo "$b $(LD_LIBRARY_PATH=$B:$R $B/llama-bench -m $M -p 512,2048 -n 0 -fa on -ngl 99 -ctk q4_0 -ctv q4_0 -ub 2048 -r 3 2>&1 | grep -E 'pp[0-9]' | awk -F'|' '{printf "%s %s; ", $(NF-2), $(NF-1)}')"; done
+        for a in "0 0 0" "1 0 0" "0 1 0" "0 0 1" "1 1 1" "0 0 0" "1 0 0" "0 1 0" "0 0 1" "1 1 1"; do set -- $a
+          echo "Q6FR=$1 GDNF=$2 TURBO=$3 $(env GGML_HIP_MMVQ_Q6FR=$1 GGML_HIP_GDN_FUSED=$2 GGML_HIP_MMVQ_TURBO=$3 GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 LD_LIBRARY_PATH=$NEW:$R $NEW/llama-bench -m $M -p 0 -n 64 -fa on -ngl 99 -ctk q4_0 -ctv q4_0 -r 3 2>&1 | grep -E 'tg[0-9]' | awk -F'|' '{printf "%s %s; ", $(NF-2), $(NF-1)}')"; done ;;
+  r7kld) cd ~/qwen-opt/duo; T=~/wt/lfm3-prof/wikitext-2-raw/wiki.test.raw
+       for ub in 1 5; do
+         env GGML_HIP_MMVQ_Q6FR=1 GGML_HIP_GDN_FUSED=1 LD_LIBRARY_PATH=$NEW:$R GGML_HIP_PM4=0 $NEW/llama-perplexity -m $M -f $T -c 8192 --chunks 2 -b 8192 -ngl 999 -fa on -ub $ub -ctk q4_0 -ctv q4_0 --kl-divergence-base ref.kld --kl-divergence > r7on$ub.log 2>&1
+         echo "== ub $ub Q6FR+GDN_FUSED vs off"; python3 ~/qwen-opt/tools/kld_gate.py compare r4off$ub.log r7on$ub.log
+       done ;;
+esac

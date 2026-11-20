@@ -1,0 +1,8 @@
+# 2026-11-20 owner OK (duo, "działaj"): Gemini r7 — Q6FR, GDN_FUSED (fixed), pp regression fix: tests, perf, tg/pp, KLD, K-001, xbench; then :8080 back
+duo-r7-test|900|~/qwen-opt/duo|./r3.sh r7test
+duo-r7-bench|1500|~/qwen-opt/duo|./r3.sh r7bench
+duo-r7-kld|1800|~/qwen-opt/duo|./r3.sh r7kld
+duo-r7-copy|120|~|rm -rf ~/qwen-opt/k001/fix-inst && mkdir -p ~/qwen-opt/k001/fix-inst && cp -a ~/wt/l1-cachesave/build-hip/bin ~/qwen-opt/k001/fix-inst/
+duo-r7-k001|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/fix-inst K001_LABEL=r7 K001_DELTAS=post1,post31,post33,u63 python3 k001d.py GGML_HIP_MMVQ_Q6FR=1,GGML_HIP_GDN_FUSED=1,GGML_HIP_MMVQ_TURBO=1
+duo-r7-xb|1800|~/qwen-opt/duo|env VAR=GGML_HIP_DUO_ALL ARMS="0 1 0 1" XB_LABEL=r7all python3 r1c.py
+duo-r7-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
