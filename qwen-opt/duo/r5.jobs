@@ -1,0 +1,5 @@
+# duo r5 (run only after the owner's OK): GGML_HIP_MMQ_GLU + GGML_HIP_GDN_CHUNK — unit tests, pp512/2048 2x2 ABAB, KLD ub 512; then :8080 back
+duo-r5-test|700|~/qwen-opt/duo|./r3.sh r5test
+duo-r5-bench|1200|~/qwen-opt/duo|./r3.sh r5bench
+duo-r5-kld|900|~/qwen-opt/duo|./r3.sh r5kld
+duo-r5-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
