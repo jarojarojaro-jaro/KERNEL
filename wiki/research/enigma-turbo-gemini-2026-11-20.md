@@ -186,6 +186,10 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | ODRZUCONE: attention dekodu z K/V współdzielonym przez 6 głów (`k_attn_wg`) | dekod 200 / 4000 ctx 45,52 / 44,51 t/s | 43,74 / 43,14 | −4% / −3% (bit w bit, ale 4× mniej bloków) |
 | ODRZUCONE: GDN prefillu kolumnowo (192 fale bez barier) | prefill 2k 847 t/s | 814 | −4%, logity nie bit w bit |
 | `k_gemv_wide`: 2 kafle po 16 wierszy na falę (aktywacje ładowane raz na 2 WMMA) | weryfikacja 16 tok. 51,2 ms; bench-copy T=0 275,9 t/s | 48,2 ms; 289,8 t/s | +5%, bit w bit (4 kafle: 74 ms, rejestry; wagi w LDS: −17%; zamiana ról WMMA: −7%) |
+| domyślne p_min 0,5 → 0 (sweep polityki, bez myślenia) | długie 93,2 t/s, T=0,7 78,0 | 98,8; 79,2 | +6% / +1,5% |
+| accept(): odtworzenie GDN wszystkich warstw w 2 uruchomieniach (było 96) | accept 0,84 ms; T=0 83,1 t/s | 0,34 ms; 84,6 | +1,8%, bit w bit |
+| **taśma PM4 z produkcji (hip-pm4, GGML_HIP_PM4=1 WA=2 GUARD=1)** | dekod 45,4 t/s; spec 82,2; T=0 84,6; długie 99,5 | 47,5; 87,3; 89,9; 105,0 | +4,6% / +6,2% / +6,2% / +5,5%, bit w bit, 0 faults |
+| ODRZUCONE: adaptacyjne K (geometryczne / per pozycja) | T=0 83,1 | 80,3 / 74,7 | −3% / −10% (długie +3–5%); opcja `draft_adapt` |
 | **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
@@ -227,7 +231,9 @@ Lekcja (agenci): każdy agent we własnym worktree. Niezacommitowane edycje Gemi
 | długie prompty 2k / 8k | 95 / 91 | 107 / 126 |
 | prefill w serwerze 2k / 8k | 796 / 776 | 903 / 938 |
 
-Turbo wygrywa tylko dekod bez spekulacji (45,9 vs 42,2). Dźwignia: koszt weryfikacji 5–16 tokenów; u nas `k_gemv_wide` potrzebuje 51 ms na 16 tokenów, a produkcja używa few-row MMQ bez bit w bit.
+Turbo wygrywa tylko dekod bez spekulacji (45,9 vs 42,2).
+
+**Po accept() i taśmie PM4 (ten sam wieczór):** kopie 220 / 265 (produkcja 270 / 306), T=0,7 76,8 (86,6), długie 2k / 8k 103,8 / 107,1 (107,3 / 126,0), dekod bez spekulacji 47,5. Dźwignia: koszt weryfikacji 5–16 tokenów; u nas `k_gemv_wide` potrzebuje 51 ms na 16 tokenów, a produkcja używa few-row MMQ bez bit w bit.
 
 **Lekcja: przed porównaniem z produkcją sprawdź, czy obie strony generują ten sam tekst (tryb myślenia, szablon czatu, `prompt_n`).**
 

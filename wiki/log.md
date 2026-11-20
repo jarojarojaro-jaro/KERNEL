@@ -574,3 +574,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo: ogon lookupu W=16 +24% na kopiach; uczciwe porównanie bez myślenia — produkcja prowadzi w spekulacji (kopie 270–306 vs 200–242 t/s), Turbo tylko w zwykłym dekodzie; odrzucone k_attn_wg (−4%) i kolumnowy GDN prefillu (−4%)
 
 ## [2026-11-20] silnik | Enigma Turbo: szeroka weryfikacja 2 kafle wierszy na falę — 16 tokenów 51,2 → 48,2 ms, kopie 275,9 → 289,8 t/s (+5%); 3 warianty odrzucone (LDS −17%, zamiana ról −7%, 4 kafle −33%)
+
+## [2026-11-20] silnik | Enigma Turbo: taśma PM4 z produkcji — dekod 45,4 → 47,5 t/s, spec +6,2%, bit w bit; accept() 0,84 → 0,34 ms; p_min 0 (długie +6%); luka do produkcji: długie 2k 103,8 vs 107,3, kopie 265 vs 306
