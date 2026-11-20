@@ -175,6 +175,9 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | aktywacje prefillu jak Q8_K (skala na 256) + epilog całkowity w GEMM | prefill 512 tok. 626 t/s | 510 t/s | −19% (odrzucone: dodatkowe kernele, 192 VGPR) |
 | `k_gdn_conv_norm`: wagi conv w rejestrach + wejścia następnego tokenu ładowane w tle | prefill 626,3 t/s; krok spec K=3 26,68 ms | 632,0 t/s; 26,41 ms | +0,9%; +1,0% |
 | `accept()` jako graf HIP | accept 0,50 ms | 0,50 ms | 0 (koszt to praca GDN, nie uruchomienia) |
+| kafle GEMM prefillu: więcej tokenów na falę / blok 128 wierszy / kafel B w LDS | 632 t/s | 484–628 t/s | wszystkie wolniej (rejestry, LDS); optimum lokalne ~632 t/s po 8 wariantach |
+| `k_norm_q8` bez LDS, jedna bariera, int8 z rejestrów | krok spec 26,41 ms | 26,36 ms | w szumie, bit w bit, uproszczenie |
+| przekwantowanie macierzy tylko-draftu Q6_K → Q4_K (`TURBO_DRAFT_Q4`) | — | nieprzetestowane | szacunek +~1,9% spec; jaroserverai offline od ~19:22 |
 | **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.

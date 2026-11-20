@@ -564,3 +564,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo: cache prefiksu w rozmowie (Gemini r7) TTFT ×34 przy 2k; KV F16 (−50% pamięci, +1,5% dekodu przy 8k); słownik draftu 64k potwierdzony
 
 ## [2026-11-20] silnik | Enigma Turbo: prefill Q8_K odrzucony (−19%), prefetch w GDN +1%, accept jako graf bez zysku; Gemini r8 przerwany limitem (kontynuacja 13:26)
+
+## [2026-11-20] silnik | Enigma Turbo: GEMM prefillu w optimum lokalnym (~632 t/s, 8 wariantów kafli), norma uproszczona; draft Q4_K napisany, pomiar wstrzymany (jaroserverai offline od ~19:22)
