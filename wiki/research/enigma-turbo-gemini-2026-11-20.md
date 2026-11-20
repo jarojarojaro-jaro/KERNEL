@@ -65,6 +65,36 @@ Runda 1:
 
 Rozjazdy pojawiają się tam, gdzie model się waha (top-1 −1,2…−1,5). Otwarte: szum llama.cpp (aktywacje q8_K na CPU, KV f16) czy jeszcze jeden błąd. Najpierw pomiar podłogi szumu, dopiero potem tolerancja gate.
 
+### Runda 1b: forward HIP na XTX i model 27B (2026-11-20 rano)
+
+- `src/gpu/gpu_forward.hip`: ta sama matematyka co `forward_ref`.
+  - Wagi zostają w formacie bloków GGUF na karcie (Q4_K/Q5_K/Q6_K/Q8_0/IQ4_XS), czyli tyle samo bajtów co w llama.cpp. Aktywacje, KV i stan GDN są w FP32.
+  - Stary kod GPU od Gemini 4 Neon w ogóle się nie kompilował: `__builtin_nontemporal_load` na `uint4`.
+- Poprawki loadera: `n_layer` bez bloków `nextn` (27B: 65 → 64). `gate --gpu` nie ładuje już modelu do RAM.
+- **Gate na prawdziwym modelu produkcyjnym** (Qwen3.8-27B-Uncensored Q4_K_M, referencja llama.cpp na XTX): **PASS 6/6**, |Δlogp top-1| ≤ 0,056, greedy 16/16 na 3 promptach. Na 0.8B też PASS.
+
+| tempo dekodu (XTX, ten sam plik GGUF) | Enigma Turbo | llama.cpp topka (bez spekulacji) |
+|---|---|---|
+| Qwen3.5-0.8B: per-element GEMV → GEMV K-quant → GDN w LDS | 81,3 → 162,0 → 187,0 t/s | 436,9 t/s |
+| Qwen3.8-27B: per-element GEMV → GEMV K-quant → GDN w LDS | 3,96 → 26,61 → 28,20 t/s (+612%) | 42,16 t/s |
+
+Profil 27B (`rocprofv3`, na token):
+- GEMV Q4_K 21 ms, czyli ~585 GB/s (61% pasma);
+- GEMV Q6_K 6,3 ms;
+- GDN 3,0 ms → 0,83 ms po przeniesieniu stanu do LDS (wersja z rejestrami miała 348 VGPR spill);
+- RMSNorm 1,9 ms (208 wywołań);
+- atencja 0,5 ms.
+
+Do odzyskania do poziomu llama.cpp (23,7 ms/token) jest ~9,5 ms. Dźwignie po kolei:
+1. GEMV: ładowania 16-bajtowe, potem aktywacje int8 i `dot4`;
+2. narzut ~1000 uruchomień kerneli na token: graf HIP z pozycją w pamięci karty;
+3. GDN ze stanem w rejestrach;
+4. fuzja norm.
+
+**Incydent 2026-11-20 04:29–04:41 (serwer czasu UTC):** `rsync --delete` katalogu `~/turbo` skasował plik zadań kolejki w trakcie. `run-jobs.sh` przeczytał 0 zadań, a mimo to zatrzymał produkcję :8080 bez zadania przywrócenia, więc czat nie działał ~12 min. Przywrócony ręcznie: health ok, n_ctx 262144.
+- Poprawka: `run-jobs.sh` odmawia pustej albo brakującej listy przed zatrzymaniem :8080 (sprawdzone na `/nonexistent.jobs`).
+- Pliki zadań trzymamy w `~/turbo-jobs/`, poza synchronizowanym katalogiem.
+
 ## Powiązane
 - [[audyt-gemini-2026-11-19]]
 - [[bramka-kld-kanarki]]

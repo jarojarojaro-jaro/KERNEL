@@ -16,7 +16,10 @@ set -u
 export GGML_HIP_PM4=${GGML_HIP_PM4:-0}
 jobs=$1; L=~/qwen-opt/queue/logs; mkdir -p "$L"
 log() { echo "$(date -u '+%F %T') $*" | tee -a "$L/queue.log"; }
-mapfile -t JOBS < <(grep -vE '^\s*(#|$)' "$jobs")
+mapfile -t JOBS < <(grep -vE '^\s*(#|$)' "$jobs" 2>/dev/null)
+# 2026-11-20: a jobs file deleted under the runner (rsync --delete of its directory) gave "0 jobs", and the runner still
+# stopped production :8080 without a restore job. No jobs = nothing to do: refuse before taking the GPU.
+[ ${#JOBS[@]} -gt 0 ] || { log "queue $jobs: no jobs (missing or empty file), refusing; :8080 untouched"; exit 2; }
 
 # FIFO (2026-10-21): flock is not fair; with 10+ waiting runners one waited >1 h and lost its slot. Each runner takes
 # a ticket and only competes for the GPU lock when it holds the oldest live ticket. Lock users outside the queue
