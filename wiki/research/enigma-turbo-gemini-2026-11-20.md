@@ -128,6 +128,18 @@ Dalej:
 
 Lekcja: przy weryfikacji spekulacji w hybrydzie GDN najdroższe nie jest samo sprawdzanie draftów, tylko cofanie stanu po odrzuceniu. Powtórzenie kroku kosztowało 23 ms, a taśma (wejście conv, q|k|v, beta|alpha na warstwę, 31 MB) zbija to do ułamka ms. To ta sama idea co „delta tape” z projektu Gemini 4 Neon, tylko tym razem zmierzona i sprawdzona bramką.
 
+### Serwer ze spekulacją lookup + MTP (T=0), 27B na XTX, 2026-11-20 ~07:10
+
+`tests/test_serve.py --compare-spec`: 5/5 zadań identycznych bit w bit (ze spekulacją == bez == strumień SSE).
+
+| zadanie | bez spekulacji t/s | ze spekulacją t/s | × |
+|---|---|---|---|
+| krótkie odpowiedzi (3 pytania, 8–13 tok.) | 48–50 | 74–86 | 1,48–1,79 |
+| kopia/edycja kodu Python 40 linii | 41,17 | 163,84 | 3,98 |
+| kopia/edycja kodu C++ 40 linii | 41,18 | **188,12** | **4,57** |
+
+Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; reset za ~164 h). Jego niezacommitowaną pracę przejrzał, poprawił (usunięty syntetyczny test oczekiwanej szybkości) i scalił Kernel. Od rundy 4 partnerem jest Gemini 4 Neon High: spekulacja przy T>0 bezstratnie (rejection sampling z draftem jednopunktowym).
+
 ## Powiązane
 - [[audyt-gemini-2026-11-19]]
 - [[bramka-kld-kanarki]]

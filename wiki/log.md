@@ -540,3 +540,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] zwiad | [[zwiad-2026-11-20]]: ik_llama restore w hybrydzie (u nas brak, K-001 odpada), oMLX weryfikacja kilku wierszy, TRT-LLM 1.3
 
 ## [2026-11-20] silnik | Enigma Turbo: MTP na XTX, bezstratnie, 27B 43,9 → 67,0 t/s (+52,6%, K=2); prefill 219 t/s; serwer --gpu działa
+
+## [2026-11-20] silnik | Enigma Turbo serwer lookup+MTP: kod do 188 t/s (×4,57), odpowiedzi 74–86 t/s, bit w bit; Argon bez limitu → Neon
