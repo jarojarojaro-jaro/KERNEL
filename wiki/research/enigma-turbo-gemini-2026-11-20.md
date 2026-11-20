@@ -168,11 +168,15 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | atencja prefillu z K/V wspólnymi dla 6 głów q (GQA) | prefill 2048 / 3800 tok. 583,9 / 536,6 t/s | 595,1 / 562,1 t/s | +1,9 / +4,7% |
 | RMSNorm w prologu GEMV (bez kernela normy) | dekod 45,74 t/s | 25,91 t/s | −43% (odrzucone; każdy z ~2–4 tys. bloków powtarza normę) |
 | flash-attention prefillu na WMMA f16 + podział kluczy na 8 bloków | prefill 3800 tok. 562,2 t/s; serwer 8263 tok. 504,1 t/s (TTFT 16,4 s) | 604,6; 585,3 t/s (TTFT 14,1 s) | +7,5%; **+16,1%** |
+| GEMM prefillu na f16 WMMA (wagi dekodowane do f16 w LDS, bez epilogu skal) | prefill 512 tok. 626 t/s | 431 t/s | −31% (odrzucone: dekodowanie i synchronizacja bez potoku) |
+| weryfikacja do 16 tokenów na GEMV (dokładna jak dekod; pod ogon lookupu) | krok N=8 32,1 ms | N=16 59,3 ms | odłożone: dot4 przy 16 kolumnach liczeniowo ograniczony; produkcja (MMQ) płaci +6,4 ms |
 | **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
 
 Lekcja (pomiar): każda zmiana numeryki przestawia 128-tokenowy tekst testu spec i akceptację o ±0,02 (np. 0,63 → 0,61), więc spekulację porównujemy po ms/krok, a prefill na 512 tokenach po rozgrzewce (stary „prefill 64 tok” liczył przechwycenie grafu, ±10%). Lekcja (para): Gemini w rundzie 5 znalazł prawdziwy błąd Kernela (wiersz ukryty `% 8` po przejściu na kawałki 64), którego bramki nie łapały, bo tekst zostaje bezstratny, a spada tylko akceptacja.
+
+Lekcja (dokładność a szerokość weryfikacji): u nas spec == plain bit w bit, bo weryfikacja N ≤ 8 i dekod liczą te same sumy (GEMV). Szeroka weryfikacja przez WMMA byłaby tania, ale ma inną kolejność sum float; produkcja llama.cpp to akceptuje (MMQ vs MMVQ, porównanie md5 tekstu). Tani W16 przy zachowaniu bit w bit wymaga dekodu przez ten sam układ sum co WMMA.
 
 Porównanie z produkcją llama.cpp topka-q70 na tych samych promptach (2026-11-20, `xbench.py`, t/s, Turbo / produkcja): copy-edit Python 190,0 / 177,3 (+7%), C++ 218,1 / 182,8 (+19%); T=0,7 opowiadanie 70,4 / 91,9 (−23%); prompt 2k prefill 614,6 / 881,6, dekod 85,4 / 158,9; prompt 8k prefill 584,4 / 933,2, dekod 83,1 / 139,8. Produkcja: MTP n=4, głowica MTP IQ4_XS tylko dla draftu, lookup w łańcuchu MTP (`LLAMA_SPEC_LOOKUP=3`, okno 16), sprzężone losowanie. Turbo wygrywa na kopiach kodu, przegrywa na długich promptach (lookup z promptu) i prefillu.
 
