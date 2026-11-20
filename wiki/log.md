@@ -570,3 +570,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo: prefill przez MMQ z produkcji + kawałki 1024 (2k 624 → 844 t/s, +35%); weryfikacja 16 tokenów bit w bit (k_gemv_wide); ogon lookupu Gemini r8 ×1,55 na kopiach; draft Q4_K +1,4%
 
 ## [2026-11-20] research | 20 silników (6 agentów, 13 min): język zostaje C++/HIP; ranking 13 dźwigni dla Enigma Turbo — attention weryfikacji GQA (długie prompty), ogon W=16, chunk GDN prefillu, taśma PM4; notatka [[silniki-inferencji-2026-11-20]]
+
+## [2026-11-20] silnik | Enigma Turbo: ogon lookupu W=16 +24% na kopiach; uczciwe porównanie bez myślenia — produkcja prowadzi w spekulacji (kopie 270–306 vs 200–242 t/s), Turbo tylko w zwykłym dekodzie; odrzucone k_attn_wg (−4%) i kolumnowy GDN prefillu (−4%)

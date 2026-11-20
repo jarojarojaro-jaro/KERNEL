@@ -182,6 +182,9 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | ogon lookupu W≤8 + łańcuchy (Gemini r8) | `--bench-copy` T=0 143,8 / T=0,7 133,7 t/s; długie prompty 85 / 83 t/s | 222,5 / 200,3; 99 / 95 t/s | ×1,55 / ×1,50; +16 / +15% |
 | **`k_gemv_wide`: weryfikacja 9..16 tokenów na WMMA z porządkiem sum GEMV** (stos drzewa xor; dowód CPU neon2 120k/120k) | GEMV 16 kolumn 59,3 ms | 51,2 ms, `forward_all(16)` vs sekwencyjnie \|dlogit\| 0 | pod ogon W=16, bit w bit |
 | **prefill przez MMQ z produkcji (vendored ggml) + kawałki 1024 tokenów** | 2k / 4k tok. 624 / 562 t/s | **844 / 818 t/s** | **+35% / +46%** (produkcja 882 / 933) |
+| ogon lookupu W=16 kluczowany kontekstem + draftami (Gemini r9, dokończony przez Kernela) | `--bench-copy` T=0 / T=0,7 222,5 / 200,3 t/s | 275,9 / 244,3 t/s | +24% / +22%, bit w bit |
+| ODRZUCONE: attention dekodu z K/V współdzielonym przez 6 głów (`k_attn_wg`) | dekod 200 / 4000 ctx 45,52 / 44,51 t/s | 43,74 / 43,14 | −4% / −3% (bit w bit, ale 4× mniej bloków) |
+| ODRZUCONE: GDN prefillu kolumnowo (192 fale bez barier) | prefill 2k 847 t/s | 814 | −4%, logity nie bit w bit |
 | **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
@@ -212,3 +215,18 @@ Lekcja (agenci): każdy agent we własnym worktree. Niezacommitowane edycje Gemi
 - [[audyt-gemini-2026-11-19]]
 - [[bramka-kld-kanarki]]
 - [[kernelbench]]
+
+## Uczciwe porównanie z produkcją (2026-11-20 wieczór)
+**Wcześniejsze porównanie było jabłka do gruszek.** Produkcja ma domyślnie włączone myślenie, więc odpowiadała rozumowaniem: inny tekst i inna akceptacja draftów. Turbo zawsze odpowiada bez myślenia. Wyniki tych samych promptów z `enable_thinking: false` (Turbo → produkcja, t/s):
+
+| zadanie | Turbo | produkcja |
+|---|---|---|
+| kopie kodu Q4 / Q5 | 200 / 242 | 270 / 306 |
+| T=0,7 | 72 | 87 |
+| długie prompty 2k / 8k | 95 / 91 | 107 / 126 |
+| prefill w serwerze 2k / 8k | 796 / 776 | 903 / 938 |
+
+Turbo wygrywa tylko dekod bez spekulacji (45,9 vs 42,2). Dźwignia: koszt weryfikacji 5–16 tokenów; u nas `k_gemv_wide` potrzebuje 51 ms na 16 tokenów, a produkcja używa few-row MMQ bez bit w bit.
+
+**Lekcja: przed porównaniem z produkcją sprawdź, czy obie strony generują ten sam tekst (tryb myślenia, szablon czatu, `prompt_n`).**
+
