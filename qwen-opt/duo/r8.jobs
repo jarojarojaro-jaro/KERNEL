@@ -1,0 +1,6 @@
+# 2026-11-21 owner OK (duo, "działaj"): Gemini r8 GGML_HIP_MMVQ_V5 (verify n=5) — test, kernel perf, pp5 at 0/8k, KLD ub 5, xbench; then :8080 back
+duo-r8-test|900|~/qwen-opt/duo|./r3.sh r8test
+duo-r8-bench|900|~/qwen-opt/duo|./r3.sh r8bench
+duo-r8-kld|900|~/qwen-opt/duo|./r3.sh r8kld
+duo-r8-xb|1800|~/qwen-opt/duo|env VAR=GGML_HIP_MMVQ_V5 ARMS="0 1 0 1" XB_LABEL=v5 python3 r1c.py
+duo-r8-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

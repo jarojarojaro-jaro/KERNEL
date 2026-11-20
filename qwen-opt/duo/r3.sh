@@ -64,3 +64,15 @@ case ${1:-} in
          echo "== ub $ub Q6FR+GDN_FUSED vs off"; python3 ~/qwen-opt/tools/kld_gate.py compare r4off$ub.log r7on$ub.log
        done ;;
 esac
+case ${1:-} in
+  r8test) env GGML_HIP_MMVQ_V5=1 LD_LIBRARY_PATH=$NEW:$R timeout 400 $NEW/test-backend-ops test -o MUL_MAT 2>&1 | grep -E "FAIL|passed|Backend ROCm0" | tail -3
+          for v in 0 1 0 1; do echo "== perf V5=$v"; env GGML_HIP_MMVQ_V5=$v LD_LIBRARY_PATH=$NEW:$R timeout 280 $NEW/test-backend-ops perf -o MUL_MAT -p "type_a=q[46]_K,type_b=f32,m=(5120|6144|17408|248320),n=5,k=(5120|17408)" 2>&1 | grep -E "us/run" | sed -E 's/ +/ /g; s/,bs=[^:]*:/:/; s/MUL_MAT\(type_a=//; s/ - [0-9.]+ [GMT]FLOP.*//' ; done ;;
+  r8bench) for v in 0 1 0 1; do
+          echo "V5=$v $(env GGML_HIP_MMVQ_V5=$v GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 LD_LIBRARY_PATH=$NEW:$R $NEW/llama-bench -m $M -p 5 -ub 5 -n 0 -fa on -ngl 99 -ctk q4_0 -ctv q4_0 -d 0,8192 -r 10 2>&1 | grep -E 'pp5' | awk -F'|' '{printf "%s %s; ", $(NF-2), $(NF-1)}')"; done ;;
+  r8kld) cd ~/qwen-opt/duo; T=~/wt/lfm3-prof/wikitext-2-raw/wiki.test.raw
+       env GGML_HIP_MMVQ_V5=1 LD_LIBRARY_PATH=$NEW:$R GGML_HIP_PM4=0 $NEW/llama-perplexity -m $M -f $T -c 8192 --chunks 2 -b 8192 -ngl 999 -fa on -ub 5 -ctk q4_0 -ctv q4_0 --kl-divergence-base ref.kld --kl-divergence > r8on5.log 2>&1
+       echo "== ub 5 V5 vs off"; python3 ~/qwen-opt/tools/kld_gate.py compare r4off5.log r8on5.log ;;
+esac
+case ${1:-} in
+  r8fail) env GGML_HIP_MMVQ_V5=1 LD_LIBRARY_PATH=$NEW:$R timeout 400 $NEW/test-backend-ops test -o MUL_MAT 2>&1 | grep -E "FAIL" | head -12 ;;
+esac

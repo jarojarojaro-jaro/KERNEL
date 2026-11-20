@@ -1,0 +1,5 @@
+# 2026-11-21 owner OK (duo): V5 with the head excluded — failing MUL_MAT cases, kernel perf, pp5, xbench; then :8080 back
+duo-r8b-fail|500|~/qwen-opt/duo|./r3.sh r8fail
+duo-r8b-bench|900|~/qwen-opt/duo|./r3.sh r8bench
+duo-r8b-xb|1800|~/qwen-opt/duo|env VAR=GGML_HIP_MMVQ_V5 ARMS="0 1 0 1" XB_LABEL=v5b python3 r1c.py
+duo-r8b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
