@@ -538,3 +538,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo pętla: 27B 35,35 → 43,55 t/s (llama.cpp plain 42,16, +3,3%), gate PASS w każdym kroku; Q6_K 224 B odrzucone
 
 ## [2026-11-20] zwiad | [[zwiad-2026-11-20]]: ik_llama restore w hybrydzie (u nas brak, K-001 odpada), oMLX weryfikacja kilku wierszy, TRT-LLM 1.3
+
+## [2026-11-20] silnik | Enigma Turbo: MTP na XTX, bezstratnie, 27B 43,9 → 67,0 t/s (+52,6%, K=2); prefill 219 t/s; serwer --gpu działa

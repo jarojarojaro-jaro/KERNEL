@@ -116,6 +116,18 @@ Dalej:
 3. atencja flash-decoding;
 4. mniej przerw między kernelami.
 
+### Pętla, iteracje 2–4 (2026-11-20 rano): partie tokenów, serwer, MTP
+
+| krok (27B, XTX) | wynik |
+|---|---|
+| GEMV wielokolumnowy (N ≤ 8, wagi dekodowane raz), R wierszy na falę | prefill 44,8 → 219 t/s; dekod 43,79 t/s; weryfikacja N=5 27,8 ms (V(5)/V(1) = 1,24) |
+| `forward_all` (weryfikacja) + `accept` (cofanie) | bitowo równe krokom pojedynczym (max \|Δlogit\| 0) |
+| serwer `serve --gpu` (Gemini r2) | test 3/3 („Paris”, strumień == bez strumienia), 48–50 t/s na krótkich odpowiedziach |
+| głowica MTP na karcie, cofanie przez ponowne liczenie | K=1 +10%, K≥3 wolniej (koszt powtórki ~23 ms) |
+| **cofanie z taśmy rekurencji (bez GEMV)** | **K=2: 43,91 → 66,99 t/s (+52,6%)**, 128/128 tokenów identycznych z dekodem bez spekulacji; akceptacja 0,55, 2,06 tok/krok |
+
+Lekcja: przy weryfikacji spekulacji w hybrydzie GDN najdroższe nie jest samo sprawdzanie draftów, tylko cofanie stanu po odrzuceniu. Powtórzenie kroku kosztowało 23 ms, a taśma (wejście conv, q|k|v, beta|alpha na warstwę, 31 MB) zbija to do ułamka ms. To ta sama idea co „delta tape” z projektu Gemini 4 Neon, tylko tym razem zmierzona i sprawdzona bramką.
+
 ## Powiązane
 - [[audyt-gemini-2026-11-19]]
 - [[bramka-kld-kanarki]]
