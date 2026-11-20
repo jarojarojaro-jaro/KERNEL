@@ -69,13 +69,14 @@ Audyt liczb: [[AUDYT]].
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (31)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (91)
-- [[research/_hub|research]] — Streszczenia raportów (164)
+- [[research/_hub|research]] — Streszczenia raportów (165)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (36)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 - [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (6)
 
 ## Ostatnio aktualizowane
 
+- 2026-11-20 [[zwiad-2026-11-20|Zwiad 2026-11-20: błąd przywracania po odrzuconym drafcie w cache hybrydowym (ik_llama), weryfikacja kilku wierszy w oMLX, TensorRT-LLM 1.3 z Qwen3.5 MTP]]
 - 2026-11-20 [[telegram-2026-11-20-linux-7-2-pamiec|Linux 7.2 a LLM: zmiany pamięci pomagają przy odciążaniu do RAM/SSD, nie przy modelu w całości w VRAM]]
 - 2026-11-20 [[enigma-turbo-gemini-2026-11-20|„Enigma Turbo” od Gemini 4 Neon: README obiecuje silnik CUDA/HIP, a działa tylko wolny CPU i odpowiada bełkotem]]
 - 2026-11-19 [[zwiad-2026-11-19|Zwiad 2026-11-19: prefill przez drugą kartę (oMLX ×5,3 dla Qwen3.8-27B), sparowana weryfikacja draftów (TensorFold +24–29% na Macu), błąd EOG w rejekcji]]
@@ -90,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-19 [[2026-11-19-k109-k110-k106-xtx|2026-11-19 K-109, K-110, K-106 na XTX: igły 3/3 przy 130k i 222k, `bench.py` skill-io 1:1, prefill drugiego żądania nie blokuje dekodu]]
 - 2026-11-18 [[zwiad-2026-11-18|Zwiad 2026-11-18: Splash 1.7 (drzewo draftu + lookup w jednym przebiegu), drafter NVIDIA 0,8B do Qwen3.8-27B — nic do wdrożenia u nas]]
 - 2026-11-18 [[llamampere|llamAmpere (JakeATX): fork llama.cpp pod RTX 30xx — szybki, ale domyślnie niebezstratny]]
-- 2026-11-18 [[ga-racing-rohanarun|GA z wyścigami (Rohan Arun, Open Kernel Challenge): statystyczny wybór wariantu kernela, bez zależności]]
 
-Razem 780 notatek. Wygenerowano 2026-11-20 przez `tools/wiki.py index`.
+Razem 781 notatek. Wygenerowano 2026-11-20 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

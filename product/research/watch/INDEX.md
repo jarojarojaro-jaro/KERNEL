@@ -10,3 +10,4 @@ Raporty dzienne `tools/compwatch/compwatch.py` (timer systemd 06:30, `nice`). Je
 - [2026-11-17](2026-11-17.md): 43 pozycji; top: Niko1221/Strata wydanie v0.2.15 (2026-11-16): Strata 0.2.15
 - [2026-11-18](2026-11-18.md): 29 pozycji; top: mw00/project-maya wydanie v1.1.66 (2026-11-17): v1.1.66
 - [2026-11-19](2026-11-19.md): 26 pozycji; top: Niko1221/Strata wydanie v0.2.16 (2026-11-18): Strata 0.2.16: Strata's own engine code, a new folder layout, and a long list o…
+- [2026-11-20](2026-11-20.md): 24 pozycji; top: mw00/project-maya wydanie v1.1.68 (2026-11-19): v1.1.68

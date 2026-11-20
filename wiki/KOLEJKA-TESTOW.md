@@ -42,6 +42,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: wysoki (bezstratność produkcji)
 - wynik 2026-11-14: wzór R1 = R1b = świeży (3f26f79c), R2/R3/F2 inne; identyczny przy `LLAMA_SPEC_LOOKUP=0`, `LLAMA_SPEC_COUPLED=0`, `GGML_HIP_PM4=0`, a F2 (bez restore) też się różni → to zależność od historii serwera, nie od pliku slotu ([[2026-11-14-k001-wyciek-stanu-restore]]). #30541 odpada (topka nie używa `FLAGS_ON_DEVICE`).
 - wynik 2026-11-19 ([[2026-11-19-k125-k001-xtx]]): build z logiem `LLAMA_K001_LOG` (gałąź `k001-log`). Przesunięcie komórka − pozycja = 0, `used_max_p1 == used`, `n_kv` i komórka GDN takie same w R1 i R2, więc **pamięć odpada**. Wzór jest identyczny przy `CACHE_RAM=0` i `LLAMA_CKPT_VRAM=0` (**host odpada**) i przy `GGML_HIP_KVQ_OFF=1` (F c141fb1d, R2 = F2 = 3f26f79c), więc **kernel atencji odpada**. Zostają GPU-owe bufory poza KV/GDN (pula, scratch, przechowywany graf) i `common_speculative`.
+- zwiad 2026-11-20: błąd ik_llama `06a141f3b` (restore po odrzuceniu nadpisuje pozycję komórki atencji w hybrydzie) sprawdzony — topka-q70 nie ma tej ścieżki, odpada
 - następny test: zrzut top-2 logitów pierwszych ~40 kroków R1 vs R2 (`LLAMA_K001_LOG` + `n_probs`): pierwszy rozjazd i jego wielkość (1e-6 na remisie = kolejność redukcji; duża = niezainicjowany stan); jeden job ≤ 5 min
 
 ### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)

@@ -14,7 +14,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (164)
+## Notatki (165)
 
 - [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]] — Link arXiv 2605.08513 podany przez użytkownika jako praca o InferenceX to „A Single Neuron Is Sufficient to Bypass Safety Alignment in LLMs” (Kazemi, Chegini, Safi, 2026-05-08): wyłączenie jednego neuronu odmowy omija alignment, a wzmocnienie neuronu pojęcia wywołuje szkodliwe treści; 7 modeli z 2 rodzin, 1.7B–70B, bez treningu.
 - [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]] — Bezpieczeństwo karty: oba główne zarzuty prawdziwe i naprawione tego samego dnia.
@@ -179,5 +179,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[zwiad-2026-11-17|Zwiad 2026-11-17: rekord 594,7 t/s na R9700 jest fizycznie niemożliwy, draft KV q4 potwierdzony, lookup „najnowsze dopasowanie” potwierdzony]] — Nic, co zmienia produkcję. Trzy lekcje.
 - [[zwiad-2026-11-18|Zwiad 2026-11-18: Splash 1.7 (drzewo draftu + lookup w jednym przebiegu), drafter NVIDIA 0,8B do Qwen3.8-27B — nic do wdrożenia u nas]] — Splash 1.7 przyspieszył dekod Qwen3.8-27B na Macu 1,22–1,46 × dzięki drzewu draftu i łańcuchowi lookup weryfikowanym razem. Robi to jednak stratnie (stan GDN w cache jako INT8) i domyślnie niedeterministycznie. Na XTX nasz werdykt o drzewie (sufit ≤ +5%) zostaje. NVIDIA wydała osobny drafter 0,8B do Qwen3.8-27B; przy naszym koszcie draftu (K-114) będzie wolniejszy od MTP.
 - [[zwiad-2026-11-19|Zwiad 2026-11-19: prefill przez drugą kartę (oMLX ×5,3 dla Qwen3.8-27B), sparowana weryfikacja draftów (TensorFold +24–29% na Macu), błąd EOG w rejekcji]] — Trzy rzeczy dla nas:
+- [[zwiad-2026-11-20|Zwiad 2026-11-20: błąd przywracania po odrzuconym drafcie w cache hybrydowym (ik_llama), weryfikacja kilku wierszy w oMLX, TensorRT-LLM 1.3 z Qwen3.5 MTP]] — Trzy rzeczy dla nas:
 - [[enigma-turbo-gemini-2026-11-20|„Enigma Turbo” od Gemini 4 Neon: README obiecuje silnik CUDA/HIP, a działa tylko wolny CPU i odpowiada bełkotem]] — Test 2026-11-20 na prawdziwym modelu Qwen3.5-0.8B Q4_K_M (ta sama architektura hybrydowa co nasz 27B): na pytanie „What is the capital of France?” Enigma Turbo odpowiada bełkotem z surowymi tokenami (`èĬ±ĠfaĠfaĠf… IMEIMEIME`, wykrywacz pętli zgłasza pętlę) w tempie 0,7 t/s. llama.cpp na tym samym pliku (CPU, 4 wątki): „Paris is the capital of France.” przy 60,9 t/s. Na karcie niczego nie uruchamiałem: jego kod GPU nie jest nigdzie wywoływany.
 <!-- AUTO:END -->
