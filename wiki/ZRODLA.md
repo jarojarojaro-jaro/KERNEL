@@ -431,6 +431,18 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 | EvalPlus leaderboard `results.json` | 11-09 | [[2026-11-09-evalplus-qwen-uncensored]] | Brak Qwen3.x. | Qwen2.5-Coder-32B-Instruct 92,1/87,2/90,5/77,0 | wpis Qwen3.8 |
 | LocalMaxxing HumanEval+ | 11-09 | [[2026-11-09-evalplus-qwen-uncensored]] | Inny harness (shardy), orientacyjnie. | Qwen3.8-27B Q4_K_XL 90,9, Q6_K_XL 92,1, Q4_K_M 91,0 (100/164) | MBPP+ / uncensored |
 
+## Research silników 2026-11-20 (Enigma Turbo)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| llama.cpp mainline | `5f83714` (11-20) | [[silniki-inferencji-2026-11-20]] | Few-row MMQ i chunk GDN (wyłączony na gfx1100) warte portu. | few-row 8 kol. ×1,17–1,42; spec 3090 Ti +35% | GDN MMA na gfx1100 |
+| ik_llama.cpp | `8768464` (11-20) | [[silniki-inferencji-2026-11-20]] | Na RDNA3 słabszy od mainline; autotune n_max/p_min (#1595). | — | ROCm FA |
+| vLLM / SGLang | `6c6e159` / `dc8f1c3` (11-20) | [[silniki-inferencji-2026-11-20]] | Weryfikacja GQA i prefix cache stanu GDN do wzięcia. | verify attn 8k 3,5 → 0,24 ms/warstwę | gfx1100 GDN |
+| ExLlamaV3 / TensorRT-LLM | v1.6.7 `8c593e4` / 1.4.0rc5 `d55d8575` | [[silniki-inferencji-2026-11-20]] | Cięcie łańcucha MTP online, block verification, f16 GEMM prefill. | port XTX prefill ~1180–1200 t/s | PR #547–549 |
+| hipfire / Strata / TensorFold / Lemonade (HRX) | v0.4.7 / 0.2.x / 11-20 | [[silniki-inferencji-2026-11-20]] | hipfire: PM4 ×1,17 i verify WMMA na XTX; reszta bez XTX. | 27B MTP 136–141 t/s @1K | hipfire #989 |
+| Mojo/MAX, TileLang, HipKittens, tinygrad, ZML, mistral.rs, MLC | 11-20 | [[silniki-inferencji-2026-11-20]] | Język zostaje C++/HIP; DSL tylko do prototypów offline. | PM4 granica 0,46–0,86 vs graf 3,56 µs | TileLang int8 gfx11 |
+| flash-linear-attention (FLA) | 11-20 | [[silniki-inferencji-2026-11-20]] | Chunk GDN: zysk z równoległości, nie z FLOP. | ~118 kFLOP/tok·głowa | k_gdn_chunk |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
