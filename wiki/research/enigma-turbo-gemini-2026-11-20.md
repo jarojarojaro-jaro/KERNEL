@@ -162,10 +162,15 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | WMMA: start sum od bitów 12582912.0f (bez `v_cvt`), redukcja fal kafel po kaflu | prefill 590 t/s | 596 t/s | +1% (kafle MT2 NT4 / MT4 NT2 / MT4 NT4 wolniej: 511 / 436 / 126, rejestry) |
 | GEMM z kaflem bloku 64 × 64 w LDS (wagi dekodowane raz na blok, potok dekodowania) | 596 t/s | 606 t/s | +1,7% (128 × 64: 551 i 453; bez `unroll 1` spill do 1692 B/lane) |
 | `mtp_store` całego kawałka 64 naraz (WMMA zamiast 8 × GEMV) | 606 t/s | 623 t/s | +2,8% (bez MTP 634) |
+| GEMV weryfikacji: 1 wiersz na falę dla N=2..5 | krok spec K=3 26,95 ms; 98,95 t/s (512 tok.) | 26,60 ms; 100,25 t/s | +1,3% (N=2/4/5: 22,84/24,53/27,39 → 22,40/24,08/26,48 ms) |
+| przełączniki HIP dla grafów (`HIP_FORCE_DEV_KERNARG`, `DEBUG_CLR_GRAPH_PACKET_CAPTURE`, `GPU_MAX_HW_QUEUES`) | dekod 44,67 t/s | 44,65–44,68 | 0 (odrzucone) |
+| **flash-decoding** (16 kawałków kluczy + scalanie, od kontekstu > 512) | dekod przy 2048 / 3800 tok. 41,90 / 39,13 t/s | 44,67 / 44,14 t/s | **+6,6 / +12,8%** |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
 
 Lekcja (pomiar): każda zmiana numeryki przestawia 128-tokenowy tekst testu spec i akceptację o ±0,02 (np. 0,63 → 0,61), więc spekulację porównujemy po ms/krok, a prefill na 512 tokenach po rozgrzewce (stary „prefill 64 tok” liczył przechwycenie grafu, ±10%). Lekcja (para): Gemini w rundzie 5 znalazł prawdziwy błąd Kernela (wiersz ukryty `% 8` po przejściu na kawałki 64), którego bramki nie łapały, bo tekst zostaje bezstratny, a spada tylko akceptacja.
+
+Lekcja (flash-decoding): decyzja „dzielić czy nie” musi zależeć od pozycji tokenu, nie od partii. Pierwsza wersja wybierała graf po końcu partii, więc weryfikacja spec dzieliła atencję wcześniej niż dekod pojedynczy i tekst spec rozjechał się z plain od tokenu 545 (test `spec` to złapał). Teraz token z n_kv ≤ progu liczy jeden kawałek, co daje bity identyczne z kernelem jednoprzebiegowym. Spec przy K=2..5 (512 tok., p_min 0,5): 92,3/98,9/98,3/101,3 t/s.
 
 Profil prefillu 512 tok. (rocprofv3): GEMM WMMA 80% czasu przy ~39 TOPS (≈32% szczytu iu8 XTX), GDN 8,6%, atencja 2%. Przy ~600 t/s ogranicza epilog skal Q4_K/Q6_K (~4 VALU na element na 32 kolumny) i rejestry, nie dekodowanie ani ładowanie wag. llama.cpp produkcja: pp512 856, pp4096 1115 t/s.
 
