@@ -184,6 +184,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: priorytety prefillu oparte na liczbie; 0 t/s
 - ryzyko karty: temperatury (krótki GEMM), eco 2200 bez zmian
 - priorytet: średni (tani, porządkuje kolejkę)
+- wynik 2026-11-20: w `/opt/rocm` nie ma `rocblas-bench`/`hipblaslt-bench`, więc własny test hipBLAS `GemmEx` f16 (liczenie w f32) i `hipMemcpy` (`qwen-opt/k108/bench.cpp`), przy limicie eco 2200 MHz. GEMM 4096³: 91,3 TFLOPS (min z 50), 8192³: 98,1 TFLOPS (min z 20). Kopia D2D 4 GiB: 385 GB/s (771 GB/s odczyt+zapis). Wynik mieści się w hipotezie 90–110; zakładane 107 TFLOPS jest o ~8% za wysoko dla 8192³ przy eco. `ceiling-qwen27b-unc-xtx.json` jeszcze nie przeliczony. Log: `~/qwen-opt/queue/logs/k108-gemm.log`
 
 ### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
 - data: 2026-11-17
@@ -273,6 +274,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0%, jeśli ewikcji nie ma; jeśli jest, decode przy 255k jest dziś zaniżony
 - ryzyko karty: brak (odczyt)
 - priorytet: średni (darmowe, może zaskoczyć)
+- wynik 2026-11-20: serwer w konfiguracji produkcyjnej (ctx 262144, port testowy). Fill 131 000 tokenów zamiast 255k, bo 255k to ~548 s samego prefillu, a limit testu to 10 min. **Ewikcji brak**: `amd-evicted-vram` = 0 KiB we wszystkich trzech odczytach. VRAM 22,39 GiB przed promptem → 22,74 GiB po prefillu (650 t/s, 201 s) → 22,78 GiB po 256 tokenach (134 t/s). GTT stoi na ~6,1 MiB. Log: `~/qwen-opt/queue/logs/k011-fdinfo.log`, skrypt `qwen-opt/k011/fdinfo.sh`
 
 ### K-012 · `kvq` przy W=5 bliżej rooflinu: nowy układ (K dekwantowane raz, głębszy prefetch K/V), cel ~172–300 µs/warstwę przy 98–196k
 - data: 2026-11-07
@@ -405,6 +407,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: narzędziowy: bez restartu 1,5–2 min na ramię, więc każdy przyszły A/B krótszy
 - ryzyko karty: brak
 - priorytet: średni (przyspiesza całą kolejkę)
+- pominięte 2026-11-20: w `~/wt/xtxbench/build-hip/bin` są tylko biblioteki (`libggml-base`, `libggml-cpu`), nie ma `llama-server`, a xtxbench bez binarki odmawia pracy. Potrzebna jest najpierw budowa gałęzi `xtxbench`, czyli praca nad kodem
 
 ### K-029 · xtx-eco: odczytywać fabryczny `OD_SCLK` przy każdym boocie przed pierwszym zapisem OD (stock zmienia się między bootami: 2885 vs 2935 MHz)
 - data: 2026-11-06
@@ -413,6 +416,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0 t/s; „powrót do stock” nie obniża już limitu o 50 MHz (zasada: karta fabrycznie)
 - ryzyko karty: zapis OD na jądrze 6.8 gubi krzywą wentylatora, więc pilnować temperatur
 - priorytet: średni (bezpieczeństwo ustawień fabrycznych)
+- wynik 2026-11-20 (bez restartu, odczyt bieżącego bootu 13:32): stan zapisany przy starcie `/run/xtx-eco/stock` = 2940 MHz. To trzecia różna wartość fabryczna (2885, 2935, 2940), więc poprawka „odczyt przy każdym boocie” jest potrzebna i działa (`xtx-od.sh` zapisuje stock do `/run` przed pierwszym zapisem). `OD_SCLK 1` = 2200 MHz (limit eco), `power1_cap` 285 W. Krzywa wentylatora jest zapisana (`fan_curve` 25–80 °C → 100%), ale w spoczynku (hotspot 45 °C) `pwm1` = 0 i 0 RPM, czyli tryb zero-RPM. Pod obciążeniem nie sprawdzano. Log: `~/qwen-opt/queue/logs/k029-od.log`
 
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
@@ -438,6 +442,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0…3% decode przy ≥ 128k [INFERENCE]; zasila K-012
 - ryzyko karty: brak
 - priorytet: niski (diagnostyka)
+- wynik 2026-11-20: **liczniki nie działają.** Na gfx1100 nie ma `TCC_EA_RDREQ_*` (rocprofv3: „Missing”). Ich odpowiedniki `GL2C_EA_RDREQ_{32,64,96,128}B_sum` dają 0 we wszystkich 4160 dispatchach (to samo co `FETCH_SIZE` = 0 w [[2026-11-08-kvq-once-profil]]), więc bajtów z liczników nie da się dziś zmierzyć. Wynik zastępczy z czasów rocprofv3 (`llama-bench pp5 @ d131072`, produkcyjna `~/llama-topka`, PM4 0, fill z `-ub 512`): `flash_attn_ext_kvq<256,8,q4_0>` mediana 408 µs na warstwę + combine 4 µs, pp5 99,9 t/s. Przy 1152 B/token/warstwę × 131072 = 151 MB to ~370 GB/s efektywnie, około 39% z 960 GB/s. Pod profilerem dispatche idą szeregowo, więc to szacunek. Amplifikacji z tego nie da się oddzielić od niskiej zajętości kernela. Log: `~/qwen-opt/queue/logs/k032-rdreq2.log`, skrypt `qwen-opt/k032/rdreq.sh`
 
 ### K-033 · Diagnoza FCLK/MCLK pod obciążeniem, stock vs eco (tylko odczyt `pp_dpm_*`)
 - data: 2026-10-12
@@ -495,6 +500,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: kernel −1,3…−3,5%, ~+0,4% decode
 - ryzyko karty: brak
 - priorytet: niski (poniżej progu, łączyć)
+- wynik 2026-11-20: dokończone ramiona B1b i A1b z `i43-int7.jobs`, po nowej bramce md5 (qwen i lfm PASS). Uwaga: A1a/B1a są z 2026-10-21, a B1b/A1b z dzisiaj, i dzisiejsza para jest o ~1,7% wolniejsza w obu ramionach. Proza (T=1): A = (79,86 + 78,59)/2 = 79,23 → B = (79,99 + 78,55)/2 = 79,27 t/s (+0,06%). mvs (T=0): 433,2 → 433,4 t/s (+0,06%). W parach z tej samej sesji: 10-21 +0,16% / +0,09%, 11-20 −0,05% / +0,02%. Zysku nie widać ponad szum, więc nie włączać do produkcji. W produkcji tej zmiennej nie ma: brak `BIG_ROWS` w `run-topka.sh` i `run-llm.sh`. Logi: `~/qwen-opt/queue/logs/i43g-{A1a,B1a}.log`, `k039-i43g-{B1b,A1b}.log`, jobs `qwen-opt/k039/xq.jobs`
 
 ### K-040 · Flaga kompilatora `-mllvm --amdgpu-unroll-threshold-local=600`
 - data: 2026-11-07
@@ -512,6 +518,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0% wprost; kilka % na krokach zmieniających szerokość, jeśli realokacje istnieją [INFERENCE]
 - ryzyko karty: brak
 - priorytet: niski (diagnostyka)
+- wynik 2026-11-20: serwer produkcyjny (PM4 WA=2 + GUARD) z `GGML_HIP_PM4_DEBUG=1`. Replay agentpath `w6.json`: 4 sesje po kolei, 24 tury, 98,9k tokenów prefillu, 3k wygenerowanych, 140 s. Taśm budowanych jest 81 na 967 uruchomień taśmy (każda użyta średnio ~12 razy), czyli ~3,4 przebudowy na żądanie. **Rozmiary są zawsze tylko dwa: 809 i 107 dispatchy**, więc szerokości MTP / W16 / catch-up nie tworzą nowych taśm. Przebudowy to ponowne przechwycenie tych samych dwóch grafów, prawdopodobnie po każdym prefillu [INFERENCE]. Do tego 77 małych grafów (12–14 kernel) idzie zwykłą ścieżką HIP graph, 518 uruchomień grafu bez taśmy, 13 eksmisji kolejki (0 w trakcie taśmy). Następny krok, jeśli warto: zmierzyć koszt jednej przebudowy (ms) × ~3,4 na żądanie. Log: `~/qwen-opt/queue/logs/k041-realloc2.log`, `~/qwen-opt/k041/out/launch.log`
 
 ### K-042 · Spekulatywny prefill następnej tury w przerwie (serwer prefilluje swoją odpowiedź, przerywa na granicy ubatcha)
 - data: 2026-11-07
@@ -596,6 +603,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: diagnostyka (krótszy start, czystszy log jądra); 0 t/s
 - ryzyko karty: brak
 - priorytet: niski (diagnostyka)
+- wynik 2026-11-20 (`journalctl -k` działa bez sudo): start serwera produkcyjnego na porcie testowym. `-lm mmap` (domyślne `auto` = mmap) daje **15 553** wiersze `init_user_pages: Failed to get user pages`, a `-lm none` (bez mmap) **0**. Start do health w obu wariantach 5–6 s. Wiersze pochodzą więc z mapowania pliku modelu przez mmap. Para jest jedna: powtórka nie zmieściła się w 10 min, bo liczenie `journalctl` po długim boocie jest wolne. W topce flaga to `-lm`, nie `--no-mmap`. Log: `~/qwen-opt/queue/logs/k051-mmap2.log`, skrypt `qwen-opt/k051/mmap.sh`
 
 ### K-052 · HRX (Lemonade `hrx-b99`) jako referencja kerneli: tg128/pp512/pp4096 obok topki
 - data: 2026-11-07

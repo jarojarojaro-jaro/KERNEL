@@ -1,0 +1,12 @@
+# 2026-11-20 XtxQuickTests: K-029 K-108 K-039 K-041 K-032 K-051 K-011
+k029-od|120|~/qwen-opt/k029|bash od_read.sh
+k108-gemm|300|~/qwen-opt/k108|export GGML_HIP_PM4=0; LD_LIBRARY_PATH=/opt/rocm/lib ./bench
+k039-i43g-md5-qwen|900|~|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; mkdir -p /tmp/integ; rm -f /tmp/integ/FAILg /tmp/integ/i43g-qwen.PASS /tmp/integ/i43g-lfm.PASS; BIN=~/qwen-opt/topka-int7 ON_ENV="LLAMA_SERVER_SAFE_SPECIAL=1 LLAMA_SERVER_SAFE_TOOLS=1 LLAMA_TOKENIZE_PAR=8 LLAMA_CKPT_VRAM=2 LLAMA_CHAT_NATIVE=1 LLAMA_CHAT_LATE_SYSTEM=1 LLAMA_GDN_BANK=1 GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144 GGML_HIP_MMVQ_IQ4XS_BIG_ROWS=1" bash ~/qwen-opt/integ/int_md5.sh qwen && touch /tmp/integ/i43g-qwen.PASS || touch /tmp/integ/FAILg
+k039-i43g-md5-lfm|600|~|export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; BIN=~/qwen-opt/topka-int7 ON_ENV="LLAMA_SERVER_SAFE_SPECIAL=1 LLAMA_SERVER_SAFE_TOOLS=1 LLAMA_TOKENIZE_PAR=8 LLAMA_CKPT_VRAM=2 LLAMA_CHAT_NATIVE=1 LLAMA_CHAT_LATE_SYSTEM=1 LLAMA_GDN_BANK=1 GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144 GGML_HIP_MMVQ_IQ4XS_BIG_ROWS=1" bash ~/qwen-opt/integ/int_md5.sh lfm && touch /tmp/integ/i43g-lfm.PASS || touch /tmp/integ/FAILg
+k039-i43g-B1b|600|~/qwen-opt/xtxroadmap|[ -e /tmp/integ/i43g-qwen.PASS ] && [ -e /tmp/integ/i43g-lfm.PASS ] && [ ! -e /tmp/integ/FAILg ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; LOGDIR=~/qwen-opt/integ/e0 BIN=~/qwen-opt/topka-int7 SEEDS=1,2,3 XENV="LLAMA_GDN_BANK=1 GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144 GGML_HIP_MMVQ_IQ4XS_BIG_ROWS=1" bash p100_arm.sh i43g-B1b prose,mvs
+k039-i43g-A1b|600|~/qwen-opt/xtxroadmap|[ -e /tmp/integ/i43g-qwen.PASS ] && [ -e /tmp/integ/i43g-lfm.PASS ] && [ ! -e /tmp/integ/FAILg ] || exit 1; export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; LOGDIR=~/qwen-opt/integ/e0 BIN=~/qwen-opt/topka-int7 SEEDS=1,2,3 XENV="LLAMA_GDN_BANK=1 GGML_HIP_MMVQ_Q5K_BIG_ROWS=0 GGML_HIP_MMVQ_IQ4XS_BIG_ROWS=1" bash p100_arm.sh i43g-A1b prose,mvs
+k041-realloc|600|~/qwen-opt/k041|bash realloc.sh
+k032-rdreq|600|~/qwen-opt/k032|bash rdreq.sh
+k051-mmap|600|~/qwen-opt/k051|bash mmap.sh
+k011-fdinfo|600|~/qwen-opt/k011|bash fdinfo.sh
+xq-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

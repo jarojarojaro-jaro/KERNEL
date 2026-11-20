@@ -1,0 +1,2 @@
+k041-realloc2|600|~/qwen-opt/k041|bash realloc.sh
+xq2-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

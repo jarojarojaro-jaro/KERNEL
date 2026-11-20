@@ -1,0 +1,2 @@
+k032-rdreq2|600|~/qwen-opt/k032|bash rdreq.sh
+xq3-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
