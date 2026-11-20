@@ -95,6 +95,27 @@ Do odzyskania do poziomu llama.cpp (23,7 ms/token) jest ~9,5 ms. Dźwignie po ko
 - Poprawka: `run-jobs.sh` odmawia pustej albo brakującej listy przed zatrzymaniem :8080 (sprawdzone na `/nonexistent.jobs`).
 - Pliki zadań trzymamy w `~/turbo-jobs/`, poza synchronizowanym katalogiem.
 
+### Pętla optymalizacji (od 2026-11-20 05:56, polecenie właściciela „loopuj aż F1”)
+
+Każdy krok to profil `rocprofv3`, jedna dźwignia, gate 0.8B + 27B (zawsze PASS) i 2 pomiary.
+
+| krok (27B, XTX, dekod) | t/s | profil |
+|---|---|---|
+| start pętli (GEMV int8) | 35,35 | GEMV 20,1 ms/token |
+| fuzja: norm+int8 w jednym bloku, wiele GEMV w jednym launchu, swiglu+int8 | 39,93 | multi-GEMV 18,75 ms |
+| fuzja 2: q/k prep, atencja+int8, conv+SiLU+L2, gated norm+int8 (656 kerneli/token) | 40,73 | – |
+| Q4_K: nagłówek bloku jednym ładowaniem 16 B, aktywacje int4, unroll 2 | 42,50 | multi-GEMV 17,74 ms |
+| Q6_K przepakowany do 224 B (wyrównane ładowania) | 41,92 | **odrzucone**: +6,7% bajtów kosztuje więcej, niż daje wyrównanie |
+| norm w rejestrach + redukcja shuffle; GDN 4 grupy wierszy × 32 kolumny | **43,55** | kernele 20,47 ms; przerwy ~2,5 ms |
+
+**Wynik: Enigma Turbo bez spekulacji = 43,55 t/s wobec llama.cpp topka bez spekulacji 42,16 (+3,3%) na tym samym pliku i karcie.**
+
+Dalej:
+1. spekulacja MTP (produkcja ma ~120 t/s z MTP + lookup), czyli GEMV wielokolumnowy do weryfikacji i cofanie stanu GDN;
+2. prefill batchem (Gemini);
+3. atencja flash-decoding;
+4. mniej przerw między kernelami.
+
 ## Powiązane
 - [[audyt-gemini-2026-11-19]]
 - [[bramka-kld-kanarki]]
