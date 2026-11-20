@@ -556,3 +556,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo: flash-decoding (dekod przy 3800 tok. 39,1 → 44,1 t/s, +12,8%), weryfikacja R=1 dla N=2..5 (+1,3% spec), K sweep 2..5
 
 ## [2026-11-20] silnik | Enigma Turbo: sprzężony Gumbel-max T>0 (Gemini r6 + karta) 72,6 → 82,0 t/s bit w bit; atencja prefillu GQA +4,7% przy 3800 tok.; norma w prologu GEMV odrzucona (−43%)
+
+## [2026-11-20] silnik | Enigma Turbo: flash-attention prefillu WMMA f16 (8k prompt 504 → 585 t/s); porównanie z produkcją topka-q70: kopie kodu +7/+19%, długie prompty dekod −41..−46%, prefill −30..−37%
