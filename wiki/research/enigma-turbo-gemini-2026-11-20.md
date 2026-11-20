@@ -172,6 +172,9 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | weryfikacja do 16 tokenów na GEMV (dokładna jak dekod; pod ogon lookupu) | krok N=8 32,1 ms | N=16 59,3 ms | odłożone: dot4 przy 16 kolumnach liczeniowo ograniczony; produkcja (MMQ) płaci +6,4 ms |
 | **ponowne użycie prefiksu w rozmowie** (Gemini r7) | TTFT tury 2/3 przy promptcie ~2k: 3395 / 3500 ms | 99,7 / 99,4 ms | **×34–35** (`cache_n` 2033 / 2092) |
 | KV cache w F16 jak llama.cpp (wyzwanie Gemini r7) | KV 68 KB/token; dekod 8263 tok. 43,66 t/s | 34 KB/token; 44,30 t/s | −50% pamięci KV, +1,5% |
+| aktywacje prefillu jak Q8_K (skala na 256) + epilog całkowity w GEMM | prefill 512 tok. 626 t/s | 510 t/s | −19% (odrzucone: dodatkowe kernele, 192 VGPR) |
+| `k_gdn_conv_norm`: wagi conv w rejestrach + wejścia następnego tokenu ładowane w tle | prefill 626,3 t/s; krok spec K=3 26,68 ms | 632,0 t/s; 26,41 ms | +0,9%; +1,0% |
+| `accept()` jako graf HIP | accept 0,50 ms | 0,50 ms | 0 (koszt to praca GDN, nie uruchomienia) |
 | **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
