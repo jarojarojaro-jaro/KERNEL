@@ -566,3 +566,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo: prefill Q8_K odrzucony (−19%), prefetch w GDN +1%, accept jako graf bez zysku; Gemini r8 przerwany limitem (kontynuacja 13:26)
 
 ## [2026-11-20] silnik | Enigma Turbo: GEMM prefillu w optimum lokalnym (~632 t/s, 8 wariantów kafli), norma uproszczona; draft Q4_K napisany, pomiar wstrzymany (jaroserverai offline od ~19:22)
+
+## [2026-11-20] silnik | Enigma Turbo: prefill przez MMQ z produkcji + kawałki 1024 (2k 624 → 844 t/s, +35%); weryfikacja 16 tokenów bit w bit (k_gemv_wide); ogon lookupu Gemini r8 ×1,55 na kopiach; draft Q4_K +1,4%

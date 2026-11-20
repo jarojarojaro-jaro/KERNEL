@@ -178,6 +178,10 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | kafle GEMM prefillu: więcej tokenów na falę / blok 128 wierszy / kafel B w LDS | 632 t/s | 484–628 t/s | wszystkie wolniej (rejestry, LDS); optimum lokalne ~632 t/s po 8 wariantach |
 | `k_norm_q8` bez LDS, jedna bariera, int8 z rejestrów | krok spec 26,41 ms | 26,36 ms | w szumie, bit w bit, uproszczenie |
 | przekwantowanie macierzy tylko-draftu Q6_K → Q4_K (`TURBO_DRAFT_Q4`) | — | nieprzetestowane | szacunek +~1,9% spec; jaroserverai offline od ~19:22 |
+| draft Q4_K (przekwantowana głowica i Q6_K warstwy MTP, tylko draft) | krok draftu 2,37 ms; spec K=3 86,30 t/s | 1,98 ms; 87,54 t/s | +1,4% (K=4 +2,4%), akceptacja bez zmian |
+| ogon lookupu W≤8 + łańcuchy (Gemini r8) | `--bench-copy` T=0 143,8 / T=0,7 133,7 t/s; długie prompty 85 / 83 t/s | 222,5 / 200,3; 99 / 95 t/s | ×1,55 / ×1,50; +16 / +15% |
+| **`k_gemv_wide`: weryfikacja 9..16 tokenów na WMMA z porządkiem sum GEMV** (stos drzewa xor; dowód CPU neon2 120k/120k) | GEMV 16 kolumn 59,3 ms | 51,2 ms, `forward_all(16)` vs sekwencyjnie \|dlogit\| 0 | pod ogon W=16, bit w bit |
+| **prefill przez MMQ z produkcji (vendored ggml) + kawałki 1024 tokenów** | 2k / 4k tok. 624 / 562 t/s | **844 / 818 t/s** | **+35% / +46%** (produkcja 882 / 933) |
 | **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
