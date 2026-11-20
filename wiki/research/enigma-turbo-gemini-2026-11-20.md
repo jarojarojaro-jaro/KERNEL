@@ -165,10 +165,15 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | GEMV weryfikacji: 1 wiersz na falę dla N=2..5 | krok spec K=3 26,95 ms; 98,95 t/s (512 tok.) | 26,60 ms; 100,25 t/s | +1,3% (N=2/4/5: 22,84/24,53/27,39 → 22,40/24,08/26,48 ms) |
 | przełączniki HIP dla grafów (`HIP_FORCE_DEV_KERNARG`, `DEBUG_CLR_GRAPH_PACKET_CAPTURE`, `GPU_MAX_HW_QUEUES`) | dekod 44,67 t/s | 44,65–44,68 | 0 (odrzucone) |
 | **flash-decoding** (16 kawałków kluczy + scalanie, od kontekstu > 512) | dekod przy 2048 / 3800 tok. 41,90 / 39,13 t/s | 44,67 / 44,14 t/s | **+6,6 / +12,8%** |
+| atencja prefillu z K/V wspólnymi dla 6 głów q (GQA) | prefill 2048 / 3800 tok. 583,9 / 536,6 t/s | 595,1 / 562,1 t/s | +1,9 / +4,7% |
+| RMSNorm w prologu GEMV (bez kernela normy) | dekod 45,74 t/s | 25,91 t/s | −43% (odrzucone; każdy z ~2–4 tys. bloków powtarza normę) |
+| **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
 
 Lekcja (pomiar): każda zmiana numeryki przestawia 128-tokenowy tekst testu spec i akceptację o ±0,02 (np. 0,63 → 0,61), więc spekulację porównujemy po ms/krok, a prefill na 512 tokenach po rozgrzewce (stary „prefill 64 tok” liczył przechwycenie grafu, ±10%). Lekcja (para): Gemini w rundzie 5 znalazł prawdziwy błąd Kernela (wiersz ukryty `% 8` po przejściu na kawałki 64), którego bramki nie łapały, bo tekst zostaje bezstratny, a spada tylko akceptacja.
+
+Długi kontekst (`test_serve --bench-long`, 27B XTX): prompt 1989 tok. prefill 593 t/s, TTFT 3,35 s, dekod 45,5 → spec 83,3 t/s; prompt 8263 tok. prefill 504 t/s, TTFT 16,4 s, dekod 43,8 → spec 84,4 t/s (llama.cpp produkcja: pp4096 1115 t/s). Gemini r7: ponowne użycie prefiksu w rozmowach wieloturowych.
 
 Lekcja (flash-decoding): decyzja „dzielić czy nie” musi zależeć od pozycji tokenu, nie od partii. Pierwsza wersja wybierała graf po końcu partii, więc weryfikacja spec dzieliła atencję wcześniej niż dekod pojedynczy i tekst spec rozjechał się z plain od tokenu 545 (test `spec` to złapał). Teraz token z n_kv ≤ progu liczy jeden kawałek, co daje bity identyczne z kernelem jednoprzebiegowym. Spec przy K=2..5 (512 tok., p_min 0,5): 92,3/98,9/98,3/101,3 t/s.
 
