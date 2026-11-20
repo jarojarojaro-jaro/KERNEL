@@ -170,11 +170,15 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | flash-attention prefillu na WMMA f16 + podział kluczy na 8 bloków | prefill 3800 tok. 562,2 t/s; serwer 8263 tok. 504,1 t/s (TTFT 16,4 s) | 604,6; 585,3 t/s (TTFT 14,1 s) | +7,5%; **+16,1%** |
 | GEMM prefillu na f16 WMMA (wagi dekodowane do f16 w LDS, bez epilogu skal) | prefill 512 tok. 626 t/s | 431 t/s | −31% (odrzucone: dekodowanie i synchronizacja bez potoku) |
 | weryfikacja do 16 tokenów na GEMV (dokładna jak dekod; pod ogon lookupu) | krok N=8 32,1 ms | N=16 59,3 ms | odłożone: dot4 przy 16 kolumnach liczeniowo ograniczony; produkcja (MMQ) płaci +6,4 ms |
+| **ponowne użycie prefiksu w rozmowie** (Gemini r7) | TTFT tury 2/3 przy promptcie ~2k: 3395 / 3500 ms | 99,7 / 99,4 ms | **×34–35** (`cache_n` 2033 / 2092) |
+| KV cache w F16 jak llama.cpp (wyzwanie Gemini r7) | KV 68 KB/token; dekod 8263 tok. 43,66 t/s | 34 KB/token; 44,30 t/s | −50% pamięci KV, +1,5% |
 | **sprzężony Gumbel-max przy T>0** (Gemini r6: serwer + kontrakt; Kernel: `mtp_draft_n_coupled` na karcie) | T=0,7 kreatywne 72,59 t/s, akceptacja 0,55 | **81,95 t/s, 0,66** | **+12,9%**, tekst spec == bez spec bit w bit (6/6 przy T=0,7 i 1,0) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
 
 Lekcja (pomiar): każda zmiana numeryki przestawia 128-tokenowy tekst testu spec i akceptację o ±0,02 (np. 0,63 → 0,61), więc spekulację porównujemy po ms/krok, a prefill na 512 tokenach po rozgrzewce (stary „prefill 64 tok” liczył przechwycenie grafu, ±10%). Lekcja (para): Gemini w rundzie 5 znalazł prawdziwy błąd Kernela (wiersz ukryty `% 8` po przejściu na kawałki 64), którego bramki nie łapały, bo tekst zostaje bezstratny, a spada tylko akceptacja.
+
+Lekcja (cache promptu): tekst z cache prefiksu może różnić się od pełnego prefillu, bo odpowiedź poprzedniej tury przeszła przez dekod (GEMV), a w pełnym prefillu przez GEMM WMMA (inne zaokrąglenia); llama.cpp ma tę samą własność. Właściwe kryterium to cache == odtworzenie tymi samymi ścieżkami (Gemini r8).
 
 Lekcja (dokładność a szerokość weryfikacji): u nas spec == plain bit w bit, bo weryfikacja N ≤ 8 i dekod liczą te same sumy (GEMV). Szeroka weryfikacja przez WMMA byłaby tania, ale ma inną kolejność sum float; produkcja llama.cpp to akceptuje (MMQ vs MMVQ, porównanie md5 tekstu). Tani W16 przy zachowaniu bit w bit wymaga dekodu przez ten sam układ sum co WMMA.
 

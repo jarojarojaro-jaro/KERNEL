@@ -560,3 +560,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo: flash-attention prefillu WMMA f16 (8k prompt 504 → 585 t/s); porównanie z produkcją topka-q70: kopie kodu +7/+19%, długie prompty dekod −41..−46%, prefill −30..−37%
 
 ## [2026-11-20] silnik | Enigma Turbo: GEMM f16 WMMA odrzucony (−31%), weryfikacja 16 na GEMV odłożona (59 ms vs 32 ms przy 8), lekcja: dokładność bit w bit a szerokość weryfikacji
+
+## [2026-11-20] silnik | Enigma Turbo: cache prefiksu w rozmowie (Gemini r7) TTFT ×34 przy 2k; KV F16 (−50% pamięci, +1,5% dekodu przy 8k); słownik draftu 64k potwierdzony
