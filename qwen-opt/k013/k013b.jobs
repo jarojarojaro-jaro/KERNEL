@@ -1,0 +1,4 @@
+# 2026-11-20 owner OK ("tak", topka 21:11): K-013 kernel-level MUL_MAT perf, K-034 buffer sizes per context; then :8080 back
+k013-kern|600|~/qwen-opt/k013|./kern.sh
+k034-bufs|900|~/qwen-opt/k034|python3 bufs.py
+k013b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

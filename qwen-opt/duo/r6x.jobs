@@ -1,0 +1,3 @@
+# 2026-11-20 owner OK ("tak, działaj"): end to end xbench, pre-fix build (old) vs current duo (new), production config; then :8080 back
+duo-oldnew-xb|1800|~/qwen-opt/duo|env ARMS="old new old new" XB_LABEL=oldnew python3 r1c.py
+duo-oldnew-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -75,6 +75,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - (zakończone) build upstream 6ad15f48 (#31533 + port HIP RDNA3 WMMA; Q4_K/Q5_K/Q6_K/Q8_0/IQ4_NL) dla gfx1100 na jaroserverai (`~/wt/fewrow-hip`, cpuheavy 2 rdzenie), potem automatycznie job kolejki `k013-fewrow` (V(w) na tym samym modelu) przez `~/qwen-opt/k013/after-build.sh`; wynik w następnej turze
 - wynik 2026-11-14 (całe silniki, nie sam kernel): upstream 6ad15f48 z few-row MMQ HIP vs topka-q70, `llama-bench -p 1,5,8,9,16 -d 2048,32768`: V5 26,8 → 37,9 ms (+41%), V16 33,9 → 47,0 (+39%) przy 2k; V1 też +3…31% → upstream bez naszych łatek jest wolniejszy, więc few-row nie jest szybszy niż nasza ścieżka weryfikacji. Do rozstrzygnięcia tylko poziom kernela: `test-backend-ops perf -o MUL_MAT` (q4_K, n 5/8/16) obu buildów ([[2026-11-14-k002-k003-k013-xtx]])
 
+- wynik 2026-11-20 (kernel, `test-backend-ops perf -o MUL_MAT`, m 4096 k 14336, XTX eco 2200, `qwen-opt/k013/kern.sh`), nasz fork (duo) vs upstream few-row (`~/wt/fewrow-hip`), µs na wywołanie:
+  - Q4_K: n=1 35,6 vs 39,1; n=2 38,1 vs 56,6; n=4 42,6 vs 57,3; n=5 46,0 vs 57,3; n=8 50,9 vs 57,6. **Nasz kernel wygrywa przy każdym n (−9…−33%).**
+  - Q6_K: n=1 33,7 vs 29,1; n=2 56,5 vs 42,4. **Few-row wygrywa przy n = 1–2 (−14% / −25%).** Przy n=4 60,9 vs 66,9 i n=5 64,5 vs 83,2 wygrywamy my.
+  - Werdykt: całego few-row nie bierzemy. Jedyna dźwignia to jego układ dla Q6_K przy n ≤ 2 (dekod i draft), do przeniesienia w duecie.
 ### K-007 · Bramka „wymuszanie tokenów + KLD” (SpecPilot) zamiast md5 dla zmian polityki draftu i szerokości weryfikacji, z kalibracją kanarkami
 - data: 2026-11-07 (kanarki: 2026-10-15)
 - status: **czeka na decyzję** właściciela (decyzja 6 z rundy 69: czy dopuścić „te same tokeny + KLD” zamiast md5)
@@ -476,6 +480,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (0 t/s)
 - wynik 2026-11-20: czytanie kodu `llama-duo` daje ~10 KiB/token z dwóch buforów compute, oba z kontekstu głównego i draftu MTP. (1) FA na KV q4_0 przy prefillu (ub 512, kernel MMA/TILE) potrzebuje kopii f16 całego K i V jednej warstwy w buforze compute: `ggml/src/ggml-cuda/fattn.cu:745-763` (need_f16_K/V) + `ggml/src/ggml-cuda/fattn-common.cuh:53-75` (rozmiar = n_kv × 1024 × 2 B na K i na V) = 4 KiB/token. (2) maska FA f16 n_kv × ub: `src/llama-graph.cpp:30-42` = 1 KiB/token przy ub 512. Razem 5 KiB/token na kontekst. Pomiar 29,1 (R56, 2026-10-21) był przed łatką lean reserve, więc kontekst draftu MTP dokładał drugie tyle (`src/llama-context.cpp:315-326`, opis 800 MiB przy 204 800). 2 × 5 ≈ 10 z 10,7 KiB/token nadmiaru [INFERENCE: bez pomiaru `-lv 4`]. Po q63 zostaje ~5 KiB/token z kontekstu głównego (~1,25 GiB przy 262k); zbić to może tylko FA bez kopii f16 przy prefillu (kvq/VEC czytające q4_0) albo prefill w kawałkach KV. Do potwierdzenia na XTX `-lv 4` (linie `sched_reserve`).
 
+- wynik 2026-11-20 na XTX (`qwen-opt/k034/bufs.py`, produkcja `-lv 4`, ctx 64k i 128k): bufor compute celu 420,29 → 740,29 MiB, czyli **+5,0 KiB/token**, zgodnie z czytaniem kodu (kopia f16 K/V do FA przy prefillu ~4 KiB + maska ~1 KiB). Bufor compute draftu MTP stały, 40,28 MiB, więc łatka lean-reserve działa. KV 18 KiB/token.
+  - Przy 262k compute ≈ 1,38 GiB, z czego ~1 GiB to kopia f16. Natywne q4_0 K/V w FA prefillu (K-022) zwolni ok. 1 GiB VRAM.
 ### K-035 · Głowica draftu MTP: grube przejście (IQ4_XS/Q2_K) + dokładny rerank top-8 na wierszach Q6_K
 - data: 2026-10-20 (36 L6c), 2026-11-07 (66 #5)
 - źródło: [[glowica-draftu-rerank]], `R/66-SYNTEZA.md:56`
