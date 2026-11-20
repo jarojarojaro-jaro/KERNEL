@@ -159,10 +159,15 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | q norm + rope jako prolog atencji (bez `k_q_prep`) | dekod 45,56 t/s; krok spec 25,46 ms | 45,77 t/s; 25,40 ms | +0,5%; +0,2% |
 | **prefill przez int8 WMMA** (`v_wmma_i32_16x16x16_iu8`, kawałki 64 tokenów, kafel fali 32 × 32) | prefill 512 tok. 253,8 t/s (GEMV, kawałki 8) | **590,0 t/s** | **+132%** (llama.cpp produkcja pp4096: 1115) |
 | serwer Gemini r5 (`mtp_draft_n`, p_min 0,5, K=3, argmax na karcie) + naprawa wiersza ukrytego po prefillu | `--bench` mediany: Q1 84,9 · Q2 76,5 · Q5 192,0 t/s | 151,9 · 168,4 · 217,0 t/s | ×1,79 · ×2,20 · ×1,13; całość ×3,38 vs no-spec |
+| WMMA: start sum od bitów 12582912.0f (bez `v_cvt`), redukcja fal kafel po kaflu | prefill 590 t/s | 596 t/s | +1% (kafle MT2 NT4 / MT4 NT2 / MT4 NT4 wolniej: 511 / 436 / 126, rejestry) |
+| GEMM z kaflem bloku 64 × 64 w LDS (wagi dekodowane raz na blok, potok dekodowania) | 596 t/s | 606 t/s | +1,7% (128 × 64: 551 i 453; bez `unroll 1` spill do 1692 B/lane) |
+| `mtp_store` całego kawałka 64 naraz (WMMA zamiast 8 × GEMV) | 606 t/s | 623 t/s | +2,8% (bez MTP 634) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
 
 Lekcja (pomiar): każda zmiana numeryki przestawia 128-tokenowy tekst testu spec i akceptację o ±0,02 (np. 0,63 → 0,61), więc spekulację porównujemy po ms/krok, a prefill na 512 tokenach po rozgrzewce (stary „prefill 64 tok” liczył przechwycenie grafu, ±10%). Lekcja (para): Gemini w rundzie 5 znalazł prawdziwy błąd Kernela (wiersz ukryty `% 8` po przejściu na kawałki 64), którego bramki nie łapały, bo tekst zostaje bezstratny, a spada tylko akceptacja.
+
+Profil prefillu 512 tok. (rocprofv3): GEMM WMMA 80% czasu przy ~39 TOPS (≈32% szczytu iu8 XTX), GDN 8,6%, atencja 2%. Przy ~600 t/s ogranicza epilog skal Q4_K/Q6_K (~4 VALU na element na 32 kolumny) i rejestry, nie dekodowanie ani ładowanie wag. llama.cpp produkcja: pp512 856, pp4096 1115 t/s.
 
 Profil dekodu 27B (rocprofv3, po zmianach): GEMV średnio ~89% pasma (gate/up 877 GB/s, lm_head Q6_K 908, ffn_down 835–850, ssm_out/wo ~650 GB/s); poza GEMV ~3,8 ms/token, z czego przerwy między ~640 kernelami ~2,3 ms (mediana 3,6 µs). Lekcja: na RDNA3 synchronizacja między blokami (fence + atomik) kosztuje więcej niż przerwa między kernelami w grafie; zysk daje tylko łączenie kerneli, które i tak dzielą dane w jednym bloku.
 
