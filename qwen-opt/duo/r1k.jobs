@@ -1,0 +1,6 @@
+# 2026-11-20 owner OK (duo + zaległe testy): K-001 poison probe (snapshot build poison-inst), duo r1 GGML_HIP_MMVQ_TURBO; then :8080 back
+k001d|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/poison-inst K001_LABEL=poison python3 k001d.py GGML_CUDA_DISABLE_GRAPHS=1,GGML_HIP_PM4=0 GGML_CUDA_POISON=1,GGML_CUDA_DISABLE_GRAPHS=1,GGML_HIP_PM4=0
+duo-r1-bench|900|~/qwen-opt/duo|./r1.sh bench
+duo-r1-ref|900|~/qwen-opt/duo|./r1.sh ref
+duo-r1-arms|1800|~/qwen-opt/duo|./r1.sh arms
+duo-r1-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

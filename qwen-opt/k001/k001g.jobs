@@ -1,0 +1,5 @@
+# 2026-11-20 owner OK (K-001): per-node output hashes of the 33-token delta prefill after restore R1 vs R2 (and 32 as control); then :8080 back
+k001g-copy|120|~|rm -rf ~/qwen-opt/k001/hash-inst && mkdir -p ~/qwen-opt/k001/hash-inst && cp -a ~/wt/l1-cachesave/build-hip/bin ~/qwen-opt/k001/hash-inst/
+k001g33|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/hash-inst K001_LABEL=hash33 K001_DELTAS=post33 python3 k001d.py GGML_CUDA_HASHDUMP=33,GGML_CUDA_DISABLE_GRAPHS=1,GGML_HIP_PM4=0
+k001g32|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/hash-inst K001_LABEL=hash32 K001_DELTAS=post32 python3 k001d.py GGML_CUDA_HASHDUMP=32,GGML_CUDA_DISABLE_GRAPHS=1,GGML_HIP_PM4=0
+k001g-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

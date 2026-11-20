@@ -1,0 +1,7 @@
+# 2026-11-20 owner OK (duo + K-001): poison modes 2/3 (first NaN node), GGML_HIP_MMVQ_TURBO=1 (one column) end to end; then :8080 back
+k001f-copy|120|~|rm -rf ~/qwen-opt/k001/poison-inst2 && mkdir -p ~/qwen-opt/k001/poison-inst2 && cp -a ~/wt/l1-cachesave/build-hip/bin ~/qwen-opt/k001/poison-inst2/
+k001f|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/poison-inst2 K001_LABEL=poison3 python3 k001d.py GGML_CUDA_POISON=2,GGML_CUDA_DISABLE_GRAPHS=1,GGML_HIP_PM4=0 GGML_CUDA_POISON=3,GGML_CUDA_DISABLE_GRAPHS=1,GGML_HIP_PM4=0
+k001f-nan|60|~|grep -rh "POISON first NaN" $(ls -td ~/qwen-opt/xtxbench/runs/*k001d-poison3 | head -1) | sort | uniq -c | sort -rn | head -20
+duo-r1c-bench|900|~/qwen-opt/duo|./r1.sh bench
+duo-r1c|1800|~/qwen-opt/duo|python3 r1c.py
+duo-r1c-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

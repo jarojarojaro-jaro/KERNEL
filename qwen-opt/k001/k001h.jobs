@@ -1,0 +1,3 @@
+# 2026-11-20 owner OK (K-001): leak with the delta-net lag off (LLAMA_GDN_REPLAY=0) and the conv lag off (LLAMA_CONV_LAG=0); own snapshot per arm; then :8080 back
+k001h|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/hash-inst K001_LABEL=lag K001_OWN_SNAP=1 K001_ARGS=-c,32768 K001_DELTAS=post31,post32,post33 python3 k001d.py LLAMA_GDN_REPLAY=0 LLAMA_CONV_LAG=0
+k001h-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

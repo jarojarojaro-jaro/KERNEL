@@ -1,0 +1,3 @@
+# 2026-11-20 owner OK (duo): GGML_HIP_MMVQ_TURBO end to end with speculation (production config, test port); then :8080 back
+duo-r1b|1800|~/qwen-opt/duo|python3 r1b.py
+duo-r1b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

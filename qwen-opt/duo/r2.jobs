@@ -1,0 +1,5 @@
+# 2026-11-20 owner OK (duo): Gemini r2b hybrid Turbo-Multi (GGML_HIP_MMVQ_TURBO=2/3): tg64, KLD -ub 5, xbench with speculation 0 vs 2; then :8080 back
+duo-r2-bench|900|~/qwen-opt/duo|env ARMS="0 2 3 0 2 3" ./r1.sh bench
+duo-r2-arms|1500|~/qwen-opt/duo|env CAND=2 UBS=5 ./r1.sh arms
+duo-r2-xb|1800|~/qwen-opt/duo|env ARMS="0 2 0 2" XB_LABEL=multi python3 r1c.py
+duo-r2-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

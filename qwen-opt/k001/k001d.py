@@ -14,7 +14,8 @@ def first(srv, T):
     r = srv.call("/completion", {"prompt": T, "n_predict": 1, "temperature": 0.0, "seed": 1, "cache_prompt": True,
                                  "stream": False, "n_probs": 2})
     p = r["completion_probabilities"][0]
-    return [(t["token"], round(t.get("logprob", t.get("prob")), 6)) for t in (p.get("top_logprobs") or p.get("top_probs"))[:2]]
+    lp = lambda t: t.get("logprob", t.get("prob"))
+    return [(t["token"], round(lp(t), 6) if lp(t) is not None else "NaN") for t in (p.get("top_logprobs") or p.get("top_probs"))[:2]]
 
 
 def main():
@@ -32,14 +33,19 @@ def main():
         P, T = pr.snap(D)
         U = pr.total(600)[-300:]   # an unrelated 300-token prompt
         srv.slot("erase"); srv.complete(P, 1, cache_prompt=True); srv.slot("save", SNAP)   # prod snapshot (all arms restore it)
-        deltas = {f"post{n}": T[:len(P) + n] for n in (31, 32, 33)}
-        deltas.update({f"u{n}": P + U[:n] for n in (16, 24, 32, 33, 48, 64, 128, 256)})
+        deltas = {f"post{n}": T[:len(P) + n] for n in (1, 31, 32, 33)}
+        deltas.update({f"u{n}": P + U[:n] for n in (48, 63, 64)})
+        if os.environ.get("K001_DELTAS"):   # e.g. post33,post32
+            deltas = {k: v for k, v in deltas.items() if k in os.environ["K001_DELTAS"].split(",")}
         srv.stop()
         envs = [("prod", {})] + [(v, dict(kv.split("=", 1) for kv in v.split(","))) for v in sys.argv[1:]]
         fn = lambda s: None   # restore twice, nothing in between (enough to show the leak, 2026-11-20)
         for pn, env in envs:
-            srv = xb.Server(run, xb.Arm(pn, ROOT, env, [], {}), f"v-{pn.replace('=', '').replace(',', '_')}", PORT)
+            xargs = os.environ["K001_ARGS"].split(",") if os.environ.get("K001_ARGS") else []   # e.g. -c,32768
+            srv = xb.Server(run, xb.Arm(pn, ROOT, env, xargs, {}), f"v-{pn.replace('=', '').replace(',', '_')}", PORT)
             srv.start()
+            if os.environ.get("K001_OWN_SNAP"):   # configs whose state format differs: own snapshot from this server
+                srv.slot("erase"); srv.complete(P, 1, cache_prompt=True); srv.slot("save", SNAP); srv.slot("erase")
             for dn, TT in deltas.items():
                 srv.slot("restore", SNAP); r1 = first(srv, TT); srv.slot("erase")
                 fn(srv); srv.slot("erase")

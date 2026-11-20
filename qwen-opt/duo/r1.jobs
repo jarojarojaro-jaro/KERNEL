@@ -1,0 +1,5 @@
+# 2026-11-20 owner OK (duo, "testować, weryfikować, optymalizować"): GGML_HIP_MMVQ_TURBO speed + KLD; then :8080 back
+duo-r1-bench|900|~/qwen-opt/duo|./r1.sh bench
+duo-r1-ref|900|~/qwen-opt/duo|./r1.sh ref
+duo-r1-arms|1800|~/qwen-opt/duo|./r1.sh arms
+duo-r1-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
