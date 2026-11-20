@@ -1,0 +1,3 @@
+# 2026-11-20 owner OK ("niech robią też te testy, co są zaległe"): K-001 step 3, top-2 probabilities F / R1 / R2; then :8080 back
+k001c|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/inst K001_LABEL=probs python3 k001c.py
+k001-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
