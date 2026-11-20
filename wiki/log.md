@@ -544,3 +544,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo serwer lookup+MTP: kod do 188 t/s (×4,57), odpowiedzi 74–86 t/s, bit w bit; Argon bez limitu → Neon
 
 ## [2026-11-20] silnik | Enigma Turbo pętla: k_gdn_norm (dekod 43,78 → 44,26, spec 72,27 → 73,59 t/s), rozkład kroku spec (weryfikacja 90%), lekcja: akceptacja ≠ identyczność
+
+## [2026-11-20] silnik | Enigma Turbo pętla: ping-pong stanu GDN (spec 74,4 → 77,7 t/s, +4,3%), fuzja swiglu +0,8%, słownik draftu 64k optimum; serwer kod 192 t/s
