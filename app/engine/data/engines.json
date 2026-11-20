@@ -181,6 +181,40 @@
       ]
     },
     {
+      "id": "upstream-windows-x64-cuda13",
+      "kind": "upstream",
+      "label": "llama.cpp CUDA 13.4 (Windows x64, Blackwell)",
+      "version": "b11856",
+      "os": "windows",
+      "arch": "x64",
+      "backend": "cuda",
+      "envKey": "UPSTREAM_CUDA13",
+      "distribution": "download",
+      "gpuArchs": [
+        "sm_120"
+      ],
+      "minDriver": 580,
+      "features": [
+        "mtp",
+        "lookup"
+      ],
+      "assets": [
+        {
+          "name": "llama-b11856-bin-win-cuda-13.4-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/llama-b11856-bin-win-cuda-13.4-x64.zip",
+          "sizeBytes": 159939681,
+          "sha256": "06478e0fc6961e890590fd2409df5938faf62fc53a4efe0a9ae88556b6288783"
+        },
+        {
+          "name": "cudart-llama-bin-win-cuda-13.4-x64.zip",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11856/cudart-llama-bin-win-cuda-13.4-x64.zip",
+          "sizeBytes": 423535356,
+          "sha256": "738f8c251ac22b70c3ae6f83a10cf222725df0395246a2cf58f32bdb85fbe668"
+        }
+      ],
+      "note": "K-126: the CUDA 12.4 build has no Blackwell SASS (first start JIT-compiles PTX for minutes); CUDA 13.4 needs driver R580+, else the 12.4 build is used."
+    },
+    {
       "id": "upstream-windows-x64-rocm",
       "kind": "upstream",
       "label": "llama.cpp HIP/ROCm 10.0 (Windows x64)",
@@ -563,6 +597,10 @@
           ],
           "mtp": {
             "nMax": 4,
+            "nMaxByArch": {
+              "sm_86": 2,
+              "sm_120": 2
+            },
             "draftKv": "q4_0"
           },
           "maxCtx": 262144,

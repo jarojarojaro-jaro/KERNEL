@@ -198,6 +198,12 @@ describe('enigma-cuda-fork (cuda-topka2 + KVQ + lean MTP reserve)', () => {
       '--spec-type', 'draft-mtp', '--spec-draft-n-max', '4', '-ctkd', 'q4_0', '-ctvd', 'q4_0',
     ]);
     expect({ ub: cfg.ub, ctx: cfg.ctx, kvType: cfg.kvType }).toEqual({ ub: 256, ctx: 262144, kvType: 'q4_0' });
+    // K-129: MTP n 2 on Ampere and Blackwell (measured on 3090/3060/5060 Ti), n 4 on Ada
+    const nOf = (arch: string) => {
+      const a = enigmaConfig(resolved('enigma-cuda-fork'), p, '/m/Qwen3.8-27B-UD-Q4_K_XL.gguf', arch).config!.extraArgs;
+      return a[a.indexOf('--spec-draft-n-max') + 1];
+    };
+    expect([nOf('sm_86'), nOf('sm_89'), nOf('sm_120')]).toEqual(['2', '4', '2']);
   });
 
   test('available: the 3090 plan becomes UD-Q4_K_XL 262144 / ub 256 on it (measured on the shipped portable build)', () => {

@@ -76,6 +76,11 @@ describe('engines.json', () => {
       }
     }
     expect(baselineEngineFor('windows', 'x64', 'cuda')?.assets.length).toBe(2);
+    // Blackwell with driver R580+ gets the CUDA 13.4 build (no PTX JIT); older driver, unknown driver or Ampere: 12.4
+    expect(baselineEngineFor('windows', 'x64', 'cuda', { arch: 'sm_120', driver: '581.57' })?.id).toBe('upstream-windows-x64-cuda13');
+    expect(baselineEngineFor('windows', 'x64', 'cuda', { arch: 'sm_120', driver: '576.88' })?.id).toBe('upstream-windows-x64-cuda');
+    expect(baselineEngineFor('windows', 'x64', 'cuda', { arch: 'sm_120' })?.id).toBe('upstream-windows-x64-cuda');
+    expect(baselineEngineFor('windows', 'x64', 'cuda', { arch: 'sm_86', driver: '581.57' })?.id).toBe('upstream-windows-x64-cuda');
   });
 });
 

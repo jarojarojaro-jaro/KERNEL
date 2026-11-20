@@ -20,6 +20,8 @@ export interface EngineAsset { name: string; url: string; sizeBytes: number; sha
 export interface ProfileMtp {
   /** --spec-draft-n-max */
   nMax: number;
+  /** nMax per GPU architecture (sm_86, …), measured per card; absent arch: nMax */
+  nMaxByArch?: Record<string, number>;
   /** --spec-draft-n-ubatch; absent: not passed (the draft batch is -ub; our fork has no such flag) */
   ubd?: number;
   /** -ctkd/-ctvd; absent: not passed, the engine's own draft cache type applies (upstream f16; feature
@@ -61,6 +63,8 @@ export interface EngineEntry {
   features: string[];
   assets: EngineAsset[];
   gpuArchs?: string[];
+  /** lowest NVIDIA driver major version the engine runs on (CUDA 13: 580); the GPU's driver must be known */
+  minDriver?: number;
   /** "fork": MTP memory follows our fork's calibration (catalog/memory.ts enigmaSpec); absent: upstream llama.cpp's */
   memory?: 'fork';
   /** Release assets of a `local` engine that are not published yet: ours have no URL until the release upload, official
@@ -85,14 +89,21 @@ export function engineById(id: string): EngineEntry | undefined {
   return ENGINES.engines.find((e) => e.id === id);
 }
 
-export function baselineEngineFor(os: Hw['os'], arch: Hw['arch'], backend: Backend): EngineEntry | undefined {
-  return ENGINES.engines.find((e) => e.kind === 'upstream' && e.os === os && e.arch === arch && e.backend === backend);
+/** The official llama.cpp build for this platform: one built for the GPU's architecture (`gpuArchs`, driver at least
+ *  `minDriver`) wins over the generic one. */
+export function baselineEngineFor(os: Hw['os'], arch: Hw['arch'], backend: Backend, gpu?: { arch?: string; driver?: string }): EngineEntry | undefined {
+  const fits = ENGINES.engines.filter((e) => e.kind === 'upstream' && e.os === os && e.arch === arch && e.backend === backend);
+  const driverMajor = gpu?.driver ? Number.parseInt(gpu.driver, 10) : NaN;
+  const forArch = fits.find((e) => gpu?.arch !== undefined && e.gpuArchs?.includes(gpu.arch)
+    && (e.minDriver === undefined || driverMajor >= e.minDriver));
+  return forArch ?? fits.find((e) => !e.gpuArchs);
 }
 
 /** The engine the baseline runs on: the one the model needs (`Option.needsEngine`, the official build cannot run its
- *  files), else the official llama.cpp build for this platform. */
+ *  files), else the official llama.cpp build for this platform and GPU. */
 export function baselineEngineForOption(hw: Hw, option: Option): EngineEntry | undefined {
-  return option.needsEngine ? engineById(option.needsEngine) : baselineEngineFor(hw.os, hw.arch, option.backend);
+  const gpu = option.gpuIndex === null ? undefined : hw.gpus[option.gpuIndex];
+  return option.needsEngine ? engineById(option.needsEngine) : baselineEngineFor(hw.os, hw.arch, option.backend, gpu);
 }
 
 /** A `download` engine is always available; a `local` one when ENIGMA_ENGINE_DIR_<envKey> points at it. */
@@ -159,9 +170,10 @@ export function profileMatch(entry: EngineEntry, modelId: string, filePath: stri
   });
 }
 
-/** Upstream llama.cpp flags of a profile's MTP draft. */
-export function mtpArgs(mtp: ProfileMtp): string[] {
-  const args = ['--spec-type', 'draft-mtp', '--spec-draft-n-max', String(mtp.nMax)];
+/** Upstream llama.cpp flags of a profile's MTP draft on a GPU of architecture `gpuArch`. */
+export function mtpArgs(mtp: ProfileMtp, gpuArch?: string): string[] {
+  const nMax = (gpuArch !== undefined ? mtp.nMaxByArch?.[gpuArch] : undefined) ?? mtp.nMax;
+  const args = ['--spec-type', 'draft-mtp', '--spec-draft-n-max', String(nMax)];
   if (mtp.ubd !== undefined) args.push('--spec-draft-n-ubatch', String(mtp.ubd));
   if (mtp.draftKv) args.push('-ctkd', mtp.draftKv, '-ctvd', mtp.draftKv);
   return args;
@@ -503,8 +515,8 @@ function resolveNeed(need: string, engine: ResolvedEngine, modelPath: string): s
 
 export interface EnigmaConfigResult { config: EngineConfig | null; reason: string }
 
-/** The enigma profile for this option, with placeholders resolved. */
-export function enigmaConfig(engine: ResolvedEngine, option: Option, modelPath: string): EnigmaConfigResult {
+/** The enigma profile for this option, with placeholders resolved; `gpuArch` picks per-architecture MTP settings. */
+export function enigmaConfig(engine: ResolvedEngine, option: Option, modelPath: string, gpuArch?: string): EnigmaConfigResult {
   const profile = profileFor(engine.entry, option);
   if (!profile) return { config: null, reason: `no profile for ${option.modelId}` };
   const vars: Record<string, string> = {
@@ -524,7 +536,7 @@ export function enigmaConfig(engine: ResolvedEngine, option: Option, modelPath: 
   return {
     config: {
       engineId: engine.entry.id, modelPath, ctx: option.ctx, kvType: option.kvType, ub, b: profile.b ?? Math.max(2048, ub),
-      flashAttn: true, spec: profile.spec, extraArgs: [...profile.args.map(sub), ...(profile.mtp ? mtpArgs(profile.mtp) : [])], env,
+      flashAttn: true, spec: profile.spec, extraArgs: [...profile.args.map(sub), ...(profile.mtp ? mtpArgs(profile.mtp, gpuArch) : [])], env,
     },
     reason: '',
   };

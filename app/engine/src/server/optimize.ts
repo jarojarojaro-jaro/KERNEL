@@ -149,7 +149,8 @@ async function configFor(ctx: OptimizeContext, recipe: Recipe): Promise<{ engine
     const choice = enigmaEngineFor(ctx.hw, ctx.option);
     if (!choice.entry) throw new Error(choice.reason);
     const engine = await ensureEngine(choice.entry, ctx.signal ? { signal: ctx.signal } : {});
-    const r = enigmaConfig(engine, ctx.option, ctx.modelPath);
+    const gpuArch = ctx.option.gpuIndex === null ? undefined : ctx.hw.gpus[ctx.option.gpuIndex]?.arch;
+    const r = enigmaConfig(engine, ctx.option, ctx.modelPath, gpuArch);
     if (!r.config) throw new Error(r.reason);
     return { engine, config: r.config };
   }

@@ -1,0 +1,7 @@
+epochs 212, suffix cache 8561145 tokens; class tokens tok/step LOCAL CROSS UNION | t/s (model) | vs LOCAL
+assistant-text            806108 3.089 3.790 3.828 | 107.3 129.8 130.9 | CROSS 21.0% UNION 22.0% | fires local 2594 cross 15535
+bash                     2616241 3.406 3.598 3.892 | 117.1 123.2 132.3 | CROSS 5.2% UNION 13.0% | fires local 41669 cross 52650
+call-other               1160011 3.338 3.591 3.890 | 114.9 123.0 132.1 | CROSS 7.0% UNION 15.0% | fires local 17440 cross 23540
+edit-hashline            2356404 3.627 3.765 4.213 | 124.2 128.8 142.5 | CROSS 3.7% UNION 14.7% | fires local 46796 cross 47005
+write                    1585258 3.249 3.790 3.951 | 112.4 129.7 134.6 | CROSS 15.5% UNION 19.8% | fires local 13606 cross 30745
+ALL                      8524022 3.391 3.695 3.980 | 116.7 126.5 135.2 | CROSS 8.4% UNION 15.9% | fires local 122105 cross 169475

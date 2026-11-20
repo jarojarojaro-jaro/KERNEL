@@ -31,6 +31,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: +3…8% dekodu dla użytkowników Enigmy z 30xx i 5060 Ti
 - ryzyko karty: brak
 - priorytet: wysoki (tanie, zmierzone na 3 kartach)
+- wynik 2026-11-20: zrobione po stronie CPU. W profilu `qwen38-kvq-mtp4` silnika `enigma-cuda-fork` doszło `mtp.nMaxByArch` (`app/engine/data/engines.json`: sm_86 → 2, sm_120 → 2, reszta, czyli sm_89, zostaje 4); `mtpArgs`/`enigmaConfig` biorą n po architekturze karty (`app/engine/src/server/engine.ts`, wywołanie w `optimize.ts`). Test w `app/engine/test/enigma-cuda.test.ts` (sm_86/sm_89/sm_120 → 2/4/2); `bun test` 208 pass, 0 fail; `tsc` czysty. Planer pamięci dalej liczy draft dla n 4 (bezpieczny zapas). Uwaga: RTX 5090 (też sm_120) mierzona była tylko z n 4, więc dostaje 2 bez pomiaru. Zostaje potwierdzenie md5 T=0 n2 vs n4 na 1 karcie Vast.
 
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
@@ -162,6 +163,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: najpopularniejsze karty (RTX 5070 6,15% Steam) bez minut JIT przy pierwszym starcie
 - ryzyko karty: brak
 - priorytet: średni
+- wynik 2026-11-20: zrobione po stronie CPU. Nowy wpis `upstream-windows-x64-cuda13` w `app/engine/data/engines.json` (b11856, `gpuArchs: [sm_120]`, `minDriver: 580`; rozmiary i sha256 z API GitHub: zip 159 939 681 B `06478e0f…`, cudart 423 535 356 B `738f8c25…`). `baselineEngineFor` (`app/engine/src/server/engine.ts:92-98`) wybiera wpis pod architekturę karty, gdy sterownik jest znany i ≥ 580, w innym wypadku zostaje CUDA 12.4. Testy w `app/engine/test/engine.test.ts:79-83` (sm_120 + 581 → 13.4; sterownik 576, brak sterownika albo sm_86 → 12.4); `bun test` 208 pass. Zostaje pomiar pierwszej odpowiedzi na Windows z kartą 50xx.
 
 ### K-128 · Czy klient (omp) obcina `<think>` z historii i przez to psuje trafienia prompt-cache w turach agenta (analiza logów, bez karty)
 - data: 2026-11-19
@@ -171,6 +173,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: TTFT tur agenta (jeśli problem istnieje); 0 t/s dekodu
 - ryzyko karty: brak
 - priorytet: średni
+- wynik 2026-11-20: problemu nie ma. Logi serwera z jaroserverai (`qwen-opt/logs/server-*.log`, 264 pliki, 964 tury), skrypt `qwen-opt/k128/cache_hits.py`. Całość: 48,4 mln tokenów promptu, z cache 90,1%. W 386 turach agenta, w których rozmowa urosła i prefiks został w slocie, cache pokrył 99,2% promptu, a historia rozjechała się łącznie na 14 tokenach. Odpowiedź poprzedniej tury (z blokiem myślenia) wróciła w prompcie w 89,7% tokenów: 347 tur > 90%, 29 częściowo, 10 wcale, więc omp nie wycina `<think>` w sposób, który psuje cache. 66 tur „rozjechanych” to w 47 przypadkach przeskok do innej rozmowy z tym samym początkiem (wspólny prefiks stoi na ~7650 tokenach, czyli system + narzędzia; podagenci na jednym slocie), nie granica myślenia. Dziury < 10%, poprawka szablonu niepotrzebna. [INFERENCE: logi mają tylko `f_keep`, nie surowy tekst promptu.]
 
 ### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
 - data: 2026-11-17
@@ -329,6 +332,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: +5–15% na agentach [SZACUNEK]; zmienia tylko drafty
 - ryzyko karty: brak
 - priorytet: średni (agenci, tani offline)
+- wynik 2026-11-20: symulacja CPU (`qwen-opt/k019/suffix_sim.ts`, wynik `qwen-opt/k019/wynik-2026-11-20.txt`): 190 sesji omp, 212 epok, 8,52 mln tokenów wyjść agenta (tokenizer Qwen3), model kroku jak w `product/research/21c-cplm/oracle.py` (MTP n 4, ogon przy m ≥ 6 i k = 4). Cache sufiksów z wcześniejszych sesji (CROSS) zamiast lookupu w sesji: 3,39 → 3,70 tok/krok, +8,4% t/s (model); oba razem (UNION: lokalny, a gdy nie trafi, cache sufiksów) 3,98 tok/krok, **+15,9%**. Najwięcej `write` +19,8% i tekst asystenta +22%, najmniej `edit` +14,7% i `bash` +13%. Ograniczenia: wyjścia pisał Claude, nie Qwen; podagenci powtarzają podobne teksty, więc wynik to raczej górna granica. Następny krok bez zmian: XTX spec_sweep PL + replay agenta ABBA.
 
 ### K-020 · Polityka wyrzucania `--cache-ram` ważona kosztem przeliczenia (Marconi) zamiast LRU
 - data: 2026-11-07
@@ -450,6 +454,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: +~2,7 GiB zapasu przy 262k [SZACUNEK], 0 t/s; zapas na OOM i `-ub 1024`
 - ryzyko karty: brak
 - priorytet: niski (0 t/s)
+- wynik 2026-11-20: czytanie kodu `llama-duo` daje ~10 KiB/token z dwóch buforów compute, oba z kontekstu głównego i draftu MTP. (1) FA na KV q4_0 przy prefillu (ub 512, kernel MMA/TILE) potrzebuje kopii f16 całego K i V jednej warstwy w buforze compute: `ggml/src/ggml-cuda/fattn.cu:745-763` (need_f16_K/V) + `ggml/src/ggml-cuda/fattn-common.cuh:53-75` (rozmiar = n_kv × 1024 × 2 B na K i na V) = 4 KiB/token. (2) maska FA f16 n_kv × ub: `src/llama-graph.cpp:30-42` = 1 KiB/token przy ub 512. Razem 5 KiB/token na kontekst. Pomiar 29,1 (R56, 2026-10-21) był przed łatką lean reserve, więc kontekst draftu MTP dokładał drugie tyle (`src/llama-context.cpp:315-326`, opis 800 MiB przy 204 800). 2 × 5 ≈ 10 z 10,7 KiB/token nadmiaru [INFERENCE: bez pomiaru `-lv 4`]. Po q63 zostaje ~5 KiB/token z kontekstu głównego (~1,25 GiB przy 262k); zbić to może tylko FA bez kopii f16 przy prefillu (kvq/VEC czytające q4_0) albo prefill w kawałkach KV. Do potwierdzenia na XTX `-lv 4` (linie `sched_reserve`).
 
 ### K-035 · Głowica draftu MTP: grube przejście (IQ4_XS/Q2_K) + dokładny rerank top-8 na wierszach Q6_K
 - data: 2026-10-20 (36 L6c), 2026-11-07 (66 #5)
@@ -498,6 +503,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0…2% [INFERENCE]
 - ryzyko karty: brak (spille przy większej liczbie VGPR)
 - priorytet: niski (tani, mały)
+- wynik 2026-11-20: pominięte. Na serwerze Jarvo nie ma ROCm (`hipcc` brak), a build HIP i `klab isadiff` trzeba robić na jaroserverai, czyli na maszynie z GPU, której ten przebieg nie używa.
 
 ### K-041 · Licznik realokacji grafu (#30329): czy przejścia MTP5 ↔ W16 ↔ catch-up przebudowują graf albo taśmę PM4
 - data: 2026-11-07
@@ -622,6 +628,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0 (porządek w kodzie)
 - ryzyko karty: brak
 - priorytet: niski (przy okazji)
+- wynik 2026-11-20: usunięte w `llama-duo` (gałąź `duo`), commit `e1f9524` = czysty revert `57204db1e` (tylko `ggml/src/ggml-cuda/fattn-common.cuh`, −53 linie, ani `GGML_HIP_FA_OCC_*`, ani skrypty uruchomieniowe go nie używały). Bez buildu; bramka md5 (long 32k e460e3b6, fill 255k 31b6525a) przy najbliższym buildzie produkcji.
 
 ### K-056 · Rebase łatek topki na nowszy upstream (baza b11528 → llama.cpp v1.0.0 = b12359)
 - data: 2026-10-16, ostatnio 2026-11-07
