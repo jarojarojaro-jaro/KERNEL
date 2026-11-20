@@ -532,3 +532,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 
 ## [2026-11-20] silnik | Enigma Turbo: HIP forward na XTX, gate PASS na produkcyjnym Qwen3.8-27B, dekod 3,96 → 28,20 t/s (llama.cpp 42,16); run-jobs odmawia pustej listy (incydent :8080 12 min)
 [[enigma-turbo-gemini-2026-11-20]]
+
+## [2026-11-20] silnik | Enigma Turbo 27B na XTX: graf HIP (+2%), GEMV int8 + sudot4 → 35,35 t/s (84% llama.cpp 42,16), gate PASS

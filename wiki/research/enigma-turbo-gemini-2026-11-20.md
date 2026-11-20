@@ -76,7 +76,7 @@ Rozjazdy pojawiają się tam, gdzie model się waha (top-1 −1,2…−1,5). Otw
 | tempo dekodu (XTX, ten sam plik GGUF) | Enigma Turbo | llama.cpp topka (bez spekulacji) |
 |---|---|---|
 | Qwen3.5-0.8B: per-element GEMV → GEMV K-quant → GDN w LDS | 81,3 → 162,0 → 187,0 t/s | 436,9 t/s |
-| Qwen3.8-27B: per-element GEMV → GEMV K-quant → GDN w LDS | 3,96 → 26,61 → 28,20 t/s (+612%) | 42,16 t/s |
+| Qwen3.8-27B: per-element GEMV → GEMV K-quant → GDN w LDS → graf HIP → GEMV int8 + `sudot4` | 3,96 → 26,61 → 28,20 → 28,76 → **35,35 t/s** (+793%, 84% llama.cpp) | 42,16 t/s |
 
 Profil 27B (`rocprofv3`, na token):
 - GEMV Q4_K 21 ms, czyli ~585 GB/s (61% pasma);
