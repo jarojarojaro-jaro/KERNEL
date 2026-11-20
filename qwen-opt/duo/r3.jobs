@@ -1,0 +1,6 @@
+# 2026-11-20 owner OK (duo, K-001): FA masked-tile fix — unit test, K-001 repro, per-cell K/V hashes, speed vs pre-fix; then :8080 back
+duo-r3-test|700|~/qwen-opt/duo|./r3.sh test
+duo-r3-copy|120|~|rm -rf ~/qwen-opt/k001/fix-inst && mkdir -p ~/qwen-opt/k001/fix-inst && cp -a ~/wt/l1-cachesave/build-hip/bin ~/qwen-opt/k001/fix-inst/
+duo-r3-k001|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/fix-inst K001_LABEL=fix K001_DELTAS=post1,post31,post32,post33,u63,u64 python3 k001d.py GGML_CUDA_HASHDUMP=29,GGML_CUDA_DISABLE_GRAPHS=1,GGML_HIP_PM4=0
+duo-r3-bench|900|~/qwen-opt/duo|./r3.sh bench
+duo-r3-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

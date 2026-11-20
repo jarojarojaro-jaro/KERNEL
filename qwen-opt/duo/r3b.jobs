@@ -1,0 +1,5 @@
+# 2026-11-20 owner OK (duo, K-001): FA fix unit test + speed + KLD (rerun with the ROCm lib path); then :8080 back
+duo-r3-test|700|~/qwen-opt/duo|./r3.sh test
+duo-r3-bench|900|~/qwen-opt/duo|./r3.sh bench
+duo-r3-kld|1500|~/qwen-opt/duo|./r3.sh kld
+duo-r3b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

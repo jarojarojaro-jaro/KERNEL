@@ -1,0 +1,4 @@
+# 2026-11-20 owner OK (duo, K-001): which masked-tail case fails on the kvq path; KLD of the FA fix; then :8080 back
+duo-r3-tailfail|400|~/qwen-opt/duo|./r3.sh tailfail
+duo-r3-kld|1800|~/qwen-opt/duo|./r3.sh kld
+duo-r3c-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

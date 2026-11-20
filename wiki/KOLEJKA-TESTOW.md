@@ -55,6 +55,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - Wniosek: **kernele FA dopuszczają, żeby zamaskowane, stare komórki K/V zmieniały wynik** (o 0,002–0,07 logprob, bez NaN), i dotyczy to i kvq, i kernela standardowego.
   - Wykluczone: pula pamięci (`POISON=3` bez zmian), stan GDN (wejścia GDN_LAG identyczne), `LLAMA_GDN_REPLAY=0`, `LLAMA_CONV_LAG=0`.
   - Poprawkę w kernelu FA (maska przed max/exp, pomijanie w pełni zamaskowanych kafli) plus test `test-backend-ops` ze śmieciami w zamaskowanym ogonie robi Gemini (runda duo-r3); Kernel mierzy.
+- wynik 2026-11-20 ~20:15, **poprawka Gemini r3 (llama-duo `556ad79`) zmierzona na XTX**:
+  - przeciek zniknął: wszystkie 6 przypadków dopełnień identyczne co do bitu przy ponownym wczytaniu (wcześniej 4 przeciekały);
+  - hashe K/V co 64 komórki: R1 i R2 różniły się tylko w bloku zamaskowanych starych komórek;
+  - jakość: KLD przy ub 512 identyczne z wersją sprzed poprawki (prefill bit w bit), przy ub 5 PASS (+0,09 sd);
+  - prędkość: pp512 −0,2% (szum), pp2048 1021,2 → 1014,5 t/s (−0,65%), tg64 +0,2%;
+  - otwarte: ścieżka kvq przy 1 zapytaniu (dekod) nadal przecieka (test jednostkowy: błąd 2e-9); naprawa i odzyskanie −0,65% prefillu to runda duo-r4;
+  - wdrożenie do produkcji (przebudowa topki) czeka na decyzję właściciela.
 
 ### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)
 - data: 2026-11-07
