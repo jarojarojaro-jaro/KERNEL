@@ -1,0 +1,8 @@
+# 2026-11-20 owner OK (duo): Gemini r4 — masked-tail tests, pp recovery, GGML_HIP_GDN_FUSED speed/KLD, K-001 repro, xbench; then :8080 back
+duo-r4-test|700|~/qwen-opt/duo|./r3.sh test
+duo-r4-bench|900|~/qwen-opt/duo|./r3.sh r4bench
+duo-r4-copy|120|~|rm -rf ~/qwen-opt/k001/fix-inst && mkdir -p ~/qwen-opt/k001/fix-inst && cp -a ~/wt/l1-cachesave/build-hip/bin ~/qwen-opt/k001/fix-inst/
+duo-r4-k001|900|~/qwen-opt/k001|env K001_ROOT=$HOME/qwen-opt/k001/fix-inst K001_LABEL=r4 K001_DELTAS=post1,post31,post32,post33,u63,u64 python3 k001d.py GGML_HIP_GDN_FUSED=1
+duo-r4-kld|2400|~/qwen-opt/duo|./r3.sh r4kld
+duo-r4-xb|1800|~/qwen-opt/duo|env VAR=GGML_HIP_GDN_FUSED ARMS="0 1 0 1" XB_LABEL=gdnfused python3 r1c.py
+duo-r4-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

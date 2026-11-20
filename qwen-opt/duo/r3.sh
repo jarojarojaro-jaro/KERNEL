@@ -21,3 +21,16 @@ case ${1:-} in
        done ;;
   tailfail) LD_LIBRARY_PATH=$NEW:$R timeout 280 $NEW/test-backend-ops test -o FLASH_ATTN_EXT_MASKED_TAIL 2>&1 | grep -vE "^\s*$" | grep -iE "FAIL|err|nb=|tail" | head -30 ;;
 esac
+case ${1:-} in
+  r4bench) for b in OLD NEW OLD NEW; do B=${!b}
+          echo "$b $(LD_LIBRARY_PATH=$B:$R $B/llama-bench -m $M -p 512,2048 -n 0 -fa on -ngl 99 -ctk q4_0 -ctv q4_0 -ub 2048 -r 3 2>&1 | grep -E 'pp[0-9]' | awk -F'|' '{printf "%s %s; ", $(NF-2), $(NF-1)}')"; done
+        for v in 0 1 0 1; do
+          echo "GDN_FUSED=$v $(env GGML_HIP_GDN_FUSED=$v GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 LD_LIBRARY_PATH=$NEW:$R $NEW/llama-bench -m $M -p 0 -n 64 -fa on -ngl 99 -ctk q4_0 -ctv q4_0 -r 3 2>&1 | grep -E 'tg[0-9]' | awk -F'|' '{printf "%s %s; ", $(NF-2), $(NF-1)}')"; done ;;
+  r4kld) cd ~/qwen-opt/duo; T=~/wt/lfm3-prof/wikitext-2-raw/wiki.test.raw
+       for ub in 1 5; do
+         env LD_LIBRARY_PATH=$NEW:$R GGML_HIP_PM4=0 $NEW/llama-perplexity -m $M -f $T -c 8192 --chunks 2 -b 8192 -ngl 999 -fa on -ub $ub -ctk q4_0 -ctv q4_0 --kl-divergence-base ref.kld --kl-divergence > r4off$ub.log 2>&1
+         env GGML_HIP_GDN_FUSED=1 LD_LIBRARY_PATH=$NEW:$R GGML_HIP_PM4=0 $NEW/llama-perplexity -m $M -f $T -c 8192 --chunks 2 -b 8192 -ngl 999 -fa on -ub $ub -ctk q4_0 -ctv q4_0 --kl-divergence-base ref.kld --kl-divergence > r4gdn$ub.log 2>&1
+         echo "== ub $ub fix(off) vs base"; python3 ~/qwen-opt/tools/kld_gate.py compare base$ub.log r4off$ub.log | tail -2
+         echo "== ub $ub GDN_FUSED=1 vs off"; python3 ~/qwen-opt/tools/kld_gate.py compare r4off$ub.log r4gdn$ub.log
+       done ;;
+esac

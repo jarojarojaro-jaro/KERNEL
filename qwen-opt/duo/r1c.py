@@ -13,7 +13,7 @@ pid = xb.find_server_pid(8080)
 if pid:
     xb.stop_pid(pid, run.log, ":8080")
 for t in os.environ.get("ARMS", "0 1 0 1").split():
-    srv = xb.Server(run, xb.Arm(f"turbo{t}", ROOT, {"GGML_HIP_MMVQ_TURBO": t}, [], {}), f"t{t}", PORT)
+    srv = xb.Server(run, xb.Arm(f"turbo{t}", ROOT, {os.environ.get("VAR", "GGML_HIP_MMVQ_TURBO"): t}, [], {}), f"t{t}", PORT)
     srv.start()
     try:
         out = subprocess.run(["python3", os.path.expanduser("~/turbo-jobs/xbench.py"), str(PORT),
