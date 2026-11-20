@@ -548,3 +548,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo pętla: ping-pong stanu GDN (spec 74,4 → 77,7 t/s, +4,3%), fuzja swiglu +0,8%, słownik draftu 64k optimum; serwer kod 192 t/s
 
 ## [2026-11-20] silnik | Enigma Turbo pętla: atencja fala-na-klucz (+11,4% przy 1024 tok.), argmax na karcie (+1,3% spec), 2 próby odrzucone (norma w epilogu −7%, K-split szum)
+
+## [2026-11-20] silnik | Enigma Turbo: prefill int8 WMMA 254 → 590 t/s (+132%), serwer Gemini r5 ×3,38 vs no-spec (Q2 76 → 168 t/s), błąd wiersza ukrytego złapany przez Gemini

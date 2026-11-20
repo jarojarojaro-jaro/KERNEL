@@ -156,8 +156,13 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | norma RMS w epilogu GEMV (ostatni blok, licznik atomowy) | dekod 45,40 t/s | 42,16 t/s | −7% (odrzucone: `__threadfence` + atomik w ~640 blokach) |
 | K-split GEMV dla macierzy ≤ 8192 wierszy | 45,15 t/s | 45,12–45,31 t/s | szum (odrzucone) |
 | `k_gdn_conv_norm`: conv + L2 jako prolog kernela GDN (48 uruchomień mniej na token) | dekod 45,29; spec K=2 78,08 t/s | 45,56; 80,91 t/s | +0,6%; +3,6% (krok 25,6 → 25,5 ms, reszta: akceptacja 0,61 → 0,63 na zmienionym tekście) |
+| q norm + rope jako prolog atencji (bez `k_q_prep`) | dekod 45,56 t/s; krok spec 25,46 ms | 45,77 t/s; 25,40 ms | +0,5%; +0,2% |
+| **prefill przez int8 WMMA** (`v_wmma_i32_16x16x16_iu8`, kawałki 64 tokenów, kafel fali 32 × 32) | prefill 512 tok. 253,8 t/s (GEMV, kawałki 8) | **590,0 t/s** | **+132%** (llama.cpp produkcja pp4096: 1115) |
+| serwer Gemini r5 (`mtp_draft_n`, p_min 0,5, K=3, argmax na karcie) + naprawa wiersza ukrytego po prefillu | `--bench` mediany: Q1 84,9 · Q2 76,5 · Q5 192,0 t/s | 151,9 · 168,4 · 217,0 t/s | ×1,79 · ×2,20 · ×1,13; całość ×3,38 vs no-spec |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
+
+Lekcja (pomiar): każda zmiana numeryki przestawia 128-tokenowy tekst testu spec i akceptację o ±0,02 (np. 0,63 → 0,61), więc spekulację porównujemy po ms/krok, a prefill na 512 tokenach po rozgrzewce (stary „prefill 64 tok” liczył przechwycenie grafu, ±10%). Lekcja (para): Gemini w rundzie 5 znalazł prawdziwy błąd Kernela (wiersz ukryty `% 8` po przejściu na kawałki 64), którego bramki nie łapały, bo tekst zostaje bezstratny, a spada tylko akceptacja.
 
 Profil dekodu 27B (rocprofv3, po zmianach): GEMV średnio ~89% pasma (gate/up 877 GB/s, lm_head Q6_K 908, ffn_down 835–850, ssm_out/wo ~650 GB/s); poza GEMV ~3,8 ms/token, z czego przerwy między ~640 kernelami ~2,3 ms (mediana 3,6 µs). Lekcja: na RDNA3 synchronizacja między blokami (fence + atomik) kosztuje więcej niż przerwa między kernelami w grafie; zysk daje tylko łączenie kerneli, które i tak dzielą dane w jednym bloku.
 
