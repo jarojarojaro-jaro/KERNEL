@@ -140,6 +140,21 @@ Lekcja: przy weryfikacji spekulacji w hybrydzie GDN najdroższe nie jest samo sp
 
 Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; reset za ~164 h). Jego niezacommitowaną pracę przejrzał, poprawił (usunięty syntetyczny test oczekiwanej szybkości) i scalił Kernel. Od rundy 4 partnerem jest Gemini 4 Neon High: spekulacja przy T>0 bezstratnie (rejection sampling z draftem jednopunktowym).
 
+### Pętla optymalizacji 2026-11-20 07:10–07:55 (27B, XTX, T=0, draft vocab 64k, p_min 0,5)
+
+| krok | przed | po | Δ |
+|---|---|---|---|
+| T>0 bezstratnie (Gemini r4, test χ² na 200 tys. próbek) | 42,8 t/s (T=0,7 bez spekulacji) | 64,5–66,4 t/s | +52% |
+| graf HIP dla przebiegu MTP | 72,18 t/s | 72,16 t/s | 0 (odrzucone jako dźwignia, kod zostaje) |
+| GEMV dekodu 16/8 wątków na wiersz | 43,79 t/s | 42,56 / 41,08 t/s | −2,8 / −6,2% (odrzucone) |
+| `k_gdn_norm`: GDN + gated RMSNorm + int8 w jednym kernelu | dekod 43,78 / spec K=3 72,27 t/s | 44,26 / 73,59 t/s | +1,1 / +1,8% |
+
+Rozkład kroku spekulacji (K=2): draft MTP 1,69 ms, weryfikacja 25,45 ms (90%), argmax na hoście 0,26, accept 0,67, razem 28,07 ms. Weryfikacja N=1/2/4/5/8: 23,3/24,7/26,4/28,5/33,7 ms. Dźwignią jest przejście celu (GEMV 86% pasma i ~2,4 ms przerw między ~640 kernelami na token), nie draft.
+
+Lekcja (błąd złapany po akceptacji): komentarz połknął przesunięcia `tk*…` w `k_mtp_in`, więc przebiegi MTP z N>1 pisały jeden wiersz. Test spekulacji dalej mówił „identyczne 128/128”, bo przy bezstratnej weryfikacji tekst jest zawsze ten sam; spadła tylko akceptacja 0,55 → 0,32. Akceptacja to sygnał jakości draftu i trzeba ją pilnować obok identyczności tekstu.
+
+Lekcja (agenci): każdy agent we własnym worktree. Niezacommitowane edycje Gemini psuły build przesyłany rsync-iem na kartę; od rundy 4 Kernel pracuje w gałęzi `kernel`, Gemini w `main`. Limity: Gemini 4 Argon wyczerpany (~164 h), Neon High wyczerpał limit godzinny w rundzie 5 (reset ~1 h).
+
 ## Powiązane
 - [[audyt-gemini-2026-11-19]]
 - [[bramka-kld-kanarki]]

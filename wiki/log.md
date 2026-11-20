@@ -542,3 +542,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo: MTP na XTX, bezstratnie, 27B 43,9 → 67,0 t/s (+52,6%, K=2); prefill 219 t/s; serwer --gpu działa
 
 ## [2026-11-20] silnik | Enigma Turbo serwer lookup+MTP: kod do 188 t/s (×4,57), odpowiedzi 74–86 t/s, bit w bit; Argon bez limitu → Neon
+
+## [2026-11-20] silnik | Enigma Turbo pętla: k_gdn_norm (dekod 43,78 → 44,26, spec 72,27 → 73,59 t/s), rozkład kroku spec (weryfikacja 90%), lekcja: akceptacja ≠ identyczność
