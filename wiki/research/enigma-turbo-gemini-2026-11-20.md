@@ -237,3 +237,15 @@ Turbo wygrywa tylko dekod bez spekulacji (45,9 vs 42,2).
 
 **Lekcja: przed porównaniem z produkcją sprawdź, czy obie strony generują ten sam tekst (tryb myślenia, szablon czatu, `prompt_n`).**
 
+## Odłożony 2026-11-20 17:20 (decyzja właściciela) i duet na llama.cpp
+**Stan końcowy Turbo:**
+- dekod bez spekulacji 47,5 t/s (produkcja 42,2, +12,6%);
+- ze spekulacją: kopie 220 / 265 t/s, T=0,7 76,8, długie 2k / 8k 103,8 / 107,1, prefill 829 / 807;
+- produkcja: 270 / 306, 86,6, 107,3 / 126,0, 903 / 938.
+
+Turbo zostaje naszym silnikiem infra. Dalej pracuje duet Kernel + Gemini 4 Argon High nad produkcyjną llama.cpp (gałąź `duo` od `topka-q70`).
+
+**Pierwsza dźwignia:** GEMV dekodu z Turbo przeniesiony do MMVQ. Profil tokenu: MMVQ produkcji 20,4 ms vs GEMV Turbo 18,9 ms (−8%), przy tych samych 337 mnożeniach macierz–wektor.
+
+**Lekcja: najpierw porównać profil per token z produkcją, potem budować silnik.** Przewaga Turbo leżała w kilku kernelach (GEMV, fuzja GDN), a nie w całym silniku. Port tych kerneli do produkcji to mniej pracy niż dogonienie produkcji w spekulacji i prefillu.
+
