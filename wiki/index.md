@@ -69,18 +69,19 @@ Audyt liczb: [[AUDYT]].
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (31)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (91)
-- [[research/_hub|research]] — Streszczenia raportów (162)
+- [[research/_hub|research]] — Streszczenia raportów (163)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (36)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
 - [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (6)
 
 ## Ostatnio aktualizowane
 
+- 2026-11-20 [[telegram-2026-11-20-linux-7-2-pamiec|Linux 7.2 a LLM: zmiany pamięci pomagają przy odciążaniu do RAM/SSD, nie przy modelu w całości w VRAM]]
 - 2026-11-19 [[zwiad-2026-11-19|Zwiad 2026-11-19: prefill przez drugą kartę (oMLX ×5,3 dla Qwen3.8-27B), sparowana weryfikacja draftów (TensorFold +24–29% na Macu), błąd EOG w rejekcji]]
 - 2026-11-19 [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]]
 - 2026-11-19 [[megakernel-zoo|megakernel-zoo (Xingyu Dang, Princeton): agent (Claude) pisze osobny megakernel dekodu dla każdego modelu i karty]]
 - 2026-11-19 [[daisyrose-27b|DaisyRose-27B (RadixArk): pełny RL na Qwen3.8-27B, 144 × H200 przez 18 dni — duży koszt, mały zysk poza Terminal-Bench 4.1]]
-- 2026-11-19 [[lekcja-tlo-z-sesji-agenta-ginie|Procesy w tle odpalone z sesji agenta giną razem z nią: strażników kosztów uruchamiaj przez `systemd-run --user`]]
+- 2026-11-19 [[lekcja-tlo-z-sesji-agenta-ginie|Karty w chmurze nigdy nie stoją: zbieranie i usuwanie robi timer systemowy, nie sesja agenta]]
 - 2026-11-19 [[lekcja-env-switch-domyslnie-wlaczony|`ggml_cuda_env_switch` jest włączony, gdy zmiennej nie ma: nie używaj go do wyłączników]]
 - 2026-11-19 [[2026-11-19-k125-k001-xtx|2026-11-19: K-125 (KLD ścieżki kvq) i K-001 (wyciek stanu): XTX, topka-q70, Qwen3.8-27B-Uncensored Q4_K_M]]
 - 2026-11-19 [[2026-11-19-k118-nvidia-pelna-moc|2026-11-19 K-118 / K-116a / K-127: fork CUDA Enigmy na 3090, 3060 i 4080 SUPER z pełną mocą]]
@@ -90,7 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-18 [[llamampere|llamAmpere (JakeATX): fork llama.cpp pod RTX 30xx — szybki, ale domyślnie niebezstratny]]
 - 2026-11-18 [[ga-racing-rohanarun|GA z wyścigami (Rohan Arun, Open Kernel Challenge): statystyczny wybór wariantu kernela, bez zależności]]
 - 2026-11-18 [[qwen38-27b-pi-adapter|Qwen3.8-27B-pi-adapted: LoRA wytrenowana RL-em pod agenta pi — nasz model bazowy, dużo mniej wywołań narzędzi]]
-- 2026-11-18 [[lekcja-czas-optymalizacji-to-metryka|Lekcja: czas od nowego modelu lub pomysłu do zmierzonego wyniku to osobna metryka, którą mierzymy i skracamy]]
 
-Razem 778 notatek. Wygenerowano 2026-11-19 przez `tools/wiki.py index`.
+Razem 779 notatek. Wygenerowano 2026-11-20 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -807,6 +807,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (wynajem)
 - priorytet: średni
 
+### K-132 · Jądro Linux 7.0/7.2 vs 6.8 na jaroserverai (start, cache promptów w RAM) i odciążanie MoE z `mmap` na CPU
+- data: 2026-11-20
+- źródło: [[telegram-2026-11-20-linux-7-2-pamiec]]
+- test: (1) CPU teraz, bez karty: model MoE z odciążeniem z `mmap` przy ograniczonym RAM (cgroup), refault i t/s, jądro 7.0 (serwer Jarva) — pomiar bazowy; (2) jaroserverai za zgodą właściciela: boot 7.x obok 6.8, start do /health, TTFT po restore z `--cache-ram` przy presji RAM, dekod 1,7k (kontrola), PM4 i amdgpu bez błędów
+- zysk: start i przywracanie cache promptów; porady dla Enigmy przy odciążaniu; dekod XTX bez zmian [INFERENCE]
+- ryzyko karty: zmiana jądra pod ROCm 10.0 i PM4, tylko za zgodą właściciela
+- priorytet: niski
+
 ## W toku
 
 (pusto)
