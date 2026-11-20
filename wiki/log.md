@@ -526,3 +526,6 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 
 ## [2026-11-20] test | Enigma Turbo (silnik Gemini 4 Neon z agy): bełkot i 0,7 t/s na Qwen3.5-0.8B vs llama.cpp „Paris…” 60,9 t/s; kod GPU niewywoływany
 [[enigma-turbo-gemini-2026-11-20]]
+
+## [2026-11-20] silnik | Enigma Turbo w parze z Gemini 4 Argon: gate vs llama.cpp, forward_ref (top-1 5/6, greedy 51/88, było 0); Gemini robi tokenizer
+[[enigma-turbo-gemini-2026-11-20]]

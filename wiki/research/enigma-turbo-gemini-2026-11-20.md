@@ -43,6 +43,28 @@ Jeśli właściciel chce dalej rozwijać ten silnik z Gemini, warunek wejścia n
 
 Realnie to tygodnie pracy, a nasz fork llama.cpp już ma te dźwignie z pomiarami.
 
+## Praca w parze Kernel + Gemini 4 Argon High (od 2026-11-20 04:50, decyzja właściciela)
+
+Repo `~/praca/enigma-turbo` (git, poza KERNEL), zasady w `COLLAB.md`: jedna miara prawdy `gate/gate.py`, czyli referencja llama.cpp na tym samym GGUF (Qwen3.5-0.8B Q4_K_M), 26 tekstów tokenizera i 6 promptów (top-5 logprob + 16 tokenów greedy). Nikt nie zmienia gate bez zgody drugiej strony. Gemini działa przez `agy` (`--model gemini-4-argon-high --mode accept-edits`) jako unit `systemd --user`. Gdy kończy turę, `notify.sh` wrzuca wiadomość do skrzynki Kernela, który robi przegląd i zleca następną rundę.
+
+Runda 1:
+- **Gemini: tokenizer** (byte-level BPE + pretokenizacja Qwena), stan wyjściowy 1/26 identycznych.
+- **Kernel: forward.** Znalezione rozbieżności z `llama.cpp src/models/qwen35.cpp`:
+  - bramka `z` to osobny tensor `attn_gate`;
+  - `ssm_a` w GGUF ma już postać −exp(A_log);
+  - brakowało SiLU po conv1d, L2-normy q/k i skali q;
+  - `attn_q` niesie Q i bramkę sigmoid przeplecione per głowica;
+  - RoPE działa tylko na 64 z 256 wymiarów.
+- Nowy `forward_ref.cpp` (referencyjny forward FP32, wyrocznia dla szybkich ścieżek). Gate gen, przed → po:
+
+| miara | przed | po (319bdb7) |
+|---|---|---|
+| top-1 pierwszego kroku zgodny z llama.cpp | 0/1 | 5/6 |
+| tokeny greedy identyczne | 0/8 | 51/88 (2 prompty 16/16, 1 prompt 8/8) |
+| max |Δlogp| top-5 | – | 0,09–0,46 nat |
+
+Rozjazdy pojawiają się tam, gdzie model się waha (top-1 −1,2…−1,5). Otwarte: szum llama.cpp (aktywacje q8_K na CPU, KV f16) czy jeszcze jeden błąd. Najpierw pomiar podłogi szumu, dopiero potem tolerancja gate.
+
 ## Powiązane
 - [[audyt-gemini-2026-11-19]]
 - [[bramka-kld-kanarki]]
