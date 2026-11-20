@@ -523,3 +523,6 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] telegram | TensorFold v1.3.0: cp.async +24% GLM NVFP4 na sm_120; HIP bez gfx1100; K-131 (MMVQ 3090 58% pasma)
 
 ## [2026-11-20] telegram | Linux 7.2 a LLM: [[telegram-2026-11-20-linux-7-2-pamiec]], K-132
+
+## [2026-11-20] test | Enigma Turbo (silnik Gemini 4 Neon z agy): bełkot i 0,7 t/s na Qwen3.5-0.8B vs llama.cpp „Paris…” 60,9 t/s; kod GPU niewywoływany
+[[enigma-turbo-gemini-2026-11-20]]
