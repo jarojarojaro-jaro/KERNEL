@@ -443,6 +443,12 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 | Mojo/MAX, TileLang, HipKittens, tinygrad, ZML, mistral.rs, MLC | 11-20 | [[silniki-inferencji-2026-11-20]] | Język zostaje C++/HIP; DSL tylko do prototypów offline. | PM4 granica 0,46–0,86 vs graf 3,56 µs | TileLang int8 gfx11 |
 | flash-linear-attention (FLA) | 11-20 | [[silniki-inferencji-2026-11-20]] | Chunk GDN: zysk z równoległości, nie z FLOP. | ~118 kFLOP/tok·głowa | k_gdn_chunk |
 
+## Inkling 2 Mini (2026-11-20)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| Thinking Machines Inkling 2 Mini + Unsloth GGUF | 2026-11-20, llama.cpp `5f83714` | [[inkling-2-mini]] | MoE z pętlą; jakość ≈ Qwen3.8-27B, ~5× mniej odczytu; K-133 | AA 20,1; DeepSWE 48,2%; UD-Q4_K_M 16,6 GB KLD 0,0108 | test na XTX, port do topki |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

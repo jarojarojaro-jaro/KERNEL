@@ -578,3 +578,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo: taśma PM4 z produkcji — dekod 45,4 → 47,5 t/s, spec +6,2%, bit w bit; accept() 0,84 → 0,34 ms; p_min 0 (długie +6%); luka do produkcji: długie 2k 103,8 vs 107,3, kopie 265 vs 306
 
 ## [2026-11-20] silnik | Enigma Turbo odłożony (właściciel); duet Kernel + Gemini Argon High optymalizuje produkcyjną llama.cpp — dźwignia 1: GEMV Turbo w MMVQ (20,4 → 18,9 ms/token)
+
+## [2026-11-20] research | Inkling 2 Mini (Thinking Machines): MoE z pętlą warstw, jakość ≈ Qwen3.8-27B (AA 20,1) przy ~3,3 GB odczytu na token; mainline llama.cpp ma inkling2, topka nie; K-133 [[inkling-2-mini]]
