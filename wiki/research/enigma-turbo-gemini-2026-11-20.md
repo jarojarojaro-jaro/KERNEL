@@ -151,8 +151,15 @@ Gemini 4 Argon High wyczerpał limit w rundzie 3 (lookup + pętla w serwerze; re
 | `k_gemv_swiglu_q8`: gate/up + swiglu + int8 w jednym kernelu (tylko N=2..5) | spec K=2 73,80 t/s | 74,38 t/s | +0,8% (przy N=1 i N=8 wolniej, tam stara ścieżka) |
 | rozmiar słownika draftu 8k/16k/32k/**64k**/96k/128k | — | 61,7/64,4/67,9/**74,4**/73,8/72,8 t/s (K=2) | 64k optimum: akceptacja 0,63 stoi powyżej, draft droższy |
 | **stan GDN/conv jako ping-pong** (bez migawki 151 MB i 96 memcpy na krok) | spec K=2 / K=3 74,44 / 74,19 t/s | **77,67 / 77,58 t/s** | **+4,3 / +4,6%** (weryfikacja 25,14 → 24,28 ms, accept 0,64 → 0,35 ms) |
+| `forward_all_argmax`: argmax weryfikacji na karcie (N intów zamiast N × 248k logitów) | spec K=2 77,53 t/s | 78,54 t/s | +1,3% |
+| `k_attn_w`: atencja fala-na-klucz, online softmax (stara: wątek na klucz, 47,7 µs/wywołanie) | dekod 44,06; 1024 tok. bez spec / spec 39,97 / 84,49 t/s | 45,23; 44,54 / 89,83 t/s | +2,7%; +11,4 / +6,3% |
+| norma RMS w epilogu GEMV (ostatni blok, licznik atomowy) | dekod 45,40 t/s | 42,16 t/s | −7% (odrzucone: `__threadfence` + atomik w ~640 blokach) |
+| K-split GEMV dla macierzy ≤ 8192 wierszy | 45,15 t/s | 45,12–45,31 t/s | szum (odrzucone) |
+| `k_gdn_conv_norm`: conv + L2 jako prolog kernela GDN (48 uruchomień mniej na token) | dekod 45,29; spec K=2 78,08 t/s | 45,56; 80,91 t/s | +0,6%; +3,6% (krok 25,6 → 25,5 ms, reszta: akceptacja 0,61 → 0,63 na zmienionym tekście) |
 
 Serwer po ping-pongu (`test_serve --compare-spec`, 5/5 bit w bit): kod C++ 191,98 t/s (×4,65), Python 168,02 (×4,07), krótkie odpowiedzi 76–90 t/s; T=0,7: 43,2 → 66,8–70,8 t/s.
+
+Profil dekodu 27B (rocprofv3, po zmianach): GEMV średnio ~89% pasma (gate/up 877 GB/s, lm_head Q6_K 908, ffn_down 835–850, ssm_out/wo ~650 GB/s); poza GEMV ~3,8 ms/token, z czego przerwy między ~640 kernelami ~2,3 ms (mediana 3,6 µs). Lekcja: na RDNA3 synchronizacja między blokami (fence + atomik) kosztuje więcej niż przerwa między kernelami w grafie; zysk daje tylko łączenie kerneli, które i tak dzielą dane w jednym bloku.
 
 Rozkład kroku spekulacji (K=2): draft MTP 1,69 ms, weryfikacja 25,45 ms (90%), argmax na hoście 0,26, accept 0,67, razem 28,07 ms. Weryfikacja N=1/2/4/5/8: 23,3/24,7/26,4/28,5/33,7 ms. Dźwignią jest przejście celu (GEMV 86% pasma i ~2,4 ms przerw między ~640 kernelami na token), nie draft.
 

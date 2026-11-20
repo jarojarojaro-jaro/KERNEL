@@ -546,3 +546,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo pętla: k_gdn_norm (dekod 43,78 → 44,26, spec 72,27 → 73,59 t/s), rozkład kroku spec (weryfikacja 90%), lekcja: akceptacja ≠ identyczność
 
 ## [2026-11-20] silnik | Enigma Turbo pętla: ping-pong stanu GDN (spec 74,4 → 77,7 t/s, +4,3%), fuzja swiglu +0,8%, słownik draftu 64k optimum; serwer kod 192 t/s
+
+## [2026-11-20] silnik | Enigma Turbo pętla: atencja fala-na-klucz (+11,4% przy 1024 tok.), argmax na karcie (+1,3% spec), 2 próby odrzucone (norma w epilogu −7%, K-split szum)
