@@ -36,6 +36,15 @@ W kodowaniu agentowym jest lepszy (DeepSWE 48,2 vs 42,2%), więc na XTX powinien
 - **NVFP4 natywnie:** przyspieszenie tensorowe tylko na Blackwell (5060 Ti / 50xx: FP4). Na XTX, Ampere i Apple idzie przez GGUF (Q4_K) z KLD 0,011.
 - **Silnik:** mainline llama.cpp ma architekturę `inkling2` (`src/models/inkling2.cpp` w klonie 5f83714 z 2026-11-20). **Topka (baza b11528) jej nie ma**, więc potrzebny rebase (K-056) albo port architektury. Brak głowicy MTP [INFERENCE: nie ma jej w karcie modelu], więc spekulacja tylko z lookupu albo z osobnego draftera.
 
+## GGUF i wersje bez cenzury (stan 2026-11-21 03:00)
+- **Oficjalnego GGUF od Thinking Machines nie ma.** Producent wydał tylko safetensors (NVFP4 + MXFP8, ~20 GB). Najbliżej oficjalnego jest `ggml-org/Inkling-2-Mini-GGUF` od zespołu llama.cpp (IQ4_NL 17,6 GB, Q8_0 27,8 GB, BF16). Najwięcej kwantów ma `unsloth/Inkling-2-Mini-GGUF` (od UD-IQ1_S 7,8 GB do UD-Q8_K_XL 22,9 GB) razem z drafterem **DSpark** (`dspark-Inkling-2-Mini-Q8_0.gguf`, 0,40 GB) do spekulacji.
+- **Wersje bez cenzury:**
+  - `AtomicChat/Inkling-2-Mini-Uncensored-GGUF`: AD-Q4_K 16,53 GB (KLD 0,0115 do BF16, top-1 95,6%) i AD-IQ3_S 13,34 GB, plus LoRA rank-1 (44 MB) na dowolny GGUF ich bazy. Według autorów 0/8 i 0/104 odmów, perpleksja +0,3%, ale KL pierwszego tokenu nie przeszło ich progu (0,375 > 0,10).
+  - `OpenUncensored/Inkling-2-Mini-Uncensored`: abliteracja tylko wyjść atencji, MMLU 78,95 → 79,47%. Tylko safetensors, bez GGUF.
+  - Do tego `JoaoZaokk/Inkling-2-Mini-Heretic-GGUF` i `IndrasMirror/...-XQ-Uncensored` (bez opisu, nie sprawdzone).
+- **Silnik:** pliki Unsloth i AtomicChat wymagają PR [#32695](https://github.com/ggml-org/llama.cpp/pull/32695) (Unsloth, „looped arch”, otwarty, commit `6196d98`). Master ma #32694 dla plików ggml-org.
+- **Wybór na XTX (24 GB):** AtomicChat AD-Q4_K 16,5 GB (bez cenzury, zostaje ~6 GB na KV i draft) plus DSpark Q8_0. Alternatywa z najlepszą jakością w 24 GB: UD-Q4_K_XL 17,6 GB (KLD 0,0107). UD-Q8_K_XL 22,9 GB zostawia za mało miejsca na kontekst. Pobieranie AD-Q4_K i DSpark trwa (~75 min), build PR #32695 dla gfx1100 też.
+
 ## Lekcje
 - Pętla warstw to nowy wymiar kompromisu jakość / pasmo: mniej wag, więcej obliczeń na wagę. Dla dekodu ograniczonego pasmem (batch 1) oznacza to więcej jakości na GB/s, dopóki pętla nie mieści się w cache.
 - Pomysł na nasz silnik [INFERENCE]: przy pętli te same wagi idą 3 razy z rzędu. Kernel MoE, który trzyma kafel wag w LDS albo L2 przez 3 przejścia, oszczędzi do 2/3 odczytu środkowych bloków.
