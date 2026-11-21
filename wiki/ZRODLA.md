@@ -449,6 +449,14 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 |---|---|---|---|---|---|
 | Thinking Machines Inkling 2 Mini + Unsloth GGUF | 2026-11-20, llama.cpp `5f83714` | [[inkling-2-mini]] | MoE z pętlą; jakość ≈ Qwen3.8-27B, ~5× mniej odczytu; K-133 | AA 20,1; DeepSWE 48,2%; UD-Q4_K_M 16,6 GB KLD 0,0108 | test na XTX, port do topki |
 
+## Silniki „Strata-rodzina” (wpis jun1228909, 2026-11-20; Telegram 03:20)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| Basalt (jesdga95, fork Strata) | v0.5.0 (11-20) | — | Nowy; Blackwell, MoE GPU+CPU; nie nasz sprzęt — tylko obserwacja | brak liczb we wpisie | zwiad: compwatch github.repos |
+| Sync-Strata (hiruhiru2005) | v0.1.3 (11-20) | — | Nowy; własne rekwanty Qwen3.8-Flash-Next (stratne dla nas) | brak liczb | tylko obserwacja |
+| Strata / TensorFold / Maya / Yasakani | v0.2.17 / v1.3.1 / v1.1.69 / v0.2.0 | [[silniki-inferencji-2026-11-20]] | delta wersji; brak nowych liczb XTX we wpisie | — | delta w porannym zwiadzie |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

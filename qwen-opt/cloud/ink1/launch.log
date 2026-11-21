@@ -1,0 +1,15 @@
+offer 51428264 machine 31878: RTX 3090, $0.168/h, download $0.0000026041666666666666/GB, 1 h + 22 GB ≈ $0.17
+{"error": true, "status_code": 400, "msg": "error 404/3603: no_such_ask  Instance type by id 51428264 is not available."}
+create failed for offer 51428264: 
+offer 58627332 machine 68109: RTX 3090, $0.196/h, download $0.0006510416666666666/GB, 1 h + 22 GB ≈ $0.21
+instance 61737323 (ink1-3090, offer 58627332); on-instance guard + vast-reaper.timer
+hostguard 61737323: RTX 3090 power 390.00/390.00 W, mem max 9751/9751 MHz, 42 C -> ok 
+Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
+Have fun!
+Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
+Have fun!
+Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
+Have fun!
+1795227290 start
+guard alive
+started on 61737323 (vast-reaper collects and destroys)

@@ -580,3 +580,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-20] silnik | Enigma Turbo odłożony (właściciel); duet Kernel + Gemini Argon High optymalizuje produkcyjną llama.cpp — dźwignia 1: GEMV Turbo w MMVQ (20,4 → 18,9 ms/token)
 
 ## [2026-11-20] research | Inkling 2 Mini (Thinking Machines): MoE z pętlą warstw, jakość ≈ Qwen3.8-27B (AA 20,1) przy ~3,3 GB odczytu na token; mainline llama.cpp ma inkling2, topka nie; K-133 [[inkling-2-mini]]
+
+## [2026-11-21] stan nocy | duet: r9 V5 odrzucony (−7% e2e), r10 FA_NATIVE_Q4 0% prędkości (KLD PASS); 7 testów kolejki (K-048 odrzucone, K-031 0,4–0,8%, K-053 mediana 141 t/s, K-054 low zostaje, K-044 25 łatek); Inkling: pliki unsloth XL nie ładują się w PR #32695 (734 vs 714 tensorów) → build mastera; AtomicChat AD dociągany; 3090 Vast przepadła bez wyników
