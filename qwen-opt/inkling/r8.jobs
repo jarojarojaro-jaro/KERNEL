@@ -1,0 +1,5 @@
+# Gemini ink-r8 gate; owner OK 2026-11-21
+ink-r8-kld|600|~/qwen-opt/inkling|./r8.sh kld
+ink-r8-ab|600|~/qwen-opt/inkling|./r8.sh ab
+ink-r8-serve|1800|~/qwen-opt/inkling|./r8.sh serve
+ink-r8-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
