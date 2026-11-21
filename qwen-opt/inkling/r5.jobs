@@ -1,0 +1,6 @@
+# Gemini ink-r5 gate (FUSE3); owner OK 2026-11-21
+ink-r5-md5|600|~/qwen-opt/inkling|./r5.sh md5
+ink-r5-kld|600|~/qwen-opt/inkling|./r5.sh kld
+ink-r5-abab|600|~/qwen-opt/inkling|./r5.sh abab
+ink-r5-dbg|300|~/qwen-opt/inkling|./r5.sh dbg
+ink-r5-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -46,6 +46,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - INK_FUSE + INK_FUSE2: tg64 26,85 → 37,31 t/s (+39%); KLD 0,0024 do wersji bez sklejeń, PPL bez zmian (max KLD 1,61 do sprawdzenia);
   - UD-Q4_K_XL się wczytuje: tg64 28,6 → 39,7 t/s (+39%), czat ~38 t/s;
   - DSpark nadal czeka na rundę 4.
+- wynik 2026-11-21 08:25 (runda 4):
+  - taśma PM4 działa po usunięciu kernela rocBLAS (NOBLAS): 1 taśma, 3925 dispatchy, tekst bajt w bajt;
+  - tg64 37,35 → 43,0 t/s (+15%), od stocku 26,85 → 43,0 (+60%); rozrzut ±2,5;
+  - DSpark: nowy błąd (markov_w2 wymagany), runda 6.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19
