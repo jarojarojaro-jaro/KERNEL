@@ -55,6 +55,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - czat bez zgadywania stabilnie 47,6–50,3 t/s (stock 26,0–27,1, +85%);
   - DSpark działa (akceptacja 0,83 przy 3 tokenach, 0,55 przy 7), ale jest wolniejszy od czatu bez zgadywania (39 / 53 t/s na kopiach, 21–22 t/s przy T=0,7);
   - przyczyna: grafy weryfikacji bez taśmy PM4 i 170 ms na każde tworzenie grafu.
+- wynik 2026-11-21 09:30 (diagnoza Kernela):
+  - najlepsze dziś ustawienie ze zgadywaniem to DSpark z 7 tokenami draftu bez PM4: kopie 85 t/s, długi prompt 2k 67,7 t/s, T=0,7 26,4 t/s (Qwen w produkcji: 252 / 97,5 / 79);
+  - PM4 psuje zgadywanie, bo kernel atencji przy weryfikacji używa scratch i taśma jest odrzucana;
+  - FUSE3: błąd w pakowaniu wag q/k/v (KLD 4,68 → 0,139 po wyłączeniu), drugi mniejszy błąd do znalezienia; runda 8 Gemini startuje o 11:25.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19

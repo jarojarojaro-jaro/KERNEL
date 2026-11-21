@@ -1,0 +1,3 @@
+# Kernel FUSE3 bisect (KLD per cut)
+ink-b4|900|~/qwen-opt/inkling|./b4.sh
+ink-b4-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
