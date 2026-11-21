@@ -1,0 +1,5 @@
+# duo r9 (run after the owner's "tak"): V5 DRAM-cold fix ffc6030 — failing-case isolation, pp5 0/8k, xbench; then :8080 back
+duo-r9-test|900|~/qwen-opt/duo|./r3.sh r9test
+duo-r9-bench|900|~/qwen-opt/duo|./r3.sh r9bench
+duo-r9-xb|1800|~/qwen-opt/duo|env VAR=GGML_HIP_MMVQ_V5 ARMS="0 1 0 1" XB_LABEL=r9v5 python3 r1c.py
+duo-r9-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

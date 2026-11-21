@@ -76,3 +76,9 @@ esac
 case ${1:-} in
   r8fail) env GGML_HIP_MMVQ_V5=1 LD_LIBRARY_PATH=$NEW:$R timeout 400 $NEW/test-backend-ops test -o MUL_MAT 2>&1 | grep -E "FAIL" | head -12 ;;
 esac
+case ${1:-} in
+  r9test) for v in 0 2 3 1; do echo "== V5=$v $(env GGML_HIP_MMVQ_V5=$v LD_LIBRARY_PATH=$NEW:$R timeout 200 $NEW/test-backend-ops test -o MUL_MAT -p 'type_a=(q4_K|q6_K),n=5' 2>&1 | grep -E 'FAIL|passed' | tr '\n' ' ')"; done
+          env GGML_HIP_MMVQ_V5=1 LD_LIBRARY_PATH=$NEW:$R timeout 400 $NEW/test-backend-ops test -o MUL_MAT 2>&1 | grep -E "FAIL" | head -8 ;;
+  r9bench) for v in 0 1 0 1; do
+          echo "V5=$v $(env GGML_HIP_MMVQ_V5=$v GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 LD_LIBRARY_PATH=$NEW:$R $NEW/llama-bench -m $M -p 5 -ub 5 -n 0 -fa on -ngl 99 -ctk q4_0 -ctv q4_0 -d 0,8192 -r 10 2>&1 | grep -E 'pp5' | awk -F'|' '{printf "%s %s; ", $(NF-2), $(NF-1)}')"; done ;;
+esac
