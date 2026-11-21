@@ -577,6 +577,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0 t/s wprost; wykrywa łatki bez zysku (koszt utrzymania)
 - ryzyko karty: niskie (mikrobenche)
 - priorytet: niski (higiena)
+- wynik 2026-11-21 (częściowo: tylko łatki z wyłącznikiem env, bez łatek „tylko build” i bez `kt tune`): **żadna łatka nie daje ≥ 3% na Qwenie, ale prawie wszystkie mierzalnie pomagają. Kandydaci do usunięcia: 52, 58 i 59 (Qwen), 62 i 64 (LFM).** Narzędzie `loo.py` zostało bez zmian; owijka `Q/k044/loo_topka.py` puszcza te same próby (ABBA) na silniku produkcyjnym `~/llama-topka` z kolejki, bez zagnieżdżonego flocka, port testowy, PM4 0. Qwen UD-Q4_K_XL, tg128 + serwer MTP n4 (2 prompty × 256 tok., T=0), 4 rundy. Spadek po wyjęciu łatki (95% CI) w serwerze: 31 top-k −2,72%, 33 replay GDN −1,58%, 29 asynchroniczne wejścia −1,45%, 24 para MMVQ −1,30%, 47 −1,23%, 28 −0,92%, 25 −0,91%, 30 −0,82%, 27 −0,65%, 38 −0,40%, 26 −0,28%. Neutralne: 48 (0,00%), 58 (+0,13% / tg +0,04%), 59 (−0,06% / tg −0,19%). Szybciej bez łatki: 52 (`GGML_HIP_MMVQ_N1_ROWS`) tg +1,31% ± 0,11, w serwerze +0,29% (neutralnie). LFM2.5-24B, 2 rundy, szerokie CI: najwięcej dają 48 (−13,7%), 31 (−12,2%), 50 tg (−9,4%), 53 tg (−6,7%), 29 (−6,0%), 49 tg (−5,3%), 51 (−4,5%). Szybciej bez łatki: 62 tg +0,39% i 64 tg +0,79%, w serwerze neutralnie. Pominięte: 60 (to sam PM4, a punkt odniesienia jest z PM4 0), 65 (flaga web UI, w produkcji i tak wyłączona), CLI 4 i 32 oraz 22 łatki „tylko build” (wymagają buildów z revertem, czyli pracy nad kodem). Decyzja o usuwaniu łatek należy do właściciela. Źródło: `~/qwen-opt/queue/logs/k044-*.log`, raport `~/qwen-opt/k044/loo/loo-report.md`, wyniki `loo-results.jsonl` (316 prób, 0 błędów).
 
 ### K-045 · Model kosztu weryfikacji MoE LFM2.5 (pomiar G1) i drafter dla LFM (LFM2.5-2.6B-QAD-Q4_0 jest na dysku)
 - data: 2026-10-19 (raport 18), drafter 2026-10-14
@@ -665,6 +666,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: jakość, nie prędkość; potwierdza albo zmienia domyślny effort low (dziś HE+ 92,7%, MBPP+ 80,2%)
 - ryzyko karty: brak
 - priorytet: niski (nie prędkość)
+- wynik 2026-11-21 (częściowo: HE+ 130 ze 164 zadań, MBPP+ 98 z 378; 10 jobów po ≤ 10 min, codegen wznawiany): **xhigh nie poprawia dokładności, a kosztuje ~3,7× więcej tokenów, więc domyślne low zostaje.** Konfiguracja produkcyjna na porcie testowym, `EFFORT=xhigh`. Porównanie z przebiegiem low z 2026-11-09 na tych samych zadaniach. HumanEval+ plus: 94,6% (123/130) → 93,8% (122/130), base 97,7% → 94,6%. MBPP+ plus: 85,7% → 85,7% (84/98), base 95,9% → 95,9%. Między ramionami przechodzi inny zestaw zadań: 7 zadań zmienia wynik w HE, 10 w MBPP. Tokeny na odpowiedź: HE 730 → 2637, MBPP 613 → 2386. Przy xhigh 4 odpowiedzi HE i 3 MBPP dobiły do limitu 32 768 tokenów. Dekod 134–135 t/s. Źródło: `~/qwen-opt/queue/logs/k054-*.log`, `~/qwen-opt/evalplus/runs/uncensored-xhigh/`, `uncensored-xhigh-pad/`, skrypty `Q/k054/k054.sh`, `k054_cmp.py`.
 
 ### K-055 · Usunąć z topki martwy kod capu LDS FA (`57204db1e`, no-op na ROCm 10.0 pre4) przy najbliższym buildzie
 - data: 2026-11-06
