@@ -1,0 +1,5 @@
+# Gemini ink-r6 gate (DSpark, PM4 counters, FUSE3 op tests); owner OK 2026-11-21
+ink-r6-tbo|600|~/qwen-opt/inkling|./r6.sh tbo
+ink-r6-pm4|600|~/qwen-opt/inkling|./r6.sh pm4
+ink-r6-serve|1500|~/qwen-opt/inkling|./r6.sh serve
+ink-r6-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -50,6 +50,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - taśma PM4 działa po usunięciu kernela rocBLAS (NOBLAS): 1 taśma, 3925 dispatchy, tekst bajt w bajt;
   - tg64 37,35 → 43,0 t/s (+15%), od stocku 26,85 → 43,0 (+60%); rozrzut ±2,5;
   - DSpark: nowy błąd (markov_w2 wymagany), runda 6.
+- wynik 2026-11-21 08:45 (runda 5): FUSE3 daje tg64 42,3 → 58,0 t/s (+37%), ale psuje model (KLD 4,68, PPL ×114, tekst bez sensu) → wyłączone, Gemini szuka błędu (runda 7); do produkcji tylko z KLD PASS.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19

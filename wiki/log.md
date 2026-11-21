@@ -590,3 +590,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-21] Inkling r3 | FUSE+FUSE2 tg64 26,85→37,31 (+39%), KLD 0,0024; XL ładuje się, 28,6→39,7
 
 ## [2026-11-21] Inkling r4 | PM4 tape 3925 dispatchy (NOBLAS), tg64 37,35→43,0 (+15%), od stocku +60%; DSpark markov_w2 regres
+
+## [2026-11-21] Inkling r5 | FUSE3 58,0 t/s (+37%) ale KLD 4,68 / PPL ×114 → zepsute, wyłączone; lekcja: każde sklejenie przez bramkę KLD
