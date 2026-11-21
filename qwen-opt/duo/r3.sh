@@ -82,3 +82,11 @@ case ${1:-} in
   r9bench) for v in 0 1 0 1; do
           echo "V5=$v $(env GGML_HIP_MMVQ_V5=$v GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 LD_LIBRARY_PATH=$NEW:$R $NEW/llama-bench -m $M -p 5 -ub 5 -n 0 -fa on -ngl 99 -ctk q4_0 -ctv q4_0 -d 0,8192 -r 10 2>&1 | grep -E 'pp5' | awk -F'|' '{printf "%s %s; ", $(NF-2), $(NF-1)}')"; done ;;
 esac
+case ${1:-} in
+  r10test) for o in FLASH_ATTN_EXT FLASH_ATTN_EXT_MASKED_TAIL; do echo "== $o $(env GGML_HIP_FA_NATIVE_Q4=1 LD_LIBRARY_PATH=$NEW:$R timeout 300 $NEW/test-backend-ops test -o $o 2>&1 | grep -E 'FAIL|passed' | tail -2 | tr '\n' ' ')"; done ;;
+  r10bench) for v in 0 1 0 1; do
+          echo "NQ4=$v $(env GGML_HIP_FA_NATIVE_Q4=$v GGML_HIP_FA_D256_VAR=83 LD_LIBRARY_PATH=$NEW:$R $NEW/llama-bench -m $M -p 2048 -n 0 -fa on -ngl 99 -ctk q4_0 -ctv q4_0 -ub 2048 -d 0,32768 -r 3 2>&1 | grep -E 'pp2048' | awk -F'|' '{printf "%s %s; ", $(NF-2), $(NF-1)}')"; done ;;
+  r10kld) cd ~/qwen-opt/duo; T=~/wt/lfm3-prof/wikitext-2-raw/wiki.test.raw
+       env GGML_HIP_FA_NATIVE_Q4=1 GGML_HIP_FA_D256_VAR=83 LD_LIBRARY_PATH=$NEW:$R GGML_HIP_PM4=0 $NEW/llama-perplexity -m $M -f $T -c 8192 --chunks 2 -b 8192 -ngl 999 -fa on -ub 512 -ctk q4_0 -ctv q4_0 --kl-divergence-base ref.kld --kl-divergence > r10on512.log 2>&1
+       echo "== ub 512 NATIVE_Q4 vs fix"; python3 ~/qwen-opt/tools/kld_gate.py compare fix512.log r10on512.log ;;
+esac

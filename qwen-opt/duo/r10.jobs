@@ -1,0 +1,5 @@
+# duo r10 (run after the owner's "tak"): GGML_HIP_FA_NATIVE_Q4 (K-022) — FA tests, pp2048 at 0/32k, KLD ub 512, compute buffer -lv 4; then :8080 back
+duo-r10-test|700|~/qwen-opt/duo|./r3.sh r10test
+duo-r10-bench|900|~/qwen-opt/duo|./r3.sh r10bench
+duo-r10-kld|900|~/qwen-opt/duo|./r3.sh r10kld
+duo-r10-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
