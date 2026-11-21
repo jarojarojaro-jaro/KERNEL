@@ -1,0 +1,4 @@
+# 2026-11-21 owner ("pobierz … zoptymalizujemy, ma zapierdalać"): Inkling 2 Mini baseline on the XTX; then :8080 back
+ink-ad-bench|600|~/qwen-opt/inkling|INK_B=$HOME/wt/ink-stock-bin INK_M=$HOME/models/inkling/Inkling-2-Mini-Uncensored-AD-Q4_K.gguf ./base.sh bench
+ink-ad-serve|1200|~/qwen-opt/inkling|INK_B=$HOME/wt/ink-stock-bin INK_M=$HOME/models/inkling/Inkling-2-Mini-Uncensored-AD-Q4_K.gguf ./base.sh serve
+ink-ad-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

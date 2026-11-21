@@ -1,0 +1,6 @@
+# Gemini ink-r2 gate (PM4 port + INK_FUSE) on Inkling AD-Q4_K; owner OK 2026-11-21 ("zoptymalizujemy, ma zapierdalać")
+ink-r2-md5|600|~/qwen-opt/inkling|./r2.sh md5
+ink-r2-dbg|300|~/qwen-opt/inkling|./r2.sh dbg
+ink-r2-abab|600|~/qwen-opt/inkling|./r2.sh abab
+ink-r2-serve|1200|~/qwen-opt/inkling|GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 GGML_HIP_INK_FUSE=1 INK_TAG=r2 INK_B=$HOME/wt/upstream-inkling/build-hip/bin INK_M=$HOME/models/inkling/Inkling-2-Mini-Uncensored-AD-Q4_K.gguf ./base.sh serve
+ink-r2-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
