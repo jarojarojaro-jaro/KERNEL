@@ -51,6 +51,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - tg64 37,35 → 43,0 t/s (+15%), od stocku 26,85 → 43,0 (+60%); rozrzut ±2,5;
   - DSpark: nowy błąd (markov_w2 wymagany), runda 6.
 - wynik 2026-11-21 08:45 (runda 5): FUSE3 daje tg64 42,3 → 58,0 t/s (+37%), ale psuje model (KLD 4,68, PPL ×114, tekst bez sensu) → wyłączone, Gemini szuka błędu (runda 7); do produkcji tylko z KLD PASS.
+- wynik 2026-11-21 09:05 (runda 6):
+  - czat bez zgadywania stabilnie 47,6–50,3 t/s (stock 26,0–27,1, +85%);
+  - DSpark działa (akceptacja 0,83 przy 3 tokenach, 0,55 przy 7), ale jest wolniejszy od czatu bez zgadywania (39 / 53 t/s na kopiach, 21–22 t/s przy T=0,7);
+  - przyczyna: grafy weryfikacji bez taśmy PM4 i 170 ms na każde tworzenie grafu.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19

@@ -1,0 +1,3 @@
+# Kernel diag: DSpark slower than plain (PM4 refusals, materialize cost)
+ink-d7|1500|~/qwen-opt/inkling|./d7.sh
+ink-d7-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -592,3 +592,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-21] Inkling r4 | PM4 tape 3925 dispatchy (NOBLAS), tg64 37,35→43,0 (+15%), od stocku +60%; DSpark markov_w2 regres
 
 ## [2026-11-21] Inkling r5 | FUSE3 58,0 t/s (+37%) ale KLD 4,68 / PPL ×114 → zepsute, wyłączone; lekcja: każde sklejenie przez bramkę KLD
+
+## [2026-11-21] Inkling r6 | czat 49,5 t/s stabilnie (+85% od stocku); DSpark działa, akceptacja 0,83/0,55, ale wolniejszy (taśmy odrzucone, 170 ms na graf); Gemini bez kwoty do ~11:20, Kernel sam bisekcja FUSE3
