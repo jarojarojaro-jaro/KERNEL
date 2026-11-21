@@ -1,0 +1,4 @@
+# 2026-11-21 owner OK: K-053 the 12 NInfer scenario fixtures (YASAKANI set: greedy, thinking off) on the production config; then :8080 back
+k053-a|600|~/qwen-opt/k053|bash k053.sh k053-a scenario_code_cuda scenario_code_python scenario_code_typescript scenario_structured_jsonl scenario_structured_csv scenario_structured_sql
+k053-b|600|~/qwen-opt/k053|bash k053.sh k053-b scenario_story_zh_scifi scenario_story_en_mystery scenario_story_zh_dialogue scenario_translation_zh_en scenario_translation_en_zh scenario_translation_markdown
+k053-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

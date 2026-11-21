@@ -1,0 +1,6 @@
+# 2026-11-21 owner OK: K-031 host-gap trace at 1.7k/94k, ABBA A = production (mask fast) vs B = LLAMA_KV_MASK_FAST=0; then :8080 back
+k031-A1|600|~/qwen-opt/k031|bash k031.sh A k031-A1 1700,94000
+k031-B2|600|~/qwen-opt/k031|bash k031.sh B k031-B2 1700,94000
+k031-B3|600|~/qwen-opt/k031|bash k031.sh B k031-B3 1700,94000
+k031-A4|600|~/qwen-opt/k031|bash k031.sh A k031-A4 1700,94000
+k031-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

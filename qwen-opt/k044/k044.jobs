@@ -1,0 +1,14 @@
+# 2026-11-21 owner OK: K-044 LOO of the env-switch patches on ~/llama-topka (Qwen UD-Q4_K_XL, tg128 + serve MTP n4, ABBA 2 rounds, PM4 off), one patch per job; then :8080 back
+k044-p24|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 24
+k044-p25|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 25
+k044-p27|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 27
+k044-p28|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 28
+k044-p29|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 29
+k044-p52|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 52
+k044-p58|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 58
+k044-p59|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 59
+k044-p26-30|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 26,30
+k044-p31-33|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 31,33
+k044-p38-47|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 38,47
+k044-p48|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --only 48
+k044-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -1,0 +1,11 @@
+# 2026-11-21 owner OK: K-044 part 2: Qwen rounds 3-4 (ABBA x2) of the 15 env patches, then the LFM env patches (2 rounds); finished trials are skipped; then :8080 back
+k044-q4-24-25-27|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --rounds 4 --only 24,25,27
+k044-q4-28-29-52|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --rounds 4 --only 28,29,52
+k044-q4-58-59-26-30|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --rounds 4 --only 58,59,26,30
+k044-q4-31-33-38-47-48|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --rounds 4 --only 31,33,38,47,48
+k044-lfm-25-29-31-47|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --models lfm --only 25,29,31,47
+k044-lfm-48-49-50-51|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --models lfm --only 48,49,50,51
+k044-lfm-52-53-54-55|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --models lfm --only 52,53,54,55
+k044-lfm-56-57-58-59|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --models lfm --only 56,57,58,59
+k044-lfm-62-64|600|~/qwen-opt/k044|~/qwen-opt/l1tok/chat8080.sh stop; env GGML_HIP_PM4=0 LLAMA_MTP_REQUANT_CACHE=$HOME/.cache/llama-mtp python3 loo_topka.py --models lfm --only 62,64
+k044b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

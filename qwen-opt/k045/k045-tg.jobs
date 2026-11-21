@@ -1,0 +1,3 @@
+# 2026-11-21 owner OK: K-045 calibration: tg128 of the same build/config (the fixed per-call cost of the pN path); then :8080 back
+k045-tg|300|~/qwen-opt/k045|~/qwen-opt/l1tok/chat8080.sh stop; GGML_HIP_PM4=0 LD_LIBRARY_PATH=$HOME/llama-topka/bin:/opt/rocm/core-10.0/lib ~/llama-topka/bin/llama-bench -m ~/models/lfm/LFM2.5-24B-A2B-Q5_K_M.gguf -ngl 999 -fa 1 -ctk q8_0 -ctv q8_0 -b 2048 -ub 2048 -p 0 -n 128 -d 0,32768 -r 3 -o md 2>&1 | grep -E '^\|'
+k045b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -464,6 +464,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: decode 199–255k +0,5…1,5%, fill 255k +0…3%, −256 MiB VRAM i −256 MiB pinned [SZACUNEK]
 - ryzyko karty: brak (host); wariant w kernelu = nowy kernel w PM4
 - priorytet: niski (sam poniżej progu, łączyć z K-012)
+- wynik 2026-11-21: **maska leży na ścieżce krytycznej, ale zdjęcie jej daje tylko ~0,4% przy 94k i ~0,8% przy 199k, poniżej progu.** Ślad hosta `LLAMA_HOSTGAP_TRACE=16`, konfiguracja produkcyjna na porcie testowym, jedno zimne żądanie na głębokość (T=0, 256 tok.). Ramię A to produkcja (szybka maska). Ramię B to `LLAMA_KV_MASK_FAST=0`, czyli celowo wolniejsza maska jako sonda: jeśli krok rośnie o tyle, o ile rośnie budowa maski, to maska blokuje GPU. Przy 94k (ABBA): `graph→inputs` A 136 µs, B 396 µs (+260 µs); ściana kroku 32,83 → 33,07 ms (+0,24 ms, prawie 1:1); decode 120,95 → 119,98 t/s (−0,8%). Przy 199k (jedna para A/B, wypełnienie 360 s): `graph→inputs` A 303 µs, B 909 µs; ściana 37,77 → 38,67 ms; decode 95,05 → 93,08 t/s (−2,1%). Przy 1,7k budowa maski kosztuje ~40 µs i A = B. md5 identyczne w obu ramionach (94k `3f0651b0`, 199k `efdb8053`, to samo co w [[2026-11-08-kvq-once-profil]]). Zysk z przeniesienia maski poza ścieżkę krytyczną to najwyżej czas maski w A: 136 µs na 32,8 ms (0,4%) i 303 µs na 37,8 ms (0,8%). Priorytet zostaje niski, łączyć z K-012. Źródło: `~/qwen-opt/queue/logs/k031-{A1,B2,B3,A4,199A,199B}.log`, skrypt `Q/k031/k031.sh`.
 
 ### K-032 · Amplifikacja odczytu KV w `kvq` (bajty z liczników vs 1152 B/token/warstwę)
 - data: 2026-11-07
@@ -481,6 +482,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0% sam; wyjaśnia, czy −1,9% decode na eco to fabric
 - ryzyko karty: brak (odczyt)
 - priorytet: niski (darmowa diagnostyka)
+- wynik 2026-11-21 (tylko eco, zegarów nie zmieniamy, więc ramienia stock nie ma): **pod obciążeniem pamięć i fabric stoją na najwyższych poziomach, które faktycznie są używane.** Pętla `dpm_poll.sh` (co 0,25 s, sam odczyt sysfs) chodziła przy 9 jobach: decode 1,7k/94k/199k, prefill 12k/94k/199k, pp4096, LFM pN. Próbki z `gpu_busy` ≥ 50%: MCLK 1249 MHz (najwyższy poziom) w 88–100% próbek, FCLK 2000 MHz w 88–100%, a poziomy 2201–2301 MHz w 0–5%. SCLK mediana 2183–2187 MHz (sufit eco 2200). Spadki do 772 MHz MCLK i 1200 MHz FCLK (0–12%) wypadają na krótkie przerwy między żądaniami. Pamięć nie jest dławiona na eco. Czy −1,9% decode na eco to FCLK 2000 zamiast 2301, rozstrzygnie dopiero odczyt na stocku przy okazji, gdy karta i tak będzie na stocku (sami nie przełączamy). Źródło: `~/qwen-opt/queue/logs/k048-*.log`, `k031-*.log`, `k045-g1.log`, skrypty `Q/k033/dpm_poll.sh`, `dpm_sum.py`.
 
 ### K-034 · Nadmiar ~10 KiB/token VRAM (nachylenie 29,1 vs 18,4 KiB/token): znaleźć bufor rosnący z kontekstem
 - data: 2026-11-05
@@ -583,6 +585,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: decyduje, czy tani drafter dla LFM ma sens (od α ≈ 0,4); LFM poza produkcją
 - ryzyko karty: VRAM (+1,6 GB draftera przy KV q8_0 131k)
 - priorytet: niski (LFM poza produkcją)
+- wynik 2026-11-21: **bramka G1 na surowym `llama-bench` niespełniona; po odjęciu narzutu ścieżki pN spełniona tylko przy d0.** Build `~/llama-topka`, LFM2.5-24B-A2B Q5_K_M, KV q8_0, PM4 0. Surowe T(N) = N / t/s przy d0: T(1) 7,56, T(2) 8,42, T(3) 8,86, T(4) 8,93, T(5) 13,18, T(8) 15,09, T(16) 20,94 ms. Przy d32768: 6,53 / 8,90 / 10,03 / 10,77 / 15,15 / 17,12 / 23,50 ms. Bramki T(3) ≤ 6,8 i T(8) ≤ 13,6 ms padają w obu głębokościach. Ścieżka pN ma stały narzut: ten sam build daje tg128 239,6 t/s (4,17 ms na token) przy d0 i 217,3 t/s (4,60 ms) przy d32768, a p1 7,56 i 6,53 ms. Po odjęciu tej różnicy: przy d0 T(3) ≈ 5,5 ms (model 5,47) i T(8) ≈ 11,7 ms (model 9,58), obie bramki spełnione; przy d32768 T(3) ≈ 8,1 i T(8) ≈ 15,2 ms, obie niespełnione. Wyraźny skok między 4 a 5 kolumnami (+4,3 ms) wskazuje, że od 5 kolumn działa inny kernel [INFERENCE]. Jeśli drafter, to najwyżej 3 tokeny draftu (weryfikacja 4 kolumn). Drugiej części testu (LFM24B + drafter 2.6B, spec_sweep) nie uruchamiałem: bramka nie przeszła jednoznacznie, a LFM jest poza produkcją. Źródło: `~/qwen-opt/queue/logs/k045-g1.log`, `k045-tg.log`, skrypt `Q/k045/k045.sh`.
 
 ### K-046 · Szerokość ogona lookup zależna od kontekstu: W16 → W8/W5 przy ≥ 128k (`LLAMA_SPEC_LOOKUP_ADAPT=1`)
 - data: 2026-10-18, 2026-11-07 (68c #7)
@@ -610,6 +613,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: pp4096 +3…8% [SZACUNEK]
 - ryzyko karty: **VRAM OOM przy 262k**
 - priorytet: niski (OOM, numeryka; po K-022/K-034)
+- wynik 2026-11-21: **ub 1024 zmienia wynik i nie przyspiesza → odrzucić.** md5 greedy (prompt 12k, T=0, 256 tok., konfiguracja produkcyjna na porcie testowym, kolejność 512/1024/1024/512): ub 512 `8f23c7d9` w obu przebiegach, ub 1024 `669c414a` w obu, czyli inna kolejność sum. Prefill 12k: 894,7 → 871,1 t/s (−2,6%). `llama-bench` pp4096 (PM4 0, FA 83, ABBA): 1003,1 → 994,5 t/s (−0,9%). VRAM po starcie serwera przy ctx 262144: 22955 → 23352 MiB (+397 MiB). Przy 255k z ub 512 zostaje 1193 MiB zapasu, więc wypełnienia 255k z ub 1024 nie uruchamiałem (ryzyko OOM, a zysku i tak nie ma). Źródło: `~/qwen-opt/queue/logs/k048-md5.log`, `k048-bench.log`, skrypt `Q/k048/k048.sh`.
 
 ### K-049 · ROCm 10.1 na gfx1100: md5 + hash logitów + pomiar `kvq` (spill 8 VGPR)
 - data: 2026-10-16 (raport 13), 2026-11-05 (63c)
@@ -652,6 +656,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: wiedza i porównanie 1:1 z innymi silnikami; 0 t/s
 - ryzyko karty: brak
 - priorytet: niski (wiedza)
+- wynik 2026-11-21: **12 zadań NInfer zmierzone, edycji YASAKANI nie ma na dysku.** Zestaw: 12 scenariuszy z `examples/cli/manifest.json` klonu NInfer (kod, proza, tłumaczenie, dane strukturalne po 3). Ustawienia jak u YASAKANI: greedy, thinking off, limit 4096 tokenów, bez cache promptu. Konfiguracja produkcyjna (MTP n4, lookup W16) na porcie testowym. Ich edycja kodu (`textwrap`) i JSONL 300 zamówień są prywatne, więc ich nie ma. Dekod w t/s, licząc jak YASAKANI, czyli (tokeny − 1) / czas generacji: kod 150,2 / 157,4 / 141,6, dane JSONL 190,8 / CSV 142,6 / SQL 169,3, proza EN 140,9, proza ZH 64,7 i 46,4, tłumaczenie ZH→EN 127,2, EN→ZH 68,9, markdown 76,6. Mediana z 12 zadań to 141,3 t/s. Dla porównania YASAKANI JSONL 160 wierszy daje ~455 t/s po przeliczeniu na pasmo XTX i bajty wag (`R/63a-silniki-lokalne.md` §9), a my na JSONL 190,8. Słabe są zadania z chińskim tekstem: akceptacja draftu 18%, 6% i 21% wobec 62–76% w kodzie i danych. Prawdopodobna przyczyna to okrojony słownik głowicy draftu (65 536 tokenów) [INFERENCE]. Źródło: `~/qwen-opt/queue/logs/k053-a.log`, `k053-b.log`, skrypt `Q/k053/k053.py`.
 
 ### K-054 · EvalPlus z `--effort xhigh` vs `low`: czy effort low kosztuje dokładność
 - data: 2026-11-09

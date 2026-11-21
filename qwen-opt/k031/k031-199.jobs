@@ -1,0 +1,4 @@
+# 2026-11-21 owner OK: K-031 at 199k (fill ~6 min estimated from 94k = 130 s): A production vs B LLAMA_KV_MASK_FAST=0, one pair; then :8080 back
+k031-199A|600|~/qwen-opt/k031|env LC_TIMEOUT=540 bash k031.sh A k031-199A 199000
+k031-199B|600|~/qwen-opt/k031|env LC_TIMEOUT=540 bash k031.sh B k031-199B 199000
+k031b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

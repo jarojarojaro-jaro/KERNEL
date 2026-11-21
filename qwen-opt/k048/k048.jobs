@@ -1,0 +1,4 @@
+# 2026-11-21 owner OK (XTX idle, "work the queue"): K-048 -ub 1024 vs 512 md5 12k + pp4096 (K-033 DPM poll alongside); then :8080 back
+k048-md5|600|~/qwen-opt/k048|bash k048.sh md5
+k048-bench|600|~/qwen-opt/k048|bash k048.sh bench
+k048-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -1,0 +1,4 @@
+# 2026-11-21 owner OK: K-054 HumanEval+ xhigh slices 5-6 (finish the 164 if they fit); then :8080 back
+k054-gen5|600|~/qwen-opt/k054|bash k054.sh 5
+k054-gen6|600|~/qwen-opt/k054|bash k054.sh 6
+k054c-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

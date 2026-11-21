@@ -1,0 +1,6 @@
+# 2026-11-21 owner OK: K-054 EvalPlus MBPP+ at effort xhigh, 4 resumable slices of <= 10 min (partial subset if not done); then :8080 back
+k054-mbpp1|600|~/qwen-opt/k054|bash k054.sh 1 mbpp
+k054-mbpp2|600|~/qwen-opt/k054|bash k054.sh 2 mbpp
+k054-mbpp3|600|~/qwen-opt/k054|bash k054.sh 3 mbpp
+k054-mbpp4|600|~/qwen-opt/k054|bash k054.sh 4 mbpp
+k054b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

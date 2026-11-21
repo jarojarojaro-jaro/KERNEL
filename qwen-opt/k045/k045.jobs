@@ -1,0 +1,3 @@
+# 2026-11-21 owner OK: K-045 G1 LFM2.5-24B-A2B verify-cost curve (llama-bench p1..16 at d 0/32768, PM4 off); then :8080 back
+k045-g1|600|~/qwen-opt/k045|bash k045.sh
+k045-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
