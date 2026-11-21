@@ -457,6 +457,17 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 | Sync-Strata (hiruhiru2005) | v0.1.3 (11-20) | — | Nowy; własne rekwanty Qwen3.8-Flash-Next (stratne dla nas) | brak liczb | tylko obserwacja |
 | Strata / TensorFold / Maya / Yasakani | v0.2.17 / v1.3.1 / v1.1.69 / v0.2.0 | [[silniki-inferencji-2026-11-20]] | delta wersji; brak nowych liczb XTX we wpisie | — | delta w porannym zwiadzie |
 
+## Zwiad 2026-11-21 (raport product/research/watch/2026-11-21.md)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| vLLM blog: Inkling 2 Mini day-0 | 2026-11-20 | [[inkling-2-mini]] | Ważne: mapa fuzji pętli (wiadomości, sterowniki), wzór dla nas | GB200 batch 1: 3,85 ms/krok (3 przejścia), 1,51 ms (1) | port fuzji do llama-inkling (Gemini) |
+| LocalMaxxing: XTX Inkling-2-Mini | run cmwpt5s3b085rmi01nnw2wr0p, 2026-11-21 | [[inkling-2-mini]] | Pierwszy verified na XTX: 33,9 t/s, potwierdza limit kerneli | Q3_K_XL, llama.cpp b12588, bez spekulacji | nasz pomiar XTX (K-133) |
+| ROCm blog: FlashInfer na ROCm 10.1 | 2026-11-20 | — | Tylko CDNA3/4 (gfx942/gfx950); nie RDNA3 | — | czy dojdzie gfx1100 |
+| Strata v0.2.17 / Maya v1.1.70 / TensorFold v1.3.2 | 2026-11-20 | [[silniki-inferencji-2026-11-20]] | Delta: Maya drafter DFly2 <1 GB (karty 8–12 GB), TensorFold Hy4-flash Metal, Strata „flash next hip” (rozkład stron) | brak liczb XTX | Maya HIP EXL3 commity |
+| oMLX v0.8.2 | 2026-11-21 | — | Apple: Inkling 2 Mini, Lightning MTP Hy4-flash 23,1 → 37,7 t/s przy 32K (+63%) | M-series, deklaracja | liczby Inkling na M5 |
+| Lucebox (Luce-Org) | 175a98737, 2026-11-21 | — | RDNA3.5/4 zero-spill WMMA FA-2; sprawdzić, czy przenosi się na gfx1100 | brak liczb | diff pod gfx1100 |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

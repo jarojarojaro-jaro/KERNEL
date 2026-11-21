@@ -47,7 +47,33 @@ W kodowaniu agentowym jest lepszy (DeepSWE 48,2 vs 42,2%), więc na XTX powinien
 
 ## Lekcje
 - Pętla warstw to nowy wymiar kompromisu jakość / pasmo: mniej wag, więcej obliczeń na wagę. Dla dekodu ograniczonego pasmem (batch 1) oznacza to więcej jakości na GB/s, dopóki pętla nie mieści się w cache.
-- Pomysł na nasz silnik [INFERENCE]: przy pętli te same wagi idą 3 razy z rzędu. Kernel MoE, który trzyma kafel wag w LDS albo L2 przez 3 przejścia, oszczędzi do 2/3 odczytu środkowych bloków.
+- ~~Kernel MoE, który trzyma wagi w LDS/L2 przez 3 przejścia~~ — **nie działa** (Gemini ink-r1, 2026-11-21). Jedno przejście 12 warstw rdzenia czyta ~550–600 MB, więc przy następnym przejściu tych wag już nie ma ani w 96 MB Infinity Cache, ani w L2. Przejścia idą po kolei przez wszystkie 12 warstw, a nie po 3 razy ta sama warstwa.
+- **Dekod przy batch 1 ogranicza liczba kerneli, a nie pasmo.** Według mapy kosztów Gemini graf ma ~7550 uruchomień kerneli na token. Na samych granicach kerneli to 12–19 ms, a odczyt wag to tylko ~4,4 ms, więc wychodzi ~41–56 t/s. Pierwszy pomiar społeczności na XTX daje 33,9 t/s (LocalMaxxing, Q3_K_XL, llama.cpp, bez spekulacji), co pasuje do tego szacunku. Dźwignie: taśma PM4 (granica kernela 3,6 → 0,5–0,9 µs) i fuzje w stylu vLLM (niżej).
+
+## Delta 2026-11-21 (zwiad): vLLM day-0
+- **Źródło:** [blog vLLM](https://vllm.ai/blog/2026-11-20-inkling2-mini) (Inferact, Thinking Machines, NVIDIA).
+- **Szczegóły modelu:**
+  - prelude: warstwy 0–5, rdzeń: 6–17 (×3), coda: 18–23;
+  - **każde przejście startuje z wyjścia prelude**, a poprzednie przejście widzi tylko przez „wiadomości”: 48 odczytów na token, każdy ze sterownikiem rank-64 (`out = (1−tanh(W_f·h))·in + tanh(W_g·h)·msg`);
+  - **48 cache KV i 48 cache stanu konwolucji**: każde przejście ma własny;
+  - 20 warstw SWA i 4 pełne, 24 głowy Q i 8 głów KV, hidden 2304, 128 ekspertów (top-8) w NVFP4, w ostatnich 4 warstwach MXFP8;
+  - DSpark (3 warstwy) czyta stany z 4 wizyt: prelude, przejście 2, przejście 3 i wyjście. vLLM używa 7 tokenów draftu z próbkowaniem probabilistycznym.
+- **Fuzje vLLM** (wzór dla nas na każdej karcie):
+  1. 4 odczyty wiadomości warstwy w jednym kernelu attention-residual;
+  2. wagi 4 sterowników ułożone w stos, więc down i gain/forget idą jako batched GEMM;
+  3. normy RMS sterowników w jednym kernelu;
+  4. scalanie z bramką połączone z RMSNorm następnej podwarstwy, w FP32 bez FMA;
+  5. konwolucja, residual, attn-res mix i RMSNorm podwarstwy w jednym kernelu.
+- **Liczby (GB200, TP1, kontekst 4K, sam forward):**
+  - krok dekodu przy batch 1: 1 przejście 1,51 ms, 2 przejścia 2,67 ms, 3 przejścia 3,85 ms (≈ 260 t/s bez spekulacji);
+  - przy batch 32: 3,81 / 5,92 / 8,11 ms;
+  - każde przejście kosztuje ~1,17 ms, czyli rdzeń to ~90% kroku.
+- **Jabłka do jabłek:**
+  - GB200 ma ~8 TB/s, a XTX 0,96 TB/s;
+  - na GB200 krok 3,85 ms też jest daleko od sufitu pasma (~0,4 ms), więc nawet vLLM ze wszystkimi fuzjami jest ograniczony liczbą kerneli i synchronizacją;
+  - dla XTX realny cel to ~6–8 ms na krok (125–165 t/s) [INFERENCE], przy dziś szacowanych ~20–25 ms;
+  - na Apple to samo: oMLX 0.8.2 dodał Inkling 2 Mini, liczb brak.
+- **Checkpoint `TML-d24-varloop-research`:** liczbę przejść można ustawić (1–3+). To inny model, nie produkcja, ale dobry do nauki o kompromisie jakość/prędkość (dział `llm/`).
 
 ## Powiązane
 - [[KOLEJKA-TESTOW]] (K-133)
