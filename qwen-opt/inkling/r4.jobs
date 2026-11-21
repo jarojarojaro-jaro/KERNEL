@@ -1,0 +1,6 @@
+# Gemini ink-r4 gate (NOBLAS + PM4 exit fix + DSpark padded vocab); owner OK 2026-11-21
+ink-r4-dbg|300|~/qwen-opt/inkling|./r4.sh dbg
+ink-r4-md5|600|~/qwen-opt/inkling|./r4.sh md5
+ink-r4-abab|600|~/qwen-opt/inkling|./r4.sh abab
+ink-r4-serve|1500|~/qwen-opt/inkling|./r4.sh serve
+ink-r4-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

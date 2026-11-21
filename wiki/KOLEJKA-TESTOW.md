@@ -42,6 +42,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - PM4: tapa odrzucona (kernel rocBLAS w grafie), −20%;
   - DSpark nie wczytuje się z AtomicChat (słownik 200058 vs 201024);
   - log: `DUO-INKLING.md` (llama-inkling), kolejka `ink-ad-*`, `ink-r2-*`.
+- wynik 2026-11-21 08:00 (runda 3 Gemini):
+  - INK_FUSE + INK_FUSE2: tg64 26,85 → 37,31 t/s (+39%); KLD 0,0024 do wersji bez sklejeń, PPL bez zmian (max KLD 1,61 do sprawdzenia);
+  - UD-Q4_K_XL się wczytuje: tg64 28,6 → 39,7 t/s (+39%), czat ~38 t/s;
+  - DSpark nadal czeka na rundę 4.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19

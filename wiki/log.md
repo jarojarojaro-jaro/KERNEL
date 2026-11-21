@@ -586,3 +586,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-21] zwiad | vLLM Inkling day-0 (fuzje pętli, GB200 3,85 ms/krok) → notatka inkling-2-mini; LocalMaxxing XTX Inkling 33,9 t/s; FlashInfer ROCm tylko CDNA; Strata/Maya/TensorFold/oMLX delta
 
 ## [2026-11-21] Inkling XTX pierwszy pomiar | AD-Q4_K tg64 26,9 t/s (stock), INK_FUSE +14,5%, PM4 odrzucone (rocBLAS), DSpark słownik 200058≠201024; K-133 wynik
+
+## [2026-11-21] Inkling r3 | FUSE+FUSE2 tg64 26,85→37,31 (+39%), KLD 0,0024; XL ładuje się, 28,6→39,7
