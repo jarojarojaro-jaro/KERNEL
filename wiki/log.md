@@ -596,3 +596,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-21] Inkling r6 | czat 49,5 t/s stabilnie (+85% od stocku); DSpark działa, akceptacja 0,83/0,55, ale wolniejszy (taśmy odrzucone, 170 ms na graf); Gemini bez kwoty do ~11:20, Kernel sam bisekcja FUSE3
 
 ## [2026-11-21] Inkling diag | DSpark n7 bez PM4: kopie 85, long 67,7, T=0,7 26,4 t/s; PM4 odrzuca weryfikację (FA tile scratch); FUSE3 błąd w pakowaniu QKV (bisekcja b3/b4)
+
+## [2026-11-21] Telegram | @HealthRanger „ROCm 10.2 daje 2,2×” — bzdura (brak bazy, karty, silnika; dotyczy wielu równoległych zapytań, AMD sam nazywa 10.2 wydaniem stabilizacyjnym); znane, K-130 zostaje
