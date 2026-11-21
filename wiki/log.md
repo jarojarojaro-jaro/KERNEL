@@ -584,3 +584,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-21] stan nocy | duet: r9 V5 odrzucony (−7% e2e), r10 FA_NATIVE_Q4 0% prędkości (KLD PASS); 7 testów kolejki (K-048 odrzucone, K-031 0,4–0,8%, K-053 mediana 141 t/s, K-054 low zostaje, K-044 25 łatek); Inkling: pliki unsloth XL nie ładują się w PR #32695 (734 vs 714 tensorów) → build mastera; AtomicChat AD dociągany; 3090 Vast przepadła bez wyników
 
 ## [2026-11-21] zwiad | vLLM Inkling day-0 (fuzje pętli, GB200 3,85 ms/krok) → notatka inkling-2-mini; LocalMaxxing XTX Inkling 33,9 t/s; FlashInfer ROCm tylko CDNA; Strata/Maya/TensorFold/oMLX delta
+
+## [2026-11-21] Inkling XTX pierwszy pomiar | AD-Q4_K tg64 26,9 t/s (stock), INK_FUSE +14,5%, PM4 odrzucone (rocBLAS), DSpark słownik 200058≠201024; K-133 wynik

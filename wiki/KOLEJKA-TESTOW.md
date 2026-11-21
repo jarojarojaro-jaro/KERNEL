@@ -34,6 +34,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: dekod ~150–170 t/s vs 42 t/s Qwen bez spekulacji [INFERENCE: ~3,3 GB odczytu na token]; jakość według producenta jak Qwen3.8-27B (AA 20,1)
 - ryzyko karty: brak (zwykły dekod, eco 2200)
 - priorytet: wysoki (decyzja o modelu produkcyjnym należy do właściciela)
+- wynik 2026-11-21 (XTX eco 2200, AtomicChat AD-Q4_K, stock PR #32695 6196d98):
+  - llama-bench: pp512 1333, pp2048 1125, **tg64 26,9 t/s**;
+  - czat xbench: dekod ~26 t/s (krótkie i długie prompty), prefill 887 t/s przy 2k i 537 t/s przy 8k;
+  - **szacunek [INFERENCE] 150–170 t/s był błędny o ~6×:** dekod ograniczają ~7700 uruchomień kerneli na token, nie pasmo;
+  - Gemini INK_FUSE: 26,9 → 30,8 t/s (+14,5%), ale zmienia tekst (KLD w toku);
+  - PM4: tapa odrzucona (kernel rocBLAS w grafie), −20%;
+  - DSpark nie wczytuje się z AtomicChat (słownik 200058 vs 201024);
+  - log: `DUO-INKLING.md` (llama-inkling), kolejka `ink-ad-*`, `ink-r2-*`.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19

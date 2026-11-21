@@ -50,6 +50,14 @@ W kodowaniu agentowym jest lepszy (DeepSWE 48,2 vs 42,2%), więc na XTX powinien
 - ~~Kernel MoE, który trzyma wagi w LDS/L2 przez 3 przejścia~~ — **nie działa** (Gemini ink-r1, 2026-11-21). Jedno przejście 12 warstw rdzenia czyta ~550–600 MB, więc przy następnym przejściu tych wag już nie ma ani w 96 MB Infinity Cache, ani w L2. Przejścia idą po kolei przez wszystkie 12 warstw, a nie po 3 razy ta sama warstwa.
 - **Dekod przy batch 1 ogranicza liczba kerneli, a nie pasmo.** Według mapy kosztów Gemini graf ma ~7550 uruchomień kerneli na token. Na samych granicach kerneli to 12–19 ms, a odczyt wag to tylko ~4,4 ms, więc wychodzi ~41–56 t/s. Pierwszy pomiar społeczności na XTX daje 33,9 t/s (LocalMaxxing, Q3_K_XL, llama.cpp, bez spekulacji), co pasuje do tego szacunku. Dźwignie: taśma PM4 (granica kernela 3,6 → 0,5–0,9 µs) i fuzje w stylu vLLM (niżej).
 
+## Pierwszy pomiar na XTX (2026-11-21, eco 2200)
+- **AtomicChat AD-Q4_K, stock PR #32695:** tg64 **26,9 t/s**, pp512 1333, pp2048 1125. Czat: dekod ~26 t/s, prefill 887 t/s przy 2k. Qwen3.8-27B ma dziś 42 t/s bez spekulacji i 107–126 t/s z nią.
+- **Mimo ~5× mniejszego odczytu na token Inkling jest dziś wolniejszy od Qwen.** Liczba kerneli (~7700 na token) zjada wszystko, co daje małe MoE. To lekcja dla każdej karty: przy małych, głębokich modelach wąskim gardłem przy batch 1 jest narzut uruchomień i synchronizacji, nie pasmo. Na GB200 ten sam model ma 3,85 ms/krok, a jego sufit pasma to ~0,4 ms.
+- Pierwsze dźwignie (duet Kernel + Gemini, `DUO-INKLING.md`):
+  - INK_FUSE: +14,5% (zmienia tekst, KLD w toku);
+  - PM4: tapa odrzucona przez kernel rocBLAS w grafie;
+  - DSpark: niezgodny rozmiar słownika z plikiem AtomicChat.
+
 ## Delta 2026-11-21 (zwiad): vLLM day-0
 - **Źródło:** [blog vLLM](https://vllm.ai/blog/2026-11-20-inkling2-mini) (Inferact, Thinking Machines, NVIDIA).
 - **Szczegóły modelu:**

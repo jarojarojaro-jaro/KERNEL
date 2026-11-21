@@ -1,0 +1,7 @@
+# Gemini ink-r3 gate (FUSE + FUSE2, loader fix) on Inkling; owner OK 2026-11-21
+ink-r3-md5|600|~/qwen-opt/inkling|./r3.sh md5
+ink-r3-kld|600|~/qwen-opt/inkling|./r3.sh kld
+ink-r3-abab|600|~/qwen-opt/inkling|./r3.sh abab
+ink-r3-xl|600|~/qwen-opt/inkling|./r3.sh xl
+ink-r3-xlserve|1200|~/qwen-opt/inkling|GGML_HIP_INK_FUSE=1 GGML_HIP_INK_FUSE2=1 INK_TAG=r3xl INK_B=$HOME/wt/upstream-inkling/build-hip/bin INK_M=$HOME/models/inkling/Inkling-2-Mini-UD-Q4_K_XL.gguf ./base.sh serve
+ink-r3-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
