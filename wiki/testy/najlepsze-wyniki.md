@@ -10,7 +10,7 @@ status: aktualne
 **Najlepszy zmierzony wynik każdej pary model i karta dla każdej metryki, z warunkami, datą i notatką źródłową; generuje tools/tabele.py.**
 
 <!-- TABELE:START -->
-Wygenerowano 2026-11-22 przez `tools/tabele.py` z pól `wynik`/`wyniki` 319 trójek; poprawiaj notatkę źródłową, nie tę tabelę.
+Wygenerowano 2026-11-22 przez `tools/tabele.py` z pól `wynik`/`wyniki` 322 trójek; poprawiaj notatkę źródłową, nie tę tabelę.
 
 ## Ternary Bonsai 2 27B: najlepsze wyniki na kartach
 
@@ -137,6 +137,14 @@ Wygenerowano 2026-11-22 przez `tools/tabele.py` z pól `wynik`/`wyniki` 319 tró
 | NVIDIA RTX 3090 [[rtx-3090]] | dekod DFlash T=1 | **141.1 t/s** | tuned fork, IQ2_XXS n_max 5 | 2026-10-16 | [[2026-10-16-nemotron-3090]] |
 | NVIDIA RTX 3090 [[rtx-3090]] | dekod plain | **87.2 t/s** | A0 | 2026-10-16 | [[nemotron-3-5-bolt-74b-a9b]] |
 | NVIDIA RTX 3090 [[rtx-3090]] | tg128 | **96.7 t/s** | fork nowe łatki (było 91.1) | 2026-10-16 | [[2026-10-16-nemotron-3090]] |
+
+## Qwen3.5-9B: najlepsze wyniki na kartach
+
+| karta | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| NVIDIA RTX 5060 Ti 16 GB [[rtx-5060-ti]] | code-edit | **239.0 t/s** | fork CUDA gałąź cuda-v070-5060ti, 1 runda | 2026-10-16 | [[qwen3-5-9b]] |
+| NVIDIA RTX 5060 Ti 16 GB [[rtx-5060-ti]] | prefill 64k | **2343 t/s** | fork CUDA | 2026-10-16 | [[qwen3-5-9b]] |
+| NVIDIA RTX 5060 Ti 16 GB [[rtx-5060-ti]] | sweep | **121.0 t/s** | fork CUDA, 1 runda | 2026-10-16 | [[qwen3-5-9b]] |
 
 ## Qwen3.6-35B-A3B: najlepsze wyniki na kartach
 

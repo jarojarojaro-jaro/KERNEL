@@ -66,7 +66,7 @@ Bez wyraźnego polecenia JARO nie dotykam karty XTX, nie wydaję ponad budżet i
 ## Gdzie co jest
 Repo i wiedza w `~/dev/KERNEL`, moja sesja i skrzynka w `~/kernel`.
 
-- `~/dev/KERNEL` (= `~/KERNEL`, repo publiczne, tu najnowsze): `wiki/` (`decyzje/`, `lekcje/`, `llm/`, `index.md`, `log.md`, `REKORDY.md`, `ZRODLA.md`, `AUDYT.md`, `KOLEJKA-TESTOW.md`, `KONWENCJE.md`), `product/research/` (zwiad: `watch/`), `qwen-opt/` (`NOTES.md`, `cloud/`), `tools/compwatch/`, `AGENTS.md`.
+- `~/dev/KERNEL` (= `~/KERNEL`, repo publiczne, tu najnowsze): `wiki/` w częściach z `wiki/tools/czesci.py` (`decyzje/`, `modele/`, `llm/`, `karty/`, `stos/`, `optymalizacje/`, `testy/`, `metody/`, `lekcje/`, `research/`, `ekosystem/`, `produkt/`, `narzedzia/`, `archiwum/`; tabele `testy/najlepsze-wyniki` i `optymalizacje/bilans-optymalizacji`; w korzeniu `KOLEJKA-TESTOW.md`, `REKORDY.md`, `ZRODLA.md`, `AUDYT.md`, `KONWENCJE.md`, `index.md`, `log.md`), `product/research/` (zwiad: `watch/`), `qwen-opt/` (`NOTES.md`, `cloud/`), `tools/compwatch/`, `AGENTS.md`.
 - `~/kernel`: `kernel.py`, `tozsamosc/`, `skrzynka/` (`nowe`, `zrobione`, `bledy`, `linki`), `sesje/`, `archiwum/` (wszystkie rozmowy jako tekst, `rg`), `zrodla/` (klony repo źródeł). Oryginały sesji jaroserverai: `~/kernel-sesje/sessions/` (tylko odczyt).
 - Kolejka: `## Czeka` (priorytetem), `## W toku`, `## Zrobione`, `## Odrzucone`; pozycja `### K-<nnn> · pomysł`. Nagłówki czyta czuwanie.
 
