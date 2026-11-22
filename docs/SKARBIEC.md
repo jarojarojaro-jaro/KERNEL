@@ -7,8 +7,8 @@ Stan: 2026-10-16. Wersja uproszczona z decyzji użytkownika: „po prostu baza w
 - Każda notatka: frontmatter (`typ`, `tags`, `aktualizacja`, `zrodlo` z plikiem i liniami, `status`), tytuł, jedno zdanie streszczenia, treść z liczbami z datą, sekcja „Powiązane”.
 - `wiki/tools/wiki.py` (tylko stdlib): `lint [folder]` (frontmatter, streszczenie, martwe linki, sieroty, wzorce sekretów, IPv4, e-maile i porównanie z prawdziwymi kluczami z dysku bez ich wypisywania), `index` (listy w hubach i w index.md), `search`.
 - `wiki/.obsidian/graph.json`: kolor węzła w grafie = folder.
-- `AGENTS.md` w katalogu głównym repo: omp ładuje go automatycznie przy pracy w `~/KERNEL` (provider `agents-md`). Sesje startowane z innego katalogu (np. `/tmp`) go nie widzą. Wtedy pomaga kopia w `~/.omp/agent/AGENTS.md` albo hook niżej (decyzja użytkownika).
-- `wiki/tools/omp-hook/wiki-context.ts`: opcjonalny hook `before_agent_start`. Wstrzykuje tytuły decyzji i 3–5 pasujących notatek, maks. ~1600 znaków. **Niezainstalowany.** Instalacja: skopiować do `~/.omp/agent/hooks/pre/`.
+- `AGENTS.md` w katalogu głównym repo: omp ładuje go automatycznie przy pracy w `~/KERNEL` (provider `agents-md`); sesja Kernel (`omp --no-context-files`) go nie ładuje, jej zasady składa `jarvo sesja gpu` z `~/kernel/tozsamosc/` (SOUL, ZASADY, rdzeń mapy).
+- Przypomnienie przed turą (od 2026-11-22, `jarvo/mozg_sesji.py` w repo JARVO, wpis `gpu` w `konfig/sesje.json`, pola `panel.wiedza` i `panel.tozsamosc`): skrzynka dokleja do wiadomości tury blok `<memory-context>` z notatkami tej wiki (silnik skarbca Jarva `wiedza.py` zfuzjowany z `kb search --mode bm25`), link od właściciela dostaje sam wiersz w `wiki/ZRODLA.md` (sekcja „Linki od właściciela (wpisywane automatycznie)”), po turze link bez analizy dostaje wyciąg odpowiedzi i wraca w przypomnieniu. Dawny hook `wiki/tools/omp-hook/wiki-context.ts` (nigdy niezainstalowany) usunięty: zastąpiło go to przypomnienie.
 
 ## Jak oglądać na Windows
 `git pull` repo KERNEL, potem w Obsidianie „Open folder as vault” → `KERNEL/wiki`. Bez Syncthing i chmury, więc bez konfliktów synchronizacji. Pliki `workspace*.json` są w `.gitignore`.
