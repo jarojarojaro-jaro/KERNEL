@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [lekcje, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Lekcje
 
 **Lekcje z błędów i pułapek: co poszło źle, jak to rozpoznać, jak uniknąć.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Lekcje z błędów (objaw, przyczyna, reguła). Najczęstsze: szacunek bez pomiaru (Inkling: 150–170 t/s przewidziane, 26,9 zmierzone; liczba kerneli, nie pasmo), mikrobench bez wygranej w realnym grafie (V5: −7% e2e, DUO 2026-11-21), PM4 bez przełączników bezpieczeństwa resetuje kartę, pkill -f po ssh zabija własną sesję.
+<!-- /Jarvo:STRESZCZENIE -->
 
 Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 

@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [llm, hub]
-aktualizacja: 2026-11-13
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # LLM: trening, dostrajanie i jakość modeli
 
 **Główna sekcja o samych modelach językowych: trening i dostrajanie (draftery, głowica MTP, LoRA, edycje wag), jakość (benchmarki) i pomysły na przyszłe fine-tuningi. Optymalizacja silnika (kernele, łatki, spekulacja w runtime) zostaje w swoich folderach.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Trening, dostrajanie (LoRA/PEFT, draftery, głowica MTP), edycje wag i jakość modeli; mapa: [[trening-llm-mapa]]. Inkling 2 Mini: [[inkling-2-mini]].
+<!-- /Jarvo:STRESZCZENIE -->
 
 Punkt startowy: [[trening-llm-mapa]] (co już trenowaliśmy, z wynikami, i gdzie leżą starsze notatki). Zasada na produkcję bez zmian: przyspieszamy tylko bezstratnie, a wszystko, co zmienia odpowiedzi modelu (fine-tune, LoRA, edycje wag), jest osobnym tematem i decyzją właściciela ([[2026-11-05-tylko-bezstratne]]).
 

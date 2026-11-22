@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [narzedzia, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Narzędzia
 
 **Nasze skrypty i narzędzia: do czego służą, jak je uruchomić, gdzie lądują wyniki.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Nasze skrypty: kolejka GPU `run-jobs.sh` na [[jaroserverai]], [[gpu-guard]], [[run-llm-sh]], skrypty chmury ([[skrypty-chmury]]), baza wiedzy [[wiki-py]] (lint, index, tabele z pól) i porządki (`tools/porzadki.py`: przenieś, scal, archiwizuj, streszczenie, cofnij).
+<!-- /Jarvo:STRESZCZENIE -->
 
 Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-opt/` na serwerze. Harness chmurowy: [[karty/_hub|Chmura]].
 

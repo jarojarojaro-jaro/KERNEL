@@ -4,10 +4,15 @@ tags: [ekosystem, hub]
 aktualizacja: 2026-11-22
 zrodlo: wiki/tools/czesci.py; wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Ekosystem: silniki, repo, firmy
 
 **Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Cudze silniki i konkurencja, jedna notatka na podmiot: Strata, Maya (Inkling na XTX 93,6 t/s bez spekulacji, LocalMaxxing 2026-11-22, K-134), TensorFold, Magnitude, vLLM/SGLang; firmy i dostawcy. Wersje i werdykty: [[ZRODLA]].
+<!-- /Jarvo:STRESZCZENIE -->
 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 

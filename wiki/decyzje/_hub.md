@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [decyzje, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Decyzje użytkownika
 
 **Decyzje i korekty użytkownika z datą; mają pierwszeństwo przed każdą inną notatką.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Decyzje JARO wiążą i mają pierwszeństwo; nowsza wygrywa, uchylone są w `archiwum/` ze statusem nieaktualne. Stałe: karta fabrycznie, bez OC i zmian limitu mocy ([[2026-10-20-karta-fabrycznie]]), profil eco 2200 ([[2026-11-06-profil-eco-2200]]), przyspieszamy tylko bezstratnie (ten sam model i plik wag), KV tylko w RAM ([[2026-10-19-kv-tylko-w-ram]]), XTX tylko na wyraźne polecenie JARO, wydatki w chmurze tylko w uzgodnionym budżecie.
+<!-- /Jarvo:STRESZCZENIE -->
 
 Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba poprawić). Jedna notatka = jedna decyzja, nazwa `RRRR-MM-DD-krotko`.
 

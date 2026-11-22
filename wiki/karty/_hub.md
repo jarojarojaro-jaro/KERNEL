@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [karty, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Karty GPU
 
 **Każda karta, której używamy lub którą planujemy: parametry, gdzie stoi (lokalnie / chmura), co zmierzyliśmy.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Główna karta: [[rx-7900-xtx]] (gfx1100, 24 GB, 960 GB/s) w maszynie [[jaroserverai]] (zwykle wyłączona, testy tylko przez kolejkę i na polecenie JARO, profil eco 2200 MHz). NVIDIA w wynajmie: [[vast-ai]] (3090, 3060, 5060 Ti, 4080 SUPER; pełna moc sprawdzana przed pobraniem modelu), [[runpod]], od 2026-11-22 [[google-colab]] (200 jednostek/mies.). Najlepsze wyniki per karta: [[najlepsze-wyniki]]; 4080 SUPER: MTP n4 107,3 t/s Qwen3.8-27B ([[rtx-4080-super]], K-118).
+<!-- /Jarvo:STRESZCZENIE -->
 
 Lokalna maszyna: RX 7900 XTX + RTX 5060 Ti. Karty NVIDIA z chmury: [[karty/_hub|Chmura]]. Stosy: [[stos/_hub|ROCm]], [[stos/_hub|NVIDIA]].
 

@@ -4,10 +4,15 @@ tags: [testy, hub]
 aktualizacja: 2026-11-22
 zrodlo: wiki/tools/czesci.py; wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Testy i pomiary
 
 **Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Pomiary z datą, warunkami i przyrostem; najlepszy wynik model × karta × metryka: [[najlepsze-wyniki]], rekordy z warunkami produkcji: [[REKORDY]]. Metoda: ABBA na tej samej karcie i tym samym skrypcie, baseline bez naszych zmian ([[pomiar-abba]]). Ostatnie: Inkling 2 Mini na XTX 2026-11-21 (26,9 → 49,5 t/s, DSpark 85 t/s kopie; DUO-INKLING), K-118 NVIDIA pełna moc ([[2026-11-19-k118-nvidia-pelna-moc]]). Kolejka: [[KOLEJKA-TESTOW]].
+<!-- /Jarvo:STRESZCZENIE -->
 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 

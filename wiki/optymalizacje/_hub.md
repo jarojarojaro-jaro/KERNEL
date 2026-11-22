@@ -4,10 +4,15 @@ tags: [optymalizacje, hub]
 aktualizacja: 2026-11-22
 zrodlo: wiki/tools/czesci.py; wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Speedupy i optymalizacje
 
 **Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Każda technika ma werdykt (przyjete, odrzucone, w-toku), zysk i dowód; zbiorczo w [[bilans-optymalizacji]] (składa `wiki.py index` z pól). Przyjęte filary na XTX: taśma [[pm4-replay]] (PM4 +6,4% dekodu MTP 1,7k, REKORDY 2026-11-14), słownik draftu 64k i głowica IQ4_XS ([[latki-spekulacji]]), FA D256 dla fill 255k (466,3 → 493,4 t/s, 2026-11-09). Odrzucone mają powód w notatce (np. [[gdn-fast]]: bitowo zgodny, zysk w szumie). Kolejka pomysłów: [[KOLEJKA-TESTOW]].
+<!-- /Jarvo:STRESZCZENIE -->
 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 

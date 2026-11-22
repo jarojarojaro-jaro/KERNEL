@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [metody, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Metody pracy
 
 **Jak pracujemy i myślimy: playbook profil → hipoteza → łatka → bramka → pomiar ABBA.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Jak pracujemy: sufit przed pracą (bajty/token ÷ pasmo, [[skill-io-sufity]]), jedna zmiana naraz i ABBA ([[pomiar-abba]]), bramka KLD/md5 przed przyjęciem, test jednego pomysłu na karcie ≤ 10 min, wynik zawsze baseline → teraz → przyrost.
+<!-- /Jarvo:STRESZCZENIE -->
 
 Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk. Narzędzia, które to realizują: [[narzedzia/_hub|Narzędzia]].
 

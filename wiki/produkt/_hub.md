@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [produkt, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Produkt
 
 **Plan produktu konsumenckiego: lokalne AI plug and play, które samo się przyspiesza.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Enigma: aplikacja i strona enigmalabz z przepisami per klasa VRAM; silnik to nasze forki llama.cpp (ROCm i CUDA). Zmiana odpowiedzi modelu na produkcji tylko decyzją JARO.
+<!-- /Jarvo:STRESZCZENIE -->
 
 Źródło: `product/PLAN.md`. Decyzje produktowe z datą także w [[decyzje/_hub|Decyzjach]].
 

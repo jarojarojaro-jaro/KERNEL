@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [modele, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Modele
 
 **Modele, które uruchamiamy lub rozważamy: architektura, kwanty, KV, najlepsze zmierzone t/s, licencja.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Produkcja na XTX: [[qwen3-8-27b-uncensored]] Q4_K_M ze spekulacją MTP (REKORDY: dekod MTP 1,7k 133,9 t/s, 2026-11-14; tg128 bez spekulacji 43,2 t/s). Najszybszy model na XTX: [[lfm2-5-24b-a2b]] (copy 288,2 t/s, raport 24d). W toku: [[inkling-2-mini]] (MoE z pętlą; XTX 26,9 → 49,5 t/s bez spekulacji po rundach duetu, DSpark 85 t/s kopie; K-133, K-134). Dla kart 8–12 GB: [[qwen3-5-9b]], [[bonsai]]. Najlepszy wynik każdego modelu na każdej karcie: [[najlepsze-wyniki]]; blok „Wyniki z notatek” w notatce modelu składa się sam z pól.
+<!-- /Jarvo:STRESZCZENIE -->
 
 Liczby t/s zawsze z datą i warunkami (kwant, KV, MTP/DFlash, prompt, T). Aktualny stan instalacji: [[stan-2026-10-15]].
 

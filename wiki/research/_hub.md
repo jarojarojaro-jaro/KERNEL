@@ -1,13 +1,18 @@
 ---
 typ: hub
 tags: [research, hub]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Research
 
 **Streszczenia raportów badawczych: produktowych (01–10), technicznych i głównego raportu o AMD.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Raporty, zwiady (product/research/watch) i linki JARO z werdyktem; rejestr przebadanych źródeł i delta wersji: [[ZRODLA]]. Zasada: znane źródło = tylko delta; bzdura (brak bazy, karty, silnika) jednym zdaniem; prawdziwe → mechanizm, liczby, test albo K-…
+<!-- /Jarvo:STRESZCZENIE -->
 
 Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; tu są wnioski z liczbami i linkami.
 

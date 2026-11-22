@@ -4,10 +4,15 @@ tags: [stos, hub]
 aktualizacja: 2026-11-22
 zrodlo: wiki/tools/czesci.py; wiki/tools/wiki.py index
 status: aktualne
+streszczono: 2026-11-22
 ---
 # Silnik i stos GPU
 
 **Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury.**
+
+<!-- Jarvo:STRESZCZENIE -->
+Produkcja: fork llama.cpp „topka” (`~/llama-topka`, łatki amd-opt) na ROCm 10.0, gfx1100; taśma [[pm4]] tylko z `GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0`, inaczej `GGML_HIP_PM4=0`. ROCm 10.2: wydanie stabilizacyjne, bez nowego GEMV/FA dla gfx1100 (ZRODLA, K-130). CUDA: fork NVIDIA Enigmy (wydania KERNEL).
+<!-- /Jarvo:STRESZCZENIE -->
 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
