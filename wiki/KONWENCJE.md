@@ -1,8 +1,8 @@
 ---
 typ: meta
 tags: [meta]
-aktualizacja: 2026-10-20
-zrodlo: wiki/tools/wiki.py; wiki/tools/site/build.py
+aktualizacja: 2026-11-22
+zrodlo: wiki/tools/czesci.py; wiki/tools/tabele.py; wiki/tools/wiki.py; wiki/tools/porzadki.py; wiki/tools/site/build.py
 status: aktualne
 ---
 # Konwencje wiki
@@ -12,7 +12,7 @@ status: aktualne
 ## Notatka
 ```
 ---
-typ: model|karta|rocm|nvidia|kernel|latka|metoda|eksperyment|lekcja|narzedzie|chmura|repo|research|produkt|firma|decyzja|llm
+typ: <typ części z tools/czesci.py, tabela niżej>
 tags: [<folder>, temat-1, temat-2]
 aktualizacja: RRRR-MM-DD
 zrodlo: ścieżka:linie; URL
@@ -25,17 +25,44 @@ status: aktualne|do-sprawdzenia|nieaktualne
 Treść 50–200 słów: liczby z datą i warunkami pomiaru.
 
 ## Powiązane
-- [[hub folderu]], 2+ sąsiadów, 1+ notatka z innego folderu
+- 2+ sąsiadów, 1+ notatka z innej części (BEZ linku do huba: hub listuje swoje notatki sam)
 ```
+
+## Części (jedna definicja: `tools/czesci.py`)
+| folder | typ | co tam jest | pola tabel |
+|---|---|---|---|
+| `decyzje/` | decyzja | decyzje i korekty właściciela, wiążą | — |
+| `modele/` | model | jedna notatka na model (też drafter): rozmiar, kwant, gdzie działa | model, rozmiar, kwant, karty, wyniki |
+| `llm/` | llm | trening, dostrajanie, edycje wag, jakość modeli | — |
+| `karty/` | karta | jedna notatka na kartę, maszynę albo chmurę | karta, vram, pasmo, gdzie, stan, wyniki |
+| `stos/` | stos | nasz fork, ROCm/HIP/PM4/KFD, CUDA, sterowniki | — |
+| `optymalizacje/` | optymalizacja | jedna technika, kernel albo łatka z werdyktem | technika, werdykt, zysk, dowod, karta, model, k |
+| `testy/` | test | eksperymenty i pomiary z datą, metoda pomiaru | model, karta, wynik/wyniki, k |
+| `metody/` | metoda | jak pracujemy | — |
+| `lekcje/` | lekcja | lekcje z błędów | — |
+| `research/` | research | raporty, zwiady, linki właściciela z werdyktem | — |
+| `ekosystem/` | ekosystem | cudze silniki, repo, firmy, ludzie | — |
+| `produkt/` | produkt | Enigma: plan, strona, aplikacja | — |
+| `narzedzia/` | narzedzie | nasze skrypty i narzędzia | — |
+| `archiwum/` | archiwum | scalone i wycofane (`status: nieaktualne`, `zastapiona_przez`), poza przypomnieniem | — |
+
+Nowa część albo zmiana opisu: tylko w `tools/czesci.py`; KONWENCJE, huby, lint i aplikacja WWW czytają ją stamtąd.
+
+## Pola tabel (frontmatter, format w `tools/tabele.py`)
+- `wynik: <model> | <karta> | <liczba> <jednostka> | <metryka>; <warunki> | RRRR-MM-DD` (kilka: lista `wyniki:` z punktami `  - …`); `model` i `karta` to nazwy notatek z `modele/` i `karty/`.
+- Technika: `technika`, `werdykt: przyjete|odrzucone|w-toku`, `zysk: +5,6% fill 255k (466,3 → 492,5 t/s)`, `dowod: notatka albo plik:wiersz`, `k: K-xxx`.
+- Wartości bez „: ” w środku. Liczba tylko z pomiaru, który stoi w notatce albo w jej `zrodlo` (żadnych szacunków).
+- `python3 tools/wiki.py index` składa z pól [[najlepsze-wyniki]] (model × karta × metryka), [[bilans-optymalizacji]] i blok „Wyniki z notatek” w notatce każdego modelu i karty; bloków `TABELE` nie edytuje się ręcznie.
 
 ## Zasady
 - Nazwa pliku: małe litery ASCII, kebab-case, bez kropek, unikalna w całym vaulcie (`qwen3-8-27b.md`, `2026-10-12-rocm-vs-vulkan.md`).
 - Linki: `[[nazwa]]`, `[[nazwa|tekst]]` albo `[[folder/nazwa|tekst]]`. Linkuj tylko do istniejących notatek (lint zgłasza martwe linki). Pliki repo spoza wiki: link markdown ze ścieżką względną (`[NOTES.md](../../qwen-opt/NOTES.md)`); pliki spoza repo: ścieżka w backtickach.
-- Folder = kategoria = tag = kolor w grafie. `typ` wynika z folderu (tabela w `tools/wiki.py`).
-- Liczby dokładnie ze źródła, z datą. Niepewne → `status: do-sprawdzenia`. Zastąpione → `nieaktualne` (nie kasujemy historii).
+- Folder = część = tag = kolor w grafie. `typ` wynika z części (`tools/czesci.py`).
+- Liczby dokładnie ze źródła, z datą. Niepewne → `status: do-sprawdzenia`. Zastąpione → `python3 tools/porzadki.py archiwizuj X --powod … --nastepca Y` (przenosi do `archiwum/`, `status: nieaktualne`; nie wraca w przypomnieniu, historii nie kasujemy). Duplikat → `porzadki.py scal B A`.
 - `decyzje/` ma pierwszeństwo przed resztą.
 - Repo jest publiczne: zero sekretów, adresów IP, e-maili, sald, ID maszyn. Lint to sprawdza, także względem prawdziwych kluczy z dysku.
-- Huby (`_hub.md`) i listy w `index.md` generuje `python3 tools/wiki.py index`; ręcznie pisze się tylko wstęp nad znacznikiem AUTO.
+- Huby (`_hub.md`) i listy w `index.md` generuje `python3 tools/wiki.py index`; ręcznie pisze się tylko wstęp nad znacznikiem AUTO, a blok „Najważniejsze” części przez `python3 tools/porzadki.py streszczenie <część> "…"` (do 1500 znaków, liczby ze źródłem).
+- Nie linkuj do huba części w „Powiązane”: nazwa części w linku dopasowywała każde pytanie z tym słowem do każdej notatki części i obniżała trafność przypomnienia.
 
 ## Utrzymanie
 1. Po zakończonym zadaniu główny agent poprawia lub dodaje notatki (podagenci tylko czytają).
@@ -50,4 +77,4 @@ Treść 50–200 słów: liczby z datą i warunkami pomiaru.
 ## Powiązane
 - [[index|Strona główna]]
 - [[log]]
-- [[decyzje/_hub|Decyzje]]
+- [[wiki-py]]
