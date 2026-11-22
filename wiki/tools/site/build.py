@@ -33,26 +33,11 @@ REPORTS = REPO / "product" / "research"
 FONTS = REPO / "app" / "landing" / "static" / "fonts"
 DEFAULT_OUT = Path.home() / ".cache" / "wiki-graph"
 
-# category key -> (label, icon, colour); "" = pages in the wiki root
-CATS: dict[str, tuple[str, str, str]] = {
-    "decyzje": ("Decyzje", "flag", "#ff7a1a"),
-    "eksperymenty": ("Eksperymenty", "flask", "#f5b841"),
-    "karty": ("Karty GPU", "chip", "#e3a07a"),
-    "kernele": ("Kernele", "zap", "#4ecdc4"),
-    "metody": ("Metody", "checks", "#6fd08c"),
-    "rocm": ("ROCm", "layers", "#ff5f6d"),
-    "nvidia": ("NVIDIA", "eye", "#a3d65c"),
-    "latki": ("Łatki", "branch", "#5ab0f0"),
-    "modele": ("Modele", "cube", "#a99bff"),
-    "llm": ("LLM: trening i jakość", "flask", "#c38bff"),
-    "research": ("Research", "filesearch", "#7f8cff"),
+# category key -> (label, icon, colour) z tools/czesci.py; "raporty" = pełne raporty z product/research, "" = korzeń wiki
+from czesci import CZESCI  # noqa: E402
+
+CATS: dict[str, tuple[str, str, str]] = {f: (d["tytul"], d["ikona"], d["kolor"]) for f, d in CZESCI.items()} | {
     "raporty": ("Raporty", "filetext", "#e58fd0"),
-    "repo": ("Repozytoria", "folder", "#9fb3c8"),
-    "ludzie-firmy": ("Ludzie i firmy", "users", "#c9a27e"),
-    "produkt": ("Produkt", "package", "#ff8fa3"),
-    "narzedzia": ("Narzędzia", "wrench", "#52c7e8"),
-    "chmura": ("Chmura", "cloud", "#93b8ff"),
-    "lekcje": ("Lekcje", "bulb", "#ffd84d"),
     "": ("Strony wiki", "grid", "#bdb9b1"),
 }
 CAT_DESC = {k: v[1] for k, v in FOLDERS.items()} | {
@@ -67,19 +52,17 @@ SPECIAL = {
     "log": ("Dziennik zmian", "history", "/dziennik.html"),
     "index": ("Strona główna wiki", "grid", "/wiki.html"),
 }
-NAV: list[tuple[str, list[str]]] = [
-    ("Decyzje i zasady", ["decyzje", "@KONWENCJE"]),
-    ("Wyniki", ["@REKORDY", "eksperymenty", "karty"]),
-    ("Wiedza techniczna", ["kernele", "metody", "rocm", "nvidia", "latki"]),
-    ("Modele i LLM", ["llm", "modele"]),
-    ("Research i źródła", ["research", "raporty", "@ZRODLA", "repo", "ludzie-firmy"]),
-    ("Produkt", ["produkt"]),
-    ("Narzędzia i chmura", ["narzedzia", "chmura"]),
-    ("Lekcje", ["lekcje"]),
-]
+# nawigacja: grupy w kolejności części z czesci.py; strony z korzenia i raporty dołączone do swojej grupy
+_DOKLEJ = {"decyzje": ["@KONWENCJE"], "testy": ["@REKORDY"], "research": ["raporty", "@ZRODLA"]}
+NAV: list[tuple[str, list[str]]] = []
+for _f, _d in CZESCI.items():
+    _g = next((items for g, items in NAV if g == _d["grupa"]), None)
+    if _g is None:
+        NAV.append((_d["grupa"], _g := []))
+    _g += [_f, *_DOKLEJ.get(_f, [])]
 GROUP_OF = {k.lstrip("@"): g for g, items in NAV for k in items}
 NO_GRAPH = {"log", "AUDYT", "index"}  # meta pages that link to everything
-TIMELINE_CATS = ("decyzje", "eksperymenty", "lekcje")
+TIMELINE_CATS = ("decyzje", "testy", "lekcje")
 STATUS_LABEL = {"aktualne": "aktualne", "do-sprawdzenia": "do sprawdzenia", "nieaktualne": "nieaktualne"}
 REPORT_REF = re.compile(r"product/research/([\w.+-]+?\.md)")
 DATE_PREFIX = re.compile(r"^(\d{4}-\d{2}-\d{2})-")

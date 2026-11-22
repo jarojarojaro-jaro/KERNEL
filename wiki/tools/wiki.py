@@ -2,7 +2,7 @@
 """Narzędzie bazy wiedzy KERNEL/wiki (tylko stdlib).
 
   python3 wiki/tools/wiki.py lint [folder]   # błędy -> kod wyjścia 1; folder zawęża raport
-  python3 wiki/tools/wiki.py index           # odświeża listy w _hub.md i index.md
+  python3 wiki/tools/wiki.py index           # tabele zbiorcze z pól (tools/tabele.py), listy w _hub.md i index.md
   python3 wiki/tools/wiki.py search słowa…   # deleguje do `kb search` (tools/kb), bez kb: tytuły, streszczenia, tagi
 """
 from __future__ import annotations
@@ -18,26 +18,11 @@ from pathlib import Path
 WIKI = Path(__file__).resolve().parent.parent
 REPO = WIKI.parent
 
-# folder -> (typ, opis do index.md)
-FOLDERS: dict[str, tuple[str, str]] = {
-    "decyzje": ("decyzja", "Decyzje i korekty użytkownika (wiążące)"),
-    "modele": ("model", "Modele i kwanty"),
-    "karty": ("karta", "Karty GPU: używane i planowane"),
-    "rocm": ("rocm", "Stos AMD: ROCm, HIP, ROCr, PM4, rocprof"),
-    "nvidia": ("nvidia", "Stos NVIDIA: CUDA, sm_xx, poprawki zgodności"),
-    "kernele": ("kernel", "Nasze kernele: rodziny, zysk, poprawność, wyłącznik"),
-    "latki": ("latka", "Łatki llama.cpp i gałęzie"),
-    "metody": ("metoda", "Jak pracujemy: playbook, bramki, pomiar"),
-    "eksperymenty": ("eksperyment", "Rundy i pomiary z datą"),
-    "lekcje": ("lekcja", "Lekcje z błędów"),
-    "narzedzia": ("narzedzie", "Nasze skrypty i narzędzia"),
-    "chmura": ("chmura", "Wynajem GPU i harness chmurowy"),
-    "repo": ("repo", "Repozytoria i projekty: cudze i nasze"),
-    "research": ("research", "Streszczenia raportów"),
-    "produkt": ("produkt", "Plan produktu i decyzje produktowe"),
-    "ludzie-firmy": ("firma", "Firmy, dostawcy, ludzie"),
-    "llm": ("llm", "LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika)"),
-}
+# folder -> (typ, opis do index.md): jedna definicja części w tools/czesci.py
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import czesci  # noqa: E402
+
+FOLDERS: dict[str, tuple[str, str]] = czesci.foldery(WIKI)
 STATUSES = {"aktualne", "do-sprawdzenia", "nieaktualne"}
 REQUIRED = ("typ", "tags", "aktualizacja", "zrodlo", "status")
 AUTO_START, AUTO_END = "<!-- AUTO:START -->", "<!-- AUTO:END -->"
@@ -65,6 +50,7 @@ SECRET_FILES = [Path.home() / ".vast" / "key", Path.home() / ".runpod" / "key"]
 LINK_RE = re.compile(r"\[\[([^\]|#]+)(?:#[^\]|]*)?(?:\|[^\]]*)?\]\]")
 MDLINK_RE = re.compile(r"\]\(([^)\s]+)\)")
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+TABELE_RE = re.compile(r"<!-- TABELE:START -->.*?<!-- TABELE:END -->", re.S)
 
 
 class Note:
@@ -208,12 +194,12 @@ def lint(only: str | None = None) -> int:
         for s in secrets:
             if s in n.text:
                 e("zawiera prawdziwy klucz z ~/.vast lub ~/.runpod")
-        words = len(re.findall(r"\w+", n.body))
+        words = len(re.findall(r"\w+", TABELE_RE.sub("", n.body)))   # tabele z tools/tabele.py nie liczą się do limitu
         if not n.is_hub and n.rel not in ("AUDYT.md", "log.md", "REKORDY.md", "ZRODLA.md", "KOLEJKA-TESTOW.md", "llm/mapa-inferencji-roadmap.md") and words > 450:  # AUDYT/REKORDY/ZRODLA/KOLEJKA-TESTOW: tabele i rejestry; log.md: dziennik tylko do dopisywania
             warnings.append(f"{n.rel}: {words} słów (cel 50–200)")
 
     for n in notes:
-        if not n.is_hub and inbound[n.rel] == 0:
+        if not n.is_hub and inbound[n.rel] == 0 and n.folder not in czesci.POZA_PRZYPOMNIENIEM:   # archiwum: sieroty z założenia
             warnings.append(f"{n.rel}: sierota (linkuje do niej tylko hub)")
     for f in FOLDERS:
         if not (WIKI / f / "_hub.md").exists():
@@ -254,6 +240,12 @@ def replace_auto(path: Path, content: str) -> bool:
 
 
 def index() -> int:
+    import tabele          # najpierw tabele z pól notatek: notatki zbiorcze i bloki „Wyniki z notatek” nadążają same
+    t = tabele.generuj()
+    for b in t["bledy"]:
+        print("BŁĄD POLA", b)
+    if t["zmienione"]:
+        print(f"tabele: {len(t['zmienione'])} notatek ({', '.join(t['zmienione'][:6])})")
     notes = load_notes()
     changed = 0
     counts = {}
