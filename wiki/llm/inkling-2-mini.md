@@ -58,6 +58,14 @@ W kodowaniu agentowym jest lepszy (DeepSWE 48,2 vs 42,2%), więc na XTX powinien
   - PM4: tapa odrzucona przez kernel rocBLAS w grafie;
   - DSpark: niezgodny rozmiar słownika z plikiem AtomicChat.
 
+## Punkty odniesienia społeczności (zwiad 2026-11-22)
+- **XTX bez spekulacji: 93,6 t/s** (Maya v1.1.73, UD-Q4_K_XL, LocalMaxxing verified). My: 49,5 t/s po rundach 1–6 duetu, czyli Maya jest 1,9× szybsza. To realny cel i wzór (K-134).
+- **Z DSpark:**
+  - RTX 3090: 290,8 t/s (vLLM, NVFP4, n=7, verified);
+  - RTX 5090: 440,5 t/s (sglang, n=8, średnio 3,74 tokenu na krok, verified);
+  - R9700: 81,8 t/s (llama.cpp unsloth, n=7, niezweryfikowane).
+- Lekcja: 250–300 t/s ze spekulacją na karcie klasy 3090/XTX jest osiągalne, ale tylko z silnikiem, który ma mało uruchomień kerneli na token.
+
 ## Delta 2026-11-21 (zwiad): vLLM day-0
 - **Źródło:** [blog vLLM](https://vllm.ai/blog/2026-11-20-inkling2-mini) (Inferact, Thinking Machines, NVIDIA).
 - **Szczegóły modelu:**

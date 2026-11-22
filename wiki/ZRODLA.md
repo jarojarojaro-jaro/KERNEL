@@ -475,6 +475,15 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 |---|---|---|---|---|---|
 | Cerebras + AMD: disaggregated inference (blog cerebras.ai 2026-11-17, tweet A. Feldman 11-21) | produkcja | — | Prawdziwe: prefill na AMD Instinct (obliczenia), dekod na CS-3 (wagi w SRAM obok rdzeni); lekcja: prefill i dekod mają inne wąskie gardła, dzieli się je między sprzęt; u nas jedna karta, nie do testu | 5× więcej tokenów/MW niż same CS-3 (deklaracja, bez opóźnień i modelu) | czy podadzą koszt przesyłu KV i TTFT |
 
+## Zwiad 2026-11-22 (raport product/research/watch/2026-11-22.md)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| Maya (mw00/project-maya) | v1.1.71–1.1.73, 2026-11-22 | K-134, [[inkling-2-mini]] | Ważne: Inkling 2 Mini na AMD Linux (24 GB), eksperci w RAM dla 8 GB, drafting auto; XTX 93,6 t/s bez spekulacji (LocalMaxxing verified) = 1,9× nasze 49,5 | XTX 93,6; Radeon 8065S przetestowany | kernele HIP Inkling (@alesha-pro) |
+| LocalMaxxing Inkling-2-Mini | 2026-11-21/22 | [[inkling-2-mini]] | Punkty odniesienia ze spekulacją DSpark | R9700 81,8 (llama.cpp n7), 3090 290,8 (vLLM NVFP4 n7, verified), 5090 440,5 (sglang n8, verified) | nasze XTX z DSpark po K-134 |
+| PrismML llama.cpp (R9700 Qwen3.8-27B) | prism-b10754, 2026-11-21 | — | Kwant PQ2_0 (2 bity, stratny dla nas), MTP n=2 | 67,6 t/s, niezweryfikowane | — |
+| Strata 0.2.18 / TensorFold 1.3.3 / strix-llama.cpp b1067 | 2026-11-21 | — | Delta bez nowości dla XTX (Strata: Hy4-Flash, wpis 11-22) | — | — |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

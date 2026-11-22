@@ -24,6 +24,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
 1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
 
+### K-134 · Inkling 2 Mini w Maya v1.1.73 na XTX: 93,6 t/s bez spekulacji (społeczność) vs nasze 49,5 — skąd różnica
+- data: 2026-11-22 (zwiad; LocalMaxxing run cmwraqz5108dlmi01cwdleupp, verified, UD-Q4_K_XL)
+- źródło: github.com/mw00/project-maya v1.1.73 (silnik Inkling @alesha-pro); [[inkling-2-mini]]
+- test: najpierw CPU: przeczytać kernele HIP Inkling w Maya (pętla, MoE, liczba uruchomień na token) i porównać z naszym DUO-INKLING; potem XTX: Maya 1.1.73 tym samym plikiem UD-Q4_K_XL, tg i czat T=0, ≤ 10 min
+- oczekiwany zysk: wiedza, które sklejenia dają 2× (cel 93,6 t/s bez spekulacji, ze spekulacją DSpark wyżej)
+- ryzyko karty: brak (zwykły dekod)
+- priorytet: wysoki
+
 ### K-133 · Inkling 2 Mini (MoE z pętlą warstw, 26,4B / 5,4B efektywnie aktywnych) na XTX: prędkość i jakość vs Qwen3.8-27B
 - data: 2026-11-20 (Telegram właściciela 23:29)
 - źródło: [[inkling-2-mini]], HF `unsloth/Inkling-2-Mini-GGUF`, mainline llama.cpp `src/models/inkling2.cpp`
@@ -34,6 +42,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: dekod ~150–170 t/s vs 42 t/s Qwen bez spekulacji [INFERENCE: ~3,3 GB odczytu na token]; jakość według producenta jak Qwen3.8-27B (AA 20,1)
 - ryzyko karty: brak (zwykły dekod, eco 2200)
 - priorytet: wysoki (decyzja o modelu produkcyjnym należy do właściciela)
+- stan 2026-11-22 04:20 (STOP na polecenie właściciela): build r8+r9 gotowy na jaroserverai, bramka r8/r9 nieuruchomiona (kolejka zabita w oczekiwaniu); wznowienie: `qwen-opt/inkling/start-r8.sh`. Szczegóły: `DUO-INKLING.md` (llama-inkling).
 - wynik 2026-11-21 (XTX eco 2200, AtomicChat AD-Q4_K, stock PR #32695 6196d98):
   - llama-bench: pp512 1333, pp2048 1125, **tg64 26,9 t/s**;
   - czat xbench: dekod ~26 t/s (krótkie i długie prompty), prefill 887 t/s przy 2k i 537 t/s przy 8k;
