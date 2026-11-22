@@ -469,6 +469,12 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 | oMLX v0.8.2 | 2026-11-21 | — | Apple: Inkling 2 Mini, Lightning MTP Hy4-flash 23,1 → 37,7 t/s przy 32K (+63%) | M-series, deklaracja | liczby Inkling na M5 |
 | Lucebox (Luce-Org) | 175a98737, 2026-11-21 | — | RDNA3.5/4 zero-spill WMMA FA-2; sprawdzić, czy przenosi się na gfx1100 | brak liczb | diff pod gfx1100 |
 
+## Telegram/panel 2026-11-22
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| Cerebras + AMD: disaggregated inference (blog cerebras.ai 2026-11-17, tweet A. Feldman 11-21) | produkcja | — | Prawdziwe: prefill na AMD Instinct (obliczenia), dekod na CS-3 (wagi w SRAM obok rdzeni); lekcja: prefill i dekod mają inne wąskie gardła, dzieli się je między sprzęt; u nas jedna karta, nie do testu | 5× więcej tokenów/MW niż same CS-3 (deklaracja, bez opóźnień i modelu) | czy podadzą koszt przesyłu KV i TTFT |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

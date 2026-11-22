@@ -600,3 +600,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-21] Telegram | @HealthRanger „ROCm 10.2 daje 2,2×” — bzdura (brak bazy, karty, silnika; dotyczy wielu równoległych zapytań, AMD sam nazywa 10.2 wydaniem stabilizacyjnym); znane, K-130 zostaje
 
 ## [2026-11-22] panel | Strata 0.2.18: silnik Hy4-Flash (220B MoE, offload RAM/SSD), bez nowości dla Qwen3.8-27B/Inkling na XTX; wiersz ZRODLA
+
+## [2026-11-22] panel | Cerebras+AMD dezagregacja prefill (Instinct) / dekod (CS-3), 5× tokenów/MW; lekcja zapisana, nie do testu u nas
