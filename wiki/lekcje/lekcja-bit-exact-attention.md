@@ -24,4 +24,4 @@ Pełna lista źródeł rozbieżności (raport 12, kolejność znalezienia): MMVQ
 - [[lekcja-md5-wzgledem-upstreamu]]
 - [[llama-bx-diff]]
 - [[fattn-kvq]]
-- [[raport-12-bit-exact]]
+- [[testy/2026-10-16-bit-exact]]

@@ -27,4 +27,4 @@ status: aktualne
 - [[saluki]]
 - [[final-recipes-nvidia]]
 - [[lekcja-licencja-modelu-sie-zmienia]]
-- [[2026-10-16-saluki-bonsai-na-3060]]
+- [[decyzje/2026-11-14-saluki-usuniety]]

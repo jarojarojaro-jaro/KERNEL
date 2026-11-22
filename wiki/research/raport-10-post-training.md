@@ -20,8 +20,8 @@ Wynik pilota (raport 11, 2026-10-16): douczenie głowicy MTP na 1.7 M tokenów d
 
 ## Powiązane
 - [[research/_hub|research]]
-- [[raport-12-bit-exact]]
+- [[testy/2026-10-16-bit-exact]]
 - [[raport-07-metody]]
 - [[speculators-specforge]]
 - [[glowica-mtp]]
-- [[raport-11-mtp-pl-pilot]]
+- [[testy/2026-10-16-mtp-pl-pilot]]

@@ -183,5 +183,5 @@ Pozycji z rangą: 72 (w tym C26 to proces, a D7 pomiar wiedzy); 2 zdecydowane (A
 - **Wieloużytkownikowo:** `-np 2/4` na upstream nigdy.
 
 ## Powiązane
-- Wiki: `wiki/nvidia/backlog-testow-nvidia.md`
+- Wiki: `wiki/KOLEJKA-TESTOW.md`
 - Poprzednie raporty: [67b](67b-wybor-modeli-nvidia.md), [16c](16c-kvq-cuda.md), [27](27-3090-final.md), [29](29-4060ti.md), [56-orca](56-orca-3090.md), [63-SYNTEZA](63-SYNTEZA.md), [66-SYNTEZA](66-SYNTEZA.md), [60b](60b-apple-engines-bonsai.md)

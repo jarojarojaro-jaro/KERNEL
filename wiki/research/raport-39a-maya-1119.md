@@ -15,4 +15,4 @@ status: aktualne
 - [[research/_hub|research]]
 - [[raporty-2026-10-20-21]]
 - [[project-maya]]
-- [[raport-45-opoznienia]]
+- [[optymalizacje/opoznienia-ttft]]

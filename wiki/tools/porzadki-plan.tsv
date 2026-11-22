@@ -1,0 +1,809 @@
+stara	nowa	akcja	cel	powod
+AUDYT	AUDYT	korzen		rejestr w korzeniu, zostaje (link z huba części)
+KOLEJKA-TESTOW	KOLEJKA-TESTOW	korzen		rejestr w korzeniu, zostaje (link z huba części)
+KONWENCJE	KONWENCJE	korzen		rejestr w korzeniu, zostaje (link z huba części)
+REKORDY	REKORDY	korzen		rejestr w korzeniu, zostaje (link z huba części)
+ZRODLA	ZRODLA	korzen		rejestr w korzeniu, zostaje (link z huba części)
+chmura/_hub	karty/_hub	hub	karty/_hub	hub dawnego folderu: linki → karty/_hub, plik usunięty
+chmura/amd-dev-cloud	karty/amd-dev-cloud	przenies	karty/amd-dev-cloud	folder chmura → część karty
+chmura/harness-chmurowy	scal z narzedzia/skrypty-chmury	scal	narzedzia/skrypty-chmury	te same skrypty ~/qwen-opt/cloud dwa razy
+chmura/radeony-do-wynajecia	karty/radeony-do-wynajecia	przenies	karty/radeony-do-wynajecia	folder chmura → część karty
+chmura/runpod	karty/runpod	przenies	karty/runpod	folder chmura → część karty
+chmura/salad	karty/salad	przenies	karty/salad	folder chmura → część karty
+chmura/vast-ai	karty/vast-ai	przenies	karty/vast-ai	folder chmura → część karty
+decyzje/2026-10-09-limit-mocy-odlozony	archiwum	archiwum	decyzje/2026-10-20-karta-fabrycznie	uchylona: od 20.10 karta fabrycznie (bez zmian limitu mocy), od 06.11 profil eco 2200 MHz; 285 W z 09.10 nie obowiązuje
+decyzje/2026-10-12-rocm-domyslny	decyzje/2026-10-12-rocm-domyslny	zostaje	decyzje/2026-10-12-rocm-domyslny	część decyzje bez zmian
+decyzje/2026-10-14-lfm-kv-q8	decyzje/2026-10-14-lfm-kv-q8	zostaje	decyzje/2026-10-14-lfm-kv-q8	część decyzje bez zmian
+decyzje/2026-10-15-czat-na-web-ui-llama	decyzje/2026-10-15-czat-na-web-ui-llama	zostaje	decyzje/2026-10-15-czat-na-web-ui-llama	część decyzje bez zmian
+decyzje/2026-10-15-karty-kupujemy	decyzje/2026-10-15-karty-kupujemy	zostaje	decyzje/2026-10-15-karty-kupujemy	część decyzje bez zmian
+decyzje/2026-10-15-linux-i-analiza-platformy	decyzje/2026-10-15-linux-i-analiza-platformy	zostaje	decyzje/2026-10-15-linux-i-analiza-platformy	część decyzje bez zmian
+decyzje/2026-10-15-open-core	decyzje/2026-10-15-open-core	zostaje	decyzje/2026-10-15-open-core	część decyzje bez zmian
+decyzje/2026-10-15-reasoning-control-off	decyzje/2026-10-15-reasoning-control-off	zostaje	decyzje/2026-10-15-reasoning-control-off	część decyzje bez zmian
+decyzje/2026-10-15-zakaz-gpu-w-nocy	archiwum	archiwum		czasowy zakaz z 15.10 (od 00:45 do 02:00), minął tej samej nocy
+decyzje/2026-10-16-badamy-magnitude	decyzje/2026-10-16-badamy-magnitude	zostaje	decyzje/2026-10-16-badamy-magnitude	część decyzje bez zmian
+decyzje/2026-10-16-bez-lokalnego-gpu	archiwum	archiwum	kernel-od-a-do-z	uchylona: od 19.11 testy na XTX na polecenie JARO (mapa Kernela, „Czego nie robię bez zgody”; kolejka K-… na XTX)
+decyzje/2026-10-16-budzety-chmury	archiwum	archiwum	karty/vast-ai	jednorazowa kampania 16.10 ($5 Vast, $6 RunPod), zamknięta i rozliczona; dziś budżet każdorazowo ze zgody JARO
+decyzje/2026-10-16-kvq-cuda-zostaje	decyzje/2026-10-16-kvq-cuda-zostaje	zostaje	decyzje/2026-10-16-kvq-cuda-zostaje	część decyzje bez zmian
+decyzje/2026-10-16-landing-i-konto	decyzje/2026-10-16-landing-i-konto	zostaje	decyzje/2026-10-16-landing-i-konto	część decyzje bez zmian
+decyzje/2026-10-16-najpierw-wynajem-na-vast	decyzje/2026-10-16-najpierw-wynajem-na-vast	zostaje	decyzje/2026-10-16-najpierw-wynajem-na-vast	część decyzje bez zmian
+decyzje/2026-10-16-nie-placimy-za-przestoj	decyzje/2026-10-16-nie-placimy-za-przestoj	zostaje	decyzje/2026-10-16-nie-placimy-za-przestoj	część decyzje bez zmian
+decyzje/2026-10-16-prosta-baza-wiedzy	decyzje/2026-10-16-prosta-baza-wiedzy	zostaje	decyzje/2026-10-16-prosta-baza-wiedzy	część decyzje bez zmian
+decyzje/2026-10-16-runpod-drugi-pod	decyzje/2026-10-16-runpod-drugi-pod	zostaje	decyzje/2026-10-16-runpod-drugi-pod	część decyzje bez zmian
+decyzje/2026-10-16-saluki-bonsai-na-3060	archiwum	archiwum	decyzje/2026-11-14-saluki-usuniety	Saluki usunięty 14.11
+decyzje/2026-10-16-wiki-jeden-agent	decyzje/2026-10-16-wiki-jeden-agent	zostaje	decyzje/2026-10-16-wiki-jeden-agent	część decyzje bez zmian
+decyzje/2026-10-16-wszystko-do-bazy-wiedzy	decyzje/2026-10-16-wszystko-do-bazy-wiedzy	zostaje	decyzje/2026-10-16-wszystko-do-bazy-wiedzy	część decyzje bez zmian
+decyzje/2026-10-19-bezpieczenstwo-sprzetu	decyzje/2026-10-19-bezpieczenstwo-sprzetu	zostaje	decyzje/2026-10-19-bezpieczenstwo-sprzetu	część decyzje bez zmian
+decyzje/2026-10-19-buildy-przez-rbuild	decyzje/2026-10-19-buildy-przez-rbuild	zostaje	decyzje/2026-10-19-buildy-przez-rbuild	część decyzje bez zmian
+decyzje/2026-10-19-chmura-bez-destroy-all	decyzje/2026-10-19-chmura-bez-destroy-all	zostaje	decyzje/2026-10-19-chmura-bez-destroy-all	część decyzje bez zmian
+decyzje/2026-10-19-kv-tylko-w-ram	decyzje/2026-10-19-kv-tylko-w-ram	zostaje	decyzje/2026-10-19-kv-tylko-w-ram	część decyzje bez zmian
+decyzje/2026-10-19-najlepiej-bez-pytania	decyzje/2026-10-19-najlepiej-bez-pytania	zostaje	decyzje/2026-10-19-najlepiej-bez-pytania	część decyzje bez zmian
+decyzje/2026-10-19-szanujemy-sprzet-serwera	decyzje/2026-10-19-szanujemy-sprzet-serwera	zostaje	decyzje/2026-10-19-szanujemy-sprzet-serwera	część decyzje bez zmian
+decyzje/2026-10-19-topka-tylko-keeper	decyzje/2026-10-19-topka-tylko-keeper	zostaje	decyzje/2026-10-19-topka-tylko-keeper	część decyzje bez zmian
+decyzje/2026-10-19-wentylator-100-przy-pracy	decyzje/2026-10-19-wentylator-100-przy-pracy	zostaje	decyzje/2026-10-19-wentylator-100-przy-pracy	część decyzje bez zmian
+decyzje/2026-10-20-auth-bez-backendu	decyzje/2026-10-20-auth-bez-backendu	zostaje	decyzje/2026-10-20-auth-bez-backendu	część decyzje bez zmian
+decyzje/2026-10-20-bez-publikacji-localmaxxing	decyzje/2026-10-20-bez-publikacji-localmaxxing	zostaje	decyzje/2026-10-20-bez-publikacji-localmaxxing	część decyzje bez zmian
+decyzje/2026-10-20-chmura-wstrzymana	archiwum	archiwum	karty/vast-ai	uchylona: od 17.11 testy na Vaście ze zgodą i budżetem JARO (K-114, K-118, Colab od 22.11)
+decyzje/2026-10-20-karta-fabrycznie	decyzje/2026-10-20-karta-fabrycznie	zostaje	decyzje/2026-10-20-karta-fabrycznie	część decyzje bez zmian
+decyzje/2026-10-20-kontekst-min-131k	decyzje/2026-10-20-kontekst-min-131k	zostaje	decyzje/2026-10-20-kontekst-min-131k	część decyzje bez zmian
+decyzje/2026-10-20-lepsze-wdrazamy-bez-pytania	decyzje/2026-10-20-lepsze-wdrazamy-bez-pytania	zostaje	decyzje/2026-10-20-lepsze-wdrazamy-bez-pytania	część decyzje bez zmian
+decyzje/2026-10-20-szybkie-iteracje	decyzje/2026-10-20-szybkie-iteracje	zostaje	decyzje/2026-10-20-szybkie-iteracje	część decyzje bez zmian
+decyzje/2026-10-20-uncensored-poza-strona	decyzje/2026-10-20-uncensored-poza-strona	zostaje	decyzje/2026-10-20-uncensored-poza-strona	część decyzje bez zmian
+decyzje/2026-10-21-enigma-labz	decyzje/2026-10-21-enigma-labz	zostaje	decyzje/2026-10-21-enigma-labz	część decyzje bez zmian
+decyzje/2026-11-05-termika-eco-test	decyzje/2026-11-05-termika-eco-test	zostaje	decyzje/2026-11-05-termika-eco-test	część decyzje bez zmian
+decyzje/2026-11-05-tylko-bezstratne	decyzje/2026-11-05-tylko-bezstratne	zostaje	decyzje/2026-11-05-tylko-bezstratne	część decyzje bez zmian
+decyzje/2026-11-06-profil-eco-2200	decyzje/2026-11-06-profil-eco-2200	zostaje	decyzje/2026-11-06-profil-eco-2200	część decyzje bez zmian
+decyzje/2026-11-09-decyzje-runda-69	decyzje/2026-11-09-decyzje-runda-69	zostaje	decyzje/2026-11-09-decyzje-runda-69	część decyzje bez zmian
+decyzje/2026-11-14-saluki-usuniety	decyzje/2026-11-14-saluki-usuniety	zostaje	decyzje/2026-11-14-saluki-usuniety	część decyzje bez zmian
+decyzje/_hub	decyzje/_hub	zostaje	decyzje/_hub	hub części
+eksperymenty/2026-10-09-pierwsze-pomiary	testy/2026-10-09-pierwsze-pomiary	przenies	testy/2026-10-09-pierwsze-pomiary	folder eksperymenty → część testy
+eksperymenty/2026-10-10-sweep-mtp-dflash	testy/2026-10-10-sweep-mtp-dflash	przenies	testy/2026-10-10-sweep-mtp-dflash	folder eksperymenty → część testy
+eksperymenty/2026-10-12-cache-promptu-i-a7	testy/2026-10-12-cache-promptu-i-a7	przenies	testy/2026-10-12-cache-promptu-i-a7	folder eksperymenty → część testy
+eksperymenty/2026-10-12-fuzje-a3-a6	testy/2026-10-12-fuzje-a3-a6	przenies	testy/2026-10-12-fuzje-a3-a6	folder eksperymenty → część testy
+eksperymenty/2026-10-12-mtp-trening-faza1	testy/2026-10-12-mtp-trening-faza1	przenies	testy/2026-10-12-mtp-trening-faza1	folder eksperymenty → część testy
+eksperymenty/2026-10-12-rocm-vs-vulkan	testy/2026-10-12-rocm-vs-vulkan	przenies	testy/2026-10-12-rocm-vs-vulkan	folder eksperymenty → część testy
+eksperymenty/2026-10-12-vulkan-krok-po-kroku	testy/2026-10-12-vulkan-krok-po-kroku	przenies	testy/2026-10-12-vulkan-krok-po-kroku	folder eksperymenty → część testy
+eksperymenty/2026-10-13-k1-mmvq	testy/2026-10-13-k1-mmvq	przenies	testy/2026-10-13-k1-mmvq	folder eksperymenty → część testy
+eksperymenty/2026-10-13-k2-male-kernele	testy/2026-10-13-k2-male-kernele	przenies	testy/2026-10-13-k2-male-kernele	folder eksperymenty → część testy
+eksperymenty/2026-10-13-k3-host	testy/2026-10-13-k3-host	przenies	testy/2026-10-13-k3-host	folder eksperymenty → część testy
+eksperymenty/2026-10-13-k4-i-hw-queues	testy/2026-10-13-k4-i-hw-queues	przenies	testy/2026-10-13-k4-i-hw-queues	folder eksperymenty → część testy
+eksperymenty/2026-10-13-s2-s4	testy/2026-10-13-s2-s4	przenies	testy/2026-10-13-s2-s4	folder eksperymenty → część testy
+eksperymenty/2026-10-14-prefill-k5-t3	testy/2026-10-14-prefill-k5-t3	przenies	testy/2026-10-14-prefill-k5-t3	folder eksperymenty → część testy
+eksperymenty/2026-10-14-t1-t2-draft	testy/2026-10-14-t1-t2-draft	przenies	testy/2026-10-14-t1-t2-draft	folder eksperymenty → część testy
+eksperymenty/2026-10-15-sampler	testy/2026-10-15-sampler	przenies	testy/2026-10-15-sampler	folder eksperymenty → część testy
+eksperymenty/2026-10-16-backtest-regul-fabryki	testy/2026-10-16-backtest-regul-fabryki	przenies	testy/2026-10-16-backtest-regul-fabryki	folder eksperymenty → część testy
+eksperymenty/2026-10-16-bit-exact	testy/2026-10-16-bit-exact	przenies	testy/2026-10-16-bit-exact	folder eksperymenty → część testy
+eksperymenty/2026-10-16-budzet-lfm-megakernel	testy/2026-10-16-budzet-lfm-megakernel	przenies	testy/2026-10-16-budzet-lfm-megakernel	folder eksperymenty → część testy
+eksperymenty/2026-10-16-kampania-nvidia	testy/2026-10-16-kampania-nvidia	przenies	testy/2026-10-16-kampania-nvidia	folder eksperymenty → część testy
+eksperymenty/2026-10-16-kompresja-skal-offline	testy/2026-10-16-kompresja-skal-offline	przenies	testy/2026-10-16-kompresja-skal-offline	folder eksperymenty → część testy
+eksperymenty/2026-10-16-kvq-cuda	testy/2026-10-16-kvq-cuda	przenies	testy/2026-10-16-kvq-cuda	folder eksperymenty → część testy
+eksperymenty/2026-10-16-lookup-kopiowalnosc	testy/2026-10-16-lookup-kopiowalnosc	przenies	testy/2026-10-16-lookup-kopiowalnosc	folder eksperymenty → część testy
+eksperymenty/2026-10-16-magnitude-rozklad-wygranej	testy/2026-10-16-magnitude-rozklad-wygranej	przenies	testy/2026-10-16-magnitude-rozklad-wygranej	folder eksperymenty → część testy
+eksperymenty/2026-10-16-magnitude-vs-fork	testy/2026-10-16-magnitude-vs-fork	przenies	testy/2026-10-16-magnitude-vs-fork	folder eksperymenty → część testy
+eksperymenty/2026-10-16-mtp-pl-pilot	testy/2026-10-16-mtp-pl-pilot	przenies	testy/2026-10-16-mtp-pl-pilot	folder eksperymenty → część testy
+eksperymenty/2026-10-16-nemotron-3090	testy/2026-10-16-nemotron-3090	przenies	testy/2026-10-16-nemotron-3090	folder eksperymenty → część testy
+eksperymenty/2026-10-16-nvfp4-skala-globalna-sim	testy/2026-10-16-nvfp4-skala-globalna-sim	przenies	testy/2026-10-16-nvfp4-skala-globalna-sim	folder eksperymenty → część testy
+eksperymenty/2026-10-16-pflash-pilot-cpu	testy/2026-10-16-pflash-pilot-cpu	przenies	testy/2026-10-16-pflash-pilot-cpu	folder eksperymenty → część testy
+eksperymenty/2026-10-16-rebase-v070	testy/2026-10-16-rebase-v070	przenies	testy/2026-10-16-rebase-v070	folder eksperymenty → część testy
+eksperymenty/2026-10-18-cache-promptu-agenta	testy/2026-10-18-cache-promptu-agenta	przenies	testy/2026-10-18-cache-promptu-agenta	folder eksperymenty → część testy
+eksperymenty/2026-10-18-e1-kwanty-27b-kld	testy/2026-10-18-e1-kwanty-27b-kld	przenies	testy/2026-10-18-e1-kwanty-27b-kld	folder eksperymenty → część testy
+eksperymenty/2026-10-18-hak-mtp-i-checkpointy	testy/2026-10-18-hak-mtp-i-checkpointy	przenies	testy/2026-10-18-hak-mtp-i-checkpointy	folder eksperymenty → część testy
+eksperymenty/2026-10-18-kontroler-szerokosci-zerowy	testy/2026-10-18-kontroler-szerokosci-zerowy	przenies	testy/2026-10-18-kontroler-szerokosci-zerowy	folder eksperymenty → część testy
+eksperymenty/2026-10-18-lfm-moe-negatywne	testy/2026-10-18-lfm-moe-negatywne	przenies	testy/2026-10-18-lfm-moe-negatywne	folder eksperymenty → część testy
+eksperymenty/2026-10-18-lfm-moe-pasmo	testy/2026-10-18-lfm-moe-pasmo	przenies	testy/2026-10-18-lfm-moe-pasmo	folder eksperymenty → część testy
+eksperymenty/2026-10-18-lfm-ubatch-2048	testy/2026-10-18-lfm-ubatch-2048	przenies	testy/2026-10-18-lfm-ubatch-2048	folder eksperymenty → część testy
+eksperymenty/2026-10-18-lookup-ogon	testy/2026-10-18-lookup-ogon	przenies	testy/2026-10-18-lookup-ogon	folder eksperymenty → część testy
+eksperymenty/2026-10-18-magnitude-vulkan-xtx	testy/2026-10-18-magnitude-vulkan-xtx	przenies	testy/2026-10-18-magnitude-vulkan-xtx	folder eksperymenty → część testy
+eksperymenty/2026-10-18-pm4-pdl-x1	testy/2026-10-18-pm4-pdl-x1	przenies	testy/2026-10-18-pm4-pdl-x1	folder eksperymenty → część testy
+eksperymenty/2026-10-18-pm4-ub-lfm	testy/2026-10-18-pm4-ub-lfm	przenies	testy/2026-10-18-pm4-ub-lfm	folder eksperymenty → część testy
+eksperymenty/2026-10-18-sprzezone-probkowanie-mtp	testy/2026-10-18-sprzezone-probkowanie-mtp	przenies	testy/2026-10-18-sprzezone-probkowanie-mtp	folder eksperymenty → część testy
+eksperymenty/2026-10-19-build-topka	testy/2026-10-19-build-topka	przenies	testy/2026-10-19-build-topka	folder eksperymenty → część testy
+eksperymenty/2026-10-19-certyfikowana-glowica-pilot	testy/2026-10-19-certyfikowana-glowica-pilot	przenies	testy/2026-10-19-certyfikowana-glowica-pilot	folder eksperymenty → część testy
+eksperymenty/2026-10-19-page-faulty-gpu-analiza	testy/2026-10-19-page-faulty-gpu-analiza	przenies	testy/2026-10-19-page-faulty-gpu-analiza	folder eksperymenty → część testy
+eksperymenty/2026-10-19-plan-e1-rsr27b	archiwum	archiwum	KOLEJKA-TESTOW	plan niewykonany, zastąpiony pozycją K-074
+eksperymenty/2026-10-19-plan-retro-rsr-0070	archiwum	archiwum	KOLEJKA-TESTOW	plan niewykonany, zastąpiony pozycją K-060
+eksperymenty/2026-10-19-pm4-priv-analiza	testy/2026-10-19-pm4-priv-analiza	przenies	testy/2026-10-19-pm4-priv-analiza	folder eksperymenty → część testy
+eksperymenty/2026-10-19-sufit-pointera-lookup	testy/2026-10-19-sufit-pointera-lookup	przenies	testy/2026-10-19-sufit-pointera-lookup	folder eksperymenty → część testy
+eksperymenty/2026-10-19-tokeny-spoza-slownika-draftu	testy/2026-10-19-tokeny-spoza-slownika-draftu	przenies	testy/2026-10-19-tokeny-spoza-slownika-draftu	folder eksperymenty → część testy
+eksperymenty/2026-10-19-workload-omp	testy/2026-10-19-workload-omp	przenies	testy/2026-10-19-workload-omp	folder eksperymenty → część testy
+eksperymenty/2026-10-20-podsumowanie-nocy	testy/2026-10-20-podsumowanie-nocy	przenies	testy/2026-10-20-podsumowanie-nocy	folder eksperymenty → część testy
+eksperymenty/2026-11-05-q63-topka	testy/2026-11-05-q63-topka	przenies	testy/2026-11-05-q63-topka	folder eksperymenty → część testy
+eksperymenty/2026-11-06-ctx-262k-fit	testy/2026-11-06-ctx-262k-fit	przenies	testy/2026-11-06-ctx-262k-fit	folder eksperymenty → część testy
+eksperymenty/2026-11-06-eco-sweep-sclk	testy/2026-11-06-eco-sweep-sclk	przenies	testy/2026-11-06-eco-sweep-sclk	folder eksperymenty → część testy
+eksperymenty/2026-11-06-eco-szybki-bench	testy/2026-11-06-eco-szybki-bench	przenies	testy/2026-11-06-eco-szybki-bench	folder eksperymenty → część testy
+eksperymenty/2026-11-06-final-mode	testy/2026-11-06-final-mode	przenies	testy/2026-11-06-final-mode	folder eksperymenty → część testy
+eksperymenty/2026-11-06-sesja-uzytkownika-final-mode	testy/2026-11-06-sesja-uzytkownika-final-mode	przenies	testy/2026-11-06-sesja-uzytkownika-final-mode	folder eksperymenty → część testy
+eksperymenty/2026-11-06-xtx-eco-instalacja	testy/2026-11-06-xtx-eco-instalacja	przenies	testy/2026-11-06-xtx-eco-instalacja	folder eksperymenty → część testy
+eksperymenty/2026-11-07-kampania-nvidia-vast	testy/2026-11-07-kampania-nvidia-vast	przenies	testy/2026-11-07-kampania-nvidia-vast	folder eksperymenty → część testy
+eksperymenty/2026-11-07-q6k-mmq-skale	testy/2026-11-07-q6k-mmq-skale	przenies	testy/2026-11-07-q6k-mmq-skale	folder eksperymenty → część testy
+eksperymenty/2026-11-08-cachesave-30137	testy/2026-11-08-cachesave-30137	przenies	testy/2026-11-08-cachesave-30137	folder eksperymenty → część testy
+eksperymenty/2026-11-08-fa-d256-prefill	testy/2026-11-08-fa-d256-prefill	przenies	testy/2026-11-08-fa-d256-prefill	folder eksperymenty → część testy
+eksperymenty/2026-11-08-kvq-once-profil	testy/2026-11-08-kvq-once-profil	przenies	testy/2026-11-08-kvq-once-profil	folder eksperymenty → część testy
+eksperymenty/2026-11-08-l1-tokenizacja-parser	testy/2026-11-08-l1-tokenizacja-parser	przenies	testy/2026-11-08-l1-tokenizacja-parser	folder eksperymenty → część testy
+eksperymenty/2026-11-09-evalplus-qwen-uncensored	testy/2026-11-09-evalplus-qwen-uncensored	przenies	testy/2026-11-09-evalplus-qwen-uncensored	folder eksperymenty → część testy
+eksperymenty/2026-11-09-jakosc-mini-qwen-unc	testy/2026-11-09-jakosc-mini-qwen-unc	przenies	testy/2026-11-09-jakosc-mini-qwen-unc	folder eksperymenty → część testy
+eksperymenty/2026-11-09-qwen-warp-vs-fork-3090	testy/2026-11-09-qwen-warp-vs-fork-3090	przenies	testy/2026-11-09-qwen-warp-vs-fork-3090	folder eksperymenty → część testy
+eksperymenty/2026-11-09-wdrozenie-topka-q70	testy/2026-11-09-wdrozenie-topka-q70	przenies	testy/2026-11-09-wdrozenie-topka-q70	folder eksperymenty → część testy
+eksperymenty/2026-11-14-k001-wyciek-stanu-restore	testy/2026-11-14-k001-wyciek-stanu-restore	przenies	testy/2026-11-14-k001-wyciek-stanu-restore	folder eksperymenty → część testy
+eksperymenty/2026-11-14-k002-k003-k013-xtx	testy/2026-11-14-k002-k003-k013-xtx	przenies	testy/2026-11-14-k002-k003-k013-xtx	folder eksperymenty → część testy
+eksperymenty/2026-11-14-k103-llamacpp-v1-nvidia	testy/2026-11-14-k103-llamacpp-v1-nvidia	przenies	testy/2026-11-14-k103-llamacpp-v1-nvidia	folder eksperymenty → część testy
+eksperymenty/2026-11-14-k104-krotki-ogon-promptu	testy/2026-11-14-k104-krotki-ogon-promptu	przenies	testy/2026-11-14-k104-krotki-ogon-promptu	folder eksperymenty → część testy
+eksperymenty/2026-11-17-k114-nvidia-sufit	testy/2026-11-17-k114-nvidia-sufit	przenies	testy/2026-11-17-k114-nvidia-sufit	folder eksperymenty → część testy
+eksperymenty/2026-11-19-k109-k110-k106-xtx	testy/2026-11-19-k109-k110-k106-xtx	przenies	testy/2026-11-19-k109-k110-k106-xtx	folder eksperymenty → część testy
+eksperymenty/2026-11-19-k111-k123-krok-xtx	testy/2026-11-19-k111-k123-krok-xtx	przenies	testy/2026-11-19-k111-k123-krok-xtx	folder eksperymenty → część testy
+eksperymenty/2026-11-19-k118-nvidia-pelna-moc	testy/2026-11-19-k118-nvidia-pelna-moc	przenies	testy/2026-11-19-k118-nvidia-pelna-moc	folder eksperymenty → część testy
+eksperymenty/2026-11-19-k125-k001-xtx	testy/2026-11-19-k125-k001-xtx	przenies	testy/2026-11-19-k125-k001-xtx	folder eksperymenty → część testy
+eksperymenty/_hub	testy/_hub	hub	testy/_hub	hub dawnego folderu: linki → testy/_hub, plik usunięty
+eksperymenty/lfm-baza	testy/lfm-baza	przenies	testy/lfm-baza	folder eksperymenty → część testy
+eksperymenty/lfm-runda-1	testy/lfm-runda-1	przenies	testy/lfm-runda-1	folder eksperymenty → część testy
+eksperymenty/lfm-runda-2	testy/lfm-runda-2	przenies	testy/lfm-runda-2	folder eksperymenty → część testy
+eksperymenty/lfm-runda-3	testy/lfm-runda-3	przenies	testy/lfm-runda-3	folder eksperymenty → część testy
+eksperymenty/lfm-runda-4-pm4	testy/lfm-runda-4-pm4	przenies	testy/lfm-runda-4-pm4	folder eksperymenty → część testy
+eksperymenty/qwen-runda-5	testy/qwen-runda-5	przenies	testy/qwen-runda-5	folder eksperymenty → część testy
+eksperymenty/runda-6	testy/runda-6	przenies	testy/runda-6	folder eksperymenty → część testy
+eksperymenty/stan-2026-10-15	testy/stan-2026-10-15	przenies	testy/stan-2026-10-15	folder eksperymenty → część testy
+index	index	korzen		rejestr w korzeniu, zostaje (link z huba części)
+karty/_hub	karty/_hub	zostaje	karty/_hub	hub części
+karty/arc-b580-i-mac	karty/arc-b580-i-mac	zostaje	karty/arc-b580-i-mac	część karty bez zmian
+karty/dysk-serwera-pm9b1	karty/dysk-serwera-pm9b1	zostaje	karty/dysk-serwera-pm9b1	część karty bez zmian
+karty/inne-karty-nvidia	karty/inne-karty-nvidia	zostaje	karty/inne-karty-nvidia	część karty bez zmian
+karty/mi300x	karty/mi300x	zostaje	karty/mi300x	część karty bez zmian
+karty/radeon-ai-pro-r9700	karty/radeon-ai-pro-r9700	zostaje	karty/radeon-ai-pro-r9700	część karty bez zmian
+karty/rtx-3060	karty/rtx-3060	zostaje	karty/rtx-3060	część karty bez zmian
+karty/rtx-3090	karty/rtx-3090	zostaje	karty/rtx-3090	część karty bez zmian
+karty/rtx-4060-ti	karty/rtx-4060-ti	zostaje	karty/rtx-4060-ti	część karty bez zmian
+karty/rtx-5060-ti	karty/rtx-5060-ti	zostaje	karty/rtx-5060-ti	część karty bez zmian
+karty/rx-7900-xtx	karty/rx-7900-xtx	zostaje	karty/rx-7900-xtx	część karty bez zmian
+karty/rx-9070-xt	karty/rx-9070-xt	zostaje	karty/rx-9070-xt	część karty bez zmian
+karty/strix-halo	karty/strix-halo	zostaje	karty/strix-halo	część karty bez zmian
+kernel-od-a-do-z	kernel-od-a-do-z	korzen		korzeń
+kernele/_hub	optymalizacje/_hub	hub	optymalizacje/_hub	hub dawnego folderu: linki → optymalizacje/_hub, plik usunięty
+kernele/argmax-dpp	optymalizacje/argmax-dpp	przenies	optymalizacje/argmax-dpp	folder kernele → część optymalizacje
+kernele/attn-prep-fwht	optymalizacje/attn-prep-fwht	przenies	optymalizacje/attn-prep-fwht	folder kernele → część optymalizacje
+kernele/bariera-lds-rdna3	optymalizacje/bariera-lds-rdna3	przenies	optymalizacje/bariera-lds-rdna3	folder kernele → część optymalizacje
+kernele/cache-q8-1	optymalizacje/cache-q8-1	przenies	optymalizacje/cache-q8-1	folder kernele → część optymalizacje
+kernele/clamp-q8-1	optymalizacje/clamp-q8-1	przenies	optymalizacje/clamp-q8-1	folder kernele → część optymalizacje
+kernele/conv-lag	optymalizacje/conv-lag	przenies	optymalizacje/conv-lag	folder kernele → część optymalizacje
+kernele/fattn-kvq	optymalizacje/fattn-kvq	przenies	optymalizacje/fattn-kvq	folder kernele → część optymalizacje
+kernele/fuzje-lfm-moe	optymalizacje/fuzje-lfm-moe	przenies	optymalizacje/fuzje-lfm-moe	folder kernele → część optymalizacje
+kernele/fuzje-weryfikacji	optymalizacje/fuzje-weryfikacji	przenies	optymalizacje/fuzje-weryfikacji	folder kernele → część optymalizacje
+kernele/gdn-fast	optymalizacje/gdn-fast	przenies	optymalizacje/gdn-fast	folder kernele → część optymalizacje
+kernele/gdn-fuzje-k2	optymalizacje/gdn-fuzje-k2	przenies	optymalizacje/gdn-fuzje-k2	folder kernele → część optymalizacje
+kernele/gdn-replay	optymalizacje/gdn-replay	przenies	optymalizacje/gdn-replay	folder kernele → część optymalizacje
+kernele/gumbel-max	optymalizacje/gumbel-max	przenies	optymalizacje/gumbel-max	folder kernele → część optymalizacje
+kernele/kv-raz-na-weryfikacje	optymalizacje/kv-raz-na-weryfikacje	przenies	optymalizacje/kv-raz-na-weryfikacje	folder kernele → część optymalizacje
+kernele/lfm-shortconv	optymalizacje/lfm-shortconv	przenies	optymalizacje/lfm-shortconv	folder kernele → część optymalizacje
+kernele/maska-kq-host-dlugi-ctx	optymalizacje/maska-kq-host-dlugi-ctx	przenies	optymalizacje/maska-kq-host-dlugi-ctx	folder kernele → część optymalizacje
+kernele/mmq-epilog	optymalizacje/mmq-epilog	przenies	optymalizacje/mmq-epilog	folder kernele → część optymalizacje
+kernele/mmq-q6k-skale-lds	optymalizacje/mmq-q6k-skale-lds	przenies	optymalizacje/mmq-q6k-skale-lds	folder kernele → część optymalizacje
+kernele/mmvq-moe-gate-up-blok	optymalizacje/mmvq-moe-gate-up-blok	przenies	optymalizacje/mmvq-moe-gate-up-blok	folder kernele → część optymalizacje
+kernele/mmvq-multikolumnowe	optymalizacje/mmvq-multikolumnowe	przenies	optymalizacje/mmvq-multikolumnowe	folder kernele → część optymalizacje
+kernele/mmvq-n1-wiersze	optymalizacje/mmvq-n1-wiersze	przenies	optymalizacje/mmvq-n1-wiersze	folder kernele → część optymalizacje
+kernele/mmvq-prefetch-l2	optymalizacje/mmvq-prefetch-l2	przenies	optymalizacje/mmvq-prefetch-l2	folder kernele → część optymalizacje
+kernele/mtp-draft-graf	optymalizacje/mtp-draft-graf	przenies	optymalizacje/mtp-draft-graf	folder kernele → część optymalizacje
+kernele/nemotron-kernele-cuda	optymalizacje/nemotron-kernele-cuda	przenies	optymalizacje/nemotron-kernele-cuda	folder kernele → część optymalizacje
+kernele/pamiec-stanu-gdn	optymalizacje/pamiec-stanu-gdn	przenies	optymalizacje/pamiec-stanu-gdn	folder kernele → część optymalizacje
+kernele/para-mmvq	optymalizacje/para-mmvq	przenies	optymalizacje/para-mmvq	folder kernele → część optymalizacje
+kernele/pdl-mmvq-trigger	optymalizacje/pdl-mmvq-trigger	przenies	optymalizacje/pdl-mmvq-trigger	folder kernele → część optymalizacje
+kernele/pm4-replay	optymalizacje/pm4-replay	przenies	optymalizacje/pm4-replay	folder kernele → część optymalizacje
+kernele/prefill-mmq-fa	optymalizacje/prefill-mmq-fa	przenies	optymalizacje/prefill-mmq-fa	folder kernele → część optymalizacje
+kernele/rmsnorm-dpp	optymalizacje/rmsnorm-dpp	przenies	optymalizacje/rmsnorm-dpp	folder kernele → część optymalizacje
+kernele/sampler-fast-path	optymalizacje/sampler-fast-path	przenies	optymalizacje/sampler-fast-path	folder kernele → część optymalizacje
+kernele/vulkan-mmvq	optymalizacje/vulkan-mmvq	przenies	optymalizacje/vulkan-mmvq	folder kernele → część optymalizacje
+kernele/wmma-small-n	optymalizacje/wmma-small-n	przenies	optymalizacje/wmma-small-n	folder kernele → część optymalizacje
+latki/_hub	optymalizacje/_hub	hub	optymalizacje/_hub	hub dawnego folderu: linki → optymalizacje/_hub, plik usunięty
+latki/klasyfikacja-latek	optymalizacje/klasyfikacja-latek	przenies	optymalizacje/klasyfikacja-latek	folder latki → część optymalizacje
+latki/latki-do-upstreamu	optymalizacje/latki-do-upstreamu	przenies	optymalizacje/latki-do-upstreamu	folder latki → część optymalizacje
+latki/latki-hostowe	optymalizacje/latki-hostowe	przenies	optymalizacje/latki-hostowe	folder latki → część optymalizacje
+latki/latki-oczekujace	optymalizacje/latki-oczekujace	przenies	optymalizacje/latki-oczekujace	folder latki → część optymalizacje
+latki/latki-spekulacji	optymalizacje/latki-spekulacji	przenies	optymalizacje/latki-spekulacji	folder latki → część optymalizacje
+latki/patch-manifest	optymalizacje/patch-manifest	przenies	optymalizacje/patch-manifest	folder latki → część optymalizacje
+latki/seria-amd-opt	optymalizacje/seria-amd-opt	przenies	optymalizacje/seria-amd-opt	folder latki → część optymalizacje
+latki/wylaczniki-env	optymalizacje/wylaczniki-env	przenies	optymalizacje/wylaczniki-env	folder latki → część optymalizacje
+lekcje/_hub	lekcje/_hub	zostaje	lekcje/_hub	hub części
+lekcje/baco-runtime-suspend	lekcje/baco-runtime-suspend	zostaje	lekcje/baco-runtime-suspend	część lekcje bez zmian
+lekcje/determinizm-fma	lekcje/determinizm-fma	zostaje	lekcje/determinizm-fma	część lekcje bez zmian
+lekcje/lekcja-5-seedow	lekcje/lekcja-5-seedow	zostaje	lekcje/lekcja-5-seedow	część lekcje bez zmian
+lekcje/lekcja-5060ti-bezczynna	lekcje/lekcja-5060ti-bezczynna	zostaje	lekcje/lekcja-5060ti-bezczynna	część lekcje bez zmian
+lekcje/lekcja-agent-nie-patrzyl-na-temperatury	lekcje/lekcja-agent-nie-patrzyl-na-temperatury	zostaje	lekcje/lekcja-agent-nie-patrzyl-na-temperatury	część lekcje bez zmian
+lekcje/lekcja-agent-prefill-nie-decode	lekcje/lekcja-agent-prefill-nie-decode	zostaje	lekcje/lekcja-agent-prefill-nie-decode	część lekcje bez zmian
+lekcje/lekcja-agent-zmienia-protokol	lekcje/lekcja-agent-zmienia-protokol	zostaje	lekcje/lekcja-agent-zmienia-protokol	część lekcje bez zmian
+lekcje/lekcja-akceptacja-h100-nie-przenosi-sie	lekcje/lekcja-akceptacja-h100-nie-przenosi-sie	zostaje	lekcje/lekcja-akceptacja-h100-nie-przenosi-sie	część lekcje bez zmian
+lekcje/lekcja-baseline-wlasnego-silnika	lekcje/lekcja-baseline-wlasnego-silnika	zostaje	lekcje/lekcja-baseline-wlasnego-silnika	część lekcje bez zmian
+lekcje/lekcja-benchmark-kopia	lekcje/lekcja-benchmark-kopia	zostaje	lekcje/lekcja-benchmark-kopia	część lekcje bez zmian
+lekcje/lekcja-benchmark-te-same-tokeny	lekcje/lekcja-benchmark-te-same-tokeny	zostaje	lekcje/lekcja-benchmark-te-same-tokeny	część lekcje bez zmian
+lekcje/lekcja-bit-exact-attention	lekcje/lekcja-bit-exact-attention	zostaje	lekcje/lekcja-bit-exact-attention	część lekcje bez zmian
+lekcje/lekcja-bit-exact-wobec-siebie	lekcje/lekcja-bit-exact-wobec-siebie	zostaje	lekcje/lekcja-bit-exact-wobec-siebie	część lekcje bez zmian
+lekcje/lekcja-bledny-roofline	lekcje/lekcja-bledny-roofline	zostaje	lekcje/lekcja-bledny-roofline	część lekcje bez zmian
+lekcje/lekcja-bootstrap-male-n	lekcje/lekcja-bootstrap-male-n	zostaje	lekcje/lekcja-bootstrap-male-n	część lekcje bez zmian
+lekcje/lekcja-bootstrap-numpy	lekcje/lekcja-bootstrap-numpy	zostaje	lekcje/lekcja-bootstrap-numpy	część lekcje bez zmian
+lekcje/lekcja-brak-column-w-obrazie	lekcje/lekcja-brak-column-w-obrazie	zostaje	lekcje/lekcja-brak-column-w-obrazie	część lekcje bez zmian
+lekcje/lekcja-build-cuda-0057-0070	lekcje/lekcja-build-cuda-0057-0070	zostaje	lekcje/lekcja-build-cuda-0057-0070	część lekcje bez zmian
+lekcje/lekcja-build-landing-nie-czyta-home	lekcje/lekcja-build-landing-nie-czyta-home	zostaje	lekcje/lekcja-build-landing-nie-czyta-home	część lekcje bez zmian
+lekcje/lekcja-build-przed-wynajmem	lekcje/lekcja-build-przed-wynajmem	zostaje	lekcje/lekcja-build-przed-wynajmem	część lekcje bez zmian
+lekcje/lekcja-buildfarm-down-z-cloud	lekcje/lekcja-buildfarm-down-z-cloud	zostaje	lekcje/lekcja-buildfarm-down-z-cloud	część lekcje bez zmian
+lekcje/lekcja-cache-ram-za-maly	lekcje/lekcja-cache-ram-za-maly	zostaje	lekcje/lekcja-cache-ram-za-maly	część lekcje bez zmian
+lekcje/lekcja-chrome-zostawiony	lekcje/lekcja-chrome-zostawiony	zostaje	lekcje/lekcja-chrome-zostawiony	część lekcje bez zmian
+lekcje/lekcja-commity-bez-pomiaru	lekcje/lekcja-commity-bez-pomiaru	zostaje	lekcje/lekcja-commity-bez-pomiaru	część lekcje bez zmian
+lekcje/lekcja-cpuheavy-w-jobie-kolejki	lekcje/lekcja-cpuheavy-w-jobie-kolejki	zostaje	lekcje/lekcja-cpuheavy-w-jobie-kolejki	część lekcje bez zmian
+lekcje/lekcja-czas-optymalizacji-to-metryka	lekcje/lekcja-czas-optymalizacji-to-metryka	zostaje	lekcje/lekcja-czas-optymalizacji-to-metryka	część lekcje bez zmian
+lekcje/lekcja-dostep-intel-apple	lekcje/lekcja-dostep-intel-apple	zostaje	lekcje/lekcja-dostep-intel-apple	część lekcje bez zmian
+lekcje/lekcja-dowod-poza-commitem	lekcje/lekcja-dowod-poza-commitem	zostaje	lekcje/lekcja-dowod-poza-commitem	część lekcje bez zmian
+lekcje/lekcja-drafter-gleboki-vs-mtp	lekcje/lekcja-drafter-gleboki-vs-mtp	zostaje	lekcje/lekcja-drafter-gleboki-vs-mtp	część lekcje bez zmian
+lekcje/lekcja-enigma-apu-jako-karta	lekcje/lekcja-enigma-apu-jako-karta	zostaje	lekcje/lekcja-enigma-apu-jako-karta	część lekcje bez zmian
+lekcje/lekcja-env-switch-domyslnie-wlaczony	lekcje/lekcja-env-switch-domyslnie-wlaczony	zostaje	lekcje/lekcja-env-switch-domyslnie-wlaczony	część lekcje bez zmian
+lekcje/lekcja-fit-mtp-16gb	lekcje/lekcja-fit-mtp-16gb	zostaje	lekcje/lekcja-fit-mtp-16gb	część lekcje bez zmian
+lekcje/lekcja-flaga-bez-dowodu-dzialania	lekcje/lekcja-flaga-bez-dowodu-dzialania	zostaje	lekcje/lekcja-flaga-bez-dowodu-dzialania	część lekcje bez zmian
+lekcje/lekcja-glebokosc-zmienia-tekst	lekcje/lekcja-glebokosc-zmienia-tekst	zostaje	lekcje/lekcja-glebokosc-zmienia-tekst	część lekcje bez zmian
+lekcje/lekcja-gorzka-lekcja-tkcc	lekcje/lekcja-gorzka-lekcja-tkcc	zostaje	lekcje/lekcja-gorzka-lekcja-tkcc	część lekcje bez zmian
+lekcje/lekcja-handoff-rdna3	lekcje/lekcja-handoff-rdna3	zostaje	lekcje/lekcja-handoff-rdna3	część lekcje bez zmian
+lekcje/lekcja-higiena-pomiaru	lekcje/lekcja-higiena-pomiaru	zostaje	lekcje/lekcja-higiena-pomiaru	część lekcje bez zmian
+lekcje/lekcja-hydration-blok-w-p	lekcje/lekcja-hydration-blok-w-p	zostaje	lekcje/lekcja-hydration-blok-w-p	część lekcje bez zmian
+lekcje/lekcja-jak-user-testuje-model	lekcje/lekcja-jak-user-testuje-model	zostaje	lekcje/lekcja-jak-user-testuje-model	część lekcje bez zmian
+lekcje/lekcja-jeden-prompt	lekcje/lekcja-jeden-prompt	zostaje	lekcje/lekcja-jeden-prompt	część lekcje bez zmian
+lekcje/lekcja-juror-llm-plateau	lekcje/lekcja-juror-llm-plateau	zostaje	lekcje/lekcja-juror-llm-plateau	część lekcje bez zmian
+lekcje/lekcja-kld-protokoly	lekcje/lekcja-kld-protokoly	zostaje	lekcje/lekcja-kld-protokoly	część lekcje bez zmian
+lekcje/lekcja-kld-szum-kolejnosci	lekcje/lekcja-kld-szum-kolejnosci	zostaje	lekcje/lekcja-kld-szum-kolejnosci	część lekcje bez zmian
+lekcje/lekcja-kolejka-fifo-bilety	lekcje/lekcja-kolejka-fifo-bilety	zostaje	lekcje/lekcja-kolejka-fifo-bilety	część lekcje bez zmian
+lekcje/lekcja-kolejnosc-akumulacji-fa	lekcje/lekcja-kolejnosc-akumulacji-fa	zostaje	lekcje/lekcja-kolejnosc-akumulacji-fa	część lekcje bez zmian
+lekcje/lekcja-koszt-szerokosci-backendu	lekcje/lekcja-koszt-szerokosci-backendu	zostaje	lekcje/lekcja-koszt-szerokosci-backendu	część lekcje bez zmian
+lekcje/lekcja-label-to-nie-binarka	lekcje/lekcja-label-to-nie-binarka	zostaje	lekcje/lekcja-label-to-nie-binarka	część lekcje bez zmian
+lekcje/lekcja-landing-jeden-uklad	lekcje/lekcja-landing-jeden-uklad	zostaje	lekcje/lekcja-landing-jeden-uklad	część lekcje bez zmian
+lekcje/lekcja-licencja-modelu-sie-zmienia	lekcje/lekcja-licencja-modelu-sie-zmienia	zostaje	lekcje/lekcja-licencja-modelu-sie-zmienia	część lekcje bez zmian
+lekcje/lekcja-limit-cpu-kontenera	lekcje/lekcja-limit-cpu-kontenera	zostaje	lekcje/lekcja-limit-cpu-kontenera	część lekcje bez zmian
+lekcje/lekcja-limit-mocy-285w	lekcje/lekcja-limit-mocy-285w	zostaje	lekcje/lekcja-limit-mocy-285w	część lekcje bez zmian
+lekcje/lekcja-limit-mocy-hosta	lekcje/lekcja-limit-mocy-hosta	zostaje	lekcje/lekcja-limit-mocy-hosta	część lekcje bez zmian
+lekcje/lekcja-littles-law-gemv	lekcje/lekcja-littles-law-gemv	zostaje	lekcje/lekcja-littles-law-gemv	część lekcje bez zmian
+lekcje/lekcja-lm-head-bottleneck	lekcje/lekcja-lm-head-bottleneck	zostaje	lekcje/lekcja-lm-head-bottleneck	część lekcje bez zmian
+lekcje/lekcja-losowe-spowolnienia	lekcje/lekcja-losowe-spowolnienia	zostaje	lekcje/lekcja-losowe-spowolnienia	część lekcje bez zmian
+lekcje/lekcja-markdown-puste-linie	lekcje/lekcja-markdown-puste-linie	zostaje	lekcje/lekcja-markdown-puste-linie	część lekcje bez zmian
+lekcje/lekcja-md5-wzgledem-upstreamu	lekcje/lekcja-md5-wzgledem-upstreamu	zostaje	lekcje/lekcja-md5-wzgledem-upstreamu	część lekcje bez zmian
+lekcje/lekcja-megakernel-prefetch-nie-granica	lekcje/lekcja-megakernel-prefetch-nie-granica	zostaje	lekcje/lekcja-megakernel-prefetch-nie-granica	część lekcje bez zmian
+lekcje/lekcja-mikrobench-klamie	lekcje/lekcja-mikrobench-klamie	zostaje	lekcje/lekcja-mikrobench-klamie	część lekcje bez zmian
+lekcje/lekcja-mtp-embd-state	lekcje/lekcja-mtp-embd-state	zostaje	lekcje/lekcja-mtp-embd-state	część lekcje bez zmian
+lekcje/lekcja-mtp-glowica-optimum	lekcje/lekcja-mtp-glowica-optimum	zostaje	lekcje/lekcja-mtp-glowica-optimum	część lekcje bez zmian
+lekcje/lekcja-mtp-juz-kopiuje	lekcje/lekcja-mtp-juz-kopiuje	zostaje	lekcje/lekcja-mtp-juz-kopiuje	część lekcje bez zmian
+lekcje/lekcja-nadpisanie-dzialajacego-skryptu	lekcje/lekcja-nadpisanie-dzialajacego-skryptu	zostaje	lekcje/lekcja-nadpisanie-dzialajacego-skryptu	część lekcje bez zmian
+lekcje/lekcja-naglowki-drafterow	lekcje/lekcja-naglowki-drafterow	zostaje	lekcje/lekcja-naglowki-drafterow	część lekcje bez zmian
+lekcje/lekcja-nie-odtwarzac-lockow	lekcje/lekcja-nie-odtwarzac-lockow	zostaje	lekcje/lekcja-nie-odtwarzac-lockow	część lekcje bez zmian
+lekcje/lekcja-nie-zabijaj-pm4-w-trakcie	lekcje/lekcja-nie-zabijaj-pm4-w-trakcie	zostaje	lekcje/lekcja-nie-zabijaj-pm4-w-trakcie	część lekcje bez zmian
+lekcje/lekcja-obciazenie-cpu	lekcje/lekcja-obciazenie-cpu	zostaje	lekcje/lekcja-obciazenie-cpu	część lekcje bez zmian
+lekcje/lekcja-od-commit-gubi-krzywa	lekcje/lekcja-od-commit-gubi-krzywa	zostaje	lekcje/lekcja-od-commit-gubi-krzywa	część lekcje bez zmian
+lekcje/lekcja-odczyty-kv-batch1	lekcje/lekcja-odczyty-kv-batch1	zostaje	lekcje/lekcja-odczyty-kv-batch1	część lekcje bez zmian
+lekcje/lekcja-ogon-zmienia-tekst-t1	lekcje/lekcja-ogon-zmienia-tekst-t1	zostaje	lekcje/lekcja-ogon-zmienia-tekst-t1	część lekcje bez zmian
+lekcje/lekcja-oom-ub2048	lekcje/lekcja-oom-ub2048	zostaje	lekcje/lekcja-oom-ub2048	część lekcje bez zmian
+lekcje/lekcja-paczka-march-native	lekcje/lekcja-paczka-march-native	zostaje	lekcje/lekcja-paczka-march-native	część lekcje bez zmian
+lekcje/lekcja-pdl-sm120	lekcje/lekcja-pdl-sm120	zostaje	lekcje/lekcja-pdl-sm120	część lekcje bez zmian
+lekcje/lekcja-pgrep-f-lapie-powloki	lekcje/lekcja-pgrep-f-lapie-powloki	zostaje	lekcje/lekcja-pgrep-f-lapie-powloki	część lekcje bez zmian
+lekcje/lekcja-pick-z-kalkulatora	lekcje/lekcja-pick-z-kalkulatora	zostaje	lekcje/lekcja-pick-z-kalkulatora	część lekcje bez zmian
+lekcje/lekcja-pkill-wlasna-powloka	lekcje/lekcja-pkill-wlasna-powloka	zostaje	lekcje/lekcja-pkill-wlasna-powloka	część lekcje bez zmian
+lekcje/lekcja-pm4-zamienia-fault-w-reset	lekcje/lekcja-pm4-zamienia-fault-w-reset	zostaje	lekcje/lekcja-pm4-zamienia-fault-w-reset	część lekcje bez zmian
+lekcje/lekcja-pm4-zawsze-jawnie	lekcje/lekcja-pm4-zawsze-jawnie	zostaje	lekcje/lekcja-pm4-zawsze-jawnie	część lekcje bez zmian
+lekcje/lekcja-prefetch-mall-xtx	lekcje/lekcja-prefetch-mall-xtx	zostaje	lekcje/lekcja-prefetch-mall-xtx	część lekcje bez zmian
+lekcje/lekcja-proza-e0-vs-myslenie	lekcje/lekcja-proza-e0-vs-myslenie	zostaje	lekcje/lekcja-proza-e0-vs-myslenie	część lekcje bez zmian
+lekcje/lekcja-qa-clip-blokuje-gpu	lekcje/lekcja-qa-clip-blokuje-gpu	zostaje	lekcje/lekcja-qa-clip-blokuje-gpu	część lekcje bez zmian
+lekcje/lekcja-radare2-sass	lekcje/lekcja-radare2-sass	zostaje	lekcje/lekcja-radare2-sass	część lekcje bez zmian
+lekcje/lekcja-rbuild-pod-flock	lekcje/lekcja-rbuild-pod-flock	zostaje	lekcje/lekcja-rbuild-pod-flock	część lekcje bez zmian
+lekcje/lekcja-regula-tylko-w-prompcie	lekcje/lekcja-regula-tylko-w-prompcie	zostaje	lekcje/lekcja-regula-tylko-w-prompcie	część lekcje bez zmian
+lekcje/lekcja-restart-zlym-launcherem	lekcje/lekcja-restart-zlym-launcherem	zostaje	lekcje/lekcja-restart-zlym-launcherem	część lekcje bez zmian
+lekcje/lekcja-restore-stanu-exactness	lekcje/lekcja-restore-stanu-exactness	zostaje	lekcje/lekcja-restore-stanu-exactness	część lekcje bez zmian
+lekcje/lekcja-rezerwa-mtp-kopia-f16	lekcje/lekcja-rezerwa-mtp-kopia-f16	zostaje	lekcje/lekcja-rezerwa-mtp-kopia-f16	część lekcje bez zmian
+lekcje/lekcja-rocm10-lds-128kb	lekcje/lekcja-rocm10-lds-128kb	zostaje	lekcje/lekcja-rocm10-lds-128kb	część lekcje bez zmian
+lekcje/lekcja-rzadkosc-vs-weryfikacja	lekcje/lekcja-rzadkosc-vs-weryfikacja	zostaje	lekcje/lekcja-rzadkosc-vs-weryfikacja	część lekcje bez zmian
+lekcje/lekcja-siatka-pelna-fala	lekcje/lekcja-siatka-pelna-fala	zostaje	lekcje/lekcja-siatka-pelna-fala	część lekcje bez zmian
+lekcje/lekcja-slaby-cpu-3090	lekcje/lekcja-slaby-cpu-3090	zostaje	lekcje/lekcja-slaby-cpu-3090	część lekcje bez zmian
+lekcje/lekcja-sondy-en-na-polskim	lekcje/lekcja-sondy-en-na-polskim	zostaje	lekcje/lekcja-sondy-en-na-polskim	część lekcje bez zmian
+lekcje/lekcja-spekulacja-zmienia-numeryke	lekcje/lekcja-spekulacja-zmienia-numeryke	zostaje	lekcje/lekcja-spekulacja-zmienia-numeryke	część lekcje bez zmian
+lekcje/lekcja-sufit-bloku	lekcje/lekcja-sufit-bloku	zostaje	lekcje/lekcja-sufit-bloku	część lekcje bez zmian
+lekcje/lekcja-sufit-wzorca	lekcje/lekcja-sufit-wzorca	zostaje	lekcje/lekcja-sufit-wzorca	część lekcje bez zmian
+lekcje/lekcja-szum-t-s-przy-t1	lekcje/lekcja-szum-t-s-przy-t1	zostaje	lekcje/lekcja-szum-t-s-przy-t1	część lekcje bez zmian
+lekcje/lekcja-ten-sam-serwer-pending-h	lekcje/lekcja-ten-sam-serwer-pending-h	zostaje	lekcje/lekcja-ten-sam-serwer-pending-h	część lekcje bez zmian
+lekcje/lekcja-test-wywlaszczenia	lekcje/lekcja-test-wywlaszczenia	zostaje	lekcje/lekcja-test-wywlaszczenia	część lekcje bez zmian
+lekcje/lekcja-timeline-scen-3s	lekcje/lekcja-timeline-scen-3s	zostaje	lekcje/lekcja-timeline-scen-3s	część lekcje bez zmian
+lekcje/lekcja-timeout-tasmy-to-skutek	lekcje/lekcja-timeout-tasmy-to-skutek	zostaje	lekcje/lekcja-timeout-tasmy-to-skutek	część lekcje bez zmian
+lekcje/lekcja-tlo-z-sesji-agenta-ginie	lekcje/lekcja-tlo-z-sesji-agenta-ginie	zostaje	lekcje/lekcja-tlo-z-sesji-agenta-ginie	część lekcje bez zmian
+lekcje/lekcja-tmp-po-restarcie	lekcje/lekcja-tmp-po-restarcie	zostaje	lekcje/lekcja-tmp-po-restarcie	część lekcje bez zmian
+lekcje/lekcja-tps-z-zalozonej-akceptacji	lekcje/lekcja-tps-z-zalozonej-akceptacji	zostaje	lekcje/lekcja-tps-z-zalozonej-akceptacji	część lekcje bez zmian
+lekcje/lekcja-unikalny-katalog-wynikow	lekcje/lekcja-unikalny-katalog-wynikow	zostaje	lekcje/lekcja-unikalny-katalog-wynikow	część lekcje bez zmian
+lekcje/lekcja-uslugi-poza-omp	lekcje/lekcja-uslugi-poza-omp	zostaje	lekcje/lekcja-uslugi-poza-omp	część lekcje bez zmian
+lekcje/lekcja-ustalony-seed-to-nie-powtorzenie	lekcje/lekcja-ustalony-seed-to-nie-powtorzenie	zostaje	lekcje/lekcja-ustalony-seed-to-nie-powtorzenie	część lekcje bez zmian
+lekcje/lekcja-vast-authorized-keys	lekcje/lekcja-vast-authorized-keys	zostaje	lekcje/lekcja-vast-authorized-keys	część lekcje bez zmian
+lekcje/lekcja-vast-cli-klucz	lekcje/lekcja-vast-cli-klucz	zostaje	lekcje/lekcja-vast-cli-klucz	część lekcje bez zmian
+lekcje/lekcja-vast-transfer-kosztuje	lekcje/lekcja-vast-transfer-kosztuje	zostaje	lekcje/lekcja-vast-transfer-kosztuje	część lekcje bez zmian
+lekcje/lekcja-vast-tylko-pelna-moc	lekcje/lekcja-vast-tylko-pelna-moc	zostaje	lekcje/lekcja-vast-tylko-pelna-moc	część lekcje bez zmian
+lekcje/lekcja-vastai-destroy-pyta	lekcje/lekcja-vastai-destroy-pyta	zostaje	lekcje/lekcja-vastai-destroy-pyta	część lekcje bez zmian
+lekcje/lekcja-verified-to-nie-poprawny	lekcje/lekcja-verified-to-nie-poprawny	zostaje	lekcje/lekcja-verified-to-nie-poprawny	część lekcje bez zmian
+lekcje/lekcja-vgpr-limit-hak-spill	lekcje/lekcja-vgpr-limit-hak-spill	zostaje	lekcje/lekcja-vgpr-limit-hak-spill	część lekcje bez zmian
+lekcje/lekcja-wentylator-rdna3	lekcje/lekcja-wentylator-rdna3	zostaje	lekcje/lekcja-wentylator-rdna3	część lekcje bez zmian
+lekcje/lekcja-wlasny-pm4-musi-robic-to-co-firmware	lekcje/lekcja-wlasny-pm4-musi-robic-to-co-firmware	zostaje	lekcje/lekcja-wlasny-pm4-musi-robic-to-co-firmware	część lekcje bez zmian
+lekcje/lekcja-wolna-sciezka-samplera	lekcje/lekcja-wolna-sciezka-samplera	zostaje	lekcje/lekcja-wolna-sciezka-samplera	część lekcje bez zmian
+lekcje/lekcja-wyrazna-wygrana-albo-nic	lekcje/lekcja-wyrazna-wygrana-albo-nic	zostaje	lekcje/lekcja-wyrazna-wygrana-albo-nic	część lekcje bez zmian
+lekcje/lekcja-zabicie-skryptu-nie-serwera	lekcje/lekcja-zabicie-skryptu-nie-serwera	zostaje	lekcje/lekcja-zabicie-skryptu-nie-serwera	część lekcje bez zmian
+lekcje/lekcja-zapas-doladowania-kerneli-cuda	lekcje/lekcja-zapas-doladowania-kerneli-cuda	zostaje	lekcje/lekcja-zapas-doladowania-kerneli-cuda	część lekcje bez zmian
+lekcje/lekcja-zmiana-draftu-zmienia-md5	lekcje/lekcja-zmiana-draftu-zmienia-md5	zostaje	lekcje/lekcja-zmiana-draftu-zmienia-md5	część lekcje bez zmian
+lekcje/lekcja-zombie-serwery	lekcje/lekcja-zombie-serwery	zostaje	lekcje/lekcja-zombie-serwery	część lekcje bez zmian
+lekcje/lekcja-zysk-rosnie-z-glebokoscia	lekcje/lekcja-zysk-rosnie-z-glebokoscia	zostaje	lekcje/lekcja-zysk-rosnie-z-glebokoscia	część lekcje bez zmian
+lekcje/pm4-niewidoczne-w-rocprof	lekcje/pm4-niewidoczne-w-rocprof	zostaje	lekcje/pm4-niewidoczne-w-rocprof	część lekcje bez zmian
+llm/_hub	llm/_hub	zostaje	llm/_hub	hub części
+llm/daisyrose-27b	modele/daisyrose-27b	przenies	modele/daisyrose-27b	notatka o modelu (jedna notatka na model)
+llm/inkling-2-mini	modele/inkling-2-mini	przenies	modele/inkling-2-mini	notatka o modelu (jedna notatka na model)
+llm/mapa-inferencji-roadmap	llm/mapa-inferencji-roadmap	zostaje	llm/mapa-inferencji-roadmap	część llm bez zmian
+llm/peft-lora-warianty	llm/peft-lora-warianty	zostaje	llm/peft-lora-warianty	część llm bez zmian
+llm/qwen38-27b-pi-adapter	llm/qwen38-27b-pi-adapter	zostaje	llm/qwen38-27b-pi-adapter	część llm bez zmian
+llm/sensenova-loop-9b	modele/sensenova-loop-9b	przenies	modele/sensenova-loop-9b	notatka o modelu (jedna notatka na model)
+llm/trening-llm-mapa	llm/trening-llm-mapa	zostaje	llm/trening-llm-mapa	część llm bez zmian
+log	log	korzen		rejestr w korzeniu, zostaje (link z huba części)
+ludzie-firmy/_hub	ekosystem/_hub	hub	ekosystem/_hub	hub dawnego folderu: linki → ekosystem/_hub, plik usunięty
+ludzie-firmy/actual-computer	ekosystem/actual-computer	przenies	ekosystem/actual-computer	folder ludzie-firmy → część ekosystem
+ludzie-firmy/conway-research	ekosystem/conway-research	przenies	ekosystem/conway-research	folder ludzie-firmy → część ekosystem
+ludzie-firmy/firma-amd	ekosystem/firma-amd	przenies	ekosystem/firma-amd	folder ludzie-firmy → część ekosystem
+ludzie-firmy/firma-magnitude	scal z ekosystem/magnitude	scal	ekosystem/magnitude	ten sam konkurent dwa razy (firma i repo)
+ludzie-firmy/firma-nvidia	ekosystem/firma-nvidia	przenies	ekosystem/firma-nvidia	folder ludzie-firmy → część ekosystem
+ludzie-firmy/firma-runpod	scal z karty/runpod	scal	karty/runpod	ten sam dostawca dwa razy (firma i chmura)
+ludzie-firmy/firma-salad	scal z karty/salad	scal	karty/salad	ten sam dostawca dwa razy (firma i chmura)
+ludzie-firmy/firma-vast-ai	scal z karty/vast-ai	scal	karty/vast-ai	ten sam dostawca dwa razy (firma i chmura)
+ludzie-firmy/flapping-airplanes	ekosystem/flapping-airplanes	przenies	ekosystem/flapping-airplanes	folder ludzie-firmy → część ekosystem
+ludzie-firmy/ggml-org	ekosystem/ggml-org	przenies	ekosystem/ggml-org	folder ludzie-firmy → część ekosystem
+ludzie-firmy/gigagpu	ekosystem/gigagpu	przenies	ekosystem/gigagpu	folder ludzie-firmy → część ekosystem
+ludzie-firmy/hostkey	ekosystem/hostkey	przenies	ekosystem/hostkey	folder ludzie-firmy → część ekosystem
+ludzie-firmy/hugging-face	ekosystem/hugging-face	przenies	ekosystem/hugging-face	folder ludzie-firmy → część ekosystem
+ludzie-firmy/ista-daslab	ekosystem/ista-daslab	przenies	ekosystem/ista-daslab	folder ludzie-firmy → część ekosystem
+ludzie-firmy/jan	ekosystem/jan	przenies	ekosystem/jan	folder ludzie-firmy → część ekosystem
+ludzie-firmy/lemonade	ekosystem/lemonade	przenies	ekosystem/lemonade	folder ludzie-firmy → część ekosystem
+ludzie-firmy/liquidai	ekosystem/liquidai	przenies	ekosystem/liquidai	folder ludzie-firmy → część ekosystem
+ludzie-firmy/lm-studio	ekosystem/lm-studio	przenies	ekosystem/lm-studio	folder ludzie-firmy → część ekosystem
+ludzie-firmy/metr-sakana	ekosystem/metr-sakana	przenies	ekosystem/metr-sakana	folder ludzie-firmy → część ekosystem
+ludzie-firmy/ollama	ekosystem/ollama	przenies	ekosystem/ollama	folder ludzie-firmy → część ekosystem
+ludzie-firmy/prismml	ekosystem/prismml	przenies	ekosystem/prismml	folder ludzie-firmy → część ekosystem
+ludzie-firmy/qwen-alibaba	ekosystem/qwen-alibaba	przenies	ekosystem/qwen-alibaba	folder ludzie-firmy → część ekosystem
+ludzie-firmy/scaleway	ekosystem/scaleway	przenies	ekosystem/scaleway	folder ludzie-firmy → część ekosystem
+ludzie-firmy/tencent-terminal-rsi	ekosystem/tencent-terminal-rsi	przenies	ekosystem/tencent-terminal-rsi	folder ludzie-firmy → część ekosystem
+ludzie-firmy/thinking-machines	ekosystem/thinking-machines	przenies	ekosystem/thinking-machines	folder ludzie-firmy → część ekosystem
+ludzie-firmy/turbollm	ekosystem/turbollm	przenies	ekosystem/turbollm	folder ludzie-firmy → część ekosystem
+ludzie-firmy/ukisai	ekosystem/ukisai	przenies	ekosystem/ukisai	folder ludzie-firmy → część ekosystem
+ludzie-firmy/unsloth	ekosystem/unsloth	przenies	ekosystem/unsloth	folder ludzie-firmy → część ekosystem
+metody/_hub	metody/_hub	zostaje	metody/_hub	hub części
+metody/ablacja	metody/ablacja	zostaje	metody/ablacja	część metody bez zmian
+metody/agr-lookup-zgodny-z-mtp	optymalizacje/agr-lookup-zgodny-z-mtp	przenies	optymalizacje/agr-lookup-zgodny-z-mtp	technika przyspieszenia (jedna notatka na technikę)
+metody/akv-cache-agentow	optymalizacje/akv-cache-agentow	przenies	optymalizacje/akv-cache-agentow	technika przyspieszenia (jedna notatka na technikę)
+metody/analiza-platformy	metody/analiza-platformy	zostaje	metody/analiza-platformy	część metody bez zmian
+metody/aob-v1	testy/aob-v1	przenies	testy/aob-v1	metoda pomiaru, zestaw albo metryka (część testów)
+metody/bramka-kld-kanarki	metody/bramka-kld-kanarki	zostaje	metody/bramka-kld-kanarki	część metody bez zmian
+metody/budzet-megakernela-qwen-xtx	optymalizacje/budzet-megakernela-qwen-xtx	przenies	optymalizacje/budzet-megakernela-qwen-xtx	technika przyspieszenia (jedna notatka na technikę)
+metody/dcq-kotwica-stanu-gdn	optymalizacje/dcq-kotwica-stanu-gdn	przenies	optymalizacje/dcq-kotwica-stanu-gdn	technika przyspieszenia (jedna notatka na technikę)
+metody/dowod-offline	metody/dowod-offline	zostaje	metody/dowod-offline	część metody bez zmian
+metody/dowod-z-profilu	metody/dowod-z-profilu	zostaje	metody/dowod-z-profilu	część metody bez zmian
+metody/drzewo-weryfikacji-gdn-wy	optymalizacje/drzewo-weryfikacji-gdn-wy	przenies	optymalizacje/drzewo-weryfikacji-gdn-wy	technika przyspieszenia (jedna notatka na technikę)
+metody/emulator-isa	metody/emulator-isa	zostaje	metody/emulator-isa	część metody bez zmian
+metody/evalplus-jakosc-kodu	testy/evalplus-jakosc-kodu	przenies	testy/evalplus-jakosc-kodu	metoda pomiaru, zestaw albo metryka (część testów)
+metody/fabryka-v1	metody/fabryka-v1	zostaje	metody/fabryka-v1	część metody bez zmian
+metody/fly-stratna-weryfikacja	optymalizacje/fly-stratna-weryfikacja	przenies	optymalizacje/fly-stratna-weryfikacja	technika przyspieszenia (jedna notatka na technikę)
+metody/glowica-draftu-rerank	optymalizacje/glowica-draftu-rerank	przenies	optymalizacje/glowica-draftu-rerank	technika przyspieszenia (jedna notatka na technikę)
+metody/jak-przyspieszylismy-nvidia	optymalizacje/jak-przyspieszylismy-nvidia	przenies	optymalizacje/jak-przyspieszylismy-nvidia	technika przyspieszenia (jedna notatka na technikę)
+metody/jakosc-mini	testy/jakosc-mini	przenies	testy/jakosc-mini	metoda pomiaru, zestaw albo metryka (część testów)
+metody/kernel-tuner	metody/kernel-tuner	zostaje	metody/kernel-tuner	część metody bez zmian
+metody/kld-po-polsku	testy/kld-po-polsku	przenies	testy/kld-po-polsku	metoda pomiaru, zestaw albo metryka (część testów)
+metody/kontroler-szerokosci-draftu	optymalizacje/kontroler-szerokosci-draftu	przenies	optymalizacje/kontroler-szerokosci-draftu	technika przyspieszenia (jedna notatka na technikę)
+metody/koszt-szerokosci-weryfikacji	testy/koszt-szerokosci-weryfikacji	przenies	testy/koszt-szerokosci-weryfikacji	metoda pomiaru, zestaw albo metryka (część testów)
+metody/ksztalt-ruchu-agentowego	testy/ksztalt-ruchu-agentowego	przenies	testy/ksztalt-ruchu-agentowego	metoda pomiaru, zestaw albo metryka (część testów)
+metody/loo	metody/loo	zostaje	metody/loo	część metody bez zmian
+metody/metryka-prozy-e0	testy/metryka-prozy-e0	przenies	testy/metryka-prozy-e0	metoda pomiaru, zestaw albo metryka (część testów)
+metody/mikrobench-granicy-kernela	testy/mikrobench-granicy-kernela	przenies	testy/mikrobench-granicy-kernela	metoda pomiaru, zestaw albo metryka (część testów)
+metody/model-kosztu-weryfikacji-moe	optymalizacje/model-kosztu-weryfikacji-moe	przenies	optymalizacje/model-kosztu-weryfikacji-moe	technika przyspieszenia (jedna notatka na technikę)
+metody/ms-na-krok	testy/ms-na-krok	przenies	testy/ms-na-krok	metoda pomiaru, zestaw albo metryka (część testów)
+metody/najpierw-baza-kb	metody/najpierw-baza-kb	zostaje	metody/najpierw-baza-kb	część metody bez zmian
+metody/petla-rsi-f	metody/petla-rsi-f	zostaje	metody/petla-rsi-f	część metody bez zmian
+metody/physics-floor-check	metody/physics-floor-check	zostaje	metody/physics-floor-check	część metody bez zmian
+metody/playbook-optymalizacji	metody/playbook-optymalizacji	zostaje	metody/playbook-optymalizacji	część metody bez zmian
+metody/podrecznik-gpu	metody/podrecznik-gpu	zostaje	metody/podrecznik-gpu	część metody bez zmian
+metody/pomiar-abba	testy/pomiar-abba	przenies	testy/pomiar-abba	metoda pomiaru, zestaw albo metryka (część testów)
+metody/prog-draftu-od-kosztu-wiersza	optymalizacje/prog-draftu-od-kosztu-wiersza	przenies	optymalizacje/prog-draftu-od-kosztu-wiersza	technika przyspieszenia (jedna notatka na technikę)
+metody/re-vendorow-zasady	metody/re-vendorow-zasady	zostaje	metody/re-vendorow-zasady	część metody bez zmian
+metody/reward-hacking-inferencji	metody/reward-hacking-inferencji	zostaje	metody/reward-hacking-inferencji	część metody bez zmian
+metody/serializacja-gpu	metody/serializacja-gpu	zostaje	metody/serializacja-gpu	część metody bez zmian
+metody/siatka-checkpointow-gdn	optymalizacje/siatka-checkpointow-gdn	przenies	optymalizacje/siatka-checkpointow-gdn	technika przyspieszenia (jedna notatka na technikę)
+metody/skill-io-dzwignie	optymalizacje/skill-io-dzwignie	przenies	optymalizacje/skill-io-dzwignie	technika przyspieszenia (jedna notatka na technikę)
+metody/skill-io-metodyka	testy/skill-io-metodyka	przenies	testy/skill-io-metodyka	metoda pomiaru, zestaw albo metryka (część testów)
+metody/skill-io-przeglad	metody/skill-io-przeglad	zostaje	metody/skill-io-przeglad	część metody bez zmian
+metody/skill-io-publikacja	metody/skill-io-publikacja	zostaje	metody/skill-io-publikacja	część metody bez zmian
+metody/skill-io-pulapki	metody/skill-io-pulapki	zostaje	metody/skill-io-pulapki	część metody bez zmian
+metody/skill-io-sufity	testy/skill-io-sufity	przenies	testy/skill-io-sufity	metoda pomiaru, zestaw albo metryka (część testów)
+metody/sprzezone-probkowanie-draftu	optymalizacje/sprzezone-probkowanie-draftu	przenies	optymalizacje/sprzezone-probkowanie-draftu	technika przyspieszenia (jedna notatka na technikę)
+metody/strata-kva	optymalizacje/strata-kva	przenies	optymalizacje/strata-kva	technika przyspieszenia (jedna notatka na technikę)
+metody/strumien-on-wyrocznia	optymalizacje/strumien-on-wyrocznia	przenies	optymalizacje/strumien-on-wyrocznia	technika przyspieszenia (jedna notatka na technikę)
+metody/sufit-pasma-i-mapa-czasu	testy/sufit-pasma-i-mapa-czasu	przenies	testy/sufit-pasma-i-mapa-czasu	metoda pomiaru, zestaw albo metryka (część testów)
+metody/sweep-wariantow-kernela	testy/sweep-wariantow-kernela	przenies	testy/sweep-wariantow-kernela	metoda pomiaru, zestaw albo metryka (część testów)
+metody/wspolny-poczatek-promptu	optymalizacje/wspolny-poczatek-promptu	przenies	optymalizacje/wspolny-poczatek-promptu	technika przyspieszenia (jedna notatka na technikę)
+metody/wylacznik-w-kazdej-latce	metody/wylacznik-w-kazdej-latce	zostaje	metody/wylacznik-w-kazdej-latce	część metody bez zmian
+metody/wyniki-negatywne	metody/wyniki-negatywne	zostaje	metody/wyniki-negatywne	część metody bez zmian
+metody/xtxbench-szybki-ab	testy/xtxbench-szybki-ab	przenies	testy/xtxbench-szybki-ab	metoda pomiaru, zestaw albo metryka (część testów)
+metody/zestaw-copy-mvs	testy/zestaw-copy-mvs	przenies	testy/zestaw-copy-mvs	metoda pomiaru, zestaw albo metryka (część testów)
+metody/zestaw-odlozony	testy/zestaw-odlozony	przenies	testy/zestaw-odlozony	metoda pomiaru, zestaw albo metryka (część testów)
+metody/zgodnosc-bitowa-md5	metody/zgodnosc-bitowa-md5	zostaje	metody/zgodnosc-bitowa-md5	część metody bez zmian
+metody/zmiany-fabryki-z-21i	metody/zmiany-fabryki-z-21i	zostaje	metody/zmiany-fabryki-z-21i	część metody bez zmian
+modele/_hub	modele/_hub	zostaje	modele/_hub	hub części
+modele/astra-stop	modele/astra-stop	zostaje	modele/astra-stop	część modele bez zmian
+modele/bonsai	modele/bonsai	zostaje	modele/bonsai	część modele bez zmian
+modele/drafter-dflash	modele/drafter-dflash	zostaje	modele/drafter-dflash	część modele bez zmian
+modele/drafter-dspine	modele/drafter-dspine	zostaje	modele/drafter-dspine	część modele bez zmian
+modele/gemma-4	modele/gemma-4	zostaje	modele/gemma-4	część modele bez zmian
+modele/glowica-mtp	modele/glowica-mtp	zostaje	modele/glowica-mtp	część modele bez zmian
+modele/gyro-coder	modele/gyro-coder	zostaje	modele/gyro-coder	część modele bez zmian
+modele/kwanty-gguf	modele/kwanty-gguf	zostaje	modele/kwanty-gguf	część modele bez zmian
+modele/lfm-czulosc-na-podzial-batcha	modele/lfm-czulosc-na-podzial-batcha	zostaje	modele/lfm-czulosc-na-podzial-batcha	część modele bez zmian
+modele/lfm2-5-24b-a2b	modele/lfm2-5-24b-a2b	zostaje	modele/lfm2-5-24b-a2b	część modele bez zmian
+modele/lfm2-5-uncensored	modele/lfm2-5-uncensored	zostaje	modele/lfm2-5-uncensored	część modele bez zmian
+modele/modele-katalogowe	modele/modele-katalogowe	zostaje	modele/modele-katalogowe	część modele bez zmian
+modele/modele-telefon	modele/modele-telefon	zostaje	modele/modele-telefon	część modele bez zmian
+modele/nemotron-3-5-bolt-74b-a9b	modele/nemotron-3-5-bolt-74b-a9b	zostaje	modele/nemotron-3-5-bolt-74b-a9b	część modele bez zmian
+modele/nemotron-3-5-bolt-e4b	modele/nemotron-3-5-bolt-e4b	zostaje	modele/nemotron-3-5-bolt-e4b	część modele bez zmian
+modele/qwen3-6-35b-a3b	modele/qwen3-6-35b-a3b	zostaje	modele/qwen3-6-35b-a3b	część modele bez zmian
+modele/qwen3-8-27b	modele/qwen3-8-27b	zostaje	modele/qwen3-8-27b	część modele bez zmian
+modele/qwen3-8-27b-uncensored	modele/qwen3-8-27b-uncensored	zostaje	modele/qwen3-8-27b-uncensored	część modele bez zmian
+modele/qwen38-27b-inferencex	scal z research/raport-21f-inferencex	scal	research/raport-21f-inferencex	wpis InferenceX to część raportu 21f, nie model
+modele/qwen38-flash-next	modele/qwen38-flash-next	zostaje	modele/qwen38-flash-next	część modele bez zmian
+modele/saluki	modele/saluki	zostaje	modele/saluki	część modele bez zmian
+modele/swift-1-5	modele/swift-1-5	zostaje	modele/swift-1-5	część modele bez zmian
+modele/uncensored-ablacja-kierunku	modele/uncensored-ablacja-kierunku	zostaje	modele/uncensored-ablacja-kierunku	część modele bez zmian
+narzedzia/_hub	narzedzia/_hub	zostaje	narzedzia/_hub	hub części
+narzedzia/agentx-harness	narzedzia/agentx-harness	zostaje	narzedzia/agentx-harness	część narzedzia bez zmian
+narzedzia/att-gfx1100	narzedzia/att-gfx1100	zostaje	narzedzia/att-gfx1100	część narzedzia bez zmian
+narzedzia/co-stats	narzedzia/co-stats	zostaje	narzedzia/co-stats	część narzedzia bez zmian
+narzedzia/det-probe	narzedzia/det-probe	zostaje	narzedzia/det-probe	część narzedzia bez zmian
+narzedzia/fabryka-cli	narzedzia/fabryka-cli	zostaje	narzedzia/fabryka-cli	część narzedzia bez zmian
+narzedzia/ga-racing-rohanarun	narzedzia/ga-racing-rohanarun	zostaje	narzedzia/ga-racing-rohanarun	część narzedzia bez zmian
+narzedzia/gdnemu-isadiff	narzedzia/gdnemu-isadiff	zostaje	narzedzia/gdnemu-isadiff	część narzedzia bez zmian
+narzedzia/gpu-guard	narzedzia/gpu-guard	zostaje	narzedzia/gpu-guard	część narzedzia bez zmian
+narzedzia/gpu-keepawake	narzedzia/gpu-keepawake	zostaje	narzedzia/gpu-keepawake	część narzedzia bez zmian
+narzedzia/greedy-check	narzedzia/greedy-check	zostaje	narzedzia/greedy-check	część narzedzia bez zmian
+narzedzia/hip-fatbin-extract	narzedzia/hip-fatbin-extract	zostaje	narzedzia/hip-fatbin-extract	część narzedzia bez zmian
+narzedzia/isa-kstat	narzedzia/isa-kstat	zostaje	narzedzia/isa-kstat	część narzedzia bez zmian
+narzedzia/kb	narzedzia/kb	zostaje	narzedzia/kb	część narzedzia bez zmian
+narzedzia/kld-canary	narzedzia/kld-canary	zostaje	narzedzia/kld-canary	część narzedzia bez zmian
+narzedzia/kt-harness	narzedzia/kt-harness	zostaje	narzedzia/kt-harness	część narzedzia bez zmian
+narzedzia/landing-qa	narzedzia/landing-qa	zostaje	narzedzia/landing-qa	część narzedzia bez zmian
+narzedzia/llama-bx-diff	narzedzia/llama-bx-diff	zostaje	narzedzia/llama-bx-diff	część narzedzia bez zmian
+narzedzia/loo-py	narzedzia/loo-py	zostaje	narzedzia/loo-py	część narzedzia bez zmian
+narzedzia/pm4-soak	narzedzia/pm4-soak	zostaje	narzedzia/pm4-soak	część narzedzia bez zmian
+narzedzia/reactor-monitor	narzedzia/reactor-monitor	zostaje	narzedzia/reactor-monitor	część narzedzia bez zmian
+narzedzia/rs64-firmware-re	narzedzia/rs64-firmware-re	zostaje	narzedzia/rs64-firmware-re	część narzedzia bez zmian
+narzedzia/run-llm-sh	narzedzia/run-llm-sh	zostaje	narzedzia/run-llm-sh	część narzedzia bez zmian
+narzedzia/samp-ab	narzedzia/samp-ab	zostaje	narzedzia/samp-ab	część narzedzia bez zmian
+narzedzia/serve-bench	narzedzia/serve-bench	zostaje	narzedzia/serve-bench	część narzedzia bez zmian
+narzedzia/skill-io-skrypty	narzedzia/skill-io-skrypty	zostaje	narzedzia/skill-io-skrypty	część narzedzia bez zmian
+narzedzia/skrypty-chmury	narzedzia/skrypty-chmury	zostaje	narzedzia/skrypty-chmury	część narzedzia bez zmian
+narzedzia/spec-sweep	narzedzia/spec-sweep	zostaje	narzedzia/spec-sweep	część narzedzia bez zmian
+narzedzia/ss-zrzut-ekranu	narzedzia/ss-zrzut-ekranu	zostaje	narzedzia/ss-zrzut-ekranu	część narzedzia bez zmian
+narzedzia/tailscale	narzedzia/tailscale	zostaje	narzedzia/tailscale	część narzedzia bez zmian
+narzedzia/umr-offline-pm4	narzedzia/umr-offline-pm4	zostaje	narzedzia/umr-offline-pm4	część narzedzia bez zmian
+narzedzia/wiki-py	narzedzia/wiki-py	zostaje	narzedzia/wiki-py	część narzedzia bez zmian
+nvidia/_hub	stos/_hub	hub	stos/_hub	hub dawnego folderu: linki → stos/_hub, plik usunięty
+nvidia/backlog-testow-nvidia	archiwum	archiwum	KOLEJKA-TESTOW	backlog ze stanem 2026-11-07, pozycje są w kolejce K-…
+nvidia/cuda-compat	stos/cuda-compat	przenies	stos/cuda-compat	folder nvidia → część stos
+nvidia/cuda-stos	stos/cuda-stos	przenies	stos/cuda-stos	folder nvidia → część stos
+nvidia/fa-kv-kwantyzowane-cuda	optymalizacje/fa-kv-kwantyzowane-cuda	przenies	optymalizacje/fa-kv-kwantyzowane-cuda	technika przyspieszenia z werdyktem
+nvidia/karty-nvidia-parametry	karty/karty-nvidia-parametry	przenies	karty/karty-nvidia-parametry	parametry kart do rachunków: część kart
+nvidia/l2-persist	optymalizacje/l2-persist	przenies	optymalizacje/l2-persist	technika przyspieszenia z werdyktem
+nvidia/latki-na-nvidia	optymalizacje/latki-na-nvidia	przenies	optymalizacje/latki-na-nvidia	technika przyspieszenia z werdyktem
+nvidia/nvfp4	modele/nvfp4	przenies	modele/nvfp4	notatka o modelu (jedna notatka na model)
+nvidia/nvidia-wyniki-2026-10-16	scal z testy/2026-10-16-kampania-nvidia	scal	testy/2026-10-16-kampania-nvidia	ta sama kampania 2026-10-16 dwa razy
+nvidia/sm-86-89-120	stos/sm-86-89-120	przenies	stos/sm-86-89-120	folder nvidia → część stos
+produkt/_hub	produkt/_hub	zostaje	produkt/_hub	hub części
+produkt/amd-adrenalin-zapisy-ssd	produkt/amd-adrenalin-zapisy-ssd	zostaje	produkt/amd-adrenalin-zapisy-ssd	część produkt bez zmian
+produkt/aplikacja-w-budowie	produkt/aplikacja-w-budowie	zostaje	produkt/aplikacja-w-budowie	część produkt bez zmian
+produkt/app-landing	produkt/app-landing	zostaje	produkt/app-landing	część produkt bez zmian
+produkt/app-onboarding-prototyp	produkt/app-onboarding-prototyp	zostaje	produkt/app-onboarding-prototyp	część produkt bez zmian
+produkt/app-prototyp-desktop	produkt/app-prototyp-desktop	zostaje	produkt/app-prototyp-desktop	część produkt bez zmian
+produkt/app-skrypty-skanu	produkt/app-skrypty-skanu	zostaje	produkt/app-skrypty-skanu	część produkt bez zmian
+produkt/app-system-projektowy	produkt/app-system-projektowy	zostaje	produkt/app-system-projektowy	część produkt bez zmian
+produkt/bezpieczenstwo-tokenow-specjalnych	stos/bezpieczenstwo-tokenow-specjalnych	przenies	stos/bezpieczenstwo-tokenow-specjalnych	funkcja naszego silnika (topka)
+produkt/cache-sesji-na-dysku	optymalizacje/cache-sesji-na-dysku	przenies	optymalizacje/cache-sesji-na-dysku	technika z werdyktem (K-085, K-081, opóźnienia topki)
+produkt/enigma-uczciwy-benchmark	testy/enigma-uczciwy-benchmark	przenies	testy/enigma-uczciwy-benchmark	metoda i wynik benchmarku Enigmy
+produkt/final-modele-per-vram	produkt/final-modele-per-vram	zostaje	produkt/final-modele-per-vram	część produkt bez zmian
+produkt/final-recipes-nvidia	produkt/final-recipes-nvidia	zostaje	produkt/final-recipes-nvidia	część produkt bez zmian
+produkt/karty-nvidia-na-stronie	produkt/karty-nvidia-na-stronie	zostaje	produkt/karty-nvidia-na-stronie	część produkt bez zmian
+produkt/kv-na-dysku-polityka	archiwum	archiwum	decyzje/2026-10-19-kv-tylko-w-ram	status nieaktualne, zastąpiona decyzją KV tylko w RAM
+produkt/opoznienia-ttft	optymalizacje/opoznienia-ttft	przenies	optymalizacje/opoznienia-ttft	technika z werdyktem (K-085, K-081, opóźnienia topki)
+produkt/otwarte-decyzje-produktu	produkt/otwarte-decyzje-produktu	zostaje	produkt/otwarte-decyzje-produktu	część produkt bez zmian
+produkt/otwarte-decyzje-techniczne	produkt/otwarte-decyzje-techniczne	zostaje	produkt/otwarte-decyzje-techniczne	część produkt bez zmian
+produkt/produkt-analiza-platformy	scal z metody/analiza-platformy	scal	metody/analiza-platformy	analiza platformy dwa razy (plan i metoda)
+produkt/produkt-anatomia-l0-l3	produkt/produkt-anatomia-l0-l3	zostaje	produkt/produkt-anatomia-l0-l3	część produkt bez zmian
+produkt/produkt-architektura	produkt/produkt-architektura	zostaje	produkt/produkt-architektura	część produkt bez zmian
+produkt/produkt-biznes-edycje	produkt/produkt-biznes-edycje	zostaje	produkt/produkt-biznes-edycje	część produkt bez zmian
+produkt/produkt-budzet	produkt/produkt-budzet	zostaje	produkt/produkt-budzet	część produkt bez zmian
+produkt/produkt-dla-kogo-i-ekrany	produkt/produkt-dla-kogo-i-ekrany	zostaje	produkt/produkt-dla-kogo-i-ekrany	część produkt bez zmian
+produkt/produkt-fabryka	produkt/produkt-fabryka	zostaje	produkt/produkt-fabryka	część produkt bez zmian
+produkt/produkt-landing-i-onboarding	produkt/produkt-landing-i-onboarding	zostaje	produkt/produkt-landing-i-onboarding	część produkt bez zmian
+produkt/produkt-optymalizacja-u-uzytkownika	produkt/produkt-optymalizacja-u-uzytkownika	zostaje	produkt/produkt-optymalizacja-u-uzytkownika	część produkt bez zmian
+produkt/produkt-platformy-i-lab	produkt/produkt-platformy-i-lab	zostaje	produkt/produkt-platformy-i-lab	część produkt bez zmian
+produkt/produkt-prawo	produkt/produkt-prawo	zostaje	produkt/produkt-prawo	część produkt bez zmian
+produkt/produkt-roadmapa	produkt/produkt-roadmapa	zostaje	produkt/produkt-roadmapa	część produkt bez zmian
+produkt/produkt-ryzyka	produkt/produkt-ryzyka	zostaje	produkt/produkt-ryzyka	część produkt bez zmian
+produkt/produkt-stack	produkt/produkt-stack	zostaje	produkt/produkt-stack	część produkt bez zmian
+produkt/przelaczanie-main-uncensored	produkt/przelaczanie-main-uncensored	zostaje	produkt/przelaczanie-main-uncensored	część produkt bez zmian
+produkt/strona-zrodlo-rowna-zywej	produkt/strona-zrodlo-rowna-zywej	zostaje	produkt/strona-zrodlo-rowna-zywej	część produkt bez zmian
+produkt/tryb-stratny-pflash	optymalizacje/tryb-stratny-pflash	przenies	optymalizacje/tryb-stratny-pflash	technika z werdyktem (K-085, K-081, opóźnienia topki)
+produkt/werdykt	produkt/werdykt	zostaje	produkt/werdykt	część produkt bez zmian
+produkt/zawezenie-tezy-produktu	produkt/zawezenie-tezy-produktu	zostaje	produkt/zawezenie-tezy-produktu	część produkt bez zmian
+repo/1cat-vllm	ekosystem/1cat-vllm	przenies	ekosystem/1cat-vllm	folder repo → część ekosystem
+repo/_hub	ekosystem/_hub	hub	ekosystem/_hub	hub dawnego folderu: linki → ekosystem/_hub, plik usunięty
+repo/a-hamdi-gpu	ekosystem/a-hamdi-gpu	przenies	ekosystem/a-hamdi-gpu	folder repo → część ekosystem
+repo/ako4all	ekosystem/ako4all	przenies	ekosystem/ako4all	folder repo → część ekosystem
+repo/amd-opt	stos/amd-opt	przenies	stos/amd-opt	nasz fork llama.cpp albo jego gałąź
+repo/amd-opt-v070	stos/amd-opt-v070	przenies	stos/amd-opt-v070	nasz fork llama.cpp albo jego gałąź
+repo/atrex-kernel-agent	ekosystem/atrex-kernel-agent	przenies	ekosystem/atrex-kernel-agent	folder repo → część ekosystem
+repo/auto-gpu-kernel	ekosystem/auto-gpu-kernel	przenies	ekosystem/auto-gpu-kernel	folder repo → część ekosystem
+repo/batch-invariant	stos/batch-invariant	przenies	stos/batch-invariant	nasz fork llama.cpp albo jego gałąź
+repo/blocksparse	ekosystem/blocksparse	przenies	ekosystem/blocksparse	folder repo → część ekosystem
+repo/bonsai-fast-contest	ekosystem/bonsai-fast-contest	przenies	ekosystem/bonsai-fast-contest	folder repo → część ekosystem
+repo/colibri	ekosystem/colibri	przenies	ekosystem/colibri	folder repo → część ekosystem
+repo/cuda-compat-galaz	scal z stos/cuda-compat	scal	stos/cuda-compat	ta sama gałąź cuda-compat dwa razy
+repo/cuda-rust	ekosystem/cuda-rust	przenies	ekosystem/cuda-rust	folder repo → część ekosystem
+repo/cuda-v070	stos/cuda-v070	przenies	stos/cuda-v070	nasz fork llama.cpp albo jego gałąź
+repo/cutile-python	ekosystem/cutile-python	przenies	ekosystem/cutile-python	folder repo → część ekosystem
+repo/deepgemm	ekosystem/deepgemm	przenies	ekosystem/deepgemm	folder repo → część ekosystem
+repo/deepinfer	ekosystem/deepinfer	przenies	ekosystem/deepinfer	folder repo → część ekosystem
+repo/eagle-4	ekosystem/eagle-4	przenies	ekosystem/eagle-4	folder repo → część ekosystem
+repo/exllamav3	ekosystem/exllamav3	przenies	ekosystem/exllamav3	folder repo → część ekosystem
+repo/falkon	ekosystem/falkon	przenies	ekosystem/falkon	folder repo → część ekosystem
+repo/flameox	ekosystem/flameox	przenies	ekosystem/flameox	folder repo → część ekosystem
+repo/flashinfer	ekosystem/flashinfer	przenies	ekosystem/flashinfer	folder repo → część ekosystem
+repo/flashinfer-bench-starter-kit	ekosystem/flashinfer-bench-starter-kit	przenies	ekosystem/flashinfer-bench-starter-kit	folder repo → część ekosystem
+repo/galezie-rund	stos/galezie-rund	przenies	stos/galezie-rund	nasz fork llama.cpp albo jego gałąź
+repo/gpu-kernel-engineer-from-scratch	ekosystem/gpu-kernel-engineer-from-scratch	przenies	ekosystem/gpu-kernel-engineer-from-scratch	folder repo → część ekosystem
+repo/gpu-mode-reference-kernels	ekosystem/gpu-mode-reference-kernels	przenies	ekosystem/gpu-mode-reference-kernels	folder repo → część ekosystem
+repo/hipfire	ekosystem/hipfire	przenies	ekosystem/hipfire	folder repo → część ekosystem
+repo/how-to-optimize-in-gpu	ekosystem/how-to-optimize-in-gpu	przenies	ekosystem/how-to-optimize-in-gpu	folder repo → część ekosystem
+repo/humming	ekosystem/humming	przenies	ekosystem/humming	folder repo → część ekosystem
+repo/hyperkernel	ekosystem/hyperkernel	przenies	ekosystem/hyperkernel	folder repo → część ekosystem
+repo/hyperqwen	ekosystem/hyperqwen	przenies	ekosystem/hyperqwen	folder repo → część ekosystem
+repo/ik-llama-cpp	ekosystem/ik-llama-cpp	przenies	ekosystem/ik-llama-cpp	folder repo → część ekosystem
+repo/inferrous	ekosystem/inferrous	przenies	ekosystem/inferrous	folder repo → część ekosystem
+repo/keops	ekosystem/keops	przenies	ekosystem/keops	folder repo → część ekosystem
+repo/kernel-tuner-repo	ekosystem/kernel-tuner-repo	przenies	ekosystem/kernel-tuner-repo	folder repo → część ekosystem
+repo/kernelagent	ekosystem/kernelagent	przenies	ekosystem/kernelagent	folder repo → część ekosystem
+repo/kernelbench	ekosystem/kernelbench	przenies	ekosystem/kernelbench	folder repo → część ekosystem
+repo/kernelguard	ekosystem/kernelguard	przenies	ekosystem/kernelguard	folder repo → część ekosystem
+repo/knlp-lm-head	ekosystem/knlp-lm-head	przenies	ekosystem/knlp-lm-head	folder repo → część ekosystem
+repo/latent-sparse-attention	ekosystem/latent-sparse-attention	przenies	ekosystem/latent-sparse-attention	folder repo → część ekosystem
+repo/laya-mlx	ekosystem/laya-mlx	przenies	ekosystem/laya-mlx	folder repo → część ekosystem
+repo/llama-cpp-fork	stos/llama-cpp-fork	przenies	stos/llama-cpp-fork	nasz fork llama.cpp albo jego gałąź
+repo/llama-moe-cache-mib	ekosystem/llama-moe-cache-mib	przenies	ekosystem/llama-moe-cache-mib	folder repo → część ekosystem
+repo/llamampere	ekosystem/llamampere	przenies	ekosystem/llamampere	folder repo → część ekosystem
+repo/locals	ekosystem/locals	przenies	ekosystem/locals	folder repo → część ekosystem
+repo/lucebox	ekosystem/lucebox	przenies	ekosystem/lucebox	folder repo → część ekosystem
+repo/magnitude	ekosystem/magnitude	przenies	ekosystem/magnitude	folder repo → część ekosystem
+repo/megakernel-zoo	ekosystem/megakernel-zoo	przenies	ekosystem/megakernel-zoo	folder repo → część ekosystem
+repo/megakernele-prior-art	ekosystem/megakernele-prior-art	przenies	ekosystem/megakernele-prior-art	folder repo → część ekosystem
+repo/mixbench	ekosystem/mixbench	przenies	ekosystem/mixbench	folder repo → część ekosystem
+repo/mkernel	ekosystem/mkernel	przenies	ekosystem/mkernel	folder repo → część ekosystem
+repo/mtp-train	stos/mtp-train	przenies	stos/mtp-train	nasz fork llama.cpp albo jego gałąź
+repo/mtplx	ekosystem/mtplx	przenies	ekosystem/mtplx	folder repo → część ekosystem
+repo/nemotron-3090	stos/nemotron-3090	przenies	stos/nemotron-3090	nasz fork llama.cpp albo jego gałąź
+repo/ninfer	ekosystem/ninfer	przenies	ekosystem/ninfer	folder repo → część ekosystem
+repo/nvidia-flare	ekosystem/nvidia-flare	przenies	ekosystem/nvidia-flare	folder repo → część ekosystem
+repo/nvidia-open-gpu-kernel-modules	ekosystem/nvidia-open-gpu-kernel-modules	przenies	ekosystem/nvidia-open-gpu-kernel-modules	folder repo → część ekosystem
+repo/omlx	ekosystem/omlx	przenies	ekosystem/omlx	folder repo → część ekosystem
+repo/opt-gdn6	stos/opt-gdn6	przenies	stos/opt-gdn6	nasz fork llama.cpp albo jego gałąź
+repo/opt-mmq6	stos/opt-mmq6	przenies	stos/opt-mmq6	nasz fork llama.cpp albo jego gałąź
+repo/opt-qwen5	stos/opt-qwen5	przenies	stos/opt-qwen5	nasz fork llama.cpp albo jego gałąź
+repo/opt-samp	stos/opt-samp	przenies	stos/opt-samp	nasz fork llama.cpp albo jego gałąź
+repo/pplx-kernels	ekosystem/pplx-kernels	przenies	ekosystem/pplx-kernels	folder repo → część ekosystem
+repo/prism-llama-cpp	ekosystem/prism-llama-cpp	przenies	ekosystem/prism-llama-cpp	folder repo → część ekosystem
+repo/project-maya	ekosystem/project-maya	przenies	ekosystem/project-maya	folder repo → część ekosystem
+repo/pygpubench	ekosystem/pygpubench	przenies	ekosystem/pygpubench	folder repo → część ekosystem
+repo/qwen-qsa-llama-cpp	ekosystem/qwen-qsa-llama-cpp	przenies	ekosystem/qwen-qsa-llama-cpp	folder repo → część ekosystem
+repo/qwen-warp	ekosystem/qwen-warp	przenies	ekosystem/qwen-warp	folder repo → część ekosystem
+repo/rdna-fast	ekosystem/rdna-fast	przenies	ekosystem/rdna-fast	folder repo → część ekosystem
+repo/rsr-27b	modele/rsr-27b	przenies	modele/rsr-27b	notatka o modelu (jedna notatka na model)
+repo/saber-engine	ekosystem/saber-engine	przenies	ekosystem/saber-engine	folder repo → część ekosystem
+repo/sakana-agentic-scientist	ekosystem/sakana-agentic-scientist	przenies	ekosystem/sakana-agentic-scientist	folder repo → część ekosystem
+repo/sglang-hicache	ekosystem/sglang-hicache	przenies	ekosystem/sglang-hicache	folder repo → część ekosystem
+repo/sglang-unified-memory	ekosystem/sglang-unified-memory	przenies	ekosystem/sglang-unified-memory	folder repo → część ekosystem
+repo/smokinggun	ekosystem/smokinggun	przenies	ekosystem/smokinggun	folder repo → część ekosystem
+repo/speculators-specforge	ekosystem/speculators-specforge	przenies	ekosystem/speculators-specforge	folder repo → część ekosystem
+repo/strata	ekosystem/strata	przenies	ekosystem/strata	folder repo → część ekosystem
+repo/suffixdecoding	ekosystem/suffixdecoding	przenies	ekosystem/suffixdecoding	folder repo → część ekosystem
+repo/tensara	ekosystem/tensara	przenies	ekosystem/tensara	folder repo → część ekosystem
+repo/tensorfold	ekosystem/tensorfold	przenies	ekosystem/tensorfold	folder repo → część ekosystem
+repo/tilegym	ekosystem/tilegym	przenies	ekosystem/tilegym	folder repo → część ekosystem
+repo/tilelang	ekosystem/tilelang	przenies	ekosystem/tilelang	folder repo → część ekosystem
+repo/tokamax	ekosystem/tokamax	przenies	ekosystem/tokamax	folder repo → część ekosystem
+repo/tokenspeed	ekosystem/tokenspeed	przenies	ekosystem/tokenspeed	folder repo → część ekosystem
+repo/tools6	stos/tools6	przenies	stos/tools6	nasz fork llama.cpp albo jego gałąź
+repo/tqllm	ekosystem/tqllm	przenies	ekosystem/tqllm	folder repo → część ekosystem
+repo/vllm-kimi-k3-specialized-decode	ekosystem/vllm-kimi-k3-specialized-decode	przenies	ekosystem/vllm-kimi-k3-specialized-decode	folder repo → część ekosystem
+repo/vllm-monokernel	ekosystem/vllm-monokernel	przenies	ekosystem/vllm-monokernel	folder repo → część ekosystem
+repo/vllm-rocm-octave	ekosystem/vllm-rocm-octave	przenies	ekosystem/vllm-rocm-octave	folder repo → część ekosystem
+repo/vllm-xpu-kernels	ekosystem/vllm-xpu-kernels	przenies	ekosystem/vllm-xpu-kernels	folder repo → część ekosystem
+repo/yasakani	ekosystem/yasakani	przenies	ekosystem/yasakani	folder repo → część ekosystem
+research/_hub	research/_hub	zostaje	research/_hub	hub części
+research/audyt-gemini-2026-11-19	research/audyt-gemini-2026-11-19	zostaje	research/audyt-gemini-2026-11-19	część research bez zmian
+research/benchmarki-przed-po-2026-10-19	testy/benchmarki-przed-po-2026-10-19	przenies	testy/benchmarki-przed-po-2026-10-19	raport z wynikami pomiarów na kartach (część testów)
+research/enigma-turbo-gemini-2026-11-20	research/enigma-turbo-gemini-2026-11-20	zostaje	research/enigma-turbo-gemini-2026-11-20	część research bez zmian
+research/projekcja-rtx-5090	research/projekcja-rtx-5090	zostaje	research/projekcja-rtx-5090	część research bez zmian
+research/raport-01-konkurencja	research/raport-01-konkurencja	zostaje	research/raport-01-konkurencja	część research bez zmian
+research/raport-02-autotuning	research/raport-02-autotuning	zostaje	research/raport-02-autotuning	część research bez zmian
+research/raport-03-silniki	research/raport-03-silniki	zostaje	research/raport-03-silniki	część research bez zmian
+research/raport-04-sprzet	research/raport-04-sprzet	zostaje	research/raport-04-sprzet	część research bez zmian
+research/raport-05-chmura	research/raport-05-chmura	zostaje	research/raport-05-chmura	część research bez zmian
+research/raport-06-produkt	research/raport-06-produkt	zostaje	research/raport-06-produkt	część research bez zmian
+research/raport-07-metody	research/raport-07-metody	zostaje	research/raport-07-metody	część research bez zmian
+research/raport-08-platforma	research/raport-08-platforma	zostaje	research/raport-08-platforma	część research bez zmian
+research/raport-09-chmura-3060	testy/raport-09-chmura-3060	przenies	testy/raport-09-chmura-3060	raport z wynikami pomiarów na kartach (część testów)
+research/raport-09-chmura-3090	testy/raport-09-chmura-3090	przenies	testy/raport-09-chmura-3090	raport z wynikami pomiarów na kartach (część testów)
+research/raport-09-chmura-5060ti	testy/raport-09-chmura-5060ti	przenies	testy/raport-09-chmura-5060ti	raport z wynikami pomiarów na kartach (część testów)
+research/raport-10-post-training	research/raport-10-post-training	zostaje	research/raport-10-post-training	część research bez zmian
+research/raport-11-mtp-pl-pilot	scal z testy/2026-10-16-mtp-pl-pilot	scal	testy/2026-10-16-mtp-pl-pilot	ten sam raport 11 dwa razy
+research/raport-12-bit-exact	scal z testy/2026-10-16-bit-exact	scal	testy/2026-10-16-bit-exact	ten sam raport 12 dwa razy
+research/raport-13-rocm-10-1	scal z stos/rocm-10-1	scal	stos/rocm-10-1	ten sam raport 13 dwa razy
+research/raport-14-nemotron-3090	scal z testy/2026-10-16-nemotron-3090	scal	testy/2026-10-16-nemotron-3090	ten sam raport 14 dwa razy
+research/raport-15-synteza	research/raport-15-synteza	zostaje	research/raport-15-synteza	część research bez zmian
+research/raport-15a-monokernel	research/raport-15a-monokernel	zostaje	research/raport-15a-monokernel	część research bez zmian
+research/raport-15b-spekulacja-frontier	research/raport-15b-spekulacja-frontier	zostaje	research/raport-15b-spekulacja-frontier	część research bez zmian
+research/raport-15c-nowe-silniki	research/raport-15c-nowe-silniki	zostaje	research/raport-15c-nowe-silniki	część research bez zmian
+research/raport-15d-prefill-dlugi-kontekst	research/raport-15d-prefill-dlugi-kontekst	zostaje	research/raport-15d-prefill-dlugi-kontekst	część research bez zmian
+research/raport-15e-kwantyzacja-nowa	research/raport-15e-kwantyzacja-nowa	zostaje	research/raport-15e-kwantyzacja-nowa	część research bez zmian
+research/raport-15f-agentowa-nauka	research/raport-15f-agentowa-nauka	zostaje	research/raport-15f-agentowa-nauka	część research bez zmian
+research/raport-16a-pm4-pdl	scal z testy/2026-10-18-pm4-pdl-x1	scal	testy/2026-10-18-pm4-pdl-x1	ten sam raport 16a dwa razy
+research/raport-16b-lookup-tail	scal z testy/2026-10-18-lookup-ogon	scal	testy/2026-10-18-lookup-ogon	ten sam raport 16b dwa razy
+research/raport-16c-kvq-cuda	scal z testy/2026-10-16-kvq-cuda	scal	testy/2026-10-16-kvq-cuda	ten sam raport 16c dwa razy
+research/raport-16d-magnitude-vs-nasz	scal z testy/2026-10-16-magnitude-vs-fork	scal	testy/2026-10-16-magnitude-vs-fork	ten sam raport 16d dwa razy
+research/raport-16e-kwanty-kld	scal z testy/2026-10-18-e1-kwanty-27b-kld	scal	testy/2026-10-18-e1-kwanty-27b-kld	ten sam raport 16e dwa razy
+research/raport-16f-xtx-szybkie	testy/raport-16f-xtx-szybkie	przenies	testy/raport-16f-xtx-szybkie	raport z wynikami pomiarów na kartach (część testów)
+research/raport-16g-lfm-moe-pasmo	scal z testy/2026-10-18-lfm-moe-pasmo	scal	testy/2026-10-18-lfm-moe-pasmo	ten sam raport 16g dwa razy
+research/raport-16h-fabryka-v1	scal z metody/fabryka-v1	scal	metody/fabryka-v1	ten sam raport 16h dwa razy
+research/raport-16i-magnitude	research/raport-16i-magnitude	zostaje	research/raport-16i-magnitude	część research bez zmian
+research/raport-16j-magnitude-vulkan-xtx	scal z testy/2026-10-18-magnitude-vulkan-xtx	scal	testy/2026-10-18-magnitude-vulkan-xtx	ten sam raport 16j dwa razy
+research/raport-16k-sprzezone-probkowanie	scal z testy/2026-10-18-sprzezone-probkowanie-mtp	scal	testy/2026-10-18-sprzezone-probkowanie-mtp	ten sam raport 16k dwa razy
+research/raport-17-gpu-page-fault	scal z testy/2026-10-19-page-faulty-gpu-analiza	scal	testy/2026-10-19-page-faulty-gpu-analiza	ten sam raport 17 dwa razy
+research/raport-18-nastepna-fala	research/raport-18-nastepna-fala	zostaje	research/raport-18-nastepna-fala	część research bez zmian
+research/raport-19-kb-wyszukiwanie	scal z narzedzia/kb	scal	narzedzia/kb	raport 19 opisuje narzędzie kb
+research/raport-20-build-topka	scal z testy/2026-10-19-build-topka	scal	testy/2026-10-19-build-topka	ten sam raport 20 dwa razy
+research/raport-21a-dspine	testy/raport-21a-dspine	przenies	testy/raport-21a-dspine	raport z wynikami pomiarów na kartach (część testów)
+research/raport-21b-gpu-perf-zasoby	research/raport-21b-gpu-perf-zasoby	zostaje	research/raport-21b-gpu-perf-zasoby	część research bez zmian
+research/raport-21c-cplm	research/raport-21c-cplm	zostaje	research/raport-21c-cplm	część research bez zmian
+research/raport-21d-kv-na-dysku	research/raport-21d-kv-na-dysku	zostaje	research/raport-21d-kv-na-dysku	część research bez zmian
+research/raport-21e-kv-miedzy-modelami	research/raport-21e-kv-miedzy-modelami	zostaje	research/raport-21e-kv-miedzy-modelami	część research bez zmian
+research/raport-21f-inferencex	research/raport-21f-inferencex	zostaje	research/raport-21f-inferencex	część research bez zmian
+research/raport-21g-nowe-silniki	research/raport-21g-nowe-silniki	zostaje	research/raport-21g-nowe-silniki	część research bez zmian
+research/raport-21h-rsi	research/raport-21h-rsi	zostaje	research/raport-21h-rsi	część research bez zmian
+research/raport-21i-rsi-inference-bench	research/raport-21i-rsi-inference-bench	zostaje	research/raport-21i-rsi-inference-bench	część research bez zmian
+research/raport-21j-flameox	scal z ekosystem/flameox	scal	ekosystem/flameox	repo i raport o nim to jeden podmiot
+research/raport-21k-smokinggun	scal z ekosystem/smokinggun	scal	ekosystem/smokinggun	repo i raport o nim to jeden podmiot
+research/raport-21l-re-gpu	research/raport-21l-re-gpu	zostaje	research/raport-21l-re-gpu	część research bez zmian
+research/raport-21m-declarative-attention	research/raport-21m-declarative-attention	zostaje	research/raport-21m-declarative-attention	część research bez zmian
+research/raport-21n-strata-gyro	research/raport-21n-strata-gyro	zostaje	research/raport-21n-strata-gyro	część research bez zmian
+research/raport-21o-gemma	research/raport-21o-gemma	zostaje	research/raport-21o-gemma	część research bez zmian
+research/raport-22-rsi-f	research/raport-22-rsi-f	zostaje	research/raport-22-rsi-f	część research bez zmian
+research/raport-23a-rea	research/raport-23a-rea	zostaje	research/raport-23a-rea	część research bez zmian
+research/raport-23b-re-kernele-amd	research/raport-23b-re-kernele-amd	zostaje	research/raport-23b-re-kernele-amd	część research bez zmian
+research/raport-23b2-bariery-lds	scal z research/raport-23b-re-kernele-amd	scal	research/raport-23b-re-kernele-amd	druga część tego samego RE kerneli AMD
+research/raport-23c-re-kernele-nvidia	research/raport-23c-re-kernele-nvidia	zostaje	research/raport-23c-re-kernele-nvidia	część research bez zmian
+research/raport-23d-re-runtime-amd	research/raport-23d-re-runtime-amd	zostaje	research/raport-23d-re-runtime-amd	część research bez zmian
+research/raport-23e-re-silniki	research/raport-23e-re-silniki	zostaje	research/raport-23e-re-silniki	część research bez zmian
+research/raport-23f-podrecznik-gpu	scal z metody/podrecznik-gpu	scal	metody/podrecznik-gpu	podręcznik GPU dwa razy
+research/raport-24a-bariera-lds	scal z optymalizacje/bariera-lds-rdna3	scal	optymalizacje/bariera-lds-rdna3	ta sama technika (bariera tylko LDS) dwa razy
+research/raport-24b-draft-pelny-slownik	optymalizacje/raport-24b-draft-pelny-slownik	przenies	optymalizacje/raport-24b-draft-pelny-slownik	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24c-wiele-zapytan	optymalizacje/raport-24c-wiele-zapytan	przenies	optymalizacje/raport-24c-wiele-zapytan	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24d-lfm-lookup	optymalizacje/raport-24d-lfm-lookup	przenies	optymalizacje/raport-24d-lfm-lookup	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24e-nvidia-runda	testy/raport-24e-nvidia-runda	przenies	testy/raport-24e-nvidia-runda	raport z wynikami pomiarów na kartach (część testów)
+research/raport-24f-mmvq-fa	optymalizacje/raport-24f-mmvq-fa	przenies	optymalizacje/raport-24f-mmvq-fa	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24g-hipfire	research/raport-24g-hipfire	zostaje	research/raport-24g-hipfire	część research bez zmian
+research/raport-24h-kv-jeden-przebieg	optymalizacje/raport-24h-kv-jeden-przebieg	przenies	optymalizacje/raport-24h-kv-jeden-przebieg	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24i-sciezka-agenta	optymalizacje/raport-24i-sciezka-agenta	przenies	optymalizacje/raport-24i-sciezka-agenta	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24j-router	optymalizacje/raport-24j-router	przenies	optymalizacje/raport-24j-router	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24k-koszt-weryfikacji	optymalizacje/raport-24k-koszt-weryfikacji	przenies	optymalizacje/raport-24k-koszt-weryfikacji	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24l-fuzja-norm	optymalizacje/raport-24l-fuzja-norm	przenies	optymalizacje/raport-24l-fuzja-norm	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24m-weryfikacja-gpu	optymalizacje/raport-24m-weryfikacja-gpu	przenies	optymalizacje/raport-24m-weryfikacja-gpu	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24n-mmvq-n5	optymalizacje/raport-24n-mmvq-n5	przenies	optymalizacje/raport-24n-mmvq-n5	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24o-luki-hosta	optymalizacje/raport-24o-luki-hosta	przenies	optymalizacje/raport-24o-luki-hosta	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24p-sprzezone-t1	optymalizacje/raport-24p-sprzezone-t1	przenies	optymalizacje/raport-24p-sprzezone-t1	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24q-adaptacyjna-spekulacja	optymalizacje/raport-24q-adaptacyjna-spekulacja	przenies	optymalizacje/raport-24q-adaptacyjna-spekulacja	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24r-mmvq-pasmo	optymalizacje/raport-24r-mmvq-pasmo	przenies	optymalizacje/raport-24r-mmvq-pasmo	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24s-drzewa-proza	optymalizacje/raport-24s-drzewa-proza	przenies	optymalizacje/raport-24s-drzewa-proza	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24t-entropia-wag	optymalizacje/raport-24t-entropia-wag	przenies	optymalizacje/raport-24t-entropia-wag	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24u-norm-quant	optymalizacje/raport-24u-norm-quant	przenies	optymalizacje/raport-24u-norm-quant	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24v-prefill-fa	optymalizacje/raport-24v-prefill-fa	przenies	optymalizacje/raport-24v-prefill-fa	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-24w-pair2	optymalizacje/raport-24w-pair2	przenies	optymalizacje/raport-24w-pair2	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-25-buildfarm	narzedzia/raport-25-buildfarm	przenies	narzedzia/raport-25-buildfarm	raport o naszym narzędziu
+research/raport-26-kolejka-gpu	testy/raport-26-kolejka-gpu	przenies	testy/raport-26-kolejka-gpu	raport z wynikami pomiarów na kartach (część testów)
+research/raport-27-3090-final	testy/raport-27-3090-final	przenies	testy/raport-27-3090-final	raport z wynikami pomiarów na kartach (część testów)
+research/raport-28-moe-offload	research/raport-28-moe-offload	zostaje	research/raport-28-moe-offload	część research bez zmian
+research/raport-29-4060ti	testy/raport-29-4060ti	przenies	testy/raport-29-4060ti	raport z wynikami pomiarów na kartach (część testów)
+research/raport-30-intel-apple	research/raport-30-intel-apple	zostaje	research/raport-30-intel-apple	część research bez zmian
+research/raport-31-3060-3080	testy/raport-31-3060-3080	przenies	testy/raport-31-3060-3080	raport z wynikami pomiarów na kartach (część testów)
+research/raport-31-3090	testy/raport-31-3090	przenies	testy/raport-31-3090	raport z wynikami pomiarów na kartach (część testów)
+research/raport-31-4060ti	testy/raport-31-4060ti	przenies	testy/raport-31-4060ti	raport z wynikami pomiarów na kartach (część testów)
+research/raport-31-4070ti	testy/raport-31-4070ti	przenies	testy/raport-31-4070ti	raport z wynikami pomiarów na kartach (część testów)
+research/raport-31-5060ti	testy/raport-31-5060ti	przenies	testy/raport-31-5060ti	raport z wynikami pomiarów na kartach (część testów)
+research/raport-32a-maya-strata-gyro	research/raport-32a-maya-strata-gyro	zostaje	research/raport-32a-maya-strata-gyro	część research bez zmian
+research/raport-32b-deepinfer	scal z ekosystem/deepinfer	scal	ekosystem/deepinfer	repo i raport o nim to jeden podmiot
+research/raport-32c-sage-exl3	research/raport-32c-sage-exl3	zostaje	research/raport-32c-sage-exl3	część research bez zmian
+research/raport-32d-localmaxxing	research/raport-32d-localmaxxing	zostaje	research/raport-32d-localmaxxing	część research bez zmian
+research/raport-32e-safe-special	scal z stos/bezpieczenstwo-tokenow-specjalnych	scal	stos/bezpieczenstwo-tokenow-specjalnych	SAFE_SPECIAL dwa razy
+research/raport-32f-ninfer-tqllm	research/raport-32f-ninfer-tqllm	zostaje	research/raport-32f-ninfer-tqllm	część research bez zmian
+research/raport-33-modele-na-karty	research/raport-33-modele-na-karty	zostaje	research/raport-33-modele-na-karty	część research bez zmian
+research/raport-34-zrodla-benchmarkow	research/raport-34-zrodla-benchmarkow	zostaje	research/raport-34-zrodla-benchmarkow	część research bez zmian
+research/raport-35-xtx-eksperymenty	testy/raport-35-xtx-eksperymenty	przenies	testy/raport-35-xtx-eksperymenty	raport z wynikami pomiarów na kartach (część testów)
+research/raport-36-xtx-roadmap	testy/raport-36-xtx-roadmap	przenies	testy/raport-36-xtx-roadmap	raport z wynikami pomiarów na kartach (część testów)
+research/raport-37-proza-100	testy/raport-37-proza-100	przenies	testy/raport-37-proza-100	raport z wynikami pomiarów na kartach (część testów)
+research/raport-38-ckpt-vram	optymalizacje/raport-38-ckpt-vram	przenies	optymalizacje/raport-38-ckpt-vram	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-39a-maya-1119	research/raport-39a-maya-1119	zostaje	research/raport-39a-maya-1119	część research bez zmian
+research/raport-39b-flashmap	research/raport-39b-flashmap	zostaje	research/raport-39b-flashmap	część research bez zmian
+research/raport-39c-deepseek-deploy	research/raport-39c-deepseek-deploy	zostaje	research/raport-39c-deepseek-deploy	część research bez zmian
+research/raport-39d-rea-prompts	research/raport-39d-rea-prompts	zostaje	research/raport-39d-rea-prompts	część research bez zmian
+research/raport-39e-torchtpu	research/raport-39e-torchtpu	zostaje	research/raport-39e-torchtpu	część research bez zmian
+research/raport-39f-nvidia-flare	scal z ekosystem/nvidia-flare	scal	ekosystem/nvidia-flare	repo i raport o nim to jeden podmiot
+research/raport-40-akceptacja-prozy	testy/raport-40-akceptacja-prozy	przenies	testy/raport-40-akceptacja-prozy	raport z wynikami pomiarów na kartach (część testów)
+research/raport-41-re-kerneli	research/raport-41-re-kerneli	zostaje	research/raport-41-re-kerneli	część research bez zmian
+research/raport-42-safe-io	research/raport-42-safe-io	zostaje	research/raport-42-safe-io	część research bez zmian
+research/raport-43-integracja	testy/raport-43-integracja	przenies	testy/raport-43-integracja	raport z wynikami pomiarów na kartach (część testów)
+research/raport-44-spec-route	optymalizacje/raport-44-spec-route	przenies	optymalizacje/raport-44-spec-route	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-45-opoznienia	scal z optymalizacje/opoznienia-ttft	scal	optymalizacje/opoznienia-ttft	opóźnienia topki dwa razy
+research/raport-46-mmvq-big	optymalizacje/raport-46-mmvq-big	przenies	optymalizacje/raport-46-mmvq-big	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-47-kernel-lab	narzedzia/raport-47-kernel-lab	przenies	narzedzia/raport-47-kernel-lab	raport o naszym narzędziu
+research/raport-48-norma-gdn-bank	optymalizacje/raport-48-norma-gdn-bank	przenies	optymalizacje/raport-48-norma-gdn-bank	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-49-mmvq-ogon-1024	optymalizacje/raport-49-mmvq-ogon-1024	przenies	optymalizacje/raport-49-mmvq-ogon-1024	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-50a-mmvq-q4k	optymalizacje/raport-50a-mmvq-q4k	przenies	optymalizacje/raport-50a-mmvq-q4k	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-50b-mmvq-q5k	optymalizacje/raport-50b-mmvq-q5k	przenies	optymalizacje/raport-50b-mmvq-q5k	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-50c-mmvq-q6k	optymalizacje/raport-50c-mmvq-q6k	przenies	optymalizacje/raport-50c-mmvq-q6k	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-50d-mmvq-iq4xs	optymalizacje/raport-50d-mmvq-iq4xs	przenies	optymalizacje/raport-50d-mmvq-iq4xs	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-51-male-kernele	optymalizacje/raport-51-male-kernele	przenies	optymalizacje/raport-51-male-kernele	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-52-eagle4	scal z ekosystem/eagle-4	scal	ekosystem/eagle-4	repo i raport o nim to jeden podmiot
+research/raport-53-draft-shortlist	optymalizacje/raport-53-draft-shortlist	przenies	optymalizacje/raport-53-draft-shortlist	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-54-mniej-granic	optymalizacje/raport-54-mniej-granic	przenies	optymalizacje/raport-54-mniej-granic	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-56-orca-3090	testy/raport-56-orca-3090	przenies	testy/raport-56-orca-3090	raport z wynikami pomiarów na kartach (część testów)
+research/raport-57a-gsq-rco	research/raport-57a-gsq-rco	zostaje	research/raport-57a-gsq-rco	część research bez zmian
+research/raport-57g-quantalloc-ear	research/raport-57g-quantalloc-ear	zostaje	research/raport-57g-quantalloc-ear	część research bez zmian
+research/raport-60b-apple-bonsai	research/raport-60b-apple-bonsai	zostaje	research/raport-60b-apple-bonsai	część research bez zmian
+research/raport-60c-quant-3090	research/raport-60c-quant-3090	zostaje	research/raport-60c-quant-3090	część research bez zmian
+research/raport-60d-serving-kernels-cache	research/raport-60d-serving-kernels-cache	zostaje	research/raport-60d-serving-kernels-cache	część research bez zmian
+research/raport-63-synteza	research/raport-63-synteza	zostaje	research/raport-63-synteza	część research bez zmian
+research/raport-64-termika	research/raport-64-termika	zostaje	research/raport-64-termika	część research bez zmian
+research/raport-65-vram-rezerwa-mtp	optymalizacje/raport-65-vram-rezerwa-mtp	przenies	optymalizacje/raport-65-vram-rezerwa-mtp	próba jednej techniki z werdyktem (przyjęta albo odrzucona)
+research/raport-66-synteza	research/raport-66-synteza	zostaje	research/raport-66-synteza	część research bez zmian
+research/raport-67-kampania-nvidia	scal z testy/2026-11-07-kampania-nvidia-vast	scal	testy/2026-11-07-kampania-nvidia-vast	kampania 67 dwa razy
+research/raport-69-synteza	research/raport-69-synteza	zostaje	research/raport-69-synteza	część research bez zmian
+research/raport-plan-nv-v2	research/raport-plan-nv-v2	zostaje	research/raport-plan-nv-v2	część research bez zmian
+research/raport-watch-compwatch	research/raport-watch-compwatch	zostaje	research/raport-watch-compwatch	część research bez zmian
+research/raport-wyniki-xtx-2026-10-19	testy/raport-wyniki-xtx-2026-10-19	przenies	testy/raport-wyniki-xtx-2026-10-19	raport z wynikami pomiarów na kartach (część testów)
+research/raporty-2026-10-19-20	research/raporty-2026-10-19-20	zostaje	research/raporty-2026-10-19-20	część research bez zmian
+research/raporty-2026-10-20-21	research/raporty-2026-10-20-21	zostaje	research/raporty-2026-10-20-21	część research bez zmian
+research/repos-30-przeglad	research/repos-30-przeglad	zostaje	research/repos-30-przeglad	część research bez zmian
+research/runda-6-raporty	scal z testy/runda-6	scal	testy/runda-6	runda 6 dwa razy
+research/silniki-inferencji-2026-11-20	research/silniki-inferencji-2026-11-20	zostaje	research/silniki-inferencji-2026-11-20	część research bez zmian
+research/single-neuron-safety-2605-08513	research/single-neuron-safety-2605-08513	zostaje	research/single-neuron-safety-2605-08513	część research bez zmian
+research/star-elastic-2605-07182	research/star-elastic-2605-07182	zostaje	research/star-elastic-2605-07182	część research bez zmian
+research/telegram-2026-11-14-pearlquant-llamacpp-v1	research/telegram-2026-11-14-pearlquant-llamacpp-v1	zostaje	research/telegram-2026-11-14-pearlquant-llamacpp-v1	część research bez zmian
+research/telegram-2026-11-14-silniki-agenci	research/telegram-2026-11-14-silniki-agenci	zostaje	research/telegram-2026-11-14-silniki-agenci	część research bez zmian
+research/telegram-2026-11-20-linux-7-2-pamiec	research/telegram-2026-11-20-linux-7-2-pamiec	zostaje	research/telegram-2026-11-20-linux-7-2-pamiec	część research bez zmian
+research/wafer-gpu-perf-lista	research/wafer-gpu-perf-lista	zostaje	research/wafer-gpu-perf-lista	część research bez zmian
+research/zwiad-2026-11-14	research/zwiad-2026-11-14	zostaje	research/zwiad-2026-11-14	część research bez zmian
+research/zwiad-2026-11-17	research/zwiad-2026-11-17	zostaje	research/zwiad-2026-11-17	część research bez zmian
+research/zwiad-2026-11-18	research/zwiad-2026-11-18	zostaje	research/zwiad-2026-11-18	część research bez zmian
+research/zwiad-2026-11-19	research/zwiad-2026-11-19	zostaje	research/zwiad-2026-11-19	część research bez zmian
+research/zwiad-2026-11-20	research/zwiad-2026-11-20	zostaje	research/zwiad-2026-11-20	część research bez zmian
+rocm/_hub	stos/_hub	hub	stos/_hub	hub dawnego folderu: linki → stos/_hub, plik usunięty
+rocm/amd-smi	stos/amd-smi	przenies	stos/amd-smi	folder rocm → część stos
+rocm/amdgpu-moc-i-termika	stos/amdgpu-moc-i-termika	przenies	stos/amdgpu-moc-i-termika	folder rocm → część stos
+rocm/dekodowanie-page-fault-amdgpu	stos/dekodowanie-page-fault-amdgpu	przenies	stos/dekodowanie-page-fault-amdgpu	folder rocm → część stos
+rocm/gfx11-pm4-dispatch-priv	stos/gfx11-pm4-dispatch-priv	przenies	stos/gfx11-pm4-dispatch-priv	folder rocm → część stos
+rocm/hip	stos/hip	przenies	stos/hip	folder rocm → część stos
+rocm/hip-dyn-data-prefetch	stos/hip-dyn-data-prefetch	przenies	stos/hip-dyn-data-prefetch	folder rocm → część stos
+rocm/hip-graph-narzut	stos/hip-graph-narzut	przenies	stos/hip-graph-narzut	folder rocm → część stos
+rocm/hip-kopie-stronicowane-zostawiaja-svm	stos/hip-kopie-stronicowane-zostawiaja-svm	przenies	stos/hip-kopie-stronicowane-zostawiaja-svm	folder rocm → część stos
+rocm/hip-na-windows	stos/hip-na-windows	przenies	stos/hip-na-windows	folder rocm → część stos
+rocm/init-user-pages-failed	stos/init-user-pages-failed	przenies	stos/init-user-pages-failed	folder rocm → część stos
+rocm/kfd-ewikcja-kolejek-gfx11	stos/kfd-ewikcja-kolejek-gfx11	przenies	stos/kfd-ewikcja-kolejek-gfx11	folder rocm → część stos
+rocm/kfd-smi-eventy	stos/kfd-smi-eventy	przenies	stos/kfd-smi-eventy	folder rocm → część stos
+rocm/mec-fw-dispatch-aql-gfx11	stos/mec-fw-dispatch-aql-gfx11	przenies	stos/mec-fw-dispatch-aql-gfx11	folder rocm → część stos
+rocm/pm4	stos/pm4	przenies	stos/pm4	folder rocm → część stos
+rocm/rdna3-gfx1100	stos/rdna3-gfx1100	przenies	stos/rdna3-gfx1100	folder rocm → część stos
+rocm/rocm-10-1	stos/rocm-10-1	przenies	stos/rocm-10-1	folder rocm → część stos
+rocm/rocm-stos	stos/rocm-stos	przenies	stos/rocm-stos	folder rocm → część stos
+rocm/rocm-vs-vulkan	stos/rocm-vs-vulkan	przenies	stos/rocm-vs-vulkan	folder rocm → część stos
+rocm/rocprof	stos/rocprof	przenies	stos/rocprof	folder rocm → część stos
+rocm/rocr	stos/rocr	przenies	stos/rocr	folder rocm → część stos
+rocm/therock	stos/therock	przenies	stos/therock	folder rocm → część stos
+rocm/trwala-siatka-bez-pm4	optymalizacje/trwala-siatka-bez-pm4	przenies	optymalizacje/trwala-siatka-bez-pm4	technika przyspieszenia z werdyktem
+rocm/wsl2-rocm	stos/wsl2-rocm	przenies	stos/wsl2-rocm	folder rocm → część stos

@@ -20,4 +20,4 @@ Reguły: w produkcie i na landingu nie obiecywać „wynik identyczny z llama.cp
 - [[lekcja-bit-exact-attention]]
 - [[zgodnosc-bitowa-md5]]
 - [[mmvq-multikolumnowe]]
-- [[nvidia-wyniki-2026-10-16]]
+- [[testy/2026-10-16-kampania-nvidia]]

@@ -15,11 +15,11 @@ status: do-sprawdzenia
 - Bramki bezpieczeństwa H0–H11 (kodem, nie promptem): agenci nie dotykają GPU poza `factory verify`; `gpu-guard`; PM4=0; kwarantanna sha256 builda po pierwszym faultcie; `journalctl -k` ze wszystkich bootów; ≤ 60 min GPU/dobę i ≤ 15 h/30 dni; zakaz zmian zegarów, napięć i limitów mocy; :8080 nietknięty.
 - Przepustowość: 16–60 werdyktów/miesiąc – pętla podnosi tylko trafność, nie znajdzie mnożników strukturalnych (MTP, lookup).
 
-Pilot: [[2026-10-19-plan-retro-rsr-0070]] (P0 + P1, decyzja użytkownika w [[otwarte-decyzje-techniczne]]).
+Pilot: [[KOLEJKA-TESTOW]] (P0 + P1, decyzja użytkownika w [[otwarte-decyzje-techniczne]]).
 
 Uzupełnienia z RSI-Inference Bench (21i): [[zmiany-fabryki-z-21i]] (VOID, acceptance floor, guards, reward, worktree bez historii) i benchmark regresji [[aob-v1]].
 
-MCP flameoxa łamie H0 (20 narzędzi capture bez trybu tylko-analiza) – nie podłączać; dowody dla Replayera przez `evidence_id` z `factory preserve` ([[raport-21j-flameox]]).
+MCP flameoxa łamie H0 (20 narzędzi capture bez trybu tylko-analiza) – nie podłączać; dowody dla Replayera przez `evidence_id` z `factory preserve` ([[ekosystem/flameox]]).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

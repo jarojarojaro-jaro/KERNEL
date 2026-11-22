@@ -43,7 +43,7 @@ draftu, cache prefiksów na dysku i lista odrzuconych eksperymentów.
 | Cache prefiksów na dysku (O_DIRECT, segmenty przyrostowe) | 6K prefiks w 0,2 s zamiast 19 s u nich. U nas prefill 27B jest szybki, więc zysk tylko przy długich czatach wielosesyjnych. llama-server ma `--slot-save-path`, wystarczy go podłączyć |
 | LOOP_BREAK (wyklucza token, który powtarza cykl 12. raz) | **zmienia rozkład**, gdy zadziała; ich pętle otwierały głównie podstawione eksperty. Dla nas nic, a łamałoby regułę bezstratności |
 | KV FP8/FP4 | stratne (FP8 +0,002–0,005 NLL, FP4 KL +0,004–0,010). Pamięć KV dla 27B i tak nie jest u nas wąskim gardłem → nic |
-| FP4 grouped-MoE kernel (Triton, GB10) | nic: gfx1100 nie ma FP4, a LFM już ma fuzje MoE (wiki/kernele/fuzje-lfm-moe) |
+| FP4 grouped-MoE kernel (Triton, GB10) | nic: gfx1100 nie ma FP4, a LFM już ma fuzje MoE (wiki/optymalizacje/fuzje-lfm-moe) |
 | „chunk-invariant” referencja (`tools/v41_ref.py`) | lekcja: bit-exactness kończy się na 512 tokenach przez kafelkowanie cuBLAS. Nasz rygor „bezstratny” musi mierzyć KL/top-1 względem referencji, nie md5 przy innym chunku |
 
 ## Odrzucone eksperymenty (gotchas), które oszczędzają nam pracę

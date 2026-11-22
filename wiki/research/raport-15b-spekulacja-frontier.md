@@ -18,7 +18,7 @@ Raport 2026-10-16, symulacja CPU na naszych danych, bez GPU.
 - tqLLM „identyczne wyjście”: greedy, 1 slot, naprawione 2026-10-13; metodyka testu end-to-end z przemiataniem `ubatch` do przejęcia.
 Ranking: shadow-log lookupu (0.5 osobodnia) → EXT-W8 + łańcuchy (2) → EXT-W16 po pomiarze V(W) przy 32k; nie robić HYB, DFlash2+lookup, bloków 32/64.
 
-E1–E4 zrealizowane w [[raport-16b-lookup-tail]]: E2 V16 − V5 @32k 9.50 ms, E3 copy +41%, E4 W16 +51% nad W8; E1 (ruch użytkownika) otwarte.
+E1–E4 zrealizowane w [[testy/2026-10-18-lookup-ogon]]: E2 V16 − V5 @32k 9.50 ms, E3 copy +41%, E4 W16 +51% nad W8; E1 (ruch użytkownika) otwarte.
 
 ## Powiązane
 - [[research/_hub|research]]

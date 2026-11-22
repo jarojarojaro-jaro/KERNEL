@@ -17,5 +17,5 @@ Reguła: zysk kernela oceniać tylko end-to-end (ABBA t/s, taśma PM4 µs/token)
 - [[lekcje/_hub|lekcje]]
 - [[lekcja-mikrobench-klamie]]
 - [[amdgpu-moc-i-termika]]
-- [[2026-10-09-limit-mocy-odlozony]]
+- [[decyzje/2026-10-20-karta-fabrycznie]]
 - [[2026-10-18-lfm-moe-pasmo]]

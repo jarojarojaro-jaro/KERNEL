@@ -18,4 +18,4 @@ Przy okazji wyszły dwa błędy semantyczne: brak `ggml_cuda_pdl_sync` w 0053/00
 - [[lekcja-pdl-sm120]]
 - [[lekcja-mtp-embd-state]]
 - [[cuda-compat]]
-- [[cuda-compat-galaz]]
+- [[stos/cuda-compat]]

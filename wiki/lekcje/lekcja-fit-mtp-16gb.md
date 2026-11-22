@@ -20,4 +20,4 @@ Reguły: przy MTP lub osobnym drafterze na kartach 16 GB nie używać `-fit on`,
 - [[lekcja-md5-wzgledem-upstreamu]]
 - [[rtx-5060-ti]]
 - [[glowica-mtp]]
-- [[raport-14-nemotron-3090]]
+- [[testy/2026-10-16-nemotron-3090]]

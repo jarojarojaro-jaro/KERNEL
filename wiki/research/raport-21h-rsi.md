@@ -15,7 +15,7 @@ Weryfikacja (§3, analiza CPU agenta ResRSI):
 - Brak ablacji TB-GAE i dziedziczenia krytyka; w pierwszej fazie RL zwykłe GAE γ = λ = 1. Nagrodę SPR zaprojektowano na widzianych danych, checkpoint (krok 18; krok 20 −2.4…−3.0 pp) wybrano na teście ([[zestaw-odlozony]]).
 - Kontaminacja nieaudytowana; 2 z 6 benchmarków własne. Kosztu brak – szacunek ~1.5–2.5 tys. H100-h, ~$3–9k `[SZACUNEK]`; pełne RSI (≥ 0.86 TB stanu aktora i krytyka) poza naszym zasięgiem.
 
-Kąt 1 (jakość w produkcie): [[rsr-27b]] + eksperyment [[2026-10-19-plan-e1-rsr27b]] (~$40–70, decyzja użytkownika); własne „RSI-lite” (SFT na zweryfikowanych trajektoriach Qwena) ~$150–300 pilot; nie trenować na sesjach omp z Claude (ToS `[INFERENCE]`). Kąt 2: [[petla-rsi-f]], pilot [[2026-10-19-plan-retro-rsr-0070]].
+Kąt 1 (jakość w produkcie): [[rsr-27b]] + eksperyment [[KOLEJKA-TESTOW]] (~$40–70, decyzja użytkownika); własne „RSI-lite” (SFT na zweryfikowanych trajektoriach Qwena) ~$150–300 pilot; nie trenować na sesjach omp z Claude (ToS `[INFERENCE]`). Kąt 2: [[petla-rsi-f]], pilot [[KOLEJKA-TESTOW]].
 
 ## Powiązane
 - [[research/_hub|research]]

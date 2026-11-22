@@ -541,4 +541,4 @@ Dla aplikacji Enigma na CUDA (5090/Blackwell):
 - Konkurs: https://github.com/Layr-Labs/cudafast-qwen38-27b-tf-engine (TASK.md, benchmark.json, `correctness_prompts/`, PR #18, #21, #27, #50, #73, #152, #161, #650, #1785), https://github.com/Layr-Labs/mlxfast-qwen38-27b-tf-engine (PR #166, #349, #1124)
 - gpu.nz: https://gpu.nz/en/guides/llm-vram-table
 - LocalMaxxing: https://www.localmaxxing.com/api/leaderboard?hfId=Qwen3.8-27B&hardwareName=RTX%205090&since=2026-10-21
-- Nasze: `wiki/REKORDY.md:102-137`, `product/WYNIKI-XTX-2026-10-19.md:38-55,83-86`, `product/research/18-nastepna-fala.md` (#5, #15), `32f-ninfer-tqllm-dflash2.md`, `36-xtx-qwen-roadmap.md` §3, `56-orca-3090.md` §2, `product/PLAN-NV-V2.md:52`, `wiki/kernele/gdn-replay.md`, `wiki/kernele/fattn-kvq.md`
+- Nasze: `wiki/REKORDY.md:102-137`, `product/WYNIKI-XTX-2026-10-19.md:38-55,83-86`, `product/research/18-nastepna-fala.md` (#5, #15), `32f-ninfer-tqllm-dflash2.md`, `36-xtx-qwen-roadmap.md` §3, `56-orca-3090.md` §2, `product/PLAN-NV-V2.md:52`, `wiki/optymalizacje/gdn-replay.md`, `wiki/optymalizacje/fattn-kvq.md`

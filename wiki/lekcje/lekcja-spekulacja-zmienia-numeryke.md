@@ -16,4 +16,4 @@ Przyczyna (raport 12): ta sama pozycja tokenu liczona jest innym kernelem przy N
 - [[lekcja-ten-sam-serwer-pending-h]]
 - [[lekcja-bit-exact-attention]]
 - [[zgodnosc-bitowa-md5]]
-- [[raport-12-bit-exact]]
+- [[testy/2026-10-16-bit-exact]]

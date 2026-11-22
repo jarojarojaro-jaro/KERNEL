@@ -18,6 +18,6 @@ status: aktualne
 ## Powiązane
 - [[produkt/_hub|produkt]]
 - [[produkt-architektura]]
-- [[produkt-analiza-platformy]]
+- [[metody/analiza-platformy]]
 - [[playbook-optymalizacji]]
 - [[metr-sakana]]

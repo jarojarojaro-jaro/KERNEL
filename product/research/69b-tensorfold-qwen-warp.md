@@ -66,7 +66,7 @@ Sprzęt we wszystkich pomiarach: jedna RTX 3090 24 GB (sm_86), limit mocy 350 W,
 
 ## 4. Testowalne pomysły
 
-Model kosztu V(w, ctx) z `wiki/metody/koszt-szerokosci-weryfikacji.md`: na XTX V8 = 26.6 ms, V5 = 24.1 ms przy 2k, a krok serwerowy MTP4 to 29.6 ms.
+Model kosztu V(w, ctx) z `wiki/testy/koszt-szerokosci-weryfikacji.md`: na XTX V8 = 26.6 ms, V5 = 24.1 ms przy 2k, a krok serwerowy MTP4 to 29.6 ms.
 
 | # | Pomysł | Oczekiwany zysk u nas | Test | Kryterium odrzucenia | Pobranie |
 |---|---|---|---|---|---|
@@ -96,4 +96,4 @@ Model kosztu V(w, ctx) z `wiki/metody/koszt-szerokosci-weryfikacji.md`: na XTX V
 - https://github.com/tuan3w/qwen-warp: `docs/PERFORMANCE.md` §5–7 i :6,14-22; `docs/USAGE.md:200,255-338`; `docs/ARCHITECTURE.md`; `docs/IDEAS.md`; commity `a4f1e4f`, `c07d0e7`, `9825d74`.
 - https://github.com/ashhart/TensorFold: `CHANGELOG.md:5-673` (Unreleased, 1.2.5, 1.2.4, 1.2.3); `docs/recipes/training-a-drafter.md:130`.
 - https://huggingface.co/api/models/ukisai/Swift-1.5-Qwen3.8-27b-INT4 (19.48 GB); https://huggingface.co/api/models/incoai/Qwen3.8-27B-DFlash2 (3.85 GB).
-- KB: `wiki/repo/qwen-warp.md`, `wiki/repo/tensorfold.md`, `wiki/ZRODLA.md:21,51,60,240-241`, `wiki/produkt/final-recipes-nvidia.md:23-28`, `product/research/67c-nvidia-backlog-testow.md:76-99`, `wiki/metody/koszt-szerokosci-weryfikacji.md`.
+- KB: `wiki/ekosystem/qwen-warp.md`, `wiki/ekosystem/tensorfold.md`, `wiki/ZRODLA.md:21,51,60,240-241`, `wiki/produkt/final-recipes-nvidia.md:23-28`, `product/research/67c-nvidia-backlog-testow.md:76-99`, `wiki/testy/koszt-szerokosci-weryfikacji.md`.

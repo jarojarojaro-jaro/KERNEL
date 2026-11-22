@@ -12,11 +12,11 @@ status: aktualne
 - `idle-watch.py` pomija etykiety `buildfarm*`; `down.sh --all` i masowe `vastai destroy instances` w `lib.sh` nie ruszają `buildfarm*` (`25:43-45`).
 - Wzorzec poprawny: raport 27 zniszczył wszystkie swoje `nv-final-*` po id, z lokalnym watchdogiem i self-destruct na instancji (`27:227`).
 - Instancje `neuron-lab*` nie są nasze (zakaz z polecenia użytkownika 2026-10-20) [INFERENCE: inny projekt].
-- Kontekst kosztów: [[2026-10-16-nie-placimy-za-przestoj]], [[2026-10-16-budzety-chmury]].
+- Kontekst kosztów: [[2026-10-16-nie-placimy-za-przestoj]], [[karty/vast-ai]].
 
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
 - [[2026-10-16-nie-placimy-za-przestoj]]
-- [[2026-10-16-budzety-chmury]]
+- [[karty/vast-ai]]
 - [[raport-25-buildfarm]]
 - [[vast-ai]]

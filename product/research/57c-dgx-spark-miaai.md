@@ -1,6 +1,6 @@
 # 57c. @MiaAI_lab (Mia's AI Lab): przepisy inferencji na DGX Spark
 
-Źródło: bio badacza (współtwórca GSQ-RCO) z listą silników: „@MiaAI_lab (DGX Spark)”. Czytałem README i patche repo `MiaAI-Lab/Qwen3.8-Flash-Next-Single-DGX-Spark-TensorFold` (płytki klon `656879f`, 2026-10-18, w `~/qwen-opt/research/mia-tf`), stronę mia-ai.net i wpisy X (tylko przez wyniki wyszukiwarki, bo X blokuje czytnik). Bez GPU. W KB jest już TensorFold (`wiki/repo/tensorfold.md`) i Flare (39f), więc tu opisuję tylko to, co Mia dokłada.
+Źródło: bio badacza (współtwórca GSQ-RCO) z listą silników: „@MiaAI_lab (DGX Spark)”. Czytałem README i patche repo `MiaAI-Lab/Qwen3.8-Flash-Next-Single-DGX-Spark-TensorFold` (płytki klon `656879f`, 2026-10-18, w `~/qwen-opt/research/mia-tf`), stronę mia-ai.net i wpisy X (tylko przez wyniki wyszukiwarki, bo X blokuje czytnik). Bez GPU. W KB jest już TensorFold (`wiki/ekosystem/tensorfold.md`) i Flare (39f), więc tu opisuję tylko to, co Mia dokłada.
 
 ## 1. Co to jest
 

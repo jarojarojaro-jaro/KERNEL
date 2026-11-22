@@ -1,8 +1,8 @@
 ---
 typ: research
 tags: [research, reverse-engineering, mmvq]
-aktualizacja: 2026-10-19
-zrodlo: ~/KERNEL/product/research/23b-re-kernele-amd.md:1-65; ~/KERNEL/product/research/23b2-re-kernele-amd-bariery.md:1-170
+aktualizacja: 2026-11-22
+zrodlo: ~/KERNEL/product/research/23b-re-kernele-amd.md:1-65; ~/KERNEL/product/research/23b2-re-kernele-amd-bariery.md:1-170; ~/KERNEL/product/research/23b2-re-kernele-amd-bariery.md:8-14
 status: aktualne
 ---
 # Raport 23b: kernele AMD (gfx1100) vs nasze MMVQ, weryfikacja i atencja
@@ -20,6 +20,16 @@ Liczby: nasza ścieżka n=1 to upstream – 18 ładowań `global_load_b32`/`d16`
 Odrzucone: bity cache, prefetch PGR2, split-K (łamie bitowość spekulacji), WMMA dla n ≤ 8 (hipBLASLt dopełnia N do 16), wave64, rocBLAS gemv jako wzór, `s_setprio`. Narzędzia: `~/KERNEL/tools/re/` (kpack, fatbin, profil ISA, Tensile, AOTriton).
 
 **Wersja wcześniejsza (23b2, ResVendorAmd):** dodatkowo pętla MMVQ n≥2 bez prefetchu między iteracjami (`vmcnt(0)` co iterację; Tensile PGR2 w 1418/2182 rozwiązań) i bity `glc dlc` na wagach (AMD: 0 w 2182 + 7461 + CK) jako tani A/B; bariery z `gl0_inv` u nas: `fattn-kvq` 55/55 (poza pętlą KV), `fattn-vec` 39/40, `fattn-tile` 115/129, `mmq` 122/196 z 4 barierami + 4 `gl0_inv` w każdej iteracji K; AOTriton `attn_fwd` (218 VGPR, 11 barier/iterację, P przez LDS) gorszy od naszego kvq (144 VGPR, 0 barier w pętli, `v_permlanex16`).
+
+## Ze scalonej notatki: Raport 23b2: RE kerneli AMD (gfx1100) i bariery LDS
+
+AMD nie ma lepszego GEMV niż nasz; ręczny asm Tensile pokazuje głęboki potok pamięci i bariery bez `buffer_gl0_inv`, a wszystko kompilowane z HIP przez `__syncthreads()` płaci `gl0_inv` jak my (2026-10-19, tylko CPU).
+
+- rocBLAS `gemvt` to wąskie `global_load_b32`; hipBLASLt dla N≤16 dopełnia do kafla 16 WMMA (`23b2:10`).
+- Tensile: 12 `buffer_load_b128` w locie, prefetch PGR2, stopniowy `vmcnt(N)`; 14 574 `s_barrier` i 0 `gl0_inv` (`23b2:11`).
+- AMD nigdy nie ustawia nontemporal/glc/slc na operandach GEMM (0/2182 hipBLASLt, 0/7461 rocBLAS) (`23b2:13`).
+- AOTriton `attn_fwd` gorszy od naszego `fattn-kvq`: 218 vs 144 VGPR (`23b2:14`).
+- Test bariery tylko-LDS na GPU: [[optymalizacje/bariera-lds-rdna3]] (w szumie, odrzucone).
 
 ## Powiązane
 - [[research/_hub|research]]

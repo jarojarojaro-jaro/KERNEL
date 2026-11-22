@@ -41,12 +41,12 @@ Legenda: **2×/3×/4×** = źródło badane wielokrotnie; kolumna „delta” m�
 | hipfire (github.com/Kaden-Schutt/hipfire, dawn. warpfront) **4×** | v0.4.0 (R03) → `1ff5182` v0.4.2 2026-10-14 | Q:repos/30, R23e, [[hipfire]] | Średnia–wysoka: replay PM4; przewaga z bajtów, nie ISA. | XTX plain 54.3 vs nasze 43.2 t/s; ~14.3 vs 16.83 GB/token | `git log 1ff5182..`; format MQ4G256V2 |
 | HyperQwen (github.com/syv-ai/HyperQwen) **2×** | `95ee3b6` 2026-10-11 | R15b, R15d, [[hyperqwen]] | Lookup i szeroki blok dają nam mało. | 381 t/s (kopiowanie verbatim, 3090) | nowe łatki po `95ee3b6` |
 | ik_llama.cpp (github.com/ikawrakow/ik_llama.cpp) **3×** | R03, R15e, R18 | [[ik-llama-cpp]] | Kwanty IQK/KT mocne na CPU/CUDA; HIP częściowo. | – | wsparcie HIP, kwanty KT |
-| InferenceX / AgentX (SemiAnalysis; github.com/SemiAnalysisAI/InferenceX, InferenceX-app, inferencex.semianalysis.com) | `b9c6fc30` 2026-10-18; korpus AgentX v1.0 256k | R21f, [[raport-21f-inferencex]], [[qwen38-27b-inferencex]], [[agentx-harness]], [[ksztalt-ruchu-agentowego]] | Cenny kształt ruchu agenta, nie wyniki (syntetyczna treść, wymuszona AL). | 393 sesje Claude Code; Kimi K3 c=1: 1554 tok/s/GPU (10.1 wyjścia); Qwen3.8-27B H100 DSpark c=1 86.1 tok/s | `git log b9c6fc30..`; nowy korpus, prawdziwa AL; praca (2605.08513 to NIE ona) |
+| InferenceX / AgentX (SemiAnalysis; github.com/SemiAnalysisAI/InferenceX, InferenceX-app, inferencex.semianalysis.com) | `b9c6fc30` 2026-10-18; korpus AgentX v1.0 256k | R21f, [[raport-21f-inferencex]], [[research/raport-21f-inferencex]], [[agentx-harness]], [[ksztalt-ruchu-agentowego]] | Cenny kształt ruchu agenta, nie wyniki (syntetyczna treść, wymuszona AL). | 393 sesje Claude Code; Kimi K3 c=1: 1554 tok/s/GPU (10.1 wyjścia); Qwen3.8-27B H100 DSpark c=1 86.1 tok/s | `git log b9c6fc30..`; nowy korpus, prawdziwa AL; praca (2605.08513 to NIE ona) |
 | inferrous (github.com/bitemyapp/inferrous) | `405bfd3` | R21g, [[inferrous]] | Badawczy, Rust→PTX, bez porównania z llama.cpp. | 182.3 t/s Qwen3-8B W8A8, 84% pasma | – (niski priorytet) |
 | llama.cpp upstream (github.com/ggml-org/llama.cpp) | `e60eff95f` 10-09; v0.7.0 `620d2225c`; `f336359` 10-16 | prawie wszystkie, [[ggml-org]], [[llama-cpp-fork]] | Baza; cienki overlay łatek, nie twardy fork. | ~24 buildy/dzień | `git log` od ostatniego rebase; PR #29887 `--moe-cache-mib` już mamy |
 | llama.cpp PR #29887 `--moe-cache-mib` | scalony 2026-10-07 | R21g, [[llama-moe-cache-mib]] | Jest w naszej bazie. | 5090 Flash-Next 30.8 → 67.8 t/s | – |
 | lucebox (github.com/Luce-Org/lucebox) **3×** | `54132ca` 10-14 → `6f2b179` 10-15 | Q:repos/22, R15d, [[lucebox]] | Średnia: ten sam model i DFlash2; PFlash stratny. | PR #746 +27645/−2997 | `git log 6f2b179..` |
-| Magnitude (github.com/magnitudedev/magnitude) **6×** | `1f54d5b7` (R15c) → 0.2.9 `954d677d` (R16i/j) | R15c, R16d, R16i, R16j, R16k, R23e, [[magnitude]], [[firma-magnitude]] | Najbliższy konkurent; wygrywa kopią/edycją dzięki DFlash2. | code-edit 1.35–1.56× dla nich; XTX Vulkan ×1.42–×2.24 dla nas | wersja >0.2.9: HIP? bramka bitowa? |
+| Magnitude (github.com/magnitudedev/magnitude) **6×** | `1f54d5b7` (R15c) → 0.2.9 `954d677d` (R16i/j) | R15c, R16d, R16i, R16j, R16k, R23e, [[magnitude]], [[ekosystem/magnitude]] | Najbliższy konkurent; wygrywa kopią/edycją dzięki DFlash2. | code-edit 1.35–1.56× dla nich; XTX Vulkan ×1.42–×2.24 dla nas | wersja >0.2.9: HIP? bramka bitowa? |
 | MTPLX (mtplx.com, github.com/youssofal/MTPLX) **2×** | 2.6.0 (R18) | R01, R18, [[mtplx]] | MTP w kohortach; obsługuje LFM2. | 1.6–2.25× na strumień (2 agenci) | czy jest linux/ROCm |
 | Project Maya (github.com/mw00/project-maya) **2×** | `a4e1ff0` 1.1.14–1.1.15 → `abc09c7` v1.1.16 (10-19, release notes) | R21g, [[project-maya]] | Pochodna Straty; 1.1.16 = DeepSeek-V4.1-Flash 748B z SSD/RAM offload, nic dla naszych modeli. | 81 t/s RTX PRO 6000 = 41% pasma; Maya-S 178 GB, top-1 92.6%, KL 0.12 (stratny) | tylko jeśli dodadzą gęsty 27B lub pomiar XTX |
 | Strata (github.com/Niko1221/Strata) **6×** | `a0116b27` v0.1.43.1 → `ed4773eb` v0.1.44 → `296b59d2` v0.1.44.1 → `477ac13c` v0.1.45 (10-17) → `3d1fb480` v0.2.0-beta (silnik v0.1.45.3) → `e88ee39d` (10-19, +12 commitów: CI, dokumentacja, instalatory RX 7000/Strix Halo) | Q:strata/*, R21d, R21g, R23e, [R21n](../product/research/21n-strata-020-gyro.md), [[strata]] | Wzór metodologii; 0.2.0 = aplikacja (konkurent UX), dla gfx1100 nic; tylko Qwen3.8-Flash-Next (125B), DeepSeek nie obsługuje. | R9700 83.2 → 117.8 t/s; 0.2.0: +219k linii, silnik 6% | `git log e88ee39d..`; tylko HIP/gfx1100, KV, nowe modele; do sprawdzenia u nas: wątki = rdzenie fizyczne, rozgrzewka hipBLAS (TTFT) |
@@ -63,7 +63,7 @@ Legenda: **2×/3×/4×** = źródło badane wielokrotnie; kolumna „delta” m�
 
 ## Repozytoria kerneli, DSL i narzędzia
 
-Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma notatkę w [[repo/_hub|repo/]].
+Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma notatkę w [[ekosystem/_hub|repo/]].
 
 | źródło | wersja | raport, notatka | werdykt | następnym razem |
 |---|---|---|---|---|
@@ -148,17 +148,17 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 
 | źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
 |---|---|---|---|---|---|
-| DFlash2 drafter (huggingface.co/z-lab/Qwen3.8-27B-DFlash2, github z-lab/dflash; magnitudedev GGUF) **6×** | Q:drafters 10-10 | R03, Q:drafters, Q:v2, R16d, R16i, R21a, [[firma-magnitude]] | Najlepszy drafter na kopię/edycję; u nas ogon lookupu wystarcza. | MT-Bench AL 4.10 vs MTP 3.74 | nowa wersja draftera |
-| DFlash dla Nemotron 3.5 Bolt | R14 10-16 | R14, [[raport-14-nemotron-3090]] | Działa na 3090; KLD niezmierzone. | 87.2 → 141.1 t/s | KLD |
+| DFlash2 drafter (huggingface.co/z-lab/Qwen3.8-27B-DFlash2, github z-lab/dflash; magnitudedev GGUF) **6×** | Q:drafters 10-10 | R03, Q:drafters, Q:v2, R16d, R16i, R21a, [[ekosystem/magnitude]] | Najlepszy drafter na kopię/edycję; u nas ogon lookupu wystarcza. | MT-Bench AL 4.10 vs MTP 3.74 | nowa wersja draftera |
+| DFlash dla Nemotron 3.5 Bolt | R14 10-16 | R14, [[testy/2026-10-16-nemotron-3090]] | Działa na 3090; KLD niezmierzone. | 87.2 → 141.1 t/s | KLD |
 | DSpark (RadixArk, RedHatAI, DimInfer, Doopeworld) | Q:drafters 10-10 | Q:drafters | Na czacie nie lepsze niż MTP. | MT-Bench 3.01 | – |
 | KaedeTai/Qwen3.8-27B-MTP-zh | Q:v2 | Q:v2/rr-engines-drafters | Douczona głowica zh: +5.8 pp akceptacji. | – | – |
-| Qwen3.8-27B (+FP8, NVFP4 nvidia/unsloth, GGUF unsloth UD, ubergarm, APEX, KTopt, AutoRound) | R04, R09, R15e, R16e | [[qwen-alibaba]], [[unsloth]], [[raport-16e-kwanty-kld]] | Zostajemy przy UD-Q4_K_XL (nie zmieniamy kwantów). | KLD 12 ramion | – |
+| Qwen3.8-27B (+FP8, NVFP4 nvidia/unsloth, GGUF unsloth UD, ubergarm, APEX, KTopt, AutoRound) | R04, R09, R15e, R16e | [[qwen-alibaba]], [[unsloth]], [[testy/2026-10-18-e1-kwanty-27b-kld]] | Zostajemy przy UD-Q4_K_XL (nie zmieniamy kwantów). | KLD 12 ramion | – |
 | Swift 1.0/1.5 (ukisai) | R15e, R16e | [[ukisai]] | Fine-tune, niedouczona głowica MTP; licencja <US$1M. | – | – |
 | Underdog Saluki 27B (ConwayResearch) | R09-3060, R10, R15e, R16e | [[conway-research]] | IQ2-mix 7.89 GB na 12 GB. | 3060: 22.3 → 23.4 t/s | – |
 | Ternary Bonsai 2 27B (PrismML) | R09-3060, R10 | [[prismml]] | Działa na 3060 przez prism fork. | Q2_0 33.15 → 35.51 t/s | – |
 | GSQ-RCO GGUF (ISTA-DASLab, BuffedMod) **2×** | R10, R15e → R57a (alokacja IQ3_S, 3Bit-GSQ vLLM) | [[ista-daslab]], [R57a](../product/research/57a-gsq-rco.md) | Ten sam format GGUF, zysk wąski; na 24 GB nie dotyczy (U4 KLD 4.8× niższy). | – | nowy tier ≥ 4 bpw (CompWatch hf: ISTA-DASLab) |
 | LFM2.5-24B-A2B (+GGUF, FP8, NVFP4, MXFP4 społeczności) | R04, R06, R09-5060ti | [[liquidai]] | Nasz drugi model; NVFP4 tylko prefill. | – | – |
-| Nemotron 3.5 Bolt 74B-A9B, Super-VL 120B | R04, R14, R15c | [[raport-14-nemotron-3090]] | Bolt IQ2_XXS mieści się na 3090. | – | – |
+| Nemotron 3.5 Bolt 74B-A9B, Super-VL 120B | R04, R14, R15c | [[testy/2026-10-16-nemotron-3090]] | Bolt IQ2_XXS mieści się na 3090. | – | – |
 | Qwen3.8-Flash-Next (+NVFP4, CSF-QAD) | R04, R06, R15e, R21g | [[raport-21g-nowe-silniki]] | Strata uruchamia na XTX ~80 t/s. | – | czy dla nas MoE offload |
 | Gyro-S (Strata, trellis + Hadamard, TQ1_0/TQ2_0/TQ3_0 dla Qwen3.8-Flash-Next) | R21n 2026-10-19 (nagłówki GGUF zakresem bajtów) | [R21n](../product/research/21n-strata-020-gyro.md) | Zły plik dla nas (próg 32 GB); przy 86 GB IQ3_S. | KLD 0.27–0.40; XTX szac. ~50–75 t/s bez MTP | tylko jako test progu „32 GB PC”; najpierw IQ3_S w forku |
 | Laya / laya-mlx | R10 | [[laya-mlx]] | Za wolne do decyzji per token. | 322–421M | – |
@@ -169,8 +169,8 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 
 | źródło | wersja | raport, notatka | werdykt | następnym razem |
 |---|---|---|---|---|
-| ROCm 10.1 (rocm.docs.amd.com, TheRock, rocm-systems, amd/skills) **3×** | 10.1 vs 10.0 | R13, R08, R17, [[raport-13-rocm-10-1]] | Nic istotnego na gfx1100; zostajemy na 10.0. | ROCm 10.2 release notes |
-| rocm-systems CLR/ROCr + Linux v6.8 + tinygrad + firmware MEC | `55754a0` develop | R17, [R23d](../product/research/23d-re-runtime-amd.md), [[raport-17-gpu-page-fault]] | Firmware potwierdza H1′ (PRIV z flagi kolejki). | nowy firmware MEC |
+| ROCm 10.1 (rocm.docs.amd.com, TheRock, rocm-systems, amd/skills) **3×** | 10.1 vs 10.0 | R13, R08, R17, [[stos/rocm-10-1]] | Nic istotnego na gfx1100; zostajemy na 10.0. | ROCm 10.2 release notes |
+| rocm-systems CLR/ROCr + Linux v6.8 + tinygrad + firmware MEC | `55754a0` develop | R17, [R23d](../product/research/23d-re-runtime-amd.md), [[testy/2026-10-19-page-faulty-gpu-analiza]] | Firmware potwierdza H1′ (PRIV z flagi kolejki). | nowy firmware MEC |
 | Kernele AMD gfx1100 (hipBLASLt, rocBLAS, MIOpen CK, AOTriton) **2×** | ROCm 10.0.0 | R23b, [R23b2](../product/research/23b2-re-kernele-amd-bariery.md), [[raport-23b-re-kernele-amd]] | Nie mają lepszego GEMV dla N=1..16. | 2. podejście dodało tylko bariery LDS |
 | cuBLASLt / SASS sm_86/sm_120 (CUDA) | R23c | R23c, [[raport-23c-re-kernele-nvidia]] | Trzy różnice: PDL, `LDG.E.EF`, ładowanie 128-bit. | nowe CUDA |
 | Blackwell Tuning Guide | v13.4 | R21b, [[raport-21b-gpu-perf-zasoby]] | Głównie B200/GB200; dla sm_120 mało. | nowa wersja |
@@ -187,7 +187,7 @@ Przegląd 30 repo: Q:repos/*, [[repos-30-przeglad]] (2026-10-14). Każde repo ma
 | Ollama, LM Studio, Jan, Lemonade, llamafile, koboldcpp, GPT4All, Foundry Local, AnythingLLM, Open WebUI, LocalAI, llama-swap, Msty, Pinokio, AI Playground, ramalama, osaurus, omlx, pocketpal, GenieX | R01, R03, R06, [[ollama]], [[lm-studio]], [[jan]], [[lemonade]] | Nikt nie łączy pomiaru, optymalizacji i bitowej weryfikacji. | nowe funkcje „auto-tune” |
 | TurboLLM, llmfit, llama-optimus, local-llm-autotune, ggrun, gguf-parser-go | R01, R04, [[turbollm]] | Flag-tunery; nie optymalizują kerneli. | – |
 | Tauri 2, velopack, llama-cpp-rs, Textual | R03, R06 | Wybrany stos produktu. | – |
-| Vast.ai, RunPod, Salad, HOSTKEY, GigaGPU, Scaleway, TensorDock, Thunder Compute | R05, R09, [[firma-vast-ai]], [[firma-runpod]], [[firma-salad]], [[hostkey]], [[gigagpu]], [[scaleway]] | NVIDIA tanio u Vast; Radeonów z rootem prawie brak. | ceny i nowe Radeony |
+| Vast.ai, RunPod, Salad, HOSTKEY, GigaGPU, Scaleway, TensorDock, Thunder Compute | R05, R09, [[karty/vast-ai]], [[karty/runpod]], [[karty/salad]], [[hostkey]], [[gigagpu]], [[scaleway]] | NVIDIA tanio u Vast; Radeonów z rootem prawie brak. | ceny i nowe Radeony |
 | Intel Arc do wynajęcia: GigaGPU Arc Pro B60/B70, Zed Up (karta B60), Intel Tiber AI Cloud, Vast.ai (CLI live), TensorDock, Hetzner/OVH/Scaleway GPU **2×** | R05 (10-15) → [R30](../product/research/30-intel-apple-dostep.md) (10-20) | Godzinowego Arc nie ma (Vast: 5039 ofert, 0 Intel/AMD); GigaGPU B60 £129/mies. = krzem B580, 24 GB, 456 GB/s, root. | nowe oferty Arc na Vast (`gpu_arch=intel`), Tiber z Arc |
 | Apple Silicon do wynajęcia: Scaleway (M1…M4 Pro), AWS EC2 Mac (M4/M4 Pro/M4 Max/M3 Ultra), MyRemoteMac, MacStadium, MacinCloud, RentAMac, MacRent, RoundFleet, HostMyApple **2×** | R05 (10-15) → [R30](../product/research/30-intel-apple-dostep.md) (10-20) | Karta M4: Scaleway M4-M 32 GB €0.29/h, 24 h min. (€6.96); AWS m4max $6.25/h, m3ultra $12.50/h, wszędzie 24 h min. (licencja Apple). | nowe M5/M6 w Scaleway; ceny |
 | Enverge (enverge.ai, mac-studio.enverge.ai) | [R30](../product/research/30-intel-apple-dostep.md) 10-20 | Najtańszy krótki test Apple: Mac Studio M5 Ultra 256 GB $2.50/h, co minutę, admin+sudo, kolejka FIFO; też DGX Spark $0.75/h, RTX Pro 6000 $1.95/h. | dostępność Mac Studio (portal za logowaniem); 512 GB i cena |
@@ -488,5 +488,5 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 - [[KONWENCJE]]
 - [[REKORDY]]
 - [[podrecznik-gpu]]
-- [[repo/_hub|repo/]], [[ludzie-firmy/_hub|ludzie-firmy/]], [[research/_hub|research/]]
+- [[ekosystem/_hub|repo/]], [[ekosystem/_hub|ludzie-firmy/]], [[research/_hub|research/]]
 - [[index|Strona główna]]

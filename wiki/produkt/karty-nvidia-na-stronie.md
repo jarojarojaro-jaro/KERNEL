@@ -37,5 +37,5 @@ Dwie pułapki: zduplikowany klucz w `{#each}` (np. dwa takie same chipy warunkó
 ## Powiązane
 - [[produkt/_hub|produkt]]
 - [[app-landing]]
-- [[raport-67-kampania-nvidia]]
+- [[testy/2026-11-07-kampania-nvidia-vast]]
 - [[strona-zrodlo-rowna-zywej]]

@@ -485,7 +485,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
-- źródło: [[raport-16e-kwanty-kld]], `R/67b-wybor-modeli-nvidia.md`, [[jakosc-mini]]
+- źródło: [[testy/2026-10-18-e1-kwanty-27b-kld]], `R/67b-wybor-modeli-nvidia.md`, [[jakosc-mini]]
 - test: 5060 Ti: `~/qwen-opt/jakosc-mini/run.py gen` + KLD na każdym kandydacie (> 10 min, podzielić po zbiorze)
 - zysk: wybór modeli katalogu (AP vs U3: KLD czat −12%, kod −23% przy tych samych bajtach)
 - ryzyko karty: brak
@@ -751,7 +751,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
 - data: 2026-10-19 (21h)
 - status: **czeka na decyzję**
-- źródło: [[2026-10-19-plan-retro-rsr-0070]], [[petla-rsi-f]], [[otwarte-decyzje-techniczne]] (`:21`)
+- źródło: [[KOLEJKA-TESTOW]], [[petla-rsi-f]], [[otwarte-decyzje-techniczne]] (`:21`)
 - test: XTX `GGML_HIP_PM4=0`, P0 ~20 min → 2 joby, P1 4 × 15–20 min
 - zysk: walidacja fabryki, 0 t/s
 - ryzyko karty: brak
@@ -868,7 +868,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-074 · OrcaCyber-Nano na XTX z drafterem DFlash2 (dotąd tylko 3090) i E1 RSR-27B vs Qwen (TB 2.1, omp-bench-20)
 - data: 2026-10-19 / 2026-10-21
 - status: **czeka na decyzję** (Orca: tylko na prośbę; RSR-27B: wydatek $40–70, ~120 GPU-h)
-- źródło: [[raport-56-orca-3090]], [[2026-10-19-plan-e1-rsr27b]], [[otwarte-decyzje-techniczne]] (`:22`)
+- źródło: [[raport-56-orca-3090]], [[KOLEJKA-TESTOW]], [[otwarte-decyzje-techniczne]] (`:22`)
 - test: Orca: XTX MTP vs DFlash2 ≤ 10 min; RSR: wynajem, test do zdefiniowania
 - zysk: wiedza o innych modelach; 0 t/s dla produkcji
 - ryzyko karty: VRAM (Orca 15,7 + 2,1 GB przy 262k)
@@ -884,7 +884,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ### K-130 · Topka zbudowana ROCm 10.2 (hipcc/LLVM) vs 10.0: czy nowy kompilator przyspiesza nasze kernele
 - data: 2026-11-19
-- źródło: blog ROCm 10.2.0 (Telegram „gpu” 2026-11-19); wcześniej 10.1 nic nie dało ([[raport-13-rocm-10-1]])
+- źródło: blog ROCm 10.2.0 (Telegram „gpu” 2026-11-19); wcześniej 10.1 nic nie dało ([[stos/rocm-10-1]])
 - test: ROCm 10.2 w osobnym katalogu na jaroserverai (bez ruszania /opt/rocm 10.0 produkcji), rbuild topki tym samym commitem; `test-backend-ops` MUL_MAT/FA bitowo + xtxbench ABBA dekod 1,7k i prefill 32k, md5 T=0; ≤ 10 min karty
 - zysk: nieznany (AMD nie wymienia gfx1100 GEMV/FA); próg przyjęcia ≥ 3%
 - ryzyko karty: brak (PM4=0 w teście); ryzyko systemu: druga instalacja ROCm, tylko za zgodą właściciela (~3 GB)

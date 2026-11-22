@@ -12,12 +12,12 @@ status: do-sprawdzenia
 - **Fakty:** AMD potwierdziło błąd (forum, październik); przyczyna wg przedstawiciela AMD (za Neowin, 8.11): interakcja z filtrem PCIe Microsoftu, poprawka w walidacji, bez daty. Numer „26.11.1” niepotwierdzony. „432 GB/dzień” = jedno zgłoszenie 5 MB/s × 24 h zapisów hosta. Ta sama wersja (26.10.2) działa u jednych źle, u innych dobrze – sama wersja nie wystarcza.
 - **Obejścia:** zatrzymanie usługi (odwracalne, ale psuje FreeSync, hotkeye, hot-plug monitorów); wyłączenie ReBAR (obejście AMD). **Nigdy nie radzić wyłączania ReBAR:** bez niego okno BAR ma 256 MB, ładowanie wag i offload idą przez staging `[INFERENCE: niemierzone]`.
 - **Serwer:** amdgpu, brak odpowiednika usługi; ReBAR aktywny (BAR0 32 GiB). Nie dotyczy.
-- **Polityka KV:** sam błąd to 2.6–13× naszego budżetu zapisu 10 GB/dzień – argument za „KV w RAM” ([[kv-na-dysku-polityka]]).
+- **Polityka KV:** sam błąd to 2.6–13× naszego budżetu zapisu 10 GB/dzień – argument za „KV w RAM” ([[decyzje/2026-10-19-kv-tylko-w-ram]]).
 - **Proponowana karta UX** (hardware scan, tylko Windows+AMD): wersja z rejestru → 30 s pomiaru zapisów `atieclxx` w bezczynności → przy ≥ 0.2 MB/s żółte ostrzeżenie (aktualizuj sterownik po poprawce; opcjonalnie zatrzymaj usługę; nie wyłączaj ReBAR), bez automatycznych akcji; osobna informacja, gdy ReBAR wyłączony. Decyzja: [[raport-69-synteza]].
 
 ## Powiązane
 - [[produkt/_hub|Produkt]]
-- [[kv-na-dysku-polityka]]
+- [[decyzje/2026-10-19-kv-tylko-w-ram]]
 - [[produkt-optymalizacja-u-uzytkownika]]
 - [[raport-21d-kv-na-dysku]]
 - [[wsl2-rocm]]

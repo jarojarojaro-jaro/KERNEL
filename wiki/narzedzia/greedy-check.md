@@ -19,5 +19,5 @@ status: aktualne
 - [[narzedzia/_hub|Narzędzia]]
 - [[zgodnosc-bitowa-md5]]
 - det-probe
-- [[nvidia-wyniki-2026-10-16]]
+- [[testy/2026-10-16-kampania-nvidia]]
 - [[serializacja-gpu]]

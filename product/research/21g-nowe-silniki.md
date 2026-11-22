@@ -70,14 +70,14 @@ Oznaczenia: `[INFERENCE]` = mój rachunek albo wniosek, niezmierzony. Werdykty: 
 | „Every optimization preserves the complete-vocabulary logit hashes” (README) | Hashe wszystkich logitów i ID tokenów wobec **własnego** pierwszego buildu, 4416 hashy na implementację (`round-6.md:77`) | — | **Wiarygodne, ale wąskie:** to bit-exact wobec siebie. Niezależna bramka z PyTorch **nie przechodzi**: rel. L2 logitów **9–11%** przy tym samym argmax pierwszego tokenu, rozjazd od warstwy 4 (`discrepancies.md:7-9`). Jakość modelu nie była oceniana (README) |
 | Runda 6, „keep DRAM busy”: +7.0 / +7.8 / +6.5% (`round-6.md:73`) | Ślad: 364 kernele/krok; gate/up 2276 µs (1592 GB/s), O+down 1652, QKV 609, głowica 574 (92% szczytu), **252 kernele latencyjne = 642 µs**; ~830 µs/krok bez strumieniowania wag (`round-6.md:9-17`) | 830 / 5755 µs = 14.4% kroku z DRAM w bezczynności. Odzyskali 325 µs (5755 → 5430 µs grafu, `round-6.md:73`), czyli 39% tej dziury | **Wiarygodne**, z dobrą metodą: mikrobench, odrzucone warianty spisane w tabeli (`round-6.md:53-61`) |
 | Bezstratne pakowanie głowicy BF16 do 12 bitów: 943 404 322 B vs 1 244 659 712 B = 75.8% (`round-3.md:24`) | 99.985% wartości ma wykładnik 109–123, więc wystarcza 4-bitowy selektor + bajt znak/mantysa i tablica wyjątków. Pełny test wszystkich 65 536 wzorców BF16 (`round-3.md:24-26`) | Głowica 574 µs przy 92% szczytu, czyli zysk ≈ 25% bajtów głowicy ≈ 3% kroku. Zmierzone: ~5 ms na żądanie z 32 tokenami (`round-3.md:32`) | **Wiarygodne.** To wariant DFloat11 o stałej długości kodu |
-| PDL („programmatic graph edges”): 174.40 → 177.44 t/s osobno (`round-6.md:38`); „PDL saves ~0.5 µs per boundary, only with early trigger” (`round-6.md:26`) | Mikrobench SM120 | 364 granice × 0.5 µs ≈ 0.18 ms/krok ≈ 3% | **Wiarygodne.** Zgodne z naszym pomiarem PM4-PDL na XTX: −0.11 µs, kill (`wiki/eksperymenty/2026-10-18-pm4-pdl-x1.md`) |
+| PDL („programmatic graph edges”): 174.40 → 177.44 t/s osobno (`round-6.md:38`); „PDL saves ~0.5 µs per boundary, only with early trigger” (`round-6.md:26`) | Mikrobench SM120 | 364 granice × 0.5 µs ≈ 0.18 ms/krok ≈ 3% | **Wiarygodne.** Zgodne z naszym pomiarem PM4-PDL na XTX: −0.11 µs, kill (`wiki/testy/2026-10-18-pm4-pdl-x1.md`) |
 
 ### 1.3 Co nowe wobec llama.cpp i naszego forka
 - **PDL:** nic nowego. llama.cpp CUDA ma PDL od Hoppera wzwyż, włącznie z konsumenckim sm_120 (`~/llama-master/ggml/src/ggml-cuda/common.cuh:124-142,1820-1826`).
 - **Prefetch wag do L2 z małych kerneli i „hoist cold loads”:**
   - W llama.cpp CUDA tego nie ma.
-  - Na XTX już to próbowaliśmy: „touch” do MALL, X3, wynik w szumie (`wiki/lekcje/lekcja-prefetch-mall-xtx.md`). `hipLaunchAttributeExtDynDataPrefetch` nie działa poniżej gfx12.5 (`wiki/rocm/hip-dyn-data-prefetch.md`).
-  - „Wszystkie loady przed sumami” znamy z TensorFold (`wiki/repo/tensorfold.md`).
+  - Na XTX już to próbowaliśmy: „touch” do MALL, X3, wynik w szumie (`wiki/lekcje/lekcja-prefetch-mall-xtx.md`). `hipLaunchAttributeExtDynDataPrefetch` nie działa poniżej gfx12.5 (`wiki/stos/hip-dyn-data-prefetch.md`).
+  - „Wszystkie loady przed sumami” znamy z TensorFold (`wiki/ekosystem/tensorfold.md`).
   - Nowe jest tylko **na NVIDIA**: 16 dodatkowych CTA z `prefetch.global.L2`/`cp.async.bulk.prefetch.L2` w kernelu latencyjnym chowa 80–85% jego czasu (`round-6.md:23`). Ważne zastrzeżenie: pod PDL ten prefetch trzeba robić tylko tam, gdzie poprzednik nie nasyca DRAM (`round-6.md:42-45`).
 - **Bezstratna głowica 12-bit:** nie dla nas. Nasze głowice i embeddingi w GGUF są kwantyzowane, a w kwantach K/IQ nie ma redundancji wykładnika BF16 `[INFERENCE]`.
 - **Dokładna akumulacja FP8 w liczbach całkowitych** (plan Qwen3.6: iloczyn E4M3 × E4M3 jest wielokrotnością 2⁻¹⁸, więc blok 128 sumuje się dokładnie w i64; `plans/qwen3.6-35b-a3b-fp8.md:51`): niezmienniczość względem batcha i kolejności za darmo. To ta sama idea co nasze q8_1 × Qx_K na DP4A. Koncepcyjnie warta zapamiętania na wypadek FP8 na RDNA4.
@@ -89,7 +89,7 @@ Oznaczenia: `[INFERENCE]` = mój rachunek albo wniosek, niezmierzony. Werdykty: 
 
 ## 2. TensorFold 1.1.0 i aplikacja Beta 7 / Beta 8
 
-Poprzedni stan: v1.0.12 = `833bbfcb` (raport 15c §2.4/§3.4, `wiki/repo/tensorfold.md`). Tu opisuję wyłącznie deltę. Pełne tabele: `21g-notatki/tf-delta.md`.
+Poprzedni stan: v1.0.12 = `833bbfcb` (raport 15c §2.4/§3.4, `wiki/ekosystem/tensorfold.md`). Tu opisuję wyłącznie deltę. Pełne tabele: `21g-notatki/tf-delta.md`.
 
 ### 2.1 Skala delty
 - **901 commitów** v1.0.12..v1.1.0, w tym 394 jednego dnia (10-16), plus 3 commity po tagu. Kod spoza aplikacji: 1285 plików, +140 tys. linii. Kernele: CUDA 76 plików (+12.6k), Metal 35 (+5.3k), **HIP 6 plików, +12/−9**: tylko refaktor `clock_gettime` dla Windows i poprawka puli grafów Flash Next (#963) (`tf-delta.md:11-19`).
@@ -235,11 +235,11 @@ Pełne notatki: `21g-notatki/maya.md`. Repo: https://github.com/mw00/project-may
 
   R9700 UD-Q4_K_XL: **82.5 → 120.6 t/s** (commit), w release notes 83.2 → 117.8 (5/5 par; llama.cpp 82). `--mtp 2` 167.7 → 183.7. `STRATA_Q36_VERIFY=1` porównuje stare i nowe kernele na prawdziwych aktywacjach: 0 niezgodności w 18 360 porównaniach (`docs/QWEN36.md:130-142`).
 
-  **To są dokładnie nasze fuzje LFM:** 0049 norma → q8_1, 0051 down + ważenie + residual, 0053 norma + router + top-k, 0056 gate + up → q8_1 (`wiki/kernele/fuzje-lfm-moe.md`). Niezależne potwierdzenie kierunku, dla nas nic nowego.
+  **To są dokładnie nasze fuzje LFM:** 0049 norma → q8_1, 0051 down + ważenie + residual, 0053 norma + router + top-k, 0056 gate + up → q8_1 (`wiki/optymalizacje/fuzje-lfm-moe.md`). Niezależne potwierdzenie kierunku, dla nas nic nowego.
 
   Arytmetyka: duże iloczyny Q8_0 (atencja, projekcje GDN, głowica) to 1.9 GB/token (`QWEN36.md:136-137`), plus eksperci Q4_K ≈ 0.6 GB `[INFERENCE]`, razem ≈ 2.5 GB/token. R9700 ma ~640 GB/s ([AMD](https://www.amd.com/en/products/graphics/workstations/radeon-ai-pro/ai-9000-series/amd-radeon-ai-pro-r9700.html)), więc sufit ≈ 256 t/s. 117.8 t/s = **~46% pasma**, llama.cpp 82 = ~32%. Dla porównania nasz LFM na XTX: 52–54%. **Werdykt: wiarygodne.** Wzór „upstream HIP MoE zostawia 30–70%” zgadza się z naszym LFM (upstream 169.3 → fork 289.7 tg128, `BENCHMARKI-PRZED-PO-2026-10-19.md:56`).
 - **Prefill GDN** (`6f4697f6`, `55bae973`): delta rule ładuje wejścia tokenu t+1 podczas liczenia t i ma 2 bariery na token zamiast 3. Bitowo identyczne, 913 → 885 ms dla 3000 tokenów przy chunku 512. U nas prefill GDN idzie innym kernelem (chunked), a ten pomysł dotyczy sekwencyjnego skanu, więc dla nas niski priorytet.
-- **Domyślny chunk promptu 512 → 4096/2048/1024** (`93f0f48f`, „owner decision”): R9700 pp4096 3390 → 5750 t/s. **Łamie bitową tożsamość** długich promptów (KL 0.004 vs chunk 512). Opisane uczciwie, ale to odstępstwo od ich własnej reguły „wszystko, co zmienia bity, jest opt-in” (`wiki/repo/strata.md`). Ten sam kompromis znamy z LFM `-ub 2048` (`wiki/modele/lfm-czulosc-na-podzial-batcha.md`).
+- **Domyślny chunk promptu 512 → 4096/2048/1024** (`93f0f48f`, „owner decision”): R9700 pp4096 3390 → 5750 t/s. **Łamie bitową tożsamość** długich promptów (KL 0.004 vs chunk 512). Opisane uczciwie, ale to odstępstwo od ich własnej reguły „wszystko, co zmienia bity, jest opt-in” (`wiki/ekosystem/strata.md`). Ten sam kompromis znamy z LFM `-ub 2048` (`wiki/modele/lfm-czulosc-na-podzial-batcha.md`).
 - **Wiele żądań naraz** (`--parallel N`, ≤ 8; `docs/QWEN36.md:65-73`). R9700, 128 tokenów, 5 przeplatanych par:
 
   | N | Strata | llama.cpp `-np N` | × |
@@ -282,7 +282,7 @@ U nas na NVIDIA ten udział zależy od modelu `[INFERENCE]`:
 - **Kill:** na XTX analogiczny „touch” do MALL dał szum. Jeżeli na 5060 Ti nsys pokaże, że kernele latencyjne LFM zajmują < 15% kroku, zamykamy temat.
 
 ### 5.2 TensorFold: przełącznik pokrycia słownika draftu (#1011)
-Mamy głowicę draftu na 64k tokenach (łatka 0004: 32k +7%, 64k +7.5%, 96k +6%; `wiki/latki/latki-spekulacji.md:14`). Polskie teksty mogą częściej zawierać tokeny spoza 64k. Wtedy draft na pozycji takiego tokenu musi chybić, a potem każdy kolejny draft w łańcuchu też.
+Mamy głowicę draftu na 64k tokenach (łatka 0004: 32k +7%, 64k +7.5%, 96k +6%; `wiki/optymalizacje/latki-spekulacji.md:14`). Polskie teksty mogą częściej zawierać tokeny spoza 64k. Wtedy draft na pozycji takiego tokenu musi chybić, a potem każdy kolejny draft w łańcuchu też.
 
 Przełącznik „pełna głowica, gdy w ostatnich 16 tokenach jest token spoza podzbioru” kosztuje (0.675 − 0.18) GB ≈ 0.5 ms na poziom draftu, czyli ~2 ms/krok przy n=4 (`tf-delta.md:200`, `[INFERENCE]`, ≈ −7% gdy nic nie zyskuje). Zysk pojawia się tylko wtedy, gdy na takich odcinkach akceptacja rośnie o > 7%.
 
@@ -410,8 +410,8 @@ Wynik = zysk × pewność / wysiłek. Eksperymenty na GPU tylko za zgodą, kill 
   - `~/llama-master/common/arg.cpp:2795`, `~/llama-master/ggml/src/ggml-cuda/common.cuh:124-142`.
 - Nasze:
   - `BENCHMARKI-PRZED-PO-2026-10-19.md:25,33,56,99`;
-  - `wiki/kernele/fuzje-lfm-moe.md`, `wiki/latki/latki-spekulacji.md:14`, `wiki/modele/drafter-dflash.md`;
-  - `wiki/lekcje/lekcja-prefetch-mall-xtx.md`, `wiki/rocm/hip-dyn-data-prefetch.md`.
+  - `wiki/optymalizacje/fuzje-lfm-moe.md`, `wiki/optymalizacje/latki-spekulacji.md:14`, `wiki/modele/drafter-dflash.md`;
+  - `wiki/lekcje/lekcja-prefetch-mall-xtx.md`, `wiki/stos/hip-dyn-data-prefetch.md`.
 - ISA: `21g-notatki/k.hip`, `k.s:27-29`, `k2.hip`, `k2.s:33-34`.
 
 ---

@@ -1,6 +1,6 @@
 # 57d. FreeToken (@Andy_ShuoYang) i NVFP4: co z tego dla RDNA3
 
-Źródło: bio badacza (współtwórca GSQ-RCO): „@Andy_ShuoYang (FreeToken / NVFP4)”. Czytałem pracę arXiv 2608.16157 (całą), repo `FlashML-org/FreeToken` (płytki klon `cc4aa08`, 2026-10-20, w `~/qwen-opt/research/freetoken`) z kodem NVFP4 (CPU `cpu_moe/kernels/nvfp4.cpp`, łata do ggml, `kernel/aot_models.py`) i `docs/install_amd.md`. Wpisy X znam tylko ze snippetów wyszukiwarki. Bez GPU. W KB już są: `wiki/nvidia/nvfp4.md`, symulacja skali globalnej (`eksperymenty/2026-10-16-nvfp4-skala-globalna-sim.md`), raport 09 (5060 Ti) i 39f. Tu dopisuję tylko nowe rzeczy.
+Źródło: bio badacza (współtwórca GSQ-RCO): „@Andy_ShuoYang (FreeToken / NVFP4)”. Czytałem pracę arXiv 2608.16157 (całą), repo `FlashML-org/FreeToken` (płytki klon `cc4aa08`, 2026-10-20, w `~/qwen-opt/research/freetoken`) z kodem NVFP4 (CPU `cpu_moe/kernels/nvfp4.cpp`, łata do ggml, `kernel/aot_models.py`) i `docs/install_amd.md`. Wpisy X znam tylko ze snippetów wyszukiwarki. Bez GPU. W KB już są: `wiki/modele/nvfp4.md`, symulacja skali globalnej (`eksperymenty/2026-10-16-nvfp4-skala-globalna-sim.md`), raport 09 (5060 Ti) i 39f. Tu dopisuję tylko nowe rzeczy.
 
 ## 1. Co to jest
 

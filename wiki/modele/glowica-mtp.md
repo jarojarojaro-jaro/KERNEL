@@ -25,7 +25,7 @@ Publicznie (drafters.md): nie ma EAGLE-3, Medusa ani przetrenowanej głowicy MTP
 
 ## Aktualizacja 2026-10-21
 - Proza E0: akceptacja 0.655/0.503/0.407/0.382, PL gorzej; jedyna dźwignia ≥ +25% to lepsza głowica ([[raport-40-akceptacja-prozy]]).
-- Shortlist low-rank po 248k (EAGLE Efficient LM Head): kod gotowy, recall nie przeszedł ([[raport-52-eagle4]], [[raport-53-draft-shortlist]]).
+- Shortlist low-rank po 248k (EAGLE Efficient LM Head): kod gotowy, recall nie przeszedł ([[ekosystem/eagle-4]], [[raport-53-draft-shortlist]]).
 - DRAFT_N=5 jako profil opt-in ([[raport-35-xtx-eksperymenty]]); routing głębokości per żądanie ([[raport-44-spec-route]]).
 
 ## Powiązane
@@ -34,5 +34,5 @@ Publicznie (drafters.md): nie ma EAGLE-3, Medusa ani przetrenowanej głowicy MTP
 - [[mtp-draft-graf]]
 - [[latki-spekulacji]]
 - [[raport-10-post-training]]
-- [[raport-11-mtp-pl-pilot]]
+- [[testy/2026-10-16-mtp-pl-pilot]]
 - [[2026-10-16-mtp-pl-pilot]]

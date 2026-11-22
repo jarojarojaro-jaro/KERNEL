@@ -16,10 +16,10 @@ status: aktualne
 | model 12 GB | Bonsai 2 (Saluki usunięty 2026-11-14) | IQ3_XXS-mtp (Swift W3 lub ISTA)? KLD-PL 0.108 vs 0.320 |
 | łatka 0071 `GGML_HIP_MOE_GU_BLOCK` | gałąź `opt-lfmmoe` @ `7c5b2a116`, poza produkcją | scalić, domyślnie wł.? bitowa, LFM +0.33%, Uncensored +1.39% ([[2026-10-18-lfm-moe-pasmo]]) |
 | flagi `run-llm.sh` (16f) | bez zmian | LFM `-ub 2048` (+17% prefillu) i `CACHE_SHARE_MIN=1024` ([[raport-16f-xtx-szybkie]]) |
-| ogon lookupu dla Qwena (16b) | gałąź `lookup-tail`, poza produkcją | `LLAMA_SPEC_LOOKUP=3`, `_W=16` (mvs ×2.41) po tygodniu logu `=1` na ruchu omp ([[raport-16b-lookup-tail]]) |
+| ogon lookupu dla Qwena (16b) | gałąź `lookup-tail`, poza produkcją | `LLAMA_SPEC_LOOKUP=3`, `_W=16` (mvs ×2.41) po tygodniu logu `=1` na ruchu omp ([[testy/2026-10-18-lookup-ogon]]) |
 | PM4 w serwerach (raport 17) | `~/llama-opt` z PM4 domyślnie (~1 reset/330 req.) | `GGML_HIP_PM4=0`? (−4.7% / −12%); testy S1–S6, `HSA_USE_SVM=0` ([[2026-10-19-pm4-priv-analiza]]) |
 | RSI-F pilot P0/P1 (21h) | fabryka bez werdyktu na GPU | P0 ~20 min + P1 ~60–80 min GPU XTX, $0 ([[petla-rsi-f]]) |
-| E1: RSR-27B vs Qwen (21h) | niezmierzone | ~$40–70 na wynajętych 3090 ([[2026-10-19-plan-e1-rsr27b]]) |
+| E1: RSR-27B vs Qwen (21h) | niezmierzone | ~$40–70 na wynajętych 3090 ([[KOLEJKA-TESTOW]]) |
 | Uncensored jako tryb (21e) | osobne pliki Uncensored | źródło wektorów: z cudzych GGUF czy własne (Arditi)? ([[przelaczanie-main-uncensored]]) |
 
 Od 2026-10-19 rekomendacje przechodzące bramki wdrażamy bez pytania ([[2026-10-19-najlepiej-bez-pytania]]); użytkownik decyduje już tylko o testach z resetem GPU, wydatkach ponad budżet, usuwaniu danych i domyślnych ustawieniach `~/llama-opt`.

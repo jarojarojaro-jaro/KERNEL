@@ -19,4 +19,4 @@ status: aktualne
 - [[pomiar-abba]]
 - [[ms-na-krok]]
 - [[run-llm-sh]]
-- [[harness-chmurowy]]
+- [[narzedzia/skrypty-chmury]]

@@ -18,4 +18,4 @@ status: aktualne
 - [[research/_hub|research]]
 - [[qwen3-8-27b-uncensored]]
 - [[lfm2-5-uncensored]]
-- [[kv-na-dysku-polityka]]
+- [[decyzje/2026-10-19-kv-tylko-w-ram]]

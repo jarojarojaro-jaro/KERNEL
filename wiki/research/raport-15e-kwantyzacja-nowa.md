@@ -20,7 +20,7 @@ Raport 2026-10-16, bez GPU, trzy eksperymenty CPU.
 - 16 GB: zostać przy UD-Q3_K_XL albo AP-Q3_K_XL (KLD held-out −19.5% przy tych samych bajtach).
 Ranking: 1. MTP na 2-bitowych 27B, 2. AP zamiast UD, 3. Swift jako „krótkie myślenie” (warunkowo licencja), 4. naprawa kwantyzatora NVFP4. E1 ≈ $5–8 albo ≈ $1.5–2 + CPU (wymaga zgody).
 
-Wynik E1/E3: [[raport-16e-kwanty-kld]] – H1 i H3 potwierdzone, H2 na granicy, kill GSQ 16 GB zadziałał, E3 zamknięte.
+Wynik E1/E3: [[testy/2026-10-18-e1-kwanty-27b-kld]] – H1 i H3 potwierdzone, H2 na granicy, kill GSQ 16 GB zadziałał, E3 zamknięte.
 
 ## Powiązane
 - [[research/_hub|research]]

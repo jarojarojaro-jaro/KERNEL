@@ -16,7 +16,7 @@ Data: 2026-10-19. Tylko CPU (kompilacja ISA/SASS, czytanie kodu i dokumentów). 
 | redukcja | ds_bpermute×4 + swizzle | ds_bpermute×5 | j.w. |
 | stan GDN | int8 + skale | fp32 | `gdn_q8_compact3_b2` (kstat) |
 
-Rozbicie różnicy 3.5 ms: ~2.7 ms to bajty (2.5 GB mniej), ~0.8 ms to rzeczy spoza GEMV (fuzje rmsnorm+rotate w prologu, qkvza w jednym GEMV, moe_down+combine+rmsnorm, conv1d+silu+qknorm). Kernargi PM4 w VRAM (+7.2% u nich) już mamy (wiki/rocm/pm4.md:17).
+Rozbicie różnicy 3.5 ms: ~2.7 ms to bajty (2.5 GB mniej), ~0.8 ms to rzeczy spoza GEMV (fuzje rmsnorm+rotate w prologu, qkvza w jednym GEMV, moe_down+combine+rmsnorm, conv1d+silu+qknorm). Kernargi PM4 w VRAM (+7.2% u nich) już mamy (wiki/stos/pm4.md:17).
 
 ## Ranking działań (arytmetyka)
 1. **GDN: rollback przez replay zamiast snapshotów (Strata)** – do K snapshotów po 151 MB [INFERENCJA: 48 warstw GDN × 48 h × 128² × 4 B] ≈ 0.6 GB/krok → ≤0.63 ms z 27.7 ms ≈ **do +2% MTP**. Bitowo możliwe. Test: rocprof kroku weryfikacji. Kryterium porzucenia: zysk < 0.3 ms.

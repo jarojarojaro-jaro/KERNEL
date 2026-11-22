@@ -18,6 +18,6 @@ status: aktualne
 
 ## Powiązane
 - [[research/_hub|research]]
-- [[raport-16b-lookup-tail]]
+- [[testy/2026-10-18-lookup-ogon]]
 - [[lekcja-mtp-juz-kopiuje]]
 - [[2026-10-18-lookup-ogon]]

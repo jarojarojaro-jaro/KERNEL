@@ -222,5 +222,5 @@ Kampania 67c (wieczór 2026-11-07): T1 = mediana `spec_sweep` seed 1, fill = pro
 - [[raport-wyniki-xtx-2026-10-19]]
 - [[raport-27-3090-final]]
 - [[stan-2026-10-15]]
-- [[nvidia-wyniki-2026-10-16]]
+- [[testy/2026-10-16-kampania-nvidia]]
 - [[otwarte-decyzje-techniczne]]

@@ -23,4 +23,4 @@ Override with `GGML_HIP_FA_D256_VAR=0` / `LLAMA_SERVER_CACHE_HUGE=0`; outputs ar
 
 Measured (final mode eco 2200, Uncensored Q4_K_M, KV q4_0, ctx 262144): 255k fill 466.3 -> 492.5 t/s (+5.6%),
 agent thread-switch turn median 13 413 -> 12 029 ms (-10.3%), md5 identical. Deploy scripts: `qwen-opt/deploy-q70/`.
-Wiki: `wiki/eksperymenty/2026-11-09-wdrozenie-topka-q70.md`.
+Wiki: `wiki/testy/2026-11-09-wdrozenie-topka-q70.md`.

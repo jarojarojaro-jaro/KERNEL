@@ -16,5 +16,5 @@ status: aktualne
 - [[research/_hub|research]]
 - [[ista-daslab]]
 - [[raport-15e-kwantyzacja-nowa]]
-- [[raport-16e-kwanty-kld]]
+- [[testy/2026-10-18-e1-kwanty-27b-kld]]
 - [[kwanty-gguf]]

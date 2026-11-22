@@ -465,7 +465,7 @@
    "enigmaSpec": false,
    "prompt": 32768,
    "usedMiB": 18591,
-   "source": "wiki/eksperymenty/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
+   "source": "wiki/testy/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
   },
   {
    "id": "xtx-lfm-131072-ub1024",
@@ -481,7 +481,7 @@
    "enigmaSpec": false,
    "prompt": 32768,
    "usedMiB": 18765,
-   "source": "wiki/eksperymenty/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
+   "source": "wiki/testy/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
   },
   {
    "id": "xtx-lfm-131072-ub2048",
@@ -497,7 +497,7 @@
    "enigmaSpec": false,
    "prompt": 32768,
    "usedMiB": 19089,
-   "source": "wiki/eksperymenty/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
+   "source": "wiki/testy/2026-10-18-lfm-ubatch-2048.md (XTX amd-smi after TTFT runs up to 32k)"
   },
   {
    "id": "vast-4060ti-qwen-q3-131072-ub1024",

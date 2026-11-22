@@ -10,14 +10,14 @@ status: aktualne
 **Użytkownik (2026-10-16, 17:22 UTC): „oni coś zrobili dobrze, trzeba to zbadać i zobaczyć, czy możemy wykorzystać” – po wynikach 16d, gdzie Magnitude wygrał code-edit 156.1 vs 105.2 t/s.**
 
 Pierwsza analiza: [[raport-16i-magnitude]] (sufit bloku + kontroler, nie kernele). Uruchomione wątki (2026-10-16):
-- **XtxLookupTail** – ogon z lookupu doklejany do MTP4 do 8/16 wierszy na XTX (E-X1, E-X2): mvs ×2.41 przy W16 ([[raport-16b-lookup-tail]]);
-- **CoupledSampling** – sprzężone próbkowanie draftu, raport 16k (E-X4): bezstratne, zysk MTP nierozstrzygnięty, nie domyślnie ([[raport-16k-sprzezone-probkowanie]]);
-- **MagnitudeVulkanXtx** – Magnitude przez Vulkan na 7900 XTX, raport 16j (E-X5) – zrobione 2026-10-18: na XTX Magnitude ~2× wolniejszy ([[raport-16j-magnitude-vulkan-xtx]]).
+- **XtxLookupTail** – ogon z lookupu doklejany do MTP4 do 8/16 wierszy na XTX (E-X1, E-X2): mvs ×2.41 przy W16 ([[testy/2026-10-18-lookup-ogon]]);
+- **CoupledSampling** – sprzężone próbkowanie draftu, raport 16k (E-X4): bezstratne, zysk MTP nierozstrzygnięty, nie domyślnie ([[testy/2026-10-18-sprzezone-probkowanie-mtp]]);
+- **MagnitudeVulkanXtx** – Magnitude przez Vulkan na 7900 XTX, raport 16j (E-X5) – zrobione 2026-10-18: na XTX Magnitude ~2× wolniejszy ([[testy/2026-10-18-magnitude-vulkan-xtx]]).
 
 Kolejność wg 16i: ogon → kontroler szerokości (E-X3) → sprzężone próbkowanie → DFlash2 jako drugi drafter (opcjonalnie). Warunek: polskie pisanie bez regresji (spec_sweep ≥ −0.5%), pomiary GPU za zgodą.
 
 ## Powiązane
 - [[decyzje/_hub|Decyzje]]
-- [[firma-magnitude]]
+- [[ekosystem/magnitude]]
 - [[kontroler-szerokosci-draftu]]
 - [[sprzezone-probkowanie-draftu]]

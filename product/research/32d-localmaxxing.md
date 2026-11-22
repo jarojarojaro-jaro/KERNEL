@@ -122,7 +122,7 @@ Pełna tabela per karta (dla raportu 33): `local://localmaxxing-per-karta.md`, k
 | 6 | Wysyłka macierzy `/api/inference-benchmarks` | — | — | **nie dotyczy**: tylko vLLM/SGLang (README CLI:621), a my mamy jedno zapytanie naraz |
 
 **Czego NIE robić / co nie dotyczy:**
-- Runów „warm” z lookupem i `CACHE_SHARE` na powtórkach tego samego kanonicznego promptu. Przeszłyby weryfikację jak u zotowaty, ale to gra pod benchmark, sprzeczna z naszą zasadą dwóch klas obciążenia (`wiki/metody/pomiar-abba.md:21`). Code-edit (mvs 430 t/s) publikujemy **tylko w raporcie**, jako osobną klasę „copy/edit” z opisem, a nie jako speed-test.
+- Runów „warm” z lookupem i `CACHE_SHARE` na powtórkach tego samego kanonicznego promptu. Przeszłyby weryfikację jak u zotowaty, ale to gra pod benchmark, sprzeczna z naszą zasadą dwóch klas obciążenia (`wiki/testy/pomiar-abba.md:21`). Code-edit (mvs 430 t/s) publikujemy **tylko w raporcie**, jako osobną klasę „copy/edit” z opisem, a nie jako speed-test.
 - Porównywania 114.8 t/s (spec_sweep T=1) z ich liczbami: inne T, prompt, długość i miejsce pomiaru.
 - Przejmowania ich danych do katalogu Podkręt: brak licencji. Pasmo i tak mamy od producentów.
 - Macierzy współbieżności, wypożyczalni i marketplace: poza naszym profilem (jeden użytkownik, decode).

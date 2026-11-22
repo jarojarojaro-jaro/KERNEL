@@ -16,4 +16,4 @@ Reakcja: polecenie dla agenta, żeby natychmiast puścił pomiary, a resztę skr
 - [[lekcja-brak-column-w-obrazie]]
 - [[lekcja-slaby-cpu-3090]]
 - [[rtx-5060-ti]]
-- [[2026-10-16-budzety-chmury]]
+- [[karty/vast-ai]]

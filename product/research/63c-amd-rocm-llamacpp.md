@@ -162,7 +162,7 @@ Upstream ma już infrastrukturę QSA dla qwen4exp: fused QSA mask op [#30640](ht
   5. „Recursive, self-improving kernel harness” (bez szczegółów).
 - **Co przenosi się na RDNA3 (1 GPU, bez TP):**
   - (1) i (2) mieliśmy: 15a (MonoKernel, dataflow +12…28% `[SZACUNEK]` dla LFM) i 16a (PM4-PDL, realnie ≈ +3%, X1/X3 kill). Lekcja „jedna flaga pollowana przez cały grid jest wolniejsza od granicy” (`wiki/lekcje/lekcja-handoff-rdna3.md`) nadal obowiązuje.
-  - (4) to dokładnie nasze „wagi do VGPR przed czekaniem” w PM4-replay (`wiki/kernele/pm4-replay.md`). RDNA3 ma 192 KB VGPR na SIMD pair, czyli mniej niż MI355X, ale ten sam mechanizm `[INFERENCE]`.
+  - (4) to dokładnie nasze „wagi do VGPR przed czekaniem” w PM4-replay (`wiki/optymalizacje/pm4-replay.md`). RDNA3 ma 192 KB VGPR na SIMD pair, czyli mniej niż MI355X, ale ten sam mechanizm `[INFERENCE]`.
   - (3) nie dotyczy (1 GPU).
   - **Nic nowego do zrobienia.** Wzmacnia priorytet „dataflow-megakernel dla LFM” z 15a, jeśli kiedyś wrócimy.
 

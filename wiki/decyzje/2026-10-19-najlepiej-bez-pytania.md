@@ -13,7 +13,7 @@ Zasada: agenci sami wdrażają i przyjmują poprawki, które przechodzą bramki 
 
 Pytamy tylko o:
 - celowe testy wywołujące reset GPU (np. S5 z raportu 17);
-- wydatki ponad uzgodnione budżety ([[2026-10-16-budzety-chmury]]);
+- wydatki ponad uzgodnione budżety ([[karty/vast-ai]]);
 - usuwanie danych użytkownika;
 - zmianę domyślnych ustawień produkcji `~/llama-opt`; build „topka” (żywy build użytkownika, [[2026-10-19-build-topka]]) może być aktualizowany po weryfikacji.
 

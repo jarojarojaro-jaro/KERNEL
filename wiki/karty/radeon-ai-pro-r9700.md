@@ -19,7 +19,7 @@ status: aktualne
 ## Powiązane
 - [[karty/_hub|Karty]]
 - [[rx-9070-xt]]
-- [[chmura/_hub|Chmura]]
+- [[karty/_hub|Chmura]]
 - [[saber-engine]]
 - strata
 - raport-05-chmura

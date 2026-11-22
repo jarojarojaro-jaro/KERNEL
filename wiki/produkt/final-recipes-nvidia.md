@@ -72,6 +72,6 @@ Tekst na stronę (nagłówek, tabela, „jak to osiągnęliśmy”, zastrzeżeni
 - [[produkt/_hub|Produkt]]
 - [[final-modele-per-vram]]
 - [[2026-11-07-kampania-nvidia-vast]]
-- [[backlog-testow-nvidia]]
+- [[KOLEJKA-TESTOW]]
 - [[rtx-3090]]
 - [[inne-karty-nvidia]]

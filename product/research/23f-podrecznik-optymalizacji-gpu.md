@@ -46,8 +46,8 @@ Już mamy (nie proponować): rollback GDN przez przeliczenie zamiast snapshotów
 | wielkość | wartość | źródło |
 |---|---|---|
 | pasmo XTX / realny strumień | 960 / ~900 GB/s (789–925) | `15a:121` |
-| granica kernela: graf HIP / podłoga AQL / taśma PM4 / bariera trwałej siatki | 2.75 / 2.08 / 0.46–0.86 / 0.48–0.77 µs | `wiki/metody/mikrobench-granicy-kernela.md`; 23d |
-| kernargi w pamięci hosta | +1 µs/dispatch | `wiki/rocm/pm4.md` |
+| granica kernela: graf HIP / podłoga AQL / taśma PM4 / bariera trwałej siatki | 2.75 / 2.08 / 0.46–0.86 / 0.48–0.77 µs | `wiki/testy/mikrobench-granicy-kernela.md`; 23d |
+| kernargi w pamięci hosta | +1 µs/dispatch | `wiki/stos/pm4.md` |
 | hand-off flagą/ticketem zamiast granicy (1024 bloki) | −0.11 µs (94% zysku zjada synchronizacja) | 16a X1 |
 | Qwen: wagi plain / głowa Q6_K / blok MTP / stan GDN / KV q4_0 | 16.48 GB / 1.043 GB / 0.351 GB / 151 MB f32 (R+W) / 18 432 B/token | `18:103-112` |
 | Qwen: dispatche na krok / kernele weryfikacji | 807–919 / ~830 (z 2156) | `15a:155`; `hip-graph-narzut.md` |
@@ -56,7 +56,7 @@ Już mamy (nie proponować): rollback GDN przez przeliczenie zamiast snapshotów
 | Little's law (600 ns) | ~6 KB w locie/CU XTX; 6.8 KB/SM 3090; 7.5 KB/SM 5060 Ti | `21b:82` |
 | ATT: % czasu fali w `s_waitcnt vmcnt` | gate+up 85%, in_proj+conv 75–83%, down 37–45% (+33–43% wydawanie VMEM) | `16g:§1` |
 | koszt 1 ms/krok | ≈ +3.6% t/s Qwen MTP; ≈ +4.3% Qwen plain | rachunek |
-| szum A/A (ten sam label, ta sama sesja) | 0.09% ms/krok (mediana); MDE ~0.2–0.3% | `wiki/metody/pomiar-abba.md` |
+| szum A/A (ten sam label, ta sama sesja) | 0.09% ms/krok (mediana); MDE ~0.2–0.3% | `wiki/testy/pomiar-abba.md` |
 
 ---
 

@@ -219,7 +219,7 @@ Wartości to odsetek prób, w których 95% CI wykluczył 0. Nominalnie powinno t
 |---|---|---|---|
 | werdykt A/B | fabryka v1: karta przed pomiarem, ABBA, A/A, MDE, t-CI, 7 werdyktów, ledger z łańcuchem sha256, 36 reguł (`wiki/narzedzia/fabryka-cli.md`) | wall time procesu, losowa kolejność, estymata punktowa, bootstrap | **fabryka** |
 | proweniencja | ledger: ścieżka + sha256 plików runu, sha buildów, modelu i harnessu (`fk/verify.py:543-573`) | dowód adresowany treścią, kopia bajtów, manifest RFC 8785, `evidence_id`, atomowa publikacja | **flameox** (my hashujemy, ale nie zachowujemy bajtów) |
-| profil GPU AMD | rocprofv3 `--kernel-trace --stats` + `trace_breakdown.py`; ATT na gfx1100 (`att_model.sh`, `attsum.py`); świadomość PM4 (`wiki/rocm/rocprof.md`, `wiki/narzedzia/att-gfx1100.md`) | pftrace → pierwsze ≤ 1000 slice'ów | **nasze** |
+| profil GPU AMD | rocprofv3 `--kernel-trace --stats` + `trace_breakdown.py`; ATT na gfx1100 (`att_model.sh`, `attsum.py`); świadomość PM4 (`wiki/stos/rocprof.md`, `wiki/narzedzia/att-gfx1100.md`) | pftrace → pierwsze ≤ 1000 slice'ów | **nasze** |
 | uczciwość podsumowania profilu | `trace_breakdown.py` (41 linii): ucina 30% po czasie, sumuje czasy, kategoria „other”, nie podaje pokrycia | jawne `complete`, `rows_observed`, ograniczenia, zakaz „pusty selektor = brak” | **zasady flameoxa** (P2) |
 | walidacja kerneli | `test-backend-ops` w G1; `kt.py fake` z referencją numpy; `llama-bx-diff` (pierwszy rozbieżny węzeł) | schemat `kernel-validation.v2` + kontrola spójności werdyktów | nasze narzędzia; **jego kontrola spójności** do przeniesienia (P4) |
 | autotuning | kt harness (Kernel Tuner, `kt.py tune`, tylko gfx1100) | czyta cache Tritona | nasze |
@@ -247,7 +247,7 @@ Wartości to odsetek prób, w których 95% CI wykluczył 0. Nominalnie powinno t
 **Oczekiwany zysk, arytmetyka** (tylko trafność, nie t/s):
 - **P1.** Przy 30 werdyktach/miesiąc (21h §5.5) i ~70% hipotez zerowych `[SZACUNEK]` jest 21 przypadków z prawdziwą H0. Przy n = 5 bootstrap średniej daje 21 × 17.8% ≈ 3.7 fałszywych wykluczeń 0 na miesiąc, a t daje 21 × 5.5% ≈ 1.2. To górna granica, bo `CONFIRMED` wymaga jeszcze mediany ≥ MDE. Dziś domyślnie jest `t`, więc P1 chroni przed regresją, a nie naprawia błędu.
 - **P3.** `~/qwen-opt/prof`, `s2/prof` i `t2/prof` to razem 1.18 GB. Przy 18.5× daje to ~64 MB `[INFERENCE: zakładam podobny współczynnik dla innych trace'ów]`. To mieści się w H9 (SSD).
-- **P2.** Zysku nie da się dziś policzyć. Zapobiega klasie błędu „profil z PM4 = 1 albo pusty regex wygląda jak prawdziwy” (`wiki/rocm/rocprof.md:17`).
+- **P2.** Zysku nie da się dziś policzyć. Zapobiega klasie błędu „profil z PM4 = 1 albo pusty regex wygląda jak prawdziwy” (`wiki/stos/rocprof.md:17`).
 
 **Czego nie adoptujemy:**
 - **flameox jako MCP w omp.** Katalog ~284 KB widoczny dla modelu (§4.5). 20 narzędzi capture omija H0. Nie znalazłem przełącznika „tylko analiza”: `grep` po `mcp/server.py` i `cli.py` nie znalazł flag typu read-only. `LD_LIBRARY_PATH` jest zablokowany (`environment_policy.py:12`), a nasze A/B buildów od niego zależy (`fk/measure.py:106-111`).

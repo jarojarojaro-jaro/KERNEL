@@ -18,5 +18,5 @@ status: aktualne
 - [[lekcje/_hub|lekcje]]
 - [[lekcja-spekulacja-zmienia-numeryke]]
 - [[raport-24q-adaptacyjna-spekulacja]]
-- [[raport-12-bit-exact]]
+- [[testy/2026-10-16-bit-exact]]
 - [[kontroler-szerokosci-draftu]]

@@ -17,4 +17,4 @@ Omówione wady: tylko hałas, nieco szybsze zużycie łożyska wentylatora i kil
 - [[decyzje/_hub|Decyzje]]
 - [[rx-7900-xtx]]
 - [[lekcja-wentylator-rdna3]]
-- [[2026-10-09-limit-mocy-odlozony]]
+- [[decyzje/2026-10-20-karta-fabrycznie]]

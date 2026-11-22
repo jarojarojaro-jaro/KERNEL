@@ -14,6 +14,6 @@ Słowa użytkownika (00:36 i 00:38 UTC): „chciałbym na pewno, że tworzy się
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
 - [[2026-10-15-czat-na-web-ui-llama]]
-- [[2026-10-16-bez-lokalnego-gpu]]
+- [[kernel-od-a-do-z]]
 - [[produkt-landing-i-onboarding]]
 - [[aplikacja-w-budowie]]

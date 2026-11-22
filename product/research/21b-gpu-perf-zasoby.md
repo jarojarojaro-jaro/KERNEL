@@ -18,7 +18,7 @@ Oznaczenia: `[SZACUNEK]` = moje wyliczenie; `[INFERENCE]` = wniosek bez pomiaru;
    - **(c) Prefetch L2 w pętli MMVQ jest dziś włączony tylko na DGX Spark.** Upstream na GB10 przy 5 kolumnach zmierzył +2.9% (Q4_K), +3.9% (Q5_K) i +6.2% (Q6_K). Teza, że „na kartach z wyższym pasmem to nie pomaga”, nie ma danych w podlinkowanym komentarzu. To kandydat do weryfikacji MTP (4–5 kolumn) na 3090/5060 Ti.
 5. **RTX 5090 to karta, na której narzut kerneli waży najwięcej.** Nikt u nas jej nie mierzył. Projekcja LFM Q4_K_M (§4.1): 435–570 t/s, czyli tylko 37–48% pasma 1.792 TB/s, bo stały narzut ~1.5 ms/token z 5060 Ti nie maleje razem z czasem strumienia. Tam PDL/prefetch (a) i ewentualny trwały blok MoE mają największą dźwignię.
 6. **XTX: najważniejsza „technika z listy” to ta, której nie mamy po wyłączeniu PM4, czyli tani launch.** Raport 17 zaleca `GGML_HIP_PM4=0` (koszt: LFM −12%, Qwen MTP −4.7%). Zmierzona podłoga pakietu AQL to 2.08 µs nawet bez fence’ów (lfm-decode-round4.md:37,47-50), więc żadne sztuczki AQL/HIP graph tego nie odzyskają. Jeśli PM4 nie da się zabezpieczyć (Pm4Fix), jedyną bezstratną drogą do tych 12% jest kernel trwały: bariera siatki 0.48–0.77 µs wobec 2.75 µs granicy grafu HIP. To odwraca wniosek 15a, który zakładał działające PM4. Decyzja zależy od wyniku Pm4Fix.
-7. **FP4/FP8 nie przyspieszą naszego decode** (bajty wag te same: NVFP4 4.5 bpw ≈ Q4_K 4.5 bpw). W prefillu na sm_120 dają +65–81% (09), ale tylko na plikach NVFP4, które dziś są słabe jakościowo (KLD Qwen 0.0865 vs 0.0265, `wiki/nvidia/nvfp4.md:20-21`). XTX nie ma FP8/FP4 w ogóle.
+7. **FP4/FP8 nie przyspieszą naszego decode** (bajty wag te same: NVFP4 4.5 bpw ≈ Q4_K 4.5 bpw). W prefillu na sm_120 dają +65–81% (09), ale tylko na plikach NVFP4, które dziś są słabe jakościowo (KLD Qwen 0.0865 vs 0.0265, `wiki/modele/nvfp4.md:20-21`). XTX nie ma FP8/FP4 w ogóle.
 8. **Pięć eksperymentów (§6):**
    - E1 — PDL trigger + prefetch przed czekaniem (lokalna 5060 Ti, $0);
    - E2 — pierwsza kampania 4090/5090 z rozkładem przerw (~$1.5);
@@ -42,7 +42,7 @@ Dział po dziale, z oceną przydatności dla nas:
 | 2. Kernel optimization | transpose, reduction, decoupled look-back, online softmax, batch-invariance, Volkov, Stream-K, DeepGEMM, siboehm, Gordić, TMA, tcgen05 | **wysoka** dla nauki; techniki: online softmax, split, Stream-K, batch-invariance już mamy | DeepGEMM/TMA/tcgen05 = Hopper/B200, nie sm_120 |
 | Tensor cores / low precision | OFP8, MX, TE, tcgen05 | niska (decode bandwidth-bound) | MX/NVFP4 ważne dla jakości kwantów (15e) |
 | Attention | FA1–4, FlashInfer | średnia: FA2 (podział pracy), FlashInfer (load balancing, graph-safe) | FA3/FA4 wymagają wgmma/tcgen05, na sm_120 nie ma |
-| 3. Triton / CUTLASS / CK / AITER / HipKittens | — | niska | AITER i HipKittens celują w CDNA; Compute Profiler (roofline) tylko Instinct (`wiki/rocm/rocprof.md:20`) |
+| 3. Triton / CUTLASS / CK / AITER / HipKittens | — | niska | AITER i HipKittens celują w CDNA; Compute Profiler (roofline) tylko Instinct (`wiki/stos/rocprof.md:20`) |
 | Profiling | Nsight Systems/Compute, Sanitizer, CUTLASS methodology, rocprof-compute | średnia | metodologia CUTLASS (zegary, rozgrzewka) zgodna z naszym ABBA |
 | 4. Engines | Orca, vLLM, Sarathi, SGLang, KV (GQA, MLA, KIVI, Jenga), kwanty, spekulacja, XGrammar | średnia: Jenga (KV dla hybryd), EAGLE-3 (18 #8), Sarathi (18 #4) | throughput przy dużym batchu |
 | 5. Distributed | NCCL, DeepEP, EPLB, DistServe, Mooncake, Dynamo, llm-d | ~0 (jedno GPU) | — |
@@ -52,7 +52,7 @@ Dział po dziale, z oceną przydatności dla nas:
 Twierdzenia z listy, które sprawdziłem:
 - **Stream-K**: „peak speedup up to 14× and 6.7×” (https://arxiv.org/abs/2301.03598). To szczyt na patologicznych kształtach w zbiorze 32 824 geometrii, więc nie jest typowy; uczciwa liczba to „wyższa i stabilniejsza średnia”. U nas Stream-K już jest w MMQ (`mmq.cuh:173,346`) i w FA (`fattn-common.cuh:1155-1196`, upstream).
 - **NVFP4 blog** (https://developer.nvidia.com/blog/introducing-nvfp4-for-efficient-and-accurate-low-precision-inference/): dwupoziomowe skale, E4M3 na 16 wartości i FP32 na tensor, 4.5 bita/wartość. Pomiar dokładności jest dla DeepSeek-R1 (FP8 → NVFP4, ≤1 pp), czyli modelu 671B. Na modelach 24–27B nasze KLD jest ~3× gorsze od UD-Q3_K_XL. Ważne potwierdzenie raportu 15e: ggml nie ma tej skali FP32 na tensor (99.8–100% skal subnormalnych), a NVIDIA pisze wprost, że bez niej zakres E4M3 nie wystarcza.
-- **Lista podaje „HIP hardware implementation” jako źródło AMD.** Dokument mówi „4 SIMD × 16 ALU, wave64, MFMA, AGPR” (CDNA), a RDNA3 ma 2× SIMD32 na CU, wave32 i WMMA bez osobnych tensor core’ów (`wiki/rocm/rdna3-gfx1100.md:13-17`). Dla naszego zespołu to źródło myli.
+- **Lista podaje „HIP hardware implementation” jako źródło AMD.** Dokument mówi „4 SIMD × 16 ALU, wave64, MFMA, AGPR” (CDNA), a RDNA3 ma 2× SIMD32 na CU, wave32 i WMMA bez osobnych tensor core’ów (`wiki/stos/rdna3-gfx1100.md:13-17`). Dla naszego zespołu to źródło myli.
 
 ### 1.2 Blackwell Tuning Guide (https://docs.nvidia.com/cuda/blackwell-tuning-guide/, wersja 13.4)
 Treść dotycząca sm_120:
@@ -73,7 +73,7 @@ Wszystko inne (HBM3, GB200 126 MB L2, NVLink 5) dotyczy datacenter.
 
 | karta | pasmo GB/s | L2 | SM/CU | PDL | TMA | klastry/DSMEM | FP8 / FP4 tensor | źródło |
 |---|---|---|---|---|---|---|---|---|
-| RX 7900 XTX (gfx1100) | 960 | 6 MB L2 + 96 MB MALL | 96 CU | brak (enum tylko, 15a §2.5) | brak | brak | brak / brak | `wiki/rocm/rdna3-gfx1100.md:13-17` |
+| RX 7900 XTX (gfx1100) | 960 | 6 MB L2 + 96 MB MALL | 96 CU | brak (enum tylko, 15a §2.5) | brak | brak | brak / brak | `wiki/stos/rdna3-gfx1100.md:13-17` |
 | RTX 3090 (sm_86) | 936 | 6 MB | 82 | brak (cc < 9.0) | brak (cp.async) | brak | brak / brak | Blackwell RTX whitepaper tab. 1 (https://images.nvidia.com/aem-dam/Solutions/geforce/blackwell/nvidia-rtx-blackwell-gpu-architecture.pdf) |
 | RTX 4090 (sm_89) | 1008 | 72 MB | 128 | **brak** (Ada, #22522 „CC >= 90”) | brak | brak | FP8 tak / brak | j.w. |
 | RTX 5060 Ti (sm_120) | 448 | 32 MB | 36 | tak | tak | tak, bez multicast | tak / tak (`sm_120a`) | https://en.wikipedia.org/wiki/GeForce_RTX_50_series (tabela specyfikacji); `wiki/karty/rtx-5060-ti.md:12` |
@@ -97,7 +97,7 @@ Zysk dotyczy naszych obciążeń: Qwen MTP / LFM plain / agent kodujący.
 | technika | (a) XTX | (b) NVIDIA | oczekiwany zysk | wysiłek |
 |---|---|---|---|---|
 | koalescencja, szerokie ładowania 16 B, buffer loads | **tak** (`MMVQ_BUFFER_LOADS`, `mmvq.cu:197-231`) | tak (upstream) | — | — |
-| wiersze/fale na blok, strojenie per arch | **tak** (`mmvq-n1-wiersze`; sm_86 N1_ROWS=2 +7–8.5%, sm_120 −2.7%, `wiki/nvidia/sm-86-89-120.md:22`) | tak (profil karty) | — | — |
+| wiersze/fale na blok, strojenie per arch | **tak** (`mmvq-n1-wiersze`; sm_86 N1_ROWS=2 +7–8.5%, sm_120 −2.7%, `wiki/stos/sm-86-89-120.md:22`) | tak (profil karty) | — | — |
 | wielokolumnowy GEMV dla weryfikacji (wagi czytane raz na N tokenów) | **tak** (2–8 MMVQ multi, 9–16 WMMA iu8 0037) | tak (MMVQ ≤ 8, potem MMQ) | — | — |
 | cache policy wag (strumień poza L0/GL1) | **tak**: GLC\|DLC, verify mmvq 22.95 → 22.08 ms (`mmvq.cu:345-347`); głowa Q6_K traci ~0.14 ms | nie: `ld.global.L1::no_allocate`/`evict_first` | XTX: cpol 0 dla samej głowy Q6_K ≈ +0.5% Qwen MTP `[SZACUNEK]`; NVIDIA nieznany | 0.5 dnia |
 | prefetch wag do rejestrów w pętli | **tak** w GU_BLOCK (16g) | upstream: `prefetch.global.L2` tylko na DGX Spark (`mmvq.cu:30-34,1703-1721`) | NVIDIA 2–8 kol.: 0…+3% weryfikacji `[SZACUNEK]` z danych GB10 | 0.5 dnia (E4) |
@@ -321,7 +321,7 @@ Zasady bezpieczeństwa (18 §6.1, 17):
 **AMD/RDNA3 (luka listy wafer; dodaję spoza niej):**
 11. AMD RDNA3 ISA Reference Guide (gfx11) — https://www.amd.com/content/dam/amd/en/documents/radeon-tech-docs/instruction-set-architectures/rdna3-shader-instruction-set-architecture-feb-2023_0.pdf `[link nie otwierany w tej sesji]`
 12. LLVM AMDGPU memory model dla gfx10/gfx11 (GLC/DLC, `buffer_gl*_inv`) — https://llvm.org/docs/AMDGPUUsage.html#memory-model-gfx10-gfx11 (potrzebne do każdego hand-offu przez pamięć, 15a §4.4).
-13. Nasze: `wiki/rocm/pm4.md`, `hip-graph-narzut.md`, `lekcja-handoff-rdna3.md`, `att-gfx1100` (16g), `lfm-decode-round4.md` §1.
+13. Nasze: `wiki/stos/pm4.md`, `hip-graph-narzut.md`, `lekcja-handoff-rdna3.md`, `att-gfx1100` (16g), `lfm-decode-round4.md` §1.
 14. HIP hardware implementation — https://rocm.docs.amd.com/projects/HIP/en/latest/understand/hardware_implementation.html. Czytać ze świadomością, że opisuje CDNA.
 
 **Megakernele / dataflow:**
@@ -362,11 +362,11 @@ Pomijalne dla nas: dział 5 (distributed), TPU/Trainium, Gateway API/llm-d, NCCL
   - 17 §0 (17:8-26);
   - 18 §3.1–3.5, §4;
   - `qwen-opt/research/lfm-decode-round4.md:26-55`;
-  - `wiki/rocm/hip-graph-narzut.md:14-16`;
-  - `wiki/nvidia/sm-86-89-120.md:20-24`;
-  - `wiki/nvidia/nvfp4.md:18-25`;
+  - `wiki/stos/hip-graph-narzut.md:14-16`;
+  - `wiki/stos/sm-86-89-120.md:20-24`;
+  - `wiki/modele/nvfp4.md:18-25`;
   - `wiki/metody/wyniki-negatywne.md:13-17`;
-  - `wiki/kernele/wmma-small-n.md:10-17`;
+  - `wiki/optymalizacje/wmma-small-n.md:10-17`;
   - `BENCHMARKI-PRZED-PO-2026-10-19.md:17,96-99`.
 
 ---

@@ -21,4 +21,4 @@ E1 (2026-10-18): ten sam błąd rozbroił samozniszczenie instancji 3060 B (uzbr
 - [[lekcje/_hub|lekcje]]
 - [[lekcja-zombie-serwery]]
 - [[serializacja-gpu]]
-- [[harness-chmurowy]]
+- [[narzedzia/skrypty-chmury]]

@@ -14,6 +14,6 @@ Asystent (2026-10-15 23:39 UTC): „Pierwsza runda idzie w całości na Vast, bo
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
 - [[2026-10-15-karty-kupujemy]]
-- [[2026-10-16-budzety-chmury]]
+- [[karty/vast-ai]]
 - [[2026-10-16-kampania-nvidia]]
-- [[firma-vast-ai]]
+- [[karty/vast-ai]]

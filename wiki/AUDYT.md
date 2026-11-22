@@ -28,79 +28,79 @@ Ograniczenie: automat potwierdza obecność liczby w źródle; kontekst semantyc
 
 Poprawiona liczba: [[kwanty-gguf]] – rozmiar Qwen3.8-27B UD-Q4_K_XL 16.34 → **16.35 GiB** (`stat`: 17 559 178 144 B; SPEC-QWEN27B.md:21 obcinał).
 
-Uzupełnione `zrodlo` (liczba była prawdziwa, ale nie w cytowanym pliku): [[modele/kwanty-gguf]], [[nvidia/cuda-stos]], [[nvidia/nvidia-wyniki-2026-10-16]], [[karty/rx-7900-xtx]], [[kernele/clamp-q8-1]], [[narzedzia/gpu-keepawake]], [[narzedzia/gdnemu-isadiff]], [[narzedzia/reactor-monitor]], [[narzedzia/loo-py]], [[repo/mtp-train]], [[repo/opt-gdn6]], [[repo/strata]], [[repo/tools6]], [[lekcje/lekcja-zombie-serwery]], [[lekcje/lekcja-bledny-roofline]], [[ludzie-firmy/firma-nvidia]], [[ludzie-firmy/ggml-org]], [[ludzie-firmy/liquidai]], [[decyzje/2026-10-16-prosta-baza-wiedzy]], [[eksperymenty/2026-10-16-rebase-v070]], [[karty/rtx-3090]], [[karty/rtx-5060-ti]], [[latki/patch-manifest]].
+Uzupełnione `zrodlo` (liczba była prawdziwa, ale nie w cytowanym pliku): [[modele/kwanty-gguf]], [[stos/cuda-stos]], [[testy/2026-10-16-kampania-nvidia]], [[karty/rx-7900-xtx]], [[optymalizacje/clamp-q8-1]], [[narzedzia/gpu-keepawake]], [[narzedzia/gdnemu-isadiff]], [[narzedzia/reactor-monitor]], [[narzedzia/loo-py]], [[stos/mtp-train]], [[stos/opt-gdn6]], [[ekosystem/strata]], [[stos/tools6]], [[lekcje/lekcja-zombie-serwery]], [[lekcje/lekcja-bledny-roofline]], [[ekosystem/firma-nvidia]], [[ekosystem/ggml-org]], [[ekosystem/liquidai]], [[decyzje/2026-10-16-prosta-baza-wiedzy]], [[testy/2026-10-16-rebase-v070]], [[karty/rtx-3090]], [[karty/rtx-5060-ti]], [[optymalizacje/patch-manifest]].
 
 Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je 2026-10-16 rano (sekcja „Aktualizacja: wyniki finalne” niżej).
 
 ## Tabela (notatka, liczby, wiersz źródła, status)
 | notatka | liczby | wiersz źródła | status |
 |---|---|---|---|
-| [[chmura/amd-dev-cloud]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[chmura/amd-dev-cloud]] | 1.75, 1.99, 2.39, 2.99 | 05-chmura-gpu-do-testow.md:114 | OK |
-| [[chmura/amd-dev-cloud]] | 10, 25 | 05-chmura-gpu-do-testow.md:164 | OK |
-| [[chmura/amd-dev-cloud]] | 100, 30 | 05-chmura-gpu-do-testow.md:39 | OK |
-| [[chmura/amd-dev-cloud]] | 14 | 05-chmura-gpu-do-testow.md:40 | OK |
-| [[chmura/amd-dev-cloud]] | 50 | 05-chmura-gpu-do-testow.md:113 | OK |
-| [[chmura/harness-chmurowy]] | 0.3 | PLAN-TESTOW.md:38 | OK |
-| [[chmura/harness-chmurowy]] | 0.98, 12.8, 24 | PLAN-TESTOW.md:36 | OK |
-| [[chmura/harness-chmurowy]] | 15 | PLAN-TESTOW.md:47 | OK |
-| [[chmura/harness-chmurowy]] | 20 | PLAN-TESTOW.md:40 | OK |
-| [[chmura/harness-chmurowy]] | 600 | PLAN-TESTOW.md:13 | OK |
-| [[chmura/radeony-do-wynajecia]] | 0.04, 0.17, 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
-| [[chmura/radeony-do-wynajecia]] | 0.22 | 05-chmura-gpu-do-testow.md:28 | OK |
-| [[chmura/radeony-do-wynajecia]] | 0.471 | 05-chmura-gpu-do-testow.md:24 | OK |
-| [[chmura/radeony-do-wynajecia]] | 0.49 | 05-chmura-gpu-do-testow.md:29 | OK |
-| [[chmura/radeony-do-wynajecia]] | 0.635, 2.54 | 05-chmura-gpu-do-testow.md:140 | OK |
-| [[chmura/radeony-do-wynajecia]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[chmura/radeony-do-wynajecia]] | 1,470, 694 | 05-chmura-gpu-do-testow.md:258 | OK |
-| [[chmura/radeony-do-wynajecia]] | 129, 179, 270 | 05-chmura-gpu-do-testow.md:26 | OK |
-| [[chmura/radeony-do-wynajecia]] | 2026 | 05-chmura-gpu-do-testow.md:75 | OK |
-| [[chmura/radeony-do-wynajecia]] | 24 | 05-chmura-gpu-do-testow.md:27 | OK |
-| [[chmura/radeony-do-wynajecia]] | 299 | 05-chmura-gpu-do-testow.md:72 | OK |
-| [[chmura/radeony-do-wynajecia]] | 395 | 05-chmura-gpu-do-testow.md:25 | OK |
-| [[chmura/radeony-do-wynajecia]] | 7900 | 05-chmura-gpu-do-testow.md:22 | OK |
-| [[chmura/runpod]] | 0.22, 0.50, 22 | 05-chmura-gpu-do-testow.md:99 | OK |
-| [[chmura/runpod]] | 0.34, 0.89 | 05-chmura-gpu-do-testow.md:103 | OK |
-| [[chmura/runpod]] | 0.69, 1.19 | 05-chmura-gpu-do-testow.md:108 | OK |
-| [[chmura/runpod]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[chmura/runpod]] | 1.11 | PLAN-TESTOW.md:11 | OK |
-| [[chmura/runpod]] | 2.39, 3070, 5090 | 05-chmura-gpu-do-testow.md:67 | OK |
-| [[chmura/runpod]] | 2026 | 05-chmura-gpu-do-testow.md:3 | OK (inny wiersz źródła, sprawdzone) |
-| [[chmura/runpod]] | 3.0 | PLAN-TESTOW.md:12 | OK |
-| [[chmura/runpod]] | 3060 | 05-chmura-gpu-do-testow.md:68 | OK |
-| [[chmura/runpod]] | 3090, 4090 | 05-chmura-gpu-do-testow.md:69 | OK |
-| [[chmura/salad]] | 0.04, 0.17, 7800, 9060, 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
-| [[chmura/salad]] | 0.09, 3090 | 05-chmura-gpu-do-testow.md:21 | OK |
-| [[chmura/salad]] | 0060 | 05-chmura-gpu-do-testow.md:26 | OK |
-| [[chmura/salad]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[chmura/salad]] | 20 | 05-chmura-gpu-do-testow.md:365 | OK |
-| [[chmura/salad]] | 3060 | 05-chmura-gpu-do-testow.md:68 | OK |
-| [[chmura/salad]] | 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
-| [[chmura/salad]] | 7.1 | 05-chmura-gpu-do-testow.md:136 | OK |
-| [[chmura/salad]] | 7900 | 05-chmura-gpu-do-testow.md:22 | OK |
-| [[chmura/vast-ai]] | 0.08, 3060 | 05-chmura-gpu-do-testow.md:14 | OK |
-| [[chmura/vast-ai]] | 0.097 | PLAN-TESTOW.md:99 | OK |
-| [[chmura/vast-ai]] | 0.165, 163 | 05-chmura-gpu-do-testow.md:104 | OK |
-| [[chmura/vast-ai]] | 0.188 | 05-chmura-gpu-do-testow.md:110 | OK |
-| [[chmura/vast-ai]] | 0.228, 162 | 05-chmura-gpu-do-testow.md:99 | OK |
-| [[chmura/vast-ai]] | 0.232 | PLAN-TESTOW.md:101 | OK |
-| [[chmura/vast-ai]] | 0.294 | 05-chmura-gpu-do-testow.md:105 | OK |
-| [[chmura/vast-ai]] | 0.507, 318 | 05-chmura-gpu-do-testow.md:103 | OK |
-| [[chmura/vast-ai]] | 0.734 | 05-chmura-gpu-do-testow.md:108 | OK |
-| [[chmura/vast-ai]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[chmura/vast-ai]] | 1.8 | PLAN-TESTOW.md:11 | OK |
-| [[chmura/vast-ai]] | 10, 2026 | 05-chmura-gpu-do-testow.md:13 | OK |
-| [[chmura/vast-ai]] | 2.5 | PLAN-TESTOW.md:5 | OK |
-| [[chmura/vast-ai]] | 3090 | 05-chmura-gpu-do-testow.md:15 | OK |
-| [[chmura/vast-ai]] | 4090 | 05-chmura-gpu-do-testow.md:16 | OK |
-| [[chmura/vast-ai]] | 445, 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
-| [[chmura/vast-ai]] | 50 | 05-chmura-gpu-do-testow.md:66 | OK |
-| [[chmura/vast-ai]] | 5060 | 05-chmura-gpu-do-testow.md:17 | OK |
-| [[chmura/vast-ai]] | 5070 | 05-chmura-gpu-do-testow.md:18 | OK |
-| [[chmura/vast-ai]] | 80 | 05-chmura-gpu-do-testow.md:21 | OK |
-| [[decyzje/2026-10-09-limit-mocy-odlozony]] | 20, 2026 | NOTES.md:109 | OK |
-| [[decyzje/2026-10-09-limit-mocy-odlozony]] | 272, 303, 350 | NOTES.md:110 | OK |
-| [[decyzje/2026-10-09-limit-mocy-odlozony]] | 285 | NOTES.md:126 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/amd-dev-cloud]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/amd-dev-cloud]] | 1.75, 1.99, 2.39, 2.99 | 05-chmura-gpu-do-testow.md:114 | OK |
+| [[karty/amd-dev-cloud]] | 10, 25 | 05-chmura-gpu-do-testow.md:164 | OK |
+| [[karty/amd-dev-cloud]] | 100, 30 | 05-chmura-gpu-do-testow.md:39 | OK |
+| [[karty/amd-dev-cloud]] | 14 | 05-chmura-gpu-do-testow.md:40 | OK |
+| [[karty/amd-dev-cloud]] | 50 | 05-chmura-gpu-do-testow.md:113 | OK |
+| [[narzedzia/skrypty-chmury]] | 0.3 | PLAN-TESTOW.md:38 | OK |
+| [[narzedzia/skrypty-chmury]] | 0.98, 12.8, 24 | PLAN-TESTOW.md:36 | OK |
+| [[narzedzia/skrypty-chmury]] | 15 | PLAN-TESTOW.md:47 | OK |
+| [[narzedzia/skrypty-chmury]] | 20 | PLAN-TESTOW.md:40 | OK |
+| [[narzedzia/skrypty-chmury]] | 600 | PLAN-TESTOW.md:13 | OK |
+| [[karty/radeony-do-wynajecia]] | 0.04, 0.17, 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
+| [[karty/radeony-do-wynajecia]] | 0.22 | 05-chmura-gpu-do-testow.md:28 | OK |
+| [[karty/radeony-do-wynajecia]] | 0.471 | 05-chmura-gpu-do-testow.md:24 | OK |
+| [[karty/radeony-do-wynajecia]] | 0.49 | 05-chmura-gpu-do-testow.md:29 | OK |
+| [[karty/radeony-do-wynajecia]] | 0.635, 2.54 | 05-chmura-gpu-do-testow.md:140 | OK |
+| [[karty/radeony-do-wynajecia]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/radeony-do-wynajecia]] | 1,470, 694 | 05-chmura-gpu-do-testow.md:258 | OK |
+| [[karty/radeony-do-wynajecia]] | 129, 179, 270 | 05-chmura-gpu-do-testow.md:26 | OK |
+| [[karty/radeony-do-wynajecia]] | 2026 | 05-chmura-gpu-do-testow.md:75 | OK |
+| [[karty/radeony-do-wynajecia]] | 24 | 05-chmura-gpu-do-testow.md:27 | OK |
+| [[karty/radeony-do-wynajecia]] | 299 | 05-chmura-gpu-do-testow.md:72 | OK |
+| [[karty/radeony-do-wynajecia]] | 395 | 05-chmura-gpu-do-testow.md:25 | OK |
+| [[karty/radeony-do-wynajecia]] | 7900 | 05-chmura-gpu-do-testow.md:22 | OK |
+| [[karty/runpod]] | 0.22, 0.50, 22 | 05-chmura-gpu-do-testow.md:99 | OK |
+| [[karty/runpod]] | 0.34, 0.89 | 05-chmura-gpu-do-testow.md:103 | OK |
+| [[karty/runpod]] | 0.69, 1.19 | 05-chmura-gpu-do-testow.md:108 | OK |
+| [[karty/runpod]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/runpod]] | 1.11 | PLAN-TESTOW.md:11 | OK |
+| [[karty/runpod]] | 2.39, 3070, 5090 | 05-chmura-gpu-do-testow.md:67 | OK |
+| [[karty/runpod]] | 2026 | 05-chmura-gpu-do-testow.md:3 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/runpod]] | 3.0 | PLAN-TESTOW.md:12 | OK |
+| [[karty/runpod]] | 3060 | 05-chmura-gpu-do-testow.md:68 | OK |
+| [[karty/runpod]] | 3090, 4090 | 05-chmura-gpu-do-testow.md:69 | OK |
+| [[karty/salad]] | 0.04, 0.17, 7800, 9060, 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
+| [[karty/salad]] | 0.09, 3090 | 05-chmura-gpu-do-testow.md:21 | OK |
+| [[karty/salad]] | 0060 | 05-chmura-gpu-do-testow.md:26 | OK |
+| [[karty/salad]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/salad]] | 20 | 05-chmura-gpu-do-testow.md:365 | OK |
+| [[karty/salad]] | 3060 | 05-chmura-gpu-do-testow.md:68 | OK |
+| [[karty/salad]] | 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
+| [[karty/salad]] | 7.1 | 05-chmura-gpu-do-testow.md:136 | OK |
+| [[karty/salad]] | 7900 | 05-chmura-gpu-do-testow.md:22 | OK |
+| [[karty/vast-ai]] | 0.08, 3060 | 05-chmura-gpu-do-testow.md:14 | OK |
+| [[karty/vast-ai]] | 0.097 | PLAN-TESTOW.md:99 | OK |
+| [[karty/vast-ai]] | 0.165, 163 | 05-chmura-gpu-do-testow.md:104 | OK |
+| [[karty/vast-ai]] | 0.188 | 05-chmura-gpu-do-testow.md:110 | OK |
+| [[karty/vast-ai]] | 0.228, 162 | 05-chmura-gpu-do-testow.md:99 | OK |
+| [[karty/vast-ai]] | 0.232 | PLAN-TESTOW.md:101 | OK |
+| [[karty/vast-ai]] | 0.294 | 05-chmura-gpu-do-testow.md:105 | OK |
+| [[karty/vast-ai]] | 0.507, 318 | 05-chmura-gpu-do-testow.md:103 | OK |
+| [[karty/vast-ai]] | 0.734 | 05-chmura-gpu-do-testow.md:108 | OK |
+| [[karty/vast-ai]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/vast-ai]] | 1.8 | PLAN-TESTOW.md:11 | OK |
+| [[karty/vast-ai]] | 10, 2026 | 05-chmura-gpu-do-testow.md:13 | OK |
+| [[karty/vast-ai]] | 2.5 | PLAN-TESTOW.md:5 | OK |
+| [[karty/vast-ai]] | 3090 | 05-chmura-gpu-do-testow.md:15 | OK |
+| [[karty/vast-ai]] | 4090 | 05-chmura-gpu-do-testow.md:16 | OK |
+| [[karty/vast-ai]] | 445, 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
+| [[karty/vast-ai]] | 50 | 05-chmura-gpu-do-testow.md:66 | OK |
+| [[karty/vast-ai]] | 5060 | 05-chmura-gpu-do-testow.md:17 | OK |
+| [[karty/vast-ai]] | 5070 | 05-chmura-gpu-do-testow.md:18 | OK |
+| [[karty/vast-ai]] | 80 | 05-chmura-gpu-do-testow.md:21 | OK |
+| [[decyzje/2026-10-20-karta-fabrycznie]] | 20, 2026 | NOTES.md:109 | OK |
+| [[decyzje/2026-10-20-karta-fabrycznie]] | 272, 303, 350 | NOTES.md:110 | OK |
+| [[decyzje/2026-10-20-karta-fabrycznie]] | 285 | NOTES.md:126 | OK (inny wiersz źródła, sprawdzone) |
 | [[decyzje/2026-10-12-rocm-domyslny]] | 0006 | NOTES.md:187 | OK |
 | [[decyzje/2026-10-12-rocm-domyslny]] | 0010, 2026 | NOTES.md:190 | OK |
 | [[decyzje/2026-10-14-lfm-kv-q8]] | 0.044, 0.128 | 07-nasze-metody-uogolnienie.md:449 | OK |
@@ -124,16 +124,16 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[decyzje/2026-10-15-reasoning-control-off]] | 00, 2026 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:4329 | OK |
 | [[decyzje/2026-10-15-reasoning-control-off]] | 0065, 14 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:4331 | OK |
 | [[decyzje/2026-10-15-reasoning-control-off]] | 255.6, 291.4 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:4380 | OK |
-| [[decyzje/2026-10-15-zakaz-gpu-w-nocy]] | 00, 02, 2026, 45 | qwen-round5.md:7 | OK |
-| [[decyzje/2026-10-16-bez-lokalnego-gpu]] | 00, 2026 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5300 | OK |
-| [[decyzje/2026-10-16-bez-lokalnego-gpu]] | 02, 46 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5590 | OK |
-| [[decyzje/2026-10-16-bez-lokalnego-gpu]] | 20 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5301 | OK |
-| [[decyzje/2026-10-16-bez-lokalnego-gpu]] | 45 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5591 | OK |
-| [[decyzje/2026-10-16-bez-lokalnego-gpu]] | 56, 7900 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5302 | OK |
-| [[decyzje/2026-10-16-bez-lokalnego-gpu]] | 77240, 77240c9b3 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5574 | OK (inny wiersz źródła, sprawdzone) |
-| [[decyzje/2026-10-16-budzety-chmury]] | 00, 01, 2026, 38, 52 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5283 | OK |
-| [[decyzje/2026-10-16-budzety-chmury]] | 02, 31 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5287 | OK |
-| [[decyzje/2026-10-16-budzety-chmury]] | 35 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5395 | OK |
+| [[archiwum/2026-10-15-zakaz-gpu-w-nocy]] | 00, 02, 2026, 45 | qwen-round5.md:7 | OK |
+| [[kernel-od-a-do-z]] | 00, 2026 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5300 | OK |
+| [[kernel-od-a-do-z]] | 02, 46 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5590 | OK |
+| [[kernel-od-a-do-z]] | 20 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5301 | OK |
+| [[kernel-od-a-do-z]] | 45 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5591 | OK |
+| [[kernel-od-a-do-z]] | 56, 7900 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5302 | OK |
+| [[kernel-od-a-do-z]] | 77240, 77240c9b3 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5574 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/vast-ai]] | 00, 01, 2026, 38, 52 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5283 | OK |
+| [[karty/vast-ai]] | 02, 31 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5287 | OK |
+| [[karty/vast-ai]] | 35 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5395 | OK |
 | [[decyzje/2026-10-16-landing-i-konto]] | 00, 2026, 36, 38 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5233 | OK |
 | [[decyzje/2026-10-16-landing-i-konto]] | 571, 571e505 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5247 | OK |
 | [[decyzje/2026-10-16-landing-i-konto]] | 8.1 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5248 | OK |
@@ -143,320 +143,320 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[decyzje/2026-10-16-najpierw-wynajem-na-vast]] | 5.2 | PLAN.md:281 | OK |
 | [[decyzje/2026-10-16-prosta-baza-wiedzy]] | 2026 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5478 | OK |
 | [[decyzje/2026-10-16-runpod-drugi-pod]] | 02, 2026, 38 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5553 | OK |
-| [[decyzje/2026-10-16-saluki-bonsai-na-3060]] | 0.8 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5371 | OK |
-| [[decyzje/2026-10-16-saluki-bonsai-na-3060]] | 00, 01, 2026, 52 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5283 | OK |
-| [[decyzje/2026-10-16-saluki-bonsai-na-3060]] | 08, 26 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5287 | OK |
-| [[decyzje/2026-10-16-saluki-bonsai-na-3060]] | 27, 3060, 3090, 5060 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5286 | OK |
+| [[decyzje/2026-11-14-saluki-usuniety]] | 0.8 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5371 | OK |
+| [[decyzje/2026-11-14-saluki-usuniety]] | 00, 01, 2026, 52 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5283 | OK |
+| [[decyzje/2026-11-14-saluki-usuniety]] | 08, 26 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5287 | OK |
+| [[decyzje/2026-11-14-saluki-usuniety]] | 27, 3060, 3090, 5060 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5286 | OK |
 | [[decyzje/2026-10-16-wiki-jeden-agent]] | 02, 17, 2026, 23 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5503 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 10.0, 7900 | NOTES.md:1 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 1044, 850 | NOTES.md:16 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 116, 22.0 | 2026-10-09-rx7900xtx-qwen38-27b.md:15 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 127 | NOTES.md:48 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 131072 | SPEC-QWEN27B.md:70 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 2026 | 2026-10-09-rx7900xtx-qwen38-27b.md:1 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 204800 | NOTES.md:6 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 22.3, 59.4, 91.8 | NOTES.md:13 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 22.8, 47.4, 59, 59.2, b356fa262 | NOTES.md:10 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 23, 23.2, 60.2, 64, 85.5 | NOTES.md:11 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 25.2 | 2026-10-09-rx7900xtx-qwen38-27b.md:4 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 256 | NOTES.md:3 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 296, 621 | 2026-10-09-rx7900xtx-qwen38-27b.md:23 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 40 | SPEC-QWEN27B.md:75 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 43 | 2026-10-09-rx7900xtx-qwen38-27b.md:31 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 58 | NOTES.md:42 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 69 | 2026-10-09-rx7900xtx-qwen38-27b.md:21 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 7.5 | 2026-10-09-rx7900xtx-qwen38-27b.md:25 | OK |
-| [[eksperymenty/2026-10-09-pierwsze-pomiary]] | 92 | SPEC-QWEN27B.md:58 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 0.0, 81.9 | NOTES.md:140 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 0.3, 80.7 | NOTES.md:135 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 0.5 | NOTES.md:136 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 0.7, 79.5 | NOTES.md:139 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 1.0, 64, 80.5 | NOTES.md:133 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 120 | NOTES.md:158 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 15 | NOTES.md:119 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 2026 | NOTES.md:122 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 204800 | NOTES.md:148 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 285, 90.6, 94.1, 94.7 | NOTES.md:126 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 3.5 | NOTES.md:145 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 4.4, 92 | NOTES.md:124 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 400 | NOTES.md:129 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 47 | NOTES.md:137 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 47.0 | NOTES.md:138 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 71.9 | NOTES.md:156 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 75.0 | NOTES.md:134 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 81.1 | NOTES.md:154 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 86.2 | NOTES.md:153 | OK |
-| [[eksperymenty/2026-10-10-sweep-mtp-dflash]] | 86.3 | NOTES.md:151 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 0.7, 24 | NOTES.md:210 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 1.2, 517 | NOTES.md:211 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 1.4, 536 | NOTES.md:212 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 1.7, 78.6, 92.9 | NOTES.md:199 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 1024, 2048, 204800, 24.5, 512 | NOTES.md:218 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 1040, 1050 | NOTES.md:217 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 16384, 8192 | NOTES.md:213 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 2026 | NOTES.md:190 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 25, 3.8, 91, 99.8 | STATUS-NEXT.md:41 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 27 | NOTES.md:206 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 27332, 31.9 | NOTES.md:209 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 28 | NOTES.md:195 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 29.5, 62.4, 74.4 | NOTES.md:201 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 41.65, 41.69 | NOTES.md:216 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 43.0, 65, 70.9, 94 | NOTES.md:202 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 6.6, 75.5, 81.4 | NOTES.md:200 | OK |
-| [[eksperymenty/2026-10-12-cache-promptu-i-a7]] | 71.6 | NOTES.md:204 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 0.0067, 0.0098, 6.182, 6.191, 96.5 | NOTES.md:225 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 1.7, 106.9, 43.0, 77.7, 78.6, 94 | NOTES.md:234 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 1308, 2156, 4.30, 6.99 | NOTES.md:223 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 16 | NOTES.md:232 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 2026 | NOTES.md:221 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 3.23, 972 | NOTES.md:230 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 33.79, 35.67, 88.1, 90.4 | NOTES.md:239 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 34.52, 36.38, 86.4, 88.5 | NOTES.md:231 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 35.83, 37.71, 39.6, 41.7, 74.8, 78.5, 83.3, 85.3 | NOTES.md:224 | OK |
-| [[eksperymenty/2026-10-12-fuzje-a3-a6]] | 85.2, 87.6 | NOTES.md:233 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 1.7, 40 | RESULTS.md:98 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 107, 127, 35, 69 207 | RESULTS.md:15 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 11, 3.04, 3.93 | RESULTS.md:68 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 12.1 | RESULTS.md:108 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 2.14, 4096, 71, 74 | RESULTS.md:9 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 2.3, 3.7, 7.4 | RESULTS.md:21 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 2026, c90db29c6 | RESULTS.md:5 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 2048 | RESULTS.md:100 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 25 | RESULTS.md:91 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 27 | RESULTS.md:3 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 30, 57 | RESULTS.md:13 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 45 | RESULTS.md:109 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 5.3, 60 | RESULTS.md:102 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 97.3, 98.2, 99.0, 99.6 | RESULTS.md:40 | OK |
-| [[eksperymenty/2026-10-12-mtp-trening-faza1]] | 98.4 | RESULTS.md:35 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 1.7, 13.3, 15.0, 683, 750, 78.6, 92, 92.4 | NOTES.md:175 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 1000 | NOTES.md:173 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 1200, 15.5 | NOTES.md:184 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 165, 260, 397, 43.0, 43.9, 666, 94 | NOTES.md:178 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 20.3, 21.2, 6.6, 746, 75.5, 80, 80.9, 924 | NOTES.md:176 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 2026, 204800, 256, 64 | NOTES.md:172 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 29.5, 50.2, 62.4, 624, 66.1, 863 | NOTES.md:177 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 38.4, 41.5, 41.8, 44.5, 73.8, 74.4, 74.5 | NOTES.md:183 | OK |
-| [[eksperymenty/2026-10-12-rocm-vs-vulkan]] | 44 | NOTES.md:180 | OK |
-| [[eksperymenty/2026-10-12-vulkan-krok-po-kroku]] | 0.0036, 0.0042, 512, 6.2099, 6.2226 | NOTES.md:167 | OK |
-| [[eksperymenty/2026-10-12-vulkan-krok-po-kroku]] | 0.3, 39.92, 4.8, 41.46, 41.93, 43.73, 5.2 | NOTES.md:166 | OK |
-| [[eksperymenty/2026-10-12-vulkan-krok-po-kroku]] | 0.5, 13.6, 48, 68, 68e163cf4, 8.6 | NOTES.md:164 | OK |
-| [[eksperymenty/2026-10-12-vulkan-krok-po-kroku]] | 1.3, 1.9, 579, 614, 663, 665, 690, 699, 6c7801bf6, 81, 81e5fb913, afbb23886, f6e5de112 | NOTES.md:165 | OK |
-| [[eksperymenty/2026-10-12-vulkan-krok-po-kroku]] | 2026, 204800, 285 | NOTES.md:162 | OK |
-| [[eksperymenty/2026-10-12-vulkan-krok-po-kroku]] | 284, 87, 90 | NOTES.md:170 | OK |
-| [[eksperymenty/2026-10-12-vulkan-krok-po-kroku]] | 80.3, 80.5 | NOTES.md:163 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 0021 | NOTES.md:176 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 0022, 22.1, 24.3 | NOTES.md:245 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 1280, 16 | NOTES.md:250 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 2026, 60, 60ce2a71f, 9f83f1f81 | NOTES.md:241 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 28.4, 31.0 | NOTES.md:254 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 32 | NOTES.md:242 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 32.02, 33.17 | NOTES.md:255 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 33.79, 35.67, 88.1 | NOTES.md:239 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 40 | NOTES.md:249 | OK |
-| [[eksperymenty/2026-10-13-k1-mmvq]] | 94.7, 95.4 | NOTES.md:246 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 0023 | NOTES.md:11 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 0024 | NOTES.md:210 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 0025 | NOTES.md:25 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 0026 | NOTES.md:350 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 0027 | NOTES.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 0028 | NOTES.md:195 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 1.84, 1.87, 2.68 | NOTES.md:263 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 16.8, 4.3 | NOTES.md:262 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 17.7 | NOTES.md:268 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 2.8, 3.18, 831 | NOTES.md:273 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 2026, 849b69978, ba90baf3a | NOTES.md:258 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 30.68, 32.14, 97.8 | NOTES.md:274 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 32.50, 99.6, 9f83f1f81 | NOTES.md:266 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 33.17 | NOTES.md:255 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 4.51, 5.87, 5120 | NOTES.md:261 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 4.68, 4.90, 5.54 | NOTES.md:264 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 65504 | NOTES.md:259 | OK |
-| [[eksperymenty/2026-10-13-k2-male-kernele]] | 972 | NOTES.md:265 | OK |
-| [[eksperymenty/2026-10-13-k3-host]] | 0.65 | NOTES.md:281 | OK |
-| [[eksperymenty/2026-10-13-k3-host]] | 0029, 101.5, 103.7, 29.46, 30.97 | NOTES.md:279 | OK |
-| [[eksperymenty/2026-10-13-k3-host]] | 0031 | NOTES.md:195 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k3-host]] | 0047 | NOTES.md:10 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k3-host]] | 1.1, 140, 375, 645, 963 | NOTES.md:278 | OK |
-| [[eksperymenty/2026-10-13-k3-host]] | 1.7, 109.4, 126.0, 29.5, 6.6, 88.3, 94, 98.8 | NOTES.md:280 | OK |
-| [[eksperymenty/2026-10-13-k3-host]] | 16, 248 | NOTES.md:277 | OK |
-| [[eksperymenty/2026-10-13-k3-host]] | 2026, 2eb088419, 35, 35d04b446, 56, 56be15abf | NOTES.md:276 | OK |
-| [[eksperymenty/2026-10-13-k3-host]] | 32.14, 97.8 | NOTES.md:274 | OK |
-| [[eksperymenty/2026-10-13-k4-i-hw-queues]] | 0.43, 32.1, 35.0, 49.2, 51.0 | NOTES.md:298 | OK |
-| [[eksperymenty/2026-10-13-k4-i-hw-queues]] | 0037 | NOTES.md:224 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-k4-i-hw-queues]] | 16, 2026, d3a0973ae | NOTES.md:297 | OK |
-| [[eksperymenty/2026-10-13-k4-i-hw-queues]] | 2305 | NOTES.md:302 | OK |
-| [[eksperymenty/2026-10-13-k4-i-hw-queues]] | 29.30, 29.39 | NOTES.md:303 | OK |
-| [[eksperymenty/2026-10-13-k4-i-hw-queues]] | 4 101.7, 470, 5 105.4 | NOTES.md:299 | OK |
-| [[eksperymenty/2026-10-13-k4-i-hw-queues]] | 8097 | NOTES.md:300 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 0.4 | NOTES.md:284 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 0.64, 0036, 1.35, 102.9, 106.1, 28.27, 29.36 | NOTES.md:293 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 0032 | NOTES.md:298 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 0033 | NOTES.md:96 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-13-s2-s4]] | 10, 2026, 343, 343c2fbbb | NOTES.md:283 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 100.6, 100.7, 103.2, 3.008, 3.063, 78, 85, 86, 92, 99.8 | NOTES.md:286 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 15 | NOTES.md:294 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 195, 638, 748, 793 | NOTES.md:292 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 28.74, 29.46, 29.76, 3.62, 30.97, 4.82 | NOTES.md:285 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 308 | NOTES.md:287 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 3f8c8ddff, b1a203959 | NOTES.md:290 | OK |
-| [[eksperymenty/2026-10-13-s2-s4]] | 720 | NOTES.md:291 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 0.5, 1.6, 2.46, 2.78, 2.98, 27, 3.31, 62, 72, 8192, 83, 90 | NOTES.md:327 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 0040, 32 | NOTES.md:321 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 0045 | NOTES.md:307 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 0047 | NOTES.md:10 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 0b5b15d17, e84abb808 | NOTES.md:326 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 1.7, 130.2, 766, 818 | NOTES.md:331 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 100.6, 97.5 | NOTES.md:330 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 1024, 15 | NOTES.md:324 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 104.2, 106.5, 27.90, 28.94 | NOTES.md:329 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 105 | NOTES.md:318 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 123, 141, 29.5, 6.6, 666, 668, 762, 767, 867, 870, 906, 913, 94, 941, 943, 956, 962 | NOTES.md:322 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 139, 204800, 236, 305 | NOTES.md:328 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 2026, 575e3d893, 6aacfea49 | NOTES.md:320 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 29.40 | NOTES.md:323 | OK |
-| [[eksperymenty/2026-10-14-prefill-k5-t3]] | 89 | NOTES.md:317 | OK |
-| [[eksperymenty/2026-10-14-t1-t2-draft]] | 0.65, 1.6 | NOTES.md:309 | OK |
-| [[eksperymenty/2026-10-14-t1-t2-draft]] | 102.4 | NOTES.md:312 | OK |
-| [[eksperymenty/2026-10-14-t1-t2-draft]] | 102.6, 28.28, 29.36 | NOTES.md:318 | OK |
-| [[eksperymenty/2026-10-14-t1-t2-draft]] | 102.7, 103.0, 103.5, 104.7, 105.0, 108.4, 4 104.7, 82.6, 84.6, 88.4, 89.3, 93.5, 95.9, 96.5, 96.7 | NOTES.md:308 | OK |
-| [[eksperymenty/2026-10-14-t1-t2-draft]] | 103.6, 79.8, 88.8 | NOTES.md:311 | OK |
-| [[eksperymenty/2026-10-14-t1-t2-draft]] | 12, 1391, 1585, 30.9, 32.2, 34.2, 36.4, 37.2, 40.8, 41.1, 45.7, 832, 834, d3a0973ae | NOTES.md:307 | OK |
-| [[eksperymenty/2026-10-14-t1-t2-draft]] | 2026, 7e9c73d8b, 87, b9b476c87 | NOTES.md:305 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 0.8, 11, 312, 800 | NOTES.md:384 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 0065, 0069, 2026 | NOTES.md:381 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 0066, 128 | NOTES.md:383 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 101.6, 109.5, 256.9, 292.9 | NOTES.md:389 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 104.6, 293, 293.2, 293.3 | NOTES.md:388 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 104.8, 113.2, 254.2, 294.3 | NOTES.md:391 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 105.4, 257.1, 292.6, 98.9 | NOTES.md:392 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 107.0, 2048, 99.3 | NOTES.md:390 | OK |
-| [[eksperymenty/2026-10-15-sampler]] | 255 | STATUS-NEXT.md:21 | OK |
-| [[eksperymenty/2026-10-16-bit-exact]] | 12 | 12-bit-exact-spekulacja.md:1 | OK |
-| [[eksperymenty/2026-10-16-bit-exact]] | 16, 2026 | 12-bit-exact-spekulacja.md:3 | OK |
-| [[eksperymenty/2026-10-16-bit-exact]] | 23335 | 12-bit-exact-spekulacja.md:24 | OK |
-| [[eksperymenty/2026-10-16-bit-exact]] | 6f14e814, c4708318 | 12-bit-exact-spekulacja.md:8 | OK |
-| [[eksperymenty/2026-10-16-kampania-nvidia]] | 19253 | summary.txt:4 | OK |
-| [[eksperymenty/2026-10-16-kampania-nvidia]] | 2.5 | PLAN-TESTOW.md:5 | OK |
-| [[eksperymenty/2026-10-16-kampania-nvidia]] | 2026 | PLAN-TESTOW.md:3 | OK |
-| [[eksperymenty/2026-10-16-kampania-nvidia]] | 3060 | PLAN-TESTOW.md:91 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-16-kampania-nvidia]] | 3090 | PLAN-TESTOW.md:89 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-16-kampania-nvidia]] | 31 | PLAN-TESTOW.md:58 | OK |
-| [[eksperymenty/2026-10-16-kampania-nvidia]] | 32 | PLAN-TESTOW.md:154 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/2026-10-16-kampania-nvidia]] | 5060 | PLAN-TESTOW.md:159 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 0006 | REBASE.md:17 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 0010, 10 | REBASE.md:15 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 0018 | REBASE.md:24 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 07, 29274 | REBASE.md:133 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 13 | REBASE.md:182 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 141, 60, 620, 620d2225c, e60eff95f | REBASE.md:3 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 1bb2b9fcb | REBASE.md:115 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 20, 39 | REBASE.md:140 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 2026 | git:1 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 29 | REBASE.md:25 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 29353 | REBASE.md:122 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 30257 | REBASE.md:146 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 33, 38 | REBASE.md:169 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 46 | REBASE.md:26 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 59 | REBASE.md:98 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 69, 8c942e5a9 | REBASE.md:5 | OK |
-| [[eksperymenty/2026-10-16-rebase-v070]] | 70 | REBASE.md:1 | OK |
-| [[eksperymenty/lfm-baza]] | 1.3, 2.69, 3.1, 3.5, 3.7, 3.8, 5.05, 680, 71, 721 | NOTES.md:340 | OK |
-| [[eksperymenty/lfm-baza]] | 1.7 | NOTES.md:331 | OK |
-| [[eksperymenty/lfm-baza]] | 1.8, 1.9, 500 | NOTES.md:338 | OK |
-| [[eksperymenty/lfm-baza]] | 131072, 17, 17.8 | NOTES.md:334 | OK |
-| [[eksperymenty/lfm-baza]] | 153, 168, 172, 174, 198, 2768, 29.7, 3709, 5172, 5805, 6.7, 6124, 95 | NOTES.md:336 | OK |
-| [[eksperymenty/lfm-baza]] | 169.3, 198.3, 6107, 6180, e60eff95f | NOTES.md:339 | OK |
-| [[eksperymenty/lfm-baza]] | 173, 5.78 | NOTES.md:335 | OK |
-| [[eksperymenty/lfm-baza]] | 2.5, 2026 | NOTES.md:333 | OK |
-| [[eksperymenty/lfm-runda-1]] | 0048, 0052, 2026 | NOTES.md:343 | OK |
-| [[eksperymenty/lfm-runda-1]] | 0049, 4.979, 5.067, 682, 720 | NOTES.md:346 | OK |
-| [[eksperymenty/lfm-runda-1]] | 0050, 4.800, 595 | NOTES.md:347 | OK |
-| [[eksperymenty/lfm-runda-1]] | 0051, 4.642, 4.817, 521 | NOTES.md:348 | OK |
-| [[eksperymenty/lfm-runda-1]] | 1.05, 5.11, 5.79 | NOTES.md:345 | OK |
-| [[eksperymenty/lfm-runda-1]] | 172.9, 197.4, 217, 218.6, 219, 220.4, 26, 29.12, 29.17, 4.536, e84abb808 | NOTES.md:350 | OK |
-| [[eksperymenty/lfm-runda-1]] | 4.474, 4.490 | NOTES.md:351 | OK |
-| [[eksperymenty/lfm-runda-1]] | 4.509, 4.610 | NOTES.md:349 | OK |
-| [[eksperymenty/lfm-runda-2]] | 0.5, 0.8, 2.53 | NOTES.md:358 | OK |
-| [[eksperymenty/lfm-runda-2]] | 0053, 0054, 2026 | NOTES.md:353 | OK |
-| [[eksperymenty/lfm-runda-2]] | 0055 | NOTES.md:362 | OK |
-| [[eksperymenty/lfm-runda-2]] | 12.7, 131, 144, 18.6, 187, 19.3, 2.6, 30.1, 32, 5.0, 98 | NOTES.md:354 | OK |
-| [[eksperymenty/lfm-runda-2]] | 217 | NOTES.md:350 | OK |
-| [[eksperymenty/lfm-runda-2]] | 221.3, 223, 238, 243, 244.1, 2c7ee8a2, 3000, 4.097, 4.519, 64, 6f14e814, bcdf324d3, c4708318 | NOTES.md:357 | OK |
-| [[eksperymenty/lfm-runda-2]] | 24.3, 27.2 | NOTES.md:359 | OK |
-| [[eksperymenty/lfm-runda-2]] | 4.100, 4.231, 416 | NOTES.md:356 | OK |
-| [[eksperymenty/lfm-runda-2]] | 4.246, 4.451, 445, 521 | NOTES.md:355 | OK |
-| [[eksperymenty/lfm-runda-3]] | 0 241.1, 152.4, 191.4, 205.4, 231.0, 237, 241.1, 243, 25.6, 251, 252, 262.1, 305, 416, 56, 5909, 5909da1f1, 894, 894e56e4 | NOTES.md:368 | OK |
-| [[eksperymenty/lfm-runda-3]] | 0.044171, 0.044196, 0.128, 16, 32, 4.099, 4.121, 4.526, 4.875, 5.462, 6.561, 64, 85.2, 92.25, 92.35, 98 | NOTES.md:363 | OK |
-| [[eksperymenty/lfm-runda-3]] | 0055, 0059, 2026 | NOTES.md:362 | OK |
-| [[eksperymenty/lfm-runda-3]] | 0056, 3.973, 4.070 | NOTES.md:364 | OK |
-| [[eksperymenty/lfm-runda-3]] | 0057, 3.907, 4.043 | NOTES.md:365 | OK |
-| [[eksperymenty/lfm-runda-3]] | 0058, 3.879, 3.928 | NOTES.md:366 | OK |
-| [[eksperymenty/lfm-runda-3]] | 12, 3.806, 3.840 | NOTES.md:367 | OK |
-| [[eksperymenty/lfm-runda-3]] | 12.9, 13, 14.4 | NOTES.md:369 | OK |
-| [[eksperymenty/lfm-runda-3]] | 6.3 | NOTES.md:370 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 0.5, 0.9 | NOTES.md:379 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 0060, 0064, 2026 | NOTES.md:372 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 0061, 0062, 0063, 3.402, 3.424, 3.458, 3.706, 3.887, 3.933 | NOTES.md:374 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 101.72, 108.82, 27.812, 29.218 | lfm-decode-round4.md:13 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 103.7, 108.8, 259.3, 27.80, 29.16, 293.6 | NOTES.md:375 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 193.40, 212.95, 98304 | lfm-decode-round4.md:11 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 2.75, 20 | NOTES.md:373 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 258.48, 294.84 | lfm-decode-round4.md:10 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 259.13, 259.31, 293.43, 293.75 | lfm-decode-round4.md:12 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 270 | NOTES.md:377 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 3072 | NOTES.md:378 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | 9d493cf6e | lfm-decode-round4.md:3 | OK |
-| [[eksperymenty/lfm-runda-4-pm4]] | e41c2330e | lfm-decode-round4.md:6 | OK |
-| [[eksperymenty/qwen-runda-5]] | 0 109 | STATUS-NEXT.md:10 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/qwen-runda-5]] | 0.3 | qwen-round5.md:44 | OK |
-| [[eksperymenty/qwen-runda-5]] | 00, 02, 15, 2026, 45 | qwen-round5.md:7 | OK |
-| [[eksperymenty/qwen-runda-5]] | 0070 | qwen-round5.md:43 | OK |
-| [[eksperymenty/qwen-runda-5]] | 0b7b073b, 58, 58e578967, c4708318 | qwen-round5.md:11 | OK |
-| [[eksperymenty/qwen-runda-5]] | 104.8, 38.3, 44.2, 89.7 | qwen-round5.md:26 | OK |
-| [[eksperymenty/qwen-runda-5]] | 1065, 1091, 2.6 | qwen-round5.md:18 | OK |
-| [[eksperymenty/qwen-runda-5]] | 11 | qwen-round5.md:21 | OK |
-| [[eksperymenty/qwen-runda-5]] | 16 | qwen-round5.md:25 | OK |
-| [[eksperymenty/qwen-runda-5]] | 2 106 | ręcznie | OK: artefakt parsera („2” i „1066” osobno, oba w QWEN5-ROUND5.md:18) |
-| [[eksperymenty/qwen-runda-5]] | 2.5 | qwen-round5.md:27 | OK |
-| [[eksperymenty/qwen-runda-5]] | 2aa6999ed | qwen-round5.md:19 | OK |
-| [[eksperymenty/qwen-runda-5]] | 318 | STATUS-NEXT.md:28 | OK |
-| [[eksperymenty/qwen-runda-5]] | 56 | qwen-round5.md:15 | OK |
-| [[eksperymenty/qwen-runda-5]] | 5b1fdbc2f | qwen-round5.md:14 | OK |
-| [[eksperymenty/qwen-runda-5]] | 66 | qwen-round5.md:22 | OK |
-| [[eksperymenty/qwen-runda-5]] | 83, 94 | qwen-round5.md:13 | OK |
-| [[eksperymenty/qwen-runda-5]] | a6f218d0e | qwen-round5.md:17 | OK |
-| [[eksperymenty/qwen-runda-5]] | bbac7d7ae | qwen-round5.md:61 | OK |
-| [[eksperymenty/qwen-runda-5]] | c36fd2c87 | qwen-round5.md:1 | OK |
-| [[eksperymenty/runda-6]] | 0.15, 0.7, 67 | NOTES.md:398 | OK |
-| [[eksperymenty/runda-6]] | 0.3 | STATUS-NEXT.md:29 | OK |
-| [[eksperymenty/runda-6]] | 0070, 70, f61994f58 | STATUS-NEXT.md:5 | OK |
-| [[eksperymenty/runda-6]] | 0d89ce56c, b4e819237 | STATUS-NEXT.md:35 | OK |
-| [[eksperymenty/runda-6]] | 1.9, 1099.5, 1123.2 | NOTES.md:397 | OK |
-| [[eksperymenty/runda-6]] | 2.2 | STATUS-NEXT.md:3 | OK |
-| [[eksperymenty/runda-6]] | 2026 | STATUS-NEXT.md:1 | OK |
-| [[eksperymenty/runda-6]] | 4db68c6ab | test-tooling.md:8 | OK |
-| [[eksperymenty/runda-6]] | ae1ef6a97 | STATUS-NEXT.md:36 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 07 | 07-nasze-metody-uogolnienie.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[eksperymenty/stan-2026-10-15]] | 109.0, 1115, 27.74, 43.2 | STATUS-NEXT.md:10 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 1109, 115.5, 26.68, 44.0 | STATUS-NEXT.md:11 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 128, 4096 | STATUS-NEXT.md:7 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 14, 6f14e814, 894, 894e56e4, c4708318 | STATUS-NEXT.md:15 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 2026 | STATUS-NEXT.md:6 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 264.3, 267.3, 3.74, 6291 | STATUS-NEXT.md:13 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 27.80 | 07-nasze-metody-uogolnienie.md:171 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 28.94 | 07-nasze-metody-uogolnienie.md:170 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 289.7, 293.7, 3.41, 6175 | STATUS-NEXT.md:12 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 29.36 | 07-nasze-metody-uogolnienie.md:169 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 29.76 | 07-nasze-metody-uogolnienie.md:168 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 30.97 | 07-nasze-metody-uogolnienie.md:167 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 32.14 | 07-nasze-metody-uogolnienie.md:166 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 33.17 | 07-nasze-metody-uogolnienie.md:165 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 35.67 | 07-nasze-metody-uogolnienie.md:164 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 36.38 | 07-nasze-metody-uogolnienie.md:163 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 37.71 | 07-nasze-metody-uogolnienie.md:162 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 41.7 | 07-nasze-metody-uogolnienie.md:161 | OK |
-| [[eksperymenty/stan-2026-10-15]] | 70, f61994f58 | STATUS-NEXT.md:5 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 10.0, 7900 | NOTES.md:1 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 1044, 850 | NOTES.md:16 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 116, 22.0 | 2026-10-09-rx7900xtx-qwen38-27b.md:15 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 127 | NOTES.md:48 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 131072 | SPEC-QWEN27B.md:70 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 2026 | 2026-10-09-rx7900xtx-qwen38-27b.md:1 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 204800 | NOTES.md:6 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 22.3, 59.4, 91.8 | NOTES.md:13 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 22.8, 47.4, 59, 59.2, b356fa262 | NOTES.md:10 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 23, 23.2, 60.2, 64, 85.5 | NOTES.md:11 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 25.2 | 2026-10-09-rx7900xtx-qwen38-27b.md:4 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 256 | NOTES.md:3 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 296, 621 | 2026-10-09-rx7900xtx-qwen38-27b.md:23 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 40 | SPEC-QWEN27B.md:75 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 43 | 2026-10-09-rx7900xtx-qwen38-27b.md:31 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 58 | NOTES.md:42 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 69 | 2026-10-09-rx7900xtx-qwen38-27b.md:21 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 7.5 | 2026-10-09-rx7900xtx-qwen38-27b.md:25 | OK |
+| [[testy/2026-10-09-pierwsze-pomiary]] | 92 | SPEC-QWEN27B.md:58 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 0.0, 81.9 | NOTES.md:140 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 0.3, 80.7 | NOTES.md:135 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 0.5 | NOTES.md:136 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 0.7, 79.5 | NOTES.md:139 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 1.0, 64, 80.5 | NOTES.md:133 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 120 | NOTES.md:158 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 15 | NOTES.md:119 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 2026 | NOTES.md:122 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 204800 | NOTES.md:148 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 285, 90.6, 94.1, 94.7 | NOTES.md:126 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 3.5 | NOTES.md:145 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 4.4, 92 | NOTES.md:124 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 400 | NOTES.md:129 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 47 | NOTES.md:137 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 47.0 | NOTES.md:138 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 71.9 | NOTES.md:156 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 75.0 | NOTES.md:134 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 81.1 | NOTES.md:154 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 86.2 | NOTES.md:153 | OK |
+| [[testy/2026-10-10-sweep-mtp-dflash]] | 86.3 | NOTES.md:151 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 0.7, 24 | NOTES.md:210 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 1.2, 517 | NOTES.md:211 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 1.4, 536 | NOTES.md:212 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 1.7, 78.6, 92.9 | NOTES.md:199 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 1024, 2048, 204800, 24.5, 512 | NOTES.md:218 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 1040, 1050 | NOTES.md:217 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 16384, 8192 | NOTES.md:213 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 2026 | NOTES.md:190 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 25, 3.8, 91, 99.8 | STATUS-NEXT.md:41 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 27 | NOTES.md:206 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 27332, 31.9 | NOTES.md:209 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 28 | NOTES.md:195 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 29.5, 62.4, 74.4 | NOTES.md:201 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 41.65, 41.69 | NOTES.md:216 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 43.0, 65, 70.9, 94 | NOTES.md:202 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 6.6, 75.5, 81.4 | NOTES.md:200 | OK |
+| [[testy/2026-10-12-cache-promptu-i-a7]] | 71.6 | NOTES.md:204 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 0.0067, 0.0098, 6.182, 6.191, 96.5 | NOTES.md:225 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 1.7, 106.9, 43.0, 77.7, 78.6, 94 | NOTES.md:234 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 1308, 2156, 4.30, 6.99 | NOTES.md:223 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 16 | NOTES.md:232 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 2026 | NOTES.md:221 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 3.23, 972 | NOTES.md:230 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 33.79, 35.67, 88.1, 90.4 | NOTES.md:239 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 34.52, 36.38, 86.4, 88.5 | NOTES.md:231 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 35.83, 37.71, 39.6, 41.7, 74.8, 78.5, 83.3, 85.3 | NOTES.md:224 | OK |
+| [[testy/2026-10-12-fuzje-a3-a6]] | 85.2, 87.6 | NOTES.md:233 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 1.7, 40 | RESULTS.md:98 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 107, 127, 35, 69 207 | RESULTS.md:15 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 11, 3.04, 3.93 | RESULTS.md:68 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 12.1 | RESULTS.md:108 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 2.14, 4096, 71, 74 | RESULTS.md:9 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 2.3, 3.7, 7.4 | RESULTS.md:21 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 2026, c90db29c6 | RESULTS.md:5 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 2048 | RESULTS.md:100 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 25 | RESULTS.md:91 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 27 | RESULTS.md:3 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 30, 57 | RESULTS.md:13 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 45 | RESULTS.md:109 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 5.3, 60 | RESULTS.md:102 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 97.3, 98.2, 99.0, 99.6 | RESULTS.md:40 | OK |
+| [[testy/2026-10-12-mtp-trening-faza1]] | 98.4 | RESULTS.md:35 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 1.7, 13.3, 15.0, 683, 750, 78.6, 92, 92.4 | NOTES.md:175 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 1000 | NOTES.md:173 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 1200, 15.5 | NOTES.md:184 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 165, 260, 397, 43.0, 43.9, 666, 94 | NOTES.md:178 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 20.3, 21.2, 6.6, 746, 75.5, 80, 80.9, 924 | NOTES.md:176 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 2026, 204800, 256, 64 | NOTES.md:172 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 29.5, 50.2, 62.4, 624, 66.1, 863 | NOTES.md:177 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 38.4, 41.5, 41.8, 44.5, 73.8, 74.4, 74.5 | NOTES.md:183 | OK |
+| [[testy/2026-10-12-rocm-vs-vulkan]] | 44 | NOTES.md:180 | OK |
+| [[testy/2026-10-12-vulkan-krok-po-kroku]] | 0.0036, 0.0042, 512, 6.2099, 6.2226 | NOTES.md:167 | OK |
+| [[testy/2026-10-12-vulkan-krok-po-kroku]] | 0.3, 39.92, 4.8, 41.46, 41.93, 43.73, 5.2 | NOTES.md:166 | OK |
+| [[testy/2026-10-12-vulkan-krok-po-kroku]] | 0.5, 13.6, 48, 68, 68e163cf4, 8.6 | NOTES.md:164 | OK |
+| [[testy/2026-10-12-vulkan-krok-po-kroku]] | 1.3, 1.9, 579, 614, 663, 665, 690, 699, 6c7801bf6, 81, 81e5fb913, afbb23886, f6e5de112 | NOTES.md:165 | OK |
+| [[testy/2026-10-12-vulkan-krok-po-kroku]] | 2026, 204800, 285 | NOTES.md:162 | OK |
+| [[testy/2026-10-12-vulkan-krok-po-kroku]] | 284, 87, 90 | NOTES.md:170 | OK |
+| [[testy/2026-10-12-vulkan-krok-po-kroku]] | 80.3, 80.5 | NOTES.md:163 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 0021 | NOTES.md:176 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k1-mmvq]] | 0022, 22.1, 24.3 | NOTES.md:245 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 1280, 16 | NOTES.md:250 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 2026, 60, 60ce2a71f, 9f83f1f81 | NOTES.md:241 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 28.4, 31.0 | NOTES.md:254 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 32 | NOTES.md:242 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 32.02, 33.17 | NOTES.md:255 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 33.79, 35.67, 88.1 | NOTES.md:239 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 40 | NOTES.md:249 | OK |
+| [[testy/2026-10-13-k1-mmvq]] | 94.7, 95.4 | NOTES.md:246 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 0023 | NOTES.md:11 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k2-male-kernele]] | 0024 | NOTES.md:210 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k2-male-kernele]] | 0025 | NOTES.md:25 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k2-male-kernele]] | 0026 | NOTES.md:350 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k2-male-kernele]] | 0027 | NOTES.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k2-male-kernele]] | 0028 | NOTES.md:195 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k2-male-kernele]] | 1.84, 1.87, 2.68 | NOTES.md:263 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 16.8, 4.3 | NOTES.md:262 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 17.7 | NOTES.md:268 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 2.8, 3.18, 831 | NOTES.md:273 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 2026, 849b69978, ba90baf3a | NOTES.md:258 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 30.68, 32.14, 97.8 | NOTES.md:274 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 32.50, 99.6, 9f83f1f81 | NOTES.md:266 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 33.17 | NOTES.md:255 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 4.51, 5.87, 5120 | NOTES.md:261 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 4.68, 4.90, 5.54 | NOTES.md:264 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 65504 | NOTES.md:259 | OK |
+| [[testy/2026-10-13-k2-male-kernele]] | 972 | NOTES.md:265 | OK |
+| [[testy/2026-10-13-k3-host]] | 0.65 | NOTES.md:281 | OK |
+| [[testy/2026-10-13-k3-host]] | 0029, 101.5, 103.7, 29.46, 30.97 | NOTES.md:279 | OK |
+| [[testy/2026-10-13-k3-host]] | 0031 | NOTES.md:195 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k3-host]] | 0047 | NOTES.md:10 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k3-host]] | 1.1, 140, 375, 645, 963 | NOTES.md:278 | OK |
+| [[testy/2026-10-13-k3-host]] | 1.7, 109.4, 126.0, 29.5, 6.6, 88.3, 94, 98.8 | NOTES.md:280 | OK |
+| [[testy/2026-10-13-k3-host]] | 16, 248 | NOTES.md:277 | OK |
+| [[testy/2026-10-13-k3-host]] | 2026, 2eb088419, 35, 35d04b446, 56, 56be15abf | NOTES.md:276 | OK |
+| [[testy/2026-10-13-k3-host]] | 32.14, 97.8 | NOTES.md:274 | OK |
+| [[testy/2026-10-13-k4-i-hw-queues]] | 0.43, 32.1, 35.0, 49.2, 51.0 | NOTES.md:298 | OK |
+| [[testy/2026-10-13-k4-i-hw-queues]] | 0037 | NOTES.md:224 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-k4-i-hw-queues]] | 16, 2026, d3a0973ae | NOTES.md:297 | OK |
+| [[testy/2026-10-13-k4-i-hw-queues]] | 2305 | NOTES.md:302 | OK |
+| [[testy/2026-10-13-k4-i-hw-queues]] | 29.30, 29.39 | NOTES.md:303 | OK |
+| [[testy/2026-10-13-k4-i-hw-queues]] | 4 101.7, 470, 5 105.4 | NOTES.md:299 | OK |
+| [[testy/2026-10-13-k4-i-hw-queues]] | 8097 | NOTES.md:300 | OK |
+| [[testy/2026-10-13-s2-s4]] | 0.4 | NOTES.md:284 | OK |
+| [[testy/2026-10-13-s2-s4]] | 0.64, 0036, 1.35, 102.9, 106.1, 28.27, 29.36 | NOTES.md:293 | OK |
+| [[testy/2026-10-13-s2-s4]] | 0032 | NOTES.md:298 | OK |
+| [[testy/2026-10-13-s2-s4]] | 0033 | NOTES.md:96 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-13-s2-s4]] | 10, 2026, 343, 343c2fbbb | NOTES.md:283 | OK |
+| [[testy/2026-10-13-s2-s4]] | 100.6, 100.7, 103.2, 3.008, 3.063, 78, 85, 86, 92, 99.8 | NOTES.md:286 | OK |
+| [[testy/2026-10-13-s2-s4]] | 15 | NOTES.md:294 | OK |
+| [[testy/2026-10-13-s2-s4]] | 195, 638, 748, 793 | NOTES.md:292 | OK |
+| [[testy/2026-10-13-s2-s4]] | 28.74, 29.46, 29.76, 3.62, 30.97, 4.82 | NOTES.md:285 | OK |
+| [[testy/2026-10-13-s2-s4]] | 308 | NOTES.md:287 | OK |
+| [[testy/2026-10-13-s2-s4]] | 3f8c8ddff, b1a203959 | NOTES.md:290 | OK |
+| [[testy/2026-10-13-s2-s4]] | 720 | NOTES.md:291 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 0.5, 1.6, 2.46, 2.78, 2.98, 27, 3.31, 62, 72, 8192, 83, 90 | NOTES.md:327 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 0040, 32 | NOTES.md:321 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 0045 | NOTES.md:307 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-14-prefill-k5-t3]] | 0047 | NOTES.md:10 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-14-prefill-k5-t3]] | 0b5b15d17, e84abb808 | NOTES.md:326 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 1.7, 130.2, 766, 818 | NOTES.md:331 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 100.6, 97.5 | NOTES.md:330 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 1024, 15 | NOTES.md:324 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 104.2, 106.5, 27.90, 28.94 | NOTES.md:329 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 105 | NOTES.md:318 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 123, 141, 29.5, 6.6, 666, 668, 762, 767, 867, 870, 906, 913, 94, 941, 943, 956, 962 | NOTES.md:322 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 139, 204800, 236, 305 | NOTES.md:328 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 2026, 575e3d893, 6aacfea49 | NOTES.md:320 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 29.40 | NOTES.md:323 | OK |
+| [[testy/2026-10-14-prefill-k5-t3]] | 89 | NOTES.md:317 | OK |
+| [[testy/2026-10-14-t1-t2-draft]] | 0.65, 1.6 | NOTES.md:309 | OK |
+| [[testy/2026-10-14-t1-t2-draft]] | 102.4 | NOTES.md:312 | OK |
+| [[testy/2026-10-14-t1-t2-draft]] | 102.6, 28.28, 29.36 | NOTES.md:318 | OK |
+| [[testy/2026-10-14-t1-t2-draft]] | 102.7, 103.0, 103.5, 104.7, 105.0, 108.4, 4 104.7, 82.6, 84.6, 88.4, 89.3, 93.5, 95.9, 96.5, 96.7 | NOTES.md:308 | OK |
+| [[testy/2026-10-14-t1-t2-draft]] | 103.6, 79.8, 88.8 | NOTES.md:311 | OK |
+| [[testy/2026-10-14-t1-t2-draft]] | 12, 1391, 1585, 30.9, 32.2, 34.2, 36.4, 37.2, 40.8, 41.1, 45.7, 832, 834, d3a0973ae | NOTES.md:307 | OK |
+| [[testy/2026-10-14-t1-t2-draft]] | 2026, 7e9c73d8b, 87, b9b476c87 | NOTES.md:305 | OK |
+| [[testy/2026-10-15-sampler]] | 0.8, 11, 312, 800 | NOTES.md:384 | OK |
+| [[testy/2026-10-15-sampler]] | 0065, 0069, 2026 | NOTES.md:381 | OK |
+| [[testy/2026-10-15-sampler]] | 0066, 128 | NOTES.md:383 | OK |
+| [[testy/2026-10-15-sampler]] | 101.6, 109.5, 256.9, 292.9 | NOTES.md:389 | OK |
+| [[testy/2026-10-15-sampler]] | 104.6, 293, 293.2, 293.3 | NOTES.md:388 | OK |
+| [[testy/2026-10-15-sampler]] | 104.8, 113.2, 254.2, 294.3 | NOTES.md:391 | OK |
+| [[testy/2026-10-15-sampler]] | 105.4, 257.1, 292.6, 98.9 | NOTES.md:392 | OK |
+| [[testy/2026-10-15-sampler]] | 107.0, 2048, 99.3 | NOTES.md:390 | OK |
+| [[testy/2026-10-15-sampler]] | 255 | STATUS-NEXT.md:21 | OK |
+| [[testy/2026-10-16-bit-exact]] | 12 | 12-bit-exact-spekulacja.md:1 | OK |
+| [[testy/2026-10-16-bit-exact]] | 16, 2026 | 12-bit-exact-spekulacja.md:3 | OK |
+| [[testy/2026-10-16-bit-exact]] | 23335 | 12-bit-exact-spekulacja.md:24 | OK |
+| [[testy/2026-10-16-bit-exact]] | 6f14e814, c4708318 | 12-bit-exact-spekulacja.md:8 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 19253 | summary.txt:4 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 2.5 | PLAN-TESTOW.md:5 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 2026 | PLAN-TESTOW.md:3 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 3060 | PLAN-TESTOW.md:91 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 3090 | PLAN-TESTOW.md:89 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 31 | PLAN-TESTOW.md:58 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 32 | PLAN-TESTOW.md:154 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 5060 | PLAN-TESTOW.md:159 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 0006 | REBASE.md:17 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 0010, 10 | REBASE.md:15 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 0018 | REBASE.md:24 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 07, 29274 | REBASE.md:133 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 13 | REBASE.md:182 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 141, 60, 620, 620d2225c, e60eff95f | REBASE.md:3 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 1bb2b9fcb | REBASE.md:115 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 20, 39 | REBASE.md:140 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 2026 | git:1 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 29 | REBASE.md:25 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 29353 | REBASE.md:122 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 30257 | REBASE.md:146 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 33, 38 | REBASE.md:169 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 46 | REBASE.md:26 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 59 | REBASE.md:98 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 69, 8c942e5a9 | REBASE.md:5 | OK |
+| [[testy/2026-10-16-rebase-v070]] | 70 | REBASE.md:1 | OK |
+| [[testy/lfm-baza]] | 1.3, 2.69, 3.1, 3.5, 3.7, 3.8, 5.05, 680, 71, 721 | NOTES.md:340 | OK |
+| [[testy/lfm-baza]] | 1.7 | NOTES.md:331 | OK |
+| [[testy/lfm-baza]] | 1.8, 1.9, 500 | NOTES.md:338 | OK |
+| [[testy/lfm-baza]] | 131072, 17, 17.8 | NOTES.md:334 | OK |
+| [[testy/lfm-baza]] | 153, 168, 172, 174, 198, 2768, 29.7, 3709, 5172, 5805, 6.7, 6124, 95 | NOTES.md:336 | OK |
+| [[testy/lfm-baza]] | 169.3, 198.3, 6107, 6180, e60eff95f | NOTES.md:339 | OK |
+| [[testy/lfm-baza]] | 173, 5.78 | NOTES.md:335 | OK |
+| [[testy/lfm-baza]] | 2.5, 2026 | NOTES.md:333 | OK |
+| [[testy/lfm-runda-1]] | 0048, 0052, 2026 | NOTES.md:343 | OK |
+| [[testy/lfm-runda-1]] | 0049, 4.979, 5.067, 682, 720 | NOTES.md:346 | OK |
+| [[testy/lfm-runda-1]] | 0050, 4.800, 595 | NOTES.md:347 | OK |
+| [[testy/lfm-runda-1]] | 0051, 4.642, 4.817, 521 | NOTES.md:348 | OK |
+| [[testy/lfm-runda-1]] | 1.05, 5.11, 5.79 | NOTES.md:345 | OK |
+| [[testy/lfm-runda-1]] | 172.9, 197.4, 217, 218.6, 219, 220.4, 26, 29.12, 29.17, 4.536, e84abb808 | NOTES.md:350 | OK |
+| [[testy/lfm-runda-1]] | 4.474, 4.490 | NOTES.md:351 | OK |
+| [[testy/lfm-runda-1]] | 4.509, 4.610 | NOTES.md:349 | OK |
+| [[testy/lfm-runda-2]] | 0.5, 0.8, 2.53 | NOTES.md:358 | OK |
+| [[testy/lfm-runda-2]] | 0053, 0054, 2026 | NOTES.md:353 | OK |
+| [[testy/lfm-runda-2]] | 0055 | NOTES.md:362 | OK |
+| [[testy/lfm-runda-2]] | 12.7, 131, 144, 18.6, 187, 19.3, 2.6, 30.1, 32, 5.0, 98 | NOTES.md:354 | OK |
+| [[testy/lfm-runda-2]] | 217 | NOTES.md:350 | OK |
+| [[testy/lfm-runda-2]] | 221.3, 223, 238, 243, 244.1, 2c7ee8a2, 3000, 4.097, 4.519, 64, 6f14e814, bcdf324d3, c4708318 | NOTES.md:357 | OK |
+| [[testy/lfm-runda-2]] | 24.3, 27.2 | NOTES.md:359 | OK |
+| [[testy/lfm-runda-2]] | 4.100, 4.231, 416 | NOTES.md:356 | OK |
+| [[testy/lfm-runda-2]] | 4.246, 4.451, 445, 521 | NOTES.md:355 | OK |
+| [[testy/lfm-runda-3]] | 0 241.1, 152.4, 191.4, 205.4, 231.0, 237, 241.1, 243, 25.6, 251, 252, 262.1, 305, 416, 56, 5909, 5909da1f1, 894, 894e56e4 | NOTES.md:368 | OK |
+| [[testy/lfm-runda-3]] | 0.044171, 0.044196, 0.128, 16, 32, 4.099, 4.121, 4.526, 4.875, 5.462, 6.561, 64, 85.2, 92.25, 92.35, 98 | NOTES.md:363 | OK |
+| [[testy/lfm-runda-3]] | 0055, 0059, 2026 | NOTES.md:362 | OK |
+| [[testy/lfm-runda-3]] | 0056, 3.973, 4.070 | NOTES.md:364 | OK |
+| [[testy/lfm-runda-3]] | 0057, 3.907, 4.043 | NOTES.md:365 | OK |
+| [[testy/lfm-runda-3]] | 0058, 3.879, 3.928 | NOTES.md:366 | OK |
+| [[testy/lfm-runda-3]] | 12, 3.806, 3.840 | NOTES.md:367 | OK |
+| [[testy/lfm-runda-3]] | 12.9, 13, 14.4 | NOTES.md:369 | OK |
+| [[testy/lfm-runda-3]] | 6.3 | NOTES.md:370 | OK |
+| [[testy/lfm-runda-4-pm4]] | 0.5, 0.9 | NOTES.md:379 | OK |
+| [[testy/lfm-runda-4-pm4]] | 0060, 0064, 2026 | NOTES.md:372 | OK |
+| [[testy/lfm-runda-4-pm4]] | 0061, 0062, 0063, 3.402, 3.424, 3.458, 3.706, 3.887, 3.933 | NOTES.md:374 | OK |
+| [[testy/lfm-runda-4-pm4]] | 101.72, 108.82, 27.812, 29.218 | lfm-decode-round4.md:13 | OK |
+| [[testy/lfm-runda-4-pm4]] | 103.7, 108.8, 259.3, 27.80, 29.16, 293.6 | NOTES.md:375 | OK |
+| [[testy/lfm-runda-4-pm4]] | 193.40, 212.95, 98304 | lfm-decode-round4.md:11 | OK |
+| [[testy/lfm-runda-4-pm4]] | 2.75, 20 | NOTES.md:373 | OK |
+| [[testy/lfm-runda-4-pm4]] | 258.48, 294.84 | lfm-decode-round4.md:10 | OK |
+| [[testy/lfm-runda-4-pm4]] | 259.13, 259.31, 293.43, 293.75 | lfm-decode-round4.md:12 | OK |
+| [[testy/lfm-runda-4-pm4]] | 270 | NOTES.md:377 | OK |
+| [[testy/lfm-runda-4-pm4]] | 3072 | NOTES.md:378 | OK |
+| [[testy/lfm-runda-4-pm4]] | 9d493cf6e | lfm-decode-round4.md:3 | OK |
+| [[testy/lfm-runda-4-pm4]] | e41c2330e | lfm-decode-round4.md:6 | OK |
+| [[testy/qwen-runda-5]] | 0 109 | STATUS-NEXT.md:10 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/qwen-runda-5]] | 0.3 | qwen-round5.md:44 | OK |
+| [[testy/qwen-runda-5]] | 00, 02, 15, 2026, 45 | qwen-round5.md:7 | OK |
+| [[testy/qwen-runda-5]] | 0070 | qwen-round5.md:43 | OK |
+| [[testy/qwen-runda-5]] | 0b7b073b, 58, 58e578967, c4708318 | qwen-round5.md:11 | OK |
+| [[testy/qwen-runda-5]] | 104.8, 38.3, 44.2, 89.7 | qwen-round5.md:26 | OK |
+| [[testy/qwen-runda-5]] | 1065, 1091, 2.6 | qwen-round5.md:18 | OK |
+| [[testy/qwen-runda-5]] | 11 | qwen-round5.md:21 | OK |
+| [[testy/qwen-runda-5]] | 16 | qwen-round5.md:25 | OK |
+| [[testy/qwen-runda-5]] | 2 106 | ręcznie | OK: artefakt parsera („2” i „1066” osobno, oba w QWEN5-ROUND5.md:18) |
+| [[testy/qwen-runda-5]] | 2.5 | qwen-round5.md:27 | OK |
+| [[testy/qwen-runda-5]] | 2aa6999ed | qwen-round5.md:19 | OK |
+| [[testy/qwen-runda-5]] | 318 | STATUS-NEXT.md:28 | OK |
+| [[testy/qwen-runda-5]] | 56 | qwen-round5.md:15 | OK |
+| [[testy/qwen-runda-5]] | 5b1fdbc2f | qwen-round5.md:14 | OK |
+| [[testy/qwen-runda-5]] | 66 | qwen-round5.md:22 | OK |
+| [[testy/qwen-runda-5]] | 83, 94 | qwen-round5.md:13 | OK |
+| [[testy/qwen-runda-5]] | a6f218d0e | qwen-round5.md:17 | OK |
+| [[testy/qwen-runda-5]] | bbac7d7ae | qwen-round5.md:61 | OK |
+| [[testy/qwen-runda-5]] | c36fd2c87 | qwen-round5.md:1 | OK |
+| [[testy/runda-6]] | 0.15, 0.7, 67 | NOTES.md:398 | OK |
+| [[testy/runda-6]] | 0.3 | STATUS-NEXT.md:29 | OK |
+| [[testy/runda-6]] | 0070, 70, f61994f58 | STATUS-NEXT.md:5 | OK |
+| [[testy/runda-6]] | 0d89ce56c, b4e819237 | STATUS-NEXT.md:35 | OK |
+| [[testy/runda-6]] | 1.9, 1099.5, 1123.2 | NOTES.md:397 | OK |
+| [[testy/runda-6]] | 2.2 | STATUS-NEXT.md:3 | OK |
+| [[testy/runda-6]] | 2026 | STATUS-NEXT.md:1 | OK |
+| [[testy/runda-6]] | 4db68c6ab | test-tooling.md:8 | OK |
+| [[testy/runda-6]] | ae1ef6a97 | STATUS-NEXT.md:36 | OK |
+| [[testy/stan-2026-10-15]] | 07 | 07-nasze-metody-uogolnienie.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/stan-2026-10-15]] | 109.0, 1115, 27.74, 43.2 | STATUS-NEXT.md:10 | OK |
+| [[testy/stan-2026-10-15]] | 1109, 115.5, 26.68, 44.0 | STATUS-NEXT.md:11 | OK |
+| [[testy/stan-2026-10-15]] | 128, 4096 | STATUS-NEXT.md:7 | OK |
+| [[testy/stan-2026-10-15]] | 14, 6f14e814, 894, 894e56e4, c4708318 | STATUS-NEXT.md:15 | OK |
+| [[testy/stan-2026-10-15]] | 2026 | STATUS-NEXT.md:6 | OK |
+| [[testy/stan-2026-10-15]] | 264.3, 267.3, 3.74, 6291 | STATUS-NEXT.md:13 | OK |
+| [[testy/stan-2026-10-15]] | 27.80 | 07-nasze-metody-uogolnienie.md:171 | OK |
+| [[testy/stan-2026-10-15]] | 28.94 | 07-nasze-metody-uogolnienie.md:170 | OK |
+| [[testy/stan-2026-10-15]] | 289.7, 293.7, 3.41, 6175 | STATUS-NEXT.md:12 | OK |
+| [[testy/stan-2026-10-15]] | 29.36 | 07-nasze-metody-uogolnienie.md:169 | OK |
+| [[testy/stan-2026-10-15]] | 29.76 | 07-nasze-metody-uogolnienie.md:168 | OK |
+| [[testy/stan-2026-10-15]] | 30.97 | 07-nasze-metody-uogolnienie.md:167 | OK |
+| [[testy/stan-2026-10-15]] | 32.14 | 07-nasze-metody-uogolnienie.md:166 | OK |
+| [[testy/stan-2026-10-15]] | 33.17 | 07-nasze-metody-uogolnienie.md:165 | OK |
+| [[testy/stan-2026-10-15]] | 35.67 | 07-nasze-metody-uogolnienie.md:164 | OK |
+| [[testy/stan-2026-10-15]] | 36.38 | 07-nasze-metody-uogolnienie.md:163 | OK |
+| [[testy/stan-2026-10-15]] | 37.71 | 07-nasze-metody-uogolnienie.md:162 | OK |
+| [[testy/stan-2026-10-15]] | 41.7 | 07-nasze-metody-uogolnienie.md:161 | OK |
+| [[testy/stan-2026-10-15]] | 70, f61994f58 | STATUS-NEXT.md:5 | OK |
 | [[karty/arc-b580-i-mac]] | 0.22, 24 | PLAN.md:295 | OK |
 | [[karty/arc-b580-i-mac]] | 0.49, 64 | 05-chmura-gpu-do-testow.md:29 | OK |
 | [[karty/arc-b580-i-mac]] | 07 | PLAN.md:20 | OK (inny wiersz źródła, sprawdzone) |
@@ -613,347 +613,347 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[karty/strix-halo]] | 299 | 05-chmura-gpu-do-testow.md:138 | OK |
 | [[karty/strix-halo]] | 395 | 05-chmura-gpu-do-testow.md:25 | OK |
 | [[karty/strix-halo]] | 8060 | Optymalizacja kerneli na AMD.md:7 | OK |
-| [[kernele/argmax-dpp]] | 0020 | 07-nasze-metody-uogolnienie.md:104 | OK |
-| [[kernele/argmax-dpp]] | 0026 | 07-nasze-metody-uogolnienie.md:99 | OK |
-| [[kernele/argmax-dpp]] | 08 | NOTES.md:373 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/argmax-dpp]] | 16, 16.8, 4.3 | NOTES.md:262 | OK |
-| [[kernele/argmax-dpp]] | 2026 | NOTES.md:109 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/argmax-dpp]] | 32.14 | 07-nasze-metody-uogolnienie.md:102 | OK |
-| [[kernele/argmax-dpp]] | 33.17 | NOTES.md:265 | OK |
-| [[kernele/attn-prep-fwht]] | 0.207 | 07-nasze-metody-uogolnienie.md:183 | OK |
-| [[kernele/attn-prep-fwht]] | 0019, 12, 2026 | NOTES.md:228 | OK |
-| [[kernele/attn-prep-fwht]] | 0055 | NOTES.md:362 | OK |
-| [[kernele/attn-prep-fwht]] | 0057, 3.907, 4.043 | NOTES.md:365 | OK |
-| [[kernele/attn-prep-fwht]] | 0058, 3.879, 3.928 | NOTES.md:366 | OK |
-| [[kernele/attn-prep-fwht]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/attn-prep-fwht]] | 1004, 31.17 | 07-nasze-metody-uogolnienie.md:92 | OK |
-| [[kernele/attn-prep-fwht]] | 31.01 | 07-nasze-metody-uogolnienie.md:94 | OK |
-| [[kernele/attn-prep-fwht]] | 64 | NOTES.md:363 | OK |
-| [[kernele/attn-prep-fwht]] | 972 | NOTES.md:230 | OK |
-| [[kernele/cache-q8-1]] | 0003, 1308 | NOTES.md:230 | OK |
-| [[kernele/cache-q8-1]] | 0015, 1052, 37.04, 37.73 | 07-nasze-metody-uogolnienie.md:90 | OK |
-| [[kernele/cache-q8-1]] | 0049, 4.979, 5.067, 682, 720 | NOTES.md:346 | OK |
-| [[kernele/cache-q8-1]] | 0056, 3.973, 4.070 | NOTES.md:364 | OK |
-| [[kernele/cache-q8-1]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/cache-q8-1]] | 3a05006a0 | NOTES.md:89 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/clamp-q8-1]] | 0023, 23606 | 07-nasze-metody-uogolnienie.md:98 | OK |
-| [[kernele/clamp-q8-1]] | 07 | README.md:68 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/clamp-q8-1]] | 2026 | NOTES.md:258 | OK |
-| [[kernele/clamp-q8-1]] | 2444 | NOTES.md:78 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/clamp-q8-1]] | 4017 | NOTES.md:195 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/clamp-q8-1]] | 53 | README.md:163 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/clamp-q8-1]] | 606 | README.md:21 | OK |
-| [[kernele/clamp-q8-1]] | 65504 | NOTES.md:259 | OK |
-| [[kernele/clamp-q8-1]] | 9f83f1f81 | NOTES.md:241 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/conv-lag]] | 0014, 12, 2026 | NOTES.md:221 | OK |
-| [[kernele/conv-lag]] | 0038 | 07-nasze-metody-uogolnienie.md:113 | OK |
-| [[kernele/conv-lag]] | 102.6, 28.28, 29.36 | NOTES.md:318 | OK |
-| [[kernele/conv-lag]] | 105.0 | NOTES.md:308 | OK |
-| [[kernele/conv-lag]] | 1391, 1585, 30.9, 32.2, 34.2, 36.4, 37.2, 40.8, 41.1, 45.7, 832, 834 | NOTES.md:307 | OK |
-| [[kernele/conv-lag]] | 470 | NOTES.md:299 | OK |
-| [[kernele/conv-lag]] | b9b476c87 | NOTES.md:305 | OK |
-| [[kernele/conv-lag]] | d3a0973ae | NOTES.md:297 | OK |
-| [[kernele/fattn-kvq]] | 0.044171, 0.044196, 128.7, 223.5, 5.462, 6.561 | NOTES.md:363 | OK |
-| [[kernele/fattn-kvq]] | 0011 | NOTES.md:179 | OK |
-| [[kernele/fattn-kvq]] | 0055 | NOTES.md:362 | OK |
-| [[kernele/fattn-kvq]] | 0058, 3.879, 3.928 | NOTES.md:366 | OK |
-| [[kernele/fattn-kvq]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/fattn-kvq]] | 120.6 | NOTES.md:187 | OK |
-| [[kernele/fattn-kvq]] | 2026 | NOTES.md:182 | OK |
-| [[kernele/fattn-kvq]] | 36.7, 68.2 | NOTES.md:195 | OK |
-| [[kernele/fattn-kvq]] | 40, 40c9bacdc | NOTES.md:193 | OK |
-| [[kernele/fattn-kvq]] | 43.0, 65, 70.9 | NOTES.md:202 | OK |
-| [[kernele/fattn-kvq]] | 64 | NOTES.md:357 | OK |
-| [[kernele/fattn-kvq]] | 94 | NOTES.md:180 | OK |
-| [[kernele/fattn-kvq]] | 98 | NOTES.md:354 | OK |
-| [[kernele/fuzje-lfm-moe]] | 0.565, 34 | 07-nasze-metody-uogolnienie.md:180 | OK |
-| [[kernele/fuzje-lfm-moe]] | 0049, 4.979, 5.067, 682, 720 | NOTES.md:346 | OK |
-| [[kernele/fuzje-lfm-moe]] | 0051, 4.642, 4.817, 521 | NOTES.md:348 | OK |
-| [[kernele/fuzje-lfm-moe]] | 0053 | NOTES.md:353 | OK |
-| [[kernele/fuzje-lfm-moe]] | 0056, 3.973, 4.070 | NOTES.md:364 | OK |
-| [[kernele/fuzje-lfm-moe]] | 07 | NOTES.md:338 | OK |
-| [[kernele/fuzje-lfm-moe]] | 13 | 07-nasze-metody-uogolnienie.md:123 | OK |
-| [[kernele/fuzje-lfm-moe]] | 2.5, 3.5, 3.7, 38, 71, 721 | NOTES.md:340 | OK |
-| [[kernele/fuzje-lfm-moe]] | 2026 | NOTES.md:343 | OK |
-| [[kernele/fuzje-lfm-moe]] | 4.246, 4.451, 445 | NOTES.md:355 | OK |
-| [[kernele/fuzje-lfm-moe]] | 56 | NOTES.md:160 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/fuzje-lfm-moe]] | 64 | NOTES.md:337 | OK |
-| [[kernele/fuzje-weryfikacji]] | 0.0067, 0.0098, 6.182, 6.191 | NOTES.md:225 | OK |
-| [[kernele/fuzje-weryfikacji]] | 0012, 0014, 2026, 6da87d000, 92, 92b14b8b2, a180bea04 | NOTES.md:221 | OK |
-| [[kernele/fuzje-weryfikacji]] | 0013 | 07-nasze-metody-uogolnienie.md:87 | OK |
-| [[kernele/fuzje-weryfikacji]] | 0015 | 07-nasze-metody-uogolnienie.md:90 | OK |
-| [[kernele/fuzje-weryfikacji]] | 0018 | 07-nasze-metody-uogolnienie.md:84 | OK |
-| [[kernele/fuzje-weryfikacji]] | 0019, b1f8c19ac, b9db88004 | NOTES.md:228 | OK |
-| [[kernele/fuzje-weryfikacji]] | 1308, 2156, 4.30, 6.99 | NOTES.md:223 | OK |
-| [[kernele/fuzje-weryfikacji]] | 3.23, 972 | NOTES.md:230 | OK |
-| [[kernele/fuzje-weryfikacji]] | 30103, 6.1, 9.05 | NOTES.md:229 | OK |
-| [[kernele/fuzje-weryfikacji]] | 34.52, 36.38, 86.4, 88.5 | NOTES.md:231 | OK |
-| [[kernele/fuzje-weryfikacji]] | 35.83, 37.71, 39.6, 41.7, 74.8, 78.5, 83.3, 85.3 | NOTES.md:224 | OK |
-| [[kernele/gdn-fast]] | 0.1 | gdn-bitwise.md:183 | OK |
-| [[kernele/gdn-fast]] | 0.15, 0.7 | gdn-bitwise.md:182 | OK |
-| [[kernele/gdn-fast]] | 0b7b073b, 58, 58e578967 | qwen-round5.md:11 | OK |
-| [[kernele/gdn-fast]] | 0d89ce56c, 16 | gdn-bitwise.md:14 | OK |
-| [[kernele/gdn-fast]] | 1.5, 14.27, 14.49 | gdn-bitwise.md:180 | OK |
-| [[kernele/gdn-fast]] | 120 | gdn-bitwise.md:123 | OK |
-| [[kernele/gdn-fast]] | 132.1, 153.7 | gdn-bitwise.md:181 | OK |
-| [[kernele/gdn-fast]] | 14, c4708318 | gdn-bitwise.md:179 | OK |
-| [[kernele/gdn-fast]] | 2026 | gdn-bitwise.md:176 | OK |
-| [[kernele/gdn-fast]] | 379 | gdn-bitwise.md:20 | OK |
-| [[kernele/gdn-fast]] | 423, 476 | gdn-bitwise.md:100 | OK |
-| [[kernele/gdn-fast]] | 5b1fdbc2f | qwen-round5.md:14 | OK |
-| [[kernele/gdn-fast]] | 67 | gdn-bitwise.md:177 | OK |
-| [[kernele/gdn-fast]] | 83, 94 | qwen-round5.md:13 | OK |
-| [[kernele/gdn-fast]] | b4e819237 | gdn-bitwise.md:7 | OK |
-| [[kernele/gdn-fuzje-k2]] | 0.33, 0028 | 07-nasze-metody-uogolnienie.md:103 | OK |
-| [[kernele/gdn-fuzje-k2]] | 0027 | 07-nasze-metody-uogolnienie.md:102 | OK |
-| [[kernele/gdn-fuzje-k2]] | 0045, 1082, 1108, 2.4 | 07-nasze-metody-uogolnienie.md:120 | OK |
-| [[kernele/gdn-fuzje-k2]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/gdn-fuzje-k2]] | 1.84, 1.87, 2.68 | NOTES.md:263 | OK |
-| [[kernele/gdn-fuzje-k2]] | 2026 | NOTES.md:320 | OK |
-| [[kernele/gdn-fuzje-k2]] | 32.17 | NOTES.md:265 | OK |
-| [[kernele/gdn-fuzje-k2]] | 32.50 | NOTES.md:266 | OK |
-| [[kernele/gdn-fuzje-k2]] | 4.68, 4.90, 5.54 | NOTES.md:264 | OK |
-| [[kernele/gdn-replay]] | 0.64, 0035, 0036, 1.35, 102.9, 106.1, 28.27, 29.36 | NOTES.md:293 | OK |
-| [[kernele/gdn-replay]] | 0033 | 07-nasze-metody-uogolnienie.md:108 | OK |
-| [[kernele/gdn-replay]] | 0034 | 07-nasze-metody-uogolnienie.md:109 | OK |
-| [[kernele/gdn-replay]] | 0038 | 07-nasze-metody-uogolnienie.md:113 | OK |
-| [[kernele/gdn-replay]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/gdn-replay]] | 10, 2026, 3f8c8ddff, b1a203959 | NOTES.md:290 | OK |
-| [[kernele/gdn-replay]] | 15, 48 | NOTES.md:294 | OK |
-| [[kernele/gdn-replay]] | 195, 638, 748, 793 | NOTES.md:292 | OK |
-| [[kernele/gdn-replay]] | 661 | 07-nasze-metody-uogolnienie.md:110 | OK |
-| [[kernele/gdn-replay]] | 720 | NOTES.md:291 | OK |
-| [[kernele/lfm-shortconv]] | 0.366, 22 | 07-nasze-metody-uogolnienie.md:182 | OK |
-| [[kernele/lfm-shortconv]] | 0050, 4.800, 595 | NOTES.md:347 | OK |
-| [[kernele/lfm-shortconv]] | 0054 | NOTES.md:353 | OK |
-| [[kernele/lfm-shortconv]] | 0062, 3.402, 3.458 | NOTES.md:374 | OK |
-| [[kernele/lfm-shortconv]] | 08 | NOTES.md:373 | OK |
-| [[kernele/lfm-shortconv]] | 12.2, 13.6, 14.6, 2560, 3072 | NOTES.md:378 | OK |
-| [[kernele/lfm-shortconv]] | 30, 32 | NOTES.md:337 | OK |
-| [[kernele/lfm-shortconv]] | 4.100, 4.231, 416 | NOTES.md:356 | OK |
-| [[kernele/lfm-shortconv]] | 4.979 | NOTES.md:346 | OK |
-| [[kernele/lfm-shortconv]] | 445 | NOTES.md:355 | OK |
-| [[kernele/lfm-shortconv]] | 96 | 07-nasze-metody-uogolnienie.md:137 | OK |
-| [[kernele/mmq-epilog]] | 0.3 | mmq-epilogue.md:166 | OK |
-| [[kernele/mmq-epilog]] | 0070, 2026, f61994f58 | mmq-epilogue.md:159 | OK |
-| [[kernele/mmq-epilog]] | 1.9 | mmq-epilogue.md:165 | OK |
-| [[kernele/mmq-epilog]] | 1099.5, 1123.2, 2.2 | mmq-epilogue.md:164 | OK |
-| [[kernele/mmq-epilog]] | 128, 16 | mmq-epilogue.md:10 | OK |
-| [[kernele/mmq-epilog]] | 178, 237, 243, 298 | mmq-epilogue.md:47 | OK |
-| [[kernele/mmq-epilog]] | 19 | mmq-epilogue.md:81 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/mmq-epilog]] | 2048 | mmq-epilogue.md:161 | OK |
-| [[kernele/mmq-epilog]] | 2486, 933 | mmq-epilogue.md:160 | OK |
-| [[kernele/mmq-epilog]] | 48 | mmq-epilogue.md:32 | OK |
-| [[kernele/mmq-epilog]] | 512 | mmq-epilogue.md:38 | OK |
-| [[kernele/mmq-epilog]] | 64 | mmq-epilogue.md:11 | OK |
-| [[kernele/mmq-epilog]] | 66 | NOTES.md:118 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/mmq-epilog]] | ae1ef6a97 | mmq-epilogue.md:7 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 0001 | NOTES.md:42 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 0002 | NOTES.md:35 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 0021 | 07-nasze-metody-uogolnienie.md:96 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 0022, 22.1, 24.3 | NOTES.md:245 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 08 | 07-nasze-metody-uogolnienie.md:97 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 132, 272 | NOTES.md:75 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 17408, 5120 | NOTES.md:67 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 2026, 60ce2a71f, 9f83f1f81 | NOTES.md:241 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 240, 340, 700 | NOTES.md:56 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 2444 | NOTES.md:78 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 296, 621 | NOTES.md:71 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 32 | NOTES.md:88 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 32.02, 33.17 | NOTES.md:255 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 33.79, 35.67, 88.1, 90.4 | NOTES.md:239 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 60, 68.6, 95 | NOTES.md:43 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 72, 72cfa5656, 95a0c83d6 | NOTES.md:89 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 7900 | NOTES.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/mmvq-multikolumnowe]] | 82.3 | NOTES.md:44 | OK |
-| [[kernele/mmvq-multikolumnowe]] | 94.7, 95.4 | NOTES.md:246 | OK |
-| [[kernele/mmvq-n1-wiersze]] | 0.135, 0059 | 07-nasze-metody-uogolnienie.md:184 | OK |
-| [[kernele/mmvq-n1-wiersze]] | 0052, 4.509, 4.610 | NOTES.md:349 | OK |
-| [[kernele/mmvq-n1-wiersze]] | 0064, 2026 | NOTES.md:372 | OK |
-| [[kernele/mmvq-n1-wiersze]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/mmvq-n1-wiersze]] | 2.2 | 07-nasze-metody-uogolnienie.md:127 | OK |
-| [[kernele/mmvq-n1-wiersze]] | 3.706, 3.933 | NOTES.md:374 | OK |
-| [[kernele/mmvq-n1-wiersze]] | 39 | NOTES.md:135 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/mmvq-n1-wiersze]] | 6.1 | 07-nasze-metody-uogolnienie.md:139 | OK |
-| [[kernele/mtp-draft-graf]] | 0.2 | NOTES.md:238 | OK |
-| [[kernele/mtp-draft-graf]] | 0004, 86.4 | NOTES.md:233 | OK |
-| [[kernele/mtp-draft-graf]] | 0020, 36.39, 88.0 | 07-nasze-metody-uogolnienie.md:95 | OK |
-| [[kernele/mtp-draft-graf]] | 0030 | NOTES.md:274 | OK |
-| [[kernele/mtp-draft-graf]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/mtp-draft-graf]] | 1.19, 104, 180, 42, 64 | NOTES.md:237 | OK |
-| [[kernele/mtp-draft-graf]] | 2026, c90db29c6 | NOTES.md:236 | OK |
-| [[kernele/mtp-draft-graf]] | 31.59 | 07-nasze-metody-uogolnienie.md:105 | OK |
-| [[kernele/mtp-draft-graf]] | 31.89 | 07-nasze-metody-uogolnienie.md:104 | OK |
-| [[kernele/mtp-draft-graf]] | 33.79, 35.67, 88.1, 90.4 | NOTES.md:239 | OK |
-| [[kernele/para-mmvq]] | 0024, 0025, 0026, 911 | 07-nasze-metody-uogolnienie.md:99 | OK |
-| [[kernele/para-mmvq]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/para-mmvq]] | 2026 | NOTES.md:258 | OK |
-| [[kernele/para-mmvq]] | 30.68 | NOTES.md:274 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/para-mmvq]] | 32.14, 97.8 | 07-nasze-metody-uogolnienie.md:102 | OK |
-| [[kernele/para-mmvq]] | 33.17, 972 | NOTES.md:265 | OK |
-| [[kernele/para-mmvq]] | 99.6 | NOTES.md:266 | OK |
-| [[kernele/pm4-replay]] | 0.46, 0.86 | lfm-decode-round4.md:51 | OK |
-| [[kernele/pm4-replay]] | 0060, 2026 | NOTES.md:372 | OK |
-| [[kernele/pm4-replay]] | 0061, 0063 | NOTES.md:374 | OK |
-| [[kernele/pm4-replay]] | 103.7, 108.8, 109.9, 115.3, 259.3, 27.80, 29.16, 293.6 | NOTES.md:375 | OK |
-| [[kernele/pm4-replay]] | 2.75 | lfm-decode-round4.md:57 | OK |
-| [[kernele/pm4-replay]] | 20 | lfm-decode-round4.md:52 | OK |
-| [[kernele/pm4-replay]] | 257.3, 292.1, 3.424, 3.887 | lfm-decode-round4.md:94 | OK |
-| [[kernele/pm4-replay]] | 304 | lfm-decode-round4.md:92 | OK |
-| [[kernele/prefill-mmq-fa]] | 0.0135 | 07-nasze-metody-uogolnienie.md:118 | OK |
-| [[kernele/prefill-mmq-fa]] | 0040, 249, 32, 48, 5120, 932 | NOTES.md:321 | OK |
-| [[kernele/prefill-mmq-fa]] | 0041, 897, 936 | 07-nasze-metody-uogolnienie.md:116 | OK |
-| [[kernele/prefill-mmq-fa]] | 0042, 0043, 256, 3.42, 4.36, 40.2, 49.0 | 07-nasze-metody-uogolnienie.md:117 | OK |
-| [[kernele/prefill-mmq-fa]] | 0044 | 07-nasze-metody-uogolnienie.md:119 | OK |
-| [[kernele/prefill-mmq-fa]] | 0045, 1082, 1108, 2.4 | 07-nasze-metody-uogolnienie.md:120 | OK |
-| [[kernele/prefill-mmq-fa]] | 1024, 15 | NOTES.md:324 | OK |
-| [[kernele/prefill-mmq-fa]] | 1059, 1080 | 07-nasze-metody-uogolnienie.md:115 | OK |
-| [[kernele/prefill-mmq-fa]] | 123, 141, 29.5, 6.6, 666, 668, 762, 767, 867, 870, 906, 913, 94, 941, 943, 956, 962 | NOTES.md:322 | OK |
-| [[kernele/prefill-mmq-fa]] | 2026 | NOTES.md:320 | OK |
-| [[kernele/rmsnorm-dpp]] | 0025 | 07-nasze-metody-uogolnienie.md:99 | OK |
-| [[kernele/rmsnorm-dpp]] | 2000 | NOTES.md:93 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/rmsnorm-dpp]] | 2026 | NOTES.md:258 | OK |
-| [[kernele/rmsnorm-dpp]] | 2048, 8192 | 07-nasze-metody-uogolnienie.md:100 | OK |
-| [[kernele/rmsnorm-dpp]] | 4.51, 5.87, 5120 | NOTES.md:261 | OK |
-| [[kernele/sampler-fast-path]] | 0031 | 07-nasze-metody-uogolnienie.md:104 | OK |
-| [[kernele/sampler-fast-path]] | 0048 | NOTES.md:343 | OK |
-| [[kernele/sampler-fast-path]] | 0065 | NOTES.md:281 | OK |
-| [[kernele/sampler-fast-path]] | 0066, 64 | NOTES.md:383 | OK |
-| [[kernele/sampler-fast-path]] | 0069 | NOTES.md:381 | OK |
-| [[kernele/sampler-fast-path]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/sampler-fast-path]] | 1.05, 128, 5.11, 5.79 | NOTES.md:345 | OK |
-| [[kernele/sampler-fast-path]] | 104.8, 113.2, 254.2, 294.3 | NOTES.md:391 | OK |
-| [[kernele/sampler-fast-path]] | 107.0, 99.3 | NOTES.md:390 | OK |
-| [[kernele/sampler-fast-path]] | 140, 645 | NOTES.md:278 | OK |
-| [[kernele/sampler-fast-path]] | 2026 | NOTES.md:276 | OK |
-| [[kernele/sampler-fast-path]] | 248 | NOTES.md:277 | OK |
-| [[kernele/sampler-fast-path]] | 256.9, 292.9 | NOTES.md:389 | OK |
-| [[kernele/sampler-fast-path]] | 312 | NOTES.md:384 | OK |
-| [[kernele/vulkan-mmvq]] | 0.0036, 0.0042, 512 | NOTES.md:167 | OK |
-| [[kernele/vulkan-mmvq]] | 0.3, 39.92, 4.8, 41.46, 41.93, 43.73, 5.2 | NOTES.md:166 | OK |
-| [[kernele/vulkan-mmvq]] | 0.5, 13.6, 48, 8.6 | NOTES.md:164 | OK |
-| [[kernele/vulkan-mmvq]] | 0006, 0008 | NOTES.md:160 | OK |
-| [[kernele/vulkan-mmvq]] | 0007 | NOTES.md:163 | OK |
-| [[kernele/vulkan-mmvq]] | 0009, 1.3, 1.9, 614, 690 | NOTES.md:165 | OK |
-| [[kernele/vulkan-mmvq]] | 0010, 2026 | NOTES.md:162 | OK |
-| [[kernele/vulkan-mmvq]] | 1024, 18.1, 4096, 9.7 | 07-nasze-metody-uogolnienie.md:84 | OK |
-| [[kernele/vulkan-mmvq]] | 256 | 07-nasze-metody-uogolnienie.md:81 | OK |
-| [[kernele/wmma-small-n]] | 0.0006, 0.0122, 0.0124, 0.0128, 0037 | 07-nasze-metody-uogolnienie.md:112 | OK |
-| [[kernele/wmma-small-n]] | 0.43, 32.1, 35.0, 49.2, 51.0 | NOTES.md:298 | OK |
-| [[kernele/wmma-small-n]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[kernele/wmma-small-n]] | 16, 2026, d3a0973ae | NOTES.md:297 | OK |
-| [[kernele/wmma-small-n]] | 4 101.7, 470, 5 105.4 | NOTES.md:299 | OK |
-| [[latki/klasyfikacja-latek]] | 0001 | 07-nasze-metody-uogolnienie.md:5 | OK |
-| [[latki/klasyfikacja-latek]] | 0006, 0008, 0011, 0013, 0037, 0055, 45, 70 | 07-nasze-metody-uogolnienie.md:7 | OK |
-| [[latki/klasyfikacja-latek]] | 0009 | 07-nasze-metody-uogolnienie.md:26 | OK |
-| [[latki/klasyfikacja-latek]] | 07, 28, 3.40, 34, 5.07 | 07-nasze-metody-uogolnienie.md:24 | OK |
-| [[latki/klasyfikacja-latek]] | 08 | 07-nasze-metody-uogolnienie.md:97 | OK (inny wiersz źródła, sprawdzone) |
-| [[latki/klasyfikacja-latek]] | 10 | 07-nasze-metody-uogolnienie.md:15 | OK |
-| [[latki/klasyfikacja-latek]] | 12 | 07-nasze-metody-uogolnienie.md:14 | OK |
-| [[latki/klasyfikacja-latek]] | 18 | 07-nasze-metody-uogolnienie.md:13 | OK |
-| [[latki/klasyfikacja-latek]] | 22 | 07-nasze-metody-uogolnienie.md:12 | OK |
-| [[latki/klasyfikacja-latek]] | 27.74, 30, 41.7, 48 | 07-nasze-metody-uogolnienie.md:23 | OK |
-| [[latki/klasyfikacja-latek]] | 38 | 07-nasze-metody-uogolnienie.md:27 | OK |
-| [[latki/latki-do-upstreamu]] | 0003 | 07-nasze-metody-uogolnienie.md:436 | OK |
-| [[latki/latki-do-upstreamu]] | 0015 | 07-nasze-metody-uogolnienie.md:442 | OK |
-| [[latki/latki-do-upstreamu]] | 0023 | 07-nasze-metody-uogolnienie.md:440 | OK |
-| [[latki/latki-do-upstreamu]] | 0029, 0059 | 07-nasze-metody-uogolnienie.md:441 | OK |
-| [[latki/latki-do-upstreamu]] | 0031, 0048, 0066, 0069 | 07-nasze-metody-uogolnienie.md:438 | OK |
-| [[latki/latki-do-upstreamu]] | 0047 | 07-nasze-metody-uogolnienie.md:439 | OK |
-| [[latki/latki-do-upstreamu]] | 07 | 07-nasze-metody-uogolnienie.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[latki/latki-do-upstreamu]] | 143, 33, 69 | PLAN.md:45 | OK |
-| [[latki/latki-do-upstreamu]] | 2026, 70 | 07-nasze-metody-uogolnienie.md:472 | OK |
-| [[latki/latki-do-upstreamu]] | 3.1 | PLAN.md:42 | OK |
-| [[latki/latki-hostowe]] | 0029, 101.5, 30.97 | NOTES.md:279 | OK |
-| [[latki/latki-hostowe]] | 0031 | NOTES.md:327 | OK |
-| [[latki/latki-hostowe]] | 0047, 102.6, 29.36 | 07-nasze-metody-uogolnienie.md:122 | OK |
-| [[latki/latki-hostowe]] | 0059, 12, 3.806, 3.840 | NOTES.md:367 | OK |
-| [[latki/latki-hostowe]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[latki/latki-hostowe]] | 104.2, 28.94 | NOTES.md:329 | OK |
-| [[latki/latki-hostowe]] | 140, 375, 645, 963 | NOTES.md:278 | OK |
-| [[latki/latki-hostowe]] | 16 | NOTES.md:277 | OK |
-| [[latki/latki-hostowe]] | 2026 | NOTES.md:276 | OK |
-| [[latki/latki-hostowe]] | 204800, 236 | NOTES.md:328 | OK |
-| [[latki/latki-hostowe]] | 31.89, 32.20 | 07-nasze-metody-uogolnienie.md:104 | OK |
-| [[latki/latki-hostowe]] | 32.14, 97.8 | NOTES.md:274 | OK |
-| [[latki/latki-oczekujace]] | 0.15 | gdn-bitwise.md:182 | OK |
-| [[latki/latki-oczekujace]] | 0001 | gdn-bitwise.md:177 | OK |
-| [[latki/latki-oczekujace]] | 0002, 0006 | qwen-round5.md:81 | OK |
-| [[latki/latki-oczekujace]] | 0003 | qwen-round5.md:85 | OK |
-| [[latki/latki-oczekujace]] | 0004 | qwen-round5.md:78 | OK |
-| [[latki/latki-oczekujace]] | 0005 | qwen-round5.md:87 | OK |
-| [[latki/latki-oczekujace]] | 0007 | qwen-round5.md:83 | OK |
-| [[latki/latki-oczekujace]] | 15, 2026 | gdn-bitwise.md:176 | OK |
-| [[latki/latki-oczekujace]] | 16 | 0001-HIP-RDNA-GDN-separate-bit-identical-fast-kernel-DPP-.patch:28 | OK |
-| [[latki/latki-oczekujace]] | 2.6 | qwen-round5.md:18 | OK (inny wiersz źródła, sprawdzone) |
-| [[latki/latki-spekulacji]] | 0.4 | NOTES.md:284 | OK |
-| [[latki/latki-spekulacji]] | 0004 | NOTES.md:83 | OK |
-| [[latki/latki-spekulacji]] | 0032, 16, 32, 48, 64, 7.5, 96 | NOTES.md:88 | OK |
-| [[latki/latki-spekulacji]] | 0039 | 07-nasze-metody-uogolnienie.md:114 | OK |
-| [[latki/latki-spekulacji]] | 0041 | NOTES.md:307 | OK |
-| [[latki/latki-spekulacji]] | 0046, 3.62, 4.82 | NOTES.md:285 | OK |
-| [[latki/latki-spekulacji]] | 100.6 | NOTES.md:286 | OK |
-| [[latki/latki-spekulacji]] | 103.6 | NOTES.md:311 | OK |
-| [[latki/latki-spekulacji]] | 105, 4 102.7 | NOTES.md:308 | OK |
-| [[latki/latki-spekulacji]] | 2.78, 3.31, 8192, 90 | NOTES.md:327 | OK |
-| [[latki/latki-spekulacji]] | 2026 | NOTES.md:283 | OK |
-| [[latki/latki-spekulacji]] | 6.6, 94 | NOTES.md:280 | OK |
-| [[latki/latki-spekulacji]] | 913 | NOTES.md:322 | OK |
-| [[latki/latki-spekulacji]] | 936 | 07-nasze-metody-uogolnienie.md:116 | OK |
-| [[latki/latki-spekulacji]] | 97.5 | NOTES.md:330 | OK |
-| [[latki/patch-manifest]] | 0001, 0019, 19 | 08-analiza-platformy-latek.md:5 | OK |
-| [[latki/patch-manifest]] | 0057 | patch-manifest.json:74 | OK |
-| [[latki/patch-manifest]] | 0060, 0070, 2026, 70, e60eff95f, f61994f58 | 08-analiza-platformy-latek.md:3 | OK |
-| [[latki/patch-manifest]] | 1.736 | patch-manifest.json:49 | OK |
-| [[latki/patch-manifest]] | 13.96, 14, 14.14, 27.74, 41, 41.7 | patch-manifest.json:48 | OK |
-| [[latki/patch-manifest]] | 193 | ręcznie | OK: stat: 193045 B ≈ 193 KB |
-| [[latki/patch-manifest]] | 30 | patch-manifest.json:666 | OK |
-| [[latki/patch-manifest]] | 47 | patch-manifest.json:3679 | OK |
-| [[latki/patch-manifest]] | 56 | 08-analiza-platformy-latek.md:188 | OK (inny wiersz źródła, sprawdzone) |
-| [[latki/seria-amd-opt]] | 0001, 0070, 70 | 07-nasze-metody-uogolnienie.md:51 | OK |
-| [[latki/seria-amd-opt]] | 0005, 0012, 0018 | 07-nasze-metody-uogolnienie.md:152 | OK |
-| [[latki/seria-amd-opt]] | 0006, 0010, 2026, e60eff95f, f61994f58 | 07-nasze-metody-uogolnienie.md:53 | OK |
-| [[latki/seria-amd-opt]] | 0011 | 07-nasze-metody-uogolnienie.md:153 | OK |
-| [[latki/seria-amd-opt]] | 0019, 0033, 0038 | 07-nasze-metody-uogolnienie.md:163 | OK |
-| [[latki/seria-amd-opt]] | 0020 | 07-nasze-metody-uogolnienie.md:164 | OK |
-| [[latki/seria-amd-opt]] | 0021 | 07-nasze-metody-uogolnienie.md:165 | OK |
-| [[latki/seria-amd-opt]] | 0028, 0032 | 07-nasze-metody-uogolnienie.md:166 | OK |
-| [[latki/seria-amd-opt]] | 0029 | 07-nasze-metody-uogolnienie.md:167 | OK |
-| [[latki/seria-amd-opt]] | 0039 | 0042-CUDA-HIP-RDNA-FA-MMA-D-256-prompt-tile-keeps-Q-in-SR.patch:10 | OK |
-| [[latki/seria-amd-opt]] | 0047, 0048, 0064, 0069 | 07-nasze-metody-uogolnienie.md:155 | OK |
-| [[latki/seria-amd-opt]] | 0065 | 07-nasze-metody-uogolnienie.md:154 | OK |
-| [[latki/seria-amd-opt]] | 07 | 0060-HIP-RDNA3-replay-a-captured-decode-graph-as-one-PM4-.patch:769 | OK |
-| [[latki/seria-amd-opt]] | 16 | README.md:16 | OK |
-| [[latki/seria-amd-opt]] | 30103 | 0018-CUDA-HIP-fix-race-in-flash_attn_ext_f16_process_tile.patch:5 | OK |
-| [[latki/seria-amd-opt]] | 59 | README.md:1 | OK |
-| [[latki/wylaczniki-env]] | 0004, 0049 | NOTES.md:346 | OK |
-| [[latki/wylaczniki-env]] | 0024, 0027 | NOTES.md:359 | OK |
-| [[latki/wylaczniki-env]] | 0025 | NOTES.md:363 | OK |
-| [[latki/wylaczniki-env]] | 0026, 0029 | NOTES.md:350 | OK |
-| [[latki/wylaczniki-env]] | 0028 | NOTES.md:369 | OK |
-| [[latki/wylaczniki-env]] | 0030, 0032 | NOTES.md:354 | OK |
-| [[latki/wylaczniki-env]] | 0031 | patch-manifest.json:667 | OK |
-| [[latki/wylaczniki-env]] | 0033 | patch-manifest.json:1600 | OK |
-| [[latki/wylaczniki-env]] | 0034 | patch-manifest.json:56 | OK |
-| [[latki/wylaczniki-env]] | 0036 | patch-manifest.json:1301 | OK |
-| [[latki/wylaczniki-env]] | 0038 | patch-manifest.json:2529 | OK |
-| [[latki/wylaczniki-env]] | 0039 | patch-manifest.json:1031 | OK |
-| [[latki/wylaczniki-env]] | 0046 | NOTES.md:373 | OK |
-| [[latki/wylaczniki-env]] | 0047 | patch-manifest.json:3534 | OK |
-| [[latki/wylaczniki-env]] | 0048, 0052 | NOTES.md:343 | OK |
-| [[latki/wylaczniki-env]] | 0050 | NOTES.md:347 | OK |
-| [[latki/wylaczniki-env]] | 0051 | NOTES.md:348 | OK |
-| [[latki/wylaczniki-env]] | 0053, 0054 | NOTES.md:353 | OK |
-| [[latki/wylaczniki-env]] | 0055, 0059 | NOTES.md:362 | OK |
-| [[latki/wylaczniki-env]] | 0056 | NOTES.md:364 | OK |
-| [[latki/wylaczniki-env]] | 0057 | NOTES.md:365 | OK |
-| [[latki/wylaczniki-env]] | 0058 | NOTES.md:366 | OK |
-| [[latki/wylaczniki-env]] | 0060 | NOTES.md:372 | OK |
-| [[latki/wylaczniki-env]] | 0061, 0062 | NOTES.md:374 | OK |
-| [[latki/wylaczniki-env]] | 0064 | NOTES.md:357 | OK |
-| [[latki/wylaczniki-env]] | 0065, 0069 | NOTES.md:381 | OK |
-| [[latki/wylaczniki-env]] | 0066 | NOTES.md:383 | OK |
-| [[latki/wylaczniki-env]] | 0070 | patch-manifest.json:8 | OK |
+| [[optymalizacje/argmax-dpp]] | 0020 | 07-nasze-metody-uogolnienie.md:104 | OK |
+| [[optymalizacje/argmax-dpp]] | 0026 | 07-nasze-metody-uogolnienie.md:99 | OK |
+| [[optymalizacje/argmax-dpp]] | 08 | NOTES.md:373 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/argmax-dpp]] | 16, 16.8, 4.3 | NOTES.md:262 | OK |
+| [[optymalizacje/argmax-dpp]] | 2026 | NOTES.md:109 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/argmax-dpp]] | 32.14 | 07-nasze-metody-uogolnienie.md:102 | OK |
+| [[optymalizacje/argmax-dpp]] | 33.17 | NOTES.md:265 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 0.207 | 07-nasze-metody-uogolnienie.md:183 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 0019, 12, 2026 | NOTES.md:228 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 0055 | NOTES.md:362 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 0057, 3.907, 4.043 | NOTES.md:365 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 0058, 3.879, 3.928 | NOTES.md:366 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/attn-prep-fwht]] | 1004, 31.17 | 07-nasze-metody-uogolnienie.md:92 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 31.01 | 07-nasze-metody-uogolnienie.md:94 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 64 | NOTES.md:363 | OK |
+| [[optymalizacje/attn-prep-fwht]] | 972 | NOTES.md:230 | OK |
+| [[optymalizacje/cache-q8-1]] | 0003, 1308 | NOTES.md:230 | OK |
+| [[optymalizacje/cache-q8-1]] | 0015, 1052, 37.04, 37.73 | 07-nasze-metody-uogolnienie.md:90 | OK |
+| [[optymalizacje/cache-q8-1]] | 0049, 4.979, 5.067, 682, 720 | NOTES.md:346 | OK |
+| [[optymalizacje/cache-q8-1]] | 0056, 3.973, 4.070 | NOTES.md:364 | OK |
+| [[optymalizacje/cache-q8-1]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/cache-q8-1]] | 3a05006a0 | NOTES.md:89 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/clamp-q8-1]] | 0023, 23606 | 07-nasze-metody-uogolnienie.md:98 | OK |
+| [[optymalizacje/clamp-q8-1]] | 07 | README.md:68 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/clamp-q8-1]] | 2026 | NOTES.md:258 | OK |
+| [[optymalizacje/clamp-q8-1]] | 2444 | NOTES.md:78 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/clamp-q8-1]] | 4017 | NOTES.md:195 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/clamp-q8-1]] | 53 | README.md:163 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/clamp-q8-1]] | 606 | README.md:21 | OK |
+| [[optymalizacje/clamp-q8-1]] | 65504 | NOTES.md:259 | OK |
+| [[optymalizacje/clamp-q8-1]] | 9f83f1f81 | NOTES.md:241 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/conv-lag]] | 0014, 12, 2026 | NOTES.md:221 | OK |
+| [[optymalizacje/conv-lag]] | 0038 | 07-nasze-metody-uogolnienie.md:113 | OK |
+| [[optymalizacje/conv-lag]] | 102.6, 28.28, 29.36 | NOTES.md:318 | OK |
+| [[optymalizacje/conv-lag]] | 105.0 | NOTES.md:308 | OK |
+| [[optymalizacje/conv-lag]] | 1391, 1585, 30.9, 32.2, 34.2, 36.4, 37.2, 40.8, 41.1, 45.7, 832, 834 | NOTES.md:307 | OK |
+| [[optymalizacje/conv-lag]] | 470 | NOTES.md:299 | OK |
+| [[optymalizacje/conv-lag]] | b9b476c87 | NOTES.md:305 | OK |
+| [[optymalizacje/conv-lag]] | d3a0973ae | NOTES.md:297 | OK |
+| [[optymalizacje/fattn-kvq]] | 0.044171, 0.044196, 128.7, 223.5, 5.462, 6.561 | NOTES.md:363 | OK |
+| [[optymalizacje/fattn-kvq]] | 0011 | NOTES.md:179 | OK |
+| [[optymalizacje/fattn-kvq]] | 0055 | NOTES.md:362 | OK |
+| [[optymalizacje/fattn-kvq]] | 0058, 3.879, 3.928 | NOTES.md:366 | OK |
+| [[optymalizacje/fattn-kvq]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/fattn-kvq]] | 120.6 | NOTES.md:187 | OK |
+| [[optymalizacje/fattn-kvq]] | 2026 | NOTES.md:182 | OK |
+| [[optymalizacje/fattn-kvq]] | 36.7, 68.2 | NOTES.md:195 | OK |
+| [[optymalizacje/fattn-kvq]] | 40, 40c9bacdc | NOTES.md:193 | OK |
+| [[optymalizacje/fattn-kvq]] | 43.0, 65, 70.9 | NOTES.md:202 | OK |
+| [[optymalizacje/fattn-kvq]] | 64 | NOTES.md:357 | OK |
+| [[optymalizacje/fattn-kvq]] | 94 | NOTES.md:180 | OK |
+| [[optymalizacje/fattn-kvq]] | 98 | NOTES.md:354 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 0.565, 34 | 07-nasze-metody-uogolnienie.md:180 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 0049, 4.979, 5.067, 682, 720 | NOTES.md:346 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 0051, 4.642, 4.817, 521 | NOTES.md:348 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 0053 | NOTES.md:353 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 0056, 3.973, 4.070 | NOTES.md:364 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 07 | NOTES.md:338 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 13 | 07-nasze-metody-uogolnienie.md:123 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 2.5, 3.5, 3.7, 38, 71, 721 | NOTES.md:340 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 2026 | NOTES.md:343 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 4.246, 4.451, 445 | NOTES.md:355 | OK |
+| [[optymalizacje/fuzje-lfm-moe]] | 56 | NOTES.md:160 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/fuzje-lfm-moe]] | 64 | NOTES.md:337 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 0.0067, 0.0098, 6.182, 6.191 | NOTES.md:225 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 0012, 0014, 2026, 6da87d000, 92, 92b14b8b2, a180bea04 | NOTES.md:221 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 0013 | 07-nasze-metody-uogolnienie.md:87 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 0015 | 07-nasze-metody-uogolnienie.md:90 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 0018 | 07-nasze-metody-uogolnienie.md:84 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 0019, b1f8c19ac, b9db88004 | NOTES.md:228 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 1308, 2156, 4.30, 6.99 | NOTES.md:223 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 3.23, 972 | NOTES.md:230 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 30103, 6.1, 9.05 | NOTES.md:229 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 34.52, 36.38, 86.4, 88.5 | NOTES.md:231 | OK |
+| [[optymalizacje/fuzje-weryfikacji]] | 35.83, 37.71, 39.6, 41.7, 74.8, 78.5, 83.3, 85.3 | NOTES.md:224 | OK |
+| [[optymalizacje/gdn-fast]] | 0.1 | gdn-bitwise.md:183 | OK |
+| [[optymalizacje/gdn-fast]] | 0.15, 0.7 | gdn-bitwise.md:182 | OK |
+| [[optymalizacje/gdn-fast]] | 0b7b073b, 58, 58e578967 | qwen-round5.md:11 | OK |
+| [[optymalizacje/gdn-fast]] | 0d89ce56c, 16 | gdn-bitwise.md:14 | OK |
+| [[optymalizacje/gdn-fast]] | 1.5, 14.27, 14.49 | gdn-bitwise.md:180 | OK |
+| [[optymalizacje/gdn-fast]] | 120 | gdn-bitwise.md:123 | OK |
+| [[optymalizacje/gdn-fast]] | 132.1, 153.7 | gdn-bitwise.md:181 | OK |
+| [[optymalizacje/gdn-fast]] | 14, c4708318 | gdn-bitwise.md:179 | OK |
+| [[optymalizacje/gdn-fast]] | 2026 | gdn-bitwise.md:176 | OK |
+| [[optymalizacje/gdn-fast]] | 379 | gdn-bitwise.md:20 | OK |
+| [[optymalizacje/gdn-fast]] | 423, 476 | gdn-bitwise.md:100 | OK |
+| [[optymalizacje/gdn-fast]] | 5b1fdbc2f | qwen-round5.md:14 | OK |
+| [[optymalizacje/gdn-fast]] | 67 | gdn-bitwise.md:177 | OK |
+| [[optymalizacje/gdn-fast]] | 83, 94 | qwen-round5.md:13 | OK |
+| [[optymalizacje/gdn-fast]] | b4e819237 | gdn-bitwise.md:7 | OK |
+| [[optymalizacje/gdn-fuzje-k2]] | 0.33, 0028 | 07-nasze-metody-uogolnienie.md:103 | OK |
+| [[optymalizacje/gdn-fuzje-k2]] | 0027 | 07-nasze-metody-uogolnienie.md:102 | OK |
+| [[optymalizacje/gdn-fuzje-k2]] | 0045, 1082, 1108, 2.4 | 07-nasze-metody-uogolnienie.md:120 | OK |
+| [[optymalizacje/gdn-fuzje-k2]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/gdn-fuzje-k2]] | 1.84, 1.87, 2.68 | NOTES.md:263 | OK |
+| [[optymalizacje/gdn-fuzje-k2]] | 2026 | NOTES.md:320 | OK |
+| [[optymalizacje/gdn-fuzje-k2]] | 32.17 | NOTES.md:265 | OK |
+| [[optymalizacje/gdn-fuzje-k2]] | 32.50 | NOTES.md:266 | OK |
+| [[optymalizacje/gdn-fuzje-k2]] | 4.68, 4.90, 5.54 | NOTES.md:264 | OK |
+| [[optymalizacje/gdn-replay]] | 0.64, 0035, 0036, 1.35, 102.9, 106.1, 28.27, 29.36 | NOTES.md:293 | OK |
+| [[optymalizacje/gdn-replay]] | 0033 | 07-nasze-metody-uogolnienie.md:108 | OK |
+| [[optymalizacje/gdn-replay]] | 0034 | 07-nasze-metody-uogolnienie.md:109 | OK |
+| [[optymalizacje/gdn-replay]] | 0038 | 07-nasze-metody-uogolnienie.md:113 | OK |
+| [[optymalizacje/gdn-replay]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/gdn-replay]] | 10, 2026, 3f8c8ddff, b1a203959 | NOTES.md:290 | OK |
+| [[optymalizacje/gdn-replay]] | 15, 48 | NOTES.md:294 | OK |
+| [[optymalizacje/gdn-replay]] | 195, 638, 748, 793 | NOTES.md:292 | OK |
+| [[optymalizacje/gdn-replay]] | 661 | 07-nasze-metody-uogolnienie.md:110 | OK |
+| [[optymalizacje/gdn-replay]] | 720 | NOTES.md:291 | OK |
+| [[optymalizacje/lfm-shortconv]] | 0.366, 22 | 07-nasze-metody-uogolnienie.md:182 | OK |
+| [[optymalizacje/lfm-shortconv]] | 0050, 4.800, 595 | NOTES.md:347 | OK |
+| [[optymalizacje/lfm-shortconv]] | 0054 | NOTES.md:353 | OK |
+| [[optymalizacje/lfm-shortconv]] | 0062, 3.402, 3.458 | NOTES.md:374 | OK |
+| [[optymalizacje/lfm-shortconv]] | 08 | NOTES.md:373 | OK |
+| [[optymalizacje/lfm-shortconv]] | 12.2, 13.6, 14.6, 2560, 3072 | NOTES.md:378 | OK |
+| [[optymalizacje/lfm-shortconv]] | 30, 32 | NOTES.md:337 | OK |
+| [[optymalizacje/lfm-shortconv]] | 4.100, 4.231, 416 | NOTES.md:356 | OK |
+| [[optymalizacje/lfm-shortconv]] | 4.979 | NOTES.md:346 | OK |
+| [[optymalizacje/lfm-shortconv]] | 445 | NOTES.md:355 | OK |
+| [[optymalizacje/lfm-shortconv]] | 96 | 07-nasze-metody-uogolnienie.md:137 | OK |
+| [[optymalizacje/mmq-epilog]] | 0.3 | mmq-epilogue.md:166 | OK |
+| [[optymalizacje/mmq-epilog]] | 0070, 2026, f61994f58 | mmq-epilogue.md:159 | OK |
+| [[optymalizacje/mmq-epilog]] | 1.9 | mmq-epilogue.md:165 | OK |
+| [[optymalizacje/mmq-epilog]] | 1099.5, 1123.2, 2.2 | mmq-epilogue.md:164 | OK |
+| [[optymalizacje/mmq-epilog]] | 128, 16 | mmq-epilogue.md:10 | OK |
+| [[optymalizacje/mmq-epilog]] | 178, 237, 243, 298 | mmq-epilogue.md:47 | OK |
+| [[optymalizacje/mmq-epilog]] | 19 | mmq-epilogue.md:81 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/mmq-epilog]] | 2048 | mmq-epilogue.md:161 | OK |
+| [[optymalizacje/mmq-epilog]] | 2486, 933 | mmq-epilogue.md:160 | OK |
+| [[optymalizacje/mmq-epilog]] | 48 | mmq-epilogue.md:32 | OK |
+| [[optymalizacje/mmq-epilog]] | 512 | mmq-epilogue.md:38 | OK |
+| [[optymalizacje/mmq-epilog]] | 64 | mmq-epilogue.md:11 | OK |
+| [[optymalizacje/mmq-epilog]] | 66 | NOTES.md:118 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/mmq-epilog]] | ae1ef6a97 | mmq-epilogue.md:7 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 0001 | NOTES.md:42 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 0002 | NOTES.md:35 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 0021 | 07-nasze-metody-uogolnienie.md:96 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 0022, 22.1, 24.3 | NOTES.md:245 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 08 | 07-nasze-metody-uogolnienie.md:97 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 132, 272 | NOTES.md:75 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 17408, 5120 | NOTES.md:67 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 2026, 60ce2a71f, 9f83f1f81 | NOTES.md:241 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 240, 340, 700 | NOTES.md:56 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 2444 | NOTES.md:78 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 296, 621 | NOTES.md:71 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 32 | NOTES.md:88 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 32.02, 33.17 | NOTES.md:255 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 33.79, 35.67, 88.1, 90.4 | NOTES.md:239 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 60, 68.6, 95 | NOTES.md:43 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 72, 72cfa5656, 95a0c83d6 | NOTES.md:89 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 7900 | NOTES.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/mmvq-multikolumnowe]] | 82.3 | NOTES.md:44 | OK |
+| [[optymalizacje/mmvq-multikolumnowe]] | 94.7, 95.4 | NOTES.md:246 | OK |
+| [[optymalizacje/mmvq-n1-wiersze]] | 0.135, 0059 | 07-nasze-metody-uogolnienie.md:184 | OK |
+| [[optymalizacje/mmvq-n1-wiersze]] | 0052, 4.509, 4.610 | NOTES.md:349 | OK |
+| [[optymalizacje/mmvq-n1-wiersze]] | 0064, 2026 | NOTES.md:372 | OK |
+| [[optymalizacje/mmvq-n1-wiersze]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/mmvq-n1-wiersze]] | 2.2 | 07-nasze-metody-uogolnienie.md:127 | OK |
+| [[optymalizacje/mmvq-n1-wiersze]] | 3.706, 3.933 | NOTES.md:374 | OK |
+| [[optymalizacje/mmvq-n1-wiersze]] | 39 | NOTES.md:135 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/mmvq-n1-wiersze]] | 6.1 | 07-nasze-metody-uogolnienie.md:139 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 0.2 | NOTES.md:238 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 0004, 86.4 | NOTES.md:233 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 0020, 36.39, 88.0 | 07-nasze-metody-uogolnienie.md:95 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 0030 | NOTES.md:274 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/mtp-draft-graf]] | 1.19, 104, 180, 42, 64 | NOTES.md:237 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 2026, c90db29c6 | NOTES.md:236 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 31.59 | 07-nasze-metody-uogolnienie.md:105 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 31.89 | 07-nasze-metody-uogolnienie.md:104 | OK |
+| [[optymalizacje/mtp-draft-graf]] | 33.79, 35.67, 88.1, 90.4 | NOTES.md:239 | OK |
+| [[optymalizacje/para-mmvq]] | 0024, 0025, 0026, 911 | 07-nasze-metody-uogolnienie.md:99 | OK |
+| [[optymalizacje/para-mmvq]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/para-mmvq]] | 2026 | NOTES.md:258 | OK |
+| [[optymalizacje/para-mmvq]] | 30.68 | NOTES.md:274 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/para-mmvq]] | 32.14, 97.8 | 07-nasze-metody-uogolnienie.md:102 | OK |
+| [[optymalizacje/para-mmvq]] | 33.17, 972 | NOTES.md:265 | OK |
+| [[optymalizacje/para-mmvq]] | 99.6 | NOTES.md:266 | OK |
+| [[optymalizacje/pm4-replay]] | 0.46, 0.86 | lfm-decode-round4.md:51 | OK |
+| [[optymalizacje/pm4-replay]] | 0060, 2026 | NOTES.md:372 | OK |
+| [[optymalizacje/pm4-replay]] | 0061, 0063 | NOTES.md:374 | OK |
+| [[optymalizacje/pm4-replay]] | 103.7, 108.8, 109.9, 115.3, 259.3, 27.80, 29.16, 293.6 | NOTES.md:375 | OK |
+| [[optymalizacje/pm4-replay]] | 2.75 | lfm-decode-round4.md:57 | OK |
+| [[optymalizacje/pm4-replay]] | 20 | lfm-decode-round4.md:52 | OK |
+| [[optymalizacje/pm4-replay]] | 257.3, 292.1, 3.424, 3.887 | lfm-decode-round4.md:94 | OK |
+| [[optymalizacje/pm4-replay]] | 304 | lfm-decode-round4.md:92 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 0.0135 | 07-nasze-metody-uogolnienie.md:118 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 0040, 249, 32, 48, 5120, 932 | NOTES.md:321 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 0041, 897, 936 | 07-nasze-metody-uogolnienie.md:116 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 0042, 0043, 256, 3.42, 4.36, 40.2, 49.0 | 07-nasze-metody-uogolnienie.md:117 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 0044 | 07-nasze-metody-uogolnienie.md:119 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 0045, 1082, 1108, 2.4 | 07-nasze-metody-uogolnienie.md:120 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 1024, 15 | NOTES.md:324 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 1059, 1080 | 07-nasze-metody-uogolnienie.md:115 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 123, 141, 29.5, 6.6, 666, 668, 762, 767, 867, 870, 906, 913, 94, 941, 943, 956, 962 | NOTES.md:322 | OK |
+| [[optymalizacje/prefill-mmq-fa]] | 2026 | NOTES.md:320 | OK |
+| [[optymalizacje/rmsnorm-dpp]] | 0025 | 07-nasze-metody-uogolnienie.md:99 | OK |
+| [[optymalizacje/rmsnorm-dpp]] | 2000 | NOTES.md:93 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/rmsnorm-dpp]] | 2026 | NOTES.md:258 | OK |
+| [[optymalizacje/rmsnorm-dpp]] | 2048, 8192 | 07-nasze-metody-uogolnienie.md:100 | OK |
+| [[optymalizacje/rmsnorm-dpp]] | 4.51, 5.87, 5120 | NOTES.md:261 | OK |
+| [[optymalizacje/sampler-fast-path]] | 0031 | 07-nasze-metody-uogolnienie.md:104 | OK |
+| [[optymalizacje/sampler-fast-path]] | 0048 | NOTES.md:343 | OK |
+| [[optymalizacje/sampler-fast-path]] | 0065 | NOTES.md:281 | OK |
+| [[optymalizacje/sampler-fast-path]] | 0066, 64 | NOTES.md:383 | OK |
+| [[optymalizacje/sampler-fast-path]] | 0069 | NOTES.md:381 | OK |
+| [[optymalizacje/sampler-fast-path]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/sampler-fast-path]] | 1.05, 128, 5.11, 5.79 | NOTES.md:345 | OK |
+| [[optymalizacje/sampler-fast-path]] | 104.8, 113.2, 254.2, 294.3 | NOTES.md:391 | OK |
+| [[optymalizacje/sampler-fast-path]] | 107.0, 99.3 | NOTES.md:390 | OK |
+| [[optymalizacje/sampler-fast-path]] | 140, 645 | NOTES.md:278 | OK |
+| [[optymalizacje/sampler-fast-path]] | 2026 | NOTES.md:276 | OK |
+| [[optymalizacje/sampler-fast-path]] | 248 | NOTES.md:277 | OK |
+| [[optymalizacje/sampler-fast-path]] | 256.9, 292.9 | NOTES.md:389 | OK |
+| [[optymalizacje/sampler-fast-path]] | 312 | NOTES.md:384 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 0.0036, 0.0042, 512 | NOTES.md:167 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 0.3, 39.92, 4.8, 41.46, 41.93, 43.73, 5.2 | NOTES.md:166 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 0.5, 13.6, 48, 8.6 | NOTES.md:164 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 0006, 0008 | NOTES.md:160 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 0007 | NOTES.md:163 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 0009, 1.3, 1.9, 614, 690 | NOTES.md:165 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 0010, 2026 | NOTES.md:162 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 1024, 18.1, 4096, 9.7 | 07-nasze-metody-uogolnienie.md:84 | OK |
+| [[optymalizacje/vulkan-mmvq]] | 256 | 07-nasze-metody-uogolnienie.md:81 | OK |
+| [[optymalizacje/wmma-small-n]] | 0.0006, 0.0122, 0.0124, 0.0128, 0037 | 07-nasze-metody-uogolnienie.md:112 | OK |
+| [[optymalizacje/wmma-small-n]] | 0.43, 32.1, 35.0, 49.2, 51.0 | NOTES.md:298 | OK |
+| [[optymalizacje/wmma-small-n]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/wmma-small-n]] | 16, 2026, d3a0973ae | NOTES.md:297 | OK |
+| [[optymalizacje/wmma-small-n]] | 4 101.7, 470, 5 105.4 | NOTES.md:299 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 0001 | 07-nasze-metody-uogolnienie.md:5 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 0006, 0008, 0011, 0013, 0037, 0055, 45, 70 | 07-nasze-metody-uogolnienie.md:7 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 0009 | 07-nasze-metody-uogolnienie.md:26 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 07, 28, 3.40, 34, 5.07 | 07-nasze-metody-uogolnienie.md:24 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 08 | 07-nasze-metody-uogolnienie.md:97 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/klasyfikacja-latek]] | 10 | 07-nasze-metody-uogolnienie.md:15 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 12 | 07-nasze-metody-uogolnienie.md:14 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 18 | 07-nasze-metody-uogolnienie.md:13 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 22 | 07-nasze-metody-uogolnienie.md:12 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 27.74, 30, 41.7, 48 | 07-nasze-metody-uogolnienie.md:23 | OK |
+| [[optymalizacje/klasyfikacja-latek]] | 38 | 07-nasze-metody-uogolnienie.md:27 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 0003 | 07-nasze-metody-uogolnienie.md:436 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 0015 | 07-nasze-metody-uogolnienie.md:442 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 0023 | 07-nasze-metody-uogolnienie.md:440 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 0029, 0059 | 07-nasze-metody-uogolnienie.md:441 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 0031, 0048, 0066, 0069 | 07-nasze-metody-uogolnienie.md:438 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 0047 | 07-nasze-metody-uogolnienie.md:439 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 07 | 07-nasze-metody-uogolnienie.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/latki-do-upstreamu]] | 143, 33, 69 | PLAN.md:45 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 2026, 70 | 07-nasze-metody-uogolnienie.md:472 | OK |
+| [[optymalizacje/latki-do-upstreamu]] | 3.1 | PLAN.md:42 | OK |
+| [[optymalizacje/latki-hostowe]] | 0029, 101.5, 30.97 | NOTES.md:279 | OK |
+| [[optymalizacje/latki-hostowe]] | 0031 | NOTES.md:327 | OK |
+| [[optymalizacje/latki-hostowe]] | 0047, 102.6, 29.36 | 07-nasze-metody-uogolnienie.md:122 | OK |
+| [[optymalizacje/latki-hostowe]] | 0059, 12, 3.806, 3.840 | NOTES.md:367 | OK |
+| [[optymalizacje/latki-hostowe]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/latki-hostowe]] | 104.2, 28.94 | NOTES.md:329 | OK |
+| [[optymalizacje/latki-hostowe]] | 140, 375, 645, 963 | NOTES.md:278 | OK |
+| [[optymalizacje/latki-hostowe]] | 16 | NOTES.md:277 | OK |
+| [[optymalizacje/latki-hostowe]] | 2026 | NOTES.md:276 | OK |
+| [[optymalizacje/latki-hostowe]] | 204800, 236 | NOTES.md:328 | OK |
+| [[optymalizacje/latki-hostowe]] | 31.89, 32.20 | 07-nasze-metody-uogolnienie.md:104 | OK |
+| [[optymalizacje/latki-hostowe]] | 32.14, 97.8 | NOTES.md:274 | OK |
+| [[optymalizacje/latki-oczekujace]] | 0.15 | gdn-bitwise.md:182 | OK |
+| [[optymalizacje/latki-oczekujace]] | 0001 | gdn-bitwise.md:177 | OK |
+| [[optymalizacje/latki-oczekujace]] | 0002, 0006 | qwen-round5.md:81 | OK |
+| [[optymalizacje/latki-oczekujace]] | 0003 | qwen-round5.md:85 | OK |
+| [[optymalizacje/latki-oczekujace]] | 0004 | qwen-round5.md:78 | OK |
+| [[optymalizacje/latki-oczekujace]] | 0005 | qwen-round5.md:87 | OK |
+| [[optymalizacje/latki-oczekujace]] | 0007 | qwen-round5.md:83 | OK |
+| [[optymalizacje/latki-oczekujace]] | 15, 2026 | gdn-bitwise.md:176 | OK |
+| [[optymalizacje/latki-oczekujace]] | 16 | 0001-HIP-RDNA-GDN-separate-bit-identical-fast-kernel-DPP-.patch:28 | OK |
+| [[optymalizacje/latki-oczekujace]] | 2.6 | qwen-round5.md:18 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/latki-spekulacji]] | 0.4 | NOTES.md:284 | OK |
+| [[optymalizacje/latki-spekulacji]] | 0004 | NOTES.md:83 | OK |
+| [[optymalizacje/latki-spekulacji]] | 0032, 16, 32, 48, 64, 7.5, 96 | NOTES.md:88 | OK |
+| [[optymalizacje/latki-spekulacji]] | 0039 | 07-nasze-metody-uogolnienie.md:114 | OK |
+| [[optymalizacje/latki-spekulacji]] | 0041 | NOTES.md:307 | OK |
+| [[optymalizacje/latki-spekulacji]] | 0046, 3.62, 4.82 | NOTES.md:285 | OK |
+| [[optymalizacje/latki-spekulacji]] | 100.6 | NOTES.md:286 | OK |
+| [[optymalizacje/latki-spekulacji]] | 103.6 | NOTES.md:311 | OK |
+| [[optymalizacje/latki-spekulacji]] | 105, 4 102.7 | NOTES.md:308 | OK |
+| [[optymalizacje/latki-spekulacji]] | 2.78, 3.31, 8192, 90 | NOTES.md:327 | OK |
+| [[optymalizacje/latki-spekulacji]] | 2026 | NOTES.md:283 | OK |
+| [[optymalizacje/latki-spekulacji]] | 6.6, 94 | NOTES.md:280 | OK |
+| [[optymalizacje/latki-spekulacji]] | 913 | NOTES.md:322 | OK |
+| [[optymalizacje/latki-spekulacji]] | 936 | 07-nasze-metody-uogolnienie.md:116 | OK |
+| [[optymalizacje/latki-spekulacji]] | 97.5 | NOTES.md:330 | OK |
+| [[optymalizacje/patch-manifest]] | 0001, 0019, 19 | 08-analiza-platformy-latek.md:5 | OK |
+| [[optymalizacje/patch-manifest]] | 0057 | patch-manifest.json:74 | OK |
+| [[optymalizacje/patch-manifest]] | 0060, 0070, 2026, 70, e60eff95f, f61994f58 | 08-analiza-platformy-latek.md:3 | OK |
+| [[optymalizacje/patch-manifest]] | 1.736 | patch-manifest.json:49 | OK |
+| [[optymalizacje/patch-manifest]] | 13.96, 14, 14.14, 27.74, 41, 41.7 | patch-manifest.json:48 | OK |
+| [[optymalizacje/patch-manifest]] | 193 | ręcznie | OK: stat: 193045 B ≈ 193 KB |
+| [[optymalizacje/patch-manifest]] | 30 | patch-manifest.json:666 | OK |
+| [[optymalizacje/patch-manifest]] | 47 | patch-manifest.json:3679 | OK |
+| [[optymalizacje/patch-manifest]] | 56 | 08-analiza-platformy-latek.md:188 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/seria-amd-opt]] | 0001, 0070, 70 | 07-nasze-metody-uogolnienie.md:51 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0005, 0012, 0018 | 07-nasze-metody-uogolnienie.md:152 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0006, 0010, 2026, e60eff95f, f61994f58 | 07-nasze-metody-uogolnienie.md:53 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0011 | 07-nasze-metody-uogolnienie.md:153 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0019, 0033, 0038 | 07-nasze-metody-uogolnienie.md:163 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0020 | 07-nasze-metody-uogolnienie.md:164 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0021 | 07-nasze-metody-uogolnienie.md:165 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0028, 0032 | 07-nasze-metody-uogolnienie.md:166 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0029 | 07-nasze-metody-uogolnienie.md:167 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0039 | 0042-CUDA-HIP-RDNA-FA-MMA-D-256-prompt-tile-keeps-Q-in-SR.patch:10 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0047, 0048, 0064, 0069 | 07-nasze-metody-uogolnienie.md:155 | OK |
+| [[optymalizacje/seria-amd-opt]] | 0065 | 07-nasze-metody-uogolnienie.md:154 | OK |
+| [[optymalizacje/seria-amd-opt]] | 07 | 0060-HIP-RDNA3-replay-a-captured-decode-graph-as-one-PM4-.patch:769 | OK |
+| [[optymalizacje/seria-amd-opt]] | 16 | README.md:16 | OK |
+| [[optymalizacje/seria-amd-opt]] | 30103 | 0018-CUDA-HIP-fix-race-in-flash_attn_ext_f16_process_tile.patch:5 | OK |
+| [[optymalizacje/seria-amd-opt]] | 59 | README.md:1 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0004, 0049 | NOTES.md:346 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0024, 0027 | NOTES.md:359 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0025 | NOTES.md:363 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0026, 0029 | NOTES.md:350 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0028 | NOTES.md:369 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0030, 0032 | NOTES.md:354 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0031 | patch-manifest.json:667 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0033 | patch-manifest.json:1600 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0034 | patch-manifest.json:56 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0036 | patch-manifest.json:1301 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0038 | patch-manifest.json:2529 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0039 | patch-manifest.json:1031 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0046 | NOTES.md:373 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0047 | patch-manifest.json:3534 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0048, 0052 | NOTES.md:343 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0050 | NOTES.md:347 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0051 | NOTES.md:348 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0053, 0054 | NOTES.md:353 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0055, 0059 | NOTES.md:362 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0056 | NOTES.md:364 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0057 | NOTES.md:365 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0058 | NOTES.md:366 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0060 | NOTES.md:372 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0061, 0062 | NOTES.md:374 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0064 | NOTES.md:357 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0065, 0069 | NOTES.md:381 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0066 | NOTES.md:383 | OK |
+| [[optymalizacje/wylaczniki-env]] | 0070 | patch-manifest.json:8 | OK |
 | [[lekcje/baco-runtime-suspend]] | 04 | NOTES.md:221 | OK (inny wiersz źródła, sprawdzone) |
 | [[lekcje/baco-runtime-suspend]] | 10, 2026 | NOTES.md:122 | OK |
 | [[lekcje/baco-runtime-suspend]] | 20, 285, 90.6, 94.1, 94.7 | NOTES.md:126 | OK |
@@ -1028,90 +1028,90 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[lekcje/lekcja-zombie-serwery]] | 8080 | loo.py:11 | OK |
 | [[lekcje/pm4-niewidoczne-w-rocprof]] | 0060 | NOTES.md:372 | OK |
 | [[lekcje/pm4-niewidoczne-w-rocprof]] | 13 | NOTES.md:96 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/conway-research]] | 10 | 10-post-training.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/conway-research]] | 2025, 7.89, 79.2, 84, 88, 96.7 | 10-post-training.md:337 | OK |
-| [[ludzie-firmy/conway-research]] | 27 | 10-post-training.md:137 | OK |
-| [[ludzie-firmy/conway-research]] | 3060 | 10-post-training.md:364 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/firma-amd]] | 0.2 | 13-rocm-10.1.md:26 | OK |
-| [[ludzie-firmy/firma-amd]] | 01.2026 | 01-konkurencja.md:58 | OK |
-| [[ludzie-firmy/firma-amd]] | 100, 30 | 05-chmura-gpu-do-testow.md:39 | OK |
-| [[ludzie-firmy/firma-amd]] | 14 | 01-konkurencja.md:42 | OK |
-| [[ludzie-firmy/firma-amd]] | 2026 | 01-konkurencja.md:46 | OK |
-| [[ludzie-firmy/firma-amd]] | 7900 | 05-chmura-gpu-do-testow.md:40 | OK |
-| [[ludzie-firmy/firma-nvidia]] | 06 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:48 | OK |
-| [[ludzie-firmy/firma-nvidia]] | 1.9, 5090 | 01-konkurencja.md:57 | OK |
-| [[ludzie-firmy/firma-nvidia]] | 12,93 | 06-produkt-ux-prawo-biznes.md:19 | OK |
-| [[ludzie-firmy/firma-nvidia]] | 2026 | 01-konkurencja.md:46 | OK |
-| [[ludzie-firmy/firma-nvidia]] | 76 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:47 | OK |
-| [[ludzie-firmy/firma-runpod]] | 10 | 05-chmura-gpu-do-testow.md:66 | OK |
-| [[ludzie-firmy/firma-runpod]] | 2.39, 3070 | 05-chmura-gpu-do-testow.md:67 | OK |
-| [[ludzie-firmy/firma-runpod]] | 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
-| [[ludzie-firmy/firma-runpod]] | 80 | 05-chmura-gpu-do-testow.md:21 | OK |
-| [[ludzie-firmy/firma-salad]] | 0.04, 0.17, 7800, 9060, 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
-| [[ludzie-firmy/firma-salad]] | 0.09, 3090 | 05-chmura-gpu-do-testow.md:21 | OK |
-| [[ludzie-firmy/firma-salad]] | 7900 | 05-chmura-gpu-do-testow.md:22 | OK |
-| [[ludzie-firmy/firma-vast-ai]] | 0.08, 3060 | 05-chmura-gpu-do-testow.md:14 | OK |
-| [[ludzie-firmy/firma-vast-ai]] | 0.16, 5060 | 05-chmura-gpu-do-testow.md:17 | OK |
-| [[ludzie-firmy/firma-vast-ai]] | 0.23, 3090 | 05-chmura-gpu-do-testow.md:15 | OK |
-| [[ludzie-firmy/firma-vast-ai]] | 0.29, 5070 | 05-chmura-gpu-do-testow.md:18 | OK |
-| [[ludzie-firmy/firma-vast-ai]] | 0.51, 4090 | 05-chmura-gpu-do-testow.md:16 | OK |
-| [[ludzie-firmy/firma-vast-ai]] | 0.73, 445, 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
-| [[ludzie-firmy/firma-vast-ai]] | 2026, 21, 30 | 05-chmura-gpu-do-testow.md:7 | OK |
-| [[ludzie-firmy/firma-vast-ai]] | 80 | 05-chmura-gpu-do-testow.md:21 | OK |
-| [[ludzie-firmy/ggml-org]] | 2026, 24, 33, 69 | 03-silniki-i-stack.md:21 | OK |
-| [[ludzie-firmy/ggml-org]] | e60eff95f | git:1 | OK |
-| [[ludzie-firmy/gigagpu]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/gigagpu]] | 129, 179, 270 | 05-chmura-gpu-do-testow.md:26 | OK |
-| [[ludzie-firmy/gigagpu]] | 395 | 05-chmura-gpu-do-testow.md:25 | OK |
-| [[ludzie-firmy/gigagpu]] | 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
-| [[ludzie-firmy/hostkey]] | 0.47 | PLAN.md:293 | OK |
-| [[ludzie-firmy/hostkey]] | 0.471 | 05-chmura-gpu-do-testow.md:24 | OK |
-| [[ludzie-firmy/hostkey]] | 5.2 | PLAN.md:30 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/hostkey]] | 7900 | 05-chmura-gpu-do-testow.md:22 | OK |
-| [[ludzie-firmy/hostkey]] | 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
-| [[ludzie-firmy/hugging-face]] | 04 | 06-produkt-ux-prawo-biznes.md:342 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/hugging-face]] | 12,93 | 06-produkt-ux-prawo-biznes.md:19 | OK |
-| [[ludzie-firmy/hugging-face]] | 2026 | 03-silniki-i-stack.md:118 | OK |
-| [[ludzie-firmy/hugging-face]] | 25 | 03-silniki-i-stack.md:66 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/ista-daslab]] | 50.03, 56.28 | 10-post-training.md:334 | OK |
-| [[ludzie-firmy/jan]] | 0.8 | 03-silniki-i-stack.md:39 | OK |
-| [[ludzie-firmy/jan]] | 13 | 03-silniki-i-stack.md:38 | OK |
-| [[ludzie-firmy/jan]] | 45.0 | 01-konkurencja.md:158 | OK |
-| [[ludzie-firmy/jan]] | 530, 95 | 03-silniki-i-stack.md:416 | OK |
-| [[ludzie-firmy/lemonade]] | 0.2 | 13-rocm-10.1.md:26 | OK |
-| [[ludzie-firmy/lemonade]] | 10, 2026 | 01-konkurencja.md:46 | OK |
-| [[ludzie-firmy/liquidai]] | 10, 2026 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:313 | OK |
-| [[ludzie-firmy/lm-studio]] | 100, 20 | 06-produkt-ux-prawo-biznes.md:20 | OK |
-| [[ludzie-firmy/lm-studio]] | 61, 74.7 | 01-konkurencja.md:36 | OK |
-| [[ludzie-firmy/metr-sakana]] | 1.49, 3.13 | 02-autotuning-i-agenci-kerneli.md:35 | OK |
-| [[ludzie-firmy/metr-sakana]] | 1.81, 20, 2025 | 02-autotuning-i-agenci-kerneli.md:31 | OK |
-| [[ludzie-firmy/metr-sakana]] | 10 | 02-autotuning-i-agenci-kerneli.md:192 | OK |
-| [[ludzie-firmy/metr-sakana]] | 100, 2.01, 35, 93 | 02-autotuning-i-agenci-kerneli.md:191 | OK |
-| [[ludzie-firmy/ollama]] | 1,5 | 03-silniki-i-stack.md:38 | OK |
-| [[ludzie-firmy/ollama]] | 1.3 | 01-konkurencja.md:144 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/ollama]] | 165, 190 | 01-konkurencja.md:49 | OK |
-| [[ludzie-firmy/ollama]] | 2026 | 01-konkurencja.md:46 | OK |
-| [[ludzie-firmy/ollama]] | 65 | 06-produkt-ux-prawo-biznes.md:17 | OK |
-| [[ludzie-firmy/prismml]] | 1.76, 20, 27, 5.93, 98.2 | 10-post-training.md:329 | OK |
-| [[ludzie-firmy/prismml]] | 3060 | 10-post-training.md:364 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/qwen-alibaba]] | 04 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/qwen-alibaba]] | 16, 27 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:40 | OK |
-| [[ludzie-firmy/qwen-alibaba]] | 17,56, 24 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:41 | OK |
-| [[ludzie-firmy/qwen-alibaba]] | 40 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:45 | OK |
-| [[ludzie-firmy/scaleway]] | 0.22, 149, 16 | 05-chmura-gpu-do-testow.md:28 | OK |
-| [[ludzie-firmy/scaleway]] | 0.49, 64 | 05-chmura-gpu-do-testow.md:29 | OK |
-| [[ludzie-firmy/scaleway]] | 08 | 05-chmura-gpu-do-testow.md:75 | OK |
-| [[ludzie-firmy/scaleway]] | 24 | 05-chmura-gpu-do-testow.md:27 | OK |
-| [[ludzie-firmy/thinking-machines]] | 02 | 02-autotuning-i-agenci-kerneli.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[ludzie-firmy/thinking-machines]] | 10.09 | 12-bit-exact-spekulacja.md:16 | OK |
-| [[ludzie-firmy/thinking-machines]] | 1000, 12, 34, 78 | 02-autotuning-i-agenci-kerneli.md:225 | OK |
-| [[ludzie-firmy/thinking-machines]] | 60 | 02-autotuning-i-agenci-kerneli.md:222 | OK |
-| [[ludzie-firmy/turbollm]] | 285, 61, 74.7 | 01-konkurencja.md:36 | OK |
-| [[ludzie-firmy/unsloth]] | 0,0137, 0,0192, 18,49, 19,17 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:360 | OK |
-| [[ludzie-firmy/unsloth]] | 04 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:363 | OK |
-| [[ludzie-firmy/unsloth]] | 10, 3.0 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:359 | OK |
-| [[ludzie-firmy/unsloth]] | 2026 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:361 | OK |
-| [[ludzie-firmy/unsloth]] | 66.9 | 10-post-training.md:339 | OK |
+| [[ekosystem/conway-research]] | 10 | 10-post-training.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/conway-research]] | 2025, 7.89, 79.2, 84, 88, 96.7 | 10-post-training.md:337 | OK |
+| [[ekosystem/conway-research]] | 27 | 10-post-training.md:137 | OK |
+| [[ekosystem/conway-research]] | 3060 | 10-post-training.md:364 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/firma-amd]] | 0.2 | 13-rocm-10.1.md:26 | OK |
+| [[ekosystem/firma-amd]] | 01.2026 | 01-konkurencja.md:58 | OK |
+| [[ekosystem/firma-amd]] | 100, 30 | 05-chmura-gpu-do-testow.md:39 | OK |
+| [[ekosystem/firma-amd]] | 14 | 01-konkurencja.md:42 | OK |
+| [[ekosystem/firma-amd]] | 2026 | 01-konkurencja.md:46 | OK |
+| [[ekosystem/firma-amd]] | 7900 | 05-chmura-gpu-do-testow.md:40 | OK |
+| [[ekosystem/firma-nvidia]] | 06 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:48 | OK |
+| [[ekosystem/firma-nvidia]] | 1.9, 5090 | 01-konkurencja.md:57 | OK |
+| [[ekosystem/firma-nvidia]] | 12,93 | 06-produkt-ux-prawo-biznes.md:19 | OK |
+| [[ekosystem/firma-nvidia]] | 2026 | 01-konkurencja.md:46 | OK |
+| [[ekosystem/firma-nvidia]] | 76 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:47 | OK |
+| [[karty/runpod]] | 10 | 05-chmura-gpu-do-testow.md:66 | OK |
+| [[karty/runpod]] | 2.39, 3070 | 05-chmura-gpu-do-testow.md:67 | OK |
+| [[karty/runpod]] | 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
+| [[karty/runpod]] | 80 | 05-chmura-gpu-do-testow.md:21 | OK |
+| [[karty/salad]] | 0.04, 0.17, 7800, 9060, 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
+| [[karty/salad]] | 0.09, 3090 | 05-chmura-gpu-do-testow.md:21 | OK |
+| [[karty/salad]] | 7900 | 05-chmura-gpu-do-testow.md:22 | OK |
+| [[karty/vast-ai]] | 0.08, 3060 | 05-chmura-gpu-do-testow.md:14 | OK |
+| [[karty/vast-ai]] | 0.16, 5060 | 05-chmura-gpu-do-testow.md:17 | OK |
+| [[karty/vast-ai]] | 0.23, 3090 | 05-chmura-gpu-do-testow.md:15 | OK |
+| [[karty/vast-ai]] | 0.29, 5070 | 05-chmura-gpu-do-testow.md:18 | OK |
+| [[karty/vast-ai]] | 0.51, 4090 | 05-chmura-gpu-do-testow.md:16 | OK |
+| [[karty/vast-ai]] | 0.73, 445, 5090 | 05-chmura-gpu-do-testow.md:19 | OK |
+| [[karty/vast-ai]] | 2026, 21, 30 | 05-chmura-gpu-do-testow.md:7 | OK |
+| [[karty/vast-ai]] | 80 | 05-chmura-gpu-do-testow.md:21 | OK |
+| [[ekosystem/ggml-org]] | 2026, 24, 33, 69 | 03-silniki-i-stack.md:21 | OK |
+| [[ekosystem/ggml-org]] | e60eff95f | git:1 | OK |
+| [[ekosystem/gigagpu]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/gigagpu]] | 129, 179, 270 | 05-chmura-gpu-do-testow.md:26 | OK |
+| [[ekosystem/gigagpu]] | 395 | 05-chmura-gpu-do-testow.md:25 | OK |
+| [[ekosystem/gigagpu]] | 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
+| [[ekosystem/hostkey]] | 0.47 | PLAN.md:293 | OK |
+| [[ekosystem/hostkey]] | 0.471 | 05-chmura-gpu-do-testow.md:24 | OK |
+| [[ekosystem/hostkey]] | 5.2 | PLAN.md:30 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/hostkey]] | 7900 | 05-chmura-gpu-do-testow.md:22 | OK |
+| [[ekosystem/hostkey]] | 9070 | 05-chmura-gpu-do-testow.md:23 | OK |
+| [[ekosystem/hugging-face]] | 04 | 06-produkt-ux-prawo-biznes.md:342 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/hugging-face]] | 12,93 | 06-produkt-ux-prawo-biznes.md:19 | OK |
+| [[ekosystem/hugging-face]] | 2026 | 03-silniki-i-stack.md:118 | OK |
+| [[ekosystem/hugging-face]] | 25 | 03-silniki-i-stack.md:66 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/ista-daslab]] | 50.03, 56.28 | 10-post-training.md:334 | OK |
+| [[ekosystem/jan]] | 0.8 | 03-silniki-i-stack.md:39 | OK |
+| [[ekosystem/jan]] | 13 | 03-silniki-i-stack.md:38 | OK |
+| [[ekosystem/jan]] | 45.0 | 01-konkurencja.md:158 | OK |
+| [[ekosystem/jan]] | 530, 95 | 03-silniki-i-stack.md:416 | OK |
+| [[ekosystem/lemonade]] | 0.2 | 13-rocm-10.1.md:26 | OK |
+| [[ekosystem/lemonade]] | 10, 2026 | 01-konkurencja.md:46 | OK |
+| [[ekosystem/liquidai]] | 10, 2026 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:313 | OK |
+| [[ekosystem/lm-studio]] | 100, 20 | 06-produkt-ux-prawo-biznes.md:20 | OK |
+| [[ekosystem/lm-studio]] | 61, 74.7 | 01-konkurencja.md:36 | OK |
+| [[ekosystem/metr-sakana]] | 1.49, 3.13 | 02-autotuning-i-agenci-kerneli.md:35 | OK |
+| [[ekosystem/metr-sakana]] | 1.81, 20, 2025 | 02-autotuning-i-agenci-kerneli.md:31 | OK |
+| [[ekosystem/metr-sakana]] | 10 | 02-autotuning-i-agenci-kerneli.md:192 | OK |
+| [[ekosystem/metr-sakana]] | 100, 2.01, 35, 93 | 02-autotuning-i-agenci-kerneli.md:191 | OK |
+| [[ekosystem/ollama]] | 1,5 | 03-silniki-i-stack.md:38 | OK |
+| [[ekosystem/ollama]] | 1.3 | 01-konkurencja.md:144 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/ollama]] | 165, 190 | 01-konkurencja.md:49 | OK |
+| [[ekosystem/ollama]] | 2026 | 01-konkurencja.md:46 | OK |
+| [[ekosystem/ollama]] | 65 | 06-produkt-ux-prawo-biznes.md:17 | OK |
+| [[ekosystem/prismml]] | 1.76, 20, 27, 5.93, 98.2 | 10-post-training.md:329 | OK |
+| [[ekosystem/prismml]] | 3060 | 10-post-training.md:364 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/qwen-alibaba]] | 04 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/qwen-alibaba]] | 16, 27 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:40 | OK |
+| [[ekosystem/qwen-alibaba]] | 17,56, 24 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:41 | OK |
+| [[ekosystem/qwen-alibaba]] | 40 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:45 | OK |
+| [[ekosystem/scaleway]] | 0.22, 149, 16 | 05-chmura-gpu-do-testow.md:28 | OK |
+| [[ekosystem/scaleway]] | 0.49, 64 | 05-chmura-gpu-do-testow.md:29 | OK |
+| [[ekosystem/scaleway]] | 08 | 05-chmura-gpu-do-testow.md:75 | OK |
+| [[ekosystem/scaleway]] | 24 | 05-chmura-gpu-do-testow.md:27 | OK |
+| [[ekosystem/thinking-machines]] | 02 | 02-autotuning-i-agenci-kerneli.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/thinking-machines]] | 10.09 | 12-bit-exact-spekulacja.md:16 | OK |
+| [[ekosystem/thinking-machines]] | 1000, 12, 34, 78 | 02-autotuning-i-agenci-kerneli.md:225 | OK |
+| [[ekosystem/thinking-machines]] | 60 | 02-autotuning-i-agenci-kerneli.md:222 | OK |
+| [[ekosystem/turbollm]] | 285, 61, 74.7 | 01-konkurencja.md:36 | OK |
+| [[ekosystem/unsloth]] | 0,0137, 0,0192, 18,49, 19,17 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:360 | OK |
+| [[ekosystem/unsloth]] | 04 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:363 | OK |
+| [[ekosystem/unsloth]] | 10, 3.0 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:359 | OK |
+| [[ekosystem/unsloth]] | 2026 | 04-wykrywanie-sprzetu-i-dobor-modeli.md:361 | OK |
+| [[ekosystem/unsloth]] | 66.9 | 10-post-training.md:339 | OK |
 | [[metody/ablacja]] | 0070 | qwen-round5.md:43 | OK (inny wiersz źródła, sprawdzone) |
 | [[metody/ablacja]] | 1085, 1094, 1173, 7.6 | qwen-round5.md:20 | OK |
 | [[metody/ablacja]] | 11, 11.9, 1131, 1219, 3.0, 3.8, 3254 | qwen-round5.md:21 | OK |
@@ -1167,42 +1167,42 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[metody/loo]] | 45 | README.md:21 | OK |
 | [[metody/loo]] | 65, c36fd2c87 | README.md:3 | OK (inny wiersz źródła, sprawdzone) |
 | [[metody/loo]] | 95 | README.md:30 | OK |
-| [[metody/mikrobench-granicy-kernela]] | 0.46, 0.86, 2.08, 2.75 | NOTES.md:373 | OK |
-| [[metody/mikrobench-granicy-kernela]] | 0.5, 0.8, 11, 2.53 | NOTES.md:358 | OK |
-| [[metody/mikrobench-granicy-kernela]] | 0060, 2026 | NOTES.md:372 | OK |
-| [[metody/mikrobench-granicy-kernela]] | 10.0, 7900 | NOTES.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[metody/mikrobench-granicy-kernela]] | 3.424, 3.887 | NOTES.md:374 | OK |
-| [[metody/mikrobench-granicy-kernela]] | 358, 373 | 07-nasze-metody-uogolnienie.md:214 | OK |
-| [[metody/ms-na-krok]] | 2.9 | README.md:179 | OK |
-| [[metody/ms-na-krok]] | 2026 | NOTES.md:283 | OK |
-| [[metody/ms-na-krok]] | 29.76, 30.97 | NOTES.md:285 | OK |
-| [[metody/ms-na-krok]] | 3.008, 3.063 | NOTES.md:286 | OK |
-| [[metody/ms-na-krok]] | 3.16, 35.7 | README.md:178 | OK |
+| [[testy/mikrobench-granicy-kernela]] | 0.46, 0.86, 2.08, 2.75 | NOTES.md:373 | OK |
+| [[testy/mikrobench-granicy-kernela]] | 0.5, 0.8, 11, 2.53 | NOTES.md:358 | OK |
+| [[testy/mikrobench-granicy-kernela]] | 0060, 2026 | NOTES.md:372 | OK |
+| [[testy/mikrobench-granicy-kernela]] | 10.0, 7900 | NOTES.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/mikrobench-granicy-kernela]] | 3.424, 3.887 | NOTES.md:374 | OK |
+| [[testy/mikrobench-granicy-kernela]] | 358, 373 | 07-nasze-metody-uogolnienie.md:214 | OK |
+| [[testy/ms-na-krok]] | 2.9 | README.md:179 | OK |
+| [[testy/ms-na-krok]] | 2026 | NOTES.md:283 | OK |
+| [[testy/ms-na-krok]] | 29.76, 30.97 | NOTES.md:285 | OK |
+| [[testy/ms-na-krok]] | 3.008, 3.063 | NOTES.md:286 | OK |
+| [[testy/ms-na-krok]] | 3.16, 35.7 | README.md:178 | OK |
 | [[metody/playbook-optymalizacji]] | 0.15 | 07-nasze-metody-uogolnienie.md:234 | OK |
 | [[metody/playbook-optymalizacji]] | 07 | PLAN.md:224 | OK |
 | [[metody/playbook-optymalizacji]] | 10, 25, 40 | 07-nasze-metody-uogolnienie.md:38 | OK |
 | [[metody/playbook-optymalizacji]] | 2.2, 4.4 | 07-nasze-metody-uogolnienie.md:27 | OK |
-| [[metody/pomiar-abba]] | 0.3 | NOTES.md:166 | OK |
-| [[metody/pomiar-abba]] | 02 | 02-autotuning-i-agenci-kerneli.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[metody/pomiar-abba]] | 12 | 07-nasze-metody-uogolnienie.md:273 | OK |
-| [[metody/pomiar-abba]] | 163.1, 98.5 | 02-autotuning-i-agenci-kerneli.md:50 | OK |
-| [[metody/pomiar-abba]] | 17.3, 26.7 | 02-autotuning-i-agenci-kerneli.md:47 | OK |
-| [[metody/pomiar-abba]] | 2026 | NOTES.md:362 | OK |
-| [[metody/pomiar-abba]] | 22 | 02-autotuning-i-agenci-kerneli.md:49 | OK |
-| [[metody/pomiar-abba]] | 24.3, 27.2 | 07-nasze-metody-uogolnienie.md:278 | OK |
-| [[metody/pomiar-abba]] | 95 | 07-nasze-metody-uogolnienie.md:233 | OK |
+| [[testy/pomiar-abba]] | 0.3 | NOTES.md:166 | OK |
+| [[testy/pomiar-abba]] | 02 | 02-autotuning-i-agenci-kerneli.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/pomiar-abba]] | 12 | 07-nasze-metody-uogolnienie.md:273 | OK |
+| [[testy/pomiar-abba]] | 163.1, 98.5 | 02-autotuning-i-agenci-kerneli.md:50 | OK |
+| [[testy/pomiar-abba]] | 17.3, 26.7 | 02-autotuning-i-agenci-kerneli.md:47 | OK |
+| [[testy/pomiar-abba]] | 2026 | NOTES.md:362 | OK |
+| [[testy/pomiar-abba]] | 22 | 02-autotuning-i-agenci-kerneli.md:49 | OK |
+| [[testy/pomiar-abba]] | 24.3, 27.2 | 07-nasze-metody-uogolnienie.md:278 | OK |
+| [[testy/pomiar-abba]] | 95 | 07-nasze-metody-uogolnienie.md:233 | OK |
 | [[metody/serializacja-gpu]] | 07 | 07-nasze-metody-uogolnienie.md:1 | OK (inny wiersz źródła, sprawdzone) |
 | [[metody/serializacja-gpu]] | 15, 5.6, 8097 | 07-nasze-metody-uogolnienie.md:269 | OK |
 | [[metody/serializacja-gpu]] | 18433, 18499, 8080 | README.md:5 | OK |
 | [[metody/serializacja-gpu]] | 2026 | NOTES.md:162 | OK |
-| [[metody/sufit-pasma-i-mapa-czasu]] | 1.3, 3.8, 680, 71, 721 | NOTES.md:340 | OK |
-| [[metody/sufit-pasma-i-mapa-czasu]] | 1.8, 1.9, 500 | 07-nasze-metody-uogolnienie.md:193 | OK |
-| [[metody/sufit-pasma-i-mapa-czasu]] | 112 | NOTES.md:104 | OK |
-| [[metody/sufit-pasma-i-mapa-czasu]] | 16, 3.2 | 07-nasze-metody-uogolnienie.md:204 | OK |
-| [[metody/sufit-pasma-i-mapa-czasu]] | 1900, 2100 | NOTES.md:57 | OK |
-| [[metody/sufit-pasma-i-mapa-czasu]] | 2026 | NOTES.md:343 | OK |
-| [[metody/sufit-pasma-i-mapa-czasu]] | 3.1, 5.05 | 07-nasze-metody-uogolnienie.md:201 | OK |
-| [[metody/sufit-pasma-i-mapa-czasu]] | 81, 88, 960 | 07-nasze-metody-uogolnienie.md:192 | OK |
+| [[testy/sufit-pasma-i-mapa-czasu]] | 1.3, 3.8, 680, 71, 721 | NOTES.md:340 | OK |
+| [[testy/sufit-pasma-i-mapa-czasu]] | 1.8, 1.9, 500 | 07-nasze-metody-uogolnienie.md:193 | OK |
+| [[testy/sufit-pasma-i-mapa-czasu]] | 112 | NOTES.md:104 | OK |
+| [[testy/sufit-pasma-i-mapa-czasu]] | 16, 3.2 | 07-nasze-metody-uogolnienie.md:204 | OK |
+| [[testy/sufit-pasma-i-mapa-czasu]] | 1900, 2100 | NOTES.md:57 | OK |
+| [[testy/sufit-pasma-i-mapa-czasu]] | 2026 | NOTES.md:343 | OK |
+| [[testy/sufit-pasma-i-mapa-czasu]] | 3.1, 5.05 | 07-nasze-metody-uogolnienie.md:201 | OK |
+| [[testy/sufit-pasma-i-mapa-czasu]] | 81, 88, 960 | 07-nasze-metody-uogolnienie.md:192 | OK |
 | [[metody/wylacznik-w-kazdej-latce]] | 0024 | 07-nasze-metody-uogolnienie.md:222 | OK |
 | [[metody/wylacznik-w-kazdej-latce]] | 0063 | NOTES.md:374 | OK |
 | [[metody/wylacznik-w-kazdej-latce]] | 08, 27 | NOTES.md:373 | OK |
@@ -1434,90 +1434,90 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[narzedzia/spec-sweep]] | 2.15, 6.8 | 07-nasze-metody-uogolnienie.md:301 | OK |
 | [[narzedzia/spec-sweep]] | 2026 | NOTES.md:162 | OK |
 | [[narzedzia/ss-zrzut-ekranu]] | 2026 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5195 | OK |
-| [[nvidia/cuda-compat]] | 0053 | CUDA-AUDIT.md:10 | OK |
-| [[nvidia/cuda-compat]] | 0056 | CUDA-AUDIT.md:11 | OK |
-| [[nvidia/cuda-compat]] | 0057, 21, 25 | CUDA-AUDIT.md:7 | OK |
-| [[nvidia/cuda-compat]] | 0070 | CUDA-AUDIT.md:3 | OK |
-| [[nvidia/cuda-compat]] | 14506801, 14506801c | CUDA-AUDIT.md:76 | OK |
-| [[nvidia/cuda-compat]] | 57, 57e0bdfe4 | CUDA-AUDIT.md:74 | OK |
-| [[nvidia/cuda-compat]] | 579, 7b2680760, 835 | CUDA-AUDIT.md:8 | OK |
-| [[nvidia/cuda-compat]] | 780365407 | CUDA-AUDIT.md:75 | OK |
-| [[nvidia/cuda-compat]] | 7a538d96f | git:1 | OK |
-| [[nvidia/cuda-compat]] | b479c67dd | ręcznie | OK: git log 8c942e5a9..cuda-v070 |
-| [[nvidia/cuda-stos]] | 1140, 1160 | ręcznie | OK: przybliżenie 1139/1151/1157 s z results/3060-20261016/build/times.jsonl:1-3 |
-| [[nvidia/cuda-stos]] | 12.8, 2.3, 5.4 | CUDA-AUDIT.md:22 | OK |
-| [[nvidia/cuda-stos]] | 120, 86, 89 | CUDA-AUDIT.md:37 | OK |
-| [[nvidia/cuda-stos]] | 13.3 | CUDA-AUDIT.md:34 | OK |
-| [[nvidia/cuda-stos]] | 155 | CUDA-AUDIT.md:50 | OK |
-| [[nvidia/cuda-stos]] | 16, 5060 | rx-7900-xtx.md:36 | OK |
-| [[nvidia/cuda-stos]] | 2026 | rx-7900-xtx.md:34 | OK |
-| [[nvidia/cuda-stos]] | 3060, 3090 | CUDA-AUDIT.md:3 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/cuda-stos]] | 3090 615.71, 580.173 | hw.json:6 | OK |
-| [[nvidia/cuda-stos]] | 4.5, 835 | CUDA-AUDIT.md:48 | OK |
-| [[nvidia/cuda-stos]] | 501, 80, 860 | times.jsonl:1 | OK |
-| [[nvidia/cuda-stos]] | 503, 787 | times.jsonl:2 | OK |
-| [[nvidia/cuda-stos]] | 799 | CUDA-AUDIT.md:46 | OK |
-| [[nvidia/latki-na-nvidia]] | 0.0067 | CUDA-AUDIT.md:118 | OK |
-| [[nvidia/latki-na-nvidia]] | 0001, 35 | CUDA-AUDIT.md:13 | OK |
-| [[nvidia/latki-na-nvidia]] | 0003 | CUDA-AUDIT.md:15 | OK |
-| [[nvidia/latki-na-nvidia]] | 0012 | CUDA-AUDIT.md:117 | OK |
-| [[nvidia/latki-na-nvidia]] | 0013 | CUDA-AUDIT.md:12 | OK |
-| [[nvidia/latki-na-nvidia]] | 0017 | CUDA-AUDIT.md:122 | OK |
-| [[nvidia/latki-na-nvidia]] | 0018 | CUDA-AUDIT.md:123 | OK |
-| [[nvidia/latki-na-nvidia]] | 0019 | CUDA-AUDIT.md:124 | OK |
-| [[nvidia/latki-na-nvidia]] | 0023 | CUDA-AUDIT.md:16 | OK |
-| [[nvidia/latki-na-nvidia]] | 0024 | CUDA-AUDIT.md:129 | OK |
-| [[nvidia/latki-na-nvidia]] | 0027 | CUDA-AUDIT.md:132 | OK |
-| [[nvidia/latki-na-nvidia]] | 0028 | CUDA-AUDIT.md:133 | OK |
-| [[nvidia/latki-na-nvidia]] | 0033, 0036 | CUDA-AUDIT.md:136 | OK |
-| [[nvidia/latki-na-nvidia]] | 0038 | CUDA-AUDIT.md:138 | OK |
-| [[nvidia/latki-na-nvidia]] | 0043 | CUDA-AUDIT.md:17 | OK |
-| [[nvidia/latki-na-nvidia]] | 0045 | CUDA-AUDIT.md:18 | OK |
-| [[nvidia/latki-na-nvidia]] | 0049 | CUDA-AUDIT.md:147 | OK |
-| [[nvidia/latki-na-nvidia]] | 0051 | CUDA-AUDIT.md:149 | OK |
-| [[nvidia/latki-na-nvidia]] | 0053, 0057 | CUDA-AUDIT.md:10 | OK |
-| [[nvidia/latki-na-nvidia]] | 0056 | CUDA-AUDIT.md:11 | OK |
-| [[nvidia/latki-na-nvidia]] | 31 | PLAN-TESTOW.md:16 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/latki-na-nvidia]] | 70 | CUDA-AUDIT.md:99 | OK |
-| [[nvidia/nvfp4]] | 0004 | rx-7900-xtx.md:38 | OK |
-| [[nvidia/nvfp4]] | 0012 | rx-7900-xtx.md:13 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/nvfp4]] | 01 | 01-konkurencja.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/nvfp4]] | 1.14 | 22-lucebox.md:90 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/nvfp4]] | 2.5 | 01-konkurencja.md:200 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/nvfp4]] | 5060 | rx-7900-xtx.md:36 | OK |
-| [[nvidia/nvfp4]] | 7900 | rx-7900-xtx.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 0.0005, 0.000505, 0.000944 | ręcznie | OK: tbo/summary.txt: ERR 0.000505463 / 0.000944348 > 0.000500000 (zaokrąglone) |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 0001 | summary.txt:1 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 0013 | PLAN-TESTOW.md:77 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 0018 | PLAN-TESTOW.md:81 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 0023 | PLAN-TESTOW.md:80 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 0043 | PLAN-TESTOW.md:78 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 19251 | summary.txt:4 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 194.8, 195.7, 196.2, 196.9, 199.4, 201.2, 236.3, 237.5, 245.3, 256.9, 258.2, 28.6, 28.9, 29.0, 29.3, 39.0, 39.4, 39.6, 40.2 | ręcznie | OK: lb/*.jsonl avg_ts tg128 zaokrąglone do 0.1 (wyciąg 2026-10-16) |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 2026, 3090 | lfm25-24b-q5.fork-tuned.r3.jsonl:1 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 3060 | PLAN-TESTOW.md:91 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 3090 192 | lfm25-24b-q4.fork-safe.r4.jsonl:3 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 31 | summary.txt:2 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 5060 | qwen38-27b-q3.fork-tuned.r6.jsonl:1 | OK |
-| [[nvidia/nvidia-wyniki-2026-10-16]] | 999 | bench.sh:272 | OK |
-| [[nvidia/sm-86-89-120]] | 0025, 0057 | CUDA-AUDIT.md:7 | OK |
-| [[nvidia/sm-86-89-120]] | 0053 | CUDA-AUDIT.md:10 | OK |
-| [[nvidia/sm-86-89-120]] | 1024,1 | CUDA-AUDIT.md:130 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia/sm-86-89-120]] | 12 | CUDA-AUDIT.md:178 | OK |
-| [[nvidia/sm-86-89-120]] | 120, 16, 3060, 3090, 4060, 5060, 86 | CUDA-AUDIT.md:3 | OK |
-| [[nvidia/sm-86-89-120]] | 147 | CUDA-AUDIT.md:40 | OK |
-| [[nvidia/sm-86-89-120]] | 24 | PLAN-TESTOW.md:89 | OK |
-| [[nvidia/sm-86-89-120]] | 32 | CUDA-AUDIT.md:181 | OK |
-| [[nvidia/sm-86-89-120]] | 48 | CUDA-AUDIT.md:226 | OK |
-| [[nvidia/sm-86-89-120]] | 64 | CUDA-AUDIT.md:222 | OK |
-| [[nvidia/sm-86-89-120]] | 90 | CUDA-AUDIT.md:176 | OK |
+| [[stos/cuda-compat]] | 0053 | CUDA-AUDIT.md:10 | OK |
+| [[stos/cuda-compat]] | 0056 | CUDA-AUDIT.md:11 | OK |
+| [[stos/cuda-compat]] | 0057, 21, 25 | CUDA-AUDIT.md:7 | OK |
+| [[stos/cuda-compat]] | 0070 | CUDA-AUDIT.md:3 | OK |
+| [[stos/cuda-compat]] | 14506801, 14506801c | CUDA-AUDIT.md:76 | OK |
+| [[stos/cuda-compat]] | 57, 57e0bdfe4 | CUDA-AUDIT.md:74 | OK |
+| [[stos/cuda-compat]] | 579, 7b2680760, 835 | CUDA-AUDIT.md:8 | OK |
+| [[stos/cuda-compat]] | 780365407 | CUDA-AUDIT.md:75 | OK |
+| [[stos/cuda-compat]] | 7a538d96f | git:1 | OK |
+| [[stos/cuda-compat]] | b479c67dd | ręcznie | OK: git log 8c942e5a9..cuda-v070 |
+| [[stos/cuda-stos]] | 1140, 1160 | ręcznie | OK: przybliżenie 1139/1151/1157 s z results/3060-20261016/build/times.jsonl:1-3 |
+| [[stos/cuda-stos]] | 12.8, 2.3, 5.4 | CUDA-AUDIT.md:22 | OK |
+| [[stos/cuda-stos]] | 120, 86, 89 | CUDA-AUDIT.md:37 | OK |
+| [[stos/cuda-stos]] | 13.3 | CUDA-AUDIT.md:34 | OK |
+| [[stos/cuda-stos]] | 155 | CUDA-AUDIT.md:50 | OK |
+| [[stos/cuda-stos]] | 16, 5060 | rx-7900-xtx.md:36 | OK |
+| [[stos/cuda-stos]] | 2026 | rx-7900-xtx.md:34 | OK |
+| [[stos/cuda-stos]] | 3060, 3090 | CUDA-AUDIT.md:3 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/cuda-stos]] | 3090 615.71, 580.173 | hw.json:6 | OK |
+| [[stos/cuda-stos]] | 4.5, 835 | CUDA-AUDIT.md:48 | OK |
+| [[stos/cuda-stos]] | 501, 80, 860 | times.jsonl:1 | OK |
+| [[stos/cuda-stos]] | 503, 787 | times.jsonl:2 | OK |
+| [[stos/cuda-stos]] | 799 | CUDA-AUDIT.md:46 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0.0067 | CUDA-AUDIT.md:118 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0001, 35 | CUDA-AUDIT.md:13 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0003 | CUDA-AUDIT.md:15 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0012 | CUDA-AUDIT.md:117 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0013 | CUDA-AUDIT.md:12 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0017 | CUDA-AUDIT.md:122 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0018 | CUDA-AUDIT.md:123 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0019 | CUDA-AUDIT.md:124 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0023 | CUDA-AUDIT.md:16 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0024 | CUDA-AUDIT.md:129 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0027 | CUDA-AUDIT.md:132 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0028 | CUDA-AUDIT.md:133 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0033, 0036 | CUDA-AUDIT.md:136 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0038 | CUDA-AUDIT.md:138 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0043 | CUDA-AUDIT.md:17 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0045 | CUDA-AUDIT.md:18 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0049 | CUDA-AUDIT.md:147 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0051 | CUDA-AUDIT.md:149 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0053, 0057 | CUDA-AUDIT.md:10 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 0056 | CUDA-AUDIT.md:11 | OK |
+| [[optymalizacje/latki-na-nvidia]] | 31 | PLAN-TESTOW.md:16 | OK (inny wiersz źródła, sprawdzone) |
+| [[optymalizacje/latki-na-nvidia]] | 70 | CUDA-AUDIT.md:99 | OK |
+| [[modele/nvfp4]] | 0004 | rx-7900-xtx.md:38 | OK |
+| [[modele/nvfp4]] | 0012 | rx-7900-xtx.md:13 | OK (inny wiersz źródła, sprawdzone) |
+| [[modele/nvfp4]] | 01 | 01-konkurencja.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[modele/nvfp4]] | 1.14 | 22-lucebox.md:90 | OK (inny wiersz źródła, sprawdzone) |
+| [[modele/nvfp4]] | 2.5 | 01-konkurencja.md:200 | OK (inny wiersz źródła, sprawdzone) |
+| [[modele/nvfp4]] | 5060 | rx-7900-xtx.md:36 | OK |
+| [[modele/nvfp4]] | 7900 | rx-7900-xtx.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 0.0005, 0.000505, 0.000944 | ręcznie | OK: tbo/summary.txt: ERR 0.000505463 / 0.000944348 > 0.000500000 (zaokrąglone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 0001 | summary.txt:1 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 0013 | PLAN-TESTOW.md:77 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 0018 | PLAN-TESTOW.md:81 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 0023 | PLAN-TESTOW.md:80 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 0043 | PLAN-TESTOW.md:78 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 19251 | summary.txt:4 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 194.8, 195.7, 196.2, 196.9, 199.4, 201.2, 236.3, 237.5, 245.3, 256.9, 258.2, 28.6, 28.9, 29.0, 29.3, 39.0, 39.4, 39.6, 40.2 | ręcznie | OK: lb/*.jsonl avg_ts tg128 zaokrąglone do 0.1 (wyciąg 2026-10-16) |
+| [[testy/2026-10-16-kampania-nvidia]] | 2026, 3090 | lfm25-24b-q5.fork-tuned.r3.jsonl:1 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 3060 | PLAN-TESTOW.md:91 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 3090 192 | lfm25-24b-q4.fork-safe.r4.jsonl:3 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 31 | summary.txt:2 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 5060 | qwen38-27b-q3.fork-tuned.r6.jsonl:1 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 999 | bench.sh:272 | OK |
+| [[stos/sm-86-89-120]] | 0025, 0057 | CUDA-AUDIT.md:7 | OK |
+| [[stos/sm-86-89-120]] | 0053 | CUDA-AUDIT.md:10 | OK |
+| [[stos/sm-86-89-120]] | 1024,1 | CUDA-AUDIT.md:130 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/sm-86-89-120]] | 12 | CUDA-AUDIT.md:178 | OK |
+| [[stos/sm-86-89-120]] | 120, 16, 3060, 3090, 4060, 5060, 86 | CUDA-AUDIT.md:3 | OK |
+| [[stos/sm-86-89-120]] | 147 | CUDA-AUDIT.md:40 | OK |
+| [[stos/sm-86-89-120]] | 24 | PLAN-TESTOW.md:89 | OK |
+| [[stos/sm-86-89-120]] | 32 | CUDA-AUDIT.md:181 | OK |
+| [[stos/sm-86-89-120]] | 48 | CUDA-AUDIT.md:226 | OK |
+| [[stos/sm-86-89-120]] | 64 | CUDA-AUDIT.md:222 | OK |
+| [[stos/sm-86-89-120]] | 90 | CUDA-AUDIT.md:176 | OK |
 | [[produkt/aplikacja-w-budowie]] | 2026 | docs.ts:15 | OK |
 | [[produkt/aplikacja-w-budowie]] | 3.3, 8.1 | bun.lock:147 | OK |
-| [[produkt/produkt-analiza-platformy]] | 0060 | PLAN.md:258 | OK |
-| [[produkt/produkt-analiza-platformy]] | 10.1 | PLAN.md:257 | OK |
-| [[produkt/produkt-analiza-platformy]] | 30 | PLAN.md:259 | OK |
-| [[produkt/produkt-analiza-platformy]] | 4.4, 92 | PLAN.md:261 | OK |
-| [[produkt/produkt-analiza-platformy]] | 4.5 | PLAN.md:252 | OK |
+| [[metody/analiza-platformy]] | 0060 | PLAN.md:258 | OK |
+| [[metody/analiza-platformy]] | 10.1 | PLAN.md:257 | OK |
+| [[metody/analiza-platformy]] | 30 | PLAN.md:259 | OK |
+| [[metody/analiza-platformy]] | 4.4, 92 | PLAN.md:261 | OK |
+| [[metody/analiza-platformy]] | 4.5 | PLAN.md:252 | OK |
 | [[produkt/produkt-anatomia-l0-l3]] | 1.5, 2.2, 38.8, 85.6 | PLAN.md:71 | OK |
 | [[produkt/produkt-anatomia-l0-l3]] | 109, 198, 294, 30, 70 | PLAN.md:73 | OK |
 | [[produkt/produkt-anatomia-l0-l3]] | 15 | PLAN.md:72 | OK |
@@ -1573,223 +1573,223 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[produkt/werdykt]] | 15, 2026 | PLAN.md:3 | OK |
 | [[produkt/werdykt]] | 30 | PLAN.md:10 | OK |
 | [[produkt/werdykt]] | 70 | PLAN.md:18 | OK |
-| [[repo/a-hamdi-gpu]] | 10 000, 220, 89.9 | 02-a-hamdi-gpu.md:13 | OK |
-| [[repo/a-hamdi-gpu]] | 100 | 02-a-hamdi-gpu.md:1 | OK |
-| [[repo/a-hamdi-gpu]] | 18.6, 34.3 | 02-a-hamdi-gpu.md:14 | OK |
-| [[repo/a-hamdi-gpu]] | 2025, a9b0a17c | 02-a-hamdi-gpu.md:3 | OK |
-| [[repo/a-hamdi-gpu]] | 512, 52.4 | 02-a-hamdi-gpu.md:15 | OK |
-| [[repo/a-hamdi-gpu]] | 7900 | 02-a-hamdi-gpu.md:22 | OK |
-| [[repo/ako4all]] | 175 | 21-ako4all.md:9 | OK |
-| [[repo/ako4all]] | 2026, bbd0e1c | 21-ako4all.md:3 | OK |
-| [[repo/ako4all]] | 54 | 21-ako4all.md:203 | OK |
-| [[repo/amd-opt-v070]] | 0018 | 2026-10-16-rebase-v070.md:13 | OK |
-| [[repo/amd-opt-v070]] | 2026, 70 | 2026-10-16-rebase-v070.md:8 | OK |
-| [[repo/amd-opt-v070]] | 30257 | 2026-10-16-rebase-v070.md:15 | OK |
-| [[repo/amd-opt-v070]] | 60, 69 | 2026-10-16-rebase-v070.md:10 | OK |
-| [[repo/amd-opt-v070]] | 620, 620d2225c, 8c942e5a9 | 2026-10-16-rebase-v070.md:12 | OK |
-| [[repo/amd-opt]] | 0001, 0070, 70 | seria-amd-opt.md:5 | OK |
-| [[repo/amd-opt]] | 0057 | git:10 | OK |
-| [[repo/amd-opt]] | 2026 | seria-amd-opt.md:4 | OK |
-| [[repo/amd-opt]] | 7900 | ręcznie | OK: nazwa karty (identyfikator) |
-| [[repo/amd-opt]] | c36fd2c87 | git:6 | OK |
-| [[repo/amd-opt]] | e60eff95f, f61994f58 | seria-amd-opt.md:10 | OK |
-| [[repo/atrex-kernel-agent]] | 1.55 | 25-atrex-kernel-agent.md:5 | OK |
-| [[repo/atrex-kernel-agent]] | 2026, 5ad94ff | 25-atrex-kernel-agent.md:3 | OK |
-| [[repo/atrex-kernel-agent]] | 3.7, 72.7 | 25-atrex-kernel-agent.md:43 | OK |
-| [[repo/auto-gpu-kernel]] | 11.3, 20.6 | REPOS-PODSUMOWANIE.md:24 | OK |
-| [[repo/auto-gpu-kernel]] | 128 | 14-auto-gpu-kernel.md:9 | OK |
-| [[repo/auto-gpu-kernel]] | 16, 48 | 14-auto-gpu-kernel.md:15 | OK |
-| [[repo/auto-gpu-kernel]] | 2026 | 14-auto-gpu-kernel.md:1 | OK |
-| [[repo/auto-gpu-kernel]] | 54, db02153 | 14-auto-gpu-kernel.md:3 | OK |
-| [[repo/auto-gpu-kernel]] | 54e3c5f | 14-auto-gpu-kernel.md:7 | OK |
-| [[repo/batch-invariant]] | 2026, 6e261fdb4 | git:1 | OK |
-| [[repo/batch-invariant]] | 204, 204f108de | git:3 | OK |
-| [[repo/batch-invariant]] | 77240, 77240c9b3 | git:2 | OK |
-| [[repo/batch-invariant]] | c09ac6aab | git:4 | OK |
-| [[repo/blocksparse]] | 2020, 89074, 89074c5 | 12-blocksparse.md:3 | OK |
-| [[repo/cuda-compat-galaz]] | 0053 | cuda-compat.md:16 | OK |
-| [[repo/cuda-compat-galaz]] | 0056 | cuda-compat.md:17 | OK |
-| [[repo/cuda-compat-galaz]] | 0057, 0070 | cuda-compat.md:14 | OK |
-| [[repo/cuda-compat-galaz]] | 25, 579 | cuda-compat.md:19 | OK |
-| [[repo/cuda-compat-galaz]] | 74 | git:52 | OK |
-| [[repo/cuda-compat-galaz]] | 7b2680760 | cuda-compat.md:10 | OK |
-| [[repo/cuda-compat-galaz]] | e60eff95f | git:112 | OK |
-| [[repo/cuda-rust]] | 0.3, 2068.88, 96.35 | 29-cuda-rust.md:9 | OK |
-| [[repo/cuda-rust]] | 0.81, 2.5 | REPOS-PODSUMOWANIE.md:39 | OK |
-| [[repo/cuda-rust]] | 2026, bc46b1f | 29-cuda-rust.md:3 | OK |
-| [[repo/cuda-rust]] | 5090 | 29-cuda-rust.md:11 | OK |
-| [[repo/cuda-v070]] | 0053, 5dae6224f, 74 | git:2 | OK |
-| [[repo/cuda-v070]] | 0056, 2026, 7a538d96f | git:1 | OK |
-| [[repo/cuda-v070]] | 2600, 2600ad94a | git:12 | OK |
-| [[repo/cuda-v070]] | 3060 | git:17 | OK |
-| [[repo/cuda-v070]] | 3090 | git:21 | OK |
-| [[repo/cuda-v070]] | 398, 398ded98d | git:3 | OK |
-| [[repo/cuda-v070]] | 5060 | git:24 | OK |
-| [[repo/cuda-v070]] | b479c67dd | git:4 | OK |
-| [[repo/cuda-v070]] | da4748c4f | git:8 | OK |
-| [[repo/cutile-python]] | 0.2, 0.45 | 13-cutile-python.md:47 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/cutile-python]] | 2026, d9d8520 | 13-cutile-python.md:3 | OK |
-| [[repo/cutile-python]] | 32 | 13-cutile-python.md:11 | OK |
-| [[repo/deepgemm]] | 0.2, 0.4 | REPOS-PODSUMOWANIE.md:51 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/deepgemm]] | 12 | REPOS-PODSUMOWANIE.md:18 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/deepgemm]] | 1fc9c66, 2026 | 03-deepgemm.md:3 | OK |
-| [[repo/falkon]] | 04, 04f168e, 2026 | 24-falkon.md:3 | OK |
-| [[repo/falkon]] | 20, 40 | REPOS-PODSUMOWANIE.md:34 | OK |
-| [[repo/flashinfer-bench-starter-kit]] | 1.54, 2.05 | 27-flashinfer-bench-starter-kit.md:113 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/flashinfer-bench-starter-kit]] | 2.98 | 27-flashinfer-bench-starter-kit.md:114 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/flashinfer-bench-starter-kit]] | 2026, 75, 75ccd05 | 27-flashinfer-bench-starter-kit.md:3 | OK |
-| [[repo/flashinfer]] | 0.6 | 07-flashinfer.md:107 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/flashinfer]] | 2026, 2895577 | 07-flashinfer.md:3 | OK |
-| [[repo/flashinfer]] | 94 | 07-flashinfer.md:106 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/galezie-rund]] | 0d89ce56c | git:15 | OK |
-| [[repo/galezie-rund]] | 16, 2026 | git:1 | OK |
-| [[repo/galezie-rund]] | 2aa6999ed | git:28 | OK |
-| [[repo/galezie-rund]] | 343, 343c2fbbb | git:29 | OK |
-| [[repo/galezie-rund]] | 35, 35d04b446 | git:18 | OK |
-| [[repo/galezie-rund]] | 3b053e5e2 | git:21 | OK |
-| [[repo/galezie-rund]] | 40, 40c9bacdc | git:12 | OK |
-| [[repo/galezie-rund]] | 4db68c6ab | git:34 | OK |
-| [[repo/galezie-rund]] | 575, 575e3d893 | git:20 | OK |
-| [[repo/galezie-rund]] | 5909, 5909da1f1 | git:22 | OK |
-| [[repo/galezie-rund]] | 68, 68e163cf4 | git:11 | OK |
-| [[repo/galezie-rund]] | 6c7801bf6 | git:26 | OK |
-| [[repo/galezie-rund]] | 7e9c73d8b | git:33 | OK |
-| [[repo/galezie-rund]] | 849, 849b69978 | git:17 | OK |
-| [[repo/galezie-rund]] | 9d493cf6e | git:23 | OK |
-| [[repo/galezie-rund]] | 9f83f1f81 | git:16 | OK |
-| [[repo/galezie-rund]] | ae1ef6a97 | git:25 | OK |
-| [[repo/galezie-rund]] | b1a203959 | git:31 | OK |
-| [[repo/galezie-rund]] | b1f8c19ac | git:13 | OK |
-| [[repo/galezie-rund]] | c90db29c6 | git:27 | OK |
-| [[repo/galezie-rund]] | ce934a304 | git:14 | OK |
-| [[repo/galezie-rund]] | d3a0973ae | git:19 | OK |
-| [[repo/galezie-rund]] | e41c2330e | git:24 | OK |
-| [[repo/galezie-rund]] | e84abb808 | git:30 | OK |
-| [[repo/galezie-rund]] | f4f0deae5 | git:32 | OK |
-| [[repo/gpu-kernel-engineer-from-scratch]] | 2026, ba738db | 19-gpu-kernel-engineer-from-scratch.md:3 | OK |
-| [[repo/gpu-kernel-engineer-from-scratch]] | 48 | 19-gpu-kernel-engineer-from-scratch.md:7 | OK |
-| [[repo/gpu-mode-reference-kernels]] | 2026, f3295bb6 | 09-gpu-mode-reference-kernels.md:3 | OK |
-| [[repo/hipfire]] | 10, 1ff5182, 2026, 7900 | 30-hipfire.md:3 | OK |
-| [[repo/hipfire]] | 104, 76.4 | 30-hipfire.md:17 | OK |
-| [[repo/hipfire]] | 13, 307.9 | 30-hipfire.md:18 | OK |
-| [[repo/hipfire]] | 219.6, 251.8, 35, 603 | REPOS-PODSUMOWANIE.md:40 | OK |
-| [[repo/hipfire]] | 30 | 30-hipfire.md:1 | OK |
-| [[repo/hipfire]] | 3000 | 30-hipfire.md:20 | OK |
-| [[repo/hipfire]] | 4.25 | 30-hipfire.md:7 | OK |
-| [[repo/how-to-optimize-in-gpu]] | 10.3, 16384, 8.4 | 08-how-to-optimize-in-gpu.md:21 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/how-to-optimize-in-gpu]] | 2023, 5d2def3e | 08-how-to-optimize-in-gpu.md:3 | OK |
-| [[repo/how-to-optimize-in-gpu]] | 900 | 08-how-to-optimize-in-gpu.md:7 | OK |
-| [[repo/ik-llama-cpp]] | 03 | 03-silniki-i-stack.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/ik-llama-cpp]] | 2024 | 03-silniki-i-stack.md:126 | OK |
-| [[repo/ik-llama-cpp]] | 2026 | 03-silniki-i-stack.md:138 | OK |
-| [[repo/ik-llama-cpp]] | 3,27 | 03-silniki-i-stack.md:129 | OK |
-| [[repo/keops]] | 0.1, 29, 3.4, 4.10 | 20-keops.md:68 | OK |
-| [[repo/keops]] | 0.3, 1.5 | 20-keops.md:133 | OK |
-| [[repo/keops]] | 100, 2.4 | 20-keops.md:7 | OK |
-| [[repo/keops]] | 2026, ef72bc90 | 20-keops.md:3 | OK |
-| [[repo/kernel-tuner-repo]] | 20 | 26-kernel-tuner.md:11 | OK |
-| [[repo/kernel-tuner-repo]] | 2026, 8e71bbf | 26-kernel-tuner.md:3 | OK |
-| [[repo/kernelagent]] | 1.56, 2.02 | 06-kernelagent.md:21 | OK |
-| [[repo/kernelagent]] | 2026, e0647170 | 06-kernelagent.md:3 | OK |
-| [[repo/kernelbench]] | 100, 20, 50 | 04-kernelbench.md:7 | OK |
-| [[repo/kernelbench]] | 2026, 423217, 423217d9 | 04-kernelbench.md:3 | OK |
-| [[repo/laya-mlx]] | 0.1, 193, 27, 33, 464 | 10-post-training.md:42 | OK |
-| [[repo/laya-mlx]] | 10 | 10-post-training.md:39 | OK |
-| [[repo/laya-mlx]] | 13.4, 7.4 | 10-post-training.md:277 | OK |
-| [[repo/laya-mlx]] | 2.2, 74 | 10-post-training.md:293 | OK |
-| [[repo/laya-mlx]] | 2026 | 10-post-training.md:284 | OK |
-| [[repo/laya-mlx]] | 322, 421 | 10-post-training.md:273 | OK |
-| [[repo/llama-cpp-fork]] | 2026, 3060 | git:1 | OK |
-| [[repo/llama-cpp-fork]] | 620, 620d2225c | git:73 | OK |
-| [[repo/llama-cpp-fork]] | 70 | git:25 | OK |
-| [[repo/llama-cpp-fork]] | b356fa262 | git:9 | OK |
-| [[repo/llama-cpp-fork]] | e60eff95f | git:36 | OK |
-| [[repo/llama-cpp-fork]] | f61994f58 | git:2 | OK |
-| [[repo/lucebox]] | 1.5 | 22-lucebox.md:107 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/lucebox]] | 1.55, 267, 413 | 22-lucebox.md:46 | OK |
-| [[repo/lucebox]] | 110, 130, 175, 300 | 22-lucebox.md:86 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/lucebox]] | 16 208.1, 32.3, 8 133.9 | 22-lucebox.md:15 | OK |
-| [[repo/lucebox]] | 2026, 3090, 54132, 54132ca | 22-lucebox.md:3 | OK |
-| [[repo/mixbench]] | 2026, 2070, a8cab0c | 23-mixbench.md:3 | OK |
-| [[repo/mixbench]] | 33, 512 | 23-mixbench.md:7 | OK |
-| [[repo/mixbench]] | 50 | 23-mixbench.md:78 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/mixbench]] | 720 | 23-mixbench.md:98 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/mkernel]] | 2026, 97, 97e916b | 16-mkernel.md:3 | OK |
-| [[repo/mtp-train]] | 10, 17 | 10-post-training.md:32 | OK |
-| [[repo/mtp-train]] | 2026, 532, 532fd1057 | git:1 | OK |
-| [[repo/nvidia-open-gpu-kernel-modules]] | 2026, 6.8, 615.78, ca2d03e | 01-nvidia-open-gpu-kernel-modules.md:3 | OK |
-| [[repo/nvidia-open-gpu-kernel-modules]] | 24.3, 27.2 | 01-nvidia-open-gpu-kernel-modules.md:31 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/nvidia-open-gpu-kernel-modules]] | 64 | 01-nvidia-open-gpu-kernel-modules.md:9 | OK |
-| [[repo/opt-gdn6]] | 0d89ce56c, 16, 8.5 | REPORT.md:14 | OK |
-| [[repo/opt-gdn6]] | 128, b4e819237 | REPORT.md:7 | OK |
-| [[repo/opt-gdn6]] | 2026 | QWEN5-ROUND5.md:7 | OK |
-| [[repo/opt-gdn6]] | 379 | REPORT.md:20 | OK |
-| [[repo/opt-gdn6]] | 83, 94 | QWEN5-ROUND5.md:13 | OK |
-| [[repo/opt-gdn6]] | c36fd2c87 | REPORT.md:6 | OK |
-| [[repo/opt-mmq6]] | 0070 | REPORT.md:68 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/opt-mmq6]] | 128, 16 | REPORT.md:10 | OK |
-| [[repo/opt-mmq6]] | 2026 | REPORT.md:159 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/opt-mmq6]] | 32, ae1ef6a97 | REPORT.md:7 | OK |
-| [[repo/opt-mmq6]] | 64 | REPORT.md:11 | OK |
-| [[repo/opt-qwen5]] | 0.61, 0.918 | QWEN5-ROUND5.md:22 | OK |
-| [[repo/opt-qwen5]] | 00, 02, 2026, 45 | QWEN5-ROUND5.md:7 | OK |
-| [[repo/opt-qwen5]] | 0b7b073b, c4708318 | QWEN5-ROUND5.md:11 | OK |
-| [[repo/opt-qwen5]] | 1066, 1097, 2.6 | QWEN5-ROUND5.md:18 | OK |
-| [[repo/opt-qwen5]] | 1094, 1173, 7.6 | QWEN5-ROUND5.md:20 | OK |
-| [[repo/opt-qwen5]] | 11.9, 1219, 3.0, 3254 | QWEN5-ROUND5.md:21 | OK |
-| [[repo/opt-qwen5]] | 2aa6999ed | QWEN5-ROUND5.md:19 | OK |
-| [[repo/opt-qwen5]] | 5b1fdbc2f | QWEN5-ROUND5.md:14 | OK |
-| [[repo/opt-qwen5]] | c36fd2c87 | QWEN5-ROUND5.md:1 | OK |
-| [[repo/opt-samp]] | 0065, 0069 | seria-amd-opt.md:24 | OK |
-| [[repo/opt-samp]] | 2026 | seria-amd-opt.md:23 | OK |
-| [[repo/opt-samp]] | f4f0deae5 | git:32 | OK |
-| [[repo/pplx-kernels]] | 1.31, 194.7, 256 | 05-pplx-kernels.md:9 | OK |
-| [[repo/pplx-kernels]] | 41.6, 41.7 | 05-pplx-kernels.md:20 | OK |
-| [[repo/pplx-kernels]] | f70d1eb7 | 05-pplx-kernels.md:3 | OK |
-| [[repo/prism-llama-cpp]] | 0.17549, 0.17553, 8.6154, 8.6171 | bonsai.md:15 | OK |
-| [[repo/prism-llama-cpp]] | 1,0, 1.76, 128, 20, 27, 5.93, 98.2 | 10-post-training.md:329 | OK |
-| [[repo/prism-llama-cpp]] | 10, 2026 | bonsai.md:4 | OK |
-| [[repo/prism-llama-cpp]] | 3060 | bonsai.md:5 | OK |
-| [[repo/pygpubench]] | 0.5 | 28-pygpubench.md:63 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/pygpubench]] | 2026, 286841, 286841bf | 28-pygpubench.md:3 | OK |
-| [[repo/pygpubench]] | 96 | 28-pygpubench.md:42 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/speculators-specforge]] | 0.6, 10, 80 | 10-post-training.md:86 | OK |
-| [[repo/speculators-specforge]] | 2.2, 2.4, 3.74 | 10-post-training.md:87 | OK |
-| [[repo/speculators-specforge]] | 3090 | 10-post-training.md:50 | OK |
-| [[repo/strata]] | 0.0000, 11.7, 14.3 | README.md:23 | OK |
-| [[repo/strata]] | 12, 1892, 19, 2026, 2231, 49, a0116b27 | README.md:3 | OK |
-| [[repo/strata]] | 125 | README.md:31 | OK |
-| [[repo/strata]] | 28.8 | README.md:34 | OK |
-| [[repo/strata]] | 335 | README.md:194 | OK |
-| [[repo/strata]] | 36, 48 | README.md:32 | OK |
-| [[repo/strata]] | 39 | REPOS-PODSUMOWANIE.md:82 | OK |
-| [[repo/strata]] | 512 | README.md:33 | OK |
-| [[repo/strata]] | 7900 | README.md:1 | OK |
-| [[repo/strata]] | 888 | issues.md:8 | OK |
-| [[repo/tensara]] | 160 | 18-tensara.md:16 | OK |
-| [[repo/tensara]] | 20 | 18-tensara.md:15 | OK |
-| [[repo/tensara]] | 2026, fae96618 | 18-tensara.md:3 | OK |
-| [[repo/tensorfold]] | 0efbd447, 12, 1560, 18, 2026, 235, 32, 552 | README.md:3 | OK |
-| [[repo/tensorfold]] | 1.2, 1.4 | README.md:14 | OK |
-| [[repo/tensorfold]] | 100 | README.md:9 | OK |
-| [[repo/tensorfold]] | 126, 95.7 | README.md:21 | OK |
-| [[repo/tensorfold]] | 16 | README.md:10 | OK |
-| [[repo/tensorfold]] | 25.8, 27.2 | README.md:20 | OK |
-| [[repo/tensorfold]] | 27 | README.md:1 | OK |
-| [[repo/tensorfold]] | 490 | README.md:16 | OK |
-| [[repo/tilegym]] | 2026, c742afc | 17-tilegym.md:3 | OK |
-| [[repo/tilegym]] | 39 | 17-tilegym.md:86 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/tilegym]] | 888 | 17-tilegym.md:52 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/tilelang]] | 19, 19da924, 2026 | 10-tilelang.md:3 | OK |
-| [[repo/tokamax]] | 2026, b500ee4 | 15-tokamax.md:3 | OK |
-| [[repo/tokamax]] | 48 | 15-tokamax.md:7 | OK |
-| [[repo/tools6]] | 14, 22 | REPORT.md:21 | OK |
-| [[repo/tools6]] | 2026 | git:1 | OK |
-| [[repo/tools6]] | 27 | REPORT.md:19 | OK |
-| [[repo/tools6]] | 4db68c6ab | REPORT.md:8 | OK |
-| [[repo/tools6]] | 65 | REPORT.md:1 | OK |
-| [[repo/vllm-xpu-kernels]] | 0.15, 0.3 | 11-vllm-xpu-kernels.md:75 | OK (inny wiersz źródła, sprawdzone) |
-| [[repo/vllm-xpu-kernels]] | 2026, 6b30c9b9 | 11-vllm-xpu-kernels.md:3 | OK |
+| [[ekosystem/a-hamdi-gpu]] | 10 000, 220, 89.9 | 02-a-hamdi-gpu.md:13 | OK |
+| [[ekosystem/a-hamdi-gpu]] | 100 | 02-a-hamdi-gpu.md:1 | OK |
+| [[ekosystem/a-hamdi-gpu]] | 18.6, 34.3 | 02-a-hamdi-gpu.md:14 | OK |
+| [[ekosystem/a-hamdi-gpu]] | 2025, a9b0a17c | 02-a-hamdi-gpu.md:3 | OK |
+| [[ekosystem/a-hamdi-gpu]] | 512, 52.4 | 02-a-hamdi-gpu.md:15 | OK |
+| [[ekosystem/a-hamdi-gpu]] | 7900 | 02-a-hamdi-gpu.md:22 | OK |
+| [[ekosystem/ako4all]] | 175 | 21-ako4all.md:9 | OK |
+| [[ekosystem/ako4all]] | 2026, bbd0e1c | 21-ako4all.md:3 | OK |
+| [[ekosystem/ako4all]] | 54 | 21-ako4all.md:203 | OK |
+| [[stos/amd-opt-v070]] | 0018 | 2026-10-16-rebase-v070.md:13 | OK |
+| [[stos/amd-opt-v070]] | 2026, 70 | 2026-10-16-rebase-v070.md:8 | OK |
+| [[stos/amd-opt-v070]] | 30257 | 2026-10-16-rebase-v070.md:15 | OK |
+| [[stos/amd-opt-v070]] | 60, 69 | 2026-10-16-rebase-v070.md:10 | OK |
+| [[stos/amd-opt-v070]] | 620, 620d2225c, 8c942e5a9 | 2026-10-16-rebase-v070.md:12 | OK |
+| [[stos/amd-opt]] | 0001, 0070, 70 | seria-amd-opt.md:5 | OK |
+| [[stos/amd-opt]] | 0057 | git:10 | OK |
+| [[stos/amd-opt]] | 2026 | seria-amd-opt.md:4 | OK |
+| [[stos/amd-opt]] | 7900 | ręcznie | OK: nazwa karty (identyfikator) |
+| [[stos/amd-opt]] | c36fd2c87 | git:6 | OK |
+| [[stos/amd-opt]] | e60eff95f, f61994f58 | seria-amd-opt.md:10 | OK |
+| [[ekosystem/atrex-kernel-agent]] | 1.55 | 25-atrex-kernel-agent.md:5 | OK |
+| [[ekosystem/atrex-kernel-agent]] | 2026, 5ad94ff | 25-atrex-kernel-agent.md:3 | OK |
+| [[ekosystem/atrex-kernel-agent]] | 3.7, 72.7 | 25-atrex-kernel-agent.md:43 | OK |
+| [[ekosystem/auto-gpu-kernel]] | 11.3, 20.6 | REPOS-PODSUMOWANIE.md:24 | OK |
+| [[ekosystem/auto-gpu-kernel]] | 128 | 14-auto-gpu-kernel.md:9 | OK |
+| [[ekosystem/auto-gpu-kernel]] | 16, 48 | 14-auto-gpu-kernel.md:15 | OK |
+| [[ekosystem/auto-gpu-kernel]] | 2026 | 14-auto-gpu-kernel.md:1 | OK |
+| [[ekosystem/auto-gpu-kernel]] | 54, db02153 | 14-auto-gpu-kernel.md:3 | OK |
+| [[ekosystem/auto-gpu-kernel]] | 54e3c5f | 14-auto-gpu-kernel.md:7 | OK |
+| [[stos/batch-invariant]] | 2026, 6e261fdb4 | git:1 | OK |
+| [[stos/batch-invariant]] | 204, 204f108de | git:3 | OK |
+| [[stos/batch-invariant]] | 77240, 77240c9b3 | git:2 | OK |
+| [[stos/batch-invariant]] | c09ac6aab | git:4 | OK |
+| [[ekosystem/blocksparse]] | 2020, 89074, 89074c5 | 12-blocksparse.md:3 | OK |
+| [[stos/cuda-compat]] | 0053 | cuda-compat.md:16 | OK |
+| [[stos/cuda-compat]] | 0056 | cuda-compat.md:17 | OK |
+| [[stos/cuda-compat]] | 0057, 0070 | cuda-compat.md:14 | OK |
+| [[stos/cuda-compat]] | 25, 579 | cuda-compat.md:19 | OK |
+| [[stos/cuda-compat]] | 74 | git:52 | OK |
+| [[stos/cuda-compat]] | 7b2680760 | cuda-compat.md:10 | OK |
+| [[stos/cuda-compat]] | e60eff95f | git:112 | OK |
+| [[ekosystem/cuda-rust]] | 0.3, 2068.88, 96.35 | 29-cuda-rust.md:9 | OK |
+| [[ekosystem/cuda-rust]] | 0.81, 2.5 | REPOS-PODSUMOWANIE.md:39 | OK |
+| [[ekosystem/cuda-rust]] | 2026, bc46b1f | 29-cuda-rust.md:3 | OK |
+| [[ekosystem/cuda-rust]] | 5090 | 29-cuda-rust.md:11 | OK |
+| [[stos/cuda-v070]] | 0053, 5dae6224f, 74 | git:2 | OK |
+| [[stos/cuda-v070]] | 0056, 2026, 7a538d96f | git:1 | OK |
+| [[stos/cuda-v070]] | 2600, 2600ad94a | git:12 | OK |
+| [[stos/cuda-v070]] | 3060 | git:17 | OK |
+| [[stos/cuda-v070]] | 3090 | git:21 | OK |
+| [[stos/cuda-v070]] | 398, 398ded98d | git:3 | OK |
+| [[stos/cuda-v070]] | 5060 | git:24 | OK |
+| [[stos/cuda-v070]] | b479c67dd | git:4 | OK |
+| [[stos/cuda-v070]] | da4748c4f | git:8 | OK |
+| [[ekosystem/cutile-python]] | 0.2, 0.45 | 13-cutile-python.md:47 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/cutile-python]] | 2026, d9d8520 | 13-cutile-python.md:3 | OK |
+| [[ekosystem/cutile-python]] | 32 | 13-cutile-python.md:11 | OK |
+| [[ekosystem/deepgemm]] | 0.2, 0.4 | REPOS-PODSUMOWANIE.md:51 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/deepgemm]] | 12 | REPOS-PODSUMOWANIE.md:18 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/deepgemm]] | 1fc9c66, 2026 | 03-deepgemm.md:3 | OK |
+| [[ekosystem/falkon]] | 04, 04f168e, 2026 | 24-falkon.md:3 | OK |
+| [[ekosystem/falkon]] | 20, 40 | REPOS-PODSUMOWANIE.md:34 | OK |
+| [[ekosystem/flashinfer-bench-starter-kit]] | 1.54, 2.05 | 27-flashinfer-bench-starter-kit.md:113 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/flashinfer-bench-starter-kit]] | 2.98 | 27-flashinfer-bench-starter-kit.md:114 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/flashinfer-bench-starter-kit]] | 2026, 75, 75ccd05 | 27-flashinfer-bench-starter-kit.md:3 | OK |
+| [[ekosystem/flashinfer]] | 0.6 | 07-flashinfer.md:107 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/flashinfer]] | 2026, 2895577 | 07-flashinfer.md:3 | OK |
+| [[ekosystem/flashinfer]] | 94 | 07-flashinfer.md:106 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/galezie-rund]] | 0d89ce56c | git:15 | OK |
+| [[stos/galezie-rund]] | 16, 2026 | git:1 | OK |
+| [[stos/galezie-rund]] | 2aa6999ed | git:28 | OK |
+| [[stos/galezie-rund]] | 343, 343c2fbbb | git:29 | OK |
+| [[stos/galezie-rund]] | 35, 35d04b446 | git:18 | OK |
+| [[stos/galezie-rund]] | 3b053e5e2 | git:21 | OK |
+| [[stos/galezie-rund]] | 40, 40c9bacdc | git:12 | OK |
+| [[stos/galezie-rund]] | 4db68c6ab | git:34 | OK |
+| [[stos/galezie-rund]] | 575, 575e3d893 | git:20 | OK |
+| [[stos/galezie-rund]] | 5909, 5909da1f1 | git:22 | OK |
+| [[stos/galezie-rund]] | 68, 68e163cf4 | git:11 | OK |
+| [[stos/galezie-rund]] | 6c7801bf6 | git:26 | OK |
+| [[stos/galezie-rund]] | 7e9c73d8b | git:33 | OK |
+| [[stos/galezie-rund]] | 849, 849b69978 | git:17 | OK |
+| [[stos/galezie-rund]] | 9d493cf6e | git:23 | OK |
+| [[stos/galezie-rund]] | 9f83f1f81 | git:16 | OK |
+| [[stos/galezie-rund]] | ae1ef6a97 | git:25 | OK |
+| [[stos/galezie-rund]] | b1a203959 | git:31 | OK |
+| [[stos/galezie-rund]] | b1f8c19ac | git:13 | OK |
+| [[stos/galezie-rund]] | c90db29c6 | git:27 | OK |
+| [[stos/galezie-rund]] | ce934a304 | git:14 | OK |
+| [[stos/galezie-rund]] | d3a0973ae | git:19 | OK |
+| [[stos/galezie-rund]] | e41c2330e | git:24 | OK |
+| [[stos/galezie-rund]] | e84abb808 | git:30 | OK |
+| [[stos/galezie-rund]] | f4f0deae5 | git:32 | OK |
+| [[ekosystem/gpu-kernel-engineer-from-scratch]] | 2026, ba738db | 19-gpu-kernel-engineer-from-scratch.md:3 | OK |
+| [[ekosystem/gpu-kernel-engineer-from-scratch]] | 48 | 19-gpu-kernel-engineer-from-scratch.md:7 | OK |
+| [[ekosystem/gpu-mode-reference-kernels]] | 2026, f3295bb6 | 09-gpu-mode-reference-kernels.md:3 | OK |
+| [[ekosystem/hipfire]] | 10, 1ff5182, 2026, 7900 | 30-hipfire.md:3 | OK |
+| [[ekosystem/hipfire]] | 104, 76.4 | 30-hipfire.md:17 | OK |
+| [[ekosystem/hipfire]] | 13, 307.9 | 30-hipfire.md:18 | OK |
+| [[ekosystem/hipfire]] | 219.6, 251.8, 35, 603 | REPOS-PODSUMOWANIE.md:40 | OK |
+| [[ekosystem/hipfire]] | 30 | 30-hipfire.md:1 | OK |
+| [[ekosystem/hipfire]] | 3000 | 30-hipfire.md:20 | OK |
+| [[ekosystem/hipfire]] | 4.25 | 30-hipfire.md:7 | OK |
+| [[ekosystem/how-to-optimize-in-gpu]] | 10.3, 16384, 8.4 | 08-how-to-optimize-in-gpu.md:21 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/how-to-optimize-in-gpu]] | 2023, 5d2def3e | 08-how-to-optimize-in-gpu.md:3 | OK |
+| [[ekosystem/how-to-optimize-in-gpu]] | 900 | 08-how-to-optimize-in-gpu.md:7 | OK |
+| [[ekosystem/ik-llama-cpp]] | 03 | 03-silniki-i-stack.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/ik-llama-cpp]] | 2024 | 03-silniki-i-stack.md:126 | OK |
+| [[ekosystem/ik-llama-cpp]] | 2026 | 03-silniki-i-stack.md:138 | OK |
+| [[ekosystem/ik-llama-cpp]] | 3,27 | 03-silniki-i-stack.md:129 | OK |
+| [[ekosystem/keops]] | 0.1, 29, 3.4, 4.10 | 20-keops.md:68 | OK |
+| [[ekosystem/keops]] | 0.3, 1.5 | 20-keops.md:133 | OK |
+| [[ekosystem/keops]] | 100, 2.4 | 20-keops.md:7 | OK |
+| [[ekosystem/keops]] | 2026, ef72bc90 | 20-keops.md:3 | OK |
+| [[ekosystem/kernel-tuner-repo]] | 20 | 26-kernel-tuner.md:11 | OK |
+| [[ekosystem/kernel-tuner-repo]] | 2026, 8e71bbf | 26-kernel-tuner.md:3 | OK |
+| [[ekosystem/kernelagent]] | 1.56, 2.02 | 06-kernelagent.md:21 | OK |
+| [[ekosystem/kernelagent]] | 2026, e0647170 | 06-kernelagent.md:3 | OK |
+| [[ekosystem/kernelbench]] | 100, 20, 50 | 04-kernelbench.md:7 | OK |
+| [[ekosystem/kernelbench]] | 2026, 423217, 423217d9 | 04-kernelbench.md:3 | OK |
+| [[ekosystem/laya-mlx]] | 0.1, 193, 27, 33, 464 | 10-post-training.md:42 | OK |
+| [[ekosystem/laya-mlx]] | 10 | 10-post-training.md:39 | OK |
+| [[ekosystem/laya-mlx]] | 13.4, 7.4 | 10-post-training.md:277 | OK |
+| [[ekosystem/laya-mlx]] | 2.2, 74 | 10-post-training.md:293 | OK |
+| [[ekosystem/laya-mlx]] | 2026 | 10-post-training.md:284 | OK |
+| [[ekosystem/laya-mlx]] | 322, 421 | 10-post-training.md:273 | OK |
+| [[stos/llama-cpp-fork]] | 2026, 3060 | git:1 | OK |
+| [[stos/llama-cpp-fork]] | 620, 620d2225c | git:73 | OK |
+| [[stos/llama-cpp-fork]] | 70 | git:25 | OK |
+| [[stos/llama-cpp-fork]] | b356fa262 | git:9 | OK |
+| [[stos/llama-cpp-fork]] | e60eff95f | git:36 | OK |
+| [[stos/llama-cpp-fork]] | f61994f58 | git:2 | OK |
+| [[ekosystem/lucebox]] | 1.5 | 22-lucebox.md:107 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/lucebox]] | 1.55, 267, 413 | 22-lucebox.md:46 | OK |
+| [[ekosystem/lucebox]] | 110, 130, 175, 300 | 22-lucebox.md:86 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/lucebox]] | 16 208.1, 32.3, 8 133.9 | 22-lucebox.md:15 | OK |
+| [[ekosystem/lucebox]] | 2026, 3090, 54132, 54132ca | 22-lucebox.md:3 | OK |
+| [[ekosystem/mixbench]] | 2026, 2070, a8cab0c | 23-mixbench.md:3 | OK |
+| [[ekosystem/mixbench]] | 33, 512 | 23-mixbench.md:7 | OK |
+| [[ekosystem/mixbench]] | 50 | 23-mixbench.md:78 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/mixbench]] | 720 | 23-mixbench.md:98 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/mkernel]] | 2026, 97, 97e916b | 16-mkernel.md:3 | OK |
+| [[stos/mtp-train]] | 10, 17 | 10-post-training.md:32 | OK |
+| [[stos/mtp-train]] | 2026, 532, 532fd1057 | git:1 | OK |
+| [[ekosystem/nvidia-open-gpu-kernel-modules]] | 2026, 6.8, 615.78, ca2d03e | 01-nvidia-open-gpu-kernel-modules.md:3 | OK |
+| [[ekosystem/nvidia-open-gpu-kernel-modules]] | 24.3, 27.2 | 01-nvidia-open-gpu-kernel-modules.md:31 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/nvidia-open-gpu-kernel-modules]] | 64 | 01-nvidia-open-gpu-kernel-modules.md:9 | OK |
+| [[stos/opt-gdn6]] | 0d89ce56c, 16, 8.5 | REPORT.md:14 | OK |
+| [[stos/opt-gdn6]] | 128, b4e819237 | REPORT.md:7 | OK |
+| [[stos/opt-gdn6]] | 2026 | QWEN5-ROUND5.md:7 | OK |
+| [[stos/opt-gdn6]] | 379 | REPORT.md:20 | OK |
+| [[stos/opt-gdn6]] | 83, 94 | QWEN5-ROUND5.md:13 | OK |
+| [[stos/opt-gdn6]] | c36fd2c87 | REPORT.md:6 | OK |
+| [[stos/opt-mmq6]] | 0070 | REPORT.md:68 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/opt-mmq6]] | 128, 16 | REPORT.md:10 | OK |
+| [[stos/opt-mmq6]] | 2026 | REPORT.md:159 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/opt-mmq6]] | 32, ae1ef6a97 | REPORT.md:7 | OK |
+| [[stos/opt-mmq6]] | 64 | REPORT.md:11 | OK |
+| [[stos/opt-qwen5]] | 0.61, 0.918 | QWEN5-ROUND5.md:22 | OK |
+| [[stos/opt-qwen5]] | 00, 02, 2026, 45 | QWEN5-ROUND5.md:7 | OK |
+| [[stos/opt-qwen5]] | 0b7b073b, c4708318 | QWEN5-ROUND5.md:11 | OK |
+| [[stos/opt-qwen5]] | 1066, 1097, 2.6 | QWEN5-ROUND5.md:18 | OK |
+| [[stos/opt-qwen5]] | 1094, 1173, 7.6 | QWEN5-ROUND5.md:20 | OK |
+| [[stos/opt-qwen5]] | 11.9, 1219, 3.0, 3254 | QWEN5-ROUND5.md:21 | OK |
+| [[stos/opt-qwen5]] | 2aa6999ed | QWEN5-ROUND5.md:19 | OK |
+| [[stos/opt-qwen5]] | 5b1fdbc2f | QWEN5-ROUND5.md:14 | OK |
+| [[stos/opt-qwen5]] | c36fd2c87 | QWEN5-ROUND5.md:1 | OK |
+| [[stos/opt-samp]] | 0065, 0069 | seria-amd-opt.md:24 | OK |
+| [[stos/opt-samp]] | 2026 | seria-amd-opt.md:23 | OK |
+| [[stos/opt-samp]] | f4f0deae5 | git:32 | OK |
+| [[ekosystem/pplx-kernels]] | 1.31, 194.7, 256 | 05-pplx-kernels.md:9 | OK |
+| [[ekosystem/pplx-kernels]] | 41.6, 41.7 | 05-pplx-kernels.md:20 | OK |
+| [[ekosystem/pplx-kernels]] | f70d1eb7 | 05-pplx-kernels.md:3 | OK |
+| [[ekosystem/prism-llama-cpp]] | 0.17549, 0.17553, 8.6154, 8.6171 | bonsai.md:15 | OK |
+| [[ekosystem/prism-llama-cpp]] | 1,0, 1.76, 128, 20, 27, 5.93, 98.2 | 10-post-training.md:329 | OK |
+| [[ekosystem/prism-llama-cpp]] | 10, 2026 | bonsai.md:4 | OK |
+| [[ekosystem/prism-llama-cpp]] | 3060 | bonsai.md:5 | OK |
+| [[ekosystem/pygpubench]] | 0.5 | 28-pygpubench.md:63 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/pygpubench]] | 2026, 286841, 286841bf | 28-pygpubench.md:3 | OK |
+| [[ekosystem/pygpubench]] | 96 | 28-pygpubench.md:42 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/speculators-specforge]] | 0.6, 10, 80 | 10-post-training.md:86 | OK |
+| [[ekosystem/speculators-specforge]] | 2.2, 2.4, 3.74 | 10-post-training.md:87 | OK |
+| [[ekosystem/speculators-specforge]] | 3090 | 10-post-training.md:50 | OK |
+| [[ekosystem/strata]] | 0.0000, 11.7, 14.3 | README.md:23 | OK |
+| [[ekosystem/strata]] | 12, 1892, 19, 2026, 2231, 49, a0116b27 | README.md:3 | OK |
+| [[ekosystem/strata]] | 125 | README.md:31 | OK |
+| [[ekosystem/strata]] | 28.8 | README.md:34 | OK |
+| [[ekosystem/strata]] | 335 | README.md:194 | OK |
+| [[ekosystem/strata]] | 36, 48 | README.md:32 | OK |
+| [[ekosystem/strata]] | 39 | REPOS-PODSUMOWANIE.md:82 | OK |
+| [[ekosystem/strata]] | 512 | README.md:33 | OK |
+| [[ekosystem/strata]] | 7900 | README.md:1 | OK |
+| [[ekosystem/strata]] | 888 | issues.md:8 | OK |
+| [[ekosystem/tensara]] | 160 | 18-tensara.md:16 | OK |
+| [[ekosystem/tensara]] | 20 | 18-tensara.md:15 | OK |
+| [[ekosystem/tensara]] | 2026, fae96618 | 18-tensara.md:3 | OK |
+| [[ekosystem/tensorfold]] | 0efbd447, 12, 1560, 18, 2026, 235, 32, 552 | README.md:3 | OK |
+| [[ekosystem/tensorfold]] | 1.2, 1.4 | README.md:14 | OK |
+| [[ekosystem/tensorfold]] | 100 | README.md:9 | OK |
+| [[ekosystem/tensorfold]] | 126, 95.7 | README.md:21 | OK |
+| [[ekosystem/tensorfold]] | 16 | README.md:10 | OK |
+| [[ekosystem/tensorfold]] | 25.8, 27.2 | README.md:20 | OK |
+| [[ekosystem/tensorfold]] | 27 | README.md:1 | OK |
+| [[ekosystem/tensorfold]] | 490 | README.md:16 | OK |
+| [[ekosystem/tilegym]] | 2026, c742afc | 17-tilegym.md:3 | OK |
+| [[ekosystem/tilegym]] | 39 | 17-tilegym.md:86 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/tilegym]] | 888 | 17-tilegym.md:52 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/tilelang]] | 19, 19da924, 2026 | 10-tilelang.md:3 | OK |
+| [[ekosystem/tokamax]] | 2026, b500ee4 | 15-tokamax.md:3 | OK |
+| [[ekosystem/tokamax]] | 48 | 15-tokamax.md:7 | OK |
+| [[stos/tools6]] | 14, 22 | REPORT.md:21 | OK |
+| [[stos/tools6]] | 2026 | git:1 | OK |
+| [[stos/tools6]] | 27 | REPORT.md:19 | OK |
+| [[stos/tools6]] | 4db68c6ab | REPORT.md:8 | OK |
+| [[stos/tools6]] | 65 | REPORT.md:1 | OK |
+| [[ekosystem/vllm-xpu-kernels]] | 0.15, 0.3 | 11-vllm-xpu-kernels.md:75 | OK (inny wiersz źródła, sprawdzone) |
+| [[ekosystem/vllm-xpu-kernels]] | 2026, 6b30c9b9 | 11-vllm-xpu-kernels.md:3 | OK |
 | [[research/raport-01-konkurencja]] | 01, 10, 2026 | 01-konkurencja.md:1 | OK |
 | [[research/raport-01-konkurencja]] | 14.4, 23.0 | 01-konkurencja.md:42 | OK |
 | [[research/raport-01-konkurencja]] | 165, 190 | 01-konkurencja.md:49 | OK |
@@ -1882,20 +1882,20 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[research/raport-10-post-training]] | 17 | 10-post-training.md:32 | OK |
 | [[research/raport-10-post-training]] | 2.2, 2.4, 3.74 | 10-post-training.md:35 | OK |
 | [[research/raport-10-post-training]] | 3.07 | 10-post-training.md:20 | OK |
-| [[research/raport-12-bit-exact]] | 0.3, 1.3 | 12-bit-exact-spekulacja.md:91 | OK |
-| [[research/raport-12-bit-exact]] | 0.5, 32 | 12-bit-exact-spekulacja.md:87 | OK |
-| [[research/raport-12-bit-exact]] | 1.5, 98 | 12-bit-exact-spekulacja.md:88 | OK |
-| [[research/raport-12-bit-exact]] | 12 | 12-bit-exact-spekulacja.md:1 | OK |
-| [[research/raport-12-bit-exact]] | 2026, 8c942e5a9 | 12-bit-exact-spekulacja.md:3 | OK |
-| [[research/raport-12-bit-exact]] | 36 | 12-bit-exact-spekulacja.md:106 | OK |
-| [[research/raport-12-bit-exact]] | 6f14e814, c4708318 | 12-bit-exact-spekulacja.md:8 | OK |
-| [[research/raport-12-bit-exact]] | 862 | 12-bit-exact-spekulacja.md:98 | OK |
-| [[research/raport-13-rocm-10-1]] | 0060, 7900 | 13-rocm-10.1.md:24 | OK |
-| [[research/raport-13-rocm-10-1]] | 10.0 | 13-rocm-10.1.md:5 | OK |
-| [[research/raport-13-rocm-10-1]] | 10.1, 13 | 13-rocm-10.1.md:1 | OK |
-| [[research/raport-13-rocm-10-1]] | 11, 2.67, 24 | 13-rocm-10.1.md:4 | OK |
-| [[research/raport-13-rocm-10-1]] | 2026 | 13-rocm-10.1.md:3 | OK |
-| [[research/raport-13-rocm-10-1]] | 256, 98 | 13-rocm-10.1.md:20 | OK |
+| [[testy/2026-10-16-bit-exact]] | 0.3, 1.3 | 12-bit-exact-spekulacja.md:91 | OK |
+| [[testy/2026-10-16-bit-exact]] | 0.5, 32 | 12-bit-exact-spekulacja.md:87 | OK |
+| [[testy/2026-10-16-bit-exact]] | 1.5, 98 | 12-bit-exact-spekulacja.md:88 | OK |
+| [[testy/2026-10-16-bit-exact]] | 12 | 12-bit-exact-spekulacja.md:1 | OK |
+| [[testy/2026-10-16-bit-exact]] | 2026, 8c942e5a9 | 12-bit-exact-spekulacja.md:3 | OK |
+| [[testy/2026-10-16-bit-exact]] | 36 | 12-bit-exact-spekulacja.md:106 | OK |
+| [[testy/2026-10-16-bit-exact]] | 6f14e814, c4708318 | 12-bit-exact-spekulacja.md:8 | OK |
+| [[testy/2026-10-16-bit-exact]] | 862 | 12-bit-exact-spekulacja.md:98 | OK |
+| [[stos/rocm-10-1]] | 0060, 7900 | 13-rocm-10.1.md:24 | OK |
+| [[stos/rocm-10-1]] | 10.0 | 13-rocm-10.1.md:5 | OK |
+| [[stos/rocm-10-1]] | 10.1, 13 | 13-rocm-10.1.md:1 | OK |
+| [[stos/rocm-10-1]] | 11, 2.67, 24 | 13-rocm-10.1.md:4 | OK |
+| [[stos/rocm-10-1]] | 2026 | 13-rocm-10.1.md:3 | OK |
+| [[stos/rocm-10-1]] | 256, 98 | 13-rocm-10.1.md:20 | OK |
 | [[research/repos-30-przeglad]] | 10, 2026 | REPOS-PODSUMOWANIE.md:3 | OK |
 | [[research/repos-30-przeglad]] | 104, 2.5, 240, 28.9, 4.1, 416 | REPOS-PODSUMOWANIE.md:5 | OK |
 | [[research/repos-30-przeglad]] | 110, 130, 175 | REPOS-PODSUMOWANIE.md:63 | OK |
@@ -1905,119 +1905,119 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 | [[research/repos-30-przeglad]] | 300 | REPOS-PODSUMOWANIE.md:49 | OK |
 | [[research/repos-30-przeglad]] | 39 | REPOS-PODSUMOWANIE.md:82 | OK |
 | [[research/repos-30-przeglad]] | 54 | REPOS-PODSUMOWANIE.md:31 | OK |
-| [[research/runda-6-raporty]] | 0070 | mmq-epilogue.md:68 | OK (inny wiersz źródła, sprawdzone) |
-| [[research/runda-6-raporty]] | 0d89ce56c | gdn-bitwise.md:14 | OK |
-| [[research/runda-6-raporty]] | 14, 22 | test-tooling.md:21 | OK |
-| [[research/runda-6-raporty]] | 2026 | gdn-bitwise.md:176 | OK (inny wiersz źródła, sprawdzone) |
-| [[research/runda-6-raporty]] | 27 | test-tooling.md:19 | OK |
-| [[research/runda-6-raporty]] | 379 | gdn-bitwise.md:20 | OK |
-| [[research/runda-6-raporty]] | 64 | mmq-epilogue.md:11 | OK |
-| [[research/runda-6-raporty]] | ae1ef6a97 | mmq-epilogue.md:7 | OK |
-| [[research/runda-6-raporty]] | b4e819237 | gdn-bitwise.md:7 | OK |
-| [[rocm/amd-smi]] | 10.0 | 13-rocm-10.1.md:27 | OK |
-| [[rocm/amd-smi]] | 10.1 | 13-rocm-10.1.md:28 | OK |
-| [[rocm/amd-smi]] | 13 | 13-rocm-10.1.md:267 | OK |
-| [[rocm/amd-smi]] | 2026 | 13-rocm-10.1.md:276 | OK |
-| [[rocm/amd-smi]] | 27.0 | ręcznie | OK: amd-smi version: AMDSMI Tool 27.0.0 (2026-10-16) |
-| [[rocm/amd-smi]] | 27.1 | 13-rocm-10.1.md:265 | OK |
-| [[rocm/amd-smi]] | 5.3 | 13-rocm-10.1.md:279 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 10, 20, 2026 | NOTES.md:109 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 106, 196, 281, 66, 76 | NOTES.md:118 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 15 | NOTES.md:104 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 25, 40 | NOTES.md:119 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 272, 303, 350 | NOTES.md:110 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 285, 90, 90.6, 94.1, 94.7 | NOTES.md:126 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 305 | NOTES.md:112 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 4.4, 92 | NOTES.md:124 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 64 | NOTES.md:145 | OK |
-| [[rocm/amdgpu-moc-i-termika]] | 67, 85, 88 | NOTES.md:146 | OK |
-| [[rocm/hip-graph-narzut]] | 0.5 | rr-hip.md:86 | OK (inny wiersz źródła, sprawdzone) |
-| [[rocm/hip-graph-narzut]] | 0.876, 3.865, 6409 | rr-hip.md:20 | OK |
-| [[rocm/hip-graph-narzut]] | 0.9 | rr-hip.md:160 | OK (inny wiersz źródła, sprawdzone) |
-| [[rocm/hip-graph-narzut]] | 16, 2026 | rr-hip.md:3 | OK |
-| [[rocm/hip-graph-narzut]] | 19, 3.2, 3.22, 3.23, 3.27, 3.4, 7.13 | rr-hip.md:18 | OK |
-| [[rocm/hip-graph-narzut]] | 2000 | NOTES.md:93 | OK |
-| [[rocm/hip-graph-narzut]] | 2156 | NOTES.md:223 | OK (inny wiersz źródła, sprawdzone) |
-| [[rocm/hip-graph-narzut]] | 2188, 29.8, 36.7, 36.9 | rr-hip.md:12 | OK |
-| [[rocm/hip-graph-narzut]] | 3.3 | rr-hip.md:74 | OK (inny wiersz źródła, sprawdzone) |
-| [[rocm/hip-graph-narzut]] | 830 | NOTES.md:265 | OK (inny wiersz źródła, sprawdzone) |
-| [[rocm/hip-na-windows]] | 0019, 0057 | 08-analiza-platformy-latek.md:42 | OK |
-| [[rocm/hip-na-windows]] | 0060, 2026, 8900 | 08-analiza-platformy-latek.md:19 | OK |
-| [[rocm/hip-na-windows]] | 08 | PLAN.md:257 | OK |
-| [[rocm/hip-na-windows]] | 10.0 | 08-analiza-platformy-latek.md:65 | OK |
-| [[rocm/hip-na-windows]] | 6713 | 08-analiza-platformy-latek.md:56 | OK |
-| [[rocm/hip-na-windows]] | 7.2 | 08-analiza-platformy-latek.md:52 | OK |
-| [[rocm/hip]] | 128, 32 | Optymalizacja kerneli na AMD.md:27 | OK |
-| [[rocm/hip]] | 131 | gdn-bitwise.md:130 | OK |
-| [[rocm/hip]] | 2026 | NOTES.md:241 | OK |
-| [[rocm/hip]] | 40 | NOTES.md:249 | OK |
-| [[rocm/pm4]] | 0.262 | lfm-decode-round4.md:44 | OK |
-| [[rocm/pm4]] | 0.731 | lfm-decode-round4.md:43 | OK |
-| [[rocm/pm4]] | 0.858 | lfm-decode-round4.md:40 | OK |
-| [[rocm/pm4]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
-| [[rocm/pm4]] | 1.874 | lfm-decode-round4.md:39 | OK |
-| [[rocm/pm4]] | 10.0 | lfm-decode-round4.md:18 | OK |
-| [[rocm/pm4]] | 13 | 13-rocm-10.1.md:243 | OK |
-| [[rocm/pm4]] | 2.754 | lfm-decode-round4.md:30 | OK |
-| [[rocm/pm4]] | 2026 | NOTES.md:372 | OK |
-| [[rocm/rdna3-gfx1100]] | 12, 128, 1536, 16, 192, 256 | rx-7900-xtx.md:13 | OK |
-| [[rocm/rdna3-gfx1100]] | 123 | rx-7900-xtx.md:17 | OK |
-| [[rocm/rdna3-gfx1100]] | 24, 384, 960 | rx-7900-xtx.md:16 | OK |
-| [[rocm/rdna3-gfx1100]] | 32, 48, 96 | rx-7900-xtx.md:11 | OK |
-| [[rocm/rdna3-gfx1100]] | 512 | Optymalizacja kerneli na AMD.md:11 | OK |
-| [[rocm/rdna3-gfx1100]] | 7600, 7800 | Optymalizacja kerneli na AMD.md:7 | OK |
-| [[rocm/rdna3-gfx1100]] | 7900 | rx-7900-xtx.md:6 | OK |
-| [[rocm/rocm-10-1]] | 1.21 | 13-rocm-10.1.md:27 | OK |
-| [[rocm/rocm-10-1]] | 10, 10.1, 13 | 13-rocm-10.1.md:1 | OK |
-| [[rocm/rocm-10-1]] | 10.0, 23 | 13-rocm-10.1.md:5 | OK |
-| [[rocm/rocm-10-1]] | 11, 2.67, 24, 24.0 | 13-rocm-10.1.md:4 | OK |
-| [[rocm/rocm-10-1]] | 2026 | 13-rocm-10.1.md:3 | OK |
-| [[rocm/rocm-10-1]] | 256, 98 | 13-rocm-10.1.md:20 | OK |
-| [[rocm/rocm-stos]] | 1.21 | 13-rocm-10.1.md:27 | OK |
-| [[rocm/rocm-stos]] | 10.0, 2026, 7.14, 7900 | Optymalizacja kerneli na AMD.md:31 | OK |
-| [[rocm/rocm-stos]] | 10.1 | Optymalizacja kerneli na AMD.md:29 | OK |
-| [[rocm/rocm-stos]] | 13 | rocm_stack.md:11 | OK |
-| [[rocm/rocm-stos]] | 23.0 | 13-rocm-10.1.md:5 | OK |
-| [[rocm/rocm-stos]] | 27.0 | ręcznie | OK: amd-smi version: AMDSMI Tool 27.0.0 (2026-10-16) |
-| [[rocm/rocm-stos]] | 31.50 | ręcznie | OK: ~/amdgpu-install_31.50.315000-1_all.deb |
-| [[rocm/rocm-stos]] | 6.8 | 13-rocm-10.1.md:23 | OK (inny wiersz źródła, sprawdzone) |
-| [[rocm/rocm-vs-vulkan]] | 03, 170.1, 190.9, 20934, 25, 7900 | Optymalizacja kerneli na AMD.md:75 | OK |
-| [[rocm/rocm-vs-vulkan]] | 1.7, 13.3, 15, 15.0 | NOTES.md:175 | OK |
-| [[rocm/rocm-vs-vulkan]] | 1000 | NOTES.md:173 | OK |
-| [[rocm/rocm-vs-vulkan]] | 1044, 16, 622, 850, 890 | NOTES.md:16 | OK |
-| [[rocm/rocm-vs-vulkan]] | 109 | NOTES.md:280 | OK (inny wiersz źródła, sprawdzone) |
-| [[rocm/rocm-vs-vulkan]] | 11 | NOTES.md:179 | OK |
-| [[rocm/rocm-vs-vulkan]] | 165, 260, 94 | NOTES.md:178 | OK |
-| [[rocm/rocm-vs-vulkan]] | 20.3, 21.2, 6.6 | NOTES.md:176 | OK |
-| [[rocm/rocm-vs-vulkan]] | 2026 | NOTES.md:172 | OK |
-| [[rocm/rocm-vs-vulkan]] | 204800 | NOTES.md:6 | OK |
-| [[rocm/rocm-vs-vulkan]] | 29.5, 50.2, 62.4 | NOTES.md:177 | OK |
-| [[rocm/rocm-vs-vulkan]] | 64, 85.5 | NOTES.md:11 | OK |
-| [[rocm/rocm-vs-vulkan]] | 88.1 | NOTES.md:12 | OK |
-| [[rocm/rocm-vs-vulkan]] | 91.8 | NOTES.md:13 | OK |
-| [[rocm/rocprof]] | 0060 | NOTES.md:372 | OK |
-| [[rocm/rocprof]] | 10.0 | 13-rocm-10.1.md:18 | OK |
-| [[rocm/rocprof]] | 1200, 15.5 | NOTES.md:184 | OK |
-| [[rocm/rocprof]] | 13 | NOTES.md:258 | OK |
-| [[rocm/rocprof]] | 2026 | NOTES.md:182 | OK |
-| [[rocm/rocr]] | 0060, 2026, 8900 | 08-analiza-platformy-latek.md:19 | OK |
-| [[rocm/rocr]] | 1.21 | 13-rocm-10.1.md:27 | OK |
-| [[rocm/rocr]] | 10.1 | 13-rocm-10.1.md:28 | OK |
-| [[rocm/rocr]] | 2.08 | lfm-decode-round4.md:47 | OK |
-| [[rocm/rocr]] | 2.75 | lfm-decode-round4.md:57 | OK |
-| [[rocm/therock]] | 0060 | 03-silniki-i-stack.md:605 | OK |
-| [[rocm/therock]] | 03, 10, 10.1, 2026, 7.14 | rocm_stack.md:11 | OK |
-| [[rocm/therock]] | 0a20260930, 10.2, 604 | 03-silniki-i-stack.md:71 | OK |
-| [[rocm/therock]] | 100, 50 | 03-silniki-i-stack.md:70 | OK |
-| [[rocm/therock]] | 183, 654 | 03-silniki-i-stack.md:608 | OK |
-| [[rocm/therock]] | 700 | 03-silniki-i-stack.md:364 | OK |
-| [[rocm/therock]] | 947 | 03-silniki-i-stack.md:367 | OK |
-| [[rocm/wsl2-rocm]] | 0060, 7900 | 13-rocm-10.1.md:24 | OK |
-| [[rocm/wsl2-rocm]] | 10.1 | 13-rocm-10.1.md:30 | OK |
-| [[rocm/wsl2-rocm]] | 13 | 13-rocm-10.1.md:243 | OK |
-| [[rocm/wsl2-rocm]] | 4.5 | 13-rocm-10.1.md:253 | OK |
-| [[rocm/wsl2-rocm]] | 7800, 9070 | 13-rocm-10.1.md:226 | OK |
-| [[rocm/wsl2-rocm]] | 8791 | 13-rocm-10.1.md:224 | OK |
+| [[testy/runda-6]] | 0070 | mmq-epilogue.md:68 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/runda-6]] | 0d89ce56c | gdn-bitwise.md:14 | OK |
+| [[testy/runda-6]] | 14, 22 | test-tooling.md:21 | OK |
+| [[testy/runda-6]] | 2026 | gdn-bitwise.md:176 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/runda-6]] | 27 | test-tooling.md:19 | OK |
+| [[testy/runda-6]] | 379 | gdn-bitwise.md:20 | OK |
+| [[testy/runda-6]] | 64 | mmq-epilogue.md:11 | OK |
+| [[testy/runda-6]] | ae1ef6a97 | mmq-epilogue.md:7 | OK |
+| [[testy/runda-6]] | b4e819237 | gdn-bitwise.md:7 | OK |
+| [[stos/amd-smi]] | 10.0 | 13-rocm-10.1.md:27 | OK |
+| [[stos/amd-smi]] | 10.1 | 13-rocm-10.1.md:28 | OK |
+| [[stos/amd-smi]] | 13 | 13-rocm-10.1.md:267 | OK |
+| [[stos/amd-smi]] | 2026 | 13-rocm-10.1.md:276 | OK |
+| [[stos/amd-smi]] | 27.0 | ręcznie | OK: amd-smi version: AMDSMI Tool 27.0.0 (2026-10-16) |
+| [[stos/amd-smi]] | 27.1 | 13-rocm-10.1.md:265 | OK |
+| [[stos/amd-smi]] | 5.3 | 13-rocm-10.1.md:279 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 10, 20, 2026 | NOTES.md:109 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 106, 196, 281, 66, 76 | NOTES.md:118 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 15 | NOTES.md:104 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 25, 40 | NOTES.md:119 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 272, 303, 350 | NOTES.md:110 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 285, 90, 90.6, 94.1, 94.7 | NOTES.md:126 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 305 | NOTES.md:112 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 4.4, 92 | NOTES.md:124 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 64 | NOTES.md:145 | OK |
+| [[stos/amdgpu-moc-i-termika]] | 67, 85, 88 | NOTES.md:146 | OK |
+| [[stos/hip-graph-narzut]] | 0.5 | rr-hip.md:86 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/hip-graph-narzut]] | 0.876, 3.865, 6409 | rr-hip.md:20 | OK |
+| [[stos/hip-graph-narzut]] | 0.9 | rr-hip.md:160 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/hip-graph-narzut]] | 16, 2026 | rr-hip.md:3 | OK |
+| [[stos/hip-graph-narzut]] | 19, 3.2, 3.22, 3.23, 3.27, 3.4, 7.13 | rr-hip.md:18 | OK |
+| [[stos/hip-graph-narzut]] | 2000 | NOTES.md:93 | OK |
+| [[stos/hip-graph-narzut]] | 2156 | NOTES.md:223 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/hip-graph-narzut]] | 2188, 29.8, 36.7, 36.9 | rr-hip.md:12 | OK |
+| [[stos/hip-graph-narzut]] | 3.3 | rr-hip.md:74 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/hip-graph-narzut]] | 830 | NOTES.md:265 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/hip-na-windows]] | 0019, 0057 | 08-analiza-platformy-latek.md:42 | OK |
+| [[stos/hip-na-windows]] | 0060, 2026, 8900 | 08-analiza-platformy-latek.md:19 | OK |
+| [[stos/hip-na-windows]] | 08 | PLAN.md:257 | OK |
+| [[stos/hip-na-windows]] | 10.0 | 08-analiza-platformy-latek.md:65 | OK |
+| [[stos/hip-na-windows]] | 6713 | 08-analiza-platformy-latek.md:56 | OK |
+| [[stos/hip-na-windows]] | 7.2 | 08-analiza-platformy-latek.md:52 | OK |
+| [[stos/hip]] | 128, 32 | Optymalizacja kerneli na AMD.md:27 | OK |
+| [[stos/hip]] | 131 | gdn-bitwise.md:130 | OK |
+| [[stos/hip]] | 2026 | NOTES.md:241 | OK |
+| [[stos/hip]] | 40 | NOTES.md:249 | OK |
+| [[stos/pm4]] | 0.262 | lfm-decode-round4.md:44 | OK |
+| [[stos/pm4]] | 0.731 | lfm-decode-round4.md:43 | OK |
+| [[stos/pm4]] | 0.858 | lfm-decode-round4.md:40 | OK |
+| [[stos/pm4]] | 07 | NOTES.md:338 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/pm4]] | 1.874 | lfm-decode-round4.md:39 | OK |
+| [[stos/pm4]] | 10.0 | lfm-decode-round4.md:18 | OK |
+| [[stos/pm4]] | 13 | 13-rocm-10.1.md:243 | OK |
+| [[stos/pm4]] | 2.754 | lfm-decode-round4.md:30 | OK |
+| [[stos/pm4]] | 2026 | NOTES.md:372 | OK |
+| [[stos/rdna3-gfx1100]] | 12, 128, 1536, 16, 192, 256 | rx-7900-xtx.md:13 | OK |
+| [[stos/rdna3-gfx1100]] | 123 | rx-7900-xtx.md:17 | OK |
+| [[stos/rdna3-gfx1100]] | 24, 384, 960 | rx-7900-xtx.md:16 | OK |
+| [[stos/rdna3-gfx1100]] | 32, 48, 96 | rx-7900-xtx.md:11 | OK |
+| [[stos/rdna3-gfx1100]] | 512 | Optymalizacja kerneli na AMD.md:11 | OK |
+| [[stos/rdna3-gfx1100]] | 7600, 7800 | Optymalizacja kerneli na AMD.md:7 | OK |
+| [[stos/rdna3-gfx1100]] | 7900 | rx-7900-xtx.md:6 | OK |
+| [[stos/rocm-10-1]] | 1.21 | 13-rocm-10.1.md:27 | OK |
+| [[stos/rocm-10-1]] | 10, 10.1, 13 | 13-rocm-10.1.md:1 | OK |
+| [[stos/rocm-10-1]] | 10.0, 23 | 13-rocm-10.1.md:5 | OK |
+| [[stos/rocm-10-1]] | 11, 2.67, 24, 24.0 | 13-rocm-10.1.md:4 | OK |
+| [[stos/rocm-10-1]] | 2026 | 13-rocm-10.1.md:3 | OK |
+| [[stos/rocm-10-1]] | 256, 98 | 13-rocm-10.1.md:20 | OK |
+| [[stos/rocm-stos]] | 1.21 | 13-rocm-10.1.md:27 | OK |
+| [[stos/rocm-stos]] | 10.0, 2026, 7.14, 7900 | Optymalizacja kerneli na AMD.md:31 | OK |
+| [[stos/rocm-stos]] | 10.1 | Optymalizacja kerneli na AMD.md:29 | OK |
+| [[stos/rocm-stos]] | 13 | rocm_stack.md:11 | OK |
+| [[stos/rocm-stos]] | 23.0 | 13-rocm-10.1.md:5 | OK |
+| [[stos/rocm-stos]] | 27.0 | ręcznie | OK: amd-smi version: AMDSMI Tool 27.0.0 (2026-10-16) |
+| [[stos/rocm-stos]] | 31.50 | ręcznie | OK: ~/amdgpu-install_31.50.315000-1_all.deb |
+| [[stos/rocm-stos]] | 6.8 | 13-rocm-10.1.md:23 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/rocm-vs-vulkan]] | 03, 170.1, 190.9, 20934, 25, 7900 | Optymalizacja kerneli na AMD.md:75 | OK |
+| [[stos/rocm-vs-vulkan]] | 1.7, 13.3, 15, 15.0 | NOTES.md:175 | OK |
+| [[stos/rocm-vs-vulkan]] | 1000 | NOTES.md:173 | OK |
+| [[stos/rocm-vs-vulkan]] | 1044, 16, 622, 850, 890 | NOTES.md:16 | OK |
+| [[stos/rocm-vs-vulkan]] | 109 | NOTES.md:280 | OK (inny wiersz źródła, sprawdzone) |
+| [[stos/rocm-vs-vulkan]] | 11 | NOTES.md:179 | OK |
+| [[stos/rocm-vs-vulkan]] | 165, 260, 94 | NOTES.md:178 | OK |
+| [[stos/rocm-vs-vulkan]] | 20.3, 21.2, 6.6 | NOTES.md:176 | OK |
+| [[stos/rocm-vs-vulkan]] | 2026 | NOTES.md:172 | OK |
+| [[stos/rocm-vs-vulkan]] | 204800 | NOTES.md:6 | OK |
+| [[stos/rocm-vs-vulkan]] | 29.5, 50.2, 62.4 | NOTES.md:177 | OK |
+| [[stos/rocm-vs-vulkan]] | 64, 85.5 | NOTES.md:11 | OK |
+| [[stos/rocm-vs-vulkan]] | 88.1 | NOTES.md:12 | OK |
+| [[stos/rocm-vs-vulkan]] | 91.8 | NOTES.md:13 | OK |
+| [[stos/rocprof]] | 0060 | NOTES.md:372 | OK |
+| [[stos/rocprof]] | 10.0 | 13-rocm-10.1.md:18 | OK |
+| [[stos/rocprof]] | 1200, 15.5 | NOTES.md:184 | OK |
+| [[stos/rocprof]] | 13 | NOTES.md:258 | OK |
+| [[stos/rocprof]] | 2026 | NOTES.md:182 | OK |
+| [[stos/rocr]] | 0060, 2026, 8900 | 08-analiza-platformy-latek.md:19 | OK |
+| [[stos/rocr]] | 1.21 | 13-rocm-10.1.md:27 | OK |
+| [[stos/rocr]] | 10.1 | 13-rocm-10.1.md:28 | OK |
+| [[stos/rocr]] | 2.08 | lfm-decode-round4.md:47 | OK |
+| [[stos/rocr]] | 2.75 | lfm-decode-round4.md:57 | OK |
+| [[stos/therock]] | 0060 | 03-silniki-i-stack.md:605 | OK |
+| [[stos/therock]] | 03, 10, 10.1, 2026, 7.14 | rocm_stack.md:11 | OK |
+| [[stos/therock]] | 0a20260930, 10.2, 604 | 03-silniki-i-stack.md:71 | OK |
+| [[stos/therock]] | 100, 50 | 03-silniki-i-stack.md:70 | OK |
+| [[stos/therock]] | 183, 654 | 03-silniki-i-stack.md:608 | OK |
+| [[stos/therock]] | 700 | 03-silniki-i-stack.md:364 | OK |
+| [[stos/therock]] | 947 | 03-silniki-i-stack.md:367 | OK |
+| [[stos/wsl2-rocm]] | 0060, 7900 | 13-rocm-10.1.md:24 | OK |
+| [[stos/wsl2-rocm]] | 10.1 | 13-rocm-10.1.md:30 | OK |
+| [[stos/wsl2-rocm]] | 13 | 13-rocm-10.1.md:243 | OK |
+| [[stos/wsl2-rocm]] | 4.5 | 13-rocm-10.1.md:253 | OK |
+| [[stos/wsl2-rocm]] | 7800, 9070 | 13-rocm-10.1.md:226 | OK |
+| [[stos/wsl2-rocm]] | 8791 | 13-rocm-10.1.md:224 | OK |
 | [[aplikacja-w-budowie]] | 0,12, 2026, 3090, 47, 5060, 56 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
 | [[aplikacja-w-budowie]] | 9f96ff4 | git log -1 9f96ff4 | OK: commit istnieje |
 | [[app-system-projektowy]] | #07080D, #3B6E00, #3DD6FF, #5BE49B, #C8FF3D, #FF4D8D, #FFB23E, 07080, 110, 270, 32, 4,5 | app/REPORT.md, DESIGN.md, APP-ARCHITECTURE.md, scan/TEST-linux.txt, PLAN.md | OK |
@@ -2130,70 +2130,70 @@ Ta sama metoda dla 41 notatek nowych lub zmienionych (raporty 09 ×3, 11, 12; ka
 | [[raport-09-chmura-3060]] | 7.6665 | 09-chmura-3060.md:47 | OK |
 | [[raport-09-chmura-3060]] | 7b344114d | 09-chmura-3060.md:113 | OK |
 | [[raport-09-chmura-3060]] | 8.6154, 8.6171 | 09-chmura-3060.md:38 | OK |
-| [[raport-11-mtp-pl-pilot]] | 0.02 | 11-mtp-pl-pilot.md:88 | OK |
-| [[raport-11-mtp-pl-pilot]] | 0.1, 0.65, 0.9 | 11-mtp-pl-pilot.md:20 | OK |
-| [[raport-11-mtp-pl-pilot]] | 0.2, 1.7 | 11-mtp-pl-pilot.md:6 | OK |
-| [[raport-11-mtp-pl-pilot]] | 0.21 | 11-mtp-pl-pilot.md:87 | OK |
-| [[raport-11-mtp-pl-pilot]] | 0.39 | 11-mtp-pl-pilot.md:60 | OK |
-| [[raport-11-mtp-pl-pilot]] | 0.45, 3.281 | 11-mtp-pl-pilot.md:80 | OK |
-| [[raport-11-mtp-pl-pilot]] | 1.71, 3.235 | 11-mtp-pl-pilot.md:86 | OK |
-| [[raport-11-mtp-pl-pilot]] | 10, 11, 2026, 27 | 11-mtp-pl-pilot.md:1 | OK |
-| [[raport-11-mtp-pl-pilot]] | 2.14 | 11-mtp-pl-pilot.md:8 | OK |
-| [[raport-11-mtp-pl-pilot]] | 2.3 | 11-mtp-pl-pilot.md:5 | OK |
-| [[raport-11-mtp-pl-pilot]] | 2.65 | 11-mtp-pl-pilot.md:78 | OK |
-| [[raport-11-mtp-pl-pilot]] | 2.71 | 11-mtp-pl-pilot.md:111 | OK |
-| [[raport-11-mtp-pl-pilot]] | 21 | 11-mtp-pl-pilot.md:47 | OK |
-| [[raport-11-mtp-pl-pilot]] | 3.009, 3.812 | 11-mtp-pl-pilot.md:70 | OK |
-| [[raport-11-mtp-pl-pilot]] | 3.266 | 11-mtp-pl-pilot.md:38 | OK |
-| [[raport-11-mtp-pl-pilot]] | 3.960 | 11-mtp-pl-pilot.md:68 | OK |
-| [[raport-11-mtp-pl-pilot]] | 351 008 768 | 11-mtp-pl-pilot.md:28 | OK |
-| [[raport-11-mtp-pl-pilot]] | 7.65 | 11-mtp-pl-pilot.md:171 | OK |
-| [[raport-11-mtp-pl-pilot]] | 7f63dec8 | ręcznie | OK: skrót hasha 7f63dec872e319cb… (11-mtp-pl-pilot.md:129) |
-| [[raport-11-mtp-pl-pilot]] | 96 | 11-mtp-pl-pilot.md:174 | OK |
-| [[raport-12-bit-exact]] | 0.3, 1.3 | 12-bit-exact-spekulacja.md:91 | OK |
-| [[raport-12-bit-exact]] | 0.5, 32 | 12-bit-exact-spekulacja.md:87 | OK |
-| [[raport-12-bit-exact]] | 1.19, 368 | 12-bit-exact-spekulacja.md:156 | OK |
-| [[raport-12-bit-exact]] | 12 | 12-bit-exact-spekulacja.md:1 | OK |
-| [[raport-12-bit-exact]] | 2026 | 12-bit-exact-spekulacja.md:3 | OK |
-| [[raport-12-bit-exact]] | 36 | 12-bit-exact-spekulacja.md:106 | OK |
-| [[raport-12-bit-exact]] | 4c6d328b, 8cca9b70, c09ac6aab | 12-bit-exact-spekulacja.md:146 | OK |
-| [[raport-12-bit-exact]] | 6e261fdb4 | 12-bit-exact-spekulacja.md:182 | OK |
-| [[raport-12-bit-exact]] | 6f14e814, c4708318 | 12-bit-exact-spekulacja.md:8 | OK |
-| [[raport-12-bit-exact]] | 77240, 77240c9b3 | 12-bit-exact-spekulacja.md:163 | OK |
-| [[raport-12-bit-exact]] | 862 | 12-bit-exact-spekulacja.md:98 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 0.40 | 09-chmura-3090.md:165 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia-wyniki-2026-10-16]] | 0.82 | 09-chmura-3060.md:229 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia-wyniki-2026-10-16]] | 0.90 | 09-chmura-3090.md:183 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia-wyniki-2026-10-16]] | 0001 | 09-chmura-3090.md:40 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 0013 | 09-chmura-3090.md:199 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 1.05 | 09-chmura-5060ti.md:86 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 1.23, 2.00 | 09-chmura-3090.md:218 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 1.38, 1.84 | 09-chmura-5060ti.md:234 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 1.4 | 09-chmura-3090.md:108 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia-wyniki-2026-10-16]] | 1.41, 1.44 | 09-chmura-5060ti.md:252 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 1.46, 1.50 | 09-chmura-3090.md:233 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 144.47, 147.69, 207.86 | 09-chmura-5060ti.md:240 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 176.0 | 09-chmura-3090.md:58 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 180.2 | 09-chmura-3090.md:57 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 180.5 | 09-chmura-3090.md:224 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 19251 | 09-chmura-5060ti.md:35 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia-wyniki-2026-10-16]] | 1956 | 09-chmura-3090.md:137 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia-wyniki-2026-10-16]] | 2.0 | 09-chmura-3090.md:196 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia-wyniki-2026-10-16]] | 2026 | 09-chmura-3090.md:1 | OK (inny wiersz źródła, sprawdzone) |
-| [[nvidia-wyniki-2026-10-16]] | 22.1 | 09-chmura-3090.md:46 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 22.3 | 09-chmura-3060.md:102 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 23.4 | 09-chmura-3060.md:62 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 263.9 | 09-chmura-3090.md:61 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 27 | 09-chmura-3090.md:42 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 28.07, 37.32, 51.66 | 09-chmura-5060ti.md:222 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 3060 | 09-chmura-3060.md:113 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 3090 | 09-chmura-5060ti.md:89 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 3090 192 | ręcznie | OK: artefakt parsera („3090” i „19253” osobno w źródle) |
-| [[nvidia-wyniki-2026-10-16]] | 31, 78.0 | 09-chmura-3090.md:49 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 33.1, 35.5 | 09-chmura-3060.md:258 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 39.0, 63.3 | 09-chmura-3090.md:47 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 5060 | 09-chmura-5060ti.md:216 | OK |
-| [[nvidia-wyniki-2026-10-16]] | 795 | 09-chmura-3090.md:138 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 0.02 | 11-mtp-pl-pilot.md:88 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 0.1, 0.65, 0.9 | 11-mtp-pl-pilot.md:20 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 0.2, 1.7 | 11-mtp-pl-pilot.md:6 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 0.21 | 11-mtp-pl-pilot.md:87 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 0.39 | 11-mtp-pl-pilot.md:60 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 0.45, 3.281 | 11-mtp-pl-pilot.md:80 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 1.71, 3.235 | 11-mtp-pl-pilot.md:86 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 10, 11, 2026, 27 | 11-mtp-pl-pilot.md:1 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 2.14 | 11-mtp-pl-pilot.md:8 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 2.3 | 11-mtp-pl-pilot.md:5 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 2.65 | 11-mtp-pl-pilot.md:78 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 2.71 | 11-mtp-pl-pilot.md:111 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 21 | 11-mtp-pl-pilot.md:47 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 3.009, 3.812 | 11-mtp-pl-pilot.md:70 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 3.266 | 11-mtp-pl-pilot.md:38 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 3.960 | 11-mtp-pl-pilot.md:68 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 351 008 768 | 11-mtp-pl-pilot.md:28 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 7.65 | 11-mtp-pl-pilot.md:171 | OK |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 7f63dec8 | ręcznie | OK: skrót hasha 7f63dec872e319cb… (11-mtp-pl-pilot.md:129) |
+| [[testy/2026-10-16-mtp-pl-pilot]] | 96 | 11-mtp-pl-pilot.md:174 | OK |
+| [[testy/2026-10-16-bit-exact]] | 0.3, 1.3 | 12-bit-exact-spekulacja.md:91 | OK |
+| [[testy/2026-10-16-bit-exact]] | 0.5, 32 | 12-bit-exact-spekulacja.md:87 | OK |
+| [[testy/2026-10-16-bit-exact]] | 1.19, 368 | 12-bit-exact-spekulacja.md:156 | OK |
+| [[testy/2026-10-16-bit-exact]] | 12 | 12-bit-exact-spekulacja.md:1 | OK |
+| [[testy/2026-10-16-bit-exact]] | 2026 | 12-bit-exact-spekulacja.md:3 | OK |
+| [[testy/2026-10-16-bit-exact]] | 36 | 12-bit-exact-spekulacja.md:106 | OK |
+| [[testy/2026-10-16-bit-exact]] | 4c6d328b, 8cca9b70, c09ac6aab | 12-bit-exact-spekulacja.md:146 | OK |
+| [[testy/2026-10-16-bit-exact]] | 6e261fdb4 | 12-bit-exact-spekulacja.md:182 | OK |
+| [[testy/2026-10-16-bit-exact]] | 6f14e814, c4708318 | 12-bit-exact-spekulacja.md:8 | OK |
+| [[testy/2026-10-16-bit-exact]] | 77240, 77240c9b3 | 12-bit-exact-spekulacja.md:163 | OK |
+| [[testy/2026-10-16-bit-exact]] | 862 | 12-bit-exact-spekulacja.md:98 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 0.40 | 09-chmura-3090.md:165 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 0.82 | 09-chmura-3060.md:229 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 0.90 | 09-chmura-3090.md:183 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 0001 | 09-chmura-3090.md:40 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 0013 | 09-chmura-3090.md:199 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 1.05 | 09-chmura-5060ti.md:86 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 1.23, 2.00 | 09-chmura-3090.md:218 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 1.38, 1.84 | 09-chmura-5060ti.md:234 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 1.4 | 09-chmura-3090.md:108 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 1.41, 1.44 | 09-chmura-5060ti.md:252 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 1.46, 1.50 | 09-chmura-3090.md:233 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 144.47, 147.69, 207.86 | 09-chmura-5060ti.md:240 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 176.0 | 09-chmura-3090.md:58 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 180.2 | 09-chmura-3090.md:57 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 180.5 | 09-chmura-3090.md:224 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 19251 | 09-chmura-5060ti.md:35 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 1956 | 09-chmura-3090.md:137 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 2.0 | 09-chmura-3090.md:196 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 2026 | 09-chmura-3090.md:1 | OK (inny wiersz źródła, sprawdzone) |
+| [[testy/2026-10-16-kampania-nvidia]] | 22.1 | 09-chmura-3090.md:46 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 22.3 | 09-chmura-3060.md:102 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 23.4 | 09-chmura-3060.md:62 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 263.9 | 09-chmura-3090.md:61 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 27 | 09-chmura-3090.md:42 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 28.07, 37.32, 51.66 | 09-chmura-5060ti.md:222 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 3060 | 09-chmura-3060.md:113 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 3090 | 09-chmura-5060ti.md:89 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 3090 192 | ręcznie | OK: artefakt parsera („3090” i „19253” osobno w źródle) |
+| [[testy/2026-10-16-kampania-nvidia]] | 31, 78.0 | 09-chmura-3090.md:49 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 33.1, 35.5 | 09-chmura-3060.md:258 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 39.0, 63.3 | 09-chmura-3090.md:47 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 5060 | 09-chmura-5060ti.md:216 | OK |
+| [[testy/2026-10-16-kampania-nvidia]] | 795 | 09-chmura-3090.md:138 | OK (inny wiersz źródła, sprawdzone) |
 | [[rtx-3090]] | 0.23 | 05-chmura-gpu-do-testow.md:15 | OK |
 | [[rtx-3090]] | 0.32, 7900 | 05-chmura-gpu-do-testow.md:305 | OK |
 | [[rtx-3090]] | 0.90 | 09-chmura-3090.md:183 | OK |
@@ -2552,15 +2552,15 @@ Ta sama metoda dla 41 notatek nowych lub zmienionych (raporty 09 ×3, 11, 12; ka
 | [[batch-invariant]] | 6e261fdb4 | 12-bit-exact-spekulacja.md:182 | OK |
 | [[batch-invariant]] | 77240, 77240c9b3 | 12-bit-exact-spekulacja.md:163 | OK |
 | [[batch-invariant]] | c09ac6aab | git:4 | OK |
-| [[2026-10-16-budzety-chmury]] | 0.82 | 09-chmura-3060.md:229 | OK |
-| [[2026-10-16-budzety-chmury]] | 0.90 | 09-chmura-3090.md:183 | OK |
-| [[2026-10-16-budzety-chmury]] | 00, 01, 2026, 38, 52 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5283 | OK |
-| [[2026-10-16-budzety-chmury]] | 02, 31 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5287 | OK |
-| [[2026-10-16-budzety-chmury]] | 1.05 | 09-chmura-5060ti.md:191 | OK |
-| [[2026-10-16-budzety-chmury]] | 2.14 | 11-mtp-pl-pilot.md:8 | OK |
-| [[2026-10-16-budzety-chmury]] | 2.77 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:1996 | OK (inny wiersz źródła, sprawdzone) |
-| [[2026-10-16-budzety-chmury]] | 3060, 3090, 5060 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5286 | OK |
-| [[2026-10-16-budzety-chmury]] | 35 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5395 | OK |
+| [[karty/vast-ai]] | 0.82 | 09-chmura-3060.md:229 | OK |
+| [[karty/vast-ai]] | 0.90 | 09-chmura-3090.md:183 | OK |
+| [[karty/vast-ai]] | 00, 01, 2026, 38, 52 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5283 | OK |
+| [[karty/vast-ai]] | 02, 31 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5287 | OK |
+| [[karty/vast-ai]] | 1.05 | 09-chmura-5060ti.md:191 | OK |
+| [[karty/vast-ai]] | 2.14 | 11-mtp-pl-pilot.md:8 | OK |
+| [[karty/vast-ai]] | 2.77 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:1996 | OK (inny wiersz źródła, sprawdzone) |
+| [[karty/vast-ai]] | 3060, 3090, 5060 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5286 | OK |
+| [[karty/vast-ai]] | 35 | 2026-10-14T15-41-08-699Z_01a13b13-14db-71be-beb0-1fa2146a74f8.jsonl:5395 | OK |
 | [[vast-ai]] | 0.08, 3060 | 05-chmura-gpu-do-testow.md:14 | OK |
 | [[vast-ai]] | 0.097 | PLAN-TESTOW.md:99 | OK |
 | [[vast-ai]] | 0.165, 163 | 05-chmura-gpu-do-testow.md:104 | OK |
@@ -2686,7 +2686,7 @@ Automatyczna kontrola 44 notatek, których `zrodlo` zaczyna się od raportu 14/1
 Liczby w nowych i zmienionych notatkach przepisane ręcznie z wierszy podanych w `zrodlo` (raporty 12, 14 §13, 16c, 16d, 16h, 16i; `/tmp/bxv/summary.txt:71-103` dla prędkości bit-exact). Rozbieżność źródeł: Magnitude 9B copy 64k 175.8 t/s (16d, mediana) vs 174.8 (16i, suma żądań) – w notatkach obie z opisem; za kanoniczne przyjęto 16d (decyzja Main). Pominięte celowo (repo publiczne): adres IP hosta z 16c §8, ID instancji, kredyt Vast. Błędnych: 0.
 
 ## Aktualizacja: 16e i incydent nadpisania (2026-10-18)
-Liczby z 16e przepisane z wierszy w `zrodlo` (raport 16e i `quantkld-20261016/*/speed.md`, `kld-all/kld.md`); błędnych 0. **Uwaga:** `results/3060-20261016/build/times.jsonl` (źródło wiersza [[nvidia/cuda-stos]] wyżej) i `hw/*` zostały 2026-10-16 nadpisane danymi innej instancji – weryfikacja z audytu 2026-10-16 była przed nadpisaniem, dziś pliku nie da się użyć ponownie ([[lekcja-unikalny-katalog-wynikow]]).
+Liczby z 16e przepisane z wierszy w `zrodlo` (raport 16e i `quantkld-20261016/*/speed.md`, `kld-all/kld.md`); błędnych 0. **Uwaga:** `results/3060-20261016/build/times.jsonl` (źródło wiersza [[stos/cuda-stos]] wyżej) i `hw/*` zostały 2026-10-16 nadpisane danymi innej instancji – weryfikacja z audytu 2026-10-16 była przed nadpisaniem, dziś pliku nie da się użyć ponownie ([[lekcja-unikalny-katalog-wynikow]]).
 
 ## Aktualizacja: 16c §9, 16j, landing, chłodzenie (2026-10-18)
 Liczby przepisane z wierszy w `zrodlo` (16c:191-252, 16j:7-110, `app/REPORT.md:238-260`, `REDESIGN.md:154-169`, `scripts/qa/README.md`); juror r7 7/7/6 i „wrapper omp ukrył ostrzeżenia” tylko w sekcji „Do bazy wiedzy” LandingWow (transkrypt, wiersz 1224) – w REDESIGN.md brak wiersza r7. Temperatury przed/po restarcie z komunikatu Main; odczyt pod obciążeniem (3402 RPM, 71/78 °C) z sysfs przez WikiIngest. Źródła `/tmp/bxv/summary.txt` i `/tmp/bxd/*` utracone przy restarcie 2026-10-18 ~18:53 UTC, przed archiwizacją (nie ma ich w `tmp-archive-20261018`); kanoniczne źródło: raport 12 §13; liczby z nich sprawdzone 2026-10-16, przed utratą. Błędnych: 0.
@@ -2778,14 +2778,14 @@ Automat: tokeny liczbowe (≥ 2 znaki) z nowych notatek i z nowych akapitów w n
 | [[lekcja-obciazenie-cpu]] | 7 | cytowane wiersze + plik | OK |
 | [[lekcja-pm4-zawsze-jawnie]] | 5 | cytowane wiersze + plik | OK |
 | [[lekcja-wyrazna-wygrana-albo-nic]] | 17 | cytowane wiersze + plik | OK |
-| [[raport-21k-smokinggun]] | 7 | cytowane wiersze + plik | OK |
+| [[ekosystem/smokinggun]] | 7 | cytowane wiersze + plik | OK |
 | [[raport-21n-strata-gyro]] | 19 | cytowane wiersze + plik | OK |
 | [[raport-21o-gemma]] | 18 | cytowane wiersze + plik | OK |
 | [[raport-22-rsi-f]] | 8 | cytowane wiersze + plik | OK |
-| [[raport-23b2-bariery-lds]] | 11 | cytowane wiersze + plik | OK |
+| [[research/raport-23b-re-kernele-amd]] | 11 | cytowane wiersze + plik | OK |
 | [[raport-23d-re-runtime-amd]] | 7 | cytowane wiersze + plik | OK |
-| [[raport-23f-podrecznik-gpu]] | 9 | cytowane wiersze + plik | OK po weryfikacji ręcznej: 11.1 |
-| [[raport-24a-bariera-lds]] | 17 | cytowane wiersze + plik | OK |
+| [[metody/podrecznik-gpu]] | 9 | cytowane wiersze + plik | OK po weryfikacji ręcznej: 11.1 |
+| [[optymalizacje/bariera-lds-rdna3]] | 17 | cytowane wiersze + plik | OK |
 | [[raport-24b-draft-pelny-slownik]] | 11 | cytowane wiersze + plik | OK |
 | [[raport-24c-wiele-zapytan]] | 14 | cytowane wiersze + plik | OK |
 | [[raport-24d-lfm-lookup]] | 19 | cytowane wiersze + plik | OK |
@@ -2862,10 +2862,10 @@ Automat jak 2026-10-20: tokeny liczbowe (≥ 2 znaki) z nowych notatek, z sekcji
 | [[raport-31-4070ti]] | 19 | cytowane wiersze + plik | OK |
 | [[raport-31-5060ti]] | 22 | cytowane wiersze + plik | OK |
 | [[raport-32a-maya-strata-gyro]] | 15 | cytowane wiersze + plik | OK |
-| [[raport-32b-deepinfer]] | 8 | cytowane wiersze + plik | OK |
+| [[ekosystem/deepinfer]] | 8 | cytowane wiersze + plik | OK |
 | [[raport-32c-sage-exl3]] | 13 | cytowane wiersze + plik | OK |
 | [[raport-32d-localmaxxing]] | 15 | cytowane wiersze + plik | OK |
-| [[raport-32e-safe-special]] | 3 | cytowane wiersze + plik | OK |
+| [[stos/bezpieczenstwo-tokenow-specjalnych]] | 3 | cytowane wiersze + plik | OK |
 | [[raport-32f-ninfer-tqllm]] | 13 | cytowane wiersze + plik | OK |
 | [[raport-33-modele-na-karty]] | 21 | cytowane wiersze + plik | OK |
 | [[raport-34-zrodla-benchmarkow]] | 16 | cytowane wiersze + plik | OK (identyfikatory: 2333) |
@@ -2878,13 +2878,13 @@ Automat jak 2026-10-20: tokeny liczbowe (≥ 2 znaki) z nowych notatek, z sekcji
 | [[raport-39c-deepseek-deploy]] | 9 | cytowane wiersze + plik | OK (identyfikatory: 42) |
 | [[raport-39d-rea-prompts]] | 1 | cytowane wiersze + plik | OK |
 | [[raport-39e-torchtpu]] | 5 | cytowane wiersze + plik | OK |
-| [[raport-39f-nvidia-flare]] | 6 | cytowane wiersze + plik | OK |
+| [[ekosystem/nvidia-flare]] | 6 | cytowane wiersze + plik | OK |
 | [[raport-40-akceptacja-prozy]] | 19 | cytowane wiersze + plik | OK |
 | [[raport-41-re-kerneli]] | 7 | cytowane wiersze + plik | OK |
 | [[raport-42-safe-io]] | 7 | cytowane wiersze + plik | OK |
 | [[raport-43-integracja]] | 18 | cytowane wiersze + plik | OK |
 | [[raport-44-spec-route]] | 7 | cytowane wiersze + plik | OK (identyfikatory: 2504) |
-| [[raport-45-opoznienia]] | 11 | cytowane wiersze + plik | OK |
+| [[optymalizacje/opoznienia-ttft]] | 11 | cytowane wiersze + plik | OK |
 | [[raport-46-mmvq-big]] | 9 | cytowane wiersze + plik | OK |
 | [[raport-47-kernel-lab]] | 14 | cytowane wiersze + plik | OK |
 | [[raport-48-norma-gdn-bank]] | 6 | cytowane wiersze + plik | OK |
@@ -2894,7 +2894,7 @@ Automat jak 2026-10-20: tokeny liczbowe (≥ 2 znaki) z nowych notatek, z sekcji
 | [[raport-50c-mmvq-q6k]] | 4 | cytowane wiersze + plik | OK |
 | [[raport-50d-mmvq-iq4xs]] | 9 | cytowane wiersze + plik | OK |
 | [[raport-51-male-kernele]] | 9 | cytowane wiersze + plik | OK |
-| [[raport-52-eagle4]] | 7 | cytowane wiersze + plik | OK |
+| [[ekosystem/eagle-4]] | 7 | cytowane wiersze + plik | OK |
 | [[raport-53-draft-shortlist]] | 10 | cytowane wiersze + plik | OK |
 | [[raport-54-mniej-granic]] | 12 | cytowane wiersze + plik | OK |
 | [[raport-plan-nv-v2]] | 20 | cytowane wiersze + plik | OK |
@@ -3030,7 +3030,7 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 ## Ingest 2026-11-07 (kampania 67 NVIDIA na Vast)
 
 - `product/research/67-nvidia-vast-kampania.md` — wyniki 17 kart: 262 144 z MTP na 4090 (79,1 t/s, +67,6%) i 5090 (86,9, +44,7%), MoE 35B-A3B 319,5 (+30,6%), 16 GB OOM przy MTP, b11856→b12110 ±1% (3070 −8%), `p-min` szkodzi; $3,47.
-- Notatki: [[2026-11-07-kampania-nvidia-vast]], [[raport-67-kampania-nvidia]]; wiersze w [[REKORDY]].
+- Notatki: [[2026-11-07-kampania-nvidia-vast]], [[testy/2026-11-07-kampania-nvidia-vast]]; wiersze w [[REKORDY]].
 - Enigma: `memory.ts` (upstream MTP, KV draftu f16, stan × (n+1)), `optimize.ts` (MTP n=3, `--spec-draft-n-ubatch 64`, batch 256), `catalog/index.ts` (odstęp nvidia-smi→CUDA per karta, 300 MiB na doładowanie kerneli, zmierzone plany 262 144).
 - Wersjonowane narzędzia kampanii: `qwen-opt/cloud/nv67/` (bez stanu, kluczy i adresów).
 
@@ -3041,7 +3041,7 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 | [[final-recipes-nvidia]] | ~60 | `~/qwen-opt/cloud/results/nv67c-summary.txt` (res-*v, *w, *l, *fll, *x, *lfm, *m); repo HF i licencje z `app/engine/data/catalog.json`; flagi forka z `data/engines.json` | OK; pozycje `[w toku]` czekały na wyniki kampanii |
 | [[2026-11-07-kampania-nvidia-vast]] (sekcja 67c) | 22 | `nv67c-summary.txt` | OK |
 | [[REKORDY]] (tabela 67c) | 40 | `nv67c-summary.txt` | OK; 5090 102,19 zastępuje 86,9 (inny host: 575 vs 450 W, pin vs b12110) |
-| [[backlog-testow-nvidia]] (kolumna stanu) | 34 | `nv67c-summary.txt` (res-4090g/k, res-5080g/k, res-5090ab, res-*l, res-*b) | OK |
+| [[KOLEJKA-TESTOW]] (kolumna stanu) | 34 | `nv67c-summary.txt` (res-4090g/k, res-5080g/k, res-5090ab, res-*l, res-*b) | OK |
 | [[rtx-3060]], [[rtx-3090]], [[rtx-4060-ti]], [[rtx-5060-ti]], [[inne-karty-nvidia]] | 9, 7, 6, 6, 20 | `nv67c-summary.txt`; limity mocy z nagłówków hostów | OK |
 
 ## Ingest 2026-11-07 (synteza NVIDIA na stronę)

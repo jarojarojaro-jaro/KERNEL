@@ -256,7 +256,7 @@ Odczyt pod obciążeniem (15:31): edge 49, hotspot 66, mem 72, VR 48–52 °C; g
 ## 6. Interakcja z replayem PM4
 
 - Zegarami steruje SMU/PMFW (osobny mikrokontroler MP1). Taśmy PM4 wykonuje CP/MES. Commit OD to jeden komunikat do SMU ([smu_cmn.c](https://github.com/torvalds/linux/blob/v6.8/drivers/gpu/drm/amd/pm/swsmu/smu_cmn.c#L860-L900)), bez GFXOFF i bez resetu (§3.2). Zmiany częstotliwości w trakcie taśmy i tak zachodzą bez przerwy: na żywo sclk skacze 18 → 2406 MHz w 1 s (§1.7, próbka 15:31:15–16).
-- Niższy zegar wydłuża taśmę proporcjonalnie. Krok dekodowania trwa ~28–30 ms ([pm4-replay](../../wiki/kernele/pm4-replay.md)), a limit czasu taśmy to 10 s ([lekcja-timeout-tasmy-to-skutek](../../wiki/lekcje/lekcja-timeout-tasmy-to-skutek.md)). Nawet przy 1200 MHz (×2) zostaje ponad 100× zapasu.
+- Niższy zegar wydłuża taśmę proporcjonalnie. Krok dekodowania trwa ~28–30 ms ([pm4-replay](../../wiki/optymalizacje/pm4-replay.md)), a limit czasu taśmy to 10 s ([lekcja-timeout-tasmy-to-skutek](../../wiki/lekcje/lekcja-timeout-tasmy-to-skutek.md)). Nawet przy 1200 MHz (×2) zostaje ponad 100× zapasu.
 - Hipotezy awarii PM4 z raportu 17 (wywłaszczenie kolejki, PRIV, ewikcja SVM) nie mają związku z DPM. Termikę jako przyczynę wykluczono już wtedy ([17-gpu-page-fault.md:127](17-gpu-page-fault.md)).
 - Jedyne realne ryzyko PM4 przy tym teście to **sposób zatrzymywania serwera** (jeden SIGTERM przy bezczynności, `sweep.sh:18-24` robi to dobrze) i **zabicie przez guard** (§5). Nie samo DPM.
 

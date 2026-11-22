@@ -15,4 +15,4 @@ Qwen UD-Q4_K_XL plain: pod≈Çoga 16.48 / 1.792 = 9.20 ms; narzut z 3090 5.28 ms ‚
 - [[research/_hub|research]]
 - [[karty-nvidia-parametry]]
 - [[pdl-mmvq-trigger]]
-- [[nvidia-wyniki-2026-10-16]]
+- [[testy/2026-10-16-kampania-nvidia]]

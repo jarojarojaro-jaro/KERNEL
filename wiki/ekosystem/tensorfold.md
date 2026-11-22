@@ -1,0 +1,40 @@
+---
+typ: ekosystem
+tags: [ekosystem, spekulacja, dflash, metal]
+aktualizacja: 2026-11-09
+zrodlo: ~/KERNEL/qwen-opt/research/tensorfold/README.md:1-25; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:41; ~/KERNEL/product/research/15c-nowe-silniki.md:34-37,93-102,210-221; ~/KERNEL/product/research/21g-nowe-silniki.md:90-157,284-289; ~/KERNEL/product/research/21g-notatki/tf-delta.md; ~/KERNEL/product/research/63a-silniki-lokalne.md:409-445; ~/KERNEL/product/research/69b-tensorfold-qwen-warp.md:10,40-57
+status: aktualne
+---
+# TensorFold (ashhart/TensorFold)
+
+**Serwer Zig z kontraktem dokładności („drafted == plain”) dla 7 rodzin modeli (HEAD `0efbd447`, 2026-10-12, v1.0.8; aktualizacja do v1.0.11 2026-10-14).**
+
+Repo: 1560 commitów na `main`, 32 tagi w 18 dni, 552 PR-y, 235 issues. Rdzeń „lanes”: jeden forward weryfikuje drafty MTP, drzewa DFlash2 i kopie n-gram. Najważniejsze lekcje: weryfikacja na WMMA, gdzie dodatkowe wiersze są prawie darmowe (R9700: 12 → 16 wierszy +1.2 ms; u nas kolumna ok. 1.4 ms), drzewa draftów nad GDN, rollback GDN przez „lagged state” (zob. conv-lag), głębokość draftu wyceniana kosztem mierzonym przy starcie (+6–7%). Na 27B są wolniejsi od nas: HIP na W7800 25.8–27.2 tok/s plain (#490), R9700 z DFlash2 95.7 chat / 126 code tok/s przy T=1 (#100). Aktualizacja v1.0.11: LFM2.5 na Metal z n-gramem, „wszystkie loady przed sumami”, bramka KL przepuściła 2 celowe błędy (stąd nasze kanarki KLD).
+
+## v1.0.12 (raport 15c, 2026-10-16)
+- LFM2.5-24B-A2B tylko na Metal: M5 Ultra 261.5 t/s plain (30% pasma) i 299.5 na kodzie z n-gramem; nasz XTX 293.7 t/s na cięższym Q5_K_M (54%). Koszt okna weryfikacji LFM: 1.24–1.68× dla k = 2–4 (#868).
+- Nowe techniki: „twins” (GEMV 1/2–7/8–32 wiersze z tą samą kolejnością fma co kafle prompt, sprawdzane bitowo przy ładowaniu), dokładny dekod 4-bit „half pair” 0x6400 (pre-scaling gubił subnormale: x = 2^-126 daje 0x0080 → 0x0000), Recall (trwały n-gram wyceniany wobec MTP; powtórki 2.4× na 27B), TP przez hosty z podziałem samych ekspertów (TP=2 == TP=1 bitowo).
+- Super VL na 2×GB10: MTP 38.2 → 46.8 t/s (recipe:86-91).
+- HIP to preview i nadal słaby: 2×W7800 TP2 39.0 t/s plain na 27B (#655) wobec naszego 1×XTX 43.2.
+
+## v1.1.0 i aplikacja Beta 7/8 (raport 21g, 2026-10-19)
+- HIP +12/−9 bez zmian funkcjonalnych w 901 commitach; `--drafter` na HIP ignorowany (#1001), tablica odrzuca ROCm – AMD dalej nasze.
+- CUDA: Qwen3.8-27B + DFlash2; RTX 5090 chat T0 263.0 / code T0 366.8 t/s (≈ 141 / 196 na pasmo XTX `[INFERENCE]`, nasze 103–130) – przed ogłoszeniem przewagi na NVIDIA A/B na 3090.
+- Tablica: 45 przebiegów, 0 AMD, 0 „serial baseline”, 1 angielski prompt na klasę; „874 t/s” = wydanie 1.0.6.
+- Aplikacja (Mac): profile per model, „Serial baseline”, porównanie dwóch modeli, polski maszynowy ([[raport-21g-nowe-silniki]]).
+
+## v1.1.1–v1.2.2 (raport 63a, 2026-11-05, HEAD `cde4fe7`)
+- HIP ruszył, ale pod gfx1151/gfx1201: dekod atencji „cztery klucze na warp” +7.5–18.9% na gfx1151 przy 32/64K (#1932); gfx1100 nieuruchamiany, `--drafter` na HIP dalej odmawiany. Watch: `zig/kernels/hip/decode/plan.hip`.
+- Konkurs cuda.fast / mlx.fast Qwen3.8-27B: prompt to kopiowanie tekstu; najlepsze 2.759 (CUDA) / 1.810 (MLX); techniki już mamy ([[raport-63-synteza]]).
+
+## v1.2.3–v1.2.5 (raport 69b, 2026-11-09, HEAD `abc39af1`)
+- gfx1100 dalej nieuruchamiany („as we have no AMD GPU”, #1694); HIP rośnie na gfx1151/gfx1201 (27B przy 16 strumieniach 51 → 75 t/s na gfx1151). DFlash2 na HIP ładowany (#2477), ale serwer go nie używa.
+- Brak nowych liczb 27B na 3090/4090/5090. `TF_QWEN_REQUEST_STARTS=1` (GB10): tury 2–6 0.72–1.33 s zamiast 1.78–2.10 s, ale odpowiedź może się różnić (nie bezstratne).
+- Spine w stylu DSpine w ich treningu: ±0.002 kontroli – słaby sygnał przeciw [[drafter-dspine]]. Werdykt: nic do adopcji ([[raport-69-synteza]]).
+
+## Powiązane
+- [[strata]]
+- [[hipfire]]
+- [[conv-lag]]
+- [[bramka-kld-kanarki]]
+- [[raport-15c-nowe-silniki]]

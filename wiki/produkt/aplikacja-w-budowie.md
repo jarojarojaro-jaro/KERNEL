@@ -26,4 +26,4 @@ Dokumenty: [REPORT.md](../../app/REPORT.md), [DESIGN.md](../../app/design/DESIGN
 - [[app-prototyp-desktop]]
 - [[otwarte-decyzje-produktu]]
 - [[produkt-landing-i-onboarding]]
-- [[nvidia-wyniki-2026-10-16]]
+- [[testy/2026-10-16-kampania-nvidia]]

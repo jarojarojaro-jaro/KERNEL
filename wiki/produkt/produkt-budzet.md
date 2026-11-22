@@ -18,5 +18,5 @@ Faktyczne wydatki chmurowe trzymamy w limitach decyzji (np. $5 Vast, $6 RunPod).
 - [[produkt/_hub|produkt]]
 - [[produkt-roadmapa]]
 - [[produkt-platformy-i-lab]]
-- [[2026-10-16-budzety-chmury]]
+- [[karty/vast-ai]]
 - [[raport-05-chmura]]

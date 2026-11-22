@@ -12,7 +12,7 @@ status: aktualne
 - Odczyt O_DIRECT (obciążona maszyna): 1.05 GB/s (16 MiB), 1.60 GB/s (1 MiB), 1.11 GB/s (4 strumienie) – ~30–45% specyfikacji 3.5 GB/s; restore E5 (0.95 GB/s) już jest blisko limitu dysku.
 - Bieżący zapis ~4.0 GB/h, ~95 GB/dzień przy pracy deweloperskiej (`/sys/block/nvme0n1/stat`: 27.05 GB w 6.81 h).
 - TBW nieopublikowane; proxy 300 TBW / 5 lat (detaliczne 500 GB) → 1.875 TB to 0.6%. Progi temperatury 83/85 °C. TRIM cotygodniowy (`fstrim.timer`), zajętość / 55%.
-- Skutki: 46 niebezpiecznych wyłączeń wymusza atomowy zapis plików stanu ([[lekcja-restore-stanu-exactness]]); budżet zapisu cache KV w [[kv-na-dysku-polityka]].
+- Skutki: 46 niebezpiecznych wyłączeń wymusza atomowy zapis plików stanu ([[lekcja-restore-stanu-exactness]]); budżet zapisu cache KV w [[decyzje/2026-10-19-kv-tylko-w-ram]].
 
 **Decyzja użytkownika 2026-10-19:** KV/sesje tylko w RAM, bez SSD – [[2026-10-19-kv-tylko-w-ram]].
 

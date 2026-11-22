@@ -13,6 +13,6 @@ Strażnik co 180 s czyta obciążenie GPU wszystkich naszych instancji Vast i po
 
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
-- [[decyzje/2026-10-16-budzety-chmury|budżety chmury]]
+- [[karty/vast-ai|budżety chmury]]
 - [[lekcje/lekcja-5060ti-bezczynna|lekcja: bezczynna 5060 Ti]]
 - [[narzedzia/skrypty-chmury|skrypty chmury]]

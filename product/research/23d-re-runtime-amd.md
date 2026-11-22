@@ -45,7 +45,7 @@ Dla porównania, wewnętrzny dispatch samego firmware (`41164-41212`) ustawia PR
 | taśma PM4 | jeden pakiet vendor, potem w IB `SET_SH_REG`, `DISPATCH_DIRECT`, partial flush i acquire | **0.46–0.86 µs/granicę** |
 | ewikcja kolejek | KFD REMOVE_QUEUE/ADD_QUEUE przez MES, restore po 1 ms (SVM/userptr) albo 100 ms (TTM) (17 §9.2) | zatrzymuje wszystkie kolejki procesu |
 
-Pomiary: `wiki/metody/mikrobench-granicy-kernela.md`, `wiki/rocm/hip-graph-narzut.md`.
+Pomiary: `wiki/testy/mikrobench-granicy-kernela.md`, `wiki/stos/hip-graph-narzut.md`.
 
 ## 3. Wywłaszczenie (to, czego nie ma w 17)
 

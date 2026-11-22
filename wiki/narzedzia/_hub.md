@@ -9,12 +9,12 @@ status: aktualne
 
 **Nasze skrypty i narzędzia: do czego służą, jak je uruchomić, gdzie lądują wyniki.**
 
-Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-opt/` na serwerze. Harness chmurowy: [[chmura/_hub|Chmura]].
+Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-opt/` na serwerze. Harness chmurowy: [[karty/_hub|Chmura]].
 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (31)
+## Notatki (33)
 
 - [[co-stats|`co_stats.py`: statyczny audyt kerneli (VGPR, spille, fale)]] — `21l-skrypty/co_stats.py OUT.csv <lib.so|*.co|*.hsaco>` czyta wszystkie kernele z bundli HIP (także skompresowanych CCOB) i zapisuje per kernel VGPR, SGPR, spille, LDS i fale/SIMD; reguła fal gfx1100 = min(16, ⌊1536 / ⌈VGPR⌉₂₄⌋), zgodna z kompilatorem i RGA (raport 21l, 2026-10-19).
 - [[hip-fatbin-extract|`tools/re/hip_fatbin_extract.py`: code objects z `.hip_fatbin`]] — Skrypt w czystym Pythonie (CPU) wyciąga z sekcji `.hip_fatbin` biblioteki HIP nieskompresowane bundle `__CLANG_OFFLOAD_BUNDLE__` (jeden na jednostkę kompilacji) i zapisuje każdy wpis `hipv4-amdgcn-*` jako `<outdir>/<idx>.<target>.co`; `--filter SUBSTR` zostawia tylko obiekty zawierające nazwę kernela (raport 23a, 2026-10-19).
@@ -35,6 +35,8 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[loo-py|loo.py (leave-one-out łatek)]] — Narzędzie leave-one-out serii `amd-opt`: plan (CPU, git), runner GPU, buildy z revertami i raport ze sparowanym 95% CI.
 - [[pm4-soak|pm4_soak.py (test wytrzymałościowy serwera)]] — Soak test działającego llama-server: wiele zapytań czatu o mieszanej długości, powtarzane zapytania greedy muszą się zgadzać, follow-upy ćwiczą cache promptu; kod wyjścia 1 przy błędzie lub rozjeździe.
 - [[landing-qa|QA landingu: `app/landing/scripts/qa/`]] — Cztery skrypty puppeteer-core po CDP (Chrome bez GPU, `.tools/chrome-swgl`, port 18499): hydracja, hero pod obciążeniem, axe i zrzuty ekranu.
+- [[raport-25-buildfarm|Raport 25: zdalny serwer buildów (Vast) i `rbuild`]] — `~/qwen-opt/tools/rbuild <worktree>` buduje na zdalnym 24 vCPU: pełny build topki 232–271 s, przyrostowo 9–12 s, wynik bitowo identyczny z lokalnym (109/109 plików `bin/`); kolejka 26 potwierdziła binarki (MUL_MAT 822/822, FA 567/567, md5 bez zmian) (2026-10-19).
+- [[raport-47-kernel-lab|Raport 47: kernel lab (klab)]] — Narzędzie `klab` (profile/trace/isa/bench/sweep/gate); profil topki 31.24 ms/krok, 4.92 tok/krok, strata vs roofline 7.00 ms/krok (2026-10-21).
 - [[reactor-monitor|REACTOR (monitor terminalowy)]] — Pełnoekranowy monitor GPU/CPU/LLM w terminalu dla serwera z RX 7900 XTX, w czystym Pythonie 3.12 (tylko stdlib) z 24-bitowymi kolorami ANSI.
 - [[run-llm-sh|run-llm.sh — start produkcyjnego serwera]] — Jeden skrypt, który uruchamia zoptymalizowany llama-server na RX 7900 XTX z naszymi ustawieniami dla każdego modelu.
 - [[samp-ab|samp_ab.py (A/B samplera)]] — Skrypt A/B szybkich ścieżek samplera: wysyła do działającego llama-server zapytania w stylu web UI i omp, wypisuje t/s dekodu i md5 wyjścia z ustalonym seedem.

@@ -122,7 +122,7 @@ Fork = `cuda-topka2` 2a261101b + kvq 007a6f813, MTP n4, KV draftu q4_0, słownik
 - **Opublikowane 2026-11-07:** wydanie GitHub `enigma-engines-cuda-2026-11-07` (repo KERNEL), `engines.json` → `distribution:"download"`; planner domyślnie wybiera silniki Enigmy (Linux x64). Fork dostał `RUNPATH=$ORIGIN` przed publikacją (nowe sha256). Szczegóły: `app/engine/CONTRACT.md`, „Silniki Enigma CUDA — opublikowane”.
 
 ## Powiązane
-- Materiał na stronę: [`product/SITE-NVIDIA.md`](../SITE-NVIDIA.md); jak to osiągnęliśmy: `wiki/metody/jak-przyspieszylismy-nvidia.md`
+- Materiał na stronę: [`product/SITE-NVIDIA.md`](../SITE-NVIDIA.md); jak to osiągnęliśmy: `wiki/optymalizacje/jak-przyspieszylismy-nvidia.md`
 - [[raport-67b-wybor-modeli-nvidia]]
 - [[raport-67c-nvidia-backlog-testow]]
 - [[raport-27-3090-final]], [[raport-56-orca-3090]], [[raport-29-4060ti]]

@@ -42,14 +42,14 @@ Każdy wiersz: temat → nasza najlepsza notatka → nasza liczba z `plik:linia`
 | temat | nasze notatki | liczba / fakt | status |
 |---|---|---|---|
 | autoregresja (decode bez spekulacji) | [[stan-2026-10-15]], [[podrecznik-gpu]] | tg128 bez spekulacji 43,2 t/s, z MTP 109,0 (`modele/qwen3-8-27b.md:20`). | mamy, zmierzone u nas |
-| szablony czatu | [[opoznienia-ttft]], [[raport-45-opoznienia]] | Natywny ChatML: 108,6 → 8,8 ms (`research/raport-45-opoznienia.md:10`). Jinja: 9–11 ms → ~1 ms (`produkt/opoznienia-ttft.md:13`). | mamy, zmierzone u nas |
+| szablony czatu | [[opoznienia-ttft]], [[optymalizacje/opoznienia-ttft]] | Natywny ChatML: 108,6 → 8,8 ms (`research/raport-45-opoznienia.md:10`). Jinja: 9–11 ms → ~1 ms (`produkt/opoznienia-ttft.md:13`). | mamy, zmierzone u nas |
 | okno kontekstu | [[2026-11-06-ctx-262k-fit]], [[raport-65-vram-rezerwa-mtp]] | Natywne 262 144: prompt 254 977 tok. bez OOM (`eksperymenty/2026-11-06-ctx-262k-fit.md:10`). | mamy, zmierzone u nas |
 | prefill vs decode | [[2026-10-19-workload-omp]], [[lekcja-agent-prefill-nie-decode]] | Tokeny prefill : decode = 4,9 : 1. Czas modelu: prefill 34,4%, decode 56,6% (`eksperymenty/2026-10-19-workload-omp.md:10`). | mamy, zmierzone u nas |
 | KV cache | [[kwanty-gguf]], [[raport-65-vram-rezerwa-mtp]] | KV q4_0 ~19,1 KiB/token, więc 1 GiB to +57k tokenów (`research/raport-65-vram-rezerwa-mtp.md:10`). | mamy, zmierzone u nas |
 | próbkowanie | [[sampler-fast-path]], [[lekcja-wolna-sciezka-samplera]] | Bez wolnych ścieżek samplera: LFM ~255 → ~293 t/s (`eksperymenty/2026-10-15-sampler.md:10`). | mamy, zmierzone u nas |
 | temperatura | [[2026-10-10-sweep-mtp-dflash]], [[lekcja-szum-t-s-przy-t1]] | MTP n=5: T=1 80,5 / T=0,7 79,5 / T=0 81,9 t/s (`eksperymenty/2026-10-10-sweep-mtp-dflash.md:15`). | mamy, zmierzone u nas |
 | top-k / top-p | [[gumbel-max]], [[samp-ab]] | Przy top_k 40, top_p 0,95, min_p 0,05 szybka i wolna ścieżka dają ten sam md5 (`narzedzia/samp-ab.md:12`). | mamy, zmierzone u nas |
-| tokeny stopu / specjalne | [[bezpieczenstwo-tokenow-specjalnych]], [[raport-32e-safe-special]] | `<\|im_end\|>` w treści użytkownika stawał się tokenem sterującym; naprawa to SAFE_SPECIAL (`research/raport-32e-safe-special.md:10`). Dosłowne `</think>` ucinało `reasoning_content` (`research/raport-39c-deepseek-deploy.md:12`). | mamy, zmierzone u nas |
+| tokeny stopu / specjalne | [[bezpieczenstwo-tokenow-specjalnych]], [[stos/bezpieczenstwo-tokenow-specjalnych]] | `<\|im_end\|>` w treści użytkownika stawał się tokenem sterującym; naprawa to SAFE_SPECIAL (`research/raport-32e-safe-special.md:10`). Dosłowne `</think>` ucinało `reasoning_content` (`research/raport-39c-deepseek-deploy.md:12`). | mamy, zmierzone u nas |
 | modele rozumujące | [[lekcja-proza-e0-vs-myslenie]], [[astra-stop]] | Ten sam prompt: 102,1 t/s z myśleniem vs 73,1 bez (`lekcje/lekcja-proza-e0-vs-myslenie.md:10`). Astra-Stop skraca myślenie o −35,5% (`modele/astra-stop.md:10`). | mamy, zmierzone u nas |
 | streaming | [[strumien-on-wyrocznia]], [[2026-11-08-l1-tokenizacja-parser]] | Parser O(n²) w wątku HTTP: 0,07 → 0,52 ms/token przy 1k → 12,8k (`metody/strumien-on-wyrocznia.md:10`). | mamy, zmierzone u nas |
 
@@ -147,7 +147,7 @@ Każdy wiersz: temat → nasza najlepsza notatka → nasza liczba z `plik:linia`
 | cache prefiksów | [[2026-10-18-cache-promptu-agenta]], [[lekcja-cache-ram-za-maly]] | Start sesji: 8019 → 1612 ms (`eksperymenty/2026-10-18-cache-promptu-agenta.md:10`). 74% prefillu to ponowne czytanie (`lekcje/lekcja-cache-ram-za-maly.md:10`). | mamy, zmierzone u nas |
 | prompty przyjazne dla cache | [[wspolny-poczatek-promptu]], [[akv-cache-agentow]] | Tylko cudze liczby (Maya: 19×) (`metody/wspolny-poczatek-promptu.md:10`). | mamy, opis |
 | prompt caching (zapis/odczyt slotu) | [[cache-sesji-na-dysku]], [[2026-11-08-cachesave-30137]] | Sesja 53k: restore 2,51 s zamiast ~61,5 s prefillu (`produkt/cache-sesji-na-dysku.md:10`). | mamy, zmierzone u nas |
-| offloading KV | [[kv-na-dysku-polityka]], [[2026-10-19-kv-tylko-w-ram]], [[sglang-hicache]] | Przywracanie z `--cache-ram`: ~2,1 GB/s (`metody/ksztalt-ruchu-agentowego.md:12`). Decyzja: KV tylko w RAM. | mamy, zmierzone u nas |
+| offloading KV | [[decyzje/2026-10-19-kv-tylko-w-ram]], [[2026-10-19-kv-tylko-w-ram]], [[sglang-hicache]] | Przywracanie z `--cache-ram`: ~2,1 GB/s (`metody/ksztalt-ruchu-agentowego.md:12`). Decyzja: KV tylko w RAM. | mamy, zmierzone u nas |
 | routing świadomy cache | [[ksztalt-ruchu-agentowego]], [[sglang-hicache]] | Polityki radix/lane/cram badaliśmy tylko w symulacji (`metody/ksztalt-ruchu-agentowego.md:12`). | mamy, opis |
 | długi kontekst | [[2026-11-06-sesja-uzytkownika-final-mode]], [[2026-11-08-kvq-once-profil]] | 120,8 t/s do 139k; przy 128–160k spada do 95,8 (`eksperymenty/2026-11-06-sesja-uzytkownika-final-mode.md:10`). | mamy, zmierzone u nas |
 
@@ -160,7 +160,7 @@ Każdy wiersz: temat → nasza najlepsza notatka → nasza liczba z `plik:linia`
 | akceptacja | [[raport-40-akceptacja-prozy]], [[glowica-mtp]] | Warunkowa akceptacja na kolejnych pozycjach: 0,655/0,503/0,407/0,382 (`research/raport-40-akceptacja-prozy.md:10`). | mamy, zmierzone u nas |
 | n-gram (lookup) | [[2026-10-18-lookup-ogon]], [[suffixdecoding]] | `mvs`: 166,2 → 400,9 t/s (×2,41) (`eksperymenty/2026-10-18-lookup-ogon.md:10`). | mamy, zmierzone u nas |
 | Medusa | [[glowica-mtp]] | Jedna linia: dla Qwen3.8-27B nie ma Medusy (`modele/glowica-mtp.md:24`). | luka |
-| EAGLE | [[eagle-4]], [[raport-52-eagle4]] | Tylko szacunek: proza PL +3…6% `[INFERENCE]` (`research/raport-52-eagle4.md:10`). | mamy, opis |
+| EAGLE | [[eagle-4]], [[ekosystem/eagle-4]] | Tylko szacunek: proza PL +3…6% `[INFERENCE]` (`research/raport-52-eagle4.md:10`). | mamy, opis |
 | spekulacja vs rozmiar batcha | [[lekcja-akceptacja-h100-nie-przenosi-sie]], [[mtplx]] | V16/V1 = 1,34 przy 2k, 1,61 przy 64k (`lekcje/lekcja-akceptacja-h100-nie-przenosi-sie.md:10`). `-np 4` z MTP w ogóle nie startuje (`research/raport-56-orca-3090.md:94`). | mamy, zmierzone u nas (bez wielu strumieni) |
 
 ## 13. Kwantyzacja

@@ -15,14 +15,14 @@ Projekcja XTX d=2048 (§3): MTP4 27.74 ms, 177 t/s; + ogon do 8 wierszy 30.22 ms
 
 Plan GPU (§8): E-X0 krzywa V(w, d) na XTX; E-X1 akceptacja ogona per głębokość (shadow); E-X2 ogon W8/W16 (kill < +20% mvs); E-X3 kontroler (`LLAMA_SPEC_LOOKUP=3`); E-X4 sprzężone próbkowanie (kill < +2%); E-X5 Magnitude Vulkan na XTX; E-C1 krzywa szerokości na 3090; E-C2 head-to-head na 3090 (cel code-edit ≥ 150 t/s). Stan: [[2026-10-16-badamy-magnitude]].
 
-E-X5 zamknięte 2026-10-18: [[raport-16j-magnitude-vulkan-xtx]] – Magnitude na XTX ~2× wolniejszy.
+E-X5 zamknięte 2026-10-18: [[testy/2026-10-18-magnitude-vulkan-xtx]] – Magnitude na XTX ~2× wolniejszy.
 
-E-X4: [[raport-16k-sprzezone-probkowanie]] – nierozstrzygnięte (+0…+3.6%), A/B przerwane resetami GPU.
+E-X4: [[testy/2026-10-18-sprzezone-probkowanie-mtp]] – nierozstrzygnięte (+0…+3.6%), A/B przerwane resetami GPU.
 
-E-X0–E-X3: [[raport-16b-lookup-tail]] – ogon W16 ×2.26–×2.41 na mvs, kontroler bez zysku.
+E-X0–E-X3: [[testy/2026-10-18-lookup-ogon]] – ogon W16 ×2.26–×2.41 na mvs, kontroler bez zysku.
 
 ## Powiązane
 - [[research/_hub|research]]
-- [[raport-16d-magnitude-vs-nasz]]
+- [[testy/2026-10-16-magnitude-vs-fork]]
 - [[raport-15b-spekulacja-frontier]]
 - [[2026-10-16-magnitude-rozklad-wygranej]]

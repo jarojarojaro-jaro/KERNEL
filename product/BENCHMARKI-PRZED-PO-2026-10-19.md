@@ -22,7 +22,7 @@ Produkcja (`amd-opt` @ f61994f58) ma domyślnie włączony replay PM4. Raport 17
 
 | metryka | upstream domyślny (A0, `-m`) | upstream, najlepsze flagi | wcześniejszy stan / nasz fork | **produkcja amd-opt** | porównywalność |
 |---|---|---|---|---|---|
-| decode z MTP (spec_sweep T=1) | **nie zmierzone** (Ollama na XTX też nie, `wiki/ludzie-firmy/ollama.md:12`) | **nie zmierzone** tym skryptem | fork ROCm 2026-10-12: 74.5 t/s, 41.8 ms/krok (`NOTES:183`) | **109.0** t/s, 27.74 ms/krok (`STATUS:10`); bez PM4 103.7 (`NOTES:375`) | fork → prod: **P** (×1.46) |
+| decode z MTP (spec_sweep T=1) | **nie zmierzone** (Ollama na XTX też nie, `wiki/ekosystem/ollama.md:12`) | **nie zmierzone** tym skryptem | fork ROCm 2026-10-12: 74.5 t/s, 41.8 ms/krok (`NOTES:183`) | **109.0** t/s, 27.74 ms/krok (`STATUS:10`); bez PM4 103.7 (`NOTES:375`) | fork → prod: **P** (×1.46) |
 | decode z MTP (serve_bench T=0, inne prompty) | nie zmierzone | Vulkan MTP n=4: 85.6 (EN+PL); ROCm MTP n=3: 68.6 (EN); DFlash2 n=7: 97.7 (EN) (`NOTES:43,45,48`) | stary build b356fa262, MTP n=3: 59.2 (`NOTES:10`) | spec_sweep 109.0 (`STATUS:10`) | upstream/stary → prod: **O** (różne skrypty i T) |
 | decode bez spekulacji (llama-bench tg128) | nie zmierzone | upstream Vulkan 38.8 (`NOTES:48`) | nasz ROCm 2026-10-09: 36.6 (`NOTES:47`) | **43.2** (`STATUS:10`) | to samo narzędzie, inne buildy i backend: **O** |
 | prefill pp512 | nie zmierzone | nie zmierzone | nasz ROCm 856 (`SPEC:86`) | brak wartości bezwzględnej (+1.9% z 0070, `NOTES:397`) | brak |

@@ -17,6 +17,6 @@ status: aktualne
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
 - [[2026-10-20-karta-fabrycznie]]
-- [[2026-10-09-limit-mocy-odlozony]]
+- [[decyzje/2026-10-20-karta-fabrycznie]]
 - [[amdgpu-moc-i-termika]]
 - [[rx-7900-xtx]]

@@ -16,4 +16,4 @@ Naprawa: `if command -v column …; then column -t …; else cat …; fi` (w kop
 - [[lekcja-5060ti-bezczynna]]
 - [[lekcja-vast-cli-klucz]]
 - [[skrypty-chmury]]
-- [[harness-chmurowy]]
+- [[narzedzia/skrypty-chmury]]

@@ -20,7 +20,7 @@ Raport z 2026-10-16, bez GPU.
 - Ranking: 1. mikrobench PM4-PDL (X1), 2. prefetch do MALL, 3. proces bezpieczeństwa z RFC, 4. pełny megakernel LFM (25–35 osobodni), 5. trwały blok MoE.
 - arXiv 2605.07182 to inny temat (Star Elastic).
 
-**Korekta (16a, 2026-10-18):** szacunek S1 (+9…+15%) za wysoki – zmierzona górna granica bez synchronizacji to +12.0% (LFM 289.3 → 324.0 t/s), a z realną synchronizacją ≈ +2.9%; X1, X2 i X3 zakończone KILL ([[raport-16a-pm4-pdl]]).
+**Korekta (16a, 2026-10-18):** szacunek S1 (+9…+15%) za wysoki – zmierzona górna granica bez synchronizacji to +12.0% (LFM 289.3 → 324.0 t/s), a z realną synchronizacją ≈ +2.9%; X1, X2 i X3 zakończone KILL ([[testy/2026-10-18-pm4-pdl-x1]]).
 
 ## Powiązane
 - [[research/_hub|research]]

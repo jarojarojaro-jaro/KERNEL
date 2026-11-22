@@ -23,7 +23,7 @@ Kampania 67c (2026-11-07, host 160/180 W): stary pick UD-Q3_K_XL 135 168 PASS 27
 
 ## Powiązane
 - [[karty/_hub|Karty]]
-- [[nvidia-wyniki-2026-10-16]]
+- [[testy/2026-10-16-kampania-nvidia]]
 - [[raport-09-chmura-5060ti]]
 - [[sm-86-89-120]]
 - [[nvfp4]]

@@ -15,4 +15,4 @@ Reguła: binarki sm_86/sm_120 budować lokalnie (RPATH `$ORIGIN`, jak w raporcie
 - [[lekcje/_hub|lekcje]]
 - [[lekcja-5060ti-bezczynna]]
 - [[cuda-stos]]
-- [[harness-chmurowy]]
+- [[narzedzia/skrypty-chmury]]

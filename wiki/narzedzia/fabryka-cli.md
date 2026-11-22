@@ -26,4 +26,4 @@ Propozycje z 21j (2026-10-19): P1 percentile bootstrap w `stats.summarize` tylko
 - [[spec-sweep]]
 - [[greedy-check]]
 - [[2026-10-16-backtest-regul-fabryki]]
-- [[raport-16h-fabryka-v1]]
+- [[metody/fabryka-v1]]

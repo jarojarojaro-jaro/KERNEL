@@ -13,4 +13,4 @@ Stan po odchudzeniu 2026-10-19: venv 17 → 6.3 GB, mtp-train 9.6+ → 8.5 GB (�
 - `data/ext_p1`, `data/ext_par` (1.2 GB): gotowe dane treningowe (wygenerowane na A40, $2.14) — zostają.
 - `cache/*.f16.npy` (3.0 GB): osadzenia/głowica w f16 wyciągnięte z GGUF — zostają (decyzja użytkownika), odtwarzalne skryptami z `mtp-train/`.
 - Usunięte: `smoke/qwen35-0.8b-hf` (1.7 GB, model do testu rozruchu; wynik w `mtp-train/RESULTS.md` §1).
-- Wynik pilota: raport `product/research/11-mtp-pl-pilot.md`, notatka `wiki/eksperymenty/2026-10-16-mtp-pl-pilot.md`. Głowica `out/…mtpPL.mtp-head.gguf` (362 MB) zostaje; pełny plik odtwarza `writeback.py apply`.
+- Wynik pilota: raport `product/research/11-mtp-pl-pilot.md`, notatka `wiki/testy/2026-10-16-mtp-pl-pilot.md`. Głowica `out/…mtpPL.mtp-head.gguf` (362 MB) zostaje; pełny plik odtwarza `writeback.py apply`.

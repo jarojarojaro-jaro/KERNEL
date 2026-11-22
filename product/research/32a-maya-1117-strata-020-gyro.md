@@ -160,5 +160,5 @@ Proponowane wiersze `wiki/ZRODLA.md`:
 | halo-box/strix-llama.cpp (fork llama.cpp dla Strix Halo) | `82f1aa96` (PR #195 `ab062040`: typy trellis 143–149, CPU/Vulkan/HIP) | 10-20 | R32a | Najkrótsza droga Gyro do naszego forka (wymaga `prism.hadamard` z ggml-org #29600). Port tylko pod katalog 32 GB. | czy trellis trafia do ggml-org; wydajność HIP mmvq TQK na gfx1100 |
 
 Proponowane notatki:
-- dopisek w `wiki/eksperymenty/2026-10-18-hak-mtp-i-checkpointy.md`: „następny kandydat” ma wzorzec z zewnątrz (Maya #253: kopia w tle, nakładana na następny prompt), więc priorytet rośnie.
+- dopisek w `wiki/testy/2026-10-18-hak-mtp-i-checkpointy.md`: „następny kandydat” ma wzorzec z zewnątrz (Maya #253: kopia w tle, nakładana na następny prompt), więc priorytet rośnie.
 - `wiki/metody/`: nowa notatka „A/B na wymuszonej kontynuacji (spec-follow)” ze statusem do-zrobienia.

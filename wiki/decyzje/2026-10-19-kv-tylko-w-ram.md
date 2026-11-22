@@ -13,7 +13,7 @@ Konsekwencje:
 - Budżet RAM na tym serwerze: 62 GB, dziś `--cache-ram 16384` (wpis Qwena 53k ≈ 2.3 GB, LFM ≈ 0.55 GB); limit musi zostawić page cache na wagi (Qwen 17.6 GB + LFM).
 - Kopie stanu `--cache-ram` z pamięci stronicowanej zostawiają zakresy SVM, których unieważnianie ewikuje kolejki KFD (wyzwalacz resetów PM4, [[hip-kopie-stronicowane-zostawiaja-svm]]) – cache RAM musi omijać ten mechanizm (`HSA_USE_SVM=0` albo transfery przez pinned; test S3, [[2026-10-19-pm4-priv-analiza]]).
 - Sprawdzanie odcisku modelu przy restore nadal potrzebne także dla przywracania z RAM (para Main ↔ Uncensored o tych samych kształtach, [[przelaczanie-main-uncensored]], [[lekcja-restore-stanu-exactness]]).
-- Projekt i budżet zużycia SSD z 21d zostają jako analiza, bez wdrożenia ([[kv-na-dysku-polityka]]).
+- Projekt i budżet zużycia SSD z 21d zostają jako analiza, bez wdrożenia ([[decyzje/2026-10-19-kv-tylko-w-ram]]).
 
 ## Powiązane
 - [[decyzje/_hub|Decyzje]]

@@ -20,6 +20,6 @@ Błąd sterownika opisany w [[lekcja-od-commit-gubi-krzywa]]. Instalacja eco: [[
 ## Powiązane
 - [[research/_hub|research]]
 - [[raport-63-synteza]]
-- [[raport-17-gpu-page-fault]]
+- [[testy/2026-10-19-page-faulty-gpu-analiza]]
 - [[amdgpu-moc-i-termika]]
 - [[2026-11-05-termika-eco-test]]

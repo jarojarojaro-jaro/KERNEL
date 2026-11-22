@@ -20,7 +20,7 @@ Metoda: kod i PR-y (git clone `Luce-Org/lucebox` @ `6f2b179`, 2026-10-15; `syv-a
 | platforma | pomiar | wartość | źródło |
 |---|---|---|---|
 | XTX, Qwen UD-Q4_K_XL | pp4096 llama-bench | 1115 t/s | `wiki/index.md` (stan 2026-10-15) |
-| XTX | prefill serwera 6.6k / 29.5k / 94k | 962 / 943 / 767 t/s (94k = 123 s) | `wiki/kernele/prefill-mmq-fa.md` |
+| XTX | prefill serwera 6.6k / 29.5k / 94k | 962 / 943 / 767 t/s (94k = 123 s) | `wiki/optymalizacje/prefill-mmq-fa.md` |
 | XTX | podział 94k prefill | matmul ~70%, FA ~26% | `qwen-opt/research/v2/rr-prefill-kv.md:199-203` |
 | XTX | MTP decode 1.7k / 94k | 92.9 / 70.9 t/s (po kvq) | `qwen-opt/NOTES.md:196-202` |
 | 3090, Qwen (KV q4_0) | tg64 d0 / 8k / 32k / 64k | 39.3 / 37.7 / 32.3 / 27.2 | `BENCHMARKI-NVIDIA-2026-10-16.md:54` |

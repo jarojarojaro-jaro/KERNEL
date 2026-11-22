@@ -70,7 +70,7 @@ Data: 2026-10-21. Tylko CPU (bez GPU). Klon: `~/qwen-opt/research-src/strata-new
 - Gyro: trellis QTIP + Hadamard, typy 144–149 (R21n §2);
 - NVFP4 w trzech wariantach: konwersja GPTQ Straty, checkpoint NVIDII i NVIDIA FP4-QAD (`docs/MODELS.md:197-236`; tylko NVIDIA, ~80 GB RAM).
 
-**Metodologia** (stała od początku, R `wiki/repo/strata.md`):
+**Metodologia** (stała od początku, R `wiki/ekosystem/strata.md`):
 - zmiana domyślnej ścieżki musi być bitowo identyczna (greedy ids / „identity gate” na kilku kwantach) i wygrać A/B na przeplatanych parach;
 - każda zmiana ma wyłącznik `STRATA_*=0`;
 - wszystko, co zmienia bity, jest opt-in z podanym KL.

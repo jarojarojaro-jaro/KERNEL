@@ -23,4 +23,4 @@ Od 2026-10-19 przy pracy GPU krzywa 100% (`FAN=100`, decyzja użytkownika: [[202
 - [[lekcje/_hub|lekcje]]
 - [[rx-7900-xtx]]
 - [[lekcja-losowe-spowolnienia]]
-- [[2026-10-09-limit-mocy-odlozony]]
+- [[decyzje/2026-10-20-karta-fabrycznie]]

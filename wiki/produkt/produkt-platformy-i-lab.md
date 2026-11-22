@@ -17,7 +17,7 @@ status: aktualne
 
 ## Powiązane
 - [[produkt/_hub|produkt]]
-- [[produkt-analiza-platformy]]
+- [[metody/analiza-platformy]]
 - [[produkt-budzet]]
 - [[2026-10-15-karty-kupujemy]]
 - [[raport-05-chmura]]

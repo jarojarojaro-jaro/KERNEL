@@ -58,7 +58,7 @@ Punkt odniesienia z tej samej karty: Lucebox mierzy na R9700 llama.cpp plain 29.
 - **Wariant „pf” (opcja, domyślnie wyłączona).** Prefetch do rejestrów następnego slabu przed WMMA bieżącego, z barierami tylko na LDS, bo na gfx12 `__syncthreads()` = `s_wait_loadcnt 0` (`mxfp4_gemm_decode_pf.hip:1-19`).
 - **Pomiar.** 453 GB/s w łańcuchu przy b1s5, czyli ~71% z 635 (`rules/mxfp4_gfx1201.toml:167`).
 
-**Topka na gfx1100.** MMVQ ma ścieżkę WMMA dla wielu kolumn (`mmvq.cu:171-178`), buffer resource w SGPR (`:180-231`) i politykę cache GLC|DLC dla wag (`:374-383`, w weryfikacji MTP 22.95 → 22.08 ms). Reguły R=1/2 wierszy na blok dla 1024-wierszowych k/v pochodzą z [raportu 49](49-mmvq-ogon-1024.md). Pasmo: 81–88% na kernel ([wiki sufit-pasma](../../wiki/metody/sufit-pasma-i-mapa-czasu.md):12), plain 75.7% ([wiki qwen3-8-27b](../../wiki/modele/qwen3-8-27b.md):25). **Wniosek: nasza pętla jest lepsza w relacji do szczytu.** Z Sabera warto rozważyć tylko split-K z redukcją ostatniego przybyłego dla małych N (§5, pomysł F).
+**Topka na gfx1100.** MMVQ ma ścieżkę WMMA dla wielu kolumn (`mmvq.cu:171-178`), buffer resource w SGPR (`:180-231`) i politykę cache GLC|DLC dla wag (`:374-383`, w weryfikacji MTP 22.95 → 22.08 ms). Reguły R=1/2 wierszy na blok dla 1024-wierszowych k/v pochodzą z [raportu 49](49-mmvq-ogon-1024.md). Pasmo: 81–88% na kernel ([wiki sufit-pasma](../../wiki/testy/sufit-pasma-i-mapa-czasu.md):12), plain 75.7% ([wiki qwen3-8-27b](../../wiki/modele/qwen3-8-27b.md):25). **Wniosek: nasza pętla jest lepsza w relacji do szczytu.** Z Sabera warto rozważyć tylko split-K z redukcją ostatniego przybyłego dla małych N (§5, pomysł F).
 
 ### 3.2 Atencja decode, split-KV (`sattn_decode.h`, `sattn_prims.h`)
 

@@ -15,5 +15,5 @@ status: aktualne
 ## Powiązane
 - [[research/_hub|research]]
 - [[raport-57a-gsq-rco]]
-- [[raport-16e-kwanty-kld]]
+- [[testy/2026-10-18-e1-kwanty-27b-kld]]
 - [[kwanty-gguf]]

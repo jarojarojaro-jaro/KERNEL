@@ -20,7 +20,7 @@ Weryfikacja na NVIDIA (raporty 09, 2026-10-16): szacunek trafił co do fuzji GPU
 ## Powiązane
 - [[research/_hub|research]]
 - [[raport-07-metody]]
-- [[raport-13-rocm-10-1]]
+- [[stos/rocm-10-1]]
 - [[analiza-platformy]]
 - [[hip-na-windows]]
 - [[raport-09-chmura-3090]]

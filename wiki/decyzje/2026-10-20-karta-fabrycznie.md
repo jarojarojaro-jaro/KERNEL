@@ -12,13 +12,13 @@ status: aktualne
 - Dotyczy RX 7900 XTX na serwerze i każdej karty w chmurze.
 - Zysk z OC nie liczy się jako wynik projektu; rekordy w [[REKORDY]] są na ustawieniach sterownika.
 - Egzekucja w kodzie: bramka H7 fabryki hashuje OD_SCLK/OD_MCLK/OD_VDDGFX_OFFSET i `power1_cap` i odmawia pomiaru po zmianie (`22:90`); krzywa wentylatora jest wyłączona z hasha, bo wentylator ustawiamy dla bezpieczeństwa ([[2026-10-19-wentylator-100-przy-pracy]]).
-- Wcześniejszy kontekst: [[2026-10-09-limit-mocy-odlozony]].
+- Wcześniejszy kontekst: [[decyzje/2026-10-20-karta-fabrycznie]].
 - **Zmiana 2026-11-05:** użytkownik dopuścił testy „eco” z capem taktowania rdzenia (pamięć bez zmian, bez undervoltu), wyniki osobno od rekordów ([[2026-11-05-termika-eco-test]]).
 
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
 - [[2026-10-19-bezpieczenstwo-sprzetu]]
-- [[2026-10-09-limit-mocy-odlozony]]
+- [[decyzje/2026-10-20-karta-fabrycznie]]
 - [[2026-10-19-wentylator-100-przy-pracy]]
 - [[raport-22-rsi-f]]
 - [[REKORDY]]

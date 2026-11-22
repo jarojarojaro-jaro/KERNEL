@@ -18,7 +18,7 @@ Przykłady z `qwen-opt/NOTES.md` (sekcja „Wyniki negatywne (nie wracać bez no
 
 Zasada scalania: tylko realny zysk w przeplatanym A/B. Bitowy, ale w szumie (GDN fast +0.15%) = nie scalamy, gałąź zostaje.
 
-2026-10-18: PM4-PDL i prefetch MALL na XTX ([[raport-16a-pm4-pdl]], [[lekcja-prefetch-mall-xtx]]); MoE matvec LFM ([[2026-10-18-lfm-moe-negatywne]]).
+2026-10-18: PM4-PDL i prefetch MALL na XTX ([[testy/2026-10-18-pm4-pdl-x1]], [[lekcja-prefetch-mall-xtx]]); MoE matvec LFM ([[2026-10-18-lfm-moe-negatywne]]).
 
 2026-10-19/20: bariera LDS (szum), MMVQ n=1 wide (−1.0%), ogon OOV klastrowy (−1.5%), obłożenie MMVQ n=5 (−0.5% / −6.4%), RPB=1 (−3.0%), `-np 2` (wall +11%), router DFlash2 (sufit +1.1%), entropia wag (≤ 0.9%), FA bez spilli (+0.4–0.8%, za mało) – przegląd w [[raporty-2026-10-19-20]].
 PAIR2 (24w, 2026-10-20 rano): para MMVQ dla mieszanych typów, md5 OK, czat +0.4% (115.1 → 115.6 t/s) – odrzucone ([[raport-24w-pair2]]).
@@ -27,5 +27,5 @@ PAIR2 (24w, 2026-10-20 rano): para MMVQ dla mieszanych typów, md5 OK, czat +0.4
 - [[metody/_hub|Metody]]
 - [[playbook-optymalizacji]]
 - [[pomiar-abba]]
-- [[eksperymenty/_hub|Eksperymenty]]
+- [[testy/_hub|Eksperymenty]]
 - [[gdn-fast]]

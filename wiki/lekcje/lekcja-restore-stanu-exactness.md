@@ -17,6 +17,6 @@ Reguła: plik stanu = tmp → fsync → rename → fsync katalogu + fingerprint 
 
 ## Powiązane
 - [[lekcje/_hub|lekcje]]
-- [[kv-na-dysku-polityka]]
+- [[decyzje/2026-10-19-kv-tylko-w-ram]]
 - [[2026-10-16-bit-exact]]
 - [[dysk-serwera-pm9b1]]

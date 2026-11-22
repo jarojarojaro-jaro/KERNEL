@@ -17,7 +17,7 @@ Qwen3.8-27B-Uncensored Q4_K_M, KV q4_0, MTP n=4, silnik topka-q63 (lean rezerwa 
 | prefill promptów 4–12k | 795–929 t/s | – |
 | waty przy pracy / hotspot | **241 W / 63,5 °C** | 280 W / 67,9 °C |
 
-Szczegóły: [`wiki/eksperymenty/2026-11-06-final-mode.md`](../wiki/eksperymenty/2026-11-06-final-mode.md), [`wiki/eksperymenty/2026-11-06-sesja-uzytkownika-final-mode.md`](../wiki/eksperymenty/2026-11-06-sesja-uzytkownika-final-mode.md).
+Szczegóły: [`wiki/testy/2026-11-06-final-mode.md`](../wiki/testy/2026-11-06-final-mode.md), [`wiki/testy/2026-11-06-sesja-uzytkownika-final-mode.md`](../wiki/testy/2026-11-06-sesja-uzytkownika-final-mode.md).
 
 ## Historia: stan 2026-10-14 (ROCm, ctx 204800, KV q4_0, MTP n=4 + słownik draftu 64k + draft IQ4_XS + KV draftu q4_0, limit mocy 285 W, 6 promptów PL/EN × 3 seedy, T=1)
 

@@ -15,4 +15,4 @@ Dalej: selekcja przed obcięciem (nie „pierwsze 1000 wierszy”), tożsamość
 - [[metody/_hub|Metody]]
 - [[rocprof]]
 - [[sufit-pasma-i-mapa-czasu]]
-- [[raport-21j-flameox]]
+- [[ekosystem/flameox]]

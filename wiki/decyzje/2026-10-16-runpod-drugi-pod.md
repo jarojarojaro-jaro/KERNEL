@@ -13,7 +13,7 @@ Odpowiedź użytkownika (2026-10-16 02:38 UTC): „tak, to działa z innego agen
 
 ## Powiązane
 - [[decyzje/_hub|decyzje]]
-- [[2026-10-16-budzety-chmury]]
-- [[2026-10-16-bez-lokalnego-gpu]]
+- [[karty/vast-ai]]
+- [[kernel-od-a-do-z]]
 - [[runpod]]
 - [[mtp-train]]

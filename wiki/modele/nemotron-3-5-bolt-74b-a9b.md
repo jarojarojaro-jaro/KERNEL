@@ -20,7 +20,7 @@ status: aktualne
 - [[modele/_hub|Modele]]
 - [[lfm2-5-24b-a2b]]
 - [[drafter-dflash]]
-- [[raport-14-nemotron-3090]]
+- [[testy/2026-10-16-nemotron-3090]]
 - [[nemotron-kernele-cuda]]
 - [[firma-nvidia]]
 - [[star-elastic-2605-07182]]

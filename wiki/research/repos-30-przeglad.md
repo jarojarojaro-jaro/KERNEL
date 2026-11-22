@@ -18,7 +18,7 @@ Punkt odniesienia: Qwen3.8-27B 104 t/s (krok 28.9 ms, MTP), LFM2.5-24B-A2B ~240 
 
 ## Powiązane
 - [[research/_hub|research]]
-- [[repo/_hub|wszystkie repo]]
+- [[ekosystem/_hub|wszystkie repo]]
 - [[hipfire]]
 - [[lucebox]]
 - [[raport-07-metody]]

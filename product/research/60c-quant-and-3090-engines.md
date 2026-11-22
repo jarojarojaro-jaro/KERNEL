@@ -286,4 +286,4 @@ Kolejność: #1, gdy tylko 57g dostanie BF16. #2 tanio przy najbliższym oknie G
 - Fraser Price: https://x.com/fraserpricee/status/2112111199454454169 · https://github.com/fraserprice/dspark-vllm · https://huggingface.co/fraserprice/DeepSeek-V4-Flash-DSpark
 - FastH3 Omni: https://huggingface.co/FastVideo/FastVideo-FastH3-Omni-8-Step-V1 · https://huggingface.co/FastVideo/FastH3-Omni-NVFP4-QAD-Comfy
 - Bolt-E4B: https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF · https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16 (`config.json`) · https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-4GB-DFlash · https://unsloth.ai/docs/models/nemotron-3.5-bolt
-- Nasze: R14, R15b, R15c, R16e, R21n (+ `21n-notatki/gguf-M-TQ2_0.txt`), R27, R32a §3, R32f, R57a, R57b, R57g (`57g-skrypty/alloc.json`), R58, [[REKORDY]], `wiki/eksperymenty/2026-10-10-sweep-mtp-dflash.md`
+- Nasze: R14, R15b, R15c, R16e, R21n (+ `21n-notatki/gguf-M-TQ2_0.txt`), R27, R32a §3, R32f, R57a, R57b, R57g (`57g-skrypty/alloc.json`), R58, [[REKORDY]], `wiki/testy/2026-10-10-sweep-mtp-dflash.md`

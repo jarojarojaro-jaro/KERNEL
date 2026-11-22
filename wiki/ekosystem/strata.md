@@ -1,0 +1,37 @@
+---
+typ: ekosystem
+tags: [ekosystem, spekulacja, moe, metodologia]
+aktualizacja: 2026-11-07
+zrodlo: ~/KERNEL/qwen-opt/research/strata/README.md:1-34,194; ~/KERNEL/qwen-opt/research/strata/issues.md:1-20; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:82; ~/KERNEL/product/research/21d-kv-na-dysku.md:76-88; ~/KERNEL/product/research/21g-nowe-silniki.md:218-272,291-297; ~/KERNEL/product/research/21n-strata-020-gyro.md:7-10; ~/KERNEL/product/research/63a-silniki-lokalne.md:29-32,69-169; ~/KERNEL/product/research/66a-strata-maya.md:23-116,141-204,273-298,355-365
+status: aktualne
+---
+# Strata (Niko1221/Strata)
+
+**Silnik C++/CUDA/HIP pod jeden model MoE z offloadem (HEAD `a0116b27`, 2026-10-12, tag v0.1.43.1), studiowany jako wzór metodologii autora.**
+
+Repo: 1892 commity w 19 dni, 49 tagów. Model docelowy: Qwen3.8-Flash-Next (125B MoE, ok. 6B aktywnych, 48 warstw: 36 GDN + 12 sparse attention, 512 ekspertów top-10, tablica n-gram 28.8 GB, głowica MTP). Otwarty PR #2231: bitowo identyczne poprawki decode na RX 7900 XTX, +11.7% chat / +14.3% agent decode, KL 0.0000. Standard autora: zmiana domyślnej ścieżki musi dać bajtowo identyczne wyjście na czterech modelach i przejść A/B prędkości; wszystko, co zmienia bity, jest opt-in. Dla nas: chunked GDN (WY) dał −39% na gfx1100 (#888, odrzucone) oraz odkrycie, że warstwa MTP w UD-Q4_K_XL jest cała w Q6_K (≈ 335 MiB). Raporty cząstkowe: `timeline`, `kernels`, `spec-host`, `prefill`, `method`, `issues`, `update-v0.1.44`.
+
+Session files (v0.1.45, 21d): tmp + fsync + rename, fingerprint modelu i konfiguracji, O_DIRECT, tylko najgłębszy checkpoint; „0.2.0” nie istnieje ([[raport-21d-kv-na-dysku]]).
+
+v0.1.44.1–0.1.45 (21g, 2026-10-19): ścieżka Qwen3.6-35B-A3B, dekod R9700 83.2 → 117.8 t/s (llama.cpp 82), bitowo; fuzje = nasze 0049/0051/0053/0056; `--parallel` vs `llama-server -np` ×1.14 / 1.61 / 1.53 / 1.56 dla N = 1 / 2 / 4 / 8; domyślny chunk 4096 zmienia bity (KL 0.004); Flash-Next 125B na XTX + 96 GB RAM ≈ 80 t/s, prefill 1810 t/s przy 98K (#2938); PR #3064 [[bariera-lds-rdna3]].
+
+0.2.0-beta (`3d1fb480`, 21n): 55% zmian to aplikacja, silnik 6%; dla gfx1100 nic nowego; Gyro-S to plik dla 32 GB ([[raport-21n-strata-gyro]]).
+
+0.2.1–0.2.2 (`011c9e60`, 10-21, silnik 0.1.47; R57b): Gyro na Arc/Mac, trellis NVIDIA +17% (3060) / P100 +30%, pula CPU per NUMA, role kart Main/Helper/Off; silnik ~11% zmian od 0.2.0-beta, dla gfx1100 nic do prędkości. Lekcja `86d10ed8`: flaga hosta podnoszona po `graphLaunch` = deadlock na HIP (8/41 → 0/46). Domyślne wagi = ISTA-DASLab GSQ-RCO GGUF. XTX (społeczność): IQ3_S 62.3 t/s, prefill 128K 926 → 1687 z tabelą hipBLASLt. „Qwen3.8-Flash” = hostowane API, lokalnie tylko Flash-Next ([R57b](../../product/research/57b-strata-qwen38-flash.md)).
+
+0.2.3–0.2.11 (klon `9f7d977d`, 2026-11-05, silnik 0.1.48 → 0.1.57; R63a): dla gfx1100 i gęstego 27B nic; paczka „Linux RX 7900” tylko zbudowana, nieuruchomiona. KVA (0.2.7) to stratny prefill przez stan późnych warstw ([[strata-kva]], odrzucony). PR #4366: ogłoszone +39% prefillu to ciepły vs zimny przebieg, realnie +2–6%. 0.2.10: DFlash2 domyślny (wygrywa na greedy kodzie, nie przy T=1), silnik TP „wszystkie karty”; „128K na 8 GB” = drabina degradacji mierzona na dużej karcie ograniczonej do 8 GB (wzór UX dla Enigmy). Synteza: [[raport-63-synteza]].
+
+0.2.12 (tag `123bad4a`, 2026-11-07, silnik 0.1.58; R66a): „newly trained DFlash2 drafter” to fine-tune drafteru Inco AI dla Flash-Next (603 M, na wyjściach kwantów UD-Q4_K_XL i UD-IQ4_XS-v31): +11.4% przyjętych draftów, +2.1…5.0% t/s; z 27B nieużywalny (inne tapy i format `.pack`). Tweet vs release notes: Mac +10.3…12.7%, nie +31%; Strix Halo ×1.77–2.12 to prefill 4K z fuzowanych kerneli F16 WMMA (stratne, tylko Windows), „prawie 3× na Linuksie” nie było mierzone; „3× low RAM” to poprawka błędu liczenia wolnej pamięci. Pułapka UMA: kopie z niezarejestrowanej areny hosta szły ~0.5 GB/s. Dla Enigmy: próg draftu rośnie z kosztem wiersza weryfikacji ([[prog-draftu-od-kosztu-wiersza]]). Flash-Next na XTX: tylko HIP (bez Vulkana), DFlash2 na gfx1100 niezmierzony, reguły RAM ISTA vs Unsloth w [[qwen38-flash-next]]. Synteza: [[raport-66-synteza]].
+
+## Aktualizacja 2026-11-19 (v0.2.16, silniki 0.1.62; Telegram „gpu”)
+
+- **Własny kod silnika na wszystkich platformach** (NVIDIA, AMD, Intel Arc, Mac, DGX Spark), bez ggml i bez kerneli macierzowych llama.cpp. Te same tokeny co w 0.2.15 na 10 promptach: R9700 10/10, P100 10/10, M5 Max 10/10, Arc A750 9/9. Nowych liczb prędkości dla gfx1100 i gęstego 27B brak.
+- **Lekcja (wszystkie firmy):** w 0.2.15 na Apple M1–M4 z UD-Q4_K_XL liczyła się tylko ćwiartka kolumn w części warstw (160 z 640), **a tekst dalej brzmiał płynnie**. KL pierwszego tokena 0,303 → 0,0068 po poprawce; top-1 różny w 3/6 → 1/6 promptów. Krótka odpowiedź tego nie pokazuje. Potrzebna jest bramka KL/md5 na każdej architekturze, nie „czy brzmi dobrze”. Dla nas: Enigma na nowych kartach zawsze z bramką KLD.
+- **Blackwell, CUDA 12:** pierwsza odpowiedź 173,0 s → 0,34 s po dodaniu natywnego kodu dla karty (wcześniej kompilacja JIT z PTX). Enigma ma natywne `sm_120` (CUDA 12.8), ale to warto sprawdzić przy każdym nowym wydaniu.
+- Prefill starszych NVIDIA: V100 26k tokenów 17 464 → 15 068 ms (−13,7%), 2080 Ti ×1,088 vs 0.1.58.
+
+## Powiązane
+- [[tensorfold]]
+- [[lucebox]]
+- [[zgodnosc-bitowa-md5]]
+- [[wylacznik-w-kazdej-latce]]

@@ -14,7 +14,7 @@ status: aktualne
 - Oczekiwany zysk przy 1 checkpoincie + MTP z SSD 1.05 GB/s: 53k ×47, 150k ×74, 200k ×86 względem prefillu `[INFERENCE]`.
 - Plan: higiena pliku (0.5 dnia), sidecar MTP (0.5), tmpfs + polityka (1–2), segmenty natywne (2–3); eksperyment GPU z kill (restore z tmpfs ≥ 80% SSD; md5 różne w BITEXACT; replay dnia > 10 GB).
 
-Notatki: [[kv-na-dysku-polityka]], [[dysk-serwera-pm9b1]], [[lekcja-restore-stanu-exactness]].
+Notatki: [[decyzje/2026-10-19-kv-tylko-w-ram]], [[dysk-serwera-pm9b1]], [[lekcja-restore-stanu-exactness]].
 
 **Decyzja użytkownika 2026-10-19:** KV/sesje tylko w RAM, bez SSD – [[2026-10-19-kv-tylko-w-ram]].
 
