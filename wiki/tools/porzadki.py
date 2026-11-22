@@ -55,6 +55,7 @@ ARCH = "archiwum"
 DZIS = dt.date.today().isoformat()
 REPO_SUFIKSY = {".md", ".json", ".sh", ".py", ".ts", ".js", ".txt"}
 REPO_POMIN = {"wiki", "node_modules", ".git", "vendor", "dist", "build", ".svelte-kit"}
+REPO_POMIN_SCIEZKI = {"app/landing"}   # stała zasada sesji Kernel: app/landing nietykalne (prowadzi go Web)
 
 
 def skarbiec() -> "W.Skarbiec":
@@ -167,7 +168,8 @@ def przepisz_repo(cele: dict[str, str], sucho: bool = False) -> dict:
     wzor = re.compile(r"wiki/(" + "|".join(re.escape(s) for s in sorted(cele, key=len, reverse=True)) + r")(?=\.md|[^\w/-]|$)")
     lista, zamian = [], 0
     for root, dirs, files in os.walk(REPO):
-        dirs[:] = [d for d in dirs if d not in REPO_POMIN and not (Path(root) == REPO and d == WIKI.name)]
+        dirs[:] = [d for d in dirs if d not in REPO_POMIN and not (Path(root) == REPO and d == WIKI.name)
+                   and (Path(root) / d).relative_to(REPO).as_posix() not in REPO_POMIN_SCIEZKI]
         for f in files:
             p = Path(root) / f
             if p.suffix not in REPO_SUFIKSY or p.stat().st_size > 2_000_000:

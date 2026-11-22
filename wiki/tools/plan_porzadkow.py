@@ -139,6 +139,12 @@ ARCHIWUM: dict[str, tuple[str, str]] = {
     "decyzje/2026-10-16-saluki-bonsai-na-3060": ("decyzje/2026-11-14-saluki-usuniety", "Saluki usunięty 14.11"),
     "decyzje/2026-10-20-chmura-wstrzymana": ("chmura/vast-ai", "uchylona: od 17.11 testy na Vaście ze zgodą i budżetem "
                                              "JARO (K-114, K-118, Colab od 22.11)"),
+    # Kernel 2026-11-22: dwie kandydatki rozstrzygnięte
+    "decyzje/2026-10-09-limit-mocy-odlozony": ("decyzje/2026-10-20-karta-fabrycznie",
+                                             "uchylona: od 20.10 karta fabrycznie (bez zmian limitu mocy), od 06.11 profil "
+                                             "eco 2200 MHz; 285 W z 09.10 nie obowiązuje"),
+    "decyzje/2026-10-16-budzety-chmury": ("chmura/vast-ai", "jednorazowa kampania 16.10 ($5 Vast, $6 RunPod), zamknięta i "
+                                          "rozliczona; dziś budżet każdorazowo ze zgody JARO"),
 }
 
 KORZEN_PLIKI = {"KOLEJKA-TESTOW", "REKORDY", "ZRODLA", "AUDYT", "KONWENCJE", "log", "index"}
