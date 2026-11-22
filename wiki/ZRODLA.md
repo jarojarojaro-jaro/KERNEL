@@ -465,6 +465,7 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 | LocalMaxxing: XTX Inkling-2-Mini | run cmwpt5s3b085rmi01nnw2wr0p, 2026-11-21 | [[inkling-2-mini]] | Pierwszy verified na XTX: 33,9 t/s, potwierdza limit kerneli | Q3_K_XL, llama.cpp b12588, bez spekulacji | nasz pomiar XTX (K-133) |
 | ROCm blog: FlashInfer na ROCm 10.1 | 2026-11-20 | — | Tylko CDNA3/4 (gfx942/gfx950); nie RDNA3 | — | czy dojdzie gfx1100 |
 | Strata v0.2.17 / Maya v1.1.70 / TensorFold v1.3.2 | 2026-11-20 | [[silniki-inferencji-2026-11-20]] | Delta: Maya drafter DFly2 <1 GB (karty 8–12 GB), TensorFold Hy4-flash Metal, Strata „flash next hip” (rozkład stron) | brak liczb XTX | Maya HIP EXL3 commity |
+| Strata v0.2.18 (panel właściciela 2026-11-22) | engine 0.1.64, 2026-11-21 | — | Delta: nowy silnik `strata-hy4` dla Hy4-Flash (220B / 12B aktywnych, eksperci w RAM i na SSD), paczka hip-rx7900; nie nasz model; graf CUDA dla drzewa 8 tokenów bitowo zgodny | R9700 62 t/s, Strix Halo 51–60, RTX 5090 90–111, PRO 6000 240 (deklaracje, Hy4-Flash) | liczba dla XTX z Hy4, jeśli kiedyś Hy4 |
 | oMLX v0.8.2 | 2026-11-21 | — | Apple: Inkling 2 Mini, Lightning MTP Hy4-flash 23,1 → 37,7 t/s przy 32K (+63%) | M-series, deklaracja | liczby Inkling na M5 |
 | Lucebox (Luce-Org) | 175a98737, 2026-11-21 | — | RDNA3.5/4 zero-spill WMMA FA-2; sprawdzić, czy przenosi się na gfx1100 | brak liczb | diff pod gfx1100 |
 
