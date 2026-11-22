@@ -1,0 +1,5 @@
+# duo r13 (owner "tak wszystko" 2026-11-22): GDN bank 0/1 sanity, K-005 LLAMA_CKPT_GRID off/on resume (production config, port 18796); then :8080 back
+duo-r13-gdnbank|600|~/qwen-opt/duo|env GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 python3 gdnbank.py
+duo-r13-k005-off|600|~/qwen-opt/duo|env GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 python3 k005_grid.py off
+duo-r13-k005-on|600|~/qwen-opt/duo|env GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 python3 k005_grid.py on
+duo-r13-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

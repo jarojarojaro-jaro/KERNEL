@@ -14,9 +14,10 @@ Punkt startowy: [[trening-llm-mapa]] (co już trenowaliśmy, z wynikami, i gdzie
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (6)
+## Notatki (7)
 
 - [[daisyrose-27b|DaisyRose-27B (RadixArk): pełny RL na Qwen3.8-27B, 144 × H200 przez 18 dni — duży koszt, mały zysk poza Terminal-Bench 4.1]] — RadixArk (twórcy DSpark) wytrenował nasz model bazowy samym RL-em (bez SFT i destylacji) na ~1200 długich zadaniach agentowych, z sesjami do 1M tokenów. Koszt to 144 H200 × 18 dni ≈ 62 tys. GPU-godzin. Zysk: Terminal-Bench 4.1 5,6 → 12,0%, na pozostałych testach +0,4…+4 pp. Ta sama architektura i ten sam szablon, więc zastępuje Qwen3.8-27B bez zmian; GGUF Q4_K_M działa w naszym silniku bez łatek [INFERENCE: ten sam typ `qwen35`].
+- [[inkling-2-mini|Inkling 2 Mini (Thinking Machines, 2026-11-20): MoE z pętlą warstw, jakość jak Qwen3.8-27B przy ~5× mniejszym odczycie na token]] — Prawdziwy i ważny dla nas: według producenta jakość Qwen3.8-27B (AA Index 20,1 vs 20,1) przy ok. 3,3 GB odczytu wag na token zamiast ~16 GB.
 - [[mapa-inferencji-roadmap|Mapa inżynierii inferencji LLM: 114 tematów roadmapy a nasza wiedza]] — Roadmapa „LLM Inference Engineering” (17 części, 114 tematów) zestawiona z naszą bazą. 79 tematów mamy zmierzonych na własnym stosie, 15 tylko opisanych, 20 to luki. Luki skupiają się w wielu GPU (równoległość, dezagregacja), produkcji wielu użytkowników i interferencji prefill–decode (2026-11-15).
 - [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]] — Do 2026-11-13 trenowaliśmy tylko draftery (głowica MTP, DFlash2), żaden nie dał zysku. Model zmienialiśmy wyłącznie edycjami wag bez treningu (Uncensored, Astra-Stop). Jakość mierzą EvalPlus i jakość-mini: Qwen3.8-27B-Uncensored HE+ 92,7%, jakość-mini 87,9%.
 - [[peft-lora-warianty|PEFT: LoRA i warianty (LoRA-FA, VeRA, Delta-LoRA, LoRA+)]] — Pięć sposobów taniego dostrajania LLM, w których nie trenuje się całej macierzy W, tylko małą poprawkę niskiego rzędu. Różnią się tym, co jest trenowane, a co zamrożone. To ściąga na przyszłe fine-tuningi (Astra-Stop, głowica MTP), a nie sposób na przyspieszenie (2026-11-14).

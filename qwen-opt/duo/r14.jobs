@@ -1,0 +1,4 @@
+# duo r14 (owner "tak wszystko" 2026-11-22): K-001 prefill bisect (pp512/pp2048 per commit, 2 rounds), GDN bank 0/1 with -lv 4 (bank on/off confirmed in the log); then :8080 back
+duo-r14-bisect|600|~/qwen-opt/duo|./bisect.sh
+duo-r14-gdnbank|300|~/qwen-opt/duo|env GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 python3 gdnbank.py
+duo-r14-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -1,114 +1,62 @@
-import hashlib, json, os, subprocess, sys, time, urllib.request
+#!/usr/bin/env python3
+"""K-005 LLAMA_CKPT_GRID A/B in the PRODUCTION config (xtxbench Server = run-topka.sh uncensored, duo build, test port).
+One arm per queue job (each <= 10 min):  python3 k005_grid.py off|on   [env K005_TOKENS (40000), K005_PORT (18796),
+K005_ROOT (~/wt/l1-cachesave/build-hip)]. Conversation (token lists, exact shared prefix):
+  P1 = prefix + tail_a (K005_TOKENS), P2 = prefix + tail_b (the last 10 % edited), P3 = P2 + one appended turn.
+off: P1, P2 (edit: resume time without the grid), P3 (append), cold P2 (cache_prompt=false, md5 reference).
+on (LLAMA_CKPT_GRID=8192, 4096 MiB): P1, P2, P3, fork back to the end of P2 (kind fork).
+Results: ~/qwen-opt/duo/k005-<arm>.json; the on arm compares md5 with k005-off.json. Queue only."""
+import json, os, sys
+sys.path.insert(0, os.path.expanduser("~/qwen-opt/xtxbench"))
+import xtxbench as xb  # noqa: E402
 
-BIN, R, MODEL, PORT = sys.argv[1], sys.argv[2], sys.argv[3], int(sys.argv[4])
-URL = f"http://127.0.0.1:{PORT}"
-
-def http_post(path, payload):
-    data = json.dumps(payload).encode()
-    req = urllib.request.Request(f"{URL}{path}", data=data, headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=600) as r:
-        return json.loads(r.read().decode())
-
-def wait_ready(proc):
-    for _ in range(300):
-        if proc.poll() is not None:
-            raise RuntimeError(f"server exited early with {proc.returncode}")
-        try:
-            with urllib.request.urlopen(f"{URL}/health", timeout=2) as r:
-                if json.loads(r.read().decode()).get("status") == "ok":
-                    return
-        except Exception:
-            pass
-        time.sleep(0.5)
-    raise RuntimeError("server did not become ready")
-
-def start_server(extra_env, log_path):
-    env = os.environ.copy()
-    env["LD_LIBRARY_PATH"] = f"{BIN}:{R}:" + env.get("LD_LIBRARY_PATH", "")
-    env["LLAMA_SERVER_AP_TIMING"] = "1"
-    env.update(extra_env)
-    cmd = [
-        f"{BIN}/llama-server", "-m", MODEL, "--host", "127.0.0.1", "--port", str(PORT),
-        "-c", "65536", "-np", "1", "-b", "2048", "-ub", "2048",
-        "-fa", "on", "-ctk", "q4_0", "-ctv", "q4_0",
-        "--cache-ram", "16384", "--ctx-checkpoints", "32",
-    ]
-    # Add your standard production MTP/PM4/FA flags here if desired:
-    # e.g. extra_flags from K005_SRV_FLAGS env var
-    extra = os.environ.get("K005_SRV_FLAGS", "").split()
-    cmd.extend(extra)
-    lf = open(log_path, "w")
-    proc = subprocess.Popen(cmd, env=env, stdin=subprocess.DEVNULL, stdout=lf, stderr=subprocess.STDOUT)
-    wait_ready(proc)
-    return proc, lf
-
-def run_req(prompt, cache_prompt=True, n_predict=64):
-    t0 = time.monotonic()
-    res = http_post("/completion", {
-        "prompt": prompt,
-        "n_predict": n_predict,
-        "temperature": 0.0,
-        "seed": 42,
-        "cache_prompt": cache_prompt,
-    })
-    wall_s = time.monotonic() - t0
-    txt = res.get("content", "")
-    tm = res.get("timings", {})
-    return {
-        "cache_n": tm.get("cache_n", 0),
-        "prompt_n": tm.get("prompt_n", 0),
-        "prompt_ms": tm.get("prompt_ms", 0.0),
-        "pred_ms": tm.get("predicted_ms", 0.0),
-        "wall_s": wall_s,
-        "md5": hashlib.md5(txt.encode()).hexdigest()[:12],
-        "head": repr(txt[:60]),
-    }
-
-def build_prompts():
-    # Build deterministic ~60k-token P1 and P2 sharing first 90% (~54k tokens) and differing in last 10% (~6k tokens)
+ARM = sys.argv[1]
+N = int(os.environ.get("K005_TOKENS", "40000"))
+PORT = int(os.environ.get("K005_PORT", "18796"))
+ROOT = os.path.expanduser(os.environ.get("K005_ROOT", "~/wt/l1-cachesave/build-hip"))
+OUT = os.path.expanduser("~/qwen-opt/duo/k005-%s.json")
+ENV = {"off": {"LLAMA_CKPT_GRID": "0"}, "on": {"LLAMA_CKPT_GRID": "8192", "LLAMA_CKPT_GRID_MIB": "4096"}}[ARM]
+if not xb.under_queue():
+    sys.exit("REFUSED: outside ~/qwen-opt/queue/run-jobs.sh")
+run = xb.Run("duo-k005", ARM)
+pid = xb.find_server_pid(8080)
+if pid:
+    xb.stop_pid(pid, run.log, ":8080")
+srv = xb.Server(run, xb.Arm(f"grid-{ARM}", ROOT, ENV, [], {}), ARM, PORT)
+srv.start()
+res = {"arm": ARM, "tokens": N, "env": ENV}
+try:
+    def toks(fmt, a, b):
+        return srv.tokenize("".join(fmt.format(i) for i in range(a, b)), False)
     unit_a = "Record {:05d}: alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu.\n"
     unit_b = "Edited {:05d}: omega psi chi phi upsilon tau sigma rho pi omicron xi nu.\n"
-    # Calibrate token count via /tokenize on the running server
-    s1 = "".join(unit_a.format(i) for i in range(100))
-    toks_per_100 = len(http_post("/tokenize", {"content": s1})["tokens"])
-    n_lines_total = int(60000 * 100 / toks_per_100)
-    n_lines_prefix = int(n_lines_total * 0.90)
-    prefix = "".join(unit_a.format(i) for i in range(n_lines_prefix))
-    tail_1 = "".join(unit_a.format(i) for i in range(n_lines_prefix, n_lines_total)) + "\nSummarize the final record number and words concisely:"
-    tail_2 = "".join(unit_b.format(i) for i in range(n_lines_prefix, n_lines_total)) + "\nSummarize the final record number and words concisely:"
-    p1 = prefix + tail_1
-    p2 = prefix + tail_2
-    t1 = len(http_post("/tokenize", {"content": p1})["tokens"])
-    t2 = len(http_post("/tokenize", {"content": p2})["tokens"])
-    tp = len(http_post("/tokenize", {"content": prefix})["tokens"])
-    print(f"Prompts built: P1={t1} tok, P2={t2} tok, common_prefix={tp} tok ({100.0*tp/t2:.1f}%)")
-    return p1, p2
-
-results = {}
-# Arm 1: Baseline (LLAMA_CKPT_GRID=0) -> P1 (warm) -> P2 (edit last 10%, expected full 60k recompute = cold ref!)
-proc, lf = start_server({"LLAMA_CKPT_GRID": "0"}, "/tmp/k005_off.log")
-try:
-    p1, p2 = build_prompts()
-    results["off_p1"] = run_req(p1, cache_prompt=True)
-    results["off_p2_edit10"] = run_req(p2, cache_prompt=True)
-    results["cold_p2"] = run_req(p2, cache_prompt=False)
+    per_line = len(toks(unit_a, 0, 100)) / 100
+    lines = int(N / per_line)
+    cut = int(lines * 0.9)
+    q = srv.tokenize("\nSummarize the final record number and words concisely:", False)
+    prefix = toks(unit_a, 0, cut)
+    p1 = prefix + toks(unit_a, cut, lines) + q
+    p2 = prefix + toks(unit_b, cut, lines) + q
+    turn = srv.tokenize(" The final record is listed above.\n" + "Follow-up question: list three of the words again.\n" * 40, False)
+    p3 = p2 + turn
+    fork = p2 + srv.tokenize("\nAlternative branch from here. Answer:", False)
+    res["len"] = {"p1": len(p1), "p2": len(p2), "prefix": len(prefix), "p3": len(p3)}
+    run.log(f"P1 {len(p1)} P2 {len(p2)} shared prefix {len(prefix)} ({100 * len(prefix) / len(p2):.1f} %) P3 {len(p3)}")
+    steps = [("p1", p1, True, 64), ("p2_edit10", p2, True, 64), ("p3_append", p3, True, 64)]
+    steps += [("cold_p2", p2, False, 64)] if ARM == "off" else [("p2_fork", fork, True, 16)]
+    for name, p, cache, n in steps:
+        r = srv.complete(p, n, cache_prompt=cache)
+        res[name] = r
+        run.log(f"{name:10s} cache_n={r['cache_n']} prompt_n={r['prompt_n']} prompt_ms={r['prompt_ms']} "
+                f"wall_s={r['wall_s']} md5={r['md5']}")
 finally:
-    proc.terminate(); proc.wait(); lf.close()
-
-# Arm 2: Grid ON (LLAMA_CKPT_GRID=8192, budget 4096 MiB, LLAMA_CKPT_VRAM=2) -> P1 -> P2 (edit 10%) -> fork branch
-proc, lf = start_server({"LLAMA_CKPT_GRID": "8192", "LLAMA_CKPT_GRID_MIB": "4096", "LLAMA_CKPT_VRAM": "2"}, "/tmp/k005_on.log")
-try:
-    results["grid_p1"] = run_req(p1, cache_prompt=True)
-    results["grid_p2_edit10"] = run_req(p2, cache_prompt=True)
-    # Fork-point check: extend P2 by 500 tokens, then branch back to exact end of P2 with a different suffix
-    p2_ext = p2 + "\n" + "Extension line for turn 2.\n" * 60 + "Answer:"
-    p2_fork = p2 + "\nAlternative branch from P2 end. Answer:"
-    results["grid_p2_ext"] = run_req(p2_ext, cache_prompt=True, n_predict=16)
-    results["grid_p2_fork"] = run_req(p2_fork, cache_prompt=True, n_predict=16)
-finally:
-    proc.terminate(); proc.wait(); lf.close()
-
-print("\n=== K-005 Summary ===")
-for k, v in results.items():
-    print(f"{k:16s} cache_n={v['cache_n']:6d} prompt_n={v['prompt_n']:6d} prompt_ms={v['prompt_ms']:8.1f} wall_s={v['wall_s']:6.2f} md5={v['md5']} {v['head']}")
-print(f"\nEdit-10% md5 match vs cold: grid={results['grid_p2_edit10']['md5']} cold={results['cold_p2']['md5']} equal={results['grid_p2_edit10']['md5'] == results['cold_p2']['md5']}")
+    srv.stop()
+xb.save_json(OUT % ARM, res)
+if ARM == "on" and os.path.exists(OUT % "off"):
+    off = xb.load_json(OUT % "off", {})
+    for k in ("p2_edit10", "p3_append"):
+        a, b = off[k], res[k]
+        run.log(f"{k}: resume prompt_ms off {a['prompt_ms']} -> on {b['prompt_ms']} ({100 * (b['prompt_ms'] / a['prompt_ms'] - 1):+.1f} %), "
+                f"wall {a['wall_s']} -> {b['wall_s']} s, md5 off {a['md5']} on {b['md5']} equal={a['md5'] == b['md5']}")
+    run.log(f"md5 grid p2_edit10 {res['p2_edit10']['md5']} vs cold {off['cold_p2']['md5']}: "
+            f"equal={res['p2_edit10']['md5'] == off['cold_p2']['md5']}")

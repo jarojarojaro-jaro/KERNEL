@@ -69,16 +69,19 @@ Audyt liczb: [[AUDYT]].
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia (31)
 - [[chmura/_hub|chmura]] — Wynajem GPU i harness chmurowy (6)
 - [[repo/_hub|repo]] — Repozytoria i projekty: cudze i nasze (91)
-- [[research/_hub|research]] — Streszczenia raportów (165)
+- [[research/_hub|research]] — Streszczenia raportów (166)
 - [[produkt/_hub|produkt]] — Plan produktu i decyzje produktowe (36)
 - [[ludzie-firmy/_hub|ludzie-firmy]] — Firmy, dostawcy, ludzie (28)
-- [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (6)
+- [[llm/_hub|llm]] — LLM: trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (7)
 
 ## Ostatnio aktualizowane
 
+- 2026-11-22 [[kernel-od-a-do-z|Kernel od A do Z]]
 - 2026-11-20 [[zwiad-2026-11-20|Zwiad 2026-11-20: błąd przywracania po odrzuconym drafcie w cache hybrydowym (ik_llama), weryfikacja kilku wierszy w oMLX, TensorRT-LLM 1.3 z Qwen3.5 MTP]]
 - 2026-11-20 [[telegram-2026-11-20-linux-7-2-pamiec|Linux 7.2 a LLM: zmiany pamięci pomagają przy odciążaniu do RAM/SSD, nie przy modelu w całości w VRAM]]
+- 2026-11-20 [[silniki-inferencji-2026-11-20|Silniki inferencji 2026-11-20: co bierzemy do Enigma Turbo (język zostaje C++/HIP)]]
 - 2026-11-20 [[enigma-turbo-gemini-2026-11-20|„Enigma Turbo” od Gemini 4 Neon: README obiecuje silnik CUDA/HIP, a działa tylko wolny CPU i odpowiada bełkotem]]
+- 2026-11-20 [[inkling-2-mini|Inkling 2 Mini (Thinking Machines, 2026-11-20): MoE z pętlą warstw, jakość jak Qwen3.8-27B przy ~5× mniejszym odczycie na token]]
 - 2026-11-19 [[zwiad-2026-11-19|Zwiad 2026-11-19: prefill przez drugą kartę (oMLX ×5,3 dla Qwen3.8-27B), sparowana weryfikacja draftów (TensorFold +24–29% na Macu), błąd EOG w rejekcji]]
 - 2026-11-19 [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]]
 - 2026-11-19 [[megakernel-zoo|megakernel-zoo (Xingyu Dang, Princeton): agent (Claude) pisze osobny megakernel dekodu dla każdego modelu i karty]]
@@ -88,9 +91,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-19 [[2026-11-19-k125-k001-xtx|2026-11-19: K-125 (KLD ścieżki kvq) i K-001 (wyciek stanu): XTX, topka-q70, Qwen3.8-27B-Uncensored Q4_K_M]]
 - 2026-11-19 [[2026-11-19-k118-nvidia-pelna-moc|2026-11-19 K-118 / K-116a / K-127: fork CUDA Enigmy na 3090, 3060 i 4080 SUPER z pełną mocą]]
 - 2026-11-19 [[2026-11-19-k111-k123-krok-xtx|2026-11-19 K-111 i K-123: gdzie ucieka krok MTP na XTX (bez karty, z istniejącego śladu) i błąd EOG w rejekcji]]
-- 2026-11-19 [[2026-11-19-k109-k110-k106-xtx|2026-11-19 K-109, K-110, K-106 na XTX: igły 3/3 przy 130k i 222k, `bench.py` skill-io 1:1, prefill drugiego żądania nie blokuje dekodu]]
-- 2026-11-18 [[zwiad-2026-11-18|Zwiad 2026-11-18: Splash 1.7 (drzewo draftu + lookup w jednym przebiegu), drafter NVIDIA 0,8B do Qwen3.8-27B — nic do wdrożenia u nas]]
-- 2026-11-18 [[llamampere|llamAmpere (JakeATX): fork llama.cpp pod RTX 30xx — szybki, ale domyślnie niebezstratny]]
 
-Razem 781 notatek. Wygenerowano 2026-11-20 przez `tools/wiki.py index`.
+Razem 783 notatek. Wygenerowano 2026-11-22 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
