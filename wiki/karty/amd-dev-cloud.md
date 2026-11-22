@@ -4,6 +4,10 @@ tags: [karty, amd, darmowe]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:38-40,77,114,139,161-167,206,299,366,407,418
 status: aktualne
+karta: amd-dev-cloud
+vram: 192 GB (MI300X)
+gdzie: AMD Developer Cloud (DigitalOcean / Vultr)
+stan: tylko darmowy kredyt $100, sanity-check HIP
 ---
 # AMD Developer Cloud i inne programy AMD
 

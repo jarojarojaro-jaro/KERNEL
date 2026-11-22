@@ -4,6 +4,16 @@ tags: [modele, dflash, spekulacja]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/qwen-opt/research/drafters.md:9-11,28-29,44-57; ~/KERNEL/qwen-opt/NOTES.md:45-50,148-160; ~/KERNEL/qwen-opt/research/qwen-round5.md:26-28; ~/KERNEL/qwen-opt/SPEC-QWEN27B.md:24,74-75; ls ~/models/draft (2026-10-16); ~/KERNEL/product/research/15b-spekulacja-frontier.md:21,113-123; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:28-29,43-52,295-301; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:14,66-67; ~/KERNEL/product/research/21a-dspine.md:17-21
 status: aktualne
+model: drafter-dflash
+rozmiar: 5 warstw
+kwant: Q4_K_M
+karty: rx-7900-xtx, rtx-3090
+wyniki:
+  - drafter-dflash | rx-7900-xtx | 115.7 t/s | dekod EN; n=6, cache q8_1 | 2026-10-09
+  - drafter-dflash | rx-7900-xtx | 90.6 t/s | dekod mediana T=0; PL/EN, n=6, 285 W | 2026-10-10
+  - drafter-dflash | rx-7900-xtx | 71.9 t/s | dekod mediana T=1; PL/EN, n=6 | 2026-10-10
+  - drafter-dflash | rx-7900-xtx | 104.8 t/s | dekod EN kod; n=6, runda 5 | 2026-10-15
+  - drafter-dflash | rtx-3090 | 109.2 t/s | dekod pl-kod T=1; Magnitude, Q8_0 | 2026-10-16
 ---
 # Drafter DFlash2 dla Qwen3.8-27B
 
@@ -36,6 +46,20 @@ Następca z tej rodziny: [[drafter-dspine]] (przyczynowy kręgosłup, +3.7…+6.
 - Dla nas bez zmian: DFlash2 przegrywa u nas z MTP po polsku i przy T=1 (powyżej). Nawet +30% względem DFlash2 nie gwarantuje wygranej z MTP n4.
 - Lekcja treningowa: pamięć odrzuconych propozycji to pomysł niezależny od architektury. Do sprawdzenia przy douczaniu naszej głowicy MTP (akceptacja PL 0,64 na głębokości 1).
 - Wraca, gdy pojawią się wagi dla Qwen3.8-27B.
+
+<!-- TABELE:START -->
+## Wyniki z notatek (5)
+
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+
+| karta | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| NVIDIA RTX 3090 [[rtx-3090]] | dekod pl-kod T=1 | **109.2 t/s** | Magnitude, Q8_0 | 2026-10-16 | [[drafter-dflash]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod EN | **115.7 t/s** | n=6, cache q8_1 | 2026-10-09 | [[drafter-dflash]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod EN kod | **104.8 t/s** | n=6, runda 5 | 2026-10-15 | [[drafter-dflash]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod mediana T=0 | **90.6 t/s** | PL/EN, n=6, 285 W | 2026-10-10 | [[drafter-dflash]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod mediana T=1 | **71.9 t/s** | PL/EN, n=6 | 2026-10-10 | [[drafter-dflash]] |
+<!-- TABELE:END -->
 
 ## Powiązane
 - [[modele/_hub|Modele]]

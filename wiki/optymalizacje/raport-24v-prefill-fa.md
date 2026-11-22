@@ -4,6 +4,12 @@ tags: [optymalizacje, fa, prefill, spill]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24v-prefill-fa.md:7-11,17-19,44-47,61-62
 status: aktualne
+technika: FA D=256 prefill bez spilli (sched_barrier)
+werdykt: odrzucone
+zysk: +0,84% pp512@d32k, +0,40% pp16384
+dowod: raport-24v-prefill-fa
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 24v: FA D=256 w prefillu Qwena – spille usunięte, zysk za mały
 

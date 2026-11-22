@@ -4,6 +4,12 @@ tags: [optymalizacje, mmvq, moe, lfm]
 aktualizacja: 2026-10-18
 zrodlo: ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:43-81; gałąź `opt-lfmmoe` @ `7c5b2a116` (`mmvq.cu`)
 status: aktualne
+technika: MMVQ MoE gate+up blok (GGML_HIP_MOE_GU_BLOCK)
+werdykt: przyjete
+zysk: mikrobench −7% (24.16 → 22.32 µs)
+dowod: 2026-10-18-lfm-moe-pasmo
+karta: rx-7900-xtx
+model: lfm2-5-24b-a2b
 ---
 # MMVQ MoE gate+up: blok jednej grupy q8_1 (`GGML_HIP_MOE_GU_BLOCK`)
 

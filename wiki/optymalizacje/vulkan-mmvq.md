@@ -4,6 +4,14 @@ tags: [optymalizacje, vulkan, mmvq]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:162-168,190-191; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:81-85
 status: nieaktualne
+technika: Vulkan RDNA matvec i MMVQ (0006–0010)
+werdykt: odrzucone
+zysk: −5,2% ms/krok (43,73 → 41,46), backend poza domyślną ścieżką
+dowod: vulkan-mmvq
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 41.46 ms | krok Vulkan 0007–0010; Qwen UD | 2026-10-12
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 39.92 ms | krok Vulkan 0007–0010 | 2026-10-12
 ---
 # Vulkan RDNA: matvec i MMVQ (0006–0010)
 

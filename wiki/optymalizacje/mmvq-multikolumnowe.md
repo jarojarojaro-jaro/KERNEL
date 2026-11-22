@@ -4,6 +4,15 @@ tags: [optymalizacje, mmvq, spekulacja]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:38-47,59-78,89,241-256; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:76-77,96-97; ~/KERNEL/product/research/08-analiza-platformy-latek.md:24; ~/KERNEL/product/research/patch-manifest.json (0001, 0002, 0021, 0022); ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:89-95,240; ~/KERNEL/product/research/21l-reverse-engineering-gpu.md:40-41; ~/KERNEL/product/research/21l-skrypty/rga-livereg-mmvq-q4k-ncols5.txt; ~/KERNEL/product/research/47-kernel-lab.md:14-18; ~/KERNEL/product/research/50a-mmvq-q4k.md:9-14; ~/KERNEL/product/research/50b-mmvq-q5k.md:5-16; ~/KERNEL/product/research/50c-mmvq-q6k.md:5-20; ~/KERNEL/product/research/50d-mmvq-iq4xs.md:15-26
 status: aktualne
+technika: MMVQ wielokolumnowe (0001, 0002, 0021, 0022)
+werdykt: przyjete
+zysk: Qwen MTP 68.6 → 82.3 t/s; K1 35.67 → 33.17 ms/krok
+dowod: ~/KERNEL/qwen-opt/NOTES.md:38-47
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 94,7 t/s | dekod MTP; po K1 0021-0022, 33.17 ms/krok | 2026-10-13
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 95,4 t/s | dekod MTP; po K1, 32.02 ms/krok | 2026-10-13
 ---
 # MMVQ wielokolumnowe (weryfikacja spekulacji)
 

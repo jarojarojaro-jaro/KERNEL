@@ -4,6 +4,15 @@ tags: [optymalizacje, mmvq, fa, isa]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24f-mmvq-i-fa.md:7-14,68-72; ~/KERNEL/product/research/26-kolejka-gpu-wieczor.md:11
 status: aktualne
+technika: MMVQ n=1 szeroki loader (wide=2)
+werdykt: odrzucone
+zysk: −1,0% tg128 (40,86 → 40,41 t/s)
+dowod: raport-24f-mmvq-fa
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 40.86 t/s | tg128 wide off | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 40.41 t/s | tg128 wide=2 | 2026-10-20
 ---
 # Raport 24f: MMVQ n=1 szeroki loader, klif Q4_K n=5, FA D=256 w prefillu (ISA)
 

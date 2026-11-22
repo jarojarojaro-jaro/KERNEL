@@ -4,6 +4,9 @@ tags: [modele, qwen, moe, flash-next]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66f-flash-next-dobor-kwantu-xtx.md; ~/KERNEL/product/research/66a-strata-maya.md:23-116; https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF; https://huggingface.co/ISTA-DASLab/Qwen3.8-Flash-Next-GSQ-RCO-GGUF; https://unsloth.ai/docs/basics/dynamic-3.0-ggufs/dynamic-3.1-ggufs.md; https://github.com/Niko1221/Strata (setup.py:3710-3723, docs/MODELS.md:119-134)
 status: do-sprawdzenia
+model: qwen38-flash-next
+rozmiar: 125B-A6B
+kwant: UD-IQ3_XXS
 ---
 # Qwen3.8-Flash-Next (125B MoE, 6B aktywnych, zapowiedź architektury Qwen4)
 

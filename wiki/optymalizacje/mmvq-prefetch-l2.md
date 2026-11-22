@@ -4,6 +4,10 @@ tags: [optymalizacje, cuda, mmvq, prefetch]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21b-gpu-perf-zasoby.md:291-296; ~/llama-master ggml/src/ggml-cuda/mmvq.cu:30-34,1703-1721; https://github.com/ggml-org/llama.cpp/pull/26705#issuecomment-5569335031
 status: do-sprawdzenia
+technika: prefetch L2 w MMVQ (CUDA)
+werdykt: w-toku
+zysk: u nas niezmierzone; GB10 Q6_K +6.19%
+dowod: ~/KERNEL/product/research/21b-gpu-perf-zasoby.md
 ---
 # Prefetch L2 w pętli MMVQ: włączony tylko na DGX Spark
 

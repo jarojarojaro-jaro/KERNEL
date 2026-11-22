@@ -4,6 +4,12 @@ tags: [optymalizacje, mtp, graf]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:236-239,277; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:95,105; ~/KERNEL/product/research/patch-manifest.json (0020, 0030)
 status: aktualne
+technika: draft MTP jednym grafem (0020) + scheduler (0030)
+werdykt: przyjete
+zysk: 36.39 → 35.67 ms/krok (0020); 31.89 → 31.59 ms (0030)
+dowod: ~/KERNEL/qwen-opt/NOTES.md:236-239
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Draft MTP jako jeden graf (0020) i własny scheduler (0030)
 

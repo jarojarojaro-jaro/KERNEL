@@ -4,6 +4,16 @@ tags: [testy, nvidia, vast, mtp, sufit, enigma, k118, k116, k127]
 aktualizacja: 2026-11-19
 zrodlo: qwen-opt/cloud/k114/{run.sh,run2.sh,run3.sh,lp.py,summ.py,launch.sh,fetch.sh}; wyniki qwen-opt/cloud/k114/res/k118-{3090,3060,4080s}/ (bench.jsonl, up-vn.jsonl, up-tg.jsonl, long.jsonl, prefill.jsonl, smi.csv, gpu.csv, start_s.txt); `python3 summ.py res/k118-3090 res/k118-3060 res/k118-4080s`
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 89,5 t/s | dekod MTP n2 T=0; GSQ IQ3_XXS-mtp, kvqlean, 418 W | 2026-11-19
+  - qwen3-8-27b | rtx-3090 | 1386 t/s | prefill ~11k; kvqlean | 2026-11-19
+  - qwen3-8-27b | rtx-3060 | 34,0 t/s | dekod MTP n2 T=0; GSQ IQ3_XXS-mtp, kvqlean, 144 W | 2026-11-19
+  - qwen3-8-27b | rtx-4080-super | 107,3 t/s | dekod MTP n4 T=0; GSQ IQ3_XXS-mtp, kvqlean, 278 W | 2026-11-19
+  - qwen3-8-27b | rtx-4080-super | 1862 t/s | prefill ~11k; kvqlean | 2026-11-19
+  - qwen3-8-27b | rtx-3090 | 71,8 t/s | dekod MTP n2 T=0 przy 95,6k; ctx 139 264 | 2026-11-19
+k: K-118, K-116, K-127
 ---
 # 2026-11-19 K-118 / K-116a / K-127: fork CUDA Enigmy na 3090, 3060 i 4080 SUPER z pełną mocą
 

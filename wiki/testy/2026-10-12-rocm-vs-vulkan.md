@@ -4,6 +4,14 @@ tags: [testy, rocm, vulkan]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:172-191
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 78.6 t/s | dekod 1.7k; ROCm MTP T=0 | 2026-10-12
+  - qwen3-8-27b | rx-7900-xtx | 92.4 t/s | dekod 1.7k; Vulkan MTP T=0 | 2026-10-12
+  - qwen3-8-27b | rx-7900-xtx | 666 t/s | prefill 94k; ROCm | 2026-10-12
+  - qwen3-8-27b | rx-7900-xtx | 397 t/s | prefill 94k; Vulkan | 2026-10-12
+  - qwen3-8-27b | rx-7900-xtx | 165 s | prompt 94k + 1000 tok.; ROCm (Vulkan 260 s) | 2026-10-12
 ---
 # 2026-10-12: ROCm vs Vulkan — cały czas odpowiedzi i długi kontekst
 

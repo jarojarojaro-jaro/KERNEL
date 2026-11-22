@@ -4,6 +4,16 @@ tags: [karty, nvidia, sm-89]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/29-4060ti.md:3-5,9-21,25-28,56-71,77-82; ~/qwen-opt/cloud/results/nv67c-summary.txt
 status: aktualne
+karta: rtx-4060-ti
+vram: 16 GB
+pasmo: 288 GB/s
+gdzie: Vast
+stan: zmierzona (29, 67c)
+wyniki:
+  - qwen3-8-27b | rtx-4060-ti | 36,30 t/s | dekod MTP n2; ISTA IQ3_XXS-mtp lean, ctx 229 376 | 2026-11-07
+  - qwen3-8-27b | rtx-4060-ti | 35.4 t/s | dekod czat T=1; UD-Q3_K_XL | 2026-10-20
+  - qwen3-8-27b | rtx-4060-ti | 24,02 t/s | dekod plain; ISTA ctx 217 088 | 2026-11-07
+  - lfm2-5-24b-a2b | rtx-4060-ti | 149.4 t/s | dekod; QAD-Q4_0 | 2026-10-20
 ---
 # NVIDIA RTX 4060 Ti 16 GB (Vast, serwer buildów)
 
@@ -16,6 +26,25 @@ status: aktualne
 - Raport: [[raport-29-4060ti]]. Bliźniak 16 GB: [[rtx-5060-ti]] (T 50.8 t/s przy 448 GB/s).
 
 Kampania 67c (2026-11-07, 165 W): stary pick UD-Q3_K_XL 143 360 plain PASS 19,78 t/s (b12110 19,80). Lean b12110 ISTA IQ3_XXS-mtp MTP n2 **229 376 PASS 36,30 t/s** (15 736 MiB; 245 760 crash, 262 144 OOM); n1 @200 704 34,29. Pick ISTA 217 088 plain PASS **24,02** (14 566 MiB; MTP n3 przy nim OOM). Przepisy: [[final-recipes-nvidia]].
+
+<!-- TABELE:START -->
+## Wyniki z notatek (10)
+
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+
+| model | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| LFM2.5-24B-A2B [[lfm2-5-24b-a2b]] | dekod | **149.4 t/s** | QAD-Q4_0 | 2026-10-20 | [[rtx-4060-ti]] |
+| LFM2.5-24B-A2B [[lfm2-5-24b-a2b]] | serwer | **149.4 t/s** | QAD-Q4_0 | 2026-10-20 | [[raport-29-4060ti]] |
+| Qwen3.8-27B [[qwen3-8-27b]] | code-edit | **170.9 t/s** | cuda-topka2 | 2026-10-20 | [[raport-29-4060ti]] |
+| Qwen3.8-27B [[qwen3-8-27b]] | czat T=1 | **35.4 t/s** | Q3_K_XL, cuda-topka2, 100 W | 2026-10-20 | [[raport-29-4060ti]] |
+| Qwen3.8-27B [[qwen3-8-27b]] | czat T=1 T' | **50.8 t/s** | UD-IQ4_XS, KV q4_0, 32k | 2026-10-20 | [[raport-31-4060ti]] |
+| Qwen3.8-27B [[qwen3-8-27b]] | dekod czat T=1 | **35.4 t/s** | UD-Q3_K_XL | 2026-10-20 | [[rtx-4060-ti]] |
+| Qwen3.8-27B [[qwen3-8-27b]] | dekod MTP n2 | **36,30 t/s** | ISTA IQ3_XXS-mtp lean, ctx 229 376 | 2026-11-07 | [[rtx-4060-ti]] |
+| Qwen3.8-27B [[qwen3-8-27b]] | dekod MTP n2 ctx 229 376 | **36,30 t/s** | ISTA IQ3_XXS-mtp, b12110lean, fill PASS | 2026-11-07 | [[2026-11-07-kampania-nvidia-vast]] |
+| Qwen3.8-27B [[qwen3-8-27b]] | dekod plain | **24,02 t/s** | ISTA ctx 217 088 | 2026-11-07 | [[rtx-4060-ti]] |
+| Qwen3.8-27B [[qwen3-8-27b]] | mvs T' | **188.6 t/s** | UD-IQ4_XS | 2026-10-20 | [[raport-31-4060ti]] |
+<!-- TABELE:END -->
 
 ## Powiązane
 - [[karty/_hub|karty]]

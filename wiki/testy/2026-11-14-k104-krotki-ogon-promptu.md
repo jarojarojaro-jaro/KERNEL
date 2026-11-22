@@ -4,6 +4,12 @@ tags: [testy, xtx, ttft, checkpointy, gdn, kolejka]
 aktualizacja: 2026-11-14
 zrodlo: ~/KERNEL/qwen-opt/k104/{k104.py,k104.jobs,res/k104.json,res/xtxbench.log}; ~/KERNEL/qwen-opt/patches/k104/0001-*.patch (gałąź k104-short-tail @ 5bbc8d442 na topka-q70)
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 128,0 t/s | dekod 1,7k; SHORT_TAIL=32 (KILL, produkcja 135,4) | 2026-11-14
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 148,5 ms | prompt krótkiej tury mediana; SHORT_TAIL=32 (produkcja 148,7) | 2026-11-14
+k: K-104
 ---
 # 2026-11-14: K-104 — krótki ogon promptu w jednym przebiegu: KILL (0 ms zysku, zmienia md5, −5,5% dekodu)
 

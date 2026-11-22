@@ -4,6 +4,10 @@ tags: [optymalizacje, cache, agent, serwer]
 aktualizacja: 2026-11-05
 zrodlo: ~/KERNEL/product/research/63b-colibri-maya-delta.md:33-39,200-208,260-270,299-320
 status: aktualne
+technika: wspólny początek promptu i chude checkpointy
+werdykt: w-toku
+zysk: niezmierzone
+dowod: wspolny-poczatek-promptu
 ---
 # Wspólny początek promptu i chude checkpointy (Maya #607, RTP-LLM #1574)
 

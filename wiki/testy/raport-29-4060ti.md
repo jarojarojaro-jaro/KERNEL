@@ -4,6 +4,12 @@ tags: [testy, nvidia, rtx-4060-ti, wyniki]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/29-4060ti.md:7-21,87-89,104-108,113-116
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-4060-ti
+wyniki:
+  - qwen3-8-27b | rtx-4060-ti | 35.4 t/s | czat T=1; Q3_K_XL, cuda-topka2, 100 W | 2026-10-20
+  - qwen3-8-27b | rtx-4060-ti | 170.9 t/s | code-edit; cuda-topka2 | 2026-10-20
+  - lfm2-5-24b-a2b | rtx-4060-ti | 149.4 t/s | serwer; QAD-Q4_0 | 2026-10-20
 ---
 # Raport 29: RTX 4060 Ti 16 GB – przed/po (Qwen Q3_K_XL, LFM QAD-Q4_0)
 

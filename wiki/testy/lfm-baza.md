@@ -4,6 +4,12 @@ tags: [testy, lfm, baza]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:333-341
 status: aktualne
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 173 t/s | czat T=1; Q5_K_M, KV q4_0, bez MTP | 2026-10-14
+  - lfm2-5-24b-a2b | rx-7900-xtx | 198.3 t/s | tg128; fork (upstream 169.3) | 2026-10-14
+  - lfm2-5-24b-a2b | rx-7900-xtx | 6180 t/s | pp4096; fork | 2026-10-14
 ---
 # 2026-10-14: LFM2.5-24B-A2B — pomiar bazowy
 

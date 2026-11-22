@@ -4,6 +4,11 @@ tags: [karty, amd, rdna4]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/reports/Optymalizacja kerneli na AMD.md:7,15,75-84,97,114; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:24,119,137,364; ~/KERNEL/hardware/rx-7900-xtx.md:135,139; ~/KERNEL/product/research/66d-saber-engine-rdna.md:20,43,59,149
 status: aktualne
+karta: radeon-ai-pro-r9700
+vram: 32 GB
+pasmo: 640 GB/s
+gdzie: Hostkey
+stan: do wynajęcia, plan kampanii RDNA4
 ---
 # AMD Radeon AI PRO R9700 (do wynajęcia)
 

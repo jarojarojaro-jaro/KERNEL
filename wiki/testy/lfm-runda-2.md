@@ -4,6 +4,9 @@ tags: [testy, lfm, kv]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:353-360; ~/KERNEL/qwen-opt/research/lfm-kv-q4-vs-q8.md; ~/KERNEL/qwen-opt/research/lfm-decode-round2.md
 status: aktualne
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wynik: lfm2-5-24b-a2b | rx-7900-xtx | 244.1 t/s | tg128; KV q8_0, łatki 0053–0054 | 2026-10-14
 ---
 # 2026-10-14: LFM runda 2 (0053–0054) i przejście na KV q8_0
 

@@ -4,6 +4,12 @@ tags: [testy, pomiar, rx-7900-xtx, ab, kolejka]
 aktualizacja: 2026-11-09
 zrodlo: ~/qwen-opt/xtxbench/runs/1109-004040-t1-aa-validate/summary.txt, results.jsonl, xtxbench.log; ~/qwen-opt/xtxbench/README.md, xtxbench.py, selftest.py; ~/KERNEL/qwen-opt/xtxbench/; ~/KERNEL/qwen-opt/patches/xtxbench/0001-runtime-switch-hook-GGML_HIP_RUNTIME_SWITCH_FILE.patch
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 129,23 t/s | dekod 1,7k T=0; xtxbench A/A, produkcja | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 93,33 t/s | dekod 199k T=0; xtxbench A/A | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 865,61 t/s | prefill 32k; xtxbench A/A | 2026-11-09
 ---
 # xtxbench: szybki A/B silnika produkcyjnego XTX (cel ~10 min na wariant zamiast 40–120)
 

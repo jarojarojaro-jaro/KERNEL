@@ -4,6 +4,11 @@ tags: [optymalizacje, spekulacja, drzewa, gdn]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66d-saber-engine-rdna.md:80-99,159; Saber `sgdn_tree.h:1-10`, `spec_tree.rs:13-22,490`, `p27_tree_advl.hip` (c8a1e84); ~/KERNEL/product/research/24s-proza-drzewa.md:8-21
 status: do-sprawdzenia
+technika: drzewo weryfikacji GDN (forma WY)
+werdykt: w-toku
+zysk: +7.8% w symulacji Sabera; nasz sufit dynamiczne +3.9…4.7%
+dowod: ~/KERNEL/product/research/66d-saber-engine-rdna.md
+model: qwen3-8-27b
 ---
 # Drzewo weryfikacji na hybrydzie GDN (forma WY)
 

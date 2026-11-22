@@ -4,6 +4,11 @@ tags: [optymalizacje, cache, agent, kv]
 aktualizacja: 2026-10-24
 zrodlo: ~/KERNEL/product/research/60d-serving-kernels-cache.md:167-183,224-227; https://arxiv.org/abs/2610.28577; https://github.com/thu-nics/AKV (`c567a42`)
 status: aktualne
+technika: AKV drop + repozycjonowanie KV
+werdykt: w-toku
+zysk: −27.7% kosztu API u autorów (GPT-OSS-120B); repos odpada u nas (IMROPE)
+dowod: ~/KERNEL/product/research/60d-serving-kernels-cache.md
+model: qwen3-8-27b
 ---
 # AKV: agent/harness edytuje własne KV (drop + repozycjonowanie RoPE)
 

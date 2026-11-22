@@ -4,6 +4,12 @@ tags: [optymalizacje, mmvq, lfm]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:349,374; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:127,139,184; ~/KERNEL/product/research/patch-manifest.json (0052, 0064); ~/KERNEL/qwen-opt/run-llm.sh:11; ~/KERNEL/product/research/09-chmura-3090.md:103,110-125; ~/KERNEL/product/research/09-chmura-5060ti.md:124,207; ~/KERNEL/product/research/09-chmura-3060.md:159; git -C ~/llama-master log -1 3da7a02ec; git -C ~/llama-master log -1 007000aaa; git -C ~/llama-master log -1 71412d9c6; ~/KERNEL/product/research/14-nemotron-3090.md:134,139-141; ~/KERNEL/product/research/23b-re-kernele-amd.md:20-22,40
 status: aktualne
+technika: MMVQ n=1 2 wiersze na blok (0052, 0064)
+werdykt: przyjete
+zysk: LFM 4.610 → 4.509 ms/token (+2.2%); Uncensored 3.933 → 3.706 ms (+6.1%); 3090 LFM +8.5%
+dowod: raport-09-chmura-3090
+karta: rx-7900-xtx
+model: lfm2-5-24b-a2b
 ---
 # MMVQ 1-kolumnowe: 2 wiersze na blok (0052, 0064)
 

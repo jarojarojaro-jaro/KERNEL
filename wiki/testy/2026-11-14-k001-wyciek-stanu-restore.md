@@ -4,6 +4,12 @@ tags: [testy, xtx, determinizm, cache, mtp, kolejka]
 aktualizacja: 2026-11-14
 zrodlo: ~/KERNEL/qwen-opt/k001/k001.py; ~/KERNEL/qwen-opt/k001/res/{k001.json,xtxbench.log} (run 1114-205229-k001-aa; pierwszy run 1114-203645); ~/KERNEL/qwen-opt/k001/k1114.jobs; kod topka-q70 tools/server/server-context.cpp (load_slot_draft), src/llama-kv-cache.cpp (v_heads)
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 130,4 t/s | dekod T=0 1,7k; topka-q70, PM4 | 2026-11-14
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 122,6 t/s | dekod T=0 1,7k; topka-q70, bez PM4 | 2026-11-14
+k: K-001
 ---
 # 2026-11-14: K-001 — „wyciek stanu” przy restore to zależność od historii serwera, nie od lookupu, sprzężenia ani PM4
 

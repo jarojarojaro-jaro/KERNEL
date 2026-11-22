@@ -4,6 +4,11 @@ tags: [testy, lfm, atencja]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:362-370; ~/KERNEL/qwen-opt/research/lfm-decode-round3.md
 status: aktualne
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 262.1 t/s | tg128 głębokość 0; KV q8_0, łatki 0055–0059 | 2026-10-14
+  - lfm2-5-24b-a2b | rx-7900-xtx | 191.4 t/s | tg128 98k; KV q8_0, kvq q8 (baza 152.4) | 2026-10-14
 ---
 # 2026-10-14: LFM runda 3 (0055–0059)
 

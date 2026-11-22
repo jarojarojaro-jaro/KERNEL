@@ -4,6 +4,12 @@ tags: [optymalizacje, fuzje, normy, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24u-norm-quant.md:7-12,18-30,50-52
 status: aktualne
+technika: osobny kernel rms_norm × w + quantize q8_1
+werdykt: odrzucone
+zysk: ≈ 0,012 ms/krok (próg 0,25 ms)
+dowod: raport-24u-norm-quant
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 24u: osobny kernel rms_norm × w + quantize q8_1 – stop, zysk ≈ 0
 

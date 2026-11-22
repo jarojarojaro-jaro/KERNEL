@@ -4,6 +4,12 @@ tags: [optymalizacje, spekulacja, glowica, mtp]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66d-saber-engine-rdna.md:101-117,158; Saber `dflash_head.hip:1-40,88-93,607-610` (c8a1e84)
 status: do-sprawdzenia
+technika: głowica draftu gruba + rerank top-K
+werdykt: w-toku
+zysk: niezmierzone; cel odzyskać −2–3% akceptacji IQ4_XS
+dowod: ~/KERNEL/product/research/66d-saber-engine-rdna.md
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Głowica draftu: grube przejście + dokładny rerank top-K
 

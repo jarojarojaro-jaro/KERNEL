@@ -4,6 +4,12 @@ tags: [optymalizacje, serwer, wiele-zapytan, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24c-wiele-zapytan.md:3,14-35,47-50
 status: aktualne
+technika: wiele zapytań -np 2/4
+werdykt: odrzucone
+zysk: −5…−17% single; fan-out wall 258.0 → 287.4 s (+11%)
+dowod: ~/KERNEL/product/research/24c-wiele-zapytan.md
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Raport 24c: wiele zapytań naraz na topce (`-np 2/4`) – kill
 

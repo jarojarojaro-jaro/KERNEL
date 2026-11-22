@@ -4,6 +4,15 @@ tags: [optymalizacje, cache, serwer]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/16f-xtx-szybkie.md:16,192-215; ~/wt/quickwins/qw/e5.jsonl; ~/KERNEL/product/research/21d-kv-na-dysku.md:5-13
 status: aktualne
+technika: cache sesji na dysku (slot save/restore)
+werdykt: odrzucone
+zysk: restore 53k 23–24× szybciej niż prefill (Qwen 2.51 s vs ~61.5 s); decyzja KV tylko w RAM
+dowod: 2026-10-19-kv-tylko-w-ram
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 2,51 s | odczyt sesji 53k z SSD; slot-save-path, MTP | 2026-10-18
+  - lfm2-5-24b-a2b | rx-7900-xtx | 0,53 s | odczyt sesji 53k z SSD; slot-save-path | 2026-10-18
 ---
 # Cache sesji na dysku (projekt z 16f E5)
 

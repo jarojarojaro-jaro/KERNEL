@@ -4,6 +4,11 @@ tags: [testy, nvidia, rtx-3090, topka]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24e-nvidia-runda.md:9-14,18-27,33-37
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 320.6 t/s | code-edit; topka CUDA lookup W16 (125.8) | 2026-10-19
+  - qwen3-8-27b | rtx-3090 | 245 t/s | kopia 64k; topka CUDA | 2026-10-19
 ---
 # Raport 24e: runda NVIDIA – topka na CUDA (RTX 3090), L2 prefetch, TensorFold 1.1.0
 

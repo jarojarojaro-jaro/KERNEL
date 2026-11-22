@@ -4,6 +4,12 @@ tags: [optymalizacje, rdna3, bariery]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/21g-nowe-silniki.md:291-297,316-322; ~/KERNEL/product/research/21g-notatki/k.s:27-29; ~/KERNEL/product/research/21g-notatki/k2.s:33-34; ~/KERNEL/product/research/23b2-re-kernele-amd-bariery.md:32-59; ~/KERNEL/product/research/26-kolejka-gpu-wieczor.md:10; ~/KERNEL/product/research/24a-bariera-lds.md:7-13,26-31,48-52; ~/KERNEL/product/research/26-kolejka-gpu-wieczor.md:10
 status: aktualne
+technika: bariera tylko LDS (GGML_HIP_LDS_BARRIER)
+werdykt: odrzucone
+zysk: w szumie (pp4096 1133.2 → 1129.7 t/s, czat 102.5 → 102.4)
+dowod: ~/KERNEL/product/research/26-kolejka-gpu-wieczor.md:10
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Bariera tylko LDS na RDNA3 (bez `buffer_gl0_inv`)
 

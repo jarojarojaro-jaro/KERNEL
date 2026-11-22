@@ -4,6 +4,8 @@ tags: [karty, pasmo]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21b-gpu-perf-zasoby.md:72-84
 status: aktualne
+karta: karty-nvidia-parametry
+stan: parametry do modeli kosztu
 ---
 # Karty NVIDIA (i XTX): pasmo, L2, SM – liczby do rachunków
 

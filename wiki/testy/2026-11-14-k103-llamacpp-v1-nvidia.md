@@ -4,6 +4,14 @@ tags: [testy, nvidia, rtx-5060-ti, enigma, mtp, upstream, kolejka]
 aktualizacja: 2026-11-14
 zrodlo: ~/KERNEL/qwen-opt/cloud/k103/{run.sh,run2.sh,summ.py,collect.sh,collect2.sh,res/*,res2/*}; Vast instancja 60693822 (RTX 5060 Ti 16 GB, Tajwan, limit mocy 150 W z 180 W fabrycznych), 2026-11-14 20:36–21:20 UTC
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-5060-ti
+wyniki:
+  - qwen3-8-27b | rtx-5060-ti | 45,62 t/s | spec_sweep T=1 MTP n2; ISTA IQ3_XXS-mtp, v1.0.0, 150 W | 2026-11-14
+  - qwen3-8-27b | rtx-5060-ti | 43,95 t/s | spec_sweep T=1 MTP n2; ISTA IQ3_XXS-mtp, b11856, 150 W | 2026-11-14
+  - qwen3-8-27b | rtx-5060-ti | 40,32 t/s | spec_sweep T=1 MTP n3; b12359, 160 W | 2026-11-14
+  - qwen3-8-27b | rtx-5060-ti | 306,41 t/s | pp576 ub 16; v1.0.0 (b11856 278,98) | 2026-11-14
+k: K-103
 ---
 # 2026-11-14: K-103 — llama.cpp v1.0.0 vs pin Enigmy b11856 na RTX 5060 Ti (Qwen3.8-27B ISTA IQ3_XXS-mtp, MTP n2)
 

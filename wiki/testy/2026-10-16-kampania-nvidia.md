@@ -4,6 +4,15 @@ tags: [testy, nvidia, chmura, faza-0]
 aktualizacja: 2026-11-22
 zrodlo: ~/qwen-opt/cloud/PLAN-TESTOW.md:1-6,51-71,162-178; ~/KERNEL/product/research/09-chmura-3090.md:3-7,176-185; ~/KERNEL/product/research/09-chmura-5060ti.md:3-5,189-191,205-212; ~/KERNEL/product/research/09-chmura-3060.md:3-5,225-231; ~/KERNEL/product/research/09-chmura-3090.md:40-72,201-233; ~/KERNEL/product/research/09-chmura-5060ti.md:59-89,214-256; ~/KERNEL/product/research/09-chmura-3060.md:64-127,233-275; ~/qwen-opt/cloud/results/{3090,5060ti,3060}-20261016/scorecard.json; ~/KERNEL/product/research/14-nemotron-3090.md:216-231
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 78.0 t/s | dekod MTP T=1; UD-Q4_K_XL fork (A1 63.3) | 2026-10-16
+  - lfm2-5-24b-a2b | rtx-3090 | 263.9 t/s | dekod T=1; Q5_K_M fork (A1 176.0) | 2026-10-16
+  - qwen3-8-27b | rtx-5060-ti | 51.66 t/s | dekod MTP T=1; UD-Q3_K_XL fork (A1 37.32) | 2026-10-16
+  - lfm2-5-24b-a2b | rtx-5060-ti | 207.86 t/s | dekod T=1; Q4_K_M fork (A1 144.47) | 2026-10-16
+  - saluki | rtx-3060 | 23.4 t/s | dekod T=1; IQ2-mix fork (A1 22.3) | 2026-10-16
+  - bonsai | rtx-3060 | 35.5 t/s | dekod T=1; Q2_0 repack fork (A1 33.1) | 2026-10-16
 ---
 # 2026-10-16: pierwsza kampania na kartach NVIDIA (Vast)
 

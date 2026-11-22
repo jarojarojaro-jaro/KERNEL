@@ -4,6 +4,16 @@ tags: [optymalizacje, sampler, host]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:277-278,345,381-392; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:106,123,140-144,266; ~/KERNEL/qwen-opt/STATUS-NEXT.md:16,20-21
 status: aktualne
+technika: szybka ścieżka samplera (0031, 0048, 0065–0069)
+werdykt: przyjete
+zysk: narzędzia omp Qwen MTP 104,8 → 113,2 t/s, LFM 254,2 → 294,3
+dowod: sampler-fast-path
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 113.2 t/s | dekod MTP narzędzia omp; sampler fast | 2026-10-15
+  - lfm2-5-24b-a2b | rx-7900-xtx | 294.3 t/s | dekod narzędzia omp; sampler fast | 2026-10-15
+  - lfm2-5-24b-a2b | rx-7900-xtx | 292.9 t/s | dekod budżet myślenia; sampler fast | 2026-10-15
+  - qwen3-8-27b | rx-7900-xtx | 107.0 t/s | dekod MTP budżet myślenia; sampler fast | 2026-10-15
 ---
 # Szybka ścieżka samplera (0031, 0048, 0065–0069)
 

@@ -4,6 +4,15 @@ tags: [optymalizacje, spekulacja, sampler, topka]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24p-sprzezone-t1.md:8-12,29-41,63
 status: aktualne
+technika: sprzężone próbkowanie draftu (LLAMA_SPEC_COUPLED)
+werdykt: przyjete
+zysk: +3,5% T=1 (107,6 → 111,4 t/s)
+dowod: raport-24p-sprzezone-t1
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 107.6 t/s | dekod MTP T=1 bez sprzężenia | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 111.4 t/s | dekod MTP T=1 SPEC_COUPLED=1 | 2026-10-20
 ---
 # Raport 24p: sprzężone próbkowanie draftu (`LLAMA_SPEC_COUPLED`) na topce przy T=1
 

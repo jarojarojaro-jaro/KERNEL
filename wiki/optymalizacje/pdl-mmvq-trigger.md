@@ -4,6 +4,12 @@ tags: [optymalizacje, cuda, pdl, mmvq]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21b-gpu-perf-zasoby.md:168-200; ~/llama-master ggml/src/ggml-cuda/mmvq.cu:1480,1530,1980; ggml/src/ggml-cuda/common.cuh:1913-1916; ~/KERNEL/product/research/23c-re-kernele-nvidia.md:5-8
 status: do-sprawdzenia
+technika: PDL trigger w MMVQ (CUDA sm_90+)
+werdykt: w-toku
+zysk: niezmierzone (szacunek)
+dowod: ~/KERNEL/product/research/21b-gpu-perf-zasoby.md
+karta: rtx-5060-ti
+model: lfm2-5-24b-a2b
 ---
 # PDL w MMVQ użyty tylko w połowie (CUDA sm_90+)
 

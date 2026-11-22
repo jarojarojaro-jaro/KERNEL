@@ -59,10 +59,10 @@ Audyt liczb: [[AUDYT]].
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (37)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (27)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (4)
-- [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (18)
+- [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (39)
-- [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (98)
-- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (123)
+- [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
+- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (24)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (123)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (81)
@@ -74,6 +74,7 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-22 [[runda-6|2026-10-15: runda 6 — epilog MMQ, GDN fast, narzędzia]]
+- 2026-11-22 [[najlepsze-wyniki|Najlepsze wyniki: model × karta (tabela z notatek)]]
 - 2026-11-22 [[2026-11-07-kampania-nvidia-vast|Kampania NVIDIA na Vast: 17 kart, 262 144 z MTP na 24 i 32 GB (2026-11-07)]]
 - 2026-11-22 [[2026-10-19-page-faulty-gpu-analiza|2026-10-16/19: page faulty GPU i 10 resetów XTX (analiza bez GPU)]]
 - 2026-11-22 [[2026-10-19-build-topka|2026-10-19: build „topka” – ogon lookupu + współdzielenie cache, PM4 wyłączone]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-22 [[2026-10-16-mtp-pl-pilot|2026-10-16: pilot douczania głowicy MTP (wynik negatywny)]]
 - 2026-11-22 [[2026-10-16-magnitude-vs-fork|2026-10-16: X1 – Magnitude vs nasz fork vs upstream (3090, 5060 Ti)]]
 - 2026-11-22 [[2026-10-16-kvq-cuda|2026-10-16: E1 – port `kvq` na CUDA (Ampere+)]]
-- 2026-11-22 [[2026-10-16-kampania-nvidia|2026-10-16: pierwsza kampania na kartach NVIDIA (Vast)]]
 
-Razem 783 notatek. Wygenerowano 2026-11-22 przez `tools/wiki.py index`.
+Razem 788 notatek. Wygenerowano 2026-11-22 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

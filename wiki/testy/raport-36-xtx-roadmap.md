@@ -4,6 +4,9 @@ tags: [testy, xtx, budzet-kroku]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/36-xtx-qwen-roadmap.md:8-20
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wynik: qwen3-8-27b | rx-7900-xtx | 27.38 ms | krok prozy T=1; 2.63 tok/krok, stara metryka | 2026-10-20
 ---
 # Raport 36: budżet kroku prozy T=1 na XTX
 

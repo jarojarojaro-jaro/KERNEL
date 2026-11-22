@@ -4,6 +4,9 @@ tags: [karty, amd, bare-metal]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:22-28,71-76,130-141,258-260,289-292,403; komunikat Main do WikiIngest 2026-10-18 (portal SaladCloud, 2026-10-18)
 status: aktualne
+karta: radeony-do-wynajecia
+gdzie: Hostkey / GigaGPU / Scaleway / Salad
+stan: podaż punktowa
 ---
 # Gdzie wynająć Radeona, Arca i Maca (Hostkey, GigaGPU, Scaleway, hyperscalerzy)
 

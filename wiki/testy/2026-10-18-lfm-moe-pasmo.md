@@ -4,6 +4,11 @@ tags: [testy, lfm, moe, pasmo]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:1-93; ~/wt/lfmmoe-prof/{base_tr_1.txt,base_rp_1.txt}; ~/wt/lfmmoe-prof/frozen/{abba_lfm.txt,abba_unc.txt,check1.txt}; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:1-123
 status: aktualne
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 292.22 t/s | tg128; MOE_GU_BLOCK 7c5b2a116 (=0 291.26) | 2026-10-18
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 268.27 t/s | tg128; MOE_GU_BLOCK (=0 264.60) | 2026-10-18
 ---
 # 2026-10-16/18: pasmo kerneli MoE LFM2.5 na XTX
 

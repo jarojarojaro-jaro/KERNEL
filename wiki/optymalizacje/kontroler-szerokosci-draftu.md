@@ -4,6 +4,12 @@ tags: [optymalizacje, spekulacja, kontroler]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,65-80,222-235,258-271; ~/KERNEL/product/research/16b-lookup-tail.md:132-136; ~/KERNEL/product/research/24q-adaptacyjna-spekulacja.md:11-21,48-53
 status: aktualne
+technika: kontroler szerokości draftu
+werdykt: odrzucone
+zysk: T2 103.6 vs 102.7 t/s (nic); kontroler 5/8/16 wynik zerowy
+dowod: 2026-10-18-kontroler-szerokosci-zerowy
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Kontroler szerokości draftu (wzorzec Magnitude)
 

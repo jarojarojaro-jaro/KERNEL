@@ -4,6 +4,9 @@ tags: [testy, xtx, proza]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/37-proza-100.md:9-38
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wynik: qwen3-8-27b | rx-7900-xtx | 78.93 t/s | proza E0 T=1; produkcja, 27.34 ms/krok | 2026-10-20
 ---
 # Raport 37: stała metryka prozy E0, resztka hosta, górne granice
 

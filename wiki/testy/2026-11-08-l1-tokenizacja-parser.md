@@ -4,6 +4,12 @@ tags: [testy, rx-7900-xtx, serwer, host, tokenizacja, agent]
 aktualizacja: 2026-11-09
 zrodlo: ~/qwen-opt/l1tok/results.jsonl (ramiona A1, B1, B2; 2026-11-08 00:58–01:25); ~/qwen-opt/l1tok/NOTE.md; branch l1-tokparse 8a18c3077; ~/KERNEL/qwen-opt/patches/l1-tokparse/
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 6,6 ms | tokenizacja mediana 82–119k; TOK_CACHE+PARSE_INC (baza 14,0) | 2026-11-08
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 1 619 ms | tura poza prefillem; TOK_CACHE+PARSE_INC (baza 1 704) | 2026-11-08
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 110,1 t/s | spec_sweep T=1; B1 | 2026-11-08
 ---
 # Cache tokenizacji na ścieżce SAFE_SPECIAL + parser przyrostowy: tokenizacja 14,0 → 6,6 ms, wyjście identyczne (2026-11-08, pomiar częściowy)
 

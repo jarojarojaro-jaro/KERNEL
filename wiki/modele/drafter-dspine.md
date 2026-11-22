@@ -4,6 +4,10 @@ tags: [modele, spekulacja, drafter]
 aktualizacja: 2026-11-09
 zrodlo: ~/KERNEL/product/research/21a-dspine.md:13-38,39-77,307-321; ~/KERNEL/product/research/69a-dspine-27b.md:16-37,45-57,74-86,100-141,185-213; https://arxiv.org/abs/2609.36173; https://huggingface.co/tencent/Qwen3-8B-DSpine-b16; https://huggingface.co/tencent/Qwen3.8-27B-DSpine-b16; https://github.com/Ajay9o9/llama.cpp/tree/dspine
 status: aktualne
+model: drafter-dspine
+rozmiar: 2.03B
+kwant: BF16
+dowod: ~/KERNEL/product/research/69a-dspine-27b.md
 ---
 # Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem
 

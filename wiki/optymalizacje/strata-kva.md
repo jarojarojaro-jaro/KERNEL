@@ -4,6 +4,11 @@ tags: [optymalizacje, prefill, stratne, odrzucone]
 aktualizacja: 2026-11-05
 zrodlo: ~/KERNEL/product/research/63d-atencja-spec-kwant.md:191-255; ~/KERNEL/product/research/63a-silniki-lokalne.md:93-122; https://github.com/Niko1221/Strata/blob/9f7d977/docs/KVA.md
 status: aktualne
+technika: Strata KVA (prefill przez stan późnych warstw)
+werdykt: odrzucone
+zysk: stratne; decode −11% na R9700
+dowod: strata-kva
+karta: radeon-ai-pro-r9700
 ---
 # Strata KVA: prefill przez sam stan późnych warstw
 

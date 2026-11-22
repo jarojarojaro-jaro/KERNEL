@@ -4,6 +4,9 @@ tags: [modele, agenci]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21h-rsi.md:264-293; https://huggingface.co/IntelligenceLab/RSR-27B (HF API 2026-10-19); https://arxiv.org/abs/2610.02826
 status: do-sprawdzenia
+model: rsr-27b
+rozmiar: 27B
+kwant: BF16
 ---
 # RSR-27B (IntelligenceLab): Qwen3.8-27B po RSR + RL
 

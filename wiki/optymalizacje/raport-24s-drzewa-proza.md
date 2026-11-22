@@ -4,6 +4,11 @@ tags: [optymalizacje, spekulacja, drzewa, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24s-proza-drzewa.md:8-21,58-63,82-85,109
 status: aktualne
+technika: drzewa draftu MTP i temperatura draftu
+werdykt: odrzucone
+zysk: drzewo statyczne +1,2%, dynamiczne +3,9…4,7% (próg +6%)
+dowod: raport-24s-drzewa-proza
+model: qwen3-8-27b
 ---
 # Raport 24s: drzewa draftu MTP i temperatura draftu na prozie – sufit offline
 

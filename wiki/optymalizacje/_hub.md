@@ -12,12 +12,13 @@ status: aktualne
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (98)
+## Notatki (99)
 
 - [[agr-lookup-zgodny-z-mtp|AGR: wybór kandydata lookupu zgodnego z draftami MTP]] — Reguła bez treningu i bezstratna: spośród kandydatów lookupu (sufiks ≥ 2 albo ≥ 4 tokenów) zostawić tych, których pierwsze 4 tokeny kontynuacji równają się 4 draftom MTP, potem najdłuższy sufiks, potem najnowszy; w symulacji AGR2 daje +3.7% t/s na agencie (2/3 sufitu idealnego pointera) i +0.6% na czacie (raport 21c, 2026-10-19).
 - [[akv-cache-agentow|AKV: agent/harness edytuje własne KV (drop + repozycjonowanie RoPE)]] — AKV (Tsinghua NICS, arXiv 2610.28577, Apache-2.0, łatany SGLang) usuwa KV starych wyników narzędzi i przenumerowuje klucze K ← R(q)R(p)⁻¹K bez re-prefillu: −27.7% kosztu w centach API, jakość +1.3…+2.1 pkt średnio, 1.18× wyjścia i 1.53× wejścia przy szczycie (GPT-OSS-120B, 8× A800) (raport 60d, 2026-10-24).
 - [[argmax-dpp|Argmax z DPP (0026)]] — Argmax po słowniku w drafcie MTP: 16 ładowań w locie i wymiana między lane'ami przez DPP zamiast pamięci LDS; 16.8 → 4.3 µs na wywołanie.
 - [[bariera-lds-rdna3|Bariera tylko LDS na RDNA3 (bez `buffer_gl0_inv`)]] — Na gfx1100 `__syncthreads()` kompiluje się do `s_waitcnt lgkmcnt(0); s_barrier; buffer_gl0_inv`, a bariera z płotami `__builtin_amdgcn_fence(…, "workgroup", "local")` wokół `__builtin_amdgcn_s_barrier()` do samego `s_waitcnt lgkmcnt(0); s_barrier` – bez unieważniania L0, więc load globalny za barierą nie czeka; Strata #3064 zmierzyła −1.3…−5% czasu weryfikacji GDN na R9700, bitowo (raport 21g, ISA sprawdzone `hipcc -S`, 2026-10-19).
+- [[bilans-optymalizacji|Bilans optymalizacji: przyjęte, w toku, odrzucone (tabela z notatek)]] — Każda technika, kernel i łatka z werdyktem, zyskiem, kartą, modelem i dowodem; generuje tools/tabele.py.
 - [[budzet-megakernela-qwen-xtx|Budżet megakernela dla Qwen3.8-27B na XTX]] — Pula, którą megakernel mógłby odzyskać z kroku MTP ~27.6 ms, to sufit ~4 ms (+12%, poziom Hazy 78% pasma), realnie 1.1–2.4 ms, czyli +4…9.5% (środek +5–6%) przy krótkim kontekście i +2…4% przy 199k, za 40–70 osobodni (raport 66c, 2026-11-07, `[SZACUNEK]`).
 - [[cache-q8-1|Cache q8_1 aktywacji i „producenci” q8_1]] — MMVQ potrzebuje wejścia skwantyzowanego do q8_1; zamiast osobnego kernela kwantyzacji przed każdym matvec, kwantyzujemy raz i najlepiej już w kernelu, który to wejście produkuje.
 - [[cache-sesji-na-dysku|Cache sesji na dysku (projekt z 16f E5)]] — Istniejący mechanizm llama-server `--slot-save-path` + `/slots/0?action=save|restore` (z checkpointami) przywraca sesję 53k z SSD 23–24× szybciej niż prefill: Qwen MTP 2.28 GiB w 2.51 s zamiast ~61.5 s, LFM 553 MiB w 0.53 s zamiast ~12.2 s (2026-10-18).

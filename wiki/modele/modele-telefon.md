@@ -4,6 +4,9 @@ tags: [modele, telefon, arm]
 aktualizacja: 2026-10-16
 zrodlo: ~/telefon/PROMPT-optymalizacja-modeli.md:1-4,56,58-61,83,104,129-131,135-159,163,180; ~/telefon/PROMPT-minicpm-speed.md:1-22; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:395
 status: do-sprawdzenia
+model: modele-telefon
+rozmiar: 1B, 271M
+kwant: Q8_0
 ---
 # Modele na telefon: MiniCPM-V 4.7 1B i EmbeddingGemma 2
 

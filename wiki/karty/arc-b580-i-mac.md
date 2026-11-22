@@ -4,6 +4,10 @@ tags: [karty, intel, apple]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/PLAN.md:291,294-296; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:26-28,121,241-242,259-260,324-325
 status: aktualne
+karta: arc-b580-i-mac
+vram: 12 GB (B580), 16 GB (M4)
+gdzie: Scaleway (Mac), zakup
+stan: w planie zakup
 ---
 # Intel Arc B580 i Mac mini M4 (platformy spoza AMD/NVIDIA)
 

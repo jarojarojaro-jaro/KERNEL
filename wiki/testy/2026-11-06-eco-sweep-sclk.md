@@ -4,6 +4,14 @@ tags: [testy, termika, rx-7900-xtx, eco]
 aktualizacja: 2026-11-06
 zrodlo: ~/qwen-opt/thermal/run-20261106T1221/results.csv; ~/qwen-opt/thermal/bugcheck-20261106T1216/result.txt; ~/qwen-opt/thermal/sweep.sh
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 123,6 t/s | dekod spec_sweep T=1; stock, topka-q63 UD-Q4_K_XL | 2026-11-06
+  - qwen3-8-27b | rx-7900-xtx | 121,3 t/s | dekod spec_sweep T=1; sclk 2200 | 2026-11-06
+  - qwen3-8-27b | rx-7900-xtx | 118,5 t/s | dekod spec_sweep T=1; sclk 2000 | 2026-11-06
+  - qwen3-8-27b | rx-7900-xtx | 2,07 J/token | energia; sclk 2200 (stock 2,27) | 2026-11-06
+  - qwen3-8-27b | rx-7900-xtx | 940 t/s | prefill 12k; sclk 2200 (stock 1030) | 2026-11-06
 ---
 # Sweep eco: limit taktowania rdzenia XTX (2026-11-06)
 

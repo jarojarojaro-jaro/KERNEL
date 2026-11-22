@@ -4,6 +4,12 @@ tags: [optymalizacje, flash-attention, kv, cuda]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,39-41,59-60,255; ~/wt/3090-opt/ggml/src/ggml-cuda/fattn.cu:655-670; ~/wt/3090-opt/ggml/src/ggml-cuda/fattn-vec.cuh:108-111; ~/KERNEL/product/research/16c-kvq-cuda.md:11,57-75,190-198
 status: aktualne
+technika: kvq-mma (FA na KV q4_0/q8_0, CUDA)
+werdykt: przyjete
+zysk: 5060 Ti tg@64k Qwen +24.6%, LFM +30.0%
+dowod: 2026-10-16-kvq-cuda
+karta: rtx-5060-ti
+model: qwen3-8-27b
 ---
 # Flash attention na KV q4_0/q8_0 w upstream CUDA
 

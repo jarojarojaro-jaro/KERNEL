@@ -4,6 +4,16 @@ tags: [modele, moe, looped-transformer, thinking-machines, unsloth, telegram]
 aktualizacja: 2026-11-20
 zrodlo: thinkingmachines.ai/news/inkling-2-mini (2026-11-20), HF unsloth/Inkling-2-Mini-GGUF, mainline llama.cpp 5f83714 (src/models/inkling2.cpp); link od właściciela (Telegram 23:29)
 status: aktualne
+model: inkling-2-mini
+rozmiar: 26.4B-A3.4B
+kwant: AD-Q4_K
+karty: rx-7900-xtx
+k: K-133
+wyniki:
+  - inkling-2-mini | rx-7900-xtx | 49,5 t/s | dekod plain; po rundach 1–6 duetu | 2026-11-21
+  - inkling-2-mini | rx-7900-xtx | 26,9 t/s | dekod tg64; AtomicChat AD-Q4_K, stock PR #32695, eco 2200 | 2026-11-21
+  - inkling-2-mini | rx-7900-xtx | 1333 t/s | prefill pp512; AD-Q4_K, PR #32695 | 2026-11-21
+  - inkling-2-mini | rx-7900-xtx | 1125 t/s | prefill pp2048; AD-Q4_K, PR #32695 | 2026-11-21
 ---
 # Inkling 2 Mini (Thinking Machines, 2026-11-20): MoE z pętlą warstw, jakość jak Qwen3.8-27B przy ~5× mniejszym odczycie na token
 
@@ -90,6 +100,19 @@ W kodowaniu agentowym jest lepszy (DeepSWE 48,2 vs 42,2%), więc na XTX powinien
   - dla XTX realny cel to ~6–8 ms na krok (125–165 t/s) [INFERENCE], przy dziś szacowanych ~20–25 ms;
   - na Apple to samo: oMLX 0.8.2 dodał Inkling 2 Mini, liczb brak.
 - **Checkpoint `TML-d24-varloop-research`:** liczbę przejść można ustawić (1–3+). To inny model, nie produkcja, ale dobry do nauki o kompromisie jakość/prędkość (dział `llm/`).
+
+<!-- TABELE:START -->
+## Wyniki z notatek (4)
+
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+
+| karta | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod plain | **49,5 t/s** | po rundach 1–6 duetu | 2026-11-21 | [[inkling-2-mini]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod tg64 | **26,9 t/s** | AtomicChat AD-Q4_K, stock PR #32695, eco 2200 | 2026-11-21 | [[inkling-2-mini]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | prefill pp2048 | **1125 t/s** | AD-Q4_K, PR #32695 | 2026-11-21 | [[inkling-2-mini]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | prefill pp512 | **1333 t/s** | AD-Q4_K, PR #32695 | 2026-11-21 | [[inkling-2-mini]] |
+<!-- TABELE:END -->
 
 ## Powiązane
 - [[KOLEJKA-TESTOW]] (K-133)

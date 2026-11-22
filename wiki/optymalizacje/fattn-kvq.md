@@ -4,6 +4,19 @@ tags: [optymalizacje, flash-attention, kv]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:182-204,354,363,366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:7,86,130,133; ~/KERNEL/product/research/patch-manifest.json (0011, 0055, 0058); ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:8-9,34-41,107; ~/KERNEL/product/research/15b-spekulacja-frontier.md:20,92,179; ~/KERNEL/product/BENCHMARKI-NVIDIA-2026-10-16.md:54-55; ~/KERNEL/product/research/16c-kvq-cuda.md:7-15,190-198; ~/KERNEL/product/research/16c-kvq-cuda.md:191-221,245-252; ~/qwen-opt/cloud/results/kvq-cuda-20261016/kld-c5/; ~/KERNEL/product/research/51-male-kernele.md:10-12; ~/KERNEL/product/research/54-mniej-granic.md:15-27; ~/KERNEL/product/research/66b-1cat-tokenspeed.md:129; ~/KERNEL/product/research/66c-hyperkernel-megakernele.md:104
 status: aktualne
+technika: FA kvq (0011, 0055, 0058)
+werdykt: przyjete
+zysk: serwer 94k decode 43.0 → 70.9 t/s (+65%)
+dowod: 2026-11-19-k125-k001-xtx
+karta: rx-7900-xtx
+model: qwen3-8-27b
+k: K-125
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 70,9 t/s | dekod serwer 94k; KV q4_0, kvq 0011 | 2026-10-12
+  - lfm2-5-24b-a2b | rx-7900-xtx | 5,462 ms | token 98k; KV q8_0, kvq 0055 | 2026-10-14
+  - qwen3-8-27b | rtx-3090 | 39,14 t/s | tg64@64k; kvq-mma f08dc78bb | 2026-10-16
+  - lfm2-5-24b-a2b | rtx-3090 | 208,12 t/s | tg64@64k; kvq-mma f08dc78bb | 2026-10-16
+  - qwen3-8-27b | rtx-3090 | 89,75 t/s | dekod MTP@59k; kvq-mma | 2026-10-16
 ---
 # FA `kvq`: atencja dekodowania na skwantyzowanym KV
 

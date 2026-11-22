@@ -4,6 +4,11 @@ tags: [testy, cache, agent, serwer]
 aktualizacja: 2026-10-18
 zrodlo: ~/KERNEL/product/research/16f-xtx-szybkie.md:15,151-190; ~/wt/quickwins/qw/e4.jsonl; ~/llama-master server-task.cpp:1824; commit `50c3a2f2a` (gałąź `quickwins`)
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 1612 ms | start sesji agenta; CACHE_SHARE_MIN=1024 (było 8019) | 2026-10-18
+  - lfm2-5-24b-a2b | rx-7900-xtx | 230 ms | start sesji agenta; CACHE_SHARE_MIN=1024 (było 1357) | 2026-10-18
 ---
 # 2026-10-18: audyt cache promptu agenta (E4 z 16f)
 

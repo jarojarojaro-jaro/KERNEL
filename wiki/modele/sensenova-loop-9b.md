@@ -4,6 +4,10 @@ tags: [modele, looped, architektura, enigma, telegram]
 aktualizacja: 2026-11-17
 zrodlo: https://x.com/SenseTime_AI/status/2122702684985938356 (Telegram „gpu”, 2026-11-17); github.com/OpenSenseNova/SenseNova-Loop README (2026-11-17); huggingface.co/sensenova/SenseNova-Loop-9B (gated, safetensors 18,83 GB); llama.cpp issue #31571 (otwarte); huggingface.co/AtomicChat/SenseNova-Loop-9B-Preview-GGUF README; arXiv 2611.19896 (LoopSkim)
 status: aktualne
+model: sensenova-loop-9b
+rozmiar: 9B (pętla, ~14.6B efektywnie)
+kwant: Q4_K_M
+k: K-119
 ---
 # SenseNova-Loop-9B: model z pętlą warstw — pamięć jak 9B, pasmo jak ~14B, jakość wg producenta blisko Qwen3.8-27B
 

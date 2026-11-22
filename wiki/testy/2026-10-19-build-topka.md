@@ -4,6 +4,13 @@ tags: [testy, spekulacja, lookup, build]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/20-build-topka.md:1-85; ~/qwen-opt/topka/logs/copy_bench.jsonl (fast-qwen-mtponly, fast-qwen-topka, fast-unc-topka); ~/qwen-opt/topka/greedy/; ~/KERNEL/product/research/20-build-topka.md:5-17,59,63-68,82-84
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 396.9 t/s | dekod mvs T=0; topka lookup W16, PM4=0 (było 166.1) | 2026-10-19
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 414.8 t/s | dekod mvs T=0; topka lookup W16, PM4=0 | 2026-10-19
+  - qwen3-8-27b | rx-7900-xtx | 105.1 t/s | spec_sweep T=1 1 seed; topka | 2026-10-19
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 106.9 t/s | spec_sweep T=1 1 seed; topka | 2026-10-19
 ---
 # 2026-10-19: build „topka” – ogon lookupu + współdzielenie cache, PM4 wyłączone
 

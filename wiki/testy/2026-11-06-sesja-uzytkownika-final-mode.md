@@ -4,6 +4,13 @@ tags: [testy, kontekst, rx-7900-xtx, eco, telemetria]
 aktualizacja: 2026-11-07
 zrodlo: ~/qwen-opt/logs/server-2026-11-06_175345.log (print_timing, stop processing; 145 zadań, 17:53–18:58)
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 120,8 t/s | dekod sesja omp ważone; final mode, do 139k | 2026-11-06
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 127,2 t/s | dekod sesja omp 0–32k; final mode | 2026-11-06
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 95,8 t/s | dekod sesja omp 128–160k; final mode | 2026-11-06
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 498,6 t/s | prefill 4242 tok. przy 103k; final mode | 2026-11-06
 ---
 # Prawdziwa sesja użytkownika w final mode: 120,8 t/s średnio do 139k kontekstu (2026-11-06)
 

@@ -4,6 +4,15 @@ tags: [optymalizacje, wmma, spekulacja]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:297-300; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:112; ~/KERNEL/qwen-opt/research/round6/test-tooling.md:21; ~/KERNEL/product/research/patch-manifest.json (0037)
 status: aktualne
+technika: WMMA small-N weryfikacja 9–16 kolumn (0037)
+werdykt: przyjete
+zysk: n=9 49,2 → 32,1 ms, n=16 51,0 → 35,0 ms
+dowod: wmma-small-n
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 32.1 ms | weryfikacja n=9; WMMA 0037 | 2026-10-13
+  - qwen3-8-27b | rx-7900-xtx | 35.0 ms | weryfikacja n=16; WMMA 0037 | 2026-10-13
 ---
 # WMMA small-N: weryfikacja 9–16 tokenów (K4, 0037)
 

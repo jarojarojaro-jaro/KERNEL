@@ -4,6 +4,9 @@ tags: [testy, rx-7900-xtx, prefill, mmq, q6k, wynik-negatywny]
 aktualizacja: 2026-11-07
 zrodlo: ~/qwen-opt/q6kwide/run-1107-2305/summary.txt, pp4096.txt, prefill.txt; ~/qwen-opt/q6kwide/NOTE.txt; branch q6k-wide 4dc11c952
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wynik: qwen3-8-27b-uncensored | rx-7900-xtx | 1000,6 t/s | pp4096 Q6K_WIDE (KILL, −0,01%); Q4_K_M, topka-q63, ABBA | 2026-11-07
 ---
 # Q6_K MMQ na gfx11: skale jednym `int` zamiast 16 odczytów bajtowych — 0,0% (KILL, 2026-11-07)
 

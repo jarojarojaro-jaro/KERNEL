@@ -4,6 +4,11 @@ tags: [testy, nvidia, rtx-5060-ti]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/31-5060ti.md:1-16
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-5060-ti
+wyniki:
+  - qwen3-8-27b | rtx-5060-ti | 62.6 t/s | czat T=1 T; UD-IQ4_XS 32k, 150 W | 2026-10-20
+  - qwen3-8-27b | rtx-5060-ti | 244.2 t/s | mvs; UD-IQ4_XS | 2026-10-20
 ---
 # Raport 31: RTX 5060 Ti 16 GB, UD-IQ4_XS 32k
 

@@ -4,6 +4,11 @@ tags: [modele, moe, kwanty, trellis]
 aktualizacja: 2026-10-24
 zrodlo: ~/KERNEL/product/research/60c-quant-and-3090-engines.md:92-136,196-205; https://huggingface.co/agentionai/Qwen3.8-Flash-Next-Gyro-Coder-GGUF; https://gitlab.com/agentionai-group/agention-gyro
 status: do-sprawdzenia
+model: gyro-coder
+rozmiar: Flash-Next 256/512 ekspertów
+kwant: TQ2_T
+karty: strix-halo
+wynik: gyro-coder | strix-halo | 0.118 KLD | KLD do Q8_0; C++, -c 2048 | 2026-10-24
 ---
 # Gyro-Coder (Qwen3.8-Flash-Next, 256/512 ekspertów) i format Gyro TQ
 
@@ -20,6 +25,16 @@ status: do-sprawdzenia
 
   Referencyjny enkoder jest jawny, ale „noticeably worse” od produkcyjnego.
 - Dla nas: przy 24 GB nie dotyczy, bo U4 ma KLD 0.0117.
+
+<!-- TABELE:START -->
+## Wyniki z notatek (1)
+
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+
+| karta | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| AMD Strix Halo [[strix-halo]] | KLD do Q8_0 | **0.118 KLD** | C++, -c 2048 | 2026-10-24 | [[gyro-coder]] |
+<!-- TABELE:END -->
 
 ## Powiązane
 - [[modele/_hub|modele]]

@@ -4,6 +4,11 @@ tags: [testy, chmura, nvidia, sm-120, nvfp4]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/09-chmura-5060ti.md:1-290
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-5060-ti
+wyniki:
+  - qwen3-8-27b | rtx-5060-ti | 51.7 t/s | dekod MTP; UD-Q3_K_XL, nasz silnik | 2026-10-16
+  - lfm2-5-24b-a2b | rtx-5060-ti | 226.8 t/s | serwer; QAD-Q4_0 | 2026-10-16
 ---
 # Raport 09 (5060 Ti): RTX 5060 Ti 16 GB w chmurze
 

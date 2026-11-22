@@ -4,6 +4,12 @@ tags: [optymalizacje, mmvq, q5-k]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/50b-mmvq-q5k.md:1-80
 status: do-sprawdzenia
+technika: MMVQ Q5_K n=5 big_rows
+werdykt: w-toku
+zysk: −1,3…−3,5% na 8192–34816 wierszach
+dowod: raport-50b-mmvq-q5k
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 50b: MMVQ Q5_K n=5 – instancja big_rows
 

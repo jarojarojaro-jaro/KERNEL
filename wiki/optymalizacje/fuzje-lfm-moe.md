@@ -4,6 +4,14 @@ tags: [optymalizacje, moe, lfm]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:340-341,346,348,355,364; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:124,126,128,131,178-180; ~/KERNEL/product/research/09-chmura-3090.md:91-104,115; ~/KERNEL/product/research/09-chmura-5060ti.md:95-119; ~/KERNEL/product/research/09-chmura-3060.md:136,145-147; ~/KERNEL/product/research/15a-monokernel.md:178,198,214; ~/KERNEL/product/research/15c-nowe-silniki.md:98,351,442
 status: aktualne
+technika: fuzje MoE LFM (0049, 0051, 0053, 0056)
+werdykt: przyjete
+zysk: −0.565 ms/token (5.067 → 3.973 ms/token)
+dowod: lfm-runda-2
+karta: rx-7900-xtx
+model: lfm2-5-24b-a2b
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 3,973 ms | token tg; po 0056 gate+up q8_1 | 2026-10-14
 ---
 # Fuzje MoE dla LFM2.5 (0049, 0051, 0053, 0056)
 

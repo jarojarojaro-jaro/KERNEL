@@ -4,6 +4,14 @@ tags: [optymalizacje, lfm, conv]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:337,347,356,374,378; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:125,129,137,182,272; ~/KERNEL/product/research/08-analiza-platformy-latek.md:25
 status: aktualne
+technika: fuzje shortconv LFM (0050, 0054, 0062)
+werdykt: przyjete
+zysk: −0.366 ms/token (~22% zysku LFM)
+dowod: ~/KERNEL/qwen-opt/NOTES.md
+karta: rx-7900-xtx
+model: lfm2-5-24b-a2b
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 3,402 ms | token tg; po 0062 CONV_ROWS4 | 2026-10-14
 ---
 # Fuzje shortconv LFM2 (0050, 0054, 0062)
 

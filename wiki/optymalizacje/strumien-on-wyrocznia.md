@@ -4,6 +4,10 @@ tags: [optymalizacje, serwer, host, parser]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66e-anatomia-serwowania-tqllm.md:61-75,117-123,186; tqLLM `tools/serve/session.hpp:982-1007` (9a9e7e5)
 status: do-sprawdzenia
+technika: strumień O(n) z wyrocznią zamiast parsera O(n²)
+werdykt: w-toku
+zysk: parser 0,07 → 0,52 ms/token przy 1k → 12,8k (do usunięcia)
+dowod: strumien-on-wyrocznia
 ---
 # Strumień O(n) z wyrocznią zamiast parsera O(n²)
 

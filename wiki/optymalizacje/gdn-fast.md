@@ -4,6 +4,12 @@ tags: [optymalizacje, gdn, nie-scalone]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/research/round6/gdn-bitwise.md:6-17,95-133,176-184; ~/KERNEL/qwen-opt/research/qwen-round5.md:10-16,36-40; ~/KERNEL/qwen-opt/STATUS-NEXT.md:25,35; ~/KERNEL/qwen-opt/NOTES.md:398
 status: aktualne
+technika: GDN fast (DPP)
+werdykt: odrzucone
+zysk: +0.15% tg128, pp512 +0.7% (szum)
+dowod: ~/KERNEL/qwen-opt/research/round6/gdn-bitwise.md
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # GDN fast (Gated DeltaNet, DPP) — nie scalony
 

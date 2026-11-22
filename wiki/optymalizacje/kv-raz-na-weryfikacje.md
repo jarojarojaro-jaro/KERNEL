@@ -4,6 +4,12 @@ tags: [optymalizacje, flash-attention, kv, weryfikacja]
 aktualizacja: 2026-11-08
 zrodlo: ~/KERNEL/product/research/66b-1cat-tokenspeed.md:99-129,216-217; ~/KERNEL/product/research/66d-saber-engine-rdna.md:63-78,157; ~/KERNEL/product/research/66e-anatomia-serwowania-tqllm.md:132-136,192; ~/KERNEL/product/research/24h-kv-jeden-przebieg.md:9-14; ~/qwen-opt/kvq-once/run-1107-2315/summary.txt
 status: aktualne
+technika: KV raz na weryfikację (GGML_HIP_KVQ_ONCE)
+werdykt: odrzucone
+zysk: FA −6.1% przy 199k (próg −10%), e2e 199k +1.79%
+dowod: 2026-11-08-kvq-once-profil
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # KV czytane raz na weryfikację (plan #8): trzy wzorce
 

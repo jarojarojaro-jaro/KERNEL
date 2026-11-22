@@ -4,6 +4,10 @@ tags: [karty, dysk, serwer]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21d-kv-na-dysku.md:104-122; lsblk, /sys/class/nvme/nvme0, UDisks2 SmartGetAttributes, dd iflag=direct (2026-10-19)
 status: aktualne
+karta: dysk-serwera-pm9b1
+pasmo: 1.60 GB/s (odczyt O_DIRECT)
+gdzie: jaroserverai
+stan: 0% zużycia, KV tylko w RAM
 ---
 # Dysk serwera: Samsung PM9B1 512 GB (NVMe)
 

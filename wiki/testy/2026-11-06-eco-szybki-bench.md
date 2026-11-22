@@ -4,6 +4,12 @@ tags: [testy, termika, rx-7900-xtx, eco]
 aktualizacja: 2026-11-06
 zrodlo: ~/qwen-opt/thermal/quick-20261106.txt; ~/qwen-opt/thermal/quick-20261106.csv
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 26,86 ms | ms/krok spec_sweep T=1; eco 2200 (stock 26,32) | 2026-11-06
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 106,2 t/s | greedy 256 tok.; eco 2200 (stock 108,4) | 2026-11-06
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 916,0 t/s | prefill 12k; eco 2200 (stock 1036,8) | 2026-11-06
 ---
 # Szybki bench produkcji: eco 2200 vs stock (2026-11-06)
 

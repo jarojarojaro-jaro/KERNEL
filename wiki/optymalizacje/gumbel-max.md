@@ -4,6 +4,12 @@ tags: [optymalizacje, sampler, spekulacja]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:50-62,85-88,113-121,129-140
 status: aktualne
+technika: op GGML_OP_GUMBEL_MAX
+werdykt: przyjete
+zysk: koszt +0.11 ms/krok (27.74 → 27.85) w wersji 2
+dowod: ~/KERNEL/product/research/16k-sprzezone-probkowanie.md
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Op `GGML_OP_GUMBEL_MAX` (draft MTP ze sprzężonym szumem)
 

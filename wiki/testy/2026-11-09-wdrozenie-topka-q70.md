@@ -4,6 +4,14 @@ tags: [testy, rx-7900-xtx, wdrozenie, prefill, prompt-cache, agent, rekord]
 aktualizacja: 2026-11-09
 zrodlo: branch topka-q70 (~/wt/l1-cachesave; c0576e3e8 + 3152b0bfa + 6f4ae4198 + 3191b25f4); qwen-opt/patches/topka-q70/; qwen-opt/deploy-q70/ (stage.sh, check.sh, swap.sh, deploy.jobs; ticket 22938); qwen-opt/run-topka.sh; qwen-opt/cachesave/summarize.py (grupa Q); qwen-opt/fa-d256/arm.sh; qwen-opt/speed_real.py; product/research/70-fa-d256-jak-to-zrobilismy.md §6
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 492,5 t/s | fill 255k; topka-q70 (baza 466,3) | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 12 029 ms | tura agenta mediana 76–112k; topka-q70 (baza 13 413) | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 859,1 t/s | prefill long 32k; topka-q70 | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 119,3 t/s | spec_sweep T=1 mediana; topka-q70 | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 73,6 t/s | dekod po fillu 255k; topka-q70 | 2026-11-09
 ---
 # Wdrożenie topka-q70 na RX 7900 XTX: tura agenta −10,3%, fill 255k +5,6%, bitowo = (2026-11-09) — PASS, w produkcji
 

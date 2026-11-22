@@ -4,6 +4,16 @@ tags: [optymalizacje, lfm, lookup, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24d-lfm-lookup.md:3,12-19,24-27,35-36,46
 status: aktualne
+technika: lookup kontekstowy bez draftera (LFM)
+werdykt: odrzucone
+zysk: +17% copy W8 (288,2 → 334,7 t/s), tekst T=0 ≠ plain
+dowod: raport-24d-lfm-lookup
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 334.7 t/s | copy lookup W8; T=0 | 2026-10-19
+  - lfm2-5-24b-a2b | rx-7900-xtx | 312.4 t/s | copy lookup W16; T=0 | 2026-10-19
+  - lfm2-5-24b-a2b | rx-7900-xtx | 288.2 t/s | copy bez lookup; T=0 | 2026-10-19
 ---
 # Raport 24d: lookup bez draftera dla LFM2.5 – nie adoptować
 

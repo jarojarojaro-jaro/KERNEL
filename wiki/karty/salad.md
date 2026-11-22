@@ -4,6 +4,9 @@ tags: [karty, salad, wsl2]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:21-23,55,68,136,203,298,365,404; komunikat Main do WikiIngest 2026-10-18 (portal SaladCloud, 2026-10-18); ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:21,23,55; komunikat Main do WikiIngest 2026-10-18 (portal SaladCloud, 2026-10-18)
 status: aktualne
+karta: salad
+gdzie: SaladCloud (WSL2)
+stan: AMD niedostępne dla organizacji
 ---
 # SaladCloud (domowe PC graczy, WSL2)
 

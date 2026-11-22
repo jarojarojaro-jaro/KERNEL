@@ -4,6 +4,13 @@ tags: [testy, spekulacja, lookup, mtp]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/16b-lookup-tail.md:10-23,72-130,138-161; ~/qwen-opt/lookup/logs/e3_summary.txt:9-62; ~/qwen-opt/lookup/logs/e4_summary.txt:3-62; ~/qwen-opt/lookup/logs/e4_postfix.txt:2-5; ~/KERNEL/product/research/16b-lookup-tail.md:1-180; ~/KERNEL/product/research/21c-copy-paste-lm.md:176-205
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 400.9 t/s | dekod mvs T=0; MTP4 + lookup W16 + łańcuchy (MTP4 166.2) | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 375.8 t/s | dekod mvs T=1; W16 (MTP4 166.1) | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 355.0 t/s | dekod copy T=0; W16 (MTP4 163.4) | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 373.5 t/s | dekod long 30k T=0; W16 (MTP4 156.7) | 2026-10-18
 ---
 # 2026-10-18/19: ogon z lookupu za MTP na XTX (W8/W16 + łańcuchy)
 

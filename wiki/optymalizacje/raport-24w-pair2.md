@@ -4,6 +4,15 @@ tags: [optymalizacje, mmvq, topka]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24w-pair2.md:5-19,33-43; ~/KERNEL/product/research/24r-mmvq-pasmo.md:14; ~/KERNEL/product/research/24w-pair2.md:21-36; ~/qwen-opt/queue/logs/p2-md5.log
 status: aktualne
+technika: PAIR2 para MMVQ dla mieszanych typów
+werdykt: odrzucone
+zysk: +0,4% czat T=1 (115,1 → 115,6 t/s)
+dowod: raport-24w-pair2
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 115.1 t/s | czat T=1 baza | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 115.6 t/s | czat T=1 PAIR2=1 | 2026-10-20
 ---
 # Raport 24w: PAIR2 (para MMVQ dla mieszanych typów) na topce – odrzucone (+0.4%)
 

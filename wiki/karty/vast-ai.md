@@ -4,6 +4,9 @@ tags: [karty, vast, nvidia]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:12-22,66,99-128,185-189,202-204; ~/qwen-opt/cloud/PLAN-TESTOW.md:5,11,20-23,36-49,95-104; ~/KERNEL/product/research/09-chmura-3090.md:3-4,183; ~/KERNEL/product/research/09-chmura-5060ti.md:16,191; ~/KERNEL/product/research/09-chmura-3060.md:229; ~/KERNEL/product/PLAN-NV-V2.md:12-14; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:7,13-22
 status: aktualne
+karta: vast-ai
+gdzie: Vast
+stan: główne źródło NVIDIA
 ---
 # Vast.ai (główne źródło kart NVIDIA)
 

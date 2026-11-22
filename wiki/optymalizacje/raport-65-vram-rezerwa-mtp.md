@@ -4,6 +4,15 @@ tags: [optymalizacje, vram, kontekst, mtp]
 aktualizacja: 2026-11-06
 zrodlo: product/research/65-vram-rezerwa-mtp-kontekst.md
 status: aktualne
+technika: chuda rezerwa grafu kontekstu draftu MTP
+werdykt: przyjete
+zysk: bufor MTP 1081,23 → 40,28 MiB, kontekst 262 144 (+28%)
+dowod: raport-65-vram-rezerwa-mtp
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 40.28 MiB | bufor MTP ROCm0 | 2026-11-06
+  - qwen3-8-27b | rx-7900-xtx | 23367 MiB | szczyt VRAM fill 255k | 2026-11-06
 ---
 # Raport 65: 1 GiB VRAM z rezerwy MTP → kontekst 262 144
 

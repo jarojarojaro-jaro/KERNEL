@@ -4,6 +4,12 @@ tags: [optymalizacje, mmvq, xtx]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/49-mmvq-ogon-1024.md:1-77
 status: do-sprawdzenia
+technika: MMVQ n=5 ogon k/v 1024 wierszy
+werdykt: w-toku
+zysk: szac. −0,03 ms/krok, bez bramki
+dowod: raport-49-mmvq-ogon-1024
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 49: MMVQ n=5 – ogon 1024-wierszowych k/v
 

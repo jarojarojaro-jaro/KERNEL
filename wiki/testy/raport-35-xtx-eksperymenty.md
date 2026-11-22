@@ -4,6 +4,9 @@ tags: [testy, xtx, spekulacja]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/35-xtx-eksperymenty-z-researchu.md:14-25
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wynik: qwen3-8-27b | rx-7900-xtx | 154.2 t/s | T=0 reasoning; DRAFT_N=5 (baza 144.4) | 2026-10-20
 ---
 # Raport 35: XTX – krótkie eksperymenty z raportów 32a–32f
 

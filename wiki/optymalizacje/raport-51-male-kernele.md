@@ -4,6 +4,12 @@ tags: [optymalizacje, xtx, male-kernele]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/51-male-kernele.md:1-40
 status: aktualne
+technika: małe kernele weryfikacji (rms_norm, FA kvq, GDN)
+werdykt: odrzucone
+zysk: sufit ≤ 0,26 ms/krok, brak zwycięzcy
+dowod: raport-51-male-kernele
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 51: małe kernele weryfikacji – rms_norm, FA kvq, GDN
 

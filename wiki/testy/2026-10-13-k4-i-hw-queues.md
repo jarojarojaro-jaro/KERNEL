@@ -4,6 +4,11 @@ tags: [testy, wmma, spekulacja]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:297-303
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 105.4 t/s | dekod MTP n=5; K4 WMMA d3a0973ae | 2026-10-13
+  - qwen3-8-27b | rx-7900-xtx | 101.7 t/s | dekod MTP n=4; K4 WMMA d3a0973ae | 2026-10-13
 ---
 # 2026-10-13: K4 (weryfikacja 9–16 tokenów) i GPU_MAX_HW_QUEUES
 

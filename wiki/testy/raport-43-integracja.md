@@ -4,6 +4,11 @@ tags: [testy, topka, produkcja]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/43-integracja-2026-10-20.md:1-73
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 433.8 t/s | mvs; topka f9b84bcfa | 2026-10-21
+  - qwen3-8-27b | rx-7900-xtx | 6.5 s | start serwera; topka f9b84bcfa (baza 39.8) | 2026-10-21
 ---
 # Raport 43: integracja topki 2026-10-20/21 – zainstalowana f9b84bcfa
 

@@ -4,6 +4,9 @@ tags: [testy, prefill, gdn]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/qwen-opt/STATUS-NEXT.md:3,31-38; ~/KERNEL/qwen-opt/NOTES.md:394-398; ~/KERNEL/qwen-opt/research/round6/mmq-epilogue.md:159-168; ~/KERNEL/qwen-opt/research/round6/gdn-bitwise.md:176-184; ~/KERNEL/qwen-opt/research/round6/test-tooling.md:5; ~/KERNEL/qwen-opt/research/round6/gdn-bitwise.md:1-25; ~/KERNEL/qwen-opt/research/round6/mmq-epilogue.md:1-25; ~/KERNEL/qwen-opt/research/round6/test-tooling.md:1-25
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wynik: qwen3-8-27b | rx-7900-xtx | 1123.2 t/s | pp4096; epilog MMQ 0070 (baza 1099.5) | 2026-10-15
 ---
 # 2026-10-15: runda 6 — epilog MMQ, GDN fast, narzędzia
 

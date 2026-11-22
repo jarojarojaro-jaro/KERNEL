@@ -4,6 +4,11 @@ tags: [testy, spekulacja, sampler, mtp]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:6-24,76-170; ~/qwen-opt/coupled/logs/, ~/qwen-opt/coupled/logs5/, ~/qwen-opt/coupled/test-coupled-sampling-200k.txt; ~/KERNEL/product/research/17-gpu-page-fault.md:28-61; ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:1-180
 status: do-sprawdzenia
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 114.2 t/s | dekod MTP T=1; LLAMA_SPEC_COUPLED=1 (off 107.7) | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 118.3 t/s | dekod MTP T=0.7; COUPLED=1 (off 112.7) | 2026-10-18
 ---
 # 2026-10-18: E-X4 – sprzężone próbkowanie draftu MTP na XTX (nierozstrzygnięte)
 

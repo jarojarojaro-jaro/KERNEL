@@ -4,6 +4,11 @@ tags: [optymalizacje, spekulacja, lookup]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21c-copy-paste-lm.md:12,126-133,185-195
 status: aktualne
+technika: AGR lookup zgodny z MTP
+werdykt: w-toku
+zysk: +3.7% t/s agent, +0.6% czat (symulacja)
+dowod: ~/KERNEL/product/research/21c-copy-paste-lm.md
+model: qwen3-8-27b
 ---
 # AGR: wybór kandydata lookupu zgodnego z draftami MTP
 

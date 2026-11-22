@@ -4,6 +4,13 @@ tags: [testy, nvidia, rtx-3090, rtx-3060, wyniki]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/27-3090-final.md:20-35,42-44,211-213,243-247
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 93.3 t/s | czat T=1; cuda-topka2 lookup W16 + verify | 2026-10-20
+  - qwen3-8-27b | rtx-3090 | 348.9 t/s | code-edit; cuda-topka2 | 2026-10-20
+  - qwen3-8-27b-uncensored | rtx-3090 | 75.3 t/s | czat; cuda-topka2 | 2026-10-20
+  - saluki | rtx-3060 | 38.2 t/s | dekod; topka (baza 24.0) | 2026-10-20
 ---
 # Raport 27: RTX 3090 i 3060 – finał przed/po (Qwen, Uncensored, Saluki)
 

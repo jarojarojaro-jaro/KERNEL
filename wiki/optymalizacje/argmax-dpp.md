@@ -4,6 +4,12 @@ tags: [optymalizacje, dpp, mtp]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:262; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:101; ~/KERNEL/product/research/08-analiza-platformy-latek.md:24; ~/KERNEL/product/research/patch-manifest.json (0026)
 status: aktualne
+technika: argmax DPP (0026)
+werdykt: przyjete
+zysk: 16.8 → 4.3 µs na wywołanie
+dowod: 2026-10-13-k2-male-kernele
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Argmax z DPP (0026)
 

@@ -4,6 +4,13 @@ tags: [testy, spekulacja, vulkan]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:122-160
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 86.3 t/s | dekod MTP n=5 T=0; Vulkan 285 W | 2026-10-10
+  - qwen3-8-27b | rx-7900-xtx | 90.6 t/s | dekod DFlash n=6 T=0; Vulkan | 2026-10-10
+  - qwen3-8-27b | rx-7900-xtx | 81.1 t/s | dekod MTP n=5 T=1; Vulkan | 2026-10-10
+  - qwen3-8-27b | rx-7900-xtx | 71.9 t/s | dekod DFlash n=6 T=1; Vulkan | 2026-10-10
 ---
 # 2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP
 

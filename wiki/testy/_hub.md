@@ -16,7 +16,7 @@ Rejestry tej części:
 - [[REKORDY]]
 
 <!-- AUTO:START -->
-## Notatki (123)
+## Notatki (124)
 
 - [[2026-10-09-pierwsze-pomiary|2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)]] — Pierwszy dzień: od starego buildu użytkownika (59.2 t/s) do 85.5 t/s na ROCm i 91.8 t/s na Vulkanie dzięki aktualizacji llama.cpp, wielokolumnowemu MMVQ, cache q8_1 i słownikowi draftu 64k.
 - [[2026-10-10-sweep-mtp-dflash|2026-10-10: długość draftu MTP, temperatura i DFlash vs MTP]] — Sweep na Vulkanie przy 285 W: n=5 bez p_min zostaje dla MTP, temperatura prawie nie ma wpływu, a DFlash na szerszym zestawie nie jest szybszy od MTP (wcześniejsze „120 t/s” to był jeden prompt).
@@ -101,6 +101,7 @@ Rejestry tej części:
 - [[metryka-prozy-e0|Metryka prozy E0 (XTX, Qwen3.8-27B)]] — E0 = 8 promptów prozy (4 PL, 4 EN) × seedy 1–8, 400 tokenów, T=1, `enable_thinking: false`, świeży serwer na ramię; baza produkcyjna 78.93 t/s [75.69, 82.21], 2.158 tok/krok, 27.34 ms/krok (2026-10-20).
 - [[mikrobench-granicy-kernela|Mikrobenchmark granicy kernela]] — Zanim zainwestujemy w fuzje albo nowy sposób wysyłania pracy, mierzymy, ile kosztuje sama granica między kernelami na danym stosie.
 - [[ms-na-krok|ms/krok jako główna metryka spekulacji]] — Przy dekodowaniu spekulacyjnym t/s = (tokeny na krok) / (czas kroku); kernel zmienia tylko czas kroku, więc to ms/krok mierzy łatkę, a t/s miesza ją z losowością tekstu.
+- [[najlepsze-wyniki|Najlepsze wyniki: model × karta (tabela z notatek)]] — Najlepszy zmierzony wynik każdej pary model i karta dla każdej metryki, z warunkami, datą i notatką źródłową; generuje tools/tabele.py.
 - [[2026-11-06-ctx-262k-fit|Pełny kontekst 262 144 na XTX (Qwen3.8-27B-Uncensored, 2026-11-06)]] — Po wdrożeniu topka-q63 (MTP lean reserve, −1,0 GiB) serwer czatu mieści natywne 262 144 tokenów: prompt 254 977 tok. przeszedł bez OOM, szczyt VRAM 23 367 / 24 560 MiB.
 - [[pomiar-abba|Pomiar: przeplatane A/B (ABBA) na ms/krok]] — Porównania robimy w jednej binarce, przeplatając warianty (ABBA), na metryce ms/krok, z kilkoma seedami i promptami; pojedynczy przebieg nic nie dowodzi.
 - [[2026-11-06-sesja-uzytkownika-final-mode|Prawdziwa sesja użytkownika w final mode: 120,8 t/s średnio do 139k kontekstu (2026-11-06)]] — W prawdziwej pracy agentowej (omp, 145 zadań, 125 658 wygenerowanych tokenów, kontekst do 139 160) czat w final mode (eco 2200, ctx 262 144) pisał średnio 120,8 t/s, ważone tokenami. Do 128k utrzymywał 117–127 t/s, przy 128–160k spadał do 95,8 t/s.

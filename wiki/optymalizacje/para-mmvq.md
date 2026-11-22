@@ -4,6 +4,15 @@ tags: [optymalizacje, mmvq, fuzje]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:260,265-266; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:99,222; ~/KERNEL/product/research/patch-manifest.json (0024)
 status: aktualne
+technika: para MMVQ jedną siatką (0024)
+werdykt: przyjete
+zysk: K2 33.17 → 32.14 ms/krok
+dowod: ~/KERNEL/qwen-opt/NOTES.md:260
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 97,8 t/s | dekod MTP; po K2, 32.14 ms/krok | 2026-10-13
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 99,6 t/s | dekod MTP; po K2, 30.68 ms/krok | 2026-10-13
 ---
 # Para MMVQ jedną siatką (0024)
 

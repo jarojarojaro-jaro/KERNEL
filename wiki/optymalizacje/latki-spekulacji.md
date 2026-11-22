@@ -4,6 +4,15 @@ tags: [optymalizacje, spekulacja, mtp]
 aktualizacja: 2026-10-18
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:86-88,283-288,310-317,321,327,330; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:79,107,114,116,121; ~/KERNEL/product/research/16f-xtx-szybkie.md:94-115
 status: aktualne
+technika: słownik draftu 64k + draft IQ4_XS (0004, 0032)
+werdykt: przyjete
+zysk: 0004 +7.5% (64k); 0032 netto +1–3% t/s
+dowod: ~/KERNEL/product/research/16f-xtx-szybkie.md:94-115
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 113,2 t/s | dekod MTP; blok MTP IQ4_XS, 28.14 ms/krok | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 109,4 t/s | dekod MTP; blok MTP natywny Q6_K | 2026-10-18
 ---
 # Łatki spekulacji (słownik draftu, requant, okno, adaptacja)
 

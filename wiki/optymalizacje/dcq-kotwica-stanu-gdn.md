@@ -4,6 +4,11 @@ tags: [optymalizacje, kwanty, gdn]
 aktualizacja: 2026-10-24
 zrodlo: ~/KERNEL/product/research/60c-quant-and-3090-engines.md:162-176,211-212; https://huggingface.co/Akahsizrr/mimo-v2.6-distill-qwen-9b-dcq (tools/quant_learned.py, results/*.json)
 status: do-sprawdzenia
+technika: DCQ (błąd stanu GDN w stracie kwantyzacji)
+werdykt: w-toku
+zysk: brak pomiaru u nas; dowody autora słabe
+dowod: ~/KERNEL/product/research/60c-quant-and-3090-engines.md
+model: qwen3-8-27b
 ---
 # DCQ: błąd stanu GDN w stracie kwantyzacji
 

@@ -4,6 +4,12 @@ tags: [testy, jakosc, benchmark, qwen-uncensored, rx-7900-xtx, predkosc]
 aktualizacja: 2026-11-09
 zrodlo: ~/KERNEL/qwen-opt/jakosc-mini/results/qwen-unc-low-s20261109/{summary.md,speed.md,speed-mmlu-pro-domains.md}; ~/qwen-opt/jakosc-mini/runs/qwen-unc-low-s20261109/{meta.json,scored.jsonl,humaneval_plus_eval.json}; ~/qwen-opt/queue/logs/queue.log (2026-11-09 15:44:30–16:22:22)
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 87.9 % | jakość-mini 255/290; topka-q70, effort low, T=0 | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 82.1 % | MMLU-Pro 140 pytań; effort low | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 142.4 t/s | dekod ważony jakość-mini; T=0 | 2026-11-09
 ---
 # jakość-mini na produkcyjnym Qwen3.8-27B-Uncensored (2026-11-09)
 

@@ -4,6 +4,12 @@ tags: [optymalizacje, gdn, fuzje]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:263-266; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:102-103,120; ~/KERNEL/qwen-opt/NOTES.md:321
 status: aktualne
+technika: fuzje GDN (0027, 0028, 0045)
+werdykt: przyjete
+zysk: 0028 ~0.33 ms/krok; 0045 pp2048 1082 → 1108 (+2.4%)
+dowod: ~/KERNEL/qwen-opt/NOTES.md:263-266
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Fuzje GDN Qwena (0027, 0028, 0045)
 

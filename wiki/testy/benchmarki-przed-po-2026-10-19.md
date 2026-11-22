@@ -4,6 +4,15 @@ tags: [testy, benchmarki, rekordy]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/BENCHMARKI-PRZED-PO-2026-10-19.md:1-131
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 109.0 t/s | spec_sweep; produkcja (fork 74.5) | 2026-10-19
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 115.5 t/s | spec_sweep; produkcja | 2026-10-19
+  - lfm2-5-24b-a2b | rx-7900-xtx | 293.7 t/s | spec_sweep; KV q8_0 | 2026-10-19
+  - qwen3-8-27b | rtx-3090 | 78.0 t/s | dekod; nasz silnik (A0 38.9) | 2026-10-19
+  - lfm2-5-24b-a2b | rtx-3090 | 263.9 t/s | dekod; nasz silnik (A0 180.2) | 2026-10-19
+  - qwen3-8-27b | rtx-5060-ti | 51.66 t/s | dekod; nasz silnik (A0 28.07) | 2026-10-19
 ---
 # Benchmarki przed → po (stan 2026-10-19)
 

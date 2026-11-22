@@ -4,6 +4,9 @@ tags: [testy, lfm, pm4, budzet]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/15a-monokernel.md:118-152; ~/KERNEL/product/research/15a-lfm-budget.py
 status: aktualne
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wynik: lfm2-5-24b-a2b | rx-7900-xtx | 293.7 t/s | dekod spec_sweep; Q5_K_M, 3404 µs/token | 2026-10-16
 ---
 # 2026-10-16: budżet tokenu LFM pod megakernel (offline)
 

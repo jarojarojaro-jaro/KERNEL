@@ -4,6 +4,10 @@ tags: [optymalizacje, kwanty, kompresja, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24t-entropia-wag.md:8-17,50-57,82
 status: aktualne
+technika: bezstratna kompresja entropijna wag GGUF
+werdykt: odrzucone
+zysk: kodek 0–0,9% bajtów/token (bramka 8%)
+dowod: raport-24t-entropia-wag
 ---
 # Raport 24t: bezstratna kompresja entropijna wag GGUF (DFloat11/ZipNN) – kill
 

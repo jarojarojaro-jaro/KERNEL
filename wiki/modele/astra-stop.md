@@ -4,6 +4,13 @@ tags: [modele, myslenie, edycja-wag, lora]
 aktualizacja: 2026-11-09
 zrodlo: ~/KERNEL/product/research/69c-astra-stop.md:9-40,46-52,58-78,82-98,139-183,207-233; ~/KERNEL/product/research/69c-skrypty/analyze_unc.json; https://huggingface.co/jarrodwatts/Qwen3.8-27B-Astra-Stop; https://github.com/notwitcheer/llm-bench-rig/tree/main/astra-stop
 status: do-sprawdzenia
+model: astra-stop
+rozmiar: 27B
+kwant: Q6_K (tensor edycji)
+technika: rank-1 edycja down_proj warstwy 63
+werdykt: w-toku
+zysk: −35,5% mediana myślenia (26 254 → 16 930 tokenów), przeciek </think> 11/32
+dowod: ~/KERNEL/product/research/69c-astra-stop.md
 ---
 # Astra-Stop: rank-1 edycja, która skraca myślenie Qwen3.8-27B
 

@@ -4,6 +4,9 @@ tags: [testy, qwen, negatywne]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/research/qwen-round5.md:1-29,30-85; ~/KERNEL/qwen-opt/STATUS-NEXT.md:23-29
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wynik: qwen3-8-27b | rx-7900-xtx | 1066 t/s | pp4096 MMQ YDB=2 (wycofane, YDB=0 1097) | 2026-10-15
 ---
 # 2026-10-15: Qwen runda 5 (gałąź opt-qwen5) — same wyniki negatywne
 

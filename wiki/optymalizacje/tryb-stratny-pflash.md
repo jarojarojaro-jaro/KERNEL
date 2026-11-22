@@ -4,6 +4,11 @@ tags: [optymalizacje, propozycja, prefill, pflash]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:10-11,118-135,222-237
 status: do-sprawdzenia
+technika: PFlash tryb stratny długich dokumentów
+werdykt: w-toku
+zysk: niezmierzone (pilot etap C)
+dowod: tryb-stratny-pflash
+karta: rx-7900-xtx
 ---
 # Propozycja: tryb stratny „szybki odczyt długich dokumentów” (PFlash)
 

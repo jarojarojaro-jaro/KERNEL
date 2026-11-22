@@ -4,6 +4,11 @@ tags: [testy, mtp, trening]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/mtp-train/RESULTS.md:1-44,68-127
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 3.04 tok/krok | akceptacja głowicy MTP; UD-Q4_K_XL, amd-opt c90db29c6 | 2026-10-12
+  - qwen3-8-27b | rx-7900-xtx | 2.3 k tok/s | trening MTP; bf16 K=4 T=2048, szczyt 12.1 GiB | 2026-10-12
 ---
 # 2026-10-12: trening głowicy MTP — faza 1 (wykonalność)
 

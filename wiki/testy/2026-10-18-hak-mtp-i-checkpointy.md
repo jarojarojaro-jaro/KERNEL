@@ -4,6 +4,11 @@ tags: [testy, mtp, prefill, ttft]
 aktualizacja: 2026-10-18
 zrodlo: ~/KERNEL/product/research/16f-xtx-szybkie.md:14,117-149; ~/wt/quickwins/qw/e3d.jsonl; ~/wt/quickwins/qw/e3-timing.server.log; commity `7369380bf`, `7f908b4dd` (cofnięty w `caefe1800`)
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 768 ms | koszt haka MTP prefill 32k; 2.2% TTFT | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 35050 ms | TTFT 32k MTP; (bez spekulacji 33619) | 2026-10-18
 ---
 # 2026-10-18: hak MTP w prefillu i koszt checkpointów (E3 z 16f)
 

@@ -4,6 +4,15 @@ tags: [optymalizacje, xtx, pm4]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/54-mniej-granic.md:1-30; ~/KERNEL/product/research/66c-hyperkernel-megakernele.md:104-106; ~/qwen-opt/launchcut/logs/prose.jsonl, copy_bench.jsonl (2026-10-21)
 status: aktualne
+technika: fuzje ATTN_PREP_MT i KVQ_FWHT_GATE (mniej granic dispatchy)
+werdykt: odrzucone
+zysk: proza +0,24% (szum), mvs 0,0% (428,49 → 428,55 t/s)
+dowod: raport-54-mniej-granic
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 428.49 t/s | mvs A | 2026-10-21
+  - qwen3-8-27b | rx-7900-xtx | 428.55 t/s | mvs B ATTN_PREP_MT+KVQ_FWHT_GATE | 2026-10-21
 ---
 # Raport 54: mniej granic dispatchy w kroku weryfikacji
 

@@ -4,6 +4,11 @@ tags: [testy, dpp, fuzje]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:258-274
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 97.8 t/s | dekod MTP; K2 małe kernele, 32.14 ms/krok, opt-k2 | 2026-10-13
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 99.6 t/s | dekod MTP; K2 małe kernele, 30.68 ms/krok, opt-k2 | 2026-10-13
 ---
 # 2026-10-13: K2 — małe kernele weryfikacji i draftu
 

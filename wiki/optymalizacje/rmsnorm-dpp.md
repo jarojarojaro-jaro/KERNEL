@@ -4,6 +4,11 @@ tags: [optymalizacje, dpp, norma]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:261; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:100,262; ~/KERNEL/product/research/patch-manifest.json (0025); ~/KERNEL/product/research/48-norma-n4-gdn-bank.md:10-16; ~/KERNEL/product/research/51-male-kernele.md:10-40
 status: aktualne
+technika: rms_norm·mul(+q8_1) z redukcjami DPP (0025)
+werdykt: przyjete
+zysk: 5,87 → 4,51 µs przy 5120 kolumnach
+dowod: rmsnorm-dpp
+karta: rx-7900-xtx
 ---
 # rms_norm·mul(+q8_1) z redukcjami DPP (0025)
 

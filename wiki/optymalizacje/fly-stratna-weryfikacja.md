@@ -4,6 +4,11 @@ tags: [optymalizacje, spekulacja, stratne, odrzucone]
 aktualizacja: 2026-11-05
 zrodlo: ~/KERNEL/product/research/63d-atencja-spec-kwant.md:303-313,432-437; https://github.com/vllm-project/vllm/pull/53987 (scalone 2026-10-19); arXiv 2511.22972
 status: aktualne
+technika: FLy stratna weryfikacja
+werdykt: odrzucone
+zysk: +8.2% u autorów (MI355X), zmienia wyjście
+dowod: 2026-11-05-tylko-bezstratne
+model: qwen3-8-27b
 ---
 # FLy: stratna weryfikacja z bramką entropii (vLLM)
 

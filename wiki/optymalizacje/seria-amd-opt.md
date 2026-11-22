@@ -4,6 +4,12 @@ tags: [optymalizacje, amd-opt, historia]
 aktualizacja: 2026-10-18
 zrodlo: ~/KERNEL/qwen-opt/patches/llama.cpp-amd-opt/ (70 plików); ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:53,155,157-172; ~/KERNEL/qwen-opt/STATUS-NEXT.md:5; ~/KERNEL/qwen-opt/README.md:1-40; ~/KERNEL/product/research/16h-fabryka-v1.md:51-58; ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:5-10
 status: aktualne
+technika: kandydat 0071 GGML_HIP_MOE_GU_BLOCK
+werdykt: w-toku
+zysk: LFM +0,33% / Uncensored +1,39%
+dowod: seria-amd-opt
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
 ---
 # Seria łatek amd-opt (0001–0070)
 

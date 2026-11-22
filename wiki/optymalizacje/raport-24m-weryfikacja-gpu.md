@@ -4,6 +4,15 @@ tags: [optymalizacje, weryfikacja, sampler, topka]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24m-weryfikacja-gpu.md:3-6,18-38,44-46
 status: aktualne
+technika: weryfikacja draftu top-128 na GPU (LLAMA_GPU_VERIFY)
+werdykt: przyjete
+zysk: +2,4% mvs (410,4 → 420,1 t/s)
+dowod: raport-24m-weryfikacja-gpu
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 410.4 t/s | mvs bez GPU verify | 2026-10-19
+  - qwen3-8-27b | rx-7900-xtx | 420.1 t/s | mvs GPU verify; f2217bac7 | 2026-10-19
 ---
 # Raport 24m: weryfikacja draftu bez kopii logitów (`LLAMA_GPU_VERIFY`)
 

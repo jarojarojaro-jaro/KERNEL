@@ -4,6 +4,12 @@ tags: [testy, enigma, benchmark, aplikacja]
 aktualizacja: 2026-11-05
 zrodlo: git 1af7fd2 (app/engine); ~/qwen-opt/queue/logs/enigma-xtx2.log:50,67,100; ~/qwen-opt/queue/logs/enigma-xtx3.log:32,43,61,108,125-127,141
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 97.8 t/s | dekod Enigma uczciwy bench; effort low (baseline 35.0) | 2026-11-05
+  - qwen3-8-27b | rx-7900-xtx | 1041 t/s | prefill Enigma; kandydat enigma | 2026-11-05
+  - qwen3-8-27b | rx-7900-xtx | 111.3 t/s | dekod deep 32630 tok.; Enigma | 2026-11-05
 ---
 # Enigma: uczciwy benchmark optymalizacji (G1–G4, G7) i E2E na XTX
 

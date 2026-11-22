@@ -4,6 +4,12 @@ tags: [optymalizacje, q8-1, fuzje]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:82-85,229-231,346,364; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:78,90,124,131
 status: aktualne
+technika: cache q8_1 i producenci q8_1 (0003, 0015, 0049, 0056)
+werdykt: przyjete
+zysk: +2–4% e2e (0003); 37.73 → 37.04 ms (0015)
+dowod: ~/KERNEL/qwen-opt/NOTES.md
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Cache q8_1 aktywacji i „producenci” q8_1
 

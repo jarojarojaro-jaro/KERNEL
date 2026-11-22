@@ -4,6 +4,11 @@ tags: [optymalizacje, cache, l2]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21b-gpu-perf-zasoby.md:202-213,281-289; https://docs.nvidia.com/cuda/cuda-programming-guide/04-special-topics/l2-cache-control.html
 status: do-sprawdzenia
+technika: L2 persisting window (CUDA)
+werdykt: w-toku
+zysk: niezmierzone (szacunek)
+dowod: ~/KERNEL/product/research/21b-gpu-perf-zasoby.md
+model: lfm2-5-24b-a2b
 ---
 # L2 persisting window (NVIDIA) dla danych czytanych co token
 

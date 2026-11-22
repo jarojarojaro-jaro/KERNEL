@@ -4,6 +4,16 @@ tags: [optymalizacje, host, pm4, topka]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24o-luki-hosta.md:3-6,10-23,27-33; ~/qwen-opt/queue/logs/hg-sweep1.log:2,5; wynik `python3 ~/qwen-opt/hostgap/hg_summary.py` (2026-10-20)
 status: aktualne
+technika: przełączniki luk hosta (YIELD_FAST=2, PM4_MIN_DISPATCH=16, PM4_LAZY_EXEC=1)
+werdykt: przyjete
+zysk: czat T=1 113,8 → 117,9 t/s
+dowod: raport-24o-luki-hosta
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 113.8 t/s | spec_sweep T=1 A | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 117.9 t/s | spec_sweep T=1 B przełączniki hosta | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 27.40 ms | krok B | 2026-10-20
 ---
 # Raport 24o: luki hosta w kroku spekulacji MTP
 

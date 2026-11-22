@@ -4,6 +4,11 @@ tags: [optymalizacje, fa, kv, weryfikacja]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/24h-kv-jeden-przebieg.md:3,9-14,20-28; ~/KERNEL/product/research/66-SYNTEZA.md
 status: aktualne
+technika: jeden przebieg KV w fattn-kvq dla weryfikacji MTP
+werdykt: odrzucone
+zysk: sufit +3,0…6,6% e2e przy 94k, ≤ 2,3% przy 32k (cel +8%)
+dowod: raport-24h-kv-jeden-przebieg
+karta: rx-7900-xtx
 ---
 # Raport 24h: jeden przebieg KV w `fattn-kvq` dla weryfikacji MTP – nie teraz
 

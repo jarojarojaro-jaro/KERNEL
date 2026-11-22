@@ -4,6 +4,15 @@ tags: [testy, nvidia, cuda, vast, enigma, mtp]
 aktualizacja: 2026-11-22
 zrodlo: ~/qwen-opt/cloud/results/nv67-*; ~/qwen-opt/cloud/results/nv67c-summary.txt; ~/qwen-opt/cloud/runs/nv67 (kopiowane do ~/KERNEL/qwen-opt/cloud/nv67); product/research/67-nvidia-vast-kampania.md; ~/KERNEL/product/research/67-nvidia-vast-kampania.md; 67b-wybor-modeli-nvidia.md; 67c-nvidia-backlog-testow.md; ~/qwen-opt/cloud/results/nv67-*
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 79,97 t/s | dekod MTP ctx 262 144; UD-Q4_K_XL, fork+kvq+lean, fill PASS | 2026-11-07
+  - qwen3-8-27b | rtx-3090 | 61,49 t/s | dekod pick Enigmy ctx 245 760; pin b11856 | 2026-11-07
+  - qwen3-8-27b | rtx-5060-ti | 49,44 t/s | dekod MTP ctx 196 608; ISTA IQ3_XXS-mtp, fork+kvq+lean | 2026-11-07
+  - qwen3-8-27b | rtx-4060-ti | 36,30 t/s | dekod MTP n2 ctx 229 376; ISTA IQ3_XXS-mtp, b12110lean, fill PASS | 2026-11-07
+  - bonsai | rtx-3060 | 58,31 t/s | dekod MTP n2 ctx 204 800; prism, fill PASS | 2026-11-07
+  - saluki | rtx-3060 | 22,23 t/s | dekod pick Enigmy ctx 135 168; pin b11856 | 2026-11-07
 ---
 # Kampania NVIDIA na Vast: 17 kart, 262 144 z MTP na 24 i 32 GB (2026-11-07)
 

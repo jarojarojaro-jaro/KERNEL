@@ -4,6 +4,11 @@ tags: [optymalizacje, spekulacja, enigma, moe]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66a-strata-maya.md:355-365,389; Strata `strata_control/drafting.py:257-276,334-347` (klon 146df3c4)
 status: do-sprawdzenia
+technika: próg draftu p-min od kosztu wiersza
+werdykt: w-toku
+zysk: u Straty +9.3% (1383 sloty); u nas niezmierzone
+dowod: ~/KERNEL/product/research/66a-strata-maya.md
+model: qwen3-6-35b-a3b
 ---
 # Próg draftu zależny od kosztu wiersza weryfikacji
 

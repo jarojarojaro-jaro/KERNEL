@@ -4,6 +4,11 @@ tags: [testy, nvidia, rtx-4060-ti]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/31-4060ti.md:1-16
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-4060-ti
+wyniki:
+  - qwen3-8-27b | rtx-4060-ti | 50.8 t/s | czat T=1 T'; UD-IQ4_XS, KV q4_0, 32k | 2026-10-20
+  - qwen3-8-27b | rtx-4060-ti | 188.6 t/s | mvs T'; UD-IQ4_XS | 2026-10-20
 ---
 # Raport 31: RTX 4060 Ti 16 GB, UD-IQ4_XS 32k
 

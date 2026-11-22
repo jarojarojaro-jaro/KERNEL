@@ -4,6 +4,11 @@ tags: [testy, lfm, moe]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:343-351; ~/KERNEL/qwen-opt/research/lfm-decode.md
 status: aktualne
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 220.4 t/s | tg128; łatki 0048–0052 | 2026-10-14
+  - lfm2-5-24b-a2b | rx-7900-xtx | 218.6 t/s | serwer lfm none; łatki 0048–0052 | 2026-10-14
 ---
 # 2026-10-14: LFM runda 1 (łatki 0048–0052)
 

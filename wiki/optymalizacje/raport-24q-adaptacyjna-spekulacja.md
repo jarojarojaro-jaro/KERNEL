@@ -4,6 +4,12 @@ tags: [optymalizacje, spekulacja, mtp, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24q-adaptacyjna-spekulacja.md:9-21,48-53,96-108; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:14
 status: aktualne
+technika: adaptacyjna spekulacja (bramka ogona, głębokość MTP)
+werdykt: odrzucone
+zysk: bramka ogona ≤ +0,5%; głębokość adaptacyjna zmienia greedy md5
+dowod: raport-24q-adaptacyjna-spekulacja
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 24q: adaptacyjna spekulacja – bramka ogona i głębokość MTP z akceptacji
 

@@ -4,6 +4,14 @@ tags: [modele, mtp, spekulacja]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/qwen-opt/mtp-train/RESULTS.md:1-10,52-127; ~/KERNEL/qwen-opt/NOTES.md:128-146,233,317; ~/KERNEL/qwen-opt/research/drafters.md:9-13; git -C ~/llama.cpp log mtp-train -1; ~/KERNEL/product/research/11-mtp-pl-pilot.md:3-9,24-30,66-93; ~/KERNEL/product/research/40-akceptacja-prozy.md:9-20; ~/KERNEL/product/research/52-eagle4.md:14-22; ~/KERNEL/product/research/53-draft-shortlist.md:1-20
 status: aktualne
+model: glowica-mtp
+rozmiar: blk.64 (nextn)
+kwant: IQ4_XS (przy ładowaniu)
+karty: rx-7900-xtx
+wyniki:
+  - glowica-mtp | rx-7900-xtx | 3.04 tok/krok | akceptacja offline; n_draft=4, 69 207 tokenów | 2026-10-12
+  - glowica-mtp | rx-7900-xtx | 3.266 tok/krok | akceptacja held-out; n=4, głowica fabryczna | 2026-10-16
+  - glowica-mtp | rx-7900-xtx | 102.7 t/s | dekod T=1; MTP n=4 | 2026-10-15
 ---
 # Głowica MTP Qwen3.8-27B (spekulacja bez osobnego draftera)
 
@@ -27,6 +35,18 @@ Publicznie (drafters.md): nie ma EAGLE-3, Medusa ani przetrenowanej głowicy MTP
 - Proza E0: akceptacja 0.655/0.503/0.407/0.382, PL gorzej; jedyna dźwignia ≥ +25% to lepsza głowica ([[raport-40-akceptacja-prozy]]).
 - Shortlist low-rank po 248k (EAGLE Efficient LM Head): kod gotowy, recall nie przeszedł ([[ekosystem/eagle-4]], [[raport-53-draft-shortlist]]).
 - DRAFT_N=5 jako profil opt-in ([[raport-35-xtx-eksperymenty]]); routing głębokości per żądanie ([[raport-44-spec-route]]).
+
+<!-- TABELE:START -->
+## Wyniki z notatek (3)
+
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+
+| karta | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | akceptacja held-out | **3.266 tok/krok** | n=4, głowica fabryczna | 2026-10-16 | [[glowica-mtp]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | akceptacja offline | **3.04 tok/krok** | n_draft=4, 69 207 tokenów | 2026-10-12 | [[glowica-mtp]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod T=1 | **102.7 t/s** | MTP n=4 | 2026-10-15 | [[glowica-mtp]] |
+<!-- TABELE:END -->
 
 ## Powiązane
 - [[modele/_hub|Modele]]

@@ -4,6 +4,12 @@ tags: [optymalizacje, atencja, fwht]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:229,365-366; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:94,132-133,183
 status: aktualne
+technika: attn prep + FWHT (0019, 0057, 0058)
+werdykt: przyjete
+zysk: LFM 4.043 → 3.907 ms/token (0057), 3.928 → 3.879 (0058)
+dowod: lfm-runda-3
+karta: rx-7900-xtx
+model: lfm2-5-24b-a2b
 ---
 # Wejście atencji jednym kernelem i rotacja Hadamarda (0019, 0057, 0058)
 

@@ -4,6 +4,12 @@ tags: [optymalizacje, mmvq, xtx]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/46-mmvq-duze-ksztalty.md:1-20
 status: aktualne
+technika: MMVQ n=5 duże kształty (pipelining Q4_K + 8 fal)
+werdykt: odrzucone
+zysk: −15% mikrobench 17408×5120, ABBA bez zysku
+dowod: raport-46-mmvq-big
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 46: MMVQ n=5 na dużych kształtach (mmvq-big)
 

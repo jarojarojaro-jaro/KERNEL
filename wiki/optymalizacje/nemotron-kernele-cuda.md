@@ -4,6 +4,12 @@ tags: [optymalizacje, cuda, moe, iq2]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/14-nemotron-3090.md:104-150,201; git -C ~/llama-master log -1 e46d34e0e
 status: aktualne
+technika: TOPK_MOE_NP2 + MMVQ_N1_IQ2 (CUDA)
+werdykt: przyjete
+zysk: tg128 91.1 → 96.7 (+6.1%); IQ2_LUT −2.4% odrzucone
+dowod: ~/KERNEL/product/research/14-nemotron-3090.md
+karta: rtx-3090
+model: nemotron-3-5-bolt-74b-a9b
 ---
 # Łatki CUDA dla Nemotron 3.5 Bolt: TOPK_MOE_NP2, MMVQ_N1_IQ2, IQ2_LUT
 

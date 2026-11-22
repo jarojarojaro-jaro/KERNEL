@@ -4,6 +4,11 @@ tags: [testy, xtx, serwer]
 aktualizacja: 2026-10-18
 zrodlo: ~/KERNEL/product/research/16f-xtx-szybkie.md:1-239
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 113.2 t/s | spec blok MTP IQ4_XS; 5 seedów (Q6_K 109.4) | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 1612 ms | start sesji agenta; CACHE_SHARE_MIN (baza 8019) | 2026-10-18
 ---
 # Raport 16f: szybkie zyski na XTX (ubatch LFM, typ bloku MTP, hak MTP, cache agenta, cache na SSD)
 

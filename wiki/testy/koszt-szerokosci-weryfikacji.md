@@ -4,6 +4,12 @@ tags: [testy, spekulacja, weryfikacja, kvq]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/16b-lookup-tail.md:55-70; ~/qwen-opt/lookup/e2/e2_table.txt:2-5; ~/qwen-opt/lookup/e2_bench.sh; ~/KERNEL/product/research/24k-koszt-weryfikacji.md:3-9; ~/KERNEL/product/research/24s-proza-drzewa.md:16,109
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 6.40 ms | V16 − V5 przy 2k; llama-bench KV q4_0 | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 9.50 ms | V16 − V5 przy 32k; llama-bench KV q4_0 | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 12.45 ms | V16 − V5 przy 64k; llama-bench KV q4_0 | 2026-10-18
 ---
 # Krzywa kosztu szerokości weryfikacji V(w, kontekst) na XTX
 

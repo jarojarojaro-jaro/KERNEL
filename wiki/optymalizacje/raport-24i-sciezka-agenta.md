@@ -4,6 +4,11 @@ tags: [optymalizacje, agent, tokenizacja, serwer]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24i-sciezka-agenta.md:7-9,17-21,31,41-57,65-68
 status: aktualne
+technika: przyrostowy cache tokenizacji (LLAMA_SERVER_TOK_CACHE)
+werdykt: przyjete
+zysk: tokenizacja+szablon 25,5 ms (14k) / 137,3 ms (91k) → 0,5–2,5 ms na turę
+dowod: raport-24i-sciezka-agenta
+model: qwen3-8-27b
 ---
 # Raport 24i: ścieżka agenta – tokenizacja, szablon, graf decode
 

@@ -4,6 +4,12 @@ tags: [optymalizacje, mmq, prefill, wmma]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66a-strata-maya.md:300-343,388; https://github.com/mw00/project-maya/pull/864
 status: do-sprawdzenia
+technika: MMQ Q6_K skale przez b128
+werdykt: odrzucone
+zysk: 0,0% (pp4096 1000,7 → 1000,6)
+dowod: 2026-11-07-q6k-mmq-skale
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # MMQ Q6_K na gfx1100 czyta skale bajt po bajcie
 

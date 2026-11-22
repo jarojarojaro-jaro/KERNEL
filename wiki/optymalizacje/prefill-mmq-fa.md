@@ -4,6 +4,15 @@ tags: [optymalizacje, prefill, mmq]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:320-324; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:115-120
 status: aktualne
+technika: kafle MMQ i FA prefill (0040–0045)
+werdykt: przyjete
+zysk: prefill 94k 668 → 767 t/s
+dowod: ~/KERNEL/qwen-opt/NOTES.md:320-324
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 767 t/s | prefill 94k; K5+T3 0040-0045 | 2026-10-14
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 762 t/s | prefill 94k; K5+T3 0040-0045 | 2026-10-14
 ---
 # Prefill: kafle MMQ i FA (K5 + T3, 0040–0045)
 

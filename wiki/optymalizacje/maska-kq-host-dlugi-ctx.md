@@ -4,6 +4,11 @@ tags: [optymalizacje, host, dlugi-kontekst, maska]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66e-anatomia-serwowania-tqllm.md:96-115,185-187; ~/KERNEL/product/research/66e-skrypty/maskbench.cpp; ~/KERNEL/product/research/66d-saber-engine-rdna.md:122,163
 status: do-sprawdzenia
+technika: maska KQ na GPU/w czasie draftu
+werdykt: w-toku
+zysk: maska 0.25 ms na graf przy 199k (~1.1% kroku), niezmierzone e2e
+dowod: ~/KERNEL/product/research/66e-anatomia-serwowania-tqllm.md
+model: qwen3-8-27b
 ---
 # Maska KQ na hoście przy długim kontekście
 

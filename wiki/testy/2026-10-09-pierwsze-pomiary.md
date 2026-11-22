@@ -4,6 +4,14 @@ tags: [testy, qwen, baza]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/benchmarks/2026-10-09-rx7900xtx-qwen38-27b.md; ~/KERNEL/qwen-opt/NOTES.md:3-16,38-50; ~/KERNEL/qwen-opt/SPEC-QWEN27B.md:50-77
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 59.2 t/s | dekod MTP T=0; stary build b356fa262, ROCm, n=3 | 2026-10-09
+  - qwen3-8-27b | rx-7900-xtx | 85.5 t/s | dekod MTP T=0; ROCm + MMVQ + cache q8_1 + słownik 64k, n=4 | 2026-10-09
+  - qwen3-8-27b | rx-7900-xtx | 91.8 t/s | dekod MTP T=0; Vulkan RADV + słownik 64k, n=5 | 2026-10-09
+  - qwen3-8-27b | rx-7900-xtx | 1044 t/s | prefill pp4096; ROCm | 2026-10-09
+  - qwen3-8-27b | rx-7900-xtx | 850 t/s | prefill pp4096; Vulkan | 2026-10-09
 ---
 # 2026-10-09: pierwsze pomiary Qwen3.8-27B (59 → 92 t/s)
 

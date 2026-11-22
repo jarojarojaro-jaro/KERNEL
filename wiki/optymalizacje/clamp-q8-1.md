@@ -4,6 +4,12 @@ tags: [optymalizacje, poprawnosc, q8-1]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/patches/llama.cpp-amd-opt/0023-*.patch:8,30 (wiadomość commitu ba90baf3a); ~/KERNEL/qwen-opt/research/strata/README.md:21; ~/KERNEL/qwen-opt/NOTES.md:259,271; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:98,440
 status: aktualne
+technika: clamp q8_1 do ±65504 (0023)
+werdykt: przyjete
+zysk: poprawka poprawności, bitowo bez zmian
+dowod: ~/KERNEL/qwen-opt/NOTES.md:259
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Clamp (d, sum) bloków q8_1 do ±65504 (0023, poprawka)
 

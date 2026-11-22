@@ -4,6 +4,12 @@ tags: [testy, chmura, nvidia, sm-86, kwanty]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/09-chmura-3060.md:1-275; ~/qwen-opt/cloud/results/3060-20261016/NOTE-quantkld-overwrite.txt:1-5
 status: aktualne
+model: saluki
+karta: rtx-3060
+wyniki:
+  - saluki | rtx-3060 | 23.4 t/s | dekod; nasz silnik (upstream 22.3) | 2026-10-16
+  - bonsai | rtx-3060 | 35.51 t/s | dekod Q2_0; nasz fork | 2026-10-16
+  - bonsai | rtx-3060 | 44.75 t/s | dekod PTQ1_0; fork prism | 2026-10-16
 ---
 # Raport 09 (3060): Saluki i Bonsai na RTX 3060
 

@@ -4,6 +4,13 @@ tags: [testy, cache-promptu, konfiguracja]
 aktualizacja: 2026-10-18
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:193-219; ~/KERNEL/qwen-opt/STATUS-NEXT.md:40-44; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:14,88-94,108-109,239-242; ~/llama-master/tools/server/server-task.cpp:1824; ~/llama-master/tools/server/server-context.cpp:3979-3985; ~/KERNEL/product/research/16f-xtx-szybkie.md:151-190
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 31.9 s | prefill zimny 27k; cache promptu domyślny | 2026-10-12
+  - qwen3-8-27b | rx-7900-xtx | 0.7 s | pytanie uzupełniające 27k; cache promptu | 2026-10-12
+  - qwen3-8-27b | rx-7900-xtx | 70.9 t/s | dekod 94k; po kvq, MTP n=4 T=0 | 2026-10-12
+  - qwen3-8-27b | rx-7900-xtx | 92.9 t/s | dekod 1.7k; po kvq, MTP n=4 T=0 | 2026-10-12
 ---
 # 2026-10-12: cache promptu, długi kontekst po `kvq` i testy bez zmian w kodzie (A7)
 

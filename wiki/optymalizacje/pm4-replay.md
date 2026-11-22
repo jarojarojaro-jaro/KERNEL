@@ -4,6 +4,16 @@ tags: [optymalizacje, pm4, rocr]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:6-14,18-57,81-99; ~/KERNEL/qwen-opt/NOTES.md:372-376; ~/KERNEL/product/research/08-analiza-platformy-latek.md:14-21; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:135-136,473; ~/KERNEL/product/research/15a-monokernel.md:179-183,196,233-242; ~/KERNEL/product/research/16a-pm4-pdl.md:145-150; ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:142-150; komunikat Main do WikiIngest 2026-10-19; ~/KERNEL/product/research/17-gpu-page-fault.md:104-153; ~/KERNEL/product/research/17-gpu-page-fault.md:210-425; ~/KERNEL/product/research/37-proza-100.md:13-24; ~/KERNEL/product/research/54-mniej-granic.md:8-27
 status: aktualne
+technika: PM4 replay (0060, 0061, 0063)
+werdykt: przyjete
+zysk: LFM 3.887 → 3.424 ms/token; Qwen MTP 103.7 → 108.8 t/s
+dowod: ~/KERNEL/qwen-opt/research/lfm-decode-round4.md
+karta: rx-7900-xtx
+model: lfm2-5-24b-a2b
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 292,1 t/s | dekod plain tg128; PM4 replay | 2026-10-14
+  - qwen3-8-27b | rx-7900-xtx | 108,8 t/s | dekod MTP; PM4 replay | 2026-10-14
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 115,3 t/s | dekod MTP; PM4 replay | 2026-10-14
 ---
 # Replay grafu dekodowania jako bufor PM4 (0060, 0061, 0063)
 

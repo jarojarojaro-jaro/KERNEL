@@ -4,6 +4,15 @@ tags: [testy, konkurencja, nvidia, spekulacja]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:5-117,140-157; ~/qwen-opt/cloud/results/magnitude-vs-3090-20261016/x/xbench.jsonl; ~/qwen-opt/cloud/results/magnitude-vs-5060ti-20261016/x/xbench.jsonl; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:1-176
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 65.7 t/s | sweep T=1 fork; cuda-3090-opt (Magnitude 65.7, upstream 49.2) | 2026-10-16
+  - qwen3-8-27b | rtx-3090 | 105.2 t/s | code-edit fork; (Magnitude 156.1) | 2026-10-16
+  - qwen3-8-27b | rtx-3090 | 888 t/s | prefill 64k fork; (Magnitude 744) | 2026-10-16
+  - lfm2-5-24b-a2b | rtx-3090 | 291.6 t/s | sweep fork; (Magnitude 209.0) | 2026-10-16
+  - lfm2-5-24b-a2b | rtx-5060-ti | 205.1 t/s | sweep 32k fork; (Magnitude 157.8) | 2026-10-16
+  - qwen3-8-27b | rtx-5060-ti | 58.0 t/s | sweep fork; Q3_K_XL (upstream 43.5) | 2026-10-16
 ---
 # 2026-10-16: X1 – Magnitude vs nasz fork vs upstream (3090, 5060 Ti)
 

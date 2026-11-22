@@ -4,6 +4,16 @@ tags: [optymalizacje, mmvq, pasmo, sufit]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24r-mmvq-pasmo.md:7-14,72-76
 status: aktualne
+technika: MMVQ n=5 RPB=1
+werdykt: odrzucone
+zysk: −3,0% (27,98 → 28,80 ms/krok)
+dowod: raport-24r-mmvq-pasmo
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 926 GB/s | sufit odczytu | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 762 GB/s | pasmo weryfikacji n=5 | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 28.80 ms | krok spec_sweep RPB=1 | 2026-10-20
 ---
 # Raport 24r: pasmo MMVQ weryfikacji n=5 – sufit 926 GB/s
 

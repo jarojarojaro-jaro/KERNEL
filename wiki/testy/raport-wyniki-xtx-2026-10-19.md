@@ -4,6 +4,15 @@ tags: [testy, wyniki, rx-7900-xtx, topka]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/WYNIKI-XTX-2026-10-19.md:8-14,43-52,63-74,78-89,103-111,141-150
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 114.8 t/s | czat T=1; topka f2217bac7 (upstream 35.8) | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 419.9 t/s | code-edit; topka | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 111.6 t/s | dekod ~32k; topka | 2026-10-20
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 434.9 t/s | mvs; topka | 2026-10-20
+  - lfm2-5-24b-a2b | rx-7900-xtx | 274.1 t/s | czat; topka (upstream 146.8) | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 136.5 t/s | dekod 1.7k; sam MTP, LOOKUP=0 | 2026-10-20
 ---
 # Wyniki RX 7900 XTX 2026-10-19/20: upstream → topka (ten sam skrypt, ABBA)
 

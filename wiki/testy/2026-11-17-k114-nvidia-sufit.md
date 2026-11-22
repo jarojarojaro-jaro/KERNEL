@@ -4,6 +4,14 @@ tags: [testy, nvidia, vast, mtp, sufit, enigma, k114]
 aktualizacja: 2026-11-17
 zrodlo: qwen-opt/cloud/k114/{run.sh,run2.sh,pf.py,pdl.sh,launch.sh,summ.py}; wyniki qwen-opt/cloud/k114/res/{3090,5060ti,3060}/ (bench.jsonl, prefill.jsonl, smi.csv, gpu.csv); `python3 summ.py res/3090 res/5060ti res/3060`
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-5060-ti
+wyniki:
+  - qwen3-8-27b | rtx-5060-ti | 54,2 t/s | dekod MTP n2 T=0; GSQ IQ3_XXS-mtp, kvqlean, ctx 8192, 180 W | 2026-11-17
+  - qwen3-8-27b | rtx-5060-ti | 51,0 t/s | dekod MTP n2 T=1; GSQ IQ3_XXS-mtp, kvqlean, ctx 8192 | 2026-11-17
+  - qwen3-8-27b | rtx-5060-ti | 31,9 t/s | dekod plain; GSQ IQ3_XXS-mtp, kvqlean | 2026-11-17
+  - qwen3-8-27b | rtx-5060-ti | 828 t/s | prefill ~11k; GSQ IQ3_XXS-mtp, kvqlean | 2026-11-17
+k: K-114
 ---
 # 2026-11-17 K-114: nasz silnik CUDA na 3090, 5060 Ti i 3060 względem sufitu — czas kroku zjadają drafty, a na Vaście limity hosta
 

@@ -4,6 +4,9 @@ tags: [testy, lfm, moe, wyniki-negatywne]
 aktualizacja: 2026-10-18
 zrodlo: ~/KERNEL/product/research/16g-lfm-moe-pasmo.md:43-65,97-103; ~/wt/lfmmoe-prof/rp_r6_{1,2,3}.txt, mb3.txt
 status: aktualne
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wynik: lfm2-5-24b-a2b | rx-7900-xtx | 11.64 µs | MoE down Q5_K produkcja; moebench | 2026-10-18
 ---
 # 2026-10-18: wyniki negatywne MoE matvec LFM (mikrobench)
 

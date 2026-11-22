@@ -4,6 +4,15 @@ tags: [optymalizacje, fuzje, qwen]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:221-234; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:87-94,162-163; ~/KERNEL/product/research/15c-nowe-silniki.md:174-177,197-199
 status: aktualne
+technika: fuzje weryfikacji Qwena A3–A6
+werdykt: przyjete
+zysk: 41.7 → 36.38 ms/krok (74.8 → 86.4 t/s)
+dowod: 2026-10-12-fuzje-a3-a6
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 86,4 t/s | dekod MTP; po A6, 36.38 ms/krok | 2026-10-12
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 88,5 t/s | dekod MTP; po A6, 34.52 ms/krok | 2026-10-12
 ---
 # Fuzje kroku weryfikacji Qwena (A3–A6)
 

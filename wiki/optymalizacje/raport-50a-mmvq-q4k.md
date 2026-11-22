@@ -4,6 +4,12 @@ tags: [optymalizacje, mmvq, q4-k]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/50a-mmvq-q4k.md:1-20
 status: do-sprawdzenia
+technika: MMVQ Q4_K n=5 kernel strumieniowy
+werdykt: w-toku
+zysk: plain −3…−6%, pary −10…−21% (mikrobench)
+dowod: raport-50a-mmvq-q4k
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 50a: MMVQ Q4_K n=5 – kernel strumieniowy
 

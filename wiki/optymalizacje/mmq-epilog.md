@@ -4,6 +4,14 @@ tags: [optymalizacje, mmq, prefill]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/research/round6/mmq-epilogue.md:6-61,159-168; ~/KERNEL/qwen-opt/NOTES.md:394-397; ~/KERNEL/qwen-opt/STATUS-NEXT.md:3,31
 status: aktualne
+technika: epilog MMQ VOPD (0070)
+werdykt: przyjete
+zysk: +2.2% pp4096 (1099.5 → 1123.2 t/s)
+dowod: ~/KERNEL/qwen-opt/research/round6/mmq-epilogue.md
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 1123,2 t/s | prefill pp4096; MMQ epilog 0070 | 2026-10-15
 ---
 # Epilog MMQ w parach VOPD (0070)
 

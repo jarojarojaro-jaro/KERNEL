@@ -4,6 +4,13 @@ tags: [testy, lfm, pm4]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:372-379; ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:6-14,101-127
 status: aktualne
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 293.75 t/s | spec_sweep lfm none T=1; PM4 replay | 2026-10-14
+  - lfm2-5-24b-a2b | rx-7900-xtx | 294.84 t/s | tg128 KV q8_0; PM4 | 2026-10-14
+  - lfm2-5-24b-a2b | rx-7900-xtx | 212.95 t/s | tg128 głębokość 98304; PM4 | 2026-10-14
+  - qwen3-8-27b | rx-7900-xtx | 108.82 t/s | spec_sweep qwen mtp T=1; PM4 | 2026-10-14
 ---
 # 2026-10-14: runda 4 — replay PM4 (0060–0064)
 

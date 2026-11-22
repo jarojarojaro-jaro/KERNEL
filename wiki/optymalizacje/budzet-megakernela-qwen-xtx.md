@@ -4,6 +4,12 @@ tags: [optymalizacje, megakernel, xtx, szacunki]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66c-hyperkernel-megakernele.md:89-127,151-161
 status: do-sprawdzenia
+technika: megakernel Qwen
+werdykt: w-toku
+zysk: sufit ~4 ms/krok (+12%) wg szacunku, niezmierzone
+dowod: ~/KERNEL/product/research/66c-hyperkernel-megakernele.md
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Budżet megakernela dla Qwen3.8-27B na XTX
 

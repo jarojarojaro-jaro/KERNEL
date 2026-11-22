@@ -4,6 +4,10 @@ tags: [modele, rl, qwen, agenci, trening, telegram]
 aktualizacja: 2026-11-19
 zrodlo: https://x.com/radixark/status/2123115052127633536 (Telegram „gpu”, 2026-11-19); huggingface.co/RadixArk/DaisyRose-27B (karta, Apache-2.0); huggingface.co/bartowski/RadixArk_DaisyRose-27B-GGUF (Q4_K_M 17,33 GB)
 status: aktualne
+model: daisyrose-27b
+rozmiar: 27B
+kwant: Q4_K_M
+k: K-120
 ---
 # DaisyRose-27B (RadixArk): pełny RL na Qwen3.8-27B, 144 × H200 przez 18 dni — duży koszt, mały zysk poza Terminal-Bench 4.1
 

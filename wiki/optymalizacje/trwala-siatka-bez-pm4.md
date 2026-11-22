@@ -4,6 +4,15 @@ tags: [optymalizacje, pm4, megakernel, lfm]
 aktualizacja: 2026-10-19
 zrodlo: ~/KERNEL/product/research/21b-gpu-perf-zasoby.md:215-228,297-303; ~/KERNEL/qwen-opt/research/lfm-decode-round4.md:30-50
 status: do-sprawdzenia
+technika: trwała siatka MoE bez PM4
+werdykt: w-toku
+zysk: strata PM4-off 293,7 → 259,3 t/s do odzyskania
+dowod: trwala-siatka-bez-pm4
+model: lfm2-5-24b-a2b
+karta: rx-7900-xtx
+wyniki:
+  - lfm2-5-24b-a2b | rx-7900-xtx | 293.7 t/s | dekod plain PM4 on | 2026-10-19
+  - lfm2-5-24b-a2b | rx-7900-xtx | 259.3 t/s | dekod plain PM4 off | 2026-10-19
 ---
 # XTX bez PM4: trwała siatka wraca do gry (warunkowo)
 

@@ -4,6 +4,12 @@ tags: [optymalizacje, spekulacja, glowica]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/53-draft-shortlist.md:1-78
 status: do-sprawdzenia
+technika: shortlist w głowicy draftu MTP (LLAMA_DRAFT_SHORTLIST)
+werdykt: w-toku
+zysk: bramka recall nie przeszła (40,8% ridge K=1024), VRAM +536 MiB
+dowod: raport-53-draft-shortlist
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 53: shortlist w głowicy draftu MTP (E52b)
 

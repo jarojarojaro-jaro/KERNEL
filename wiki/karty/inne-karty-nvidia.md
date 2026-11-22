@@ -4,6 +4,9 @@ tags: [karty, nvidia, lab]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:15-19,100-108,234-236,305-321; ~/KERNEL/product/PLAN.md:282,290,296; ~/qwen-opt/cloud/PLAN-TESTOW.md:102,138; ~/KERNEL/qwen-opt/research/tensorfold/issues.md:34; ~/KERNEL/qwen-opt/research/tensorfold/spec-host.md:156; ~/qwen-opt/cloud/results/nv67c-summary.txt
 status: aktualne
+karta: inne-karty-nvidia
+gdzie: Vast
+stan: kampania 67c zmierzona
 ---
 # Pozostałe karty NVIDIA (2080 Ti, 3070, 3080, 4060 Ti, 4070, 5080, 4090, 5070, 5090, A40, L40S)
 

@@ -4,6 +4,14 @@ tags: [testy, nvidia, rtx-3090, vast, enigma, mtp, dlugi-kontekst]
 aktualizacja: 2026-11-09
 zrodlo: ~/qwen-opt/cloud/results/nv69q-3090-20261109/ (bench.jsonl, smi.csv, logs/, hw/); kopia w qwen-opt/cloud/nv69q/ (summary.txt, bench.jsonl, skrypty); product/research/69b-tensorfold-qwen-warp.md (Q1)
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 82.9 t/s | dekod krótki T=0; fork kvqleana, UD-Q4_K_XL, 350 W | 2026-11-09
+  - qwen3-8-27b | rtx-3090 | 51.1 t/s | dekod 262k T=0; fork kvqleana, UD-Q4_K_XL | 2026-11-09
+  - swift-1-5 | rtx-3090 | 121.2 t/s | dekod krótki T=0; qwen-warp v0.8.0 INT4 | 2026-11-09
+  - swift-1-5 | rtx-3090 | 68.3 t/s | dekod 262k T=0; qwen-warp v0.8.0 INT4 | 2026-11-09
+  - qwen3-8-27b | rtx-3090 | 420 t/s | prefill 130k → 262k; fork kvqleana | 2026-11-09
 ---
 # qwen-warp v0.8.0 kontra nasz fork CUDA na jednej RTX 3090 (2026-11-09)
 

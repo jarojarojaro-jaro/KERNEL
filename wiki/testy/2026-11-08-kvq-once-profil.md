@@ -4,6 +4,13 @@ tags: [testy, rx-7900-xtx, flash-attention, kv, dlugi-kontekst, profil, wynik-ne
 aktualizacja: 2026-11-09
 zrodlo: ~/qwen-opt/kvq-once/run-1107-2315/summary.txt, kperf.txt, lc.jsonl, sweep.txt, hg-parsed.txt; ~/qwen-opt/kvq-once/run2-1108-0054/summary.txt; ~/qwen-opt/kvq-once/run2b-1109-0103/summary.txt, kperf.txt; ~/qwen-opt/kvq-once/NOTE.txt; gałąź kvq-once 1d0fa32bb (ONCE=1), 47b6be451 (ONCE=2)
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 95.81 t/s | dekod 199k T=0; KVQ_ONCE=1 (KILL, baza 94.12) | 2026-11-08
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 122.04 t/s | dekod 94k T=0; KVQ_ONCE=1 (baza 120.97) | 2026-11-08
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 11.32 ms | FA na krok przy 199k; rocprofv3, ONCE=0 | 2026-11-08
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 94.73 t/s | dekod 199k T=0; KVQ_ONCE=2 (KILL) | 2026-11-09
 ---
 # kvq: KV raz na weryfikację MTP (`GGML_HIP_KVQ_ONCE`) i profil kroku przy długim kontekście (2026-11-07/08)
 

@@ -4,6 +4,10 @@ tags: [optymalizacje, cache, gdn, agent]
 aktualizacja: 2026-11-07
 zrodlo: ~/KERNEL/product/research/66b-1cat-tokenspeed.md:140-158,219-220; ~/KERNEL/product/research/66a-strata-maya.md:221,394
 status: do-sprawdzenia
+technika: siatka checkpointów GDN, junction, fallback odtwarzania
+werdykt: w-toku
+zysk: niezmierzone
+dowod: siatka-checkpointow-gdn
 ---
 # Siatka checkpointów GDN, junction i fallback odtwarzania
 

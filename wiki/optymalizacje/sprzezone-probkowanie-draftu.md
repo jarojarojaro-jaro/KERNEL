@@ -4,6 +4,14 @@ tags: [optymalizacje, spekulacja, sampler]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:28-32,81-88,240,302-307; ~/KERNEL/product/research/16k-sprzezone-probkowanie.md:35-75; ~/KERNEL/product/research/24p-sprzezone-t1.md:8-12,63; ~/KERNEL/product/research/24s-proza-drzewa.md:17-21
 status: aktualne
+technika: sprzężone próbkowanie draftu (Gumbel-max)
+werdykt: przyjete
+zysk: +3,5% T=1 (107,6 → 111,4 t/s)
+dowod: raport-24p-sprzezone-t1
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 111.4 t/s | dekod MTP T=1 SPEC_COUPLED=1 | 2026-10-20
 ---
 # Sprzężone próbkowanie draftu (coupled sampling)
 

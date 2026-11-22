@@ -4,6 +4,12 @@ tags: [optymalizacje, ttft, latencja]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/45-opoznienia.md:84-122; ~/KERNEL/product/research/38-checkpointy-vram.md:12-19; ~/KERNEL/product/research/45-opoznienia.md:1-126
 status: aktualne
+technika: cache MTP + CKPT_VRAM=2 (TTFT)
+werdykt: przyjete
+zysk: start 38.5 → 6.55 s; tura agenta 687/579 → 197 ms
+dowod: ~/KERNEL/product/research/45-opoznienia.md
+karta: rx-7900-xtx
+model: qwen3-8-27b
 ---
 # Opóźnienia: TTFT, start i przełączanie modeli (topka)
 

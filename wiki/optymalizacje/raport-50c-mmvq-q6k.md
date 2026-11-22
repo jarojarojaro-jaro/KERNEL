@@ -4,6 +4,12 @@ tags: [optymalizacje, mmvq, q6-k]
 aktualizacja: 2026-10-21
 zrodlo: ~/KERNEL/product/research/50c-mmvq-q6k.md:1-30
 status: do-sprawdzenia
+technika: MMVQ Q6_K n=5 potok ping-pong
+werdykt: w-toku
+zysk: szac. −0,15 ms/krok, bramki nieuruchomione
+dowod: raport-50c-mmvq-q6k
+model: qwen3-8-27b
+karta: rx-7900-xtx
 ---
 # Raport 50c: MMVQ Q6_K n=5 – potok ping-pong
 

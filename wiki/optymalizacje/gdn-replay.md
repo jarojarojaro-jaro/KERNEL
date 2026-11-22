@@ -4,6 +4,15 @@ tags: [optymalizacje, gdn, spekulacja]
 aktualizacja: 2026-10-24
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:290-295; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:108-111; ~/KERNEL/qwen-opt/research/round6/test-tooling.md:26; ~/KERNEL/product/research/patch-manifest.json (0033); ~/KERNEL/product/research/23e-re-silniki.md:21
 status: aktualne
+technika: GDN replay (S4, 0033–0036)
+werdykt: przyjete
+zysk: GDN 793 → 638 µs/weryfikację; VRAM stanów 748 → 195 MiB
+dowod: ~/KERNEL/qwen-opt/NOTES.md:290-295
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 102,9 t/s | dekod MTP; GDN replay S4, 29.36 ms/krok | 2026-10-13
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 106,1 t/s | dekod MTP; GDN replay S4, 28.27 ms/krok | 2026-10-13
 ---
 # GDN z opóźnieniem: cofanie przez przeliczenie (S4)
 

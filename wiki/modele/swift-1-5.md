@@ -4,6 +4,13 @@ tags: [modele, qwen, kwanty, licencje]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/15e-kwantyzacja-nowa.md:33-40,130-150,238-246; ~/KERNEL/product/research/16e-kwanty-kld.md:48-59,162-176; ~/qwen-opt/cloud/results/quantkld-20261016/tasks-all/tasks-report.json
 status: aktualne
+model: swift-1-5
+rozmiar: 27B
+kwant: IQ3_XXS-mtp
+karty: rtx-3060
+wyniki:
+  - swift-1-5 | rtx-3060 | 0.0019 KLD | KLD PL do Qwen-Q8; Swift-Q8, E1 | 2026-10-18
+  - swift-1-5 | rtx-3060 | 0.55 akceptacja | akceptacja MTP; głowica Qwena, E1 | 2026-10-18
 ---
 # Swift 1.5 (UkisAI): Qwen3.8-27B z krótszym myśleniem
 
@@ -17,6 +24,20 @@ status: aktualne
 - **Licencja Swift Open License v1.0:** komercyjnie tylko przy przychodzie < US$1M rocznie (§5), automatyczne wygaśnięcie przy naruszeniu (§12) – ryzyko dla B2B; decyzja otwarta.
 
 E1 (2026-10-18): KLD Swift-Q8 do Qwen-Q8 0.0082 wiki / 0.0019 PL (podłoga Q8 0.0038/0.0006) – na tekście ≈ Qwen; akceptacja MTP z głowicą Qwena = ISTA (0.55 vs 0.53/0.55); zadania −19% tokenów przez rzadsze zapętlenia (mediana bez zmian), W4 pass 1.00 i 0 ucięć. W3 (IQ3_XXS-mtp) jedyny przechodzi bramkę 12 GB ([[2026-10-18-e1-kwanty-27b-kld]]).
+
+<!-- TABELE:START -->
+## Wyniki z notatek (5)
+
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+
+| karta | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | akceptacja MTP | **0.55 akceptacja** | głowica Qwena, E1 | 2026-10-18 | [[swift-1-5]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod MTP | **25.15 t/s** | Swift IQ3_XXS W3, 120 W, 16k | 2026-10-18 | [[2026-10-18-e1-kwanty-27b-kld]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | KLD PL do Qwen-Q8 | **0.0019 KLD** | Swift-Q8, E1 | 2026-10-18 | [[swift-1-5]] |
+| NVIDIA RTX 3090 [[rtx-3090]] | dekod 262k T=0 | **68.3 t/s** | qwen-warp v0.8.0 INT4 | 2026-11-09 | [[2026-11-09-qwen-warp-vs-fork-3090]] |
+| NVIDIA RTX 3090 [[rtx-3090]] | dekod krótki T=0 | **121.2 t/s** | qwen-warp v0.8.0 INT4 | 2026-11-09 | [[2026-11-09-qwen-warp-vs-fork-3090]] |
+<!-- TABELE:END -->
 
 ## Powiązane
 - [[modele/_hub|Modele]]

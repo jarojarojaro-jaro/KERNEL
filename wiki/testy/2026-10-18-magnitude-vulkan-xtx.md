@@ -4,6 +4,14 @@ tags: [testy, konkurencja, vulkan, rdna3]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:7-99; ~/qwen-opt/magnitude-xtx/x/xbench.jsonl; ~/qwen-opt/magnitude-xtx/results.txt; ~/qwen-opt/magnitude-xtx/servers.jsonl; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:1-110
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 100.0 t/s | sweep T=1; ROCm MTP (Magnitude Vulkan 50.1) | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 141.2 t/s | copy 64k; ROCm MTP (Magnitude 63.7) | 2026-10-18
+  - qwen3-8-27b | rx-7900-xtx | 170.0 t/s | code-edit; ROCm MTP (Magnitude 87.7) | 2026-10-18
+  - lfm2-5-24b-a2b | rx-7900-xtx | 322.9 t/s | sweep plain; Q4_K_M (Magnitude 219.6) | 2026-10-18
+  - lfm2-5-24b-a2b | rx-7900-xtx | 14.6 s | prefill 64k; (Magnitude 32.7 s) | 2026-10-18
 ---
 # 2026-10-18: E-X5 – Magnitude przez Vulkan na RX 7900 XTX
 

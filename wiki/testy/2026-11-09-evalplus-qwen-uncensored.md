@@ -4,6 +4,14 @@ tags: [testy, rx-7900-xtx, jakosc, evalplus, uncensored]
 aktualizacja: 2026-11-09
 zrodlo: ~/KERNEL/qwen-opt/evalplus/uncensored-low/{summary.md,summary.json,speed.md,gen-wall.txt}; ~/KERNEL/qwen-opt/evalplus/overhead.py; ~/qwen-opt/evalplus/runs/uncensored-low/ (surowe generacje); https://www.localmaxxing.com/en/benchmarks/humaneval-plus; https://evalplus.github.io/leaderboard.html; https://huggingface.co/Qwen/Qwen3.8-27B
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 97,6 % | HumanEval pass@1; topka-q70, effort low, T=0 | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 92,7 % | HumanEval+ pass@1; topka-q70, effort low, T=0 | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 80,2 % | MBPP+ pass@1; topka-q70, effort low, T=0 | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 174,2 t/s | dekod HumanEval+ ważony; T=0, MTP n4 + lookup | 2026-11-09
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 162,0 t/s | dekod ważony evalplus; T=0 | 2026-11-09
 ---
 # EvalPlus: Qwen3.8-27B-Uncensored Q4_K_M, produkcja XTX, effort low (2026-11-09)
 

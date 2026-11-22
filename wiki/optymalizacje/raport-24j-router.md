@@ -4,6 +4,13 @@ tags: [optymalizacje, spekulacja, lookup, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24j-router-edycja.md:3-14
 status: aktualne
+technika: router ogon lookupu / DFlash2 / MTP
+werdykt: odrzucone
+zysk: sufit wyroczni +1,1% (T=0) / +2,0% (T=1), próg +8%
+dowod: raport-24j-router
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 64 ms | krok DFlash2 | 2026-10-19
+  - qwen3-8-27b | rtx-3090 | 46.5 ms | krok MTP | 2026-10-19
 ---
 # Raport 24j: router ogon lookupu / DFlash2 / MTP na code-edit – kill bez GPU
 

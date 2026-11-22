@@ -4,6 +4,11 @@ tags: [testy, konkurencja, spekulacja]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:124-196; ~/KERNEL/product/research/16i-magnitude/results.txt; ~/qwen-opt/cloud/results/magnitude-vs-3090-20261016/x/xbench.jsonl; ~/qwen-opt/cloud/results/magnitude-vs-5060ti-20261016/x/xbench.jsonl
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 105.3 t/s | code-edit fork; 4.91 tok/krok, 46.6 ms/krok (Magnitude 141.9) | 2026-10-16
+  - qwen3-8-27b | rtx-3090 | 69.7 t/s | copy 64k fork; 4.51 tok/krok (Magnitude 80.2) | 2026-10-16
 ---
 # 2026-10-16: rozkład wygranej Magnitude (tok/krok × ms/krok)
 

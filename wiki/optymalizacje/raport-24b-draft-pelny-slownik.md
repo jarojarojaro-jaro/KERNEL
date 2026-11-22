@@ -4,6 +4,11 @@ tags: [optymalizacje, spekulacja, mtp, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24b-draft-pelny-slownik.md:6-17
 status: aktualne
+technika: pełna głowica draftu dla OOV
+werdykt: odrzucone
+zysk: −0.51% (W=16), −2.40% (stała pełna głowica), sufit
+dowod: ~/KERNEL/product/research/24b-draft-pelny-slownik.md
+model: qwen3-8-27b
 ---
 # Raport 24b: pełna głowica draftu dla tokenów spoza słownika 64k – odrzucone
 

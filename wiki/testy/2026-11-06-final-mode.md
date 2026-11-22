@@ -4,6 +4,13 @@ tags: [testy, termika, kontekst, rx-7900-xtx, eco]
 aktualizacja: 2026-11-06
 zrodlo: ~/qwen-opt/thermal/final-unc.csv; ~/qwen-opt/thermal/quick-20261106.txt; ~/qwen-opt/queue/logs/ctx-262144.log; ~/qwen-opt/queue/logs/final-qwen-262144.log
 status: aktualne
+model: qwen3-8-27b-uncensored
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 26,91 ms | ms/krok spec_sweep T=1; final eco 2200 ctx 262144 | 2026-11-06
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 106,4 t/s | greedy 256 tok.; final mode | 2026-11-06
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 914,9 t/s | prefill 12k; final mode | 2026-11-06
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 118,3 t/s | dekod spec_sweep T=1 mediana; final mode | 2026-11-06
 ---
 # Final mode: eco 2200 MHz + kontekst 262 144 (2026-11-06)
 

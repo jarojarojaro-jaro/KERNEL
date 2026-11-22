@@ -4,6 +4,15 @@ tags: [optymalizacje, conv, spekulacja]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:222,299,305-309,314-318; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:89,113
 status: aktualne
+technika: conv lag (0038)
+werdykt: przyjete
+zysk: draft 8 krok 40.8 → 37.2 ms, draft 12 45.7 → 41.1 ms
+dowod: 2026-10-14-t1-t2-draft
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 102,6 t/s | dekod MTP; po conv-lag 0038, 29.36 ms/krok | 2026-10-14
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 105,0 t/s | dekod MTP; po conv-lag 0038, 28.28 ms/krok | 2026-10-14
 ---
 # Historia conv z opóźnieniem (T1, łatka 0038)
 

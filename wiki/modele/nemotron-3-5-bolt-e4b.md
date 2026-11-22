@@ -4,6 +4,9 @@ tags: [modele, telefon, nvidia, gemma]
 aktualizacja: 2026-10-24
 zrodlo: ~/KERNEL/product/research/60c-quant-and-3090-engines.md:189-194,217; https://huggingface.co/unsloth/NVIDIA-Nemotron-3.5-Bolt-E4B-GGUF; https://huggingface.co/nvidia/NVIDIA-Nemotron-3.5-Bolt-E4B-BF16
 status: aktualne
+model: nemotron-3-5-bolt-e4b
+rozmiar: 8B (E4B)
+kwant: Q4_K_M
 ---
 # NVIDIA Nemotron-3.5-Bolt-E4B (Gemma-4-E4B po RL)
 

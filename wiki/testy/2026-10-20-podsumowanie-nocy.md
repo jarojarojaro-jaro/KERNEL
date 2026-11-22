@@ -4,6 +4,12 @@ tags: [testy, topka, host-gap, sprzezone]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:3,9-14,20-24,32-36; ~/KERNEL/product/PODSUMOWANIE-NOC-2026-10-20.md:39-51
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 433.0 t/s | dekod mvs T=0; topka-next coupled=1 + host-gap (było 420.2) | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 114.6 t/s | czat T=1; host-gap coupled=1 (było 113.0) | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 115.6 t/s | czat T=1; PAIR2 (było 115.1) | 2026-10-20
 ---
 # 2026-10-20: podsumowanie nocy – topka-next (coupled + host-gap) i stan prac
 

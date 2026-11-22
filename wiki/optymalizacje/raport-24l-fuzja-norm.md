@@ -4,6 +4,11 @@ tags: [optymalizacje, fuzje, pm4, awarie]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24l-fuzja-norm.md:7,26-37,62-65
 status: aktualne
+technika: fuzja RMS norm do MMVQ (ogon producenta)
+werdykt: odrzucone
+zysk: page fault + mode1 reset GPU, matvec różny 13/216
+dowod: raport-24l-fuzja-norm
+karta: rx-7900-xtx
 ---
 # Raport 24l: fuzja RMS norm do MMVQ – stop po faulcie GPU
 

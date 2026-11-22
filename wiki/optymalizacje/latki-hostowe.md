@@ -4,6 +4,14 @@ tags: [optymalizacje, host, cpu]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:276-281,326-329,367; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:104,122,134,317
 status: aktualne
+technika: łatki hostowe (0029, 0047, 0059)
+werdykt: przyjete
+zysk: K3 32.14 → 30.97 ms/krok (97.8 → 101.5 t/s); 0047 102.6 → 104.2 t/s
+dowod: 2026-10-13-k3-host
+karta: rx-7900-xtx
+model: qwen3-8-27b
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 104,2 t/s | dekod MTP; po 0047, 28.94 ms/krok | 2026-10-14
 ---
 # Łatki hostowe (CPU, pętla spekulacji)
 

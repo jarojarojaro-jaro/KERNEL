@@ -4,6 +4,11 @@ tags: [testy, chmura, nvidia, sm-86]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/product/research/09-chmura-3090.md:1-233
 status: aktualne
+model: qwen3-8-27b
+karta: rtx-3090
+wyniki:
+  - qwen3-8-27b | rtx-3090 | 78.0 t/s | spec_sweep A2; fork + słownik draftu, 300 W | 2026-10-16
+  - lfm2-5-24b-a2b | rtx-3090 | 263.9 t/s | serwer A2p; profil Ampere | 2026-10-16
 ---
 # Raport 09 (3090): RTX 3090 w chmurze
 

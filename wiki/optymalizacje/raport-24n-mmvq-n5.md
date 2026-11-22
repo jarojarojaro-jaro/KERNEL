@@ -4,6 +4,16 @@ tags: [optymalizacje, mmvq, obłożenie, wynik-negatywny]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/24n-mmvq-n5.md:7-12,62-68,79-83
 status: aktualne
+technika: obłożenie MMVQ n=5 (GGML_HIP_MMVQ_OCC)
+werdykt: odrzucone
+zysk: −0,5% spec_sweep (111,4 → 110,8 t/s), serializacja −6,4%
+dowod: raport-24n-mmvq-n5
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 111.4 t/s | spec_sweep baza | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 110.8 t/s | spec_sweep MMVQ_OCC | 2026-10-20
+  - qwen3-8-27b | rx-7900-xtx | 104.3 t/s | spec_sweep MMVQ_OCC serializacja | 2026-10-20
 ---
 # Raport 24n: obłożenie MMVQ n=5 (`GGML_HIP_MMVQ_OCC`) – kill
 

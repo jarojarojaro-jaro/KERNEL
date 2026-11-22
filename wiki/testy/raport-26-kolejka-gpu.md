@@ -4,6 +4,9 @@ tags: [testy, kolejka, pm4, wyniki]
 aktualizacja: 2026-10-20
 zrodlo: ~/KERNEL/product/research/26-kolejka-gpu-wieczor.md:3-24
 status: aktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wynik: qwen3-8-27b | rx-7900-xtx | 115.8 t/s | czat; PM4 WA=2 + GUARD (baza 110.8) | 2026-10-19
 ---
 # Raport 26: kolejka GPU 2026-10-19 wieczorem – testy odłożone przez pauzę
 

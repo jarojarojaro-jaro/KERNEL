@@ -4,6 +4,11 @@ tags: [testy, pm4, awarie, rdna3]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/17-gpu-page-fault.md:6-61,104-130,184-193; journalctl -k -b -2/-1/0; ~/qwen-opt/coupled/logs*/; ~/KERNEL/product/research/17-gpu-page-fault.md:216-247; ~/KERNEL/product/research/17-gpu-page-fault.md:1-208; ~/KERNEL/product/research/17-gpu-page-fault.md:210-425
 status: do-sprawdzenia
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 103.7 t/s | dekod MTP; GGML_HIP_PM4=0 (PM4 108.8) | 2026-10-19
+  - lfm2-5-24b-a2b | rx-7900-xtx | 259.3 t/s | dekod; GGML_HIP_PM4=0 (PM4 293.6) | 2026-10-19
 ---
 # 2026-10-16/19: page faulty GPU i 10 resetów XTX (analiza bez GPU)
 

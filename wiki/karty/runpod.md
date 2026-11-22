@@ -4,6 +4,9 @@ tags: [karty, runpod, nvidia]
 aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:67,99-114; ~/qwen-opt/cloud/PLAN-TESTOW.md:11-13,21-22,138-142; ~/qwen-opt/cloud/env.sh (nagłówek); ~/KERNEL/product/research/11-mtp-pl-pilot.md:8,164-174; ~/KERNEL/product/research/16e-kwanty-kld.md:71-79,99-105; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:22,67; ~/KERNEL/product/research/10-post-training.md:452
 status: aktualne
+karta: runpod
+gdzie: RunPod
+stan: użyty raz (A40, pilot MTP $2.14)
 ---
 # RunPod
 

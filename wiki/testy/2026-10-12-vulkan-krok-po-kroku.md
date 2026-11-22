@@ -4,6 +4,11 @@ tags: [testy, vulkan, mmvq]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:162-170
 status: nieaktualne
+model: qwen3-8-27b
+karta: rx-7900-xtx
+wyniki:
+  - qwen3-8-27b | rx-7900-xtx | 41.46 ms | ms/krok MTP T=1; Vulkan łatki MMVQ | 2026-10-12
+  - qwen3-8-27b-uncensored | rx-7900-xtx | 39.92 ms | ms/krok MTP T=1; Vulkan łatki MMVQ | 2026-10-12
 ---
 # 2026-10-12 (rano): Vulkan krok po kroku
 

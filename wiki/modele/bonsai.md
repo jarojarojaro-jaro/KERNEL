@@ -4,6 +4,16 @@ tags: [modele, kwanty, qwen]
 aktualizacja: 2026-10-24
 zrodlo: ~/KERNEL/product/research/10-post-training.md:140,329-331,389; ~/qwen-opt/cloud/runs/3060/pre/bonsai-README.md:44,63-86; ~/KERNEL/product/research/09-chmura-3060.md:30-62,86-107,120-127,177-179,194-223; ~/KERNEL/product/research/16e-kwanty-kld.md:34-46,63
 status: aktualne
+model: bonsai
+rozmiar: 27B
+kwant: PTQ1_0, PQ2_0, Q2_0
+karty: rtx-3060
+wyniki:
+  - bonsai | rtx-3060 | 44.75 t/s | dekod; prism PTQ1_0, 6.8 GB VRAM | 2026-10-16
+  - bonsai | rtx-3060 | 35.51 t/s | dekod; nasz fork Q2_0 (repack), +7.1% vs upstream | 2026-10-16
+  - bonsai | rtx-3060 | 36.45 t/s | dekod; prism PQ2_0 | 2026-10-16
+  - bonsai | rtx-3060 | 8.6171 PPL | PPL; Q2_0 upstream/fork | 2026-10-16
+  - bonsai | rtx-3060 | 0.508 KLD | KLD PL do BF16; E1 | 2026-10-18
 ---
 # Ternary Bonsai 2 27B (PrismML)
 
@@ -19,6 +29,24 @@ status: aktualne
 E1 (2026-10-18): KLD do Qwen BF16 wiki 0.352, PL 0.508 (najgorszy, PL/wiki 1.44); nadal najszybszy na 12 GB (PTQ1_0 Prism 44.9 t/s).
 
 Bonsai 2 9B (2026-10-15, geometria Qwen3.5-9B, PQ2_0 + MTP Q8_0 + drafter DFlash2): konkurs cuda.fast / mlx.fast podniósł decode z 85.9 do 576.7 tok/s (DGX Spark, llama.cpp) i z 144.8 do 959.6 tok/s (M5 Max) ([[bonsai-fast-contest]], raport 60b).
+
+<!-- TABELE:START -->
+## Wyniki z notatek (9)
+
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+
+| karta | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod | **44.75 t/s** | prism PTQ1_0, 6.8 GB VRAM | 2026-10-16 | [[bonsai]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod MTP n1 | **60,02 t/s** | prism PTQ1_0 @64k | 2026-11-07 | [[rtx-3060]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod MTP n2 | **58,31 t/s** | prism PTQ1_0-mtp-lean, ctx 204 800 | 2026-11-07 | [[rtx-3060]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod MTP n2 ctx 204 800 | **58,31 t/s** | prism, fill PASS | 2026-11-07 | [[2026-11-07-kampania-nvidia-vast]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod PTQ1_0 | **44.75 t/s** | fork prism | 2026-10-16 | [[raport-09-chmura-3060]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod Q2_0 | **35.51 t/s** | nasz fork | 2026-10-16 | [[raport-09-chmura-3060]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod T=1 | **35.5 t/s** | Q2_0 repack fork (A1 33.1) | 2026-10-16 | [[2026-10-16-kampania-nvidia]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | KLD PL do BF16 | **0.508 KLD** | E1 | 2026-10-18 | [[bonsai]] |
+| NVIDIA RTX 3060 12 GB [[rtx-3060]] | PPL | **8.6171 PPL** | Q2_0 upstream/fork | 2026-10-16 | [[bonsai]] |
+<!-- TABELE:END -->
 
 ## Powiązane
 - [[modele/_hub|Modele]]

@@ -4,6 +4,11 @@ tags: [karty, amd, apu]
 aktualizacja: 2026-10-16
 zrodlo: ~/KERNEL/reports/Optymalizacja kerneli na AMD.md:7,15,17,84,88,104,115; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:25,138,292; ~/KERNEL/product/PLAN.md:277
 status: aktualne
+karta: strix-halo
+vram: do 128 GB (UMA)
+pasmo: 256 GB/s
+gdzie: GigaGPU (dedyk)
+stan: faza 3, niemierzona u nas
 ---
 # AMD Strix Halo (Ryzen AI Max, gfx1151)
 
@@ -15,6 +20,16 @@ status: aktualne
 - Strata na Strix Halo: 125B UD-IQ4_XS przy 8K ok. 1293 t/s promptu i 53.8 t/s wyjścia.
 - Nasze łatki: część bramek RDNA3 obejmuje też gfx115x (0022, 0040, 0060, 0070 — korekta raportu 08), ale nic nie było mierzone.
 - Dostęp: GigaGPU Ryzen AI Max+ 395 £299/mies.; PLAN: faza 3 (razem z macOS i Intel Arc).
+
+<!-- TABELE:START -->
+## Wyniki z notatek (1)
+
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+
+| model | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| Gyro-Coder [[gyro-coder]] | KLD do Q8_0 | **0.118 KLD** | C++, -c 2048 | 2026-10-24 | [[gyro-coder]] |
+<!-- TABELE:END -->
 
 ## Powiązane
 - [[karty/_hub|Karty]]
