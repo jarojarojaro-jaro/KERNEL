@@ -14,7 +14,7 @@ Liczby t/s zawsze z datą i warunkami (kwant, KV, MTP/DFlash, prompt, T). Aktual
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (27)
+## Notatki (28)
 
 - [[astra-stop|Astra-Stop: rank-1 edycja, która skraca myślenie Qwen3.8-27B]] — Jedna macierz `layers.63.mlp.down_proj` zmieniona wzorem `W' = (I + u uᵀ)W` (u = odczyt tokena `</think>` przez głowicę LM, cos 0.9998 na naszym GGUF): mediana myślenia −35.5% przy effort xhigh, ale `</think>` przecieka do odpowiedzi w 11/32 – to zmiana zachowania, nie bezstratna optymalizacja (2026-11-09).
 - [[daisyrose-27b|DaisyRose-27B (RadixArk): pełny RL na Qwen3.8-27B, 144 × H200 przez 18 dni — duży koszt, mały zysk poza Terminal-Bench 4.1]] — RadixArk (twórcy DSpark) wytrenował nasz model bazowy samym RL-em (bez SFT i destylacji) na ~1200 długich zadaniach agentowych, z sesjami do 1M tokenów. Koszt to 144 H200 × 18 dni ≈ 62 tys. GPU-godzin. Zysk: Terminal-Bench 4.1 5,6 → 12,0%, na pozostałych testach +0,4…+4 pp. Ta sama architektura i ten sam szablon, więc zastępuje Qwen3.8-27B bez zmian; GGUF Q4_K_M działa w naszym silniku bez łatek [INFERENCE: ten sam typ `qwen35`].
@@ -33,6 +33,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[nvfp4|NVFP4 (4-bitowy format NVIDIA)]] — NVFP4 to 4-bitowy format liczb NVIDIA, sprzętowo liczony od Blackwella (np. RTX 5060 Ti); RX 7900 XTX nie ma FP4/FP8, a my go nie używamy, bo zmienia model.
 - [[nemotron-3-5-bolt-74b-a9b|NVIDIA Nemotron 3.5 Bolt 74B-A9B]] — Hybrydowy MoE NVIDIA (Mamba-2 + LatentMoE + 8 warstw attention, ~9B aktywnych) w pliku IQ2_XXS 22 018 326 528 B; na RTX 3090 z drafterem DFlash nasz silnik daje 141.1 t/s.
 - [[nemotron-3-5-bolt-e4b|NVIDIA Nemotron-3.5-Bolt-E4B (Gemma-4-E4B po RL)]] — SLM NVIDIA na telefon i edge, wydany 2026-10-23: Gemma-4-E4B-it po RL (GRPO) pod narzędzia, rozmowę i instrukcje. Q4_K_M ma 6.18 GB i zajmuje „~4 GB VRAM”. Na drafter Qwen3.8-27B się nie nadaje.
+- [[qwen3-5-9b|Qwen3.5-9B (mały Qwen do kart 8–12 GB)]] — Mały model Qwena, który mierzymy jako model dla kart z 8–12 GB VRAM: na 5060 Ti nasz fork CUDA daje 239,0 t/s przy edycji kodu i 121,0 t/s w sweepie (1 runda, 2026-10-16).
 - [[qwen3-6-35b-a3b|Qwen3.6-35B-A3B (MoE 35B/3B)]] — Wybór raportu 33 dla kart 10–16 GB przy ctx ≥ 131k: eksperci częściowo w RAM (`--n-cpu-moe`), KV q4_0; szacunki fitcalc, niezmierzone u nas (2026-10-20).
 - [[qwen3-8-27b|Qwen3.8-27B (główny model)]] — Gęsty hybrydowy model 27B (48 warstw Gated DeltaNet + 16 pełnej uwagi) z wbudowaną głowicą MTP; na RX 7900 XTX przyspieszony z 59.2 do 109 t/s.
 - [[qwen3-8-27b-uncensored|Qwen3.8-27B-Uncensored (OrcaRouter)]] — Abliterowana wersja Qwen3.8-27B od OrcaRouter: usunięty „kierunek odmowy”, architektura bez zmian; u nas najszybszy wariant Qwena (115.5 t/s).

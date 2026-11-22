@@ -57,7 +57,7 @@ Audyt liczb: [[AUDYT]].
 ## Kategorie
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (37)
-- [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (27)
+- [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (28)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (4)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (39)
@@ -89,5 +89,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-22 [[2026-10-16-magnitude-vs-fork|2026-10-16: X1 – Magnitude vs nasz fork vs upstream (3090, 5060 Ti)]]
 - 2026-11-22 [[2026-10-16-kvq-cuda|2026-10-16: E1 – port `kvq` na CUDA (Ampere+)]]
 
-Razem 788 notatek. Wygenerowano 2026-11-22 przez `tools/wiki.py index`.
+Razem 789 notatek. Wygenerowano 2026-11-22 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
