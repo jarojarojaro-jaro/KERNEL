@@ -33,7 +33,7 @@ E1 (2026-10-18, ctx 32k): U3 MTP 51.7 vs I4/W4 50.0 t/s, plain 29.1 vs 30.3; U3 
 Kampania 67c (2026-11-07, host 160/180 W): stary pick UD-Q3_K_XL 135 168 PASS 27,48; nowy ISTA IQ3_XXS-mtp 200 704 plain PASS **31,42** (14 230 MiB; pin MTP n3 ładuje się, 39,68, bez filla). Lean MTP n2 **229 376 PASS 43,40 t/s** (15 762 MiB). Fork+kvq+lean ISTA: 196 608 PASS **49,44** (15 416 MiB; 229 376 crash, 262 144 OOM); UD-Q3_K_XL 98 304 PASS 54,33. LFM2.5 Q4_K_M w VRAM 131 072 q8_0: **139,48 t/s**, peak 15 820. Przepisy: [[final-recipes-nvidia]].
 
 <!-- TABELE:START -->
-## Wyniki z notatek (23)
+## Wyniki z notatek (26)
 
 Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
 
@@ -45,6 +45,9 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 | LFM2.5-24B-A2B [[lfm2-5-24b-a2b]] | serwer | **226.8 t/s** | QAD-Q4_0 | 2026-10-16 | [[raport-09-chmura-5060ti]] |
 | LFM2.5-24B-A2B [[lfm2-5-24b-a2b]] | sweep 32k fork | **205.1 t/s** | (Magnitude 157.8) | 2026-10-16 | [[2026-10-16-magnitude-vs-fork]] |
 | LFM2.5-24B-A2B [[lfm2-5-24b-a2b]] | tg64 64k | **155.77 t/s** | kvq CUDA, Q4_K_M (bez 119.82) | 2026-10-16 | [[2026-10-16-kvq-cuda]] |
+| Qwen3.5-9B [[qwen3-5-9b]] | code-edit | **239.0 t/s** | fork CUDA gałąź cuda-v070-5060ti, 1 runda | 2026-10-16 | [[qwen3-5-9b]] |
+| Qwen3.5-9B [[qwen3-5-9b]] | prefill 64k | **2343 t/s** | fork CUDA | 2026-10-16 | [[qwen3-5-9b]] |
+| Qwen3.5-9B [[qwen3-5-9b]] | sweep | **121.0 t/s** | fork CUDA, 1 runda | 2026-10-16 | [[qwen3-5-9b]] |
 | Qwen3.6-35B-A3B [[qwen3-6-35b-a3b]] | dekod mediana | **115.9 t/s** | LM | 2026-10-20 | [[qwen3-6-35b-a3b]] |
 | Qwen3.8-27B [[qwen3-8-27b]] | czat T=1 T | **62.6 t/s** | UD-IQ4_XS 32k, 150 W | 2026-10-20 | [[raport-31-5060ti]] |
 | Qwen3.8-27B [[qwen3-8-27b]] | dekod | **51.66 t/s** | nasz silnik (A0 28.07) | 2026-10-19 | [[benchmarki-przed-po-2026-10-19]] |

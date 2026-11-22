@@ -1,7 +1,7 @@
 ---
 typ: decyzja
 tags: [decyzje, research, produkt, publikacja]
-aktualizacja: 2026-11-09
+aktualizacja: 2026-11-22
 zrodlo: polecenie użytkownika 2026-11-09 (czat z Main); ~/KERNEL/product/research/69-SYNTEZA.md
 status: aktualne
 ---
@@ -14,6 +14,8 @@ status: aktualne
 - **Publikacja wyników prędkości** (LocalMaxxing, llm-bench.io, llamabench.ai, club-3090, Token Atlas): nadal tylko odczyt ([[2026-10-20-bez-publikacji-localmaxxing]]), ale publikacja jest planowana wkrótce — przygotowywać wyniki w formie gotowej do zgłoszenia (warunki, wersja silnika, prompty).
 - **Jakość-mini:** zgoda na porównanie kandydatów 12–16 GB jednym zestawem (GSM8K, MMLU-Pro / PL, HumanEval+, BFCL); źródła danych i pobrania modeli — do potwierdzenia przy uruchomieniu.
 - Uruchomione tego dnia: EvalPlus (HumanEval+/MBPP+) na produkcyjnym Qwen3.8-27B-Uncensored, qwen-warp vs `enigma-cuda-fork` na wynajętej 3090.
+
+> Saluki usunięty z produktu 2026-11-14 ([[2026-11-14-saluki-usuniety]]); jego liczby zostają jako historia pomiarów.
 
 ## Powiązane
 - [[decyzje/_hub|decyzje]]

@@ -1,7 +1,7 @@
 ---
 typ: stos
 tags: [stos, llama-cpp, galezie, worktree]
-aktualizacja: 2026-10-16
+aktualizacja: 2026-11-22
 zrodlo: git -C ~/llama-master branch; git -C ~/llama-master worktree list; git -C ~/llama-master log e60eff95f..amd-opt (70), 620d2225c..amd-opt-v070 (70)
 status: aktualne
 ---
@@ -17,6 +17,8 @@ Stan 2026-10-16 (`git worktree list`):
 - gałęzie NVIDIA: `cuda-compat`, `cuda-v070`, `cuda-3090-opt`, `cuda-v070-5060ti`, `3060-opt`;
 - gałęzie eksperymentalne rund: `opt-k1`…`opt-k5`, `opt-s2/s3t1/s4`, `opt-t2`, `opt-lfm`…`opt-lfm4`, `opt-samp`, `opt-gdn6`, `opt-mmq6`, `opt-qwen5`, `tools6`, `batch-invariant`, `mtp-train` oraz starsze `opt-dflash/fattn/fusion/gdn/mmvq/mtpgraph` (2026-10-12).
 Reguła: każda runda dostaje osobny worktree od aktualnego `amd-opt`, a do `amd-opt` trafiają tylko zmierzone, bitowe commity z wyłącznikiem env.
+
+**Stan 2026-11-22:** produkcja to od 2026-11-09 `topka-q70` (instalacja `~/llama-topka`, `run-topka.sh uncensored`; [[REKORDY]] wiersz dekodu MTP 1,7k), nie `amd-opt`/`run-llm.sh`; prace duetu Kernel + Gemini idą na gałęzi `duo` (worktree `~/wt/l1-cachesave` na jaroserverai).
 
 ## Powiązane
 - [[amd-opt]]

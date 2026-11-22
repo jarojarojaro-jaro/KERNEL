@@ -1,7 +1,7 @@
 ---
 typ: karta
 tags: [karty, amd, rdna3]
-aktualizacja: 2026-11-06
+aktualizacja: 2026-11-22
 zrodlo: ~/KERNEL/hardware/rx-7900-xtx.md:6-34,100-110; ~/KERNEL/qwen-opt/STATUS-NEXT.md:8-14; ~/KERNEL/qwen-opt/NOTES.md:126; ~/KERNEL/product/research/05-chmura-gpu-do-testow.md:117,239,305; ~/qwen-opt/tools/fan.sh:1-45; /proc/cmdline; komunikat Main do WikiIngest 2026-10-18; ~/qwen-opt/tools/fan.sh:1-40,66-90; /etc/systemd/system/xtx-fan.timer; komunikat Main do WikiIngest 2026-10-19 (decyzja użytkownika 00:00 UTC); ~/KERNEL/qwen-opt/tools/gpu-guard.sh:1-45
 status: aktualne
 karta: rx-7900-xtx
@@ -19,7 +19,7 @@ wyniki:
 ---
 # AMD Radeon RX 7900 XTX (główna karta)
 
-**Nasza główna karta: RDNA3 gfx1100, 24 GB GDDR6, 960 GB/s; na niej powstało 70 łatek i rekordy Qwen 109 t/s i LFM 294 t/s.**
+**Nasza główna karta: RDNA3 gfx1100, 24 GB GDDR6, 960 GB/s; na niej powstało 70 łatek; rekordy Qwen: spec_sweep T=1 120,58 t/s (2026-11-05) i dekod MTP przy prompcie 1,7k 133,9 t/s (2026-11-14, topka-q70, [[REKORDY]]), LFM 294 t/s.**
 
 Parametry (hardware/rx-7900-xtx.md): 96 CU (48 WGP), wave32, VGPR 192 KiB/SIMD, LDS 128 KiB/WGP, L2 6 MiB, Infinity Cache 96 MiB, VRAM 24 GB 384-bit, 960 GB/s (standardowa wartość, oznaczona „do weryfikacji”), WMMA ~123 TFLOPS FP16 (wyliczone), brak FP8/FP4.
 
