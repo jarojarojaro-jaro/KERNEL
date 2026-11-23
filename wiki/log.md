@@ -646,3 +646,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Maya + ablacja AtomicChat | Inkling bez cenzury na Mayi: kopie 102,9, T=0,7 77,9, long 2k 76,1 t/s (nasz llama.cpp: 91,2 / 26,8 / 73,4); odmowy 7/8 → 0/8; czat :18796
 
 ## [2026-11-23] Telegram | Inkling-2-Mini 10,04× na KernelBench-Mega (agent kernelowy, #1 Gemini Neon); r10 kontroler spekulacji w bramce; r11 port Mayi zlecony
+
+## [2026-11-23] Inkling r10 | kontroler spekulacji: T=0,7 +34% (35,9), kopie +6% z ngram, długi −27%; ub2048 OOM

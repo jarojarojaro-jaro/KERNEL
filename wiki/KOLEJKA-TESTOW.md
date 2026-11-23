@@ -58,6 +58,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (zwykły dekod, eco 2200)
 - priorytet: wysoki (decyzja o modelu produkcyjnym należy do właściciela)
 - stan 2026-11-22 04:20 (STOP na polecenie właściciela): build r8+r9 gotowy na jaroserverai, bramka r8/r9 nieuruchomiona (kolejka zabita w oczekiwaniu); wznowienie: `qwen-opt/inkling/start-r8.sh`. Szczegóły: `DUO-INKLING.md` (llama-inkling).
+- wynik 2026-11-23 02:27 UTC (r10, kontroler spekulacji `LLAMA_SPEC_CTL=1`, AD-Q4_K, DSpark n7): T=0,7 26,8 → 35,9 t/s (+34%), kopie z ngram 91,2 → 96,9 (+6%), ale długi 2k 73,4 → 53,9 (−27%); ub 2048 OOM (bufor 12,15 GiB). Do poprawy w r11/r12.
 - wynik 2026-11-23 01:00–01:10 UTC (zgoda właściciela 01:57 CET; r8 + r9, `inkling-opt` 854c58e, eco 2200, AD-Q4_K, DSpark n7, `-c 16384`):
   - FUSE3 naprawiony: KLD 4,68 → 0,0022 (PPL ×1,0001), md5 PM4 0/1 równe;
   - **rekord ze zgadywaniem:** kopie 84,6 → **91,2 t/s** (+7,8%, FUSE3 wył. → wł., ta sama sesja), długi 2k 67,4 → 73,4 (+8,9%), 8k 59,0 → 66,8 (+13%), T=0,7 24,9 → 26,8; prefill 2k 994 → 1300 t/s (+31%);
