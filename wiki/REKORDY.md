@@ -233,6 +233,12 @@ Kampania 67c (wieczór 2026-11-07): T1 = mediana `spec_sweep` seed 1, fill = pro
 
 FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s. Kernel MoE w jednym (r9, GGML_HIP_INK_MEGA): KLD OK, ale z DSpark kopie 68,8 → 46,2 t/s (−33%), odrzucony. PM4 z DSpark nadal wolniej (68,8 vs 91,2 t/s). Odniesienie obcego silnika na tej karcie: Strata 0.1.66 (UD-Q4_K_XL, DSpark) kopie 100,6–109,6 t/s, T=0,7 60,6 t/s, ale GPU page fault przy długim prompcie; Maya 1.1.73 (UD-Q4_K_XL, drafting on bez draftera) kopie 112,7, T=0,7 80,7, długi 2k 80,0 t/s, stabilna (K-134, 2026-11-23).
 
+## Qwen3.8-27B XTX: wznowienie długiej rozmowy po edycji (K-005)
+
+| obciążenie | rekord | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|
+| wznowienie 40k promptu po edycji w 10% | **19,4 s** (bez siatki 74,1 s, −74%), md5 = zimny start | 2026-11-23 | duet `l1-cachesave`, `LLAMA_CKPT_GRID=1`, PM4, eco 2200 | `duo-r13-k005-on.log` | nie (czeka na wdrożenie) |
+
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.
 2. Nowa para (karta, model, obciążenie, metryka) → nowy wiersz.
