@@ -1,0 +1,432 @@
+diff -ru src.orig-20261123/src/ik2/ik2_kernels.cu src/src/ik2/ik2_kernels.cu
+--- src.orig-20261123/src/ik2/ik2_kernels.cu	2026-11-23 00:59:06.679919868 +0000
++++ src/src/ik2/ik2_kernels.cu	2026-11-23 02:07:26.760523480 +0000
+@@ -235,6 +235,17 @@
+         }
+     }
+ }
++
++// y[t] -= r (r . y[t]) for each row t of y [T][ld] (C values a row; r [C] a unit vector): a block a row
++__global__ void proj_out_kernel(float* y, int ld, const float* __restrict__ r, int C) {
++    __shared__ float sh[kBlk];
++    float* yr = y + (size_t) blockIdx.x * ld;
++    float a = 0.0f;
++    for (int c = threadIdx.x; c < C; c += kBlk) a += r[c] * yr[c];
++    const float d = bsum(a, sh);
++    for (int c = threadIdx.x; c < C; c += kBlk) yr[c] -= d * r[c];
++}
++
+ // rms of up to three vectors, each with its own weights, in one launch (a block a vector; rms_impl_kernel's sums)
+ __global__ void rms_multi_kernel(RmsJobs jobs, int D, float eps) {
+     __shared__ float sh[kBlk];
+@@ -5112,6 +5123,71 @@
+     hist[c] = h0, hist[(size_t) C + c] = h1, hist[(size_t) 2 * C + c] = h2;
+ }
+ 
++// IK2_ABLATE: a few tokens' (T <= kPcMaxT) short conv as conv_block_kernel's (no dyn), its input x [T][x_ld] with the
++// direction r [C] projected out first (xn = x - r (r . x)): each block takes every token's dot over all C (from L2),
++// then its own channels.  With ys the input is first the MoE's sum (moe_combine_f32's, K picks a token), written to
++// x [T][C] - one block then (the sum is made once, each thread's channels the same in both loops)
++constexpr int kPcMaxT = 8;
++__global__ void __launch_bounds__(1024) proj_conv_kernel(float* x, int x_ld, const float* __restrict__ ys,
++                                                         const int* __restrict__ inv, const float* __restrict__ wt,
++                                                         int K, const float* __restrict__ r, int T, int C, float* hist,
++                                                         const float* __restrict__ w, const float* __restrict__ res,
++                                                         int res_ld, float* y, int y_ld, float* rec_old, float* rec_x) {
++    __shared__ float part[kPcMaxT][32];
++    __shared__ float dt[kPcMaxT];
++    const int lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
++    float a[kPcMaxT];
++#pragma unroll
++    for (int t = 0; t < kPcMaxT; ++t) a[t] = 0.0f;
++    for (int c = threadIdx.x; c < C; c += blockDim.x) {
++        const float rc = r[c];
++#pragma unroll
++        for (int t = 0; t < kPcMaxT; ++t) {
++            if (t >= T) break;
++            float v;
++            if (ys) {
++                v = 0.0f;
++                for (int k = 0; k < K; ++k) v += wt[t * K + k] * ys[(size_t) inv[t * K + k] * C + c];
++                x[(size_t) t * x_ld + c] = v;
++            } else {
++                v = x[(size_t) t * x_ld + c];
++            }
++            a[t] += rc * v;
++        }
++    }
++#pragma unroll
++    for (int t = 0; t < kPcMaxT; ++t) {
++        if (t >= T) break;
++        const float v = wsum(a[t]);
++        if (lane == 0) part[t][warp] = v;
++    }
++    __syncthreads();
++    if (warp == 0) {
++        const int nw = (blockDim.x + 31) >> 5;
++        for (int t = 0; t < T; ++t) {
++            const float v = wsum(lane < nw ? part[t][lane] : 0.0f);
++            if (lane == 0) dt[t] = v;
++        }
++    }
++    __syncthreads();
++    for (int c = blockIdx.x * blockDim.x + threadIdx.x; c < C; c += gridDim.x * blockDim.x) {
++        float h0 = hist[c], h1 = hist[(size_t) C + c], h2 = hist[(size_t) 2 * C + c];
++        if (rec_old) rec_old[c] = h0, rec_old[(size_t) C + c] = h1, rec_old[(size_t) 2 * C + c] = h2;
++        const float* wc = w + (size_t) c * 4;
++        const float w0 = wc[0], w1 = wc[1], w2 = wc[2], w3 = wc[3];
++        const float rc = r[c];
++        for (int t = 0; t < T; ++t) {
++            const float xn = x[(size_t) t * x_ld + c] - dt[t] * rc;
++            if (rec_x) rec_x[(size_t) t * C + c] = xn;
++            float v = w0 * h0 + w1 * h1 + w2 * h2 + w3 * xn;
++            if (res) v += res[(size_t) t * res_ld + c];
++            y[(size_t) t * y_ld + c] = v;
++            h0 = h1, h1 = h2, h2 = xn;
++        }
++        hist[c] = h0, hist[(size_t) C + c] = h1, hist[(size_t) 2 * C + c] = h2;
++    }
++}
++
+ // every short conv's history as after the first n of a window's tokens, all the layers' convs in one launch
+ __global__ void rollback_block_kernel(const ConvRec* __restrict__ recs, int n) {
+     const ConvRec rc = recs[blockIdx.y];
+@@ -5677,6 +5753,11 @@
+     rms_impl_kernel<false, true><<<rows, kBlk, 0, s>>>(x, w, D, eps, nullptr, y);
+     check("rms");
+ }
++void proj_out(float* y, int ld, const float* r, int T, int C, cudaStream_t s) {
++    if (T <= 0) return;
++    proj_out_kernel<<<T, kBlk, 0, s>>>(y, ld, r, C);
++    check("proj_out");
++}
+ void rms_multi(const RmsJobs& jobs, int n, int D, float eps, cudaStream_t s) {
+     if (n <= 0) return;
+     if (n > 3) {
+@@ -6690,6 +6771,22 @@
+                                                                    T, C, res, res_ld, y, y_ld, rec_old, rec_x);
+     check("conv_block");
+ }
++void proj_conv(float* x, int x_ld, const float* ys, const int* inv, const float* wt, int K, const float* r, int T, int C,
++               float* hist, const float* w, const float* res, int res_ld, float* y, int y_ld, float* rec_old,
++               float* rec_x, cudaStream_t s) {
++    if (T <= 0) return;
++    if (T > kPcMaxT) {
++        std::fprintf(stderr, "ik2::k::proj_conv: %d tokens (at most %d)\n", T, kPcMaxT);
++        std::abort();
++    }
++    if (ys)
++        proj_conv_kernel<<<1, 1024, 0, s>>>(x, x_ld, ys, inv, wt, K, r, T, C, hist, w, res, res_ld, y, y_ld, rec_old,
++                                            rec_x);
++    else
++        proj_conv_kernel<<<(unsigned) ((C + 255) / 256), 256, 0, s>>>(x, x_ld, ys, inv, wt, K, r, T, C, hist, w, res,
++                                                                      res_ld, y, y_ld, rec_old, rec_x);
++    check("proj_conv");
++}
+ void rollback_block(const ConvRec* recs, int n_recs, int n, cudaStream_t s) {
+     if (n_recs <= 0) return;
+     rollback_block_kernel<<<dim3(8, (unsigned) n_recs), 256, 0, s>>>(recs, n);
+diff -ru src.orig-20261123/src/ik2/ik2_kernels.cuh src/src/ik2/ik2_kernels.cuh
+--- src.orig-20261123/src/ik2/ik2_kernels.cuh	2026-11-23 00:59:06.680919867 +0000
++++ src/src/ik2/ik2_kernels.cuh	2026-11-23 02:07:26.766523472 +0000
+@@ -21,6 +21,9 @@
+ 
+ /// y = x * rsqrt(mean(x^2) + eps) * w per row of D (w null: no weight).  x and y may alias.
+ void rms(const float* x, const float* w, int rows, int D, float eps, float* y, cudaStream_t s);
++/// y[t] -= r (r . y[t]) for each row of y [T][ld] (C values a row; r [C] a unit vector): a direction projected out
++/// (IK2_ABLATE, a rank-1 refusal-direction LoRA applied as what it is).  In place.
++void proj_out(float* y, int ld, const float* r, int T, int C, cudaStream_t s);
+ /// rms of n <= 3 vectors [D] in one launch, each with its own weights: y[i] = rms(x[i]) * w[i] (y may be x).
+ struct RmsJobs {
+     const float* x[3];
+@@ -454,6 +457,12 @@
+ void conv_block(const float* x, int x_ld, float* hist, const float* w, const float* dyn, int d_ld, int heads, int T,
+                 int C, const float* res, int res_ld, float* y, int y_ld, float* rec_old, float* rec_x,
+                 cudaStream_t s);
++/// IK2_ABLATE: conv_block (no dyn; T <= 8) with the direction r [C] projected out of each token's input first
++/// (x - r (r . x)); with ys the input is first the MoE's sum (moe_combine_f32's: ys, inv, wt, K picks a token), written
++/// to x [T][C].  One launch (with ys a single block): rec_old / rec_x (or null) as conv_block's, rec_x the projected inputs.
++void proj_conv(float* x, int x_ld, const float* ys, const int* inv, const float* wt, int K, const float* r, int T, int C,
++               float* hist, const float* w, const float* res, int res_ld, float* y, int y_ld, float* rec_old,
++               float* rec_x, cudaStream_t s);
+ /// A conv's record of a window (conv_block's rec_old, rec_x) and its history.
+ struct ConvRec {
+     const float* old;
+diff -ru src.orig-20261123/src/ik2/ik2_main.cu src/src/ik2/ik2_main.cu
+--- src.orig-20261123/src/ik2/ik2_main.cu	2026-11-23 00:59:06.681919866 +0000
++++ src/src/ik2/ik2_main.cu	2026-11-23 02:00:29.088030517 +0000
+@@ -236,6 +236,7 @@
+     // a looped core's layer: its later passes' message gates by module (0 q's, 1 k's, 2 v's, 3 the MoE's) -
+     // down [rank][2 C], forget and gain [rank][C] - and the four messages' queries [4][C] in that order (F32)
+     float *lp_down[4] = {}, *lp_forget[4] = {}, *lp_gain[4] = {}, *lp_query = nullptr;
++    float* ablate = nullptr;   // IK2_ABLATE: the direction r [C] projected out of wo's output and the MoE's sum
+     // the resident token path (every expert in VRAM): where each expert's blocks are, and the experts' scales, on the
+     // device ([E] each; a scale's null: 1)
+     const uint8_t** tab_blob = nullptr;
+@@ -271,6 +272,7 @@
+     float* lp_query_all = nullptr;   // a looped core's message queries, layer by layer ([n_core][4][C]: Layer::lp_query's)
+     const uint8_t* embd;  // host Q8_0 [n_rows][C]
+     int embd_type;
++    std::vector<float> ablate_e;   // IK2_ABLATE: the direction [C] projected out of each embedding row (empty: none)
+ };
+ 
+ inline Layer& bind_visit(Model& M, int v) {
+@@ -641,6 +643,17 @@
+     return p;
+ }
+ float* load_f32(const Shards& S, const std::string& n, size_t expect) { return dev_f32(host_f32(S, n, expect)); }
++// token t's embedding row as the model takes it into out (host [C]): decoded, and with IK2_ABLATE its direction out
++void embd_host(const Model& M, int t, float* out) {
++    const int C = M.c.C;
++    const size_t rb = (size_t) C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
++    k::decode_host(M.embd_type, M.embd + (size_t) t * rb, C, out);
++    if (M.ablate_e.empty()) return;
++    const float* r = M.ablate_e.data();
++    double d = 0.0;
++    for (int i = 0; i < C; ++i) d += (double) r[i] * out[i];
++    for (int i = 0; i < C; ++i) out[i] -= (float) d * r[i];
++}
+ uint16_t* load_f16(const Shards& S, const std::string& n, size_t expect) { return dev_f16(host_f32(S, n, expect)); }
+ 
+ // ---- loading the experts into pinned host memory: pread from the files, several at once
+@@ -1698,6 +1711,7 @@
+     }
+     k::gate_mul_f16(W.o, gate_p, (size_t) T * HD, W.x16, g_dense_q8 && T == 1, g_s);
+     matmul(Ly.wo, W.o, W.x16, T, W.tmp, C);
++    if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+     conv_rec(Ly, 2, W.tmp, Ly.h_attn, T, C);
+     if (l % c.block == 0) {
+         CU(cudaMemcpyAsync(blk(nb), h_in, TC * 4, cudaMemcpyDeviceToDevice, g_s));
+@@ -2134,6 +2148,7 @@
+     }
+     g_pf.lap(g_pf.experts);
+     t_exp += now() - te0;
++    if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+     conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+     k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, r_in, h_out, g_s);
+ }
+@@ -2213,6 +2228,16 @@
+ };
+ FastGraph g_fgraph[4];      // by OutMode
+ 
++// one token's MoE output: the picks' rows summed, through the MoE's short conv with the stream added (one launch;
++// IK2_ABLATE: the sum's direction out first, in the same launch)
++void moe_out_token(const Layer& Ly, const Work& W, int K, int C) {
++    if (Ly.ablate)
++        k::proj_conv(W.tmp, C, W.y32, W.inv, W.wt, K, Ly.ablate, 1, C, Ly.h_mlp, Ly.sc_mlp, W.r, C, W.h, C, nullptr,
++                     nullptr, g_s);
++    else
++        k::moe_combine_conv(W.y32, W.inv, W.wt, K, C, Ly.h_mlp, Ly.sc_mlp, W.r, W.h, g_s);
++}
++
+ // one token's launches: its embedding row in W.emb_h and its position in W.pos_h[0] (pinned host; copied first)
+ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+     const Config& c = M.c;
+@@ -2354,7 +2379,13 @@
+         // stream joins the blocks and starts again)
+         const bool first = l % c.block == 0;
+         if (first) CU(cudaMemcpyAsync(blk(nb), W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
+-        mv1c(Ly.wo, W.o, W.tmp, k::MvConv{0, C, Ly.h_attn, Ly.sc_attn, nullptr, 0, first ? nullptr : W.h, W.r});
++        if (Ly.ablate) {
++            mv1(Ly.wo, W.o, W.tmp);
++            k::proj_conv(W.tmp, C, nullptr, nullptr, nullptr, 0, Ly.ablate, 1, C, Ly.h_attn, Ly.sc_attn,
++                         first ? nullptr : W.h, C, W.r, C, nullptr, nullptr, g_s);
++        } else {
++            mv1c(Ly.wo, W.o, W.tmp, k::MvConv{0, C, Ly.h_attn, Ly.sc_attn, nullptr, 0, first ? nullptr : W.h, W.r});
++        }
+         if (first) ++nb;
+         // the MoE: its input, the router and the picks' tables on the device, the experts
+         {
+@@ -2396,7 +2427,7 @@
+                                  c.up_cap, g_offs.hx, g_s);
+                 k::off_down_x(W.blob, g_offs.cls, c.K, Ly.ty[2], Ly.eb[0] + Ly.eb[1], g_offs.hx, C, c.F, W.y32, g_s);
+                 k::off_lane_wait(g_offs.ls, g_offs.done_d, C, W.y32, g_s);
+-                k::moe_combine_conv(W.y32, W.inv, W.wt, c.K, C, Ly.h_mlp, Ly.sc_mlp, W.r, W.h, g_s);
++                moe_out_token(Ly, W, c.K, C);
+                 continue;
+             }
+             k::off_fetch_plan(W.blob, rtop, c.K, l * c.E, g_offs.host[l], Ly.slot_bytes, st, g_offs.fl, g_offs.cnt,
+@@ -2412,7 +2443,7 @@
+                                       c.gate_cap, c.up_cap, W.h16, g_s);
+             k::experts_down(W.blob, c.K, Ly.ty[2], Ly.eb[0] + Ly.eb[1], W.h16, C, c.F, W.y32, g_s);
+         }
+-        k::moe_combine_conv(W.y32, W.inv, W.wt, c.K, C, Ly.h_mlp, Ly.sc_mlp, W.r, W.h, g_s);
++        moe_out_token(Ly, W, c.K, C);
+     }
+     if (out_mode == OutMode::kNone) return;
+     {   // the head
+@@ -2670,8 +2701,7 @@
+         }
+         if (moved) CU(cudaMemcpyAsync(g_offs.cost, &g_offs.cost_h, sizeof(k::LaneCost), cudaMemcpyHostToDevice, g_s));
+     }
+-    const size_t rb = (size_t) c.C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+-    k::decode_host(M.embd_type, M.embd + (size_t) tok * rb, c.C, W.emb_h);
++    embd_host(M, tok, W.emb_h);
+     W.pos_h[0] = pos;
+     if (!g_graph) {
+         fast_token_launches(M, W, out_mode);
+@@ -2951,8 +2981,12 @@
+         if (first) CU(cudaMemcpyAsync(blk(nb), W.h, TCb, cudaMemcpyDeviceToDevice, g_s));
+         if (ex) exact_rows(Ly.wo, 0, C, W.o, HD, T, W.tmp, C);
+         else tile_rows(Ly.wo, 0, C, W.x16, T, W.tmp, C);
+-        k::conv_block(W.tmp, C, Ly.h_attn, Ly.sc_attn, nullptr, 0, 0, T, C, first ? nullptr : W.h, C, W.r, C,
+-                      Ly.rec_old[2], Ly.rec_x[2], g_s);
++        if (Ly.ablate)
++            k::proj_conv(W.tmp, C, nullptr, nullptr, nullptr, 0, Ly.ablate, T, C, Ly.h_attn, Ly.sc_attn,
++                         first ? nullptr : W.h, C, W.r, C, Ly.rec_old[2], Ly.rec_x[2], g_s);
++        else
++            k::conv_block(W.tmp, C, Ly.h_attn, Ly.sc_attn, nullptr, 0, 0, T, C, first ? nullptr : W.h, C, W.r, C,
++                          Ly.rec_old[2], Ly.rec_x[2], g_s);
+         if (first) ++nb;
+         // the MoE: its input, the router, the picks grouped by expert on the device, the experts
+         {
+@@ -3006,8 +3040,12 @@
+                               g_s);
+         }
+         k::moe_combine_f32(W.y32, g_blk.inv, g_blk.wt, T, c.K, C, W.tmp, false, g_s);
+-        k::conv_block(W.tmp, C, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, 0, T, C, W.r, C, W.h, C, Ly.rec_old[3], Ly.rec_x[3],
+-                      g_s);
++        if (Ly.ablate)
++            k::proj_conv(W.tmp, C, nullptr, nullptr, nullptr, 0, Ly.ablate, T, C, Ly.h_mlp, Ly.sc_mlp, W.r, C, W.h, C,
++                         Ly.rec_old[3], Ly.rec_x[3], g_s);
++        else
++            k::conv_block(W.tmp, C, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, 0, T, C, W.r, C, W.h, C, Ly.rec_old[3],
++                          Ly.rec_x[3], g_s);
+     }
+     if (out_mode == OutMode::kNone) return;
+     {   // the head: every token's logits
+@@ -3048,9 +3086,8 @@
+     if (T < 1 || T > kBlockMax) die("fast_block: a window of 1 .. 8 tokens");
+     if (!g_blk.ready) block_init(M);
+     Work& W = dev_work(0);
+-    const size_t rb = (size_t) c.C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+     for (int t = 0; t < T; ++t) {
+-        k::decode_host(M.embd_type, M.embd + (size_t) tok[t] * rb, c.C, g_blk.emb_h + (size_t) t * c.C);
++        embd_host(M, tok[t], g_blk.emb_h + (size_t) t * c.C);
+         g_blk.pos_h[t] = pos0 + t;
+     }
+     if (!g_graph) {
+@@ -3360,9 +3397,8 @@
+     if (g_off) EC.scan = T > 1 && !(getenv("IK2_SCAN") && !std::atoi(getenv("IK2_SCAN")));
+     // the embedding rows, normed (pinned host staging, no stream sync needed)
+     {
+-        const size_t rb = (size_t) C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+         for (int t = 0; t < T; ++t)
+-            k::decode_host(M.embd_type, M.embd + (size_t) tok[t] * rb, C, W.emb_h + (size_t) t * C);
++            embd_host(M, tok[t], W.emb_h + (size_t) t * C);
+         CU(cudaMemcpyAsync(W.tmp, W.emb_h, (size_t) T * C * 4, cudaMemcpyHostToDevice, g_s));
+         k::rms(W.tmp, M.embd_norm, T, C, c.eps, W.h, g_s);
+         place_pictures(W.h, T, pos0, C, g_s);
+@@ -3580,6 +3616,7 @@
+                                    c.K, Cd, W.tmp + Cd, false, g_s);
+             }
+             t_exp += now() - te0;
++            if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+             conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+             k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, W.r, W.h, g_s);
+             dump_f("blk." + std::to_string(vis) + ".out", W.h, TC);
+@@ -3670,6 +3707,7 @@
+                                    false, g_s);
+             }
+             t_exp += now() - te0;
++            if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+             conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+             k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, W.r, W.h, g_s);
+             dump_f("blk." + std::to_string(vis) + ".out", W.h, TC);
+@@ -3723,6 +3761,7 @@
+                                false, g_s);
+             g_pf.lap(g_pf.experts);
+             t_exp += now() - te0;
++            if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+             conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+             k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, W.r, W.h, g_s);
+             g_pf.lap(g_pf.rest);
+@@ -3920,6 +3959,7 @@
+             k::moe_combine_f32(W.y32, pid, pwt, T, c.K, C, W.tmp, false, g_s);
+             g_pf.lap(g_pf.experts);
+             t_exp += now() - te0;
++            if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+             conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+             k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, W.r, W.h, g_s);
+             g_pf.lap(g_pf.rest);
+@@ -4077,11 +4117,10 @@
+ 
+     // Embed and norm all T tokens in sub-chunks of <= W.Tm
+     {
+-        const size_t rb = (size_t) C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+         for (int off = 0; off < T; off += W.Tm) {
+             const int ts = std::min(W.Tm, T - off);
+             for (int t = 0; t < ts; ++t)
+-                k::decode_host(M.embd_type, M.embd + (size_t) tok[off + t] * rb, C, W.emb_h + (size_t) t * C);
++                embd_host(M, tok[off + t], W.emb_h + (size_t) t * C);
+             CU(cudaMemcpyAsync(W.tmp, W.emb_h, (size_t) ts * C * 4, cudaMemcpyHostToDevice, g_s));
+             k::rms(W.tmp, M.embd_norm, ts, C, c.eps, W.h + (size_t) off * C, g_s);
+             place_pictures(W.h + (size_t) off * C, ts, pos0 + off, C, g_s);
+@@ -4203,8 +4242,7 @@
+ void embed_row(Model& M, int t, float* raw, float* out) {
+     const int C = M.c.C;
+     float* e = dev_work(M.L[0].dev).emb_h;
+-    const size_t rb = (size_t) C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+-    k::decode_host(M.embd_type, M.embd + (size_t) t * rb, C, e);
++    embd_host(M, t, e);
+     CU(cudaMemcpyAsync(raw, e, (size_t) C * 4, cudaMemcpyHostToDevice, g_s));
+     k::rms(raw, M.embd_norm, 1, C, M.c.eps, out, g_s);
+ }
+@@ -4905,11 +4943,57 @@
+         lp_q = host_f32(S, "loop_res_query.weight", (size_t) 2 * n_core * C);
+         lp_kv = host_f32(S, "loop_kv_res_query.weight", (size_t) 2 * n_core * C);
+     }
++    // IK2_ABLATE=<lora.gguf>: a rank-1 refusal-direction LoRA (AtomicChat's Uncensored adapter: per layer lora_b a unit
++    // vector r, the same for attn_output and each expert of ffn_down_exps, and lora_a = -r^T W) applied as the
++    // projection it is: y -= r (r . y) on wo's output and on the MoE's sum (every pass), and on the embedding row
++    std::unique_ptr<Shards> abl;
++    if (const char* p = getenv("IK2_ABLATE"); p && *p) {
++        abl.reset(new Shards(p));
++        if (abl->num("adapter.lora_alpha") != 1.0) die("IK2_ABLATE: adapter.lora_alpha is not 1");
++        auto unit = [&](const std::string& n) {
++            auto r = host_f32(*abl, n, C);
++            double q = 0.0;
++            for (float v : r) q += (double) v * v;
++            if (std::fabs(std::sqrt(q) - 1.0) > 1e-3) die("IK2_ABLATE: " + n + " is not a unit vector (rank 1)");
++            return r;
++        };
++        M.ablate_e = unit("token_embd.weight.lora_b");
++        // (lora_a [n_vocab] of the embedding = -r . E[tok]: checked on rows of this model's table - the direction's sign
++        //  and that the adapter is for this model)
++        const auto* ai = abl->info("token_embd.weight.lora_a");
++        if (!ai) die("IK2_ABLATE: no token_embd.weight.lora_a");
++        const auto a = host_f32(*abl, "token_embd.weight.lora_a", (size_t) ai->elements());
++        const int ety = (int) S.info("token_embd.weight")->type;
++        if (!k::block_values(ety) || a.size() < 1064) die("IK2_ABLATE: token_embd's type or size");
++        const uint8_t* emb = S.data("token_embd.weight");
++        const size_t rb = (size_t) C / k::block_values(ety) * k::block_bytes(ety);
++        std::vector<float> e(C);
++        double err = 0.0, ref = 0.0;
++        for (int t = 1000; t < 1064; ++t) {
++            k::decode_host(ety, emb + (size_t) t * rb, C, e.data());
++            double d = 0.0;
++            for (int i = 0; i < (int) C; ++i) d += (double) M.ablate_e[i] * e[i];
++            err += (a[t] + d) * (a[t] + d), ref += d * d;
++        }
++        if (!(err <= 0.01 * ref)) die("IK2_ABLATE: token_embd.weight.lora_a is not -r . E on this model's embedding");
++        std::fprintf(stderr, "maya-ik2: IK2_ABLATE %s: the direction projected out of %d layers and the embedding\n", p,
++                     c.n_layer);
++    }
+     for (int l = 0; l < c.n_layer; ++l) {
+         Layer& Ly = M.L[l];
+         const std::string b = "blk." + std::to_string(l) + ".";
+         Ly.dev = dual() ? 0 : l * n_gpu / c.n_layer;
+         use_dev(Ly.dev);
++        if (abl) {
++            auto r = host_f32(*abl, b + "attn_output.weight.lora_b", C);
++            const auto rd = host_f32(*abl, b + "ffn_down_exps.weight.lora_b", (size_t) c.E * C);
++            double q = 0.0, dev = 0.0;
++            for (float v : r) q += (double) v * v;
++            for (size_t i = 0; i < rd.size(); ++i) dev = std::max(dev, (double) std::fabs(rd[i] - r[i % C]));
++            if (std::fabs(std::sqrt(q) - 1.0) > 1e-3 || dev > 1e-5)
++                die("IK2_ABLATE: " + b + " is not one unit direction for attn_output and every expert's down");
++            Ly.ablate = dev_f32(r);
++        }
+         Ly.sliding = c.sliding[l];
+         auto sink_v = host_f32(S, b + "attn_sink_proj.weight", (size_t) c.H * C);
+         if (Ly.sliding) {

@@ -25,7 +25,7 @@ status: aktualne
 5. Fuzje do ~16 uruchomień na wizytę.
 
 ## Wersja bez cenzury w Mayi
-LoRA AtomicChat (rank 1, 44 MB) to w praktyce rzut y ← y − r(r·y) na wyjściu atencji, na sumie MoE i na embeddingu (sprawdzone na danych GGUF, cos 0,999998). Zamiast kernela Q4_K (3–5 dni) wdrażamy rzut w czasie działania w `ik2` (`IK2_ABLATE`) na pliku unsloth.
+LoRA AtomicChat (rank 1, 44 MB) to w praktyce rzut y ← y − r(r·y) na wyjściu atencji, na sumie MoE i na embeddingu (sprawdzone na danych GGUF, cos 0,999998). Zamiast kernela Q4_K (3–5 dni) wdrożyliśmy rzut w czasie działania w `ik2` (`IK2_ABLATE`, łatka `qwen-opt/inkling/maya-ik2-ablate.patch`, 2026-11-23): bez zmiennej wynik bit w bit jak przed (md5 f83b4c50), z nią odmowy 7/8 → 0/8, dekod −2…−5%, prefill −1%; działa jako czat :18796.
 
 ## Powiązane
 - [[inkling-2-mini]]
