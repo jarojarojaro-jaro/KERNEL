@@ -63,7 +63,7 @@ Audyt liczb: [[AUDYT]].
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (39)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (24)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (25)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (124)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (82)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (101)
@@ -74,6 +74,7 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-23 [[rightnow-inkling-b300-kernele|RightNow AI: kernele MoE Inkling 2 Small na B300, bitowo identyczne przy 1 i 64 wierszach]]
+- 2026-11-23 [[lektury-dekod-podstawy|Cztery podstawowe lektury o dekodzie LLM (i co z nich już stosujemy)]]
 - 2026-11-23 [[vocab-surgery|„Vocab Surgery”: zdjęcie cenzury przez edycję kilkunastu wierszy embeddingu i lm_head]]
 - 2026-11-23 [[lekcja-tylko-wynik-ze-zgadywaniem|Lekcja: właścicielowi raportuję tylko prędkość ze zgadywaniem (spekulacją)]]
 - 2026-11-23 [[lista-dostawcow-inferencji|Lista 425 dostawców API inferencji LLM (Jaber / RightNow AI, 2026-11-22)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-22 [[2026-10-18-magnitude-vulkan-xtx|2026-10-18: E-X5 – Magnitude przez Vulkan na RX 7900 XTX]]
 - 2026-11-22 [[2026-10-18-lookup-ogon|2026-10-18/19: ogon z lookupu za MTP na XTX (W8/W16 + łańcuchy)]]
 - 2026-11-22 [[2026-10-18-lfm-moe-pasmo|2026-10-16/18: pasmo kerneli MoE LFM2.5 na XTX]]
-- 2026-11-22 [[2026-10-18-e1-kwanty-27b-kld|2026-10-16/18: E1 – nowe kwanty Qwen3.8-27B na 12–16 GB (KLD, zadania, prędkość)]]
 
-Razem 793 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
+Razem 794 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

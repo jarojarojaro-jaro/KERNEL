@@ -509,6 +509,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/PeasantSmith/status/2124487147637948837 (Telegram 2026-11-23) Maya v1.1.74 | 2026-11-22 | K-134 | Delta od 1.1.73: Inkling 2 Mini na Windows, 2 GPU, pełny kontekst 1M, kilka czatów naraz z odpowiedziami jak w pojedynkę; bez nowych liczb | — | pomiar Maya na XTX (K-134, w toku) |
 
+| https://x.com/cheese_cakee_9/status/2123723211602891249 (Telegram 2026-11-23) 4 lektury o dekodzie | 2026-11-20 | [[lektury-dekod-podstawy]] | Kanon (kipply, Flash-Decoding, gpt-fast, arXiv 2211.17192); wszystko już stosujemy, zapisane jako lista do nauki | — | — |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

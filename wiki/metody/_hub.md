@@ -19,11 +19,12 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (24)
+## Notatki (25)
 
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
 - [[analiza-platformy|Analiza platformy (obowiązkowy krok)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; bez niej nie trafia do produktu (decyzja z 2026-10-15).
 - [[bramka-kld-kanarki|Bramka KLD z kanarkami]] — Zmianę numeryki przepuszczamy tylko, gdy KLD względem referencji f16-KV mieści się w 2σ bazy, a celowo zepsute warianty („kanarki”) bramka musi odrzucić.
+- [[lektury-dekod-podstawy|Cztery podstawowe lektury o dekodzie LLM (i co z nich już stosujemy)]] — Kanon „od pierwszych zasad” dla dekodu: arytmetyka inferencji (kipply), Flash-Decoding, gpt-fast i oryginalna praca o spekulacji; wszystkie cztery mechanizmy są już u nas w użyciu, więc to lista do nauki i wdrażania nowych osób, nie źródło nowych dźwigni.
 - [[fabryka-v1|Fabryka v1: role, ledger, kaskada bramek]] — Propozycja raportu 15f: fabryka przepisów jako role z rozdzielonymi uprawnieniami, karta twierdzenia zapisywana przed pomiarem, `ledger.jsonl` z łańcuchem hashy pisany tylko przez deterministyczny weryfikator i kaskada bramek G0–G7.
 - [[kernel-tuner|Kernel Tuner: strojenie parametrów kerneli]] — Przeszukujemy parametry prawdziwych kerneli ggml (warpy, wiersze na blok) i przyjmujemy tylko konfiguracje bitowo równe produkcji.
 - [[skill-io-publikacja|Kwalifikacja i publikacja wg skill-io (publishing.md) a nasze wdrożenia topki i Enigmy]] — Przepis jest coś wart tylko wtedy, gdy ktoś inny go odbuduje i dostanie ten sam wynik (`publishing.md:3`). Nasze wdrożenia spełniają przypinanie, bramkę md5 i dowód „kopia = najlepsze”. Brakuje pełnego zestawu 6 bramek akceptacji (narzędzia w obie strony, igła przy 85% okna, rozdzielenie myślenia) i budowania produkcji z czystego checkoutu przypiętego commita.
