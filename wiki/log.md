@@ -622,3 +622,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Telegram | tokenizacja vLLM 120× (Elixir/Rust/toks): zysk dla serwerów Pythona; u nas tokenizacja już równoległa (raport 42); pomysł: cache segmentów rozmowy
 
 ## [2026-11-23] Telegram | TensorFold 1.3.4: Qwen 27B + DFlash2 na HIP, koszt draftu mierzony przy starcie; bez liczb XTX
+
+## [2026-11-23] Telegram | Maya 1.1.74: Inkling Windows/2 GPU/1M ctx/wiele czatów; K-134 mierzy Mayę na XTX

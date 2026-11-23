@@ -507,6 +507,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/ashxhart/status/2124609773765112271 (Telegram 2026-11-23) TensorFold 1.3.4 | 2026-11-22 | [[tensorfold]] | Delta: Qwen3.8-27B z drafterem DFlash2 na HIP (wcześniej odmawiał); „hold” liczy tylko wiersze potrzebne draftom, koszt draftu mierzony przy starcie (gfx1151 0,56 ms/draft vs 1,73 ms pełny blok) = ten sam pomysł co nasz koszt weryfikacji; +42,2% dotyczy Intel Arc B70 bez spekulacji przy 121k; liczb XTX brak | gfx1151: draft 0,56 ms, blok 1,73 ms | DFlash2 vs nasze MTP na XTX tylko, gdy podadzą liczby gfx1100 |
 
+| https://x.com/PeasantSmith/status/2124487147637948837 (Telegram 2026-11-23) Maya v1.1.74 | 2026-11-22 | K-134 | Delta od 1.1.73: Inkling 2 Mini na Windows, 2 GPU, pełny kontekst 1M, kilka czatów naraz z odpowiedziami jak w pojedynkę; bez nowych liczb | — | pomiar Maya na XTX (K-134, w toku) |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
