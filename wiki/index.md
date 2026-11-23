@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (25)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (126)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (127)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (82)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (102)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
@@ -78,6 +78,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-23 [[vocab-surgery|„Vocab Surgery”: zdjęcie cenzury przez edycję kilkunastu wierszy embeddingu i lm_head]]
 - 2026-11-23 [[lekcja-tylko-wynik-ze-zgadywaniem|Lekcja: właścicielowi raportuję tylko prędkość ze zgadywaniem (spekulacją)]]
 - 2026-11-23 [[lekcja-nie-ruszam-skrzynki-nowe|Lekcja: w turze ze skrzynki nie ruszam `skrzynka/nowe/`, a każdą wiadomość kończę pełnym raportem]]
+- 2026-11-23 [[lekcja-najpierw-wszystkie-testy-potem-wylaczenie|Lekcja: „skończ wszystko i wyłącz” = najpierw każdy czekający test, potem wyłączenie]]
 - 2026-11-23 [[lekcja-dense-szybszy-od-moe-ze-spekulacja|Dlaczego gęsty Qwen 27B ze zgadywaniem jest na XTX szybszy od małego MoE Inkling]]
 - 2026-11-23 [[maya-ik2-inkling|Maya `ik2`: jak silnik Inkling 2 Mini jest 3× szybszy od nas przy T=0,7 na XTX]]
 - 2026-11-23 [[lista-dostawcow-inferencji|Lista 425 dostawców API inferencji LLM (Jaber / RightNow AI, 2026-11-22)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-22 [[najlepsze-wyniki|Najlepsze wyniki: model × karta (tabela z notatek)]]
 - 2026-11-22 [[2026-11-07-kampania-nvidia-vast|Kampania NVIDIA na Vast: 17 kart, 262 144 z MTP na 24 i 32 GB (2026-11-07)]]
 - 2026-11-22 [[2026-10-19-page-faulty-gpu-analiza|2026-10-16/19: page faulty GPU i 10 resetów XTX (analiza bez GPU)]]
-- 2026-11-22 [[2026-10-19-build-topka|2026-10-19: build „topka” – ogon lookupu + współdzielenie cache, PM4 wyłączone]]
 
-Razem 799 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
+Razem 800 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

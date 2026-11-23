@@ -19,7 +19,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (126)
+## Notatki (127)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]] — Analiza 704 żądań z `~/qwen-opt/logs/server-*.log` (2026-11-05): z 4753 s prefillu 3536 s (74%) to 38 tur, w których prompt ≥ 20k był czytany od zera lub od ≤ 8k; najgorsze tury trwały 150–200 s.
@@ -78,6 +78,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-vast-tylko-pelna-moc|Lekcja: na Vaście bierzemy tylko karty z pełną mocą — sprawdzenie przed pobraniem modelu, zły host na czarną listę]] — Na Vaście bierzemy tylko hosty z pełną mocą karty: sprawdzenie `nvidia-smi` przed pobraniem modelu, zły host od razu usuwamy i dopisujemy do czarnej listy.
 - [[lekcja-nie-ruszam-skrzynki-nowe|Lekcja: w turze ze skrzynki nie ruszam `skrzynka/nowe/`, a każdą wiadomość kończę pełnym raportem]] — `mv ~/kernel/skrzynka/nowe/*.json zrobione/` w trakcie tury połknął dwie wiadomości operatora (2026-11-23); pliki w `nowe/` przenosi wyłącznie skrzynka, bo każdy z nich to wiadomość, która jeszcze do mnie nie doszła.
 - [[lekcja-tylko-wynik-ze-zgadywaniem|Lekcja: właścicielowi raportuję tylko prędkość ze zgadywaniem (spekulacją)]] — Spekulacja bezstratna daje te same odpowiedzi co dekod bez niej, tylko szybciej, więc „wariant bez zgadywania” nie jest dla JARO opcją: w raporcie i w propozycjach podaję wyłącznie wynik ze spekulacją; dekod bez niej to tylko liczba robocza do diagnozy.
+- [[lekcja-najpierw-wszystkie-testy-potem-wylaczenie|Lekcja: „skończ wszystko i wyłącz” = najpierw każdy czekający test, potem wyłączenie]] — 2026-11-23 06:15 wyłączyłem jaroserverai, choć runda 13 Gemini była gotowa do pomiaru, a K-135 i dalsze kernele Mayi czekały; JARO musiał sam włączyć serwer.
 - [[lekcja-licencja-modelu-sie-zmienia|Licencja modelu potrafi się zmienić z dnia na dzień]] — Underdog Saluki 27B był w naszej wiki jako Apache-2.0, a 2026-11-05 autor przełączył go na CC BY-NC 4.0 (tylko niekomercyjnie); graft MTP Kujiry dalej deklaruje Apache-2.0, ale powstał z tych wag, więc w praktyce też jest niekomercyjny `[INFERENCE]`.
 - [[lekcja-littles-law-gemv|Little's law dla GEMV: liczy się liczba ładowań w locie]] — Bajty w locie = pasmo × latencja: przy ~600 ns latencji DRAM `[ZAŁOŻENIE]` XTX potrzebuje ~6.0 KB w locie na CU, 3090 6.8 KB/SM, 4090 4.7, 5060 Ti 7.5, 5090 6.3 – czyli ~10–16 ładowań 16 B na falę/warp; to samo pokazał ATT na XTX (gate+up LFM 85% czasu w `s_waitcnt vmcnt`) (raport 21b, 2026-10-19).
 - [[lekcja-losowe-spowolnienia|Losowe spowolnienia per proces]] — Gate+up w LFM trwał 24.3 albo 27.2 µs w 4 z 8 profili, także na buildzie bez zmian; A/B trzeba robić na wielu procesach, nie na jednym.
