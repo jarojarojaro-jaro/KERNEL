@@ -38,7 +38,7 @@ Bezpieczeństwo (2026-10-19): twarda zasada użytkownika [[2026-10-19-bezpieczen
 <!-- TABELE:START -->
 ## Wyniki z notatek (218)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-23); pełna tabela: [[najlepsze-wyniki]].
 
 | model | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

@@ -497,6 +497,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/elder_plinius/status/2124584972866498884 (Telegram 2026-11-23) „Vocab Surgery” | 2026-11-22 | [[vocab-surgery]] | Edycja 7 wierszy embeddingu + 10 lm_head zdejmuje odmowy Inkling; ryzyko: sam się potwierdza przy detektorze słów kluczowych | deklaracja: odmowy ~0 na 800+ promptach, bez metody | test z sędzią treści vs AtomicChat |
 
+| https://x.com/Akashi203/status/2124576912412737898 (Telegram 2026-11-23) + blog RightNow AI | 2026-11-22, repo RightNow-AI/inkling-b300-kernels | [[rightnow-inkling-b300-kernele]] | Prawdziwe: agent pisze kernele NVFP4 MoE na B300, bitowo niezmienne względem batcha; lekcje: podział K przy n=1, stałe drzewo sum, zepsuty bliźniak testu | w13 104,4 → 20,5 µs (5,1×), 114 → 583 GB/s; krok 16,35 ms | podział K w MMVQ-ID Inkling na XTX (Gemini) |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

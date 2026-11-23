@@ -33,7 +33,7 @@ Bonsai 2 9B (2026-10-15, geometria Qwen3.5-9B, PQ2_0 + MTP Q8_0 + drafter DFlash
 <!-- TABELE:START -->
 ## Wyniki z notatek (9)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-23); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

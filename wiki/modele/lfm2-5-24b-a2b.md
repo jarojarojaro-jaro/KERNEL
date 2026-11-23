@@ -38,7 +38,7 @@ Raport 18: KV q8_0 10 880 B/token, głowica 215 MB = 12% bajtów, roofline @0 54
 <!-- TABELE:START -->
 ## Wyniki z notatek (49)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-22); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-23); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|
