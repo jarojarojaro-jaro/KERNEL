@@ -505,6 +505,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/TheHarryET/status/2123920011983225339 (Telegram 2026-11-23) artykuł „vLLM tokenization 120x faster with Elixir” | 2026-11-20 | [[raport-42-safe-io]] | Prawdziwe, ale dla serwerów wielu użytkowników: tokenizer toks (asembler) + szablony czatu w Rust jako NIF poza GIL Pythona, cache segmentów rozmowy; u nas llama.cpp w C++ bez GIL, tokenizacja już równoległa (LLAMA_TOKENIZE_PAR=8, 1492 → 329 ms, raport 42) | 120× przy 1M tokenów + 8 obrazów (162 vs 1,35 req/s); 53–181× vs preprocessing vLLM/SGLang; od tury ~30 98–99% tokenów z cache | czy tokenizacja + szablon przy 200k+ to >1% TTFT u nas; cache segmentów jako pomysł |
 
+| https://x.com/ashxhart/status/2124609773765112271 (Telegram 2026-11-23) TensorFold 1.3.4 | 2026-11-22 | [[tensorfold]] | Delta: Qwen3.8-27B z drafterem DFlash2 na HIP (wcześniej odmawiał); „hold” liczy tylko wiersze potrzebne draftom, koszt draftu mierzony przy starcie (gfx1151 0,56 ms/draft vs 1,73 ms pełny blok) = ten sam pomysł co nasz koszt weryfikacji; +42,2% dotyczy Intel Arc B70 bez spekulacji przy 121k; liczb XTX brak | gfx1151: draft 0,56 ms, blok 1,73 ms | DFlash2 vs nasze MTP na XTX tylko, gdy podadzą liczby gfx1100 |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
