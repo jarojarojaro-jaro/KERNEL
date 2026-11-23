@@ -511,6 +511,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/cheese_cakee_9/status/2123723211602891249 (Telegram 2026-11-23) 4 lektury o dekodzie | 2026-11-20 | [[lektury-dekod-podstawy]] | Kanon (kipply, Flash-Decoding, gpt-fast, arXiv 2211.17192); wszystko już stosujemy, zapisane jako lista do nauki | — | — |
 
+| https://x.com/YuvrajInfer/status/2123611563278180763 (Telegram 2026-11-23) „hierarchia optymalizacji” | 2026-11-20 | [[lektury-dekod-podstawy]] | Ogólnik bez liczb (bajty z HBM > narzut kerneli > reszta; tiling FA, fuzje + grafy, KV paged/kwantyzowany, układy pamięci) — wszystko już stosujemy; kontrprzykład z naszych pomiarów: Inkling 2 Mini na XTX ogranicza narzut ~7700 kerneli/token, nie bajty (26,9 t/s przy ssuficie pasma ~290) | brak | — |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

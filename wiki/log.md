@@ -626,3 +626,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Telegram | Maya 1.1.74: Inkling Windows/2 GPU/1M ctx/wiele czatów; K-134 mierzy Mayę na XTX
 
 ## [2026-11-23] Telegram | 4 lektury o dekodzie → metody/lektury-dekod-podstawy (wszystko już w użyciu)
+
+## [2026-11-23] Telegram | YuvrajInfer: ogólna hierarchia optymalizacji bez liczb — znane; Inkling to kontrprzykład (narzut kerneli > bajty)
