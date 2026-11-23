@@ -27,6 +27,12 @@ status: aktualne
 ## Wersja bez cenzury w Mayi
 LoRA AtomicChat (rank 1, 44 MB) to w praktyce rzut y ← y − r(r·y) na wyjściu atencji, na sumie MoE i na embeddingu (sprawdzone na danych GGUF, cos 0,999998). Zamiast kernela Q4_K (3–5 dni) wdrożyliśmy rzut w czasie działania w `ik2` (`IK2_ABLATE`, łatka `qwen-opt/inkling/maya-ik2-ablate.patch`, 2026-11-23): bez zmiennej wynik bit w bit jak przed (md5 f83b4c50), z nią odmowy 7/8 → 0/8, dekod −2…−5%, prefill −1%; działa jako czat :18796.
 
+## Nasze przyspieszenie na gfx1100 (2026-11-23)
+- Profil: 825 uruchomień/token, 11,34 ms kerneli; Q8_0 GEMV 23%, eksperci 30%, małe iloczyny FP16 (router, sinki) 8,6%.
+- `IK2_HIP_MVF16=1`: pętla „jedna fala na wiersz” rozwinięta z loadami na początku — router 14,8 → 2,9 µs, sinki 15,3 → 3,0 µs (te same bity).
+- `IK2_HIP_EXPV=1`: eksperci NVFP4 jeden wiersz na falę, x w rejestrach, wskaźniki w przestrzeni globalnej + `sched_barrier` — gate_up 567 → 650 GB/s.
+- Razem: dekod bez draftera Q6 77,6 → 91,2 t/s (+17,5%), długi 2k 75,0 → 86,2; prefill bez zmian; md5 logitów identyczne.
+
 ## Powiązane
 - [[inkling-2-mini]]
 - [[project-maya]]
