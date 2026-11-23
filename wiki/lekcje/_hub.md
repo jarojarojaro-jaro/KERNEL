@@ -19,7 +19,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (125)
+## Notatki (126)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]] — Analiza 704 żądań z `~/qwen-opt/logs/server-*.log` (2026-11-05): z 4753 s prefillu 3536 s (74%) to 38 tur, w których prompt ≥ 20k był czytany od zera lub od ≤ 8k; najgorsze tury trwały 150–200 s.
@@ -47,6 +47,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-commity-bez-pomiaru|Commity bez pomiaru (UNMEASURED)]] — Łatki 0066–0070 powstały z dopiskiem „UNMEASURED”, bo w czasie rundy nie było dostępu do GPU; zmierzono je później.
 - [[lekcja-mtp-embd-state|Crash MTP po rebase: embd_state]] — Po rebase na v0.7.0 Qwen MTP ze słownikiem draftu przerywał serwer przy pierwszym żądaniu, bo upstream przeniósł stan ukryty MTP do `embd_state`, a dwa nasze wywołania git zmergował bez konfliktu na starym `set_embd`.
 - [[determinizm-fma|Determinizm: kontrakcja FMA i świeży serwer]] — Bity zmieniają się z trzech powodów: kompilator łączy mnożenie z dodawaniem w FMA, weryfikacja batcha liczy inaczej niż N=1, a llama.cpp nie jest deterministyczny w obrębie jednego serwera.
+- [[lekcja-dense-szybszy-od-moe-ze-spekulacja|Dlaczego gęsty Qwen 27B ze zgadywaniem jest na XTX szybszy od małego MoE Inkling]] — Bez zgadywania MoE wygrywa (Inkling 60,6 t/s vs Qwen 43,2 t/s, +40%), ale ze zgadywaniem gęsty model odjeżdża (kopie 251,9 vs 95,2 t/s), bo weryfikacja kilku tokenów w gęstym modelu czyta wagi raz, a w MoE każdy token wybiera innych ekspertów.
 - [[lekcja-pick-z-kalkulatora|Domyślny pick kalkulatora to nie wybór modelu]] — Kampania NVIDIA zaczęła się od modeli, które planer Enigmy sam wybrał (Gemma 4 12B na 10–12 GB, 27B UD-Q3_K_XL przy 135k na 16 GB, 160k na 24 GB); użytkownik słusznie je odrzucił, a przegląd bazy wiedzy dał na 12 GB 27B 2,6× szybszy (3060: Bonsai 2 + MTP 58,3 t/s wobec Saluki 22,2) i 262 144 na 24 GB (2026-11-07).
 - [[lekcja-dostep-intel-apple|Dostęp w chmurze: Intel Arc bez wynajmu godzinowego, Apple z minimum 24 h, Enverge co minutę]] — Przed planowaniem testów na Intel/Apple: Arc nie ma wynajmu godzinowego nigdzie (Vast 2026-10-20: 0 z 5039 ofert), Apple u AWS/Scaleway ma minimum 24 h z licencji macOS, Enverge rozlicza co minutę, a Darkbloom to API inferencji, nie maszyna (raport 30).
 - [[lekcja-dowod-poza-commitem|Dowód rozproszony poza commitem]] — Tylko 25/70 commitów łatek ma w treści komplet dowodu (liczba + powtórzenia/przeplot + marker poprawności), 0/70 podaje niepewność, a 25/70 nie ma żadnej liczby – dowody leżą w NOTES.md i `~/wt/*/REPORT.md`, niczym niezwiązane z SHA.

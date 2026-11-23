@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (25)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (125)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (126)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (82)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (102)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
@@ -78,6 +78,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-23 [[vocab-surgery|„Vocab Surgery”: zdjęcie cenzury przez edycję kilkunastu wierszy embeddingu i lm_head]]
 - 2026-11-23 [[lekcja-tylko-wynik-ze-zgadywaniem|Lekcja: właścicielowi raportuję tylko prędkość ze zgadywaniem (spekulacją)]]
 - 2026-11-23 [[lekcja-nie-ruszam-skrzynki-nowe|Lekcja: w turze ze skrzynki nie ruszam `skrzynka/nowe/`, a każdą wiadomość kończę pełnym raportem]]
+- 2026-11-23 [[lekcja-dense-szybszy-od-moe-ze-spekulacja|Dlaczego gęsty Qwen 27B ze zgadywaniem jest na XTX szybszy od małego MoE Inkling]]
 - 2026-11-23 [[maya-ik2-inkling|Maya `ik2`: jak silnik Inkling 2 Mini jest 3× szybszy od nas przy T=0,7 na XTX]]
 - 2026-11-23 [[lista-dostawcow-inferencji|Lista 425 dostawców API inferencji LLM (Jaber / RightNow AI, 2026-11-22)]]
 - 2026-11-23 [[2026-11-23-kv-q4-maks-q6|2026-11-23: KV cache zawsze q4, najwyżej q6 (słowa JARO)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-22 [[2026-10-19-page-faulty-gpu-analiza|2026-10-16/19: page faulty GPU i 10 resetów XTX (analiza bez GPU)]]
 - 2026-11-22 [[2026-10-19-build-topka|2026-10-19: build „topka” – ogon lookupu + współdzielenie cache, PM4 wyłączone]]
 - 2026-11-22 [[2026-10-18-sprzezone-probkowanie-mtp|2026-10-18: E-X4 – sprzężone próbkowanie draftu MTP na XTX (nierozstrzygnięte)]]
-- 2026-11-22 [[2026-10-18-pm4-pdl-x1|2026-10-16/18: X1 – mikrobench PM4-PDL na XTX (KILL)]]
 
-Razem 797 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
+Razem 798 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
