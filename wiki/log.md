@@ -640,3 +640,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] K-134 | Maya 1.1.73 na XTX: kopie 112,7, T=0,7 80,7, long 2k 80,0, prefill 1911 t/s (bez naszego DSpark) vs nasz 91,2 / 26,8 / 73,4 — Maya wzorem
 
 ## [2026-11-23] Telegram | Multi-Branch Transformer (2611.19800): architektura do treningu, bez wdrożenia w silniku
+
+## [2026-11-23] K-134 | Maya: AtomicChat Q4_K nieobsługiwany; unsloth drafting on kopie 111,6 / T=0,7 80,6 / long 77,8 (auto: 80 / 82 / 78); Maya jako czat na :18796

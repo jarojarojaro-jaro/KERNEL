@@ -41,6 +41,11 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - vs nasz rekord (AD-Q4_K, DSpark n7): kopie 91,2 → 112,7 (+24%), T=0,7 26,8 → 80,7 (3,0×), długi 2k 73,4 → 80,0 (+9%), prefill 2k 1300 → 1911 (+47%) — inne pliki (UD vs AD), więc kierunkowo;
   - wniosek: Maya bez naszego DSpark i tak 3× szybsza przy T=0,7 → ich dekod/weryfikacja i obsługa T>0 są do przeczytania w kodzie (silnik @alesha-pro), zanim dalej kleimy llama.cpp; następny krok: Maya z oficjalnym drafterem (safetensors, wymaga pobrania) i AD-Q4_K.
   - log: `~/qwen-opt/queue/logs/k134-maya.log`, `~/k134/maya.json` (jaroserverai).
+- wynik 2026-11-23 01:28–01:31 UTC (polecenie właściciela 02:27 CET: Maya z unsloth i AtomicChat, najszybsze runy):
+  - **AtomicChat AD-Q4_K w Mayi nie działa:** `maya-ik2: blk.0.ffn_gate_up_exps.weight: type Q4_K not decoded here` (Maya nie ma kernela Q4_K dla ekspertów), oba tryby (`on`, `auto`);
+  - unsloth UD-Q4_K_XL `--drafting on` (powtórka): kopie 111,6 / 99,8, T=0,7 80,6, długi 2k / 8k 77,8 / 74,0 t/s, prefill 3398 / 3183 t/s;
+  - `--drafting auto` (Maya sama mierzy, co szybsze): kopie 80,1 / 80,4, T=0,7 82,0, długi 2k / 8k 78,2 / 74,7 t/s → `on` lepsze na kopiach o ~39%, przy T=0,7 i długich równe;
+  - po testach Maya (unsloth, `--drafting on`) uruchomiona jako czat właściciela na :18796 (`~/k134/mayaserve.sh`, trzyma blokadę GPU, :8080 wyłączony, stop: `touch ~/k134/STOP-MAYA`).
 
 ### K-133 · Inkling 2 Mini (MoE z pętlą warstw, 26,4B / 5,4B efektywnie aktywnych) na XTX: prędkość i jakość vs Qwen3.8-27B
 - data: 2026-11-20 (Telegram właściciela 23:29)
