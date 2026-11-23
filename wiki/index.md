@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (37)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (38)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (28)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (5)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
@@ -80,6 +80,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-23 [[lekcja-nie-ruszam-skrzynki-nowe|Lekcja: w turze ze skrzynki nie ruszam `skrzynka/nowe/`, a każdą wiadomość kończę pełnym raportem]]
 - 2026-11-23 [[maya-ik2-inkling|Maya `ik2`: jak silnik Inkling 2 Mini jest 3× szybszy od nas przy T=0,7 na XTX]]
 - 2026-11-23 [[lista-dostawcow-inferencji|Lista 425 dostawców API inferencji LLM (Jaber / RightNow AI, 2026-11-22)]]
+- 2026-11-23 [[2026-11-23-kv-q4-maks-q6|2026-11-23: KV cache zawsze q4, najwyżej q6 (słowa JARO)]]
 - 2026-11-22 [[runda-6|2026-10-15: runda 6 — epilog MMQ, GDN fast, narzędzia]]
 - 2026-11-22 [[najlepsze-wyniki|Najlepsze wyniki: model × karta (tabela z notatek)]]
 - 2026-11-22 [[2026-11-07-kampania-nvidia-vast|Kampania NVIDIA na Vast: 17 kart, 262 144 z MTP na 24 i 32 GB (2026-11-07)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-22 [[2026-10-19-build-topka|2026-10-19: build „topka” – ogon lookupu + współdzielenie cache, PM4 wyłączone]]
 - 2026-11-22 [[2026-10-18-sprzezone-probkowanie-mtp|2026-10-18: E-X4 – sprzężone próbkowanie draftu MTP na XTX (nierozstrzygnięte)]]
 - 2026-11-22 [[2026-10-18-pm4-pdl-x1|2026-10-16/18: X1 – mikrobench PM4-PDL na XTX (KILL)]]
-- 2026-11-22 [[2026-10-18-magnitude-vulkan-xtx|2026-10-18: E-X5 – Magnitude przez Vulkan na RX 7900 XTX]]
 
-Razem 796 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
+Razem 797 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

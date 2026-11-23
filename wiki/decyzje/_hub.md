@@ -19,7 +19,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (37)
+## Notatki (38)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -58,4 +58,5 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-11-06-profil-eco-2200|2026-11-06: stały profil eco 2200 MHz na XTX]] — Użytkownik (2026-11-06 ~13:50 UTC): „−10% w chuj się opłaca, tracimy dosłownie nic”. Produkcja XTX ma limit max sclk 2200 MHz.
 - [[2026-11-09-decyzje-runda-69|2026-11-09: decyzje po rundzie 69 (DSpine, Astra-Stop, publikacja, jakość-mini)]] — Użytkownik (2026-11-09): DSpine odpuszczamy (nie schodzimy do 64k kontekstu), Astra-Stop na razie odpuszczamy (ciekawy kierunek na przyszłe fine-tuningi i benchmarki), rankingi prędkości dalej tylko czytamy, ale „wkrótce” zaczniemy publikować; robimy porównanie jakości kandydatów 12–16 GB (Bonsai, Saluki, ISTA, LFM) zestawem „jakość-mini”; uruchomione: EvalPlus na naszym Qwenie i qwen-warp vs nasz fork na 3090.
 - [[2026-11-14-saluki-usuniety|2026-11-14: Saluki usunięty całkowicie; na stronie zawsze najnowsze pomiary]] — Decyzje właściciela (2026-11-14): (1) Underdog Saluki 27B (CC BY-NC 4.0, tylko niekomercyjnie) znika ze strony i z aplikacji Enigma w całości. Słowa właściciela: „saluki wypierdalamy już totalnie”. (2) Na stronie zawsze najnowsze i najlepsze pomiary: „na tym to polega, updatujemy, dajemy nowsze i lepsze optymalizacje”.
+- [[2026-11-23-kv-q4-maks-q6|2026-11-23: KV cache zawsze q4, najwyżej q6 (słowa JARO)]] — JARO (2026-11-23 03:34): „kv q8 to za duże, staramy się kv zawsze mieć q4 / q6 maks”.
 <!-- AUTO:END -->
