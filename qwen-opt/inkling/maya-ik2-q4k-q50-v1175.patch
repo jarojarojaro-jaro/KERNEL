@@ -1,0 +1,1594 @@
+From 60dffeb4e395420b8e3341ea6091accbb2e50ad7 Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Mon, 23 Nov 2026 19:33:55 +0100
+Subject: [PATCH] ik2: Q4_K / Q5_0 experts (AtomicChat
+ Inkling-2-Mini-Uncensored-AD-Q4_K), on v1.1.75
+
+Cherry-pick of 30ff426 (ad-q4k) onto k175 (v1.1.75 + hipx14 port), adapted:
+- MAYA_USE_HIP instead of STRATA_USE_HIP in the new code (v1.1.75's rename; with the old macro the AMD build
+  would have taken the CUDA branches: IK2_HIP_EXPV ignored for Q4_K / Q5_0, no NT loads, no sched_barrier).
+- the duplicate CUDA shim for the AMD builtins dropped (88b6a6c has one).
+- experts_q4k_gu / experts_q50_down and hipx14's experts_nv_gu / experts_nv_down return for a slot whose blob is
+  null / k::kHeldElsewhere (v1.1.75's two-GPU split), as the shared-memory token kernels do.
+- tests: test_window_exact's two-GPU window takes the down type (Q5_0) and the case name.
+
+src/ik2/ik2_kq.h: ggml's Q4_K / Q5_0 values and one fixed row-dot order shared by host and device.
+ik2_kernels.cu: decodes, row dots (token, window, grouped), register kernels (AMD IK2_HIP_EXPV=1, IK2_HIP_NT bit 1;
+CUDA IK2_EXPV_KQ=1 for tests).  ik2_rdna.inc: prompt WMMA tiles for Q4_K gate/up + Q5_0 down.  ik2_main.cu: whole
+blocks per role.  tests: ik2_kq_test (host, vs ggml), ik2_kernels_test Q4_K / Q5_0 cases.
+---
+ CMakeLists.txt            |   3 +
+ docs/INKLING2.md          |   2 +
+ src/ik2/ik2_kernels.cu    | 352 +++++++++++++++++++++++++++++++++++++-
+ src/ik2/ik2_kernels.cuh   |  13 +-
+ src/ik2/ik2_kq.h          | 249 +++++++++++++++++++++++++++
+ src/ik2/ik2_main.cu       |   4 +-
+ src/ik2/ik2_rdna.inc      |  36 +++-
+ tests/ik2_kernels_test.cu | 229 ++++++++++++++++++++-----
+ tests/ik2_kq_test.cpp     | 212 +++++++++++++++++++++++
+ 9 files changed, 1041 insertions(+), 59 deletions(-)
+ create mode 100644 src/ik2/ik2_kq.h
+ create mode 100644 tests/ik2_kq_test.cpp
+
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 48b66c4..ef729be 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -965,6 +965,9 @@ if(MAYA_ENABLE_CUDA OR MAYA_ENABLE_HIP)
+       add_test(NAME ik2_kernels_test COMMAND ik2_kernels_test)
+       set_tests_properties(ik2_kernels_test PROPERTIES TIMEOUT 300)
+       list(APPEND _ik2_targets ik2_kernels_test)
++      # (Q4_K / Q5_0 on the host, no GPU: ik2_kq.h's values against ggml's dequantize_row_*, its row-dot order)
++      add_executable(ik2_kq_test tests/ik2_kq_test.cpp)
++      add_test(NAME ik2_kq_test COMMAND ik2_kq_test)
+       if(NOT _ik2_hip)   # (AMD: no offload path there yet - its lane test is NVIDIA's)
+         # the offload path's exact lane: the GPU's rows against the CPU's forms (AVX-512, AVX2, the reference) bit for
+         # bit, on random NVFP4 and Q8_0 experts; the staging plan and the GPU fetch
+diff --git a/docs/INKLING2.md b/docs/INKLING2.md
+index 79a436b..b003bde 100644
+--- a/docs/INKLING2.md
++++ b/docs/INKLING2.md
+@@ -122,6 +122,8 @@ which keeps the experts' original bits) is the bar.
+ ## 6. Phase 2: the engine, `maya-ik2`
+ 
+ `src/ik2/` runs unsloth's GGUFs in place (UD-Q4_K_XL: NVFP4 experts in layers 0-39; UD-Q3_K_XL: IQ3_XXS / IQ4_XS),
++and AtomicChat's Inkling-2-Mini-Uncensored-AD-Q4_K (experts' gate_up Q4_K, down Q5_0: `src/ik2/ik2_kq.h` - ggml's
++values, one fixed row-dot order for every kernel; AMD's register kernels with `IK2_HIP_EXPV=1`; no exact CPU lane),
+ CUDA on Linux, Volta (sm_70) on. Built by CMake beside the other engines (`maya-ik2`, and `ik2_kernels_test` with
+ `MAYA_BUILD_TESTS`); a 90 in `CMAKE_CUDA_ARCHITECTURES` builds sm_90a for the Hopper attention; `all` / `all-major`
+ take the compiler's list from sm_70 on. CUDA 12.x for a V100 (CUDA 13 has no sm_70).
+diff --git a/src/ik2/ik2_kernels.cu b/src/ik2/ik2_kernels.cu
+index aef88a3..f6a0fb0 100644
+--- a/src/ik2/ik2_kernels.cu
++++ b/src/ik2/ik2_kernels.cu
+@@ -1,6 +1,7 @@
+ // src/ik2/ik2_kernels.cu - maya-ik2's kernels (the interface and the conventions: ik2_kernels.cuh).
+ #include "ik2_kernels.cuh"
+ #include "ik2_iq_tables.h"
++#include "ik2_kq.h"
+ 
+ #include <cuda_fp16.h>
+ #ifndef MAYA_USE_HIP
+@@ -3123,6 +3124,8 @@ __host__ __device__ inline float decode_value(int type, const uint8_t* blocks, s
+         const int val = (half ? (lo >> 4) : (lo & 0xF)) + (hb ? 16 : 0);
+         return d * (float) sc * (float) val - mn * (float) m;
+     }
++    if (type == kQ4_K) return kq::q4k_value(blocks, v);   // d, dmin, scales [12], qs [128] (ik2_kq.h)
++    if (type == kQ5_0) return kq::q50_value(blocks, v);   // d, qh [4], qs [16]
+     return 0.0f;
+ }
+ 
+@@ -3253,6 +3256,77 @@ __device__ __forceinline__ void load_xv8(const float* x, float4 (&xv)[8]) {
+     for (int k = 0; k < 8; ++k) xv[k] = *(const float4*) (x + 4 * k);
+ }
+ 
++// ---- Q4_K / Q5_0: ik2_kq.h's units (lane l the units l, l + 32, ..; every kernel the same sums).  A unit's words:
++// Q4_K the block's first 4 (d | dmin, the scales) and its 2 code words (144-byte blocks: 4-byte loads from a 4-byte
++// aligned row); Q5_0 d, qh's halves and its 4 code bytes (22-byte blocks: 16-bit loads).  NT: non-temporal (AMD).
++#ifdef MAYA_USE_HIP
++typedef const uint32_t __attribute__((address_space(1))) kq_g32;   // (global, not flat: the rows' pointers are generic)
++typedef const uint16_t __attribute__((address_space(1))) kq_g16;
++#endif
++template <bool NT>
++__device__ __forceinline__ uint32_t kq_ld32(const uint8_t* p) {
++#ifdef MAYA_USE_HIP
++    if constexpr (NT) return __builtin_nontemporal_load((kq_g32*) p);
++    return *(kq_g32*) p;
++#else
++    return __ldg((const unsigned int*) p);
++#endif
++}
++template <bool NT>
++__device__ __forceinline__ uint32_t kq_ld16(const uint8_t* p) {
++#ifdef MAYA_USE_HIP
++    if constexpr (NT) return (uint32_t) __builtin_nontemporal_load((kq_g16*) p);
++    return (uint32_t) *(kq_g16*) p;
++#else
++    return (uint32_t) __ldg((const unsigned short*) p);
++#endif
++}
++struct Q4kW {
++    uint32_t dm, s0, s1, s2, w0, w1;
++};
++template <bool NT = false>
++__device__ __forceinline__ Q4kW q4k_unit_load(const uint8_t* row, int u) {
++    const uint8_t* b = row + (size_t) (u >> 4) * kq::kQ4kBytes;
++    const int wo = kq::q4k_unit_w(u);
++    Q4kW r;
++    r.dm = kq_ld32<NT>(b), r.s0 = kq_ld32<NT>(b + 4), r.s1 = kq_ld32<NT>(b + 8), r.s2 = kq_ld32<NT>(b + 12);
++    r.w0 = kq_ld32<NT>(b + 4 * wo), r.w1 = kq_ld32<NT>(b + 4 * wo + 4);
++    return r;
++}
++__device__ __forceinline__ float q4k_unit_dot(const Q4kW& w, int u, const float* xl, const float* xh, float sxl,
++                                              float sxh, float acc) {
++    return kq::q4k_unit(kq::q4k_scales(w.dm, w.s0, w.s1, w.s2, (u >> 2) & 3), w.w0, w.w1, xl, xh, sxl, sxh, acc);
++}
++struct Q50W {
++    uint32_t d, qh, qs;
++};
++template <bool NT = false>
++__device__ __forceinline__ Q50W q50_unit_load(const uint8_t* row, int u) {
++    const uint8_t* b = row + (size_t) (u >> 2) * kq::kQ50Bytes;
++    const int q = u & 3;
++    Q50W r;
++    r.d = kq_ld16<NT>(b);
++    r.qh = kq_ld16<NT>(b + 2) | (kq_ld16<NT>(b + 4) << 16);
++    r.qs = kq_ld16<NT>(b + 6 + 4 * q) | (kq_ld16<NT>(b + 8 + 4 * q) << 16);
++    return r;
++}
++__device__ __forceinline__ float q50_unit_dot(const Q50W& w, int u, const float* xl, const float* xh, float acc) {
++    return kq::q50_unit(w.d, w.qh, w.qs, u & 3, xl, xh, acc);
++}
++// a unit's inputs from the padded shared x (xp): Q4_K 8 + 8 (from i0, i0 + 32), Q5_0 4 + 4 (from i0, i0 + 16)
++__device__ __forceinline__ void kq_xs8(const float* xs, int i0, float* xl, float* xh) {
++    const float4* l = (const float4*) (xs + xp(i0));
++    const float4* h = (const float4*) (xs + xp(i0 + 32));
++    const float4 a = l[0], b = l[1], c = h[0], d = h[1];
++    xl[0] = a.x, xl[1] = a.y, xl[2] = a.z, xl[3] = a.w, xl[4] = b.x, xl[5] = b.y, xl[6] = b.z, xl[7] = b.w;
++    xh[0] = c.x, xh[1] = c.y, xh[2] = c.z, xh[3] = c.w, xh[4] = d.x, xh[5] = d.y, xh[6] = d.z, xh[7] = d.w;
++}
++__device__ __forceinline__ void kq_xs4(const float* xs, int i0, float* xl, float* xh) {
++    const float4 a = *(const float4*) (xs + xp(i0)), c = *(const float4*) (xs + xp(i0 + 16));
++    xl[0] = a.x, xl[1] = a.y, xl[2] = a.z, xl[3] = a.w;
++    xh[0] = c.x, xh[1] = c.y, xh[2] = c.z, xh[3] = c.w;
++}
++
+ // a warp's dot of one row of K values (blocks of `type` from w) with xs (shared, padded: xp), every lane gets it
+ __device__ float row_dot(int type, const uint8_t* w, const float* xs, int K) {
+     const int lane = threadIdx.x & 31;
+@@ -3373,6 +3447,18 @@ __device__ float row_dot(int type, const uint8_t* w, const float* xs, int K) {
+             acc += iq3 ? iq3xxs_sub_dot(w + (size_t) (sb >> 3) * 98, sb & 7, xv)
+                        : iq4xs_sub_dot(w + (size_t) (sb >> 3) * 136, sb & 7, xv);
+         }
++    } else if (type == kQ4_K && ((uintptr_t) w & 3) == 0) {   // (ik2_kq.h's units; a misaligned row: the values)
++        for (int u = lane; u < K / 16; u += 32) {
++            float xl[8], xh[8];
++            kq_xs8(xs, kq::q4k_unit_x(u), xl, xh);
++            acc = q4k_unit_dot(q4k_unit_load(w, u), u, xl, xh, kq::sum8(xl), kq::sum8(xh), acc);
++        }
++    } else if (type == kQ5_0 && ((uintptr_t) w & 1) == 0) {
++        for (int u = lane; u < K / 8; u += 32) {
++            float xl[4], xh[4];
++            kq_xs4(xs, kq::q50_unit_x(u), xl, xh);
++            acc = q50_unit_dot(q50_unit_load(w, u), u, xl, xh, acc);
++        }
+     } else {
+         for (int i = lane; i < K; i += 32) acc += decode_value(type, w, (size_t) i) * xs[xp(i)];
+     }
+@@ -3549,6 +3635,23 @@ __device__ void row_dot_2(int type, const uint8_t* wg, const uint8_t* wu, const
+             ag += iq3 ? iq3xxs_sub_dot(wg + off, sb & 7, xv) : iq4xs_sub_dot(wg + off, sb & 7, xv);
+             au += iq3 ? iq3xxs_sub_dot(wu + off, sb & 7, xv) : iq4xs_sub_dot(wu + off, sb & 7, xv);
+         }
++    } else if (type == kQ4_K && (((uintptr_t) wg | (uintptr_t) wu) & 3) == 0) {   // (each row row_dot's sums)
++        for (int u = lane; u < K / 16; u += 32) {
++            float xl[8], xh[8];
++            kq_xs8(xs, kq::q4k_unit_x(u), xl, xh);
++            const float sl = kq::sum8(xl), sh = kq::sum8(xh);
++            const Q4kW g = q4k_unit_load<NT>(wg, u), v = q4k_unit_load<NT>(wu, u);
++            ag = q4k_unit_dot(g, u, xl, xh, sl, sh, ag);
++            au = q4k_unit_dot(v, u, xl, xh, sl, sh, au);
++        }
++    } else if (type == kQ5_0 && (((uintptr_t) wg | (uintptr_t) wu) & 1) == 0) {
++        for (int u = lane; u < K / 8; u += 32) {
++            float xl[4], xh[4];
++            kq_xs4(xs, kq::q50_unit_x(u), xl, xh);
++            const Q50W g = q50_unit_load<NT>(wg, u), v = q50_unit_load<NT>(wu, u);
++            ag = q50_unit_dot(g, u, xl, xh, ag);
++            au = q50_unit_dot(v, u, xl, xh, au);
++        }
+     } else {
+         for (int i = lane; i < K; i += 32) {
+             const float xv = xs[xp(i)];
+@@ -3911,7 +4014,7 @@ experts_nv_gu_kernel(const uint8_t* const* __restrict__ blob, const int* __restr
+     using L = NvLane<K>;
+     const int lane = threadIdx.x & 31, s = blockIdx.y;
+     const int r = blockIdx.x * 4 + (threadIdx.x >> 5);
+-    if (r >= F) return;
++    if (r >= F || (uintptr_t) blob[s] <= 1u) return;   // (two GPUs: a pick the other GPU runs)
+     const float4* x4 = (const float4*) (x + (size_t) tok[s] * K);
+     const uint8_t* bl = blob[s];
+     float4 xv[L::kIt][4];
+@@ -3961,7 +4064,7 @@ experts_nv_down_kernel(const uint8_t* const* __restrict__ blob, size_t off_down,
+     using L = NvLane<K>;
+     const int lane = threadIdx.x & 31, s = blockIdx.y;
+     const int r = blockIdx.x * 4 + (threadIdx.x >> 5);
+-    if (r >= C) return;
++    if (r >= C || (uintptr_t) blob[s] <= 1u) return;   // (two GPUs: a pick the other GPU runs)
+     const uint4* h8 = (const uint4*) (hin + (size_t) s * K);
+     const uint8_t* w = blob[s] + off_down + (size_t) r * L::kRow;
+     uint4 hv[L::kIt][2];
+@@ -3999,6 +4102,104 @@ experts_nv_down_kernel(const uint8_t* const* __restrict__ blob, size_t off_down,
+ }
+ #endif   // MAYA_USE_HIP
+ 
++// ---- one token's Q4_K gate / up and Q5_0 down experts with the input in the registers (AMD IK2_HIP_EXPV=1; CUDA
++// IK2_EXPV_KQ=1, tests): experts_nv_*_kernel's layout for ik2_kq.h's units - a row (gate / up pair) a wave, four
++// waves a block; a lane's units (lane + 32 i) and their inputs in its registers, all its words asked for at once,
++// then the sums.  A lane past the row's end reads the last unit and keeps its sum.  The units in row_dot's order and
++// the same butterfly: experts_gate_up_swiglu_kernel's / experts_down_kernel's bits (and so the exact window's).
++// NT: the weights read non-temporally (AMD, IK2_HIP_NT bit 1, as the NVFP4 kernels').
++template <int K, bool NT>
++__global__ void __launch_bounds__(128)
++experts_q4k_gu_kernel(const uint8_t* const* __restrict__ blob, const int* __restrict__ tok, size_t eb0,
++                      const float* __restrict__ x, int F, const float* __restrict__ sg, const float* __restrict__ su,
++                      float gcap, float ucap, uint16_t* __restrict__ h) {
++    constexpr int NU = K / 16, IT = (NU + 31) / 32;
++    constexpr size_t RB = (size_t) (K / 256) * kq::kQ4kBytes;
++    const int lane = threadIdx.x & 31, s = blockIdx.y;
++    const int r = blockIdx.x * 4 + (threadIdx.x >> 5);
++    if (r >= F || (uintptr_t) blob[s] <= 1u) return;   // (two GPUs: a pick the other GPU runs)
++    const float4* x4 = (const float4*) (x + (size_t) tok[s] * K);
++    const uint8_t* wg = blob[s] + (size_t) r * RB;
++    const uint8_t* wu = blob[s] + eb0 + (size_t) r * RB;
++    float4 xv[IT][4];
++    Q4kW g[IT], u[IT];
++#pragma unroll
++    for (int i = 0; i < IT; ++i) {   // (a unit's 8 low inputs from x4 [i0], its 8 high ones 32 values on)
++        const int i0 = kq::q4k_unit_x(min(lane + 32 * i, NU - 1)) >> 2;
++        xv[i][0] = __ldg(x4 + i0), xv[i][1] = __ldg(x4 + i0 + 1), xv[i][2] = __ldg(x4 + i0 + 8);
++        xv[i][3] = __ldg(x4 + i0 + 9);
++    }
++#pragma unroll
++    for (int i = 0; i < IT; ++i) {
++        const int un = min(lane + 32 * i, NU - 1);
++        g[i] = q4k_unit_load<NT>(wg, un);
++        u[i] = q4k_unit_load<NT>(wu, un);
++    }
++#ifdef MAYA_USE_HIP
++    __builtin_amdgcn_sched_barrier(0);
++#endif
++    const float sgs = sg ? sg[s] : 1.0f, sus = su ? su[s] : 1.0f;
++    float ag = 0.0f, au = 0.0f;
++#pragma unroll
++    for (int i = 0; i < IT; ++i) {
++        const int un = lane + 32 * i;
++        const float xl[8] = {xv[i][0].x, xv[i][0].y, xv[i][0].z, xv[i][0].w, xv[i][1].x, xv[i][1].y, xv[i][1].z, xv[i][1].w};
++        const float xh[8] = {xv[i][2].x, xv[i][2].y, xv[i][2].z, xv[i][2].w, xv[i][3].x, xv[i][3].y, xv[i][3].z, xv[i][3].w};
++        const float sl = kq::sum8(xl), sh = kq::sum8(xh);
++        const float tg = q4k_unit_dot(g[i], un, xl, xh, sl, sh, ag);
++        const float tu = q4k_unit_dot(u[i], un, xl, xh, sl, sh, au);
++        const bool in = 32 * (i + 1) <= NU || un < NU;
++        ag = in ? tg : ag;
++        au = in ? tu : au;
++    }
++#pragma unroll
++    for (int o = 16; o > 0; o >>= 1) {
++        ag += __shfl_xor_sync(0xffffffffu, ag, o);
++        au += __shfl_xor_sync(0xffffffffu, au, o);
++    }
++    if (lane == 0) {
++        const float gv = ag * sgs, uv = au * sus;
++        h[(size_t) s * F + r] = f2h(gcap * tanhf(gv / gcap) * (1.0f / (1.0f + expf(-gv))) * ucap * tanhf(uv / ucap));
++    }
++}
++template <int K, bool NT>
++__global__ void __launch_bounds__(128)
++experts_q50_down_kernel(const uint8_t* const* __restrict__ blob, size_t off_down, const uint16_t* __restrict__ hin,
++                        int C, float* __restrict__ y) {
++    constexpr int NU = K / 8, IT = (NU + 31) / 32;
++    constexpr size_t RB = (size_t) (K / 32) * kq::kQ50Bytes;
++    const int lane = threadIdx.x & 31, s = blockIdx.y;
++    const int r = blockIdx.x * 4 + (threadIdx.x >> 5);
++    if (r >= C || (uintptr_t) blob[s] <= 1u) return;   // (two GPUs: a pick the other GPU runs)
++    const uint2* h4 = (const uint2*) (hin + (size_t) s * K);
++    const uint8_t* w = blob[s] + off_down + (size_t) r * RB;
++    uint2 hv[IT][2];
++    Q50W q[IT];
++#pragma unroll
++    for (int i = 0; i < IT; ++i) {   // (a unit's 4 low inputs from h4 [i0], its 4 high ones 16 values on)
++        const int i0 = kq::q50_unit_x(min(lane + 32 * i, NU - 1)) >> 2;
++        hv[i][0] = __ldg(h4 + i0), hv[i][1] = __ldg(h4 + i0 + 4);
++    }
++#pragma unroll
++    for (int i = 0; i < IT; ++i) q[i] = q50_unit_load<NT>(w, min(lane + 32 * i, NU - 1));
++#ifdef MAYA_USE_HIP
++    __builtin_amdgcn_sched_barrier(0);
++#endif
++    float acc = 0.0f;
++#pragma unroll
++    for (int i = 0; i < IT; ++i) {
++        const int un = lane + 32 * i;
++        const float2 a = u32_to_f2(hv[i][0].x), b = u32_to_f2(hv[i][0].y);
++        const float2 c = u32_to_f2(hv[i][1].x), d = u32_to_f2(hv[i][1].y);
++        const float xl[4] = {a.x, a.y, b.x, b.y}, xh[4] = {c.x, c.y, d.x, d.y};
++        const float t = q50_unit_dot(q[i], un, xl, xh, acc);
++        acc = (32 * (i + 1) <= NU || un < NU) ? t : acc;
++    }
++#pragma unroll
++    for (int o = 16; o > 0; o >>= 1) acc += __shfl_xor_sync(0xffffffffu, acc, o);
++    if (lane == 0) y[(size_t) s * C + r] = acc;
++}
++
+ // ---- grouped: an expert's rows read once for every token that picked it (a verify window's few tokens)
+ 
+ // a warp's dots of one row (blocks of `type`) with n <= N_CAP inputs (each K values, F32 or FP16 rows in global memory)
+@@ -4246,6 +4447,32 @@ __device__ void row_dot_multi(int type, const uint8_t* w, const X* const* xs, in
+                 }
+             }
+         }
++    } else if (type == kQ4_K && ((uintptr_t) w & 3) == 0) {   // (each token row_dot's sums: its order, its values)
++        for (int u = lane; u < K / 16; u += 32) {
++            const Q4kW q = q4k_unit_load(w, u);
++            const int i0 = kq::q4k_unit_x(u);
++#pragma unroll
++            for (int t = 0; t < N_CAP; ++t) {
++                if (t >= n) break;
++                float xl[8], xh[8];
++#pragma unroll
++                for (int k = 0; k < 8; ++k) xl[k] = xval(xs[t], i0 + k), xh[k] = xval(xs[t], i0 + 32 + k);
++                acc[t] = q4k_unit_dot(q, u, xl, xh, kq::sum8(xl), kq::sum8(xh), acc[t]);
++            }
++        }
++    } else if (type == kQ5_0 && ((uintptr_t) w & 1) == 0) {
++        for (int u = lane; u < K / 8; u += 32) {
++            const Q50W q = q50_unit_load(w, u);
++            const int i0 = kq::q50_unit_x(u);
++#pragma unroll
++            for (int t = 0; t < N_CAP; ++t) {
++                if (t >= n) break;
++                float xl[4], xh[4];
++#pragma unroll
++                for (int k = 0; k < 4; ++k) xl[k] = xval(xs[t], i0 + k), xh[k] = xval(xs[t], i0 + 16 + k);
++                acc[t] = q50_unit_dot(q, u, xl, xh, acc[t]);
++            }
++        }
+     } else {
+         for (int i = lane; i < K; i += 32) {
+             const float wv = decode_value(type, w, (size_t) i);
+@@ -4403,6 +4630,21 @@ __device__ void row_dot_pair_multi(int type, const uint8_t* wg, const uint8_t* w
+                 }
+             }
+         }
++    } else if (type == kQ4_K && (((uintptr_t) wg | (uintptr_t) wu) & 3) == 0) {   // (row_dot's sums, each token)
++        for (int u = lane; u < K / 16; u += 32) {
++            const Q4kW qg = q4k_unit_load(wg, u), qu = q4k_unit_load(wu, u);
++            const int i0 = kq::q4k_unit_x(u);
++#pragma unroll
++            for (int t = 0; t < N_CAP; ++t) {
++                if (t >= n) break;
++                float xl[8], xh[8];
++#pragma unroll
++                for (int k = 0; k < 8; ++k) xl[k] = __ldg(xs[t] + i0 + k), xh[k] = __ldg(xs[t] + i0 + 32 + k);
++                const float sl = kq::sum8(xl), sh = kq::sum8(xh);
++                ag[t] = q4k_unit_dot(qg, u, xl, xh, sl, sh, ag[t]);
++                au[t] = q4k_unit_dot(qu, u, xl, xh, sl, sh, au[t]);
++            }
++        }
+     } else {
+         row_dot_multi<float, N_CAP>(type, wg, xs, n, K, og);
+         row_dot_multi<float, N_CAP>(type, wu, xs, n, K, ou);
+@@ -5840,6 +6082,49 @@ __global__ void decode_f16_k_kernel(int type, const uint8_t* blocks, size_t nblk
+     }
+ }
+ 
++// Q4_K a warp a 256-value block (lane: 4 values of sub-block 2 g and the same 4 of 2 g + 1, g = lane / 8); Q5_0 a
++// thread a quarter of a block (4 values of each half) - ik2_kq.h's values (ggml's), rounded to FP16
++__device__ __forceinline__ uint32_t ld32_any(const uint8_t* p) {
++    return (((uintptr_t) p & 3) == 0) ? *(const uint32_t*) p : kq::ld32(p);
++}
++__global__ void decode_f16_q4k_kernel(const uint8_t* blocks, size_t nblk, uint16_t* out) {
++    const size_t bi = (size_t) blockIdx.x * (blockDim.x >> 5) + (threadIdx.x >> 5);
++    if (bi >= nblk) return;
++    const int lane = threadIdx.x & 31, g = lane >> 3, l0 = (lane & 7) * 4;
++    const uint8_t* b = blocks + bi * kq::kQ4kBytes;
++    const kq::Q4kSc sc = kq::q4k_scales(ld32_any(b), ld32_any(b + 4), ld32_any(b + 8), ld32_any(b + 12), g);
++    const uint32_t q = ld32_any(b + 16 + 32 * g + l0);
++    float lo[4], hi[4];
++#pragma unroll
++    for (int k = 0; k < 4; ++k) {
++        const uint32_t c = (q >> (8 * k)) & 0xFFu;
++        lo[k] = sc.d0 * (float) (c & 0xF) - sc.m0;
++        hi[k] = sc.d1 * (float) (c >> 4) - sc.m1;
++    }
++    uint16_t* y = out + bi * 256 + 64 * g + l0;
++    store_f16x4(y, lo[0], lo[1], lo[2], lo[3]);
++    store_f16x4(y + 32, hi[0], hi[1], hi[2], hi[3]);
++}
++__global__ void decode_f16_q50_kernel(const uint8_t* blocks, size_t nq, uint16_t* out) {
++    const size_t t = (size_t) blockIdx.x * blockDim.x + threadIdx.x;
++    if (t >= nq) return;
++    const uint8_t* b = blocks + (t >> 2) * kq::kQ50Bytes;
++    const int q = (int) (t & 3);
++    const float d = kq::h2f((uint32_t) b[0] | ((uint32_t) b[1] << 8));
++    const uint32_t qh = kq::ld32(b + 2);
++    float lo[4], hi[4];
++#pragma unroll
++    for (int k = 0; k < 4; ++k) {
++        const int i = 4 * q + k;
++        const uint32_t c = b[6 + i];
++        lo[k] = (float) ((int) ((c & 0xF) | (((qh >> i) & 1u) << 4)) - 16) * d;
++        hi[k] = (float) ((int) ((c >> 4) | (((qh >> (i + 16)) & 1u) << 4)) - 16) * d;
++    }
++    uint16_t* y = out + (t >> 2) * 32 + 4 * q;
++    store_f16x4(y, lo[0], lo[1], lo[2], lo[3]);
++    store_f16x4(y + 16, hi[0], hi[1], hi[2], hi[3]);
++}
++
+ __global__ void decode_f16_kernel(int type, const uint8_t* blocks, size_t n, uint16_t* out) {
+     const size_t i = (size_t) blockIdx.x * blockDim.x + threadIdx.x;
+     if (i < n) out[i] = f2h(decode_value(type, blocks, i));
+@@ -8386,12 +8671,13 @@ void argmax_gemv_i8(const int8_t* W, int ld, const float* xs, const float* base,
+ }
+ 
+ int block_values(int type) {
+-    return type == kNVFP4 ? 64 : type == kQ8_0 ? 32
+-         : type == kQ5_K || type == kQ6_K || type == kIQ3_XXS || type == kIQ4_XS ? 256 : 0;
++    return type == kNVFP4 ? 64 : type == kQ8_0 || type == kQ5_0 ? 32
++         : type == kQ5_K || type == kQ6_K || type == kIQ3_XXS || type == kIQ4_XS || type == kQ4_K ? 256 : 0;
+ }
+ size_t block_bytes(int type) {
+     return type == kNVFP4 ? 36 : type == kQ8_0 ? 34 : type == kQ5_K ? 176 : type == kQ6_K ? 210
+-         : type == kIQ3_XXS ? 98 : type == kIQ4_XS ? 136 : 0;
++         : type == kIQ3_XXS ? 98 : type == kIQ4_XS ? 136 : type == kQ4_K ? kq::kQ4kBytes : type == kQ5_0 ? kq::kQ50Bytes
++         : 0;
+ }
+ 
+ template <int WARPS, int ROWS>
+@@ -8501,6 +8787,44 @@ static bool expv_gate_up(const uint8_t* const* blob, const int* tok, int S, int
+     return true;
+ }
+ #endif
++// Q4_K gate / up and Q5_0 down (AtomicChat's Inkling-2-Mini) through experts_q4k_gu / q50_down_kernel: AMD with
++// IK2_HIP_EXPV=1 (IK2_HIP_NT bit 1: their weights non-temporal), CUDA with IK2_EXPV_KQ=1 (tests: the same sums as the
++// shared-memory kernels there too) - Inkling-2-Mini's shapes (C 2304, F 1152), else the kernels below.
++static bool expv_kq_on() {
++#ifdef MAYA_USE_HIP
++    return expv_on();
++#else
++    static const bool on = getenv("IK2_EXPV_KQ") && atoi(getenv("IK2_EXPV_KQ"));
++    return on;
++#endif
++}
++static bool expv_kq_down(const uint8_t* const* blob, int S, int ty_down, size_t off_down, const uint16_t* h, int C,
++                         int F, float* y, cudaStream_t s) {
++    if (!expv_kq_on() || ty_down != kQ5_0 || F != 1152 || C % 4 || ((uintptr_t) h & 7)) return false;
++    const dim3 g((unsigned) (C / 4), (unsigned) S);
++#ifdef MAYA_USE_HIP
++    if (hip_nt() & 1) {
++        experts_q50_down_kernel<1152, true><<<g, 128, 0, s>>>(blob, off_down, h, C, y);
++        return true;
++    }
++#endif
++    experts_q50_down_kernel<1152, false><<<g, 128, 0, s>>>(blob, off_down, h, C, y);
++    return true;
++}
++static bool expv_kq_gate_up(const uint8_t* const* blob, const int* tok, int S, int ty_gate, int ty_up, size_t eb0,
++                            const float* x, int C, int F, const float* sg, const float* su, float gcap, float ucap,
++                            uint16_t* h, cudaStream_t s) {
++    if (!expv_kq_on() || ty_gate != kQ4_K || ty_up != kQ4_K || C != 2304 || F % 4 || ((uintptr_t) x & 15)) return false;
++    const dim3 g((unsigned) (F / 4), (unsigned) S);
++#ifdef MAYA_USE_HIP
++    if (hip_nt() & 1) {
++        experts_q4k_gu_kernel<2304, true><<<g, 128, 0, s>>>(blob, tok, eb0, x, F, sg, su, gcap, ucap, h);
++        return true;
++    }
++#endif
++    experts_q4k_gu_kernel<2304, false><<<g, 128, 0, s>>>(blob, tok, eb0, x, F, sg, su, gcap, ucap, h);
++    return true;
++}
+ void experts_down(const uint8_t* const* blob, int S, int ty_down, size_t off_down, const uint16_t* h, int C, int F,
+                   float* y, cudaStream_t s) {
+     if (S <= 0) return;
+@@ -8510,6 +8834,10 @@ void experts_down(const uint8_t* const* blob, int S, int ty_down, size_t off_dow
+         return;
+     }
+ #endif
++    if (expv_kq_down(blob, S, ty_down, off_down, h, C, F, y, s)) {
++        check("experts_down");
++        return;
++    }
+     if (S <= 4) launch_experts_down<4, 2>(blob, S, ty_down, off_down, h, C, F, y, s);
+     else launch_experts_down<4, 4>(blob, S, ty_down, off_down, h, C, F, y, s);
+     check("experts_down");
+@@ -8569,6 +8897,10 @@ void experts_gate_up_swiglu(const uint8_t* const* blob, const int* tok, int S, i
+         return;
+     }
+ #endif
++    if (expv_kq_gate_up(blob, tok, S, ty_gate, ty_up, eb0, x, C, F, sg, su, gcap, ucap, h, s)) {
++        check("experts_gate_up_swiglu");
++        return;
++    }
+     if (S <= 8) launch_experts_gate_up_swiglu<4, 2>(blob, tok, S, ty_gate, ty_up, eb0, x, C, F, sg, su, gcap, ucap, h, s);
+     else launch_experts_gate_up_swiglu<4, 4>(blob, tok, S, ty_gate, ty_up, eb0, x, C, F, sg, su, gcap, ucap, h, s);
+     check("experts_gate_up_swiglu");
+@@ -9108,6 +9440,16 @@ void decode_f16(int type, const uint8_t* blocks, size_t n, uint16_t* out, cudaSt
+         check("decode_f16_k");
+         return;
+     }
++    if (type == kQ4_K && n % 256 == 0) {
++        decode_f16_q4k_kernel<<<grid(n / 256, kBlk / 32), kBlk, 0, s>>>(blocks, n / 256, out);
++        check("decode_f16_q4k");
++        return;
++    }
++    if (type == kQ5_0 && n % 32 == 0) {
++        decode_f16_q50_kernel<<<grid(n / 8), kBlk, 0, s>>>(blocks, n / 8, out);
++        check("decode_f16_q50");
++        return;
++    }
+     decode_f16_kernel<<<grid(n), kBlk, 0, s>>>(type, blocks, n, out);
+     check("decode_f16");
+ }
+diff --git a/src/ik2/ik2_kernels.cuh b/src/ik2/ik2_kernels.cuh
+index 5accbcd..4bf6e07 100644
+--- a/src/ik2/ik2_kernels.cuh
++++ b/src/ik2/ik2_kernels.cuh
+@@ -123,7 +123,8 @@ bool attn_flash_available();
+ /// AMD, RDNA 3 / 3.5 / 4 (ik2_rdna.inc): the prompt's routed experts of a layer in three launches from their blocks.
+ /// Rows: a token's pick each, grouped by expert in expert order; tiles: int4 {expert, first row, rows <= 32, 0} over
+ /// them; eptr [E]: an expert's blocks (gate, then up at off_up / down at off_down, as a cache slot holds them).
+-/// Can the current GPU take it for these expert types (all NVFP4 or all Q8_0) and widths (IK2_RDNA_MOE=0: no)?
++/// Can the current GPU take it for these expert types (all NVFP4, all Q8_0, or Q4_K gate / up with Q5_0 down) and
++/// widths (IK2_RDNA_MOE=0: no)?
+ bool experts_rdna_available(int ty_gate, int ty_up, int ty_down, int C, int F);
+ /// h16 [rows][F] = SwiGLU(x16 . gate^T * sg[row], x16 . up^T * su[row]) (softcaps gcap / ucap), x16 [rows][C]
+ void experts_rdna_gu(const uint8_t* const* eptr, const int* tiles, int n_tiles, int ty, size_t off_up,
+@@ -227,8 +228,8 @@ void loop_gate_blend(const float* x, const float* m, const float* f, const float
+ // ---- the token path: the experts straight from their blocks, the attention of one query
+ 
+ /// The routed experts of a few tokens as matrix-vector products over the blocks as the GGUF holds them (NVFP4, Q8_0,
+-/// Q5_K, Q6_K), one launch a phase.  Slot s (S of them): its expert's blob at blob[s] (gate | up | down: eb0, eb1 bytes
+-/// in), its token's row tok[s] of x.
++/// Q5_K, Q6_K, IQ3_XXS, IQ4_XS, Q4_K, Q5_0), one launch a phase.  Slot s (S of them): its expert's blob at blob[s]
++/// (gate | up | down: eb0, eb1 bytes in), its token's row tok[s] of x.
+ ///   gate_up: gu [S][2 F] = (gate, up) . x[tok[s]] (x [*][C] F32), raw sums (the scales applied by swiglu_cap_f32)
+ ///   down:    y [S][C] = down . h[s] (h [S][F] FP16), raw sums
+ void experts_gate_up(const uint8_t* const* blob, const int* tok, int S, int ty_gate, int ty_up, size_t eb0,
+@@ -245,7 +246,7 @@ void experts_down_mma(const uint8_t* const* blob, int S, size_t off_down, const
+ void experts_down(const uint8_t* const* blob, int S, int ty_down, size_t off_down, const uint16_t* h, int C, int F,
+                   float* y, cudaStream_t s);
+ 
+-/// y [N] = W [N][K] . x [K] for a dense matrix as the GGUF holds it (rows of `type` blocks: Q8_0, NVFP4, Q5_K, Q6_K),
++/// y [N] = W [N][K] . x [K] for a dense matrix as the GGUF holds it (rows of `type` blocks: Q8_0, NVFP4, Q5_K, Q6_K, ...),
+ /// a warp a row in a fixed order - one token's products, half the bytes of an FP16 copy for Q8_0.  K <= 8192.
+ void mv_blocks(int type, const uint8_t* W, int N, int K, const float* x, float* y, cudaStream_t s);
+ 
+@@ -571,8 +572,8 @@ void argmax_gemv_f16(const uint16_t* W, int ld, const float* x, const float* bas
+ 
+ // ---- the weights' decodes (ggml's block types; values exactly ggml's dequantize_row_*, then rounded to the output)
+ 
+-/// ggml type ids of the blocks these decode.
+-constexpr int kQ8_0 = 8, kQ5_K = 13, kQ6_K = 14, kIQ3_XXS = 18, kIQ4_XS = 23, kNVFP4 = 40;
++/// ggml type ids of the blocks these decode (Q4_K / Q5_0: AtomicChat's Inkling-2-Mini, gate_up / down - ik2_kq.h).
++constexpr int kQ5_0 = 6, kQ8_0 = 8, kQ4_K = 12, kQ5_K = 13, kQ6_K = 14, kIQ3_XXS = 18, kIQ4_XS = 23, kNVFP4 = 40;
+ /// values a block / bytes a block (0: not one of the above).
+ int block_values(int type);
+ size_t block_bytes(int type);
+diff --git a/src/ik2/ik2_kq.h b/src/ik2/ik2_kq.h
+new file mode 100644
+index 0000000..f9d9c47
+--- /dev/null
++++ b/src/ik2/ik2_kq.h
+@@ -0,0 +1,249 @@
++// src/ik2/ik2_kq.h - maya-ik2's Q4_K and Q5_0 blocks (AtomicChat's Inkling-2-Mini-Uncensored-AD-Q4_K: the experts'
++// gate_up in Q4_K, down in Q5_0), one arithmetic for the host and the device:
++//   * a value as ggml's dequantize_row_q4_K / dequantize_row_q5_0 make it (Q4_K: d1 q - m1 with d1 = d sc, m1 = dmin m;
++//     Q5_0: (q - 16) d).  Every product there is exact in F32 (an FP16 times a 6-bit scale, times a 4- or 5-bit
++//     code), so a contraction to an FMA cannot change a value: the device's are the host's to the bit;
++//   * a row's dot product in one fixed order - the "unit" a lane takes (Q4_K: 16 values, the same 8 positions of the
++//     two sub-blocks that share a 32-byte run of codes; Q5_0: 8 values, 4 low and the same 4 high nibbles of a block),
++//     lane l the units l, l + 32, .. in turn, then the warp's butterfly (j + j^16, j^8, .. j^1).  Its sums are
++//     explicit FMAs and the plain products in it exact, so no compiler contraction changes a bit either: every kernel
++//     that dots such a row (one token's, the exact window's, the grouped ones, AMD's register kernels) gives the
++//     same sums, and row_dot_host below gives them on the host (tests/ik2_kernels_test.cu holds the GPU to it).
++// Q4_K block (144 bytes): d, dmin (FP16), scales [12] (8 6-bit scale / min pairs, ggml's get_scale_min_k4), qs [128]
++// (32-byte run j: sub-block 2 j in the low nibbles, 2 j + 1 in the high ones).  Q5_0 block (22 bytes): d (FP16),
++// qh [4] (bit i: the 5th bit of value i), qs [16] (value i < 16 the low nibble of byte i, value i + 16 its high one).
++#pragma once
++
++#include <cmath>
++#include <cstddef>
++#include <cstdint>
++#include <cstring>
++#if defined(__CUDACC__) || defined(__HIPCC__)
++#include <cuda_fp16.h>
++#define IK2KQ_HD __host__ __device__ __forceinline__
++#else
++#define IK2KQ_HD inline
++#endif
++#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)
++#define IK2KQ_DEVICE 1
++#define IK2KQ_UNROLL _Pragma("unroll")
++#else
++#define IK2KQ_DEVICE 0
++#define IK2KQ_UNROLL
++#endif
++
++namespace ik2::kq {
++
++constexpr int kQ5_0 = 6, kQ4_K = 12;          // (ggml's type ids, ik2_kernels.cuh's)
++constexpr int kQ4kBytes = 144, kQ50Bytes = 22;   // (a block's bytes: 256 / 32 values)
++
++IK2KQ_HD float fma(float a, float b, float c) {
++#if IK2KQ_DEVICE
++    return fmaf(a, b, c);
++#else
++    return std::fma(a, b, c);
++#endif
++}
++/// FP16 bits to F32 (exact)
++IK2KQ_HD float h2f(uint32_t h16) {
++#if IK2KQ_DEVICE
++    return __half2float(__ushort_as_half((unsigned short) (h16 & 0xFFFFu)));
++#else
++    const uint32_t h = h16 & 0xFFFFu, sign = (h >> 15) << 31, e = (h >> 10) & 31, m = h & 1023;
++    uint32_t u;
++    if (e == 0) {
++        if (m == 0) {
++            u = sign;
++        } else {   // (subnormal: normalised)
++            int sh = 0;
++            uint32_t mm = m;
++            while (!(mm & 1024)) mm <<= 1, ++sh;
++            u = sign | ((uint32_t) (113 - sh) << 23) | ((mm & 1023) << 13);
++        }
++    } else if (e == 31) {
++        u = sign | 0x7f800000u | (m << 13);
++    } else {
++        u = sign | ((e + 112) << 23) | (m << 13);
++    }
++    float f;
++    std::memcpy(&f, &u, 4);
++    return f;
++#endif
++}
++IK2KQ_HD uint32_t ld32(const uint8_t* p) {   // (little endian, any alignment; the host's loads)
++    return (uint32_t) p[0] | ((uint32_t) p[1] << 8) | ((uint32_t) p[2] << 16) | ((uint32_t) p[3] << 24);
++}
++
++// ---- values (ggml's dequantize_row_*)
++
++/// ggml's get_scale_min_k4: scale / min pair j (0..7) of a Q4_K / Q5_K block's 12 scale bytes
++IK2KQ_HD void scale_min(int j, const uint8_t* q, int& sc, int& m) {
++    if (j < 4) {
++        sc = q[j] & 63, m = q[j + 4] & 63;
++    } else {
++        sc = (q[j + 4] & 0xF) | ((q[j - 4] >> 6) << 4), m = (q[j + 4] >> 4) | ((q[j] >> 6) << 4);
++    }
++}
++/// value v of a run of Q4_K blocks
++IK2KQ_HD float q4k_value(const uint8_t* blocks, size_t v) {
++    const uint8_t* b = blocks + (v / 256) * kQ4kBytes;
++    const int i = (int) (v % 256), j = i / 64, hi = (i / 32) & 1, l = i % 32;
++    int sc, m;
++    scale_min(2 * j + hi, b + 4, sc, m);
++    const float d1 = h2f((uint32_t) b[0] | ((uint32_t) b[1] << 8)) * (float) sc;
++    const float m1 = h2f((uint32_t) b[2] | ((uint32_t) b[3] << 8)) * (float) m;
++    const uint8_t q = b[16 + 32 * j + l];
++    return d1 * (float) (hi ? q >> 4 : q & 0xF) - m1;
++}
++/// value v of a run of Q5_0 blocks
++IK2KQ_HD float q50_value(const uint8_t* blocks, size_t v) {
++    const uint8_t* b = blocks + (v / 32) * kQ50Bytes;
++    const int i = (int) (v % 32);
++    const float d = h2f((uint32_t) b[0] | ((uint32_t) b[1] << 8));
++    const uint32_t qh = ld32(b + 2);
++    const int x = i < 16 ? ((b[6 + i] & 0x0F) | (int) (((qh >> i) << 4) & 0x10)) - 16
++                         : ((b[6 + i - 16] >> 4) | (int) ((qh >> (i - 16 + 12)) & 0x10)) - 16;
++    return (float) x * d;
++}
++
++// ---- the row dots' units
++
++/// Q4_K: d sc and dmin m of sub-blocks 2 j and 2 j + 1 (j: the unit's 32-byte run) from a block's first 4 words.
++/// get_scale_min_k4 for the pair at once: bytes 2 j, 2 j + 1 of the scales' words a (0..3), b (4..7), c (8..11).
++struct Q4kSc {
++    float d0, m0, d1, m1;
++};
++IK2KQ_HD Q4kSc q4k_scales(uint32_t dm, uint32_t s0, uint32_t s1, uint32_t s2, int j) {
++    const int sh = 16 * (j & 1);
++    const uint32_t a = s0 >> sh, b = s1 >> sh, c = s2 >> sh;
++    const bool hi = j >= 2;
++    const uint32_t lm = hi ? 0x0F0Fu : 0x3F3Fu, hm = hi ? 0x3030u : 0u;
++    const uint32_t sc = ((hi ? c : a) & lm) | ((a >> 2) & hm);
++    const uint32_t mm = ((hi ? c >> 4 : b) & lm) | ((b >> 2) & hm);
++    const float d = h2f(dm), dmin = h2f(dm >> 16);
++    Q4kSc r;
++    r.d0 = d * (float) (sc & 0xFFu), r.d1 = d * (float) (sc >> 8);   // (exact: 11 bits times 6)
++    r.m0 = dmin * (float) (mm & 0xFFu), r.m1 = dmin * (float) (mm >> 8);
++    return r;
++}
++
++// ---- a 64-value run's values (the AMD prompt kernels' FP16 tiles: these rounded to FP16 - decode_f16's values)
++
++/// Q4_K: run j (0..3) of a block, from its first 16 bytes (hdr [4] words: d | dmin, scales) and the run's 32 code
++/// bytes (qs [8] words): sub-block 2 j's 32 values, then 2 j + 1's
++IK2KQ_HD void q4k_run_values(const uint32_t* hdr, const uint32_t* qs, int j, float* out) {
++    const Q4kSc s = q4k_scales(hdr[0], hdr[1], hdr[2], hdr[3], j);
++    IK2KQ_UNROLL
++    for (int l = 0; l < 32; ++l) {
++        const uint32_t q = (qs[l / 4] >> (8 * (l % 4))) & 0xFFu;
++        out[l] = s.d0 * (float) (q & 0xF) - s.m0;
++        out[32 + l] = s.d1 * (float) (q >> 4) - s.m1;
++    }
++}
++/// Q5_0: two blocks (44 bytes from a multiple of 4: w [11] words) - their 64 values
++IK2KQ_HD uint32_t byte_at(const uint32_t* w, int o) { return (w[o >> 2] >> (8 * (o & 3))) & 0xFFu; }
++IK2KQ_HD void q50_pair_values(const uint32_t* w, float* out) {
++    IK2KQ_UNROLL
++    for (int bb = 0; bb < 2; ++bb) {
++        const int o0 = 22 * bb;
++        const float d = h2f(byte_at(w, o0) | (byte_at(w, o0 + 1) << 8));
++        const uint32_t qh = byte_at(w, o0 + 2) | (byte_at(w, o0 + 3) << 8) | (byte_at(w, o0 + 4) << 16) |
++                            (byte_at(w, o0 + 5) << 24);
++        IK2KQ_UNROLL
++        for (int i = 0; i < 16; ++i) {
++            const uint32_t q = byte_at(w, o0 + 6 + i);
++            out[32 * bb + i] = (float) ((int) ((q & 0xF) | (((qh >> i) & 1u) << 4)) - 16) * d;
++            out[32 * bb + 16 + i] = (float) ((int) ((q >> 4) | (((qh >> (i + 16)) & 1u) << 4)) - 16) * d;
++        }
++    }
++}
++/// the sum of 8 inputs, a tree
++IK2KQ_HD float sum8(const float* x) {
++    return ((x[0] + x[1]) + (x[2] + x[3])) + ((x[4] + x[5]) + (x[6] + x[7]));
++}
++/// Q4_K unit: codes w0, w1 (8 bytes: positions 8 p .. 8 p + 7 of the run), xl / xh the inputs of those positions in
++/// sub-blocks 2 j / 2 j + 1, sxl / sxh their sums (sum8); acc + d0 (q . xl) - m0 sxl + d1 (q' . xh) - m1 sxh
++IK2KQ_HD float q4k_unit(const Q4kSc& s, uint32_t w0, uint32_t w1, const float* xl, const float* xh, float sxl,
++                        float sxh, float acc) {
++    const uint32_t l0 = w0 & 0x0F0F0F0Fu, l1 = w1 & 0x0F0F0F0Fu;
++    const uint32_t h0 = (w0 >> 4) & 0x0F0F0F0Fu, h1 = (w1 >> 4) & 0x0F0F0F0Fu;
++    float al = (float) (l0 & 0xFFu) * xl[0];
++    al = fma((float) ((l0 >> 8) & 0xFFu), xl[1], al);
++    al = fma((float) ((l0 >> 16) & 0xFFu), xl[2], al);
++    al = fma((float) (l0 >> 24), xl[3], al);
++    al = fma((float) (l1 & 0xFFu), xl[4], al);
++    al = fma((float) ((l1 >> 8) & 0xFFu), xl[5], al);
++    al = fma((float) ((l1 >> 16) & 0xFFu), xl[6], al);
++    al = fma((float) (l1 >> 24), xl[7], al);
++    float ah = (float) (h0 & 0xFFu) * xh[0];
++    ah = fma((float) ((h0 >> 8) & 0xFFu), xh[1], ah);
++    ah = fma((float) ((h0 >> 16) & 0xFFu), xh[2], ah);
++    ah = fma((float) (h0 >> 24), xh[3], ah);
++    ah = fma((float) (h1 & 0xFFu), xh[4], ah);
++    ah = fma((float) ((h1 >> 8) & 0xFFu), xh[5], ah);
++    ah = fma((float) ((h1 >> 16) & 0xFFu), xh[6], ah);
++    ah = fma((float) (h1 >> 24), xh[7], ah);
++    acc = fma(s.d0, al, acc);
++    acc = fma(-s.m0, sxl, acc);
++    acc = fma(s.d1, ah, acc);
++    return fma(-s.m1, sxh, acc);
++}
++/// Q4_K unit u of a row (16 a block): its block, run j and quarter p; the index of its first low input
++IK2KQ_HD int q4k_unit_x(int u) { return (u >> 4) * 256 + 64 * ((u >> 2) & 3) + 8 * (u & 3); }
++/// word offsets (in the block) of unit u's codes
++IK2KQ_HD int q4k_unit_w(int u) { return 4 + 8 * ((u >> 2) & 3) + 2 * (u & 3); }
++
++/// the 4 bits n spread to bit 4 of each byte
++IK2KQ_HD uint32_t spread4(uint32_t n) { return ((n * 0x00204081u) & 0x01010101u) << 4; }
++/// Q5_0 unit (quarter q of a block: values 4 q .. 4 q + 3 and 16 + 4 q .. 16 + 4 q + 3): d16 the block's FP16 d, qh
++/// its 32 high bits, qs4 the 4 code bytes 4 q .. 4 q + 3; xl / xh the 4 inputs of each half; acc + d (q - 16) . x
++IK2KQ_HD float q50_unit(uint32_t d16, uint32_t qh, uint32_t qs4, int q, const float* xl, const float* xh, float acc) {
++    const uint32_t lo = (qs4 & 0x0F0F0F0Fu) | spread4((qh >> (4 * q)) & 0xFu);
++    const uint32_t hi = ((qs4 >> 4) & 0x0F0F0F0Fu) | spread4((qh >> (16 + 4 * q)) & 0xFu);
++    float s = ((float) (lo & 0xFFu) - 16.0f) * xl[0];
++    s = fma((float) ((lo >> 8) & 0xFFu) - 16.0f, xl[1], s);
++    s = fma((float) ((lo >> 16) & 0xFFu) - 16.0f, xl[2], s);
++    s = fma((float) (lo >> 24) - 16.0f, xl[3], s);
++    s = fma((float) (hi & 0xFFu) - 16.0f, xh[0], s);
++    s = fma((float) ((hi >> 8) & 0xFFu) - 16.0f, xh[1], s);
++    s = fma((float) ((hi >> 16) & 0xFFu) - 16.0f, xh[2], s);
++    s = fma((float) (hi >> 24) - 16.0f, xh[3], s);
++    return fma(h2f(d16), s, acc);
++}
++/// Q5_0 unit u of a row (4 a block): the index of its first low input
++IK2KQ_HD int q50_unit_x(int u) { return (u >> 2) * 32 + 4 * (u & 3); }
++
++/// a lane's sum of row (K values of `type` blocks) . x over its units, x [K] F32 - the kernels' order
++inline float lane_sum_host(int type, const uint8_t* row, int K, const float* x, int lane) {
++    float acc = 0.0f;
++    if (type == kQ4_K) {
++        for (int u = lane; u < K / 16; u += 32) {
++            const uint8_t* b = row + (size_t) (u >> 4) * kQ4kBytes;
++            const int i0 = q4k_unit_x(u), wo = q4k_unit_w(u);
++            const Q4kSc s = q4k_scales(ld32(b), ld32(b + 4), ld32(b + 8), ld32(b + 12), (u >> 2) & 3);
++            acc = q4k_unit(s, ld32(b + 4 * wo), ld32(b + 4 * wo + 4), x + i0, x + i0 + 32, sum8(x + i0), sum8(x + i0 + 32),
++                           acc);
++        }
++    } else if (type == kQ5_0) {
++        for (int u = lane; u < K / 8; u += 32) {
++            const uint8_t* b = row + (size_t) (u >> 2) * kQ50Bytes;
++            const int i0 = q50_unit_x(u), q = u & 3;
++            const uint32_t d16 = (uint32_t) b[0] | ((uint32_t) b[1] << 8);
++            acc = q50_unit(d16, ld32(b + 2), ld32(b + 6 + 4 * q), q, x + i0, x + i0 + 16, acc);
++        }
++    }
++    return acc;
++}
++/// the warp's row dot (what every lane gets): the lanes' sums through the butterfly
++inline float row_dot_host(int type, const uint8_t* row, int K, const float* x) {
++    float a[32];
++    for (int l = 0; l < 32; ++l) a[l] = lane_sum_host(type, row, K, x, l);
++    for (int o = 16; o > 0; o >>= 1) {
++        float b[32];
++        for (int l = 0; l < 32; ++l) b[l] = a[l] + a[l ^ o];
++        std::memcpy(a, b, sizeof a);
++    }
++    return a[0];
++}
++
++}  // namespace ik2::kq
+diff --git a/src/ik2/ik2_main.cu b/src/ik2/ik2_main.cu
+index 4eb2cf2..50728b3 100644
+--- a/src/ik2/ik2_main.cu
++++ b/src/ik2/ik2_main.cu
+@@ -6816,7 +6816,9 @@ int main(int argc, char** argv) {
+             const int nr = (int) pr.second.size();
+             if (ti->elements() != (uint64_t) c.E * c.F * C * nr) die(n + ": shape");
+             if (!k::block_values((int) ti->type)) die(n + ": type " + ti->type_name() + " not decoded here");
+-            if (C % k::block_values((int) ti->type) || c.F % k::block_values((int) ti->type))
++            // (a row: C values of gate / up, F of down - whole blocks; the decodes take a matrix's C x F values)
++            const int row_k = pr.first == "down" ? c.F : (int) C, bv = k::block_values((int) ti->type);
++            if (row_k % bv || ((size_t) C * c.F) % bv)
+                 die(n + ": a row is not whole " + ti->type_name() + " blocks");
+             const size_t per = tensor_bytes(*ti) / c.E;
+             std::vector<float> sc;
+diff --git a/src/ik2/ik2_rdna.inc b/src/ik2/ik2_rdna.inc
+index f9d855c..9ca5462 100644
+--- a/src/ik2/ik2_rdna.inc
++++ b/src/ik2/ik2_rdna.inc
+@@ -5,7 +5,8 @@
+ // not the CUDA kernels' bits (another order of the same sums).
+ //
+ // The prompt's routed experts: a layer's experts over a chunk in three launches, straight from their blocks (NVFP4 or
+-// Q8_0, made FP16 in shared memory - exact: a code times its scale is an FP16), instead of a decode to FP16 and two
++// Q8_0, made FP16 in shared memory - exact: a code times its scale is an FP16; Q4_K gate / up and Q5_0 down: ggml's
++// values rounded to FP16, decode_f16's), instead of a decode to FP16 and two
+ // BLAS products an expert.  The rows (a token's pick each) lie grouped by expert, in expert order; a tile is up to 32
+ // rows of one expert.  gate / up: a block 64 rows of gate and the same 64 of up against a tile's rows, SwiGLU in the
+ // registers (a lane holds a row's gate and up); down: 128 rows of down.  Then each token's picks summed in expert
+@@ -23,6 +24,16 @@ __device__ __forceinline__ void rm_load_w(const uint8_t* row, int ks, uint32_t (
+         const uint32_t* p = (const uint32_t*) (row + (size_t) ks * 36);
+ #pragma unroll
+         for (int i = 0; i < 9; ++i) w[i] = __ldg(p + i);
++    } else if constexpr (TY == kQ4_K) {   // run ks & 3 of block ks / 4: the block's d | dmin and scales, the run's codes
++        const uint32_t* p = (const uint32_t*) (row + (size_t) (ks >> 2) * kq::kQ4kBytes);
++#pragma unroll
++        for (int i = 0; i < 4; ++i) w[i] = __ldg(p + i);
++#pragma unroll
++        for (int i = 0; i < 8; ++i) w[4 + i] = __ldg(p + 4 + 8 * (ks & 3) + i);
++    } else if constexpr (TY == kQ5_0) {   // two 32-value blocks (22 bytes each: 44 from a multiple of 4)
++        const uint32_t* p = (const uint32_t*) (row + (size_t) ks * 2 * kq::kQ50Bytes);
++#pragma unroll
++        for (int i = 0; i < 11; ++i) w[i] = __ldg(p + i);
+     } else {   // Q8_0: two 32-value blocks (34 bytes each)
+         const uint32_t* p = (const uint32_t*) (row + (size_t) ks * 68);
+ #pragma unroll
+@@ -30,7 +41,7 @@ __device__ __forceinline__ void rm_load_w(const uint8_t* row, int ks, uint32_t (
+     }
+ }
+ template <int TY>
+-__device__ __forceinline__ void rm_store_w(const uint32_t (&w)[17], uint16_t* dst) {
++__device__ __forceinline__ void rm_store_w(const uint32_t (&w)[17], int ks, uint16_t* dst) {
+     uint32_t h[32];
+     if constexpr (TY == kNVFP4) {
+ #pragma unroll
+@@ -43,6 +54,12 @@ __device__ __forceinline__ void rm_store_w(const uint32_t (&w)[17], uint16_t* ds
+             o[4] = nv_pair_h2(w0 >> 4, sc), o[5] = nv_pair_h2(w0 >> 20, sc);
+             o[6] = nv_pair_h2(w1 >> 4, sc), o[7] = nv_pair_h2(w1 >> 20, sc);
+         }
++    } else if constexpr (TY == kQ4_K || TY == kQ5_0) {   // (ggml's values in F32 - ik2_kq.h - rounded: decode_f16's)
++        float v[64];
++        if constexpr (TY == kQ4_K) kq::q4k_run_values(w, w + 4, ks & 3, v);
++        else kq::q50_pair_values(w, v);
++#pragma unroll
++        for (int p = 0; p < 32; ++p) h[p] = f2_to_u32(v[2 * p], v[2 * p + 1]);
+     } else {
+ #pragma unroll
+         for (int b = 0; b < 2; ++b) {   // block b at byte 34 b: its scale, then 32 int8 from byte 34 b + 2
+@@ -114,7 +131,7 @@ __global__ void __launch_bounds__(128) experts_rdna_kernel(const uint8_t* const*
+         __syncthreads();   // (the previous step's reads of the tiles are done)
+         *(uint4*) (Xs + xr * kRmLd + xc) = xa;
+         *(uint4*) (Xs + xr * kRmLd + xc + 8) = xb;
+-        rm_store_w<TY>(w, Ws + tid * kRmLd);
++        rm_store_w<TY>(w, ks, Ws + tid * kRmLd);
+         __syncthreads();
+         if (ks + 1 < nk) {   // (the next step's bytes in flight under this one's products)
+             rm_load_w<TY>(wrow, ks + 1, w);
+@@ -441,8 +458,11 @@ bool experts_rdna_available(int ty_gate, int ty_up, int ty_down, int C, int F) {
+         if (std::getenv("IK2_RDNA_MOE") && !std::atoi(std::getenv("IK2_RDNA_MOE"))) return 0;
+         return rdna_wmma_gpu() ? 1 : 0;
+     }();
+-    const bool fmt = (ty_gate == kNVFP4 || ty_gate == kQ8_0) && ty_up == ty_gate && ty_down == ty_gate;
+-    return on && fmt && C % kRmBN == 0 && F % kRmBN == 0 && C % kRmBK == 0 && F % kRmBK == 0;
++    // all NVFP4 or all Q8_0; or gate / up Q4_K (rows of whole 256-value blocks) and down Q5_0 (AtomicChat's
++    // Inkling-2-Mini) - each launch's tiles of its own type
++    const bool same = (ty_gate == kNVFP4 || ty_gate == kQ8_0) && ty_up == ty_gate && ty_down == ty_gate;
++    const bool atomic = ty_gate == kQ4_K && ty_up == kQ4_K && ty_down == kQ5_0 && C % 256 == 0;
++    return on && (same || atomic) && C % kRmBN == 0 && F % kRmBN == 0 && C % kRmBK == 0 && F % kRmBK == 0;
+ }
+ void experts_rdna_gu(const uint8_t* const* eptr, const int* tiles, int n_tiles, int ty, size_t off_up,
+                      const uint16_t* x16, int C, int F, const float* sg, const float* su, float gcap, float ucap,
+@@ -453,6 +473,9 @@ void experts_rdna_gu(const uint8_t* const* eptr, const int* tiles, int n_tiles,
+     if (ty == kNVFP4)
+         experts_rdna_kernel<kNVFP4, true><<<g, 128, 0, s>>>(eptr, (const int4*) tiles, off_up, rb, x16, C, F, C, sg,
+                                                             su, gcap, ucap, h16, nullptr);
++    else if (ty == kQ4_K)
++        experts_rdna_kernel<kQ4_K, true><<<g, 128, 0, s>>>(eptr, (const int4*) tiles, off_up, rb, x16, C, F, C, sg,
++                                                           su, gcap, ucap, h16, nullptr);
+     else
+         experts_rdna_kernel<kQ8_0, true><<<g, 128, 0, s>>>(eptr, (const int4*) tiles, off_up, rb, x16, C, F, C, sg,
+                                                            su, gcap, ucap, h16, nullptr);
+@@ -466,6 +489,9 @@ void experts_rdna_down(const uint8_t* const* eptr, const int* tiles, int n_tiles
+     if (ty == kNVFP4)
+         experts_rdna_kernel<kNVFP4, false><<<g, 128, 0, s>>>(eptr, (const int4*) tiles, off_down, rb, h16, F, F, C,
+                                                              nullptr, nullptr, 0.0f, 0.0f, nullptr, y32);
++    else if (ty == kQ5_0)
++        experts_rdna_kernel<kQ5_0, false><<<g, 128, 0, s>>>(eptr, (const int4*) tiles, off_down, rb, h16, F, F, C,
++                                                            nullptr, nullptr, 0.0f, 0.0f, nullptr, y32);
+     else
+         experts_rdna_kernel<kQ8_0, false><<<g, 128, 0, s>>>(eptr, (const int4*) tiles, off_down, rb, h16, F, F, C,
+                                                             nullptr, nullptr, 0.0f, 0.0f, nullptr, y32);
+diff --git a/tests/ik2_kernels_test.cu b/tests/ik2_kernels_test.cu
+index 8252820..14474e2 100644
+--- a/tests/ik2_kernels_test.cu
++++ b/tests/ik2_kernels_test.cu
+@@ -6,11 +6,12 @@
+ //   * a head's attention weights: the relative bias out to the extent, the window, the sink, queries and keys at
+ //     offsets (a chunk of a prompt against the cache);
+ //   * the router (the picks as a set and the weights), the softcapped SwiGLU with the experts' scales, the combine;
+-//   * the decodes (NVFP4, Q8_0, Q5_K, Q6_K): the device's F32 values bit for bit the host's, FP16 = F32 rounded (NVFP4:
+-//     exact), NVFP4 against the format's definition.  (Q8_0 / Q5_K / Q6_K against ggml's values: not here yet - the
+-//     real model's seams cover them.)
++//   * the decodes (NVFP4, Q8_0, Q5_K, Q6_K, IQ3_XXS, IQ4_XS, Q4_K, Q5_0): the device's F32 values bit for bit the
++//     host's, FP16 = F32 rounded (NVFP4: exact), NVFP4 against the format's definition, the IQ / Q4_K / Q5_0 host
++//     values against ggml's dequantize_row_*; Q4_K / Q5_0 row dots in ik2_kq.h's order bit for bit.
+ #include "../src/ik2/ik2_iq_tables.h"
+ #include "../src/ik2/ik2_kernels.cuh"
++#include "../src/ik2/ik2_kq.h"
+ 
+ #include <cuda_fp16.h>
+ 
+@@ -544,9 +545,9 @@ double nvfp4_def(const uint8_t* blocks, size_t v) {
+ }
+ 
+ void test_decode() {
+-    const int types[] = {k::kNVFP4, k::kQ8_0, k::kQ5_K, k::kQ6_K, k::kIQ3_XXS, k::kIQ4_XS};
+-    const char* names[] = {"NVFP4", "Q8_0", "Q5_K", "Q6_K", "IQ3_XXS", "IQ4_XS"};
+-    for (int ti = 0; ti < 6; ++ti) {
++    const int types[] = {k::kNVFP4, k::kQ8_0, k::kQ5_K, k::kQ6_K, k::kIQ3_XXS, k::kIQ4_XS, k::kQ4_K, k::kQ5_0};
++    const char* names[] = {"NVFP4", "Q8_0", "Q5_K", "Q6_K", "IQ3_XXS", "IQ4_XS", "Q4_K", "Q5_0"};
++    for (int ti = 0; ti < 8; ++ti) {
+         const int type = types[ti], bv = k::block_values(type);
+         const size_t bb = k::block_bytes(type), nblk = 777, n = nblk * bv;
+         std::vector<uint8_t> raw(nblk * bb);
+@@ -560,9 +561,9 @@ void test_decode() {
+                 p[0] = (uint8_t) h, p[1] = (uint8_t) (h >> 8);
+             };
+             if (type == k::kQ8_0) fix(0);
+-            if (type == k::kQ5_K) fix(0), fix(2);
++            if (type == k::kQ5_K || type == k::kQ4_K) fix(0), fix(2);
+             if (type == k::kQ6_K) fix(208);
+-        if (type == k::kIQ3_XXS || type == k::kIQ4_XS) fix(0);
++        if (type == k::kIQ3_XXS || type == k::kIQ4_XS || type == k::kQ5_0) fix(0);
+         }
+         std::vector<float> hostv(n);
+         k::decode_host(type, raw.data(), n, hostv.data());
+@@ -608,9 +609,9 @@ std::vector<uint8_t> rand_blocks(int type, size_t n_values) {
+             p[0] = (uint8_t) h, p[1] = (uint8_t) (h >> 8);
+         };
+         if (type == k::kQ8_0) fix(0);
+-        if (type == k::kQ5_K) fix(0), fix(2);
++        if (type == k::kQ5_K || type == k::kQ4_K) fix(0), fix(2);
+         if (type == k::kQ6_K) fix(208);
+-        if (type == k::kIQ3_XXS || type == k::kIQ4_XS) fix(0);
++        if (type == k::kIQ3_XXS || type == k::kIQ4_XS || type == k::kQ5_0) fix(0);
+     }
+     return raw;
+ }
+@@ -678,6 +679,123 @@ void test_iq_ref() {
+     }
+ }
+ 
++// ggml's dequantize_row_q4_K (with get_scale_min_k4) / dequantize_row_q5_0, transcribed from ggml-quants.c
++void ggml_q4_K(const uint8_t* x, float* y, size_t k) {
++    auto scale_min = [](int j, const uint8_t* q, uint8_t* d, uint8_t* m) {
++        if (j < 4) {
++            *d = q[j] & 63, *m = q[j + 4] & 63;
++        } else {
++            *d = (q[j + 4] & 0xF) | ((q[j - 4] >> 6) << 4), *m = (q[j + 4] >> 4) | ((q[j - 0] >> 6) << 4);
++        }
++    };
++    for (size_t i = 0; i < k / 256; ++i) {
++        const uint8_t* blk = x + i * 144;
++        const uint8_t* q = blk + 16;
++        const float d = h2f_host((uint16_t) (blk[0] | (blk[1] << 8))), min = h2f_host((uint16_t) (blk[2] | (blk[3] << 8)));
++        int is = 0;
++        uint8_t sc, m;
++        for (int j = 0; j < 256; j += 64) {
++            scale_min(is + 0, blk + 4, &sc, &m);
++            const float d1 = d * sc, m1 = min * m;
++            scale_min(is + 1, blk + 4, &sc, &m);
++            const float d2 = d * sc, m2 = min * m;
++            for (int l = 0; l < 32; ++l) *y++ = d1 * (q[l] & 0xF) - m1;
++            for (int l = 0; l < 32; ++l) *y++ = d2 * (q[l] >> 4) - m2;
++            q += 32;
++            is += 2;
++        }
++    }
++}
++void ggml_q5_0(const uint8_t* x, float* y, size_t k) {
++    for (size_t i = 0; i < k / 32; ++i) {
++        const uint8_t* blk = x + i * 22;
++        const float d = h2f_host((uint16_t) (blk[0] | (blk[1] << 8)));
++        uint32_t qh;
++        std::memcpy(&qh, blk + 2, 4);
++        for (int j = 0; j < 16; ++j) {
++            const uint8_t xh_0 = ((qh >> (j + 0)) << 4) & 0x10, xh_1 = ((qh >> (j + 12))) & 0x10;
++            const int32_t x0 = ((blk[6 + j] & 0x0F) | xh_0) - 16, x1 = ((blk[6 + j] >> 4) | xh_1) - 16;
++            y[i * 32 + j] = x0 * d;
++            y[i * 32 + j + 16] = x1 * d;
++        }
++    }
++}
++void test_kq_ref() {
++    for (int type : {k::kQ4_K, k::kQ5_0}) {
++        const size_t n = 256 * 333;
++        auto raw = rand_blocks(type, n);
++        std::vector<float> want(n), got(n);
++        (type == k::kQ4_K ? ggml_q4_K : ggml_q5_0)(raw.data(), want.data(), n);
++        k::decode_host(type, raw.data(), n, got.data());
++        expect(type == k::kQ4_K ? "decode_host Q4_K = ggml" : "decode_host Q5_0 = ggml", got,
++               std::vector<double>(want.begin(), want.end()), 0.0, 0.0);
++    }
++}
++
++// Q4_K / Q5_0 (AtomicChat's Inkling-2-Mini: gate_up Q4_K, down Q5_0, its shapes): every row-dot kernel's sums the
++// order ik2_kq.h fixes, bit for bit - the one-token kernels (experts_gate_up, experts_down: with IK2_HIP_EXPV=1 on
++// AMD / IK2_EXPV_KQ=1 on CUDA its register kernel), the grouped ones, mv_blocks - against kq::row_dot_host
++void test_kq_exact() {
++    const int C = 2304, F = 1152, E = 3, S = 4;
++    auto g = rand_blocks(k::kQ4_K, (size_t) E * 2 * F * C), d = rand_blocks(k::kQ5_0, (size_t) E * C * F);
++    const size_t eb0 = g.size() / E / 2, eb2 = d.size() / E, slot = 2 * eb0 + eb2;   // (slot: 16-byte multiple)
++    std::vector<uint8_t> pool(slot * E);
++    for (int e = 0; e < E; ++e) {
++        std::memcpy(pool.data() + e * slot, g.data() + e * 2 * eb0, 2 * eb0);
++        std::memcpy(pool.data() + e * slot + 2 * eb0, d.data() + e * eb2, eb2);
++    }
++    uint8_t* dpool = dev(pool);
++    const int pick[S] = {2, 0, 1, 2}, tok[S] = {0, 1, 1, 2};
++    std::vector<const uint8_t*> blob(S);
++    for (int i = 0; i < S; ++i) blob[i] = dpool + pick[i] * slot;
++    const uint8_t** dblob = dev(blob);
++    auto x = fvec((size_t) 3 * C, 2.0f);
++    std::vector<uint16_t> h((size_t) S * F);
++    std::vector<float> hf(h.size());
++    for (size_t i = 0; i < h.size(); ++i) h[i] = f2h_host(frand(3.0f)), hf[i] = h2f_host(h[i]);
++    float *dx = dev(x), *dgu = dev_n<float>((size_t) S * 2 * F), *dy = dev_n<float>((size_t) S * C);
++    int* dtok = dev(std::vector<int>(tok, tok + S));
++    uint16_t* dh = dev(h);
++    std::vector<float> want_gu((size_t) S * 2 * F), want_y((size_t) S * C);
++    const size_t rbg = eb0 / F, rbd = eb2 / C;
++    for (int i = 0; i < S; ++i) {
++        const uint8_t* bl = pool.data() + pick[i] * slot;
++        for (int r = 0; r < 2 * F; ++r)
++            want_gu[(size_t) i * 2 * F + r] = ik2::kq::row_dot_host(k::kQ4_K, bl + r * rbg, C, x.data() + (size_t) tok[i] * C);
++        for (int r = 0; r < C; ++r)
++            want_y[(size_t) i * C + r] = ik2::kq::row_dot_host(k::kQ5_0, bl + 2 * eb0 + r * rbd, F, hf.data() + (size_t) i * F);
++    }
++    auto same = [](const std::vector<float>& a, const std::vector<float>& b) {
++        return a.size() == b.size() && !std::memcmp(a.data(), b.data(), a.size() * 4);
++    };
++    k::experts_gate_up(dblob, dtok, S, k::kQ4_K, k::kQ4_K, eb0, dx, C, F, dgu, 0);
++    expect_true("Q4_K experts_gate_up = ik2_kq.h's order, bit for bit", same(host(dgu, want_gu.size()), want_gu));
++    k::experts_down(dblob, S, k::kQ5_0, 2 * eb0, dh, C, F, dy, 0);
++    expect_true("Q5_0 experts_down = ik2_kq.h's order, bit for bit", same(host(dy, want_y.size()), want_y));
++    // the grouped kernels: experts 2 (slots 0, 3), 0 (slot 1), 1 (slot 2)
++    const std::vector<const uint8_t*> gb = {dpool + 2 * slot, dpool, dpool + slot};
++    std::vector<int> gn = {2, 1, 1}, gtok(3 * k::kGroupMax, 0), grow(3 * k::kGroupMax, 0);
++    gtok[0] = tok[0], grow[0] = 0, gtok[1] = tok[3], grow[1] = 3;
++    gtok[k::kGroupMax] = tok[1], grow[k::kGroupMax] = 1, gtok[2 * k::kGroupMax] = tok[2], grow[2 * k::kGroupMax] = 2;
++    const uint8_t** dgb = dev(gb);
++    int *dgn = dev(gn), *dgt = dev(gtok), *dgr = dev(grow);
++    CU(cudaMemset(dgu, 0, (size_t) S * 2 * F * 4));
++    CU(cudaMemset(dy, 0, (size_t) S * C * 4));
++    k::experts_gate_up_g(dgb, dgn, dgt, dgr, 3, k::kQ4_K, k::kQ4_K, eb0, dx, C, F, dgu, 0);
++    expect_true("Q4_K experts_gate_up_g = ik2_kq.h's order, bit for bit", same(host(dgu, want_gu.size()), want_gu));
++    k::experts_down_g(dgb, dgn, dgr, 3, k::kQ5_0, 2 * eb0, dh, C, F, dy, 0);
++    expect_true("Q5_0 experts_down_g = ik2_kq.h's order, bit for bit", same(host(dy, want_y.size()), want_y));
++    // mv_blocks over expert 0's gate | up (2 F rows of C) and its down (C rows of F)
++    float* dmv = dev_n<float>((size_t) 2 * F);
++    k::mv_blocks(k::kQ4_K, dpool, 2 * F, C, dx, dmv, 0);
++    std::vector<float> want_mv(2 * F);
++    for (int r = 0; r < 2 * F; ++r) want_mv[r] = ik2::kq::row_dot_host(k::kQ4_K, pool.data() + r * rbg, C, x.data());
++    expect_true("Q4_K mv_blocks = ik2_kq.h's order, bit for bit", same(host(dmv, want_mv.size()), want_mv));
++    for (void* p : {(void*) dpool, (void*) dblob, (void*) dx, (void*) dgu, (void*) dy, (void*) dtok, (void*) dh,
++                    (void*) dgb, (void*) dgn, (void*) dgt, (void*) dgr, (void*) dmv})
++        cudaFree(p);
++}
++
+ void test_experts_mv() {
+     const int C = 512, F = 256, S = 5;
+     struct Case {
+@@ -688,7 +806,8 @@ void test_experts_mv() {
+                           {k::kQ5_K, k::kQ5_K, k::kQ6_K, "Q5_K / Q6_K"},
+                           {k::kQ8_0, k::kNVFP4, k::kQ6_K, "mixed"},
+                           {k::kIQ3_XXS, k::kIQ3_XXS, k::kNVFP4, "IQ3_XXS / NVFP4"},
+-                          {k::kIQ4_XS, k::kIQ4_XS, k::kQ6_K, "IQ4_XS / Q6_K"}};
++                          {k::kIQ4_XS, k::kIQ4_XS, k::kQ6_K, "IQ4_XS / Q6_K"},
++                          {k::kQ4_K, k::kQ4_K, k::kQ5_0, "Q4_K / Q5_0"}};
+     for (const Case& cs : cases) {
+         const int E = 3;
+         auto g = rand_blocks(cs.tg, (size_t) E * F * C), u = rand_blocks(cs.tu, (size_t) E * F * C),
+@@ -767,9 +886,10 @@ void test_experts_grouped() {
+                             {k::kQ8_0, k::kQ8_0, k::kQ8_0},
+                             {k::kQ8_0, k::kNVFP4, k::kQ6_K},
+                             {k::kIQ3_XXS, k::kIQ3_XXS, k::kNVFP4},
+-                            {k::kIQ4_XS, k::kIQ4_XS, k::kQ6_K}};
+-    const char* tnames[] = {"NVFP4", "Q5_K/Q6_K", "Q8_0", "Q8_0/NVFP4/Q6_K", "IQ3_XXS/NVFP4", "IQ4_XS/Q6_K"};
+-    for (int ti = 0; ti < 6; ++ti) {
++                            {k::kIQ4_XS, k::kIQ4_XS, k::kQ6_K},
++                            {k::kQ4_K, k::kQ4_K, k::kQ5_0}};
++    const char* tnames[] = {"NVFP4", "Q5_K/Q6_K", "Q8_0", "Q8_0/NVFP4/Q6_K", "IQ3_XXS/NVFP4", "IQ4_XS/Q6_K", "Q4_K/Q5_0"};
++    for (int ti = 0; ti < 7; ++ti) {
+         const auto& ty = types[ti];
+         auto g = rand_blocks(ty[0], (size_t) E * F * C), u = rand_blocks(ty[1], (size_t) E * F * C),
+              d = rand_blocks(ty[2], (size_t) E * C * F);
+@@ -888,6 +1008,8 @@ void test_mv_blocks() {
+         {k::kQ5_K, 513, 4608, "Q5_K N=513"},
+         {k::kIQ3_XXS, 1031, 4608, "IQ3_XXS N=1031"},
+         {k::kIQ4_XS, 513, 4608, "IQ4_XS N=513"},
++        {k::kQ4_K, 513, 4608, "Q4_K N=513"},
++        {k::kQ5_0, 1031, 1152, "Q5_0 N=1031"},
+     };
+     for (const Case& cs : cases) {
+         const int N = cs.N, K = cs.K;
+@@ -1729,6 +1851,7 @@ void test_round2_fused() {
+             {k::kQ8_0, k::kNVFP4, 0, true, "Q8_0/NVFP4 mixed"},
+             {k::kIQ3_XXS, k::kIQ3_XXS, 0, true, "IQ3_XXS scaled"},
+             {k::kIQ4_XS, k::kIQ4_XS, 0, false, "IQ4_XS unscaled"},
++            {k::kQ4_K, k::kQ4_K, 0, false, "Q4_K unscaled"},
+         };
+         for (const Case& cs : cases) {
+             auto g = rand_blocks(cs.tg, (size_t) E * F * C), u = rand_blocks(cs.tu, (size_t) E * F * C);
+@@ -1787,10 +1910,11 @@ void test_round2_fused() {
+                                 {k::kQ8_0, k::kQ8_0},
+                                 {k::kQ8_0, k::kNVFP4},
+                                 {k::kIQ3_XXS, k::kIQ3_XXS},
+-                                {k::kIQ4_XS, k::kIQ4_XS}};
+-        const char* tnames[] = {"NVFP4", "Q5_K", "Q6_K", "Q8_0", "Q8_0/NVFP4", "IQ3_XXS", "IQ4_XS"};
++                                {k::kIQ4_XS, k::kIQ4_XS},
++                                {k::kQ4_K, k::kQ4_K}};
++        const char* tnames[] = {"NVFP4", "Q5_K", "Q6_K", "Q8_0", "Q8_0/NVFP4", "IQ3_XXS", "IQ4_XS", "Q4_K"};
+         const int want_ng[E] = {1, 2, 3, 5, 8};
+-        for (int ti = 0; ti < 7; ++ti) {
++        for (int ti = 0; ti < 8; ++ti) {
+             const int tg = types[ti][0], tu = types[ti][1];
+             auto g = rand_blocks(tg, (size_t) E * F * C), u = rand_blocks(tu, (size_t) E * F * C);
+             const size_t eb0 = g.size() / E, eb1 = u.size() / E, slot = (eb0 + eb1 + 255) / 256 * 256;
+@@ -2446,9 +2570,10 @@ void test_round6() {
+                                 {k::kQ5_K, k::kQ5_K, k::kQ5_K},
+                                 {k::kQ6_K, k::kQ6_K, k::kQ6_K},
+                                 {k::kIQ3_XXS, k::kIQ3_XXS, k::kNVFP4},
+-                                {k::kIQ4_XS, k::kIQ4_XS, k::kQ6_K}};
+-        const char* tnames[] = {"NVFP4", "Q8_0", "Q5_K", "Q6_K", "IQ3_XXS/NVFP4", "IQ4_XS/Q6_K"};
+-        for (int ti = 0; ti < 6; ++ti) {
++                                {k::kIQ4_XS, k::kIQ4_XS, k::kQ6_K},
++                                {k::kQ4_K, k::kQ4_K, k::kQ5_0}};
++        const char* tnames[] = {"NVFP4", "Q8_0", "Q5_K", "Q6_K", "IQ3_XXS/NVFP4", "IQ4_XS/Q6_K", "Q4_K/Q5_0"};
++        for (int ti = 0; ti < 7; ++ti) {
+             const int tg = types[ti][0], tu = types[ti][1], td = types[ti][2];
+             const int Cin = 512;   // weight row width for gate/up (multiple of 256 for Q5_K/Q6_K)
+             auto g = rand_blocks(tg, (size_t) E * F * Cin), u = rand_blocks(tu, (size_t) E * F * Cin),
+@@ -2525,13 +2650,15 @@ void test_round6() {
+ void test_experts_rdna() {
+     const int C = 256, F = 128, E = 3, cnt[E] = {37, 1, 6};
+     const float gcap = 4.0f, ucap = 25.0f;
+-    for (int ty : {k::kNVFP4, k::kQ8_0}) {
+-        if (!k::experts_rdna_available(ty, ty, ty, C, F)) {
++    const int tys[][2] = {{k::kNVFP4, k::kNVFP4}, {k::kQ8_0, k::kQ8_0}, {k::kQ4_K, k::kQ5_0}};   // (gate / up, down)
++    for (const auto& tt : tys) {
++        const int ty = tt[0], td = tt[1];
++        if (!k::experts_rdna_available(ty, ty, td, C, F)) {
+             std::printf("skip experts_rdna: not this GPU\n");
+             return;
+         }
+         auto g = rand_blocks(ty, (size_t) E * F * C), u = rand_blocks(ty, (size_t) E * F * C),
+-             d = rand_blocks(ty, (size_t) E * C * F);
++             d = rand_blocks(td, (size_t) E * C * F);
+         const size_t eb0 = g.size() / E, eb1 = u.size() / E, eb2 = d.size() / E;
+         const size_t slot = (eb0 + eb1 + eb2 + 255) / 256 * 256;
+         std::vector<uint8_t> pool(slot * E);
+@@ -2562,14 +2689,14 @@ void test_experts_rdna() {
+         float *dsg = dev(sg), *dsu = dev(su), *dy = dev_n<float>((size_t) rows * C);
+         const int nt = (int) tiles.size() / 4;
+         k::experts_rdna_gu(deptr, dtiles, nt, ty, eb0, dx, C, F, dsg, dsu, gcap, ucap, dh, 0);
+-        k::experts_rdna_down(deptr, dtiles, nt, ty, eb0 + eb1, dh, C, F, dy, 0);
++        k::experts_rdna_down(deptr, dtiles, nt, td, eb0 + eb1, dh, C, F, dy, 0);
+         const auto h16 = host(dh, (size_t) rows * F);
+         std::vector<float> hgot(h16.size()), row(C);
+         for (size_t i = 0; i < h16.size(); ++i) hgot[i] = h2f_host(h16[i]);
+         std::vector<double> want_h((size_t) rows * F), want_y((size_t) rows * C);
+         // (the weights as the kernel holds them: FP16 - NVFP4's exact, Q8_0's d q rounded, as decode_f16's are)
+-        auto dec = [&](const uint8_t* w, int n) {
+-            k::decode_host(ty, w, n, row.data());
++        auto dec = [&](int t, const uint8_t* w, int n) {
++            k::decode_host(t, w, n, row.data());
+             for (int i = 0; i < n; ++i) row[i] = h2f_host(f2h_host(row[i]));
+         };
+         double worst_mag = 0;   // (down's largest sum of |products|: the F32 sums' error bound scales with it)
+@@ -2581,10 +2708,10 @@ void test_experts_rdna() {
+             const int e = row_e[r];
+             for (int j = 0; j < F; ++j) {
+                 double gg = 0, uu = 0, mg = 0, mu = 0;
+-                dec(g.data() + e * eb0 + (size_t) j * (eb0 / F), C);
++                dec(ty, g.data() + e * eb0 + (size_t) j * (eb0 / F), C);
+                 for (int c = 0; c < C; ++c) gg += (double) row[c] * xf[(size_t) r * C + c];
+                 for (int c = 0; c < C; ++c) mg += std::fabs((double) row[c] * xf[(size_t) r * C + c]);
+-                dec(u.data() + e * eb1 + (size_t) j * (eb1 / F), C);
++                dec(ty, u.data() + e * eb1 + (size_t) j * (eb1 / F), C);
+                 for (int c = 0; c < C; ++c) uu += (double) row[c] * xf[(size_t) r * C + c];
+                 for (int c = 0; c < C; ++c) mu += std::fabs((double) row[c] * xf[(size_t) r * C + c]);
+                 gg *= sg[r], uu *= su[r], mg *= std::fabs(sg[r]) * 1e-6, mu *= std::fabs(su[r]) * 1e-6;
+@@ -2597,7 +2724,7 @@ void test_experts_rdna() {
+                 want_h[(size_t) r * F + j] = w;
+             }
+             for (int c = 0; c < C; ++c) {   // (down over the hidden the kernel wrote: its FP16 rounding not counted)
+-                dec(d.data() + e * eb2 + (size_t) c * (eb2 / C), F);
++                dec(td, d.data() + e * eb2 + (size_t) c * (eb2 / C), F);
+                 double a = 0, mag = 0;
+                 for (int j = 0; j < F; ++j) a += (double) row[j] * hgot[(size_t) r * F + j];
+                 for (int j = 0; j < F; ++j) mag += std::fabs((double) row[j] * hgot[(size_t) r * F + j]);
+@@ -2605,7 +2732,7 @@ void test_experts_rdna() {
+                 worst_mag = std::max(worst_mag, mag);
+             }
+         }
+-        const char* nm = ty == k::kNVFP4 ? "NVFP4" : "Q8_0";
++        const char* nm = ty == k::kNVFP4 ? "NVFP4" : ty == k::kQ8_0 ? "Q8_0" : "Q4_K / Q5_0";
+         char name[64];
+         std::snprintf(name, sizeof name, "experts_rdna_gu %s: %d of %zu off%s", nm, gu_bad, want_h.size(),
+                       gu_bad ? " (first below)" : "");
+@@ -2667,7 +2794,8 @@ void test_experts_mma() {
+ }
+ 
+ // The exact verify window (drafting on = off): each of T tokens' values from the window's kernels the one-token
+-// path's to the bit - mv_q8p_cols vs mv_q8p, experts_*_mem vs experts_gate_up_swiglu / experts_down (NVFP4, Q8_0),
++// path's to the bit - mv_q8p_cols vs mv_q8p, experts_*_mem vs experts_gate_up_swiglu / experts_down (NVFP4, Q8_0,
++// Q4_K / Q5_0: with IK2_HIP_EXPV=1 / IK2_EXPV_KQ=1 the one-token side is the register kernels),
+ // experts_block_gu / _down vs experts_gate_up_swiglu_mma / experts_down_mma (each class's kernels: Ampere on, Turing,
+ // Volta's mma.m8n8k4) - Inkling-2-Mini's sizes.  And two GPUs: the groups the other GPU runs left alone on each, its
+ // rows taken (two_take_rows_g) - the one-GPU window to the bit.
+@@ -2729,12 +2857,27 @@ void test_window_exact(bool mma) {
+             for (void* p : {(void*) dqb, (void*) ddb, (void*) yb}) CU(cudaFree(p));
+         }
+     }
+-    for (const int ty : {k::kNVFP4, k::kQ8_0}) {   // the experts: a window of T tokens' picks grouped by expert
+-        const size_t mb = (size_t) C * F / k::block_values(ty) * k::block_bytes(ty);
+-        auto pool = rand_blocks(ty, (size_t) E * 3 * C * F);
++    // the experts: a window of T tokens' picks grouped by expert - all NVFP4, all Q8_0, Q4_K gate / up with Q5_0 down
++    const int wtys[][2] = {{k::kNVFP4, k::kNVFP4}, {k::kQ8_0, k::kQ8_0}, {k::kQ4_K, k::kQ5_0}};
++    for (const auto& tt : wtys) {
++        const int ty = tt[0], td = tt[1];
++        const char* tyn = ty == k::kNVFP4 ? "NVFP4" : ty == k::kQ8_0 ? "Q8_0" : "Q4_K / Q5_0";
++        const size_t mb = (size_t) C * F / k::block_values(ty) * k::block_bytes(ty);   // (gate's, up's bytes)
++        const size_t md = (size_t) C * F / k::block_values(td) * k::block_bytes(td), slot = 2 * mb + md;
++        std::vector<uint8_t> pool;
++        if (ty == td) {
++            pool = rand_blocks(ty, (size_t) E * 3 * C * F);
++        } else {   // (an expert: gate | up, then down)
++            const auto gu = rand_blocks(ty, (size_t) E * 2 * C * F), dn = rand_blocks(td, (size_t) E * C * F);
++            pool.resize(slot * E);
++            for (int e = 0; e < E; ++e) {
++                std::memcpy(pool.data() + e * slot, gu.data() + e * 2 * mb, 2 * mb);
++                std::memcpy(pool.data() + e * slot + 2 * mb, dn.data() + e * md, md);
++            }
++        }
+         auto* dpool = dev(pool);
+         std::vector<const uint8_t*> tab;
+-        for (int e = 0; e < E; ++e) tab.push_back(dpool + 3 * e * mb);
++        for (int e = 0; e < E; ++e) tab.push_back(dpool + e * slot);
+         auto** dtab = dev(tab);
+         auto sgt = fvec(E), sut = fvec(E);
+         for (auto& v : sgt) v = 0.5f + std::fabs(v);
+@@ -2770,7 +2913,7 @@ void test_window_exact(bool mma) {
+                 k::experts_block_down(gblob, gn, grow, S, 2 * mb, C, F, h_win, y_win, 0);
+             } else {
+                 k::experts_gate_up_swiglu_mem(gblob, gn, gtok, grow, S, ty, ty, mb, dx, C, F, gsg, gsu, 20, 20, h_win, 0);
+-                k::experts_down_mem(gblob, gn, grow, S, ty, 2 * mb, h_win, C, F, y_win, 0);
++                k::experts_down_mem(gblob, gn, grow, S, td, 2 * mb, h_win, C, F, y_win, 0);
+             }
+             const auto hw = host(h_win, (size_t) S * F);
+             const auto yw = host(y_win, (size_t) S * C);
+@@ -2794,7 +2937,7 @@ void test_window_exact(bool mma) {
+                 } else {
+                     k::experts_gate_up_swiglu(dbls[t], tok0, K, ty, ty, mb, dx + (size_t) t * C, C, F, dsgs[t], dsus[t],
+                                               20, 20, h1, 0);
+-                    k::experts_down(dbls[t], K, ty, 2 * mb, h1, C, F, y1, 0);
++                    k::experts_down(dbls[t], K, td, 2 * mb, h1, C, F, y1, 0);
+                 }
+             };
+             for (int t = 0; t < T; ++t) {
+@@ -2818,7 +2961,7 @@ void test_window_exact(bool mma) {
+                         k::experts_block_down(gb, gn, grow, S, 2 * mb, C, F, hh, yy, 0);
+                     } else {
+                         k::experts_gate_up_swiglu_mem(gb, gn, gtok, grow, S, ty, ty, mb, dx, C, F, gsg, gsu, 20, 20, hh, 0);
+-                        k::experts_down_mem(gb, gn, grow, S, ty, 2 * mb, hh, C, F, yy, 0);
++                        k::experts_down_mem(gb, gn, grow, S, td, 2 * mb, hh, C, F, yy, 0);
+                     }
+                 };
+                 if (tc) k::f16_limbs_rows(dx, T, C, limbs, 0);
+@@ -2828,7 +2971,7 @@ void test_window_exact(bool mma) {
+                 const bool two_same = !std::memcmp(host(y0, (size_t) S * C).data(), yw.data(), (size_t) S * C * 4);
+                 char nm[160];
+                 std::snprintf(nm, sizeof nm, "window experts %s (%s), %d tokens, split over two GPUs: y the one-GPU "
+-                              "window's to the bit", ty == k::kNVFP4 ? "NVFP4" : "Q8_0", tc ? "tensor cores" : "row dots", T);
++                              "window's to the bit", tyn, tc ? "tensor cores" : "row dots", T);
+                 expect_true(nm, two_same);
+                 for (void* p : {(void*) dt0, (void*) dt1, (void*) gb1, (void*) h0, (void*) h1g, (void*) y0, (void*) y1g})
+                     CU(cudaFree(p));
+@@ -2852,7 +2995,7 @@ void test_window_exact(bool mma) {
+                             } else {
+                                 k::experts_gate_up_swiglu_mem(gblob, gn, gtok, grow, S, ty, ty, mb, dx, C, F, gsg, gsu, 20,
+                                                               20, h_win, 0);
+-                                k::experts_down_mem(gblob, gn, grow, S, ty, 2 * mb, h_win, C, F, y_win, 0);
++                                k::experts_down_mem(gblob, gn, grow, S, td, 2 * mb, h_win, C, F, y_win, 0);
+                             }
+                         }
+                         CU(cudaEventRecord(e1));
+@@ -2866,14 +3009,14 @@ void test_window_exact(bool mma) {
+                     groups = (int) (std::unique(u.begin(), u.end()) - u.begin());
+                 }
+                 std::printf("  time: experts %s %s, %d tokens (%d experts of %d picks): one-token %.3f ms, window %.3f ms "
+-                            "(%.2fx one token's)\n", ty == k::kNVFP4 ? "NVFP4" : "Q8_0", tc ? "tensor cores" : "row dots", T,
++                            "(%.2fx one token's)\n", tyn, tc ? "tensor cores" : "row dots", T,
+                             groups, S, ms[0] / 10, ms[1] / 10, ms[1] / (ms[0] / T));
+             }
+             for (int t = 0; t < T; ++t)
+                 for (void* p : {(void*) dbls[t], (void*) dsgs[t], (void*) dsus[t]}) CU(cudaFree(p));
+             char name[160];
+             std::snprintf(name, sizeof name, "window experts %s (%s), %d tokens: h and y the one-token path's to the bit",
+-                          ty == k::kNVFP4 ? "NVFP4" : "Q8_0", tc ? "tensor cores" : "row dots", T);
++                          tyn, tc ? "tensor cores" : "row dots", T);
+             expect_true(name, h_same && y_same);
+             for (void* p : {(void*) dtop, (void*) dx, (void*) dw, (void*) gblob, (void*) gn, (void*) gtok, (void*) grow,
+                             (void*) ginv, (void*) gsg, (void*) gsu, (void*) gwt, (void*) h_win, (void*) y_win,
+@@ -3214,6 +3357,8 @@ int main() {
+     test_moe_pieces();
+     test_decode();
+     test_iq_ref();
++    test_kq_ref();
++    test_kq_exact();
+     test_experts_mv();
+     test_attn_decode();
+     test_mv_blocks();
+diff --git a/tests/ik2_kq_test.cpp b/tests/ik2_kq_test.cpp
+new file mode 100644
+index 0000000..c7a3aff
+--- /dev/null
++++ b/tests/ik2_kq_test.cpp
+@@ -0,0 +1,212 @@
++// tests/ik2_kq_test.cpp - maya-ik2's Q4_K and Q5_0 arithmetic (src/ik2/ik2_kq.h, what decode_value / decode_host and
++// every row-dot kernel of ik2_kernels.cu call) on the host, no GPU: on random blocks
++//   * the values = ggml's dequantize_row_q4_K / dequantize_row_q5_0 (transcribed from third_party/ggml's
++//     ggml-quants.c), bit for bit;
++//   * the 64-value runs the AMD prompt kernels make FP16 tiles of = those values;
++//   * the row dots in the kernels' order (row_dot_host: the lanes' units, then the butterfly) = the double sum of
++//     value x input within F32's rounding, over the rows Inkling-2-Mini has (gate_up: 2304 values, down: 1152) and
++//     shorter / longer ones - every value of a row in exactly one unit.
++// Built without contraction (-ffp-contract=off), as the engine's C++ is.
++#include "../src/ik2/ik2_kq.h"
++
++#include <cmath>
++#include <cstdio>
++#include <cstring>
++#include <random>
++#include <vector>
++
++namespace kq = ik2::kq;
++
++namespace {
++
++int g_fail = 0;
++std::mt19937 rng(20261123);
++
++float fp16_to_fp32(uint16_t h) {   // (ggml's GGML_FP16_TO_FP32: the IEEE conversion, written independently)
++    const int s = h >> 15, e = (h >> 10) & 31, m = h & 1023;
++    if (e == 0) return (s ? -1.0f : 1.0f) * std::ldexp((float) m, -24);
++    if (e == 31) return m ? NAN : (s ? -INFINITY : INFINITY);
++    return (s ? -1.0f : 1.0f) * std::ldexp(1.0f + (float) m / 1024.0f, e - 15);
++}
++
++// ggml-quants.c, dequantize_row_q4_K (QK_K 256) with get_scale_min_k4, transcribed
++void get_scale_min_k4(int j, const uint8_t* q, uint8_t* d, uint8_t* m) {
++    if (j < 4) {
++        *d = q[j] & 63;
++        *m = q[j + 4] & 63;
++    } else {
++        *d = (q[j + 4] & 0xF) | ((q[j - 4] >> 6) << 4);
++        *m = (q[j + 4] >> 4) | ((q[j - 0] >> 6) << 4);
++    }
++}
++void ggml_dequantize_row_q4_K(const uint8_t* x, float* y, int64_t k) {
++    const int nb = (int) (k / 256);
++    for (int i = 0; i < nb; i++) {
++        const uint8_t* blk = x + (size_t) i * 144;
++        const uint8_t* q = blk + 16;
++        const float d = fp16_to_fp32((uint16_t) (blk[0] | (blk[1] << 8)));
++        const float min = fp16_to_fp32((uint16_t) (blk[2] | (blk[3] << 8)));
++        const uint8_t* scales = blk + 4;
++        int is = 0;
++        uint8_t sc, m;
++        for (int j = 0; j < 256; j += 64) {
++            get_scale_min_k4(is + 0, scales, &sc, &m);
++            const float d1 = d * sc;
++            const float m1 = min * m;
++            get_scale_min_k4(is + 1, scales, &sc, &m);
++            const float d2 = d * sc;
++            const float m2 = min * m;
++            for (int l = 0; l < 32; ++l) *y++ = d1 * (q[l] & 0xF) - m1;
++            for (int l = 0; l < 32; ++l) *y++ = d2 * (q[l] >> 4) - m2;
++            q += 32;
++            is += 2;
++        }
++    }
++}
++// ggml-quants.c, dequantize_row_q5_0 (QK5_0 32), transcribed
++void ggml_dequantize_row_q5_0(const uint8_t* x, float* y, int64_t k) {
++    static const int qk = 32;
++    const int nb = (int) (k / qk);
++    for (int i = 0; i < nb; i++) {
++        const uint8_t* blk = x + (size_t) i * 22;
++        const float d = fp16_to_fp32((uint16_t) (blk[0] | (blk[1] << 8)));
++        uint32_t qh;
++        std::memcpy(&qh, blk + 2, sizeof(qh));
++        const uint8_t* qs = blk + 6;
++        for (int j = 0; j < qk / 2; ++j) {
++            const uint8_t xh_0 = ((qh >> (j + 0)) << 4) & 0x10;
++            const uint8_t xh_1 = ((qh >> (j + 12))) & 0x10;
++            const int32_t x0 = ((qs[j] & 0x0F) | xh_0) - 16;
++            const int32_t x1 = ((qs[j] >> 4) | xh_1) - 16;
++            y[i * qk + j + 0] = x0 * d;
++            y[i * qk + j + qk / 2] = x1 * d;
++        }
++    }
++}
++
++// random blocks whose FP16 scales are finite (any exponent but inf / nan: subnormals and large ones too)
++std::vector<uint8_t> rand_blocks(int type, size_t n_values, bool moderate) {
++    const size_t bb = type == kq::kQ4_K ? 144 : 22, nb = n_values / (type == kq::kQ4_K ? 256 : 32);
++    std::vector<uint8_t> raw(nb * bb);
++    for (auto& b : raw) b = (uint8_t) rng();
++    auto fix = [&](uint8_t* p) {
++        uint16_t h = (uint16_t) (p[0] | (p[1] << 8));
++        if (moderate) h = (uint16_t) ((h & 0x83FF) | ((uint16_t) (8 + (h >> 10) % 8) << 10));
++        else if (((h >> 10) & 31) == 31) h = (uint16_t) (h & ~0x0400);   // (exponent 30: the largest finite)
++        p[0] = (uint8_t) h, p[1] = (uint8_t) (h >> 8);
++    };
++    for (size_t b = 0; b < nb; ++b) {
++        fix(raw.data() + b * bb);
++        if (type == kq::kQ4_K) fix(raw.data() + b * bb + 2);
++    }
++    return raw;
++}
++
++void check(const char* what, bool ok) {
++    if (!ok) ++g_fail;
++    std::printf("%s %s\n", ok ? "ok  " : "FAIL", what);
++}
++
++void test_values(int type, const char* name) {
++    for (bool moderate : {true, false}) {
++        const size_t n = 256 * 4001;
++        auto raw = rand_blocks(type, n, moderate);
++        std::vector<float> want(n), got(n);
++        (type == kq::kQ4_K ? ggml_dequantize_row_q4_K : ggml_dequantize_row_q5_0)(raw.data(), want.data(), (int64_t) n);
++        size_t bad = 0, at = 0;
++        for (size_t v = 0; v < n; ++v) {
++            got[v] = type == kq::kQ4_K ? kq::q4k_value(raw.data(), v) : kq::q50_value(raw.data(), v);
++            if (std::memcmp(&got[v], &want[v], 4) && !bad++) at = v;
++        }
++        char nm[160];
++        std::snprintf(nm, sizeof nm, "%s values = ggml's dequantize_row, bit for bit (%zu values, %s scales)%s", name, n,
++                      moderate ? "moderate" : "any finite", bad ? "" : "");
++        check(nm, bad == 0);
++        if (bad) std::printf("     %zu off, first at %zu: got %a want %a\n", bad, at, got[at], want[at]);
++        // the AMD prompt kernels' 64-value runs
++        bool runs = true;
++        std::vector<float> r(64);
++        if (type == kq::kQ4_K) {
++            for (size_t b = 0; b < n / 256; ++b) {
++                uint32_t w[40];
++                std::memcpy(w, raw.data() + b * 144, 144);
++                for (int j = 0; j < 4; ++j) {
++                    kq::q4k_run_values(w, w + 4 + 8 * j, j, r.data());
++                    runs &= !std::memcmp(r.data(), want.data() + b * 256 + 64 * j, 64 * 4);
++                }
++            }
++        } else {
++            for (size_t p = 0; p < n / 64; ++p) {
++                uint32_t w[11];
++                std::memcpy(w, raw.data() + p * 44, 44);
++                kq::q50_pair_values(w, r.data());
++                runs &= !std::memcmp(r.data(), want.data() + p * 64, 64 * 4);
++            }
++        }
++        std::snprintf(nm, sizeof nm, "%s 64-value runs (AMD prompt tiles) = the values (%s scales)", name,
++                      moderate ? "moderate" : "any finite");
++        check(nm, runs);
++    }
++}
++
++void test_row_dots(int type, const char* name) {
++    for (int K : {256, 512, 1152, 2304, 4608}) {
++        if (type == kq::kQ4_K && K % 256) continue;
++        const int rows = 97;
++        auto raw = rand_blocks(type, (size_t) rows * K, true);
++        const size_t rb = raw.size() / rows;
++        std::vector<float> x(K), vals(K);
++        for (auto& v : x) v = std::uniform_real_distribution<float>(-2.0f, 2.0f)(rng);
++        double worst = 0;
++        int bad = 0;
++        for (int r = 0; r < rows; ++r) {
++            const uint8_t* row = raw.data() + r * rb;
++            double want = 0, mag = 0;
++            for (int i = 0; i < K; ++i) {
++                vals[i] = type == kq::kQ4_K ? kq::q4k_value(row, i) : kq::q50_value(row, i);
++                want += (double) vals[i] * x[i];
++                mag += std::fabs((double) vals[i] * x[i]);
++            }
++            const double got = kq::row_dot_host(type, row, K, x.data());
++            const double lim = 1e-6 * mag + 1e-30;   // (F32 sums of K terms: well within K 2^-24 of the magnitudes)
++            worst = std::max(worst, std::fabs(got - want) / lim);
++            bad += !(std::fabs(got - want) <= lim);
++        }
++        char nm[160];
++        std::snprintf(nm, sizeof nm, "%s row dot in the kernels' order, K %d: %d of %d rows off (worst %.2f of the bound)",
++                      name, K, bad, rows, worst);
++        check(nm, bad == 0);
++    }
++    // a unit's scale pair (the 4 words at once) = get_scale_min_k4, every byte pattern of the scales
++    if (type == kq::kQ4_K) {
++        bool ok = true;
++        for (int it = 0; it < 200000; ++it) {
++            uint8_t s[12];
++            for (auto& b : s) b = (uint8_t) rng();
++            uint32_t w[3];
++            std::memcpy(w, s, 12);
++            const uint16_t dm[2] = {0x3c00, 0x3c00};   // (d = dmin = 1: the scales themselves)
++            uint32_t dmw;
++            std::memcpy(&dmw, dm, 4);
++            for (int j = 0; j < 4; ++j) {
++                const kq::Q4kSc sc = kq::q4k_scales(dmw, w[0], w[1], w[2], j);
++                uint8_t a, m, c, n;
++                get_scale_min_k4(2 * j, s, &a, &m);
++                get_scale_min_k4(2 * j + 1, s, &c, &n);
++                ok &= sc.d0 == a && sc.m0 == m && sc.d1 == c && sc.m1 == n;
++            }
++        }
++        check("Q4_K unit scales (4 words, the pair at once) = get_scale_min_k4", ok);
++    }
++}
++
++}  // namespace
++
++int main() {
++    test_values(kq::kQ4_K, "Q4_K");
++    test_values(kq::kQ5_0, "Q5_0");
++    test_row_dots(kq::kQ4_K, "Q4_K");
++    test_row_dots(kq::kQ5_0, "Q5_0");
++    std::printf(g_fail ? "FAILED: %d check(s)\n" : "all passed\n", g_fail);
++    return g_fail ? 1 : 0;
++}
+-- 
+2.53.0
+

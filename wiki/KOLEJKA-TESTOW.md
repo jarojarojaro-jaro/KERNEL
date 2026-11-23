@@ -32,6 +32,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: 0–5% (bez rzutu ablacji, który kosztował 2–5%) [INFERENCE]; wierność kwantom AtomicChat (KLD 0,0115 do BF16)
 - ryzyko karty: nowe kernele → najpierw test-kernel i krótki smoke
 - priorytet: wysoki (polecenie JARO)
+- stan 2026-11-23 20:00 UTC: kod gotowy, niezmierzony (serwer wyłączony). Gałęzie w `~/praca/maya-ad` (`ad-q4k` 30ff426, na 1.1.73 + hipx14) i `~/praca/maya-175` (`k175` 88b6a6c = hipx14 na 1.1.75; `k175-ad` 60dffeb = to + Q4_K/Q5_0). Test hosta: wartości Q4_K/Q5_0 = ggml `dequantize_row` bit w bit (1 024 256 wartości), iloczyny wierszy w kolejności kerneli 0/97 różnic; nvcc czysto. Nowe kernele rejestrowe `experts_q4k_gu_kernel`/`experts_q50_down_kernel` (styl EXPV, NT), kafle WMMA prefillu Q4_K/Q5_0. Start: `qwen-opt/inkling/start-maya-k136-k137.sh` (build na pudle + kolejka `maya-k13x.jobs`, ~55 min karty razem z K-136).
 
 ### K-136 · Maya v1.1.75 na XTX: drafter DSpark GGUF w grafie + próbkowanie Gumbel-max (3090: nowy kod 124 → 201 t/s)
 - data: 2026-11-23 (link JARO, panel 19:04)
