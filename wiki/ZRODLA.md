@@ -493,6 +493,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 | https://x.com/coldniko/status/2124646708185334088 (Telegram 2026-11-23) = Strata v0.2.19/0.2.20 | engine 0.1.66, 2026-11-22 | K-134, [[inkling-2-mini]] | Prawdziwe: nowy silnik `strata-inkling` z paczką hip-rx7900, ładuje UD-Q4_K_XL GGUF bezstratnie, DSpark drzewo W=4; XTX bez liczb | 5090 250,3 t/s solo z DSpark (deklaracja); 12 GB: DSpark 6,5 → 61,9 t/s | pomiar strata-inkling na XTX (K-134) |
 
 
+| https://x.com/justvugg/status/2124562029738385864 (Telegram 2026-11-23) = colibri v2.2.0 (2026-11-22) | v2.2.0 | [[colibri]] | Delta od 2.1.0: Inkling-2-Mini/Small z GGUF unsloth (CPU, Vulkan, CUDA), prefix store, setup dobierający model; „7×” to Flash-Next z offloadem na 24 GB, nie nasz przypadek; AMD tylko przez Vulkan, liczb XTX brak | RTX PRO 4000 Vulkan: Flash-Next IQ3_XXS prompt 173 → 276, dekod 31 → 33 t/s; Qwen3.6-35B-A3B dekod ~92 t/s | Inkling-Mini przez Vulkan na XTX tylko, jeśli Maya/Strata (K-134) zawiodą |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

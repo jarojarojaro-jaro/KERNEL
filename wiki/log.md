@@ -608,3 +608,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-22] porządki | polecenie JARO: narzędzia porządków (czesci/porzadki/plan/tabele), porządek (373 przeniesionych, 37 scalonych, 10 w archiwum, w tym limit-mocy-odlozony i budzety-chmury), pola tabel (421 wyników, 89 technik → najlepsze-wyniki, bilans-optymalizacji), notatki jaroserverai/google-colab/rtx-4080-super/qwen3-5-9b, „Najważniejsze” w 13 hubach, 5 nieaktualnych poprawionych, KONWENCJE z czesci.py; ocena hit@5/MRR przed 0,912/0,785 i 0,864/0,731 → po 0,941/0,753 i 0,909/0,765
 
 ## [2026-11-23] Telegram | Strata 0.2.20: strata-inkling z paczką hip-rx7900, UD-Q4_K_XL wprost, DSpark W=4 (5090 250,3 t/s, deklaracja); dopisane do K-134
+
+## [2026-11-23] Telegram | colibri 2.2: Inkling-Mini z GGUF (Vulkan/CUDA), 7× dotyczy Flash-Next z offloadem; AMD tylko Vulkan, bez liczb XTX; nie do testu teraz
