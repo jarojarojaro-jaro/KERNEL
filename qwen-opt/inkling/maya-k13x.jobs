@@ -1,0 +1,7 @@
+# K-136/K-137 Maya 1.1.75 port + AtomicChat Q4_K/Q5_0 (each job <= 15 min)
+k13x-test|600|~/k134|./maya-k13x.sh test
+k137-a|900|~/k134|./maya-k13x.sh run k136-prod k137-ad k136-prod
+k137-b|900|~/k134|./maya-k13x.sh run k137-ad175 k137-ad
+k136-a|900|~/k134|./maya-k13x.sh run k136-175-on k136-175-ds k136-prod
+k136-b|900|~/k134|./maya-k13x.sh run k136-175-dsa k136-175-ds
+k13x-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

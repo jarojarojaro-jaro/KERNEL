@@ -24,6 +24,22 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
 1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
 
+### K-137 · AtomicChat Uncensored AD-Q4_K natywnie w Maya (eksperci Q4_K + Q5_0): ile szybciej niż ablacja w locie
+- data: 2026-11-23 (JARO, panel 19:02: „zoptymalizować ten atomic chat i zobaczyć, ile może śmigać”)
+- stan: Maya odrzuca plik (`type Q4_K not decoded here`); eksperci AtomicChat: gate_up Q4_K (9,17 GB), down Q5_0 (5,61 GB), reszta Q8_0 (nagłówek GGUF). Odczyt ekspertów na token jak w unsloth UD-Q4_K_XL: 1,847 vs 1,847 GB (pętla 3× w warstwach 6–17), dense 1,73 vs 1,82 GB
+- praca (CPU): kernele Q4_K/Q5_0 w `ik2` (dekod, okno, prefill WMMA, NT), gałąź `ad-q4k` w `~/praca/maya-ad`; poprawność na Colab T4 (`tests/ik2_kernels_test.cu`), potem XTX
+- test (XTX, ≤ 15 min): rep2 mediana 5 (Q1, Q6 T=0,7, L2k, prefill 2k) AD-Q4_K natywnie vs produkcja (unsloth + `IK2_ABLATE`); odmowy 8 pytań; zgodność z llama.cpp na tym samym pliku (top-1, KLD)
+- oczekiwany zysk: 0–5% (bez rzutu ablacji, który kosztował 2–5%) [INFERENCE]; wierność kwantom AtomicChat (KLD 0,0115 do BF16)
+- ryzyko karty: nowe kernele → najpierw test-kernel i krótki smoke
+- priorytet: wysoki (polecenie JARO)
+
+### K-136 · Maya v1.1.75 na XTX: drafter DSpark GGUF w grafie + próbkowanie Gumbel-max (3090: nowy kod 124 → 201 t/s)
+- data: 2026-11-23 (link JARO, panel 19:04)
+- test: stock v1.1.75 `--drafting auto` i `on` z `dspark-Inkling-2-Mini-Q8_0.gguf` vs nasza produkcja (1.1.73 + hipx14), ten sam rep2 i xbench T=0,7; potem nasze łatki przeniesione na 1.1.75
+- oczekiwany zysk: przy T=0,7 drafter u nas przegrywał (79 vs 94); krótsze okno (−30%) i wspólny szum mogą to odwrócić [INFERENCE]
+- ryzyko karty: brak nowych kerneli naszych; build stock
+- priorytet: wysoki
+
 ### K-135 · Maya Inkling na XTX: `GPU_MAX_HW_QUEUES=2` (vllm-redshift: R9700 37,8 → 59,9 t/s)
 - data: 2026-11-23 (zwiad; repo abhinand5/vllm-redshift łatka 0101)
 - test: XTX, Maya `ik2` produkcyjna konfiguracja (bez cenzury, KV q4, kernele HIP) z i bez `GPU_MAX_HW_QUEUES=2`, rep2 mediana 5 (Q1, Q6 T=0,7, L2k, prefill); ≤ 10 min, tekst bit w bit

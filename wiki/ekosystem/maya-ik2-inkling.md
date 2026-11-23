@@ -37,6 +37,13 @@ LoRA AtomicChat (rank 1, 44 MB) to w praktyce rzut y ← y − r(r·y) na wyjśc
 
 - Runda 3 (2026-11-23): **wagi czytane nietemporalnie** (`__builtin_nontemporal_load`, `IK2_HIP_NT=15`) — ~3,7 GB wag na token przestało wypychać z cache małe wektory wejścia; dekod +9%, atencja 0,85 → 0,54 ms/token (choć sama wag nie czyta). Czat T=0,7 94,5 → **104,3**, długi 2k 93,5 → **100,8 t/s**, bit w bit. Lekcja na każdą kartę: przy n=1 wagi czytane raz na token streamować z pominięciem cache.
 
+## Maya v1.1.75 (2026-11-23, PR #1154 @needmorevram, `4d4371c`)
+- Drafter DSpark wczytywany z GGUF (`dspark-Inkling-2-Mini-Q8_0.gguf`, który mamy), krok draftera jako jeden graf CUDA, okno weryfikacji z gęstymi iloczynami na kilka tokenów naraz (`mv_q8p_cols`) i atencją czytającą klucze raz dla całego okna (`attn_decode_mma_win`): krok z oknem 5 na 3090 25,5 → 17,6 ms (drafty 2,5 → 1,7, okno 22,2 → 15,7), logity bit w bit jak ścieżka jednego tokenu (`docs/INKLING2.md`).
+- Próbkowanie Gumbel-max: szum zależy tylko od zapytania, pozycji i tokenu, drafter losuje z tym samym szumem → rozkład celu dokładnie, a akceptacja przy T=1 (nowy kod) 58 → 68%. Te same tokeny z draftingiem i bez.
+- 3090, greedy, z / bez: nowy kod 201 / 124, edycja 210 / 124, proza 135 / 124 t/s; serwer nowy kod 207, T=0,7 209. `--drafting auto` mierzy raz, co szybsze.
+- Dla nas: w 1.1.73 oficjalny drafter na XTX przegrywał przy T=0,7 (79 vs 94); w 1.1.75 tańsze okno i wspólny szum mogą to odwrócić → K-136 (stock 1.1.75 vs nasza produkcja, potem hipx14 przeniesione na 1.1.75).
+- AtomicChat AD-Q4_K (eksperci Q4_K + Q5_0) dalej nieobsługiwany w 1.1.75 (`block_values`) → K-137, nasze kernele.
+
 ## Powiązane
 - [[inkling-2-mini]]
 - [[project-maya]]
