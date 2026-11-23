@@ -31,6 +31,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: wiedza, które sklejenia dają 2× (cel 93,6 t/s bez spekulacji, ze spekulacją DSpark wyżej)
 - ryzyko karty: brak (zwykły dekod)
 - priorytet: wysoki
+- delta 2026-11-23: Strata v0.2.20 (`strata-inkling` 0.1.66) też uruchamia Inkling na gfx1100: gotowa paczka `strata-inkling-0.1.66-linux-x86_64-hip-rx7900` (96 MB), ładuje nasz plik UD-Q4_K_XL wprost (lossless GGUF_RAW), DSpark „W=4 Markov Beam Tree”; deklaracja 5090: 250,3 t/s z DSpark, XTX bez liczb. Test rozszerzony: Maya 1.1.73 i Strata 0.1.66 tym samym plikiem, bez i z DSpark, ≤ 10 min każde (pobranie ~0,4 GB razem).
 
 ### K-133 · Inkling 2 Mini (MoE z pętlą warstw, 26,4B / 5,4B efektywnie aktywnych) na XTX: prędkość i jakość vs Qwen3.8-27B
 - data: 2026-11-20 (Telegram właściciela 23:29)

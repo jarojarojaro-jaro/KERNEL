@@ -484,6 +484,15 @@ Raport: `product/research/67b-wybor-modeli-nvidia.md`, notatka [[final-modele-pe
 | PrismML llama.cpp (R9700 Qwen3.8-27B) | prism-b10754, 2026-11-21 | — | Kwant PQ2_0 (2 bity, stratny dla nas), MTP n=2 | 67,6 t/s, niezweryfikowane | — |
 | Strata 0.2.18 / TensorFold 1.3.3 / strix-llama.cpp b1067 | 2026-11-21 | — | Delta bez nowości dla XTX (Strata: Hy4-Flash, wpis 11-22) | — | — |
 
+## Linki od właściciela (wpisywane automatycznie)
+
+Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień werdykt „czeka na analizę” na wniosek i dopisz notatkę; wiersz z analizą gdzie indziej znika sam.
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| https://x.com/coldniko/status/2124646708185334088 (Telegram 2026-11-23) = Strata v0.2.19/0.2.20 | engine 0.1.66, 2026-11-22 | K-134, [[inkling-2-mini]] | Prawdziwe: nowy silnik `strata-inkling` z paczką hip-rx7900, ładuje UD-Q4_K_XL GGUF bezstratnie, DSpark drzewo W=4; XTX bez liczb | 5090 250,3 t/s solo z DSpark (deklaracja); 12 GB: DSpark 6,5 → 61,9 t/s | pomiar strata-inkling na XTX (K-134) |
+
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
