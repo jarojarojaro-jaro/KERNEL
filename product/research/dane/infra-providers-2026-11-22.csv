@@ -1,0 +1,426 @@
+#,Provider,API launch year (approx.),First listed on models.dev,Listed in,Notes
+1,Hugging Face,2020,2025-07-19,"Hugging Face, LiteLLM, models.dev",
+2,OpenAI,2020,2025-06-05,"LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+3,AI21,2021,2026-09-17,"LiteLLM, OpenRouter, models.dev",
+4,Azure,2021,2025-06-11,"LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+5,Cohere,2021,2025-11-21,"Hugging Face, LiteLLM, OpenRouter, models.dev",
+6,Stability AI,2022,,LiteLLM,
+7,Amazon Bedrock (AWS),2023,2025-06-11,"LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+8,Anthropic,2023,2025-06-04,"LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+9,Anyscale,2023,,LiteLLM,
+10,Cloudflare Workers AI,2023,2025-08-13,"LiteLLM, OpenRouter, models.dev",
+11,DeepInfra,2023,2025-07-28,"Hugging Face, LiteLLM, OpenRouter, models.dev",
+12,ElevenLabs,2023,2026-11-08,"LiteLLM, OpenRouter, models.dev",
+13,Fireworks,2023,2025-07-18,"Hugging Face, LiteLLM, OpenRouter, models.dev",
+14,Google AI Studio,2023,,"LiteLLM, OpenRouter",
+15,Google Vertex AI,2023,2025-06-05,"LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+16,IBM watsonx.ai,2023,2026-08-08,"LiteLLM, models.dev",
+17,Mistral,2023,2025-06-10,"LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+18,OpenRouter,2023,2025-06-21,"LiteLLM, models.dev",Name suggests router/reseller
+19,Perplexity,2023,2025-09-08,"LiteLLM, OpenRouter, models.dev",
+20,Together,2023,2025-08-06,"Hugging Face, LiteLLM, OpenRouter, models.dev",
+21,Voyage AI (MongoDB),2023,,"LiteLLM, OpenRouter",
+22,Cerebras,2024,2025-08-01,"Hugging Face, LiteLLM, OpenRouter, models.dev",
+23,DeepSeek,2024,2025-06-10,"LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+24,GitHub Models / Copilot,2024,2025-06-22,"LiteLLM, models.dev",
+25,Groq,2024,2025-06-12,"Hugging Face, LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+26,Hyperbolic,2024,,"Hugging Face, LiteLLM",
+27,Lambda AI,2024,,LiteLLM,
+28,Nebius,2024,2025-10-06,"Hugging Face, LiteLLM, OpenRouter, models.dev",
+29,SambaNova,2024,2026-10-14,"Hugging Face, LiteLLM, OpenRouter, models.dev",
+30,xAI,2024,2025-06-10,"LiteLLM, OpenRouter, models.dev",In catalog from its first days; date is not a launch date
+31,RightNow AI,2025,2025-06-10,models.dev,
+32,Vercel AI Gateway,2025,2025-06-11,"LiteLLM, models.dev",In catalog from its first days; date is not a launch date; Name suggests router/reseller
+33,Morph,2025,2025-06-18,"LiteLLM, OpenRouter, models.dev",
+34,Requesty,2025,2025-07-01,models.dev,
+35,inference.net,,2025-07-09,"OpenRouter, models.dev",
+36,Upstage,,2025-07-10,"OpenRouter, models.dev",
+37,Venice,,2025-07-15,"OpenRouter, models.dev",
+38,Alibaba Cloud,,2025-07-29,"LiteLLM, OpenRouter, models.dev",
+39,CoreWeave,,2025-07-31,"LiteLLM, OpenRouter, models.dev",
+40,Inception,2025,2025-07-31,"LiteLLM, OpenRouter, models.dev",
+41,ModelScope,,2025-07-31,models.dev,
+42,Chutes,,2025-08-02,"LiteLLM, OpenRouter, models.dev",
+43,OpenCode,,2025-08-04,"LiteLLM, models.dev",
+44,FastRouter,,2025-08-06,models.dev,Name suggests router/reseller
+45,Moonshot AI (Kimi),,2025-08-08,"LiteLLM, OpenRouter, models.dev",
+46,Z.AI (Zhipu),,2025-08-11,"LiteLLM, OpenRouter, models.dev",
+47,submodel,,2025-08-24,models.dev,
+48,Synthetic,,2025-08-30,"LiteLLM, models.dev",
+49,Baseten,,2025-09-04,"LiteLLM, OpenRouter, models.dev",
+50,Nvidia,,2025-09-05,"OpenRouter, models.dev",
+51,LucidQuery,,2025-09-16,models.dev,
+52,Cortecs,,2025-09-24,models.dev,
+53,AIHubMix,,2025-10-18,models.dev,
+54,Scaleway,,2025-10-20,"Hugging Face, LiteLLM, models.dev",
+55,Vultr,,2025-10-22,models.dev,
+56,Helicone,,2025-10-23,"LiteLLM, models.dev",
+57,ZenMux,,2025-10-28,models.dev,
+58,Poe,,2025-11-06,"LiteLLM, models.dev",
+59,MiniMax,,2025-11-11,"LiteLLM, OpenRouter, models.dev",
+60,OVHcloud AI Endpoints,,2025-11-12,"LiteLLM, models.dev",
+61,Ollama Cloud,,2025-11-22,"OpenRouter, models.dev",
+62,SiliconFlow,,2025-11-25,"OpenRouter, models.dev",
+63,Bailing,,2025-11-26,models.dev,
+64,AgentRouter,,2025-11-27,models.dev,Name suggests router/reseller
+65,SAP AI Core,,2025-12-03,"LiteLLM, models.dev",
+66,Xiaomi,,2025-12-19,"LiteLLM, OpenRouter, models.dev",
+67,Friendli,,2025-12-23,"LiteLLM, OpenRouter, models.dev",
+68,NanoGPT,,2025-12-24,"LiteLLM, models.dev",
+69,Abacus,,2025-12-31,models.dev,
+70,Privatemode AI,,2026-01-05,models.dev,
+71,Novita,,2026-01-07,"Hugging Face, LiteLLM, OpenRouter, models.dev",
+72,Vivgrid,,2026-01-07,models.dev,
+73,GitLab Duo,,2026-01-08,models.dev,
+74,302.AI,,2026-01-13,models.dev,
+75,Qiniu,,2026-01-15,models.dev,
+76,Moark,,2026-01-16,models.dev,
+77,CloudFerro Sherlock,,2026-01-22,models.dev,
+78,Berget.AI,,2026-01-23,models.dev,
+79,LLM Gateway,,2026-01-23,models.dev,Name suggests router/reseller
+80,QiHang,,2026-01-25,models.dev,
+81,Regolo AI,,2026-01-29,models.dev,
+82,Jiekou.AI,,2026-01-30,models.dev,
+83,Nova,,2026-01-30,models.dev,
+84,STACKIT,,2026-02-08,models.dev,
+85,KUAE Cloud Coding Plan,,2026-02-13,models.dev,
+86,StepFun,,2026-02-13,"OpenRouter, models.dev",
+87,Kilo Gateway,,2026-02-16,models.dev,Name suggests router/reseller
+88,evroc,,2026-02-18,models.dev,
+89,Meganova,,2026-02-18,models.dev,
+90,Clarifai,,2026-02-25,"LiteLLM, OpenRouter, models.dev",
+91,D.Run (China),,2026-03-04,models.dev,
+92,Tencent Cloud,,2026-03-08,"LiteLLM, OpenRouter, models.dev",
+93,DInference,,2026-03-17,models.dev,
+94,Mixlayer,,2026-03-18,models.dev,
+95,HPC-AI,,2026-03-25,models.dev,
+96,The Grid AI,,2026-03-25,models.dev,
+97,Zeldoc,,2026-04-16,models.dev,
+98,DigitalOcean,,2026-04-17,"OpenRouter, models.dev",
+99,Wafer,,2026-04-18,"OpenRouter, models.dev",
+100,Umans AI,,2026-04-23,models.dev,
+101,Abliteration,,2026-04-24,"LiteLLM, models.dev",
+102,Neuralwatt,,2026-04-27,models.dev,
+103,Sarvam AI,,2026-05-01,"LiteLLM, models.dev",
+104,FrogBot,,2026-05-02,models.dev,
+105,Databricks,,2026-05-04,"LiteLLM, OpenRouter, models.dev",
+106,GMI Cloud,,2026-05-06,"LiteLLM, OpenRouter, models.dev",
+107,Auriko,,2026-05-12,models.dev,
+108,Claudinio,,2026-05-12,models.dev,
+109,Ambient,,2026-05-13,"OpenRouter, models.dev",
+110,NEAR AI,,2026-05-13,"OpenRouter, models.dev",
+111,Xpersona,,2026-05-13,models.dev,
+112,OrcaRouter,,2026-05-14,models.dev,Name suggests router/reseller
+113,routing.run,,2026-05-17,models.dev,
+114,Inceptron,,2026-05-21,"OpenRouter, models.dev",
+115,InferX,,2026-05-22,models.dev,
+116,Poolside,,2026-05-23,"OpenRouter, models.dev",
+117,Merge Gateway,,2026-05-27,models.dev,Name suggests router/reseller
+118,Snowflake Cortex,,2026-05-29,"LiteLLM, models.dev",
+119,AnyAPI,,2026-06-01,models.dev,
+120,FreeModel,,2026-06-05,models.dev,
+121,LLMTR,,2026-06-08,models.dev,
+122,Pioneer,,2026-06-08,models.dev,
+123,Neon,,2026-06-11,models.dev,
+124,EmpirioLabs AI,,2026-06-21,"LiteLLM, models.dev",
+125,Sakana AI,,2026-06-22,"OpenRouter, models.dev",
+126,Subconscious,,2026-06-22,models.dev,
+127,Blue Claw,,2026-06-24,models.dev,
+128,CrossModel,,2026-06-26,models.dev,
+129,Tinfoil,,2026-06-26,models.dev,
+130,TrustedRouter,,2026-06-27,models.dev,Name suggests router/reseller
+131,ClinePass,,2026-06-30,models.dev,
+132,Kenari,,2026-07-01,models.dev,
+133,LongCat,,2026-07-01,models.dev,
+134,Zenifra,,2026-07-02,models.dev,
+135,Model Oracle AI,,2026-07-07,models.dev,
+136,EBCloud,,2026-07-08,models.dev,
+137,Meta,,2026-07-08,"LiteLLM, OpenRouter, models.dev",
+138,UnoRouter,,2026-07-09,models.dev,Name suggests router/reseller
+139,DaoXE,,2026-07-11,models.dev,
+140,Lynkr,,2026-07-11,models.dev,
+141,AI-ROUTER,,2026-07-12,models.dev,Name suggests router/reseller
+142,Ofox,,2026-07-14,models.dev,
+143,Thinking Machines,,2026-07-16,"OpenRouter, models.dev",
+144,AKI.IO,,2026-07-22,models.dev,
+145,Hetzner,,2026-07-24,models.dev,
+146,ai&,,2026-07-25,models.dev,
+147,Charm Hyper,,2026-07-28,models.dev,
+148,Modal,,2026-07-28,"OpenRouter, models.dev",
+149,GreenPT,,2026-07-30,models.dev,
+150,TensorX,,2026-08-01,models.dev,
+151,Modelis,,2026-08-02,models.dev,
+152,Impossibl,,2026-08-03,models.dev,
+153,Infomaniak,,2026-08-04,models.dev,
+154,SaladCloud,,2026-08-08,models.dev,
+155,CoralBricks,,2026-08-10,"LiteLLM, models.dev",
+156,Eden AI,,2026-08-12,"LiteLLM, models.dev",
+157,Crusoe,,2026-08-13,"LiteLLM, OpenRouter, models.dev",
+158,SCNet Token Plan,,2026-08-16,models.dev,
+159,AMD,,2026-08-17,models.dev,
+160,Arcee,,2026-08-17,"OpenRouter, models.dev",
+161,Echo,,2026-08-18,models.dev,
+162,Jalapeno Cloud,,2026-08-18,models.dev,
+163,Kosmik Compute,,2026-08-18,models.dev,
+164,SCX.ai,,2026-08-19,"LiteLLM, models.dev",
+165,Opper,,2026-08-23,models.dev,
+166,Agnes AI,,2026-08-25,models.dev,
+167,IteraCompute,,2026-08-25,models.dev,
+168,NeoSmith,,2026-08-25,models.dev,
+169,Pendra,,2026-08-25,models.dev,
+170,Standard Compute,,2026-08-25,models.dev,
+171,Aixy,,2026-08-26,models.dev,
+172,LLM Tech,,2026-08-26,models.dev,
+173,Volcengine Ark / BytePlus (ByteDance),,2026-08-26,"LiteLLM, models.dev",
+174,OpenReason,,2026-08-28,models.dev,
+175,TokenGo,,2026-08-28,models.dev,
+176,Vancine,,2026-08-29,models.dev,
+177,above.dev,,2026-08-30,models.dev,
+178,Bothub,,2026-08-30,models.dev,
+179,klokintegration.se,,2026-08-30,models.dev,
+180,TokenRouter,,2026-08-30,models.dev,Name suggests router/reseller
+181,SenseNova (China),,2026-08-31,models.dev,
+182,Infer by Flow7,,2026-09-14,models.dev,
+183,Melious,,2026-09-14,models.dev,
+184,Vispark,,2026-09-15,models.dev,
+185,Wallaby,,2026-09-15,models.dev,
+186,Oracle OCI Generative AI,,2026-09-16,"LiteLLM, models.dev",
+187,ainetcafe,,2026-09-17,models.dev,
+188,Inco,,2026-09-17,models.dev,
+189,Pareto (Unbiased),,2026-09-27,"OpenRouter, models.dev",
+190,Bee by HEOSSI,,2026-09-28,models.dev,
+191,TeamoRouter,,2026-10-01,models.dev,Name suggests router/reseller
+192,engy,,2026-10-02,models.dev,
+193,LowRouter,,2026-10-09,models.dev,Name suggests router/reseller
+194,AI/ML API,,2026-10-12,"LiteLLM, models.dev",Name suggests router/reseller
+195,Prime Intellect,,2026-10-12,"OpenRouter, models.dev",
+196,Boundless,,2026-10-14,models.dev,
+197,Reflection,,2026-10-16,models.dev,
+198,CommandCode,,2026-10-17,models.dev,
+199,Liquid,,2026-10-21,"OpenRouter, models.dev",
+200,Munito AI,,2026-10-24,models.dev,
+201,Modular (ModelRun),,2026-10-27,"OpenRouter, models.dev",
+202,Hopper,,2026-10-30,models.dev,
+203,Wally,,2026-10-31,"LiteLLM, models.dev",
+204,Kling AI,,2026-11-12,models.dev,
+205,50X,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+206,AbliteratedLLM,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+207,Adaption,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+208,AI Power Grid,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+209,AI Stupid Level,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+210,AIGROW,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+211,AnonRouter,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+212,APIKO,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+213,Augure,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+214,Autarcho,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+215,Butler,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+216,CedarLLM,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+217,cheapllm.shop,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+218,CloudCode.ONE,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+219,Confidential AI,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+220,Decision Models,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+221,Doubleword,,2026-11-14,"OpenRouter, models.dev",Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+222,Entrim,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+223,GraphN,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+224,Hostinger Router,,2026-11-14,"LiteLLM, models.dev",Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+225,Hubris,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+226,HUMAIN,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+227,InferAll,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+228,Inference APIs,,2026-11-14,"LiteLLM, models.dev",Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+229,Inference Cooperative,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+230,Inferris,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+231,JoinGonka,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+232,Keln,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+233,Kitani,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+234,LithosAI,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+235,Logits,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+236,Lyceum,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+237,Mallard AI,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+238,Nodecode,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+239,Oathbreaker AI,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+240,Obscurify.ai,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+241,ParalonCloud,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+242,Phala,,2026-11-14,"OpenRouter, models.dev",Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+243,Phase Router,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+244,Powerspring,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+245,Rayline,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+246,Refuseless,,2026-11-14,"LiteLLM, models.dev",Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+247,Runcrate,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+248,SAGG,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+249,SOKKAN Router,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+250,SteadyRouter,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+251,stepping stone AG,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+252,superbot,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+253,Tenstorrent,,2026-11-14,"OpenRouter, models.dev",Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+254,TokenLab,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+255,TokenWatt,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+256,TrustedTokens,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+257,Turion,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+258,UncensuredAI,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+259,Unrestricted,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+260,UplinkSwitch,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+261,Verda,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+262,Zro,,2026-11-14,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+263,Adzuki AI,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+264,Bumo Router,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+265,cheapaimodel,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+266,CheapestToken,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+267,DotHoosh,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+268,Ezkielyna,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+269,Fortytwo,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+270,Frequency,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+271,Gisoo,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+272,Huawei Cloud MAAS,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+273,Infersia,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+274,Isoquant,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+275,Jad AI,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+276,JZSTOKEN,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+277,Klavo AI,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+278,KoRouter,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+279,Kunavo,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+280,meraGPT,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+281,Moneo,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+282,nokeep,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+283,Outer Labs,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+284,ProxyStacks Relay,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+285,RuAPI,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+286,SandBase,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+287,SparrowCodes,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+288,Synthorai,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+289,Teapot Router,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+290,TheRouter,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+291,ToAPIs,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown; Name suggests router/reseller
+292,Tokenify,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+293,Watt Cloud,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+294,xxapi,,2026-11-15,models.dev,Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+295,ZeroGPU,,2026-11-15,"LiteLLM, models.dev",Part of 93-provider bulk import on 14-15 Nov 2026; real launch earlier/unknown
+296,TypeSafe,,2026-11-16,"OpenRouter, models.dev",
+297,01.AI,,,None of the four (added from memory - not verified),
+298,AionLabs,,,OpenRouter,
+299,AkashML,,,OpenRouter,
+300,Aleph Alpha,,,LiteLLM,
+301,Ant Digital,,,OpenRouter,
+302,Apertis AI,,,LiteLLM,
+303,AssemblyAI,,,"LiteLLM, OpenRouter",
+304,AtlasCloud,,,OpenRouter,
+305,Avian,,,OpenRouter,
+306,Baichuan,,,None of the four (added from memory - not verified),
+307,Baidu,,,OpenRouter,
+308,Beam,,,None of the four (added from memory - not verified),
+309,Black Forest Labs,,,"LiteLLM, OpenRouter",
+310,Bytez,,,LiteLLM,
+311,Cartesia,,,None of the four (added from memory - not verified),
+312,Cerebrium,,,None of the four (added from memory - not verified),
+313,Cirrascale,,,OpenRouter,
+314,CLF AI Gateway,,,LiteLLM,Name suggests router/reseller
+315,Cognition,,,LiteLLM,
+316,CometAPI,,,LiteLLM,
+317,CompactifAI,,,LiteLLM,
+318,Contextual AI,,,None of the four (added from memory - not verified),
+319,Cosine,,,OpenRouter,
+320,Crucible,,,OpenRouter,
+321,Darkbloom,,,"LiteLLM, OpenRouter",
+322,DataRobot,,,LiteLLM,
+323,Decart,,,OpenRouter,
+324,Deepgram,,,"LiteLLM, OpenRouter",
+325,DekaLLM,,,OpenRouter,
+326,fal,,,"Hugging Face, LiteLLM",
+327,Featherless,,,"Hugging Face, LiteLLM, OpenRouter",
+328,Fish Audio,,,OpenRouter,
+329,Galadriel,,,LiteLLM,
+330,Gcore,,,None of the four (added from memory - not verified),
+331,GigaChat,,,LiteLLM,
+332,Gladia,,,None of the four (added from memory - not verified),
+333,GooseAI,,,None of the four (added from memory - not verified),
+334,GradientAI,,,LiteLLM,
+335,Heroku,,,LiteLLM,
+336,HeyGen,,,OpenRouter,
+337,Hume AI,,,None of the four (added from memory - not verified),
+338,Hyperstack,,,None of the four (added from memory - not verified),
+339,Ideogram,,,None of the four (added from memory - not verified),
+340,iFlytek Spark,,,None of the four (added from memory - not verified),
+341,Inferact vLLM,,,OpenRouter,
+342,Infermatic,,,OpenRouter,
+343,Inflection,,,OpenRouter,
+344,io.net,,,"OpenRouter, models.dev",
+345,IONOS AI Model Hub,,,None of the four (added from memory - not verified),
+346,Ionstream,,,OpenRouter,
+347,Jina AI,,,LiteLLM,
+348,Kluster.ai,,,None of the four (added from memory - not verified),
+349,Koyeb,,,None of the four (added from memory - not verified),
+350,Krea,,,OpenRouter,
+351,Krutrim,,,None of the four (added from memory - not verified),
+352,KT,,,OpenRouter,
+353,Lamini,,,None of the four (added from memory - not verified),
+354,Leonardo AI,,,None of the four (added from memory - not verified),
+355,Lepton AI,,,None of the four (added from memory - not verified),
+356,LibertAI,,,LiteLLM,
+357,Lightning AI,,,None of the four (added from memory - not verified),
+358,LightOn,,,None of the four (added from memory - not verified),
+359,LlamaGate,,,LiteLLM,
+360,LMNT,,,None of the four (added from memory - not verified),
+361,Luma AI,,,None of the four (added from memory - not verified),
+362,Makora,,,OpenRouter,
+363,Mancer,,,OpenRouter,
+364,Mara,,,OpenRouter,
+365,Martian,,,None of the four (added from memory - not verified),
+366,Mixedbread,,,None of the four (added from memory - not verified),
+367,Monster API,,,None of the four (added from memory - not verified),Name suggests router/reseller
+368,Nadir Router,,,LiteLLM,Name suggests router/reseller
+369,Naver Clova Studio,,,None of the four (added from memory - not verified),
+370,Neosantara,,,LiteLLM,
+371,NetMind,,,None of the four (added from memory - not verified),
+372,Nex AGI,,,OpenRouter,
+373,NextBit,,,OpenRouter,
+374,NLP Cloud,,,LiteLLM,
+375,Nomic,,,None of the four (added from memory - not verified),
+376,Nscale,,,"Hugging Face, LiteLLM",
+377,OpenInfer,,,LiteLLM,
+378,OpenInference,,,OpenRouter,
+379,Parallel,,,OpenRouter,
+380,Parasail,,,OpenRouter,
+381,Particle AI,,,OpenRouter,
+382,Pearl Research,,,OpenRouter,
+383,Perceptron,,,OpenRouter,
+384,Pinecone Inference,,,None of the four (added from memory - not verified),
+385,Portkey,,,None of the four (added from memory - not verified),
+386,Predibase,,,LiteLLM,
+387,PrimaLabs,,,OpenRouter,
+388,Prism,,,LiteLLM,
+389,PublicAI,,,LiteLLM,
+390,Quiver,,,OpenRouter,
+391,Recraft,,,"LiteLLM, OpenRouter",
+392,Recursive,,,OpenRouter,
+393,Reka,,,"LiteLLM, OpenRouter",
+394,Relace,,,OpenRouter,
+395,Replicate,,,"Hugging Face, LiteLLM",
+396,Resemble AI,,,None of the four (added from memory - not verified),
+397,ResetData,,,LiteLLM,
+398,Respan,,,OpenRouter,
+399,Rev AI,,,None of the four (added from memory - not verified),
+400,Rime,,,None of the four (added from memory - not verified),
+401,River,,,OpenRouter,
+402,Runpod,,,None of the four (added from memory - not verified),
+403,Runware,,,None of the four (added from memory - not verified),
+404,Runway,,,"LiteLLM, OpenRouter",
+405,Sail Research,,,"LiteLLM, OpenRouter",
+406,ScaleDown,,,"LiteLLM, OpenRouter",
+407,Seed,,,OpenRouter,
+408,Segmind,,,None of the four (added from memory - not verified),
+409,Soniox,,,LiteLLM,
+410,Sourceful,,,OpenRouter,
+411,Speechify,,,OpenRouter,
+412,Speechmatics,,,None of the four (added from memory - not verified),
+413,StreamLake,,,"LiteLLM, OpenRouter",
+414,Switchpoint,,,OpenRouter,Name suggests router/reseller
+415,Targon,,,None of the four (added from memory - not verified),
+416,Telnyx,,,None of the four (added from memory - not verified),
+417,Tensormesh,,,LiteLLM,
+418,TextSynth,,,None of the four (added from memory - not verified),
+419,Topaz,,,LiteLLM,
+420,Twelve Labs,,,None of the four (added from memory - not verified),
+421,Unify,,,None of the four (added from memory - not verified),
+422,v0,,,LiteLLM,
+423,WaveSpeedAI,,,None of the four (added from memory - not verified),
+424,Writer,,,None of the four (added from memory - not verified),
+425,Yandex Cloud,,,None of the four (added from memory - not verified),

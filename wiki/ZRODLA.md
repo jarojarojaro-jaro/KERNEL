@@ -499,6 +499,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/Akashi203/status/2124576912412737898 (Telegram 2026-11-23) + blog RightNow AI | 2026-11-22, repo RightNow-AI/inkling-b300-kernels | [[rightnow-inkling-b300-kernele]] | Prawdziwe: agent pisze kernele NVFP4 MoE na B300, bitowo niezmienne względem batcha; lekcje: podział K przy n=1, stałe drzewo sum, zepsuty bliźniak testu | w13 104,4 → 20,5 µs (5,1×), 114 → 583 GB/s; krok 16,35 ms | podział K w MMVQ-ID Inkling na XTX (Gemini) |
 
+| https://x.com/Akashi203/status/2124337431436787858 (Telegram 2026-11-23) lista 425 dostawców | arkusz 2026-11-22 | [[lista-dostawcow-inferencji]] | Zapisane: 425 dostawców API LLM, kopia CSV/XLSX w product/research/dane | 94 nowych w 2026-11 (models.dev) | odświeżyć, gdy autor wyda nową wersję |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

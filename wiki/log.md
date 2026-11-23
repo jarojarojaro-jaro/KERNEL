@@ -614,3 +614,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Telegram | Vocab Surgery (Pliny): zdjęcie odmów edycją 17 wierszy embeddingu/lm_head → notatka llm/vocab-surgery (do sprawdzenia: detektor słów kluczowych)
 
 ## [2026-11-23] Telegram | RightNow AI kernele Inkling 2 Small na B300 (5,1× GEMM eksperta, bitowo niezmienne 1 vs 64 wiersze) → research/rightnow-inkling-b300-kernele; lekcja: podział K przy n=1 dla MMVQ-ID na XTX
+
+## [2026-11-23] Telegram | lista 425 dostawców inferencji (Jaber) zapisana: ekosystem/lista-dostawcow-inferencji + CSV/XLSX
