@@ -30,6 +30,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: kilka–kilkanaście % (u nas ~777 launchy, przerwa ~2 µs/launch) [INFERENCE]
 - ryzyko karty: brak (zmienna runtime)
 - priorytet: wysoki (najtańsza droga do >100 t/s)
+- wynik 2026-11-23 13:52–13:58 UTC (ABBA, rep2 mediana 5): bez → z `GPU_MAX_HW_QUEUES=2`: Q6 T=0,7 94,5 / 94,5 → 94,5 / 94,5; L2k 93,3 / 93,6 → 93,5 / 93,6; Q1 93,8 → 93,8–94,0; prefill bez zmian → **0%, odrzucone** (na RDNA3 nie ma kary przełączania kolejki, którą łatka 0101 leczy na RDNA4). Log: `~/qwen-opt/queue/logs/k135-*.log`.
 
 ### K-134 · Inkling 2 Mini w Maya v1.1.73 na XTX: 93,6 t/s bez spekulacji (społeczność) vs nasze 49,5 — skąd różnica
 - data: 2026-11-22 (zwiad; LocalMaxxing run cmwraqz5108dlmi01cwdleupp, verified, UD-Q4_K_XL)
