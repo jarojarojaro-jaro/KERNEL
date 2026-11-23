@@ -650,3 +650,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Inkling r10 | kontroler spekulacji: T=0,7 +34% (35,9), kopie +6% z ngram, długi −27%; ub2048 OOM
 
 ## [2026-11-23] Maya KV q4 | IK2_KV=q4: PPL +0,92%, KLD 0,024, kopie 101,2 / T=0,7 77,3 / long 74,8 t/s (f16: 102,3 / 78,4 / 76,3), 262k ctx mieści się; wdrożone na :18796
+
+## [2026-11-23] Inkling r11 | KV q4_0 rekord kopie 95,2; FUSE4 −14%, PLANAR KLD 0,008 (błąd), all psuje DSpark → r12

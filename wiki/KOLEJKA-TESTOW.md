@@ -58,6 +58,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (zwykły dekod, eco 2200)
 - priorytet: wysoki (decyzja o modelu produkcyjnym należy do właściciela)
 - stan 2026-11-22 04:20 (STOP na polecenie właściciela): build r8+r9 gotowy na jaroserverai, bramka r8/r9 nieuruchomiona (kolejka zabita w oczekiwaniu); wznowienie: `qwen-opt/inkling/start-r8.sh`. Szczegóły: `DUO-INKLING.md` (llama-inkling).
+- wynik 2026-11-23 03:50 UTC (r11 port Mayi, KV q4_0): nasz llama.cpp z KV q4_0 + DSpark n7: kopie 95,2, T=0,7 28,0, długi 2k 61,7 t/s; STABLE_GRAPH neutralny (KLD 0); FUSE4 wolniejszy (tg 49,5 → 42,4) i KLD 0,0077; PLANAR_Q8 nie jest bezstratny (KLD 0,0081, błąd); wszystkie razem psują DSpark (akceptacja 0/413) → runda 12 naprawia.
 - wynik 2026-11-23 02:27 UTC (r10, kontroler spekulacji `LLAMA_SPEC_CTL=1`, AD-Q4_K, DSpark n7): T=0,7 26,8 → 35,9 t/s (+34%), kopie z ngram 91,2 → 96,9 (+6%), ale długi 2k 73,4 → 53,9 (−27%); ub 2048 OOM (bufor 12,15 GiB). Do poprawy w r11/r12.
 - wynik 2026-11-23 01:00–01:10 UTC (zgoda właściciela 01:57 CET; r8 + r9, `inkling-opt` 854c58e, eco 2200, AD-Q4_K, DSpark n7, `-c 16384`):
   - FUSE3 naprawiony: KLD 4,68 → 0,0022 (PPL ×1,0001), md5 PM4 0/1 równe;
