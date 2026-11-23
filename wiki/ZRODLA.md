@@ -501,6 +501,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/Akashi203/status/2124337431436787858 (Telegram 2026-11-23) lista 425 dostawców | arkusz 2026-11-22 | [[lista-dostawcow-inferencji]] | Zapisane: 425 dostawców API LLM, kopia CSV/XLSX w product/research/dane | 94 nowych w 2026-11 (models.dev) | odświeżyć, gdy autor wyda nową wersję |
 
+| https://x.com/ViC305/status/2124143645687492623 (Telegram 2026-11-23) SAGE-REXL3 kwanty Inkling 2 Mini | 2026-11-21, HF vcruz305/Inkling-2-Mini-SAGE-REXL3-{4.23,2.92,2.26}bpw | [[inkling-2-mini]] | Nie dla nas: EXL3 (exllamav3) działa tylko na CUDA, nie na ROCm; zmiana kwantu wbrew zasadzie; sam autor przyznaje, że porównanie z GGUF jest na innej referencji (oryginał vs UD-Q8), więc „+4 pkt top-1” nie jest jabłka do jabłek | 4,23 bpw 15,03 GB top-1 98,33% KLD 0,0088 vs UD-Q4_K_XL 17,63 GB 98,0% (deklaracja) | tylko jeśli exllamav3 dostanie HIP; ewentualnie karty NVIDIA 16 GB |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
