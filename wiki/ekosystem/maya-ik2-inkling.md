@@ -35,6 +35,8 @@ LoRA AtomicChat (rank 1, 44 MB) to w praktyce rzut y ← y − r(r·y) na wyjśc
 
 - Runda 2 (2026-11-23): `IK2_HIP_COMB` (combine atencji 32 odczyty naraz), `PCONV` (loady najpierw w proj_conv), `FUSE` (router + wybór ekspertów w jednym launchu, „ostatni blok robi resztę”, 825 → 777 launchy), `LGD` (loop gates load-first) → czat T=0,7 91,3 → 94,5, długi 2k 86,4 → 93,5; dalej bez 100. Lekcje: przerwa między kernelami w grafie na gfx1100 ~2 µs i zmienne CLR jej nie skracają; ręczne rozwinięcie z akumulatorem 0 zmienia fma (pomaga `asm volatile("" : "+v"(acc))`).
 
+- Runda 3 (2026-11-23): **wagi czytane nietemporalnie** (`__builtin_nontemporal_load`, `IK2_HIP_NT=15`) — ~3,7 GB wag na token przestało wypychać z cache małe wektory wejścia; dekod +9%, atencja 0,85 → 0,54 ms/token (choć sama wag nie czyta). Czat T=0,7 94,5 → **104,3**, długi 2k 93,5 → **100,8 t/s**, bit w bit. Lekcja na każdą kartę: przy n=1 wagi czytane raz na token streamować z pominięciem cache.
+
 ## Powiązane
 - [[inkling-2-mini]]
 - [[project-maya]]
