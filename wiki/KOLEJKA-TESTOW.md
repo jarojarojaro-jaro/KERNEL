@@ -343,6 +343,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (~150 MiB RAM hosta na checkpoint)
 - priorytet: wysoki (≥ 1 s/turę)
 
+- wynik 2026-11-23 (bisekcja spadku prefillu po poprawce K-001, duet): pp2048 1021,8 → 981,6 (−3,9%); winne commity Gemini 5ff6a15 (−1,8%) i 0bb43ee (−1,5%); bank GDN 0/1 daje identyczne odpowiedzi (produkcja bez wpływu). Log `~/qwen-opt/queue/logs/duo-r14-*.log`.
+
 ### K-006 · Wpis „wspólny początek” (Maya #607) i chude checkpointy (stan GDN tylko na granicach wiadomości) zamiast kopii całej sesji w cache
 - data: 2026-11-05
 - źródło: [[wspolny-poczatek-promptu]], `R/63-SYNTEZA.md:85-86` (plan #6, #7), `R/63b-colibri-maya-delta.md` §6, `R/68c-dlugi-kontekst-gdn.md:143`
