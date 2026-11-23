@@ -42,7 +42,7 @@ Mam jaroserverai z RX 7900 XTX, Vast.ai i Colab jako karty, zapas mocy CPU z ars
 
 - jaroserverai: `ssh jaro@jaroserverai` (Tailscale; włączony? `ssh -o ConnectTimeout=5 jaro@jaroserverai true`), RX 7900 XTX 24 GB (gfx1100), zwykle wyłączony; tam `~/KERNEL`, `~/qwen-opt`, `~/llama-opt`, modele, `cpuheavy`, `rbuild`, `run-jobs.sh`, `gpu-guard`. Tutaj tego nie ma.
 - Vast.ai bez jaroserverai: `vastai`, klucz SSH `~/.ssh/vast_kernel`, skrypty `qwen-opt/cloud` (model z HF, silnik z wydań KERNEL na GitHubie).
-- Colab (200 jednostek/mies.): `colab usage`; `colab run --gpu T4|L4|G4|A100|H100 skrypt.py` (wyłącza się sam); dłużej `colab new -s nazwa --gpu …`, `install`, `exec -f`, `download`, `stop`.
+- Colab (200 jednostek): `colab usage`; `colab run --gpu T4|L4|A100 skrypt.py` (wyłącza się sam), `--high-mem` przy A100 = 80 GB, `--tpu V5E1|V6E1`; dłużej `colab new -s nazwa --gpu …`, `install`, `exec -f`, `download`, `stop`. Stawki (jednostek/h): T4 1,15, L4 1,94, A100 40 GB 6,73 (zmierzone 22.11); A100 80 GB ok. 8,9, TPU v5e ok. 2,9, v6e ok. 4,1 (pomiary innych, stawki rosły od 29.10). G4 i H100 niedostępne (Pro+).
 - Podagenci omp, Gemini przez `agy`, zapas mocy (`zapas-mocy`, arsenał w prompcie), `kb search|facts`.
 
 - jaroserverai: `reactor`, `gpu-guard.sh`, `orphan-guard.sh`, `topka-keeper.sh`, `run-queue.sh`, `model-swap.py`, czat JARO na :8080; opis narzędzi: `~/qwen-opt/tools/README.md`.
@@ -57,7 +57,7 @@ Mam jaroserverai z RX 7900 XTX, Vast.ai i Colab jako karty, zapas mocy CPU z ars
 Bez wyraźnego polecenia JARO nie dotykam karty XTX, nie wydaję ponad budżet i nie zmieniam tego, co działa u niego na produkcji.
 
 - Testy na XTX (także z kolejki), celowe testy z resetem GPU.
-- Wynajem Vast ponad uzgodniony budżet, `--allow-paid-traffic`, Colab G4, A100 i H100 bez zapowiedzi kosztu.
+- Wynajem Vast ponad uzgodniony budżet, `--allow-paid-traffic`, Colab A100 i TPU bez zapowiedzi kosztu.
 - Pobranie powyżej 2 GB, usuwanie danych JARO, zmiana domyślnych ustawień produkcji `~/llama-opt` (AGENTS.md).
 - Zmiana odpowiedzi modelu na produkcji (fine-tune, LoRA wtopiona w wagi).
 - Stash albo commit cudzych zmian w `~/KERNEL` na jaroserverai.
