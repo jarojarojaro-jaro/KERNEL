@@ -32,6 +32,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (zwykły dekod)
 - priorytet: wysoki
 - delta 2026-11-23: Strata v0.2.20 (`strata-inkling` 0.1.66) też uruchamia Inkling na gfx1100: gotowa paczka `strata-inkling-0.1.66-linux-x86_64-hip-rx7900` (96 MB), ładuje nasz plik UD-Q4_K_XL wprost (lossless GGUF_RAW), DSpark „W=4 Markov Beam Tree”; deklaracja 5090: 250,3 t/s z DSpark, XTX bez liczb. Test rozszerzony: Maya 1.1.73 i Strata 0.1.66 tym samym plikiem, bez i z DSpark, ≤ 10 min każde (pobranie ~0,4 GB razem).
+- wynik 2026-11-23 01:08 UTC (Strata `strata-inkling` 0.1.66 hip-rx7900, UD-Q4_K_XL `--native`, DSpark `--draft dspark`, `--max-context 32768`, xbench, eco 2200):
+  - **krótkie zadania ze zgadywaniem:** Q4/Q5 kopie 100,6 / 109,6 t/s, Q2 136,2, **T=0,7 60,6 t/s**; nasz rekord (2026-11-23, AD-Q4_K): kopie 91,2, T=0,7 26,8 → Strata szybsza o ~10–20% na kopiach i 2,3× przy T=0,7 (inne pliki: UD-Q4_K_XL vs AD-Q4_K);
+  - **GPU page fault** przy przejściu do długich promptów (L2048): `[gfxhub] page fault … process strata-inkling` 01:09:20 UTC, bez resetu karty; kolejka zatrzymana, Maya nieuruchomiona, :8080 przywrócony. Według zasady: Straty na XTX nie powtarzamy bez poprawki autora (zgłoszenie z logiem).
+  - log: `~/qwen-opt/queue/logs/k134-strata.log`, konfiguracja `~/k134/strata.json` (jaroserverai).
 
 ### K-133 · Inkling 2 Mini (MoE z pętlą warstw, 26,4B / 5,4B efektywnie aktywnych) na XTX: prędkość i jakość vs Qwen3.8-27B
 - data: 2026-11-20 (Telegram właściciela 23:29)

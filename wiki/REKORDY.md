@@ -223,7 +223,7 @@ Kampania 67c (wieczór 2026-11-07): T1 = mediana `spec_sweep` seed 1, fill = pro
 | (poprzedni) DSpark n7, długi 2k / T=0,7 | 67,7 / 26,4 t/s | 2026-11-21 | j.w. | `ink-d7.log` | nie |
 | prefill pp512 / pp2048 | 1333 / 1125 t/s (stock); serwer 2k 1030 t/s z PM4 | 2026-11-21 | stock / r6 | `ink-ad-bench.log`, `ink-r6-serve.log` | nie |
 
-FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s. Kernel MoE w jednym (r9, GGML_HIP_INK_MEGA): KLD OK, ale z DSpark kopie 68,8 → 46,2 t/s (−33%), odrzucony. PM4 z DSpark nadal wolniej (68,8 vs 91,2 t/s).
+FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s. Kernel MoE w jednym (r9, GGML_HIP_INK_MEGA): KLD OK, ale z DSpark kopie 68,8 → 46,2 t/s (−33%), odrzucony. PM4 z DSpark nadal wolniej (68,8 vs 91,2 t/s). Odniesienie obcego silnika na tej karcie: Strata 0.1.66 (UD-Q4_K_XL, DSpark) kopie 100,6–109,6 t/s, T=0,7 60,6 t/s, ale GPU page fault przy długim prompcie (K-134, 2026-11-23).
 
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.
