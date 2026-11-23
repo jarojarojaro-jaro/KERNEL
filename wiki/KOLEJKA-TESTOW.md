@@ -36,6 +36,11 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - **krótkie zadania ze zgadywaniem:** Q4/Q5 kopie 100,6 / 109,6 t/s, Q2 136,2, **T=0,7 60,6 t/s**; nasz rekord (2026-11-23, AD-Q4_K): kopie 91,2, T=0,7 26,8 → Strata szybsza o ~10–20% na kopiach i 2,3× przy T=0,7 (inne pliki: UD-Q4_K_XL vs AD-Q4_K);
   - **GPU page fault** przy przejściu do długich promptów (L2048): `[gfxhub] page fault … process strata-inkling` 01:09:20 UTC, bez resetu karty; kolejka zatrzymana, Maya nieuruchomiona, :8080 przywrócony. Według zasady: Straty na XTX nie powtarzamy bez poprawki autora (zgłoszenie z logiem).
   - log: `~/qwen-opt/queue/logs/k134-strata.log`, konfiguracja `~/k134/strata.json` (jaroserverai).
+- wynik 2026-11-23 01:19 UTC (Maya 1.1.73 `maya-ik2` zbudowany dla gfx1100, UD-Q4_K_XL, `--drafting on` bez pliku draftera (drafter Mayi wymaga safetensors, nasz GGUF DSpark odrzucony) → przypuszczam: tylko prompt lookup; `--max-context 16384`, KV domyślne; xbench, eco 2200):
+  - **kopie Q4 / Q5 112,7 / 100,3 t/s, krótkie Q1–Q3 79–93, T=0,7 80,7 t/s, długi 2k / 8k 80,0 / 72,6 t/s, prefill 2k / 8k 1911 / 3180 t/s**; bez page fault, :8080 przywrócony;
+  - vs nasz rekord (AD-Q4_K, DSpark n7): kopie 91,2 → 112,7 (+24%), T=0,7 26,8 → 80,7 (3,0×), długi 2k 73,4 → 80,0 (+9%), prefill 2k 1300 → 1911 (+47%) — inne pliki (UD vs AD), więc kierunkowo;
+  - wniosek: Maya bez naszego DSpark i tak 3× szybsza przy T=0,7 → ich dekod/weryfikacja i obsługa T>0 są do przeczytania w kodzie (silnik @alesha-pro), zanim dalej kleimy llama.cpp; następny krok: Maya z oficjalnym drafterem (safetensors, wymaga pobrania) i AD-Q4_K.
+  - log: `~/qwen-opt/queue/logs/k134-maya.log`, `~/k134/maya.json` (jaroserverai).
 
 ### K-133 · Inkling 2 Mini (MoE z pętlą warstw, 26,4B / 5,4B efektywnie aktywnych) na XTX: prędkość i jakość vs Qwen3.8-27B
 - data: 2026-11-20 (Telegram właściciela 23:29)

@@ -636,3 +636,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Telegram | aci-cpp (Actual): fork llama.cpp bez AMD, +do 28% vs v1.0.0; nasz topka ×3,21 vs upstream
 
 ## [2026-11-23] Telegram | XeFlash Arc B60: 400 t/s to kopiowanie kodu; README 22,4 plain / 61,8 MTP / 86,6 bdraft2
+
+## [2026-11-23] K-134 | Maya 1.1.73 na XTX: kopie 112,7, T=0,7 80,7, long 2k 80,0, prefill 1911 t/s (bez naszego DSpark) vs nasz 91,2 / 26,8 / 73,4 — Maya wzorem
