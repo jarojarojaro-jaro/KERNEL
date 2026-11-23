@@ -1,0 +1,4 @@
+# Gemini ink-r10 gate (LLAMA_SPEC_CTL); owner 2026-11-23 'dawaj działaj'
+ink-r10-ctl|1500|~/qwen-opt/inkling|INK_TAG=ub512 ./r10.sh serve
+ink-r10-ub2048|900|~/qwen-opt/inkling|INK_TAG=ub2048 INK_UB=2048 ./r10.sh serve
+ink-r10-maya-back|60|~|(setsid nohup ~/k134/mayaserve.sh > ~/k134/mayaserve.out 2>&1 < /dev/null &); echo maya-queued
