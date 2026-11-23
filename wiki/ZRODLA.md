@@ -515,6 +515,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/actualinc/status/2124662121304617094 (Telegram 2026-11-23) aci-cpp (fork llama.cpp Actual) | 2026-11-23 | [[actual-computer]] | Delta: ich fork llama.cpp dla Mac, DGX Spark i RTX (bez AMD); vs llama.cpp v1.0.0 na Qwen3.8-27B +do 28% na 8/10 obciążeń; nasz topka vs upstream na XTX: czat ×3,21 (raport wyniki-xtx 2026-10-19), więc nic do przejęcia bez kodu i liczb per technika | do +28% (deklaracja, wątek) | czy kod aci-cpp jest publiczny; przeczytać wątek, jeśli podadzą techniki |
 
+| https://x.com/shi3z/status/2124619723556184266 (Telegram 2026-11-23) XeFlash (github shi3z/XeFlash) | 2026-11-22 | [[skill-io-sufity]] | „400+ t/s Qwen3.8-27B na Arc B60” to generacja kodu z kopiowaniem (spekulacja/lookup), nie zwykły czat: README podaje 22,4 t/s bez spekulacji, 61,8 z MTP, 86,6 z drafterem bdraft2 (YASAKANI); własny kwant XMX (zmiana modelu); B60 456 GB/s, sufit dekodu ~28 t/s zgadza się z 22,4 | B60: 22,4 / 61,8 / 86,6 t/s (README) | — |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
