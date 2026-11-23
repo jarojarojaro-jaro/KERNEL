@@ -674,3 +674,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] duet | bisekcja prefillu K-001: 5ff6a15 −1,8%, 0bb43ee −1,5% (razem −3,9%); bank GDN bez wpływu
 
 ## [2026-11-23] K-005 | siatka checkpointów: wznowienie po edycji 40k 74,1 → 19,4 s (−74%), md5 równe
+
+## [2026-11-23] koniec testów | Maya >100 t/s (T=0,7 104,3), K-135 0%, r13/r14 llama.cpp (tg +17%, narzut serwera 7,8 ms/token → r15), bisekcja K-001, K-005 −74%; jaroserverai wyłączony

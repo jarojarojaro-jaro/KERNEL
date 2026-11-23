@@ -1,0 +1,5 @@
+# Gemini ink-r14 gate
+ink-r14-kld|900|~/qwen-opt/inkling|./r14.sh kld
+ink-r14-tg|600|~/qwen-opt/inkling|./r14.sh tg
+ink-r14-serve|1500|~/qwen-opt/inkling|./r14.sh serve
+ink-r14-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
