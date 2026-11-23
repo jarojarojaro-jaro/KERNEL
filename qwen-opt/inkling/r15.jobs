@@ -1,0 +1,4 @@
+# Gemini ink-r15 gate (LLAMA_INK_SRV_FAST)
+ink-r15-tg|600|~/qwen-opt/inkling|./r15.sh tg
+ink-r15-serve|1800|~/qwen-opt/inkling|./r15.sh serve
+ink-r15-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
