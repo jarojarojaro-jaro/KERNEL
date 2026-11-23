@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (24)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (123)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (124)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (82)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (100)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
@@ -75,6 +75,7 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-11-23 [[rightnow-inkling-b300-kernele|RightNow AI: kernele MoE Inkling 2 Small na B300, bitowo identyczne przy 1 i 64 wierszach]]
 - 2026-11-23 [[vocab-surgery|„Vocab Surgery”: zdjęcie cenzury przez edycję kilkunastu wierszy embeddingu i lm_head]]
+- 2026-11-23 [[lekcja-tylko-wynik-ze-zgadywaniem|Lekcja: właścicielowi raportuję tylko prędkość ze zgadywaniem (spekulacją)]]
 - 2026-11-22 [[runda-6|2026-10-15: runda 6 — epilog MMQ, GDN fast, narzędzia]]
 - 2026-11-22 [[najlepsze-wyniki|Najlepsze wyniki: model × karta (tabela z notatek)]]
 - 2026-11-22 [[2026-11-07-kampania-nvidia-vast|Kampania NVIDIA na Vast: 17 kart, 262 144 z MTP na 24 i 32 GB (2026-11-07)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-22 [[2026-10-18-lfm-moe-pasmo|2026-10-16/18: pasmo kerneli MoE LFM2.5 na XTX]]
 - 2026-11-22 [[2026-10-18-e1-kwanty-27b-kld|2026-10-16/18: E1 – nowe kwanty Qwen3.8-27B na 12–16 GB (KLD, zadania, prędkość)]]
 - 2026-11-22 [[2026-10-16-nemotron-3090|2026-10-16: Nemotron 3.5 Bolt na RTX 3090 (Vast)]]
-- 2026-11-22 [[2026-10-16-mtp-pl-pilot|2026-10-16: pilot douczania głowicy MTP (wynik negatywny)]]
 
-Razem 791 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
+Razem 792 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
