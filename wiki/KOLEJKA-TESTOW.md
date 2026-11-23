@@ -44,6 +44,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (zwykły dekod, eco 2200)
 - priorytet: wysoki (decyzja o modelu produkcyjnym należy do właściciela)
 - stan 2026-11-22 04:20 (STOP na polecenie właściciela): build r8+r9 gotowy na jaroserverai, bramka r8/r9 nieuruchomiona (kolejka zabita w oczekiwaniu); wznowienie: `qwen-opt/inkling/start-r8.sh`. Szczegóły: `DUO-INKLING.md` (llama-inkling).
+- wynik 2026-11-23 01:00–01:10 UTC (zgoda właściciela 01:57 CET; r8 + r9, `inkling-opt` 854c58e, eco 2200, AD-Q4_K, DSpark n7, `-c 16384`):
+  - FUSE3 naprawiony: KLD 4,68 → 0,0022 (PPL ×1,0001), md5 PM4 0/1 równe;
+  - **rekord ze zgadywaniem:** kopie 84,6 → **91,2 t/s** (+7,8%, FUSE3 wył. → wł., ta sama sesja), długi 2k 67,4 → 73,4 (+8,9%), 8k 59,0 → 66,8 (+13%), T=0,7 24,9 → 26,8; prefill 2k 994 → 1300 t/s (+31%);
+  - losowanie draftu (`--spec-draft-sampling probabilistic`) nie podniosło akceptacji przy T=0,7 (0,55, T=0,7 nadal ~27 t/s) — do zbadania;
+  - PM4 z DSpark: 68,8 t/s (−25% vs bez PM4) mimo VEC FA; r9 MEGA: 46,2 t/s (−33%) → odrzucony;
+  - z `-c 32768` serwer z FUSE3 i DSpark nie startuje (OOM 508 MiB): FUSE3 trzyma dodatkową kopię wag atencji;
+  - logi: `~/qwen-opt/queue/logs/ink-r8-*.log`, `ink-r8b-*.log`, `ink-r9*.log`.
 - wynik 2026-11-21 (XTX eco 2200, AtomicChat AD-Q4_K, stock PR #32695 6196d98):
   - llama-bench: pp512 1333, pp2048 1125, **tg64 26,9 t/s**;
   - czat xbench: dekod ~26 t/s (krótkie i długie prompty), prefill 887 t/s przy 2k i 537 t/s przy 8k;

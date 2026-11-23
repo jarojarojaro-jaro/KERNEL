@@ -1,0 +1,5 @@
+# retry spec arms at ctx 16384 (FUSE3 derived weights OOM at 32768)
+ink-r8b-serve|1500|~/qwen-opt/inkling|./r8b.sh serve
+ink-r8b-f3off|900|~/qwen-opt/inkling|GGML_HIP_INK_FUSE3_FORCE0=1 ./r8b.sh serve0
+ink-r9b-serve|900|~/qwen-opt/inkling|./r9b.sh serve
+ink-r8b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

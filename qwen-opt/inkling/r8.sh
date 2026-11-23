@@ -17,7 +17,7 @@ case ${1:-} in
       for c in "$P1 GGML_HIP_INK_FUSE3=0" "$P1 GGML_HIP_INK_FUSE3=1" "$P1 GGML_HIP_INK_FUSE3=1" "$P1 GGML_HIP_INK_FUSE3=0"; do
         echo "${c%% *} ${c##* } tg64 $(env $c $B/llama-bench -m $M -p 0 -n 64 -fa 1 -ngl 99 -r 5 2>&1 | grep tg64 | awk -F'|' '{print $(NF-1)}')"; done ;;
   serve) export GGML_HIP_INK_FUSE3=1 GGML_HIP_PM4_DEBUG=1
-         for arm in "plain-pm4|$P1|" "n7-pm4|$P1|-md $D --spec-type draft-dspark --spec-draft-n-max 7" "n7-pm4-prob|$P1|-md $D --spec-type draft-dspark --spec-draft-n-max 7 --spec-draft-sampling probabilistic" "n7-nopm4-prob|$P0|-md $D --spec-type draft-dspark --spec-draft-n-max 7 --spec-draft-sampling probabilistic"; do
+         for arm in "n7-nopm4-greedy|$P0|-md $D --spec-type draft-dspark --spec-draft-n-max 7" "n7-nopm4-prob|$P0|-md $D --spec-type draft-dspark --spec-draft-n-max 7 --spec-draft-sampling probabilistic" "n7-pm4-prob|$P1|-md $D --spec-type draft-dspark --spec-draft-n-max 7 --spec-draft-sampling probabilistic"; do
            IFS='|' read name envs extra <<< "$arm"
            env $envs $B/llama-server -m $M $extra -ngl 99 -fa on -c 32768 --port 18794 --jinja > /tmp/ink-r8-$name.log 2>&1 &
            pid=$!; for i in $(seq 180); do curl -fs localhost:18794/health >/dev/null && break; kill -0 $pid 2>/dev/null || break; sleep 1; done

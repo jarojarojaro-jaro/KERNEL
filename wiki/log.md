@@ -628,3 +628,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Telegram | 4 lektury o dekodzie → metody/lektury-dekod-podstawy (wszystko już w użyciu)
 
 ## [2026-11-23] Telegram | YuvrajInfer: ogólna hierarchia optymalizacji bez liczb — znane; Inkling to kontrprzykład (narzut kerneli > bajty)
+
+## [2026-11-23] Inkling r8/r9 na XTX | rekord DSpark kopie 91,2 t/s (+7,8% FUSE3), long 2k 73,4; FUSE3 KLD 0,0022; MEGA −33% odrzucony; PM4 z DSpark −25%; OOM przy 32k

@@ -1,9 +1,8 @@
-# Gemini ink-r8 + ink-r9 gate (one build at 71883e5); owner OK 2026-11-21
+# Inkling final: r8 + r9 gate, spec-only serve arms; owner OK 2026-11-23 01:57
 ink-r8-kld|600|~/qwen-opt/inkling|./r8.sh kld
-ink-r8-ab|600|~/qwen-opt/inkling|./r8.sh ab
-ink-r8-serve|1800|~/qwen-opt/inkling|./r8.sh serve
-ink-r9-tbo|600|~/qwen-opt/inkling|./r9.sh tbo
-ink-r9-kld|600|~/qwen-opt/inkling|./r9.sh kld
-ink-r9-tg|600|~/qwen-opt/inkling|./r9.sh tg
+ink-r8-ab|420|~/qwen-opt/inkling|./r8.sh ab
+ink-r8-serve|1500|~/qwen-opt/inkling|./r8.sh serve
+ink-r9-tbo|300|~/qwen-opt/inkling|./r9.sh tbo
+ink-r9-kld|420|~/qwen-opt/inkling|./r9.sh kld
 ink-r9-serve|900|~/qwen-opt/inkling|./r9.sh serve
 ink-r9-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

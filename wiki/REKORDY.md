@@ -217,11 +217,13 @@ Kampania 67c (wieczór 2026-11-07): T1 = mediana `spec_sweep` seed 1, fill = pro
 |---|---|---|---|---|---|
 | czat xbench bez spekulacji, dekod | **47,6–50,3 t/s** (stock PR #32695: 26,0–27,1) | 2026-11-21 | `GGML_HIP_PM4=1 WA=2 GUARD=1 HSA_USE_SVM=0`, `GGML_HIP_INK_FUSE=1 FUSE2=1 NOBLAS=1`, `-fa on -c 32768` | `~/qwen-opt/queue/logs/ink-r6-serve.log` (jaroserverai); `DUO-INKLING.md` 09:05 | nie |
 | llama-bench tg64 | **43,0 t/s** (stock 26,85) | 2026-11-21 | j.w. (PM4 + FUSE + FUSE2 + NOBLAS) | `ink-r4-abab.log`; `DUO-INKLING.md` 08:25 | nie |
-| czat z DSpark n-max 7, kopie (Q4) | **85,0 t/s** | 2026-11-21 | `GGML_HIP_PM4=0`, FUSE + FUSE2 + NOBLAS, `-md dspark-Q8_0 --spec-type draft-dspark --spec-draft-n-max 7`, akceptacja 0,55 | `ink-d7.log`; `DUO-INKLING.md` 09:30 | nie |
-| czat z DSpark n7, długi prompt 2k / T=0,7 | 67,7 / 26,4 t/s | 2026-11-21 | j.w. | `ink-d7.log` | nie |
+| czat z DSpark n-max 7, kopie (Q4) | **91,2 t/s** (FUSE3 wył., ta sama sesja: 84,6; 2026-11-21: 85,0) | 2026-11-23 | `GGML_HIP_PM4=0`, `GGML_HIP_INK_FUSE=1 FUSE2=1 FUSE3=1 NOBLAS=1` (r8, `inkling-opt` 854c58e), `-md dspark-Q8_0 --spec-type draft-dspark --spec-draft-n-max 7 --spec-draft-sampling probabilistic`, `-c 16384`, akceptacja 0,55 | `~/qwen-opt/queue/logs/ink-r8b-serve.log` | nie |
+| (poprzedni) czat z DSpark n-max 7, kopie (Q4) | 85,0 t/s | `GGML_HIP_PM4=0`, FUSE + FUSE2 + NOBLAS, `-md dspark-Q8_0 --spec-type draft-dspark --spec-draft-n-max 7`, akceptacja 0,55 | `ink-d7.log`; `DUO-INKLING.md` 09:30 | nie |
+| czat z DSpark n7, długi prompt 2k / 8k / T=0,7 | **73,4 / 66,8 / 26,8 t/s**, prefill 2k 1300 t/s (FUSE3 wył.: 67,4 / 59,0 / 24,9, prefill 994) | 2026-11-23 | jak wiersz 91,2 | `ink-r8b-serve.log`, `ink-r8b-f3off.log` | nie |
+| (poprzedni) DSpark n7, długi 2k / T=0,7 | 67,7 / 26,4 t/s | 2026-11-21 | j.w. | `ink-d7.log` | nie |
 | prefill pp512 / pp2048 | 1333 / 1125 t/s (stock); serwer 2k 1030 t/s z PM4 | 2026-11-21 | stock / r6 | `ink-ad-bench.log`, `ink-r6-serve.log` | nie |
 
-FUSE3 dał tg64 58,0 t/s, ale KLD 4,68 (zepsuty) — nie jest rekordem; poprawka r8 i kernel MoE r9 niezmierzone (stop 2026-11-22).
+FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s. Kernel MoE w jednym (r9, GGML_HIP_INK_MEGA): KLD OK, ale z DSpark kopie 68,8 → 46,2 t/s (−33%), odrzucony. PM4 z DSpark nadal wolniej (68,8 vs 91,2 t/s).
 
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.
