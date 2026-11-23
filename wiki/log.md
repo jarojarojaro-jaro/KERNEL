@@ -618,3 +618,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Telegram | lista 425 dostawców inferencji (Jaber) zapisana: ekosystem/lista-dostawcow-inferencji + CSV/XLSX
 
 ## [2026-11-23] Telegram | SAGE-REXL3 (EXL3) kwanty Inkling: tylko CUDA, inna referencja porównania, zmiana kwantu — nie dla XTX
+
+## [2026-11-23] Telegram | tokenizacja vLLM 120× (Elixir/Rust/toks): zysk dla serwerów Pythona; u nas tokenizacja już równoległa (raport 42); pomysł: cache segmentów rozmowy

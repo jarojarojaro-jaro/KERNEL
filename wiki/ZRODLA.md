@@ -503,6 +503,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/ViC305/status/2124143645687492623 (Telegram 2026-11-23) SAGE-REXL3 kwanty Inkling 2 Mini | 2026-11-21, HF vcruz305/Inkling-2-Mini-SAGE-REXL3-{4.23,2.92,2.26}bpw | [[inkling-2-mini]] | Nie dla nas: EXL3 (exllamav3) działa tylko na CUDA, nie na ROCm; zmiana kwantu wbrew zasadzie; sam autor przyznaje, że porównanie z GGUF jest na innej referencji (oryginał vs UD-Q8), więc „+4 pkt top-1” nie jest jabłka do jabłek | 4,23 bpw 15,03 GB top-1 98,33% KLD 0,0088 vs UD-Q4_K_XL 17,63 GB 98,0% (deklaracja) | tylko jeśli exllamav3 dostanie HIP; ewentualnie karty NVIDIA 16 GB |
 
+| https://x.com/TheHarryET/status/2123920011983225339 (Telegram 2026-11-23) artykuł „vLLM tokenization 120x faster with Elixir” | 2026-11-20 | [[raport-42-safe-io]] | Prawdziwe, ale dla serwerów wielu użytkowników: tokenizer toks (asembler) + szablony czatu w Rust jako NIF poza GIL Pythona, cache segmentów rozmowy; u nas llama.cpp w C++ bez GIL, tokenizacja już równoległa (LLAMA_TOKENIZE_PAR=8, 1492 → 329 ms, raport 42) | 120× przy 1M tokenów + 8 obrazów (162 vs 1,35 req/s); 53–181× vs preprocessing vLLM/SGLang; od tury ~30 98–99% tokenów z cache | czy tokenizacja + szablon przy 200k+ to >1% TTFT u nas; cache segmentów jako pomysł |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
