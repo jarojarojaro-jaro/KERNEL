@@ -660,3 +660,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Inkling r12 | llama.cpp: KLD 0, tg +7,6%, DSpark z all nadal 0/413 → r13; produkcja = Maya
 
 ## [2026-11-23] Maya HIP runda 2 | czat T=0,7 94,5, długi 2k 93,5 t/s (bit w bit); do 100 brak ~0,6 ms/token
+
+## [2026-11-23] koniec sesji | Maya :18796 bez draftera (T=0,7 94,5 / długi 93,5 t/s); z drafterem kopie 141, krótkie ~100, T=0,7 79; jaroserverai wyłączony na polecenie JARO
