@@ -632,3 +632,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Inkling r8/r9 na XTX | rekord DSpark kopie 91,2 t/s (+7,8% FUSE3), long 2k 73,4; FUSE3 KLD 0,0022; MEGA −33% odrzucony; PM4 z DSpark −25%; OOM przy 32k
 
 ## [2026-11-23] K-134 | Strata 0.1.66 na XTX z DSpark: kopie 100,6–109,6, T=0,7 60,6 t/s (nasz 91,2 / 26,8); page fault przy L2048 → stop, Maya nie mierzona
+
+## [2026-11-23] Telegram | aci-cpp (Actual): fork llama.cpp bez AMD, +do 28% vs v1.0.0; nasz topka ×3,21 vs upstream

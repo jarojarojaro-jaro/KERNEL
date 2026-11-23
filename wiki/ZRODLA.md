@@ -513,6 +513,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/YuvrajInfer/status/2123611563278180763 (Telegram 2026-11-23) „hierarchia optymalizacji” | 2026-11-20 | [[lektury-dekod-podstawy]] | Ogólnik bez liczb (bajty z HBM > narzut kerneli > reszta; tiling FA, fuzje + grafy, KV paged/kwantyzowany, układy pamięci) — wszystko już stosujemy; kontrprzykład z naszych pomiarów: Inkling 2 Mini na XTX ogranicza narzut ~7700 kerneli/token, nie bajty (26,9 t/s przy ssuficie pasma ~290) | brak | — |
 
+| https://x.com/actualinc/status/2124662121304617094 (Telegram 2026-11-23) aci-cpp (fork llama.cpp Actual) | 2026-11-23 | [[actual-computer]] | Delta: ich fork llama.cpp dla Mac, DGX Spark i RTX (bez AMD); vs llama.cpp v1.0.0 na Qwen3.8-27B +do 28% na 8/10 obciążeń; nasz topka vs upstream na XTX: czat ×3,21 (raport wyniki-xtx 2026-10-19), więc nic do przejęcia bez kodu i liczb per technika | do +28% (deklaracja, wątek) | czy kod aci-cpp jest publiczny; przeczytać wątek, jeśli podadzą techniki |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
