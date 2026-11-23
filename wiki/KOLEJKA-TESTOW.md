@@ -24,6 +24,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
 1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
 
+### K-138 · Unsloth llama.cpp (prebuild b12649-mix, fuzje Inkling) na XTX vs nasz r14 i Maya
+- data: 2026-11-23 (link JARO, panel 19:57; Unsloth: RTX PRO 6000 81 → 125 t/s, gfx1151 24 → 33 bez spekulacji)
+- test: gotowa paczka `app-b12649-mix-c7059d6-linux-x64-rocm-gfx110X.tar.gz` (bez budowania), AD-Q4_K i UD-Q4_K_XL, KV q4_0: llama-bench tg128 vs nasz r14 (58,4) i stock; serwer z DSpark n7 (xbench Q4, T=0,7, L2k, L8k) vs r14 i Maya (T=0,7 104,3); ≤ 10 min
+- oczekiwany zysk: dla Mai brak [INFERENCE: Maya na 3090 124 t/s ≈ Unsloth na PRO 6000 przy 2× większym paśmie]; dla naszego llama.cpp sprawdzić, które ich fuzje nie pokrywają się z naszymi FUSE/F4 (#401, #402, #411, #412, #414) i dać je Gemini w r16
+- ryzyko karty: obca paczka ROCm; PM4 nie dotyczy (to nie nasz fork), test pod blokadą GPU
+- priorytet: średni
+
 ### K-137 · AtomicChat Uncensored AD-Q4_K natywnie w Maya (eksperci Q4_K + Q5_0): ile szybciej niż ablacja w locie
 - data: 2026-11-23 (JARO, panel 19:02: „zoptymalizować ten atomic chat i zobaczyć, ile może śmigać”)
 - stan: Maya odrzuca plik (`type Q4_K not decoded here`); eksperci AtomicChat: gate_up Q4_K (9,17 GB), down Q5_0 (5,61 GB), reszta Q8_0 (nagłówek GGUF). Odczyt ekspertów na token jak w unsloth UD-Q4_K_XL: 1,847 vs 1,847 GB (pętla 3× w warstwach 6–17), dense 1,73 vs 1,82 GB

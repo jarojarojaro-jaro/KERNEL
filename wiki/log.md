@@ -678,3 +678,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] koniec testów | Maya >100 t/s (T=0,7 104,3), K-135 0%, r13/r14 llama.cpp (tg +17%, narzut serwera 7,8 ms/token → r15), bisekcja K-001, K-005 −74%; jaroserverai wyłączony
 
 ## [2026-11-23] Maya v1.1.75 (link JARO) + AtomicChat natywnie | hipx14 przeniesione na 1.1.75 (88b6a6c, STRATA_USE_HIP→MAYA_USE_HIP), kernele Q4_K/Q5_0 (30ff426, test hosta = ggml bit w bit); XTX czeka: K-136, K-137
+
+## [2026-11-23] Unsloth Inkling 1,9× (link JARO) | fuzje ggml-cuda, PRO 6000 81 → 125 t/s bez spekulacji; ~2× mniej wydajne na bajt niż Maya; K-138 (prebuild gfx110X na XTX)
