@@ -1,0 +1,5 @@
+# Gemini ink-r13 gate (KV q4_0)
+ink-r13-kld|900|~/qwen-opt/inkling|./r13.sh kld
+ink-r13-tg|600|~/qwen-opt/inkling|./r13.sh tg
+ink-r13-serve|1200|~/qwen-opt/inkling|./r13.sh serve
+ink-r13-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

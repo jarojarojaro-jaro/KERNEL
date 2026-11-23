@@ -666,3 +666,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] zwiad | vllm-redshift (R9700 Inkling 88–104 t/s, GPU_MAX_HW_QUEUES=2 → K-135); QEngine 275 t/s to 3×3090 TP INT4 (1 karta 102,9); oMLX 0.8.3; r13 czeka na włączenie serwera
 
 ## [2026-11-23] K-135 | GPU_MAX_HW_QUEUES=2 na XTX z Mayą: 0% (94,5 → 94,5), odrzucone
+
+## [2026-11-23] Inkling r13 | llama.cpp: tg +15%, DSpark naprawiony, L8k +21%; T=0,7 nadal 28 → r14
