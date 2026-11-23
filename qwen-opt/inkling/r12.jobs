@@ -1,0 +1,5 @@
+# Gemini ink-r12 gate (KV q4_0)
+ink-r12-kld|900|~/qwen-opt/inkling|./r12.sh kld
+ink-r12-tg|600|~/qwen-opt/inkling|./r12.sh tg
+ink-r12-serve|1200|~/qwen-opt/inkling|./r12.sh serve
+ink-r12-maya-back|60|~|(setsid nohup ~/k134/mayaserve.sh > ~/k134/mayaserve.out 2>&1 < /dev/null &); echo ok

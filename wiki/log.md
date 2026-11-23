@@ -656,3 +656,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Maya + oficjalny drafter na XTX | czat Q1–Q3 do 93 t/s, kopie 131,8, ale T=0,7 −15%; :18796 bez draftera; 3090 128 t/s vs XTX 82 → eksperci HIP
 
 ## [2026-11-23] Maya HIP | IK2_HIP_MVF16+EXPV: czat T=0,7 77,1 → 91,3, długi 2k 74,9 → 86,4 t/s (+15–18%, bit w bit); wdrożone :18796
+
+## [2026-11-23] Inkling r12 | llama.cpp: KLD 0, tg +7,6%, DSpark z all nadal 0/413 → r13; produkcja = Maya
