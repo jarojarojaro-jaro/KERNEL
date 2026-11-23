@@ -225,6 +225,8 @@ Kampania 67c (wieczór 2026-11-07): T1 = mediana `spec_sweep` seed 1, fill = pro
 
 | **Maya 1.1.73 + nasza ablacja AtomicChat (`IK2_ABLATE`), bez cenzury, UD-Q4_K_XL, zgadywanie (lookup)** | kopie 102,9 t/s, T=0,7 77,9, długi 2k 76,1 t/s (mediana 5), prefill 2k 3372 t/s; odmowy 7/8 → 0/8 | 2026-11-23 | `~/k134/mayaserve.sh` (:18796), łatka `qwen-opt/inkling/maya-ik2-ablate.patch` | `~/k134/ablate/` (jaroserverai) | tak (czat :18796) |
 
+| **Maya + ablacja AtomicChat + KV q4 (`IK2_KV=q4`), bez cenzury, zgadywanie (lookup)** | kopie 101,2 t/s, T=0,7 77,3, długi 2k 74,8 t/s (mediana 5; KV f16: 102,3 / 78,4 / 76,3); PPL +0,92%, KLD 0,024; pełny kontekst 262 144 mieści się z ekspertami w VRAM (KV 2,38 GiB) | 2026-11-23 | `~/k134/mayaserve.sh` (:18796), łatka `qwen-opt/inkling/maya-ik2-ablate-kvq4.patch` | `~/k134/kvq4/` (jaroserverai) | tak (czat :18796) |
+
 FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s. Kernel MoE w jednym (r9, GGML_HIP_INK_MEGA): KLD OK, ale z DSpark kopie 68,8 → 46,2 t/s (−33%), odrzucony. PM4 z DSpark nadal wolniej (68,8 vs 91,2 t/s). Odniesienie obcego silnika na tej karcie: Strata 0.1.66 (UD-Q4_K_XL, DSpark) kopie 100,6–109,6 t/s, T=0,7 60,6 t/s, ale GPU page fault przy długim prompcie; Maya 1.1.73 (UD-Q4_K_XL, drafting on bez draftera) kopie 112,7, T=0,7 80,7, długi 2k 80,0 t/s, stabilna (K-134, 2026-11-23).
 
 ## Jak dopisywać

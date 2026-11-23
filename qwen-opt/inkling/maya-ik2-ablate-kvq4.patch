@@ -1,0 +1,1268 @@
+diff -ru src.orig-20261123/src/ik2/ik2_kernels.cu src/src/ik2/ik2_kernels.cu
+--- src.orig-20261123/src/ik2/ik2_kernels.cu	2026-11-23 00:59:06.679919868 +0000
++++ src/src/ik2/ik2_kernels.cu	2026-11-23 02:44:38.380098715 +0000
+@@ -17,6 +17,7 @@
+ #include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
++#include <type_traits>
+ 
+ namespace ik2::k {
+ namespace {
+@@ -197,6 +198,91 @@
+     return (uint32_t) __half_as_ushort(__low2half(h2)) | ((uint32_t) __half_as_ushort(__high2half(h2)) << 16);
+ }
+ 
++// IK2_KV=q4: the cache in 4 bits, ggml q4_0's numbers (blocks of 32 values along a head's 128 dims: an FP16 scale
++// d = max / -8 of the value of largest magnitude, codes min(15, (int) (x / d + 8.5)), a value (code - 8) d - what
++// quantize_row_q4_0 makes, so the same as llama.cpp's -ctk/-ctv q4_0), laid out for the kernels' loads: a record of
++// 72 bytes a (position, K / V head) - 64 bytes of codes (byte i: dim 2 i in its low nibble, 2 i + 1 in its high), then
++// the four blocks' scales.  An element offset e of the FP16 cache's [kv_cap][KV][128] is record e >> 7, dim e & 127.
++// (KvQ4: the kernels' tag type for it; its pointers are the cache's bytes, never stepped by element.)
++struct KvQ4 {
++    uint8_t b;
++};
++constexpr int kQ4Rec = kKvQ4Rec;
++__device__ __forceinline__ const uint8_t* q4_rec(const KvQ4* base, size_t e) {
++    return (const uint8_t*) base + (e >> 7) * kQ4Rec;
++}
++// the scale of dim's block in both halves (FP16 bits)
++__device__ __forceinline__ uint32_t q4_d2(const uint8_t* rec, int dim) {
++    const uint32_t d = *(const uint16_t*) (rec + 64 + 2 * (dim >> 5));
++    return d | (d << 16);
++}
++// four codes (bits 0, 4, 8, 12 of n: dims 0 .. 3) as FP16 times d2: lo dims 0, 1, hi dims 2, 3.  A code c as FP16 is
++// 1024 + c (0x6400 | c); less 1032, exact, then times the scale (rounded to nearest, as ggml's FP16 dequantization)
++__device__ __forceinline__ void q4x4_h4(uint32_t n, uint32_t d2, uint32_t& lo, uint32_t& hi) {
++    lo = h2_mul(h2_sub((n & 0xFu) | ((n & 0xF0u) << 12) | 0x64006400u, 0x64086408u), d2);
++    hi = h2_mul(h2_sub(((n >> 8) & 0xFu) | ((n & 0xF000u) << 4) | 0x64006400u, 0x64086408u), d2);
++}
++__device__ __forceinline__ uint4 q4x8_h8(uint32_t w, uint32_t d2) {
++    uint4 h;
++    q4x4_h4(w, d2, h.x, h.y);
++    q4x4_h4(w >> 16, d2, h.z, h.w);
++    return h;
++}
++// the 8 values from element offset e (a multiple of 8) as FP16
++__device__ __forceinline__ uint4 q4_ld8(const KvQ4* base, size_t e) {
++    const uint8_t* rec = q4_rec(base, e);
++    const int dim = (int) (e & 127);
++    return q4x8_h8(*(const uint32_t*) (rec + (dim >> 1)), q4_d2(rec, dim));
++}
++// a warp's head row into its record: lane holds dims 4 lane .. + 3 (x); the 8 lanes of a block find its value of
++// largest magnitude (the first of equals, as quantize_row_q4_0's scan)
++__device__ __forceinline__ void q4_store_warp(float4 x, uint8_t* rec) {
++    const int lane = threadIdx.x & 31;
++    float am = fabsf(x.x), mv = x.x;
++    if (fabsf(x.y) > am) am = fabsf(x.y), mv = x.y;
++    if (fabsf(x.z) > am) am = fabsf(x.z), mv = x.z;
++    if (fabsf(x.w) > am) am = fabsf(x.w), mv = x.w;
++    int src = lane;
++#pragma unroll
++    for (int sh = 1; sh < 8; sh <<= 1) {
++        const float oa = __shfl_xor_sync(0xffffffffu, am, sh), ov = __shfl_xor_sync(0xffffffffu, mv, sh);
++        const int os = __shfl_xor_sync(0xffffffffu, src, sh);
++        if (oa > am || (oa == am && os < src)) am = oa, mv = ov, src = os;
++    }
++    const float d = mv / -8.0f, id = d != 0.0f ? 1.0f / d : 0.0f;
++    auto code = [&](float v) { return (uint32_t) min(15, (int) (__fmul_rn(v, id) + 8.5f)); };
++    ((uint16_t*) rec)[lane] = (uint16_t) (code(x.x) | (code(x.y) << 4) | (code(x.z) << 8) | (code(x.w) << 12));
++    if ((lane & 7) == 0) ((uint16_t*) (rec + 64))[lane >> 3] = f2h(d);
++}
++// the decode kernels' fragments (attn_decode_mma_kernel / attn_block_mma_kernel) from a q4 cache: K - the lane's dims
++// 16 kk + 4 tq .. + 3 of the keys at element offsets e0 / e1 (ka[kk][0], [2] / [1], [3], as the FP16 words); V - the
++// 16 dims 16 gr .. of the key at e, FP16 (lo the first 8)
++__device__ __forceinline__ void q4_k_frags(const KvQ4* kc, size_t e0, size_t e1, int tq, uint32_t (&ka)[8][4]) {
++    const uint8_t* r0 = q4_rec(kc, e0);
++    const uint8_t* r1 = q4_rec(kc, e1);
++    const uint2 s0 = *(const uint2*) (r0 + 64), s1 = *(const uint2*) (r1 + 64);
++    uint32_t n0[8], n1[8];
++#pragma unroll
++    for (int kk = 0; kk < 8; ++kk) {
++        n0[kk] = *(const uint16_t*) (r0 + 8 * kk + 2 * tq);
++        n1[kk] = *(const uint16_t*) (r1 + 8 * kk + 2 * tq);
++    }
++#pragma unroll
++    for (int kk = 0; kk < 8; ++kk) {   // (the scale of block kk / 2)
++        const uint32_t w0 = kk < 4 ? s0.x : s0.y, w1 = kk < 4 ? s1.x : s1.y;
++        const uint32_t d0 = (kk & 2) ? (w0 >> 16) : (w0 & 0xFFFFu), d1 = (kk & 2) ? (w1 >> 16) : (w1 & 0xFFFFu);
++        q4x4_h4(n0[kk], d0 | (d0 << 16), ka[kk][0], ka[kk][2]);
++        q4x4_h4(n1[kk], d1 | (d1 << 16), ka[kk][1], ka[kk][3]);
++    }
++}
++__device__ __forceinline__ void q4_v_row16(const KvQ4* vc, size_t e, int gr, uint4& lo, uint4& hi) {
++    const uint8_t* r = q4_rec(vc, e);
++    const uint2 w = *(const uint2*) (r + 8 * gr);
++    const uint32_t d = *(const uint16_t*) (r + 64 + 2 * (gr >> 1));
++    lo = q4x8_h8(w.x, d | (d << 16));
++    hi = q4x8_h8(w.y, d | (d << 16));
++}
++
+ template <bool WRITE_F16, bool WRITE_F32>
+ __global__ void rms_impl_kernel(const float* x, const float* w, int D, float eps, uint16_t* y16, float* y32) {
+     __shared__ float sh[kBlk];
+@@ -235,6 +321,17 @@
+         }
+     }
+ }
++
++// y[t] -= r (r . y[t]) for each row t of y [T][ld] (C values a row; r [C] a unit vector): a block a row
++__global__ void proj_out_kernel(float* y, int ld, const float* __restrict__ r, int C) {
++    __shared__ float sh[kBlk];
++    float* yr = y + (size_t) blockIdx.x * ld;
++    float a = 0.0f;
++    for (int c = threadIdx.x; c < C; c += kBlk) a += r[c] * yr[c];
++    const float d = bsum(a, sh);
++    for (int c = threadIdx.x; c < C; c += kBlk) yr[c] -= d * r[c];
++}
++
+ // rms of up to three vectors, each with its own weights, in one launch (a block a vector; rms_impl_kernel's sums)
+ __global__ void rms_multi_kernel(RmsJobs jobs, int D, float eps) {
+     __shared__ float sh[kBlk];
+@@ -377,6 +474,31 @@
+ __device__ __forceinline__ void store_v_warp(const float* vp, uint8_t* vdst, int D, float eps, float v_scale) {
+     rms_fp8_warp(vp, vdst, D, eps, v_scale);
+ }
++// (q4: kdst / vdst the row's record - kv_row; D is 128)
++__device__ __forceinline__ float4 q4_src4(const float* src) {
++    const int lane = threadIdx.x & 31;
++    if (((uintptr_t) src & 15) == 0) return ((const float4*) src)[lane];
++    return make_float4(src[4 * lane], src[4 * lane + 1], src[4 * lane + 2], src[4 * lane + 3]);
++}
++__device__ __forceinline__ void store_k_warp(const float* kp, KvQ4* kdst, int, float qk_clip, float) {
++    const float4 xv = q4_src4(kp);
++    const float nrm = sqrtf(wsum(xv.x * xv.x + xv.y * xv.y + xv.z * xv.z + xv.w * xv.w));
++    const float f = fminf(1.0f, qk_clip / (nrm + 1e-6f));
++    q4_store_warp(make_float4(xv.x * f, xv.y * f, xv.z * f, xv.w * f), (uint8_t*) kdst);
++}
++__device__ __forceinline__ void store_v_warp(const float* vp, KvQ4* vdst, int D, float eps, float) {
++    const float4 xv = q4_src4(vp);
++    const float rs = rsqrtf(wsum(xv.x * xv.x + xv.y * xv.y + xv.z * xv.z + xv.w * xv.w) / (float) D + eps);
++    q4_store_warp(make_float4(xv.x * rs, xv.y * rs, xv.z * rs, xv.w * rs), (uint8_t*) vdst);
++}
++// a cache's row at element offset e (q4: its record)
++template <class KV>
++__device__ __forceinline__ KV* kv_row(KV* c, size_t e) {
++    return c + e;
++}
++__device__ __forceinline__ KvQ4* kv_row(KvQ4* c, size_t e) {
++    return (KvQ4*) ((uint8_t*) c + (e >> 7) * kQ4Rec);
++}
+ 
+ // 1 warp (32 threads) per group across all q, k, v, r groups of T tokens
+ template <class KV>
+@@ -415,13 +537,13 @@
+         const int kv = rem - H;
+         const int slot = kv_cap > 0 ? (pos0 + t) % kv_cap : (pos0 + t);
+         const float* kp = k_in + ((size_t) t * KVh + kv) * D;
+-        KV* kdst = kc + ((size_t) slot * KVh + kv) * D;
++        KV* kdst = kv_row(kc, ((size_t) slot * KVh + kv) * D);
+         store_k_warp(kp, kdst, D, qk_clip, k_scale);
+     } else if (rem < H + 2 * KVh) {
+         const int kv = rem - H - KVh;
+         const int slot = kv_cap > 0 ? (pos0 + t) % kv_cap : (pos0 + t);
+         const float* vp = v_in + ((size_t) t * KVh + kv) * D;
+-        KV* vdst = vc + ((size_t) slot * KVh + kv) * D;
++        KV* vdst = kv_row(vc, ((size_t) slot * KVh + kv) * D);
+         store_v_warp(vp, vdst, D, eps, v_scale);
+     } else {
+         const int h = rem - H - 2 * KVh;
+@@ -1558,7 +1680,8 @@
+                        int kv_cap, int H, int Hkv, const int* pos_d, int qpos, float qk_scale,
+                        const float* __restrict__ r, const float* __restrict__ proj, int d_rel, bool rel4, int extent,
+                        int window, int n_split, float* __restrict__ o_part, float2* __restrict__ ml_part) {
+-    constexpr bool F8 = sizeof(KVT) == 1;
++    constexpr bool Q4 = std::is_same<KVT, KvQ4>::value;
++    constexpr bool F8 = sizeof(KVT) == 1 && !Q4;
+     if (pos_d) qpos = *pos_d;   // (a token of a replayed graph: its position read here)
+     const int lane = threadIdx.x & 31, gr = lane >> 2, tq = lane & 3;
+     const int g = blockIdx.x, R = H / Hkv, KD = Hkv * kFaD;
+@@ -1607,7 +1730,9 @@
+             const KVT* p0 = kg + row(gr);
+             const KVT* p1 = kg + row(gr + 8);
+             uint32_t ka[kFaD / 16][4];
+-            if constexpr (F8) {
++            if constexpr (Q4) {
++                q4_k_frags(kc, row(gr) + (size_t) g * kFaD, row(gr + 8) + (size_t) g * kFaD, tq, ka);
++            } else if constexpr (F8) {
+                 uint32_t w0[kFaD / 16], w1[kFaD / 16];
+ #pragma unroll
+                 for (int kk = 0; kk < kFaD / 16; ++kk) {
+@@ -1689,7 +1814,24 @@
+             const KVT* v1 = vg + row(2 * tq + 1);
+             const KVT* v8 = vg + row(2 * tq + 8);
+             const KVT* v9 = vg + row(2 * tq + 9);
+-            if constexpr (F8) {
++            if constexpr (Q4) {
++                uint4 h0[2], h1[2], h8[2], h9[2];
++                q4_v_row16(vc, row(2 * tq) + (size_t) g * kFaD, gr, h0[0], h0[1]);
++                q4_v_row16(vc, row(2 * tq + 1) + (size_t) g * kFaD, gr, h1[0], h1[1]);
++                q4_v_row16(vc, row(2 * tq + 8) + (size_t) g * kFaD, gr, h8[0], h8[1]);
++                q4_v_row16(vc, row(2 * tq + 9) + (size_t) g * kFaD, gr, h9[0], h9[1]);
++#pragma unroll
++                for (int i = 0; i < 2; ++i) {
++                    const uint32_t x0[4] = {h0[i].x, h0[i].y, h0[i].z, h0[i].w}, x1[4] = {h1[i].x, h1[i].y, h1[i].z, h1[i].w};
++                    const uint32_t x8[4] = {h8[i].x, h8[i].y, h8[i].z, h8[i].w}, x9[4] = {h9[i].x, h9[i].y, h9[i].z, h9[i].w};
++#pragma unroll
++                    for (int jj = 0; jj < 4; ++jj) {
++                        const uint32_t a[4] = {__byte_perm(x0[jj], x1[jj], 0x5410u), __byte_perm(x0[jj], x1[jj], 0x7632u),
++                                               __byte_perm(x8[jj], x9[jj], 0x5410u), __byte_perm(x8[jj], x9[jj], 0x7632u)};
++                        mma16816(o[4 * i + jj], a, pb0, pb1);
++                    }
++                }
++            } else if constexpr (F8) {
+                 const uint4 r0 = __ldg((const uint4*) v0), r1 = __ldg((const uint4*) v1);
+                 const uint4 r8 = __ldg((const uint4*) v8), r9 = __ldg((const uint4*) v9);
+                 const uint32_t x0[4] = {r0.x, r0.y, r0.z, r0.w}, x1[4] = {r1.x, r1.y, r1.z, r1.w};
+@@ -3890,6 +4032,18 @@
+     return make_float4(e4m3fn_to_f32(vr[o]), e4m3fn_to_f32(vr[o + 1]), e4m3fn_to_f32(vr[o + 2]),
+                        e4m3fn_to_f32(vr[o + 3]));
+ }
++// a head row's lane values (dims 4 lane .. + 3) at element offset e of a cache
++template <class KV>
++__device__ __forceinline__ float4 kv_ld4(const KV* c, size_t e, int lane) {
++    return v_load4(c + e, lane);
++}
++__device__ __forceinline__ float4 kv_ld4(const KvQ4* c, size_t e, int lane) {
++    const uint8_t* rec = q4_rec(c, e);
++    uint32_t lo, hi;
++    q4x4_h4(*(const uint16_t*) (rec + 2 * lane), q4_d2(rec, 4 * lane), lo, hi);
++    const float2 a = u32_to_f2(lo), b = u32_to_f2(hi);
++    return make_float4(a.x, a.y, b.x, b.y);
++}
+ 
+ template <class KV>
+ __device__ __forceinline__ void attn_flash_range(const float* qh, const float* rh, const KV* kc, const KV* vc,
+@@ -3909,7 +4063,7 @@
+         if (dist < 0 || dist >= window) continue;
+         const int slot = kv_cap > 0 ? pos % kv_cap : pos;
+         const size_t head_off = (size_t) slot * KD + (size_t) g * 128;
+-        const float4 k4 = v_load4(kc + head_off, lane);
++        const float4 k4 = kv_ld4(kc, head_off, lane);
+         float a = q4.x * k4.x + q4.y * k4.y + q4.z * k4.z + q4.w * k4.w;
+         float l = wsum(a) * qk_scale;
+         if (dist < extent) {
+@@ -3917,7 +4071,7 @@
+             l += wsum(b);
+         }
+         if (l > -INFINITY) {
+-            const float4 v4 = v_load4(vc + head_off, lane);
++            const float4 v4 = kv_ld4(vc, head_off, lane);
+             const float m_new = fmaxf(m_w, l);
+             const float alpha = (m_w == -INFINITY) ? 0.0f : expf(m_w - m_new);
+             const float beta = expf(l - m_new);
+@@ -4070,6 +4224,18 @@
+         if (v_out16) v_out16[idx] = f2h(e4m3fn_to_f32(vc[src]) * v_inv_scale);
+     }
+ }
++// q4: the same rows as FP16, 8 values a thread
++__global__ void unpack_kv_q4_to_f16_kernel(const KvQ4* kc, const KvQ4* vc, int kv_cap, int k0, int nk, int KD,
++                                           uint16_t* k_out16, uint16_t* v_out16) {
++    const int d8 = blockIdx.x * blockDim.x + threadIdx.x;
++    if (d8 >= (KD >> 3)) return;
++    for (int j = blockIdx.y; j < nk; j += gridDim.y) {
++        const int slot = kv_cap > 0 ? (k0 + j) % kv_cap : (k0 + j);
++        const size_t src = (size_t) slot * KD + (size_t) d8 * 8, dst = (size_t) j * KD + (size_t) d8 * 8;
++        if (k_out16) *(uint4*) (k_out16 + dst) = q4_ld8(kc, src);
++        if (v_out16) *(uint4*) (v_out16 + dst) = q4_ld8(vc, src);
++    }
++}
+ 
+ // ---- the resident token path: every expert in VRAM and nothing of a token on the host
+ 
+@@ -4837,7 +5003,8 @@
+                       int kv_cap, int H, int Hkv, const int* __restrict__ pos_d, int T, float qk_scale,
+                       const float* __restrict__ r, int r_ld, const float* __restrict__ proj, int d_rel, bool rel4,
+                       int extent, int window, int n_split, float* __restrict__ o_part, float2* __restrict__ ml_part) {
+-    constexpr bool F8 = sizeof(KVT) == 1;
++    constexpr bool Q4 = std::is_same<KVT, KvQ4>::value;
++    constexpr bool F8 = sizeof(KVT) == 1 && !Q4;
+     const int pos0 = *pos_d;
+     const int lane = threadIdx.x & 31, gr = lane >> 2, tq = lane & 3;
+     const int g = blockIdx.x, R = H / Hkv, KD = Hkv * kFaD, NC = T * R;
+@@ -4897,7 +5064,9 @@
+         {
+             const KVT* p0 = kg + row(gr);
+             const KVT* p1 = kg + row(gr + 8);
+-            if constexpr (F8) {
++            if constexpr (Q4) {
++                q4_k_frags(kc, row(gr) + (size_t) g * kFaD, row(gr + 8) + (size_t) g * kFaD, tq, ka);
++            } else if constexpr (F8) {
+                 uint32_t w0[kFaD / 16], w1[kFaD / 16];
+ #pragma unroll
+                 for (int kk = 0; kk < kFaD / 16; ++kk) {
+@@ -4992,7 +5161,25 @@
+             const KVT* v1 = vg + row(2 * tq + 1);
+             const KVT* v8 = vg + row(2 * tq + 8);
+             const KVT* v9 = vg + row(2 * tq + 9);
+-            if constexpr (F8) {
++            if constexpr (Q4) {
++                uint4 h0[2], h1[2], h8[2], h9[2];
++                q4_v_row16(vc, row(2 * tq) + (size_t) g * kFaD, gr, h0[0], h0[1]);
++                q4_v_row16(vc, row(2 * tq + 1) + (size_t) g * kFaD, gr, h1[0], h1[1]);
++                q4_v_row16(vc, row(2 * tq + 8) + (size_t) g * kFaD, gr, h8[0], h8[1]);
++                q4_v_row16(vc, row(2 * tq + 9) + (size_t) g * kFaD, gr, h9[0], h9[1]);
++#pragma unroll
++                for (int i = 0; i < 2; ++i) {
++                    const uint32_t x0[4] = {h0[i].x, h0[i].y, h0[i].z, h0[i].w}, x1[4] = {h1[i].x, h1[i].y, h1[i].z, h1[i].w};
++                    const uint32_t x8[4] = {h8[i].x, h8[i].y, h8[i].z, h8[i].w}, x9[4] = {h9[i].x, h9[i].y, h9[i].z, h9[i].w};
++#pragma unroll
++                    for (int jj = 0; jj < 4; ++jj) {
++                        const uint32_t a[4] = {__byte_perm(x0[jj], x1[jj], 0x5410u), __byte_perm(x0[jj], x1[jj], 0x7632u),
++                                               __byte_perm(x8[jj], x9[jj], 0x5410u), __byte_perm(x8[jj], x9[jj], 0x7632u)};
++#pragma unroll
++                        for (int j = 0; j < NT; ++j) mma16816(o[j][4 * i + jj], a, pb0[j], pb1[j]);
++                    }
++                }
++            } else if constexpr (F8) {
+                 const uint4 r0 = __ldg((const uint4*) v0), r1 = __ldg((const uint4*) v1);
+                 const uint4 r8 = __ldg((const uint4*) v8), r9 = __ldg((const uint4*) v9);
+                 const uint32_t x0[4] = {r0.x, r0.y, r0.z, r0.w}, x1[4] = {r1.x, r1.y, r1.z, r1.w};
+@@ -5112,6 +5299,71 @@
+     hist[c] = h0, hist[(size_t) C + c] = h1, hist[(size_t) 2 * C + c] = h2;
+ }
+ 
++// IK2_ABLATE: a few tokens' (T <= kPcMaxT) short conv as conv_block_kernel's (no dyn), its input x [T][x_ld] with the
++// direction r [C] projected out first (xn = x - r (r . x)): each block takes every token's dot over all C (from L2),
++// then its own channels.  With ys the input is first the MoE's sum (moe_combine_f32's, K picks a token), written to
++// x [T][C] - one block then (the sum is made once, each thread's channels the same in both loops)
++constexpr int kPcMaxT = 8;
++__global__ void __launch_bounds__(1024) proj_conv_kernel(float* x, int x_ld, const float* __restrict__ ys,
++                                                         const int* __restrict__ inv, const float* __restrict__ wt,
++                                                         int K, const float* __restrict__ r, int T, int C, float* hist,
++                                                         const float* __restrict__ w, const float* __restrict__ res,
++                                                         int res_ld, float* y, int y_ld, float* rec_old, float* rec_x) {
++    __shared__ float part[kPcMaxT][32];
++    __shared__ float dt[kPcMaxT];
++    const int lane = threadIdx.x & 31, warp = threadIdx.x >> 5;
++    float a[kPcMaxT];
++#pragma unroll
++    for (int t = 0; t < kPcMaxT; ++t) a[t] = 0.0f;
++    for (int c = threadIdx.x; c < C; c += blockDim.x) {
++        const float rc = r[c];
++#pragma unroll
++        for (int t = 0; t < kPcMaxT; ++t) {
++            if (t >= T) break;
++            float v;
++            if (ys) {
++                v = 0.0f;
++                for (int k = 0; k < K; ++k) v += wt[t * K + k] * ys[(size_t) inv[t * K + k] * C + c];
++                x[(size_t) t * x_ld + c] = v;
++            } else {
++                v = x[(size_t) t * x_ld + c];
++            }
++            a[t] += rc * v;
++        }
++    }
++#pragma unroll
++    for (int t = 0; t < kPcMaxT; ++t) {
++        if (t >= T) break;
++        const float v = wsum(a[t]);
++        if (lane == 0) part[t][warp] = v;
++    }
++    __syncthreads();
++    if (warp == 0) {
++        const int nw = (blockDim.x + 31) >> 5;
++        for (int t = 0; t < T; ++t) {
++            const float v = wsum(lane < nw ? part[t][lane] : 0.0f);
++            if (lane == 0) dt[t] = v;
++        }
++    }
++    __syncthreads();
++    for (int c = blockIdx.x * blockDim.x + threadIdx.x; c < C; c += gridDim.x * blockDim.x) {
++        float h0 = hist[c], h1 = hist[(size_t) C + c], h2 = hist[(size_t) 2 * C + c];
++        if (rec_old) rec_old[c] = h0, rec_old[(size_t) C + c] = h1, rec_old[(size_t) 2 * C + c] = h2;
++        const float* wc = w + (size_t) c * 4;
++        const float w0 = wc[0], w1 = wc[1], w2 = wc[2], w3 = wc[3];
++        const float rc = r[c];
++        for (int t = 0; t < T; ++t) {
++            const float xn = x[(size_t) t * x_ld + c] - dt[t] * rc;
++            if (rec_x) rec_x[(size_t) t * C + c] = xn;
++            float v = w0 * h0 + w1 * h1 + w2 * h2 + w3 * xn;
++            if (res) v += res[(size_t) t * res_ld + c];
++            y[(size_t) t * y_ld + c] = v;
++            h0 = h1, h1 = h2, h2 = xn;
++        }
++        hist[c] = h0, hist[(size_t) C + c] = h1, hist[(size_t) 2 * C + c] = h2;
++    }
++}
++
+ // every short conv's history as after the first n of a window's tokens, all the layers' convs in one launch
+ __global__ void rollback_block_kernel(const ConvRec* __restrict__ recs, int n) {
+     const ConvRec rc = recs[blockIdx.y];
+@@ -5677,6 +5929,11 @@
+     rms_impl_kernel<false, true><<<rows, kBlk, 0, s>>>(x, w, D, eps, nullptr, y);
+     check("rms");
+ }
++void proj_out(float* y, int ld, const float* r, int T, int C, cudaStream_t s) {
++    if (T <= 0) return;
++    proj_out_kernel<<<T, kBlk, 0, s>>>(y, ld, r, C);
++    check("proj_out");
++}
+ void rms_multi(const RmsJobs& jobs, int n, int D, float eps, cudaStream_t s) {
+     if (n <= 0) return;
+     if (n > 3) {
+@@ -5870,6 +6127,33 @@
+                                                                                  out, o_ld, v_inv_scale);
+     check("attn_flash_combine");
+ }
++void attn_flash_q4(const uint16_t* q16, int q_ld, const uint8_t* kc, const uint8_t* vc, int kv_cap, int H, int KV,
++                   int D, int Tq, int qpos0, float qk_scale, const float* bias, int extent, int window,
++                   const float* sink, float* out, int o_ld, float* scratch, size_t scratch_floats, int n_split,
++                   cudaStream_t s) {
++    if (Tq <= 0) return;
++    if (D != kFaD) {
++        std::fprintf(stderr, "ik2::k::attn_flash_q4: D = %d, not 128\n", D);
++        std::abort();
++    }
++#ifdef STRATA_USE_HIP
++    const size_t per_split = (size_t) Tq * H * (kFaD + 2);
++    n_split = std::max(1, std::min<int>(n_split, (int) (scratch_floats / per_split)));
++    float* o_part = scratch;
++    float2* ml_part = (float2*) (scratch + (size_t) n_split * Tq * H * kFaD);
++    attn_flash_rdna<KvQ4>(q16, q_ld, (const KvQ4*) kc, (const KvQ4*) vc, kv_cap, H, KV, Tq, qpos0, qk_scale, bias,
++                          extent, window, n_split, o_part, ml_part, s);
++    attn_flash_combine_kernel<<<dim3((unsigned) Tq, (unsigned) H), kFaD, 0, s>>>(o_part, ml_part, n_split, Tq, H, sink,
++                                                                                 out, o_ld, 1.0f);
++    check("attn_flash_combine");
++#else
++    (void) q16, (void) q_ld, (void) kc, (void) vc, (void) kv_cap, (void) KV, (void) qpos0, (void) qk_scale, (void) bias;
++    (void) extent, (void) window, (void) sink, (void) out, (void) o_ld, (void) scratch, (void) scratch_floats;
++    (void) n_split, (void) s;
++    std::fprintf(stderr, "ik2::k::attn_flash_q4: the AMD build's kernel only (IK2_FLASH=0)\n");
++    std::abort();
++#endif
++}
+ int attn_flash_splits(int Tq, int H, int nk, int n_sm) {
+     const int blocks = (Tq + 16 * kFaNW - 1) / (16 * kFaNW) * H;
+     const int want = (6 * n_sm + blocks - 1) / blocks;   // (about three waves of two blocks an SM)
+@@ -6525,11 +6809,15 @@
+     float* o_part = scratch;
+     float2* ml_part = (float2*) (o_part + (size_t) n_split * kWaNW * H * kFaD);
+     const bool rel4 = d_rel % 4 == 0 && (((uintptr_t) r | (uintptr_t) proj) & 15) == 0;
+-    if (arch_class() == 70)   // (Volta: mma.m8n8k4, the same partials)
++    if (arch_class() == 70) {   // (Volta: mma.m8n8k4, the same partials)
++        if constexpr (std::is_same<KV, KvQ4>::value) {
++            std::fprintf(stderr, "ik2::k::attn_decode_mma: IK2_KV=q4 has no Volta kernel\n");
++            std::abort();
++        } else
+         attn_decode_v70_kernel<KV><<<dim3((unsigned) Hkv, (unsigned) n_split), kWaNW * 32, 0, s>>>(
+             q16, kc, vc, kv_cap, H, Hkv, pos, qpos, qk_scale, r, proj, d_rel, rel4, extent, window, n_split, o_part,
+             ml_part);
+-    else
++    } else
+     attn_decode_mma_kernel<KV><<<dim3((unsigned) Hkv, (unsigned) n_split), kWaNW * 32, 0, s>>>(
+         q16, kc, vc, kv_cap, H, Hkv, pos, qpos, qk_scale, r, proj, d_rel, rel4, extent, window, n_split, o_part,
+         ml_part);
+@@ -6579,6 +6867,71 @@
+     check("unpack_kv_fp8_to_f16");
+ }
+ 
++// ---- IK2_KV=q4 (the caches' bytes: KvQ4 records, kQ4Rec bytes a position and K / V head; D 128)
++static void q4_need_d(int D) {
++    if (D != 128) {
++        std::fprintf(stderr, "ik2::k: IK2_KV=q4 needs heads of 128 dims, not %d\n", D);
++        std::abort();
++    }
++}
++void prep_qkv_r_q4(float* q, const float* q_clip, const float* k_in, uint8_t* kc, const float* v_in, uint8_t* vc,
++                   float* r, const float* r_clip, int T, int H, int KV, int D, int d_rel, float qk_clip, float rel_clip,
++                   float eps, const int* pos, float alpha, float n_floor, int pos0, int kv_cap, cudaStream_t s) {
++    if (T <= 0) return;
++    q4_need_d(D);
++    prep_qkv_r_impl_kernel<KvQ4><<<(unsigned) (T * (2 * H + 2 * KV)), 32, 0, s>>>(
++        q, q_clip, k_in, (KvQ4*) kc, v_in, (KvQ4*) vc, r, r_clip, T, H, KV, D, d_rel, qk_clip, rel_clip, eps, pos, alpha,
++        n_floor, pos0, kv_cap, 1.0f, 1.0f, nullptr, nullptr, nullptr, nullptr, 0, nullptr);
++    check("prep_qkv_r_q4");
++}
++void prep_qkv_r_q4_at(float* q, const float* q_clip, const float* k_in, uint8_t* kc, const float* v_in, uint8_t* vc,
++                      float* r, const float* r_clip, int H, int KV, int D, int d_rel, float qk_clip, float rel_clip,
++                      float eps, const int* pos, bool log_scale, float alpha, float n_floor, int kv_cap, uint16_t* q16,
++                      cudaStream_t s, const uint16_t* sink_w, const float* sink_x, int sink_k, float* sink_y) {
++    q4_need_d(D);
++    prep_qkv_r_impl_kernel<KvQ4><<<(unsigned) (2 * H + 2 * KV + (sink_w ? H : 0)), 32, 0, s>>>(
++        q, q_clip, k_in, (KvQ4*) kc, v_in, (KvQ4*) vc, r, r_clip, 1, H, KV, D, d_rel, qk_clip, rel_clip, eps,
++        log_scale ? pos : nullptr, alpha, n_floor, 0, kv_cap, 1.0f, 1.0f, pos, q16, sink_w, sink_x, sink_k, sink_y);
++    check("prep_qkv_r_q4_at");
++}
++void attn_multi_q4(const float* q, const float* r, const float* sink, const uint8_t* kc, const uint8_t* vc, int kv_cap,
++                   int nq, int H, int Hkv, int k0, int nk, int qpos0, float qk_scale, const float* proj, int d_rel,
++                   int extent, int window, float* scratch, float* out, cudaStream_t s) {
++    attn_multi_impl(q, r, sink, (const KvQ4*) kc, (const KvQ4*) vc, kv_cap, nq, H, Hkv, k0, nk, qpos0, qk_scale, 1.0f,
++                    proj, d_rel, extent, window, scratch, out, s);
++}
++void attn_decode_q4(const float* q, const float* r, const float* sink, const uint8_t* kc, const uint8_t* vc, int kv_cap,
++                    int H, int Hkv, int D, int k0, int nk, int qpos, float qk_scale, const float* proj, int d_rel,
++                    int extent, int window, float* scratch, float* out, cudaStream_t s) {
++    attn_decode_impl(q, r, sink, (const KvQ4*) kc, (const KvQ4*) vc, kv_cap, H, Hkv, D, k0, nk, qpos, qk_scale, 1.0f,
++                     proj, d_rel, extent, window, scratch, out, s);
++}
++void attn_decode_q4_at(const float* q, const float* r, const float* sink, const uint8_t* kc, const uint8_t* vc,
++                       int kv_cap, int H, int Hkv, const int* pos, int P, float qk_scale, const float* proj, int d_rel,
++                       int extent, int window, float* scratch, float* out, cudaStream_t s) {
++    attn_split_kernel<KvQ4><<<dim3(H, P), 128, 0, s>>>(q, r, (const KvQ4*) kc, (const KvQ4*) vc, kv_cap, H, Hkv, 0, 0, 0,
++                                                        qk_scale, proj, d_rel, extent, window, scratch, pos);
++    check("attn_decode_q4_at (split)");
++    attn_combine_kernel<<<dim3(H, 1), 128, 0, s>>>(sink, scratch, H, P, 1.0f, out);
++    check("attn_decode_q4_at (combine)");
++}
++void attn_decode_mma_q4(const uint16_t* q16, const float* r, const float* sink, const uint8_t* kc, const uint8_t* vc,
++                        int kv_cap, int H, int Hkv, const int* pos, int qpos, int n_split, float qk_scale,
++                        const float* proj, int d_rel, int extent, int window, float* scratch, float* out,
++                        const float* gate, uint16_t* out16, cudaStream_t s) {
++    attn_decode_mma_impl(q16, r, sink, (const KvQ4*) kc, (const KvQ4*) vc, kv_cap, H, Hkv, pos, qpos, n_split, qk_scale,
++                         1.0f, proj, d_rel, extent, window, scratch, out, gate, out16, s);
++}
++void unpack_kv_q4_to_f16(const uint8_t* kc, const uint8_t* vc, int kv_cap, int k0, int nk, int KD, uint16_t* k_out16,
++                         uint16_t* v_out16, cudaStream_t s) {
++    if (nk <= 0 || KD <= 0) return;
++    const int kd8 = KD >> 3, bx = std::min(256, kd8);
++    const dim3 g((unsigned) ((kd8 + bx - 1) / bx), (unsigned) std::min(nk, 65535));
++    unpack_kv_q4_to_f16_kernel<<<g, (unsigned) bx, 0, s>>>((const KvQ4*) kc, (const KvQ4*) vc, kv_cap, k0, nk, KD,
++                                                          k_out16, v_out16);
++    check("unpack_kv_q4_to_f16");
++}
++
+ void decode_f16(int type, const uint8_t* blocks, size_t n, uint16_t* out, cudaStream_t s) {
+     if (!n) return;
+     if (type == kNVFP4 && n % 16 == 0 && (((uintptr_t) blocks & 3) == 0) && (((uintptr_t) out & 15) == 0)) {
+@@ -6690,6 +7043,22 @@
+                                                                    T, C, res, res_ld, y, y_ld, rec_old, rec_x);
+     check("conv_block");
+ }
++void proj_conv(float* x, int x_ld, const float* ys, const int* inv, const float* wt, int K, const float* r, int T, int C,
++               float* hist, const float* w, const float* res, int res_ld, float* y, int y_ld, float* rec_old,
++               float* rec_x, cudaStream_t s) {
++    if (T <= 0) return;
++    if (T > kPcMaxT) {
++        std::fprintf(stderr, "ik2::k::proj_conv: %d tokens (at most %d)\n", T, kPcMaxT);
++        std::abort();
++    }
++    if (ys)
++        proj_conv_kernel<<<1, 1024, 0, s>>>(x, x_ld, ys, inv, wt, K, r, T, C, hist, w, res, res_ld, y, y_ld, rec_old,
++                                            rec_x);
++    else
++        proj_conv_kernel<<<(unsigned) ((C + 255) / 256), 256, 0, s>>>(x, x_ld, ys, inv, wt, K, r, T, C, hist, w, res,
++                                                                      res_ld, y, y_ld, rec_old, rec_x);
++    check("proj_conv");
++}
+ void rollback_block(const ConvRec* recs, int n_recs, int n, cudaStream_t s) {
+     if (n_recs <= 0) return;
+     rollback_block_kernel<<<dim3(8, (unsigned) n_recs), 256, 0, s>>>(recs, n);
+@@ -6754,6 +7123,25 @@
+         alpha, n_floor, 0, kv_cap, 1.0f, 1.0f, pos, q16, sink_w, sink_x, sink_k, sink_y, q_ld, r_ld);
+     check("prep_qkv_r_f16_block");
+ }
++void prep_qkv_r_q4_block(float* q, int q_ld, const float* q_clip, const float* k_in, uint8_t* kc, const float* v_in,
++                         uint8_t* vc, float* r, int r_ld, const float* r_clip, int T, int H, int KV, int D, int d_rel,
++                         float qk_clip, float rel_clip, float eps, const int* pos, bool log_scale, float alpha,
++                         float n_floor, int kv_cap, uint16_t* q16, cudaStream_t s, const uint16_t* sink_w,
++                         const float* sink_x, int sink_k, float* sink_y) {
++    q4_need_d(D);
++    prep_qkv_r_impl_kernel<KvQ4><<<(unsigned) (T * (2 * H + 2 * KV) + (sink_w ? T * H : 0)), 32, 0, s>>>(
++        q, q_clip, k_in, (KvQ4*) kc, v_in, (KvQ4*) vc, r, r_clip, T, H, KV, D, d_rel, qk_clip, rel_clip, eps,
++        log_scale ? pos : nullptr, alpha, n_floor, 0, kv_cap, 1.0f, 1.0f, pos, q16, sink_w, sink_x, sink_k, sink_y, q_ld,
++        r_ld);
++    check("prep_qkv_r_q4_block");
++}
++void attn_block_q4(const uint16_t* q16, const float* r, int r_ld, const float* sink, const uint8_t* kc,
++                   const uint8_t* vc, int kv_cap, int H, int Hkv, const int* pos, int T, int n_split, float qk_scale,
++                   const float* proj, int d_rel, int extent, int window, float* scratch, float* out, const float* gate,
++                   int gate_ld, uint16_t* out16, cudaStream_t s) {
++    attn_block_impl<KvQ4>(q16, r, r_ld, sink, (const KvQ4*) kc, (const KvQ4*) vc, kv_cap, H, Hkv, pos, T, n_split,
++                          qk_scale, 1.0f, proj, d_rel, extent, window, scratch, out, gate, gate_ld, out16, s);
++}
+ void attn_res_jobs_block(const ResStates& states, int n, const float* q, int nq, int jobs, int T, int C, float eps,
+                          float* out, cudaStream_t s) {
+     launch_attn_res<false>(states, n, q, nq, T, C, eps, 0.0f, out, RmsOuts{}, s, jobs);
+diff -ru src.orig-20261123/src/ik2/ik2_kernels.cuh src/src/ik2/ik2_kernels.cuh
+--- src.orig-20261123/src/ik2/ik2_kernels.cuh	2026-11-23 00:59:06.680919867 +0000
++++ src/src/ik2/ik2_kernels.cuh	2026-11-23 02:44:30.052862945 +0000
+@@ -21,6 +21,9 @@
+ 
+ /// y = x * rsqrt(mean(x^2) + eps) * w per row of D (w null: no weight).  x and y may alias.
+ void rms(const float* x, const float* w, int rows, int D, float eps, float* y, cudaStream_t s);
++/// y[t] -= r (r . y[t]) for each row of y [T][ld] (C values a row; r [C] a unit vector): a direction projected out
++/// (IK2_ABLATE, a rank-1 refusal-direction LoRA applied as what it is).  In place.
++void proj_out(float* y, int ld, const float* r, int T, int C, cudaStream_t s);
+ /// rms of n <= 3 vectors [D] in one launch, each with its own weights: y[i] = rms(x[i]) * w[i] (y may be x).
+ struct RmsJobs {
+     const float* x[3];
+@@ -290,6 +293,48 @@
+                           float k_inv_scale, float v_inv_scale, uint16_t* k_out16, uint16_t* v_out16,
+                           cudaStream_t s);
+ 
++/// IK2_KV=q4: K and V in 4 bits, ggml q4_0's numbers (blocks of 32 along a head's dims, an FP16 scale each), a record
++/// of kKvQ4Rec bytes a (position, K / V head) - the cache [kv_cap][KV] records; D = 128.  The same calls as the FP16
++/// cache's (no K / V scales), the caches as bytes.
++constexpr int kKvQ4Rec = 72;
++void prep_qkv_r_q4(float* q, const float* q_clip, const float* k_in, uint8_t* kc, const float* v_in, uint8_t* vc,
++                   float* r, const float* r_clip, int T, int H, int KV, int D, int d_rel, float qk_clip, float rel_clip,
++                   float eps, const int* pos, float alpha, float n_floor, int pos0, int kv_cap, cudaStream_t s);
++void prep_qkv_r_q4_at(float* q, const float* q_clip, const float* k_in, uint8_t* kc, const float* v_in, uint8_t* vc,
++                      float* r, const float* r_clip, int H, int KV, int D, int d_rel, float qk_clip, float rel_clip,
++                      float eps, const int* pos, bool log_scale, float alpha, float n_floor, int kv_cap, uint16_t* q16,
++                      cudaStream_t s, const uint16_t* sink_w = nullptr, const float* sink_x = nullptr, int sink_k = 0,
++                      float* sink_y = nullptr);
++void prep_qkv_r_q4_block(float* q, int q_ld, const float* q_clip, const float* k_in, uint8_t* kc, const float* v_in,
++                         uint8_t* vc, float* r, int r_ld, const float* r_clip, int T, int H, int KV, int D, int d_rel,
++                         float qk_clip, float rel_clip, float eps, const int* pos, bool log_scale, float alpha,
++                         float n_floor, int kv_cap, uint16_t* q16, cudaStream_t s, const uint16_t* sink_w,
++                         const float* sink_x, int sink_k, float* sink_y);
++void attn_multi_q4(const float* q, const float* r, const float* sink, const uint8_t* kc, const uint8_t* vc, int kv_cap,
++                   int nq, int H, int Hkv, int k0, int nk, int qpos0, float qk_scale, const float* proj, int d_rel,
++                   int extent, int window, float* scratch, float* out, cudaStream_t s);
++void attn_decode_q4(const float* q, const float* r, const float* sink, const uint8_t* kc, const uint8_t* vc, int kv_cap,
++                    int H, int Hkv, int D, int k0, int nk, int qpos, float qk_scale, const float* proj, int d_rel,
++                    int extent, int window, float* scratch, float* out, cudaStream_t s);
++void attn_decode_q4_at(const float* q, const float* r, const float* sink, const uint8_t* kc, const uint8_t* vc,
++                       int kv_cap, int H, int Hkv, const int* pos, int P, float qk_scale, const float* proj, int d_rel,
++                       int extent, int window, float* scratch, float* out, cudaStream_t s);
++void attn_decode_mma_q4(const uint16_t* q16, const float* r, const float* sink, const uint8_t* kc, const uint8_t* vc,
++                        int kv_cap, int H, int Hkv, const int* pos, int qpos, int n_split, float qk_scale,
++                        const float* proj, int d_rel, int extent, int window, float* scratch, float* out,
++                        const float* gate, uint16_t* out16, cudaStream_t s);
++void attn_block_q4(const uint16_t* q16, const float* r, int r_ld, const float* sink, const uint8_t* kc,
++                   const uint8_t* vc, int kv_cap, int H, int Hkv, const int* pos, int T, int n_split, float qk_scale,
++                   const float* proj, int d_rel, int extent, int window, float* scratch, float* out, const float* gate,
++                   int gate_ld, uint16_t* out16, cudaStream_t s);
++/// (the AMD build's matrix-core kernel only: elsewhere a q4 prompt takes unpack_kv_q4_to_f16 and cuBLAS)
++void attn_flash_q4(const uint16_t* q16, int q_ld, const uint8_t* kc, const uint8_t* vc, int kv_cap, int H, int KV,
++                   int D, int Tq, int qpos0, float qk_scale, const float* bias, int extent, int window,
++                   const float* sink, float* out, int o_ld, float* scratch, size_t scratch_floats, int n_split,
++                   cudaStream_t s);
++void unpack_kv_q4_to_f16(const uint8_t* kc, const uint8_t* vc, int kv_cap, int k0, int nk, int KD, uint16_t* k_out16,
++                         uint16_t* v_out16, cudaStream_t s);
++
+ // ---- the resident token path: every expert in VRAM (found on the device), the position read on the device, so a
+ // token needs nothing from the host between its embedding and its logits and its launches replay as one CUDA graph
+ 
+@@ -454,6 +499,12 @@
+ void conv_block(const float* x, int x_ld, float* hist, const float* w, const float* dyn, int d_ld, int heads, int T,
+                 int C, const float* res, int res_ld, float* y, int y_ld, float* rec_old, float* rec_x,
+                 cudaStream_t s);
++/// IK2_ABLATE: conv_block (no dyn; T <= 8) with the direction r [C] projected out of each token's input first
++/// (x - r (r . x)); with ys the input is first the MoE's sum (moe_combine_f32's: ys, inv, wt, K picks a token), written
++/// to x [T][C].  One launch (with ys a single block): rec_old / rec_x (or null) as conv_block's, rec_x the projected inputs.
++void proj_conv(float* x, int x_ld, const float* ys, const int* inv, const float* wt, int K, const float* r, int T, int C,
++               float* hist, const float* w, const float* res, int res_ld, float* y, int y_ld, float* rec_old,
++               float* rec_x, cudaStream_t s);
+ /// A conv's record of a window (conv_block's rec_old, rec_x) and its history.
+ struct ConvRec {
+     const float* old;
+diff -ru src.orig-20261123/src/ik2/ik2_main.cu src/src/ik2/ik2_main.cu
+--- src.orig-20261123/src/ik2/ik2_main.cu	2026-11-23 00:59:06.681919866 +0000
++++ src/src/ik2/ik2_main.cu	2026-11-23 02:45:43.026778958 +0000
+@@ -236,6 +236,7 @@
+     // a looped core's layer: its later passes' message gates by module (0 q's, 1 k's, 2 v's, 3 the MoE's) -
+     // down [rank][2 C], forget and gain [rank][C] - and the four messages' queries [4][C] in that order (F32)
+     float *lp_down[4] = {}, *lp_forget[4] = {}, *lp_gain[4] = {}, *lp_query = nullptr;
++    float* ablate = nullptr;   // IK2_ABLATE: the direction r [C] projected out of wo's output and the MoE's sum
+     // the resident token path (every expert in VRAM): where each expert's blocks are, and the experts' scales, on the
+     // device ([E] each; a scale's null: 1)
+     const uint8_t** tab_blob = nullptr;
+@@ -244,6 +245,7 @@
+     // the state: of the visit being run (bind_visit)
+     uint16_t *kc = nullptr, *vc = nullptr;         // FP16 [kv_cap][KV * D] (IK2_KV=f16)
+     uint8_t *kc8 = nullptr, *vc8 = nullptr;        // FP8 E4M3 [kv_cap][KV * D] (IK2_KV=fp8)
++    uint8_t *kc4 = nullptr, *vc4 = nullptr;        // q4 [kv_cap][KV] records of k::kKvQ4Rec bytes (IK2_KV=q4)
+     int kv_cap = 0;
+     float *h_k, *h_v, *h_attn, *h_mlp;             // conv histories [3][C']
+     float *rec_old[4] = {}, *rec_x[4] = {};        // (speculative) the convs' histories and inputs of a verify window
+@@ -257,6 +259,7 @@
+     int pass = 0;     // the core's pass (0: its first, or a layer outside the core)
+     uint16_t *kc = nullptr, *vc = nullptr;
+     uint8_t *kc8 = nullptr, *vc8 = nullptr;
++    uint8_t *kc4 = nullptr, *vc4 = nullptr;
+     int kv_cap = 0;
+     float *h_k = nullptr, *h_v = nullptr, *h_attn = nullptr, *h_mlp = nullptr;
+     float *rec_old[4] = {}, *rec_x[4] = {};
+@@ -271,12 +274,13 @@
+     float* lp_query_all = nullptr;   // a looped core's message queries, layer by layer ([n_core][4][C]: Layer::lp_query's)
+     const uint8_t* embd;  // host Q8_0 [n_rows][C]
+     int embd_type;
++    std::vector<float> ablate_e;   // IK2_ABLATE: the direction [C] projected out of each embedding row (empty: none)
+ };
+ 
+ inline Layer& bind_visit(Model& M, int v) {
+     const Visit& Vi = M.V[v];
+     Layer& Ly = M.L[Vi.l];
+-    Ly.kc = Vi.kc, Ly.vc = Vi.vc, Ly.kc8 = Vi.kc8, Ly.vc8 = Vi.vc8, Ly.kv_cap = Vi.kv_cap;
++    Ly.kc = Vi.kc, Ly.vc = Vi.vc, Ly.kc8 = Vi.kc8, Ly.vc8 = Vi.vc8, Ly.kc4 = Vi.kc4, Ly.vc4 = Vi.vc4, Ly.kv_cap = Vi.kv_cap;
+     Ly.h_k = Vi.h_k, Ly.h_v = Vi.h_v, Ly.h_attn = Vi.h_attn, Ly.h_mlp = Vi.h_mlp;
+     for (int i = 0; i < 4; ++i) Ly.rec_old[i] = Vi.rec_old[i], Ly.rec_x[i] = Vi.rec_x[i];
+     return Ly;
+@@ -390,6 +394,13 @@
+ // top-1 token (KL mean 8.5e-4) and FP8 changed 5 (KL 8.3e-3): Inkling's router is full of near-ties, so FP8's 1.5% in
+ // layer 0's attention output already moves 7 of 48 tokens' experts.  The full layers' cache is 32 KB a token in FP16.
+ bool g_kv_fp8 = false;
++// IK2_KV=q4: K and V in 4 bits (ggml q4_0's numbers, llama.cpp's -ctk / -ctv q4_0; k::kKvQ4Rec bytes a position and
++// K / V head - 3.6x less than FP16), made FP16 inside the attention kernels.
++bool g_kv_q4 = false;
++// a cache row's bytes (a position's K or V, every K / V head)
++size_t kv_row_bytes(int KV, int D) {
++    return g_kv_q4 ? (size_t) KV * k::kKvQ4Rec : (size_t) KV * D * (g_kv_fp8 ? 1 : 2);
++}
+ // Q8_0 blocks (2 bytes of FP16 scale, 32 int8 values) taken apart into m.q8 / m.q8d on the device; false if the
+ // matrix cannot be kept so (another type, or K not a multiple of 128)
+ bool upload_planar(Mat& m, const std::vector<const uint8_t*>& parts, const std::vector<size_t>& part_values) {
+@@ -641,6 +652,17 @@
+     return p;
+ }
+ float* load_f32(const Shards& S, const std::string& n, size_t expect) { return dev_f32(host_f32(S, n, expect)); }
++// token t's embedding row as the model takes it into out (host [C]): decoded, and with IK2_ABLATE its direction out
++void embd_host(const Model& M, int t, float* out) {
++    const int C = M.c.C;
++    const size_t rb = (size_t) C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
++    k::decode_host(M.embd_type, M.embd + (size_t) t * rb, C, out);
++    if (M.ablate_e.empty()) return;
++    const float* r = M.ablate_e.data();
++    double d = 0.0;
++    for (int i = 0; i < C; ++i) d += (double) r[i] * out[i];
++    for (int i = 0; i < C; ++i) out[i] -= (float) d * r[i];
++}
+ uint16_t* load_f16(const Shards& S, const std::string& n, size_t expect) { return dev_f16(host_f32(S, n, expect)); }
+ 
+ // ---- loading the experts into pinned host memory: pread from the files, several at once
+@@ -1546,7 +1568,11 @@
+     const float k_scale = c.qk_clip <= 28.0f ? 16.0f : 1.0f;
+     const float v_scale = 32.0f;
+     const float k_inv = 1.0f / k_scale, v_inv = 1.0f / v_scale;
+-    if (g_kv_fp8) {
++    if (g_kv_q4) {
++        k::prep_qkv_r_q4(q_p, Ly.q_clip, W.kconv, Ly.kc4, W.vconv, Ly.vc4, r_p, Ly.r_clip, T, c.H, c.KV, c.D, c.d_rel,
++                         c.qk_clip, c.rel_clip, c.eps, Ly.sliding ? nullptr : pos_p, c.alpha, c.n_floor, pos0,
++                         Ly.kv_cap, g_s);
++    } else if (g_kv_fp8) {
+         k::prep_qkv_r_fp8(q_p, Ly.q_clip, W.kconv, Ly.kc8, W.vconv, Ly.vc8, r_p, Ly.r_clip, T, c.H, c.KV, c.D, c.d_rel,
+                           c.qk_clip, c.rel_clip, c.eps, Ly.sliding ? nullptr : pos_p, c.alpha, c.n_floor, pos0,
+                           Ly.kv_cap, k_scale, v_scale, g_s);
+@@ -1564,7 +1590,10 @@
+     const float qk_scale = 1.0f / std::sqrt((float) c.D);
+     const int attn_kv_cap = Ly.sliding ? Ly.kv_cap : 0;
+     if (T == 1) {
+-        if (g_kv_fp8) {
++        if (g_kv_q4) {
++            k::attn_decode_q4(q_p, r_p, sink_p, Ly.kc4, Ly.vc4, attn_kv_cap, c.H, c.KV, c.D, k0, nk, pos0, qk_scale,
++                              Ly.rel_proj, c.d_rel, extent, window, W.lg, W.o, g_s);
++        } else if (g_kv_fp8) {
+             k::attn_decode_fp8(q_p, r_p, sink_p, Ly.kc8, Ly.vc8, attn_kv_cap, c.H, c.KV, c.D, k0, nk, pos0,
+                                qk_scale * k_inv, v_inv, Ly.rel_proj, c.d_rel, extent, window, W.lg, W.o, g_s);
+         } else {
+@@ -1572,7 +1601,10 @@
+                                Ly.rel_proj, c.d_rel, extent, window, W.lg, W.o, g_s);
+         }
+     } else if (T <= 8 && g_group && g_group_attn) {
+-        if (g_kv_fp8) {
++        if (g_kv_q4) {
++            k::attn_multi_q4(q_p, r_p, sink_p, Ly.kc4, Ly.vc4, attn_kv_cap, T, c.H, c.KV, k0, nk, pos0, qk_scale,
++                             Ly.rel_proj, c.d_rel, extent, window, W.lg, W.o, g_s);
++        } else if (g_kv_fp8) {
+             k::attn_multi_fp8(q_p, r_p, sink_p, Ly.kc8, Ly.vc8, attn_kv_cap, T, c.H, c.KV, k0, nk, pos0,
+                               qk_scale * k_inv, v_inv, Ly.rel_proj, c.d_rel, extent, window, W.lg, W.o, g_s);
+         } else {
+@@ -1607,7 +1639,11 @@
+                                 CUDA_R_32F, extent, CUBLAS_COMPUTE_32F_PEDANTIC, CUBLAS_GEMM_DEFAULT));
+                 const int k_lo = Ly.sliding ? std::max(0, pos0 + ts - c.window + 1) : 0;
+                 const int ns = k::attn_flash_splits(Tq, c.H, pos0 + ts + Tq - k_lo, g_n_sm);
+-                if (g_kv_fp8)
++                if (g_kv_q4)
++                    k::attn_flash_q4(W.x16 + (size_t) ts * HD, HD, Ly.kc4, Ly.vc4, attn_kv_cap, c.H, c.KV, c.D, Tq,
++                                     pos0 + ts, qk_scale, W.relb, extent, window, sink_p + (size_t) ts * c.H,
++                                     W.o + (size_t) ts * HD, HD, W.lg, W.lg_cap, ns, g_s);
++                else if (g_kv_fp8)
+                     k::attn_flash_fp8(W.x16 + (size_t) ts * HD, HD, Ly.kc8, Ly.vc8, attn_kv_cap, c.H, c.KV, c.D, Tq,
+                                       pos0 + ts, qk_scale * k_inv, v_inv, W.relb, extent, window,
+                                       sink_p + (size_t) ts * c.H, W.o + (size_t) ts * HD, HD, W.lg, W.lg_cap, ns, g_s);
+@@ -1624,11 +1660,19 @@
+             if (W.relb) Tq = std::min(Tq, Work::kRelbRows);
+             const int nk_s = pos0 + ts + Tq - k0_s;
+             const long long qn = (long long) Tq * nk_s;
+-            if (g_kv_fp8) {
++            // (an FP8 / q4 cache: its keys made FP16 a chunk at a time for the GEMMs)
++            auto unpack = [&](int k_off, int nk_c) {
++                if (g_kv_q4)
++                    k::unpack_kv_q4_to_f16(Ly.kc4, Ly.vc4, attn_kv_cap, k0_s + k_off, nk_c, KD, W.kv_k16, W.kv_v16,
++                                           g_s);
++                else
++                    k::unpack_kv_fp8_to_f16(Ly.kc8, Ly.vc8, attn_kv_cap, k0_s + k_off, nk_c, KD, k_inv, v_inv,
++                                            W.kv_k16, W.kv_v16, g_s);
++            };
++            if (g_kv_fp8 || g_kv_q4) {
+                 for (int k_off = 0; k_off < nk_s; k_off += W.kv_tmp_cap) {
+                     const int nk_c = std::min(W.kv_tmp_cap, nk_s - k_off);
+-                    k::unpack_kv_fp8_to_f16(Ly.kc8, Ly.vc8, attn_kv_cap, k0_s + k_off, nk_c, KD, k_inv, v_inv, W.kv_k16,
+-                                            W.kv_v16, g_s);
++                    unpack(k_off, nk_c);
+                     for (int g = 0; g < c.KV; ++g) {
+                         const uint16_t* Kp = W.kv_k16 + (size_t) g * c.D;
+                         CB(cublasGemmStridedBatchedEx(
+@@ -1641,10 +1685,7 @@
+                 attn_probs(Tq, nk_s, ts, k0_s);
+                 for (int k_off = 0; k_off < nk_s; k_off += W.kv_tmp_cap) {
+                     const int nk_c = std::min(W.kv_tmp_cap, nk_s - k_off);
+-                    if (nk_s > W.kv_tmp_cap) {
+-                        k::unpack_kv_fp8_to_f16(Ly.kc8, Ly.vc8, attn_kv_cap, k0_s + k_off, nk_c, KD, k_inv, v_inv,
+-                                                W.kv_k16, W.kv_v16, g_s);
+-                    }
++                    if (nk_s > W.kv_tmp_cap) unpack(k_off, nk_c);
+                     const float beta = k_off == 0 ? zero : one;
+                     for (int g = 0; g < c.KV; ++g) {
+                         const uint16_t* Vp = W.kv_v16 + (size_t) g * c.D;
+@@ -1698,6 +1739,7 @@
+     }
+     k::gate_mul_f16(W.o, gate_p, (size_t) T * HD, W.x16, g_dense_q8 && T == 1, g_s);
+     matmul(Ly.wo, W.o, W.x16, T, W.tmp, C);
++    if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+     conv_rec(Ly, 2, W.tmp, Ly.h_attn, T, C);
+     if (l % c.block == 0) {
+         CU(cudaMemcpyAsync(blk(nb), h_in, TC * 4, cudaMemcpyDeviceToDevice, g_s));
+@@ -2134,6 +2176,7 @@
+     }
+     g_pf.lap(g_pf.experts);
+     t_exp += now() - te0;
++    if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+     conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+     k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, r_in, h_out, g_s);
+ }
+@@ -2213,6 +2256,16 @@
+ };
+ FastGraph g_fgraph[4];      // by OutMode
+ 
++// one token's MoE output: the picks' rows summed, through the MoE's short conv with the stream added (one launch;
++// IK2_ABLATE: the sum's direction out first, in the same launch)
++void moe_out_token(const Layer& Ly, const Work& W, int K, int C) {
++    if (Ly.ablate)
++        k::proj_conv(W.tmp, C, W.y32, W.inv, W.wt, K, Ly.ablate, 1, C, Ly.h_mlp, Ly.sc_mlp, W.r, C, W.h, C, nullptr,
++                     nullptr, g_s);
++    else
++        k::moe_combine_conv(W.y32, W.inv, W.wt, K, C, Ly.h_mlp, Ly.sc_mlp, W.r, W.h, g_s);
++}
++
+ // one token's launches: its embedding row in W.emb_h and its position in W.pos_h[0] (pinned host; copied first)
+ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+     const Config& c = M.c;
+@@ -2326,7 +2379,17 @@
+         const int ring = Ly.sliding ? Ly.kv_cap : 0;
+         const int ns = Ly.sliding ? std::min(g_mma_split, std::max(1, (c.window + 63) / 64)) : g_mma_split;
+         uint16_t* q16 = mma ? W.x16 : nullptr;
+-        if (g_kv_fp8) {
++        if (g_kv_q4) {
++            k::prep_qkv_r_q4_at(q_p, Ly.q_clip, W.kconv, Ly.kc4, W.vconv, Ly.vc4, r_p, Ly.r_clip, c.H, c.KV, c.D, c.d_rel,
++                                c.qk_clip, c.rel_clip, c.eps, W.pos, !Ly.sliding, c.alpha, c.n_floor, Ly.kv_cap, q16, g_s,
++                                Ly.sink16, W.xq, C, W.sink);
++            if (mma)
++                k::attn_decode_mma_q4(q16, r_p, W.sink, Ly.kc4, Ly.vc4, ring, c.H, c.KV, W.pos, 0, ns, qk_scale,
++                                      Ly.rel_proj, c.d_rel, extent, window, W.lg, W.o, gate_p, W.x16, g_s);
++            else
++                k::attn_decode_q4_at(q_p, r_p, W.sink, Ly.kc4, Ly.vc4, Ly.sliding ? Ly.kv_cap : 0, c.H, c.KV, W.pos, P,
++                                     qk_scale, Ly.rel_proj, c.d_rel, extent, window, W.lg, W.o, g_s);
++        } else if (g_kv_fp8) {
+             k::prep_qkv_r_fp8_at(q_p, Ly.q_clip, W.kconv, Ly.kc8, W.vconv, Ly.vc8, r_p, Ly.r_clip, c.H, c.KV, c.D, c.d_rel,
+                                  c.qk_clip, c.rel_clip, c.eps, W.pos, !Ly.sliding, c.alpha, c.n_floor, Ly.kv_cap,
+                                  k_scale, v_scale, q16, g_s, Ly.sink16, W.xq, C, W.sink);
+@@ -2354,7 +2417,13 @@
+         // stream joins the blocks and starts again)
+         const bool first = l % c.block == 0;
+         if (first) CU(cudaMemcpyAsync(blk(nb), W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
+-        mv1c(Ly.wo, W.o, W.tmp, k::MvConv{0, C, Ly.h_attn, Ly.sc_attn, nullptr, 0, first ? nullptr : W.h, W.r});
++        if (Ly.ablate) {
++            mv1(Ly.wo, W.o, W.tmp);
++            k::proj_conv(W.tmp, C, nullptr, nullptr, nullptr, 0, Ly.ablate, 1, C, Ly.h_attn, Ly.sc_attn,
++                         first ? nullptr : W.h, C, W.r, C, nullptr, nullptr, g_s);
++        } else {
++            mv1c(Ly.wo, W.o, W.tmp, k::MvConv{0, C, Ly.h_attn, Ly.sc_attn, nullptr, 0, first ? nullptr : W.h, W.r});
++        }
+         if (first) ++nb;
+         // the MoE: its input, the router and the picks' tables on the device, the experts
+         {
+@@ -2396,7 +2465,7 @@
+                                  c.up_cap, g_offs.hx, g_s);
+                 k::off_down_x(W.blob, g_offs.cls, c.K, Ly.ty[2], Ly.eb[0] + Ly.eb[1], g_offs.hx, C, c.F, W.y32, g_s);
+                 k::off_lane_wait(g_offs.ls, g_offs.done_d, C, W.y32, g_s);
+-                k::moe_combine_conv(W.y32, W.inv, W.wt, c.K, C, Ly.h_mlp, Ly.sc_mlp, W.r, W.h, g_s);
++                moe_out_token(Ly, W, c.K, C);
+                 continue;
+             }
+             k::off_fetch_plan(W.blob, rtop, c.K, l * c.E, g_offs.host[l], Ly.slot_bytes, st, g_offs.fl, g_offs.cnt,
+@@ -2412,7 +2481,7 @@
+                                       c.gate_cap, c.up_cap, W.h16, g_s);
+             k::experts_down(W.blob, c.K, Ly.ty[2], Ly.eb[0] + Ly.eb[1], W.h16, C, c.F, W.y32, g_s);
+         }
+-        k::moe_combine_conv(W.y32, W.inv, W.wt, c.K, C, Ly.h_mlp, Ly.sc_mlp, W.r, W.h, g_s);
++        moe_out_token(Ly, W, c.K, C);
+     }
+     if (out_mode == OutMode::kNone) return;
+     {   // the head
+@@ -2670,8 +2739,7 @@
+         }
+         if (moved) CU(cudaMemcpyAsync(g_offs.cost, &g_offs.cost_h, sizeof(k::LaneCost), cudaMemcpyHostToDevice, g_s));
+     }
+-    const size_t rb = (size_t) c.C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+-    k::decode_host(M.embd_type, M.embd + (size_t) tok * rb, c.C, W.emb_h);
++    embd_host(M, tok, W.emb_h);
+     W.pos_h[0] = pos;
+     if (!g_graph) {
+         fast_token_launches(M, W, out_mode);
+@@ -2904,7 +2972,19 @@
+                 const int* pt = W.pos + t;
+                 uint16_t* q16t = mma ? W.x16 + (size_t) t * HD : nullptr;
+                 float* sk = W.sink + (size_t) t * c.H;
+-                if (g_kv_fp8) {
++                if (g_kv_q4) {
++                    k::prep_qkv_r_q4_at(qt, Ly.q_clip, W.kconv + (size_t) t * KD, Ly.kc4, W.vconv + (size_t) t * KD,
++                                        Ly.vc4, rt, Ly.r_clip, c.H, c.KV, c.D, c.d_rel, c.qk_clip, c.rel_clip, c.eps, pt,
++                                        !Ly.sliding, c.alpha, c.n_floor, Ly.kv_cap, q16t, g_s, Ly.sink16,
++                                        W.xq + (size_t) t * C, C, sk);
++                    if (mma)
++                        k::attn_decode_mma_q4(q16t, rt, sk, Ly.kc4, Ly.vc4, ring, c.H, c.KV, pt, 0, ns, qk_scale,
++                                              Ly.rel_proj, c.d_rel, extent, window, W.lg, ot, gt,
++                                              W.x16 + (size_t) t * HD, g_s);
++                    else
++                        k::attn_decode_q4_at(qt, rt, sk, Ly.kc4, Ly.vc4, Ly.sliding ? Ly.kv_cap : 0, c.H, c.KV, pt, P,
++                                             qk_scale, Ly.rel_proj, c.d_rel, extent, window, W.lg, ot, g_s);
++                } else if (g_kv_fp8) {
+                     k::prep_qkv_r_fp8_at(qt, Ly.q_clip, W.kconv + (size_t) t * KD, Ly.kc8, W.vconv + (size_t) t * KD,
+                                          Ly.vc8, rt, Ly.r_clip, c.H, c.KV, c.D, c.d_rel, c.qk_clip, c.rel_clip, c.eps,
+                                          pt, !Ly.sliding, c.alpha, c.n_floor, Ly.kv_cap, k_scale, v_scale, q16t, g_s,
+@@ -2932,6 +3012,12 @@
+                 }
+                 if (!mma) k::gate_mul_f16(ot, gt, (size_t) HD, W.x16 + (size_t) t * HD, true, g_s);
+             }
++        } else if (g_kv_q4) {
++            k::prep_qkv_r_q4_block(q_p, q_ld, Ly.q_clip, W.kconv, Ly.kc4, W.vconv, Ly.vc4, r_p, r_ld, Ly.r_clip, T, c.H,
++                                   c.KV, c.D, c.d_rel, c.qk_clip, c.rel_clip, c.eps, W.pos, !Ly.sliding, c.alpha,
++                                   c.n_floor, Ly.kv_cap, q16, g_s, Ly.sink16, W.xq, C, W.sink);
++            k::attn_block_q4(q16, r_p, r_ld, W.sink, Ly.kc4, Ly.vc4, ring, c.H, c.KV, W.pos, T, ns, qk_scale, Ly.rel_proj,
++                             c.d_rel, extent, window, W.lg, W.o, gate_p, gate_ld, W.x16, g_s);
+         } else if (g_kv_fp8) {
+             k::prep_qkv_r_fp8_block(q_p, q_ld, Ly.q_clip, W.kconv, Ly.kc8, W.vconv, Ly.vc8, r_p, r_ld, Ly.r_clip, T, c.H,
+                                     c.KV, c.D, c.d_rel, c.qk_clip, c.rel_clip, c.eps, W.pos, !Ly.sliding, c.alpha,
+@@ -2951,8 +3037,12 @@
+         if (first) CU(cudaMemcpyAsync(blk(nb), W.h, TCb, cudaMemcpyDeviceToDevice, g_s));
+         if (ex) exact_rows(Ly.wo, 0, C, W.o, HD, T, W.tmp, C);
+         else tile_rows(Ly.wo, 0, C, W.x16, T, W.tmp, C);
+-        k::conv_block(W.tmp, C, Ly.h_attn, Ly.sc_attn, nullptr, 0, 0, T, C, first ? nullptr : W.h, C, W.r, C,
+-                      Ly.rec_old[2], Ly.rec_x[2], g_s);
++        if (Ly.ablate)
++            k::proj_conv(W.tmp, C, nullptr, nullptr, nullptr, 0, Ly.ablate, T, C, Ly.h_attn, Ly.sc_attn,
++                         first ? nullptr : W.h, C, W.r, C, Ly.rec_old[2], Ly.rec_x[2], g_s);
++        else
++            k::conv_block(W.tmp, C, Ly.h_attn, Ly.sc_attn, nullptr, 0, 0, T, C, first ? nullptr : W.h, C, W.r, C,
++                          Ly.rec_old[2], Ly.rec_x[2], g_s);
+         if (first) ++nb;
+         // the MoE: its input, the router, the picks grouped by expert on the device, the experts
+         {
+@@ -3006,8 +3096,12 @@
+                               g_s);
+         }
+         k::moe_combine_f32(W.y32, g_blk.inv, g_blk.wt, T, c.K, C, W.tmp, false, g_s);
+-        k::conv_block(W.tmp, C, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, 0, T, C, W.r, C, W.h, C, Ly.rec_old[3], Ly.rec_x[3],
+-                      g_s);
++        if (Ly.ablate)
++            k::proj_conv(W.tmp, C, nullptr, nullptr, nullptr, 0, Ly.ablate, T, C, Ly.h_mlp, Ly.sc_mlp, W.r, C, W.h, C,
++                         Ly.rec_old[3], Ly.rec_x[3], g_s);
++        else
++            k::conv_block(W.tmp, C, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, 0, T, C, W.r, C, W.h, C, Ly.rec_old[3],
++                          Ly.rec_x[3], g_s);
+     }
+     if (out_mode == OutMode::kNone) return;
+     {   // the head: every token's logits
+@@ -3048,9 +3142,8 @@
+     if (T < 1 || T > kBlockMax) die("fast_block: a window of 1 .. 8 tokens");
+     if (!g_blk.ready) block_init(M);
+     Work& W = dev_work(0);
+-    const size_t rb = (size_t) c.C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+     for (int t = 0; t < T; ++t) {
+-        k::decode_host(M.embd_type, M.embd + (size_t) tok[t] * rb, c.C, g_blk.emb_h + (size_t) t * c.C);
++        embd_host(M, tok[t], g_blk.emb_h + (size_t) t * c.C);
+         g_blk.pos_h[t] = pos0 + t;
+     }
+     if (!g_graph) {
+@@ -3360,9 +3453,8 @@
+     if (g_off) EC.scan = T > 1 && !(getenv("IK2_SCAN") && !std::atoi(getenv("IK2_SCAN")));
+     // the embedding rows, normed (pinned host staging, no stream sync needed)
+     {
+-        const size_t rb = (size_t) C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+         for (int t = 0; t < T; ++t)
+-            k::decode_host(M.embd_type, M.embd + (size_t) tok[t] * rb, C, W.emb_h + (size_t) t * C);
++            embd_host(M, tok[t], W.emb_h + (size_t) t * C);
+         CU(cudaMemcpyAsync(W.tmp, W.emb_h, (size_t) T * C * 4, cudaMemcpyHostToDevice, g_s));
+         k::rms(W.tmp, M.embd_norm, T, C, c.eps, W.h, g_s);
+         place_pictures(W.h, T, pos0, C, g_s);
+@@ -3580,6 +3672,7 @@
+                                    c.K, Cd, W.tmp + Cd, false, g_s);
+             }
+             t_exp += now() - te0;
++            if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+             conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+             k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, W.r, W.h, g_s);
+             dump_f("blk." + std::to_string(vis) + ".out", W.h, TC);
+@@ -3670,6 +3763,7 @@
+                                    false, g_s);
+             }
+             t_exp += now() - te0;
++            if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+             conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+             k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, W.r, W.h, g_s);
+             dump_f("blk." + std::to_string(vis) + ".out", W.h, TC);
+@@ -3723,6 +3817,7 @@
+                                false, g_s);
+             g_pf.lap(g_pf.experts);
+             t_exp += now() - te0;
++            if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+             conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+             k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, W.r, W.h, g_s);
+             g_pf.lap(g_pf.rest);
+@@ -3920,6 +4015,7 @@
+             k::moe_combine_f32(W.y32, pid, pwt, T, c.K, C, W.tmp, false, g_s);
+             g_pf.lap(g_pf.experts);
+             t_exp += now() - te0;
++            if (Ly.ablate) k::proj_out(W.tmp, C, Ly.ablate, T, C, g_s);
+             conv_rec(Ly, 3, W.tmp, Ly.h_mlp, T, C);
+             k::conv4_res(W.tmp, Ly.h_mlp, Ly.sc_mlp, nullptr, 0, T, C, W.r, W.h, g_s);
+             g_pf.lap(g_pf.rest);
+@@ -4077,11 +4173,10 @@
+ 
+     // Embed and norm all T tokens in sub-chunks of <= W.Tm
+     {
+-        const size_t rb = (size_t) C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+         for (int off = 0; off < T; off += W.Tm) {
+             const int ts = std::min(W.Tm, T - off);
+             for (int t = 0; t < ts; ++t)
+-                k::decode_host(M.embd_type, M.embd + (size_t) tok[off + t] * rb, C, W.emb_h + (size_t) t * C);
++                embd_host(M, tok[off + t], W.emb_h + (size_t) t * C);
+             CU(cudaMemcpyAsync(W.tmp, W.emb_h, (size_t) ts * C * 4, cudaMemcpyHostToDevice, g_s));
+             k::rms(W.tmp, M.embd_norm, ts, C, c.eps, W.h + (size_t) off * C, g_s);
+             place_pictures(W.h + (size_t) off * C, ts, pos0 + off, C, g_s);
+@@ -4203,8 +4298,7 @@
+ void embed_row(Model& M, int t, float* raw, float* out) {
+     const int C = M.c.C;
+     float* e = dev_work(M.L[0].dev).emb_h;
+-    const size_t rb = (size_t) C / k::block_values(M.embd_type) * k::block_bytes(M.embd_type);
+-    k::decode_host(M.embd_type, M.embd + (size_t) t * rb, C, e);
++    embd_host(M, t, e);
+     CU(cudaMemcpyAsync(raw, e, (size_t) C * 4, cudaMemcpyHostToDevice, g_s));
+     k::rms(raw, M.embd_norm, 1, C, M.c.eps, out, g_s);
+ }
+@@ -4279,7 +4373,7 @@
+     char buf[640];
+     std::snprintf(buf, sizeof buf, "ik2 drafting v1|%s %.0f GB sm_%d%d|driver %d|%s %lld|drafter %lld|ctx %d %s",
+                   p.name, p.totalGlobalMem / 1e9, p.major, p.minor, drv, base.c_str(), fsize(model),
+-                  draft_path.empty() ? -1LL : fsize(draft_path), ctx, g_kv_fp8 ? "fp8" : "f16");
++                  draft_path.empty() ? -1LL : fsize(draft_path), ctx, g_kv_q4 ? "q4" : g_kv_fp8 ? "fp8" : "f16");
+     return buf;
+ }
+ // the remembered choice (0 .. 3, kDraftNames), or -1; tps: its four figures
+@@ -4519,9 +4613,13 @@
+     g_dense_q8 = getenv("IK2_DENSE") && std::string(getenv("IK2_DENSE")) == "q8";
+     if (getenv("IK2_KV")) {
+         const std::string kv = getenv("IK2_KV");
+-        if (kv == "f16" || kv == "fp16") g_kv_fp8 = false;
+-        else if (kv == "fp8" || kv == "e4m3") g_kv_fp8 = true;
+-        else die("unknown IK2_KV=" + kv + " (expected fp8 or f16)");
++        if (kv == "f16" || kv == "fp16") g_kv_fp8 = false, g_kv_q4 = false;
++        else if (kv == "fp8" || kv == "e4m3") g_kv_fp8 = true, g_kv_q4 = false;
++        else if (kv == "q4" || kv == "q4_0") g_kv_fp8 = false, g_kv_q4 = true;
++        else die("unknown IK2_KV=" + kv + " (expected fp8, q4 or f16)");
++#ifndef STRATA_USE_HIP
++        if (g_kv_q4) g_flash = false;   // (the fused prompt attention over a q4 cache: the AMD kernel only)
++#endif
+     }
+     if (getenv("IK2_TRACE") && *getenv("IK2_TRACE")) {
+         g_trace = std::fopen(getenv("IK2_TRACE"), "wb");
+@@ -4751,6 +4849,7 @@
+         use_dev(0);
+         if (cls < 80) g_flash = false;
+         if (cls < 75) g_block = false;
++        if (cls < 75 && g_kv_q4) g_attn_mma = 0;   // (q4: no Volta tensor-core kernel - the scalar one)
+         if (cls < 80 && (!draft_path.empty() || g_lookup)) {
+             std::printf("NOTE maya-ik2: drafting off - on this GPU (sm_%d class) the verify window does not have the "
+                         "one-token path's kernels yet, so it would change the answers; plain decoding\n", cls);
+@@ -4768,7 +4867,7 @@
+         }
+         for (int l = 0; l < c.n_layer; ++l) {
+             const size_t cap = c.sliding[l] ? (size_t) std::min(ctx, c.window + std::max(chunk, ik2::draft::kBlock)) : (size_t) ctx;
+-            kv_b += (l >= c.core0 && l < c.core1 ? c.n_pass : 1) * cap * c.KV * c.D * (g_kv_fp8 ? 1 : 2) * 2;
++            kv_b += (l >= c.core0 && l < c.core1 ? c.n_pass : 1) * cap * kv_row_bytes(c.KV, c.D) * 2;
+         }
+         size_t fr0 = 0, tot0 = 0;
+         CU(cudaMemGetInfo(&fr0, &tot0));
+@@ -4905,11 +5004,57 @@
+         lp_q = host_f32(S, "loop_res_query.weight", (size_t) 2 * n_core * C);
+         lp_kv = host_f32(S, "loop_kv_res_query.weight", (size_t) 2 * n_core * C);
+     }
++    // IK2_ABLATE=<lora.gguf>: a rank-1 refusal-direction LoRA (AtomicChat's Uncensored adapter: per layer lora_b a unit
++    // vector r, the same for attn_output and each expert of ffn_down_exps, and lora_a = -r^T W) applied as the
++    // projection it is: y -= r (r . y) on wo's output and on the MoE's sum (every pass), and on the embedding row
++    std::unique_ptr<Shards> abl;
++    if (const char* p = getenv("IK2_ABLATE"); p && *p) {
++        abl.reset(new Shards(p));
++        if (abl->num("adapter.lora_alpha") != 1.0) die("IK2_ABLATE: adapter.lora_alpha is not 1");
++        auto unit = [&](const std::string& n) {
++            auto r = host_f32(*abl, n, C);
++            double q = 0.0;
++            for (float v : r) q += (double) v * v;
++            if (std::fabs(std::sqrt(q) - 1.0) > 1e-3) die("IK2_ABLATE: " + n + " is not a unit vector (rank 1)");
++            return r;
++        };
++        M.ablate_e = unit("token_embd.weight.lora_b");
++        // (lora_a [n_vocab] of the embedding = -r . E[tok]: checked on rows of this model's table - the direction's sign
++        //  and that the adapter is for this model)
++        const auto* ai = abl->info("token_embd.weight.lora_a");
++        if (!ai) die("IK2_ABLATE: no token_embd.weight.lora_a");
++        const auto a = host_f32(*abl, "token_embd.weight.lora_a", (size_t) ai->elements());
++        const int ety = (int) S.info("token_embd.weight")->type;
++        if (!k::block_values(ety) || a.size() < 1064) die("IK2_ABLATE: token_embd's type or size");
++        const uint8_t* emb = S.data("token_embd.weight");
++        const size_t rb = (size_t) C / k::block_values(ety) * k::block_bytes(ety);
++        std::vector<float> e(C);
++        double err = 0.0, ref = 0.0;
++        for (int t = 1000; t < 1064; ++t) {
++            k::decode_host(ety, emb + (size_t) t * rb, C, e.data());
++            double d = 0.0;
++            for (int i = 0; i < (int) C; ++i) d += (double) M.ablate_e[i] * e[i];
++            err += (a[t] + d) * (a[t] + d), ref += d * d;
++        }
++        if (!(err <= 0.01 * ref)) die("IK2_ABLATE: token_embd.weight.lora_a is not -r . E on this model's embedding");
++        std::fprintf(stderr, "maya-ik2: IK2_ABLATE %s: the direction projected out of %d layers and the embedding\n", p,
++                     c.n_layer);
++    }
+     for (int l = 0; l < c.n_layer; ++l) {
+         Layer& Ly = M.L[l];
+         const std::string b = "blk." + std::to_string(l) + ".";
+         Ly.dev = dual() ? 0 : l * n_gpu / c.n_layer;
+         use_dev(Ly.dev);
++        if (abl) {
++            auto r = host_f32(*abl, b + "attn_output.weight.lora_b", C);
++            const auto rd = host_f32(*abl, b + "ffn_down_exps.weight.lora_b", (size_t) c.E * C);
++            double q = 0.0, dev = 0.0;
++            for (float v : r) q += (double) v * v;
++            for (size_t i = 0; i < rd.size(); ++i) dev = std::max(dev, (double) std::fabs(rd[i] - r[i % C]));
++            if (std::fabs(std::sqrt(q) - 1.0) > 1e-3 || dev > 1e-5)
++                die("IK2_ABLATE: " + b + " is not one unit direction for attn_output and every expert's down");
++            Ly.ablate = dev_f32(r);
++        }
+         Ly.sliding = c.sliding[l];
+         auto sink_v = host_f32(S, b + "attn_sink_proj.weight", (size_t) c.H * C);
+         if (Ly.sliding) {
+@@ -5061,7 +5206,10 @@
+         const Layer& Ly = M.L[Vi.l];
+         use_dev(Ly.dev);
+         Vi.kv_cap = Ly.sliding ? std::min(ctx, c.window + std::max(chunk, ik2::draft::kBlock)) : ctx;
+-        if (g_kv_fp8) {
++        if (g_kv_q4) {
++            Vi.kc4 = dalloc<uint8_t>((size_t) Vi.kv_cap * kv_row_bytes(c.KV, c.D));
++            Vi.vc4 = dalloc<uint8_t>((size_t) Vi.kv_cap * kv_row_bytes(c.KV, c.D));
++        } else if (g_kv_fp8) {
+             Vi.kc8 = dalloc<uint8_t>((size_t) Vi.kv_cap * KD);
+             Vi.vc8 = dalloc<uint8_t>((size_t) Vi.kv_cap * KD);
+         } else {
+@@ -5087,8 +5235,9 @@
+     if (g_stage) cudaFree(g_stage), g_stage = nullptr, g_stage_bytes = 0;
+     {
+         size_t kv_bytes = 0;
+-        for (const auto& Vi : M.V) kv_bytes += (size_t) Vi.kv_cap * KD * (g_kv_fp8 ? 1 : 2) * 2;
+-        std::printf("kv cache: %s (%.2f GiB across %d layer%s)\n", g_kv_fp8 ? "FP8 E4M3" : "FP16",
++        for (const auto& Vi : M.V) kv_bytes += (size_t) Vi.kv_cap * kv_row_bytes(c.KV, c.D) * 2;
++        std::printf("kv cache: %s (%.2f GiB across %d layer%s)\n",
++                    g_kv_q4 ? "q4 (q4_0)" : g_kv_fp8 ? "FP8 E4M3" : "FP16",
+                     kv_bytes / 1073741824.0, c.n_visit, c.n_pass > 1 ? " visits" : "s");
+         std::fflush(stdout);
+     }
+@@ -5401,7 +5550,7 @@
+         W.relb_ext = std::max(c.extent, c.extent_swa);
+         W.relb = dalloc<float>((size_t) Work::kRelbRows * c.H * W.relb_ext);
+     }
+-    if (g_kv_fp8) {
++    if (g_kv_fp8 || (g_kv_q4 && !(g_flash && W.relb))) {   // (q4: only where a prompt's attention is not the fused one)
+         W.kv_tmp_cap = std::min(ctx, 32768);
+         W.kv_k16 = dalloc<uint16_t>((size_t) W.kv_tmp_cap * KD);
+         W.kv_v16 = dalloc<uint16_t>((size_t) W.kv_tmp_cap * KD);
+@@ -5806,7 +5955,7 @@
+             std::vector<float*> h;   // [layer * 4 + conv]
+             std::vector<std::vector<uint8_t>> kv_k, kv_v;
+         };
+-        const size_t kv_elem_b = g_kv_fp8 ? 1 : 2;
++        const size_t kv_row_b = kv_row_bytes(c.KV, c.D);
+         std::vector<Snap> snaps(8);
+         for (auto& sn : snaps) {
+             sn.kv_k.resize(M.V.size());
+@@ -5817,7 +5966,7 @@
+                 const size_t cc[4] = {KD, KD, C, C};
+                 for (int i = 0; i < 4; ++i) sn.h.push_back(dalloc<float>(3 * cc[i]));
+                 if (Ly.sliding && Ly.kv_cap < ctx) {
+-                    const size_t bytes = (size_t) c.window * KD * kv_elem_b;
++                    const size_t bytes = (size_t) c.window * kv_row_b;
+                     sn.kv_k[l].resize(bytes);
+                     sn.kv_v[l].resize(bytes);
+                 }
+@@ -5827,7 +5976,7 @@
+         auto snap_copy = [&](Snap& sn, bool save) {
+             const size_t cc[4] = {KD, KD, C, C};
+             const cudaMemcpyKind kv_dir = save ? cudaMemcpyDeviceToHost : cudaMemcpyHostToDevice;
+-            const size_t row_b = (size_t) KD * kv_elem_b;
++            const size_t row_b = kv_row_b;
+             for (size_t l = 0; l < M.V.size(); ++l) {   // (l: a visit)
+                 Layer& Ly = bind_visit(M, (int) l);
+                 use_dev(Ly.dev);
+@@ -5842,8 +5991,8 @@
+                     const int s0 = k_start % Ly.kv_cap;
+                     const int n1 = std::min(w, Ly.kv_cap - s0);
+                     const int n2 = w - n1;
+-                    uint8_t* dk = g_kv_fp8 ? Ly.kc8 : (uint8_t*) Ly.kc;
+-                    uint8_t* dv = g_kv_fp8 ? Ly.vc8 : (uint8_t*) Ly.vc;
++                    uint8_t* dk = g_kv_q4 ? Ly.kc4 : g_kv_fp8 ? Ly.kc8 : (uint8_t*) Ly.kc;
++                    uint8_t* dv = g_kv_q4 ? Ly.vc4 : g_kv_fp8 ? Ly.vc8 : (uint8_t*) Ly.vc;
+                     uint8_t* hk = sn.kv_k[l].data();
+                     uint8_t* hv = sn.kv_v[l].data();
+                     CU(cudaMemcpyAsync(save ? hk : dk + (size_t) s0 * row_b, save ? dk + (size_t) s0 * row_b : hk,
+@@ -5984,7 +6133,8 @@
+             // (dspark= / lookup=: the drafters this start runs - the Monitor's Speculation; drafting= the choice)
+             const bool sp = (drafter || g_lookup) && g_fast && g_block;
+             std::printf("INFO engine=ik2 engine_kind=ik2 model=Inkling-2 kv=%s ctx=%d gpus=%d dspark=%d lookup=%d "
+-                        "drafting=%s\n", g_kv_fp8 ? "fp8" : "f16", ctx, n_gpu, sp && drafter ? 1 : 0, sp && g_lookup ? 1 : 0,
++                        "drafting=%s\n", g_kv_q4 ? "q4" : g_kv_fp8 ? "fp8" : "f16", ctx, n_gpu, sp && drafter ? 1 : 0,
++                        sp && g_lookup ? 1 : 0,
+                         drafting.c_str());
+             std::printf("READY %d stop\n", ctx);
+         } else {
+diff -ru src.orig-20261123/src/ik2/ik2_rdna.inc src/src/ik2/ik2_rdna.inc
+--- src.orig-20261123/src/ik2/ik2_rdna.inc	2026-11-23 00:59:06.682919865 +0000
++++ src/src/ik2/ik2_rdna.inc	2026-11-23 02:42:55.418971860 +0000
+@@ -203,7 +203,8 @@
+     __shared__ __align__(16) uint16_t Ks[kRfBN * kRfLd];          // [key][dim]
+     __shared__ __align__(16) uint16_t Vt[kFaD * kRfVld];          // [dim][key]
+     __shared__ __align__(16) uint16_t Pss[kRfNW * 16 * kRfVld];   // each warp's P [16][key]
+-    constexpr bool F8 = sizeof(KVT) == 1;
++    constexpr bool Q4 = std::is_same<KVT, KvQ4>::value;   // (q4: a tile's values made FP16 as they are loaded)
++    constexpr bool F8 = sizeof(KVT) == 1 && !Q4;
+     const int tid = threadIdx.x, warp = tid >> 5, hi = (tid & 31) >> 4, ln = tid & 15;
+     uint16_t* Ps = Pss + warp * 16 * kRfVld;
+     const int h = blockIdx.y, split = blockIdx.z, g = h / (H / KV), KD = KV * kFaD;
+@@ -247,6 +248,9 @@
+             const int c = it * kRfNW * 32 + tid, row = c >> 4, col = (c & 15) * 8, kp = kt + row;
+             const bool ok = kp < k_hi;
+             const int pr = ok ? (kv_cap > 0 ? kp % kv_cap : kp) : 0;
++            if constexpr (Q4)
++                *(uint4*) (Ks + row * kRfLd + col) = ok ? q4_ld8(kc, (size_t) pr * KD + (size_t) g * kFaD + col) : zr;
++            else
+             *(uint4*) (Ks + row * kRfLd + col) = h8(ok ? *(const Raw*) (kc + (size_t) pr * KD + (size_t) g * kFaD + col) : zr);
+         }
+         {
+@@ -256,9 +260,15 @@
+                 const int kp = kt + 2 * vp + j;
+                 const bool ok = kp < k_hi;
+                 const int pr = ok ? (kv_cap > 0 ? kp % kv_cap : kp) : 0;
++                if constexpr (Q4) {
++                    const size_t e = (size_t) pr * KD + (size_t) g * kFaD + 16 * vg;
++                    vr[j][0] = ok ? q4_ld8(vc, e) : zr;
++                    vr[j][1] = ok ? q4_ld8(vc, e + 8) : zr;
++                } else {
+                 const KVT* src = vc + (size_t) pr * KD + (size_t) g * kFaD + 16 * vg;
+                 vr[j][0] = ok ? *(const Raw*) src : zr;
+                 vr[j][1] = ok ? *(const Raw*) (src + 8) : zr;
++                }
+             }
+             uint32_t* Vt32 = (uint32_t*) Vt;
+ #pragma unroll
