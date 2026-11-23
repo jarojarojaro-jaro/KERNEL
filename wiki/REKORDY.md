@@ -211,6 +211,18 @@ Kampania 67c (wieczór 2026-11-07): T1 = mediana `spec_sweep` seed 1, fill = pro
 | RTX 2080 Ti / Bonsai 2 27B PTQ1_0-mtp-lean | ctx 155 648, prism MTP n2, ub 512 (pick z silnikiem Enigmy) / T1 | **77,96 t/s** | 2026-11-07 | 67c; fill PASS, peak 10 151 MiB | `results/nv67-2080ti-20261107` |
 | RTX 2080 Ti / Bonsai 2 27B PTQ1_0 | prism MTP n1, 65 536 / T1 | **76,88 t/s** (prism Q2_0 43,76; upstream Q2_0 @131 072: 39,57, fill PASS) | 2026-11-07 | 67c, czysty host | `results/nv67-2080ti-20261107/res-2080tib` |
 
+## RX 7900 XTX – Inkling 2 Mini AtomicChat AD-Q4_K (duet Kernel + Gemini, gałąź `inkling-opt`, eco 2200)
+
+| obciążenie / metryka | rekord | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|
+| czat xbench bez spekulacji, dekod | **47,6–50,3 t/s** (stock PR #32695: 26,0–27,1) | 2026-11-21 | `GGML_HIP_PM4=1 WA=2 GUARD=1 HSA_USE_SVM=0`, `GGML_HIP_INK_FUSE=1 FUSE2=1 NOBLAS=1`, `-fa on -c 32768` | `~/qwen-opt/queue/logs/ink-r6-serve.log` (jaroserverai); `DUO-INKLING.md` 09:05 | nie |
+| llama-bench tg64 | **43,0 t/s** (stock 26,85) | 2026-11-21 | j.w. (PM4 + FUSE + FUSE2 + NOBLAS) | `ink-r4-abab.log`; `DUO-INKLING.md` 08:25 | nie |
+| czat z DSpark n-max 7, kopie (Q4) | **85,0 t/s** | 2026-11-21 | `GGML_HIP_PM4=0`, FUSE + FUSE2 + NOBLAS, `-md dspark-Q8_0 --spec-type draft-dspark --spec-draft-n-max 7`, akceptacja 0,55 | `ink-d7.log`; `DUO-INKLING.md` 09:30 | nie |
+| czat z DSpark n7, długi prompt 2k / T=0,7 | 67,7 / 26,4 t/s | 2026-11-21 | j.w. | `ink-d7.log` | nie |
+| prefill pp512 / pp2048 | 1333 / 1125 t/s (stock); serwer 2k 1030 t/s z PM4 | 2026-11-21 | stock / r6 | `ink-ad-bench.log`, `ink-r6-serve.log` | nie |
+
+FUSE3 dał tg64 58,0 t/s, ale KLD 4,68 (zepsuty) — nie jest rekordem; poprawka r8 i kernel MoE r9 niezmierzone (stop 2026-11-22).
+
 ## Jak dopisywać
 1. Nowy wynik lepszy od wiersza w tabeli (ta sama karta, model, obciążenie, metryka i porównywalne warunki) → podmień liczbę, zostaw poprzednią w nawiasie albo w nowym wierszu „wariant”, dopisz datę, warunki, `plik:wiersz` i status prod.
 2. Nowa para (karta, model, obciążenie, metryka) → nowy wiersz.
