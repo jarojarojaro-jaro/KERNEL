@@ -495,6 +495,8 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 
 | https://x.com/justvugg/status/2124562029738385864 (Telegram 2026-11-23) = colibri v2.2.0 (2026-11-22) | v2.2.0 | [[colibri]] | Delta od 2.1.0: Inkling-2-Mini/Small z GGUF unsloth (CPU, Vulkan, CUDA), prefix store, setup dobierający model; „7×” to Flash-Next z offloadem na 24 GB, nie nasz przypadek; AMD tylko przez Vulkan, liczb XTX brak | RTX PRO 4000 Vulkan: Flash-Next IQ3_XXS prompt 173 → 276, dekod 31 → 33 t/s; Qwen3.6-35B-A3B dekod ~92 t/s | Inkling-Mini przez Vulkan na XTX tylko, jeśli Maya/Strata (K-134) zawiodą |
 
+| https://x.com/elder_plinius/status/2124584972866498884 (Telegram 2026-11-23) „Vocab Surgery” | 2026-11-22 | [[vocab-surgery]] | Edycja 7 wierszy embeddingu + 10 lm_head zdejmuje odmowy Inkling; ryzyko: sam się potwierdza przy detektorze słów kluczowych | deklaracja: odmowy ~0 na 800+ promptach, bez metody | test z sędzią treści vs AtomicChat |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]

@@ -610,3 +610,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Telegram | Strata 0.2.20: strata-inkling z paczką hip-rx7900, UD-Q4_K_XL wprost, DSpark W=4 (5090 250,3 t/s, deklaracja); dopisane do K-134
 
 ## [2026-11-23] Telegram | colibri 2.2: Inkling-Mini z GGUF (Vulkan/CUDA), 7× dotyczy Flash-Next z offloadem; AMD tylko Vulkan, bez liczb XTX; nie do testu teraz
+
+## [2026-11-23] Telegram | Vocab Surgery (Pliny): zdjęcie odmów edycją 17 wierszy embeddingu/lm_head → notatka llm/vocab-surgery (do sprawdzenia: detektor słów kluczowych)
