@@ -24,6 +24,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
 1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
 
+### K-135 · Maya Inkling na XTX: `GPU_MAX_HW_QUEUES=2` (vllm-redshift: R9700 37,8 → 59,9 t/s)
+- data: 2026-11-23 (zwiad; repo abhinand5/vllm-redshift łatka 0101)
+- test: XTX, Maya `ik2` produkcyjna konfiguracja (bez cenzury, KV q4, kernele HIP) z i bez `GPU_MAX_HW_QUEUES=2`, rep2 mediana 5 (Q1, Q6 T=0,7, L2k, prefill); ≤ 10 min, tekst bit w bit
+- oczekiwany zysk: kilka–kilkanaście % (u nas ~777 launchy, przerwa ~2 µs/launch) [INFERENCE]
+- ryzyko karty: brak (zmienna runtime)
+- priorytet: wysoki (najtańsza droga do >100 t/s)
+
 ### K-134 · Inkling 2 Mini w Maya v1.1.73 na XTX: 93,6 t/s bez spekulacji (społeczność) vs nasze 49,5 — skąd różnica
 - data: 2026-11-22 (zwiad; LocalMaxxing run cmwraqz5108dlmi01cwdleupp, verified, UD-Q4_K_XL)
 - źródło: github.com/mw00/project-maya v1.1.73 (silnik Inkling @alesha-pro); [[inkling-2-mini]]

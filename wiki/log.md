@@ -662,3 +662,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Maya HIP runda 2 | czat T=0,7 94,5, długi 2k 93,5 t/s (bit w bit); do 100 brak ~0,6 ms/token
 
 ## [2026-11-23] koniec sesji | Maya :18796 bez draftera (T=0,7 94,5 / długi 93,5 t/s); z drafterem kopie 141, krótkie ~100, T=0,7 79; jaroserverai wyłączony na polecenie JARO
+
+## [2026-11-23] zwiad | vllm-redshift (R9700 Inkling 88–104 t/s, GPU_MAX_HW_QUEUES=2 → K-135); QEngine 275 t/s to 3×3090 TP INT4 (1 karta 102,9); oMLX 0.8.3; r13 czeka na włączenie serwera

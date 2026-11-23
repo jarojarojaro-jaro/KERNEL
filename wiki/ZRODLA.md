@@ -520,6 +520,16 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 | https://x.com/elliotarledge/status/2124568616964333644 (Telegram 2026-11-23) Inkling-2-Mini na KernelBench-Mega | 2026-11-22, kernelbench.com/mega | [[maya-ik2-inkling]] | Prawdziwe: Inkling-2-Mini jako lokalny agent napisał megakernel dekodu (zadanie KDA+MLA+MoE) 10,04× na RTX PRO 6000, lepiej niż Grok 4.7 (6,34×) i Sonnet 5 (3,92×); #1 tabeli to Gemini 4 Neon (nasz partner duetu); lekcja kernelowa: trwały megakernel z barierami ~0,75 µs, podział gate/up na CTA | 10,04× (0,606 ms/tok, 1650 tok/s przy ctx 8192); 686k tokenów w 2,9 h | Inkling bez cenzury na Mayi (~80–100 t/s na XTX) jako darmowy lokalny agent kernelowy obok Gemini — ale wtedy karta jest zajęta modelem |
 | https://x.com/rskjr/status/2124696610429161694 (Telegram 2026-11-23) + github alesha-pro/maya-inkling-mini | README 2026-11-22 | [[maya-ik2-inkling]], K-134 | Prawdziwe: silnik Mayi dla Inkling; 3090 (300 W, UD-Q4_K_XL, KV FP8): dekod 128 t/s, z oficjalnym drafterem 150–210 na kodzie, prefill 2742 t/s przy 4k; 757 uruchomień/token vs ~7350 w llama.cpp; drafter grupuje ekspertów okna, czyta każdego raz (5 tokenów 15,6 ms vs 7,8 ms za 1) | 3090: 128 / 150–210 / 2742 t/s; „163 t/s” z tweeta to czyjś benchmark bez warunków | XTX dekod Mayi 82 vs 3090 128 → przyspieszyć ścieżkę ekspertów HIP |
 
+## Zwiad 2026-11-23 (raport product/research/watch/2026-11-23.md)
+
+| źródło | wersja / data | raport, notatka | werdykt | liczby | następnym razem |
+|---|---|---|---|---|---|
+| vllm-redshift (abhinand5, vLLM na Radeon R9700 gfx1201) | v0.4.0, 2026-11-22 | [[maya-ik2-inkling]] | Prawdziwe, AMD: Inkling na RDNA4 przez łatki vLLM; wzorce przenośne na gfx1100: dekod NVFP4→fp16 w rejestrach + v_dot2, fuzje 1002 → 762 launchy, **`GPU_MAX_HW_QUEUES=2`** (R9700: 37,8 → 59,9 t/s bez spekulacji), drafty probabilistyczne + adaptacyjna weryfikacja (T=1,0: kod 101 → 119); FP8 WMMA nie dla nas | R9700 (640 GB/s): story 88,5, kod 103,7, 41K 97,4, prefill ~4600 t/s, DSpark T=1 86–133 (verified 135,3) | test `GPU_MAX_HW_QUEUES=2` z Mayą na XTX |
+| QEngine (bpx03, CUDA tylko 3090) | 1.5.0, 2026-11-22 | — | „275 narracja / 524 kod t/s Qwen3.8-27B” to 3× RTX 3090 w TP i kwant INT4 W4A16; jedna karta: 102,9 t/s (KV 4-bit) — poniżej naszych 120–140 przy T=0; przenośne bezstratne: akceptacja na GPU bez synchronizacji, lookup jako warunek grafu, „druga kandydatka” w weryfikacji (+3,5%) | 1 karta 102,9 t/s, prefill 2550 t/s | — |
+| oMLX 0.8.3 | 2026-11-22 | — | Apple: Inkling 2 Mini prefill +20%, dekod +10–13% | — | — |
+| Maya 1.1.74 / Strata 0.2.20 / TensorFold 1.3.4 | 2026-11-22 | wcześniejsze wiersze 2026-11-23 | już przeanalizowane (Telegram) | — | — |
+| Splash 1.7.1, strix-llama.cpp b1071 | 2026-11-22 | — | Mac ANE prefill / gfx1151; bez wpływu na XTX | — | — |
+
 ## Powiązane
 - [[KONWENCJE]]
 - [[REKORDY]]
