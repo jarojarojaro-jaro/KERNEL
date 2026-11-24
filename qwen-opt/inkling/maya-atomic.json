@@ -1,1 +1,27 @@
-{"exe":"/home/jaro/k134/maya/build-hip/maya-ik2.adq4k-dpp","args":["--model","/home/jaro/models/inkling/Inkling-2-Mini-Uncensored-AD-Q4_K.gguf","--max-context","16384","--drafting","on"],"tokenizer":"/home/jaro/k134/maya/ik2/tokenizer","model_name":"inkling-2-mini","log":"/home/jaro/k134/maya-atomic.log","env":{"LD_LIBRARY_PATH":"/opt/rocm/core-10.0/lib","IK2_KV":"q4","IK2_HIP_COMB":"1","IK2_HIP_EXPV":"1","IK2_HIP_FUSE":"1","IK2_HIP_LGD":"2","IK2_HIP_LGR":"1","IK2_HIP_MVF16":"1","IK2_HIP_NT":"15","IK2_HIP_PCONV":"1"}}
+{
+ "exe": "/home/jaro/k134/maya/build-hip/maya-ik2.adq4k-dpp-sfx",
+ "args": [
+  "--model",
+  "/home/jaro/models/inkling/Inkling-2-Mini-Uncensored-AD-Q4_K.gguf",
+  "--max-context",
+  "16384",
+  "--drafting",
+  "on"
+ ],
+ "tokenizer": "/home/jaro/k134/maya/ik2/tokenizer",
+ "model_name": "inkling-2-mini",
+ "log": "/home/jaro/k134/maya-atomic.log",
+ "env": {
+  "LD_LIBRARY_PATH": "/opt/rocm/core-10.0/lib",
+  "IK2_KV": "q4",
+  "IK2_HIP_COMB": "1",
+  "IK2_HIP_EXPV": "1",
+  "IK2_HIP_FUSE": "1",
+  "IK2_HIP_LGD": "2",
+  "IK2_HIP_LGR": "1",
+  "IK2_HIP_MVF16": "1",
+  "IK2_HIP_NT": "15",
+  "IK2_HIP_PCONV": "1",
+  "IK2_SUFFIX": "128"
+ }
+}

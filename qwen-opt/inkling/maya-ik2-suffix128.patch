@@ -1,0 +1,135 @@
+From 8621f0d532c9a9699d039a854940d76c1c3d2924 Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Tue, 24 Nov 2026 17:10:54 +0100
+Subject: [PATCH] ik2: IK2_SUFFIX=n - a long repeat of the text (12-token
+ match) verified up to n tokens in one forward, after GodGMN's verify_suffix
+
+---
+ src/ik2/ik2_main.cu | 76 ++++++++++++++++++++++++++++++++++++++++++++-
+ 1 file changed, 75 insertions(+), 1 deletion(-)
+
+diff --git a/src/ik2/ik2_main.cu b/src/ik2/ik2_main.cu
+index 77671425..47fd8ffe 100644
+--- a/src/ik2/ik2_main.cu
++++ b/src/ik2/ik2_main.cu
+@@ -3314,6 +3314,8 @@ struct SpecCtl {
+     uint64_t kept() const { return accepted + l_accepted; }
+ };
+ 
++int g_suffix_w = 0;
++long g_sfx_fw = 0, g_sfx_in = 0, g_sfx_acc = 0;   // (IK2_SUFFIX: forwards, inputs, accepted)   // IK2_SUFFIX=n (16 .. 128): a long repeat of the text verified n tokens in one forward
+ bool g_lookup = false;   // the prompt lookup (src/spec/suffix_drafter): drafts copied from the text so far
+ 
+ // VRAM drafting takes beside the model (the plan's check that it changes nothing): the window's records (every
+@@ -4600,6 +4602,8 @@ int main(int argc, char** argv) {
+     if (drafting.empty()) drafting = draft_path.empty() ? "off" : "on";   // (--draft alone: as before, drafting on)
+     if (drafting == "off") draft_path.clear();
+     g_lookup = drafting != "off" && !(getenv("IK2_LOOKUP") && !std::atoi(getenv("IK2_LOOKUP")));
++    g_suffix_w = getenv("IK2_SUFFIX") ? std::clamp(std::atoi(getenv("IK2_SUFFIX")), 0, 128) : 0;
++    if (g_suffix_w < 16) g_suffix_w = 0;
+     g_prof = getenv("IK2_PROF") && std::atoi(getenv("IK2_PROF"));
+     g_flash = !(getenv("IK2_FLASH") && !std::atoi(getenv("IK2_FLASH")));
+ #ifdef STRATA_USE_HIP
+@@ -5514,7 +5518,7 @@ int main(int argc, char** argv) {
+             const size_t cc[4] = {KD, KD, C, C};
+             for (int i = 0; i < 4; ++i) {
+                 Vi.rec_old[i] = dalloc<float>(3 * cc[i]);
+-                Vi.rec_x[i] = dalloc<float>((size_t) ik2::draft::kBlock * cc[i]);
++                Vi.rec_x[i] = dalloc<float>((size_t) std::max(ik2::draft::kBlock, g_suffix_w) * cc[i]);
+             }
+         }
+     }
+@@ -6422,6 +6426,7 @@ int main(int argc, char** argv) {
+             const bool use_cand = !(getenv("IK2_CAND") && !std::atoi(getenv("IK2_CAND")));
+             bool cand = false;   // the last token's logits came as candidates (g_cand), not in `last`
+             int pending_sample = -1;   // (a speculative window's last token, sampled already)
++            int suffix_at = 0;   // (IK2_SUFFIX: no repeat tried before this token - after a short one)
+             const char* reason = "length";
+             int n_out = 0;
+             int greedy_tok = temp <= 0 && !last.empty() ? pick(last.data()) : -1;
+@@ -6444,6 +6449,72 @@ int main(int argc, char** argv) {
+                 }
+                 if (i + 1 == max_new) break;
+                 if (req_spec) lk.append(tok);
++                // (IK2_SUFFIX: the last 12 tokens and tok found earlier in the text - the text after them, up to
++                //  g_suffix_w tokens, verified in one forward; each row the target's own pick, kept while it is the
++                //  repeat's next token: the target's distribution exactly, greedy or sampled)
++                if (req_spec && g_suffix_w && !drafter && i >= suffix_at) {
++                    constexpr int match = 12;
++                    const int end = (int) hist.size();
++                    const int remaining = std::min(max_new - i - 1, ctx - end - 1);
++                    int src = -1;
++                    if (remaining >= match && end >= 2 * match) {
++                        const int floor = std::max(match - 1, end - 65536);
++                        for (int s0 = end - match; s0 >= floor; --s0)
++                            if (hist[s0] == tok && std::equal(hist.begin() + s0 - match + 1, hist.begin() + s0,
++                                                               hist.end() - match + 1)) {
++                                src = s0;
++                                break;
++                            }
++                    }
++                    int n = 0;
++                    if (src >= 0) {
++                        int matched = match;
++                        while (matched < g_suffix_w && src >= matched && hist[src - matched] == hist[end - matched])
++                            ++matched;
++                        n = std::min({g_suffix_w, remaining, end - src, 2 * matched - 8});
++                    }
++                    if (n >= 16) {
++                        const double ts = now();
++                        std::vector<int> win(hist.begin() + src, hist.begin() + src + n);   // (win[0] == tok)
++                        std::vector<float> lo;
++                        std::vector<int> ag;
++                        g_rec = true;
++                        forward(M, win.data(), n, end, true, temp <= 0 ? OutMode::kArgmax : OutMode::kLogits,
++                                std::string(), lo, temp <= 0 ? &ag : nullptr, t_exp);
++                        g_rec = false;
++                        std::vector<int> next;
++                        for (int j = 0; j < n; ++j) {
++                            const int picked = temp <= 0 ? ag[j] : pick(lo.data() + (size_t) j * c.n_vocab);
++                            next.push_back(picked);
++                            if (j + 1 == n || picked != win[j + 1]) break;
++                            if (std::find(stops.begin(), stops.end(), picked) != stops.end()) break;
++                        }
++                        const int used = (int) next.size();
++                        if (used < n) rollback(M, used);
++                        CU(cudaStreamSynchronize(g_s));
++                        req_verify_s += now() - ts, ++req_rounds;
++                        g_sfx_fw += 1, g_sfx_in += n, g_sfx_acc += used - 1;
++                        hist.push_back(tok);
++                        for (int j = 0; j + 1 < used; ++j) {
++                            std::printf(serve_maya ? "T %d\n" : "@TOK %d\n", next[j]);
++                            hist.push_back(next[j]);
++                            lk.append(next[j]);
++                        }
++                        std::fflush(stdout);
++                        n_out += used - 1;
++                        i += used - 1;
++                        if (temp <= 0) greedy_tok = next.back();
++                        else pending_sample = next.back();
++                        last.clear();
++                        cand = false;
++                        if (used < 8) suffix_at = i + 16;
++                        if (g_cancel) {
++                            reason = "cancelled";
++                            break;
++                        }
++                        continue;
++                    }
++                }
+                 // (the step: a plain token, or a window of the drafter's or the prompt lookup's drafts)
+                 int B = 1, src = 0;
+                 int32_t ld[kBlockMax];
+@@ -6517,6 +6588,9 @@ int main(int argc, char** argv) {
+                              (unsigned long long) sctl.kept(), (unsigned long long) sctl.offered(),
+                              (unsigned long long) sctl.l_accepted, (unsigned long long) sctl.l_drafted,
+                              (unsigned long long) sctl.plain);
++            if (g_sfx_fw)
++                std::fprintf(stderr, "suffix: %ld forwards verified %ld inputs, %ld accepted\n", g_sfx_fw, g_sfx_in,
++                             g_sfx_acc);
+             if (serve_maya && req_rounds) stat_line();
+             if (serve_maya)   // (DONE's 6th and 7th fields: this answer's drafts kept and offered)
+                 std::printf("DONE %d %zu %.1f %.1f %s %llu %llu %d\n", n_out, ids.size(), (t1 - t0) * 1e3,
+-- 
+2.53.0
+

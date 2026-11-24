@@ -56,7 +56,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-147 · Maya: szerokie okno sufiksowe (do 128 tokenów) zamiast lookupu W16 dla edycji i przepisywania
 - data: 2026-11-24 (K-144: GodGMN `IK2_SUFFIX=128` 708 / 494 t/s vs nasz lookup 115 / 107 na copy/edit, wyniki dokładne)
 - plan: przenieść `IK2_SUFFIX` (drzewo sufiksów, weryfikacja do 128 wejść w jednym przejściu) z GodGMN f472e94 do gałęzi produkcyjnej; parytet greedy 11/11, rep2 (Q1, T=0,7, L2k: nie może stracić > 0,5%) i `ik2_copy_edit.py`; najpierw na CPU przegląd kodu (nvcc), potem jedna bramka na XTX do 10 min
-- stan: czeka (kod)
+- **wynik 2026-11-24 16:22–16:30 (XTX, gałąź `ad-suffix` 8621f0d = produkcja ad-dpp + `IK2_SUFFIX`, łatka `qwen-opt/inkling/maya-ik2-suffix128.patch`):** odpowiedzi greedy identyczne z produkcją 11/11 (sufiks zadziałał w nich 7 razy); `ik2_copy_edit.py` (dokładne we wszystkich ramionach, 2 powtórzenia): przepisanie 118,3 / 110,9 → **403,8 / 451,8 t/s (×3,7)**, edycja 114,9 / 107,2 → **298,6 / 298,6 (×2,7)**, akceptacja 564/576 i 1108/1376; czat rep2 ABBA bez zmian: Q1 130,1 / 130,1 → 130,1 / 129,7, T=0,7 114,1 / 114,1 → 114,3 / 114,2, L2k 108,1 / 108,0 → 108,1 / 108,0. **Wdrożone** do `maya-atomic.json` (`maya-ik2.adq4k-dpp-sfx`, md5 b9dcf28a…, `IK2_SUFFIX=128`). Różnica do GodGMN (708 / 494): nasze okno idzie ścieżką prefillu `forward()` (ok. 0,2 s na 96 tokenów); następny krok: szybsza weryfikacja szerokiego okna. Ścieżka T>0 (próbka celu w każdym wierszu, zgodna z rozkładem z konstrukcji) nie była osobno mierzona na edycji.
 
 ### K-144 · Maya: szerokie okna lookupu (GodGMN `IK2_SUFFIX`, do 512) i `IK2_SLOT_KEEP` (alesha #11)
 - test (≤10 min): kopia/edycja kodu i proza: nasz lookup (okno ≤8) vs binarka GodGMN z `IK2_SUFFIX=128`; rozmowa 30k + boczne żądanie 2k + powrót (czas wznowienia)
@@ -898,6 +898,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (proces)
 - 2026-11-24 14:37: pierwsze uruchomienie odrzucone przez fabrykę (port 18794 poza zakresem fabryki 18434–18499; skrypt poprawiony na 18450, uruchomione ponownie).
 - 2026-11-24 15:18: fabryka INVALID, bo zmieniona uprząż (`ext/spec_sweep.py` po audycie 19.11, `ext/fusion/greedy.sh`) bez wpisu w HARNESS.lock; zablokowana z powodem (ledger seq 11), test ponownie w kolejce 15:40.
+- 2026-11-24 16:08: fabryka VOID przez bramkę sprzętu H4: niepotwierdzony page fault z 2026-11-23 01:09 (proces strata-inkling, znany incydent K-134). Potwierdzenie (`factory rsi hw ack --reason …`) to według fabryki krok człowieka: **czeka na JARO**, potem jedno uruchomienie `K-060.jobs` (ok. 25 min).
 
 ### K-061 · Tryb wielu użytkowników na NVIDIA: naprawić start `-np 4` z MTP (`failed to create context`), potem k zależne od liczby klientów (`K_BY_B`)
 - data: 2026-10-21 (raport 56)
