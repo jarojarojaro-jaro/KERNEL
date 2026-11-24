@@ -702,3 +702,7 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-24] llama.cpp #31669 replay GDN (link JARO) | nasze S4 z 10-13 upstream; topka bez zmian; Enigma: podbić upstream b11856 → ≥ b12671 i model pamięci (−0,55 GiB stanu przy n4, wiele slotów tanie)
 
 ## [2026-11-24] tools/kol: kolejka GPU jednym poleceniem (stan, pusc --czekaj, czekaj, wynik) — zlecenie JARO o oszczędności tokenów
+
+## [2026-11-24] kolejka | 103 pozycje na polecenie JARO: przegląd, 20 testów na XTX i Colabie, 2 wdrożenia
+Przegląd [[przeglad-kolejki-2026-11-24]], Colab [[colab-kolejka-2026-11-24]]. Wdrożone w Mai: DPP (K-142, T=0,7 +0,75%, bit w bit) i okno sufiksowe 128 (K-147, przepisywanie ×3,7, edycja ×2,7, czat bez zmian). Odrzucone: ROCm 10.1 (K-049, prefill −1,7%), ROCm 10.2 (K-130, bez zysku), HRX (K-052, ≥6× wolniej), lazy ctx (K-145, +2% tylko z drafterem), drafter tylko greedy (K-146, T=0,7 −1,7%). Wiedza: nasz stos +4…8% nad GodGMN na tej samej karcie (K-141); DFlash2 bije MTP dla Orci na XTX (K-074, +35%); fork CUDA bez sm_75 (K-069); regresja prefillu CUDA to stara baza (K-023). Przeniesione: 40 do Zrobione, 8 do Odrzucone. Czeka na JARO: K-060 (potwierdzenie faultu z 23.11 w fabryce) i decyzje z przeglądu.
+

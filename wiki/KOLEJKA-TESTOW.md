@@ -21,183 +21,15 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-148 · Maya: szybsza weryfikacja szerokiego okna sufiksowego (dziś ścieżka prefillu, ok. 0,2 s na 96 tokenów)
+- data: 2026-11-24 (K-147: nasz sufiks 404–452 / 299 t/s vs GodGMN 708 / 494 na tym samym teście i karcie)
+- plan: profil `forward()` dla T=16–128 z `g_rec` (IK2_PROF), porównanie z presetem GodGMN (`IK2_PREFILL_WMMA`, `IK2_PREFILL_DENSE=2`, `IK2_EXPERT_TILE_LDS`); cel: koszt okna 96 tokenów ≤ 0,14 s; bramka: parytet 11/11 + `ik2_copy_edit.py` + rep2 czatu
+- zysk: copy/edit do +60% [SZACUNEK z różnicy do GodGMN]
+- ryzyko karty: niskie (ścieżka prefillu już używana)
+- priorytet: wysoki dla agentów i edycji kodu
+
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
 1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
-
-### K-141 · Inkling na XTX: nasz silnik vs port GodGMN (release Victora) tym samym testem + wiersz code-v1 T=0 jak LocalMaxxing
-- data: 2026-11-24 (zwiad: GodGMN 117 / T=0,7 115,7 / 2k 114,2 na jego XTX, Victor 106 przy 272 W; R9700 z DSpark 144,6 na code-v1 T=0)
-- test (~25 min): binarka `maya-ik2-f472e94-rocm10-gfx1100` (sha256 z release) na ggml-org IQ4_NL (pobranie 17,6 GB — zgoda JARO) vs nasza `maya-ik2.adq4k`; ta sama procedura: głębokość 512 / 2k / 8k, greedy i T=0,7; do tego prompt code-v1 (`/tmp/zw-lm-code-v1.txt`, sha a737db73) T=0, 2048 wyj.: off / lookup / DSpark / auto
-- oczekiwany zysk: wiedza, czy różnica ±5–10% to maszyna czy kernele; uczciwy wiersz do rankingu
-- priorytet: wysoki
-- **wynik 2026-11-24 16:00–16:07 (XTX, ten sam komputer, `tools/ik2_bench.py` GodGMN, 2 przebiegi):** nasza produkcja (adq4k-dpp, AD-Q4_K, KV q4, lookup) vs GodGMN f472e94 (zbudowany u nas, bo wydanie wymaga glibc 2.43; preset `ik2-mini-gfx1100.json`, IQ4_NL, KV fp8). **T=0:** głębokość 512 / 2k / 8k: nasz 110,0 / 106,3 / 103,1, ich 104,8 / 102,1 / 95,3 → **+5% / +4% / +8% dla nas**; prefill nasz 2593 / 3048 / 2996, ich 2354 / 3044 / 3051 (przy 8k −2% dla nas). **T=0,7:** nasz 108,3 / 104,8 / 101,9, ich 103,8 / 101,0 / 94,4 → **+4% / +4% / +8%**. Ich 115,7 t/s z README nie powtarza się na naszej karcie (103,8). Uwaga: inne pliki wag (AD-Q4_K vs IQ4_NL), porównanie stosów, nie kerneli.
-
-### K-142 · Maya: redukcje fali przez DPP (`lane_xor`, mw00 #1164) w ik2 i naszych kernelach
-- test (≤10 min po buildzie): `ik2_kernels_test` te same bity; rep2 ABA Q1 / T=0,7 / L2k
-- oczekiwany zysk: +0,5–2% [INFERENCE z +1,6% na Hy4 3×XTX]; mamy już DPP w llama.cpp (argmax, rmsnorm)
-- priorytet: średni
-- **wynik 2026-11-24 15:10–15:18 (XTX, gałąź `ad-dpp` = produkcja + `ik2_lane_xor.h`, 49 zamian `__shfl_xor_sync` na DPP/permlanex16):** `ik2_kernels_test` all passed (387 ok); odpowiedzi greedy identyczne z produkcją (11/11); rep2 ABBA prod / dpp / dpp / prod: Q1 128,4 / 129,9 / 130,1 / 128,6, **T=0,7 112,8 / 114,1 / 113,7 / 113,3 (+0,75%)**, L2k 107,0 / 108,0 / 107,7 / 107,3 (+0,6%). Mały, ale stały zysk, ten sam wynik bit w bit → **wdrożone**: `maya-ik2.adq4k-dpp` (md5 7cbf71e2…) w `maya-atomic.json` (łatka `qwen-opt/inkling/maya-ik2-dpp-lanexor.patch`).
-
-### K-143 · Inkling: dekod na długim kontekście (32k / 128k), KV q4 vs f16
-- data: 2026-11-24 (arXiv 2611.30027: kernele 4-bit KV przy batch 1 biorą 18–38% pasma; Inkling czyta ~1,2 GB KV/token przy 128k)
-- test (≤10 min): Maya prod, prompt 32k i 128k + 128 tokenów greedy, `IK2_KV=q4` vs f16; efektywne pasmo atencji z rocprofv3
-- oczekiwany zysk: wiedza; jeśli atencja q4 < 40% pasma → kernel
-- priorytet: średni
-- **wynik 2026-11-24 14:30 (XTX, Maya 1.1.75 port + hipx14, AtomicChat, CLI 128 tokenów greedy, IK2_DEPTH):** głębokość 0 / 8k / 32k / 128k: **KV q4 112,6 / 101,1 / 92,8 / 70,2 t/s**, KV f16 112,6 / 96,9 / 87,7 / 63,4. q4 szybsze od f16 o 4–11% (mniej bajtów), spadek przy 128k −38% (q4) / −44% (f16). Kandydat: atencja na długim kontekście (8 wizyt globalnych) — przy 128k ok. 5,4 ms/token więcej niż przy 0.
-
-### K-145 · Maya: kontekst draftera zwykłych kroków zapisywany partią (`IK2_K_LAZYCTX`) — podatek draftera
-- data: 2026-11-24 (K-139: drafter wczytany kosztuje −4% na każdym kroku)
-- **wynik 2026-11-24 15:21–15:25 (XTX, gałąź `k175-lazy` e106fe7, AtomicChat, KV q4, ABAB):** odpowiedzi identyczne (11/11); DSpark z kontrolerem T=0,7 **100,7 / 100,6 → 102,7 / 102,6 (+2,0%)**, Q1 157,9 bez zmian, L2k 103,9 / 102,9 → 103,4 / 103,1; lookup + drafter wczytany T=0,7 100,7 / 100,8 → 102,7 / 103,7. Podatek zmniejszony o połowę, ale DSpark przy T=0,7 nadal poniżej samego lookupu (112,4).
-
-### K-146 · Maya: drafter tylko dla zapytań greedy (`IK2_K_DRAFT_T0`), przy T>0 lookup bez kontekstu draftera
-- data: 2026-11-24 (K-139: DSpark +24% przy T=0, −11% przy T=0,7)
-- test: `qwen-opt/inkling/k146.sh` ABBA prod vs k175-lazy z `IK2_K_LAZYCTX=1 IK2_K_DRAFT_T0=1`; parytet greedy
-- **wynik 2026-11-24 15:58–16:10 (XTX, ABBA, produkcja = adq4k-dpp):** odpowiedzi identyczne 11/11; Q1 130,1 / 129,7 → **157,6 / 157,6 (+21%)**, T=0,7 114,1 / 114,1 → 112,2 / 112,2 (**−1,7%**), L2k 108,0 / 108,1 → 102,9 / 104,3 (−4%, greedy z drafterem na długim kontekście). Wniosek: przy T>0 sama obecność draftera nadal kosztuje 1,7% (gałąź 1.1.75 bez DPP + rezerwa VRAM, do rozdzielenia), a na długim greedy drafter przegrywa z lookupem. **Nie wdrażamy** (metryka główna T=0,7). Następny krok, jeśli wrócimy: DPP w gałęzi lazy i drafter tylko dla krótkiego kontekstu (< 1k).
-
-### K-147 · Maya: szerokie okno sufiksowe (do 128 tokenów) zamiast lookupu W16 dla edycji i przepisywania
-- data: 2026-11-24 (K-144: GodGMN `IK2_SUFFIX=128` 708 / 494 t/s vs nasz lookup 115 / 107 na copy/edit, wyniki dokładne)
-- plan: przenieść `IK2_SUFFIX` (drzewo sufiksów, weryfikacja do 128 wejść w jednym przejściu) z GodGMN f472e94 do gałęzi produkcyjnej; parytet greedy 11/11, rep2 (Q1, T=0,7, L2k: nie może stracić > 0,5%) i `ik2_copy_edit.py`; najpierw na CPU przegląd kodu (nvcc), potem jedna bramka na XTX do 10 min
-- **wynik 2026-11-24 16:22–16:30 (XTX, gałąź `ad-suffix` 8621f0d = produkcja ad-dpp + `IK2_SUFFIX`, łatka `qwen-opt/inkling/maya-ik2-suffix128.patch`):** odpowiedzi greedy identyczne z produkcją 11/11 (sufiks zadziałał w nich 7 razy); `ik2_copy_edit.py` (dokładne we wszystkich ramionach, 2 powtórzenia): przepisanie 118,3 / 110,9 → **403,8 / 451,8 t/s (×3,7)**, edycja 114,9 / 107,2 → **298,6 / 298,6 (×2,7)**, akceptacja 564/576 i 1108/1376; czat rep2 ABBA bez zmian: Q1 130,1 / 130,1 → 130,1 / 129,7, T=0,7 114,1 / 114,1 → 114,3 / 114,2, L2k 108,1 / 108,0 → 108,1 / 108,0. **Wdrożone** do `maya-atomic.json` (`maya-ik2.adq4k-dpp-sfx`, md5 b9dcf28a…, `IK2_SUFFIX=128`). Różnica do GodGMN (708 / 494): nasze okno idzie ścieżką prefillu `forward()` (ok. 0,2 s na 96 tokenów); następny krok: szybsza weryfikacja szerokiego okna. Ścieżka T>0 (próbka celu w każdym wierszu, zgodna z rozkładem z konstrukcji) nie była osobno mierzona na edycji.
-
-### K-144 · Maya: szerokie okna lookupu (GodGMN `IK2_SUFFIX`, do 512) i `IK2_SLOT_KEEP` (alesha #11)
-- test (≤10 min): kopia/edycja kodu i proza: nasz lookup (okno ≤8) vs binarka GodGMN z `IK2_SUFFIX=128`; rozmowa 30k + boczne żądanie 2k + powrót (czas wznowienia)
-- oczekiwany zysk: kopie ×5–9 (Victor HTTP 99 → 939 t/s), powrót do rozmowy ~10 s → <0,2 s; proza −8–13% bez kontrolera, więc tylko z SpecCtl
-- priorytet: wysoki (agenci w Mai)
-- **wynik 2026-11-24 16:07 (XTX, `tests/ik2_copy_edit.py`, przepisanie 582 tokenów i edycja 583 tokenów, wyniki dokładne we wszystkich ramionach):** nasz lookup 115,3 / 106,9 t/s; GodGMN domyślnie 103,0 / 103,1; **GodGMN `IK2_SUFFIX=128` (drzewo sufiksów, okno weryfikacji do 128 tokenów): 708,5 / 493,6 t/s (×6,1 / ×4,6 względem nas)**, akceptacja 564/570 i 547/767. Wniosek: przy kopiowaniu i edycji kodu (agenci, poprawki plików) szerokie okno sufiksowe daje kilkukrotny zysk, którego nasz lookup (okno ≤ 16) nie łapie. Nowa pozycja K-147.
-
-### K-140 · Wyścig Maya: pomiar gałęzi Gemini `gem-maya` (runda 1: IK2_G_WEXP/WCOLS/WROUTE/WLOOP/DGRAPH/DFAST)
-- data: 2026-11-24 (runda maya-g1c, commit 96f45fc)
-- stan: nvcc czysto (kernels, main, draft); Gemini nie dodał testów; prognoza autora 135–155 t/s przy T=0,7 [jego szacunek, nasz model ze śladu daje dużo mniej: te same pomysły u Kernela dały DSpark 102,2 → 106,7, lookup 112,9]
-- test (~35 min karty): build `wt-gem-maya` (jak build-kr1.sh), `qwen-opt/inkling/race-gem1.sh` + `race-gem1.jobs`: testy kerneli z/bez IK2_G_*, rep2: bez przełączników lookup / DSpark, wszystkie IK2_G_* DSpark on / auto / lookup, parytet greedy drafting wył. vs wł.
-- baza: produkcja 113,2 t/s T=0,7 (AtomicChat, lookup)
-- ryzyko karty: nowe kernele HIP bez testów → najpierw g1-test, przy page fault stop
-- priorytet: wysoki (wyścig)
-- **testy kerneli 2026-11-24 14:33 (gałąź Gemini 96f45fc):** NIE przechodzą — `window experts Q8_0 (row dots), 2/5/8 tokens: h and y the one-token path's to the bit` FAIL także BEZ przełączników IK2_G_* (zmiana Gemini psuje domyślną ścieżkę Q8_0 okna, czyli plik unsloth warstwy 20–23), plus znany próg NVFP4. Reguła „bit w bit, gdy wyłączone” złamana.
-- **wynik 2026-11-24 14:33–14:36 (XTX, AtomicChat AD-Q4_K, KV q4, rep2 mediana 5, ta sama sesja):** bez przełączników lookup Q1 / T=0,7 / L2k 127,5 / 112,5 / 106,9 (powtórka 127,8 / 112,5 / 106,9); **wszystkie IK2_G_* + lookup 130,4 / 114,3 / 108,3 (+2,3 / +1,6 / +1,3%)**; auto 129,9 / 114,2 / 108,2; DSpark bez przełączników 157,3 / 101,8 / 102,2, z przełącznikami 117,0 / 107,4 / 102,8 (T=0,7 +5,5%, ale krótkie T=0 −26%). Parytet greedy drafting wył./wł. z przełącznikami: identyczne (11/11). Kernel race runda 1 (`IK2_K_*`): T=0,7 +0,6%. **Gemini prowadzi o ~1 pkt proc.**, ale ścieżka Q8_0 okna jest niedokładna nawet bez przełączników (plik unsloth) — przed wdrożeniem do naprawy.
-
-### K-139 · Ekonomia zgadywania Inklinga na XTX (Maya): pomiar kosztu okna, podatku draftera, lokalności ekspertów, parytetu przy T>0
-- data: 2026-11-24 (analiza skilli ashhart, [[ashhart-skills-infra]])
-- test (rep2/STAT, łącznie ~40 min): E1 wymuszona szerokość `IK2_DRAFT_ADAPT=0 IK2_DRAFT_WIDTH=2..8` → c[B], j, s, a (15 min); E2 podatek draftera: bez `--draft` vs drafter wczytany, a kontroler wybiera zwykły krok (5 min); E3 `IK2_TRACE` 256 tokenów → `route_locality.py` U(B) (2 min); E4 `parity.py` drafting wył./wł., seedy 1,2, T 0/0,7 (10 min); E5 drift routera AD vs UD (5 min); E6 priory SpecCtl z E1 + maks. szerokość (5 min)
-- oczekiwany zysk: E1+E6 0–3% przy T=0,7, E2 do ~3% [INFERENCE]; przede wszystkim liczby zamiast założeń dla wyścigu
-- ryzyko karty: brak (konfiguracje istniejących buildów)
-- priorytet: wysoki
-- **wynik 2026-11-24 14:23–14:31 (XTX, Maya 1.1.75 + hipx14 + Q4_K/Q5_0, AtomicChat, KV q4, rep2 mediana 5; Q1 = krótka T=0, Q6 = T=0,7, L2k):**
-  - bez zgadywania 127,1 / 112,3 / 106,3; lookup 127,7 / 112,4 / 106,7; `auto` 127,7 / 112,3 / 106,7 (pomiar auto: bez 111,7, lookup 113,4, drafter 107,5, oba 109,2).
-  - **DSpark z kontrolerem: Q1 157,9 (+24% nad lookupem), T=0,7 100,2 (−11%), L2k 102,8 (−4%).** DSpark wygrywa przy T=0 i krótkich odpowiedziach, przegrywa przy T=0,7.
-  - Wymuszona szerokość (bez kontrolera) T=0,7: w2 77,1, w3 72,4, w4 66,4, w5 59,4, w8 45,9 t/s — każde wymuszone okno traci; T=0 Q1: w3 133,7, w5 157,9, w8 119,8.
-  - **Podatek draftera potwierdzony:** lookup z wczytanym drafterem 107,9 / 102,2 vs lookup bez 112,4 / 106,7 → −4,0% / −4,2% na każdym kroku (zapis kontekstu draftera w zwykłych krokach).
-  - Lokalność ekspertów (IK2_TRACE, 256 tokenów): suma ekspertów okna U(B) 1,60 / 2,09 / 2,52 / 2,89 / 3,81 dla B=2/3/4/5/8 vs routing niezależny 1,94 / 2,82 / 3,64 / 4,41 / 6,45 (deklaracja Mai 2,7 dla 5 potwierdzona: 2,89); nakładanie sąsiednich tokenów 0,40 (losowo 0,06); między przejściami pętli 0,43–0,57.
-  - Parytet greedy (11 odpowiedzi) drafting wył. vs DSpark: identyczne.
-  - Wniosek: (1) wyłączyć zapis kontekstu draftera w zwykłych krokach (−4% podatku) → DSpark auto byłby co najmniej równy lookupowi przy T=0,7; (2) wybór drafter vs lookup według temperatury: DSpark przy T=0 (+24% Q1), lookup przy T>0; (3) stały koszt okna nadal główny problem (wymuszone okna przy T=0,7 tracą 31–59%).
-
-### K-138 · Unsloth llama.cpp (prebuild b12649-mix, fuzje Inkling) na XTX vs nasz r14 i Maya
-- data: 2026-11-23 (link JARO, panel 19:57; Unsloth: RTX PRO 6000 81 → 125 t/s, gfx1151 24 → 33 bez spekulacji)
-- test: gotowa paczka `app-b12649-mix-c7059d6-linux-x64-rocm-gfx110X.tar.gz` (bez budowania), AD-Q4_K i UD-Q4_K_XL, KV q4_0: llama-bench tg128 vs nasz r14 (58,4) i stock; serwer z DSpark n7 (xbench Q4, T=0,7, L2k, L8k) vs r14 i Maya (T=0,7 104,3); ≤ 10 min
-- oczekiwany zysk: dla Mai brak [INFERENCE: Maya na 3090 124 t/s ≈ Unsloth na PRO 6000 przy 2× większym paśmie]; dla naszego llama.cpp sprawdzić, które ich fuzje nie pokrywają się z naszymi FUSE/F4 (#401, #402, #411, #412, #414) i dać je Gemini w r16
-- ryzyko karty: obca paczka ROCm; PM4 nie dotyczy (to nie nasz fork), test pod blokadą GPU
-- priorytet: średni
-- wynik 2026-11-24 01:35–01:38 UTC (XTX, KV q4_0, AtomicChat AD-Q4_K): llama-bench tg128 Unsloth 40,9 vs nasz r14 58,2 (UD-Q4_K_XL: 44,1 vs 60,9) → nasz +42% w samym dekodzie; prefill pp2048 Unsloth 968. Serwer z DSpark n7 (xbench): Unsloth / nasz r14: krótki Q1 71,0 / 46,0, kopie Q4 98,3 / 85,9, **T=0,7 31,1 / 23,6**, L2k 72,4 / 62,0 (prefill 761 / 1339), L8k 67,9 / 66,5. Wniosek: ich serwer traci mniej na kroku niż nasz (potwierdza narzut 7,8 ms/token z r14 → r15), ale oba 3× za Mayą (T=0,7 104,3). Paczka Unsloth na XTX nie jest dla nas kandydatem; ich pętla serwera do przejrzenia w r16.
-
-### K-137 · AtomicChat Uncensored AD-Q4_K natywnie w Maya (eksperci Q4_K + Q5_0): ile szybciej niż ablacja w locie
-- data: 2026-11-23 (JARO, panel 19:02: „zoptymalizować ten atomic chat i zobaczyć, ile może śmigać”)
-- stan: Maya odrzuca plik (`type Q4_K not decoded here`); eksperci AtomicChat: gate_up Q4_K (9,17 GB), down Q5_0 (5,61 GB), reszta Q8_0 (nagłówek GGUF). Odczyt ekspertów na token jak w unsloth UD-Q4_K_XL: 1,847 vs 1,847 GB (pętla 3× w warstwach 6–17), dense 1,73 vs 1,82 GB
-- praca (CPU): kernele Q4_K/Q5_0 w `ik2` (dekod, okno, prefill WMMA, NT), gałąź `ad-q4k` w `~/praca/maya-ad`; poprawność na Colab T4 (`tests/ik2_kernels_test.cu`), potem XTX
-- test (XTX, ≤ 15 min): rep2 mediana 5 (Q1, Q6 T=0,7, L2k, prefill 2k) AD-Q4_K natywnie vs produkcja (unsloth + `IK2_ABLATE`); odmowy 8 pytań; zgodność z llama.cpp na tym samym pliku (top-1, KLD)
-- oczekiwany zysk: 0–5% (bez rzutu ablacji, który kosztował 2–5%) [INFERENCE]; wierność kwantom AtomicChat (KLD 0,0115 do BF16)
-- ryzyko karty: nowe kernele → najpierw test-kernel i krótki smoke
-- priorytet: wysoki (polecenie JARO)
-- **wynik 2026-11-24 01:58–02:09 UTC (XTX, rep2 mediana 5, ABA):** produkcja (unsloth + ablacja w locie) → AtomicChat natywnie (1.1.73 + hipx14 + Q4_K/Q5_0): Q1 118,3 → 128,6 (+8,7%), **T=0,7 104,2 → 113,2 (+8,6%)**, L2k 99,9 → 107,1 (+7,2%), prefill 2k 3457 → 3314 (−4,2%). Na bazie 1.1.75 (k175-ad, `--drafting auto` z DSpark): 127,3 / 112,1 / 106,2 / 3309; auto zmierzył: bez zgadywania 112,3, lookup 113,3, drafter 108,7. Jakość: kopia i 2k poprawne, odmowy 0/8, 1.1.73 i 1.1.75 dają identyczne odpowiedzi. Test kerneli: wszystkie Q4_K/Q5_0 ok; 1 próg tolerancji w starym teście NVFP4 przesunięty losowaniem (poprawka testu d01275e/8773c98). **Wdrożone** do `mayaserve.sh` (konfiguracja `maya-atomic.json`, exe `maya-ik2.adq4k` md5 2bda43fd…).
-- stan 2026-11-23 20:00 UTC: kod gotowy, niezmierzony (serwer wyłączony). Gałęzie w `~/praca/maya-ad` (`ad-q4k` 30ff426, na 1.1.73 + hipx14) i `~/praca/maya-175` (`k175` 88b6a6c = hipx14 na 1.1.75; `k175-ad` 60dffeb = to + Q4_K/Q5_0). Test hosta: wartości Q4_K/Q5_0 = ggml `dequantize_row` bit w bit (1 024 256 wartości), iloczyny wierszy w kolejności kerneli 0/97 różnic; nvcc czysto. Nowe kernele rejestrowe `experts_q4k_gu_kernel`/`experts_q50_down_kernel` (styl EXPV, NT), kafle WMMA prefillu Q4_K/Q5_0. Start: `qwen-opt/inkling/start-maya-k136-k137.sh` (build na pudle + kolejka `maya-k13x.jobs`, ~55 min karty razem z K-136).
-
-### K-136 · Maya v1.1.75 na XTX: drafter DSpark GGUF w grafie + próbkowanie Gumbel-max (3090: nowy kod 124 → 201 t/s)
-- data: 2026-11-23 (link JARO, panel 19:04)
-- test: stock v1.1.75 `--drafting auto` i `on` z `dspark-Inkling-2-Mini-Q8_0.gguf` vs nasza produkcja (1.1.73 + hipx14), ten sam rep2 i xbench T=0,7; potem nasze łatki przeniesione na 1.1.75
-- oczekiwany zysk: przy T=0,7 drafter u nas przegrywał (79 vs 94); krótsze okno (−30%) i wspólny szum mogą to odwrócić [INFERENCE]
-- ryzyko karty: brak nowych kerneli naszych; build stock
-- priorytet: wysoki
-- **wynik 2026-11-24 02:02–02:07 UTC (XTX, unsloth + ablacja, rep2):** produkcja 1.1.73 Q1/T=0,7/L2k 118,3 / 104,3 / 100,2; 1.1.75 + nasze łatki: lookup 118,1 / 103,9 / 101,0; DSpark wymuszony 94,6 / **94,8** / 95,0 (krótkie odpowiedzi do 134, ale średnio wolniej); `auto` 117,8 / 103,8 / 100,1 (zmierzył: bez 103,9, lookup 105,4, drafter 101,2). **Wniosek:** nowy drafter 1.1.75 na XTX nadal przegrywa przy T=0,7, bo okno weryfikacji nie ma naszych przyspieszeń (EXPV, NT, PCONV, FUSE…). Okno przyspieszamy w wyścigu (gałąź kern-maya: `IK2_K_W*`, `IK2_K_D*`).
-
-### K-135 · Maya Inkling na XTX: `GPU_MAX_HW_QUEUES=2` (vllm-redshift: R9700 37,8 → 59,9 t/s)
-- data: 2026-11-23 (zwiad; repo abhinand5/vllm-redshift łatka 0101)
-- test: XTX, Maya `ik2` produkcyjna konfiguracja (bez cenzury, KV q4, kernele HIP) z i bez `GPU_MAX_HW_QUEUES=2`, rep2 mediana 5 (Q1, Q6 T=0,7, L2k, prefill); ≤ 10 min, tekst bit w bit
-- oczekiwany zysk: kilka–kilkanaście % (u nas ~777 launchy, przerwa ~2 µs/launch) [INFERENCE]
-- ryzyko karty: brak (zmienna runtime)
-- priorytet: wysoki (najtańsza droga do >100 t/s)
-- wynik 2026-11-23 13:52–13:58 UTC (ABBA, rep2 mediana 5): bez → z `GPU_MAX_HW_QUEUES=2`: Q6 T=0,7 94,5 / 94,5 → 94,5 / 94,5; L2k 93,3 / 93,6 → 93,5 / 93,6; Q1 93,8 → 93,8–94,0; prefill bez zmian → **0%, odrzucone** (na RDNA3 nie ma kary przełączania kolejki, którą łatka 0101 leczy na RDNA4). Log: `~/qwen-opt/queue/logs/k135-*.log`.
-
-### K-134 · Inkling 2 Mini w Maya v1.1.73 na XTX: 93,6 t/s bez spekulacji (społeczność) vs nasze 49,5 — skąd różnica
-- data: 2026-11-22 (zwiad; LocalMaxxing run cmwraqz5108dlmi01cwdleupp, verified, UD-Q4_K_XL)
-- źródło: github.com/mw00/project-maya v1.1.73 (silnik Inkling @alesha-pro); [[inkling-2-mini]]
-- test: najpierw CPU: przeczytać kernele HIP Inkling w Maya (pętla, MoE, liczba uruchomień na token) i porównać z naszym DUO-INKLING; potem XTX: Maya 1.1.73 tym samym plikiem UD-Q4_K_XL, tg i czat T=0, ≤ 10 min
-- oczekiwany zysk: wiedza, które sklejenia dają 2× (cel 93,6 t/s bez spekulacji, ze spekulacją DSpark wyżej)
-- ryzyko karty: brak (zwykły dekod)
-- priorytet: wysoki
-- delta 2026-11-23: Strata v0.2.20 (`strata-inkling` 0.1.66) też uruchamia Inkling na gfx1100: gotowa paczka `strata-inkling-0.1.66-linux-x86_64-hip-rx7900` (96 MB), ładuje nasz plik UD-Q4_K_XL wprost (lossless GGUF_RAW), DSpark „W=4 Markov Beam Tree”; deklaracja 5090: 250,3 t/s z DSpark, XTX bez liczb. Test rozszerzony: Maya 1.1.73 i Strata 0.1.66 tym samym plikiem, bez i z DSpark, ≤ 10 min każde (pobranie ~0,4 GB razem).
-- wynik 2026-11-23 01:08 UTC (Strata `strata-inkling` 0.1.66 hip-rx7900, UD-Q4_K_XL `--native`, DSpark `--draft dspark`, `--max-context 32768`, xbench, eco 2200):
-  - **krótkie zadania ze zgadywaniem:** Q4/Q5 kopie 100,6 / 109,6 t/s, Q2 136,2, **T=0,7 60,6 t/s**; nasz rekord (2026-11-23, AD-Q4_K): kopie 91,2, T=0,7 26,8 → Strata szybsza o ~10–20% na kopiach i 2,3× przy T=0,7 (inne pliki: UD-Q4_K_XL vs AD-Q4_K);
-  - **GPU page fault** przy przejściu do długich promptów (L2048): `[gfxhub] page fault … process strata-inkling` 01:09:20 UTC, bez resetu karty; kolejka zatrzymana, Maya nieuruchomiona, :8080 przywrócony. Według zasady: Straty na XTX nie powtarzamy bez poprawki autora (zgłoszenie z logiem).
-  - log: `~/qwen-opt/queue/logs/k134-strata.log`, konfiguracja `~/k134/strata.json` (jaroserverai).
-- wynik 2026-11-23 01:19 UTC (Maya 1.1.73 `maya-ik2` zbudowany dla gfx1100, UD-Q4_K_XL, `--drafting on` bez pliku draftera (drafter Mayi wymaga safetensors, nasz GGUF DSpark odrzucony) → przypuszczam: tylko prompt lookup; `--max-context 16384`, KV domyślne; xbench, eco 2200):
-  - **kopie Q4 / Q5 112,7 / 100,3 t/s, krótkie Q1–Q3 79–93, T=0,7 80,7 t/s, długi 2k / 8k 80,0 / 72,6 t/s, prefill 2k / 8k 1911 / 3180 t/s**; bez page fault, :8080 przywrócony;
-  - vs nasz rekord (AD-Q4_K, DSpark n7): kopie 91,2 → 112,7 (+24%), T=0,7 26,8 → 80,7 (3,0×), długi 2k 73,4 → 80,0 (+9%), prefill 2k 1300 → 1911 (+47%) — inne pliki (UD vs AD), więc kierunkowo;
-  - wniosek: Maya bez naszego DSpark i tak 3× szybsza przy T=0,7 → ich dekod/weryfikacja i obsługa T>0 są do przeczytania w kodzie (silnik @alesha-pro), zanim dalej kleimy llama.cpp; następny krok: Maya z oficjalnym drafterem (safetensors, wymaga pobrania) i AD-Q4_K.
-  - log: `~/qwen-opt/queue/logs/k134-maya.log`, `~/k134/maya.json` (jaroserverai).
-- wynik 2026-11-23 06:10 UTC (Maya po rundzie 2 kerneli HIP, bez cenzury, KV q4): bez draftera → z oficjalnym drafterem: krótkie Q1–Q3 88,8/104,5/102,7 → 98,7/100,5/99,9; kopie 93,4 → 141,4; **T=0,7 94,2 → 79,3**; długi 2k 93,5 → 90,4; prefill 3388 → 3345. Czat domyślnie T=1,0 → produkcja :18796 bez draftera (T=0,7 94,2–94,5, długi 2k 93,5 t/s).
-- wynik 2026-11-23 04:02 UTC (Maya bez cenzury + KV q4, oficjalny drafter `mtp.safetensors` 0,6 GB z thinkingmachines/Inkling-2-Mini, xbench): bez → z drafterem: krótkie czaty Q1–Q3 T=0 75,4/88,0/80,7 → 93,1/90,3/78,8; kopie 103,3/97,1 → 129,7/131,8; **T=0,7 76,9 → 65,3 (−15%)**; długi 2k / 8k 73,5/72,4 → 78,2/76,7 (+6%); prefill 2k 3398 → 3346. Domyślna temperatura modelu to 1,0, więc w czacie drafter szkodzi → produkcja :18796 zostaje bez draftera. Dla porównania Qwen produkcja xbench (eco): Q1–Q3 T=0 121,6/139,3/139,6, T=0,7 79,0, prefill 2k 861. Odniesienie autora (README alesha-pro/maya-inkling-mini): RTX 3090 dekod bez draftera 128 t/s, u nas na XTX ~82 → ścieżka ekspertów HIP (skalarna, `ik2_main.cu:2448-2452`) to główna dźwignia.
-- wynik 2026-11-23 01:28–01:31 UTC (polecenie właściciela 02:27 CET: Maya z unsloth i AtomicChat, najszybsze runy):
-  - **AtomicChat AD-Q4_K w Mayi nie działa:** `maya-ik2: blk.0.ffn_gate_up_exps.weight: type Q4_K not decoded here` (Maya nie ma kernela Q4_K dla ekspertów), oba tryby (`on`, `auto`);
-  - unsloth UD-Q4_K_XL `--drafting on` (powtórka): kopie 111,6 / 99,8, T=0,7 80,6, długi 2k / 8k 77,8 / 74,0 t/s, prefill 3398 / 3183 t/s;
-  - `--drafting auto` (Maya sama mierzy, co szybsze): kopie 80,1 / 80,4, T=0,7 82,0, długi 2k / 8k 78,2 / 74,7 t/s → `on` lepsze na kopiach o ~39%, przy T=0,7 i długich równe;
-  - po testach Maya (unsloth, `--drafting on`) uruchomiona jako czat właściciela na :18796 (`~/k134/mayaserve.sh`, trzyma blokadę GPU, :8080 wyłączony, stop: `touch ~/k134/STOP-MAYA`).
-
-### K-133 · Inkling 2 Mini (MoE z pętlą warstw, 26,4B / 5,4B efektywnie aktywnych) na XTX: prędkość i jakość vs Qwen3.8-27B
-- data: 2026-11-20 (Telegram właściciela 23:29)
-- źródło: [[inkling-2-mini]], HF `unsloth/Inkling-2-Mini-GGUF`, mainline llama.cpp `src/models/inkling2.cpp`
-- test (po zgodzie na pobranie ~16,6 GB):
-  - CPU: build mainline llama.cpp HIP (topka nie zna architektury);
-  - XTX: `llama-bench -p 512,2048 -n 64 -fa 1` dla UD-Q4_K_M;
-  - XTX: czat T=0 na tych samych promptach co xbench i szybki EvalPlus (jakość-mini) vs Qwen3.8-27B; ≤ 10 min GPU.
-- oczekiwany zysk: dekod ~150–170 t/s vs 42 t/s Qwen bez spekulacji [INFERENCE: ~3,3 GB odczytu na token]; jakość według producenta jak Qwen3.8-27B (AA 20,1)
-- ryzyko karty: brak (zwykły dekod, eco 2200)
-- priorytet: wysoki (decyzja o modelu produkcyjnym należy do właściciela)
-- stan 2026-11-22 04:20 (STOP na polecenie właściciela): build r8+r9 gotowy na jaroserverai, bramka r8/r9 nieuruchomiona (kolejka zabita w oczekiwaniu); wznowienie: `qwen-opt/inkling/start-r8.sh`. Szczegóły: `DUO-INKLING.md` (llama-inkling).
-- czeka 2026-11-23: runda 15 Gemini (`LLAMA_INK_SRV_FAST=1`: stały graf zwykłego kroku, top-k na GPU zamiast sortu 200k na CPU, bez buforów DSpark w zwykłych krokach; cel: zabrać ~7,8 ms narzutu serwera na słowo) — niezmierzona, bramka gotowa: `qwen-opt/inkling/start-r15.sh` (~25 min karty).
-- wynik 2026-11-23 16:00 UTC (r14, nasz llama.cpp): wagi nietemporalne +1,7% (tg128 58,4, razem +17% od bazy, KLD 0); kontroler zgadywania nadal przegrywa: w serwerze zwykły krok 24,9 ms vs 17,1 ms w llama-bench (+46% narzutu serwera) → r15 szuka tego narzutu. Najlepszy nasz czat: DSpark bez kontrolera, długi 8k 67,2 t/s; T=0,7 24–41 t/s. Produkcja Inkling = Maya (T=0,7 104,3).
-- wynik 2026-11-23 14:50 UTC (r13, nasz llama.cpp, KV q4_0): KLD 0 dla wszystkich; tg128 50,0 → 57,5 (+15%) z wszystkimi; DSpark naprawiony (akceptacja 0,61): długi 2k 61,8 → 64,6, 8k 56,7 → 68,7 (+21%), T=0,7 28,1 bez zmian → r14 (kontroler + losowanie draftu).
-- wynik 2026-11-23 05:20 UTC (r12, nasz llama.cpp, KV q4_0): wszystkie przełączniki KLD 0; tg128 49,9 → 53,7 (+7,6%) z wszystkimi; DSpark z wszystkimi nadal 0/413 (błąd na ścieżce n=1/n=8) → r13; najlepszy serwer (bez przełączników r11/r12) kopie 95,4, T=0,7 28,2, długi 2k 61,7 t/s. Produkcja Inkling = Maya (czat T=0,7 91,3 t/s).
-- wynik 2026-11-23 03:50 UTC (r11 port Mayi, KV q4_0): nasz llama.cpp z KV q4_0 + DSpark n7: kopie 95,2, T=0,7 28,0, długi 2k 61,7 t/s; STABLE_GRAPH neutralny (KLD 0); FUSE4 wolniejszy (tg 49,5 → 42,4) i KLD 0,0077; PLANAR_Q8 nie jest bezstratny (KLD 0,0081, błąd); wszystkie razem psują DSpark (akceptacja 0/413) → runda 12 naprawia.
-- wynik 2026-11-23 02:27 UTC (r10, kontroler spekulacji `LLAMA_SPEC_CTL=1`, AD-Q4_K, DSpark n7): T=0,7 26,8 → 35,9 t/s (+34%), kopie z ngram 91,2 → 96,9 (+6%), ale długi 2k 73,4 → 53,9 (−27%); ub 2048 OOM (bufor 12,15 GiB). Do poprawy w r11/r12.
-- wynik 2026-11-23 01:00–01:10 UTC (zgoda właściciela 01:57 CET; r8 + r9, `inkling-opt` 854c58e, eco 2200, AD-Q4_K, DSpark n7, `-c 16384`):
-  - FUSE3 naprawiony: KLD 4,68 → 0,0022 (PPL ×1,0001), md5 PM4 0/1 równe;
-  - **rekord ze zgadywaniem:** kopie 84,6 → **91,2 t/s** (+7,8%, FUSE3 wył. → wł., ta sama sesja), długi 2k 67,4 → 73,4 (+8,9%), 8k 59,0 → 66,8 (+13%), T=0,7 24,9 → 26,8; prefill 2k 994 → 1300 t/s (+31%);
-  - losowanie draftu (`--spec-draft-sampling probabilistic`) nie podniosło akceptacji przy T=0,7 (0,55, T=0,7 nadal ~27 t/s) — do zbadania;
-  - PM4 z DSpark: 68,8 t/s (−25% vs bez PM4) mimo VEC FA; r9 MEGA: 46,2 t/s (−33%) → odrzucony;
-  - z `-c 32768` serwer z FUSE3 i DSpark nie startuje (OOM 508 MiB): FUSE3 trzyma dodatkową kopię wag atencji;
-  - logi: `~/qwen-opt/queue/logs/ink-r8-*.log`, `ink-r8b-*.log`, `ink-r9*.log`.
-- wynik 2026-11-21 (XTX eco 2200, AtomicChat AD-Q4_K, stock PR #32695 6196d98):
-  - llama-bench: pp512 1333, pp2048 1125, **tg64 26,9 t/s**;
-  - czat xbench: dekod ~26 t/s (krótkie i długie prompty), prefill 887 t/s przy 2k i 537 t/s przy 8k;
-  - **szacunek [INFERENCE] 150–170 t/s był błędny o ~6×:** dekod ograniczają ~7700 uruchomień kerneli na token, nie pasmo;
-  - Gemini INK_FUSE: 26,9 → 30,8 t/s (+14,5%), ale zmienia tekst (KLD w toku);
-  - PM4: tapa odrzucona (kernel rocBLAS w grafie), −20%;
-  - DSpark nie wczytuje się z AtomicChat (słownik 200058 vs 201024);
-  - log: `DUO-INKLING.md` (llama-inkling), kolejka `ink-ad-*`, `ink-r2-*`.
-- wynik 2026-11-21 08:00 (runda 3 Gemini):
-  - INK_FUSE + INK_FUSE2: tg64 26,85 → 37,31 t/s (+39%); KLD 0,0024 do wersji bez sklejeń, PPL bez zmian (max KLD 1,61 do sprawdzenia);
-  - UD-Q4_K_XL się wczytuje: tg64 28,6 → 39,7 t/s (+39%), czat ~38 t/s;
-  - DSpark nadal czeka na rundę 4.
-- wynik 2026-11-21 08:25 (runda 4):
-  - taśma PM4 działa po usunięciu kernela rocBLAS (NOBLAS): 1 taśma, 3925 dispatchy, tekst bajt w bajt;
-  - tg64 37,35 → 43,0 t/s (+15%), od stocku 26,85 → 43,0 (+60%); rozrzut ±2,5;
-  - DSpark: nowy błąd (markov_w2 wymagany), runda 6.
-- wynik 2026-11-21 08:45 (runda 5): FUSE3 daje tg64 42,3 → 58,0 t/s (+37%), ale psuje model (KLD 4,68, PPL ×114, tekst bez sensu) → wyłączone, Gemini szuka błędu (runda 7); do produkcji tylko z KLD PASS.
-- wynik 2026-11-21 09:05 (runda 6):
-  - czat bez zgadywania stabilnie 47,6–50,3 t/s (stock 26,0–27,1, +85%);
-  - DSpark działa (akceptacja 0,83 przy 3 tokenach, 0,55 przy 7), ale jest wolniejszy od czatu bez zgadywania (39 / 53 t/s na kopiach, 21–22 t/s przy T=0,7);
-  - przyczyna: grafy weryfikacji bez taśmy PM4 i 170 ms na każde tworzenie grafu.
-- wynik 2026-11-21 09:30 (diagnoza Kernela):
-  - najlepsze dziś ustawienie ze zgadywaniem to DSpark z 7 tokenami draftu bez PM4: kopie 85 t/s, długi prompt 2k 67,7 t/s, T=0,7 26,4 t/s (Qwen w produkcji: 252 / 97,5 / 79);
-  - PM4 psuje zgadywanie, bo kernel atencji przy weryfikacji używa scratch i taśma jest odrzucana;
-  - FUSE3: błąd w pakowaniu wag q/k/v (KLD 4,68 → 0,139 po wyłączeniu), drugi mniejszy błąd do znalezienia; runda 8 Gemini startuje o 11:25.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19
@@ -238,22 +70,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - otwarte: ścieżka kvq przy 1 zapytaniu (dekod) nadal przecieka (test jednostkowy: błąd 2e-9); naprawa i odzyskanie −0,65% prefillu to runda duo-r4;
   - wdrożenie do produkcji (przebudowa topki) czeka na decyzję właściciela.
 
-### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)
-- data: 2026-11-07
-- źródło: `R/68d-swieze-od-spolecznosci.md:140`, `R/69-SYNTEZA.md:30` (W3), [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 3), `R/67c-nvidia-backlog-testow.md:131` (C14)
-- test: XTX `llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 1,5,8,9,16 -n 0 -d 2048,32768` przed/po (krzywa V(w)), potem `mvs` + czat ABBA i md5; ≤ 10 min. NVIDIA: `test-backend-ops MUL_MAT` n=8/16 na 5060 Ti.
-- nowe (2026-11-14): #31533 scalone w llama.cpp v1.0.0. Na NVIDIA spec-dec Qwen3.8-27B +16,7…34,9% tok/s (3090 Ti 57,6 → 77,7), KLD jak master; port HIP (`6ad15f48`, am17an) na RDNA3.5 z DFlash2: 21 → 37 tok/s. Weryfikacja MTP n=5 (5 kolumn) też w zakresie 2–24. Inny kernel = inna kolejność sum, więc md5 T=0 się zmieni: wdrożenie na XTX wymaga bramki K-007 albo decyzji właściciela.
-- zysk: V16 − V5 = 6,4 ms przy 2k; połowa tego → kroki W16 −9%, tury agenta z kopiowaniem +5…10% [SZACUNEK]; czat 0. Warunek dla drzew (K-075).
-- ryzyko karty: nowy kernel w PM4
-- priorytet: wysoki (zmierzone +17…35% u autora, ten sam model)
-- baseline 2026-11-14 (produkcja, r=3): V16 − V5 = 7,1 ms przy 2k, 10,1 ms przy 32k; V5 26,8 / 28,3 ms ([[2026-11-14-k002-k003-k013-xtx]]); port HIP #31533 jeszcze niezbudowany
-- (zakończone) build upstream 6ad15f48 (#31533 + port HIP RDNA3 WMMA; Q4_K/Q5_K/Q6_K/Q8_0/IQ4_NL) dla gfx1100 na jaroserverai (`~/wt/fewrow-hip`, cpuheavy 2 rdzenie), potem automatycznie job kolejki `k013-fewrow` (V(w) na tym samym modelu) przez `~/qwen-opt/k013/after-build.sh`; wynik w następnej turze
-- wynik 2026-11-14 (całe silniki, nie sam kernel): upstream 6ad15f48 z few-row MMQ HIP vs topka-q70, `llama-bench -p 1,5,8,9,16 -d 2048,32768`: V5 26,8 → 37,9 ms (+41%), V16 33,9 → 47,0 (+39%) przy 2k; V1 też +3…31% → upstream bez naszych łatek jest wolniejszy, więc few-row nie jest szybszy niż nasza ścieżka weryfikacji. Do rozstrzygnięcia tylko poziom kernela: `test-backend-ops perf -o MUL_MAT` (q4_K, n 5/8/16) obu buildów ([[2026-11-14-k002-k003-k013-xtx]])
-
-- wynik 2026-11-20 (kernel, `test-backend-ops perf -o MUL_MAT`, m 4096 k 14336, XTX eco 2200, `qwen-opt/k013/kern.sh`), nasz fork (duo) vs upstream few-row (`~/wt/fewrow-hip`), µs na wywołanie:
-  - Q4_K: n=1 35,6 vs 39,1; n=2 38,1 vs 56,6; n=4 42,6 vs 57,3; n=5 46,0 vs 57,3; n=8 50,9 vs 57,6. **Nasz kernel wygrywa przy każdym n (−9…−33%).**
-  - Q6_K: n=1 33,7 vs 29,1; n=2 56,5 vs 42,4. **Few-row wygrywa przy n = 1–2 (−14% / −25%).** Przy n=4 60,9 vs 66,9 i n=5 64,5 vs 83,2 wygrywamy my.
-  - Werdykt: całego few-row nie bierzemy. Jedyna dźwignia to jego układ dla Q6_K przy n ≤ 2 (dekod i draft), do przeniesienia w duecie.
 ### K-007 · Bramka „wymuszanie tokenów + KLD” (SpecPilot) zamiast md5 dla zmian polityki draftu i szerokości weryfikacji, z kalibracją kanarkami
 - data: 2026-11-07 (kanarki: 2026-10-15)
 - status: **czeka na decyzję** właściciela (decyzja 6 z rundy 69: czy dopuścić „te same tokeny + KLD” zamiast md5)
@@ -359,27 +175,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni
 - wynik 2026-11-20: zrobione po stronie CPU. Nowy wpis `upstream-windows-x64-cuda13` w `app/engine/data/engines.json` (b11856, `gpuArchs: [sm_120]`, `minDriver: 580`; rozmiary i sha256 z API GitHub: zip 159 939 681 B `06478e0f…`, cudart 423 535 356 B `738f8c25…`). `baselineEngineFor` (`app/engine/src/server/engine.ts:92-98`) wybiera wpis pod architekturę karty, gdy sterownik jest znany i ≥ 580, w innym wypadku zostaje CUDA 12.4. Testy w `app/engine/test/engine.test.ts:79-83` (sm_120 + 581 → 13.4; sterownik 576, brak sterownika albo sm_86 → 12.4); `bun test` 208 pass. Zostaje pomiar pierwszej odpowiedzi na Windows z kartą 50xx.
 
-### K-128 · Czy klient (omp) obcina `<think>` z historii i przez to psuje trafienia prompt-cache w turach agenta (analiza logów, bez karty)
-- data: 2026-11-19
-- źródło: audyt Gemini (H.9) i [[zwiad-2026-11-14]] (TensorFold: „[INFERENCE: sprawdzić na surowych logach omp]”)
-- test: CPU: surowe logi serwera/omp z sesji agentowych (`~/kernel/archiwum`, logi topki, gdy jaroserverai online): `cache_n` vs `prompt_n` per tura, czy prefiks rozjeżdża się na granicy bloku myślenia
-- miara: udział tokenów promptu z cache per tura; jeśli dziury > 10% → poprawka po stronie szablonu/serwera
-- zysk: TTFT tur agenta (jeśli problem istnieje); 0 t/s dekodu
-- ryzyko karty: brak
-- priorytet: średni
-- wynik 2026-11-20: problemu nie ma. Logi serwera z jaroserverai (`qwen-opt/logs/server-*.log`, 264 pliki, 964 tury), skrypt `qwen-opt/k128/cache_hits.py`. Całość: 48,4 mln tokenów promptu, z cache 90,1%. W 386 turach agenta, w których rozmowa urosła i prefiks został w slocie, cache pokrył 99,2% promptu, a historia rozjechała się łącznie na 14 tokenach. Odpowiedź poprzedniej tury (z blokiem myślenia) wróciła w prompcie w 89,7% tokenów: 347 tur > 90%, 29 częściowo, 10 wcale, więc omp nie wycina `<think>` w sposób, który psuje cache. 66 tur „rozjechanych” to w 47 przypadkach przeskok do innej rozmowy z tym samym początkiem (wspólny prefiks stoi na ~7650 tokenach, czyli system + narzędzia; podagenci na jednym slocie), nie granica myślenia. Dziury < 10%, poprawka szablonu niepotrzebna. [INFERENCE: logi mają tylko `f_keep`, nie surowy tekst promptu.]
-
-### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
-- data: 2026-11-17
-- źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)
-- hipoteza: zmierzony szczyt 90–110 TFLOPS; wtedy prefill 4k–255k jest na 84–95% praktycznego sufitu i K-009/K-010 dają najwyżej kilka %
-- test: XTX, `rocblas-bench`/`hipblaslt-bench` gemm f16 4096 i 8192 (min z N), `hipMemcpy` 4 GB D2D; `GGML_HIP_PM4=0`; ≤ 10 min
-- miara: TFLOPS 4096/8192, GB/s; przeliczenie `ceiling-qwen27b-unc-xtx.json`
-- zysk: priorytety prefillu oparte na liczbie; 0 t/s
-- ryzyko karty: temperatury (krótki GEMM), eco 2200 bez zmian
-- priorytet: średni (tani, porządkuje kolejkę)
-- wynik 2026-11-20: w `/opt/rocm` nie ma `rocblas-bench`/`hipblaslt-bench`, więc własny test hipBLAS `GemmEx` f16 (liczenie w f32) i `hipMemcpy` (`qwen-opt/k108/bench.cpp`), przy limicie eco 2200 MHz. GEMM 4096³: 91,3 TFLOPS (min z 50), 8192³: 98,1 TFLOPS (min z 20). Kopia D2D 4 GiB: 385 GB/s (771 GB/s odczyt+zapis). Wynik mieści się w hipotezie 90–110; zakładane 107 TFLOPS jest o ~8% za wysoko dla 8192³ przy eco. `ceiling-qwen27b-unc-xtx.json` jeszcze nie przeliczony. Log: `~/qwen-opt/queue/logs/k108-gemm.log`
-
 ### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (sufit prefillu 3090 z INT8 MMQ 2737 t/s przy 4k = 2,3 × XTX; prefillu NVIDIA nigdy nie mierzyliśmy); [[skill-io-metodyka]] (narzędzia CUDA)
@@ -429,18 +224,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (bez PM4 na Vulkan)
 - priorytet: średni (5060 Ti offline)
 
-### K-005 · Siatka checkpointów GDN co ~8192 tokenów + checkpoint w punkcie rozwidlenia + łańcuch fallbacku (edycja, regeneracja, kompaktowanie omp)
-- data: 2026-10-15 (STATUS-NEXT §4), ponownie 2026-11-07 (66 poz. 6)
-- źródło: [[siatka-checkpointow-gdn]], `Q/STATUS-NEXT.md:44`, `R/66-SYNTEZA.md:57`, `R/67c-nvidia-backlog-testow.md:116` (B22)
-- test: najpierw implementacja w topce. XTX: replay prompt 60k → zmieniony koniec → rodzeństwo; `prompt_n`, TTFT, md5 vs zimny start (~1,5 min prefillu na ramię, ≤ 10 min).
-- zysk: edycja ostatnich 10% promptu 60k: TTFT ~65 s → ~8–10 s [SZACUNEK]; ≥ 1 s/turę, gdy dojdzie do rozjazdu
-- ryzyko karty: brak (~150 MiB RAM hosta na checkpoint)
-- priorytet: wysoki (≥ 1 s/turę)
-
-- wynik 2026-11-23 (bisekcja spadku prefillu po poprawce K-001, duet): pp2048 1021,8 → 981,6 (−3,9%); winne commity Gemini 5ff6a15 (−1,8%) i 0bb43ee (−1,5%); bank GDN 0/1 daje identyczne odpowiedzi (produkcja bez wpływu). Log `~/qwen-opt/queue/logs/duo-r14-*.log`.
-
-- wynik 2026-11-23 15:09 UTC (r11 `LLAMA_CKPT_GRID=1`, produkcyjna konfiguracja, prompt 40k, edycja w 10% długości): wznowienie po edycji 74,1 → **19,4 s (−74%)**, tekst identyczny z liczeniem od zera (md5 równe); dopisek na końcu 2,09 → 2,18 s (w szumie); rozwidlenie 0,46 s. Kandydat do wdrożenia z poprawką K-001 (po naprawie spadku prefillu). Log `~/qwen-opt/queue/logs/duo-r13-k005-*.log`.
-
 ### K-006 · Wpis „wspólny początek” (Maya #607) i chude checkpointy (stan GDN tylko na granicach wiadomości) zamiast kopii całej sesji w cache
 - data: 2026-11-05
 - źródło: [[wspolny-poczatek-promptu]], `R/63-SYNTEZA.md:85-86` (plan #6, #7), `R/63b-colibri-maya-delta.md` §6, `R/68c-dlugi-kontekst-gdn.md:143`
@@ -464,15 +247,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: pp ≤ 32k +2…4% [INFERENCE] (CUDA u autora +4,6…7,4%)
 - ryzyko karty: brak (wariant MoE był na RDNA3 wolniejszy o 3…16%, więc mierzyć)
 - priorytet: średni (prefill, pakiet z K-009)
-
-### K-011 · Kontrola ewikcji VRAM do GTT przy 262k (`amd-evicted-vram`, `drm-memory-*` w fdinfo)
-- data: 2026-11-07
-- źródło: `R/68a-rdna3-kernele.md:123` (4.5), `R/68-SYNTEZA.md:24`
-- test: doczepić do najbliższego fillu 255k: odczyt `/proc/<pid>/fdinfo/*` przed promptem, po prefillu i po 256 tokenach (0 dodatkowego czasu GPU)
-- zysk: 0%, jeśli ewikcji nie ma; jeśli jest, decode przy 255k jest dziś zaniżony
-- ryzyko karty: brak (odczyt)
-- priorytet: średni (darmowe, może zaskoczyć)
-- wynik 2026-11-20: serwer w konfiguracji produkcyjnej (ctx 262144, port testowy). Fill 131 000 tokenów zamiast 255k, bo 255k to ~548 s samego prefillu, a limit testu to 10 min. **Ewikcji brak**: `amd-evicted-vram` = 0 KiB we wszystkich trzech odczytach. VRAM 22,39 GiB przed promptem → 22,74 GiB po prefillu (650 t/s, 201 s) → 22,78 GiB po 256 tokenach (134 t/s). GTT stoi na ~6,1 MiB. Log: `~/qwen-opt/queue/logs/k011-fdinfo.log`, skrypt `qwen-opt/k011/fdinfo.sh`
 
 ### K-012 · `kvq` przy W=5 bliżej rooflinu: nowy układ (K dekwantowane raz, głębszy prefetch K/V), cel ~172–300 µs/warstwę przy 98–196k
 - data: 2026-11-07
@@ -558,15 +332,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: VRAM (szczyt może się przesunąć)
 - priorytet: średni (VRAM daje zapas dla K-048)
 
-### K-023 · Bisekcja regresji prefillu forka CUDA względem upstream (sm_89 −3,5…−3,9%, 3060 TTFT 512 +30%) i LOO przełączników forka
-- data: 2026-10-20 (raport 29)
-- źródło: `R/67c-nvidia-backlog-testow.md:103,105` (B9, B11), `product/BENCHMARKI-PRZED-PO-2026-10-19.md` §4, [[raport-15d-prefill-dlugi-kontekst]]
-- test: 5060 Ti lokalnie (sm_120): `llama-bench -p 512,4096` upstream vs fork + po jednym przełączniku `=0` na job; sm_89 wynajem
-- zysk: odzysk 3…12% prefillu i TTFT na NVIDIA
-- ryzyko karty: brak
-- priorytet: średni (TTFT Enigmy)
-- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, prefill 512 / 4096: fork vs upstream b12110 −4,7% / −3,6%, fork vs swoja baza b11620 **+3,2% / +3,4%**; wyłączenie każdego z 17 przełączników forka i `GGML_CUDA_KVQ=0` zmienia prefill o ≤ ±0,5%. Regresja to stara baza (upstream +8% prefillu między b11620 a b12110), nie nasze łatki: lekarstwo = rebase forka.
-
 ### K-024 · Enigma ROCm na innych kartach AMD + autotune wariantu FA przy instalacji (gfx1101/1102/1151/1201)
 - data: 2026-11-09
 - źródło: `R/70-fa-d256-jak-to-zrobilismy.md:186` (#3)
@@ -591,34 +356,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (produkt Enigma)
 
-### K-027 · Profil kroku przy długim kontekście na NVIDIA (`nsys` + `LLAMA_HOSTGAP_TRACE` przy 1,7k/94k/199k)
-- data: 2026-11-07
-- źródło: `R/67c-nvidia-backlog-testow.md:118` (C1)
-- test: 3090/4090 (wynajem; 16 GB 5060 Ti nie zmieści 199k z 27B), po jednym kontekście na job ≤ 10 min
-- zysk: 0% sam; rozstrzyga K-062, K-063 i maskę na CUDA
-- ryzyko karty: brak
-- priorytet: średni (bramka decyzji NVIDIA)
-- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4 nsys: dekod 1,7k / 94k / 199k = 37,5 / 30,0 / 25,0 t/s (73,9 / 93,2 / 126,7 ms na krok); udział uwagi 1,5% / 18% / 32%; bezczynność hosta 10,7 / 11,1 / 17,2 ms na krok (12–14%); odczyt wag stałe 54–58 ms. Wniosek: uwaga (K-062) liczy się tylko przy długim kontekście, przerwy hosta (K-031) to stałe 12–14% kroku.
-
-### K-028 · xtxbench: smoke przełącznika bez restartu `GGML_HIP_RUNTIME_SWITCH_FILE`
-- data: 2026-11-09
-- źródło: [[xtxbench-szybki-ab]] (`:39,48`), `Q/patches/xtxbench/0001-runtime-switch-hook-GGML_HIP_RUNTIME_SWITCH_FILE.patch`
-- test: XTX `xtxbench.py t1 --var-switch …` A/A; obowiązkowe ramię md5 ze świeżym startem (wyciek K-001); ≤ 10 min
-- zysk: narzędziowy: bez restartu 1,5–2 min na ramię, więc każdy przyszły A/B krótszy
-- ryzyko karty: brak
-- priorytet: średni (przyspiesza całą kolejkę)
-- pominięte 2026-11-20: w `~/wt/xtxbench/build-hip/bin` są tylko biblioteki (`libggml-base`, `libggml-cpu`), nie ma `llama-server`, a xtxbench bez binarki odmawia pracy. Potrzebna jest najpierw budowa gałęzi `xtxbench`, czyli praca nad kodem
-- **wynik 2026-11-24 15:37–15:40 (XTX):** llama-server z hakiem przełączników xtxbench (d5454e0) przechodzi bramkę md5 (c4708318 / 6f14e814 PASS), przełącznik `GGML_HIP_MMVQ_PAIR=0` przez `--var-switch` zadziałał (1 przełączenie w logu serwera); llama-bench ABBA vs produkcja: pp4096 997,35 → 997,60 (+0,02%), tg128 41,24 → 41,21 (−0,06%) = koszt haka zerowy. **Zrobione**: hak można włączyć do builda produkcyjnego (A/B bez restartu serwera).
-
-### K-029 · xtx-eco: odczytywać fabryczny `OD_SCLK` przy każdym boocie przed pierwszym zapisem OD (stock zmienia się między bootami: 2885 vs 2935 MHz)
-- data: 2026-11-06
-- źródło: [[2026-11-06-xtx-eco-instalacja]] (`:12-13`, „poprawka w toku — status do sprawdzenia”), [[raport-64-termika]]
-- test: XTX bez obciążenia: po restarcie porównać `pp_od_clk_voltage` z zapisanym stanem bootu, sprawdzić krzywą wentylatora (`pwm1`/RPM); ≤ 10 min
-- zysk: 0 t/s; „powrót do stock” nie obniża już limitu o 50 MHz (zasada: karta fabrycznie)
-- ryzyko karty: zapis OD na jądrze 6.8 gubi krzywą wentylatora, więc pilnować temperatur
-- priorytet: średni (bezpieczeństwo ustawień fabrycznych)
-- wynik 2026-11-20 (bez restartu, odczyt bieżącego bootu 13:32): stan zapisany przy starcie `/run/xtx-eco/stock` = 2940 MHz. To trzecia różna wartość fabryczna (2885, 2935, 2940), więc poprawka „odczyt przy każdym boocie” jest potrzebna i działa (`xtx-od.sh` zapisuje stock do `/run` przed pierwszym zapisem). `OD_SCLK 1` = 2200 MHz (limit eco), `power1_cap` 285 W. Krzywa wentylatora jest zapisana (`fan_curve` 25–80 °C → 100%), ale w spoczynku (hotspot 45 °C) `pwm1` = 0 i 0 RPM, czyli tryb zero-RPM. Pod obciążeniem nie sprawdzano. Log: `~/qwen-opt/queue/logs/k029-od.log`
-
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -628,44 +365,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (produkt)
 
-### K-031 · Maska KQ poza ścieżką krytyczną albo pochodna maska w kernelu (bez `n_kv × n_tokens` z hosta)
-- data: 2026-10-13 (K3), 2026-11-07 (66 #9, 68c #4)
-- źródło: [[maska-kq-host-dlugi-ctx]], [[2026-11-08-kvq-once-profil]] (`:50,89`: `graph→inputs` 355 µs przy 199k), `R/68c-dlugi-kontekst-gdn.md:15-17,138`
-- test: XTX `LLAMA_HOSTGAP_TRACE=16` + xtxbench decode 199k ABBA, md5 (osobny job na 199k)
-- zysk: decode 199–255k +0,5…1,5%, fill 255k +0…3%, −256 MiB VRAM i −256 MiB pinned [SZACUNEK]
-- ryzyko karty: brak (host); wariant w kernelu = nowy kernel w PM4
-- priorytet: niski (sam poniżej progu, łączyć z K-012)
-- wynik 2026-11-21: **maska leży na ścieżce krytycznej, ale zdjęcie jej daje tylko ~0,4% przy 94k i ~0,8% przy 199k, poniżej progu.** Ślad hosta `LLAMA_HOSTGAP_TRACE=16`, konfiguracja produkcyjna na porcie testowym, jedno zimne żądanie na głębokość (T=0, 256 tok.). Ramię A to produkcja (szybka maska). Ramię B to `LLAMA_KV_MASK_FAST=0`, czyli celowo wolniejsza maska jako sonda: jeśli krok rośnie o tyle, o ile rośnie budowa maski, to maska blokuje GPU. Przy 94k (ABBA): `graph→inputs` A 136 µs, B 396 µs (+260 µs); ściana kroku 32,83 → 33,07 ms (+0,24 ms, prawie 1:1); decode 120,95 → 119,98 t/s (−0,8%). Przy 199k (jedna para A/B, wypełnienie 360 s): `graph→inputs` A 303 µs, B 909 µs; ściana 37,77 → 38,67 ms; decode 95,05 → 93,08 t/s (−2,1%). Przy 1,7k budowa maski kosztuje ~40 µs i A = B. md5 identyczne w obu ramionach (94k `3f0651b0`, 199k `efdb8053`, to samo co w [[2026-11-08-kvq-once-profil]]). Zysk z przeniesienia maski poza ścieżkę krytyczną to najwyżej czas maski w A: 136 µs na 32,8 ms (0,4%) i 303 µs na 37,8 ms (0,8%). Priorytet zostaje niski, łączyć z K-012. Źródło: `~/qwen-opt/queue/logs/k031-{A1,B2,B3,A4,199A,199B}.log`, skrypt `Q/k031/k031.sh`.
-
-### K-032 · Amplifikacja odczytu KV w `kvq` (bajty z liczników vs 1152 B/token/warstwę)
-- data: 2026-11-07
-- źródło: `R/68a-rdna3-kernele.md:124` (4.6), [[2026-11-08-kvq-once-profil]] (`:77`, `FETCH_SIZE` = 0)
-- test: XTX `rocprofv3 --pmc TCC_EA_RDREQ_sum TCC_EA_RDREQ_32B_sum` na `llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 5 -ub 5 -d 131072`, `GGML_HIP_PM4=0`; ≤ 10 min
-- zysk: 0…3% decode przy ≥ 128k [INFERENCE]; zasila K-012
-- ryzyko karty: brak
-- priorytet: niski (diagnostyka)
-- wynik 2026-11-20: **liczniki nie działają.** Na gfx1100 nie ma `TCC_EA_RDREQ_*` (rocprofv3: „Missing”). Ich odpowiedniki `GL2C_EA_RDREQ_{32,64,96,128}B_sum` dają 0 we wszystkich 4160 dispatchach (to samo co `FETCH_SIZE` = 0 w [[2026-11-08-kvq-once-profil]]), więc bajtów z liczników nie da się dziś zmierzyć. Wynik zastępczy z czasów rocprofv3 (`llama-bench pp5 @ d131072`, produkcyjna `~/llama-topka`, PM4 0, fill z `-ub 512`): `flash_attn_ext_kvq<256,8,q4_0>` mediana 408 µs na warstwę + combine 4 µs, pp5 99,9 t/s. Przy 1152 B/token/warstwę × 131072 = 151 MB to ~370 GB/s efektywnie, około 39% z 960 GB/s. Pod profilerem dispatche idą szeregowo, więc to szacunek. Amplifikacji z tego nie da się oddzielić od niskiej zajętości kernela. Log: `~/qwen-opt/queue/logs/k032-rdreq2.log`, skrypt `qwen-opt/k032/rdreq.sh`
-
-### K-033 · Diagnoza FCLK/MCLK pod obciążeniem, stock vs eco (tylko odczyt `pp_dpm_*`)
-- data: 2026-10-12
-- źródło: `R/68a-rdna3-kernele.md:122` (4.4), §2.9
-- test: pętla `grep '\*' pp_dpm_{sclk,mclk,fclk}` co 0,25 s doczepiona do najbliższego spec_sweep (0 dodatkowego czasu)
-- zysk: 0% sam; wyjaśnia, czy −1,9% decode na eco to fabric
-- ryzyko karty: brak (odczyt)
-- priorytet: niski (darmowa diagnostyka)
-- wynik 2026-11-21 (tylko eco, zegarów nie zmieniamy, więc ramienia stock nie ma): **pod obciążeniem pamięć i fabric stoją na najwyższych poziomach, które faktycznie są używane.** Pętla `dpm_poll.sh` (co 0,25 s, sam odczyt sysfs) chodziła przy 9 jobach: decode 1,7k/94k/199k, prefill 12k/94k/199k, pp4096, LFM pN. Próbki z `gpu_busy` ≥ 50%: MCLK 1249 MHz (najwyższy poziom) w 88–100% próbek, FCLK 2000 MHz w 88–100%, a poziomy 2201–2301 MHz w 0–5%. SCLK mediana 2183–2187 MHz (sufit eco 2200). Spadki do 772 MHz MCLK i 1200 MHz FCLK (0–12%) wypadają na krótkie przerwy między żądaniami. Pamięć nie jest dławiona na eco. Czy −1,9% decode na eco to FCLK 2000 zamiast 2301, rozstrzygnie dopiero odczyt na stocku przy okazji, gdy karta i tak będzie na stocku (sami nie przełączamy). Źródło: `~/qwen-opt/queue/logs/k048-*.log`, `k031-*.log`, `k045-g1.log`, skrypty `Q/k033/dpm_poll.sh`, `dpm_sum.py`.
-
-### K-034 · Nadmiar ~10 KiB/token VRAM (nachylenie 29,1 vs 18,4 KiB/token): znaleźć bufor rosnący z kontekstem
-- data: 2026-11-05
-- źródło: `R/63-SYNTEZA.md:88` (#9), `R/65-vram-rezerwa-mtp-kontekst.md` §5
-- test: najpierw CPU (`llama-context`); XTX `-lv 4` przy 131k/262k i szczyt VRAM (fill osobnym jobem)
-- zysk: +~2,7 GiB zapasu przy 262k [SZACUNEK], 0 t/s; zapas na OOM i `-ub 1024`
-- ryzyko karty: brak
-- priorytet: niski (0 t/s)
-- wynik 2026-11-20: czytanie kodu `llama-duo` daje ~10 KiB/token z dwóch buforów compute, oba z kontekstu głównego i draftu MTP. (1) FA na KV q4_0 przy prefillu (ub 512, kernel MMA/TILE) potrzebuje kopii f16 całego K i V jednej warstwy w buforze compute: `ggml/src/ggml-cuda/fattn.cu:745-763` (need_f16_K/V) + `ggml/src/ggml-cuda/fattn-common.cuh:53-75` (rozmiar = n_kv × 1024 × 2 B na K i na V) = 4 KiB/token. (2) maska FA f16 n_kv × ub: `src/llama-graph.cpp:30-42` = 1 KiB/token przy ub 512. Razem 5 KiB/token na kontekst. Pomiar 29,1 (R56, 2026-10-21) był przed łatką lean reserve, więc kontekst draftu MTP dokładał drugie tyle (`src/llama-context.cpp:315-326`, opis 800 MiB przy 204 800). 2 × 5 ≈ 10 z 10,7 KiB/token nadmiaru [INFERENCE: bez pomiaru `-lv 4`]. Po q63 zostaje ~5 KiB/token z kontekstu głównego (~1,25 GiB przy 262k); zbić to może tylko FA bez kopii f16 przy prefillu (kvq/VEC czytające q4_0) albo prefill w kawałkach KV. Do potwierdzenia na XTX `-lv 4` (linie `sched_reserve`).
-
-- wynik 2026-11-20 na XTX (`qwen-opt/k034/bufs.py`, produkcja `-lv 4`, ctx 64k i 128k): bufor compute celu 420,29 → 740,29 MiB, czyli **+5,0 KiB/token**, zgodnie z czytaniem kodu (kopia f16 K/V do FA przy prefillu ~4 KiB + maska ~1 KiB). Bufor compute draftu MTP stały, 40,28 MiB, więc łatka lean-reserve działa. KV 18 KiB/token.
-  - Przy 262k compute ≈ 1,38 GiB, z czego ~1 GiB to kopia f16. Natywne q4_0 K/V w FA prefillu (K-022) zwolni ok. 1 GiB VRAM.
 ### K-035 · Głowica draftu MTP: grube przejście (IQ4_XS/Q2_K) + dokładny rerank top-8 na wierszach Q6_K
 - data: 2026-10-20 (36 L6c), 2026-11-07 (66 #5)
 - źródło: [[glowica-draftu-rerank]], `R/66-SYNTEZA.md:56`
@@ -698,33 +397,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (szum, klątwa zwycięzcy)
 
-### K-039 · Q5_K MMVQ `big_rows` (`GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144`): dokończyć ABBA i sprawdzić env w produkcji
-- data: 2026-10-20 (raport 50b)
-- źródło: [[raport-50b-mmvq-q5k]], `R/43-integracja-2026-10-20.md:68`, archiwum (`A:36426`: „brakuje 2 z 4 ramion”, md5 PASS)
-- test: XTX `~/qwen-opt/queue/i43-int7.jobs` od `i43g-B1b` (2 ramiona × ~2,5 min)
-- zysk: kernel −1,3…−3,5%, ~+0,4% decode
-- ryzyko karty: brak
-- priorytet: niski (poniżej progu, łączyć)
-- wynik 2026-11-20: dokończone ramiona B1b i A1b z `i43-int7.jobs`, po nowej bramce md5 (qwen i lfm PASS). Uwaga: A1a/B1a są z 2026-10-21, a B1b/A1b z dzisiaj, i dzisiejsza para jest o ~1,7% wolniejsza w obu ramionach. Proza (T=1): A = (79,86 + 78,59)/2 = 79,23 → B = (79,99 + 78,55)/2 = 79,27 t/s (+0,06%). mvs (T=0): 433,2 → 433,4 t/s (+0,06%). W parach z tej samej sesji: 10-21 +0,16% / +0,09%, 11-20 −0,05% / +0,02%. Zysku nie widać ponad szum, więc nie włączać do produkcji. W produkcji tej zmiennej nie ma: brak `BIG_ROWS` w `run-topka.sh` i `run-llm.sh`. Logi: `~/qwen-opt/queue/logs/i43g-{A1a,B1a}.log`, `k039-i43g-{B1b,A1b}.log`, jobs `qwen-opt/k039/xq.jobs`
-
-### K-040 · Flaga kompilatora `-mllvm --amdgpu-unroll-threshold-local=600`
-- data: 2026-11-07
-- źródło: `R/68a-rdna3-kernele.md:126` (4.8)
-- test: build + `klab isadiff` gorących kerneli (CPU); GPU tylko, gdy ISA się zmienia: `llama-bench -p 4096` + spec_sweep ABBA + md5 ≤ 10 min
-- zysk: 0…2% [INFERENCE]
-- ryzyko karty: brak (spille przy większej liczbie VGPR)
-- priorytet: niski (tani, mały)
-- wynik 2026-11-20: pominięte. Na serwerze Jarvo nie ma ROCm (`hipcc` brak), a build HIP i `klab isadiff` trzeba robić na jaroserverai, czyli na maszynie z GPU, której ten przebieg nie używa.
-
-### K-041 · Licznik realokacji grafu (#30329): czy przejścia MTP5 ↔ W16 ↔ catch-up przebudowują graf albo taśmę PM4
-- data: 2026-11-07
-- źródło: `R/68d-swieze-od-spolecznosci.md:141` (#7)
-- test: XTX serwer testowy, replay sesji agenta, licznik w logu + `GGML_HIP_PM4_DEBUG`; ≤ 10 min
-- zysk: 0% wprost; kilka % na krokach zmieniających szerokość, jeśli realokacje istnieją [INFERENCE]
-- ryzyko karty: brak
-- priorytet: niski (diagnostyka)
-- wynik 2026-11-20: serwer produkcyjny (PM4 WA=2 + GUARD) z `GGML_HIP_PM4_DEBUG=1`. Replay agentpath `w6.json`: 4 sesje po kolei, 24 tury, 98,9k tokenów prefillu, 3k wygenerowanych, 140 s. Taśm budowanych jest 81 na 967 uruchomień taśmy (każda użyta średnio ~12 razy), czyli ~3,4 przebudowy na żądanie. **Rozmiary są zawsze tylko dwa: 809 i 107 dispatchy**, więc szerokości MTP / W16 / catch-up nie tworzą nowych taśm. Przebudowy to ponowne przechwycenie tych samych dwóch grafów, prawdopodobnie po każdym prefillu [INFERENCE]. Do tego 77 małych grafów (12–14 kernel) idzie zwykłą ścieżką HIP graph, 518 uruchomień grafu bez taśmy, 13 eksmisji kolejki (0 w trakcie taśmy). Następny krok, jeśli warto: zmierzyć koszt jednej przebudowy (ms) × ~3,4 na żądanie. Log: `~/qwen-opt/queue/logs/k041-realloc2.log`, `~/qwen-opt/k041/out/launch.log`
-
 ### K-042 · Spekulatywny prefill następnej tury w przerwie (serwer prefilluje swoją odpowiedź, przerywa na granicy ubatcha)
 - data: 2026-11-07
 - źródło: `R/68c-dlugi-kontekst-gdn.md:140` (#6)
@@ -732,32 +404,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: ~10–25% czasu małych tur [SZACUNEK], więcej przy ≥ 128k
 - ryzyko karty: brak (GPU zajęte w przerwach)
 - priorytet: niski (zależne od klienta)
-
-### K-043 · Profil i optymalizacja atencji draftu MTP przy długim kontekście (~1,3 ms/krok przy 199k), np. pamięć MASW (ujścia + okno + sloty)
-- data: 2026-11-07
-- źródło: `R/68c-dlugi-kontekst-gdn.md:144` (#10), [[2026-11-08-kvq-once-profil]] (`:92`)
-- test: offline symulacja akceptacji MTP z oknem 128 + sloty; potem spec_sweep + xtxbench 199k. Wymaga treningu adaptera.
-- zysk: sufit +3…5% przy 255k minus spadek akceptacji [SZACUNEK]
-- ryzyko karty: brak
-- priorytet: niski (trening, niepewne; samo okno MTP to KILL, K-090)
-
-### K-044 · Leave-one-out łatek (`loo.py run`) i Kernel Tuner (`kt tune`) na GPU
-- data: 2026-10-15 (runda 6)
-- źródło: [[runda-6]], [[loo]], `Q/STATUS-NEXT.md:31-37`, `R/07-nasze-metody-uogolnienie.md:250-252`
-- test: XTX `GGML_HIP_PM4=0`, po jednej łatce/fladze na job (xtxbench ~4 min); LOO ~3,8 h + buildy w sumie
-- zysk: 0 t/s wprost; wykrywa łatki bez zysku (koszt utrzymania)
-- ryzyko karty: niskie (mikrobenche)
-- priorytet: niski (higiena)
-- wynik 2026-11-21 (częściowo: tylko łatki z wyłącznikiem env, bez łatek „tylko build” i bez `kt tune`): **żadna łatka nie daje ≥ 3% na Qwenie, ale prawie wszystkie mierzalnie pomagają. Kandydaci do usunięcia: 52, 58 i 59 (Qwen), 62 i 64 (LFM).** Narzędzie `loo.py` zostało bez zmian; owijka `Q/k044/loo_topka.py` puszcza te same próby (ABBA) na silniku produkcyjnym `~/llama-topka` z kolejki, bez zagnieżdżonego flocka, port testowy, PM4 0. Qwen UD-Q4_K_XL, tg128 + serwer MTP n4 (2 prompty × 256 tok., T=0), 4 rundy. Spadek po wyjęciu łatki (95% CI) w serwerze: 31 top-k −2,72%, 33 replay GDN −1,58%, 29 asynchroniczne wejścia −1,45%, 24 para MMVQ −1,30%, 47 −1,23%, 28 −0,92%, 25 −0,91%, 30 −0,82%, 27 −0,65%, 38 −0,40%, 26 −0,28%. Neutralne: 48 (0,00%), 58 (+0,13% / tg +0,04%), 59 (−0,06% / tg −0,19%). Szybciej bez łatki: 52 (`GGML_HIP_MMVQ_N1_ROWS`) tg +1,31% ± 0,11, w serwerze +0,29% (neutralnie). LFM2.5-24B, 2 rundy, szerokie CI: najwięcej dają 48 (−13,7%), 31 (−12,2%), 50 tg (−9,4%), 53 tg (−6,7%), 29 (−6,0%), 49 tg (−5,3%), 51 (−4,5%). Szybciej bez łatki: 62 tg +0,39% i 64 tg +0,79%, w serwerze neutralnie. Pominięte: 60 (to sam PM4, a punkt odniesienia jest z PM4 0), 65 (flaga web UI, w produkcji i tak wyłączona), CLI 4 i 32 oraz 22 łatki „tylko build” (wymagają buildów z revertem, czyli pracy nad kodem). Decyzja o usuwaniu łatek należy do właściciela. Źródło: `~/qwen-opt/queue/logs/k044-*.log`, raport `~/qwen-opt/k044/loo/loo-report.md`, wyniki `loo-results.jsonl` (316 prób, 0 błędów).
-
-### K-045 · Model kosztu weryfikacji MoE LFM2.5 (pomiar G1) i drafter dla LFM (LFM2.5-2.6B-QAD-Q4_0 jest na dysku)
-- data: 2026-10-19 (raport 18), drafter 2026-10-14
-- źródło: [[model-kosztu-weryfikacji-moe]], [[raport-24d-lfm-lookup]], archiwum (`A:36446`)
-- test: XTX `llama-bench -p 1,2,3,4,5,8,16 -n 0 -d 0,32768` (bramki T(8) ≤ 13,6 ms, T(3) ≤ 6,8 ms); potem LFM24B + draft 2.6B spec_sweep T=1 + `mvs`; ≤ 10 min każdy
-- zysk: decyduje, czy tani drafter dla LFM ma sens (od α ≈ 0,4); LFM poza produkcją
-- ryzyko karty: VRAM (+1,6 GB draftera przy KV q8_0 131k)
-- priorytet: niski (LFM poza produkcją)
-- wynik 2026-11-21: **bramka G1 na surowym `llama-bench` niespełniona; po odjęciu narzutu ścieżki pN spełniona tylko przy d0.** Build `~/llama-topka`, LFM2.5-24B-A2B Q5_K_M, KV q8_0, PM4 0. Surowe T(N) = N / t/s przy d0: T(1) 7,56, T(2) 8,42, T(3) 8,86, T(4) 8,93, T(5) 13,18, T(8) 15,09, T(16) 20,94 ms. Przy d32768: 6,53 / 8,90 / 10,03 / 10,77 / 15,15 / 17,12 / 23,50 ms. Bramki T(3) ≤ 6,8 i T(8) ≤ 13,6 ms padają w obu głębokościach. Ścieżka pN ma stały narzut: ten sam build daje tg128 239,6 t/s (4,17 ms na token) przy d0 i 217,3 t/s (4,60 ms) przy d32768, a p1 7,56 i 6,53 ms. Po odjęciu tej różnicy: przy d0 T(3) ≈ 5,5 ms (model 5,47) i T(8) ≈ 11,7 ms (model 9,58), obie bramki spełnione; przy d32768 T(3) ≈ 8,1 i T(8) ≈ 15,2 ms, obie niespełnione. Wyraźny skok między 4 a 5 kolumnami (+4,3 ms) wskazuje, że od 5 kolumn działa inny kernel [INFERENCE]. Jeśli drafter, to najwyżej 3 tokeny draftu (weryfikacja 4 kolumn). Drugiej części testu (LFM24B + drafter 2.6B, spec_sweep) nie uruchamiałem: bramka nie przeszła jednoznacznie, a LFM jest poza produkcją. Źródło: `~/qwen-opt/queue/logs/k045-g1.log`, `k045-tg.log`, skrypt `Q/k045/k045.sh`.
 
 ### K-046 · Szerokość ogona lookup zależna od kontekstu: W16 → W8/W5 przy ≥ 128k (`LLAMA_SPEC_LOOKUP_ADAPT=1`)
 - data: 2026-10-18, 2026-11-07 (68c #7)
@@ -777,25 +423,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (poniżej progu)
 
-### K-048 · Mikrobatch prefillu `-ub 1024` dla Qwena (po odzyskaniu VRAM)
-- data: 2026-10-12 (A7)
-- status: **czeka na decyzję**, jeśli md5 ≠ (zmiana ub zmienia kolejność sum)
-- źródło: `Q/NOTES.md:218` (ub 2048 pp +3%, OOM przy 204800), `R/63-SYNTEZA.md:84`
-- test: XTX md5 greedy 12k ub 512 vs 1024 (jeśli różne → do Odrzuconych); jeśli równe, `llama-bench -p 4096 -ub 1024` + szczyt VRAM przy fill 255k osobnym jobem
-- zysk: pp4096 +3…8% [SZACUNEK]
-- ryzyko karty: **VRAM OOM przy 262k**
-- priorytet: niski (OOM, numeryka; po K-022/K-034)
-- wynik 2026-11-21: **ub 1024 zmienia wynik i nie przyspiesza → odrzucić.** md5 greedy (prompt 12k, T=0, 256 tok., konfiguracja produkcyjna na porcie testowym, kolejność 512/1024/1024/512): ub 512 `8f23c7d9` w obu przebiegach, ub 1024 `669c414a` w obu, czyli inna kolejność sum. Prefill 12k: 894,7 → 871,1 t/s (−2,6%). `llama-bench` pp4096 (PM4 0, FA 83, ABBA): 1003,1 → 994,5 t/s (−0,9%). VRAM po starcie serwera przy ctx 262144: 22955 → 23352 MiB (+397 MiB). Przy 255k z ub 512 zostaje 1193 MiB zapasu, więc wypełnienia 255k z ub 1024 nie uruchamiałem (ryzyko OOM, a zysku i tak nie ma). Źródło: `~/qwen-opt/queue/logs/k048-md5.log`, `k048-bench.log`, skrypt `Q/k048/k048.sh`.
-
-### K-049 · ROCm 10.1 na gfx1100: md5 + hash logitów + pomiar `kvq` (spill 8 VGPR)
-- data: 2026-10-16 (raport 13), 2026-11-05 (63c)
-- źródło: [[rocm-10-1]] (`:28-30`), [[lekcja-rocm10-lds-128kb]]
-- test: build topki na `~/opt/rocm-10.1` (CPU), XTX md5 greedy/long 32k + xtxbench t1; ≤ 10 min
-- zysk: nieznany (RDNA-FAST: 10.1 +3,1% vs 7.2 na innej bazie); `kvq` może zwolnić przez spill
-- ryzyko karty: nowy runtime + PM4 (możliwy fault/reset)
-- priorytet: niski (niepewny zysk, ryzyko)
-- **wynik 2026-11-24 15:33–15:36 (XTX, topka-q70 3191b25 zbudowana na ROCm 10.1, PM4=0, xtxbench t1):** bramka md5 świeżego startu PASS (c4708318 / 6f14e814), ale xtxbench: decode@1,7k 121,28 → 120,88 (−0,33%, szum), **prefill@32k 875,9 → 861,3 (−1,67%, LOSS)**, md5 greedy czatu inny (d36768ee → 662da515). Werdykt **KILL**: ROCm 10.1 wolniejszy w prefillu (zgodne z ISA: spill `flash_attn_ext_kvq<256,8,Q4_0>` 0→36 B). Zostajemy na 10.0; 10.2 to K-130.
-
 ### K-050 · Runtime ROCm 7.2.4 z kompilatorem ROCm 10
 - data: 2026-11-07
 - status: **czeka na decyzję** (pobranie runtime)
@@ -804,51 +431,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: prefill 0…+5% (dane z innej XTX); decode ~0 (PM4 omija runtime)
 - ryzyko karty: **wysokie**: PM4 zależy od ROCr/CLR (raport 17), page faulty/resety
 - priorytet: niski (ryzyko > zysk)
-
-### K-051 · Wyjaśnić ~16 tys. wierszy `amdgpu: init_user_pages: Failed to get user pages: -1` przy każdym starcie serwera
-- data: 2026-11-06
-- źródło: [[init-user-pages-failed]]
-- test: XTX dwa starty serwera `--mmap` vs `--no-mmap`, licznik wierszy w `journalctl -k`, bez obciążenia; ≤ 10 min
-- zysk: diagnostyka (krótszy start, czystszy log jądra); 0 t/s
-- ryzyko karty: brak
-- priorytet: niski (diagnostyka)
-- wynik 2026-11-20 (`journalctl -k` działa bez sudo): start serwera produkcyjnego na porcie testowym. `-lm mmap` (domyślne `auto` = mmap) daje **15 553** wiersze `init_user_pages: Failed to get user pages`, a `-lm none` (bez mmap) **0**. Start do health w obu wariantach 5–6 s. Wiersze pochodzą więc z mapowania pliku modelu przez mmap. Para jest jedna: powtórka nie zmieściła się w 10 min, bo liczenie `journalctl` po długim boocie jest wolne. W topce flaga to `-lm`, nie `--no-mmap`. Log: `~/qwen-opt/queue/logs/k051-mmap2.log`, skrypt `qwen-opt/k051/mmap.sh`
-
-### K-052 · HRX (Lemonade `hrx-b99`) jako referencja kerneli: tg128/pp512/pp4096 obok topki
-- data: 2026-11-07
-- źródło: `R/68a-rdna3-kernele.md:125` (4.7)
-- test: XTX `llama-bench -fa 1 -p 512,4096 -n 128 -r 3` HRX vs topka, eco (~30 min → 3 joby); wymaga buildu i pobrania HRX
-- zysk: 0% wprost; wzór do portu, jeśli HRX wygra prefill (producent: +30–50% vs HIP upstream)
-- ryzyko karty: nieznany runtime (inne kolejki, bez gpu-guard)
-- priorytet: niski (wiedza)
-- **wynik 2026-11-24 15:44–15:58 (XTX, HRX `hrx-b99` z ROCm/ggml-staging-automation: hrx-system 32b86d4, llama.cpp AMD-Ecosystem 2ba2ddc, build gfx1100 na ROCm 10.1, KV f16 w obu ramionach):** smoke OK (443 słowa, tekst sensowny), ale sam smoke 370 s; llama-bench `-p 512,4096 -n 128 -r 3` w ramieniu HRX przekroczył 200 s w obu rundach (produkcja: ok. 30 s na rundę) i nie dał ani jednego wiersza (stderr pusty, ubity przez timeout). Wniosek: HRX na tym buildzie jest co najmniej ok. 6× wolniejszy albo wisi przy benchu; bez gfxhub fault. Odłożone do nowego wydania HRX (dalszy czas karty nieopłacalny).
-
-### K-053 · Wspólne punkty odniesienia: zestaw YASAKANI/NInfer (12 zadań + edycja) na XTX
-- data: 2026-11-05
-- źródło: `R/63-SYNTEZA.md:104` (#25), `R/63a-silniki-lokalne.md` §9
-- test: XTX ~15 min (2 joby)
-- zysk: wiedza i porównanie 1:1 z innymi silnikami; 0 t/s
-- ryzyko karty: brak
-- priorytet: niski (wiedza)
-- wynik 2026-11-21: **12 zadań NInfer zmierzone, edycji YASAKANI nie ma na dysku.** Zestaw: 12 scenariuszy z `examples/cli/manifest.json` klonu NInfer (kod, proza, tłumaczenie, dane strukturalne po 3). Ustawienia jak u YASAKANI: greedy, thinking off, limit 4096 tokenów, bez cache promptu. Konfiguracja produkcyjna (MTP n4, lookup W16) na porcie testowym. Ich edycja kodu (`textwrap`) i JSONL 300 zamówień są prywatne, więc ich nie ma. Dekod w t/s, licząc jak YASAKANI, czyli (tokeny − 1) / czas generacji: kod 150,2 / 157,4 / 141,6, dane JSONL 190,8 / CSV 142,6 / SQL 169,3, proza EN 140,9, proza ZH 64,7 i 46,4, tłumaczenie ZH→EN 127,2, EN→ZH 68,9, markdown 76,6. Mediana z 12 zadań to 141,3 t/s. Dla porównania YASAKANI JSONL 160 wierszy daje ~455 t/s po przeliczeniu na pasmo XTX i bajty wag (`R/63a-silniki-lokalne.md` §9), a my na JSONL 190,8. Słabe są zadania z chińskim tekstem: akceptacja draftu 18%, 6% i 21% wobec 62–76% w kodzie i danych. Prawdopodobna przyczyna to okrojony słownik głowicy draftu (65 536 tokenów) [INFERENCE]. Źródło: `~/qwen-opt/queue/logs/k053-a.log`, `k053-b.log`, skrypt `Q/k053/k053.py`.
-
-### K-054 · EvalPlus z `--effort xhigh` vs `low`: czy effort low kosztuje dokładność
-- data: 2026-11-09
-- źródło: [[2026-11-09-evalplus-qwen-uncensored]] (`:25`), [[evalplus-jakosc-kodu]]
-- test: XTX `~/qwen-opt/evalplus/jakosc-mini.sh --effort xhigh --port 8097 all` (HE+ 164 + MBPP+ 378; > 10 min, podzielić po zbiorze)
-- zysk: jakość, nie prędkość; potwierdza albo zmienia domyślny effort low (dziś HE+ 92,7%, MBPP+ 80,2%)
-- ryzyko karty: brak
-- priorytet: niski (nie prędkość)
-- wynik 2026-11-21 (częściowo: HE+ 130 ze 164 zadań, MBPP+ 98 z 378; 10 jobów po ≤ 10 min, codegen wznawiany): **xhigh nie poprawia dokładności, a kosztuje ~3,7× więcej tokenów, więc domyślne low zostaje.** Konfiguracja produkcyjna na porcie testowym, `EFFORT=xhigh`. Porównanie z przebiegiem low z 2026-11-09 na tych samych zadaniach. HumanEval+ plus: 94,6% (123/130) → 93,8% (122/130), base 97,7% → 94,6%. MBPP+ plus: 85,7% → 85,7% (84/98), base 95,9% → 95,9%. Między ramionami przechodzi inny zestaw zadań: 7 zadań zmienia wynik w HE, 10 w MBPP. Tokeny na odpowiedź: HE 730 → 2637, MBPP 613 → 2386. Przy xhigh 4 odpowiedzi HE i 3 MBPP dobiły do limitu 32 768 tokenów. Dekod 134–135 t/s. Źródło: `~/qwen-opt/queue/logs/k054-*.log`, `~/qwen-opt/evalplus/runs/uncensored-xhigh/`, `uncensored-xhigh-pad/`, skrypty `Q/k054/k054.sh`, `k054_cmp.py`.
-
-### K-055 · Usunąć z topki martwy kod capu LDS FA (`57204db1e`, no-op na ROCm 10.0 pre4) przy najbliższym buildzie
-- data: 2026-11-06
-- źródło: [[2026-11-05-q63-topka]] (wynik negatywny), dawny wpis `DO-ZAPISANIA.txt`
-- test: przy następnym buildzie produkcji bramka md5 (long 32k e460e3b6, fill 255k 31b6525a); bez osobnego okna GPU
-- zysk: 0 (porządek w kodzie)
-- ryzyko karty: brak
-- priorytet: niski (przy okazji)
-- wynik 2026-11-20: usunięte w `llama-duo` (gałąź `duo`), commit `e1f9524` = czysty revert `57204db1e` (tylko `ggml/src/ggml-cuda/fattn-common.cuh`, −53 linie, ani `GGML_HIP_FA_OCC_*`, ani skrypty uruchomieniowe go nie używały). Bez buildu; bramka md5 (long 32k e460e3b6, fill 255k 31b6525a) przy najbliższym buildzie produkcji.
 
 ### K-056 · Rebase łatek topki na nowszy upstream (baza b11528 → llama.cpp v1.0.0 = b12359)
 - data: 2026-10-16, ostatnio 2026-11-07
@@ -877,17 +459,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (nie szybkość)
 
-### K-059 · Pomiar w warunkach LocalMaxxing (`reasoning-v1`/`code-v1`, T=0, 320 tok.) do publikacji wyników XTX
-- data: 2026-10-16
-- status: **czeka na decyzję** (publikacja „wkrótce”, na razie tylko odczyt: [[2026-10-20-bez-publikacji-localmaxxing]], [[2026-11-09-decyzje-runda-69]])
-- źródło: [[raport-32f-ninfer-tqllm]], [[raport-32d-localmaxxing]]
-- test: XTX ~15 min (2 joby)
-- zysk: 0 t/s (marketing); szacunek ~147 t/s w ich warunkach
-- ryzyko karty: brak
-- priorytet: niski (nie wydajność)
-- zwiad 2026-11-14: XTX top verified na LocalMaxxing nadal 97,2 t/s (llama.cpp IQ3_S MTP); szacunek topki w ich warunkach ~147 ([[zwiad-2026-11-14]])
-- **wynik 2026-11-24 14:36 (XTX, produkcja Qwen3.8-27B Uncensored, warunki LocalMaxxing: kanoniczne prompty, T=0, 320 tok., mediana 3):** konfiguracja produkcyjna (lookup W16) reasoning-v1 **139,4** t/s, code-v1 **123,5**; bez lookupu (`LLAMA_SPEC_LOOKUP=0`, ramię do publikacji) 149,4 / 122,0. Akceptacja draftu ~75% (reasoning), ~58% (code). Publikacja nadal wstrzymana (decyzja właściciela).
-
 ### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
 - data: 2026-10-19 (21h)
 - status: **czeka na decyzję**
@@ -899,15 +470,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - 2026-11-24 14:37: pierwsze uruchomienie odrzucone przez fabrykę (port 18794 poza zakresem fabryki 18434–18499; skrypt poprawiony na 18450, uruchomione ponownie).
 - 2026-11-24 15:18: fabryka INVALID, bo zmieniona uprząż (`ext/spec_sweep.py` po audycie 19.11, `ext/fusion/greedy.sh`) bez wpisu w HARNESS.lock; zablokowana z powodem (ledger seq 11), test ponownie w kolejce 15:40.
 - 2026-11-24 16:08: fabryka VOID przez bramkę sprzętu H4: niepotwierdzony page fault z 2026-11-23 01:09 (proces strata-inkling, znany incydent K-134). Potwierdzenie (`factory rsi hw ack --reason …`) to według fabryki krok człowieka: **czeka na JARO**, potem jedno uruchomienie `K-060.jobs` (ok. 25 min).
-
-### K-061 · Tryb wielu użytkowników na NVIDIA: naprawić start `-np 4` z MTP (`failed to create context`), potem k zależne od liczby klientów (`K_BY_B`)
-- data: 2026-10-21 (raport 56)
-- źródło: `R/67c-nvidia-backlog-testow.md:110` (B16), `R/67-nvidia-vast-kampania.md` §7.2 (`-np 2` agregat +30…36%), `R/69b-tensorfold-qwen-warp.md:77`
-- test: 5060 Ti: `-np 2/4` ctx 32k + MTP n=2, C = 1/2/4/8 klientów, suma t/s; ≤ 10 min
-- zysk: agregat +20–30% (dane warp: ×2,7–2,9 przy 4–8 klientach); latencja 0
-- ryzyko karty: VRAM OOM
-- priorytet: niski (jeden użytkownik)
-- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, 204 800 kontekstu, `-np 4` + MTP: start pada na OOM (`allocating 9576.00 MiB` → `failed to allocate buffer for rs cache`); 131k: zdrowy, OOM przy pierwszym zapytaniu; 32k i 64k działają. Każdy dodatkowy slot z MTP kosztuje 2,4–3,1 GB VRAM: to brak pamięci, nie błąd slotów.
 
 ### K-062 · Dekoder FA CUDA z `__launch_bounds__(…,2)` (dual-CTA)
 - data: 2026-11-07
@@ -934,15 +496,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (mały TTFT)
 
-### K-065 · Zimny start `--no-mmap` (pierwszy prompt po restarcie 0,39–1,07 t/s) i nieprzetestowane flagi upstream (`--spec-draft-n-ubatch 64`, `GRAPH_CHUNK_SIZE`, `-fa off`, `--spec-default`)
-- data: 2026-11-07
-- źródło: `R/67c-nvidia-backlog-testow.md:79-91` (A4, A8, A10, A12, A16)
-- test: 5060 Ti, po jednym ramieniu na job ≤ 10 min
-- zysk: A12: TTFT pierwszego żądania; reszta ~0 [INFERENCE]
-- ryzyko karty: brak
-- priorytet: niski (UX)
-- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4: wolny pierwszy prompt po restarcie się nie powtarza; `-lm none` start szybszy o 2–3 s; `--spec-draft-n-ubatch 64` bez zmiany szybkości, −48 MiB VRAM; `GGML_CUDA_GRAPH_CHUNK_SIZE` domyślny najlepszy (1: −1,6%); `--spec-default` na przepisywaniu kodu 133–134 t/s vs 17,6–18,2 bez i 45 z MTP n3 (×7,4), na zwykłym czacie bez zysku; wyjście bajt w bajt identyczne. A10 (`-fa off`) pominięte (wymaga KV f16).
-
 ### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
 - data: 2026-10-16 (15d), 2026-10-21 (Orca)
 - źródło: `R/67c-nvidia-backlog-testow.md:133` (C16), sesja Orca (`O:1788-1796`, `O:2187-2196`: occupancy 2 → −11,5%)
@@ -967,15 +520,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (formalność)
 - **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, 63k bez MTP: wyłączenie wyjątku n=1 (`GGML_CUDA_KVQ_N1_D256_Q4=1`) dekod 12,54 → 16,64 t/s (+32,7%), ale wyjście się zmienia; z MTP ok. +2% (38,1–38,3 → 39,0), wyjście identyczne. Prawdziwy KLD niewykonany (paczka bez `llama-perplexity`); top-10 prawdopodobieństw różni się średnio 4,3e-4, tyle co kvq vs zwykła uwaga. Decyzja wymaga KLD.
-
-### K-069 · Turing sm_75 (2080 Ti): build forka i smoke test
-- data: 2026-11-07
-- źródło: `R/67c-nvidia-backlog-testow.md:149` (D6)
-- test: build `-DCMAKE_CUDA_ARCHITECTURES=75`, `test-backend-ops`, fork vs upstream; wynajem ≤ 10 min po buildzie
-- zysk: nieznany; poprawność dla klasy 11 GB w Enigmie
-- ryzyko karty: brak
-- priorytet: niski (mała klasa)
-- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** na T4 wydany fork CUDA (kvqleana, build 11620) pada przy starcie: `no kernel image is available` (brak sm_75); upstream b12110 działa: pp512 302,3, tg128 9,14 t/s. **Silnik Enigmy CUDA nie działa na Turingu (2080 Ti, T4)**: dodać arch 75 do wydania albo planer ma wybierać upstream poniżej sm_86. Build forka na sm_75 niezrobiony (źródło tylko na jaroserverai).
 
 ### K-070 · NVIDIA: soak termiczny 600 s przy fill 262k (E3) i sweep limitu mocy → perf/W na wynajętych kartach (E1)
 - data: 2026-11-07
@@ -1004,26 +548,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (model poza katalogiem)
 
-### K-073 · Flint (NVFP4) na XTX: rozstrzygnąć nieudany test igły przed katalogiem Enigmy
-- data: 2026-10-21
-- status: **czeka na decyzję** (inny model; PR #30928 niescalony)
-- źródło: `R/59-flint.md`, archiwum (`A:37717-37753`)
-- test: XTX needle przy długim kontekście, Flint na topce z poprawkami (`run-topka.sh flint`); ≤ 10 min
-- zysk: ~2× vs Qwen27B na XTX, ale to zmiana modelu
-- ryzyko karty: temperatury (prefill 160–262k: junction 94 °C, 286 W przed eco)
-- priorytet: niski (inny model)
-- **wynik 2026-11-24 14:38–14:43 (XTX, Flint, KV q4_0, PM4=0):** igła przy 150k i 64k znaleziona w obu buildach (obecny i bazowy upstream+#30928), odpowiedź kończy się `stop`, sekret także w rozumowaniu; dekod obecny 82,0 / 89,0 t/s vs bazowy 35,3 / 49,2 (×2,3 / ×1,8). Wcześniejsza pusta odpowiedź przy 150k się nie powtarza → test igły zaliczony; Flint może wrócić do rozważań katalogu (jakość osobno). Ramię q8_0 pominięte (zasada KV ≤ q6).
-
-### K-074 · OrcaCyber-Nano na XTX z drafterem DFlash2 (dotąd tylko 3090) i E1 RSR-27B vs Qwen (TB 2.1, omp-bench-20)
-- data: 2026-10-19 / 2026-10-21
-- status: **czeka na decyzję** (Orca: tylko na prośbę; RSR-27B: wydatek $40–70, ~120 GPU-h)
-- źródło: [[raport-56-orca-3090]], [[KOLEJKA-TESTOW]], [[otwarte-decyzje-techniczne]] (`:22`)
-- test: Orca: XTX MTP vs DFlash2 ≤ 10 min; RSR: wynajem, test do zdefiniowania
-- zysk: wiedza o innych modelach; 0 t/s dla produkcji
-- ryzyko karty: VRAM (Orca 15,7 + 2,1 GB przy 262k)
-- priorytet: niski (inne modele)
-- **wynik 2026-11-24 14:44–14:59 (XTX, OrcaCyber-Nano 15,7G, fork produkcyjny `~/llama-opt`, KV q4_0, PM4=0, xbench, kolejność none / MTP / DFlash / DFlash / MTP):** bez zgadywania Q4 43,7, T=0,7 43,7, L2k 42,4, L8k 41,3; **MTP n4** Q4 144,1–145,0, T=0,7 61,0–63,0, L2k 129,9–130,5, L8k 129,3–129,4 (akceptacja 0,91–0,92); **DFlash2 n6** Q4 194,8–196,3 (+35%), T=0,7 68,5–68,6 (+10%), L2k 175,8–177,2 (+36%), L8k 152,0–153,5 (+18%), akceptacja 0,85–0,96; krótkie Q2/Q3 DFlash wolniejszy (81–92 vs 96–103). Prefill z drafterem DFlash −10…−20% (762–877 vs 816–930). Wniosek: na XTX DFlash2 bije MTP dla Orci (wcześniej mierzone tylko na 3090). Połowa E1 (RSR-27B) czeka na budżet.
-
 ### K-075 · Drzewo weryfikacji MTP na hybrydzie GDN (forma WY, maska przodków)
 - data: 2026-10-20 (24s), 2026-11-07 (66d C)
 - źródło: [[drzewo-weryfikacji-gdn-wy]], `R/66-SYNTEZA.md:65`, `R/68b-spekulacja-nowe.md` („dziś kill”: +1,6% przy 0,85 ms/wiersz)
@@ -1031,15 +555,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: kod/T=0 +3…8%, czat T=1 0…+4% [SZACUNEK]
 - ryzyko karty: nowe kernele GDN w PM4
 - priorytet: niski (zależne od K-013 i K-007)
-
-### K-130 · Topka zbudowana ROCm 10.2 (hipcc/LLVM) vs 10.0: czy nowy kompilator przyspiesza nasze kernele
-- data: 2026-11-19
-- źródło: blog ROCm 10.2.0 (Telegram „gpu” 2026-11-19); wcześniej 10.1 nic nie dało ([[stos/rocm-10-1]])
-- test: ROCm 10.2 w osobnym katalogu na jaroserverai (bez ruszania /opt/rocm 10.0 produkcji), rbuild topki tym samym commitem; `test-backend-ops` MUL_MAT/FA bitowo + xtxbench ABBA dekod 1,7k i prefill 32k, md5 T=0; ≤ 10 min karty
-- zysk: nieznany (AMD nie wymienia gfx1100 GEMV/FA); próg przyjęcia ≥ 3%
-- ryzyko karty: brak (PM4=0 w teście); ryzyko systemu: druga instalacja ROCm, tylko za zgodą właściciela (~3 GB)
-- priorytet: niski
-- **wynik 2026-11-24 15:40–15:44 (XTX, topka-q70 3191b25 na ROCm 10.2 z `~/rocm-10.2`, PM4=0):** md5 świeżego startu PASS (c4708318 / 6f14e814); test-backend-ops MUL_MAT 2496/2496, FLASH_ATTN_EXT hsk=256 173/173; xtxbench t1: decode@1,7k 122,38 → 121,08 (−1,07%, w szumie), prefill@32k 869,5 → 868,2 (−0,15%, w szumie). Werdykt xtxbench KILL: brak zysku ≥ +1%. Uwaga: md5 greedy czatu ramienia B (662da515) jest ten sam dla 10.1 i 10.2, więc różnica md5 pochodzi z przebudowy lub ścieżki uruchomienia, nie z ROCm (do wyjaśnienia przy następnym buildzie). Zostajemy na 10.0.
 
 ### K-131 · Fork CUDA na Ampere: MMVQ celu tylko 58% pasma na 3090 (4080 SUPER 78%) — strumieniowanie wag przez `cp.async`
 - data: 2026-11-20
@@ -1062,6 +577,477 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-005 · Siatka checkpointów GDN co ~8192 tokenów + checkpoint w punkcie rozwidlenia + łańcuch fallbacku (edycja, regeneracja, kompaktowanie omp)
+- data: 2026-10-15 (STATUS-NEXT §4), ponownie 2026-11-07 (66 poz. 6)
+- źródło: [[siatka-checkpointow-gdn]], `Q/STATUS-NEXT.md:44`, `R/66-SYNTEZA.md:57`, `R/67c-nvidia-backlog-testow.md:116` (B22)
+- test: najpierw implementacja w topce. XTX: replay prompt 60k → zmieniony koniec → rodzeństwo; `prompt_n`, TTFT, md5 vs zimny start (~1,5 min prefillu na ramię, ≤ 10 min).
+- zysk: edycja ostatnich 10% promptu 60k: TTFT ~65 s → ~8–10 s [SZACUNEK]; ≥ 1 s/turę, gdy dojdzie do rozjazdu
+- ryzyko karty: brak (~150 MiB RAM hosta na checkpoint)
+- priorytet: wysoki (≥ 1 s/turę)
+
+- wynik 2026-11-23 (bisekcja spadku prefillu po poprawce K-001, duet): pp2048 1021,8 → 981,6 (−3,9%); winne commity Gemini 5ff6a15 (−1,8%) i 0bb43ee (−1,5%); bank GDN 0/1 daje identyczne odpowiedzi (produkcja bez wpływu). Log `~/qwen-opt/queue/logs/duo-r14-*.log`.
+
+- wynik 2026-11-23 15:09 UTC (r11 `LLAMA_CKPT_GRID=1`, produkcyjna konfiguracja, prompt 40k, edycja w 10% długości): wznowienie po edycji 74,1 → **19,4 s (−74%)**, tekst identyczny z liczeniem od zera (md5 równe); dopisek na końcu 2,09 → 2,18 s (w szumie); rozwidlenie 0,46 s. Kandydat do wdrożenia z poprawką K-001 (po naprawie spadku prefillu). Log `~/qwen-opt/queue/logs/duo-r13-k005-*.log`.
+- przegląd 2026-11-24: zrobione wcześniej (r13 LLAMA_CKPT_GRID=1: wznowienie po edycji 40k 74,1 → 19,4 s (−74%), md5 równe (REKORDY.md:237, duo-r13-k005-on/off.log). Wdrożenie czeka na naprawę spadku prefillu K-001 (r14: winne commity 5ff6a15/0bb43ee): to decyzja o wdrożeniu, nie test | 0 | -)
+
+### K-011 · Kontrola ewikcji VRAM do GTT przy 262k (`amd-evicted-vram`, `drm-memory-*` w fdinfo)
+- data: 2026-11-07
+- źródło: `R/68a-rdna3-kernele.md:123` (4.5), `R/68-SYNTEZA.md:24`
+- test: doczepić do najbliższego fillu 255k: odczyt `/proc/<pid>/fdinfo/*` przed promptem, po prefillu i po 256 tokenach (0 dodatkowego czasu GPU)
+- zysk: 0%, jeśli ewikcji nie ma; jeśli jest, decode przy 255k jest dziś zaniżony
+- ryzyko karty: brak (odczyt)
+- priorytet: średni (darmowe, może zaskoczyć)
+- wynik 2026-11-20: serwer w konfiguracji produkcyjnej (ctx 262144, port testowy). Fill 131 000 tokenów zamiast 255k, bo 255k to ~548 s samego prefillu, a limit testu to 10 min. **Ewikcji brak**: `amd-evicted-vram` = 0 KiB we wszystkich trzech odczytach. VRAM 22,39 GiB przed promptem → 22,74 GiB po prefillu (650 t/s, 201 s) → 22,78 GiB po 256 tokenach (134 t/s). GTT stoi na ~6,1 MiB. Log: `~/qwen-opt/queue/logs/k011-fdinfo.log`, skrypt `qwen-opt/k011/fdinfo.sh`
+- przegląd 2026-11-24: zrobione wcześniej (Ewikcji brak: amd-evicted-vram 0 KiB we wszystkich 3 odczytach przy fill 131k, VRAM 22,39 → 22,78 GiB, GTT ~6 MiB (log k011-fdinfo.log jest na boxie) | 0 | -)
+
+### K-013 · Tańsza weryfikacja 2–24 kolumn (MTP n=5 i lookup W16): port kernela „few-row” upstream #31533 na RDNA3 (iu8 WMMA)
+- data: 2026-11-07
+- źródło: `R/68d-swieze-od-spolecznosci.md:140`, `R/69-SYNTEZA.md:30` (W3), [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 3), `R/67c-nvidia-backlog-testow.md:131` (C14)
+- test: XTX `llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 1,5,8,9,16 -n 0 -d 2048,32768` przed/po (krzywa V(w)), potem `mvs` + czat ABBA i md5; ≤ 10 min. NVIDIA: `test-backend-ops MUL_MAT` n=8/16 na 5060 Ti.
+- nowe (2026-11-14): #31533 scalone w llama.cpp v1.0.0. Na NVIDIA spec-dec Qwen3.8-27B +16,7…34,9% tok/s (3090 Ti 57,6 → 77,7), KLD jak master; port HIP (`6ad15f48`, am17an) na RDNA3.5 z DFlash2: 21 → 37 tok/s. Weryfikacja MTP n=5 (5 kolumn) też w zakresie 2–24. Inny kernel = inna kolejność sum, więc md5 T=0 się zmieni: wdrożenie na XTX wymaga bramki K-007 albo decyzji właściciela.
+- zysk: V16 − V5 = 6,4 ms przy 2k; połowa tego → kroki W16 −9%, tury agenta z kopiowaniem +5…10% [SZACUNEK]; czat 0. Warunek dla drzew (K-075).
+- ryzyko karty: nowy kernel w PM4
+- priorytet: wysoki (zmierzone +17…35% u autora, ten sam model)
+- baseline 2026-11-14 (produkcja, r=3): V16 − V5 = 7,1 ms przy 2k, 10,1 ms przy 32k; V5 26,8 / 28,3 ms ([[2026-11-14-k002-k003-k013-xtx]]); port HIP #31533 jeszcze niezbudowany
+- (zakończone) build upstream 6ad15f48 (#31533 + port HIP RDNA3 WMMA; Q4_K/Q5_K/Q6_K/Q8_0/IQ4_NL) dla gfx1100 na jaroserverai (`~/wt/fewrow-hip`, cpuheavy 2 rdzenie), potem automatycznie job kolejki `k013-fewrow` (V(w) na tym samym modelu) przez `~/qwen-opt/k013/after-build.sh`; wynik w następnej turze
+- wynik 2026-11-14 (całe silniki, nie sam kernel): upstream 6ad15f48 z few-row MMQ HIP vs topka-q70, `llama-bench -p 1,5,8,9,16 -d 2048,32768`: V5 26,8 → 37,9 ms (+41%), V16 33,9 → 47,0 (+39%) przy 2k; V1 też +3…31% → upstream bez naszych łatek jest wolniejszy, więc few-row nie jest szybszy niż nasza ścieżka weryfikacji. Do rozstrzygnięcia tylko poziom kernela: `test-backend-ops perf -o MUL_MAT` (q4_K, n 5/8/16) obu buildów ([[2026-11-14-k002-k003-k013-xtx]])
+
+- wynik 2026-11-20 (kernel, `test-backend-ops perf -o MUL_MAT`, m 4096 k 14336, XTX eco 2200, `qwen-opt/k013/kern.sh`), nasz fork (duo) vs upstream few-row (`~/wt/fewrow-hip`), µs na wywołanie:
+  - Q4_K: n=1 35,6 vs 39,1; n=2 38,1 vs 56,6; n=4 42,6 vs 57,3; n=5 46,0 vs 57,3; n=8 50,9 vs 57,6. **Nasz kernel wygrywa przy każdym n (−9…−33%).**
+  - Q6_K: n=1 33,7 vs 29,1; n=2 56,5 vs 42,4. **Few-row wygrywa przy n = 1–2 (−14% / −25%).** Przy n=4 60,9 vs 66,9 i n=5 64,5 vs 83,2 wygrywamy my.
+  - Werdykt: całego few-row nie bierzemy. Jedyna dźwignia to jego układ dla Q6_K przy n ≤ 2 (dekod i draft), do przeniesienia w duecie.
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-20 kern.sh/k013-kern.log: our Q4_K is faster at every n (−9…−33%); few-row wins only Q6_K n≤2. Verdict: full few-row not taken. The Q6_K n≤2 remainder already went into duo (GGML_HIP_MMVQ_Q6FR in duo-r7). | 0 | -)
+
+### K-029 · xtx-eco: odczytywać fabryczny `OD_SCLK` przy każdym boocie przed pierwszym zapisem OD (stock zmienia się między bootami: 2885 vs 2935 MHz)
+- data: 2026-11-06
+- źródło: [[2026-11-06-xtx-eco-instalacja]] (`:12-13`, „poprawka w toku — status do sprawdzenia”), [[raport-64-termika]]
+- test: XTX bez obciążenia: po restarcie porównać `pp_od_clk_voltage` z zapisanym stanem bootu, sprawdzić krzywą wentylatora (`pwm1`/RPM); ≤ 10 min
+- zysk: 0 t/s; „powrót do stock” nie obniża już limitu o 50 MHz (zasada: karta fabrycznie)
+- ryzyko karty: zapis OD na jądrze 6.8 gubi krzywą wentylatora, więc pilnować temperatur
+- priorytet: średni (bezpieczeństwo ustawień fabrycznych)
+- wynik 2026-11-20 (bez restartu, odczyt bieżącego bootu 13:32): stan zapisany przy starcie `/run/xtx-eco/stock` = 2940 MHz. To trzecia różna wartość fabryczna (2885, 2935, 2940), więc poprawka „odczyt przy każdym boocie” jest potrzebna i działa (`xtx-od.sh` zapisuje stock do `/run` przed pierwszym zapisem). `OD_SCLK 1` = 2200 MHz (limit eco), `power1_cap` 285 W. Krzywa wentylatora jest zapisana (`fan_curve` 25–80 °C → 100%), ale w spoczynku (hotspot 45 °C) `pwm1` = 0 i 0 RPM, czyli tryb zero-RPM. Pod obciążeniem nie sprawdzano. Log: `~/qwen-opt/queue/logs/k029-od.log`
+- przegląd 2026-11-24: zrobione wcześniej (Result line of 2026-11-20 in the queue: stock is read at every boot into /run/xtx-eco/stock (2940 MHz, the third distinct value after 2885/2935), so the fix works; OD_SCLK1 = 2200, cap 285 W, fan_curve is set, idle is zero-RPM. Log ~/qwen-opt/queue/logs/k029-od.log. Fan under load was not checked an)
+
+### K-031 · Maska KQ poza ścieżką krytyczną albo pochodna maska w kernelu (bez `n_kv × n_tokens` z hosta)
+- data: 2026-10-13 (K3), 2026-11-07 (66 #9, 68c #4)
+- źródło: [[maska-kq-host-dlugi-ctx]], [[2026-11-08-kvq-once-profil]] (`:50,89`: `graph→inputs` 355 µs przy 199k), `R/68c-dlugi-kontekst-gdn.md:15-17,138`
+- test: XTX `LLAMA_HOSTGAP_TRACE=16` + xtxbench decode 199k ABBA, md5 (osobny job na 199k)
+- zysk: decode 199–255k +0,5…1,5%, fill 255k +0…3%, −256 MiB VRAM i −256 MiB pinned [SZACUNEK]
+- ryzyko karty: brak (host); wariant w kernelu = nowy kernel w PM4
+- priorytet: niski (sam poniżej progu, łączyć z K-012)
+- wynik 2026-11-21: **maska leży na ścieżce krytycznej, ale zdjęcie jej daje tylko ~0,4% przy 94k i ~0,8% przy 199k, poniżej progu.** Ślad hosta `LLAMA_HOSTGAP_TRACE=16`, konfiguracja produkcyjna na porcie testowym, jedno zimne żądanie na głębokość (T=0, 256 tok.). Ramię A to produkcja (szybka maska). Ramię B to `LLAMA_KV_MASK_FAST=0`, czyli celowo wolniejsza maska jako sonda: jeśli krok rośnie o tyle, o ile rośnie budowa maski, to maska blokuje GPU. Przy 94k (ABBA): `graph→inputs` A 136 µs, B 396 µs (+260 µs); ściana kroku 32,83 → 33,07 ms (+0,24 ms, prawie 1:1); decode 120,95 → 119,98 t/s (−0,8%). Przy 199k (jedna para A/B, wypełnienie 360 s): `graph→inputs` A 303 µs, B 909 µs; ściana 37,77 → 38,67 ms; decode 95,05 → 93,08 t/s (−2,1%). Przy 1,7k budowa maski kosztuje ~40 µs i A = B. md5 identyczne w obu ramionach (94k `3f0651b0`, 199k `efdb8053`, to samo co w [[2026-11-08-kvq-once-profil]]). Zysk z przeniesienia maski poza ścieżkę krytyczną to najwyżej czas maski w A: 136 µs na 32,8 ms (0,4%) i 303 µs na 37,8 ms (0,8%). Priorytet zostaje niski, łączyć z K-012. Źródło: `~/qwen-opt/queue/logs/k031-{A1,B2,B3,A4,199A,199B}.log`, skrypt `Q/k031/k031.sh`.
+- przegląd 2026-11-24: zrobione wcześniej (Result line of 2026-11-21: the mask is on the critical path, but removing it gives only ~0.4% at 94k (step 32.83→33.07 ms, 120.95→119.98 t/s with the slow-mask probe) and ~0.8% at 199k (95.05→93.08 t/s probe). Below threshold, merge into K-012. Logs: queue/logs/k031-{A1,B2,B3,A4,199A,199B}.log. | 0 )
+
+### K-032 · Amplifikacja odczytu KV w `kvq` (bajty z liczników vs 1152 B/token/warstwę)
+- data: 2026-11-07
+- źródło: `R/68a-rdna3-kernele.md:124` (4.6), [[2026-11-08-kvq-once-profil]] (`:77`, `FETCH_SIZE` = 0)
+- test: XTX `rocprofv3 --pmc TCC_EA_RDREQ_sum TCC_EA_RDREQ_32B_sum` na `llama-bench -fa 1 -ctk q4_0 -ctv q4_0 -p 5 -ub 5 -d 131072`, `GGML_HIP_PM4=0`; ≤ 10 min
+- zysk: 0…3% decode przy ≥ 128k [INFERENCE]; zasila K-012
+- ryzyko karty: brak
+- priorytet: niski (diagnostyka)
+- wynik 2026-11-20: **liczniki nie działają.** Na gfx1100 nie ma `TCC_EA_RDREQ_*` (rocprofv3: „Missing”). Ich odpowiedniki `GL2C_EA_RDREQ_{32,64,96,128}B_sum` dają 0 we wszystkich 4160 dispatchach (to samo co `FETCH_SIZE` = 0 w [[2026-11-08-kvq-once-profil]]), więc bajtów z liczników nie da się dziś zmierzyć. Wynik zastępczy z czasów rocprofv3 (`llama-bench pp5 @ d131072`, produkcyjna `~/llama-topka`, PM4 0, fill z `-ub 512`): `flash_attn_ext_kvq<256,8,q4_0>` mediana 408 µs na warstwę + combine 4 µs, pp5 99,9 t/s. Przy 1152 B/token/warstwę × 131072 = 151 MB to ~370 GB/s efektywnie, około 39% z 960 GB/s. Pod profilerem dispatche idą szeregowo, więc to szacunek. Amplifikacji z tego nie da się oddzielić od niskiej zajętości kernela. Log: `~/qwen-opt/queue/logs/k032-rdreq2.log`, skrypt `qwen-opt/k032/rdreq.sh`
+- przegląd 2026-11-24: zrobione wcześniej (Result line of 2026-11-20: TCC_EA_RDREQ_* is "Missing" on gfx1100 and GL2C_EA_RDREQ_* reads 0 in all 4160 dispatches, so amplification cannot be measured with counters. Proxy: kvq<256,8,q4_0> 408 µs/layer @131k ≈ 370 GB/s (39% of peak); pp5 99.9 t/s. Logs: k032-rdreq{,2}.log. Further work only via K)
+
+### K-033 · Diagnoza FCLK/MCLK pod obciążeniem, stock vs eco (tylko odczyt `pp_dpm_*`)
+- data: 2026-10-12
+- źródło: `R/68a-rdna3-kernele.md:122` (4.4), §2.9
+- test: pętla `grep '\*' pp_dpm_{sclk,mclk,fclk}` co 0,25 s doczepiona do najbliższego spec_sweep (0 dodatkowego czasu)
+- zysk: 0% sam; wyjaśnia, czy −1,9% decode na eco to fabric
+- ryzyko karty: brak (odczyt)
+- priorytet: niski (darmowa diagnostyka)
+- wynik 2026-11-21 (tylko eco, zegarów nie zmieniamy, więc ramienia stock nie ma): **pod obciążeniem pamięć i fabric stoją na najwyższych poziomach, które faktycznie są używane.** Pętla `dpm_poll.sh` (co 0,25 s, sam odczyt sysfs) chodziła przy 9 jobach: decode 1,7k/94k/199k, prefill 12k/94k/199k, pp4096, LFM pN. Próbki z `gpu_busy` ≥ 50%: MCLK 1249 MHz (najwyższy poziom) w 88–100% próbek, FCLK 2000 MHz w 88–100%, a poziomy 2201–2301 MHz w 0–5%. SCLK mediana 2183–2187 MHz (sufit eco 2200). Spadki do 772 MHz MCLK i 1200 MHz FCLK (0–12%) wypadają na krótkie przerwy między żądaniami. Pamięć nie jest dławiona na eco. Czy −1,9% decode na eco to FCLK 2000 zamiast 2301, rozstrzygnie dopiero odczyt na stocku przy okazji, gdy karta i tak będzie na stocku (sami nie przełączamy). Źródło: `~/qwen-opt/queue/logs/k048-*.log`, `k031-*.log`, `k045-g1.log`, skrypty `Q/k033/dpm_poll.sh`, `dpm_sum.py`.
+- przegląd 2026-11-24: zrobione wcześniej (Result line of 2026-11-21 (eco arm): under load MCLK 1249 is at 88–100% and FCLK 2000 at 88–100%, SCLK median 2183–2187, so there is no memory throttling on eco. The stock arm is not allowed by the owner's factory-settings rule; read it opportunistically if the card is ever on stock. | 0 | –)
+
+### K-034 · Nadmiar ~10 KiB/token VRAM (nachylenie 29,1 vs 18,4 KiB/token): znaleźć bufor rosnący z kontekstem
+- data: 2026-11-05
+- źródło: `R/63-SYNTEZA.md:88` (#9), `R/65-vram-rezerwa-mtp-kontekst.md` §5
+- test: najpierw CPU (`llama-context`); XTX `-lv 4` przy 131k/262k i szczyt VRAM (fill osobnym jobem)
+- zysk: +~2,7 GiB zapasu przy 262k [SZACUNEK], 0 t/s; zapas na OOM i `-ub 1024`
+- ryzyko karty: brak
+- priorytet: niski (0 t/s)
+- wynik 2026-11-20: czytanie kodu `llama-duo` daje ~10 KiB/token z dwóch buforów compute, oba z kontekstu głównego i draftu MTP. (1) FA na KV q4_0 przy prefillu (ub 512, kernel MMA/TILE) potrzebuje kopii f16 całego K i V jednej warstwy w buforze compute: `ggml/src/ggml-cuda/fattn.cu:745-763` (need_f16_K/V) + `ggml/src/ggml-cuda/fattn-common.cuh:53-75` (rozmiar = n_kv × 1024 × 2 B na K i na V) = 4 KiB/token. (2) maska FA f16 n_kv × ub: `src/llama-graph.cpp:30-42` = 1 KiB/token przy ub 512. Razem 5 KiB/token na kontekst. Pomiar 29,1 (R56, 2026-10-21) był przed łatką lean reserve, więc kontekst draftu MTP dokładał drugie tyle (`src/llama-context.cpp:315-326`, opis 800 MiB przy 204 800). 2 × 5 ≈ 10 z 10,7 KiB/token nadmiaru [INFERENCE: bez pomiaru `-lv 4`]. Po q63 zostaje ~5 KiB/token z kontekstu głównego (~1,25 GiB przy 262k); zbić to może tylko FA bez kopii f16 przy prefillu (kvq/VEC czytające q4_0) albo prefill w kawałkach KV. Do potwierdzenia na XTX `-lv 4` (linie `sched_reserve`).
+
+- wynik 2026-11-20 na XTX (`qwen-opt/k034/bufs.py`, produkcja `-lv 4`, ctx 64k i 128k): bufor compute celu 420,29 → 740,29 MiB, czyli **+5,0 KiB/token**, zgodnie z czytaniem kodu (kopia f16 K/V do FA przy prefillu ~4 KiB + maska ~1 KiB). Bufor compute draftu MTP stały, 40,28 MiB, więc łatka lean-reserve działa. KV 18 KiB/token.
+  - Przy 262k compute ≈ 1,38 GiB, z czego ~1 GiB to kopia f16. Natywne q4_0 K/V w FA prefillu (K-022) zwolni ok. 1 GiB VRAM.
+- przegląd 2026-11-24: zrobione wcześniej (Result line of 2026-11-20: XTX `-lv 4` (k034/bufs.py, 64k→128k) gives target compute 420.29→740.29 MiB = +5.0 KiB/token (f16 K/V copy ~4 KiB + mask ~1 KiB); the MTP draft compute is a flat 40.28 MiB, so lean-reserve works. The remaining ~1 GiB @262k moves to K-022. Log k034-bufs.log. | 0 | –)
+
+### K-039 · Q5_K MMVQ `big_rows` (`GGML_HIP_MMVQ_Q5K_BIG_ROWS=6144`): dokończyć ABBA i sprawdzić env w produkcji
+- data: 2026-10-20 (raport 50b)
+- źródło: [[raport-50b-mmvq-q5k]], `R/43-integracja-2026-10-20.md:68`, archiwum (`A:36426`: „brakuje 2 z 4 ramion”, md5 PASS)
+- test: XTX `~/qwen-opt/queue/i43-int7.jobs` od `i43g-B1b` (2 ramiona × ~2,5 min)
+- zysk: kernel −1,3…−3,5%, ~+0,4% decode
+- ryzyko karty: brak
+- priorytet: niski (poniżej progu, łączyć)
+- wynik 2026-11-20: dokończone ramiona B1b i A1b z `i43-int7.jobs`, po nowej bramce md5 (qwen i lfm PASS). Uwaga: A1a/B1a są z 2026-10-21, a B1b/A1b z dzisiaj, i dzisiejsza para jest o ~1,7% wolniejsza w obu ramionach. Proza (T=1): A = (79,86 + 78,59)/2 = 79,23 → B = (79,99 + 78,55)/2 = 79,27 t/s (+0,06%). mvs (T=0): 433,2 → 433,4 t/s (+0,06%). W parach z tej samej sesji: 10-21 +0,16% / +0,09%, 11-20 −0,05% / +0,02%. Zysku nie widać ponad szum, więc nie włączać do produkcji. W produkcji tej zmiennej nie ma: brak `BIG_ROWS` w `run-topka.sh` i `run-llm.sh`. Logi: `~/qwen-opt/queue/logs/i43g-{A1a,B1a}.log`, `k039-i43g-{B1b,A1b}.log`, jobs `qwen-opt/k039/xq.jobs`
+- przegląd 2026-11-24: zrobione wcześniej (Result line of 2026-11-20: all 4 ABBA arms are done, md5 PASS (qwen, lfm). Prose 79.23→79.27 t/s (+0.06%), mvs 433.2→433.4 (+0.06%), within noise, so it does not go to production. BIG_ROWS is absent from run-topka.sh/run-llm.sh. Logs k039-i43g-{B1b,A1b,md5-*}.log, i43g-{A1a,B1a}.log. | 0 | –)
+
+### K-041 · Licznik realokacji grafu (#30329): czy przejścia MTP5 ↔ W16 ↔ catch-up przebudowują graf albo taśmę PM4
+- data: 2026-11-07
+- źródło: `R/68d-swieze-od-spolecznosci.md:141` (#7)
+- test: XTX serwer testowy, replay sesji agenta, licznik w logu + `GGML_HIP_PM4_DEBUG`; ≤ 10 min
+- zysk: 0% wprost; kilka % na krokach zmieniających szerokość, jeśli realokacje istnieją [INFERENCE]
+- ryzyko karty: brak
+- priorytet: niski (diagnostyka)
+- wynik 2026-11-20: serwer produkcyjny (PM4 WA=2 + GUARD) z `GGML_HIP_PM4_DEBUG=1`. Replay agentpath `w6.json`: 4 sesje po kolei, 24 tury, 98,9k tokenów prefillu, 3k wygenerowanych, 140 s. Taśm budowanych jest 81 na 967 uruchomień taśmy (każda użyta średnio ~12 razy), czyli ~3,4 przebudowy na żądanie. **Rozmiary są zawsze tylko dwa: 809 i 107 dispatchy**, więc szerokości MTP / W16 / catch-up nie tworzą nowych taśm. Przebudowy to ponowne przechwycenie tych samych dwóch grafów, prawdopodobnie po każdym prefillu [INFERENCE]. Do tego 77 małych grafów (12–14 kernel) idzie zwykłą ścieżką HIP graph, 518 uruchomień grafu bez taśmy, 13 eksmisji kolejki (0 w trakcie taśmy). Następny krok, jeśli warto: zmierzyć koszt jednej przebudowy (ms) × ~3,4 na żądanie. Log: `~/qwen-opt/queue/logs/k041-realloc2.log`, `~/qwen-opt/k041/out/launch.log`
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-20 result in the queue entry: 81 tapes per 967 launches; only 2 sizes (809 and 107 dispatches), so MTP/W16/catch-up widths create no new tapes; 13 evictions. Logs `k041-realloc.log`, `k041-realloc2.log` | 0 | –)
+
+### K-044 · Leave-one-out łatek (`loo.py run`) i Kernel Tuner (`kt tune`) na GPU
+- data: 2026-10-15 (runda 6)
+- źródło: [[runda-6]], [[loo]], `Q/STATUS-NEXT.md:31-37`, `R/07-nasze-metody-uogolnienie.md:250-252`
+- test: XTX `GGML_HIP_PM4=0`, po jednej łatce/fladze na job (xtxbench ~4 min); LOO ~3,8 h + buildy w sumie
+- zysk: 0 t/s wprost; wykrywa łatki bez zysku (koszt utrzymania)
+- ryzyko karty: niskie (mikrobenche)
+- priorytet: niski (higiena)
+- wynik 2026-11-21 (częściowo: tylko łatki z wyłącznikiem env, bez łatek „tylko build” i bez `kt tune`): **żadna łatka nie daje ≥ 3% na Qwenie, ale prawie wszystkie mierzalnie pomagają. Kandydaci do usunięcia: 52, 58 i 59 (Qwen), 62 i 64 (LFM).** Narzędzie `loo.py` zostało bez zmian; owijka `Q/k044/loo_topka.py` puszcza te same próby (ABBA) na silniku produkcyjnym `~/llama-topka` z kolejki, bez zagnieżdżonego flocka, port testowy, PM4 0. Qwen UD-Q4_K_XL, tg128 + serwer MTP n4 (2 prompty × 256 tok., T=0), 4 rundy. Spadek po wyjęciu łatki (95% CI) w serwerze: 31 top-k −2,72%, 33 replay GDN −1,58%, 29 asynchroniczne wejścia −1,45%, 24 para MMVQ −1,30%, 47 −1,23%, 28 −0,92%, 25 −0,91%, 30 −0,82%, 27 −0,65%, 38 −0,40%, 26 −0,28%. Neutralne: 48 (0,00%), 58 (+0,13% / tg +0,04%), 59 (−0,06% / tg −0,19%). Szybciej bez łatki: 52 (`GGML_HIP_MMVQ_N1_ROWS`) tg +1,31% ± 0,11, w serwerze +0,29% (neutralnie). LFM2.5-24B, 2 rundy, szerokie CI: najwięcej dają 48 (−13,7%), 31 (−12,2%), 50 tg (−9,4%), 53 tg (−6,7%), 29 (−6,0%), 49 tg (−5,3%), 51 (−4,5%). Szybciej bez łatki: 62 tg +0,39% i 64 tg +0,79%, w serwerze neutralnie. Pominięte: 60 (to sam PM4, a punkt odniesienia jest z PM4 0), 65 (flaga web UI, w produkcji i tak wyłączona), CLI 4 i 32 oraz 22 łatki „tylko build” (wymagają buildów z revertem, czyli pracy nad kodem). Decyzja o usuwaniu łatek należy do właściciela. Źródło: `~/qwen-opt/queue/logs/k044-*.log`, raport `~/qwen-opt/k044/loo/loo-report.md`, wyniki `loo-results.jsonl` (316 prób, 0 błędów).
+- przegląd 2026-11-24: zrobione wcześniej (Partial result 2026-11-21: no patch gives ≥3% on Qwen. Removal candidates: 52, 58, 59 (Qwen) and 62, 64 (LFM). Logs `k044-*.log` (24 files). Not done: build-only patches and `kt tune` (each needs a rebuild per patch, XTX-NEEDS-BUILD, ~3.8 h; low value) | 0 | –)
+
+### K-045 · Model kosztu weryfikacji MoE LFM2.5 (pomiar G1) i drafter dla LFM (LFM2.5-2.6B-QAD-Q4_0 jest na dysku)
+- data: 2026-10-19 (raport 18), drafter 2026-10-14
+- źródło: [[model-kosztu-weryfikacji-moe]], [[raport-24d-lfm-lookup]], archiwum (`A:36446`)
+- test: XTX `llama-bench -p 1,2,3,4,5,8,16 -n 0 -d 0,32768` (bramki T(8) ≤ 13,6 ms, T(3) ≤ 6,8 ms); potem LFM24B + draft 2.6B spec_sweep T=1 + `mvs`; ≤ 10 min każdy
+- zysk: decyduje, czy tani drafter dla LFM ma sens (od α ≈ 0,4); LFM poza produkcją
+- ryzyko karty: VRAM (+1,6 GB draftera przy KV q8_0 131k)
+- priorytet: niski (LFM poza produkcją)
+- wynik 2026-11-21: **bramka G1 na surowym `llama-bench` niespełniona; po odjęciu narzutu ścieżki pN spełniona tylko przy d0.** Build `~/llama-topka`, LFM2.5-24B-A2B Q5_K_M, KV q8_0, PM4 0. Surowe T(N) = N / t/s przy d0: T(1) 7,56, T(2) 8,42, T(3) 8,86, T(4) 8,93, T(5) 13,18, T(8) 15,09, T(16) 20,94 ms. Przy d32768: 6,53 / 8,90 / 10,03 / 10,77 / 15,15 / 17,12 / 23,50 ms. Bramki T(3) ≤ 6,8 i T(8) ≤ 13,6 ms padają w obu głębokościach. Ścieżka pN ma stały narzut: ten sam build daje tg128 239,6 t/s (4,17 ms na token) przy d0 i 217,3 t/s (4,60 ms) przy d32768, a p1 7,56 i 6,53 ms. Po odjęciu tej różnicy: przy d0 T(3) ≈ 5,5 ms (model 5,47) i T(8) ≈ 11,7 ms (model 9,58), obie bramki spełnione; przy d32768 T(3) ≈ 8,1 i T(8) ≈ 15,2 ms, obie niespełnione. Wyraźny skok między 4 a 5 kolumnami (+4,3 ms) wskazuje, że od 5 kolumn działa inny kernel [INFERENCE]. Jeśli drafter, to najwyżej 3 tokeny draftu (weryfikacja 4 kolumn). Drugiej części testu (LFM24B + drafter 2.6B, spec_sweep) nie uruchamiałem: bramka nie przeszła jednoznacznie, a LFM jest poza produkcją. Źródło: `~/qwen-opt/queue/logs/k045-g1.log`, `k045-tg.log`, skrypt `Q/k045/k045.sh`.
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-21: G1 fails on raw numbers (d0 T(3) 8.86 ms, T(8) 15.09 ms) and passes only at d0 after subtracting the pN overhead (T(3) ≈ 5.5, T(8) ≈ 11.7). Logs `k045-g1.log`, `k045-tg.log`. The drafter stage was not run; LFM is outside production | 0 | –)
+
+### K-051 · Wyjaśnić ~16 tys. wierszy `amdgpu: init_user_pages: Failed to get user pages: -1` przy każdym starcie serwera
+- data: 2026-11-06
+- źródło: [[init-user-pages-failed]]
+- test: XTX dwa starty serwera `--mmap` vs `--no-mmap`, licznik wierszy w `journalctl -k`, bez obciążenia; ≤ 10 min
+- zysk: diagnostyka (krótszy start, czystszy log jądra); 0 t/s
+- ryzyko karty: brak
+- priorytet: niski (diagnostyka)
+- wynik 2026-11-20 (`journalctl -k` działa bez sudo): start serwera produkcyjnego na porcie testowym. `-lm mmap` (domyślne `auto` = mmap) daje **15 553** wiersze `init_user_pages: Failed to get user pages`, a `-lm none` (bez mmap) **0**. Start do health w obu wariantach 5–6 s. Wiersze pochodzą więc z mapowania pliku modelu przez mmap. Para jest jedna: powtórka nie zmieściła się w 10 min, bo liczenie `journalctl` po długim boocie jest wolne. W topce flaga to `-lm`, nie `--no-mmap`. Log: `~/qwen-opt/queue/logs/k051-mmap2.log`, skrypt `qwen-opt/k051/mmap.sh`
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-20: mmap gives 15 553 `init_user_pages` lines, `-lm none` gives 0; start 5–6 s in both. Log `k051-mmap2.log`. Cause explained | 0 | –)
+
+### K-053 · Wspólne punkty odniesienia: zestaw YASAKANI/NInfer (12 zadań + edycja) na XTX
+- data: 2026-11-05
+- źródło: `R/63-SYNTEZA.md:104` (#25), `R/63a-silniki-lokalne.md` §9
+- test: XTX ~15 min (2 joby)
+- zysk: wiedza i porównanie 1:1 z innymi silnikami; 0 t/s
+- ryzyko karty: brak
+- priorytet: niski (wiedza)
+- wynik 2026-11-21: **12 zadań NInfer zmierzone, edycji YASAKANI nie ma na dysku.** Zestaw: 12 scenariuszy z `examples/cli/manifest.json` klonu NInfer (kod, proza, tłumaczenie, dane strukturalne po 3). Ustawienia jak u YASAKANI: greedy, thinking off, limit 4096 tokenów, bez cache promptu. Konfiguracja produkcyjna (MTP n4, lookup W16) na porcie testowym. Ich edycja kodu (`textwrap`) i JSONL 300 zamówień są prywatne, więc ich nie ma. Dekod w t/s, licząc jak YASAKANI, czyli (tokeny − 1) / czas generacji: kod 150,2 / 157,4 / 141,6, dane JSONL 190,8 / CSV 142,6 / SQL 169,3, proza EN 140,9, proza ZH 64,7 i 46,4, tłumaczenie ZH→EN 127,2, EN→ZH 68,9, markdown 76,6. Mediana z 12 zadań to 141,3 t/s. Dla porównania YASAKANI JSONL 160 wierszy daje ~455 t/s po przeliczeniu na pasmo XTX i bajty wag (`R/63a-silniki-lokalne.md` §9), a my na JSONL 190,8. Słabe są zadania z chińskim tekstem: akceptacja draftu 18%, 6% i 21% wobec 62–76% w kodzie i danych. Prawdopodobna przyczyna to okrojony słownik głowicy draftu (65 536 tokenów) [INFERENCE]. Źródło: `~/qwen-opt/queue/logs/k053-a.log`, `k053-b.log`, skrypt `Q/k053/k053.py`.
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-21: 12 NInfer scenarios, median 141.3 t/s (code 141.6–157.4, JSONL 190.8, ZH prose 46.4–64.7). The YASAKANI edit set is private, so it is missing. Logs `k053-a.log`, `k053-b.log` | 0 | –)
+
+### K-054 · EvalPlus z `--effort xhigh` vs `low`: czy effort low kosztuje dokładność
+- data: 2026-11-09
+- źródło: [[2026-11-09-evalplus-qwen-uncensored]] (`:25`), [[evalplus-jakosc-kodu]]
+- test: XTX `~/qwen-opt/evalplus/jakosc-mini.sh --effort xhigh --port 8097 all` (HE+ 164 + MBPP+ 378; > 10 min, podzielić po zbiorze)
+- zysk: jakość, nie prędkość; potwierdza albo zmienia domyślny effort low (dziś HE+ 92,7%, MBPP+ 80,2%)
+- ryzyko karty: brak
+- priorytet: niski (nie prędkość)
+- wynik 2026-11-21 (częściowo: HE+ 130 ze 164 zadań, MBPP+ 98 z 378; 10 jobów po ≤ 10 min, codegen wznawiany): **xhigh nie poprawia dokładności, a kosztuje ~3,7× więcej tokenów, więc domyślne low zostaje.** Konfiguracja produkcyjna na porcie testowym, `EFFORT=xhigh`. Porównanie z przebiegiem low z 2026-11-09 na tych samych zadaniach. HumanEval+ plus: 94,6% (123/130) → 93,8% (122/130), base 97,7% → 94,6%. MBPP+ plus: 85,7% → 85,7% (84/98), base 95,9% → 95,9%. Między ramionami przechodzi inny zestaw zadań: 7 zadań zmienia wynik w HE, 10 w MBPP. Tokeny na odpowiedź: HE 730 → 2637, MBPP 613 → 2386. Przy xhigh 4 odpowiedzi HE i 3 MBPP dobiły do limitu 32 768 tokenów. Dekod 134–135 t/s. Źródło: `~/qwen-opt/queue/logs/k054-*.log`, `~/qwen-opt/evalplus/runs/uncensored-xhigh/`, `uncensored-xhigh-pad/`, skrypty `Q/k054/k054.sh`, `k054_cmp.py`.
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-21 (partial: HE+ 130/164, MBPP+ 98/378): xhigh does not improve accuracy (HE+ 94.6 → 93.8%, MBPP+ 85.7 → 85.7%) and costs ~3.7× tokens → keep low. Logs `k054-gen*.log`, `k054-mbpp*.log`. Finishing the remaining tasks is pointless | 0 | –)
+
+### K-055 · Usunąć z topki martwy kod capu LDS FA (`57204db1e`, no-op na ROCm 10.0 pre4) przy najbliższym buildzie
+- data: 2026-11-06
+- źródło: [[2026-11-05-q63-topka]] (wynik negatywny), dawny wpis `DO-ZAPISANIA.txt`
+- test: przy następnym buildzie produkcji bramka md5 (long 32k e460e3b6, fill 255k 31b6525a); bez osobnego okna GPU
+- zysk: 0 (porządek w kodzie)
+- ryzyko karty: brak
+- priorytet: niski (przy okazji)
+- wynik 2026-11-20: usunięte w `llama-duo` (gałąź `duo`), commit `e1f9524` = czysty revert `57204db1e` (tylko `ggml/src/ggml-cuda/fattn-common.cuh`, −53 linie, ani `GGML_HIP_FA_OCC_*`, ani skrypty uruchomieniowe go nie używały). Bez buildu; bramka md5 (long 32k e460e3b6, fill 255k 31b6525a) przy najbliższym buildzie produkcji.
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-20: removed in `llama-duo` commit e1f9524 (revert of 57204db1e). The md5 gate (long 32k e460e3b6, fill 255k 31b6525a) runs with the next production build and needs no separate GPU slot | 0 | –)
+
+### K-108 · Zmierzyć na XTX szczyt FP16 WMMA (GEMM 4096³ i 8192³, hipBLASLt/rocBLAS) i pasmo kopii device→device
+- data: 2026-11-17
+- źródło: [[skill-io-sufity]] (`ceilings.md:3`: mierzyć, nie brać ze specyfikacji); dziś sufit prefillu liczony z cudzych 107 TFLOPS (#52585)
+- hipoteza: zmierzony szczyt 90–110 TFLOPS; wtedy prefill 4k–255k jest na 84–95% praktycznego sufitu i K-009/K-010 dają najwyżej kilka %
+- test: XTX, `rocblas-bench`/`hipblaslt-bench` gemm f16 4096 i 8192 (min z N), `hipMemcpy` 4 GB D2D; `GGML_HIP_PM4=0`; ≤ 10 min
+- miara: TFLOPS 4096/8192, GB/s; przeliczenie `ceiling-qwen27b-unc-xtx.json`
+- zysk: priorytety prefillu oparte na liczbie; 0 t/s
+- ryzyko karty: temperatury (krótki GEMM), eco 2200 bez zmian
+- priorytet: średni (tani, porządkuje kolejkę)
+- wynik 2026-11-20: w `/opt/rocm` nie ma `rocblas-bench`/`hipblaslt-bench`, więc własny test hipBLAS `GemmEx` f16 (liczenie w f32) i `hipMemcpy` (`qwen-opt/k108/bench.cpp`), przy limicie eco 2200 MHz. GEMM 4096³: 91,3 TFLOPS (min z 50), 8192³: 98,1 TFLOPS (min z 20). Kopia D2D 4 GiB: 385 GB/s (771 GB/s odczyt+zapis). Wynik mieści się w hipotezie 90–110; zakładane 107 TFLOPS jest o ~8% za wysoko dla 8192³ przy eco. `ceiling-qwen27b-unc-xtx.json` jeszcze nie przeliczony. Log: `~/qwen-opt/queue/logs/k108-gemm.log`
+- przegląd 2026-11-24: zrobione wcześniej (GEMM f16 4096³ 91,3 / 8192³ 98,1 TFLOPS, D2D 385 GB/s (log k108-gemm.log jest na boxie). Zostało tylko przeliczenie ceiling-qwen27b-unc-xtx.json, praca na CPU | 0 | -)
+
+### K-128 · Czy klient (omp) obcina `<think>` z historii i przez to psuje trafienia prompt-cache w turach agenta (analiza logów, bez karty)
+- data: 2026-11-19
+- źródło: audyt Gemini (H.9) i [[zwiad-2026-11-14]] (TensorFold: „[INFERENCE: sprawdzić na surowych logach omp]”)
+- test: CPU: surowe logi serwera/omp z sesji agentowych (`~/kernel/archiwum`, logi topki, gdy jaroserverai online): `cache_n` vs `prompt_n` per tura, czy prefiks rozjeżdża się na granicy bloku myślenia
+- miara: udział tokenów promptu z cache per tura; jeśli dziury > 10% → poprawka po stronie szablonu/serwera
+- zysk: TTFT tur agenta (jeśli problem istnieje); 0 t/s dekodu
+- ryzyko karty: brak
+- priorytet: średni
+- wynik 2026-11-20: problemu nie ma. Logi serwera z jaroserverai (`qwen-opt/logs/server-*.log`, 264 pliki, 964 tury), skrypt `qwen-opt/k128/cache_hits.py`. Całość: 48,4 mln tokenów promptu, z cache 90,1%. W 386 turach agenta, w których rozmowa urosła i prefiks został w slocie, cache pokrył 99,2% promptu, a historia rozjechała się łącznie na 14 tokenach. Odpowiedź poprzedniej tury (z blokiem myślenia) wróciła w prompcie w 89,7% tokenów: 347 tur > 90%, 29 częściowo, 10 wcale, więc omp nie wycina `<think>` w sposób, który psuje cache. 66 tur „rozjechanych” to w 47 przypadkach przeskok do innej rozmowy z tym samym początkiem (wspólny prefiks stoi na ~7650 tokenach, czyli system + narzędzia; podagenci na jednym slocie), nie granica myślenia. Dziury < 10%, poprawka szablonu niepotrzebna. [INFERENCE: logi mają tylko `f_keep`, nie surowy tekst promptu.]
+- przegląd 2026-11-24: zrobione wcześniej (Problemu nie ma: 964 tury, 90,1% promptu z cache, tury agenta 99,2%, odpowiedź z <think> wraca w 89,7% (qwen-opt/k128/cache_hits.py, wynik w kolejce 2026-11-20) | 0 | -)
+
+### K-133 · Inkling 2 Mini (MoE z pętlą warstw, 26,4B / 5,4B efektywnie aktywnych) na XTX: prędkość i jakość vs Qwen3.8-27B
+- data: 2026-11-20 (Telegram właściciela 23:29)
+- źródło: [[inkling-2-mini]], HF `unsloth/Inkling-2-Mini-GGUF`, mainline llama.cpp `src/models/inkling2.cpp`
+- test (po zgodzie na pobranie ~16,6 GB):
+  - CPU: build mainline llama.cpp HIP (topka nie zna architektury);
+  - XTX: `llama-bench -p 512,2048 -n 64 -fa 1` dla UD-Q4_K_M;
+  - XTX: czat T=0 na tych samych promptach co xbench i szybki EvalPlus (jakość-mini) vs Qwen3.8-27B; ≤ 10 min GPU.
+- oczekiwany zysk: dekod ~150–170 t/s vs 42 t/s Qwen bez spekulacji [INFERENCE: ~3,3 GB odczytu na token]; jakość według producenta jak Qwen3.8-27B (AA 20,1)
+- ryzyko karty: brak (zwykły dekod, eco 2200)
+- priorytet: wysoki (decyzja o modelu produkcyjnym należy do właściciela)
+- stan 2026-11-22 04:20 (STOP na polecenie właściciela): build r8+r9 gotowy na jaroserverai, bramka r8/r9 nieuruchomiona (kolejka zabita w oczekiwaniu); wznowienie: `qwen-opt/inkling/start-r8.sh`. Szczegóły: `DUO-INKLING.md` (llama-inkling).
+- czeka 2026-11-23: runda 15 Gemini (`LLAMA_INK_SRV_FAST=1`: stały graf zwykłego kroku, top-k na GPU zamiast sortu 200k na CPU, bez buforów DSpark w zwykłych krokach; cel: zabrać ~7,8 ms narzutu serwera na słowo) — niezmierzona, bramka gotowa: `qwen-opt/inkling/start-r15.sh` (~25 min karty).
+- wynik 2026-11-23 16:00 UTC (r14, nasz llama.cpp): wagi nietemporalne +1,7% (tg128 58,4, razem +17% od bazy, KLD 0); kontroler zgadywania nadal przegrywa: w serwerze zwykły krok 24,9 ms vs 17,1 ms w llama-bench (+46% narzutu serwera) → r15 szuka tego narzutu. Najlepszy nasz czat: DSpark bez kontrolera, długi 8k 67,2 t/s; T=0,7 24–41 t/s. Produkcja Inkling = Maya (T=0,7 104,3).
+- wynik 2026-11-23 14:50 UTC (r13, nasz llama.cpp, KV q4_0): KLD 0 dla wszystkich; tg128 50,0 → 57,5 (+15%) z wszystkimi; DSpark naprawiony (akceptacja 0,61): długi 2k 61,8 → 64,6, 8k 56,7 → 68,7 (+21%), T=0,7 28,1 bez zmian → r14 (kontroler + losowanie draftu).
+- wynik 2026-11-23 05:20 UTC (r12, nasz llama.cpp, KV q4_0): wszystkie przełączniki KLD 0; tg128 49,9 → 53,7 (+7,6%) z wszystkimi; DSpark z wszystkimi nadal 0/413 (błąd na ścieżce n=1/n=8) → r13; najlepszy serwer (bez przełączników r11/r12) kopie 95,4, T=0,7 28,2, długi 2k 61,7 t/s. Produkcja Inkling = Maya (czat T=0,7 91,3 t/s).
+- wynik 2026-11-23 03:50 UTC (r11 port Mayi, KV q4_0): nasz llama.cpp z KV q4_0 + DSpark n7: kopie 95,2, T=0,7 28,0, długi 2k 61,7 t/s; STABLE_GRAPH neutralny (KLD 0); FUSE4 wolniejszy (tg 49,5 → 42,4) i KLD 0,0077; PLANAR_Q8 nie jest bezstratny (KLD 0,0081, błąd); wszystkie razem psują DSpark (akceptacja 0/413) → runda 12 naprawia.
+- wynik 2026-11-23 02:27 UTC (r10, kontroler spekulacji `LLAMA_SPEC_CTL=1`, AD-Q4_K, DSpark n7): T=0,7 26,8 → 35,9 t/s (+34%), kopie z ngram 91,2 → 96,9 (+6%), ale długi 2k 73,4 → 53,9 (−27%); ub 2048 OOM (bufor 12,15 GiB). Do poprawy w r11/r12.
+- wynik 2026-11-23 01:00–01:10 UTC (zgoda właściciela 01:57 CET; r8 + r9, `inkling-opt` 854c58e, eco 2200, AD-Q4_K, DSpark n7, `-c 16384`):
+  - FUSE3 naprawiony: KLD 4,68 → 0,0022 (PPL ×1,0001), md5 PM4 0/1 równe;
+  - **rekord ze zgadywaniem:** kopie 84,6 → **91,2 t/s** (+7,8%, FUSE3 wył. → wł., ta sama sesja), długi 2k 67,4 → 73,4 (+8,9%), 8k 59,0 → 66,8 (+13%), T=0,7 24,9 → 26,8; prefill 2k 994 → 1300 t/s (+31%);
+  - losowanie draftu (`--spec-draft-sampling probabilistic`) nie podniosło akceptacji przy T=0,7 (0,55, T=0,7 nadal ~27 t/s) — do zbadania;
+  - PM4 z DSpark: 68,8 t/s (−25% vs bez PM4) mimo VEC FA; r9 MEGA: 46,2 t/s (−33%) → odrzucony;
+  - z `-c 32768` serwer z FUSE3 i DSpark nie startuje (OOM 508 MiB): FUSE3 trzyma dodatkową kopię wag atencji;
+  - logi: `~/qwen-opt/queue/logs/ink-r8-*.log`, `ink-r8b-*.log`, `ink-r9*.log`.
+- wynik 2026-11-21 (XTX eco 2200, AtomicChat AD-Q4_K, stock PR #32695 6196d98):
+  - llama-bench: pp512 1333, pp2048 1125, **tg64 26,9 t/s**;
+  - czat xbench: dekod ~26 t/s (krótkie i długie prompty), prefill 887 t/s przy 2k i 537 t/s przy 8k;
+  - **szacunek [INFERENCE] 150–170 t/s był błędny o ~6×:** dekod ograniczają ~7700 uruchomień kerneli na token, nie pasmo;
+  - Gemini INK_FUSE: 26,9 → 30,8 t/s (+14,5%), ale zmienia tekst (KLD w toku);
+  - PM4: tapa odrzucona (kernel rocBLAS w grafie), −20%;
+  - DSpark nie wczytuje się z AtomicChat (słownik 200058 vs 201024);
+  - log: `DUO-INKLING.md` (llama-inkling), kolejka `ink-ad-*`, `ink-r2-*`.
+- wynik 2026-11-21 08:00 (runda 3 Gemini):
+  - INK_FUSE + INK_FUSE2: tg64 26,85 → 37,31 t/s (+39%); KLD 0,0024 do wersji bez sklejeń, PPL bez zmian (max KLD 1,61 do sprawdzenia);
+  - UD-Q4_K_XL się wczytuje: tg64 28,6 → 39,7 t/s (+39%), czat ~38 t/s;
+  - DSpark nadal czeka na rundę 4.
+- wynik 2026-11-21 08:25 (runda 4):
+  - taśma PM4 działa po usunięciu kernela rocBLAS (NOBLAS): 1 taśma, 3925 dispatchy, tekst bajt w bajt;
+  - tg64 37,35 → 43,0 t/s (+15%), od stocku 26,85 → 43,0 (+60%); rozrzut ±2,5;
+  - DSpark: nowy błąd (markov_w2 wymagany), runda 6.
+- wynik 2026-11-21 08:45 (runda 5): FUSE3 daje tg64 42,3 → 58,0 t/s (+37%), ale psuje model (KLD 4,68, PPL ×114, tekst bez sensu) → wyłączone, Gemini szuka błędu (runda 7); do produkcji tylko z KLD PASS.
+- wynik 2026-11-21 09:05 (runda 6):
+  - czat bez zgadywania stabilnie 47,6–50,3 t/s (stock 26,0–27,1, +85%);
+  - DSpark działa (akceptacja 0,83 przy 3 tokenach, 0,55 przy 7), ale jest wolniejszy od czatu bez zgadywania (39 / 53 t/s na kopiach, 21–22 t/s przy T=0,7);
+  - przyczyna: grafy weryfikacji bez taśmy PM4 i 170 ms na każde tworzenie grafu.
+- wynik 2026-11-21 09:30 (diagnoza Kernela):
+  - najlepsze dziś ustawienie ze zgadywaniem to DSpark z 7 tokenami draftu bez PM4: kopie 85 t/s, długi prompt 2k 67,7 t/s, T=0,7 26,4 t/s (Qwen w produkcji: 252 / 97,5 / 79);
+  - PM4 psuje zgadywanie, bo kernel atencji przy weryfikacji używa scratch i taśma jest odrzucana;
+  - FUSE3: błąd w pakowaniu wag q/k/v (KLD 4,68 → 0,139 po wyłączeniu), drugi mniejszy błąd do znalezienia; runda 8 Gemini startuje o 11:25.
+- przegląd 2026-11-24: zrobione wcześniej (r15 gate done 2026-11-24 01:47 (ink-r15-tg.log: base 49.84, r13 56.94, r14 58.09). Result per log.md: r15 +1–3% plus a ctl bug. Production Inkling = Maya. Next step is Gemini round r16b (hit the 429 limit), which needs a build. | 0 | -)
+
+### K-134 · Inkling 2 Mini w Maya v1.1.73 na XTX: 93,6 t/s bez spekulacji (społeczność) vs nasze 49,5 — skąd różnica
+- data: 2026-11-22 (zwiad; LocalMaxxing run cmwraqz5108dlmi01cwdleupp, verified, UD-Q4_K_XL)
+- źródło: github.com/mw00/project-maya v1.1.73 (silnik Inkling @alesha-pro); [[inkling-2-mini]]
+- test: najpierw CPU: przeczytać kernele HIP Inkling w Maya (pętla, MoE, liczba uruchomień na token) i porównać z naszym DUO-INKLING; potem XTX: Maya 1.1.73 tym samym plikiem UD-Q4_K_XL, tg i czat T=0, ≤ 10 min
+- oczekiwany zysk: wiedza, które sklejenia dają 2× (cel 93,6 t/s bez spekulacji, ze spekulacją DSpark wyżej)
+- ryzyko karty: brak (zwykły dekod)
+- priorytet: wysoki
+- delta 2026-11-23: Strata v0.2.20 (`strata-inkling` 0.1.66) też uruchamia Inkling na gfx1100: gotowa paczka `strata-inkling-0.1.66-linux-x86_64-hip-rx7900` (96 MB), ładuje nasz plik UD-Q4_K_XL wprost (lossless GGUF_RAW), DSpark „W=4 Markov Beam Tree”; deklaracja 5090: 250,3 t/s z DSpark, XTX bez liczb. Test rozszerzony: Maya 1.1.73 i Strata 0.1.66 tym samym plikiem, bez i z DSpark, ≤ 10 min każde (pobranie ~0,4 GB razem).
+- wynik 2026-11-23 01:08 UTC (Strata `strata-inkling` 0.1.66 hip-rx7900, UD-Q4_K_XL `--native`, DSpark `--draft dspark`, `--max-context 32768`, xbench, eco 2200):
+  - **krótkie zadania ze zgadywaniem:** Q4/Q5 kopie 100,6 / 109,6 t/s, Q2 136,2, **T=0,7 60,6 t/s**; nasz rekord (2026-11-23, AD-Q4_K): kopie 91,2, T=0,7 26,8 → Strata szybsza o ~10–20% na kopiach i 2,3× przy T=0,7 (inne pliki: UD-Q4_K_XL vs AD-Q4_K);
+  - **GPU page fault** przy przejściu do długich promptów (L2048): `[gfxhub] page fault … process strata-inkling` 01:09:20 UTC, bez resetu karty; kolejka zatrzymana, Maya nieuruchomiona, :8080 przywrócony. Według zasady: Straty na XTX nie powtarzamy bez poprawki autora (zgłoszenie z logiem).
+  - log: `~/qwen-opt/queue/logs/k134-strata.log`, konfiguracja `~/k134/strata.json` (jaroserverai).
+- wynik 2026-11-23 01:19 UTC (Maya 1.1.73 `maya-ik2` zbudowany dla gfx1100, UD-Q4_K_XL, `--drafting on` bez pliku draftera (drafter Mayi wymaga safetensors, nasz GGUF DSpark odrzucony) → przypuszczam: tylko prompt lookup; `--max-context 16384`, KV domyślne; xbench, eco 2200):
+  - **kopie Q4 / Q5 112,7 / 100,3 t/s, krótkie Q1–Q3 79–93, T=0,7 80,7 t/s, długi 2k / 8k 80,0 / 72,6 t/s, prefill 2k / 8k 1911 / 3180 t/s**; bez page fault, :8080 przywrócony;
+  - vs nasz rekord (AD-Q4_K, DSpark n7): kopie 91,2 → 112,7 (+24%), T=0,7 26,8 → 80,7 (3,0×), długi 2k 73,4 → 80,0 (+9%), prefill 2k 1300 → 1911 (+47%) — inne pliki (UD vs AD), więc kierunkowo;
+  - wniosek: Maya bez naszego DSpark i tak 3× szybsza przy T=0,7 → ich dekod/weryfikacja i obsługa T>0 są do przeczytania w kodzie (silnik @alesha-pro), zanim dalej kleimy llama.cpp; następny krok: Maya z oficjalnym drafterem (safetensors, wymaga pobrania) i AD-Q4_K.
+  - log: `~/qwen-opt/queue/logs/k134-maya.log`, `~/k134/maya.json` (jaroserverai).
+- wynik 2026-11-23 06:10 UTC (Maya po rundzie 2 kerneli HIP, bez cenzury, KV q4): bez draftera → z oficjalnym drafterem: krótkie Q1–Q3 88,8/104,5/102,7 → 98,7/100,5/99,9; kopie 93,4 → 141,4; **T=0,7 94,2 → 79,3**; długi 2k 93,5 → 90,4; prefill 3388 → 3345. Czat domyślnie T=1,0 → produkcja :18796 bez draftera (T=0,7 94,2–94,5, długi 2k 93,5 t/s).
+- wynik 2026-11-23 04:02 UTC (Maya bez cenzury + KV q4, oficjalny drafter `mtp.safetensors` 0,6 GB z thinkingmachines/Inkling-2-Mini, xbench): bez → z drafterem: krótkie czaty Q1–Q3 T=0 75,4/88,0/80,7 → 93,1/90,3/78,8; kopie 103,3/97,1 → 129,7/131,8; **T=0,7 76,9 → 65,3 (−15%)**; długi 2k / 8k 73,5/72,4 → 78,2/76,7 (+6%); prefill 2k 3398 → 3346. Domyślna temperatura modelu to 1,0, więc w czacie drafter szkodzi → produkcja :18796 zostaje bez draftera. Dla porównania Qwen produkcja xbench (eco): Q1–Q3 T=0 121,6/139,3/139,6, T=0,7 79,0, prefill 2k 861. Odniesienie autora (README alesha-pro/maya-inkling-mini): RTX 3090 dekod bez draftera 128 t/s, u nas na XTX ~82 → ścieżka ekspertów HIP (skalarna, `ik2_main.cu:2448-2452`) to główna dźwignia.
+- wynik 2026-11-23 01:28–01:31 UTC (polecenie właściciela 02:27 CET: Maya z unsloth i AtomicChat, najszybsze runy):
+  - **AtomicChat AD-Q4_K w Mayi nie działa:** `maya-ik2: blk.0.ffn_gate_up_exps.weight: type Q4_K not decoded here` (Maya nie ma kernela Q4_K dla ekspertów), oba tryby (`on`, `auto`);
+  - unsloth UD-Q4_K_XL `--drafting on` (powtórka): kopie 111,6 / 99,8, T=0,7 80,6, długi 2k / 8k 77,8 / 74,0 t/s, prefill 3398 / 3183 t/s;
+  - `--drafting auto` (Maya sama mierzy, co szybsze): kopie 80,1 / 80,4, T=0,7 82,0, długi 2k / 8k 78,2 / 74,7 t/s → `on` lepsze na kopiach o ~39%, przy T=0,7 i długich równe;
+  - po testach Maya (unsloth, `--drafting on`) uruchomiona jako czat właściciela na :18796 (`~/k134/mayaserve.sh`, trzyma blokadę GPU, :8080 wyłączony, stop: `touch ~/k134/STOP-MAYA`).
+- przegląd 2026-11-24: zrobione wcześniej (Maya 1.1.73 on XTX: T=0.7 80.7 → later 104.3/113.2 in production. Strata 0.1.66 page-faulted, so no repeat. Logs k134-maya.log, k134-strata.log. | 0 | -)
+
+### K-135 · Maya Inkling na XTX: `GPU_MAX_HW_QUEUES=2` (vllm-redshift: R9700 37,8 → 59,9 t/s)
+- data: 2026-11-23 (zwiad; repo abhinand5/vllm-redshift łatka 0101)
+- test: XTX, Maya `ik2` produkcyjna konfiguracja (bez cenzury, KV q4, kernele HIP) z i bez `GPU_MAX_HW_QUEUES=2`, rep2 mediana 5 (Q1, Q6 T=0,7, L2k, prefill); ≤ 10 min, tekst bit w bit
+- oczekiwany zysk: kilka–kilkanaście % (u nas ~777 launchy, przerwa ~2 µs/launch) [INFERENCE]
+- ryzyko karty: brak (zmienna runtime)
+- priorytet: wysoki (najtańsza droga do >100 t/s)
+- wynik 2026-11-23 13:52–13:58 UTC (ABBA, rep2 mediana 5): bez → z `GPU_MAX_HW_QUEUES=2`: Q6 T=0,7 94,5 / 94,5 → 94,5 / 94,5; L2k 93,3 / 93,6 → 93,5 / 93,6; Q1 93,8 → 93,8–94,0; prefill bez zmian → **0%, odrzucone** (na RDNA3 nie ma kary przełączania kolejki, którą łatka 0101 leczy na RDNA4). Log: `~/qwen-opt/queue/logs/k135-*.log`.
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-23 ABBA: `GPU_MAX_HW_QUEUES=2` gives 0% (T=0.7 94.5/94.5) and was rejected. Logs ~/qwen-opt/queue/logs/k135-*.log. | 0 | -)
+
+### K-136 · Maya v1.1.75 na XTX: drafter DSpark GGUF w grafie + próbkowanie Gumbel-max (3090: nowy kod 124 → 201 t/s)
+- data: 2026-11-23 (link JARO, panel 19:04)
+- test: stock v1.1.75 `--drafting auto` i `on` z `dspark-Inkling-2-Mini-Q8_0.gguf` vs nasza produkcja (1.1.73 + hipx14), ten sam rep2 i xbench T=0,7; potem nasze łatki przeniesione na 1.1.75
+- oczekiwany zysk: przy T=0,7 drafter u nas przegrywał (79 vs 94); krótsze okno (−30%) i wspólny szum mogą to odwrócić [INFERENCE]
+- ryzyko karty: brak nowych kerneli naszych; build stock
+- priorytet: wysoki
+- **wynik 2026-11-24 02:02–02:07 UTC (XTX, unsloth + ablacja, rep2):** produkcja 1.1.73 Q1/T=0,7/L2k 118,3 / 104,3 / 100,2; 1.1.75 + nasze łatki: lookup 118,1 / 103,9 / 101,0; DSpark wymuszony 94,6 / **94,8** / 95,0 (krótkie odpowiedzi do 134, ale średnio wolniej); `auto` 117,8 / 103,8 / 100,1 (zmierzył: bez 103,9, lookup 105,4, drafter 101,2). **Wniosek:** nowy drafter 1.1.75 na XTX nadal przegrywa przy T=0,7, bo okno weryfikacji nie ma naszych przyspieszeń (EXPV, NT, PCONV, FUSE…). Okno przyspieszamy w wyścigu (gałąź kern-maya: `IK2_K_W*`, `IK2_K_D*`).
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-24 02:02–02:07: forced 1.1.75 DSpark gives T=0.7 94.8 vs production 104.3, auto 103.8, so the drafter still loses. Logs ~/k134/k136-*.log. | 0 | -)
+
+### K-137 · AtomicChat Uncensored AD-Q4_K natywnie w Maya (eksperci Q4_K + Q5_0): ile szybciej niż ablacja w locie
+- data: 2026-11-23 (JARO, panel 19:02: „zoptymalizować ten atomic chat i zobaczyć, ile może śmigać”)
+- stan: Maya odrzuca plik (`type Q4_K not decoded here`); eksperci AtomicChat: gate_up Q4_K (9,17 GB), down Q5_0 (5,61 GB), reszta Q8_0 (nagłówek GGUF). Odczyt ekspertów na token jak w unsloth UD-Q4_K_XL: 1,847 vs 1,847 GB (pętla 3× w warstwach 6–17), dense 1,73 vs 1,82 GB
+- praca (CPU): kernele Q4_K/Q5_0 w `ik2` (dekod, okno, prefill WMMA, NT), gałąź `ad-q4k` w `~/praca/maya-ad`; poprawność na Colab T4 (`tests/ik2_kernels_test.cu`), potem XTX
+- test (XTX, ≤ 15 min): rep2 mediana 5 (Q1, Q6 T=0,7, L2k, prefill 2k) AD-Q4_K natywnie vs produkcja (unsloth + `IK2_ABLATE`); odmowy 8 pytań; zgodność z llama.cpp na tym samym pliku (top-1, KLD)
+- oczekiwany zysk: 0–5% (bez rzutu ablacji, który kosztował 2–5%) [INFERENCE]; wierność kwantom AtomicChat (KLD 0,0115 do BF16)
+- ryzyko karty: nowe kernele → najpierw test-kernel i krótki smoke
+- priorytet: wysoki (polecenie JARO)
+- **wynik 2026-11-24 01:58–02:09 UTC (XTX, rep2 mediana 5, ABA):** produkcja (unsloth + ablacja w locie) → AtomicChat natywnie (1.1.73 + hipx14 + Q4_K/Q5_0): Q1 118,3 → 128,6 (+8,7%), **T=0,7 104,2 → 113,2 (+8,6%)**, L2k 99,9 → 107,1 (+7,2%), prefill 2k 3457 → 3314 (−4,2%). Na bazie 1.1.75 (k175-ad, `--drafting auto` z DSpark): 127,3 / 112,1 / 106,2 / 3309; auto zmierzył: bez zgadywania 112,3, lookup 113,3, drafter 108,7. Jakość: kopia i 2k poprawne, odmowy 0/8, 1.1.73 i 1.1.75 dają identyczne odpowiedzi. Test kerneli: wszystkie Q4_K/Q5_0 ok; 1 próg tolerancji w starym teście NVFP4 przesunięty losowaniem (poprawka testu d01275e/8773c98). **Wdrożone** do `mayaserve.sh` (konfiguracja `maya-atomic.json`, exe `maya-ik2.adq4k` md5 2bda43fd…).
+- stan 2026-11-23 20:00 UTC: kod gotowy, niezmierzony (serwer wyłączony). Gałęzie w `~/praca/maya-ad` (`ad-q4k` 30ff426, na 1.1.73 + hipx14) i `~/praca/maya-175` (`k175` 88b6a6c = hipx14 na 1.1.75; `k175-ad` 60dffeb = to + Q4_K/Q5_0). Test hosta: wartości Q4_K/Q5_0 = ggml `dequantize_row` bit w bit (1 024 256 wartości), iloczyny wierszy w kolejności kerneli 0/97 różnic; nvcc czysto. Nowe kernele rejestrowe `experts_q4k_gu_kernel`/`experts_q50_down_kernel` (styl EXPV, NT), kafle WMMA prefillu Q4_K/Q5_0. Start: `qwen-opt/inkling/start-maya-k136-k137.sh` (build na pudle + kolejka `maya-k13x.jobs`, ~55 min karty razem z K-136).
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-24 01:58–02:09, rep2: T=0.7 104.2 → 113.2 (+8.6%), Q1 +8.7%, refusals 0/8. Deployed (mayaserve, maya-atomic.json, maya-ik2.adq4k). Logs ~/k134/k137-ad*.log. | 0 | -)
+
+### K-138 · Unsloth llama.cpp (prebuild b12649-mix, fuzje Inkling) na XTX vs nasz r14 i Maya
+- data: 2026-11-23 (link JARO, panel 19:57; Unsloth: RTX PRO 6000 81 → 125 t/s, gfx1151 24 → 33 bez spekulacji)
+- test: gotowa paczka `app-b12649-mix-c7059d6-linux-x64-rocm-gfx110X.tar.gz` (bez budowania), AD-Q4_K i UD-Q4_K_XL, KV q4_0: llama-bench tg128 vs nasz r14 (58,4) i stock; serwer z DSpark n7 (xbench Q4, T=0,7, L2k, L8k) vs r14 i Maya (T=0,7 104,3); ≤ 10 min
+- oczekiwany zysk: dla Mai brak [INFERENCE: Maya na 3090 124 t/s ≈ Unsloth na PRO 6000 przy 2× większym paśmie]; dla naszego llama.cpp sprawdzić, które ich fuzje nie pokrywają się z naszymi FUSE/F4 (#401, #402, #411, #412, #414) i dać je Gemini w r16
+- ryzyko karty: obca paczka ROCm; PM4 nie dotyczy (to nie nasz fork), test pod blokadą GPU
+- priorytet: średni
+- wynik 2026-11-24 01:35–01:38 UTC (XTX, KV q4_0, AtomicChat AD-Q4_K): llama-bench tg128 Unsloth 40,9 vs nasz r14 58,2 (UD-Q4_K_XL: 44,1 vs 60,9) → nasz +42% w samym dekodzie; prefill pp2048 Unsloth 968. Serwer z DSpark n7 (xbench): Unsloth / nasz r14: krótki Q1 71,0 / 46,0, kopie Q4 98,3 / 85,9, **T=0,7 31,1 / 23,6**, L2k 72,4 / 62,0 (prefill 761 / 1339), L8k 67,9 / 66,5. Wniosek: ich serwer traci mniej na kroku niż nasz (potwierdza narzut 7,8 ms/token z r14 → r15), ale oba 3× za Mayą (T=0,7 104,3). Paczka Unsloth na XTX nie jest dla nas kandydatem; ich pętla serwera do przejrzenia w r16.
+- przegląd 2026-11-24: zrobione wcześniej (2026-11-24 01:35: llama-bench tg128 Unsloth 40.9 vs r14 58.2. Server T=0.7: 31.1 vs 23.6, both 3× behind Maya 104.3. Not a candidate (KOLEJKA item result, ~/KERNEL/qwen-opt/inkling/k138.sh). | 0 | -)
+
+### K-059 · Pomiar w warunkach LocalMaxxing (`reasoning-v1`/`code-v1`, T=0, 320 tok.) do publikacji wyników XTX
+- data: 2026-10-16
+- status: **czeka na decyzję** (publikacja „wkrótce”, na razie tylko odczyt: [[2026-10-20-bez-publikacji-localmaxxing]], [[2026-11-09-decyzje-runda-69]])
+- źródło: [[raport-32f-ninfer-tqllm]], [[raport-32d-localmaxxing]]
+- test: XTX ~15 min (2 joby)
+- zysk: 0 t/s (marketing); szacunek ~147 t/s w ich warunkach
+- ryzyko karty: brak
+- priorytet: niski (nie wydajność)
+- zwiad 2026-11-14: XTX top verified na LocalMaxxing nadal 97,2 t/s (llama.cpp IQ3_S MTP); szacunek topki w ich warunkach ~147 ([[zwiad-2026-11-14]])
+- **wynik 2026-11-24 14:36 (XTX, produkcja Qwen3.8-27B Uncensored, warunki LocalMaxxing: kanoniczne prompty, T=0, 320 tok., mediana 3):** konfiguracja produkcyjna (lookup W16) reasoning-v1 **139,4** t/s, code-v1 **123,5**; bez lookupu (`LLAMA_SPEC_LOOKUP=0`, ramię do publikacji) 149,4 / 122,0. Akceptacja draftu ~75% (reasoning), ~58% (code). Publikacja nadal wstrzymana (decyzja właściciela).
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-073 · Flint (NVFP4) na XTX: rozstrzygnąć nieudany test igły przed katalogiem Enigmy
+- data: 2026-10-21
+- status: **czeka na decyzję** (inny model; PR #30928 niescalony)
+- źródło: `R/59-flint.md`, archiwum (`A:37717-37753`)
+- test: XTX needle przy długim kontekście, Flint na topce z poprawkami (`run-topka.sh flint`); ≤ 10 min
+- zysk: ~2× vs Qwen27B na XTX, ale to zmiana modelu
+- ryzyko karty: temperatury (prefill 160–262k: junction 94 °C, 286 W przed eco)
+- priorytet: niski (inny model)
+- **wynik 2026-11-24 14:38–14:43 (XTX, Flint, KV q4_0, PM4=0):** igła przy 150k i 64k znaleziona w obu buildach (obecny i bazowy upstream+#30928), odpowiedź kończy się `stop`, sekret także w rozumowaniu; dekod obecny 82,0 / 89,0 t/s vs bazowy 35,3 / 49,2 (×2,3 / ×1,8). Wcześniejsza pusta odpowiedź przy 150k się nie powtarza → test igły zaliczony; Flint może wrócić do rozważań katalogu (jakość osobno). Ramię q8_0 pominięte (zasada KV ≤ q6).
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-074 · OrcaCyber-Nano na XTX z drafterem DFlash2 (dotąd tylko 3090) i E1 RSR-27B vs Qwen (TB 2.1, omp-bench-20)
+- data: 2026-10-19 / 2026-10-21
+- status: **czeka na decyzję** (Orca: tylko na prośbę; RSR-27B: wydatek $40–70, ~120 GPU-h)
+- źródło: [[raport-56-orca-3090]], [[KOLEJKA-TESTOW]], [[otwarte-decyzje-techniczne]] (`:22`)
+- test: Orca: XTX MTP vs DFlash2 ≤ 10 min; RSR: wynajem, test do zdefiniowania
+- zysk: wiedza o innych modelach; 0 t/s dla produkcji
+- ryzyko karty: VRAM (Orca 15,7 + 2,1 GB przy 262k)
+- priorytet: niski (inne modele)
+- **wynik 2026-11-24 14:44–14:59 (XTX, OrcaCyber-Nano 15,7G, fork produkcyjny `~/llama-opt`, KV q4_0, PM4=0, xbench, kolejność none / MTP / DFlash / DFlash / MTP):** bez zgadywania Q4 43,7, T=0,7 43,7, L2k 42,4, L8k 41,3; **MTP n4** Q4 144,1–145,0, T=0,7 61,0–63,0, L2k 129,9–130,5, L8k 129,3–129,4 (akceptacja 0,91–0,92); **DFlash2 n6** Q4 194,8–196,3 (+35%), T=0,7 68,5–68,6 (+10%), L2k 175,8–177,2 (+36%), L8k 152,0–153,5 (+18%), akceptacja 0,85–0,96; krótkie Q2/Q3 DFlash wolniejszy (81–92 vs 96–103). Prefill z drafterem DFlash −10…−20% (762–877 vs 816–930). Wniosek: na XTX DFlash2 bije MTP dla Orci (wcześniej mierzone tylko na 3090). Połowa E1 (RSR-27B) czeka na budżet.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-142 · Maya: redukcje fali przez DPP (`lane_xor`, mw00 #1164) w ik2 i naszych kernelach
+- test (≤10 min po buildzie): `ik2_kernels_test` te same bity; rep2 ABA Q1 / T=0,7 / L2k
+- oczekiwany zysk: +0,5–2% [INFERENCE z +1,6% na Hy4 3×XTX]; mamy już DPP w llama.cpp (argmax, rmsnorm)
+- priorytet: średni
+- **wynik 2026-11-24 15:10–15:18 (XTX, gałąź `ad-dpp` = produkcja + `ik2_lane_xor.h`, 49 zamian `__shfl_xor_sync` na DPP/permlanex16):** `ik2_kernels_test` all passed (387 ok); odpowiedzi greedy identyczne z produkcją (11/11); rep2 ABBA prod / dpp / dpp / prod: Q1 128,4 / 129,9 / 130,1 / 128,6, **T=0,7 112,8 / 114,1 / 113,7 / 113,3 (+0,75%)**, L2k 107,0 / 108,0 / 107,7 / 107,3 (+0,6%). Mały, ale stały zysk, ten sam wynik bit w bit → **wdrożone**: `maya-ik2.adq4k-dpp` (md5 7cbf71e2…) w `maya-atomic.json` (łatka `qwen-opt/inkling/maya-ik2-dpp-lanexor.patch`).
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-028 · xtxbench: smoke przełącznika bez restartu `GGML_HIP_RUNTIME_SWITCH_FILE`
+- data: 2026-11-09
+- źródło: [[xtxbench-szybki-ab]] (`:39,48`), `Q/patches/xtxbench/0001-runtime-switch-hook-GGML_HIP_RUNTIME_SWITCH_FILE.patch`
+- test: XTX `xtxbench.py t1 --var-switch …` A/A; obowiązkowe ramię md5 ze świeżym startem (wyciek K-001); ≤ 10 min
+- zysk: narzędziowy: bez restartu 1,5–2 min na ramię, więc każdy przyszły A/B krótszy
+- ryzyko karty: brak
+- priorytet: średni (przyspiesza całą kolejkę)
+- pominięte 2026-11-20: w `~/wt/xtxbench/build-hip/bin` są tylko biblioteki (`libggml-base`, `libggml-cpu`), nie ma `llama-server`, a xtxbench bez binarki odmawia pracy. Potrzebna jest najpierw budowa gałęzi `xtxbench`, czyli praca nad kodem
+- **wynik 2026-11-24 15:37–15:40 (XTX):** llama-server z hakiem przełączników xtxbench (d5454e0) przechodzi bramkę md5 (c4708318 / 6f14e814 PASS), przełącznik `GGML_HIP_MMVQ_PAIR=0` przez `--var-switch` zadziałał (1 przełączenie w logu serwera); llama-bench ABBA vs produkcja: pp4096 997,35 → 997,60 (+0,02%), tg128 41,24 → 41,21 (−0,06%) = koszt haka zerowy. **Zrobione**: hak można włączyć do builda produkcyjnego (A/B bez restartu serwera).
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-139 · Ekonomia zgadywania Inklinga na XTX (Maya): pomiar kosztu okna, podatku draftera, lokalności ekspertów, parytetu przy T>0
+- data: 2026-11-24 (analiza skilli ashhart, [[ashhart-skills-infra]])
+- test (rep2/STAT, łącznie ~40 min): E1 wymuszona szerokość `IK2_DRAFT_ADAPT=0 IK2_DRAFT_WIDTH=2..8` → c[B], j, s, a (15 min); E2 podatek draftera: bez `--draft` vs drafter wczytany, a kontroler wybiera zwykły krok (5 min); E3 `IK2_TRACE` 256 tokenów → `route_locality.py` U(B) (2 min); E4 `parity.py` drafting wył./wł., seedy 1,2, T 0/0,7 (10 min); E5 drift routera AD vs UD (5 min); E6 priory SpecCtl z E1 + maks. szerokość (5 min)
+- oczekiwany zysk: E1+E6 0–3% przy T=0,7, E2 do ~3% [INFERENCE]; przede wszystkim liczby zamiast założeń dla wyścigu
+- ryzyko karty: brak (konfiguracje istniejących buildów)
+- priorytet: wysoki
+- **wynik 2026-11-24 14:23–14:31 (XTX, Maya 1.1.75 + hipx14 + Q4_K/Q5_0, AtomicChat, KV q4, rep2 mediana 5; Q1 = krótka T=0, Q6 = T=0,7, L2k):**
+  - bez zgadywania 127,1 / 112,3 / 106,3; lookup 127,7 / 112,4 / 106,7; `auto` 127,7 / 112,3 / 106,7 (pomiar auto: bez 111,7, lookup 113,4, drafter 107,5, oba 109,2).
+  - **DSpark z kontrolerem: Q1 157,9 (+24% nad lookupem), T=0,7 100,2 (−11%), L2k 102,8 (−4%).** DSpark wygrywa przy T=0 i krótkich odpowiedziach, przegrywa przy T=0,7.
+  - Wymuszona szerokość (bez kontrolera) T=0,7: w2 77,1, w3 72,4, w4 66,4, w5 59,4, w8 45,9 t/s — każde wymuszone okno traci; T=0 Q1: w3 133,7, w5 157,9, w8 119,8.
+  - **Podatek draftera potwierdzony:** lookup z wczytanym drafterem 107,9 / 102,2 vs lookup bez 112,4 / 106,7 → −4,0% / −4,2% na każdym kroku (zapis kontekstu draftera w zwykłych krokach).
+  - Lokalność ekspertów (IK2_TRACE, 256 tokenów): suma ekspertów okna U(B) 1,60 / 2,09 / 2,52 / 2,89 / 3,81 dla B=2/3/4/5/8 vs routing niezależny 1,94 / 2,82 / 3,64 / 4,41 / 6,45 (deklaracja Mai 2,7 dla 5 potwierdzona: 2,89); nakładanie sąsiednich tokenów 0,40 (losowo 0,06); między przejściami pętli 0,43–0,57.
+  - Parytet greedy (11 odpowiedzi) drafting wył. vs DSpark: identyczne.
+  - Wniosek: (1) wyłączyć zapis kontekstu draftera w zwykłych krokach (−4% podatku) → DSpark auto byłby co najmniej równy lookupowi przy T=0,7; (2) wybór drafter vs lookup według temperatury: DSpark przy T=0 (+24% Q1), lookup przy T>0; (3) stały koszt okna nadal główny problem (wymuszone okna przy T=0,7 tracą 31–59%).
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-141 · Inkling na XTX: nasz silnik vs port GodGMN (release Victora) tym samym testem + wiersz code-v1 T=0 jak LocalMaxxing
+- data: 2026-11-24 (zwiad: GodGMN 117 / T=0,7 115,7 / 2k 114,2 na jego XTX, Victor 106 przy 272 W; R9700 z DSpark 144,6 na code-v1 T=0)
+- test (~25 min): binarka `maya-ik2-f472e94-rocm10-gfx1100` (sha256 z release) na ggml-org IQ4_NL (pobranie 17,6 GB — zgoda JARO) vs nasza `maya-ik2.adq4k`; ta sama procedura: głębokość 512 / 2k / 8k, greedy i T=0,7; do tego prompt code-v1 (`/tmp/zw-lm-code-v1.txt`, sha a737db73) T=0, 2048 wyj.: off / lookup / DSpark / auto
+- oczekiwany zysk: wiedza, czy różnica ±5–10% to maszyna czy kernele; uczciwy wiersz do rankingu
+- priorytet: wysoki
+- **wynik 2026-11-24 16:00–16:07 (XTX, ten sam komputer, `tools/ik2_bench.py` GodGMN, 2 przebiegi):** nasza produkcja (adq4k-dpp, AD-Q4_K, KV q4, lookup) vs GodGMN f472e94 (zbudowany u nas, bo wydanie wymaga glibc 2.43; preset `ik2-mini-gfx1100.json`, IQ4_NL, KV fp8). **T=0:** głębokość 512 / 2k / 8k: nasz 110,0 / 106,3 / 103,1, ich 104,8 / 102,1 / 95,3 → **+5% / +4% / +8% dla nas**; prefill nasz 2593 / 3048 / 2996, ich 2354 / 3044 / 3051 (przy 8k −2% dla nas). **T=0,7:** nasz 108,3 / 104,8 / 101,9, ich 103,8 / 101,0 / 94,4 → **+4% / +4% / +8%**. Ich 115,7 t/s z README nie powtarza się na naszej karcie (103,8). Uwaga: inne pliki wag (AD-Q4_K vs IQ4_NL), porównanie stosów, nie kerneli.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-143 · Inkling: dekod na długim kontekście (32k / 128k), KV q4 vs f16
+- data: 2026-11-24 (arXiv 2611.30027: kernele 4-bit KV przy batch 1 biorą 18–38% pasma; Inkling czyta ~1,2 GB KV/token przy 128k)
+- test (≤10 min): Maya prod, prompt 32k i 128k + 128 tokenów greedy, `IK2_KV=q4` vs f16; efektywne pasmo atencji z rocprofv3
+- oczekiwany zysk: wiedza; jeśli atencja q4 < 40% pasma → kernel
+- priorytet: średni
+- **wynik 2026-11-24 14:30 (XTX, Maya 1.1.75 port + hipx14, AtomicChat, CLI 128 tokenów greedy, IK2_DEPTH):** głębokość 0 / 8k / 32k / 128k: **KV q4 112,6 / 101,1 / 92,8 / 70,2 t/s**, KV f16 112,6 / 96,9 / 87,7 / 63,4. q4 szybsze od f16 o 4–11% (mniej bajtów), spadek przy 128k −38% (q4) / −44% (f16). Kandydat: atencja na długim kontekście (8 wizyt globalnych) — przy 128k ok. 5,4 ms/token więcej niż przy 0.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-144 · Maya: szerokie okna lookupu (GodGMN `IK2_SUFFIX`, do 512) i `IK2_SLOT_KEEP` (alesha #11)
+- test (≤10 min): kopia/edycja kodu i proza: nasz lookup (okno ≤8) vs binarka GodGMN z `IK2_SUFFIX=128`; rozmowa 30k + boczne żądanie 2k + powrót (czas wznowienia)
+- oczekiwany zysk: kopie ×5–9 (Victor HTTP 99 → 939 t/s), powrót do rozmowy ~10 s → <0,2 s; proza −8–13% bez kontrolera, więc tylko z SpecCtl
+- priorytet: wysoki (agenci w Mai)
+- **wynik 2026-11-24 16:07 (XTX, `tests/ik2_copy_edit.py`, przepisanie 582 tokenów i edycja 583 tokenów, wyniki dokładne we wszystkich ramionach):** nasz lookup 115,3 / 106,9 t/s; GodGMN domyślnie 103,0 / 103,1; **GodGMN `IK2_SUFFIX=128` (drzewo sufiksów, okno weryfikacji do 128 tokenów): 708,5 / 493,6 t/s (×6,1 / ×4,6 względem nas)**, akceptacja 564/570 i 547/767. Wniosek: przy kopiowaniu i edycji kodu (agenci, poprawki plików) szerokie okno sufiksowe daje kilkukrotny zysk, którego nasz lookup (okno ≤ 16) nie łapie. Nowa pozycja K-147.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-147 · Maya: szerokie okno sufiksowe (do 128 tokenów) zamiast lookupu W16 dla edycji i przepisywania
+- data: 2026-11-24 (K-144: GodGMN `IK2_SUFFIX=128` 708 / 494 t/s vs nasz lookup 115 / 107 na copy/edit, wyniki dokładne)
+- plan: przenieść `IK2_SUFFIX` (drzewo sufiksów, weryfikacja do 128 wejść w jednym przejściu) z GodGMN f472e94 do gałęzi produkcyjnej; parytet greedy 11/11, rep2 (Q1, T=0,7, L2k: nie może stracić > 0,5%) i `ik2_copy_edit.py`; najpierw na CPU przegląd kodu (nvcc), potem jedna bramka na XTX do 10 min
+- **wynik 2026-11-24 16:22–16:30 (XTX, gałąź `ad-suffix` 8621f0d = produkcja ad-dpp + `IK2_SUFFIX`, łatka `qwen-opt/inkling/maya-ik2-suffix128.patch`):** odpowiedzi greedy identyczne z produkcją 11/11 (sufiks zadziałał w nich 7 razy); `ik2_copy_edit.py` (dokładne we wszystkich ramionach, 2 powtórzenia): przepisanie 118,3 / 110,9 → **403,8 / 451,8 t/s (×3,7)**, edycja 114,9 / 107,2 → **298,6 / 298,6 (×2,7)**, akceptacja 564/576 i 1108/1376; czat rep2 ABBA bez zmian: Q1 130,1 / 130,1 → 130,1 / 129,7, T=0,7 114,1 / 114,1 → 114,3 / 114,2, L2k 108,1 / 108,0 → 108,1 / 108,0. **Wdrożone** do `maya-atomic.json` (`maya-ik2.adq4k-dpp-sfx`, md5 b9dcf28a…, `IK2_SUFFIX=128`). Różnica do GodGMN (708 / 494): nasze okno idzie ścieżką prefillu `forward()` (ok. 0,2 s na 96 tokenów); następny krok: szybsza weryfikacja szerokiego okna. Ścieżka T>0 (próbka celu w każdym wierszu, zgodna z rozkładem z konstrukcji) nie była osobno mierzona na edycji.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-023 · Bisekcja regresji prefillu forka CUDA względem upstream (sm_89 −3,5…−3,9%, 3060 TTFT 512 +30%) i LOO przełączników forka
+- data: 2026-10-20 (raport 29)
+- źródło: `R/67c-nvidia-backlog-testow.md:103,105` (B9, B11), `product/BENCHMARKI-PRZED-PO-2026-10-19.md` §4, [[raport-15d-prefill-dlugi-kontekst]]
+- test: 5060 Ti lokalnie (sm_120): `llama-bench -p 512,4096` upstream vs fork + po jednym przełączniku `=0` na job; sm_89 wynajem
+- zysk: odzysk 3…12% prefillu i TTFT na NVIDIA
+- ryzyko karty: brak
+- priorytet: średni (TTFT Enigmy)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, prefill 512 / 4096: fork vs upstream b12110 −4,7% / −3,6%, fork vs swoja baza b11620 **+3,2% / +3,4%**; wyłączenie każdego z 17 przełączników forka i `GGML_CUDA_KVQ=0` zmienia prefill o ≤ ±0,5%. Regresja to stara baza (upstream +8% prefillu między b11620 a b12110), nie nasze łatki: lekarstwo = rebase forka.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-027 · Profil kroku przy długim kontekście na NVIDIA (`nsys` + `LLAMA_HOSTGAP_TRACE` przy 1,7k/94k/199k)
+- data: 2026-11-07
+- źródło: `R/67c-nvidia-backlog-testow.md:118` (C1)
+- test: 3090/4090 (wynajem; 16 GB 5060 Ti nie zmieści 199k z 27B), po jednym kontekście na job ≤ 10 min
+- zysk: 0% sam; rozstrzyga K-062, K-063 i maskę na CUDA
+- ryzyko karty: brak
+- priorytet: średni (bramka decyzji NVIDIA)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4 nsys: dekod 1,7k / 94k / 199k = 37,5 / 30,0 / 25,0 t/s (73,9 / 93,2 / 126,7 ms na krok); udział uwagi 1,5% / 18% / 32%; bezczynność hosta 10,7 / 11,1 / 17,2 ms na krok (12–14%); odczyt wag stałe 54–58 ms. Wniosek: uwaga (K-062) liczy się tylko przy długim kontekście, przerwy hosta (K-031) to stałe 12–14% kroku.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-061 · Tryb wielu użytkowników na NVIDIA: naprawić start `-np 4` z MTP (`failed to create context`), potem k zależne od liczby klientów (`K_BY_B`)
+- data: 2026-10-21 (raport 56)
+- źródło: `R/67c-nvidia-backlog-testow.md:110` (B16), `R/67-nvidia-vast-kampania.md` §7.2 (`-np 2` agregat +30…36%), `R/69b-tensorfold-qwen-warp.md:77`
+- test: 5060 Ti: `-np 2/4` ctx 32k + MTP n=2, C = 1/2/4/8 klientów, suma t/s; ≤ 10 min
+- zysk: agregat +20–30% (dane warp: ×2,7–2,9 przy 4–8 klientach); latencja 0
+- ryzyko karty: VRAM OOM
+- priorytet: niski (jeden użytkownik)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, 204 800 kontekstu, `-np 4` + MTP: start pada na OOM (`allocating 9576.00 MiB` → `failed to allocate buffer for rs cache`); 131k: zdrowy, OOM przy pierwszym zapytaniu; 32k i 64k działają. Każdy dodatkowy slot z MTP kosztuje 2,4–3,1 GB VRAM: to brak pamięci, nie błąd slotów.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-065 · Zimny start `--no-mmap` (pierwszy prompt po restarcie 0,39–1,07 t/s) i nieprzetestowane flagi upstream (`--spec-draft-n-ubatch 64`, `GRAPH_CHUNK_SIZE`, `-fa off`, `--spec-default`)
+- data: 2026-11-07
+- źródło: `R/67c-nvidia-backlog-testow.md:79-91` (A4, A8, A10, A12, A16)
+- test: 5060 Ti, po jednym ramieniu na job ≤ 10 min
+- zysk: A12: TTFT pierwszego żądania; reszta ~0 [INFERENCE]
+- ryzyko karty: brak
+- priorytet: niski (UX)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4: wolny pierwszy prompt po restarcie się nie powtarza; `-lm none` start szybszy o 2–3 s; `--spec-draft-n-ubatch 64` bez zmiany szybkości, −48 MiB VRAM; `GGML_CUDA_GRAPH_CHUNK_SIZE` domyślny najlepszy (1: −1,6%); `--spec-default` na przepisywaniu kodu 133–134 t/s vs 17,6–18,2 bez i 45 z MTP n3 (×7,4), na zwykłym czacie bez zysku; wyjście bajt w bajt identyczne. A10 (`-fa off`) pominięte (wymaga KV f16).
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-069 · Turing sm_75 (2080 Ti): build forka i smoke test
+- data: 2026-11-07
+- źródło: `R/67c-nvidia-backlog-testow.md:149` (D6)
+- test: build `-DCMAKE_CUDA_ARCHITECTURES=75`, `test-backend-ops`, fork vs upstream; wynajem ≤ 10 min po buildzie
+- zysk: nieznany; poprawność dla klasy 11 GB w Enigmie
+- ryzyko karty: brak
+- priorytet: niski (mała klasa)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** na T4 wydany fork CUDA (kvqleana, build 11620) pada przy starcie: `no kernel image is available` (brak sm_75); upstream b12110 działa: pp512 302,3, tg128 9,14 t/s. **Silnik Enigmy CUDA nie działa na Turingu (2080 Ti, T4)**: dodać arch 75 do wydania albo planer ma wybierać upstream poniżej sm_86. Build forka na sm_75 niezrobiony (źródło tylko na jaroserverai).
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
+### K-040 · Flaga kompilatora `-mllvm --amdgpu-unroll-threshold-local=600`
+- data: 2026-11-07
+- źródło: `R/68a-rdna3-kernele.md:126` (4.8)
+- test: build + `klab isadiff` gorących kerneli (CPU); GPU tylko, gdy ISA się zmienia: `llama-bench -p 4096` + spec_sweep ABBA + md5 ≤ 10 min
+- zysk: 0…2% [INFERENCE]
+- ryzyko karty: brak (spille przy większej liczbie VGPR)
+- priorytet: niski (tani, mały)
+- wynik 2026-11-20: pominięte. Na serwerze Jarvo nie ma ROCm (`hipcc` brak), a build HIP i `klab isadiff` trzeba robić na jaroserverai, czyli na maszynie z GPU, której ten przebieg nie używa.
+- przeniesione 2026-11-24 po teście (wynik wyżej)
+
 
 ### K-118 · Powtórka K-114 dla 3090 i 3060 na hostach z pełną mocą (dzisiejsze wyniki to dolne granice)
 - data: 2026-11-17
@@ -1189,6 +1175,79 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-043 · Profil i optymalizacja atencji draftu MTP przy długim kontekście (~1,3 ms/krok przy 199k), np. pamięć MASW (ujścia + okno + sloty)
+- data: 2026-11-07
+- źródło: `R/68c-dlugi-kontekst-gdn.md:144` (#10), [[2026-11-08-kvq-once-profil]] (`:92`)
+- test: offline symulacja akceptacji MTP z oknem 128 + sloty; potem spec_sweep + xtxbench 199k. Wymaga treningu adaptera.
+- zysk: sufit +3…5% przy 255k minus spadek akceptacji [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: niski (trening, niepewne; samo okno MTP to KILL, K-090)
+- przegląd 2026-11-24: nieaktualne (The entry itself says "the MTP window alone is a KILL (K-090)". The rest (MASW sinks+slots) needs adapter training, has an uncertain ceiling of +3–5%, and has no data or code. Recommend moving it to Odrzucone, or to an owner decision if training shou)
+
+### K-048 · Mikrobatch prefillu `-ub 1024` dla Qwena (po odzyskaniu VRAM)
+- data: 2026-10-12 (A7)
+- status: **czeka na decyzję**, jeśli md5 ≠ (zmiana ub zmienia kolejność sum)
+- źródło: `Q/NOTES.md:218` (ub 2048 pp +3%, OOM przy 204800), `R/63-SYNTEZA.md:84`
+- test: XTX md5 greedy 12k ub 512 vs 1024 (jeśli różne → do Odrzuconych); jeśli równe, `llama-bench -p 4096 -ub 1024` + szczyt VRAM przy fill 255k osobnym jobem
+- zysk: pp4096 +3…8% [SZACUNEK]
+- ryzyko karty: **VRAM OOM przy 262k**
+- priorytet: niski (OOM, numeryka; po K-022/K-034)
+- wynik 2026-11-21: **ub 1024 zmienia wynik i nie przyspiesza → odrzucić.** md5 greedy (prompt 12k, T=0, 256 tok., konfiguracja produkcyjna na porcie testowym, kolejność 512/1024/1024/512): ub 512 `8f23c7d9` w obu przebiegach, ub 1024 `669c414a` w obu, czyli inna kolejność sum. Prefill 12k: 894,7 → 871,1 t/s (−2,6%). `llama-bench` pp4096 (PM4 0, FA 83, ABBA): 1003,1 → 994,5 t/s (−0,9%). VRAM po starcie serwera przy ctx 262144: 22955 → 23352 MiB (+397 MiB). Przy 255k z ub 512 zostaje 1193 MiB zapasu, więc wypełnienia 255k z ub 1024 nie uruchamiałem (ryzyko OOM, a zysku i tak nie ma). Źródło: `~/qwen-opt/queue/logs/k048-md5.log`, `k048-bench.log`, skrypt `Q/k048/k048.sh`.
+- przeniesione 2026-11-24: wynik bez zysku albo nie wdrażamy (wyżej)
+
+### K-049 · ROCm 10.1 na gfx1100: md5 + hash logitów + pomiar `kvq` (spill 8 VGPR)
+- data: 2026-10-16 (raport 13), 2026-11-05 (63c)
+- źródło: [[rocm-10-1]] (`:28-30`), [[lekcja-rocm10-lds-128kb]]
+- test: build topki na `~/opt/rocm-10.1` (CPU), XTX md5 greedy/long 32k + xtxbench t1; ≤ 10 min
+- zysk: nieznany (RDNA-FAST: 10.1 +3,1% vs 7.2 na innej bazie); `kvq` może zwolnić przez spill
+- ryzyko karty: nowy runtime + PM4 (możliwy fault/reset)
+- priorytet: niski (niepewny zysk, ryzyko)
+- **wynik 2026-11-24 15:33–15:36 (XTX, topka-q70 3191b25 zbudowana na ROCm 10.1, PM4=0, xtxbench t1):** bramka md5 świeżego startu PASS (c4708318 / 6f14e814), ale xtxbench: decode@1,7k 121,28 → 120,88 (−0,33%, szum), **prefill@32k 875,9 → 861,3 (−1,67%, LOSS)**, md5 greedy czatu inny (d36768ee → 662da515). Werdykt **KILL**: ROCm 10.1 wolniejszy w prefillu (zgodne z ISA: spill `flash_attn_ext_kvq<256,8,Q4_0>` 0→36 B). Zostajemy na 10.0; 10.2 to K-130.
+- przeniesione 2026-11-24: wynik bez zysku albo nie wdrażamy (wyżej)
+
+### K-130 · Topka zbudowana ROCm 10.2 (hipcc/LLVM) vs 10.0: czy nowy kompilator przyspiesza nasze kernele
+- data: 2026-11-19
+- źródło: blog ROCm 10.2.0 (Telegram „gpu” 2026-11-19); wcześniej 10.1 nic nie dało ([[stos/rocm-10-1]])
+- test: ROCm 10.2 w osobnym katalogu na jaroserverai (bez ruszania /opt/rocm 10.0 produkcji), rbuild topki tym samym commitem; `test-backend-ops` MUL_MAT/FA bitowo + xtxbench ABBA dekod 1,7k i prefill 32k, md5 T=0; ≤ 10 min karty
+- zysk: nieznany (AMD nie wymienia gfx1100 GEMV/FA); próg przyjęcia ≥ 3%
+- ryzyko karty: brak (PM4=0 w teście); ryzyko systemu: druga instalacja ROCm, tylko za zgodą właściciela (~3 GB)
+- priorytet: niski
+- **wynik 2026-11-24 15:40–15:44 (XTX, topka-q70 3191b25 na ROCm 10.2 z `~/rocm-10.2`, PM4=0):** md5 świeżego startu PASS (c4708318 / 6f14e814); test-backend-ops MUL_MAT 2496/2496, FLASH_ATTN_EXT hsk=256 173/173; xtxbench t1: decode@1,7k 122,38 → 121,08 (−1,07%, w szumie), prefill@32k 869,5 → 868,2 (−0,15%, w szumie). Werdykt xtxbench KILL: brak zysku ≥ +1%. Uwaga: md5 greedy czatu ramienia B (662da515) jest ten sam dla 10.1 i 10.2, więc różnica md5 pochodzi z przebudowy lub ścieżki uruchomienia, nie z ROCm (do wyjaśnienia przy następnym buildzie). Zostajemy na 10.0.
+- przeniesione 2026-11-24: wynik bez zysku albo nie wdrażamy (wyżej)
+
+### K-140 · Wyścig Maya: pomiar gałęzi Gemini `gem-maya` (runda 1: IK2_G_WEXP/WCOLS/WROUTE/WLOOP/DGRAPH/DFAST)
+- data: 2026-11-24 (runda maya-g1c, commit 96f45fc)
+- stan: nvcc czysto (kernels, main, draft); Gemini nie dodał testów; prognoza autora 135–155 t/s przy T=0,7 [jego szacunek, nasz model ze śladu daje dużo mniej: te same pomysły u Kernela dały DSpark 102,2 → 106,7, lookup 112,9]
+- test (~35 min karty): build `wt-gem-maya` (jak build-kr1.sh), `qwen-opt/inkling/race-gem1.sh` + `race-gem1.jobs`: testy kerneli z/bez IK2_G_*, rep2: bez przełączników lookup / DSpark, wszystkie IK2_G_* DSpark on / auto / lookup, parytet greedy drafting wył. vs wł.
+- baza: produkcja 113,2 t/s T=0,7 (AtomicChat, lookup)
+- ryzyko karty: nowe kernele HIP bez testów → najpierw g1-test, przy page fault stop
+- priorytet: wysoki (wyścig)
+- **testy kerneli 2026-11-24 14:33 (gałąź Gemini 96f45fc):** NIE przechodzą — `window experts Q8_0 (row dots), 2/5/8 tokens: h and y the one-token path's to the bit` FAIL także BEZ przełączników IK2_G_* (zmiana Gemini psuje domyślną ścieżkę Q8_0 okna, czyli plik unsloth warstwy 20–23), plus znany próg NVFP4. Reguła „bit w bit, gdy wyłączone” złamana.
+- **wynik 2026-11-24 14:33–14:36 (XTX, AtomicChat AD-Q4_K, KV q4, rep2 mediana 5, ta sama sesja):** bez przełączników lookup Q1 / T=0,7 / L2k 127,5 / 112,5 / 106,9 (powtórka 127,8 / 112,5 / 106,9); **wszystkie IK2_G_* + lookup 130,4 / 114,3 / 108,3 (+2,3 / +1,6 / +1,3%)**; auto 129,9 / 114,2 / 108,2; DSpark bez przełączników 157,3 / 101,8 / 102,2, z przełącznikami 117,0 / 107,4 / 102,8 (T=0,7 +5,5%, ale krótkie T=0 −26%). Parytet greedy drafting wył./wł. z przełącznikami: identyczne (11/11). Kernel race runda 1 (`IK2_K_*`): T=0,7 +0,6%. **Gemini prowadzi o ~1 pkt proc.**, ale ścieżka Q8_0 okna jest niedokładna nawet bez przełączników (plik unsloth) — przed wdrożeniem do naprawy.
+- przeniesione 2026-11-24: wynik bez zysku albo nie wdrażamy (wyżej)
+
+### K-145 · Maya: kontekst draftera zwykłych kroków zapisywany partią (`IK2_K_LAZYCTX`) — podatek draftera
+- data: 2026-11-24 (K-139: drafter wczytany kosztuje −4% na każdym kroku)
+- **wynik 2026-11-24 15:21–15:25 (XTX, gałąź `k175-lazy` e106fe7, AtomicChat, KV q4, ABAB):** odpowiedzi identyczne (11/11); DSpark z kontrolerem T=0,7 **100,7 / 100,6 → 102,7 / 102,6 (+2,0%)**, Q1 157,9 bez zmian, L2k 103,9 / 102,9 → 103,4 / 103,1; lookup + drafter wczytany T=0,7 100,7 / 100,8 → 102,7 / 103,7. Podatek zmniejszony o połowę, ale DSpark przy T=0,7 nadal poniżej samego lookupu (112,4).
+- przeniesione 2026-11-24: wynik bez zysku albo nie wdrażamy (wyżej)
+
+### K-146 · Maya: drafter tylko dla zapytań greedy (`IK2_K_DRAFT_T0`), przy T>0 lookup bez kontekstu draftera
+- data: 2026-11-24 (K-139: DSpark +24% przy T=0, −11% przy T=0,7)
+- test: `qwen-opt/inkling/k146.sh` ABBA prod vs k175-lazy z `IK2_K_LAZYCTX=1 IK2_K_DRAFT_T0=1`; parytet greedy
+- **wynik 2026-11-24 15:58–16:10 (XTX, ABBA, produkcja = adq4k-dpp):** odpowiedzi identyczne 11/11; Q1 130,1 / 129,7 → **157,6 / 157,6 (+21%)**, T=0,7 114,1 / 114,1 → 112,2 / 112,2 (**−1,7%**), L2k 108,0 / 108,1 → 102,9 / 104,3 (−4%, greedy z drafterem na długim kontekście). Wniosek: przy T>0 sama obecność draftera nadal kosztuje 1,7% (gałąź 1.1.75 bez DPP + rezerwa VRAM, do rozdzielenia), a na długim greedy drafter przegrywa z lookupem. **Nie wdrażamy** (metryka główna T=0,7). Następny krok, jeśli wrócimy: DPP w gałęzi lazy i drafter tylko dla krótkiego kontekstu (< 1k).
+- przeniesione 2026-11-24: wynik bez zysku albo nie wdrażamy (wyżej)
+
+### K-052 · HRX (Lemonade `hrx-b99`) jako referencja kerneli: tg128/pp512/pp4096 obok topki
+- data: 2026-11-07
+- źródło: `R/68a-rdna3-kernele.md:125` (4.7)
+- test: XTX `llama-bench -fa 1 -p 512,4096 -n 128 -r 3` HRX vs topka, eco (~30 min → 3 joby); wymaga buildu i pobrania HRX
+- zysk: 0% wprost; wzór do portu, jeśli HRX wygra prefill (producent: +30–50% vs HIP upstream)
+- ryzyko karty: nieznany runtime (inne kolejki, bez gpu-guard)
+- priorytet: niski (wiedza)
+- **wynik 2026-11-24 15:44–15:58 (XTX, HRX `hrx-b99` z ROCm/ggml-staging-automation: hrx-system 32b86d4, llama.cpp AMD-Ecosystem 2ba2ddc, build gfx1100 na ROCm 10.1, KV f16 w obu ramionach):** smoke OK (443 słowa, tekst sensowny), ale sam smoke 370 s; llama-bench `-p 512,4096 -n 128 -r 3` w ramieniu HRX przekroczył 200 s w obu rundach (produkcja: ok. 30 s na rundę) i nie dał ani jednego wiersza (stderr pusty, ubity przez timeout). Wniosek: HRX na tym buildzie jest co najmniej ok. 6× wolniejszy albo wisi przy benchu; bez gfxhub fault. Odłożone do nowego wydania HRX (dalszy czas karty nieopłacalny).
+- przeniesione 2026-11-24: wynik bez zysku albo nie wdrażamy (wyżej)
+
 
 ### K-116 · NVIDIA (i XTX): draft MTP kosztuje 4–15 × swoje bajty — graf CUDA/HIP na całą pętlę draftu i fuzja kroku draftu
 - data: 2026-11-17

@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (28)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (128)
-- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (84)
+- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (86)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (113)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (35)
@@ -84,10 +84,10 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-24 [[raport-21i-rsi-inference-bench|Raport 21i: RSI-Inference Bench (Apple) – co mierzy i co bierzemy do fabryki]]
 - 2026-11-24 [[raport-03-silniki|Raport 03: silniki inferencji i stack]]
 - 2026-11-24 [[przeglad-zrodla-2026-11-24|Przegląd ZRODLA 2026-11-24: zmienione oceny (cała inferencja i nauka, nie tylko prędkość)]]
+- 2026-11-24 [[przeglad-kolejki-2026-11-24|Przegląd kolejki testów 2026-11-24: co z 103 pozycji da się zrobić teraz]]
 - 2026-11-24 [[kv4-hopper-2611-30027|kv4-hopper (arXiv 2611.30027): dlaczego 4-bitowe KV bywa wolniejsze od FP8 i co z tego dla XTX]]
+- 2026-11-24 [[colab-kolejka-2026-11-24|Kolejka testów NVIDIA na Google Colab (T4 / L4), 2026-11-24]]
 - 2026-11-24 [[amd-adrenalin-zapisy-ssd|AMD Adrenalin: ciągłe zapisy SSD przez `atieclxx.exe` (Windows)]]
-- 2026-11-24 [[gdn-replay|GDN z opóźnieniem: cofanie przez przeliczenie (S4)]]
-- 2026-11-24 [[speed-bench|SPEED-Bench (NVIDIA): wspólny standard pomiaru spekulacji, którym podają liczby wszyscy poza nami]]
 
-Razem 821 notatek. Wygenerowano 2026-11-24 przez `tools/wiki.py index`.
+Razem 823 notatek. Wygenerowano 2026-11-24 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
