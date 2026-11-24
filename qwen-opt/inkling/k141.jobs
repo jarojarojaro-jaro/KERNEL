@@ -1,0 +1,5 @@
+# K-141 + K-144 (after IQ4_NL download)
+k141-greedy|900|~/k141|~/k141/k141.sh bench greedy
+k141-t07|900|~/k141|~/k141/k141.sh bench t07
+k144-copy|900|~/k141|~/k141/k141.sh copy
+k141-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -1,0 +1,5 @@
+# K-145 lazy drafter context
+k145-par|600|~/k134|~/k134/k145.sh parity
+k145-a|900|~/k134|~/k134/k145.sh run k145-lk k145-lkds-off k145-lkds-on k145-lkds-off k145-lkds-on
+k145-b|900|~/k134|~/k134/k145.sh run k145-ds-off k145-ds-on k145-ds-on k145-ds-off
+k145-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

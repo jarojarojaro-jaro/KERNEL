@@ -1,0 +1,5 @@
+# K-142 DPP lane xor
+k142-test|600|~/k134|~/k134/k142.sh test
+k142-par|600|~/k134|~/k134/k142.sh parity
+k142-ab|900|~/k134|~/k134/k142.sh run prod dpp dpp prod
+k142-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

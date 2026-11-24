@@ -34,6 +34,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test (≤10 min po buildzie): `ik2_kernels_test` te same bity; rep2 ABA Q1 / T=0,7 / L2k
 - oczekiwany zysk: +0,5–2% [INFERENCE z +1,6% na Hy4 3×XTX]; mamy już DPP w llama.cpp (argmax, rmsnorm)
 - priorytet: średni
+- **wynik 2026-11-24 15:10–15:18 (XTX, gałąź `ad-dpp` = produkcja + `ik2_lane_xor.h`, 49 zamian `__shfl_xor_sync` na DPP/permlanex16):** `ik2_kernels_test` all passed (387 ok); odpowiedzi greedy identyczne z produkcją (11/11); rep2 ABBA prod / dpp / dpp / prod: Q1 128,4 / 129,9 / 130,1 / 128,6, **T=0,7 112,8 / 114,1 / 113,7 / 113,3 (+0,75%)**, L2k 107,0 / 108,0 / 107,7 / 107,3 (+0,6%). Mały, ale stały zysk, ten sam wynik bit w bit → **wdrożone**: `maya-ik2.adq4k-dpp` (md5 7cbf71e2…) w `maya-atomic.json` (łatka `qwen-opt/inkling/maya-ik2-dpp-lanexor.patch`).
 
 ### K-143 · Inkling: dekod na długim kontekście (32k / 128k), KV q4 vs f16
 - data: 2026-11-24 (arXiv 2611.30027: kernele 4-bit KV przy batch 1 biorą 18–38% pasma; Inkling czyta ~1,2 GB KV/token przy 128k)

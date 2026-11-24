@@ -1,0 +1,357 @@
+From 7540640324e5bac36cb03596afff99866ac76076 Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Tue, 24 Nov 2026 15:31:15 +0100
+Subject: [PATCH] ik2: warp xor through DPP / permlanex16 on RDNA (mw00 #1164
+ lane_xor), same values
+
+---
+ src/ik2/ik2_kernels.cu | 93 +++++++++++++++++++++---------------------
+ src/ik2/ik2_lane_xor.h | 31 ++++++++++++++
+ src/ik2/ik2_rdna.inc   |  4 +-
+ 3 files changed, 80 insertions(+), 48 deletions(-)
+ create mode 100644 src/ik2/ik2_lane_xor.h
+
+diff --git a/src/ik2/ik2_kernels.cu b/src/ik2/ik2_kernels.cu
+index 0f5c6466..1b898744 100644
+--- a/src/ik2/ik2_kernels.cu
++++ b/src/ik2/ik2_kernels.cu
+@@ -1,5 +1,6 @@
+ // src/ik2/ik2_kernels.cu - maya-ik2's kernels (the interface and the conventions: ik2_kernels.cuh).
+ #include "ik2_kernels.cuh"
++#include "ik2_lane_xor.h"
+ #include "ik2_iq_tables.h"
+ #include "ik2_kq.h"
+ 
+@@ -253,8 +254,8 @@ __device__ __forceinline__ void q4_store_warp(float4 x, uint8_t* rec) {
+     int src = lane;
+ #pragma unroll
+     for (int sh = 1; sh < 8; sh <<= 1) {
+-        const float oa = __shfl_xor_sync(0xffffffffu, am, sh), ov = __shfl_xor_sync(0xffffffffu, mv, sh);
+-        const int os = __shfl_xor_sync(0xffffffffu, src, sh);
++        const float oa = ik2_xor(am, sh), ov = ik2_xor(mv, sh);
++        const int os = ik2_xor(src, sh);
+         if (oa > am || (oa == am && os < src)) am = oa, mv = ov, src = os;
+     }
+     const float d = mv / -8.0f, id = d != 0.0f ? 1.0f / d : 0.0f;
+@@ -379,12 +380,12 @@ __global__ void rms_multi_kernel(RmsJobs jobs, int D, float eps) {
+ 
+ __device__ __forceinline__ float wsum(float v) {
+ #pragma unroll
+-    for (int o = 16; o > 0; o >>= 1) v += __shfl_xor_sync(0xffffffffu, v, o);
++    for (int o = 16; o > 0; o >>= 1) v += ik2_xor(v, o);
+     return v;
+ }
+ __device__ __forceinline__ float wmax(float v) {
+ #pragma unroll
+-    for (int o = 16; o > 0; o >>= 1) v = fmaxf(v, __shfl_xor_sync(0xffffffffu, v, o));
++    for (int o = 16; o > 0; o >>= 1) v = fmaxf(v, ik2_xor(v, o));
+     return v;
+ }
+ 
+@@ -1580,10 +1581,10 @@ attn_flash_f16_kernel(const uint16_t* __restrict__ q16, int q_ld, const KVT* __r
+                     mxa = fmaxf(mxa, va), mxb = fmaxf(mxb, vb);
+                 }
+             }
+-            mxa = fmaxf(mxa, __shfl_xor_sync(0xffffffffu, mxa, 1));
+-            mxa = fmaxf(mxa, __shfl_xor_sync(0xffffffffu, mxa, 2));
+-            mxb = fmaxf(mxb, __shfl_xor_sync(0xffffffffu, mxb, 1));
+-            mxb = fmaxf(mxb, __shfl_xor_sync(0xffffffffu, mxb, 2));
++            mxa = fmaxf(mxa, ik2_xor(mxa, 1));
++            mxa = fmaxf(mxa, ik2_xor(mxa, 2));
++            mxb = fmaxf(mxb, ik2_xor(mxb, 1));
++            mxb = fmaxf(mxb, ik2_xor(mxb, 2));
+             const float mna = fmaxf(ma, mxa), mnb = fmaxf(mb, mxb);
+             const float ca = mna == -INFINITY ? 1.0f : exp2f(ma - mna);   // (ma = -inf: exp2f(-inf) = 0)
+             const float cb = mnb == -INFINITY ? 1.0f : exp2f(mb - mnb);
+@@ -1636,10 +1637,10 @@ attn_flash_f16_kernel(const uint16_t* __restrict__ q16, int q_ld, const KVT* __r
+         }
+         if constexpr (!F8) __syncthreads();   // (the buffer is refilled next iteration; FP8's FP16 tile is written
+     }                                         //  past the next iteration's barrier)
+-    la += __shfl_xor_sync(0xffffffffu, la, 1);
+-    la += __shfl_xor_sync(0xffffffffu, la, 2);
+-    lb += __shfl_xor_sync(0xffffffffu, lb, 1);
+-    lb += __shfl_xor_sync(0xffffffffu, lb, 2);
++    la += ik2_xor(la, 1);
++    la += ik2_xor(la, 2);
++    lb += ik2_xor(lb, 1);
++    lb += ik2_xor(lb, 2);
+     // the split's partials: o_part [split][Tq][H][D], ml_part [split][Tq][H] = (max in log2 units, sum)
+     if (ia < Tq) {
+         float* op = o_part + (((size_t) split * Tq + ia) * H + h) * kFaD + tq * 2;
+@@ -1817,8 +1818,8 @@ attn_decode_mma_kernel(const uint16_t* __restrict__ q16, const KVT* __restrict__
+         float mxa = fmaxf(c0, c2), mxb = fmaxf(c1, c3);   // (over the lanes of the same heads: the same tq)
+ #pragma unroll
+         for (int sh = 4; sh < 32; sh <<= 1) {
+-            mxa = fmaxf(mxa, __shfl_xor_sync(0xffffffffu, mxa, sh));
+-            mxb = fmaxf(mxb, __shfl_xor_sync(0xffffffffu, mxb, sh));
++            mxa = fmaxf(mxa, ik2_xor(mxa, sh));
++            mxb = fmaxf(mxb, ik2_xor(mxb, sh));
+         }
+         if (__ballot_sync(0xffffffffu, mxa > ma || mxb > mb)) {   // a new maximum (few steps have one): rescale
+             const float mna = fmaxf(ma, mxa), mnb = fmaxf(mb, mxb);
+@@ -1894,8 +1895,8 @@ attn_decode_mma_kernel(const uint16_t* __restrict__ q16, const KVT* __restrict__
+     }
+ #pragma unroll
+     for (int sh = 4; sh < 32; sh <<= 1) {
+-        la += __shfl_xor_sync(0xffffffffu, la, sh);
+-        lb += __shfl_xor_sync(0xffffffffu, lb, sh);
++        la += ik2_xor(la, sh);
++        lb += ik2_xor(lb, sh);
+     }
+     // the warp's partials: o_part [warp][H][D], ml_part [warp][H] = (max in log2 units, sum)
+     if (a_ok) {
+@@ -2172,7 +2173,7 @@ attn_decode_v70_kernel(const uint16_t* __restrict__ q16, const KVT* __restrict__
+         for (int sh = 1; sh < 32; sh <<= 1) {   // (over the lanes of the same heads: lane bits 0, 2, 3, 4)
+             if (sh == 2) continue;
+ #pragma unroll
+-            for (int sl = 0; sl < 4; ++sl) mt[sl] = fmaxf(mt[sl], __shfl_xor_sync(0xffffffffu, mt[sl], sh));
++            for (int sl = 0; sl < 4; ++sl) mt[sl] = fmaxf(mt[sl], ik2_xor(mt[sl], sh));
+         }
+         if (__ballot_sync(0xffffffffu, mt[0] > mx[0] || mt[1] > mx[1] || mt[2] > mx[2] || mt[3] > mx[3])) {
+ #pragma unroll
+@@ -2228,7 +2229,7 @@ attn_decode_v70_kernel(const uint16_t* __restrict__ q16, const KVT* __restrict__
+     for (int sh = 1; sh < 32; sh <<= 1) {
+         if (sh == 2) continue;
+ #pragma unroll
+-        for (int sl = 0; sl < 4; ++sl) ls[sl] += __shfl_xor_sync(0xffffffffu, ls[sl], sh);
++        for (int sl = 0; sl < 4; ++sl) ls[sl] += ik2_xor(ls[sl], sh);
+     }
+     // the warp's partials: o_part [warp][H][D], ml_part [warp][H] = (max in log2 units, sum); a lane's value i of
+     // block b is the dim 32 qp + 16 hi + 4 b + (j & 1) + 2 ((i >> 1) & 1)
+@@ -2331,8 +2332,8 @@ __global__ void route_warp_kernel(const float* logits, const float* bias, int T,
+         }
+ #pragma unroll
+         for (int o = 16; o > 0; o >>= 1) {
+-            const float ob = __shfl_xor_sync(0xffffffffu, best, o);
+-            const int oi = __shfl_xor_sync(0xffffffffu, idx, o);
++            const float ob = ik2_xor(best, o);
++            const int oi = ik2_xor(idx, o);
+             if (ob > best || (ob == best && oi < idx)) {
+                 best = ob;
+                 idx = oi;
+@@ -2375,8 +2376,8 @@ __global__ void route_kernel(const float* logits, const float* bias, int T, int
+             if (v[e] > best || (v[e] == best && e < idx)) best = v[e], idx = e;
+ #pragma unroll
+         for (int o = 16; o > 0; o >>= 1) {
+-            const float ob = __shfl_xor_sync(0xffffffffu, best, o);
+-            const int oi = __shfl_xor_sync(0xffffffffu, idx, o);
++            const float ob = ik2_xor(best, o);
++            const int oi = ik2_xor(idx, o);
+             if (ob > best || (ob == best && oi < idx)) best = ob, idx = oi;
+         }
+         if (lane == 0) bv[warp] = best, bi[warp] = idx;
+@@ -2649,7 +2650,7 @@ __global__ void cand_threshold_kernel(const int* __restrict__ part, int n_part,
+     cnt[j] = c;
+     int ws = c;
+ #pragma unroll
+-    for (int o = 16; o > 0; o >>= 1) ws += __shfl_xor_sync(0xffffffffu, ws, o);
++    for (int o = 16; o > 0; o >>= 1) ws += ik2_xor(ws, o);
+     if (lane == 0) wcnt[warp] = ws;
+     __syncthreads();
+     int above = 0;   // the values of the bins over this one
+@@ -3139,7 +3140,7 @@ __device__ float row_dot(int type, const uint8_t* w, const float* xs, int K) {
+         for (int i = lane; i < K; i += 32) acc += decode_value(type, w, (size_t) i) * xs[xp(i)];
+     }
+ #pragma unroll
+-    for (int o = 16; o > 0; o >>= 1) acc += __shfl_xor_sync(0xffffffffu, acc, o);
++    for (int o = 16; o > 0; o >>= 1) acc += ik2_xor(acc, o);
+     return acc;
+ }
+ 
+@@ -3337,8 +3338,8 @@ __device__ void row_dot_2(int type, const uint8_t* wg, const uint8_t* wu, const
+     }
+ #pragma unroll
+     for (int o = 16; o > 0; o >>= 1) {
+-        ag += __shfl_xor_sync(0xffffffffu, ag, o);
+-        au += __shfl_xor_sync(0xffffffffu, au, o);
++        ag += ik2_xor(ag, o);
++        au += ik2_xor(au, o);
+     }
+     og = ag;
+     ou = au;
+@@ -3549,8 +3550,8 @@ experts_v70_kernel(const uint8_t* const* __restrict__ blob, size_t off, int C, i
+     float b0 = Gate ? cb[0] + cb[1] : cb[0], b1 = Gate ? cb[2] + cb[3] : cb[2];
+ #pragma unroll
+     for (int sh = 4; sh <= 8; sh <<= 1) {   // (the quad pairs: the sub-blocks)
+-        a0 += __shfl_xor_sync(0xffffffffu, a0, sh), a1 += __shfl_xor_sync(0xffffffffu, a1, sh);
+-        b0 += __shfl_xor_sync(0xffffffffu, b0, sh), b1 += __shfl_xor_sync(0xffffffffu, b1, sh);
++        a0 += ik2_xor(a0, sh), a1 += ik2_xor(a1, sh);
++        b0 += ik2_xor(b0, sh), b1 += ik2_xor(b1, sh);
+     }
+     if (qp == 0 && j < 2) {
+         const int m0 = j + 4 * hi;
+@@ -3721,8 +3722,8 @@ experts_nv_gu_kernel(const uint8_t* const* __restrict__ blob, const int* __restr
+     }
+ #pragma unroll
+     for (int o = 16; o > 0; o >>= 1) {
+-        ag += __shfl_xor_sync(0xffffffffu, ag, o);
+-        au += __shfl_xor_sync(0xffffffffu, au, o);
++        ag += ik2_xor(ag, o);
++        au += ik2_xor(au, o);
+     }
+     if (lane == 0) {
+         const float g = ag * sgs, u = au * sus;
+@@ -3769,7 +3770,7 @@ experts_nv_down_kernel(const uint8_t* const* __restrict__ blob, size_t off_down,
+         acc = (32 * (i + 1) <= L::kSub || sb < L::kSub) ? t : acc;
+     }
+ #pragma unroll
+-    for (int o = 16; o > 0; o >>= 1) acc += __shfl_xor_sync(0xffffffffu, acc, o);
++    for (int o = 16; o > 0; o >>= 1) acc += ik2_xor(acc, o);
+     if (lane == 0) y[(size_t) s * C + r] = acc;
+ }
+ #endif   // STRATA_USE_HIP
+@@ -3826,8 +3827,8 @@ experts_q4k_gu_kernel(const uint8_t* const* __restrict__ blob, const int* __rest
+     }
+ #pragma unroll
+     for (int o = 16; o > 0; o >>= 1) {
+-        ag += __shfl_xor_sync(0xffffffffu, ag, o);
+-        au += __shfl_xor_sync(0xffffffffu, au, o);
++        ag += ik2_xor(ag, o);
++        au += ik2_xor(au, o);
+     }
+     if (lane == 0) {
+         const float gv = ag * sgs, uv = au * sus;
+@@ -3868,7 +3869,7 @@ experts_q50_down_kernel(const uint8_t* const* __restrict__ blob, size_t off_down
+         acc = (32 * (i + 1) <= NU || un < NU) ? t : acc;
+     }
+ #pragma unroll
+-    for (int o = 16; o > 0; o >>= 1) acc += __shfl_xor_sync(0xffffffffu, acc, o);
++    for (int o = 16; o > 0; o >>= 1) acc += ik2_xor(acc, o);
+     if (lane == 0) y[(size_t) s * C + r] = acc;
+ }
+ 
+@@ -4159,7 +4160,7 @@ __device__ void row_dot_multi(int type, const uint8_t* w, const X* const* xs, in
+     for (int t = 0; t < N_CAP; ++t) {
+         float a = acc[t];
+ #pragma unroll
+-        for (int o = 16; o > 0; o >>= 1) a += __shfl_xor_sync(0xffffffffu, a, o);
++        for (int o = 16; o > 0; o >>= 1) a += ik2_xor(a, o);
+         out[t] = a;
+     }
+ }
+@@ -4327,8 +4328,8 @@ __device__ void row_dot_pair_multi(int type, const uint8_t* wg, const uint8_t* w
+         float g_a = ag[t], u_a = au[t];
+ #pragma unroll
+         for (int o = 16; o > 0; o >>= 1) {
+-            g_a += __shfl_xor_sync(0xffffffffu, g_a, o);
+-            u_a += __shfl_xor_sync(0xffffffffu, u_a, o);
++            g_a += ik2_xor(g_a, o);
++            u_a += ik2_xor(u_a, o);
+         }
+         og[t] = g_a;
+         ou[t] = u_a;
+@@ -5005,7 +5006,7 @@ __global__ void draft_attn_part_kernel(const float* q, const KVT* kc, const KVT*
+             if (qi >= nq) break;
+             float a = qs[qi][lane] * k0 + qs[qi][lane + 32] * k1 + qs[qi][lane + 64] * k2 + qs[qi][lane + 96] * k3;
+ #pragma unroll
+-            for (int o = 16; o > 0; o >>= 1) a += __shfl_xor_sync(0xffffffffu, a, o);
++            for (int o = 16; o > 0; o >>= 1) a += ik2_xor(a, o);
+             a *= scale;
+             if (lane == 0) lg[(size_t) qi * per + jj] = a;
+             mx[qi] = fmaxf(mx[qi], a);
+@@ -5092,8 +5093,8 @@ __device__ __forceinline__ void argmax_better(float v, int i, float& best, int&
+ __device__ __forceinline__ void argmax_block_reduce(float& best, int& idx) {
+ #pragma unroll
+     for (int o = 16; o > 0; o >>= 1) {
+-        const float ob = __shfl_xor_sync(0xffffffffu, best, o);
+-        const int oi = __shfl_xor_sync(0xffffffffu, idx, o);
++        const float ob = ik2_xor(best, o);
++        const int oi = ik2_xor(idx, o);
+         argmax_better(ob, oi, best, idx);
+     }
+     __shared__ float bv[32];
+@@ -5106,8 +5107,8 @@ __device__ __forceinline__ void argmax_block_reduce(float& best, int& idx) {
+         idx = (lane < nw) ? bi[lane] : 0x7fffffff;
+ #pragma unroll
+         for (int o = 16; o > 0; o >>= 1) {
+-            const float ob = __shfl_xor_sync(0xffffffffu, best, o);
+-            const int oi = __shfl_xor_sync(0xffffffffu, idx, o);
++            const float ob = ik2_xor(best, o);
++            const int oi = ik2_xor(idx, o);
+             argmax_better(ob, oi, best, idx);
+         }
+     }
+@@ -5700,8 +5701,8 @@ attn_block_mma_kernel(const uint16_t* __restrict__ q16, const KVT* __restrict__
+             float mxa = fmaxf(c0, c2), mxb = fmaxf(c1, c3);
+ #pragma unroll
+             for (int sh = 4; sh < 32; sh <<= 1) {
+-                mxa = fmaxf(mxa, __shfl_xor_sync(0xffffffffu, mxa, sh));
+-                mxb = fmaxf(mxb, __shfl_xor_sync(0xffffffffu, mxb, sh));
++                mxa = fmaxf(mxa, ik2_xor(mxa, sh));
++                mxb = fmaxf(mxb, ik2_xor(mxb, sh));
+             }
+             if (__ballot_sync(0xffffffffu, mxa > ma[j] || mxb > mb[j])) {
+                 const float mna = fmaxf(ma[j], mxa), mnb = fmaxf(mb[j], mxb);
+@@ -5782,8 +5783,8 @@ attn_block_mma_kernel(const uint16_t* __restrict__ q16, const KVT* __restrict__
+     for (int j = 0; j < NT; ++j) {
+ #pragma unroll
+         for (int sh = 4; sh < 32; sh <<= 1) {
+-            la[j] += __shfl_xor_sync(0xffffffffu, la[j], sh);
+-            lb[j] += __shfl_xor_sync(0xffffffffu, lb[j], sh);
++            la[j] += ik2_xor(la[j], sh);
++            lb[j] += ik2_xor(lb[j], sh);
+         }
+         const int ca = j * 8 + 2 * tq, cb = ca + 1;
+         // the warp's partials: o_part [warp][T][H][D], ml_part [warp][T][H]
+diff --git a/src/ik2/ik2_lane_xor.h b/src/ik2/ik2_lane_xor.h
+new file mode 100644
+index 00000000..7d169c83
+--- /dev/null
++++ b/src/ik2/ik2_lane_xor.h
+@@ -0,0 +1,31 @@
++// ik2_lane_xor.h - __shfl_xor_sync(0xffffffffu, v, m) with the value moved in registers on RDNA (wave32):
++// DPP quad_perm for 1 and 2, row_xmask for 4 and 8, v_permlanex16 for 16 (mw00/project-maya v1.1.77 #1164,
++// include/maya/kernels/lane_xor.hpp).  The same value arrives, so every sum keeps its order and its bits.  Whole-warp
++// calls only (all lanes active), as the full mask already demands.  IK2_XOR_BPERMUTE (compile-time) keeps the shuffle.
++#pragma once
++template <int M>
++__device__ __forceinline__ int ik2_lane_xor_i(int x) {
++#if defined(STRATA_USE_HIP) && !defined(IK2_XOR_BPERMUTE) && (defined(__GFX10__) || defined(__GFX11__) || defined(__GFX12__))
++    if constexpr (M == 1) return __builtin_amdgcn_update_dpp(0, x, 0xB1, 0xF, 0xF, false);
++    else if constexpr (M == 2) return __builtin_amdgcn_update_dpp(0, x, 0x4E, 0xF, 0xF, false);
++    else if constexpr (M == 4) return __builtin_amdgcn_update_dpp(0, x, 0x164, 0xF, 0xF, false);
++    else if constexpr (M == 8) return __builtin_amdgcn_update_dpp(0, x, 0x168, 0xF, 0xF, false);
++    else {
++        static_assert(M == 16, "ik2_lane_xor: 1, 2, 4, 8 or 16");
++        return (int) __builtin_amdgcn_permlanex16((unsigned) x, (unsigned) x, 0x76543210u, 0xFEDCBA98u, false, false);
++    }
++#else
++    return __shfl_xor_sync(0xffffffffu, x, M);
++#endif
++}
++__device__ __forceinline__ int ik2_xor(int x, int m) {   // (m a constant after unrolling: the switch folds away)
++    switch (m) {
++        case 1: return ik2_lane_xor_i<1>(x);
++        case 2: return ik2_lane_xor_i<2>(x);
++        case 4: return ik2_lane_xor_i<4>(x);
++        case 8: return ik2_lane_xor_i<8>(x);
++        case 16: return ik2_lane_xor_i<16>(x);
++        default: return __shfl_xor_sync(0xffffffffu, x, m);
++    }
++}
++__device__ __forceinline__ float ik2_xor(float v, int m) { return __int_as_float(ik2_xor(__float_as_int(v), m)); }
+diff --git a/src/ik2/ik2_rdna.inc b/src/ik2/ik2_rdna.inc
+index 051f3237..01d052a6 100644
+--- a/src/ik2/ik2_rdna.inc
++++ b/src/ik2/ik2_rdna.inc
+@@ -331,7 +331,7 @@ attn_flash_rdna_kernel(const uint16_t* __restrict__ q16, int q_ld, const KVT* __
+                 mxi = fmaxf(mxi, v);
+             }
+ #pragma unroll
+-            for (int sh = 1; sh < 16; sh <<= 1) mxi = fmaxf(mxi, __shfl_xor_sync(0xffffffffu, mxi, sh));
++            for (int sh = 1; sh < 16; sh <<= 1) mxi = fmaxf(mxi, ik2_xor(mxi, sh));
+             const float mn = fmaxf(mx[i], mxi);
+             const float cf = mn == -INFINITY ? 1.0f : exp2f(mx[i] - mn);
+             u[i] = mn == -INFINITY ? 0.0f : mn;
+@@ -359,7 +359,7 @@ attn_flash_rdna_kernel(const uint16_t* __restrict__ q16, int q_ld, const KVT* __
+ #pragma unroll
+     for (int i = 0; i < 8; ++i)
+ #pragma unroll
+-        for (int sh = 1; sh < 16; sh <<= 1) ls[i] += __shfl_xor_sync(0xffffffffu, ls[i], sh);
++        for (int sh = 1; sh < 16; sh <<= 1) ls[i] += ik2_xor(ls[i], sh);
+     // the split's partials: o_part [split][Tq][H][D], ml_part [split][Tq][H] = (max in log2 units, sum)
+ #pragma unroll
+     for (int i = 0; i < 8; ++i) {
+-- 
+2.53.0
+

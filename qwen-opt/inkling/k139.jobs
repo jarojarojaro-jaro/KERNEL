@@ -1,0 +1,8 @@
+# K-139 + K-143 (2026-11-24, owner: tak, wszystkie)
+k139-a|900|~/k134|~/k134/k139.sh run k139-off k139-lk k139-auto k139-dsadapt
+k139-b|900|~/k134|~/k134/k139.sh run k139-ds2 k139-ds3 k139-ds4 k139-ds5
+k139-c|900|~/k134|~/k134/k139.sh run k139-ds6 k139-ds8 k139-lkdsload k139-lk
+k139-trace|600|~/k134|~/k134/k139.sh trace
+k139-parity|600|~/k134|~/k134/k139.sh parity
+k143|900|~/k134|~/k134/k143.sh
+k139-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
