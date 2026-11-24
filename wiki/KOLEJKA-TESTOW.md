@@ -50,7 +50,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-146 · Maya: drafter tylko dla zapytań greedy (`IK2_K_DRAFT_T0`), przy T>0 lookup bez kontekstu draftera
 - data: 2026-11-24 (K-139: DSpark +24% przy T=0, −11% przy T=0,7)
 - test: `qwen-opt/inkling/k146.sh` ABBA prod vs k175-lazy z `IK2_K_LAZYCTX=1 IK2_K_DRAFT_T0=1`; parytet greedy
-- stan: w kolejce 2026-11-24
+- **wynik 2026-11-24 15:58–16:10 (XTX, ABBA, produkcja = adq4k-dpp):** odpowiedzi identyczne 11/11; Q1 130,1 / 129,7 → **157,6 / 157,6 (+21%)**, T=0,7 114,1 / 114,1 → 112,2 / 112,2 (**−1,7%**), L2k 108,0 / 108,1 → 102,9 / 104,3 (−4%, greedy z drafterem na długim kontekście). Wniosek: przy T>0 sama obecność draftera nadal kosztuje 1,7% (gałąź 1.1.75 bez DPP + rezerwa VRAM, do rozdzielenia), a na długim greedy drafter przegrywa z lookupem. **Nie wdrażamy** (metryka główna T=0,7). Następny krok, jeśli wrócimy: DPP w gałęzi lazy i drafter tylko dla krótkiego kontekstu (< 1k).
 
 ### K-144 · Maya: szerokie okna lookupu (GodGMN `IK2_SUFFIX`, do 512) i `IK2_SLOT_KEEP` (alesha #11)
 - test (≤10 min): kopia/edycja kodu i proza: nasz lookup (okno ≤8) vs binarka GodGMN z `IK2_SUFFIX=128`; rozmowa 30k + boczne żądanie 2k + powrót (czas wznowienia)
@@ -812,6 +812,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0% wprost; wzór do portu, jeśli HRX wygra prefill (producent: +30–50% vs HIP upstream)
 - ryzyko karty: nieznany runtime (inne kolejki, bez gpu-guard)
 - priorytet: niski (wiedza)
+- **wynik 2026-11-24 15:44–15:58 (XTX, HRX `hrx-b99` z ROCm/ggml-staging-automation: hrx-system 32b86d4, llama.cpp AMD-Ecosystem 2ba2ddc, build gfx1100 na ROCm 10.1, KV f16 w obu ramionach):** smoke OK (443 słowa, tekst sensowny), ale sam smoke 370 s; llama-bench `-p 512,4096 -n 128 -r 3` w ramieniu HRX przekroczył 200 s w obu rundach (produkcja: ok. 30 s na rundę) i nie dał ani jednego wiersza (stderr pusty, ubity przez timeout). Wniosek: HRX na tym buildzie jest co najmniej ok. 6× wolniejszy albo wisi przy benchu; bez gfxhub fault. Odłożone do nowego wydania HRX (dalszy czas karty nieopłacalny).
 
 ### K-053 · Wspólne punkty odniesienia: zestaw YASAKANI/NInfer (12 zadań + edycja) na XTX
 - data: 2026-11-05
@@ -1023,6 +1024,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: nieznany (AMD nie wymienia gfx1100 GEMV/FA); próg przyjęcia ≥ 3%
 - ryzyko karty: brak (PM4=0 w teście); ryzyko systemu: druga instalacja ROCm, tylko za zgodą właściciela (~3 GB)
 - priorytet: niski
+- **wynik 2026-11-24 15:40–15:44 (XTX, topka-q70 3191b25 na ROCm 10.2 z `~/rocm-10.2`, PM4=0):** md5 świeżego startu PASS (c4708318 / 6f14e814); test-backend-ops MUL_MAT 2496/2496, FLASH_ATTN_EXT hsk=256 173/173; xtxbench t1: decode@1,7k 122,38 → 121,08 (−1,07%, w szumie), prefill@32k 869,5 → 868,2 (−0,15%, w szumie). Werdykt xtxbench KILL: brak zysku ≥ +1%. Uwaga: md5 greedy czatu ramienia B (662da515) jest ten sam dla 10.1 i 10.2, więc różnica md5 pochodzi z przebudowy lub ścieżki uruchomienia, nie z ROCm (do wyjaśnienia przy następnym buildzie). Zostajemy na 10.0.
 
 ### K-131 · Fork CUDA na Ampere: MMVQ celu tylko 58% pasma na 3090 (4080 SUPER 78%) — strumieniowanie wag przez `cp.async`
 - data: 2026-11-20
