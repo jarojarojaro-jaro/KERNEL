@@ -686,3 +686,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-24] K-137 AtomicChat natywnie w Mai: T=0,7 104,3 → 113,2 (+8,6%), wdrożone do mayaserve; K-136 Maya 1.1.75 = produkcja (drafter nadal przegrywa: 94,8); r15 +1–3% i błąd ctl; wyścig Kernel vs Gemini
 
 ## [2026-11-24] Wyścig Maya runda 1 Kernela | 16 przełączników IK2_K_*, T=0,7 112,9 → 113,6 (szum); −22% uruchomień bez zysku (lekcja); Gemini zablokowany limitem do 07:41, wznowienie timerem agy-retry-0724
+
+## [2026-11-24] weaponized-curiosity (link JARO) | skill procesu badań (debata 4 agentów, autoresearch z zamrożonym ewaluatorem); bez liczb dla kerneli; wniosek: przewidywanie liczbowe + walidacja w każdej próbie wyścigu
