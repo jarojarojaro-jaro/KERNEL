@@ -17,7 +17,7 @@ Cudze silniki i konkurencja, jedna notatka na podmiot: Strata, Maya (Inkling na 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (112)
+## Notatki (113)
 
 - [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]] — „Flash-Next przy 250K tylko −18% względem 1K” to własność modelu (natywna rzadka QSA z budżetem 2048 tokenów) plus stratny host KV FP8, a nie trik kernela; ich gęsty 27B traci −47% (501 → 268 t/s), tyle co my −45% (136.5 → 74.5 przy 199k) (raport 66b, 2026-11-07).
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
@@ -77,6 +77,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[megakernele-prior-art|Megakernele: Hazy, MPK i inne (prior art)]] — Hazy Megakernels (interpreter instrukcji per SM ze stronicowanym SMEM) i MPK/Mirage (kompilator tGraph) osiągają 71–80% pasma przy batch 1, wobec ≤ 50% kernel-per-op; na RDNA3 publicznego megakernela nie ma.
 - [[kernelagent|meta-pytorch/KernelAgent]] — Wieloagentowy system Meta zamieniający PyTorch na kernele Triton (HEAD `e0647170`, 2026-07-15); bierzemy strukturę pętli; werdykt: średnia (proces).
 - [[metr-sakana|METR i Sakana (agenci kerneli)]] — Dwa punkty odniesienia dla agentów piszących kernele: METR (1.81× średnio, ~$20/zadanie) i Sakana AI CUDA Engineer (wycofane „10–100×”, 3.13× → 1.49× po usunięciu reward hackingu).
+- [[mori-umbp|MoRI UMBP (AMD): pula KV na NVMe zamiast DRAM i czego uczy o naszym cache sesji]] — Na 16× MI355X pula KV 1,8 TB na NVMe dorównała puli DRAM tej samej wielkości (±1%, Kimi-K3, 48–96 sesji agentów), bo przepustowość zależy od odsetka trafień, a nie od nośnika, a ładowanie asynchroniczne chowa się w kolejce prefillu. Bez kolejki NVMe dodaje ~0,4 s na prefiks 128K.
 - [[flameox|morluto/flameox: orkiestrator profilerów dla agentów (MCP)]] — MIT, wersja 0.2.9 (HEAD `c7ea167`, 2026-10-11), 523 commity w 79 dni, 400/400 issues od autora, Devin współautorem 9 commitów, 210 gwiazdek; 26 operacji / 51 narzędzi MCP; na naszym CPU 649 testów OK, 11 pominiętych w 98 s; obsługa rocprofv3 ma jeden test, sprawdzający tylko argumenty (raport 21j, 2026-10-19).
 - [[smokinggun|morluto/smokinggun: nie stosuje się do naszej pracy]] — Mimo nazwy narzędzie nie szuka przyczyn regresji: to statyczny skaner wzorców złożoności w pętlach kodu CPU (tree-sitter, 13 języków, bez `.cu`/`.cuh`/`.hip`) plus porównanie zaimportowanych wyników benchmarków (hyperfine, pyperf, Google Benchmark, criterion, JMH, pprof, Perfetto) z gate'em eligible/blocked/inconclusive; MIT, TypeScript/Node, ostatni commit 2026-08-29 (raport 21k, 2026-10-19).
 - [[mtplx|MTPLX: współbieżny MTP dla wielu agentów]] — Silnik z MTP w kohortach (3/8 strumieni) deklaruje 1.6–2.25× na strumień dla 2 agentów względem zwykłego batchingu AR; wspiera LFM2 (wydanie 2.6.0, stan 2026-10-19).

@@ -1,7 +1,7 @@
 ---
 typ: ekosystem
 tags: [ekosystem, konkurencja, autotuning]
-aktualizacja: 2026-11-22
+aktualizacja: 2026-11-24
 zrodlo: ~/KERNEL/product/research/15c-nowe-silniki.md:17-22,52-66,108-164,229-254,380; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:22-28,37,119-129; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,111-118,308-321; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:9,17-32; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:5-28,119-138; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:11-40,308-321; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:10-13,85-91
 status: aktualne
 ---
@@ -35,6 +35,9 @@ Słabe: polski (9B sweep 68.2 vs 121.0 t/s; drafter trenowany bez PL), bez draft
 Decyzja użytkownika: badać ich podejście i przejąć, co się da ([[2026-10-16-badamy-magnitude]]).
 
 Na AMD (16j, 2026-10-18): przez Vulkan na 7900 XTX ~2× wolniejszy od nas (Qwen sweep 50.1 vs 100.0, code-edit 87.7 vs 170.0 t/s; LFM ×1.42–×2.24), bo każdy szerszy krok jest drogi (blok 8 = ×3.0 kroku 1-wierszowego). Konkurent w instalacji, nie w wydajności ([[2026-10-18-magnitude-vulkan-xtx]]).
+
+## Zwiad 2026-11-24
+**Aktualizacja 2026-11-24 (0.3.0-alpha.0..2, `155e1b67`):** główna nowość to strumień ekspertów MoE przez VRAM, RAM i SSD z dokładnym routingiem: brakujący ekspert jest doładowywany, nie podmieniany (`experts/watcher/mod.rs:1-60`). Bank ekspertów zmienia rozmiar w trakcie pracy według zmierzonych czasów, kosztem miejsca na KV i prefill. Rekomendacja modelu ocenia prędkość **przy 50 000 tokenów** kontekstu (`candidates.rs:5163-5174`), z celem 10 t/s (wcześniej 20) i kontekstem roboczym 64K. Enigma ocenia prędkość z tg128, więc dla agentów ją zawyża. Pamięć liczą z cgroup procesu: min(`memory.max`, `memory.high`) i rezerwa OOM `min(limit/12, 2–4 GiB)` (`limits.rs:176-260`). `/health` zwraca stałe „ok” (`lib.rs:648-660`), więc nie jest wzorem nadzoru. Błąd z wydania: podniesienie VERIFY_ROWS z 8 do 16 zostawiło w kernelach Vulkan MoE niezainicjowane wiersze 8–15 (`59060928`), co uczy, że szerszą weryfikację trzeba testować przy nowym maksimum.
 
 ## Powiązane
 - [[tqllm]]

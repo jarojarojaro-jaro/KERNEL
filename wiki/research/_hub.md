@@ -19,10 +19,11 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (83)
+## Notatki (84)
 
 - [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]] — Link arXiv 2605.08513 podany przez użytkownika jako praca o InferenceX to „A Single Neuron Is Sufficient to Bypass Safety Alignment in LLMs” (Kazemi, Chegini, Safi, 2026-05-08): wyłączenie jednego neuronu odmowy omija alignment, a wzmocnienie neuronu pojęcia wywołuje szkodliwe treści; 7 modeli z 2 rodzin, 1.7B–70B, bez treningu.
 - [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]] — Bezpieczeństwo karty: oba główne zarzuty prawdziwe i naprawione tego samego dnia.
+- [[kv4-hopper-2611-30027|kv4-hopper (arXiv 2611.30027): dlaczego 4-bitowe KV bywa wolniejsze od FP8 i co z tego dla XTX]] — Na H200 kernele 4-bit KV z vLLM wykonują 2–6× więcej instrukcji na bajt, niż GPU zdąży wydać przy pełnym paśmie, i czekają szeregowo na odczyt; poprawiony kernel bije FP8 o 1,12–1,49×, ale przy batch 1 osiąga tylko 18–38% pasma.
 - [[telegram-2026-11-20-linux-7-2-pamiec|Linux 7.2 a LLM: zmiany pamięci pomagają przy odciążaniu do RAM/SSD, nie przy modelu w całości w VRAM]] — Tweet (@Biggest, 19.11): „jeśli nie masz jądra 7.2+, zaktualizuj; nowe zarządzanie pamięcią i eksmisja robią LLM-y dużo płynniejszymi”. Bez liczb i bez konfiguracji. Zmiany w 7.2 (16.08.2026) są prawdziwe, ale pomagają tylko tam, gdzie model albo jego cache siedzi w RAM lub na dysku pod presją pamięci. Na XTX z całym modelem w VRAM tempo pisania się nie zmieni [INFERENCE: niezmierzone].
 - [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]] — Dobry spis lektur, ale nie przepis na nasz problem: 5 z 6 działów dotyczy serwerów z dużym batchem, Hoppera/B200 i rozproszenia (NVLink, DeepEP, EPLB, disaggregation), dział AMD to tylko CDNA/Instinct, a o RDNA3, batch 1 na kartach konsumenckich i skwantyzowanym GEMV nie ma nic (raport 21b, 2026-10-19).
 - [[raport-plan-nv-v2|PLAN-NV-V2: kampania NVIDIA v2 (ctx ≥ 131k)]] — Karty 10–16 GB dostają Qwen3.6-35B-A3B z ekspertami w RAM, 24/32 GB Qwen3.8-27B + MTP; twarde bramki J1–J5 (KLD ≤0.05/0.07, `-c ≥ 131072`, ≥20 t/s po 64k, TTFT 32k ≤ 120 s); start po bramce KLD E7. Kampania wstrzymana ([[karty/vast-ai]]).

@@ -1,0 +1,6 @@
+# race Gemini g1c (gem-maya) — build first: wt-gem-maya like build-kr1.sh
+g1-test|600|~/k134|~/k134/race-gem1.sh test
+g1-a|900|~/k134|~/k134/race-gem1.sh run g1-off-lk g1-off-ds g1-all-ds
+g1-b|900|~/k134|~/k134/race-gem1.sh run g1-all-auto g1-all-lk g1-off-lk
+g1-par|600|~/k134|~/k134/race-gem1.sh parity
+g1-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

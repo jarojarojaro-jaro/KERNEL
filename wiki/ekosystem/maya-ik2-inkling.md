@@ -1,7 +1,7 @@
 ---
 typ: ekosystem
 tags: [ekosystem, maya, inkling, spekulacja, hip]
-aktualizacja: 2026-11-23
+aktualizacja: 2026-11-24
 zrodlo: kod Maya 1.1.73 na jaroserverai `~/k134/maya/src` (src/ik2/ik2_main.cu, ik2_kernels.cu, ik2_rdna.inc, src/spec/suffix_drafter.cpp, INKLING2.md); logi `~/k134/*` (K-134); analiza podagentów MayaT07 i MayaQ4K 2026-11-23
 status: aktualne
 ---
@@ -49,6 +49,19 @@ LoRA AtomicChat (rank 1, 44 MB) to w praktyce rzut y ← y − r(r·y) na wyjśc
 - **Czat T=0,7 (rep2, mediana 5):** lookup bez przełączników 112,9; + kernele gęste `IK2_K_DMV` 113,0; + fuzje `IK2_K_L*` 112,9–113,0; L+D 113,6 (+0,6%, w szumie). DSpark wymuszony: 102,2 → 106,7 ze wszystkimi przełącznikami okna (+4,4%), ale dalej poniżej lookupu.
 - **Profil (rocprofv3, 56 tokenów, bez zgadywania):** 705 → 547 uruchomień/token (−22%), ale kernele zajęte 7572 → 7786 µs (scalone kernele liczą więcej), a bez profilera prędkość 112,0 → 112,1 t/s. **Lekcja: w grafie na gfx1100 mniej uruchomień nie przyspiesza, gdy scalony kernel liczy coś ponownie; przerwy w profilerze są większe niż w zwykłym biegu.**
 - Gdzie idzie czas tokenu (bez L/D): eksperci gate_up Q4_K 32 µs × 48 = 1,53 ms (~750 GB/s, 78% pasma), down Q5_0 19 µs × 48 = 0,91 ms (~770 GB/s), q|k|v|r|gate Q8_0 27 µs × 40 = 1,08 ms (~780 GB/s), głowica 545 µs (~900 GB/s), atencja 12 µs × 40 = 0,50 ms, małe kernele (norma, bramki pętli, splot) ~1,5 ms; zajętość kerneli 74% czasu w profilerze. Odczyt wag ~3,8 GB/token = 3,96 ms przy 960 GB/s, czyli dziś ~44% sufitu.
+
+## Konkurencja na XTX (zwiad 2026-11-24)
+- Trzy niezależne silniki Inkling na AMD: nasz (mw00 1.1.73 + hipx14 + Q4_K/Q5_0), port HIP GodGMN (`GodGMN/maya-inkling-mini` hip-port `f472e94`, z alesha-pro, IQ4_NL) i Lucebox (`7eb143b`, ggml, RDNA4/Strix). Bajty na token IQ4_NL ggml-org i AD-Q4_K są równe (eksperci 1847 MB, część gęsta 1438 MB, głowica 492 MB; liczone z nagłówków GGUF).
+- GodGMN na swojej XTX: 117,1 / 114,2 / 107,5 t/s przy 512 / 2K / 8K bez zgadywania, T=0,7 115,7, prefill 2K 3156–3501 (`docs/HIP-PORT.md:676-684,1369-1373`). Ten sam silnik u Victora (272 W, ROCm 10.1): 106,1. My (eco 2200, ROCm 10.0): ~112 bez zgadywania, T=0,7 z lookupem 113,2. Różnica ±5–10% wynika z maszyny (moc, runtime ROCm 7.2 vs 10), nie z kerneli; do sprawdzenia testem obu binarek na naszej karcie.
+- Czego nie mamy: okna lookupu do 512 (`IK2_SUFFIX`; kopia 99 → 939 t/s przez HTTP u Victora; u nas `kBlockMax=8`), bramki pętli równolegle po randze (+3% u nich), `IK2_SLOT_KEEP` i `--parallel` (alesha #5, #11), DPP w redukcjach (mw00 #1164, +1,6% na Hy4).
+- Czego nie mają oni: loadów nietemporalnych (u nas +9%), KV q4.
+- Lekcja: przewagę konkurencji widać w serwowaniu (okna, sloty, wizja na GPU, testy z wyrocznią FP64 + GSM8K przy każdej zmianie), a nie w t/s dekodu.
+
+## Maya v1.1.76–1.1.77 (2026-11-23/24): co dla nas
+- v1.1.77 `bdaeba1` (#1164): sumy warp na RDNA przez DPP (`quad_perm`, `row_xmask`) i `v_permlanex16` zamiast `ds_bpermute` (`include/maya/kernels/lane_xor.hpp`), ta sama kolejność → te same bity; Hy4 3×XTX +1,6%. ik2 (`ik2_kernels.cu:290,295`) i nasze łatki hipx14/Q4_K nadal używają `__shfl_xor_sync` → do przeniesienia (K-test).
+- `d6dff49`: błąd krytyczny ik2 kończy proces `_Exit` (wcześniej mógł zawisnąć) — ważne dla strażnika mayaserve; `0d4f9dc`: start serwera bez `getfqdn`.
+- Stock XTX według README: 109,1 t/s (`--bench`, 1.1.74); nasze Q1 T=0 128,6 na innym prompcie.
+- Pełne porównanie i źródła: `product/research/watch/2026-11-24.md`, [[ZRODLA]] sekcja „Zwiad 2026-11-24”.
 
 ## Powiązane
 - [[inkling-2-mini]]

@@ -122,6 +122,11 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | prefill pp512 | **1333 t/s** | AD-Q4_K, PR #32695 | 2026-11-21 | [[inkling-2-mini]] |
 <!-- TABELE:END -->
 
+## KV i długi kontekst (zwiad 2026-11-24)
+- Według 2611.29092 §II Inkling ma 8 głów KV, d=128, 40 wizyt przesuwnych (okno 1024) i 8 globalnych, bez RoPE; bias względny działa tylko na ostatnich 1024 tokenach, V ma RMS-normę bez gammy. KV pełnej długości trzymają tylko wizyty globalne: 32 KB/token w f16, ~9,2 KB w q4_0.
+- Na Macu M6 2-bitowe KV po rotacji SRFT mieści 1M kontekstu w 19,5 GiB (9,5 t/s); u nas stratność poniżej q4 odpada, ale ich podział „ostatnie 1024 w f16 + reszta skwantowana z rotacją” to tani sposób na lepsze KV q4 (32 MiB, ~0 t/s) [INFERENCE], do decyzji JARO.
+- Weryfikacja 8 draftów DSpark czyta 35–45 ze 128 ekspertów (3× koszt tokenu na M6): ten sam mechanizm, co nasz stały koszt okna 0,52 kroku.
+
 ## Powiązane
 - [[KOLEJKA-TESTOW]] (K-133)
 - [[ZRODLA]]

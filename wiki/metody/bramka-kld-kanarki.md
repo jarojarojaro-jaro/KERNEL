@@ -1,7 +1,7 @@
 ---
 typ: metoda
 tags: [metody, poprawnosc, kld]
-aktualizacja: 2026-10-18
+aktualizacja: 2026-11-24
 zrodlo: ~/KERNEL/qwen-opt/tools/kld-canary.md:1-62; ~/KERNEL/qwen-opt/tools/README.md:35-51; ~/KERNEL/qwen-opt/NOTES.md:363; ~/KERNEL/product/research/16c-kvq-cuda.md:209-210,249-252
 status: aktualne
 ---
@@ -27,6 +27,11 @@ Sprawdzone na prawdziwych logach (baza: q8_0 vec):
 Ograniczenie: próg 2σ to ok. 0.005 KLD, więc błąd mniejszy od tego przejdzie. Kanarki (`kld_canary.sh`: KV q4_0, 3 z 4 ekspertów, wagi warstwy ×1.10, requant Q3_K_M…) mają zmierzyć tę granicę; na GPU jeszcze nieuruchomione (~2 h) wg tools/README.
 
 Uwaga 16c §9 (2026-10-18): 99.9% KLD na 40 960 tokenach to ~41 tokenów – na Qwenie z KV q4_0 jeden fragment (chunk 3, KLD tokenu ~20) decyduje o werdykcie, a sama zmiana kolejności sumowania przesuwa tę statystykę o ×0.69–×1.41; przy kandydatach blisko progu zawsze kontrola „to samo jądro, inny podział” ([[lekcja-kld-szum-kolejnosci]]).
+
+## Zmiany ocen, nie tylko KLD (arXiv 2611.29663, 2026-11-24)
+- FP8 KV w vLLM trzyma dokładność (+0,13 pkt), ale zmienia ocenę 3,4–3,9% zadań (tyle co wagi FP8); same „dokładne” funkcje (prefix cache, chunked prefill, spekulacja) z kernelami niezależnymi od batcha dają identyczny tekst w 3380/3380.
+- Dla nas: md5 przy batch 1 to poprawna bramka dla kerneli i spekulacji (podłoga 0). Zmianę numeryki (KV q4) bramkujemy liczbą zmienionych ocen ponad podłogą: ≥3 replik, gdy podłoga > 0 (topka ze slotami), jeden bieg, gdy restarty są bit w bit (Maya).
+- Tani predyktor ryzyka: 10. percentyl marginesu top1−top2 (AUC 0,89).
 
 ## Powiązane
 - [[metody/_hub|Metody]]

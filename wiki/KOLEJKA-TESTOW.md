@@ -24,6 +24,36 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
 1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
 
+### K-141 · Inkling na XTX: nasz silnik vs port GodGMN (release Victora) tym samym testem + wiersz code-v1 T=0 jak LocalMaxxing
+- data: 2026-11-24 (zwiad: GodGMN 117 / T=0,7 115,7 / 2k 114,2 na jego XTX, Victor 106 przy 272 W; R9700 z DSpark 144,6 na code-v1 T=0)
+- test (~25 min): binarka `maya-ik2-f472e94-rocm10-gfx1100` (sha256 z release) na ggml-org IQ4_NL (pobranie 17,6 GB — zgoda JARO) vs nasza `maya-ik2.adq4k`; ta sama procedura: głębokość 512 / 2k / 8k, greedy i T=0,7; do tego prompt code-v1 (`/tmp/zw-lm-code-v1.txt`, sha a737db73) T=0, 2048 wyj.: off / lookup / DSpark / auto
+- oczekiwany zysk: wiedza, czy różnica ±5–10% to maszyna czy kernele; uczciwy wiersz do rankingu
+- priorytet: wysoki
+
+### K-142 · Maya: redukcje fali przez DPP (`lane_xor`, mw00 #1164) w ik2 i naszych kernelach
+- test (≤10 min po buildzie): `ik2_kernels_test` te same bity; rep2 ABA Q1 / T=0,7 / L2k
+- oczekiwany zysk: +0,5–2% [INFERENCE z +1,6% na Hy4 3×XTX]; mamy już DPP w llama.cpp (argmax, rmsnorm)
+- priorytet: średni
+
+### K-143 · Inkling: dekod na długim kontekście (32k / 128k), KV q4 vs f16
+- data: 2026-11-24 (arXiv 2611.30027: kernele 4-bit KV przy batch 1 biorą 18–38% pasma; Inkling czyta ~1,2 GB KV/token przy 128k)
+- test (≤10 min): Maya prod, prompt 32k i 128k + 128 tokenów greedy, `IK2_KV=q4` vs f16; efektywne pasmo atencji z rocprofv3
+- oczekiwany zysk: wiedza; jeśli atencja q4 < 40% pasma → kernel
+- priorytet: średni
+
+### K-144 · Maya: szerokie okna lookupu (GodGMN `IK2_SUFFIX`, do 512) i `IK2_SLOT_KEEP` (alesha #11)
+- test (≤10 min): kopia/edycja kodu i proza: nasz lookup (okno ≤8) vs binarka GodGMN z `IK2_SUFFIX=128`; rozmowa 30k + boczne żądanie 2k + powrót (czas wznowienia)
+- oczekiwany zysk: kopie ×5–9 (Victor HTTP 99 → 939 t/s), powrót do rozmowy ~10 s → <0,2 s; proza −8–13% bez kontrolera, więc tylko z SpecCtl
+- priorytet: wysoki (agenci w Mai)
+
+### K-140 · Wyścig Maya: pomiar gałęzi Gemini `gem-maya` (runda 1: IK2_G_WEXP/WCOLS/WROUTE/WLOOP/DGRAPH/DFAST)
+- data: 2026-11-24 (runda maya-g1c, commit 96f45fc)
+- stan: nvcc czysto (kernels, main, draft); Gemini nie dodał testów; prognoza autora 135–155 t/s przy T=0,7 [jego szacunek, nasz model ze śladu daje dużo mniej: te same pomysły u Kernela dały DSpark 102,2 → 106,7, lookup 112,9]
+- test (~35 min karty): build `wt-gem-maya` (jak build-kr1.sh), `qwen-opt/inkling/race-gem1.sh` + `race-gem1.jobs`: testy kerneli z/bez IK2_G_*, rep2: bez przełączników lookup / DSpark, wszystkie IK2_G_* DSpark on / auto / lookup, parytet greedy drafting wył. vs wł.
+- baza: produkcja 113,2 t/s T=0,7 (AtomicChat, lookup)
+- ryzyko karty: nowe kernele HIP bez testów → najpierw g1-test, przy page fault stop
+- priorytet: wysoki (wyścig)
+
 ### K-139 · Ekonomia zgadywania Inklinga na XTX (Maya): pomiar kosztu okna, podatku draftera, lokalności ekspertów, parytetu przy T>0
 - data: 2026-11-24 (analiza skilli ashhart, [[ashhart-skills-infra]])
 - test (rep2/STAT, łącznie ~40 min): E1 wymuszona szerokość `IK2_DRAFT_ADAPT=0 IK2_DRAFT_WIDTH=2..8` → c[B], j, s, a (15 min); E2 podatek draftera: bez `--draft` vs drafter wczytany, a kontroler wybiera zwykły krok (5 min); E3 `IK2_TRACE` 256 tokenów → `route_locality.py` U(B) (2 min); E4 `parity.py` drafting wył./wł., seedy 1,2, T 0/0,7 (10 min); E5 drift routera AD vs UD (5 min); E6 priory SpecCtl z E1 + maks. szerokość (5 min)

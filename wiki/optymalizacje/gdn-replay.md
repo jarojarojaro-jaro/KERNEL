@@ -1,7 +1,7 @@
 ---
 typ: optymalizacja
 tags: [optymalizacje, gdn, spekulacja]
-aktualizacja: 2026-10-24
+aktualizacja: 2026-11-24
 zrodlo: ~/KERNEL/qwen-opt/NOTES.md:290-295; ~/KERNEL/product/research/07-nasze-metody-uogolnienie.md:108-111; ~/KERNEL/qwen-opt/research/round6/test-tooling.md:26; ~/KERNEL/product/research/patch-manifest.json (0033); ~/KERNEL/product/research/23e-re-silniki.md:21
 status: aktualne
 technika: GDN replay (S4, 0033–0036)
@@ -34,6 +34,9 @@ Poprawność: bitowo identyczne. Wyłącznik: `LLAMA_GDN_REPLAY=0` (gasi też 00
 Raport 23e (2026-10-19) proponował „rollback GDN przez replay” jako nowy pomysł ze Straty – to dokładnie ta technika, już w produkcji.
 
 Konkurs Bonsai 2 9B (2026-10-17…19, raport 60b) doszedł niezależnie do tego samego: cuda.fast #9 „lazy rollback” (slot 0 + baza okna + rekord k/v/g/beta, 34.6 MB → ~4.5 MiB zapisów na wywołanie, decode +7.5–8.3% na GB10) i #74 `GDN_LAZY_NOFINAL` (bez zapisu stanu końcowego w weryfikacji). Nowe względem S4: taśma delt (mlx.fast #467: weryfikacja zapisuje `delta` i `g`, przeliczenie bez k·S; ×1.02) – kandydat T3 z raportu 60b.
+
+## Zwiad 2026-11-24
+**2026-11-24:** upstream llama.cpp scalił tę samą technikę (`d35dc4d9e`, #31669): jeden stan + wejścia k/v/g/beta ostatniego ubatcha, a op GDN przelicza przyjęte tokeny przed nowymi. Snapshoty usunięto. TRT-LLM zrobił to samo (#19586). Raport 07 oceniał szansę upstreamu jako średnią–niską, a upstream doszedł do tego sam w 6 tygodni. Mamy więcej: bank, czyli brak replayu po pełnej akceptacji. Do wzięcia: ich test bitowy z losowymi cofnięciami oraz fuzja zapisu wejść oczekujących w kernel GDN.
 
 ## Powiązane
 - [[conv-lag]]: ten sam pomysł dla stanu conv
