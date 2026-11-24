@@ -1,0 +1,1377 @@
+From 34c28c8fe1b9bb9ef1ee7272f892be355fdff049 Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Tue, 24 Nov 2026 03:14:53 +0100
+Subject: [PATCH 5/8] ik2: a token's launches fused - IK2_K_LCN / LRR / LDN /
+ LMD / LKV (default off, same bits on)
+
+The resident path's one-token step (fast_token_launches), Inkling-2-Mini on HIP with the production env: ~711
+launches a token (11 a windowed visit outside the loop, 15 a full one, 16 / 20 in the loop, +4 a later pass's
+start) -> ~550 with every switch on (9 / 10 / 13 / 14).  Each fused launch runs the unfused kernels' code with their
+block sizes; a vector a part needs whole is computed again in each block that needs it (no "last block" added).
+
+- IK2_K_LCN: a visit's MoE output (moe_combine_conv) left pending and written by the next visit's input-norm launch
+  (combine_res / combine_res_rms: one block of 512, attn_res_vec4's body over states read back with plain loads),
+  with the block state's and the drafter tap's copies; the embedding's norm with layer 0's (emb_norm2); the loop's
+  passes copy no stream (lp_pre = block nb_pre's state, the bank read where it is).  -65 launches a token.
+- IK2_K_LRR: the MoE input's attn_res_rms with the router rows and route_pick (res_router; the norm again in each of
+  E / 16 blocks, the picks by the last block as IK2_HIP_FUSE's).  -24.
+- IK2_K_LDN: a looped visit's MoE residual with its message gate's dots (res_dots, 4 ranks a block of 512).  -24.
+- IK2_K_LMD: a looped visit's attention input - the pending MoE output (again in each block, its conv history moved
+  on in rms_multi_shift's launch), the residual, the three gates' dots - in one launch.  -24.
+- IK2_K_LKV (load): a full layer's q | r | gate | k | v as one planar Q8_0 matrix (wqrg / wk / wv its rows), its
+  products one mv_q8p_conv with MvAlt + the dynamic-tap convs; the two tap products one mv_f16_pair.  -24.
+
+Refactors, the same code for the unfused kernels: attn_res_vec4_body, moe_combine_conv_ch, lg_dots_body,
+rms_multi_row, rms_row / route_pick LDG flag; loop_gates / loop_gate_rms dots_done.
+tests/ik2_kernels_test.cu: test_k_launches - each fused launch against the unfused calls, every output bit for bit.
+---
+ docs/INKLING2.md          |  15 ++
+ src/ik2/ik2_kernels.cu    | 437 +++++++++++++++++++++++++++++++++-----
+ src/ik2/ik2_kernels.cuh   |  54 ++++-
+ src/ik2/ik2_main.cu       | 235 +++++++++++++++-----
+ tests/ik2_kernels_test.cu | 236 ++++++++++++++++++++
+ 5 files changed, 864 insertions(+), 113 deletions(-)
+
+diff --git a/docs/INKLING2.md b/docs/INKLING2.md
+index b003bde0..7d53888e 100644
+--- a/docs/INKLING2.md
++++ b/docs/INKLING2.md
+@@ -484,6 +484,21 @@ time): mode A only by default - the resident path's expert kernels, so the same
+ VRAM; lane parity (`IK2_LANE=1`) sums in other bits there and is a test option. Run on a Radeon 8065S (Ubuntu, ROCm
+ 7.1), also set as a 12 and a 16 GB card (`IK2_VRAM_GB`: on an APU the free figures are capped, no ballast).
+ 
++**Fewer launches a token** (`IK2_K_LCN`, `_LRR`, `_LDN`, `_LMD`, `_LKV`, each `=1` to turn on, off by default; the
++resident path's one-token steps, not the offload path or two GPUs). A token's launches each cost ~2 us of gap on an
++RX 7900 XTX whatever they do, and Inkling-2-Mini's 48 visits took ~711 of them (11 a windowed visit outside the loop,
++16-21 inside it). Each switch merges small kernels into one launch whose blocks run the unfused kernels' code with
++their block sizes, so every value is the unfused launches' to the bit (`tests/ik2_kernels_test.cu`: each against
++them); a vector a part needs whole is computed again in each block that needs it (a few KB from L2), not left to "the
++last block" (which broke even on gfx1100). `LCN`: a visit's MoE output (combine + short conv + stream) is written by the
++next visit's input-norm launch, with the block state's and the drafter's tap's copies, and the loop's passes copy no
++stream (the core's input is block `nb_pre`'s state; the bank is read where it is): -65 launches a token. `LRR`: the MoE
++input's norm with the router (-24). `LDN`: a looped visit's MoE residual with its message gate's dots (-24). `LMD`: a
++looped visit's attention input - the pending MoE output, the residual, the three gates' dots - in one launch, the
++conv's history moved on in the norms' launch after (-24). `LKV` (at load): a full layer's q | r | gate | k | v as one
++planar Q8_0 matrix, its products one launch, the dynamic taps' two products one (-24). All on: ~550 launches a token
++(-161), 9 a windowed visit outside the loop, 13 inside it.
++
+ **Defaults.** Thinking Machines' `generation_config.json`: temperature 1.0 (no top_p, no top_k: 1.0 and off).
+ Thinking is the template's `reasoning_effort`, a name or a number in [0.0, 0.99]: `none` 0.0, `minimal` 0.1, `low`
+ 0.2, `medium` 0.7, `high` 0.9 (the template's default), `xhigh` and `max` 0.99.
+diff --git a/src/ik2/ik2_kernels.cu b/src/ik2/ik2_kernels.cu
+index f6a0fb01..72449e39 100644
+--- a/src/ik2/ik2_kernels.cu
++++ b/src/ik2/ik2_kernels.cu
+@@ -288,8 +288,15 @@ __device__ __forceinline__ void q4_v_row16(const KvQ4* vc, size_t e, int gr, uin
+     hi = q4x8_h8(w.y, d | (d << 16));
+ }
+ 
++// a float4 through the read-only path, or (LDG false) a plain load: a row the launch itself wrote (the read-only path
++// is not coherent with a launch's own stores) or one in shared memory - the same values
++template <bool LDG>
++__device__ __forceinline__ float4 ld_f4(const float4* p) {
++    if constexpr (LDG) return __ldg(p);
++    else return *p;
++}
+ // rms_impl_kernel's row: kBlk threads (sh [kBlk])
+-template <bool WRITE_F16, bool WRITE_F32>
++template <bool WRITE_F16, bool WRITE_F32, bool LDG = true>
+ __device__ __forceinline__ void rms_row(const float* xr, const float* w, int D, float eps, uint16_t* y16r, float* y32r,
+                                         float* sh) {
+     const bool vec4 = (((uintptr_t) xr & 15) == 0) && (!w || ((uintptr_t) w & 15) == 0) &&
+@@ -300,7 +307,7 @@ __device__ __forceinline__ void rms_row(const float* xr, const float* w, int D,
+         const int n4 = D >> 2;
+         const float4* x4 = (const float4*) xr;
+         for (int d4 = threadIdx.x; d4 < n4; d4 += kBlk) {
+-            const float4 v = __ldg(x4 + d4);
++            const float4 v = ld_f4<LDG>(x4 + d4);
+             a += v.x * v.x + v.y * v.y + v.z * v.z + v.w * v.w;
+         }
+         const float rs = rsqrtf(bsum(a, sh) / (float) D + eps);
+@@ -308,7 +315,7 @@ __device__ __forceinline__ void rms_row(const float* xr, const float* w, int D,
+         float4* y32_4 = (float4*) y32r;
+         uint2* y16_4 = (uint2*) y16r;
+         for (int d4 = threadIdx.x; d4 < n4; d4 += kBlk) {
+-            const float4 v = __ldg(x4 + d4);
++            const float4 v = ld_f4<LDG>(x4 + d4);
+             const float4 ww = w4 ? __ldg(w4 + d4) : make_float4(1.0f, 1.0f, 1.0f, 1.0f);
+             const float r0 = v.x * rs * ww.x, r1 = v.y * rs * ww.y, r2 = v.z * rs * ww.z, r3 = v.w * rs * ww.w;
+             if (WRITE_F32) y32_4[d4] = make_float4(r0, r1, r2, r3);
+@@ -362,12 +369,12 @@ __global__ void proj_out_kernel(float* y, int ld, const float* __restrict__ r, i
+     const float d = bsum(a, sh);
+     for (int c = threadIdx.x; c < C; c += kBlk) yr[c] -= d * r[c];
+ }
+-// rms of up to three vectors, each with its own weights, in one launch (a block a vector; rms_impl_kernel's sums)
+-__global__ void rms_multi_kernel(RmsJobs jobs, int D, float eps) {
+-    __shared__ float sh[kBlk];
+-    const float* xr = jobs.x[blockIdx.x];
+-    const float* w = jobs.w[blockIdx.x];
+-    float* y32r = jobs.y[blockIdx.x];
++// rms of up to three vectors, each with its own weights, in one launch (a block a vector; rms_impl_kernel's sums);
++// vector i's block (rms_multi_kernel's, IK2_K_LMD's rms_multi_shift_kernel's)
++__device__ __forceinline__ void rms_multi_row(const RmsJobs& jobs, int i, int D, float eps, float* sh) {
++    const float* xr = jobs.x[i];
++    const float* w = jobs.w[i];
++    float* y32r = jobs.y[i];
+     const bool vec4 = (((uintptr_t) xr & 15) == 0) && (!w || ((uintptr_t) w & 15) == 0) &&
+                       (((uintptr_t) y32r & 15) == 0) && ((D & 3) == 0);
+     float a = 0.0f;
+@@ -393,6 +400,10 @@ __global__ void rms_multi_kernel(RmsJobs jobs, int D, float eps) {
+         for (int d = threadIdx.x; d < D; d += kBlk) y32r[d] = xr[d] * rs * (w ? w[d] : 1.0f);
+     }
+ }
++__global__ void rms_multi_kernel(RmsJobs jobs, int D, float eps) {
++    __shared__ float sh[kBlk];
++    rms_multi_row(jobs, (int) blockIdx.x, D, eps, sh);
++}
+ 
+ __device__ __forceinline__ float wsum(float v) {
+ #pragma unroll
+@@ -724,15 +735,18 @@ __device__ __forceinline__ void attn_res_warp0_softmax(float sh_red[][kResMax *
+ }
+ 
+ constexpr int kResGroup = 4;
+-template <bool FUSED_RMS, int BLOCK_THREADS>
+-__global__ void attn_res_vec4_kernel(ResStates st, int n, const float* q, int nq, int T, int C, float res_eps,
+-                                     float rms_eps, float* out, RmsOuts outs, size_t q_step, size_t o_step) {
+-    q += blockIdx.y * q_step, out += blockIdx.y * o_step;   // (attn_res_jobs: a job a block of the launch)
++// (the kernel's block: the token t's attn_res of the queries q; LDG false: the states read with plain loads - one the
++//  launch wrote itself, IK2_K_LCN's - the same values; last (given): the last state read from there instead - the
++//  block's own copy of it in shared memory, IK2_K_LMD's)
++template <bool FUSED_RMS, int BLOCK_THREADS, bool LDG = true>
++__device__ __forceinline__ void attn_res_vec4_body(const ResStates& st, int n, const float* q, int nq, int T, int C,
++                                                   float res_eps, float rms_eps, float* out, const RmsOuts& outs, int t,
++                                                   const float* last = nullptr) {
+     constexpr int NUM_WARPS = BLOCK_THREADS / 32;
+     __shared__ float sh_red[NUM_WARPS][kResMax * 4];
+     __shared__ float sc[3][kResMax];
+     __shared__ float rs_rms[3];
+-    const int t = blockIdx.x, tid = threadIdx.x, lane = tid & 31, warp = tid >> 5;
++    const int tid = threadIdx.x, lane = tid & 31, warp = tid >> 5;
+     const int c4 = C >> 2, d4_0 = tid, d4_1 = tid + BLOCK_THREADS;
+     float4 q0[3] = {}, q1[3] = {};
+     if (d4_0 < c4) {
+@@ -753,9 +767,10 @@ __global__ void attn_res_vec4_kernel(ResStates st, int n, const float* q, int nq
+         float4 xa[kResGroup], xb[kResGroup];
+ #pragma unroll
+         for (int j = 0; j < kResGroup; ++j) {
+-            const float4* x4 = (const float4*) (st.st[min(i0 + j, n - 1)] + (size_t) t * C);
+-            xa[j] = in0 ? __ldg(x4 + d4_0) : zero4;
+-            xb[j] = in1 ? __ldg(x4 + d4_1) : zero4;
++            const float4* x4 =
++                (const float4*) ((last && i0 + j >= n - 1 ? last : st.st[min(i0 + j, n - 1)]) + (size_t) t * C);
++            xa[j] = in0 ? ld_f4<LDG>(x4 + d4_0) : zero4;
++            xb[j] = in1 ? ld_f4<LDG>(x4 + d4_1) : zero4;
+         }
+ #pragma unroll
+         for (int j = 0; j < kResGroup; ++j) {
+@@ -797,9 +812,10 @@ __global__ void attn_res_vec4_kernel(ResStates st, int n, const float* q, int nq
+         float4 xa[kResGroup], xb[kResGroup];
+ #pragma unroll
+         for (int j = 0; j < kResGroup; ++j) {
+-            const float4* x4 = (const float4*) (st.st[min(i0 + j, n - 1)] + (size_t) t * C);
+-            xa[j] = in0 ? __ldg(x4 + d4_0) : zero4;
+-            xb[j] = in1 ? __ldg(x4 + d4_1) : zero4;
++            const float4* x4 =
++                (const float4*) ((last && i0 + j >= n - 1 ? last : st.st[min(i0 + j, n - 1)]) + (size_t) t * C);
++            xa[j] = in0 ? ld_f4<LDG>(x4 + d4_0) : zero4;
++            xb[j] = in1 ? ld_f4<LDG>(x4 + d4_1) : zero4;
+         }
+ #pragma unroll
+         for (int j = 0; j < kResGroup; ++j) {
+@@ -877,6 +893,12 @@ __global__ void attn_res_vec4_kernel(ResStates st, int n, const float* q, int nq
+         }
+     }
+ }
++template <bool FUSED_RMS, int BLOCK_THREADS>
++__global__ void attn_res_vec4_kernel(ResStates st, int n, const float* q, int nq, int T, int C, float res_eps,
++                                     float rms_eps, float* out, RmsOuts outs, size_t q_step, size_t o_step) {
++    q += blockIdx.y * q_step, out += blockIdx.y * o_step;   // (attn_res_jobs: a job a block of the launch)
++    attn_res_vec4_body<FUSED_RMS, BLOCK_THREADS>(st, n, q, nq, T, C, res_eps, rms_eps, out, outs, (int) blockIdx.x);
++}
+ 
+ template <bool FUSED_RMS>
+ __global__ void attn_res_scalar_kernel(ResStates st, int n, const float* q, int nq, int T, int C, float res_eps,
+@@ -2722,11 +2744,13 @@ __global__ void swiglu_cap_f32_kernel(const float* gu, int n, int F, const float
+ }
+ 
+ // one token's moe_combine_f32 and the conv4_res after it in one launch: out = conv(sum_k wt[k] y[inv[k]]) + res
+-__global__ void moe_combine_conv_kernel(const float* __restrict__ y, const int* __restrict__ inv,
+-                                        const float* __restrict__ wt, int K, int C, float* hist,
+-                                        const float* __restrict__ w, const float* res, float* out) {
+-    const int c = blockIdx.x * blockDim.x + threadIdx.x;
+-    if (c >= C) return;
++// (channel c's value, its history moved on; the kernel's and IK2_K_LCN's combine_res_kernel's)
++// (HIST false, IK2_K_LMD: the history left as it is - the pre-conv sum to *a_ret, moved on by a later launch)
++template <bool HIST = true>
++__device__ __forceinline__ float moe_combine_conv_ch(const float* __restrict__ y, const int* __restrict__ inv,
++                                                     const float* __restrict__ wt, int K, int C, float* hist,
++                                                     const float* __restrict__ w, const float* res, int c,
++                                                     float* a_ret = nullptr) {
+     float a = 0.0f;
+     for (int k = 0; k < K; ++k) a += wt[k] * y[(size_t) inv[k] * C + c];
+     const float h0 = hist[c], h1 = hist[(size_t) C + c], h2 = hist[(size_t) 2 * C + c];
+@@ -2734,10 +2758,21 @@ __global__ void moe_combine_conv_kernel(const float* __restrict__ y, const int*
+     const float w0 = wc[0], w1 = wc[1], w2 = wc[2], w3 = wc[3];
+     float b = w0 * h0 + w1 * h1 + w2 * h2 + w3 * a;
+     if (res) b += res[c];
+-    out[c] = b;
+-    hist[c] = h1;
+-    hist[(size_t) C + c] = h2;
+-    hist[(size_t) 2 * C + c] = a;
++    if constexpr (HIST) {
++        hist[c] = h1;
++        hist[(size_t) C + c] = h2;
++        hist[(size_t) 2 * C + c] = a;
++    } else {
++        *a_ret = a;
++    }
++    return b;
++}
++__global__ void moe_combine_conv_kernel(const float* __restrict__ y, const int* __restrict__ inv,
++                                        const float* __restrict__ wt, int K, int C, float* hist,
++                                        const float* __restrict__ w, const float* res, float* out) {
++    const int c = blockIdx.x * blockDim.x + threadIdx.x;
++    if (c >= C) return;
++    out[c] = moe_combine_conv_ch(y, inv, wt, K, C, hist, w, res, c);
+ }
+ __global__ void moe_combine_f32_kernel(const float* y, const int* inv, const float* wt, int T, int K, int C, float* out,
+                                        bool add) {
+@@ -2780,13 +2815,12 @@ constexpr int kLoopRankMax = 128;
+ // (1) a block a rank (128 threads): its two dots; rank 0's block also stores the sums of squares.  (U, AMD
+ // IK2_HIP_LGD=1, C 2304: a thread's 18 steps' loads asked for at once, then the loop's sums in its order - the zeros
+ // they start from hidden from the compiler: with 0 + x x folded to x x it fused the second square instead of the first)
+-template <int U = 0>   // (U 2, IK2_HIP_LGD=2: D read non-temporally too)
+-__global__ void loop_gate_dots_kernel(LoopGateArgs a, int T, int C, int R, float* sc) {
+-    __shared__ float sh[4][4];
+-    const int r = blockIdx.x, j = blockIdx.y, t = blockIdx.z, tid = threadIdx.x, warp = tid >> 5;
+-    const float* xr = a.x[j] + (size_t) t * C;
+-    const float* mr = a.m[j] + (size_t) t * C;
+-    const float* dr = a.D[j] + (size_t) r * 2 * C;
++// (the block's part, 128 threads tid: rank r's two dots of x row xr and m row mr against D row dr, written to the
++//  token's sc row o; sh [4][4] its own - loop_gate_dots_kernel's, and IK2_K_LDN's res_dots_kernel's four ranks a block)
++template <int U>   // (U 2, IK2_HIP_LGD=2: D read non-temporally too)
++__device__ __forceinline__ void lg_dots_body(const float* xr, const float* mr, const float* dr, int C, int R, int r,
++                                             int tid, float (*sh)[4], float* o) {
++    const int warp = tid >> 5;
+     float ax = 0.0f, am = 0.0f, sx = 0.0f, sm = 0.0f;
+     if (U && C == 2304) {
+         constexpr int kN = 2304 / 128;
+@@ -2818,7 +2852,6 @@ __global__ void loop_gate_dots_kernel(LoopGateArgs a, int T, int C, int R, float
+     if ((tid & 31) == 0) sh[warp][0] = ax, sh[warp][1] = am, sh[warp][2] = sx, sh[warp][3] = sm;
+     __syncthreads();
+     if (tid == 0) {
+-        float* o = sc + ((size_t) j * T + t) * (2 * R + 2);
+         o[2 * r] = sh[0][0] + sh[1][0] + sh[2][0] + sh[3][0];
+         o[2 * r + 1] = sh[0][1] + sh[1][1] + sh[2][1] + sh[3][1];
+         if (r == 0) {
+@@ -2827,6 +2860,13 @@ __global__ void loop_gate_dots_kernel(LoopGateArgs a, int T, int C, int R, float
+         }
+     }
+ }
++template <int U = 0>
++__global__ void loop_gate_dots_kernel(LoopGateArgs a, int T, int C, int R, float* sc) {
++    __shared__ float sh[4][4];
++    const int r = blockIdx.x, j = blockIdx.y, t = blockIdx.z;
++    lg_dots_body<U>(a.x[j] + (size_t) t * C, a.m[j] + (size_t) t * C, a.D[j] + (size_t) r * 2 * C, C, R, r,
++                    (int) threadIdx.x, sh, sc + ((size_t) j * T + t) * (2 * R + 2));
++}
+ #ifndef MAYA_USE_HIP
+ // (1) for a few tokens (a token, a window: T <= 8) and C = 128 NIT: a block a (rank, gate) for every token - its D
+ // row's two halves asked for once, at the start, each token's x and m a token ahead of its sums; the sums are
+@@ -5151,7 +5191,18 @@ __global__ void route_gather_kernel(const int* __restrict__ top, const float* __
+ // expert), the K of rank under K are the picks, and a pick's place among them - ascending experts - is the count of
+ // picks under it.  (route_warp_kernel finds them by K rounds of one warp's argmax: 10 us of a lone warp's latency.)
+ // route_token_kernel's first block: the picks and their tables (blockDim threads, at least E, a multiple of 32; rt_sm:
+-// E + blockDim / 32 + K + 1 floats)
++// E + blockDim / 32 + K + 1 floats).  LDG false: the logits read past the read-only path (the launch's other blocks
++// wrote them: IK2_K_LRR's res_router_kernel) - the same values.
++template <bool LDG = true>
++__device__ __forceinline__ float ld_logit(const float* p) {
++#ifdef MAYA_USE_HIP
++    return LDG ? __ldg(p) : *p;
++#else
++    if constexpr (LDG) return __ldg(p);
++    else return __ldcg(p);
++#endif
++}
++template <bool LDG = true>
+ __device__ __forceinline__ void route_pick(const float* __restrict__ logits, const float* __restrict__ bias, int E, int K,
+                                            float scale, const uint8_t* const* __restrict__ tab,
+                                            const float* __restrict__ sg_t, const float* __restrict__ su_t,
+@@ -5161,7 +5212,7 @@ __device__ __forceinline__ void route_pick(const float* __restrict__ logits, con
+     uint32_t* picked = (uint32_t*) (rt_sm + E);               // [warps] a warp's picks, a bit a lane
+     float* sig = (float*) (picked + (blockDim.x >> 5));       // [K] the picks' sigmoids in order, [K]: their sum
+     const int e = threadIdx.x, lane = e & 31, warp = e >> 5;
+-    const float sl = e < E ? 1.0f / (1.0f + expf(-__ldg(logits + e))) : 0.0f;
++    const float sl = e < E ? 1.0f / (1.0f + expf(-ld_logit<LDG>(logits + e))) : 0.0f;
+     const float v = e < E ? sl + __ldg(bias + e) : -INFINITY;
+     if (e < E) val[e] = v;
+     __syncthreads();
+@@ -5241,6 +5292,156 @@ router_route_kernel(const uint16_t* __restrict__ W, int N, const float* __restri
+ }
+ #endif
+ 
++// ---- IK2_K_L*: a token's small kernels in fewer launches.  Each part runs the unfused kernel's code with its block's
++// threads (the same per-thread order, the same reductions), so every value is the unfused launches' to the bit; a
++// launch of a token costs ~2 us of gap on gfx1100 whatever it does.  Parts that need a whole vector the launch's other
++// blocks make (a norm before a product) are computed again in each block that needs it - a few KB from L2 - rather
++// than "the last block does the rest" (on gfx1100 that broke even).
++
++// IK2_K_LCN: the visit before's MoE output (moe_combine_conv_kernel's channels, to out and its copies: the block state
++// where a block starts, the drafter's tap) and the next visit's attention residual over states whose last is out
++// (attn_res_vec4_kernel<FUSED_RMS, 512>'s block; the states read with plain loads): one block, a launch less a visit.
++template <bool FUSED_RMS>
++__global__ void __launch_bounds__(512) combine_res_kernel(CombineJob cb, ResStates st, int n, const float* q, int nq,
++                                                          int C, float res_eps, float rms_eps, float* out,
++                                                          RmsOuts outs) {
++    for (int c = threadIdx.x; c < C; c += 512) {
++        const float b = moe_combine_conv_ch(cb.y, cb.inv, cb.wt, cb.K, C, cb.hist, cb.w, cb.res, c);
++        cb.out[c] = b;
++        if (cb.out2) cb.out2[c] = b;
++        if (cb.out3) cb.out3[c] = b;
++    }
++    __syncthreads();
++    attn_res_vec4_body<FUSED_RMS, 512, false>(st, n, q, nq, 1, C, res_eps, rms_eps, out, outs, 0);
++}
++// IK2_K_LCN, the token's start: the embedding row's norm (rms_impl_kernel's row) to h and its copy h2 (block 0's
++// state), then layer 0's attention norm of h (rms_impl_kernel's, h read back with plain loads) to y: one launch, not two
++// and a copy
++__global__ void __launch_bounds__(kBlk) emb_norm2_kernel(const float* x, const float* w0, float* h, float* h2,
++                                                         const float* w1, float* y, int D, float eps) {
++    __shared__ float sh[kBlk];
++    rms_row<false, true>(x, w0, D, eps, nullptr, h, sh);
++    __syncthreads();
++    if (h2)
++        for (int d = threadIdx.x; d < D; d += kBlk) h2[d] = h[d];
++    rms_row<false, true, false>(h, w1, D, eps, nullptr, y, sh);
++}
++// IK2_K_LRR: the MoE's input norm (attn_res_vec4_kernel<true, 512>'s block, again in each block: its states from L2)
++// and the router's rows over it from shared memory (mv_f16's sums, a warp a row, 16 a block), the last block to finish
++// its rows takes the picks (route_pick, as IK2_HIP_FUSE's router_route_kernel): a launch less a visit.  Block 0
++// writes the norm's outputs.  KC 2304: f16_dot_lane's sums (AMD IK2_HIP_MVF16=1); 0: mv_f16_kernel's loop.
++__device__ unsigned int g_lrr_done = 0;
++template <int KC>
++__global__ void __launch_bounds__(512)
++res_router_kernel(ResStates st, int n, const float* q, int C, float res_eps, float rms_eps, const float* nw, uint16_t* x16,
++                  float* x32, const uint16_t* __restrict__ W, int E, float* rlog, const float* __restrict__ bias, int K,
++                  float scale, const uint8_t* const* __restrict__ tab, const float* __restrict__ sg_t,
++                  const float* __restrict__ su_t, const float* __restrict__ sd_t, int* top, float* w,
++                  const uint8_t** blob, int* tok, int* inv, float* sg, float* su, float* wt) {
++    extern __shared__ __align__(16) float lrr_sm[];   // the norm's output [C], then route_pick's
++    __shared__ bool last;
++    float* xs = lrr_sm;
++    {
++        RmsOuts o;
++        o.w[0] = nw, o.y32[0] = xs;
++        attn_res_vec4_body<true, 512>(st, n, q, 1, 1, C, res_eps, rms_eps, nullptr, o, 0);
++    }
++    __syncthreads();
++    if (blockIdx.x == 0)
++        for (int i = threadIdx.x; i < C; i += 512) {
++            const float v = xs[i];
++            x32[i] = v;
++            if (x16) x16[i] = f2h(v);
++        }
++    const int row = blockIdx.x * 16 + (threadIdx.x >> 5), lane = threadIdx.x & 31;
++    if (row < E) {
++        const uint16_t* wr = W + (size_t) row * C;
++        float a = 0.0f;
++        if constexpr (KC > 0) a = f16_dot_lane<KC>(wr, xs, lane);
++        else
++            for (int i = lane; i < C; i += 32) a += h2f(wr[i]) * xs[i];
++        a = wsum(a);
++        if (lane == 0) rlog[row] = a;
++    }
++    __threadfence();
++    __syncthreads();
++    if (threadIdx.x == 0) last = atomicAdd(&g_lrr_done, 1u) == gridDim.x - 1;
++    __syncthreads();
++    if (!last) return;
++    __threadfence();
++    if (threadIdx.x == 0) atomicExch(&g_lrr_done, 0u);
++    route_pick<false>(rlog, bias, E, K, scale, tab, sg_t, su_t, sd_t, top, w, blob, tok, inv, sg, su, wt, lrr_sm + C);
++}
++// IK2_K_LDN / IK2_K_LMD: a looped visit's attention residual (attn_res_vec4_kernel<false, 512>'s block, nq queries,
++// again in each block) and its message gates' dots (loop_gate_dots_kernel's, four ranks a block of 512, gate
++// blockIdx.y, x from shared memory): a launch less a looped visit's input.  COMB (LMD, the visit's attention input):
++// first the visit before's MoE output, again in each block (moe_combine_conv_kernel's channels, its history left for
++// rms_multi_shift: other blocks read it); block 0 writes it (cb.out and its copies) and its pre-conv sums (a_out).
++// Block 0 writes the residuals (x_out [nq][C]: the gates' x, which their apply reads).
++template <int U, bool COMB>
++__global__ void __launch_bounds__(512) res_dots_kernel(CombineJob cb, float* a_out, ResStates st, int n, const float* q,
++                                                       int nq, int C, float res_eps, float* x_out, LoopGateArgs ga,
++                                                       int R, float* sc) {
++    extern __shared__ __align__(16) float lrd_sm[];   // the residuals [nq][C], then (COMB) the stream [C]
++    __shared__ float sh[4][4][4];
++    float* hsm = lrd_sm + (size_t) nq * C;
++    if constexpr (COMB) {
++        for (int c = threadIdx.x; c < C; c += 512) {
++            float a;
++            const float b = moe_combine_conv_ch<false>(cb.y, cb.inv, cb.wt, cb.K, C, cb.hist, cb.w, cb.res, c, &a);
++            hsm[c] = b;
++            if (blockIdx.x == 0 && blockIdx.y == 0) {
++                cb.out[c] = b, a_out[c] = a;
++                if (cb.out2) cb.out2[c] = b;
++                if (cb.out3) cb.out3[c] = b;
++            }
++        }
++        __syncthreads();
++    }
++    attn_res_vec4_body<false, 512, !COMB>(st, n, q, nq, 1, C, res_eps, 0.0f, lrd_sm, RmsOuts{}, 0,
++                                          COMB ? hsm : nullptr);
++    __syncthreads();
++    if (blockIdx.x == 0 && blockIdx.y == 0)
++        for (int i = threadIdx.x; i < nq * C; i += 512) x_out[i] = lrd_sm[i];
++    const int j = blockIdx.y, g = threadIdx.x >> 7, r = blockIdx.x * 4 + g;
++    lg_dots_body<U>(lrd_sm + (size_t) (nq == 3 ? j : 0) * C, ga.m[j], ga.D[j] + (size_t) r * 2 * C, C, R, r,
++                    threadIdx.x & 127, sh[g], sc + (size_t) j * (2 * R + 2));
++}
++// IK2_K_LMD: rms_multi and the history res_dots_kernel<_, true> left - hist [3][C] moved on, its last row a: rms_multi's
++// blocks, then blocks of kBlk channels
++__global__ void rms_multi_shift_kernel(RmsJobs jobs, int n, int D, float eps, float* hist, const float* a, int C) {
++    if ((int) blockIdx.x < n) {
++        __shared__ float sh[kBlk];
++        rms_multi_row(jobs, (int) blockIdx.x, D, eps, sh);
++        return;
++    }
++    const int c = ((int) blockIdx.x - n) * kBlk + threadIdx.x;
++    if (c >= C) return;
++    const float h1 = hist[(size_t) C + c], h2 = hist[(size_t) 2 * C + c];
++    hist[c] = h1;
++    hist[(size_t) C + c] = h2;
++    hist[(size_t) 2 * C + c] = a[c];
++}
++// IK2_K_LKV: two mv_f16's in one launch (a full layer's dynamic taps of k and v): the first's blocks then the second's,
++// each mv_f16_kernel's / mv_f16_k_kernel's row (KC as res_router_kernel's)
++template <int KC>
++__global__ void __launch_bounds__(128)
++mv_f16_pair_kernel(const uint16_t* __restrict__ W0, int N0, const float* __restrict__ x0, float* __restrict__ y0,
++                   const uint16_t* __restrict__ W1, int N1, const float* __restrict__ x1, float* __restrict__ y1, int K) {
++    const int nb0 = (N0 + 3) / 4;
++    const bool two = (int) blockIdx.x >= nb0;
++    const int row = ((int) blockIdx.x - (two ? nb0 : 0)) * 4 + (threadIdx.x >> 5), lane = threadIdx.x & 31;
++    if (row >= (two ? N1 : N0)) return;
++    const uint16_t* w = (two ? W1 : W0) + (size_t) row * K;
++    const float* x = two ? x1 : x0;
++    float a = 0.0f;
++    if constexpr (KC > 0) a = f16_dot_lane<KC>(w, x, lane);
++    else
++        for (int i = lane; i < K; i += 32) a += h2f(w[i]) * x[i];
++    a = wsum(a);
++    if (lane == 0) (two ? y1 : y0)[row] = a;
++}
++
+ // ---- speculative decoding
+ 
+ __global__ void conv_hist_after_kernel(const float* old, const float* x, int T, int C, float* hist) {
+@@ -8344,8 +8545,8 @@ void softcap(float* x, size_t n, float cap, cudaStream_t s) {
+ }
+ 
+ static void lg_launch(const LoopGateArgs& a, int n, int T, int C, int R, float eps, float* sc, bool rms,
+-                      const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s);
+-void loop_gates(const LoopGate* gt, int n, int T, int C, int R, float eps, float* sc, cudaStream_t s) {
++                      const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s, bool dots = true);
++void loop_gates(const LoopGate* gt, int n, int T, int C, int R, float eps, float* sc, cudaStream_t s, bool dots_done) {
+     if (T <= 0 || n <= 0) return;
+     if (n > 3 || R > kLoopRankMax || T > 65535) {
+         std::fprintf(stderr, "ik2::k::loop_gates: %d gates, rank %d, %d tokens\n", n, R, T);
+@@ -8354,28 +8555,42 @@ void loop_gates(const LoopGate* gt, int n, int T, int C, int R, float eps, float
+     LoopGateArgs a{};
+     for (int j = 0; j < n; ++j)
+         a.x[j] = gt[j].x, a.m[j] = gt[j].m, a.D[j] = gt[j].D, a.F[j] = gt[j].F, a.G[j] = gt[j].G, a.y[j] = gt[j].y;
+-    lg_launch(a, n, T, C, R, eps, sc, false, nullptr, 0.0f, nullptr, s);
++    lg_launch(a, n, T, C, R, eps, sc, false, nullptr, 0.0f, nullptr, s, !dots_done);
+ }
+ // (AMD: IK2_HIP_LGD=1 the dots' loads first, 2 with D non-temporal; IK2_HIP_NT bit 4 the apply's F and G
+-//  non-temporal; rms: rms() of gate 0's output in the apply's last block - all the same values)
++//  non-temporal; rms: rms() of gate 0's output in the apply's last block - all the same values.  dots false: sc holds
++//  them already, res_dots')
++static int lgd_mode() {
++#ifdef MAYA_USE_HIP
++    static const int lgd = getenv("IK2_HIP_LGD") ? atoi(getenv("IK2_HIP_LGD")) : 0;
++    return lgd;
++#else
++    return 0;
++#endif
++}
+ static void lg_launch(const LoopGateArgs& a, int n, int T, int C, int R, float eps, float* sc, bool rms,
+-                      const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s) {
++                      const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s, bool dots) {
+     const dim3 gd((unsigned) R, (unsigned) n, (unsigned) T);
+ #ifdef MAYA_USE_HIP
+-    static const int lgd = getenv("IK2_HIP_LGD") ? atoi(getenv("IK2_HIP_LGD")) : 0;
+     static const bool nta = getenv("IK2_HIP_NT") && (atoi(getenv("IK2_HIP_NT")) & 4);
+-    if (lgd == 2) loop_gate_dots_kernel<2><<<gd, 128, 0, s>>>(a, T, C, R, sc);
+-    else if (lgd) loop_gate_dots_kernel<1><<<gd, 128, 0, s>>>(a, T, C, R, sc);
+-    else
+ #else
+     const bool nta = false;
+-    static const bool toks = !(getenv("IK2_GATE_TOKS") && !atoi(getenv("IK2_GATE_TOKS")));
+-    if (toks && T <= 8 && C == 18 * 128)
+-        loop_gate_dots_toks_kernel<18><<<dim3((unsigned) R, (unsigned) n), 128, 0, s>>>(a, T, C, R, sc);
+-    else
+ #endif
+-    loop_gate_dots_kernel<<<gd, 128, 0, s>>>(a, T, C, R, sc);
+-    check("loop_gates (dots)");
++    if (dots) {
++#ifdef MAYA_USE_HIP
++        const int lgd = lgd_mode();
++        if (lgd == 2) loop_gate_dots_kernel<2><<<gd, 128, 0, s>>>(a, T, C, R, sc);
++        else if (lgd) loop_gate_dots_kernel<1><<<gd, 128, 0, s>>>(a, T, C, R, sc);
++        else
++#else
++        static const bool toks = !(getenv("IK2_GATE_TOKS") && !atoi(getenv("IK2_GATE_TOKS")));
++        if (toks && T <= 8 && C == 18 * 128)
++            loop_gate_dots_toks_kernel<18><<<dim3((unsigned) R, (unsigned) n), 128, 0, s>>>(a, T, C, R, sc);
++        else
++#endif
++            loop_gate_dots_kernel<<<gd, 128, 0, s>>>(a, T, C, R, sc);
++        check("loop_gates (dots)");
++    }
+     const dim3 ga((unsigned) ((C + kGateCh - 1) / kGateCh), (unsigned) n, (unsigned) ((T + kGateWarps - 1) / kGateWarps));
+     const size_t sm = (size_t) R * (2 * kGateCh + kGateWarps) * sizeof(float);
+     if (rms && nta) loop_gate_apply_kernel<true, true><<<ga, kGateWarps * 32, sm, s>>>(a, T, C, R, eps, sc, rms_w, rms_eps, rms_y);
+@@ -8390,17 +8605,26 @@ void loop_gate(const float* x, const float* m, const float* D, const float* F, c
+     loop_gates(&g, 1, T, C, R, eps, sc, s);
+ }
+ void loop_gate_rms(const float* x, const float* m, const float* D, const float* F, const float* G, int C, int R,
+-                   float eps, float* sc, float* y, const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s) {
++                   float eps, float* sc, float* y, const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s,
++                   bool dots_done) {
++    LoopGateArgs a{};
++    a.x[0] = x, a.m[0] = m, a.D[0] = D, a.F[0] = F, a.G[0] = G, a.y[0] = y;
+ #ifdef MAYA_USE_HIP
+     static const bool lgr = getenv("IK2_HIP_LGR") && atoi(getenv("IK2_HIP_LGR"));
+     if (lgr && R <= kLoopRankMax) {
+-        LoopGateArgs a{};
+-        a.x[0] = x, a.m[0] = m, a.D[0] = D, a.F[0] = F, a.G[0] = G, a.y[0] = y;
+-        lg_launch(a, 1, 1, C, R, eps, sc, true, rms_w, rms_eps, rms_y, s);
++        lg_launch(a, 1, 1, C, R, eps, sc, true, rms_w, rms_eps, rms_y, s, !dots_done);
+         return;
+     }
+ #endif
+-    loop_gate(x, m, D, F, G, 1, C, R, eps, sc, y, s);
++    if (dots_done) {
++        if (R > kLoopRankMax) {
++            std::fprintf(stderr, "ik2::k::loop_gate_rms: rank %d\n", R);
++            std::abort();
++        }
++        lg_launch(a, 1, 1, C, R, eps, sc, false, nullptr, 0.0f, nullptr, s, false);
++    } else {
++        loop_gate(x, m, D, F, G, 1, C, R, eps, sc, y, s);
++    }
+     rms(y, rms_w, 1, C, rms_eps, rms_y, s);
+ }
+ constexpr int kCandPer = 8192;   // values a block of the histogram
+@@ -9135,6 +9359,101 @@ void router_route(const uint16_t* W, int E, int C, const float* x, float* logits
+     route_token(logits, bias, E, K, scale, tab, sg_t, su_t, sd_t, top, w, blob, tok, inv, sg, su, wt, s, x, C, x_limbs);
+ }
+ 
++// ---- IK2_K_L*: the fused launches (the unfused calls' kernels and block sizes inside, so their values to the bit)
++// launch_attn_res's attn_res_vec4_kernel<_, 512> case - the one the fused kernels run: 16-byte rows, C % 4, C <= 4096
++static bool res512(const ResStates& st, int n, const float* q, int nq, int C) {
++    if (n < 1 || n > kResMax || nq < 1 || nq > 3 || (C & 3) || C > 4096 || ((uintptr_t) q & 15)) return false;
++    for (int i = 0; i < n; ++i)
++        if ((uintptr_t) st.st[i] & 15) return false;
++    return true;
++}
++bool combine_res(const CombineJob& cb, const ResStates& states, int n, const float* q, int nq, int C, float eps,
++                 float* out, cudaStream_t s) {
++    if (!cb.out || !res512(states, n, q, nq, C) || ((uintptr_t) out & 15)) return false;
++    combine_res_kernel<false><<<1, 512, 0, s>>>(cb, states, n, q, nq, C, eps, 0.0f, out, RmsOuts{});
++    check("combine_res");
++    return true;
++}
++bool combine_res_rms(const CombineJob& cb, const ResStates& states, int n, const float* q, int nq, int C,
++                     float res_eps, float rms_eps, const RmsOuts& outs, cudaStream_t s) {
++    if (!cb.out || !res512(states, n, q, nq, C)) return false;
++    for (int qi = 0; qi < nq; ++qi)
++        if (((uintptr_t) outs.w[qi] & 15) || ((uintptr_t) outs.y16[qi] & 7) || ((uintptr_t) outs.y32[qi] & 15))
++            return false;
++    combine_res_kernel<true><<<1, 512, 0, s>>>(cb, states, n, q, nq, C, res_eps, rms_eps, nullptr, outs);
++    check("combine_res_rms");
++    return true;
++}
++void emb_norm2(const float* x, const float* w0, float* h, float* h2, const float* w1, float* y, int D, float eps,
++               cudaStream_t s) {
++    emb_norm2_kernel<<<1, kBlk, 0, s>>>(x, w0, h, h2, w1, y, D, eps);
++    check("emb_norm2");
++}
++bool res_router(const ResStates& states, int n, const float* q, int C, float res_eps, float rms_eps, const float* nw,
++                uint16_t* x16, float* x32, const uint16_t* W, int E, float* logits, const float* bias, int K, float scale,
++                const uint8_t* const* tab, const float* sg_t, const float* su_t, const float* sd_t, int* top, float* w,
++                const uint8_t** blob, int* tok, int* inv, float* sg, float* su, float* wt, cudaStream_t s) {
++    if (!res512(states, n, q, 1, C) || ((uintptr_t) nw & 15) || ((uintptr_t) x16 & 7) || ((uintptr_t) x32 & 15) ||
++        E < 1 || E > 512 || K < 1 || K > E)
++        return false;
++    const size_t sm = (size_t) (C + E + 512 / 32 + K + 1) * sizeof(float);
++    const unsigned g = (unsigned) ((E + 15) / 16);
++    if (mvf16_on() && C == 2304)
++        res_router_kernel<2304><<<g, 512, sm, s>>>(states, n, q, C, res_eps, rms_eps, nw, x16, x32, W, E, logits, bias, K,
++                                                   scale, tab, sg_t, su_t, sd_t, top, w, blob, tok, inv, sg, su, wt);
++    else
++        res_router_kernel<0><<<g, 512, sm, s>>>(states, n, q, C, res_eps, rms_eps, nw, x16, x32, W, E, logits, bias, K,
++                                                scale, tab, sg_t, su_t, sd_t, top, w, blob, tok, inv, sg, su, wt);
++    check("res_router");
++    return true;
++}
++bool res_dots(const CombineJob* cb, float* a, const ResStates& states, int n, const float* q, int nq, int C, float eps,
++              float* x, const LoopGate* gt, int n_gates, int R, float* sc, cudaStream_t s) {
++    if (!res512(states, n, q, nq, C) || ((uintptr_t) x & 15) || R < 4 || R % 4 || R > kLoopRankMax || n_gates < 1 ||
++        n_gates > 3 || (cb && (!cb->out || !a)))
++        return false;
++    const size_t sm = (size_t) (nq + (cb ? 1 : 0)) * C * sizeof(float);
++    if (sm > 48 * 1024) return false;
++    LoopGateArgs ga{};
++    for (int j = 0; j < n_gates; ++j) ga.m[j] = gt[j].m, ga.D[j] = gt[j].D;
++    const CombineJob c0 = cb ? *cb : CombineJob{};
++    const dim3 g((unsigned) (R / 4), (unsigned) n_gates);
++    const int lgd = lgd_mode();   // (the dots' kernel lg_launch takes: AMD IK2_HIP_LGD; CUDA's token kernel has U 0's sums)
++#define IK2_RES_DOTS(U, COMB) res_dots_kernel<U, COMB><<<g, 512, sm, s>>>(c0, a, states, n, q, nq, C, eps, x, ga, R, sc)
++    if (cb) {
++        if (lgd == 2) IK2_RES_DOTS(2, true);
++        else if (lgd) IK2_RES_DOTS(1, true);
++        else IK2_RES_DOTS(0, true);
++    } else {
++        if (lgd == 2) IK2_RES_DOTS(2, false);
++        else if (lgd) IK2_RES_DOTS(1, false);
++        else IK2_RES_DOTS(0, false);
++    }
++#undef IK2_RES_DOTS
++    check("res_dots");
++    return true;
++}
++void rms_multi_shift(const RmsJobs& jobs, int n, int D, float eps, float* hist, const float* a, int C, cudaStream_t s) {
++    if (n < 1 || n > 3) {
++        std::fprintf(stderr, "ik2::k::rms_multi_shift: %d vectors\n", n);
++        std::abort();
++    }
++    rms_multi_shift_kernel<<<(unsigned) (n + (C + kBlk - 1) / kBlk), kBlk, 0, s>>>(jobs, n, D, eps, hist, a, C);
++    check("rms_multi_shift");
++}
++void mv_f16_pair(const uint16_t* W0, int N0, const float* x0, float* y0, const uint16_t* W1, int N1, const float* x1,
++                 float* y1, int K, cudaStream_t s) {
++    if (N0 <= 0 || N1 <= 0) {
++        mv_f16(W0, N0, K, x0, y0, s);
++        mv_f16(W1, N1, K, x1, y1, s);
++        return;
++    }
++    const unsigned g = (unsigned) ((N0 + 3) / 4 + (N1 + 3) / 4);
++    if (mvf16_on() && K == 2304) mv_f16_pair_kernel<2304><<<g, 128, 0, s>>>(W0, N0, x0, y0, W1, N1, x1, y1, K);
++    else mv_f16_pair_kernel<0><<<g, 128, 0, s>>>(W0, N0, x0, y0, W1, N1, x1, y1, K);
++    check("mv_f16_pair");
++}
++
+ void prep_qkv_r_f16_at(float* q, const float* q_clip, const float* k_in, uint16_t* kc, const float* v_in, uint16_t* vc,
+                        float* r, const float* r_clip, int H, int KV, int D, int d_rel, float qk_clip, float rel_clip,
+                        float eps, const int* pos, bool log_scale, float alpha, float n_floor, int kv_cap,
+diff --git a/src/ik2/ik2_kernels.cuh b/src/ik2/ik2_kernels.cuh
+index 4bf6e072..791ea0b6 100644
+--- a/src/ik2/ik2_kernels.cuh
++++ b/src/ik2/ik2_kernels.cuh
+@@ -204,12 +204,16 @@ struct LoopGate {
+     const float *x, *m, *D, *F, *G;
+     float* y;
+ };
+-void loop_gates(const LoopGate* gates, int n, int T, int C, int R, float eps, float* sc, cudaStream_t s);
++/// (dots_done: sc already holds the gates' dots - res_dots' - the apply only)
++void loop_gates(const LoopGate* gates, int n, int T, int C, int R, float eps, float* sc, cudaStream_t s,
++                bool dots_done = false);
+ void loop_gate(const float* x, const float* m, const float* D, const float* F, const float* G, int T, int C, int R,
+                float eps, float* sc, float* y, cudaStream_t s);
+-/// loop_gate (one token) and then rms(y): one launch less on AMD with IK2_HIP_LGR=1 (the same values)
++/// loop_gate (one token) and then rms(y): one launch less on AMD with IK2_HIP_LGR=1 (the same values).  dots_done: sc
++/// already holds the gate's dots (res_dots'): the apply (and the rms) only.
+ void loop_gate_rms(const float* x, const float* m, const float* D, const float* F, const float* G, int C, int R,
+-                   float eps, float* sc, float* y, const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s);
++                   float eps, float* sc, float* y, const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s,
++                   bool dots_done = false);
+ /// Sampling's candidates found on the device: of x [n] (its values within [lo, hi]: softcapped logits) every value
+ /// of the highest bins that together hold K values at least (1024 bins over [lo, hi]) - K and a few more - gathered
+ /// in no order, so that the host sorts a thousand or two values and not the vocabulary.  out [2 + 2 cap] ints:
+@@ -422,6 +426,50 @@ void router_route(const uint16_t* W, int E, int C, const float* x, float* logits
+                   const uint8_t* const* tab, const float* sg_t, const float* su_t, const float* sd_t, int* top, float* w,
+                   const uint8_t** blob, int* tok, int* inv, float* sg, float* su, float* wt, cudaStream_t s,
+                   uint16_t* x_limbs = nullptr);
++
++// ---- IK2_K_L*: a token's small kernels in fewer launches, every value the unfused launches' to the bit (each part runs
++// the unfused kernel's code with its block's threads).  false: not this shape, nothing launched - the unfused calls.
++
++/// The MoE's output of a token's visit (moe_combine_conv's: out = conv(sum_k wt[k] y[inv[k]]) + res, hist moved on),
++/// also written to out2 / out3 when given.
++struct CombineJob {
++    const float* y = nullptr;
++    const int* inv = nullptr;
++    const float* wt = nullptr;
++    int K = 0;
++    float* hist = nullptr;
++    const float* w = nullptr;
++    const float* res = nullptr;
++    float* out = nullptr;
++    float* out2 = nullptr;
++    float* out3 = nullptr;
++};
++/// IK2_K_LCN: moe_combine_conv(cb) and then one token's attn_res (out) / attn_res_rms_f16 (outs) over states (the
++/// last of them may be cb.out) in one launch.
++bool combine_res(const CombineJob& cb, const ResStates& states, int n, const float* q, int nq, int C, float eps,
++                 float* out, cudaStream_t s);
++bool combine_res_rms(const CombineJob& cb, const ResStates& states, int n, const float* q, int nq, int C,
++                     float res_eps, float rms_eps, const RmsOuts& outs, cudaStream_t s);
++/// IK2_K_LCN: h = rms(x) * w0 (and h2, a copy, if given), y = rms(h) * w1 - one row of D, one launch.
++void emb_norm2(const float* x, const float* w0, float* h, float* h2, const float* w1, float* y, int D, float eps,
++               cudaStream_t s);
++/// IK2_K_LRR: one token's attn_res_rms_f16 (one query; outputs x16 (or null) and x32, weights nw) and router_route over
++/// x32 (no limbs) in one launch.
++bool res_router(const ResStates& states, int n, const float* q, int C, float res_eps, float rms_eps, const float* nw,
++                uint16_t* x16, float* x32, const uint16_t* W, int E, float* logits, const float* bias, int K, float scale,
++                const uint8_t* const* tab, const float* sg_t, const float* su_t, const float* sd_t, int* top, float* w,
++                const uint8_t** blob, int* tok, int* inv, float* sg, float* su, float* wt, cudaStream_t s);
++/// IK2_K_LDN / IK2_K_LMD: one token's attn_res (nq queries, to x [nq][C]) and then the dots of n_gates loop gates (gate
++/// j: x's row nq == 3 ? j : 0, gt[j].m, gt[j].D; rank R) into sc (loop_gates' scratch) in one launch -
++/// loop_gates / loop_gate_rms (..., dots_done = true) then take the gates on.  cb (LMD): first moe_combine_conv(*cb)
++/// - its stream the states' last - but its history not moved on: a [C] gets the pre-conv sums for rms_multi_shift.
++bool res_dots(const CombineJob* cb, float* a, const ResStates& states, int n, const float* q, int nq, int C, float eps,
++              float* x, const LoopGate* gt, int n_gates, int R, float* sc, cudaStream_t s);
++/// IK2_K_LMD: rms_multi and, in the same launch, a conv history res_dots(cb) left moved on (hist [3][C]: rows 1, 2, a).
++void rms_multi_shift(const RmsJobs& jobs, int n, int D, float eps, float* hist, const float* a, int C, cudaStream_t s);
++/// IK2_K_LKV: mv_f16(W0, N0, K, x0, y0) and mv_f16(W1, N1, K, x1, y1) in one launch.
++void mv_f16_pair(const uint16_t* W0, int N0, const float* x0, float* y0, const uint16_t* W1, int N1, const float* x1,
++                 float* y1, int K, cudaStream_t s);
+ /// prep_qkv_r_f16 / _fp8 of one token whose position is at pos (device): the cache slot from it, and with log_scale
+ /// (a full layer) q's and r's tau.  q16 (given): an FP16 copy of the clipped q, [H][D] (attn_decode_mma's).
+ /// sink_w (given): the token's sinks in the same launch, sink_y [H] = sink_w [H][sink_k] (FP16) . sink_x (mv_f16's).
+diff --git a/src/ik2/ik2_main.cu b/src/ik2/ik2_main.cu
+index 50728b32..d5eb9bfc 100644
+--- a/src/ik2/ik2_main.cu
++++ b/src/ik2/ik2_main.cu
+@@ -199,6 +199,19 @@ struct Config {
+     std::vector<bool> sliding;   // by layer
+ };
+ 
++// IK2_K_L*=1: a token's launches fused (each off by default; on, every value the same to the bit, fewer launches a
++// layer visit - each launch of a token is ~2 us of gap on an RX 7900 XTX):
++//   LCN the MoE's output into the next visit's input norm (and no copies of the stream: the block states, the loop's
++//       passes), the embedding's norm with layer 0's;
++//   LRR the MoE's input norm with the router; LDN a looped visit's MoE residual with its message gate's dots;
++//   LMD a looped visit's attention input - the visit before's MoE output, the residual and the three gates' dots - in
++//       one launch (the MoE conv's history moved on in the norms' launch after);
++//   LKV a full layer's k and v products in its q | r | gate launch (the five loaded as one matrix) and its two dynamic
++//       taps' products in one launch.
++inline bool k_env(const char* n) { return getenv(n) && atoi(getenv(n)); }
++bool g_k_lcn = k_env("IK2_K_LCN"), g_k_lrr = k_env("IK2_K_LRR"), g_k_ldn = k_env("IK2_K_LDN"),
++     g_k_lmd = k_env("IK2_K_LMD"), g_k_lkv = k_env("IK2_K_LKV");
++
+ // a dense matrix as the GGUF holds it, in VRAM: its blocks [N][K]
+ struct Mat {
+     // (IK2_DENSE=q8 with Q8_0 blocks and K a multiple of 128: the blocks taken apart - the int8 values [N][K] and the
+@@ -216,6 +229,7 @@ struct Layer {
+     // FP16 [out][in] (fused projections on !g_dense_q8, or when quant types match on g_dense_q8)
+     Mat wq, wk, wv, wr, wgate, wo;
+     Mat wqkvrg, wqrg, wk_dyn, wv_dyn;
++    Mat wqrgkv;   // IK2_K_LKV (a full layer, planar Q8_0): q | r | gate | k | v in one matrix - wqrg, wk, wv its rows
+     uint16_t *sink16 = nullptr;                    // F16 [H][C] (used in g_dense_q8; fused in !g_dense_q8)
+     uint16_t *router16 = nullptr;                  // F16 [E][C]
+     float *probs_b;                                // F32 [E]
+@@ -1269,6 +1283,7 @@ struct Work {
+     float *lp_pre = nullptr, *lp_bank = nullptr, *lp_msg = nullptr, *lp_in = nullptr;
+     float* lp_msg_all = nullptr;   // a token's messages of a pass, every core layer's ([n_core][4][C]): one launch a pass
+     float* lp_g = nullptr;   // the message gates' scratch [3][Tm][2 rank + 2]
++    float* k_a = nullptr;    // (IK2_K_LMD: a looped visit's pending MoE output's pre-conv sums [C], its history's row)
+     float *lp_a = nullptr, *lp_f = nullptr;   // ... of a chunk's: [3][Tm][rank] and [2][Tm][C]
+     float* logits_h = nullptr;   // the resident token path's logits, pinned [n_vocab]
+     int *cand_d = nullptr, *cand_h = nullptr, *cand_part = nullptr;   // ... its candidates (k::cand_topk's out), scratch
+@@ -2560,8 +2575,14 @@ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+     const float k_scale = c.qk_clip <= 28.0f ? 16.0f : 1.0f, v_scale = 32.0f;
+     // the attention's key splits: fixed, so that the launches are the same at every position
+     const int P_sl = std::min(128, std::max(1, (c.window + 63) / 64)), P_full = 128;
++    // (IK2_K_L*: not on the offload path or two GPUs - their MoE launches are their own)
++    const bool fuse_ok = !g_off && !g_two.on;
++    const bool lcn = g_k_lcn && fuse_ok;
+     CU(cudaMemcpyAsync(W.tmp, W.emb_h, Cb, cudaMemcpyHostToDevice, g_s));
+-    k::rms(W.tmp, M.embd_norm, 1, C, c.eps, W.h, g_s);
++    // (IK2_K_LCN: with layer 0's attention norm - a windowed layer's one input - and block 0's state, one launch)
++    const bool emb2 = lcn && M.V[0].l == 0 && M.V[0].pass == 0 && M.L[0].sliding;
++    if (emb2) k::emb_norm2(W.tmp, M.embd_norm, W.h, W.blocks, M.L[0].attn_norm, W.xq, C, c.eps, g_s);
++    else k::rms(W.tmp, M.embd_norm, 1, C, c.eps, W.h, g_s);
+     CU(cudaMemcpyAsync(W.pos, W.pos_h, 4, cudaMemcpyHostToDevice, g_s));
+     // (KV streaming: the streamed visits' rows this token reads, a slot of the ring a few of the kernel's blocks -
+     //  the first copies start now, under the layers before; a slot's next copy once its kernel is done.  Launched as
+@@ -2608,36 +2629,69 @@ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+     }
+     auto blk = [&](int i) { return W.blocks + (size_t) i * W.blk_ld * C; };
+     int nb = 0, nb_pre = 0, n_bank = 0;
++    // (IK2_K_LCN: a visit's MoE output is left pending and written by the next launch that reads the stream - the next
++    //  visit's input norm, the head's - with the stream's copies; else on its own, moe_out_token's launch.  The loop's
++    //  passes copy no stream: the core's input is block nb_pre's state (the core starts a block), the bank's rows
++    //  are read where they are when the pass's messages are taken)
++    const bool lcn_pass = lcn && c.block > 0 && c.core0 % c.block == 0;
++    k::CombineJob pend{};
++    bool pending = false;
++    auto flush = [&]() {
++        if (!pending) return;
++        k::moe_combine_conv(pend.y, pend.inv, pend.wt, pend.K, C, pend.hist, pend.w, pend.res, pend.out, g_s);
++        pending = false;
++    };
+     for (int vis = 0; vis < c.n_visit; ++vis) {
+         const int l = M.V[vis].l;
+         Layer& Ly = bind_visit(M, vis);
++        const bool first = l % c.block == 0;   // (the stream joins the blocks: block nb's state is the stream here)
++        float* hs = W.h;                       // the stream this visit starts from
+         // a looped core's passes (as forward()'s)
+         const float* msg = nullptr;
+         if (c.n_pass > 1 && l == c.core0) {
+             if (M.V[vis].pass == 0) {
+                 nb_pre = nb;
+-                CU(cudaMemcpyAsync(W.lp_pre, W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
++                if (!lcn_pass) {
++                    flush();
++                    CU(cudaMemcpyAsync(W.lp_pre, W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
++                }
+             } else {
++                flush();   // (the messages read the pass's final stream)
++                k::ResStates st{};
+                 n_bank = 0;
+-                for (int i = nb_pre + 1; i < nb; ++i, ++n_bank)
+-                    CU(cudaMemcpyAsync(W.lp_bank + (size_t) n_bank * C, blk(i), Cb, cudaMemcpyDeviceToDevice, g_s));
+-                CU(cudaMemcpyAsync(W.lp_bank + (size_t) n_bank * C, W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
+-                ++n_bank;
+-                CU(cudaMemcpyAsync(W.h, W.lp_pre, Cb, cudaMemcpyDeviceToDevice, g_s));
++                if (lcn_pass) {
++                    for (int i = nb_pre + 1; i < nb; ++i) st.st[n_bank++] = blk(i);
++                    st.st[n_bank++] = W.h;
++                    hs = blk(nb_pre);
++                } else {
++                    for (int i = nb_pre + 1; i < nb; ++i, ++n_bank)
++                        CU(cudaMemcpyAsync(W.lp_bank + (size_t) n_bank * C, blk(i), Cb, cudaMemcpyDeviceToDevice, g_s));
++                    CU(cudaMemcpyAsync(W.lp_bank + (size_t) n_bank * C, W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
++                    ++n_bank;
++                    CU(cudaMemcpyAsync(W.h, W.lp_pre, Cb, cudaMemcpyDeviceToDevice, g_s));
++                    for (int i = 0; i < n_bank; ++i) st.st[i] = W.lp_bank + (size_t) i * C;
++                }
+                 nb = nb_pre;
+                 // the pass's messages, every core layer's at once: the bank stays as it is until the pass ends, and a
+                 // layer's launch of its own was 7 us on one SM (a job a block: the same sums, 24 launches less a token)
+-                k::ResStates st{};
+-                for (int i = 0; i < n_bank; ++i) st.st[i] = W.lp_bank + (size_t) i * C;
+                 k::attn_res_jobs(st, n_bank, M.lp_query_all, 2, 2 * (c.core1 - c.core0), C, 1e-6f, W.lp_msg_all, g_s);
+             }
+         }
+         if (M.V[vis].pass > 0) msg = W.lp_msg_all + (size_t) (l - c.core0) * 4 * C;   // (q, k | v, MoE)
+-        if (g_taps) {   // (the drafter's taps of the token: row 0)
++        float* tap_dst = nullptr;   // (the drafter's taps of the token: row 0)
++        if (g_taps) {
+             const int tap = draft_tap(c, l, vis);
+-            if (tap >= 0)
+-                CU(cudaMemcpyAsync(g_taps + (size_t) tap * g_taps_ld * C, W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
+-        }
++            if (tap >= 0) tap_dst = g_taps + (size_t) tap * g_taps_ld * C;
++        }
++        // (the stream's copies: block nb's state - written below unless here or there already - and the tap)
++        bool blk_set = !first || hs == blk(nb) || (emb2 && vis == 0);
++        auto unfused = [&]() {   // (the pending output on its own and the tap's copy, then the unfused norm; once)
++            flush();
++            if (tap_dst) CU(cudaMemcpyAsync(tap_dst, hs, Cb, cudaMemcpyDeviceToDevice, g_s));
++            tap_dst = nullptr;
++        };
++        k::CombineJob cj = pend;
++        cj.out2 = blk_set ? nullptr : blk(nb), cj.out3 = tap_dst;
+         // the attention's inputs, normed, in F32: W.xq, W.xk, W.xv (sep: q, k and v each have their own)
+         float* x3[3] = {W.xq, W.xk, W.xv};
+         const float* nw[3] = {Ly.sliding ? Ly.attn_norm : Ly.q_in_norm, Ly.sliding ? Ly.attn_norm : Ly.k_in_norm,
+@@ -2646,25 +2700,54 @@ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+         {
+             k::ResStates st{};
+             for (int i = 0; i < nb; ++i) st.st[i] = blk(i);
+-            st.st[nb] = W.h;
++            st.st[nb] = hs;
++            bool fused = false;
+             if (msg) {
+-                k::attn_res(st, nb + 1, Ly.res_score, Ly.n_res_q, 1, C, 1e-6f, W.lp_in, g_s);
+                 k::LoopGate gt[3];
+                 for (int j = 0; j < 3; ++j)
+                     gt[j] = {W.lp_in + (size_t) (Ly.n_res_q == 3 ? j : 0) * C, msg + (size_t) j * C, Ly.lp_down[j],
+                              Ly.lp_forget[j], Ly.lp_gain[j], x3[j]};
+-                k::loop_gates(gt, 3, 1, C, c.rank, 1e-6f, W.lp_g, g_s);
+-                k::rms_multi(k::RmsJobs{{x3[0], x3[1], x3[2]}, {nw[0], nw[1], nw[2]}, {x3[0], x3[1], x3[2]}}, 3, C, c.eps,
+-                             g_s);
++                // (IK2_K_LMD: the residual and the gates' dots in one launch - with the pending MoE output (IK2_K_LCN)
++                //  too, its conv's history then moved on in the norms' launch)
++                bool dots = false, shift = false;
++                if (g_k_lmd && fuse_ok) {
++                    if (pending) {
++                        dots = shift = fused = k::res_dots(&cj, W.k_a, st, nb + 1, Ly.res_score, Ly.n_res_q, C, 1e-6f,
++                                                           W.lp_in, gt, 3, c.rank, W.lp_g, g_s);
++                    } else {
++                        unfused();
++                        dots = k::res_dots(nullptr, nullptr, st, nb + 1, Ly.res_score, Ly.n_res_q, C, 1e-6f, W.lp_in,
++                                           gt, 3, c.rank, W.lp_g, g_s);
++                    }
++                }
++                if (!dots) {
++                    fused = pending && k::combine_res(cj, st, nb + 1, Ly.res_score, Ly.n_res_q, C, 1e-6f, W.lp_in, g_s);
++                    if (!fused) {
++                        unfused();
++                        k::attn_res(st, nb + 1, Ly.res_score, Ly.n_res_q, 1, C, 1e-6f, W.lp_in, g_s);
++                    }
++                }
++                k::loop_gates(gt, 3, 1, C, c.rank, 1e-6f, W.lp_g, g_s, dots);
++                const k::RmsJobs jobs{{x3[0], x3[1], x3[2]}, {nw[0], nw[1], nw[2]}, {x3[0], x3[1], x3[2]}};
++                if (shift) k::rms_multi_shift(jobs, 3, C, c.eps, pend.hist, W.k_a, C, g_s);
++                else k::rms_multi(jobs, 3, C, c.eps, g_s);
+                 sep = true;
+             } else if (l > 0) {
+                 k::RmsOuts outs{};
+                 uint16_t* y16[3] = {W.x16, W.xk16, W.xv16};
+                 for (int j = 0; j < Ly.n_res_q; ++j) outs.w[j] = nw[j], outs.y16[j] = y16[j], outs.y32[j] = x3[j];
+-                k::attn_res_rms_f16(st, nb + 1, Ly.res_score, Ly.n_res_q, 1, C, 1e-6f, c.eps, outs, g_s);
++                fused = pending && k::combine_res_rms(cj, st, nb + 1, Ly.res_score, Ly.n_res_q, C, 1e-6f, c.eps, outs,
++                                                      g_s);
++                if (!fused) {
++                    unfused();
++                    k::attn_res_rms_f16(st, nb + 1, Ly.res_score, Ly.n_res_q, 1, C, 1e-6f, c.eps, outs, g_s);
++                }
+             } else {
+-                for (int j = 0; j < (sep ? 3 : 1); ++j) k::rms(W.h, nw[j], 1, C, c.eps, x3[j], g_s);
++                unfused();
++                if (!(emb2 && vis == 0))   // (IK2_K_LCN: the embedding's launch took it)
++                    for (int j = 0; j < (sep ? 3 : 1); ++j) k::rms(W.h, nw[j], 1, C, c.eps, x3[j], g_s);
+             }
++            if (fused) pending = false, blk_set = true;
+         }
+         // the projections, straight over the blocks
+         float *q_p, *k_p, *v_p, *r_p, *gate_p, *kd_p = nullptr, *vd_p = nullptr;
+@@ -2689,13 +2772,23 @@ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+             }
+         } else {
+             const Mat& m = Ly.wqrg;     // q | r | gate
+-            mv1(m, W.xq, W.qkv);
+             q_p = W.qkv, r_p = q_p + HD, gate_p = r_p + HR;
+             k_p = W.kk, v_p = W.vv, kd_p = W.dyn, vd_p = W.dyn + (size_t) c.KV * 4;
+-            k::mv_f16(Ly.sc_k_dyn16, c.KV * 4, C, W.xk, kd_p, g_s);
+-            k::mv_f16(Ly.sc_v_dyn16, c.KV * 4, C, W.xv, vd_p, g_s);
+-            mv1c(Ly.wk, W.xk, k_p, k::MvConv{0, KD, Ly.h_k, Ly.sc_k, kd_p, c.KV, nullptr, W.kconv});
+-            mv1c(Ly.wv, W.xv, v_p, k::MvConv{0, KD, Ly.h_v, Ly.sc_v, vd_p, c.KV, nullptr, W.vconv});
++            if (g_k_lkv && Ly.wqrgkv.q8) {   // (IK2_K_LKV: the taps' two products, then the five in one launch)
++                const Mat& f = Ly.wqrgkv;
++                const int NQ = m.N;
++                k::mv_f16_pair(Ly.sc_k_dyn16, c.KV * 4, W.xk, kd_p, Ly.sc_v_dyn16, c.KV * 4, W.xv, vd_p, C, g_s);
++                k::mv_q8p_conv(f.q8, f.q8d, f.N, f.K, W.xq, W.qkv,
++                               k::MvConv{NQ, KD, Ly.h_k, Ly.sc_k, kd_p, c.KV, nullptr, W.kconv},
++                               k::MvConv{NQ + KD, KD, Ly.h_v, Ly.sc_v, vd_p, c.KV, nullptr, W.vconv}, g_s,
++                               k::MvAlt{W.xk, NQ, KD}, k::MvAlt{W.xv, NQ + KD, KD});
++            } else {
++                mv1(m, W.xq, W.qkv);
++                k::mv_f16(Ly.sc_k_dyn16, c.KV * 4, C, W.xk, kd_p, g_s);
++                k::mv_f16(Ly.sc_v_dyn16, c.KV * 4, C, W.xv, vd_p, g_s);
++                mv1c(Ly.wk, W.xk, k_p, k::MvConv{0, KD, Ly.h_k, Ly.sc_k, kd_p, c.KV, nullptr, W.kconv});
++                mv1c(Ly.wv, W.xv, v_p, k::MvConv{0, KD, Ly.h_v, Ly.sc_v, vd_p, c.KV, nullptr, W.vconv});
++            }
+         }
+         // the clips, the token's K and V into the cache at its position, the attention
+         const int extent = Ly.sliding ? c.extent_swa : c.extent;
+@@ -2777,8 +2870,7 @@ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+         if (!mma) k::gate_mul_f16(W.o, gate_p, (size_t) HD, W.x16, true, g_s);   // (the tensor cores' merge has it)
+         // the output projection with its short conv (and the stream added, but where a block starts: there the
+         // stream joins the blocks and starts again)
+-        const bool first = l % c.block == 0;
+-        if (first) CU(cudaMemcpyAsync(blk(nb), W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
++        if (!blk_set) CU(cudaMemcpyAsync(blk(nb), W.h, Cb, cudaMemcpyDeviceToDevice, g_s));
+         if (Ly.ablate && Ly.wo.q8) {
+             k::mv_q8p_pconv(Ly.wo.q8, Ly.wo.q8d, Ly.wo.N, Ly.wo.K, W.o, W.tmp, Ly.ablate, Ly.h_attn, Ly.sc_attn,
+                             first ? nullptr : W.h, W.r, g_s);
+@@ -2791,20 +2883,6 @@ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+         }
+         if (first) ++nb;
+         // the MoE: its input, the router and the picks' tables on the device, the experts
+-        {
+-            k::ResStates st{};
+-            for (int i = 0; i < nb; ++i) st.st[i] = blk(i);
+-            st.st[nb] = W.r;
+-            if (msg) {
+-                k::attn_res(st, nb + 1, Ly.ffn_res_score, 1, 1, C, 1e-6f, W.xq, g_s);
+-                k::loop_gate_rms(W.xq, msg + (size_t) 3 * C, Ly.lp_down[3], Ly.lp_forget[3], Ly.lp_gain[3], C, c.rank,
+-                                 1e-6f, W.lp_g, W.xq, Ly.ffn_norm, c.eps, W.xq, g_s);
+-            } else {
+-                k::RmsOuts outs{};
+-                outs.w[0] = Ly.ffn_norm, outs.y16[0] = W.x16, outs.y32[0] = W.xq;
+-                k::attn_res_rms_f16(st, nb + 1, Ly.ffn_res_score, 1, 1, C, 1e-6f, c.eps, outs, g_s);
+-            }
+-        }
+         int* rtop = W.route_d;
+         float* rw = (float*) (W.route_d + c.K);
+         // (NVFP4 experts go through the tensor cores, their input as two FP16 limbs the router's launch writes)
+@@ -2814,13 +2892,40 @@ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+         static const int exp_mma = getenv("IK2_EXPERT_MMA") ? atoi(getenv("IK2_EXPERT_MMA")) : 1;
+ #endif
+         const bool exp_tc = exp_mma && !g_lane && k::experts_mma_fits(Ly.ty[0], Ly.ty[1], Ly.ty[2], C, c.F);
++        bool routed = false;   // (IK2_K_LRR: the norm's launch routed too)
++        {
++            k::ResStates st{};
++            for (int i = 0; i < nb; ++i) st.st[i] = blk(i);
++            st.st[nb] = W.r;
++            if (msg) {
++                // (IK2_K_LDN: the residual with its gate's dots, one launch)
++                const k::LoopGate g3{W.xq, msg + (size_t) 3 * C, Ly.lp_down[3], Ly.lp_forget[3], Ly.lp_gain[3], W.xq};
++                const bool dots = g_k_ldn && fuse_ok &&
++                                  k::res_dots(nullptr, nullptr, st, nb + 1, Ly.ffn_res_score, 1, C, 1e-6f, W.xq, &g3, 1,
++                                              c.rank, W.lp_g, g_s);
++                if (!dots) k::attn_res(st, nb + 1, Ly.ffn_res_score, 1, 1, C, 1e-6f, W.xq, g_s);
++                k::loop_gate_rms(W.xq, msg + (size_t) 3 * C, Ly.lp_down[3], Ly.lp_forget[3], Ly.lp_gain[3], C, c.rank,
++                                 1e-6f, W.lp_g, W.xq, Ly.ffn_norm, c.eps, W.xq, g_s, dots);
++            } else {
++                routed = g_k_lrr && fuse_ok && !exp_tc &&
++                         k::res_router(st, nb + 1, Ly.ffn_res_score, C, 1e-6f, c.eps, Ly.ffn_norm, W.x16, W.xq,
++                                       Ly.router16, c.E, W.rlog, Ly.probs_b, c.K, c.route_scale, Ly.tab_blob,
++                                       Ly.tab_sc[0], Ly.tab_sc[1], Ly.tab_sc[2], rtop, rw, W.blob, W.tok, W.inv,
++                                       W.sg, W.su, W.wt, g_s);
++                if (!routed) {
++                    k::RmsOuts outs{};
++                    outs.w[0] = Ly.ffn_norm, outs.y16[0] = W.x16, outs.y32[0] = W.xq;
++                    k::attn_res_rms_f16(st, nb + 1, Ly.ffn_res_score, 1, 1, C, 1e-6f, c.eps, outs, g_s);
++                }
++            }
++        }
+         if (g_two.on) {   // (two GPUs: GPU 1's picks there, beside GPU 0's - the logits before the send)
+             k::mv_f16(Ly.router16, c.E, C, W.xq, W.rlog, g_s);
+             two_send(M, l, W, exp_tc);
+             k::route_token(W.rlog, Ly.probs_b, c.E, c.K, c.route_scale, Ly.tab_blob, Ly.tab_sc[0], Ly.tab_sc[1],
+                            Ly.tab_sc[2], rtop, rw, W.blob, W.tok, W.inv, W.sg, W.su, W.wt, g_s, W.xq, C,
+                            exp_tc ? (uint16_t*) W.gu32 : nullptr);
+-        } else {
++        } else if (!routed) {
+             k::router_route(Ly.router16, c.E, C, W.xq, W.rlog, Ly.probs_b, c.K, c.route_scale, Ly.tab_blob,
+                             Ly.tab_sc[0], Ly.tab_sc[1], Ly.tab_sc[2], rtop, rw, W.blob, W.tok, W.inv, W.sg, W.su, W.wt,
+                             g_s, exp_tc ? (uint16_t*) W.gu32 : nullptr);
+@@ -2853,16 +2958,31 @@ void fast_token_launches(Model& M, Work& W, OutMode out_mode) {
+             k::experts_down(W.blob, c.K, Ly.ty[2], Ly.eb[0] + Ly.eb[1], W.h16, C, c.F, W.y32, g_s);
+         }
+         if (g_two.on) two_take(M, W);
+-        moe_out_token(Ly, W, c.K, C);
++        if (lcn && !Ly.ablate) {   // (IK2_K_LCN: written by the next launch that reads the stream)
++            pend = k::CombineJob{};
++            pend.y = W.y32, pend.inv = W.inv, pend.wt = W.wt, pend.K = c.K, pend.hist = Ly.h_mlp, pend.w = Ly.sc_mlp;
++            pend.res = W.r, pend.out = W.h;
++            pending = true;
++        } else {
++            moe_out_token(Ly, W, c.K, C);
++        }
++    }
++    if (out_mode == OutMode::kNone) {
++        flush();
++        return;
+     }
+-    if (out_mode == OutMode::kNone) return;
+     {   // the head
+         k::ResStates st{};
+         for (int i = 0; i < nb; ++i) st.st[i] = blk(i);
+         st.st[nb] = W.h;
+         k::RmsOuts outs{};
+         outs.w[0] = M.out_norm, outs.y16[0] = W.x16, outs.y32[0] = W.xq;
+-        k::attn_res_rms_f16(st, nb + 1, M.out_res_score, 1, 1, C, 1e-6f, c.eps, outs, g_s);
++        if (pending && k::combine_res_rms(pend, st, nb + 1, M.out_res_score, 1, C, 1e-6f, c.eps, outs, g_s)) {
++            pending = false;
++        } else {
++            flush();
++            k::attn_res_rms_f16(st, nb + 1, M.out_res_score, 1, 1, C, 1e-6f, c.eps, outs, g_s);
++        }
+         if (g_taps)
+             CU(cudaMemcpyAsync(g_taps + (size_t) g_final_tap * g_taps_ld * C, W.xq, Cb, cudaMemcpyDeviceToDevice, g_s));
+         mv1(M.out_w, W.xq, W.logits);
+@@ -6756,13 +6876,25 @@ int main(int argc, char** argv) {
+                 Ly.wv_dyn = load_fused_f16(S, {{b + "attn_v.weight", (int) KD, {}}, {"", c.KV * 4, std::move(vd_v)}},
+                                            (int) C);
+             } else {
+-                if (!try_load_fused_raw(S, qrg_parts, (int) C, Ly.wqrg)) {
+-                    Ly.wq = load_mat(S, b + "attn_q.weight", (int) HD, (int) C);
+-                    Ly.wr = load_mat(S, nm(b, "attn_r.weight"), c.H * c.d_rel, (int) C);
+-                    Ly.wgate = load_mat(S, b + "attn_gate.weight", (int) HD, (int) C);
++                // (IK2_K_LKV: q | r | gate | k | v as one matrix - a token's products of them one launch; the three
++                //  its rows, the same bytes)
++                std::vector<MatPart> all = qrg_parts;
++                all.push_back({b + "attn_k.weight", (int) KD, {}});
++                all.push_back({b + "attn_v.weight", (int) KD, {}});
++                if (g_k_lkv && try_load_fused_raw(S, all, (int) C, Ly.wqrgkv)) {
++                    const int NQ = (int) (2 * HD) + c.H * c.d_rel;
++                    Ly.wqrg = mat_rows(Ly.wqrgkv, 0, NQ);
++                    Ly.wk = mat_rows(Ly.wqrgkv, NQ, (int) KD);
++                    Ly.wv = mat_rows(Ly.wqrgkv, NQ + (int) KD, (int) KD);
++                } else {
++                    if (!try_load_fused_raw(S, qrg_parts, (int) C, Ly.wqrg)) {
++                        Ly.wq = load_mat(S, b + "attn_q.weight", (int) HD, (int) C);
++                        Ly.wr = load_mat(S, nm(b, "attn_r.weight"), c.H * c.d_rel, (int) C);
++                        Ly.wgate = load_mat(S, b + "attn_gate.weight", (int) HD, (int) C);
++                    }
++                    Ly.wk = load_mat(S, b + "attn_k.weight", (int) KD, (int) C);
++                    Ly.wv = load_mat(S, b + "attn_v.weight", (int) KD, (int) C);
+                 }
+-                Ly.wk = load_mat(S, b + "attn_k.weight", (int) KD, (int) C);
+-                Ly.wv = load_mat(S, b + "attn_v.weight", (int) KD, (int) C);
+                 Ly.sink16 = dev_f16(sink_v);
+                 Ly.sc_k_dyn16 = dev_f16(kd_v);
+                 Ly.sc_v_dyn16 = dev_f16(vd_v);
+@@ -7323,6 +7455,7 @@ int main(int argc, char** argv) {
+         W.lp_g = dalloc<float>(3 * Tm * (2 * (size_t) c.rank + 2));
+         W.lp_a = dalloc<float>(3 * Tm * (size_t) c.rank);
+         W.lp_f = dalloc<float>(2 * Tm * C);
++        if (g_k_lmd) W.k_a = dalloc<float>(C);
+     }
+     for (auto& Vi : M.V) {   // the conv histories start at zero
+         if (M.L[Vi.l].dev != d) continue;
+diff --git a/tests/ik2_kernels_test.cu b/tests/ik2_kernels_test.cu
+index 14474e24..6c07c5c0 100644
+--- a/tests/ik2_kernels_test.cu
++++ b/tests/ik2_kernels_test.cu
+@@ -1436,6 +1436,241 @@ void test_token_path() {
+     }
+ }
+ 
++// IK2_K_L*: each fused launch against the unfused calls it stands for, every output bit for bit
++template <class T>
++bool same_dev(const T* a, const T* b, size_t n) {
++    const auto x = host(a, n), y = host(b, n);
++    return !std::memcmp(x.data(), y.data(), n * sizeof(T));
++}
++void test_k_launches() {
++    const int C = 2304;
++    const float eps = 1e-6f, rms_eps = 1e-5f;
++    {   // IK2_K_LCN: combine_res / combine_res_rms against moe_combine_conv and attn_res / attn_res_rms_f16
++        const int K = 8;
++        auto y = fvec((size_t) K * C), wt = fvec(K), hist = fvec((size_t) 3 * C), tw = fvec((size_t) 4 * C),
++             res = fvec(C), blocks = fvec((size_t) 8 * C, 2.0f), q = fvec((size_t) 3 * C), nw = fvec((size_t) 3 * C);
++        std::vector<int> inv = {3, 1, 0, 2, 7, 5, 6, 4};
++        float *dy = dev(y), *dwt = dev(wt), *dtw = dev(tw), *dres = dev(res), *dblk = dev(blocks), *dq = dev(q),
++              *dnw = dev(nw);
++        int* dinv = dev(inv);
++        bool same = true;
++        int cases = 0;
++        for (int fused_rms = 0; fused_rms < 2; ++fused_rms)
++            for (int nq : {1, 3})
++                for (int n : {1, 4, 7}) {
++                    float *ha = dev(hist), *hb = dev(hist), *oa = dev(fvec(C)), *ob = dev(fvec(C)), *o2 = dev_n<float>(C),
++                          *o3 = dev_n<float>(C);
++                    float *ya = dev_n<float>((size_t) 3 * C), *yb = dev_n<float>((size_t) 3 * C);
++                    uint16_t *ga = dev_n<uint16_t>((size_t) 3 * C), *gb = dev_n<uint16_t>((size_t) 3 * C);
++                    k::ResStates sa{}, sb{};
++                    for (int i = 0; i + 1 < n; ++i) sa.st[i] = sb.st[i] = dblk + (size_t) i * C;
++                    sa.st[n - 1] = oa, sb.st[n - 1] = ob;
++                    k::RmsOuts outa{}, outb{};
++                    for (int j = 0; j < nq; ++j) {
++                        outa.w[j] = outb.w[j] = dnw + (size_t) j * C;
++                        outa.y16[j] = ga + (size_t) j * C, outb.y16[j] = gb + (size_t) j * C;
++                        outa.y32[j] = ya + (size_t) j * C, outb.y32[j] = yb + (size_t) j * C;
++                    }
++                    k::moe_combine_conv(dy, dinv, dwt, K, C, ha, dtw, dres, oa, 0);
++                    k::CombineJob cj{};
++                    cj.y = dy, cj.inv = dinv, cj.wt = dwt, cj.K = K, cj.hist = hb, cj.w = dtw, cj.res = dres, cj.out = ob;
++                    cj.out2 = o2, cj.out3 = o3;
++                    bool ok;
++                    if (fused_rms) {
++                        k::attn_res_rms_f16(sa, n, dq, nq, 1, C, eps, rms_eps, outa, 0);
++                        ok = k::combine_res_rms(cj, sb, n, dq, nq, C, eps, rms_eps, outb, 0);
++                        ok = ok && same_dev(ga, gb, (size_t) nq * C);
++                    } else {
++                        k::attn_res(sa, n, dq, nq, 1, C, eps, ya, 0);
++                        ok = k::combine_res(cj, sb, n, dq, nq, C, eps, yb, 0);
++                    }
++                    same &= ok && same_dev(ya, yb, (size_t) nq * C) && same_dev(oa, ob, C) && same_dev(oa, o2, C) &&
++                            same_dev(oa, o3, C) && same_dev(ha, hb, (size_t) 3 * C);
++                    ++cases;
++                    for (float* p : {ha, hb, oa, ob, o2, o3, ya, yb}) cudaFree(p);
++                    cudaFree(ga), cudaFree(gb);
++                }
++        expect_true("combine_res(_rms): moe_combine_conv + attn_res(_rms_f16)'s values to the bit (12 cases)",
++                    same && cases == 12);
++        // the embedding's norm with layer 0's (a row of C: the vector path; of C - 3: the scalar one)
++        bool same2 = true;
++        for (int D : {C, C - 3}) {
++            auto x = fvec(D, 3.0f), w0 = fvec(D), w1 = fvec(D);
++            float *dx = dev(x), *dw0 = dev(w0), *dw1 = dev(w1), *ha = dev_n<float>(D), *hb = dev_n<float>(D),
++                  *h2 = dev_n<float>(D), *ya = dev_n<float>(D), *yb = dev_n<float>(D);
++            k::rms(dx, dw0, 1, D, rms_eps, ha, 0);
++            k::rms(ha, dw1, 1, D, rms_eps, ya, 0);
++            k::emb_norm2(dx, dw0, hb, h2, dw1, yb, D, rms_eps, 0);
++            same2 &= same_dev(ha, hb, D) && same_dev(ha, h2, D) && same_dev(ya, yb, D);
++            for (float* p : {dx, dw0, dw1, ha, hb, h2, ya, yb}) cudaFree(p);
++        }
++        expect_true("emb_norm2: two rms' values to the bit (the vector and the scalar row)", same2);
++        for (float* p : {dy, dwt, dtw, dres, dblk, dq, dnw}) cudaFree(p);
++        cudaFree(dinv);
++    }
++    {   // IK2_K_LRR: res_router against attn_res_rms_f16 + router_route (128 and 384 experts; twice: the counter)
++        bool same = true;
++        for (int E : {128, 384}) {
++            const int K = 8, n = 5;
++            auto st = fvec((size_t) n * C, 2.0f), q = fvec(C), nw = fvec(C), bias = fvec(E, 0.5f);
++            std::vector<uint16_t> wr((size_t) E * C);
++            for (auto& v : wr) v = f2h_host(frand(0.05f));
++            std::vector<const uint8_t*> tab(E);
++            for (int e = 0; e < E; ++e) tab[e] = (const uint8_t*) (uintptr_t) (0x1000 + 64 * e);
++            auto sgt = fvec(E, 2.0f), sut = fvec(E, 2.0f), sdt = fvec(E, 2.0f);
++            float *dst = dev(st), *dq = dev(q), *dnw = dev(nw), *db = dev(bias), *dsg = dev(sgt), *dsu = dev(sut),
++                  *dsd = dev(sdt);
++            uint16_t* dwr = dev(wr);
++            const uint8_t** dtab = dev(tab);
++            k::ResStates s{};
++            for (int i = 0; i < n; ++i) s.st[i] = dst + (size_t) i * C;
++            struct Out {
++                float *x32, *lg, *w, *sg, *su, *wt;
++                uint16_t* x16;
++                int *top, *tok, *inv;
++                const uint8_t** blob;
++            } o[2];
++            for (auto& a : o) {
++                a.x32 = dev_n<float>(C), a.lg = dev_n<float>(E), a.w = dev_n<float>(K), a.sg = dev_n<float>(K);
++                a.su = dev_n<float>(K), a.wt = dev_n<float>(K), a.x16 = dev_n<uint16_t>(C), a.top = dev_n<int>(K);
++                a.tok = dev_n<int>(K), a.inv = dev_n<int>(K), a.blob = dev_n<const uint8_t*>(K);
++            }
++            k::RmsOuts outs{};
++            outs.w[0] = dnw, outs.y16[0] = o[0].x16, outs.y32[0] = o[0].x32;
++            k::attn_res_rms_f16(s, n, dq, 1, 1, C, eps, rms_eps, outs, 0);
++            k::router_route(dwr, E, C, o[0].x32, o[0].lg, db, K, 8.0f, dtab, dsg, dsu, dsd, o[0].top, o[0].w, o[0].blob,
++                            o[0].tok, o[0].inv, o[0].sg, o[0].su, o[0].wt, 0);
++            for (int rep = 0; rep < 2; ++rep) {
++                same &= k::res_router(s, n, dq, C, eps, rms_eps, dnw, o[1].x16, o[1].x32, dwr, E, o[1].lg, db, K, 8.0f,
++                                      dtab, dsg, dsu, dsd, o[1].top, o[1].w, o[1].blob, o[1].tok, o[1].inv, o[1].sg,
++                                      o[1].su, o[1].wt, 0);
++                same &= same_dev(o[0].x32, o[1].x32, C) && same_dev(o[0].x16, o[1].x16, C) &&
++                        same_dev(o[0].lg, o[1].lg, E) && same_dev(o[0].w, o[1].w, K) && same_dev(o[0].sg, o[1].sg, K) &&
++                        same_dev(o[0].su, o[1].su, K) && same_dev(o[0].wt, o[1].wt, K) &&
++                        same_dev(o[0].top, o[1].top, K) && same_dev(o[0].tok, o[1].tok, K) &&
++                        same_dev(o[0].inv, o[1].inv, K) && same_dev(o[0].blob, o[1].blob, K);
++                CU(cudaMemset(o[1].top, 0xFF, K * 4));
++            }
++            for (auto& a : o) {
++                for (float* p : {a.x32, a.lg, a.w, a.sg, a.su, a.wt}) cudaFree(p);
++                cudaFree(a.x16), cudaFree(a.top), cudaFree(a.tok), cudaFree(a.inv), cudaFree(a.blob);
++            }
++            for (float* p : {dst, dq, dnw, db, dsg, dsu, dsd}) cudaFree(p);
++            cudaFree(dwr), cudaFree(dtab);
++        }
++        expect_true("res_router: attn_res_rms_f16 + router_route's values to the bit (128, 384 experts, twice)", same);
++    }
++    {   // IK2_K_LDN: res_dots + loop_gate_rms(dots done) against attn_res + loop_gate_rms
++        const int R = 64, n = 4;
++        auto st = fvec((size_t) n * C, 2.0f), q = fvec(C), m = fvec(C, 2.0f), D = fvec((size_t) R * 2 * C, 0.05f),
++             F = fvec((size_t) R * C, 0.3f), G = fvec((size_t) R * C, 0.3f), nw = fvec(C);
++        float *dst = dev(st), *dq = dev(q), *dm = dev(m), *dD = dev(D), *dF = dev(F), *dG = dev(G), *dnw = dev(nw);
++        float *xa = dev_n<float>(C), *xb = dev(fvec(C)), *ra = dev_n<float>(C), *sca = dev_n<float>(2 * R + 2),
++              *scb = dev_n<float>(2 * R + 2);
++        k::ResStates s{};
++        for (int i = 0; i < n; ++i) s.st[i] = dst + (size_t) i * C;
++        k::attn_res(s, n, dq, 1, 1, C, eps, ra, 0);
++        k::attn_res(s, n, dq, 1, 1, C, eps, xa, 0);
++        k::loop_gate_rms(xa, dm, dD, dF, dG, C, R, eps, sca, xa, dnw, rms_eps, xa, 0);
++        const k::LoopGate g1{xb, dm, dD, dF, dG, xb};
++        const bool ok = k::res_dots(nullptr, nullptr, s, n, dq, 1, C, eps, xb, &g1, 1, R, scb, 0);
++        const bool res_same = ok && same_dev(ra, xb, C);
++        k::loop_gate_rms(xb, dm, dD, dF, dG, C, R, eps, scb, xb, dnw, rms_eps, xb, 0, true);
++        expect_true("res_dots: attn_res + loop_gate's dots to the bit, the gate and its rms after them too",
++                    res_same && same_dev(sca, scb, 2 * R + 2) && same_dev(xa, xb, C));
++        for (float* p : {dst, dq, dm, dD, dF, dG, dnw, xa, xb, ra, sca, scb}) cudaFree(p);
++    }
++    {   // IK2_K_LMD: res_dots(cb) + loop_gates(dots done) + rms_multi_shift against moe_combine_conv + attn_res +
++        // loop_gates + rms_multi (a windowed layer's one query, a full layer's three; three gates)
++        const int R = 64, n = 4, K = 8;
++        auto st = fvec((size_t) n * C, 2.0f), q = fvec((size_t) 3 * C), m = fvec((size_t) 3 * C, 2.0f),
++             D = fvec((size_t) 3 * R * 2 * C, 0.05f), F = fvec((size_t) 3 * R * C, 0.3f), G = fvec((size_t) 3 * R * C, 0.3f),
++             nw = fvec((size_t) 3 * C), y = fvec((size_t) K * C), wt = fvec(K), hist = fvec((size_t) 3 * C),
++             tw = fvec((size_t) 4 * C), res = fvec(C);
++        std::vector<int> inv = {3, 1, 0, 2, 7, 5, 6, 4};
++        float *dst = dev(st), *dq = dev(q), *dm = dev(m), *dD = dev(D), *dF = dev(F), *dG = dev(G), *dnw = dev(nw),
++              *dy = dev(y), *dwt = dev(wt), *dtw = dev(tw), *dres = dev(res), *da = dev_n<float>(C);
++        int* dinv = dev(inv);
++        bool same = true;
++        for (int nq : {1, 3})
++            for (int comb = 0; comb < 2; ++comb) {
++                float *ha = dev(hist), *hb = dev(hist), *oa = dev(fvec(C)), *ob = dev(fvec(C)), *o2 = dev_n<float>(C),
++                      *ina = dev_n<float>((size_t) 3 * C), *inb = dev_n<float>((size_t) 3 * C),
++                      *xa = dev_n<float>((size_t) 3 * C), *xb = dev_n<float>((size_t) 3 * C),
++                      *sca = dev_n<float>(3 * (2 * R + 2)), *scb = dev_n<float>(3 * (2 * R + 2));
++                k::ResStates sa{}, sb{};
++                for (int i = 0; i + 1 < n; ++i) sa.st[i] = sb.st[i] = dst + (size_t) i * C;
++                sa.st[n - 1] = comb ? oa : dst + (size_t) (n - 1) * C, sb.st[n - 1] = comb ? ob : sa.st[n - 1];
++                k::LoopGate ga[3], gb[3];
++                for (int j = 0; j < 3; ++j) {
++                    const size_t xo = (size_t) (nq == 3 ? j : 0) * C;
++                    ga[j] = {ina + xo, dm + (size_t) j * C, dD + (size_t) j * R * 2 * C, dF + (size_t) j * R * C,
++                             dG + (size_t) j * R * C, xa + (size_t) j * C};
++                    gb[j] = {inb + xo, ga[j].m, ga[j].D, ga[j].F, ga[j].G, xb + (size_t) j * C};
++                }
++                const k::RmsJobs ja{{xa, xa + C, xa + 2 * C}, {dnw, dnw + C, dnw + 2 * C}, {xa, xa + C, xa + 2 * C}};
++                const k::RmsJobs jb{{xb, xb + C, xb + 2 * C}, {dnw, dnw + C, dnw + 2 * C}, {xb, xb + C, xb + 2 * C}};
++                if (comb) k::moe_combine_conv(dy, dinv, dwt, K, C, ha, dtw, dres, oa, 0);
++                k::attn_res(sa, n, dq, nq, 1, C, eps, ina, 0);
++                k::loop_gates(ga, 3, 1, C, R, eps, sca, 0);
++                k::rms_multi(ja, 3, C, rms_eps, 0);
++                k::CombineJob cj{};
++                cj.y = dy, cj.inv = dinv, cj.wt = dwt, cj.K = K, cj.hist = hb, cj.w = dtw, cj.res = dres, cj.out = ob;
++                cj.out2 = o2;
++                const bool ok = k::res_dots(comb ? &cj : nullptr, comb ? da : nullptr, sb, n, dq, nq, C, eps, inb, gb, 3,
++                                            R, scb, 0);
++                k::loop_gates(gb, 3, 1, C, R, eps, scb, 0, true);
++                if (comb) k::rms_multi_shift(jb, 3, C, rms_eps, hb, da, C, 0);
++                else k::rms_multi(jb, 3, C, rms_eps, 0);
++                same &= ok && same_dev(ina, inb, (size_t) nq * C) && same_dev(sca, scb, 3 * (2 * R + 2)) &&
++                        same_dev(xa, xb, (size_t) 3 * C);
++                if (comb) same &= same_dev(oa, ob, C) && same_dev(oa, o2, C) && same_dev(ha, hb, (size_t) 3 * C);
++                for (float* p : {ha, hb, oa, ob, o2, ina, inb, xa, xb, sca, scb}) cudaFree(p);
++            }
++        expect_true("res_dots(cb), rms_multi_shift: moe_combine_conv + attn_res + loop_gates + rms_multi to the bit",
++                    same);
++        for (float* p : {dst, dq, dm, dD, dF, dG, dnw, dy, dwt, dtw, dres, da}) cudaFree(p);
++        cudaFree(dinv);
++    }
++    {   // IK2_K_LKV: a full layer's q | r | gate | k | v as one planar Q8_0 matrix (k's and v's rows with their own
++        // inputs and convs with dynamic taps) and the taps' mv_f16_pair, against its three products and two mv_f16's
++        const int H = 6, KV = 2, HD = H * 128, HR = H * 16, KD = KV * 128, NQ = 2 * HD + HR, N = NQ + 2 * KD, nb = C / 32;
++        std::vector<int8_t> q8((size_t) N * C);
++        for (auto& v : q8) v = (int8_t) ((int) (rng() % 255) - 127);
++        std::vector<uint16_t> d8((size_t) N * nb), wk((size_t) KV * 4 * C), wv((size_t) KV * 4 * C);
++        for (auto& v : d8) v = f2h_host(0.001f + 0.01f * std::fabs(frand()));
++        for (auto& v : wk) v = f2h_host(frand(0.05f));
++        for (auto& v : wv) v = f2h_host(frand(0.05f));
++        auto xq = fvec(C, 2.0f), xk = fvec(C, 2.0f), xv = fvec(C, 2.0f), hk = fvec((size_t) 3 * KD), hv = fvec((size_t) 3 * KD),
++             sck = fvec((size_t) 4 * KD), scv = fvec((size_t) 4 * KD);
++        int8_t* dq8 = dev(q8);
++        uint16_t *dd8 = dev(d8), *dwk = dev(wk), *dwv = dev(wv);
++        float *dxq = dev(xq), *dxk = dev(xk), *dxv = dev(xv), *dsck = dev(sck), *dscv = dev(scv);
++        float *hka = dev(hk), *hkb = dev(hk), *hva = dev(hv), *hvb = dev(hv);
++        float *ya = dev_n<float>(N), *yb = dev_n<float>(N), *kda = dev_n<float>(KV * 4), *kdb = dev_n<float>(KV * 4),
++              *vda = dev_n<float>(KV * 4), *vdb = dev_n<float>(KV * 4), *kca = dev_n<float>(KD), *kcb = dev_n<float>(KD),
++              *vca = dev_n<float>(KD), *vcb = dev_n<float>(KD), *tk = dev_n<float>(KD), *tv = dev_n<float>(KD);
++        k::mv_q8p(dq8, dd8, NQ, C, dxq, ya, 0);
++        k::mv_f16(dwk, KV * 4, C, dxk, kda, 0);
++        k::mv_f16(dwv, KV * 4, C, dxv, vda, 0);
++        k::mv_q8p_conv(dq8 + (size_t) NQ * C, dd8 + (size_t) NQ * nb, KD, C, dxk, tk,
++                       k::MvConv{0, KD, hka, dsck, kda, KV, nullptr, kca}, k::MvConv{}, 0);
++        k::mv_q8p_conv(dq8 + (size_t) (NQ + KD) * C, dd8 + (size_t) (NQ + KD) * nb, KD, C, dxv, tv,
++                       k::MvConv{0, KD, hva, dscv, vda, KV, nullptr, vca}, k::MvConv{}, 0);
++        k::mv_f16_pair(dwk, KV * 4, dxk, kdb, dwv, KV * 4, dxv, vdb, C, 0);
++        k::mv_q8p_conv(dq8, dd8, N, C, dxq, yb, k::MvConv{NQ, KD, hkb, dsck, kdb, KV, nullptr, kcb},
++                       k::MvConv{NQ + KD, KD, hvb, dscv, vdb, KV, nullptr, vcb}, 0, k::MvAlt{dxk, NQ, KD},
++                       k::MvAlt{dxv, NQ + KD, KD});
++        expect_true("mv_f16_pair, the fused q | r | gate | k | v product: the five products' values to the bit",
++                    same_dev(kda, kdb, KV * 4) && same_dev(vda, vdb, KV * 4) && same_dev(ya, yb, NQ) &&
++                        same_dev(kca, kcb, KD) && same_dev(vca, vcb, KD) && same_dev(hka, hkb, (size_t) 3 * KD) &&
++                        same_dev(hva, hvb, (size_t) 3 * KD));
++        cudaFree(dq8), cudaFree(dd8), cudaFree(dwk), cudaFree(dwv);
++        for (float* p : {dxq, dxk, dxv, dsck, dscv, hka, hkb, hva, hvb, ya, yb, kda, kdb, vda, vdb, kca, kcb, vca, vcb, tk, tv})
++            cudaFree(p);
++    }
++}
++
+ // cand_topk: every one of the K largest values is among the gathered, each gathered value is its token's, and the
+ // count says when the buffer was too small (a flat row)
+ void test_cand_topk() {
+@@ -3375,6 +3610,7 @@ int main() {
+     test_attn_decode_mma();
+     test_cand_topk();
+     test_token_path();
++    test_k_launches();
+     test_experts_mma();
+ #ifdef MAYA_USE_HIP
+     test_experts_rdna();
+-- 
+2.53.0
+

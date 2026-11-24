@@ -1,0 +1,631 @@
+From 96e95342587728572a471e750e894f9b6782a116 Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Tue, 24 Nov 2026 03:05:16 +0100
+Subject: [PATCH 3/8] ik2 AMD: dense Q8_0 products with x in shared memory
+ (IK2_K_DMV, IK2_K_DCOLS, IK2_K_DLG)
+
+All default off; on: the same bits as off (each row's lanes, steps, expression and
+wsum as mv_q8p_kernel's AMD path; zeros hidden from the compiler).
+- IK2_K_DMV=1|2: mv_q8p / mv_q8p_conv (K 2304/3072) through mv_q8p_lds_kernel:
+  x copied once a block into shared memory (lane-contiguous layout), every step of
+  a warp's rows asked for at once, weights and scales non-temporal; convs, alts
+  (ranges of 16 rows) as before.
+- IK2_K_DCOLS=1|8|16|32: mv_q8p_cols (T 2..8) through mv_q8p_cols_lds_kernel:
+  chunks of 3 steps of every token's x in shared memory, the next chunk's x and
+  weights in flight under this chunk's sums; mv_q8p_cols_alts true on AMD (the
+  looped visits' q|k|v|r|gate one launch, not four).
+- IK2_K_DLG=1 (with IK2_HIP_LGD): the window's loop gate dots with a D row read
+  once for the tokens (loop_gate_dots_toks_amd_kernel, loop_gate_dots_kernel<U>'s
+  sums).
+- kd_force (tests); test_dense_kd: on vs off bit for bit on Inkling's shapes
+  (8576/6528/1024 x 2304, 2304 x 3072, the head 201024 x 2304, odd row counts),
+  convs + alts, window alts, loop gates; IK2_TEST_DENSE_ONLY=1.
+---
+ docs/INKLING2.md          |   8 +
+ src/ik2/ik2_kernels.cu    | 332 +++++++++++++++++++++++++++++++++++++-
+ src/ik2/ik2_kernels.cuh   |   7 +
+ tests/ik2_kernels_test.cu | 150 +++++++++++++++++
+ 4 files changed, 491 insertions(+), 6 deletions(-)
+
+diff --git a/docs/INKLING2.md b/docs/INKLING2.md
+index b003bde0..b6a5ad07 100644
+--- a/docs/INKLING2.md
++++ b/docs/INKLING2.md
+@@ -355,6 +355,14 @@ compares the first n windows with the one-token path row for row. `IK2_BLOCK_EXA
+ tiles and the window's own attention instead (a few 1e-5 off: greedy answers then differ with drafting on; the
+ contributor's figures below were measured that way).
+ 
++On AMD (gfx11, wave32) three switches, each off by default and the same bits on as off (`tests/ik2_kernels_test.cu`'s
++`test_dense_kd`, `IK2_TEST_DENSE_ONLY=1`), change where the dense Q8_0 products' bytes come from, for K 2304 / 3072:
++`IK2_K_DMV=1` (2: a row a wave) the one-token product with x in shared memory (a wave read x from the caches four
++times its weight bytes) and every step of a wave's rows asked for at once, non-temporally; `IK2_K_DCOLS=1` (8 / 16
++/ 32: rows a block) the window's, a chunk of 3 steps of every token's x in shared memory and the next chunk's weights
++asked for before this chunk's sums - and a looped visit's q, k, v, r and gate rows one launch (`mv_q8p_cols_alts`);
++`IK2_K_DLG=1` (with `IK2_HIP_LGD` on) the window's loop gates' dots with a D row read once for its tokens.
++
+ **The prompt lookup** (`src/spec/suffix_drafter`) drafts the tokens that followed the latest earlier copy of the
+ text's end - edits, quoted code, repeated lines - with no weights; the same window checks them. `--drafting`: **auto**
+ (the setup's default) measures once on the PC, before the first answer, which of no drafting, the prompt lookup, the
+diff --git a/src/ik2/ik2_kernels.cu b/src/ik2/ik2_kernels.cu
+index f6a0fb01..3c3fe076 100644
+--- a/src/ik2/ik2_kernels.cu
++++ b/src/ik2/ik2_kernels.cu
+@@ -2875,6 +2875,58 @@ __global__ void __launch_bounds__(128) loop_gate_dots_toks_kernel(LoopGateArgs a
+     }
+ }
+ #endif
++// (1) on AMD for a window (IK2_K_DLG=1 with IK2_HIP_LGD on, T 2 .. 8, C 2304): a block a (rank, gate) for every
++// token, its D row's two halves asked for once, non-temporally (a block a (rank, gate, token) read it again for every
++// token), each token's x and m a token ahead of its sums - and the sums loop_gate_dots_kernel<U>'s, the token path's
++// kernel there: its expression in its order from zeros hidden the same way, the warp sums, the four warps added in
++// order.  So the same bits.
++__global__ void __launch_bounds__(128) loop_gate_dots_toks_amd_kernel(LoopGateArgs a, int T, int C, int R, float* sc) {
++    constexpr int kN = 2304 / 128;
++    __shared__ float sh[8][4][4];
++    const int r = blockIdx.x, j = blockIdx.y, tid = threadIdx.x, warp = tid >> 5;
++    const float* dr = a.D[j] + (size_t) r * 2 * C;
++    const float* xr = a.x[j];
++    const float* mr = a.m[j];
++    typedef const float __attribute__((address_space(1))) g_f;
++    float d0[kN], d1[kN], xv[kN], mv[kN];
++#pragma unroll
++    for (int k = 0; k < kN; ++k) {
++        const int c = tid + 128 * k;
++        d0[k] = __builtin_nontemporal_load((const g_f*) (dr + c));
++        d1[k] = __builtin_nontemporal_load((const g_f*) (dr + 2304 + c));
++        xv[k] = xr[c], mv[k] = mr[c];
++    }
++    for (int t = 0; t < T; ++t) {
++        float xn[kN], mn[kN];
++        const size_t tn = (size_t) min(t + 1, T - 1) * C;
++#pragma unroll
++        for (int k = 0; k < kN; ++k) xn[k] = xr[tn + tid + 128 * k], mn[k] = mr[tn + tid + 128 * k];
++        float ax = 0.0f, am = 0.0f, sx = 0.0f, sm = 0.0f;
++#ifdef MAYA_USE_HIP
++        asm volatile("" : "+v"(ax), "+v"(am), "+v"(sx), "+v"(sm));
++#endif
++#pragma unroll
++        for (int k = 0; k < kN; ++k) {
++            ax += d0[k] * xv[k], am += d1[k] * mv[k];
++            sx += xv[k] * xv[k], sm += mv[k] * mv[k];
++        }
++        ax = wsum(ax), am = wsum(am), sx = wsum(sx), sm = wsum(sm);
++        if ((tid & 31) == 0) sh[t][warp][0] = ax, sh[t][warp][1] = am, sh[t][warp][2] = sx, sh[t][warp][3] = sm;
++#pragma unroll
++        for (int k = 0; k < kN; ++k) xv[k] = xn[k], mv[k] = mn[k];
++    }
++    __syncthreads();
++    if (tid < T) {
++        const int t = tid;
++        float* o = sc + ((size_t) j * T + t) * (2 * R + 2);
++        o[2 * r] = sh[t][0][0] + sh[t][1][0] + sh[t][2][0] + sh[t][3][0];
++        o[2 * r + 1] = sh[t][0][1] + sh[t][1][1] + sh[t][2][1] + sh[t][3][1];
++        if (r == 0) {
++            o[2 * R] = sh[t][0][2] + sh[t][1][2] + sh[t][2][2] + sh[t][3][2];
++            o[2 * R + 1] = sh[t][0][3] + sh[t][1][3] + sh[t][2][3] + sh[t][3][3];
++        }
++    }
++}
+ // (2) y = (1 - tanh(F g)) x + tanh(G g) m, F and G by rank ([R][C]).  A block is 32 channels of up to 8 tokens: its
+ // 8 warps copy the channels' R rows of F and G into shared memory (the rows spread over the warps, a warp's loads all
+ // issued at once - one thread a channel walking the rows itself left the loads in a chain on 27 blocks: 35 us a visit
+@@ -7671,6 +7723,198 @@ mv_q8p_colsx_kernel(const int8_t* __restrict__ q, const uint16_t* __restrict__ d
+ }
+ #endif
+ 
++// ---- IK2_K_DMV / IK2_K_DCOLS (AMD, default off): the dense Q8_0 products in other launch shapes with the same sums.
++// mv_q8p_kernel's AMD rows (K a multiple of 256) and mv_q8p_cols_kernel's: lane l of a row's warp takes the 8 values
++// 256 it + 8 l .. of step it, acc += dv * (their 8 products, the same expression), the steps in order, then wsum - so
++// every row (every token's row) is the one-token kernel's to the bit.  What changes is where the bytes come from:
++// - x through shared memory: a block copies x (a window: a chunk of 3 steps of each token's x) once, laid out so that
++//   a lane's two float4 of a step are consecutive across the lanes; a wave read x from the caches four times a
++//   row's weight bytes (a window: 4 T / R times) and a window's x (T x 9 KB) does not fit the 16 KB L0;
++// - the weights (values and scales) read non-temporally, every step of the warp's rows asked for at once (the one
++//   token) or a chunk ahead (a window), not three steps a loop trip;
++// - K a constant (2304 or 3072: 9 or 12 steps), straight-line code; the sums start from zeros hidden from the compiler
++//   (as loop_gate_dots_kernel's: a folded 0 + p would let it fuse another product than the loop kernels do).
++// The CUDA build compiles them and never launches them (its one-token kernel's lanes take 4 values of each 128).
++__device__ __forceinline__ uint2 kd_ldw(const uint2* p) {
++#ifdef MAYA_USE_HIP
++    typedef unsigned kd_u2v __attribute__((ext_vector_type(2)));
++    const kd_u2v t = __builtin_nontemporal_load((const __attribute__((address_space(1))) kd_u2v*) p);
++    return make_uint2(t.x, t.y);
++#else
++    return __ldg(p);
++#endif
++}
++__device__ __forceinline__ uint16_t kd_ldh(const uint16_t* p) {   // (a scale's bits: made F32 where it is used)
++    return __builtin_nontemporal_load((const __attribute__((address_space(1))) uint16_t*) p);
++}
++__device__ __forceinline__ void kd_hide(float& v) {
++#ifdef MAYA_USE_HIP
++    asm volatile("" : "+v"(v));
++#else
++    (void) v;
++#endif
++}
++
++// one token: y [N] = W . x, a block WARPS x R rows (a warp R rows), x [K] in shared memory; c0 / c1 / a0 / a1 as
++// mv_q8p_kernel's (a0's and a1's ranges whole blocks: the block takes the input of its first row)
++template <int WARPS, int R, int NIT>
++__global__ void __launch_bounds__(WARPS * 32)
++mv_q8p_lds_kernel(const int8_t* __restrict__ q, const uint16_t* __restrict__ d, int N, const float* __restrict__ x0,
++                  float* y, MvConv c0, MvConv c1, MvAlt a0, MvAlt a1) {
++    constexpr int K = NIT * 256, B = WARPS * 32, NF = K / 4, CP = (NF + B - 1) / B;
++    __shared__ __align__(16) float4 xs[NF];   // float4 (2 it + h) 32 + l: lane l's xa (h 0) / xb (h 1) of step it
++    const int tid = threadIdx.x, lane = tid & 31;
++    const int rb0 = blockIdx.x * (WARPS * R), row0 = rb0 + (tid >> 5) * R;
++    const float* x = (unsigned) (rb0 - a0.r0) < (unsigned) a0.n   ? a0.x
++                     : (unsigned) (rb0 - a1.r0) < (unsigned) a1.n ? a1.x
++                                                                  : x0;
++    float4 xr[CP];
++#pragma unroll
++    for (int p = 0; p < CP; ++p) {
++        const int f = tid + p * B;
++        if (f < NF) xr[p] = __ldg((const float4*) x + f);
++    }
++    __builtin_amdgcn_sched_barrier(0);
++    uint2 w[R][NIT];
++    uint16_t dh[R][NIT];
++#pragma unroll
++    for (int i = 0; i < R; ++i) {
++        const int row = min(row0 + i, N - 1);   // (past the last row: the last again, not written)
++        const uint2* q2 = (const uint2*) (q + (size_t) row * K);
++        const uint16_t* dr = d + (size_t) row * (K >> 5);
++#pragma unroll
++        for (int it = 0; it < NIT; ++it) w[i][it] = kd_ldw(q2 + it * 32 + lane), dh[i][it] = kd_ldh(dr + it * 8 + (lane >> 2));
++    }
++    __builtin_amdgcn_sched_barrier(0);   // (x's loads first, then every weight's: x is in shared memory long before)
++#pragma unroll
++    for (int p = 0; p < CP; ++p) {
++        const int f = tid + p * B;   // (x's float4 f: step f / 64, lane (f % 64) / 2, half f % 2)
++        if (f < NF) xs[(((f >> 6) * 2 + (f & 1)) << 5) + ((f & 63) >> 1)] = xr[p];
++    }
++    __syncthreads();
++    if (row0 >= N) return;
++    float acc[R];
++#pragma unroll
++    for (int i = 0; i < R; ++i) acc[i] = 0.0f, kd_hide(acc[i]);
++#pragma unroll
++    for (int it = 0; it < NIT; ++it) {
++        const float4 xa = xs[((it * 2) << 5) + lane], xb = xs[((it * 2 + 1) << 5) + lane];
++#pragma unroll
++        for (int i = 0; i < R; ++i) {
++            const uint2 wv = w[i][it];
++            const float dv = h2f(dh[i][it]);
++            acc[i] += dv * ((float) (int8_t) (wv.x & 0xFFu) * xa.x + (float) (int8_t) ((wv.x >> 8) & 0xFFu) * xa.y +
++                            (float) (int8_t) ((wv.x >> 16) & 0xFFu) * xa.z + (float) (int8_t) (wv.x >> 24) * xa.w +
++                            (float) (int8_t) (wv.y & 0xFFu) * xb.x + (float) (int8_t) ((wv.y >> 8) & 0xFFu) * xb.y +
++                            (float) (int8_t) ((wv.y >> 16) & 0xFFu) * xb.z + (float) (int8_t) (wv.y >> 24) * xb.w);
++        }
++    }
++#pragma unroll
++    for (int i = 0; i < R; ++i) {
++        const float a = wsum(acc[i]);
++        const int row = row0 + i;
++        if (lane == 0 && row < N && !mv_conv_row(c0, row, a) && !mv_conv_row(c1, row, a)) y[row] = a;
++    }
++}
++
++// a window: y [T][N] = W . x [T][K] (rows x_ld apart), a block WARPS x R rows (a warp R rows x T tokens), the steps in
++// chunks of 3: a chunk's x of every token in shared memory (copied by the block, the next chunk's x and weights
++// asked for before this chunk's sums); a0 / a1 as mv_q8p_colsx_kernel's, their ranges whole blocks
++template <int WARPS, int R, int T, int NIT>
++__global__ void __launch_bounds__(WARPS * 32)
++mv_q8p_cols_lds_kernel(const int8_t* __restrict__ q, const uint16_t* __restrict__ d, int N,
++                       const float* __restrict__ x0, int x_ld, float* __restrict__ y, int y_ld, MvAlt a0, MvAlt a1) {
++    constexpr int K = NIT * 256, S = 3, NC = NIT / S, B = WARPS * 32;
++    constexpr int NF = T * S * 64, CP = (NF + B - 1) / B;   // (a chunk's float4: token, step, 64 of a step)
++    static_assert(NIT % S == 0, "chunks of 3 steps");
++    __shared__ __align__(16) float4 xs[NF];   // float4 ((t S + s) 2 + h) 32 + l: token t's lane l's xa / xb of step s
++    const int tid = threadIdx.x, lane = tid & 31;
++    const int rb0 = blockIdx.x * (WARPS * R), row0 = rb0 + (tid >> 5) * R;
++    const float* x = (unsigned) (rb0 - a0.r0) < (unsigned) a0.n   ? a0.x
++                     : (unsigned) (rb0 - a1.r0) < (unsigned) a1.n ? a1.x
++                                                                  : x0;
++    const uint2* q2[R];
++    const uint16_t* dr[R];
++#pragma unroll
++    for (int i = 0; i < R; ++i) {
++        const int row = min(row0 + i, N - 1);   // (past the last row: the last again, not written)
++        q2[i] = (const uint2*) (q + (size_t) row * K), dr[i] = d + (size_t) row * (K >> 5);
++    }
++    float4 xr[CP];
++    uint2 w[R][NIT];
++    uint16_t dh[R][NIT];
++    float acc[R][T];
++#pragma unroll
++    for (int i = 0; i < R; ++i)
++#pragma unroll
++        for (int t = 0; t < T; ++t) acc[i][t] = 0.0f, kd_hide(acc[i][t]);
++#pragma unroll
++    for (int c = 0; c <= NC; ++c) {
++        if (c > 0) {   // chunk c - 1's x into shared memory (once the previous chunk's sums have read theirs)
++            if (c > 1) __syncthreads();
++#pragma unroll
++            for (int p = 0; p < CP; ++p) {
++                const int f = tid + p * B;
++                if (f < NF) {
++                    const int t = f / (S * 64), s = (f >> 6) - t * S, r = f & 63;
++                    xs[(((t * S + s) * 2 + (r & 1)) << 5) + (r >> 1)] = xr[p];
++                }
++            }
++            __syncthreads();
++        }
++        if (c < NC) {   // chunk c's loads: x first (its stores above wait for them, not for the weights)
++#pragma unroll
++            for (int p = 0; p < CP; ++p) {
++                const int f = tid + p * B;
++                if (f < NF) {
++                    const int t = f / (S * 64), s = (f >> 6) - t * S, r = f & 63;
++                    xr[p] = __ldg((const float4*) (x + (size_t) t * x_ld) + (c * S + s) * 64 + r);
++                }
++            }
++            __builtin_amdgcn_sched_barrier(0);
++#pragma unroll
++            for (int i = 0; i < R; ++i)
++#pragma unroll
++                for (int s = 0; s < S; ++s) {
++                    const int it = c * S + s;
++                    w[i][it] = kd_ldw(q2[i] + it * 32 + lane), dh[i][it] = kd_ldh(dr[i] + it * 8 + (lane >> 2));
++                }
++            __builtin_amdgcn_sched_barrier(0);
++        }
++        if (c > 0) {   // chunk c - 1's sums
++#pragma unroll
++            for (int s = 0; s < S; ++s) {
++                const int it = (c - 1) * S + s;
++#pragma unroll
++                for (int t = 0; t < T; ++t) {
++                    const float4 xa = xs[(((t * S + s) * 2) << 5) + lane], xb = xs[(((t * S + s) * 2 + 1) << 5) + lane];
++#pragma unroll
++                    for (int i = 0; i < R; ++i) {
++                        const uint2 wv = w[i][it];
++                        const float dv = h2f(dh[i][it]);
++                        acc[i][t] += dv * ((float) (int8_t) (wv.x & 0xFFu) * xa.x +
++                                           (float) (int8_t) ((wv.x >> 8) & 0xFFu) * xa.y +
++                                           (float) (int8_t) ((wv.x >> 16) & 0xFFu) * xa.z +
++                                           (float) (int8_t) (wv.x >> 24) * xa.w +
++                                           (float) (int8_t) (wv.y & 0xFFu) * xb.x +
++                                           (float) (int8_t) ((wv.y >> 8) & 0xFFu) * xb.y +
++                                           (float) (int8_t) ((wv.y >> 16) & 0xFFu) * xb.z +
++                                           (float) (int8_t) (wv.y >> 24) * xb.w);
++                    }
++                }
++            }
++        }
++    }
++    if (row0 >= N) return;
++#pragma unroll
++    for (int i = 0; i < R; ++i)
++#pragma unroll
++        for (int t = 0; t < T; ++t) {
++            const float a = wsum(acc[i][t]);
++            if (lane == 0 && row0 + i < N) y[(size_t) t * y_ld + row0 + i] = a;
++        }
++}
++
+ // experts_gate_up_swiglu_kernel for group_route's groups: a block's rows for each member in turn (its x in shared
+ // memory, the rows' weights read again from the cache), with the one-token kernel's row dots - the same h to the bit
+ template <int WARPS, int ROWS>
+@@ -8343,6 +8587,29 @@ void softcap(float* x, size_t n, float cap, cudaStream_t s) {
+     check("softcap");
+ }
+ 
++// IK2_K_DMV, IK2_K_DCOLS, IK2_K_DLG (AMD; default off; on: the same bits as off): the one-token dense product through
++// mv_q8p_lds_kernel, the window's through mv_q8p_cols_lds_kernel (and its rows with inputs of their own in one launch:
++// mv_q8p_cols_alts), the window's loop gates' dots through loop_gate_dots_toks_amd_kernel.  Each switch's value (0
++// off; DMV 1 / 2, DCOLS 1 / 8 / 16 / 32: the launch shapes), kd_force's where it set one.  Never on in the CUDA build
++// (its one-token kernel's lanes take other values: the AMD kernels' sums are not its bits).
++#ifdef MAYA_USE_HIP
++static int g_kd_force[3] = {-1, -1, -1};
++void kd_force(int mv, int cols, int lg) { g_kd_force[0] = mv, g_kd_force[1] = cols, g_kd_force[2] = lg; }
++static int kd_switch(int i) {
++    static const char* const names[3] = {"IK2_K_DMV", "IK2_K_DCOLS", "IK2_K_DLG"};
++    static int env[3] = {-1, -1, -1};
++    if (g_kd_force[i] >= 0) return g_kd_force[i];
++    if (env[i] < 0) env[i] = getenv(names[i]) ? std::max(0, atoi(getenv(names[i]))) : 0;
++    return env[i];
++}
++#else   // (nothing to turn on here)
++void kd_force(int, int, int) {}
++static int kd_switch(int) { return 0; }
++#endif
++static int kd_mv() { return kd_switch(0); }
++static int kd_cols() { return kd_switch(1); }
++static bool kd_lg_on() { return kd_switch(2) != 0; }
++
+ static void lg_launch(const LoopGateArgs& a, int n, int T, int C, int R, float eps, float* sc, bool rms,
+                       const float* rms_w, float rms_eps, float* rms_y, cudaStream_t s);
+ void loop_gates(const LoopGate* gt, int n, int T, int C, int R, float eps, float* sc, cudaStream_t s) {
+@@ -8364,13 +8631,19 @@ static void lg_launch(const LoopGateArgs& a, int n, int T, int C, int R, float e
+ #ifdef MAYA_USE_HIP
+     static const int lgd = getenv("IK2_HIP_LGD") ? atoi(getenv("IK2_HIP_LGD")) : 0;
+     static const bool nta = getenv("IK2_HIP_NT") && (atoi(getenv("IK2_HIP_NT")) & 4);
+-    if (lgd == 2) loop_gate_dots_kernel<2><<<gd, 128, 0, s>>>(a, T, C, R, sc);
+-    else if (lgd) loop_gate_dots_kernel<1><<<gd, 128, 0, s>>>(a, T, C, R, sc);
+-    else
+ #else
++    const int lgd = 0;
+     const bool nta = false;
+     static const bool toks = !(getenv("IK2_GATE_TOKS") && !atoi(getenv("IK2_GATE_TOKS")));
+-    if (toks && T <= 8 && C == 18 * 128)
++#endif
++    if (kd_lg_on() && lgd && T >= 2 && T <= 8 && C == 2304)   // (IK2_K_DLG: the token path's dots kernel is <lgd>)
++        loop_gate_dots_toks_amd_kernel<<<dim3((unsigned) R, (unsigned) n), 128, 0, s>>>(a, T, C, R, sc);
++#ifdef MAYA_USE_HIP
++    else if (lgd == 2) loop_gate_dots_kernel<2><<<gd, 128, 0, s>>>(a, T, C, R, sc);
++    else if (lgd) loop_gate_dots_kernel<1><<<gd, 128, 0, s>>>(a, T, C, R, sc);
++    else
++#else
++    else if (toks && T <= 8 && C == 18 * 128)
+         loop_gate_dots_toks_kernel<18><<<dim3((unsigned) R, (unsigned) n), 128, 0, s>>>(a, T, C, R, sc);
+     else
+ #endif
+@@ -9051,6 +9324,27 @@ void mv_q8p_conv(const int8_t* q, const uint16_t* d, int N, int K, const float*
+         std::fprintf(stderr, "ik2::k::mv_q8p: K %d, or q / x not aligned\n", K);
+         std::abort();
+     }
++    if (const int mode = kd_mv(); mode && (K == 9 * 256 || K == 12 * 256)) {
++        // (IK2_K_DMV: rows a block by N - enough blocks for the CUs, 16 where there are many, so that x's copy is
++        //  read once for 16 rows; IK2_K_DMV=2: a row a warp throughout.  a0's / a1's ranges: whole blocks of 16)
++        auto whole = [](const MvAlt& a) { return a.n == 0 || (a.r0 % 16 == 0 && a.n % 16 == 0); };
++        const bool alts = a0.n || a1.n;
++        if (!alts || (whole(a0) && whole(a1))) {
++            const int wr = alts ? (mode == 2 ? 8 : 16) : mode != 2 && N >= 16 * 384 ? 16 : N >= 8 * 192 ? 8 : 4;
++#define IK2_KD_MV(W, R)                                                                                               \
++    {                                                                                                                 \
++        const unsigned g = (unsigned) ((N + (W) * (R) - 1) / ((W) * (R)));                                            \
++        if (K == 9 * 256) mv_q8p_lds_kernel<W, R, 9><<<g, (W) * 32, 0, s>>>(q, d, N, x, y, c0, c1, a0, a1);          \
++        else mv_q8p_lds_kernel<W, R, 12><<<g, (W) * 32, 0, s>>>(q, d, N, x, y, c0, c1, a0, a1);                      \
++    }
++            if (wr == 16) IK2_KD_MV(8, 2)
++            else if (wr == 8) IK2_KD_MV(8, 1)
++            else IK2_KD_MV(4, 1)
++#undef IK2_KD_MV
++            check("mv_q8p_lds");
++            return;
++        }
++    }
+ #ifdef MAYA_USE_HIP
+     if (hip_nt() & 2)
+         mv_q8p_kernel<4, true><<<(unsigned) ((N + 3) / 4), 128, 0, s>>>(q, d, N, K, x, y, c0, c1, a0, a1);
+@@ -9740,8 +10034,9 @@ bool mv_q8p_cols_alts(int K, int T, const MvAlt& a0, const MvAlt& a1) {
+     static const bool ahead = !(getenv("IK2_COLS_AHEAD") && !atoi(getenv("IK2_COLS_AHEAD")));
+     auto whole = [](const MvAlt& a) { return a.n == 0 || (a.r0 % 16 == 0 && a.n % 16 == 0); };
+     return ahead && T >= 2 && T <= 8 && (K == 18 * 128 || K == 24 * 128) && whole(a0) && whole(a1);
+-#else
+-    return false;
++#else   // (IK2_K_DCOLS: mv_q8p_cols_lds_kernel's blocks of 32 rows take the input of their first row)
++    auto whole = [](const MvAlt& a) { return a.n == 0 || (a.r0 % 32 == 0 && a.n % 32 == 0); };
++    return kd_cols() && T >= 2 && T <= 8 && (K == 9 * 256 || K == 12 * 256) && whole(a0) && whole(a1);
+ #endif
+ }
+ void mv_q8p_cols(const int8_t* q, const uint16_t* d, int N, int K, const float* x, int x_ld, int T, float* y, int y_ld,
+@@ -9755,6 +10050,31 @@ void mv_q8p_cols(const int8_t* q, const uint16_t* d, int N, int K, const float*
+         std::fprintf(stderr, "ik2::k::mv_q8p_cols: K %d, x_ld %d, %d tokens, or q / x not aligned\n", K, x_ld, T);
+         std::abort();
+     }
++    if (const int rr = kd_cols(); rr && T >= 2 && (K == 9 * 256 || K == 12 * 256)) {
++        // (IK2_K_DCOLS: rows a block by N - 32 where there are many, so that a chunk of x is copied once for 32 rows,
++        //  fewer where 32 would leave CUs idle; IK2_K_DCOLS=8|16|32 fixes it but where rows have their own input)
++        const bool alts = a0.n || a1.n;
++        const int rb = alts ? 32 : rr == 8 || rr == 16 || rr == 32 ? rr : N >= 32 * 192 ? 32 : N >= 16 * 192 ? 16 : 8;
++#define IK2_KD_COLS(W, R, TT)                                                                                         \
++    case TT: {                                                                                                        \
++        const unsigned g = (unsigned) ((N + (W) * (R) - 1) / ((W) * (R)));                                            \
++        if (K == 9 * 256) mv_q8p_cols_lds_kernel<W, R, TT, 9><<<g, (W) * 32, 0, s>>>(q, d, N, x, x_ld, y, y_ld, a0, a1); \
++        else mv_q8p_cols_lds_kernel<W, R, TT, 12><<<g, (W) * 32, 0, s>>>(q, d, N, x, x_ld, y, y_ld, a0, a1);         \
++        break;                                                                                                        \
++    }
++#define IK2_KD_COLS_T(W, R)                                                                                           \
++    switch (T) {                                                                                                      \
++        IK2_KD_COLS(W, R, 2) IK2_KD_COLS(W, R, 3) IK2_KD_COLS(W, R, 4) IK2_KD_COLS(W, R, 5) IK2_KD_COLS(W, R, 6)     \
++        IK2_KD_COLS(W, R, 7) IK2_KD_COLS(W, R, 8)                                                                     \
++    }
++        if (rb == 32) IK2_KD_COLS_T(8, 4)
++        else if (rb == 16) IK2_KD_COLS_T(4, 4)
++        else IK2_KD_COLS_T(4, 2)
++#undef IK2_KD_COLS_T
++#undef IK2_KD_COLS
++        check("mv_q8p_cols_lds");
++        return;
++    }
+ #ifndef MAYA_USE_HIP
+     // (K of 18 or 24 steps of 128 - Inkling 2's widths - and 2 .. 8 tokens: the straight-line kernel, loads ahead;
+     //  IK2_COLS_AHEAD=0: the kernel below)
+diff --git a/src/ik2/ik2_kernels.cuh b/src/ik2/ik2_kernels.cuh
+index 4bf6e072..872a7b62 100644
+--- a/src/ik2/ik2_kernels.cuh
++++ b/src/ik2/ik2_kernels.cuh
+@@ -683,6 +683,13 @@ void mv_q8p_cols(const int8_t* q, const uint16_t* d, int N, int K, const float*
+ /// ... whether rows with an input of their own (a0, a1: x [T][K], rows x_ld apart, the ranges multiples of 16 rows) go
+ /// in the same launch - a layer's fused matrix whose q, k and v each have theirs: one launch, not four.
+ bool mv_q8p_cols_alts(int K, int T, const MvAlt& a0, const MvAlt& a1);
++/// AMD's dense kernels for Inkling's widths (K 2304 / 3072), each switch default off and the same bits on as off:
++/// IK2_K_DMV=1 (2: a row a warp) the one-token product (mv_q8p, mv_q8p_conv) with x in shared memory and the weights'
++/// steps asked for at once, non-temporally; IK2_K_DCOLS=1 (8 / 16 / 32: that many rows a block) mv_q8p_cols with a
++/// chunk of the tokens' x in shared memory, and rows with inputs of their own in its launch (alts: ranges of 32
++/// rows); IK2_K_DLG=1 (with IK2_HIP_LGD on, C 2304) a window's loop gates' dots with a D row read once for its
++/// tokens.  kd_force (the tests): each -1 as the environment says, else that value (0 off).  The CUDA build: off.
++void kd_force(int mv, int cols, int lg);
+ /// experts_gate_up_swiglu / experts_down for group_route's groups: each member's h / y the one-token kernels' to the
+ /// bit (x [T][C] F32; h [slot][F]; y [slot][C]), an expert's rows read once from memory for its members.
+ void experts_gate_up_swiglu_mem(const uint8_t* const* blob, const int* n, const int* tok, const int* row, int G,
+diff --git a/tests/ik2_kernels_test.cu b/tests/ik2_kernels_test.cu
+index 14474e24..721d9ba7 100644
+--- a/tests/ik2_kernels_test.cu
++++ b/tests/ik2_kernels_test.cu
+@@ -3337,12 +3337,161 @@ void test_window_launches() {
+     }
+ }
+ 
++// IK2_K_DMV / IK2_K_DCOLS / IK2_K_DLG (AMD's dense kernels): each switch on against off, to the bit, on
++// Inkling-2-Mini's Q8_0 shapes (the fused q | k | v | r | gate of a windowed layer, q | r | gate and k / v of a full
++// one, the output projection's K 3072, the head's 201,024 rows, and row counts that leave a block part empty) - the
++// one-token product (every launch shape; with its two convs and rows with inputs of their own), the window's (T 2 ..
++// 8, every rows-a-block shape; rows with inputs of their own in one launch against the ranges a launch each), the
++// window's loop gates (1 and 3 gates).  The CUDA build keeps the switches off: nothing to compare there.
++void test_dense_kd() {
++#ifndef MAYA_USE_HIP   // (the body compiled all the same; IK2_TEST_DENSE_CUDA=1 runs it: both sides the same kernels)
++    std::printf("--   IK2_K_DMV / DCOLS / DLG: AMD's kernels (off in the CUDA build)\n");
++    if (!getenv("IK2_TEST_DENSE_CUDA")) return;
++#endif
++    struct Shape {
++        int N, K;
++        const char* what;
++    };
++    const Shape shapes[] = {{8576, 2304, "q|k|v|r|gate"}, {6528, 2304, "q|r|gate"}, {1024, 2304, "k / v"},
++                            {2304, 3072, "output"},       {1029, 2304, "1029 rows"}, {1037, 3072, "1037 rows"},
++                            {201024, 2304, "the head"}};
++    for (const Shape& sh : shapes) {
++        const int N = sh.N, K = sh.K;
++        std::vector<int8_t> q((size_t) N * K);
++        for (size_t i = 0; i < q.size(); i += 4) {
++            const uint32_t r = (uint32_t) rng();
++            std::memcpy(q.data() + i, &r, 4);
++        }
++        std::vector<uint16_t> d((size_t) N * (K / 32));
++        for (auto& v : d) v = f2h_host(std::uniform_real_distribution<float>(0.001f, 0.02f)(rng));
++        int8_t* dq = dev(q);
++        uint16_t* dd = dev(d);
++        q.clear(), q.shrink_to_fit();
++        float* dx = dev(fvec((size_t) 8 * K, 2.0f));
++        float *ya = dev_n<float>((size_t) 8 * N), *yb = dev_n<float>((size_t) 8 * N);
++        bool same = true;
++        k::kd_force(0, 0, 0);
++        k::mv_q8p(dq, dd, N, K, dx, ya, 0);
++        const auto want1 = host(ya, (size_t) N);
++        for (int mode : {1, 2}) {
++            k::kd_force(mode, 0, 0);
++            CU(cudaMemset(yb, 0, (size_t) N * 4));
++            k::mv_q8p(dq, dd, N, K, dx, yb, 0);
++            same &= !std::memcmp(host(yb, (size_t) N).data(), want1.data(), (size_t) N * 4);
++        }
++        char label[128];
++        std::snprintf(label, sizeof label, "IK2_K_DMV: mv_q8p on = off, to the bit (%s, %d x %d)", sh.what, N, K);
++        expect_true(label, same);
++        same = true;
++        for (int T = 2; T <= 8; ++T) {
++            k::kd_force(0, 0, 0);
++            k::mv_q8p_cols(dq, dd, N, K, dx, K, T, ya, N, 0);
++            const auto want = host(ya, (size_t) T * N);
++            for (int cols : {1, 8, 16, 32}) {
++                k::kd_force(0, cols, 0);
++                CU(cudaMemset(yb, 0, (size_t) T * N * 4));
++                k::mv_q8p_cols(dq, dd, N, K, dx, K, T, yb, N, 0);
++                same &= !std::memcmp(host(yb, (size_t) T * N).data(), want.data(), (size_t) T * N * 4);
++            }
++        }
++        std::snprintf(label, sizeof label, "IK2_K_DCOLS: mv_q8p_cols on = off, to the bit (%s, T 2 .. 8)", sh.what);
++        expect_true(label, same);
++        if (N == 8576) {   // (a windowed layer's fused matrix: k's and v's rows with their own inputs and convs)
++            const int HD = 3072, KD = 1024, heads = 8;
++            const auto hh = fvec((size_t) 2 * 3 * KD), wh = fvec((size_t) 2 * KD * 4), dyn = fvec((size_t) heads * 4),
++                       res = fvec((size_t) KD);
++            float *dw = dev(wh), *ddyn = dev(dyn), *dres = dev(res);
++            float *yk = dev_n<float>((size_t) 2 * KD), *dh = dev_n<float>((size_t) 2 * 3 * KD);
++            auto one = [&](int mode) {
++                k::kd_force(mode, 0, 0);
++                CU(cudaMemcpy(dh, hh.data(), hh.size() * 4, cudaMemcpyHostToDevice));
++                CU(cudaMemset(yb, 0, (size_t) N * 4));
++                CU(cudaMemset(yk, 0, (size_t) 2 * KD * 4));
++                k::mv_q8p_conv(dq, dd, N, K, dx, yb, k::MvConv{HD, KD, dh, dw, nullptr, 0, nullptr, yk},
++                               k::MvConv{HD + KD, KD, dh + 3 * KD, dw + 4 * KD, ddyn, heads, dres, yk + KD}, 0,
++                               k::MvAlt{dx + K, HD, KD}, k::MvAlt{dx + 2 * K, HD + KD, KD});
++                auto v = host(yb, (size_t) N);
++                for (const float* p : {(const float*) yk, (const float*) dh}) {
++                    const auto u = host(p, p == yk ? (size_t) 2 * KD : (size_t) 2 * 3 * KD);
++                    v.insert(v.end(), u.begin(), u.end());
++                }
++                return v;
++            };
++            const auto want = one(0);
++            same = true;
++            for (int mode : {1, 2}) same &= !std::memcmp(one(mode).data(), want.data(), want.size() * 4);
++            expect_true("IK2_K_DMV: mv_q8p_conv on = off, to the bit (convs, rows with their own inputs)", same);
++            same = true;
++            bool taken = true;
++            float* x3 = dev(fvec((size_t) 3 * 8 * K, 2.0f));   // (token t's q, k, v inputs at 3 K t, + K, + 2 K)
++            for (int T = 2; T <= 8; ++T) {   // (off: a launch a range, as the window's exact_rows; on: one launch)
++                k::kd_force(0, 0, 0);
++                const int r0s[4] = {0, HD, HD + KD, HD + 2 * KD}, ns[4] = {HD, KD, KD, N - HD - 2 * KD};
++                const size_t xo[4] = {0, (size_t) K, (size_t) 2 * K, 0};
++                for (int r = 0; r < 4; ++r)
++                    k::mv_q8p_cols(dq + (size_t) r0s[r] * K, dd + (size_t) r0s[r] * (K / 32), ns[r], K, x3 + xo[r],
++                                   3 * K, T, ya + r0s[r], N, 0);
++                const auto want = host(ya, (size_t) T * N);
++                k::kd_force(0, 1, 0);
++                const k::MvAlt a0{x3 + K, HD, KD}, a1{x3 + 2 * K, HD + KD, KD};
++                taken &= k::mv_q8p_cols_alts(K, T, a0, a1);
++                CU(cudaMemset(yb, 0, (size_t) T * N * 4));
++                if (taken) k::mv_q8p_cols(dq, dd, N, K, x3, 3 * K, T, yb, N, 0, a0, a1);
++                same &= !std::memcmp(host(yb, (size_t) T * N).data(), want.data(), (size_t) T * N * 4);
++            }
++            expect_true("IK2_K_DCOLS: mv_q8p_cols_alts on (K 2304, T 2 .. 8)", taken);
++            expect_true("IK2_K_DCOLS: rows with their own inputs, one launch = a launch a range, to the bit", same);
++            for (float* p : {dw, ddyn, dres, yk, dh, x3}) cudaFree(p);
++        }
++        cudaFree(dq), cudaFree(dd);
++        for (float* p : {dx, ya, yb}) cudaFree(p);
++    }
++    {   // the window's loop gates: a block a (rank, gate) for the tokens against a block a (rank, gate, token)
++        const int C = 2304, R = 64, T8 = 8;
++        const float eps = 1e-6f;
++        const char* lgd = getenv("IK2_HIP_LGD");
++        if (!(lgd && atoi(lgd)))
++            std::printf("--   IK2_K_DLG: inactive without IK2_HIP_LGD (the dots kernel it matches): both sides the same\n");
++        float *x = dev(fvec((size_t) 3 * T8 * C, 2.0f)), *m = dev(fvec((size_t) 3 * T8 * C, 2.0f));
++        float *Dm = dev(fvec((size_t) 3 * R * 2 * C, 0.05f)), *Fm = dev(fvec((size_t) 3 * R * C, 0.05f)),
++              *Gm = dev(fvec((size_t) 3 * R * C, 0.05f));
++        float *ya = dev_n<float>((size_t) 3 * T8 * C), *yb = dev_n<float>((size_t) 3 * T8 * C);
++        float *sa = dev_n<float>((size_t) 3 * T8 * (2 * R + 2)), *sb = dev_n<float>((size_t) 3 * T8 * (2 * R + 2));
++        bool same = true;
++        for (int n : {1, 3})
++            for (int T = 2; T <= 8; ++T) {
++                k::LoopGate ga[3], gb[3];
++                for (int j = 0; j < 3; ++j) {
++                    ga[j] = {x + (size_t) j * T8 * C, m + (size_t) j * T8 * C, Dm + (size_t) j * R * 2 * C,
++                             Fm + (size_t) j * R * C, Gm + (size_t) j * R * C, ya + (size_t) j * T8 * C};
++                    gb[j] = ga[j];
++                    gb[j].y = yb + (size_t) j * T8 * C;
++                }
++                k::kd_force(0, 0, 0);
++                k::loop_gates(ga, n, T, C, R, eps, sa, 0);
++                k::kd_force(0, 0, 1);
++                k::loop_gates(gb, n, T, C, R, eps, sb, 0);
++                const size_t ny = (size_t) 3 * T8 * C, ns = (size_t) n * T * (2 * R + 2);
++                same &= !std::memcmp(host(ya, ny).data(), host(yb, ny).data(), ny * 4) &&
++                        !std::memcmp(host(sa, ns).data(), host(sb, ns).data(), ns * 4);
++            }
++        expect_true("IK2_K_DLG: loop_gates on = off, to the bit (1 and 3 gates, T 2 .. 8)", same);
++        for (float* p : {x, m, Dm, Fm, Gm, ya, yb, sa, sb}) cudaFree(p);
++    }
++    k::kd_force(-1, -1, -1);
++}
++
+ int main() {
+     int dev_count = 0;
+     CU(cudaGetDeviceCount(&dev_count));
+     cudaDeviceProp p{};
+     CU(cudaGetDeviceProperties(&p, 0));
+     std::printf("ik2_kernels_test on %s (sm_%d%d)\n", p.name, p.major, p.minor);
++    if (getenv("IK2_TEST_DENSE_ONLY")) {   // (IK2_K_DMV / DCOLS / DLG on against off alone)
++        test_dense_kd();
++        std::printf(g_fail ? "FAILED: %d check(s)\n" : "all passed\n", g_fail);
++        return g_fail ? 1 : 0;
++    }
+     if (getenv("IK2_TEST_WINDOW_ONLY")) {   // (the exact window's checks alone: a GPU without the tensor-core kernels)
+         test_window_exact(p.major >= 7);   // (Volta and Turing: their own tensor-core kernels)
+         std::printf(g_fail ? "FAILED: %d check(s)\n" : "all passed\n", g_fail);
+@@ -3381,6 +3530,7 @@ int main() {
+ #endif
+     test_window_exact(p.major >= 7);   // (Volta and Turing: their own tensor-core kernels)
+     test_window_launches();
++    test_dense_kd();
+     std::printf(g_fail ? "FAILED: %d check(s)\n" : "all passed\n", g_fail);
+     return g_fail ? 1 : 0;
+ }
+-- 
+2.53.0
+

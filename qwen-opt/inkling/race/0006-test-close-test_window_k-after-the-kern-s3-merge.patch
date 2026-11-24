@@ -1,0 +1,25 @@
+From b425de4a2eab108bb892273627d554d00810522a Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Tue, 24 Nov 2026 03:15:38 +0100
+Subject: [PATCH 6/8] test: close test_window_k after the kern-s3 merge
+
+---
+ tests/ik2_kernels_test.cu | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/tests/ik2_kernels_test.cu b/tests/ik2_kernels_test.cu
+index 6b49a279..fcdc387f 100644
+--- a/tests/ik2_kernels_test.cu
++++ b/tests/ik2_kernels_test.cu
+@@ -3606,6 +3606,8 @@ void test_window_k() {
+                 CU(cudaFree(p));
+         for (void* p : {(void*) dsw, (void*) dsx, (void*) dk, (void*) dvv, (void*) dpos}) CU(cudaFree(p));
+     }
++}
++
+ // IK2_K_DMV / IK2_K_DCOLS / IK2_K_DLG (AMD's dense kernels): each switch on against off, to the bit, on
+ // Inkling-2-Mini's Q8_0 shapes (the fused q | k | v | r | gate of a windowed layer, q | r | gate and k / v of a full
+ // one, the output projection's K 3072, the head's 201,024 rows, and row counts that leave a block part empty) - the
+-- 
+2.53.0
+

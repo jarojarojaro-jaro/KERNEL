@@ -1,0 +1,28 @@
+From deaf7579a25a230614a21fb245094927f4cb15fa Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Tue, 24 Nov 2026 03:23:30 +0100
+Subject: [PATCH 7/8] merge fix: one k_env (KernLaunch and KernSync both
+ defined it)
+
+---
+ src/ik2/ik2_main.cu | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/src/ik2/ik2_main.cu b/src/ik2/ik2_main.cu
+index 7cd63733..64d332c6 100644
+--- a/src/ik2/ik2_main.cu
++++ b/src/ik2/ik2_main.cu
+@@ -3549,10 +3549,6 @@ bool lane_init(Model& M, const std::string& want, int threads) {
+ //   wait a round instead of two.  The drafts' time from two events around the drafter's launches.
+ // IK2_K_SSAMP=1: the host's sampling orders its candidates with nth_element + sort (partial_sort's order: the order
+ //   is strict and total) and the Gumbel pick stops where no lower token's noise can reach the best: the same tokens.
+-static bool k_env(const char* n) {
+-    const char* v = getenv(n);
+-    return v && std::atoi(v);
+-}
+ const bool g_k_sovl = k_env("IK2_K_SOVL"), g_k_swin = k_env("IK2_K_SWIN"), g_k_ssamp = k_env("IK2_K_SSAMP");
+ struct KTail {   // (IK2_K_SOVL: the drafter's rows the next fast_token / fast_block queues behind its launches)
+     ik2::draft::Drafter* d = nullptr;
+-- 
+2.53.0
+

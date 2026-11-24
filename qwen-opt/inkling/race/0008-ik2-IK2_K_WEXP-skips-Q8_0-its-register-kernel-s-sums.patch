@@ -1,0 +1,482 @@
+From 4da3c6b349e4db5aa92a4ac8290d12083f8901f0 Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Tue, 24 Nov 2026 03:26:38 +0100
+Subject: [PATCH 8/8] ik2: IK2_K_WEXP skips Q8_0 (its register kernel's sums
+ were not row_dot_2's bits on gfx1100)
+
+- experts_win_q8_gu/_down_kernel removed; experts_win_gu/_down return false for Q8_0, so a window's
+  Q8_0 experts stay on experts_*_mem (the token path's bits)
+- q8_blk0_dot / q8_blk1_dot back to the v1.1.75 text (the word-taking split could move HIP's FMA fusion
+  in the token kernels too)
+- cause: HIP's default contraction (fast-honor-pragmas, AMDGPU aggressive FMA fusion) fuses the Q8_0
+  pair's long sums per SelectionDAG basic block; the register kernel's DAG (words from another block,
+  gate then up) fused differently from row_dot_2's loads-beside-sums
+- tests: Q8_0 checks 'not taken'; same_bits() prints the count and first differing value of each
+  failing window check
+---
+ docs/INKLING2.md          |   9 +-
+ src/ik2/ik2_kernels.cu    | 171 +++++++-------------------------------
+ src/ik2/ik2_kernels.cuh   |   6 +-
+ tests/ik2_kernels_test.cu |  82 ++++++++++++++----
+ 4 files changed, 105 insertions(+), 163 deletions(-)
+
+diff --git a/docs/INKLING2.md b/docs/INKLING2.md
+index ef2d9ad4..b72da5fa 100644
+--- a/docs/INKLING2.md
++++ b/docs/INKLING2.md
+@@ -486,10 +486,11 @@ VRAM; lane parity (`IK2_LANE=1`) sums in other bits there and is a test option.
+ 
+ **The exact window's register kernels** (each off unless set to 1; on, every token's values the same bits - held by
+ `ik2_kernels_test`'s `test_window_k`): `IK2_K_WEXP` a window's experts with a row's words read once into the
+-registers for all of its group's tokens (NVFP4, Q8_0, Q4_K gate / up; NVFP4, Q8_0, Q5_0 down; non-temporal where the
+-token kernels are, `IK2_HIP_NT`), where `experts_*_mem` read a group's rows from the caches once a member and wait on
+-each step's loads; `IK2_K_WMVF16` the window's FP16 rows (router, dynamic taps, sinks) with their loads asked for
+-first; `IK2_K_WROUTE` the router's rows, the picks and their groups in one launch (two less a visit);
++registers for all of its group's tokens (NVFP4, Q4_K gate / up; NVFP4, Q5_0 down; non-temporal where the token kernels
++are, `IK2_HIP_NT`; Q8_0 stays on `experts_*_mem`: a register kernel over its sums gave other bits on gfx1100, the
++compiler fusing its long sums into FMAs differently), where `experts_*_mem` read a group's rows from the caches once a
++member and wait on each step's loads; `IK2_K_WMVF16` the window's FP16 rows (router, dynamic taps, sinks) with their
++loads asked for first; `IK2_K_WROUTE` the router's rows, the picks and their groups in one launch (two less a visit);
+ `IK2_K_WCOMB` the MoE's combine and its conv in one launch (one less a visit); `IK2_K_WACOMB` the tokens' attention
+ combine with its partials asked for 32 at a time (`IK2_HIP_COMB`'s combine).
+ 
+diff --git a/src/ik2/ik2_kernels.cu b/src/ik2/ik2_kernels.cu
+index e6ddd776..b83ddb79 100644
+--- a/src/ik2/ik2_kernels.cu
++++ b/src/ik2/ik2_kernels.cu
+@@ -3173,12 +3173,12 @@ __device__ __forceinline__ uint32_t q8ld(const uint32_t* p) {
+     if constexpr (NT) return __builtin_nontemporal_load((const __attribute__((address_space(1))) uint32_t*) p);
+     return __ldg(p);
+ }
+-// (the Q8_0 pair's sums from its words - u0 .. u8 the first block's and the second's scale, v the second's 8 code
+-//  words - so that a kernel holding the words in its registers sums them in the same expression)
+-__device__ __forceinline__ float q8_blk0_w(uint32_t u0, uint32_t u1, uint32_t u2, uint32_t u3, uint32_t u4,
+-                                           uint32_t u5, uint32_t u6, uint32_t u7, uint32_t u8, float4 f0, float4 f1,
+-                                           float4 f2, float4 f3, float4 f4, float4 f5, float4 f6, float4 f7,
+-                                           float& d1_out) {
++template <bool NT = false>
++__device__ __forceinline__ float q8_blk0_dot(const uint32_t* p, float4 f0, float4 f1, float4 f2, float4 f3,
++                                             float4 f4, float4 f5, float4 f6, float4 f7, float& d1_out) {
++    const uint32_t u0 = q8ld<NT>(p + 0), u1 = q8ld<NT>(p + 1), u2 = q8ld<NT>(p + 2), u3 = q8ld<NT>(p + 3),
++                   u4 = q8ld<NT>(p + 4);
++    const uint32_t u5 = q8ld<NT>(p + 5), u6 = q8ld<NT>(p + 6), u7 = q8ld<NT>(p + 7), u8 = q8ld<NT>(p + 8);
+     const float d0 = half_bits_to_float((uint16_t) (u0 & 0xFFFFu));
+     float a0 = (float) (int8_t) ((u0 >> 16) & 0xFFu) * f0.x + (float) (int8_t) (u0 >> 24) * f0.y;
+     a0 += dot_u32_f4(u1, make_float4(f0.z, f0.w, f1.x, f1.y));
+@@ -3192,26 +3192,13 @@ __device__ __forceinline__ float q8_blk0_w(uint32_t u0, uint32_t u1, uint32_t u2
+     d1_out = half_bits_to_float((uint16_t) (u8 >> 16));
+     return d0 * a0;
+ }
+-__device__ __forceinline__ float q8_blk1_w(float d1, uint32_t v0, uint32_t v1, uint32_t v2, uint32_t v3, uint32_t v4,
+-                                           uint32_t v5, uint32_t v6, uint32_t v7, float4 g0, float4 g1, float4 g2,
+-                                           float4 g3, float4 g4, float4 g5, float4 g6, float4 g7) {
+-    return d1 * (dot_u32_f4(v0, g0) + dot_u32_f4(v1, g1) + dot_u32_f4(v2, g2) + dot_u32_f4(v3, g3) +
+-                 dot_u32_f4(v4, g4) + dot_u32_f4(v5, g5) + dot_u32_f4(v6, g6) + dot_u32_f4(v7, g7));
+-}
+-template <bool NT = false>
+-__device__ __forceinline__ float q8_blk0_dot(const uint32_t* p, float4 f0, float4 f1, float4 f2, float4 f3,
+-                                             float4 f4, float4 f5, float4 f6, float4 f7, float& d1_out) {
+-    const uint32_t u0 = q8ld<NT>(p + 0), u1 = q8ld<NT>(p + 1), u2 = q8ld<NT>(p + 2), u3 = q8ld<NT>(p + 3),
+-                   u4 = q8ld<NT>(p + 4);
+-    const uint32_t u5 = q8ld<NT>(p + 5), u6 = q8ld<NT>(p + 6), u7 = q8ld<NT>(p + 7), u8 = q8ld<NT>(p + 8);
+-    return q8_blk0_w(u0, u1, u2, u3, u4, u5, u6, u7, u8, f0, f1, f2, f3, f4, f5, f6, f7, d1_out);
+-}
+ 
+ template <bool NT = false>
+ __device__ __forceinline__ float q8_blk1_dot(const uint32_t* p, float d1, float4 g0, float4 g1, float4 g2, float4 g3,
+                                              float4 g4, float4 g5, float4 g6, float4 g7) {
+-    return q8_blk1_w(d1, q8ld<NT>(p + 9), q8ld<NT>(p + 10), q8ld<NT>(p + 11), q8ld<NT>(p + 12), q8ld<NT>(p + 13),
+-                     q8ld<NT>(p + 14), q8ld<NT>(p + 15), q8ld<NT>(p + 16), g0, g1, g2, g3, g4, g5, g6, g7);
++    return d1 * (dot_u32_f4(q8ld<NT>(p + 9), g0) + dot_u32_f4(q8ld<NT>(p + 10), g1) + dot_u32_f4(q8ld<NT>(p + 11), g2) +
++                 dot_u32_f4(q8ld<NT>(p + 12), g3) + dot_u32_f4(q8ld<NT>(p + 13), g4) + dot_u32_f4(q8ld<NT>(p + 14), g5) +
++                 dot_u32_f4(q8ld<NT>(p + 15), g6) + dot_u32_f4(q8ld<NT>(p + 16), g7));
+ }
+ 
+ 
+@@ -7813,9 +7800,9 @@ __global__ void route_rows_kernel(const float* __restrict__ logits, const float*
+ // The experts: experts_nv_* / experts_q4k_gu / experts_q50_down_kernel's layout (a row - gate / up pair - a wave,
+ // four waves a block, a lane's sub-blocks / units lane + 32 i in its registers, all its words asked for at once) for
+ // group_route's groups - the row's words read ONCE (non-temporally on AMD where the token kernels do: IK2_HIP_NT
+-// bit 1, bit 8 for Q8_0) and kept in the registers while each member's input is read and summed in row_dot /
+-// row_dot_2's order and butterfly: each member's h / y the token kernels' (and experts_*_mem's) bits.  Where
+-// experts_*_mem reads a group's rows from the caches once a member, each member here costs only its input's loads.
++// bit 1) and kept in the registers while each member's input is read and summed in row_dot / row_dot_2's order and
++// butterfly: each member's h / y the token kernels' (and experts_*_mem's) bits.  Where experts_*_mem reads a group's
++// rows from the caches once a member, each member here costs only its input's loads.
+ template <bool NT>
+ __device__ __forceinline__ void nvw_load(const uint8_t* w, int sb, uint32_t& sc, uint32_t& q0, uint32_t& q1) {
+     const uint8_t* b = w + (size_t) (sb >> 2) * 36;
+@@ -8023,105 +8010,12 @@ experts_win_q50_down_kernel(const uint8_t* const* __restrict__ blob, const int*
+         if (lane == 0) y[(size_t) slot * C + r] = acc;
+     }
+ }
+-// Q8_0 (row_dot / row_dot_2's 4-byte aligned order: lane l the block pairs 2 (l + 32 i), 2 (l + 32 i) + 1 - a pair's
+-// 17 words in the registers - q8_blk0 then q8_blk1 into the row's sum; K a multiple of 64): a row (gate / up pair) a
+-// wave.  The rows 4-byte aligned, as the one-token kernels find them (an expert's blocks start aligned, a row is a
+-// multiple of 4 bytes at Inkling-2-Mini's widths).
+-template <bool NT>
+-__device__ __forceinline__ void q8w_load(const uint8_t* row, int p, uint32_t (&u)[17]) {
+-    const uint8_t* b = row + (size_t) p * 68;
+-#pragma unroll
+-    for (int j = 0; j < 17; ++j) u[j] = kq_ld32<NT>(b + 4 * j);
+-}
+-__device__ __forceinline__ float q8w_pair(float acc, const uint32_t (&u)[17], const float4 (&f)[16]) {
+-    float d1;
+-    acc += q8_blk0_w(u[0], u[1], u[2], u[3], u[4], u[5], u[6], u[7], u[8], f[0], f[1], f[2], f[3], f[4], f[5], f[6],
+-                     f[7], d1);
+-    acc += q8_blk1_w(d1, u[9], u[10], u[11], u[12], u[13], u[14], u[15], u[16], f[8], f[9], f[10], f[11], f[12],
+-                     f[13], f[14], f[15]);
+-    return acc;
+-}
+-template <int K, bool NT>
+-__global__ void __launch_bounds__(128)
+-experts_win_q8_gu_kernel(const uint8_t* const* __restrict__ blob, const int* __restrict__ n_g,
+-                         const int* __restrict__ tok_g, const int* __restrict__ row_g, size_t eb0,
+-                         const float* __restrict__ x, int F, const float* __restrict__ sg,
+-                         const float* __restrict__ su, float gcap, float ucap, uint16_t* __restrict__ h) {
+-    constexpr int NP = K / 64, IT = (NP + 31) / 32;
+-    constexpr size_t RB = (size_t) (K / 32) * 34;
+-    const int lane = threadIdx.x & 31, grp = blockIdx.y, n = n_g[grp];
+-    const int r = blockIdx.x * 4 + (threadIdx.x >> 5);
+-    if (n <= 0 || r >= F || (uintptr_t) blob[grp] <= 1u) return;
+-    const uint8_t* wg = blob[grp] + (size_t) r * RB;
+-    const uint8_t* wu = blob[grp] + eb0 + (size_t) r * RB;
+-    uint32_t gw[IT][17], uw[IT][17];
+-#pragma unroll
+-    for (int i = 0; i < IT; ++i) {
+-        const int p = min(lane + 32 * i, NP - 1);
+-        q8w_load<NT>(wg, p, gw[i]);
+-        q8w_load<NT>(wu, p, uw[i]);
+-    }
+-    for (int m = 0; m < n; ++m) {
+-        const int slot = row_g[grp * kGroupMax + m];
+-        const float4* x4 = (const float4*) (x + (size_t) tok_g[grp * kGroupMax + m] * K);
+-        float ag = 0.0f, au = 0.0f;
+-#pragma unroll
+-        for (int i = 0; i < IT; ++i) {
+-            const int p = lane + 32 * i;
+-            if (32 * (i + 1) > NP && p >= NP) break;
+-            float4 f[16];
+-#pragma unroll
+-            for (int k = 0; k < 16; ++k) f[k] = __ldg(x4 + p * 16 + k);
+-            ag = q8w_pair(ag, gw[i], f);
+-            au = q8w_pair(au, uw[i], f);
+-        }
+-#pragma unroll
+-        for (int o = 16; o > 0; o >>= 1) {
+-            ag += __shfl_xor_sync(0xffffffffu, ag, o);
+-            au += __shfl_xor_sync(0xffffffffu, au, o);
+-        }
+-        if (lane == 0) {
+-            const float sgs = sg ? sg[slot] : 1.0f, sus = su ? su[slot] : 1.0f;
+-            h[(size_t) slot * F + r] = f2h(swiglu_h(ag * sgs, au * sus, gcap, ucap));
+-        }
+-    }
+-}
+-template <int K, bool NT>
+-__global__ void __launch_bounds__(128)
+-experts_win_q8_down_kernel(const uint8_t* const* __restrict__ blob, const int* __restrict__ n_g,
+-                           const int* __restrict__ row_g, size_t off_down, const uint16_t* __restrict__ hin, int C,
+-                           float* __restrict__ y) {
+-    constexpr int NP = K / 64, IT = (NP + 31) / 32;
+-    constexpr size_t RB = (size_t) (K / 32) * 34;
+-    const int lane = threadIdx.x & 31, grp = blockIdx.y, n = n_g[grp];
+-    const int r = blockIdx.x * 4 + (threadIdx.x >> 5);
+-    if (n <= 0 || r >= C || (uintptr_t) blob[grp] <= 1u) return;
+-    const uint8_t* w = blob[grp] + off_down + (size_t) r * RB;
+-    uint32_t dw[IT][17];
+-#pragma unroll
+-    for (int i = 0; i < IT; ++i) q8w_load<NT>(w, min(lane + 32 * i, NP - 1), dw[i]);
+-    for (int m = 0; m < n; ++m) {
+-        const int slot = row_g[grp * kGroupMax + m];
+-        const uint4* h8 = (const uint4*) (hin + (size_t) slot * K);
+-        float acc = 0.0f;
+-#pragma unroll
+-        for (int i = 0; i < IT; ++i) {
+-            const int p = lane + 32 * i;
+-            if (32 * (i + 1) > NP && p >= NP) break;
+-            float4 f[16];
+-#pragma unroll
+-            for (int k = 0; k < 8; ++k) {   // (a pair's 64 inputs: 8 x 8 FP16)
+-                const uint4 v = __ldg(h8 + p * 8 + k);
+-                const float2 a = u32_to_f2(v.x), b = u32_to_f2(v.y), c = u32_to_f2(v.z), d = u32_to_f2(v.w);
+-                f[2 * k] = make_float4(a.x, a.y, b.x, b.y), f[2 * k + 1] = make_float4(c.x, c.y, d.x, d.y);
+-            }
+-            acc = q8w_pair(acc, dw[i], f);
+-        }
+-#pragma unroll
+-        for (int o = 16; o > 0; o >>= 1) acc += __shfl_xor_sync(0xffffffffu, acc, o);
+-        if (lane == 0) y[(size_t) slot * C + r] = acc;
+-    }
+-}
++// (No Q8_0 here: a register kernel over row_dot_2's Q8_0 expression gave other bits on gfx1100 - the expression's
++//  long `a0 +=` / `dot + dot` chains are fused into FMAs by HIP's default contraction (fast-honor-pragmas, AMDGPU's
++//  aggressive FMA fusion) in the SelectionDAG of each basic block, and which product a chain fuses depends on the
++//  DAG around it - the words from the registers of another block and the gate / up rows' order are a different
++//  DAG than row_dot_2's loads beside their sums.  The NVFP4 / Q4_K / Q5_0 kernels above are the token register
++//  kernels' own code, held to the shared-memory kernels by the tests.  A window's Q8_0 experts stay experts_*_mem.)
+ 
+ // IK2_K_WMVF16: mv_f16_rows_kernel's rows through f16_dot_lane (its sums, in its order - every load asked for first),
+ // K a constant: the window's router, dynamic taps
+@@ -10248,31 +10142,27 @@ void experts_down_mem(const uint8_t* const* blob, const int* n, const int* row,
+     check("experts_down_mem");
+ }
+ // ---- the exact window's register kernels (the host's switches: IK2_K_WEXP, _WMVF16, _WROUTE, _WCOMB)
+-static int wexp_nt(int bit) {
++static bool wexp_nt() {
+ #ifdef MAYA_USE_HIP
+-    return hip_nt() & bit;   // (the token kernels' bits: 1 NVFP4 / Q4_K / Q5_0, 8 Q8_0)
++    return hip_nt() & 1;   // (the token register kernels' bit)
+ #else
+-    (void) bit;
+-    return 0;
++    return false;
+ #endif
+ }
+ bool experts_win_gu(const uint8_t* const* blob, const int* n, const int* tok, const int* row, int G, int ty_gate,
+                     int ty_up, size_t eb0, const float* x, int C, int F, const float* sg, const float* su, float gcap,
+                     float ucap, uint16_t* h, cudaStream_t s) {
+     if (ty_gate != ty_up || C != 2304 || F % 4 || ((uintptr_t) x & 15) || eb0 % 4) return false;
+-    if (ty_gate != kNVFP4 && ty_gate != kQ4_K && ty_gate != kQ8_0) return false;
++    if (ty_gate != kNVFP4 && ty_gate != kQ4_K) return false;   // (Q8_0: experts_*_mem - see above)
+     if (G <= 0) return true;
+     const dim3 g((unsigned) (F / 4), (unsigned) G);
+ #define IK2_WGU(KERN, NT) KERN<2304, NT><<<g, 128, 0, s>>>(blob, n, tok, row, eb0, x, F, sg, su, gcap, ucap, h)
+     if (ty_gate == kNVFP4) {
+-        if (wexp_nt(1)) IK2_WGU(experts_win_nv_gu_kernel, true);
++        if (wexp_nt()) IK2_WGU(experts_win_nv_gu_kernel, true);
+         else IK2_WGU(experts_win_nv_gu_kernel, false);
+-    } else if (ty_gate == kQ4_K) {
+-        if (wexp_nt(1)) IK2_WGU(experts_win_q4k_gu_kernel, true);
+-        else IK2_WGU(experts_win_q4k_gu_kernel, false);
+     } else {
+-        if (wexp_nt(8)) IK2_WGU(experts_win_q8_gu_kernel, true);
+-        else IK2_WGU(experts_win_q8_gu_kernel, false);
++        if (wexp_nt()) IK2_WGU(experts_win_q4k_gu_kernel, true);
++        else IK2_WGU(experts_win_q4k_gu_kernel, false);
+     }
+ #undef IK2_WGU
+     check("experts_win_gu");
+@@ -10281,19 +10171,16 @@ bool experts_win_gu(const uint8_t* const* blob, const int* n, const int* tok, co
+ bool experts_win_down(const uint8_t* const* blob, const int* n, const int* row, int G, int ty_down, size_t off_down,
+                       const uint16_t* h, int C, int F, float* y, cudaStream_t s) {
+     if (F != 1152 || C % 4 || ((uintptr_t) h & 15) || off_down % 4) return false;
+-    if (ty_down != kNVFP4 && ty_down != kQ5_0 && ty_down != kQ8_0) return false;
++    if (ty_down != kNVFP4 && ty_down != kQ5_0) return false;   // (Q8_0: experts_*_mem)
+     if (G <= 0) return true;
+     const dim3 g((unsigned) (C / 4), (unsigned) G);
+ #define IK2_WDN(KERN, NT) KERN<1152, NT><<<g, 128, 0, s>>>(blob, n, row, off_down, h, C, y)
+     if (ty_down == kNVFP4) {
+-        if (wexp_nt(1)) IK2_WDN(experts_win_nv_down_kernel, true);
++        if (wexp_nt()) IK2_WDN(experts_win_nv_down_kernel, true);
+         else IK2_WDN(experts_win_nv_down_kernel, false);
+-    } else if (ty_down == kQ5_0) {
+-        if (wexp_nt(1)) IK2_WDN(experts_win_q50_down_kernel, true);
+-        else IK2_WDN(experts_win_q50_down_kernel, false);
+     } else {
+-        if (wexp_nt(8)) IK2_WDN(experts_win_q8_down_kernel, true);
+-        else IK2_WDN(experts_win_q8_down_kernel, false);
++        if (wexp_nt()) IK2_WDN(experts_win_q50_down_kernel, true);
++        else IK2_WDN(experts_win_q50_down_kernel, false);
+     }
+ #undef IK2_WDN
+     check("experts_win_down");
+diff --git a/src/ik2/ik2_kernels.cuh b/src/ik2/ik2_kernels.cuh
+index 8b5c2d6c..d62d6f34 100644
+--- a/src/ik2/ik2_kernels.cuh
++++ b/src/ik2/ik2_kernels.cuh
+@@ -695,9 +695,9 @@ void experts_down_mem(const uint8_t* const* blob, const int* n, const int* row,
+                       const uint16_t* h, int C, int F, float* y, cudaStream_t s);
+ /// The exact window's register kernels (the host's switches, each off by default; on, the same bits):
+ /// experts_win_gu / _down: experts_gate_up_swiglu_mem / experts_down_mem's values to the bit - a row's words read
+-/// once into the registers (non-temporally on AMD as the token kernels: IK2_HIP_NT bit 1, Q8_0 bit 8), each member's
+-/// input summed in the one-token kernels' order (IK2_K_WEXP).  NVFP4, Q4_K, Q8_0 gate / up (C 2304), NVFP4, Q5_0, Q8_0
+-/// down (F 1152); false: not these shapes, nothing launched.
++/// once into the registers (non-temporally on AMD as the token kernels: IK2_HIP_NT bit 1), each member's input summed
++/// in the one-token kernels' order (IK2_K_WEXP).  NVFP4, Q4_K gate / up (C 2304), NVFP4, Q5_0 down (F 1152); false:
++/// not these shapes or types (Q8_0: its register kernel's sums were not row_dot_2's bits on gfx1100), nothing launched.
+ bool experts_win_gu(const uint8_t* const* blob, const int* n, const int* tok, const int* row, int G, int ty_gate,
+                     int ty_up, size_t eb0, const float* x, int C, int F, const float* sg, const float* su, float gcap,
+                     float ucap, uint16_t* h, cudaStream_t s);
+diff --git a/tests/ik2_kernels_test.cu b/tests/ik2_kernels_test.cu
+index 97ea9225..e399f9b8 100644
+--- a/tests/ik2_kernels_test.cu
++++ b/tests/ik2_kernels_test.cu
+@@ -22,6 +22,7 @@
+ #include <cstdlib>
+ #include <cstring>
+ #include <random>
++#include <type_traits>
+ #include <vector>
+ 
+ namespace k = ik2::k;
+@@ -3353,11 +3354,36 @@ void test_window_launches() {
+     }
+ }
+ 
++// a bit-for-bit comparison of n values (rows of `width`): where they differ, the count and the first difference
++// printed - once a check (shown)
++template <class T>
++bool same_bits(const char* what, const T* a, const T* b, size_t n, int width, bool& shown) {
++    if (!std::memcmp(a, b, n * sizeof(T))) return true;
++    if (shown) return false;
++    shown = true;
++    size_t first = n, count = 0;
++    for (size_t i = 0; i < n; ++i)
++        if (std::memcmp(a + i, b + i, sizeof(T))) {
++            if (first == n) first = i;
++            ++count;
++        }
++    uint32_t ba = 0, bb = 0;
++    std::memcpy(&ba, a + first, sizeof(T));
++    std::memcpy(&bb, b + first, sizeof(T));
++    double va, vb;
++    if constexpr (std::is_same<T, uint16_t>::value) va = h2f_host(a[first]), vb = h2f_host(b[first]);
++    else va = (double) a[first], vb = (double) b[first];
++    std::printf("     %s: %zu of %zu differ, the first at %zu (row %zu, col %zu): %.9g (0x%x) vs %.9g (0x%x)\n", what,
++                count, n, first, first / (size_t) width, first % (size_t) width, va, ba, vb, bb);
++    return false;
++}
++
+ // The exact window's register kernels (IK2_K_WEXP, IK2_K_WMVF16, IK2_K_WROUTE, IK2_K_WCOMB: switched on by the host,
+ // each the launches it replaces to the bit): experts_win_gu / _down against experts_*_mem and against the one-token
+-// kernels a token at a time (NVFP4, Q8_0, Q4_K / Q5_0; a group the other GPU runs left alone as experts_*_mem leave
+-// it), mv_f16_rows_lane against mv_f16_rows, router_win against mv_f16_rows + route_rows + group_route (twice: its
+-// counter put back), moe_combine_conv_block against moe_combine_f32 + conv_block.
++// kernels a token at a time (NVFP4, Q4_K / Q5_0; a group the other GPU runs left alone as experts_*_mem leave it;
++// Q8_0 not taken), mv_f16_rows_lane against mv_f16_rows, router_win against mv_f16_rows + route_rows + group_route
++// (twice: its counter put back), moe_combine_conv_block against moe_combine_f32 + conv_block.  A failing check prints
++// its first differing value.
+ void test_window_k() {
+     constexpr int C = 2304, F = 1152, K = 8, E = 24;
+     const int wtys[][2] = {{k::kNVFP4, k::kNVFP4}, {k::kQ8_0, k::kQ8_0}, {k::kQ4_K, k::kQ5_0}};
+@@ -3366,6 +3392,16 @@ void test_window_k() {
+         const char* tyn = ty == k::kNVFP4 ? "NVFP4" : ty == k::kQ8_0 ? "Q8_0" : "Q4_K / Q5_0";
+         const size_t mb = (size_t) C * F / k::block_values(ty) * k::block_bytes(ty);
+         const size_t md = (size_t) C * F / k::block_values(td) * k::block_bytes(td), slot = 2 * mb + md;
++        if (ty == k::kQ8_0) {   // (no register kernel: its sums were not row_dot_2's bits on gfx1100 - experts_*_mem)
++            float* dx = dev_n<float>(C);
++            const bool none = !k::experts_win_gu(nullptr, nullptr, nullptr, nullptr, 0, ty, ty, mb, dx, C, F, nullptr,
++                                                 nullptr, 20, 20, nullptr, 0) &&
++                              !k::experts_win_down(nullptr, nullptr, nullptr, 0, td, 2 * mb, (const uint16_t*) dx, C,
++                                                   F, nullptr, 0);
++            expect_true("IK2_K_WEXP Q8_0: not taken (a window's Q8_0 experts stay experts_*_mem)", none);
++            CU(cudaFree(dx));
++            continue;
++        }
+         std::vector<uint8_t> pool(slot * E);
+         {
+             const auto gu = rand_blocks(ty, (size_t) E * 2 * C * F), dn = rand_blocks(td, (size_t) E * C * F);
+@@ -3386,6 +3422,7 @@ void test_window_k() {
+         for (auto& v : sut) v = 0.5f + std::fabs(v);
+         auto *dsg_t = dev(sgt), *dsu_t = dev(sut);
+         bool same_mem = true, same_tok = true, same_two = true, taken = true;
++        bool shown[6] = {};   // (a diagnostic once each: mem h / y, two h / y, token h / y)
+         for (int T : {1, 2, 3, 5, 8}) {
+             const int S = T * K;
+             std::vector<int> top(S);
+@@ -3414,10 +3451,13 @@ void test_window_k() {
+                 k::experts_down_mem(gblob, gn, grow, S, td, 2 * mb, h_off, C, F, y_off, 0);
+                 taken &= k::experts_win_gu(gblob, gn, gtok, grow, S, ty, ty, mb, dx, C, F, gsg, gsu, 20, 20, h_on, 0);
+                 taken &= k::experts_win_down(gblob, gn, grow, S, td, 2 * mb, h_on, C, F, y_on, 0);
+-                const bool sh = !std::memcmp(host(h_off, (size_t) S * F).data(), host(h_on, (size_t) S * F).data(),
+-                                             (size_t) S * F * 2);
+-                const bool sy = !std::memcmp(host(y_off, (size_t) S * C).data(), host(y_on, (size_t) S * C).data(),
+-                                             (size_t) S * C * 4);
++                const char* wh = two ? "h (window, two GPUs) vs experts_gate_up_swiglu_mem"
++                                     : "h (window) vs experts_gate_up_swiglu_mem";
++                const char* wy = two ? "y (window, two GPUs) vs experts_down_mem" : "y (window) vs experts_down_mem";
++                const bool sh = same_bits(wh, host(h_on, (size_t) S * F).data(), host(h_off, (size_t) S * F).data(),
++                                          (size_t) S * F, F, shown[2 * two]);
++                const bool sy = same_bits(wy, host(y_on, (size_t) S * C).data(), host(y_off, (size_t) S * C).data(),
++                                          (size_t) S * C, C, shown[2 * two + 1]);
+                 (two ? same_two : same_mem) &= sh && sy;
+             }
+             // each token as the one-token path runs it (its K slots in pick order) against the window's rows
+@@ -3437,8 +3477,10 @@ void test_window_k() {
+                 float *dsg = dev(sg), *dsu = dev(su);
+                 k::experts_gate_up_swiglu(dbl, tok0, K, ty, ty, mb, dx + (size_t) t * C, C, F, dsg, dsu, 20, 20, h1, 0);
+                 k::experts_down(dbl, K, td, 2 * mb, h1, C, F, y1, 0);
+-                same_tok &= !std::memcmp(host(h1, (size_t) K * F).data(), hw.data() + (size_t) t * K * F, (size_t) K * F * 2);
+-                same_tok &= !std::memcmp(host(y1, (size_t) K * C).data(), yw.data() + (size_t) t * K * C, (size_t) K * C * 4);
++                same_tok &= same_bits("h (window) vs the one-token kernel, a token's K rows", hw.data() + (size_t) t * K * F,
++                                      host(h1, (size_t) K * F).data(), (size_t) K * F, F, shown[4]);
++                same_tok &= same_bits("y (window) vs the one-token kernel, a token's K rows", yw.data() + (size_t) t * K * C,
++                                      host(y1, (size_t) K * C).data(), (size_t) K * C, C, shown[5]);
+                 for (void* p : {(void*) dbl, (void*) dsg, (void*) dsu}) CU(cudaFree(p));
+             }
+             for (void* p : {(void*) dtop, (void*) dx, (void*) dw, (void*) gblob, (void*) gn, (void*) gtok, (void*) grow,
+@@ -3456,7 +3498,7 @@ void test_window_k() {
+         for (void* p : {(void*) dpool, (void*) dtab, (void*) dtab2, (void*) dsg_t, (void*) dsu_t}) CU(cudaFree(p));
+     }
+     {   // IK2_K_WMVF16: the window's FP16 rows (the router's 128, a full layer's 32 dynamic taps)
+-        bool same = true;
++        bool same = true, shown = false;
+         for (int N : {128, 32, 37}) {
+             std::vector<uint16_t> w((size_t) N * C);
+             for (auto& v : w) v = f2h_host(frand(0.05f));
+@@ -3466,7 +3508,8 @@ void test_window_k() {
+             for (int T = 1; T <= 8; ++T) {
+                 k::mv_f16_rows(dw, N, C, dx, C, T, ya, N, 0);
+                 same &= k::mv_f16_rows_lane(dw, N, C, dx, C, T, yb, N, 0);
+-                same &= !std::memcmp(host(ya, (size_t) T * N).data(), host(yb, (size_t) T * N).data(), (size_t) T * N * 4);
++                same &= same_bits("mv_f16_rows_lane vs mv_f16_rows", host(yb, (size_t) T * N).data(),
++                                  host(ya, (size_t) T * N).data(), (size_t) T * N, N, shown);
+             }
+             for (void* p : {(void*) dw, (void*) dx, (void*) ya, (void*) yb}) CU(cudaFree(p));
+         }
+@@ -3482,7 +3525,7 @@ void test_window_k() {
+         for (int e = 0; e < EE; ++e) tab[e] = (const uint8_t*) (uintptr_t) (0x1000 + 64 * e);
+         auto** dtab = dev(tab);
+         auto *sg_t = dev(fvec(EE)), *su_t = dev(fvec(EE)), *sd_t = dev(fvec(EE));
+-        bool same = true, taken = true;
++        bool same = true, taken = true, shown_lg = false, shown_w = false;
+         for (int rep = 0; rep < 2; ++rep)
+             for (int T : {1, 2, 5, 8}) {
+                 const int S = T * K;
+@@ -3512,6 +3555,10 @@ void test_window_k() {
+                     CU(cudaMemcpy(hb.data(), b, bytes, cudaMemcpyDeviceToHost));
+                     return ha == hb;
+                 };
++                same &= same_bits("router_win logits vs mv_f16_rows", host(o[1].lg, (size_t) T * EE).data(),
++                                  host(o[0].lg, (size_t) T * EE).data(), (size_t) T * EE, EE, shown_lg);
++                same &= same_bits("router_win weights vs route_rows", host(o[1].w, S).data(), host(o[0].w, S).data(),
++                                  (size_t) S, K, shown_w);
+                 same &= eq(o[0].lg, o[1].lg, (size_t) T * EE * 4) && eq(o[0].top, o[1].top, S * 4) &&
+                         eq(o[0].w, o[1].w, S * 4) && eq(o[0].sg, o[1].sg, S * 4) && eq(o[0].su, o[1].su, S * 4) &&
+                         eq(o[0].wt, o[1].wt, S * 4) && eq(o[0].n, o[1].n, S * 4) && eq(o[0].inv, o[1].inv, S * 4) &&
+@@ -3529,7 +3576,7 @@ void test_window_k() {
+         for (void* p : {(void*) dw, (void*) dbias, (void*) dtab, (void*) sg_t, (void*) su_t, (void*) sd_t}) CU(cudaFree(p));
+     }
+     {   // IK2_K_WCOMB: the MoE's combine and its conv (the stream added, the records kept) in one launch
+-        bool same = true, taken = true;
++        bool same = true, taken = true, shown_o = false, shown_h = false;
+         for (int CC : {2304, 2300})
+             for (int T = 1; T <= 8; ++T) {
+                 const int S = T * K;
+@@ -3549,6 +3596,10 @@ void test_window_k() {
+                 auto eq = [&](const float* a, const float* b, size_t n) {
+                     return !std::memcmp(host(a, n).data(), host(b, n).data(), n * 4);
+                 };
++                same &= same_bits("moe_combine_conv_block out vs conv_block", host(ob, (size_t) T * CC).data(),
++                                  host(oa, (size_t) T * CC).data(), (size_t) T * CC, CC, shown_o);
++                same &= same_bits("moe_combine_conv_block hist vs conv_block", host(hb, (size_t) 3 * CC).data(),
++                                  host(ha, (size_t) 3 * CC).data(), (size_t) 3 * CC, CC, shown_h);
+                 same &= eq(oa, ob, (size_t) T * CC) && eq(ha, hb, (size_t) 3 * CC) && eq(roa, rob, (size_t) 3 * CC) &&
+                         eq(rxa, rxb, (size_t) T * CC);
+                 for (void* p : {(void*) y, (void*) dinv, (void*) wt, (void*) w, (void*) res, (void*) ha, (void*) hb,
+@@ -3588,7 +3639,10 @@ void test_window_k() {
+         auto eqh = [&](const uint16_t* a, const uint16_t* b, size_t n) {
+             return !std::memcmp(host(a, n).data(), host(b, n).data(), n * 2);
+         };
+-        const bool same = eqf(run[0].sink, run[1].sink, (size_t) T * H) && eqf(run[0].q, run[1].q, (size_t) T * HD) &&
++        bool shown = false;
++        const bool sinks = same_bits("sinks with sink_fast vs without", host(run[1].sink, (size_t) T * H).data(),
++                                     host(run[0].sink, (size_t) T * H).data(), (size_t) T * H, H, shown);
++        const bool same = sinks && eqf(run[0].q, run[1].q, (size_t) T * HD) &&
+                           eqf(run[0].r, run[1].r, (size_t) T * H * d_rel) &&
+                           eqh(run[0].q16, run[1].q16, (size_t) T * HD) && eqh(run[0].kc, run[1].kc, (size_t) 64 * KD) &&
+                           eqh(run[0].vc, run[1].vc, (size_t) 64 * KD);
+-- 
+2.53.0
+

@@ -44,6 +44,12 @@ LoRA AtomicChat (rank 1, 44 MB) to w praktyce rzut y ← y − r(r·y) na wyjśc
 - Dla nas: w 1.1.73 oficjalny drafter na XTX przegrywał przy T=0,7 (79 vs 94); w 1.1.75 tańsze okno i wspólny szum mogą to odwrócić → K-136 (stock 1.1.75 vs nasza produkcja, potem hipx14 przeniesione na 1.1.75).
 - AtomicChat AD-Q4_K (eksperci Q4_K + Q5_0) dalej nieobsługiwany w 1.1.75 (`block_values`) → K-137, nasze kernele.
 
+## Wyścig Kernel vs Gemini, runda 1 Kernela (2026-11-24, gałąź `kern-maya`, AtomicChat AD-Q4_K, XTX)
+- 4 podagentów, 16 przełączników `IK2_K_*` (domyślnie wył.), test kerneli 487 ok; `IK2_K_WEXP` dla Q8_0 nie daje tych samych bitów na gfx1100 (fuzja FMA zależy od otoczenia kodu) → Q8_0 wyłączone z WEXP.
+- **Czat T=0,7 (rep2, mediana 5):** lookup bez przełączników 112,9; + kernele gęste `IK2_K_DMV` 113,0; + fuzje `IK2_K_L*` 112,9–113,0; L+D 113,6 (+0,6%, w szumie). DSpark wymuszony: 102,2 → 106,7 ze wszystkimi przełącznikami okna (+4,4%), ale dalej poniżej lookupu.
+- **Profil (rocprofv3, 56 tokenów, bez zgadywania):** 705 → 547 uruchomień/token (−22%), ale kernele zajęte 7572 → 7786 µs (scalone kernele liczą więcej), a bez profilera prędkość 112,0 → 112,1 t/s. **Lekcja: w grafie na gfx1100 mniej uruchomień nie przyspiesza, gdy scalony kernel liczy coś ponownie; przerwy w profilerze są większe niż w zwykłym biegu.**
+- Gdzie idzie czas tokenu (bez L/D): eksperci gate_up Q4_K 32 µs × 48 = 1,53 ms (~750 GB/s, 78% pasma), down Q5_0 19 µs × 48 = 0,91 ms (~770 GB/s), q|k|v|r|gate Q8_0 27 µs × 40 = 1,08 ms (~780 GB/s), głowica 545 µs (~900 GB/s), atencja 12 µs × 40 = 0,50 ms, małe kernele (norma, bramki pętli, splot) ~1,5 ms; zajętość kerneli 74% czasu w profilerze. Odczyt wag ~3,8 GB/token = 3,96 ms przy 960 GB/s, czyli dziś ~44% sufitu.
+
 ## Powiązane
 - [[inkling-2-mini]]
 - [[project-maya]]

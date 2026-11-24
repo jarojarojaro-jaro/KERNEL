@@ -1,0 +1,44 @@
+From d01275eac1502a942e2ea5f3aae169d62e93e242 Mon Sep 17 00:00:00 2001
+From: kernel <kernel@local>
+Date: Tue, 24 Nov 2026 03:02:40 +0100
+Subject: [PATCH 2/8] ik2_kernels_test: moe_rows_combine's tolerance follows
+ its terms (F32 FMAs), not a fixed 1e-5
+
+The check sums a token's 3 picks' y rows (the RDNA down kernel's outputs, NVFP4's random scales: terms of 1e3 - 1e4
+that cancel) in F32 FMAs against a double sum; the bound now 4 2^-24 times the largest sum of |terms| (or 1e-5).
+The Q4_K / Q5_0 tests run before it and draw from the same generator, so its data changed and one sum of 3 went
+9e-4 off at -48.46 (XTX, gfx1100) - within F32's rounding of its terms; no kernel changed.
+---
+ tests/ik2_kernels_test.cu | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/tests/ik2_kernels_test.cu b/tests/ik2_kernels_test.cu
+index 14474e24..15b4ac96 100644
+--- a/tests/ik2_kernels_test.cu
++++ b/tests/ik2_kernels_test.cu
+@@ -2748,11 +2748,19 @@ void test_experts_rdna() {
+         k::moe_rows_combine(dy, dinv, dw, T, K, C, dout, 0);
+         const auto yv = host(dy, (size_t) rows * C);
+         std::vector<double> want_o((size_t) T * C, 0.0);
++        double mag_o = 0;   // (a sum's F32 FMAs: each rounds once - the bound scales with its terms, not its result)
+         for (int t = 0; t < T; ++t)
+-            for (int kk = 0; kk < K; ++kk)
+-                for (int c = 0; c < C; ++c) want_o[(size_t) t * C + c] += (double) wtr[inv[t * K + kk]] * yv[(size_t) inv[t * K + kk] * C + c];
++            for (int c = 0; c < C; ++c) {
++                double mag = 0;
++                for (int kk = 0; kk < K; ++kk) {
++                    const double p = (double) wtr[inv[t * K + kk]] * yv[(size_t) inv[t * K + kk] * C + c];
++                    want_o[(size_t) t * C + c] += p;
++                    mag += std::fabs(p);
++                }
++                mag_o = std::max(mag_o, mag);
++            }
+         std::snprintf(name, sizeof name, "moe_rows_combine %s", nm);
+-        expect(name, host(dout, want_o.size()), want_o, 1e-5, 1e-5);
++        expect(name, host(dout, want_o.size()), want_o, 1e-5, std::max(1e-5, 4 * 0x1.0p-24 * mag_o));
+         for (void* p : {(void*) dpool, (void*) deptr, (void*) dtiles, (void*) dx, (void*) dh, (void*) dsg, (void*) dsu,
+                         (void*) dy, (void*) dinv, (void*) dw, (void*) dout})
+             cudaFree(p);
+-- 
+2.53.0
+
