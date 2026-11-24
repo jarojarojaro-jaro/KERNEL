@@ -1,0 +1,4 @@
+# K-138 Unsloth prebuild vs ours
+k138-tg|600|~/k138|~/qwen-opt/inkling/k138.sh tg
+k138-serve|800|~/k138|~/qwen-opt/inkling/k138.sh serve
+k138-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

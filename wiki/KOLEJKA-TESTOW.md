@@ -40,6 +40,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: 0–5% (bez rzutu ablacji, który kosztował 2–5%) [INFERENCE]; wierność kwantom AtomicChat (KLD 0,0115 do BF16)
 - ryzyko karty: nowe kernele → najpierw test-kernel i krótki smoke
 - priorytet: wysoki (polecenie JARO)
+- **wynik 2026-11-24 01:58–02:09 UTC (XTX, rep2 mediana 5, ABA):** produkcja (unsloth + ablacja w locie) → AtomicChat natywnie (1.1.73 + hipx14 + Q4_K/Q5_0): Q1 118,3 → 128,6 (+8,7%), **T=0,7 104,2 → 113,2 (+8,6%)**, L2k 99,9 → 107,1 (+7,2%), prefill 2k 3457 → 3314 (−4,2%). Na bazie 1.1.75 (k175-ad, `--drafting auto` z DSpark): 127,3 / 112,1 / 106,2 / 3309; auto zmierzył: bez zgadywania 112,3, lookup 113,3, drafter 108,7. Jakość: kopia i 2k poprawne, odmowy 0/8, 1.1.73 i 1.1.75 dają identyczne odpowiedzi. Test kerneli: wszystkie Q4_K/Q5_0 ok; 1 próg tolerancji w starym teście NVFP4 przesunięty losowaniem (poprawka testu d01275e/8773c98). **Wdrożone** do `mayaserve.sh` (konfiguracja `maya-atomic.json`, exe `maya-ik2.adq4k` md5 2bda43fd…).
 - stan 2026-11-23 20:00 UTC: kod gotowy, niezmierzony (serwer wyłączony). Gałęzie w `~/praca/maya-ad` (`ad-q4k` 30ff426, na 1.1.73 + hipx14) i `~/praca/maya-175` (`k175` 88b6a6c = hipx14 na 1.1.75; `k175-ad` 60dffeb = to + Q4_K/Q5_0). Test hosta: wartości Q4_K/Q5_0 = ggml `dequantize_row` bit w bit (1 024 256 wartości), iloczyny wierszy w kolejności kerneli 0/97 różnic; nvcc czysto. Nowe kernele rejestrowe `experts_q4k_gu_kernel`/`experts_q50_down_kernel` (styl EXPV, NT), kafle WMMA prefillu Q4_K/Q5_0. Start: `qwen-opt/inkling/start-maya-k136-k137.sh` (build na pudle + kolejka `maya-k13x.jobs`, ~55 min karty razem z K-136).
 
 ### K-136 · Maya v1.1.75 na XTX: drafter DSpark GGUF w grafie + próbkowanie Gumbel-max (3090: nowy kod 124 → 201 t/s)
@@ -48,6 +49,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: przy T=0,7 drafter u nas przegrywał (79 vs 94); krótsze okno (−30%) i wspólny szum mogą to odwrócić [INFERENCE]
 - ryzyko karty: brak nowych kerneli naszych; build stock
 - priorytet: wysoki
+- **wynik 2026-11-24 02:02–02:07 UTC (XTX, unsloth + ablacja, rep2):** produkcja 1.1.73 Q1/T=0,7/L2k 118,3 / 104,3 / 100,2; 1.1.75 + nasze łatki: lookup 118,1 / 103,9 / 101,0; DSpark wymuszony 94,6 / **94,8** / 95,0 (krótkie odpowiedzi do 134, ale średnio wolniej); `auto` 117,8 / 103,8 / 100,1 (zmierzył: bez 103,9, lookup 105,4, drafter 101,2). **Wniosek:** nowy drafter 1.1.75 na XTX nadal przegrywa przy T=0,7, bo okno weryfikacji nie ma naszych przyspieszeń (EXPV, NT, PCONV, FUSE…). Okno przyspieszamy w wyścigu (gałąź kern-maya: `IK2_K_W*`, `IK2_K_D*`).
 
 ### K-135 · Maya Inkling na XTX: `GPU_MAX_HW_QUEUES=2` (vllm-redshift: R9700 37,8 → 59,9 t/s)
 - data: 2026-11-23 (zwiad; repo abhinand5/vllm-redshift łatka 0101)

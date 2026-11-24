@@ -11,5 +11,6 @@ trap restore EXIT
 cd ~/k134/maya/src
 # 2026-11-23: uncensored (IK2_ABLATE=AtomicChat LoRA as a runtime projection, maya-unsloth-ablate.json); stock was:
 # LD_LIBRARY_PATH=/opt/rocm/core-10.0/lib taskset -c 2-5 ~/qwen-opt/mtp-train/.venv/bin/python serve/server.py --engine maya --config /home/jaro/k134/maya-unsloth-on.json --port 18796 --host 0.0.0.0 > ~/k134/mayaserve.log 2>&1 8>&- & SPID=$!
-LD_LIBRARY_PATH=/opt/rocm/core-10.0/lib taskset -c 2-5 ~/qwen-opt/mtp-train/.venv/bin/python serve/server.py --engine maya --config /home/jaro/k134/maya-unsloth-ablate.json --port 18796 --host 0.0.0.0 > ~/k134/mayaserve.log 2>&1 8>&- & SPID=$!
+# 2026-11-24: AtomicChat AD-Q4_K natively (K-137: T=0.7 104.3 -> 113.2); previous: unsloth + IK2_ABLATE, config maya-unsloth-ablate.json
+LD_LIBRARY_PATH=/opt/rocm/core-10.0/lib taskset -c 2-5 ~/qwen-opt/mtp-train/.venv/bin/python serve/server.py --engine maya --config /home/jaro/k134/maya-atomic.json --port 18796 --host 0.0.0.0 > ~/k134/mayaserve.log 2>&1 8>&- & SPID=$!
 for i in $(seq 4320); do [ -f ~/k134/STOP-MAYA ] && break; kill -0 $SPID 2>/dev/null || break; sleep 10; done
