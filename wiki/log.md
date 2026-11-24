@@ -688,3 +688,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-24] Wyścig Maya runda 1 Kernela | 16 przełączników IK2_K_*, T=0,7 112,9 → 113,6 (szum); −22% uruchomień bez zysku (lekcja); Gemini zablokowany limitem do 07:41, wznowienie timerem agy-retry-0724
 
 ## [2026-11-24] weaponized-curiosity (link JARO) | skill procesu badań (debata 4 agentów, autoresearch z zamrożonym ewaluatorem); bez liczb dla kerneli; wniosek: przewidywanie liczbowe + walidacja w każdej próbie wyścigu
+
+## [2026-11-24] KVCompress (link JARO) | prototyp bez pomiarów jakości i prędkości; lekcja: rotacja Hadamarda przed KV q4
