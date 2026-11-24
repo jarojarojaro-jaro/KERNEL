@@ -565,6 +565,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: odzysk 3…12% prefillu i TTFT na NVIDIA
 - ryzyko karty: brak
 - priorytet: średni (TTFT Enigmy)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, prefill 512 / 4096: fork vs upstream b12110 −4,7% / −3,6%, fork vs swoja baza b11620 **+3,2% / +3,4%**; wyłączenie każdego z 17 przełączników forka i `GGML_CUDA_KVQ=0` zmienia prefill o ≤ ±0,5%. Regresja to stara baza (upstream +8% prefillu między b11620 a b12110), nie nasze łatki: lekarstwo = rebase forka.
 
 ### K-024 · Enigma ROCm na innych kartach AMD + autotune wariantu FA przy instalacji (gfx1101/1102/1151/1201)
 - data: 2026-11-09
@@ -597,6 +598,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0% sam; rozstrzyga K-062, K-063 i maskę na CUDA
 - ryzyko karty: brak
 - priorytet: średni (bramka decyzji NVIDIA)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4 nsys: dekod 1,7k / 94k / 199k = 37,5 / 30,0 / 25,0 t/s (73,9 / 93,2 / 126,7 ms na krok); udział uwagi 1,5% / 18% / 32%; bezczynność hosta 10,7 / 11,1 / 17,2 ms na krok (12–14%); odczyt wag stałe 54–58 ms. Wniosek: uwaga (K-062) liczy się tylko przy długim kontekście, przerwy hosta (K-031) to stałe 12–14% kroku.
 
 ### K-028 · xtxbench: smoke przełącznika bez restartu `GGML_HIP_RUNTIME_SWITCH_FILE`
 - data: 2026-11-09
@@ -904,6 +906,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: agregat +20–30% (dane warp: ×2,7–2,9 przy 4–8 klientach); latencja 0
 - ryzyko karty: VRAM OOM
 - priorytet: niski (jeden użytkownik)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, 204 800 kontekstu, `-np 4` + MTP: start pada na OOM (`allocating 9576.00 MiB` → `failed to allocate buffer for rs cache`); 131k: zdrowy, OOM przy pierwszym zapytaniu; 32k i 64k działają. Każdy dodatkowy slot z MTP kosztuje 2,4–3,1 GB VRAM: to brak pamięci, nie błąd slotów.
 
 ### K-062 · Dekoder FA CUDA z `__launch_bounds__(…,2)` (dual-CTA)
 - data: 2026-11-07
@@ -912,6 +915,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 1Cat V100 128k +19% bitowo; u nas po `kvq` nieznane
 - ryzyko karty: brak
 - priorytet: niski (po profilu)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** pominięte na Colabie: `__launch_bounds__` to zmiana źródła kernela, nie flaga builda (wymaga kodu).
 
 ### K-063 · Wyzwalacz PDL + prefetch L2 przed `pdl_sync` w gęstym MMVQ (sm_120) i sterowanie L2 (`evict_first`, persisting window `GGML_CUDA_L2_PERSIST`)
 - data: 2026-10-19 (21b)
@@ -936,6 +940,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: A12: TTFT pierwszego żądania; reszta ~0 [INFERENCE]
 - ryzyko karty: brak
 - priorytet: niski (UX)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4: wolny pierwszy prompt po restarcie się nie powtarza; `-lm none` start szybszy o 2–3 s; `--spec-draft-n-ubatch 64` bez zmiany szybkości, −48 MiB VRAM; `GGML_CUDA_GRAPH_CHUNK_SIZE` domyślny najlepszy (1: −1,6%); `--spec-default` na przepisywaniu kodu 133–134 t/s vs 17,6–18,2 bez i 45 z MTP n3 (×7,4), na zwykłym czacie bez zysku; wyjście bajt w bajt identyczne. A10 (`-fa off`) pominięte (wymaga KV f16).
 
 ### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
 - data: 2026-10-16 (15d), 2026-10-21 (Orca)
@@ -960,6 +965,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: poprawność (przy ub1 = vec z konstrukcji [INFERENCE])
 - ryzyko karty: brak
 - priorytet: niski (formalność)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, 63k bez MTP: wyłączenie wyjątku n=1 (`GGML_CUDA_KVQ_N1_D256_Q4=1`) dekod 12,54 → 16,64 t/s (+32,7%), ale wyjście się zmienia; z MTP ok. +2% (38,1–38,3 → 39,0), wyjście identyczne. Prawdziwy KLD niewykonany (paczka bez `llama-perplexity`); top-10 prawdopodobieństw różni się średnio 4,3e-4, tyle co kvq vs zwykła uwaga. Decyzja wymaga KLD.
 
 ### K-069 · Turing sm_75 (2080 Ti): build forka i smoke test
 - data: 2026-11-07
@@ -968,6 +974,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: nieznany; poprawność dla klasy 11 GB w Enigmie
 - ryzyko karty: brak
 - priorytet: niski (mała klasa)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** na T4 wydany fork CUDA (kvqleana, build 11620) pada przy starcie: `no kernel image is available` (brak sm_75); upstream b12110 działa: pp512 302,3, tg128 9,14 t/s. **Silnik Enigmy CUDA nie działa na Turingu (2080 Ti, T4)**: dodać arch 75 do wydania albo planer ma wybierać upstream poniżej sm_86. Build forka na sm_75 niezrobiony (źródło tylko na jaroserverai).
 
 ### K-070 · NVIDIA: soak termiczny 600 s przy fill 262k (E3) i sweep limitu mocy → perf/W na wynajętych kartach (E1)
 - data: 2026-11-07
