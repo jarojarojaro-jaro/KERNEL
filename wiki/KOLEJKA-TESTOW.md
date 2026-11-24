@@ -24,6 +24,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
 1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
 
+### K-139 · Ekonomia zgadywania Inklinga na XTX (Maya): pomiar kosztu okna, podatku draftera, lokalności ekspertów, parytetu przy T>0
+- data: 2026-11-24 (analiza skilli ashhart, [[ashhart-skills-infra]])
+- test (rep2/STAT, łącznie ~40 min): E1 wymuszona szerokość `IK2_DRAFT_ADAPT=0 IK2_DRAFT_WIDTH=2..8` → c[B], j, s, a (15 min); E2 podatek draftera: bez `--draft` vs drafter wczytany, a kontroler wybiera zwykły krok (5 min); E3 `IK2_TRACE` 256 tokenów → `route_locality.py` U(B) (2 min); E4 `parity.py` drafting wył./wł., seedy 1,2, T 0/0,7 (10 min); E5 drift routera AD vs UD (5 min); E6 priory SpecCtl z E1 + maks. szerokość (5 min)
+- oczekiwany zysk: E1+E6 0–3% przy T=0,7, E2 do ~3% [INFERENCE]; przede wszystkim liczby zamiast założeń dla wyścigu
+- ryzyko karty: brak (konfiguracje istniejących buildów)
+- priorytet: wysoki
+
 ### K-138 · Unsloth llama.cpp (prebuild b12649-mix, fuzje Inkling) na XTX vs nasz r14 i Maya
 - data: 2026-11-23 (link JARO, panel 19:57; Unsloth: RTX PRO 6000 81 → 125 t/s, gfx1151 24 → 33 bez spekulacji)
 - test: gotowa paczka `app-b12649-mix-c7059d6-linux-x64-rocm-gfx110X.tar.gz` (bez budowania), AD-Q4_K i UD-Q4_K_XL, KV q4_0: llama-bench tg128 vs nasz r14 (58,4) i stock; serwer z DSpark n7 (xbench Q4, T=0,7, L2k, L8k) vs r14 i Maya (T=0,7 104,3); ≤ 10 min
