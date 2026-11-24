@@ -698,3 +698,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-24] Zwiad 2026-11-24 | 34 wiersze ZRODLA; konkurenci Inkling na XTX (GodGMN 115,7 przy T=0,7 vs nasze 113,2, inna maszyna; Victor 106), R9700 144,6 z DSpark na code-v1 T=0 (na bajt dekodu równo z nami, wygrywa okno), Maya 1.1.77 DPP, upstream llama.cpp przyjął replay GDN (nasze S4 z 10-13), kv4-hopper; notatki ekonomia-okna-weryfikacji, kv4-hopper, mori-umbp; K-141..K-144; wyścig: Gemini runda 1 nvcc OK, bez testów, prognoza 135–155 bez podstaw, K-140
 
 ## [2026-11-24] Gemini maya-g2 i ink-r16b padły na limicie (429, reset ~14:13); wznowienie timerem agy-retry-1420 (maya 14:30, ink godzinę później)
+
+## [2026-11-24] llama.cpp #31669 replay GDN (link JARO) | nasze S4 z 10-13 upstream; topka bez zmian; Enigma: podbić upstream b11856 → ≥ b12671 i model pamięci (−0,55 GiB stanu przy n4, wiele slotów tanie)

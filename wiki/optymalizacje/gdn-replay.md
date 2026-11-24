@@ -38,6 +38,12 @@ Konkurs Bonsai 2 9B (2026-10-17…19, raport 60b) doszedł niezależnie do tego 
 ## Zwiad 2026-11-24
 **2026-11-24:** upstream llama.cpp scalił tę samą technikę (`d35dc4d9e`, #31669): jeden stan + wejścia k/v/g/beta ostatniego ubatcha, a op GDN przelicza przyjęte tokeny przed nowymi. Snapshoty usunięto. TRT-LLM zrobił to samo (#19586). Raport 07 oceniał szansę upstreamu jako średnią–niską, a upstream doszedł do tego sam w 6 tygodni. Mamy więcej: bank, czyli brak replayu po pełnej akceptacji. Do wzięcia: ich test bitowy z losowymi cofnięciami oraz fuzja zapisu wejść oczekujących w kernel GDN.
 
+## Upstream przyjął replay (PR #31669, 2026-11-23) — co to znaczy dla produktu
+- llama.cpp scalił tę samą technikę na CUDA, Vulkan, Metal, OpenCL, WebGPU, Hexagon (bez SyCL): stan rekurencyjny na sekwencję przy `n_rs_seq` 3 / 7 / 15: 598 / 1197 / 2394 → 163 / 177 / 204 MiB; 32 sekwencje przy n7: 37,4 → 5,5 GiB. Szybkość przy 1 sekwencji ~0 (+0,5% przy n7), przy weryfikacji wsadowej 32 sekwencji +34,5%, serwer DFlash2 z 16 slotami +7,9% (RTX PRO 6000, Qwen3.8-27B Q8_0; Strix Halo HIP prefill +0,9–1,7%).
+- Topka: bez zmian (mamy replay od 10-13 plus bank bez replayu po pełnej akceptacji; jeden slot).
+- **Enigma:** użytkownicy NVIDIA, Vulkan i Mac dostają upstream b11856 bez replayu; model pamięci aplikacji liczy stan × (n_max + 1) (`app/engine/src/server/catalog/memory.ts:25`: 748 MiB przy n4). Po podbiciu do ≥ b12671 zwalnia się ~0,55 GiB, czyli więcej kontekstu albo lepszy kwant na kartach 8–16 GB, a wiele slotów dla agentów przestaje być drogie (to był jeden z powodów odrzucenia `-np 2` w K-086).
+- Do zrobienia (CPU): podbić wersję upstream w `engines.json`, poprawić `memory.ts`, przeliczyć przepisy per karta; bazowy pomiar „upstream” w benchmarku Enigmy wzrośnie, co jest uczciwe.
+
 ## Powiązane
 - [[conv-lag]]: ten sam pomysł dla stanu conv
 - [[gdn-fast]]
