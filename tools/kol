@@ -27,7 +27,7 @@ Q=~/qwen-opt/queue; L=$Q/logs/queue.log
 wynik() { # job [n]
   local f=$Q/logs/$1.log n=${2:-25}
   [ -f "$f" ] || { echo "(brak logu $1)"; return; }
-  local noise='^\s*$|^\s+File "|^\s+\^+\s*$|urllib|raise HTTPError|return opener|response = (meth|self)|result = func|_call_chain|meth\(req|^\s+(with|d =|t, wall)|init_user_pages|server is listening|^Traceback'
+  local noise='^\s*$|^\s+File "|^\s+\^+\s*$|urllib|raise HTTPError|return opener|response = (meth|self)|result = func|_call_chain|meth\(req|^\s+(with|d =|t, wall)|init_user_pages|server is listening|^Traceback|\[maya\] (answering|done|stopping|the engine)|^--- server log tail|^gen exit 0'
   local err; err=$(grep -nE -i 'error|fail|fault|abort|died|did not start|not decoded|rc=[1-9]|\bnan\b|mismatch' "$f" | grep -vE "$noise|passed|0 errors" | tail -6 | cut -c1-220)
   [ -n "$err" ] && { echo "  ! błędy:"; echo "$err" | sed 's/^/    /'; }
   grep -vE "$noise" "$f" | tail -n "$n" | cut -c1-220 | sed 's/^/  /'
@@ -59,6 +59,9 @@ czekaj() { # target limit since_line
       local d; d=$(echo "$tailq" | grep -E "queue [^ ]*$(basename "$t"): (done|no jobs)" | tail -1)
       local f; f=$(echo "$tailq" | grep -E 'GPU (FAULT|GUARD)' | tail -1)
       if [ -n "$d$f" ]; then
+        local jp; jp=$(grep -oE "queue [^ ]*$t: [0-9]+ jobs" $L | tail -1 | sed -E 's/^queue //; s/: [0-9]+ jobs$//')
+        local nm; nm=$(grep -vE '^\s*(#|$)' "$jp" 2>/dev/null | cut -d'|' -f1 | paste -sd'|')
+        [ -n "$nm" ] && tailq=$(echo "$tailq" | grep -E " (START|END)   ?($nm) |GPU (FAULT|GUARD)|queue ")
         echo "$tailq" | grep -E ' END   ' | cut -c1-160
         [ -n "$f" ] && echo "$f"
         for j in $(echo "$tailq" | grep -oE ' END   [^ ]+' | awk '{print $2}' | grep -v restore8080); do echo "== $j"; wynik "$j" "${KOLN:-12}"; done

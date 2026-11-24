@@ -40,6 +40,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test (≤10 min): Maya prod, prompt 32k i 128k + 128 tokenów greedy, `IK2_KV=q4` vs f16; efektywne pasmo atencji z rocprofv3
 - oczekiwany zysk: wiedza; jeśli atencja q4 < 40% pasma → kernel
 - priorytet: średni
+- **wynik 2026-11-24 14:30 (XTX, Maya 1.1.75 port + hipx14, AtomicChat, CLI 128 tokenów greedy, IK2_DEPTH):** głębokość 0 / 8k / 32k / 128k: **KV q4 112,6 / 101,1 / 92,8 / 70,2 t/s**, KV f16 112,6 / 96,9 / 87,7 / 63,4. q4 szybsze od f16 o 4–11% (mniej bajtów), spadek przy 128k −38% (q4) / −44% (f16). Kandydat: atencja na długim kontekście (8 wizyt globalnych) — przy 128k ok. 5,4 ms/token więcej niż przy 0.
 
 ### K-144 · Maya: szerokie okna lookupu (GodGMN `IK2_SUFFIX`, do 512) i `IK2_SLOT_KEEP` (alesha #11)
 - test (≤10 min): kopia/edycja kodu i proza: nasz lookup (okno ≤8) vs binarka GodGMN z `IK2_SUFFIX=128`; rozmowa 30k + boczne żądanie 2k + powrót (czas wznowienia)
@@ -53,6 +54,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - baza: produkcja 113,2 t/s T=0,7 (AtomicChat, lookup)
 - ryzyko karty: nowe kernele HIP bez testów → najpierw g1-test, przy page fault stop
 - priorytet: wysoki (wyścig)
+- **testy kerneli 2026-11-24 14:33 (gałąź Gemini 96f45fc):** NIE przechodzą — `window experts Q8_0 (row dots), 2/5/8 tokens: h and y the one-token path's to the bit` FAIL także BEZ przełączników IK2_G_* (zmiana Gemini psuje domyślną ścieżkę Q8_0 okna, czyli plik unsloth warstwy 20–23), plus znany próg NVFP4. Reguła „bit w bit, gdy wyłączone” złamana.
+- **wynik 2026-11-24 14:33–14:36 (XTX, AtomicChat AD-Q4_K, KV q4, rep2 mediana 5, ta sama sesja):** bez przełączników lookup Q1 / T=0,7 / L2k 127,5 / 112,5 / 106,9 (powtórka 127,8 / 112,5 / 106,9); **wszystkie IK2_G_* + lookup 130,4 / 114,3 / 108,3 (+2,3 / +1,6 / +1,3%)**; auto 129,9 / 114,2 / 108,2; DSpark bez przełączników 157,3 / 101,8 / 102,2, z przełącznikami 117,0 / 107,4 / 102,8 (T=0,7 +5,5%, ale krótkie T=0 −26%). Parytet greedy drafting wył./wł. z przełącznikami: identyczne (11/11). Kernel race runda 1 (`IK2_K_*`): T=0,7 +0,6%. **Gemini prowadzi o ~1 pkt proc.**, ale ścieżka Q8_0 okna jest niedokładna nawet bez przełączników (plik unsloth) — przed wdrożeniem do naprawy.
 
 ### K-139 · Ekonomia zgadywania Inklinga na XTX (Maya): pomiar kosztu okna, podatku draftera, lokalności ekspertów, parytetu przy T>0
 - data: 2026-11-24 (analiza skilli ashhart, [[ashhart-skills-infra]])
@@ -60,6 +63,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: E1+E6 0–3% przy T=0,7, E2 do ~3% [INFERENCE]; przede wszystkim liczby zamiast założeń dla wyścigu
 - ryzyko karty: brak (konfiguracje istniejących buildów)
 - priorytet: wysoki
+- **wynik 2026-11-24 14:23–14:31 (XTX, Maya 1.1.75 + hipx14 + Q4_K/Q5_0, AtomicChat, KV q4, rep2 mediana 5; Q1 = krótka T=0, Q6 = T=0,7, L2k):**
+  - bez zgadywania 127,1 / 112,3 / 106,3; lookup 127,7 / 112,4 / 106,7; `auto` 127,7 / 112,3 / 106,7 (pomiar auto: bez 111,7, lookup 113,4, drafter 107,5, oba 109,2).
+  - **DSpark z kontrolerem: Q1 157,9 (+24% nad lookupem), T=0,7 100,2 (−11%), L2k 102,8 (−4%).** DSpark wygrywa przy T=0 i krótkich odpowiedziach, przegrywa przy T=0,7.
+  - Wymuszona szerokość (bez kontrolera) T=0,7: w2 77,1, w3 72,4, w4 66,4, w5 59,4, w8 45,9 t/s — każde wymuszone okno traci; T=0 Q1: w3 133,7, w5 157,9, w8 119,8.
+  - **Podatek draftera potwierdzony:** lookup z wczytanym drafterem 107,9 / 102,2 vs lookup bez 112,4 / 106,7 → −4,0% / −4,2% na każdym kroku (zapis kontekstu draftera w zwykłych krokach).
+  - Lokalność ekspertów (IK2_TRACE, 256 tokenów): suma ekspertów okna U(B) 1,60 / 2,09 / 2,52 / 2,89 / 3,81 dla B=2/3/4/5/8 vs routing niezależny 1,94 / 2,82 / 3,64 / 4,41 / 6,45 (deklaracja Mai 2,7 dla 5 potwierdzona: 2,89); nakładanie sąsiednich tokenów 0,40 (losowo 0,06); między przejściami pętli 0,43–0,57.
+  - Parytet greedy (11 odpowiedzi) drafting wył. vs DSpark: identyczne.
+  - Wniosek: (1) wyłączyć zapis kontekstu draftera w zwykłych krokach (−4% podatku) → DSpark auto byłby co najmniej równy lookupowi przy T=0,7; (2) wybór drafter vs lookup według temperatury: DSpark przy T=0 (+24% Q1), lookup przy T>0; (3) stały koszt okna nadal główny problem (wymuszone okna przy T=0,7 tracą 31–59%).
 
 ### K-138 · Unsloth llama.cpp (prebuild b12649-mix, fuzje Inkling) na XTX vs nasz r14 i Maya
 - data: 2026-11-23 (link JARO, panel 19:57; Unsloth: RTX PRO 6000 81 → 125 t/s, gfx1151 24 → 33 bez spekulacji)
