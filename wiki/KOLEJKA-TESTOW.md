@@ -29,6 +29,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test (~25 min): binarka `maya-ik2-f472e94-rocm10-gfx1100` (sha256 z release) na ggml-org IQ4_NL (pobranie 17,6 GB — zgoda JARO) vs nasza `maya-ik2.adq4k`; ta sama procedura: głębokość 512 / 2k / 8k, greedy i T=0,7; do tego prompt code-v1 (`/tmp/zw-lm-code-v1.txt`, sha a737db73) T=0, 2048 wyj.: off / lookup / DSpark / auto
 - oczekiwany zysk: wiedza, czy różnica ±5–10% to maszyna czy kernele; uczciwy wiersz do rankingu
 - priorytet: wysoki
+- **wynik 2026-11-24 16:00–16:07 (XTX, ten sam komputer, `tools/ik2_bench.py` GodGMN, 2 przebiegi):** nasza produkcja (adq4k-dpp, AD-Q4_K, KV q4, lookup) vs GodGMN f472e94 (zbudowany u nas, bo wydanie wymaga glibc 2.43; preset `ik2-mini-gfx1100.json`, IQ4_NL, KV fp8). **T=0:** głębokość 512 / 2k / 8k: nasz 110,0 / 106,3 / 103,1, ich 104,8 / 102,1 / 95,3 → **+5% / +4% / +8% dla nas**; prefill nasz 2593 / 3048 / 2996, ich 2354 / 3044 / 3051 (przy 8k −2% dla nas). **T=0,7:** nasz 108,3 / 104,8 / 101,9, ich 103,8 / 101,0 / 94,4 → **+4% / +4% / +8%**. Ich 115,7 t/s z README nie powtarza się na naszej karcie (103,8). Uwaga: inne pliki wag (AD-Q4_K vs IQ4_NL), porównanie stosów, nie kerneli.
 
 ### K-142 · Maya: redukcje fali przez DPP (`lane_xor`, mw00 #1164) w ik2 i naszych kernelach
 - test (≤10 min po buildzie): `ik2_kernels_test` te same bity; rep2 ABA Q1 / T=0,7 / L2k
@@ -52,10 +53,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test: `qwen-opt/inkling/k146.sh` ABBA prod vs k175-lazy z `IK2_K_LAZYCTX=1 IK2_K_DRAFT_T0=1`; parytet greedy
 - **wynik 2026-11-24 15:58–16:10 (XTX, ABBA, produkcja = adq4k-dpp):** odpowiedzi identyczne 11/11; Q1 130,1 / 129,7 → **157,6 / 157,6 (+21%)**, T=0,7 114,1 / 114,1 → 112,2 / 112,2 (**−1,7%**), L2k 108,0 / 108,1 → 102,9 / 104,3 (−4%, greedy z drafterem na długim kontekście). Wniosek: przy T>0 sama obecność draftera nadal kosztuje 1,7% (gałąź 1.1.75 bez DPP + rezerwa VRAM, do rozdzielenia), a na długim greedy drafter przegrywa z lookupem. **Nie wdrażamy** (metryka główna T=0,7). Następny krok, jeśli wrócimy: DPP w gałęzi lazy i drafter tylko dla krótkiego kontekstu (< 1k).
 
+### K-147 · Maya: szerokie okno sufiksowe (do 128 tokenów) zamiast lookupu W16 dla edycji i przepisywania
+- data: 2026-11-24 (K-144: GodGMN `IK2_SUFFIX=128` 708 / 494 t/s vs nasz lookup 115 / 107 na copy/edit, wyniki dokładne)
+- plan: przenieść `IK2_SUFFIX` (drzewo sufiksów, weryfikacja do 128 wejść w jednym przejściu) z GodGMN f472e94 do gałęzi produkcyjnej; parytet greedy 11/11, rep2 (Q1, T=0,7, L2k: nie może stracić > 0,5%) i `ik2_copy_edit.py`; najpierw na CPU przegląd kodu (nvcc), potem jedna bramka na XTX do 10 min
+- stan: czeka (kod)
+
 ### K-144 · Maya: szerokie okna lookupu (GodGMN `IK2_SUFFIX`, do 512) i `IK2_SLOT_KEEP` (alesha #11)
 - test (≤10 min): kopia/edycja kodu i proza: nasz lookup (okno ≤8) vs binarka GodGMN z `IK2_SUFFIX=128`; rozmowa 30k + boczne żądanie 2k + powrót (czas wznowienia)
 - oczekiwany zysk: kopie ×5–9 (Victor HTTP 99 → 939 t/s), powrót do rozmowy ~10 s → <0,2 s; proza −8–13% bez kontrolera, więc tylko z SpecCtl
 - priorytet: wysoki (agenci w Mai)
+- **wynik 2026-11-24 16:07 (XTX, `tests/ik2_copy_edit.py`, przepisanie 582 tokenów i edycja 583 tokenów, wyniki dokładne we wszystkich ramionach):** nasz lookup 115,3 / 106,9 t/s; GodGMN domyślnie 103,0 / 103,1; **GodGMN `IK2_SUFFIX=128` (drzewo sufiksów, okno weryfikacji do 128 tokenów): 708,5 / 493,6 t/s (×6,1 / ×4,6 względem nas)**, akceptacja 564/570 i 547/767. Wniosek: przy kopiowaniu i edycji kodu (agenci, poprawki plików) szerokie okno sufiksowe daje kilkukrotny zysk, którego nasz lookup (okno ≤ 16) nie łapie. Nowa pozycja K-147.
 
 ### K-140 · Wyścig Maya: pomiar gałęzi Gemini `gem-maya` (runda 1: IK2_G_WEXP/WCOLS/WROUTE/WLOOP/DGRAPH/DFAST)
 - data: 2026-11-24 (runda maya-g1c, commit 96f45fc)
