@@ -19,7 +19,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (82)
+## Notatki (83)
 
 - [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]] — Link arXiv 2605.08513 podany przez użytkownika jako praca o InferenceX to „A Single Neuron Is Sufficient to Bypass Safety Alignment in LLMs” (Kazemi, Chegini, Safi, 2026-05-08): wyłączenie jednego neuronu odmowy omija alignment, a wzmocnienie neuronu pojęcia wywołuje szkodliwe treści; 7 modeli z 2 rodzin, 1.7B–70B, bez treningu.
 - [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]] — Bezpieczeństwo karty: oba główne zarzuty prawdziwe i naprawione tego samego dnia.
@@ -29,6 +29,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[projekcja-rtx-5090|Projekcja RTX 5090: narzut kerneli waży tam najwięcej]] — Stały narzut ~1.46 ms/token zmierzony dla LFM Q4_K_M na 5060 Ti (4.81 ms/token, podłoga ~3.35 ms przy 448 GB/s) przeniesiony na 5090 (1.792 TB/s, podłoga 0.84 ms) daje tylko 435–571 t/s, czyli 37–48% pasma – narzut to tam 40–63% czasu tokenu (`[SZACUNEK]`, raport 21b, 2026-10-19).
 - [[repos-30-przeglad|Przegląd 30 repozytoriów (REPOS-PODSUMOWANIE)]] — Przegląd 30 repo o kernelach GPU + aktualizacja TensorFold (2026-10-14): werdykty, ranking eksperymentów dla LFM i Qwena oraz lista odrzuconych pomysłów.
 - [[raporty-2026-10-20-21|Przegląd raportów 31–54 (2026-10-20/21)]] — Raporty po ingeście 87cd979: kampania NVIDIA 31-*, research konkurencji 32–34/39/52, XTX proza i opóźnienia 35–45, kernele MMVQ i małe opy 46–54.
+- [[przeglad-zrodla-2026-11-24|Przegląd ZRODLA 2026-11-24: zmienione oceny (cała inferencja i nauka, nie tylko prędkość)]] — 151 wpisów przejrzanych (55 ocen „nie dla nas / zero / bzdura / niska” i 106 o serwowaniu, infrastrukturze, produkcie i pracy agentów), 108 zmienionych, 43 bez zmian („sprawdzone 24.11”).
 - [[raport-01-konkurencja|Raport 01: konkurencja]] — Detekcja sprzętu i rekomendacja modelu to już standard; żaden produkt konsumencki nie łączy pomiaru, długiej optymalizacji poza flagami, weryfikacji bitowej i raportu przed → po (stan 2026-10-15).
 - [[raport-02-autotuning|Raport 02: autotuning i agenci kerneli]] — Duże „przed → po” robi praca wykonana raz w labie, nie strojenie u użytkownika; agenci kerneli działają tylko z mocną bramką i zostają w labie.
 - [[raport-03-silniki|Raport 03: silniki inferencji i stack]] — Bazą zostaje llama.cpp jako cienki overlay łatek, nie twardy fork; rdzeń w Rust, GUI w Tauri 2, daemon z API OpenAI na 127.0.0.1.

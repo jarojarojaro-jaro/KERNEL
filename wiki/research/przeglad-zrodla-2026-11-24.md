@@ -1,0 +1,124 @@
+---
+typ: research
+tags: [research, zrodla, przeglad]
+aktualizacja: 2026-11-24
+zrodlo: przegląd 8 podagentów 2026-11-24 (/tmp/zr-review/out-*.jsonl), decyzja [[2026-11-24-cel-cala-inferencja-i-nauka]]
+status: aktualne
+---
+# Przegląd ZRODLA 2026-11-24: zmienione oceny (cała inferencja i nauka, nie tylko prędkość)
+
+**151 wpisów przejrzanych (55 ocen „nie dla nas / zero / bzdura / niska” i 106 o serwowaniu, infrastrukturze, produkcie i pracy agentów), 108 zmienionych, 43 bez zmian („sprawdzone 24.11”).**
+
+- **Strata** (ZRODLA:20): Piąte podejście opisało 0.2.0 tylko jako „nic dla gfx1100”, a to aplikacja tego samego rodzaju co Enigma, więc dopisałem porównanie warstwy aplikacji.
+- **TensorFold** (ZRODLA:21): Stara delta pytała tylko o HIP; TensorFold uczy koordynacji wielu agentów, indeksu dowodów i polityki prefillu w serwerze, czego nie mamy.
+- **qwen-warp** (ZRODLA:26): Delta pomijała nasz pomiar na 3090 i główną lekcję: qwen-warp to udany silnik jednego modelu dzięki bramce testów, której zabrakło Enigma Turbo.
+- **lucebox** (ZRODLA:27): Delta pomijała lekcję serwowania (cache sesji na dysku, którego nie ma Enigma) i przestrogę o własnym serwerze poza swoją kartą.
+- **SuffixDecoding (arXiv 2411.04975)** (ZRODLA:30): Opis „te same liczby” był nieaktualny: mamy dwa własne, sprzeczne pomiary (R68b kill vs K-019 +15,9%), co trzeba zapisać obok siebie zamiast wybierać jeden.
+- **vLLM** (ZRODLA:32): vLLM czytaliśmy tylko jako źródło kerneli; jako wzór warstwy serwowania (metryki, testy akceptacji) nikt go nie porównał z topką i Enigmą.
+- **Project Maya (github.com/mw00/project-maya)** (ZRODLA:51): Werdykt „nic dla naszych modeli” jest fałszywy, bo Maya ik2 to dziś nasz silnik Inklinga, a jej warstwa serve/ jest wzorem dla topki i Enigmy.
+- **Strata (github.com/Niko1221/Strata)** (ZRODLA:52): „0.2.0 = aplikacja, dla gfx1100 nic” traktowało aplikację jako szum, a to dokładnie warstwa, w której Enigma przegrywa; dopisałem, co mają, a my nie.
+- **TideLM (github.com/raspy135/tideLM; przodek 0xBakeer/deepseek-v41-flas** (ZRODLA:55): „Dla nas tylko dynamiczna głębokość MTP” pomijało doradcę Enigmy bez offloadu, dziennik ślepych uliczek i związek z kontrolerem SpecCtl Mai.
+- **vLLM (github.com/vllm-project/vllm)** (ZRODLA:57): Werdykt mówił tylko o kernelach; vLLM to standard serwowania, z którego bierzemy test regresji akceptacji i metryki cache.
+- **Inne silniki z R03 (mlc-llm, mistral.rs, candle, ktransformers, PowerI** (ZRODLA:58): „Żaden nie bije na AMD” streszczało tylko prędkość, a R03 dał zasady produktu (część wziętych) i przestrogę przed własnym silnikiem, której nie posłuchaliśmy.
+- **AKO4ALL (TongmingLAIC)** (ZRODLA:71): „Protokół, nie kod” to dla naszej pracy agentów zaleta, nie wada; wzięliśmy z niego tylko LOO, a dziennik ślepych uliczek przyjmujemy 5 tygodni później.
+- **atrex-kernel-agent (alibaba)** (ZRODLA:72): Główna lekcja to mechaniczny nadzorca i niezależny recenzent numeryki, czyli to, czego zabrakło przy Enigma Turbo, a nie same narzędzia pomiarowe.
+- **cuTile Python (NVIDIA)** (ZRODLA:77): Dodano lekcję infrastrukturalną: sprawdzanie protokołów synchronizacji bez karty, czego nie mamy, a nasze błędy protokołów kończą się resetem GPU.
+- **GPU MODE reference-kernels, kernelboard, lectures** (ZRODLA:82): Stary werdykt patrzył tylko na techniki kerneli, a źródło uczy, jak agenci i ludzie oszukują harness, i daje materiał do nauki RDNA3 na naszym sprzęcie.
+- **KernelAgent (meta-pytorch)** (ZRODLA:87): Ogólne „średnia (proces)” zamieniłem na konkretne porównanie z naszą fabryką: co już mamy, czego brakuje i czego nie brać.
+- **pplx-kernels (+ lily)** (ZRODLA:95): Stary werdykt pomijał lily jako wzór budowy własnego silnika i serwera, a to dokładnie odpowiedź na porażkę Enigma Turbo.
+- **rea (rea-agents)** (ZRODLA:97): Dodano lekcję o dowodach z hashami i o rozpoznawaniu kodu generowanego przez agentów, porównaną z naszymi cytatami i Enigma Turbo.
+- **Tensara** (ZRODLA:99): Porównałem harness Tensary z naszą kolejką i benchmarkiem aplikacji: brakuje nam telemetrii przypiętej do pomiaru, co na sprzęcie klientów może wybrać zły przepis.
+- **Tokamax (Google)** (ZRODLA:102): Dodano lekcję serwowania: spadek akceptacji draftu jako kanarek cichych błędów, którego nie pilnujemy ani w topce, ani w aplikacji.
+- **speculators (vllm), SpecForge** (ZRODLA:105): Werdykt był nieaktualny: pilot MTP zrobiliśmy własnym narzędziem i wyszedł negatywnie, więc źródło zostaje jako materiał do nauki.
+- **wafer-ai gpu-perf-engineering-resources** (ZRODLA:107): Ocena patrzyła tylko na RDNA3, a pominięte rozdziały o serwowaniu opisują problem, który sami rozwiązywaliśmy w topce i w aplikacji.
+- **ml-rsi-inference-bench (Apple)** (ZRODLA:116): Dodałem, co z benchmarku wdrożyliśmy w fabryce i czego uczy o pracy agentów oraz wsparciu nowych modeli, zamiast samej krytyki statystyki.
+- **SPEED-Bench (arXiv 2604.09557)** (ZRODLA:117): Stary werdykt widział tylko źródło golden AL; to standard, w którym rynek podaje akceptację, a nasze pomiary (6 promptów, 1 tekst w aplikacji) nie są z nim porównywalne.
+- **sol-execbench (nvidia), ncu-report-skill-rtx-5090, kekzl/imp** (ZRODLA:119): Do źródła doszedł kekzl/imp jako wzór udanego własnego silnika pisanego przez agenta z twardą bramką, czyli lekcja dokładnie o naszej porażce z Enigma Turbo.
+- **Star Elastic, Nemotron Nano v3 (arXiv 2605.07182)** (ZRODLA:137): Ocena „niska istotność” patrzyła tylko na kernele; dla katalogu produktu i nauki o drafterach to wzór jednego pliku na wiele rozmiarów.
+- **SuffixDecoding (arXiv 2411.04975)** (ZRODLA:138): Wiersz nie wspominał, że globalny cache sufiksów zmierzyliśmy w R68b (0.1%), ani dlaczego zysk z pracy zależy od rodzaju ruchu.
+- **Prace o agentach kerneli i autotuningu (R02: METR, Sakana CUDA Enginee** (ZRODLA:140): Lekcja o bramce sprawdziła się na naszej porażce z Enigma Turbo i na udanym imp, więc werdykt dostał dowody i granicę „za bramką”, a nie „tylko w labie”.
+- **GSQ-RCO GGUF (ISTA-DASLab, BuffedMod)** (ZRODLA:159): Stary werdykt „na 24 GB nie dotyczy” przeoczył, że nasz katalog produktu już używa GSQ-RCO dla wszystkich kart 16 GB, bez własnego pomiaru jakości.
+- **Bielik 11B v3 (+DFlash), MiniCPM5, Mistral Small 4, gpt-oss-120b, Kimi** (ZRODLA:165): „Katalog modeli produktu” było nieprawdą wobec wydanego katalogu; brak Bielika to luka produktowa dla rynku PL większa niż zysk z kerneli.
+- **ROCm 10.1 (rocm.docs.amd.com, TheRock, rocm-systems, amd/skills)** (ZRODLA:172): Werdykt patrzył tylko na prędkość gfx1100, a raport 13 dał narzędzie ATT, przyczynę PMC i ryzyko WSL2, które trzeba zamknąć przed wysłaniem silnika AMD klientom.
+- **gemma.ai (99 URL mapy strony; `capabilities/mtp`, `qat`, `visual-guide** (ZRODLA:180): Wiersz streszczał tylko eksperyment z głowicą, a raport zawiera nierozpoczęty zysk dla Gemmy w naszym katalogu i lekcję o cache prefiksu.
+- **Ollama, LM Studio, Jan, Lemonade, llamafile, koboldcpp, GPT4All, Found** (ZRODLA:187): Werdykt mierzył konkurencję tylko naszym wyróżnikiem, a lekcja jest w tym, co oni robią lepiej (instalacja, izolacja, utrzymanie) i że nasz wyróżnik nie dociera do użytkowników AMD.
+- **Tauri 2, velopack, llama-cpp-rs, Textual** (ZRODLA:189): Werdykt „wybrany stos” był nieaktualny; przy zmianie stosu zgubiliśmy aktualizacje z wycofaniem, które dawał stary wybór.
+- **Vast.ai, RunPod, Salad, HOSTKEY, GigaGPU, Scaleway, TensorDock, Thunde** (ZRODLA:190): Werdykt patrzył na chmurę jako źródło kart do kerneli, a ona jest naszym laboratorium macierzy testów produktu, z luką dokładnie tam, gdzie są klienci AMD i Windows.
+- **AI Act, licencje, prawo (eur-lex, twobirds)** (ZRODLA:196): Werdykt prawny nie był zestawiony z wydanym produktem: czat w aplikacji podlega art. 50(1), a obowiązku nie wdrożyliśmy.
+- **Strata 0.2.2 + Qwen3.8-Flash (API) vs Flash-Next** (ZRODLA:213): Wiersz oceniał Stratę tylko jako silnik dla gfx1100, a to wzór całego produktu i proporcji pracy, w których przegraliśmy.
+- **SGLang Unified Memory (blog LMSYS + wpis @ChengWan17, Telegram „gpu”)** (ZRODLA:221): Stary werdykt patrzył tylko na dekod jednego slotu; nasz ruch agentów ma 37% czasu z ≥ 2 żądaniami, a K-086 odpadło też przez pamięć na slot, którą ta technika rozwiązuje.
+- **Baseten deepseek-ultrafast (Rust + CUDA, DeepSeek-V4.1-Flash; @saltyph** (ZRODLA:222): Źródło to kontrprzykład dla naszego nieudanego Enigma Turbo: pokazuje, jakie bramki (referencja, port, powtarzalny pomiar) sprawiają, że własny silnik się udaje.
+- **InferenceForge (@kaiwei_chang, Telegram „gpu”)** (ZRODLA:223): Znalazłem źródło pierwotne; to wzór pętli agent-optymalizator na prawdziwym ruchu, a nasza pętla mierzy obciążenie, którego agenci nie generują.
+- **vstack (hao-ai-lab/vstack, Telegram „gpu”)** (ZRODLA:224): Stary werdykt sprowadzał źródło do K-001, które rozwiązaliśmy inaczej; prawdziwa wartość to bramki przeciw oszukiwaniu przez agentów, których brak wywrócił Enigma Turbo.
+- **Project Maya (delta), github.com/mw00/project-maya/releases/tag/v1.1.6** (ZRODLA:227): Werdykt patrzył tylko na XTX; para APU + karta to sprzęt części klientów Enigmy, a samostrojenie z progiem to wzór dla naszej optymalizacji.
+- **Strata (delta, zwiad 2026-11-14)** (ZRODLA:233): Stary werdykt pominął, że Strata to produkt konkurujący z Enigmą, który wysyła swoje bezstratne usprawnienia per karta do użytkowników, czego my nie robimy.
+- **TensorFold v1.2.9** (ZRODLA:236): Większość wydania to niezawodność serwera i zgodność klientów, czyli warstwy, w których Enigma jest słaba; werdykt patrzył tylko na kernele.
+- **Project Maya v1.1.64–v1.1.65** (ZRODLA:243): Poprawki stabilności Mai to gotowa lista błędów produktu, które Enigma może mieć; werdykt „nic dla XTX” je pominął.
+- **NVIDIA/TensorRT-LLM** (ZRODLA:249): Brak liczb nie znaczył braku lekcji: kod bezpiecznika spekulacji to tani wzór dla Enigmy, która dziś decyduje o MTP tylko raz.
+- **Project Maya v1.1.66 (github.com/mw00/project-maya/releases/tag/v1.1.6** (ZRODLA:250): Wydanie pokazuje strojenie na ruchu użytkownika z warunkiem tych samych odpowiedzi, czego nasza jednorazowa optymalizacja Enigmy nie robi.
+- **arXiv 2611.17753 Superfluid (github.com/basecompute/superfluid)** (ZRODLA:252): Superfluid to bezpośredni odpowiednik aplikacji Enigma i serwera topki z mierzalnie lepszym zachowaniem pod ruchem agentów; zasługuje na własną notatkę i porównanie warstwa po warstwie.
+- **arXiv 2611.17526 (approximate_by, Halide dla kodeków kwantów), 2611.18** (ZRODLA:253): Ocena „nie dla nas” pominęła lekcję o kombinatoryce ręcznych kerneli i teście round trip (błąd q8_1) oraz o parytecie wdrożonego modelu z ewaluacją, co dotyczy naszego silnika i Enigmy.
+- **inference-optimisation-skill (github.com/sybil-solutions/inference-opt** (ZRODLA:254): Dopisano lekcje dla aplikacji Enigma (flaga pętli i baterii, bootstrap CI, procent sufitu), bo wcześniej skill oceniono tylko jako metodę labu.
+- **Qwen3.8-27B-pi-adapted + blog harness-adapters (huggingface.co/harness** (ZRODLA:257): Ocena ograniczała się do „sprawdzić w omp”; dopisano lekcje serwowania (adapter per żądanie w llama-server), danych z sesji agentów i bramki safeagents dla naszej pracy agentowej.
+- **vineet.pro/writing/quantization** (ZRODLA:261): Dla silnika nadal nic, ale artykuł jest wzorem prostego tłumaczenia kwantyzacji, którego brakuje w Enigmie i na landingu.
+- **TensorTonic/llm-optimization-handbook** (ZRODLA:262): Spis tematów ma wartość jako lista kontrolna nauki i pokazuje nasze luki w serwowaniu (etapy 6–7), więc „nic nowego” było zbyt wąskie.
+- **ROCm 10.2.0 (blog AMD 2026-11-18; Telegram „gpu” 2026-11-19 @AIatAMD; ** (ZRODLA:266): Werdykt patrzył tylko na kernele gfx1100; dopisano, że AMD wydaje produkt typu Enigma (rocm serve, InferaSim, Hyperloom) i zmienia sprzęt klientów (gfx1103).
+- **dangxingyu/megakernel-zoo + blog dangxingyu.github.io/megakernel** (ZRODLA:267): Dopisano porównanie z Enigma Turbo (bramka przed kodem) i lekcję serwowania (przerwa dekodu przy cudzym prefillu, K-106), które ginęły pod liczbami ms/token.
+- **SergiioB/intel-arc-pro-b70-inference-cookbook** (ZRODLA:272): Wcześniej oceniono tylko 1,3–1,5 × z drugiej karty; repo uczy parytetu spekulacji, rejestru zamkniętych prób z warunkiem powrotu i jednego źródła liczb.
+- **DevDock-AI/Speedy (fork Straty; Telegram „gpu” 2026-11-19)** (ZRODLA:273): Werdykt „nie nasz model” pominął, że Speedy to wzór warstwy serwera dla agentów (pętle, tool-calle, budżet myślenia), której nam brakuje.
+- **KernelBench-CUDA: Gemini 4 „Neon” #2 (Elliot Arledge, Telegram „gpu” 2** (ZRODLA:275): Dopisano lekcję o pracy agentów: ten sam model wygrywa z bramką i przegrywa bez niej (Enigma Turbo).
+- **AKV (arXiv 2610.28577, thu-nics/AKV)** (ZRODLA:280): Werdykt dotyczył tylko kernela; dopisano lekcję harnessu (mniej kontekstu = lepsza jakość) i serwera (prompt_cache_key).
+- **Project Maya** (ZRODLA:282): Wiersz „tylko DeepSeek, nic dla nas” zestarzał się, bo Maya ik2 jest naszym silnikiem Inklinga, a wersje miały lekcje serwera (sesje po restarcie) i Windows HIP.
+- **Locals (Generated-Computers) + arXiv 2610.09139** (ZRODLA:284): Dopisano, że lekcja dotyczy serwera wielu agentów (K-086) i gramatyki dla tool-calli, a nie tylko kernela GDN.
+- **Strata (delta)** (ZRODLA:295): Werdykt „nic” pominął lekcje serwera i produktu zapisane już w R63a (cache z wolnej pamięci, tool-calle, drabina degradacji, test prywatności).
+- **basalt (jesdga95/basalt)** (ZRODLA:297): Dopisano lekcje produktu (oddawanie VRAM w bezczynności, którego Enigma nie używa, i bramka KLD wobec BF16).
+- **colibri (JustVugg)** (ZRODLA:311): Sprawdzono wdrożenie akcji z R63b: jedna zrobiona, dwie tanie (czat, prefix log) leżą od 5.11.
+- **Project Maya (delta)** (ZRODLA:312): Stary werdykt patrzył tylko na dekod gęstego 27B; R63b §2.2 i notatka pokazują lekcje serwera (#607, #704, #573) i produktu, a Maya stała się naszym silnikiem Inklinga.
+- **vLLM v0.33.0 (ROCm, spec)** (ZRODLA:321): Dodany wymiar silnika/produktu: vLLM jest realną alternatywą na XTX, a sposób wyboru skali i przełączniki opt-in to lekcje metody i UX (63c §6, 63d §6).
+- **cheaptokens: q5_1 KV** (ZRODLA:322): Stary werdykt mówił „Enigma bezpieczna”, a Enigma rozprowadza właśnie Vulkan, gdzie ryzyko istnieje, i strażnika E10 dalej nie ma w kodzie aplikacji.
+- **LSA (arXiv 2610.42147, Prefrontal-AI/latent-sparse-attention)** (ZRODLA:323): Werdykt prędkości zostaje, ale dodana lekcja metody (sufit → wyrocznia → kernel) i pułapka baseline'u, czyli to, czego zabrakło przy Enigmie Turbo.
+- **nvidia/Qwen3.8-Flash-Next-NVFP4** (ZRODLA:329): Werdykt sprzętowy zostaje, ale źródło uczy alokacji precyzji per część modelu i rachunku pamięci MoE, potrzebnego w katalogu Enigmy.
+- **llm-compressor 0.15.0** (ZRODLA:330): Raport 63d §8 wskazuje QAD jako źródło naszego LFM Q4_0 i REAP jako opcję katalogu Enigmy, więc „odrzucone” mylnie objęło też produkt.
+- **Open Kernel Challenge llms.txt** (ZRODLA:331): Dodane porównanie z naszym benchmarkiem: ta sama luka (brak held-outu) nadal istnieje w `spec_sweep.py`.
+- **rohanarun/Auto-research-agent** (ZRODLA:332): Werdykt dotyczył tylko liczb; repo i tweety opisują proces agentów porównywalny z naszym (koordynator, kolejka, bramki), co R63e §2.2–2.4 już zawierał.
+- **SGLang „Beyond Day-0” i Low-Latency Mode** (ZRODLA:343): Stary werdykt tylko obalał liczbę; raport 63e §4 wyciąga z bloga regułę „koszt według długości, nie pojemności”, potwierdzoną później u Sabera.
+- **InferenceBench (arXiv 2607.20468), Overshoot, wafer field guide, GPU M** (ZRODLA:344): Dodane porównanie źródeł z naszym benchmarkiem i procesem agentów oraz aktualny stan luk G1–G5 w kodzie Enigmy.
+- **Project Maya (delta), github.com/mw00/project-maya/releases/tag/v1.1.5** (ZRODLA:368): Stary werdykt pominął zmiany serwera i produktu z R66a §2.2, które mają bezpośrednie odpowiedniki w Enigmie i topce.
+- **1Cat-vLLM, github.com/1CatAI/1Cat-vLLM (release v1.5.2)** (ZRODLA:371): Dodany wymiar wydania i serwera: 1Cat pokazuje, jak fork pod niszową kartę staje się produktem, czego nasz silnik ROCm w Enigmie jeszcze nie zrobił.
+- **Blogi TokenSpeed (lightseek.org, pytorch.org; wpis x.com/zainhas/statu** (ZRODLA:373): „Dla nas 0%” zostaje dla prędkości, ale dodane lekcje serwowania agentów (cache, kompromis TTFT/przepustowość) i raportowania z 66b.
+- **Hyperkernel, github.com/Hyperstitioncc/Hyperkernel** (ZRODLA:374): Werdykt „nic do portu” zostaje, ale raport 66c daje lekcje architektury serwera, własny wynik negatywny i ryzyko produktu, których wiersz nie zapisywał.
+- **github.com/GGZ14/vllm-mxfp4** (ZRODLA:382): Repo nie było czytane; README to gotowy wzór instalacji, wykrywania sprzętu i diagnostyki, których brakuje Enigmie, więc powstała notatka.
+- **Kumar, „Anatomy of an LLM Serving Engine” (hiraditya.github.io)** (ZRODLA:383): Dodane porównanie z Enigmą (dodatkowy proces Bun) i brak metryk, bez których metody pomiaru z artykułu nie da się u nas użyć.
+- **Kumar, „A Request's Life in vLLM V1”** (ZRODLA:384): Liczba sama w sobie nic nie mówiła; zestawiona z naszym parserem (520 µs/token) pokazuje, gdzie jest nasz koszt, i daje metodę mock-engine dla testów Enigmy.
+- **vllm.ai/blog/2024-09-05-perf-update** (ZRODLA:385): Zamiast „profil sprzed rozdzielenia procesów” wiersz uczy metody podziału czasu hosta i wskazuje naszą niezmierzoną warstwę proxy Enigmy.
+- **HF Nanbeige/Nanbeige4.3-33B (+ bartowski GGUF)** (ZRODLA:399): Dodana lekcja produktowa: katalog Enigmy ocenia t/s, a nie czas zadania, co Nanbeige (+44% tokenów) dobrze pokazuje.
+- **HF tencent/Qwen3.8-27B-DSpine-b16** (ZRODLA:402): Werdykt był przestarzały (port llama.cpp istnieje, decyzja 09.11), a nauka o serwowaniu przy c=8 i pamięci draftera nie była zapisana.
+- **llama.cpp PR #31533 (few-row MMQ, CUDA)** (ZRODLA:415): Wiersz czekał na K-103 i K-013, a oba mają wyniki: zysk autora nie przeniósł się na nasze 3 kolumny ani na nasz fork.
+- **qwen-warp (tuan3w)** (ZRODLA:417): Dodane porównanie z nieudanym Enigma Turbo i wnioski o serwowaniu wielu klientów oraz o mierzeniu jakości, nie tylko t/s.
+- **honnibal.dev „Astra read/write misleading”** (ZRODLA:423): Krytyka była zapisana jako ciekawostka, a to metoda weryfikacji twierdzeń agentów, której potrzebujemy przy Gemini i własnych podagentach.
+- **AMD Adrenalin `atieclxx.exe` (wccftech, windowsforum/Comss, Neowin, fo** (ZRODLA:424): Pytanie z „następnym razem” ma odpowiedź (26.11.1/26.11.2), a lekcja produktowa poszerza się na wszystkich producentów i brak kontroli sterownika AMD w skanie.
+- **vLLM / SGLang** (ZRODLA:440): Ocena patrzyła tylko na kernele dla Turbo; dodane porównanie cache prefiksu hybrydy z naszą polityką checkpointów topki.
+- **ExLlamaV3 / TensorRT-LLM** (ZRODLA:441): Dodane lekcje serwerowe (planowanie, wyłącznik spekulacji) i sprzeczność między deklaracją portu a naszym pomiarem f16 GEMM.
+- **hipfire / Strata / TensorFold / Lemonade (HRX)** (ZRODLA:442): Lemonade odrzucony filtrem „bez XTX”, choć to wzór produktu, który budujemy; hipfire #989 z „następnym razem” jest już scalony.
+- **Basalt (jesdga95, fork Strata)** (ZRODLA:456): Wpis udawał nowość i „tylko obserwację”, a mamy własną analizę techniki głowicy i miejsce Basalta w mapie konkurencji.
+- **Sync-Strata (hiruhiru2005)** (ZRODLA:457): Odrzucony przez stratne kwanty, a jest bezpośrednim odpowiednikiem produktu Enigma z gotowymi rozwiązaniami UX.
+- **Strata v0.2.18** (ZRODLA:468): Filtr „nie nasz model” pominął lekcję o tempie wydań i paczkach per karta, którą potwierdził nasz własny test K-134.
+- **Lucebox (Luce-Org)** (ZRODLA:470): „Brak liczb” było błędne, a pytanie o gfx1100 ma odpowiedź z kodu; największa wartość to wzór weryfikacji kernela.
+- **LocalMaxxing Inkling-2-Mini** (ZRODLA:483): Pomiar „po K-134” istnieje i pokazuje, że droga przez DSpark przegrała z silnikiem Maya; wiersz tego nie mówił.
+- **= colibri v2.2.0 (2026-11-22)** (ZRODLA:496): Stary werdykt patrzył tylko na prędkość XTX; colibri 2.2.0 to produkt typu Enigmy z pomiarem maszyny przy instalacji, prefix store i poprawkami TTFT, których nam brakuje.
+- **+ blog RightNow AI** (ZRODLA:500): Dodana lekcja procesu agentów: szybki pojedynczy kernel nie przesunął kroku, tak jak nasze fuzje w wyścigu 24.11, więc prognoza całego kroku musi być przed budową.
+- **SAGE-REXL3 kwanty Inkling 2 Mini** (ZRODLA:504): Werdykt „EXL3 tylko CUDA” przeczył naszej notatce exllamav3 (ROCm w drzewie), a karta modelu uczy katalog Enigmy pokazywać kontekst na kartę.
+- **TensorFold 1.3.4** (ZRODLA:508): Pomiar kosztu draftu przy starcie to lekcja dla optymalizacji Enigmy (stałe n=3), nie tylko „ten sam pomysł co nasz”.
+- **ingine + własna ablacja Inkling** (ZRODLA:514): Dodane porównanie z Enigma Turbo (wąski silnik z bramką działa, ogólny bez bramki nie) i lekcje serwowania/instalatora; utworzona notatka ingine.
+- **Inference Stack (BerriAI, zespół LiteLLM)** (ZRODLA:518): Werdykt zaczynał się od „zero dla prędkości”; teraz prowadzi lekcja produktu z pełnego studium (co lepsze od Enigmy i co bierzemy).
+- **aci-cpp (fork llama.cpp Actual)** (ZRODLA:524): Kod jest publiczny, a lekcja dotyczy miary (TTFT następnej tury) i dystrybucji forka do użytkowników, czego Enigma nie robi.
+- **Inkling-2-Mini na KernelBench-Mega** (ZRODLA:528): Dodana lekcja oceny agentów (stałe zadanie + koszt), której brakuje w naszym wyścigu Kernel vs Gemini.
+- **** (ZRODLA:530): Dodana lekcja dystrybucji: Unsloth wysyła build gfx110X, a nasz silnik AMD w Enigmie nie trafia do użytkowników.
+- **skill „weaponized-curiosity”** (ZRODLA:531): „To już robimy” obaliła analiza 24.11: brakuje nam budżetu, prognozy, walidacji i dziennika prób; utworzona notatka weaponized-curiosity.
+- **vllm-redshift (abhinand5, vLLM na Radeon R9700 gfx1201)** (ZRODLA:538): „Następnym razem” wskazywało test już zrobiony (K-135: 0%, odrzucone); wpisany wynik i powód.
+- **ashhart/skills** (ZRODLA:532): z „czeka na analizę” na metodę do wzięcia: wzór na fuzje, ekonomia okna zgadywania, dziennik wyścigu i bramki ([[ashhart-skills-infra]]).
+
+## Powiązane
+- [[ZRODLA]]
+- [[lekcja-uczymy-sie-nie-tylko-predkosc]]
+- [[inference-stack]]
