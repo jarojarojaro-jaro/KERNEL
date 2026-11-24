@@ -1,0 +1,3 @@
+# Bonsai 2.5 decode profile
+b25-prof|600|~/qwen-opt/bonsai25|./b25-prof.sh
+b25prof-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

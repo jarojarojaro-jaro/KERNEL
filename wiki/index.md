@@ -57,7 +57,7 @@ Audyt liczb: [[AUDYT]].
 ## Kategorie
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (40)
-- [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (29)
+- [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (30)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (5)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (39)
@@ -73,6 +73,7 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-11-25 [[bonsai-2-5-uncensored|Ternary Bonsai 2.5 27B Uncensored (AtomicChat)]]
 - 2026-11-24 [[zwiad-2026-11-20|Zwiad 2026-11-20: błąd przywracania po odrzuconym drafcie w cache hybrydowym (ik_llama), weryfikacja kilku wierszy w oMLX, TensorRT-LLM 1.3 z Qwen3.5 MTP]]
 - 2026-11-24 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
 - 2026-11-24 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-24 [[przeglad-kolejki-2026-11-24|Przegląd kolejki testów 2026-11-24: co z 103 pozycji da się zrobić teraz]]
 - 2026-11-24 [[kv4-hopper-2611-30027|kv4-hopper (arXiv 2611.30027): dlaczego 4-bitowe KV bywa wolniejsze od FP8 i co z tego dla XTX]]
 - 2026-11-24 [[colab-kolejka-2026-11-24|Kolejka testów NVIDIA na Google Colab (T4 / L4), 2026-11-24]]
-- 2026-11-24 [[amd-adrenalin-zapisy-ssd|AMD Adrenalin: ciągłe zapisy SSD przez `atieclxx.exe` (Windows)]]
 
-Razem 823 notatek. Wygenerowano 2026-11-24 przez `tools/wiki.py index`.
+Razem 824 notatek. Wygenerowano 2026-11-25 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -1,0 +1,7 @@
+# Bonsai 2.5 Uncensored, round B: prism + Q2_0, MTP width, MTP+ngram-mod, repeat
+b25b-q2-none|600|~/qwen-opt/bonsai25|./b25.sh prism q2 none
+b25b-q2-mtp2|600|~/qwen-opt/bonsai25|./b25.sh prism q2 mtp 2
+b25b-q2-mtp4|600|~/qwen-opt/bonsai25|./b25.sh prism q2 mtp 4
+b25b-q2-mtp3ng|600|~/qwen-opt/bonsai25|EXTRA_TAG=-ngmod ./b25.sh prism q2 mtp 3 --spec-type draft-mtp,ngram-mod
+b25b-q2-mtp3r|600|~/qwen-opt/bonsai25|EXTRA_TAG=-r2 ./b25.sh prism q2 mtp 3
+b25b-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

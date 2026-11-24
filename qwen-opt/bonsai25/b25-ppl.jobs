@@ -1,0 +1,3 @@
+# Bonsai 2.5 PPL repack check
+b25-ppl|600|~/qwen-opt/bonsai25|./b25-ppl.sh
+b25ppl-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

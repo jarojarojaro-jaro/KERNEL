@@ -706,3 +706,6 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-24] kolejka | 103 pozycje na polecenie JARO: przegląd, 20 testów na XTX i Colabie, 2 wdrożenia
 Przegląd [[przeglad-kolejki-2026-11-24]], Colab [[colab-kolejka-2026-11-24]]. Wdrożone w Mai: DPP (K-142, T=0,7 +0,75%, bit w bit) i okno sufiksowe 128 (K-147, przepisywanie ×3,7, edycja ×2,7, czat bez zmian). Odrzucone: ROCm 10.1 (K-049, prefill −1,7%), ROCm 10.2 (K-130, bez zysku), HRX (K-052, ≥6× wolniej), lazy ctx (K-145, +2% tylko z drafterem), drafter tylko greedy (K-146, T=0,7 −1,7%). Wiedza: nasz stos +4…8% nad GodGMN na tej samej karcie (K-141); DFlash2 bije MTP dla Orci na XTX (K-074, +35%); fork CUDA bez sm_75 (K-069); regresja prefillu CUDA to stara baza (K-023). Przeniesione: 40 do Zrobione, 8 do Odrzucone. Czeka na JARO: K-060 (potwierdzenie faultu z 23.11 w fabryce) i decyzje z przeglądu.
 
+## [2026-11-25] Bonsai 2.5 27B Uncensored (link JARO): pobrany, przepakowany bez strat do Q2_0 + MTP, na XTX T=0,7 77,7 t/s
+[[bonsai-2-5-uncensored]]: fork PrismML na gfx1100, 13 wariantów xbench; najlepiej prism Q2_0 + MTP n2 (T=0,7 77,7, greedy 117,9, z ngram-mod 188,4); PTQ1_0 na HIP liczy zamiast czytać (MTP 33,8). Nowe K-149 (kernel PTQ1_0 RDNA3), K-150 (przerwa hosta 19%), K-151 (port Hadamarda do topki); K-152 zrobione.
+

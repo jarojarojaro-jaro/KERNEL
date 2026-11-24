@@ -43,7 +43,7 @@ Bajty na krok (raport 18, nagłówek GGUF): MLP 10.62 GB (4.96 bpw), głowica Q6
 <!-- TABELE:START -->
 ## Wyniki z notatek (157)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-24); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-25); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

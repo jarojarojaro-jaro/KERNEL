@@ -21,6 +21,27 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-149 · Bonsai 2.5: kernel PTQ1_0 dla RDNA3 (n = 1–4 kolumny, ograniczony pasmem), żeby MTP działało na pliku 5,99 GB
+- data: 2026-11-25 ([[bonsai-2-5-uncensored]]: PTQ1_0 na HIP 446–583 GB/s przy n=1 i 3,8× dłużej przy n=4; Q2_0 ma 7,3 GB na token)
+- plan: dekodowanie trytów przez LUT (bajt → 5 trytów) w LDS, kolumny 1–4 w jednym przejściu wag; `test-backend-ops` MUL_MAT ptq1_0, potem b25.sh (prism ptq1 mtp 2) ABBA vs prism Q2_0 MTP n2
+- zysk: wag o 21% mniej → do +15…20% dekodu przy T=0,7 [SZACUNEK]
+- ryzyko karty: niskie (nowy kernel, bramka test-backend-ops)
+- priorytet: wysoki dla Bonsai
+
+### K-150 · Bonsai 2.5: przerwa hosta 19% kroku dekodu (3,4 ms z 18,2 ms), HIP graphs + MTP w forku prism
+- data: 2026-11-25 (profil rocprofv3: GPU 14,8 ms na token, zegar 18,2 ms)
+- plan: sprawdzić, czy grafy działają przy MTP w prism na HIP (`GGML_HIP_GRAPHS`), profil hosta; ewentualnie fuzja FWHT + quantize_q8_1 (razem 7,2% GPU)
+- zysk: do +10…19% [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: średni
+
+### K-151 · Bonsai 2.5 w naszej topce: port `prism.hadamard` (runtime FWHT) z upstream do topka-q70 i PM4 replay
+- data: 2026-11-25 (topka b11528 nie zna Hadamarda; upstream od b11556; PM4 dał Qwenowi +6,4%)
+- plan: port `load_hparams_hadamard`/`load_tensors_hadamard` + graf qwen35, md5 greedy vs prism Q2_0, b25.sh z silnikiem topki
+- zysk: PM4 + nasze MTP-lean, kilka–kilkanaście % [SZACUNEK]
+- ryzyko karty: PM4 (zasady PM4)
+- priorytet: średni
+
 ### K-148 · Maya: szybsza weryfikacja szerokiego okna sufiksowego (dziś ścieżka prefillu, ok. 0,2 s na 96 tokenów)
 - data: 2026-11-24 (K-147: nasz sufiks 404–452 / 299 t/s vs GodGMN 708 / 494 na tym samym teście i karcie)
 - plan: profil `forward()` dla T=16–128 z `g_rec` (IK2_PROF), porównanie z presetem GodGMN (`IK2_PREFILL_WMMA`, `IK2_PREFILL_DENSE=2`, `IK2_EXPERT_TILE_LDS`); cel: koszt okna 96 tokenów ≤ 0,14 s; bramka: parytet 11/11 + `ik2_copy_edit.py` + rep2 czatu
@@ -577,6 +598,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-152 · Ternary Bonsai 2.5 27B Uncensored (AtomicChat) na XTX: pobrać i zoptymalizować (JARO 2026-11-24 23:37)
+- wynik 2026-11-25: plik AtomicChat PTQ1_0 (SHA zgodne) + głowica MTP PrismML → PTQ1_0-mtp i bezstratny Q2_0-mtp; fork PrismML zbudowany na gfx1100; najlepiej **prism Q2_0 + MTP n2: T=0,7 77,7, T=0 117,9, L2k 97,5, L8k 92,6 t/s** (bez spekulacji 54,4; PTQ1_0 + MTP 33,8 przy T=0,7). Szczegóły i tabela: [[bonsai-2-5-uncensored]]. Dalej K-149, K-150, K-151.
+
 
 ### K-005 · Siatka checkpointów GDN co ~8192 tokenów + checkpoint w punkcie rozwidlenia + łańcuch fallbacku (edycja, regeneracja, kompaktowanie omp)
 - data: 2026-10-15 (STATUS-NEXT §4), ponownie 2026-11-07 (66 poz. 6)

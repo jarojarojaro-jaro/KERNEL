@@ -1,0 +1,8 @@
+# Bonsai 2.5 Uncensored on XTX, round A: engines x formats, plain vs MTP n3
+b25-tbo|600|~/wt/prism/build-hip/bin|GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib taskset -c 2-5 timeout 500 ./test-backend-ops -b ROCm0 -o MUL_MAT -p "type_a=(ptq1_0|q2_0)" 2>&1 | tail -4; journalctl -k --since "-10min" --no-pager | grep -c gfxhub
+b25-prism-none|600|~/qwen-opt/bonsai25|./b25.sh prism ptq1 none
+b25-prism-mtp3|600|~/qwen-opt/bonsai25|./b25.sh prism ptq1 mtp 3
+b25-up-none|600|~/qwen-opt/bonsai25|./b25.sh up q2 none
+b25-up-mtp3|600|~/qwen-opt/bonsai25|./b25.sh up q2 mtp 3
+b25-prism-q2-mtp3|600|~/qwen-opt/bonsai25|./b25.sh prism q2 mtp 3
+b25a-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

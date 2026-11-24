@@ -236,6 +236,14 @@ Kampania 67c (wieczór 2026-11-07): T1 = mediana `spec_sweep` seed 1, fill = pro
 
 FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s. Kernel MoE w jednym (r9, GGML_HIP_INK_MEGA): KLD OK, ale z DSpark kopie 68,8 → 46,2 t/s (−33%), odrzucony. PM4 z DSpark nadal wolniej (68,8 vs 91,2 t/s). Odniesienie obcego silnika na tej karcie: Strata 0.1.66 (UD-Q4_K_XL, DSpark) kopie 100,6–109,6 t/s, T=0,7 60,6 t/s, ale GPU page fault przy długim prompcie; Maya 1.1.73 (UD-Q4_K_XL, drafting on bez draftera) kopie 112,7, T=0,7 80,7, długi 2k 80,0 t/s, stabilna (K-134, 2026-11-23).
 
+## RX 7900 XTX – Ternary Bonsai 2.5 27B Uncensored (AtomicChat), Q2_0 bez strat + MTP
+
+| obciążenie / metryka | rekord | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|
+| czat T=0,7 (xbench Q6) | **77,7 t/s** (bez spekulacji 54,4; upstream MTP n3 65,8) | 2026-11-25 | fork PrismML 910442b na ROCm 10.0, Q2_0-mtp (repack PTQ1_0), MTP n2, KV q4_0, PM4=0 | `~/qwen-opt/queue/logs/b25c-mtp2r.log` (jaroserverai); [[bonsai-2-5-uncensored]] | nie (`qwen-opt/bonsai25/serve.sh` gotowe) |
+| greedy Q4 160 tok. | **188,4 t/s** (MTP n2 + ngram-mod; samo MTP n2 117,9, n4 139,3) | 2026-11-25 | j.w. + `--spec-type draft-mtp,ngram-mod` (L8k spada do 76,0) | `b25c-mtp2ng.log` | nie |
+| długi 2k / 8k, dekod | **97,8 / 94,0 t/s** | 2026-11-25 | MTP n2 + ngram-mod / MTP n3 | `b25c-mtp2ng.log`, `b25-prism-q2-mtp3.log` | nie |
+
 ## Qwen3.8-27B XTX: wznowienie długiej rozmowy po edycji (K-005)
 
 | obciążenie | rekord | data | warunki | źródło | prod. |

@@ -1,0 +1,13 @@
+diff --git a/ggml/src/ggml-cuda/vendors/hip.h b/ggml/src/ggml-cuda/vendors/hip.h
+index e5fcb35..27bf08a 100644
+--- a/ggml/src/ggml-cuda/vendors/hip.h
++++ b/ggml/src/ggml-cuda/vendors/hip.h
+@@ -64,6 +64,8 @@
+ #define cudaEventCreateWithFlags hipEventCreateWithFlags
+ #define cudaEventDisableTiming hipEventDisableTiming
+ #define cudaEventRecord hipEventRecord
++#define cudaEventCreate hipEventCreate
++#define cudaEventElapsedTime hipEventElapsedTime
+ #define cudaEventSynchronize hipEventSynchronize
+ #define cudaEvent_t hipEvent_t
+ #define cudaEventDestroy hipEventDestroy

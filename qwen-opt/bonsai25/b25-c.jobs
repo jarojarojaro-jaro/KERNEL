@@ -1,0 +1,6 @@
+# Bonsai 2.5 Uncensored, round C: MTP confidence cut (p-min) and n2 repeat
+b25c-mtp2r|600|~/qwen-opt/bonsai25|EXTRA_TAG=-r2 ./b25.sh prism q2 mtp 2
+b25c-mtp3p5|600|~/qwen-opt/bonsai25|EXTRA_TAG=-p05 ./b25.sh prism q2 mtp 3 --spec-draft-p-min 0.5
+b25c-mtp4p7|600|~/qwen-opt/bonsai25|EXTRA_TAG=-p07 ./b25.sh prism q2 mtp 4 --spec-draft-p-min 0.7
+b25c-mtp2ng|600|~/qwen-opt/bonsai25|EXTRA_TAG=-ngmod ./b25.sh prism q2 mtp 2 --spec-type draft-mtp,ngram-mod
+b25c-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -21,7 +21,7 @@ wynik: qwen3-6-35b-a3b | rtx-5060-ti | 115.9 t/s | dekod mediana; LM | 2026-10-2
 <!-- TABELE:START -->
 ## Wyniki z notatek (1)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-24); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-25); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

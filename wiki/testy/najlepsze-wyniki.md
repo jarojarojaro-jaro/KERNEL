@@ -10,7 +10,7 @@ status: aktualne
 **Najlepszy zmierzony wynik każdej pary model i karta dla każdej metryki, z warunkami, datą i notatką źródłową; generuje tools/tabele.py.**
 
 <!-- TABELE:START -->
-Wygenerowano 2026-11-24 przez `tools/tabele.py` z pól `wynik`/`wyniki` 322 trójek; poprawiaj notatkę źródłową, nie tę tabelę.
+Wygenerowano 2026-11-25 przez `tools/tabele.py` z pól `wynik`/`wyniki` 326 trójek; poprawiaj notatkę źródłową, nie tę tabelę.
 
 ## Ternary Bonsai 2 27B: najlepsze wyniki na kartach
 
@@ -25,6 +25,15 @@ Wygenerowano 2026-11-24 przez `tools/tabele.py` z pól `wynik`/`wyniki` 322 tró
 | NVIDIA RTX 3060 12 GB [[rtx-3060]] | dekod T=1 | **35.5 t/s** | Q2_0 repack fork (A1 33.1) | 2026-10-16 | [[2026-10-16-kampania-nvidia]] |
 | NVIDIA RTX 3060 12 GB [[rtx-3060]] | KLD PL do BF16 | **0.508 KLD** | E1 | 2026-10-18 | [[bonsai]] |
 | NVIDIA RTX 3060 12 GB [[rtx-3060]] | PPL | **8.6171 PPL** | Q2_0 upstream/fork | 2026-10-16 | [[bonsai]] |
+
+## Ternary Bonsai 2.5 27B Uncensored: najlepsze wyniki na kartach
+
+| karta | metryka | najlepszy | warunki | data | źródło |
+|---|---|---|---|---|---|
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | czat T=0,7, prism Q2_0 + MTP n2, KV q4_0 | **77.7 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod T=0 (Q4 160 tok.), prism Q2_0 + MTP n2 | **117.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod T=0 (Q4), MTP n2 + ngram-mod | **188.4 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | llama-bench tg128 bez spekulacji, Q2_0 | **54.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 
 ## Drafter DFlash2 dla Qwen3.8-27B: najlepsze wyniki na kartach
 

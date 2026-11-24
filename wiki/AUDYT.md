@@ -35,6 +35,7 @@ Uwaga: w chwili pierwszego audytu raportów 09 i 11 jeszcze nie było; dodano je
 ## Tabela (notatka, liczby, wiersz źródła, status)
 | notatka | liczby | wiersz źródła | status |
 |---|---|---|---|
+| [[modele/bonsai-2-5-uncensored]] | 77,5–77,7, 117,6–117,9, 97,5, 92,3–92,6, 188,4, 54,4, 54,88, 5,6002, 5,5703 | jaroserverai `~/qwen-opt/queue/logs/b25b-q2-mtp2.log`, `b25c-mtp2r.log`, `b25c-mtp2ng.log`, `b25b-q2-none.log`, `b25-prof.log`, `b25-ppl.log` | OK (wynik narzędzia w sesji 2026-11-25) |
 | [[karty/amd-dev-cloud]] | 05 | 05-chmura-gpu-do-testow.md:1 | OK (inny wiersz źródła, sprawdzone) |
 | [[karty/amd-dev-cloud]] | 1.75, 1.99, 2.39, 2.99 | 05-chmura-gpu-do-testow.md:114 | OK |
 | [[karty/amd-dev-cloud]] | 10, 25 | 05-chmura-gpu-do-testow.md:164 | OK |

@@ -36,12 +36,16 @@ Bezpieczeństwo (2026-10-19): twarda zasada użytkownika [[2026-10-19-bezpieczen
 **Termika i eco (2026-11-05/06):** raport 64 – limit `OD_SCLK` bezpieczny, ale na jądrze 6.8 commit OD gubi krzywą wentylatora ([[raport-64-termika]], [[lekcja-od-commit-gubi-krzywa]]). Stock 2026-11-05 (14:41–16:32, ≥ 250 W, cap 285 W, wentylator 100%): junction śr. 78 / maks. 89 °C, Δ hotspot−edge śr. 25 °C (maks. 38); 65–66 °C to tylko próbka 30 s. xtx-eco zainstalowane 2026-11-06 12:07 UTC; fabryczny `OD_SCLK 1` zmienia się między bootami (2885 → 2935 MHz) ([[2026-11-06-xtx-eco-instalacja]]). Produkcja Qwen od 2026-11-05: topka-q63, −1.0 GiB VRAM ([[2026-11-05-q63-topka]]).
 
 <!-- TABELE:START -->
-## Wyniki z notatek (218)
+## Wyniki z notatek (222)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-24); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-25); pełna tabela: [[najlepsze-wyniki]].
 
 | model | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|
+| Ternary Bonsai 2.5 27B Uncensored [[bonsai-2-5-uncensored]] | czat T=0,7, prism Q2_0 + MTP n2, KV q4_0 | **77.7 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| Ternary Bonsai 2.5 27B Uncensored [[bonsai-2-5-uncensored]] | dekod T=0 (Q4 160 tok.), prism Q2_0 + MTP n2 | **117.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| Ternary Bonsai 2.5 27B Uncensored [[bonsai-2-5-uncensored]] | dekod T=0 (Q4), MTP n2 + ngram-mod | **188.4 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| Ternary Bonsai 2.5 27B Uncensored [[bonsai-2-5-uncensored]] | llama-bench tg128 bez spekulacji, Q2_0 | **54.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 | Drafter DFlash2 dla Qwen3.8-27B [[drafter-dflash]] | dekod EN | **115.7 t/s** | n=6, cache q8_1 | 2026-10-09 | [[drafter-dflash]] |
 | Drafter DFlash2 dla Qwen3.8-27B [[drafter-dflash]] | dekod EN kod | **104.8 t/s** | n=6, runda 5 | 2026-10-15 | [[drafter-dflash]] |
 | Drafter DFlash2 dla Qwen3.8-27B [[drafter-dflash]] | dekod mediana T=0 | **90.6 t/s** | PL/EN, n=6, 285 W | 2026-10-10 | [[drafter-dflash]] |
