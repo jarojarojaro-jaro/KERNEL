@@ -599,6 +599,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (przyspiesza całą kolejkę)
 - pominięte 2026-11-20: w `~/wt/xtxbench/build-hip/bin` są tylko biblioteki (`libggml-base`, `libggml-cpu`), nie ma `llama-server`, a xtxbench bez binarki odmawia pracy. Potrzebna jest najpierw budowa gałęzi `xtxbench`, czyli praca nad kodem
+- **wynik 2026-11-24 15:37–15:40 (XTX):** llama-server z hakiem przełączników xtxbench (d5454e0) przechodzi bramkę md5 (c4708318 / 6f14e814 PASS), przełącznik `GGML_HIP_MMVQ_PAIR=0` przez `--var-switch` zadziałał (1 przełączenie w logu serwera); llama-bench ABBA vs produkcja: pp4096 997,35 → 997,60 (+0,02%), tg128 41,24 → 41,21 (−0,06%) = koszt haka zerowy. **Zrobione**: hak można włączyć do builda produkcyjnego (A/B bez restartu serwera).
 
 ### K-029 · xtx-eco: odczytywać fabryczny `OD_SCLK` przy każdym boocie przed pierwszym zapisem OD (stock zmienia się między bootami: 2885 vs 2935 MHz)
 - data: 2026-11-06
@@ -784,6 +785,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: nieznany (RDNA-FAST: 10.1 +3,1% vs 7.2 na innej bazie); `kvq` może zwolnić przez spill
 - ryzyko karty: nowy runtime + PM4 (możliwy fault/reset)
 - priorytet: niski (niepewny zysk, ryzyko)
+- **wynik 2026-11-24 15:33–15:36 (XTX, topka-q70 3191b25 zbudowana na ROCm 10.1, PM4=0, xtxbench t1):** bramka md5 świeżego startu PASS (c4708318 / 6f14e814), ale xtxbench: decode@1,7k 121,28 → 120,88 (−0,33%, szum), **prefill@32k 875,9 → 861,3 (−1,67%, LOSS)**, md5 greedy czatu inny (d36768ee → 662da515). Werdykt **KILL**: ROCm 10.1 wolniejszy w prefillu (zgodne z ISA: spill `flash_attn_ext_kvq<256,8,Q4_0>` 0→36 B). Zostajemy na 10.0; 10.2 to K-130.
 
 ### K-050 · Runtime ROCm 7.2.4 z kompilatorem ROCm 10
 - data: 2026-11-07
@@ -885,6 +887,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (proces)
 - 2026-11-24 14:37: pierwsze uruchomienie odrzucone przez fabrykę (port 18794 poza zakresem fabryki 18434–18499; skrypt poprawiony na 18450, uruchomione ponownie).
+- 2026-11-24 15:18: fabryka INVALID, bo zmieniona uprząż (`ext/spec_sweep.py` po audycie 19.11, `ext/fusion/greedy.sh`) bez wpisu w HARNESS.lock; zablokowana z powodem (ledger seq 11), test ponownie w kolejce 15:40.
 
 ### K-061 · Tryb wielu użytkowników na NVIDIA: naprawić start `-np 4` z MTP (`failed to create context`), potem k zależne od liczby klientów (`K_BY_B`)
 - data: 2026-10-21 (raport 56)

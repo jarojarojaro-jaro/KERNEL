@@ -1,0 +1,5 @@
+# K-060 P0 (RSI-F pilot): factory verify of claim 0070, two single-round verifies (each <= 900 s), then :8080 back.
+# P1 (playbook 0070 on new targets) is agent work after a CONFIRMED verdict, not scripted here.
+k060-p0-r1|880|~/qwen-opt/kq|bash K-060.sh 1
+k060-p0-r2|880|~/qwen-opt/kq|bash K-060.sh 1
+k060-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

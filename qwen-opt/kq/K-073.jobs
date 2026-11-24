@@ -1,0 +1,4 @@
+# K-073 Flint needle: now vs base (upstream+PR #30928) at q4_0, then q8_0 at 64k (non-kvq path); PM4=0; then :8080 back.
+k073-now-q4|880|~/qwen-opt/kq|bash K-073.sh /home/jaro/qwen-opt/flint/inst/bin now q4_0 200000 150000,65536
+k073-base-q4|880|~/qwen-opt/kq|bash K-073.sh /home/jaro/qwen-opt/flint/base-inst/bin base q4_0 200000 150000,65536
+k073-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

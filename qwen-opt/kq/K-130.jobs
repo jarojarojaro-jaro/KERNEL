@@ -1,0 +1,7 @@
+# K-130 topka-q70 built with ROCm 10.2 (runtime 10.2) vs production 10.0: fresh greedy md5 gate (c4708318/6f14e814),
+# test-backend-ops MUL_MAT/FA vs CPU, xtxbench t1 A=~/llama-topka B=10.2 build (decode 1.7k + prefill 32k, md5 vs A);
+# PM4=0 both arms; ~10 min GPU; then :8080 back.
+k130-md5|600|~/qwen-opt/kq|bash K-130.sh md5
+k130-tbo|450|~/qwen-opt/kq|bash K-130.sh tbo
+k130-xtx|900|~/qwen-opt/kq|bash K-130.sh xtx
+k130-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

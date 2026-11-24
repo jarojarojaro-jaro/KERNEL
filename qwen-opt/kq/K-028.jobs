@@ -1,0 +1,6 @@
+# K-028 xtxbench runtime-switch smoke: fresh-start md5 gate of the hook build, xtxbench t1 --var-switch on one server
+# (production PM4 rule), llama-bench ABBA production vs hook build (PM4=0); ~10 min GPU; then :8080 back.
+k028-md5|600|~/qwen-opt/kq|bash K-028.sh md5
+k028-switch|900|~/qwen-opt/kq|bash K-028.sh switch
+k028-bench|600|~/qwen-opt/kq|bash K-028.sh bench
+k028-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

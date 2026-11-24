@@ -1,0 +1,4 @@
+# K-059 LocalMaxxing conditions: production config (lookup W16) and fresh (LLAMA_SPEC_LOOKUP=0, the publishable arm); then :8080 back
+k059-prod|600|~/qwen-opt/kq|taskset -c 2-5 bash K-059.sh prod
+k059-fresh|600|~/qwen-opt/kq|taskset -c 2-5 bash K-059.sh fresh LLAMA_SPEC_LOOKUP=0
+k059-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

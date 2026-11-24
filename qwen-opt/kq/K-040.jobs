@@ -1,0 +1,8 @@
+# K-040 NO GPU TEST NEEDED (KqBuild 2026-11-24): the -mllvm --amdgpu-unroll-threshold-local=600 build of topka-q70
+# (~/wt/k040-unroll/build-hip) vs production ~/llama-topka: 7359 of 7361 gfx1100 kernels have identical normalized ISA,
+# 0 of 4277 hot kernels changed; only mul_mat_f<__half2|__hip_bfloat162, 32, 16, 1, true> (f16/bf16 mul_mat_f with ids,
+# not on the Qwen/LFM decode or prefill path) changed. Details ~/kqbuild/K-040.isadiff.txt. The lines below stay
+# commented out: run-jobs.sh refuses a file without jobs, so :8080 is never touched. Uncomment only if the ISA changes.
+#k040-md5|600|~/qwen-opt/kq|bash K-040.sh md5
+#k040-bench|600|~/qwen-opt/kq|bash K-040.sh bench
+#k040-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

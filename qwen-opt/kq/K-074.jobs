@@ -1,0 +1,8 @@
+# K-074 Orca on XTX: MTP n4 vs DFlash2 n6 vs no spec (ABBA-lite: mtp, dflash, dflash, mtp); PM4=0; then :8080 back.
+# The E1 RSR-27B half ($40-70 rental) is not scripted (owner budget).
+k074-none|600|~/qwen-opt/kq|bash K-074.sh none
+k074-mtp-a|600|~/qwen-opt/kq|bash K-074.sh mtp 4
+k074-dflash-a|600|~/qwen-opt/kq|bash K-074.sh dflash 6
+k074-dflash-b|600|~/qwen-opt/kq|bash K-074.sh dflash 6
+k074-mtp-b|600|~/qwen-opt/kq|bash K-074.sh mtp 4
+k074-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
