@@ -75,6 +75,7 @@ W kodowaniu agentowym jest lepszy (DeepSWE 48,2 vs 42,2%), więc na XTX powinien
   - RTX 5090: 440,5 t/s (sglang, n=8, średnio 3,74 tokenu na krok, verified);
   - R9700: 81,8 t/s (llama.cpp unsloth, n=7, niezweryfikowane).
 - Lekcja: 250–300 t/s ze spekulacją na karcie klasy 3090/XTX jest osiągalne, ale tylko z silnikiem, który ma mało uruchomień kerneli na token.
+- **ingine (satellitedown, 2026-11-22):** własny silnik CUDA tylko na RTX 5090, z DSpark 487–561 t/s, prefill do 10 900 t/s; cała runda zgadywania sterowana na GPU, jedna synchronizacja hosta na rundę. Przeliczone na pasmo XTX to ~260 t/s, czyli 2,5× nad naszym 104 [INFERENCE].
 - **Unsloth llama.cpp (2026-11-23, prebuild b12649-mix):** fuzje kerneli Inkling w ggml-cuda dają bez spekulacji RTX PRO 6000 81 → 125 t/s (1,54×), B200 68 → 111, gfx1151 24 → 33; tyle samo co Strata (105–110 na B200). Maya robi 124 na 3090 przy połowie pasma, więc w llama.cpp dalej brakuje ~2× (K-138).
 
 ## Delta 2026-11-21 (zwiad): vLLM day-0

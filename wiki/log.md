@@ -680,3 +680,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-23] Maya v1.1.75 (link JARO) + AtomicChat natywnie | hipx14 przeniesione na 1.1.75 (88b6a6c, STRATA_USE_HIP→MAYA_USE_HIP), kernele Q4_K/Q5_0 (30ff426, test hosta = ggml bit w bit); XTX czeka: K-136, K-137
 
 ## [2026-11-23] Unsloth Inkling 1,9× (link JARO) | fuzje ggml-cuda, PRO 6000 81 → 125 t/s bez spekulacji; ~2× mniej wydajne na bajt niż Maya; K-138 (prebuild gfx110X na XTX)
+
+## [2026-11-24] K-138 Unsloth na XTX + ingine (link JARO) | tg128 Unsloth 40,9 vs nasz 58,2; serwer DSpark T=0,7 31,1 vs 23,6 (nasz narzut serwera); ingine 5090 487–561 t/s → wzór: synchronizacja raz na rundę; wyścig Kernel vs Gemini na Mai (gałęzie kern-s1..s4, gem-maya)

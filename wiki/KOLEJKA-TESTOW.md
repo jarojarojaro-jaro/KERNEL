@@ -30,6 +30,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - oczekiwany zysk: dla Mai brak [INFERENCE: Maya na 3090 124 t/s ≈ Unsloth na PRO 6000 przy 2× większym paśmie]; dla naszego llama.cpp sprawdzić, które ich fuzje nie pokrywają się z naszymi FUSE/F4 (#401, #402, #411, #412, #414) i dać je Gemini w r16
 - ryzyko karty: obca paczka ROCm; PM4 nie dotyczy (to nie nasz fork), test pod blokadą GPU
 - priorytet: średni
+- wynik 2026-11-24 01:35–01:38 UTC (XTX, KV q4_0, AtomicChat AD-Q4_K): llama-bench tg128 Unsloth 40,9 vs nasz r14 58,2 (UD-Q4_K_XL: 44,1 vs 60,9) → nasz +42% w samym dekodzie; prefill pp2048 Unsloth 968. Serwer z DSpark n7 (xbench): Unsloth / nasz r14: krótki Q1 71,0 / 46,0, kopie Q4 98,3 / 85,9, **T=0,7 31,1 / 23,6**, L2k 72,4 / 62,0 (prefill 761 / 1339), L8k 67,9 / 66,5. Wniosek: ich serwer traci mniej na kroku niż nasz (potwierdza narzut 7,8 ms/token z r14 → r15), ale oba 3× za Mayą (T=0,7 104,3). Paczka Unsloth na XTX nie jest dla nas kandydatem; ich pętla serwera do przejrzenia w r16.
 
 ### K-137 · AtomicChat Uncensored AD-Q4_K natywnie w Maya (eksperci Q4_K + Q5_0): ile szybciej niż ablacja w locie
 - data: 2026-11-23 (JARO, panel 19:02: „zoptymalizować ten atomic chat i zobaczyć, ile może śmigać”)
