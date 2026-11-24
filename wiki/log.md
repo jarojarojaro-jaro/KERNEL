@@ -690,3 +690,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-24] weaponized-curiosity (link JARO) | skill procesu badań (debata 4 agentów, autoresearch z zamrożonym ewaluatorem); bez liczb dla kerneli; wniosek: przewidywanie liczbowe + walidacja w każdej próbie wyścigu
 
 ## [2026-11-24] KVCompress (link JARO) | prototyp bez pomiarów jakości i prędkości; lekcja: rotacja Hadamarda przed KV q4
+
+## [2026-11-24] Inference Stack (link JARO) | vLLM+llm-d+LiteLLM+Grafana w jednym instalatorze, tylko NVIDIA, bez liczb; dla nas wzór produktu, nie prędkość
