@@ -19,9 +19,10 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (34)
+## Notatki (35)
 
 - [[co-stats|`co_stats.py`: statyczny audyt kerneli (VGPR, spille, fale)]] — `21l-skrypty/co_stats.py OUT.csv <lib.so|*.co|*.hsaco>` czyta wszystkie kernele z bundli HIP (także skompresowanych CCOB) i zapisuje per kernel VGPR, SGPR, spille, LDS i fale/SIMD; reguła fal gfx1100 = min(16, ⌊1536 / ⌈VGPR⌉₂₄⌋), zgodna z kompilatorem i RGA (raport 21l, 2026-10-19).
+- [[kol|`tools/kol`: kolejka GPU na jaroserverai jednym poleceniem z krótkim wynikiem]] — Jedno wywołanie zastępuje serię ssh + tail/grep queue.log + pętlę czekania + czytanie logów zadania; czekanie dzieje się na pudle (jedno połączenie ssh, sprawdzanie co 15 s), a wynik to END, błędy na górze i ogon logu bez szumu.
 - [[hip-fatbin-extract|`tools/re/hip_fatbin_extract.py`: code objects z `.hip_fatbin`]] — Skrypt w czystym Pythonie (CPU) wyciąga z sekcji `.hip_fatbin` biblioteki HIP nieskompresowane bundle `__CLANG_OFFLOAD_BUNDLE__` (jeden na jednostkę kompilacji) i zapisuje każdy wpis `hipv4-amdgcn-*` jako `<outdir>/<idx>.<target>.co`; `--filter SUBSTR` zostawia tylko obiekty zawierające nazwę kernela (raport 23a, 2026-10-19).
 - [[isa-kstat|`tools/re/isa_kstat.py`: zasoby i miks instrukcji z `.s` AMDGPU]] — `isa_kstat.py FILE.s [REGEX] [--max N]` czyta asembler AMDGPU (`clang -S --offload-device-only`) i podaje per kernel VGPR, SGPR, statyczny LDS, scratch, fale wave32 z reguły gfx1100 (granulat 24) oraz statyczne liczby instrukcji: ładowania wg szerokości (b32/b64/b96/b128, sub), LDS, `s_waitcnt`, DPP, VOPD, WMMA, dot, bariery, atomiki (2026-10-19).
 - [[agentx-harness|AgentX harness (SemiAnalysis, AIPerf)]] — `agentx-harness==1.0.11` (na AIPerf NVIDIA, wrapper `python3 -m infx.bench agentic`) odtwarza 393 sesje Claude Code z zachowanymi długościami, hashami bloków 64 tokenów, drzewem subagentów i przerwami na narzędzia, ale z syntetyczną treścią; c = liczba żywych drzew sesji, punkt ≥ 900 s (oficjalnie 1 h) na świeżym serwerze (raport 21f, 2026-10-19).

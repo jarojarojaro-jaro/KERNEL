@@ -700,3 +700,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-24] Gemini maya-g2 i ink-r16b padły na limicie (429, reset ~14:13); wznowienie timerem agy-retry-1420 (maya 14:30, ink godzinę później)
 
 ## [2026-11-24] llama.cpp #31669 replay GDN (link JARO) | nasze S4 z 10-13 upstream; topka bez zmian; Enigma: podbić upstream b11856 → ≥ b12671 i model pamięci (−0,55 GiB stanu przy n4, wiele slotów tanie)
+
+## [2026-11-24] tools/kol: kolejka GPU jednym poleceniem (stan, pusc --czekaj, czekaj, wynik) — zlecenie JARO o oszczędności tokenów

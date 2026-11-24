@@ -68,7 +68,7 @@ Audyt liczb: [[AUDYT]].
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (84)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (113)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (34)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (35)
 - [[archiwum/_hub|archiwum]] — Notatki scalone i wycofane (status nieaktualne, pole zastapiona_przez); poza przypomnieniem (47)
 
 ## Ostatnio aktualizowane
@@ -89,5 +89,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-24 [[gdn-replay|GDN z opóźnieniem: cofanie przez przeliczenie (S4)]]
 - 2026-11-24 [[speed-bench|SPEED-Bench (NVIDIA): wspólny standard pomiaru spekulacji, którym podają liczby wszyscy poza nami]]
 
-Razem 820 notatek. Wygenerowano 2026-11-24 przez `tools/wiki.py index`.
+Razem 821 notatek. Wygenerowano 2026-11-24 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

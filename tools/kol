@@ -1,0 +1,89 @@
+#!/bin/bash
+# kol: the GPU queue on jaroserverai in one call with a short answer (replaces ssh + tail/grep/sleep loops).
+#   kol stan                         runners, current job, last START/END, :8080, temperature, builds, GPU faults
+#   kol pusc <plik.jobs> [--czekaj] [--limit S]
+#                                    start run-jobs.sh (a local file is copied to the box first); --czekaj = wait
+#                                    for "queue <plik>: done" / GPU FAULT / runner gone, then every job's result
+#   kol czekaj <zadanie|plik.jobs> [limit_s]
+#                                    block until the job's END (or the file's done), a GPU fault or a dead runner;
+#                                    prints END + result. An already finished job answers at once
+#   kol czekaj-plik <plik> <regex> [limit_s]
+#                                    block until a remote file matches (build markers, e.g. ~/k134/build-all.done)
+#   kol wynik <zadanie> [n]          the job's log: error lines first, then the last n lines (default 25), noise cut
+#   kol log [n]                      last n queue.log lines (default 15)
+# Exit: 0 done/ok, 1 job rc!=0 or error, 2 usage, 3 GPU fault/guard stop, 4 timeout, 5 box unreachable.
+# Limits: default wait 3600 s. Polls every 15 s on the box (one ssh connection for the whole wait).
+set -u
+H=${KOL_HOST:-jaro@jaroserverai}
+SSH=(ssh -o ConnectTimeout=8 -o ServerAliveInterval=30 -n "$H")
+[ "$H" = local ] && SSH=(bash -c)   # (tests: run the box side here, HOME decides the queue dir)
+usage() { sed -n 2,15p "$0"; exit 2; }
+[ $# -ge 1 ] || usage
+"${SSH[@]}" true 2>/dev/null || { echo "kol: $H nie odpowiada (wyłączony?)"; exit 5; }
+
+# shared remote functions (sent with every call)
+read -r -d '' RF <<'EOF'
+Q=~/qwen-opt/queue; L=$Q/logs/queue.log
+wynik() { # job [n]
+  local f=$Q/logs/$1.log n=${2:-25}
+  [ -f "$f" ] || { echo "(brak logu $1)"; return; }
+  local noise='^\s*$|^\s+File "|^\s+\^+\s*$|urllib|raise HTTPError|return opener|response = (meth|self)|result = func|_call_chain|meth\(req|^\s+(with|d =|t, wall)|init_user_pages|server is listening|^Traceback'
+  local err; err=$(grep -nE -i 'error|fail|fault|abort|died|did not start|not decoded|rc=[1-9]|\bnan\b|mismatch' "$f" | grep -vE "$noise|passed|0 errors" | tail -6 | cut -c1-220)
+  [ -n "$err" ] && { echo "  ! błędy:"; echo "$err" | sed 's/^/    /'; }
+  grep -vE "$noise" "$f" | tail -n "$n" | cut -c1-220 | sed 's/^/  /'
+}
+stan() {
+  echo "runnery: $(ps -eo pid,args | grep -E '^ *[0-9]+ /bin/bash .*[r]un-jobs.sh' | awk '{print $1":"$NF}' | sed 's#.*/##' | tr '\n' ' ')"
+  local s; s=$(grep -E ' START ' $L | tail -1); local n=${s#*START }; n=${n%% *}
+  if [ -n "$n" ] && ! tail -n +"$(grep -n " START $n " $L | tail -1 | cut -d: -f1)" $L | grep -q "END   $n "; then echo "trwa: $s" | cut -c1-200; fi
+  grep -E ' (END|GPU FAULT|GPU GUARD|queue .*: done)' $L | tail -4 | cut -c1-160
+  echo ":8080 $(curl -s -m3 localhost:8080/health || echo down) | $(rocm-smi --showtemp 2>/dev/null | grep -m1 -o 'junction) (C): [0-9.]*') | gfxhub od startu: $(journalctl -k -b --no-pager 2>/dev/null | grep -c gfxhub)"
+  local b; b=$(ps -eo args | grep -cE '^[^ ]*([c]make --build|[c]lang\+\+|[h]ipcc)'); [ "$b" -gt 0 ] && echo "budowanie: $b procesów kompilacji"
+  [ -f ~/k134/build-all.done ] && echo "znaczniki builda: $(grep -v '^$' ~/k134/build-all.done | tr '\n' ' ')"
+  true
+}
+czekaj() { # target limit since_line
+  local t=$1 lim=$2 from=${3:-0} end=$((SECONDS+$2)) job=1
+  case $t in *.jobs) job=0;; esac
+  if [ "$from" = 0 ]; then from=1; [ $job = 0 ] && from=$(grep -nE "queue [^ ]*$t: [0-9]+ jobs" $L | tail -1 | cut -d: -f1); [ -n "$from" ] || from=1; fi
+  while :; do
+    local tailq; tailq=$(tail -n +"$from" $L)
+    if [ $job = 1 ]; then
+      local st; st=$(grep -n " START $t " $L | tail -1 | cut -d: -f1)
+      if [ -n "$st" ]; then
+        local e; e=$(tail -n +"$st" $L | grep -m1 "END   $t ")
+        [ -n "$e" ] && { echo "$e" | cut -c1-160; wynik "$t" "${KOLN:-25}"; echo "$e" | grep -q 'rc=0 ' && return 0 || return 1; }
+        tail -n +"$st" $L | grep -qE 'GPU (FAULT|GUARD)' && { tail -n +"$st" $L | grep -E 'GPU (FAULT|GUARD)' | tail -1; wynik "$t" 15; return 3; }
+      fi
+    else
+      local d; d=$(echo "$tailq" | grep -E "queue [^ ]*$(basename "$t"): (done|no jobs)" | tail -1)
+      local f; f=$(echo "$tailq" | grep -E 'GPU (FAULT|GUARD)' | tail -1)
+      if [ -n "$d$f" ]; then
+        echo "$tailq" | grep -E ' END   ' | cut -c1-160
+        [ -n "$f" ] && echo "$f"
+        for j in $(echo "$tailq" | grep -oE ' END   [^ ]+' | awk '{print $2}' | grep -v restore8080); do echo "== $j"; wynik "$j" "${KOLN:-12}"; done
+        [ -n "$f" ] && return 3; echo "$tailq" | grep -E ' END   ' | grep -qv 'rc=0 ' && return 1; return 0
+      fi
+      ps -eo args | grep -q "[r]un-jobs.sh .*$(basename "$t")" || [ $((SECONDS)) -lt 20 ] || { echo "runner dla $t nie żyje, a brak 'done':"; echo "$tailq" | tail -5 | cut -c1-160; return 1; }
+    fi
+    [ $SECONDS -ge $end ] && { echo "limit ${lim}s: $t jeszcze trwa"; stan; return 4; }
+    sleep 15
+  done
+}
+EOF
+
+case $1 in
+  stan) "${SSH[@]}" "$RF"$'\n'"stan" ;;
+  log) "${SSH[@]}" "$RF"$'\n'"tail -n ${2:-15} \$L | cut -c1-180" ;;
+  wynik) [ $# -ge 2 ] || usage; "${SSH[@]}" "$RF"$'\n'"wynik $(printf %q "$2") ${3:-25}" ;;
+  czekaj) [ $# -ge 2 ] || usage; t=$2; case $t in *.jobs) t=$(basename "$t");; esac
+    "${SSH[@]}" "$RF"$'\n'"czekaj $(printf %q "$t") ${3:-3600} 0" ;;
+  czekaj-plik) [ $# -ge 3 ] || usage
+    "${SSH[@]}" "end=\$((SECONDS+${4:-3600})); while ! grep -qE $(printf %q "$3") $2 2>/dev/null; do [ \$SECONDS -ge \$end ] && { echo 'limit: brak dopasowania'; tail -3 $2 2>/dev/null; exit 4; }; sleep 15; done; grep -E $(printf %q "$3") $2 | tail -5" ;;
+  pusc) [ $# -ge 2 ] || usage; f=$2; shift 2; wait=0; lim=3600
+    while [ $# -gt 0 ]; do case $1 in --czekaj) wait=1;; --limit) lim=$2; shift;; *) usage;; esac; shift; done
+    if [ -f "$f" ] && [ "$H" != local ]; then rp="qwen-opt/queue/up/$(basename "$f")"; "${SSH[@]}" "mkdir -p ~/qwen-opt/queue/up" && scp -q "$f" "$H:$rp" || exit 5; rp="~/$rp"; else rp=$f; fi
+    "${SSH[@]}" "$RF"$'\n'"n=\$(( \$(wc -l < \$L) + 1 )); (setsid nohup \$Q/run-jobs.sh $rp > /tmp/kol-\$(basename $rp).out 2>&1 < /dev/null &); sleep 3; tail -n +\$n \$L | cut -c1-160; [ $wait = 1 ] && czekaj $(basename "$f") $lim \$n"
+    ;;
+  *) usage ;;
+esac
