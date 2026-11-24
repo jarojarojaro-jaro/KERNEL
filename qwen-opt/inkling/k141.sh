@@ -27,8 +27,8 @@ case $1 in
     done ;;
   copy) cd $G/tests
     $PY ik2_copy_edit.py --tokenizer $HOME/k134/maya/ik2/tokenizer --direct-answer --workload inventory > /tmp/k144-req.txt
-    for arm in ours-lookup theirs-default theirs-suffix128; do
-      case $arm in ours-lookup) e="$OENV"; b="$OURS --drafting on"; m=$AD;; theirs-default) e="$TENV"; b=$THEIRS; m=$NL;; theirs-suffix128) e="$TENV IK2_SUFFIX=128"; b=$THEIRS; m=$NL;; esac
+    for arm in ${ARMS:-ours-lookup theirs-default theirs-suffix128}; do
+      case $arm in ours-lookup) e="$OENV"; b="$OURS --drafting on"; m=$AD;; ours-suffix128) e="$OENV IK2_SUFFIX=128"; b="$HOME/k134/wt-ad-suffix/build-hip/maya-ik2 --drafting on"; m=$AD;; theirs-default) e="$TENV"; b=$THEIRS; m=$NL;; theirs-suffix128) e="$TENV IK2_SUFFIX=128"; b=$THEIRS; m=$NL;; esac
       env $e timeout 400 taskset -c 2-5 $b --model $m --serve-ik2 --ctx 16384 --chunk 1024 < /tmp/k144-req.txt > /tmp/k144-$arm.out 2>/tmp/k144-$arm.err
       echo "== $arm"; $PY ik2_copy_edit.py --tokenizer $HOME/k134/maya/ik2/tokenizer --direct-answer --workload inventory --score /tmp/k144-$arm.out 2>&1 | cut -c1-220; tail -2 /tmp/k144-$arm.err
     done ;;

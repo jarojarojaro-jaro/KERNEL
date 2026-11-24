@@ -1,0 +1,5 @@
+# K-147 suffix128
+k147-par|600|~/k134|~/k134/k147.sh parity
+k147-copy|600|~/k134|~/k134/k147.sh copy
+k147-ab|900|~/k134|~/k134/k147.sh run prod sfx sfx prod
+k147-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
