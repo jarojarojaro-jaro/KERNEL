@@ -19,7 +19,7 @@ Liczby t/s zawsze z datą i warunkami (kwant, KV, MTP/DFlash, prompt, T). Aktual
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (28)
+## Notatki (29)
 
 - [[astra-stop|Astra-Stop: rank-1 edycja, która skraca myślenie Qwen3.8-27B]] — Jedna macierz `layers.63.mlp.down_proj` zmieniona wzorem `W' = (I + u uᵀ)W` (u = odczyt tokena `</think>` przez głowicę LM, cos 0.9998 na naszym GGUF): mediana myślenia −35.5% przy effort xhigh, ale `</think>` przecieka do odpowiedzi w 11/32 – to zmiana zachowania, nie bezstratna optymalizacja (2026-11-09).
 - [[daisyrose-27b|DaisyRose-27B (RadixArk): pełny RL na Qwen3.8-27B, 144 × H200 przez 18 dni — duży koszt, mały zysk poza Terminal-Bench 4.1]] — RadixArk (twórcy DSpark) wytrenował nasz model bazowy samym RL-em (bez SFT i destylacji) na ~1200 długich zadaniach agentowych, z sesjami do 1M tokenów. Koszt to 144 H200 × 18 dni ≈ 62 tys. GPU-godzin. Zysk: Terminal-Bench 4.1 5,6 → 12,0%, na pozostałych testach +0,4…+4 pp. Ta sama architektura i ten sam szablon, więc zastępuje Qwen3.8-27B bez zmian; GGUF Q4_K_M działa w naszym silniku bez łatek [INFERENCE: ten sam typ `qwen35`].
@@ -35,6 +35,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lfm-czulosc-na-podzial-batcha|LFM2.5: logity zależą od podziału promptu na ubatche]] — Dowolne dwa rozmiary ubatcha (128–2048) dają dla LFM2.5-24B-A2B KLD 0.055–0.068 i 88–89% tego samego top-1, przy KV q8_0 i f16, a upstream `e60eff95f` daje bit w bit te same liczby co fork; A/A (ub 512 vs 512) to KLD 0 (2026-10-18).
 - [[modele-katalogowe|Modele katalogu produktu i testów (gpt-oss, Gemma 4, Qwen3.5-9B, Bielik, Mistral)]] — Modele z licencją Apache 2.0, które produkt ma polecać i które testujemy na kartach NVIDIA; dla nich nie mamy jeszcze własnych kerneli.
 - [[modele-telefon|Modele na telefon: MiniCPM-V 4.7 1B i EmbeddingGemma 2]] — Osobny projekt (`jarojarojaro-jaro/phoneuse`): lokalny agent na telefonie realme Note 50 (Unisoc UMS9230H), gdzie EmbeddingGemma dopasowuje podpisy ekranu, a MiniCPM-V jest opcjonalny; zasada: model nigdy nie klika z pewnością w złe miejsce.
+- [[nanbeige4-3-33b|Nanbeige4.3-33B: gęsty model agentowy, który pokazuje, że Enigma liczy prędkość zamiast czasu zadania]] — Gęsty model (Llama, 52 warstwy) z AA v5 20,4 (Qwen3.8-27B 20,1) i Terminal-Bench 4.0 30% wobec 6% Qwena, ale z 44% większą liczbą tokenów na zadanie i KV 58,5 KB/token przy q4_0 (3,2× Qwen); na 24 GB mieści Q4_K_M tylko do 64k (R67b, 2026-11-07).
 - [[nvfp4|NVFP4 (4-bitowy format NVIDIA)]] — NVFP4 to 4-bitowy format liczb NVIDIA, sprzętowo liczony od Blackwella (np. RTX 5060 Ti); RX 7900 XTX nie ma FP4/FP8, a my go nie używamy, bo zmienia model.
 - [[nemotron-3-5-bolt-74b-a9b|NVIDIA Nemotron 3.5 Bolt 74B-A9B]] — Hybrydowy MoE NVIDIA (Mamba-2 + LatentMoE + 8 warstw attention, ~9B aktywnych) w pliku IQ2_XXS 22 018 326 528 B; na RTX 3090 z drafterem DFlash nasz silnik daje 141.1 t/s.
 - [[nemotron-3-5-bolt-e4b|NVIDIA Nemotron-3.5-Bolt-E4B (Gemma-4-E4B po RL)]] — SLM NVIDIA na telefon i edge, wydany 2026-10-23: Gemma-4-E4B-it po RL (GRPO) pod narzędzia, rozmowę i instrukcje. Q4_K_M ma 6.18 GB i zajmuje „~4 GB VRAM”. Na drafter Qwen3.8-27B się nie nadaje.

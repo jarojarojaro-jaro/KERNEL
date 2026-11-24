@@ -20,6 +20,15 @@ Uzupełnienie (raport 57a, 2026-10-21):
 - **SLQ:** EAR = Σmin(p,q) (zgodność tokenów, czyli akceptacja „kwant jako drafter BF16”). Accuracy jest płaskie do KL ≈ 0.01. Siatki symetryczne mają γ² większą wariancję. Qwen3.5-27B: TL 3.30 bpp, DL 5.19 bpp.
 - **Inne:** 3Bit-GSQ Qwen3.8-27B (vLLM, compressed-tensors, 11.8 GB); Disaggregated Quantization (2609.26333) z prefillerem NVFP4 i ODP 1.78× TTFT w llama.cpp, co nie dotyczy XTX ani 3090.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+- Werdykt „na 24 GB nie dotyczy” patrzył tylko na XTX. Tymczasem nasz **produkt już używa GSQ-RCO**: katalog Enigmy daje Qwen3.8-27B `GSQ-IQ3_XXS` (`ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF`, plik `-mtp`) na karty 16 GB: 4060 Ti, 5060 Ti, 5080 (`app/engine/src/server/catalog/index.ts:222-236`, `app/engine/data/catalog.json:562-564`).
+- Zmierzone w kampanii 67 na prawdziwych kartach: 5060 Ti 229 376 tokenów kontekstu i 43.4 t/s (enigma-cuda-lean), 5080 81.6 t/s; UD-Q3_K_XL na 5060 Ti mieścił tylko 98 304 tokeny, poniżej minimum 131 072 (`catalog/index.ts:231-243`). To dzięki temu plikowi 16 GB w ogóle dostaje 27B z długim kontekstem.
+- Napięcie do pamiętania: w niezależnym KLD IQ3_S od ISTA wypadł gorzej niż UD-IQ3_S (0.0665 vs 0.0470, R15e), a dla IQ3_XXS własnego KLD nie mamy. Wybór w katalogu wynika z pamięci, nie z jakości.
+- Konkurencja na tych samych plikach: Strata też domyślnie bierze GSQ-RCO (R57b TL;DR 3), a pobrania 27B to 1.29 M — klienci 12–16 GB to duży rynek.
+- Czego uczy RCO: dobór typu kwantu per tensor pod dokładny budżet bajtów to dokładnie problem „optimize” w Enigmie (zmieścić model + KV w VRAM klienta). EAR (SLQ) to zrozumiała dla użytkownika metryka „ile tokenów zgodnych z pełnym modelem”.
+- Co bierzemy: KLD i jakość-mini dla `GSQ-IQ3_XXS` przed dalszym polecaniem (to już jest K-030 w [[KOLEJKA-TESTOW]], status „czeka na decyzję”); EAR obok KLD w raporcie aplikacji; CompWatch na nowe tiery ISTA, bo każdy dotyczy katalogu.
+
 ## Powiązane
 - [[conway-research]]
 - [[unsloth]]

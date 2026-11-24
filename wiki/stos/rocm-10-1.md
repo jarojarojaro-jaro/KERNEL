@@ -38,6 +38,13 @@ Data 2026-10-16. Tarball TheRock gfx110X 10.1.0 (2.67 GB), rozpakowany do `~/opt
 - WSL2 tech preview: RX 7900 XTX na liście, ale pakiet PM4 (0060) jest tam cicho pomijany → blokada 0060 pod WSL2.
 - ATT/thread trace działa na gfx1100 już w 10.0 (`rocprofv3 --att`); PMC = 0 prawdopodobnie przez brak stabilnego stanu zasilania z `amd-smi`.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+- Werdykt w rejestrze „nic istotnego na gfx1100” był za wąski. Raport 13 dał nam trzy rzeczy ważniejsze niż sama wersja: ATT na gfx1100 (dziś narzędzie [[att-gfx1100]]), przyczynę zerowych PMC (stały stan zasilania przez `amd-smi`) i ostrzeżenie, że pod WSL2 taśma PM4 kończy się „sukcesem” bez wykonania kernela ([[wsl2-rocm]]).
+- Produkt: AMD dołącza ROCm CLI z Lemonade jako „uruchom GGUF na Radeonie”, a `rocm-doctor` to gotowy wzór diagnostyki L0 (`product/research/13-rocm-10.1.md:26`). To ten sam brak, który pokazał [[inference-stack]]: diagnostyki z komendami po awarii.
+- Stan bramki WSL2: w forku duo `pm4_enabled()` sprawdza tylko `GGML_HIP_PM4` i RDNA3, nie obecność `/dev/kfd` (`~/praca/llama-duo/ggml/src/ggml-cuda/hip-pm4.cu:284-287`); aplikacja nie wykrywa WSL (`rg -i wsl app/engine/src/server` = 0). Dziś to nie szkodzi, bo silnik ROCm gfx1100 ma `distribution: local` (`app/engine/data/engines.json:264-272`) i do użytkowników nie trafia; zanim trafi, blokada musi być w kodzie.
+- Co bierzemy: przy każdym wydaniu ROCm pytać nie tylko „czy szybciej na gfx1100”, ale też „co się zmienia dla klientów” (WSL2, Windows, APU gfx1151, RDNA4 gfx1201) i „jakie narzędzia diagnostyczne dostajemy”.
+
 ## Powiązane
 - [[rocm-stos]]
 - [[rocprof]]

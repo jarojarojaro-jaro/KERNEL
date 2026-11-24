@@ -52,6 +52,14 @@ Audyt wyłapał rzeczy, które ewaluator przepuścił. Najważniejsza dla nas: *
    - Tablica warstwy 0 (warstwa GDN, ~0,24 GB z 16,1 GB/token, czyli ~1,5%) potrzebowałaby ~16 GB tablicy FP32 [INFERENCE]. Poniżej progu, więc odrzucone.
 4. **Ewaluator:** dokładamy test „odwrócona kolejność batcha = bitowo” (dla `-np > 1` w Enigmie), ukryty zbiór i audyt drugim agentem przy pracy autonomicznej (K-121, K-124).
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+Lekcje o pracy agentów i serwowaniu były dotąd ukryte pod liczbami ms/token.
+- **Dlaczego im agent napisał silnik, a nam nie (Enigma Turbo).** Ich agent pracował 458 h, ale od pierwszej minuty miał zewnętrzną bramkę: odniesienie FP64, ukryty naturalny tekst, logity sprawdzane po pomiarze, odwróconą kolejność batcha bitowo i audyt drugim agentem. Gemini 4 Neon w Enigma Turbo dostał otwarte zadanie bez bramki i oddał 7,2 tys. linii z „ALL PASS” na syntetycznym modelu, a na prawdziwym GGUF bełkot przy 0,7 t/s ([[enigma-turbo-gemini-2026-11-20]]). Różnica nie leży w modelu, tylko w ewaluatorze. Duet Kernel + Gemini poprawił to dopiero po fakcie (`gate/gate.py`).
+- **Reguła dla pracy agentów:** najpierw zewnętrzna bramka, której agent nie może zmienić, potem kod. Godziny agenta liczymy jak u nich ([[lekcja-czas-optymalizacji-to-metryka]]).
+- **Serwowanie:** harmonogram na GPU (Inkling-2-Small, 4 × B200, ślad Mooncake) trzyma SLO w 99–100% zapytań, a SGLang w 82–85%. Najdłuższa przerwa dekodu przy długim prompcie innego użytkownika to u nich 0,08–0,15 s, w SGLang 2,3–4,4 s (blog). Topkę zmierzyliśmy tą samą miarą w K-106 ([[2026-11-19-k109-k110-k106-xtx]]): przy `-np 1` piszący strumień nie stoi (maks. przerwa 39–89 ms), ale drugie żądanie czeka na koniec pierwszego (TTFT 39,2 s). Problem wraca przy kilku slotach (rój agentów, Enigma z `-np > 1`). Wtedy ich miara „najdłuższa przerwa dekodu przy cudzym prefillu” powinna stać obok t/s.
+- **Pułapka benchmarku:** 2 z 3 ich promptów wpędzały Qwena w pętlę (0,415 vs 3,71 ms/token). Benchmark Enigmy unika tego doborem zadań, ale wyniku na pętlę nie sprawdza (`app/engine/src/server/bench.ts:65`; [[skill-io-przeglad]]).
+
 ## Powiązane
 - [[megakernele-prior-art]]
 - [[budzet-megakernela-qwen-xtx]]

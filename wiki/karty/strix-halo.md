@@ -24,7 +24,7 @@ stan: faza 3, niemierzona u nas
 <!-- TABELE:START -->
 ## Wyniki z notatek (1)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-23); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-24); pełna tabela: [[najlepsze-wyniki]].
 
 | model | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

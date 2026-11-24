@@ -14,6 +14,14 @@ status: aktualne
 - Generator zapowiedziany „w kilka tygodni”; AMD tylko jako zdanie w wątku.
 - Wzorce warte zapamiętania: ≤ 1 atomik na WG na etap, liczniki co 128 B, prefetch wag przed czekaniem, grant z horyzontem dla pętli MTP, znaczniki czasu per etap.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+„Tylko binaria B300, AMD brak” zamykało temat jako „nie ma czego portować”. Repo i nasz pomiar przy okazji uczą jednak trzech rzeczy (66c:55-60, 104-126, 146):
+- **Serwer, w którym host nigdy nie czeka:** pierścienie zleceń i odpowiedzi w przypiętej pamięci hosta, grant „wolno do kroku t+2”, a próbkowanie, akceptacja draftu i zapis logprobów dzieją się na GPU (`gpu/ring.rs:1-69`, `engine/clock.rs:3,20-29`). U nas GPU stoi 410 µs/krok między taśmami (R37), a llama-server czeka na wynik każdego kroku. To ten sam kierunek co plan #11 (overlap), z liczbą: +1…+1,5% (66c pomysł C).
+- **Nasz własny wynik, który przy okazji wyszedł:** fuzje z raportu 54 zabrały 126 dispatchy na krok (13%), a proza zmieniła się o +0,24% (szum), `mvs` o 0,0% (ABBA x54, `qwen-opt/launchcut/logs/prose.jsonl`). Mniej uruchomień to jeszcze nie szybciej: płaci się za ogony i rampy w łańcuchach MMVQ → norma → MMVQ.
+- **Ryzyko w produkcie:** kernel rezydentny „na zawsze” nie przejdzie na Windows (TDR), a port NVIDIA mega zawiesił produkcję 2× w 12,5 h i wrócił na zwykłą ścieżkę (66c:126,135). Dla Enigmy (Windows, karty klientów) stabilność jest ważniejsza niż +5% dekodu.
+- **Czytanie twierdzeń:** baza to liczba opublikowana przez NVIDIA, a nie powtórzona; jakość sprawdza 7 pytań; „60–100 linii na megakernel” i „generator w 20 dni” są nie do sprawdzenia. To ten sam wzór co README Enigmy Turbo („ALL PASS”, „Dual CUDA/HIP”) ([[enigma-turbo-gemini-2026-11-20]]). Bez kodu i bez naszego pomiaru to tylko deklaracja.
+- Do zrobienia zostaje tani PoC-A (1–1,5 dnia, hand-off w trwałej siatce 96–192 WG). Pełny megakernel Qwena to 40–70 osobodni `[SZACUNEK]`, więc dopiero po planach #1–#8 z 63.
+
 ## Powiązane
 - [[megakernele-prior-art]]
 - [[budzet-megakernela-qwen-xtx]]

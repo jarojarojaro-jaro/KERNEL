@@ -692,3 +692,5 @@ run3.sh (upstream llama-bench V(n), kvqleana vs kvqlean, ramię ~122k), fetch.sh
 ## [2026-11-24] KVCompress (link JARO) | prototyp bez pomiarów jakości i prędkości; lekcja: rotacja Hadamarda przed KV q4
 
 ## [2026-11-24] Inference Stack (link JARO) | vLLM+llm-d+LiteLLM+Grafana w jednym instalatorze, tylko NVIDIA, bez liczb; dla nas wzór produktu, nie prędkość
+
+## [2026-11-24] Przegląd ZRODLA pod nowy cel (cała inferencja + nauka) | 151 wpisów (55 ocen „nie dla nas/zero/bzdura”, 106 o serwowaniu/infra/produkcie/agentach): 108 zmienionych, 43 sprawdzone bez zmian; ~70 notatek z sekcją „Przegląd 2026-11-24”, nowe: inference-stack, ashhart-skills-infra, vllm, superfluid, ingine, lemonade, speed-bench, kekzl-imp, vllm-radiance-mxfp4, anatomia-serwowania-kumar, b70-cookbook, speedy, vllm-v060-narzut-cpu, nanbeige4-3-33b, weaponized-curiosity; decyzja 2026-11-24-cel-cala-inferencja-i-nauka

@@ -18,6 +18,15 @@ Werdykt: nisza jest, ale wąska i łatwa do skopiowania; bronią nas dane i bram
 
 Aktualizacja (raport 15c, 2026-10-16): teza „kernele u konsumenta: nikt” jest nieaktualna – Magnitude stroi kernele na urządzeniu (60 s, bramka α = 8, nie bitowa), a tqLLM wybiera warianty bit-identyczne przy ładowaniu. Nowa teza: nikt nie łączy strojenia z bitową bramką ani z publikowanym KLD. Nowe wiersze: Magnitude (6.9k★ w 4 miesiące), tqLLM, Actual Computer.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+- Zdanie „nikt nie łączy pomiaru, optymalizacji i bitowej weryfikacji” jest prawdziwe, ale patrzy tylko na nasz wyróżnik. Ci gracze wygrywają tam, gdzie Enigma jest najsłabsza: w dowiezieniu i utrzymaniu działania ([[inference-stack]], „dlaczego Enigma wyszła gorzej”).
+- **Instalacja i paczki:** Lemonade 10 MB + backendy dociągane na żądanie, wersja „embeddable” 5–7 MB ([[lemonade]]); LM Studio runtime packs na żądanie ([[lm-studio]]); Jan 530 MB Windows / 95 MB DMG ([[jan]]). U nas jedna binarka Bun, bez aktualizacji z wycofaniem.
+- **Izolacja i odporność:** Jan od 0.8.5 trzyma silnik w osobnym procesie (crash nie zabija aplikacji); Ollama ma odkrywanie runnerów z timeoutem. U nas po `ready` nikt nie pilnuje llama-server, klient dostaje 502 ([[inference-stack]]).
+- **Dopasowanie do pamięci:** Ollama mierzy pamięć przed załadowaniem; LM Studio pokazuje „Full GPU offload possible” i ma guardraile; Jan „Fits / May be slow / Won't fit”. U nas jest lepiej (zmierzone konfiguracje z kampanii 67 w `app/engine/src/server/catalog/index.ts:205-246`, minimum 131k kontekstu), ale tylko dla kart, które wynajęliśmy.
+- **Nasz wyróżnik nie dociera:** jedyny silnik AMD z naszymi kernelami ma `distribution: local` (`app/engine/data/engines.json:264-272`), więc posiadacz Radeona dostaje to samo upstream llama.cpp co w Ollamie, a 165 zgłoszeń `amd` w Ollamie to dokładnie ci klienci.
+- Co bierzemy: z Jana osobny proces + watchdog, z Lemonade małe paczki z backendem na żądanie, z Ollamy pomiar pamięci przed ładowaniem jako bezpiecznik obok naszej tabeli; „auto-tune” Lemonade śledzić dalej w CompWatch.
+
 ## Powiązane
 - [[research/_hub|research]]
 - [[raport-02-autotuning]]

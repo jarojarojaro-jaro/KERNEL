@@ -1,7 +1,7 @@
 ---
 typ: research
 tags: [research, telegram, kv-cache, kwantyzacja, llamacpp, upstream, mmq]
-aktualizacja: 2026-11-14
+aktualizacja: 2026-11-24
 zrodlo: https://pearlresearch.ai/research/blog/pearlquant (2026-11-12); https://x.com/WeinsteinOmri/status/2120888055556948106; https://x.com/ggerganov/status/2121246103312212124; https://huggingface.co/blog/ggml-org/llama-cpp-v1 (2026-11-13); https://github.com/ggml-org/llama.cpp/releases/tag/v1.0.0 (`b1b770d`, nightly b12359); https://github.com/ggml-org/llama.cpp/pull/31533; https://github.com/ggml-org/llama.cpp/pull/30541
 status: aktualne
 ---
@@ -23,6 +23,13 @@ status: aktualne
     - K-013 w górę: port few-row na XTX; zmienia md5, więc potrzebna bramka K-007;
     - K-001: hipoteza #30541;
     - K-056: rebase na v1.0.0.
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+- **Co wyszło z #31533 u nas:** K-103 (Vast 5060 Ti, 14.11): MTP n2 43,95 → 45,62 t/s (+3,8%), n3 +0,6%, KLD 0,000700 przy szumie 0,000569–0,000615 (~2σ ponad) → pin Enigmy b11856 zostaje ([[2026-11-14-k103-llamacpp-v1-nvidia]]). K-013 (XTX, 20.11, `test-backend-ops` m 4096 k 14336): nasz kernel Q4_K szybszy przy każdym n (−9…−33%), few-row wygrywa tylko Q6_K przy n = 1–2 (−14% / −25%) (`KOLEJKA-TESTOW.md:188-191`).
+- **Lekcja 1: zysk z PR zależy od szerokości weryfikacji.** Autor mierzył DFlash2 z 7 draftami (8 kolumn) na 3090 Ti; nasza MTP n2 to 3 kolumny (5060 Ti), a tam +34,9% zostało +3,8%; przy ub 8/16 sam przebieg weryfikacji dał +12,1% / +9,8%. Przy każdej liczbie z PR najpierw: ile kolumn, jaki drafter, jaka baza, jaka karta.
+- **Lekcja 2: porównuj z forkiem, nie z upstreamem.** Cały upstream 6ad15f48 był na XTX wolniejszy od topki o 39–41% (V5, V16), bo nie ma naszych łatek; sam kernel trzeba mierzyć osobno (K-013, 14.11 → 20.11).
+- **Lekcja 3 (proces upstreamu):** v1.0.0 wprowadziło semver `libllama`/`libggml`. Dla Enigmy to argument za pinem po tagu i za bramką KLD przy każdej zmianie pinu, co K-103 zrobił: zgoda właściciela „jak lepsze” nie wystarczyła, bo nie było bezstratnie.
+- Bierzemy: układ Q6_K few-row dla n ≤ 2 (dekod i draft) do duetu; port całego #31533 do forka CUDA tylko przy szerokiej weryfikacji (K-105).
 
 ## Powiązane
 - [[research/_hub|research]]

@@ -30,7 +30,7 @@ Kampania 67c (2026-11-07, 165 W): stary pick UD-Q3_K_XL 143 360 plain PASS 19,78
 <!-- TABELE:START -->
 ## Wyniki z notatek (10)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-23); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-24); pełna tabela: [[najlepsze-wyniki]].
 
 | model | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

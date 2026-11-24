@@ -38,6 +38,15 @@ status: aktualne
 
 **Działa na:** każdym GPU, bo adapter mierzy czas. Gotowe adaptery: NVIDIA CUDA i Apple MPS; na AMD (HIP) i Intelu trzeba napisać własny adapter, np. wokół `test-backend-ops -o perf`. Test: K-121.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+Dotyczy wcześniejszego wiersza o tym repo (`0230468`, PR #6/#9, R63e §2.2–2.4). Werdykt „wiersze Gemini to nie pomiary agenta; PR #9 dobre reguły” mówił tylko o liczbach. Repo i tweety autora to jednak opis całego procesu pracy z agentami, a my prowadzimy podobny proces (omp, podagenci, Kernel + Gemini, kolejka GPU):
+- **Kolejka GPU:** u nich hooki pilnują, żeby robotnicy nie stali i GPU było zajęte w 100%. Nasza `run-jobs.sh` (FIFO z biletami, stop przy page fault) stawia na bezpieczeństwo karty, a nie na zajętość; miary zajętości kolejki nie znalazłem `[INFERENCE]`.
+- **Koordynator:** autor pisze, że człowiek jako koordynator dał 2× szybszy postęp niż koordynator-AI, a najwolniejszym ogniwem jest przegląd człowieka pod kątem oczywistych błędów (63e:186-192). U nas to ten sam wzorzec: JARO + bramki review, a Gemini bez bramki zbudował Enigmę Turbo z zielonymi testami i bełkotem ([[enigma-turbo-gemini-2026-11-20]]).
+- **Przed pomiarem:** mały model statystyczny („surogat”) do shortlisty i automatyczne odrzucanie kombinacji niemożliwych fizycznie. U nas jest tylko to drugie: [[physics-floor-check]].
+- **Benchmark „historical recovery”** (`benchmarks/PROTOCOL.md`): agent dostaje snapshot kodu sprzed znanej poprawy, 30 min i GPU przez zaufany dispatcher. Tanio dałoby się tak sprawdzać naszych agentów: odtworzyć znaną łatkę z historii topki i zmierzyć, czy ją znajdą.
+- **Antywzorzec:** kryterium sukcesu zmienili po publikacji wyników (z „95% dolna granica ≥ 98%” na „> 1.01×”). To przesuwanie bramki po zobaczeniu danych; bramkę trzeba zapisać przed pomiarem.
+- **PR #9:** zasadę „nie powtarzaj niezmienionego kodu, licząc na szum” i hash źródła przy każdym wyniku dalej mamy tylko w fabryce. W `spec_sweep.jsonl` hasha buildu brak (`qwen-opt/spec_sweep.py`).
+
 ## Powiązane
 - [[sweep-wariantow-kernela]]
 - [[xtxbench-szybki-ab]]

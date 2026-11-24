@@ -1,7 +1,7 @@
 ---
 typ: produkt
 tags: [produkt, windows, amd, ssd, ux]
-aktualizacja: 2026-11-09
+aktualizacja: 2026-11-24
 zrodlo: ~/KERNEL/product/research/69d-amd-sterownik-ssd.md:6-11,16-28,31-50,55-58; https://wccftech.com/amd-acknowledges-radeon-driver-bug-causing-constant-ssd-writes-fix-in-the-works/; https://windowsforum.com/news/amd-radeon-ssd-write-bug-how-to-check-atieclxx-exe-on-windows-10-and-11.450605/
 status: do-sprawdzenia
 ---
@@ -14,6 +14,12 @@ status: do-sprawdzenia
 - **Serwer:** amdgpu, brak odpowiednika usługi; ReBAR aktywny (BAR0 32 GiB). Nie dotyczy.
 - **Polityka KV:** sam błąd to 2.6–13× naszego budżetu zapisu 10 GB/dzień – argument za „KV w RAM” ([[decyzje/2026-10-19-kv-tylko-w-ram]]).
 - **Proponowana karta UX** (hardware scan, tylko Windows+AMD): wersja z rejestru → 30 s pomiaru zapisów `atieclxx` w bezczynności → przy ≥ 0.2 MB/s żółte ostrzeżenie (aktualizuj sterownik po poprawce; opcjonalnie zatrzymaj usługę; nie wyłączaj ReBAR), bez automatycznych akcji; osobna informacja, gdy ReBAR wyłączony. Decyzja: [[raport-69-synteza]].
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+- **Poprawka wyszła:** Adrenalin 26.11.1 (opcjonalny, 2026-11-12) naprawia zapisy dla RX 7000 i nowszych ([PC Gamer](https://www.pcgamer.com/hardware/graphics-cards/amd-has-patched-its-ssd-eating-gpu-driver-bug-with-an-optional-adrenalin-update-for-rx-7000-series-graphics-cards-and-above), [release notes](https://www.amd.com/en/resources/support-articles/release-notes/RN-RAD-WIN-26-11-1.html)); 26.11.2 (2026-11-18) dokłada poprawkę dla RX 5000/6000 na Windows 10 i **wsparcie ROCm 10.2 w sterowniku Windows** ([Guru3D](https://www.guru3d.com/story/amd-adrenalin-26112-fixes-more-radeon-ssd-writes-and-game-crashes)). Numer „26.11.1” z października okazał się trafny, ale wtedy był niepotwierdzony.
+- **To nie tylko AMD:** Guru3D 2026-11 podaje doniesienia, że GeForce 621.24 zapisuje do 30 GB/h w bezczynności (niezweryfikowane przez nas). Karta UX Enigmy powinna więc mówić ogólnie „sterownik GPU zapisuje na dysk”, z regułą per producent i wersja.
+- **Porównanie z naszą aplikacją:** skan sprzętu Enigmy sprawdza dziś sterownik tylko dla NVIDIA (`minDriver`, `app/engine/src/server/engine.ts:66-98`); dla AMD na Windows nie ma żadnej kontroli zdrowia środowiska (wersja sterownika, ReBAR, znane błędy). Karta z tej notatki nadal nie istnieje w kodzie.
+- **Lekcja produktowa:** sprzęt klienta to nie tylko karta, ale sterownik i jego błędy; skan ma mieć tabelę „znane problemy sterowników” z datą i źródłem, aktualizowaną jak katalog modeli. ROCm 10.2 w Adrenalinie to też szansa na natywny silnik ROCm dla Enigmy na Windows+AMD — do sprawdzenia w [[hip-na-windows]].
 
 ## Powiązane
 - [[produkt/_hub|Produkt]]

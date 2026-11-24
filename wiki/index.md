@@ -56,38 +56,38 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (39)
-- [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (28)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (40)
+- [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (29)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (5)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (39)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (25)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (127)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (27)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (128)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (82)
-- [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (102)
+- [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (112)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
-- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (33)
+- [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (34)
 - [[archiwum/_hub|archiwum]] — Notatki scalone i wycofane (status nieaktualne, pole zastapiona_przez); poza przypomnieniem (47)
 
 ## Ostatnio aktualizowane
 
-- 2026-11-23 [[rightnow-inkling-b300-kernele|RightNow AI: kernele MoE Inkling 2 Small na B300, bitowo identyczne przy 1 i 64 wierszach]]
-- 2026-11-23 [[lektury-dekod-podstawy|Cztery podstawowe lektury o dekodzie LLM (i co z nich już stosujemy)]]
-- 2026-11-23 [[vocab-surgery|„Vocab Surgery”: zdjęcie cenzury przez edycję kilkunastu wierszy embeddingu i lm_head]]
-- 2026-11-23 [[lekcja-tylko-wynik-ze-zgadywaniem|Lekcja: właścicielowi raportuję tylko prędkość ze zgadywaniem (spekulacją)]]
-- 2026-11-23 [[lekcja-nie-ruszam-skrzynki-nowe|Lekcja: w turze ze skrzynki nie ruszam `skrzynka/nowe/`, a każdą wiadomość kończę pełnym raportem]]
-- 2026-11-23 [[lekcja-najpierw-wszystkie-testy-potem-wylaczenie|Lekcja: „skończ wszystko i wyłącz” = najpierw każdy czekający test, potem wyłączenie]]
-- 2026-11-23 [[lekcja-dense-szybszy-od-moe-ze-spekulacja|Dlaczego gęsty Qwen 27B ze zgadywaniem jest na XTX szybszy od małego MoE Inkling]]
-- 2026-11-23 [[maya-ik2-inkling|Maya `ik2`: jak silnik Inkling 2 Mini jest 3× szybszy od nas przy T=0,7 na XTX]]
-- 2026-11-23 [[lista-dostawcow-inferencji|Lista 425 dostawców API inferencji LLM (Jaber / RightNow AI, 2026-11-22)]]
-- 2026-11-23 [[2026-11-23-miara-decode-i-prefill|2026-11-23: główna miara to dekod czatu (ze zgadywaniem) i prefill, kopiowanie na drugim planie]]
-- 2026-11-23 [[2026-11-23-kv-q4-maks-q6|2026-11-23: KV cache zawsze q4, najwyżej q6 (słowa JARO)]]
-- 2026-11-22 [[runda-6|2026-10-15: runda 6 — epilog MMQ, GDN fast, narzędzia]]
-- 2026-11-22 [[najlepsze-wyniki|Najlepsze wyniki: model × karta (tabela z notatek)]]
-- 2026-11-22 [[2026-11-07-kampania-nvidia-vast|Kampania NVIDIA na Vast: 17 kart, 262 144 z MTP na 24 i 32 GB (2026-11-07)]]
-- 2026-11-22 [[2026-10-19-page-faulty-gpu-analiza|2026-10-16/19: page faulty GPU i 10 resetów XTX (analiza bez GPU)]]
+- 2026-11-24 [[zwiad-2026-11-20|Zwiad 2026-11-20: błąd przywracania po odrzuconym drafcie w cache hybrydowym (ik_llama), weryfikacja kilku wierszy w oMLX, TensorRT-LLM 1.3 z Qwen3.5 MTP]]
+- 2026-11-24 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
+- 2026-11-24 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
+- 2026-11-24 [[telegram-2026-11-14-pearlquant-llamacpp-v1|Telegram 2026-11-14: PearlQuant (KV na kracie E8) i llama.cpp v1.0.0]]
+- 2026-11-24 [[silniki-inferencji-2026-11-20|Silniki inferencji 2026-11-20: co bierzemy do Enigma Turbo (język zostaje C++/HIP)]]
+- 2026-11-24 [[rightnow-inkling-b300-kernele|RightNow AI: kernele MoE Inkling 2 Small na B300, bitowo identyczne przy 1 i 64 wierszach]]
+- 2026-11-24 [[raport-28-moe-offload|Raport 28: silniki MoE-offload TideLM i Xolotl – stratne z założenia]]
+- 2026-11-24 [[raport-23a-rea|Raport 23a: morluto/rea („Reverse Engineer Anything”) – bez wsparcia GPU]]
+- 2026-11-24 [[raport-21i-rsi-inference-bench|Raport 21i: RSI-Inference Bench (Apple) – co mierzy i co bierzemy do fabryki]]
+- 2026-11-24 [[raport-03-silniki|Raport 03: silniki inferencji i stack]]
+- 2026-11-24 [[amd-adrenalin-zapisy-ssd|AMD Adrenalin: ciągłe zapisy SSD przez `atieclxx.exe` (Windows)]]
+- 2026-11-24 [[speed-bench|SPEED-Bench (NVIDIA): wspólny standard pomiaru spekulacji, którym podają liczby wszyscy poza nami]]
+- 2026-11-24 [[nanbeige4-3-33b|Nanbeige4.3-33B: gęsty model agentowy, który pokazuje, że Enigma liczy prędkość zamiast czasu zadania]]
+- 2026-11-24 [[inkling-2-mini|Inkling 2 Mini (Thinking Machines, 2026-11-20): MoE z pętlą warstw, jakość jak Qwen3.8-27B przy ~5× mniejszym odczycie na token]]
+- 2026-11-24 [[drafter-dspine|Drafter DSpine (Tencent YouTu): DFlash z przyczynowym kręgosłupem]]
 
-Razem 800 notatek. Wygenerowano 2026-11-23 przez `tools/wiki.py index`.
+Razem 816 notatek. Wygenerowano 2026-11-24 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

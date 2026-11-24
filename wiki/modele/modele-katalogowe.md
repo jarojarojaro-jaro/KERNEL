@@ -21,6 +21,14 @@ MVP katalogu (raport 06): Qwen3.8-27B, Gemma 4 (rozmiar wg VRAM), gpt-oss-20b, B
 
 Polski: tokenizer Qwen3 ma 2.69 tokenu na słowo (EN 1.17), stąd przyspieszenie liczy się po polsku bardziej.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+- Plan MVP katalogu z raportu 06 (Qwen3.8-27B, Gemma 4, gpt-oss-20b, Bielik 11B v3, Mistral Small 4) rozjechał się z tym, co wydaliśmy. W `app/engine/data/catalog.json` są: qwen38-27b, bonsai2-27b, qwen36-35b-a3b, flint-40b-a2.5b, lfm25-24b-a2b, gemma4-31b/26b-a4b/12b, qwen35-9b/4b, gpt-oss-20b, lfm25-2.6b. **Nie ma Bielika ani Mistrala Small 4**, choć to dwa modele polecane wprost dla rynku PL.
+- To nie jest sprawa prędkości kerneli, tylko produktu: Bielik v3 z tokenizerem APT4 ma 1.62 tokenu na polskie słowo wobec 2.69 Qwena (`product/research/06-produkt-ux-prawo-biznes.md:95-97`), czyli po polsku ok. 1.66× mniej tokenów na tę samą odpowiedź — tyle, ile dają miesiące pracy nad kernelami. Ma też gotowy drafter DFlash.
+- Raport 04 zalecał Bielika w tierach ≤ 12 GB i Apple 16 GB (`product/research/04-wykrywanie-sprzetu-i-dobor-modeli.md:337-345,554`) oraz własny pomiar PLCC, bo publicznych wyników dla Qwen3.8/Gemma 4 brak (`04:385,572`). Tego pomiaru nie zrobiliśmy; [[jakosc-mini]] ma PL tylko jako 50 pytań Global-MMLU.
+- gpt-oss-120b, Kimi K3, GLM-5.2 to tiery 96–128 GB / serwerowe — poprawnie poza katalogiem konsumenckim.
+- Co bierzemy: zanim dodamy kolejny kernel dla Qwena, sprawdzić na 8–12 GB pakiet „Bielik v3 + DFlash” (tokeny na słowo, t/s, jakość-mini PL) jako opcję dla polskiego użytkownika; decyzja o Mistralu Small 4 tylko dla 96–128 GB.
+
 ## Powiązane
 - [[modele/_hub|Modele]]
 - licencje-modeli

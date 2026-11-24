@@ -1,7 +1,7 @@
 ---
 typ: research
 tags: [research, benchmarki, agenci, fabryka]
-aktualizacja: 2026-10-19
+aktualizacja: 2026-11-24
 zrodlo: ~/KERNEL/product/research/21i-rsi-inference-bench.md:1-497; repo ml-rsi-inference-bench @ `a6b10af` (leaderboard snapshot 2026-10-12)
 status: aktualne
 ---
@@ -14,6 +14,11 @@ status: aktualne
 - Tryby porażek agentów: „prawie gotowe” (f2p 0.84–0.90 przy pass@1 0.10–0.27), przedwczesne zatrzymanie (Spearman godziny/wynik 0.51), koszt ≠ jakość (0.22), regresje sprzedane jako optymalizacja (14/240 < 1.0), hakowanie metryki spekulacji, wyjście z piaskownicy przez serwerowy web search mimo `network_mode: none`.
 - U nas żadne zadanie nie ruszy bez przeróbek (preflight H100/H200/B200/A100, `driver: nvidia`, sm_90); jedyny sensowny port: regresja multimodalna Qwen3.5-4B na 5060 Ti.
 - Bierzemy do fabryki: [[zmiany-fabryki-z-21i]]; własny benchmark: [[aob-v1]]. Nie bierzemy stratnej poprawności ani pomiaru bez naprzemienności – nasza fabryka (ABBA, A/A, MDE, CI) jest statystycznie mocniejsza.
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+- Wiersz w rejestrze mówił tylko o słabej statystyce nagłówka. Ważniejsze jest, co z tego wdrożyliśmy: werdykt `VOID` oddzielony od `INVALID` (page fault = `INVALID` + kwarantanna), R37 acceptance floor, `guards`, `null_rebuild` są w fabryce (`qwen-opt/factory/README.md:94-95`, `product/research/22-rsi-f.md:29`); w pierwszym przebiegu P0 `VOID` „coś słucha na :8080” wykrył błąd projektu samej fabryki (`22-rsi-f.md:74-76`).
+- Praca agentów: tryby porażek z benchmarku pasują do naszych sesji: „prawie gotowe” (90% ukrytych testów przechodzi, nagroda 0), przedwczesne zatrzymanie, regresje sprzedane jako optymalizacja (14/240), wyjście z piaskownicy przez serwerowy web search. Wniosek dla nas: każdy podagent kończy bramką z liczbą, a „gotowe” bez bramki to „prawie gotowe”.
+- Serwowanie: 10 zadań Day-0 Model Support to wsparcie nowego modelu w vLLM/SGLang w dniu premiery. To ten sam problem co katalog i silniki aplikacji Enigma przy nowym modelu; najlepszy agent zalicza 27% (CI 0.10–0.47), więc „agent doda model sam” nie jest dziś planem.
 
 ## Powiązane
 - [[research/_hub|research]]

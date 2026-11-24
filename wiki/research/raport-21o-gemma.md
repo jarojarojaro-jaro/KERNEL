@@ -15,6 +15,16 @@ status: aktualne
 - Nasz MTP nie współdzieli KV z celem; zysk z przeuczenia mały (`21o:8`).
 - Produkt: Qwen3.8-27B zostaje flagowcem 24 GB, Gemma 4 dla 8/12 GB; K=V w globalnych warstwach Gemmy da −50% KV globalnego (`21o:9`).
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+- Werdykt w rejestrze mówił tylko o klastrowej głowicy. Raport ma więcej dla produktu i serwowania (`product/research/21o-gemma-ai.md:9,15,22-23,49-53`):
+- **Katalog:** Gemma 4 weszła do Enigmy w trzech rozmiarach (`app/engine/data/catalog.json:1187,1269,1351`: 31B, 26B-A4B, 12B), zgodnie z planem tierów 8/12/16 GB z raportu.
+- **K=V w globalnych warstwach Gemmy 4:** llama.cpp trzyma K i V osobno, choć V = rms_norm(K); trzymanie jednego daje dla 31B przy 64k −2.68 GB i +6.8…11.8% t/s (arytmetyka, `21o:15`). Nikt tego nie zrobił (`rg 'K=V' wiki` = tylko ten raport), a to zysk dla klientów z Gemmą w katalogu, nie dla Qwena na XTX.
+- **Serwowanie:** usuwanie myśli z historii (zalecenie Gemmy) unieważnia cache prefiksu od pierwszej przyciętej tury (`21o:23`). To samo dotyczy naszej topki i proxy aplikacji przy pracy agentowej — szablon czatu decyduje o trafieniach cache.
+- **Budżet tokenów obrazu** 1120 → 280 to −75% prefillu obrazu (`21o:22`) — domyślna wartość w UX, gdy dodamy wizję.
+- **Dokumentacja:** gemma.ai ma osobną stronę na każde środowisko (llama.cpp, vLLM, Ollama, MLX…) i wizualne przewodniki po MTP — wzór dla pomocy Enigmy.
+- Co bierzemy: K=V jako kandydat silnikowy dla Gemmy w katalogu; test trafień cache przy szablonach z przycinaniem myśli.
+
 ## Powiązane
 - [[research/_hub|research]]
 - [[raporty-2026-10-19-20]]

@@ -1,7 +1,7 @@
 ---
 typ: ekosystem
 tags: [ekosystem, konkurencja, moe]
-aktualizacja: 2026-11-14
+aktualizacja: 2026-11-24
 zrodlo: ~/KERNEL/product/research/21g-nowe-silniki.md:158-216; ~/KERNEL/product/research/21g-notatki/maya.md; https://github.com/mw00/project-maya (`a4e1ff0`, v1.1.15; `f26d8ba`, v1.1.26; `c167004`, v1.1.54; `c4effee6`, v1.1.55; `22fc101f`, v1.1.56; `30145b8`, v1.1.62 + CHANGELOG do v1.1.63, 2026-11-14; https://x.com/PeasantSmith/status/2121371735157264831); ~/KERNEL/product/research/32a-maya-1117-strata-020-gyro.md:14-20; ~/KERNEL/product/research/39a-maya-1119.md:14-30; ~/KERNEL/product/research/60d-serving-kernels-cache.md:196-213,232-239; ~/KERNEL/product/research/63b-colibri-maya-delta.md:166-220; ~/KERNEL/product/research/66a-strata-maya.md:206-226,300-353
 status: aktualne
 ---
@@ -52,6 +52,44 @@ Delta od v1.1.65:
 - Reszta to poprawki (DeepSeek: dwa rozmiary obok siebie, eksperci draftu w profilu; uśpienie bezczynnego CPU jako ustawienie; diagnostyka faultów prefillu).
 
 Dla gęstego 27B na XTX nic nowego do portu. Lekcja zgodna z naszym K-114/K-116: narzut wywołań na token w weryfikacji i drafcie kosztuje więcej niż bajty. U nas weryfikacja czyta wagi raz (MMVQ N=5), więc pierwszego błędu nie mamy.
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+Wydania v1.1.27–v1.1.56 oceniliśmy wtedy zdaniem „nic dla gfx1100, gęstego 27B brak”. To był jeden filtr. Maya to cały produkt (silnik + serwer + instalator + UI) i od 2026-11-23 sami jej używamy: Maya `ik2` z naszymi łatkami HIP to produkcja Inklinga 2 Mini, 113,2 t/s przy T=0,7 ([[maya-ik2-inkling]]).
+- **Serwer i ścieżka agenta (63b:183-198, 66a:212-226):** #607 wspólny początek, #639 punkty przywracania, #704 „nic nie przepisuje prefiksu”, #573/#746 przerwanie nie gubi stanu, #840 łańcuch fallbacku przy wczytaniu slotu (slot → następny slot → checkpoint). Nasz odpowiednik to serwer topki (`CACHE_SHARE_MIN`, checkpointy). Z tej listy wdrożone mamy tylko zasadę #704 (`SAFE_TOOLS`); #607 jest w [[wspolny-poczatek-promptu]] jako „w toku”, a `TOK_CACHE` (odpowiednik MEMO) dalej nie jest ustawiony w `qwen-opt/run-topka.sh`.
+- **Pomiar:** `tools/agent_bench.py` (#406) mierzy całe tury agenta, a nie t/s jednego promptu. To lepsza miara naszego celu niż `spec_sweep` z 6 stałymi promptami (`qwen-opt/spec_sweep.py:18-25`).
+- **Produkt (porównanie z Enigmą, `app/engine`):**
+  - kalibracja per PC (chunk prefillu 1.4–1.75×, v1.1.30) i strojenie w trakcie działania (v1.1.66) — Enigma ma podobne Optimize, ale jednorazowe;
+  - odpowiedź web-chatu biegnie do końca bez czytelnika i przeżywa restart (v1.1.55) — Enigma tylko przepuszcza strumień (`api.ts:104`), więc zamknięte okno najpewniej gubi odpowiedź `[INFERENCE]`;
+  - zgodność klientów: Codex CLI na `/v1/responses` (#726), API w stylu Ollama (v1.1.50), załączniki (#837) — Enigma przepuszcza `/v1/*` do llama-server, API Ollamy nie ma, testu z Codexem nie znalazłem;
+  - SIGTERM nie zawiesza serwera (`78c450a2`) — u nas łagodne zatrzymanie w `engine.ts:614` jest, ale bez watchdoga po `ready` ([[inference-stack]]).
+- **Lekcja:** link o silniku, który „nie ma naszego modelu”, i tak trzeba czytać jako wzór serwera i produktu. Miesiąc później ten sam silnik okazał się 3× szybszy od nas na Inklingu przy T=0,7 (kontroler `SpecCtl`).
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość): v1.1.62–v1.1.66
+Trzy wiersze ZRODLA (v1.1.57–63, v1.1.64–65, v1.1.66) zamknęliśmy zdaniem „nic dla gęstego 27B na XTX”. Dla dekodu topki to dalej prawda, ale te wydania to głównie lekcje produktu i utrzymania (CHANGELOG w `~/kernel/zrodla/maya` @ `f9a053dc`):
+- **Para APU AMD + karta NVIDIA w jednym procesie (v1.1.62, CHANGELOG.md:246-262):** ROCm i CUDA obok siebie, jedna kopia wag w RAM APU, między kartami tylko aktywacje. To sprzęt części klientów Enigmy (PC z APU i kartą). Enigma przy osobnej karcie pomija iGPU całkiem („only drives the display”, `app/engine/src/server/catalog/index.ts:96,102-106`), a APU bez karty już raz pomyliła z kartą ([[lekcja-enigma-apu-jako-karta]]).
+- **Samostrojenie z progiem (CHANGELOG.md:251, 180):** pierwszy start mierzy APU samo i parę, tryb zostaje tylko przy > 3% zysku; w v1.1.66 kolejność wybierana na pierwszych prawdziwych odpowiedziach, tylko tam, gdzie obie dają te same odpowiedzi. Enigma robi to samo raz, w fazie `optimize` przed `ready` (`app/engine/CONTRACT.md:45,64`), z tym samym progiem 3% dla zmiany tekstu i potwierdzeniem drugim pomiarem (`app/engine/src/server/optimize.ts:12-20`). Różnica: Maya strojenie powtarza na ruchu użytkownika, a nasze kandydaty nie obejmują drugiego urządzenia.
+- **Błąd silnika to błąd, nie „length” (v1.1.65 #827, CHANGELOG.md:204):** strumień zachowuje wysłany tekst i kończy się zdarzeniem błędu API, reszta dostaje HTTP 422 `engine_error`, którego SDK OpenAI/Anthropic nie ponawiają. Enigma: proxy zwraca 502 przy braku serwera (`api.ts:117`), awarii w trakcie odpowiedzi osobno nie nazywa `[INFERENCE: nie testowałem]`.
+- **Pomiar pamięci na AMD Linux (#899, CHANGELOG.md:200):** wolna VRAM odczytana tuż po sprawdzeniu budżetu jeszcze liczyła sprawdzaną pamięć jako zajętą, pula ekspertów dostała 0 miejsc. Enigma liczy budżet z całkowitej VRAM minus stała rezerwa (`app/engine/src/server/catalog/index.ts:117-122`), więc tego błędu nie ma, ale też nie widzi pamięci zajętej przez inne programy.
+- **Instalator (v1.1.64–66):** sprawdzanie sum plików, które już leżą w folderze (CHANGELOG.md:237), karta 19,98 GB liczona jako 20 GB i karty AMD w rekomendacji (CHANGELOG.md:188). Enigma sprawdza sumę przy pobraniu (`download.ts:163`).
+- **Testy (v1.1.65, CHANGELOG.md:212):** każdy znany niestabilny test naprawiony co do przyczyny, testy bez plików modelu pomijane z powodem; „czerwony test zawsze coś znaczy”. Ta sama zasada co nasze bramki.
+- Co bierzemy do Enigmy: (1) wykrywanie pary APU + karta i pomiar „karta sama / para” przy pierwszym starcie z progiem 3%; (2) nazwany błąd silnika w strumieniu z zachowaniem tekstu; (3) sprawdzanie sum istniejących plików. Dla topki nic.
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość): v1.1.21–v1.1.26
+Wiersz ZRODLA o tych wersjach brzmiał „tylko DeepSeek; nic dla gfx1100/Qwena”. Kerneli do portu nadal nie ma, ale „tylko DeepSeek” przestało opisywać ten silnik, bo dziś jest naszym silnikiem Inklinga ([[maya-ik2-inkling]]). Te wersje uczą też o serwerze i sprzęcie (tabela w `product/research/60d-serving-kernels-cache.md:3.5`):
+- **Sesje przeżywają przełączenie modelu i restart (v1.1.25, `MAYA_DS4_SLOT_KEEP=1`, #356); powtórzona tura cofa się do checkpointów rozmowy (#394).** Topka trzyma cache tylko w RAM (`--cache-ram`, decyzja „tylko RAM” w [[cache-sesji-na-dysku]]), więc po restarcie keepera każda sesja agenta czyta wszystko od nowa (Qwen 53k ≈ 61,5 s prefillu wobec 2,5 s odczytu z dysku, `STAN-PRAC.md:47`). Enigma po restarcie też zaczyna od zera. Razem z brakiem watchdoga ([[inference-stack]]) to ta sama luka „po gotowe”.
+- **Czekanie między strumieniami HIP kosztuje ~1 ms na warstwę na Windows (v1.1.22, `DS4_HC_STREAM`).** Enigma wydaje HIP na Windows (`app/engine/data/engines.json:218-225`). Każdy port drugiego strumienia (np. draft obok celu) trzeba tam zmierzyć osobno, nie przenosić wyniku z Linuksa.
+- **All-reduce bez P2P przez copy engine i pamięć hosta (v1.1.22, `allreduce_dma`, bitowo):** 9 GPU na PCIe 3.0, dekod 42,9 → 66,8 t/s. W parze XTX + 5060 Ti (K-107) każda wymiana też idzie przez host, bo karty dwóch firm nie mają P2P; to wzór, jak to zrobić bez straty bitów.
+- **#382 na 2 × XTX:** jedno uruchomienie kwantyzacji zamiast wielu dało 12,5 vs 13,1 t/s, bez zysku (przerwa 3,3 µs, praca ~2 µs). Przy tak małych krokach o czasie decydują uruchomienia i przerwy, nie bajty, podobnie jak w naszych K-114/K-116.
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość): warstwa `serve/` i pętla zgłoszeń
+Wiersz rejestru o 1.1.14–1.1.16 kończył się „nic dla naszych modeli; wracać tylko przy gęstym 27B albo pomiarze XTX”. Od 23.11 Maya `ik2` to nasz silnik Inklinga 2 Mini, a Maya jest silnikiem jednego autora (1605 commitów od 2026-10-07), budowanym przez rozszerzanie sprawdzonej bazy (Strata), nie od zera jak Enigma Turbo ([[enigma-turbo-gemini-2026-11-20]]). Klon `~/kernel/zrodla/maya` @ `f9a053dc` (v1.1.73); warstwa `serve/` to ~41,8 tys. linii Pythona z testami:
+- **Fałszywe silniki do testów bez GPU:** `serve/fake_multi_engine.py:1-8` udaje `strata --serve` z wieloma rozmowami (przeplot tokenów, anulowanie, logprobs), więc kolejka, przeplot i API są testowane na CPU. To punkt 3 z [[inference-stack]] („symulator silnika”); Enigma i topka go nie mają.
+- **Strażnik pętli na id tokenów** dla wszystkich modeli, w myśleniu i odpowiedzi (`serve/loop_guard.py:1-8`); powód: odpowiedź Maya-XS pisała ten sam ciąg liczb przez 12K tokenów.
+- **Telemetria GPU w osobnym procesie** (`serve/telemetry.py:1-8`): awaria NVML (#136, SIGSEGV) zabijała cały serwer, teraz kończy tylko czytnik, a serwer uruchamia go ponownie bez tej funkcji.
+- **Sprawiedliwy podział czasu między rozmowy** `MAYA_FAIR_SLICE_S` z testem na skryptowanym silniku (`serve/test_fair.py:1-5`).
+- **Linia „Zaoszczędzono”** (`serve/savings.py:1-8`): ile kosztowałyby obsłużone tokeny w API producenta modelu, z rozbiciem na nowe wejście, wejście z cache i wyjście, sumowane między startami. Gotowy argument sprzedażowy dla Enigmy.
+- **Pętla zgłoszeń:** `./maya.sh --bench` → `--report` → issue z plikiem raportu; zmiany AMD scalane na pomiarach zgłaszających, bo autorzy nie mają karty AMD (`CONTRIBUTING.md:5-27,37-38`). Enigma nie ma kanału pomiarów od użytkowników, a testujemy na naszym labie ([[lekcja-enigma-apu-jako-karta]]).
+- Bierzemy do Enigmy: fałszywy silnik do testów całej ścieżki, strażnik pętli, licznik oszczędności, `enigma report` (sprzęt + bench + log w jednym pliku).
 
 ## Powiązane
 - [[strata]]

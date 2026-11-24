@@ -30,6 +30,13 @@ Rynek wynajmu GPU na godziny; nasze główne źródło NVIDIA do testów (konten
 
 Mediany on-demand z feedu 2026-10-15 21:30 UTC: RTX 3060 0.08 $, 3090 0.23 $, 4090 0.51 $, 5060 Ti 0.16 $, 5070 0.29 $, 5090 0.73 $ (445 ofert). Zero ofert AMD (feed: 80 modeli, wszystkie NVIDIA). W kontenerach brak liczników profilera i blokady zegarów; VM ma „CUDA profiling with hardware counters”. Szczegóły operacyjne, CLI i lekcje w notatce chmury.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+- Werdykt „NVIDIA tanio, Radeonów z rootem prawie brak” mówił o kernelach. Dla produktu chmura to **laboratorium sprzętu klientów**: konfiguracje katalogu Enigmy dla 2080 Ti, 3060, 3090, 4060 Ti, 4070, 4090, 5060 Ti, 5080, 5090 są zmierzone na wynajętych kartach w kampanii 67 (`app/engine/src/server/catalog/index.ts:205-250`, „run end-to-end in campaign 67 on the real card”). Bez Vast katalog byłby szacunkiem.
+- Infrastruktura, którą przy tym zbudowaliśmy, to nasz odpowiednik zabezpieczeń kosztowych Inference Stack (harmonogram wyłączenia GPU przed wydaniem pieniędzy): `qwen-opt/cloud/{hostguard.sh,vast-reaper.sh,idle-watch.py,hosty-zle.txt,onstart-guard.sh}` i dwa timery zniszczenia.
+- Luka: klienci to też Windows, APU i Radeony ([[lekcja-enigma-apu-jako-karta]]). Vast nie ma AMD, RunPod tylko MI300X, a Salad ma Radeony 7800 XT…9070 XT w WSL2 na Windowsie graczy, ale dla naszej organizacji AMD jest niedostępne ([[salad]]). Mac: Enverge (R30).
+- Co bierzemy: macierz testów aplikacji = lista kart z katalogu + Windows + APU; dla Radeonów na Windows ponowić dostęp w Salad albo znaleźć hosta z Windows, zanim wyślemy silnik AMD użytkownikom.
+
 ## Powiązane
 - [[narzedzia/skrypty-chmury]]
 - [[runpod]]

@@ -1,7 +1,7 @@
 ---
 typ: research
 tags: [research, silnik, enigma-turbo, hipfire, llama-cpp, vllm, sglang, exllamav3, tensorrt-llm, gdn, pm4]
-aktualizacja: 2026-11-20
+aktualizacja: 2026-11-24
 zrodlo: 6 agentów Kernela na klonach z 2026-11-20 (~/research/engines, 20 silników); pełne notatki product/research/silniki-2026-11-20/
 status: aktualne
 ---
@@ -40,6 +40,16 @@ status: aktualne
 - **Nasza największa luka nie leży w GEMV, tylko w attention weryfikacji.** Koszt T tokenów × 24 głowy rośnie z kontekstem, czego nie widać w profilu krótkiego promptu.
 - **Bierzemy gotowe, sprawdzone kernele z produkcji** (MMQ: prefill 624 → 848 t/s w jeden dzień), zamiast pisać od zera.
 - **Research przez 6 równoległych agentów na lokalnych klonach zajął 13 min.** Gemini Neon na tym samym zadaniu zużył limit (3,2 mln tokenów) przed zapisem czegokolwiek.
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+- **Rama się zmieniła:** ranking był pisany „do Turbo”, a Turbo został odłożony tego samego dnia (`wiki/log.md:580`); dźwignie kernelowe idą teraz do duetu llama.cpp. Zdanie „vLLM i SGLang na RDNA3 są wolniejsze od Turbo (29–47 vs 45,9 t/s)” (RAPORT.md:13) mówi tylko o kernelach; ich przewagą są algorytmy serwera (`vllm-sglang.md:84`), i tego się uczymy.
+- **vLLM / SGLang jako serwer (nasz odpowiednik: topka na :8080 i proxy Enigmy):**
+  - Cache prefiksu dla hybrydy GDN: vLLM trzyma stan na granicach bloków i dodatkowo **w miejscu, gdzie poprzednie zapytanie z tym prefiksem się skończyło** (`--enable-mamba-shared-prefix-checkpoint`, punkt zapisany w trakcie prefillu bez osobnego przebiegu, `checkpoint.py:21-60`); SGLang robi copy-on-write stanu, pamięta punkt rozwidlenia i co 256 tokenów dekodu zapisuje stan (`mamba_track_interval`) (`vllm-sglang.md:45-48`).
+  - U nas: checkpoint stanu Qwena kosztuje ~94–104 ms × 2 na prompt (`STAN-PRAC.md:46`), a obce zapytanie wyrzucało cache agenta, aż dodaliśmy `CACHE_SHARE_MIN=1024` (8,0 → 1,6 s). Punkt rozwidlenia i zapis co 256 tok. to gotowe odpowiedzi na edycję ostatniej wiadomości i retry agenta (TTFT wielu tur).
+- **ExLlamaV3 / TensorRT-LLM:** poza kernelami — TRT-LLM ma „overlap scheduler” (host szykuje krok n+1, gdy GPU liczy n), SpeculationGate (wyłącza spekulację, gdy akceptacja spada) i osobne grafy dla greedy / temperatury / pełnego próbkowania (`exllama-tensorrt.md:37-49`). ExLlamaV3 trzyma punkty kontrolne stanu GDN w RAM i na dysku i wyłącza grafy na ROCm (węzeł grafu HIP nie startuje szybciej od zwykłego kernela, +2 MB na każde łatanie, `exllama-tensorrt.md:22-31`) — zgodne z naszym pomiarem ~3 µs na granicę kernela w grafie HIP ([[hip-graph-narzut]]).
+- **Sprzeczność do zapamiętania:** port f16 GEMM prefillu ExLlamaV3 na XTX deklaruje ~1180–1200 t/s, a nasz f16 GEMM WMMA w Turbo przegrał o 31% (`wiki/log.md:562`); liczba portu nie jest naszym pomiarem. PR-y RDNA3 #547–549 dalej otwarte (API GitHub, 2026-11-24).
+- **hipfire / Strata / TensorFold / Lemonade:** hipfire #989 (weryfikacja WMMA split-K na gfx1100) scalony 2026-10-26, wydanie v0.4.7 (2026-11-15). Lemonade to nie „reszta bez XTX”, tylko najbliższy odpowiednik aplikacji Enigma: tier wsparcia backendów, paczki ROCm per rodzina gfx, nocny dashboard regresji forków ([[lemonade]]). hipfire sprawdza poprawność testem jakości, nie bit w bit — inna polityka niż nasza ([[2026-11-05-tylko-bezstratne]]).
+- **Lekcja:** research silników ocenia też serwer, cache, politykę spekulacji i dystrybucję, a nie tylko kernele dla jednej karty.
 
 ## Powiązane
 - [[enigma-turbo-gemini-2026-11-20]]

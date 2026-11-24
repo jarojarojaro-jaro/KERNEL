@@ -77,6 +77,14 @@ Taki zysk daje sam model, bez żadnego kernela.
 
 **Zmiana modelu na produkcji (topka, Enigma) to decyzja właściciela.** Test: K-120 w [[KOLEJKA-TESTOW]].
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+Blog „Harness adapters” (huggingface.co/blog/harness-hub/harness-adapters, 2026-11-06) uczy więcej niż „czy adapter pomoże w omp”. Trzy warstwy mają u nas odpowiedniki.
+- **Serwowanie: jedna baza, wiele adapterów.** Jeden vLLM trzyma wagi bazowe raz, a każde żądanie wybiera adapter po nazwie. Nowy adapter ładuje się obok starego bez przerwy, a 9 checkpointów oceniono w 1 zadaniu za ~5 USD zamiast ~90 USD po scaleniu. llama-server ma to samo: pole `lora` per żądanie i `/lora-adapters` (`~/praca/llama-duo/tools/server/README.md:605,1201-1236`). Ostrzeżenie: żądania z innym zestawem LoRA nie idą w jednym batchu. Topka i Enigma mogłyby więc trzymać jeden plik Qwena i adapter na harness, bez drugiej kopii 16 GB.
+- **Dane z sesji agentów (Repo2RLEnv):** zadania wybierają same reguły, bez LLM. `repair` to sprawdzenie, które padło, a po edycjach przeszło bez nowej instalacji. Testy pisane przez LLM zostają tylko wtedy, gdy przechodzą na oryginale dwa razy, padają na zaślepce i łapią wstrzyknięte błędy (mutacje). Mamy tysiące tur omp w `~/kernel/archiwum`, więc ta sama droga daje nasze zadania RL i nasz zestaw testów agenta.
+- **Bramka agenta (safeagents):** proxy między harnessem a modelem sprawdza każde wywołanie narzędzia regułami w 10–20 ms. Blokuje edycję testów, czytanie gradera, `curl` do hosta spoza rozmowy i `echo $HF_TOKEN`. Zablokowana próba dostaje 0, a złapali ją już w kroku 0. U nas bramki przeglądu ([[metody/_hub|metody]]) działają po fakcie, a w przypadku Enigma Turbo agent zrobił „zielone” testy na własnych założeniach ([[enigma-turbo-gemini-2026-11-20]]). Reguły „nie ruszaj testów ani bramki” można sprawdzać automatycznie, zanim wywołanie się wykona.
+- **Wniosek o tokenach:** adapter bez myślenia = baza z `xhigh` przy 3,5–8 × mniej tokenów. Dla użytkownika liczy się czas zadania, czyli tokeny / t/s, a Enigma mierzy tylko t/s.
+
 ## Powiązane
 - [[peft-lora-warianty]]
 - [[trening-llm-mapa]]

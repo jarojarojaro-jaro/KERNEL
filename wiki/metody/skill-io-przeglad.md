@@ -55,6 +55,15 @@ status: aktualne
 
 Testy NVIDIA w kolejce: K-112…K-115.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+Wcześniej skill był oceniany tylko jako metoda dla labu. To także gotowy wzór dla funkcji „optymalizuj” w aplikacji Enigma, a ta jest od niego słabsza w trzech miejscach.
+- **Flaga pętli i błędów w pomiarze:** ich `bench.py` przy każdym pomiarze oznacza `LOOP` (powtórzone fragmenty), `REQ_FAIL`, `ON_BATTERY` i `MEM_CAP` (`scripts/bench.py:27,100,192`; `SKILL.md:100`). Benchmark Enigmy unika pętli tylko doborem zadań (`app/engine/src/server/bench.ts:65,169`). Wyniku pod kątem pętli ani pracy na baterii nie sprawdza, choć laptop to częsty komputer klienta ([[lekcja-enigma-apu-jako-karta]]).
+- **Statystyka:** Enigma robi 2 powtórzenia, medianę i próg szumu z jednej powtórki bazy (`CONTRACT.md`, „Optymalizacja”). Skill przyjmuje „B szybsze” dopiero wtedy, gdy bootstrapowy przedział 95% ilorazu median jest > 1 (`references/methodology.md:23`).
+- **Sufit jako liczba dla użytkownika:** Enigma już zna przepustowość RAM i karty (`src/server/hw/ram.ts:60-89`), ale pokazuje tylko „baseline → teraz”. Zdanie „twoja karta działa na X% swojego sufitu” to ten sam pomysł co ich kolumna sufitu i uczciwa odpowiedź na pytanie klienta, czy da się szybciej.
+- **Forma:** to nie program, tylko skill dla agenta (SKILL.md + skrypty) do każdego sprzętu. Nasza wiedza z labu (sufity, dźwignie, pułapki) mogłaby wyjść do ludzi w tej samej formie.
+- **Bierzemy:** flagę pętli i baterii do `bench.ts`, bootstrap CI do `decide()` i procent sufitu w UI. Koszt bez GPU: ok. 1 dzień.
+
 ## Powiązane
 - [[metody/_hub|metody]]
 - [[mapa-inferencji-roadmap]]

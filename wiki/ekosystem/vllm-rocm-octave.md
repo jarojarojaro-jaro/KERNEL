@@ -15,6 +15,13 @@ status: aktualne
 - **Odrzucone 2026-11-05**: inny kwant KV zmienia wyjście ([[2026-11-05-tylko-bezstratne]]).
 - Z tego samego wydania bezstratne: TRITON_ATTN +18% na RDNA3 z 32-bitowego adresowania buforów (PR #60084) → mikroeksperyment buffer loads w [[fattn-kvq]].
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+Wiersz w [[ZRODLA]] zamknął vLLM 0.33 zdaniem „Octave i FLy stratne”. Dla labu to prawda, ale vLLM to też drugi silnik serwujący na naszej karcie, więc warto patrzeć warstwa po warstwie (63c:203-227, 63d:299-313):
+- **Silnik na XTX:** vLLM 0.33 ma ROCm 10.0 domyślnie (#58761), koła ROCm budowane 4–7× szybciej (#63105) i natywny KV 3/4-bit dla gfx1100. Autorzy Octave testowali na 4× XTX z Qwen3.8-27B, czyli na tej samej karcie i modelu co nasza topka. Nasze llama.cpp nie ma tak dużej pojemności KV na 24 GB.
+- **Metoda kwantyzacji:** skalę wybrali po końcowej metryce (NLL przy 380k), a nie po błędzie najmniejszych kwadratów. Skala „least-squares” była 2–3× gorsza w NLL. Ta sama lekcja co nasza bramka KLD ([[bramka-kld-kanarki]]): mały błąd rekonstrukcji to jeszcze nie jakość.
+- **Produkt:** w vLLM FLy (#53987) i Octave to przełączniki opt-in z opisaną ceną jakości. Enigma może kiedyś pokazać użytkownikowi podobny „tryb szybki” (63d E5: +5…8% t/s przy T=1 `[SZACUNEK]`), ale tylko jako jawny wybór i z bramką jakości PL. W labie dalej obowiązuje [[2026-11-05-tylko-bezstratne]].
+- **Porządek w konfiguracji:** flaga `--monokernel` zastąpiła zmienną `VLLM_ROCM_MONO_DECODE`. U nas topkę sterują zmienne środowiska (16 `export LLAMA_*`/`GGML_*` w `qwen-opt/run-topka.sh`). To wzór na czas, gdy przełącznik wchodzi do produktu.
+
 ## Powiązane
 - [[vllm-monokernel]]
 - [[fattn-kvq]]

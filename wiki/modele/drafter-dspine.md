@@ -1,7 +1,7 @@
 ---
 typ: model
 tags: [modele, spekulacja, drafter]
-aktualizacja: 2026-11-09
+aktualizacja: 2026-11-24
 zrodlo: ~/KERNEL/product/research/21a-dspine.md:13-38,39-77,307-321; ~/KERNEL/product/research/69a-dspine-27b.md:16-37,45-57,74-86,100-141,185-213; https://arxiv.org/abs/2609.36173; https://huggingface.co/tencent/Qwen3-8B-DSpine-b16; https://huggingface.co/tencent/Qwen3.8-27B-DSpine-b16; https://github.com/Ajay9o9/llama.cpp/tree/dspine
 status: aktualne
 model: drafter-dspine
@@ -24,6 +24,13 @@ dowod: ~/KERNEL/product/research/69a-dspine-27b.md
 - **Twierdzenia vs fakty:** „28.2 t/s” = AR **bez MTP** na 3090 (~31% wolniej niż nasze 40.93); „1.75× nad DFlash2” = 90.1/51.7 przy T=0, DFlash2 blok 8 na wolnej ścieżce MMQ; „3.3×” = SGLang przy c=8; „94–132 t/s” nie ma w źródłach. Krok DSpine na 3090 = 1.68× AR.
 - **Model XTX:** krok 37.5–43.5 ms przy 2k ⇒ wymagane τ 1.39–1.62× MTP4. Per klasa (2k): en-code +9…+57%, pl-kod −14…+33%, en-tech −45…−15%, en-chat −48…−23%, pl-tech −58…−30%, pl-proza −67…−40%; mieszanka agentowa +0…+4%. Poza oknem 8192 τ spada (v1: −35% przy 13k).
 - **Następny krok:** T1 (fork pod HIP, pobranie 1.26 GB), decyzja w [[raport-69-synteza]].
+
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+- **Stan:** wpis „tylko SGLang” z 07.11 jest nieaktualny: port llama.cpp Ajay9o9 `d493f84` (1 commit, +323 linie, sam graf). Decyzja 09.11: odpuszczony, bo na 24 GB obcina kontekst do ~64k zamiast 245–262k ([[2026-11-09-decyzje-runda-69]]); test T1 nieplanowany.
+- **Czego uczy o serwowaniu:** nagłówek „3,3×” to SGLang przy współbieżności 8, BF16, FA3 (69a:24-31), a nie batch 1. Liczba z serwera wielu klientów nie mówi nic o czacie jednej osoby na XTX; przy każdym źródle sprawdzamy c (liczbę równoległych żądań).
+- **Czego uczy o budowie draftera:** SWA 8192 we wszystkich 5 warstwach zmniejsza KV draftu z ~1,18 GB do ~47 MB (69a:48-53). To wzór dla każdego naszego draftera i dla katalogu Enigmy: na 24 GB o wyborze draftera decyduje pamięć na kontekst, nie samo τ.
+- **Czego uczy o treningu (nasz cel nauki):** kod treningu jest w SpecForge #1038, dane 27B nieujawnione, dane 8B praktycznie tylko EN (~42% matematyki) → PL proza −67…−40% wobec MTP4. Własny drafter PL wymaga własnych danych PL; to temat w [[trening-llm-mapa]] („polski fine-tune DSpine”).
+- Nagłówki autorów i „+27,8%” już rozebrane w [[lekcja-naglowki-drafterow]] i [[lekcja-akceptacja-h100-nie-przenosi-sie]].
 
 ## Powiązane
 - [[modele/_hub|Modele]]

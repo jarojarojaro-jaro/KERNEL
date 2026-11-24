@@ -19,6 +19,15 @@ model: qwen3-8-27b
 - U nas: Qwen3.8 = IMROPE, więc llama.cpp nie robi `seq_add`/shift (`get_can_shift()==false`) i **repos odpada**. Sam drop (`seq_rm`) działa tylko w 16 warstwach atencji, a stan GDN zachowuje informację z usuniętych tokenów.
 - Koszt wdrożenia wysoki: cache kluczowany historią operacji, spany wiadomości, KV MTP, checkpointy. Najpierw tani test sufitu na transkryptach omp (T5 w raporcie 60d).
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+
+Werdykt „repos odpada przy IMROPE, drop drogi” dotyczył tylko silnika. Praca uczy też czegoś o harnessie i serwerze (dane z `product/research/60d-serving-kernels-cache.md`, §3.3 i tabela liczb):
+- **Mniej kontekstu = lepszy agent, nie tylko tańszy.** AKV z polityką „zostaw 12 ostatnich wyników narzędzi i całe rozumowanie” podniosło średnią jakość względem pełnego kontekstu o 1,3–2,1 pkt na trzech modelach (MiniMax-M2.7 52,4 → 53,7, GPT-OSS-120B 51,0 → 53,1, MiroThinker 44,1 → 45,8; Tab. 1). Sama polityka żyje w harnessie, a omp to nasz harness, więc można ją sprawdzić na transkryptach bez zmian w silniku (T5).
+- **Wariant tekstowy był w pracy osobną bazą** („Text Eng.”, AKV −21,9% kosztu względem niej). Usunięcie starych wyników narzędzi z tekstu łamie prefiks, więc u nas kosztuje pełny prefill: Qwen 53k to ~61,5 s (`STAN-PRAC.md:47`). Sprzątanie ma więc sens rzadko, przy progu (jak repos AKV przy 96K), a nie co turę. Za to działa także dla hybrydy GDN, gdzie drop w KV nie działa.
+- **Model może sam sprzątać kontekst** (narzędzie `drop_context`, tylko stare wyniki narzędzi, pierwsze 2 wiadomości chronione). To pomysł na narzędzie omp, nie na kernel.
+- **Serwer:** AKV kluczuje cache historią operacji (ten sam tekst ≠ ten sam KV). Nasz llama-server ignoruje `prompt_cache_key` wysyłany przez omp (60d, tabela 3.2), więc nie wie nawet, która sesja jest która. To tańsza luka do zamknięcia niż drop KV.
+- **Bierzemy:** test polityki „12 ostatnich wyników narzędzi” na transkryptach omp (jakość i tokeny) oraz obsługę `prompt_cache_key` w wyborze slotu. Repos i drop w KV nadal odpadają.
+
 ## Powiązane
 - [[ksztalt-ruchu-agentowego]]
 - [[pamiec-stanu-gdn]]

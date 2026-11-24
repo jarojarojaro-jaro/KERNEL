@@ -16,6 +16,13 @@ status: aktualne
 - Wyniki negatywne: split-K po D w QK ±0.4%; adres liczony przez pół warpa i rozgłaszany shuffle −2.4…−3.5%; zwarte mapowanie ogona 2 głów −6.3…−7.0%; FP8 dekodowane inline w pętli 196 vs 107 µs; PV rozbite na 3 iloczyny wolniejsze.
 - CPU KV offload dla gęstej atencji: 3.6 GB na krok przez PCIe ≈ 145 ms, odpada.
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość)
+Wiersz w [[ZRODLA]] streszczał tylko kernele (QSA, Pack-GQA48). 1Cat to jednak ta sama strategia co nasza: fork znanego silnika pod jedną niszową kartę („Make Volta Fast Again” vs nasza topka pod gfx1100). Różnica jest w tym, co dostaje użytkownik (66b:15-52, 140-170):
+- **Wydanie:** gotowy wheel, `docker/sm70_release/serve.sh` z flagami pod 27B i Flash-Next, 128 PR w release v1.5.2 i zmiana nazwy na 1Cat-LLM z obsługą GGUF, czyli fork stał się produktem. Nasz wyróżnik (silnik ROCm gfx1100) ma w Enigmie `distribution: local`, więc użytkownik AMD go nie dostaje ([[inference-stack]], punkt 4).
+- **Uczciwy opis:** release ma listę znanych ograniczeń (edycja ostatnich 10% promptu = pełne przeliczenie, +3.3 ms próbkowania, maks. 8 żądań przy 256K) i tabelę t/s według zbioru danych (HumanEval 619, MT-Bench 386, chiński 215). Słabe jest tylko to, że nagłówkowe 501 t/s liczono przy założonej akceptacji 70% ([[lekcja-tps-z-zalozonej-akceptacji]]). Enigma pokazuje jedną liczbę t/s, bez listy ograniczeń.
+- **Serwer dla hybryd (bezstratnie):** siatka stanu GDN, junction learning, migawka w dokładnej pozycji końca wiadomości wyliczonej z sond szablonu czatu i warstwa dyskowa przeżywająca restart ([[siatka-checkpointow-gdn]]). Topka ma checkpointy na wiadomościach użytkownika i `--cache-ram`, ale bez siatki i dysku. Enigma to aplikacja desktopowa, która się restartuje, więc dysk daje jej najwięcej (66b T5: tura po restarcie przy 50k ~55 s → ~2–4 s `[SZACUNEK]`).
+- **Offload KV do RAM:** zapis write-through w trakcie liczenia na osobnym strumieniu, osobna pula na stan GDN i eksmisja LRU/ARC. Funkcjonalnie to nasze `--cache-ram`, ale z jawnie opisaną polityką.
+
 ## Powiązane
 - [[tokenspeed]]
 - [[kv-raz-na-weryfikacje]]

@@ -23,7 +23,7 @@ K-131: MMVQ celu wykorzystuje 58% pasma na 3090 i 78% na 4080 SUPER, więc strum
 <!-- TABELE:START -->
 ## Wyniki z notatek (2)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-23); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-24); pełna tabela: [[najlepsze-wyniki]].
 
 | model | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

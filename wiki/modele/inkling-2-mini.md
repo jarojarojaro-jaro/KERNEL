@@ -1,7 +1,7 @@
 ---
 typ: model
 tags: [modele, moe, looped-transformer, thinking-machines, unsloth, telegram]
-aktualizacja: 2026-11-20
+aktualizacja: 2026-11-24
 zrodlo: thinkingmachines.ai/news/inkling-2-mini (2026-11-20), HF unsloth/Inkling-2-Mini-GGUF, mainline llama.cpp 5f83714 (src/models/inkling2.cpp); link od właściciela (Telegram 23:29)
 status: aktualne
 model: inkling-2-mini
@@ -103,10 +103,16 @@ W kodowaniu agentowym jest lepszy (DeepSWE 48,2 vs 42,2%), więc na XTX powinien
   - na Apple to samo: oMLX 0.8.2 dodał Inkling 2 Mini, liczb brak.
 - **Checkpoint `TML-d24-varloop-research`:** liczbę przejść można ustawić (1–3+). To inny model, nie produkcja, ale dobry do nauki o kompromisie jakość/prędkość (dział `llm/`).
 
+## Przegląd 2026-11-24 (nauka, nie tylko prędkość): punkty LocalMaxxing a nasze wyniki
+- **Wiersz „nasze XTX z DSpark po K-134” jest zamknięty, ale inaczej, niż zakładał:** Strata 0.1.66 z DSpark na XTX: T=0,7 60,6 t/s, kopie 100,6 / 109,6, potem page fault przy długich promptach (K-134). Unsloth llama.cpp z DSpark n7: T=0,7 31,1 t/s, nasz r14 23,6 (K-138, 2026-11-24). Najlepszy wynik dała **Maya ik2 bez DSpark** (lookup): AtomicChat natywnie T=0,7 113,2 t/s, długi 2k 107,1 (`KOLEJKA-TESTOW.md:50`, [[project-maya]]).
+- **Lekcja 1:** liczby z DSpark na LocalMaxxing (3090 290,8 vLLM NVFP4 n7, 5090 440,5 sglang n8) to inne silniki, inna precyzja i nieznana temperatura; nasz czat jest przy T=0,7, gdzie DSpark w llama.cpp daje 24–31 t/s. Punkt odniesienia porównujemy tylko przy tej samej T, tym samym zadaniu i tym samym pliku.
+- **Lekcja 2:** wygrał silnik z małą liczbą uruchomień kerneli (Maya), nie lepszy drafter — zgodnie z mapą kosztów z 21.11 („batch 1 ogranicza liczba kerneli, nie pasmo”). Szybciej było wziąć cudzy, działający silnik i dopisać kernele (K-137: +8,6% przy T=0,7), niż ścigać go w llama.cpp (r14 58,2 t/s plain wobec Mai 93,6 t/s plain na LocalMaxxing, ×1,6).
+- **Lekcja 3 (pomiar publiczny):** LocalMaxxing rozróżnia „verified” i nie; R9700 81,8 to wpis niezweryfikowany. Do porównań bierzemy tylko verified albo własny pomiar tym samym plikiem.
+
 <!-- TABELE:START -->
 ## Wyniki z notatek (4)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-23); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-24); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|
