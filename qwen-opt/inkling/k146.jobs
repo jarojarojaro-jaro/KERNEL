@@ -1,0 +1,4 @@
+# K-146 drafter only for greedy
+k146-par|600|~/k134|~/k134/k146.sh parity
+k146-ab|900|~/k134|~/k134/k146.sh run prod k146-t0 k146-t0 prod
+k146-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -43,6 +43,15 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni
 - **wynik 2026-11-24 14:30 (XTX, Maya 1.1.75 port + hipx14, AtomicChat, CLI 128 tokenów greedy, IK2_DEPTH):** głębokość 0 / 8k / 32k / 128k: **KV q4 112,6 / 101,1 / 92,8 / 70,2 t/s**, KV f16 112,6 / 96,9 / 87,7 / 63,4. q4 szybsze od f16 o 4–11% (mniej bajtów), spadek przy 128k −38% (q4) / −44% (f16). Kandydat: atencja na długim kontekście (8 wizyt globalnych) — przy 128k ok. 5,4 ms/token więcej niż przy 0.
 
+### K-145 · Maya: kontekst draftera zwykłych kroków zapisywany partią (`IK2_K_LAZYCTX`) — podatek draftera
+- data: 2026-11-24 (K-139: drafter wczytany kosztuje −4% na każdym kroku)
+- **wynik 2026-11-24 15:21–15:25 (XTX, gałąź `k175-lazy` e106fe7, AtomicChat, KV q4, ABAB):** odpowiedzi identyczne (11/11); DSpark z kontrolerem T=0,7 **100,7 / 100,6 → 102,7 / 102,6 (+2,0%)**, Q1 157,9 bez zmian, L2k 103,9 / 102,9 → 103,4 / 103,1; lookup + drafter wczytany T=0,7 100,7 / 100,8 → 102,7 / 103,7. Podatek zmniejszony o połowę, ale DSpark przy T=0,7 nadal poniżej samego lookupu (112,4).
+
+### K-146 · Maya: drafter tylko dla zapytań greedy (`IK2_K_DRAFT_T0`), przy T>0 lookup bez kontekstu draftera
+- data: 2026-11-24 (K-139: DSpark +24% przy T=0, −11% przy T=0,7)
+- test: `qwen-opt/inkling/k146.sh` ABBA prod vs k175-lazy z `IK2_K_LAZYCTX=1 IK2_K_DRAFT_T0=1`; parytet greedy
+- stan: w kolejce 2026-11-24
+
 ### K-144 · Maya: szerokie okna lookupu (GodGMN `IK2_SUFFIX`, do 512) i `IK2_SLOT_KEEP` (alesha #11)
 - test (≤10 min): kopia/edycja kodu i proza: nasz lookup (okno ≤8) vs binarka GodGMN z `IK2_SUFFIX=128`; rozmowa 30k + boczne żądanie 2k + powrót (czas wznowienia)
 - oczekiwany zysk: kopie ×5–9 (Victor HTTP 99 → 939 t/s), powrót do rozmowy ~10 s → <0,2 s; proza −8–13% bez kontrolera, więc tylko z SpecCtl
