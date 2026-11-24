@@ -864,6 +864,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (nie wydajność)
 - zwiad 2026-11-14: XTX top verified na LocalMaxxing nadal 97,2 t/s (llama.cpp IQ3_S MTP); szacunek topki w ich warunkach ~147 ([[zwiad-2026-11-14]])
+- **wynik 2026-11-24 14:36 (XTX, produkcja Qwen3.8-27B Uncensored, warunki LocalMaxxing: kanoniczne prompty, T=0, 320 tok., mediana 3):** konfiguracja produkcyjna (lookup W16) reasoning-v1 **139,4** t/s, code-v1 **123,5**; bez lookupu (`LLAMA_SPEC_LOOKUP=0`, ramię do publikacji) 149,4 / 122,0. Akceptacja draftu ~75% (reasoning), ~58% (code). Publikacja nadal wstrzymana (decyzja właściciela).
 
 ### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
 - data: 2026-10-19 (21h)
@@ -873,6 +874,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: walidacja fabryki, 0 t/s
 - ryzyko karty: brak
 - priorytet: niski (proces)
+- 2026-11-24 14:37: pierwsze uruchomienie odrzucone przez fabrykę (port 18794 poza zakresem fabryki 18434–18499; skrypt poprawiony na 18450, uruchomione ponownie).
 
 ### K-061 · Tryb wielu użytkowników na NVIDIA: naprawić start `-np 4` z MTP (`failed to create context`), potem k zależne od liczby klientów (`K_BY_B`)
 - data: 2026-10-21 (raport 56)
@@ -981,6 +983,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: ~2× vs Qwen27B na XTX, ale to zmiana modelu
 - ryzyko karty: temperatury (prefill 160–262k: junction 94 °C, 286 W przed eco)
 - priorytet: niski (inny model)
+- **wynik 2026-11-24 14:38–14:43 (XTX, Flint, KV q4_0, PM4=0):** igła przy 150k i 64k znaleziona w obu buildach (obecny i bazowy upstream+#30928), odpowiedź kończy się `stop`, sekret także w rozumowaniu; dekod obecny 82,0 / 89,0 t/s vs bazowy 35,3 / 49,2 (×2,3 / ×1,8). Wcześniejsza pusta odpowiedź przy 150k się nie powtarza → test igły zaliczony; Flint może wrócić do rozważań katalogu (jakość osobno). Ramię q8_0 pominięte (zasada KV ≤ q6).
 
 ### K-074 · OrcaCyber-Nano na XTX z drafterem DFlash2 (dotąd tylko 3090) i E1 RSR-27B vs Qwen (TB 2.1, omp-bench-20)
 - data: 2026-10-19 / 2026-10-21
@@ -990,6 +993,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: wiedza o innych modelach; 0 t/s dla produkcji
 - ryzyko karty: VRAM (Orca 15,7 + 2,1 GB przy 262k)
 - priorytet: niski (inne modele)
+- **wynik 2026-11-24 14:44–14:59 (XTX, OrcaCyber-Nano 15,7G, fork produkcyjny `~/llama-opt`, KV q4_0, PM4=0, xbench, kolejność none / MTP / DFlash / DFlash / MTP):** bez zgadywania Q4 43,7, T=0,7 43,7, L2k 42,4, L8k 41,3; **MTP n4** Q4 144,1–145,0, T=0,7 61,0–63,0, L2k 129,9–130,5, L8k 129,3–129,4 (akceptacja 0,91–0,92); **DFlash2 n6** Q4 194,8–196,3 (+35%), T=0,7 68,5–68,6 (+10%), L2k 175,8–177,2 (+36%), L8k 152,0–153,5 (+18%), akceptacja 0,85–0,96; krótkie Q2/Q3 DFlash wolniejszy (81–92 vs 96–103). Prefill z drafterem DFlash −10…−20% (762–877 vs 816–930). Wniosek: na XTX DFlash2 bije MTP dla Orci (wcześniej mierzone tylko na 3090). Połowa E1 (RSR-27B) czeka na budżet.
 
 ### K-075 · Drzewo weryfikacji MTP na hybrydzie GDN (forma WY, maska przodków)
 - data: 2026-10-20 (24s), 2026-11-07 (66d C)
