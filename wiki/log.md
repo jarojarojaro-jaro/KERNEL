@@ -773,3 +773,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] produkcja | topki per model i karta; czat :8080 zawsze z modelu ACTIVE; decyzje: bez pobierania modeli, bramka KLD (K-007)
 - `topki/xtx/{qwen-uncensored,qwen,bonsai,inkling}.sh`, `topka-start.sh`, `topka-stop.sh`; keeper, chat8080, topka-restart, run-jobs (podmiana atomowa) i @reboot przez jedno wejście; keeper ponownie uruchomiony.
 - K-170, K-172 zamknięte decyzją JARO.
+
+## [2026-11-26] kolejka | Vast nvq: 3090 i 5060 Ti wynajęte (5060 Ti pierwszy host odrzucony: limit mocy 150/180 W); K-113 XTX; zamknięte K-119, K-126, K-107, K-024, K-057, K-176 (do K-179); czeka 36

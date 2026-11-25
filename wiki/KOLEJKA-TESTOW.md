@@ -32,12 +32,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - plan: po zakończeniu K-176 i K-171 (używają `maya-atomic.json` jako bazy) podmienić konfigurację, kopia `maya-atomic.prev.json`; potem jedno wall.py kontrolne
 
 - **2026-11-25:** K-176 (K-148 `both`) też przeszedł bramkę (czat −0,4…−0,5%, parytet 11/11, edycja +14,2%); obie zmiany połączone w K-179 (`wt-k179` 1f11609e, w kolejce). Wdrażamy zwycięzcę K-179, a gdy nie przejdzie, sam K-158g.
-### K-176 · Wdrożenie w Mai: K-148 `both` (szerokie okno sufiksu, edycja kodu +14,2%)
-- data: 2026-11-25
-- test: wall.py `pl` T=0 / T=0,7 prod vs `wt-k148` z SFXBLK=32 SFXRG=16, bramka −2%; potem `maya-atomic.json` → binarka k148
-- czas karty: ok. 5 min
-- priorytet: wysoki
-
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
@@ -117,18 +111,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: wysoki (odblokowuje największy bezstratny decode)
 
 - **decyzja JARO 2026-11-26:** zgoda ([[2026-11-26-bramka-kld]]): zmiany zmieniające md5 wchodzą po bramce KLD + wymuszanie tokenów + wall.py −2%. Następny krok: narzędzie bramki i pierwsze użycie na K-006 i K-017.
-### K-119 · SenseNova-Loop-9B: pobrać i sprawdzić, jak naprawdę działa (jakość, zachowanie, prędkość), bez optymalizacji
-- data: 2026-11-17
-- **cel (właściciel 2026-11-17 18:17):** „nie wszystko musimy optymalizować, wysłałem, żebyśmy pamiętali, pobrali i przetestowali, jak to rzeczywiście wygląda”. Najpierw zwykły test modelu: odpowiedzi PL/EN, kod, narzędzia, długi kontekst, obraz. Prędkość mierzymy przy okazji, bez kerneli
-- źródło: [[sensenova-loop-9b]] (sufit bez spekulacji ~2,1 × Qwen3.8-27B: 5060 Ti 58 vs 28 t/s, 3060 47 vs 22; jakość wg producenta NL2Repo 41,36 vs 44,60, AIDABench 65,31 vs 65,01); llama.cpp #31571 otwarte, łatany build AtomicChat (GGUF Preview)
-- hipoteza: na 12–16 GB Loop-9B Q4_K_M (~5,3 GB) z KV q4_0 przy 128–256K jest szybszy niż obecne przepisy (5060 Ti 51 t/s z GSQ IQ3_XXS + MTP; 3060 Bonsai 58 t/s) przy jakości ≥ 90% Qwen3.8-27B w naszej bramce (EvalPlus HE+, jakość-mini)
-- test: najprościej, czym działa dziś: oficjalne AWQ 4-bit (~4,9 GB) w SGLang (PR #47281) albo vLLM na wynajętej karcie ≥ 16 GB z hostguardem, albo GGUF Preview z łatanym llama.cpp, gdy obsługa trafi do upstream. Sprawdzić: (1) ręczny panel 10 promptów PL/EN (rozmowa, kod, narzędzia, obraz) z wyjściami w notatce; (2) jakość-mini + EvalPlus HE+ vs Qwen3.8-27B (92,7 / 87,9%); (3) igła 128k; (4) t/s i % sufitu przy okazji. Wagi są gated na HF (trzeba zaakceptować warunki na koncie)
-- miara: t/s i % sufitu, HE+ i jakość-mini vs 92,7 / 87,9% (Qwen3.8-27B Uncensored)
-- zysk: Enigma 8–16 GB: do ~2 × dekodu w zasięgu sufitu, kontekst 256K w 12 GB [INFERENCE]; zmiana modelu = decyzja właściciela
-- ryzyko karty: brak (wynajem)
-- zegar (2026-11-18): znaczniki etapów od pobrania do tabeli „zmierzone vs sufit”, wiersz „czas: ściana / GPU / najwolniejszy etap” ([[lekcja-czas-optymalizacji-to-metryka]])
-- priorytet: średni (prośba właściciela; koszt wynajmu ~$0,10–0,20, czeka na kredyt)
-
 ### K-120 · Qwen3.8-27B-pi-adapted (LoRA RL pod pi) w naszym stosie: czy pomaga w omp, ile kosztuje w dekodzie, co z MTP
 - data: 2026-11-18
 - źródło: [[qwen38-27b-pi-adapter]] (pod pi: SWE-bench Pro hard 51 29,4 → 62,7%, Terminal-Bench 2.1 39,5 → 55,8%, −55…62% wywołań narzędzi); adapter GGUF F16 dla llama.cpp (`--lora`)
@@ -143,6 +125,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zegar (2026-11-18): znaczniki etapów od pobrania do tabeli „zmierzone vs sufit”, wiersz „czas: ściana / GPU / najwolniejszy etap” ([[lekcja-czas-optymalizacji-to-metryka]])
 - priorytet: średni
 
+- **2026-11-26:** adapter 0,64 GB (mniej niż 2 GB), ale decyzja „pracuj na tych co masz”; czeka na wyraźne „tak” JARO.
 ### K-121 · Adapter GA z wyścigami (Rohan Arun) do naszych sweepów wariantów: test-backend-ops perf na XTX i na NVIDIA (kernele draftu K-116)
 - data: 2026-11-18
 - źródło: [[ga-racing-rohanarun]] (`Auto-research-agent` @ `9367733`, eliminacja na log-ratio do mediany żywych, bramka rel < 0,997 i CI < 1 na świeżych danych, `pending` → czarna lista); demo działa tu na CPU (1,4 s, syntetyczne)
@@ -175,16 +158,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (decyzja właściciela: budżet agent-godzin i GPU)
 
 - **2026-11-25:** bez paczki: wymaga budżetu (godziny agentów + GPU) i najpierw K-116 (nsys pętli draftu NVIDIA, Vast 5060 Ti). Decyzja JARO.
-### K-126 · Enigma Windows NVIDIA: wydanie z CUDA 13.4 dla Blackwell (sm_120) zamiast CUDA 12.4
-- data: 2026-11-19
-- źródło: audyt Gemini (C.1.4b) potwierdzony: `app/engine/data/engines.json:155-182` pinuje `win-cuda-12.4`; release b11856 ma `llama-b11856-bin-win-cuda-13.4-x64.zip` (sha256 `06478e0f…`) i `cudart-…-13.4` (`738f8c25…`); `baselineEngineFor` (`engine.ts:88-90`) bierze pierwszy wpis i nie patrzy na architekturę GPU; JIT z PTX: Strata 173 s → 0,34 s ([[strata]])
-- test: CPU: wpis `upstream-windows-x64-cuda13` z `gpuArchs: [sm_120]`, wybór po architekturze w `baselineEngineFor`, rozmiary z API GitHub, testy `bun test`; potem pomiar pierwszej odpowiedzi na Windows z kartą 50xx (nie mamy: Vast nie ma Windows) [INFERENCE: CUDA 13 wymaga sterownika ≥ R580, sprawdzać przy wykrywaniu]
-- miara: czas do pierwszego tokena przy pierwszym starcie, t/s 12.4 vs 13.4
-- zysk: najpopularniejsze karty (RTX 5070 6,15% Steam) bez minut JIT przy pierwszym starcie
-- ryzyko karty: brak
-- priorytet: średni
-- wynik 2026-11-20: zrobione po stronie CPU. Nowy wpis `upstream-windows-x64-cuda13` w `app/engine/data/engines.json` (b11856, `gpuArchs: [sm_120]`, `minDriver: 580`; rozmiary i sha256 z API GitHub: zip 159 939 681 B `06478e0f…`, cudart 423 535 356 B `738f8c25…`). `baselineEngineFor` (`app/engine/src/server/engine.ts:92-98`) wybiera wpis pod architekturę karty, gdy sterownik jest znany i ≥ 580, w innym wypadku zostaje CUDA 12.4. Testy w `app/engine/test/engine.test.ts:79-83` (sm_120 + 581 → 13.4; sterownik 576, brak sterownika albo sm_86 → 12.4); `bun test` 208 pass. Zostaje pomiar pierwszej odpowiedzi na Windows z kartą 50xx.
-
 ### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (sufit prefillu 3090 z INT8 MMQ 2737 t/s przy 4k = 2,3 × XTX; prefillu NVIDIA nigdy nie mierzyliśmy); [[skill-io-metodyka]] (narzędzia CUDA)
@@ -208,15 +181,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni
 - **bieg 2026-11-25 17:09 nieważny:** serwer testowy nie wstał (`Connection refused`), bo w tym czasie plik modelu Qwen był skasowany (`~/models/orca`, pobrany ponownie 18:06). Ponownie w kolejce 2026-11-25 19:25.
 
-### K-107 · Dwie karty w jednym komputerze: XTX + RTX 5060 Ti (podział warstw `-sm layer` przez Vulkan albo dwa niezależne serwery dla roju agentów)
-- data: 2026-11-15
-- źródło: [[mapa-inferencji-roadmap]] (luki #3–#6, #10); plan z `hardware/rx-7900-xtx.md` §2 („do przetestowania”)
-- test: gdy 5060 Ti online w jaroserverai: (a) dwa serwery (XTX Qwen 27B + 5060 Ti LFM albo Qwen IQ3) i fan-out omp, ściana sesji; (b) Vulkan `-sm layer` Qwen 27B na 40 GB: decode/prefill vs sam XTX; ≤ 10 min na ramię
-- (c) dodane 2026-11-19 ([[zwiad-2026-11-19]]): prefill dzielony warstwami jak oMLX „Prefill Accelerator” (Qwen3.8-27B 64K 352 → 1879 t/s z 2 × A6000): 5060 Ti liczy pierwsze k warstw chunku promptu, XTX resztę i dekod; KV/stan GDN warstw k przesyłany przez PCIe; miara: fill 64k/255k t/s vs sam XTX (493 t/s przy 255k), md5 dekodu po fillu
-- zysk: (a) przepustowość roju agentów; (b) tylko pojemność (większy model), decode wolniejszy [SZACUNEK]; (c) prefill, jeśli udział warstw na 5060 Ti i koszt PCIe na to pozwolą [INFERENCE]; reguła dla Enigmy „kiedy druga karta pomaga”
-- ryzyko karty: brak (bez PM4 na Vulkan)
-- priorytet: średni (5060 Ti offline)
-
+- **wynik XTX 2026-11-25 21:35 (topka produkcji, port 18794):** skill-io bench.py: TTFT krótki 304,7 ms, dekod c1 145,4 t/s; długi 65 259 tok.: TTFT 83,2 s, prefill 784,8 t/s, dekod 118,7 t/s, igły 3/3. Część 5060 Ti / 3090 w paczce Vast nvq (2026-11-26).
 ### K-006 · Wpis „wspólny początek” (Maya #607) i chude checkpointy (stan GDN tylko na granicach wiadomości) zamiast kopii całej sesji w cache
 - data: 2026-11-05
 - źródło: [[wspolny-poczatek-promptu]], `R/63-SYNTEZA.md:85-86` (plan #6, #7), `R/63b-colibri-maya-delta.md` §6, `R/68c-dlugi-kontekst-gdn.md:143`
@@ -273,14 +238,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (jedyna duża dźwignia w kernelach, drogie i ryzykowne)
 
 - **2026-11-25:** PoC-A w kolejce (`k021.jobs`, `~/qwen-opt/klab/handoff/handoff.hip`): koszt przekazania między etapami w trwałej siatce vs osobne dispatche; KILL gdy > 0,3 µs albo < 30% zysku. PoC-B w forku: 1–2 tygodnie.
-### K-024 · Enigma ROCm na innych kartach AMD + autotune wariantu FA przy instalacji (gfx1101/1102/1151/1201)
-- data: 2026-11-09
-- źródło: `R/70-fa-d256-jak-to-zrobilismy.md:186` (#3)
-- test: wynajem kart AMD; `fa-d256` micro + md5 + bench przy głębokości na każdej architekturze; ~1 h wynajmu
-- zysk: RDNA3 gfx1101/1102: prefill przy głębokości +3…6%; gfx1151 nieznane; gfx1201 wymaga portu [INFERENCE]
-- ryzyko karty: brak (wynajem)
-- priorytet: średni (warunek sprzedaży Enigmy na inne Radeony)
-
 ### K-026 · Enigma: próg draftu `--spec-draft-p-min` {0; 0,5; 0,8} × n {1,2,4} dla MoE z `--n-cpu-moe` na kartach ≤ 16 GB
 - data: 2026-11-07 (66a A2)
 - źródło: [[prog-draftu-od-kosztu-wiersza]], `R/66-SYNTEZA.md` poz. 10
@@ -355,16 +312,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (mało zysku)
 
 - **ocena 2026-11-25:** cel `upstream-master` 6792507b7 (11-21): fork 110 plików (+21,5k/−1,2k); 3-way: 62 pliki czysto, 48 plików z 142 konfliktami (`~/qwen-opt/specprep/k056-conflicts.txt`); 2–4 dni + build + pełna bramka.
-### K-057 · Tryb „identyczne odpowiedzi” `LLAMA_SPEC_BITEXACT=1` jako opt-in (port gałęzi `batch-invariant` na topkę)
-- data: 2026-10-16 (raport 12)
-- status: **czeka na decyzję** (wdrożyć przełącznik, domyślnie wyłączony)
-- źródło: [[2026-10-16-bit-exact]], [[otwarte-decyzje-techniczne]] (`:14`), `STAN-PRAC.md` (BitExactSpec, `365af3e5e`)
-- test: XTX `validate.sh` (plain == MTP) + spec_sweep krótko i przy 27k; ≤ 10 min
-- zysk: ujemny (0% krótko, −9% przy ~27k); wartość: dowód bezstratności
-- ryzyko karty: brak
-- priorytet: niski (nie przyspiesza)
-
-- **ocena 2026-11-25:** port gałęzi bitexact koliduje już na pierwszym commicie (`c09ac6aab`, 6 kawałków w `mmvq.cu`, od bazy +2916 linii mmvq i +802 fattn-kvq); 1,5–3 dni + build, zysk prędkości ujemny. Czeka na decyzję JARO, czy tryb identycznych odpowiedzi jest potrzebny.
 ### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
 - data: 2026-10-19 (21h)
 - status: **czeka na decyzję**
@@ -450,6 +397,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-176 · Wdrożenie w Mai: K-148 `both` (szerokie okno sufiksu, edycja kodu +14,2%)
+- data: 2026-11-25
+- test: wall.py `pl` T=0 / T=0,7 prod vs `wt-k148` z SFXBLK=32 SFXRG=16, bramka −2%; potem `maya-atomic.json` → binarka k148
+- czas karty: ok. 5 min
+- priorytet: wysoki
+- **wynik 2026-11-25 21:42–21:45:** GATE PASS (czat T=0/T=0,7 −0,4…−0,5%, kod T=0 +3,0%), parytet IDENTICAL 11/11; scalone z K-158g w K-179.
+- przeniesione 2026-11-26: zmierzone, wchodzi przez K-179/K-177
 
 ### K-115 · Bramka igieł (K-109) na NVIDIA: 5060 Ti (IQ3_XXS, 196k) i 3090 (UD-Q4_K_XL, 245k) z przepisami Enigmy
 - data: 2026-11-17
@@ -1303,6 +1258,66 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-057 · Tryb „identyczne odpowiedzi” `LLAMA_SPEC_BITEXACT=1` jako opt-in (port gałęzi `batch-invariant` na topkę)
+- data: 2026-10-16 (raport 12)
+- status: **czeka na decyzję** (wdrożyć przełącznik, domyślnie wyłączony)
+- źródło: [[2026-10-16-bit-exact]], [[otwarte-decyzje-techniczne]] (`:14`), `STAN-PRAC.md` (BitExactSpec, `365af3e5e`)
+- test: XTX `validate.sh` (plain == MTP) + spec_sweep krótko i przy 27k; ≤ 10 min
+- zysk: ujemny (0% krótko, −9% przy ~27k); wartość: dowód bezstratności
+- ryzyko karty: brak
+- priorytet: niski (nie przyspiesza)
+
+- **ocena 2026-11-25:** port gałęzi bitexact koliduje już na pierwszym commicie (`c09ac6aab`, 6 kawałków w `mmvq.cu`, od bazy +2916 linii mmvq i +802 fattn-kvq); 1,5–3 dni + build, zysk prędkości ujemny. Czeka na decyzję JARO, czy tryb identycznych odpowiedzi jest potrzebny.
+- **2026-11-26:** po decyzji K-007 (bramka KLD) tryb bit-exact nie jest warunkiem wdrożeń; port 1,5–3 dni bez zysku prędkości.
+- przeniesione 2026-11-26: zbędne po K-007
+
+### K-024 · Enigma ROCm na innych kartach AMD + autotune wariantu FA przy instalacji (gfx1101/1102/1151/1201)
+- data: 2026-11-09
+- źródło: `R/70-fa-d256-jak-to-zrobilismy.md:186` (#3)
+- test: wynajem kart AMD; `fa-d256` micro + md5 + bench przy głębokości na każdej architekturze; ~1 h wynajmu
+- zysk: RDNA3 gfx1101/1102: prefill przy głębokości +3…6%; gfx1151 nieznane; gfx1201 wymaga portu [INFERENCE]
+- ryzyko karty: brak (wynajem)
+- priorytet: średni (warunek sprzedaży Enigmy na inne Radeony)
+- **2026-11-26:** wymaga innych kart AMD (gfx1101/1102/1201); mamy tylko XTX, a Vast nie ma ofert Radeonów.
+- przeniesione 2026-11-26: brak sprzętu
+
+### K-107 · Dwie karty w jednym komputerze: XTX + RTX 5060 Ti (podział warstw `-sm layer` przez Vulkan albo dwa niezależne serwery dla roju agentów)
+- data: 2026-11-15
+- źródło: [[mapa-inferencji-roadmap]] (luki #3–#6, #10); plan z `hardware/rx-7900-xtx.md` §2 („do przetestowania”)
+- test: gdy 5060 Ti online w jaroserverai: (a) dwa serwery (XTX Qwen 27B + 5060 Ti LFM albo Qwen IQ3) i fan-out omp, ściana sesji; (b) Vulkan `-sm layer` Qwen 27B na 40 GB: decode/prefill vs sam XTX; ≤ 10 min na ramię
+- (c) dodane 2026-11-19 ([[zwiad-2026-11-19]]): prefill dzielony warstwami jak oMLX „Prefill Accelerator” (Qwen3.8-27B 64K 352 → 1879 t/s z 2 × A6000): 5060 Ti liczy pierwsze k warstw chunku promptu, XTX resztę i dekod; KV/stan GDN warstw k przesyłany przez PCIe; miara: fill 64k/255k t/s vs sam XTX (493 t/s przy 255k), md5 dekodu po fillu
+- zysk: (a) przepustowość roju agentów; (b) tylko pojemność (większy model), decode wolniejszy [SZACUNEK]; (c) prefill, jeśli udział warstw na 5060 Ti i koszt PCIe na to pozwolą [INFERENCE]; reguła dla Enigmy „kiedy druga karta pomaga”
+- ryzyko karty: brak (bez PM4 na Vulkan)
+- priorytet: średni (5060 Ti offline)
+- **2026-11-26:** w jaroserverai nie ma RTX 5060 Ti (lspci: tylko Navi 31, 2026-11-25), więc test dwóch kart w jednym komputerze jest niewykonalny.
+- przeniesione 2026-11-26: brak sprzętu
+
+### K-126 · Enigma Windows NVIDIA: wydanie z CUDA 13.4 dla Blackwell (sm_120) zamiast CUDA 12.4
+- data: 2026-11-19
+- źródło: audyt Gemini (C.1.4b) potwierdzony: `app/engine/data/engines.json:155-182` pinuje `win-cuda-12.4`; release b11856 ma `llama-b11856-bin-win-cuda-13.4-x64.zip` (sha256 `06478e0f…`) i `cudart-…-13.4` (`738f8c25…`); `baselineEngineFor` (`engine.ts:88-90`) bierze pierwszy wpis i nie patrzy na architekturę GPU; JIT z PTX: Strata 173 s → 0,34 s ([[strata]])
+- test: CPU: wpis `upstream-windows-x64-cuda13` z `gpuArchs: [sm_120]`, wybór po architekturze w `baselineEngineFor`, rozmiary z API GitHub, testy `bun test`; potem pomiar pierwszej odpowiedzi na Windows z kartą 50xx (nie mamy: Vast nie ma Windows) [INFERENCE: CUDA 13 wymaga sterownika ≥ R580, sprawdzać przy wykrywaniu]
+- miara: czas do pierwszego tokena przy pierwszym starcie, t/s 12.4 vs 13.4
+- zysk: najpopularniejsze karty (RTX 5070 6,15% Steam) bez minut JIT przy pierwszym starcie
+- ryzyko karty: brak
+- priorytet: średni
+- wynik 2026-11-20: zrobione po stronie CPU. Nowy wpis `upstream-windows-x64-cuda13` w `app/engine/data/engines.json` (b11856, `gpuArchs: [sm_120]`, `minDriver: 580`; rozmiary i sha256 z API GitHub: zip 159 939 681 B `06478e0f…`, cudart 423 535 356 B `738f8c25…`). `baselineEngineFor` (`app/engine/src/server/engine.ts:92-98`) wybiera wpis pod architekturę karty, gdy sterownik jest znany i ≥ 580, w innym wypadku zostaje CUDA 12.4. Testy w `app/engine/test/engine.test.ts:79-83` (sm_120 + 581 → 13.4; sterownik 576, brak sterownika albo sm_86 → 12.4); `bun test` 208 pass. Zostaje pomiar pierwszej odpowiedzi na Windows z kartą 50xx.
+- **2026-11-26:** wymaga Windows z RTX 50xx; nie mamy takiej maszyny ani wynajmu z Windows.
+- przeniesione 2026-11-26: brak sprzętu
+
+### K-119 · SenseNova-Loop-9B: pobrać i sprawdzić, jak naprawdę działa (jakość, zachowanie, prędkość), bez optymalizacji
+- data: 2026-11-17
+- **cel (właściciel 2026-11-17 18:17):** „nie wszystko musimy optymalizować, wysłałem, żebyśmy pamiętali, pobrali i przetestowali, jak to rzeczywiście wygląda”. Najpierw zwykły test modelu: odpowiedzi PL/EN, kod, narzędzia, długi kontekst, obraz. Prędkość mierzymy przy okazji, bez kerneli
+- źródło: [[sensenova-loop-9b]] (sufit bez spekulacji ~2,1 × Qwen3.8-27B: 5060 Ti 58 vs 28 t/s, 3060 47 vs 22; jakość wg producenta NL2Repo 41,36 vs 44,60, AIDABench 65,31 vs 65,01); llama.cpp #31571 otwarte, łatany build AtomicChat (GGUF Preview)
+- hipoteza: na 12–16 GB Loop-9B Q4_K_M (~5,3 GB) z KV q4_0 przy 128–256K jest szybszy niż obecne przepisy (5060 Ti 51 t/s z GSQ IQ3_XXS + MTP; 3060 Bonsai 58 t/s) przy jakości ≥ 90% Qwen3.8-27B w naszej bramce (EvalPlus HE+, jakość-mini)
+- test: najprościej, czym działa dziś: oficjalne AWQ 4-bit (~4,9 GB) w SGLang (PR #47281) albo vLLM na wynajętej karcie ≥ 16 GB z hostguardem, albo GGUF Preview z łatanym llama.cpp, gdy obsługa trafi do upstream. Sprawdzić: (1) ręczny panel 10 promptów PL/EN (rozmowa, kod, narzędzia, obraz) z wyjściami w notatce; (2) jakość-mini + EvalPlus HE+ vs Qwen3.8-27B (92,7 / 87,9%); (3) igła 128k; (4) t/s i % sufitu przy okazji. Wagi są gated na HF (trzeba zaakceptować warunki na koncie)
+- miara: t/s i % sufitu, HE+ i jakość-mini vs 92,7 / 87,9% (Qwen3.8-27B Uncensored)
+- zysk: Enigma 8–16 GB: do ~2 × dekodu w zasięgu sufitu, kontekst 256K w 12 GB [INFERENCE]; zmiana modelu = decyzja właściciela
+- ryzyko karty: brak (wynajem)
+- zegar (2026-11-18): znaczniki etapów od pobrania do tabeli „zmierzone vs sufit”, wiersz „czas: ściana / GPU / najwolniejszy etap” ([[lekcja-czas-optymalizacji-to-metryka]])
+- priorytet: średni (prośba właściciela; koszt wynajmu ~$0,10–0,20, czeka na kredyt)
+- **2026-11-26:** wymaga pobrania nowego modelu; decyzja JARO „pracuj na tych co masz” ([[2026-11-26-bez-pobierania-modeli]]).
+- przeniesione 2026-11-26: decyzja JARO: bez pobierania
 
 ### K-172 · Silniki strumienia ekspertów MoE na XTX: Magnitude 0.3.3 (Vulkan) i RustingStrata 1.3.3 (`--backend hip`) vs topka `-ncmoe`
 - data: 2026-11-25 (panel JARO: RustingStrata 160 t/s na 3060, Magnitude strumień z SSD)
