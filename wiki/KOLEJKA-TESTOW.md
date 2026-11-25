@@ -38,6 +38,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - plan: (1) zbudować topka-k157 + `topka-rtswitch.patch` (+ `rtswitch_convert.py` dla BZ16), test-backend-ops, koszt haka ABBA (K-028: 0); (2) xtxbench: profil serwera zamiast `run-topka.sh` (Bonsai, Inkling/Maya osobno); (3) sesja: 10 przełączników K-15x po kolei w jednym serwerze, zmierzyć minuty/wariant
 - miara: minuty na wariant (dziś 30–45), warianty/h
 - priorytet: najwyższy (proces)
+- **wynik 2026-11-25 12:55:** `tools/perf/sweep.sh` na `~/wt/topka-rt` (hak + przełączniki runtime): 14 s na wariant zamiast 30–45 min, 10 wariantów w 2,5 min, bez fault; ablacja w [[perf]]. Zrobione; następnie: profil Mai i sito dla każdej nowej łatki.
 
 ### K-161 · `tools/perf` na topce i Mai: jedna komenda build → spill audit → oracle (md5 + KLD) → księga µs/token z rocprof → ABBA e2e
 - data: 2026-11-25 ([[metoda-nib-level-up]], polecenie JARO „level wyżej”)
