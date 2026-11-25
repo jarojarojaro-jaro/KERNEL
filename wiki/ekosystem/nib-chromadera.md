@@ -46,6 +46,7 @@ Klient strumieniowy `qwen-opt/nib/wall.py` (tokeny / czas od pierwszego do ostat
 - Łatka `~/qwen-opt/nib/nib-uncensored.patch` (gałąź `nib-unc`, 018d0fc + eb07c8f na 2e16cf0, 25 plików): adapter rank 1 (24 unikalne warstwy × wo i ffn_down_exps + token_embd, 15 MiB) liczony w każdej ścieżce: decode, weryfikacja MTP, prefill, wiele slotów, embedding kotwicy DSpark; poprawka do x3 przed short-convem, więc rollback MTP zgodny. Bez `--lora` bez zmian w kernelach.
 - XTX: selftest z LoRA i bez: rollback bit w bit, 64 tokeny greedy MTP = bez MTP. Odmowy (5 promptów, T=0, 160 tok.): stock 5/5, z LoRA 0/5.
 - wall.py KV q4: stock (ta sama binarka) 168,2 / 149,9, **z LoRA 156,6 / 147,3** (T=0 / T=0,7), czyli koszt LoRA −7% przy T=0 i −2% przy T=0,7. Maya produkcja tym samym klientem 113,9 / 113,4: **+30% przy T=0,7 dla wersji bez cenzury**.
+- Jakość (K-168, HumanEval+ 164, greedy, bez thinking, max 2048 tok., `qwen-opt/nib/qeval-inkling.sh` + `jakosc-mini.sh eval`): **Nib NVFP4 + LoRA 92,1 / 87,2%** (base / plus), Maya produkcja AD-Q4_K 90,2 / 85,4%; różnica 3 zadania, w granicach szumu, czyli NVFP4 + LoRA nie gorsze. Dekod na kodzie: Nib 209,5 t/s, Maya 124,4 t/s (+68%).
 - Zastrzeżenia: wagi NVFP4-Mixed, nie nasze AD-Q4_K (jakość do porównania), Quest stratny powyżej ok. 14k, pełny rozkład (top_k 0) 39 t/s. Zmiana produkcji Inkling = decyzja JARO.
 
 ## Czego uczy nas

@@ -27,6 +27,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - czas karty: ok. 15 min
 - priorytet: najwyższy
 - **wynik 2026-11-25:** pierwszy bieg (13:27) unieważniony: odpowiadał osierocony serwer Mai z K-164 ([[lekcja-zabicie-skryptu-nie-serwera]]). Powtórka k165b: odmowy stock 5/5, z LoRA 0/5; wall.py T=0 / T=0,7: stock 168,2 / 149,9, **LoRA 156,6 / 147,3** (Maya 113,9 / 113,4). Cel ≥ 145 osiągnięty. Dalej: jakość NVFP4+LoRA vs AD-Q4_K (KLD/odpowiedzi), decyzja JARO o czacie Inkling na Nib.
+- **jakość (K-168, HumanEval+):** Nib + LoRA 92,1 / 87,2% vs Maya 90,2 / 85,4%; dekod kodu 209,5 vs 124,4 t/s. Gotowe do decyzji JARO (czat Inkling na Nib + LoRA).
 
 ### K-164 · Inkling: drafter DFlash2 (incoai, 0,99 GB) zamiast DSpark w Mai na XTX
 - data: 2026-11-25 (zwiad: H200 T=1 akceptacja 4,96 vs 3,52 DSpark, GSM8K 482 vs 375 t/s; tqllm Metal exact+DFlash2 57,1 vs 52,1)
