@@ -1,0 +1,16 @@
+# Drafter gate (drafter-plan.md, 2026-11-25), topka-k157 binaries as built, no build. Needs drafter-gate.sh in ~/qwen-opt/bonsai25.
+# 1) real T=0.7 acceptance per category (none measured so far: every logged Bonsai acceptance is L2k/L8k at T=0)
+dg-mtp2|600|~/qwen-opt/bonsai25|./drafter-gate.sh mtp2 mtp 2
+dg-mtp3|600|~/qwen-opt/bonsai25|./drafter-gate.sh mtp3 mtp 3
+dg-mtp2-full|600|~/qwen-opt/bonsai25|WALL_TOPK=0 WALL_TOPP=1.0 ./drafter-gate.sh mtp2-full mtp 2
+# 2) MTP round cost per depth at one synthetic curve (explains measured n3 < n2 at T=0.7; ledger says n3 ~ n2)
+dg-syn-mtp2|600|~/qwen-opt/bonsai25|LOOKUP=0 SYNTH=0.67,0.44,0.26,0.16 ./drafter-gate.sh syn-mtp2 mtp 2
+dg-syn-mtp3|600|~/qwen-opt/bonsai25|LOOKUP=0 SYNTH=0.67,0.44,0.26,0.16 ./drafter-gate.sh syn-mtp3 mtp 3
+dg-syn-mtp4|600|~/qwen-opt/bonsai25|LOOKUP=0 SYNTH=0.67,0.44,0.26,0.16 ./drafter-gate.sh syn-mtp4 mtp 4
+# 3) block drafter (DFlash2 pass as cost proxy) at the curve a Bonsai-trained DSpark should reach (plan option b)
+dg-syn-df3|600|~/qwen-opt/bonsai25|LOOKUP=0 SYNTH=0.75,0.55,0.40,0.30,0.22,0.17,0.13 ./drafter-gate.sh syn-df3 dflash 3
+dg-syn-df4|600|~/qwen-opt/bonsai25|LOOKUP=0 SYNTH=0.75,0.55,0.40,0.30,0.22,0.17,0.13 ./drafter-gate.sh syn-df4 dflash 4
+dg-syn-df5|600|~/qwen-opt/bonsai25|LOOKUP=0 SYNTH=0.75,0.55,0.40,0.30,0.22,0.17,0.13 ./drafter-gate.sh syn-df5 dflash 5
+dg-syn-df7|600|~/qwen-opt/bonsai25|LOOKUP=0 SYNTH=0.75,0.55,0.40,0.30,0.22,0.17,0.13 ./drafter-gate.sh syn-df7 dflash 7
+dg-syn-df5-pm0|600|~/qwen-opt/bonsai25|PM4=0 LOOKUP=0 SYNTH=0.75,0.55,0.40,0.30,0.22,0.17,0.13 ./drafter-gate.sh syn-df5-pm0 dflash 5
+restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -43,23 +43,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - wniosek: DFlash2 to najlepszy drafter przy T=0 (3,73 vs 3,09 tok./okno), ale zysk zjada weryfikacja: koszt rośnie z kontekstem (L2k −25%) i z szerokością. Kolejność: K-158b (atencja okna w jednym launchu, eksperci okna przez kernele tokenu), tani draft (K-159: głowa skrócona, wagi Q8), potem ponownie df2 z oknem wg pewności.
 - **k164c 2026-11-25 (ac47cca2: shortlista głowy 32768 + kontekst, wagi Q8, graf, okno wg pewności):** propose 3,43 → 2,54 ms (warstwy 2,4–2,8 ms nie schodzą z Q8, więc ograniczone opóźnieniem, nie pasmem; głowa 0,74 → 0,15 ms). Parytet 11/11. rep2 Q1 / Q6 / L2k: df2m-sl 106,3 / 43,9 / 83,0; df2-conf-sl 144,0 / 77,0 / 105,5; df2-conf-slq 145,4 / 81,5 / 106,8. Akceptacja: okno 8 T=0 3,54 tok., T=0,7 1,86–2,02; okno wg pewności T=0 2,45 tok. (86% draftów), T=0,7 1,60. Weryfikacja na tej gałęzi bez poprawek K-158b (okno 8 = 40 ms), więc DFlash2 ocenić dopiero po przeniesieniu na `k158-dspark`.
 
-### K-163 · Szybka pętla: przełączniki runtime w topce Bonsai + xtxbench z profilem modelu, cel ≥ 15 wariantów/h
-- data: 2026-11-25 (JARO: „on robi eval w minuty, my w godziny”; [[metoda-nib-level-up]])
-- plan: (1) zbudować topka-k157 + `topka-rtswitch.patch` (+ `rtswitch_convert.py` dla BZ16), test-backend-ops, koszt haka ABBA (K-028: 0); (2) xtxbench: profil serwera zamiast `run-topka.sh` (Bonsai, Inkling/Maya osobno); (3) sesja: 10 przełączników K-15x po kolei w jednym serwerze, zmierzyć minuty/wariant
-- miara: minuty na wariant (dziś 30–45), warianty/h
-- priorytet: najwyższy (proces)
-- **wynik 2026-11-25 12:55:** `tools/perf/sweep.sh` na `~/wt/topka-rt` (hak + przełączniki runtime): 14 s na wariant zamiast 30–45 min, 10 wariantów w 2,5 min, bez fault; ablacja w [[perf]]. Zrobione; następnie: profil Mai i sito dla każdej nowej łatki.
-
-### K-161 · `tools/perf` na topce i Mai: jedna komenda build → spill audit → oracle (md5 + KLD) → księga µs/token z rocprof → ABBA e2e
-- data: 2026-11-25 ([[metoda-nib-level-up]], polecenie JARO „level wyżej”)
-- plan: CPU: skrypt i spill audit (wzór `nib/scripts/spill_audit.sh`); XTX: jeden przebieg na topka-k157 (Bonsai) i Maya (Inkling), księga do notatek modeli; cel: wariant ≤ 1 h od pomysłu do liczby
-- priorytet: najwyższy (proces)
-
-### K-162 · Profil Nib vs Maya kernel po kernelu (rocprofv3, ten sam prompt, KV q4) i księga µs/token obu
-- data: 2026-11-25 (Nib T=0,7 130–151 vs Maya 112,5; bench Nib przy d=0 140,7 tok/s bez MTP wg nagłówka)
-- plan: `nib bench -d 0,8192 -p 512 -n 128 --kv-type q4_0 --sparse-pages 0` i Maya gen pod rocprofv3; tabela etap → µs/token; wynik kieruje K-158
-- czas: ok. 10 min karty
-
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
@@ -83,35 +66,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-25 (Nib liczy na NVFP4-Mixed, nie na naszych wagach uncensored)
 - plan: wtopić LoRA AtomicChat (43 MB) w paczkę Nib albo dodać Q4_K do loadera Nib; wall.py T=0 / T=0,7, KV q4_0, Quest wyłączony do 14k
 - priorytet: średni
-
-### K-160 · Bonsai 2.5: kernel Q2_0 a pasmo DRAM (K-156 dał 1,9× w mikrobenchu i 0% w dekodzie)
-- data: 2026-11-25 (MMVQ Q2_0 ok. 695 GB/s w całym kroku)
-- plan: profil PM4-off z licznikami pamięci (rocprofv3 --pmc) na pełnym dekodzie; sprawdzić, czy limit to DRAM, czy kolejność/rozmiar kerneli; bramka: plain ≥ 85 t/s
-- priorytet: średni
-
-### K-149 · Bonsai 2.5: kernel PTQ1_0 dla RDNA3 (n = 1–4 kolumny, ograniczony pasmem), żeby MTP działało na pliku 5,99 GB
-- data: 2026-11-25 ([[bonsai-2-5-uncensored]]: PTQ1_0 na HIP 446–583 GB/s przy n=1 i 3,8× dłużej przy n=4; Q2_0 ma 7,3 GB na token)
-- plan: dekodowanie trytów przez LUT (bajt → 5 trytów) w LDS, kolumny 1–4 w jednym przejściu wag; `test-backend-ops` MUL_MAT ptq1_0, potem b25.sh (prism ptq1 mtp 2) ABBA vs prism Q2_0 MTP n2
-- zysk: wag o 21% mniej → do +15…20% dekodu przy T=0,7 [SZACUNEK]
-- ryzyko karty: niskie (nowy kernel, bramka test-backend-ops)
-- priorytet: wysoki dla Bonsai
-- **wynik 2026-11-25:** kernel PT na HIP (agent) poprawny (255/255, 120/120, 85/85), 17408×5120 n=4 167 → 43 µs; prism PTQ1_0 MTP n2 T=0,7 33,8 → 75,9. W topce (K-153) PTQ1_0 102,4 vs Q2_0 105,0: zostaje Q2_0. Zrobione.
-
-### K-150 · Bonsai 2.5: przerwa hosta 19% kroku dekodu (3,4 ms z 18,2 ms), HIP graphs + MTP w forku prism
-- data: 2026-11-25 (profil rocprofv3: GPU 14,8 ms na token, zegar 18,2 ms)
-- plan: sprawdzić, czy grafy działają przy MTP w prism na HIP (`GGML_HIP_GRAPHS`), profil hosta; ewentualnie fuzja FWHT + quantize_q8_1 (razem 7,2% GPU)
-- zysk: do +10…19% [SZACUNEK]
-- ryzyko karty: brak
-- priorytet: średni
-- **wynik 2026-11-25:** przyczyna przerw to ok. 1080 kerneli na token i fuzje tylko dla NVIDIA; prism + łatka Gemini +11,5% (77,6 → 86,5), topka + PM4 + K-150T + K-157: 70,6 → 76,9 bez spekulacji. Zrobione.
-
-### K-151 · Bonsai 2.5 w naszej topce: port `prism.hadamard` (runtime FWHT) z upstream do topka-q70 i PM4 replay
-- data: 2026-11-25 (topka b11528 nie zna Hadamarda; upstream od b11556; PM4 dał Qwenowi +6,4%)
-- plan: port `load_hparams_hadamard`/`load_tensors_hadamard` + graf qwen35, md5 greedy vs prism Q2_0, b25.sh z silnikiem topki
-- zysk: PM4 + nasze MTP-lean, kilka–kilkanaście % [SZACUNEK]
-- ryzyko karty: PM4 (zasady PM4)
-- priorytet: średni
-- **wynik 2026-11-25:** port do topki (c76335b) działa; PM4 + env produkcji: T=0,7 77,7 → 101,7–106,0; z kolejnymi łatkami 116,9. Zrobione.
 
 ### K-148 · Maya: szybsza weryfikacja szerokiego okna sufiksowego (dziś ścieżka prefillu, ok. 0,2 s na 96 tokenów)
 - data: 2026-11-24 (K-147: nasz sufiks 404–452 / 299 t/s vs GodGMN 708 / 494 na tym samym teście i karcie)
@@ -297,15 +251,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: poprawność przepisów Enigmy NVIDIA; 0 t/s
 - ryzyko karty: brak
 - priorytet: średni
-
-### K-105 · Enigma NVIDIA: few-row MMQ (#31533) w naszym forku CUDA (szeroka weryfikacja: lookup W16, MTP n4)
-- data: 2026-11-14
-- źródło: K-103 ([[2026-11-14-k103-llamacpp-v1-nvidia]]): few-row MMQ daje +10…12% na przebieg przy 8–16 kolumnach, a przy MTP n2 (3 kolumny) ~0
-- test: 5060 Ti w jaroserverai (gdy online) lub 3090 z wynajmu: b11856 vs v1.0.0, MTP n 3/4, spec_sweep T=1 ABBA; 24 GB z UD-Q4_K_XL n3
-- stan po bramce K-103: przy MTP n2/n3 upstream v1.0.0 daje +3,8% / +0,6%, KLD ~2σ ponad szumem. Few-row MMQ opłaci się dopiero przy szerokiej weryfikacji (fork z lookupem W16, n4), więc sens ma port #31533 do naszego forka CUDA (bramka KLD vs fork), a nie zmiana pinu.
-- zysk: +5…12% decode na NVIDIA przy szerokiej weryfikacji [SZACUNEK]
-- ryzyko karty: brak
-- priorytet: średni (zysk tylko w forku z szeroką weryfikacją)
 
 ### K-107 · Dwie karty w jednym komputerze: XTX + RTX 5060 Ti (podział warstw `-sm layer` przez Vulkan albo dwa niezależne serwery dla roju agentów)
 - data: 2026-11-15
@@ -669,6 +614,69 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-160 · Bonsai 2.5: kernel Q2_0 a pasmo DRAM (K-156 dał 1,9× w mikrobenchu i 0% w dekodzie)
+- data: 2026-11-25 (MMVQ Q2_0 ok. 695 GB/s w całym kroku)
+- plan: profil PM4-off z licznikami pamięci (rocprofv3 --pmc) na pełnym dekodzie; sprawdzić, czy limit to DRAM, czy kolejność/rozmiar kerneli; bramka: plain ≥ 85 t/s
+- priorytet: średni
+- wynik 2026-11-25 (`qwen-opt/bonsai25/k160-dram.sh`): MMVQ Q2_0 = 80,5% czasu GPU dekodu (11121 wywołań na 32 tokeny). Liczniki rocprofv3 (FETCH_SIZE, GL2C_EA_RDREQ_*, GL2C_HIT/MISS) na gfx1100 z ROCm core-10.0 zwracają 0 dla każdego kernela, więc bajtów z DRAM tą drogą nie zmierzymy. Odpowiedź daje mikrobench pełnego kroku (wszystkie macierze > 96 MB cache) agenta BonsaiMmvqBandwidth (ładowania nontemporal, 128-bit, więcej fal); zamknięte tutaj, kontynuacja tam.
+
+### K-105 · Enigma NVIDIA: few-row MMQ (#31533) w naszym forku CUDA (szeroka weryfikacja: lookup W16, MTP n4)
+- data: 2026-11-14
+- źródło: K-103 ([[2026-11-14-k103-llamacpp-v1-nvidia]]): few-row MMQ daje +10…12% na przebieg przy 8–16 kolumnach, a przy MTP n2 (3 kolumny) ~0
+- test: 5060 Ti w jaroserverai (gdy online) lub 3090 z wynajmu: b11856 vs v1.0.0, MTP n 3/4, spec_sweep T=1 ABBA; 24 GB z UD-Q4_K_XL n3
+- stan po bramce K-103: przy MTP n2/n3 upstream v1.0.0 daje +3,8% / +0,6%, KLD ~2σ ponad szumem. Few-row MMQ opłaci się dopiero przy szerokiej weryfikacji (fork z lookupem W16, n4), więc sens ma port #31533 do naszego forka CUDA (bramka KLD vs fork), a nie zmiana pinu.
+- zysk: +5…12% decode na NVIDIA przy szerokiej weryfikacji [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: średni (zysk tylko w forku z szeroką weryfikacją)
+- zamknięte 2026-11-25: zastąpione werdyktem K-013 (Q4_K szybsze przy każdym n).
+
+### K-151 · Bonsai 2.5 w naszej topce: port `prism.hadamard` (runtime FWHT) z upstream do topka-q70 i PM4 replay
+- data: 2026-11-25 (topka b11528 nie zna Hadamarda; upstream od b11556; PM4 dał Qwenowi +6,4%)
+- plan: port `load_hparams_hadamard`/`load_tensors_hadamard` + graf qwen35, md5 greedy vs prism Q2_0, b25.sh z silnikiem topki
+- zysk: PM4 + nasze MTP-lean, kilka–kilkanaście % [SZACUNEK]
+- ryzyko karty: PM4 (zasady PM4)
+- priorytet: średni
+- **wynik 2026-11-25:** port do topki (c76335b) działa; PM4 + env produkcji: T=0,7 77,7 → 101,7–106,0; z kolejnymi łatkami 116,9. Zrobione.
+- zamknięte 2026-11-25: port w topce (c76335b), topka-k157 T=0,7 116,9 t/s.
+
+### K-150 · Bonsai 2.5: przerwa hosta 19% kroku dekodu (3,4 ms z 18,2 ms), HIP graphs + MTP w forku prism
+- data: 2026-11-25 (profil rocprofv3: GPU 14,8 ms na token, zegar 18,2 ms)
+- plan: sprawdzić, czy grafy działają przy MTP w prism na HIP (`GGML_HIP_GRAPHS`), profil hosta; ewentualnie fuzja FWHT + quantize_q8_1 (razem 7,2% GPU)
+- zysk: do +10…19% [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: średni
+- **wynik 2026-11-25:** przyczyna przerw to ok. 1080 kerneli na token i fuzje tylko dla NVIDIA; prism + łatka Gemini +11,5% (77,6 → 86,5), topka + PM4 + K-150T + K-157: 70,6 → 76,9 bez spekulacji. Zrobione.
+- zamknięte 2026-11-25: K-150 Gemini +11,5% w prism, przeniesione do topki (K-150T), topka-k157 76,9 t/s bez spekulacji.
+
+### K-149 · Bonsai 2.5: kernel PTQ1_0 dla RDNA3 (n = 1–4 kolumny, ograniczony pasmem), żeby MTP działało na pliku 5,99 GB
+- data: 2026-11-25 ([[bonsai-2-5-uncensored]]: PTQ1_0 na HIP 446–583 GB/s przy n=1 i 3,8× dłużej przy n=4; Q2_0 ma 7,3 GB na token)
+- plan: dekodowanie trytów przez LUT (bajt → 5 trytów) w LDS, kolumny 1–4 w jednym przejściu wag; `test-backend-ops` MUL_MAT ptq1_0, potem b25.sh (prism ptq1 mtp 2) ABBA vs prism Q2_0 MTP n2
+- zysk: wag o 21% mniej → do +15…20% dekodu przy T=0,7 [SZACUNEK]
+- ryzyko karty: niskie (nowy kernel, bramka test-backend-ops)
+- priorytet: wysoki dla Bonsai
+- **wynik 2026-11-25:** kernel PT na HIP (agent) poprawny (255/255, 120/120, 85/85), 17408×5120 n=4 167 → 43 µs; prism PTQ1_0 MTP n2 T=0,7 33,8 → 75,9. W topce (K-153) PTQ1_0 102,4 vs Q2_0 105,0: zostaje Q2_0. Zrobione.
+- zamknięte 2026-11-25: kernel PT 255/255 testów, ale w topce Q2_0 szybszy (K-153: T=0,7 102,4 vs 105,0), zostaje Q2_0.
+
+### K-161 · `tools/perf` na topce i Mai: jedna komenda build → spill audit → oracle (md5 + KLD) → księga µs/token z rocprof → ABBA e2e
+- data: 2026-11-25 ([[metoda-nib-level-up]], polecenie JARO „level wyżej”)
+- plan: CPU: skrypt i spill audit (wzór `nib/scripts/spill_audit.sh`); XTX: jeden przebieg na topka-k157 (Bonsai) i Maya (Inkling), księga do notatek modeli; cel: wariant ≤ 1 h od pomysłu do liczby
+- priorytet: najwyższy (proces)
+- zamknięte 2026-11-25 jako proces: księga rundy w Mai (`IK2_K158_BENCH`), `tools/perf/sweep.sh`, `b25-ledger.sh`; spill audit Nib-style zostaje w [[perf]].
+
+### K-162 · Profil Nib vs Maya kernel po kernelu (rocprofv3, ten sam prompt, KV q4) i księga µs/token obu
+- data: 2026-11-25 (Nib T=0,7 130–151 vs Maya 112,5; bench Nib przy d=0 140,7 tok/s bez MTP wg nagłówka)
+- plan: `nib bench -d 0,8192 -p 512 -n 128 --kv-type q4_0 --sparse-pages 0` i Maya gen pod rocprofv3; tabela etap → µs/token; wynik kieruje K-158
+- czas: ok. 10 min karty
+- zamknięte 2026-11-25: księga w [[nib-chromadera]] (Maya plain 127 > Nib 118; przewaga Nib = spekulacja).
+
+### K-163 · Szybka pętla: przełączniki runtime w topce Bonsai + xtxbench z profilem modelu, cel ≥ 15 wariantów/h
+- data: 2026-11-25 (JARO: „on robi eval w minuty, my w godziny”; [[metoda-nib-level-up]])
+- plan: (1) zbudować topka-k157 + `topka-rtswitch.patch` (+ `rtswitch_convert.py` dla BZ16), test-backend-ops, koszt haka ABBA (K-028: 0); (2) xtxbench: profil serwera zamiast `run-topka.sh` (Bonsai, Inkling/Maya osobno); (3) sesja: 10 przełączników K-15x po kolei w jednym serwerze, zmierzyć minuty/wariant
+- miara: minuty na wariant (dziś 30–45), warianty/h
+- priorytet: najwyższy (proces)
+- **wynik 2026-11-25 12:55:** `tools/perf/sweep.sh` na `~/wt/topka-rt` (hak + przełączniki runtime): 14 s na wariant zamiast 30–45 min, 10 wariantów w 2,5 min, bez fault; ablacja w [[perf]]. Zrobione; następnie: profil Mai i sito dla każdej nowej łatki.
+- zamknięte 2026-11-25: sweep.sh 14 s/wariant (wynik wyżej).
 
 ### K-152 · Ternary Bonsai 2.5 27B Uncensored (AtomicChat) na XTX: pobrać i zoptymalizować (JARO 2026-11-24 23:37)
 - wynik 2026-11-25: plik AtomicChat PTQ1_0 (SHA zgodne) + głowica MTP PrismML → PTQ1_0-mtp i bezstratny Q2_0-mtp; fork PrismML zbudowany na gfx1100; najlepiej **prism Q2_0 + MTP n2: T=0,7 77,7, T=0 117,9, L2k 97,5, L8k 92,6 t/s** (bez spekulacji 54,4; PTQ1_0 + MTP 33,8 przy T=0,7). Szczegóły i tabela: [[bonsai-2-5-uncensored]]. Dalej K-149, K-150, K-151.

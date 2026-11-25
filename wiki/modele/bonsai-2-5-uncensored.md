@@ -54,7 +54,7 @@ wyniki:
 | prism Q2_0, MTP n4, p-min 0,7 | 94,4 | 138,6 | 66,5 | 85,5 | 80,4 | 728 / 787 |
 
 - llama-bench tg128 bez spekulacji: Q2_0 54,88, PTQ1_0 54,38; pp512 886 / 717.
-- Akceptacja MTP: n2 0,76–0,79, n3 0,63–0,70, n4 0,58–0,61.
+- Akceptacja MTP: n2 0,76–0,79, n3 0,63–0,70, n4 0,58–0,61. **Uwaga 2026-11-25:** te liczby (i DFlash2 0,27–0,40) pochodzą z zapytań L2k/L8k przy T=0 (`tail -2` w `b25.sh`), nie z T=0,7; akceptację przy T=0,7 mierzy dopiero `drafter-gate.sh`. GGUF 2.5 ma domyślne próbkowanie top_k 20, top_p 0,95, min_p 0,05, więc nasze biegi T=0,7 nigdy nie były na pełnym rozkładzie. W topce `src/models/dflash.cpp:693` drafter pożycza `token_embd` bez odwrotnego Hadamarda (prism go stosuje): wyniki DFlash/DSpark na Bonsai w topce są nieważne do poprawki. Plan draftera: `qwen-opt/bonsai25/drafter-plan.md`.
 - PPL (40 × 512, korpus xtxbench, prism): PTQ1_0 5,6002 ± 0,146, Q2_0 5,5703 ± 0,144. Te same wagi, różnica w granicach błędu i pochodzi z kerneli.
 
 ## Dlaczego tak (profil rocprofv3, Q2_0, dekod)
