@@ -34,6 +34,10 @@ status: aktualne
 - **Porównanie z nami:** 3090 Ti ma 1008 GB/s, XTX 960. Nasza produkcja Maya T=0,7 ok. 113 t/s, Nib + LoRA 147,3 (top-k 40), K-158f do 165,6 na kodzie. Test na równych warunkach (T=1, top-k 20, top-p 0,95, prompt 3K i 32K, odpowiedź długa): K-171.
 
 
+## K-171: pomiar w ich warunkach (2026-11-25)
+- XTX, T=1 / top-k 20 / top-p 0,95, odpowiedź 2048 tok.: Maya prod 101,8 (3K) / 90,7 (32K), Maya K-158 110,3 / 105,9; llamAmpere na 3090 Ti 189,0 / 182,6. Różnica ok. 1,7×.
+- Opublikowane źródło (HEAD `8369abe`) nie zawiera ścieżki Inklinga: brak profilu `24ink`, przełączników `FUSE_*`, `NK_*`, `Q8TC`, formatu NVFP4Q8 (przegląd scout 2026-11-25). Akceptacja spekulacji przy T=1 w ich domyślnej ścieżce jest dokładna (`common/sampling.cpp:1237-1270`), mb-MTP nie dotyczy draftera blokowego. Przyczyny przewagi nie da się więc odczytać z kodu; pierwszy pomiar u nas: udział grafów i ścieżki blokowej w Mai (`IK2_GRAPH=0`, `IK2_BLOCK=0`) i akceptacja na krok.
+
 ## Powiązane
 - [[2026-11-17-k114-nvidia-sufit]]
 - [[latent-sparse-attention]]

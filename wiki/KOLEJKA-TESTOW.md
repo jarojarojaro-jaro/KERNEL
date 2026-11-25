@@ -31,18 +31,12 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-25 (wynik K-158g niżej)
 - plan: po zakończeniu K-176 i K-171 (używają `maya-atomic.json` jako bazy) podmienić konfigurację, kopia `maya-atomic.prev.json`; potem jedno wall.py kontrolne
 
+- **2026-11-25:** K-176 (K-148 `both`) też przeszedł bramkę (czat −0,4…−0,5%, parytet 11/11, edycja +14,2%); obie zmiany połączone w K-179 (`wt-k179` 1f11609e, w kolejce). Wdrażamy zwycięzcę K-179, a gdy nie przejdzie, sam K-158g.
 ### K-176 · Wdrożenie w Mai: K-148 `both` (szerokie okno sufiksu, edycja kodu +14,2%)
 - data: 2026-11-25
 - test: wall.py `pl` T=0 / T=0,7 prod vs `wt-k148` z SFXBLK=32 SFXRG=16, bramka −2%; potem `maya-atomic.json` → binarka k148
 - czas karty: ok. 5 min
 - priorytet: wysoki
-
-### K-171 · Inkling na równych warunkach z llamAmpere: T=1, top-k 20, top-p 0,95 (Maya prod, Nib + LoRA, K-158f)
-- data: 2026-11-25 (panel JARO: llamAmpere v0.7.5 189 t/s przy 3K i 144,7 przy 100K na 3090 Ti, „T=1”)
-- powód: ich profile ustawiają top-k 20 (`common/preset.cpp:117`); my mierzymy T=0,7 pełnym rozkładem; K-167 pokazał, że top-k zmienia wynik ×3,8. Bez tego testu nie wiemy, czy przegrywamy
-- test: wall.py z samplerem T=1 / top-k 20 / top-p 0,95, prompty 3K i 32K, odpowiedź 2048 tok., 3 seedy, ramiona: Maya `maya-atomic.json` (prod), Nib + LoRA (`~/wt/nib-unc`), Maya k158-dspark; port 18796, PM4=0
-- czas karty: ok. 10 min
-- priorytet: wysoki (wyścig Inkling)
 
 ### K-170 · Lucebox `inkling2_loop` (#1056) na XTX: Inkling 2 Mini z DSpark vs Maya
 - data: 2026-11-25 (panel JARO: Lucebox na R9700 AR 81,7, z DSpark 143,5 t/s temp=1)
@@ -52,13 +46,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: wysoki
 
 - **2026-11-25:** lucebox `d0e94739` zbudowany dla gfx1100 (`~/wt/lucebox/server/build-hip`), ale loader czyta tylko ich konwersję (`inkling2_loop`, klucze `loop.start/end/count`, bez skal NVFP4 ekspertów; `server/src/inkling2/inkling2_loader.cpp:94-305`); nasz plik unsloth się nie załaduje. Wymaga pobrania `Inkling-2-Mini-Fast-IQ4_NL.gguf` (17,6 GB, inny model, test tylko szybkości silnika) albo portu loadera (kilka godzin). `k170.jobs` gotowy z blokadą „brak modelu”. Nasz `mtp.safetensors` = ich DSpark (sha256 7c3b6513…). Decyzja JARO.
-### K-173 · Dekwantyzacja K-quantów przy prefillu: bloki 32/64 wątków → dim3(32, 8) (jak PR #32875 dla NVFP4)
-- data: 2026-11-25 (panel JARO, PR ggml-org/llama.cpp#32875: NVFP4 dequant 4,2×, prefill Qwen3.8-27B +17,7% na V100)
-- mechanizm u nas: na RDNA3 `ggml_cuda_should_use_mmq` zwraca false dla Q6_K przy ne11 > 128 (`mmq.cu`), więc prefill Q4_K_M idzie przez dekwantyzację + hipBLAS dla tensorów Q6_K; `dequantize_row_q6_K_cuda` startuje `<<<nb, 64>>>`, q4_K `<<<nb, 32>>>` (`convert.cu:307,319`, topka qprep-spec 50ca29355). Nib ma własny silnik HIP bez tej ścieżki
-- test: łatka (indeks bloku `blockIdx.x*blockDim.y + threadIdx.y` z warunkiem `i < nb`), test-backend-ops MUL_MAT q4_K/q6_K bitowo + perf, xtxbench prefill 32k ABBA; próg ≥ 1% prefillu
-- czas karty: ok. 8 min
-- priorytet: średni
-
 ### K-172 · Silniki strumienia ekspertów MoE na XTX: Magnitude 0.3.3 (Vulkan) i RustingStrata 1.3.3 (`--backend hip`) vs topka `-ncmoe`
 - data: 2026-11-25 (panel JARO: RustingStrata 160 t/s na 3060, Magnitude strumień z SSD)
 - po co: Enigma nie ma offloadu MoE dla kart 8–16 GB; test na modelu większym niż 24 GB pokazuje, czy rozmieszczenie ekspertów po routingu bije statyczne `-ncmoe`
@@ -578,6 +565,15 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-171 · Inkling na równych warunkach z llamAmpere: T=1, top-k 20, top-p 0,95 (Maya prod, Nib + LoRA, K-158f)
+- data: 2026-11-25 (panel JARO: llamAmpere v0.7.5 189 t/s przy 3K i 144,7 przy 100K na 3090 Ti, „T=1”)
+- powód: ich profile ustawiają top-k 20 (`common/preset.cpp:117`); my mierzymy T=0,7 pełnym rozkładem; K-167 pokazał, że top-k zmienia wynik ×3,8. Bez tego testu nie wiemy, czy przegrywamy
+- test: wall.py z samplerem T=1 / top-k 20 / top-p 0,95, prompty 3K i 32K, odpowiedź 2048 tok., 3 seedy, ramiona: Maya `maya-atomic.json` (prod), Nib + LoRA (`~/wt/nib-unc`), Maya k158-dspark; port 18796, PM4=0
+- czas karty: ok. 10 min
+- priorytet: wysoki (wyścig Inkling)
+- **wynik 2026-11-25 21:45–21:59 (XTX, PM4=0, odpowiedź 2048 tok., 3 seedy, mediana):** T=1 / top-k 20 / top-p 0,95, prompt 3K / 32K: Maya prod **101,8 / 90,7**, Maya K-158 (bez POLICY) **110,3 / 105,9**, Nib + LoRA 75,0 / 70,7 (rzadka atencja od 14k), Nib gęsty 32K 92,6. Maya T=0,7 pełny rozkład 100,7 / 90,8. llamAmpere v0.7.5 na 3090 Ti (1008 GB/s) w tych warunkach: 189,0 / 182,6. **Jesteśmy ok. 1,7× wolniejsi przy długich odpowiedziach**; 150 t/s Niba dotyczyło odpowiedzi 300 tok. Różnice: ich kwant 5,4 bpw i drafter ATX 0,45 GB (nie DSpark), KV 4-bit. Następny krok: przejrzeć ich drafter i ścieżkę weryfikacji (`~/kernel/zrodla/llamAmpere`, v0.7.5) pod kątem bezstratnych dźwigni.
+- przeniesione 2026-11-25: zmierzone
 
 ### K-022 · Natywne q4_0 K/V w prefillu FA D256 (bit 128 / #31802): wyjaśnić md5 wariantów 131/147, alternatywnie szybszy staging q4_0→f16
 - data: 2026-11-07
@@ -1340,6 +1336,15 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-173 · Dekwantyzacja K-quantów przy prefillu: bloki 32/64 wątków → dim3(32, 8) (jak PR #32875 dla NVFP4)
+- data: 2026-11-25 (panel JARO, PR ggml-org/llama.cpp#32875: NVFP4 dequant 4,2×, prefill Qwen3.8-27B +17,7% na V100)
+- mechanizm u nas: na RDNA3 `ggml_cuda_should_use_mmq` zwraca false dla Q6_K przy ne11 > 128 (`mmq.cu`), więc prefill Q4_K_M idzie przez dekwantyzację + hipBLAS dla tensorów Q6_K; `dequantize_row_q6_K_cuda` startuje `<<<nb, 64>>>`, q4_K `<<<nb, 32>>>` (`convert.cu:307,319`, topka qprep-spec 50ca29355). Nib ma własny silnik HIP bez tej ścieżki
+- test: łatka (indeks bloku `blockIdx.x*blockDim.y + threadIdx.y` z warunkiem `i < nb`), test-backend-ops MUL_MAT q4_K/q6_K bitowo + perf, xtxbench prefill 32k ABBA; próg ≥ 1% prefillu
+- czas karty: ok. 8 min
+- priorytet: średni
+- **wynik 2026-11-25 22:00–22:09 (XTX, `~/wt/k173-dequant` 6c7824556, `GGML_HIP_DQ_Y`):** test-backend-ops 17/17 dla Y=1/4/8. Perf q6_K (jedyny typ na ścieżce dekwantyzacja + hipBLAS na RDNA3 przy n > 128): 17408×512×5120 2086–2199 GFLOPS bez różnicy między Y; pp2048 1004,6/1002,6 (Y=1) vs 1004,0/1004,0 (Y=8), pp32k 890,1/890,5 vs 889,4/889,9: **0%**. Na gfx1100 bloki 64 wątków (2 fale wave32) nie są wąskim gardłem; zysk z PR #32875 dotyczy NVIDII (bloki 32 wątków = 1 warp).
+- przeniesione 2026-11-25: bez efektu
 
 ### K-175 · Wdrożenie na :8080: K-020 (wyrzucanie cache ważone kosztem, α=1) + K-018 (AGR2) z `~/wt/qprep-spec`
 - data: 2026-11-25 (wyniki K-018, K-020 wyżej)
