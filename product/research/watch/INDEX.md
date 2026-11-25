@@ -15,3 +15,4 @@ Raporty dzienne `tools/compwatch/compwatch.py` (timer systemd 06:30, `nice`). Je
 - [2026-11-22](2026-11-22.md): 35 pozycji; top: Niko1221/Strata wydanie v0.2.18 (2026-11-21): Strata 0.2.18
 - [2026-11-23](2026-11-23.md): 35 pozycji; top: mw00/project-maya wydanie v1.1.74 (2026-11-22): v1.1.74
 - [2026-11-24](2026-11-24.md): 57 pozycji; top: mw00/project-maya wydanie v1.1.76 (2026-11-23): v1.1.76 (+1 wcześniejszych: v1.1.75)
+- [2026-11-25](2026-11-25.md): 52 pozycji; top: mw00/project-maya wydanie v1.1.78 (2026-11-24): v1.1.78 (+1 wcześniejszych: v1.1.77)

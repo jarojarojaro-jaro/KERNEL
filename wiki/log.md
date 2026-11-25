@@ -718,3 +718,6 @@ Przegląd [[przeglad-kolejki-2026-11-24]], Colab [[colab-kolejka-2026-11-24]]. W
 ## [2026-11-25] Szybka pętla eval (JARO: eval w minuty, nie godziny)
 [[metoda-nib-level-up]] sekcja liczb: dziś 30–45 min/wariant; mamy już xtxbench z przełącznikami runtime (0,3 min/wariant, K-028), nieużyty tej nocy. Hak przeniesiony na topka-bonsai z przełącznikami K-150T/K-155/K-157 (`topka-rtswitch.patch`), K-163.
 
+## [2026-11-25] Zwiad: DFlash2 dla Inklinga (K-164), Strata 0.2.21 bez zmian dla gfx1100
+Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): drafter DFlash2 Inklinga akceptacja 4,96 vs DSpark 3,52 (H200, T=1) → K-164; Pando i kalibracja temperatury draftu dopisane do K-158; Strata 92 vs 29 t/s to CUDA/routing slotu; LocalMaxxing R9700 194,7 niepotwierdzone.
+

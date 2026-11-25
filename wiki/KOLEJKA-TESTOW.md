@@ -21,6 +21,12 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-164 · Inkling: drafter DFlash2 (incoai, 0,99 GB) zamiast DSpark w Mai na XTX
+- data: 2026-11-25 (zwiad: H200 T=1 akceptacja 4,96 vs 3,52 DSpark, GSM8K 482 vs 375 t/s; tqllm Metal exact+DFlash2 57,1 vs 52,1)
+- plan: pobrać `incoai/Inkling-2-Mini-DFlash2` (0,99 GB); w Mai brak DFlash2 (jest DSpark) → port na podstawie tqllm 788055720 i `sglang_inkling_dflash2.py`; najpierw CPU: kształty i referencja; potem XTX: parytet 11/11, wall.py T=0 / T=0,7 vs produkcja i vs DSpark
+- zysk: +20…40% przy T=0,7, jeśli krok weryfikacji tani (łączyć z K-158) [SZACUNEK]
+- priorytet: wysoki
+
 ### K-163 · Szybka pętla: przełączniki runtime w topce Bonsai + xtxbench z profilem modelu, cel ≥ 15 wariantów/h
 - data: 2026-11-25 (JARO: „on robi eval w minuty, my w godziny”; [[metoda-nib-level-up]])
 - plan: (1) zbudować topka-k157 + `topka-rtswitch.patch` (+ `rtswitch_convert.py` dla BZ16), test-backend-ops, koszt haka ABBA (K-028: 0); (2) xtxbench: profil serwera zamiast `run-topka.sh` (Bonsai, Inkling/Maya osobno); (3) sesja: 10 przełączników K-15x po kolei w jednym serwerze, zmierzyć minuty/wariant
@@ -41,6 +47,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
 - zysk: +15…30% T=0,7 [SZACUNEK z różnicy do Nib]
+- dopisane 2026-11-25 (zwiad): drzewo DSpark z Pando (2611.32269, 16 węzłów bez dodatkowego przejścia) i temperatura draftu 0,4–0,6 (2611.33111, +9–11% akceptacji), oba bezstratne przy próbkowaniu draftu z q
 - priorytet: wysoki
 
 ### K-159 · Nib na tym samym modelu co Maya (uncensored): AtomicChat w paczce NVFP4 albo AD-Q4_K w Nib
