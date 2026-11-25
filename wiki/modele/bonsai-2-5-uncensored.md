@@ -34,6 +34,7 @@ wyniki:
 - **Przepakowanie bez strat** (`qwen-opt/bonsai25/build_b25.py`): PTQ1_0 (128 trytów + fp16 d) → dwa bloki Q2_0 (kod = tryt, ta sama skala); test na 2000 losowych blokach: różnica 0,0. Nieedytowane tensory naszego Q2_0 są bajt w bajt takie jak w oficjalnym Q2_0-mtp PrismML (4 tensory po 8 MiB sprawdzone zakresami HTTP), edytowany `blk.30.ffn_down` się różni, czyli tak jak powinien.
 - **Głowica MTP** (`blk.64.*`, Q4_0, 239 MB) z oficjalnego PTQ1_0-mtp PrismML pobrana zakresem bajtów; nagłówek z pliku -mtp (block_count 65, nextn 1), reszta KV identyczna. Rozmiary wyników równe oficjalnym plikom -mtp (6 232 818 944 i 7 912 178 944 B).
 - **Silnik**: fork PrismML `910442b` (2026-11-24) zbudowany na ROCm 10.0 gfx1100 z dwiema brakującymi definicjami HIP (`prism-hip-event-defines.patch`). Upstream `6792507b7` też czyta Q2_0 + Hadamard, ale jest wolniejszy. Nasza topka (baza b11528) nie zna `prism.hadamard`, więc wymaga portu (K-151).
+- Na jaroserverai zostaje tylko `Ternary-Bonsai-2.5-27B-Uncensored-Q2_0-mtp.gguf` (PTQ1_0-mtp usunięty 2026-11-25 przy 0,9 GB wolnego dysku; odtwarza go `build_b25.py`).
 - Start: `qwen-opt/bonsai25/serve.sh` (port 18796, KV q4_0, MTP n2).
 
 ## Wyniki na XTX (xbench, KV q4_0, PM4=0, 2026-11-25)
