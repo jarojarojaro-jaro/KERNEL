@@ -36,8 +36,10 @@ stan() {
   echo "runnery: $(ps -eo pid,args | grep -E '^ *[0-9]+ /bin/bash .*[r]un-jobs.sh' | awk '{print $1":"$NF}' | sed 's#.*/##' | tr '\n' ' ')"
   local s; s=$(grep -E ' START ' $L | tail -1); local n=${s#*START }; n=${n%% *}
   if [ -n "$n" ] && ! tail -n +"$(grep -n " START $n " $L | tail -1 | cut -d: -f1)" $L | grep -q "END   $n "; then echo "trwa: $s" | cut -c1-200; fi
-  grep -E ' (END|GPU FAULT|GPU GUARD|queue .*: done)' $L | tail -4 | cut -c1-160
+  grep -E ' (END|GPU FAULT|GPU GUARD|DISK GUARD|queue .*: done)' $L | tail -4 | cut -c1-160
   echo ":8080 $(curl -s -m3 localhost:8080/health || echo down) | $(rocm-smi --showtemp 2>/dev/null | grep -m1 -o 'junction) (C): [0-9.]*') | gfxhub od startu: $(journalctl -k -b --no-pager 2>/dev/null | grep -c gfxhub)"
+  local w; w=$(df -BG --output=avail ~ | tail -1 | tr -dc 0-9)
+  echo "dysk: wolne ${w} GB$([ "${w:-0}" -lt 70 ] && echo ' < 70 GB: kolejka nie ruszy, nowe buildy i pobrania stop, napisz właścicielowi')"
   local b; b=$(ps -eo args | grep -cE '^[^ ]*([c]make --build|[c]lang\+\+|[h]ipcc)'); [ "$b" -gt 0 ] && echo "budowanie: $b procesów kompilacji"
   [ -f ~/k134/build-all.done ] && echo "znaczniki builda: $(grep -v '^$' ~/k134/build-all.done | tr '\n' ' ')"
   true
@@ -53,11 +55,11 @@ czekaj() { # target limit since_line
       if [ -n "$st" ]; then
         local e; e=$(tail -n +"$st" $L | grep -m1 "END   $t ")
         [ -n "$e" ] && { echo "$e" | cut -c1-160; wynik "$t" "${KOLN:-25}"; echo "$e" | grep -q 'rc=0 ' && return 0 || return 1; }
-        tail -n +"$st" $L | grep -qE 'GPU (FAULT|GUARD)' && { tail -n +"$st" $L | grep -E 'GPU (FAULT|GUARD)' | tail -1; wynik "$t" 15; return 3; }
+        tail -n +"$st" $L | grep -qE 'GPU (FAULT|GUARD)|DISK GUARD' && { tail -n +"$st" $L | grep -E 'GPU (FAULT|GUARD)|DISK GUARD' | tail -1; wynik "$t" 15; return 3; }
       fi
     else
       local d; d=$(echo "$tailq" | grep -E "queue [^ ]*$(basename "$t"): (done|no jobs)" | tail -1)
-      local f; f=$(echo "$tailq" | grep -E 'GPU (FAULT|GUARD)' | tail -1)
+      local f; f=$(echo "$tailq" | grep -E 'GPU (FAULT|GUARD)|DISK GUARD' | tail -1)
       if [ -n "$d$f" ]; then
         local jp; jp=$(grep -oE "queue [^ ]*$t: [0-9]+ jobs" $L | tail -1 | sed -E 's/^queue //; s/: [0-9]+ jobs$//')
         local nm; nm=$(grep -vE '^\s*(#|$)' "$jp" 2>/dev/null | cut -d'|' -f1 | paste -sd'|')
