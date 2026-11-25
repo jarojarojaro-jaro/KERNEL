@@ -19,7 +19,7 @@ Każda optymalizacja przechodzi bramkę poprawności, zanim liczy się jej zysk.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (28)
+## Notatki (29)
 
 - [[ablacja|Ablacja zamiast zgadywania]] — Wyłączamy kolejne części kernela w specjalnym buildzie i patrzymy, ile czasu znika; to pokazuje, co naprawdę ogranicza kernel.
 - [[analiza-platformy|Analiza platformy (obowiązkowy krok)]] — Każda łatka, profil i ustawienie dostaje rubrykę „gdzie działa i co się zmienia” na Linux / Windows / macOS; bez niej nie trafia do produktu (decyzja z 2026-10-15).
@@ -30,6 +30,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[kernel-tuner|Kernel Tuner: strojenie parametrów kerneli]] — Przeszukujemy parametry prawdziwych kerneli ggml (warpy, wiersze na blok) i przyjmujemy tylko konfiguracje bitowo równe produkcji.
 - [[skill-io-publikacja|Kwalifikacja i publikacja wg skill-io (publishing.md) a nasze wdrożenia topki i Enigmy]] — Przepis jest coś wart tylko wtedy, gdy ktoś inny go odbuduje i dostanie ten sam wynik (`publishing.md:3`). Nasze wdrożenia spełniają przypinanie, bramkę md5 i dowód „kopia = najlepsze”. Brakuje pełnego zestawu 6 bramek akceptacji (narzędzia w obie strony, igła przy 85% okna, rozdzielenie myślenia) i budowania produkcji z czystego checkoutu przypiętego commita.
 - [[loo|Leave-one-out łatek (LOO)]] — Wyłączamy po jednej łatce i mierzymy, czy bez niej jest wolniej; łatka bez mierzalnego zysku jest kandydatem do usunięcia.
+- [[metoda-nib-level-up|Metoda Nib i co zmieniamy u siebie („level wyżej”)]] — Nib nie ma jednej magicznej techniki: wygrywa dyscypliną procesu, czyli jeden silnik na jeden model, build w 30 s, każdy wariant za przełącznikiem w runtime, tabela µs na token w nagłówku przy każdej decyzji i poprawność wbudowana w ten sam plik binarny. U nas wiedza o kernelach jest porównywalna, przegrywamy kosztem przejścia od pomysłu do zweryfikowanej liczby.
 - [[najpierw-baza-kb|Najpierw baza: `kb search` / `kb facts` przed pytaniem i pomiarem]] — Zasada od 2026-10-19 (`AGENTS.md`, wiersz 8, i `~/AGENTS.md`): zanim agent zapyta albo zacznie mierzyć, szuka w bazie – `kb search <pytanie>` albo `kb facts <pytanie> [--max|--min]` – i odpowiada liczbą z `plik:linia`; `wiki.py search` deleguje do `kb` (`KB_NO_DELEGATE=1` przywraca stare).
 - [[physics-floor-check|Physics-floor check: czas kernela ≥ bajty / pasmo]] — Każdy zmierzony czas kernela porównać z fizyczną podłogą (bajty do przeczytania / szczytowe pasmo); wynik szybszy niż podłoga to błąd pomiaru, nie rekord – u nas tak wyszedł raport „1075 GB/s, 112% peaku”, który przy MTP był ~400 GB/s (propozycja raportu 21b #8, wzorem KernelGuard i SOL-ExecBench, 2026-10-19).
 - [[playbook-optymalizacji|Playbook optymalizacji]] — Każda optymalizacja przechodzi tę samą pętlę: sufit → profil → hipoteza z budżetem → łatka z wyłącznikiem → bramka poprawności → przeplatane A/B → wpis w NOTES.

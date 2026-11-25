@@ -712,3 +712,6 @@ Przegląd [[przeglad-kolejki-2026-11-24]], Colab [[colab-kolejka-2026-11-24]]. W
 ## [2026-11-25] Bonsai 2.5 Uncensored: 262k, 4 nowe łatki topki; Nib, straggler-finder, Doğukan (linki JARO)
 [[bonsai-2-5-uncensored]]: prism 77,7 → topka-k157 116,9 t/s przy T=0,7 (+50%), edycja kodu 174 → 446 t/s, bez spekulacji 54,9 → 76,9; łatki K-150T i K-157 (Gemini), K-154 i K-156 (agent), K-155 (Kernel); KLD 0,000000 do bazowego portu. Cel 200 t/s osiągnięty dla edycji kodu i greedy (Q4 279), nie dla czatu T=0,7. [[nib-chromadera]]: Nib szybszy od Mai (T=0,7 130–151 vs 112,5) dzięki tańszemu DSparkowi → K-158. [[gpu-straggler-finder]]: statystyka p90 okien do A/B i bramki Vast. Doğukan 3060 74 t/s: jego konfiguracja na XTX 39,8 (prism) → 121,9 (topka).
 
+## [2026-11-25] Jak zrobiono Nib i nasz „level wyżej” (polecenie JARO)
+[[metoda-nib-level-up]]: Nib = dyscyplina procesu (Step N z pomiarem przy każdej fladze, księga µs/token, warianty w runtime, selftest/oracle/ppl w binarce, spill audit, build 30 s), nie jedna technika; nasza luka to czas pomysł → liczba. Lekcja [[lekcja-przegrywamy-procesem-nie-wiedza]]; K-161 (`tools/perf`), K-162 (profil Nib vs Maya). jaroserverai offline od 04:27 (profil Nib na karcie czeka).
+

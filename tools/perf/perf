@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Kernel-side one-command perf loop (K-161, metoda-nib-level-up). Syncs tools/perf to jaroserverai, runs perf-remote.sh there
+# (build + spill audit), queues the GPU part through the queue, waits and prints the summary.
+# usage: perf PROFILE ENGINE_WT BASE_WT [--no-build] [--tag T] [--no-wait]
+set -uo pipefail
+H=jaro@jaroserverai; D=$(cd "$(dirname "$0")" && pwd); WAIT=1; a=()
+for x in "$@"; do [ "$x" = --no-wait ] && WAIT=0 || a+=("$x"); done
+ssh -n -o ConnectTimeout=8 $H true || { echo "jaroserverai offline"; exit 2; }
+rsync -aq "$D/" $H:qwen-opt/perf-tools/
+R=$(ssh -n $H "~/qwen-opt/perf-tools/perf-remote.sh ${a[*]}" | tee /dev/stderr | tail -1)
+case $R in /home/*) ;; *) echo "perf-remote failed"; exit 1;; esac
+"$(dirname "$D")/kol" pusc "$R/perf.jobs" > /dev/null
+[ $WAIT = 1 ] || { echo "queued $R"; exit 0; }
+"$(dirname "$D")/kol" czekaj "$R/perf.jobs" 3000 > /dev/null 2>&1
+ssh -n $H "cat $R/summary.txt; grep -hE '^(TBO|MD5|KLD|ABBA|COPY|GPU time|gfxhub)|^ +[0-9.]+ +[0-9.]+%' ~/qwen-opt/queue/logs/perf-$(basename $R | sed 's/-[0-9]*-[0-9]*$//').log | head -80"

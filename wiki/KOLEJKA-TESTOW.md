@@ -21,6 +21,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-161 · `tools/perf` na topce i Mai: jedna komenda build → spill audit → oracle (md5 + KLD) → księga µs/token z rocprof → ABBA e2e
+- data: 2026-11-25 ([[metoda-nib-level-up]], polecenie JARO „level wyżej”)
+- plan: CPU: skrypt i spill audit (wzór `nib/scripts/spill_audit.sh`); XTX: jeden przebieg na topka-k157 (Bonsai) i Maya (Inkling), księga do notatek modeli; cel: wariant ≤ 1 h od pomysłu do liczby
+- priorytet: najwyższy (proces)
+
+### K-162 · Profil Nib vs Maya kernel po kernelu (rocprofv3, ten sam prompt, KV q4) i księga µs/token obu
+- data: 2026-11-25 (Nib T=0,7 130–151 vs Maya 112,5; bench Nib przy d=0 140,7 tok/s bez MTP wg nagłówka)
+- plan: `nib bench -d 0,8192 -p 512 -n 128 --kv-type q4_0 --sparse-pages 0` i Maya gen pod rocprofv3; tabela etap → µs/token; wynik kieruje K-158
+- czas: ok. 10 min karty
+
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py

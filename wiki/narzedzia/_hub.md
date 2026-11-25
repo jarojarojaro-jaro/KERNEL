@@ -19,7 +19,7 @@ Większość leży w `qwen-opt/` i `qwen-opt/tools/` (repo KERNEL) oraz `~/qwen-
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (35)
+## Notatki (36)
 
 - [[co-stats|`co_stats.py`: statyczny audyt kerneli (VGPR, spille, fale)]] — `21l-skrypty/co_stats.py OUT.csv <lib.so|*.co|*.hsaco>` czyta wszystkie kernele z bundli HIP (także skompresowanych CCOB) i zapisuje per kernel VGPR, SGPR, spille, LDS i fale/SIMD; reguła fal gfx1100 = min(16, ⌊1536 / ⌈VGPR⌉₂₄⌋), zgodna z kompilatorem i RGA (raport 21l, 2026-10-19).
 - [[kol|`tools/kol`: kolejka GPU na jaroserverai jednym poleceniem z krótkim wynikiem]] — Jedno wywołanie zastępuje serię ssh + tail/grep queue.log + pętlę czekania + czytanie logów zadania; czekanie dzieje się na pudle (jedno połączenie ssh, sprawdzanie co 15 s), a wynik to END, błędy na górze i ogon logu bez szumu.
@@ -54,6 +54,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[ss-zrzut-ekranu|ss (zrzut ekranu z Windowsa na serwer)]] — Funkcja PowerShella `ss` w profilu użytkownika: zapisuje obrazek ze schowka jako PNG i kopiuje go przez `scp` do `/tmp` na serwerze, żeby agent mógł go przeczytać.
 - [[gpu-guard|Strażnik GPU: `qwen-opt/tools/gpu-guard.sh`]] — Skrypt odpytuje co 2 s log jądra i sensory XTX; przy zagrożeniu zabija wszystkie `llama-server` / `llama-bench` / `llama-perplexity` / `test-backend-ops` / `magnitude-engine` poza produkcją na :8080, zapisuje powód do `gpu-guard.log` i kończy się kodem 3, który budzi agenta głównego.
 - [[tailscale|Tailscale: zdalny dostęp do serwera]] — Od 2026-11-06 serwer jest w sieci Tailscale użytkownika (MagicDNS włączony, `tailscaled` uruchamiany przy starcie); zdalnie: `ssh jaro@jaroserverai` z urządzenia zalogowanego na to samo konto.
+- [[perf|tools/perf: pętla optymalizacji jedną komendą (K-161)]] — `tools/perf PROFIL WORKTREE BAZA` buduje silnik poza blokadą GPU, robi audyt spillów względem bazy, a w jednym jobie kolejki: test-backend-ops, md5 greedy, KLD 40×512, księgę µs/token z rocprof (delta do bazy) i ABBA czatu + kopii; na końcu jedno podsumowanie.
 - [[umr-offline-pm4|umr offline: dekodowanie taśmy PM4 bez roota]] — umr zbudowany bez roota (`apt download` + `dpkg -x`) dekoduje offline pakiety PM4, AQL i pola rejestrów gfx1100: `umr -f gfx11_vm_test -df plik.bin`; nie dekoduje słowa inicjatora `DISPATCH_DIRECT` (Mesa `ac_parse_ib.c` też nie) (raport 21l, 2026-10-19).
 - [[wiki-py|wiki.py (narzędzie tej bazy wiedzy)]] — Skrypt tylko ze stdlib do utrzymania wiki: `lint` (błędy → kod wyjścia 1), `index` (odświeża listy w `_hub.md` i `index.md`), `search` (deleguje do [[kb]], gdy `kb` jest w PATH; bez niego tytuły, streszczenia, tagi).
 <!-- AUTO:END -->

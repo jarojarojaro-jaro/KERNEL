@@ -27,6 +27,8 @@ Ten sam schemat przeniesiono na CPU ARM telefonu (`~/telefon/PROMPT-minicpm-spee
 
 Propozycja uprzemysłowienia playbooka z ledgerem i kaskadą bramek: [[fabryka-v1]] (raport 15f, do sprawdzenia).
 
+Od 2026-11-25 pętla ma narzędzie i miarę procesu: jedna komenda `perf` (build, spill audit, oracle, księga µs/token, ABBA), wariant w runtime zamiast rebuildu i czas „pomysł → zweryfikowana liczba” jako metryka: [[metoda-nib-level-up]].
+
 ## Powiązane
 - [[metody/_hub|Metody]]
 - [[analiza-platformy]]: obowiązkowy krok od 2026-10-15
