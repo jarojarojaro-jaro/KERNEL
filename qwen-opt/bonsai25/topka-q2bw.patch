@@ -1,0 +1,1322 @@
+diff --git a/ggml/src/ggml-cuda/mmvq-ld.cuh b/ggml/src/ggml-cuda/mmvq-ld.cuh
+new file mode 100644
+index 000000000..33edc542d
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-ld.cuh
+@@ -0,0 +1,75 @@
++#pragma once
++
++#include "common.cuh"
++
++// Byte-offset loads for the multi path: a block-uniform source (row of x / column of y) plus a 32-bit per-thread
++// byte offset. On RDNA3 the sources are raw buffer resources in SGPRs, so every load is `buffer_load voffset, srsrc,
++// soffset` and the loop only advances the shared 32-bit offsets; with plain pointers the compiler hoists one 64-bit
++// VGPR base per (row, field) and spends a 64-bit add per load. `align` is what the caller can guarantee (RDNA does
++// unaligned loads natively, the pointer fallback honors it).
++#if defined(GGML_USE_HIP) && defined(RDNA3)
++#define MMVQ_BUFFER_LOADS
++#endif
++
++struct mmvq_src {
++    const char * p; // p + soff = base; used by the pointer path and the types without a byte-offset loader
++#ifdef MMVQ_BUFFER_LOADS
++    __amdgpu_buffer_rsrc_t rsrc;
++    uint32_t soff;
++#endif
++};
++
++static __device__ __forceinline__ mmvq_src mmvq_make_src(const void * base, const uint32_t soff = 0) {
++    mmvq_src s;
++    s.p = (const char *) base + soff;
++#ifdef MMVQ_BUFFER_LOADS
++    // raw buffer (stride 0), no effective range limit, RDNA3 dword3 (as in composable_kernel for gfx11)
++    s.rsrc = __builtin_amdgcn_make_buffer_rsrc(const_cast<void *>(base), 0, -1, 0x31004000);
++    s.soff = soff;
++#endif
++    return s;
++}
++
++// cpol: buffer load cache policy bits (gfx11: 1 = GLC, 2 = SLC, 4 = DLC), ignored by the pointer fallback
++template <typename T, int align, int cpol = 0>
++static __device__ __forceinline__ T mmvq_ld(const mmvq_src & s, const uint32_t off) {
++    T v;
++#ifdef MMVQ_BUFFER_LOADS
++    static_assert(sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8 || sizeof(T) == 16, "mmvq_ld: unsupported size");
++    if constexpr (sizeof(T) == 2) {
++        const auto r = __builtin_amdgcn_raw_buffer_load_b16(s.rsrc, off, s.soff, cpol);
++        __builtin_memcpy(&v, &r, sizeof(T));
++    } else if constexpr (sizeof(T) == 4) {
++        const auto r = __builtin_amdgcn_raw_buffer_load_b32(s.rsrc, off, s.soff, cpol);
++        __builtin_memcpy(&v, &r, sizeof(T));
++    } else if constexpr (sizeof(T) == 8) {
++        const auto r = __builtin_amdgcn_raw_buffer_load_b64(s.rsrc, off, s.soff, cpol);
++        __builtin_memcpy(&v, &r, sizeof(T));
++    } else {
++        const auto r = __builtin_amdgcn_raw_buffer_load_b128(s.rsrc, off, s.soff, cpol);
++        __builtin_memcpy(&v, &r, sizeof(T));
++    }
++#else
++    __builtin_memcpy(&v, __builtin_assume_aligned(s.p + off, align), sizeof(T));
++#endif
++    return v;
++}
++
++template <int n, int align, int cpol = 0>
++static __device__ __forceinline__ void mmvq_ld_ints(const mmvq_src & s, const uint32_t off, int (&v)[n]) {
++#pragma unroll
++    for (int i = 0; i < n; i += 4) {
++        if (n - i >= 4) {
++            const int4 t = mmvq_ld<int4, align, cpol>(s, off + 4*i);
++            v[i + 0] = t.x; v[i + 1] = t.y; v[i + 2] = t.z; v[i + 3] = t.w;
++        } else if (n - i == 2) {
++            const int2 t = mmvq_ld<int2, align, cpol>(s, off + 4*i);
++            v[i + 0] = t.x; v[i + 1] = t.y;
++        } else {
++#pragma unroll
++            for (int k = i; k < n; ++k) {
++                v[k] = mmvq_ld<int, align, cpol>(s, off + 4*k);
++            }
++        }
++    }
++}
+diff --git a/ggml/src/ggml-cuda/mmvq-q2bw-impl.cuh b/ggml/src/ggml-cuda/mmvq-q2bw-impl.cuh
+new file mode 100644
+index 000000000..a0a838961
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-q2bw-impl.cuh
+@@ -0,0 +1,425 @@
++#pragma once
++
++// [GGML_HIP_Q2BW] kernel and launcher (see mmvq-q2bw.cuh); included by the per-cache-policy instance files only
++
++#include "mmvq-ld.cuh"
++#include "mmvq-q2bw.cuh"
++#include "unary.cuh"
++
++// 4x4 byte transpose: a[i] byte m = byte i of y[m] (y[m] holds activations 4m..4m+3, so a[i] holds 4m + i, m = 0..3,
++// the values of code plane i of a 16-value weight dword)
++static __device__ __forceinline__ void mmvq_q2bw_transpose(const int4 y, int * a) {
++#if defined(GGML_USE_HIP)
++    const uint32_t t0 = __builtin_amdgcn_perm(y.y, y.x, 0x05010400); // y0.b0 y1.b0 y0.b1 y1.b1
++    const uint32_t t1 = __builtin_amdgcn_perm(y.y, y.x, 0x07030602); // y0.b2 y1.b2 y0.b3 y1.b3
++    const uint32_t t2 = __builtin_amdgcn_perm(y.w, y.z, 0x05010400); // y2.b0 y3.b0 y2.b1 y3.b1
++    const uint32_t t3 = __builtin_amdgcn_perm(y.w, y.z, 0x07030602); // y2.b2 y3.b2 y2.b3 y3.b3
++    a[0] = __builtin_amdgcn_perm(t2, t0, 0x05040100);
++    a[1] = __builtin_amdgcn_perm(t2, t0, 0x07060302);
++    a[2] = __builtin_amdgcn_perm(t3, t1, 0x05040100);
++    a[3] = __builtin_amdgcn_perm(t3, t1, 0x07060302);
++#else
++    GGML_UNUSED(y);
++    a[0] = a[1] = a[2] = a[3] = 0;
++#endif
++}
++
++// the 32-value chunk of a lane in one K iteration: its 8 code bytes (byte m: values 4m..4m+3, low bits first) and the
++// scale of its Q2_0 block
++struct mmvq_q2bw_x {
++    int2 q;
++    half d;
++};
++
++// One wave computes R rows (R*ncols_dst results; with a gate R more); lane l takes the 32-value chunks l, l + 32, ... of
++// each row (block l/2 + 16*it, half l%2), exactly as one wave of the table's launch does for its row. The wave walks
++// K in batches of U iterations: batch b+1's weights are loaded (after batch b's activations) before batch b is dotted.
++#if defined(GGML_USE_HIP)
++#define MMVQ_Q2BW_LAUNCH_BOUNDS __attribute__((amdgpu_flat_work_group_size(1, 32*MMVQ_Q2BW_MAX_WPB)))
++#else
++#define MMVQ_Q2BW_LAUNCH_BOUNDS __launch_bounds__(32*MMVQ_Q2BW_MAX_WPB, 1)
++#endif
++template <int ncols_dst, int fus, int cpol, int U, int R, bool W>
++MMVQ_Q2BW_LAUNCH_BOUNDS
++static __global__ void mul_mat_vec_q2_0_bw(
++        const void * __restrict__ vx, const void * __restrict__ vy, const ggml_cuda_mm_fusion_args_device fusion,
++        float * __restrict__ dst, const uint32_t nb, const uint32_t nrows_x, const uint32_t stride_row_x,
++        const uint32_t stride_col_y, uint32_t stride_col_dst, const uint32_t ngroups0) {
++#if defined(GGML_USE_HIP) && defined(RDNA3)
++    constexpr bool has_fusion = fus != MMVQ_Q2BW_PLAIN;
++    constexpr bool has_gate   = fus == MMVQ_Q2BW_GATE;
++    constexpr int  NG         = has_gate ? 2 : 1;
++    constexpr uint32_t bsx    = sizeof(block_q2_0);
++    constexpr uint32_t bsy    = sizeof(block_q8_1);
++    constexpr uint32_t seg    = 16*bsx;           // bytes of a row per K iteration of the wave (32 chunks of 32 values)
++    constexpr int      NW     = (U*seg/16 + 31)/32; // W: int4 loads per lane per (matrix, row) and batch
++    constexpr uint32_t lds_row = U*seg + 16;      // W: LDS bytes per (matrix, row): one batch + read-ahead pad
++    static_assert(sizeof(block_q2_0) == 18 && QK2_0 == 2*QK8_1, "Q2BW: block_q2_0 layout");
++
++    const int      lane = threadIdx.x % 32;
++    const uint32_t wave = __builtin_amdgcn_readfirstlane(threadIdx.x / 32);
++    uint32_t grp = blockIdx.x*(blockDim.x/32) + wave;
++
++    const char * x     = (const char *) vx;
++    uint32_t     nrows = nrows_x;
++    if constexpr (has_fusion) {
++        // pair launch: the row groups past the first matrix compute the second one (same K and src1)
++        if (fusion.pair_x != nullptr && grp >= ngroups0) {
++            grp           -= ngroups0;
++            x              = (const char *) fusion.pair_x;
++            dst            = fusion.pair_dst;
++            stride_col_dst = fusion.pair_nrows;
++            nrows          = fusion.pair_nrows;
++        }
++    }
++    const uint32_t row0 = grp*R;
++    if (row0 >= nrows) {
++        return;
++    }
++
++    [[maybe_unused]] float x_biases[ncols_dst]    = { 0.0f };
++    [[maybe_unused]] float gate_biases[ncols_dst] = { 0.0f };
++    if constexpr (has_fusion) {
++        if (lane < R && row0 + lane < nrows) {
++            if (fusion.x_bias != nullptr) {
++#pragma unroll
++                for (int j = 0; j < ncols_dst; ++j) {
++                    x_biases[j] = ((const float *) fusion.x_bias)[j*stride_col_dst + row0 + lane];
++                }
++            }
++            if (has_gate && fusion.gate_bias != nullptr) {
++#pragma unroll
++                for (int j = 0; j < ncols_dst; ++j) {
++                    gate_biases[j] = ((const float *) fusion.gate_bias)[j*stride_col_dst + row0 + lane];
++                }
++            }
++        }
++    }
++
++    // rows past the end of the matrix re-read the last one, their results are not stored
++    mmvq_src xs[NG][R];
++#pragma unroll
++    for (int r = 0; r < R; ++r) {
++        const uint32_t roff = min(row0 + r, nrows - 1)*stride_row_x*bsx;
++        xs[0][r] = mmvq_make_src(x, roff);
++        if constexpr (has_gate) {
++            xs[1][r] = mmvq_make_src(fusion.gate, roff);
++        }
++    }
++    mmvq_src ys[ncols_dst];
++#pragma unroll
++    for (int j = 0; j < ncols_dst; ++j) {
++        ys[j] = mmvq_make_src(vy, j*stride_col_y*bsy);
++    }
++
++    const uint32_t bl    = lane / 2;      // block of the lane within a K iteration
++    const uint32_t h     = lane % 2;      // half of the block
++    const uint32_t niter = (nb + 15)/16;  // K iterations of the wave (the last one may leave lanes idle)
++
++    float acc[NG][ncols_dst][R] = {{{0.0f}}};
++
++    // Activations of a batch, loaded before the next batch's weights so that waiting for them does not wait for those.
++    // Every load of the K loop is unconditional (iterations past the end re-read the row's last block, a cache hit):
++    // loads under a branch leave the number of later loads unknown and the waits fall back to the last load.
++    struct ybatch {
++        int4  y0[U][ncols_dst];
++        int4  y1[U][ncols_dst];
++        float d8[U][ncols_dst];
++    };
++    const auto load_y = [&](ybatch & yb, const uint32_t it0) {
++#pragma unroll
++        for (int u = 0; u < U; ++u) {
++            const uint32_t kb = min(bl + 16*(it0 + u), nb - 1);
++            const uint32_t yo = (2*kb + h)*bsy;
++#pragma unroll
++            for (int j = 0; j < ncols_dst; ++j) {
++                yb.d8[u][j] = __low2float(mmvq_ld<half2, 4>(ys[j], yo));
++                yb.y0[u][j] = mmvq_ld<int4, 4>(ys[j], yo + 4);
++                yb.y1[u][j] = mmvq_ld<int4, 4>(ys[j], yo + 20);
++            }
++        }
++    };
++
++    // dot of one K iteration: the chunk of every (matrix, row) against the activations of every column
++    const auto dot_iter = [&](const mmvq_q2bw_x (&xw)[NG][R], const ybatch & yb, const int u, const uint32_t it) {
++        // chunks past the end of the row (lanes of the last iteration, iterations of the last batch) add d*d8 = +0:
++        // acc + 0*sumi == acc bitwise (acc starts at +0 and an fma never makes it -0), and no select on a loaded value
++        // (the compiler turns that into a branch around the loads, which then wait behind the next batch's)
++        const int keep = bl + 16*it < nb ? -1 : 0;
++#pragma unroll
++        for (int j = 0; j < ncols_dst; ++j) {
++            int a[8];
++            mmvq_q2bw_transpose(yb.y0[u][j], a);
++            mmvq_q2bw_transpose(yb.y1[u][j], a + 4);
++            // exact integer sum of the chunk's activations: the code offset (codes 0..3 = values -1..2)
++            int sumy = 0;
++            sumy = ggml_cuda_dp4a(0x01010101, yb.y0[u][j].x, sumy);
++            sumy = ggml_cuda_dp4a(0x01010101, yb.y0[u][j].y, sumy);
++            sumy = ggml_cuda_dp4a(0x01010101, yb.y0[u][j].z, sumy);
++            sumy = ggml_cuda_dp4a(0x01010101, yb.y0[u][j].w, sumy);
++            sumy = ggml_cuda_dp4a(0x01010101, yb.y1[u][j].x, sumy);
++            sumy = ggml_cuda_dp4a(0x01010101, yb.y1[u][j].y, sumy);
++            sumy = ggml_cuda_dp4a(0x01010101, yb.y1[u][j].z, sumy);
++            sumy = ggml_cuda_dp4a(0x01010101, yb.y1[u][j].w, sumy);
++#pragma unroll
++            for (int m = 0; m < NG; ++m) {
++#pragma unroll
++                for (int r = 0; r < R; ++r) {
++                    int sumi = 0;
++#pragma unroll
++                    for (int i = 0; i < 4; ++i) {
++                        sumi = ggml_cuda_dp4a(((uint32_t) xw[m][r].q.x >> 2*i) & 0x03030303, a[i],     sumi);
++                        sumi = ggml_cuda_dp4a(((uint32_t) xw[m][r].q.y >> 2*i) & 0x03030303, a[4 + i], sumi);
++                    }
++                    // the table's launch: acc += (d*d8) * sumi, contracted to one fma
++                    const float dd = __int_as_float(__float_as_int(__half2float(xw[m][r].d) * yb.d8[u][j]) & keep);
++                    acc[m][j][r] = __builtin_fmaf(dd, (float) (sumi - sumy), acc[m][j][r]);
++                }
++            }
++        }
++    };
++
++    // The K loop: batches of U iterations in two register buffers, two batches per trip (no buffer is ever copied: a
++    // copy waits for its loads). Every trip's prefetch is consumed by the next batch: with an exit between the two
++    // batches the compiler sank the second prefetch past the exit test, into the next trip, right before its use.
++    const auto run_ring = [&](auto & step, auto & xa, auto & xb) {
++        uint32_t it0 = 0;
++        for (; it0 + U < niter; it0 += 2*U) {
++            step(xa, xb, it0);
++            step(xb, xa, it0 + U);
++        }
++        if (it0 < niter) {
++            step(xa, xb, it0); // the last batch (its prefetch is dead)
++        }
++    };
++    if constexpr (!W) {
++        // per-lane loads: the chunk's 8 code bytes and its block scale
++        using xbatch = mmvq_q2bw_x[U][NG][R];
++        const auto load_x = [&](xbatch & xb, const uint32_t it0) {
++#pragma unroll
++            for (int u = 0; u < U; ++u) {
++                const uint32_t kb = min(bl + 16*(it0 + u), nb - 1);
++#pragma unroll
++                for (int m = 0; m < NG; ++m) {
++#pragma unroll
++                    for (int r = 0; r < R; ++r) {
++                        xb[u][m][r].q = mmvq_ld<int2, 2, cpol>(xs[m][r], kb*bsx + 2 + 8*h);
++                        xb[u][m][r].d = mmvq_ld<half, 2, cpol>(xs[m][r], kb*bsx);
++                    }
++                }
++            }
++        };
++        const auto step = [&](xbatch & cur, xbatch & nxt, const uint32_t it0) {
++            ybatch yb;
++            // issue order: this batch's activations, then the next batch's weights (the waits count loads in order);
++            // sched barriers keep the scheduler from interleaving them
++            load_y(yb, it0);
++            __builtin_amdgcn_sched_barrier(0);
++            load_x(nxt, it0 + U);
++            __builtin_amdgcn_sched_barrier(0);
++            // no branch around the dots of iterations past the end (dot_iter masks them): their activation loads would
++            // sink into it, behind the next batch's weight loads
++#pragma unroll
++            for (int u = 0; u < U; ++u) {
++                dot_iter(cur[u], yb, u, it0 + u);
++            }
++        };
++        xbatch xa;
++        xbatch xb;
++        load_x(xa, 0);
++        run_ring(step, xa, xb);
++    } else {
++        // 128-bit loads: lane s of the wave loads bytes 16*s .. 16*s + 15 of the batch (U iterations, U*seg bytes) of
++        // each (matrix, row), the batch goes through this wave's LDS slice and every lane reads its chunks back
++        extern __shared__ int4 mmvq_q2bw_lds[];
++        char * lw = (char *) mmvq_q2bw_lds + wave*(NG*R*lds_row);
++        const uint32_t row_bytes = nb*bsx;
++        using xbatch = int4[NG][R][NW];
++        const auto load_x = [&](xbatch & xb, const uint32_t it0) {
++#pragma unroll
++            for (int m = 0; m < NG; ++m) {
++#pragma unroll
++                for (int r = 0; r < R; ++r) {
++#pragma unroll
++                    for (int s = 0; s < NW; ++s) {
++                        // slots past the batch or the row re-read the row's last 16 bytes
++                        const uint32_t o = min(it0*seg + 16*(lane + 32*s), row_bytes - 16);
++                        xb[m][r][s] = mmvq_ld<int4, 16, cpol>(xs[m][r], o);
++                    }
++                }
++            }
++        };
++        const auto step = [&](xbatch & cur, xbatch & nxt, const uint32_t it0) {
++            ybatch yb;
++            load_y(yb, it0);
++            __builtin_amdgcn_sched_barrier(0); // issue order as in the per-lane path
++            load_x(nxt, it0 + U);
++            __builtin_amdgcn_sched_barrier(0);
++            // LDS slice reuse: the previous batch's reads are done (one wave, LDS operations in order)
++            __builtin_amdgcn_wave_barrier();
++#pragma unroll
++            for (int m = 0; m < NG; ++m) {
++#pragma unroll
++                for (int r = 0; r < R; ++r) {
++#pragma unroll
++                    for (int s = 0; s < NW; ++s) {
++                        const uint32_t slot = lane + 32*s;
++                        if (slot < U*seg/16) {
++                            *(int4 *) (lw + (m*R + r)*lds_row + 16*slot) = cur[m][r][s];
++                        }
++                    }
++                }
++            }
++            __builtin_amdgcn_fence(__ATOMIC_RELEASE, "wavefront");
++            __builtin_amdgcn_wave_barrier();
++            __builtin_amdgcn_fence(__ATOMIC_ACQUIRE, "wavefront");
++#pragma unroll
++            for (int u = 0; u < U; ++u) {
++                mmvq_q2bw_x xw[NG][R];
++                const uint32_t oq = u*seg + bl*bsx + 2 + 8*h; // even: the code bytes start at a 2-byte boundary
++                const uint32_t sh = 8*(oq & 2);
++#pragma unroll
++                for (int m = 0; m < NG; ++m) {
++#pragma unroll
++                    for (int r = 0; r < R; ++r) {
++                        const char     * lr = lw + (m*R + r)*lds_row;
++                        const uint32_t * l4 = (const uint32_t *) (lr + (oq & ~3u));
++                        const uint32_t w0 = l4[0];
++                        const uint32_t w1 = l4[1];
++                        const uint32_t w2 = l4[2];
++                        xw[m][r].q.x = __builtin_amdgcn_alignbit(w1, w0, sh);
++                        xw[m][r].q.y = __builtin_amdgcn_alignbit(w2, w1, sh);
++                        xw[m][r].d   = *(const half *) (lr + u*seg + bl*bsx);
++                    }
++                }
++                dot_iter(xw, yb, u, it0 + u); // past the end: masked in dot_iter (no branch, see the per-lane path)
++            }
++        };
++        xbatch xa;
++        xbatch xb;
++        load_x(xa, 0);
++        run_ring(step, xa, xb);
++    }
++
++    // epilogue of the table's launch (one wave, rows_per_cuda_block = R)
++    dst += row0;
++#pragma unroll
++    for (int j = 0; j < ncols_dst; ++j) {
++#pragma unroll
++        for (int r = 0; r < R; ++r) {
++            float tmp = warp_reduce_sum<32>(acc[0][j][r]);
++            [[maybe_unused]] float tmp_gate = 0.0f;
++            if constexpr (has_gate) {
++                tmp_gate = warp_reduce_sum<32>(acc[NG - 1][j][r]);
++            }
++            if (lane == r && row0 + r < nrows) {
++                float result = tmp;
++                if constexpr (has_fusion) {
++                    result += x_biases[j];
++                }
++                if constexpr (has_gate) {
++                    float gate_value = tmp_gate + gate_biases[j];
++                    switch (fusion.glu_op) {
++                        case GGML_GLU_OP_SWIGLU:
++                            result *= ggml_cuda_op_silu_single(gate_value);
++                            break;
++                        case GGML_GLU_OP_GEGLU:
++                            result *= ggml_cuda_op_gelu_single(gate_value);
++                            break;
++                        case GGML_GLU_OP_SWIGLU_OAI:
++                            result = ggml_cuda_op_swiglu_oai_single(gate_value, result);
++                            break;
++                        case GGML_GLU_OP_SWIGLU_CLAMP:
++                            result = ggml_cuda_op_swiglu_clamp_single(gate_value, result, fusion.glu_limit);
++                            break;
++                        default:
++                            result = result * gate_value;
++                            break;
++                    }
++                }
++                dst[j*stride_col_dst + r] = result;
++            }
++        }
++    }
++
++    if constexpr (has_fusion && ncols_dst == 1) {
++        // [GGML_HIP_GATE_UP_Q8] the q8_1 copy of dst, as the table's launch: the wave that completes the 32 rows of a
++        // group (ticket per group, R rows per wave, R divides 32) quantizes them
++        if (fusion.q8_out != nullptr) {
++            const uint32_t group = row0 / QK8_1;
++            __threadfence();
++            unsigned int t = 0;
++            if (lane == 0) {
++                t = atomicAdd(fusion.q8_tickets + group, (unsigned int) R);
++            }
++            t = __shfl_sync(0xFFFFFFFF, t, 0, 32);
++            if (t == QK8_1 - R) {
++                if (lane == 0) {
++                    fusion.q8_tickets[group] = 0;
++                }
++                __threadfence();
++                const float * dst_group = dst - (int64_t) row0 + (int64_t) group*QK8_1; // dst points at row0 here
++                quantize_q8_1_group(dst_group[lane], fusion.q8_out + group, lane);
++            }
++        }
++    }
++#else
++    GGML_UNUSED_VARS(vx, vy, fusion, dst, nb, nrows_x, stride_row_x, stride_col_y, stride_col_dst, ngroups0);
++    NO_DEVICE_CODE;
++#endif // defined(GGML_USE_HIP) && defined(RDNA3)
++}
++
++template <int ncols_dst, int fus, int cpol, int U, int R, bool W>
++static void mmvq_q2bw_launch_one(const mmvq_q2bw_args & a) {
++    constexpr int NG = fus == MMVQ_Q2BW_GATE ? 2 : 1;
++    const uint32_t ngroups0 = (a.nrows + R - 1)/R;
++    uint32_t ngroups = ngroups0;
++    if (a.fusion.pair_x != nullptr) {
++        ngroups += (a.fusion.pair_nrows + R - 1)/R;
++    }
++    const uint32_t nblocks = (ngroups + a.wpb - 1)/a.wpb;
++    const size_t   lds     = W ? size_t(a.wpb)*NG*R*(U*16*sizeof(block_q2_0) + 16) : 0;
++    const ggml_cuda_kernel_launch_params params(dim3(nblocks, 1, 1), dim3(32*a.wpb, 1, 1), lds, a.stream);
++    ggml_cuda_kernel_launch(mul_mat_vec_q2_0_bw<ncols_dst, fus, cpol, U, R, W>, params,
++        a.vx, a.vy, a.fusion, a.dst, a.nb, a.nrows, a.stride_row_x, a.stride_col_y, a.stride_col_dst, ngroups0);
++}
++
++// args.U, args.R, args.W name an instance (mmvq_q2bw_instance), see ggml_cuda_mmvq_q2bw
++template <int ncols_dst, int fus, int cpol>
++void ggml_cuda_mmvq_q2bw_launch(const mmvq_q2bw_args & a) {
++    constexpr bool gate = fus == MMVQ_Q2BW_GATE;
++    bool done = false;
++    const auto try_one = [&](auto U_tag, auto R_tag, auto W_tag) {
++        constexpr int  U = decltype(U_tag)::value;
++        constexpr int  R = decltype(R_tag)::value;
++        constexpr bool W = decltype(W_tag)::value;
++        if constexpr (mmvq_q2bw_instance(ncols_dst, gate, U, R, W, cpol)) {
++            if (!done && a.U == U && a.R == R && a.W == W) {
++                mmvq_q2bw_launch_one<ncols_dst, fus, cpol, U, R, W>(a);
++                done = true;
++            }
++        }
++    };
++    const auto try_r = [&](auto U_tag, auto W_tag) {
++        try_one(U_tag, std::integral_constant<int, 1>{}, W_tag);
++        try_one(U_tag, std::integral_constant<int, 2>{}, W_tag);
++        try_one(U_tag, std::integral_constant<int, 4>{}, W_tag);
++    };
++    const auto try_u = [&](auto W_tag) {
++        try_r(std::integral_constant<int, 1>{}, W_tag);
++        try_r(std::integral_constant<int, 2>{}, W_tag);
++        try_r(std::integral_constant<int, 4>{}, W_tag);
++    };
++    try_u(std::false_type{});
++    try_u(std::true_type{});
++    GGML_ASSERT(done && "Q2BW: no kernel instance for these knobs");
++}
++
++#define MMVQ_Q2BW_INSTANCES(cpol)                                                         \
++    template void ggml_cuda_mmvq_q2bw_launch<1, MMVQ_Q2BW_PLAIN, cpol>(const mmvq_q2bw_args &); \
++    template void ggml_cuda_mmvq_q2bw_launch<1, MMVQ_Q2BW_EPI,   cpol>(const mmvq_q2bw_args &); \
++    template void ggml_cuda_mmvq_q2bw_launch<1, MMVQ_Q2BW_GATE,  cpol>(const mmvq_q2bw_args &); \
++    template void ggml_cuda_mmvq_q2bw_launch<2, MMVQ_Q2BW_PLAIN, cpol>(const mmvq_q2bw_args &); \
++    template void ggml_cuda_mmvq_q2bw_launch<2, MMVQ_Q2BW_EPI,   cpol>(const mmvq_q2bw_args &); \
++    template void ggml_cuda_mmvq_q2bw_launch<3, MMVQ_Q2BW_PLAIN, cpol>(const mmvq_q2bw_args &); \
++    template void ggml_cuda_mmvq_q2bw_launch<3, MMVQ_Q2BW_EPI,   cpol>(const mmvq_q2bw_args &)
+diff --git a/ggml/src/ggml-cuda/mmvq-q2bw-nt0.cu b/ggml/src/ggml-cuda/mmvq-q2bw-nt0.cu
+new file mode 100644
+index 000000000..245ffdd12
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-q2bw-nt0.cu
+@@ -0,0 +1,5 @@
++// [GGML_HIP_Q2BW] kernel instances, default cache policy
++
++#include "mmvq-q2bw-impl.cuh"
++
++MMVQ_Q2BW_INSTANCES(0);
+diff --git a/ggml/src/ggml-cuda/mmvq-q2bw-nt1.cu b/ggml/src/ggml-cuda/mmvq-q2bw-nt1.cu
+new file mode 100644
+index 000000000..b231a92d2
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-q2bw-nt1.cu
+@@ -0,0 +1,5 @@
++// [GGML_HIP_Q2BW] kernel instances, GGML_HIP_Q2BW_NT=1: slc dlc (nontemporal)
++
++#include "mmvq-q2bw-impl.cuh"
++
++MMVQ_Q2BW_INSTANCES(6);
+diff --git a/ggml/src/ggml-cuda/mmvq-q2bw-nt2.cu b/ggml/src/ggml-cuda/mmvq-q2bw-nt2.cu
+new file mode 100644
+index 000000000..e9a230da9
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-q2bw-nt2.cu
+@@ -0,0 +1,5 @@
++// [GGML_HIP_Q2BW] kernel instances, GGML_HIP_Q2BW_NT=2: slc
++
++#include "mmvq-q2bw-impl.cuh"
++
++MMVQ_Q2BW_INSTANCES(2);
+diff --git a/ggml/src/ggml-cuda/mmvq-q2bw-nt3.cu b/ggml/src/ggml-cuda/mmvq-q2bw-nt3.cu
+new file mode 100644
+index 000000000..ac7bbe859
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-q2bw-nt3.cu
+@@ -0,0 +1,5 @@
++// [GGML_HIP_Q2BW] kernel instances, GGML_HIP_Q2BW_NT=3: dlc (MALL no-alloc)
++
++#include "mmvq-q2bw-impl.cuh"
++
++MMVQ_Q2BW_INSTANCES(4);
+diff --git a/ggml/src/ggml-cuda/mmvq-q2bw.cu b/ggml/src/ggml-cuda/mmvq-q2bw.cu
+new file mode 100644
+index 000000000..5faf81d22
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-q2bw.cu
+@@ -0,0 +1,111 @@
++#include "mmvq-q2bw.cuh"
++
++#include <algorithm>
++
++// [GGML_HIP_Q2BW] host entry: switches, applicability, instance choice (see mmvq-q2bw.cuh)
++bool ggml_cuda_mmvq_q2bw(const void * vx, const void * vy, const ggml_cuda_mm_fusion_args_device & fusion, float * dst,
++        const int ncols_x, const int nrows_x, const int ncols_dst, const int stride_row_x, const int stride_col_y,
++        const int stride_col_dst, cudaStream_t stream) {
++    if (GGML_CUDA_RT_SWITCH("GGML_HIP_Q2BW", 0) == 0) {
++        return false;
++    }
++    const int nmax = std::min(3, GGML_CUDA_RT_SWITCH("GGML_HIP_Q2BW_N", 3));
++    if (ncols_dst < 1 || ncols_dst > nmax || ncols_x % QK2_0 != 0) {
++        return false;
++    }
++    // the epilogues of the table's launch this kernel reproduces: gate/GLU (one column), bias, pair, q8_1 copy
++    if (fusion.shared_up != nullptr || fusion.x_scale != nullptr || fusion.gate_scale != nullptr ||
++        (ncols_dst > 1 && (fusion.gate != nullptr || fusion.q8_out != nullptr))) {
++        return false;
++    }
++    // 32-bit byte offsets within a matrix
++    const uint64_t row_bytes = uint64_t(stride_row_x)*sizeof(block_q2_0);
++    if (uint64_t(nrows_x)*row_bytes >= (uint64_t(1) << 32) ||
++        (fusion.pair_x != nullptr && uint64_t(fusion.pair_nrows)*row_bytes >= (uint64_t(1) << 32))) {
++        return false;
++    }
++
++    const bool gate = fusion.gate != nullptr;
++    const int  cpol = mmvq_q2bw_cpol(GGML_CUDA_RT_SWITCH("GGML_HIP_Q2BW_NT", 0));
++    const int  u_sw = GGML_CUDA_RT_SWITCH("GGML_HIP_Q2BW_U", 2);
++    const int  r_sw = GGML_CUDA_RT_SWITCH("GGML_HIP_Q2BW_R", 1);
++    int  U   = u_sw >= 4 ? 4 : u_sw >= 2 ? 2 : 1;
++    int  R   = r_sw >= 4 ? 4 : r_sw >= 2 ? 2 : 1;
++    int  wpb = std::clamp(GGML_CUDA_RT_SWITCH("GGML_HIP_Q2BW_WPB", 4), 1, MMVQ_Q2BW_MAX_WPB);
++    bool W   = GGML_CUDA_RT_SWITCH("GGML_HIP_Q2BW_W", 0) != 0;
++    if (W) {
++        // the batch loads read whole 16-byte slots of a row: 16-byte aligned rows that end on a slot boundary
++        const uint32_t nb = ncols_x / QK2_0;
++        const auto a16 = [](const void * p) { return p == nullptr || (uintptr_t) p % 16 == 0; };
++        W = row_bytes % 16 == 0 && (nb*sizeof(block_q2_0)) % 16 == 0 && a16(vx) && a16(fusion.gate) && a16(fusion.pair_x);
++    }
++    if (W && !mmvq_q2bw_instance(ncols_dst, gate, 1, 1, true, cpol)) {
++        W = false;
++    }
++    if (!mmvq_q2bw_instance(ncols_dst, gate, 1, 1, W, cpol)) {
++        return false; // e.g. 2-3 columns with GGML_HIP_Q2BW_NT=2|3
++    }
++    // past the register budget: fewer K iterations per batch first, then fewer rows per wave
++    while (!mmvq_q2bw_instance(ncols_dst, gate, U, R, W, cpol)) {
++        if (U > 1) {
++            U /= 2;
++        } else {
++            R /= 2;
++        }
++    }
++
++    mmvq_q2bw_args a;
++    a.vx             = vx;
++    a.vy             = vy;
++    a.fusion         = fusion;
++    a.dst            = dst;
++    a.nb             = ncols_x / QK2_0;
++    a.nrows          = nrows_x;
++    a.stride_row_x   = stride_row_x;
++    a.stride_col_y   = stride_col_y;
++    a.stride_col_dst = stride_col_dst;
++    a.U              = U;
++    a.R              = R;
++    a.wpb            = wpb;
++    a.W              = W;
++    a.stream         = stream;
++
++    // as mmvq_fusion_any: any epilogue input makes the table's launch take its fused instance
++    const int fus = gate ? MMVQ_Q2BW_GATE :
++        (fusion.x_bias != nullptr || fusion.gate_bias != nullptr || fusion.pair_x != nullptr) ? MMVQ_Q2BW_EPI : MMVQ_Q2BW_PLAIN;
++
++#define MMVQ_Q2BW_CPOL(nc, f)                                                          \
++    switch (cpol) {                                                                    \
++        case 0: ggml_cuda_mmvq_q2bw_launch<nc, f, 0>(a); break;                        \
++        case 6: ggml_cuda_mmvq_q2bw_launch<nc, f, 6>(a); break;                        \
++        case 2: ggml_cuda_mmvq_q2bw_launch<nc, f, 2>(a); break;                        \
++        default: ggml_cuda_mmvq_q2bw_launch<nc, f, 4>(a); break;                       \
++    }
++    switch (ncols_dst) {
++        case 1:
++            if (fus == MMVQ_Q2BW_GATE) {
++                MMVQ_Q2BW_CPOL(1, MMVQ_Q2BW_GATE);
++            } else if (fus == MMVQ_Q2BW_EPI) {
++                MMVQ_Q2BW_CPOL(1, MMVQ_Q2BW_EPI);
++            } else {
++                MMVQ_Q2BW_CPOL(1, MMVQ_Q2BW_PLAIN);
++            }
++            break;
++        case 2:
++            if (fus == MMVQ_Q2BW_EPI) {
++                MMVQ_Q2BW_CPOL(2, MMVQ_Q2BW_EPI);
++            } else {
++                MMVQ_Q2BW_CPOL(2, MMVQ_Q2BW_PLAIN);
++            }
++            break;
++        default:
++            if (fus == MMVQ_Q2BW_EPI) {
++                MMVQ_Q2BW_CPOL(3, MMVQ_Q2BW_EPI);
++            } else {
++                MMVQ_Q2BW_CPOL(3, MMVQ_Q2BW_PLAIN);
++            }
++            break;
++    }
++#undef MMVQ_Q2BW_CPOL
++    return true;
++}
+diff --git a/ggml/src/ggml-cuda/mmvq-q2bw.cuh b/ggml/src/ggml-cuda/mmvq-q2bw.cuh
+new file mode 100644
+index 000000000..080184e78
+--- /dev/null
++++ b/ggml/src/ggml-cuda/mmvq-q2bw.cuh
+@@ -0,0 +1,72 @@
++#pragma once
++
++#include "common.cuh"
++
++// [GGML_HIP_Q2BW] RDNA3 Q2_0 (Bonsai) mat-vec at 1-3 src1 columns, a weight-streaming variant of the table's launch
++// (mul_mat_vec_q<Q2_0, n>, one wave per row, one 288-byte K segment of the row in flight per wave). Every row keeps the
++// table's lanes and per-lane order of partial sums (lane l: 32-value chunks l, l + 32, ...; the same fma per chunk;
++// the same butterfly and fusion epilogue), so the results are bitwise those of the table's launch. Knobs (runtime
++// switches, read per graph build; GGML_HIP_Q2BW=0, the default, keeps the table's launch):
++//   GGML_HIP_Q2BW=1        on (columns 1..GGML_HIP_Q2BW_N, default 3)
++//   GGML_HIP_Q2BW_U=1|2|4  K iterations per weight load batch; the next batch is loaded before this one is dotted
++//                          (register ring of two batches): U*R*(2 with a fused gate) segments in flight per wave
++//   GGML_HIP_Q2BW_R=1|2|4  rows per wave (the activation loads shared by the rows)
++//   GGML_HIP_Q2BW_WPB=1..8 waves per block (each wave its own rows; the table's launch: 1)
++//   GGML_HIP_Q2BW_NT=0..3  weight load cache policy: 0 default, 1 nontemporal (slc dlc: L0/L1 hit-evict, L2 stream,
++//                          MALL no-alloc), 2 slc only, 3 dlc only (MALL no-alloc)
++//   GGML_HIP_Q2BW_W=1      128-bit weight loads: the wave loads each batch of a row as contiguous int4 per lane and
++//                          redistributes it through LDS (needs 16-byte aligned rows)
++// Combinations past the register budget take a smaller U (see ggml_cuda_mmvq_q2bw).
++
++enum mmvq_q2bw_fusion {
++    MMVQ_Q2BW_PLAIN = 0, // no epilogue
++    MMVQ_Q2BW_EPI   = 1, // fusion epilogue without a gate (bias/residual, pair launches)
++    MMVQ_Q2BW_GATE  = 2, // gate + GLU (+ biases, q8_1 copy of dst)
++};
++
++static constexpr int MMVQ_Q2BW_MAX_WPB = 8;
++
++// cache policy bits of the GGML_HIP_Q2BW_NT values (gfx11 buffer loads: 2 = SLC, 4 = DLC)
++static constexpr int mmvq_q2bw_cpol(const int nt) {
++    return nt == 1 ? 6 : nt == 2 ? 2 : nt == 3 ? 4 : 0;
++}
++
++// the instantiated (columns, gate, U, R, W, cache policy) combinations: the weight register ring (two batches of
++// U*R*ng segments, 3 VGPRs each, 4*ceil(18*U/32) with W) and the activations of a batch (9*U*ncols VGPRs) stay within
++// ~110 VGPRs; 2-3 columns: no W, default / nontemporal policy only
++static constexpr __host__ __device__ bool mmvq_q2bw_instance(const int ncols, const bool gate, const int U, const int R,
++                                                             const bool W, const int cpol) {
++    const int ng = gate ? 2 : 1;
++    if ((U != 1 && U != 2 && U != 4) || (R != 1 && R != 2 && R != 4)) {
++        return false;
++    }
++    if (ncols == 1) {
++        return U*R*ng <= 8 && (!W || cpol == 0 || cpol == 6);
++    }
++    return !gate && !W && U <= 2 && U*R <= 4 && (cpol == 0 || cpol == 6);
++}
++
++struct mmvq_q2bw_args {
++    const void * vx;
++    const void * vy;                       // q8_1 activations
++    ggml_cuda_mm_fusion_args_device fusion;
++    float * dst;
++    uint32_t nb;                           // Q2_0 blocks per row
++    uint32_t nrows;                        // rows of vx (pair launches: the second matrix has fusion.pair_nrows)
++    uint32_t stride_row_x;                 // in blocks
++    uint32_t stride_col_y;                 // in q8_1 blocks
++    uint32_t stride_col_dst;
++    int U;
++    int R;
++    int wpb;
++    bool W;
++    cudaStream_t stream;
++};
++
++// instantiated per cache policy in mmvq-q2bw-nt*.cu
++template <int ncols_dst, int fus, int cpol>
++void ggml_cuda_mmvq_q2bw_launch(const mmvq_q2bw_args & args);
++
++// true: launched (the caller skips the table's launch)
++bool ggml_cuda_mmvq_q2bw(const void * vx, const void * vy, const ggml_cuda_mm_fusion_args_device & fusion, float * dst,
++        int ncols_x, int nrows_x, int ncols_dst, int stride_row_x, int stride_col_y, int stride_col_dst, cudaStream_t stream);
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index ce9617985..e30cecad2 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1,3 +1,5 @@
++#include "mmvq-ld.cuh"
++#include "mmvq-q2bw.cuh"
+ #include "mmvq.cuh"
+ #include "quantize.cuh"
+ #include "unary.cuh"
+@@ -200,78 +202,6 @@ static int mmvq_wmma_min_ncols_host(const ggml_type type) {
+     return mmvq_wmma_min_ncols(type);
+ }
+ 
+-// Byte-offset loads for the multi path: a block-uniform source (row of x / column of y) plus a 32-bit per-thread
+-// byte offset. On RDNA3 the sources are raw buffer resources in SGPRs, so every load is `buffer_load voffset, srsrc,
+-// soffset` and the loop only advances the shared 32-bit offsets; with plain pointers the compiler hoists one 64-bit
+-// VGPR base per (row, field) and spends a 64-bit add per load. `align` is what the caller can guarantee (RDNA does
+-// unaligned loads natively, the pointer fallback honors it).
+-#if defined(GGML_USE_HIP) && defined(RDNA3)
+-#define MMVQ_BUFFER_LOADS
+-#endif
+-
+-struct mmvq_src {
+-    const char * p; // p + soff = base; used by the pointer path and the types without a byte-offset loader
+-#ifdef MMVQ_BUFFER_LOADS
+-    __amdgpu_buffer_rsrc_t rsrc;
+-    uint32_t soff;
+-#endif
+-};
+-
+-static __device__ __forceinline__ mmvq_src mmvq_make_src(const void * base, const uint32_t soff = 0) {
+-    mmvq_src s;
+-    s.p = (const char *) base + soff;
+-#ifdef MMVQ_BUFFER_LOADS
+-    // raw buffer (stride 0), no effective range limit, RDNA3 dword3 (as in composable_kernel for gfx11)
+-    s.rsrc = __builtin_amdgcn_make_buffer_rsrc(const_cast<void *>(base), 0, -1, 0x31004000);
+-    s.soff = soff;
+-#endif
+-    return s;
+-}
+-
+-// cpol: buffer load cache policy bits (gfx11: 1 = GLC, 2 = SLC, 4 = DLC), ignored by the pointer fallback
+-template <typename T, int align, int cpol = 0>
+-static __device__ __forceinline__ T mmvq_ld(const mmvq_src & s, const uint32_t off) {
+-    T v;
+-#ifdef MMVQ_BUFFER_LOADS
+-    static_assert(sizeof(T) == 2 || sizeof(T) == 4 || sizeof(T) == 8 || sizeof(T) == 16, "mmvq_ld: unsupported size");
+-    if constexpr (sizeof(T) == 2) {
+-        const auto r = __builtin_amdgcn_raw_buffer_load_b16(s.rsrc, off, s.soff, cpol);
+-        __builtin_memcpy(&v, &r, sizeof(T));
+-    } else if constexpr (sizeof(T) == 4) {
+-        const auto r = __builtin_amdgcn_raw_buffer_load_b32(s.rsrc, off, s.soff, cpol);
+-        __builtin_memcpy(&v, &r, sizeof(T));
+-    } else if constexpr (sizeof(T) == 8) {
+-        const auto r = __builtin_amdgcn_raw_buffer_load_b64(s.rsrc, off, s.soff, cpol);
+-        __builtin_memcpy(&v, &r, sizeof(T));
+-    } else {
+-        const auto r = __builtin_amdgcn_raw_buffer_load_b128(s.rsrc, off, s.soff, cpol);
+-        __builtin_memcpy(&v, &r, sizeof(T));
+-    }
+-#else
+-    __builtin_memcpy(&v, __builtin_assume_aligned(s.p + off, align), sizeof(T));
+-#endif
+-    return v;
+-}
+-
+-template <int n, int align, int cpol = 0>
+-static __device__ __forceinline__ void mmvq_ld_ints(const mmvq_src & s, const uint32_t off, int (&v)[n]) {
+-#pragma unroll
+-    for (int i = 0; i < n; i += 4) {
+-        if (n - i >= 4) {
+-            const int4 t = mmvq_ld<int4, align, cpol>(s, off + 4*i);
+-            v[i + 0] = t.x; v[i + 1] = t.y; v[i + 2] = t.z; v[i + 3] = t.w;
+-        } else if (n - i == 2) {
+-            const int2 t = mmvq_ld<int2, align, cpol>(s, off + 4*i);
+-            v[i + 0] = t.x; v[i + 1] = t.y;
+-        } else {
+-#pragma unroll
+-            for (int k = i; k < n; ++k) {
+-                v[k] = mmvq_ld<int, align, cpol>(s, off + 4*k);
+-            }
+-        }
+-    }
+-}
+-
+ // Scales/mins of q8_1 blocks 2*pair, 2*pair+1 of a Q4_K/Q5_K block from its 16-byte header (dm + scales[12]).
+ static __device__ __forceinline__ void mmvq_unpack_kq_scales(const int4 hdr, const int pair, int (&sc)[2], int (&m)[2]) {
+     // 16-bit scale words jm, jm+2, jm+4 (jm = pair & 1) live in the low/high halves of hdr.y, hdr.z, hdr.w
+@@ -2828,6 +2758,17 @@ static void mul_mat_vec_q_switch_ncols_dst(
+         return idle * 8 <= iters_wide * 2;
+     };
+ 
++#if defined(GGML_USE_HIP)
++    if constexpr (type == GGML_TYPE_Q2_0) {
++        // [GGML_HIP_Q2BW] Q2_0 at 1-3 columns on RDNA3: the weight-streaming launch (mmvq-q2bw.cuh), bitwise as below
++        if (table_id == MMVQ_PARAMETERS_RDNA3_0 && warp_size == 32 && !has_ids && nchannels_dst == 1 && nsamples_dst == 1 &&
++            ggml_cuda_mmvq_q2bw(vx, vy, fusion, dst, ncols_x, nrows_x, ncols_dst, stride_row_x, stride_col_y, stride_col_dst,
++                                stream)) {
++            return;
++        }
++    }
++#endif // defined(GGML_USE_HIP)
++
+     if (has_ids && ncols_dst > 1) {
+         // Multi-token MUL_MAT_ID path - dedicated MoE kernel
+         mul_mat_vec_q_moe_launch<type>(
+diff --git a/tests/CMakeLists.txt b/tests/CMakeLists.txt
+index 17dfd5b33..9004b96fc 100644
+--- a/tests/CMakeLists.txt
++++ b/tests/CMakeLists.txt
+@@ -306,6 +306,8 @@ endif()
+ 
+ # TODO: make this test (and others) not link `libllama` as it is not needed [TAG_TESTS_LLAMA_LINK]
+ llama_build(test-backend-ops.cpp)
++# full-step quantized mat-vec bandwidth microbench (GGML_HIP_Q2BW variants), not a ctest
++llama_build(test-mmvq-bw.cpp)
+ 
+ llama_build_and_test(test-tiled-mulmat.cpp)
+ llama_build_and_test(test-model-load-cancel.cpp LABEL "model")
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 781c14478..5db32199f 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -11659,6 +11659,36 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+         test_cases.emplace_back(new test_mul_mat_pair(type_a, 17408, 17408, 5, 5120));
+     }
+ 
++    // Q2_0 at 1-3 columns (decode and the MTP verify), the RDNA3 GGML_HIP_Q2BW launch (U/R/WPB/NT/W knobs): odd row
++    // counts and row counts that are not a multiple of the rows per wave, K that is not a multiple of the 1024-value
++    // wave stride, Bonsai 2.5 27B shapes, residual ADD (bias epilogue), row pairs, the fused gate/up + GLU with biases
++    for (int64_t n : {1, 2, 3}) {
++        for (auto [m, k] : std::vector<std::pair<int64_t, int64_t>>{{67, 576}, {33, 320}, {17, 64}, {77, 2048}, {130, 17408},
++                                                                    {1000, 5120}, {5120, 6144}, {1024, 5120}}) {
++            test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q2_0, GGML_TYPE_F32, m, n, k, {1, 1}, {1, 1}));
++        }
++        for (mul_mat_add_mode mode : {MUL_MAT_ADD_MM_RES, MUL_MAT_ADD_RES_MM, MUL_MAT_ADD_ROW, MUL_MAT_ADD_RES_INPLACE, MUL_MAT_ADD_MM_MM}) {
++            test_cases.emplace_back(new test_mul_mat_add(GGML_TYPE_Q2_0, 1000, n, 1024, mode));
++        }
++        test_cases.emplace_back(new test_mul_mat_add(GGML_TYPE_Q2_0, 5120, n, 17408, MUL_MAT_ADD_MM_RES));
++        test_cases.emplace_back(new test_mul_mat_add(GGML_TYPE_Q2_0, 5120, n, 6144, MUL_MAT_ADD_MM_RES));
++        if (n > 1) {
++            test_cases.emplace_back(new test_mul_mat_pair(GGML_TYPE_Q2_0, 1000, 1000, n, 1024));
++            test_cases.emplace_back(new test_mul_mat_pair(GGML_TYPE_Q2_0, 130,  67,   n, 512));
++            test_cases.emplace_back(new test_mul_mat_pair(GGML_TYPE_Q2_0, 10240, 6144, n, 5120));
++        }
++    }
++    for (ggml_glu_op glu_op : {GGML_GLU_OP_SWIGLU, GGML_GLU_OP_GEGLU, GGML_GLU_OP_SWIGLU_OAI, GGML_GLU_OP_SWIGLU_CLAMP}) {
++        for (bool with_bias : {false, true}) {
++            for (auto [m, k] : std::vector<std::pair<int64_t, int64_t>>{{1000, 5120}, {96, 1024}, {35, 320}}) {
++                test_cases.emplace_back(new test_mul_mat_vec_fusion(GGML_TYPE_Q2_0, glu_op, 1, m, k, false, 1, 1, false,
++                                                                     with_bias, true, false, {1, 1}));
++            }
++        }
++    }
++    test_cases.emplace_back(new test_mul_mat_vec_fusion(GGML_TYPE_Q2_0, GGML_GLU_OP_SWIGLU, 1, 1000, 5120, false, 1, 1, false,
++                                                         true, false, false, {1, 1}));
++
+ #if 0
+     {
+         // Test paths in OpenCL
+@@ -12838,6 +12868,10 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q4_0, true, 16, 8, 512, 256));
+     test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q5_K, false, 1, 1, 2048, 11776));
+     test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q8_0, false, 1, 1, 1024, 2048));
++    // Q2_0 (Bonsai 2.5 27B dense FFN 5120 -> 17408 -> 5120, and a small one): the gate-fused launch with its q8_1 copy of
++    // the GLU output (GGML_HIP_GATE_UP_Q8; GGML_HIP_Q2BW)
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q2_0, false, 1, 1, 5120, 17408));
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q2_0, false, 1, 1, 1024, 2048));
+     // single-token MoE routing (LFM2 24B-A2B: 64 experts, 4 used, sigmoid + bias; and other expert counts / gatings)
+     test_cases.emplace_back(new test_norm_router_topk(2048, 64, 4, true, GATING_FUNC_SIGMOID));
+     test_cases.emplace_back(new test_norm_router_topk(2048, 64, 4, false, GATING_FUNC_SOFTMAX));
+diff --git a/tests/test-mmvq-bw.cpp b/tests/test-mmvq-bw.cpp
+new file mode 100644
+index 000000000..7c01a3636
+--- /dev/null
++++ b/tests/test-mmvq-bw.cpp
+@@ -0,0 +1,393 @@
++// Full-step quantized mat-vec bandwidth (GGML_HIP_Q2BW): every weight matrix of a Bonsai 2.5 27B (Qwen3.8-27B hybrid)
++// decode step as its own tensor (~7.2 GB of Q2_0, far past the 96 MB Infinity Cache of an RX 7900 XTX, so nothing is
++// served from cache between steps), run as one graph per step with the model's matmul pattern: GDN qkv + z + ssm_out,
++// attention q/k/v/o, the FFN gate/up + SWIGLU (fused gate/up launch) and down, residual ADDs (fused bias epilogues) and
++// the vocab head. Also the FFN, the projections and the head alone. Prints ms and GB/s of weights per graph for every
++// variant (sets of runtime switches, flipped through GGML_HIP_RUNTIME_SWITCH_FILE, rounds interleaved), and checks the
++// step's outputs of every variant bitwise against the first variant.
++//
++// usage: test-mmvq-bw [-b ROCm0] [-n ncols] [-r rounds] [-i iters] [-l layers] [-t q2_0] [-g all|step] VARIANT...
++//   VARIANT: base | NAME=VAL[,NAME=VAL...]   e.g. base GGML_HIP_Q2BW=1 GGML_HIP_Q2BW=1,GGML_HIP_Q2BW_NT=1
++//   -g step: the step graph only (2 warm-up + iters runs per variant and round)
++// Kernel-only GB/s: run one variant with -g step under rocprofv3 --kernel-trace --stats and divide the step bytes times
++// the number of runs by the mat-vec kernel time (qwen-opt/bonsai25/bw-prof.sh).
++
++#include "ggml.h"
++#include "ggml-alloc.h"
++#include "ggml-backend.h"
++
++#include <algorithm>
++#include <chrono>
++#include <cinttypes>
++#include <cmath>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <fstream>
++#include <random>
++#include <string>
++#include <thread>
++#include <unistd.h>
++#include <vector>
++
++namespace {
++
++constexpr int64_t N_EMBD  = 5120;
++constexpr int64_t N_FF    = 17408;
++constexpr int64_t N_QKV   = 10240; // GDN qkv
++constexpr int64_t N_Z     = 6144;  // GDN gate (z)
++constexpr int64_t N_INNER = 6144;  // GDN inner / attention output width
++constexpr int64_t N_Q     = 12288; // attention q (+ gate)
++constexpr int64_t N_KV    = 1024;
++constexpr int64_t N_VOCAB = 248320;
++
++struct layer_w {
++    bool          attn;
++    ggml_tensor * a = nullptr; // GDN qkv | attn q
++    ggml_tensor * b = nullptr; // GDN z   | attn k
++    ggml_tensor * c = nullptr; //         | attn v
++    ggml_tensor * o = nullptr; // ssm_out | attn_output
++    ggml_tensor * gate = nullptr;
++    ggml_tensor * up   = nullptr;
++    ggml_tensor * down = nullptr;
++};
++
++enum graph_kind { G_STEP, G_FFN, G_PROJ, G_HEAD, G_COUNT };
++const char * graph_name[G_COUNT] = { "step", "ffn", "proj", "head" };
++
++struct bench_graph {
++    ggml_context *            ctx   = nullptr;
++    ggml_cgraph *             gf    = nullptr;
++    ggml_gallocr_t            alloc = nullptr;
++    ggml_tensor *             x     = nullptr;
++    ggml_tensor *             hid   = nullptr;
++    std::vector<ggml_tensor *> outs;
++    double                    bytes = 0.0; // weight bytes read per run
++};
++
++uint64_t fnv1a(const uint8_t * p, size_t n, uint64_t h = 1469598103934665603ull) {
++    for (size_t i = 0; i < n; ++i) {
++        h = (h ^ p[i]) * 1099511628211ull;
++    }
++    return h;
++}
++
++void usage(const char * argv0) {
++    fprintf(stderr, "usage: %s [-b backend] [-n ncols] [-r rounds] [-i iters] [-l layers] [-t type] [-g all|step] VARIANT...\n", argv0);
++    fprintf(stderr, "  VARIANT: base | NAME=VAL[,NAME=VAL...] (runtime switches)\n");
++}
++
++} // namespace
++
++int main(int argc, char ** argv) {
++    std::string backend_name = "ROCm0";
++    int64_t     ncols  = 1;
++    int         rounds = 3;
++    int         iters  = 10;
++    int         n_layer = 64;
++    ggml_type   wtype  = GGML_TYPE_Q2_0;
++    bool        step_only = false;
++    std::vector<std::string> variants;
++    for (int i = 1; i < argc; ++i) {
++        const std::string a = argv[i];
++        const bool has_val = i + 1 < argc;
++        if (a == "-b" && has_val) {
++            backend_name = argv[++i];
++        } else if (a == "-n" && has_val) {
++            ncols = atoi(argv[++i]);
++        } else if (a == "-r" && has_val) {
++            rounds = atoi(argv[++i]);
++        } else if (a == "-i" && has_val) {
++            iters = atoi(argv[++i]);
++        } else if (a == "-g" && has_val) {
++            step_only = std::string(argv[++i]) == "step";
++        } else if (a == "-l" && has_val) {
++            n_layer = atoi(argv[++i]);
++        } else if (a == "-t" && has_val) {
++            const std::string t = argv[++i];
++            wtype = GGML_TYPE_COUNT;
++            for (int k = 0; k < GGML_TYPE_COUNT; ++k) {
++                const char * nm = ggml_type_name((ggml_type) k);
++                if (nm && t == nm) {
++                    wtype = (ggml_type) k;
++                }
++            }
++            if (wtype == GGML_TYPE_COUNT) {
++                fprintf(stderr, "unknown type %s\n", t.c_str());
++                return 1;
++            }
++        } else if (a == "-h" || a == "--help") {
++            usage(argv[0]);
++            return 0;
++        } else if (!a.empty() && a[0] != '-') {
++            variants.push_back(a);
++        } else {
++            usage(argv[0]);
++            return 1;
++        }
++    }
++    if (variants.empty()) {
++        variants.push_back("base");
++    }
++
++    // the runtime switch file (read by the HIP backend on every graph_compute, at most every 20 ms)
++    std::string sw_path;
++    if (const char * p = getenv("GGML_HIP_RUNTIME_SWITCH_FILE")) {
++        sw_path = p;
++    } else {
++        sw_path = "/tmp/test-mmvq-bw." + std::to_string(getpid()) + ".sw";
++        setenv("GGML_HIP_RUNTIME_SWITCH_FILE", sw_path.c_str(), 1);
++    }
++    int sw_serial = 0;
++    const auto set_variant = [&](const std::string & v) {
++        std::ofstream f(sw_path, std::ios::trunc);
++        f << "# test-mmvq-bw " << ++sw_serial << "\n";
++        if (v != "base") {
++            std::string s = v;
++            std::replace(s.begin(), s.end(), ',', '\n');
++            f << s << "\n";
++        }
++        f.close();
++        std::this_thread::sleep_for(std::chrono::milliseconds(40));
++    };
++    set_variant("base");
++
++    ggml_backend_load_all();
++    ggml_backend_dev_t dev = ggml_backend_dev_by_name(backend_name.c_str());
++    if (!dev) {
++        fprintf(stderr, "backend %s not found\n", backend_name.c_str());
++        return 1;
++    }
++    ggml_backend_t backend = ggml_backend_dev_init(dev, nullptr);
++    if (!backend) {
++        fprintf(stderr, "backend %s init failed\n", backend_name.c_str());
++        return 1;
++    }
++
++    // ---- weights: one tensor per matrix, every layer its own
++    const int n_w = n_layer*7 + 1;
++    ggml_init_params wp = { size_t(n_w + 8)*ggml_tensor_overhead(), nullptr, true };
++    ggml_context * ctx_w = ggml_init(wp);
++    std::vector<layer_w> layers(n_layer);
++    const auto mk = [&](int64_t k, int64_t m, const std::string & name) {
++        ggml_tensor * t = ggml_new_tensor_2d(ctx_w, wtype, k, m);
++        ggml_set_name(t, name.c_str());
++        return t;
++    };
++    for (int il = 0; il < n_layer; ++il) {
++        layer_w & L = layers[il];
++        const std::string p = "blk." + std::to_string(il) + ".";
++        L.attn = il % 4 == 3; // full_attention_interval 4: 48 GDN + 16 attention layers
++        if (L.attn) {
++            L.a = mk(N_EMBD, N_Q,  p + "attn_q");
++            L.b = mk(N_EMBD, N_KV, p + "attn_k");
++            L.c = mk(N_EMBD, N_KV, p + "attn_v");
++            L.o = mk(N_INNER, N_EMBD, p + "attn_output");
++        } else {
++            L.a = mk(N_EMBD, N_QKV, p + "attn_qkv");
++            L.b = mk(N_EMBD, N_Z,   p + "attn_gate");
++            L.o = mk(N_INNER, N_EMBD, p + "ssm_out");
++        }
++        L.gate = mk(N_EMBD, N_FF, p + "ffn_gate");
++        L.up   = mk(N_EMBD, N_FF, p + "ffn_up");
++        L.down = mk(N_FF, N_EMBD, p + "ffn_down");
++    }
++    ggml_tensor * head = mk(N_EMBD, N_VOCAB, "output");
++    ggml_backend_buffer_t wbuf = ggml_backend_alloc_ctx_tensors(ctx_w, backend);
++    if (!wbuf) {
++        fprintf(stderr, "weight allocation failed\n");
++        return 1;
++    }
++
++    // fill: a pattern of quantized random rows (scale ~ 1/sqrt(K) keeps the residual stream bounded), each tensor
++    // starting at a different block so that no two matrices are the same bytes
++    {
++        std::mt19937 rng(1234);
++        std::normal_distribution<float> nd(0.0f, 1.0f);
++        const int64_t k_pat = 1024, rows_pat = 4096;
++        std::vector<float> f(k_pat*rows_pat);
++        for (float & v : f) {
++            v = nd(rng) * 0.03f;
++        }
++        const size_t row_sz = ggml_row_size(wtype, k_pat);
++        std::vector<uint8_t> pat(row_sz*rows_pat);
++        ggml_quantize_chunk(wtype, f.data(), pat.data(), 0, rows_pat, k_pat, nullptr);
++        const size_t bs = ggml_type_size(wtype);
++        const size_t nblk_pat = pat.size() / bs;
++        const size_t chunk = (64u << 20) / bs * bs;
++        std::vector<uint8_t> stage(chunk);
++        size_t seed = 0;
++        for (ggml_tensor * t = ggml_get_first_tensor(ctx_w); t; t = ggml_get_next_tensor(ctx_w, t)) {
++            const size_t nbytes = ggml_nbytes(t);
++            size_t blk = (seed++ * 7919) % nblk_pat;
++            for (size_t off = 0; off < nbytes; off += chunk) {
++                const size_t len = std::min(chunk, nbytes - off);
++                for (size_t o = 0; o < len; ) { // whole blocks of the pattern from block blk on, wrapping around
++                    const size_t n = std::min(len - o, (nblk_pat - blk)*bs);
++                    memcpy(stage.data() + o, pat.data() + blk*bs, n);
++                    o  += n;
++                    blk = (blk + n/bs) % nblk_pat;
++                }
++                ggml_backend_tensor_set(t, stage.data(), off, len);
++            }
++        }
++    }
++
++    // ---- graphs
++    const auto build = [&](graph_kind kind) {
++        bench_graph g;
++        ggml_init_params gp = { size_t(4096)*ggml_tensor_overhead() + ggml_graph_overhead_custom(8192, false), nullptr, true };
++        g.ctx = ggml_init(gp);
++        g.gf  = ggml_new_graph_custom(g.ctx, 8192, false);
++        g.x   = ggml_new_tensor_2d(g.ctx, GGML_TYPE_F32, N_EMBD, ncols);
++        g.hid = ggml_new_tensor_2d(g.ctx, GGML_TYPE_F32, N_INNER, ncols);
++        ggml_set_input(g.x);
++        ggml_set_input(g.hid);
++        const auto out = [&](ggml_tensor * t) {
++            ggml_set_output(t);
++            ggml_build_forward_expand(g.gf, t);
++            g.outs.push_back(t);
++        };
++        const auto mm = [&](ggml_tensor * w, ggml_tensor * y) {
++            g.bytes += ggml_nbytes(w);
++            return ggml_mul_mat(g.ctx, w, y);
++        };
++        ggml_tensor * x = g.x;
++        for (int il = 0; il < n_layer; ++il) {
++            const layer_w & L = layers[il];
++            if (kind == G_STEP || kind == G_PROJ) {
++                out(mm(L.a, x));
++                out(mm(L.b, x));
++                if (L.attn) {
++                    out(mm(L.c, x));
++                }
++                x = ggml_add(g.ctx, mm(L.o, g.hid), x);
++                out(x);
++            }
++            if (kind == G_STEP || kind == G_FFN) {
++                ggml_tensor * gt = mm(L.gate, x);
++                ggml_tensor * up = mm(L.up, x);
++                ggml_tensor * a  = ggml_swiglu_split(g.ctx, gt, up);
++                x = ggml_add(g.ctx, mm(L.down, a), x);
++                out(x);
++            }
++        }
++        if (kind == G_STEP || kind == G_HEAD) {
++            out(mm(head, x));
++        }
++        g.alloc = ggml_gallocr_new(ggml_backend_get_default_buffer_type(backend));
++        if (!ggml_gallocr_alloc_graph(g.alloc, g.gf)) {
++            fprintf(stderr, "graph allocation failed\n");
++            exit(1);
++        }
++        std::mt19937 rng(42);
++        std::normal_distribution<float> nd(0.0f, 1.0f);
++        std::vector<float> xv(N_EMBD*ncols), hv(N_INNER*ncols);
++        for (float & v : xv) { v = nd(rng); }
++        for (float & v : hv) { v = nd(rng); }
++        ggml_backend_tensor_set(g.x, xv.data(), 0, ggml_nbytes(g.x));
++        if (g.hid->buffer) { // not part of the FFN and head graphs
++            ggml_backend_tensor_set(g.hid, hv.data(), 0, ggml_nbytes(g.hid));
++        }
++        return g;
++    };
++    std::vector<bench_graph> graphs;
++    for (int k = 0; k < G_COUNT; ++k) {
++        graphs.push_back(build((graph_kind) k));
++    }
++
++    printf("test-mmvq-bw: %s, type %s, ncols %" PRId64 ", %d layers, %d rounds x %d iters; weight MB per run:",
++           backend_name.c_str(), ggml_type_name(wtype), ncols, n_layer, rounds, iters);
++    for (int k = 0; k < G_COUNT; ++k) {
++        printf(" %s %.1f", graph_name[k], graphs[k].bytes/1e6);
++    }
++    printf("\n");
++
++    const auto run = [&](bench_graph & g, int n) {
++        const auto t0 = std::chrono::steady_clock::now();
++        for (int i = 0; i < n; ++i) {
++            if (ggml_backend_graph_compute(backend, g.gf) != GGML_STATUS_SUCCESS) {
++                fprintf(stderr, "graph compute failed\n");
++                exit(1);
++            }
++        }
++        const auto t1 = std::chrono::steady_clock::now();
++        return std::chrono::duration<double, std::milli>(t1 - t0).count() / n;
++    };
++    const auto hashes = [&](bench_graph & g) {
++        std::vector<uint64_t> h;
++        std::vector<uint8_t> buf;
++        for (ggml_tensor * t : g.outs) {
++            buf.resize(ggml_nbytes(t));
++            ggml_backend_tensor_get(t, buf.data(), 0, buf.size());
++            h.push_back(fnv1a(buf.data(), buf.size()));
++        }
++        return h;
++    };
++
++    const size_t nv = variants.size();
++    std::vector<std::vector<std::vector<double>>> ms(nv, std::vector<std::vector<double>>(G_COUNT));
++    std::vector<std::string> parity(nv, "ref");
++    std::vector<uint64_t> ref;
++    for (int r = 0; r < rounds; ++r) {
++        for (size_t v = 0; v < nv; ++v) {
++            set_variant(variants[v]);
++            for (int k = 0; k < G_COUNT; ++k) {
++                if (step_only && k != G_STEP) {
++                    continue;
++                }
++                run(graphs[k], 2); // warm-up: switch poll, graph capture
++                ms[v][k].push_back(run(graphs[k], k == G_STEP ? iters : 2*iters));
++            }
++            if (r == 0) {
++                const std::vector<uint64_t> h = hashes(graphs[G_STEP]);
++                if (v == 0) {
++                    ref = h;
++                } else {
++                    size_t ndiff = 0;
++                    std::string first;
++                    for (size_t i = 0; i < h.size(); ++i) {
++                        if (h[i] != ref[i]) {
++                            if (ndiff++ == 0) {
++                                first = ggml_get_name(graphs[G_STEP].outs[i])[0] ? ggml_get_name(graphs[G_STEP].outs[i])
++                                                                                    : ("out#" + std::to_string(i));
++                                first += " (" + std::string(ggml_op_desc(graphs[G_STEP].outs[i])) + " #" + std::to_string(i) + ")";
++                            }
++                        }
++                    }
++                    parity[v] = ndiff == 0 ? "bitwise" : "DIFF " + std::to_string(ndiff) + "/" + std::to_string(h.size()) +
++                                                            " first " + first;
++                }
++            }
++        }
++    }
++    set_variant("base");
++
++    printf("%-60s %9s %8s %9s %9s %9s  %s\n", "variant", "step ms", "GB/s", "ffn GB/s", "proj GB/s", "head GB/s", "parity");
++    for (size_t v = 0; v < nv; ++v) {
++        double gbs[G_COUNT];
++        double step_ms = 0.0;
++        for (int k = 0; k < G_COUNT; ++k) {
++            std::vector<double> s = ms[v][k];
++            std::sort(s.begin(), s.end());
++            gbs[k] = s.empty() ? 0.0 : graphs[k].bytes/s[s.size()/2]/1e6;
++            if (k == G_STEP) {
++                step_ms = s[s.size()/2];
++            }
++        }
++        printf("%-60s %9.3f %8.1f %9.1f %9.1f %9.1f  %s\n", variants[v].c_str(), step_ms, gbs[G_STEP], gbs[G_FFN],
++               gbs[G_PROJ], gbs[G_HEAD], parity[v].c_str());
++    }
++
++    for (bench_graph & g : graphs) {
++        ggml_gallocr_free(g.alloc);
++        ggml_free(g.ctx);
++    }
++    ggml_backend_buffer_free(wbuf);
++    ggml_free(ctx_w);
++    ggml_backend_free(backend);
++    if (!getenv("TEST_MMVQ_BW_KEEP_SWITCH_FILE") && sw_path.find("/tmp/test-mmvq-bw.") == 0) {
++        unlink(sw_path.c_str());
++    }
++    return 0;
++}
