@@ -35,6 +35,11 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: wysoki
 - **wynik 2026-11-25 (gałąź `k164-dflash2` fea522a0):** test GPU vs referencja CPU PASS (drafty identyczne, propose 3,84 ms z głowicą Q8, 8,29 ms FP16, write_context 0,13–0,20 ms), test akceptacji q (min(1,p/q)) passed, parytet 11/11. rep2 Q1 / Q6 / L2k: produkcja 129,7 / 114,1 / 107,7; df2 85,9 / 96,4 / 101,1; df2only 115,7 / 96,6 / 99,0; df2q (próbkowanie z q) 85,5 / 98,1 / 100,7; df2qonly 115,7 / 98,3 / 102,2. wall.py: produkcja 108,5 / 110,5, df2 108,6 / 108,4, df2q 107,9 / 106,9.
 - wniosek: DFlash2 w Mai dziś przegrywa przy T=0,7 (−14%) z tego samego powodu co K-158: droga runda weryfikacji. Q1 dwumodalne (82–86 albo 124–134 na bieg), do wyjaśnienia (sterownik spekulacji). Dalej: statystyki akceptacji (IK2_STATS) i ponowny pomiar po K-158b.
+- **k164b 2026-11-25 (build 9b95ffbe: grafy okien przed READY, koszt draftu osobno, sonda z odstępem; okno 8 w każdym kroku, bez lookupu, IK2_STATS):**
+  - DFlash2 greedy (df2m): T=0 **3,73 tok./okno**, Q1 **209,8 t/s** (+62% vs 129,7), ale L2k 80,9; T=0,7 1,93 tok./okno, Q6 44,6. Próbkowanie z q (df2qm): T=0,7 2,05 tok./okno, Q6 47,6. DSpark (dsm): T=0 3,09, T=0,7 1,58 tok./okno, Q1 104,4.
+  - **Księga rundy Mai:** zwykły token 7,8 ms; draft 3,2–3,8 ms (Nib 1,4); weryfikacja okna 8 ok. 40 ms (5,1 tokenu), c[2..8] = 13,3 / 16,4 / 23 / 18–25 / 29 / 21 / 41 ms. Przy T=0,7 rep2 wysyła pełny rozkład, więc drafty punktowe trafiają rzadko (8–15% draftów).
+  - z nowym sterownikiem (df2only, df2qonly, dsonly) sterownik słusznie prawie nie draftuje przy T=0,7: Q6 107,8–109,4 vs 114,1 produkcja (−4…−5%), Q1 122,6–124,5.
+  - wniosek: DFlash2 to najlepszy drafter przy T=0 (3,73 vs 3,09 tok./okno), ale zysk zjada weryfikacja: koszt rośnie z kontekstem (L2k −25%) i z szerokością. Kolejność: K-158b (atencja okna w jednym launchu, eksperci okna przez kernele tokenu), tani draft (K-159: głowa skrócona, wagi Q8), potem ponownie df2 z oknem wg pewności.
 
 ### K-163 · Szybka pętla: przełączniki runtime w topce Bonsai + xtxbench z profilem modelu, cel ≥ 15 wariantów/h
 - data: 2026-11-25 (JARO: „on robi eval w minuty, my w godziny”; [[metoda-nib-level-up]])
