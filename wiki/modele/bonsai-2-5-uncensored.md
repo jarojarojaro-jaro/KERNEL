@@ -11,6 +11,7 @@ karty: rx-7900-xtx
 wyniki:
   - bonsai-2-5-uncensored | rx-7900-xtx | 106.0 t/s | czat T=0,7, topka-bonsai PM4 + env produkcji + MTP n2 + słownik draftu 64k, ctx 262144 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 77.7 t/s | czat T=0,7, prism Q2_0 + MTP n2, KV q4_0 | 2026-11-25
+  - bonsai-2-5-uncensored | rx-7900-xtx | 237.8 t/s | edycja/kopia kodu T=0 (copy_bench short), topka PM4 + MTP n2 + lookup W7 + słownik 64k | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 117.9 t/s | dekod T=0 (Q4 160 tok.), prism Q2_0 + MTP n2 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 188.4 t/s | dekod T=0 (Q4), MTP n2 + ngram-mod | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 54.9 t/s | llama-bench tg128 bez spekulacji, Q2_0 | 2026-11-25
@@ -75,6 +76,8 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 - **DFlash2 dla Qwen3.8-27B na Bonsai** (Q4_K_M, n 6/8/12): T=0 do 159 t/s, ale T=0,7 38,6–41,7 (akceptacja 0,27–0,40): odrzucone.
 - **Profil kroku MTP (prism, serwer)**: 216 tys. kerneli na 200 tokenów (ok. 1080 na token), GPU zajęte 67%, mediana przerwy między kernelami 3,44 µs: przerwy to 33% czasu, dlatego PM4 (taśma bez AQL) daje tu +17%.
 - **K-150 (Gemini, przegląd forka prism)**: fuzje FWHT+q8_1, norm+FWHT, łańcuch GDN conv i para ssm_beta/alpha są w forku tylko dla NVIDIA (`GGML_CUDA_CC_IS_NVIDIA`), na HIP nieużywane: ok. 800 zbędnych kerneli na token; łatka `prism-k150-gemini.patch` w budowie, przeniesienie do topki w toku.
+- **K-150 Gemini na forku prism** (`prism-k150-gemini.patch`): test-backend-ops MUL_MAT 3150/3150, fuzje 1745/1745, RMS_NORM 53/53, SSM_CONV 60/60; llama-bench tg128 54,9 → **61,4 t/s (+11,9%)**, serwer MTP n2 T=0,7 77,6 → **86,5 (+11,5%)**, akceptacja bez zmian. Przeniesienie tych fuzji do topki w toku (Gemini, K-150T).
+- **Przepisywanie i edycja kodu** (`copy_bench.py`, zestaw short, 512 tok., topka PM4 + env produkcji + MTP n2 + słownik 64k): okno lookupu 16 → mediana 174 t/s; **okno 7 → 237,8 t/s przy T=0 i 229,1 przy T=0,7** (edit 2k/8k 236–243); okno 11 → 129,8. Przyczyna: krok weryfikacji ≤ 8 tokenów kosztuje 27 ms, 9–16 tokenów 74–80 ms (Q2_0 poza ścieżką MMVQ). Naprawa w toku (K-154).
 - Grok (X, 14 dni): nikt nie publikował Bonsai 2.5 na 7900 XTX; producent: RTX 4090 bez spekulacji 111, z MTP n3 p-min 0,1 204 t/s; RTX 3060 przy 262k 74 t/s z MTP.
 
 ## Powiązane

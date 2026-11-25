@@ -1,0 +1,4 @@
+# Bonsai 2.5 round J: best topka config on copy/edit set (agent work) + repeat chat
+b25j-best-copy|900|~/qwen-opt/bonsai25|PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-dv64k ./b25.sh topka q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25j-best3-copy|900|~/qwen-opt/bonsai25|PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-dv64k ./b25.sh topka q2 mtp 3 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25j-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -15,7 +15,7 @@ case $sp in mtp) spec=(--spec-type draft-mtp --spec-draft-n-max "$n" -ctkd q4_0 
 export LD_LIBRARY_PATH=$B:/opt/rocm/core-10.0/lib
 if [ "${PM4:-0}" = 1 ]; then export GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; else export GGML_HIP_PM4=0; fi
 if [ "${PROD:-0}" = 1 ]; then  # production topka env (run-topka.sh), Bonsai only differs in model
-  export GGML_HIP_FA_D256_VAR=83 LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_GPU_VERIFY=1 LLAMA_SPEC_COUPLED=1 \
+  export GGML_HIP_FA_D256_VAR=83 LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=${LOOKUP_W:-16} LLAMA_GPU_VERIFY=1 LLAMA_SPEC_COUPLED=1 \
     LLAMA_SERVER_YIELD_FAST=2 GGML_HIP_PM4_MIN_DISPATCH=16 GGML_HIP_PM4_LAZY_EXEC=1 LLAMA_SERVER_CACHE_SHARE_MIN=1024
 fi
 PORT=18796; out=$HOME/qwen-opt/bonsai25/out; mkdir -p "$out"
@@ -32,5 +32,9 @@ for _ in $(seq 300); do
 done
 grep -m3 -iE "hadamard|PTQ1|Q2_0|model size|CUDA0 model buffer|ROCm0 model buffer" "$out/$tag.server.log"
 taskset -c 2-5 timeout 600 python3 ~/turbo-jobs/xbench.py $PORT ~/turbo/tests "$tag" | tee -a "$out/b25.txt"
+if [ -n "${BENCH_COPY:-}" ]; then
+  taskset -c 2-5 timeout 500 python3 ~/qwen-opt/lookup/copy_bench.py --label "$tag" --port $PORT --set short --temps 0.0,0.7 --seeds 1 --tokens 512 \
+    --out "$out/copy.jsonl" 2>&1 | tail -8
+fi
 grep -E "draft acceptance" "$out/$tag.server.log" | tail -2
 journalctl -k --since "-15min" --no-pager | grep -c gfxhub

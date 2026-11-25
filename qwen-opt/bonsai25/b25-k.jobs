@@ -1,0 +1,4 @@
+# Bonsai 2.5 round K: lookup window 7 (verify <= 8 = MMVQ path) vs 16, copy set
+b25k-w7|900|~/qwen-opt/bonsai25|LOOKUP_W=7 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-dv64k-w7 ./b25.sh topka q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25k-w11|900|~/qwen-opt/bonsai25|LOOKUP_W=11 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-dv64k-w11 ./b25.sh topka q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25k-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
