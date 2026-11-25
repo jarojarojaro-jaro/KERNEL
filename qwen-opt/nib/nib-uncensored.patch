@@ -1,0 +1,2494 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 0f35923..e973275 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -26,6 +26,7 @@ function(add_hip_object target_name hip_src)
+             "${CMAKE_CURRENT_SOURCE_DIR}/${hip_src}"
+             "${CMAKE_CURRENT_SOURCE_DIR}/include/inkling_engine.h"
+             "${CMAKE_CURRENT_SOURCE_DIR}/include/sparse_global.h"
++            "${CMAKE_CURRENT_SOURCE_DIR}/include/lora.h"
+             ${ARGN}
+         COMMENT "Compiling RDNA3 HIP kernel ${hip_src} (${GPU_TARGET})"
+     )
+@@ -62,6 +63,7 @@ add_hip_object(kernels_dspark_mtp    "src/kernels_dspark_mtp.hip"
+     "${CMAKE_CURRENT_SOURCE_DIR}/include/dspark_mtp.h")
+ add_hip_object(kernels_verify_batch  "src/kernels_verify_batch.hip"
+     "${CMAKE_CURRENT_SOURCE_DIR}/include/kernels_verify_batch.h")
++add_hip_object(kernels_lora          "src/kernels_lora.hip")
+ 
+ add_executable(nib
+     src/gguf_loader.cpp
+@@ -70,6 +72,7 @@ add_executable(nib
+     src/vision_encoder.cpp
+     src/server.cpp
+     src/main.cpp
++    src/lora_adapter.cpp
+     ${repack_soa_OBJ}
+     ${kernels_core_OBJ}
+     ${kernels_fa_OBJ}
+@@ -88,6 +91,7 @@ add_executable(nib
+     ${kernels_mtp_verify_OBJ}
+     ${kernels_dspark_mtp_OBJ}
+     ${kernels_verify_batch_OBJ}
++    ${kernels_lora_OBJ}
+ )
+ 
+ target_include_directories(nib PRIVATE
+@@ -106,3 +110,17 @@ set_target_properties(nib PROPERTIES
+     BUILD_RPATH "${ROCM_PATH}/lib"
+     INSTALL_RPATH "${ROCM_PATH}/lib"
+ )
++
++# CPU-only check of the --lora math against a model pack + adapter (no GPU work):
++#   build/nib-lora-check Inkling-2-Mini-NVFP4-Mixed.gguf Inkling-2-Mini-Uncensored-LoRA.gguf
++add_executable(nib-lora-check
++    tests/lora_check.cpp
++    src/lora_adapter.cpp
++)
++target_include_directories(nib-lora-check PRIVATE
++    "${CMAKE_CURRENT_SOURCE_DIR}/include"
++    "${CMAKE_CURRENT_SOURCE_DIR}/src"
++    "${ROCM_PATH}/include"
++)
++target_compile_definitions(nib-lora-check PRIVATE __HIP_PLATFORM_AMD__)
++target_compile_options(nib-lora-check PRIVATE -O3 -Wall -Wextra -Wno-unused-parameter -ffp-contract=off)
+diff --git a/README.md b/README.md
+index 88a50b6..5d90c44 100644
+--- a/README.md
++++ b/README.md
+@@ -216,6 +216,24 @@ Open **http://127.0.0.1:4444/** for the built-in Web UI, or connect any OpenAI-c
+ ./scripts/sim_gpu.sh 7900xt ./build/nib selftest -m models/Inkling-2-Mini-NVFP4-Mixed.gguf --mtp models/mtp.safetensors -c 131072 --kv-type q4_1 --sparse-pages 224
+ ```
+ 
++### 5. Rank-1 LoRA adapters (`--lora`, e.g. the "Uncensored" abliteration)
++Every mode takes `--lora <adapter.gguf>`: an `inkling2_loop` rank-1 LoRA GGUF with
++`blk.N.attn_output.weight.lora_{a,b}`, `blk.N.ffn_down_exps.weight.lora_{a,b}` (per expert)
++and `token_embd.weight.lora_{a,b}` for all 24 layers (98 tensors, e.g. AtomicChat
++`Inkling-2-Mini-Uncensored-LoRA.gguf`).  `W' = W + (alpha/rank) B A` is applied at run time in
++the existing epilogues of every path (decode graph, batched MTP verify, multi-slot batch,
++WMMA prefill, the DSpark drafter's anchor embedding), on every loop visit; the quantised
++weights are untouched.  Without `--lora` the launch sequence and every result are unchanged.
++```bash
++./build/nib serve -m models/Inkling-2-Mini-NVFP4-Mixed.gguf --mtp models/mtp.safetensors \
++  --lora models/Inkling-2-Mini-Uncensored-LoRA.gguf
++# CPU-only check of the adapter against the pack and of the kernel arithmetic:
++./build/nib-lora-check models/Inkling-2-Mini-NVFP4-Mixed.gguf models/Inkling-2-Mini-Uncensored-LoRA.gguf
++```
++The LoRA terms live in the default kernels only, so `--lora` refuses the A/B switches that select
++other wo / MoE kernels (`--wo-v3`, `--fdot2-wo`, `--fuse-wob`, `--moe-ship-fused` != 2, `--moe-*-v3`,
++`--fdot2-moe`, `--moe-q8-fused`, `--fdot2-q8moe`).
++
+ ---
+ 
+ ## Repository Layout
+diff --git a/include/dspark_mtp_kernels.h b/include/dspark_mtp_kernels.h
+index 08481c0..780b6ff 100644
+--- a/include/dspark_mtp_kernels.h
++++ b/include/dspark_mtp_kernels.h
+@@ -68,11 +68,14 @@ void launch_dspark_mix_rmsnorm(const uint16_t * feats, int n, const uint16_t * a
+ 
+ // res[0] = bf16(rms(embed[anchor]) * embed_norm), res[1..7] = mask_embed,
+ // xn[r] = bf16(rms(res[r]) * in_norm); also clears the GAMMA picks.
++// lora_a / lora_b (--lora, the target's token_embd adapter; nullptr = off):
++// embed[anchor] += lora_b * lora_a[anchor] before the norm, as in the target.
+ void launch_dspark_embed_block(const SoaQ8Matrix & tok_embd, const float * embed_norm,
+                                const uint16_t * mask_embed, const uint16_t * in_norm,
+                                int anchor, uint16_t * res, uint16_t * xn,
+                                uint64_t * picks, hipStream_t stream,
+-                               const DSparkDraftParams * dp = nullptr);
++                               const DSparkDraftParams * dp = nullptr,
++                               const float * lora_a = nullptr, const float * lora_b = nullptr);
+ 
+ // Commit of context keys/values: kv f32 [n, 2048] = (c Wk^T | c Wv^T).  Row r is
+ // at position start + r; k = bf16(rope(bf16(rms_head(k) * k_norm))), v as is.
+diff --git a/include/inkling_engine.h b/include/inkling_engine.h
+index 5a41f8e..314fec8 100644
+--- a/include/inkling_engine.h
++++ b/include/inkling_engine.h
+@@ -107,6 +107,8 @@ static inline bool is_swa_slot(int slot) {
+ // Note: Because qs rows are 16-byte aligned and K is a multiple of 64 (1152, 2304, 3072),
+ // every single row & block starts on a 128-bit boundary!
+ 
++struct LoraMoe;   // --lora ffn_down_exps term (include/lora.h)
++
+ struct SoaQ8Matrix {
+     int8_t * qs   = nullptr; // [rows, K] row-major
+     __half * d    = nullptr; // [rows, K/32] row-major
+@@ -240,6 +242,13 @@ struct PhysLayerWeights {
+     SoaNVFP4Experts down_nvfp4;    // [128, 2304, 1152]
+     SoaQ8Experts    gate_up_q8;    // [128, 2304, 2304]
+     SoaQ8Experts    down_q8;       // [128, 2304, 1152]
++
++    // --lora rank-1 adapter (include/lora.h); all nullptr when no adapter is loaded
++    float * lora_wo_a = nullptr;   // [N_Q]
++    float * lora_wo_b = nullptr;   // [N_EMBD]
++    float * lora_dn_a = nullptr;   // [N_EXPERT, N_FF_EXP]
++    float * lora_dn_b = nullptr;   // [N_EXPERT, N_EMBD], or [N_EMBD] when lora_dn_b_stride == 0
++    int     lora_dn_b_stride = 0;
+ };
+ 
+ struct LoopLayerWeights {
+@@ -255,6 +264,9 @@ struct ModelWeights {
+     SoaQ8Matrix lm_head;               // [200058, 2304] (unpadded rows only! saves 966 rows)
+     float *     output_norm   = nullptr; // [2304]
+     float *     output_res_q  = nullptr; // [2304]
++    // --lora token_embd term: e[tok] += lora_emb_b * lora_emb_a[tok] (nullptr = off)
++    float *     lora_emb_a    = nullptr; // [VOCAB_PADDED]
++    float *     lora_emb_b    = nullptr; // [N_EMBD]
+ 
+     PhysLayerWeights layers[N_LAYER_PHYS];
+     LoopLayerWeights loop[LOOP_CORE_LEN];
+@@ -297,10 +309,12 @@ bool load_inkling_gguf(
+ // Embed + RMSNorm:
+ //   Decode: if d_meta != nullptr, reads token_id from d_meta->token_id (n_tokens == 1)
+ //   Prefill: reads token_ids[0..n_tokens-1] from device pointer d_token_ids
++//   --lora: e = fmaf(lora_b[i], lora_a[tok], e) before the norm (both nullptr = off)
+ void launch_embed_norm(
+     const SoaQ8Matrix & tok_embd, const float * tok_norm,
+     const int32_t * d_token_ids, const StepMeta * d_meta,
+-    float * out, int n_tokens, hipStream_t stream);
++    float * out, int n_tokens, hipStream_t stream,
++    const float * lora_a = nullptr, const float * lora_b = nullptr);
+ 
+ // Depth attention mix:
+ //   states_ptrs: up to MAX_RES_BLOCKS pointers (first n_blocks are blocks in REVERSE order
+@@ -620,7 +634,8 @@ void launch_moe_q8_decode(
+     const float        * post_conv_w  = nullptr, // [N_EMBD, 4] optional fused sconv_post_res
+     float              * post_sconv_h = nullptr, // [N_EMBD, 3]
+     const float        * post_res_add = nullptr, // [N_EMBD]
+-    float              * raw_out      = nullptr);// Step 8A: raw pre-conv dump [N_EMBD]
++    float              * raw_out      = nullptr, // Step 8A: raw pre-conv dump [N_EMBD]
++    const LoraMoe      * lora         = nullptr);// --lora (include/lora.h)
+ 
+ // ============================================================================
+ // Hardware RDNA3 FP16 WMMA Prefill GEMM & Grouped MoE API (src/kernels_wmma_prefill.hip)
+@@ -673,7 +688,8 @@ void launch_moe_nvfp4_prefill_wmma(
+     hipStream_t             stream,
+     const float           * post_conv_w  = nullptr, // [N_EMBD, 4] optional fused sconv_post_res
+     float                 * post_sconv_h = nullptr, // [N_EMBD, 3]
+-    const float           * post_res_add = nullptr);// [M, N_EMBD]
++    const float           * post_res_add = nullptr, // [M, N_EMBD]
++    const LoraMoe         * lora         = nullptr);// --lora (include/lora.h)
+ 
+ // Grouped MoE Prefill (Q8_0 layers 20..23) using RDNA3 FP16 WMMA + fused SITU + weighted combine
+ // + optional fused 4-tap static sconv_post_res & inline sconv_hist update!
+@@ -689,6 +705,7 @@ void launch_moe_q8_prefill_wmma(
+     hipStream_t          stream,
+     const float        * post_conv_w  = nullptr, // [N_EMBD, 4] optional fused sconv_post_res
+     float              * post_sconv_h = nullptr, // [N_EMBD, 3]
+-    const float        * post_res_add = nullptr);// [M, N_EMBD]
++    const float        * post_res_add = nullptr, // [M, N_EMBD]
++    const LoraMoe      * lora         = nullptr);// --lora (include/lora.h)
+ 
+ } // namespace inkling
+diff --git a/include/kernels_decode_fused.h b/include/kernels_decode_fused.h
+index eb46430..1f09bb0 100644
+--- a/include/kernels_decode_fused.h
++++ b/include/kernels_decode_fused.h
+@@ -107,6 +107,7 @@
+ // ============================================================================
+ 
+ #include "inkling_engine.h"
++#include "lora.h"
+ 
+ namespace inkling {
+ 
+@@ -290,7 +291,7 @@ void launch_qkv_qkvr_prep_fused_decode(
+ void launch_soa_q8_gemv_wo_v2(
+     const SoaQ8Matrix & W, const float * x,
+     const float * conv_w, float * sconv_hist, const float * res, float * out,
+-    hipStream_t stream, float * raw_out = nullptr);
++    hipStream_t stream, float * raw_out = nullptr, const LoraWo * lora = nullptr);
+ 
+ // ---------------------------------------------------------------------------
+ // G/H. NVFP4 MoE decode v2 (bit-identical math, deeper prefetch / better fill).
+diff --git a/include/kernels_step7h_fused.h b/include/kernels_step7h_fused.h
+index 4c8992a..ac73e28 100644
+--- a/include/kernels_step7h_fused.h
++++ b/include/kernels_step7h_fused.h
+@@ -22,6 +22,7 @@
+ // ============================================================================
+ 
+ #include "inkling_engine.h"
++#include "lora.h"
+ 
+ namespace inkling {
+ 
+@@ -43,13 +44,16 @@ void launch_moe_nvfp4_ship_fused(
+     float * raw_out = nullptr);
+ 
+ // A/B: same fusion with a 192-block grid (2 blocks/CU, no VGPR pin).
++// lora (--lora): phase 1 also writes the 192 canonical chunk partials of
++// s_k = A_{e_k} . act_k (one per block, lora->part), phase 2 adds the rank-1
++// term to the 8-slot sum before the sconv epilogue (include/lora.h).
+ void launch_moe_nvfp4_ship_fused192(
+     const SoaNVFP4Experts & gate_up, const SoaNVFP4Experts & down,
+     const float * x_norm, const int32_t * topk_ids, const float * topk_w,
+     float * tmp_act, float * out, hipStream_t stream,
+     const float * post_conv_w = nullptr, float * post_sconv_h = nullptr,
+     const float * post_res_add = nullptr, float * scratch = nullptr,
+-    float * raw_out = nullptr);
++    float * raw_out = nullptr, const LoraMoe * lora = nullptr);
+ 
+ // ---------------------------------------------------------------------------
+ // 2. Shipped-shape fused Q8 MoE (4 layers, -4 graph nodes)
+diff --git a/include/kernels_step7i_fused.h b/include/kernels_step7i_fused.h
+index 4c593a8..f7d7f32 100644
+--- a/include/kernels_step7i_fused.h
++++ b/include/kernels_step7i_fused.h
+@@ -42,6 +42,7 @@
+ // ============================================================================
+ 
+ #include "inkling_engine.h"
++#include "lora.h"
+ #include "sparse_global.h"
+ 
+ namespace inkling {
+@@ -80,7 +81,8 @@ void launch_wo_c_fused(
+     const __half * router_w, const float * exp_probs_b,
+     float * out_mixed, float * out_gate,
+     float * x_norm_out, int32_t * topk_ids_out, float * topk_w_out,
+-    float * mix_scratch, hipStream_t stream, float * raw_out = nullptr);
++    float * mix_scratch, hipStream_t stream, float * raw_out = nullptr,
++    const LoraWo * lora = nullptr);
+ 
+ // Step 7J: identical kernel with the wo phase on `v_dot2_f32_f16` + `__half2`
+ // LDS (s_x 13.8 KB -> 7.7 KB, whole launch 24.9 KB -> 18.3 KB).  Same weight
+diff --git a/include/kernels_verify_batch.h b/include/kernels_verify_batch.h
+index 11d4481..6bc44af 100644
+--- a/include/kernels_verify_batch.h
++++ b/include/kernels_verify_batch.h
+@@ -24,6 +24,7 @@
+ //                                 values into the per-slot rollback buffer.
+ 
+ #include "inkling_engine.h"
++#include "lora.h"
+ 
+ #include <cstdint>
+ 
+@@ -46,10 +47,11 @@ void launch_verify_gemv_mrows(const VerifyGemvSeg seg[3], int n_seg, int m,
+ // (bit-identical to the decode wo kernel), causal across the m rows, plus the
+ // raw pre-conv dump for the speculative rollback.  ONE 3072-row weight stream
+ // for all m rows (the shipped per-row path re-reads 7.1 MB per row).
++// lora (--lora): x3 = fmaf(B[row], lora->s[t], x3) before the epilogue.
+ void launch_verify_wo_mrows(const SoaQ8Matrix & W, const float * x, int xstride,
+                             const float * conv_w, float * hist, const float * res,
+                             float * y, int m, float * raw_out, int raw_stride,
+-                            hipStream_t stream);
++                            hipStream_t stream, const LoraWo * lora = nullptr);
+ 
+ // Expert dedup: unique_exp[u], exp_tok_mask[u] (bit r set = token r routed to
+ // expert u), exp_tok_slot[u*8+r] (slot k of token r), exp_tok_w[u*8+r],
+@@ -99,9 +101,13 @@ void launch_verify_router_topk(const float * x_norm, const __half * router_w,
+ 
+ // Fixed-order tree sum of the 8 slots + causal 4-tap shortconv + residual.
+ // out/res are [m, N_EMBD]; raw_out (optional) receives the pre-conv sum.
++// lora (--lora): the sum gets lora_moe_delta() of row t (lora->s[t][k] from
++// launch_lora_moe_s, routed weights topk_w[t][k], experts topk_ids[t][k]).
+ void launch_verify_ffn_post(const float * buf_slot, int m, const float * conv_w,
+                             float * hist, const float * res, float * out,
+-                            float * raw_out, int raw_stride, hipStream_t stream);
++                            float * raw_out, int raw_stride, hipStream_t stream,
++                            const LoraMoe * lora = nullptr, const int32_t * topk_ids = nullptr,
++                            const float * topk_w = nullptr);
+ 
+ // raw[t * raw_stride + 0..width) = src[t * N_EMBD + 0..width)
+ void launch_verify_save_raw(const float * src, int m, int width, float * raw,
+@@ -120,12 +126,13 @@ struct BatchHistPtrs {
+ // each row updates its own independent sconv history in hists.p[t]).
+ void launch_batch_wo_mrows(const SoaQ8Matrix & W, const float * x, int xstride,
+                            const float * conv_w, BatchHistPtrs hists, const float * res,
+-                           float * y, int m, hipStream_t stream);
++                           float * y, int m, hipStream_t stream, const LoraWo * lora = nullptr);
+ 
+ // Multi-stream independent-slot FFN 8-slot tree sum + 4-tap shortconv + residual
+ // (1 parallel launch across all m rows, each row updates hists.p[t]).
+ void launch_batch_ffn_post(const float * buf_slot, int m, const float * conv_w,
+                            BatchHistPtrs hists, const float * res, float * out,
+-                           hipStream_t stream);
++                           hipStream_t stream, const LoraMoe * lora = nullptr,
++                           const int32_t * topk_ids = nullptr, const float * topk_w = nullptr);
+ 
+ } // namespace inkling
+diff --git a/include/lora.h b/include/lora.h
+new file mode 100644
+index 0000000..a0d6c77
+--- /dev/null
++++ b/include/lora.h
+@@ -0,0 +1,104 @@
++#pragma once
++
++// Rank-1 LoRA (W' = W + B A, B pre-scaled by alpha / rank) on Inkling 2 Mini's
++// residual writers, applied at run time inside the existing epilogues:
++//
++//   attn_output   : x3[r] = fmaf(B[r], s, x3[r]),            s = A . fa_out (3072)
++//   ffn_down_exps : x3[r] = sum8[r] + delta[r],
++//                   delta[r] = sum_k fmaf(w_k * s_k, B_{e_k}[r], .), s_k = A_{e_k} . act_k (1152)
++//   token_embd    : e[r]  = fmaf(B[r], A[tok], e[r])          (before tok_norm)
++//
++// x3 is the raw pre-conv value of the 4-tap post short conv, so the LoRA term is
++// part of everything downstream (conv, residual, short-conv history, verify
++// rollback rows), exactly as if W itself had been changed.  w_k is the routed
++// expert weight (topk_w, i.e. without the NVFP4 per-expert scale2: A was taken
++// against the dequantised BF16 weights).
++//
++// Every MoE path computes s_k in ONE canonical order (24 chunks of 48: each
++// chunk a sequential fmaf chain, the chunks summed in order) and every path
++// adds delta to the same tree sum, so the m-row verify / batched paths stay
++// bit-identical to the single-token decode (selftest A/B/C).
++
++#include <cstdio>
++#include <cstdlib>
++#include <cmath>
++
++#include "inkling_engine.h"
++
++namespace inkling {
++
++static constexpr int LORA_MOE_CHUNK   = 48;
++static constexpr int LORA_MOE_NCHUNK  = N_FF_EXP / LORA_MOE_CHUNK;   // 24
++static constexpr int LORA_MOE_PARTS   = TOP_K * LORA_MOE_NCHUNK;     // 192 (= fused MoE grid)
++static_assert(N_FF_EXP % LORA_MOE_CHUNK == 0, "chunking");
++
++// attn_output of one physical layer.
++struct LoraWo {
++    const float * a = nullptr;   // [N_Q]
++    const float * b = nullptr;   // [N_EMBD]
++    float *       s = nullptr;   // [rows] s[t] = A . x[t] (launch_lora_wo_s; read by the wo epilogues)
++};
++
++// ffn_down_exps of one physical layer, plus the per-visit scratch.
++struct LoraMoe {
++    const float * a = nullptr;   // [N_EXPERT][N_FF_EXP]
++    const float * b = nullptr;   // [N_EXPERT][N_EMBD] (b_stride = N_EMBD) or [N_EMBD] (b_stride = 0)
++    int     b_stride = 0;
++    float * s = nullptr;         // [rows][TOP_K]  s_k = A_{e_k} . act_k
++    float * part = nullptr;      // [LORA_MOE_PARTS] fused-kernel chunk partials
++};
++
++__host__ __device__ inline float lora_chunk_dot(const float * a, const float * h) {
++    float p = 0.0f;
++    for (int i = 0; i < LORA_MOE_CHUNK; ++i) {
++        p = fmaf(a[i], h[i], p);
++    }
++    return p;
++}
++
++// Canonical s = A_e . act (24 chunk partials summed in order).
++__host__ __device__ inline float lora_moe_s_ref(const float * a_e, const float * act) {
++    float s = lora_chunk_dot(a_e, act);
++    for (int c = 1; c < LORA_MOE_NCHUNK; ++c) {
++        s += lora_chunk_dot(a_e + c * LORA_MOE_CHUNK, act + c * LORA_MOE_CHUNK);
++    }
++    return s;
++}
++
++// Routed weight times s for slot k (0 for an invalid expert id, like coef).
++__host__ __device__ inline float lora_moe_ws(int32_t e, float w, float s) {
++    return ((unsigned) e < (unsigned) N_EXPERT) ? w * s : 0.0f;
++}
++
++// delta[r] for one token: ws[k] / ids[k] of its 8 slots.
++__host__ __device__ inline float lora_moe_delta(const float * ws, const int32_t * ids,
++                                                const float * b, int b_stride, int r) {
++    float d = 0.0f;
++    for (int k = 0; k < TOP_K; ++k) {
++        const int32_t e = ids[k];
++        const int ex = ((unsigned) e < (unsigned) N_EXPERT) ? e : 0;
++        d = fmaf(ws[k], b[(size_t) ex * b_stride + r], d);
++    }
++    return d;
++}
++
++// A launcher reached a fallback that has no LoRA term: refuse rather than
++// silently run the stock (censored) math.
++inline void lora_require(bool ok, const char * where) {
++    if (!ok) {
++        std::fprintf(stderr, "[lora] %s has no --lora support\n", where);
++        std::abort();
++    }
++}
++
++// ---- kernels_lora.hip -------------------------------------------------------
++// s[t] = A . x[t * xstride + 0..N_Q) into lw.s[t] for t < m (deterministic block reduction).
++void launch_lora_wo_s(const LoraWo & lw, const float * x, int xstride, int m, hipStream_t stream);
++// Prefill: y[t * ystride + r] = fmaf(B[r], A . x[t], y[...]) in place, t < m.
++void launch_lora_wo_apply(const LoraWo & lw, const float * x, int xstride, float * y, int ystride,
++                          int m, hipStream_t stream);
++// s[t * TOP_K + k] = canonical A_{ids[t][k]} . act[(t * TOP_K + k) * N_FF_EXP ...], t < m.
++void launch_lora_moe_s(const LoraMoe & lm, const float * act, const int32_t * topk_ids, int m,
++                       hipStream_t stream);
++
++} // namespace inkling
+diff --git a/src/dspark_mtp.cpp b/src/dspark_mtp.cpp
+index fb6356f..77d1c7e 100644
+--- a/src/dspark_mtp.cpp
++++ b/src/dspark_mtp.cpp
+@@ -723,7 +723,7 @@ double DSparkDrafter::debug_shortlist_check() {
+ 
+ void DSparkDrafter::run_draft_body(const DSparkDraftParams * dp, int anchor, int P) {
+     launch_dspark_embed_block(w_->tok_embd, w_->tok_norm, mask_embed_, layers_[0].in_norm,
+-                              anchor, res_, xn_, picks_, stream_, dp);
++                              anchor, res_, xn_, picks_, stream_, dp, w_->lora_emb_a, w_->lora_emb_b);
+     for (int l = 0; l < 3; ++l) {
+         Layer & L = layers_[l];
+         launch_dspark_gemv(L.qkv, xn_, N_EMBD, /*x_bf16=*/true, BLOCK, qkv_out_, N_Q + 2 * N_KV,
+diff --git a/src/engine.cpp b/src/engine.cpp
+index 6c0a73c..9687dd0 100644
+--- a/src/engine.cpp
++++ b/src/engine.cpp
+@@ -9,6 +9,8 @@
+ #include "kernels_step7j_fdot2.h"
+ #include "kernels_mtp_verify.h"
+ #include "kernels_verify_batch.h"
++#include "lora.h"
++#include "lora_adapter.hpp"
+ 
+ // Step 7F: per-stage launchers of the shipped MoE decode (src/kernels_gemv_soa.hip),
+ // split out so each stage can be A/B benchmarked against its kernels_moe_v3
+@@ -42,6 +44,7 @@ void launch_moe_q8_down_ship(
+ #include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
++#include <stdexcept>
+ 
+ // Step 7D super-fused decode kernels: per-group switches kept so each group can
+ // be A/B benchmarked in isolation against the split pipeline.
+@@ -182,6 +185,14 @@ bool InklingEngine::init(const std::string & model_path, const EngineConfig & cf
+         std::fprintf(stderr, "InklingEngine: failed to load GGUF '%s'\n", model_path.c_str());
+         return false;
+     }
++    if (!cfg_.lora_path.empty()) {
++        try {
++            load_lora();
++        } catch (const std::exception & e) {
++            std::fprintf(stderr, "InklingEngine: --lora %s: %s\n", cfg_.lora_path.c_str(), e.what());
++            return false;
++        }
++    }
+     total_vram_bytes_ = weights_.total_vram_bytes;
+ 
+     alloc_state_and_scratch();
+@@ -223,6 +234,61 @@ bool InklingEngine::init(const std::string & model_path, const EngineConfig & cf
+     return true;
+ }
+ 
++// --lora: upload a rank-1 adapter (src/lora_adapter.hpp) into weights_.  The
++// LoRA terms live in the shipped default kernels only (wo_v2 / wo+C, fused-192
++// NVFP4 MoE, Q8 MoE decode, the m-row verify/batch kernels, WMMA prefill), so
++// every A/B switch that selects another wo / MoE kernel is refused here.
++void InklingEngine::load_lora() {
++    struct Knob { const char * flag; bool stock; };
++    const Knob knobs[] = {
++        {"--wo-v3",          cfg_.wo_v3 < 0},
++        {"--fdot2-wo",       cfg_.fdot2_wo == 0},
++        {"--fuse-wob",       cfg_.fuse_wob == 0},
++        {"--moe-ship-fused", cfg_.moe_ship_fused == 2},
++        {"--moe-fused-v3",   cfg_.moe_fused_v3 < 0},
++        {"--moe-gu-v3",      cfg_.moe_gu_v3 < 0},
++        {"--moe-dn-v3",      cfg_.moe_dn_v3 < 0},
++        {"--fdot2-moe",      cfg_.fdot2_moe == 0},
++        {"--moe-q8-fused",   cfg_.moe_q8_fused == 0},
++        {"--fdot2-q8moe",    cfg_.fdot2_q8moe == 0},
++    };
++    for (const Knob & k : knobs) {
++        if (!k.stock) {
++            throw std::runtime_error(std::string(k.flag) + " selects a kernel without the LoRA term (keep the default)");
++        }
++    }
++    const LoraAdapterHost ad = load_lora_adapter(cfg_.lora_path);
++    size_t bytes = 0;
++    auto upload = [&](const std::vector<float> & v) {
++        void * p = nullptr;
++        const size_t n = v.size() * sizeof(float);
++        HIP_CHECK(hipMalloc(&p, n));
++        HIP_CHECK(hipMemcpy(p, v.data(), n, hipMemcpyHostToDevice));
++        weights_.gpu_allocs.push_back(p);
++        weights_.total_vram_bytes += n;
++        bytes += n;
++        return static_cast<float *>(p);
++    };
++    int shared = 0;
++    for (int l = 0; l < N_LAYER_PHYS; ++l) {
++        const auto & a = ad.layers[l];
++        PhysLayerWeights & L = weights_.layers[l];
++        L.lora_wo_a = upload(a.wo_a);
++        L.lora_wo_b = upload(a.wo_b);
++        L.lora_dn_a = upload(a.dn_a);
++        L.lora_dn_b = upload(a.dn_b);
++        L.lora_dn_b_stride = a.dn_b_shared ? 0 : N_EMBD;
++        shared += a.dn_b_shared ? 1 : 0;
++    }
++    weights_.lora_emb_a = upload(ad.emb_a);
++    weights_.lora_emb_b = upload(ad.emb_b);
++    std::printf("[lora] %s ('%s', scale %.3g): attn_output + ffn_down_exps x %d layers (every loop visit) "
++                "+ token_embd, %d/%d layers share one expert B, %.1f MiB\n",
++                cfg_.lora_path.c_str(), ad.name.c_str(), ad.scale, N_LAYER_PHYS, shared, N_LAYER_PHYS,
++                (double)bytes / (1024.0 * 1024.0));
++    std::fflush(stdout);
++}
++
+ void InklingEngine::alloc_state_and_scratch() {
+     // 1. Allocate KV cache & short-conv recurrent state for all 48 virtual slots (slot 0)
+     const size_t qs_bytes_per_head = (cfg_.kv_type == KV_Q8_0) ? (size_t)HEAD_DIM : (size_t)(HEAD_DIM / 2);
+@@ -310,6 +376,11 @@ void InklingEngine::alloc_state_and_scratch() {
+     buf_mix_scratch_    = alloc_gpu<float>(16384,                           state_allocs_, total_vram_bytes_);
+     buf_moe_act_dec_ = alloc_gpu<float>((size_t)TOP_K * N_FF_EXP,           state_allocs_, total_vram_bytes_);
+     buf_moe_out_     = alloc_gpu<float>(embd_buf,                           state_allocs_, total_vram_bytes_);
++    if (weights_.lora_emb_a != nullptr) {
++        d_lora_wo_s_  = alloc_gpu<float>(LORA_ROWS,                         state_allocs_, total_vram_bytes_);
++        d_lora_moe_s_ = alloc_gpu<float>((size_t)LORA_ROWS * TOP_K,         state_allocs_, total_vram_bytes_);
++        d_lora_part_  = alloc_gpu<float>(LORA_MOE_PARTS,                    state_allocs_, total_vram_bytes_);
++    }
+     const size_t fa_tmp_rows = (size_t)std::max(64, 8 * MAX_UBATCH);
+     buf_fa_tmp_o_    = alloc_gpu<float>(fa_tmp_rows * N_HEAD * HEAD_DIM,    state_allocs_, total_vram_bytes_);
+     buf_fa_tmp_m_    = alloc_gpu<float2>(fa_tmp_rows * N_HEAD,              state_allocs_, total_vram_bytes_);
+@@ -610,6 +681,24 @@ void InklingEngine::record_layer(
+     int32_t     * const topk_ids_    = buf_topk_ids_ + o_topk;
+     float       * const topk_w_      = buf_topk_w_ + o_topk;
+ 
++    // --lora (include/lora.h): this physical layer's rank-1 terms; the per-row
++    // scalars follow the same row offsets as the activations.
++    LoraWo  lora_wo;
++    LoraMoe lora_moe;
++    const bool lora_on = (L.lora_wo_a != nullptr);
++    if (lora_on) {
++        lora_wo.a = L.lora_wo_a;
++        lora_wo.b = L.lora_wo_b;
++        lora_wo.s = d_lora_wo_s_ + row_slot;
++        lora_moe.a = L.lora_dn_a;
++        lora_moe.b = L.lora_dn_b;
++        lora_moe.b_stride = L.lora_dn_b_stride;
++        lora_moe.s = d_lora_moe_s_ + (size_t)row_slot * TOP_K;
++        lora_moe.part = d_lora_part_;
++    }
++    const LoraWo  * const lw = lora_on ? &lora_wo : nullptr;
++    const LoraMoe * const lm = lora_on ? &lora_moe : nullptr;
++
+     // Step 8A: the DSpark taps are the hidden entering visits 5, 23, 41 (in this
+     // engine: prelude layer 5, pass 1 ip 11 => slot 29, pass 2 ip 17 => slot 47);
+     // the reference writes them as bf16(hid) inside the visit's mix launch.
+@@ -1550,6 +1639,11 @@ void InklingEngine::record_layer(
+         ? (d_verify_raw_ + ((size_t)slot * MAX_VERIFY_TOKENS + (verify_mode_ ? verify_row_ : 0)) * N_SCONV_CHANNELS + 2 * N_KV)
+         : nullptr;
+ 
++    // --lora: s = A_wo . fa_out for every row the wo epilogue below finishes.
++    if (lw != nullptr && (n_tokens == 1 || verify_m_ > 0)) {
++        launch_lora_wo_s(*lw, fa_out_, N_Q, n_tokens, stream_);
++    }
++
+     if (verify_m_ > 0 && batch_slots_active_) {
+         BatchHistPtrs wo_hists{};
+         for (int r = 0; r < n_tokens; ++r) {
+@@ -1557,7 +1651,7 @@ void InklingEngine::record_layer(
+         }
+         launch_batch_wo_mrows(
+             L.wo, fa_out_, N_Q, L.attn_post_conv,
+-            wo_hists, attn_res_add, buf_ffn_inp_, n_tokens, stream_);
++            wo_hists, attn_res_add, buf_ffn_inp_, n_tokens, stream_, lw);
+     } else if (verify_m_ > 0) {
+         // Step 8C: ONE weight stream for all m rows + the exact causal
+         // multi-token sconv_post_res epilogue (identical per-row math to the
+@@ -1569,7 +1663,7 @@ void InklingEngine::record_layer(
+         launch_verify_wo_mrows(
+             L.wo, fa_out_, N_Q, L.attn_post_conv,
+             hist_base + (size_t)(2 * N_KV) * N_CONV_HIST,
+-            attn_res_add, buf_ffn_inp_, n_tokens, wo_raw, N_SCONV_CHANNELS, stream_);
++            attn_res_add, buf_ffn_inp_, n_tokens, wo_raw, N_SCONV_CHANNELS, stream_, lw);
+         if (vsync2) { HIP_CHECK(hipStreamSynchronize(stream_)); std::fprintf(stderr, "[v] slot=%d wo ok\n", slot); }
+     } else if (n_tokens == 1) {
+         if (s7i_wob) {
+@@ -1617,7 +1711,7 @@ void InklingEngine::record_layer(
+                 loop->ctrl_forget[LOOP_CTRL_FFN], L.ffn_norm,
+                 L.ffn_gate_inp, L.ffn_exp_probs_b,
+                 mixed_, ctrl_gate_, x_norm_,
+-                topk_ids_, topk_w_, buf_mix_scratch_, stream_, wo_raw);
++                topk_ids_, topk_w_, buf_mix_scratch_, stream_, wo_raw, lw);
+             norm_router_done = true;
+         } else if (cfg_.fdot2_wo >= 1) {
+             launch_soa_q8_gemv_wo_fdot2(
+@@ -1633,7 +1727,7 @@ void InklingEngine::record_layer(
+             launch_soa_q8_gemv_wo_v2(
+                 L.wo, fa_out_, L.attn_post_conv,
+                 hist_base + (size_t)(2 * N_KV) * N_CONV_HIST,
+-                attn_res_add, buf_ffn_inp_, stream_, wo_raw);
++                attn_res_add, buf_ffn_inp_, stream_, wo_raw, lw);
+         } else {
+             launch_soa_q8_gemv_sconv_post_res(
+                 L.wo, fa_out_, L.attn_post_conv,
+@@ -1642,6 +1736,9 @@ void InklingEngine::record_layer(
+         }
+     } else {
+         run_proj(L.wo, fa_out_, wo_out_);
++        if (lw != nullptr) {
++            launch_lora_wo_apply(*lw, fa_out_, N_Q, wo_out_, N_EMBD, n_tokens, stream_);
++        }
+         launch_sconv_post_res(
+             wo_out_, L.attn_post_conv,
+             hist_base + (size_t)(2 * N_KV) * N_CONV_HIST,
+@@ -1803,6 +1900,9 @@ void InklingEngine::record_layer(
+     if (verify_m_ > 0 && !batch_slots_active_ && std::getenv("INKLING_VROW_MOE") != nullptr) {
+         // A/B fallback: the exact shipped per-row fused decode MoE + post-conv.
+         for (int vr = 0; vr < n_tokens; ++vr) {
++            LoraMoe lora_row = lora_moe;
++            lora_row.s = lora_moe.s + (size_t)vr * TOP_K;
++            const LoraMoe * const lmr = lora_on ? &lora_row : nullptr;
+             if (L.is_nvfp4) {
+                 launch_moe_nvfp4_ship_fused192(L.gate_up_nvfp4, L.down_nvfp4,
+                                                x_norm_ + (size_t)vr * N_EMBD,
+@@ -1811,7 +1911,8 @@ void InklingEngine::record_layer(
+                                                buf_verify_act_, cur_out + (size_t)vr * N_EMBD, stream_,
+                                                L.ffn_post_conv, ffn_hist, buf_ffn_inp_ + (size_t)vr * N_EMBD,
+                                                buf_router_scratch_,
+-                                               (ffn_raw != nullptr) ? (ffn_raw + (size_t)vr * N_SCONV_CHANNELS) : nullptr);
++                                               (ffn_raw != nullptr) ? (ffn_raw + (size_t)vr * N_SCONV_CHANNELS) : nullptr,
++                                               lmr);
+             } else {
+                 launch_moe_q8_decode(L.gate_up_q8, L.down_q8,
+                                      x_norm_ + (size_t)vr * N_EMBD,
+@@ -1819,7 +1920,8 @@ void InklingEngine::record_layer(
+                                      topk_w_ + (size_t)vr * TOP_K,
+                                      buf_verify_act_, cur_out + (size_t)vr * N_EMBD, stream_,
+                                      L.ffn_post_conv, ffn_hist, buf_ffn_inp_ + (size_t)vr * N_EMBD,
+-                                     (ffn_raw != nullptr) ? (ffn_raw + (size_t)vr * N_SCONV_CHANNELS) : nullptr);
++                                     (ffn_raw != nullptr) ? (ffn_raw + (size_t)vr * N_SCONV_CHANNELS) : nullptr,
++                                     lmr);
+             }
+         }
+     } else if (verify_m_ > 0) {
+@@ -1894,16 +1996,20 @@ void InklingEngine::record_layer(
+                                     d_num_unique_, n_tokens,
+                                     buf_moe_slot_, stream_);
+         }
++        if (lm != nullptr) {
++            launch_lora_moe_s(*lm, buf_verify_act_, topk_ids_, n_tokens, stream_);
++        }
+         if (batch_slots_active_) {
+             BatchHistPtrs ffn_hists{};
+             for (int r = 0; r < n_tokens; ++r) {
+                 ffn_hists.p[r] = slot_sconv_hist(batch_slot_ids_[r], slot) + (size_t)(2 * N_KV + N_EMBD) * N_CONV_HIST;
+             }
+             launch_batch_ffn_post(buf_moe_slot_, n_tokens, L.ffn_post_conv, ffn_hists,
+-                                  buf_ffn_inp_, cur_out, stream_);
++                                  buf_ffn_inp_, cur_out, stream_, lm, topk_ids_, topk_w_);
+         } else {
+             launch_verify_ffn_post(buf_moe_slot_, n_tokens, L.ffn_post_conv, ffn_hist,
+-                                   buf_ffn_inp_, cur_out, ffn_raw, N_SCONV_CHANNELS, stream_);
++                                   buf_ffn_inp_, cur_out, ffn_raw, N_SCONV_CHANNELS, stream_,
++                                   lm, topk_ids_, topk_w_);
+         }
+         if (vsync2) { HIP_CHECK(hipStreamSynchronize(stream_)); std::fprintf(stderr, "[v] slot=%d moe ok\n", slot); }
+     } else if (n_tokens == 1) {
+@@ -1936,7 +2042,7 @@ void InklingEngine::record_layer(
+                 launch_moe_nvfp4_ship_fused192(
+                     L.gate_up_nvfp4, L.down_nvfp4, x_norm_,
+                     topk_ids_, topk_w_, buf_moe_act_dec_, cur_out, stream_,
+-                    L.ffn_post_conv, ffn_hist, buf_ffn_inp_, buf_router_scratch_, ffn_raw);
++                    L.ffn_post_conv, ffn_hist, buf_ffn_inp_, buf_router_scratch_, ffn_raw, lm);
+             } else if (cfg_.moe_fused_v3 >= 0) {
+                 launch_moe_nvfp4_fused_v3(
+                     L.gate_up_nvfp4, L.down_nvfp4, x_norm_,
+@@ -2017,7 +2123,7 @@ void InklingEngine::record_layer(
+                 launch_moe_q8_decode(
+                     L.gate_up_q8, L.down_q8, x_norm_,
+                     topk_ids_, topk_w_, buf_moe_act_dec_, cur_out, stream_,
+-                    L.ffn_post_conv, ffn_hist, buf_ffn_inp_, ffn_raw);
++                    L.ffn_post_conv, ffn_hist, buf_ffn_inp_, ffn_raw, lm);
+             }
+         }
+     } else {
+@@ -2025,12 +2131,12 @@ void InklingEngine::record_layer(
+             launch_moe_nvfp4_prefill_wmma(
+                 L.gate_up_nvfp4, L.down_nvfp4, x_norm_,
+                 topk_ids_, topk_w_, moe_scratch_, cur_out, n_tokens, stream_,
+-                L.ffn_post_conv, ffn_hist, buf_ffn_inp_);
++                L.ffn_post_conv, ffn_hist, buf_ffn_inp_, lm);
+         } else {
+             launch_moe_q8_prefill_wmma(
+                 L.gate_up_q8, L.down_q8, x_norm_,
+                 topk_ids_, topk_w_, moe_scratch_, cur_out, n_tokens, stream_,
+-                L.ffn_post_conv, ffn_hist, buf_ffn_inp_);
++                L.ffn_post_conv, ffn_hist, buf_ffn_inp_, lm);
+         }
+     }
+ }
+@@ -2055,7 +2161,8 @@ void InklingEngine::record_forward_pass(
+         // Step 8B: the batched verify gathers every row's token id into
+         // d_token_ids_ (d_meta->token_id is only for the single-token path).
+         launch_embed_norm(weights_.tok_embd, weights_.tok_norm, d_token_ids_,
+-                          (verify_m_ > 0) ? nullptr : d_meta, buf_blk0_ + o_embd, n_tokens, stream_);
++                          (verify_m_ > 0) ? nullptr : d_meta, buf_blk0_ + o_embd, n_tokens, stream_,
++                          weights_.lora_emb_a, weights_.lora_emb_b);
+     }
+ 
+     const bool dbg_sync = std::getenv("INKLING_DEBUG_SYNC") != nullptr && !graph_capturing_;
+diff --git a/src/engine.hpp b/src/engine.hpp
+index c0012e0..1b1c9de 100644
+--- a/src/engine.hpp
++++ b/src/engine.hpp
+@@ -23,6 +23,11 @@ struct EngineConfig {
+     bool    use_hip_graph = true;
+     int32_t sparse_pages  = 0; // 0 = dense Global FA; >= SPARSE_MIN_PAGES = Quest block-sparse
+ 
++    // --lora: rank-1 LoRA adapter GGUF (AtomicChat Inkling-2-Mini-Uncensored)
++    // applied at run time to attn_output, ffn_down_exps and token_embd in every
++    // path (include/lora.h).  Empty = stock model, bit-identical launches.
++    std::string lora_path;
++
+     // Step 8A: buf_logits_ is [MAX_UBATCH, VOCAB] (391 MiB) only where every row's
+     // logits are needed (ppl / oracle).  gen / bench / vision / selftest only ever
+     // read the last (or a single) row plus the 8 verify rows, so 8 rows (6.1 MiB)
+@@ -223,6 +228,7 @@ public:
+ private:
+     void alloc_state_and_scratch();
+     void alloc_batch_scratch();
++    void load_lora();   // --lora: uploads the adapter into weights_ (before alloc_state_and_scratch)
+     KVCacheSlot          slot_kv_view(int slot_id, int layer_slot) const;
+     SparseGlobalPageMeta slot_sparse_meta_view(int slot_id, int layer_slot) const;
+     float *              slot_sconv_hist(int slot_id, int layer_slot) const;
+@@ -249,6 +255,13 @@ private:
+     TokenizerData tok_;
+     hipStream_t   stream_ = nullptr;
+ 
++    // --lora per-visit scratch (allocated before any graph capture; nullptr = off)
++    float * d_lora_wo_s_  = nullptr; // [LORA_ROWS]          s = A_wo . fa_out per row
++    float * d_lora_moe_s_ = nullptr; // [LORA_ROWS * TOP_K]  s_k = A_e . act_k per row
++    float * d_lora_part_  = nullptr; // [LORA_MOE_PARTS]     fused NVFP4 MoE chunk partials
++    static constexpr int LORA_ROWS = (MAX_VERIFY_TOKENS > MAX_CONCURRENT_SLOTS) ? MAX_VERIFY_TOKENS
++                                                                               : MAX_CONCURRENT_SLOTS;
++
+     // Persistent per-slot KV and short-conv states (48 virtual slots)
+     KVCacheSlot    kv_slots_[N_LAYER_SLOTS];
+     SConvStateSlot sconv_slots_[N_LAYER_SLOTS];
+diff --git a/src/kernels_core.hip b/src/kernels_core.hip
+index 58fa108..6487978 100644
+--- a/src/kernels_core.hip
++++ b/src/kernels_core.hip
+@@ -124,7 +124,9 @@ static __global__ void embed_norm_2304_kernel(
+         const int32_t  * __restrict__ d_token_ids,
+         const StepMeta * __restrict__ d_meta,
+         float          * __restrict__ out,
+-        int n_tokens) {
++        int n_tokens,
++        const float    * __restrict__ lora_a,
++        const float    * __restrict__ lora_b) {
+     constexpr int N_WARPS = 18;
+     const int t = blockIdx.x;
+     if (t >= n_tokens) {
+@@ -143,10 +145,18 @@ static __global__ void embed_norm_2304_kernel(
+     const int32_t q4 = row_qs[tid];
+     const float   d  = __half2float(row_d[tid >> 3]);
+ 
+-    const float v0 = d * (float)(int8_t)( q4        & 0xFF);
+-    const float v1 = d * (float)(int8_t)((q4 >>  8) & 0xFF);
+-    const float v2 = d * (float)(int8_t)((q4 >> 16) & 0xFF);
+-    const float v3 = d * (float)(int8_t)((q4 >> 24) & 0xFF);
++    float v0 = d * (float)(int8_t)( q4        & 0xFF);
++    float v1 = d * (float)(int8_t)((q4 >>  8) & 0xFF);
++    float v2 = d * (float)(int8_t)((q4 >> 16) & 0xFF);
++    float v3 = d * (float)(int8_t)((q4 >> 24) & 0xFF);
++    if (lora_a != nullptr) {   // --lora: token_embd + B A[:, tok]
++        const float  at = lora_a[tok_id];
++        const float4 b4 = reinterpret_cast<const float4 *>(lora_b)[tid];
++        v0 = fmaf(b4.x, at, v0);
++        v1 = fmaf(b4.y, at, v1);
++        v2 = fmaf(b4.z, at, v2);
++        v3 = fmaf(b4.w, at, v3);
++    }
+ 
+     float ssq = v0 * v0 + v1 * v1 + v2 * v2 + v3 * v3;
+     ssq = warp_reduce_sum<WARP_SIZE>(ssq);
+@@ -3467,14 +3477,15 @@ static __global__ void logit_softcap_argmax_kernel(
+ void launch_embed_norm(
+         const SoaQ8Matrix & tok_embd, const float * tok_norm,
+         const int32_t * d_token_ids, const StepMeta * d_meta,
+-        float * out, int n_tokens, hipStream_t stream) {
++        float * out, int n_tokens, hipStream_t stream,
++        const float * lora_a, const float * lora_b) {
+     if (n_tokens <= 0) {
+         return;
+     }
+     hipLaunchKernelGGL(
+         embed_norm_2304_kernel,
+         dim3(n_tokens), dim3(576), 0, stream,
+-        tok_embd.qs, tok_embd.d, tok_norm, d_token_ids, d_meta, out, n_tokens);
++        tok_embd.qs, tok_embd.d, tok_norm, d_token_ids, d_meta, out, n_tokens, lora_a, lora_b);
+ }
+ 
+ void launch_inkling_mix(
+diff --git a/src/kernels_decode_fused.hip b/src/kernels_decode_fused.hip
+index 8b4db90..0faa0a7 100644
+--- a/src/kernels_decode_fused.hip
++++ b/src/kernels_decode_fused.hip
+@@ -377,12 +377,17 @@ struct SconvEpi {
+     float *       hist;
+     const float * res;
+     float *       raw_out; // Step 8A: optional dump of the raw pre-conv x3
++    const float * lora_b;  // --lora attn_output: x3 += B[r] * s (nullptr = off)
++    const float * lora_s;  //   s = A . x of this row (launch_lora_wo_s)
+ };
+ 
+ static __device__ __forceinline__ float sconv_post_res_one(const SconvEpi & e, int r, float x3) {
+     const float4 w  = reinterpret_cast<const float4 *>(e.conv_w)[r];
+     float *      hs = e.hist + (size_t) r * N_CONV_HIST;
+     const float x0 = hs[0], x1 = hs[1], x2 = hs[2];
++    if (e.lora_b != nullptr) {
++        x3 = fmaf(e.lora_b[r], e.lora_s[0], x3);
++    }
+     if (e.raw_out != nullptr) {
+         e.raw_out[r] = x3;
+     }
+@@ -1611,7 +1616,7 @@ template <int NWARPS, int LPR, int NB, int PD>
+ __launch_bounds__(NWARPS * 32, 4)
+ static __global__ void q8_gemv_qkv_v2_kernel(QkvSeg s0, QkvSeg s1, QkvSeg s2) {
+     __shared__ float4 s_x[NB * 9];
+-    const SconvEpi none = {nullptr, nullptr, nullptr, nullptr};
++    const SconvEpi none = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+     q8_gemv_body<NWARPS, LPR, NB, PD, false>(s0, s1, s2, s_x, none);
+ }
+ 
+@@ -1656,7 +1661,7 @@ static __global__ void qkv_qkvr_prep_fused_decode_kernel(
+     __shared__ alignas(16) float s_r[N_HEAD][N_REL];
+     __shared__ alignas(16) float s_b[8][N_REL + 1];
+ 
+-    const SconvEpi none = {nullptr, nullptr, nullptr, nullptr};
++    const SconvEpi none = {nullptr, nullptr, nullptr, nullptr, nullptr, nullptr};
+     q8_gemv_body<NWARPS, LPR, NB, PD, false>(s0, s1, s2, s_x, none);
+ 
+     // ------------------------- sharded grid barrier -------------------------
+@@ -2067,12 +2072,17 @@ static __global__ void moe_nvfp4_down_v2_kernel(
+ // ---------------------------------------------------------------------------
+ // Host-side helpers
+ // ---------------------------------------------------------------------------
+-SconvEpi make_epi(const float * conv_w, float * hist, const float * res, float * raw_out = nullptr) {
+-    SconvEpi e;
++SconvEpi make_epi(const float * conv_w, float * hist, const float * res, float * raw_out = nullptr,
++                  const LoraWo * lora = nullptr) {
++    SconvEpi e{};
+     e.conv_w  = conv_w;
+     e.hist    = hist;
+     e.res     = res;
+     e.raw_out = raw_out;
++    if (lora != nullptr) {
++        e.lora_b = lora->b;
++        e.lora_s = lora->s;
++    }
+     return e;
+ }
+ 
+@@ -2539,11 +2549,12 @@ void launch_qkv_qkvr_prep_fused_decode(
+ void launch_soa_q8_gemv_wo_v2(
+         const SoaQ8Matrix & W, const float * x,
+         const float * conv_w, float * sconv_hist, const float * res, float * out,
+-        hipStream_t stream, float * raw_out) {
++        hipStream_t stream, float * raw_out, const LoraWo * lora) {
+     if (W.rows <= 0) {
+         return;
+     }
+     if (W.K != N_Q || conv_w == nullptr || sconv_hist == nullptr) {
++        lora_require(lora == nullptr, "launch_soa_q8_gemv_wo_v2 fallback (K != 3072 or no sconv)");
+         launch_soa_q8_gemv_sconv_post_res(W, x, conv_w, sconv_hist, res, out, stream);
+         return;
+     }
+@@ -2552,7 +2563,7 @@ void launch_soa_q8_gemv_wo_v2(
+     constexpr int RPB = NWARPS * (32 / LPR);
+     const int grid = partition_segments<RPB>(&s0, 1, 0);
+     q8_gemv_wo_v2_kernel<NWARPS, LPR, NB, PD><<<grid, NWARPS * 32, 0, stream>>>(
+-        s0, make_epi(conv_w, sconv_hist, res, raw_out));
++        s0, make_epi(conv_w, sconv_hist, res, raw_out, lora));
+ }
+ 
+ void launch_moe_nvfp4_gate_up_v2(
+diff --git a/src/kernels_dspark_mtp.hip b/src/kernels_dspark_mtp.hip
+index d5b2213..e6ea771 100644
+--- a/src/kernels_dspark_mtp.hip
++++ b/src/kernels_dspark_mtp.hip
+@@ -450,7 +450,8 @@ static __global__ __launch_bounds__(DSG_ROW_THREADS) void dsg_embed_block_kernel
+         const uint16_t * __restrict__ in_norm, int anchor,
+         uint16_t * __restrict__ res, uint16_t * __restrict__ xn,
+         uint64_t * __restrict__ picks,
+-        const DSparkDraftParams * __restrict__ dp) {
++        const DSparkDraftParams * __restrict__ dp,
++        const float * __restrict__ lora_a, const float * __restrict__ lora_b) {
+     __shared__ DsgScratch sc;
+     if (dp != nullptr) anchor = dp->anchor;
+     const int r = blockIdx.x, c = 8 * threadIdx.x;
+@@ -465,6 +466,11 @@ static __global__ __launch_bounds__(DSG_ROW_THREADS) void dsg_embed_block_kernel
+         float v[8];
+         #pragma unroll
+         for (int j = 0; j < 8; ++j) v[j] = (float)row[c % 32 + j] * sc_q;
++        if (lora_a != nullptr) {   // --lora: the target's token_embd + B A[:, anchor]
++            const float at = lora_a[anchor];
++            #pragma unroll
++            for (int j = 0; j < 8; ++j) v[j] = fmaf(lora_b[c + j], at, v[j]);
++        }
+         const float rs = dsg_rms_scale(v, sc);
+         #pragma unroll
+         for (int j = 0; j < 8; ++j) x[j] = dsg_bfr(__fmul_rn(__fmul_rn(v[j], rs), en[j]));
+@@ -490,9 +496,11 @@ void launch_dspark_embed_block(const SoaQ8Matrix & tok_embd, const float * embed
+                                const uint16_t * mask_embed, const uint16_t * in_norm,
+                                int anchor, uint16_t * res, uint16_t * xn,
+                                uint64_t * picks, hipStream_t stream,
+-                               const DSparkDraftParams * dp) {
++                               const DSparkDraftParams * dp,
++                               const float * lora_a, const float * lora_b) {
+     dsg_embed_block_kernel<<<DSG_BLOCK, DSG_ROW_THREADS, 0, stream>>>(
+-        tok_embd.qs, tok_embd.d, embed_norm, mask_embed, in_norm, anchor, res, xn, picks, dp);
++        tok_embd.qs, tok_embd.d, embed_norm, mask_embed, in_norm, anchor, res, xn, picks, dp,
++        lora_a, lora_b);
+ }
+ 
+ // One head row of 128 values, one per thread: bf16(rms(x) * w) then NeoX RoPE.
+diff --git a/src/kernels_gemv_soa.hip b/src/kernels_gemv_soa.hip
+index a5b97d6..11e4ee7 100644
+--- a/src/kernels_gemv_soa.hip
++++ b/src/kernels_gemv_soa.hip
+@@ -22,6 +22,7 @@
+ // race-free, HIP-Graph safe). Bit-identical to sconv_post_res_kernel (kernels_core.hip).
+ // ============================================================================
+ #include "inkling_engine.h"
++#include "lora.h"
+ 
+ #include <cstdio>
+ #include <cstdlib>
+@@ -725,11 +726,14 @@ moe_q8_gate_up_situ_kernel(const int8_t * __restrict__ qs, const __half * __rest
+ //   - Blocks 32..35 (weights 1024..1151 = 128 weights): lane g owns 8 contiguous weights
+ //     (2 float4s in s_act2[8][2][16] 4.0 KB LDS, scale d[32 + (g >> 2)]).
+ //   - Cuts LDS from 41,472 B (40.5 KB) to 12,416 B (12.1 KB <= 16 KB) and VGPRs to 120 (12 waves/SIMD).
++// lora (--lora, lora.b != nullptr): the 8-slot sum gets lora_moe_delta() with
++// s_k = lora.s[k] from launch_lora_moe_s (include/lora.h).
+ template <int R, int GRID_BLOCKS>
+ __global__ void __launch_bounds__(256)
+ moe_q8_down_wsum_kernel(const int8_t * __restrict__ qs, const __half * __restrict__ d,
+                         const float * __restrict__ act, const int32_t * __restrict__ topk_ids,
+-                        const float * __restrict__ topk_w, float * __restrict__ out, const SconvEpi epi) {
++                        const float * __restrict__ topk_w, float * __restrict__ out, const SconvEpi epi,
++                        const LoraMoe lora) {
+     constexpr int K   = N_FF_EXP;   // 1152
+     constexpr int NB  = K / 32;     // 36
+     constexpr int RPB = 2 * R;
+@@ -849,7 +853,16 @@ moe_q8_down_wsum_kernel(const int8_t * __restrict__ qs, const __half * __restric
+             const float sum = ((s_red[0][rr] + s_red[1][rr]) + (s_red[2][rr] + s_red[3][rr])) +
+                               ((s_red[4][rr] + s_red[5][rr]) + (s_red[6][rr] + s_red[7][rr]));
+             const int r = r0 + rr;
+-            out[r] = (epi.conv_w != nullptr) ? sconv_post_res_one(epi, r, sum) : sum;
++            float x3 = sum;
++            if (lora.b != nullptr) {
++                float lws[TOP_K];
++#pragma unroll
++                for (int kk = 0; kk < TOP_K; ++kk) {
++                    lws[kk] = lora_moe_ws(topk_ids[kk], topk_w[kk], lora.s[kk]);
++                }
++                x3 = sum + lora_moe_delta(lws, topk_ids, lora.b, lora.b_stride, r);
++            }
++            out[r] = (epi.conv_w != nullptr) ? sconv_post_res_one(epi, r, x3) : x3;
+         }
+         __syncthreads();
+     }
+@@ -1089,17 +1102,28 @@ void launch_moe_q8_down_ship(const SoaQ8Experts & down,
+     }
+     // Stage 2: Hybrid 12.1 KB LDS + 48-VGPR register-cached kernel, 192 blocks (2 blocks/CU).
+     moe_q8_down_wsum_kernel<2, 192><<<192, 256, 0, stream>>>(
+-        down.qs, down.d, tmp_act, topk_ids, topk_w, out, make_epi(post_conv_w, post_sconv_h, post_res_add, raw_out));
++        down.qs, down.d, tmp_act, topk_ids, topk_w, out, make_epi(post_conv_w, post_sconv_h, post_res_add, raw_out),
++        LoraMoe{});
+ }
+ 
+ void launch_moe_q8_decode(const SoaQ8Experts & gate_up, const SoaQ8Experts & down,
+                           const float * x_norm, const int32_t * topk_ids, const float * topk_w,
+                           float * tmp_act, float * out, hipStream_t stream,
+                           const float * post_conv_w, float * post_sconv_h, const float * post_res_add,
+-                          float * raw_out) {
++                          float * raw_out, const LoraMoe * lora) {
+     launch_moe_q8_gate_up_ship(gate_up, x_norm, topk_ids, tmp_act, stream);
+-    launch_moe_q8_down_ship(down, tmp_act, topk_ids, topk_w, out, stream,
+-                            post_conv_w, post_sconv_h, post_res_add, raw_out);
++    if (lora == nullptr) {
++        launch_moe_q8_down_ship(down, tmp_act, topk_ids, topk_w, out, stream,
++                                post_conv_w, post_sconv_h, post_res_add, raw_out);
++        return;
++    }
++    if (down.rows != N_EMBD || down.K != N_FF_EXP) {
++        gemv_contract_fail("Q8 down must be [*, 2304, 1152]");
++    }
++    launch_lora_moe_s(*lora, tmp_act, topk_ids, 1, stream);
++    moe_q8_down_wsum_kernel<2, 192><<<192, 256, 0, stream>>>(
++        down.qs, down.d, tmp_act, topk_ids, topk_w, out, make_epi(post_conv_w, post_sconv_h, post_res_add, raw_out),
++        *lora);
+ }
+ 
+ } // namespace inkling
+diff --git a/src/kernels_lora.hip b/src/kernels_lora.hip
+new file mode 100644
+index 0000000..4a4aa04
+--- /dev/null
++++ b/src/kernels_lora.hip
+@@ -0,0 +1,119 @@
++// ============================================================================
++// kernels_lora.hip -- the small stand-alone pieces of the --lora path
++// (include/lora.h): the attn_output scalar s = A . fa_out (decode / verify /
++// batch rows, consumed by the wo epilogues), the prefill in-place wo update,
++// and the canonical MoE scalars s_k for the paths whose gate_up and down are
++// separate launches (Q8 decode, m-row verify, multi-slot batch).
++// ============================================================================
++
++#include "lora.h"
++
++#include <hip/hip_runtime.h>
++
++namespace inkling {
++namespace {
++
++constexpr int LORA_WO_THREADS = 256;
++static_assert(N_Q == 3 * 4 * LORA_WO_THREADS, "lora_wo_dot: 3 float4 per thread");
++
++// A . x for one row, the same order in every caller (tests/lora_check.cpp
++// replicates it): thread t owns float4 t, t + 256, t + 512 (sequential fmaf),
++// xor butterfly per wave32, the 8 wave sums added in order.  Every thread
++// returns the result.
++__device__ __forceinline__ float lora_wo_dot(const float * __restrict__ a, const float * __restrict__ x) {
++    __shared__ float s_w[LORA_WO_THREADS / 32];
++    const int t = threadIdx.x;
++    const float4 * a4 = reinterpret_cast<const float4 *>(a);
++    const float4 * x4 = reinterpret_cast<const float4 *>(x);
++    float p = 0.0f;
++#pragma unroll
++    for (int i = 0; i < 3; ++i) {
++        const float4 av = a4[t + LORA_WO_THREADS * i];
++        const float4 xv = x4[t + LORA_WO_THREADS * i];
++        p = fmaf(av.x, xv.x, p);
++        p = fmaf(av.y, xv.y, p);
++        p = fmaf(av.z, xv.z, p);
++        p = fmaf(av.w, xv.w, p);
++    }
++#pragma unroll
++    for (int off = 16; off > 0; off >>= 1) {
++        p += __shfl_xor(p, off, 32);
++    }
++    if ((t & 31) == 0) {
++        s_w[t >> 5] = p;
++    }
++    __syncthreads();
++    float s = s_w[0];
++#pragma unroll
++    for (int w = 1; w < LORA_WO_THREADS / 32; ++w) {
++        s += s_w[w];
++    }
++    return s;
++}
++
++__global__ void __launch_bounds__(LORA_WO_THREADS)
++lora_wo_s_kernel(const float * __restrict__ a, const float * __restrict__ x, int xstride,
++                 float * __restrict__ s) {
++    const int row = blockIdx.x;
++    const float v = lora_wo_dot(a, x + (size_t) row * xstride);
++    if (threadIdx.x == 0) {
++        s[row] = v;
++    }
++}
++
++__global__ void __launch_bounds__(LORA_WO_THREADS)
++lora_wo_apply_kernel(const float * __restrict__ a, const float * __restrict__ b,
++                     const float * __restrict__ x, int xstride, float * __restrict__ y, int ystride) {
++    const int row = blockIdx.x;
++    const float s = lora_wo_dot(a, x + (size_t) row * xstride);
++    float * yr = y + (size_t) row * ystride;
++    for (int r = threadIdx.x; r < N_EMBD; r += LORA_WO_THREADS) {
++        yr[r] = fmaf(b[r], s, yr[r]);
++    }
++}
++
++// One wave32 per (row, slot): lane c < 24 runs chunk c, lane 0 sums the chunks
++// in order (== lora_moe_s_ref, == the fused MoE kernel's partials).
++__global__ void __launch_bounds__(32)
++lora_moe_s_kernel(const float * __restrict__ a, const float * __restrict__ act,
++                  const int32_t * __restrict__ topk_ids, float * __restrict__ s) {
++    const int p    = blockIdx.x;            // row * TOP_K + slot
++    const int lane = threadIdx.x;
++    const int32_t e = topk_ids[p];
++    const int ex = ((unsigned) e < (unsigned) N_EXPERT) ? e : 0;
++    float part = 0.0f;
++    if (lane < LORA_MOE_NCHUNK) {
++        part = lora_chunk_dot(a + (size_t) ex * N_FF_EXP + lane * LORA_MOE_CHUNK,
++                              act + (size_t) p * N_FF_EXP + lane * LORA_MOE_CHUNK);
++    }
++    float sum = __shfl(part, 0, 32);
++#pragma unroll
++    for (int c = 1; c < LORA_MOE_NCHUNK; ++c) {
++        const float v = __shfl(part, c, 32);
++        sum += v;
++    }
++    if (lane == 0) {
++        s[p] = sum;
++    }
++}
++
++} // namespace
++
++void launch_lora_wo_s(const LoraWo & lw, const float * x, int xstride, int m, hipStream_t stream) {
++    if (m <= 0) return;
++    lora_wo_s_kernel<<<m, LORA_WO_THREADS, 0, stream>>>(lw.a, x, xstride, lw.s);
++}
++
++void launch_lora_wo_apply(const LoraWo & lw, const float * x, int xstride, float * y, int ystride,
++                          int m, hipStream_t stream) {
++    if (m <= 0) return;
++    lora_wo_apply_kernel<<<m, LORA_WO_THREADS, 0, stream>>>(lw.a, lw.b, x, xstride, y, ystride);
++}
++
++void launch_lora_moe_s(const LoraMoe & lm, const float * act, const int32_t * topk_ids, int m,
++                       hipStream_t stream) {
++    if (m <= 0) return;
++    lora_moe_s_kernel<<<m * TOP_K, 32, 0, stream>>>(lm.a, act, topk_ids, lm.s);
++}
++
++} // namespace inkling
+diff --git a/src/kernels_step7h_fused.hip b/src/kernels_step7h_fused.hip
+index 2b3edda..9cf5991 100644
+--- a/src/kernels_step7h_fused.hip
++++ b/src/kernels_step7h_fused.hip
+@@ -378,11 +378,14 @@ constexpr int Q8_LPR  = 32;        // shipped q8 gate_up: one pair per warp
+ // ===========================================================================
+ // Part 1a. NVFP4 gate_up phase (EXACT shipped moe_nvfp4_gate_up_situ_kernel<4>)
+ // ===========================================================================
+-template <int NWARPS_ACTIVE>
++// LORA: lane g == 0 also stores its act value at s_lh[local pair] (the block's
++// 48 consecutive act rows of one slot: one canonical chunk, include/lora.h).
++template <int NWARPS_ACTIVE, bool LORA = false>
+ __device__ __forceinline__ void nvfp4_gu_ship_phase(
+     const uint8_t * __restrict__ qs, const uint8_t * __restrict__ scales,
+     const float * __restrict__ scale2, const int32_t * __restrict__ topk_ids,
+-    float * __restrict__ act, int pair_base, const float4 * __restrict__ s_x) {
++    float * __restrict__ act, int pair_base, const float4 * __restrict__ s_x,
++    float * __restrict__ s_lh = nullptr) {
+     const int warp = threadIdx.x >> 5;
+     const int lane = threadIdx.x & 31;
+     const int g    = lane % NV_GULPR;
+@@ -443,7 +446,11 @@ __device__ __forceinline__ void nvfp4_gu_ship_phase(
+         accg = group_reduce_sum<NV_GULPR>(accg);
+         accu = group_reduce_sum<NV_GULPR>(accu);
+         if (g == 0) {
+-            act[k * N_FF_EXP + r] = situ_default(accg * s2, accu * s2);
++            const float v = situ_default(accg * s2, accu * s2);
++            act[k * N_FF_EXP + r] = v;
++            if constexpr (LORA) {
++                s_lh[warp * NV_GUPPW + lane / NV_GULPR] = v;
++            }
+         }
+     }
+ }
+@@ -451,13 +458,23 @@ __device__ __forceinline__ void nvfp4_gu_ship_phase(
+ // ===========================================================================
+ // Part 1b. NVFP4 down phase (EXACT shipped moe_nvfp4_down_wsum_kernel<1, GRID>)
+ // ===========================================================================
+-template <int GRID, bool LEAN>
++// --lora state of one fused MoE block (LDS).
++struct MoeLoraLds {
++    float   h[LORA_MOE_CHUNK];   // phase 1: this block's 48 act values
++    float   ws[TOP_K];           // phase 2: w_k * s_k
++    int32_t e[TOP_K];            // phase 2: expert ids
++};
++
++// LORA: threads 0..7 first reduce slot k's 24 chunk partials (in order) into
++// ll->ws / ll->e; the epilogue adds lora_moe_delta() to the 8-slot sum.
++template <int GRID, bool LEAN, bool LORA = false>
+ __device__ __forceinline__ void nvfp4_down_ship_phase(
+     const uint8_t * __restrict__ qs, const uint8_t * __restrict__ scales,
+     const float * __restrict__ scale2, const float * __restrict__ act,
+     const int32_t * __restrict__ topk_ids, const float * __restrict__ topk_w,
+     float * __restrict__ out, const SconvEpi & epi,
+-    float4 (*s_act1)[8][16], float4 (*s_act2)[2][16], float (*s_red)[8][2]) {
++    float4 (*s_act1)[8][16], float4 (*s_act2)[2][16], float (*s_red)[8][2],
++    const LoraMoe & lora, MoeLoraLds * ll) {
+     constexpr int K   = DN_K;
+     constexpr int RPB = 2;
+ 
+@@ -466,6 +483,20 @@ __device__ __forceinline__ void nvfp4_down_ship_phase(
+     const int k    = warp;
+     const int g    = lane & 15;
+     const int rloc = lane >> 4;
++    if constexpr (LORA) {
++        if (threadIdx.x < TOP_K) {
++            const int kk = threadIdx.x;
++            const float * pp = lora.part + kk * LORA_MOE_NCHUNK;
++            float s = pp[0];
++#pragma unroll
++            for (int c = 1; c < LORA_MOE_NCHUNK; ++c) {
++                s += pp[c];
++            }
++            const int32_t e = topk_ids[kk];
++            ll->ws[kk] = lora_moe_ws(e, topk_w[kk], s);
++            ll->e[kk]  = e;
++        }
++    }
+ 
+     const int expr   = topk_ids[k];
+     const bool eok   = (unsigned) expr < (unsigned) N_EXPERT;
+@@ -581,7 +612,11 @@ __device__ __forceinline__ void nvfp4_down_ship_phase(
+             const float sum = ((rb[0][lane] + rb[1][lane]) + (rb[2][lane] + rb[3][lane])) +
+                               ((rb[4][lane] + rb[5][lane]) + (rb[6][lane] + rb[7][lane]));
+             const int ro = r0 + lane;
+-            out[ro] = (epi.conv_w != nullptr) ? sconv_post_res_one(epi, ro, sum) : sum;
++            float x3 = sum;
++            if constexpr (LORA) {
++                x3 = sum + lora_moe_delta(ll->ws, ll->e, lora.b, lora.b_stride, ro);
++            }
++            out[ro] = (epi.conv_w != nullptr) ? sconv_post_res_one(epi, ro, x3) : x3;
+         }
+     }
+ }
+@@ -598,7 +633,11 @@ union MoeSharedU {
+     } dn;
+ };
+ 
+-template <int GRID, int GU_BLOCKS, int NWARPS, int SHARDS, bool LEAN>
++// LORA (GRID 192 only): each phase-1 block owns exactly one canonical chunk
++// (48 consecutive act rows of one slot), so it writes that chunk's partial of
++// s_k = A_{e_k} . act_k to lora.part[block] before the grid barrier; phase 2
++// reduces the 24 partials of every slot in order (== launch_lora_moe_s).
++template <int GRID, int GU_BLOCKS, int NWARPS, int SHARDS, bool LEAN, bool LORA = false>
+ __device__ __forceinline__ void moe_nvfp4_fused_body(
+     const uint8_t * __restrict__ gu_qs, const uint8_t * __restrict__ gu_sc,
+     const float * __restrict__ gu_s2, const int32_t * __restrict__ topk_ids,
+@@ -606,7 +645,7 @@ __device__ __forceinline__ void moe_nvfp4_fused_body(
+     const uint8_t * __restrict__ dn_qs, const uint8_t * __restrict__ dn_sc,
+     const float * __restrict__ dn_s2, float * __restrict__ act,
+     float * __restrict__ out, const SconvEpi epi, float * __restrict__ scratch,
+-    MoeSharedU & sh) {
++    MoeSharedU & sh, const LoraMoe & lora, MoeLoraLds * ll) {
+     constexpr int NT = NWARPS * 32;
+     static_assert(N_FF_EXP % (NWARPS * NV_GUPPW) == 0, "pair tiling");
+     // Shipped 4-lane pair tiling: 8 pairs/warp.  288 blocks -> 4 active warps
+@@ -622,15 +661,28 @@ __device__ __forceinline__ void moe_nvfp4_fused_body(
+     }
+     __syncthreads();
+     if ((int) blockIdx.x < GU_BLOCKS) {
+-        nvfp4_gu_ship_phase<GU_WARPS_ACTIVE>(gu_qs, gu_sc, gu_s2, topk_ids, act,
+-                                             blockIdx.x * PAIRS_PER_BLOCK, sh.gu_x);
++        nvfp4_gu_ship_phase<GU_WARPS_ACTIVE, LORA>(gu_qs, gu_sc, gu_s2, topk_ids, act,
++                                                   blockIdx.x * PAIRS_PER_BLOCK, sh.gu_x,
++                                                   LORA ? ll->h : nullptr);
++    }
++    if constexpr (LORA) {
++        static_assert(GU_BLOCKS == LORA_MOE_PARTS && PAIRS_PER_BLOCK == LORA_MOE_CHUNK,
++                      "--lora needs one canonical chunk per phase-1 block");
++        __syncthreads();
++        if (threadIdx.x == 0) {
++            const int kk = blockIdx.x / LORA_MOE_NCHUNK;
++            const int c  = blockIdx.x - kk * LORA_MOE_NCHUNK;
++            const int32_t e = topk_ids[kk];
++            const int ex = ((unsigned) e < (unsigned) N_EXPERT) ? e : 0;
++            lora.part[blockIdx.x] = lora_chunk_dot(lora.a + (size_t) ex * N_FF_EXP + c * LORA_MOE_CHUNK, ll->h);
++        }
+     }
+ 
+     grid_barrier<SHARDS>(scratch, GRID);
+ 
+     // ---- phase 2: down + weighted sum + sconv epilogue (all GRID blocks)
+-    nvfp4_down_ship_phase<GRID, LEAN>(dn_qs, dn_sc, dn_s2, act, topk_ids, topk_w, out, epi,
+-                                      sh.dn.a1, sh.dn.a2, sh.dn.red);
++    nvfp4_down_ship_phase<GRID, LEAN, LORA>(dn_qs, dn_sc, dn_s2, act, topk_ids, topk_w, out, epi,
++                                            sh.dn.a1, sh.dn.a2, sh.dn.red, lora, ll);
+ }
+ 
+ #pragma clang diagnostic push
+@@ -646,11 +698,15 @@ moe_nvfp4_ship_fused288_kernel(
+     const float * __restrict__ dn_s2, float * __restrict__ act,
+     float * __restrict__ out, const SconvEpi epi, float * __restrict__ scratch) {
+     __shared__ MoeSharedU sh;
++    const LoraMoe none{};
+     moe_nvfp4_fused_body<288, 288, 8, 4, true>(gu_qs, gu_sc, gu_s2, topk_ids, topk_w, x_norm,
+-                                               dn_qs, dn_sc, dn_s2, act, out, epi, scratch, sh);
++                                               dn_qs, dn_sc, dn_s2, act, out, epi, scratch, sh,
++                                               none, nullptr);
+ }
+ 
+ // GRID = 192: 2 blocks/CU co-resident with no VGPR pin (spill-free A/B).
++// LORA = true is the --lora instantiation (+256 B LDS, include/lora.h).
++template <bool LORA>
+ __global__ void __launch_bounds__(256)
+ moe_nvfp4_ship_fused192_kernel(
+     const uint8_t * __restrict__ gu_qs, const uint8_t * __restrict__ gu_sc,
+@@ -658,10 +714,19 @@ moe_nvfp4_ship_fused192_kernel(
+     const float * __restrict__ topk_w, const float * __restrict__ x_norm,
+     const uint8_t * __restrict__ dn_qs, const uint8_t * __restrict__ dn_sc,
+     const float * __restrict__ dn_s2, float * __restrict__ act,
+-    float * __restrict__ out, const SconvEpi epi, float * __restrict__ scratch) {
++    float * __restrict__ out, const SconvEpi epi, float * __restrict__ scratch,
++    const LoraMoe lora) {
+     __shared__ MoeSharedU sh;
+-    moe_nvfp4_fused_body<192, 192, 8, 4, false>(gu_qs, gu_sc, gu_s2, topk_ids, topk_w, x_norm,
+-                                                dn_qs, dn_sc, dn_s2, act, out, epi, scratch, sh);
++    if constexpr (LORA) {
++        __shared__ MoeLoraLds ll;
++        moe_nvfp4_fused_body<192, 192, 8, 4, false, true>(gu_qs, gu_sc, gu_s2, topk_ids, topk_w, x_norm,
++                                                          dn_qs, dn_sc, dn_s2, act, out, epi, scratch, sh,
++                                                          lora, &ll);
++    } else {
++        moe_nvfp4_fused_body<192, 192, 8, 4, false>(gu_qs, gu_sc, gu_s2, topk_ids, topk_w, x_norm,
++                                                    dn_qs, dn_sc, dn_s2, act, out, epi, scratch, sh,
++                                                    lora, nullptr);
++    }
+ }
+ 
+ // ===========================================================================
+@@ -1668,13 +1733,6 @@ namespace {
+ int g_wgp_7h = 48;
+ } // namespace
+ 
+-void launch_moe_nvfp4_ship_fused192(
+-    const SoaNVFP4Experts & gate_up, const SoaNVFP4Experts & down,
+-    const float * x_norm, const int32_t * topk_ids, const float * topk_w,
+-    float * tmp_act, float * out, hipStream_t stream,
+-    const float * post_conv_w, float * post_sconv_h, const float * post_res_add,
+-    float * scratch, float * raw_out);
+-
+ void launch_moe_nvfp4_ship_fused(
+     const SoaNVFP4Experts & gate_up, const SoaNVFP4Experts & down,
+     const float * x_norm, const int32_t * topk_ids, const float * topk_w,
+@@ -1716,10 +1774,11 @@ void launch_moe_nvfp4_ship_fused192(
+     const float * x_norm, const int32_t * topk_ids, const float * topk_w,
+     float * tmp_act, float * out, hipStream_t stream,
+     const float * post_conv_w, float * post_sconv_h, const float * post_res_add,
+-    float * scratch, float * raw_out) {
++    float * scratch, float * raw_out, const LoraMoe * lora) {
+     // 192-block 256-thread MoE kernel (121 VGPRs, 20.6 KB LDS) fits <=5 blocks/WGP:
+     // requires >=40 WGPs (7900 GRE/XT/XTX/W7900); W7800 (35 WGPs) falls back cleanly.
+     if (scratch == nullptr || post_conv_w == nullptr || post_sconv_h == nullptr || g_wgp_7h < 40) {
++        lora_require(lora == nullptr, "launch_moe_nvfp4_ship_fused192 fallback (< 40 WGPs or no sconv)");
+         extern void launch_moe_nvfp4_decode(const SoaNVFP4Experts &, const SoaNVFP4Experts &,
+                                             const float *, const int32_t *, const float *,
+                                             float *, float *, hipStream_t,
+@@ -1733,9 +1792,15 @@ void launch_moe_nvfp4_ship_fused192(
+     epi.hist    = post_sconv_h;
+     epi.res     = post_res_add;
+     epi.raw_out = raw_out;
+-    moe_nvfp4_ship_fused192_kernel<<<192, 256, 0, stream>>>(
+-        gate_up.qs, gate_up.scales, gate_up.scale2, topk_ids, topk_w, x_norm,
+-        down.qs, down.scales, down.scale2, tmp_act, out, epi, scratch);
++    if (lora != nullptr) {
++        moe_nvfp4_ship_fused192_kernel<true><<<192, 256, 0, stream>>>(
++            gate_up.qs, gate_up.scales, gate_up.scale2, topk_ids, topk_w, x_norm,
++            down.qs, down.scales, down.scale2, tmp_act, out, epi, scratch, *lora);
++    } else {
++        moe_nvfp4_ship_fused192_kernel<false><<<192, 256, 0, stream>>>(
++            gate_up.qs, gate_up.scales, gate_up.scale2, topk_ids, topk_w, x_norm,
++            down.qs, down.scales, down.scale2, tmp_act, out, epi, scratch, LoraMoe{});
++    }
+ }
+ 
+ void launch_moe_q8_ship_fused(
+diff --git a/src/kernels_step7i_fused.hip b/src/kernels_step7i_fused.hip
+index b466ce8..c2f4621 100644
+--- a/src/kernels_step7i_fused.hip
++++ b/src/kernels_step7i_fused.hip
+@@ -389,12 +389,17 @@ struct SconvEpi {
+     float *       hist;
+     const float * res;
+     float *       raw_out; // Step 8A: optional dump of the raw pre-conv x3
++    const float * lora_b;  // --lora attn_output: x3 += B[r] * s (nullptr = off)
++    const float * lora_s;  //   s = A . x of this row (launch_lora_wo_s)
+ };
+ 
+ static __device__ __forceinline__ float sconv_post_res_one(const SconvEpi & e, int r, float x3) {
+     const float4 w  = reinterpret_cast<const float4 *>(e.conv_w)[r];
+     float *      hs = e.hist + (size_t) r * N_CONV_HIST;
+     const float x0 = hs[0], x1 = hs[1], x2 = hs[2];
++    if (e.lora_b != nullptr) {
++        x3 = fmaf(e.lora_b[r], e.lora_s[0], x3);
++    }
+     if (e.raw_out != nullptr) {
+         e.raw_out[r] = x3;
+     }
+@@ -2523,7 +2528,7 @@ void launch_wo_b_fused(
+     }
+     S7IStatePtrs st;
+     s7i_states(states, n_states, st);
+-    SconvEpi epi = {conv_w, sconv_hist, res, nullptr};
++    SconvEpi epi = {conv_w, sconv_hist, res, nullptr, nullptr, nullptr};
+     wo_b_fused_kernel<<<192, 288, 0, stream>>>(
+         W.qs, W.d, x, out, epi,
+         res_query, st, n_states, ffn_norm_w, router_w, exp_probs_b,
+@@ -2552,7 +2557,7 @@ void launch_wo_c_fused_fdot2(
+     }
+     S7IStatePtrs st;
+     s7i_states(states, n_states, st);
+-    SconvEpi epi = {conv_w, sconv_hist, res, nullptr};
++    SconvEpi epi = {conv_w, sconv_hist, res, nullptr, nullptr, nullptr};
+     wo_c_fused_kernel<true><<<192, 288, 0, stream>>>(
+         W.qs, W.d, x, out, epi,
+         res_query, st, n_states, msg, w_down, w_gain, w_forget,
+@@ -2570,10 +2575,10 @@ void launch_wo_c_fused(
+         const __half * router_w, const float * exp_probs_b,
+         float * out_mixed, float * out_gate,
+         float * x_norm_out, int32_t * topk_ids_out, float * topk_w_out,
+-        float * mix_scratch, hipStream_t stream, float * raw_out) {
++        float * mix_scratch, hipStream_t stream, float * raw_out, const LoraWo * lora) {
+     if (W.K != N_Q || conv_w == nullptr || sconv_hist == nullptr || res_query == nullptr ||
+         n_states <= 0 || n_states > 5 || mix_scratch == nullptr || !s7i_coresident(g_occ_wo_c, 4, 192)) {
+-        launch_soa_q8_gemv_wo_v2(W, x, conv_w, sconv_hist, res, out, stream, raw_out);
++        launch_soa_q8_gemv_wo_v2(W, x, conv_w, sconv_hist, res, out, stream, raw_out, lora);
+         launch_mix_ctrl_ffn_norm_router_topk_decode_v2(
+             res_query, states, n_states, msg, w_down, w_gain, w_forget,
+             ffn_norm_w, router_w, exp_probs_b, out_mixed, out_gate,
+@@ -2582,7 +2587,8 @@ void launch_wo_c_fused(
+     }
+     S7IStatePtrs st;
+     s7i_states(states, n_states, st);
+-    SconvEpi epi = {conv_w, sconv_hist, res, raw_out};
++    SconvEpi epi = {conv_w, sconv_hist, res, raw_out,
++                    lora != nullptr ? lora->b : nullptr, lora != nullptr ? lora->s : nullptr};
+     wo_c_fused_kernel<false><<<192, 288, 0, stream>>>(
+         W.qs, W.d, x, out, epi,
+         res_query, st, n_states, msg, w_down, w_gain, w_forget,
+diff --git a/src/kernels_verify_batch.hip b/src/kernels_verify_batch.hip
+index 2061897..f26f095 100644
+--- a/src/kernels_verify_batch.hip
++++ b/src/kernels_verify_batch.hip
+@@ -285,7 +285,8 @@ __global__ __launch_bounds__(192, 2) void verify_wo_mrows_kernel(
+         const SoaQ8Matrix W, const float * __restrict__ x, int xstride,
+         const float * __restrict__ conv_w, float * __restrict__ hist,
+         const float * __restrict__ res, float * __restrict__ y, int m,
+-        float * __restrict__ raw_out, int raw_stride) {
++        float * __restrict__ raw_out, int raw_stride,
++        const float * __restrict__ lora_b, const float * __restrict__ lora_s) {
+     constexpr int NB = N_Q / 32;   // 96 = 3 blocks per lane
+     const int warp = threadIdx.x >> 5;
+     const int lane = threadIdx.x & 31;
+@@ -352,7 +353,7 @@ __global__ __launch_bounds__(192, 2) void verify_wo_mrows_kernel(
+         }
+         a = group_reduce_sum<32>(a);
+         if (lane == 0) {
+-            const float x3 = a;
++            const float x3 = (lora_b != nullptr) ? fmaf(lora_b[row], lora_s[t], a) : a;
+             if (raw_out != nullptr) {
+                 raw_out[(size_t)t * raw_stride + row] = x3;
+             }
+@@ -372,9 +373,10 @@ __global__ __launch_bounds__(192, 2) void verify_wo_mrows_kernel(
+ void launch_verify_wo_mrows(const SoaQ8Matrix & W, const float * x, int xstride,
+                             const float * conv_w, float * hist, const float * res,
+                             float * y, int m, float * raw_out, int raw_stride,
+-                            hipStream_t stream) {
++                            hipStream_t stream, const LoraWo * lora) {
+     if (W.rows <= 0 || m <= 0) return;
+     if (W.K != N_Q) {
++        lora_require(lora == nullptr, "launch_verify_wo_mrows fallback (K != 3072)");
+         // Unexpected shape: fall back to m exact single-row launches.
+         for (int t = 0; t < m; ++t) {
+             launch_soa_q8_gemv_sconv_post_res(
+@@ -386,7 +388,9 @@ void launch_verify_wo_mrows(const SoaQ8Matrix & W, const float * x, int xstride,
+     }
+     const int grid = (W.rows + 5) / 6;
+     verify_wo_mrows_kernel<<<grid, 192, 0, stream>>>(W, x, xstride, conv_w, hist, res,
+-                                                     y, m, raw_out, raw_stride);
++                                                     y, m, raw_out, raw_stride,
++                                                     lora != nullptr ? lora->b : nullptr,
++                                                     lora != nullptr ? lora->s : nullptr);
+ }
+ 
+ 
+@@ -973,7 +977,8 @@ __global__ __launch_bounds__(32) void verify_ffn_post_kernel(
+         const float * __restrict__ buf_slot, int m,
+         const float * __restrict__ conv_w, float * __restrict__ hist,
+         const float * __restrict__ res, float * __restrict__ out,
+-        float * __restrict__ raw_out, int raw_stride) {
++        float * __restrict__ raw_out, int raw_stride,
++        const LoraMoe lora, const int32_t * __restrict__ topk_ids, const float * __restrict__ topk_w) {
+     const int i4 = blockIdx.x * blockDim.x + threadIdx.x;   // 0..575
+     if (i4 >= N_EMBD / 4 || m <= 0) return;
+     const int c_base = i4 * 4;
+@@ -991,6 +996,16 @@ __global__ __launch_bounds__(32) void verify_ffn_post_kernel(
+     constexpr float scale = 0.4472135954999579f;   // 1 / sqrt(5)
+     for (int t = 0; t < m; ++t) {
+         float x3[4];
++        // --lora: the routed rank-1 term of row t, added to the same tree sum as
++        // the decode epilogue (bit-identical to m sequential decode steps).
++        float lws[TOP_K];
++        const int32_t * lid = (lora.b != nullptr) ? topk_ids + (size_t)t * TOP_K : nullptr;
++        if (lora.b != nullptr) {
++#pragma unroll
++            for (int k = 0; k < TOP_K; ++k) {
++                lws[k] = lora_moe_ws(lid[k], topk_w[(size_t)t * TOP_K + k], lora.s[(size_t)t * TOP_K + k]);
++            }
++        }
+ #pragma unroll
+         for (int j = 0; j < 4; ++j) {
+             const size_t off = (size_t)((t * TOP_K + 0) * N_EMBD) + c_base + j;
+@@ -1003,6 +1018,9 @@ __global__ __launch_bounds__(32) void verify_ffn_post_kernel(
+             const float s6 = buf_slot[off + (size_t)6 * N_EMBD];
+             const float s7 = buf_slot[off + (size_t)7 * N_EMBD];
+             x3[j] = ((s0 + s1) + (s2 + s3)) + ((s4 + s5) + (s6 + s7));
++            if (lora.b != nullptr) {
++                x3[j] = x3[j] + lora_moe_delta(lws, lid, lora.b, lora.b_stride, c_base + j);
++            }
+         }
+         if (raw_out != nullptr) {
+ #pragma unroll
+@@ -1050,10 +1068,12 @@ void launch_verify_router_topk(const float * x_norm, const __half * router_w,
+ 
+ void launch_verify_ffn_post(const float * buf_slot, int m, const float * conv_w,
+                             float * hist, const float * res, float * out,
+-                            float * raw_out, int raw_stride, hipStream_t stream) {
++                            float * raw_out, int raw_stride, hipStream_t stream,
++                            const LoraMoe * lora, const int32_t * topk_ids, const float * topk_w) {
+     if (m <= 0) return;
++    const LoraMoe l = (lora != nullptr) ? *lora : LoraMoe{};
+     verify_ffn_post_kernel<<<(N_EMBD / 4) / 32, 32, 0, stream>>>(
+-        buf_slot, m, conv_w, hist, res, out, raw_out, raw_stride);
++        buf_slot, m, conv_w, hist, res, out, raw_out, raw_stride, l, topk_ids, topk_w);
+ }
+ 
+ void launch_verify_save_raw(const float * src, int m, int width, float * raw,
+@@ -1085,7 +1105,8 @@ namespace {
+ __global__ __launch_bounds__(192, 2) void batch_wo_mrows_kernel(
+         const SoaQ8Matrix W, const float * __restrict__ x, int xstride,
+         const float * __restrict__ conv_w, BatchHistPtrs hists,
+-        const float * __restrict__ res, float * __restrict__ y, int m) {
++        const float * __restrict__ res, float * __restrict__ y, int m,
++        const float * __restrict__ lora_b, const float * __restrict__ lora_s) {
+     constexpr int NB = N_Q / 32;   // 96 = 3 blocks per lane
+     const int warp = threadIdx.x >> 5;
+     const int lane = threadIdx.x & 31;
+@@ -1151,7 +1172,7 @@ __global__ __launch_bounds__(192, 2) void batch_wo_mrows_kernel(
+         if (lane == 0) {
+             float * hs = hists.p[t] + (size_t)row * N_CONV_HIST;
+             const float h0 = hs[0], h1 = hs[1], h2 = hs[2];
+-            const float x3 = a;
++            const float x3 = (lora_b != nullptr) ? fmaf(lora_b[row], lora_s[t], a) : a;
+             const float ca = x3 + h0 * cw.x + h1 * cw.y + h2 * cw.z + x3 * cw.w;
+             const float val = (res != nullptr) ? fmaf(ca, 0.4472135954999579f, res[(size_t)t * N_EMBD + row])
+                                                : ca * 0.4472135954999579f;
+@@ -1164,13 +1185,22 @@ __global__ __launch_bounds__(192, 2) void batch_wo_mrows_kernel(
+ __global__ __launch_bounds__(32) void batch_ffn_post_kernel(
+         const float * __restrict__ buf_slot, int m,
+         const float * __restrict__ conv_w, BatchHistPtrs hists,
+-        const float * __restrict__ res, float * __restrict__ out) {
++        const float * __restrict__ res, float * __restrict__ out,
++        const LoraMoe lora, const int32_t * __restrict__ topk_ids, const float * __restrict__ topk_w) {
+     const int i4 = blockIdx.x * blockDim.x + threadIdx.x;   // 0..575
+     const int t  = blockIdx.y;                              // 0..m-1
+     if (i4 >= N_EMBD / 4 || t >= m) return;
+     const int c_base = i4 * 4;
+     float * hist = hists.p[t];
+     constexpr float scale = 0.4472135954999579f;   // 1 / sqrt(5)
++    float lws[TOP_K];
++    const int32_t * lid = (lora.b != nullptr) ? topk_ids + (size_t)t * TOP_K : nullptr;
++    if (lora.b != nullptr) {
++#pragma unroll
++        for (int k = 0; k < TOP_K; ++k) {
++            lws[k] = lora_moe_ws(lid[k], topk_w[(size_t)t * TOP_K + k], lora.s[(size_t)t * TOP_K + k]);
++        }
++    }
+ #pragma unroll
+     for (int j = 0; j < 4; ++j) {
+         const float4 w = reinterpret_cast<const float4 *>(conv_w)[c_base + j];
+@@ -1183,7 +1213,10 @@ __global__ __launch_bounds__(32) void batch_ffn_post_kernel(
+         const float s5 = buf_slot[off + (size_t)5 * N_EMBD];
+         const float s6 = buf_slot[off + (size_t)6 * N_EMBD];
+         const float s7 = buf_slot[off + (size_t)7 * N_EMBD];
+-        const float x3 = ((s0 + s1) + (s2 + s3)) + ((s4 + s5) + (s6 + s7));
++        float x3 = ((s0 + s1) + (s2 + s3)) + ((s4 + s5) + (s6 + s7));
++        if (lora.b != nullptr) {
++            x3 = x3 + lora_moe_delta(lws, lid, lora.b, lora.b_stride, c_base + j);
++        }
+         float * hs = hist + (size_t)(c_base + j) * N_CONV_HIST;
+         const float h0 = hs[0], h1 = hs[1], h2 = hs[2];
+         const float acc = x3 + h0 * w.x + h1 * w.y + h2 * w.z + x3 * w.w;
+@@ -1199,9 +1232,10 @@ __global__ __launch_bounds__(32) void batch_ffn_post_kernel(
+ 
+ void launch_batch_wo_mrows(const SoaQ8Matrix & W, const float * x, int xstride,
+                            const float * conv_w, BatchHistPtrs hists, const float * res,
+-                           float * y, int m, hipStream_t stream) {
++                           float * y, int m, hipStream_t stream, const LoraWo * lora) {
+     if (W.rows <= 0 || m <= 0) return;
+     if (W.K != N_Q) {
++        lora_require(lora == nullptr, "launch_batch_wo_mrows fallback (K != 3072)");
+         for (int t = 0; t < m; ++t) {
+             launch_soa_q8_gemv_sconv_post_res(
+                 W, x + (size_t)t * xstride, conv_w, hists.p[t],
+@@ -1211,15 +1245,20 @@ void launch_batch_wo_mrows(const SoaQ8Matrix & W, const float * x, int xstride,
+         return;
+     }
+     const int grid = (W.rows + 5) / 6;
+-    batch_wo_mrows_kernel<<<grid, 192, 0, stream>>>(W, x, xstride, conv_w, hists, res, y, m);
++    batch_wo_mrows_kernel<<<grid, 192, 0, stream>>>(W, x, xstride, conv_w, hists, res, y, m,
++                                                    lora != nullptr ? lora->b : nullptr,
++                                                    lora != nullptr ? lora->s : nullptr);
+ }
+ 
+ void launch_batch_ffn_post(const float * buf_slot, int m, const float * conv_w,
+                            BatchHistPtrs hists, const float * res, float * out,
+-                           hipStream_t stream) {
++                           hipStream_t stream, const LoraMoe * lora,
++                           const int32_t * topk_ids, const float * topk_w) {
+     if (m <= 0) return;
++    const LoraMoe l = (lora != nullptr) ? *lora : LoraMoe{};
+     const dim3 grid((N_EMBD / 4) / 32, (unsigned)m);
+-    batch_ffn_post_kernel<<<grid, 32, 0, stream>>>(buf_slot, m, conv_w, hists, res, out);
++    batch_ffn_post_kernel<<<grid, 32, 0, stream>>>(buf_slot, m, conv_w, hists, res, out,
++                                                   l, topk_ids, topk_w);
+ }
+ 
+ } // namespace inkling
+diff --git a/src/kernels_wmma_prefill.hip b/src/kernels_wmma_prefill.hip
+index 1bf7b77..dead12f 100644
+--- a/src/kernels_wmma_prefill.hip
++++ b/src/kernels_wmma_prefill.hip
+@@ -42,6 +42,7 @@
+ // Grids are sized from the host-known worst-case tile count; blocks past *d_num_tiles exit.
+ // ============================================================================
+ #include "inkling_engine.h"
++#include "lora.h"
+ 
+ #include <cstdio>
+ #include <cstdlib>
+@@ -1137,11 +1138,56 @@ struct MoeCfg {
+     static constexpr int DWM = DWM_, DWN = DWN_, DBN  = DBN_;  // down:    warps, out cols
+ };
+ 
++// --lora: perm_down[slot] += perm_w[slot] * (A_e . act[slot]) * B_e for every
++// routed (token, k) that owns a slot (duplicate experts of a token share one
++// slot whose perm_w is their summed weight).  act is the FP16 activation the
++// down WMMA itself consumed.  One block per (token, k).
++constexpr int LORA_PF_THREADS = 256;
++
++__global__ void __launch_bounds__(LORA_PF_THREADS)
++moe_lora_prefill_kernel(const int32_t * __restrict__ tok_slots, const int32_t * __restrict__ topk_ids,
++                        const float * __restrict__ perm_w, const _Float16 * __restrict__ acth,
++                        const LoraMoe lora, float * __restrict__ perm_down) {
++    __shared__ float s_w[LORA_PF_THREADS / 32];
++    const int p    = blockIdx.x;
++    const int slot = tok_slots[p];
++    if (slot < 0) {
++        return;
++    }
++    const int e = topk_ids[p];
++    const _Float16 * h = acth + (size_t) slot * N_FF_EXP;
++    const float * a = lora.a + (size_t) e * N_FF_EXP;
++    float acc = 0.0f;
++    for (int i = threadIdx.x; i < N_FF_EXP; i += LORA_PF_THREADS) {
++        acc = fmaf(a[i], (float) h[i], acc);
++    }
++#pragma unroll
++    for (int off = 16; off > 0; off >>= 1) {
++        acc += __shfl_xor(acc, off, 32);
++    }
++    if ((threadIdx.x & 31) == 0) {
++        s_w[threadIdx.x >> 5] = acc;
++    }
++    __syncthreads();
++    float s = s_w[0];
++#pragma unroll
++    for (int w = 1; w < LORA_PF_THREADS / 32; ++w) {
++        s += s_w[w];
++    }
++    const float ws = perm_w[slot] * s;
++    const float * b = lora.b + (size_t) e * lora.b_stride;
++    float * y = perm_down + (size_t) slot * N_EMBD;
++    for (int r = threadIdx.x; r < N_EMBD; r += LORA_PF_THREADS) {
++        y[r] = fmaf(ws, b[r], y[r]);
++    }
++}
++
+ template <class C, class Fmt>
+ void launch_moe_grouped(const ExpertArgs<Fmt> & gu, const ExpertArgs<Fmt> & dn, const float * X_norm,
+                         const int32_t * topk_ids, const float * topk_w, MoePrefillScratch & s,
+                         float * Y_out, int M, hipStream_t stream,
+-                        const float * post_conv_w, float * post_sconv_h, const float * post_res_add) {
++                        const float * post_conv_w, float * post_sconv_h, const float * post_res_add,
++                        const LoraMoe * lora) {
+     // Scratch reuse (internal to these kernels):
+     //   - s.perm_x (allocated as [MAX_UBATCH * TOP_K, N_EMBD] FP32 = 36 MiB) holds X_norm as FP16
+     //     [M, 2304] in its first 2.25 MiB, and tok_slots [M * TOP_K] int32_t right after MAX_UBATCH * N_EMBD halves.
+@@ -1161,6 +1207,10 @@ void launch_moe_grouped(const ExpertArgs<Fmt> & gu, const ExpertArgs<Fmt> & dn,
+     moe_down_wmma_kernel<C::TM, C::DWM, C::DWN, C::DBN, Fmt>
+         <<<dim3(N_EMBD / C::DBN, tiles), C::DWM * C::DWN * 32, 0, stream>>>(
+         dn, acth, s.exp_offsets, s.perm_w, s.tile_exp, s.tile_m0, s.d_num_tiles, s.perm_down);
++    if (lora != nullptr) {
++        moe_lora_prefill_kernel<<<M * TOP_K, LORA_PF_THREADS, 0, stream>>>(
++            tok_slots, topk_ids, s.perm_w, acth, *lora, s.perm_down);
++    }
+     if (post_conv_w != nullptr) {
+         if (post_sconv_h == nullptr) {
+             wmma_contract_fail("launch_moe_*_prefill_wmma: post_sconv_h must be non-null when post_conv_w is provided");
+@@ -1185,13 +1235,14 @@ template <class Fmt>
+ void launch_moe_dispatch(const ExpertArgs<Fmt> & gu, const ExpertArgs<Fmt> & dn, const float * X_norm,
+                          const int32_t * topk_ids, const float * topk_w, MoePrefillScratch & s,
+                          float * Y_out, int M, hipStream_t stream,
+-                         const float * post_conv_w, float * post_sconv_h, const float * post_res_add) {
++                         const float * post_conv_w, float * post_sconv_h, const float * post_res_add,
++                         const LoraMoe * lora) {
+     if (M > 256) {
+         launch_moe_grouped<MoeCfg<64, 4, 2, 64, 4, 2, 128>, Fmt>(
+-            gu, dn, X_norm, topk_ids, topk_w, s, Y_out, M, stream, post_conv_w, post_sconv_h, post_res_add);
++            gu, dn, X_norm, topk_ids, topk_w, s, Y_out, M, stream, post_conv_w, post_sconv_h, post_res_add, lora);
+     } else {
+         launch_moe_grouped<MoeCfg<32, 2, 4, 64, 2, 4, 128>, Fmt>(
+-            gu, dn, X_norm, topk_ids, topk_w, s, Y_out, M, stream, post_conv_w, post_sconv_h, post_res_add);
++            gu, dn, X_norm, topk_ids, topk_w, s, Y_out, M, stream, post_conv_w, post_sconv_h, post_res_add, lora);
+     }
+ }
+ 
+@@ -1300,7 +1351,8 @@ void launch_soa_q8_gemm_wmma_qkv3(const SoaQ8Matrix & W0, const float * X0, floa
+ void launch_moe_nvfp4_prefill_wmma(const SoaNVFP4Experts & gate_up, const SoaNVFP4Experts & down,
+                                    const float * X_norm, const int32_t * topk_ids, const float * topk_w,
+                                    MoePrefillScratch & scratch, float * Y_out, int M, hipStream_t stream,
+-                                   const float * post_conv_w, float * post_sconv_h, const float * post_res_add) {
++                                   const float * post_conv_w, float * post_sconv_h, const float * post_res_add,
++                                   const LoraMoe * lora) {
+     if (M <= 0) {
+         return;
+     }
+@@ -1316,14 +1368,15 @@ void launch_moe_nvfp4_prefill_wmma(const SoaNVFP4Experts & gate_up, const SoaNVF
+         const float * chunk_res = (post_res_add != nullptr) ? (post_res_add + (size_t) t0 * N_EMBD) : nullptr;
+         launch_moe_dispatch<FmtNVFP4>(gu, dn, X_norm + (size_t) t0 * N_EMBD, topk_ids + (size_t) t0 * TOP_K,
+                                       topk_w + (size_t) t0 * TOP_K, scratch, Y_out + (size_t) t0 * N_EMBD, mc, stream,
+-                                      post_conv_w, post_sconv_h, chunk_res);
++                                      post_conv_w, post_sconv_h, chunk_res, lora);
+     }
+ }
+ 
+ void launch_moe_q8_prefill_wmma(const SoaQ8Experts & gate_up, const SoaQ8Experts & down,
+                                 const float * X_norm, const int32_t * topk_ids, const float * topk_w,
+                                 MoePrefillScratch & scratch, float * Y_out, int M, hipStream_t stream,
+-                                const float * post_conv_w, float * post_sconv_h, const float * post_res_add) {
++                                const float * post_conv_w, float * post_sconv_h, const float * post_res_add,
++                                const LoraMoe * lora) {
+     if (M <= 0) {
+         return;
+     }
+@@ -1338,7 +1391,7 @@ void launch_moe_q8_prefill_wmma(const SoaQ8Experts & gate_up, const SoaQ8Experts
+         const float * chunk_res = (post_res_add != nullptr) ? (post_res_add + (size_t) t0 * N_EMBD) : nullptr;
+         launch_moe_dispatch<FmtQ8>(gu, dn, X_norm + (size_t) t0 * N_EMBD, topk_ids + (size_t) t0 * TOP_K,
+                                    topk_w + (size_t) t0 * TOP_K, scratch, Y_out + (size_t) t0 * N_EMBD, mc, stream,
+-                                   post_conv_w, post_sconv_h, chunk_res);
++                                   post_conv_w, post_sconv_h, chunk_res, lora);
+     }
+ }
+ 
+diff --git a/src/lora_adapter.cpp b/src/lora_adapter.cpp
+new file mode 100644
+index 0000000..f53c64e
+--- /dev/null
++++ b/src/lora_adapter.cpp
+@@ -0,0 +1,263 @@
++#include "lora_adapter.hpp"
++
++#include <cmath>
++#include <cstdio>
++#include <cstring>
++#include <fcntl.h>
++#include <stdexcept>
++#include <sys/mman.h>
++#include <sys/stat.h>
++#include <unistd.h>
++
++namespace inkling {
++
++namespace {
++
++enum : uint32_t {
++    GGUF_T_UINT8 = 0, GGUF_T_INT8 = 1, GGUF_T_UINT16 = 2, GGUF_T_INT16 = 3,
++    GGUF_T_UINT32 = 4, GGUF_T_INT32 = 5, GGUF_T_FLOAT32 = 6, GGUF_T_BOOL = 7,
++    GGUF_T_STRING = 8, GGUF_T_ARRAY = 9, GGUF_T_UINT64 = 10, GGUF_T_INT64 = 11,
++    GGUF_T_FLOAT64 = 12,
++};
++
++enum : uint32_t { GGML_F32 = 0, GGML_F16 = 1, GGML_Q8_0 = 8, GGML_NVFP4 = 40 };
++
++struct Cursor {
++    const uint8_t * p;
++    const uint8_t * end;
++    void need(size_t n) const {
++        if (static_cast<size_t>(end - p) < n) throw std::runtime_error("gguf: truncated file");
++    }
++    template <class T> T get() {
++        need(sizeof(T));
++        T v;
++        std::memcpy(&v, p, sizeof(T));
++        p += sizeof(T);
++        return v;
++    }
++    std::string str() {
++        const uint64_t n = get<uint64_t>();
++        need(static_cast<size_t>(n));
++        std::string s(reinterpret_cast<const char *>(p), static_cast<size_t>(n));
++        p += n;
++        return s;
++    }
++};
++
++size_t scalar_size(uint32_t t) {
++    static const size_t sz[13] = {1, 1, 2, 2, 4, 4, 4, 1, 0, 0, 8, 8, 8};
++    if (t >= 13 || sz[t] == 0) throw std::runtime_error("gguf: unsupported metadata type");
++    return sz[t];
++}
++
++double scalar_value(Cursor & c, uint32_t t) {
++    switch (t) {
++        case GGUF_T_UINT8:   return c.get<uint8_t>();
++        case GGUF_T_INT8:    return c.get<int8_t>();
++        case GGUF_T_UINT16:  return c.get<uint16_t>();
++        case GGUF_T_INT16:   return c.get<int16_t>();
++        case GGUF_T_UINT32:  return c.get<uint32_t>();
++        case GGUF_T_INT32:   return c.get<int32_t>();
++        case GGUF_T_FLOAT32: return c.get<float>();
++        case GGUF_T_BOOL:    return c.get<uint8_t>();
++        case GGUF_T_UINT64:  return (double) c.get<uint64_t>();
++        case GGUF_T_INT64:   return (double) c.get<int64_t>();
++        case GGUF_T_FLOAT64: return c.get<double>();
++        default: throw std::runtime_error("gguf: unsupported scalar type");
++    }
++}
++
++size_t raw_bytes(size_t n, uint32_t type, const std::string & name) {
++    switch (type) {
++        case GGML_F32:   return n * 4;
++        case GGML_F16:   return n * 2;
++        case GGML_Q8_0:  return (n / 32) * 34;
++        case GGML_NVFP4: return (n / 64) * 36;
++        default:
++            throw std::runtime_error("gguf: tensor " + name + " has unsupported type " + std::to_string(type));
++    }
++}
++
++} // namespace
++
++size_t GgufView::Tensor::nelem() const {
++    size_t n = 1;
++    for (uint64_t d : dims) n *= static_cast<size_t>(d);
++    return n;
++}
++
++GgufView::GgufView(const std::string & path) : path_(path) {
++    fd_ = ::open(path.c_str(), O_RDONLY);
++    if (fd_ < 0) throw std::runtime_error("cannot open " + path);
++    struct stat st {};
++    if (::fstat(fd_, &st) != 0 || st.st_size <= 0) {
++        ::close(fd_);
++        throw std::runtime_error("cannot stat " + path);
++    }
++    size_ = static_cast<size_t>(st.st_size);
++    map_ = ::mmap(nullptr, size_, PROT_READ, MAP_PRIVATE, fd_, 0);
++    if (map_ == MAP_FAILED) {
++        ::close(fd_);
++        throw std::runtime_error("mmap failed for " + path);
++    }
++    try {
++        const uint8_t * base = static_cast<const uint8_t *>(map_);
++        Cursor c{base, base + size_};
++        c.need(4);
++        if (std::memcmp(c.p, "GGUF", 4) != 0) throw std::runtime_error(path + " is not a GGUF file");
++        c.p += 4;
++        if (c.get<uint32_t>() != 3) throw std::runtime_error(path + ": need GGUF v3");
++        const uint64_t n_tensors = c.get<uint64_t>();
++        const uint64_t n_kv = c.get<uint64_t>();
++        uint32_t alignment = 32;
++        for (uint64_t i = 0; i < n_kv; ++i) {
++            const std::string key = c.str();
++            const uint32_t t = c.get<uint32_t>();
++            if (t == GGUF_T_STRING) {
++                strs_[key] = c.str();
++            } else if (t == GGUF_T_ARRAY) {
++                const uint32_t et = c.get<uint32_t>();
++                const uint64_t n = c.get<uint64_t>();
++                if (et == GGUF_T_STRING) {
++                    for (uint64_t j = 0; j < n; ++j) c.str();
++                } else {
++                    const size_t bytes = static_cast<size_t>(n) * scalar_size(et);
++                    c.need(bytes);
++                    c.p += bytes;
++                }
++            } else {
++                const double v = scalar_value(c, t);
++                nums_[key] = v;
++                if (key == "general.alignment") alignment = static_cast<uint32_t>(v);
++            }
++        }
++        std::vector<Tensor> list;
++        list.reserve(static_cast<size_t>(n_tensors));
++        std::vector<uint64_t> offsets;
++        for (uint64_t i = 0; i < n_tensors; ++i) {
++            Tensor t;
++            t.name = c.str();
++            const uint32_t nd = c.get<uint32_t>();
++            t.dims.resize(nd);
++            for (uint32_t d = 0; d < nd; ++d) t.dims[d] = c.get<uint64_t>();
++            t.type = c.get<uint32_t>();
++            offsets.push_back(c.get<uint64_t>());
++            list.push_back(std::move(t));
++        }
++        const size_t pos = static_cast<size_t>(c.p - base);
++        const size_t data_start = (pos + alignment - 1) & ~static_cast<size_t>(alignment - 1);
++        for (size_t i = 0; i < list.size(); ++i) {
++            Tensor & t = list[i];
++            t.nbytes = raw_bytes(t.nelem(), t.type, t.name);
++            const size_t at = data_start + static_cast<size_t>(offsets[i]);
++            if (at + t.nbytes > size_) throw std::runtime_error("gguf: tensor out of bounds: " + t.name);
++            t.data = base + at;
++            const std::string name = t.name;
++            tensors_.emplace(name, std::move(t));
++        }
++    } catch (...) {
++        ::munmap(map_, size_);
++        ::close(fd_);
++        throw;
++    }
++}
++
++GgufView::~GgufView() {
++    if (map_ != nullptr && map_ != MAP_FAILED) ::munmap(map_, size_);
++    if (fd_ >= 0) ::close(fd_);
++}
++
++const GgufView::Tensor * GgufView::find(const std::string & name) const {
++    const auto it = tensors_.find(name);
++    return it == tensors_.end() ? nullptr : &it->second;
++}
++
++const GgufView::Tensor & GgufView::get(const std::string & name) const {
++    const Tensor * t = find(name);
++    if (t == nullptr) throw std::runtime_error(path_ + ": missing tensor " + name);
++    return *t;
++}
++
++bool GgufView::num(const std::string & key, double & out) const {
++    const auto it = nums_.find(key);
++    if (it == nums_.end()) return false;
++    out = it->second;
++    return true;
++}
++
++bool GgufView::str(const std::string & key, std::string & out) const {
++    const auto it = strs_.find(key);
++    if (it == strs_.end()) return false;
++    out = it->second;
++    return true;
++}
++
++namespace {
++
++std::vector<float> f32_tensor(const GgufView & g, const std::string & name,
++                              const std::vector<uint64_t> & dims) {
++    const GgufView::Tensor & t = g.get(name);
++    if (t.type != GGML_F32) throw std::runtime_error("LoRA tensor " + name + " is not F32");
++    if (t.dims != dims) {
++        std::string want, have;
++        for (uint64_t d : dims) want += std::to_string(d) + " ";
++        for (uint64_t d : t.dims) have += std::to_string(d) + " ";
++        throw std::runtime_error("LoRA tensor " + name + " has shape [ " + have + "], expected [ " + want +
++                                 "] (only rank-1 inkling2_loop adapters are supported)");
++    }
++    std::vector<float> v(t.nelem());
++    std::memcpy(v.data(), t.data, v.size() * sizeof(float));
++    for (float x : v) {
++        if (!std::isfinite(x)) throw std::runtime_error("LoRA tensor " + name + " has a non-finite value");
++    }
++    return v;
++}
++
++} // namespace
++
++LoraAdapterHost load_lora_adapter(const std::string & path) {
++    GgufView g(path);
++    std::string s;
++    if (!g.str("general.type", s) || s != "adapter") throw std::runtime_error(path + ": general.type is not 'adapter'");
++    if (!g.str("adapter.type", s) || s != "lora") throw std::runtime_error(path + ": adapter.type is not 'lora'");
++    if (!g.str("general.architecture", s) || s != "inkling2_loop") {
++        throw std::runtime_error(path + ": adapter architecture '" + s + "' is not inkling2_loop");
++    }
++    LoraAdapterHost a;
++    a.path = path;
++    g.str("general.name", a.name);
++    double alpha = 0.0;
++    g.num("adapter.lora_alpha", alpha);
++    // llama.cpp: scale = alpha / rank (alpha == 0 -> 1); every tensor here is rank 1.
++    a.scale = (alpha != 0.0) ? static_cast<float>(alpha) : 1.0f;
++
++    const size_t expected = static_cast<size_t>(N_LAYER_PHYS) * 4 + 2;
++    if (g.tensors().size() != expected) {
++        throw std::runtime_error(path + ": expected " + std::to_string(expected) + " LoRA tensors (attn_output + "
++                                 "ffn_down_exps per layer + token_embd), found " + std::to_string(g.tensors().size()));
++    }
++    auto scaled = [&](std::vector<float> v) {
++        if (a.scale != 1.0f) for (float & x : v) x *= a.scale;
++        return v;
++    };
++    for (int l = 0; l < N_LAYER_PHYS; ++l) {
++        const std::string p = "blk." + std::to_string(l) + ".";
++        LoraAdapterHost::Layer & L = a.layers[l];
++        L.wo_a = f32_tensor(g, p + "attn_output.weight.lora_a", {N_Q, 1});
++        L.wo_b = scaled(f32_tensor(g, p + "attn_output.weight.lora_b", {1, N_EMBD}));
++        L.dn_a = f32_tensor(g, p + "ffn_down_exps.weight.lora_a", {N_FF_EXP, 1, N_EXPERT});
++        std::vector<float> b = scaled(f32_tensor(g, p + "ffn_down_exps.weight.lora_b", {1, N_EMBD, N_EXPERT}));
++        bool shared = true;
++        for (int e = 1; e < N_EXPERT && shared; ++e) {
++            shared = std::memcmp(b.data(), b.data() + (size_t) e * N_EMBD, N_EMBD * sizeof(float)) == 0;
++        }
++        L.dn_b_shared = shared;
++        if (shared) b.resize(N_EMBD);
++        L.dn_b = std::move(b);
++    }
++    a.emb_a = f32_tensor(g, "token_embd.weight.lora_a", {1, VOCAB_PADDED});
++    a.emb_b = scaled(f32_tensor(g, "token_embd.weight.lora_b", {1, N_EMBD}));
++    return a;
++}
++
++} // namespace inkling
+diff --git a/src/lora_adapter.hpp b/src/lora_adapter.hpp
+new file mode 100644
+index 0000000..d3aa8bc
+--- /dev/null
++++ b/src/lora_adapter.hpp
+@@ -0,0 +1,74 @@
++#pragma once
++
++// Rank-1 LoRA adapters for Inkling 2 Mini (AtomicChat "Uncensored": a refusal
++// direction abliterated out of every residual writer).  The adapter GGUF holds,
++// per physical layer, blk.N.attn_output.weight.lora_{a,b} and
++// blk.N.ffn_down_exps.weight.lora_{a,b} (one pair per expert), plus
++// token_embd.weight.lora_{a,b}.  The engine applies W' = W + scale * B A at run
++// time in every writer epilogue (y += B (A x)); see include/lora.h.
++
++#include "inkling_engine.h"
++
++#include <cstdint>
++#include <string>
++#include <unordered_map>
++#include <vector>
++
++namespace inkling {
++
++// Read-only mmap view of a GGUF v3 file: scalar metadata + tensor directory.
++class GgufView {
++public:
++    struct Tensor {
++        std::string           name;
++        std::vector<uint64_t> dims;    // ne[0..], ne0 innermost
++        uint32_t              type = 0;
++        size_t                nbytes = 0;
++        const uint8_t *       data = nullptr;
++        size_t nelem() const;
++    };
++
++    explicit GgufView(const std::string & path);   // throws std::runtime_error
++    ~GgufView();
++    GgufView(const GgufView &) = delete;
++    GgufView & operator=(const GgufView &) = delete;
++
++    const Tensor * find(const std::string & name) const;
++    const Tensor & get(const std::string & name) const;   // throws if missing
++    const std::unordered_map<std::string, Tensor> & tensors() const { return tensors_; }
++    // Scalar metadata (numbers as double, strings verbatim); arrays are skipped.
++    bool num(const std::string & key, double & out) const;
++    bool str(const std::string & key, std::string & out) const;
++    const std::string & path() const { return path_; }
++
++private:
++    std::string path_;
++    void * map_ = nullptr;
++    size_t size_ = 0;
++    int fd_ = -1;
++    std::unordered_map<std::string, Tensor> tensors_;
++    std::unordered_map<std::string, double> nums_;
++    std::unordered_map<std::string, std::string> strs_;
++};
++
++// Host copy of a rank-1 adapter, B already multiplied by scale = alpha / rank.
++struct LoraAdapterHost {
++    std::string path;
++    std::string name;
++    float scale = 1.0f;
++    struct Layer {
++        std::vector<float> wo_a;   // [N_Q]
++        std::vector<float> wo_b;   // [N_EMBD]
++        std::vector<float> dn_a;   // [N_EXPERT][N_FF_EXP]
++        std::vector<float> dn_b;   // [N_EXPERT][N_EMBD], or [N_EMBD] when every expert shares B
++        bool dn_b_shared = false;
++    };
++    Layer layers[N_LAYER_PHYS];
++    std::vector<float> emb_a;      // [VOCAB_PADDED]
++    std::vector<float> emb_b;      // [N_EMBD]
++};
++
++// Loads and validates an inkling2_loop rank-1 LoRA GGUF (throws std::runtime_error).
++LoraAdapterHost load_lora_adapter(const std::string & path);
++
++} // namespace inkling
+diff --git a/src/main.cpp b/src/main.cpp
+index 4d6b435..70d263a 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -88,7 +88,9 @@ static void print_usage(const char * argv0) {
+         "  vision   -m <gguf> --mmproj <mmproj.gguf> --image <img.png> [--prompt <text>] [-c 262144] [-d 0] [-n 256] [--kv-type q8_0|q4_1|q4_0] [--sparse-pages 0|112|192|224] [--sparse-meta q8|q4] [--bench-vision 5] [--dump-embeds <path>] [--no-graph]\n"
+         "  serve    -m <gguf> [--host 127.0.0.1] [--port 4444] [--model-name inkling-2-mini] [--slots 4] [-c 262848] [--strict-slot-ctx] [--max-slot-ctx N] [--kv-type q8_0|q4_1|q4_0] [--sparse-pages 0|112|192|224] [--sparse-meta q8|q4]\n"
+         "           [--default-temp 0.6] [--default-top-p 0.95] [--default-top-k 40] [--default-min-p 0.0] [--mtp models/mtp.safetensors] [--spec-threshold 0.8] [--draft-ctx 8192] [--mmproj <mmproj.gguf> | --no-vision] [--no-graph]\n"
+-        "  selftest -m <gguf> [--kv-type q8_0|q4_1|q4_0] [--sparse-pages 0|112|192|224] [--sparse-meta q8|q4] [--mtp models/mtp.safetensors] [--bench-mtp]\n",
++        "  selftest -m <gguf> [--kv-type q8_0|q4_1|q4_0] [--sparse-pages 0|112|192|224] [--sparse-meta q8|q4] [--mtp models/mtp.safetensors] [--bench-mtp]\n"
++        "Every mode: [--lora <adapter.gguf>]  rank-1 LoRA on attn_output / ffn_down_exps / token_embd\n"
++        "            (e.g. AtomicChat Inkling-2-Mini-Uncensored-LoRA.gguf), applied at run time in every path\n",
+         argv0);
+ }
+ 
+@@ -696,6 +698,7 @@ int main(int argc, char ** argv) {
+             }
+         }
+         else if (a == "--mtp" && i + 1 < argc) mtp_path = argv[++i];
++        else if (a == "--lora" && i + 1 < argc) cfg.lora_path = argv[++i];
+         else if (a == "--spec-threshold" && i + 1 < argc) spec_threshold = (float)std::atof(argv[++i]);
+         else if (a == "--draft-ctx" && i + 1 < argc) draft_ctx = std::atoi(argv[++i]);
+         else if (a == "--bench-mtp") bench_mtp = true;
+diff --git a/tests/lora_check.cpp b/tests/lora_check.cpp
+new file mode 100644
+index 0000000..1e02c02
+--- /dev/null
++++ b/tests/lora_check.cpp
+@@ -0,0 +1,348 @@
++// nib-lora-check: CPU-only check of the --lora (rank-1 LoRA / abliteration) math.
++//
++//   nib-lora-check <model.gguf> <lora.gguf>
++//
++// 1. Adapter structure: B unit-norm, the same direction for attn_output and every
++//    expert of ffn_down_exps, A = -B^T W (sign + scale convention, NVFP4 scale2
++//    included) against this pack's dequantised attn_output, ffn_down_exps and
++//    token_embd rows.
++// 2. Kernel arithmetic: the exact float operations of the GPU epilogues
++//    (include/lora.h helpers + a replica of the wo block reduction) against an
++//    FP64 reference of y + B (A x), and the fused-partials order against the
++//    canonical one (bit-identical).
++// 3. Effect: the component of the writer output along B before/after the LoRA.
++// Exit code 0 = every check inside its bound.
++
++#include "lora.h"
++#include "lora_adapter.hpp"
++
++#include <cmath>
++#include <cstdio>
++#include <cstring>
++#include <stdexcept>
++#include <string>
++#include <vector>
++
++using namespace inkling;
++
++namespace {
++
++float half_to_f32(uint16_t h) {
++    const uint32_t s = (uint32_t)(h & 0x8000u) << 16;
++    uint32_t e = (h >> 10) & 0x1Fu, m = h & 0x3FFu, bits;
++    if (e == 0) {
++        if (m == 0) {
++            bits = s;
++        } else {
++            int ex = -1;
++            do { ++ex; m <<= 1; } while ((m & 0x400u) == 0);
++            bits = s | ((uint32_t)(127 - 15 - ex) << 23) | ((m & 0x3FFu) << 13);
++        }
++    } else if (e == 0x1F) {
++        bits = s | 0x7F800000u | (m << 13);
++    } else {
++        bits = s | ((e - 15u + 127u) << 23) | (m << 13);
++    }
++    float f;
++    std::memcpy(&f, &bits, 4);
++    return f;
++}
++
++float ue4m3_to_f32(uint8_t x) {   // ggml_ue4m3_to_fp32 (NVFP4 convention: raw * 0.5)
++    if (x == 0 || x == 0x7F) return 0.0f;
++    const int exp = (x >> 3) & 0xF, man = x & 0x7;
++    const float raw = exp == 0 ? std::ldexp((float)man, -9) : std::ldexp(1.0f + (float)man / 8.0f, exp - 7);
++    return raw * 0.5f;
++}
++
++const int8_t kFp4[16] = {0, 1, 2, 3, 4, 6, 8, 12, 0, -1, -2, -3, -4, -6, -8, -12};
++
++// GGML Q8_0 row `row` of a [K, rows] tensor.
++void deq_q8_row(const uint8_t * raw, size_t row, int K, float * out) {
++    const uint8_t * p = raw + row * (size_t)(K / 32) * 34;
++    for (int b = 0; b < K / 32; ++b, p += 34) {
++        uint16_t hd;
++        std::memcpy(&hd, p, 2);
++        const float d = half_to_f32(hd);
++        for (int j = 0; j < 32; ++j) out[b * 32 + j] = d * (float)(int8_t)p[2 + j];
++    }
++}
++
++// GGML NVFP4 row (64-weight blocks: 4 ue4m3 sub-scales + 32 nibble bytes) times scale2.
++// order 0: byte j of sub-block s holds elements s*16 + j (lo) and s*16 + 8 + j (hi);
++// order 1: elements s*16 + 2j (lo) and s*16 + 2j + 1 (hi).
++void deq_nvfp4_row(const uint8_t * raw, size_t row, int K, float s2, int order, float * out) {
++    const uint8_t * p = raw + row * (size_t)(K / 64) * 36;
++    for (int b = 0; b < K / 64; ++b, p += 36) {
++        for (int s = 0; s < 4; ++s) {
++            const float d = ue4m3_to_f32(p[s]) * s2;
++            for (int j = 0; j < 8; ++j) {
++                const uint8_t q = p[4 + s * 8 + j];
++                const int lo = order == 0 ? s * 16 + j : s * 16 + 2 * j;
++                const int hi = order == 0 ? s * 16 + 8 + j : s * 16 + 2 * j + 1;
++                out[b * 64 + lo] = (float)kFp4[q & 0xF] * d;
++                out[b * 64 + hi] = (float)kFp4[q >> 4] * d;
++            }
++        }
++    }
++}
++
++struct Cmp {
++    double rel = 0.0;     // |a - v| / |v|
++    double ratio = 0.0;   // (a . v) / (v . v)
++};
++
++Cmp compare(const float * a, const std::vector<double> & v) {
++    double d2 = 0.0, v2 = 0.0, av = 0.0;
++    for (size_t i = 0; i < v.size(); ++i) {
++        d2 += (a[i] - v[i]) * (a[i] - v[i]);
++        v2 += v[i] * v[i];
++        av += a[i] * v[i];
++    }
++    return {std::sqrt(d2 / v2), av / v2};
++}
++
++uint64_t g_rng = 0x9E3779B97F4A7C15ull;
++float rnd() {   // ~N(0, 1) (Irwin-Hall of 4)
++    double s = 0.0;
++    for (int i = 0; i < 4; ++i) {
++        g_rng = g_rng * 6364136223846793005ull + 1442695040888963407ull;
++        s += (double)(g_rng >> 11) / 9007199254740992.0;
++    }
++    return (float)((s - 2.0) * std::sqrt(3.0));
++}
++
++// Replica of kernels_lora.hip lora_wo_dot: 256 threads, thread t owns float4
++// t, t + 256, t + 512 (sequential fmaf over x, y, z, w), xor butterfly per
++// wave32, the 8 wave sums added in order.
++float wo_dot_replica(const float * a, const float * x) {
++    float p[256];
++    for (int t = 0; t < 256; ++t) {
++        float acc = 0.0f;
++        for (int i = 0; i < 3; ++i) {
++            const int q = 4 * (t + 256 * i);
++            for (int c = 0; c < 4; ++c) acc = std::fmaf(a[q + c], x[q + c], acc);
++        }
++        p[t] = acc;
++    }
++    float s = 0.0f;
++    for (int w = 0; w < 8; ++w) {
++        float v[32];
++        for (int l = 0; l < 32; ++l) v[l] = p[w * 32 + l];
++        for (int off = 16; off > 0; off >>= 1) {
++            float nv[32];
++            for (int l = 0; l < 32; ++l) nv[l] = v[l] + v[l ^ off];
++            std::memcpy(v, nv, sizeof(v));
++        }
++        s = (w == 0) ? v[0] : s + v[0];
++    }
++    return s;
++}
++
++int g_fail = 0;
++void gate(bool ok, const char * what) {
++    if (!ok) {
++        ++g_fail;
++        std::printf("  FAIL: %s\n", what);
++    }
++}
++
++} // namespace
++
++int main(int argc, char ** argv) {
++    if (argc != 3) {
++        std::fprintf(stderr, "usage: %s <Inkling-2-Mini-NVFP4-Mixed.gguf> <lora.gguf>\n", argv[0]);
++        return 2;
++    }
++    try {
++        const LoraAdapterHost ad = load_lora_adapter(argv[2]);
++        const GgufView model(argv[1]);
++        std::printf("adapter '%s' scale=%.3f\n", ad.name.c_str(), ad.scale);
++
++        // ---- 1. structure + A = -B^T W ------------------------------------
++        int nvfp4_order = -1;
++        std::vector<float> row(N_Q);
++        double worst_wo = 0.0, worst_dn = 0.0, worst_ratio = 0.0;
++        for (int l = 0; l < N_LAYER_PHYS; ++l) {
++            const auto & L = ad.layers[l];
++            double n2 = 0.0, dd = 0.0;
++            for (int i = 0; i < N_EMBD; ++i) {
++                n2 += (double)L.wo_b[i] * L.wo_b[i];
++                const float bd = L.dn_b[i];   // expert 0 (or the shared row)
++                dd = std::max(dd, (double)std::fabs(bd - L.wo_b[i]));
++            }
++            const std::string p = "blk." + std::to_string(l) + ".";
++            // attn_output: [K = N_Q, rows = N_EMBD] Q8_0
++            const auto & two = model.get(p + "attn_output.weight");
++            std::vector<double> v(N_Q, 0.0);
++            for (int r = 0; r < N_EMBD; ++r) {
++                deq_q8_row(two.data, r, N_Q, row.data());
++                const double br = L.wo_b[r];
++                for (int k = 0; k < N_Q; ++k) v[k] -= br * row[k];
++            }
++            const Cmp cw = compare(L.wo_a.data(), v);
++            // ffn_down_exps: 4 experts, [K = N_FF_EXP, rows = N_EMBD, N_EXPERT]
++            const auto & tdn = model.get(p + "ffn_down_exps.weight");
++            const bool nv = tdn.type == 40;
++            std::vector<float> s2(N_EXPERT, 1.0f);
++            if (nv) std::memcpy(s2.data(), model.get(p + "ffn_down_exps.scale").data, N_EXPERT * sizeof(float));
++            double rel_dn = 0.0, ratio_dn = 0.0;
++            const int experts[4] = {0, 41, 86, 127};
++            for (int e : experts) {
++                const float * be = L.dn_b.data() + (L.dn_b_shared ? 0 : (size_t)e * N_EMBD);
++                Cmp best{1e30, 0.0};
++                for (int order = 0; order < (nv ? 2 : 1); ++order) {
++                    if (nv && nvfp4_order >= 0 && order != nvfp4_order) continue;
++                    std::vector<double> ve(N_FF_EXP, 0.0);
++                    for (int r = 0; r < N_EMBD; ++r) {
++                        const size_t gr = (size_t)e * N_EMBD + r;
++                        if (nv) deq_nvfp4_row(tdn.data, gr, N_FF_EXP, s2[e], order, row.data());
++                        else    deq_q8_row(tdn.data, gr, N_FF_EXP, row.data());
++                        for (int k = 0; k < N_FF_EXP; ++k) ve[k] -= (double)be[r] * row[k];
++                    }
++                    const Cmp c = compare(L.dn_a.data() + (size_t)e * N_FF_EXP, ve);
++                    if (nv && nvfp4_order < 0) {
++                        std::printf("  [nvfp4 nibble order %d] blk.%d expert %d: rel=%.4f ratio=%.4f\n",
++                                    order, l, e, c.rel, c.ratio);
++                    }
++                    if (c.rel < best.rel) {
++                        best = c;
++                        if (nv && nvfp4_order < 0 && order == 1) nvfp4_order = 1;
++                    }
++                }
++                if (nv && nvfp4_order < 0) nvfp4_order = 0;
++                rel_dn = std::max(rel_dn, best.rel);
++                ratio_dn = std::max(ratio_dn, std::fabs(best.ratio - 1.0));
++            }
++            std::printf("blk.%-2d |B|=%.6f B_dn==B_wo:%s(max %.2g, shared=%d)  wo: rel=%.4f ratio=%.4f  "
++                        "down(%s): rel<=%.4f |ratio-1|<=%.4f\n",
++                        l, std::sqrt(n2), dd < 1e-6 ? "yes" : "NO", dd, (int)L.dn_b_shared, cw.rel, cw.ratio,
++                        nv ? "nvfp4" : "q8_0", rel_dn, ratio_dn);
++            gate(std::fabs(std::sqrt(n2) - 1.0) < 1e-3, "B is not unit-norm");
++            worst_wo = std::max(worst_wo, cw.rel);
++            worst_dn = std::max(worst_dn, rel_dn);
++            worst_ratio = std::max({worst_ratio, std::fabs(cw.ratio - 1.0), ratio_dn});
++        }
++        // token_embd: [K = N_EMBD, rows = VOCAB_PADDED] Q8_0, A[t] = -B . E[t]
++        {
++            const auto & te = model.get("token_embd.weight");
++            std::vector<double> v;
++            std::vector<float> a;
++            std::vector<float> e(N_EMBD);
++            for (int t = 1000; t < 1256; ++t) {
++                deq_q8_row(te.data, t, N_EMBD, e.data());
++                double d = 0.0;
++                for (int i = 0; i < N_EMBD; ++i) d += (double)ad.emb_b[i] * e[i];
++                v.push_back(-d);
++                a.push_back(ad.emb_a[t]);
++            }
++            const Cmp c = compare(a.data(), v);
++            std::printf("token_embd rows 1000..1255: rel=%.4f ratio=%.4f\n", c.rel, c.ratio);
++            worst_ratio = std::max(worst_ratio, std::fabs(c.ratio - 1.0));
++            gate(c.rel < 0.05, "token_embd A != -B.E");
++        }
++        std::printf("A = -B^T W: worst rel wo=%.4f down=%.4f, worst |ratio-1|=%.4f (nvfp4 nibble order %d)\n",
++                    worst_wo, worst_dn, worst_ratio, nvfp4_order);
++        gate(worst_wo < 0.05, "attn_output A != -B^T W");
++        gate(worst_dn < 0.25, "ffn_down_exps A != -B^T W (scale2 / sign convention)");
++        gate(worst_ratio < 0.05, "A is not -B^T W at scale 1");
++
++        // ---- 2 + 3. kernel arithmetic + effect, layer 0 --------------------
++        {
++            const auto & L = ad.layers[0];
++            const auto & two = model.get("blk.0.attn_output.weight");
++            std::vector<float> x(N_Q);
++            for (float & f : x) f = 0.05f * rnd();
++            std::vector<float> yf(N_EMBD);
++            std::vector<double> yref(N_EMBD);
++            double ax = 0.0;
++            for (int k = 0; k < N_Q; ++k) ax += (double)L.wo_a[k] * x[k];
++            double err = 0.0, ymax = 0.0, pb = 0.0, pa = 0.0, n0 = 0.0, n1 = 0.0;
++            const float s = wo_dot_replica(L.wo_a.data(), x.data());
++            for (int r = 0; r < N_EMBD; ++r) {
++                deq_q8_row(two.data, r, N_Q, row.data());
++                double y = 0.0;
++                for (int k = 0; k < N_Q; ++k) y += (double)row[k] * x[k];
++                yf[r] = (float)y;
++                yref[r] = y + (double)L.wo_b[r] * ax;
++                const float x3 = std::fmaf(L.wo_b[r], s, yf[r]);       // sconv_post_res_one
++                err = std::max(err, std::fabs(x3 - yref[r]));
++                ymax = std::max(ymax, std::fabs(yref[r]));
++                pb += (double)L.wo_b[r] * y;   n0 += y * y;
++                pa += (double)L.wo_b[r] * x3;  n1 += (double)x3 * x3;
++            }
++            std::printf("wo kernel math : s=%.6g (fp64 %.6g)  max|x3-ref|/max|ref| = %.3g  "
++                        "B-component %.4f -> %.4f of |y|\n",
++                        s, ax, err / ymax, pb / std::sqrt(n0), pa / std::sqrt(n1));
++            gate(err / ymax < 1e-5, "wo epilogue math");
++            gate(std::fabs(pa / std::sqrt(n1)) < 0.1 * std::fabs(pb / std::sqrt(n0)) + 1e-3,
++                 "wo LoRA does not remove the B component");
++        }
++        {
++            const auto & L = ad.layers[0];
++            const auto & tdn = model.get("blk.0.ffn_down_exps.weight");
++            std::vector<float> s2(N_EXPERT, 1.0f);
++            std::memcpy(s2.data(), model.get("blk.0.ffn_down_exps.scale").data, N_EXPERT * sizeof(float));
++            const int32_t ids[TOP_K] = {3, 17, 40, 64, 77, 90, 101, 127};
++            float w[TOP_K], wsum = 0.0f;
++            for (float & f : w) { f = 0.1f + std::fabs(rnd()); wsum += f; }
++            for (float & f : w) f *= EXPERT_W_SCALE / wsum;
++            std::vector<float> act((size_t)TOP_K * N_FF_EXP);
++            for (float & f : act) f = 0.2f * rnd();
++            float s[TOP_K], ws[TOP_K], s_fused[TOP_K];
++            for (int k = 0; k < TOP_K; ++k) {
++                const float * ae = L.dn_a.data() + (size_t)ids[k] * N_FF_EXP;
++                const float * hk = act.data() + (size_t)k * N_FF_EXP;
++                s[k] = lora_moe_s_ref(ae, hk);   // lora_moe_s kernel
++                // fused kernel: block c copies its 48 act values to LDS, thread 0 runs the chunk
++                float part[LORA_MOE_NCHUNK];
++                for (int c = 0; c < LORA_MOE_NCHUNK; ++c) {
++                    float lds[LORA_MOE_CHUNK];
++                    std::memcpy(lds, hk + c * LORA_MOE_CHUNK, sizeof(lds));
++                    part[c] = lora_chunk_dot(ae + c * LORA_MOE_CHUNK, lds);
++                }
++                s_fused[k] = part[0];
++                for (int c = 1; c < LORA_MOE_NCHUNK; ++c) s_fused[k] += part[c];
++                ws[k] = lora_moe_ws(ids[k], w[k], s[k]);
++            }
++            gate(std::memcmp(s, s_fused, sizeof(s)) == 0, "fused-partials s != canonical s (bitwise)");
++            const int bstride = L.dn_b_shared ? 0 : N_EMBD;
++            double err = 0.0, ymax = 0.0, pb = 0.0, pa = 0.0, n0 = 0.0, n1 = 0.0;
++            std::vector<std::vector<float>> slot(TOP_K, std::vector<float>(N_EMBD));
++            for (int k = 0; k < TOP_K; ++k) {
++                for (int r = 0; r < N_EMBD; ++r) {
++                    deq_nvfp4_row(tdn.data, (size_t)ids[k] * N_EMBD + r, N_FF_EXP, s2[ids[k]],
++                                  nvfp4_order < 0 ? 0 : nvfp4_order, row.data());
++                    double y = 0.0;
++                    for (int j = 0; j < N_FF_EXP; ++j) y += (double)row[j] * act[(size_t)k * N_FF_EXP + j];
++                    slot[k][r] = (float)y * w[k];
++                }
++            }
++            for (int r = 0; r < N_EMBD; ++r) {
++                double ref = 0.0, base = 0.0;
++                for (int k = 0; k < TOP_K; ++k) {
++                    const float * ae = L.dn_a.data() + (size_t)ids[k] * N_FF_EXP;
++                    double sa = 0.0;
++                    for (int j = 0; j < N_FF_EXP; ++j) sa += (double)ae[j] * act[(size_t)k * N_FF_EXP + j];
++                    base += slot[k][r];
++                    ref += slot[k][r] + (double)w[k] * sa * L.dn_b[(size_t)ids[k] * bstride + r];
++                }
++                const float sum = ((slot[0][r] + slot[1][r]) + (slot[2][r] + slot[3][r])) +
++                                  ((slot[4][r] + slot[5][r]) + (slot[6][r] + slot[7][r]));
++                const float x3 = sum + lora_moe_delta(ws, ids, L.dn_b.data(), bstride, r);
++                err = std::max(err, std::fabs(x3 - ref));
++                ymax = std::max(ymax, std::fabs(ref));
++                pb += (double)L.dn_b[r] * base; n0 += base * base;
++                pa += (double)L.dn_b[r] * x3;   n1 += (double)x3 * x3;
++            }
++            std::printf("moe kernel math: max|x3-ref|/max|ref| = %.3g  B-component %.4f -> %.4f of |y|\n",
++                        err / ymax, pb / std::sqrt(n0), pa / std::sqrt(n1));
++            gate(err / ymax < 1e-5, "moe epilogue math");
++        }
++    } catch (const std::exception & ex) {
++        std::fprintf(stderr, "nib-lora-check: %s\n", ex.what());
++        return 2;
++    }
++    std::printf("%s (%d failed checks)\n", g_fail == 0 ? "PASS" : "FAIL", g_fail);
++    return g_fail == 0 ? 0 : 1;
++}
