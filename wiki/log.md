@@ -11,12 +11,6 @@ status: aktualne
 
 Ostatnie wpisy: `grep "^## \[" wiki/log.md | tail -5`.
 
-## 2026-11-25 · Inkling: przenoszenie metody Nib do Mai (K-158…K-168)
-- K-165: Nib + LoRA AtomicChat (uncensored) 156,6 / 147,3 t/s (T=0 / T=0,7), odmowy 0/5; HumanEval+ 92,1/87,2 vs Maya 90,2/85,4; ale polski prompt 82,5 / 78,4 vs Maya 113,8 / 112,9.
-- K-167: Nib 150 t/s tylko z domyślnym top-k 40; pełny rozkład 39,3 t/s.
-- K-158b…e: księga rundy Mai, okno weryfikacji jak Nib (verify(2) = zwykły + 4,1 ms), drafter tańszy 3,6 → 2,0 ms; rep2 T=0 202,7 t/s (+56%), L2k do 131,1 (+22%); wall.py: json +72%, polski chroniony bramką, kod jeszcze bez zysku. K-166 (fuzje dekodu) odrzucone, K-164 (DFlash2) czeka na przeniesienie na k158.
-- Lekcje: osierocony server.py odpowiedział za Nib; spekulacja przez prompt `pl` przed wdrożeniem.
-
 ## [2026-10-16] ingest | Zasiew wiki
 Szkielet 16 kategorii, `tools/wiki.py` (lint/index/search), 140 notatek z `qwen-opt/NOTES.md`, `STATUS-NEXT.md`, `qwen-opt/research/**`, `qwen-opt/tools/**`, `product/**`, `reports/`, `hardware/`, `~/qwen-opt/cloud/**`, `~/wt/rebase070/REBASE.md`. Wypełnione: metody, kernele, latki, rocm, nvidia, karty, modele, eksperymenty, chmura; częściowo narzedzia, decyzje, lekcje. Puste huby: repo, research, produkt, ludzie-firmy (do uzupełnienia). Lint: 0 błędów.
 
@@ -727,3 +721,8 @@ Przegląd [[przeglad-kolejki-2026-11-24]], Colab [[colab-kolejka-2026-11-24]]. W
 ## [2026-11-25] Zwiad: DFlash2 dla Inklinga (K-164), Strata 0.2.21 bez zmian dla gfx1100
 Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): drafter DFlash2 Inklinga akceptacja 4,96 vs DSpark 3,52 (H200, T=1) → K-164; Pando i kalibracja temperatury draftu dopisane do K-158; Strata 92 vs 29 t/s to CUDA/routing slotu; LocalMaxxing R9700 194,7 niepotwierdzone.
 
+## [2026-11-25] wyniki | Inkling: przenoszenie metody Nib do Mai (K-158…K-168)
+- K-165: Nib + LoRA AtomicChat (uncensored) 156,6 / 147,3 t/s (T=0 / T=0,7), odmowy 0/5; HumanEval+ 92,1/87,2 vs Maya 90,2/85,4; ale polski prompt 82,5 / 78,4 vs Maya 113,8 / 112,9.
+- K-167: Nib 150 t/s tylko z domyślnym top-k 40; pełny rozkład 39,3 t/s.
+- K-158b…e: księga rundy Mai, okno weryfikacji jak Nib (verify(2) = zwykły + 4,1 ms), drafter tańszy 3,6 → 2,0 ms; rep2 T=0 202,7 t/s (+56%), L2k do 131,1 (+22%); wall.py: json +72%, polski chroniony bramką, kod jeszcze bez zysku. K-166 (fuzje dekodu) odrzucone, K-164 (DFlash2) czeka na przeniesienie na k158.
+- Lekcje: osierocony server.py odpowiedział za Nib; spekulacja przez prompt `pl` przed wdrożeniem.
