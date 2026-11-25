@@ -19,7 +19,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (130)
+## Notatki (131)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]] — Analiza 704 żądań z `~/qwen-opt/logs/server-*.log` (2026-11-05): z 4753 s prefillu 3536 s (74%) to 38 tur, w których prompt ≥ 20k był czytany od zera lub od ≤ 8k; najgorsze tury trwały 150–200 s.
@@ -118,6 +118,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-test-wywlaszczenia|Soak nie testuje wywłaszczenia: wymuszać ewikcje deterministycznie]] — Soak PM4 po 4 min na model przeszedł bez awarii (14.10), a resety przyszły dopiero w godzinnych seriach, gdy po zapełnieniu pamięci jądro migrowało strony i ewikowało kolejki (raport 17 §9, 2026-10-19).
 - [[lekcja-5-seedow|spec_sweep z 2 seedami potrafi odwrócić znak efektu]] — Typ bloku MTP Q6_K „wygrywał” z IQ4_XS przy 2 seedach (108.7 vs 106.5 t/s, bo pl-kod 3.67 vs 3.25 tok/krok), a przy 5 seedach przegrał (109.4 vs 113.2 t/s, 3.012 vs 3.063 tok/krok) (E2 z 16f, 2026-10-18).
 - [[lekcja-spekulacja-zmienia-numeryke|Spekulacja zmienia numerykę batcha]] — MTP rozjeżdża się z plain po 129 znakach, DFlash po 229; zmiana draftu zmienia tekst przy remisie, więc MTP porównujemy z bazą MTP, nie z plain.
+- [[lekcja-spekulacja-polski-prompt|Spekulację sprawdzamy na polskim prompcie, zanim wejdzie do produkcji]] — Maya K-158c (DSpark przy T=0, okno wg pewności) dała w rep2 +47% (Q1 191,1 vs 129,9 t/s), a w wall.py na polskim prompcie −39% (68,8 vs 113,5 t/s); rep2 nie ma polskiego promptu, więc tego nie widział (2026-11-25).
 - [[lekcja-rezerwa-mtp-kopia-f16|Stockowa rezerwa MTP płaci za kopię f16 całego KV draftu]] — Rezerwa grafu kontekstu draftu MTP w llama.cpp alokuje bufor na graf, który nigdy się nie wykonuje: pełną atencję `n_ubatch` tokenów nad całym KV draftu, z kopią f16 tego KV dla kernela MMA (≈800 MiB przy ctx 204800).
 - [[lekcja-ogon-zmienia-tekst-t1|Szeroki blok zmienia tekst T=1 nawet przy 0.3% kroków]] — Ogon lookupu odpalił na czacie tylko 8–15 razy na 2258–4500 kroków, a mimo to t/s `spec_sweep` przy T=1 zmienił się o −1.1% (seedy 1–3) i +0.7% (seedy 4–9) przy stałym ms/krok (29.06 → 29.13, 28.74 → 28.73) (2026-10-18).
 - [[lekcja-szum-t-s-przy-t1|Szum t/s przy T=1]] — Przy T=1 t/s zależy od wylosowanego tekstu bardziej niż od kernela; metryka to ms/krok, kilka seedów i przeplatanie.
