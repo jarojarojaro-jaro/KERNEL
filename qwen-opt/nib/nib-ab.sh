@@ -20,7 +20,7 @@ else
   cd $M && HIP_VISIBLE_DEVICES=0 taskset -c 2-5 $N serve -m $M/Inkling-2-Mini-NVFP4-Mixed.gguf --host 127.0.0.1 --port $PORT --slots 1 \
     -c 262848 "${a[@]}" --mtp $M/mtp.safetensors --no-vision > $out/$arm.log 2>&1 & srv=$!
 fi
-cleanup() { kill -TERM $srv 2>/dev/null; for _ in $(seq 30); do kill -0 $srv 2>/dev/null || break; sleep 1; done; kill -9 $srv 2>/dev/null; pkill -9 -f 'serve/server.py --engine maya' 2>/dev/null; pkill -9 -f 'maya-ik2.adq4k' 2>/dev/null; pkill -9 -f 'nib serve' 2>/dev/null; pkill -9 -f "port $PORT"; true; }
+cleanup() { kill -TERM $srv 2>/dev/null; for _ in $(seq 30); do kill -0 $srv 2>/dev/null || break; sleep 1; done; kill -9 $srv 2>/dev/null; pkill -9 -f 'serve/server.py --engine maya' 2>/dev/null; pkill -9 -f 'maya-ik2.adq4k' 2>/dev/null; pkill -9 -f 'build-hip/maya-ik2 --serve' 2>/dev/null; pkill -9 -f 'nib serve' 2>/dev/null; pkill -9 -f "port $PORT"; true; }
 trap cleanup EXIT
 for _ in $(seq 400); do curl -sf 127.0.0.1:$PORT/health >/dev/null && break; kill -0 $srv 2>/dev/null || { echo "$arm exited"; tail -15 $out/$arm.log; exit 1; }; sleep 1; done
 sleep 3
