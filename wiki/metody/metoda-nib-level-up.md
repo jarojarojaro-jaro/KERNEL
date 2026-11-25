@@ -31,6 +31,19 @@ status: aktualne
 5. **Agenci w pętli kroków**: jeden właściciel worktree na agenta, każdy krok = wariant + pomiar + werdykt; integracja przez jedną gałąź i jedną komendę `perf`; GPU nie stoi, bo builda nie robi się w kolejce.
 6. **Metryka procesu**: czas od pomysłu do zweryfikowanej liczby (cel ≤ 1 h na wariant przy buildzie ≤ 2 min) i liczba zweryfikowanych zysków e2e na dobę.
 
+## Szybka pętla eval: liczby (JARO 2026-11-25 04:35: „on robi eval w minuty, my w godziny”)
+Typowy wariant nocy Bonsai (2026-11-25): build nowego worktree 8–14 min (przyrostowy 0,5–3 min), job w kolejce na ramię: start serwera z 7,9 GB ok. 20 s + xbench 60–90 s + kopia 60 s + restore :8080 7 s, czyli ABBA 4 ramion 12–15 min, do tego md5/KLD 5 min i ręczne składanie jobów ok. 10 min: **30–45 min na wariant, 1–2 warianty na godzinę.**
+
+Co już mamy, a nie użyliśmy tej nocy: xtxbench z przełącznikami w runtime (`GGML_HIP_RUNTIME_SWITCH_FILE`, jeden serwer, zmiana wariantu w 20 ms bez przeładowania modelu; K-028: koszt haka 0, wariant 0,3 min, cała sesja 0,7 min) i adaptacyjną regułą (WIN/LOSS po jednej parze, gdy |d| ≥ max(5 × szum, 0,5%)).
+
+Plan (cel: ≥ 15 wariantów na godzinę na jednej karcie):
+1. **Każdy przełącznik kernela jako przełącznik runtime** (`GGML_CUDA_RT_SWITCH`): hak xtxbench przeniesiony na topka-bonsai + K-150T/K-155/K-157 (`qwen-opt/bonsai25/topka-rtswitch.patch`, `tools/perf/rtswitch_convert.py`, 2026-11-25; do zbudowania na karcie). Wariant = plik z `NAZWA=WARTOŚĆ`, model ładuje się raz na sesję.
+2. **xtxbench niezależny od modelu**: profil serwera (model, argumenty, prompty, głębokości) zamiast twardego `run-topka.sh` Qwena (K-163).
+3. **Warianty partiami**: agent pisze N wariantów jako przełączniki w jednym buildzie; jeden job GPU przechodzi wszystkie (jak Nib: wszystko skompilowane, wybór w runtime); build tylko przy nowym kodzie i zawsze poza kolejką karty.
+4. **Build ≤ 1–2 min**: jeden długożyjący worktree na silnik (nie nowy na każdą łatkę), ccache, mniej instancji FA, łatki w osobnych plikach .cu (ggml-cuda.cu to jeden ogromny plik).
+5. **Bramki według kosztu**: md5 z restore w xtxbench przy każdym wariancie (sekundy), KLD tylko dla zwycięzców partii, e2e zawsze, mikrobench najwyżej jako filtr z buforami większymi niż 96 MB Infinity Cache.
+6. **:8080 w trybie sesji**: w nocy jedna blokada na cały blok wariantów zamiast stop/restore przy każdym jobie.
+
 ## Pilot (K-161, K-162)
 - K-161: `tools/perf` dla topki i Mai (punkty 1–3), pierwszy na Bonsai (topka-k157) i Inklingu (Maya): księga µs/token, spill audit, oracle.
 - K-162: profil Nib vs Maya kernel po kernelu na XTX (rocprofv3, ten sam prompt), potem port DSpark z Nib do Mai (K-158) w krokach z księgą.

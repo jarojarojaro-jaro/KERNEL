@@ -21,6 +21,12 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-163 · Szybka pętla: przełączniki runtime w topce Bonsai + xtxbench z profilem modelu, cel ≥ 15 wariantów/h
+- data: 2026-11-25 (JARO: „on robi eval w minuty, my w godziny”; [[metoda-nib-level-up]])
+- plan: (1) zbudować topka-k157 + `topka-rtswitch.patch` (+ `rtswitch_convert.py` dla BZ16), test-backend-ops, koszt haka ABBA (K-028: 0); (2) xtxbench: profil serwera zamiast `run-topka.sh` (Bonsai, Inkling/Maya osobno); (3) sesja: 10 przełączników K-15x po kolei w jednym serwerze, zmierzyć minuty/wariant
+- miara: minuty na wariant (dziś 30–45), warianty/h
+- priorytet: najwyższy (proces)
+
 ### K-161 · `tools/perf` na topce i Mai: jedna komenda build → spill audit → oracle (md5 + KLD) → księga µs/token z rocprof → ABBA e2e
 - data: 2026-11-25 ([[metoda-nib-level-up]], polecenie JARO „level wyżej”)
 - plan: CPU: skrypt i spill audit (wzór `nib/scripts/spill_audit.sh`); XTX: jeden przebieg na topka-k157 (Bonsai) i Maya (Inkling), księga do notatek modeli; cel: wariant ≤ 1 h od pomysłu do liczby

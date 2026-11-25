@@ -715,3 +715,6 @@ Przegląd [[przeglad-kolejki-2026-11-24]], Colab [[colab-kolejka-2026-11-24]]. W
 ## [2026-11-25] Jak zrobiono Nib i nasz „level wyżej” (polecenie JARO)
 [[metoda-nib-level-up]]: Nib = dyscyplina procesu (Step N z pomiarem przy każdej fladze, księga µs/token, warianty w runtime, selftest/oracle/ppl w binarce, spill audit, build 30 s), nie jedna technika; nasza luka to czas pomysł → liczba. Lekcja [[lekcja-przegrywamy-procesem-nie-wiedza]]; K-161 (`tools/perf`), K-162 (profil Nib vs Maya). jaroserverai offline od 04:27 (profil Nib na karcie czeka).
 
+## [2026-11-25] Szybka pętla eval (JARO: eval w minuty, nie godziny)
+[[metoda-nib-level-up]] sekcja liczb: dziś 30–45 min/wariant; mamy już xtxbench z przełącznikami runtime (0,3 min/wariant, K-028), nieużyty tej nocy. Hak przeniesiony na topka-bonsai z przełącznikami K-150T/K-155/K-157 (`topka-rtswitch.patch`), K-163.
+
