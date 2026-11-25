@@ -1,7 +1,7 @@
 ---
 typ: ekosystem
 tags: [ekosystem, konkurencja, autotuning]
-aktualizacja: 2026-11-24
+aktualizacja: 2026-11-25
 zrodlo: ~/KERNEL/product/research/15c-nowe-silniki.md:17-22,52-66,108-164,229-254,380; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:22-28,37,119-129; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:16-21,111-118,308-321; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:9,17-32; ~/KERNEL/product/research/16d-magnitude-vs-nasz.md:5-28,119-138; ~/KERNEL/product/research/16i-magnitude-co-robia-dobrze.md:11-40,308-321; ~/KERNEL/product/research/16j-magnitude-vulkan-xtx.md:10-13,85-91
 status: aktualne
 ---
@@ -38,6 +38,12 @@ Na AMD (16j, 2026-10-18): przez Vulkan na 7900 XTX ~2× wolniejszy od nas (Qwen 
 
 ## Zwiad 2026-11-24
 **Aktualizacja 2026-11-24 (0.3.0-alpha.0..2, `155e1b67`):** główna nowość to strumień ekspertów MoE przez VRAM, RAM i SSD z dokładnym routingiem: brakujący ekspert jest doładowywany, nie podmieniany (`experts/watcher/mod.rs:1-60`). Bank ekspertów zmienia rozmiar w trakcie pracy według zmierzonych czasów, kosztem miejsca na KV i prefill. Rekomendacja modelu ocenia prędkość **przy 50 000 tokenów** kontekstu (`candidates.rs:5163-5174`), z celem 10 t/s (wcześniej 20) i kontekstem roboczym 64K. Enigma ocenia prędkość z tg128, więc dla agentów ją zawyża. Pamięć liczą z cgroup procesu: min(`memory.max`, `memory.high`) i rezerwa OOM `min(limit/12, 2–4 GiB)` (`limits.rs:176-260`). `/health` zwraca stałe „ok” (`lib.rs:648-660`), więc nie jest wzorem nadzoru. Błąd z wydania: podniesienie VERIFY_ROWS z 8 do 16 zostawiło w kernelach Vulkan MoE niezainicjowane wiersze 8–15 (`59060928`), co uczy, że szerszą weryfikację trzeba testować przy nowym maksimum.
+
+## Delta 2026-11-25 (cli 0.3.0 → 0.3.3)
+- 0.3.0: strumień ekspertów MoE przez VRAM, RAM i SSD wydany jako stabilny. Kolejność ekspertów według ponownego użycia, prefetch według nadchodzących tokenów, bezpośrednie odczyty NVMe z pominięciem page cache, a prefill czyta zimnego eksperta raz na warstwę. 0.3.1–0.3.3 to poprawki: zakleszczenia, CPU w spoczynku, **awarie kerneli Vulkan na AMD RDNA3** (Windows), pamięć na Windows i iGPU.
+- Wartość z tweeta: Qwen3.8 Flash Next 180B w 2 bitach na M4 Max 64 GB, 56 t/s w OpenCode przy 64k kontekstu. To liczba z filmu autora tweeta, nie z repo. Na ich stronie benchmarków nie ma AMD.
+- HIP/ROCm dalej nie istnieje; AMD tylko przez Vulkan. Test na XTX razem z RustingStrata (model większy niż VRAM): K-172.
+
 
 ## Powiązane
 - [[tqllm]]

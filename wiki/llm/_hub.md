@@ -19,8 +19,9 @@ Punkt startowy: [[trening-llm-mapa]] (co już trenowaliśmy, z wynikami, i gdzie
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (5)
+## Notatki (6)
 
+- [[cspd-soft-prompt|CSPD: destylacja eksperta RL do soft promptu 256 tokenów]] — Zamiast łączyć wagi po treningu RL, każdego eksperta (matematyka, kod, nauka, wykonywanie poleceń) destyluje się do soft promptu: 256 wektorów wejściowych (ok. 0,01% parametrów), trenowanych na zamrożonym modelu sprzed RL na odpowiedziach nauczyciela. Jeden prompt odzyskuje co najmniej 90% zysku z RL w 22 z 23 ustawień (7B–35B, dense i MoE). Cztery osobno wytrenowane prompty po prostu się skleja: 67,83 vs 67,79 dla destylacji wielu nauczycieli (MOPD), a na 6 testach spoza domeny 56,6 (MOPD traci 3,6 pkt na TruthfulQA).
 - [[mapa-inferencji-roadmap|Mapa inżynierii inferencji LLM: 114 tematów roadmapy a nasza wiedza]] — Roadmapa „LLM Inference Engineering” (17 części, 114 tematów) zestawiona z naszą bazą. 79 tematów mamy zmierzonych na własnym stosie, 15 tylko opisanych, 20 to luki. Luki skupiają się w wielu GPU (równoległość, dezagregacja), produkcji wielu użytkowników i interferencji prefill–decode (2026-11-15).
 - [[trening-llm-mapa|Mapa: co już trenowaliśmy i dostrajaliśmy]] — Do 2026-11-13 trenowaliśmy tylko draftery (głowica MTP, DFlash2), żaden nie dał zysku. Model zmienialiśmy wyłącznie edycjami wag bez treningu (Uncensored, Astra-Stop). Jakość mierzą EvalPlus i jakość-mini: Qwen3.8-27B-Uncensored HE+ 92,7%, jakość-mini 87,9%.
 - [[peft-lora-warianty|PEFT: LoRA i warianty (LoRA-FA, VeRA, Delta-LoRA, LoRA+)]] — Pięć sposobów taniego dostrajania LLM, w których nie trenuje się całej macierzy W, tylko małą poprawkę niskiego rzędu. Różnią się tym, co jest trenowane, a co zamrożone. To ściąga na przyszłe fine-tuningi (Astra-Stop, głowica MTP), a nie sposób na przyspieszenie (2026-11-14).

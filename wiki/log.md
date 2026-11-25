@@ -726,3 +726,11 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - K-167: Nib 150 t/s tylko z domyślnym top-k 40; pełny rozkład 39,3 t/s.
 - K-158b…e: księga rundy Mai, okno weryfikacji jak Nib (verify(2) = zwykły + 4,1 ms), drafter tańszy 3,6 → 2,0 ms; rep2 T=0 202,7 t/s (+56%), L2k do 131,1 (+22%); wall.py: json +72%, polski chroniony bramką, kod jeszcze bez zysku. K-166 (fuzje dekodu) odrzucone, K-164 (DFlash2) czeka na przeniesienie na k158.
 - Lekcje: osierocony server.py odpowiedział za Nib; spekulacja przez prompt `pl` przed wdrożeniem.
+
+## [2026-11-25] research | 8 linków z panelu: llamAmpere Inkling, RustingStrata, Lucebox Inkling Fast, Magnitude 0.3, CSPD, PR #32875, PR #32859, Sirius
+- llamAmpere v0.7.5: 189 t/s 3K na 3090 Ti, ale profile mają top-k 20 i własne kwanty → K-171 (równe warunki).
+- RustingStrata: nowa notatka; przewaga tylko dla MoE ponad VRAM → K-172 razem z Magnitude 0.3.3 (strumień SSD).
+- Lucebox #1056: Inkling na ROCm, R9700 AR 81,7 / DSpark 143,5 → K-170; Inkling Fast to inny model (decyzja JARO).
+- CSPD: notatka `llm/cspd-soft-prompt`, pomysł uncensored bez adaptera.
+- PR #32875: nie dotyczy Niba; ten sam wzorzec w dekwantyzacji Q4_K/Q6_K topki → K-173.
+- K-174 zmierzone na CPU: tokenizacja 178k tokenów 121 → 102 ms (−16%), ID identyczne; bez osobnego wdrożenia.

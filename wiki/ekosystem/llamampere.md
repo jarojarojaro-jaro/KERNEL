@@ -1,7 +1,7 @@
 ---
 typ: ekosystem
 tags: [ekosystem, nvidia, ampere, 3090, mtp, sparse-attention, telegram]
-aktualizacja: 2026-11-18
+aktualizacja: 2026-11-25
 zrodlo: https://x.com/JakeKAllDay/status/2122782053288829400 (Telegram „gpu”, 2026-11-18); github.com/JakeATX/llamAmpere (MIT) — release v0.7 (2026-11-17, źródło `037e42d8`, build `fe6462fc`), README main (push 11-18)
 status: aktualne
 ---
@@ -26,6 +26,13 @@ status: aktualne
 | tryb dokładny rc1 vs v0.6.4 | KL 0 / 0 / 0,0000118 (top-1024 + ogon, 1280 pozycji) | ta sama kultura bramki co nasza (md5/KLD) |
 
 **Jabłka do jabłek:** nasz fork na 3090 robi 80,0 t/s (UD-Q4_K_XL, T=1, krótki kontekst, host 340 W), qwen-warp 121–124 (R69b). llamAmpere w trybie dokładnym (`--no-spec-mb-mtp`, bez rzadkiej atencji) na tym samym pliku nie był mierzony. Test: K-122.
+
+## Inkling 2 Mini v0.7.5 / v0.7.5.1 (2026-11-25, HEAD `8369abe`)
+- Liczby autora, RTX 3090 Ti 350 W, T=1, odpowiedź 5120 tok., KV 4-bit, `--preset 24ink` z drafterem `Inkling-2-Mini-ATX-Drafter-Q8_0` (0,45 GB): plik 5,4 bpw (NVFP4Q8, 17,56 GB) 3K **189,0**, 32K 182,6, 100K 144,7 t/s; plik 4,4 bpw (AI4) 3K 192,6, 100K 147,9. Prefill 100K 2512–2747 t/s. v0.7.4.1 → v0.7.5 to +4–12% dekodu i +23–45% prefillu (maski atencji na GPU, padding KV, top-K głowicy draftera, rdzenie tensorowe w weryfikacji Q8).
+- **Uwaga 1, próbkowanie:** profile kart w `common/preset.cpp:117` ustawiają T=1 z **top-k 20**, top-p 0,95. Profilu `24ink` nie ma w opublikowanym źródle (rg: tylko README), więc jego sampler jest nieznany. Przypuszczam, że jest ten sam. Nasza lekcja K-167: Nib robi 150 t/s z top-k 40, a przy pełnym rozkładzie 39,3, więc obcięcie rozkładu mocno podnosi akceptację.
+- **Uwaga 2, jakość:** to ich własne kwanty, a KL liczą do pełnej precyzji (0,00315, top-1 98,1%), czyli inaczej niż nasz dowód „ten sam plik”. Weryfikacja w partiach 512 zamiast 5 zmienia KL (0,00337), więc ścieżka weryfikacji nie jest bitowo równa autoregresji.
+- **Porównanie z nami:** 3090 Ti ma 1008 GB/s, XTX 960. Nasza produkcja Maya T=0,7 ok. 113 t/s, Nib + LoRA 147,3 (top-k 40), K-158f do 165,6 na kodzie. Test na równych warunkach (T=1, top-k 20, top-p 0,95, prompt 3K i 32K, odpowiedź długa): K-171.
+
 
 ## Powiązane
 - [[2026-11-17-k114-nvidia-sufit]]

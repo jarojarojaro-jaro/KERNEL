@@ -1,7 +1,7 @@
 ---
 typ: ekosystem
 tags: [ekosystem, spekulacja, dflash]
-aktualizacja: 2026-11-24
+aktualizacja: 2026-11-25
 zrodlo: ~/KERNEL/qwen-opt/research/repos/22-lucebox.md:1-55; ~/KERNEL/qwen-opt/research/repos/REPOS-PODSUMOWANIE.md:32; ~/KERNEL/product/research/15d-prefill-dlugi-kontekst.md:3-14,49-56,64-82,254
 status: aktualne
 ---
@@ -28,6 +28,13 @@ Werdykt bez zmian (średnia), PFlash: pilot.
 - **Dyskowy cache sesji to funkcja ich serwera** (45K po restarcie 2,6 s zamiast 56,2 s, bajtowo). My zmierzyliśmy to samo na XTX (E5: Qwen 53k 2,51 s zamiast ~61,5 s, [[cache-sesji-na-dysku]]), a 19.10 właściciel zdecydował dla naszego serwera „SSD nie ruszamy”, KV tylko w RAM ([[2026-10-19-kv-tylko-w-ram]]). Enigma też tego nie ma: start llama-server bez `--slot-save-path` (`app/engine/src/server/engine.ts:570-576`). Dla użytkownika z długą rozmową restart aplikacji albo silnika to znów pełny prefill (minuta przy 53k). Zużycie SSD rozwiązuje polityka „zapis tylko przy zamknięciu albo presji RAM, top-2 sesje” (~7 GB/dzień, [[kv-na-dysku-polityka]]).
 - **Własny serwer przegrywa poza swoją kartą:** `dflash_server` na gfx1100 ~2× wolniejszy od llama.cpp (#457). To ten sam wzór co R03 („własne runtime'y dają rekordy tylko dla wąskiego zestawu modeli”, [[raport-03-silniki]]) i Enigma Turbo.
 - Do decyzji właściciela (decyzja 19.10 dotyczyła naszego serwera, nie produktu): zapis slotu przy zamknięciu Enigmy i odczyt przy starcie z tym samym modelem i konfiguracją (odcisk jak w Stracie: [[strata]]).
+
+## Delta 2026-11-25 (HEAD `d0e9473`): Inkling 2 Mini na ROCm i „Inkling 2 Mini Fast”
+- `7eb143b` (#1056, 11-23, +11 249 linii): natywny backend `inkling2_loop` z prefillem „wavefront” w 3 przejściach, adaptacyjną szerokością DSpark (`AdaptiveSpecWidth` z modelem kosztu, szerokości 2…blok) i podziałem R9700 + Strix Halo (eksperci MoE 74/26). Kernel FA prefillu WMMA ma gałąź `RDNA3` (nie tylko RDNA4/3.5).
+- Blog (2026-11-23): R9700 (gfx1201, 640 GB/s), bez spekulacji **81,7 t/s**, z DSpark przez HTTP 143,5 t/s (temp=1), szczyt na dwóch GPU 155,4. Prefill 3628 t/s. Nasz XTX: Maya bez spekulacji 93,6, produkcja T=0,7 ok. 113. Ich AR na karcie o 1/3 węższej pamięci jest blisko Mai, a z DSpark wyraźnie wyżej.
+- **Inkling-2-Mini-Fast** to wagi dostrojone tak, żeby model mniej „przemyśliwał”: −50% tokenów odpowiedzi, KL 0,023 do bazy, top-1 93,4%. To inny model, więc nie jest dźwignią prędkości silnika. Wersja jest z cenzurą, a decyzję o zmianie modelu podejmuje JARO. Ich `mtp.safetensors` (607 MiB, „official DSpark”) ma ten sam rozmiar co nasz `~/models/inkling/mtp.safetensors`.
+- Test na XTX bez pobierania (nasz UD-Q4_K_XL + mtp.safetensors): K-170.
+
 
 ## Powiązane
 - [[hipfire]]

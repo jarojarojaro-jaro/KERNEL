@@ -17,7 +17,7 @@ Cudze silniki i konkurencja, jedna notatka na podmiot: Strata, Maya (Inkling na 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (115)
+## Notatki (116)
 
 - [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]] — „Flash-Next przy 250K tylko −18% względem 1K” to własność modelu (natywna rzadka QSA z budżetem 2048 tokenów) plus stratny host KV FP8, a nie trik kernela; ich gęsty 27B traci −47% (501 → 268 t/s), tyle co my −45% (136.5 → 74.5 przy 199k) (raport 66b, 2026-11-07).
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
@@ -102,6 +102,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[qwen-qsa-llama-cpp|Qwen-QSA-llama.cpp (pentaCoxian): rzadka atencja QSA dla Qwen3.8-27B]] — Fork llama.cpp dokleja do 16 warstw pełnej atencji wyuczone indeksery (52.4M parametrów FP32, 300 kroków treningu); każde zapytanie czyta 2048 tokenów w blokach po 4. Na RTX 4090 przy 255K: decode 114.7 vs 40.6 t/s, prefill 2375 vs 1345 t/s (2026-11-05).
 - [[qwen-warp|qwen-warp (tuan3w): 262k na jednej RTX 3090]] — Graf CUDA z fuzjami W4A16 (Swift-1.5 INT4), MTP k ≤ 3 + ogon prompt-lookup; decode 124 / 115 / 102 / 94 t/s przy 32k / 100k / 190k / 262k (2026-11-05).
 - [[rdna-fast|RDNA-FAST (serrynaimo): fork llama.cpp/ROCmFPX dla RX 7900 XT]] — Downstream llama.cpp + ROCmFPX na RX 7900 XT 20 GB, Windows, ROCm 10.1, Swift 1.5 IQ4_XS; większość trików decode mamy w topce mocniej, nowe są 4 rzeczy i lista pułapek ROCm 10 (2026-11-05).
+- [[rustingstrata|RustingStrata (RustingStudio): silnik w Ruście dla MoE większych niż VRAM]] — Silnik GGUF w czystym Ruście (bez ggml, bez kroku C++), osobny projekt Vasyla Trefilova, a nie Strata Niko1221. Kernele CUDA kompilowane w locie przez NVRTC, te same na Vulkanie, a od niedawna eksperymentalnie na HIP przez hiprtc. Przewaga nad llama.cpp jest wyłącznie przy modelach MoE, które nie mieszczą się w VRAM: eksperci liczą się równolegle na CPU i GPU, a rozmieszczenie ekspertów dopasowuje się do zaobserwowanego routingu. Na modelach mieszczących się w karcie nie ma przewagi, więc dla naszej produkcji na XTX (wszystko w VRAM) nie wnosi szybkości. Wnosi wzór dla Enigmy na karty 8 do 16 GB.
 - [[saber-engine|Saber (GGZ14/saber-engine): silnik Rust + HIP dla R9700]] — Przepisanie prywatnego stosu vLLM autora na 1–2 karty R9700 (gfx1201) dla Qwen3.8-27B i Flash-Next; kernele używają builtinów gfx12 (FP8 WMMA, `global_load_tr`), a numeryka jest stratna (MXFP4 W4A8, KV i głowica fp8), więc nic nie uruchomimy, ale cztery projekty są przenośne (raport 66d, 2026-11-07).
 - [[sakana-agentic-scientist|Sakana AI-Scientist-v3 (Agentic Scientist)]] — Orkiestracja agentów do badań, w której kod wymusza izolację ewaluacji (harness, hashe, osobne kontenery), a naukę rozstrzyga LLM; brak jakiejkolwiek statystyki istotności.
 - [[scaleway|Scaleway]] — Francuski dostawca z Mac mini as-a-service (bare metal macOS); nasza droga do testów Metal przed zakupem Maca.

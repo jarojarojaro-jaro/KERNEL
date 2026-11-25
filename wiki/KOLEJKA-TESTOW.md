@@ -21,6 +21,35 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-171 · Inkling na równych warunkach z llamAmpere: T=1, top-k 20, top-p 0,95 (Maya prod, Nib + LoRA, K-158f)
+- data: 2026-11-25 (panel JARO: llamAmpere v0.7.5 189 t/s przy 3K i 144,7 przy 100K na 3090 Ti, „T=1”)
+- powód: ich profile ustawiają top-k 20 (`common/preset.cpp:117`); my mierzymy T=0,7 pełnym rozkładem; K-167 pokazał, że top-k zmienia wynik ×3,8. Bez tego testu nie wiemy, czy przegrywamy
+- test: wall.py z samplerem T=1 / top-k 20 / top-p 0,95, prompty 3K i 32K, odpowiedź 2048 tok., 3 seedy, ramiona: Maya `maya-atomic.json` (prod), Nib + LoRA (`~/wt/nib-unc`), Maya k158-dspark; port 18796, PM4=0
+- czas karty: ok. 10 min
+- priorytet: wysoki (wyścig Inkling)
+
+### K-170 · Lucebox `inkling2_loop` (#1056) na XTX: Inkling 2 Mini z DSpark vs Maya
+- data: 2026-11-25 (panel JARO: Lucebox na R9700 AR 81,7, z DSpark 143,5 t/s temp=1)
+- test: build lucebox `d0e9473` dla gfx1100 (`~/qwen-opt/tools/rbuild`, cel `luce_server`), model nasz `Inkling-2-Mini-UD-Q4_K_XL.gguf` + `~/models/inkling/mtp.safetensors` (bez pobierania); najpierw krótki smoke (page fault = stop), potem wall.py T=0 / T=0,7 i bez spekulacji, porównanie z Mayą w tej samej sesji
+- ryzyko karty: nowy silnik HIP; gałąź RDNA3 w ich FA istnieje, ale była testowana tylko na gfx1201/1151
+- czas karty: ok. 10 min
+- priorytet: wysoki
+
+### K-173 · Dekwantyzacja K-quantów przy prefillu: bloki 32/64 wątków → dim3(32, 8) (jak PR #32875 dla NVFP4)
+- data: 2026-11-25 (panel JARO, PR ggml-org/llama.cpp#32875: NVFP4 dequant 4,2×, prefill Qwen3.8-27B +17,7% na V100)
+- mechanizm u nas: na RDNA3 `ggml_cuda_should_use_mmq` zwraca false dla Q6_K przy ne11 > 128 (`mmq.cu`), więc prefill Q4_K_M idzie przez dekwantyzację + hipBLAS dla tensorów Q6_K; `dequantize_row_q6_K_cuda` startuje `<<<nb, 64>>>`, q4_K `<<<nb, 32>>>` (`convert.cu:307,319`, topka qprep-spec 50ca29355). Nib ma własny silnik HIP bez tej ścieżki
+- test: łatka (indeks bloku `blockIdx.x*blockDim.y + threadIdx.y` z warunkiem `i < nb`), test-backend-ops MUL_MAT q4_K/q6_K bitowo + perf, xtxbench prefill 32k ABBA; próg ≥ 1% prefillu
+- czas karty: ok. 8 min
+- priorytet: średni
+
+### K-172 · Silniki strumienia ekspertów MoE na XTX: Magnitude 0.3.3 (Vulkan) i RustingStrata 1.3.3 (`--backend hip`) vs topka `-ncmoe`
+- data: 2026-11-25 (panel JARO: RustingStrata 160 t/s na 3060, Magnitude strumień z SSD)
+- po co: Enigma nie ma offloadu MoE dla kart 8–16 GB; test na modelu większym niż 24 GB pokazuje, czy rozmieszczenie ekspertów po routingu bije statyczne `-ncmoe`
+- test: `Qwen3.6-35B-A3B-Q8_0.gguf` (35 GB, nie mieści się, jest na dysku); dekod po 4K i prefill 4K, 3 biegi na silnik, T=0; ten sam prompt
+- uwaga dysk: wymaga zostawienia `~/models/q36` (35 GB), który był na liście do usunięcia
+- czas karty: ok. 15 min
+- priorytet: średni
+
 ### K-165 · Inkling uncensored w Nib: LoRA AtomicChat (rank 1, 98 tensorów) w runtime Nib, cel ≥ 145 t/s przy T=0,7
 - data: 2026-11-25 (JARO: „nowe infra ma 150 t/s”; Nib 150,6 t/s T=0,7 KV q4 na naszym XTX, ale wagi ocenzurowane)
 - plan: agent dopisuje `--lora` do Nib (attn_output + ffn_down_exps, wszystkie ścieżki, grafy HIP); XTX: selftest z/bez LoRA, 5 promptów odmowy przy T=0, wall.py T=0 / T=0,7 KV q4; potem Nib jako czat Inkling zamiast Mai
@@ -615,6 +644,15 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-174 · Tokenizacja BPE bez alokacji (PR #32859) w topce: czas tokenizacji długiego promptu (CPU)
+- data: 2026-11-25 (panel JARO; PR scalony 2026-11-24, `2a48778`; autor: qwen2 −49%)
+- po co: serwer tokenizuje całą historię przy każdej turze agenta, także gdy prefill idzie z cache, więc przy 100k kontekstu to stały koszt TTFT
+- test: CPU na jaroserverai (`~/tokbench`), llama-tokenize przed/po na słowniku Qwen, potem port do topki (łatka nie wchodzi czysto na qprep-spec: konflikt w `src/llama-vocab.cpp:15`)
+- czas karty: 0
+- **wynik 2026-11-25 (jaroserverai CPU, rdzenie 6–9, llama-tokenize, słownik Qwen3.8-27B-Uncensored, 400 KB tekstu wiki = 178 289 tokenów, 5 biegów, czas minus czas pustego pliku):** ID tokenów identyczne (md5 41dce45f…); przed 121 ms (120–125), po 102 ms (89–112), czyli **−16%, ok. 20 ms na 178k tokenów**, a nie −49% jak u autora (inny tekst: polski i kod). Przy turze agenta ze 100k historii to ok. 11 ms przy TTFT ok. 1,5 s (< 1%). Werdykt: brak osobnego wdrożenia, łatka wchodzi przy najbliższym rebase topki na upstream.
+- przeniesione 2026-11-25: zysk poniżej progu 1%
+
 
 ### K-160 · Bonsai 2.5: kernel Q2_0 a pasmo DRAM (K-156 dał 1,9× w mikrobenchu i 0% w dekodzie)
 - data: 2026-11-25 (MMVQ Q2_0 ok. 695 GB/s w całym kroku)
