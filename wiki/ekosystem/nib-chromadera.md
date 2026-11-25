@@ -30,7 +30,7 @@ Klient strumieniowy `qwen-opt/nib/wall.py` (tokeny / czas od pierwszego do ostat
 
 ## Księga czasu Nib vs Maya (K-162, 2026-11-25, XTX, rocprofv3, dekod bez spekulacji, KV q4)
 - Wall: Nib `bench` tg128 **117,9 t/s** (8,5 ms/token, d=0, atencja gęsta); Maya produkcja CLI `--gen 129` **97,7 t/s** (10,2 ms/token).
-- Czas GPU na token podobny: Nib ok. 7,6 ms, Maya ok. 8,0 ms; ale Maya ma ok. 700 wywołań kerneli na token, Nib ok. 330, i ok. 2 ms/token przerw hosta (Nib ok. 0,9). Przewaga Nib bez spekulacji to głównie liczba kerneli i przerwy, nie pasmo.
+- Czas GPU na token podobny: Nib ok. 7,6 ms, Maya ok. 8,0 ms; Maya ma ok. 700 wywołań kerneli na token, Nib ok. 330. **Uwaga:** ścieżka CLI `--gen` Mai nie jest ścieżką serwera; w serwerze z grafami Maya bez spekulacji robi 127,1 t/s (K-139, rep2 Q1), czyli ok. 7,9 ms/token, więcej niż Nib bez spekulacji (117,9). **Cała przewaga Nib przy T=0,7 (150,6 vs 112,5) to ekonomia DSparka**, nie kernele dekodu.
 - Maya (µs/token, wywołania): mv_q8p 2514 (113), experts_q4k_gu 1533 (48), experts_q50_down 883 (48), attn_decode_mma 608 + combine 186, loop_gate_apply 434 + loop_gate_dots 198, attn_res_vec4 430 (99), router_route 340, moe_combine_conv 127, prep_qkv_r 113.
 - Nib: moe_nvfp4_ship_fused192 2507 (47), qkv_qkvr_prep_fused 1601 (51), q8_gemv_wo_v2 674 (51), lm-head fdot2 607 (1), dwa fused mix+norm+router+top8 491 + 385, fa_decode_swa_v4 485 + fa_decode 120, mix_dual_ctrl_qkv3_norm 447, mix_rms_norm 208.
 - MoE kosztuje u obu tyle samo (2,4–2,5 ms); różnica jest w drobnych kernelach (pętla, bramki, residuale, router: Maya ok. 1,4 ms w 290 wywołaniach vs Nib ok. 1,3 ms w 77) i w przerwach.
