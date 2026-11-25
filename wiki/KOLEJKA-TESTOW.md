@@ -38,23 +38,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - czas karty: ok. 5 min
 - priorytet: wysoki
 
-### K-170 · Lucebox `inkling2_loop` (#1056) na XTX: Inkling 2 Mini z DSpark vs Maya
-- data: 2026-11-25 (panel JARO: Lucebox na R9700 AR 81,7, z DSpark 143,5 t/s temp=1)
-- test: build lucebox `d0e9473` dla gfx1100 (`~/qwen-opt/tools/rbuild`, cel `luce_server`), model nasz `Inkling-2-Mini-UD-Q4_K_XL.gguf` + `~/models/inkling/mtp.safetensors` (bez pobierania); najpierw krótki smoke (page fault = stop), potem wall.py T=0 / T=0,7 i bez spekulacji, porównanie z Mayą w tej samej sesji
-- ryzyko karty: nowy silnik HIP; gałąź RDNA3 w ich FA istnieje, ale była testowana tylko na gfx1201/1151
-- czas karty: ok. 10 min
-- priorytet: wysoki
-
-- **2026-11-25:** lucebox `d0e94739` zbudowany dla gfx1100 (`~/wt/lucebox/server/build-hip`), ale loader czyta tylko ich konwersję (`inkling2_loop`, klucze `loop.start/end/count`, bez skal NVFP4 ekspertów; `server/src/inkling2/inkling2_loader.cpp:94-305`); nasz plik unsloth się nie załaduje. Wymaga pobrania `Inkling-2-Mini-Fast-IQ4_NL.gguf` (17,6 GB, inny model, test tylko szybkości silnika) albo portu loadera (kilka godzin). `k170.jobs` gotowy z blokadą „brak modelu”. Nasz `mtp.safetensors` = ich DSpark (sha256 7c3b6513…). Decyzja JARO.
-### K-172 · Silniki strumienia ekspertów MoE na XTX: Magnitude 0.3.3 (Vulkan) i RustingStrata 1.3.3 (`--backend hip`) vs topka `-ncmoe`
-- data: 2026-11-25 (panel JARO: RustingStrata 160 t/s na 3060, Magnitude strumień z SSD)
-- po co: Enigma nie ma offloadu MoE dla kart 8–16 GB; test na modelu większym niż 24 GB pokazuje, czy rozmieszczenie ekspertów po routingu bije statyczne `-ncmoe`
-- test: `Qwen3.6-35B-A3B-Q8_0.gguf` (35 GB, nie mieści się, jest na dysku); dekod po 4K i prefill 4K, 3 biegi na silnik, T=0; ten sam prompt
-- uwaga dysk: wymaga zostawienia `~/models/q36` (35 GB), który był na liście do usunięcia
-- czas karty: ok. 15 min
-- priorytet: średni
-
-- **2026-11-25:** `~/models/q36` pusty od 17:38 (model skasowany). RustingStrata 1.3.3 i Magnitude 0.3.3 zainstalowane w `~/wt/moe-engines`, `k172.jobs` gotowy z blokadą „brak modelu”; Magnitude ma port 10100 na sztywno i wymaga Vulkana z `~/vk`. Wymaga pobrania 35 GB: decyzja JARO.
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
@@ -133,6 +116,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: wysoki (odblokowuje największy bezstratny decode)
 
+- **decyzja JARO 2026-11-26:** zgoda ([[2026-11-26-bramka-kld]]): zmiany zmieniające md5 wchodzą po bramce KLD + wymuszanie tokenów + wall.py −2%. Następny krok: narzędzie bramki i pierwsze użycie na K-006 i K-017.
 ### K-119 · SenseNova-Loop-9B: pobrać i sprawdzić, jak naprawdę działa (jakość, zachowanie, prędkość), bez optymalizacji
 - data: 2026-11-17
 - **cel (właściciel 2026-11-17 18:17):** „nie wszystko musimy optymalizować, wysłałem, żebyśmy pamiętali, pobrali i przetestowali, jak to rzeczywiście wygląda”. Najpierw zwykły test modelu: odpowiedzi PL/EN, kod, narzędzia, długi kontekst, obraz. Prędkość mierzymy przy okazji, bez kerneli
@@ -1319,6 +1303,29 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-172 · Silniki strumienia ekspertów MoE na XTX: Magnitude 0.3.3 (Vulkan) i RustingStrata 1.3.3 (`--backend hip`) vs topka `-ncmoe`
+- data: 2026-11-25 (panel JARO: RustingStrata 160 t/s na 3060, Magnitude strumień z SSD)
+- po co: Enigma nie ma offloadu MoE dla kart 8–16 GB; test na modelu większym niż 24 GB pokazuje, czy rozmieszczenie ekspertów po routingu bije statyczne `-ncmoe`
+- test: `Qwen3.6-35B-A3B-Q8_0.gguf` (35 GB, nie mieści się, jest na dysku); dekod po 4K i prefill 4K, 3 biegi na silnik, T=0; ten sam prompt
+- uwaga dysk: wymaga zostawienia `~/models/q36` (35 GB), który był na liście do usunięcia
+- czas karty: ok. 15 min
+- priorytet: średni
+
+- **2026-11-25:** `~/models/q36` pusty od 17:38 (model skasowany). RustingStrata 1.3.3 i Magnitude 0.3.3 zainstalowane w `~/wt/moe-engines`, `k172.jobs` gotowy z blokadą „brak modelu”; Magnitude ma port 10100 na sztywno i wymaga Vulkana z `~/vk`. Wymaga pobrania 35 GB: decyzja JARO.
+- **2026-11-26:** JARO nie zgadza się na pobranie modelu ([[2026-11-26-bez-pobierania-modeli]]).
+- przeniesione 2026-11-26: decyzja JARO: bez pobierania
+
+### K-170 · Lucebox `inkling2_loop` (#1056) na XTX: Inkling 2 Mini z DSpark vs Maya
+- data: 2026-11-25 (panel JARO: Lucebox na R9700 AR 81,7, z DSpark 143,5 t/s temp=1)
+- test: build lucebox `d0e9473` dla gfx1100 (`~/qwen-opt/tools/rbuild`, cel `luce_server`), model nasz `Inkling-2-Mini-UD-Q4_K_XL.gguf` + `~/models/inkling/mtp.safetensors` (bez pobierania); najpierw krótki smoke (page fault = stop), potem wall.py T=0 / T=0,7 i bez spekulacji, porównanie z Mayą w tej samej sesji
+- ryzyko karty: nowy silnik HIP; gałąź RDNA3 w ich FA istnieje, ale była testowana tylko na gfx1201/1151
+- czas karty: ok. 10 min
+- priorytet: wysoki
+
+- **2026-11-25:** lucebox `d0e94739` zbudowany dla gfx1100 (`~/wt/lucebox/server/build-hip`), ale loader czyta tylko ich konwersję (`inkling2_loop`, klucze `loop.start/end/count`, bez skal NVFP4 ekspertów; `server/src/inkling2/inkling2_loader.cpp:94-305`); nasz plik unsloth się nie załaduje. Wymaga pobrania `Inkling-2-Mini-Fast-IQ4_NL.gguf` (17,6 GB, inny model, test tylko szybkości silnika) albo portu loadera (kilka godzin). `k170.jobs` gotowy z blokadą „brak modelu”. Nasz `mtp.safetensors` = ich DSpark (sha256 7c3b6513…). Decyzja JARO.
+- **2026-11-26:** JARO nie zgadza się na pobranie modelu ([[2026-11-26-bez-pobierania-modeli]]).
+- przeniesione 2026-11-26: decyzja JARO: bez pobierania
 
 ### K-063 · Wyzwalacz PDL + prefetch L2 przed `pdl_sync` w gęstym MMVQ (sm_120) i sterowanie L2 (`evict_first`, persisting window `GGML_CUDA_L2_PERSIST`)
 - data: 2026-10-19 (21b)

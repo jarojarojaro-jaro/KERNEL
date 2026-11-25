@@ -17,7 +17,7 @@ Produkcja: fork llama.cpp „topka” (`~/llama-topka`, łatki amd-opt) na ROCm 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (39)
+## Notatki (40)
 
 - [[init-user-pages-failed|`amdgpu: init_user_pages: Failed to get user pages: -1` przy starcie serwera]] — Każdy start llama-server na XTX wypisuje do logu jądra ~16 tys. wierszy `amdgpu: init_user_pages: Failed to get user pages: -1`; zjawisko trwa co najmniej od 2026-10-25, bez page faultów, resetów i wpływu na wyniki (md5 bramek zgodne).
 - [[amd-smi|AMD SMI (amd-smi)]] — Narzędzie i biblioteka AMD do telemetrii i sterowania GPU (moc, zegary, perf-level); w ROCm zastąpiło rocm-smi, działa na Linuksie, natywnego Windows brak.
@@ -56,6 +56,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[cuda-stos|Stos CUDA: jak budujemy fork dla NVIDIA]] — Fork budujemy dla NVIDIA nvcc 12.8 z conda-forge (bez sudo, bez sterownika na serwerze), dla architektur sm_86, sm_89 i sm_120; testy na GPU robimy w chmurze.
 - [[rocm-stos|Stos ROCm na naszym serwerze]] — Pracujemy na ROCm 10.0 (`/opt/rocm/core-10.0`, wersja kandydująca 10.0.0~pre4) z RX 7900 XTX (gfx1100); ROCm 10.1 leży obok w katalogu użytkownika do testów.
 - [[therock|TheRock: system budowania i wydań ROCm]] — Od ROCm 7.14 (2026-07-15) AMD buduje i wydaje ROCm przez otwarty system TheRock: Core SDK, instalator Runfile (kilka wersji obok siebie), pakiety DEB/RPM, koła Pythona per rodzina gfx i tarballe.
+- [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]] — Od 2026-11-26 każdy model ma własną topkę (build + przełączniki + kontekst) na każdej karcie, a czat :8080 na jaroserverai zawsze wstaje z modelem zapisanym w `~/qwen-opt/topki/xtx/ACTIVE`, niezależnie od tego, kto go podnosi (keeper, kolejka, restart, autostart). Wcześniej `topka-keeper.sh` startował `run-topka.sh qwen` (UD-Q4_K_XL z cenzurą), a `chat8080.sh restore` `uncensored` (JARO: „topka ma byc dla kazdego modelu a nie jedna topka”).
 - [[gfx11-pm4-dispatch-priv|Własny dispatch PM4 na GFX11 musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1`]] — Na GFX11 (w tym gfx1100) każdy własny `DISPATCH_DIRECT` musi ustawić `COMPUTE_PGM_RSRC1.PRIV=1` (bit 20) – obejście błędu CWSR DEGFX11_12113; firmware CP robi to sam tylko dla pakietów AQL, więc taśma PM4 kopiująca RSRC1 z deskryptora kernela startuje fale z PRIV=0 (raport 17 §9, 2026-10-19).
 - [[kfd-smi-eventy|Zdarzenia KFD SMI (`AMDKFD_IOC_SMI_EVENTS`) bez roota]] — Proces może otworzyć własny `/dev/kfd` i przez `AMDKFD_IOC_SMI_EVENTS` dostawać zdarzenia swoich kolejek (bez roota): `QUEUE_EVICTION` z przyczyną (SVM, userptr, TTM, suspend), `QUEUE_RESTORE`, plus globalne `VMFAULT` i `GPU_PRE_RESET` (raport 17, 2026-10-19).
 <!-- AUTO:END -->
