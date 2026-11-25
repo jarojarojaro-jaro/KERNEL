@@ -1,0 +1,268 @@
+diff --git a/ggml/src/ggml-cuda/common.cuh b/ggml/src/ggml-cuda/common.cuh
+index fbdbc57..fbd22f4 100644
+--- a/ggml/src/ggml-cuda/common.cuh
++++ b/ggml/src/ggml-cuda/common.cuh
+@@ -780,6 +780,9 @@ static __device__ __forceinline__ int ggml_cuda_dp4a_us(const unsigned int a, co
+ #if !defined(GGML_USE_HIP) && !defined(GGML_USE_MUSA) && __CUDA_ARCH__ >= GGML_CUDA_CC_DP4A
+     asm("dp4a.u32.s32 %0, %1, %2, %3;" : "=r"(c) : "r"(a), "r"(b), "r"(c));
+     return c;
++#elif defined(GGML_USE_HIP) && (defined(RDNA3) || defined(RDNA4))
++    // v_dot4_i32_iu8 with per-operand signedness: a unsigned, b signed
++    return __builtin_amdgcn_sudot4(false, (int) a, true, b, c, false);
+ #else
+     const uint8_t * a8 = (const uint8_t *) &a;
+     const int8_t  * b8 = (const int8_t *)  &b;
+@@ -1374,10 +1377,32 @@ static inline bool ggml_cuda_pq2_multicol(int ncols_dst) {
+ #endif
+ }
+ 
++#if defined(GGML_USE_HIP)
++// GGML_HIP_PTQ1_PT: 0 = PTQ1_0 mat-vec on block_q8_1 (stock vec_dot), 1 = planar PT kernel for 2-8 columns,
++// 2 (default) = planar PT kernel for 1-8 columns. Returns the smallest column count that takes the PT kernel.
++static inline int ggml_hip_ptq1_pt_min_cols() {
++    static const int min_cols = [] {
++        const char * s    = getenv("GGML_HIP_PTQ1_PT");
++        const int    mode = s ? atoi(s) : 2;
++        return mode <= 0 ? 1 << 30 : (mode == 1 ? 2 : 1);
++    }();
++    return min_cols;
++}
++#endif
++
+ static inline ggml_cuda_q8_1_layout ggml_cuda_q8_1_layout_host(ggml_type type_src0, int ncols_dst, bool has_ids, bool plain_2d = true) {
+     if (type_src0 == GGML_TYPE_PQ2_0 && plain_2d && !has_ids && ggml_cuda_pq2_multicol(ncols_dst)) {
+         return GGML_CUDA_Q8_1_PQ2;
+     }
++#if defined(GGML_USE_HIP)
++    // HIP keeps block_q8_1 (AOS) for PTQ1_0 except where the dedicated planar kernel
++    // (mul_mat_vec_ptq1_0_pt, mmvq-ptq1_0.cuh) runs: plain 2D, no ids, RDNA3/RDNA4, see ggml_hip_ptq1_pt_min_cols.
++    if (type_src0 == GGML_TYPE_PTQ1_0) {
++        const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
++        return plain_2d && !has_ids && ncols_dst >= ggml_hip_ptq1_pt_min_cols() && ncols_dst <= 8 &&
++            (GGML_CUDA_CC_IS_RDNA3(cc) || GGML_CUDA_CC_IS_RDNA4(cc)) ? GGML_CUDA_Q8_1_PT : GGML_CUDA_Q8_1_AOS;
++    }
++#endif
+     const ggml_cuda_q8_1_layout l = ggml_cuda_q8_1_layout_for(type_src0, ncols_dst, has_ids);
+     if (l == GGML_CUDA_Q8_1_Q1B) {
+         // GGML_CUDA_Q1_BITSERIAL=0 keeps the plain block_q8_1 layout (A/B switch)
+diff --git a/ggml/src/ggml-cuda/mmvq-ptq1_0.cuh b/ggml/src/ggml-cuda/mmvq-ptq1_0.cuh
+index 4775f4f..f9a23dc 100644
+--- a/ggml/src/ggml-cuda/mmvq-ptq1_0.cuh
++++ b/ggml/src/ggml-cuda/mmvq-ptq1_0.cuh
+@@ -36,7 +36,9 @@
+ #define PTQ1_0_PT_MAX_COLS     8    // equals MMVQ_MAX_BATCH_SIZE, checked in mmvq.cu
+ #define PTQ1_0_PT_SMEM_FLOATS  4096 // 16 KiB target when choosing rows per CTA; the launch may request more for one item
+ 
+-// the PT path is CUDA only; HIP keeps the block_q8_1 layout and the old vec_dot
++// constexpr switch for the generic mmvq kernel's planar PTQ1_0 branch and geometry, CUDA only.
++// HIP keeps block_q8_1 + the old vec_dot in the generic kernel and reaches the PT layout only through
++// the dedicated kernel mul_mat_vec_ptq1_0_pt below (ggml_cuda_q8_1_layout_host, GGML_HIP_PTQ1_PT).
+ static constexpr __host__ __device__ bool ptq1_0_pt_enabled() {
+ #if defined(GGML_USE_HIP)
+     return false;
+@@ -65,6 +67,18 @@ static __device__ __forceinline__ int int4_at(const int4 & v, const int k) {
+     }
+ }
+ 
++// CUDA __byte_perm(x, y, s) for a constant nibble selector s (all nibbles 0..7). On AMD v_perm_b32 takes one
++// selector byte per output byte and numbers the bytes of its first source 4..7, so x and y swap places.
++template <uint32_t s>
++static __device__ __forceinline__ uint32_t ptq1_0_byte_perm(const uint32_t x, const uint32_t y) {
++#if defined(GGML_USE_HIP)
++    constexpr uint32_t sel = (s & 7) | ((s >> 4) & 7) << 8 | ((s >> 8) & 7) << 16 | ((s >> 12) & 7) << 24;
++    return __builtin_amdgcn_perm(y, x, sel);
++#else
++    return __byte_perm(x, y, s);
++#endif
++}
++
+ // one base-3 digit step on four bytes held as two 16-bit-lane words:
+ // returns the raw digits (0, 1, 2) as four unsigned bytes, advances the remainders.
+ // The digit bias is not applied here: the dot product uses the digits as-is with a mixed-sign
+@@ -75,7 +89,7 @@ static __device__ __forceinline__ uint32_t ptq1_0_trit_step(uint32_t & vlo, uint
+     const uint32_t whi = vhi * 3;
+     vlo = wlo & 0x00FF00FF;
+     vhi = whi & 0x00FF00FF;
+-    return __byte_perm(wlo, whi, 0x7531);
++    return ptq1_0_byte_perm<0x7531>(wlo, whi);
+ }
+ 
+ // Dot products of nrows PTQ1_0 blocks with the same block index of ncols
+@@ -134,8 +148,8 @@ static __device__ __forceinline__ void ptq1_0_pt_block_dot(
+ #pragma unroll
+         for (int g = 0; g < 4; ++g) {
+             const uint32_t packed = get_int_b4(bq[i]->qs, g);
+-            vlo[i][g] = __byte_perm(packed, 0, 0x4140);
+-            vhi[i][g] = __byte_perm(packed, 0, 0x4342);
++            vlo[i][g] = ptq1_0_byte_perm<0x4140>(packed, 0);
++            vhi[i][g] = ptq1_0_byte_perm<0x4342>(packed, 0);
+         }
+     }
+ #pragma unroll
+@@ -173,8 +187,8 @@ static __device__ __forceinline__ void ptq1_0_pt_block_dot(
+ #pragma unroll
+         for (int g = 0; g < 2; ++g) {
+             const uint32_t packed = get_int_b4(bq[i]->qs + 16, g);
+-            vlo2[i][g] = __byte_perm(packed, 0, 0x4140);
+-            vhi2[i][g] = __byte_perm(packed, 0, 0x4342);
++            vlo2[i][g] = ptq1_0_byte_perm<0x4140>(packed, 0);
++            vhi2[i][g] = ptq1_0_byte_perm<0x4342>(packed, 0);
+         }
+     }
+     int4 u2[ncols];
+@@ -205,16 +219,29 @@ static __device__ __forceinline__ void ptq1_0_pt_block_dot(
+ 
+     // qh: two bytes, four trits each, interleaved: element 120 + 2*t + h -> words 30, 31,
+     // the upper half of plane 7 that u2 still holds
++#if defined(GGML_USE_HIP)
++    // qh[0..1] and d are the 7th 32-bit word of the 28-byte block (blocks are 4-byte aligned): one dword load
++    // instead of two byte loads and a short load
++    uint32_t w6[nrows];
+ #pragma unroll
+     for (int i = 0; i < nrows; ++i) {
++        w6[i] = get_int_b4(bq[i], 6);
++    }
++#endif
++#pragma unroll
++    for (int i = 0; i < nrows; ++i) {
++#if defined(GGML_USE_HIP)
++        uint32_t v = ptq1_0_byte_perm<0x4140>(w6[i], 0);
++#else
+         uint32_t v = (uint32_t) bq[i]->qh[0] | ((uint32_t) bq[i]->qh[1] << 16);
++#endif
+ #pragma unroll
+         for (int t = 0; t < 4; t += 2) {
+             const uint32_t w0 = v * 3;
+             v                 = w0 & 0x00FF00FF;
+             const uint32_t w1 = v * 3;
+             v                 = w1 & 0x00FF00FF;
+-            const uint32_t q = __byte_perm(w0, w1, 0x7531);
++            const uint32_t q = ptq1_0_byte_perm<0x7531>(w0, w1);
+ #pragma unroll
+             for (int j = 0; j < ncols; ++j) {
+                 sumi[j][i] = ggml_cuda_dp4a_us(q, int4_at(u2[j], 2 + t/2), sumi[j][i]);
+@@ -227,7 +254,11 @@ static __device__ __forceinline__ void ptq1_0_pt_block_dot(
+     for (int j = 0; j < ncols; ++j) {
+ #pragma unroll
+         for (int i = 0; i < nrows; ++i) {
++#if defined(GGML_USE_HIP)
++            result[j][i] = __fmul_rn(__half2float(__ushort_as_half((unsigned short) (w6[i] >> 16))), acc[j][i]);
++#else
+             result[j][i] = __fmul_rn((float) bq[i]->d, acc[j][i]);
++#endif
+         }
+     }
+ }
+@@ -290,10 +321,17 @@ static constexpr __host__ __device__ int ptq1_0_pt_rows_per_item(const int ncols
+ 
+ // The one-row tile is tuned on sm_86. Other devices keep the four-row baseline,
+ // including Hopper when GGML_CUDA_BATCH_INVARIANT selects this planar path.
++// AMD (RDNA3/RDNA4) also takes the one-row tile: gfx1100 needs 157 VGPRs for the four-row
++// one-column kernel and spills (256 + 39) in its gate-fused variant, 82-88 with one row.
++// GGML_HIP_PTQ1_PT_ROWS1=4 restores the four-row tile for an A/B.
+ static __host__ int ptq1_0_pt_rows_per_item_for_cc(const int ncols_dst, const int cc) {
+     if (ncols_dst == 1 && GGML_CUDA_CC_IS_NVIDIA(cc) && cc == 860) {
+         return PTQ1_0_PT_ROWS_1;
+     }
++    if (ncols_dst == 1 && GGML_CUDA_CC_IS_AMD(cc)) {
++        static const bool four = getenv("GGML_HIP_PTQ1_PT_ROWS1") != nullptr && atoi(getenv("GGML_HIP_PTQ1_PT_ROWS1")) == 4;
++        return four ? ptq1_0_pt_rows_per_item(1) : PTQ1_0_PT_ROWS_1;
++    }
+     return ptq1_0_pt_rows_per_item(ncols_dst);
+ }
+ 
+@@ -535,24 +573,30 @@ static void mul_mat_vec_ptq1_0_pt_launch(
+ #undef PTQ1_0_PT_LAUNCH
+ }
+ 
++// true when the dedicated kernel accepts a plain 2D call of this shape: K a multiple of 128, 1-8 columns,
++// partials within the device's shared memory per block
++static bool ptq1_0_pt_supported(const int ncols_x, const int nrows_x, const int ncols_dst, const bool has_gate) {
++    if (ncols_x % QK_PTQ1_0 != 0 || ncols_dst < 1 || ncols_dst > PTQ1_0_PT_MAX_COLS) {
++        return false;
++    }
++    const int device = ggml_cuda_get_device();
++    const int cc = ggml_cuda_info().devices[device].cc;
++    const size_t smem = ptq1_0_pt_smem_bytes(ncols_x / QK_PTQ1_0, ncols_dst, nrows_x,
++            ptq1_0_pt_rows_per_item_for_cc(ncols_dst, cc), has_gate);
++    return smem <= ggml_cuda_info().devices[device].smpb;
++}
++
+ // true when the dedicated kernel handles this call (plain 2D, K a multiple of 128, up to 8 columns)
+ static bool mul_mat_vec_ptq1_0_pt_switch(
+         const void * vx, const void * vy, const ggml_cuda_mm_fusion_args_device & fusion, float * dst,
+         const int ncols_x, const int nrows_x, const int ncols_dst,
+         const int stride_row_x, const int stride_col_y, const int stride_col_dst,
+         const int nchannels_dst, const int nsamples_dst, cudaStream_t stream) {
+-    if (!ptq1_0_pt_enabled() || nchannels_dst != 1 || nsamples_dst != 1 || ncols_x % QK_PTQ1_0 != 0 ||
+-        ncols_dst < 1 || ncols_dst > PTQ1_0_PT_MAX_COLS) {
++    if (nchannels_dst != 1 || nsamples_dst != 1 || !ptq1_0_pt_supported(ncols_x, nrows_x, ncols_dst, fusion.gate != nullptr)) {
+         return false;
+     }
+-    const int device = ggml_cuda_get_device();
+-    const int cc = ggml_cuda_info().devices[device].cc;
++    const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
+     const int rows_per_item = ptq1_0_pt_rows_per_item_for_cc(ncols_dst, cc);
+-    const size_t smem = ptq1_0_pt_smem_bytes(ncols_x / QK_PTQ1_0, ncols_dst, nrows_x,
+-            rows_per_item, fusion.gate != nullptr);
+-    if (smem > ggml_cuda_info().devices[device].smpb) {
+-        return false;
+-    }
+     switch (ncols_dst) {
+         case 1:
+             if (rows_per_item == PTQ1_0_PT_ROWS_1) {
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index 6225fb6..9fb9738 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1574,6 +1574,19 @@ static void mul_mat_vec_q_switch_ncols_dst(
+         }
+ #endif
+     }
++#else
++    if constexpr (type == GGML_TYPE_PTQ1_0) {
++        // ggml_cuda_q8_1_layout_host picks PT on HIP only for shapes the dedicated planar kernel takes
++        // (GGML_HIP_PTQ1_PT); the generic kernel below reads PTQ1_0 activations as block_q8_1
++        if (y_layout == GGML_CUDA_Q8_1_PT) {
++            GGML_ASSERT(!ids);
++            const bool done = mul_mat_vec_ptq1_0_pt_switch(vx, vy, fusion, dst, ncols_x, nrows_x, ncols_dst,
++                                                           stride_row_x, stride_col_y, stride_col_dst,
++                                                           nchannels_dst, nsamples_dst, stream);
++            GGML_ASSERT(done && "PTQ1_0 PT layout without a matching planar kernel");
++            return;
++        }
++    }
+ #endif
+ 
+     const uint3 nchannels_y_fd   = ids ? init_fastdiv_values(nchannels_y) : make_uint3(0, 0, 0);
+@@ -2053,7 +2066,16 @@ void ggml_cuda_mul_mat_vec_q(
+     }
+ 
+     // Same (type, ncols_dst, ids) triple the kernel switch evaluates, so quantizer and kernel agree.
+-    const ggml_cuda_q8_1_layout y_layout = ggml_cuda_q8_1_layout_host(src0->type, (int) (ids ? ne2 : ne11), ids != nullptr, ne12 == 1 && ne13 == 1);
++    ggml_cuda_q8_1_layout y_layout = ggml_cuda_q8_1_layout_host(src0->type, (int) (ids ? ne2 : ne11), ids != nullptr, ne12 == 1 && ne13 == 1);
++#if defined(GGML_USE_HIP)
++    // shapes the dedicated planar kernel does not take (partials past shared memory, SWIGLU_CLAMP, which its
++    // epilogue lacks) keep block_q8_1
++    if (y_layout == GGML_CUDA_Q8_1_PT &&
++            (!ptq1_0_pt_supported((int) ne00, (int) ne01, (int) ne11, fusion_local.gate != nullptr) ||
++             (fusion_local.gate != nullptr && fusion_local.glu_op == GGML_GLU_OP_SWIGLU_CLAMP))) {
++        y_layout = GGML_CUDA_Q8_1_AOS;
++    }
++#endif
+ 
+     int64_t ne10_padded = GGML_PAD(ne10, MATRIX_ROW_PADDING);
+     if (y_layout == GGML_CUDA_Q8_1_SOA_ISUM) {
+diff --git a/ggml/src/ggml-cuda/vendors/hip.h b/ggml/src/ggml-cuda/vendors/hip.h
+index e5fcb35..27bf08a 100644
+--- a/ggml/src/ggml-cuda/vendors/hip.h
++++ b/ggml/src/ggml-cuda/vendors/hip.h
+@@ -64,6 +64,8 @@
+ #define cudaEventCreateWithFlags hipEventCreateWithFlags
+ #define cudaEventDisableTiming hipEventDisableTiming
+ #define cudaEventRecord hipEventRecord
++#define cudaEventCreate hipEventCreate
++#define cudaEventElapsedTime hipEventElapsedTime
+ #define cudaEventSynchronize hipEventSynchronize
+ #define cudaEvent_t hipEvent_t
+ #define cudaEventDestroy hipEventDestroy

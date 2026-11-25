@@ -1,0 +1,215 @@
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index ca9b88479..ec25c9e8d 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -170,13 +170,36 @@ static constexpr __host__ __device__ bool mmvq_has_multi(ggml_type type) {
+ 
+ static constexpr __host__ __device__ bool mmvq_wmma_has_type(const ggml_type type) {
+     return type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K || type == GGML_TYPE_IQ4_XS ||
+-           type == GGML_TYPE_Q3_K || type == GGML_TYPE_Q8_0 || type == GGML_TYPE_IQ4_NL;
++           type == GGML_TYPE_Q3_K || type == GGML_TYPE_Q8_0 || type == GGML_TYPE_IQ4_NL || type == GGML_TYPE_Q2_0;
+ }
+ 
+ static constexpr __host__ __device__ int mmvq_wmma_min_ncols(const ggml_type type) {
+     return type == GGML_TYPE_Q6_K ? MMVQ_WMMA_MIN_NCOLS_Q6K : MMVQ_WMMA_MIN_NCOLS;
+ }
+ 
++// [GGML_HIP_BZ16] Q2_0 (Bonsai) verify windows of 9-16 tokens through the WMMA kernel instead of MMQ (whose 64-row
++// tiles made a 10-16 token step ~3x the 8-token one). GGML_HIP_BZ16=0: Q2_0 keeps MMQ above 8 columns (A/B).
++// GGML_HIP_BZ16_MIN=n: Q2_0 takes the WMMA kernel from n (>= 2) columns on (default MMVQ_WMMA_MIN_NCOLS) to compare it
++// with the dp4a kernel at 2-8 columns.
++static bool mmvq_wmma_type_enabled(const ggml_type type) {
++    if (type == GGML_TYPE_Q2_0) {
++        static const bool on = ggml_cuda_env_switch("GGML_HIP_BZ16");
++        return on;
++    }
++    return mmvq_wmma_has_type(type);
++}
++
++static int mmvq_wmma_min_ncols_host(const ggml_type type) {
++    if (type == GGML_TYPE_Q2_0) {
++        static const int n = [] {
++            const char * env = getenv("GGML_HIP_BZ16_MIN");
++            return env ? std::max(2, atoi(env)) : MMVQ_WMMA_MIN_NCOLS;
++        }();
++        return n;
++    }
++    return mmvq_wmma_min_ncols(type);
++}
++
+ // Byte-offset loads for the multi path: a block-uniform source (row of x / column of y) plus a 32-bit per-thread
+ // byte offset. On RDNA3 the sources are raw buffer resources in SGPRs, so every load is `buffer_load voffset, srsrc,
+ // soffset` and the loop only advances the shared 32-bit offsets; with plain pointers the compiler hoists one 64-bit
+@@ -1209,7 +1232,7 @@ bool ggml_cuda_should_use_mmvq(enum ggml_type type, int cc, int64_t ne11) {
+     // RDNA3, 9-16 columns: the WMMA kernel and the multi-column kernels (see MMVQ_R3_MULTI_MAX_NCOLS); MMQ is up to
+     // 2x slower there (its 64-row tiles leave the 5120-row matrices with less than one block per CU)
+     if (GGML_CUDA_CC_IS_RDNA3_0(cc) && ne11 > MMVQ_MAX_BATCH_SIZE) {
+-        return (mmvq_wmma_has_type(type) && ne11 <= MMVQ_MAX_BATCH_SIZE_WIDE) ||
++        return (mmvq_wmma_type_enabled(type) && ne11 <= MMVQ_MAX_BATCH_SIZE_WIDE) ||
+                (mmvq_has_multi(type) && ne11 <= MMVQ_R3_MULTI_MAX_NCOLS);
+     }
+     // k-quants cost more to decode and mvq redoes that per column, so MMQ wins sooner.
+@@ -3162,8 +3185,8 @@ static void mul_mat_vec_q_switch_type(
+ #endif
+ 
+ static bool mmvq_wmma_use(const ggml_type type, const int cc, const int64_t ncols_dst) {
+-    return GGML_CUDA_CC_IS_RDNA3_0(cc) && mmvq_wmma_has_type(type) &&
+-           ncols_dst >= mmvq_wmma_min_ncols(type) && ncols_dst <= MMVQ_MAX_BATCH_SIZE_WIDE;
++    return GGML_CUDA_CC_IS_RDNA3_0(cc) && mmvq_wmma_type_enabled(type) &&
++           ncols_dst >= mmvq_wmma_min_ncols_host(type) && ncols_dst <= MMVQ_MAX_BATCH_SIZE_WIDE;
+ }
+ 
+ #if defined(GGML_USE_HIP)
+@@ -3212,6 +3235,32 @@ static __device__ __forceinline__ mmvq_wmma_i4 mmvq_wmma_iq4_lut(const int4 q4,
+     return b;
+ }
+ 
++// Q2_0: the 16 crumbs of q (byte m: values 4m..4m+3 of this lane half, low bits first) as the int8 values -1..2 in
++// value order (b[k] byte i = value 4k + i): a 4x4 byte transpose of the crumb planes, then the crumb -> value table.
++static __device__ __forceinline__ mmvq_wmma_i4 mmvq_wmma_q2_0_b(const uint32_t q) {
++    const uint32_t c0 = q        & 0x03030303; // byte m: crumb 0 of byte m (value 4m)
++    const uint32_t c1 = (q >> 2) & 0x03030303;
++    const uint32_t c2 = (q >> 4) & 0x03030303;
++    const uint32_t c3 = (q >> 6) & 0x03030303;
++    const uint32_t t0 = __builtin_amdgcn_perm(c1, c0, 0x05010400); // c0.b0 c1.b0 c0.b1 c1.b1
++    const uint32_t t1 = __builtin_amdgcn_perm(c1, c0, 0x07030602); // c0.b2 c1.b2 c0.b3 c1.b3
++    const uint32_t t2 = __builtin_amdgcn_perm(c3, c2, 0x05010400); // c2.b0 c3.b0 c2.b1 c3.b1
++    const uint32_t t3 = __builtin_amdgcn_perm(c3, c2, 0x07030602); // c2.b2 c3.b2 c2.b3 c3.b3
++    const uint32_t s[4] = {
++        __builtin_amdgcn_perm(t2, t0, 0x05040100), // c0.b0 c1.b0 c2.b0 c3.b0: values 0-3
++        __builtin_amdgcn_perm(t2, t0, 0x07060302), // values 4-7
++        __builtin_amdgcn_perm(t3, t1, 0x05040100), // values 8-11
++        __builtin_amdgcn_perm(t3, t1, 0x07060302), // values 12-15
++    };
++    constexpr uint32_t lut = 0x020100FF; // crumb 0, 1, 2, 3 -> -1, 0, 1, 2
++    mmvq_wmma_i4 b;
++#pragma unroll
++    for (int k = 0; k < 4; ++k) {
++        b[k] = __builtin_amdgcn_perm(lut, lut, s[k]);
++    }
++    return b;
++}
++
+ // As mmvq_wmma_sub_block, but the two halves of the sub-block in separate results (Q6_K: one scale per 16 values):
+ // d1 = this lane half's values, d2 = the other half's.
+ static __device__ __forceinline__ void mmvq_wmma_sub_block2(const mmvq_wmma_i4 a, const mmvq_wmma_i4 b,
+@@ -3301,6 +3350,8 @@ static __global__ void mul_mat_vec_q_wmma(
+         [[maybe_unused]] int    sc3[4]; // Q3_K: the 16 scales (+32), one byte each
+         [[maybe_unused]] float  d3;     // Q3_K: d
+         [[maybe_unused]] int2   hdr4;   // IQ4_XS: d, scales_h, scales_l[4]
++        [[maybe_unused]] uint32_t q2w[17]; // Q2_0: the super-block's dwords, shifted by one for lane half 1
++        [[maybe_unused]] float    q2d[4];  // Q2_0: d of the 4 blocks
+         [[maybe_unused]] float2 dm;
+         if constexpr (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K) {
+             hdr = mmvq_ld<int4, 4>(xs, xb);
+@@ -3332,6 +3383,31 @@ static __global__ void mul_mat_vec_q_wmma(
+             d3 = __half2float(mmvq_ld<half, 2>(xs, xb + offsetof(block_q3_K, d)));
+         } else if constexpr (type == GGML_TYPE_IQ4_XS) {
+             hdr4 = mmvq_ld<int2, 4>(xs, xb);
++        } else if constexpr (type == GGML_TYPE_Q2_0) {
++            // the 4 blocks (d, qs[16]: 18 bytes each, 72 per super-block) of this lane's row as 18 dwords
++            int w[18];
++            if (8*kb + 8 <= nsb_row) {
++                mmvq_ld_ints<18, 2>(xs, xb, w);
++            } else {
++                // last super-block of a row whose length is not a multiple of QK_K: only the blocks of the row (the
++                // last dword may cover 2 bytes past it, inside the row padding of the allocation)
++                const int nbytes = 18*((nsb_row - 8*kb)/2);
++#pragma unroll
++                for (int k = 0; k < 18; ++k) {
++                    w[k] = 4*k < nbytes ? mmvq_ld<int, 2>(xs, xb + 4*k) : 0;
++                }
++            }
++#pragma unroll
++            for (int b = 0; b < 4; ++b) {
++                const uint32_t dw = w[18*b/4]; // d of block b at byte 18b: low half (b even) or high half (b odd)
++                q2d[b] = __half2float(__ushort_as_half((unsigned short) ((18*b) % 4 ? dw >> 16 : dw)));
++            }
++            // lane half h reads qs bytes 8j + 4h.. of each block: shift the dwords by one for h = 1 here (v_cndmask)
++            // so that the per-block extraction below indexes registers with constants only
++#pragma unroll
++            for (int k = 0; k < 17; ++k) {
++                q2w[k] = h ? w[k + 1] : w[k];
++            }
+         }
+ 
+ #pragma unroll
+@@ -3389,6 +3465,20 @@ static __global__ void mul_mat_vec_q_wmma(
+                     dp[0] = __half2float(mmvq_ld<half, 2>(xs, o));
+                 }
+             }
++            if constexpr (type == GGML_TYPE_Q2_0) {
++                // block p = sub-blocks 2p, 2p + 1, one scale: lane half h takes qs bytes 8j + 4h.. (values 16h..16h+15 of
++                // sub-block 2p + j) at byte 18p + 2 + 8j of q2w (the h shift is already in q2w)
++                if (8*kb + 2*p < nsb_row) {
++#pragma unroll
++                    for (int j = 0; j < 2; ++j) {
++                        const int B = 18*p + 2 + 8*j;
++                        const int i = B/4;
++                        const uint32_t qd = B % 4 ? __builtin_amdgcn_alignbyte(q2w[i + (B % 4 ? 1 : 0)], q2w[i], B % 4) : q2w[i];
++                        bp[j] = mmvq_wmma_q2_0_b(qd);
++                        dp[j] = q2d[p];
++                    }
++                }
++            }
+ 
+             const uint32_t yb = ycol + uint32_t(8*kb + 2*p)*qbs;
+             // scale and sum of this lane's column for sub-block 2p + h
+@@ -3396,7 +3486,7 @@ static __global__ void mul_mat_vec_q_wmma(
+ #pragma unroll
+             for (int j = 0; j < 2; ++j) {
+                 const int s = 2*p + j; // sub-block in the super-block
+-                if constexpr (qk == QK8_1) {
++                if constexpr (qk < QK_K) {
+                     if (8*kb + s >= nsb_row) {
+                         break; // past the end of a row whose length is not a multiple of QK_K
+                     }
+@@ -3484,7 +3574,8 @@ static __global__ void mul_mat_vec_q_wmma(
+                         const int ls = (scales_l & 0x0F) | (((scales_h >> 2*s) & 0x03) << 4);
+                         xd = __half2float(__builtin_bit_cast(half2, hdr4.x).x) * (ls - 32);
+                     } else {
+-                        static_assert(type == GGML_TYPE_IQ4_NL || type == GGML_TYPE_Q8_0, "mul_mat_vec_q_wmma: unsupported type");
++                        static_assert(type == GGML_TYPE_IQ4_NL || type == GGML_TYPE_Q8_0 || type == GGML_TYPE_Q2_0,
++                                      "mul_mat_vec_q_wmma: unsupported type");
+                         b  = bp[j];
+                         xd = dp[j];
+                     }
+@@ -4349,6 +4440,7 @@ void ggml_cuda_mul_mat_vec_q(
+             MMVQ_WMMA_CASE(GGML_TYPE_Q3_K);
+             MMVQ_WMMA_CASE(GGML_TYPE_Q8_0);
+             MMVQ_WMMA_CASE(GGML_TYPE_IQ4_NL);
++            MMVQ_WMMA_CASE(GGML_TYPE_Q2_0);
+ #undef MMVQ_WMMA_CASE
+             default:
+                 GGML_ABORT("fatal error");
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index d48e9c8b8..781c14478 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -11620,7 +11620,12 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+                 test_cases.emplace_back(new test_mul_mat(type_a, GGML_TYPE_F32, 100, n, 96, {1, 1}, {1, 1}));
+             }
+         }
+-        for (ggml_type type_a : {GGML_TYPE_Q4_0, GGML_TYPE_Q8_0, GGML_TYPE_Q5_K, GGML_TYPE_F16}) {
++        // Q2_0 (Bonsai) verify windows: the RDNA3 WMMA kernel at 9-16 columns (GGML_HIP_BZ16), odd row counts and K with a
++        // partial last super-block (576 = 2*256 + 64, 320, 64)
++        for (auto [m, k] : std::vector<std::pair<int64_t, int64_t>>{{67, 576}, {33, 320}, {17, 64}, {1000, 5120}, {130, 17408}}) {
++            test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q2_0, GGML_TYPE_F32, m, n, k, {1, 1}, {1, 1}));
++        }
++        for (ggml_type type_a : {GGML_TYPE_Q4_0, GGML_TYPE_Q8_0, GGML_TYPE_Q5_K, GGML_TYPE_F16, GGML_TYPE_Q2_0}) {
+             for (mul_mat_add_mode mode : {MUL_MAT_ADD_MM_RES, MUL_MAT_ADD_RES_MM, MUL_MAT_ADD_ROW, MUL_MAT_ADD_RES_INPLACE, MUL_MAT_ADD_MM_MM}) {
+                 test_cases.emplace_back(new test_mul_mat_add(type_a, 1000, n, 1024, mode));
+             }
+@@ -12973,6 +12978,12 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+ // Test cases for performance evaluation: should be representative of real-world use cases
+ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+     std::vector<std::unique_ptr<test_case>> test_cases;
++    // Q2_0 (Bonsai 27B) at speculative verify widths: projection shapes and the vocab head (GGML_HIP_BZ16 A/B)
++    for (int64_t n : {1, 4, 8, 9, 10, 12, 16}) {
++        for (auto [m, k] : std::vector<std::pair<int64_t, int64_t>>{{17408, 5120}, {5120, 17408}, {10240, 5120}, {6144, 5120}, {5120, 6144}, {248320, 5120}}) {
++            test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q2_0, GGML_TYPE_F32, m, n, k, {1, 1}, {1, 1}));
++        }
++    }
+ 
+     // SWIGLU at a 27B-class FFN width, fused [gate|up] vs split operands
+     // note: same bytes either way, so a backend that indexes them differently shows it here
