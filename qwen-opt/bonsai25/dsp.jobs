@@ -1,0 +1,22 @@
+# Real DFlash2 acceptance on Bonsai 2.5 Uncensored after E1 (2026-11-25, drafter-plan.md): topka-dsp = topka-rt 6c2c507e6 +
+# draft graphs use the ctx_other target's prism.hadamard transforms (inverse for the borrowed token_embd, forward for
+# the borrowed tied output). wall.py T=0 and T=0.7 (top-k 20 / top-p 0.95 explicit; min_p 0.05 GGUF default), acceptance per request.
+# 1) target path unchanged: plain greedy md5 topka-dsp == topka-k157
+dsp-plain|600|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin MD5=1 ./drafter-gate.sh dsp-plain none 0
+dsp-plain-k157|600|~/qwen-opt/bonsai25|MD5=1 ./drafter-gate.sh k157-plain none 0
+# 2) baseline MTP n2 on the same binary: production (lookup W16) and without lookup (clean drafter acceptance)
+dsp-mtp2|600|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin MD5=1 ./drafter-gate.sh dsp-mtp2 mtp 2
+dsp-mtp2-nolk|600|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin LOOKUP=0 ./drafter-gate.sh dsp-mtp2-nolk mtp 2
+# 3) DFlash2 (Q4_K_M, borrows token_embd + output from the target), no lookup, width 3/5/7, selector-confidence cut, PM4 off fallback
+dsp-df3|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin LOOKUP=0 MD5=1 ./drafter-gate.sh dsp-df3 dflash 3 --spec-draft-p-min 0
+dsp-df5|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin LOOKUP=0 MD5=1 ./drafter-gate.sh dsp-df5 dflash 5 --spec-draft-p-min 0
+dsp-df7|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin LOOKUP=0 MD5=1 ./drafter-gate.sh dsp-df7 dflash 7 --spec-draft-p-min 0
+dsp-df7-p5|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin LOOKUP=0 ./drafter-gate.sh dsp-df7-p5 dflash 7 --spec-draft-p-min 0.5
+dsp-df5-pm0|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin PM4=0 LOOKUP=0 ./drafter-gate.sh dsp-df5-pm0 dflash 5 --spec-draft-p-min 0
+# 4) DSpark (magnitudedev Qwen3.8-27B-DSpark-Q8_0.gguf, 1,455,376,672 B; RadixArk v1 lineage, 5 taps, Markov + confidence
+#    head, block 7): fixed width 7, then confidence-head windows (topka cuts the block at the first conf < p-min, Nib uses 0.8)
+dsp-ds7|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin DS=$HOME/models/draft/Qwen3.8-27B-DSpark-Q8_0.gguf LOOKUP=0 MD5=1 ./drafter-gate.sh dsp-ds7 dspark 7 --spec-draft-p-min 0
+dsp-ds3|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin DS=$HOME/models/draft/Qwen3.8-27B-DSpark-Q8_0.gguf LOOKUP=0 ./drafter-gate.sh dsp-ds3 dspark 3 --spec-draft-p-min 0
+dsp-ds7-c5|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin DS=$HOME/models/draft/Qwen3.8-27B-DSpark-Q8_0.gguf LOOKUP=0 ./drafter-gate.sh dsp-ds7-c5 dspark 7 --spec-draft-p-min 0.5
+dsp-ds7-c8|900|~/qwen-opt/bonsai25|BIN=$HOME/wt/topka-dsp/build-hip/bin DS=$HOME/models/draft/Qwen3.8-27B-DSpark-Q8_0.gguf LOOKUP=0 ./drafter-gate.sh dsp-ds7-c8 dspark 7 --spec-draft-p-min 0.8
+restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

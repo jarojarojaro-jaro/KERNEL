@@ -1,0 +1,513 @@
+diff --git a/common/speculative.cpp b/common/speculative.cpp
+index 8ea4f091b..e29ae5c8a 100644
+--- a/common/speculative.cpp
++++ b/common/speculative.cpp
+@@ -2829,12 +2829,31 @@ struct common_speculative_impl_ngram_cache : public common_speculative_impl {
+ //   3: tail + drafter-free chains: after a fully accepted block of the full width, the next block is lookup tokens
+ //      only and the drafter is skipped, until the first rejection (the MTP catch-up in process() covers the rows)
+ // Verification is unchanged, so the lookup tokens are verified like any draft (exact with sample-and-match).
++// Two more tail sources (mode >= 2, tried in this order when the tail above does not fire; drafts only, so lossless):
++//   LLAMA_SPEC_LOOKUP_AGREE=1 (K-018, AGR2): among the <= 64 most recent earlier occurrences of the last
++//      LLAMA_SPEC_LOOKUP_AGREE_N (2 or 4, default 2) tokens, keep those whose continuation starts with the drafter's
++//      drafts (at least LLAMA_SPEC_LOOKUP_AGREE_K of them, default 4), take the longest suffix match, then the most
++//      recent, and append its continuation as the tail (no m >= MMIN rule: the drafts are the evidence)
++//   LLAMA_SPEC_SUFFIX=1 (K-019, SuffixDecoding style): a cache of the outputs of earlier requests of this server; a
++//      candidate with suffix match >= MMIN whose continuation starts with the drafts gives the tail.
++//      LLAMA_SPEC_SUFFIX_FILE=f.ids: int32 tokens (-1 between outputs) loaded at start, every finished output
++//      appended; LLAMA_SPEC_SUFFIX_TEXT=f.txt seeds an empty/missing f.ids (outputs separated by 0x1E, tokenized with
++//      special tokens at start); LLAMA_SPEC_SUFFIX_MAX = most tokens kept (default 33554432); LLAMA_SPEC_SUFFIX_LIVE=0:
++//      this server's outputs are not added (the cache stays what the file held, for A/B on a fixed corpus)
+ struct common_spec_lookup_cfg {
+     int  mode  = 0;
+     int  width = 8;
+     int  m_min = 6;
+     bool log_prompt = false;
+     std::string log_path;
++    int  agree   = 0;
++    int  agree_n = 2;
++    int  agree_k = 4;
++    int  suffix  = 0;
++    std::string suffix_file;
++    std::string suffix_text;
++    int64_t suffix_max = 33554432;
++    bool    suffix_live = true;
+ 
+     static const common_spec_lookup_cfg & get() {
+         static const common_spec_lookup_cfg cfg = [] {
+@@ -2844,6 +2863,14 @@ struct common_spec_lookup_cfg {
+             if (const char * e = getenv("LLAMA_SPEC_LOOKUP_MMIN"))  { c.m_min = std::clamp(atoi(e), 4, 12); }
+             if (const char * e = getenv("LLAMA_SPEC_LOOKUP_LOG"))   { c.log_path = e; }
+             if (const char * e = getenv("LLAMA_SPEC_LOOKUP_LOG_PROMPT")) { c.log_prompt = atoi(e) != 0; }
++            if (const char * e = getenv("LLAMA_SPEC_LOOKUP_AGREE"))   { c.agree   = atoi(e) != 0; }
++            if (const char * e = getenv("LLAMA_SPEC_LOOKUP_AGREE_N")) { c.agree_n = atoi(e) >= 4 ? 4 : 2; }
++            if (const char * e = getenv("LLAMA_SPEC_LOOKUP_AGREE_K")) { c.agree_k = std::clamp(atoi(e), 1, 16); }
++            if (const char * e = getenv("LLAMA_SPEC_SUFFIX"))       { c.suffix = atoi(e) != 0; }
++            if (const char * e = getenv("LLAMA_SPEC_SUFFIX_FILE"))  { c.suffix_file = e; }
++            if (const char * e = getenv("LLAMA_SPEC_SUFFIX_TEXT"))  { c.suffix_text = e; }
++            if (const char * e = getenv("LLAMA_SPEC_SUFFIX_MAX"))   { c.suffix_max = std::max<int64_t>(1 << 16, atoll(e)); }
++            if (const char * e = getenv("LLAMA_SPEC_SUFFIX_LIVE"))  { c.suffix_live = atoi(e) != 0; }
+             return c;
+         }();
+         return cfg;
+@@ -2861,13 +2888,16 @@ struct common_spec_lookup {
+     static constexpr int CAND = 64; // most recent occurrences of the n-gram tried
+     static constexpr int KMAX = 15; // continuation tokens kept (log)
+ 
+-    enum kind_t { KIND_DRAFTER = 0, KIND_TAIL = 1, KIND_CHAIN = 2 };
++    enum kind_t { KIND_DRAFTER = 0, KIND_TAIL = 1, KIND_CHAIN = 2, KIND_AGREE = 3, KIND_SUFFIX = 4 };
+ 
+     struct seq_state {
+         // tokens at positions 0 .. h.size()-1, the last one is the id_last of the latest draft
+         std::vector<llama_token> h;
+         std::vector<int32_t>     prev;  // prev[e]: previous end of the same n-gram hash as the one ending at e, -1 none
+         std::unordered_map<uint64_t, int32_t> head;
++        std::vector<int32_t>     prev2; // the same for 2-grams (LLAMA_SPEC_LOOKUP_AGREE with AGREE_N 2)
++        std::unordered_map<uint32_t, int32_t> head2;
++        size_t  n_prompt = 0;           // h[n_prompt..] is this request's output (the suffix cache takes it)
+         bool valid = false;
+ 
+         // the latest step: what was sent to verification and how it came about
+@@ -2881,30 +2911,139 @@ struct common_spec_lookup {
+         int64_t req    = 0;
+     };
+ 
++    // LLAMA_SPEC_SUFFIX: outputs of earlier requests, -1 between them; 4-gram chains in a fixed bucket table (bucket
++    // collisions only cost candidate slots: every candidate is compared token by token)
++    struct suffix_store {
++        static constexpr int BITS = 24;
++        std::vector<llama_token> h;
++        std::vector<int32_t>     prev;
++        std::vector<int32_t>     head;
++        FILE * fsave = nullptr;
++        size_t n_max = 0;
++        bool   full  = false;
++
++        static uint32_t bucket(uint64_t x) { return (uint32_t) (x >> (64 - BITS)); }
++
++        void push(llama_token t) {
++            h.push_back(t);
++            prev.push_back(-1);
++            const int32_t e = (int32_t) h.size() - 1;
++            if (e >= NMIN - 1 && h[e] >= 0 && h[e - 1] >= 0 && h[e - 2] >= 0 && h[e - 3] >= 0) {
++                const uint32_t b = bucket(hash_at(h, e));
++                prev[e] = head[b];
++                head[b] = e;
++            }
++        }
++
++        // one output: kept while there is room, saved to LLAMA_SPEC_SUFFIX_FILE
++        void add(const llama_token * p, size_t n) {
++            if (n == 0 || full) {
++                return;
++            }
++            if (h.size() + n + 1 > n_max) {
++                full = true;
++                SPC_WRN("suffix cache full (%zu tokens), later outputs are not added\n", h.size());
++                return;
++            }
++            for (size_t i = 0; i < n; ++i) {
++                push(p[i]);
++            }
++            push(-1);
++            if (fsave) {
++                const llama_token sep = -1;
++                fwrite(p, sizeof(llama_token), n, fsave);
++                fwrite(&sep, sizeof(llama_token), 1, fsave);
++                fflush(fsave);
++            }
++        }
++    };
++
+     const common_spec_lookup_cfg & cfg;
+     std::vector<seq_state> seqs;
++    std::unique_ptr<suffix_store> store;
+     FILE * flog = nullptr;
+     int64_t n_req = 0;
+ 
+     // totals since start
+     int64_t n_steps = 0, n_prop = 0, n_tail = 0, n_chain = 0, n_tail_tok = 0, n_tail_acc = 0, n_chain_tok = 0,
+             n_chain_acc = 0, n_invalid = 0, t_us = 0;
++    int64_t n_agr = 0, n_agr_tok = 0, n_agr_acc = 0, n_sfx = 0, n_sfx_tok = 0, n_sfx_acc = 0;
+ 
+-    common_spec_lookup(uint32_t n_seq) : cfg(common_spec_lookup_cfg::get()), seqs(n_seq) {
++    common_spec_lookup(uint32_t n_seq, const llama_vocab * vocab) : cfg(common_spec_lookup_cfg::get()), seqs(n_seq) {
+         if (!cfg.log_path.empty()) {
+             flog = fopen(cfg.log_path.c_str(), "a");
+             if (!flog) {
+                 SPC_WRN("cannot open lookup log '%s'\n", cfg.log_path.c_str());
+             }
+         }
+-        SPC_INF("context lookup: mode %d, width %d, tail match >= %d, log '%s'\n", cfg.mode, cfg.width, cfg.m_min,
+-                cfg.log_path.c_str());
++        SPC_INF("context lookup: mode %d, width %d, tail match >= %d, log '%s', agree %d (n %d, k %d), suffix cache %d\n",
++                cfg.mode, cfg.width, cfg.m_min, cfg.log_path.c_str(), cfg.agree, cfg.agree_n, cfg.agree_k, cfg.suffix);
++        if (cfg.suffix) {
++            init_store(vocab);
++        }
+     }
+ 
+     ~common_spec_lookup() {
+         if (flog) {
+             fclose(flog);
+         }
++        if (store && store->fsave) {
++            fclose(store->fsave);
++        }
++    }
++
++    void init_store(const llama_vocab * vocab) {
++        const int64_t t0 = ggml_time_us();
++        store = std::make_unique<suffix_store>();
++        store->n_max = (size_t) cfg.suffix_max;
++        store->head.assign((size_t) 1 << suffix_store::BITS, -1);
++        std::vector<llama_token> ids;
++        if (!cfg.suffix_file.empty()) {
++            if (FILE * f = fopen(cfg.suffix_file.c_str(), "rb")) {
++                fseek(f, 0, SEEK_END);
++                const long n = ftell(f) / (long) sizeof(llama_token);
++                fseek(f, 0, SEEK_SET);
++                ids.resize(std::max(0L, n));
++                ids.resize(fread(ids.data(), sizeof(llama_token), ids.size(), f));
++                fclose(f);
++            }
++        }
++        const bool seeded = ids.empty() && !cfg.suffix_text.empty();
++        if (seeded) {
++            std::ifstream in(cfg.suffix_text, std::ios::binary);
++            if (!in || !vocab) {
++                SPC_WRN("suffix cache: cannot read '%s' (or no vocab)\n", cfg.suffix_text.c_str());
++            } else {
++                std::string seg;
++                while (std::getline(in, seg, '\x1e')) {
++                    if (seg.empty()) {
++                        continue;
++                    }
++                    const auto t = common_tokenize(vocab, seg, false, true);
++                    ids.insert(ids.end(), t.begin(), t.end());
++                    ids.push_back(-1);
++                }
++            }
++        }
++        if (ids.size() > store->n_max / 2) { // keep the newest, leave room for this run's outputs
++            ids.erase(ids.begin(), ids.end() - (ptrdiff_t) (store->n_max / 2));
++        }
++        store->h.reserve(ids.size() + 1 + (1 << 20));
++        store->prev.reserve(ids.size() + 1 + (1 << 20));
++        for (llama_token t : ids) {
++            store->push(t);
++        }
++        if (!cfg.suffix_file.empty()) {
++            store->fsave = fopen(cfg.suffix_file.c_str(), seeded ? "wb" : "ab");
++            if (!store->fsave) {
++                SPC_WRN("suffix cache: cannot write '%s'\n", cfg.suffix_file.c_str());
++            } else if (seeded) {
++                fwrite(ids.data(), sizeof(llama_token), ids.size(), store->fsave);
++                fflush(store->fsave);
++            }
++        }
++        SPC_INF("suffix cache: %zu tokens (%s), file '%s', %.1f ms\n", store->h.size(), seeded ? "seeded from text" : "loaded",
++                cfg.suffix_file.c_str(), (ggml_time_us() - t0) / 1000.0);
+     }
+ 
+     static uint64_t hash_at(const std::vector<llama_token> & h, int32_t e) {
+@@ -2915,9 +3054,13 @@ struct common_spec_lookup {
+         return x;
+     }
+ 
++    static uint32_t hash2_at(const std::vector<llama_token> & h, int32_t e) {
++        return (uint32_t) h[e - 1] * 0x9E3779B1u ^ ((uint32_t) h[e] + 0x7F4A7C15u);
++    }
++
+     // append a token and index the n-gram ending before it: the n-gram ending at the last token is indexed only
+     // when the next one arrives, so that a query never finds the suffix itself
+-    static void push(seq_state & s, llama_token t) {
++    void push(seq_state & s, llama_token t) const {
+         const int32_t e = (int32_t) s.h.size() - 1;
+         if (e >= NMIN - 1) {
+             auto it = s.head.find(hash_at(s.h, e));
+@@ -2929,10 +3072,56 @@ struct common_spec_lookup {
+                 it->second = e;
+             }
+         }
++        if (cfg.agree && cfg.agree_n == 2) {
++            if (e >= 1) {
++                auto [it, fresh] = s.head2.try_emplace(hash2_at(s.h, e), e);
++                if (!fresh) {
++                    s.prev2[e] = it->second;
++                    it->second = e;
++                }
++            }
++            s.prev2.push_back(-1);
++        }
+         s.h.push_back(t);
+         s.prev.push_back(-1);
+     }
+ 
++    // among <= CAND candidate ends on a hash chain (starting at e, links in prev) in src: the one whose backward match
++    // with the suffix of q ending at q_last is longest (>= m_min; ties: the most recent, found first) and whose
++    // continuation (up to src_end inclusive, cut at a -1 separator, <= KMAX tokens) starts with r and is longer;
++    // returns the match length (0 = none) and the continuation in lu
++    static int match_chain(const std::vector<llama_token> & src, const std::vector<int32_t> & prev, int32_t e,
++                           int32_t src_end, const std::vector<llama_token> & q, int32_t q_last, const llama_tokens & r,
++                           int m_min, llama_tokens & lu) {
++        int best = 0, best_v = 0;
++        int32_t best_e = -1;
++        for (int n_cand = 0; e >= 0 && n_cand < CAND; e = prev[e], ++n_cand) {
++            int k = 0;
++            while (k < NMAX && e - k >= 0 && q_last - k >= 0 && src[e - k] == q[q_last - k]) {
++                ++k;
++            }
++            if (k < m_min || k <= best) {
++                continue;
++            }
++            int v = 0;
++            while (v < KMAX && e + 1 + v <= src_end && src[e + 1 + v] >= 0) {
++                ++v;
++            }
++            if (v <= (int) r.size() || !std::equal(r.begin(), r.end(), src.begin() + e + 1)) {
++                continue;
++            }
++            best = k; best_e = e; best_v = v;
++            if (k == NMAX) {
++                break;
++            }
++        }
++        lu.clear();
++        if (best_e >= 0) {
++            lu.assign(src.begin() + best_e + 1, src.begin() + best_e + 1 + best_v);
++        }
++        return best;
++    }
++
+     void begin(llama_seq_id seq_id, const llama_tokens & prompt) {
+         if (seq_id < 0 || seq_id >= (llama_seq_id) seqs.size()) {
+             return;
+@@ -2942,12 +3131,19 @@ struct common_spec_lookup {
+         }
+         const int64_t t0 = ggml_time_us();
+         auto & s = seqs[seq_id];
++        if (store && cfg.suffix_live && s.h.size() > s.n_prompt) {
++            store->add(s.h.data() + s.n_prompt, s.h.size() - s.n_prompt); // the previous request's output
++        }
+         s = seq_state();
+         s.h.reserve(prompt.size() + 4096);
+         s.prev.reserve(prompt.size() + 4096);
++        if (cfg.agree && cfg.agree_n == 2) {
++            s.prev2.reserve(prompt.size() + 4096);
++        }
+         for (llama_token t : prompt) {
+             push(s, t);
+         }
++        s.n_prompt = prompt.size();
+         s.valid = !prompt.empty();
+         s.n_acc = 0;
+         s.req   = ++n_req;
+@@ -3069,6 +3265,46 @@ struct common_spec_lookup {
+                     s.kind = KIND_TAIL;
+                 }
+             }
++            // K-018 agree tail, then the K-019 suffix cache, when the tail above did not fire
++            if (s.kind == KIND_DRAFTER && cfg.mode >= 2 && s.valid && !r.empty() && (cfg.agree || store) &&
++                    (!dp.result_q || dp.result_q->empty())) {
++                const int64_t t0 = ggml_time_us();
++                const int32_t last = (int32_t) s.h.size() - 1;
++                llama_tokens lu;
++                int m = 0, kind = KIND_DRAFTER;
++                if (cfg.agree && (int) r.size() >= cfg.agree_k && last >= NMIN) {
++                    int32_t e0 = -1;
++                    if (cfg.agree_n == 2) {
++                        const auto it = s.head2.find(hash2_at(s.h, last));
++                        e0 = it == s.head2.end() ? -1 : it->second;
++                    } else {
++                        const auto it = s.head.find(hash_at(s.h, last));
++                        e0 = it == s.head.end() ? -1 : it->second;
++                    }
++                    m = match_chain(s.h, cfg.agree_n == 2 ? s.prev2 : s.prev, e0, last, s.h, last, r, cfg.agree_n, lu);
++                    kind = m > 0 ? KIND_AGREE : KIND_DRAFTER;
++                }
++                if (kind == KIND_DRAFTER && store && last >= NMIN && !store->h.empty()) {
++                    const int32_t e0 = store->head[suffix_store::bucket(hash_at(s.h, last))];
++                    m = match_chain(store->h, store->prev, e0, (int32_t) store->h.size() - 1, s.h, last, r, cfg.m_min, lu);
++                    kind = m > 0 ? KIND_SUFFIX : KIND_DRAFTER;
++                }
++                if (kind != KIND_DRAFTER) {
++                    int k = std::min<int>((int) lu.size(), cfg.width - 1);
++                    if (dp.n_max > 0) {
++                        k = std::min(k, dp.n_max);
++                    }
++                    if (k > (int) r.size()) {
++                        (kind == KIND_AGREE ? n_agr : n_sfx)++;
++                        (kind == KIND_AGREE ? n_agr_tok : n_sfx_tok) += k - (int) r.size();
++                        r.insert(r.end(), lu.begin() + r.size(), lu.begin() + k);
++                        s.kind = kind;
++                        s.m    = m;
++                        s.lu   = std::move(lu);
++                    }
++                }
++                t_us += ggml_time_us() - t0;
++            }
+         }
+         if (s.valid && !s.lu.empty()) {
+             n_prop++;
+@@ -3088,6 +3324,10 @@ struct common_spec_lookup {
+             n_tail_acc += std::max(0, (int) n_accepted - s.n_drft);
+         } else if (s.kind == KIND_CHAIN) {
+             n_chain_acc += n_accepted;
++        } else if (s.kind == KIND_AGREE) {
++            n_agr_acc += std::max(0, (int) n_accepted - s.n_drft);
++        } else if (s.kind == KIND_SUFFIX) {
++            n_sfx_acc += std::max(0, (int) n_accepted - s.n_drft);
+         }
+         // a full-width block landed whole: the next block may come from the lookup alone
+         s.chain = cfg.mode >= 3 && s.kind != KIND_DRAFTER && n_accepted == (int) s.draft.size() &&
+@@ -3107,6 +3347,11 @@ struct common_spec_lookup {
+         SPC_INF("context lookup: %" PRId64 " steps, lookup proposed at %" PRId64 ", tails %" PRId64 " (%" PRId64 "/%" PRId64
+                 " tokens accepted), chains %" PRId64 " (%" PRId64 "/%" PRId64 "), lost history %" PRId64 ", host %.3f ms\n",
+                 n_steps, n_prop, n_tail, n_tail_acc, n_tail_tok, n_chain, n_chain_acc, n_chain_tok, n_invalid, t_us / 1000.0);
++        if (cfg.agree || store) {
++            SPC_INF("context lookup: agree tails %" PRId64 " (%" PRId64 "/%" PRId64 " tokens accepted), suffix-cache tails %" PRId64
++                    " (%" PRId64 "/%" PRId64 "), suffix cache %zu tokens\n", n_agr, n_agr_acc, n_agr_tok, n_sfx, n_sfx_acc,
++                    n_sfx_tok, store ? store->h.size() : (size_t) 0);
++        }
+     }
+ };
+ 
+@@ -3676,7 +3921,8 @@ common_speculative * common_speculative_init(common_params_speculative & params,
+             case COMMON_SPECULATIVE_TYPE_DRAFT_MTP:
+             case COMMON_SPECULATIVE_TYPE_DRAFT_DFLASH:
+             case COMMON_SPECULATIVE_TYPE_DRAFT_DSPARK: {
+-                result->lookup = std::make_unique<common_spec_lookup>(n_seq);
++                result->lookup = std::make_unique<common_spec_lookup>(n_seq,
++                        params.draft.ctx_tgt ? llama_model_get_vocab(llama_get_model(params.draft.ctx_tgt)) : nullptr);
+                 // a tail changes the verify width from step to step: keep a graph per width (LLAMA_VERIFY_SCHED=0: rebuild)
+                 const char * vs_env = getenv("LLAMA_VERIFY_SCHED");
+                 if (common_spec_lookup_n_max() > 0 && params.draft.ctx_tgt && (vs_env == nullptr || atoi(vs_env) != 0)) {
+diff --git a/tools/server/server-task.cpp b/tools/server/server-task.cpp
+index bba831f26..76b657d3c 100644
+--- a/tools/server/server-task.cpp
++++ b/tools/server/server-task.cpp
+@@ -1719,6 +1719,57 @@ size_t server_prompt_cache::n_tokens() const {
+     return res;
+ }
+ 
++// LLAMA_SERVER_CACHE_EVICT=cost (K-020, Marconi-style eviction; default: the oldest entry). Every entry scores
++//   age rank / (N - 1)  +  alpha * (prefill cost / bytes) / max over the cache (prefill cost / bytes)
++// (age rank 0 = oldest) and the lowest score goes first. Prefill cost t(n) = 0.99 ms * n + 4.08 ns * n^2 (XTX topka-q70
++// server prefill: 985 t/s at 6.6k, 493 t/s at 255k), so at the same age a long prompt (minutes to recompute) outlives
++// short ones, which are cheap to recompute per byte of state. LLAMA_SERVER_CACHE_EVICT_ALPHA = alpha (default 1).
++static bool cache_evict_cost() {
++    static const bool v = [] {
++        const char * e = getenv("LLAMA_SERVER_CACHE_EVICT");
++        return e && std::string(e) == "cost";
++    }();
++    return v;
++}
++
++std::list<server_prompt_cache_state>::iterator server_prompt_cache::victim() {
++    if (!cache_evict_cost() || states.size() < 2) {
++        return states.begin();
++    }
++    static const double alpha = [] {
++        const char * e = getenv("LLAMA_SERVER_CACHE_EVICT_ALPHA");
++        return e ? std::max(0.0, atof(e)) : 1.0;
++    }();
++    std::vector<double> eff;
++    eff.reserve(states.size());
++    double eff_max = 0.0;
++    for (const auto & state : states) {
++        const double n = state.prompt.n_tokens();
++        eff.push_back((0.99e-3 * n + 4.08e-9 * n * n) / std::max<double>(1.0, state.size()));
++        eff_max = std::max(eff_max, eff.back());
++    }
++    auto best = states.begin();
++    double best_score = 0.0;
++    size_t i = 0;
++    for (auto it = states.begin(); it != states.end(); ++it, ++i) {
++        const double score = double(i) / (states.size() - 1) + alpha * (eff_max > 0.0 ? eff[i] / eff_max : 0.0);
++        if (it == states.begin() || score < best_score) {
++            best = it;
++            best_score = score;
++        }
++    }
++    return best;
++}
++
++void server_prompt_cache::evict_log(const char * why, const server_prompt_cache_state & state) const {
++    if (cache_evict_cost()) {
++        SRV_WRN(" - %s, removing the entry cheapest to recompute (n_tokens = %d, size = %.3f MiB)\n", why,
++                state.prompt.n_tokens(), state.size() / (1024.0 * 1024.0));
++    } else {
++        SRV_WRN(" - %s, removing oldest entry (size = %.3f MiB)\n", why, state.size() / (1024.0 * 1024.0));
++    }
++}
++
+ server_prompt_cache_state * server_prompt_cache::alloc(const server_prompt & prompt, size_t state_size_tgt, size_t state_size_dft) {
+     // first check if the current state is contained fully in the cache
+     for (auto it = states.begin(); it != states.end(); ++it) {
+@@ -1766,16 +1817,16 @@ server_prompt_cache_state * server_prompt_cache::alloc(const server_prompt & pro
+     if (limit_size > 0) {
+         // make room before allocating the new vectors to avoid breaching the limit
+         while (!states.empty() && size() + state_size_new > limit_size) {
+-            SRV_WRN(" - making room for prompt cache entry, removing oldest entry (size = %.3f MiB)\n",
+-                    states.front().size() / (1024.0 * 1024.0));
++            const auto it = victim();
++            evict_log("making room for prompt cache entry", *it);
+ 
+-            auto & evicted = states.front().data.main;
++            auto & evicted = it->data.main;
+             if (common_state_huge_enabled() && state_data_tgt.capacity() == 0 &&
+                 evicted.capacity() >= state_size_tgt && evicted.capacity() <= state_size_tgt + state_size_tgt / 4) {
+                 state_data_tgt = std::move(evicted);
+             }
+ 
+-            states.pop_front();
++            states.erase(it);
+         }
+     }
+ 
+@@ -1959,9 +2010,10 @@ bool server_prompt_cache::load(server_prompt & prompt, const server_tokens & tok
+ void server_prompt_cache::update() {
+     if (limit_size > 0) {
+         while (!states.empty() && size() > limit_size) {
+-            SRV_WRN(" - cache size limit reached, removing oldest entry (size = %.3f MiB)\n", states.front().size() / (1024.0 * 1024.0));
++            const auto it = victim();
++            evict_log("cache size limit reached", *it);
+ 
+-            states.pop_front();
++            states.erase(it);
+         }
+     }
+ 
+@@ -1973,10 +2025,11 @@ void server_prompt_cache::update() {
+ 
+     if (limit_tokens > 0) {
+         while (!states.empty() && n_tokens() > limit_tokens_cur) {
+-            SRV_WRN(" - cache token limit (%zu, est: %zu) reached, removing oldest entry (size = %.3f MiB)\n",
+-                    limit_tokens, limit_tokens_cur, states.front().size() / (1024.0 * 1024.0));
++            const auto it = victim();
++            evict_log(("cache token limit (" + std::to_string(limit_tokens) + ", est: " + std::to_string(limit_tokens_cur) +
++                       ") reached").c_str(), *it);
+ 
+-            states.pop_front();
++            states.erase(it);
+         }
+     }
+ 
+diff --git a/tools/server/server-task.h b/tools/server/server-task.h
+index ad6645839..831f2b867 100644
+--- a/tools/server/server-task.h
++++ b/tools/server/server-task.h
+@@ -683,6 +683,13 @@ struct server_prompt_cache {
+ 
+     size_t n_tokens() const;
+ 
++    // the entry to evict next: the oldest, or with LLAMA_SERVER_CACHE_EVICT=cost the one cheapest to recompute per
++    // byte, weighted with its age (see server-task.cpp)
++    std::list<server_prompt_cache_state>::iterator victim();
++
++    // log one eviction (why: "making room for prompt cache entry", "cache size limit reached", ...)
++    void evict_log(const char * why, const server_prompt_cache_state & state) const;
++
+     server_prompt_cache_state * alloc(const server_prompt & prompt, size_t state_size_main, size_t state_size_drft);
+ 
+     // timing of the last alloc() (LLAMA_SERVER_AP_TIMING): checkpoint copy and state buffer allocation

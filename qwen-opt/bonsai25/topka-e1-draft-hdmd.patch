@@ -1,0 +1,171 @@
+From 431b9b0e7f55618124cc9a715922809cbe144c79 Mon Sep 17 00:00:00 2001
+From: jarojarojaro-jaro <miki.jaroszek@gmail.com>
+Date: Wed, 25 Nov 2026 17:15:58 +0000
+Subject: [PATCH] E1: draft graphs use the ctx_other target's prism.hadamard
+ transforms (inverse for the borrowed token_embd, forward for the borrowed
+ tied output); build_embd_rows in DFlash/DSpark/EAGLE-3; coverage check on
+ draft graphs
+
+---
+ src/llama-context.cpp | 23 ++++++++++++++++++++---
+ src/llama-context.h   |  5 +++++
+ src/llama-graph.cpp   | 28 +++++++++++++++++-----------
+ src/llama-graph.h     |  2 ++
+ src/models/dflash.cpp |  3 ++-
+ src/models/eagle3.cpp |  3 ++-
+ 6 files changed, 48 insertions(+), 16 deletions(-)
+
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index 400aa6170..2dbfa09c7 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -2992,8 +2992,11 @@ ggml_cgraph * llama_context::graph_reserve(
+     auto * gf = model.build_graph(gparams);
+ 
+     // check the graph before scheduling: cross-backend copies break the producer chain that the check follows
+-    if (!hadamard_verified && gf && (!model.hdmd.rot.empty() || !model.hdmd.inv.empty())) {
+-        llama_verify_hadamard_graph(gf, model.hdmd.rot, model.hdmd.inv, moe_cache.get());
++    // a draft borrowing a prism.hadamard target's tables is checked against the target's transforms
++    const llama_hadamard * hdmd_g = graph_hdmd();
++    const llama_hadamard & hdmd_v = hdmd_g ? *hdmd_g : model.hdmd;
++    if (!hadamard_verified && gf && (!hdmd_v.rot.empty() || !hdmd_v.inv.empty())) {
++        llama_verify_hadamard_graph(gf, hdmd_v.rot, hdmd_v.inv, moe_cache.get());
+         hadamard_verified = true;
+     }
+ 
+@@ -3035,7 +3038,7 @@ llm_graph_params llama_context::graph_params(
+         /*.cross       =*/ &cross,
+         /*.moe_cache   =*/ moe_cache.get(),
+         /*.prec_policy =*/ &model.prec_policy,
+-        /*.hdmd        =*/ model.hdmd.rot.empty() ? nullptr : &model.hdmd,
++        /*.hdmd        =*/ graph_hdmd(),
+         /*.samplers    =*/ sampling.samplers,
+         /*.n_outputs   =*/ n_outputs,
+         /*.cb          =*/ graph_get_cb(),
+@@ -3044,6 +3047,20 @@ llm_graph_params llama_context::graph_params(
+     };
+ }
+ 
++const llama_hadamard * llama_context::graph_hdmd() const {
++    if (!model.hdmd.rot.empty()) {
++        return &model.hdmd;
++    }
++    if (cparams.ctx_other != nullptr) {
++        const llama_model & other = cparams.ctx_other->get_model();
++        if (&other != &model && (!other.hdmd.rot.empty() || !other.hdmd.inv.empty())) {
++            // keyed by tensor pointer: the target's entries only match the target tensors the draft borrows
++            return &other.hdmd;
++        }
++    }
++    return nullptr;
++}
++
+ ggml_status llama_context::graph_compute(
+             ggml_cgraph * gf,
+                    bool   batched) {
+diff --git a/src/llama-context.h b/src/llama-context.h
+index 1c61a87c0..93bb203e6 100644
+--- a/src/llama-context.h
++++ b/src/llama-context.h
+@@ -293,6 +293,11 @@ private:
+             const llama_memory_context_i * mctx,
+                           llm_graph_type   gtype) const;
+ 
++    // prism.hadamard transforms this context's graphs consult: the model's own, else the ctx_other target's when this
++    // model (a DFlash/DSpark/EAGLE-3 draft) borrows that target's token embeddings or output head, which keep the
++    // target's folding; nullptr when neither model has any
++    const llama_hadamard * graph_hdmd() const;
++
+     llm_graph_cb graph_get_cb() const;
+ 
+     // ggml_backend_sched copy callback, copies only the experts used by MUL_MAT_ID and updates the MoE cache
+diff --git a/src/llama-graph.cpp b/src/llama-graph.cpp
+index c30fc6b75..6eb320c93 100644
+--- a/src/llama-graph.cpp
++++ b/src/llama-graph.cpp
+@@ -2560,6 +2560,22 @@ ggml_tensor * llm_graph_context::build_moe_cache_slots(
+     return ggml_reshape_2d(ctx0, slots, selected_experts->ne[0], selected_experts->ne[1]); // [n_expert_used, n_tokens]
+ }
+ 
++ggml_tensor * llm_graph_context::build_embd_rows(ggml_tensor * tok_embd, ggml_tensor * ids) const {
++    ggml_tensor * cur = ggml_get_rows(ctx0, tok_embd, ids);
++
++    // a Hadamard-latent table stores rotated rows: restore the primal basis, h = s * (H z)
++    if (hdmd) {
++        if (const auto it = hdmd->inv.find(tok_embd); it != hdmd->inv.end()) {
++            cur = llama_mul_mat_hadamard(ctx0, cur, it->second.rot);
++            if (it->second.signs) {
++                cur = ggml_mul(ctx0, cur, it->second.signs);
++            }
++        }
++    }
++
++    return cur;
++}
++
+ // input embeddings with optional lora
+ ggml_tensor * llm_graph_context::build_inp_embd(ggml_tensor * tok_embd, float tok_scale) const {
+     const int64_t n_embd_inp = hparams.n_embd_inp();
+@@ -2580,17 +2596,7 @@ ggml_tensor * llm_graph_context::build_inp_embd(ggml_tensor * tok_embd, float to
+ 
+     // token embeddings with lora and padding
+     auto build_tok = [&](ggml_tensor * ids) {
+-        ggml_tensor * cur = ggml_get_rows(ctx0, tok_embd, ids);
+-
+-        // a Hadamard-latent table stores rotated rows: restore the primal basis, h = s * (H z)
+-        if (hdmd) {
+-            if (const auto it = hdmd->inv.find(tok_embd); it != hdmd->inv.end()) {
+-                cur = llama_mul_mat_hadamard(ctx0, cur, it->second.rot);
+-                if (it->second.signs) {
+-                    cur = ggml_mul(ctx0, cur, it->second.signs);
+-                }
+-            }
+-        }
++        ggml_tensor * cur = build_embd_rows(tok_embd, ids);
+ 
+         // apply lora for embedding tokens if needed
+         for (const auto & lora : *loras) {
+diff --git a/src/llama-graph.h b/src/llama-graph.h
+index 0b9040643..1a6fa18c1 100644
+--- a/src/llama-graph.h
++++ b/src/llama-graph.h
+@@ -1294,6 +1294,8 @@ struct llm_graph_context {
+ 
+     // tok_scale: applied to token rows only
+     ggml_tensor * build_inp_embd(ggml_tensor * tok_embd, float tok_scale = 1.0f) const;
++    // rows of a token-embedding table; a Hadamard-latent table gets the inverse transform (primal basis)
++    ggml_tensor * build_embd_rows(ggml_tensor * tok_embd, ggml_tensor * ids) const;
+     ggml_tensor * build_inp_pos() const;
+     ggml_tensor * build_inp_attn_scale() const;
+     ggml_tensor * build_inp_out_ids() const;
+diff --git a/src/models/dflash.cpp b/src/models/dflash.cpp
+index b6cb6bfb9..352c84930 100644
+--- a/src/models/dflash.cpp
++++ b/src/models/dflash.cpp
+@@ -690,7 +690,8 @@ llama_model_dflash::graph<false>::graph(const llama_model & model, const llm_gra
+ 
+     ggml_tensor * inp_tokens = inp->tokens;
+ 
+-    ggml_tensor * inpL = ggml_get_rows(ctx0, tok_embd, inp->tokens);
++    // a Hadamard-latent target table (prism.hadamard) gets its inverse transform (borrowed through ctx_other)
++    ggml_tensor * inpL = build_embd_rows(tok_embd, inp->tokens);
+     if (hparams.f_embedding_scale != 0.0f) {
+         inpL = ggml_scale(ctx0, inpL, hparams.f_embedding_scale);
+     }
+diff --git a/src/models/eagle3.cpp b/src/models/eagle3.cpp
+index bfde35e43..00becb2ae 100644
+--- a/src/models/eagle3.cpp
++++ b/src/models/eagle3.cpp
+@@ -178,7 +178,8 @@ llama_model_eagle3::graph<false>::graph(const llama_model & model, const llm_gra
+     inp->embd = ggml_new_tensor_2d(ctx0, GGML_TYPE_F32, n_embd, n_tokens);
+     ggml_set_input(inp->embd);
+ 
+-    ggml_tensor * inp_embd = ggml_get_rows(ctx0, tok_embd, inp->tokens);
++    // a Hadamard-latent target table (prism.hadamard) gets its inverse transform (borrowed through ctx_other)
++    ggml_tensor * inp_embd = build_embd_rows(tok_embd, inp->tokens);
+     cb(inp_embd, "inp_embd", -1);
+ 
+     ggml_tensor * inp_g = inp->embd;
+-- 
+2.43.0
+

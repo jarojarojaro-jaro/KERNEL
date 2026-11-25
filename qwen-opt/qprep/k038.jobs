@@ -1,0 +1,14 @@
+# K-038 flag screening (one flag per arm, production between), production topka-q70 config (qprep/srv.sh), build
+# ~/wt/qprep-spec (its new switches off = production code path), port 18796. Dev set: spec_sweep T=1 seeds 1,2 + copy
+# short T=0 + mvs T=0 (~3-4 min per arm). Only flags that keep the verify width (DRAFT_N 3/5 and LOOKUP_W 8/12 wait for
+# the K-007 decision). Winner (>= +1% on dev vs the mean of P1..P3) -> write it to ~/qwen-opt/k038/winner.env and run
+# k038b.jobs (sealed holdout ABBA). Summary per arm: python3 ~/qwen-opt/qprep/abba.py ~/qwen-opt/k038/logs --a k038-P1,k038-P2,k038-P3 --b k038-<arm>
+k038-P1|600|~/qwen-opt/k038|bash arm.sh k038-P1 dev
+k038-md8|600|~/qwen-opt/k038|bash arm.sh k038-md8 dev GGML_HIP_PM4_MIN_DISPATCH=8
+k038-md32|600|~/qwen-opt/k038|bash arm.sh k038-md32 dev GGML_HIP_PM4_MIN_DISPATCH=32
+k038-P2|600|~/qwen-opt/k038|bash arm.sh k038-P2 dev
+k038-mmin4|600|~/qwen-opt/k038|bash arm.sh k038-mmin4 dev LLAMA_SPEC_LOOKUP_MMIN=4
+k038-mmin8|600|~/qwen-opt/k038|bash arm.sh k038-mmin8 dev LLAMA_SPEC_LOOKUP_MMIN=8
+k038-kvd8|600|~/qwen-opt/k038|bash arm.sh k038-kvd8 dev KVD=q8_0
+k038-P3|600|~/qwen-opt/k038|bash arm.sh k038-P3 dev
+restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

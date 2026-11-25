@@ -1,0 +1,10 @@
+# K-019 cross-session suffix cache (LLAMA_SPEC_SUFFIX=1, fixed corpus of 2026-11 omp outputs, LIVE=0) ABBA, production
+# topka-q70 config (qprep/srv.sh), build ~/wt/qprep-spec, port 18796. Per arm: agent replay (61 turns, T=0) + spec_sweep
+# T=1 seed 1 (~6-7 min; the first on arm also tokenizes the 33 MB corpus at start, once).
+# Summary: tail -4 ~/qwen-opt/k019/logs/replay.jsonl | jq -c "{label,tps,tok_step,ms_step,md5_all}";
+#          python3 ~/qwen-opt/qprep/abba.py ~/qwen-opt/k019/logs --a k019-A1,k019-A2 --b k019-B1,k019-B2
+k019-A1|900|~/qwen-opt/k019|bash arm.sh k019-A1 off
+k019-B1|900|~/qwen-opt/k019|bash arm.sh k019-B1 on
+k019-B2|900|~/qwen-opt/k019|bash arm.sh k019-B2 on
+k019-A2|900|~/qwen-opt/k019|bash arm.sh k019-A2 off
+restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

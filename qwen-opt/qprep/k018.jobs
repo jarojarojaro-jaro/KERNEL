@@ -1,0 +1,8 @@
+# K-018 AGR2 (LLAMA_SPEC_LOOKUP_AGREE=1) ABBA, production topka-q70 config (qprep/srv.sh), build ~/wt/qprep-spec in
+# both arms, test port 18796, CPUs 2-5, PM4=1 WA=2 GUARD=1 SVM=0. Per arm: copy short T=0+T=1x3, mvs T=0, spec_sweep
+# T=1x3 + T=0 (~5 min). Summary: python3 ~/qwen-opt/qprep/abba.py ~/qwen-opt/k018/logs --a k018-A1,k018-A2 --b k018-B1,k018-B2
+k018-A1|900|~/qwen-opt/k018|bash arm.sh k018-A1 off
+k018-B1|900|~/qwen-opt/k018|bash arm.sh k018-B1 on
+k018-B2|900|~/qwen-opt/k018|bash arm.sh k018-B2 on
+k018-A2|900|~/qwen-opt/k018|bash arm.sh k018-A2 off
+restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

@@ -1,0 +1,8 @@
+# K-038 holdout: production vs the screening winner (~/qwen-opt/k038/winner.env, VAR=VALUE lines) on the sealed set
+# (factory/sealed, 10 prompts never used for selection), ABBA, T=1 seeds 1,2,3 + T=0 (~4 min per arm). Arms refuse
+# without winner.env. Summary: python3 ~/qwen-opt/qprep/abba.py ~/qwen-opt/k038/logs --a k038-H-A1,k038-H-A2 --b k038-H-B1,k038-H-B2
+k038-H-A1|600|~/qwen-opt/k038|bash arm.sh k038-H-A1 holdout
+k038-H-B1|600|~/qwen-opt/k038|bash arm.sh k038-H-B1 holdout @winner
+k038-H-B2|600|~/qwen-opt/k038|bash arm.sh k038-H-B2 holdout @winner
+k038-H-A2|600|~/qwen-opt/k038|bash arm.sh k038-H-A2 holdout
+restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

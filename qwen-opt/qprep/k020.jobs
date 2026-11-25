@@ -1,0 +1,10 @@
+# K-020 cost-weighted --cache-ram eviction: 3-thread replay (2 x 24k threads + 12 short 3k requests) at --cache-ram 8192,
+# production topka-q70 config otherwise (qprep/srv.sh), build ~/wt/qprep-spec, port 18796. Arms: LRU (production),
+# cost alpha 1, cost alpha 4, LRU again (~4-5 min each). Metric: long-thread full re-prefills (prompt_n >= 20k) and
+# prefill seconds; the eviction lines (sizes) print after each arm. Summary: jq -c "{label,full_reprefills,which,prefill_s,
+# long_followup_prefill_s,wall_s}" ~/qwen-opt/k020/logs/replay.jsonl
+k020-A1|900|~/qwen-opt/k020|bash arm.sh k020-A1 lru
+k020-B1|900|~/qwen-opt/k020|bash arm.sh k020-B1 cost
+k020-C1|900|~/qwen-opt/k020|bash arm.sh k020-C1 cost4
+k020-A2|900|~/qwen-opt/k020|bash arm.sh k020-A2 lru
+restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
