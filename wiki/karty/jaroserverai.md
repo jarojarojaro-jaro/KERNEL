@@ -21,6 +21,10 @@ stan: zwykle wyłączony; włącza JARO
 - **CPU:** ciężkie przez `cpuheavy` (2 sloty × 2 rdzenie, nice 19), kompilacje przez `rbuild`; testowe serwery `taskset -c 2-5`.
 - **Przerwy:** maszyna znika z Tailscale bez ostrzeżenia (2026-11-20 ~20:52 i ~00:30, 2026-11-21 ~11:48); zadań sprzed przerwy nie zakładamy jako wykonanych.
 
+## Dysk 2026-11-25: 99% zajęte (6,5 GB wolnego z 466 GB)
+- Zajętość: modele 217 GB (q36 51, inkling 35, lfm 34, flint 22, nib 18, orca 17, orca-cyber-nano 17, Qwen3.8 UD-Q4_K_XL 17), `~/wt` ok. 65 GB w 153 worktree'ach (ok. 54 GB nieruszane od ponad 5 dni), `~/qwen-opt` 63 GB (mtp-train 11, cloud 6,3, re 6,6, research 4,3, duo 3,8), `~/opt` 14 GB (rocm-10.1 11, cuda-12.8 2,3), `~/rocm-10.2` 11 GB, `/opt` 19 GB, swap 8 GB, dziennik systemowy 2,2 GB.
+- Produkcja (:8080) nie zależy od `~/wt`: binarka `~/llama-topka/bin/llama-server`. Lista do usunięcia czeka na zgodę JARO.
+
 ## Powiązane
 - [[rx-7900-xtx]]
 - [[google-colab]]
