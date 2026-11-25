@@ -31,6 +31,7 @@ stan: zwykle wyłączony; włącza JARO
 - Zabezpieczenie: `run-jobs.sh` nie startuje zadania przy wolnym miejscu < 70 GB (DISK GUARD, commit d73318b), `kol stan` pokazuje wolne miejsce.
 
 ## Powiązane
+- [[stos/topki]] (topka każdego modelu, model czatu :8080 w `topki/xtx/ACTIVE`)
 - [[rx-7900-xtx]]
 - [[google-colab]]
 - [[vast-ai]]
