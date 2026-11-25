@@ -1,0 +1,6 @@
+# K-153 PTQ1_0 in topka: test-backend-ops, then server PM4 0/1 with best config (MTP n2, dv64k, W7), chat + copy
+b25l-tbo|900|~/wt/topka-bonsai/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; for o in MUL_MAT MUL_MAT_VEC_FUSION GET_ROWS; do echo "== $o"; taskset -c 2-5 timeout 280 ./test-backend-ops -b ROCm0 -o $o -p ptq1_0 2>&1 | grep -E "FAIL|tests passed" | tail -3; done; journalctl -k --since "-15min" --no-pager | grep -c gfxhub
+b25l-ptq1-pm0|600|~/qwen-opt/bonsai25|PROD=1 EXTRA_TAG=-dv64k ./b25.sh topka ptq1 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25l-ptq1-pm4|900|~/qwen-opt/bonsai25|LOOKUP_W=7 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-dv64k-w7 ./b25.sh topka ptq1 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25l-q2-pm4|900|~/qwen-opt/bonsai25|LOOKUP_W=7 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-dv64k-w7-r2 ./b25.sh topka q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25l-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

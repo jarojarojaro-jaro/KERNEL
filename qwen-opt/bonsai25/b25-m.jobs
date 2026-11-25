@@ -1,0 +1,6 @@
+# Dogukan 3060 config on XTX (temp 1.0, MTP n3 p-min 0, 262k): prism PTQ1_0 (his engine), prism-pt, topka PM4 Q2_0, topka PM4 PTQ1_0
+b25m-prism|600|~/qwen-opt/bonsai25|./b25-dog.sh prism PTQ1_0
+b25m-pt|600|~/qwen-opt/bonsai25|./b25-dog.sh /home/jaro/wt/prism-pt/build-hip/bin PTQ1_0
+b25m-topka-q2|600|~/qwen-opt/bonsai25|PM4=1 ./b25-dog.sh topka Q2_0 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25m-topka-ptq1|600|~/qwen-opt/bonsai25|PM4=1 ./b25-dog.sh topka PTQ1_0 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25m-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
