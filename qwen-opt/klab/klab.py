@@ -16,6 +16,9 @@
                                                              `klab sweep-report NAME` ranks them (bitexact only).
   klab gate TAG BIN [ARM_ENV...]                             queue job: p100_md5.sh (PM4=1 WA=2 GUARD=1, md5 Qwen
                                                              c4708318/6f14e814, LFM 894e56e4; switch on == off).
+  klab handoff-build                                         K-021 PoC-A: build klab/handoff/handoff (hand-off in a
+                                                             persistent grid vs kernel boundaries, plain HIP) on CPU
+                                                             under /tmp/kbuild.lock; GPU runs: queue/k021.jobs.
 Every GPU action goes through ~/qwen-opt/queue/run-jobs.sh (started in the background; it waits for the locks).
 """
 from __future__ import annotations
@@ -352,6 +355,13 @@ def gate(a) -> None:
                               f"GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0; LFM=1 ./p100_md5.sh {a.tag} {a.bin} {arms}"])
 
 
+def handoff_build(a) -> None:
+    d = os.path.join(K, "handoff")
+    subprocess.run(["flock", "/tmp/kbuild.lock", "nice", "-n", "19", "taskset", "-c", "6-15", "/opt/rocm/bin/hipcc", "-O3",
+                    "-std=c++17", "--offload-arch=gfx1100", "handoff.hip", "-o", "handoff"], cwd=d, check=True)
+    print(f"built {d}/handoff; queue: ~/qwen-opt/queue/k021.jobs (smoke, then measure)")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sp = ap.add_subparsers(dest="cmd", required=True)
@@ -371,6 +381,7 @@ def main() -> None:
     p = sp.add_parser("sweep-report"); p.add_argument("name"); p.set_defaults(f=sweep_report)
     p = sp.add_parser("gate"); p.add_argument("tag"); p.add_argument("bin"); p.add_argument("arms", nargs="*")
     p.set_defaults(f=gate)
+    p = sp.add_parser("handoff-build"); p.set_defaults(f=handoff_build)
     a = ap.parse_args()
     a.f(a)
 

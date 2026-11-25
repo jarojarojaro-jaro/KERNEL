@@ -89,6 +89,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - plan: wtopić LoRA AtomicChat (43 MB) w paczkę Nib albo dodać Q4_K do loadera Nib; wall.py T=0 / T=0,7, KV q4_0, Quest wyłączony do 14k
 - priorytet: średni
 
+- **2026-11-25:** droga LoRA zrobiona (K-165). Uruchomienie wag Mai (AD-Q4_K) w Nibie: Nib nie ma ścieżki Q4_K (GEMV, MoE, dekod, weryfikacja, prefill WMMA), szacunek 1–2 tygodnie. Czeka na decyzję JARO.
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19
 - źródło: [[2026-11-19-k118-nvidia-pelna-moc]]: n2 vs n4 T=1 3090 +7,9%, 3060 +4,3%, 5060 Ti +3,2% (K-114); T=0 +3,0…3,3%; 4080 SUPER bez różnicy
@@ -128,6 +129,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - otwarte: ścieżka kvq przy 1 zapytaniu (dekod) nadal przecieka (test jednostkowy: błąd 2e-9); naprawa i odzyskanie −0,65% prefillu to runda duo-r4;
   - wdrożenie do produkcji (przebudowa topki) czeka na decyzję właściciela.
 
+- **2026-11-25:** `~/wt/k001-fix` (qprep-spec + r3 556ad799f + r4 a557fc3c5 z gałęzi duo, testy masked-tail 5/16/17); w kolejce `k001.jobs`: bramka tbo kvq wył./wł. × wariant 0/83, test wycieku restore (rozszerzenia 1/31/32/33/63/64 tok.), llama-bench ABBA przy wariancie 83 (koszt prefillu dotąd mierzony tylko przy 0: −0,65%).
 ### K-007 · Bramka „wymuszanie tokenów + KLD” (SpecPilot) zamiast md5 dla zmian polityki draftu i szerokości weryfikacji, z kalibracją kanarkami
 - data: 2026-11-07 (kanarki: 2026-10-15)
 - status: **czeka na decyzję** właściciela (decyzja 6 z rundy 69: czy dopuścić „te same tokeny + KLD” zamiast md5)
@@ -204,6 +206,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: reset przy wariancie z faultem → tylko PM4=0, nadzór, kolejka
 - priorytet: niski
 
+- **2026-11-25:** w kolejce (`k121.jobs`): Auto-research-agent `9367733` z adapterem `hip_tbo.py`, geny = 12 bezstratnych wartości `GGML_HIP_FA_D256_VAR`; pytanie: czy wyścig wybierze 83 mniejszą liczbą pomiarów.
 ### K-122 · llamAmpere v0.7 w trybie dokładnym vs nasz fork na pełnej mocy 3090, ten sam plik wag (łączyć z K-118 na jednej instancji)
 - data: 2026-11-18
 - źródło: [[llamampere]] (nagłówkowe 110+ t/s przy T=1 w trybie mb-MTP, czyli nie dokładnym; drafter DFlash2 ×3,4 po usunięciu podwójnego kroku); [[2026-11-17-k114-nvidia-sufit]]
@@ -224,6 +227,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: zawieszenia kernela rezydentnego (na Vast bez ryzyka dla naszej karty; na XTX dopiero po PoC-A z [[budzet-megakernela-qwen-xtx]])
 - priorytet: średni (decyzja właściciela: budżet agent-godzin i GPU)
 
+- **2026-11-25:** bez paczki: wymaga budżetu (godziny agentów + GPU) i najpierw K-116 (nsys pętli draftu NVIDIA, Vast 5060 Ti). Decyzja JARO.
 ### K-126 · Enigma Windows NVIDIA: wydanie z CUDA 13.4 dla Blackwell (sm_120) zamiast CUDA 12.4
 - data: 2026-11-19
 - źródło: audyt Gemini (C.1.4b) potwierdzony: `app/engine/data/engines.json:155-182` pinuje `win-cuda-12.4`; release b11856 ma `llama-b11856-bin-win-cuda-13.4-x64.zip` (sha256 `06478e0f…`) i `cudart-…-13.4` (`738f8c25…`); `baselineEngineFor` (`engine.ts:88-90`) bierze pierwszy wpis i nie patrzy na architekturę GPU; JIT z PTX: Strata 173 s → 0,34 s ([[strata]])
@@ -293,6 +297,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (duży sufit, dwa nieudane podejścia)
 - zwiad 2026-11-14: hipfire #989 (WMMA split-K verify attention, gfx1100, numeryczne) zszedł do 309,5 µs przy 100k i 4 wierszach, czyli tyle co nasz `kvq` przy nb5 i 98k (~319 µs); bitowa droga musi zejść niżej ([[zwiad-2026-11-14]])
 
+- **2026-11-25 ocena:** cel 172 µs/warstwę przy 98k nieosiągalny bezstratnie (podłoga pamięci 118, MMA 119, K/V dekwantowane raz ok. 152, dziś 319). Układ „pair-split” ok. −10% kernela = +2,5% dekodu przy 199k (poniżej progu 3–5%), 3–4 dni. Sonda w kolejce (`k012.jobs`, `GGML_HIP_KVQ_PROBE`): implementacja tylko przy ≤ −15% przy nb5/196k.
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
 - źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
@@ -335,6 +340,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: **wysokie**: zawieszenia taśmy PM4 i resety (16a, 24l); tylko z `gpu-guard.sh`
 - priorytet: średni (jedyna duża dźwignia w kernelach, drogie i ryzykowne)
 
+- **2026-11-25:** PoC-A w kolejce (`k021.jobs`, `~/qwen-opt/klab/handoff/handoff.hip`): koszt przekazania między etapami w trwałej siatce vs osobne dispatche; KILL gdy > 0,3 µs albo < 30% zysku. PoC-B w forku: 1–2 tygodnie.
 ### K-024 · Enigma ROCm na innych kartach AMD + autotune wariantu FA przy instalacji (gfx1101/1102/1151/1201)
 - data: 2026-11-09
 - źródło: `R/70-fa-d256-jak-to-zrobilismy.md:186` (#3)
@@ -361,6 +367,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (produkt Enigma)
 
+- **2026-11-25:** `~/models/q36` pusty, więc zamiennik: Inkling-2-Mini AD-Q4_K (MoE 128/8) z DSpark przez `~/wt/upstream-inkling`, `--n-cpu-moe 12`; w kolejce `k026a.jobs` (głębokość 0/1/2/4) i `k026b.jobs` (p-min 0 / 0,5 / 0,8).
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -378,6 +385,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (poniżej progu)
 
+- **2026-11-25:** krok 1 w kolejce (`k035.jobs`): głowica draftu iq4_xs (prod) vs q6_K (dokładna) vs q2_K, tok/krok; rerank top-8 (1,5–2 h kodu) tylko gdy q6_K wyraźnie wygra.
 ### K-036 · Nakładanie kroków: wejścia kroku t+1 przed synchronizacją hosta (ZOS-lite), obcinanie po stop-tokenie na GPU
 - data: 2026-10-20 (36 L11)
 - źródło: `R/36-xtx-qwen-roadmap.md:196`, `R/63-SYNTEZA.md:90`, `R/66-SYNTEZA.md:63`, `R/67c-nvidia-backlog-testow.md:129` (C12)
@@ -386,6 +394,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: PM4 (zmiana porządku taśm)
 - priorytet: niski (XTX poniżej progu)
 
+- **2026-11-25:** krok 1 w kolejce (`k036.jobs`): ślad przerw hosta produkcji (`LLAMA_HOSTGAP_TRACE=1`); nakładanie kroków (2–4 dni) tylko gdy bezczynność ≥ 1% kroku.
 ### K-037 · Megakernel / rezydentna pętla MTP (PoC-A w trwałej siatce 96–192 WG)
 - data: 2026-10-16 (15a), 2026-11-07 (66c)
 - źródło: [[budzet-megakernela-qwen-xtx]], [[lekcja-megakernel-prefetch-nie-granica]], `R/66c-hyperkernel-megakernele.md` §7
@@ -394,6 +403,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: **wysokie**: ewikcja kolejki KFD przy kernelu rezydentnym → możliwy reset
 - priorytet: niski (koszt i ryzyko; wspólny PoC z K-021)
 
+- **2026-11-25:** pierwszy krok wspólny z K-021: mikrobench przekazania PoC-A `~/qwen-opt/klab/handoff/handoff.hip` (w przygotowaniu).
 ### K-046 · Szerokość ogona lookup zależna od kontekstu: W16 → W8/W5 przy ≥ 128k (`LLAMA_SPEC_LOOKUP_ADAPT=1`)
 - data: 2026-10-18, 2026-11-07 (68c #7)
 - status: **czeka na decyzję** (bramka K-007, zmiana szerokości zmienia md5)
@@ -412,6 +422,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (poniżej progu)
 
+- **2026-11-25 ocena:** GDN w produkcji 14,7 µs/uruchomienie (0,715 ms/krok) przy podłodze bajtów 7,86 µs, więc sufit zysku ok. 0,33 ms/krok (≈ 1,1% przy n=5, realnie 0,5%); WY w fp32 3–5 dni i niebitowo (decyzja KLD). Pomiar bazy w kolejce (`k047.jobs`): zabić, gdy (base − floor) × 48 < 0,15 ms.
 ### K-050 · Runtime ROCm 7.2.4 z kompilatorem ROCm 10
 - data: 2026-11-07
 - status: **czeka na decyzję** (pobranie runtime)
@@ -539,6 +550,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: nowe kernele GDN w PM4
 - priorytet: niski (zależne od K-013 i K-007)
 
+- **2026-11-25:** krok 1 w kolejce (`k075.jobs`): koszt jednego wiersza weryfikacji `llama-bench -p 1..9`, PM4 wył./wł., ctx 0 i 32k; drzewo opłaca się przy ≤ 0,57 ms/wiersz i wymaga decyzji K-007.
 ### K-131 · Fork CUDA na Ampere: MMVQ celu tylko 58% pasma na 3090 (4080 SUPER 78%) — strumieniowanie wag przez `cp.async`
 - data: 2026-11-20
 - źródło: [[2026-11-19-k118-nvidia-pelna-moc]] (plain 3090 19,2 ms = 540 GB/s z 936; 3060 60%; 4080S 78%); TensorFold v1.3.0 #2266: rura `cp.async` per warp w dekodzie ekspertów NVFP4 +24% na sm_120, bity te same

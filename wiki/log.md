@@ -754,3 +754,6 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - K-022: FA prefill z natywnym q4_0 bit w bit, prędkość ±0,4%, szczyt VRAM przy 255k 23 323 → 22 346 MiB.
 - Colab L4 (1,36 jedn., sesja zatrzymana): K-062 identyczny SASS; K-004 GUMBEL_MAX 152/152; L4 230,8 GB/s, fp16 75,4 TFLOPS.
 - K-006 A1 padł na błędzie parsera (`k006.py:26`, grupy opcjonalne None); poprawione, ponownie w kolejce.
+
+## [2026-11-25] kolejka | 10 kolejnych paczek: K-075, K-036, K-035, K-121, K-026a/b, K-021, K-001, K-012, K-047
+- Ocenione bez karty: K-012 sufit bezstratny +2,5% (poniżej progu), K-047 sufit ok. 1,1%; K-159 Q4_K w Nibie 1–2 tygodnie (decyzja), K-124 wymaga budżetu.
