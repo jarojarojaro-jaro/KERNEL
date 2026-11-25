@@ -20,7 +20,7 @@ wynik: gemma-4 | rtx-3090 | 138.3 t/s | dekod mediana; 26B-A4B Q4_K_XL, LM | 202
 <!-- TABELE:START -->
 ## Wyniki z notatek (2)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-25); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-26); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

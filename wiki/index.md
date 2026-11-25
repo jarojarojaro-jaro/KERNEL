@@ -89,5 +89,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-25 [[llamampere|llamAmpere (JakeATX): fork llama.cpp pod RTX 30xx — szybki, ale domyślnie niebezstratny]]
 - 2026-11-25 [[gpu-straggler-finder|gpu-straggler-finder (Stas Bekman)]]
 
-Razem 834 notatek. Wygenerowano 2026-11-25 przez `tools/wiki.py index`.
+Razem 834 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

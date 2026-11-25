@@ -132,15 +132,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: wysoki (odblokowuje największy bezstratny decode)
 
-### K-008 · Dynamiczna głębokość draftu MTP z luki Gumbela z wczesnym wyjściem z łańcucha (dmin 2, dmax 5)
-- data: 2026-10-10 (zmienna długość draftu), 2026-11-07 (68b #1)
-- status: **czeka na decyzję** (bramka K-007; zmienna szerokość weryfikacji zmienia md5 T=0, choć rozkład jest zachowany)
-- źródło: `R/68b-spekulacja-nowe.md:160,164`, `R/68-SYNTEZA.md:17`, `R/40-akceptacja-prozy.md:116` (proza `DRAFT_N=3` +4,3%, 82,4 vs 79,0 t/s, 8/8 promptów), [[lekcja-glebokosc-zmienia-tekst]]
-- test: XTX, `spec_sweep.sh "LLAMA_SPEC_DEPTH_GAP=0" "LLAMA_SPEC_DEPTH_GAP=2"` T=1, ABBA po 2 ramiona na job; xtxbench 1,7k/94k/199k
-- zysk: symulacja +3,9% ogółem, czat PL +4,8%, EN +2,9%; bez wczesnego wyjścia ~0
-- ryzyko karty: PM4 (warunkowe wyjście w taśmie draftu)
-- priorytet: wysoki (największy bezstratny zysk decode, PL najwolniejszy: 120 t/s)
-
 ### K-004 · Fork CUDA: dokładne próbkowanie spekulacyjne na GPU przy T=1 (jak qwen-warp)
 - data: 2026-11-09
 - źródło: [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 2: fork traci przy T=1 7–13%, warp nie traci), `R/69b-tensorfold-qwen-warp.md` §3
@@ -325,6 +316,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (zależy od decyzji)
 
+- **wynik 2026-11-25 22:28–22:37 (XTX, qprep-spec 50ca29355, `LLAMA_SPEC_ROUTE` + `DRAFT_N=5` vs prod, ABBA):** bramka: routing ≤ 4 = prod (aa522e89), routing 5 = zwykłe n5. Proza T=1 bez myślenia 104,9 / 108,0 → 110,1 / 110,1 (**+3,4%**), czat T=1 109,2 / 115,4 → 113,9 / 113,6 (+1,3%), kopia T=0 407,5 / 427,6 → 410,9 / 410,1 (−1,7%). Zysk na granicy progu 3% tylko dla prozy; głębokość 5 zmienia md5 T=0 z założenia, więc wdrożenie zależy od decyzji K-007.
 ### K-021 · Dataflow w taśmie PM4: usunąć granice dispatchy w łańcuchu MMVQ → norma → MMVQ weryfikacji (najpierw PoC-A: hand-off w trwałej siatce)
 - data: 2026-10-20 (raport 36 L7)
 - źródło: `R/37-proza-100.md:17-19` (górna granica `GGML_HIP_PM4_UB=mmvq,norm` −2,17 ms/partię 5 wierszy, −8,8%), `R/36-xtx-qwen-roadmap.md:190`, `R/66-SYNTEZA.md:66` (#15), [[budzet-megakernela-qwen-xtx]]
@@ -387,15 +379,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (koszt i ryzyko; wspólny PoC z K-021)
 
 - **2026-11-25:** pierwszy krok wspólny z K-021: mikrobench przekazania PoC-A `~/qwen-opt/klab/handoff/handoff.hip` (w przygotowaniu).
-### K-046 · Szerokość ogona lookup zależna od kontekstu: W16 → W8/W5 przy ≥ 128k (`LLAMA_SPEC_LOOKUP_ADAPT=1`)
-- data: 2026-10-18, 2026-11-07 (68c #7)
-- status: **czeka na decyzję** (bramka K-007, zmiana szerokości zmienia md5)
-- źródło: `R/68c-dlugi-kontekst-gdn.md:141`, [[kontroler-szerokosci-draftu]]
-- test: najpierw dane z CPU (`LLAMA_SPEC_LOOKUP_LOG`: udział kroków `tail` przy n_past ≥ 128k); XTX `ADAPT=1` vs W16 na replayu 128–200k ABBA ≤ 10 min
-- zysk: krok W16 przy 255k to ~+20–25 ms; zależy od udziału ogonów (kill < 2% kroków)
-- ryzyko karty: brak
-- priorytet: niski (najpierw dane)
-
 ### K-047 · GDN w weryfikacji: forma chunkwise/WY w fp32 albo fuzja conv + rekurencja + gated RMSNorm ze stanem w VGPR
 - data: 2026-11-05 (63 #21)
 - status: **czeka na decyzję** (inna kolejność redukcji fp32 → bramka KLD, nie md5)
@@ -435,15 +418,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (nie przyspiesza)
 
 - **ocena 2026-11-25:** port gałęzi bitexact koliduje już na pierwszym commicie (`c09ac6aab`, 6 kawałków w `mmvq.cu`, od bazy +2916 linii mmvq i +802 fattn-kvq); 1,5–3 dni + build, zysk prędkości ujemny. Czeka na decyzję JARO, czy tryb identycznych odpowiedzi jest potrzebny.
-### K-058 · Strażnik „drugie `</think>` zabronione” w `reasoning-budget.cpp` (T7, niezależny od Astry)
-- data: 2026-11-09
-- status: **czeka na decyzję** (2d; zmienia wyjście tylko przy przecieku)
-- źródło: `R/69-SYNTEZA.md:27,37-40` (A3), [[astra-stop]]
-- test: build + md5 bazy (musi być =) + skan 50 zadań agentowych; ≤ 10 min/partię
-- zysk: 0 t/s; poprawność formatu
-- ryzyko karty: brak
-- priorytet: niski (nie szybkość)
-
 ### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
 - data: 2026-10-19 (21h)
 - status: **czeka na decyzję**
@@ -1339,6 +1313,39 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-058 · Strażnik „drugie `</think>` zabronione” w `reasoning-budget.cpp` (T7, niezależny od Astry)
+- data: 2026-11-09
+- status: **czeka na decyzję** (2d; zmienia wyjście tylko przy przecieku)
+- źródło: `R/69-SYNTEZA.md:27,37-40` (A3), [[astra-stop]]
+- test: build + md5 bazy (musi być =) + skan 50 zadań agentowych; ≤ 10 min/partię
+- zysk: 0 t/s; poprawność formatu
+- ryzyko karty: brak
+- priorytet: niski (nie szybkość)
+- **wynik 2026-11-25 22:45–22:54 (XTX, `~/wt/k058` f0542416f, replay 31 tur agenta omp 8k–45k, T=0):** bramka on = off PASS; wycieki `</think>`: off 0, on 0; **wywołania narzędzi: off 25, on 0**. Strażnik maskował tag także tam, gdzie po bloku rozumowania następuje wywołanie narzędzia, i zepsuł format tool calls. Werdykt: nie wdrażać; w tym korpusie problem drugiego `</think>` w ogóle nie wystąpił.
+- przeniesione 2026-11-25: psuje wywołania narzędzi
+
+### K-046 · Szerokość ogona lookup zależna od kontekstu: W16 → W8/W5 przy ≥ 128k (`LLAMA_SPEC_LOOKUP_ADAPT=1`)
+- data: 2026-10-18, 2026-11-07 (68c #7)
+- status: **czeka na decyzję** (bramka K-007, zmiana szerokości zmienia md5)
+- źródło: `R/68c-dlugi-kontekst-gdn.md:141`, [[kontroler-szerokosci-draftu]]
+- test: najpierw dane z CPU (`LLAMA_SPEC_LOOKUP_LOG`: udział kroków `tail` przy n_past ≥ 128k); XTX `ADAPT=1` vs W16 na replayu 128–200k ABBA ≤ 10 min
+- zysk: krok W16 przy 255k to ~+20–25 ms; zależy od udziału ogonów (kill < 2% kroków)
+- ryzyko karty: brak
+- priorytet: niski (najpierw dane)
+- **wynik 2026-11-25 22:55–23:00 (XTX, `~/wt/k046` 15f7b5209, jeden serwer, prefill ok. 140k, odpowiedź 384 tok.):** T=0 W16 233,5 / W8 176,5 / W5 140,0 t/s (md5 równe 1b57c02c), T=1 W16 227,6 / W8 174,0 / W5 140,9. Lookup przy ≥ 131k to 37,8% kroków. **Węższy ogon jest wolniejszy (W8 −24%, W5 −40%)**; hipoteza „przy długim kontekście W8/W5” odrzucona, zostaje W16.
+- przeniesione 2026-11-25: hipoteza odwrotna do pomiaru
+
+### K-008 · Dynamiczna głębokość draftu MTP z luki Gumbela z wczesnym wyjściem z łańcucha (dmin 2, dmax 5)
+- data: 2026-10-10 (zmienna długość draftu), 2026-11-07 (68b #1)
+- status: **czeka na decyzję** (bramka K-007; zmienna szerokość weryfikacji zmienia md5 T=0, choć rozkład jest zachowany)
+- źródło: `R/68b-spekulacja-nowe.md:160,164`, `R/68-SYNTEZA.md:17`, `R/40-akceptacja-prozy.md:116` (proza `DRAFT_N=3` +4,3%, 82,4 vs 79,0 t/s, 8/8 promptów), [[lekcja-glebokosc-zmienia-tekst]]
+- test: XTX, `spec_sweep.sh "LLAMA_SPEC_DEPTH_GAP=0" "LLAMA_SPEC_DEPTH_GAP=2"` T=1, ABBA po 2 ramiona na job; xtxbench 1,7k/94k/199k
+- zysk: symulacja +3,9% ogółem, czat PL +4,8%, EN +2,9%; bez wczesnego wyjścia ~0
+- ryzyko karty: PM4 (warunkowe wyjście w taśmie draftu)
+- priorytet: wysoki (największy bezstratny zysk decode, PL najwolniejszy: 120 t/s)
+- **wynik etapu 1, 2026-11-25 22:39–22:44 (XTX, `~/wt/k008` 0d024983c, `LLAMA_SPEC_DEPTH_CONF`):** prod P1/P2 T=1 120,0 / 120,1, kopia T=0 429,6 / 429,8; τ=0,6: 117,3 (−2,3%) / 426,7; τ=0,85: 118,5 (−1,3%) / 425,1. Wczesne zatrzymanie łańcucha MTP według pewności głowicy nie opłaca się (krótszy łańcuch kosztuje więcej, niż oszczędza). Etap 2 (luka Gumbela, 1,5–2 h + build) nie ma podstaw.
+- przeniesione 2026-11-25: wolniej
 
 ### K-173 · Dekwantyzacja K-quantów przy prefillu: bloki 32/64 wątków → dim3(32, 8) (jak PR #32875 dla NVFP4)
 - data: 2026-11-25 (panel JARO, PR ggml-org/llama.cpp#32875: NVFP4 dequant 4,2×, prefill Qwen3.8-27B +17,7% na V100)

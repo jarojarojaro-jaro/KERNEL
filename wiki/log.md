@@ -765,3 +765,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - Ryzyko: `topka-keeper.sh` podnosi czat z modelem `qwen` (z cenzurą), `chat8080.sh restore` z `uncensored`.
 
 ## [2026-11-25] wyniki | K-025 (wariant 83 bezstratny na Bonsai, zysk już w produkcji), K-173 bez efektu, K-171 llamAmpere 1,7×
+
+## [2026-11-25] wyniki | K-017 +3,4% proza (K-007), K-008 −1,3…−2,3%, K-046 W16 zostaje (W8 −24%), K-058 psuje tool calls (25 → 0)
