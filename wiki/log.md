@@ -739,3 +739,8 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - Wygrane: K-020 wall 208 → 102 s (−51%), K-148 edycja +14,2%, K-018 kopia +5,4%; wdrożenia K-175 i K-176 w kolejce z bramką wall.py `pl`.
 - Bez wdrożenia: K-164d (pl 105,9), K-019 (+1,4%), Bonsai K-169 i drafter DFlash2/DSpark (MTP n2 145,8 zostaje).
 - Nieważne: K-113 i K-158g (model Qwen skasowany o 17:09; `k158g.sh` bez prawa wykonania) → ponownie w kolejce.
+
+## [2026-11-25] kolejka | K-038, K-009, K-025 zebrane; 6 pozycji przeniesionych; 5 agentów przygotowuje paczki
+- K-009 odrzucone (wszystkie maski MMQ wolniejsze, VAR 8 −17%); K-038 bez zwycięzcy, kandydat KV draftu q8_0 +1,8% T=1 do K-175; K-025 bieg nieważny (wariant 83 nie użyty).
+- Przeniesione: K-148, K-164, K-018, K-019, K-020, K-165, K-009, K-038. Czeka 60.
+- Link Gumbii (DSpark między silnikami): zgodne z naszymi pomiarami.

@@ -548,6 +548,7 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 | https://x.com/bebuu_ai/status/2125235605273723162 (panel 2026-11-25) = llama.cpp PR #32875 NVFP4 dequant | scalony 11-24 `6fb4283` | K-173 | Nib nie używa tej ścieżki; ten sam wzorzec bloków 32/64 w Q4_K/Q6_K topki | 1,436 → 0,343 ms, prefill +17,7% V100 | wynik K-173 |
 | https://x.com/bebuu_ai/status/2125237184882233646 (panel 2026-11-25) = llama.cpp PR #32859 BPE string_view | scalony 11-24 `2a48778` | K-174 | Bez zmiany ID tokenów; koszt TTFT tur agenta przy długiej historii | qwen2 35,4 → 18,2 ms / 146 KB | wynik K-174 |
 | https://x.com/nvidiaaiinfra/status/2124946476539490480 (panel 2026-11-25) = DuckDB + Sirius (github.com/sirius-db/sirius) | Apache-2.0, push 11-25 | – | SQL na GPU NVIDIA (cuDF); nie inferencja LLM, bez AMD | – | tylko jeśli analityka logów urośnie |
+| https://x.com/gumbiidigital/status/2125620314201641139 (panel 2026-11-25) = porównanie DSpark między silnikami | wpis 11-25 | [[inkling-2-mini]], K-158, K-170 | Zgodne z nami: DSpark działa tylko w silnikach z natywną ścieżką | llama.cpp 0,45–0,58× (akceptacja 6–14%); Strata 2,04× bitowo; u nas Maya DSpark T=0 202,7 vs 129,7 | czy Strata HTTP włącza DSpark; zastrzeżenie vLLM |
 
 ## Zwiad 2026-11-23 (raport product/research/watch/2026-11-23.md)
 

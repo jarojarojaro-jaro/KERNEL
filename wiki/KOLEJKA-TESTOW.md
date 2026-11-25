@@ -62,29 +62,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - czas karty: ok. 15 min
 - priorytet: średni
 
-### K-165 · Inkling uncensored w Nib: LoRA AtomicChat (rank 1, 98 tensorów) w runtime Nib, cel ≥ 145 t/s przy T=0,7
-- data: 2026-11-25 (JARO: „nowe infra ma 150 t/s”; Nib 150,6 t/s T=0,7 KV q4 na naszym XTX, ale wagi ocenzurowane)
-- plan: agent dopisuje `--lora` do Nib (attn_output + ffn_down_exps, wszystkie ścieżki, grafy HIP); XTX: selftest z/bez LoRA, 5 promptów odmowy przy T=0, wall.py T=0 / T=0,7 KV q4; potem Nib jako czat Inkling zamiast Mai
-- czas karty: ok. 15 min
-- priorytet: najwyższy
-- **wynik 2026-11-25:** pierwszy bieg (13:27) unieważniony: odpowiadał osierocony serwer Mai z K-164 ([[lekcja-zabicie-skryptu-nie-serwera]]). Powtórka k165b: odmowy stock 5/5, z LoRA 0/5; wall.py T=0 / T=0,7: stock 168,2 / 149,9, **LoRA 156,6 / 147,3** (Maya 113,9 / 113,4). Cel ≥ 145 osiągnięty. Dalej: jakość NVFP4+LoRA vs AD-Q4_K (KLD/odpowiedzi), decyzja JARO o czacie Inkling na Nib.
-- **jakość (K-168, HumanEval+):** Nib + LoRA 92,1 / 87,2% vs Maya 90,2 / 85,4%; dekod kodu 209,5 vs 124,4 t/s. Gotowe do decyzji JARO (czat Inkling na Nib + LoRA).
-
-### K-164 · Inkling: drafter DFlash2 (incoai, 0,99 GB) zamiast DSpark w Mai na XTX
-- data: 2026-11-25 (zwiad: H200 T=1 akceptacja 4,96 vs 3,52 DSpark, GSM8K 482 vs 375 t/s; tqllm Metal exact+DFlash2 57,1 vs 52,1)
-- plan: pobrać `incoai/Inkling-2-Mini-DFlash2` (0,99 GB); w Mai brak DFlash2 (jest DSpark) → port na podstawie tqllm 788055720 i `sglang_inkling_dflash2.py`; najpierw CPU: kształty i referencja; potem XTX: parytet 11/11, wall.py T=0 / T=0,7 vs produkcja i vs DSpark
-- zysk: +20…40% przy T=0,7, jeśli krok weryfikacji tani (łączyć z K-158) [SZACUNEK]
-- priorytet: wysoki
-- **wynik 2026-11-25 (gałąź `k164-dflash2` fea522a0):** test GPU vs referencja CPU PASS (drafty identyczne, propose 3,84 ms z głowicą Q8, 8,29 ms FP16, write_context 0,13–0,20 ms), test akceptacji q (min(1,p/q)) passed, parytet 11/11. rep2 Q1 / Q6 / L2k: produkcja 129,7 / 114,1 / 107,7; df2 85,9 / 96,4 / 101,1; df2only 115,7 / 96,6 / 99,0; df2q (próbkowanie z q) 85,5 / 98,1 / 100,7; df2qonly 115,7 / 98,3 / 102,2. wall.py: produkcja 108,5 / 110,5, df2 108,6 / 108,4, df2q 107,9 / 106,9.
-- wniosek: DFlash2 w Mai dziś przegrywa przy T=0,7 (−14%) z tego samego powodu co K-158: droga runda weryfikacji. Q1 dwumodalne (82–86 albo 124–134 na bieg), do wyjaśnienia (sterownik spekulacji). Dalej: statystyki akceptacji (IK2_STATS) i ponowny pomiar po K-158b.
-- **k164b 2026-11-25 (build 9b95ffbe: grafy okien przed READY, koszt draftu osobno, sonda z odstępem; okno 8 w każdym kroku, bez lookupu, IK2_STATS):**
-  - DFlash2 greedy (df2m): T=0 **3,73 tok./okno**, Q1 **209,8 t/s** (+62% vs 129,7), ale L2k 80,9; T=0,7 1,93 tok./okno, Q6 44,6. Próbkowanie z q (df2qm): T=0,7 2,05 tok./okno, Q6 47,6. DSpark (dsm): T=0 3,09, T=0,7 1,58 tok./okno, Q1 104,4.
-  - **Księga rundy Mai:** zwykły token 7,8 ms; draft 3,2–3,8 ms (Nib 1,4); weryfikacja okna 8 ok. 40 ms (5,1 tokenu), c[2..8] = 13,3 / 16,4 / 23 / 18–25 / 29 / 21 / 41 ms. Przy T=0,7 rep2 wysyła pełny rozkład, więc drafty punktowe trafiają rzadko (8–15% draftów).
-  - z nowym sterownikiem (df2only, df2qonly, dsonly) sterownik słusznie prawie nie draftuje przy T=0,7: Q6 107,8–109,4 vs 114,1 produkcja (−4…−5%), Q1 122,6–124,5.
-  - wniosek: DFlash2 to najlepszy drafter przy T=0 (3,73 vs 3,09 tok./okno), ale zysk zjada weryfikacja: koszt rośnie z kontekstem (L2k −25%) i z szerokością. Kolejność: K-158b (atencja okna w jednym launchu, eksperci okna przez kernele tokenu), tani draft (K-159: głowa skrócona, wagi Q8), potem ponownie df2 z oknem wg pewności.
-- **k164c 2026-11-25 (ac47cca2: shortlista głowy 32768 + kontekst, wagi Q8, graf, okno wg pewności):** propose 3,43 → 2,54 ms (warstwy 2,4–2,8 ms nie schodzą z Q8, więc ograniczone opóźnieniem, nie pasmem; głowa 0,74 → 0,15 ms). Parytet 11/11. rep2 Q1 / Q6 / L2k: df2m-sl 106,3 / 43,9 / 83,0; df2-conf-sl 144,0 / 77,0 / 105,5; df2-conf-slq 145,4 / 81,5 / 106,8. Akceptacja: okno 8 T=0 3,54 tok., T=0,7 1,86–2,02; okno wg pewności T=0 2,45 tok. (86% draftów), T=0,7 1,60. Weryfikacja na tej gałęzi bez poprawek K-158b (okno 8 = 40 ms), więc DFlash2 ocenić dopiero po przeniesieniu na `k158-dspark`.
-- **wynik K-164d 2026-11-25 17:10–17:24 (DFlash2 na gałęzi K-158 `k164-on-k158` 09574b81):** rep2 prod Q1 / Q6 / L2k 129,5 / 113,8 / 107,4; DFlash2 + gate 178,6 / 108,7 / 122,3 (L2k +13,9%, Q6 −4,5%); DSpark pol-gate 202,2 / 111,0 / 120,8. wall.py T=0,7: df2-gate mediana 122,4 (code 135,4, tech 109,4, **pl 105,9**, json 186,9), df2-pol-gate 107,9 (pl 107,1). Produkcja pl ok. 113: bramka `pl` (−2%) blokuje oba. Werdykt: nie wdrażamy; DFlash2 wygrywa długi kontekst, przegrywa polski.
-
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
@@ -109,17 +86,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-25 (Nib liczy na NVFP4-Mixed, nie na naszych wagach uncensored)
 - plan: wtopić LoRA AtomicChat (43 MB) w paczkę Nib albo dodać Q4_K do loadera Nib; wall.py T=0 / T=0,7, KV q4_0, Quest wyłączony do 14k
 - priorytet: średni
-
-### K-148 · Maya: szybsza weryfikacja szerokiego okna sufiksowego (dziś ścieżka prefillu, ok. 0,2 s na 96 tokenów)
-- data: 2026-11-24 (K-147: nasz sufiks 404–452 / 299 t/s vs GodGMN 708 / 494 na tym samym teście i karcie)
-- plan: profil `forward()` dla T=16–128 z `g_rec` (IK2_PROF), porównanie z presetem GodGMN (`IK2_PREFILL_WMMA`, `IK2_PREFILL_DENSE=2`, `IK2_EXPERT_TILE_LDS`); cel: koszt okna 96 tokenów ≤ 0,14 s; bramka: parytet 11/11 + `ik2_copy_edit.py` + rep2 czatu
-- zysk: copy/edit do +60% [SZACUNEK z różnicy do GodGMN]
-- ryzyko karty: niskie (ścieżka prefillu już używana)
-- priorytet: wysoki dla agentów i edycji kodu
-
-**TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
-1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
-- **wynik 2026-11-25 17:25–17:45 (XTX, `~/k134/wt-k148` k148-sfx, PM4=0, picks SFXBLK=32 SFXRG=16):** parytet greedy IDENTICAL 11/11 (vx, blk128 i reszta). Edycja kodu `python_edit` (936 → 886 tok., dokładnie): prod 292,4 / 292,8 → **both 334,1 / 334,0 t/s (+14,2%)**, rg 318, blk 315, vx 301, blk128 244 (gorzej). Czat bez zmian: Q6 114,1 → 113,9, L2k 107,7 → 107,0 (−0,6%, szum). Werdykt: **wygrany (both)**, do wdrożenia w Mai po wall.py `pl` (K-176). Log: `~/qwen-opt/queue/logs/k148-*.log`.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19
@@ -314,14 +280,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (RAM hosta; `HSA_USE_SVM=0` już jest)
 - priorytet: wysoki (≥ 1 s/turę agenta)
 
-### K-009 · Przegląd configu MMQ na RDNA3 metodą wariantów jak FA 83 (maska `GGML_HIP_MMQ_VAR`: Q4_K/Q6_K/IQ4_XS, `sched_barrier`, offsety u32, prefetch K, skale x f32 w LDS)
-- data: 2026-11-09 (skale x f32: 2026-10-15)
-- źródło: `R/70-fa-d256-jak-to-zrobilismy.md:185` (#2), `R/68d-swieze-od-spolecznosci.md:138-139`, `Q/STATUS-NEXT.md:49`, [[sweep-wariantow-kernela]]
-- test: ISA na CPU (`isa.sh`). XTX: `test-backend-ops perf -o MUL_MAT` Q4_K/Q6_K, md5 12k jak `Q/fa-d256/md5.sh`, ABBA `llama-bench -p 512,4096`; każdy krok ≤ 10 min (szablon `~/qwen-opt/fa-d256/`)
-- zysk: pp ≤ 32k +2…4%, fill 255k +1…2% [INFERENCE]; MMQ to 63–81% prefillu, jedyna dźwignia prefillu przy krótkich promptach
-- ryzyko karty: brak
-- priorytet: średni (prefill; w pakiecie z K-010)
-
 ### K-010 · Fuzja gate/up + GLU w MMQ dla WMMA RDNA3 (port upstream #29948)
 - data: 2026-11-05
 - źródło: `R/68a-rdna3-kernele.md:120`, `R/68-SYNTEZA.md:21`, `R/68d-swieze-od-spolecznosci.md` §2.2
@@ -373,34 +331,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (zależy od decyzji)
 
-### K-018 · AGR2: kandydat lookupu zgodny z 4 draftami MTP (`LLAMA_SPEC_LOOKUP_AGREE=1`) + dynamiczny słownik draftu
-- data: 2026-10-19 (21c), 2026-11-05 (63 #18)
-- źródło: [[agr-lookup-zgodny-z-mtp]], [[2026-10-19-sufit-pointera-lookup]], `R/21c-copy-paste-lm.md:185-194`, `R/63-SYNTEZA.md:97`
-- test: najpierw symulacja CPU; XTX ABBA w jednej binarce na `mvs`, `copy` (hashline-pl) i spec_sweep T=0/T=1; kill < +2% hashline albo > +0,5% ms/krok na czacie; ≤ 10 min
-- zysk: agent +3,7%, hashline +5,4%, czat +0,6% (symulacja); zmienia tylko drafty
-- ryzyko karty: brak
-- priorytet: średni (na granicy progu)
-- **wynik 2026-11-25 18:31–18:43 (XTX, ABBA, `~/wt/qprep-spec` 50ca29355, konfiguracja produkcji):** kopiowanie mvs T=0 434,8 → **458,4 (+5,4%)**, short T=0 407,5 → 427,7 (+5,0%), short T=1 386,7 → 402,4 (+4,1%), md5 T=0 równe na wszystkich promptach; spec_sweep T=0 127,9 → 125,3 (**−2,0%**), T=1 115,5 → 117,6 (+1,8%). Werdykt: wygrany na kopii/edycji, czat w granicy bramki (−2,0%); wdrożenie razem z K-020 (K-175) po wall.py `pl`.
-
-### K-019 · Cache sufiksów między sesjami (draft z poprzednich wyjść agenta, styl SuffixDecoding)
-- data: 2026-10-19 (raport 18), 2026-11-07 (67c C18)
-- źródło: `R/67c-nvidia-backlog-testow.md:135`, archiwum (`A:21140`)
-- test: symulacja CPU na logach omp, potem XTX spec_sweep PL + replay agenta ABBA (kill < +1%); ≤ 10 min
-- zysk: +5–15% na agentach [SZACUNEK]; zmienia tylko drafty
-- ryzyko karty: brak
-- priorytet: średni (agenci, tani offline)
-- wynik 2026-11-20: symulacja CPU (`qwen-opt/k019/suffix_sim.ts`, wynik `qwen-opt/k019/wynik-2026-11-20.txt`): 190 sesji omp, 212 epok, 8,52 mln tokenów wyjść agenta (tokenizer Qwen3), model kroku jak w `product/research/21c-cplm/oracle.py` (MTP n 4, ogon przy m ≥ 6 i k = 4). Cache sufiksów z wcześniejszych sesji (CROSS) zamiast lookupu w sesji: 3,39 → 3,70 tok/krok, +8,4% t/s (model); oba razem (UNION: lokalny, a gdy nie trafi, cache sufiksów) 3,98 tok/krok, **+15,9%**. Najwięcej `write` +19,8% i tekst asystenta +22%, najmniej `edit` +14,7% i `bash` +13%. Ograniczenia: wyjścia pisał Claude, nie Qwen; podagenci powtarzają podobne teksty, więc wynik to raczej górna granica. Następny krok bez zmian: XTX spec_sweep PL + replay agenta ABBA.
-- **wynik 2026-11-25 18:43–19:06 (ABBA, LIVE=0, korpus omp 2026-11):** replay agenta 61 tur T=0: 138,1 / 138,5 → 140,6 / 140,0 t/s (**+1,4%**), tok/krok 4,111 → 4,198 (+2,1%); spec_sweep T=1 110,0 → 115,1, ale tok/krok identyczne, więc to szum termiczny, nie zysk. Werdykt: poniżej progu 3%, nie wdrażamy osobno; wróci z korpusem LIVE=1.
-
-### K-020 · Polityka wyrzucania `--cache-ram` ważona kosztem przeliczenia (Marconi) zamiast LRU
-- data: 2026-11-07
-- źródło: `R/68c-dlugi-kontekst-gdn.md:143` (#9)
-- test: XTX replay 3 wątków (2 długie + krótkie) z `LLAMA_SERVER_PREFIX_LOG`, liczba pełnych prefilli ≥ 20k; ~10 min
-- zysk: chroni wpisy ≥ 100k (przeliczenie 100–550 s) przy presji 40 GB [INFERENCE]
-- ryzyko karty: brak
-- priorytet: średni (rzadkie, ale ogromne tury)
-- **wynik 2026-11-25 19:06–19:17 (replay 3 wątki: 2 × 24k + 12 × 3k, `--cache-ram 8192`):** LRU (prod, A1/A2): 4 pełne ponowne prefille długich wątków, prefill łącznie 201,5 s, follow-up długiego wątku 107,7 s, wall 208,0 s; koszt α=1 i α=4 (B1, C1): **0 ponownych prefilli, prefill 95,2 s (−53%), follow-up 1,5 s, wall 102,0 s (−51%)**. Wyjście modelu się nie zmienia (to tylko polityka cache). Werdykt: **wygrany**, wdrożenie α=1 razem z K-018 (K-175).
-
 ### K-021 · Dataflow w taśmie PM4: usunąć granice dispatchy w łańcuchu MMVQ → norma → MMVQ weryfikacji (najpierw PoC-A: hand-off w trwałej siatce)
 - data: 2026-10-20 (raport 36 L7)
 - źródło: `R/37-proza-100.md:17-19` (górna granica `GGML_HIP_PM4_UB=mmvq,norm` −2,17 ms/partię 5 wierszy, −8,8%), `R/36-xtx-qwen-roadmap.md:190`, `R/66-SYNTEZA.md:66` (#15), [[budzet-megakernela-qwen-xtx]]
@@ -433,6 +363,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (Enigma)
 
+- **bieg 2026-11-25 19:55 nieważny:** md5 Bonsai 0 = 83 (4b32fc1a), ale `var_log=0` w obu ramionach, więc wariant 83 nie został użyty (przełącznik nie trafia w kernel tego kształtu); serwer Qwen3.6-A3B nie wstał (Connection refused). Do naprawy skryptu przed powtórką.
 ### K-026 · Enigma: próg draftu `--spec-draft-p-min` {0; 0,5; 0,8} × n {1,2,4} dla MoE z `--n-cpu-moe` na kartach ≤ 16 GB
 - data: 2026-11-07 (66a A2)
 - źródło: [[prog-draftu-od-kosztu-wiersza]], `R/66-SYNTEZA.md` poz. 10
@@ -473,14 +404,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: krótki ctx +4…9,5%, 199k +2…4%, za 40–70 osobodni [SZACUNEK]
 - ryzyko karty: **wysokie**: ewikcja kolejki KFD przy kernelu rezydentnym → możliwy reset
 - priorytet: niski (koszt i ryzyko; wspólny PoC z K-021)
-
-### K-038 · Przeszukiwanie flag spekulacji (TPE: DRAFT_N, LOOKUP_W/MMIN, PM4_MIN_DISPATCH, typ KV draftu) na odłożonym zestawie
-- data: 2026-11-05
-- źródło: `R/63-SYNTEZA.md:93` (#14), `R/63e-metodologia-agenci.md` §11, [[zestaw-odlozony]]
-- test: XTX xtxbench `--var-switch` po jednej fladze na job (~4 min), zwycięzcy na holdoucie; zmiany szerokości tylko po K-007
-- zysk: spec_sweep +1…5% [SZACUNEK]
-- ryzyko karty: brak
-- priorytet: niski (szum, klątwa zwycięzcy)
 
 ### K-042 · Spekulatywny prefill następnej tury w przerwie (serwer prefilluje swoją odpowiedź, przerywa na granicy ubatcha)
 - data: 2026-11-07
@@ -662,6 +585,84 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-038 · Przeszukiwanie flag spekulacji (TPE: DRAFT_N, LOOKUP_W/MMIN, PM4_MIN_DISPATCH, typ KV draftu) na odłożonym zestawie
+- data: 2026-11-05
+- źródło: `R/63-SYNTEZA.md:93` (#14), `R/63e-metodologia-agenci.md` §11, [[zestaw-odlozony]]
+- test: XTX xtxbench `--var-switch` po jednej fladze na job (~4 min), zwycięzcy na holdoucie; zmiany szerokości tylko po K-007
+- zysk: spec_sweep +1…5% [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: niski (szum, klątwa zwycięzcy)
+- **wynik 2026-11-25 19:17–19:30 (XTX, `~/wt/qprep-spec`, dev = sweep T=1 seed 1,2 + kopia short/mvs T=0; prod P1/P2/P3 T=1 120,0 / 120,0 / 120,1):** PM4_MIN_DISPATCH 8: 119,6; 32: 120,0; LOOKUP_MMIN 4: 116,1 T=1 (kopia +2,0%); MMIN 8: 120,1; **KV draftu q8_0: 122,2 (+1,8% T=1)**, kopia bez zmian. Plik zwycięzcy nie powstał (próg łączny dev). Kandydat `KVD=q8_0` (precyzja wyższa niż q4_0, wyjście bez zmian) potwierdzić ABBA w K-175.
+- przeniesione 2026-11-25: screening zrobiony; KVD q8_0 do K-175
+
+### K-165 · Inkling uncensored w Nib: LoRA AtomicChat (rank 1, 98 tensorów) w runtime Nib, cel ≥ 145 t/s przy T=0,7
+- data: 2026-11-25 (JARO: „nowe infra ma 150 t/s”; Nib 150,6 t/s T=0,7 KV q4 na naszym XTX, ale wagi ocenzurowane)
+- plan: agent dopisuje `--lora` do Nib (attn_output + ffn_down_exps, wszystkie ścieżki, grafy HIP); XTX: selftest z/bez LoRA, 5 promptów odmowy przy T=0, wall.py T=0 / T=0,7 KV q4; potem Nib jako czat Inkling zamiast Mai
+- czas karty: ok. 15 min
+- priorytet: najwyższy
+- **wynik 2026-11-25:** pierwszy bieg (13:27) unieważniony: odpowiadał osierocony serwer Mai z K-164 ([[lekcja-zabicie-skryptu-nie-serwera]]). Powtórka k165b: odmowy stock 5/5, z LoRA 0/5; wall.py T=0 / T=0,7: stock 168,2 / 149,9, **LoRA 156,6 / 147,3** (Maya 113,9 / 113,4). Cel ≥ 145 osiągnięty. Dalej: jakość NVFP4+LoRA vs AD-Q4_K (KLD/odpowiedzi), decyzja JARO o czacie Inkling na Nib.
+- **jakość (K-168, HumanEval+):** Nib + LoRA 92,1 / 87,2% vs Maya 90,2 / 85,4%; dekod kodu 209,5 vs 124,4 t/s. Gotowe do decyzji JARO (czat Inkling na Nib + LoRA).
+- przeniesione 2026-11-25: zmierzone; wdrożenie Niba czeka na decyzję JARO (polski −30%)
+
+### K-020 · Polityka wyrzucania `--cache-ram` ważona kosztem przeliczenia (Marconi) zamiast LRU
+- data: 2026-11-07
+- źródło: `R/68c-dlugi-kontekst-gdn.md:143` (#9)
+- test: XTX replay 3 wątków (2 długie + krótkie) z `LLAMA_SERVER_PREFIX_LOG`, liczba pełnych prefilli ≥ 20k; ~10 min
+- zysk: chroni wpisy ≥ 100k (przeliczenie 100–550 s) przy presji 40 GB [INFERENCE]
+- ryzyko karty: brak
+- priorytet: średni (rzadkie, ale ogromne tury)
+- **wynik 2026-11-25 19:06–19:17 (replay 3 wątki: 2 × 24k + 12 × 3k, `--cache-ram 8192`):** LRU (prod, A1/A2): 4 pełne ponowne prefille długich wątków, prefill łącznie 201,5 s, follow-up długiego wątku 107,7 s, wall 208,0 s; koszt α=1 i α=4 (B1, C1): **0 ponownych prefilli, prefill 95,2 s (−53%), follow-up 1,5 s, wall 102,0 s (−51%)**. Wyjście modelu się nie zmienia (to tylko polityka cache). Werdykt: **wygrany**, wdrożenie α=1 razem z K-018 (K-175).
+- przeniesione 2026-11-25: wygrany, wdrożenie K-175
+
+### K-019 · Cache sufiksów między sesjami (draft z poprzednich wyjść agenta, styl SuffixDecoding)
+- data: 2026-10-19 (raport 18), 2026-11-07 (67c C18)
+- źródło: `R/67c-nvidia-backlog-testow.md:135`, archiwum (`A:21140`)
+- test: symulacja CPU na logach omp, potem XTX spec_sweep PL + replay agenta ABBA (kill < +1%); ≤ 10 min
+- zysk: +5–15% na agentach [SZACUNEK]; zmienia tylko drafty
+- ryzyko karty: brak
+- priorytet: średni (agenci, tani offline)
+- wynik 2026-11-20: symulacja CPU (`qwen-opt/k019/suffix_sim.ts`, wynik `qwen-opt/k019/wynik-2026-11-20.txt`): 190 sesji omp, 212 epok, 8,52 mln tokenów wyjść agenta (tokenizer Qwen3), model kroku jak w `product/research/21c-cplm/oracle.py` (MTP n 4, ogon przy m ≥ 6 i k = 4). Cache sufiksów z wcześniejszych sesji (CROSS) zamiast lookupu w sesji: 3,39 → 3,70 tok/krok, +8,4% t/s (model); oba razem (UNION: lokalny, a gdy nie trafi, cache sufiksów) 3,98 tok/krok, **+15,9%**. Najwięcej `write` +19,8% i tekst asystenta +22%, najmniej `edit` +14,7% i `bash` +13%. Ograniczenia: wyjścia pisał Claude, nie Qwen; podagenci powtarzają podobne teksty, więc wynik to raczej górna granica. Następny krok bez zmian: XTX spec_sweep PL + replay agenta ABBA.
+- **wynik 2026-11-25 18:43–19:06 (ABBA, LIVE=0, korpus omp 2026-11):** replay agenta 61 tur T=0: 138,1 / 138,5 → 140,6 / 140,0 t/s (**+1,4%**), tok/krok 4,111 → 4,198 (+2,1%); spec_sweep T=1 110,0 → 115,1, ale tok/krok identyczne, więc to szum termiczny, nie zysk. Werdykt: poniżej progu 3%, nie wdrażamy osobno; wróci z korpusem LIVE=1.
+- przeniesione 2026-11-25: poniżej progu
+
+### K-018 · AGR2: kandydat lookupu zgodny z 4 draftami MTP (`LLAMA_SPEC_LOOKUP_AGREE=1`) + dynamiczny słownik draftu
+- data: 2026-10-19 (21c), 2026-11-05 (63 #18)
+- źródło: [[agr-lookup-zgodny-z-mtp]], [[2026-10-19-sufit-pointera-lookup]], `R/21c-copy-paste-lm.md:185-194`, `R/63-SYNTEZA.md:97`
+- test: najpierw symulacja CPU; XTX ABBA w jednej binarce na `mvs`, `copy` (hashline-pl) i spec_sweep T=0/T=1; kill < +2% hashline albo > +0,5% ms/krok na czacie; ≤ 10 min
+- zysk: agent +3,7%, hashline +5,4%, czat +0,6% (symulacja); zmienia tylko drafty
+- ryzyko karty: brak
+- priorytet: średni (na granicy progu)
+- **wynik 2026-11-25 18:31–18:43 (XTX, ABBA, `~/wt/qprep-spec` 50ca29355, konfiguracja produkcji):** kopiowanie mvs T=0 434,8 → **458,4 (+5,4%)**, short T=0 407,5 → 427,7 (+5,0%), short T=1 386,7 → 402,4 (+4,1%), md5 T=0 równe na wszystkich promptach; spec_sweep T=0 127,9 → 125,3 (**−2,0%**), T=1 115,5 → 117,6 (+1,8%). Werdykt: wygrany na kopii/edycji, czat w granicy bramki (−2,0%); wdrożenie razem z K-020 (K-175) po wall.py `pl`.
+- przeniesione 2026-11-25: wygrany, wdrożenie K-175
+
+### K-164 · Inkling: drafter DFlash2 (incoai, 0,99 GB) zamiast DSpark w Mai na XTX
+- data: 2026-11-25 (zwiad: H200 T=1 akceptacja 4,96 vs 3,52 DSpark, GSM8K 482 vs 375 t/s; tqllm Metal exact+DFlash2 57,1 vs 52,1)
+- plan: pobrać `incoai/Inkling-2-Mini-DFlash2` (0,99 GB); w Mai brak DFlash2 (jest DSpark) → port na podstawie tqllm 788055720 i `sglang_inkling_dflash2.py`; najpierw CPU: kształty i referencja; potem XTX: parytet 11/11, wall.py T=0 / T=0,7 vs produkcja i vs DSpark
+- zysk: +20…40% przy T=0,7, jeśli krok weryfikacji tani (łączyć z K-158) [SZACUNEK]
+- priorytet: wysoki
+- **wynik 2026-11-25 (gałąź `k164-dflash2` fea522a0):** test GPU vs referencja CPU PASS (drafty identyczne, propose 3,84 ms z głowicą Q8, 8,29 ms FP16, write_context 0,13–0,20 ms), test akceptacji q (min(1,p/q)) passed, parytet 11/11. rep2 Q1 / Q6 / L2k: produkcja 129,7 / 114,1 / 107,7; df2 85,9 / 96,4 / 101,1; df2only 115,7 / 96,6 / 99,0; df2q (próbkowanie z q) 85,5 / 98,1 / 100,7; df2qonly 115,7 / 98,3 / 102,2. wall.py: produkcja 108,5 / 110,5, df2 108,6 / 108,4, df2q 107,9 / 106,9.
+- wniosek: DFlash2 w Mai dziś przegrywa przy T=0,7 (−14%) z tego samego powodu co K-158: droga runda weryfikacji. Q1 dwumodalne (82–86 albo 124–134 na bieg), do wyjaśnienia (sterownik spekulacji). Dalej: statystyki akceptacji (IK2_STATS) i ponowny pomiar po K-158b.
+- **k164b 2026-11-25 (build 9b95ffbe: grafy okien przed READY, koszt draftu osobno, sonda z odstępem; okno 8 w każdym kroku, bez lookupu, IK2_STATS):**
+  - DFlash2 greedy (df2m): T=0 **3,73 tok./okno**, Q1 **209,8 t/s** (+62% vs 129,7), ale L2k 80,9; T=0,7 1,93 tok./okno, Q6 44,6. Próbkowanie z q (df2qm): T=0,7 2,05 tok./okno, Q6 47,6. DSpark (dsm): T=0 3,09, T=0,7 1,58 tok./okno, Q1 104,4.
+  - **Księga rundy Mai:** zwykły token 7,8 ms; draft 3,2–3,8 ms (Nib 1,4); weryfikacja okna 8 ok. 40 ms (5,1 tokenu), c[2..8] = 13,3 / 16,4 / 23 / 18–25 / 29 / 21 / 41 ms. Przy T=0,7 rep2 wysyła pełny rozkład, więc drafty punktowe trafiają rzadko (8–15% draftów).
+  - z nowym sterownikiem (df2only, df2qonly, dsonly) sterownik słusznie prawie nie draftuje przy T=0,7: Q6 107,8–109,4 vs 114,1 produkcja (−4…−5%), Q1 122,6–124,5.
+  - wniosek: DFlash2 to najlepszy drafter przy T=0 (3,73 vs 3,09 tok./okno), ale zysk zjada weryfikacja: koszt rośnie z kontekstem (L2k −25%) i z szerokością. Kolejność: K-158b (atencja okna w jednym launchu, eksperci okna przez kernele tokenu), tani draft (K-159: głowa skrócona, wagi Q8), potem ponownie df2 z oknem wg pewności.
+- **k164c 2026-11-25 (ac47cca2: shortlista głowy 32768 + kontekst, wagi Q8, graf, okno wg pewności):** propose 3,43 → 2,54 ms (warstwy 2,4–2,8 ms nie schodzą z Q8, więc ograniczone opóźnieniem, nie pasmem; głowa 0,74 → 0,15 ms). Parytet 11/11. rep2 Q1 / Q6 / L2k: df2m-sl 106,3 / 43,9 / 83,0; df2-conf-sl 144,0 / 77,0 / 105,5; df2-conf-slq 145,4 / 81,5 / 106,8. Akceptacja: okno 8 T=0 3,54 tok., T=0,7 1,86–2,02; okno wg pewności T=0 2,45 tok. (86% draftów), T=0,7 1,60. Weryfikacja na tej gałęzi bez poprawek K-158b (okno 8 = 40 ms), więc DFlash2 ocenić dopiero po przeniesieniu na `k158-dspark`.
+- **wynik K-164d 2026-11-25 17:10–17:24 (DFlash2 na gałęzi K-158 `k164-on-k158` 09574b81):** rep2 prod Q1 / Q6 / L2k 129,5 / 113,8 / 107,4; DFlash2 + gate 178,6 / 108,7 / 122,3 (L2k +13,9%, Q6 −4,5%); DSpark pol-gate 202,2 / 111,0 / 120,8. wall.py T=0,7: df2-gate mediana 122,4 (code 135,4, tech 109,4, **pl 105,9**, json 186,9), df2-pol-gate 107,9 (pl 107,1). Produkcja pl ok. 113: bramka `pl` (−2%) blokuje oba. Werdykt: nie wdrażamy; DFlash2 wygrywa długi kontekst, przegrywa polski.
+- przeniesione 2026-11-25: bez wdrożenia (bramka pl)
+
+### K-148 · Maya: szybsza weryfikacja szerokiego okna sufiksowego (dziś ścieżka prefillu, ok. 0,2 s na 96 tokenów)
+- data: 2026-11-24 (K-147: nasz sufiks 404–452 / 299 t/s vs GodGMN 708 / 494 na tym samym teście i karcie)
+- plan: profil `forward()` dla T=16–128 z `g_rec` (IK2_PROF), porównanie z presetem GodGMN (`IK2_PREFILL_WMMA`, `IK2_PREFILL_DENSE=2`, `IK2_EXPERT_TILE_LDS`); cel: koszt okna 96 tokenów ≤ 0,14 s; bramka: parytet 11/11 + `ik2_copy_edit.py` + rep2 czatu
+- zysk: copy/edit do +60% [SZACUNEK z różnicy do GodGMN]
+- ryzyko karty: niskie (ścieżka prefillu już używana)
+- priorytet: wysoki dla agentów i edycji kodu
+
+**TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
+1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
+- **wynik 2026-11-25 17:25–17:45 (XTX, `~/k134/wt-k148` k148-sfx, PM4=0, picks SFXBLK=32 SFXRG=16):** parytet greedy IDENTICAL 11/11 (vx, blk128 i reszta). Edycja kodu `python_edit` (936 → 886 tok., dokładnie): prod 292,4 / 292,8 → **both 334,1 / 334,0 t/s (+14,2%)**, rg 318, blk 315, vx 301, blk128 244 (gorzej). Czat bez zmian: Q6 114,1 → 113,9, L2k 107,7 → 107,0 (−0,6%, szum). Werdykt: **wygrany (both)**, do wdrożenia w Mai po wall.py `pl` (K-176). Log: `~/qwen-opt/queue/logs/k148-*.log`.
+- przeniesione 2026-11-25: wygrany, wdrożenie K-176
 
 ### K-174 · Tokenizacja BPE bez alokacji (PR #32859) w topce: czas tokenizacji długiego promptu (CPU)
 - data: 2026-11-25 (panel JARO; PR scalony 2026-11-24, `2a48778`; autor: qwen2 −49%)
@@ -1336,6 +1337,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-009 · Przegląd configu MMQ na RDNA3 metodą wariantów jak FA 83 (maska `GGML_HIP_MMQ_VAR`: Q4_K/Q6_K/IQ4_XS, `sched_barrier`, offsety u32, prefetch K, skale x f32 w LDS)
+- data: 2026-11-09 (skale x f32: 2026-10-15)
+- źródło: `R/70-fa-d256-jak-to-zrobilismy.md:185` (#2), `R/68d-swieze-od-spolecznosci.md:138-139`, `Q/STATUS-NEXT.md:49`, [[sweep-wariantow-kernela]]
+- test: ISA na CPU (`isa.sh`). XTX: `test-backend-ops perf -o MUL_MAT` Q4_K/Q6_K, md5 12k jak `Q/fa-d256/md5.sh`, ABBA `llama-bench -p 512,4096`; każdy krok ≤ 10 min (szablon `~/qwen-opt/fa-d256/`)
+- zysk: pp ≤ 32k +2…4%, fill 255k +1…2% [INFERENCE]; MMQ to 63–81% prefillu, jedyna dźwignia prefillu przy krótkich promptach
+- ryzyko karty: brak
+- priorytet: średni (prefill; w pakiecie z K-010)
+- **wynik 2026-11-25 19:31–19:55 (XTX, `~/wt/k009` f7d9d3286, PM4=0):** gate test-backend-ops PASS, md5 12k równe (816334e4) dla wszystkich masek. perf n=512 ABBA vs VAR 0: VAR 2 q4_K −6,6%, q6_K +0,1%, iq4_xs −5,6%, Qwen −3,2%; VAR 8 q4_K −29,9%, Qwen −17,0%; VAR 10 q4_K −5,3%, Qwen −2,7%. Żaden wariant nie wygrywa (select: NONE). `sched_barrier` po WMMA i prefetch kafla y do rejestrów szkodzą na gfx1100.
+- przeniesione 2026-11-25: bez zysku
 
 ### K-166 · Maya: fuzje i sztuczki kerneli dekodu z Nib (LGQ8, ACOMB, ROUTE, MIX, HEAD)
 - data: 2026-11-25 (gałąź Mai `k166-nibk` cd79d669, przełączniki `IK2_K166_*`; launche na token 689 → 595)
