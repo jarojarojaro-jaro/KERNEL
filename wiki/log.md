@@ -757,3 +757,9 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 
 ## [2026-11-25] kolejka | 10 kolejnych paczek: K-075, K-036, K-035, K-121, K-026a/b, K-021, K-001, K-012, K-047
 - Ocenione bez karty: K-012 sufit bezstratny +2,5% (poniżej progu), K-047 sufit ok. 1,1%; K-159 Q4_K w Nibie 1–2 tygodnie (decyzja), K-124 wymaga budżetu.
+
+## [2026-11-25] wyniki | K-158g wygrany (T=0 +26,3%, L2k +11,3%, pl −1,7%), K-175 FAIL, K-006 −36% pamięci cache
+- K-158g `eq8-hsl-pol2-gated`: parytet 11/11, bramka −2% przechodzi → K-177 (podmiana `maya-atomic.json` po K-176/K-171).
+- K-175: AGR2 i KV draftu q8_0 zmieniają md5 i tech T=0,7 −3,6% → odrzucone; sam K-020 → K-178.
+- K-006: chude checkpointy −36% pamięci wpisu, wpis wspólnego początku 8,5 s → 0,86 s po wyrzuceniu; md5 harnessu niedeterministyczne → decyzja K-007.
+- Ryzyko: `topka-keeper.sh` podnosi czat z modelem `qwen` (z cenzurą), `chat8080.sh restore` z `uncensored`.

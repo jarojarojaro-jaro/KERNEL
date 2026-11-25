@@ -21,11 +21,15 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-175 · Wdrożenie na :8080: K-020 (wyrzucanie cache ważone kosztem, α=1) + K-018 (AGR2) z `~/wt/qprep-spec`
-- data: 2026-11-25 (wyniki K-018, K-020 wyżej)
-- test: wall.py z promptem `pl` prod vs qprep-spec (AGR2 + koszt α=1), bramka: żadna kategoria < −2%; potem przełączenie `chat8080.sh` na nowy build w oknie kolejki i smoke md5
-- czas karty: ok. 8 min
-- priorytet: najwyższy (−51% czasu przy wielu wątkach agenta)
+### K-178 · Wdrożenie samego K-020 (wyrzucanie cache ważone kosztem) na :8080
+- data: 2026-11-25 (K-175 FAIL na AGR2/KVD)
+- test: `k178.jobs`: PROD (`run-topka.sh uncensored`, `~/llama-topka`) vs Q (qprep-spec 50ca29355 + `LLAMA_SERVER_CACHE_EVICT=cost`), ABBA wall.py + md5 T=0 + replay K-020; bramka −2% i md5 identyczne
+- uwaga: `topka-keeper.sh:19` restartuje `run-topka.sh qwen` (UD-Q4_K_XL z cenzurą, ctx 204 800), a `chat8080.sh restore` startuje `uncensored` (ctx 262 144): dwa różne modele produkcji zależnie od tego, kto podnosi czat
+- czas karty: ok. 9 min
+
+### K-177 · Wdrożenie w Mai: K-158g `eq8-hsl-pol2-gated` jako `maya-atomic.json`
+- data: 2026-11-25 (wynik K-158g niżej)
+- plan: po zakończeniu K-176 i K-171 (używają `maya-atomic.json` jako bazy) podmienić konfigurację, kopia `maya-atomic.prev.json`; potem jedno wall.py kontrolne
 
 ### K-176 · Wdrożenie w Mai: K-148 `both` (szerokie okno sufiksu, edycja kodu +14,2%)
 - data: 2026-11-25
@@ -84,6 +88,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - wall.py (T=0: code / tech / pl / json; T=0,7 mediana): produkcja 110,9 / 113,9 / 113,8 / 113,9; 113,0. eq8-hsl-pol2-gate2 115,8 / 112,6 / **111,7** / **196,4**; 112,8. eq8-pol2-gate2 112,5 / 112,7 / 112,0 / 190,9; 112,9. Bramka chroni polski (−1,8% zamiast −39%), ale za wcześnie wyłącza draft na kodzie (115,8 vs 162,8 bez bramki) i GATE=2 psuje L2k (105,8 vs 121,2). Nie wdrażamy jeszcze; K-158f: strojenie bramki (dłuższa ocena, decyzja z akceptacji, nie z pierwszych 2 rund), GATE=1 dla długiego kontekstu.
 - **K-158f 2026-11-25 (2cbb89f0: bramka z histerezą, sondy seriami, `c_plain` mierzone):** parytet 11/11. wall.py T=0 code / tech / pl / json (produkcja 101,2 / 113,5 / 113,4 / 108,8): pol2-gate **165,6 / 115,4 / 107,9 / 196,9** (kod +64%, json +81%, polski −4,9%); T=0,7 mediana 112,2 vs 112,2 (ale tech 101,5 do sprawdzenia). rep2 Q1 201,3, L2k 105,2 (spadek względem 121–124 z K-158e). Nie wdrażamy: polski poniżej progu −2% i L2k. K-158g: symulacja bramki offline (w benchu nie zadziałała), naprawa L2k.
 
+- **wynik K-158g 2026-11-25 21:19–21:34 (`wt-k158g` 791e2a6f, GATE_DEFER):** parytet IDENTICAL 11/11. wall.py T=0: prod code 110,3 / tech 113,3 / pl 112,7 / json 112,9 → gated **169,3 / 115,6 / 110,8 (−1,7%) / 197,6**, mediana 112,8 → **142,5 (+26,3%)**; T=0,7 wszystkie kategorie = prod (112,7 → 112,9; pl 111,8 → 112,9), bo polityka wyłącza drafter przy próbkowaniu. rep2: Q1 129,5 → 202,7, Q6 113,8 → 114,0, **L2k 107,5 → 119,6 (+11,3%)**. Bramka −2% przechodzi (najgorzej pl T=0 −1,7%). Werdykt: **wygrany**, wdrożenie K-177.
 ### K-159 · Nib na tym samym modelu co Maya (uncensored): AtomicChat w paczce NVFP4 albo AD-Q4_K w Nib
 - data: 2026-11-25 (Nib liczy na NVFP4-Mixed, nie na naszych wagach uncensored)
 - plan: wtopić LoRA AtomicChat (43 MB) w paczkę Nib albo dodać Q4_K do loadera Nib; wall.py T=0 / T=0,7, KV q4_0, Quest wyłączony do 14k
@@ -288,6 +293,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (RAM hosta; `HSA_USE_SVM=0` już jest)
 - priorytet: wysoki (≥ 1 s/turę agenta)
 
+- **wynik 2026-11-25 20:54–21:19 (XTX, `~/wt/k006` k006-thin, ABBA A=prod / C=THIN=4+PREFIX=2):** zapis wpisu cache mediana 5291 → **3404 MiB (−36%)**, maks. 8331 → 4049 MiB (−51%), checkpointy 12 → 5; tura agenta bez zmian (12,5 vs 12,3–12,6 s). Nowa sesja z tym samym system promptem: 1221 → 913–1341 ms; po wyrzuceniu slotu wpis „wspólny początek” daje **8543 → 860 ms (−90%)**. md5: 7 z 30 różnych, ale także między ramionami bez zmian (suite: A2 a0dde0fa vs EA/EB f3e9f53e), więc harness nie jest deterministyczny między serwerami; bezstratności nie da się tu orzec md5. Werdykt: duży zysk pamięci i TTFT, wdrożenie wymaga bramki KLD/wymuszania tokenów (decyzja K-007).
 ### K-012 · `kvq` przy W=5 bliżej rooflinu: nowy układ (K dekwantowane raz, głębszy prefetch K/V), cel ~172–300 µs/warstwę przy 98–196k
 - data: 2026-11-07
 - źródło: [[2026-11-08-kvq-once-profil]] (`:86`: ONCE=1/2 KILL, „potrzebny inny układ”; FA = 30% kroku przy 199k, 11,32 ms), `R/68c-dlugi-kontekst-gdn.md:142`, `R/70-fa-d256-jak-to-zrobilismy.md:188` (#5)
@@ -1334,6 +1340,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-175 · Wdrożenie na :8080: K-020 (wyrzucanie cache ważone kosztem, α=1) + K-018 (AGR2) z `~/wt/qprep-spec`
+- data: 2026-11-25 (wyniki K-018, K-020 wyżej)
+- test: wall.py z promptem `pl` prod vs qprep-spec (AGR2 + koszt α=1), bramka: żadna kategoria < −2%; potem przełączenie `chat8080.sh` na nowy build w oknie kolejki i smoke md5
+- czas karty: ok. 8 min
+- priorytet: najwyższy (−51% czasu przy wielu wątkach agenta)
+- **wynik 2026-11-25 21:37–21:40 (wall.py ABBA, `~/qwen-opt/k175/summary.py`):** N (AGR2 + koszt α=1 + KVD q8_0) vs P: T=0 code +4,5%, tech +1,3%, pl +2,2%, json +6,0%; T=0,7 code +2,9%, **tech −3,6% (FAIL)**, pl +0,1%, json +5,1%; md5 T=0 różne we wszystkich 4 kategoriach (KV draftu q8_0 zmienia wyjście). NB (bez KVD, n=1): T=0 tech −6,7%, pl −8,5%, md5 pl/json różne. **GATE FAIL: AGR2 i KVD q8_0 nie wchodzą.** Sam K-020 (neutralny dla wyjścia) idzie osobno jako K-178.
+- przeniesione 2026-11-25: bramka nie przeszła
 
 ### K-062 · Dekoder FA CUDA z `__launch_bounds__(…,2)` (dual-CTA)
 - data: 2026-11-07
