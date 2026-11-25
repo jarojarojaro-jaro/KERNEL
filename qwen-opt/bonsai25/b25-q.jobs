@@ -1,0 +1,6 @@
+# topka-best: plain decode, Dogukan config (temp 1.0, n3 p-min 0), chat repeat W16
+b25q-none|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 EXTRA_TAG=-plain ./b25.sh best q2 none
+b25q-dog|600|~/qwen-opt/bonsai25|PM4=1 ./b25-dog.sh /home/jaro/wt/topka-best/build-hip/bin Q2_0 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25q-dog-prod|600|~/qwen-opt/bonsai25|PM4=1 GGML_HIP_FA_D256_VAR=83 LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_GPU_VERIFY=1 LLAMA_SPEC_COUPLED=1 LLAMA_SERVER_YIELD_FAST=2 GGML_HIP_PM4_MIN_DISPATCH=16 GGML_HIP_PM4_LAZY_EXEC=1 ./b25-dog.sh /home/jaro/wt/topka-best/build-hip/bin Q2_0 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-n-max 2
+b25q-w16r|900|~/qwen-opt/bonsai25|LOOKUP_W=16 PM4=1 PROD=1 EXTRA_TAG=-w16r ./b25.sh best q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25q-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

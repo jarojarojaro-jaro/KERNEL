@@ -1,0 +1,51 @@
+From 850148ff769d27125cf92952fb29abed095b380d Mon Sep 17 00:00:00 2001
+From: kernel <k@l>
+Date: Wed, 25 Nov 2026 02:34:25 +0100
+Subject: [PATCH] K-155: thin F32/F16 weights at 9..32 columns via MMVF column
+ chunks instead of hipBLAS GEMM (GDN ssm_alpha/beta), env
+ GGML_HIP_K155_MMVF_SPLIT
+
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu | 26 ++++++++++++++++++++++++++
+ 1 file changed, 26 insertions(+)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 5026b5e..46f7f42 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -1983,6 +1983,32 @@ static void ggml_cuda_mul_mat(ggml_backend_cuda_context & ctx, const ggml_tensor
+         ggml_cuda_mul_mat_vec_f(ctx, src1, src0, nullptr, &dst_vec);
+         return;
+     }
++    // K-155: a thin F32/F16 weight (e.g. Qwen3.5/3.8 GDN ssm_alpha/ssm_beta, 48 rows) at 9..32 columns (a speculative
++    // verify window) went to a cuBLAS/hipBLAS GEMM, ~280 us a call on gfx1100 vs ~8 us for MMVF at 8 columns:
++    // run MMVF over column chunks of MMVF_MAX_BATCH_SIZE instead (same per-column math). GGML_HIP_K155_MMVF_SPLIT=0: off
++    {
++        static const bool k155 = []() { const char * e = getenv("GGML_HIP_K155_MMVF_SPLIT"); return !e || atoi(e) != 0; }();
++        if (k155 && ne11 > MMVF_MAX_BATCH_SIZE && ne11 <= 4*MMVF_MAX_BATCH_SIZE && ne01 <= 4096 && ne2 == 1 && ne3 == 1
++                && (src0->type == GGML_TYPE_F32 || src0->type == GGML_TYPE_F16)
++                && ggml_is_contiguous(src1) && ggml_is_contiguous(dst)
++                && ggml_cuda_should_use_mmvf(src0->type, cc, warp_size, src0->ne, src0->nb, MMVF_MAX_BATCH_SIZE)) {
++            for (int64_t c0 = 0; c0 < ne11; c0 += MMVF_MAX_BATCH_SIZE) {
++                const int64_t nc = std::min<int64_t>(MMVF_MAX_BATCH_SIZE, ne11 - c0);
++                ggml_tensor src1_c = *src1;
++                ggml_tensor dst_c  = *dst;
++                src1_c.data  = (char *) src1->data + c0*src1->nb[1];
++                src1_c.ne[1] = nc;
++                src1_c.nb[2] = src1_c.nb[1]*nc;
++                src1_c.nb[3] = src1_c.nb[2];
++                dst_c.data   = (char *) dst->data + c0*dst->nb[1];
++                dst_c.ne[1]  = nc;
++                dst_c.nb[2]  = dst_c.nb[1]*nc;
++                dst_c.nb[3]  = dst_c.nb[2];
++                ggml_cuda_mul_mat_vec_f(ctx, src0, &src1_c, nullptr, &dst_c);
++            }
++            return;
++        }
++    }
+     if (ggml_cuda_should_use_mmf(src0->type, cc, warp_size, src0->ne, src0->nb, ne11, /*mul_mat_id =*/ false)) {
+         ggml_cuda_mul_mat_f(ctx, src0, src1, nullptr, dst);
+         return;
+-- 
+2.53.0
+

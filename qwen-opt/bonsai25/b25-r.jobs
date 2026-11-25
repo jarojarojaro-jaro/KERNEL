@@ -1,0 +1,5 @@
+# WMMA Q2_0 for MTP verify widths (BZ16_MIN 2/3) vs dp4a, chat T=0.7 + plain
+b25r-perf|600|~/wt/topka-best/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; for v in 9 2; do echo "== BZ16_MIN=$v"; GGML_HIP_BZ16_MIN=$v taskset -c 2-5 timeout 250 ./test-backend-ops perf -b ROCm0 -o MUL_MAT -p "type_a=q2_0,type_b=f32,m=(17408|5120),n=(1|2|3|4|8|16),k=(5120|17408)" 2>&1 | grep MUL_MAT | sed -E "s/,bs=.*\):/:/; s/ +/ /g"; done
+b25r-min2|900|~/qwen-opt/bonsai25|GGML_HIP_BZ16_MIN=2 LOOKUP_W=16 PM4=1 PROD=1 EXTRA_TAG=-min2 ./b25.sh best q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25r-min3|900|~/qwen-opt/bonsai25|GGML_HIP_BZ16_MIN=3 LOOKUP_W=16 PM4=1 PROD=1 EXTRA_TAG=-min3 ./b25.sh best q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25r-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

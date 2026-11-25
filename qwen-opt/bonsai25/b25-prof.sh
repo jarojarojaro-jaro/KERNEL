@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # decode kernel profile (rocprofv3 kernel stats) + llama-bench tg64 for Bonsai 2.5 Uncensored Q2_0 / PTQ1_0 on the prism build
 set -uo pipefail
-B=${B:-$HOME/wt/prism/build-hip/bin}; export GGML_HIP_PM4=0 LD_LIBRARY_PATH=$B:/opt/rocm/core-10.0/lib
+B=${B:-$HOME/wt/topka-best/build-hip/bin}; export GGML_HIP_PM4=0 LD_LIBRARY_PATH=$B:/opt/rocm/core-10.0/lib
 D=$HOME/models/bonsai25; out=$HOME/qwen-opt/bonsai25/out/prof-$(date +%H%M%S); mkdir -p $out
 ~/qwen-opt/l1tok/chat8080.sh stop
-for m in Q2_0 PTQ1_0; do
+for m in Q2_0; do
   taskset -c 2-5 timeout 200 $B/llama-bench -m $D/Ternary-Bonsai-2.5-27B-Uncensored-$m-mtp.gguf -ngl 999 -fa 1 -ctk q4_0 -ctv q4_0 -p 512 -n 128 -r 3 2>&1 | grep -E "pp512|tg128"
 done
 cd $out && taskset -c 2-5 timeout 300 /opt/rocm/core-10.0/bin/rocprofv3 --kernel-trace --stats --output-format csv -d $out -o prof -- \

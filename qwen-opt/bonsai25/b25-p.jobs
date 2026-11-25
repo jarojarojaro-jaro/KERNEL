@@ -1,0 +1,6 @@
+# topka-best = Hadamard port + K-150T fusions + K-154 Q2_0 WMMA 9..16 + K-155 MMVF split: tbo, chat+copy W16/W7, K155 off arm
+b25p-tbo|600|~/wt/topka-best/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; for p in "type_a=q2_0" "type_a=f32" "type_a=f16"; do echo "== MUL_MAT $p"; taskset -c 2-5 timeout 250 ./test-backend-ops -b ROCm0 -o MUL_MAT -p "$p" 2>&1 | grep -E "FAIL|tests passed" | tail -2; done; journalctl -k --since "-10min" --no-pager | grep -c gfxhub
+b25p-w16|900|~/qwen-opt/bonsai25|LOOKUP_W=16 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-w16 ./b25.sh best q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25p-w7|900|~/qwen-opt/bonsai25|LOOKUP_W=7 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-w7 ./b25.sh best q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25p-w16-k155off|900|~/qwen-opt/bonsai25|GGML_HIP_K155_MMVF_SPLIT=0 LOOKUP_W=16 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-w16-k155off ./b25.sh best q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25p-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

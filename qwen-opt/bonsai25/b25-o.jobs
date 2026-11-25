@@ -1,0 +1,6 @@
+# K-154 Q2_0 WMMA mat-vec for 9..16 columns (topka-bz16): tbo, perf, llama-bench pp, server copy W16/W11/W7
+b25o-tbo|600|~/wt/topka-bz16/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; for o in MUL_MAT MUL_MAT_ADD; do echo "== $o"; taskset -c 2-5 timeout 200 ./test-backend-ops test -b ROCm0 -o $o -p type_a=q2_0 2>&1 | grep -E "FAIL|tests passed" | tail -2; done; journalctl -k --since "-10min" --no-pager | grep -c gfxhub
+b25o-bench|600|~/wt/topka-bz16/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; ~/qwen-opt/l1tok/chat8080.sh stop; for v in 1 0 1 0; do echo "== BZ16=$v"; GGML_HIP_BZ16=$v taskset -c 2-5 timeout 200 ./llama-bench -m ~/models/bonsai25/Ternary-Bonsai-2.5-27B-Uncensored-Q2_0-mtp.gguf -p 8,10,12,16 -n 0 -ub 16 -fa 1 -ngl 99 -ctk q4_0 -ctv q4_0 -r 3 2>&1 | grep -E "pp[0-9]+ " | sed -E "s/ +/ /g" | cut -d"|" -f9,10; done
+b25o-w16|900|~/qwen-opt/bonsai25|LOOKUP_W=16 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-w16 ./b25.sh bz16 q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25o-w11|900|~/qwen-opt/bonsai25|LOOKUP_W=11 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-w11 ./b25.sh bz16 q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25o-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

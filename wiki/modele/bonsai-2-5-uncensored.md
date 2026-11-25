@@ -11,7 +11,9 @@ karty: rx-7900-xtx
 wyniki:
   - bonsai-2-5-uncensored | rx-7900-xtx | 106.0 t/s | czat T=0,7, topka-bonsai PM4 + env produkcji + MTP n2 + słownik draftu 64k, ctx 262144 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 77.7 t/s | czat T=0,7, prism Q2_0 + MTP n2, KV q4_0 | 2026-11-25
-  - bonsai-2-5-uncensored | rx-7900-xtx | 237.8 t/s | edycja/kopia kodu T=0 (copy_bench short), topka PM4 + MTP n2 + lookup W7 + słownik 64k | 2026-11-25
+  - bonsai-2-5-uncensored | rx-7900-xtx | 426.1 t/s | edycja/kopia kodu T=0 (copy_bench short, mediana), topka-best PM4 + MTP n2 + lookup W16 + słownik 64k | 2026-11-25
+  - bonsai-2-5-uncensored | rx-7900-xtx | 70.6 t/s | dekod bez spekulacji, topka-best PM4, ctx 262144 | 2026-11-25
+  - bonsai-2-5-uncensored | rx-7900-xtx | 121.9 t/s | konfiguracja Dogukana (temp 1,0) na topka-best, MTP n2 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 117.9 t/s | dekod T=0 (Q4 160 tok.), prism Q2_0 + MTP n2 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 188.4 t/s | dekod T=0 (Q4), MTP n2 + ngram-mod | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 54.9 t/s | llama-bench tg128 bez spekulacji, Q2_0 | 2026-11-25
@@ -80,6 +82,11 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 - **Przepisywanie i edycja kodu** (`copy_bench.py`, zestaw short, 512 tok., topka PM4 + env produkcji + MTP n2 + słownik 64k): okno lookupu 16 → mediana 174 t/s; **okno 7 → 237,8 t/s przy T=0 i 229,1 przy T=0,7** (edit 2k/8k 236–243); okno 11 → 129,8. Przyczyna: krok weryfikacji ≤ 8 tokenów kosztuje 27 ms, 9–16 tokenów 74–80 ms (Q2_0 poza ścieżką MMVQ). Naprawa w toku (K-154).
 - **K-153 PTQ1_0 w topce** (`topka-ptq1.patch`, dee979b): test-backend-ops MUL_MAT 81/81, fuzje 105/105, GET_ROWS 12/12; ale z PM4 T=0,7 102,4 (Q2_0 105,0), edycja 188,7 (Q2_0 232,7): mniejszy plik nie pomaga, bo MMVQ Q2_0 w topce jest już szybszy niż kernel PT. Zostaje Q2_0.
 - **Konfiguracja Doğukana z RTX 3060** (X 2026-11-24: 262k, PTQ1_0-mtp, MTP n3 p-min 0, temp 1,0; u niego ~74 t/s, bez MTP 47) odtworzona na XTX (5 odpowiedzi po 400 tok., temp 1,0, top-p 0,95, top-k 20): prism PTQ1_0 jak u niego **39,8 t/s** (na HIP wolniej niż jego 3060), prism + nasz kernel PT 83,3, **topka PM4 Q2_0 + słownik 64k 106,3**, topka PM4 PTQ1_0 97,1. 3060 ma 360 GB/s, XTX 960 GB/s: przy tej samej sprawności XTX powinien dać ok. 2,7× (ok. 200 t/s), ma 1,44×. Różnica to oprogramowanie HIP (przerwy między kernelami, fuzje tylko dla NVIDIA, wolna weryfikacja > 8 tokenów), nie karta.
+- **K-150T (Gemini) w topce**: test-backend-ops MUL_MAT 2496/2496, RMS_NORM 53/53, fuzje 1265/1265; z PM4 T=0,7 107,5 → 110,6 (+2,9%), edycja 238,6 → 247,3 (+3,6%), L8k +4%.
+- **K-154 (agent) Q2_0 w kernelu WMMA dla 9–16 kolumn**: MUL_MAT 117/117, MUL_MAT_ADD 42/42; krok 14 tokenów 79 → 61 ms, edycja W16 174 → 218 t/s. Profil n=16: 47% czasu GPU to hipBLAS SGEMM 280 µs × 96 na krok dla cienkich wag F32 GDN (`ssm_alpha`/`ssm_beta`, 48 wierszy), bo MMVF bierze tylko ≤ 8 kolumn.
+- **K-155 (Kernel) MMVF w porcjach po 8 kolumn zamiast hipBLAS** (`topka-k155-mmvf-split.patch`, env `GGML_HIP_K155_MMVF_SPLIT`): MUL_MAT f32 275/275, f16 361/361; krok 14 tokenów 58 → 31 ms; **edycja/kopia kodu W16: 236,6 → 426,1 t/s przy T=0 i 422,2 przy T=0,7** (edit 8k 452,6), Q4 greedy 265,5.
+- **topka-best** (`~/wt/topka-best`: port Hadamarda + K-150T + K-154 + K-155): bez spekulacji 70,6 t/s (prism 54,9; +29%), czat T=0,7 MTP n2 106,5–108,0 (±3% szumu), konfiguracja Doğukana temp 1,0: 116,0 (n3) / 121,9 (n2) t/s wobec jego 74 na 3060.
+- **Profil topka-best (PM4 wył.)**: GPU 14,2 ms na token, PM4 zjada przerwy całkowicie (70,6 t/s = 14,2 ms); MMVQ Q2_0 74% (ok. 10,5 ms, ok. 695 GB/s, 72% pasma). Następna dźwignia: kernel Q2_0 n=1–3 (K-156, agent).
 - Grok (X, 14 dni): nikt nie publikował Bonsai 2.5 na 7900 XTX; producent: RTX 4090 bez spekulacji 111, z MTP n3 p-min 0,1 204 t/s; RTX 3060 przy 262k 74 t/s z MTP.
 
 ## Powiązane

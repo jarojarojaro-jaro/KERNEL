@@ -1,0 +1,6 @@
+# K-150T Gemini fusions in topka: tbo, then ABBA chat+copy with PM4 + prod env + MTP n2 + dv64k + W7 (off = BZ switches 0)
+b25n-tbo|600|~/wt/topka-k150t/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; for o in MUL_MAT RMS_NORM MUL_MAT_VEC_FUSION; do echo "== $o"; taskset -c 2-5 timeout 180 ./test-backend-ops -b ROCm0 -o $o 2>&1 | grep -E "FAIL|tests passed" | tail -2; done; journalctl -k --since "-10min" --no-pager | grep -c gfxhub
+b25n-on1|900|~/qwen-opt/bonsai25|LOOKUP_W=7 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-on1 ./b25.sh k150t q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25n-off1|900|~/qwen-opt/bonsai25|GGML_HIP_BZ_FWHT_Q8=0 GGML_HIP_BZ_NORM_FWHT=0 LOOKUP_W=7 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-off1 ./b25.sh k150t q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25n-on2|900|~/qwen-opt/bonsai25|LOOKUP_W=7 PM4=1 PROD=1 EXTRA_TAG=-on2 ./b25.sh k150t q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25n-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
