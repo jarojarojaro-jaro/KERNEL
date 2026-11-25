@@ -1,0 +1,8 @@
+# Bonsai 2.5 Uncensored, round D: full context 262144 (JARO), MTP n2 base, MTP+ngram-mod, DFlash2 Qwen3.8 drafter n6/n8/n12
+b25d-mtp2|600|~/qwen-opt/bonsai25|./b25.sh prism q2 mtp 2
+b25d-mtp2ng|600|~/qwen-opt/bonsai25|EXTRA_TAG=-ngmod ./b25.sh prism q2 mtp 2 --spec-type draft-mtp,ngram-mod
+b25d-df6|600|~/qwen-opt/bonsai25|./b25.sh prism q2 dflash 6
+b25d-df8|600|~/qwen-opt/bonsai25|./b25.sh prism q2 dflash 8
+b25d-df12|600|~/qwen-opt/bonsai25|./b25.sh prism q2 dflash 12
+b25d-df8-ptq1|600|~/qwen-opt/bonsai25|./b25.sh prism ptq1 dflash 8
+b25d-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

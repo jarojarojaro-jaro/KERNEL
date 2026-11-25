@@ -1,0 +1,3 @@
+# MTP step profile
+b25-profmtp|600|~/qwen-opt/bonsai25|./b25-profmtp.sh
+b25pm-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

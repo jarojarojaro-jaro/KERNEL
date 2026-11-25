@@ -1,0 +1,5 @@
+# Bonsai 2.5 round E: topka port (K-151), PM4 off/on, MTP n2/n3, full context
+b25e-topka-mtp2|600|~/qwen-opt/bonsai25|./b25.sh topka q2 mtp 2
+b25e-topka-pm4-mtp2|600|~/qwen-opt/bonsai25|PM4=1 ./b25.sh topka q2 mtp 2
+b25e-topka-pm4-mtp3|600|~/qwen-opt/bonsai25|PM4=1 ./b25.sh topka q2 mtp 3
+b25e-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

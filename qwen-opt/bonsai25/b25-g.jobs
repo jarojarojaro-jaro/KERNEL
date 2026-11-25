@@ -1,0 +1,6 @@
+# Bonsai 2.5 round G: topka + PM4 + production env (lookup W16, coupled, gpu verify, yield fast), MTP n2/n3/n4, draft vocab 64k
+b25g-prod-mtp2|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 ./b25.sh topka q2 mtp 2
+b25g-prod-mtp3|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 ./b25.sh topka q2 mtp 3
+b25g-prod-mtp3-dv|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 EXTRA_TAG=-dv64k ./b25.sh topka q2 mtp 3 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25g-prod-mtp4-dv|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 EXTRA_TAG=-dv64k ./b25.sh topka q2 mtp 4 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25g-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

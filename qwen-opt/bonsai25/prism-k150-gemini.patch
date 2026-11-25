@@ -1,0 +1,317 @@
+From bdac0f508346e42c863315e561149557bae86523 Mon Sep 17 00:00:00 2001
+From: gemini <g@l>
+Date: Wed, 25 Nov 2026 01:41:06 +0100
+Subject: [PATCH] K-150 (Gemini): HIP fusions FWHT+q8, norm+fwht, GDN conv,
+ mmvf pair, single graph, sync trim, MTP graph cache; env GGML_HIP_K150_*
+
+---
+ ggml/src/ggml-cuda/ggml-cuda.cu | 85 +++++++++++++++++++++++++++------
+ src/llama-context.cpp           | 76 ++++++++++++++++++++++++-----
+ 2 files changed, 134 insertions(+), 27 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 3190763..babd8b7 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -154,6 +154,38 @@ static bool ggml_cuda_env_set(const char * name) {
+     return getenv(name) != nullptr;
+ }
+ 
++static bool ggml_cuda_k150_env_on(const char * name) {
++    const char * env = getenv(name);
++    return env == nullptr || std::atoi(env) != 0;
++}
++
++static bool ggml_cuda_k150_fwht_q8_enabled() {
++    static const bool enabled = ggml_cuda_k150_env_on("GGML_HIP_K150_FWHT_Q8");
++    return enabled;
++}
++
++static bool ggml_cuda_k150_norm_fwht_enabled() {
++    static const bool enabled = ggml_cuda_k150_env_on("GGML_HIP_K150_NORM_FWHT");
++    return enabled;
++}
++
++static bool ggml_cuda_k150_gdn_conv_enabled() {
++    static const bool enabled = ggml_cuda_k150_env_on("GGML_HIP_K150_GDN_CONV");
++    return enabled;
++}
++
++static bool ggml_cuda_k150_mmvf_pair_enabled() {
++    static const bool enabled = ggml_cuda_k150_env_on("GGML_HIP_K150_MMVF_PAIR");
++    return enabled;
++}
++
++#if defined(GGML_USE_HIP) && defined(USE_CUDA_GRAPH)
++static bool ggml_cuda_k150_single_graph_enabled() {
++    static const bool enabled = ggml_cuda_k150_env_on("GGML_HIP_K150_SINGLE_GRAPH");
++    return enabled;
++}
++#endif
++
+ static bool ggml_cuda_unified_memory_enabled() {
+     static const bool enabled = ggml_cuda_env_flag("GGML_CUDA_ENABLE_UNIFIED_MEMORY");
+     return enabled;
+@@ -3007,7 +3039,15 @@ static void ggml_cuda_graph_update_executable(cudaGraphExec_t & instance, cudaGr
+ static int ggml_cuda_graph_chunk_size() {
+     static const int chunk_size = [] {
+         const char * env = getenv("GGML_CUDA_GRAPH_CHUNK_SIZE");
+-        return env != nullptr ? atoi(env) : 512;
++        if (env != nullptr) {
++            return atoi(env);
++        }
++#if defined(GGML_USE_HIP)
++        if (ggml_cuda_k150_single_graph_enabled()) {
++            return 0;
++        }
++#endif
++        return 512;
+     }();
+     return chunk_size;
+ }
+@@ -3130,7 +3170,7 @@ struct ggml_cuda_fwht_q8_uses {
+ };
+ 
+ static bool ggml_cuda_fwht_q8_find_uses(const ggml_cgraph * cgraph, const int i_mm, const int cc, const bool accept_pq2,
+-                                        ggml_cuda_fwht_q8_uses & u) {
++                                        ggml_cuda_fwht_q8_uses & u, const bool accept_q2 = false) {
+     const ggml_tensor * mm = cgraph->nodes[i_mm];
+     const ggml_tensor ** aliases = u.aliases;
+     int &     n_aliases = u.n_aliases;
+@@ -3169,7 +3209,8 @@ static bool ggml_cuda_fwht_q8_find_uses(const ggml_cgraph * cgraph, const int i_
+                 continue;
+             }
+             const ggml_type ct = t->src[0] ? t->src[0]->type : GGML_TYPE_COUNT;
+-            const bool type_ok = ct == GGML_TYPE_PTQ1_0 || (accept_pq2 && ct == GGML_TYPE_PQ2_0);
++            const bool type_ok = ct == GGML_TYPE_PTQ1_0 || (accept_pq2 && ct == GGML_TYPE_PQ2_0) ||
++                                 (accept_q2 && ct == GGML_TYPE_Q2_0);
+             if (t->op != GGML_OP_MUL_MAT || s != 1 || !type_ok || (wtype != GGML_TYPE_COUNT && ct != wtype) ||
+                     ggml_get_op_params_i32(t, 1) == GGML_HINT_SRC0_IS_HADAMARD ||
+                     t->type != GGML_TYPE_F32 || src->type != GGML_TYPE_F32 || !ggml_is_contiguous(src) ||
+@@ -3353,7 +3394,8 @@ static int ggml_cuda_try_fwht_q8(ggml_backend_cuda_context & ctx, const ggml_cgr
+     static const bool pq2_enabled = getenv("GGML_CUDA_FWHT_FUSION_PQ2") == nullptr ||
+                                     atoi(getenv("GGML_CUDA_FWHT_FUSION_PQ2")) != 0;
+     const int cc = ggml_cuda_info().devices[ctx.device].cc;
+-    if (!GGML_CUDA_CC_IS_NVIDIA(cc) || cc < GGML_CUDA_CC_TURING) {
++    const bool hip_fwht_q8 = GGML_CUDA_CC_IS_AMD(cc) && ggml_cuda_k150_fwht_q8_enabled();
++    if (!hip_fwht_q8 && (!GGML_CUDA_CC_IS_NVIDIA(cc) || cc < GGML_CUDA_CC_TURING)) {
+         return 0; // the PTQ1_0 mmvq predicate below is only meaningful there
+     }
+ 
+@@ -3418,7 +3460,7 @@ static int ggml_cuda_try_fwht_q8(ggml_backend_cuda_context & ctx, const ggml_cgr
+     // x is only known to be contiguous with the same element count as the consumers' src1 [K, ncols];
+     // in the unsigned pattern it is the [n, rows] reshape
+     ggml_cuda_fwht_q8_uses u;
+-    if (!ggml_cuda_fwht_q8_find_uses(cgraph, i_mm, cc, pq2_enabled, u)) {
++    if (!ggml_cuda_fwht_q8_find_uses(cgraph, i_mm, cc, pq2_enabled, u, hip_fwht_q8)) {
+         static const int fwht_mmq_env = ggml_cuda_env_tristate("GGML_CUDA_FWHT_MMQ");
+         const bool fwht_mmq = fwht_mmq_env >= 0 ? fwht_mmq_env == 1 : ggml_cuda_prefill_opt(cc);
+         if (!fwht_mmq || !ggml_cuda_fwht_mmq_find_uses(cgraph, i_mm, cc, u) || u.K % n != 0 ||
+@@ -3810,7 +3852,9 @@ static bool ggml_cuda_gdn_conv_match(ggml_backend_cuda_context & ctx, const ggml
+ 
+ // at the conv-state GET_ROWS: skip it when its CONCAT will run the fused chain
+ static bool ggml_cuda_try_gdn_conv_gather_skip(ggml_backend_cuda_context & ctx, const ggml_cgraph * cgraph, int node_idx) {
+-    if (!ggml_cuda_gdn_fusion_enabled() || !GGML_CUDA_CC_IS_NVIDIA(ggml_cuda_info().devices[ctx.device].cc)) {
++    const int cc = ggml_cuda_info().devices[ctx.device].cc;
++    const bool hip_gdn_conv = GGML_CUDA_CC_IS_AMD(cc) && ggml_cuda_k150_gdn_conv_enabled();
++    if (!ggml_cuda_gdn_fusion_enabled() || (!GGML_CUDA_CC_IS_NVIDIA(cc) && !hip_gdn_conv)) {
+         return false;
+     }
+     const ggml_tensor * gr = cgraph->nodes[node_idx];
+@@ -5135,7 +5179,8 @@ static bool ggml_cuda_norm_fwht_q8_prepare(const ggml_cgraph * cgraph, const int
+         return false;
+     }
+     const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
+-    if (!GGML_CUDA_CC_IS_NVIDIA(cc) || cc < GGML_CUDA_CC_TURING) {
++    const bool hip_fwht_q8 = GGML_CUDA_CC_IS_AMD(cc) && ggml_cuda_k150_fwht_q8_enabled();
++    if (!hip_fwht_q8 && (!GGML_CUDA_CC_IS_NVIDIA(cc) || cc < GGML_CUDA_CC_TURING)) {
+         return false;
+     }
+     const ggml_tensor * mm = cgraph->nodes[i_mm];
+@@ -5149,7 +5194,8 @@ static bool ggml_cuda_norm_fwht_q8_prepare(const ggml_cgraph * cgraph, const int
+         }
+     }
+     ggml_cuda_fwht_q8_uses & u = plan.uses;
+-    if (!ggml_cuda_fwht_q8_find_uses(cgraph, i_mm, cc, true, u) || u.wtype != GGML_TYPE_PQ2_0 || u.K != n ||
++    if (!ggml_cuda_fwht_q8_find_uses(cgraph, i_mm, cc, true, u, hip_fwht_q8) ||
++            (u.wtype != GGML_TYPE_PQ2_0 && !(hip_fwht_q8 && u.wtype == GGML_TYPE_Q2_0)) || u.K != n ||
+             u.K * u.ncols != ggml_nelements(mm) || GGML_PAD(u.K, MATRIX_ROW_PADDING) != u.K) {
+         return false;
+     }
+@@ -5413,7 +5459,10 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         ggml_tensor * mm       = cgraph->nodes[i + 5];
+         const ggml_op ops[]       = { GGML_OP_ADD, GGML_OP_RMS_NORM, GGML_OP_MUL, GGML_OP_MUL, GGML_OP_RESHAPE, GGML_OP_MUL_MAT };
+         const int     out_nodes[] = { i, i + 5 };
+-        if (!arf_disabled && GGML_CUDA_CC_IS_NVIDIA(ggml_cuda_info().devices[ggml_cuda_get_device()].cc) &&
++        const int arf_cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
++        const bool arf_arch_ok = GGML_CUDA_CC_IS_NVIDIA(arf_cc) ||
++                                 (GGML_CUDA_CC_IS_AMD(arf_cc) && ggml_cuda_k150_norm_fwht_enabled());
++        if (!arf_disabled && arf_arch_ok &&
+                 rms_norm->op == GGML_OP_RMS_NORM && mul_w->op == GGML_OP_MUL && mul_s->op == GGML_OP_MUL &&
+                 reshape->op == GGML_OP_RESHAPE && mm->op == GGML_OP_MUL_MAT &&
+                 rms_norm->src[0] == node && (mul_w->src[0] == rms_norm || mul_w->src[1] == rms_norm) &&
+@@ -5469,7 +5518,9 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         const ggml_tensor * x = node->src[0];
+         const int64_t ncols = node->ne[0];
+         const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
+-        if (!rf_disabled && GGML_CUDA_CC_IS_NVIDIA(cc) && mul_w->op == GGML_OP_MUL &&
++        const bool rf_arch_ok = GGML_CUDA_CC_IS_NVIDIA(cc) ||
++                                (GGML_CUDA_CC_IS_AMD(cc) && ggml_cuda_k150_norm_fwht_enabled());
++        if (!rf_disabled && rf_arch_ok && mul_w->op == GGML_OP_MUL &&
+                 (mul_w->src[0] == node || mul_w->src[1] == node) && x && x->type == GGML_TYPE_F32 &&
+                 node->type == GGML_TYPE_F32 && mul_w->type == GGML_TYPE_F32 && ggml_is_contiguous(x) &&
+                 ggml_is_contiguous(node) && ggml_is_contiguous(mul_w) && ggml_are_same_shape(x, node) &&
+@@ -5558,9 +5609,11 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         ggml_tensor * rms_norm = cgraph->nodes[i + 1];
+         ggml_tensor * mul = cgraph->nodes[i + 2];
+         const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
++        const bool arn_arch_ok = GGML_CUDA_CC_IS_NVIDIA(cc) ||
++                                 (GGML_CUDA_CC_IS_AMD(cc) && ggml_cuda_k150_norm_fwht_enabled());
+         const ggml_op ops[] = { GGML_OP_ADD, GGML_OP_RMS_NORM, GGML_OP_MUL };
+         const int out_nodes[] = { i, i + 2 };
+-        if (GGML_CUDA_CC_IS_NVIDIA(cc) && rms_norm->op == GGML_OP_RMS_NORM &&
++        if (arn_arch_ok && rms_norm->op == GGML_OP_RMS_NORM &&
+                 mul->op == GGML_OP_MUL && (mul->src[0] == rms_norm || mul->src[1] == rms_norm) &&
+                 rms_norm->src[0] == node && node->src[0] && node->src[1] &&
+                 node->type == GGML_TYPE_F32 && node->src[0]->type == GGML_TYPE_F32 &&
+@@ -6500,10 +6553,12 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         return 2;
+     }
+ 
+-    if (node->op == GGML_OP_MUL_MAT && ggml_cuda_gdn_fusion_enabled() &&
+-            GGML_CUDA_CC_IS_NVIDIA(ggml_cuda_info().devices[cuda_ctx->device].cc)) {
+-        if (const int n = ggml_cuda_try_mmvf_pair(*cuda_ctx, cgraph, i)) {
+-            return n;
++    if (node->op == GGML_OP_MUL_MAT && ggml_cuda_gdn_fusion_enabled()) {
++        const int cc_pair = ggml_cuda_info().devices[cuda_ctx->device].cc;
++        if (GGML_CUDA_CC_IS_NVIDIA(cc_pair) || (GGML_CUDA_CC_IS_AMD(cc_pair) && ggml_cuda_k150_mmvf_pair_enabled())) {
++            if (const int n = ggml_cuda_try_mmvf_pair(*cuda_ctx, cgraph, i)) {
++                return n;
++            }
+         }
+     }
+ 
+diff --git a/src/llama-context.cpp b/src/llama-context.cpp
+index d8ff830..5e4b763 100644
+--- a/src/llama-context.cpp
++++ b/src/llama-context.cpp
+@@ -950,10 +950,37 @@ bool llama_sycl_present() {
+     return v;
+ }
+ 
++static bool llama_rocm_present() {
++    static const bool v = [] {
++        ggml_backend_reg_t reg = ggml_backend_reg_by_name("ROCm");
++        return reg != nullptr && ggml_backend_reg_dev_count(reg) > 0;
++    }();
++    return v;
++}
++
++static bool llama_hip_k150_env_on(const char * name) {
++    const char * e = getenv(name);
++    return e == nullptr || atoi(e) != 0;
++}
++
++static bool llama_hip_k150_mtp_graph_cache_enabled() {
++    static const bool v = llama_rocm_present() && llama_hip_k150_env_on("GGML_HIP_K150_MTP_GRAPH_CACHE");
++    return v;
++}
++
+ int llama_sync_trim() {
+     static const int v = [] {
+         const char * e = getenv("LLAMA_SYNC_TRIM");
+-        return e ? atoi(e) : (llama_sycl_present() ? 3 : 0);
++        if (e) {
++            return atoi(e);
++        }
++        if (llama_sycl_present()) {
++            return 3;
++        }
++        if (llama_rocm_present() && llama_hip_k150_env_on("GGML_HIP_K150_SYNC_TRIM")) {
++            return 3;
++        }
++        return 0;
+     }();
+     return v;
+ }
+@@ -1077,6 +1104,15 @@ bool llama_context::memory_update(bool optimize) {
+             }
+         }
+         gf_res_prev_active = nullptr;
++        for (auto & [k, e] : mtp_chain_cache) {
++            GGML_UNUSED(k);
++            for (auto & r : e.res) {
++                if (r) {
++                    r->reset();
++                }
++            }
++            e.active = nullptr;
++        }
+ 
+         if (!mctx->apply()) {
+             LLAMA_LOG_ERROR("%s: failed to apply memory update\n", __func__);
+@@ -1626,6 +1662,8 @@ llama_context::mtp_chain_entry * llama_context::mtp_chain_entry_for(uint32_t n_t
+     mtp_chain_entry e;
+     e.sched.reset(ggml_backend_sched_new(backend_ptrs.data(), backend_buft.data(), backend_ptrs.size(), max_nodes, false,
+                                          cparams.op_offload));
++    ggml_backend_sched_set_copy_callback(e.sched.get(), sched_copy_experts, this);
++    ggml_backend_sched_set_realloc_callback(e.sched.get(), sched_graph_realloc, this);
+     for (auto & res : e.res) { res.reset(new llm_graph_result(max_nodes)); }
+     return &(mtp_chain_cache[key] = std::move(e));
+ }
+@@ -2452,17 +2490,34 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+ 
+         ggml_status status;
+ 
+-        // ARC-LAB: a chained MTP draft runs on the cached scheduler + graph of its batch shape (mtp_chain_cache)
+-        mtp_chain_entry * chain_e = cparams.mtp_chain_n > 0 ? mtp_chain_entry_for(ubatch.n_tokens) : nullptr;
+-        if (chain_e) {
+-            std::swap(sched,       chain_e->sched);
+-            std::swap(gf_res_prev, chain_e->res);
+-            std::swap(gf_res_prev_active, chain_e->active);
+-        }
++        // cache small MTP draft graphs per batch shape so alternating catch-up+anchor and 1-token steps reuse sched + cgraph
++        const bool use_mtp_cache = cparams.mtp_chain_n > 0 ||
++            (cparams.ctx_type == LLAMA_CONTEXT_TYPE_MTP && n_outputs > 0 &&
++             ubatch.n_tokens <= 8 && !cparams.pipeline_parallel &&
++             llama_hip_k150_mtp_graph_cache_enabled());
++        mtp_chain_entry * chain_e = use_mtp_cache ? mtp_chain_entry_for(ubatch.n_tokens) : nullptr;
++        struct mtp_cache_guard {
++            llama_context * ctx;
++            mtp_chain_entry * e;
++            mtp_cache_guard(llama_context * c, mtp_chain_entry * entry) : ctx(c), e(entry) {
++                if (e) {
++                    std::swap(ctx->sched, e->sched);
++                    std::swap(ctx->gf_res_prev, e->res);
++                    std::swap(ctx->gf_res_prev_active, e->active);
++                }
++            }
++            ~mtp_cache_guard() {
++                if (e) {
++                    std::swap(ctx->sched, e->sched);
++                    std::swap(ctx->gf_res_prev, e->res);
++                    std::swap(ctx->gf_res_prev_active, e->active);
++                }
++            }
++        } chain_guard(this, chain_e);
+ 
+         const auto * res = process_ubatch(ubatch, ctx_type_to_graph_type(cparams.ctx_type), mctx.get(), status);
+ 
+-        if (chain_e) {
++        if (cparams.mtp_chain_n > 0 && chain_e) {
+             // the per-step argmax rows, mapped to tokens in get_mtp_chain_ids()
+             if (res && res->t_mtp_chain_ids) {
+                 // one copy of all the ids (LLAMA_MTP_CHAIN_TIGHT bit 16)
+@@ -2482,9 +2537,6 @@ int llama_context::decode(const llama_batch_ext & batch_inp) {
+                 }
+                 mtp_chain_n_out = (uint32_t) res->t_mtp_chain.size();
+             }
+-            std::swap(sched,       chain_e->sched);
+-            std::swap(gf_res_prev, chain_e->res);
+-            std::swap(gf_res_prev_active, chain_e->active);
+         }
+ 
+         if (!res) {
+-- 
+2.53.0
+

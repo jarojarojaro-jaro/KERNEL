@@ -9,6 +9,7 @@ rozmiar: 27B
 kwant: PTQ1_0, Q2_0
 karty: rx-7900-xtx
 wyniki:
+  - bonsai-2-5-uncensored | rx-7900-xtx | 106.0 t/s | czat T=0,7, topka-bonsai PM4 + env produkcji + MTP n2 + słownik draftu 64k, ctx 262144 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 77.7 t/s | czat T=0,7, prism Q2_0 + MTP n2, KV q4_0 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 117.9 t/s | dekod T=0 (Q4 160 tok.), prism Q2_0 + MTP n2 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 188.4 t/s | dekod T=0 (Q4), MTP n2 + ngram-mod | 2026-11-25
@@ -16,7 +17,7 @@ wyniki:
 ---
 # Ternary Bonsai 2.5 27B Uncensored (AtomicChat)
 
-**Bonsai 2.5 bez cenzury od AtomicChat to Qwen3.8-27B w trytach (5,99 GB); na XTX najszybciej idzie w forku PrismML jako bezstratnie przepakowany Q2_0 z głowicą MTP n2: czat T=0,7 77,7 t/s, greedy 117,9 t/s.**
+**Bonsai 2.5 bez cenzury od AtomicChat to Qwen3.8-27B w trytach (5,99 GB); na XTX najszybciej idzie w naszej topce z portem Hadamarda i PM4 jako bezstratny Q2_0 z MTP n2: przy pełnym kontekście 262k czat T=0,7 106,0 t/s, greedy do 174 t/s.**
 
 ## Co to jest
 - Baza: PrismML Ternary Bonsai 2.5 27B (Qwen3.8-27B, hybryda 75% liniowej / 25% pełnej uwagi, tryty g128 w bazie Hadamarda, 1,76 bpw), wydanie „agentowe”: tool calling 77,2 vs 77,7 FP16 (README prism-ml).
@@ -66,6 +67,15 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod T=0 (Q4), MTP n2 + ngram-mod | **188.4 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | llama-bench tg128 bez spekulacji, Q2_0 | **54.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 <!-- TABELE:END -->
+
+## Runda 2 (2026-11-25, polecenie JARO: pełny kontekst, cel 200 t/s)
+- **Pełny kontekst 262 144** (KV q4_0) nic nie kosztuje: prism MTP n2 przy 32k 77,7, przy 262k 77,6 t/s.
+- **K-151 port do topki** (`topka-bonsai` c76335b: upstream #29600, runtime prism.hadamard + przenoszenie transformacji na głowicę draftu, słownik i requant): bez PM4 T=0,7 78,2; **z PM4** 91,4; **z env produkcji** (lookup W16, coupled, GPU verify, yield fast, PM4 min dispatch/lazy) 101,7 / 102,8; **+ słownik draftu 64k: 106,0 t/s** (Q1 116,6, Q4 141,9, L2k 118,3, L8k 127,3). MTP n3 + słownik 64k: Q4 174,1, T=0,7 92,6; IQ4_XS głowicy draftu nic nie daje przy T=0,7 (101,3).
+- **K-149 kernel PTQ1_0 PT na HIP** (agent, `prism-ptq1-hip.patch`): test-backend-ops MUL_MAT 255/255, fuzje 120/120, MUL_MAT_ID 85/85; 17408×5120 n=1 43,7 → 27,1 µs, n=4 167 → 43,1 µs (×3,9). End-to-end prism PTQ1_0 MTP n2: T=0,7 33,8 → 75,9 (tyle co Q2_0), bo resztę zjada przerwa hosta.
+- **DFlash2 dla Qwen3.8-27B na Bonsai** (Q4_K_M, n 6/8/12): T=0 do 159 t/s, ale T=0,7 38,6–41,7 (akceptacja 0,27–0,40): odrzucone.
+- **Profil kroku MTP (prism, serwer)**: 216 tys. kerneli na 200 tokenów (ok. 1080 na token), GPU zajęte 67%, mediana przerwy między kernelami 3,44 µs: przerwy to 33% czasu, dlatego PM4 (taśma bez AQL) daje tu +17%.
+- **K-150 (Gemini, przegląd forka prism)**: fuzje FWHT+q8_1, norm+FWHT, łańcuch GDN conv i para ssm_beta/alpha są w forku tylko dla NVIDIA (`GGML_CUDA_CC_IS_NVIDIA`), na HIP nieużywane: ok. 800 zbędnych kerneli na token; łatka `prism-k150-gemini.patch` w budowie, przeniesienie do topki w toku.
+- Grok (X, 14 dni): nikt nie publikował Bonsai 2.5 na 7900 XTX; producent: RTX 4090 bez spekulacji 111, z MTP n3 p-min 0,1 204 t/s; RTX 3060 przy 262k 74 t/s z MTP.
 
 ## Powiązane
 - [[bonsai]]

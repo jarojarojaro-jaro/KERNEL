@@ -1,0 +1,6 @@
+# K-149 PTQ1_0 PT path on HIP: correctness, perf A/B, end-to-end
+b25f-tbo|600|~/wt/prism-pt/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; for o in "MUL_MAT type_a=ptq1_0" "MUL_MAT_VEC_FUSION type=ptq1_0" "MUL_MAT_ID type_a=ptq1_0"; do set -- $o; echo "== $1"; taskset -c 2-5 timeout 250 ./test-backend-ops test -b ROCm0 -o $1 -p "$2" 2>&1 | grep -E "FAIL|passed|tests" | tail -3; done; journalctl -k --since "-10min" --no-pager | grep -c gfxhub
+b25f-perf|600|~/wt/prism-pt/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; for m in 0 2; do echo "== PT=$m"; GGML_HIP_PTQ1_PT=$m taskset -c 2-5 timeout 250 ./test-backend-ops perf -b ROCm0 -o MUL_MAT -p "type_a=ptq1_0,type_b=f32,m=(17408|5120),n=(1|2|3|4|8),k=(5120|17408)" 2>&1 | grep MUL_MAT | sed -E "s/,bs=.*\):/:/; s/ +/ /g"; done
+b25f-pt-mtp2|600|~/qwen-opt/bonsai25|./b25.sh pt ptq1 mtp 2
+b25f-pt-mtp3|600|~/qwen-opt/bonsai25|./b25.sh pt ptq1 mtp 3
+b25f-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

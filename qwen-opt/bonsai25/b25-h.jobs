@@ -1,0 +1,6 @@
+# Bonsai 2.5 round H: topka PM4 prod env; draft vocab 64k and IQ4_XS draft head/MTP requant, n2/n3
+b25h-mtp2-dv|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 EXTRA_TAG=-dv64k ./b25.sh topka q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25h-mtp2-dv-iq|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 EXTRA_TAG=-dv64k-iq4 ./b25.sh topka q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+b25h-mtp3-dv-iq|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 EXTRA_TAG=-dv64k-iq4 ./b25.sh topka q2 mtp 3 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --spec-draft-head-type iq4_xs --spec-mtp-type iq4_xs
+b25h-mtp2-r|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 EXTRA_TAG=-r2 ./b25.sh topka q2 mtp 2
+b25h-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore
