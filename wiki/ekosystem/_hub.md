@@ -17,7 +17,7 @@ Cudze silniki i konkurencja, jedna notatka na podmiot: Strata, Maya (Inkling na 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (113)
+## Notatki (115)
 
 - [[1cat-vllm|1Cat-vLLM (1Cat-LLM): fork vLLM pod V100]] — „Flash-Next przy 250K tylko −18% względem 1K” to własność modelu (natywna rzadka QSA z budżetem 2048 tokenów) plus stratny host KV FP8, a nie trik kernela; ich gęsty 27B traci −47% (501 → 268 t/s), tyle co my −45% (136.5 → 74.5 przy 199k) (raport 66b, 2026-11-07).
 - [[a-hamdi-gpu|a-hamdi/GPU (100 dni nauki)]] — Dziennik nauki CUDA „100 days” (HEAD `a9b0a17c`, 2025-04-27) z błędnymi benchmarkami; werdykt: niska.
@@ -42,6 +42,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[gigagpu|GigaGPU (UK)]] — Brytyjski dostawca dedyków w abonamencie miesięcznym z rootem: RX 9070 XT, R9700, Ryzen AI Max+ 395 i Intel Arc Pro B60/B70.
 - [[pygpubench|gpu-mode/pygpubench]] — Biblioteka do mierzenia krótkich kerneli niezaufanego kodu (HEAD `286841bf`, 2026-08-18); daje eksperyment z bitem DLC na RDNA3; werdykt: średnia.
 - [[gpu-mode-reference-kernels|gpu-mode/reference-kernels]] — Definicje zadań i harness KernelBota GPU MODE (commit `f3295bb6`, 2026-09-17); ranking 2026 to nie źródło technik; werdykt: niska.
+- [[gpu-straggler-finder|gpu-straggler-finder (Stas Bekman)]] — Narzędzie znajduje GPU, które co jakiś czas zwalniają o kilka procent: patrzy na 90. percentyl okien 2 s względem mediany węzła, a nie na średnią; dla nas bierzemy statystykę do A/B i bramki hostów Vast, nie całe narzędzie.
 - [[hostkey|Hostkey]] — Dostawca bare metal z rootem: RX 7900 XTX (pre-order) i Radeon AI PRO R9700 (RDNA4, gfx1201) za €0.471/h.
 - [[hugging-face|Hugging Face]] — Hub modeli, z którego pobieramy GGUF; od lutego 2026 dom ggml.ai (llama.cpp), a 2026-09-03 NVIDIA ogłosiła jego przejęcie za 12,93 mld $.
 - [[humming|Humming (vLLM + Ant Group): kernele GEMM dla kwantów, tylko CUDA]] — Biblioteka JIT (Apache-2.0, `humming-kernels`, domyślna w vLLM ≥ 0.29 na CUDA) dla WnA16/W8A8/W4A8/W4A4, dense i MoE. Brak HIP/ROCm i GGUF. Przy M=1 osiąga 610 GB/s = 60% pasma RTX 4090 (W4A16 8192², zimne L2), tyle co Marlin; nasze MMVQ na XTX ma 75.7% (raport 60d, 2026-10-24).
@@ -81,6 +82,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[flameox|morluto/flameox: orkiestrator profilerów dla agentów (MCP)]] — MIT, wersja 0.2.9 (HEAD `c7ea167`, 2026-10-11), 523 commity w 79 dni, 400/400 issues od autora, Devin współautorem 9 commitów, 210 gwiazdek; 26 operacji / 51 narzędzi MCP; na naszym CPU 649 testów OK, 11 pominiętych w 98 s; obsługa rocprofv3 ma jeden test, sprawdzający tylko argumenty (raport 21j, 2026-10-19).
 - [[smokinggun|morluto/smokinggun: nie stosuje się do naszej pracy]] — Mimo nazwy narzędzie nie szuka przyczyn regresji: to statyczny skaner wzorców złożoności w pętlach kodu CPU (tree-sitter, 13 języków, bez `.cu`/`.cuh`/`.hip`) plus porównanie zaimportowanych wyników benchmarków (hyperfine, pyperf, Google Benchmark, criterion, JMH, pprof, Perfetto) z gate'em eligible/blocked/inconclusive; MIT, TypeScript/Node, ostatni commit 2026-08-29 (raport 21k, 2026-10-19).
 - [[mtplx|MTPLX: współbieżny MTP dla wielu agentów]] — Silnik z MTP w kohortach (3/8 strumieni) deklaruje 1.6–2.25× na strumień dla 2 agentów względem zwykłego batchingu AR; wspiera LFM2 (wydanie 2.6.0, stan 2026-10-19).
+- [[nib-chromadera|Nib (Chromadera): silnik C++/HIP pod Inkling 2 Mini na 7900 XTX]] — Nib na naszym XTX, mierzony tym samym klientem co Maya, szybciej dekoduje Inklinga: przy T=0,7 130,3 t/s z KV q8_0 i 150,6 z q4_0, wobec naszej produkcji 112,5. Wygrywa tanim DSparkiem (graf dla draftu, szerokość z pewności draftu, top-256 na GPU), ale liczy na innych wagach (NVFP4-Mixed, nie uncensored) i z rzadką uwagą Quest powyżej 14k tokenów.
 - [[ninfer|NInfer (Neroued/ninfer)]] — Silnik z rekordami LocalMaxxing na NVIDIA; klon `a928f899` (dev, 2026-10-21) – liczby wiarygodne, ale mierzone przy T=0 na `reasoning-v1`, nieporównywalne z naszym czatem T=1.
 - [[firma-nvidia|NVIDIA]] — Lider rynku GPU (~76% Steam) i główny wolumen dla produktu; zamknął ChatRTX i wnosi przyspieszenia do llama.cpp, Ollamy i LM Studio.
 - [[nvidia-flare|NVIDIA Flare (flare-local-inference)]] — Apache-2.0, `47581cc` (2026-10-20): graf CUDA całego kroku, podpisane pakiety; Qwen3.8-27B tylko NVFP4 20.15 GB bez spekulacji, tylko NVIDIA – słaba konkurencja na naszych kartach, śledzona w compwatch (tier B).

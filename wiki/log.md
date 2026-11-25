@@ -709,3 +709,6 @@ Przegląd [[przeglad-kolejki-2026-11-24]], Colab [[colab-kolejka-2026-11-24]]. W
 ## [2026-11-25] Bonsai 2.5 27B Uncensored (link JARO): pobrany, przepakowany bez strat do Q2_0 + MTP, na XTX T=0,7 77,7 t/s
 [[bonsai-2-5-uncensored]]: fork PrismML na gfx1100, 13 wariantów xbench; najlepiej prism Q2_0 + MTP n2 (T=0,7 77,7, greedy 117,9, z ngram-mod 188,4); PTQ1_0 na HIP liczy zamiast czytać (MTP 33,8). Nowe K-149 (kernel PTQ1_0 RDNA3), K-150 (przerwa hosta 19%), K-151 (port Hadamarda do topki); K-152 zrobione.
 
+## [2026-11-25] Bonsai 2.5 Uncensored: 262k, 4 nowe łatki topki; Nib, straggler-finder, Doğukan (linki JARO)
+[[bonsai-2-5-uncensored]]: prism 77,7 → topka-k157 116,9 t/s przy T=0,7 (+50%), edycja kodu 174 → 446 t/s, bez spekulacji 54,9 → 76,9; łatki K-150T i K-157 (Gemini), K-154 i K-156 (agent), K-155 (Kernel); KLD 0,000000 do bazowego portu. Cel 200 t/s osiągnięty dla edycji kodu i greedy (Q4 279), nie dla czatu T=0,7. [[nib-chromadera]]: Nib szybszy od Mai (T=0,7 130–151 vs 112,5) dzięki tańszemu DSparkowi → K-158. [[gpu-straggler-finder]]: statystyka p90 okien do A/B i bramki Vast. Doğukan 3060 74 t/s: jego konfiguracja na XTX 39,8 (prism) → 121,9 (topka).
+

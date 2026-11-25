@@ -1,0 +1,6 @@
+# Nib vs Maya, engine-neutral streaming wall clock
+nibw-maya|900|~|~/qwen-opt/nib/nib-ab.sh maya
+nibw-q8|900|~|~/qwen-opt/nib/nib-ab.sh nib-q8
+nibw-q4|900|~|~/qwen-opt/nib/nib-ab.sh nib-q4
+nibw-maya2|900|~|~/qwen-opt/nib/nib-ab.sh maya2
+nibw-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

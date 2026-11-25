@@ -1,0 +1,1052 @@
+From fff8cc9cc853abb0452cd9d2ab6b806b1f87b000 Mon Sep 17 00:00:00 2001
+From: gemini <g@l>
+Date: Wed, 25 Nov 2026 03:10:22 +0100
+Subject: [PATCH] K-157 (Gemini): multiblock add_rms_norm_fwht, DPP FWHT, GDN
+ alpha/beta F32 fusion, GDN tail fusion, thin mmvf; env GGML_HIP_K157_*
+
+---
+ ggml/src/ggml-cuda/fwht.cuh     |  86 ++++++++
+ ggml/src/ggml-cuda/ggml-cuda.cu |  88 +++++++-
+ ggml/src/ggml-cuda/mmvf.cu      | 362 ++++++++++++++++++++++++++++++++
+ ggml/src/ggml-cuda/mmvf.cuh     |  10 +
+ ggml/src/ggml-cuda/norm.cu      | 229 +++++++++++++++++++-
+ ggml/src/ggml-cuda/quantize.cu  |  35 ++-
+ ggml/src/ggml-cuda/unary.cu     |  32 +++
+ ggml/src/ggml-cuda/unary.cuh    |   4 +
+ 8 files changed, 832 insertions(+), 14 deletions(-)
+
+diff --git a/ggml/src/ggml-cuda/fwht.cuh b/ggml/src/ggml-cuda/fwht.cuh
+index e26e783..e920f8f 100644
+--- a/ggml/src/ggml-cuda/fwht.cuh
++++ b/ggml/src/ggml-cuda/fwht.cuh
+@@ -124,6 +124,92 @@ static __device__ __forceinline__ void ggml_cuda_fwht_block_butterfly(float * re
+     }
+ }
+ 
++#ifdef GGML_CUDA_DPP_REDUCE
++// Two-barrier 32x32 wave32 DPP FWHT for B=1024 with NT=512 (16 warps, 2 rows per warp).
++// Bit-identical to ggml_cuda_fwht_block_butterfly<1024, 512, 1024>: stages h=1..16 run on rows,
++// then transposed stages h=32..512 run in-warp via DPP; padded LDS stride 33 avoids bank conflicts.
++static __device__ __forceinline__ void ggml_cuda_fwht_1024_nt512_dpp(
++        float reg[2], float (*s0)[33], float (*s1)[33], const int warp, const int lane) {
++    static_assert(ggml_cuda_get_physical_warp_size() == 32, "DPP FWHT requires wave32");
++#define FWHT_DPP_STEP(V, H)                                              \
++    do {                                                                 \
++        const float _v  = (V);                                           \
++        const float _v2 = ggml_cuda_xor_dpp<(H)>(_v);                    \
++        (V) = (lane & (H)) == 0 ? _v + _v2 : _v2 - _v;                   \
++    } while (0)
++#define FWHT_DPP_32(V)                                                   \
++    do {                                                                 \
++        FWHT_DPP_STEP(V,  1);                                            \
++        FWHT_DPP_STEP(V,  2);                                            \
++        FWHT_DPP_STEP(V,  4);                                            \
++        FWHT_DPP_STEP(V,  8);                                            \
++        FWHT_DPP_STEP(V, 16);                                            \
++    } while (0)
++
++    FWHT_DPP_32(reg[0]);
++    FWHT_DPP_32(reg[1]);
++
++    s0[warp][lane]      = reg[0];
++    s0[warp + 16][lane] = reg[1];
++    __syncthreads();
++
++    float col0 = s0[lane][warp];
++    float col1 = s0[lane][warp + 16];
++
++    FWHT_DPP_32(col0);
++    FWHT_DPP_32(col1);
++
++    s1[lane][warp]      = col0;
++    s1[lane][warp + 16] = col1;
++    __syncthreads();
++
++    reg[0] = s1[warp][lane];
++    reg[1] = s1[warp + 16][lane];
++
++#undef FWHT_DPP_32
++#undef FWHT_DPP_STEP
++}
++
++// Two-barrier 16x32 wave32 DPP FWHT for B=512 with NT=512 (16 warps, 1 row per warp).
++// Padded stride 34 maps lane<16 and lane>=16 to even/odd banks so the transpose is bank-conflict free.
++static __device__ __forceinline__ void ggml_cuda_fwht_512_nt512_dpp(
++        float & reg0, float (*s0)[34], float (*s1)[34], const int warp, const int lane) {
++    static_assert(ggml_cuda_get_physical_warp_size() == 32, "DPP FWHT requires wave32");
++#define FWHT_DPP_STEP(V, H)                                              \
++    do {                                                                 \
++        const float _v  = (V);                                           \
++        const float _v2 = ggml_cuda_xor_dpp<(H)>(_v);                    \
++        (V) = (lane & (H)) == 0 ? _v + _v2 : _v2 - _v;                   \
++    } while (0)
++
++    FWHT_DPP_STEP(reg0,  1);
++    FWHT_DPP_STEP(reg0,  2);
++    FWHT_DPP_STEP(reg0,  4);
++    FWHT_DPP_STEP(reg0,  8);
++    FWHT_DPP_STEP(reg0, 16);
++
++    s0[warp][lane] = reg0;
++    __syncthreads();
++
++    const int r = lane & 15;
++    const int c = warp * 2 + (lane >> 4);
++    float col = s0[r][c];
++
++    // h=1,2,4,8 stay within each 16-lane half, so both columns in the warp transform independently
++    FWHT_DPP_STEP(col, 1);
++    FWHT_DPP_STEP(col, 2);
++    FWHT_DPP_STEP(col, 4);
++    FWHT_DPP_STEP(col, 8);
++
++    s1[r][c] = col;
++    __syncthreads();
++
++    reg0 = s1[warp][lane];
++
++#undef FWHT_DPP_STEP
++}
++#endif // GGML_CUDA_DPP_REDUCE
++
+ // Threads per block for one-block-per-transform FWHT kernels at width n.
+ // Uses wider blocks (min(n/2, 1024)) for small batch counts; stages run in the same order so output is bit-identical.
+ static inline int ggml_cuda_fwht_block_threads(const int n, const int64_t n_transforms) {
+diff --git a/ggml/src/ggml-cuda/ggml-cuda.cu b/ggml/src/ggml-cuda/ggml-cuda.cu
+index 46f7f42..08a88cd 100644
+--- a/ggml/src/ggml-cuda/ggml-cuda.cu
++++ b/ggml/src/ggml-cuda/ggml-cuda.cu
+@@ -4239,16 +4239,31 @@ static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, con
+ 
+     const int64_t M = w_alpha->ne[1];
+     const int64_t N = x->ne[1];
+-    const int cc = ggml_cuda_info().devices[cuda_ctx->device].cc;
++    const int cc        = ggml_cuda_info().devices[cuda_ctx->device].cc;
++    const int warp_size = ggml_cuda_info().devices[cuda_ctx->device].warp_size;
+ 
+-    if (beta_mm->src[1] != x || w_alpha->type != w_beta->type || !ggml_cuda_gdn_ab_mmvq_supported(w_alpha->type) ||
++    static const bool k157_gdn_ab_f = ggml_cuda_env_switch("GGML_HIP_K157_GDN_AB_F");
++    const bool is_mmvq = ggml_cuda_gdn_ab_mmvq_supported(w_alpha->type);
++    const bool is_mmvf = !is_mmvq && k157_gdn_ab_f && ggml_cuda_gdn_ab_mmvf_supported(w_alpha->type);
++
++    if (beta_mm->src[1] != x || w_alpha->type != w_beta->type || (!is_mmvq && !is_mmvf) ||
+             !ggml_are_same_shape(w_alpha, w_beta) || w_alpha->nb[1] != w_beta->nb[1] ||
+-            !ggml_is_contiguous(w_alpha) || !ggml_is_contiguous(w_beta) || !ggml_is_matrix(w_alpha) ||
+-            (N <= MMVQ_MAX_BATCH_SIZE && !ggml_cuda_should_use_mmvq(w_alpha->type, cc, N))) {
++            !ggml_is_contiguous(w_alpha) || !ggml_is_contiguous(w_beta) || !ggml_is_matrix(w_alpha)) {
+         return 0;
+     }
+-    if (x->type != GGML_TYPE_F32 || !ggml_is_contiguous_rows(x) || x->ne[2] != 1 || x->ne[3] != 1 ||
+-            N > ggml_cuda_mmvq_max_ncols(cc)) {
++    if (is_mmvq) {
++        if ((N <= MMVQ_MAX_BATCH_SIZE && !ggml_cuda_should_use_mmvq(w_alpha->type, cc, N)) ||
++                N > ggml_cuda_mmvq_max_ncols(cc)) {
++            return 0;
++        }
++    } else {
++        if (N < 1 || N > MMVF_MAX_BATCH_SIZE || w_alpha->ne[0] < 512 || w_alpha->ne[0] % 2 != 0 ||
++                x->nb[1] % (2 * sizeof(float)) != 0 || alpha_mm->op_params[0] != beta_mm->op_params[0] ||
++                !ggml_cuda_should_use_mmvf(w_alpha->type, cc, warp_size, w_alpha->ne, w_alpha->nb, N)) {
++            return 0;
++        }
++    }
++    if (x->type != GGML_TYPE_F32 || !ggml_is_contiguous_rows(x) || x->ne[2] != 1 || x->ne[3] != 1) {
+         return 0;
+     }
+     // outputs: [M, N] contiguous, head values of a token next to each other
+@@ -4264,13 +4279,24 @@ static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, con
+             dt->ne[0] != M || ggml_nelements(dt) != M || ssm_a->ne[0] != M || ggml_nelements(ssm_a) != M) {
+         return 0;
+     }
++    if (is_mmvf) {
++        if (ggml_cuda_tensors_overlap(gate_out, beta_out) ||
++                ggml_cuda_tensors_overlap(gate_out, x) || ggml_cuda_tensors_overlap(beta_out, x) ||
++                ggml_cuda_tensors_overlap(gate_out, dt) || ggml_cuda_tensors_overlap(beta_out, dt) ||
++                ggml_cuda_tensors_overlap(gate_out, ssm_a) || ggml_cuda_tensors_overlap(beta_out, ssm_a)) {
++            return 0;
++        }
++    }
+     const int out_nodes[] = { i + 5, i + 8 };
+     if (!ggml_cuda_check_fusion_memory_ranges(cgraph, i, (int) ops.size(), out_nodes, 2)) {
+         return 0;
+     }
+ 
+     if (conv != nullptr) {
+-        if (!ggml_cuda_gdn_conv_ab_supported(w_alpha->type, conv->d_conv, ggml_cuda_info().devices[cuda_ctx->device].warp_size)) {
++        const bool conv_ok = is_mmvq
++            ? ggml_cuda_gdn_conv_ab_supported(w_alpha->type, conv->d_conv, warp_size)
++            : ggml_cuda_gdn_conv_ab_mmvf_supported(w_alpha->type, conv->d_conv, conv->nr, warp_size);
++        if (!conv_ok) {
+             return 0;
+         }
+         const auto overlaps = [](const ggml_tensor * t, const void * p, size_t n) {
+@@ -4285,9 +4311,17 @@ static int ggml_cuda_try_gdn_ab_fusion(ggml_backend_cuda_context * cuda_ctx, con
+                 return 0;
+             }
+         }
++        if (is_mmvf && overlaps(x, conv->dst, dst_bytes)) {
++            return 0;
++        }
+     }
+ 
+-    ggml_cuda_gdn_ab_mmvq(*cuda_ctx, w_alpha, w_beta, x, dt, ssm_a, gate_out, beta_out, conv);
++    if (is_mmvq) {
++        ggml_cuda_gdn_ab_mmvq(*cuda_ctx, w_alpha, w_beta, x, dt, ssm_a, gate_out, beta_out, conv);
++    } else {
++        ggml_cuda_gdn_ab_mmvf(*cuda_ctx, w_alpha, w_beta, x, dt, ssm_a, gate_out, beta_out,
++                              ggml_prec(alpha_mm->op_params[0]), conv);
++    }
+     return (int) ops.size() - 1;
+ }
+ 
+@@ -4990,8 +5024,9 @@ static bool ggml_cuda_norm_fwht_q8_prepare(
+         return false;
+     }
+     bool can_use_mm_data = mm_data_safe_for_q8;
+-    if (can_use_mm_data && u.ncols > 1) {
+-        // multi-row q8_1 writes packed rows that can clobber earlier input rows in other blocks
++    static const bool k157_mb = ggml_cuda_env_switch("GGML_HIP_K157_NORM_FWHT");
++    if (can_use_mm_data && (u.ncols > 1 || (k157_mb && u.ncols <= 16))) {
++        // multi-row or multi-block q8_1 writes can race with another block reading a/b
+         for (int k = 0; k < n_srcs; ++k) {
+             if (ggml_cuda_tensors_overlap(mm, srcs[k])) {
+                 can_use_mm_data = false;
+@@ -6109,6 +6144,39 @@ static int ggml_cuda_try_fuse(ggml_backend_cuda_context * cuda_ctx, ggml_cgraph
+         return 1;
+     }
+ 
++    // [GGML_HIP_K157_GDN_TAIL] Fuse ADD(x, dt) -> UNARY(SOFTPLUS) -> MUL(., ssm_a) (GDN alpha tail for any token count).
++    static const bool k157_gdn_tail = ggml_cuda_env_switch("GGML_HIP_K157_GDN_TAIL");
++    if (k157_gdn_tail && node->op == GGML_OP_ADD &&
++            ggml_can_fuse_subgraph(cgraph, i, { GGML_OP_ADD, GGML_OP_UNARY, GGML_OP_MUL }, { i + 2 })) {
++        const ggml_tensor * add = cgraph->nodes[i];
++        const ggml_tensor * sp  = cgraph->nodes[i + 1];
++        ggml_tensor *       mul = cgraph->nodes[i + 2];
++        const int out_idx = i + 2;
++        if (ggml_get_unary_op(sp) == GGML_UNARY_OP_SOFTPLUS && sp->src[0] == add &&
++                (mul->src[0] == sp || mul->src[1] == sp) &&
++                ggml_cuda_check_fusion_memory_ranges(cgraph, i, 3, &out_idx, 1)) {
++            const ggml_tensor * a0    = add->src[0];
++            const ggml_tensor * a1    = add->src[1];
++            const ggml_tensor * x     = ggml_are_same_shape(a0, add) ? a0 : a1;
++            const ggml_tensor * dt    = (x == a0) ? a1 : a0;
++            const ggml_tensor * ssm_a = (mul->src[0] == sp) ? mul->src[1] : mul->src[0];
++            const int64_t m = x->ne[0];
++            const bool x_alias_ok = !ggml_cuda_tensors_overlap(mul, x) ||
++                (mul->data == x->data && ggml_nbytes(mul) == ggml_nbytes(x));
++            if (x->type == GGML_TYPE_F32 && dt->type == GGML_TYPE_F32 && ssm_a->type == GGML_TYPE_F32 &&
++                    add->type == GGML_TYPE_F32 && sp->type == GGML_TYPE_F32 && mul->type == GGML_TYPE_F32 &&
++                    ggml_is_contiguous(x) && ggml_is_contiguous(dt) && ggml_is_contiguous(ssm_a) && ggml_is_contiguous(mul) &&
++                    ggml_are_same_shape(x, add) && ggml_are_same_shape(add, mul) &&
++                    dt->ne[0] == m && ggml_nelements(dt) == m &&
++                    ssm_a->ne[0] == m && ggml_nelements(ssm_a) == m &&
++                    ggml_nelements(mul) <= UINT32_MAX &&
++                    x_alias_ok && !ggml_cuda_tensors_overlap(mul, dt) && !ggml_cuda_tensors_overlap(mul, ssm_a)) {
++                ggml_cuda_op_add_softplus_mul(*cuda_ctx, x, dt, ssm_a, mul);
++                return 2;
++            }
++        }
++    }
++
+     if (ggml_cuda_can_fuse(cgraph, i, { GGML_OP_UNARY, GGML_OP_MUL }, { GGML_UNARY_OP_SILU }) ||
+         ggml_cuda_can_fuse(cgraph, i, { GGML_OP_UNARY, GGML_OP_MUL }, { GGML_UNARY_OP_SIGMOID }) ||
+         ggml_cuda_can_fuse(cgraph, i, { GGML_OP_UNARY, GGML_OP_MUL }, { GGML_UNARY_OP_SOFTPLUS })) {
+diff --git a/ggml/src/ggml-cuda/mmvf.cu b/ggml/src/ggml-cuda/mmvf.cu
+index d0a572e..b4515b7 100644
+--- a/ggml/src/ggml-cuda/mmvf.cu
++++ b/ggml/src/ggml-cuda/mmvf.cu
+@@ -4,6 +4,8 @@
+ #include "mmvf.cuh"
+ #include "mmf.cuh"
+ #include "convert.cuh"
++#include "ssm-conv.cuh"
++#include <cstdint>
+ 
+ template <typename T, typename type_acc, int ncols_dst, int block_size, bool has_fusion = false, bool is_multi_token_id = false>
+ static __global__ void mul_mat_vec_f(
+@@ -384,6 +386,238 @@ static __global__ void mul_mat_vec_f(
+     }
+ }
+ 
++// Thin F32 MMVF (few rows, wide K): 512 threads (16 warps/block -> 4 warps/SIMD32 on 48 WGP),
++// 128-bit float4 loads when 16B-aligned, DPP warp reduce and a single __syncthreads() across all ncols_dst.
++template <int ncols_dst, int block_size, bool use_float4>
++__launch_bounds__(block_size, 2)
++static __global__ void mul_mat_vec_f_f32_thin(
++        const float * __restrict__ x_ptr, const float * __restrict__ y_ptr, float * __restrict__ dst_ptr,
++        const int ncols_vec, const int stride_row_vec, const int stride_col_y_vec, const int stride_col_dst) {
++    constexpr int warp_size = ggml_cuda_get_physical_warp_size();
++    constexpr int nwarps    = block_size / warp_size;
++    static_assert(block_size % warp_size == 0 && nwarps <= warp_size, "bad thin MMVF block shape");
++
++    const int row  = blockIdx.x;
++    const int tid  = threadIdx.x;
++    const int lane = tid % warp_size;
++    const int warp = tid / warp_size;
++
++    ggml_cuda_pdl_sync();
++
++    float sumf[ncols_dst] = { 0.0f };
++    if constexpr (use_float4) {
++        const float4 * __restrict__ x4 = (const float4 *) x_ptr + (int64_t) row * stride_row_vec;
++        const float4 * __restrict__ y4 = (const float4 *) y_ptr;
++        for (int col4 = tid; col4 < ncols_vec; col4 += block_size) {
++            const float4 tx = x4[col4];
++#pragma unroll
++            for (int j = 0; j < ncols_dst; ++j) {
++                const float4 ty = y4[(int64_t) j * stride_col_y_vec + col4];
++                ggml_cuda_mad(sumf[j], tx.x, ty.x);
++                ggml_cuda_mad(sumf[j], tx.y, ty.y);
++                ggml_cuda_mad(sumf[j], tx.z, ty.z);
++                ggml_cuda_mad(sumf[j], tx.w, ty.w);
++            }
++        }
++    } else {
++        const float2 * __restrict__ x2 = (const float2 *) x_ptr + (int64_t) row * stride_row_vec;
++        const float2 * __restrict__ y2 = (const float2 *) y_ptr;
++        for (int col2 = tid; col2 < ncols_vec; col2 += block_size) {
++            const float2 tx = x2[col2];
++#pragma unroll
++            for (int j = 0; j < ncols_dst; ++j) {
++                const float2 ty = y2[(int64_t) j * stride_col_y_vec + col2];
++                ggml_cuda_mad(sumf[j], tx.x, ty.x);
++                ggml_cuda_mad(sumf[j], tx.y, ty.y);
++            }
++        }
++    }
++
++    ggml_cuda_pdl_lc();
++
++    __shared__ float s_buf[ncols_dst][nwarps];
++#pragma unroll
++    for (int j = 0; j < ncols_dst; ++j) {
++        sumf[j] = warp_reduce_sum_dpp<warp_size>(sumf[j]);
++        if (lane == 0) {
++            s_buf[j][warp] = sumf[j];
++        }
++    }
++    __syncthreads();
++
++    if (warp == 0) {
++#pragma unroll
++        for (int j = 0; j < ncols_dst; ++j) {
++            float val = lane < nwarps ? s_buf[j][lane] : 0.0f;
++            val = warp_reduce_sum_dpp<warp_size>(val);
++            if (lane == 0) {
++                dst_ptr[(int64_t) j * stride_col_dst + row] = val;
++            }
++        }
++    }
++}
++
++// One 256-thread block of fused GDN alpha/beta projection + activation tail:
++//   alpha: gate[t*n_heads + h] = softplus(W_alpha[h] . x[t] + dt[h]) * ssm_a[h]
++//   beta:  beta[t*n_heads + h] = sigmoid(W_beta[h] . x[t])
++// Uses the same col2 += 256 float2 loop and 32->8->32 reduction order as mul_mat_vec_f<..., 256> (bit-identical).
++template <typename T, typename type_acc, int n_tokens, int block_size = 256>
++static __device__ __forceinline__ void mul_mat_vec_f_gdn_ab_block(
++        const int h, const bool is_beta, const int tid,
++        const T * __restrict__ w_alpha, const T * __restrict__ w_beta, const float * __restrict__ y_ptr,
++        const float * __restrict__ dt, const float * __restrict__ ssm_a,
++        float * __restrict__ gate, float * __restrict__ beta,
++        const int ncols2, const int stride_row, const int stride_col_y2, const int n_heads) {
++    constexpr int warp_size = ggml_cuda_get_physical_warp_size();
++    constexpr int nwarps    = block_size / warp_size;
++    static_assert(block_size % warp_size == 0 && nwarps <= warp_size, "bad GDN ab block shape");
++
++    const T * __restrict__ x = (is_beta ? w_beta : w_alpha) + (int64_t) h * stride_row;
++    const float2 * __restrict__ y2 = (const float2 *) y_ptr;
++
++    float sumf[n_tokens] = { 0.0f };
++    if constexpr (std::is_same_v<T, float>) {
++        const float2 * __restrict__ x2 = (const float2 *) x;
++        for (int col2 = tid; col2 < ncols2; col2 += block_size) {
++            const float2 tmpx = x2[col2];
++#pragma unroll
++            for (int j = 0; j < n_tokens; ++j) {
++                const float2 tmpy = y2[(int64_t) j * stride_col_y2 + col2];
++                ggml_cuda_mad(sumf[j], tmpx.x, tmpy.x);
++                ggml_cuda_mad(sumf[j], tmpx.y, tmpy.y);
++            }
++        }
++    } else if constexpr (std::is_same_v<T, half>) {
++        const half2 * __restrict__ x2 = (const half2 *) x;
++        if constexpr (std::is_same_v<type_acc, float>) {
++            for (int col2 = tid; col2 < ncols2; col2 += block_size) {
++                const float2 tmpx = __half22float2(x2[col2]);
++#pragma unroll
++                for (int j = 0; j < n_tokens; ++j) {
++                    const float2 tmpy = y2[(int64_t) j * stride_col_y2 + col2];
++                    ggml_cuda_mad(sumf[j], tmpx.x, tmpy.x);
++                    ggml_cuda_mad(sumf[j], tmpx.y, tmpy.y);
++                }
++            }
++        } else {
++#ifdef FP16_AVAILABLE
++            half2 sumh2[n_tokens] = {{ 0.0f, 0.0f }};
++            for (int col2 = tid; col2 < ncols2; col2 += block_size) {
++                const half2 tmpx = x2[col2];
++#pragma unroll
++                for (int j = 0; j < n_tokens; ++j) {
++                    const float2 tmpy = y2[(int64_t) j * stride_col_y2 + col2];
++                    sumh2[j] += tmpx * make_half2(tmpy.x, tmpy.y);
++                }
++            }
++#pragma unroll
++            for (int j = 0; j < n_tokens; ++j) {
++                sumf[j] = __low2float(sumh2[j]) + __high2float(sumh2[j]);
++            }
++#else
++            NO_DEVICE_CODE;
++#endif
++        }
++    } else if constexpr (std::is_same_v<T, nv_bfloat16>) {
++#if defined(GGML_USE_HIP)
++        const int * __restrict__ x2 = (const int *) x;
++        for (int col2 = tid; col2 < ncols2; col2 += block_size) {
++            const int tmpx = x2[col2];
++            const float tmpx0 = ggml_cuda_cast<float>(reinterpret_cast<const nv_bfloat16 *>(&tmpx)[0]);
++            const float tmpx1 = ggml_cuda_cast<float>(reinterpret_cast<const nv_bfloat16 *>(&tmpx)[1]);
++#pragma unroll
++            for (int j = 0; j < n_tokens; ++j) {
++                const float2 tmpy = y2[(int64_t) j * stride_col_y2 + col2];
++                ggml_cuda_mad(sumf[j], tmpx0, tmpy.x);
++                ggml_cuda_mad(sumf[j], tmpx1, tmpy.y);
++            }
++        }
++#else
++        const nv_bfloat162 * __restrict__ x2 = (const nv_bfloat162 *) x;
++        for (int col2 = tid; col2 < ncols2; col2 += block_size) {
++            const nv_bfloat162 tmpx = x2[col2];
++#pragma unroll
++            for (int j = 0; j < n_tokens; ++j) {
++                const float2 tmpy = y2[(int64_t) j * stride_col_y2 + col2];
++                ggml_cuda_mad(sumf[j], tmpx.x, tmpy.x);
++                ggml_cuda_mad(sumf[j], tmpx.y, tmpy.y);
++            }
++        }
++#endif
++    } else {
++        static_assert(std::is_same_v<T, void>, "unsupported type");
++    }
++
++    __shared__ float s_buf[n_tokens][nwarps];
++    const int lane = tid % warp_size;
++    const int warp = tid / warp_size;
++#pragma unroll
++    for (int j = 0; j < n_tokens; ++j) {
++        sumf[j] = warp_reduce_sum_dpp<warp_size>(sumf[j]);
++        if (lane == 0) {
++            s_buf[j][warp] = sumf[j];
++        }
++    }
++    __syncthreads();
++
++    if (warp == 0) {
++#pragma unroll
++        for (int j = 0; j < n_tokens; ++j) {
++            float val = lane < nwarps ? s_buf[j][lane] : 0.0f;
++            val = warp_reduce_sum_dpp<warp_size>(val);
++            if (lane == 0) {
++                const int i = j * n_heads + h;
++                if (is_beta) {
++                    beta[i] = 1.0f / (1.0f + expf(-val));
++                } else {
++                    const float a  = ggml_cuda_no_contract(val + dt[h]);
++                    const float sp = (a > 20.0f) ? a : logf(1.0f + expf(a));
++                    gate[i] = sp * ssm_a[h];
++                }
++            }
++        }
++    }
++}
++
++template <typename T, typename type_acc, int n_tokens>
++__launch_bounds__(256, 2)
++static __global__ void mul_mat_vec_f_gdn_ab(
++        const T * __restrict__ w_alpha, const T * __restrict__ w_beta, const float * __restrict__ y,
++        const float * __restrict__ dt, const float * __restrict__ ssm_a,
++        float * __restrict__ gate, float * __restrict__ beta,
++        const int ncols2, const int stride_row, const int stride_col_y2, const int n_heads) {
++    ggml_cuda_pdl_sync();
++    mul_mat_vec_f_gdn_ab_block<T, type_acc, n_tokens, 256>(
++        blockIdx.x, blockIdx.y != 0, threadIdx.x,
++        w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols2, stride_row, stride_col_y2, n_heads);
++}
++
++// Fused SSM_CONV (+SILU, d_conv=4, 256 channels/block) and F32/F16/BF16 GDN alpha/beta projections in one grid.
++template <typename T, typename type_acc, int n_tokens>
++__launch_bounds__(256, 2)
++static __global__ void gdn_conv_ab_f(
++        const ggml_cuda_ssm_conv_fused_src conv_src, const float * __restrict__ conv_w, const float * __restrict__ conv_bias,
++        const int conv_w_nb1, float * conv_dst, const int conv_dst_nb1, const int conv_n_t, const int n_conv_blocks,
++        const T * __restrict__ w_alpha, const T * __restrict__ w_beta, const float * __restrict__ y,
++        const float * __restrict__ dt, const float * __restrict__ ssm_a,
++        float * __restrict__ gate, float * __restrict__ beta,
++        const int ncols2, const int stride_row, const int stride_col_y2, const int n_heads) {
++    if constexpr (ggml_cuda_get_physical_warp_size() != 32) {
++        NO_DEVICE_CODE;
++    } else {
++        ggml_cuda_pdl_sync();
++        if ((int) blockIdx.x < n_conv_blocks) {
++            ssm_conv_fused_f32_block<true, 256, 4>(
++                blockIdx.x, conv_src, conv_w, conv_bias, conv_w_nb1, conv_dst, conv_dst_nb1, conv_n_t);
++            return;
++        }
++        const int b = blockIdx.x - n_conv_blocks;
++        mul_mat_vec_f_gdn_ab_block<T, type_acc, n_tokens, 256>(
++            b % n_heads, b >= n_heads, threadIdx.x,
++            w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols2, stride_row, stride_col_y2, n_heads);
++    }
++}
++
+ template<typename T, typename type_acc, int ncols_dst, int block_size, bool is_multi_token_id = false>
+ static void mul_mat_vec_f_switch_fusion(
+         const T * x, const float * y, const int32_t * ids, const ggml_cuda_mm_fusion_args_device fusion, float * dst,
+@@ -452,6 +686,24 @@ void launch_mul_mat_vec_f_cuda(
+ 
+     const bool has_fusion = fusion.gate != nullptr || fusion.x_bias != nullptr || fusion.gate_bias != nullptr;
+ 
++    if constexpr (std::is_same_v<T, float> && !is_multi_token_id) {
++        static const bool k157_mmvf_thin = ggml_cuda_env_switch("GGML_HIP_K157_MMVF_THIN");
++        if (k157_mmvf_thin && !has_fusion && ids == nullptr && warp_size == 32 &&
++                nchannels_dst == 1 && nsamples_or_ntokens == 1 && nrows <= 96 && ncols >= 2048) {
++            const bool aligned16 = (ncols % 4 == 0) && (stride_row % 4 == 0) && (stride_col_y % 4 == 0) &&
++                ((uintptr_t) x % 16 == 0) && ((uintptr_t) y % 16 == 0);
++            const ggml_cuda_kernel_launch_params lp(dim3((unsigned) nrows, 1, 1), dim3(512, 1, 1), 0, stream);
++            if (aligned16) {
++                ggml_cuda_kernel_launch(mul_mat_vec_f_f32_thin<ncols_dst, 512, true>, lp,
++                    x, y, dst, (int) (ncols / 4), (int) (stride_row / 4), (int) (stride_col_y / 4), (int) stride_col_dst);
++            } else {
++                ggml_cuda_kernel_launch(mul_mat_vec_f_f32_thin<ncols_dst, 512, false>, lp,
++                    x, y, dst, (int) (ncols / 2), (int) (stride_row / 2), (int) (stride_col_y / 2), (int) stride_col_dst);
++            }
++            return;
++        }
++    }
++
+     const int nbytes_shared = warp_size*sizeof(float) + (has_fusion ? warp_size*sizeof(float) : 0);
+     const dim3 block_nums(nrows, nchannels_dst, nsamples_or_ntokens);
+     const dim3 block_dims(block_size_best, 1, 1);
+@@ -888,3 +1140,113 @@ bool ggml_cuda_should_use_mmvf(enum ggml_type type, int cc, int warp_size, const
+             return false;
+     }
+ }
++
++bool ggml_cuda_gdn_ab_mmvf_supported(const enum ggml_type type) {
++    return type == GGML_TYPE_F32 || type == GGML_TYPE_F16 || type == GGML_TYPE_BF16;
++}
++
++bool ggml_cuda_gdn_conv_ab_mmvf_supported(const enum ggml_type type, const int64_t d_conv, const int64_t nr, const int warp_size) {
++    return warp_size == 32 && d_conv == 4 && nr % 256 == 0 && ggml_cuda_gdn_ab_mmvf_supported(type);
++}
++
++template <typename T, typename type_acc>
++static void gdn_ab_mmvf_launch(
++        const T * w_alpha, const T * w_beta, const float * y, const float * dt, const float * ssm_a,
++        float * gate, float * beta, const int ncols2, const int stride_row, const int stride_col_y2,
++        const int n_heads, const int n_tokens, const ggml_cuda_gdn_conv_args * conv, cudaStream_t stream) {
++    static_assert(MMVF_MAX_BATCH_SIZE == 8, "update the n_tokens dispatch");
++    if (conv != nullptr) {
++        GGML_ASSERT(conv->d_conv == 4 && conv->nr % 256 == 0);
++        const int n_conv_blocks = (int) (conv->nr / 256);
++        const ggml_cuda_kernel_launch_params lp(dim3((unsigned) (n_conv_blocks + 2 * n_heads), 1, 1), dim3(256, 1, 1), 0, stream);
++#define GDN_CONV_AB_F_LAUNCH(N)                                                                                \
++    ggml_cuda_kernel_launch(gdn_conv_ab_f<T, type_acc, N>, lp,                                                 \
++        conv->src, conv->w, conv->bias, conv->w_nb1, conv->dst, conv->dst_nb1, conv->n_t, n_conv_blocks,       \
++        w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols2, stride_row, stride_col_y2, n_heads)
++        switch (n_tokens) {
++            case 1: GDN_CONV_AB_F_LAUNCH(1); break;
++            case 2: GDN_CONV_AB_F_LAUNCH(2); break;
++            case 3: GDN_CONV_AB_F_LAUNCH(3); break;
++            case 4: GDN_CONV_AB_F_LAUNCH(4); break;
++            case 5: GDN_CONV_AB_F_LAUNCH(5); break;
++            case 6: GDN_CONV_AB_F_LAUNCH(6); break;
++            case 7: GDN_CONV_AB_F_LAUNCH(7); break;
++            case 8: GDN_CONV_AB_F_LAUNCH(8); break;
++            default: GGML_ABORT("unsupported GDN token count");
++        }
++#undef GDN_CONV_AB_F_LAUNCH
++        return;
++    }
++
++    const ggml_cuda_kernel_launch_params lp(dim3((unsigned) n_heads, 2, 1), dim3(256, 1, 1), 0, stream);
++#define GDN_AB_F_LAUNCH(N)                                                                                     \
++    ggml_cuda_kernel_launch(mul_mat_vec_f_gdn_ab<T, type_acc, N>, lp,                                          \
++        w_alpha, w_beta, y, dt, ssm_a, gate, beta, ncols2, stride_row, stride_col_y2, n_heads)
++    switch (n_tokens) {
++        case 1: GDN_AB_F_LAUNCH(1); break;
++        case 2: GDN_AB_F_LAUNCH(2); break;
++        case 3: GDN_AB_F_LAUNCH(3); break;
++        case 4: GDN_AB_F_LAUNCH(4); break;
++        case 5: GDN_AB_F_LAUNCH(5); break;
++        case 6: GDN_AB_F_LAUNCH(6); break;
++        case 7: GDN_AB_F_LAUNCH(7); break;
++        case 8: GDN_AB_F_LAUNCH(8); break;
++        default: GGML_ABORT("unsupported GDN token count");
++    }
++#undef GDN_AB_F_LAUNCH
++}
++
++void ggml_cuda_gdn_ab_mmvf(
++        ggml_backend_cuda_context & ctx, const ggml_tensor * w_alpha, const ggml_tensor * w_beta,
++        const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a,
++        ggml_tensor * gate, ggml_tensor * beta, const enum ggml_prec op_prec, const ggml_cuda_gdn_conv_args * conv) {
++    const ggml_type type = w_alpha->type;
++    GGML_ASSERT(w_beta->type == type && ggml_cuda_gdn_ab_mmvf_supported(type));
++    GGML_ASSERT(ggml_are_same_shape(w_alpha, w_beta) && w_alpha->nb[1] == w_beta->nb[1]);
++    GGML_ASSERT(x->type == GGML_TYPE_F32 && x->ne[0] == w_alpha->ne[0] && x->ne[2] == 1 && x->ne[3] == 1 &&
++                x->ne[1] >= 1 && x->ne[1] <= MMVF_MAX_BATCH_SIZE);
++    GGML_ASSERT(w_alpha->ne[0] % 2 == 0 && x->nb[1] % (2 * sizeof(float)) == 0);
++
++    const size_t ts = ggml_type_size(type);
++    const int ncols2        = (int) (w_alpha->ne[0] / 2);
++    const int n_heads       = (int) w_alpha->ne[1];
++    const int n_tokens      = (int) x->ne[1];
++    const int stride_row    = (int) (w_alpha->nb[1] / ts);
++    const int stride_col_y2 = (int) (x->nb[1] / (2 * sizeof(float)));
++
++    const float * yd = (const float *) x->data;
++    const float * dd = (const float *) dt->data;
++    const float * ad = (const float *) ssm_a->data;
++    float *       gd = (float *) gate->data;
++    float *       bd = (float *) beta->data;
++    cudaStream_t  stream = ctx.stream();
++
++    const int cc = ggml_cuda_info().devices[ggml_cuda_get_device()].cc;
++    const enum ggml_prec prec = fast_fp16_available(cc) ? op_prec : GGML_PREC_F32;
++
++    switch (type) {
++        case GGML_TYPE_F32:
++            gdn_ab_mmvf_launch<float, float>(
++                (const float *) w_alpha->data, (const float *) w_beta->data, yd, dd, ad, gd, bd,
++                ncols2, stride_row, stride_col_y2, n_heads, n_tokens, conv, stream);
++            break;
++        case GGML_TYPE_F16:
++            if (prec == GGML_PREC_DEFAULT) {
++                gdn_ab_mmvf_launch<half, half>(
++                    (const half *) w_alpha->data, (const half *) w_beta->data, yd, dd, ad, gd, bd,
++                    ncols2, stride_row, stride_col_y2, n_heads, n_tokens, conv, stream);
++            } else {
++                gdn_ab_mmvf_launch<half, float>(
++                    (const half *) w_alpha->data, (const half *) w_beta->data, yd, dd, ad, gd, bd,
++                    ncols2, stride_row, stride_col_y2, n_heads, n_tokens, conv, stream);
++            }
++            break;
++        case GGML_TYPE_BF16:
++            gdn_ab_mmvf_launch<nv_bfloat16, float>(
++                (const nv_bfloat16 *) w_alpha->data, (const nv_bfloat16 *) w_beta->data, yd, dd, ad, gd, bd,
++                ncols2, stride_row, stride_col_y2, n_heads, n_tokens, conv, stream);
++            break;
++        default:
++            GGML_ABORT("unsupported type: %s", ggml_type_name(type));
++    }
++}
+diff --git a/ggml/src/ggml-cuda/mmvf.cuh b/ggml/src/ggml-cuda/mmvf.cuh
+index 350b5cc..264c59c 100644
+--- a/ggml/src/ggml-cuda/mmvf.cuh
++++ b/ggml/src/ggml-cuda/mmvf.cuh
+@@ -2,6 +2,8 @@
+ 
+ #define MMVF_MAX_BATCH_SIZE 8 // Max. batch size for which to use MMVF kernels.
+ 
++struct ggml_cuda_gdn_conv_args;
++
+ void ggml_cuda_mul_mat_vec_f(ggml_backend_cuda_context & ctx, const ggml_tensor * src0, const ggml_tensor * src1, const ggml_tensor * ids, ggml_tensor * dst,
+     const ggml_cuda_mm_fusion_args_host * fusion = nullptr);
+ 
+@@ -12,3 +14,11 @@ void ggml_cuda_op_mul_mat_vec_f(
+     const int64_t src1_padded_row_size, cudaStream_t stream);
+ 
+ bool ggml_cuda_should_use_mmvf(enum ggml_type type, int cc, int warp_size, const int64_t * src0_ne, const size_t * src0_nb, int64_t ne11);
++
++// Fused GDN alpha/beta F32/F16/BF16 projections + activation tails (+ optional fused SSM_CONV in the same grid).
++bool ggml_cuda_gdn_ab_mmvf_supported(enum ggml_type type);
++bool ggml_cuda_gdn_conv_ab_mmvf_supported(enum ggml_type type, int64_t d_conv, int64_t nr, int warp_size);
++void ggml_cuda_gdn_ab_mmvf(ggml_backend_cuda_context & ctx, const ggml_tensor * w_alpha, const ggml_tensor * w_beta,
++                           const ggml_tensor * x, const ggml_tensor * dt, const ggml_tensor * ssm_a,
++                           ggml_tensor * gate, ggml_tensor * beta, enum ggml_prec prec,
++                           const ggml_cuda_gdn_conv_args * conv = nullptr);
+diff --git a/ggml/src/ggml-cuda/norm.cu b/ggml/src/ggml-cuda/norm.cu
+index 2439def..d39c3ae 100644
+--- a/ggml/src/ggml-cuda/norm.cu
++++ b/ggml/src/ggml-cuda/norm.cu
+@@ -380,6 +380,180 @@ static __global__ void __launch_bounds__(1024, 1) add_rms_norm_fwht_f32(
+     }
+ }
+ 
++// Multi-block [ADD +] RMS_NORM + MUL(weight) + MUL(signs) + FWHT (+ optional q8_1), one 512-thread block per B-wide segment.
++// Repeats the row RMS reduction in every segment block in the exact 32-warp order of rms_norm_f32<1024> (bit-identical),
++// then runs one segment FWHT in 2 LDS barriers via wave32 DPP. Outputs must not alias a or b.
++template <int N, int B, bool has_add, bool q8>
++static __global__ void __launch_bounds__(512, 2) add_rms_norm_fwht_mb_f32(
++        const float * a, const float * b, const float * weight, const float * signs,
++        float * sum, float * normed, void * dst_ptr, const float eps, const float fwht_scale) {
++    constexpr int NT      = 512;
++    constexpr int NE_ORIG = N / 1024;
++    static_assert(N % 1024 == 0 && (B == 512 || B == 1024) && N > B, "bad multi-block FWHT shape");
++
++    __shared__ float s_sum[32];
++#ifdef GGML_CUDA_DPP_REDUCE
++    __shared__ float s0[B == 1024 ? 32 : 16][B == 1024 ? 33 : 34];
++    __shared__ float s1[B == 1024 ? 32 : 16][B == 1024 ? 33 : 34];
++#else
++    __shared__ float s_fwht[B];
++#endif
++
++    if constexpr (N == 5120) {
++        ggml_cuda_pdl_lc();
++    }
++
++    const int     seg  = blockIdx.x;
++    const int64_t row  = blockIdx.y;
++    const int     tid  = threadIdx.x;
++    const int     warp = tid / 32;
++    const int     lane = tid % 32;
++
++    a += row * N;
++    if constexpr (has_add) {
++        b   += row * N;
++        sum += row * N;
++    }
++    if (normed) {
++        normed += row * N;
++    }
++
++    if constexpr (N == 5120) {
++        ggml_cuda_pdl_sync();
++    }
++
++    if constexpr (B == 1024) {
++        const int ow0 = warp;
++        const int ow1 = warp + 16;
++        float acc0 = 0.0f;
++        float acc1 = 0.0f;
++        float reg[2];
++#pragma unroll
++        for (int i = 0; i < NE_ORIG; ++i) {
++            const int col0 = i * 1024 + ow0 * 32 + lane;
++            const int col1 = i * 1024 + ow1 * 32 + lane;
++            float x0, x1;
++            if constexpr (has_add) {
++                x0 = __fadd_rn(a[col0], b[col0]);
++                x1 = __fadd_rn(a[col1], b[col1]);
++            } else {
++                x0 = a[col0];
++                x1 = a[col1];
++            }
++            acc0 = fmaf(x0, x0, acc0);
++            acc1 = fmaf(x1, x1, acc1);
++            if (i == seg) {
++                reg[0] = x0;
++                reg[1] = x1;
++                if constexpr (has_add) {
++                    sum[col0] = x0;
++                    sum[col1] = x1;
++                }
++            }
++        }
++
++        acc0 = warp_reduce_sum_dpp<32>(acc0);
++        acc1 = warp_reduce_sum_dpp<32>(acc1);
++        if (lane == 0) {
++            s_sum[ow0] = acc0;
++            s_sum[ow1] = acc1;
++        }
++        __syncthreads();
++        const float total = warp_reduce_sum_dpp<32>(s_sum[lane]);
++        const float scale = rsqrtf(ggml_cuda_no_contract(total / N) + eps);
++
++        const int base = seg * 1024;
++#pragma unroll
++        for (int j = 0; j < 2; ++j) {
++            const int col = base + (j * 16 + warp) * 32 + lane;
++            const float v = scale * reg[j] * weight[col];
++            if (normed) {
++                normed[col] = v;
++            }
++            reg[j] = (v * signs[col]) * fwht_scale;
++        }
++
++#ifdef GGML_CUDA_DPP_REDUCE
++        ggml_cuda_fwht_1024_nt512_dpp(reg, s0, s1, warp, lane);
++#else
++        ggml_cuda_fwht_block_butterfly<1024, NT, 1024>(reg, s_fwht, tid, lane);
++#endif
++
++        if constexpr (!q8) {
++            float * dst = (float *) dst_ptr + row * N + base;
++            dst[tid]      = reg[0];
++            dst[tid + NT] = reg[1];
++        } else {
++            block_q8_1 * ycol = (block_q8_1 *) dst_ptr + row * (N / QK8_1) + seg * (1024 / QK8_1);
++            quantize_q8_1_group<true>(reg[0], ycol + warp,      lane);
++            quantize_q8_1_group<true>(reg[1], ycol + warp + 16, lane);
++        }
++    } else {
++        const int i_seg    = seg >> 1;
++        const int half_seg = seg & 1;
++        const int ow0      = half_seg * 16 + warp;
++        const int ow1      = (1 - half_seg) * 16 + warp;
++        float acc0 = 0.0f;
++        float acc1 = 0.0f;
++        float reg0 = 0.0f;
++#pragma unroll
++        for (int i = 0; i < NE_ORIG; ++i) {
++            const int col0 = i * 1024 + ow0 * 32 + lane;
++            const int col1 = i * 1024 + ow1 * 32 + lane;
++            float x0, x1;
++            if constexpr (has_add) {
++                x0 = __fadd_rn(a[col0], b[col0]);
++                x1 = __fadd_rn(a[col1], b[col1]);
++            } else {
++                x0 = a[col0];
++                x1 = a[col1];
++            }
++            acc0 = fmaf(x0, x0, acc0);
++            acc1 = fmaf(x1, x1, acc1);
++            if (i == i_seg) {
++                reg0 = x0;
++                if constexpr (has_add) {
++                    sum[col0] = x0;
++                }
++            }
++        }
++
++        acc0 = warp_reduce_sum_dpp<32>(acc0);
++        acc1 = warp_reduce_sum_dpp<32>(acc1);
++        if (lane == 0) {
++            s_sum[ow0] = acc0;
++            s_sum[ow1] = acc1;
++        }
++        __syncthreads();
++        const float total = warp_reduce_sum_dpp<32>(s_sum[lane]);
++        const float scale = rsqrtf(ggml_cuda_no_contract(total / N) + eps);
++
++        const int base = seg * 512;
++        const int col  = base + tid;
++        const float v  = scale * reg0 * weight[col];
++        if (normed) {
++            normed[col] = v;
++        }
++        reg0 = (v * signs[col]) * fwht_scale;
++
++#ifdef GGML_CUDA_DPP_REDUCE
++        ggml_cuda_fwht_512_nt512_dpp(reg0, s0, s1, warp, lane);
++#else
++        float reg[1] = { reg0 };
++        ggml_cuda_fwht_block_butterfly<512, NT, 512>(reg, s_fwht, tid, lane);
++        reg0 = reg[0];
++#endif
++
++        if constexpr (!q8) {
++            float * dst = (float *) dst_ptr + row * N + base;
++            dst[tid] = reg0;
++        } else {
++            block_q8_1 * ycol = (block_q8_1 *) dst_ptr + row * (N / QK8_1) + seg * (512 / QK8_1);
++            quantize_q8_1_group<true>(reg0, ycol + warp, lane);
++        }
++    }
++}
++
+ // The gated output norm of a GDN layer: dst = silu(z) * (rms_norm(x) * w) over rows of NCOLS (<= 256) columns, with
+ // the q8_1 copy of dst. One thread per column, one block per row. Bitwise equal to rms_norm_f32<256, true> followed
+ // by unary_gated_op_kernel<op_silu>: the 256-thread kernel sums x^2 of thread t < NCOLS, adds zeros for the rest
+@@ -940,11 +1114,64 @@ void ggml_cuda_op_add_rms_norm_fwht_fused(
+     cudaStream_t stream = ctx.stream();
+     float * normed_d = normed ? (float *) normed->data : nullptr;
+     void * out = q8 ? q8 : dst->data;
+-    const ggml_cuda_kernel_launch_params lp(dim3((unsigned) nrows, 1, 1), dim3(1024, 1, 1), 0, stream);
++
++    static const bool k157_mb = ggml_cuda_env_switch("GGML_HIP_K157_NORM_FWHT");
++    const auto ranges_overlap = [](const void * p0, const size_t n0, const void * p1, const size_t n1) {
++        if (!p0 || !p1 || n0 == 0 || n1 == 0) {
++            return false;
++        }
++        const uintptr_t a0 = (uintptr_t) p0;
++        const uintptr_t a1 = a0 + n0;
++        const uintptr_t b0 = (uintptr_t) p1;
++        const uintptr_t b1 = b0 + n1;
++        return a0 < b1 && b0 < a1;
++    };
++    const size_t row_bytes = (size_t) nrows * (size_t) ncols * sizeof(float);
++    const size_t out_bytes = q8 ? (size_t) nrows * (size_t) (ncols / QK8_1) * sizeof(block_q8_1) : row_bytes;
++    const bool mb_no_alias =
++        !ranges_overlap(out, out_bytes, a->data, row_bytes) &&
++        (!b || !ranges_overlap(out, out_bytes, b->data, row_bytes)) &&
++        (!add || (!ranges_overlap(add->data, row_bytes, a->data, row_bytes) &&
++                  !ranges_overlap(add->data, row_bytes, b->data, row_bytes))) &&
++        (!normed_d || (!ranges_overlap(normed_d, row_bytes, a->data, row_bytes) &&
++                       (!b || !ranges_overlap(normed_d, row_bytes, b->data, row_bytes))));
++    const int warp_size = ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size;
+ 
+ #define ARF_ARGS(ADD)                                                                               \
+     (const float *) a->data, ADD ? (const float *) b->data : nullptr, (const float *) weight->data, \
+         (const float *) signs->data, ADD ? (float *) add->data : nullptr, normed_d, out, eps, fwht_scale
++
++    if (k157_mb && warp_size == 32 && (blk == 512 || blk == 1024) && ncols > blk && nrows <= 16 && mb_no_alias) {
++        const ggml_cuda_kernel_launch_params lp_mb(dim3((unsigned) (ncols / blk), (unsigned) nrows, 1), dim3(512, 1, 1), 0, stream);
++#define ARF_MB_LAUNCH(NN, BB, ADD, Q8) \
++    ggml_cuda_kernel_launch(add_rms_norm_fwht_mb_f32<NN, BB, ADD, Q8>, lp_mb, ARF_ARGS(ADD))
++#define ARF_MB_CASE_ADD(NN, BB, ADD) \
++    if (!q8) { \
++        ARF_MB_LAUNCH(NN, BB, ADD, false); \
++    } else { \
++        ARF_MB_LAUNCH(NN, BB, ADD, true); \
++    }
++#define ARF_MB_CASE_B(NN, BB) \
++    if (blk == BB) { \
++        if (add) { \
++            ARF_MB_CASE_ADD(NN, BB, true) \
++        } else { \
++            ARF_MB_CASE_ADD(NN, BB, false) \
++        } \
++        return; \
++    }
++        switch (ncols) {
++            case 2048: ARF_MB_CASE_B(2048, 512) ARF_MB_CASE_B(2048, 1024) break;
++            case 4096: ARF_MB_CASE_B(4096, 512) ARF_MB_CASE_B(4096, 1024) break;
++            case 5120: ARF_MB_CASE_B(5120, 512) ARF_MB_CASE_B(5120, 1024) break;
++            default: break;
++        }
++#undef ARF_MB_CASE_B
++#undef ARF_MB_CASE_ADD
++#undef ARF_MB_LAUNCH
++    }
++
++    const ggml_cuda_kernel_launch_params lp(dim3((unsigned) nrows, 1, 1), dim3(1024, 1, 1), 0, stream);
+ #define ARF_LAUNCH(NN, BB, ADD, Q8) \
+     ggml_cuda_kernel_launch(add_rms_norm_fwht_f32<NN, BB, ADD, Q8>, lp, ARF_ARGS(ADD))
+ #define ARF_CASE_ADD(NN, BB, ADD) \
+diff --git a/ggml/src/ggml-cuda/quantize.cu b/ggml/src/ggml-cuda/quantize.cu
+index 7ff16a5..be15149 100644
+--- a/ggml/src/ggml-cuda/quantize.cu
++++ b/ggml/src/ggml-cuda/quantize.cu
+@@ -103,7 +103,7 @@ static __global__ void quantize_q8_1(
+ 
+ // Hadamard transform (optional signs, width N) + q8_1 quantization in one launch.
+ // Same ascending-stride butterfly as fwht_cuda_block and same per-32 quantizer as quantize_q8_1.
+-template <int N, int NT, typename T, bool has_signs>
++template <int N, int NT, typename T, bool has_signs, bool fast_dpp = false>
+ __launch_bounds__(NT, 1)
+ static __global__ void fwht_quantize_q8_1(
+         const T * x_ptr, const float * signs, void * vy_ptr,
+@@ -113,7 +113,15 @@ static __global__ void fwht_quantize_q8_1(
+     static_assert(NE >= 1 && N % NT == 0 && NT % warp_size == 0 && NT % QK8_1 == 0, "bad fused FWHT shape");
+     static_assert(warp_size % QK8_1 == 0, "a 32-block must not span two warps");
+ 
++#ifdef GGML_CUDA_DPP_REDUCE
++    constexpr bool use_dpp_1024 = fast_dpp && N == 1024 && NT == 512 && warp_size == 32;
++    constexpr bool use_dpp_512  = fast_dpp && N ==  512 && NT == 512 && warp_size == 32;
++    __shared__ float s0[use_dpp_1024 ? 32 : (use_dpp_512 ? 16 : 1)][use_dpp_1024 ? 33 : (use_dpp_512 ? 34 : 1)];
++    __shared__ float s1[use_dpp_1024 ? 32 : (use_dpp_512 ? 16 : 1)][use_dpp_1024 ? 33 : (use_dpp_512 ? 34 : 1)];
++    __shared__ float s[(use_dpp_1024 || use_dpp_512) ? 1 : N];
++#else
+     __shared__ float s[N];
++#endif
+ 
+     ggml_cuda_pdl_lc();
+ 
+@@ -141,7 +149,17 @@ static __global__ void fwht_quantize_q8_1(
+             }
+             reg[i] = v * scale;
+         }
++#ifdef GGML_CUDA_DPP_REDUCE
++        if constexpr (use_dpp_1024) {
++            ggml_cuda_fwht_1024_nt512_dpp(reg, s0, s1, tid / 32, lane);
++        } else if constexpr (use_dpp_512) {
++            ggml_cuda_fwht_512_nt512_dpp(reg[0], s0, s1, tid / 32, lane);
++        } else {
++            ggml_cuda_fwht_block_butterfly<N, NT>(reg, s, tid, lane);
++        }
++#else
+         ggml_cuda_fwht_block_butterfly<N, NT>(reg, s, tid, lane);
++#endif
+     } else {
+ #pragma unroll
+         for (int i = 0; i < NE; ++i) {
+@@ -169,10 +187,21 @@ static void fwht_quantize_launch_nt(
+     const dim3 num_blocks((unsigned) (ne0 / N), (unsigned) ne1, (unsigned) (ne2 * ne3));
+     const dim3 block_size(NT, 1, 1);
+     const ggml_cuda_kernel_launch_params lp = ggml_cuda_kernel_launch_params(num_blocks, block_size, 0, stream);
++    static const bool k157_fwht_dpp = ggml_cuda_env_switch("GGML_HIP_K157_FWHT_DPP");
++    if constexpr ((N == 1024 || N == 512) && NT == 512) {
++        if (k157_fwht_dpp && ggml_cuda_info().devices[ggml_cuda_get_device()].warp_size == 32) {
++            if (signs) {
++                ggml_cuda_kernel_launch(fwht_quantize_q8_1<N, NT, T, true,  true>, lp, x, signs, vy, ne00, ne0, (uint32_t) ne1, ne2_fastdiv, scale);
++            } else {
++                ggml_cuda_kernel_launch(fwht_quantize_q8_1<N, NT, T, false, true>, lp, x, signs, vy, ne00, ne0, (uint32_t) ne1, ne2_fastdiv, scale);
++            }
++            return;
++        }
++    }
+     if (signs) {
+-        ggml_cuda_kernel_launch(fwht_quantize_q8_1<N, NT, T, true>,  lp, x, signs, vy, ne00, ne0, (uint32_t) ne1, ne2_fastdiv, scale);
++        ggml_cuda_kernel_launch(fwht_quantize_q8_1<N, NT, T, true,  false>, lp, x, signs, vy, ne00, ne0, (uint32_t) ne1, ne2_fastdiv, scale);
+     } else {
+-        ggml_cuda_kernel_launch(fwht_quantize_q8_1<N, NT, T, false>, lp, x, signs, vy, ne00, ne0, (uint32_t) ne1, ne2_fastdiv, scale);
++        ggml_cuda_kernel_launch(fwht_quantize_q8_1<N, NT, T, false, false>, lp, x, signs, vy, ne00, ne0, (uint32_t) ne1, ne2_fastdiv, scale);
+     }
+ }
+ 
+diff --git a/ggml/src/ggml-cuda/unary.cu b/ggml/src/ggml-cuda/unary.cu
+index f1da2d4..1d17591 100644
+--- a/ggml/src/ggml-cuda/unary.cu
++++ b/ggml/src/ggml-cuda/unary.cu
+@@ -780,6 +780,38 @@ void ggml_cuda_op_unary_mul(ggml_backend_cuda_context & ctx, ggml_tensor * unary
+     }
+ }
+ 
++static __global__ void add_softplus_mul_f32_kernel(
++        const float * x, const float * __restrict__ dt, const float * __restrict__ ssm_a,
++        float * dst, const int64_t ne, const uint3 m_fd) {
++    ggml_cuda_pdl_lc();
++    const int64_t i = int64_t(blockDim.x) * blockIdx.x + threadIdx.x;
++    if (i >= ne) {
++        return;
++    }
++    const uint32_t h = fastmodulo((uint32_t) i, m_fd);
++    ggml_cuda_pdl_sync();
++    const float a  = ggml_cuda_no_contract(x[i] + dt[h]);
++    const float sp = op_softplus(a);
++    dst[i] = sp * ssm_a[h];
++}
++
++void ggml_cuda_op_add_softplus_mul(ggml_backend_cuda_context & ctx, const ggml_tensor * x, const ggml_tensor * dt,
++                                   const ggml_tensor * ssm_a, ggml_tensor * dst) {
++    GGML_ASSERT(x->type == GGML_TYPE_F32 && dt->type == GGML_TYPE_F32 &&
++                ssm_a->type == GGML_TYPE_F32 && dst->type == GGML_TYPE_F32);
++    GGML_ASSERT(ggml_is_contiguous(x) && ggml_is_contiguous(dt) &&
++                ggml_is_contiguous(ssm_a) && ggml_is_contiguous(dst));
++    const int64_t ne = ggml_nelements(dst);
++    const int64_t m  = x->ne[0];
++    GGML_ASSERT(ne <= UINT32_MAX && ggml_nelements(dt) == m && ggml_nelements(ssm_a) == m);
++
++    const uint3 m_fd = init_fastdiv_values((uint32_t) m);
++    const int64_t num_blocks = (ne + CUDA_NEG_BLOCK_SIZE - 1) / CUDA_NEG_BLOCK_SIZE;
++    const ggml_cuda_kernel_launch_params lp((dim3) num_blocks, CUDA_NEG_BLOCK_SIZE, 0, ctx.stream());
++    ggml_cuda_kernel_launch(add_softplus_mul_f32_kernel, lp,
++        (const float *) x->data, (const float *) dt->data, (const float *) ssm_a->data, (float *) dst->data, ne, m_fd);
++}
++
+ /* fused relu + sqr */
+ 
+ void ggml_cuda_op_relu_sqr(ggml_backend_cuda_context & ctx, ggml_tensor * relu_node, ggml_tensor * sqr_node) {
+diff --git a/ggml/src/ggml-cuda/unary.cuh b/ggml/src/ggml-cuda/unary.cuh
+index e60a061..481f7c4 100644
+--- a/ggml/src/ggml-cuda/unary.cuh
++++ b/ggml/src/ggml-cuda/unary.cuh
+@@ -94,6 +94,10 @@ void ggml_cuda_op_xielu(ggml_backend_cuda_context & ctx, ggml_tensor * dst);
+ 
+ void ggml_cuda_op_unary_mul(ggml_backend_cuda_context & ctx, ggml_tensor * unary_node, ggml_tensor * mul_node, block_q8_1 * q8 = nullptr);
+ 
++// Fused GDN alpha tail: dst[i] = softplus(x[i] + dt[i % M]) * ssm_a[i % M] for contiguous F32 tensors.
++void ggml_cuda_op_add_softplus_mul(ggml_backend_cuda_context & ctx, const ggml_tensor * x, const ggml_tensor * dt,
++                                   const ggml_tensor * ssm_a, ggml_tensor * dst);
++
+ void ggml_cuda_op_relu_sqr(ggml_backend_cuda_context & ctx, ggml_tensor * relu_node, ggml_tensor * sqr_node);
+ 
+ __device__ __forceinline__ float ggml_cuda_op_silu_single(float x) {
+-- 
+2.53.0
+

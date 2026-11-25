@@ -66,7 +66,7 @@ Audyt liczb: [[AUDYT]].
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (28)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (128)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (86)
-- [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (113)
+- [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (115)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (35)
 - [[archiwum/_hub|archiwum]] — Notatki scalone i wycofane (status nieaktualne, pole zastapiona_przez); poza przypomnieniem (47)
@@ -74,6 +74,8 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-25 [[bonsai-2-5-uncensored|Ternary Bonsai 2.5 27B Uncensored (AtomicChat)]]
+- 2026-11-25 [[nib-chromadera|Nib (Chromadera): silnik C++/HIP pod Inkling 2 Mini na 7900 XTX]]
+- 2026-11-25 [[gpu-straggler-finder|gpu-straggler-finder (Stas Bekman)]]
 - 2026-11-24 [[zwiad-2026-11-20|Zwiad 2026-11-20: błąd przywracania po odrzuconym drafcie w cache hybrydowym (ik_llama), weryfikacja kilku wierszy w oMLX, TensorRT-LLM 1.3 z Qwen3.5 MTP]]
 - 2026-11-24 [[wafer-gpu-perf-lista|Lista wafer-ai „gpu-perf-engineering-resources”: ocena]]
 - 2026-11-24 [[telegram-2026-11-14-silniki-agenci|Telegram 2026-11-14: własny silnik pod DeepSeek V4.1 Flash, InferenceForge, vstack]]
@@ -86,8 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-24 [[raport-03-silniki|Raport 03: silniki inferencji i stack]]
 - 2026-11-24 [[przeglad-zrodla-2026-11-24|Przegląd ZRODLA 2026-11-24: zmienione oceny (cała inferencja i nauka, nie tylko prędkość)]]
 - 2026-11-24 [[przeglad-kolejki-2026-11-24|Przegląd kolejki testów 2026-11-24: co z 103 pozycji da się zrobić teraz]]
-- 2026-11-24 [[kv4-hopper-2611-30027|kv4-hopper (arXiv 2611.30027): dlaczego 4-bitowe KV bywa wolniejsze od FP8 i co z tego dla XTX]]
-- 2026-11-24 [[colab-kolejka-2026-11-24|Kolejka testów NVIDIA na Google Colab (T4 / L4), 2026-11-24]]
 
-Razem 824 notatek. Wygenerowano 2026-11-25 przez `tools/wiki.py index`.
+Razem 826 notatek. Wygenerowano 2026-11-25 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

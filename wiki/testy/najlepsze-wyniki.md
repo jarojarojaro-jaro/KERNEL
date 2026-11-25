@@ -10,7 +10,7 @@ status: aktualne
 **Najlepszy zmierzony wynik każdej pary model i karta dla każdej metryki, z warunkami, datą i notatką źródłową; generuje tools/tabele.py.**
 
 <!-- TABELE:START -->
-Wygenerowano 2026-11-25 przez `tools/tabele.py` z pól `wynik`/`wyniki` 326 trójek; poprawiaj notatkę źródłową, nie tę tabelę.
+Wygenerowano 2026-11-25 przez `tools/tabele.py` z pól `wynik`/`wyniki` 333 trójek; poprawiaj notatkę źródłową, nie tę tabelę.
 
 ## Ternary Bonsai 2 27B: najlepsze wyniki na kartach
 
@@ -31,8 +31,15 @@ Wygenerowano 2026-11-25 przez `tools/tabele.py` z pól `wynik`/`wyniki` 326 tró
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | czat T=0,7, prism Q2_0 + MTP n2, KV q4_0 | **77.7 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | czat T=0,7, topka-bonsai PM4 + env produkcji + MTP n2 + słownik draftu 64k, ctx 262144 | **106.0 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | czat T=0,7, topka-k157 PM4 + env produkcji + MTP n2 + słownik 64k, ctx 262144 | **116.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod bez spekulacji, topka-best PM4, ctx 262144 | **70.6 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod bez spekulacji, topka-k157 PM4 | **76.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod T=0 (Q4 160 tok.), prism Q2_0 + MTP n2 | **117.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod T=0 (Q4), MTP n2 + ngram-mod | **188.4 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | edycja/kopia kodu T=0 (copy_bench short), topka-k157 | **446.4 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | edycja/kopia kodu T=0 (copy_bench short, mediana), topka-best PM4 + MTP n2 + lookup W16 + słownik 64k | **426.1 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | konfiguracja Dogukana (temp 1,0) na topka-best, MTP n2 | **121.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | llama-bench tg128 bez spekulacji, Q2_0 | **54.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 
 ## Drafter DFlash2 dla Qwen3.8-27B: najlepsze wyniki na kartach

@@ -1,0 +1,5 @@
+# K-157 bit-exact config (MMVF_THIN=0) speed + KLD of best/k157 vs base port
+b25u-kld|900|~/qwen-opt/bonsai25|./b25-kld.sh /home/jaro/wt/topka-bonsai/build-hip/bin /home/jaro/wt/topka-k157/build-hip/bin /home/jaro/wt/topka-k157/build-hip/bin@GGML_HIP_K157_MMVF_THIN=0
+b25u-plain|600|~/qwen-opt/bonsai25|GGML_HIP_K157_MMVF_THIN=0 PM4=1 PROD=1 EXTRA_TAG=-plain-nothin ./b25.sh k157 q2 none
+b25u-chat|900|~/qwen-opt/bonsai25|GGML_HIP_K157_MMVF_THIN=0 LOOKUP_W=16 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-nothin ./b25.sh k157 q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25u-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

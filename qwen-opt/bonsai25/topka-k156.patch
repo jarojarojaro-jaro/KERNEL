@@ -1,0 +1,279 @@
+diff --git a/ggml/src/ggml-cuda/mmvq.cu b/ggml/src/ggml-cuda/mmvq.cu
+index d88f1dfb9..c054834b1 100644
+--- a/ggml/src/ggml-cuda/mmvq.cu
++++ b/ggml/src/ggml-cuda/mmvq.cu
+@@ -1684,6 +1684,46 @@ static constexpr bool mmvq_r3_small_type(ggml_type type, int ncols_dst) {
+     return ncols_dst == 5 && (type == GGML_TYPE_Q4_K || type == GGML_TYPE_Q5_K || type == GGML_TYPE_Q6_K ||
+                               type == GGML_TYPE_IQ4_XS || type == GGML_TYPE_Q8_0);
+ }
++
++// [GGML_HIP_K156] RDNA3 Q2_0 (Bonsai) mat-vec at 1-3 columns, the big_rows instance of mul_mat_vec_q for Q2_0: a wave
++// computes GGML_HIP_K156_ROWS (2, 4 = default, 8) rows instead of one (1-column launch) or two, so a K iteration has 4x
++// the weight bytes in flight, and every lane takes one 32-value chunk (8 bytes of 2-bit codes + the block scale) per
++// row with one 64-bit and one 16-bit load. The activations of the chunk are loaded once per lane for all rows and
++// transposed (v_perm), so that the code planes (q >> 2i) & 0x03030303 dot them directly with dp4a: no per-value table
++// lookup; the code offset (codes 0..3 = values -1..2) is the exact integer sum of the chunk's activations, subtracted
++// once per chunk. Same fusion epilogue as the table's launch (gate/GLU, bias/residual, q8_1 copy, pair launches).
++// GGML_HIP_K156=0: the table's launch.
++static int mmvq_k156_rows() {
++    static const int rows = [] {
++        if (!ggml_cuda_env_switch("GGML_HIP_K156")) {
++            return 0;
++        }
++        const char * env = getenv("GGML_HIP_K156_ROWS");
++        const int r = env ? atoi(env) : 4;
++        return r == 2 || r == 8 ? r : 4;
++    }();
++    return rows;
++}
++
++// 4x4 byte transpose: a[i] byte m = byte i of y[m] (y[m] holds activations 4m..4m+3, so a[i] holds 4m + i, m = 0..3,
++// the values of code plane i of a 16-value weight dword)
++static __device__ __forceinline__ void mmvq_q2_0_transpose(const int4 y, int * a) {
++#if defined(GGML_USE_HIP)
++    const uint32_t t0 = __builtin_amdgcn_perm(y.y, y.x, 0x05010400); // y0.b0 y1.b0 y0.b1 y1.b1
++    const uint32_t t1 = __builtin_amdgcn_perm(y.y, y.x, 0x07030602); // y0.b2 y1.b2 y0.b3 y1.b3
++    const uint32_t t2 = __builtin_amdgcn_perm(y.w, y.z, 0x05010400); // y2.b0 y3.b0 y2.b1 y3.b1
++    const uint32_t t3 = __builtin_amdgcn_perm(y.w, y.z, 0x07030602); // y2.b2 y3.b2 y2.b3 y3.b3
++    a[0] = __builtin_amdgcn_perm(t2, t0, 0x05040100);
++    a[1] = __builtin_amdgcn_perm(t2, t0, 0x07060302);
++    a[2] = __builtin_amdgcn_perm(t3, t1, 0x05040100);
++    a[3] = __builtin_amdgcn_perm(t3, t1, 0x07060302);
++#else
++    GGML_UNUSED(y);
++    a[0] = a[1] = a[2] = a[3] = 0;
++    NO_DEVICE_CODE;
++#endif
++}
++
+ // HIP's __launch_bounds__(n, 1) already sets amdgpu_waves_per_eu(1), which would take precedence over a second one
+ #if defined(GGML_USE_HIP)
+ #define MMVQ_LAUNCH_BOUNDS(nthreads, max_waves) __attribute__((amdgpu_flat_work_group_size(1, nthreads), amdgpu_waves_per_eu(1, max_waves)))
+@@ -1996,6 +2036,106 @@ static __global__ void mul_mat_vec_q(
+         kbx_start = blocks_per_row_x; // done, skip the generic loop
+     }
+ 
++    // [GGML_HIP_K156] Q2_0 big_rows instance on RDNA3 (see mmvq_k156_rows): lane tid takes the 32-value chunks tid,
++    // tid + nthreads, ... of all rows_per_cuda_block rows; tmp/tmp_gate get the same per-lane partial sums the epilogue
++    // reduces for the table's launch
++    constexpr bool use_q2_0_k156 = type == GGML_TYPE_Q2_0 && big_rows && table_id == MMVQ_PARAMETERS_RDNA3_0;
++    if constexpr (use_q2_0_k156) {
++        constexpr int R        = rows_per_cuda_block;
++        constexpr int nthreads = nwarps*warp_size;
++        constexpr uint32_t bsx = sizeof(block_q2_0);
++        constexpr uint32_t bsy = sizeof(block_q8_1);
++        static_assert(sizeof(block_q2_0) == 18 && QK2_0 == 2*QK8_1, "K156: block_q2_0 layout");
++        mmvq_src xq[R];
++        [[maybe_unused]] mmvq_src xg[R];
++#pragma unroll
++        for (int r = 0; r < R; ++r) {
++            // rows past the end of the matrix re-read the last one, their results are not stored
++            const size_t row_off = size_t(kbx_offset + min(r, last_row)*int(stride_row_x)) * bsx;
++            xq[r] = mmvq_make_src((const char *) vx + row_off);
++            if constexpr (has_gate_fusion) {
++                xg[r] = mmvq_make_src((const char *) vgate + row_off);
++            }
++        }
++        mmvq_src ys[ncols_dst];
++#pragma unroll
++        for (int j = 0; j < ncols_dst; ++j) {
++            ys[j] = mmvq_make_src(y, j*stride_col_y*bsy);
++        }
++
++        // dot of a chunk's 8 code bytes q (byte m of q.x: values 4m..4m+3, of q.y: 16 + 4m..) with the transposed
++        // activations a (code plane i of q.x / q.y: a[i] / a[4 + i]); codes 0..3, the -1 offset is applied by the caller
++        const auto dot_codes = [](const int2 q, const int (&a)[8]) {
++            int sumi = 0;
++#pragma unroll
++            for (int i = 0; i < 4; ++i) {
++                sumi = ggml_cuda_dp4a(((uint32_t) q.x >> 2*i) & 0x03030303, a[i],     sumi);
++                sumi = ggml_cuda_dp4a(((uint32_t) q.y >> 2*i) & 0x03030303, a[4 + i], sumi);
++            }
++            return sumi;
++        };
++
++        const int nchunks = ncols_x / QK8_1;
++#pragma unroll 2
++        for (int c = tid; c < nchunks; c += nthreads) {
++            const uint32_t xb = uint32_t(c >> 1) * bsx;          // block of the chunk: d at +0
++            const uint32_t xc = xb + 2 + 8*uint32_t(c & 1);      // its 8 code bytes
++            const uint32_t yb = uint32_t(c) * bsy;               // q8_1 block of the chunk: ds at +0, qs at +4
++
++            int2  q[R];
++            float dx[R];
++#pragma unroll
++            for (int r = 0; r < R; ++r) {
++                q[r]  = mmvq_ld<int2, 2>(xq[r], xc);
++                dx[r] = __half2float(mmvq_ld<half, 2>(xq[r], xb));
++            }
++            [[maybe_unused]] int2  qg[R];
++            [[maybe_unused]] float dg[R];
++            if constexpr (has_gate_fusion) {
++                if (use_gate) {
++#pragma unroll
++                    for (int r = 0; r < R; ++r) {
++                        qg[r] = mmvq_ld<int2, 2>(xg[r], xc);
++                        dg[r] = __half2float(mmvq_ld<half, 2>(xg[r], xb));
++                    }
++                }
++            }
++
++#pragma unroll
++            for (int j = 0; j < ncols_dst; ++j) {
++                const float d8 = __low2float(mmvq_ld<half2, 4>(ys[j], yb));
++                const int4  y0 = mmvq_ld<int4, 4>(ys[j], yb + 4);
++                const int4  y1 = mmvq_ld<int4, 4>(ys[j], yb + 20);
++                int a[8];
++                mmvq_q2_0_transpose(y0, a);
++                mmvq_q2_0_transpose(y1, a + 4);
++                // exact integer sum of the chunk's activations: the code offset
++                int sumy = 0;
++                sumy = ggml_cuda_dp4a(0x01010101, y0.x, sumy);
++                sumy = ggml_cuda_dp4a(0x01010101, y0.y, sumy);
++                sumy = ggml_cuda_dp4a(0x01010101, y0.z, sumy);
++                sumy = ggml_cuda_dp4a(0x01010101, y0.w, sumy);
++                sumy = ggml_cuda_dp4a(0x01010101, y1.x, sumy);
++                sumy = ggml_cuda_dp4a(0x01010101, y1.y, sumy);
++                sumy = ggml_cuda_dp4a(0x01010101, y1.z, sumy);
++                sumy = ggml_cuda_dp4a(0x01010101, y1.w, sumy);
++#pragma unroll
++                for (int r = 0; r < R; ++r) {
++                    tmp[j][r] += (dx[r]*d8) * float(dot_codes(q[r], a) - sumy);
++                }
++                if constexpr (has_gate_fusion) {
++                    if (use_gate) {
++#pragma unroll
++                        for (int r = 0; r < R; ++r) {
++                            tmp_gate[j][r] += (dg[r]*d8) * float(dot_codes(qg[r], a) - sumy);
++                        }
++                    }
++                }
++            }
++        }
++        kbx_start = blocks_per_row_x; // done, skip the generic loop
++    }
++
+     for (int kbx = kbx_start; kbx < blocks_per_row_x; kbx += blocks_per_iter) {
+         const int kby = kbx * (qk/QK8_1); // y block index that aligns with kbx
+ 
+@@ -2680,7 +2820,7 @@ static void mul_mat_vec_q_switch_fusion(
+         if (has_fusion) {
+             GGML_ASSERT(fusion.pair_x == nullptr && "pair launches are only supported for ncols_dst > 1");
+             const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums, block_dims, nbytes_shared, stream);
+-            ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters, false, rows_override>, launch_params,
++            ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters, false, rows_override, big_rows>, launch_params,
+                  vx, vy, ids, fusion, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
+                  channel_ratio, stride_channel_x, stride_channel_y, stride_channel_dst,
+                  sample_ratio, stride_sample_x, stride_sample_y, stride_sample_dst, ids_stride);
+@@ -2691,20 +2831,21 @@ static void mul_mat_vec_q_switch_fusion(
+             GGML_ASSERT(fusion.gate == nullptr && fusion.gate_bias == nullptr && fusion.x_scale == nullptr &&
+                         fusion.gate_scale == nullptr && fusion.shared_up == nullptr &&
+                         "only bias fusion is supported for ncols_dst > 1");
+-            GGML_ASSERT(rows_override == 0 && "fused multi-column launches use the table's rows per block");
++            GGML_ASSERT((rows_override == 0 || (type == GGML_TYPE_Q2_0 && big_rows)) &&
++                        "fused multi-column launches use the table's rows per block (Q2_0 K156: its own)");
+             dim3 block_nums_fused = block_nums;
+             ggml_cuda_mm_fusion_args_device fusion_launch = fusion;
+             if (fusion.pair_x != nullptr) {
+                 // the second matrix's blocks follow the first matrix's block_nums.x blocks
+                 const mmvq_parameter_table_id table_id = get_device_table_id(ggml_cuda_info().devices[ggml_cuda_get_device()].cc);
+                 const int rpb = calc_rows_per_block(c_ncols_dst, table_id, small_k,
+-                                                    calc_nwarps(type, c_ncols_dst, table_id, small_k, halve_iters), type, 0, big_rows);
++                                                    calc_nwarps(type, c_ncols_dst, table_id, small_k, halve_iters), type, rows_override, big_rows);
+                 GGML_ASSERT(fusion.x_bias == nullptr && block_nums.y == 1 && block_nums.z == 1);
+                 fusion_launch.pair_block0 = block_nums.x;
+                 block_nums_fused.x += (fusion.pair_nrows + rpb - 1) / rpb;
+             }
+             const ggml_cuda_kernel_launch_params launch_params = ggml_cuda_kernel_launch_params(block_nums_fused, block_dims, nbytes_shared, stream);
+-            ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters, true, 0, big_rows>, launch_params,
++            ggml_cuda_kernel_launch(mul_mat_vec_q<type, c_ncols_dst, true, small_k, halve_iters, true, rows_override, big_rows>, launch_params,
+                  vx, vy, ids, fusion_launch, dst, ncols_x, nchannels_y, stride_row_x, stride_col_y, stride_col_dst,
+                  channel_ratio, stride_channel_x, stride_channel_y, stride_channel_dst,
+                  sample_ratio, stride_sample_x, stride_sample_y, stride_sample_dst, ids_stride);
+@@ -2877,6 +3018,37 @@ static void mul_mat_vec_q_switch_ncols_dst(
+         GGML_ABORT("fatal error");
+     }
+ 
++#if defined(GGML_USE_HIP)
++    if constexpr (type == GGML_TYPE_Q2_0) {
++        // [GGML_HIP_K156] Q2_0 at 1-3 columns on RDNA3: the big_rows instance (mmvq_k156_rows rows per wave)
++        const int k156_rows = mmvq_k156_rows();
++        if (table_id == MMVQ_PARAMETERS_RDNA3_0 && k156_rows > 0 && !has_ids && ncols_dst <= 3 && fusion.shared_up == nullptr) {
++            const auto launch_k156 = [&](auto ncols_tag, auto rows_tag) {
++                constexpr int c_ncols_dst = decltype(ncols_tag)::value;
++                constexpr int c_rows      = decltype(rows_tag)::value;
++                const std::pair<dim3, dim3> dims = calc_launch_params<type>(c_ncols_dst, nrows_x, nchannels_dst, nsamples_dst,
++                                                                              warp_size, table_id, false, false, c_rows, true);
++                mul_mat_vec_q_switch_fusion<type, c_ncols_dst, false, false, c_rows, true>(vx, vy, ids, fusion, dst, ncols_x,
++                     nchannels_y_fd, stride_row_x, stride_col_y, stride_col_dst, channel_ratio_fd, stride_channel_x,
++                     stride_channel_y, stride_channel_dst, sample_ratio_fd, stride_sample_x, stride_sample_y,
++                     stride_sample_dst, dims.first, dims.second, 0, ids_stride, stream);
++            };
++            const auto launch_rows = [&](auto ncols_tag) {
++                switch (k156_rows) {
++                    case 2:  launch_k156(ncols_tag, std::integral_constant<int, 2>{}); break;
++                    case 8:  launch_k156(ncols_tag, std::integral_constant<int, 8>{}); break;
++                    default: launch_k156(ncols_tag, std::integral_constant<int, 4>{}); break;
++                }
++            };
++            switch (ncols_dst) {
++                case 1:  launch_rows(std::integral_constant<int, 1>{}); return;
++                case 2:  launch_rows(std::integral_constant<int, 2>{}); return;
++                default: launch_rows(std::integral_constant<int, 3>{}); return;
++            }
++        }
++    }
++#endif // defined(GGML_USE_HIP)
++
+     switch (ncols_dst) {
+         case 1: {
+             // static, else MSVC lambda capture breaks the constexpr uses below
+diff --git a/tests/test-backend-ops.cpp b/tests/test-backend-ops.cpp
+index 781c14478..09ae5f8ba 100644
+--- a/tests/test-backend-ops.cpp
++++ b/tests/test-backend-ops.cpp
+@@ -11659,6 +11659,24 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+         test_cases.emplace_back(new test_mul_mat_pair(type_a, 17408, 17408, 5, 5120));
+     }
+ 
++    // Q2_0 at 1-3 columns (decode and the MTP verify), the RDNA3 GGML_HIP_K156 launch (2/4/8 rows per wave): odd row
++    // counts, a K that is not a multiple of the 1024-value lane stride, Bonsai 2.5 27B shapes, residual ADD (bias
++    // epilogue) and row pairs
++    for (int64_t n : {1, 2, 3}) {
++        for (auto [m, k] : std::vector<std::pair<int64_t, int64_t>>{{67, 576}, {33, 320}, {17, 64}, {130, 17408}, {1000, 5120}, {5120, 6144}}) {
++            test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q2_0, GGML_TYPE_F32, m, n, k, {1, 1}, {1, 1}));
++        }
++        test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q2_0, GGML_TYPE_F32, 64, n, 256, {3, 2}, {2, 1}));
++        for (mul_mat_add_mode mode : {MUL_MAT_ADD_MM_RES, MUL_MAT_ADD_RES_MM, MUL_MAT_ADD_ROW, MUL_MAT_ADD_RES_INPLACE, MUL_MAT_ADD_MM_MM}) {
++            test_cases.emplace_back(new test_mul_mat_add(GGML_TYPE_Q2_0, 1000, n, 1024, mode));
++        }
++        test_cases.emplace_back(new test_mul_mat_add(GGML_TYPE_Q2_0, 5120, n, 17408, MUL_MAT_ADD_MM_RES));
++        if (n > 1) {
++            test_cases.emplace_back(new test_mul_mat_pair(GGML_TYPE_Q2_0, 1000, 1000, n, 1024));
++            test_cases.emplace_back(new test_mul_mat_pair(GGML_TYPE_Q2_0, 130,  67,   n, 512));
++        }
++    }
++
+ #if 0
+     {
+         // Test paths in OpenCL
+@@ -12838,6 +12856,10 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+     test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q4_0, true, 16, 8, 512, 256));
+     test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q5_K, false, 1, 1, 2048, 11776));
+     test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q8_0, false, 1, 1, 1024, 2048));
++    // Q2_0 (Bonsai 2.5 27B dense FFN 5120 -> 17408 -> 5120, and a small one): the GGML_HIP_K156 gate-fused launch with its
++    // q8_1 copy of the GLU output
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q2_0, false, 1, 1, 5120, 17408));
++    test_cases.emplace_back(new test_ffn_gate_up_down(GGML_TYPE_Q2_0, false, 1, 1, 1024, 2048));
+     // single-token MoE routing (LFM2 24B-A2B: 64 experts, 4 used, sigmoid + bias; and other expert counts / gatings)
+     test_cases.emplace_back(new test_norm_router_topk(2048, 64, 4, true, GATING_FUNC_SIGMOID));
+     test_cases.emplace_back(new test_norm_router_topk(2048, 64, 4, false, GATING_FUNC_SOFTMAX));
+@@ -12979,7 +13001,7 @@ static std::vector<std::unique_ptr<test_case>> make_test_cases_eval() {
+ static std::vector<std::unique_ptr<test_case>> make_test_cases_perf() {
+     std::vector<std::unique_ptr<test_case>> test_cases;
+     // Q2_0 (Bonsai 27B) at speculative verify widths: projection shapes and the vocab head (GGML_HIP_BZ16 A/B)
+-    for (int64_t n : {1, 4, 8, 9, 10, 12, 16}) {
++    for (int64_t n : {1, 2, 3, 4, 8, 9, 10, 12, 16}) {
+         for (auto [m, k] : std::vector<std::pair<int64_t, int64_t>>{{17408, 5120}, {5120, 17408}, {10240, 5120}, {6144, 5120}, {5120, 6144}, {248320, 5120}}) {
+             test_cases.emplace_back(new test_mul_mat(GGML_TYPE_Q2_0, GGML_TYPE_F32, m, n, k, {1, 1}, {1, 1}));
+         }

@@ -1,0 +1,7 @@
+# K-157 Gemini small-kernel fusions on topka-best: tbo, plain on/off, chat on/off
+b25t-tbo|900|~/wt/topka-k157/build-hip/bin|export GGML_HIP_PM4=0 LD_LIBRARY_PATH=.:/opt/rocm/core-10.0/lib; for o in MUL_MAT RMS_NORM MUL_MAT_VEC_FUSION SSM_CONV UNARY; do echo "== $o"; taskset -c 2-5 timeout 160 ./test-backend-ops -b ROCm0 -o $o 2>&1 | grep -E "FAIL|tests passed" | tail -2; done; journalctl -k --since "-15min" --no-pager | grep -c gfxhub
+b25t-plain-on|600|~/qwen-opt/bonsai25|PM4=1 PROD=1 EXTRA_TAG=-plain ./b25.sh k157 q2 none
+b25t-plain-off|600|~/qwen-opt/bonsai25|GGML_HIP_K157_NORM_FWHT=0 GGML_HIP_K157_FWHT_DPP=0 GGML_HIP_K157_GDN_AB_F=0 GGML_HIP_K157_GDN_TAIL=0 GGML_HIP_K157_MMVF_THIN=0 PM4=1 PROD=1 EXTRA_TAG=-plain-off ./b25.sh k157 q2 none
+b25t-chat-on|900|~/qwen-opt/bonsai25|LOOKUP_W=16 PM4=1 PROD=1 BENCH_COPY=1 EXTRA_TAG=-on ./b25.sh k157 q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25t-chat-off|900|~/qwen-opt/bonsai25|GGML_HIP_K157_NORM_FWHT=0 GGML_HIP_K157_FWHT_DPP=0 GGML_HIP_K157_GDN_AB_F=0 GGML_HIP_K157_GDN_TAIL=0 GGML_HIP_K157_MMVF_THIN=0 LOOKUP_W=16 PM4=1 PROD=1 EXTRA_TAG=-off ./b25.sh k157 q2 mtp 2 --spec-draft-vocab /home/jaro/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536
+b25t-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

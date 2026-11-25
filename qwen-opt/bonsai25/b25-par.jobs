@@ -1,0 +1,3 @@
+# greedy parity topka-best vs k157
+b25-par|900|~/qwen-opt/bonsai25|./b25-par.sh /home/jaro/wt/topka-best/build-hip/bin /home/jaro/wt/topka-k157/build-hip/bin
+b25par-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

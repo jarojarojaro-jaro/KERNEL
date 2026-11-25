@@ -8,7 +8,7 @@
 # KV q4_0 (MTP draft too), ctx 32768, port 18796 (never 8080), taskset -c 2-5, GGML_HIP_PM4=0 (non-production engine).
 set -uo pipefail
 eng=$1 mod=$2 sp=$3 n=${4:-3}; shift 4 2>/dev/null || shift $#
-case $eng in prism) B=$HOME/wt/prism/build-hip/bin;; topka) B=$HOME/wt/topka-bonsai/build-hip/bin;; k150) B=$HOME/wt/prism-k150/build-hip/bin;; pt) B=$HOME/wt/prism-pt/build-hip/bin;; k150t) B=$HOME/wt/topka-k150t/build-hip/bin;; bz16) B=$HOME/wt/topka-bz16/build-hip/bin;; best) B=$HOME/wt/topka-best/build-hip/bin;; up) B=$HOME/wt/upstream-master/build-hip/bin;; *) B=$eng;; esac
+case $eng in prism) B=$HOME/wt/prism/build-hip/bin;; topka) B=$HOME/wt/topka-bonsai/build-hip/bin;; k150) B=$HOME/wt/prism-k150/build-hip/bin;; pt) B=$HOME/wt/prism-pt/build-hip/bin;; k150t) B=$HOME/wt/topka-k150t/build-hip/bin;; bz16) B=$HOME/wt/topka-bz16/build-hip/bin;; best) B=$HOME/wt/topka-best/build-hip/bin;; k156) B=$HOME/wt/topka-k156/build-hip/bin;; k157) B=$HOME/wt/topka-k157/build-hip/bin;; up) B=$HOME/wt/upstream-master/build-hip/bin;; *) B=$eng;; esac
 case $mod in ptq1) M=$HOME/models/bonsai25/Ternary-Bonsai-2.5-27B-Uncensored-PTQ1_0-mtp.gguf;; q2) M=$HOME/models/bonsai25/Ternary-Bonsai-2.5-27B-Uncensored-Q2_0-mtp.gguf;; esac
 DF=$HOME/models/draft/Qwen3.8-27B-DFlash2-Q4_K_M.gguf
 case $sp in mtp) spec=(--spec-type draft-mtp --spec-draft-n-max "$n" -ctkd q4_0 -ctvd q4_0);; dflash) spec=(-md "$DF" -ngld 99 --spec-type draft-dflash --spec-draft-n-max "$n" -ctkd q4_0 -ctvd q4_0);; none) spec=();; esac

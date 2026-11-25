@@ -1,0 +1,7 @@
+# Nib vs Maya production (JARO 2026-11-25 'przetestuj')
+nib-q8|900|~|~/qwen-opt/nib/nib-ab.sh nib-q8
+nib-maya|900|~|~/qwen-opt/nib/nib-ab.sh maya
+nib-q4|900|~|~/qwen-opt/nib/nib-ab.sh nib-q4
+nib-q8-dense|900|~|~/qwen-opt/nib/nib-ab.sh nib-q8-dense
+nib-q8-r2|900|~|~/qwen-opt/nib/nib-ab.sh nib-q8
+nib-restore8080|400|~|~/qwen-opt/l1tok/chat8080.sh restore

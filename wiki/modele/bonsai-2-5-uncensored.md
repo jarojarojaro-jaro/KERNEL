@@ -9,6 +9,9 @@ rozmiar: 27B
 kwant: PTQ1_0, Q2_0
 karty: rx-7900-xtx
 wyniki:
+  - bonsai-2-5-uncensored | rx-7900-xtx | 116.9 t/s | czat T=0,7, topka-k157 PM4 + env produkcji + MTP n2 + słownik 64k, ctx 262144 | 2026-11-25
+  - bonsai-2-5-uncensored | rx-7900-xtx | 446.4 t/s | edycja/kopia kodu T=0 (copy_bench short), topka-k157 | 2026-11-25
+  - bonsai-2-5-uncensored | rx-7900-xtx | 76.9 t/s | dekod bez spekulacji, topka-k157 PM4 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 106.0 t/s | czat T=0,7, topka-bonsai PM4 + env produkcji + MTP n2 + słownik draftu 64k, ctx 262144 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 77.7 t/s | czat T=0,7, prism Q2_0 + MTP n2, KV q4_0 | 2026-11-25
   - bonsai-2-5-uncensored | rx-7900-xtx | 426.1 t/s | edycja/kopia kodu T=0 (copy_bench short, mediana), topka-best PM4 + MTP n2 + lookup W16 + słownik 64k | 2026-11-25
@@ -20,7 +23,7 @@ wyniki:
 ---
 # Ternary Bonsai 2.5 27B Uncensored (AtomicChat)
 
-**Bonsai 2.5 bez cenzury od AtomicChat to Qwen3.8-27B w trytach (5,99 GB); na XTX najszybciej idzie w naszej topce z portem Hadamarda i PM4 jako bezstratny Q2_0 z MTP n2: przy pełnym kontekście 262k czat T=0,7 106,0 t/s, greedy do 174 t/s.**
+**Bonsai 2.5 bez cenzury od AtomicChat to Qwen3.8-27B w trytach (5,99 GB); na XTX najszybciej idzie w naszej topce (`topka-k157`: port Hadamarda, PM4, 4 nowe łatki) jako bezstratny Q2_0 z MTP n2: przy pełnym kontekście 262k czat T=0,7 115–117 t/s, edycja kodu 434–446 t/s, bez spekulacji 76,7 t/s.**
 
 ## Co to jest
 - Baza: PrismML Ternary Bonsai 2.5 27B (Qwen3.8-27B, hybryda 75% liniowej / 25% pełnej uwagi, tryty g128 w bazie Hadamarda, 1,76 bpw), wydanie „agentowe”: tool calling 77,2 vs 77,7 FP16 (README prism-ml).
@@ -59,15 +62,22 @@ wyniki:
 - PTQ1_0 na HIP liczy, a nie czyta: n=1 daje 446–583 GB/s z cache, a n=4 trwa 3,8× dłużej niż n=1 (q4_0: 1,2×). Dlatego weryfikacja MTP na PTQ1_0 jest wolniejsza niż bez spekulacji. Plik jest o 21% mniejszy, więc dobry kernel PTQ1_0 dla RDNA3 (n = 1–4) to największa dźwignia (K-149).
 
 <!-- TABELE:START -->
-## Wyniki z notatek (4)
+## Wyniki z notatek (11)
 
 Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-25); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | czat T=0,7, prism Q2_0 + MTP n2, KV q4_0 | **77.7 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | czat T=0,7, topka-bonsai PM4 + env produkcji + MTP n2 + słownik draftu 64k, ctx 262144 | **106.0 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | czat T=0,7, topka-k157 PM4 + env produkcji + MTP n2 + słownik 64k, ctx 262144 | **116.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod bez spekulacji, topka-best PM4, ctx 262144 | **70.6 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod bez spekulacji, topka-k157 PM4 | **76.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod T=0 (Q4 160 tok.), prism Q2_0 + MTP n2 | **117.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | dekod T=0 (Q4), MTP n2 + ngram-mod | **188.4 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | edycja/kopia kodu T=0 (copy_bench short), topka-k157 | **446.4 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | edycja/kopia kodu T=0 (copy_bench short, mediana), topka-best PM4 + MTP n2 + lookup W16 + słownik 64k | **426.1 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
+| AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | konfiguracja Dogukana (temp 1,0) na topka-best, MTP n2 | **121.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 | AMD Radeon RX 7900 XTX [[rx-7900-xtx]] | llama-bench tg128 bez spekulacji, Q2_0 | **54.9 t/s** |  | 2026-11-25 | [[bonsai-2-5-uncensored]] |
 <!-- TABELE:END -->
 
@@ -87,6 +97,9 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 - **K-155 (Kernel) MMVF w porcjach po 8 kolumn zamiast hipBLAS** (`topka-k155-mmvf-split.patch`, env `GGML_HIP_K155_MMVF_SPLIT`): MUL_MAT f32 275/275, f16 361/361; krok 14 tokenów 58 → 31 ms; **edycja/kopia kodu W16: 236,6 → 426,1 t/s przy T=0 i 422,2 przy T=0,7** (edit 8k 452,6), Q4 greedy 265,5.
 - **topka-best** (`~/wt/topka-best`: port Hadamarda + K-150T + K-154 + K-155): bez spekulacji 70,6 t/s (prism 54,9; +29%), czat T=0,7 MTP n2 106,5–108,0 (±3% szumu), konfiguracja Doğukana temp 1,0: 116,0 (n3) / 121,9 (n2) t/s wobec jego 74 na 3060.
 - **Profil topka-best (PM4 wył.)**: GPU 14,2 ms na token, PM4 zjada przerwy całkowicie (70,6 t/s = 14,2 ms); MMVQ Q2_0 74% (ok. 10,5 ms, ok. 695 GB/s, 72% pasma). Następna dźwignia: kernel Q2_0 n=1–3 (K-156, agent).
+- **K-156 (agent) kernel Q2_0 n=1–3** (`topka-k156.patch`, env `GGML_HIP_K156`, `_ROWS`): testy 2/4 wierszy: MUL_MAT 138/138, MUL_MAT_ADD 60/60, PAIR 4/4, fuzje 105/105, FFN 2/2; mikrobench 17408×5120 n=1 31 → 16,3 µs (dane z Infinity Cache), ale **end-to-end bez zmian**: bez spekulacji 70,1 vs 70,3, czat T=0,7 105,7 vs 106,1. Wniosek: w dekodzie MMVQ Q2_0 jest ograniczony pasmem DRAM (ok. 695 GB/s przy całym kroku), nie kodem pętli; mikrobench na jednej macierzy mieszczącej się w 96 MB cache kłamie. Nie wdrażamy.
+- **K-157 (Gemini) drobne kernele** (`topka-k157-gemini.patch`: wieloblokowy `add_rms_norm_fwht`, FWHT na DPP z 2 barierami, fuzja GDN alpha/beta F32 z ogonem, fuzja `ADD→SOFTPLUS→MUL`, cienki MMVF): testy MUL_MAT 2531/2531, RMS_NORM 53/53, fuzje 1265/1265, SSM_CONV 45/45; bez spekulacji 70,8 → **76,9 t/s (+8,6%)**, czat T=0,7 106,7 → **116,9 (+9,6%)**, edycja 446,4, L8k 143,7. Ablacja md5 greedy: NORM_FWHT, FWHT_DPP, GDN_TAIL bit w bit; tylko MMVF_THIN zmienia zaokrąglenie; z `GGML_HIP_K157_MMVF_THIN=0` odpowiedzi identyczne z topka-best i szybkość ta sama (76,7 / 115,2 / 434–439). K-150T bit w bit z bazowym portem (68c39468).
+- **KLD (40 × 512, korpus xtxbench) topka-k157 vs bazowy port c76335b**: średnie KLD 0,000000, maks. 0,000059, ten sam top-1 100%, PPL 5,5709 vs 5,5692. Różnice od K-154/K-155 (prefill krótkich promptów inną ścieżką) to zaokrąglenia, nie strata.
 - Grok (X, 14 dni): nikt nie publikował Bonsai 2.5 na 7900 XTX; producent: RTX 4090 bez spekulacji 111, z MTP n3 p-min 0,1 204 t/s; RTX 3060 przy 262k 74 t/s z MTP.
 
 ## Powiązane
