@@ -253,6 +253,8 @@ FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s.
 | czat T=0,7 (wall.py, 4 prompty × 300 tok., mediana) | **150,6 t/s** (Maya produkcja 112,5–112,8) | 2026-11-25 | Nib, NVFP4-Mixed (wagi oficjalne, **nie uncensored**), DSpark MTP, KV q4_0, Quest 224, ctx 262 848 | `~/qwen-opt/nib/out/nib.txt` (jaroserverai); [[nib-chromadera]] | nie (K-165: Nib + LoRA AtomicChat) |
 | T=0 (wall.py, mediana) | **169,0 t/s** (Maya 113,1) | 2026-11-25 | j.w. | j.w. | nie |
 | czat T=0,7, KV q8_0 | 130,3 t/s | 2026-11-25 | j.w., KV q8_0 | j.w. | nie |
+| **uncensored** czat T=0,7 (wall.py, mediana) | **147,3 t/s** (Maya produkcja uncensored 113,4 tym samym klientem, top-k 40) | 2026-11-25 | Nib `nib-unc` (018d0fc+eb07c8f, `--lora` AtomicChat rank 1 w runtime: wo + ffn_down_exps × 24 + token_embd), NVFP4-Mixed, DSpark MTP, KV q4_0, Quest 224; odmowy 0/5 (stock 5/5); domyślne próbkowanie serwera top-k 40 / top-p 0,95 | `~/qwen-opt/queue/logs/k165b-unc.log` (jaroserverai); [[nib-chromadera]] | nie (decyzja JARO: inne wagi, NVFP4) |
+| uncensored T=0 (wall.py, mediana) | **156,6 t/s** (Maya 113,9) | 2026-11-25 | j.w. | j.w. | nie |
 
 ## Qwen3.8-27B XTX: wznowienie długiej rozmowy po edycji (K-005)
 

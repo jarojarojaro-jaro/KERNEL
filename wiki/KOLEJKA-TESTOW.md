@@ -26,6 +26,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - plan: agent dopisuje `--lora` do Nib (attn_output + ffn_down_exps, wszystkie ścieżki, grafy HIP); XTX: selftest z/bez LoRA, 5 promptów odmowy przy T=0, wall.py T=0 / T=0,7 KV q4; potem Nib jako czat Inkling zamiast Mai
 - czas karty: ok. 15 min
 - priorytet: najwyższy
+- **wynik 2026-11-25:** pierwszy bieg (13:27) unieważniony: odpowiadał osierocony serwer Mai z K-164 ([[lekcja-zabicie-skryptu-nie-serwera]]). Powtórka k165b: odmowy stock 5/5, z LoRA 0/5; wall.py T=0 / T=0,7: stock 168,2 / 149,9, **LoRA 156,6 / 147,3** (Maya 113,9 / 113,4). Cel ≥ 145 osiągnięty. Dalej: jakość NVFP4+LoRA vs AD-Q4_K (KLD/odpowiedzi), decyzja JARO o czacie Inkling na Nib.
 
 ### K-164 · Inkling: drafter DFlash2 (incoai, 0,99 GB) zamiast DSpark w Mai na XTX
 - data: 2026-11-25 (zwiad: H200 T=1 akceptacja 4,96 vs 3,52 DSpark, GSM8K 482 vs 375 t/s; tqllm Metal exact+DFlash2 57,1 vs 52,1)
@@ -1253,6 +1254,11 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-166 · Maya: fuzje i sztuczki kerneli dekodu z Nib (LGQ8, ACOMB, ROUTE, MIX, HEAD)
+- data: 2026-11-25 (gałąź Mai `k166-nibk` cd79d669, przełączniki `IK2_K166_*`; launche na token 689 → 595)
+- wynik (rep2 Q1 T=0 / Q6 T=0,7 / L2k, XTX): produkcja 129,5–129,9 / 114,1–114,2 / 107,7; gałąź bez przełączników 128,6 / 113,1 / 107,0; LGQ8 125,2 / 110,4 / 104,2 (−2,6%); ACOMB 127,7 / 112,6 / 106,1; ROUTE 128,8 / 113,3 / 107,0; MIX 129,1 / 113,7 / 106,9 (parytet DIFF 9/11); HEAD 128,6 / 113,1 / 107,0; wszystkie 124,3 / 109,2 / 102,9 (−3,4%). Parytet 11/11 dla LGQ8, ACOMB, ROUTE, HEAD.
+- wniosek: odrzucone. −94 launchy na token nic nie dały, bo dekod Mai bez spekulacji (127–130 t/s) już jest szybszy niż Nib (118). Mniej bajtów bramek (LGQ8, 226 → 60 MB/tok) dało wolniej, czyli te kernele nie były ograniczone pasmem. Przewaga Nib jest w spekulacji, patrz K-158.
 
 ### K-043 · Profil i optymalizacja atencji draftu MTP przy długim kontekście (~1,3 ms/krok przy 199k), np. pamięć MASW (ujścia + okno + sloty)
 - data: 2026-11-07

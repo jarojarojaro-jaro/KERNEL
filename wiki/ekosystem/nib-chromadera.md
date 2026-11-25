@@ -36,6 +36,18 @@ Klient strumieniowy `qwen-opt/nib/wall.py` (tokeny / czas od pierwszego do ostat
 - MoE kosztuje u obu tyle samo (2,4–2,5 ms); różnica jest w drobnych kernelach (pętla, bramki, residuale, router: Maya ok. 1,4 ms w 290 wywołaniach vs Nib ok. 1,3 ms w 77) i w przerwach.
 - Kolejność portu do Mai (agenci, 2026-11-25): (1) fuzje drobnych kerneli i pełny graf w trybie serwera, (2) tani DSpark (graf rundy, szerokość z pewności, top-k na GPU), (3) atencja (794 vs 605 µs), (4) strumienie wag `slc dlc`.
 
+## Próbkowanie: 150 t/s tylko z top-k 40 (K-167, 2026-11-25, wall.py, KV q4)
+- Serwer Nib bez pól próbkowania w zapytaniu bierze `--default-top-k 40 --default-top-p 0.95` (`src/main.cpp:593-595`). Wszystkie nasze liczby Nib przy T=0,7 (150,6) były więc z top-k 40.
+- Ten sam klient z jawnym top-k 40 / top-p 0,95: Nib 168,8 (T=0) / 150,8 (T=0,7); Maya produkcja 113,9 / 113,4; Maya K-158 all-sl 100,4 / 93,5.
+- Nib z pełnym rozkładem (top_k 0, top_p 1,0): T=0,7 **39,3 t/s**, czyli −74%. Maya na pełnym rozkładzie trzyma ok. 113 t/s.
+- Wniosek: porównanie Nib vs Maya przy top-k 40 jest uczciwe (Maya bez zmian), ale „150 t/s” Nib to tylko ścieżka z obciętym rozkładem; klient wysyłający top_k 0 dostaje 39 t/s. Benchmarki T>0 zawsze z jawnym top-k/top-p w zapytaniu i z wpisanymi domyślnymi serwera.
+
+## Nib uncensored: `--lora` AtomicChat (K-165, 2026-11-25)
+- Łatka `~/qwen-opt/nib/nib-uncensored.patch` (gałąź `nib-unc`, 018d0fc + eb07c8f na 2e16cf0, 25 plików): adapter rank 1 (24 unikalne warstwy × wo i ffn_down_exps + token_embd, 15 MiB) liczony w każdej ścieżce: decode, weryfikacja MTP, prefill, wiele slotów, embedding kotwicy DSpark; poprawka do x3 przed short-convem, więc rollback MTP zgodny. Bez `--lora` bez zmian w kernelach.
+- XTX: selftest z LoRA i bez: rollback bit w bit, 64 tokeny greedy MTP = bez MTP. Odmowy (5 promptów, T=0, 160 tok.): stock 5/5, z LoRA 0/5.
+- wall.py KV q4: stock (ta sama binarka) 168,2 / 149,9, **z LoRA 156,6 / 147,3** (T=0 / T=0,7), czyli koszt LoRA −7% przy T=0 i −2% przy T=0,7. Maya produkcja tym samym klientem 113,9 / 113,4: **+30% przy T=0,7 dla wersji bez cenzury**.
+- Zastrzeżenia: wagi NVFP4-Mixed, nie nasze AD-Q4_K (jakość do porównania), Quest stratny powyżej ok. 14k, pełny rozkład (top_k 0) 39 t/s. Zmiana produkcji Inkling = decyzja JARO.
+
 ## Czego uczy nas
 - **DSpark może się opłacać przy T=0,7**, jeśli krok draftu i weryfikacji jest tani: u nas (K-139) DSpark przy T=0,7 tracił 11%, u Nib zyskuje. Różnice z kodu: statyczny graf dla draftu per długość (`dspark_mtp.cpp:767-803`, u nas `propose()` z synchronizacją), szerokość z pewności draftu zamiast z czasu (`server.cpp:2721`), top-256 na GPU zamiast sortu do 1000 kandydatów na hoście (`kernels_mtp_verify.hip:155-345`), wagi strumieniowane `slc dlc`.
 - TTFT 46 ms vs nasze 163+ ms: narzut `server.py` (Python) i protokołu Mai przy krótkich promptach.
