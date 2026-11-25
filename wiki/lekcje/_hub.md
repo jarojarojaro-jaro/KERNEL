@@ -19,7 +19,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (131)
+## Notatki (132)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]] — Analiza 704 żądań z `~/qwen-opt/logs/server-*.log` (2026-11-05): z 4753 s prefillu 3536 s (74%) to 38 tur, w których prompt ≥ 20k był czytany od zera lub od ≤ 8k; najgorsze tury trwały 150–200 s.
@@ -83,6 +83,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-final-speed-to-najszybszy-znany|Lekcja: „final speed” to najszybszy wariant zmierzony na naszej karcie, nawet gdy to cudzy silnik]] — Na pytanie o final speed Inklinga podałem naszą Mayę (114,3 t/s przy T=0,7), choć dzień wcześniej sam zmierzyłem na naszym XTX Nib: 150,6 t/s przy T=0,7 z KV q4. Najszybszy znany wariant jest bazą i odpowiedzią, a różnice (inne wagi, nie uncensored, przybliżona atencja powyżej 14k) podaję obok, zamiast chować wynik.
 - [[lekcja-najpierw-wszystkie-testy-potem-wylaczenie|Lekcja: „skończ wszystko i wyłącz” = najpierw każdy czekający test, potem wyłączenie]] — 2026-11-23 06:15 wyłączyłem jaroserverai, choć runda 13 Gemini była gotowa do pomiaru, a K-135 i dalsze kernele Mayi czekały; JARO musiał sam włączyć serwer.
 - [[lekcja-licencja-modelu-sie-zmienia|Licencja modelu potrafi się zmienić z dnia na dzień]] — Underdog Saluki 27B był w naszej wiki jako Apache-2.0, a 2026-11-05 autor przełączył go na CC BY-NC 4.0 (tylko niekomercyjnie); graft MTP Kujiry dalej deklaruje Apache-2.0, ale powstał z tych wag, więc w praktyce też jest niekomercyjny `[INFERENCE]`.
+- [[lekcja-lista-do-usuniecia-z-rola-pliku|Lista „do usunięcia” podaje rolę każdego pliku, nie tylko nazwę katalogu]] — 2026-11-25 w liście zajętości dysku jaroserverai podałem „orca 17 GB” jako zwykły katalog modelu; JARO kazał usunąć orca, a to był model produkcyjny czatu :8080 (`~/models/orca/Qwen3.8-27B-Uncensored-Q4_K_M.gguf`, `run-llm.sh:68`). Model został skasowany i trzeba go było pobrać ponownie (17 GB, ok. 7 MB/s, ok. 40 min), a czat nie mógł wstać.
 - [[lekcja-littles-law-gemv|Little's law dla GEMV: liczy się liczba ładowań w locie]] — Bajty w locie = pasmo × latencja: przy ~600 ns latencji DRAM `[ZAŁOŻENIE]` XTX potrzebuje ~6.0 KB w locie na CU, 3090 6.8 KB/SM, 4090 4.7, 5060 Ti 7.5, 5090 6.3 – czyli ~10–16 ładowań 16 B na falę/warp; to samo pokazał ATT na XTX (gate+up LFM 85% czasu w `s_waitcnt vmcnt`) (raport 21b, 2026-10-19).
 - [[lekcja-losowe-spowolnienia|Losowe spowolnienia per proces]] — Gate+up w LFM trwał 24.3 albo 27.2 µs w 4 z 8 profili, także na buildzie bez zmian; A/B trzeba robić na wielu procesach, nie na jednym.
 - [[lekcja-sondy-en-na-polskim|Małe sondy trenowane po angielsku mylą się na polskim]] — Sonda żądania PFlash (trenowana po angielsku) w 9/10 polskich przypadków wzięła tytuł wklejonego dokumentu za prośbę użytkownika, choć główna głowica Q/K przeniosła się na polski dobrze.

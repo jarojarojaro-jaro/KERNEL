@@ -25,6 +25,11 @@ stan: zwykle wyłączony; włącza JARO
 - Zajętość: modele 217 GB (q36 51, inkling 35, lfm 34, flint 22, nib 18, orca 17, orca-cyber-nano 17, Qwen3.8 UD-Q4_K_XL 17), `~/wt` ok. 65 GB w 153 worktree'ach (ok. 54 GB nieruszane od ponad 5 dni), `~/qwen-opt` 63 GB (mtp-train 11, cloud 6,3, re 6,6, research 4,3, duo 3,8), `~/opt` 14 GB (rocm-10.1 11, cuda-12.8 2,3), `~/rocm-10.2` 11 GB, `/opt` 19 GB, swap 8 GB, dziennik systemowy 2,2 GB.
 - Produkcja (:8080) nie zależy od `~/wt`: binarka `~/llama-topka/bin/llama-server`. Lista do usunięcia czeka na zgodę JARO.
 
+## Modele na dysku 2026-11-25 (po skasowaniu lfm, flint, orca-cyber-nano i orca)
+- Produkcja i bieżąca praca (4 modele): Qwen3.8-27B Uncensored Q4_K_M (`~/models/orca/`, czat :8080; skasowany przez pomyłkę, pobierany ponownie 2026-11-25), Inkling 2 Mini Uncensored AD-Q4_K 16 GB (Maya), Nib NVFP4-Mixed 17 GB (Nib + LoRA uncensored), Bonsai 2.5 Uncensored Q2_0-mtp 7,4 GB; do tego draftery (Qwen DFlash2 1,1 GB, Qwen DSpark 1,4 GB, Inkling DSpark/MTP/DFlash2 ok. 1,9 GB) i LoRA/mmproj Inklinga.
+- Poza tymi czterema: Qwen3.6-35B-A3B Q8_0 35 GB i IQ4_XS 17 GB (`q36`, tylko test K-025), Qwen3.8-27B UD-Q4_K_XL 17 GB (wersja z cenzurą, porównania i przepisy Enigmy), Inkling-2-Mini UD-Q4_K_XL 17 GB (wersja z cenzurą), drobne: qwen-image 175 MB, kb 130 MB, orcacyber 60 MB. Razem ok. 86 GB do decyzji JARO.
+- Zabezpieczenie: `run-jobs.sh` nie startuje zadania przy wolnym miejscu < 70 GB (DISK GUARD, commit d73318b), `kol stan` pokazuje wolne miejsce.
+
 ## Powiązane
 - [[rx-7900-xtx]]
 - [[google-colab]]
