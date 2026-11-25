@@ -47,6 +47,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - czas karty: ok. 10 min
 - priorytet: wysoki
 
+- **2026-11-25:** lucebox `d0e94739` zbudowany dla gfx1100 (`~/wt/lucebox/server/build-hip`), ale loader czyta tylko ich konwersję (`inkling2_loop`, klucze `loop.start/end/count`, bez skal NVFP4 ekspertów; `server/src/inkling2/inkling2_loader.cpp:94-305`); nasz plik unsloth się nie załaduje. Wymaga pobrania `Inkling-2-Mini-Fast-IQ4_NL.gguf` (17,6 GB, inny model, test tylko szybkości silnika) albo portu loadera (kilka godzin). `k170.jobs` gotowy z blokadą „brak modelu”. Nasz `mtp.safetensors` = ich DSpark (sha256 7c3b6513…). Decyzja JARO.
 ### K-173 · Dekwantyzacja K-quantów przy prefillu: bloki 32/64 wątków → dim3(32, 8) (jak PR #32875 dla NVFP4)
 - data: 2026-11-25 (panel JARO, PR ggml-org/llama.cpp#32875: NVFP4 dequant 4,2×, prefill Qwen3.8-27B +17,7% na V100)
 - mechanizm u nas: na RDNA3 `ggml_cuda_should_use_mmq` zwraca false dla Q6_K przy ne11 > 128 (`mmq.cu`), więc prefill Q4_K_M idzie przez dekwantyzację + hipBLAS dla tensorów Q6_K; `dequantize_row_q6_K_cuda` startuje `<<<nb, 64>>>`, q4_K `<<<nb, 32>>>` (`convert.cu:307,319`, topka qprep-spec 50ca29355). Nib ma własny silnik HIP bez tej ścieżki
@@ -62,6 +63,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - czas karty: ok. 15 min
 - priorytet: średni
 
+- **2026-11-25:** `~/models/q36` pusty od 17:38 (model skasowany). RustingStrata 1.3.3 i Magnitude 0.3.3 zainstalowane w `~/wt/moe-engines`, `k172.jobs` gotowy z blokadą „brak modelu”; Magnitude ma port 10100 na sztywno i wymaga Vulkana z `~/vk`. Wymaga pobrania 35 GB: decyzja JARO.
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
@@ -280,14 +282,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (RAM hosta; `HSA_USE_SVM=0` już jest)
 - priorytet: wysoki (≥ 1 s/turę agenta)
 
-### K-010 · Fuzja gate/up + GLU w MMQ dla WMMA RDNA3 (port upstream #29948)
-- data: 2026-11-05
-- źródło: `R/68a-rdna3-kernele.md:120`, `R/68-SYNTEZA.md:21`, `R/68d-swieze-od-spolecznosci.md` §2.2
-- test: XTX `test-backend-ops -o MUL_MAT` z fuzją, `llama-bench -p 512,4096 -ub 512 -r 5` ABBA, md5; ≤ 10 min/krok
-- zysk: pp ≤ 32k +2…4% [INFERENCE] (CUDA u autora +4,6…7,4%)
-- ryzyko karty: brak (wariant MoE był na RDNA3 wolniejszy o 3…16%, więc mierzyć)
-- priorytet: średni (prefill, pakiet z K-009)
-
 ### K-012 · `kvq` przy W=5 bliżej rooflinu: nowy układ (K dekwantowane raz, głębszy prefetch K/V), cel ~172–300 µs/warstwę przy 98–196k
 - data: 2026-11-07
 - źródło: [[2026-11-08-kvq-once-profil]] (`:86`: ONCE=1/2 KILL, „potrzebny inny układ”; FA = 30% kroku przy 199k, 11,32 ms), `R/68c-dlugi-kontekst-gdn.md:142`, `R/70-fa-d256-jak-to-zrobilismy.md:188` (#5)
@@ -364,6 +358,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (Enigma)
 
 - **bieg 2026-11-25 19:55 nieważny:** md5 Bonsai 0 = 83 (4b32fc1a), ale `var_log=0` w obu ramionach, więc wariant 83 nie został użyty (przełącznik nie trafia w kernel tego kształtu); serwer Qwen3.6-A3B nie wstał (Connection refused). Do naprawy skryptu przed powtórką.
+- **2026-11-25 diagnoza:** `var_log=0` to problem logowania (INFO ggml w llama-server wymaga `-lv 4`, llama-bench `-v`), wariant 83 działał. Skrypty poprawione (`~/qwen-opt/k025/{md5,bench,common}.sh`), joby A3B wyłączone (brak modelu). Ponownie w kolejce.
 ### K-026 · Enigma: próg draftu `--spec-draft-p-min` {0; 0,5; 0,8} × n {1,2,4} dla MoE z `--n-cpu-moe` na kartach ≤ 16 GB
 - data: 2026-11-07 (66a A2)
 - źródło: [[prog-draftu-od-kosztu-wiersza]], `R/66-SYNTEZA.md` poz. 10
@@ -405,14 +400,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: **wysokie**: ewikcja kolejki KFD przy kernelu rezydentnym → możliwy reset
 - priorytet: niski (koszt i ryzyko; wspólny PoC z K-021)
 
-### K-042 · Spekulatywny prefill następnej tury w przerwie (serwer prefilluje swoją odpowiedź, przerywa na granicy ubatcha)
-- data: 2026-11-07
-- źródło: `R/68c-dlugi-kontekst-gdn.md:140` (#6)
-- test: XTX replay sesji (`agent_bench`): TTFT na turę, trafienie prefiksu (LCP), md5 „trafienie vs zimny start”; ≤ 10 min/ramię
-- zysk: ~10–25% czasu małych tur [SZACUNEK], więcej przy ≥ 128k
-- ryzyko karty: brak (GPU zajęte w przerwach)
-- priorytet: niski (zależne od klienta)
-
 ### K-046 · Szerokość ogona lookup zależna od kontekstu: W16 → W8/W5 przy ≥ 128k (`LLAMA_SPEC_LOOKUP_ADAPT=1`)
 - data: 2026-10-18, 2026-11-07 (68c #7)
 - status: **czeka na decyzję** (bramka K-007, zmiana szerokości zmienia md5)
@@ -449,6 +436,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: nowe kernele w PM4
 - priorytet: niski (mało zysku)
 
+- **ocena 2026-11-25:** cel `upstream-master` 6792507b7 (11-21): fork 110 plików (+21,5k/−1,2k); 3-way: 62 pliki czysto, 48 plików z 142 konfliktami (`~/qwen-opt/specprep/k056-conflicts.txt`); 2–4 dni + build + pełna bramka.
 ### K-057 · Tryb „identyczne odpowiedzi” `LLAMA_SPEC_BITEXACT=1` jako opt-in (port gałęzi `batch-invariant` na topkę)
 - data: 2026-10-16 (raport 12)
 - status: **czeka na decyzję** (wdrożyć przełącznik, domyślnie wyłączony)
@@ -458,6 +446,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (nie przyspiesza)
 
+- **ocena 2026-11-25:** port gałęzi bitexact koliduje już na pierwszym commicie (`c09ac6aab`, 6 kawałków w `mmvq.cu`, od bazy +2916 linii mmvq i +802 fattn-kvq); 1,5–3 dni + build, zysk prędkości ujemny. Czeka na decyzję JARO, czy tryb identycznych odpowiedzi jest potrzebny.
 ### K-058 · Strażnik „drugie `</think>` zabronione” w `reasoning-budget.cpp` (T7, niezależny od Astry)
 - data: 2026-11-09
 - status: **czeka na decyzję** (2d; zmienia wyjście tylko przy przecieku)
@@ -1337,6 +1326,26 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-042 · Spekulatywny prefill następnej tury w przerwie (serwer prefilluje swoją odpowiedź, przerywa na granicy ubatcha)
+- data: 2026-11-07
+- źródło: `R/68c-dlugi-kontekst-gdn.md:140` (#6)
+- test: XTX replay sesji (`agent_bench`): TTFT na turę, trafienie prefiksu (LCP), md5 „trafienie vs zimny start”; ≤ 10 min/ramię
+- zysk: ~10–25% czasu małych tur [SZACUNEK], więcej przy ≥ 128k
+- ryzyko karty: brak (GPU zajęte w przerwach)
+- priorytet: niski (zależne od klienta)
+- **ocena 2026-11-25:** ok. 2–3 dni kodu serwera; K-128 pokazał, że poprzednia odpowiedź wraca z cache w 89,7% tokenów, a tury agenta trafiają w cache w 99,2%, więc zysk dotyczy najwyżej ok. 10% tur. Łączymy z K-128.
+- przeniesione 2026-11-25: koszt nieproporcjonalny do zysku
+
+### K-010 · Fuzja gate/up + GLU w MMQ dla WMMA RDNA3 (port upstream #29948)
+- data: 2026-11-05
+- źródło: `R/68a-rdna3-kernele.md:120`, `R/68-SYNTEZA.md:21`, `R/68d-swieze-od-spolecznosci.md` §2.2
+- test: XTX `test-backend-ops -o MUL_MAT` z fuzją, `llama-bench -p 512,4096 -ub 512 -r 5` ABBA, md5; ≤ 10 min/krok
+- zysk: pp ≤ 32k +2…4% [INFERENCE] (CUDA u autora +4,6…7,4%)
+- ryzyko karty: brak (wariant MoE był na RDNA3 wolniejszy o 3…16%, więc mierzyć)
+- priorytet: średni (prefill, pakiet z K-009)
+- **wynik (zmierzone 2026-11-20, zebrane 2026-11-25):** port jako `GGML_HIP_MMQ_GLU` (`1fc561dd6`, gałąź duo): pp512 972,9 → 959,8 (−1,3%), pp2048 981,9 → 972,5 (−1,0%), KLD PASS (`~/qwen-opt/queue/logs/duo-r5-bench.log`).
+- przeniesione 2026-11-25: wolniej
 
 ### K-009 · Przegląd configu MMQ na RDNA3 metodą wariantów jak FA 83 (maska `GGML_HIP_MMQ_VAR`: Q4_K/Q6_K/IQ4_XS, `sched_barrier`, offsety u32, prefetch K, skale x f32 w LDS)
 - data: 2026-11-09 (skale x f32: 2026-10-15)

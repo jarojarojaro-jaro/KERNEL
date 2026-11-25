@@ -744,3 +744,8 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - K-009 odrzucone (wszystkie maski MMQ wolniejsze, VAR 8 −17%); K-038 bez zwycięzcy, kandydat KV draftu q8_0 +1,8% T=1 do K-175; K-025 bieg nieważny (wariant 83 nie użyty).
 - Przeniesione: K-148, K-164, K-018, K-019, K-020, K-165, K-009, K-038. Czeka 60.
 - Link Gumbii (DSpark między silnikami): zgodne z naszymi pomiarami.
+
+## [2026-11-25] kolejka | 4 agentów przygotowało paczki: w kolejce K-175, K-176, K-171, K-173, K-025, K-017, K-008, K-058, K-046
+- Odrzucone bez karty: K-010 (zmierzone 11-20, −1,3%), K-042 (zysk ≤ 10% tur, łączymy z K-128).
+- Zablokowane pobraniem (decyzja JARO): K-170 (Lucebox czyta tylko swój plik, 17,6 GB), K-172 i A3B w K-025 (Qwen3.6-35B skasowany, 35 GB).
+- Ocenione: K-057 1,5–3 dni, K-056 2–4 dni (142 konflikty).
