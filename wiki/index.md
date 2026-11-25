@@ -58,7 +58,7 @@ Audyt liczb: [[AUDYT]].
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (42)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (30)
-- [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (6)
+- [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (7)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
@@ -74,6 +74,7 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-26 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
+- 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 - 2026-11-26 [[2026-11-26-bramka-kld|2026-11-26: bramka KLD zamiast identycznego md5, gdy zmiana niczego nie psuje]]
 - 2026-11-26 [[2026-11-26-bez-pobierania-modeli|2026-11-26: nie pobieramy nowych modeli do testów, pracujemy na tych, które są]]
 - 2026-11-25 [[perf|tools/perf: pętla optymalizacji jedną komendą (K-161)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-25 [[lekcja-final-speed-to-najszybszy-znany|Lekcja: „final speed” to najszybszy wariant zmierzony na naszej karcie, nawet gdy to cudzy silnik]]
 - 2026-11-25 [[rustingstrata|RustingStrata (RustingStudio): silnik w Ruście dla MoE większych niż VRAM]]
 - 2026-11-25 [[nib-chromadera|Nib (Chromadera): silnik C++/HIP pod Inkling 2 Mini na 7900 XTX]]
-- 2026-11-25 [[magnitude|Magnitude (silnik Seismic z autotunem 60 s)]]
 
-Razem 837 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 838 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

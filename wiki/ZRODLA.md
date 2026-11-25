@@ -605,3 +605,6 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 - [[podrecznik-gpu]]
 - [[ekosystem/_hub|repo/]], [[ekosystem/_hub|ludzie-firmy/]], [[research/_hub|research/]]
 - [[index|Strona główna]]
+
+| https://x.com/vllm_project/status/2125409455278059747 (panel 2026-11-26) = vLLM-GR (github.com/vllm-project/vllm-gr, Apache-2.0) | push 2026-11-25 | K-036, K-064, K-075 | Rekomendacje (OneRec-1.7B), nie czat; mechanizmy znane: cały beam search jednym zgłoszeniem, wybór na GPU bez rundy do hosta, beamy na wspólnym KV promptu | README bez liczb | czy opublikują benchmark i HIP |
+| https://x.com/scaling01/status/2125343228375531743 (panel 2026-11-26) = arXiv 2611.32802 „Sample-Efficient In-Context Adaptation via Sleep” | v1 2026-11-24 | [[sleep-rekurencja-kontekstu]] | Pretrening z N przejściami po fragmencie kontekstu; nie dla naszych dostrojeń | N=2/4: 2,10×/2,39× mniej tokenów kontekstu na kodzie (1,2B) | czy ktoś wytrenuje duży model ze snem |
