@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (29)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (129)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (130)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (86)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (115)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
@@ -77,6 +77,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-25 [[bonsai-2-5-uncensored|Ternary Bonsai 2.5 27B Uncensored (AtomicChat)]]
 - 2026-11-25 [[metoda-nib-level-up|Metoda Nib i co zmieniamy u siebie („level wyżej”)]]
 - 2026-11-25 [[lekcja-przegrywamy-procesem-nie-wiedza|Lekcja: przegrywamy procesem, nie wiedzą o kernelach]]
+- 2026-11-25 [[lekcja-final-speed-to-najszybszy-znany|Lekcja: „final speed” to najszybszy wariant zmierzony na naszej karcie, nawet gdy to cudzy silnik]]
 - 2026-11-25 [[nib-chromadera|Nib (Chromadera): silnik C++/HIP pod Inkling 2 Mini na 7900 XTX]]
 - 2026-11-25 [[gpu-straggler-finder|gpu-straggler-finder (Stas Bekman)]]
 - 2026-11-24 [[zwiad-2026-11-20|Zwiad 2026-11-20: błąd przywracania po odrzuconym drafcie w cache hybrydowym (ik_llama), weryfikacja kilku wierszy w oMLX, TensorRT-LLM 1.3 z Qwen3.5 MTP]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-24 [[rightnow-inkling-b300-kernele|RightNow AI: kernele MoE Inkling 2 Small na B300, bitowo identyczne przy 1 i 64 wierszach]]
 - 2026-11-24 [[raport-28-moe-offload|Raport 28: silniki MoE-offload TideLM i Xolotl – stratne z założenia]]
 - 2026-11-24 [[raport-23a-rea|Raport 23a: morluto/rea („Reverse Engineer Anything”) – bez wsparcia GPU]]
-- 2026-11-24 [[raport-21i-rsi-inference-bench|Raport 21i: RSI-Inference Bench (Apple) – co mierzy i co bierzemy do fabryki]]
 
-Razem 829 notatek. Wygenerowano 2026-11-25 przez `tools/wiki.py index`.
+Razem 830 notatek. Wygenerowano 2026-11-25 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

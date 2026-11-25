@@ -21,6 +21,12 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-165 · Inkling uncensored w Nib: LoRA AtomicChat (rank 1, 98 tensorów) w runtime Nib, cel ≥ 145 t/s przy T=0,7
+- data: 2026-11-25 (JARO: „nowe infra ma 150 t/s”; Nib 150,6 t/s T=0,7 KV q4 na naszym XTX, ale wagi ocenzurowane)
+- plan: agent dopisuje `--lora` do Nib (attn_output + ffn_down_exps, wszystkie ścieżki, grafy HIP); XTX: selftest z/bez LoRA, 5 promptów odmowy przy T=0, wall.py T=0 / T=0,7 KV q4; potem Nib jako czat Inkling zamiast Mai
+- czas karty: ok. 15 min
+- priorytet: najwyższy
+
 ### K-164 · Inkling: drafter DFlash2 (incoai, 0,99 GB) zamiast DSpark w Mai na XTX
 - data: 2026-11-25 (zwiad: H200 T=1 akceptacja 4,96 vs 3,52 DSpark, GSM8K 482 vs 375 t/s; tqllm Metal exact+DFlash2 57,1 vs 52,1)
 - plan: pobrać `incoai/Inkling-2-Mini-DFlash2` (0,99 GB); w Mai brak DFlash2 (jest DSpark) → port na podstawie tqllm 788055720 i `sglang_inkling_dflash2.py`; najpierw CPU: kształty i referencja; potem XTX: parytet 11/11, wall.py T=0 / T=0,7 vs produkcja i vs DSpark

@@ -246,6 +246,14 @@ FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s.
 | długi 2k / 8k, dekod | **138,3 / 145,9 t/s** | 2026-11-25 | `topka-k157`, MTP n2 | `b25u-chat.log` | nie |
 | konfiguracja Doğukana (temp 1,0, X 3060: 74 t/s) | **121,9 t/s** (prism na XTX 39,8) | 2026-11-25 | `topka-best`, PM4, MTP n2, słownik 64k | `b25q-dog-prod.log` | nie |
 
+## RX 7900 XTX – Inkling 2 Mini: najszybszy zmierzony silnik (Nib, Chromadera 2e16cf0)
+
+| obciążenie / metryka | rekord | data | warunki | źródło | prod. |
+|---|---|---|---|---|---|
+| czat T=0,7 (wall.py, 4 prompty × 300 tok., mediana) | **150,6 t/s** (Maya produkcja 112,5–112,8) | 2026-11-25 | Nib, NVFP4-Mixed (wagi oficjalne, **nie uncensored**), DSpark MTP, KV q4_0, Quest 224, ctx 262 848 | `~/qwen-opt/nib/out/nib.txt` (jaroserverai); [[nib-chromadera]] | nie (K-165: Nib + LoRA AtomicChat) |
+| T=0 (wall.py, mediana) | **169,0 t/s** (Maya 113,1) | 2026-11-25 | j.w. | j.w. | nie |
+| czat T=0,7, KV q8_0 | 130,3 t/s | 2026-11-25 | j.w., KV q8_0 | j.w. | nie |
+
 ## Qwen3.8-27B XTX: wznowienie długiej rozmowy po edycji (K-005)
 
 | obciążenie | rekord | data | warunki | źródło | prod. |
