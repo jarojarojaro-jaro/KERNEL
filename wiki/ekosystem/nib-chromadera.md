@@ -28,6 +28,14 @@ Klient strumieniowy `qwen-opt/nib/wall.py` (tokeny / czas od pierwszego do ostat
 - xbench (liczby z `timings` silnika): Nib q8 dense T=0,7 105,5–106,9, Q4 greedy 264–274; Maya T=0,7 111,7, Q4 86,8. Prefill 2k/8k z xbench tylko dla Mai (3160/3048), bo Nib nie ma `/tokenize`.
 - Bez gfxhub fault; VRAM Nib 22,0–24,2 GB (zajmuje całą kartę).
 
+## Księga czasu Nib vs Maya (K-162, 2026-11-25, XTX, rocprofv3, dekod bez spekulacji, KV q4)
+- Wall: Nib `bench` tg128 **117,9 t/s** (8,5 ms/token, d=0, atencja gęsta); Maya produkcja CLI `--gen 129` **97,7 t/s** (10,2 ms/token).
+- Czas GPU na token podobny: Nib ok. 7,6 ms, Maya ok. 8,0 ms; ale Maya ma ok. 700 wywołań kerneli na token, Nib ok. 330, i ok. 2 ms/token przerw hosta (Nib ok. 0,9). Przewaga Nib bez spekulacji to głównie liczba kerneli i przerwy, nie pasmo.
+- Maya (µs/token, wywołania): mv_q8p 2514 (113), experts_q4k_gu 1533 (48), experts_q50_down 883 (48), attn_decode_mma 608 + combine 186, loop_gate_apply 434 + loop_gate_dots 198, attn_res_vec4 430 (99), router_route 340, moe_combine_conv 127, prep_qkv_r 113.
+- Nib: moe_nvfp4_ship_fused192 2507 (47), qkv_qkvr_prep_fused 1601 (51), q8_gemv_wo_v2 674 (51), lm-head fdot2 607 (1), dwa fused mix+norm+router+top8 491 + 385, fa_decode_swa_v4 485 + fa_decode 120, mix_dual_ctrl_qkv3_norm 447, mix_rms_norm 208.
+- MoE kosztuje u obu tyle samo (2,4–2,5 ms); różnica jest w drobnych kernelach (pętla, bramki, residuale, router: Maya ok. 1,4 ms w 290 wywołaniach vs Nib ok. 1,3 ms w 77) i w przerwach.
+- Kolejność portu do Mai (agenci, 2026-11-25): (1) fuzje drobnych kerneli i pełny graf w trybie serwera, (2) tani DSpark (graf rundy, szerokość z pewności, top-k na GPU), (3) atencja (794 vs 605 µs), (4) strumienie wag `slc dlc`.
+
 ## Czego uczy nas
 - **DSpark może się opłacać przy T=0,7**, jeśli krok draftu i weryfikacji jest tani: u nas (K-139) DSpark przy T=0,7 tracił 11%, u Nib zyskuje. Różnice z kodu: statyczny graf dla draftu per długość (`dspark_mtp.cpp:767-803`, u nas `propose()` z synchronizacją), szerokość z pewności draftu zamiast z czasu (`server.cpp:2721`), top-256 na GPU zamiast sortu do 1000 kandydatów na hoście (`kernels_mtp_verify.hip:155-345`), wagi strumieniowane `slc dlc`.
 - TTFT 46 ms vs nasze 163+ ms: narzut `server.py` (Python) i protokołu Mai przy krótkich promptach.

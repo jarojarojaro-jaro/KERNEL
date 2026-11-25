@@ -5,7 +5,7 @@ import csv, sys, re
 def load(p, n):
     d = {}
     for r in csv.DictReader(open(p)):
-        k = re.sub(r'\(.*', '', r['Name'])[:110]
+        k = re.sub(r'^void ', '', r['Name']).replace('(anonymous namespace)::', ''); k = re.split(r'[<(]', k)[0][:110]
         t, c = d.get(k, (0.0, 0))
         d[k] = (t + float(r['TotalDurationNs']) / 1e3 / n, c + int(r['Calls']) / n)
     return d
