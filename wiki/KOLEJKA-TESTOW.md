@@ -157,6 +157,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: wysoki (Enigma NVIDIA, tani pierwszy pomiar)
 - zwiad 2026-11-14: tqLLM 1.5.0 robi dokładne próbkowanie MTP przy T>0 (3090, T=0,7: 50 → 104–117 t/s), wzór do portu ([[zwiad-2026-11-14]])
 
+- **2026-11-25 (Colab L4):** bramki: `test-backend-ops -o GUMBEL_MAX` 152/152, `test-coupled-sampling` all passed; pomiar T=1 COUPLED 0/1 nie zdążył (`/tmp/nvc/colab/run.py k004`, ok. 20 min L4).
 ### K-117 · Fork CUDA: cache skwantowanej głowicy draftu i MTP (`LLAMA_MTP_REQUANT_CACHE` jak na XTX) — start na słabym CPU 12 min → sekundy
 - data: 2026-11-17
 - źródło: [[2026-11-17-k114-nvidia-sufit]] (host 3090 TW: 12 min od „initializing” do gotowości; 5060 Ti na 64 rdzeniach 32 s); XTX: start 39,8 → 6,5 s z cache ([[REKORDY]])
@@ -244,6 +245,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni
 
+- **2026-11-25 (Colab L4, torch, GPU bezczynne):** kopia w pamięci GPU 230,8 GB/s, fp16 GEMM 75,4 / 59,8 TFLOPS (4096³ / 8192³), int8 42,7 / 19,6 TOPS. Prefill vs upstream nie sparsowany. 5060 Ti i 3090 wymagają wynajmu.
 ### K-113 · `bench.py` skill-io 1:1 na XTX, 5060 Ti i 3090 (ta sama konfiguracja) — pierwsza tabela między firmami z jednego harnessu
 - data: 2026-11-17
 - źródło: [[skill-io-skrypty]]; ich 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`); K-110 (część XTX)
@@ -332,14 +334,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: etap 1 +2,6…4,2%, pełny +3…6% krótki kontekst / +2…4% przy 199k, po 40–70 osobodniach [SZACUNEK]
 - ryzyko karty: **wysokie**: zawieszenia taśmy PM4 i resety (16a, 24l); tylko z `gpu-guard.sh`
 - priorytet: średni (jedyna duża dźwignia w kernelach, drogie i ryzykowne)
-
-### K-022 · Natywne q4_0 K/V w prefillu FA D256 (bit 128 / #31802): wyjaśnić md5 wariantów 131/147, alternatywnie szybszy staging q4_0→f16
-- data: 2026-11-07
-- źródło: [[2026-11-08-fa-d256-prefill]] (`:35`), `R/70-fa-d256-jak-to-zrobilismy.md` §3.6 (173/173 w `test-backend-ops`, ale md5 e9dcdd80 ≠ 816334e4), `R/68d-swieze-od-spolecznosci.md:137`, `R/68c-dlugi-kontekst-gdn.md:137`
-- test: najpierw różnica na CPU (ścieżka dekwantu vs `dequantize_q4_0`, ogon KV). XTX `fa-d256/md5.sh` + micro (≤ 10 min); szczyt VRAM przy fill 255k osobnym jobem (~9 min).
-- zysk: VRAM −~1 GiB przy 262k, fill 255k +2…3%; staging sam −2% fillu (~11 s)
-- ryzyko karty: VRAM (szczyt może się przesunąć)
-- priorytet: średni (VRAM daje zapas dla K-048)
 
 ### K-024 · Enigma ROCm na innych kartach AMD + autotune wariantu FA przy instalacji (gfx1101/1102/1151/1201)
 - data: 2026-11-09
@@ -468,15 +462,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - 2026-11-24 15:18: fabryka INVALID, bo zmieniona uprząż (`ext/spec_sweep.py` po audycie 19.11, `ext/fusion/greedy.sh`) bez wpisu w HARNESS.lock; zablokowana z powodem (ledger seq 11), test ponownie w kolejce 15:40.
 - 2026-11-24 16:08: fabryka VOID przez bramkę sprzętu H4: niepotwierdzony page fault z 2026-11-23 01:09 (proces strata-inkling, znany incydent K-134). Potwierdzenie (`factory rsi hw ack --reason …`) to według fabryki krok człowieka: **czeka na JARO**, potem jedno uruchomienie `K-060.jobs` (ok. 25 min).
 
-### K-062 · Dekoder FA CUDA z `__launch_bounds__(…,2)` (dual-CTA)
-- data: 2026-11-07
-- źródło: `R/67c-nvidia-backlog-testow.md:121` (C4), `R/66b-1cat-tokenspeed.md:97-98`
-- test: 5060 Ti: perf FA + long_ctx, md5; ≤ 10 min/krok (po K-027)
-- zysk: 1Cat V100 128k +19% bitowo; u nas po `kvq` nieznane
-- ryzyko karty: brak
-- priorytet: niski (po profilu)
-- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** pominięte na Colabie: `__launch_bounds__` to zmiana źródła kernela, nie flaga builda (wymaga kodu).
-
 ### K-063 · Wyzwalacz PDL + prefetch L2 przed `pdl_sync` w gęstym MMVQ (sm_120) i sterowanie L2 (`evict_first`, persisting window `GGML_CUDA_L2_PERSIST`)
 - data: 2026-10-19 (21b)
 - źródło: [[pdl-mmvq-trigger]], [[l2-persist]], `R/67c-nvidia-backlog-testow.md:122-125` (C5–C8)
@@ -485,6 +470,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: niski (małe)
 
+- **2026-11-25:** PDL wymaga PTX ≥ 90 (`common.cuh:1895`), więc na L4/Ampere nic nie robi; potrzebna karta sm_120. `WEIGHT_EVICT_FIRST` i `L2_PERSIST` nie istnieją w forku 007a6f813.
 ### K-064 · Zwinięcie haka promptu MTP do grafu celu (TTFT) w forku CUDA
 - data: 2026-10-16
 - źródło: `R/67c-nvidia-backlog-testow.md:113` (B19), `R/15d-prefill-dlugi-kontekst.md:110`
@@ -574,6 +560,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-022 · Natywne q4_0 K/V w prefillu FA D256 (bit 128 / #31802): wyjaśnić md5 wariantów 131/147, alternatywnie szybszy staging q4_0→f16
+- data: 2026-11-07
+- źródło: [[2026-11-08-fa-d256-prefill]] (`:35`), `R/70-fa-d256-jak-to-zrobilismy.md` §3.6 (173/173 w `test-backend-ops`, ale md5 e9dcdd80 ≠ 816334e4), `R/68d-swieze-od-spolecznosci.md:137`, `R/68c-dlugi-kontekst-gdn.md:137`
+- test: najpierw różnica na CPU (ścieżka dekwantu vs `dequantize_q4_0`, ogon KV). XTX `fa-d256/md5.sh` + micro (≤ 10 min); szczyt VRAM przy fill 255k osobnym jobem (~9 min).
+- zysk: VRAM −~1 GiB przy 262k, fill 255k +2…3%; staging sam −2% fillu (~11 s)
+- ryzyko karty: VRAM (szczyt może się przesunąć)
+- priorytet: średni (VRAM daje zapas dla K-048)
+- **wynik 2026-11-25 19:56–20:54 (XTX, `~/wt/k022` k022-kq4, wariant 211 = 83 + natywne q4_0):** op FA bit w bit (0 z 4 497 408 floatów), md5 drabinki równe (VERDICT lossless). Prefill pp d32k 776,5/773,8 → 775,2/776,0 (±0,2%), d128k 484,2/485,0 → 485,9/486,0 (+0,3%). Fill 255k: prefill 492,0 → 494,0 t/s (+0,4%), md5 tekstu równe (97070884), **szczyt VRAM 23 323 → 22 346 MiB (−977 MiB)**. Werdykt: prędkość bez zmian, ale ok. 1 GB VRAM mniej przy pełnym kontekście bezstratnie; do wdrożenia przy najbliższym buildzie produkcji (K-175 zostaje jak jest). `~/qwen-opt/k022/res/`.
+- przeniesione 2026-11-25: bezstratne, −1 GB VRAM, prędkość bez zmian
 
 ### K-038 · Przeszukiwanie flag spekulacji (TPE: DRAFT_N, LOOKUP_W/MMIN, PM4_MIN_DISPATCH, typ KV draftu) na odłożonym zestawie
 - data: 2026-11-05
@@ -1326,6 +1322,17 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-062 · Dekoder FA CUDA z `__launch_bounds__(…,2)` (dual-CTA)
+- data: 2026-11-07
+- źródło: `R/67c-nvidia-backlog-testow.md:121` (C4), `R/66b-1cat-tokenspeed.md:97-98`
+- test: 5060 Ti: perf FA + long_ctx, md5; ≤ 10 min/krok (po K-027)
+- zysk: 1Cat V100 128k +19% bitowo; u nas po `kvq` nieznane
+- ryzyko karty: brak
+- priorytet: niski (po profilu)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** pominięte na Colabie: `__launch_bounds__` to zmiana źródła kernela, nie flaga builda (wymaga kodu).
+- **wynik 2026-11-25 (Colab L4 sm_89, fork 007a6f813):** `__launch_bounds__(128,1)` → `(128,2)` w `fattn-vec.cuh` daje identyczny kod maszynowy: 48/48 kerneli vec bez zmian, rejestry bez zmian (max 255), bo 2 bloki po 128 wątków nie ograniczają rejestrów. Zysk 0%. Prawdziwe dual-CTA wymaga bloków 256 albo limitu rejestrów (nowa praca).
+- przeniesione 2026-11-25: bez efektu
 
 ### K-042 · Spekulatywny prefill następnej tury w przerwie (serwer prefilluje swoją odpowiedź, przerywa na granicy ubatcha)
 - data: 2026-11-07

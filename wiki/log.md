@@ -749,3 +749,8 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - Odrzucone bez karty: K-010 (zmierzone 11-20, −1,3%), K-042 (zysk ≤ 10% tur, łączymy z K-128).
 - Zablokowane pobraniem (decyzja JARO): K-170 (Lucebox czyta tylko swój plik, 17,6 GB), K-172 i A3B w K-025 (Qwen3.6-35B skasowany, 35 GB).
 - Ocenione: K-057 1,5–3 dni, K-056 2–4 dni (142 konflikty).
+
+## [2026-11-25] wyniki | K-022 (−977 MiB VRAM bezstratnie), K-062 bez efektu (Colab L4), K-004 bramki OK, K-006 poprawka skryptu
+- K-022: FA prefill z natywnym q4_0 bit w bit, prędkość ±0,4%, szczyt VRAM przy 255k 23 323 → 22 346 MiB.
+- Colab L4 (1,36 jedn., sesja zatrzymana): K-062 identyczny SASS; K-004 GUMBEL_MAX 152/152; L4 230,8 GB/s, fp16 75,4 TFLOPS.
+- K-006 A1 padł na błędzie parsera (`k006.py:26`, grupy opcjonalne None); poprawione, ponownie w kolejce.
