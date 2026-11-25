@@ -342,16 +342,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (wynajem)
 - priorytet: średni (warunek sprzedaży Enigmy na inne Radeony)
 
-### K-025 · FA D256 wariant 83 dla innych modeli i kształtów (Saluki/Bonsai, Qwen3.6-35B-A3B, LFM2.5 D=64, f16 KV, RDNA3.5) przed włączeniem domyślnie w kodzie
-- data: 2026-11-09
-- źródło: `R/70-fa-d256-jak-to-zrobilismy.md:184,187` (#1, #4), §6.2; dziś 83 tylko dla qwen/uncensored przez launcher (f16 KV przy 131k: −2,4%)
-- test: XTX `fa-d256/bench.sh` z `M=<model>` przy 4k/32k/131k (~17 min → 2 joby), md5 jak `md5.sh`; dla 35B-A3B rozszerzyć warunek `:2216` i sweep
-- zysk: Saluki/Bonsai ≥ +5,8% fillu [INFERENCE], 35B-A3B przy ≥ 128k +3…5%, LFM +1…2%; dla katalogu Enigmy, nie produkcji
-- ryzyko karty: brak
-- priorytet: średni (Enigma)
-
-- **bieg 2026-11-25 19:55 nieważny:** md5 Bonsai 0 = 83 (4b32fc1a), ale `var_log=0` w obu ramionach, więc wariant 83 nie został użyty (przełącznik nie trafia w kernel tego kształtu); serwer Qwen3.6-A3B nie wstał (Connection refused). Do naprawy skryptu przed powtórką.
-- **2026-11-25 diagnoza:** `var_log=0` to problem logowania (INFO ggml w llama-server wymaga `-lv 4`, llama-bench `-v`), wariant 83 działał. Skrypty poprawione (`~/qwen-opt/k025/{md5,bench,common}.sh`), joby A3B wyłączone (brak modelu). Ponownie w kolejce.
 ### K-026 · Enigma: próg draftu `--spec-draft-p-min` {0; 0,5; 0,8} × n {1,2,4} dla MoE z `--n-cpu-moe` na kartach ≤ 16 GB
 - data: 2026-11-07 (66a A2)
 - źródło: [[prog-draftu-od-kosztu-wiersza]], `R/66-SYNTEZA.md` poz. 10
@@ -565,6 +555,19 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-025 · FA D256 wariant 83 dla innych modeli i kształtów (Saluki/Bonsai, Qwen3.6-35B-A3B, LFM2.5 D=64, f16 KV, RDNA3.5) przed włączeniem domyślnie w kodzie
+- data: 2026-11-09
+- źródło: `R/70-fa-d256-jak-to-zrobilismy.md:184,187` (#1, #4), §6.2; dziś 83 tylko dla qwen/uncensored przez launcher (f16 KV przy 131k: −2,4%)
+- test: XTX `fa-d256/bench.sh` z `M=<model>` przy 4k/32k/131k (~17 min → 2 joby), md5 jak `md5.sh`; dla 35B-A3B rozszerzyć warunek `:2216` i sweep
+- zysk: Saluki/Bonsai ≥ +5,8% fillu [INFERENCE], 35B-A3B przy ≥ 128k +3…5%, LFM +1…2%; dla katalogu Enigmy, nie produkcji
+- ryzyko karty: brak
+- priorytet: średni (Enigma)
+
+- **bieg 2026-11-25 19:55 nieważny:** md5 Bonsai 0 = 83 (4b32fc1a), ale `var_log=0` w obu ramionach, więc wariant 83 nie został użyty (przełącznik nie trafia w kernel tego kształtu); serwer Qwen3.6-A3B nie wstał (Connection refused). Do naprawy skryptu przed powtórką.
+- **2026-11-25 diagnoza:** `var_log=0` to problem logowania (INFO ggml w llama-server wymaga `-lv 4`, llama-bench `-v`), wariant 83 działał. Skrypty poprawione (`~/qwen-opt/k025/{md5,bench,common}.sh`), joby A3B wyłączone (brak modelu). Ponownie w kolejce.
+- **wynik 2026-11-25 22:10–22:26 (XTX, `~/wt/k025` 7e6bd853c, poprawione skrypty):** test-backend-ops FA hsk=256 173/173 (kształty 16x4, 32x2, 8x8); md5 12k: Bonsai q4_0 0 = 83 (4b32fc1a, kontrola 7 różna), Bonsai f16 0 = 83, Qwen3.5-0.8B 0 = 83 (kształt 16x4). Bonsai 2.5 Q2_0 llama-bench pp512 ABBA: d4k 876,2 → 880,7 (+0,5%), **d32k 711,8 → 726,0 (+2,0%)**, d128k 387,1 / 441,5 → 465,1 (+5…+20%, ramiona 0 rozjechane; średnio +12%). Werdykt: zysk jest już w produkcji: Bonsai (GQA 6) używa kształtu 32x2, a topka-k157 ma wariant 83 dla 32x2 (`fattn-mma-f16.cuh:2216,2310`) i `bonsai25/serve.sh:11` go włącza; pomiar to VAR 0 vs 83, nie prod vs nowy. Łatka k025 dodaje tylko kształty 16x4 i 8x8 (GQA 4/8), bez modelu w produkcji. Qwen3.6-A3B i LFM bez modelu na dysku.
+- przeniesione 2026-11-25: zmierzone; nic do wdrożenia
 
 ### K-171 · Inkling na równych warunkach z llamAmpere: T=1, top-k 20, top-p 0,95 (Maya prod, Nib + LoRA, K-158f)
 - data: 2026-11-25 (panel JARO: llamAmpere v0.7.5 189 t/s przy 3K i 144,7 przy 100K na 3090 Ti, „T=1”)

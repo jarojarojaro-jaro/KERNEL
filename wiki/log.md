@@ -763,3 +763,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - K-175: AGR2 i KV draftu q8_0 zmieniają md5 i tech T=0,7 −3,6% → odrzucone; sam K-020 → K-178.
 - K-006: chude checkpointy −36% pamięci wpisu, wpis wspólnego początku 8,5 s → 0,86 s po wyrzuceniu; md5 harnessu niedeterministyczne → decyzja K-007.
 - Ryzyko: `topka-keeper.sh` podnosi czat z modelem `qwen` (z cenzurą), `chat8080.sh restore` z `uncensored`.
+
+## [2026-11-25] wyniki | K-025 (wariant 83 bezstratny na Bonsai, zysk już w produkcji), K-173 bez efektu, K-171 llamAmpere 1,7×
