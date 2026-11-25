@@ -76,6 +76,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-25 [[perf|tools/perf: pętla optymalizacji jedną komendą (K-161)]]
 - 2026-11-25 [[bonsai-2-5-uncensored|Ternary Bonsai 2.5 27B Uncensored (AtomicChat)]]
 - 2026-11-25 [[metoda-nib-level-up|Metoda Nib i co zmieniamy u siebie („level wyżej”)]]
+- 2026-11-25 [[lekcja-zabicie-skryptu-nie-serwera|Zabicie skryptu nie zabija serwera]]
 - 2026-11-25 [[lekcja-przegrywamy-procesem-nie-wiedza|Lekcja: przegrywamy procesem, nie wiedzą o kernelach]]
 - 2026-11-25 [[lekcja-final-speed-to-najszybszy-znany|Lekcja: „final speed” to najszybszy wariant zmierzony na naszej karcie, nawet gdy to cudzy silnik]]
 - 2026-11-25 [[nib-chromadera|Nib (Chromadera): silnik C++/HIP pod Inkling 2 Mini na 7900 XTX]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-24 [[silniki-inferencji-2026-11-20|Silniki inferencji 2026-11-20: co bierzemy do Enigma Turbo (język zostaje C++/HIP)]]
 - 2026-11-24 [[rightnow-inkling-b300-kernele|RightNow AI: kernele MoE Inkling 2 Small na B300, bitowo identyczne przy 1 i 64 wierszach]]
 - 2026-11-24 [[raport-28-moe-offload|Raport 28: silniki MoE-offload TideLM i Xolotl – stratne z założenia]]
-- 2026-11-24 [[raport-23a-rea|Raport 23a: morluto/rea („Reverse Engineer Anything”) – bez wsparcia GPU]]
 
 Razem 830 notatek. Wygenerowano 2026-11-25 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

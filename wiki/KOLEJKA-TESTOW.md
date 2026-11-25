@@ -32,6 +32,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - plan: pobrać `incoai/Inkling-2-Mini-DFlash2` (0,99 GB); w Mai brak DFlash2 (jest DSpark) → port na podstawie tqllm 788055720 i `sglang_inkling_dflash2.py`; najpierw CPU: kształty i referencja; potem XTX: parytet 11/11, wall.py T=0 / T=0,7 vs produkcja i vs DSpark
 - zysk: +20…40% przy T=0,7, jeśli krok weryfikacji tani (łączyć z K-158) [SZACUNEK]
 - priorytet: wysoki
+- **wynik 2026-11-25 (gałąź `k164-dflash2` fea522a0):** test GPU vs referencja CPU PASS (drafty identyczne, propose 3,84 ms z głowicą Q8, 8,29 ms FP16, write_context 0,13–0,20 ms), test akceptacji q (min(1,p/q)) passed, parytet 11/11. rep2 Q1 / Q6 / L2k: produkcja 129,7 / 114,1 / 107,7; df2 85,9 / 96,4 / 101,1; df2only 115,7 / 96,6 / 99,0; df2q (próbkowanie z q) 85,5 / 98,1 / 100,7; df2qonly 115,7 / 98,3 / 102,2. wall.py: produkcja 108,5 / 110,5, df2 108,6 / 108,4, df2q 107,9 / 106,9.
+- wniosek: DFlash2 w Mai dziś przegrywa przy T=0,7 (−14%) z tego samego powodu co K-158: droga runda weryfikacji. Q1 dwumodalne (82–86 albo 124–134 na bieg), do wyjaśnienia (sterownik spekulacji). Dalej: statystyki akceptacji (IK2_STATS) i ponowny pomiar po K-158b.
 
 ### K-163 · Szybka pętla: przełączniki runtime w topce Bonsai + xtxbench z profilem modelu, cel ≥ 15 wariantów/h
 - data: 2026-11-25 (JARO: „on robi eval w minuty, my w godziny”; [[metoda-nib-level-up]])
@@ -56,6 +58,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: +15…30% T=0,7 [SZACUNEK z różnicy do Nib]
 - dopisane 2026-11-25 (zwiad): drzewo DSpark z Pando (2611.32269, 16 węzłów bez dodatkowego przejścia) i temperatura draftu 0,4–0,6 (2611.33111, +9–11% akceptacji), oba bezstratne przy próbkowaniu draftu z q
 - priorytet: wysoki
+- **wynik 2026-11-25 (gałąź Mai `k158-dspark` 7372462b, przełączniki `IK2_K158_DGRAPH/CONF/GSORT/SFXDS`, domyślnie wyłączone):** test kerneli OK, parytet 11/11 IDENTYCZNY (g, all, all-sl). rep2 Q1 (T=0) / Q6 (T=0,7) / L2k: plain 129,7 / 114,2 / 107,1; base (draft) 110,7 / 93,6 / 100,4; DGRAPH 100,1 / 93,9 / 101,8; CONF 148,8 / **70,1** / 97,2; all 148,8 / 70,4 / 97,0; all-sl-c0 121,1 / 84,2 / 100,8; GSORT bez drafta 129,7 / 114,8 / 107,2.
+- wniosek: CONF daje +14,7% przy T=0 (148,8 vs 129,7), ale przy T=0,7 −39%. Statystyka (conf, T=0,7): 806 okien, 542 z 1097 draftów przyjętych = 1,67 tok./okno przy 70 t/s, czyli **ok. 24 ms na okno ≈ 2,7 zwykłego tokenu**; u Nib runda (draft 1,40 ms + weryfikacja m≈2,2 12,3 ms) ≈ 1,6 tokenu. Graf draftu nic nie dał, więc winna jest weryfikacja Mai przy małym m, nie host. Dalej K-158b: księga ms (plain, propose, verify(m) dla m=1..8, host) i poprawki weryfikacji.
 
 ### K-159 · Nib na tym samym modelu co Maya (uncensored): AtomicChat w paczce NVFP4 albo AD-Q4_K w Nib
 - data: 2026-11-25 (Nib liczy na NVFP4-Mixed, nie na naszych wagach uncensored)
