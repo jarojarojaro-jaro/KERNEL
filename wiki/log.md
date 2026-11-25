@@ -767,3 +767,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-25] wyniki | K-025 (wariant 83 bezstratny na Bonsai, zysk już w produkcji), K-173 bez efektu, K-171 llamAmpere 1,7×
 
 ## [2026-11-25] wyniki | K-017 +3,4% proza (K-007), K-008 −1,3…−2,3%, K-046 W16 zostaje (W8 −24%), K-058 psuje tool calls (25 → 0)
+
+## [2026-11-25] wyniki NVIDIA | Colab L4 (6,6 jedn. łącznie, sesje zatrzymane): K-016 n2/n3 +6–7% T=1, K-117 start −76%, K-068 KLD bez wyjątku niższe, K-004 +2,7%, K-064 hak MTP +37% pp512 (140 ms synchronizacji), K-063 0%, K-115 igły PASS

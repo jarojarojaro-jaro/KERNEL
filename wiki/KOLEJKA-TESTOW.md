@@ -91,6 +91,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: wysoki (tanie, zmierzone na 3 kartach)
 - wynik 2026-11-20: zrobione po stronie CPU. W profilu `qwen38-kvq-mtp4` silnika `enigma-cuda-fork` doszło `mtp.nMaxByArch` (`app/engine/data/engines.json`: sm_86 → 2, sm_120 → 2, reszta, czyli sm_89, zostaje 4); `mtpArgs`/`enigmaConfig` biorą n po architekturze karty (`app/engine/src/server/engine.ts`, wywołanie w `optimize.ts`). Test w `app/engine/test/enigma-cuda.test.ts` (sm_86/sm_89/sm_120 → 2/4/2); `bun test` 208 pass, 0 fail; `tsc` czysty. Planer pamięci dalej liczy draft dla n 4 (bezpieczny zapas). Uwaga: RTX 5090 (też sm_120) mierzona była tylko z n 4, więc dostaje 2 bez pomiaru. Zostaje potwierdzenie md5 T=0 n2 vs n4 na 1 karcie Vast.
 
+- **2026-11-25 (L4, K-016):** n2 +6,9% i n3 +6,3% T=1 vs n4, kopia bez straty; brakuje 3090 i 5060 Ti (wynajem) przed zmianą domyślnej wartości Enigmy.
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
 - źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)
@@ -131,27 +132,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: 0% sama; odblokowuje K-008, K-017 i K-046 (+3…7%)
 - ryzyko karty: brak
 - priorytet: wysoki (odblokowuje największy bezstratny decode)
-
-### K-004 · Fork CUDA: dokładne próbkowanie spekulacyjne na GPU przy T=1 (jak qwen-warp)
-- data: 2026-11-09
-- źródło: [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 2: fork traci przy T=1 7–13%, warp nie traci), `R/69b-tensorfold-qwen-warp.md` §3
-- **poprawka planu (audyt 2026-11-19):** wydany fork `kvqlean`/`kvqleana` (cuda-topka2 + kvq `007a6f813`) **nie ma** sprzężonego próbkowania `7cdc0121b`, więc `LLAMA_SPEC_COUPLED` 0/1 na nim nic nie zmieni [INFERENCE: potwierdzić `strings llama-server | grep LLAMA_SPEC_COUPLED`]. Zmierzone sprzężone na CUDA: +5,3…5,5% (3060/3080, `31-3060-3080.md:146`), +5,4% (4060 Ti), 5060 Ti +1,9% z CI [−4,9; +8,3]. Strata „7–13%” to spadek T=0 → T=1 z akceptacji (K-114), nie cały do odzyskania
-- test: (1) CPU: build kvqlean + merge `7cdc0121b` (merge-tree bez konfliktów), `test-backend-ops`; (2) 5060 Ti (Vast + hostguard) spec_sweep T=1 ABBA COUPLED 0/1, 6 promptów × seedy 1–4, md5 T=0 6/6; (3) dopisać `LLAMA_SPEC_COUPLED=1` do profilu Enigmy dopiero z nową binarką. Stary plan: Po porcie: ABBA 6 × 3 seedy, md5 T=0 bez zmian; potwierdzenie na 3090 (wynajem, metoda `nv69q`).
-- zysk: +5…5,5% przy T=1 na NVIDIA (zmierzone na sm_86/89); wszyscy użytkownicy Enigmy z NVIDIA
-- ryzyko karty: brak
-- priorytet: wysoki (Enigma NVIDIA, tani pierwszy pomiar)
-- zwiad 2026-11-14: tqLLM 1.5.0 robi dokładne próbkowanie MTP przy T>0 (3090, T=0,7: 50 → 104–117 t/s), wzór do portu ([[zwiad-2026-11-14]])
-
-- **2026-11-25 (Colab L4):** bramki: `test-backend-ops -o GUMBEL_MAX` 152/152, `test-coupled-sampling` all passed; pomiar T=1 COUPLED 0/1 nie zdążył (`/tmp/nvc/colab/run.py k004`, ok. 20 min L4).
-### K-117 · Fork CUDA: cache skwantowanej głowicy draftu i MTP (`LLAMA_MTP_REQUANT_CACHE` jak na XTX) — start na słabym CPU 12 min → sekundy
-- data: 2026-11-17
-- źródło: [[2026-11-17-k114-nvidia-sufit]] (host 3090 TW: 12 min od „initializing” do gotowości; 5060 Ti na 64 rdzeniach 32 s); XTX: start 39,8 → 6,5 s z cache ([[REKORDY]])
-- hipoteza: port przełącznika z topki do forka CUDA (kod w `common/`, nie w kernelach) skraca każdy kolejny start do < 10 s; bitowo te same wagi draftu
-- test: CPU (budowa) + dowolna karta NVIDIA: start zimny vs ciepły, md5 T=0 identyczne
-- miara: s do `/health` przy drugim starcie
-- zysk: start Enigmy na NVIDIA ze słabym CPU: minuty → sekundy (UX, 0 t/s)
-- ryzyko karty: brak
-- priorytet: średni
 
 ### K-119 · SenseNova-Loop-9B: pobrać i sprawdzić, jak naprawdę działa (jakość, zachowanie, prędkość), bez optymalizacji
 - data: 2026-11-17
@@ -244,16 +224,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni
 - **bieg 2026-11-25 17:09 nieważny:** serwer testowy nie wstał (`Connection refused`), bo w tym czasie plik modelu Qwen był skasowany (`~/models/orca`, pobrany ponownie 18:06). Ponownie w kolejce 2026-11-25 19:25.
 
-### K-115 · Bramka igieł (K-109) na NVIDIA: 5060 Ti (IQ3_XXS, 196k) i 3090 (UD-Q4_K_XL, 245k) z przepisami Enigmy
-- data: 2026-11-17
-- źródło: [[skill-io-publikacja]] (bramka 5: igła ~85% okna); [[final-recipes-nvidia]] (konteksty przepisów)
-- hipoteza: 3/3 kody przy 50% i 85% okna; jeśli nie, przepis Enigmy obiecuje kontekst, którego model nie czyta (KV q4_0 + mały kwant)
-- test: `bench.py run --long <0,5·ctx>` i osobny job `--long <0,85·ctx>` na każdej karcie; fill 167k (85% z 196k) na 5060 Ti: 3 min przy suficie prefillu 924 t/s, ~10 min przy 30% sufitu [INFERENCE: prefillu 5060 Ti nie mierzyliśmy, K-112 najpierw]; jeśli > 10 min, bramka 85% jako jedyny job tej sesji
-- miara: retrieval k/3, TTFT, szczyt VRAM vs przepis
-- zysk: poprawność przepisów Enigmy NVIDIA; 0 t/s
-- ryzyko karty: brak
-- priorytet: średni
-
 ### K-107 · Dwie karty w jednym komputerze: XTX + RTX 5060 Ti (podział warstw `-sm layer` przez Vulkan albo dwa niezależne serwery dla roju agentów)
 - data: 2026-11-15
 - źródło: [[mapa-inferencji-roadmap]] (luki #3–#6, #10); plan z `hardware/rx-7900-xtx.md` §2 („do przetestowania”)
@@ -299,14 +269,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (16 GB: uważać na OOM przy dużym kontekście)
 - priorytet: średni (lokalnie, tanio)
 
-### K-016 · Fork CUDA: ogon lookupu W8/W16/off oraz MTP n 2/3/5 per klasa na promptach kopiujących
-- data: 2026-11-07
-- źródło: `R/67c-nvidia-backlog-testow.md:99-101` (B5–B7; 5060 Ti: n=3 ≥ n=4, fork ma sztywne 4), [[final-recipes-nvidia]]
-- test: 5060 Ti: `LLAMA_SPEC_LOOKUP_W=8/16`, `LLAMA_SPEC_LOOKUP=0`, `--spec-draft-n-max 2/3/5`, `mvs` + spec_sweep; po jednym ramieniu na job ≤ 10 min
-- zysk: dobór przepisu Enigmy per klasa; W16 na wąskiej szynie może przegrywać [INFERENCE]
-- ryzyko karty: brak
-- priorytet: średni (przepis Enigmy, lokalnie)
-
+- **2026-11-25 (L4):** mikrobench kvq: KVQ1 vs KVQ0 nb2 191,5 → 37,7 µs, nb5 249,8 → 59,3, nb8 253,3 → 80,1 (kvq dużo szybsze na sm_89); BPSM 1/2 bez zmian, 3/4 gorzej (nb5 78,4 / 75,2). Regresja z wpisu dotyczy sm_120 (5080, 5060 Ti): wymaga wynajmu.
 ### K-017 · Głębokość i szerokość draftu per klasa żądania (`LLAMA_SPEC_ROUTE`: rozumowanie/kod T=0 → n=5, proza → n=3)
 - data: 2026-10-21 (raport 44)
 - status: **czeka na decyzję** (bramka K-007; n=5 zmienia md5 → d71a2c04). Najpierw naprawić crash ABBA `ggml-cpu.c:2504` w `ggml_graph_plan`.
@@ -430,23 +393,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - 2026-11-24 15:18: fabryka INVALID, bo zmieniona uprząż (`ext/spec_sweep.py` po audycie 19.11, `ext/fusion/greedy.sh`) bez wpisu w HARNESS.lock; zablokowana z powodem (ledger seq 11), test ponownie w kolejce 15:40.
 - 2026-11-24 16:08: fabryka VOID przez bramkę sprzętu H4: niepotwierdzony page fault z 2026-11-23 01:09 (proces strata-inkling, znany incydent K-134). Potwierdzenie (`factory rsi hw ack --reason …`) to według fabryki krok człowieka: **czeka na JARO**, potem jedno uruchomienie `K-060.jobs` (ok. 25 min).
 
-### K-063 · Wyzwalacz PDL + prefetch L2 przed `pdl_sync` w gęstym MMVQ (sm_120) i sterowanie L2 (`evict_first`, persisting window `GGML_CUDA_L2_PERSIST`)
-- data: 2026-10-19 (21b)
-- źródło: [[pdl-mmvq-trigger]], [[l2-persist]], `R/67c-nvidia-backlog-testow.md:122-125` (C5–C8)
-- test: 5060 Ti: `GGML_CUDA_MMVQ_PREWAIT=0/1/2`, `WEIGHT_EVICT_FIRST`, `L2_PERSIST`, md5 + tg128/spec_sweep ABBA; ≤ 10 min każdy; kill < +1,5% LFM tg128
-- zysk: LFM +1,1…4,6%, Qwen +0,7…2,6% (PDL); L2 +0,5…2% [SZACUNEK]
-- ryzyko karty: brak
-- priorytet: niski (małe)
-
-- **2026-11-25:** PDL wymaga PTX ≥ 90 (`common.cuh:1895`), więc na L4/Ampere nic nie robi; potrzebna karta sm_120. `WEIGHT_EVICT_FIRST` i `L2_PERSIST` nie istnieją w forku 007a6f813.
-### K-064 · Zwinięcie haka promptu MTP do grafu celu (TTFT) w forku CUDA
-- data: 2026-10-16
-- źródło: `R/67c-nvidia-backlog-testow.md:113` (B19), `R/15d-prefill-dlugi-kontekst.md:110`
-- test: 5060 Ti: build + TTFT 512/2k, md5; ≤ 10 min
-- zysk: TTFT −5…7% przy 2k
-- ryzyko karty: brak
-- priorytet: niski (mały TTFT)
-
 ### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
 - data: 2026-10-16 (15d), 2026-10-21 (Orca)
 - źródło: `R/67c-nvidia-backlog-testow.md:133` (C16), sesja Orca (`O:1788-1796`, `O:2187-2196`: occupancy 2 → −11,5%)
@@ -462,15 +408,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: do +10% prefillu
 - ryzyko karty: brak
 - priorytet: niski (numeryka do naprawy)
-
-### K-068 · CUDA `kvq`: KLD wariantu z wyjątkiem n=1 D256 q4_0 (`678473a27`) i serwer MTP@64k z wyjątkiem
-- data: 2026-10-18
-- źródło: `STAN-PRAC.md` (CudaKvq, „Niezmierzone”), [[2026-10-16-kvq-cuda-zostaje]]
-- test: `llama-perplexity --kl-divergence --chunks 5` Qwen q4_0 ub1 + serwer MTP 64k; 3090 (wynajem) albo 5060 Ti przy mniejszym kontekście; ≤ 10 min/ramię
-- zysk: poprawność (przy ub1 = vec z konstrukcji [INFERENCE])
-- ryzyko karty: brak
-- priorytet: niski (formalność)
-- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, 63k bez MTP: wyłączenie wyjątku n=1 (`GGML_CUDA_KVQ_N1_D256_Q4=1`) dekod 12,54 → 16,64 t/s (+32,7%), ale wyjście się zmienia; z MTP ok. +2% (38,1–38,3 → 39,0), wyjście identyczne. Prawdziwy KLD niewykonany (paczka bez `llama-perplexity`); top-10 prawdopodobieństw różni się średnio 4,3e-4, tyle co kvq vs zwykła uwaga. Decyzja wymaga KLD.
 
 ### K-070 · NVIDIA: soak termiczny 600 s przy fill 262k (E3) i sweep limitu mocy → perf/W na wynajętych kartach (E1)
 - data: 2026-11-07
@@ -529,6 +466,75 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-115 · Bramka igieł (K-109) na NVIDIA: 5060 Ti (IQ3_XXS, 196k) i 3090 (UD-Q4_K_XL, 245k) z przepisami Enigmy
+- data: 2026-11-17
+- źródło: [[skill-io-publikacja]] (bramka 5: igła ~85% okna); [[final-recipes-nvidia]] (konteksty przepisów)
+- hipoteza: 3/3 kody przy 50% i 85% okna; jeśli nie, przepis Enigmy obiecuje kontekst, którego model nie czyta (KV q4_0 + mały kwant)
+- test: `bench.py run --long <0,5·ctx>` i osobny job `--long <0,85·ctx>` na każdej karcie; fill 167k (85% z 196k) na 5060 Ti: 3 min przy suficie prefillu 924 t/s, ~10 min przy 30% sufitu [INFERENCE: prefillu 5060 Ti nie mierzyliśmy, K-112 najpierw]; jeśli > 10 min, bramka 85% jako jedyny job tej sesji
+- miara: retrieval k/3, TTFT, szczyt VRAM vs przepis
+- zysk: poprawność przepisów Enigmy NVIDIA; 0 t/s
+- ryzyko karty: brak
+- priorytet: średni
+- **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie):** igły 5/5, 0 zmyślonych przy 96 362 i 164 487 tokenach promptu (278 s i 372 s), VRAM 16,1 GB. PASS na L4; 5060 Ti i 3090 wymagają wynajmu.
+- przeniesione 2026-11-25: PASS na L4
+
+### K-064 · Zwinięcie haka promptu MTP do grafu celu (TTFT) w forku CUDA
+- data: 2026-10-16
+- źródło: `R/67c-nvidia-backlog-testow.md:113` (B19), `R/15d-prefill-dlugi-kontekst.md:110`
+- test: 5060 Ti: build + TTFT 512/2k, md5; ≤ 10 min
+- zysk: TTFT −5…7% przy 2k
+- ryzyko karty: brak
+- priorytet: niski (mały TTFT)
+- **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie):** hak promptu MTP kosztuje w prefillu pp512 835 → 1143 ms (+37%), pp2048 2955 → 3385 ms (+14,5%); z 168 ms haka 140 ms to synchronizacja hosta (`h_sync`), draft 24 ms. Zwinięcie haka do grafu celu może oddać do ok. 140 ms na 512 tokenów TTFT; to praca w forku CUDA (nowa pozycja przy następnym wynajmie).
+- przeniesione 2026-11-25: zmierzone
+
+### K-117 · Fork CUDA: cache skwantowanej głowicy draftu i MTP (`LLAMA_MTP_REQUANT_CACHE` jak na XTX) — start na słabym CPU 12 min → sekundy
+- data: 2026-11-17
+- źródło: [[2026-11-17-k114-nvidia-sufit]] (host 3090 TW: 12 min od „initializing” do gotowości; 5060 Ti na 64 rdzeniach 32 s); XTX: start 39,8 → 6,5 s z cache ([[REKORDY]])
+- hipoteza: port przełącznika z topki do forka CUDA (kod w `common/`, nie w kernelach) skraca każdy kolejny start do < 10 s; bitowo te same wagi draftu
+- test: CPU (budowa) + dowolna karta NVIDIA: start zimny vs ciepły, md5 T=0 identyczne
+- miara: s do `/health` przy drugim starcie
+- zysk: start Enigmy na NVIDIA ze słabym CPU: minuty → sekundy (UX, 0 t/s)
+- ryzyko karty: brak
+- priorytet: średni
+- **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie):** start serwera bez cache 28,75 / 29,05 s, cache zimny 29,35 s, **cache ciepły 6,86 / 6,84 s (−76%)**, md5 identyczne (439bdb8f, c62d8d52). Wygrany dla czasu startu (Enigma).
+- przeniesione 2026-11-25: wygrany (start −76%)
+
+### K-068 · CUDA `kvq`: KLD wariantu z wyjątkiem n=1 D256 q4_0 (`678473a27`) i serwer MTP@64k z wyjątkiem
+- data: 2026-10-18
+- źródło: `STAN-PRAC.md` (CudaKvq, „Niezmierzone”), [[2026-10-16-kvq-cuda-zostaje]]
+- test: `llama-perplexity --kl-divergence --chunks 5` Qwen q4_0 ub1 + serwer MTP 64k; 3090 (wynajem) albo 5060 Ti przy mniejszym kontekście; ≤ 10 min/ramię
+- zysk: poprawność (przy ub1 = vec z konstrukcji [INFERENCE])
+- ryzyko karty: brak
+- priorytet: niski (formalność)
+- **wynik 2026-11-24 (Colab, [[colab-kolejka-2026-11-24]]):** L4, 63k bez MTP: wyłączenie wyjątku n=1 (`GGML_CUDA_KVQ_N1_D256_Q4=1`) dekod 12,54 → 16,64 t/s (+32,7%), ale wyjście się zmienia; z MTP ok. +2% (38,1–38,3 → 39,0), wyjście identyczne. Prawdziwy KLD niewykonany (paczka bez `llama-perplexity`); top-10 prawdopodobieństw różni się średnio 4,3e-4, tyle co kvq vs zwykła uwaga. Decyzja wymaga KLD.
+- **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie), llama-perplexity KLD vs f16 (PPL 6,1868):** q4 KVQ0 (stock vec) i KVQ1 z wyjątkiem: mean KLD 0,002471, max 0,260; KVQ1 **bez wyjątku n=1 D256 q4_0**: 0,002256, max 0,059, top-1 97,96%. Bez wyjątku KLD jest niższe, więc wyjątek `678473a27` można usunąć (serwer MTP@64k nie zdążył).
+- przeniesione 2026-11-25: zmierzone
+
+### K-016 · Fork CUDA: ogon lookupu W8/W16/off oraz MTP n 2/3/5 per klasa na promptach kopiujących
+- data: 2026-11-07
+- źródło: `R/67c-nvidia-backlog-testow.md:99-101` (B5–B7; 5060 Ti: n=3 ≥ n=4, fork ma sztywne 4), [[final-recipes-nvidia]]
+- test: 5060 Ti: `LLAMA_SPEC_LOOKUP_W=8/16`, `LLAMA_SPEC_LOOKUP=0`, `--spec-draft-n-max 2/3/5`, `mvs` + spec_sweep; po jednym ramieniu na job ≤ 10 min
+- zysk: dobór przepisu Enigmy per klasa; W16 na wąskiej szynie może przegrywać [INFERENCE]
+- ryzyko karty: brak
+- priorytet: średni (przepis Enigmy, lokalnie)
+- **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie), Qwen3.8-27B IQ3_XXS:** T=1: n4 34,25 / 34,22 → **n2 36,59 (+6,9%)**, n3 36,39 (+6,3%), n5 31,67 (−7,5%); kopia T=0: n4 138,7 → n2 138,2, n3 140,4 (+1,2%), n5 125,0; ogon W8 kopia 81,8 (−41%), bez lookupu 63,2 (−54%); KVQ0 T=1 33,45 (−2,3%). Werdykt: na L4 n3 (albo n2) lepsze od n4 przy T=1 bez straty kopii; ogon W16 zostaje. Potwierdza kierunek K-129.
+- przeniesione 2026-11-25: zmierzone
+
+### K-004 · Fork CUDA: dokładne próbkowanie spekulacyjne na GPU przy T=1 (jak qwen-warp)
+- data: 2026-11-09
+- źródło: [[2026-11-09-qwen-warp-vs-fork-3090]] (pkt 2: fork traci przy T=1 7–13%, warp nie traci), `R/69b-tensorfold-qwen-warp.md` §3
+- **poprawka planu (audyt 2026-11-19):** wydany fork `kvqlean`/`kvqleana` (cuda-topka2 + kvq `007a6f813`) **nie ma** sprzężonego próbkowania `7cdc0121b`, więc `LLAMA_SPEC_COUPLED` 0/1 na nim nic nie zmieni [INFERENCE: potwierdzić `strings llama-server | grep LLAMA_SPEC_COUPLED`]. Zmierzone sprzężone na CUDA: +5,3…5,5% (3060/3080, `31-3060-3080.md:146`), +5,4% (4060 Ti), 5060 Ti +1,9% z CI [−4,9; +8,3]. Strata „7–13%” to spadek T=0 → T=1 z akceptacji (K-114), nie cały do odzyskania
+- test: (1) CPU: build kvqlean + merge `7cdc0121b` (merge-tree bez konfliktów), `test-backend-ops`; (2) 5060 Ti (Vast + hostguard) spec_sweep T=1 ABBA COUPLED 0/1, 6 promptów × seedy 1–4, md5 T=0 6/6; (3) dopisać `LLAMA_SPEC_COUPLED=1` do profilu Enigmy dopiero z nową binarką. Stary plan: Po porcie: ABBA 6 × 3 seedy, md5 T=0 bez zmian; potwierdzenie na 3090 (wynajem, metoda `nv69q`).
+- zysk: +5…5,5% przy T=1 na NVIDIA (zmierzone na sm_86/89); wszyscy użytkownicy Enigmy z NVIDIA
+- ryzyko karty: brak
+- priorytet: wysoki (Enigma NVIDIA, tani pierwszy pomiar)
+- zwiad 2026-11-14: tqLLM 1.5.0 robi dokładne próbkowanie MTP przy T>0 (3090, T=0,7: 50 → 104–117 t/s), wzór do portu ([[zwiad-2026-11-14]])
+
+- **2026-11-25 (Colab L4):** bramki: `test-backend-ops -o GUMBEL_MAX` 152/152, `test-coupled-sampling` all passed; pomiar T=1 COUPLED 0/1 nie zdążył (`/tmp/nvc/colab/run.py k004`, ok. 20 min L4).
+- **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie):** T=1 COUPLED 0 → 1: 34,24 / 33,89 → 35,01 / 34,98 t/s (**+2,7%**), T=0 37,54 → 37,43 (bez zmian); bramki GUMBEL_MAX 152/152, test-coupled-sampling OK. Poniżej progu 3% na L4; powtórzyć na 3090/5060 Ti przy wynajmie.
+- przeniesione 2026-11-25: zysk poniżej progu na L4
 
 ### K-025 · FA D256 wariant 83 dla innych modeli i kształtów (Saluki/Bonsai, Qwen3.6-35B-A3B, LFM2.5 D=64, f16 KV, RDNA3.5) przed włączeniem domyślnie w kodzie
 - data: 2026-11-09
@@ -1313,6 +1319,18 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-063 · Wyzwalacz PDL + prefetch L2 przed `pdl_sync` w gęstym MMVQ (sm_120) i sterowanie L2 (`evict_first`, persisting window `GGML_CUDA_L2_PERSIST`)
+- data: 2026-10-19 (21b)
+- źródło: [[pdl-mmvq-trigger]], [[l2-persist]], `R/67c-nvidia-backlog-testow.md:122-125` (C5–C8)
+- test: 5060 Ti: `GGML_CUDA_MMVQ_PREWAIT=0/1/2`, `WEIGHT_EVICT_FIRST`, `L2_PERSIST`, md5 + tg128/spec_sweep ABBA; ≤ 10 min każdy; kill < +1,5% LFM tg128
+- zysk: LFM +1,1…4,6%, Qwen +0,7…2,6% (PDL); L2 +0,5…2% [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: niski (małe)
+
+- **2026-11-25:** PDL wymaga PTX ≥ 90 (`common.cuh:1895`), więc na L4/Ampere nic nie robi; potrzebna karta sm_120. `WEIGHT_EVICT_FIRST` i `L2_PERSIST` nie istnieją w forku 007a6f813.
+- **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie):** `GGML_CUDA_MMVQ_L2PF=1`: spekulacja T=0 37,51 / 37,43 → 37,19 / 37,21 (−0,7%), plain tg128 20,33 → 20,31. Bez zysku na sm_89; część PDL wymaga sm_120.
+- przeniesione 2026-11-25: bez zysku na L4
 
 ### K-058 · Strażnik „drugie `</think>` zabronione” w `reasoning-budget.cpp` (T7, niezależny od Astry)
 - data: 2026-11-09
