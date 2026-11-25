@@ -21,6 +21,18 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-175 · Wdrożenie na :8080: K-020 (wyrzucanie cache ważone kosztem, α=1) + K-018 (AGR2) z `~/wt/qprep-spec`
+- data: 2026-11-25 (wyniki K-018, K-020 wyżej)
+- test: wall.py z promptem `pl` prod vs qprep-spec (AGR2 + koszt α=1), bramka: żadna kategoria < −2%; potem przełączenie `chat8080.sh` na nowy build w oknie kolejki i smoke md5
+- czas karty: ok. 8 min
+- priorytet: najwyższy (−51% czasu przy wielu wątkach agenta)
+
+### K-176 · Wdrożenie w Mai: K-148 `both` (szerokie okno sufiksu, edycja kodu +14,2%)
+- data: 2026-11-25
+- test: wall.py `pl` T=0 / T=0,7 prod vs `wt-k148` z SFXBLK=32 SFXRG=16, bramka −2%; potem `maya-atomic.json` → binarka k148
+- czas karty: ok. 5 min
+- priorytet: wysoki
+
 ### K-171 · Inkling na równych warunkach z llamAmpere: T=1, top-k 20, top-p 0,95 (Maya prod, Nib + LoRA, K-158f)
 - data: 2026-11-25 (panel JARO: llamAmpere v0.7.5 189 t/s przy 3K i 144,7 przy 100K na 3090 Ti, „T=1”)
 - powód: ich profile ustawiają top-k 20 (`common/preset.cpp:117`); my mierzymy T=0,7 pełnym rozkładem; K-167 pokazał, że top-k zmienia wynik ×3,8. Bez tego testu nie wiemy, czy przegrywamy
@@ -71,6 +83,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - z nowym sterownikiem (df2only, df2qonly, dsonly) sterownik słusznie prawie nie draftuje przy T=0,7: Q6 107,8–109,4 vs 114,1 produkcja (−4…−5%), Q1 122,6–124,5.
   - wniosek: DFlash2 to najlepszy drafter przy T=0 (3,73 vs 3,09 tok./okno), ale zysk zjada weryfikacja: koszt rośnie z kontekstem (L2k −25%) i z szerokością. Kolejność: K-158b (atencja okna w jednym launchu, eksperci okna przez kernele tokenu), tani draft (K-159: głowa skrócona, wagi Q8), potem ponownie df2 z oknem wg pewności.
 - **k164c 2026-11-25 (ac47cca2: shortlista głowy 32768 + kontekst, wagi Q8, graf, okno wg pewności):** propose 3,43 → 2,54 ms (warstwy 2,4–2,8 ms nie schodzą z Q8, więc ograniczone opóźnieniem, nie pasmem; głowa 0,74 → 0,15 ms). Parytet 11/11. rep2 Q1 / Q6 / L2k: df2m-sl 106,3 / 43,9 / 83,0; df2-conf-sl 144,0 / 77,0 / 105,5; df2-conf-slq 145,4 / 81,5 / 106,8. Akceptacja: okno 8 T=0 3,54 tok., T=0,7 1,86–2,02; okno wg pewności T=0 2,45 tok. (86% draftów), T=0,7 1,60. Weryfikacja na tej gałęzi bez poprawek K-158b (okno 8 = 40 ms), więc DFlash2 ocenić dopiero po przeniesieniu na `k158-dspark`.
+- **wynik K-164d 2026-11-25 17:10–17:24 (DFlash2 na gałęzi K-158 `k164-on-k158` 09574b81):** rep2 prod Q1 / Q6 / L2k 129,5 / 113,8 / 107,4; DFlash2 + gate 178,6 / 108,7 / 122,3 (L2k +13,9%, Q6 −4,5%); DSpark pol-gate 202,2 / 111,0 / 120,8. wall.py T=0,7: df2-gate mediana 122,4 (code 135,4, tech 109,4, **pl 105,9**, json 186,9), df2-pol-gate 107,9 (pl 107,1). Produkcja pl ok. 113: bramka `pl` (−2%) blokuje oba. Werdykt: nie wdrażamy; DFlash2 wygrywa długi kontekst, przegrywa polski.
 
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
@@ -106,6 +119,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 **TOPKA na teraz (właściciel 2026-11-19: „tylko najważniejsze”).** Kolejność niżej = kolejność pracy; reszta czeka bez terminu.
 1. K-001 wyciek stanu po restore (poprawność produkcji; 19.11: hipotezy pamięci, hosta i kvq odpadły, następny zrzut logitów). 2. ~~K-125~~ zrobione 19.11: PASS, kvq bliżej f16 niż standardowy kernel. 3. K-013 szybsza weryfikacja kilku wierszy na RDNA3 i NVIDIA (największa dźwignia dekodu: XTX K-111 MMVQ weryfikacji 20,2 ms; NVIDIA V(5)/V(1) = 1,26–1,64, K-118). 3a. K-129 `DRAFT_N=2` w Enigmie dla Ampere i 5060 Ti (+3…8%). 4–5. K-007 → K-008 dynamiczna głębokość draftu (+3,9…4,8%, czeka na decyzję właściciela o bramce). 6. K-004 na NVIDIA (wymaga buildu forka z `7cdc0121b`); K-116 odrzucone 19.11.
+- **wynik 2026-11-25 17:25–17:45 (XTX, `~/k134/wt-k148` k148-sfx, PM4=0, picks SFXBLK=32 SFXRG=16):** parytet greedy IDENTICAL 11/11 (vx, blk128 i reszta). Edycja kodu `python_edit` (936 → 886 tok., dokładnie): prod 292,4 / 292,8 → **both 334,1 / 334,0 t/s (+14,2%)**, rg 318, blk 315, vx 301, blk128 244 (gorzej). Czat bez zmian: Q6 114,1 → 113,9, L2k 107,7 → 107,0 (−0,6%, szum). Werdykt: **wygrany (both)**, do wdrożenia w Mai po wall.py `pl` (K-176). Log: `~/qwen-opt/queue/logs/k148-*.log`.
 
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19
@@ -271,6 +285,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: porównywalne liczby dla Enigmy i publikacji; 0 t/s
 - ryzyko karty: brak
 - priorytet: średni
+- **bieg 2026-11-25 17:09 nieważny:** serwer testowy nie wstał (`Connection refused`), bo w tym czasie plik modelu Qwen był skasowany (`~/models/orca`, pobrany ponownie 18:06). Ponownie w kolejce 2026-11-25 19:25.
 
 ### K-115 · Bramka igieł (K-109) na NVIDIA: 5060 Ti (IQ3_XXS, 196k) i 3090 (UD-Q4_K_XL, 245k) z przepisami Enigmy
 - data: 2026-11-17
@@ -365,6 +380,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: agent +3,7%, hashline +5,4%, czat +0,6% (symulacja); zmienia tylko drafty
 - ryzyko karty: brak
 - priorytet: średni (na granicy progu)
+- **wynik 2026-11-25 18:31–18:43 (XTX, ABBA, `~/wt/qprep-spec` 50ca29355, konfiguracja produkcji):** kopiowanie mvs T=0 434,8 → **458,4 (+5,4%)**, short T=0 407,5 → 427,7 (+5,0%), short T=1 386,7 → 402,4 (+4,1%), md5 T=0 równe na wszystkich promptach; spec_sweep T=0 127,9 → 125,3 (**−2,0%**), T=1 115,5 → 117,6 (+1,8%). Werdykt: wygrany na kopii/edycji, czat w granicy bramki (−2,0%); wdrożenie razem z K-020 (K-175) po wall.py `pl`.
 
 ### K-019 · Cache sufiksów między sesjami (draft z poprzednich wyjść agenta, styl SuffixDecoding)
 - data: 2026-10-19 (raport 18), 2026-11-07 (67c C18)
@@ -374,6 +390,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak
 - priorytet: średni (agenci, tani offline)
 - wynik 2026-11-20: symulacja CPU (`qwen-opt/k019/suffix_sim.ts`, wynik `qwen-opt/k019/wynik-2026-11-20.txt`): 190 sesji omp, 212 epok, 8,52 mln tokenów wyjść agenta (tokenizer Qwen3), model kroku jak w `product/research/21c-cplm/oracle.py` (MTP n 4, ogon przy m ≥ 6 i k = 4). Cache sufiksów z wcześniejszych sesji (CROSS) zamiast lookupu w sesji: 3,39 → 3,70 tok/krok, +8,4% t/s (model); oba razem (UNION: lokalny, a gdy nie trafi, cache sufiksów) 3,98 tok/krok, **+15,9%**. Najwięcej `write` +19,8% i tekst asystenta +22%, najmniej `edit` +14,7% i `bash` +13%. Ograniczenia: wyjścia pisał Claude, nie Qwen; podagenci powtarzają podobne teksty, więc wynik to raczej górna granica. Następny krok bez zmian: XTX spec_sweep PL + replay agenta ABBA.
+- **wynik 2026-11-25 18:43–19:06 (ABBA, LIVE=0, korpus omp 2026-11):** replay agenta 61 tur T=0: 138,1 / 138,5 → 140,6 / 140,0 t/s (**+1,4%**), tok/krok 4,111 → 4,198 (+2,1%); spec_sweep T=1 110,0 → 115,1, ale tok/krok identyczne, więc to szum termiczny, nie zysk. Werdykt: poniżej progu 3%, nie wdrażamy osobno; wróci z korpusem LIVE=1.
 
 ### K-020 · Polityka wyrzucania `--cache-ram` ważona kosztem przeliczenia (Marconi) zamiast LRU
 - data: 2026-11-07
@@ -382,6 +399,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: chroni wpisy ≥ 100k (przeliczenie 100–550 s) przy presji 40 GB [INFERENCE]
 - ryzyko karty: brak
 - priorytet: średni (rzadkie, ale ogromne tury)
+- **wynik 2026-11-25 19:06–19:17 (replay 3 wątki: 2 × 24k + 12 × 3k, `--cache-ram 8192`):** LRU (prod, A1/A2): 4 pełne ponowne prefille długich wątków, prefill łącznie 201,5 s, follow-up długiego wątku 107,7 s, wall 208,0 s; koszt α=1 i α=4 (B1, C1): **0 ponownych prefilli, prefill 95,2 s (−53%), follow-up 1,5 s, wall 102,0 s (−51%)**. Wyjście modelu się nie zmienia (to tylko polityka cache). Werdykt: **wygrany**, wdrożenie α=1 razem z K-018 (K-175).
 
 ### K-021 · Dataflow w taśmie PM4: usunąć granice dispatchy w łańcuchu MMVQ → norma → MMVQ weryfikacji (najpierw PoC-A: hand-off w trwałej siatce)
 - data: 2026-10-20 (raport 36 L7)

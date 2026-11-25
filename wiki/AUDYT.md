@@ -3133,3 +3133,5 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[KONWENCJE]]
 - [[wiki-py]]
 - [[log]]
+
+- 2026-11-25 wieczór: K-148 edycja 292,6 → 334,1 (+14,2%); K-018 kopia +5,4%, sweep T=0 −2,0%; K-019 +1,4%; K-020 wall 208 → 102 s (−51%); K-164d pl 105,9 (blok); Bonsai K-169 123,5 vs n2 145,7 (odrzucone), Q2BW plain +3,1%; K-174 tokenizacja −16%.

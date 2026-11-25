@@ -269,6 +269,12 @@ FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s.
 2. Nowa para (karta, model, obciążenie, metryka) → nowy wiersz.
 3. Wpis w [[log]] i wiersz w [[AUDYT]].
 
+## Nowe najlepsze 2026-11-25 (jeszcze nie w produkcji)
+- Inkling 2 Mini AtomicChat AD-Q4_K, Maya + K-148 `both`, XTX, edycja kodu `python_edit` (dokładnie): **334,1 t/s** (prod 292,6, +14,2%); `~/qwen-opt/queue/logs/k148-copy.log`; wdrożenie K-176.
+- Qwen3.8-27B Uncensored topka, XTX, kopiowanie mvs T=0 z AGR2 (K-018): **458,4 t/s** (prod 434,8, +5,4%); `~/qwen-opt/k018/logs`; wdrożenie K-175.
+- Qwen3.8-27B topka, replay 3 wątków agenta (2 × 24k + 12 × 3k), wyrzucanie cache ważone kosztem (K-020): **wall 102,0 s** (LRU 208,0 s, −51%), 0 ponownych prefilli; `~/qwen-opt/k020/logs/replay.jsonl`; wdrożenie K-175.
+- Bonsai 2.5 Q2_0 plain z Q2BW: 79,0 t/s (76,6, +3,1%); `bw-plain-on.log`.
+
 ## Powiązane
 - [[index|Strona główna]]
 - [[benchmarki-przed-po-2026-10-19]]

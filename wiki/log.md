@@ -734,3 +734,8 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - CSPD: notatka `llm/cspd-soft-prompt`, pomysł uncensored bez adaptera.
 - PR #32875: nie dotyczy Niba; ten sam wzorzec w dekwantyzacji Q4_K/Q6_K topki → K-173.
 - K-174 zmierzone na CPU: tokenizacja 178k tokenów 121 → 102 ms (−16%), ID identyczne; bez osobnego wdrożenia.
+
+## [2026-11-25] wyniki | kolejka wieczorna: K-148, K-164d, K-018, K-019, K-020, Bonsai (dsp, conf, bw)
+- Wygrane: K-020 wall 208 → 102 s (−51%), K-148 edycja +14,2%, K-018 kopia +5,4%; wdrożenia K-175 i K-176 w kolejce z bramką wall.py `pl`.
+- Bez wdrożenia: K-164d (pl 105,9), K-019 (+1,4%), Bonsai K-169 i drafter DFlash2/DSpark (MTP n2 145,8 zostaje).
+- Nieważne: K-113 i K-158g (model Qwen skasowany o 17:09; `k158g.sh` bez prawa wykonania) → ponownie w kolejce.

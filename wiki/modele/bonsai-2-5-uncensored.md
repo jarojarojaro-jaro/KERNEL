@@ -109,6 +109,12 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 - **K-169 okno pewności MTP jak w Nib (topka-conf 4fa1df911, wszystko domyślnie wyłączone):** `LLAMA_SPEC_CONF=próg` drafuje do N tokenów w jednym grafie i weryfikuje wiodące drafty z p > próg; wczesne wyjście na GPU (flaga w grafie strzeże MMVQ kolejnych kroków, pominięty krok pisze zera), `LLAMA_SPEC_GATE=1` bramka per zapytanie, linia statystyk `request rounds`. Nadal 2 synchronizacje hosta na rundę. Pomiar: `qwen-opt/bonsai25/conf.jobs` (parytet md5, xbench c0,6/0,7/0,8 ± bramka, wall z `pl`).
 - Grok (X, 14 dni): nikt nie publikował Bonsai 2.5 na 7900 XTX; producent: RTX 4090 bez spekulacji 111, z MTP n3 p-min 0,1 204 t/s; RTX 3060 przy 262k 74 t/s z MTP.
 
+## Wyniki kolejki 2026-11-25 wieczór (XTX, wall.py, mediana T=0,7)
+- MTP n2 zostaje najlepsze: 145,8 (dsp-mtp2), 145,7 (conf-n2), bez lookupu 144,2. Plain 76,4–76,9.
+- K-169, okno pewności MTP z bramką: c07-gate 123,5, c08-gate 120,1 (pl 89,4 / 85,6 vs n2 99,5). Odrzucone.
+- DFlash2 jako drafter: df3 128,6, df5 115,0, df7 108,2; DSpark ds3 98,2, ds7-c5 72,5. Polski spada do 40–58 t/s. Odrzucone dla Bonsai.
+- Q2BW (przepustowość mat-vec Q2_0, `~/wt/topka-bw`): testy backendu 212/212 i 130/130, md5 OK. Plain Q6 T=0,7: 76,6 → **79,0 t/s (+3,1%)** z `GGML_HIP_Q2BW=1`; warianty u4nt 75,0 i u4r2 74,2 gorsze. Następny krok: to samo z MTP n2 (wall), bo krok MTP to te same mat-vec.
+
 ## Powiązane
 - [[bonsai]]
 - [[prism-llama-cpp]]
