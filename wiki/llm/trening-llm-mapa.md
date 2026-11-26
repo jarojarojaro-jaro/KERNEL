@@ -24,6 +24,9 @@ status: aktualne
 
 Otwarte tematy na przyszłość: Astra-Stop jako fine-tune z benchmarkiem, polski fine-tune DSpine, porównanie RSR-27B. Pozycje testowe są w [[KOLEJKA-TESTOW]] (K-074, K-076, K-077, K-098). Starsze notatki zostają w swoich folderach; nowe notatki o treningu trafiają tutaj, do `llm/`.
 
+## Narzędzia do destylacji (2026-11-26)
+- **Fuzowany KL po pełnym słowniku** (Vishal @KyrieBlunders, Triton, fwd + bwd, nigdy nie buduje pełnych logitów; ta sama idea co FlashKL w verl #6726 i kernele Geometric na HF Hub): H100, 16k tokenów, słownik 151k: PyTorch 187 ms / 66 GB → 128 ms / 1,9 GB po złączeniu `matmul + kopia fp32 + add` w jedno `torch.addmm(..., out_dtype=float32)` (jedna linia zjadała 18% czasu GPU). Dla nas: gdy wrócimy do treningu drafterów MTP/DSpark na 248k słowniku Qwena, pamięć logitów przestaje być barierą na jednej karcie 24–48 GB. Lekcja ogólna: profil najpierw, jedna linia „klejąca” potrafi kosztować 1/5 czasu.
+
 ## Powiązane
 - [[model-carving]] (bramki podwarstw w pretreningu, 2026-11-26)
 - [[adapter-pod-omp-2026-11-26]] (research: adaptery harnessu pod omp, 2026-11-26)
