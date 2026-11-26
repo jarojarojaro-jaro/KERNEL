@@ -810,3 +810,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wdrożenie | K-183c na :8080: silnik ~/llama-topka-k183c (K-012 pary fal kvq + K-001c), dekod 94k +2,1%, wycieki 0/12, md5 identyczne; topki zaktualizowane (Qwen k183c, Maya k185)
 
 ## [2026-11-26] wdrożenie + wyniki | K-006 na :8080 (restart po wyrzuceniu 8,5 → 0,8 s, wall ±0,2%); K-017 FAIL (−3,5…−17,5%); K-036 zamknięty (bezczynność 1,8%, brak kawałka ≥ 0,5 ms); lekcja: build na 6-15 dzieli rdzenie SMT z serwerem 2-5
+
+## [2026-11-26] wyniki | K-159 Maya zostaje (Nib+WE2 na 0.1.2 psuje drafter: 101 vs 149 t/s); K-047 +0,3–0,4% bitowo identyczne (PASS); K-124 KILL (−0,3%) + znalezisko: wynik T=0 zależy od kolejności żądań; K-158r T=0,7 kod +55–64%, json +71–77%, pl −2,3–3,0% → K-158s; K-132 ramię 6.8 (zimny start 45 s vs 6 s)

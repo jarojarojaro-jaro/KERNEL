@@ -53,13 +53,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **wynik K-158g 2026-11-25 21:19–21:34 (`wt-k158g` 791e2a6f, GATE_DEFER):** parytet IDENTICAL 11/11. wall.py T=0: prod code 110,3 / tech 113,3 / pl 112,7 / json 112,9 → gated **169,3 / 115,6 / 110,8 (−1,7%) / 197,6**, mediana 112,8 → **142,5 (+26,3%)**; T=0,7 wszystkie kategorie = prod (112,7 → 112,9; pl 111,8 → 112,9), bo polityka wyłącza drafter przy próbkowaniu. rep2: Q1 129,5 → 202,7, Q6 113,8 → 114,0, **L2k 107,5 → 119,6 (+11,3%)**. Bramka −2% przechodzi (najgorzej pl T=0 −1,7%). Werdykt: **wygrany**, wdrożenie K-177.
 - **K-179 2026-11-26 00:39–00:45 (K-148 both + K-158g gated w jednej binarce, `wt-k179` 1f11609e):** parytet IDENTICAL 11/11, kernel test PASS; wall T=0: code 111,2 → 169,5 (+52,4%), json 114,0 → 197,6 (+73,5%), tech +0,5%, **pl 113,8 → 110,8 (−2,7%, FAIL)**; T=0,7 wszystko ±0,1%; edycja `python_edit` ok. 293 → 395 t/s (+35%). Bramka nie przeszła o 0,7 pkt na polskim T=0 → wdrożony sam K-158g (K-177); do poprawy: polityka bramki dla polskiego w połączonej wersji.
-### K-159 · Nib na tym samym modelu co Maya (uncensored): AtomicChat w paczce NVFP4 albo AD-Q4_K w Nib
-- data: 2026-11-25 (Nib liczy na NVFP4-Mixed, nie na naszych wagach uncensored)
-- plan: wtopić LoRA AtomicChat (43 MB) w paczkę Nib albo dodać Q4_K do loadera Nib; wall.py T=0 / T=0,7, KV q4_0, Quest wyłączony do 14k
-- priorytet: średni
-
-- **2026-11-25:** droga LoRA zrobiona (K-165). Uruchomienie wag Mai (AD-Q4_K) w Nibie: Nib nie ma ścieżki Q4_K (GEMV, MoE, dekod, weryfikacja, prefill WMMA), szacunek 1–2 tygodnie. Czeka na decyzję JARO.
-- **2026-11-26:** plik Mai: gęste Q8_0 (Nib obsługuje), eksperci gate_up Q4_K (8,54 GiB) i down **Q5_0** (5,22 GiB); szacunek zmniejszony do 5–8 dni; pierwszy commit: loader + test parytetu dekwantyzacji na CPU.
+- **K-158r 2026-11-26 12:59–13:10 (Maya, `wt-k158r` b1831852):** z planu brakowało tylko draftu przy T>0 (produkcja ma `IK2_K158_POLICY=2`, czyli drafter wyłączony dla żądań losowanych). Ramię A = `POLICY=0`, Q = A + losowanie draftu z rozkładu draftera (`IK2_K158R_QS=0.7`, odrzucanie min(1,p/q), rozkład celu bez zmian). Parity 11/11 identyczne, md5 T=0 identyczne. **T=0,7 vs produkcja: kod 110,6 → 171,8 (A) / 181,4 (Q) (+55/+64%), json 112,9 → 199,6 / 193,3 (+77/+71%), tech +2,4/+3,8%, pl −2,3/−3,0% (FAIL bramki −2%)**; mediana T=0,7 112,7 → 143,7 / 149,3. Strata pl to koszt bramki K-158g przy tekście losowanym, nie draftu. Poprawka K-158s (osobna bramka dla żądań losowanych) w kolejce.
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19
 - źródło: [[2026-11-19-k118-nvidia-pelna-moc]]: n2 vs n4 T=1 3090 +7,9%, 3060 +4,3%, 5060 Ti +3,2% (K-114); T=0 +3,0…3,3%; 4080 SUPER bez różnicy
@@ -97,18 +91,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (czeka na kredyt)
 
 - **2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** tylko ramię forka (T=0 93,48, T=1 88,16); build llamAmpere v0.7 nie zdążył przed terminem; do powtórki z buildem przygotowanym przed wynajmem.
-### K-124 · Agentowy megakernel pętli draftu MTP + weryfikacji (metoda megakernel-zoo) — najpierw fork CUDA (5060 Ti/3090), potem XTX (HIP)
-- data: 2026-11-19
-- źródło: [[megakernel-zoo]] (Qwen3.8-27B B200: SGLang 9,52 → 8,44 ms, ~63 h agenta; ewaluator FP64 + ukryty zbiór + odwrócenie batcha + audyt); [[2026-11-17-k114-nvidia-sufit]] (draft 4–15 × droższy niż bajty, 37–40% kroku); [[budzet-megakernela-qwen-xtx]] (+4…9,5% za 40–70 osobodni)
-- hipoteza: trwały kernel dla n kroków draftu (warstwa MTP + głowica 64k + argmax w pętli bez powrotu do hosta) zbliża koszt draftu do bajtów: na 5060 Ti krok n4 51 → ~36 ms (+40%) [INFERENCE]; na XTX mniej (PM4 już tnie granice)
-- test: po K-116 (`nsys`): agent w pętli autoresearch z ewaluatorem jak w zoo (odniesienie = obecny fork, tokeny T=0 bitowo + KLD T=1, ukryty zbiór promptów PL/EN/kod, odwrócenie kolejności, audyt drugim agentem); 5060 Ti na Vast z hostguardem, budżet godzin agenta i GPU ustalony z właścicielem; zegar etapów
-- miara: ms/draft i t/s n4 T=1 (49,4 → ?), md5 T=0, godziny agenta do pierwszego wyniku przechodzącego ewaluator
-- zysk: Enigma NVIDIA do +40% [INFERENCE]; dowód, czy agentowa praca nad kernelem skraca nasze 40–70 osobodni do dni
-- ryzyko karty: zawieszenia kernela rezydentnego (na Vast bez ryzyka dla naszej karty; na XTX dopiero po PoC-A z [[budzet-megakernela-qwen-xtx]])
-- priorytet: średni (decyzja właściciela: budżet agent-godzin i GPU)
-
-- **2026-11-25:** bez paczki: wymaga budżetu (godziny agentów + GPU) i najpierw K-116 (nsys pętli draftu NVIDIA, Vast 5060 Ti). Decyzja JARO.
-- **2026-11-26:** przesłanka obalona na 3090/3060/4080 SUPER (K-116: draft ≈ koszt bajtów); jedyny brakujący pomiar to V(1)…V(5) na 5060 Ti (ok. 10 min) w następnej fali; potem zamknięcie albo zmiana zakresu.
 ### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (sufit prefillu 3090 z INT8 MMQ 2737 t/s przy 4k = 2,3 × XTX; prefillu NVIDIA nigdy nie mierzyliśmy); [[skill-io-metodyka]] (narzędzia CUDA)
@@ -175,17 +157,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (koszt i ryzyko; wspólny PoC z K-021)
 
 - **2026-11-25:** pierwszy krok wspólny z K-021: mikrobench przekazania PoC-A `~/qwen-opt/klab/handoff/handoff.hip` (w przygotowaniu).
-### K-047 · GDN w weryfikacji: forma chunkwise/WY w fp32 albo fuzja conv + rekurencja + gated RMSNorm ze stanem w VGPR
-- data: 2026-11-05 (63 #21)
-- status: **czeka na decyzję** (inna kolejność redukcji fp32 → bramka KLD, nie md5)
-- źródło: `R/68b-spekulacja-nowe.md:162`, `R/68-SYNTEZA.md:20`; ta sama fuzja (conv1d + SiLU + norma Q/K + rekurencja) w kernelu weryfikacji KDA u TokenSpeed ([[tokenspeed]], 2026-11-14)
-- test: XTX `test-backend-ops perf -o GATED_DELTA_NET` (n 5/8/16), spec_sweep ABBA, KLD + md5 plain; ≤ 10 min/krok
-- zysk: +1,1…1,7% na każdym kontekście [SZACUNEK]; tańszy wiersz dla drzew (K-075)
-- ryzyko karty: brak
-- priorytet: niski (poniżej progu)
-
-- **2026-11-25 ocena:** GDN w produkcji 14,7 µs/uruchomienie (0,715 ms/krok) przy podłodze bajtów 7,86 µs, więc sufit zysku ok. 0,33 ms/krok (≈ 1,1% przy n=5, realnie 0,5%); WY w fp32 3–5 dni i niebitowo (decyzja KLD). Pomiar bazy w kolejce (`k047.jobs`): zabić, gdy (base − floor) × 48 < 0,15 ms.
-- **wynik bazy 2026-11-26 (gdnbench):** n=5 koszt ponad podłogę 10,1–10,3 µs/uruchomienie = **0,48–0,50 ms/krok** (n=8: 0,63–0,77, n=16: 1,16–1,40). Powyżej progu 0,25 ms z planu → wariant WY ma sens (3–5 dni, bramka KLD jest już zgodą K-007).
+- **2026-11-26 różnice wobec K-021:** K-021 mierzył już siatkę 96 WG (licznik globalny H1, sztafeta ×16 H16, s_sleep 1); 192 WG nie jest współrezydentne (3 WG/WGP × 48 = 144). Dobudowane warianty K-037 w `~/qwen-opt/k037/handoff37.hip`: flagi per WG (HW, bez atomowego RMW), s_sleep 0/1/2/4, siatki 48/96/144. W kolejce `k037.jobs` (PM4=0, ok. 6 min karty).
 ### K-056 · Rebase łatek topki na nowszy upstream (baza b11528 → llama.cpp v1.0.0 = b12359)
 - data: 2026-10-16, ostatnio 2026-11-07
 - źródło: [[2026-10-16-rebase-v070]], `R/68d-swieze-od-spolecznosci.md:14,18` (#31247 przesunie md5)
@@ -212,6 +184,9 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **2026-11-26:** części CPU przechodzą (card check, harness seq 11, ledger 14 wierszy). P0 potrzebuje kroku człowieka: JARO uruchamia `cd ~/qwen-opt/factory && ./factory rsi hw ack --reason "K-134"`, potem `kq/K-060.jobs` (ok. 25 min karty).
 - **2026-11-26:** `factory rsi hw ack` wykonany przez Kernela na polecenie JARO („ty pusc”), ledger seq 14, nowych błędów 0; `kq/K-060.jobs` w kolejce.
 - **2026-11-26 bieg nieważny:** oba przebiegi P0 przekroczyły limit 880 s (rc 124) przy temperaturze 38–39 °C, czyli karta głównie stała (najpewniej skan H4 fabryki + start); do skrócenia przed powtórką.
+- **2026-11-26 przyczyna rc 124 i poprawka:** bramka H1 czekała do 15 min na `gpu-guard.sh`, który nie działał. Do tego kolejka trzyma `gpu.lock` i `quiet.lock` przez cały plik jobów, więc `flock` bloku fabryki zakleszczyłby się. Teraz `kq/K-060.sh` uruchamia strażnika i przepuszcza locki przez nakładkę `kq/k060-bin/flock` (tylko gdy kolejka trzyma je na fd 8/9). Watermark H4 przesunięto (ack, ledger seq 15, 0 nowych faultów), bo zalew `init_user_pages` w journalu jądra (11:29–11:43) wydłużał skan H4 do 60 s na blok.
+- **2026-11-26 P0 na k183e:** nowa karta `claims/2026-11-26-mmq-epi-0070-k183e.json` (ledger seq 17). Obie gałęzie używają tych samych binarek k183e, różni je tylko `GGML_HIP_MMQ_EPI` 0/1. Narzędzia są w `~/k060/k183e-inst`: llama-bench i test-backend-ops z `~/wt/k183e/build-hip`, libggml-hip identyczny z produkcją. Baza diffu to `a012922be` (e3ab5b9e3 + revert 0070). Dry-run G0 jest czysty poza ostrzeżeniami R29, więc najlepszy możliwy werdykt to NEEDS-HUMAN. Job: 1 runda ABBA, 8 bloków, 13 min karty. Przy 1 rundzie (2 pary) CI będzie szerokie, więc werdykt NULL jest bardzo prawdopodobny. P1 (playbook 0070 na `t-iq4xs-mmq` i `t-q6k-mmq`) wymaga najpierw CONFIRMED P0 i implementacji przez świeżych agentów, więc nie dziś.
+- **2026-11-26 12:47 bieg nieważny (rc 124):** nakładka flock się nie włączyła. Kolejka uruchamia job z zamkniętymi fd 8/9, a locki trzyma sam proces `run-jobs.sh`, więc test fd zwrócił 0 i pierwszy blok czekał na `gpu.lock` przez 750 s. Poprawka: skrypt szuka przodka `queue/run-jobs.sh` i sprawdza `flock -n` na obu plikach; wyjście fabryki jest teraz niebuforowane, ze znacznikami czasu. Plik jobów ma dwa niezależne pełne verify (fabryka nie wznawia przebiegu między jobami).
 ### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
 - data: 2026-10-16 (15d), 2026-10-21 (Orca)
 - źródło: `R/67c-nvidia-backlog-testow.md:133` (C16), sesja Orca (`O:1788-1796`, `O:2187-2196`: occupancy 2 → −11,5%)
@@ -279,12 +254,45 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: start i przywracanie cache promptów; porady dla Enigmy przy odciążaniu; dekod XTX bez zmian [INFERENCE]
 - ryzyko karty: zmiana jądra pod ROCm 10.0 i PM4, tylko za zgodą właściciela
 - priorytet: niski
+- **wynik 2026-11-26 część (1), Jarva (jądro 7.0.0-43, 2 vCPU i5-7500T, CPU-only, `nice -n 15`, `-t 2`):** model MoE z dysku nie mieścił się w limicie łącza (Inkling 16,5 GB przez łącze ~0,3 MB/s), więc pobrany granite-3.1-1b-a400m-instruct Q8_0 (1,42 GB, MoE). `llama-bench -lm mmap -p 64 -n 32 -r 3` w `systemd-run --user --scope -p MemoryMax=… -p MemorySwapMax=0`, cache pliku zrzucony przez `posix_fadvise(DONTNEED)` (bez roota); skrypt `qwen-opt/k132/k132-moe.sh`. Mediany: bez limitu pp 93,8 / tg 40,5 t/s, refault 248; **1 GiB: 21,3 / 4,19 t/s, refault 1,49 mln stron (≈ 5,7 GB odczytu)**; 768 MiB: 15,5 / 1,96, refault 3,83 mln; 512 MiB: 14,8 / 0,61, refault 11,4 mln. Dekod spada ~10× już przy limicie 70% rozmiaru modelu: przy odciążaniu MoE z `mmap` cały plik ekspertów musi się mieścić w page cache.
+- przygotowane 2026-11-26 (2): `qwen-opt/k132/k132-68.jobs` (6.8.0-138, teraz) i `k132-70.jobs` (po jednorazowym restarcie do 7.0.0-44 przez `grub-reboot`, wymaga sudo właściciela): start produkcyjnego Qwen do /health (2× ciepły, 2× zimny cache plików), restore z `--cache-ram` bez presji i z presją RAM (hog zostawia 6 GiB), dekod 1,7k T=0 (t/s + md5), błędy amdgpu/OOM w logu jądra, Inkling `-ncmoe 99 -lm mmap` bez limitu i w cgroup 8 GiB, granite CPU-only jak na Jarvie. Podsumowanie: `bash ~/qwen-opt/k132/k132-sum.sh`.
 
 ## W toku
 
 (pusto)
 
 ## Zrobione
+
+### K-047 · GDN w weryfikacji: forma chunkwise/WY w fp32 albo fuzja conv + rekurencja + gated RMSNorm ze stanem w VGPR
+- data: 2026-11-05 (63 #21)
+- status: **czeka na decyzję** (inna kolejność redukcji fp32 → bramka KLD, nie md5)
+- źródło: `R/68b-spekulacja-nowe.md:162`, `R/68-SYNTEZA.md:20`; ta sama fuzja (conv1d + SiLU + norma Q/K + rekurencja) w kernelu weryfikacji KDA u TokenSpeed ([[tokenspeed]], 2026-11-14)
+- test: XTX `test-backend-ops perf -o GATED_DELTA_NET` (n 5/8/16), spec_sweep ABBA, KLD + md5 plain; ≤ 10 min/krok
+- zysk: +1,1…1,7% na każdym kontekście [SZACUNEK]; tańszy wiersz dla drzew (K-075)
+- ryzyko karty: brak
+- priorytet: niski (poniżej progu)
+
+- **2026-11-25 ocena:** GDN w produkcji 14,7 µs/uruchomienie (0,715 ms/krok) przy podłodze bajtów 7,86 µs, więc sufit zysku ok. 0,33 ms/krok (≈ 1,1% przy n=5, realnie 0,5%); WY w fp32 3–5 dni i niebitowo (decyzja KLD). Pomiar bazy w kolejce (`k047.jobs`): zabić, gdy (base − floor) × 48 < 0,15 ms.
+- **wynik bazy 2026-11-26 (gdnbench):** n=5 koszt ponad podłogę 10,1–10,3 µs/uruchomienie = **0,48–0,50 ms/krok** (n=8: 0,63–0,77, n=16: 1,16–1,40). Powyżej progu 0,25 ms z planu → wariant WY ma sens (3–5 dni, bramka KLD jest już zgodą K-007).
+- **K-047b 2026-11-26 13:10–13:17 (XTX, `~/wt/k047` 24aa8b3a3 = k183e + osobny kernel weryfikacji GDN `GGML_HIP_K047=1`: q/k ładowane i normowane raz na CTA przez LDS):** test-backend-ops 67/67 PASS, dowód ISA na emulatorze 72/72 identyczne, kernel LAG n=5 9,54 → 9,40 µs, n=16 10,55 → 10,36 µs (−1,5…−1,8%). **Wall ABBA ×2: +0,3…+0,4% we wszystkich 8 kategoriach (n=4/4), md5 T=0 identyczne → PASS.** Zysk mały, ale stały; wejdzie w następny łączny build silnika Qwena. Pełna fuzja conv + rekurencja + RMSNorm i postać WY zostają (3–5 dni).
+- przeniesione 2026-11-26: PASS, czeka na łączny build
+
+- **K-132 ramię 6.8 2026-11-26 12:33–12:47 (jaroserverai 6.8.0-138, produkcja k183e):** start Qwen do `/health`: zimny page cache **45,2–45,4 s**, ciepły **6,0 s**; przywrócenie cache promptu z RAM 97–99 ms (8k słów, bez i z presją pamięci, swap 0); amdgpu/OOM 0. Inkling `-ncmoe 99 -lm mmap`: bez limitu pp 516 / tg 9,94 t/s, cgroup 8 GiB pp 79 / tg 4,02 (refault 3,1 mln stron). granite CPU: bez limitu tg 78,8, 1 GiB 9,2, 768 MiB 3,1, 512 MiB 0,7 t/s (Jarva 7.0, 2 vCPU: 40,5 / 4,2 / 2,0 / 0,6). Ramię 7.0 czeka na restart JARO: `sudo grub-reboot 'Advanced options for Ubuntu>Ubuntu, with Linux 7.0.0-44-generic' && sudo reboot`, potem `~/qwen-opt/k132/k132-70.jobs`. Wniosek już teraz: zimny start 45 s to odczyt 16 GB z dysku; restart :8080 po zrzuceniu page cache kosztuje 39 s więcej niż ciepły.
+### K-159 · Nib na tym samym modelu co Maya (uncensored): AtomicChat w paczce NVFP4 albo AD-Q4_K w Nib
+- data: 2026-11-25 (Nib liczy na NVFP4-Mixed, nie na naszych wagach uncensored)
+- plan: wtopić LoRA AtomicChat (43 MB) w paczkę Nib albo dodać Q4_K do loadera Nib; wall.py T=0 / T=0,7, KV q4_0, Quest wyłączony do 14k
+- priorytet: średni
+
+- **2026-11-25:** droga LoRA zrobiona (K-165). Uruchomienie wag Mai (AD-Q4_K) w Nibie: Nib nie ma ścieżki Q4_K (GEMV, MoE, dekod, weryfikacja, prefill WMMA), szacunek 1–2 tygodnie. Czeka na decyzję JARO.
+- **2026-11-26:** plik Mai: gęste Q8_0 (Nib obsługuje), eksperci gate_up Q4_K (8,54 GiB) i down **Q5_0** (5,22 GiB); szacunek zmniejszony do 5–8 dni; pierwszy commit: loader + test parytetu dekwantyzacji na CPU.
+- **K-159 2026-11-26 12:00–12:17 (XTX, ten sam dzień, wallacc.py: 4 prompty wall + 3 polskie, 3× każdy, mediany):**
+  | ramię | odmowy | T=0 median4 / PL | T=0,7 median4 / PL | akceptacja kod / pl (tok./rundę u Niba) |
+  |---|---|---|---|---|
+  | **Maya produkcja (k185)** | 0/5 | **149,4 / 110,4** | **113,2 / 112,9** | 0,78 / 0,33 (przyjęte/oferowane) |
+  | Nib 0.1.2 + łata WE2 proj | 0/5 | 100,8 / 79,6 | 94,5 / 73,1 | 1,50 / 1,10 |
+  | Nib 0.1.2 bez łaty (z cenzurą) | 5/5 | 169,1 / 86,3 | 150,6 / 76,9 | 4,05 / 1,18 |
+  **Werdykt: Maya zostaje.** (1) Łata WE2 przeniesiona na 0.1.2 (`nib-we2-012` d1b4eda) zdejmuje odmowy, ale psuje drafter MTP: kod 4,05 → 1,50 tok./rundę, wall 169 → 101; na starym `nib-we2` było 165,2 (szablon WE2), więc to regresja przeniesienia (podejrzenie: łata nie trafia w wejście głowicy MTP albo w tok_embd używany przez drafter na 0.1.2) — do naprawy, jeśli Nib wróci. (2) Polski u Niba jest wolny przez drafter: nawet bez łaty pl 1,1–1,2 tok./rundę vs kod 4,05; lekarstwem byłby drafter trenowany na polskim, nie wagi. Maya ma polski 110–113 t/s przy obu temperaturach.
+- przeniesione 2026-11-26: Maya wygrywa; Nib + WE2 zostaje demonstracją
 
 ### K-006 · Wpis „wspólny początek” (Maya #607) i chude checkpointy (stan GDN tylko na granicach wiadomości) zamiast kopii całej sesji w cache
 - data: 2026-11-05
@@ -1289,6 +1297,21 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-124 · Agentowy megakernel pętli draftu MTP + weryfikacji (metoda megakernel-zoo) — najpierw fork CUDA (5060 Ti/3090), potem XTX (HIP)
+- data: 2026-11-19
+- źródło: [[megakernel-zoo]] (Qwen3.8-27B B200: SGLang 9,52 → 8,44 ms, ~63 h agenta; ewaluator FP64 + ukryty zbiór + odwrócenie batcha + audyt); [[2026-11-17-k114-nvidia-sufit]] (draft 4–15 × droższy niż bajty, 37–40% kroku); [[budzet-megakernela-qwen-xtx]] (+4…9,5% za 40–70 osobodni)
+- hipoteza: trwały kernel dla n kroków draftu (warstwa MTP + głowica 64k + argmax w pętli bez powrotu do hosta) zbliża koszt draftu do bajtów: na 5060 Ti krok n4 51 → ~36 ms (+40%) [INFERENCE]; na XTX mniej (PM4 już tnie granice)
+- test: po K-116 (`nsys`): agent w pętli autoresearch z ewaluatorem jak w zoo (odniesienie = obecny fork, tokeny T=0 bitowo + KLD T=1, ukryty zbiór promptów PL/EN/kod, odwrócenie kolejności, audyt drugim agentem); 5060 Ti na Vast z hostguardem, budżet godzin agenta i GPU ustalony z właścicielem; zegar etapów
+- miara: ms/draft i t/s n4 T=1 (49,4 → ?), md5 T=0, godziny agenta do pierwszego wyniku przechodzącego ewaluator
+- zysk: Enigma NVIDIA do +40% [INFERENCE]; dowód, czy agentowa praca nad kernelem skraca nasze 40–70 osobodni do dni
+- ryzyko karty: zawieszenia kernela rezydentnego (na Vast bez ryzyka dla naszej karty; na XTX dopiero po PoC-A z [[budzet-megakernela-qwen-xtx]])
+- priorytet: średni (decyzja właściciela: budżet agent-godzin i GPU)
+
+- **2026-11-25:** bez paczki: wymaga budżetu (godziny agentów + GPU) i najpierw K-116 (nsys pętli draftu NVIDIA, Vast 5060 Ti). Decyzja JARO.
+- **2026-11-26:** przesłanka obalona na 3090/3060/4080 SUPER (K-116: draft ≈ koszt bajtów); jedyny brakujący pomiar to V(1)…V(5) na 5060 Ti (ok. 10 min) w następnej fali; potem zamknięcie albo zmiana zakresu.
+- **K-124 2026-11-26 13:17–13:26 (XTX, `~/wt/k124` 93f2f9b7c: catch-up MTP wpięty w taśmę draftu `LLAMA_K124=1` + ewaluator `~/qwen-opt/k124/eval.py`):** wynik bitowy C1 vs P1 T=0 9/9, T=1 9/9, KLD 0; wall −0,2…−0,4% (GATE PASS formalnie, ale bez zysku), C2 rc=5. **KILL**: wpięcie catch-upu cofa nakładanie jego pracy GPU na próbkowanie hosta. Ewaluator zostaje jako narzędzie dla pętli agentów. **Znalezisko:** te same prompty w odwrotnej kolejności dają inny tekst T=0 nawet w produkcji (P2 vs P1 „reversed identical 0/9”): wynik zależy od poprzednich żądań (ponowne użycie cache promptu czyta stare komórki, jak w K-001c). Do zbadania jako K-187.
+- przeniesione 2026-11-26: brak zysku
 
 ### K-036 · Nakładanie kroków: wejścia kroku t+1 przed synchronizacją hosta (ZOS-lite), obcinanie po stop-tokenie na GPU
 - data: 2026-10-20 (36 L11)
