@@ -804,3 +804,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wyniki | K-186 Nib 0.1.2: 0% na naszym clang 23 (logity identyczne); WE2 HumanEval+ scalone proj 87,2 = LoRA 87,2 (baza 86,0)
 
 ## [2026-11-26] wdrożenie | K-185 port Tintero PR #2 do Mai: wall T=0 141,8 → 152,0 (+7,2%), T=0,7 +0,3%, md5 identyczne → produkcja maya-atomic.json
+
+## [2026-11-26] wyniki | K-012b układ par fal kvq: kernel nb5 −14,5…−16,9%, dekod 94k +2,0%, bitowo identyczny → PASS; K-001c tania poprawka wycieku 0/12, md5 identyczne, wall +1…+2% poza T=0,7 tech −3,0% (szum?) → łączna bramka K-183c; K-185b LGB bez znaczenia

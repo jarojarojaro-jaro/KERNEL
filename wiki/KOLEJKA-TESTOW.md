@@ -24,6 +24,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-001c · Tańsza poprawka wycieku stanu K-001 (po K-183 FAIL −5…−12%)
 - Plan: maska tylko dla przywróconych slotów / kafli z zamaskowanymi komórkami; bramka jak K-183 (12× wyciek + wall.py vs produkcja). Przygotowuje agent K001Cheap.
 
+- **wynik 2026-11-26 06:09–06:40 (XTX, `~/wt/k001-cheap`, bez zmian w ggml):** wyciek prod 3/12 → cheap **0/12**, FRESH-MD5 identyczne, md5 T=0 4/4 identyczne. Wall 4 pary ABBA: +0,9…+2,0% we wszystkich kategoriach poza T=0,7 tech −3,0% (po 2 parach −6,2%: szum próbkowania, kernele te same). Formalnie FAIL bramki −2%; łączny build z K-012 idzie bramką K-183c z md5 T=0,7.
 ### K-182 · Kernel weryfikacji na rdzeniach tensorowych dla K-quantów przy 2–16 wierszach (wzór qwen-warp `k_w4`), Ampere i RDNA3
 - data: 2026-11-26 ([[qwen-warp-dlaczego-szybszy-2026-11-26]])
 - powód: warp czyta wagi z 92–96% pasma i weryfikuje 16 wierszy za ×1,52 kosztu jednego; nasz fork 57% pasma, V(5)/V(1) = 1,59; to główna bezstratna przyczyna kopii 64k 77 vs 137 t/s
@@ -193,6 +194,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **2026-11-25 ocena:** cel 172 µs/warstwę przy 98k nieosiągalny bezstratnie (podłoga pamięci 118, MMA 119, K/V dekwantowane raz ok. 152, dziś 319). Układ „pair-split” ok. −10% kernela = +2,5% dekodu przy 199k (poniżej progu 3–5%), 3–4 dni. Sonda w kolejce (`k012.jobs`, `GGML_HIP_KVQ_PROBE`): implementacja tylko przy ≤ −15% przy nb5/196k.
 - **2026-11-26 bieg nieważny:** bramka sondy oblana (kontrola PROBE=7 nb=1 zmieniła hash, choć nie powinna) — błąd w łatce sondy, nie wynik.
 - **wynik sondy 2026-11-26 02:30–02:35:** 96k: nb1 175,9 µs/warstwę (644 GB/s), nb5 322,4 (351 GB/s); 192k: nb1 327,9, nb5 620,8. Szacunek „K/V dekwantowane raz” nb5: **−18,7% (96k) i −19,2% (192k)**, powyżej progu −15% → **GO** dla nowego układu (3–4 dni).
+- **K-012b 2026-11-26 06:20–06:50 (XTX, gałąź k012-layout 0e8935d97, `GGML_HIP_K012=1|2`, pary fal dzielą K po półbajtach i V po połowie głowy):** test-backend-ops i fa_hash bitowo identyczne z produkcją; kernel nb5: 32k −12,1%, **96k −14,5%, 192k −16,9%** (K2 −11,0/−13,8/−15,3%), nb1/nb8 bez zmian. Serwer T=0: 1,7k 118,1 vs 118,1 (−0,1%), **94k 114,6 → 116,9 t/s (+2,0%)**, 33,57 vs 34,22 ms/krok; md5 wszędzie SAME; wall T=0 117,2 → 117,2, T=0,7 120,5 → 120,3. **PASS** (bezstratne, zysk tylko przy długim kontekście). Wdrożenie razem z K-001c jako K-183c.
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
 - źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
@@ -370,6 +372,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - Plan: diff mechanizmów z `~/k134/wt-k158g`, port brakujących za przełącznikami w `~/k134/wt-k185`, A/B z produkcją Mai (nib-ab.sh) + md5 T=0, ≤15 min GPU. Przygotowuje agent K185Tintero.
 - Port (`~/k134/wt-k185`, k185-tintero be8e5c16): GEXP (eksperci Q4_K/Q5_0 czytani raz na grupę w oknie), LGB (bramki pętli raz na okno), DONLINE (online-softmax draft_attn), EMAG (strażnik EMA); drafter w grafie, bf16/q8 mv, fuzja QKV i router mv Maya już miała.
 - **wynik 2026-11-26 06:03–06:08 (XTX):** testy bitowe ok; PARITY 11/11 md5 identyczne z produkcją. Bench P=1024: eksperci v2 3,78 → 2,97 ms (GEXP), propose(7) 2,00 → 1,56 ms (−22%, DONLINE), LGB pogarsza weryfikację (v8 28,06 → 30,72 ms). **Wall prod → all: T=0 mediana 141,8 → 152,0 (+7,2%)**, kod +5,2%, tech +10,1%, json +5,7%, pl +0,3%; T=0,7 112,7 → 113,0 (+0,3%). Żadna kategoria poniżej −2% → **wdrożone 2026-11-26** (`maya-atomic.json`, kopia `maya-atomic.prev-k158g.json`). Dalej: K-185b wall „all bez LGB”.
+- **K-185b 2026-11-26 06:10 (ABBA, produkcja vs bez LGB):** T=0 mediana A 147,4/152,1 vs B 151,2/147,5 (średnie 149,8 vs 149,4), T=0,7 112,2/113,0 vs 113,0/112,9: różnica w szumie; LGB zostaje jak wdrożone.
 - przeniesione 2026-11-26: zwycięzca, w produkcji
 
 ### K-184 · Poprawka DFlash2 dla Inklinga z llama.cpp PR #33049 (link JARO 26.11) na XTX
