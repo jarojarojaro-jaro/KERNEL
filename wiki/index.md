@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (44)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (45)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (30)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (9)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
@@ -89,5 +89,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 - 2026-11-26 [[model-carving|Model Carving: trening sam wycina zbędne podwarstwy]]
 
-Razem 856 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 857 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

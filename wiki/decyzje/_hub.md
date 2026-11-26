@@ -19,7 +19,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (44)
+## Notatki (45)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -63,6 +63,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-11-24-cel-cala-inferencja-i-nauka|2026-11-24: cel to cała inferencja enigmalabz i nauka; prędkość jednego modelu to jedna z miar]] — JARO (2026-11-24): „mieliśmy się kurwa uczyć… próbowaliśmy zrobić własny i nam poszło gorzej… musisz łączyć takie kropki i masz się uczyć, a nie tylko optymalizować jeden model”; od tej tury cel to silnik, serwowanie, infrastruktura, aplikacja i nauka.
 - [[2026-11-26-bramka-kld|2026-11-26: bramka KLD zamiast identycznego md5, gdy zmiana niczego nie psuje]] — JARO (2026-11-26 00:30), o K-007: „Jak mozesz zmienic na lepiej nie psujac niczego to zawsze to rob po to sa te testy”.
 - [[2026-11-26-bez-pobierania-modeli|2026-11-26: nie pobieramy nowych modeli do testów, pracujemy na tych, które są]] — JARO (2026-11-26 00:28), o Lucebox Inkling Fast 17,6 GB i Qwen3.6-35B 35 GB: „Tego napewno nie pobieramy jebac - pracuj na tych co masz”.
+- [[2026-11-26-wiedza-na-pozniej|2026-11-26: nie wszystko jest do optymalizacji naszych modeli dziś; wiedzę zbieramy też na później]] — JARO (2026-11-26 20:35): „nie wszystko zawsze jest do optymalizacji naszych modeli — czasami uczymy się czegoś i dopiero skorzystamy z tego na innych, większych modelach lub kiedyś, lub kiedyś nam się po prostu to przyda”.
 - [[2026-11-26-eksperymenty-edycji-wag|2026-11-26: robimy dużo eksperymentów z edycją wag]] — JARO (2026-11-26 02:07), o skracaniu myślenia jednym kierunkiem i wpisaniu ablacji w plik Mai/Niba: „zrobmy duzo eksperymen tow z tym weight editing i wgl - to jest groundbreaking temat i musimy go analizowac jak sie da”.
 - [[2026-11-26-adapter-omp-odlozony|2026-11-26: trening własnego adaptera pod omp odkładamy]] — JARO (2026-11-26 01:54): „dobra odnosnie trenowania naszego adaptera to odpuszczamy narazie - ciezki temat”.
 <!-- AUTO:END -->

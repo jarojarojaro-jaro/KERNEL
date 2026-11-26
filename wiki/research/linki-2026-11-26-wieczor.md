@@ -24,6 +24,14 @@ status: aktualne
 2. **Enigma, MoE na mniejszych kartach:** pula slotów ekspertów + odczyt jednego eksperta z wyprzedzeniem. U nas K-026 pokazał, że spekulacja przy `--n-cpu-moe` traci 41–62%; Strata z offloadem jest szybsza od llama.cpp `--fit` o ~35% na A10G. Pozycja do kolejki NVIDIA, nie XTX.
 3. **AITER na gfx1100:** test importu i czasu RoPE/norm tylko, jeśli kiedyś Maya przejdzie na ścieżkę Torch; dziś brak zastosowania.
 
+## Na później (decyzja [[2026-11-26-wiedza-na-pozniej]])
+- **Model z rzadką uwagą (DeepSeek-V4.x, GLM-5.3-Flash, Hy4 flash) w Enigmie albo na większych kartach:** DFly2 jako pierwszy kandydat na drafter (gotowe wagi w AngelSlim, vLLM/SGLang `method: dfly`); spodziewany zysk przy długim kontekście i zadaniach agentowych +12…31% względem DSpark.
+- **Karty Hopper/Blackwell (wynajem, klienci Enigmy z H100/H200/B200):** KV NVFP4 z kernelem pod TMA jako opcja „więcej kontekstu na tej samej karcie” dla klienta, który zgodzi się na zmianę liczb; wtedy bramka KLD, nie md5.
+- **MoE większe niż VRAM (Qwen3.6-35B-A3B, Inkling na 12–16 GB, przyszłe duże MoE):** pula slotów ekspertów + router 2 warstwy naprzód + 1 ekspert z wyprzedzeniem (wzór Strata/HF); u nas spekulacja przy offloadzie traci 41–62% (K-026), więc to droga do dobrego offloadu.
+- **Własny trening albo dotrenowanie długiego kontekstu:** YASA (indeks dwustopniowy, KV współdzielony, inicjalizacja SVD) jako przepis na rzadką uwagę z istniejącego checkpointu, koszt ~¼ pretreningu.
+- **Nowe karty AMD (gfx1170/1171, RDNA4-class macierze):** przy pojawieniu się — od razu wiersz w `karty/` i test naszych kerneli WMMA.
+- **AITER:** gdy Maya albo produkt przejdzie na ścieżkę Torch na Radeonie, kernele RoPE/norm/flash-attn z HF Kernel Hub do porównania.
+
 ## Powiązane
 - [[edycja-wag-a-z]]
 - [[ZRODLA]]
