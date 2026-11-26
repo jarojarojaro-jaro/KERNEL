@@ -1,0 +1,60 @@
+[  0%] Built target llama-common-base
+[  0%] Built target cpp-httplib
+[  4%] Built target ggml-base
+[ 10%] Built target ggml-cpu
+[ 10%] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/ggml-cuda.cu.o
+[ 10%] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmvq.cu.o
+[ 10%] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/mmq.cu.o
+[ 10%] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/quantize.cu.o
+[ 10%] Building CUDA object ggml/src/ggml-cuda/CMakeFiles/ggml-cuda.dir/template-instances/mmq-instance-iq4_xs.cu.o
+/root/srcx/src/ggml/src/ggml-cuda/mmvq.cu(1685): warning #177-D: variable "use_tsum" was declared but never referenced
+      constexpr bool use_tsum = false;
+                     ^
+          detected during:
+            instantiation of "void mul_mat_vec_q_switch_fusion<type,c_ncols_dst,small_k,halve_iters,n1_rows>(const void *, const void *, const int32_t *, ggml_cuda_mm_fusion_args_device, float *, uint32_t, uint3, uint32_t, uint32_t, uint32_t, uint3, uint32_t, uint32_t, uint32_t, uint3, uint32_t, uint32_t, uint32_t, const dim3 &, const dim3 &, int, uint32_t, cudaStream_t) [with type=GGML_TYPE_Q1_0, c_ncols_dst=1, small_k=true, halve_iters=false, n1_rows=0]" at line 2350
+            instantiation of "void mul_mat_vec_q_switch_ncols_dst<type>(const void *, const void *, const int32_t *, ggml_cuda_mm_fusion_args_device, float *, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, int, cudaStream_t) [with type=GGML_TYPE_Q1_0]" at line 2445
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/root/srcx/src/ggml/src/ggml-cuda/mmvq.cu(1495): warning #177-D: function "mmvq_max_waves_per_eu" was declared but never referenced
+                                      int mmvq_max_waves_per_eu(ggml_type type, int ncols_dst, mmvq_parameter_table_id table_id) {
+                                          ^
+
+/root/srcx/src/ggml/src/ggml-cuda/ggml-cuda.cu: In function ‘int ggml_cuda_try_inproj_conv(ggml_backend_cuda_context*, const ggml_cgraph*, int)’:
+/root/srcx/src/ggml/src/ggml-cuda/ggml-cuda.cu:4565:84: warning: comparison of integer expressions of different signedness: ‘size_t’ {aka ‘long unsigned int’} and ‘long int’ [-Wsign-compare]
+ 4565 |     if (n_t != 1 || mm->ne[0] != 3*nr || plan.mul_out->nb[1] != nr*(int64_t) sizeof(float) ||
+      |                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~                        
+[ 10%] Linking CUDA shared library ../../../bin/libggml-cuda.so
+[ 62%] Built target ggml-cuda
+[ 62%] Linking CXX shared library ../../bin/libggml.so
+[ 62%] Built target ggml
+[ 62%] Linking CXX shared library ../bin/libllama.so
+[ 78%] Built target llama
+[ 78%] Linking CXX shared library ../bin/libllama-common.so
+[ 98%] Built target llama-common
+[ 98%] Linking CXX shared library ../../bin/libllama-bench-impl.so
+[ 98%] Built target llama-bench-impl
+[ 98%] Linking CXX executable ../../bin/llama-bench
+[100%] Built target llama-bench
+[  0%] Built target llama-common-base
+[  0%] Built target cpp-httplib
+[  4%] Built target ggml-base
+[ 10%] Built target ggml-cpu
+[ 63%] Built target ggml-cuda
+[ 63%] Built target ggml
+[ 79%] Built target llama
+[100%] Built target llama-common
+[100%] Linking CXX executable ../bin/test-backend-ops
+[100%] Built target test-backend-ops
+[  0%] Built target llama-common-base
+[  0%] Built target cpp-httplib
+[  4%] Built target ggml-base
+[ 10%] Built target ggml-cpu
+[ 62%] Built target ggml-cuda
+[ 62%] Built target ggml
+[ 78%] Built target llama
+[ 98%] Built target llama-common
+[100%] Linking CXX shared library ../../bin/libllama-perplexity-impl.so
+[100%] Built target llama-perplexity-impl
+[100%] Linking CXX executable ../../bin/llama-perplexity
+[100%] Built target llama-perplexity

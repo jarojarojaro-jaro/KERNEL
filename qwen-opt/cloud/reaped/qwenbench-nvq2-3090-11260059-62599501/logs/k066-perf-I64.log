@@ -1,0 +1,34 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 24121 MiB):
+  Device 0: NVIDIA GeForce RTX 3090, compute capability 8.6, VMM: yes, VRAM: 24121 MiB
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+Testing 2 devices
+
+Backend 1/2: CUDA0
+  Device description: NVIDIA GeForce RTX 3090
+  Device memory: 24121 MB (23856 MB free)
+
+  MUL_MAT(type_a=iq4_xs,type_b=f32,m=4096,n=1,k=14336,bs=[1,1],nr=[1,1],per=[0,1,2,3],k_v=0,o=1,src_overlap=0,m_v=0,pad=0):                    26412 runs -    38.02 us/run - 117.44 MFLOP/run - [1;34m  3.09 TFLOPS[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+  MUL_MAT(type_a=iq4_xs,type_b=f32,m=4096,n=2,k=14336,bs=[1,1],nr=[1,1],per=[0,1,2,3],k_v=0,o=1,src_overlap=0,m_v=0,pad=0):                    26412 runs -    38.15 us/run - 234.88 MFLOP/run - [1;34m  6.16 TFLOPS[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+  MUL_MAT(type_a=iq4_xs,type_b=f32,m=4096,n=3,k=14336,bs=[1,1],nr=[1,1],per=[0,1,2,3],k_v=0,o=1,src_overlap=0,m_v=0,pad=0):                    22436 runs -    45.13 us/run - 352.32 MFLOP/run - [1;34m  7.81 TFLOPS[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+  MUL_MAT(type_a=iq4_xs,type_b=f32,m=4096,n=4,k=14336,bs=[1,1],nr=[1,1],per=[0,1,2,3],k_v=0,o=1,src_overlap=0,m_v=0,pad=0):                    21726 runs -    46.44 us/run - 469.76 MFLOP/run - [1;34m 10.12 TFLOPS[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+  MUL_MAT(type_a=iq4_xs,type_b=f32,m=4096,n=5,k=14336,bs=[1,1],nr=[1,1],per=[0,1,2,3],k_v=0,o=1,src_overlap=0,m_v=0,pad=0):                    18639 runs -    53.94 us/run - 587.20 MFLOP/run - [1;34m 10.89 TFLOPS[0m
+ggml_backend_cuda_graph_compute: CUDA graph warmup complete
+  MUL_MAT(type_a=iq4_xs,type_b=f32,m=4096,n=8,k=14336,bs=[1,1],nr=[1,1],per=[0,1,2,3],k_v=0,o=1,src_overlap=0,m_v=0,pad=0):                    12198 runs -    82.00 us/run - 939.52 MFLOP/run - [1;34m 11.46 TFLOPS[0m
+CUDA error: an illegal memory access was encountered
+  current device: 0, in function ggml_backend_cuda_synchronize at /root/srcx/src/ggml/src/ggml-cuda/ggml-cuda.cu:2757
+  cudaStreamSynchronize(cuda_ctx->stream())
+/root/srcx/src/ggml/src/ggml-cuda/ggml-cuda.cu:111: CUDA error
+/root/build/bin/libggml-base.so.0(+0x1d57b)[0x79e663f0157b]
+/root/build/bin/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x79e663f019fc]
+/root/build/bin/libggml-base.so.0(ggml_abort+0x15b)[0x79e663f01bdb]
+/root/build/bin/libggml-cuda.so.0(_Z15ggml_cuda_errorPKcS0_S0_iS0_+0xb7)[0x79e661143d77]
+/root/build/bin/libggml-cuda.so.0(+0x33b818)[0x79e66114a818]
+/root/build/bin/libggml-base.so.0(ggml_backend_graph_compute+0x1c)[0x79e663f1aefc]
+/root/build/bin/test-backend-ops(+0x26189)[0x6252ab44e189]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x79e66395e1ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x79e66395e28b]
+/root/build/bin/test-backend-ops(+0x27765)[0x6252ab44f765]

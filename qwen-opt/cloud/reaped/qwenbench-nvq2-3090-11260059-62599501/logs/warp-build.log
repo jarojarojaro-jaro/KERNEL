@@ -1,0 +1,74 @@
+make: Entering directory '/root/qwen-warp/engine'
+mkdir -p build
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/gemv.cu -o build/gemv.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/misc.cu -o build/misc.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/deltanet.cu -o build/deltanet.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/attn.cu -o build/attn.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/engine.cu -o build/engine.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/mtp.cu -o build/mtp.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/mtp_sample.cu -o build/mtp_sample.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/prefill.cu -o build/prefill.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/prefill_w4.cu -o build/prefill_w4.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/head_q.cu -o build/head_q.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/pld.cu -o build/pld.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/proc.cu -o build/proc.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/dflash.cu -o build/dflash.o
+nvcc -arch=sm_86 -O3 -std=c++17 -lineinfo -Xcompiler -fPIC -Iinclude -c src/batch.cu -o build/batch.o
+src/attn.cu(485): warning #177-D: variable "ksc" was declared but never referenced
+      float ksc[2][4], vsc[2][4];
+            ^
+          detected during:
+            instantiation of "void <unnamed>::attn_split_kernel<FP8,I4,NT,KS>(int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd) [with FP8=true, I4=false, NT=1, KS=4]" at line 1304
+            instantiation of "cudaError_t <unnamed>::launch_split<FP8,I4,NT,KS>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KS=4]" at line 1334
+            instantiation of "cudaError_t <unnamed>::launch_multi<FP8,I4,NT,KSO,NTG,NG,DSV,KSV>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KSO=4, NTG=1, NG=1, DSV=2, KSV=4]" at line 1355
+            instantiation of "cudaError_t <unnamed>::run<FP8,I4>(int, int, const void *, const void *, const void *, const void *, const void *, void *, int, float, float, const int *, const int *, void *, void *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false]" at line 1432
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+src/attn.cu(485): warning #177-D: variable "vsc" was declared but never referenced
+      float ksc[2][4], vsc[2][4];
+                       ^
+          detected during:
+            instantiation of "void <unnamed>::attn_split_kernel<FP8,I4,NT,KS>(int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd) [with FP8=true, I4=false, NT=1, KS=4]" at line 1304
+            instantiation of "cudaError_t <unnamed>::launch_split<FP8,I4,NT,KS>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KS=4]" at line 1334
+            instantiation of "cudaError_t <unnamed>::launch_multi<FP8,I4,NT,KSO,NTG,NG,DSV,KSV>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KSO=4, NTG=1, NG=1, DSV=2, KSV=4]" at line 1355
+            instantiation of "cudaError_t <unnamed>::run<FP8,I4>(int, int, const void *, const void *, const void *, const void *, const void *, void *, int, float, float, const int *, const int *, void *, void *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false]" at line 1432
+
+src/attn.cu(495): warning #177-D: variable "sg" was declared but never referenced
+      float sg[4][4];
+            ^
+          detected during:
+            instantiation of "void <unnamed>::attn_split_kernel<FP8,I4,NT,KS>(int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd) [with FP8=true, I4=false, NT=1, KS=4]" at line 1304
+            instantiation of "cudaError_t <unnamed>::launch_split<FP8,I4,NT,KS>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KS=4]" at line 1334
+            instantiation of "cudaError_t <unnamed>::launch_multi<FP8,I4,NT,KSO,NTG,NG,DSV,KSV>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KSO=4, NTG=1, NG=1, DSV=2, KSV=4]" at line 1355
+            instantiation of "cudaError_t <unnamed>::run<FP8,I4>(int, int, const void *, const void *, const void *, const void *, const void *, void *, int, float, float, const int *, const int *, void *, void *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false]" at line 1432
+
+src/attn.cu(536): warning #177-D: variable "sink_tile" was declared but never referenced
+      const bool sink_tile = I4 && base == 0;
+                 ^
+          detected during:
+            instantiation of "void <unnamed>::attn_split_kernel<FP8,I4,NT,KS>(int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd) [with FP8=true, I4=false, NT=1, KS=4]" at line 1304
+            instantiation of "cudaError_t <unnamed>::launch_split<FP8,I4,NT,KS>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KS=4]" at line 1334
+            instantiation of "cudaError_t <unnamed>::launch_multi<FP8,I4,NT,KSO,NTG,NG,DSV,KSV>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KSO=4, NTG=1, NG=1, DSV=2, KSV=4]" at line 1355
+            instantiation of "cudaError_t <unnamed>::run<FP8,I4>(int, int, const void *, const void *, const void *, const void *, const void *, void *, int, float, float, const int *, const int *, void *, void *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false]" at line 1432
+
+src/attn.cu(593): warning #177-D: variable "pk" was declared but never referenced
+      float pk[I4 ? kvrot::NSINK : 1][2];
+            ^
+          detected during:
+            instantiation of "void <unnamed>::attn_split_kernel<FP8,I4,NT,KS>(int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd) [with FP8=true, I4=false, NT=1, KS=4]" at line 1304
+            instantiation of "cudaError_t <unnamed>::launch_split<FP8,I4,NT,KS>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KS=4]" at line 1334
+            instantiation of "cudaError_t <unnamed>::launch_multi<FP8,I4,NT,KSO,NTG,NG,DSV,KSV>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KSO=4, NTG=1, NG=1, DSV=2, KSV=4]" at line 1355
+            instantiation of "cudaError_t <unnamed>::run<FP8,I4>(int, int, const void *, const void *, const void *, const void *, const void *, void *, int, float, float, const int *, const int *, void *, void *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false]" at line 1432
+
+src/attn.cu(608): warning #177-D: variable "pbg" was declared but never referenced
+      uint32_t pbg[4][2];
+               ^
+          detected during:
+            instantiation of "void <unnamed>::attn_split_kernel<FP8,I4,NT,KS>(int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd) [with FP8=true, I4=false, NT=1, KS=4]" at line 1304
+            instantiation of "cudaError_t <unnamed>::launch_split<FP8,I4,NT,KS>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KS=4]" at line 1334
+            instantiation of "cudaError_t <unnamed>::launch_multi<FP8,I4,NT,KSO,NTG,NG,DSV,KSV>(int, int, const void *, int, float, float, const int *, const uint16_t *, float2 *, float *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false, NT=1, KSO=4, NTG=1, NG=1, DSV=2, KSV=4]" at line 1355
+            instantiation of "cudaError_t <unnamed>::run<FP8,I4>(int, int, const void *, const void *, const void *, const void *, const void *, void *, int, float, float, const int *, const int *, void *, void *, <unnamed>::KvInd, cudaStream_t) [with FP8=true, I4=false]" at line 1432
+
+nvcc -arch=sm_86 -shared -o build/libswiftmk.so build/gemv.o build/misc.o build/deltanet.o build/attn.o build/engine.o build/mtp.o build/mtp_sample.o build/prefill.o build/prefill_w4.o build/head_q.o build/pld.o build/proc.o build/dflash.o build/batch.o -lcudart
+make: Leaving directory '/root/qwen-warp/engine'

@@ -1,0 +1,23 @@
+ggml_cuda_init: found 1 CUDA devices (Total VRAM: 24121 MiB):
+  Device 0: NVIDIA GeForce RTX 3090, compute capability 8.6, VMM: yes, VRAM: 24121 MiB
+CUDA error: an illegal memory access was encountered
+  current device: 0, in function launch_mul_mat_q at /root/srcx/src/ggml/src/ggml-cuda/template-instances/../mmq.cuh:1444
+  cudaFuncSetAttribute((mul_mat_q<type, J, false, prec_src1, false>), cudaFuncAttributeMaxDynamicSharedMemorySize, nbytes_shared)
+/root/srcx/src/ggml/src/ggml-cuda/ggml-cuda.cu:111: CUDA error
+/root/build/bin/libggml-base.so.0(+0x1d57b)[0x704d6f88e57b]
+/root/build/bin/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x704d6f88e9fc]
+/root/build/bin/libggml-base.so.0(ggml_abort+0x15b)[0x704d6f88ebdb]
+/root/build/bin/libggml-cuda.so.0(_Z15ggml_cuda_errorPKcS0_S0_iS0_+0xb7)[0x704d6cf94d77]
+/root/build/bin/libggml-cuda.so.0(+0xc3a593)[0x704d6d89a593]
+/root/build/bin/libggml-cuda.so.0(_Z19ggml_cuda_mul_mat_qR25ggml_backend_cuda_contextPK11ggml_tensorS3_S3_PS1_+0x1001)[0x704d6cffe2d1]
+/root/build/bin/libggml-cuda.so.0(+0x3478f0)[0x704d6cfa78f0]
+/root/build/bin/libggml-cuda.so.0(+0x352863)[0x704d6cfb2863]
+/root/build/bin/libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x414)[0x704d6f8adad4]
+/root/build/bin/libllama.so.0(_ZN13llama_context13graph_computeEP11ggml_cgraphb+0xdb)[0x704d6fb6f53b]
+/root/build/bin/libllama.so.0(_ZN13llama_context14process_ubatchERK12llama_ubatch14llm_graph_typeP22llama_memory_context_iR11ggml_status+0x166)[0x704d6fb73bc6]
+/root/build/bin/libllama.so.0(_ZN13llama_context6decodeERK15llama_batch_ext+0x67c)[0x704d6fb7c4ac]
+/root/build/bin/libllama-bench-impl.so(+0x1d473)[0x704d7073f473]
+/root/build/bin/libllama-bench-impl.so(_Z11llama_benchiPPc+0xe88)[0x704d7074e8c8]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x704d702871ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x704d7028728b]
+/root/build/bin/llama-bench(+0x12a5)[0x615bb680c2a5]

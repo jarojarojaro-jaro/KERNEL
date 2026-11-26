@@ -1,0 +1,81 @@
+(APIServer pid=12660) INFO 11-26 00:31:51 [api_utils.py:347] 
+(APIServer pid=12660) INFO 11-26 00:31:51 [api_utils.py:347]        █     █     █▄   ▄█
+(APIServer pid=12660) INFO 11-26 00:31:51 [api_utils.py:347]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.30.0
+(APIServer pid=12660) INFO 11-26 00:31:51 [api_utils.py:347]   █▄█▀ █     █     █     █  model   /root/models/swift
+(APIServer pid=12660) INFO 11-26 00:31:51 [api_utils.py:347]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=12660) INFO 11-26 00:31:51 [api_utils.py:347] 
+(APIServer pid=12660) INFO 11-26 00:31:51 [api_utils.py:286] non-default args: {'enable_auto_tool_choice': True, 'tool_call_parser': 'qwen3_coder', 'enable_prompt_tokens_details': True, 'host': '127.0.0.1', 'model': '/root/models/swift', 'dtype': 'bfloat16', 'max_model_len': 61440, 'served_model_name': ['swift'], 'reasoning_parser': 'qwen3', 'language_model_only': True, 'max_num_seqs': 1, 'speculative_config': {'method': 'mtp', 'num_speculative_tokens': 3}, 'disable_log_stats': True}
+(APIServer pid=12660) INFO 11-26 00:31:51 [model.py:692] Resolved architecture: Qwen3_5ForConditionalGeneration
+(APIServer pid=12660) INFO 11-26 00:31:51 [model.py:2030] Using max model len 61440
+(APIServer pid=12660) INFO 11-26 00:31:53 [registry.py:146] All limits of multimodal modalities supported by the model are set to 0, running in text-only mode.
+(APIServer pid=12660) INFO 11-26 00:31:53 [model.py:900] Disabled mm_prefix attention mode because multimodal inputs are configuration-disabled. Attention backends without mm_prefix support may now be selected.
+(APIServer pid=12660) INFO 11-26 00:31:53 [model.py:692] Resolved architecture: Qwen3_5MTP
+(APIServer pid=12660) INFO 11-26 00:31:53 [model.py:2030] Using max model len 262144
+(APIServer pid=12660) WARNING 11-26 00:31:53 [speculative.py:1361] Enabling num_speculative_tokens > 1 will run multiple times of forward on same MTP layer,which may result in lower acceptance rate
+(APIServer pid=12660) INFO 11-26 00:31:53 [speculative.py:1651] Overriding draft model max model len from 262144 to 61440
+(APIServer pid=12660) INFO 11-26 00:31:53 [config.py:625] Mamba cache mode is set to 'align' for Qwen3_5ForConditionalGeneration by default when prefix caching is enabled
+(APIServer pid=12660) INFO 11-26 00:31:53 [kernel.py:416] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'], gelu_and_mul_sparse=['triton', 'native'])
+(APIServer pid=12660) WARNING 11-26 00:31:53 [vllm.py:2135] max_num_scheduled_tokens is set to 2048 based on the speculative decoding settings. This may lead to suboptimal performance. Consider increasing max_num_batched_tokens to accommodate the additional draft token slots, or decrease num_speculative_tokens.
+(APIServer pid=12660) Traceback (most recent call last):
+(APIServer pid=12660)   File "/root/qwen-warp/server/serve.py", line 129, in <module>
+(APIServer pid=12660)     main()
+(APIServer pid=12660)   File "/root/qwen-warp/server/serve.py", line 125, in main
+(APIServer pid=12660)     uvloop.run(run_server(args))
+(APIServer pid=12660)   File "/root/qwen-warp/.venv/lib/python3.12/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=12660)     return __asyncio.run(
+(APIServer pid=12660)            ^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+(APIServer pid=12660)     return runner.run(main)
+(APIServer pid=12660)            ^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+(APIServer pid=12660)     return self._loop.run_until_complete(task)
+(APIServer pid=12660)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "uvloop/loop.pyx", line 1515, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=12660)   File "/root/qwen-warp/.venv/lib/python3.12/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=12660)     return await main
+(APIServer pid=12660)            ^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/.venv/lib/python3.12/site-packages/vllm/entrypoints/launchers/api_server/entry.py", line 176, in run_server
+(APIServer pid=12660)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=12660)   File "/root/qwen-warp/.venv/lib/python3.12/site-packages/vllm/entrypoints/launchers/api_server/entry.py", line 190, in run_server_worker
+(APIServer pid=12660)     async with build_async_engine_client(
+(APIServer pid=12660)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=12660)     return await anext(self.gen)
+(APIServer pid=12660)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/.venv/lib/python3.12/site-packages/vllm/entrypoints/launchers/api_server/entry.py", line 58, in build_async_engine_client
+(APIServer pid=12660)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=12660)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=12660)     return await anext(self.gen)
+(APIServer pid=12660)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/.venv/lib/python3.12/site-packages/vllm/entrypoints/launchers/api_server/entry.py", line 94, in build_async_engine_client_from_engine_args
+(APIServer pid=12660)     async_llm = AsyncLLM.from_vllm_config(
+(APIServer pid=12660)                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/.venv/lib/python3.12/site-packages/vllm/v1/engine/async_llm.py", line 235, in from_vllm_config
+(APIServer pid=12660)     return cls(
+(APIServer pid=12660)            ^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/.venv/lib/python3.12/site-packages/vllm/v1/engine/async_llm.py", line 169, in __init__
+(APIServer pid=12660)     self.engine_core = EngineCoreClient.make_async_mp_client(
+(APIServer pid=12660)                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/server/smk_core_client.py", line 563, in make
+(APIServer pid=12660)     return SwiftCoreClient(vllm_config, executor_class, log_stats, client_addresses, client_count, client_index, renderer)
+(APIServer pid=12660)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/server/smk_core_client.py", line 350, in __init__
+(APIServer pid=12660)     self.runner = Runner(**kw)
+(APIServer pid=12660)                   ^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/server/smk_runner.py", line 169, in __init__
+(APIServer pid=12660)     e = DflashEngine(dflash_path=dflash_path or DF_PATH, codebooks_host=dflash_codebooks_host, ctx_max=ctx_max, kv_fp8=kv_fp8, verbose=False, host_tables=host_tables, lm_head_host=True)
+(APIServer pid=12660)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/engine/dflash.py", line 145, in __init__
+(APIServer pid=12660)     self._build(dflash_path, rescore_r, codebooks_host, mask_id, **kw)
+(APIServer pid=12660)   File "/root/qwen-warp/engine/dflash.py", line 173, in _build
+(APIServer pid=12660)     self.P = load_dflash(dflash_path, codebooks_host=codebooks_host, verbose=kw.get("verbose", True))
+(APIServer pid=12660)              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/engine/dflash.py", line 88, in load_dflash
+(APIServer pid=12660)     q, k, v = (_w4(f, a + f"self_attn.{n}_proj", dev) for n in "qkv")
+(APIServer pid=12660)     ^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/engine/dflash.py", line 88, in <genexpr>
+(APIServer pid=12660)     q, k, v = (_w4(f, a + f"self_attn.{n}_proj", dev) for n in "qkv")
+(APIServer pid=12660)                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660)   File "/root/qwen-warp/engine/dflash.py", line 65, in _w4
+(APIServer pid=12660)     p = f.get_tensor(base + ".weight_packed").to(dev)
+(APIServer pid=12660)         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=12660) safetensors._safetensors_rust.SafetensorError: File does not contain tensor layers.0.self_attn.q_proj.weight_packed

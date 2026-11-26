@@ -1,0 +1,3 @@
+1795652847 == k071w start
+1795653102 k071w W-mtp-a chat=117.85 copy64k=137.09 routes={'mtp': 0, 'dflash2': 0}
+1795653152 == k071w FAILED RuntimeError('k071w W-df2-a: qwen-warp did not start')

@@ -62,7 +62,7 @@ Audyt liczb: [[AUDYT]].
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
-- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
+- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (125)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (29)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (132)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (87)
@@ -73,6 +73,7 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-11-26 [[2026-11-26-nvq2-3090-k071-k066|2026-11-26 Vast nvq2, RTX 3090 (pełna moc 350/350 W): K-071 qwen-warp vs fork i K-066 strojenie MMQ IQ4_XS]]
 - 2026-11-26 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-25 [[lekcja-przegrywamy-procesem-nie-wiedza|Lekcja: przegrywamy procesem, nie wiedzą o kernelach]]
 - 2026-11-25 [[lekcja-lista-do-usuniecia-z-rola-pliku|Lista „do usunięcia” podaje rolę każdego pliku, nie tylko nazwę katalogu]]
 - 2026-11-25 [[lekcja-final-speed-to-najszybszy-znany|Lekcja: „final speed” to najszybszy wariant zmierzony na naszej karcie, nawet gdy to cudzy silnik]]
-- 2026-11-25 [[rustingstrata|RustingStrata (RustingStudio): silnik w Ruście dla MoE większych niż VRAM]]
 
-Razem 839 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 840 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

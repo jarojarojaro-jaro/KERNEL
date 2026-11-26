@@ -1,0 +1,2 @@
+19473020608	/root/models/swift
+3848819135	/root/models/dflash2

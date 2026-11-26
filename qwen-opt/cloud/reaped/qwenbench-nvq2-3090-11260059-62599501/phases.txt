@@ -1,0 +1,25 @@
+1795651422 start card=3090 fake=0
+1795651423 hostcheck ok: NVIDIA GeForce RTX 3090 power 350.00/350.00 W mem 9751/9751 MHz 53 C driver 610
+1795652657 model ok 17659407264
+1795652657 ready card=3090 variant=kvqlean
+1795652657 orch start card=3090 deadline in 4165 s
+1795652657 == k071f start
+1795652844 k071f fork-mtp2 chat=90.21 copy=101.85 copy64k=76.95
+1795652844 == k071f end ok
+1795652847 orch k071f ok 190.3s
+1795652847 == k071w start
+1795653102 k071w W-mtp-a chat=117.85 copy64k=137.09 routes={'mtp': 0, 'dflash2': 0}
+1795653152 == k071w FAILED RuntimeError('k071w W-df2-a: qwen-warp did not start')
+1795653156 orch k071w failed rc=1 308.4s
+1795653156 == k066 start
+1795653262 k066 base tbo=['49/49 tests passed'] pp=[(512, 256, 1409.44), (4096, 256, 1382.9), (512, 512, 1469.32), (4096, 512, 1440.98)] ppl=6.6413
+1795653405 k066 nt128 tbo=['49/49 tests passed'] pp=[(512, 256, 1568.16), (4096, 256, 1541.74), (512, 512, 1634.71), (4096, 512, 1604.2)] ppl=None
+1795653547 k066 K512 tbo=['49/49 tests passed'] pp=[(512, 256, 1557.7), (4096, 256, 1529.08), (512, 512, 1635.12), (4096, 512, 1603.2)] ppl=1160.4927
+1795653693 k066 nostreamk tbo=['49/49 tests passed'] pp=[(512, 256, 1386.21), (4096, 256, 1360.11), (512, 512, 1450.66), (4096, 512, 1423.98)] ppl=6.6566
+1795653838 k066 base-re tbo=['49/49 tests passed'] pp=[(512, 256, 1403.71), (4096, 256, 1377.79), (512, 512, 1464.23), (4096, 512, 1436.6)] ppl=6.6413
+1795653945 k066 I64 tbo=[] pp=[] ppl=None
+1795654053 k066 nt512 tbo=[] pp=[] ppl=None
+1795654053 == k066 end ok
+1795654057 orch k066 ok 901.0s
+1795654057 done
+1795654057 run.sh end

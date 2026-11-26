@@ -1,0 +1,10 @@
+1795651422 start card=3090 fake=0
+1795651423 hostcheck ok: NVIDIA GeForce RTX 3090 power 350.00/350.00 W mem 9751/9751 MHz 53 C driver 610
+1795652657 model ok 17659407264
+1795652657 ready card=3090 variant=kvqlean
+1795652657 orch start card=3090 deadline in 4165 s
+1795652847 orch k071f ok 190.3s
+1795653156 orch k071w failed rc=1 308.4s
+1795654057 orch k066 ok 901.0s
+1795654057 done
+1795654057 run.sh end

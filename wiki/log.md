@@ -781,3 +781,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wyniki | K-026: przy MoE z ekspertami na CPU spekulacja szkodzi (15,7 → 6,0–9,2 t/s); Enigma: domyślnie bez draftu przy --n-cpu-moe
 
 ## [2026-11-26] research | adapter pod omp: najpierw zestaw zadań omp i test gotowych adapterów pi (Qwen, Inkling), potem SFT samodestylacja, RL dopiero z budżetem; dane z sesji Claude licencyjnie wątpliwe
+
+## [2026-11-26] wyniki NVIDIA | Vast nvq2 3090 (0,20 $): K-066 nthreads 128 prefill +11,5% (PPL do sprawdzenia), K_vram 512 psuje PPL mimo testów 49/49; K-071 qwen-warp czat +31%, kopia 64k +78% vs fork (inne wagi), DFlash2 nie wystartował

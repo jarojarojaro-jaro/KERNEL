@@ -1,0 +1,42 @@
+0.00.877.107 W model has unused tensor blk.64.attn_norm.weight (size = 20480 bytes) -- ignoring
+0.00.877.114 W model has unused tensor blk.64.post_attention_norm.weight (size = 20480 bytes) -- ignoring
+0.00.877.122 W model has unused tensor blk.64.attn_q.weight (size = 51609600 bytes) -- ignoring
+0.00.877.124 W model has unused tensor blk.64.attn_k.weight (size = 5570560 bytes) -- ignoring
+0.00.877.127 W model has unused tensor blk.64.attn_v.weight (size = 5570560 bytes) -- ignoring
+0.00.877.136 W model has unused tensor blk.64.attn_output.weight (size = 25804800 bytes) -- ignoring
+0.00.877.139 W model has unused tensor blk.64.attn_q_norm.weight (size = 1024 bytes) -- ignoring
+0.00.877.142 W model has unused tensor blk.64.attn_k_norm.weight (size = 1024 bytes) -- ignoring
+0.00.877.145 W model has unused tensor blk.64.ffn_gate.weight (size = 73113600 bytes) -- ignoring
+0.00.877.147 W model has unused tensor blk.64.ffn_down.weight (size = 73113600 bytes) -- ignoring
+0.00.877.150 W model has unused tensor blk.64.ffn_up.weight (size = 73113600 bytes) -- ignoring
+0.00.877.154 W model has unused tensor blk.64.nextn.eh_proj.weight (size = 43008000 bytes) -- ignoring
+0.00.877.156 W model has unused tensor blk.64.nextn.enorm.weight (size = 20480 bytes) -- ignoring
+0.00.877.159 W model has unused tensor blk.64.nextn.hnorm.weight (size = 20480 bytes) -- ignoring
+0.00.877.167 W model has unused tensor blk.64.nextn.shared_head_norm.weight (size = 20480 bytes) -- ignoring
+0.03.176.181 I cmn          init: llama threadpool init, n_threads = 12
+0.03.264.378 I 
+0.03.264.465 I system_info: n_threads = 12 (n_threads_batch = 12) / 24 | CUDA : ARCHS = 860 | USE_GRAPHS = 1 | FA_QUANTS = q4_0-q4_0,q8_0-q8_0,f16-f16,bf16-bf16 | CPU : SSE3 = 1 | SSSE3 = 1 | AVX = 1 | AVX2 = 1 | F16C = 1 | FMA = 1 | BMI2 = 1 | LLAMAFILE = 1 | OPENMP = 1 | REPACK = 1 | 
+0.03.264.480 I perplexity: tokenizing the input ..
+0.03.702.582 I perplexity: tokenization took 438.096 ms
+0.03.702.679 I perplexity: calculating perplexity over 8 chunks, n_ctx=512, batch_size=2048, n_seq=4
+/root/srcx/src/ggml/src/ggml-cuda/ggml-cuda.cu:111: CUDA error
+0.04.294.715 E CUDA error: an illegal memory access was encountered
+0.04.294.718 E   current device: 0, in function launch_mul_mat_q at /root/srcx/src/ggml/src/ggml-cuda/template-instances/../mmq.cuh:1444
+0.04.294.720 E   cudaFuncSetAttribute((mul_mat_q<type, J, false, prec_src1, false>), cudaFuncAttributeMaxDynamicSharedMemorySize, nbytes_shared)
+/root/build/bin/libggml-base.so.0(+0x1d57b)[0x7a6f0ba6c57b]
+/root/build/bin/libggml-base.so.0(ggml_print_backtrace+0x21c)[0x7a6f0ba6c9fc]
+/root/build/bin/libggml-base.so.0(ggml_abort+0x15b)[0x7a6f0ba6cbdb]
+/root/build/bin/libggml-cuda.so.0(_Z15ggml_cuda_errorPKcS0_S0_iS0_+0xb7)[0x7a6f08e61d77]
+/root/build/bin/libggml-cuda.so.0(+0xc3a593)[0x7a6f09767593]
+/root/build/bin/libggml-cuda.so.0(_Z19ggml_cuda_mul_mat_qR25ggml_backend_cuda_contextPK11ggml_tensorS3_S3_PS1_+0x1001)[0x7a6f08ecb2d1]
+/root/build/bin/libggml-cuda.so.0(+0x3478f0)[0x7a6f08e748f0]
+/root/build/bin/libggml-cuda.so.0(+0x352863)[0x7a6f08e7f863]
+/root/build/bin/libggml-base.so.0(ggml_backend_sched_graph_compute_async+0x414)[0x7a6f0ba8bad4]
+/root/build/bin/libllama.so.0(_ZN13llama_context13graph_computeEP11ggml_cgraphb+0xdb)[0x7a6f0bd3f53b]
+/root/build/bin/libllama.so.0(_ZN13llama_context14process_ubatchERK12llama_ubatch14llm_graph_typeP22llama_memory_context_iR11ggml_status+0x166)[0x7a6f0bd43bc6]
+/root/build/bin/libllama.so.0(_ZN13llama_context6decodeERK15llama_batch_ext+0x67c)[0x7a6f0bd4c4ac]
+/root/build/bin/libllama-perplexity-impl.so(+0xac25)[0x7a6f0c64ec25]
+/root/build/bin/libllama-perplexity-impl.so(_Z16llama_perplexityiPPc+0x726)[0x7a6f0c6588a6]
+/lib/x86_64-linux-gnu/libc.so.6(+0x2a1ca)[0x7a6f0c4551ca]
+/lib/x86_64-linux-gnu/libc.so.6(__libc_start_main+0x8b)[0x7a6f0c45528b]
+/root/build/bin/llama-perplexity(+0x1095)[0x5b7f2c6d3095]

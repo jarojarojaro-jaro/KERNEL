@@ -314,6 +314,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (dużo pracy)
 
 - **2026-11-26:** w paczce Vast `nvq2` (3090, 35–45 min): sweep configu MMQ IQ4_XS (nthreads 128/512, K_vram 512, stream_k off, I 64), test-backend-ops + llama-bench pp512/pp4096 + PPL; IQ4_XS to 29,5% wag UD-Q4_K_XL, więc +15% kernela ≈ +4% prefillu.
+- **wynik 2026-11-26 (Vast 3090 nvq2, [[2026-11-26-nvq2-3090-k071-k066]]):** `nthreads 128` prefill +11,5% (pp4096 ub512 1441 → 1604), testy 49/49, **PPL niezmierzony**; `K_vram 512` +11% ale PPL 1160 (zepsute, testy przechodziły); stream_k off −1,6%; I 64 i nthreads 512 bez pomiaru. Następny krok: PPL/KLD nthreads 128 (5 min).
 ### K-067 · Kernel GDN chunked MMA w CUDA zintegrowany z cache i snapshotami (gałąź `orca-gdn2`)
 - data: 2026-10-21 (Orca)
 - źródło: sesja Orca (`O:1449-1462`: +10,5% pp2048, ale PPL nan; po poprawce 0%; `O:1791`)
@@ -342,6 +343,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (agent traci)
 
 - **2026-11-26:** w paczce Vast `nvq2` (3090, ok. 35 min): fork MTP n2 vs qwen-warp 689901c (mtp / dflash2 ABBA), tylko publiczne prompty (spec_sweep, kopie, kopia 52k z korpusu Enigmy); prywatne sesje omp nie wychodzą poza nasze maszyny.
+- **wynik 2026-11-26 (Vast 3090 nvq2):** fork MTP n2 czat 90,2 / kopia 101,9 / kopia 64k 77,0; qwen-warp MTP (Swift INT4) czat 117,9 (+31%), kopia 64k 137,1 (+78%); DFlash2 nie wystartował (drafter bf16 bez `weight_packed`). Do powtórki z poprawnym formatem draftera.
 ### K-072 · Nemotron 3.5 Bolt na NVIDIA: KLD fuzji `GGML_CUDA_TOPK_MOE_NP2`, `MMVQ_N1_IQ2`, kernel IQ2_XXS MMVQ, replay stanu Mamby
 - data: 2026-10-16 (raport 14 §10)
 - status: **czeka na decyzję** (model odłożony „na później”)

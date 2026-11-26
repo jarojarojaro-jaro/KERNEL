@@ -1,0 +1,1 @@
+SWIFT_MODEL=/root/models/swift DFLASH_W4=/root/models/dflash2 HF_HUB_OFFLINE=1 /root/qwen-warp/.venv/bin/python server/serve.py --model /root/models/swift --host 127.0.0.1 --port 8000 --vision off --max-model-len 61440 --host-tables --max-num-seqs 1 --drafter dflash2 --dflash-path /root/models/dflash2
