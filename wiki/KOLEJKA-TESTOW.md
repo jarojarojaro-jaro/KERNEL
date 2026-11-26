@@ -29,17 +29,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk szacowany: krok weryfikacji 43,5 → ok. 28 ms na 3090 (przypuszczam), więcej przy kopii
 - priorytet: najwyższy (NVIDIA i XTX)
 
-### K-178 · Wdrożenie samego K-020 (wyrzucanie cache ważone kosztem) na :8080
-- data: 2026-11-25 (K-175 FAIL na AGR2/KVD)
-- test: `k178.jobs`: PROD (`run-topka.sh uncensored`, `~/llama-topka`) vs Q (qprep-spec 50ca29355 + `LLAMA_SERVER_CACHE_EVICT=cost`), ABBA wall.py + md5 T=0 + replay K-020; bramka −2% i md5 identyczne
-- uwaga: `topka-keeper.sh:19` restartuje `run-topka.sh qwen` (UD-Q4_K_XL z cenzurą, ctx 204 800), a `chat8080.sh restore` startuje `uncensored` (ctx 262 144): dwa różne modele produkcji zależnie od tego, kto podnosi czat
-- czas karty: ok. 9 min
-
-### K-177 · Wdrożenie w Mai: K-158g `eq8-hsl-pol2-gated` jako `maya-atomic.json`
-- data: 2026-11-25 (wynik K-158g niżej)
-- plan: po zakończeniu K-176 i K-171 (używają `maya-atomic.json` jako bazy) podmienić konfigurację, kopia `maya-atomic.prev.json`; potem jedno wall.py kontrolne
-
-- **2026-11-25:** K-176 (K-148 `both`) też przeszedł bramkę (czat −0,4…−0,5%, parytet 11/11, edycja +14,2%); obie zmiany połączone w K-179 (`wt-k179` 1f11609e, w kolejce). Wdrażamy zwycięzcę K-179, a gdy nie przejdzie, sam K-158g.
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
@@ -61,6 +50,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **K-158f 2026-11-25 (2cbb89f0: bramka z histerezą, sondy seriami, `c_plain` mierzone):** parytet 11/11. wall.py T=0 code / tech / pl / json (produkcja 101,2 / 113,5 / 113,4 / 108,8): pol2-gate **165,6 / 115,4 / 107,9 / 196,9** (kod +64%, json +81%, polski −4,9%); T=0,7 mediana 112,2 vs 112,2 (ale tech 101,5 do sprawdzenia). rep2 Q1 201,3, L2k 105,2 (spadek względem 121–124 z K-158e). Nie wdrażamy: polski poniżej progu −2% i L2k. K-158g: symulacja bramki offline (w benchu nie zadziałała), naprawa L2k.
 
 - **wynik K-158g 2026-11-25 21:19–21:34 (`wt-k158g` 791e2a6f, GATE_DEFER):** parytet IDENTICAL 11/11. wall.py T=0: prod code 110,3 / tech 113,3 / pl 112,7 / json 112,9 → gated **169,3 / 115,6 / 110,8 (−1,7%) / 197,6**, mediana 112,8 → **142,5 (+26,3%)**; T=0,7 wszystkie kategorie = prod (112,7 → 112,9; pl 111,8 → 112,9), bo polityka wyłącza drafter przy próbkowaniu. rep2: Q1 129,5 → 202,7, Q6 113,8 → 114,0, **L2k 107,5 → 119,6 (+11,3%)**. Bramka −2% przechodzi (najgorzej pl T=0 −1,7%). Werdykt: **wygrany**, wdrożenie K-177.
+- **K-179 2026-11-26 00:39–00:45 (K-148 both + K-158g gated w jednej binarce, `wt-k179` 1f11609e):** parytet IDENTICAL 11/11, kernel test PASS; wall T=0: code 111,2 → 169,5 (+52,4%), json 114,0 → 197,6 (+73,5%), tech +0,5%, **pl 113,8 → 110,8 (−2,7%, FAIL)**; T=0,7 wszystko ±0,1%; edycja `python_edit` ok. 293 → 395 t/s (+35%). Bramka nie przeszła o 0,7 pkt na polskim T=0 → wdrożony sam K-158g (K-177); do poprawy: polityka bramki dla polskiego w połączonej wersji.
 ### K-159 · Nib na tym samym modelu co Maya (uncensored): AtomicChat w paczce NVFP4 albo AD-Q4_K w Nib
 - data: 2026-11-25 (Nib liczy na NVFP4-Mixed, nie na naszych wagach uncensored)
 - plan: wtopić LoRA AtomicChat (43 MB) w paczkę Nib albo dodać Q4_K do loadera Nib; wall.py T=0 / T=0,7, KV q4_0, Quest wyłączony do 14k
@@ -110,17 +100,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
   - wdrożenie do produkcji (przebudowa topki) czeka na decyzję właściciela.
 
 - **2026-11-25:** `~/wt/k001-fix` (qprep-spec + r3 556ad799f + r4 a557fc3c5 z gałęzi duo, testy masked-tail 5/16/17); w kolejce `k001.jobs`: bramka tbo kvq wył./wł. × wariant 0/83, test wycieku restore (rozszerzenia 1/31/32/33/63/64 tok.), llama-bench ABBA przy wariancie 83 (koszt prefillu dotąd mierzony tylko przy 0: −0,65%).
-### K-007 · Bramka „wymuszanie tokenów + KLD” (SpecPilot) zamiast md5 dla zmian polityki draftu i szerokości weryfikacji, z kalibracją kanarkami
-- data: 2026-11-07 (kanarki: 2026-10-15)
-- status: **czeka na decyzję** właściciela (decyzja 6 z rundy 69: czy dopuścić „te same tokeny + KLD” zamiast md5)
-- źródło: `R/68b-spekulacja-nowe.md:161`, `R/69-SYNTEZA.md:33,41`, [[raport-69-synteza]], [[bramka-kld-kanarki]] (`:27`, nigdy nieuruchomione na GPU), `Q/tools/kld_canary.sh`
-- wzór oceny (2026-11-14): PearlQuant ma 3 warstwy: KLD, benchmarki, cechy tekstu (liczba „Wait” na 1000 słów, ślepy sędzia = sam model), a do tego celowo zepsute konfiguracje jako kontrola pozytywna ([[telegram-2026-11-14-pearlquant-llamacpp-v1]])
-- test: skrypt teacher-forced na CPU. XTX: topka vs topka (szum), DRAFT_N=5 (powinno przejść), wstrzyknięty bias logitu (musi odpaść), 6 promptów × 2k tok. T=0. Kanarki po jednym na job ≤ 10 min.
-- zysk: 0% sama; odblokowuje K-008, K-017 i K-046 (+3…7%)
-- ryzyko karty: brak
-- priorytet: wysoki (odblokowuje największy bezstratny decode)
-
-- **decyzja JARO 2026-11-26:** zgoda ([[2026-11-26-bramka-kld]]): zmiany zmieniające md5 wchodzą po bramce KLD + wymuszanie tokenów + wall.py −2%. Następny krok: narzędzie bramki i pierwsze użycie na K-006 i K-017.
+- **wynik 2026-11-26 00:23–00:28 (`~/wt/k001-fix`):** produkcja: **3 wycieki stanu na 12 sprawdzeń** (LEAK-PREFILL po post33 i u63, LEAK-DECODE po post32), poprawka: **0 na 12**; koszt: wariant 83 pp512 −0,25%, pp2048 −0,45%, tg64 +0,1%; wariant 0 pp2048 −0,6%. To błąd poprawności w produkcji (inne odpowiedzi po przywróceniu sesji) → bramka wdrożenia K-183 w kolejce.
 ### K-120 · Qwen3.8-27B-pi-adapted (LoRA RL pod pi) w naszym stosie: czy pomaga w omp, ile kosztuje w dekodzie, co z MTP
 - data: 2026-11-18
 - źródło: [[qwen38-27b-pi-adapter]] (pod pi: SWE-bench Pro hard 51 29,4 → 62,7%, Terminal-Bench 2.1 39,5 → 55,8%, −55…62% wywołań narzędzi); adapter GGUF F16 dla llama.cpp (`--lora`)
@@ -194,6 +174,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: wysoki (≥ 1 s/turę agenta)
 
 - **wynik 2026-11-25 20:54–21:19 (XTX, `~/wt/k006` k006-thin, ABBA A=prod / C=THIN=4+PREFIX=2):** zapis wpisu cache mediana 5291 → **3404 MiB (−36%)**, maks. 8331 → 4049 MiB (−51%), checkpointy 12 → 5; tura agenta bez zmian (12,5 vs 12,3–12,6 s). Nowa sesja z tym samym system promptem: 1221 → 913–1341 ms; po wyrzuceniu slotu wpis „wspólny początek” daje **8543 → 860 ms (−90%)**. md5: 7 z 30 różnych, ale także między ramionami bez zmian (suite: A2 a0dde0fa vs EA/EB f3e9f53e), więc harness nie jest deterministyczny między serwerami; bezstratności nie da się tu orzec md5. Werdykt: duży zysk pamięci i TTFT, wdrożenie wymaga bramki KLD/wymuszania tokenów (decyzja K-007).
+- **2026-11-26 bramka K-007: PASS** (KLD 0 na ścieżce przywracania z wpisu „wspólny początek”). Do wdrożenia razem z K-001 po bramce prędkości.
 ### K-012 · `kvq` przy W=5 bliżej rooflinu: nowy układ (K dekwantowane raz, głębszy prefetch K/V), cel ~172–300 µs/warstwę przy 98–196k
 - data: 2026-11-07
 - źródło: [[2026-11-08-kvq-once-profil]] (`:86`: ONCE=1/2 KILL, „potrzebny inny układ”; FA = 30% kroku przy 199k, 11,32 ms), `R/68c-dlugi-kontekst-gdn.md:142`, `R/70-fa-d256-jak-to-zrobilismy.md:188` (#5)
@@ -204,6 +185,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zwiad 2026-11-14: hipfire #989 (WMMA split-K verify attention, gfx1100, numeryczne) zszedł do 309,5 µs przy 100k i 4 wierszach, czyli tyle co nasz `kvq` przy nb5 i 98k (~319 µs); bitowa droga musi zejść niżej ([[zwiad-2026-11-14]])
 
 - **2026-11-25 ocena:** cel 172 µs/warstwę przy 98k nieosiągalny bezstratnie (podłoga pamięci 118, MMA 119, K/V dekwantowane raz ok. 152, dziś 319). Układ „pair-split” ok. −10% kernela = +2,5% dekodu przy 199k (poniżej progu 3–5%), 3–4 dni. Sonda w kolejce (`k012.jobs`, `GGML_HIP_KVQ_PROBE`): implementacja tylko przy ≤ −15% przy nb5/196k.
+- **2026-11-26 bieg nieważny:** bramka sondy oblana (kontrola PROBE=7 nb=1 zmieniła hash, choć nie powinna) — błąd w łatce sondy, nie wynik.
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
 - źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
@@ -234,6 +216,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (zależy od decyzji)
 
 - **wynik 2026-11-25 22:28–22:37 (XTX, qprep-spec 50ca29355, `LLAMA_SPEC_ROUTE` + `DRAFT_N=5` vs prod, ABBA):** bramka: routing ≤ 4 = prod (aa522e89), routing 5 = zwykłe n5. Proza T=1 bez myślenia 104,9 / 108,0 → 110,1 / 110,1 (**+3,4%**), czat T=1 109,2 / 115,4 → 113,9 / 113,6 (+1,3%), kopia T=0 407,5 / 427,6 → 410,9 / 410,1 (−1,7%). Zysk na granicy progu 3% tylko dla prozy; głębokość 5 zmienia md5 T=0 z założenia, więc wdrożenie zależy od decyzji K-007.
+- **2026-11-26 bramka K-007: PASS** (rozkład identyczny). Zysk +3,4% proza / −1,7% kopia: wdrożenie dopiero po wall.py −2% (K-183 następny).
 ### K-021 · Dataflow w taśmie PM4: usunąć granice dispatchy w łańcuchu MMVQ → norma → MMVQ weryfikacji (najpierw PoC-A: hand-off w trwałej siatce)
 - data: 2026-10-20 (raport 36 L7)
 - źródło: `R/37-proza-100.md:17-19` (górna granica `GGML_HIP_PM4_UB=mmvq,norm` −2,17 ms/partię 5 wierszy, −8,8%), `R/36-xtx-qwen-roadmap.md:190`, `R/66-SYNTEZA.md:66` (#15), [[budzet-megakernela-qwen-xtx]]
@@ -243,6 +226,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (jedyna duża dźwignia w kernelach, drogie i ryzykowne)
 
 - **2026-11-25:** PoC-A w kolejce (`k021.jobs`, `~/qwen-opt/klab/handoff/handoff.hip`): koszt przekazania między etapami w trwałej siatce vs osobne dispatche; KILL gdy > 0,3 µs albo < 30% zysku. PoC-B w forku: 1–2 tygodnie.
+- **2026-11-26 bieg nieważny:** mikrobench `handoff` zlinkowany z `libamdhip64.so.7`, a na jaroserverai jest runtime ROCm 10 → exit 127. Do przebudowy.
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -283,16 +267,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (poniżej progu)
 
 - **2026-11-25 ocena:** GDN w produkcji 14,7 µs/uruchomienie (0,715 ms/krok) przy podłodze bajtów 7,86 µs, więc sufit zysku ok. 0,33 ms/krok (≈ 1,1% przy n=5, realnie 0,5%); WY w fp32 3–5 dni i niebitowo (decyzja KLD). Pomiar bazy w kolejce (`k047.jobs`): zabić, gdy (base − floor) × 48 < 0,15 ms.
-### K-050 · Runtime ROCm 7.2.4 z kompilatorem ROCm 10
-- data: 2026-11-07
-- status: **czeka na decyzję** (pobranie runtime)
-- źródło: `R/68a-rdna3-kernele.md:127` (4.9)
-- test: XTX `LD_LIBRARY_PATH` na 7.2.4, `llama-bench -p 512,4096 -d 0,16384 -r 3` ABA ≤ 10 min, potem soak PM4
-- zysk: prefill 0…+5% (dane z innej XTX); decode ~0 (PM4 omija runtime)
-- ryzyko karty: **wysokie**: PM4 zależy od ROCr/CLR (raport 17), page faulty/resety
-- priorytet: niski (ryzyko > zysk)
-
-- **2026-11-26:** potrzebne tylko 4 pakiety runtime 7.2.4 (73 MB: hip-runtime-amd, hsa-rocr, comgr, rocprofiler-register) rozpakowane bez roota do `~/rocm-rt/7.2.4/lib` (cofnięcie: usunięcie katalogu); symbole i code object v6 zgodne. W kolejce `~/qwen-opt/kq/K-050.jobs` (md5 + bench d0/d16k ABBA, PM4=0, ok. 15 min).
+- **wynik bazy 2026-11-26 (gdnbench):** n=5 koszt ponad podłogę 10,1–10,3 µs/uruchomienie = **0,48–0,50 ms/krok** (n=8: 0,63–0,77, n=16: 1,16–1,40). Powyżej progu 0,25 ms z planu → wariant WY ma sens (3–5 dni, bramka KLD jest już zgodą K-007).
 ### K-056 · Rebase łatek topki na nowszy upstream (baza b11528 → llama.cpp v1.0.0 = b12359)
 - data: 2026-10-16, ostatnio 2026-11-07
 - źródło: [[2026-10-16-rebase-v070]], `R/68d-swieze-od-spolecznosci.md:14,18` (#31247 przesunie md5)
@@ -318,6 +293,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-26:** części CPU przechodzą (card check, harness seq 11, ledger 14 wierszy). P0 potrzebuje kroku człowieka: JARO uruchamia `cd ~/qwen-opt/factory && ./factory rsi hw ack --reason "K-134"`, potem `kq/K-060.jobs` (ok. 25 min karty).
 - **2026-11-26:** `factory rsi hw ack` wykonany przez Kernela na polecenie JARO („ty pusc”), ledger seq 14, nowych błędów 0; `kq/K-060.jobs` w kolejce.
+- **2026-11-26 bieg nieważny:** oba przebiegi P0 przekroczyły limit 880 s (rc 124) przy temperaturze 38–39 °C, czyli karta głównie stała (najpewniej skan H4 fabryki + start); do skrócenia przed powtórką.
 ### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
 - data: 2026-10-16 (15d), 2026-10-21 (Orca)
 - źródło: `R/67c-nvidia-backlog-testow.md:133` (C16), sesja Orca (`O:1788-1796`, `O:2187-2196`: occupancy 2 → −11,5%)
@@ -391,6 +367,36 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-007 · Bramka „wymuszanie tokenów + KLD” (SpecPilot) zamiast md5 dla zmian polityki draftu i szerokości weryfikacji, z kalibracją kanarkami
+- data: 2026-11-07 (kanarki: 2026-10-15)
+- status: **czeka na decyzję** właściciela (decyzja 6 z rundy 69: czy dopuścić „te same tokeny + KLD” zamiast md5)
+- źródło: `R/68b-spekulacja-nowe.md:161`, `R/69-SYNTEZA.md:33,41`, [[raport-69-synteza]], [[bramka-kld-kanarki]] (`:27`, nigdy nieuruchomione na GPU), `Q/tools/kld_canary.sh`
+- wzór oceny (2026-11-14): PearlQuant ma 3 warstwy: KLD, benchmarki, cechy tekstu (liczba „Wait” na 1000 słów, ślepy sędzia = sam model), a do tego celowo zepsute konfiguracje jako kontrola pozytywna ([[telegram-2026-11-14-pearlquant-llamacpp-v1]])
+- test: skrypt teacher-forced na CPU. XTX: topka vs topka (szum), DRAFT_N=5 (powinno przejść), wstrzyknięty bias logitu (musi odpaść), 6 promptów × 2k tok. T=0. Kanarki po jednym na job ≤ 10 min.
+- zysk: 0% sama; odblokowuje K-008, K-017 i K-046 (+3…7%)
+- ryzyko karty: brak
+- priorytet: wysoki (odblokowuje największy bezstratny decode)
+
+- **decyzja JARO 2026-11-26:** zgoda ([[2026-11-26-bramka-kld]]): zmiany zmieniające md5 wchodzą po bramce KLD + wymuszanie tokenów + wall.py −2%. Następny krok: narzędzie bramki i pierwsze użycie na K-006 i K-017.
+- **wynik 2026-11-26 00:45–01:00 (`~/wt/k007` 8f2fb5ccd, wymuszanie tokenów, 6 promptów × do 2048 tok., 9510 pozycji/ramię):** kalibracja VALID (n5 PASS, zmiana rope +1% FAIL: mean KLD 2,1e-5 / max 0,0747, bias1 FAIL); **K-017 PASS i K-006 PASS** (KLD 0,000000, top-1 100%, 0 rozbieżności). Uwaga: ramię plain ma top-1 0,07% (błąd zapisu logprobów w trybie bez spekulacji), próg wyszedł więc „KLD dokładnie 0” — surowszy niż planowany, wynik ważny. Narzędzie bramki: `~/qwen-opt/k007/`.
+- przeniesione 2026-11-26: narzędzie gotowe, K-017/K-006 przeszły
+
+### K-177 · Wdrożenie w Mai: K-158g `eq8-hsl-pol2-gated` jako `maya-atomic.json`
+- data: 2026-11-25 (wynik K-158g niżej)
+- plan: po zakończeniu K-176 i K-171 (używają `maya-atomic.json` jako bazy) podmienić konfigurację, kopia `maya-atomic.prev.json`; potem jedno wall.py kontrolne
+
+- **2026-11-25:** K-176 (K-148 `both`) też przeszedł bramkę (czat −0,4…−0,5%, parytet 11/11, edycja +14,2%); obie zmiany połączone w K-179 (`wt-k179` 1f11609e, w kolejce). Wdrażamy zwycięzcę K-179, a gdy nie przejdzie, sam K-158g.
+- **2026-11-26:** K-179 (K-148 + K-158g razem) nie przeszedł bramki (pl T=0 −2,7%), więc wdrożony sam K-158g: `~/k134/maya-atomic.json` = `k158g-eq8-hsl-pol2-gated.json` bez `IK2_STATS` (poprzednia: `maya-atomic.prev-k137.json`).
+- przeniesione 2026-11-26: wdrożone (K-158g)
+
+### K-178 · Wdrożenie samego K-020 (wyrzucanie cache ważone kosztem) na :8080
+- data: 2026-11-25 (K-175 FAIL na AGR2/KVD)
+- test: `k178.jobs`: PROD (`run-topka.sh uncensored`, `~/llama-topka`) vs Q (qprep-spec 50ca29355 + `LLAMA_SERVER_CACHE_EVICT=cost`), ABBA wall.py + md5 T=0 + replay K-020; bramka −2% i md5 identyczne
+- uwaga: `topka-keeper.sh:19` restartuje `run-topka.sh qwen` (UD-Q4_K_XL z cenzurą, ctx 204 800), a `chat8080.sh restore` startuje `uncensored` (ctx 262 144): dwa różne modele produkcji zależnie od tego, kto podnosi czat
+- czas karty: ok. 9 min
+- **wynik 2026-11-26 00:31–00:39 (XTX):** wall.py Q vs PROD wszystkie kategorie −0,1…+0,1%, md5 T=0 IDENTICAL we wszystkich 4; replay K-020: 4 → 0 ponownych prefilli, 207,9 → 101,8 s (−51%). **GATE PASS → wdrożone 2026-11-26 02:40:** silnik `~/llama-topka-k020` (kopia qprep-spec 50ca29355) + `LLAMA_SERVER_CACHE_EVICT=cost` w `~/qwen-opt/topki/xtx/qwen-uncensored.sh`; działa od najbliższego podniesienia czatu.
+- przeniesione 2026-11-26: wdrożone
 
 - **2026-11-26:** JARO zgadza się na test; restart wymaga `sudo` z hasłem (Kernel go nie ma) i nie może przerwać kolejki: po opróżnieniu kolejki JARO wpisuje `grub-reboot` + `reboot`, a Kernel robi pomiary.
 ### K-026 · Enigma: próg draftu `--spec-draft-p-min` {0; 0,5; 0,8} × n {1,2,4} dla MoE z `--n-cpu-moe` na kartach ≤ 16 GB
@@ -1281,6 +1287,19 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-050 · Runtime ROCm 7.2.4 z kompilatorem ROCm 10
+- data: 2026-11-07
+- status: **czeka na decyzję** (pobranie runtime)
+- źródło: `R/68a-rdna3-kernele.md:127` (4.9)
+- test: XTX `LD_LIBRARY_PATH` na 7.2.4, `llama-bench -p 512,4096 -d 0,16384 -r 3` ABA ≤ 10 min, potem soak PM4
+- zysk: prefill 0…+5% (dane z innej XTX); decode ~0 (PM4 omija runtime)
+- ryzyko karty: **wysokie**: PM4 zależy od ROCr/CLR (raport 17), page faulty/resety
+- priorytet: niski (ryzyko > zysk)
+
+- **2026-11-26:** potrzebne tylko 4 pakiety runtime 7.2.4 (73 MB: hip-runtime-amd, hsa-rocr, comgr, rocprofiler-register) rozpakowane bez roota do `~/rocm-rt/7.2.4/lib` (cofnięcie: usunięcie katalogu); symbole i code object v6 zgodne. W kolejce `~/qwen-opt/kq/K-050.jobs` (md5 + bench d0/d16k ABBA, PM4=0, ok. 15 min).
+- **wynik 2026-11-26 00:58–01:05 (runtime ROCm 7.2.4 z `~/rocm-rt/7.2.4`, binarka topka-q70, PM4=0, ABBA):** md5 PASS (c4708318 / 6f14e814); pp512 996,1 → 998,1 (+0,2%), pp4096 999,7 → 999,7, tg128 41,34 → 41,38 (+0,1%), d16384: pp512 +0,16%, tg128 −0,1%. Bez zysku.
+- przeniesione 2026-11-26: bez zysku
 
 ### K-035 · Głowica draftu MTP: grube przejście (IQ4_XS/Q2_K) + dokładny rerank top-8 na wierszach Q6_K
 - data: 2026-10-20 (36 L6c), 2026-11-07 (66 #5)

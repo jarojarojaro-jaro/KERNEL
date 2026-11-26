@@ -269,6 +269,10 @@ FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s.
 2. Nowa para (karta, model, obciążenie, metryka) → nowy wiersz.
 3. Wpis w [[log]] i wiersz w [[AUDYT]].
 
+## Wdrożone 2026-11-26
+- Qwen3.8-27B Uncensored, XTX, czat :8080: K-020 wyrzucanie cache ważone kosztem, **w produkcji** (silnik `~/llama-topka-k020`): replay 3 wątków agenta 207,9 → 101,8 s (−51%), wall.py ±0,1%, md5 identyczne (K-178).
+- Inkling 2 Mini, Maya: K-158g w `maya-atomic.json` (wall T=0 mediana 112,8 → 142,5, L2k 107,5 → 119,6; T=0,7 bez zmian).
+
 ## Nowe najlepsze 2026-11-25 (jeszcze nie w produkcji)
 - Inkling 2 Mini AtomicChat AD-Q4_K, Maya + K-148 `both`, XTX, edycja kodu `python_edit` (dokładnie): **334,1 t/s** (prod 292,6, +14,2%); `~/qwen-opt/queue/logs/k148-copy.log`; wdrożenie K-176.
 - Qwen3.8-27B Uncensored topka, XTX, kopiowanie mvs T=0 z AGR2 (K-018): **458,4 t/s** (prod 434,8, +5,4%); `~/qwen-opt/k018/logs`; wdrożenie K-175.
