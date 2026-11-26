@@ -775,3 +775,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - K-170, K-172 zamknięte decyzją JARO.
 
 ## [2026-11-26] kolejka | Vast nvq: 3090 i 5060 Ti wynajęte (5060 Ti pierwszy host odrzucony: limit mocy 150/180 W); K-113 XTX; zamknięte K-119, K-126, K-107, K-024, K-057, K-176 (do K-179); czeka 36
+
+## [2026-11-26] kolejka | K-075, K-035 odrzucone (sufit < progu), K-121 narzędzie GA działa; Vast nvq2 (K-071, K-066) wystartował; K-050 w kolejce; K-056 rebase 32/49 plików
