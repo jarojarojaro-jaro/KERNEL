@@ -28,6 +28,13 @@ status: aktualne
 - **Niewidoczne:** URL bloga, kod (repo autora nie ma tego projektu), kto proponuje edycje, baza porównawcza (RL/SFT przy tym samym koszcie, losowe edycje), seedy, wariancja. 95% CI przy 200 zadaniach to ok. ±6,6 pkt, więc skok 32 pkt byłby duży, ale bez kontroli to tylko deklaracja.
 - **Ostrożność:** podobny eksperyment 4B (repo HomoHabilis/weight-space-programming exp10, edytor Opus 5.5): +5,3 pkt przy p = 0,13, łączenie edycji bez zysku; przy budżecie 16k tokenów edycja skracająca myślenie (jak Astra-Stop) może dać dużo „za darmo”.
 
+## 3a. SELFWRITE (arXiv 2611.29513) z bliska (panel JARO 2026-11-26, x.com/kalyan_kpl/status/2125460362426560530)
+- **Projekt uczciwy:** dane DAPO-Math podzielone raz na 3 rozłączne części: bramka 500 zadań (decyduje o przyjęciu edycji, edytor nigdy jej nie widzi), test 500 zadań (tylko raportowany), reszta do nauki; każde zadanie 4 próbki, T z top-k 20, do 16 384 tokenów, stały seed.
+- **Pętla:** w każdej generacji model rozwiązuje 500 świeżych zadań, czyta własne rozumowania, liczy kontrast aktywacji „źle vs dobrze” i pisze program w Pythonie, który składa edycję niskiego rzędu (kierunki SVD, kontrasty aktywacji, projekcje rank-1); 8 kandydatów na generację, najlepszy ściśle poprawiający na bramce zostaje scalony.
+- **Liczby:** bramka 73,95 → 76,45% (+2,5 pkt w 5 generacjach; przyrosty kolejnych generacji m.in. +0,50, +0,10, +0,70), **test nigdy niewidziany 76,30 → 77,75% avg@4 (+1,45 pkt)**, pass@4 82,60 → 84,80%. Bez ani jednego kroku gradientu.
+- **Zastrzeżenia:** wybór najlepszego z 8 kandydatów na tej samej bramce zawyża zysk na bramce (uczciwą liczbą jest test, +1,45); w tekście nie ma kontroli z losowymi edycjami ani porównania z RL/SFT przy tym samym koszcie; przyrosty maleją. Koszt to inferencja: 7 replik vLLM + 1 GPU na SVD i scalanie, 7200 GPU-s na programy na generację plus ocena 8 kandydatów × 2000 odpowiedzi do 16k tokenów.
+- **Dla nas:** to dokładnie nasz model (Qwen3.8-27B) i edycje scalane w plik, więc zero kosztu prędkości; ale zysk 1,45 pkt na matematyce przy kosztach 8 GPU na generację nie uzasadnia dziś powtórki. Ważna lekcja metodyczna: bramka niewidziana przez edytora + osobny test = ten sam wzór, którego używamy przy KLD (K-007).
+
 ## 4. Co już robimy my (to ta sama rodzina, ale cel wybiera człowiek)
 - Qwen3.8-27B Uncensored = jeden kierunek wycięty z warstw zapisujących ([[uncensored-ablacja-kierunku]]); Inkling w Mai: ablacja w locie (`IK2_ABLATE`, odmowy 7/8 → 0/8, dekod −2…−5%); Nib: LoRA rank 1 (−7% T=0).
 - Astra-Stop: rank-1 na `blk.63.ffn_down`, mediana myślenia −35,5%, ale wyciek `</think>` 11/32 ([[astra-stop]], odłożone 2026-11-09).
