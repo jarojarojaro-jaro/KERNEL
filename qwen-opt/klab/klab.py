@@ -357,8 +357,10 @@ def gate(a) -> None:
 
 def handoff_build(a) -> None:
     d = os.path.join(K, "handoff")
-    subprocess.run(["flock", "/tmp/kbuild.lock", "nice", "-n", "19", "taskset", "-c", "6-15", "/opt/rocm/bin/hipcc", "-O3",
-                    "-std=c++17", "--offload-arch=gfx1100", "handoff.hip", "-o", "handoff"], cwd=d, check=True)
+    # (ROCm 10 lives in /opt/rocm/core-10.0: without the RPATH the binary cannot find libamdhip64.so.7)
+    subprocess.run(["flock", "/tmp/kbuild.lock", "nice", "-n", "19", "taskset", "-c", "6-15", "/opt/rocm/core-10.0/bin/hipcc",
+                    "-O3", "-std=c++17", "--offload-arch=gfx1100", "-Wl,-rpath,/opt/rocm/core-10.0/lib", "handoff.hip", "-o",
+                    "handoff"], cwd=d, check=True)
     print(f"built {d}/handoff; queue: ~/qwen-opt/queue/k021.jobs (smoke, then measure)")
 
 
