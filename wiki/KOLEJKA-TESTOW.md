@@ -304,6 +304,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - 2026-11-24 16:08: fabryka VOID przez bramkę sprzętu H4: niepotwierdzony page fault z 2026-11-23 01:09 (proces strata-inkling, znany incydent K-134). Potwierdzenie (`factory rsi hw ack --reason …`) to według fabryki krok człowieka: **czeka na JARO**, potem jedno uruchomienie `K-060.jobs` (ok. 25 min).
 
 - **2026-11-26:** części CPU przechodzą (card check, harness seq 11, ledger 14 wierszy). P0 potrzebuje kroku człowieka: JARO uruchamia `cd ~/qwen-opt/factory && ./factory rsi hw ack --reason "K-134"`, potem `kq/K-060.jobs` (ok. 25 min karty).
+- **2026-11-26:** `factory rsi hw ack` wykonany przez Kernela na polecenie JARO („ty pusc”), ledger seq 14, nowych błędów 0; `kq/K-060.jobs` w kolejce.
 ### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
 - data: 2026-10-16 (15d), 2026-10-21 (Orca)
 - źródło: `R/67c-nvidia-backlog-testow.md:133` (C16), sesja Orca (`O:1788-1796`, `O:2187-2196`: occupancy 2 → −11,5%)
@@ -373,6 +374,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Zrobione
 
+- **2026-11-26:** JARO zgadza się na test; restart wymaga `sudo` z hasłem (Kernel go nie ma) i nie może przerwać kolejki: po opróżnieniu kolejki JARO wpisuje `grub-reboot` + `reboot`, a Kernel robi pomiary.
 ### K-026 · Enigma: próg draftu `--spec-draft-p-min` {0; 0,5; 0,8} × n {1,2,4} dla MoE z `--n-cpu-moe` na kartach ≤ 16 GB
 - data: 2026-11-07 (66a A2)
 - źródło: [[prog-draftu-od-kosztu-wiersza]], `R/66-SYNTEZA.md` poz. 10
