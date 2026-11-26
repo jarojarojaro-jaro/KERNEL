@@ -826,3 +826,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] lekcja | powtórzony błąd „nie dla nas”: lint wymusza sekcję „Na później” w research/; uzupełnione 4 notatki
 
 ## [2026-11-26] research | YASA (Aleph Alpha): notatka llm/yasa-rzadka-uwaga-kolibri; u nas pełna uwaga to ~14% kroku przy 94k, ~25% przy 192k
+
+## [2026-11-26] lekcja + kolejka | +15–30% to test, nie „na później”: K-188 rzadka uwaga bez treningu w kolejce (wysoki priorytet), agent przygotowuje na CPU

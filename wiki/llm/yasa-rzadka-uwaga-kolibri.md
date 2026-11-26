@@ -36,7 +36,7 @@ status: aktualne
 ## Na później
 - **Model z pełną uwagą w większości warstw przy długim kontekście** (np. klient Enigmy z dużym modelem dense na 256k+): YASA-podobny przepis to główna dźwignia, ale tylko z dotrenowaniem i zgodą na zmianę wyników (bramka jakości RULER + nasze zadania).
 - **Własny trening (filar 2):** inicjalizacja KV-sharing przez SVD i indeks z istniejącej głowy to tani start bez osobnej sieci indeksującej; koszt ok. ¼ pretreningu.
-- **Bezstratnie u nas:** z YASA bierzemy tylko pomiar „ile kroku to uwaga” per kontekst (powyżej); jeśli kiedyś przejdziemy na 512k+, ten udział rośnie i opłaca się dalsza praca nad kvq (K-012).
+- **Teraz u nas:** wersja bez treningu (wybór stron KV przy dekodzie) to K-188 w kolejce, bramka KLD + igły.
 - **NVFP4 KV:** u nas wbrew zasadzie bezstratności; na Blackwellu u klientów jako opcja pamięci.
 
 ## Powiązane

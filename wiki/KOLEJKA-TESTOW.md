@@ -21,6 +21,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-188 · Rzadka uwaga bez treningu przy długim kontekście (wybór stron KV jak Quest/YASA) w 16 warstwach pełnej uwagi Qwena
+- data: 2026-11-26 (YASA Kolibri 1.1, link JARO; [[yasa-rzadka-uwaga-kolibri]])
+- mechanizm: metadane stron KV (min/max albo średni klucz) przy zapisie; przy dekodzie wybór top stron pod budżet 4k/8k/16k tokenów + zawsze sink i ostatnie okno; kernel kvq tylko po wybranych stronach; prefill bez zmian. Przełącznik `GGML_HIP_K188=<budżet>`.
+- zysk (nasze liczby): uwaga = ~14% kroku przy 94k (16 × ~275 µs z 31,7 ms), ~25% przy 192k → dekod +10…15% przy 94k, +20…30% przy 192k; przy krótkim kontekście 0.
+- jakość: zmienia wynik → bramka KLD K-007 (w szumie) + igły 64k/128k wszystkie trafione; Nib ma ten mechanizm (`--sparse-pages 224`) i logity tam też się zmieniają — porównać.
+- test: ≤15 min XTX (kernel 32k/96k/192k × budżety, lc.py 94k i ~190k, KLD, igły); przygotowuje agent K188Sparse (CPU), GPU po zgodzie (stop od 16:25).
+- priorytet: wysoki (największa znana dźwignia dekodu przy długim kontekście)
+
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19
 - źródło: [[2026-11-19-k118-nvidia-pelna-moc]]: n2 vs n4 T=1 3090 +7,9%, 3060 +4,3%, 5060 Ti +3,2% (K-114); T=0 +3,0…3,3%; 4080 SUPER bez różnicy
