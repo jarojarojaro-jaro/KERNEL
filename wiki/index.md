@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (129)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (133)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (134)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (90)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
@@ -89,5 +89,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[edycja-wag-a-z|Edycja wag (weight editing) od A do Z: co działa, co jest hype, co robimy my]]
 - 2026-11-26 [[lekcja-rozmiar-pliku-to-nie-bajty-na-token|Rozmiar pliku to nie bajty czytane na token]]
 
-Razem 853 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 854 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

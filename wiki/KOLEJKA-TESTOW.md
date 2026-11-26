@@ -135,16 +135,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **wynik XTX 2026-11-25 21:35 (topka produkcji, port 18794):** skill-io bench.py: TTFT krótki 304,7 ms, dekod c1 145,4 t/s; długi 65 259 tok.: TTFT 83,2 s, prefill 784,8 t/s, dekod 118,7 t/s, igły 3/3. Część 5060 Ti / 3090 w paczce Vast nvq (2026-11-26).
 - **2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** część 5060 Ti nieudana: serwer OOM przy starcie (ctx za duży z MTP na 16 GB); do powtórki z mniejszym ctx.
-### K-006 · Wpis „wspólny początek” (Maya #607) i chude checkpointy (stan GDN tylko na granicach wiadomości) zamiast kopii całej sesji w cache
-- data: 2026-11-05
-- źródło: [[wspolny-poczatek-promptu]], `R/63-SYNTEZA.md:85-86` (plan #6, #7), `R/63b-colibri-maya-delta.md` §6, `R/68c-dlugi-kontekst-gdn.md:143`
-- test: najpierw implementacja. XTX: `switch.py` z cachesave (2 przeplatane wątki 75–120k, 14 tur ≈ 3 min), mediana tury, `prompt_n`, md5 = zimny start; ≤ 10 min/ramię.
-- zysk: start sesji po wyrzuceniu z cache 4,4 s → 0,3–0,5 s, przy 100k+ ~5–7 s → 0,3–0,5 s [SZACUNEK]; wpis 118k 14,2 GB → ~3–4 GB, czyli 3–4 długie wątki w cache zamiast 1
-- ryzyko karty: brak (RAM hosta; `HSA_USE_SVM=0` już jest)
-- priorytet: wysoki (≥ 1 s/turę agenta)
-
-- **wynik 2026-11-25 20:54–21:19 (XTX, `~/wt/k006` k006-thin, ABBA A=prod / C=THIN=4+PREFIX=2):** zapis wpisu cache mediana 5291 → **3404 MiB (−36%)**, maks. 8331 → 4049 MiB (−51%), checkpointy 12 → 5; tura agenta bez zmian (12,5 vs 12,3–12,6 s). Nowa sesja z tym samym system promptem: 1221 → 913–1341 ms; po wyrzuceniu slotu wpis „wspólny początek” daje **8543 → 860 ms (−90%)**. md5: 7 z 30 różnych, ale także między ramionami bez zmian (suite: A2 a0dde0fa vs EA/EB f3e9f53e), więc harness nie jest deterministyczny między serwerami; bezstratności nie da się tu orzec md5. Werdykt: duży zysk pamięci i TTFT, wdrożenie wymaga bramki KLD/wymuszania tokenów (decyzja K-007).
-- **2026-11-26 bramka K-007: PASS** (KLD 0 na ścieżce przywracania z wpisu „wspólny początek”). Do wdrożenia razem z K-001 po bramce prędkości.
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
 - źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
@@ -165,17 +155,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-25 (L4):** mikrobench kvq: KVQ1 vs KVQ0 nb2 191,5 → 37,7 µs, nb5 249,8 → 59,3, nb8 253,3 → 80,1 (kvq dużo szybsze na sm_89); BPSM 1/2 bez zmian, 3/4 gorzej (nb5 78,4 / 75,2). Regresja z wpisu dotyczy sm_120 (5080, 5060 Ti): wymaga wynajmu.
 - **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** mikrokernel kvq 3–6× szybszy od zwykłego FA przy nb 2–16 (8192 nb5 284,7 → 48,5 µs); BPSM 1/3/4/6 gorsze od domyślnego. End-to-end KVQ0 vs KVQ1 (n2): T=0 +1,6%, kopia +12,2% (194,6 vs 173,5), T=1 −1,8%: regresja jest w ścieżce szerokiej weryfikacji, nie w kernelu. Następny krok: nsys kopii.
-### K-017 · Głębokość i szerokość draftu per klasa żądania (`LLAMA_SPEC_ROUTE`: rozumowanie/kod T=0 → n=5, proza → n=3)
-- data: 2026-10-21 (raport 44)
-- status: **czeka na decyzję** (bramka K-007; n=5 zmienia md5 → d71a2c04). Najpierw naprawić crash ABBA `ggml-cpu.c:2504` w `ggml_graph_plan`.
-- źródło: `R/44-routing-profili-spekulacji.md:5-7`, [[raport-44-spec-route]], `R/36-xtx-qwen-roadmap.md:183`
-- test: XTX `~/qwen-opt/xtxlab/sr_gate.sh` + `sr_arm.sh` (`x44.jobs`), reason_bench T=0, spec_sweep, `mvs`; po jednym na job ≤ 10 min
-- zysk: rozumowanie T=0 +6,8%, proza +4,3%, kod/JSON T=0 +5…10%, czat 0 (kill < −1%)
-- ryzyko karty: brak
-- priorytet: średni (zależy od decyzji)
-
-- **wynik 2026-11-25 22:28–22:37 (XTX, qprep-spec 50ca29355, `LLAMA_SPEC_ROUTE` + `DRAFT_N=5` vs prod, ABBA):** bramka: routing ≤ 4 = prod (aa522e89), routing 5 = zwykłe n5. Proza T=1 bez myślenia 104,9 / 108,0 → 110,1 / 110,1 (**+3,4%**), czat T=1 109,2 / 115,4 → 113,9 / 113,6 (+1,3%), kopia T=0 407,5 / 427,6 → 410,9 / 410,1 (−1,7%). Zysk na granicy progu 3% tylko dla prozy; głębokość 5 zmienia md5 T=0 z założenia, więc wdrożenie zależy od decyzji K-007.
-- **2026-11-26 bramka K-007: PASS** (rozkład identyczny). Zysk +3,4% proza / −1,7% kopia: wdrożenie dopiero po wall.py −2% (K-183 następny).
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -187,16 +166,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-26 ocena:** KLD A3 vs U3 już jest (16e); brakuje ISTA IQ3_XXS-mtp i W3 na 5 korpusach (A40 ok. 1 h, ok. 0,6 $, pobranie BF16 54 GB na wynajętej maszynie) i jakości-mini (ok. 4 h na 3090, ok. 1,1 $). Wymaga budżetu.
 - **2026-11-26 wyjaśnienie dla JARO:** to nie test prędkości, tylko wybór pliku modelu, który Enigma poleca dla kart 12/16 GB (który kwant najmniej odbiega od pełnego modelu, KLD + krótki test jakości). Porównanie A3 vs U3 już jest (16e: A3 lepszy, KLD czat −12%, kod −23%); brakuje tylko ISTA IQ3_XXS-mtp i W3. Rekomendacja: odłożyć, dopóki Enigma nie oferuje tych plików.
-### K-036 · Nakładanie kroków: wejścia kroku t+1 przed synchronizacją hosta (ZOS-lite), obcinanie po stop-tokenie na GPU
-- data: 2026-10-20 (36 L11)
-- źródło: `R/36-xtx-qwen-roadmap.md:196`, `R/63-SYNTEZA.md:90`, `R/66-SYNTEZA.md:63`, `R/67c-nvidia-backlog-testow.md:129` (C12)
-- test: md5 + test „stop-token w środku okna”, spec_sweep ABBA ≤ 10 min (XTX i 5060 Ti)
-- zysk: XTX +0,7…1,8% (luka GPU 410 µs z 27,3 ms), 5060 Ti ≤ +3,9%, LFM +4…6%
-- ryzyko karty: PM4 (zmiana porządku taśm)
-- priorytet: niski (XTX poniżej progu)
-
-- **2026-11-25:** krok 1 w kolejce (`k036.jobs`): ślad przerw hosta produkcji (`LLAMA_HOSTGAP_TRACE=1`); nakładanie kroków (2–4 dni) tylko gdy bezczynność ≥ 1% kroku.
-- **2026-11-25 bieg nieważny:** ślad przerw hosta nie wyprodukował raportu („no report with >= 30 steps”); przełącznik `LLAMA_HOSTGAP_TRACE` prawdopodobnie nie istnieje w buildzie qprep-spec (jest w topka-q63). Do poprawki skryptu.
 ### K-037 · Megakernel / rezydentna pętla MTP (PoC-A w trwałej siatce 96–192 WG)
 - data: 2026-10-16 (15a), 2026-11-07 (66c)
 - źródło: [[budzet-megakernela-qwen-xtx]], [[lekcja-megakernel-prefetch-nie-granica]], `R/66c-hyperkernel-megakernele.md` §7
@@ -316,6 +285,19 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-006 · Wpis „wspólny początek” (Maya #607) i chude checkpointy (stan GDN tylko na granicach wiadomości) zamiast kopii całej sesji w cache
+- data: 2026-11-05
+- źródło: [[wspolny-poczatek-promptu]], `R/63-SYNTEZA.md:85-86` (plan #6, #7), `R/63b-colibri-maya-delta.md` §6, `R/68c-dlugi-kontekst-gdn.md:143`
+- test: najpierw implementacja. XTX: `switch.py` z cachesave (2 przeplatane wątki 75–120k, 14 tur ≈ 3 min), mediana tury, `prompt_n`, md5 = zimny start; ≤ 10 min/ramię.
+- zysk: start sesji po wyrzuceniu z cache 4,4 s → 0,3–0,5 s, przy 100k+ ~5–7 s → 0,3–0,5 s [SZACUNEK]; wpis 118k 14,2 GB → ~3–4 GB, czyli 3–4 długie wątki w cache zamiast 1
+- ryzyko karty: brak (RAM hosta; `HSA_USE_SVM=0` już jest)
+- priorytet: wysoki (≥ 1 s/turę agenta)
+
+- **wynik 2026-11-25 20:54–21:19 (XTX, `~/wt/k006` k006-thin, ABBA A=prod / C=THIN=4+PREFIX=2):** zapis wpisu cache mediana 5291 → **3404 MiB (−36%)**, maks. 8331 → 4049 MiB (−51%), checkpointy 12 → 5; tura agenta bez zmian (12,5 vs 12,3–12,6 s). Nowa sesja z tym samym system promptem: 1221 → 913–1341 ms; po wyrzuceniu slotu wpis „wspólny początek” daje **8543 → 860 ms (−90%)**. md5: 7 z 30 różnych, ale także między ramionami bez zmian (suite: A2 a0dde0fa vs EA/EB f3e9f53e), więc harness nie jest deterministyczny między serwerami; bezstratności nie da się tu orzec md5. Werdykt: duży zysk pamięci i TTFT, wdrożenie wymaga bramki KLD/wymuszania tokenów (decyzja K-007).
+- **2026-11-26 bramka K-007: PASS** (KLD 0 na ścieżce przywracania z wpisu „wspólny początek”). Do wdrożenia razem z K-001 po bramce prędkości.
+- **K-006g 2026-11-26 11:37–11:42 (XTX, silnik k183e e3ab5b9e3 = k183c + K-006, `LLAMA_SERVER_CACHE_THIN=4 PREFIX=2`, ABBA 2 pary):** GATE PASS: wall −0,1…+0,2%, md5 T=0 i T=0,7 identyczne. **Restart sesji po wyrzuceniu z cache: 8447–8584 ms → 755–848 ms (−90%)**, prompt_n 7309 → 31; zapis wpisu prefiksu 352 MiB w 71 ms. Odpowiedzi z wpisu prefiksu różnią się md5 od zimnego startu (4/10), co pokrywa bramka KLD K-007 (PASS). **Wdrożone na :8080 2026-11-26 11:43** (`~/llama-topka-k183e`, smoke: exe i biblioteki z nowego katalogu, md5 = produkcja, env THIN/PREFIX widoczne w procesie).
+- przeniesione 2026-11-26: w produkcji
 
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
@@ -1307,6 +1289,34 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-036 · Nakładanie kroków: wejścia kroku t+1 przed synchronizacją hosta (ZOS-lite), obcinanie po stop-tokenie na GPU
+- data: 2026-10-20 (36 L11)
+- źródło: `R/36-xtx-qwen-roadmap.md:196`, `R/63-SYNTEZA.md:90`, `R/66-SYNTEZA.md:63`, `R/67c-nvidia-backlog-testow.md:129` (C12)
+- test: md5 + test „stop-token w środku okna”, spec_sweep ABBA ≤ 10 min (XTX i 5060 Ti)
+- zysk: XTX +0,7…1,8% (luka GPU 410 µs z 27,3 ms), 5060 Ti ≤ +3,9%, LFM +4…6%
+- ryzyko karty: PM4 (zmiana porządku taśm)
+- priorytet: niski (XTX poniżej progu)
+
+- **2026-11-25:** krok 1 w kolejce (`k036.jobs`): ślad przerw hosta produkcji (`LLAMA_HOSTGAP_TRACE=1`); nakładanie kroków (2–4 dni) tylko gdy bezczynność ≥ 1% kroku.
+- **2026-11-25 bieg nieważny:** ślad przerw hosta nie wyprodukował raportu („no report with >= 30 steps”); przełącznik `LLAMA_HOSTGAP_TRACE` prawdopodobnie nie istnieje w buildzie qprep-spec (jest w topka-q63). Do poprawki skryptu.
+- **K-036t 2026-11-26 11:32 (ślad przerw hosta na produkcji k183c, `LLAMA_HOSTGAP_TRACE=1`):** bezczynność GPU między krokami: kod 1086–2222 µs z 38,0 ms (2,9–5,8%), proza 1075–1092 µs z 33,1 ms (3,2–3,3%) → **WORTH IT (≥ 1%)**. Wcześniejszy „brak raportu” to zły plik (stderr w `.stdout`). Implementacja `LLAMA_K036` w `~/wt/k036` w toku.
+- **K-036m 2026-11-26 11:41 (ślad z medianą, blokada kbuild trzymana, 0 kompilatorów):** bezczynność GPU między taśmami **468–479 µs/krok (1,82–1,85%)** z 25,4–26,3 ms; największy fragment hosta `llm.inputs → cuda.gc.in` 69–75 µs/krok. Żaden kawałek ≥ 0,5 ms → **stop K-036**: całe nakładanie dałoby najwyżej ~1,8%, a największy element strukturalny (catch-up w taśmie draftu) 60–100 µs. Wcześniejsze 2,9–5,8% to artefakt średnich (pojedyncze synchronizacje prefillu 78–95 ms) i builda na rdzeniach SMT serwera.
+- przeniesione 2026-11-26: zysk < progu
+
+### K-017 · Głębokość i szerokość draftu per klasa żądania (`LLAMA_SPEC_ROUTE`: rozumowanie/kod T=0 → n=5, proza → n=3)
+- data: 2026-10-21 (raport 44)
+- status: **czeka na decyzję** (bramka K-007; n=5 zmienia md5 → d71a2c04). Najpierw naprawić crash ABBA `ggml-cpu.c:2504` w `ggml_graph_plan`.
+- źródło: `R/44-routing-profili-spekulacji.md:5-7`, [[raport-44-spec-route]], `R/36-xtx-qwen-roadmap.md:183`
+- test: XTX `~/qwen-opt/xtxlab/sr_gate.sh` + `sr_arm.sh` (`x44.jobs`), reason_bench T=0, spec_sweep, `mvs`; po jednym na job ≤ 10 min
+- zysk: rozumowanie T=0 +6,8%, proza +4,3%, kod/JSON T=0 +5…10%, czat 0 (kill < −1%)
+- ryzyko karty: brak
+- priorytet: średni (zależy od decyzji)
+
+- **wynik 2026-11-25 22:28–22:37 (XTX, qprep-spec 50ca29355, `LLAMA_SPEC_ROUTE` + `DRAFT_N=5` vs prod, ABBA):** bramka: routing ≤ 4 = prod (aa522e89), routing 5 = zwykłe n5. Proza T=1 bez myślenia 104,9 / 108,0 → 110,1 / 110,1 (**+3,4%**), czat T=1 109,2 / 115,4 → 113,9 / 113,6 (+1,3%), kopia T=0 407,5 / 427,6 → 410,9 / 410,1 (−1,7%). Zysk na granicy progu 3% tylko dla prozy; głębokość 5 zmienia md5 T=0 z założenia, więc wdrożenie zależy od decyzji K-007.
+- **2026-11-26 bramka K-007: PASS** (rozkład identyczny). Zysk +3,4% proza / −1,7% kopia: wdrożenie dopiero po wall.py −2% (K-183 następny).
+- **K-017g 2026-11-26 11:33–11:37 (XTX, produkcja k183c vs produkcja + `LLAMA_SPEC_ROUTE=1 DRAFT_N=5`, ABBA 2 pary, wallm.py):** **FAIL**: T=0 kod −6,0%, tech −3,5%, pl −17,2%, json −0,3%; T=0,7 kod −11,2%, tech −13,8%, json −17,5%, pl +4,0%; kopia mvs 413,5 → 397,2 t/s (−3,9%). Routing przydziela promptom czatu profil „reason” z głębią 5, a weryfikacja 6 wierszy kosztuje więcej niż zysk akceptacji. Odrzucone.
+- przeniesione 2026-11-26: FAIL wall
 
 ### K-186 · Nib v0.1.2: kernele bez spilli VGPR, prefill 128K +32% na XTX (zwiad 26.11)
 - Plan: build v0.1.2 obok naszego, `nib bench -p 512 -n 64 -c 131072 --sparse-pages 224` stary vs nowy, logity identyczne, przeniesienie `--weights-patch` (WE2). ≤12 min GPU. Przygotowuje agent K186Nib012.

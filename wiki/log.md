@@ -808,3 +808,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wyniki | K-012b układ par fal kvq: kernel nb5 −14,5…−16,9%, dekod 94k +2,0%, bitowo identyczny → PASS; K-001c tania poprawka wycieku 0/12, md5 identyczne, wall +1…+2% poza T=0,7 tech −3,0% (szum?) → łączna bramka K-183c; K-185b LGB bez znaczenia
 
 ## [2026-11-26] wdrożenie | K-183c na :8080: silnik ~/llama-topka-k183c (K-012 pary fal kvq + K-001c), dekod 94k +2,1%, wycieki 0/12, md5 identyczne; topki zaktualizowane (Qwen k183c, Maya k185)
+
+## [2026-11-26] wdrożenie + wyniki | K-006 na :8080 (restart po wyrzuceniu 8,5 → 0,8 s, wall ±0,2%); K-017 FAIL (−3,5…−17,5%); K-036 zamknięty (bezczynność 1,8%, brak kawałka ≥ 0,5 ms); lekcja: build na 6-15 dzieli rdzenie SMT z serwerem 2-5

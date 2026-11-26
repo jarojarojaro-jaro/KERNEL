@@ -19,7 +19,7 @@ Lekcje procesowe (z korekt użytkownika) mają prefiks `proces-`.
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (133)
+## Notatki (134)
 
 - [[lekcja-oom-ub2048|-ub 2048 przy ctx 204800 kończy się OOM]] — Większy micro-batch daje +3% prefillu w llama-bench, ale serwer z kontekstem 204800 przekracza 24.5 GB VRAM przy pierwszym długim prompcie; zostajemy przy ub 512.
 - [[lekcja-cache-ram-za-maly|`--cache-ram 16384` za mały: 74% prefillu agenta to ponowne czytanie]] — Analiza 704 żądań z `~/qwen-opt/logs/server-*.log` (2026-11-05): z 4753 s prefillu 3536 s (74%) to 38 tur, w których prompt ≥ 20k był czytany od zera lub od ≤ 8k; najgorsze tury trwały 150–200 s.
@@ -74,6 +74,7 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[lekcja-label-to-nie-binarka|Label w pomiarach nie jest tożsamością binarki]] — Label „base” w `spec_sweep.jsonl` wskazywał na nadpisywany katalog `~/llama-opt`, więc ta sama nazwa dawała 29.77, 29.36, 29.12 i 29.16 ms/krok w różnych sesjach i nie da się oddzielić dryfu sprzętu od zmian kodu.
 - [[lekcja-landing-jeden-uklad|Landing: jeden układ stron producentów, spójne liczby między scenami, treść widoczna od pierwszej klatki, spokojny ruch]] — Cztery uwagi użytkownika z 2026-10-20 do landingu: osobny układ strony Apple odrzucony, scena 02 pokazywała liczbę z innej karty niż 01, wejście „laguje” przez fade z opacity 0, a pulsujące elementy są niemile widziane.
 - [[lekcja-vastai-destroy-pyta|Lekcja: `vastai destroy instance` w CLI 1.11 pyta o potwierdzenie, więc watchdog bez `-y` nic nie usuwa]] — `vastai destroy instance <id>` bez terminala wypisuje „Aborted.” i instancja dalej działa i kosztuje. Każdy watchdog, sprzątanie i skrypt `down` musi wołać `vastai destroy instance <id> -y`, a po usunięciu trzeba sprawdzić `vastai show instances`.
+- [[lekcja-build-na-rdzeniach-smt-serwera|Lekcja: build na `taskset -c 6-15` dzieli fizyczne rdzenie z serwerem testowym na 2–5]] — 
 - [[lekcja-czas-optymalizacji-to-metryka|Lekcja: czas od nowego modelu lub pomysłu do zmierzonego wyniku to osobna metryka, którą mierzymy i skracamy]] — Ważny jest nie tylko wynik optymalizacji, ale też ile czasu zajmuje jego zdobycie (właściciel 2026-11-18). Dlatego każda kampania zapisuje znaczniki czasu etapów i szukamy w niej najwolniejszego etapu, tak jak najwolniejszego kernela.
 - [[lekcja-uczymy-sie-nie-tylko-predkosc|Lekcja: link o infrastrukturze oceniam także jako naukę i wzór dla naszych projektów, nie tylko „czy przyspieszy model”]] — 2026-11-24 ocenę Inference Stack (BerriAI/LiteLLM: vLLM + llm-d + LiteLLM + Grafana + Lens) zamknąłem zdaniem „dla prędkości na XTX zero”, choć to ten sam rodzaj produktu, który budujemy w Enigmie (instalator, wybór modelu, silnik, pomiar, lokalne API) i który nam wyszedł gorzej.
 - [[lekcja-vast-tylko-pelna-moc|Lekcja: na Vaście bierzemy tylko karty z pełną mocą — sprawdzenie przed pobraniem modelu, zły host na czarną listę]] — Na Vaście bierzemy tylko hosty z pełną mocą karty: sprawdzenie `nvidia-smi` przed pobraniem modelu, zły host od razu usuwamy i dopisujemy do czarnej listy.
