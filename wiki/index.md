@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (42)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (43)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (30)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (7)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
@@ -79,6 +79,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 - 2026-11-26 [[2026-11-26-bramka-kld|2026-11-26: bramka KLD zamiast identycznego md5, gdy zmiana niczego nie psuje]]
 - 2026-11-26 [[2026-11-26-bez-pobierania-modeli|2026-11-26: nie pobieramy nowych modeli do testów, pracujemy na tych, które są]]
+- 2026-11-26 [[2026-11-26-adapter-omp-odlozony|2026-11-26: trening własnego adaptera pod omp odkładamy]]
 - 2026-11-25 [[perf|tools/perf: pętla optymalizacji jedną komendą (K-161)]]
 - 2026-11-25 [[bonsai-2-5-uncensored|Ternary Bonsai 2.5 27B Uncensored (AtomicChat)]]
 - 2026-11-25 [[metoda-nib-level-up|Metoda Nib i co zmieniamy u siebie („level wyżej”)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-25 [[lekcja-spekulacja-polski-prompt|Spekulację sprawdzamy na polskim prompcie, zanim wejdzie do produkcji]]
 - 2026-11-25 [[lekcja-przegrywamy-procesem-nie-wiedza|Lekcja: przegrywamy procesem, nie wiedzą o kernelach]]
 - 2026-11-25 [[lekcja-lista-do-usuniecia-z-rola-pliku|Lista „do usunięcia” podaje rolę każdego pliku, nie tylko nazwę katalogu]]
-- 2026-11-25 [[lekcja-final-speed-to-najszybszy-znany|Lekcja: „final speed” to najszybszy wariant zmierzony na naszej karcie, nawet gdy to cudzy silnik]]
 
-Razem 840 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 841 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

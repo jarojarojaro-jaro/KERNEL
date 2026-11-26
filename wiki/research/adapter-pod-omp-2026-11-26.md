@@ -38,6 +38,9 @@ status: aktualne
 | **2. Samodestylacja SFT** | nasz model rozwiązuje zadania w omp wiele razy (XTX, noc), zostawiamy udane trajektorie, LoRA SFT na nich | ok. 5–15 $ (A100 80 GB 4–8 h) + noce XTX | mały zysk bez sygnału nagrody |
 | **3. RL jak harness-hub** | AsyncGRPO na naszych zadaniach z weryfikatorem, safeagents | Inkling: 35–75 min/krok × 100–160 kroków na 2 GPU ≈ 120–400 GPU-h ≈ 300–2000 $; Qwen 27B podobny rząd | koszt, reward hacking, dryf kwantyzacji Q4_K_M |
 
+## Decyzja
+- 2026-11-26 01:54 JARO odkłada temat ([[2026-11-26-adapter-omp-odlozony]]).
+
 ## Rekomendacja
 1. Robię krok 0 teraz (zestaw zadań omp + skrypt oceny), bo jest potrzebny do wszystkiego, co dalej.
 2. Krok 1 po „tak” na pobranie dwóch adapterów (ok. 1 GB, wyjątek od zasady „pracuj na tych co masz”).
