@@ -802,3 +802,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] zwiad | Tintero PR #2 (XTX Inkling: plain +9%, draft kod 103 → 151–160) → K-185; Nib 0.1.2 bez spilli, prefill 128K +32% → K-186; tqLLM/Strata/hipfire/TensorFold/NInfer/oMLX bez znaczenia dla XTX; K-182b NO-GO (×1,05)
 
 ## [2026-11-26] wyniki | K-186 Nib 0.1.2: 0% na naszym clang 23 (logity identyczne); WE2 HumanEval+ scalone proj 87,2 = LoRA 87,2 (baza 86,0)
+
+## [2026-11-26] wdrożenie | K-185 port Tintero PR #2 do Mai: wall T=0 141,8 → 152,0 (+7,2%), T=0,7 +0,3%, md5 identyczne → produkcja maya-atomic.json

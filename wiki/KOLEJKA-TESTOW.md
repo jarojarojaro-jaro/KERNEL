@@ -21,9 +21,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-185 · Port Tintero PR #2 do Mai: grupowana weryfikacja ekspertów raz na okno, drafter w grafie, online-softmax draft_attn (zwiad 26.11)
-- Źródło: GodGMN/tintero a9d857803, ta sama karta (XTX) i model: plain 111 → 121 (+9%), draft kod 103 → 151–160, okno B=5 37,6 → 21 ms. Bezstratność: zgodność greedy z plain.
-- Plan: diff mechanizmów z `~/k134/wt-k158g`, port brakujących za przełącznikami w `~/k134/wt-k185`, A/B z produkcją Mai (nib-ab.sh) + md5 T=0, ≤15 min GPU. Przygotowuje agent K185Tintero.
 ### K-001c · Tańsza poprawka wycieku stanu K-001 (po K-183 FAIL −5…−12%)
 - Plan: maska tylko dla przywróconych slotów / kafli z zamaskowanymi komórkami; bramka jak K-183 (12× wyciek + wall.py vs produkcja). Przygotowuje agent K001Cheap.
 
@@ -367,6 +364,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-185 · Port Tintero PR #2 do Mai: grupowana weryfikacja ekspertów raz na okno, drafter w grafie, online-softmax draft_attn (zwiad 26.11)
+- Źródło: GodGMN/tintero a9d857803, ta sama karta (XTX) i model: plain 111 → 121 (+9%), draft kod 103 → 151–160, okno B=5 37,6 → 21 ms. Bezstratność: zgodność greedy z plain.
+- Plan: diff mechanizmów z `~/k134/wt-k158g`, port brakujących za przełącznikami w `~/k134/wt-k185`, A/B z produkcją Mai (nib-ab.sh) + md5 T=0, ≤15 min GPU. Przygotowuje agent K185Tintero.
+- Port (`~/k134/wt-k185`, k185-tintero be8e5c16): GEXP (eksperci Q4_K/Q5_0 czytani raz na grupę w oknie), LGB (bramki pętli raz na okno), DONLINE (online-softmax draft_attn), EMAG (strażnik EMA); drafter w grafie, bf16/q8 mv, fuzja QKV i router mv Maya już miała.
+- **wynik 2026-11-26 06:03–06:08 (XTX):** testy bitowe ok; PARITY 11/11 md5 identyczne z produkcją. Bench P=1024: eksperci v2 3,78 → 2,97 ms (GEXP), propose(7) 2,00 → 1,56 ms (−22%, DONLINE), LGB pogarsza weryfikację (v8 28,06 → 30,72 ms). **Wall prod → all: T=0 mediana 141,8 → 152,0 (+7,2%)**, kod +5,2%, tech +10,1%, json +5,7%, pl +0,3%; T=0,7 112,7 → 113,0 (+0,3%). Żadna kategoria poniżej −2% → **wdrożone 2026-11-26** (`maya-atomic.json`, kopia `maya-atomic.prev-k158g.json`). Dalej: K-185b wall „all bez LGB”.
+- przeniesione 2026-11-26: zwycięzca, w produkcji
 
 ### K-184 · Poprawka DFlash2 dla Inklinga z llama.cpp PR #33049 (link JARO 26.11) na XTX
 - Port: `~/wt/k184` (gałąź k184-dflash2-ink, df64666ae): klucz `target_visits`, RMS-norm pożyczonych embeddingów `tok_norm` celu, softcap selektora po korekcie; drafter skonwertowany do `~/models/inkling/dflash2-Inkling-2-Mini-bf16.gguf` (989 MB).

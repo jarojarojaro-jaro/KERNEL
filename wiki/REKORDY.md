@@ -272,6 +272,7 @@ FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s.
 ## Wdrożone 2026-11-26
 - Qwen3.8-27B Uncensored, XTX, czat :8080: K-020 wyrzucanie cache ważone kosztem, **w produkcji** (silnik `~/llama-topka-k020`): replay 3 wątków agenta 207,9 → 101,8 s (−51%), wall.py ±0,1%, md5 identyczne (K-178).
 - Inkling 2 Mini, Maya: K-158g w `maya-atomic.json` (wall T=0 mediana 112,8 → 142,5, L2k 107,5 → 119,6; T=0,7 bez zmian).
+- Inkling 2 Mini, Maya: **K-185 (port Tintero PR #2: eksperci raz na okno weryfikacji, online-softmax drafter, strażnik EMA) w produkcji** `~/k134/maya-atomic.json` → `~/k134/bin-k185/maya-ik2` (be8e5c16): wall T=0 mediana **141,8 → 152,0 t/s (+7,2%)** (kod 169,1 → 177,9, tech 114,5 → 126,1, json 197,7 → 208,9, pl 110,7 → 111,0), T=0,7 112,7 → 113,0; md5 T=0 11/11 identyczne; `~/qwen-opt/nib/out/nib.txt` (WALL maya-k185-*), `~/qwen-opt/queue/logs/k185-*.log`.
 
 ## Nowe najlepsze 2026-11-25 (jeszcze nie w produkcji)
 - Inkling 2 Mini AtomicChat AD-Q4_K, Maya + K-148 `both`, XTX, edycja kodu `python_edit` (dokładnie): **334,1 t/s** (prod 292,6, +14,2%); `~/qwen-opt/queue/logs/k148-copy.log`; wdrożenie K-176.

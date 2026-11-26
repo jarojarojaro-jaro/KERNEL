@@ -3135,3 +3135,4 @@ Metoda: skrypt wyciągnął wszystkie liczby z treści każdej nowej notatki i z
 - [[log]]
 
 - 2026-11-25 wieczór: K-148 edycja 292,6 → 334,1 (+14,2%); K-018 kopia +5,4%, sweep T=0 −2,0%; K-019 +1,4%; K-020 wall 208 → 102 s (−51%); K-164d pl 105,9 (blok); Bonsai K-169 123,5 vs n2 145,7 (odrzucone), Q2BW plain +3,1%; K-174 tokenizacja −16%.
+- 2026-11-26: K-185 Maya T=0 141,8 → 152,0 (+7,2%, wdrożone); WE2 Nib scalone +5,2/+5,7% (odmowy 0/5, HE+ 87,2 = LoRA); WE1 Astra-Stop przy effort low +17% czasu (odrzucone); K-183 poprawka K-001 −5…−12% (FAIL); K-184 DFlash2 Inkling llama.cpp 26 → 44 t/s (Maya 113); K-182 GEMV q4_K n=16 67% pasma, K-182b ×1,05 (NO-GO); K-021 KILL; K-012 GO (−19%); K-186 Nib 0.1.2 0%
