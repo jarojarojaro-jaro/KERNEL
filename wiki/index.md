@@ -58,7 +58,7 @@ Audyt liczb: [[AUDYT]].
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (44)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (30)
-- [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (8)
+- [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (9)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
@@ -80,6 +80,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[edycja-wag-backlog-2026-11-26|Lista eksperymentów z edycją wag (2026-11-26)]]
 - 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
+- 2026-11-26 [[model-carving|Model Carving: trening sam wycina zbędne podwarstwy]]
 - 2026-11-26 [[edycja-wag-a-z|Edycja wag (weight editing) od A do Z: co działa, co jest hype, co robimy my]]
 - 2026-11-26 [[lekcja-rozmiar-pliku-to-nie-bajty-na-token|Rozmiar pliku to nie bajty czytane na token]]
 - 2026-11-26 [[2026-11-26-eksperymenty-edycji-wag|2026-11-26: robimy dużo eksperymentów z edycją wag]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[2026-11-26-bez-pobierania-modeli|2026-11-26: nie pobieramy nowych modeli do testów, pracujemy na tych, które są]]
 - 2026-11-26 [[2026-11-26-adapter-omp-odlozony|2026-11-26: trening własnego adaptera pod omp odkładamy]]
 - 2026-11-25 [[perf|tools/perf: pętla optymalizacji jedną komendą (K-161)]]
-- 2026-11-25 [[bonsai-2-5-uncensored|Ternary Bonsai 2.5 27B Uncensored (AtomicChat)]]
 
-Razem 847 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 848 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
