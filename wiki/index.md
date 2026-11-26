@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (43)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (44)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (30)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (8)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
@@ -81,13 +81,13 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 - 2026-11-26 [[edycja-wag-a-z|Edycja wag (weight editing) od A do Z: co działa, co jest hype, co robimy my]]
 - 2026-11-26 [[lekcja-rozmiar-pliku-to-nie-bajty-na-token|Rozmiar pliku to nie bajty czytane na token]]
+- 2026-11-26 [[2026-11-26-eksperymenty-edycji-wag|2026-11-26: robimy dużo eksperymentów z edycją wag]]
 - 2026-11-26 [[2026-11-26-bramka-kld|2026-11-26: bramka KLD zamiast identycznego md5, gdy zmiana niczego nie psuje]]
 - 2026-11-26 [[2026-11-26-bez-pobierania-modeli|2026-11-26: nie pobieramy nowych modeli do testów, pracujemy na tych, które są]]
 - 2026-11-26 [[2026-11-26-adapter-omp-odlozony|2026-11-26: trening własnego adaptera pod omp odkładamy]]
 - 2026-11-25 [[perf|tools/perf: pętla optymalizacji jedną komendą (K-161)]]
 - 2026-11-25 [[bonsai-2-5-uncensored|Ternary Bonsai 2.5 27B Uncensored (AtomicChat)]]
 - 2026-11-25 [[metoda-nib-level-up|Metoda Nib i co zmieniamy u siebie („level wyżej”)]]
-- 2026-11-25 [[cspd-soft-prompt|CSPD: destylacja eksperta RL do soft promptu 256 tokenów]]
 
-Razem 845 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 846 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
