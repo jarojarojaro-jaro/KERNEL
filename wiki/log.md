@@ -812,3 +812,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wdrożenie + wyniki | K-006 na :8080 (restart po wyrzuceniu 8,5 → 0,8 s, wall ±0,2%); K-017 FAIL (−3,5…−17,5%); K-036 zamknięty (bezczynność 1,8%, brak kawałka ≥ 0,5 ms); lekcja: build na 6-15 dzieli rdzenie SMT z serwerem 2-5
 
 ## [2026-11-26] wyniki | K-159 Maya zostaje (Nib+WE2 na 0.1.2 psuje drafter: 101 vs 149 t/s); K-047 +0,3–0,4% bitowo identyczne (PASS); K-124 KILL (−0,3%) + znalezisko: wynik T=0 zależy od kolejności żądań; K-158r T=0,7 kod +55–64%, json +71–77%, pl −2,3–3,0% → K-158s; K-132 ramię 6.8 (zimny start 45 s vs 6 s)
+
+## [2026-11-26] wdrożenie | K-158s Maya: T=0,7 mediana 112,7 → 147,7 (+31%), kod +64%, json +71%, pl −1,5%, T=0 md5 identyczne → maya-atomic.json; K-120 KILL (LoRA pi −28,5% dekodu); K-182 zamknięty; K-060 P0 fabryka działa (EPI +2,3…2,8% potwierdzone)
