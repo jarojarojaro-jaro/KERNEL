@@ -794,3 +794,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] metody | szybsze testowanie: narzut XTX ok. 10% (restarty czatu 22 min, przerwy 52 min), Vast 3090 −40 min przez build llamAmpere; naprawione: pomijanie restore między paczkami, orch.py bez czekania na obcy build; WE2 (scalenie LoRA w NVFP4 Niba, proj requant resid 0,005) w kolejce
 
 ## [2026-11-26] wdrożenia i wyniki | K-020 w produkcji czatu (−51% w agencie, odpowiedzi identyczne), K-158g w Mai; K-179 −2,7% pl (FAIL), K-007 bramka działa (K-017, K-006 PASS), K-001: produkcja ma 3 wycieki stanu/12, poprawka 0 → bramka K-183; K-050 0%, K-047 sufit 0,5 ms/krok; K-012/K-021/K-060 nieważne
+
+## [2026-11-26] wyniki | WE1 Astra-Stop na Qwen uncensored: przy effort low nie skraca myślenia (skala 1: +17% czasu), jakość bez zmian, LoRA w locie −6,7% dekodu → nie wdrażamy

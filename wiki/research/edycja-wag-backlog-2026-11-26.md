@@ -11,7 +11,7 @@ status: aktualne
 
 | # | eksperyment | model | stan | praca | karta | decyzja JARO |
 |---|---|---|---|---|---|---|
-| 1 | WE1 Astra-Stop jako LoRA w locie, skala 0 / 0,5 / 1 / 1,5 | Qwen uncensored Q4_K_M | w przygotowaniu | 3 h | ok. 100 min | wdrożenie tylko opt-in |
+| 1 | WE1 Astra-Stop jako LoRA w locie, skala 0 / 0,5 / 1 / 1,5 | Qwen uncensored Q4_K_M | **zrobione 2026-11-26: negatywne przy effort low** ([[2026-11-26-we1-astra-stop-qwen]]) | 3 h | ok. 100 min | wdrożenie tylko opt-in |
 | 2 | „vocab surgery” (Pliny) na Inklingu vs nasza LoRA, sędzia LLM | Inkling AD-Q4_K | gotowe do przygotowania | 4 h | ok. 30 min | nie (test) |
 | 3 | WE2 scalenie LoRA uncensored w wagi NVFP4 Niba | Nib | w przygotowaniu | 3 h | ok. 30 min | tak (produkcja) |
 | 4 | kierunek długości myślenia per poziom effort | Qwen uncensored | gotowe | 6 h | ok. 180 min | który effort domyślny |
