@@ -43,6 +43,9 @@ Główna różnica wobec Enigma Turbo to nie język ani kernele, tylko bramka. E
 - **Serwowanie:** profile `--profile long|multiuser` (`server/serve.py:5-6,49`) i głębokość draftu zależna od liczby równoległych zapytań `K_BY_B = {1–4: 3, 5: 2, 6–8: 1}` (`server/smk_batch.py:30`), bo B × (k + 1) ≤ 16 wierszy na przejście po wagach. Topka ma jedną głębokość MTP niezależnie od liczby rozmów.
 - Bierzemy: referencję + zatrute wyjście + regułę remisu top-2 + próg akceptacji jako bramkę wejścia każdego nowego silnika lub kernela od agenta (Enigma Turbo, łatki Mai ik2), zanim trafi na kartę.
 
+## Research 2026-11-26: skąd przewaga
+- Bajty na token: warp ok. 13,25 GB vs nasz UD-Q4_K_XL 16,48 GB (×1,24 z ×1,31 na czacie to lżejszy kwant, jakość niezmierzona). Reszta i kopia 64k ×1,78 to kernel wag 92–96% pasma i tania szeroka weryfikacja: [[qwen-warp-dlaczego-szybszy-2026-11-26]], K-182.
+
 ## Powiązane
 - [[fattn-kvq]]
 - [[qwen-qsa-llama-cpp]]

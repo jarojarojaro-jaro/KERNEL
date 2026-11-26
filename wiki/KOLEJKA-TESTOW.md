@@ -21,6 +21,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-182 · Kernel weryfikacji na rdzeniach tensorowych dla K-quantów przy 2–16 wierszach (wzór qwen-warp `k_w4`), Ampere i RDNA3
+- data: 2026-11-26 ([[qwen-warp-dlaczego-szybszy-2026-11-26]])
+- powód: warp czyta wagi z 92–96% pasma i weryfikuje 16 wierszy za ×1,52 kosztu jednego; nasz fork 57% pasma, V(5)/V(1) = 1,59; to główna bezstratna przyczyna kopii 64k 77 vs 137 t/s
+- krok 1 (10 min, następna fala Vast 3090): GB/s naszych MMVQ Q4_K/Q5_K/Q6_K przy n=1…16 per kształt (test-backend-ops perf + nsys jednego kroku), ta sama tabela dla XTX z kolejki
+- krok 2: prototyp kernela (kafel 16 wierszy, dekwantyzacja w rejestrach, `mma`/WMMA z tokenami jako B, trwały strumień), bramka bitowa wobec obecnego MMVQ przez test-backend-ops + KLD
+- zysk szacowany: krok weryfikacji 43,5 → ok. 28 ms na 3090 (przypuszczam), więcej przy kopii
+- priorytet: najwyższy (NVIDIA i XTX)
+
 ### K-178 · Wdrożenie samego K-020 (wyrzucanie cache ważone kosztem) na :8080
 - data: 2026-11-25 (K-175 FAIL na AGR2/KVD)
 - test: `k178.jobs`: PROD (`run-topka.sh uncensored`, `~/llama-topka`) vs Q (qprep-spec 50ca29355 + `LLAMA_SERVER_CACHE_EVICT=cost`), ABBA wall.py + md5 T=0 + replay K-020; bramka −2% i md5 identyczne
