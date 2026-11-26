@@ -344,6 +344,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-26:** w paczce Vast `nvq2` (3090, ok. 35 min): fork MTP n2 vs qwen-warp 689901c (mtp / dflash2 ABBA), tylko publiczne prompty (spec_sweep, kopie, kopia 52k z korpusu Enigmy); prywatne sesje omp nie wychodzą poza nasze maszyny.
 - **wynik 2026-11-26 (Vast 3090 nvq2):** fork MTP n2 czat 90,2 / kopia 101,9 / kopia 64k 77,0; qwen-warp MTP (Swift INT4) czat 117,9 (+31%), kopia 64k 137,1 (+78%); DFlash2 nie wystartował (drafter bf16 bez `weight_packed`). Do powtórki z poprawnym formatem draftera.
+- **2026-11-26 uwaga JARO („ta sama jakość, po prostu szybciej”):** pliki: warp Swift-1.5 INT4 (W4A16) 19,47 GB, nasz UD-Q4_K_XL 17,66 GB, więc warp czyta więcej bajtów, a nie mniej; przewaga nie wynika z niższego kwantu. Ale to inny model (Swift = Qwen3.8 dostrojony na krótsze myślenie) i jakość obu plików nie była porównana. Do następnej fali: KLD obu wobec BF16 na tych samych promptach (wymuszanie tokenów) i nasz fork na Swift GGUF o podobnym rozmiarze, żeby porównać ten sam model przy tej samej jakości.
 ### K-072 · Nemotron 3.5 Bolt na NVIDIA: KLD fuzji `GGML_CUDA_TOPK_MOE_NP2`, `MMVQ_N1_IQ2`, kernel IQ2_XXS MMVQ, replay stanu Mamby
 - data: 2026-10-16 (raport 14 §10)
 - status: **czeka na decyzję** (model odłożony „na później”)
