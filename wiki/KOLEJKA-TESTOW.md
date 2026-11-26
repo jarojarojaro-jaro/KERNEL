@@ -21,10 +21,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-001c · Tańsza poprawka wycieku stanu K-001 (po K-183 FAIL −5…−12%)
-- Plan: maska tylko dla przywróconych slotów / kafli z zamaskowanymi komórkami; bramka jak K-183 (12× wyciek + wall.py vs produkcja). Przygotowuje agent K001Cheap.
-
-- **wynik 2026-11-26 06:09–06:40 (XTX, `~/wt/k001-cheap`, bez zmian w ggml):** wyciek prod 3/12 → cheap **0/12**, FRESH-MD5 identyczne, md5 T=0 4/4 identyczne. Wall 4 pary ABBA: +0,9…+2,0% we wszystkich kategoriach poza T=0,7 tech −3,0% (po 2 parach −6,2%: szum próbkowania, kernele te same). Formalnie FAIL bramki −2%; łączny build z K-012 idzie bramką K-183c z md5 T=0,7.
 ### K-182 · Kernel weryfikacji na rdzeniach tensorowych dla K-quantów przy 2–16 wierszach (wzór qwen-warp `k_w4`), Ampere i RDNA3
 - data: 2026-11-26 ([[qwen-warp-dlaczego-szybszy-2026-11-26]])
 - powód: warp czyta wagi z 92–96% pasma i weryfikuje 16 wierszy za ×1,52 kosztu jednego; nasz fork 57% pasma, V(5)/V(1) = 1,59; to główna bezstratna przyczyna kopii 64k 77 vs 137 t/s
@@ -75,39 +71,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-25 (L4, K-016):** n2 +6,9% i n3 +6,3% T=1 vs n4, kopia bez straty; brakuje 3090 i 5060 Ti (wynajem) przed zmianą domyślnej wartości Enigmy.
 - **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** 5060 Ti T=1: n2 53,55, n3 52,51, n4 45,54 (−15%), n5 47,45; kopia: n3 198,8 (+14,6% vs n2 173,5). Enigma: n2 domyślnie zostaje, n3 jako profil kopii; 3090 w drugiej paczce nvq.
-### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
-- data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
-- źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)
-- hipoteza (2026-11-14): upstream #30541 (w llama.cpp v1.0.0) naprawia kopię stanu „on device” dla skwantowanego KV: liczba elementów liczona jako bloki, więc dla q4_0 kopiowane było 1/32 zakresu → zły stan po restore. Topka (baza b11528) tej poprawki nie ma, a my mamy KV q4_0 [INFERENCE: czy ścieżka `LLAMA_STATE_SEQ_FLAGS_ON_DEVICE` jest używana przez cache/checkpointy topki — sprawdzić w kodzie na CPU przed testem] ([[telegram-2026-11-14-pearlquant-llamacpp-v1]])
-- test: najpierw repro na CPU (LFM2.5-2.6B pokazał wzór przy 0,6k). Potem XTX, port testowy, `run-topka.sh uncensored`: restore migawki 1,7k → md5 T=0 → inne żądanie → drugi restore → md5, porównanie z `md5_fresh` (xtxbench t1 A/A). Bez 199k ≤ 10 min.
-- zysk: poprawność, nie szybkość. Cachesave i `--cache-ram` odtwarzają wpisy w sesjach agenta, więc produkcja może dziś po cichu zmieniać odpowiedzi. Bez naprawy werdykty md5 xtxbench są pewne tylko przy pierwszym restore.
-- ryzyko karty: brak
-- priorytet: wysoki (bezstratność produkcji)
-- wynik 2026-11-14: wzór R1 = R1b = świeży (3f26f79c), R2/R3/F2 inne; identyczny przy `LLAMA_SPEC_LOOKUP=0`, `LLAMA_SPEC_COUPLED=0`, `GGML_HIP_PM4=0`, a F2 (bez restore) też się różni → to zależność od historii serwera, nie od pliku slotu ([[2026-11-14-k001-wyciek-stanu-restore]]). #30541 odpada (topka nie używa `FLAGS_ON_DEVICE`).
-- wynik 2026-11-19 ([[2026-11-19-k125-k001-xtx]]): build z logiem `LLAMA_K001_LOG` (gałąź `k001-log`). Przesunięcie komórka − pozycja = 0, `used_max_p1 == used`, `n_kv` i komórka GDN takie same w R1 i R2, więc **pamięć odpada**. Wzór jest identyczny przy `CACHE_RAM=0` i `LLAMA_CKPT_VRAM=0` (**host odpada**) i przy `GGML_HIP_KVQ_OFF=1` (F c141fb1d, R2 = F2 = 3f26f79c), więc **kernel atencji odpada**. Zostają GPU-owe bufory poza KV/GDN (pula, scratch, przechowywany graf) i `common_speculative`.
-- zwiad 2026-11-20: błąd ik_llama `06a141f3b` (restore po odrzuceniu nadpisuje pozycję komórki atencji w hybrydzie) sprawdzony — topka-q70 nie ma tej ścieżki, odpada
-- następny test: zrzut top-2 logitów pierwszych ~40 kroków R1 vs R2 (`LLAMA_K001_LOG` + `n_probs`): pierwszy rozjazd i jego wielkość (1e-6 na remisie = kolejność redukcji; duża = niezainicjowany stan); jeden job ≤ 5 min
-- wynik 2026-11-20 (`qwen-opt/k001/k001c.py`, run `1120-162340-k001c-probs`): md5 bez `n_probs` znów R1 3f26f79c ≠ R2 2a48020a; tekst R1 = R2 do tokenu 216, rozjazd na 217. **Już pierwszy token po restore ma inne prawdopodobieństwa: top-1 „Based” logprob −0,483 (R1) vs −0,565 (R2), drugi „Here” −0,988 vs −0,863 — różnica 0,08, nie poziom remisu.** F = R1 co do bitu. Czyli logity dopełnienia promptu po restore zależą od tego, co serwer liczył wcześniej → stan nieustawiony przez restore albo bufor czytany przed zapisem (nie kolejność redukcji). `n_probs` daje prawdopodobieństwa tylko dla tokenów spoza draftu (2 z 256), więc dalej porównujemy logity pierwszego tokenu.
-- wynik 2026-11-20 bisekcja (`k001d.py`: restore → logprob 1. tokenu → restore → to samo, bez niczego pomiędzy): **przeciek zależy tylko od długości dopełnienia promptu po restore**. Delta 1, 2, 5, 8, 16, 17, 24, 32, 48, 64, 128, 256 tokenów: R1 = R2 co do bitu; **delta 31 i 33 (dwa różne teksty): R1 ≠ R2** (np. „Based” −0,4830 vs −0,4808). Ten sam wzór z `GGML_CUDA_DISABLE_GRAPHS=1`, `GGML_HIP_PM4=0` i `GGML_HIP_KVQ_OFF=1`, a typ zakłócenia (czat, prefill 300, dekod 64, nic) nie ma znaczenia. Nawet R1 przy delcie 33 zależy od wcześniejszych żądań na tym serwerze. Wniosek: jakiś kernel prefillu przy n_tokens 31/33 (kafel 32 niepełny albo z jednym tokenem) czyta pamięć sprzed żądania — kandydaci: conv GDN (`gdn_conv_ab`), MMQ/quantize z paddingiem, FA prefill. Zadanie dla duetu: Gemini szuka w kodzie, Kernel `test-backend-ops` z n=31/33 i buforami wypełnionymi śmieciami.
-- wynik 2026-11-20 wieczór, **przyczyna zlokalizowana** (gałąź `duo`, narzędzia debug `GGML_CUDA_HASHDUMP` / `GGML_CUDA_POISON`; szczegóły `~/praca/llama-duo/K001.md`):
-  - Serwer liczy deltę 33 tokenów jako dwa ubatche, 29 + 4.
-  - Hashe wyjść wszystkich węzłów grafu 29 tokenów, R1 vs R2: pierwszy prawdziwy rozjazd to **FLASH_ATTN_EXT w warstwie 3** (pierwsza warstwa pełnej atencji).
-  - Q i maska są identyczne. Maska jest poprawna: wiersz 0 odsłania kolumny do 1712, wiersz 28 do 1740.
-  - K/V w oknie n_kv = 1792 różnią się tylko w zamaskowanych komórkach 1741–1791, czyli w starych danych poprzedniego żądania.
-  - Wniosek: **kernele FA dopuszczają, żeby zamaskowane, stare komórki K/V zmieniały wynik** (o 0,002–0,07 logprob, bez NaN), i dotyczy to i kvq, i kernela standardowego.
-  - Wykluczone: pula pamięci (`POISON=3` bez zmian), stan GDN (wejścia GDN_LAG identyczne), `LLAMA_GDN_REPLAY=0`, `LLAMA_CONV_LAG=0`.
-  - Poprawkę w kernelu FA (maska przed max/exp, pomijanie w pełni zamaskowanych kafli) plus test `test-backend-ops` ze śmieciami w zamaskowanym ogonie robi Gemini (runda duo-r3); Kernel mierzy.
-- wynik 2026-11-20 ~20:15, **poprawka Gemini r3 (llama-duo `556ad79`) zmierzona na XTX**:
-  - przeciek zniknął: wszystkie 6 przypadków dopełnień identyczne co do bitu przy ponownym wczytaniu (wcześniej 4 przeciekały);
-  - hashe K/V co 64 komórki: R1 i R2 różniły się tylko w bloku zamaskowanych starych komórek;
-  - jakość: KLD przy ub 512 identyczne z wersją sprzed poprawki (prefill bit w bit), przy ub 5 PASS (+0,09 sd);
-  - prędkość: pp512 −0,2% (szum), pp2048 1021,2 → 1014,5 t/s (−0,65%), tg64 +0,2%;
-  - otwarte: ścieżka kvq przy 1 zapytaniu (dekod) nadal przecieka (test jednostkowy: błąd 2e-9); naprawa i odzyskanie −0,65% prefillu to runda duo-r4;
-  - wdrożenie do produkcji (przebudowa topki) czeka na decyzję właściciela.
-
-- **2026-11-25:** `~/wt/k001-fix` (qprep-spec + r3 556ad799f + r4 a557fc3c5 z gałęzi duo, testy masked-tail 5/16/17); w kolejce `k001.jobs`: bramka tbo kvq wył./wł. × wariant 0/83, test wycieku restore (rozszerzenia 1/31/32/33/63/64 tok.), llama-bench ABBA przy wariancie 83 (koszt prefillu dotąd mierzony tylko przy 0: −0,65%).
-- **wynik 2026-11-26 00:23–00:28 (`~/wt/k001-fix`):** produkcja: **3 wycieki stanu na 12 sprawdzeń** (LEAK-PREFILL po post33 i u63, LEAK-DECODE po post32), poprawka: **0 na 12**; koszt: wariant 83 pp512 −0,25%, pp2048 −0,45%, tg64 +0,1%; wariant 0 pp2048 −0,6%. To błąd poprawności w produkcji (inne odpowiedzi po przywróceniu sesji) → bramka wdrożenia K-183 w kolejce.
-- **K-183 2026-11-26 02:26–02:30 (wall.py, `~/wt/k001-fix` vs produkcja):** **GATE FAIL**: wszystkie kategorie −5…−12% (pl T=0 80,2 → 70,5), md5 inne. Poprawka wycieku w ścieżce dekodu kvq (r4) jest za droga przy weryfikacji spekulacji; potrzebna tańsza wersja (maska tylko dla kafli z zamaskowanymi komórkami, plan 3–5 h z wpisu). Produkcja dalej ma wyciek po przywróceniu sesji.
 ### K-120 · Qwen3.8-27B-pi-adapted (LoRA RL pod pi) w naszym stosie: czy pomaga w omp, ile kosztuje w dekodzie, co z MTP
 - data: 2026-11-18
 - źródło: [[qwen38-27b-pi-adapter]] (pod pi: SWE-bench Pro hard 51 29,4 → 62,7%, Terminal-Bench 2.1 39,5 → 55,8%, −55…62% wywołań narzędzi); adapter GGUF F16 dla llama.cpp (`--lora`)
@@ -182,19 +145,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **wynik 2026-11-25 20:54–21:19 (XTX, `~/wt/k006` k006-thin, ABBA A=prod / C=THIN=4+PREFIX=2):** zapis wpisu cache mediana 5291 → **3404 MiB (−36%)**, maks. 8331 → 4049 MiB (−51%), checkpointy 12 → 5; tura agenta bez zmian (12,5 vs 12,3–12,6 s). Nowa sesja z tym samym system promptem: 1221 → 913–1341 ms; po wyrzuceniu slotu wpis „wspólny początek” daje **8543 → 860 ms (−90%)**. md5: 7 z 30 różnych, ale także między ramionami bez zmian (suite: A2 a0dde0fa vs EA/EB f3e9f53e), więc harness nie jest deterministyczny między serwerami; bezstratności nie da się tu orzec md5. Werdykt: duży zysk pamięci i TTFT, wdrożenie wymaga bramki KLD/wymuszania tokenów (decyzja K-007).
 - **2026-11-26 bramka K-007: PASS** (KLD 0 na ścieżce przywracania z wpisu „wspólny początek”). Do wdrożenia razem z K-001 po bramce prędkości.
-### K-012 · `kvq` przy W=5 bliżej rooflinu: nowy układ (K dekwantowane raz, głębszy prefetch K/V), cel ~172–300 µs/warstwę przy 98–196k
-- data: 2026-11-07
-- źródło: [[2026-11-08-kvq-once-profil]] (`:86`: ONCE=1/2 KILL, „potrzebny inny układ”; FA = 30% kroku przy 199k, 11,32 ms), `R/68c-dlugi-kontekst-gdn.md:142`, `R/70-fa-d256-jak-to-zrobilismy.md:188` (#5)
-- test: XTX `kvq-once/job.sh` kperf (d98k/196k, nb1/nb5) + `fa_hash` ≤ 10 min; potem xtxbench 199k osobnym jobem
-- zysk: sufit +12…16% decode przy 196–255k; realnie +1,5…3% przy ≥ 94k [SZACUNEK]
-- ryzyko karty: nowy kernel w taśmie PM4 (bramka `test-backend-ops` przed serwerem)
-- priorytet: średni (duży sufit, dwa nieudane podejścia)
-- zwiad 2026-11-14: hipfire #989 (WMMA split-K verify attention, gfx1100, numeryczne) zszedł do 309,5 µs przy 100k i 4 wierszach, czyli tyle co nasz `kvq` przy nb5 i 98k (~319 µs); bitowa droga musi zejść niżej ([[zwiad-2026-11-14]])
-
-- **2026-11-25 ocena:** cel 172 µs/warstwę przy 98k nieosiągalny bezstratnie (podłoga pamięci 118, MMA 119, K/V dekwantowane raz ok. 152, dziś 319). Układ „pair-split” ok. −10% kernela = +2,5% dekodu przy 199k (poniżej progu 3–5%), 3–4 dni. Sonda w kolejce (`k012.jobs`, `GGML_HIP_KVQ_PROBE`): implementacja tylko przy ≤ −15% przy nb5/196k.
-- **2026-11-26 bieg nieważny:** bramka sondy oblana (kontrola PROBE=7 nb=1 zmieniła hash, choć nie powinna) — błąd w łatce sondy, nie wynik.
-- **wynik sondy 2026-11-26 02:30–02:35:** 96k: nb1 175,9 µs/warstwę (644 GB/s), nb5 322,4 (351 GB/s); 192k: nb1 327,9, nb5 620,8. Szacunek „K/V dekwantowane raz” nb5: **−18,7% (96k) i −19,2% (192k)**, powyżej progu −15% → **GO** dla nowego układu (3–4 dni).
-- **K-012b 2026-11-26 06:20–06:50 (XTX, gałąź k012-layout 0e8935d97, `GGML_HIP_K012=1|2`, pary fal dzielą K po półbajtach i V po połowie głowy):** test-backend-ops i fa_hash bitowo identyczne z produkcją; kernel nb5: 32k −12,1%, **96k −14,5%, 192k −16,9%** (K2 −11,0/−13,8/−15,3%), nb1/nb8 bez zmian. Serwer T=0: 1,7k 118,1 vs 118,1 (−0,1%), **94k 114,6 → 116,9 t/s (+2,0%)**, 33,57 vs 34,22 ms/krok; md5 wszędzie SAME; wall T=0 117,2 → 117,2, T=0,7 120,5 → 120,3. **PASS** (bezstratne, zysk tylko przy długim kontekście). Wdrożenie razem z K-001c jako K-183c.
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
 - źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
@@ -366,6 +316,65 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
+- data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
+- źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)
+- hipoteza (2026-11-14): upstream #30541 (w llama.cpp v1.0.0) naprawia kopię stanu „on device” dla skwantowanego KV: liczba elementów liczona jako bloki, więc dla q4_0 kopiowane było 1/32 zakresu → zły stan po restore. Topka (baza b11528) tej poprawki nie ma, a my mamy KV q4_0 [INFERENCE: czy ścieżka `LLAMA_STATE_SEQ_FLAGS_ON_DEVICE` jest używana przez cache/checkpointy topki — sprawdzić w kodzie na CPU przed testem] ([[telegram-2026-11-14-pearlquant-llamacpp-v1]])
+- test: najpierw repro na CPU (LFM2.5-2.6B pokazał wzór przy 0,6k). Potem XTX, port testowy, `run-topka.sh uncensored`: restore migawki 1,7k → md5 T=0 → inne żądanie → drugi restore → md5, porównanie z `md5_fresh` (xtxbench t1 A/A). Bez 199k ≤ 10 min.
+- zysk: poprawność, nie szybkość. Cachesave i `--cache-ram` odtwarzają wpisy w sesjach agenta, więc produkcja może dziś po cichu zmieniać odpowiedzi. Bez naprawy werdykty md5 xtxbench są pewne tylko przy pierwszym restore.
+- ryzyko karty: brak
+- priorytet: wysoki (bezstratność produkcji)
+- wynik 2026-11-14: wzór R1 = R1b = świeży (3f26f79c), R2/R3/F2 inne; identyczny przy `LLAMA_SPEC_LOOKUP=0`, `LLAMA_SPEC_COUPLED=0`, `GGML_HIP_PM4=0`, a F2 (bez restore) też się różni → to zależność od historii serwera, nie od pliku slotu ([[2026-11-14-k001-wyciek-stanu-restore]]). #30541 odpada (topka nie używa `FLAGS_ON_DEVICE`).
+- wynik 2026-11-19 ([[2026-11-19-k125-k001-xtx]]): build z logiem `LLAMA_K001_LOG` (gałąź `k001-log`). Przesunięcie komórka − pozycja = 0, `used_max_p1 == used`, `n_kv` i komórka GDN takie same w R1 i R2, więc **pamięć odpada**. Wzór jest identyczny przy `CACHE_RAM=0` i `LLAMA_CKPT_VRAM=0` (**host odpada**) i przy `GGML_HIP_KVQ_OFF=1` (F c141fb1d, R2 = F2 = 3f26f79c), więc **kernel atencji odpada**. Zostają GPU-owe bufory poza KV/GDN (pula, scratch, przechowywany graf) i `common_speculative`.
+- zwiad 2026-11-20: błąd ik_llama `06a141f3b` (restore po odrzuceniu nadpisuje pozycję komórki atencji w hybrydzie) sprawdzony — topka-q70 nie ma tej ścieżki, odpada
+- następny test: zrzut top-2 logitów pierwszych ~40 kroków R1 vs R2 (`LLAMA_K001_LOG` + `n_probs`): pierwszy rozjazd i jego wielkość (1e-6 na remisie = kolejność redukcji; duża = niezainicjowany stan); jeden job ≤ 5 min
+- wynik 2026-11-20 (`qwen-opt/k001/k001c.py`, run `1120-162340-k001c-probs`): md5 bez `n_probs` znów R1 3f26f79c ≠ R2 2a48020a; tekst R1 = R2 do tokenu 216, rozjazd na 217. **Już pierwszy token po restore ma inne prawdopodobieństwa: top-1 „Based” logprob −0,483 (R1) vs −0,565 (R2), drugi „Here” −0,988 vs −0,863 — różnica 0,08, nie poziom remisu.** F = R1 co do bitu. Czyli logity dopełnienia promptu po restore zależą od tego, co serwer liczył wcześniej → stan nieustawiony przez restore albo bufor czytany przed zapisem (nie kolejność redukcji). `n_probs` daje prawdopodobieństwa tylko dla tokenów spoza draftu (2 z 256), więc dalej porównujemy logity pierwszego tokenu.
+- wynik 2026-11-20 bisekcja (`k001d.py`: restore → logprob 1. tokenu → restore → to samo, bez niczego pomiędzy): **przeciek zależy tylko od długości dopełnienia promptu po restore**. Delta 1, 2, 5, 8, 16, 17, 24, 32, 48, 64, 128, 256 tokenów: R1 = R2 co do bitu; **delta 31 i 33 (dwa różne teksty): R1 ≠ R2** (np. „Based” −0,4830 vs −0,4808). Ten sam wzór z `GGML_CUDA_DISABLE_GRAPHS=1`, `GGML_HIP_PM4=0` i `GGML_HIP_KVQ_OFF=1`, a typ zakłócenia (czat, prefill 300, dekod 64, nic) nie ma znaczenia. Nawet R1 przy delcie 33 zależy od wcześniejszych żądań na tym serwerze. Wniosek: jakiś kernel prefillu przy n_tokens 31/33 (kafel 32 niepełny albo z jednym tokenem) czyta pamięć sprzed żądania — kandydaci: conv GDN (`gdn_conv_ab`), MMQ/quantize z paddingiem, FA prefill. Zadanie dla duetu: Gemini szuka w kodzie, Kernel `test-backend-ops` z n=31/33 i buforami wypełnionymi śmieciami.
+- wynik 2026-11-20 wieczór, **przyczyna zlokalizowana** (gałąź `duo`, narzędzia debug `GGML_CUDA_HASHDUMP` / `GGML_CUDA_POISON`; szczegóły `~/praca/llama-duo/K001.md`):
+  - Serwer liczy deltę 33 tokenów jako dwa ubatche, 29 + 4.
+  - Hashe wyjść wszystkich węzłów grafu 29 tokenów, R1 vs R2: pierwszy prawdziwy rozjazd to **FLASH_ATTN_EXT w warstwie 3** (pierwsza warstwa pełnej atencji).
+  - Q i maska są identyczne. Maska jest poprawna: wiersz 0 odsłania kolumny do 1712, wiersz 28 do 1740.
+  - K/V w oknie n_kv = 1792 różnią się tylko w zamaskowanych komórkach 1741–1791, czyli w starych danych poprzedniego żądania.
+  - Wniosek: **kernele FA dopuszczają, żeby zamaskowane, stare komórki K/V zmieniały wynik** (o 0,002–0,07 logprob, bez NaN), i dotyczy to i kvq, i kernela standardowego.
+  - Wykluczone: pula pamięci (`POISON=3` bez zmian), stan GDN (wejścia GDN_LAG identyczne), `LLAMA_GDN_REPLAY=0`, `LLAMA_CONV_LAG=0`.
+  - Poprawkę w kernelu FA (maska przed max/exp, pomijanie w pełni zamaskowanych kafli) plus test `test-backend-ops` ze śmieciami w zamaskowanym ogonie robi Gemini (runda duo-r3); Kernel mierzy.
+- wynik 2026-11-20 ~20:15, **poprawka Gemini r3 (llama-duo `556ad79`) zmierzona na XTX**:
+  - przeciek zniknął: wszystkie 6 przypadków dopełnień identyczne co do bitu przy ponownym wczytaniu (wcześniej 4 przeciekały);
+  - hashe K/V co 64 komórki: R1 i R2 różniły się tylko w bloku zamaskowanych starych komórek;
+  - jakość: KLD przy ub 512 identyczne z wersją sprzed poprawki (prefill bit w bit), przy ub 5 PASS (+0,09 sd);
+  - prędkość: pp512 −0,2% (szum), pp2048 1021,2 → 1014,5 t/s (−0,65%), tg64 +0,2%;
+  - otwarte: ścieżka kvq przy 1 zapytaniu (dekod) nadal przecieka (test jednostkowy: błąd 2e-9); naprawa i odzyskanie −0,65% prefillu to runda duo-r4;
+  - wdrożenie do produkcji (przebudowa topki) czeka na decyzję właściciela.
+
+- **2026-11-25:** `~/wt/k001-fix` (qprep-spec + r3 556ad799f + r4 a557fc3c5 z gałęzi duo, testy masked-tail 5/16/17); w kolejce `k001.jobs`: bramka tbo kvq wył./wł. × wariant 0/83, test wycieku restore (rozszerzenia 1/31/32/33/63/64 tok.), llama-bench ABBA przy wariancie 83 (koszt prefillu dotąd mierzony tylko przy 0: −0,65%).
+- **wynik 2026-11-26 00:23–00:28 (`~/wt/k001-fix`):** produkcja: **3 wycieki stanu na 12 sprawdzeń** (LEAK-PREFILL po post33 i u63, LEAK-DECODE po post32), poprawka: **0 na 12**; koszt: wariant 83 pp512 −0,25%, pp2048 −0,45%, tg64 +0,1%; wariant 0 pp2048 −0,6%. To błąd poprawności w produkcji (inne odpowiedzi po przywróceniu sesji) → bramka wdrożenia K-183 w kolejce.
+- **K-183 2026-11-26 02:26–02:30 (wall.py, `~/wt/k001-fix` vs produkcja):** **GATE FAIL**: wszystkie kategorie −5…−12% (pl T=0 80,2 → 70,5), md5 inne. Poprawka wycieku w ścieżce dekodu kvq (r4) jest za droga przy weryfikacji spekulacji; potrzebna tańsza wersja (maska tylko dla kafli z zamaskowanymi komórkami, plan 3–5 h z wpisu). Produkcja dalej ma wyciek po przywróceniu sesji.
+- **K-183c 2026-11-26 06:47–06:58 (łączny silnik k183c 6c1449f91 = K-012 + K-001c):** GATE PASS: wall −0,1…+0,2%, md5 T=0 i T=0,7 identyczne we wszystkich 4 promptach i przebiegach, wycieki 0/12, FRESH-MD5 identyczne, 94k dekod 121,16 → 123,73 t/s (+2,1%). **Wdrożone na :8080** (`topki/xtx/qwen-uncensored.sh` → `~/llama-topka-k183c`, `GGML_HIP_K012=1`; kopia skryptu `.pre-k183c`); smoke: exe i biblioteki z nowego katalogu, linia K012 w logu, md5 = produkcja.
+- przeniesione 2026-11-26: w produkcji
+
+### K-001c · Tańsza poprawka wycieku stanu K-001 (po K-183 FAIL −5…−12%)
+- Plan: maska tylko dla przywróconych slotów / kafli z zamaskowanymi komórkami; bramka jak K-183 (12× wyciek + wall.py vs produkcja). Przygotowuje agent K001Cheap.
+
+- **wynik 2026-11-26 06:09–06:40 (XTX, `~/wt/k001-cheap`, bez zmian w ggml):** wyciek prod 3/12 → cheap **0/12**, FRESH-MD5 identyczne, md5 T=0 4/4 identyczne. Wall 4 pary ABBA: +0,9…+2,0% we wszystkich kategoriach poza T=0,7 tech −3,0% (po 2 parach −6,2%: szum próbkowania, kernele te same). Formalnie FAIL bramki −2%; łączny build z K-012 idzie bramką K-183c z md5 T=0,7.
+- **K-183c 2026-11-26 06:47–06:58 (łączny silnik k183c 6c1449f91 = K-012 + K-001c):** GATE PASS: wall −0,1…+0,2%, md5 T=0 i T=0,7 identyczne we wszystkich 4 promptach i przebiegach, wycieki 0/12, FRESH-MD5 identyczne, 94k dekod 121,16 → 123,73 t/s (+2,1%). **Wdrożone na :8080** (`topki/xtx/qwen-uncensored.sh` → `~/llama-topka-k183c`, `GGML_HIP_K012=1`; kopia skryptu `.pre-k183c`); smoke: exe i biblioteki z nowego katalogu, linia K012 w logu, md5 = produkcja.
+- przeniesione 2026-11-26: w produkcji
+
+### K-012 · `kvq` przy W=5 bliżej rooflinu: nowy układ (K dekwantowane raz, głębszy prefetch K/V), cel ~172–300 µs/warstwę przy 98–196k
+- data: 2026-11-07
+- źródło: [[2026-11-08-kvq-once-profil]] (`:86`: ONCE=1/2 KILL, „potrzebny inny układ”; FA = 30% kroku przy 199k, 11,32 ms), `R/68c-dlugi-kontekst-gdn.md:142`, `R/70-fa-d256-jak-to-zrobilismy.md:188` (#5)
+- test: XTX `kvq-once/job.sh` kperf (d98k/196k, nb1/nb5) + `fa_hash` ≤ 10 min; potem xtxbench 199k osobnym jobem
+- zysk: sufit +12…16% decode przy 196–255k; realnie +1,5…3% przy ≥ 94k [SZACUNEK]
+- ryzyko karty: nowy kernel w taśmie PM4 (bramka `test-backend-ops` przed serwerem)
+- priorytet: średni (duży sufit, dwa nieudane podejścia)
+- zwiad 2026-11-14: hipfire #989 (WMMA split-K verify attention, gfx1100, numeryczne) zszedł do 309,5 µs przy 100k i 4 wierszach, czyli tyle co nasz `kvq` przy nb5 i 98k (~319 µs); bitowa droga musi zejść niżej ([[zwiad-2026-11-14]])
+
+- **2026-11-25 ocena:** cel 172 µs/warstwę przy 98k nieosiągalny bezstratnie (podłoga pamięci 118, MMA 119, K/V dekwantowane raz ok. 152, dziś 319). Układ „pair-split” ok. −10% kernela = +2,5% dekodu przy 199k (poniżej progu 3–5%), 3–4 dni. Sonda w kolejce (`k012.jobs`, `GGML_HIP_KVQ_PROBE`): implementacja tylko przy ≤ −15% przy nb5/196k.
+- **2026-11-26 bieg nieważny:** bramka sondy oblana (kontrola PROBE=7 nb=1 zmieniła hash, choć nie powinna) — błąd w łatce sondy, nie wynik.
+- **wynik sondy 2026-11-26 02:30–02:35:** 96k: nb1 175,9 µs/warstwę (644 GB/s), nb5 322,4 (351 GB/s); 192k: nb1 327,9, nb5 620,8. Szacunek „K/V dekwantowane raz” nb5: **−18,7% (96k) i −19,2% (192k)**, powyżej progu −15% → **GO** dla nowego układu (3–4 dni).
+- **K-012b 2026-11-26 06:20–06:50 (XTX, gałąź k012-layout 0e8935d97, `GGML_HIP_K012=1|2`, pary fal dzielą K po półbajtach i V po połowie głowy):** test-backend-ops i fa_hash bitowo identyczne z produkcją; kernel nb5: 32k −12,1%, **96k −14,5%, 192k −16,9%** (K2 −11,0/−13,8/−15,3%), nb1/nb8 bez zmian. Serwer T=0: 1,7k 118,1 vs 118,1 (−0,1%), **94k 114,6 → 116,9 t/s (+2,0%)**, 33,57 vs 34,22 ms/krok; md5 wszędzie SAME; wall T=0 117,2 → 117,2, T=0,7 120,5 → 120,3. **PASS** (bezstratne, zysk tylko przy długim kontekście). Wdrożenie razem z K-001c jako K-183c.
+- **K-183c 2026-11-26 06:47–06:58 (łączny silnik k183c 6c1449f91 = K-012 + K-001c):** GATE PASS: wall −0,1…+0,2%, md5 T=0 i T=0,7 identyczne we wszystkich 4 promptach i przebiegach, wycieki 0/12, FRESH-MD5 identyczne, 94k dekod 121,16 → 123,73 t/s (+2,1%). **Wdrożone na :8080** (`topki/xtx/qwen-uncensored.sh` → `~/llama-topka-k183c`, `GGML_HIP_K012=1`; kopia skryptu `.pre-k183c`); smoke: exe i biblioteki z nowego katalogu, linia K012 w logu, md5 = produkcja.
+- przeniesione 2026-11-26: w produkcji
 
 ### K-185 · Port Tintero PR #2 do Mai: grupowana weryfikacja ekspertów raz na okno, drafter w grafie, online-softmax draft_attn (zwiad 26.11)
 - Źródło: GodGMN/tintero a9d857803, ta sama karta (XTX) i model: plain 111 → 121 (+9%), draft kod 103 → 151–160, okno B=5 37,6 → 21 ms. Bezstratność: zgodność greedy z plain.

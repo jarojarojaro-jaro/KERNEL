@@ -20,10 +20,10 @@ status: aktualne
 
 | karta | model | topka | wynik (źródło) |
 |---|---|---|---|
-| RX 7900 XTX | Qwen3.8-27B Uncensored Q4_K_M (**ACTIVE**) | topka-q70 `~/llama-topka` + przełączniki `run-topka.sh` | [[REKORDY]], [[2026-11-09-wdrozenie-topka-q70]] |
+| RX 7900 XTX | Qwen3.8-27B Uncensored Q4_K_M (**ACTIVE**) | `~/llama-topka-k183c` (qprep-spec + K-020 wyrzucanie cache kosztem + K-012 `GGML_HIP_K012=1` + K-001c poprawka wycieku), przełączniki `run-topka.sh`; wcześniej `~/llama-topka-k020`, `~/llama-topka` | [[REKORDY]] (wdrożone 2026-11-26), [[2026-11-09-wdrozenie-topka-q70]] |
 | RX 7900 XTX | Qwen3.8-27B UD-Q4_K_XL | to samo, `run-topka.sh qwen`, ctx 204 800 | j.w. |
 | RX 7900 XTX | Bonsai 2.5 27B Uncensored Q2_0 | topka-k157, MTP n2 | wall T=0,7 145,8 ([[bonsai-2-5-uncensored]]) |
-| RX 7900 XTX | Inkling 2 Mini Uncensored AD-Q4_K | Maya `maya-atomic.json` (po K-179/K-177 nowa konfiguracja) | wall T=0,7 ok. 113 ([[inkling-2-mini]]) |
+| RX 7900 XTX | Inkling 2 Mini Uncensored AD-Q4_K | Maya `maya-atomic.json` → `~/k134/bin-k185/maya-ik2` (K-158g + K-185 port Tintero, 2026-11-26) | wall T=0 152,0, T=0,7 113,0 ([[inkling-2-mini]], [[REKORDY]]) |
 | NVIDIA (3090, 5060 Ti, 3060, 4090, 5090…) | Qwen3.8-27B i inne | przepisy Enigmy per karta | [[final-recipes-nvidia]] |
 
 Modele bez pliku na dysku (LFM, Flint, Qwen3.6-35B) nie mają topki na XTX ([[2026-11-26-bez-pobierania-modeli]]).
