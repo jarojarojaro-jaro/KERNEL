@@ -1,0 +1,146 @@
+1795650221 start card=3090 fake=0
+1795650221 hostcheck ok: NVIDIA GeForce RTX 3090 power 370.00/370.00 W mem 9751/9751 MHz 32 C
+1795650510 model ok 17659407264
+1795650510 ready card=3090 variant=kvqlean
+1795650510 orch start card=3090 deadline in 5111 s
+1795650510 == k115 start
+1795650733 k115 0.5 rc=0 {"label": "k115-0.5", "tokens_prompt": 120427, "target": 122880, "hits": 5, "invented": 0, "passed": true, "seconds": 153.1, "answer": "kod sejfu w Gdańsku: 240891\nvault code in Lisbon: 696853\nnumer zamówienia Marty: 988598\nbuild id of the Orion branch: 941235\nPIN do skrytki 17: 900875"}
+1795650956 k115 0.85 rc=0 {"label": "k115-0.85", "tokens_prompt": 207601, "target": 208896, "hits": 5, "invented": 0, "passed": true, "seconds": 220.6, "answer": "kod sejfu w Gdańsku: 240891\nvault code in Lisbon: 696853\nnumer zamówienia Marty: 988598\nbuild id of the Orion branch: 941235\nPIN do skrytki 17: 900875"}
+1795650971 == k115 end ok
+1795650982 orch k115 ok 471.7s
+1795650983 == k070 start
+1795652604 k070 fill=531.4 soak_n=132
+1795652604 == k070 end ok
+1795652607 orch k070 ok 1625.4s
+1795652607 == filler start
+1795652695 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.3, "answer": "kod sejfu w Gdańsku: 384679\nvault code in Lisbon: 513076\nnumer
+1795652698 == filler end ok
+1795652701 orch filler ok 93.6s
+1795652701 == filler start
+1795652788 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.1, "answer": "kod sejfu w Gdańsku: 488556\nvault code in Lisbon: 585760\nnumer
+1795652791 == filler end ok
+1795652794 orch filler ok 93.5s
+1795652794 == filler start
+1795652884 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 64.5, "answer": "kod sejfu w Gdańsku: 393407\nvault code in Lisbon: 228146\nnumer
+1795652887 == filler end ok
+1795652890 orch filler ok 95.8s
+1795652890 == filler start
+1795652978 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.4, "answer": "kod sejfu w Gdańsku: 439479\nvault code in Lisbon: 633160\nnumer
+1795652981 == filler end ok
+1795652984 orch filler ok 93.6s
+1795652984 == filler start
+1795653071 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.0, "answer": "kod sejfu w Gdańsku: 877696\nvault code in Lisbon: 589020\nnumer
+1795653074 == filler end ok
+1795653077 orch filler ok 93.3s
+1795653077 == filler start
+1795653164 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 61.3, "answer": "kod sejfu w Gdańsku: 599288\nvault code in Lisbon: 230915\nnumer
+1795653167 == filler end ok
+1795653170 orch filler ok 92.6s
+1795653170 == filler start
+1795653260 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 64.9, "answer": "kod sejfu w Gdańsku: 422758\nvault code in Lisbon: 397188\nnumer
+1795653263 == filler end ok
+1795653266 orch filler ok 96.1s
+1795653266 == filler start
+1795653354 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.3, "answer": "kod sejfu w Gdańsku: 335075\nvault code in Lisbon: 188719\nnumer
+1795653356 == filler end ok
+1795653359 orch filler ok 93.6s
+1795653359 == filler start
+1795653448 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.9, "answer": "kod sejfu w Gdańsku: 989520\nvault code in Lisbon: 686946\nnumer
+1795653450 == filler end ok
+1795653453 orch filler ok 94.0s
+1795653454 == filler start
+1795653541 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.4, "answer": "kod sejfu w Gdańsku: 747119\nvault code in Lisbon: 994651\nnumer
+1795653544 == filler end ok
+1795653547 orch filler ok 93.6s
+1795653547 == filler start
+1795653637 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 64.6, "answer": "kod sejfu w Gdańsku: 170132\nvault code in Lisbon: 461056\nnumer
+1795653639 == filler end ok
+1795653643 orch filler ok 95.4s
+1795653643 == filler start
+1795653730 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.2, "answer": "kod sejfu w Gdańsku: 674785\nvault code in Lisbon: 430777\nnumer
+1795653732 == filler end ok
+1795653736 orch filler ok 93.0s
+1795653736 == filler start
+1795653826 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 64.5, "answer": "kod sejfu w Gdańsku: 528380\nvault code in Lisbon: 645281\nnumer
+1795653828 == filler end ok
+1795653831 orch filler ok 95.8s
+1795653831 == filler start
+1795653920 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.6, "answer": "kod sejfu w Gdańsku: 140424\nvault code in Lisbon: 399981\nnumer
+1795653922 == filler end ok
+1795653925 orch filler ok 94.1s
+1795653926 == filler start
+1795654013 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.0, "answer": "kod sejfu w Gdańsku: 580883\nvault code in Lisbon: 707636\nnumer
+1795654016 == filler end ok
+1795654019 orch filler ok 93.3s
+1795654019 == filler start
+1795654106 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.1, "answer": "kod sejfu w Gdańsku: 444667\nvault code in Lisbon: 161205\nnumer
+1795654109 == filler end ok
+1795654112 orch filler ok 93.3s
+1795654112 == filler start
+1795654201 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 63.3, "answer": "kod sejfu w Gdańsku: 698032\nvault code in Lisbon: 275378\nnumer
+1795654204 == filler end ok
+1795654207 orch filler ok 94.6s
+1795654207 == filler start
+1795654294 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.0, "answer": "kod sejfu w Gdańsku: 665267\nvault code in Lisbon: 947330\nnumer
+1795654297 == filler end ok
+1795654300 orch filler ok 93.1s
+1795654300 == filler start
+1795654387 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.3, "answer": "kod sejfu w Gdańsku: 883591\nvault code in Lisbon: 312601\nnumer
+1795654390 == filler end ok
+1795654393 orch filler ok 93.3s
+1795654393 == filler start
+1795654483 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 64.6, "answer": "kod sejfu w Gdańsku: 917241\nvault code in Lisbon: 403999\nnumer
+1795654486 == filler end ok
+1795654489 orch filler ok 95.9s
+1795654489 == filler start
+1795654579 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 64.3, "answer": "kod sejfu w Gdańsku: 272962\nvault code in Lisbon: 538298\nnumer
+1795654581 == filler end ok
+1795654585 orch filler ok 95.6s
+1795654585 == filler start
+1795654671 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 61.4, "answer": "kod sejfu w Gdańsku: 857910\nvault code in Lisbon: 819589\nnumer
+1795654674 == filler end ok
+1795654677 orch filler ok 92.6s
+1795654677 == filler start
+1795654767 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 64.2, "answer": "kod sejfu w Gdańsku: 479084\nvault code in Lisbon: 592015\nnumer
+1795654769 == filler end ok
+1795654773 orch filler ok 95.3s
+1795654773 == filler start
+1795654860 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.3, "answer": "kod sejfu w Gdańsku: 212017\nvault code in Lisbon: 745795\nnumer
+1795654863 == filler end ok
+1795654866 orch filler ok 93.5s
+1795654866 == filler start
+1795654954 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.1, "answer": "kod sejfu w Gdańsku: 574354\nvault code in Lisbon: 686963\nnumer
+1795654956 == filler end ok
+1795654960 orch filler ok 93.4s
+1795654960 == filler start
+1795655047 filler rc=0 {"label": "filler-0.25", "tokens_prompt": 59704, "target": 61440, "hits": 5, "invented": 0, "passed": true, "seconds": 62.2, "answer": "kod sejfu w Gdańsku: 439563\nvault code in Lisbon: 258176\nnumer
+1795655050 == filler end ok
+1795655053 orch filler ok 93.5s
+1795655053 orch build=ok la=pending after 2445 s of filler
+1795655053 == tbo start
+1795655068 tbo FLASH_ATTN_EXT rc=0 ['17/17 tests passed']
+1795655069 tbo GUMBEL_MAX rc=0 ['152/152 tests passed']
+1795655093 == tbo end ok
+1795655096 orch tbo ok 43.4s
+1795655097 == k122 start
+1795655193 k122 F-a T0=93.48 T1=88.16 copy=None
+1795655193 == k122 FAILED FileNotFoundError(2, 'No such file or directory')
+1795655196 orch k122 failed rc=1 99.8s
+1795655196 == k131 start
+1795655215 k131 rows-default [(36.2, 638.9)]
+1795655238 k131 rows1 [(27.06, 477.6)]
+1795655256 k131 rows4 [(43.63, 770.0)]
+1795655270 k131 L2PF1 [(44.96, 793.5)]
+1795655285 k131 rows-default-b [(44.97, 793.6)]
+1795655300 k131 perf rc=0 n=0
+1795655300 == k131 end ok
+1795655303 orch k131 ok 107.0s
+1795655303 == k004 start
+1795655415 k004 C0-a T0=None T1=84.68 copy=None
+1795655524 k004 C1-a T0=None T1=88.47 copy=None
+1795655623 orch k004 timeout 317s 320.1s
+1795655623 orch skip k016: deadline (-2 s left)
+1795655623 orch skip k064: deadline (-2 s left)
+1795655623 orch skip k068: deadline (-2 s left)
+1795655623 done
+1795655623 run.sh end

@@ -788,3 +788,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 
 ## [2026-11-26] wyniki NVIDIA | Vast nvq 5060 Ti (0,16 $): n2 zostaje (T=1 53,6; n4 −15%), n3 kopia +14,6%; kvq na sm_120 −12% na kopii end-to-end mimo szybszego kernela; PDL +1,1%; igły PASS; K-113 OOM
 - 3090 z tej samej paczki: build llamAmpere zablokował pomiary (pętla wypełniacza do terminu); Kernel przerwał build o 02:06, by puścić resztę pozycji przed terminem. Lekcja do paczki: pozycje niezależne od llamAmpere nie mogą czekać na jego build.
+
+## [2026-11-26] wyniki NVIDIA | Vast nvq 3090 (0,34 $): igły 208k PASS, soak 262k bez dławienia (69 t/s, 75 °C), plain dekod 85% pasma (K-131), coupled +4,5% (1 para); K-016/K-064/K-068 przepadły przez build llamAmpere. Kampania 26.11 razem ok. 0,70 $.

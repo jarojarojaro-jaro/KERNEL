@@ -1,0 +1,2 @@
+name, memory.total [MiB], driver_version, power.limit [W], power.default_limit [W], clocks.max.sm [MHz], clocks.max.memory [MHz], temperature.gpu, pcie.link.gen.current, pcie.link.width.current
+NVIDIA GeForce RTX 3090, 24576 MiB, 590.48.01, 370.00 W, 370.00 W, 2115 MHz, 9751 MHz, 32, 1, 8

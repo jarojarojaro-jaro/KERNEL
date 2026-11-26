@@ -1,0 +1,6 @@
+{"arm": "rows-default", "rc": 0, "rows": [{"n_prompt": 0, "n_gen": 128, "avg_ts": 36.2, "samples_ts": [27.3522, 36.4655, 44.7703], "model_size": 17648410624, "GBps_weights": 638.9}], "t": 1795655215}
+{"arm": "rows1", "rc": 0, "rows": [{"n_prompt": 0, "n_gen": 128, "avg_ts": 27.06, "samples_ts": [41.4983, 19.7586, 19.9318], "model_size": 17648410624, "GBps_weights": 477.6}], "t": 1795655238}
+{"arm": "rows4", "rc": 0, "rows": [{"n_prompt": 0, "n_gen": 128, "avg_ts": 43.63, "samples_ts": [43.5593, 43.6707, 43.6631], "model_size": 17648410624, "GBps_weights": 770.0}], "t": 1795655256}
+{"arm": "L2PF1", "rc": 0, "rows": [{"n_prompt": 0, "n_gen": 128, "avg_ts": 44.96, "samples_ts": [44.8841, 45.0023, 44.9959], "model_size": 17648410624, "GBps_weights": 793.5}], "t": 1795655270}
+{"arm": "rows-default-b", "rc": 0, "rows": [{"n_prompt": 0, "n_gen": 128, "avg_ts": 44.97, "samples_ts": [44.9126, 45.0127, 44.9958], "model_size": 17648410624, "GBps_weights": 793.6}], "t": 1795655285}
+{"arm": "perf-mulmat-n1", "rc": 0, "lines": [], "t": 1795655300}

@@ -62,7 +62,7 @@ Audyt liczb: [[AUDYT]].
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
-- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (126)
+- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (127)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (29)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (133)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (90)
@@ -75,6 +75,7 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-11-26 [[2026-11-26-nvq2-3090-k071-k066|2026-11-26 Vast nvq2, RTX 3090 (pełna moc 350/350 W): K-071 qwen-warp vs fork i K-066 strojenie MMQ IQ4_XS]]
 - 2026-11-26 [[2026-11-26-nvq-5060ti|2026-11-26 Vast nvq, RTX 5060 Ti 16 GB (sm_120): K-115, K-015, K-063, K-112, K-004, K-016/K-129, K-113]]
+- 2026-11-26 [[2026-11-26-nvq-3090|2026-11-26 Vast nvq, RTX 3090 (370/370 W): K-115, K-070, K-131, K-122 (część), K-004 (część)]]
 - 2026-11-26 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-26 [[qwen-warp-dlaczego-szybszy-2026-11-26|Dlaczego qwen-warp jest szybszy od naszego forka na 3090 i jak go przebić bez straty jakości]]
 - 2026-11-26 [[edycja-wag-backlog-2026-11-26|Lista eksperymentów z edycją wag (2026-11-26)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[2026-11-26-eksperymenty-edycji-wag|2026-11-26: robimy dużo eksperymentów z edycją wag]]
 - 2026-11-26 [[2026-11-26-bramka-kld|2026-11-26: bramka KLD zamiast identycznego md5, gdy zmiana niczego nie psuje]]
 - 2026-11-26 [[2026-11-26-bez-pobierania-modeli|2026-11-26: nie pobieramy nowych modeli do testów, pracujemy na tych, które są]]
-- 2026-11-26 [[2026-11-26-adapter-omp-odlozony|2026-11-26: trening własnego adaptera pod omp odkładamy]]
 
-Razem 849 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 850 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

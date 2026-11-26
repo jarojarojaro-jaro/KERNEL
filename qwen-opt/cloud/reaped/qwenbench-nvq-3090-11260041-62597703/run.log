@@ -1,0 +1,43 @@
+1795650221 start card=3090 fake=0
+1795650221 hostcheck ok: NVIDIA GeForce RTX 3090 power 370.00/370.00 W mem 9751/9751 MHz 32 C
+1795650510 model ok 17659407264
+1795650510 ready card=3090 variant=kvqlean
+1795650510 orch start card=3090 deadline in 5111 s
+1795650982 orch k115 ok 471.7s
+1795652607 orch k070 ok 1625.4s
+1795652701 orch filler ok 93.6s
+1795652794 orch filler ok 93.5s
+1795652890 orch filler ok 95.8s
+1795652984 orch filler ok 93.6s
+1795653077 orch filler ok 93.3s
+1795653170 orch filler ok 92.6s
+1795653266 orch filler ok 96.1s
+1795653359 orch filler ok 93.6s
+1795653453 orch filler ok 94.0s
+1795653547 orch filler ok 93.6s
+1795653643 orch filler ok 95.4s
+1795653736 orch filler ok 93.0s
+1795653831 orch filler ok 95.8s
+1795653925 orch filler ok 94.1s
+1795654019 orch filler ok 93.3s
+1795654112 orch filler ok 93.3s
+1795654207 orch filler ok 94.6s
+1795654300 orch filler ok 93.1s
+1795654393 orch filler ok 93.3s
+1795654489 orch filler ok 95.9s
+1795654585 orch filler ok 95.6s
+1795654677 orch filler ok 92.6s
+1795654773 orch filler ok 95.3s
+1795654866 orch filler ok 93.5s
+1795654960 orch filler ok 93.4s
+1795655053 orch filler ok 93.5s
+1795655053 orch build=ok la=pending after 2445 s of filler
+1795655096 orch tbo ok 43.4s
+1795655196 orch k122 failed rc=1 99.8s
+1795655303 orch k131 ok 107.0s
+1795655623 orch k004 timeout 317s 320.1s
+1795655623 orch skip k016: deadline (-2 s left)
+1795655623 orch skip k064: deadline (-2 s left)
+1795655623 orch skip k068: deadline (-2 s left)
+1795655623 done
+1795655623 run.sh end

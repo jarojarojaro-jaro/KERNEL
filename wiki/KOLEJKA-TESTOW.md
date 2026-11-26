@@ -146,6 +146,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (wynajem)
 - priorytet: średni (czeka na kredyt)
 
+- **2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** tylko ramię forka (T=0 93,48, T=1 88,16); build llamAmpere v0.7 nie zdążył przed terminem; do powtórki z buildem przygotowanym przed wynajmem.
 ### K-124 · Agentowy megakernel pętli draftu MTP + weryfikacji (metoda megakernel-zoo) — najpierw fork CUDA (5060 Ti/3090), potem XTX (HIP)
 - data: 2026-11-19
 - źródło: [[megakernel-zoo]] (Qwen3.8-27B B200: SGLang 9,52 → 8,44 ms, ~63 h agenta; ewaluator FP64 + ukryty zbiór + odwrócenie batcha + audyt); [[2026-11-17-k114-nvidia-sufit]] (draft 4–15 × droższy niż bajty, 37–40% kroku); [[budzet-megakernela-qwen-xtx]] (+4…9,5% za 40–70 osobodni)
@@ -345,6 +346,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: E1 zmiana mocy; E3 temperatury
 - priorytet: niski (produkt)
 
+- **wynik E3 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** fill 262k 531,4 s, soak 600 s 65,4 → 69,4 t/s (+0,7% dryf), maks. 75 °C, SM min. 1515 MHz, moc śr. 328 W: bez dławienia. E1 (sweep limitu mocy) poza zakresem (karta fabrycznie).
 ### K-071 · qwen-warp: DFlash2 ≤ 64k na replayu agentowym (W2)
 - data: 2026-11-09
 - status: **czeka na decyzję** (3,85 GB pobrania na wynajmie)
@@ -375,6 +377,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - ryzyko karty: brak (wynajem)
 - priorytet: średni
 
+- **wynik 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** UD-Q4_K_XL plain tg: domyślne 44,97 t/s = 793,6 GB/s (85% pasma), rows1 477,6, rows4 770,0, L2PF bez zmiany. 58% z wpisu dotyczył IQ3_XXS; dla jednego wiersza zapas jest mały, luka jest w weryfikacji (K-182).
 ### K-132 · Jądro Linux 7.0/7.2 vs 6.8 na jaroserverai (start, cache promptów w RAM) i odciążanie MoE z `mmap` na CPU
 - data: 2026-11-20
 - źródło: [[telegram-2026-11-20-linux-7-2-pamiec]]
@@ -437,6 +440,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie):** igły 5/5, 0 zmyślonych przy 96 362 i 164 487 tokenach promptu (278 s i 372 s), VRAM 16,1 GB. PASS na L4; 5060 Ti i 3090 wymagają wynajmu.
 - przeniesione 2026-11-25: PASS na L4
 
+- **wynik 3090 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** 120k i 208k: 5/5, 0 zmyślonych.
 ### K-064 · Zwinięcie haka promptu MTP do grafu celu (TTFT) w forku CUDA
 - data: 2026-10-16
 - źródło: `R/67c-nvidia-backlog-testow.md:113` (B19), `R/15d-prefill-dlugi-kontekst.md:110`

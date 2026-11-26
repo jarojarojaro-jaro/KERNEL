@@ -1,0 +1,40 @@
+/root/la/src/common/sampling.cpp:681:5: warning: missing initializer for member ‘common_sampler::top1_trace’ [-Wmissing-field-initializers]
+/root/la/src/common/sampling.cpp: In function ‘common_sampler* common_sampler_clone(common_sampler*)’:
+/root/la/src/common/sampling.cpp:819:5: warning: missing initializer for member ‘common_sampler::fused_topk_bias’ [-Wmissing-field-initializers]
+  819 |     };
+      |     ^
+/root/la/src/common/sampling.cpp:819:5: warning: missing initializer for member ‘common_sampler::fused_topk_scratch’ [-Wmissing-field-initializers]
+/root/la/src/common/sampling.cpp:819:5: warning: missing initializer for member ‘common_sampler::top1_trace’ [-Wmissing-field-initializers]
+/root/la/src/common/sampling.cpp: In function ‘std::vector<int> common_sampler_sample_and_accept_n_pq(common_sampler*, llama_context*, const std::vector<int>&, const llama_tokens&, const std::vector<std::vector<llama_token_data> >&, bool, bool, int32_t, int64_t, const std::function<bool(int, const std::vector<int>&)>&)’:
+/root/la/src/common/sampling.cpp:1598:67: warning: comparison of integer expressions of different signedness: ‘size_t’ {aka ‘long unsigned int’} and ‘const int’ [-Wsign-compare]
+ 1598 |             if (gsmpl->params.spec_lossy && gsmpl->pq_stats.n_pos < audit_limit) {
+      |                                             ~~~~~~~~~~~~~~~~~~~~~~^~~~~~~~~~~~~
+[ 98%] Linking CXX shared library ../../bin/libmtmd.so
+[ 98%] Built target mtmd
+[ 98%] Linking CXX shared library ../bin/libllama-common.so
+[ 98%] Built target llama-common
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-context.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-eval-cache.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-decision.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-queue.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-common.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-task.cpp.o
+[ 98%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-chat.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-tools.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-prompt-cache-disk.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-realtime.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-mcp.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-schema.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/server-context.dir/server-stream.cpp.o
+[100%] Linking CXX static library libserver-context.a
+[100%] Built target server-context
+[100%] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-connect.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-http.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-models.cpp.o
+[100%] Building CXX object tools/server/CMakeFiles/llama-server-impl.dir/server-models-sched.cpp.o
+[100%] Linking CXX shared library ../../bin/libllama-server-impl.so
+[100%] Built target llama-server-impl
+[100%] Building CXX object tools/server/CMakeFiles/llama-server.dir/main.cpp.o
+[100%] Linking CXX executable ../../bin/llama-server
+[100%] Built target llama-server
