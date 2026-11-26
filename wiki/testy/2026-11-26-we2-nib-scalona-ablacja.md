@@ -17,7 +17,7 @@ status: aktualne
 | Nib, wagi scalone (nearest) | 0/5 | 166,3 (+5,9%) | 159,1 (+8,0%) | 84,5 / 76,4 |
 
 - Bazowe ramię bez LoRA jest wolniejsze, bo odmowy mają inną długość i treść (krótkie odpowiedzi szablonowe) — porównujemy wersje bez cenzury między sobą.
-- PPL nie zapisało się (pusty wynik `nib ppl`); HumanEval+ wygenerowany (164 próbki na ramię), ocena na CPU do zrobienia (`jakosc-mini.sh --tag qe-we2-<ramię>`).
+- HumanEval / HumanEval+ pass@1 (164 zadania, T=0, ocena sandbox 2026-11-26): bez LoRA 90,2 / 86,0; LoRA w locie 92,1 / 87,2; **scalone proj 91,5 / 87,2**; scalone nearest 93,3 / 89,6. Różnice w szumie (1 zadanie = 0,6 pp); scalenie nie psuje kodu. PPL nie zapisało się (pusty wynik `nib ppl`).
 - Sidecar 5,94 GB zamiast kopii 17,6 GB. Polski dalej wolniejszy niż Maya (86,5 vs ok. 113), więc Nib nie zastępuje Mai; to dowód, że edycja kierunku daje się wpiec bez kosztu prędkości.
 
 ## Powiązane

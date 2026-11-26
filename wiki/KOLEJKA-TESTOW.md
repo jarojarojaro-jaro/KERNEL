@@ -24,8 +24,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ### K-185 · Port Tintero PR #2 do Mai: grupowana weryfikacja ekspertów raz na okno, drafter w grafie, online-softmax draft_attn (zwiad 26.11)
 - Źródło: GodGMN/tintero a9d857803, ta sama karta (XTX) i model: plain 111 → 121 (+9%), draft kod 103 → 151–160, okno B=5 37,6 → 21 ms. Bezstratność: zgodność greedy z plain.
 - Plan: diff mechanizmów z `~/k134/wt-k158g`, port brakujących za przełącznikami w `~/k134/wt-k185`, A/B z produkcją Mai (nib-ab.sh) + md5 T=0, ≤15 min GPU. Przygotowuje agent K185Tintero.
-### K-186 · Nib v0.1.2: kernele bez spilli VGPR, prefill 128K +32% na XTX (zwiad 26.11)
-- Plan: build v0.1.2 obok naszego, `nib bench -p 512 -n 64 -c 131072 --sparse-pages 224` stary vs nowy, logity identyczne, przeniesienie `--weights-patch` (WE2). ≤12 min GPU. Przygotowuje agent K186Nib012.
 ### K-001c · Tańsza poprawka wycieku stanu K-001 (po K-183 FAIL −5…−12%)
 - Plan: maska tylko dla przywróconych slotów / kafli z zamaskowanymi komórkami; bramka jak K-183 (12× wyciek + wall.py vs produkcja). Przygotowuje agent K001Cheap.
 
@@ -1293,6 +1291,11 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-186 · Nib v0.1.2: kernele bez spilli VGPR, prefill 128K +32% na XTX (zwiad 26.11)
+- Plan: build v0.1.2 obok naszego, `nib bench -p 512 -n 64 -c 131072 --sparse-pages 224` stary vs nowy, logity identyczne, przeniesienie `--weights-patch` (WE2). ≤12 min GPU. Przygotowuje agent K186Nib012.
+- **wynik 2026-11-26 05:53–05:57 (XTX, q8_0, --sparse-pages 224):** stary 2e16cf0 → v0.1.2: pp512 głęb. 0 4471,8 → 4471,9, głęb. 130048 3090,8 → 3098,1 (+0,2%), tg64 123,0 → 123,0 i 114,9 → 114,8; wall T=0 138,9 → 139,0, T=0,7 130,3 → 130,2; logity identyczne (4k, 32k, także we2-012). **0% u nas**: nasz clang 23 (ROCm core-10.0) miał tylko 6 spilli w kernels_fa zamiast 1312 u autora (clang 22). WE2 `--weights-patch` przeniesiony na v0.1.2 (`~/wt/nib-we2-012`, d1b4eda).
+- przeniesione 2026-11-26: 0% zysku
 
 ### K-021 · Dataflow w taśmie PM4: usunąć granice dispatchy w łańcuchu MMVQ → norma → MMVQ weryfikacji (najpierw PoC-A: hand-off w trwałej siatce)
 - data: 2026-10-20 (raport 36 L7)

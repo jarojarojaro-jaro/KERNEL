@@ -800,3 +800,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wyniki | nocna kolejka: WE2 scalona ablacja Nib +5,2/+5,7% przy odmowach 0/5; K-183 FAIL (poprawka K-001 −5…−12%); K-184 PR #33049 działa (akceptacja 0 → 18–37%) ale llama.cpp Inkling 26–44 t/s vs Maya 113; K-182 pasmo GEMV n=16 67%; K-021 KILL; K-012 GO (−19%)
 
 ## [2026-11-26] zwiad | Tintero PR #2 (XTX Inkling: plain +9%, draft kod 103 → 151–160) → K-185; Nib 0.1.2 bez spilli, prefill 128K +32% → K-186; tqLLM/Strata/hipfire/TensorFold/NInfer/oMLX bez znaczenia dla XTX; K-182b NO-GO (×1,05)
+
+## [2026-11-26] wyniki | K-186 Nib 0.1.2: 0% na naszym clang 23 (logity identyczne); WE2 HumanEval+ scalone proj 87,2 = LoRA 87,2 (baza 86,0)
