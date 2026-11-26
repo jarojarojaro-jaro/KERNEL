@@ -21,6 +21,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-185 · Port Tintero PR #2 do Mai: grupowana weryfikacja ekspertów raz na okno, drafter w grafie, online-softmax draft_attn (zwiad 26.11)
+- Źródło: GodGMN/tintero a9d857803, ta sama karta (XTX) i model: plain 111 → 121 (+9%), draft kod 103 → 151–160, okno B=5 37,6 → 21 ms. Bezstratność: zgodność greedy z plain.
+- Plan: diff mechanizmów z `~/k134/wt-k158g`, port brakujących za przełącznikami w `~/k134/wt-k185`, A/B z produkcją Mai (nib-ab.sh) + md5 T=0, ≤15 min GPU. Przygotowuje agent K185Tintero.
+### K-186 · Nib v0.1.2: kernele bez spilli VGPR, prefill 128K +32% na XTX (zwiad 26.11)
+- Plan: build v0.1.2 obok naszego, `nib bench -p 512 -n 64 -c 131072 --sparse-pages 224` stary vs nowy, logity identyczne, przeniesienie `--weights-patch` (WE2). ≤12 min GPU. Przygotowuje agent K186Nib012.
+### K-001c · Tańsza poprawka wycieku stanu K-001 (po K-183 FAIL −5…−12%)
+- Plan: maska tylko dla przywróconych slotów / kafli z zamaskowanymi komórkami; bramka jak K-183 (12× wyciek + wall.py vs produkcja). Przygotowuje agent K001Cheap.
+
 ### K-182 · Kernel weryfikacji na rdzeniach tensorowych dla K-quantów przy 2–16 wierszach (wzór qwen-warp `k_w4`), Ampere i RDNA3
 - data: 2026-11-26 ([[qwen-warp-dlaczego-szybszy-2026-11-26]])
 - powód: warp czyta wagi z 92–96% pasma i weryfikuje 16 wierszy za ×1,52 kosztu jednego; nasz fork 57% pasma, V(5)/V(1) = 1,59; to główna bezstratna przyczyna kopii 64k 77 vs 137 t/s
@@ -29,6 +37,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk szacowany: krok weryfikacji 43,5 → ok. 28 ms na 3090 (przypuszczam), więcej przy kopii
 - priorytet: najwyższy (NVIDIA i XTX)
 
+- **wynik pomiaru 2026-11-26 02:43–02:51 (XTX, q4_K/q6_K, kształty produkcji, zimne):** q4_K n=1 853–860 GB/s (89%), n=2–5 784–864 (82–90%), n=8 688–723 (72–75%), n=12 643–656 (67–68%), n=16 631–643 (66–67%); V(16)/V(1) ≈ 1,33–1,35 dla dużych macierzy. Słabe punkty: ssm_alpha/beta 48×5120 (601 → 113 GB/s, V(16)/V(1) 5,3: koszt startu kernela) i attn_k/v 1024×5120 (856 → 531). q6_K lm_head 749–887. Cel K-182: n 8–16 z 67–72% do ≥ 85%, małe macierze przez fuzję startów. Prototyp k182b: build bez RPATH (exit 127), poprawiany.
+- **K-182b 2026-11-26 05:45 (prototyp kernela weryfikacji, bitowo zgodny z emulacją CPU):** **NO-GO**: najlepsza konfiguracja c2_rt1ks4u1 ma 70,9% pasma przy n=2..16 i ×1,05 wobec obecnego kernela WMMA przy n=9..16; próg ≥5% na każde n i ≥10% łącznie nie spełniony. ffn_down 5120×17408 tylko 55–61% (gorzej niż produkcja 634–864 GB/s). Wniosek: przewaga warpa nie wynika z samego GEMV weryfikacji na naszych kształtach; zostają małe macierze (ssm_alpha/beta, koszt startu) jako tańszy cel.
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
@@ -101,6 +111,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-25:** `~/wt/k001-fix` (qprep-spec + r3 556ad799f + r4 a557fc3c5 z gałęzi duo, testy masked-tail 5/16/17); w kolejce `k001.jobs`: bramka tbo kvq wył./wł. × wariant 0/83, test wycieku restore (rozszerzenia 1/31/32/33/63/64 tok.), llama-bench ABBA przy wariancie 83 (koszt prefillu dotąd mierzony tylko przy 0: −0,65%).
 - **wynik 2026-11-26 00:23–00:28 (`~/wt/k001-fix`):** produkcja: **3 wycieki stanu na 12 sprawdzeń** (LEAK-PREFILL po post33 i u63, LEAK-DECODE po post32), poprawka: **0 na 12**; koszt: wariant 83 pp512 −0,25%, pp2048 −0,45%, tg64 +0,1%; wariant 0 pp2048 −0,6%. To błąd poprawności w produkcji (inne odpowiedzi po przywróceniu sesji) → bramka wdrożenia K-183 w kolejce.
+- **K-183 2026-11-26 02:26–02:30 (wall.py, `~/wt/k001-fix` vs produkcja):** **GATE FAIL**: wszystkie kategorie −5…−12% (pl T=0 80,2 → 70,5), md5 inne. Poprawka wycieku w ścieżce dekodu kvq (r4) jest za droga przy weryfikacji spekulacji; potrzebna tańsza wersja (maska tylko dla kafli z zamaskowanymi komórkami, plan 3–5 h z wpisu). Produkcja dalej ma wyciek po przywróceniu sesji.
 ### K-120 · Qwen3.8-27B-pi-adapted (LoRA RL pod pi) w naszym stosie: czy pomaga w omp, ile kosztuje w dekodzie, co z MTP
 - data: 2026-11-18
 - źródło: [[qwen38-27b-pi-adapter]] (pod pi: SWE-bench Pro hard 51 29,4 → 62,7%, Terminal-Bench 2.1 39,5 → 55,8%, −55…62% wywołań narzędzi); adapter GGUF F16 dla llama.cpp (`--lora`)
@@ -186,6 +197,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-25 ocena:** cel 172 µs/warstwę przy 98k nieosiągalny bezstratnie (podłoga pamięci 118, MMA 119, K/V dekwantowane raz ok. 152, dziś 319). Układ „pair-split” ok. −10% kernela = +2,5% dekodu przy 199k (poniżej progu 3–5%), 3–4 dni. Sonda w kolejce (`k012.jobs`, `GGML_HIP_KVQ_PROBE`): implementacja tylko przy ≤ −15% przy nb5/196k.
 - **2026-11-26 bieg nieważny:** bramka sondy oblana (kontrola PROBE=7 nb=1 zmieniła hash, choć nie powinna) — błąd w łatce sondy, nie wynik.
+- **wynik sondy 2026-11-26 02:30–02:35:** 96k: nb1 175,9 µs/warstwę (644 GB/s), nb5 322,4 (351 GB/s); 192k: nb1 327,9, nb5 620,8. Szacunek „K/V dekwantowane raz” nb5: **−18,7% (96k) i −19,2% (192k)**, powyżej progu −15% → **GO** dla nowego układu (3–4 dni).
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
 - źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
@@ -217,16 +229,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **wynik 2026-11-25 22:28–22:37 (XTX, qprep-spec 50ca29355, `LLAMA_SPEC_ROUTE` + `DRAFT_N=5` vs prod, ABBA):** bramka: routing ≤ 4 = prod (aa522e89), routing 5 = zwykłe n5. Proza T=1 bez myślenia 104,9 / 108,0 → 110,1 / 110,1 (**+3,4%**), czat T=1 109,2 / 115,4 → 113,9 / 113,6 (+1,3%), kopia T=0 407,5 / 427,6 → 410,9 / 410,1 (−1,7%). Zysk na granicy progu 3% tylko dla prozy; głębokość 5 zmienia md5 T=0 z założenia, więc wdrożenie zależy od decyzji K-007.
 - **2026-11-26 bramka K-007: PASS** (rozkład identyczny). Zysk +3,4% proza / −1,7% kopia: wdrożenie dopiero po wall.py −2% (K-183 następny).
-### K-021 · Dataflow w taśmie PM4: usunąć granice dispatchy w łańcuchu MMVQ → norma → MMVQ weryfikacji (najpierw PoC-A: hand-off w trwałej siatce)
-- data: 2026-10-20 (raport 36 L7)
-- źródło: `R/37-proza-100.md:17-19` (górna granica `GGML_HIP_PM4_UB=mmvq,norm` −2,17 ms/partię 5 wierszy, −8,8%), `R/36-xtx-qwen-roadmap.md:190`, `R/66-SYNTEZA.md:66` (#15), [[budzet-megakernela-qwen-xtx]]
-- test: XTX `klab` mikrobench hand-off, `GGML_HIP_PM4=0` (kill: > 0,3 µs albo < 30% zysku „bez granicy”); potem PoC-B md5 + spec_sweep ABBA; każdy krok ≤ 10 min
-- zysk: etap 1 +2,6…4,2%, pełny +3…6% krótki kontekst / +2…4% przy 199k, po 40–70 osobodniach [SZACUNEK]
-- ryzyko karty: **wysokie**: zawieszenia taśmy PM4 i resety (16a, 24l); tylko z `gpu-guard.sh`
-- priorytet: średni (jedyna duża dźwignia w kernelach, drogie i ryzykowne)
-
-- **2026-11-25:** PoC-A w kolejce (`k021.jobs`, `~/qwen-opt/klab/handoff/handoff.hip`): koszt przekazania między etapami w trwałej siatce vs osobne dispatche; KILL gdy > 0,3 µs albo < 30% zysku. PoC-B w forku: 1–2 tygodnie.
-- **2026-11-26 bieg nieważny:** mikrobench `handoff` zlinkowany z `libamdhip64.so.7`, a na jaroserverai jest runtime ROCm 10 → exit 127. Do przebudowy.
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -367,6 +369,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-184 · Poprawka DFlash2 dla Inklinga z llama.cpp PR #33049 (link JARO 26.11) na XTX
+- Port: `~/wt/k184` (gałąź k184-dflash2-ink, df64666ae): klucz `target_visits`, RMS-norm pożyczonych embeddingów `tok_norm` celu, softcap selektora po korekcie; drafter skonwertowany do `~/models/inkling/dflash2-Inkling-2-Mini-bf16.gguf` (989 MB).
+- **wynik 2026-11-26 02:35–02:42 (XTX, Inkling AD-Q4_K, wszystko na GPU, KV q4_0, 300 tok.):** bez spekulacji 26,4 t/s; DFlash2 bez poprawki: akceptacja ≤0,15%, 12,7 t/s; **DFlash2 z poprawką: akceptacja 18–37%, 28,0–44,4 t/s (+6…+68% vs bez spekulacji)**; DSpark 20,7–31,9. md5 T=0 spec = bez spec. Maya produkcja w tej samej sesji: 112,8 t/s T=0,7. Poprawka działa, ale ścieżka llama.cpp dla Inklinga na XTX jest 2,5–4× wolniejsza od Mai; dla Enigmy (CUDA) PR jest warunkiem DFlash2 z Inklingiem. Nasze GGUF mają rozwinięte 48 wizyt, więc `target_visits` = `target_layers`; upstreamowy konwerter `DFlashModel` zapisałby id+1 (błąd dla Inklinga).
 
 ### K-007 · Bramka „wymuszanie tokenów + KLD” (SpecPilot) zamiast md5 dla zmian polityki draftu i szerokości weryfikacji, z kalibracją kanarkami
 - data: 2026-11-07 (kanarki: 2026-10-15)
@@ -1287,6 +1293,19 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-021 · Dataflow w taśmie PM4: usunąć granice dispatchy w łańcuchu MMVQ → norma → MMVQ weryfikacji (najpierw PoC-A: hand-off w trwałej siatce)
+- data: 2026-10-20 (raport 36 L7)
+- źródło: `R/37-proza-100.md:17-19` (górna granica `GGML_HIP_PM4_UB=mmvq,norm` −2,17 ms/partię 5 wierszy, −8,8%), `R/36-xtx-qwen-roadmap.md:190`, `R/66-SYNTEZA.md:66` (#15), [[budzet-megakernela-qwen-xtx]]
+- test: XTX `klab` mikrobench hand-off, `GGML_HIP_PM4=0` (kill: > 0,3 µs albo < 30% zysku „bez granicy”); potem PoC-B md5 + spec_sweep ABBA; każdy krok ≤ 10 min
+- zysk: etap 1 +2,6…4,2%, pełny +3…6% krótki kontekst / +2…4% przy 199k, po 40–70 osobodniach [SZACUNEK]
+- ryzyko karty: **wysokie**: zawieszenia taśmy PM4 i resety (16a, 24l); tylko z `gpu-guard.sh`
+- priorytet: średni (jedyna duża dźwignia w kernelach, drogie i ryzykowne)
+
+- **2026-11-25:** PoC-A w kolejce (`k021.jobs`, `~/qwen-opt/klab/handoff/handoff.hip`): koszt przekazania między etapami w trwałej siatce vs osobne dispatche; KILL gdy > 0,3 µs albo < 30% zysku. PoC-B w forku: 1–2 tygodnie.
+- **2026-11-26 bieg nieważny:** mikrobench `handoff` zlinkowany z `libamdhip64.so.7`, a na jaroserverai jest runtime ROCm 10 → exit 127. Do przebudowy.
+- **wynik 2026-11-26 02:27–02:30 (handoff PoC-A, przebudowany z RPATH ROCm 10):** **KILL**: przekazanie między etapami w trwałej siatce 3,09 µs (r5120) i 0,81–0,83 µs (r1024) przy progu 0,3 µs; zachowane 8% zysku wobec szacunku PM4 (próg 30%). Usuwanie granic dispatchy trwałą siatką nie opłaca się na gfx1100.
+- przeniesione 2026-11-26: KILL
 
 ### K-050 · Runtime ROCm 7.2.4 z kompilatorem ROCm 10
 - data: 2026-11-07

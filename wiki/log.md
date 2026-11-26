@@ -796,3 +796,7 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wdrożenia i wyniki | K-020 w produkcji czatu (−51% w agencie, odpowiedzi identyczne), K-158g w Mai; K-179 −2,7% pl (FAIL), K-007 bramka działa (K-017, K-006 PASS), K-001: produkcja ma 3 wycieki stanu/12, poprawka 0 → bramka K-183; K-050 0%, K-047 sufit 0,5 ms/krok; K-012/K-021/K-060 nieważne
 
 ## [2026-11-26] wyniki | WE1 Astra-Stop na Qwen uncensored: przy effort low nie skraca myślenia (skala 1: +17% czasu), jakość bez zmian, LoRA w locie −6,7% dekodu → nie wdrażamy
+
+## [2026-11-26] wyniki | nocna kolejka: WE2 scalona ablacja Nib +5,2/+5,7% przy odmowach 0/5; K-183 FAIL (poprawka K-001 −5…−12%); K-184 PR #33049 działa (akceptacja 0 → 18–37%) ale llama.cpp Inkling 26–44 t/s vs Maya 113; K-182 pasmo GEMV n=16 67%; K-021 KILL; K-012 GO (−19%)
+
+## [2026-11-26] zwiad | Tintero PR #2 (XTX Inkling: plain +9%, draft kod 103 → 151–160) → K-185; Nib 0.1.2 bez spilli, prefill 128K +32% → K-186; tqLLM/Strata/hipfire/TensorFold/NInfer/oMLX bez znaczenia dla XTX; K-182b NO-GO (×1,05)
