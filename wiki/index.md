@@ -58,7 +58,7 @@ Audyt liczb: [[AUDYT]].
 
 - [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (45)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (30)
-- [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (9)
+- [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (10)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
@@ -86,8 +86,8 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[cpu-arc-cache-rozumowania|CPU-ARC: rozwiązanie raz, potem tylko uruchamianie kodu na CPU]]
 - 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
 - 2026-11-26 [[szybsze-testowanie-2026-11-26|Szybsze testowanie: gdzie ucieka czas karty i co naprawione (2026-11-26)]]
+- 2026-11-26 [[yasa-rzadka-uwaga-kolibri|YASA (Kolibri 1.1): rzadka uwaga dorobiona do gotowego modelu i co by dała u nas]]
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
-- 2026-11-26 [[model-carving|Model Carving: trening sam wycina zbędne podwarstwy]]
 
-Razem 857 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 858 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

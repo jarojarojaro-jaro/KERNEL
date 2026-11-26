@@ -824,3 +824,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] decyzja | JARO: wiedza też na później (większe modele, inne karty); notatki dostają sekcję „Na później”
 
 ## [2026-11-26] lekcja | powtórzony błąd „nie dla nas”: lint wymusza sekcję „Na później” w research/; uzupełnione 4 notatki
+
+## [2026-11-26] research | YASA (Aleph Alpha): notatka llm/yasa-rzadka-uwaga-kolibri; u nas pełna uwaga to ~14% kroku przy 94k, ~25% przy 192k
