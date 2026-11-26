@@ -170,6 +170,10 @@ def lint(only: str | None = None) -> int:
             e("brak tytułu '# …'")
         elif not n.summary:
             e("brak streszczenia (**jedno zdanie** zaraz pod tytułem)")
+        # JARO 2026-11-26: każda notatka researchu od 26.11 ma sekcję „Na później” (przy jakim modelu/karcie/skali się przyda)
+        if (n.folder == "research" and n.fm_ok and n.meta.get("aktualizacja", "") >= "2026-11-26"
+                and not re.search(r"^## Na później", n.body, re.M)):
+            e("research bez sekcji '## Na później' (decyzje/2026-11-26-wiedza-na-pozniej)")
         if not n.is_hub and not re.search(r"^## Powiązane", n.body, re.M):
             warnings.append(f"{n.rel}: brak sekcji '## Powiązane'")
         for target in n.links:

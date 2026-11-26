@@ -26,6 +26,11 @@ status: aktualne
 - Statystyka: przy 200 zadaniach 95% CI to ±6,6 pkt, więc małe efekty (rzędu SELFWRITE +1,45) wymagają 500 zadań.
 - Kolejność: 1 i 3 już przygotowywane (agenci WE1, WE2), potem 2, 7, 5, 4; 11 tylko z budżetem.
 
+## Na później
+- **Większe modele i inne architektury:** techniki ablacji kierunku i scalania LoRA w wagi (WE2: +5–6% vs LoRA w locie) przenoszą się na każdy model z liniowymi projekcjami; sprawdzić przy następnym modelu w topce.
+- **Astra-Stop (WE1):** nie działa przy effort low, ale przy effort xhigh (myślenie 26k tokenów) dawał −35% czasu — wrócić, gdy użytkownicy zaczną używać wysokiego effortu.
+- **Nib + WE2 na 0.1.2:** łata psuje drafter (K-159); naprawić, jeśli Nib wróci jako silnik.
+
 ## Powiązane
 - [[edycja-wag-a-z]]
 - [[astra-stop]]

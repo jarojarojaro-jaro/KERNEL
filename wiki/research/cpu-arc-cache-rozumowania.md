@@ -15,6 +15,10 @@ status: aktualne
 - **Dla naszej pracy już to robimy w prostszej formie:** zasada sesji „serię poleceń składaną trzeci raz zapisuję jako narzędzie w `~/dev/KERNEL/tools`” (np. `kol`, `wall.py`, skrypty kolejki) to ręczne ARC: rozumowanie raz, potem kod.
 - Ryzyko: poprawność przy trafieniu zależy od tego, czy funkcja obejmuje wariant; autorzy proponują asynchroniczny przegląd przez człowieka albo AI.
 
+## Na później
+- **Warstwa agentów i produktu:** cache rozwiązań jako kod (CPU-ARC) dla powtarzalnych zadań agentów omp/Jarvo: zamiast drugi raz rozumować, uruchomić funkcję; ma sens, gdy będziemy mieli ruch z wieloma podobnymi zapytaniami (serwer API Enigmy).
+- **Pomiar:** wtedy liczyć trafienia cache i oszczędzony czas karty, nie prędkość dekodu.
+
 ## Powiązane
 - [[narzedzia/_hub|narzędzia]]
 - [[adapter-pod-omp-2026-11-26]]

@@ -822,3 +822,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] research | 8 linków JARO: DFly2 (tylko DSA), AITER gfx1100 experimental, expert streaming (lekcja Enigma), YASA i NVFP4 KV stratne, Megatron bzdura, gfx1170 do obserwacji
 
 ## [2026-11-26] decyzja | JARO: wiedza też na później (większe modele, inne karty); notatki dostają sekcję „Na później”
+
+## [2026-11-26] lekcja | powtórzony błąd „nie dla nas”: lint wymusza sekcję „Na później” w research/; uzupełnione 4 notatki

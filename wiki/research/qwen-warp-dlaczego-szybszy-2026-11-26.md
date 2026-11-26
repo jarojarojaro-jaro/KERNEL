@@ -38,6 +38,11 @@ Plik warpa ma 19,45 GB, ale osadzenia bf16 (2,54 GB, czytany 1 wiersz na token),
 4. **lm_head: kwantyzowany wybór + dokładny rescore** tylko dla T=0 (greedy, sprawdzić odsetek pominiętego argmaxu); przy T>0 obcięcie do top-64 zmienia rozkład, więc nie.
 5. Na XTX ta sama lekcja: K-131/K-009 pokazały, że nasze MMVQ/MMQ nie dochodzą do pasma; wzór warpa (kafel 16 wierszy, trwały strumień, prefetch) jest kandydatem także dla RDNA3 (WMMA zamiast mma).
 
+## Na później
+- **Lżejszy kwant W4 warpa (13,25 vs 16,48 GB/token):** gdy JARO dopuści inny plik wag z bramką jakości, to największa pojedyncza dźwignia dekodu (~20% mniej bajtów).
+- **DFlash2 W4A16 w warp (K-071, nvq3):** +7,5% czat i +22,8% kopia 64k na 3090 — kandydat dla Enigmy na NVIDII, gdy będziemy obsługiwać warp albo jego format draftera.
+- **Kernel GEMV 92–96% pasma:** na naszych kształtach K-182b dał tylko ×1,05; wrócić przy kartach o innym stosunku pasma do mocy (RDNA4, Blackwell).
+
 ## Powiązane
 - [[qwen-warp]]
 - [[2026-11-26-nvq2-3090-k071-k066]]

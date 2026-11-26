@@ -47,6 +47,10 @@ status: aktualne
 3. Krok 2 dopiero gdy krok 1 pokaże, że adapter pi w omp coś daje; krok 3 tylko z osobnym budżetem.
 4. Do zapytania JARO: czy wolno uczyć na wyjściach Claude (warunki Anthropic) — domyślnie nie.
 
+## Na później
+- **Gdy JARO zgodzi się na trening:** adapter pod omp dla Qwena (dane: nasze sesje omp z archiwum, bez wyjść Claude ze względu na licencję); K-120 pokazał, że LoRA w locie kosztuje −28,5% dekodu, więc docelowo tylko wersja scalona z wagami.
+- **Większe modele w Enigmie:** ten sam przepis (SFT na śladach narzędzi + bramka agentowa 20 zadań z `~/qwen-opt/k120/agent.py`) dla każdego modelu, który klient chce używać jako agenta.
+
 ## Powiązane
 - [[qwen38-27b-pi-adapter]]
 - [[trening-llm-mapa]]
