@@ -25,6 +25,7 @@ status: aktualne
 Otwarte tematy na przyszłość: Astra-Stop jako fine-tune z benchmarkiem, polski fine-tune DSpine, porównanie RSR-27B. Pozycje testowe są w [[KOLEJKA-TESTOW]] (K-074, K-076, K-077, K-098). Starsze notatki zostają w swoich folderach; nowe notatki o treningu trafiają tutaj, do `llm/`.
 
 ## Powiązane
+- [[adapter-pod-omp-2026-11-26]] (research: adaptery harnessu pod omp, 2026-11-26)
 - [[sleep-rekurencja-kontekstu]] (pretrening ze „snem”, 2026-11-26)
 - [[cspd-soft-prompt]] (soft prompt zamiast eksperta RL, 2026-11-25)
 - [[llm/_hub|llm]]

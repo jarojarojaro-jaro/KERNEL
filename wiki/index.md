@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (124)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (29)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (132)
-- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (86)
+- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (87)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (36)
@@ -74,6 +74,7 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-26 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
+- 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 - 2026-11-26 [[2026-11-26-bramka-kld|2026-11-26: bramka KLD zamiast identycznego md5, gdy zmiana niczego nie psuje]]
 - 2026-11-26 [[2026-11-26-bez-pobierania-modeli|2026-11-26: nie pobieramy nowych modeli do testów, pracujemy na tych, które są]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-25 [[lekcja-lista-do-usuniecia-z-rola-pliku|Lista „do usunięcia” podaje rolę każdego pliku, nie tylko nazwę katalogu]]
 - 2026-11-25 [[lekcja-final-speed-to-najszybszy-znany|Lekcja: „final speed” to najszybszy wariant zmierzony na naszej karcie, nawet gdy to cudzy silnik]]
 - 2026-11-25 [[rustingstrata|RustingStrata (RustingStudio): silnik w Ruście dla MoE większych niż VRAM]]
-- 2026-11-25 [[nib-chromadera|Nib (Chromadera): silnik C++/HIP pod Inkling 2 Mini na 7900 XTX]]
 
-Razem 838 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 839 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

@@ -549,6 +549,7 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 | https://x.com/bebuu_ai/status/2125237184882233646 (panel 2026-11-25) = llama.cpp PR #32859 BPE string_view | scalony 11-24 `2a48778` | K-174 | Bez zmiany ID tokenów; koszt TTFT tur agenta przy długiej historii | qwen2 35,4 → 18,2 ms / 146 KB | wynik K-174 |
 | https://x.com/nvidiaaiinfra/status/2124946476539490480 (panel 2026-11-25) = DuckDB + Sirius (github.com/sirius-db/sirius) | Apache-2.0, push 11-25 | – | SQL na GPU NVIDIA (cuDF); nie inferencja LLM, bez AMD | – | tylko jeśli analityka logów urośnie |
 | https://x.com/gumbiidigital/status/2125620314201641139 (panel 2026-11-25) = porównanie DSpark między silnikami | wpis 11-25 | [[inkling-2-mini]], K-158, K-170 | Zgodne z nami: DSpark działa tylko w silnikach z natywną ścieżką | llama.cpp 0,45–0,58× (akceptacja 6–14%); Strata 2,04× bitowo; u nas Maya DSpark T=0 202,7 vs 129,7 | czy Strata HTTP włącza DSpark; zastrzeżenie vLLM |
+| https://x.com/yb2698/status/2125568461581750447 (panel 2026-11-26) = harness-hub otwarty trening adapterów (Inkling 2 Mini pi/hermes/DSH, Qwen3.8-Flash-Next pi) | trl-recipes a8f4321, dashboard 2026-11-25 | [[adapter-pod-omp-2026-11-26]] | omp = fork pi, więc ich adaptery pi są dla nas; najpierw test gotowych | Inkling pi ckpt130 TB 54,0→56,3, −22% wywołań | ckpt Inkling pi finalny, adapter Flash-Next |
 
 ## Zwiad 2026-11-23 (raport product/research/watch/2026-11-23.md)
 

@@ -779,3 +779,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] kolejka | K-075, K-035 odrzucone (sufit < progu), K-121 narzędzie GA działa; Vast nvq2 (K-071, K-066) wystartował; K-050 w kolejce; K-056 rebase 32/49 plików
 
 ## [2026-11-26] wyniki | K-026: przy MoE z ekspertami na CPU spekulacja szkodzi (15,7 → 6,0–9,2 t/s); Enigma: domyślnie bez draftu przy --n-cpu-moe
+
+## [2026-11-26] research | adapter pod omp: najpierw zestaw zadań omp i test gotowych adapterów pi (Qwen, Inkling), potem SFT samodestylacja, RL dopiero z budżetem; dane z sesji Claude licencyjnie wątpliwe
