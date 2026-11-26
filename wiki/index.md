@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (126)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (29)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (133)
-- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (88)
+- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (89)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (36)
@@ -77,6 +77,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[2026-11-26-nvq-5060ti|2026-11-26 Vast nvq, RTX 5060 Ti 16 GB (sm_120): K-115, K-015, K-063, K-112, K-004, K-016/K-129, K-113]]
 - 2026-11-26 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-26 [[qwen-warp-dlaczego-szybszy-2026-11-26|Dlaczego qwen-warp jest szybszy od naszego forka na 3090 i jak go przebić bez straty jakości]]
+- 2026-11-26 [[edycja-wag-backlog-2026-11-26|Lista eksperymentów z edycją wag (2026-11-26)]]
 - 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 - 2026-11-26 [[edycja-wag-a-z|Edycja wag (weight editing) od A do Z: co działa, co jest hype, co robimy my]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[2026-11-26-adapter-omp-odlozony|2026-11-26: trening własnego adaptera pod omp odkładamy]]
 - 2026-11-25 [[perf|tools/perf: pętla optymalizacji jedną komendą (K-161)]]
 - 2026-11-25 [[bonsai-2-5-uncensored|Ternary Bonsai 2.5 27B Uncensored (AtomicChat)]]
-- 2026-11-25 [[metoda-nib-level-up|Metoda Nib i co zmieniamy u siebie („level wyżej”)]]
 
-Razem 846 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 847 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

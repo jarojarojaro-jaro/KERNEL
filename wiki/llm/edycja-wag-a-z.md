@@ -45,6 +45,7 @@ status: aktualne
 3. **Mała pętla „self-edit” z bramką** (jak SELFWRITE) na Qwen3.8-27B: dopiero po 1–2, bo wymaga dużego zestawu ewaluacyjnego (setki zadań) i kontroli losowych edycji.
 
 ## Powiązane
+- [[edycja-wag-backlog-2026-11-26]] (lista 11 eksperymentów)
 - [[trening-llm-mapa]]
 - [[uncensored-ablacja-kierunku]]
 - [[astra-stop]]
