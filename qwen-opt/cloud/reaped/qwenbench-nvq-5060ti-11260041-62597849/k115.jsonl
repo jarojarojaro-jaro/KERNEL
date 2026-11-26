@@ -1,0 +1,3 @@
+{"label": "k115-0.5", "tokens_prompt": 96362, "target": 98304, "hits": 5, "invented": 0, "passed": true, "seconds": 183.8, "answer": "kod sejfu w Gdańsku: 240891\nvault code in Lisbon: 696853\nnumer zamówienia Marty: 988598\nbuild id of the Orion branch: 941235\nPIN do skrytki 17: 900875"}
+{"label": "k115-0.85", "tokens_prompt": 164487, "target": 167116, "hits": 5, "invented": 0, "passed": true, "seconds": 196.8, "answer": "kod sejfu w Gdańsku: 240891\nvault code in Lisbon: 696853\nnumer zamówienia Marty: 988598\nbuild id of the Orion branch: 941235\nPIN do skrytki 17: 900875"}
+{"ok": true, "vram": 15106, "bin": "/root/fork/x/llama-kvqlean", "ctx": 196608, "vram_end": 15380, "t": 1795651284}

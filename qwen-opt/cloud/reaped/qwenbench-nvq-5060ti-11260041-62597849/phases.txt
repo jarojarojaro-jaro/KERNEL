@@ -1,0 +1,73 @@
+1795650531 start card=5060ti fake=0
+1795650531 hostcheck ok: NVIDIA GeForce RTX 5060 Ti power 160.00/180.00 W mem 14001/14001 MHz 45 C
+1795650797 model ok 10442827840
+1795650797 ready card=5060ti variant=kvqlean
+1795650797 orch start card=5060ti deadline in 5134 s
+1795650797 == k115 start
+1795651079 k115 0.5 rc=0 {"label": "k115-0.5", "tokens_prompt": 96362, "target": 98304, "hits": 5, "invented": 0, "passed": true, "seconds": 183.8, "answer": "kod sejfu w Gdańsku: 240891\nvault code in Lisbon: 696853\nnumer zamówienia Marty: 988598\nbuild id of the Orion branch: 941235\nPIN do skrytki 17: 900875"}
+1795651281 k115 0.85 rc=0 {"label": "k115-0.85", "tokens_prompt": 164487, "target": 167116, "hits": 5, "invented": 0, "passed": true, "seconds": 196.8, "answer": "kod sejfu w Gdańsku: 240891\nvault code in Lisbon: 696853\nnumer zamówienia Marty: 988598\nbuild id of the Orion branch: 941235\nPIN do skrytki 17: 900875"}
+1795651284 == k115 end ok
+1795651287 orch k115 ok 489.8s
+1795651287 orch build=ok la=done after 0 s of filler
+1795651287 == tbo start
+1795651301 tbo FLASH_ATTN_EXT rc=0 ['17/17 tests passed']
+1795651303 tbo GUMBEL_MAX rc=0 ['152/152 tests passed']
+1795651327 == tbo end ok
+1795651330 orch tbo ok 42.8s
+1795651330 == k015 start
+1795651406 k015 KVQ0 rc=0 n=29
+1795651486 k015 KVQ1 rc=0 n=29
+1795651566 k015 KVQ1-BPSM1 rc=0 n=29
+1795651648 k015 KVQ1-BPSM3 rc=0 n=29
+1795651733 k015 KVQ1-BPSM4 rc=0 n=29
+1795651814 k015 KVQ1-BPSM6 rc=0 n=29
+1795651814 == k015 end ok
+1795651817 orch k015 ok 487.4s
+1795651817 == k063 start
+1795651874 k063 PDL1-a T0=54.71 T1=None copy=None
+1795651927 k063 PDL0-a T0=54.17 T1=None copy=None
+1795651981 k063 PDL0-b T0=53.96 T1=None copy=None
+1795652034 k063 PDL1-b T0=54.68 T1=None copy=None
+1795652086 k063 L2PF0-a T0=54.79 T1=None copy=None
+1795652137 k063 L2PF1-a T0=54.65 T1=None copy=None
+1795652189 k063 L2PF1-b T0=54.4 T1=None copy=None
+1795652246 k063 L2PF0-b T0=50.38 T1=None copy=None
+1795652265 k063 plain-default [32.02]
+1795652281 k063 plain-L2PF1 [31.93]
+1795652297 k063 plain-PDL0 [31.91]
+1795652297 == k063 end ok
+1795652300 orch k063 ok 483.3s
+1795652300 == k112 start
+1795652305 k112 torch {"name": "NVIDIA GeForce RTX 5060 Ti", "d2d_GBps_rw": 386.2, "f16_4096_TFLOPS": 44.4, "i8_4096_TOPS": 45.0, "f16_8192_TFLOPS": 45.2, "i8_8192_TOPS": 46.8}
+1795652451 k112 ext-a [(4096, 872.97), (32768, 768.55)]
+1795652599 k112 up-a [(4096, 884.69), (32768, 772.63)]
+1795652744 k112 up-b [(4096, 884.98), (32768, 772.73)]
+1795652891 k112 ext-b [(4096, 872.91), (32768, 768.79)]
+1795652891 == k112 end ok
+1795652894 orch k112 ok 593.4s
+1795652894 == k113 start
+1795652911 k113 rc=None
+1795652911 == k113 end ok
+1795652914 orch k113 ok 20.2s
+1795652914 == k004 start
+1795653059 k004 C0-a T0=None T1=53.28 copy=None
+1795653212 k004 C1-a T0=None T1=53.79 copy=None
+1795653366 k004 C1-b T0=None T1=52.95 copy=None
+1795653517 k004 C0-b T0=None T1=53.01 copy=None
+1795653573 k004 C0-T0 T0=54.72 T1=None copy=None
+1795653624 k004 C1-T0 T0=54.82 T1=None copy=None
+1795653624 == k004 end ok
+1795653627 orch k004 ok 713.2s
+1795653627 == k016 start
+1795653729 k016 n2-W16-a T0=54.76 T1=53.68 copy=173.99
+1795653831 k016 n3-W16 T0=54.67 T1=52.51 copy=198.83
+1795653946 k016 n4-W16 T0=54.2 T1=45.54 copy=170.29
+1795654053 k016 n5-W16 T0=50.45 T1=47.45 copy=176.05
+1795654165 k016 n2-W8 T0=54.61 T1=53.69 copy=106.84
+1795654285 k016 n2-lookup0 T0=54.62 T1=52.82 copy=70.23
+1795654388 k016 n2-KVQ0 T0=55.6 T1=52.57 copy=194.59
+1795654494 k016 n2-W16-b T0=54.72 T1=53.42 copy=173.02
+1795654494 == k016 end ok
+1795654497 orch k016 ok 870.1s
+1795654497 done
+1795654497 run.sh end

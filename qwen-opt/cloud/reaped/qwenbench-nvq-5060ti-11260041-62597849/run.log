@@ -1,0 +1,16 @@
+1795650531 start card=5060ti fake=0
+1795650531 hostcheck ok: NVIDIA GeForce RTX 5060 Ti power 160.00/180.00 W mem 14001/14001 MHz 45 C
+1795650797 model ok 10442827840
+1795650797 ready card=5060ti variant=kvqlean
+1795650797 orch start card=5060ti deadline in 5134 s
+1795651287 orch k115 ok 489.8s
+1795651287 orch build=ok la=done after 0 s of filler
+1795651330 orch tbo ok 42.8s
+1795651817 orch k015 ok 487.4s
+1795652300 orch k063 ok 483.3s
+1795652894 orch k112 ok 593.4s
+1795652914 orch k113 ok 20.2s
+1795653627 orch k004 ok 713.2s
+1795654497 orch k016 ok 870.1s
+1795654497 done
+1795654497 run.sh end

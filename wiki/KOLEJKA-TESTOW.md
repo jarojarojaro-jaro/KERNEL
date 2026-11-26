@@ -78,6 +78,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - wynik 2026-11-20: zrobione po stronie CPU. W profilu `qwen38-kvq-mtp4` silnika `enigma-cuda-fork` doszło `mtp.nMaxByArch` (`app/engine/data/engines.json`: sm_86 → 2, sm_120 → 2, reszta, czyli sm_89, zostaje 4); `mtpArgs`/`enigmaConfig` biorą n po architekturze karty (`app/engine/src/server/engine.ts`, wywołanie w `optimize.ts`). Test w `app/engine/test/enigma-cuda.test.ts` (sm_86/sm_89/sm_120 → 2/4/2); `bun test` 208 pass, 0 fail; `tsc` czysty. Planer pamięci dalej liczy draft dla n 4 (bezpieczny zapas). Uwaga: RTX 5090 (też sm_120) mierzona była tylko z n 4, więc dostaje 2 bez pomiaru. Zostaje potwierdzenie md5 T=0 n2 vs n4 na 1 karcie Vast.
 
 - **2026-11-25 (L4, K-016):** n2 +6,9% i n3 +6,3% T=1 vs n4, kopia bez straty; brakuje 3090 i 5060 Ti (wynajem) przed zmianą domyślnej wartości Enigmy.
+- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** 5060 Ti T=1: n2 53,55, n3 52,51, n4 45,54 (−15%), n5 47,45; kopia: n3 198,8 (+14,6% vs n2 173,5). Enigma: n2 domyślnie zostaje, n3 jako profil kopii; 3090 w drugiej paczce nvq.
 ### K-001 · Naprawić wyciek stanu przy drugim restore slotu (drugi restore na tym samym serwerze ≠ świeży prefill)
 - data: 2026-11-09 (ten sam objaw w `det_probe` 2026-10-14)
 - źródło: [[2026-11-08-kvq-once-profil]] (`:81-82`), [[lekcja-ten-sam-serwer-pending-h]], `R/68-SYNTEZA.md:31`, `Q/xtxbench/README.md:79-85`; podejrzany niezresetowany kontekst draftu MTP / stan GDN / `pending_h` (por. upstream #30574, `Q/patches/topka-q63/0003-*`)
@@ -169,6 +170,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni
 
 - **2026-11-25 (Colab L4, torch, GPU bezczynne):** kopia w pamięci GPU 230,8 GB/s, fp16 GEMM 75,4 / 59,8 TFLOPS (4096³ / 8192³), int8 42,7 / 19,6 TOPS. Prefill vs upstream nie sparsowany. 5060 Ti i 3090 wymagają wynajmu.
+- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** 5060 Ti: kopia GPU 386,2 GB/s, fp16 44,4 TFLOPS, int8 45,0 TOPS; prefill fork vs upstream b12110 pp4096 873,0 vs 884,8 (−1,3%), pp32768 768,7 vs 772,7 (−0,5%).
 ### K-113 · `bench.py` skill-io 1:1 na XTX, 5060 Ti i 3090 (ta sama konfiguracja) — pierwsza tabela między firmami z jednego harnessu
 - data: 2026-11-17
 - źródło: [[skill-io-skrypty]]; ich 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`); K-110 (część XTX)
@@ -181,6 +183,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **bieg 2026-11-25 17:09 nieważny:** serwer testowy nie wstał (`Connection refused`), bo w tym czasie plik modelu Qwen był skasowany (`~/models/orca`, pobrany ponownie 18:06). Ponownie w kolejce 2026-11-25 19:25.
 
 - **wynik XTX 2026-11-25 21:35 (topka produkcji, port 18794):** skill-io bench.py: TTFT krótki 304,7 ms, dekod c1 145,4 t/s; długi 65 259 tok.: TTFT 83,2 s, prefill 784,8 t/s, dekod 118,7 t/s, igły 3/3. Część 5060 Ti / 3090 w paczce Vast nvq (2026-11-26).
+- **2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** część 5060 Ti nieudana: serwer OOM przy starcie (ctx za duży z MTP na 16 GB); do powtórki z mniejszym ctx.
 ### K-006 · Wpis „wspólny początek” (Maya #607) i chude checkpointy (stan GDN tylko na granicach wiadomości) zamiast kopii całej sesji w cache
 - data: 2026-11-05
 - źródło: [[wspolny-poczatek-promptu]], `R/63-SYNTEZA.md:85-86` (plan #6, #7), `R/63b-colibri-maya-delta.md` §6, `R/68c-dlugi-kontekst-gdn.md:143`
@@ -219,6 +222,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (lokalnie, tanio)
 
 - **2026-11-25 (L4):** mikrobench kvq: KVQ1 vs KVQ0 nb2 191,5 → 37,7 µs, nb5 249,8 → 59,3, nb8 253,3 → 80,1 (kvq dużo szybsze na sm_89); BPSM 1/2 bez zmian, 3/4 gorzej (nb5 78,4 / 75,2). Regresja z wpisu dotyczy sm_120 (5080, 5060 Ti): wymaga wynajmu.
+- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** mikrokernel kvq 3–6× szybszy od zwykłego FA przy nb 2–16 (8192 nb5 284,7 → 48,5 µs); BPSM 1/3/4/6 gorsze od domyślnego. End-to-end KVQ0 vs KVQ1 (n2): T=0 +1,6%, kopia +12,2% (194,6 vs 173,5), T=1 −1,8%: regresja jest w ścieżce szerokiej weryfikacji, nie w kernelu. Następny krok: nsys kopii.
 ### K-017 · Głębokość i szerokość draftu per klasa żądania (`LLAMA_SPEC_ROUTE`: rozumowanie/kod T=0 → n=5, proza → n=3)
 - data: 2026-10-21 (raport 44)
 - status: **czeka na decyzję** (bramka K-007; n=5 zmienia md5 → d71a2c04). Najpierw naprawić crash ABBA `ggml-cpu.c:2504` w `ggml_graph_plan`.
@@ -1393,6 +1397,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **wynik (Colab L4 sm_89, fork 007a6f813, 2026-11-25, `/tmp/nvc/res` na Jarvie):** `GGML_CUDA_MMVQ_L2PF=1`: spekulacja T=0 37,51 / 37,43 → 37,19 / 37,21 (−0,7%), plain tg128 20,33 → 20,31. Bez zysku na sm_89; część PDL wymaga sm_120.
 - przeniesione 2026-11-25: bez zysku na L4
 
+- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** PDL1 vs PDL0 T=0 54,71 / 54,68 vs 54,17 / 53,96 (+1,1%), plain tg 32,02 vs 31,91; L2 prefetch bez zysku. PDL domyślnie włączony zostaje.
 ### K-058 · Strażnik „drugie `</think>` zabronione” w `reasoning-budget.cpp` (T7, niezależny od Astry)
 - data: 2026-11-09
 - status: **czeka na decyzję** (2d; zmienia wyjście tylko przy przecieku)

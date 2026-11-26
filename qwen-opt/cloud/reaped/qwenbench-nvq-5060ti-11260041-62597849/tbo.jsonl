@@ -1,0 +1,3 @@
+{"op": "FLASH_ATTN_EXT", "rc": 0, "s": 14.1, "passed_line": ["17/17 tests passed"], "ok": true, "t": 1795651301}
+{"op": "GUMBEL_MAX", "rc": 0, "s": 1.7, "passed_line": ["152/152 tests passed"], "ok": true, "t": 1795651303}
+{"test": "test-coupled-sampling", "rc": 0, "s": 23.8, "tail": ["  ok   T=1.30 top_k=40 top_p=1.00 min_p=0.10: 0 of 2000 selections differ", "  ok   T=1.00 top_k=1 top_p=1.00 min_p=0.00: 0 of 2000 selections differ", "all passed"], "t": 1795651327}

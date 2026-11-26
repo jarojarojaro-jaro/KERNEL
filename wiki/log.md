@@ -785,3 +785,6 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wyniki NVIDIA | Vast nvq2 3090 (0,20 $): K-066 nthreads 128 prefill +11,5% (PPL do sprawdzenia), K_vram 512 psuje PPL mimo testów 49/49; K-071 qwen-warp czat +31%, kopia 64k +78% vs fork (inne wagi), DFlash2 nie wystartował
 
 ## [2026-11-26] research | qwen-warp: ¾ przewagi czatu to lżejszy kwant (13,25 vs 16,48 GB/token), reszta i kopia 64k to kernel 92–96% pasma i tania weryfikacja 16 wierszy → K-182; edycja wag A–Z: fala self-edit z listopada 2026 daje 1–7 pkt, tweet 4B 35→67% niezweryfikowany
+
+## [2026-11-26] wyniki NVIDIA | Vast nvq 5060 Ti (0,16 $): n2 zostaje (T=1 53,6; n4 −15%), n3 kopia +14,6%; kvq na sm_120 −12% na kopii end-to-end mimo szybszego kernela; PDL +1,1%; igły PASS; K-113 OOM
+- 3090 z tej samej paczki: build llamAmpere zablokował pomiary (pętla wypełniacza do terminu); Kernel przerwał build o 02:06, by puścić resztę pozycji przed terminem. Lekcja do paczki: pozycje niezależne od llamAmpere nie mogą czekać na jego build.

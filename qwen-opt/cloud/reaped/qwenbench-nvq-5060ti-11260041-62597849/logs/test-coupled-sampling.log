@@ -1,0 +1,76 @@
+common_gumbel(1, 2, 0, 3) = 3.5143852
+marginal distribution (n = 200000 draws, keys 0..n-1):
+  ok   dist    T=1.00 top_k=0 top_p=1.00 min_p=0.00: chi2 p = 0.3188 (df 63)
+  ok   coupled T=1.00 top_k=0 top_p=1.00 min_p=0.00: chi2 p = 0.9444 (df 63)
+  ok   dist    T=1.00 top_k=20 top_p=0.95 min_p=0.05: chi2 p = 0.1125 (df 9)
+  ok   coupled T=1.00 top_k=20 top_p=0.95 min_p=0.05: chi2 p = 0.5408 (df 9)
+  ok   dist    T=0.70 top_k=20 top_p=0.95 min_p=0.05: chi2 p = 0.1361 (df 9)
+  ok   coupled T=0.70 top_k=20 top_p=0.95 min_p=0.05: chi2 p = 0.2069 (df 9)
+  ok   dist    T=1.50 top_k=40 top_p=0.90 min_p=0.00: chi2 p = 0.2656 (df 14)
+  ok   coupled T=1.50 top_k=40 top_p=0.90 min_p=0.00: chi2 p = 0.5805 (df 14)
+  ok   dist    T=0.30 top_k=0 top_p=1.00 min_p=0.00: chi2 p = 0.9215 (df 13)
+  ok   coupled T=0.30 top_k=0 top_p=1.00 min_p=0.00: chi2 p = 0.8483 (df 13)
+independence (n = 100000 pairs):
+  ok   keys k, k+1 (same seed): chi2 p = 0.2042
+  ok   seeds s, s+1 (key 0): chi2 p = 0.8655
+speculative, toy Markov model V=8, T=1.00 top_k=0 top_p=1.00 min_p=0.00 (n = 200000 sequences of 3 tokens):
+  ok   plain dist           joint chi2 p = 0.4332
+  ok   plain coupled        joint chi2 p = 0.2980
+  ok   greedy draft, dist   joint chi2 p = 0.4332
+  ok   greedy draft, cpl    joint chi2 p = 0.2980
+  ok   coupled draft, cpl   joint chi2 p = 0.2980
+  ok   coupled dt=0.7, cpl  joint chi2 p = 0.2980
+  ok   coupled dt=1.5, cpl  joint chi2 p = 0.2980
+  ok   'greedy draft, dist  ' == 'plain dist          ' for every seed: 0 of 20000 differ
+  ok   'greedy draft, cpl   ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled draft, cpl  ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled dt=0.7, cpl ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled dt=1.5, cpl ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+       greedy draft, dist   tok/step 1.595
+       greedy draft, cpl    tok/step 1.597
+       coupled draft, cpl   tok/step 3.019
+       coupled dt=0.7, cpl  tok/step 2.693
+       coupled dt=1.5, cpl  tok/step 2.894
+speculative, toy Markov model V=8, T=1.00 top_k=4 top_p=0.90 min_p=0.05 (n = 200000 sequences of 3 tokens):
+  ok   plain dist           joint chi2 p = 0.0917
+  ok   plain coupled        joint chi2 p = 0.1648
+  ok   greedy draft, dist   joint chi2 p = 0.0917
+  ok   greedy draft, cpl    joint chi2 p = 0.1648
+  ok   coupled draft, cpl   joint chi2 p = 0.1648
+  ok   coupled dt=0.7, cpl  joint chi2 p = 0.1648
+  ok   coupled dt=1.5, cpl  joint chi2 p = 0.1648
+  ok   'greedy draft, dist  ' == 'plain dist          ' for every seed: 0 of 20000 differ
+  ok   'greedy draft, cpl   ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled draft, cpl  ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled dt=0.7, cpl ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled dt=1.5, cpl ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+       greedy draft, dist   tok/step 1.683
+       greedy draft, cpl    tok/step 1.682
+       coupled draft, cpl   tok/step 2.433
+       coupled dt=0.7, cpl  tok/step 2.332
+       coupled dt=1.5, cpl  tok/step 2.446
+speculative, toy Markov model V=8, T=0.70 top_k=4 top_p=0.90 min_p=0.05 (n = 200000 sequences of 3 tokens):
+  ok   plain dist           joint chi2 p = 0.5503
+  ok   plain coupled        joint chi2 p = 0.2797
+  ok   greedy draft, dist   joint chi2 p = 0.5503
+  ok   greedy draft, cpl    joint chi2 p = 0.2797
+  ok   coupled draft, cpl   joint chi2 p = 0.2797
+  ok   coupled dt=0.7, cpl  joint chi2 p = 0.2797
+  ok   coupled dt=1.5, cpl  joint chi2 p = 0.2797
+  ok   'greedy draft, dist  ' == 'plain dist          ' for every seed: 0 of 20000 differ
+  ok   'greedy draft, cpl   ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled draft, cpl  ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled dt=0.7, cpl ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+  ok   'coupled dt=1.5, cpl ' == 'plain coupled       ' for every seed: 0 of 20000 differ
+       greedy draft, dist   tok/step 1.640
+       greedy draft, cpl    tok/step 1.638
+       coupled draft, cpl   tok/step 2.103
+       coupled dt=0.7, cpl  tok/step 1.978
+       coupled dt=1.5, cpl  tok/step 2.170
+GGML_OP_GUMBEL_MAX (CPU) vs the coupled sampler chain (500 keys x 4 rows):
+  ok   T=1.00 top_k=20 top_p=0.95 min_p=0.05: 0 of 2000 selections differ
+  ok   T=0.70 top_k=20 top_p=0.95 min_p=0.05: 0 of 2000 selections differ
+  ok   T=1.00 top_k=0 top_p=1.00 min_p=0.00: 0 of 2000 selections differ
+  ok   T=1.30 top_k=40 top_p=1.00 min_p=0.10: 0 of 2000 selections differ
+  ok   T=1.00 top_k=1 top_p=1.00 min_p=0.00: 0 of 2000 selections differ
+all passed
