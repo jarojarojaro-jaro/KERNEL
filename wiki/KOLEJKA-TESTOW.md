@@ -230,15 +230,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (jedyna duża dźwignia w kernelach, drogie i ryzykowne)
 
 - **2026-11-25:** PoC-A w kolejce (`k021.jobs`, `~/qwen-opt/klab/handoff/handoff.hip`): koszt przekazania między etapami w trwałej siatce vs osobne dispatche; KILL gdy > 0,3 µs albo < 30% zysku. PoC-B w forku: 1–2 tygodnie.
-### K-026 · Enigma: próg draftu `--spec-draft-p-min` {0; 0,5; 0,8} × n {1,2,4} dla MoE z `--n-cpu-moe` na kartach ≤ 16 GB
-- data: 2026-11-07 (66a A2)
-- źródło: [[prog-draftu-od-kosztu-wiersza]], `R/66-SYNTEZA.md` poz. 10
-- test: 5060 Ti z Qwen3.6-35B-A3B `--n-cpu-moe 20/30/40` albo emulacja na XTX; spec_sweep T=0/T=1 ABBA ~10 min/klasę
-- zysk: 0…+15% na MoE z offloadem (Strata +5,6…9,3%); model rezydentny ~0
-- ryzyko karty: brak
-- priorytet: średni (produkt Enigma)
-
-- **2026-11-25:** `~/models/q36` pusty, więc zamiennik: Inkling-2-Mini AD-Q4_K (MoE 128/8) z DSpark przez `~/wt/upstream-inkling`, `--n-cpu-moe 12`; w kolejce `k026a.jobs` (głębokość 0/1/2/4) i `k026b.jobs` (p-min 0 / 0,5 / 0,8).
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -249,6 +240,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (produkt)
 
 - **2026-11-26 ocena:** KLD A3 vs U3 już jest (16e); brakuje ISTA IQ3_XXS-mtp i W3 na 5 korpusach (A40 ok. 1 h, ok. 0,6 $, pobranie BF16 54 GB na wynajętej maszynie) i jakości-mini (ok. 4 h na 3090, ok. 1,1 $). Wymaga budżetu.
+- **2026-11-26 wyjaśnienie dla JARO:** to nie test prędkości, tylko wybór pliku modelu, który Enigma poleca dla kart 12/16 GB (który kwant najmniej odbiega od pełnego modelu, KLD + krótki test jakości). Porównanie A3 vs U3 już jest (16e: A3 lepszy, KLD czat −12%, kod −23%); brakuje tylko ISTA IQ3_XXS-mtp i W3. Rekomendacja: odłożyć, dopóki Enigma nie oferuje tych plików.
 ### K-036 · Nakładanie kroków: wejścia kroku t+1 przed synchronizacją hosta (ZOS-lite), obcinanie po stop-tokenie na GPU
 - data: 2026-10-20 (36 L11)
 - źródło: `R/36-xtx-qwen-roadmap.md:196`, `R/63-SYNTEZA.md:90`, `R/66-SYNTEZA.md:63`, `R/67c-nvidia-backlog-testow.md:129` (C12)
@@ -380,6 +372,18 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-026 · Enigma: próg draftu `--spec-draft-p-min` {0; 0,5; 0,8} × n {1,2,4} dla MoE z `--n-cpu-moe` na kartach ≤ 16 GB
+- data: 2026-11-07 (66a A2)
+- źródło: [[prog-draftu-od-kosztu-wiersza]], `R/66-SYNTEZA.md` poz. 10
+- test: 5060 Ti z Qwen3.6-35B-A3B `--n-cpu-moe 20/30/40` albo emulacja na XTX; spec_sweep T=0/T=1 ABBA ~10 min/klasę
+- zysk: 0…+15% na MoE z offloadem (Strata +5,6…9,3%); model rezydentny ~0
+- ryzyko karty: brak
+- priorytet: średni (produkt Enigma)
+
+- **2026-11-25:** `~/models/q36` pusty, więc zamiennik: Inkling-2-Mini AD-Q4_K (MoE 128/8) z DSpark przez `~/wt/upstream-inkling`, `--n-cpu-moe 12`; w kolejce `k026a.jobs` (głębokość 0/1/2/4) i `k026b.jobs` (p-min 0 / 0,5 / 0,8).
+- **wynik 2026-11-25 23:46–00:17 (XTX, Inkling 2 Mini AD-Q4_K, DSpark, `--n-cpu-moe 12`, serwer na 4 rdzeniach, `~/wt/upstream-inkling`):** bez spekulacji 15,7 / 15,7 t/s (T=1 / T=0); draft n1 9,2 / 9,5, n2 7,9 / 8,4, n4 6,0 / 6,8 (akceptacja 1,1–1,26 tok/krok, krok 121–194 ms vs 64 ms). p-min 0,5 i 0,8 przy n4: 15,3 (drafter praktycznie wyłączony, −2,5% narzutu). **Wniosek dla Enigmy: przy MoE z ekspertami na CPU spekulacja szkodzi (do −62%), więc domyślnie wyłączona**, bo każdy dodatkowy wiersz weryfikacji uruchamia ekspertów na CPU.
+- przeniesione 2026-11-26: zmierzone, reguła dla Enigmy
 
 - **2026-11-26:** jądro 7.0.0-43 już zainstalowane obok 6.8 (GRUB przypięty do 6.8). Test jednorazowy wymaga JARO: `sudo grub-reboot "Advanced options for Ubuntu>Ubuntu, with Linux 7.0.0-43-generic" && sudo reboot` (kolejny reboot wraca do 6.8), potem ok. 30 min pomiarów.
 ### K-121 · Adapter GA z wyścigami (Rohan Arun) do naszych sweepów wariantów: test-backend-ops perf na XTX i na NVIDIA (kernele draftu K-116)
