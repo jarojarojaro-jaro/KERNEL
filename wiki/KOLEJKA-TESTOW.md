@@ -32,6 +32,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-25 (L4, K-016):** n2 +6,9% i n3 +6,3% T=1 vs n4, kopia bez straty; brakuje 3090 i 5060 Ti (wynajem) przed zmianą domyślnej wartości Enigmy.
 - **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** 5060 Ti T=1: n2 53,55, n3 52,51, n4 45,54 (−15%), n5 47,45; kopia: n3 198,8 (+14,6% vs n2 173,5). Enigma: n2 domyślnie zostaje, n3 jako profil kopii; 3090 w drugiej paczce nvq.
+- **nvq3 2026-11-26 (3090 Broadwell):** n2 69,0 / 60,0 / 257,5; n3 −2,5 / −3,9 / −17%; n4 −6,4 / −8,7 / +3,3% → n2 zostaje ([[2026-11-26-nvq3]]).
 ### K-122 · llamAmpere v0.7 w trybie dokładnym vs nasz fork na pełnej mocy 3090, ten sam plik wag (łączyć z K-118 na jednej instancji)
 - data: 2026-11-18
 - źródło: [[llamampere]] (nagłówkowe 110+ t/s przy T=1 w trybie mb-MTP, czyli nie dokładnym; drafter DFlash2 ×3,4 po usunięciu podwójnego kroku); [[2026-11-17-k114-nvidia-sufit]]
@@ -43,6 +44,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: średni (czeka na kredyt)
 
 - **2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** tylko ramię forka (T=0 93,48, T=1 88,16); build llamAmpere v0.7 nie zdążył przed terminem; do powtórki z buildem przygotowanym przed wynajmem.
+- **nvq3 2026-11-26 (3090, Ryzen 5900X, 350/350 W):** fork T=0 87,6 / T=1 79,0 / kopia 270,5 vs llamAmpere v0.7 dokładny 70,1 / 74,9 / 102,8 → **hipoteza odrzucona, fork szybszy** ([[2026-11-26-nvq3]]).
 ### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
 - data: 2026-11-17
 - źródło: [[skill-io-sufity]] (sufit prefillu 3090 z INT8 MMQ 2737 t/s przy 4k = 2,3 × XTX; prefillu NVIDIA nigdy nie mierzyliśmy); [[skill-io-metodyka]] (narzędzia CUDA)
@@ -69,6 +71,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **wynik XTX 2026-11-25 21:35 (topka produkcji, port 18794):** skill-io bench.py: TTFT krótki 304,7 ms, dekod c1 145,4 t/s; długi 65 259 tok.: TTFT 83,2 s, prefill 784,8 t/s, dekod 118,7 t/s, igły 3/3. Część 5060 Ti / 3090 w paczce Vast nvq (2026-11-26).
 - **2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** część 5060 Ti nieudana: serwer OOM przy starcie (ctx za duży z MTP na 16 GB); do powtórki z mniejszym ctx.
+- **nvq3 2026-11-26:** 5060 Ti / 3090: c1 51,4 / 58,4 t/s, prefill 16k 711 / 811, 65k TTFT 103,5 / 101,5 s, igły 3/3 ([[2026-11-26-nvq3]]).
 ### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
 - data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
 - źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
@@ -129,6 +132,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-26:** w paczce Vast `nvq2` (3090, 35–45 min): sweep configu MMQ IQ4_XS (nthreads 128/512, K_vram 512, stream_k off, I 64), test-backend-ops + llama-bench pp512/pp4096 + PPL; IQ4_XS to 29,5% wag UD-Q4_K_XL, więc +15% kernela ≈ +4% prefillu.
 - **wynik 2026-11-26 (Vast 3090 nvq2, [[2026-11-26-nvq2-3090-k071-k066]]):** `nthreads 128` prefill +11,5% (pp4096 ub512 1441 → 1604), testy 49/49, **PPL niezmierzony**; `K_vram 512` +11% ale PPL 1160 (zepsute, testy przechodziły); stream_k off −1,6%; I 64 i nthreads 512 bez pomiaru. Następny krok: PPL/KLD nthreads 128 (5 min).
+- **2026-11-26:** wariant `nthreads 128` daje PPL = nan (log nvq2 `k066-ppl-nt128.log`) → zepsuty; nvq3 nie zbudowało forka (ucięty upload).
 ### K-067 · Kernel GDN chunked MMA w CUDA zintegrowany z cache i snapshotami (gałąź `orca-gdn2`)
 - data: 2026-10-21 (Orca)
 - źródło: sesja Orca (`O:1449-1462`: +10,5% pp2048, ale PPL nan; po poprawce 0%; `O:1791`)
@@ -148,6 +152,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (produkt)
 
 - **wynik E3 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** fill 262k 531,4 s, soak 600 s 65,4 → 69,4 t/s (+0,7% dryf), maks. 75 °C, SM min. 1515 MHz, moc śr. 328 W: bez dławienia. E1 (sweep limitu mocy) poza zakresem (karta fabrycznie).
+- **nvq3 2026-11-26 E3 (5060 Ti, 190 709 tok.):** soak 600 s 29,5 → 30,5 t/s, dryf −0,1%, 101,6 W, 64 °C maks. → brak dławienia; E1 niemożliwe na Vast (`nvidia-smi -pl`: brak uprawnień) ([[2026-11-26-nvq3]]).
 ### K-071 · qwen-warp: DFlash2 ≤ 64k na replayu agentowym (W2)
 - data: 2026-11-09
 - status: **czeka na decyzję** (3,85 GB pobrania na wynajmie)
@@ -160,6 +165,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **2026-11-26:** w paczce Vast `nvq2` (3090, ok. 35 min): fork MTP n2 vs qwen-warp 689901c (mtp / dflash2 ABBA), tylko publiczne prompty (spec_sweep, kopie, kopia 52k z korpusu Enigmy); prywatne sesje omp nie wychodzą poza nasze maszyny.
 - **wynik 2026-11-26 (Vast 3090 nvq2):** fork MTP n2 czat 90,2 / kopia 101,9 / kopia 64k 77,0; qwen-warp MTP (Swift INT4) czat 117,9 (+31%), kopia 64k 137,1 (+78%); DFlash2 nie wystartował (drafter bf16 bez `weight_packed`). Do powtórki z poprawnym formatem draftera.
 - **2026-11-26 uwaga JARO („ta sama jakość, po prostu szybciej”):** pliki: warp Swift-1.5 INT4 (W4A16) 19,47 GB, nasz UD-Q4_K_XL 17,66 GB, więc warp czyta więcej bajtów, a nie mniej; przewaga nie wynika z niższego kwantu. Ale to inny model (Swift = Qwen3.8 dostrojony na krótsze myślenie) i jakość obu plików nie była porównana. Do następnej fali: KLD obu wobec BF16 na tych samych promptach (wymuszanie tokenów) i nasz fork na Swift GGUF o podobnym rozmiarze, żeby porównać ten sam model przy tej samej jakości.
+- **nvq3 2026-11-26:** DFlash2 W4A16 (syvai) w warp: czat 126,7, kopia 227,3, kopia 64k 160,3 vs warp MTP 117,9 / 208,8 / 130,5 (+7,5 / +8,9 / +22,8%) → przechodzi W2; brak domknięcia ABBA ([[2026-11-26-nvq3]]).
 ### K-072 · Nemotron 3.5 Bolt na NVIDIA: KLD fuzji `GGML_CUDA_TOPK_MOE_NP2`, `MMVQ_N1_IQ2`, kernel IQ2_XXS MMVQ, replay stanu Mamby
 - data: 2026-10-16 (raport 14 §10)
 - status: **czeka na decyzję** (model odłożony „na później”)
