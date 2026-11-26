@@ -818,3 +818,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] wyniki + wdrożenie | K-047 na :8080 (+0,3–0,4%); K-037 KILL (przekazanie 1,1–3,5 µs); K-056 rebase działa (ops 0 FAIL, KLD PASS), wdrożenie wstrzymane (pl T=0 −6,6%); 10 testów XTX z polecenia JARO zamknięte (K-132 ramię 7.0 czeka na restart)
 
 ## [2026-11-26] wyniki | nvq3 Vast (0,50 $, przerwane poleceniem JARO 16:25): fork > llamAmpere dokładny (T=0 87,6 vs 70,1), DFlash2 W4A16 w warp +7,5% czat / +22,8% kopia 64k, n2 zostaje na Ampere, 5060 Ti bez dławienia; wszystkie testy zatrzymane, 0 instancji
+
+## [2026-11-26] research | 8 linków JARO: DFly2 (tylko DSA), AITER gfx1100 experimental, expert streaming (lekcja Enigma), YASA i NVFP4 KV stratne, Megatron bzdura, gfx1170 do obserwacji

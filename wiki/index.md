@@ -65,7 +65,7 @@ Audyt liczb: [[AUDYT]].
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (130)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (134)
-- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (90)
+- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (91)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (36)
@@ -81,13 +81,13 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[2026-11-26-nvq-3090|2026-11-26 Vast nvq, RTX 3090 (370/370 W): K-115, K-070, K-131, K-122 (część), K-004 (część)]]
 - 2026-11-26 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-26 [[qwen-warp-dlaczego-szybszy-2026-11-26|Dlaczego qwen-warp jest szybszy od naszego forka na 3090 i jak go przebić bez straty jakości]]
+- 2026-11-26 [[linki-2026-11-26-wieczor|Linki JARO 2026-11-26 wieczór: DFly2, AMD na HF Kernel Hub, expert streaming, NVFP4 KV, YASA, gfx1170]]
 - 2026-11-26 [[edycja-wag-backlog-2026-11-26|Lista eksperymentów z edycją wag (2026-11-26)]]
 - 2026-11-26 [[cpu-arc-cache-rozumowania|CPU-ARC: rozwiązanie raz, potem tylko uruchamianie kodu na CPU]]
 - 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
 - 2026-11-26 [[szybsze-testowanie-2026-11-26|Szybsze testowanie: gdzie ucieka czas karty i co naprawione (2026-11-26)]]
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 - 2026-11-26 [[model-carving|Model Carving: trening sam wycina zbędne podwarstwy]]
-- 2026-11-26 [[edycja-wag-a-z|Edycja wag (weight editing) od A do Z: co działa, co jest hype, co robimy my]]
 
-Razem 855 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 856 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
