@@ -790,3 +790,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 - 3090 z tej samej paczki: build llamAmpere zablokował pomiary (pętla wypełniacza do terminu); Kernel przerwał build o 02:06, by puścić resztę pozycji przed terminem. Lekcja do paczki: pozycje niezależne od llamAmpere nie mogą czekać na jego build.
 
 ## [2026-11-26] wyniki NVIDIA | Vast nvq 3090 (0,34 $): igły 208k PASS, soak 262k bez dławienia (69 t/s, 75 °C), plain dekod 85% pasma (K-131), coupled +4,5% (1 para); K-016/K-064/K-068 przepadły przez build llamAmpere. Kampania 26.11 razem ok. 0,70 $.
+
+## [2026-11-26] metody | szybsze testowanie: narzut XTX ok. 10% (restarty czatu 22 min, przerwy 52 min), Vast 3090 −40 min przez build llamAmpere; naprawione: pomijanie restore między paczkami, orch.py bez czekania na obcy build; WE2 (scalenie LoRA w NVFP4 Niba, proj requant resid 0,005) w kolejce

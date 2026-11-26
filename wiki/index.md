@@ -63,7 +63,7 @@ Audyt liczb: [[AUDYT]].
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (127)
-- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (29)
+- [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (133)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (90)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
@@ -81,13 +81,13 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[edycja-wag-backlog-2026-11-26|Lista eksperymentów z edycją wag (2026-11-26)]]
 - 2026-11-26 [[cpu-arc-cache-rozumowania|CPU-ARC: rozwiązanie raz, potem tylko uruchamianie kodu na CPU]]
 - 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
+- 2026-11-26 [[szybsze-testowanie-2026-11-26|Szybsze testowanie: gdzie ucieka czas karty i co naprawione (2026-11-26)]]
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 - 2026-11-26 [[model-carving|Model Carving: trening sam wycina zbędne podwarstwy]]
 - 2026-11-26 [[edycja-wag-a-z|Edycja wag (weight editing) od A do Z: co działa, co jest hype, co robimy my]]
 - 2026-11-26 [[lekcja-rozmiar-pliku-to-nie-bajty-na-token|Rozmiar pliku to nie bajty czytane na token]]
 - 2026-11-26 [[2026-11-26-eksperymenty-edycji-wag|2026-11-26: robimy dużo eksperymentów z edycją wag]]
 - 2026-11-26 [[2026-11-26-bramka-kld|2026-11-26: bramka KLD zamiast identycznego md5, gdy zmiana niczego nie psuje]]
-- 2026-11-26 [[2026-11-26-bez-pobierania-modeli|2026-11-26: nie pobieramy nowych modeli do testów, pracujemy na tych, które są]]
 
-Razem 850 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 851 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

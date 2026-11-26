@@ -9,3 +9,4 @@
 156583	2026-11-19	RTX 5070	hostguard: power 175.00/250.00 W;
 32560	2026-11-19	RTX 3090	hostguard: power 250.00/420.00 W;
 150973	2026-11-19	qwenbench-k118-5060ti	SSH refuses the registered key
+143515	2026-11-26	RTX 5060 Ti	hostguard: power 150.00/180.00 W;
