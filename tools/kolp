@@ -7,5 +7,6 @@ K=$(dirname "$0")/kol
 "$K" pusc "$jobs" 2>&1 | grep -E 'queue|ticket' | tail -1
 "$K" czekaj "$jobs" "$limit" >/dev/null 2>&1
 n=$(basename "$jobs")
-timeout 30 ssh -o ConnectTimeout=8 -n jaro@jaroserverai "awk '/queue .*$n: [0-9]+ jobs/{f=1} f&&/END /{print} /queue .*$n: done/{if(f)exit}' ~/qwen-opt/queue/logs/queue.log | cut -c1-110 | tail -20"
+# last run of this jobs file only: from its last "N jobs" line to its last "done" line
+timeout 30 ssh -o ConnectTimeout=8 -n jaro@jaroserverai "tac ~/qwen-opt/queue/logs/queue.log | awk '/queue .*$n: done/{f=1;next} f&&/queue .*$n: [0-9]+ jobs/{exit} f&&/END /' | tac | cut -c1-110 | tail -20"
 [ -n "$sum" ] && timeout 120 ssh -o ConnectTimeout=8 -n jaro@jaroserverai "$sum" 2>&1 | cut -c1-220

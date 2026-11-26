@@ -100,27 +100,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-26 ocena:** KLD A3 vs U3 już jest (16e); brakuje ISTA IQ3_XXS-mtp i W3 na 5 korpusach (A40 ok. 1 h, ok. 0,6 $, pobranie BF16 54 GB na wynajętej maszynie) i jakości-mini (ok. 4 h na 3090, ok. 1,1 $). Wymaga budżetu.
 - **2026-11-26 wyjaśnienie dla JARO:** to nie test prędkości, tylko wybór pliku modelu, który Enigma poleca dla kart 12/16 GB (który kwant najmniej odbiega od pełnego modelu, KLD + krótki test jakości). Porównanie A3 vs U3 już jest (16e: A3 lepszy, KLD czat −12%, kod −23%); brakuje tylko ISTA IQ3_XXS-mtp i W3. Rekomendacja: odłożyć, dopóki Enigma nie oferuje tych plików.
-### K-037 · Megakernel / rezydentna pętla MTP (PoC-A w trwałej siatce 96–192 WG)
-- data: 2026-10-16 (15a), 2026-11-07 (66c)
-- źródło: [[budzet-megakernela-qwen-xtx]], [[lekcja-megakernel-prefetch-nie-granica]], `R/66c-hyperkernel-megakernele.md` §7
-- test: XTX mikrobench PoC-A (kill > 0,3 µs albo < 30% zysku „bez granicy”); ≤ 10 min, kod 1–1,5 dnia
-- zysk: krótki ctx +4…9,5%, 199k +2…4%, za 40–70 osobodni [SZACUNEK]
-- ryzyko karty: **wysokie**: ewikcja kolejki KFD przy kernelu rezydentnym → możliwy reset
-- priorytet: niski (koszt i ryzyko; wspólny PoC z K-021)
-
-- **2026-11-25:** pierwszy krok wspólny z K-021: mikrobench przekazania PoC-A `~/qwen-opt/klab/handoff/handoff.hip` (w przygotowaniu).
-- **2026-11-26 różnice wobec K-021:** K-021 mierzył już siatkę 96 WG (licznik globalny H1, sztafeta ×16 H16, s_sleep 1); 192 WG nie jest współrezydentne (3 WG/WGP × 48 = 144). Dobudowane warianty K-037 w `~/qwen-opt/k037/handoff37.hip`: flagi per WG (HW, bez atomowego RMW), s_sleep 0/1/2/4, siatki 48/96/144. W kolejce `k037.jobs` (PM4=0, ok. 6 min karty).
-### K-056 · Rebase łatek topki na nowszy upstream (baza b11528 → llama.cpp v1.0.0 = b12359)
-- data: 2026-10-16, ostatnio 2026-11-07
-- źródło: [[2026-10-16-rebase-v070]], `R/68d-swieze-od-spolecznosci.md:14,18` (#31247 przesunie md5)
-- nowe (2026-11-14): v1.0.0 zawiera już u nas portowane #30137, a do tego #30541 (kopia stanu dla skwantowanego KV, K-001), #31533 (few-row MMQ CUDA, K-013/K-103), #31927 (MTP czyta stan celu z bufora na urządzeniu), #32078 (tylko fuzowany GDN), #32009/#32089 (ponowne użycie schedulera), #31838 (ROCm: stały workspace BLAS); API: `defrag_thold` usunięte, NextN w `llama.h`
-- test: build (CPU), XTX greedy md5 vs baza, `test-backend-ops`, spec_sweep A/B ≤ 10 min/ramię; zmiana md5 przez #31247 → bramka KLD
-- zysk: poprawki upstream; prędkość ~0 (68d: „prawie wszystko topka ma mocniej”)
-- ryzyko karty: nowe kernele w PM4
-- priorytet: niski (mało zysku)
-
-- **ocena 2026-11-25:** cel `upstream-master` 6792507b7 (11-21): fork 110 plików (+21,5k/−1,2k); 3-way: 62 pliki czysto, 48 plików z 142 konfliktami (`~/qwen-opt/specprep/k056-conflicts.txt`); 2–4 dni + build + pełna bramka.
-- **2026-11-26 w toku:** `~/wt/k056-rebase` (WIP 68b781b8a, 46fc73f14): 49 plików z konfliktami (139 kawałków), rozwiązane 32, zostało 17 (100 kawałków; `.k056/unresolved.txt`). Upstream zmienił sumę q8_1 (md5 się przesunie → bramka KLD), parser czatu (SAFE_TOOLS/SPECIAL do portu), cache promptu w `server-slot-sched.*`. Zostało 1,5–2,5 dnia agenta + build + bramka ok. 60 min karty.
 ### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
 - data: 2026-10-19 (21h)
 - status: **czeka na decyzję**
@@ -216,6 +195,20 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Zrobione
 
+### K-056 · Rebase łatek topki na nowszy upstream (baza b11528 → llama.cpp v1.0.0 = b12359)
+- data: 2026-10-16, ostatnio 2026-11-07
+- źródło: [[2026-10-16-rebase-v070]], `R/68d-swieze-od-spolecznosci.md:14,18` (#31247 przesunie md5)
+- nowe (2026-11-14): v1.0.0 zawiera już u nas portowane #30137, a do tego #30541 (kopia stanu dla skwantowanego KV, K-001), #31533 (few-row MMQ CUDA, K-013/K-103), #31927 (MTP czyta stan celu z bufora na urządzeniu), #32078 (tylko fuzowany GDN), #32009/#32089 (ponowne użycie schedulera), #31838 (ROCm: stały workspace BLAS); API: `defrag_thold` usunięte, NextN w `llama.h`
+- test: build (CPU), XTX greedy md5 vs baza, `test-backend-ops`, spec_sweep A/B ≤ 10 min/ramię; zmiana md5 przez #31247 → bramka KLD
+- zysk: poprawki upstream; prędkość ~0 (68d: „prawie wszystko topka ma mocniej”)
+- ryzyko karty: nowe kernele w PM4
+- priorytet: niski (mało zysku)
+
+- **ocena 2026-11-25:** cel `upstream-master` 6792507b7 (11-21): fork 110 plików (+21,5k/−1,2k); 3-way: 62 pliki czysto, 48 plików z 142 konfliktami (`~/qwen-opt/specprep/k056-conflicts.txt`); 2–4 dni + build + pełna bramka.
+- **2026-11-26 w toku:** `~/wt/k056-rebase` (WIP 68b781b8a, 46fc73f14): 49 plików z konfliktami (139 kawałków), rozwiązane 32, zostało 17 (100 kawałków; `.k056/unresolved.txt`). Upstream zmienił sumę q8_1 (md5 się przesunie → bramka KLD), parser czatu (SAFE_TOOLS/SPECIAL do portu), cache promptu w `server-slot-sched.*`. Zostało 1,5–2,5 dnia agenta + build + bramka ok. 60 min karty.
+- **K-056 2026-11-26 13:46–14:40 (rebase topki na upstream 6792507b7, gałąź `k056-rebase` 884b33048, 49/49 plików + K-018/019/020, K-012, K-001, K-006; instalacja `~/qwen-opt/k056/inst`):** test-backend-ops (kształty produkcji): MUL_MAT K-quant 622 OK, MUL_MAT q8_0/q4_0/f16 1065 OK, FLASH_ATTN_EXT 1131 OK, reszta 2480 OK, **0 FAIL**; KLD vs produkcja **PASS** (mean 0,00779 vs podłoga 0,00771, top1 95,07% = podłoga); pierwszy bieg R padał na drafcie MTP (`set_embd` → `set_embd_state` w nowym API, naprawione). Wall R vs P: kod T=0 +2,9%, T=0,7 +2,6%, pl T=0 **−6,6% (FAIL)**, pl T=0,7 +4,3%, reszta ±1%; md5 T=0 inne (upstream zmienił konwencję sum q8_1), więc T=0 porównuje różne teksty. **Rebase działa i przechodzi bramkę jakości, ale nie wdrażamy** przed wyjaśnieniem pl T=0 (akceptacja MTP na innym tekście czy realny koszt) i powtórką ABBA ×2. Otwarte: odporność op powtórki GDN na NaN w pamięci (test upstream `rollback`).
+- przeniesione 2026-11-26: zrobione technicznie, wdrożenie wstrzymane (pl T=0 −6,6%)
+
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
@@ -254,7 +247,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **2026-11-25 ocena:** GDN w produkcji 14,7 µs/uruchomienie (0,715 ms/krok) przy podłodze bajtów 7,86 µs, więc sufit zysku ok. 0,33 ms/krok (≈ 1,1% przy n=5, realnie 0,5%); WY w fp32 3–5 dni i niebitowo (decyzja KLD). Pomiar bazy w kolejce (`k047.jobs`): zabić, gdy (base − floor) × 48 < 0,15 ms.
 - **wynik bazy 2026-11-26 (gdnbench):** n=5 koszt ponad podłogę 10,1–10,3 µs/uruchomienie = **0,48–0,50 ms/krok** (n=8: 0,63–0,77, n=16: 1,16–1,40). Powyżej progu 0,25 ms z planu → wariant WY ma sens (3–5 dni, bramka KLD jest już zgodą K-007).
 - **K-047b 2026-11-26 13:10–13:17 (XTX, `~/wt/k047` 24aa8b3a3 = k183e + osobny kernel weryfikacji GDN `GGML_HIP_K047=1`: q/k ładowane i normowane raz na CTA przez LDS):** test-backend-ops 67/67 PASS, dowód ISA na emulatorze 72/72 identyczne, kernel LAG n=5 9,54 → 9,40 µs, n=16 10,55 → 10,36 µs (−1,5…−1,8%). **Wall ABBA ×2: +0,3…+0,4% we wszystkich 8 kategoriach (n=4/4), md5 T=0 identyczne → PASS.** Zysk mały, ale stały; wejdzie w następny łączny build silnika Qwena. Pełna fuzja conv + rekurencja + RMSNorm i postać WY zostają (3–5 dni).
-- przeniesione 2026-11-26: PASS, czeka na łączny build
+- **Wdrożone na :8080 2026-11-26 14:30** (`~/llama-topka-k047`, `topki/xtx/qwen-uncensored.sh` z `GGML_HIP_K047=1`, kopia `.pre-k047`; smoke md5 = produkcja).
+- przeniesione 2026-11-26: w produkcji
 
 - **K-132 ramię 6.8 2026-11-26 12:33–12:47 (jaroserverai 6.8.0-138, produkcja k183e):** start Qwen do `/health`: zimny page cache **45,2–45,4 s**, ciepły **6,0 s**; przywrócenie cache promptu z RAM 97–99 ms (8k słów, bez i z presją pamięci, swap 0); amdgpu/OOM 0. Inkling `-ncmoe 99 -lm mmap`: bez limitu pp 516 / tg 9,94 t/s, cgroup 8 GiB pp 79 / tg 4,02 (refault 3,1 mln stron). granite CPU: bez limitu tg 78,8, 1 GiB 9,2, 768 MiB 3,1, 512 MiB 0,7 t/s (Jarva 7.0, 2 vCPU: 40,5 / 4,2 / 2,0 / 0,6). Ramię 7.0 czeka na restart JARO: `sudo grub-reboot 'Advanced options for Ubuntu>Ubuntu, with Linux 7.0.0-44-generic' && sudo reboot`, potem `~/qwen-opt/k132/k132-70.jobs`. Wniosek już teraz: zimny start 45 s to odczyt 16 GB z dysku; restart :8080 po zrzuceniu page cache kosztuje 39 s więcej niż ciepły.
 ### K-159 · Nib na tym samym modelu co Maya (uncensored): AtomicChat w paczce NVFP4 albo AD-Q4_K w Nib
@@ -1276,6 +1270,19 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-037 · Megakernel / rezydentna pętla MTP (PoC-A w trwałej siatce 96–192 WG)
+- data: 2026-10-16 (15a), 2026-11-07 (66c)
+- źródło: [[budzet-megakernela-qwen-xtx]], [[lekcja-megakernel-prefetch-nie-granica]], `R/66c-hyperkernel-megakernele.md` §7
+- test: XTX mikrobench PoC-A (kill > 0,3 µs albo < 30% zysku „bez granicy”); ≤ 10 min, kod 1–1,5 dnia
+- zysk: krótki ctx +4…9,5%, 199k +2…4%, za 40–70 osobodni [SZACUNEK]
+- ryzyko karty: **wysokie**: ewikcja kolejki KFD przy kernelu rezydentnym → możliwy reset
+- priorytet: niski (koszt i ryzyko; wspólny PoC z K-021)
+
+- **2026-11-25:** pierwszy krok wspólny z K-021: mikrobench przekazania PoC-A `~/qwen-opt/klab/handoff/handoff.hip` (w przygotowaniu).
+- **2026-11-26 różnice wobec K-021:** K-021 mierzył już siatkę 96 WG (licznik globalny H1, sztafeta ×16 H16, s_sleep 1); 192 WG nie jest współrezydentne (3 WG/WGP × 48 = 144). Dobudowane warianty K-037 w `~/qwen-opt/k037/handoff37.hip`: flagi per WG (HW, bez atomowego RMW), s_sleep 0/1/2/4, siatki 48/96/144. W kolejce `k037.jobs` (PM4=0, ok. 6 min karty).
+- **K-037 2026-11-26 14:22 (XTX, `~/qwen-opt/k037/handoff37`, siatki 48/96/144 WG — 192 nie mieści się: 3 WG/CU × 48 CU = 144; nowy prymityw HW: flagi per WG bez atomów RMW; s_sleep 0/1/2):** **KILL** we wszystkich wariantach: przekazanie r5120 3,2–3,5 µs (G 96/144), 1,4 µs (G 48); r1024 1,1–3,4 µs; próg 0,3 µs. Zachowane wobec szacunku PM4 −7…+36%. H1 (jeden licznik) z s_sleep 0 łapie timeouty, flagi per WG działają, ale nie są szybsze. Rezydentna pętla MTP w trwałej siatce nie opłaca się na gfx1100 (zgodnie z K-021).
+- przeniesione 2026-11-26: KILL
 
 ### K-120 · Qwen3.8-27B-pi-adapted (LoRA RL pod pi) w naszym stosie: czy pomaga w omp, ile kosztuje w dekodzie, co z MTP
 - data: 2026-11-18
