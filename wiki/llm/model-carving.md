@@ -15,6 +15,13 @@ status: aktualne
 - **Związek z edycją wag i pruningiem warstw** (np. pomijanie warstw w drafterze, „layer skip”): carving to wersja uczona w treningu; dla gotowych modeli najbliższe są eksperymenty z pomijaniem podwarstw z bramką KLD, ale to zmiana modelu, nie bezstratna optymalizacja.
 - Nie mierzymy: brak gotowych dużych wyciętych modeli do pobrania na nasze karty (stan 2026-11-26, przypuszczam; repo autorów ma kod treningu).
 
+## Na później
+- **Własny trening (filar 2):** bramkowe skalary na podwarstwach przy pretreningu albo dotrenowaniu małego modelu (draftera, modelu do Enigmy na słabe karty) — mniejsza sieć przy tej samej stracie.
+- **Drafter:** przyciąć draftera Inklinga/Qwena bramkami zamiast trenować mniejszego od zera.
+
+## Test u nas
+- K-191: na XTX nie da się powtórzyć pretreningu, ale da się zmierzyć to, co mechanizm obiecuje dla inferencji: wpływ pominięcia podwarstw na KLD i prędkość dekodu (ablacja bez treningu, który blok MLP/atencji Qwena ma najmniejszy wpływ). ≤10 min, bramka KLD; zmiana zachowania modelu, więc tylko eksperyment.
+
 ## Powiązane
 - [[trening-llm-mapa]]
 - [[edycja-wag-a-z]]

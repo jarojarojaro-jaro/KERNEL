@@ -21,6 +21,23 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-189 · Koszt draftu Inklinga (propose DSpark/Maya) względem długości kontekstu: 2k / 32k / 96k
+- data: 2026-11-26 (lekcja z DFly2: drafter czytający cache celu ma stały koszt; nasz draft ma własną uwagę po kontekście, `IK2_DRAFT_CTX`)
+- test: `IK2_K158_BENCH` przy P = 2048 / 32768 / 98304, propose(7) ms i udział w kroku; ≤10 min XTX. Jeśli propose przy 96k > 2× wartości przy 2k → projekt draftu z ograniczonym oknem albo czytaniem KV celu.
+- priorytet: średni
+### K-190 · Enigma: pula slotów ekspertów MoE + 1 ekspert z wyprzedzeniem (wzór Strata/HF) dla MoE na kartach 12–16 GB
+- data: 2026-11-26 (HF moe-expert-streaming: Strata 82–88 vs llama.cpp `--fit` 63–64 t/s na A10G; nasze K-026: spekulacja z ekspertami na CPU −41…−62%)
+- test: Vast 5060 Ti 16 GB, Qwen3.6-35B-A3B albo Inkling, llama.cpp `--n-cpu-moe` vs `--moe-cache-mib` vs Strata `--expert-cache auto`, tg128 i z MTP; ≤15 min, ok. 0,05 $.
+- priorytet: średni (produkt Enigma)
+### K-191 · Ablacja podwarstw Qwena bez treningu (wzór Model Carving): KLD i dekod po pominięciu najmniej ważnych bloków
+- data: 2026-11-26; eksperyment zmienia zachowanie modelu (decyzja JARO przed produkcją)
+- test: na CPU ranking bloków po normie wkładu do residuum; XTX ≤10 min: pominięcie 1/2/4 bloków MLP, KLD K-007 + wall
+- priorytet: niski
+### K-192 · Kierunek „po polsku” w wagach Inklinga (edycja kierunku, kontrola losową edycją)
+- data: 2026-11-26 (backlog edycji wag)
+- test: kierunek z różnicy aktywacji PL vs EN, ablacja/dodanie w Mai, pl wall + jakość, kontrola losowym kierunkiem; ≤10 min XTX; eksperyment do decyzji JARO
+- priorytet: niski
+
 ### K-188 · Rzadka uwaga bez treningu przy długim kontekście (wybór stron KV jak Quest/YASA) w 16 warstwach pełnej uwagi Qwena
 - data: 2026-11-26 (YASA Kolibri 1.1, link JARO; [[yasa-rzadka-uwaga-kolibri]])
 - mechanizm: metadane stron KV (min/max albo średni klucz) przy zapisie; przy dekodzie wybór top stron pod budżet 4k/8k/16k tokenów + zawsze sink i ostatnie okno; kernel kvq tylko po wybranych stronach; prefill bez zmian. Przełącznik `GGML_HIP_K188=<budżet>`.

@@ -12,6 +12,7 @@ status: aktualne
 - Przyczyna: oceniłem przepis źródła (z treningiem), a nie mechanizm (wybór części KV przy dekodzie), i potraktowałem „zmienia wynik” jako koniec, choć mamy bramkę KLD na zmiany, które niczego nie psują ([[2026-11-26-bramka-kld]]).
 - Reguła: gdy rachunek na naszych liczbach daje ≥ 3–5% (próg z [[xtxbench-szybki-ab]]), w tej samej turze powstaje pozycja `K-…` z planem testu i najtańszym wariantem (bez treningu, za przełącznikiem, bramka KLD + igły), a w odpowiedzi podaję numer. „Na później” tylko dla tego, czego nie da się sprawdzić na naszych kartach i modelach.
 - Pozycja: K-188.
+- Wymuszenie (JARO 21:57: „jak mogłeś tego nie wyłapać”): `wiki.py lint` daje błąd dla każdej notatki `research/` i `llm/` od 26.11 bez sekcji `## Test u nas` z numerem `K-…` albo jawnym „nie da się …” z powodem. Przegląd dzisiejszych notatek tym sitem dał 4 nowe pozycje (K-189…K-192).
 
 ## Powiązane
 - [[yasa-rzadka-uwaga-kolibri]]

@@ -31,6 +31,9 @@ status: aktualne
 - **Astra-Stop (WE1):** nie działa przy effort low, ale przy effort xhigh (myślenie 26k tokenów) dawał −35% czasu — wrócić, gdy użytkownicy zaczną używać wysokiego effortu.
 - **Nib + WE2 na 0.1.2:** łata psuje drafter (K-159); naprawić, jeśli Nib wróci jako silnik.
 
+## Test u nas
+- Zrobione: WE1, WE2 (wyniki w [[2026-11-26-we1-astra-stop-qwen]], [[2026-11-26-we2-nib-scalona-ablacja]]). Następny z backlogu: K-192 (kierunek „po polsku”, Inkling).
+
 ## Powiązane
 - [[edycja-wag-a-z]]
 - [[astra-stop]]

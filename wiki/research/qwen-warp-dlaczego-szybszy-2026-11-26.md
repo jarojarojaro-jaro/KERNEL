@@ -43,6 +43,9 @@ Plik warpa ma 19,45 GB, ale osadzenia bf16 (2,54 GB, czytany 1 wiersz na token),
 - **DFlash2 W4A16 w warp (K-071, nvq3):** +7,5% czat i +22,8% kopia 64k na 3090 — kandydat dla Enigmy na NVIDII, gdy będziemy obsługiwać warp albo jego format draftera.
 - **Kernel GEMV 92–96% pasma:** na naszych kształtach K-182b dał tylko ×1,05; wrócić przy kartach o innym stosunku pasma do mocy (RDNA4, Blackwell).
 
+## Test u nas
+- K-182 (zamknięty: GEMV weryfikacji ×1,05, małe macierze bez zysku), K-071 (DFlash2 warp na 3090: +7,5% czat, +22,8% kopia 64k).
+
 ## Powiązane
 - [[qwen-warp]]
 - [[2026-11-26-nvq2-3090-k071-k066]]

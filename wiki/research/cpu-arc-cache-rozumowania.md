@@ -19,6 +19,9 @@ status: aktualne
 - **Warstwa agentów i produktu:** cache rozwiązań jako kod (CPU-ARC) dla powtarzalnych zadań agentów omp/Jarvo: zamiast drugi raz rozumować, uruchomić funkcję; ma sens, gdy będziemy mieli ruch z wieloma podobnymi zapytaniami (serwer API Enigmy).
 - **Pomiar:** wtedy liczyć trafienia cache i oszczędzony czas karty, nie prędkość dekodu.
 
+## Test u nas
+- Nie da się zmierzyć jako prędkość karty: to warstwa agenta (cache rozwiązań na CPU), a nie silnika. Test w harnessie agentów: ten sam zestaw 20 zadań z `~/qwen-opt/k120/agent.py` w dwóch wariantach liczbowych, z cache i bez; liczyć trafienia i czas — do zrobienia, gdy JARO zechce rozwijać warstwę agentów.
+
 ## Powiązane
 - [[narzedzia/_hub|narzędzia]]
 - [[adapter-pod-omp-2026-11-26]]

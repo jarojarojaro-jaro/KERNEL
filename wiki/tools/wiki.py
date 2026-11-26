@@ -170,10 +170,14 @@ def lint(only: str | None = None) -> int:
             e("brak tytułu '# …'")
         elif not n.summary:
             e("brak streszczenia (**jedno zdanie** zaraz pod tytułem)")
-        # JARO 2026-11-26: każda notatka researchu od 26.11 ma sekcję „Na później” (przy jakim modelu/karcie/skali się przyda)
-        if (n.folder == "research" and n.fm_ok and n.meta.get("aktualizacja", "") >= "2026-11-26"
-                and not re.search(r"^## Na później", n.body, re.M)):
-            e("research bez sekcji '## Na później' (decyzje/2026-11-26-wiedza-na-pozniej)")
+        # JARO 2026-11-26: każda notatka researchu/llm od 26.11 ma „## Na później” i „## Test u nas”
+        # (numer K-… z kolejki albo powód, czemu nie da się zmierzyć na naszych kartach/modelach)
+        if (n.folder in ("research", "llm") and n.fm_ok and n.meta.get("aktualizacja", "") >= "2026-11-26"):
+            if not re.search(r"^## Na później", n.body, re.M):
+                e("bez sekcji '## Na później' (decyzje/2026-11-26-wiedza-na-pozniej)")
+            m = re.search(r"^## Test u nas\n(.*?)(?=^## |\Z)", n.body, re.M | re.S)
+            if not m or not (re.search(r"K-\d{3}", m.group(1)) or "nie da się" in m.group(1).lower()):
+                e("bez sekcji '## Test u nas' z numerem K-… albo powodem 'nie da się …' (lekcja-procent-zysku-to-test)")
         if not n.is_hub and not re.search(r"^## Powiązane", n.body, re.M):
             warnings.append(f"{n.rel}: brak sekcji '## Powiązane'")
         for target in n.links:

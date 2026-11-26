@@ -51,6 +51,9 @@ status: aktualne
 - **Gdy JARO zgodzi się na trening:** adapter pod omp dla Qwena (dane: nasze sesje omp z archiwum, bez wyjść Claude ze względu na licencję); K-120 pokazał, że LoRA w locie kosztuje −28,5% dekodu, więc docelowo tylko wersja scalona z wagami.
 - **Większe modele w Enigmie:** ten sam przepis (SFT na śladach narzędzi + bramka agentowa 20 zadań z `~/qwen-opt/k120/agent.py`) dla każdego modelu, który klient chce używać jako agenta.
 
+## Test u nas
+- K-120 zmierzony 2026-11-26: LoRA pi w locie −28,5% dekodu, zadania agentowe 18/20 → 19/20 (KILL). Wersja scalona z wagami wymaga decyzji JARO o treningu/scaleniu.
+
 ## Powiązane
 - [[qwen38-27b-pi-adapter]]
 - [[trening-llm-mapa]]

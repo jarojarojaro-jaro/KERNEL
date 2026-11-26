@@ -32,6 +32,10 @@ status: aktualne
 - **Nowe karty AMD (gfx1170/1171, RDNA4-class macierze):** przy pojawieniu się — od razu wiersz w `karty/` i test naszych kerneli WMMA.
 - **AITER:** gdy Maya albo produkt przejdzie na ścieżkę Torch na Radeonie, kernele RoPE/norm/flash-attn z HF Kernel Hub do porównania.
 
+## Test u nas
+- K-188 (rzadka uwaga bez treningu, z YASA), K-189 (koszt draftu Inklinga względem długości kontekstu, lekcja z DFly2), K-190 (pula slotów ekspertów MoE dla Enigmy na 12–16 GB, NVIDIA/Vast).
+- DFly2 sam: nie da się — wymaga modelu z rzadką uwagą DSA, a takiego nie mamy. NVFP4 KV: nie da się na XTX (brak FP4 na RDNA3).
+
 ## Powiązane
 - [[edycja-wag-a-z]]
 - [[ZRODLA]]

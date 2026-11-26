@@ -50,6 +50,14 @@ status: aktualne
 2. **Scalona ablacja zamiast ablacji w locie** w Mai/Nibie: ten sam kierunek wpisany w plik → odzyskanie 2–7% dekodu bez zmiany zachowania (bramka KLD).
 3. **Mała pętla „self-edit” z bramką** (jak SELFWRITE) na Qwen3.8-27B: dopiero po 1–2, bo wymaga dużego zestawu ewaluacyjnego (setki zadań) i kontroli losowych edycji.
 
+## Na później
+- **Każdy nowy model w topce:** ablacja kierunku i scalenie LoRA w wagi (WE2: +5–6% vs LoRA w locie) jako standardowy krok przy wersji bez cenzury.
+- **Samodzielna edycja wag (SEAL, SELFWRITE):** gdy będziemy dotrenowywać modele pod omp, jako tańsza alternatywa pełnego SFT.
+
+## Test u nas
+- Zrobione: WE1 (Astra-Stop, negatywne przy effort low), WE2 (scalona ablacja Nib, +5,2/+5,7%), K-120 (LoRA pi, −28,5% dekodu).
+- Następny: K-192 — kierunek „po polsku” na Inklingu (Maya) z losową edycją jako kontrolą, ≤10 min, zmienia zachowanie, więc eksperyment do decyzji JARO.
+
 ## Powiązane
 - [[edycja-wag-backlog-2026-11-26]] (lista 11 eksperymentów)
 - [[trening-llm-mapa]]

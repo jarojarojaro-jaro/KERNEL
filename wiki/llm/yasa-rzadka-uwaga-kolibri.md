@@ -39,6 +39,9 @@ status: aktualne
 - **Teraz u nas:** wersja bez treningu (wybór stron KV przy dekodzie) to K-188 w kolejce, bramka KLD + igły.
 - **NVFP4 KV:** u nas wbrew zasadzie bezstratności; na Blackwellu u klientów jako opcja pamięci.
 
+## Test u nas
+- K-188: rzadka uwaga bez treningu w 16 warstwach pełnej uwagi Qwena, bramka KLD + igły; przygotowuje agent K188Sparse.
+
 ## Powiązane
 - [[linki-2026-11-26-wieczor]]
 - [[2026-11-26-wiedza-na-pozniej]]
