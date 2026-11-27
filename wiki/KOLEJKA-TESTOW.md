@@ -27,6 +27,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test: mikrobench K158 przy P 2k/32k/90k i szerokościach 1/5/8, serwer 2k/32k/90k; ≤15 min; przygotowuje agent X200
 - priorytet: wysoki
 
+- **bieg 1, 2026-11-27 14:01 (`wt-k200` 37ca3c51, `IK2_K200=1`, natywne WMMA QK i PV, okno weryfikacji czyta KV raz):** czas jednej wizyty uwagi przy 90k: T=1 643 → 385 µs (×1,67), **T=5 1602 → 331 µs (×4,85)**, T=8 2393 → 498 µs (×4,80); przy 32k T=5 ×4,83. Test poprawności: T=1 i T=5 OK (błąd 1e-6…1e-4), **ścieżka dwóch kafli T=6–8 błędna** (max błąd 0,12–0,52) → reszta jobów pominięta. Poprawka w toku (agent X200).
 ### K-201 · Enigma 16 GB: Inkling GSQ-RCO IQ3_S bez cenzury (ablacja WE2 na IQ3_S) i długi kontekst na 5060 Ti
 - data: 2026-11-27 (z K-195: IQ3_S + DSpark 82,7 t/s, +26% nad przepisem Qwena, ale model z cenzurą)
 - test: (1) CPU: scalić kierunek ablacji AtomicChat do IQ3_S (requantyzacja „proj” jak WE2) albo LoRA w locie w llama.cpp; (2) Vast 5060 Ti: odmowy 0/5, wall, KLD, ctx 64k/128k; ok. 0,10 $
