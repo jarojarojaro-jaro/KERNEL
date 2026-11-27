@@ -858,3 +858,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wyniki | K-201 Inkling IQ3_S bez cenzury (LoRA w locie) na 5060 Ti: odmowy 0/5, PPL +0,35%, 131k w 14,4 GB → kandydat Enigmy 16 GB; Vast łącznie 1,23 z 1,50 $
 
 ## [2026-11-27] wdrożenie | Maya kontekst 16k → 393 216 (384k: igły 5/5, 23,3 GiB, prompt 327 s, dekod 63–80 t/s); 448k OOM draftera; ISTA 1M w llama.cpp tylko bez draftera; K-203 Maya+IQ3_S w kolejce
+
+## [2026-11-27] wdrożenie | Maya kontekst → 425 984 (420k: igły 5/5, 23,77 GiB, prompt 380 s)
