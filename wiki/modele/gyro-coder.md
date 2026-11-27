@@ -29,7 +29,7 @@ wynik: gyro-coder | strix-halo | 0.118 KLD | KLD do Q8_0; C++, -c 2048 | 2026-10
 <!-- TABELE:START -->
 ## Wyniki z notatek (1)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-27); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-28); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

@@ -864,3 +864,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] topka | Inkling 1M na XTX: Maya + IQ3_S (K-203), KL 0,0019 vs llama.cpp, okna bitowe, wall 67,8, 128k 52–56, 360k 44,5; Maya AD 425 984 w produkcji
 
 ## [2026-11-27] K-203 | kernele IQ i mv_parts bitowo dokładne, wall 1M 67 bez zmian; rozkład kroku: macierze mieszane 3,4× wolniejsze od planarnego Q8 → K-206
+
+## [2026-11-28] test | K-204 Enigma 16 GB Inkling IQ3_S: 5060 Ti +104% przy 262k, 4060 Ti +103% przy 283k, 0,41 $; K-207 (ablacja zamiast LoRA)

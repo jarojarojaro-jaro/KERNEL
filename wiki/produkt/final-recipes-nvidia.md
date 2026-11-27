@@ -34,6 +34,7 @@ Licencje: Qwen3.8-27B, Qwen3.5-9B, ISTA GSQ, Bonsai – Apache-2.0; LFM2.5 – L
 | Enigma dziś (silnik upstream) | [Qwen3.8-27B ISTA GSQ](https://huggingface.co/ISTA-DASLab/Qwen3.8-27B-GSQ-RCO-GGUF) IQ3_XXS-mtp | 5080 208 896, 5060 Ti 200 704, 4060 Ti 217 088 | pin b11856, bez MTP, ub 256 | 5080 **58,81**, 5060 Ti **31,42**, 4060 Ti **24,02** | 14 562 / 14 230 / 14 566 | Apache-2.0 |
 | z silnikiem Enigmy (lean) – po publikacji archiwów | j.w. | 5080 217 088, 5060 Ti i 4060 Ti 229 376 | b12110lean, MTP n2, ub 256 | 5080 **81,62**, 5060 Ti **43,40**, 4060 Ti **36,30** | 15 632 / 15 762 / 15 736 | Apache-2.0 |
 | z silnikiem Enigmy (fork+kvq+lean) – wariant krótszego ctx | j.w. | 196 608 | fork kvqlean, ub 256 | 5060 Ti **49,44** | 15 416 | Apache-2.0 |
+| kandydat K-204 (upstream, czeka na decyzję JARO) | [Inkling 2 Mini GSQ-RCO](https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF) IQ3_S + LoRA bez cenzury + DSpark n2 | 5060 Ti 262 144, 4060 Ti 283 648 (igły 5/5 przy 95%) | b12811, ub 128, KV q4_0, p_min 0 | 5060 Ti **66,45**, 4060 Ti **48,58** | 15 698 / 15 955 | Apache-2.0 |
 | alternatywa MoE (upstream) | [LFM2.5-24B-A2B](https://huggingface.co/LiquidAI/LFM2.5-24B-A2B-GGUF) Q4_K_M | 131 072 | b12110, KV q8_0, ub 512, w całości w VRAM | 5060 Ti **139,48** | 15 820 | LFM Open 1.0 (< $10M) |
 
 ## 12 GB (RTX 4070, RTX 3060 przy 140 W)

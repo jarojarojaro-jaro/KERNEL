@@ -12,3 +12,8 @@
 143515	2026-11-26	RTX 5060 Ti	hostguard: power 150.00/180.00 W;
 18011	2026-11-26	qwenbench-nvq3-3090c-11261603	stuck in loading > 10 min
 156706	2026-11-26	RTX 3090	hostguard: power 350.00/420.00 W;
+152106	2026-11-27	RTX 3090	hostguard: power 280.00/350.00 W;
+140860	2026-11-27	qwenbench-nvq3-5060tic-11270305	SSH refuses the registered key
+157659	2026-11-27	RTX 5060 Ti	hostguard: power 150.00/180.00 W;
+28725	2026-11-27	qwenbench-nvq3-4060tie-11272300	stuck in loading > 10 min
+158609	2026-11-27	RTX 4060 Ti	hostguard: power 130.00/165.00 W;

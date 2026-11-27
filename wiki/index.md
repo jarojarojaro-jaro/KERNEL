@@ -62,7 +62,7 @@ Audyt liczb: [[AUDYT]].
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
-- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (132)
+- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (133)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (137)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (92)
@@ -73,6 +73,7 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-11-28 [[2026-11-27-k204-enigma-16gb-inkling|2026-11-27 K-204: Enigma 16 GB z Inklingiem IQ3_S bez cenzury i pełnym kontekstem (5060 Ti, 4060 Ti)]]
 - 2026-11-27 [[2026-11-27-nvq5|2026-11-27 Vast nvq5: Inkling GSQ-RCO na 12–16 GB (K-195), offload ekspertów (K-190), DSpine dla Qwena (K-197)]]
 - 2026-11-27 [[2026-11-27-nvq4|2026-11-27 Vast nvq4: dokończenie fali NVIDIA (K-131, K-112, K-014, K-015, K-071)]]
 - 2026-11-27 [[zwiad-2026-11-27|Zwiad 2026-11-27: Tintero v0.1.0, 663,9 t/s Qwena na 5090 (DSpine), oMLX +42% na Macu, AMD w dashboardzie llama.cpp]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[2026-11-26-nvq-3090|2026-11-26 Vast nvq, RTX 3090 (370/370 W): K-115, K-070, K-131, K-122 (część), K-004 (część)]]
 - 2026-11-26 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-26 [[qwen-warp-dlaczego-szybszy-2026-11-26|Dlaczego qwen-warp jest szybszy od naszego forka na 3090 i jak go przebić bez straty jakości]]
-- 2026-11-26 [[linki-2026-11-26-wieczor|Linki JARO 2026-11-26 wieczór: DFly2, AMD na HF Kernel Hub, expert streaming, NVFP4 KV, YASA, gfx1170]]
 
-Razem 865 notatek. Wygenerowano 2026-11-27 przez `tools/wiki.py index`.
+Razem 866 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

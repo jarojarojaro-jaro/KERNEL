@@ -30,7 +30,7 @@ Analiza wag (21e, 2026-10-19): LFM2.5 z ablacją kierunku per warstwa w warstwac
 <!-- TABELE:START -->
 ## Wyniki z notatek (4)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-27); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-28); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

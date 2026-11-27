@@ -10,7 +10,7 @@ status: aktualne
 **Każda technika, kernel i łatka z werdyktem, zyskiem, kartą, modelem i dowodem; generuje tools/tabele.py.**
 
 <!-- TABELE:START -->
-Wygenerowano 2026-11-27 przez `tools/tabele.py` z pól `technika`, `werdykt`, `zysk`, `dowod` (89 technik); poprawiaj notatkę techniki, nie tę tabelę.
+Wygenerowano 2026-11-28 przez `tools/tabele.py` z pól `technika`, `werdykt`, `zysk`, `dowod` (89 technik); poprawiaj notatkę techniki, nie tę tabelę.
 
 ## Przyjęte (w produkcji albo w przepisie) (35)
 

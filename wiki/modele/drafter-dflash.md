@@ -50,7 +50,7 @@ Następca z tej rodziny: [[drafter-dspine]] (przyczynowy kręgosłup, +3.7…+6.
 <!-- TABELE:START -->
 ## Wyniki z notatek (5)
 
-Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-27); pełna tabela: [[najlepsze-wyniki]].
+Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 2026-11-28); pełna tabela: [[najlepsze-wyniki]].
 
 | karta | metryka | najlepszy | warunki | data | źródło |
 |---|---|---|---|---|---|

@@ -21,6 +21,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-207 · Enigma NVIDIA: ablacja kierunku (jak IK2_ABLATE w Mai) zamiast LoRA w czasie działania w llama.cpp
+- Po co: LoRA bez cenzury kosztuje 17–33% dekodu Inklinga na 16 GB (K-204: 5060 Ti 66,5 vs 79,6–83,2 bez LoRA). W Mai ten sam efekt daje rzut kierunku na resztę (KL i odmowy 0/5 zmierzone w K-203). Szacunek +15–30% na 5060 Ti / 4060 Ti, te same wagi.
+- Plan testu (Vast, ok. 0,05 $): odmowy 0/5, KL vs LoRA, wall 4 prompty × T=0/0,7 na 5060 Ti.
+
 ### K-206 · Maya IQ3_S: planarne kernele macierzy mieszanych bez straty (cel krok ≤ 11 ms)
 - Po co: Inkling 1M (K-203) robi 67 t/s, a te same wagi po stratnej konwersji do Q8_0 robią 94,5; cała różnica to macierze q k v / wyjście / głowica (4,33 vs 1,76 ms). Przepakowanie w ich własnym typie do układu planarnego, ta sama kolejność sum → bitowo zgodne. Szacunek +30% wall przy 1M.
 - Plan testu (≤ 15 min): test bitowy, okna, ktime, bench 2048, wall 1M, KL f16 vs llama.cpp.
@@ -39,9 +43,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **bieg 2026-11-27 21:30–22:06 (Maya `wt-k203` cafc3355: czytnik `inkling2_loop`, dekodery IQ1_S/IQ2_*/IQ3_S/IQ4_NL/Q2_0, macierze o mieszanych typach, ablacja AtomicChat):** testy 72/72; odmowy 5/5 → 0/5 z ablacją; **1M startuje** (drafter ograniczony `IK2_DRAFT_CTX=131072`), igły 5/5 przy 128k, dekod 51,6–55,5 t/s przy 128k, 44,5 t/s przy 360k (silnik żyje, szczyt 23,7 GiB). Wall: 67,8 / 65,4 t/s (dokładne typy), 98,1 / 97,2 (wszystko na Q8_0, `IK2_K203_REQ8`), produkcja AD 151,8 / 149,4. **Blokery produkcji:** KL Maya vs llama.cpp na tym samym pliku 0,149 (powinno być ~0), okno weryfikacji ≠ dekod po tokenie (0/3 wierszy bitowo). Diagnoza w toku (X203).
 - **bieg 2026-11-27 22:19–22:29 (da8db18a):** KL Maya vs llama.cpp na tym samym IQ3_S **0,0019** (kontrola AD 0,0023; wcześniejsze 0,149 to błąd skryptu KL — wiersze llama-perplexity obcinają tokeny poniżej max−16), okna weryfikacji bitowo = dekod (z ablacją 120/120, bez 121/121; błąd w ścieżce `IK2_ABLATE` okna naprawiony). Konwersja do Q8_0 (`IK2_K203_REQ8`) szybsza (wall 94,5 / 93,6 przy 1M), ale KL 0,013 — stratna, nie do produkcji. **Topka `topki/xtx/inkling-1m.sh` (Maya, IQ3_S, bez cenzury, 1M, typy dokładne): wall 67,8 / 65,4 t/s, 128k 52–56, 360k 44,5.** Dalej: kernele rejestrowe dla ekspertów IQ (IQ4_NL down 21/24 warstw) i natywne macierze mieszane (X203).
 - **przyspieszanie 2026-11-27 22:37–23:00:** kernele rejestrowe dla ekspertów IQ (4c4b2ff5) i jeden kernel `mv_parts` na macierze mieszane (016bb5dd): bitowo zgodne (testy 78, okna dokładne, KL 0,0019), weryfikacja okna 5 tokenów 50,6 → 38,9 ms (−23%), 8 tokenów 76,6 → 56,6 ms (−26%), ale krok po 1 tokenie 14,8 → 14,6 ms i wall przy 1M bez zmian (67,0 / 64,0). Rozkład kroku (dokładne vs Q8_0): q k v 4,33 vs 1,76 ms, wyjście 2,21 vs 1,34, razem 14,6 vs 10,9 ms. `mv_parts` 170 GB/s vs planarny Q8 590 GB/s; eksperci IQ 180–280 GB/s vs Q4_K 460. Możliwy zysk bezstratny ok. +34% → **K-206** (planarne przepakowanie części w ich własnym typie).
-### K-204 · Enigma 5060 Ti 16 GB: Inkling IQ3_S bez cenzury przy 256k (K-201: 131k = 14,4 GB) na hoście Ryzen
-- data: 2026-11-27; ok. 0,05 $
-- priorytet: średni
 
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
@@ -89,6 +90,12 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-204 · Enigma 5060 Ti 16 GB: Inkling IQ3_S bez cenzury przy 256k (K-201: 131k = 14,4 GB) na hoście Ryzen
+- data: 2026-11-27; ok. 0,05 $
+- priorytet: średni
+
+- **wynik 2026-11-27 (0,41 $):** 5060 Ti 32,5 → 66,5 t/s (+104%) przy 262 144, 4060 Ti 23,9 → 48,6 (+103%) przy 283 648; igły 5/5 przy 95% głębokości, odmowy 0/5. Notatka [[2026-11-27-k204-enigma-16gb-inkling]].
 
 ### K-201 · Enigma 16 GB: Inkling GSQ-RCO IQ3_S bez cenzury (ablacja WE2 na IQ3_S) i długi kontekst na 5060 Ti
 - data: 2026-11-27 (z K-195: IQ3_S + DSpark 82,7 t/s, +26% nad przepisem Qwena, ale model z cenzurą)
