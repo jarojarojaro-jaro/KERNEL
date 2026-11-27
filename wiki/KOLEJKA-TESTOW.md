@@ -21,6 +21,23 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-196 · Maya: stronicowany KV przy długim kontekście (wzór Tintero `IK2_PAGED_KV`, XTX 131k +8,9%)
+- data: 2026-11-27 (zwiad; [[zwiad-2026-11-27]]); nasz punkt odniesienia: K-194 90k T=0 78,3 t/s
+- test: przenieść układ stronicowany z Tintero (ta sama linia Mai) za przełącznikiem, md5 T=0 = produkcja, lc 2k/32k/90k/131k; ≤12 min XTX
+- zysk: do +9% przy 131k (jeden bieg u autora), 0 przy krótkim; bezstratne, jeśli kolejność sum bez zmian
+- priorytet: wysoki
+### K-199 · Wiersz XTX w formacie dashboardu llama.cpp AMD (llama-bench pp512/tg128, FA on/off, 10 powtórzeń)
+- data: 2026-11-27; upstream build + nasz fork, Qwen3.8-27B Q4_K_M i Inkling UD-Q4_K_XL; ≤5 min XTX; publiczne porównanie z gfx1151/gfx1201
+- priorytet: średni
+### K-198 · Drzewo OPT (Top-(m−1)+reszta, Hu i in. ICLR 2025) dla żądań losowanych w Mai
+- data: 2026-11-27 (Papa G2GFAST: +7,2% rozumowanie przy T>0, dokładny rozkład chi² p=0,34)
+- test: najpierw symulacja CPU na rozkładach draftera/celu z logów K-158s (akceptacja vs obecne losowanie z q); GPU tylko jeśli symulacja > +5% tokenów na rundę
+- priorytet: średni
+### K-197 · Enigma NVIDIA: drafter DSpine-b16 dla Qwen3.8-27B zamiast MTP n2
+- data: 2026-11-27 (akceptacja 5,9 kod / 8,5 rozumowanie na 5090; wagi tencent/Qwen3.8-27B-DSpine-b16)
+- test: Vast 3090/5060 Ti, silnik obsługujący DSpine (mkyt/qwen3-27b-5090 tylko SM120 → sprawdzić llama.cpp/vLLM), vs nasz fork MTP n2; po zgodzie na budżet
+- priorytet: średni (produkt)
+
 ### K-195 · Enigma: Inkling GSQ-RCO IQ3_S / IQ2_S na kartach 12–16 GB (3060 12 GB, 5060 Ti 16 GB)
 - data: 2026-11-27 (z K-193: IQ3_S + DSpark = 12,9 GB VRAM na XTX, KLD 0,040 vs UD-Q4_K_XL)
 - test: Vast 3060 12 GB i 5060 Ti, upstream b12803+, IQ3_S i IQ2_S, plain i z DSpark, wall 4 prompty; porównać z Qwen3.8 w topce Enigmy dla tych kart; ok. 0,10 $
