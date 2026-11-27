@@ -89,5 +89,5 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[yasa-rzadka-uwaga-kolibri|YASA (Kolibri 1.1): rzadka uwaga dorobiona do gotowego modelu i co by dała u nas]]
 - 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 
-Razem 859 notatek. Wygenerowano 2026-11-26 przez `tools/wiki.py index`.
+Razem 859 notatek. Wygenerowano 2026-11-27 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

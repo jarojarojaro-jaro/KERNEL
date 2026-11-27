@@ -10,7 +10,7 @@ status: aktualne
 **Najlepszy zmierzony wynik każdej pary model i karta dla każdej metryki, z warunkami, datą i notatką źródłową; generuje tools/tabele.py.**
 
 <!-- TABELE:START -->
-Wygenerowano 2026-11-26 przez `tools/tabele.py` z pól `wynik`/`wyniki` 333 trójek; poprawiaj notatkę źródłową, nie tę tabelę.
+Wygenerowano 2026-11-27 przez `tools/tabele.py` z pól `wynik`/`wyniki` 333 trójek; poprawiaj notatkę źródłową, nie tę tabelę.
 
 ## Ternary Bonsai 2 27B: najlepsze wyniki na kartach
 

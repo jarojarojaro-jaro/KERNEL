@@ -45,15 +45,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test: kierunek z różnicy aktywacji PL vs EN, ablacja/dodanie w Mai, pl wall + jakość, kontrola losowym kierunkiem; ≤10 min XTX; eksperyment do decyzji JARO
 - priorytet: niski
 
-### K-188 · Rzadka uwaga bez treningu przy długim kontekście (wybór stron KV jak Quest/YASA) w 16 warstwach pełnej uwagi Qwena
-- data: 2026-11-26 (YASA Kolibri 1.1, link JARO; [[yasa-rzadka-uwaga-kolibri]])
-- mechanizm: metadane stron KV (min/max albo średni klucz) przy zapisie; przy dekodzie wybór top stron pod budżet 4k/8k/16k tokenów + zawsze sink i ostatnie okno; kernel kvq tylko po wybranych stronach; prefill bez zmian. Przełącznik `GGML_HIP_K188=<budżet>`.
-- zysk (nasze liczby): uwaga = ~14% kroku przy 94k (16 × ~275 µs z 31,7 ms), ~25% przy 192k → dekod +10…15% przy 94k, +20…30% przy 192k; przy krótkim kontekście 0.
-- jakość: zmienia wynik → bramka KLD K-007 (w szumie) + igły 64k/128k wszystkie trafione; Nib ma ten mechanizm (`--sparse-pages 224`) i logity tam też się zmieniają — porównać.
-- test: ≤15 min XTX (kernel 32k/96k/192k × budżety, lc.py 94k i ~190k, KLD, igły); przygotowuje agent K188Sparse (CPU), GPU po zgodzie (stop od 16:25).
-- priorytet: wysoki (największa znana dźwignia dekodu przy długim kontekście)
-
-- **2026-11-27 przygotowane (CPU):** `~/wt/k188` (k047 + 1b8a5df82, ed62709de; łatki `~/qwen-opt/k188/patches/`), strony po 64 tokeny, streszczenie Quest (min/max kluczy), zawsze 1 strona początku + 4 ostatnie; prefill i paczki > 8 tokenów pełne. Symulacja na danych syntetycznych: wybór Quest trafia 40/40 igieł (wybór po masie uwagi 30–38/40), błąd wyjścia uwagi przy 96k: budżet 16k 0,12–0,15 vs błąd samego KV q4_0 0,05–0,07; ryzyko: rozproszona uwaga → dodany budżet 32k. Joby: `~/qwen-opt/queue/k188.jobs` (~15 min: test-backend-ops + czasy kernela 32k/96k/192k, KLD 96k/128k vs podłoga szerokości 5, igły 64k/128k, lc.py 1,7k md5 i 94k t/s), `k188-extra.jobs` (~11 min, 190k, tylko po PASS); wynik `bash ~/qwen-opt/k188/run.sh gate`. Przed produkcją dodatkowo ścieżka PM4.
 ### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
 - data: 2026-11-19
 - źródło: [[2026-11-19-k118-nvidia-pelna-moc]]: n2 vs n4 T=1 3090 +7,9%, 3060 +4,3%, 5060 Ti +3,2% (K-114); T=0 +3,0…3,3%; 4080 SUPER bez różnicy
@@ -1309,6 +1300,18 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-188 · Rzadka uwaga bez treningu przy długim kontekście (wybór stron KV jak Quest/YASA) w 16 warstwach pełnej uwagi Qwena
+- data: 2026-11-26 (YASA Kolibri 1.1, link JARO; [[yasa-rzadka-uwaga-kolibri]])
+- mechanizm: metadane stron KV (min/max albo średni klucz) przy zapisie; przy dekodzie wybór top stron pod budżet 4k/8k/16k tokenów + zawsze sink i ostatnie okno; kernel kvq tylko po wybranych stronach; prefill bez zmian. Przełącznik `GGML_HIP_K188=<budżet>`.
+- zysk (nasze liczby): uwaga = ~14% kroku przy 94k (16 × ~275 µs z 31,7 ms), ~25% przy 192k → dekod +10…15% przy 94k, +20…30% przy 192k; przy krótkim kontekście 0.
+- jakość: zmienia wynik → bramka KLD K-007 (w szumie) + igły 64k/128k wszystkie trafione; Nib ma ten mechanizm (`--sparse-pages 224`) i logity tam też się zmieniają — porównać.
+- test: ≤15 min XTX (kernel 32k/96k/192k × budżety, lc.py 94k i ~190k, KLD, igły); przygotowuje agent K188Sparse (CPU), GPU po zgodzie (stop od 16:25).
+- priorytet: wysoki (największa znana dźwignia dekodu przy długim kontekście)
+
+- **2026-11-27 przygotowane (CPU):** `~/wt/k188` (k047 + 1b8a5df82, ed62709de; łatki `~/qwen-opt/k188/patches/`), strony po 64 tokeny, streszczenie Quest (min/max kluczy), zawsze 1 strona początku + 4 ostatnie; prefill i paczki > 8 tokenów pełne. Symulacja na danych syntetycznych: wybór Quest trafia 40/40 igieł (wybór po masie uwagi 30–38/40), błąd wyjścia uwagi przy 96k: budżet 16k 0,12–0,15 vs błąd samego KV q4_0 0,05–0,07; ryzyko: rozproszona uwaga → dodany budżet 32k. Joby: `~/qwen-opt/queue/k188.jobs` (~15 min: test-backend-ops + czasy kernela 32k/96k/192k, KLD 96k/128k vs podłoga szerokości 5, igły 64k/128k, lc.py 1,7k md5 i 94k t/s), `k188-extra.jobs` (~11 min, 190k, tylko po PASS); wynik `bash ~/qwen-opt/k188/run.sh gate`. Przed produkcją dodatkowo ścieżka PM4.
+- **wynik 2026-11-27 01:48–02:00 (XTX, `GGML_HIP_K188=<budżet>`, strony 64, Quest):** kernel uwagi: 96k nb5 321,8 → 150–227 µs (−30…−53%), 192k nb5 624 → 161–263 µs (−58…−74%); 32k bez zysku albo wolniej (+10…+32% dla 8k/16k). Krok dekodu z weryfikacją 5: 98k −6,7…−8,3% (16k/8k/4k), 131k −8,6…−10,2%; budżet 32k wolniejszy (+9…+11%, narzut wyboru). **Jakość: bramka KLD FAIL dla każdego budżetu** (98k: 32k dKLD 1,3e-2 przy tolerancji 8,6e-3, ogon 99,9% 0,45 vs podłoga 0,07; 16k ogon 2,4; 8k top-1 90% vs 96,9%), igły: 16k i 32k 9/9, 8k 0/6 przy 128k, 4k 0/3 przy 64k. **KILL**: na prawdziwym Qwenie uwaga jest zbyt rozproszona, żeby wybór stron bez treningu był bezstratny; zysk tam, gdzie jakość jeszcze trzyma (16k), to tylko 7–9% kroku przy dużym ogonie KLD. YASA działa, bo model jest dotrenowany pod wybór. Symulacja CPU przewidziała to ryzyko.
+- przeniesione 2026-11-27: KILL (KLD)
 
 ### K-037 · Megakernel / rezydentna pętla MTP (PoC-A w trwałej siatce 96–192 WG)
 - data: 2026-10-16 (15a), 2026-11-07 (66c)

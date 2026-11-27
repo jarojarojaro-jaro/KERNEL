@@ -40,7 +40,7 @@ status: aktualne
 - **NVFP4 KV:** u nas wbrew zasadzie bezstratności; na Blackwellu u klientów jako opcja pamięci.
 
 ## Test u nas
-- K-188: rzadka uwaga bez treningu w 16 warstwach pełnej uwagi Qwena, bramka KLD + igły; przygotowuje agent K188Sparse.
+- K-188 zmierzony 2026-11-27: kernel uwagi −30…−74% przy 96–192k, krok −7…−10%, ale KLD FAIL przy każdym budżecie (4k–32k), igły padają od 8k w dół. Bez treningu wybór stron psuje Qwena; YASA wymaga dotrenowania pod wybór.
 
 ## Powiązane
 - [[linki-2026-11-26-wieczor]]
