@@ -21,16 +21,17 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-200 · Maya: natywny kernel WMMA dla uwagi dekodu z KV q4 (zamiast emulacji mma16816)
+- data: 2026-11-27 (z K-196: uwaga przy 90k ok. 25% pasma, ograniczenie obliczeniowe; dekod 2k 8,7 ms vs 90k 12,8 ms na token)
+- zysk: jeśli uwaga 2–3× szybsza → ok. +15–20% dekodu przy 90k, +25% przy 128k; zmienia kolejność sum → bramka KL/top-1 + igły
+- test: mikrobench K158 przy P 2k/32k/90k i szerokościach 1/5/8, serwer 2k/32k/90k; ≤15 min; przygotowuje agent X200
+- priorytet: wysoki
+
 ### K-201 · Enigma 16 GB: Inkling GSQ-RCO IQ3_S bez cenzury (ablacja WE2 na IQ3_S) i długi kontekst na 5060 Ti
 - data: 2026-11-27 (z K-195: IQ3_S + DSpark 82,7 t/s, +26% nad przepisem Qwena, ale model z cenzurą)
 - test: (1) CPU: scalić kierunek ablacji AtomicChat do IQ3_S (requantyzacja „proj” jak WE2) albo LoRA w locie w llama.cpp; (2) Vast 5060 Ti: odmowy 0/5, wall, KLD, ctx 64k/128k; ok. 0,10 $
 - priorytet: średni (produkt)
 
-### K-196 · Maya: stronicowany KV przy długim kontekście (wzór Tintero `IK2_PAGED_KV`, XTX 131k +8,9%)
-- data: 2026-11-27 (zwiad; [[zwiad-2026-11-27]]); nasz punkt odniesienia: K-194 90k T=0 78,3 t/s
-- test: przenieść układ stronicowany z Tintero (ta sama linia Mai) za przełącznikiem, md5 T=0 = produkcja, lc 2k/32k/90k/131k; ≤12 min XTX
-- zysk: do +9% przy 131k (jeden bieg u autora), 0 przy krótkim; bezstratne, jeśli kolejność sum bez zmian
-- priorytet: wysoki
 ### K-191 · Ablacja podwarstw Qwena bez treningu (wzór Model Carving): KLD i dekod po pominięciu najmniej ważnych bloków
 - data: 2026-11-26; eksperyment zmienia zachowanie modelu (decyzja JARO przed produkcją)
 - test: na CPU ranking bloków po normie wkładu do residuum; XTX ≤10 min: pominięcie 1/2/4 bloków MLP, KLD K-007 + wall
@@ -1308,6 +1309,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-196 · Maya: stronicowany KV przy długim kontekście (wzór Tintero `IK2_PAGED_KV`, XTX 131k +8,9%)
+- data: 2026-11-27 (zwiad; [[zwiad-2026-11-27]]); nasz punkt odniesienia: K-194 90k T=0 78,3 t/s
+- test: przenieść układ stronicowany z Tintero (ta sama linia Mai) za przełącznikiem, md5 T=0 = produkcja, lc 2k/32k/90k/131k; ≤12 min XTX
+- zysk: do +9% przy 131k (jeden bieg u autora), 0 przy krótkim; bezstratne, jeśli kolejność sum bez zmian
+- priorytet: wysoki
+- **wynik 2026-11-27 13:28–13:42 (XTX, Maya `wt-k196` 87b9a37d, `IK2_PAGED_KV=1`, mediany z 3):** md5 T=0 identyczne na każdej głębokości. Dekod 32k 107,6 → 108,0 (+0,4%), 90k 84,8 → 84,9 (+0,1%), 128k 73,2 → 73,4 (+0,3%); 2k 124,0 → 128,6 (+3,7%, ale różna akceptacja 1,0 vs 1,23 przy tym samym md5 — szum bramki); wall 151,2/149,3 → 152,1/149,7. **Brak zysku → odrzucone.** Przyczyna (analiza X196): zysk Tintero wynika z ich natywnego kernela WMMA (V transponowane w stronie, bez przejścia przez LDS), a Maya na gfx1100 emuluje mma16816 shuffle'ami i przy 90k wykorzystuje ok. 25% pasma (ograniczenie obliczeniowe, nie układ pamięci). Dźwignia → K-200 (natywny kernel WMMA dla KV q4 w Mai).
+- przeniesione 2026-11-27: brak zysku
 
 ### K-197 · Enigma NVIDIA: drafter DSpine-b16 dla Qwen3.8-27B zamiast MTP n2
 - data: 2026-11-27 (akceptacja 5,9 kod / 8,5 rozumowanie na 5090; wagi tencent/Qwen3.8-27B-DSpine-b16)
