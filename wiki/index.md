@@ -62,7 +62,7 @@ Audyt liczb: [[AUDYT]].
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
-- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (130)
+- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (131)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (135)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (91)
@@ -73,6 +73,7 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-11-27 [[2026-11-27-nvq4|2026-11-27 Vast nvq4: dokończenie fali NVIDIA (K-131, K-112, K-014, K-015, K-071)]]
 - 2026-11-26 [[2026-11-26-we2-nib-scalona-ablacja|2026-11-26 WE2: odmowy wycięte na stałe w wagach Niba zamiast LoRA w locie]]
 - 2026-11-26 [[2026-11-26-we1-astra-stop-qwen|2026-11-26 WE1: Astra-Stop (rank-1 `</think>`) na Qwen3.8-27B Uncensored, XTX, LoRA w locie, skale 0 / 0,5 / 1 / 1,5]]
 - 2026-11-26 [[2026-11-26-nvq3|2026-11-26 Vast nvq3 (3090 ×2, 5060 Ti): K-122, K-071, K-129, K-070, K-124, K-113 — fala przerwana poleceniem JARO 16:25]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
 - 2026-11-26 [[szybsze-testowanie-2026-11-26|Szybsze testowanie: gdzie ucieka czas karty i co naprawione (2026-11-26)]]
 - 2026-11-26 [[yasa-rzadka-uwaga-kolibri|YASA (Kolibri 1.1): rzadka uwaga dorobiona do gotowego modelu i co by dała u nas]]
-- 2026-11-26 [[sleep-rekurencja-kontekstu|„Sleep”: model przelicza fragment kontekstu N razy, zanim czyta dalej]]
 
-Razem 859 notatek. Wygenerowano 2026-11-27 przez `tools/wiki.py index`.
+Razem 860 notatek. Wygenerowano 2026-11-27 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

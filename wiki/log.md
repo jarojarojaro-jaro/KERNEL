@@ -838,3 +838,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wyniki | K-194 IK2_DRAFT_CTX: propose przy 98k 4,83 → 1,58 ms, ale dekod przy 90k bez zysku (akceptacja 0,24 → 0,16–0,20) → KILL
 
 ## [2026-11-27] wyniki | K-193 Inkling GSQ-RCO IQ3_S: 11,6 GB, w llama.cpp +14–24% vs AD-Q4_K, KLD 0,040 (AD 0,011), Maya 146/148 zostaje; K-195 dla Enigmy 12–16 GB
+
+## [2026-11-27] wyniki | nvq4 (0,53 $): K-131 cp.async odrzucone (−3…−7%), K-112 3090 845 GB/s, K-014 narzut hosta 3–7% czatu, K-015 to inny tekst nie regresja, K-071 DFlash2 +5,2/+12,9%; budżet 1,05 z 1,50 $

@@ -63,19 +63,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** tylko ramię forka (T=0 93,48, T=1 88,16); build llamAmpere v0.7 nie zdążył przed terminem; do powtórki z buildem przygotowanym przed wynajmem.
 - **nvq3 2026-11-26 (3090, Ryzen 5900X, 350/350 W):** fork T=0 87,6 / T=1 79,0 / kopia 270,5 vs llamAmpere v0.7 dokładny 70,1 / 74,9 / 102,8 → **hipoteza odrzucona, fork szybszy** ([[2026-11-26-nvq3]]).
-### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
-- data: 2026-11-17
-- źródło: [[skill-io-sufity]] (sufit prefillu 3090 z INT8 MMQ 2737 t/s przy 4k = 2,3 × XTX; prefillu NVIDIA nigdy nie mierzyliśmy); [[skill-io-metodyka]] (narzędzia CUDA)
-- hipoteza: zmierzone pasmo ≥ 90% specyfikacji (3090 ≥ 840, 5060 Ti ≥ 400 GB/s); prefill forka na NVIDIA < 50% sufitu INT8 → dźwignia TTFT dla Enigmy
-- test: `nvbandwidth` / `cudaMemcpy` D2D 4 GB; `cublasLt` f16 i i8 4096³ i 8192³ (min z N); `llama-bench -p 4096,32768 -n 0` fork vs upstream b11856 (ABBA, ten sam host); ≤ 10 min na kartę
-- miara: GB/s, TFLOPS/TOPS, pp t/s i % sufitu; przeliczenie `karty.py` ze zmierzonymi wartościami
-- zysk: sufity NVIDIA z pomiaru zamiast specyfikacji; decyzja, czy prefill NVIDIA jest dźwignią
-- częściowo zrobione 2026-11-17 (K-114): prefill przez serwer 5060 Ti 788–828 t/s (43–47% sufitu INT8), 3060 442–461 (46–47%), 3090 na ograniczonym hoście 319–696; pasmo i GEMM dalej niezmierzone (archiwum forka bez `llama-bench`)
-- ryzyko karty: brak
-- priorytet: średni
-
-- **2026-11-25 (Colab L4, torch, GPU bezczynne):** kopia w pamięci GPU 230,8 GB/s, fp16 GEMM 75,4 / 59,8 TFLOPS (4096³ / 8192³), int8 42,7 / 19,6 TOPS. Prefill vs upstream nie sparsowany. 5060 Ti i 3090 wymagają wynajmu.
-- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** 5060 Ti: kopia GPU 386,2 GB/s, fp16 44,4 TFLOPS, int8 45,0 TOPS; prefill fork vs upstream b12110 pp4096 873,0 vs 884,8 (−1,3%), pp32768 768,7 vs 772,7 (−0,5%).
 ### K-113 · `bench.py` skill-io 1:1 na XTX, 5060 Ti i 3090 (ta sama konfiguracja) — pierwsza tabela między firmami z jednego harnessu
 - data: 2026-11-17
 - źródło: [[skill-io-skrypty]]; ich 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`); K-110 (część XTX)
@@ -90,26 +77,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **wynik XTX 2026-11-25 21:35 (topka produkcji, port 18794):** skill-io bench.py: TTFT krótki 304,7 ms, dekod c1 145,4 t/s; długi 65 259 tok.: TTFT 83,2 s, prefill 784,8 t/s, dekod 118,7 t/s, igły 3/3. Część 5060 Ti / 3090 w paczce Vast nvq (2026-11-26).
 - **2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** część 5060 Ti nieudana: serwer OOM przy starcie (ctx za duży z MTP na 16 GB); do powtórki z mniejszym ctx.
 - **nvq3 2026-11-26:** 5060 Ti / 3090: c1 51,4 / 58,4 t/s, prefill 16k 711 / 811, 65k TTFT 103,5 / 101,5 s, igły 3/3 ([[2026-11-26-nvq3]]).
-### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
-- data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
-- źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
-- test: 5060 Ti lokalnie: spec_sweep T=1 + ms/krok z rozbiciem host/GPU, fork vs fork+graf; ≤ 10 min/ramię. Kod: tygodnie.
-- zysk: +10–20% decode na 3090 [SZACUNEK]; część przewagi qwen-warp ×1,34–1,81
-- ryzyko karty: brak
-- priorytet: średni (duży, drogi w kodzie)
-- zwiad 2026-11-15: 1Cat-vLLM `a013fb3dc` — próbkowanie T>0 bez synchronizacji hosta przez warunkowy graf CUDA (B=1..4) + fuzja top-K, kolejny wzór ([[zwiad-2026-11-14]])
-
-- **2026-11-26:** pierwszy krok: ślad nsys jednego kroku n4 na 3090 (ok. 30 min, ok. 0,2 $) w następnej fali Vast; kod (tygodnie) tylko gdy przerwa hosta > 2 ms/krok.
-### K-015 · Regresja `kvq` na sm_120 przy krótkim kontekście (−4,4% na 5080, −4,7% na 3090) i przegląd `GGML_CUDA_KVQ_BPSM` 1/2/3/4/6
-- data: 2026-11-07
-- źródło: `R/67-nvidia-vast-kampania.md` §5, `R/67c-nvidia-backlog-testow.md:107` (B13)
-- test: 5060 Ti lokalnie: `test-backend-ops perf -o FLASH_ATTN_EXT` hs256 q4_0 przy 32k/98k/196k dla każdego BPSM, potem spec_sweep KVQ 0/1; ≤ 10 min
-- zysk: odzysk +4…5% przy krótkim kontekście przy zachowaniu +9,5% decode przy 64k
-- ryzyko karty: brak (16 GB: uważać na OOM przy dużym kontekście)
-- priorytet: średni (lokalnie, tanio)
-
-- **2026-11-25 (L4):** mikrobench kvq: KVQ1 vs KVQ0 nb2 191,5 → 37,7 µs, nb5 249,8 → 59,3, nb8 253,3 → 80,1 (kvq dużo szybsze na sm_89); BPSM 1/2 bez zmian, 3/4 gorzej (nb5 78,4 / 75,2). Regresja z wpisu dotyczy sm_120 (5080, 5060 Ti): wymaga wynajmu.
-- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** mikrokernel kvq 3–6× szybszy od zwykłego FA przy nb 2–16 (8192 nb5 284,7 → 48,5 µs); BPSM 1/3/4/6 gorsze od domyślnego. End-to-end KVQ0 vs KVQ1 (n2): T=0 +1,6%, kopia +12,2% (194,6 vs 173,5), T=1 −1,8%: regresja jest w ścieżce szerokiej weryfikacji, nie w kernelu. Następny krok: nsys kopii.
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -140,17 +107,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **2026-11-26 P0 na k183e:** nowa karta `claims/2026-11-26-mmq-epi-0070-k183e.json` (ledger seq 17). Obie gałęzie używają tych samych binarek k183e, różni je tylko `GGML_HIP_MMQ_EPI` 0/1. Narzędzia są w `~/k060/k183e-inst`: llama-bench i test-backend-ops z `~/wt/k183e/build-hip`, libggml-hip identyczny z produkcją. Baza diffu to `a012922be` (e3ab5b9e3 + revert 0070). Dry-run G0 jest czysty poza ostrzeżeniami R29, więc najlepszy możliwy werdykt to NEEDS-HUMAN. Job: 1 runda ABBA, 8 bloków, 13 min karty. Przy 1 rundzie (2 pary) CI będzie szerokie, więc werdykt NULL jest bardzo prawdopodobny. P1 (playbook 0070 na `t-iq4xs-mmq` i `t-q6k-mmq`) wymaga najpierw CONFIRMED P0 i implementacji przez świeżych agentów, więc nie dziś.
 - **2026-11-26 12:47 bieg nieważny (rc 124):** nakładka flock się nie włączyła. Kolejka uruchamia job z zamkniętymi fd 8/9, a locki trzyma sam proces `run-jobs.sh`, więc test fd zwrócił 0 i pierwszy blok czekał na `gpu.lock` przez 750 s. Poprawka: skrypt szuka przodka `queue/run-jobs.sh` i sprawdza `flock -n` na obu plikach; wyjście fabryki jest teraz niebuforowane, ze znacznikami czasu. Plik jobów ma dwa niezależne pełne verify (fabryka nie wznawia przebiegu między jobami).
 - **K-060 P0 2026-11-26 13:53–14:06 (fabryka RSI-F na produkcji k183e, karta `claims/2026-11-26-mmq-epi-0070-k183e.json`, base = k183e z cofniętym 0070, cand = k183e, `GGML_HIP_MMQ_EPI` 0 vs 1):** werdykt fabryki w rejestrze (seq 18): **NEEDS-HUMAN, efekt pp4096 CI95 [+2,30%, +2,80%]**, A/A −0,009%, bramki poprawności (test-backend-ops MUL_MAT/MUL_MAT_ID q4_K/q5_K, md5 greedy) przeszły. Pilot P0 działa: pierwsza prawdziwa ścieżka „roszczenie → weryfikacja → wiersz w rejestrze” na produkcji. 0070 jest już domyślnie włączony w produkcji (`ggml_cuda_env_switch`: brak zmiennej = włączone), więc to potwierdzenie istniejącego zysku prefillu +2,5%, nie nowy zysk. P1 (playbook 0070 na IQ4_XS i Q6_K MMQ) wymaga osobnych agentów do napisania wariantów (dni). Naprawione po drodze: blokady kolejki przekazywane do fabryki, start gpu-guard, log bez bufora.
-### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
-- data: 2026-10-16 (15d), 2026-10-21 (Orca)
-- źródło: `R/67c-nvidia-backlog-testow.md:133` (C16), sesja Orca (`O:1788-1796`, `O:2187-2196`: occupancy 2 → −11,5%)
-- test: przebudowy compile-time + `llama-bench -p 512,4096` + md5/PPL; 5060 Ti lokalnie, 3090 wynajem
-- zysk: pp +3…12% (DeepGEMM), +10–20% (config IQ4_XS) [SZACUNEK]
-- ryzyko karty: brak
-- priorytet: niski (dużo pracy)
-
-- **2026-11-26:** w paczce Vast `nvq2` (3090, 35–45 min): sweep configu MMQ IQ4_XS (nthreads 128/512, K_vram 512, stream_k off, I 64), test-backend-ops + llama-bench pp512/pp4096 + PPL; IQ4_XS to 29,5% wag UD-Q4_K_XL, więc +15% kernela ≈ +4% prefillu.
-- **wynik 2026-11-26 (Vast 3090 nvq2, [[2026-11-26-nvq2-3090-k071-k066]]):** `nthreads 128` prefill +11,5% (pp4096 ub512 1441 → 1604), testy 49/49, **PPL niezmierzony**; `K_vram 512` +11% ale PPL 1160 (zepsute, testy przechodziły); stream_k off −1,6%; I 64 i nthreads 512 bez pomiaru. Następny krok: PPL/KLD nthreads 128 (5 min).
-- **2026-11-26:** wariant `nthreads 128` daje PPL = nan (log nvq2 `k066-ppl-nt128.log`) → zepsuty; nvq3 nie zbudowało forka (ucięty upload).
 ### K-067 · Kernel GDN chunked MMA w CUDA zintegrowany z cache i snapshotami (gałąź `orca-gdn2`)
 - data: 2026-10-21 (Orca)
 - źródło: sesja Orca (`O:1449-1462`: +10,5% pp2048, ale PPL nan; po poprawce 0%; `O:1791`)
@@ -171,19 +127,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **wynik E3 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** fill 262k 531,4 s, soak 600 s 65,4 → 69,4 t/s (+0,7% dryf), maks. 75 °C, SM min. 1515 MHz, moc śr. 328 W: bez dławienia. E1 (sweep limitu mocy) poza zakresem (karta fabrycznie).
 - **nvq3 2026-11-26 E3 (5060 Ti, 190 709 tok.):** soak 600 s 29,5 → 30,5 t/s, dryf −0,1%, 101,6 W, 64 °C maks. → brak dławienia; E1 niemożliwe na Vast (`nvidia-smi -pl`: brak uprawnień) ([[2026-11-26-nvq3]]).
-### K-071 · qwen-warp: DFlash2 ≤ 64k na replayu agentowym (W2)
-- data: 2026-11-09
-- status: **czeka na decyzję** (3,85 GB pobrania na wynajmie)
-- źródło: `R/69-SYNTEZA.md:29` (W2), `R/69b-tensorfold-qwen-warp.md:65`
-- test: 3090 (wynajem), ten sam replay co spec_sweep, oba drafty, ~10 min/ramię
-- zysk: czat ×1,07–1,34, agent z kopiowaniem −31% (dane autora); u nas −10…+10% [INFERENCE]
-- ryzyko karty: brak
-- priorytet: niski (agent traci)
-
-- **2026-11-26:** w paczce Vast `nvq2` (3090, ok. 35 min): fork MTP n2 vs qwen-warp 689901c (mtp / dflash2 ABBA), tylko publiczne prompty (spec_sweep, kopie, kopia 52k z korpusu Enigmy); prywatne sesje omp nie wychodzą poza nasze maszyny.
-- **wynik 2026-11-26 (Vast 3090 nvq2):** fork MTP n2 czat 90,2 / kopia 101,9 / kopia 64k 77,0; qwen-warp MTP (Swift INT4) czat 117,9 (+31%), kopia 64k 137,1 (+78%); DFlash2 nie wystartował (drafter bf16 bez `weight_packed`). Do powtórki z poprawnym formatem draftera.
-- **2026-11-26 uwaga JARO („ta sama jakość, po prostu szybciej”):** pliki: warp Swift-1.5 INT4 (W4A16) 19,47 GB, nasz UD-Q4_K_XL 17,66 GB, więc warp czyta więcej bajtów, a nie mniej; przewaga nie wynika z niższego kwantu. Ale to inny model (Swift = Qwen3.8 dostrojony na krótsze myślenie) i jakość obu plików nie była porównana. Do następnej fali: KLD obu wobec BF16 na tych samych promptach (wymuszanie tokenów) i nasz fork na Swift GGUF o podobnym rozmiarze, żeby porównać ten sam model przy tej samej jakości.
-- **nvq3 2026-11-26:** DFlash2 W4A16 (syvai) w warp: czat 126,7, kopia 227,3, kopia 64k 160,3 vs warp MTP 117,9 / 208,8 / 130,5 (+7,5 / +8,9 / +22,8%) → przechodzi W2; brak domknięcia ABBA ([[2026-11-26-nvq3]]).
 ### K-072 · Nemotron 3.5 Bolt na NVIDIA: KLD fuzji `GGML_CUDA_TOPK_MOE_NP2`, `MMVQ_N1_IQ2`, kernel IQ2_XXS MMVQ, replay stanu Mamby
 - data: 2026-10-16 (raport 14 §10)
 - status: **czeka na decyzję** (model odłożony „na później”)
@@ -194,15 +137,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (model poza katalogiem)
 
 - **2026-11-26:** pytanie do JARO: czy Nemotron 3.5 Bolt wraca do katalogu i czy zgoda na KLD vs upstream (ok. 0,3 $, model pobierany na wynajętej karcie).
-### K-131 · Fork CUDA na Ampere: MMVQ celu tylko 58% pasma na 3090 (4080 SUPER 78%) — strumieniowanie wag przez `cp.async`
-- data: 2026-11-20
-- źródło: [[2026-11-19-k118-nvidia-pelna-moc]] (plain 3090 19,2 ms = 540 GB/s z 936; 3060 60%; 4080S 78%); TensorFold v1.3.0 #2266: rura `cp.async` per warp w dekodzie ekspertów NVFP4 +24% na sm_120, bity te same
-- test: CPU: `ncu` niedostępne bez karty, więc najpierw przegląd kodu MMVQ IQ3_XXS/IQ4_XS forka (szerokość ładowań, wypełnienie SM); potem Vast 3090 (reaper, ≤ 10 min): `llama-bench -p 0 -n 128` i `test-backend-ops MUL_MAT` n=1, wariant z `cp.async`/ładowaniami 128-bit vs fork, md5 T=0
-- zysk: do +30% dekodu plain na 3090 [INFERENCE: 58 → 75% pasma], spekulacja proporcjonalnie (weryfikacja to ten sam kernel, łączy się z K-013)
-- ryzyko karty: brak (wynajem)
-- priorytet: średni
-
-- **wynik 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** UD-Q4_K_XL plain tg: domyślne 44,97 t/s = 793,6 GB/s (85% pasma), rows1 477,6, rows4 770,0, L2PF bez zmiany. 58% z wpisu dotyczył IQ3_XXS; dla jednego wiersza zapas jest mały, luka jest w weryfikacji (K-182).
 ### K-132 · Jądro Linux 7.0/7.2 vs 6.8 na jaroserverai (start, cache promptów w RAM) i odciążanie MoE z `mmap` na CPU
 - data: 2026-11-20
 - źródło: [[telegram-2026-11-20-linux-7-2-pamiec]]
@@ -218,6 +152,48 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-071 · qwen-warp: DFlash2 ≤ 64k na replayu agentowym (W2)
+- data: 2026-11-09
+- status: **czeka na decyzję** (3,85 GB pobrania na wynajmie)
+- źródło: `R/69-SYNTEZA.md:29` (W2), `R/69b-tensorfold-qwen-warp.md:65`
+- test: 3090 (wynajem), ten sam replay co spec_sweep, oba drafty, ~10 min/ramię
+- zysk: czat ×1,07–1,34, agent z kopiowaniem −31% (dane autora); u nas −10…+10% [INFERENCE]
+- ryzyko karty: brak
+- priorytet: niski (agent traci)
+
+- **2026-11-26:** w paczce Vast `nvq2` (3090, ok. 35 min): fork MTP n2 vs qwen-warp 689901c (mtp / dflash2 ABBA), tylko publiczne prompty (spec_sweep, kopie, kopia 52k z korpusu Enigmy); prywatne sesje omp nie wychodzą poza nasze maszyny.
+- **wynik 2026-11-26 (Vast 3090 nvq2):** fork MTP n2 czat 90,2 / kopia 101,9 / kopia 64k 77,0; qwen-warp MTP (Swift INT4) czat 117,9 (+31%), kopia 64k 137,1 (+78%); DFlash2 nie wystartował (drafter bf16 bez `weight_packed`). Do powtórki z poprawnym formatem draftera.
+- **2026-11-26 uwaga JARO („ta sama jakość, po prostu szybciej”):** pliki: warp Swift-1.5 INT4 (W4A16) 19,47 GB, nasz UD-Q4_K_XL 17,66 GB, więc warp czyta więcej bajtów, a nie mniej; przewaga nie wynika z niższego kwantu. Ale to inny model (Swift = Qwen3.8 dostrojony na krótsze myślenie) i jakość obu plików nie była porównana. Do następnej fali: KLD obu wobec BF16 na tych samych promptach (wymuszanie tokenów) i nasz fork na Swift GGUF o podobnym rozmiarze, żeby porównać ten sam model przy tej samej jakości.
+- **nvq3 2026-11-26:** DFlash2 W4A16 (syvai) w warp: czat 126,7, kopia 227,3, kopia 64k 160,3 vs warp MTP 117,9 / 208,8 / 130,5 (+7,5 / +8,9 / +22,8%) → przechodzi W2; brak domknięcia ABBA ([[2026-11-26-nvq3]]).
+- **nvq4 2026-11-27 domknięte ABBA (3090 5950X):** DFlash2 vs warp MTP +5,2% czat / +2,3% kopia / +12,9% kopia 64k ([[2026-11-27-nvq4]]).
+
+### K-015 · Regresja `kvq` na sm_120 przy krótkim kontekście (−4,4% na 5080, −4,7% na 3090) i przegląd `GGML_CUDA_KVQ_BPSM` 1/2/3/4/6
+- data: 2026-11-07
+- źródło: `R/67-nvidia-vast-kampania.md` §5, `R/67c-nvidia-backlog-testow.md:107` (B13)
+- test: 5060 Ti lokalnie: `test-backend-ops perf -o FLASH_ATTN_EXT` hs256 q4_0 przy 32k/98k/196k dla każdego BPSM, potem spec_sweep KVQ 0/1; ≤ 10 min
+- zysk: odzysk +4…5% przy krótkim kontekście przy zachowaniu +9,5% decode przy 64k
+- ryzyko karty: brak (16 GB: uważać na OOM przy dużym kontekście)
+- priorytet: średni (lokalnie, tanio)
+
+- **2026-11-25 (L4):** mikrobench kvq: KVQ1 vs KVQ0 nb2 191,5 → 37,7 µs, nb5 249,8 → 59,3, nb8 253,3 → 80,1 (kvq dużo szybsze na sm_89); BPSM 1/2 bez zmian, 3/4 gorzej (nb5 78,4 / 75,2). Regresja z wpisu dotyczy sm_120 (5080, 5060 Ti): wymaga wynajmu.
+- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** mikrokernel kvq 3–6× szybszy od zwykłego FA przy nb 2–16 (8192 nb5 284,7 → 48,5 µs); BPSM 1/3/4/6 gorsze od domyślnego. End-to-end KVQ0 vs KVQ1 (n2): T=0 +1,6%, kopia +12,2% (194,6 vs 173,5), T=1 −1,8%: regresja jest w ścieżce szerokiej weryfikacji, nie w kernelu. Następny krok: nsys kopii.
+- **nvq4 2026-11-27 (5060 Ti 9900X):** ms/krok kvq szybsze (T=0 −0,4%, kopia −5,2%); spadek t/s to inny tekst (akceptacja); BPSM domyślne = najlepsze ([[2026-11-27-nvq4]]).
+
+### K-112 · NVIDIA: zmierzyć pasmo, szczyt GEMM FP16/INT8 i prefill pp4096/pp32768 na 5060 Ti (lokalnie) i 3090 (wynajem)
+- data: 2026-11-17
+- źródło: [[skill-io-sufity]] (sufit prefillu 3090 z INT8 MMQ 2737 t/s przy 4k = 2,3 × XTX; prefillu NVIDIA nigdy nie mierzyliśmy); [[skill-io-metodyka]] (narzędzia CUDA)
+- hipoteza: zmierzone pasmo ≥ 90% specyfikacji (3090 ≥ 840, 5060 Ti ≥ 400 GB/s); prefill forka na NVIDIA < 50% sufitu INT8 → dźwignia TTFT dla Enigmy
+- test: `nvbandwidth` / `cudaMemcpy` D2D 4 GB; `cublasLt` f16 i i8 4096³ i 8192³ (min z N); `llama-bench -p 4096,32768 -n 0` fork vs upstream b11856 (ABBA, ten sam host); ≤ 10 min na kartę
+- miara: GB/s, TFLOPS/TOPS, pp t/s i % sufitu; przeliczenie `karty.py` ze zmierzonymi wartościami
+- zysk: sufity NVIDIA z pomiaru zamiast specyfikacji; decyzja, czy prefill NVIDIA jest dźwignią
+- częściowo zrobione 2026-11-17 (K-114): prefill przez serwer 5060 Ti 788–828 t/s (43–47% sufitu INT8), 3060 442–461 (46–47%), 3090 na ograniczonym hoście 319–696; pasmo i GEMM dalej niezmierzone (archiwum forka bez `llama-bench`)
+- ryzyko karty: brak
+- priorytet: średni
+
+- **2026-11-25 (Colab L4, torch, GPU bezczynne):** kopia w pamięci GPU 230,8 GB/s, fp16 GEMM 75,4 / 59,8 TFLOPS (4096³ / 8192³), int8 42,7 / 19,6 TOPS. Prefill vs upstream nie sparsowany. 5060 Ti i 3090 wymagają wynajmu.
+- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** 5060 Ti: kopia GPU 386,2 GB/s, fp16 44,4 TFLOPS, int8 45,0 TOPS; prefill fork vs upstream b12110 pp4096 873,0 vs 884,8 (−1,3%), pp32768 768,7 vs 772,7 (−0,5%).
+- **nvq4 2026-11-27 (3090):** kopia VRAM 845 GB/s (90%), fp16 GEMM 72,5 TFLOPS, pp4096 1518 / pp32768 1285 (fork −2,1…−2,5% vs upstream) ([[2026-11-27-nvq4]]).
 
 ### K-193 · Inkling GSQ-RCO IQ3_S (ISTA-DASLab, 3,5 bpw, 11,43 GB) vs nasze AD-Q4_K i Maya: prędkość, KLD, odmowy (link JARO 27.11)
 - źródło: https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF (README: IQ3_S 99,2% średniej bazy NVFP4/MXFP8: AIME25 98,33, GPQA-D 86,20, LCB v6 79,05; IQ2_S 8,98 GB, Q2_K_XL 9,79, IQ3_XXS 10,61; drafter DSpark Q8_0 0,4 GB w repo)
@@ -1321,6 +1297,42 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
+- data: 2026-10-16 (15d), 2026-10-21 (Orca)
+- źródło: `R/67c-nvidia-backlog-testow.md:133` (C16), sesja Orca (`O:1788-1796`, `O:2187-2196`: occupancy 2 → −11,5%)
+- test: przebudowy compile-time + `llama-bench -p 512,4096` + md5/PPL; 5060 Ti lokalnie, 3090 wynajem
+- zysk: pp +3…12% (DeepGEMM), +10–20% (config IQ4_XS) [SZACUNEK]
+- ryzyko karty: brak
+- priorytet: niski (dużo pracy)
+
+- **2026-11-26:** w paczce Vast `nvq2` (3090, 35–45 min): sweep configu MMQ IQ4_XS (nthreads 128/512, K_vram 512, stream_k off, I 64), test-backend-ops + llama-bench pp512/pp4096 + PPL; IQ4_XS to 29,5% wag UD-Q4_K_XL, więc +15% kernela ≈ +4% prefillu.
+- **wynik 2026-11-26 (Vast 3090 nvq2, [[2026-11-26-nvq2-3090-k071-k066]]):** `nthreads 128` prefill +11,5% (pp4096 ub512 1441 → 1604), testy 49/49, **PPL niezmierzony**; `K_vram 512` +11% ale PPL 1160 (zepsute, testy przechodziły); stream_k off −1,6%; I 64 i nthreads 512 bez pomiaru. Następny krok: PPL/KLD nthreads 128 (5 min).
+- **2026-11-26:** wariant `nthreads 128` daje PPL = nan (log nvq2 `k066-ppl-nt128.log`) → zepsuty; nvq3 nie zbudowało forka (ucięty upload).
+- **2026-11-27:** zamknięte: wariant `nthreads 128` daje PPL nan.
+
+### K-014 · Graf CUDA na cały cykl draft + weryfikacja (ścieżka hosta 3,7 ms/krok = 14% na 3090)
+- data: 2026-10-21 (Orca), 2026-11-09 (qwen-warp pkt 4)
+- źródło: `R/69b-tensorfold-qwen-warp.md:75`, [[2026-11-09-qwen-warp-vs-fork-3090]], sesja Orca 2026-10-21 (archiwum, `O:1986-2003`); potwierdzenie kierunku: Baseten deepseek-ultrafast, krok spec-dec z weryfikacją 7 tokenów w jednym grafie ([[telegram-2026-11-14-silniki-agenci]])
+- test: 5060 Ti lokalnie: spec_sweep T=1 + ms/krok z rozbiciem host/GPU, fork vs fork+graf; ≤ 10 min/ramię. Kod: tygodnie.
+- zysk: +10–20% decode na 3090 [SZACUNEK]; część przewagi qwen-warp ×1,34–1,81
+- ryzyko karty: brak
+- priorytet: średni (duży, drogi w kodzie)
+- zwiad 2026-11-15: 1Cat-vLLM `a013fb3dc` — próbkowanie T>0 bez synchronizacji hosta przez warunkowy graf CUDA (B=1..4) + fuzja top-K, kolejny wzór ([[zwiad-2026-11-14]])
+
+- **2026-11-26:** pierwszy krok: ślad nsys jednego kroku n4 na 3090 (ok. 30 min, ok. 0,2 $) w następnej fali Vast; kod (tygodnie) tylko gdy przerwa hosta > 2 ms/krok.
+- **nvq4 2026-11-27 (nsys):** narzut hosta czat 1,4–2,4 ms/krok (3–7%), kopia 3,5–5,1 ms (6–11%); graf całego cyklu niewart tygodni dla czatu, ewentualnie dla kopii z K-004 ([[2026-11-27-nvq4]]).
+
+### K-131 · Fork CUDA na Ampere: MMVQ celu tylko 58% pasma na 3090 (4080 SUPER 78%) — strumieniowanie wag przez `cp.async`
+- data: 2026-11-20
+- źródło: [[2026-11-19-k118-nvidia-pelna-moc]] (plain 3090 19,2 ms = 540 GB/s z 936; 3060 60%; 4080S 78%); TensorFold v1.3.0 #2266: rura `cp.async` per warp w dekodzie ekspertów NVFP4 +24% na sm_120, bity te same
+- test: CPU: `ncu` niedostępne bez karty, więc najpierw przegląd kodu MMVQ IQ3_XXS/IQ4_XS forka (szerokość ładowań, wypełnienie SM); potem Vast 3090 (reaper, ≤ 10 min): `llama-bench -p 0 -n 128` i `test-backend-ops MUL_MAT` n=1, wariant z `cp.async`/ładowaniami 128-bit vs fork, md5 T=0
+- zysk: do +30% dekodu plain na 3090 [INFERENCE: 58 → 75% pasma], spekulacja proporcjonalnie (weryfikacja to ten sam kernel, łączy się z K-013)
+- ryzyko karty: brak (wynajem)
+- priorytet: średni
+
+- **wynik 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** UD-Q4_K_XL plain tg: domyślne 44,97 t/s = 793,6 GB/s (85% pasma), rows1 477,6, rows4 770,0, L2PF bez zmiany. 58% z wpisu dotyczył IQ3_XXS; dla jednego wiersza zapas jest mały, luka jest w weryfikacji (K-182).
+- **nvq4 2026-11-27 (3090 EPYC, 370 W):** cp.async 2 etapy: kernel −5…−15%, tg −4,7% / −3,4%; 956/956 testów OK. **Odrzucone** ([[2026-11-27-nvq4]]).
 
 ### K-194 · Maya: ograniczony kontekst draftera (`IK2_DRAFT_CTX`) przy długim kontekście
 - data: 2026-11-27 (z K-189: propose 1,59 → 4,83 ms przy 98k)
