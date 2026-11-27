@@ -862,3 +862,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wdrożenie | Maya kontekst → 425 984 (420k: igły 5/5, 23,77 GiB, prompt 380 s)
 
 ## [2026-11-27] topka | Inkling 1M na XTX: Maya + IQ3_S (K-203), KL 0,0019 vs llama.cpp, okna bitowe, wall 67,8, 128k 52–56, 360k 44,5; Maya AD 425 984 w produkcji
+
+## [2026-11-27] K-203 | kernele IQ i mv_parts bitowo dokładne, wall 1M 67 bez zmian; rozkład kroku: macierze mieszane 3,4× wolniejsze od planarnego Q8 → K-206
