@@ -21,25 +21,16 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-201 · Enigma 16 GB: Inkling GSQ-RCO IQ3_S bez cenzury (ablacja WE2 na IQ3_S) i długi kontekst na 5060 Ti
+- data: 2026-11-27 (z K-195: IQ3_S + DSpark 82,7 t/s, +26% nad przepisem Qwena, ale model z cenzurą)
+- test: (1) CPU: scalić kierunek ablacji AtomicChat do IQ3_S (requantyzacja „proj” jak WE2) albo LoRA w locie w llama.cpp; (2) Vast 5060 Ti: odmowy 0/5, wall, KLD, ctx 64k/128k; ok. 0,10 $
+- priorytet: średni (produkt)
+
 ### K-196 · Maya: stronicowany KV przy długim kontekście (wzór Tintero `IK2_PAGED_KV`, XTX 131k +8,9%)
 - data: 2026-11-27 (zwiad; [[zwiad-2026-11-27]]); nasz punkt odniesienia: K-194 90k T=0 78,3 t/s
 - test: przenieść układ stronicowany z Tintero (ta sama linia Mai) za przełącznikiem, md5 T=0 = produkcja, lc 2k/32k/90k/131k; ≤12 min XTX
 - zysk: do +9% przy 131k (jeden bieg u autora), 0 przy krótkim; bezstratne, jeśli kolejność sum bez zmian
 - priorytet: wysoki
-### K-197 · Enigma NVIDIA: drafter DSpine-b16 dla Qwen3.8-27B zamiast MTP n2
-- data: 2026-11-27 (akceptacja 5,9 kod / 8,5 rozumowanie na 5090; wagi tencent/Qwen3.8-27B-DSpine-b16)
-- test: Vast 3090/5060 Ti, silnik obsługujący DSpine (mkyt/qwen3-27b-5090 tylko SM120 → sprawdzić llama.cpp/vLLM), vs nasz fork MTP n2; po zgodzie na budżet
-- priorytet: średni (produkt)
-
-### K-195 · Enigma: Inkling GSQ-RCO IQ3_S / IQ2_S na kartach 12–16 GB (3060 12 GB, 5060 Ti 16 GB)
-- data: 2026-11-27 (z K-193: IQ3_S + DSpark = 12,9 GB VRAM na XTX, KLD 0,040 vs UD-Q4_K_XL)
-- test: Vast 3060 12 GB i 5060 Ti, upstream b12803+, IQ3_S i IQ2_S, plain i z DSpark, wall 4 prompty; porównać z Qwen3.8 w topce Enigmy dla tych kart; ok. 0,10 $
-- priorytet: średni (produkt)
-
-### K-190 · Enigma: pula slotów ekspertów MoE + 1 ekspert z wyprzedzeniem (wzór Strata/HF) dla MoE na kartach 12–16 GB
-- data: 2026-11-26 (HF moe-expert-streaming: Strata 82–88 vs llama.cpp `--fit` 63–64 t/s na A10G; nasze K-026: spekulacja z ekspertami na CPU −41…−62%)
-- test: Vast 5060 Ti 16 GB, Qwen3.6-35B-A3B albo Inkling, llama.cpp `--n-cpu-moe` vs `--moe-cache-mib` vs Strata `--expert-cache auto`, tg128 i z MTP; ≤15 min, ok. 0,05 $.
-- priorytet: średni (produkt Enigma)
 ### K-191 · Ablacja podwarstw Qwena bez treningu (wzór Model Carving): KLD i dekod po pominięciu najmniej ważnych bloków
 - data: 2026-11-26; eksperyment zmienia zachowanie modelu (decyzja JARO przed produkcją)
 - test: na CPU ranking bloków po normie wkładu do residuum; XTX ≤10 min: pominięcie 1/2/4 bloków MLP, KLD K-007 + wall
@@ -96,6 +87,12 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-195 · Enigma: Inkling GSQ-RCO IQ3_S / IQ2_S na kartach 12–16 GB (3060 12 GB, 5060 Ti 16 GB)
+- data: 2026-11-27 (z K-193: IQ3_S + DSpark = 12,9 GB VRAM na XTX, KLD 0,040 vs UD-Q4_K_XL)
+- test: Vast 3060 12 GB i 5060 Ti, upstream b12803+, IQ3_S i IQ2_S, plain i z DSpark, wall 4 prompty; porównać z Qwen3.8 w topce Enigmy dla tych kart; ok. 0,10 $
+- priorytet: średni (produkt)
+- **wynik 2026-11-27 (nvq5):** 5060 Ti IQ3_S + DSpark 82,7 / 79,3 vs przepis Qwen MTP n2 65,5 / 64,3 (+26/+23%), 12,1 GB; 3060 IQ2_S 51,8–59,5 vs Bonsai 33,4 (+55…+78%) ([[2026-11-27-nvq5]]).
 
 ### K-199 · Wiersz XTX w formacie dashboardu llama.cpp AMD (llama-bench pp512/tg128, FA on/off, 10 powtórzeń)
 - data: 2026-11-27; upstream build + nasz fork, Qwen3.8-27B Q4_K_M i Inkling UD-Q4_K_XL; ≤5 min XTX; publiczne porównanie z gfx1151/gfx1201
@@ -1311,6 +1308,18 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-197 · Enigma NVIDIA: drafter DSpine-b16 dla Qwen3.8-27B zamiast MTP n2
+- data: 2026-11-27 (akceptacja 5,9 kod / 8,5 rozumowanie na 5090; wagi tencent/Qwen3.8-27B-DSpine-b16)
+- test: Vast 3090/5060 Ti, silnik obsługujący DSpine (mkyt/qwen3-27b-5090 tylko SM120 → sprawdzić llama.cpp/vLLM), vs nasz fork MTP n2; po zgodzie na budżet
+- priorytet: średni (produkt)
+- **wynik 2026-11-27 (nvq5):** DSpine przez PR #31941: +13,7% mediana, ale pl −50% i tylko ctx 16k ([[2026-11-27-nvq5]]). Odrzucone.
+
+### K-190 · Enigma: pula slotów ekspertów MoE + 1 ekspert z wyprzedzeniem (wzór Strata/HF) dla MoE na kartach 12–16 GB
+- data: 2026-11-26 (HF moe-expert-streaming: Strata 82–88 vs llama.cpp `--fit` 63–64 t/s na A10G; nasze K-026: spekulacja z ekspertami na CPU −41…−62%)
+- test: Vast 5060 Ti 16 GB, Qwen3.6-35B-A3B albo Inkling, llama.cpp `--n-cpu-moe` vs `--moe-cache-mib` vs Strata `--expert-cache auto`, tg128 i z MTP; ≤15 min, ok. 0,05 $.
+- priorytet: średni (produkt Enigma)
+- **wynik 2026-11-27 (nvq5):** `-ncmoe 3` 60,0 t/s najlepsze; `--moe-cache-mib` 26,9 (−55%), Strata auto 43,8 (−27%), DSpark +6,7% ([[2026-11-27-nvq5]]). Pula ekspertów odrzucona.
 
 ### K-198 · Drzewo OPT (Top-(m−1)+reszta, Hu i in. ICLR 2025) dla żądań losowanych w Mai
 - data: 2026-11-27 (Papa G2GFAST: +7,2% rozumowanie przy T>0, dokładny rozkład chi² p=0,34)

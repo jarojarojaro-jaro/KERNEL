@@ -846,3 +846,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] serwis | jaroserverai wyłączony na polecenie JARO (sudo -n /usr/bin/systemctl poweroff, NOPASSWD)
 
 ## [2026-11-27] zwiad | Tintero paged KV +8,9% przy 131k (K-196), DSpine 5090 663,9 (K-197), drzewo OPT (K-198), dashboard AMD (K-199)
+
+## [2026-11-27] wyniki | nvq5 (0,13 $): Inkling IQ3_S na 5060 Ti 82,7 t/s (+26% nad przepisem Qwena), 3060 IQ2_S +55%; K-190 i K-197 odrzucone; K-201
