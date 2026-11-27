@@ -21,11 +21,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-201 · Enigma 16 GB: Inkling GSQ-RCO IQ3_S bez cenzury (ablacja WE2 na IQ3_S) i długi kontekst na 5060 Ti
-- data: 2026-11-27 (z K-195: IQ3_S + DSpark 82,7 t/s, +26% nad przepisem Qwena, ale model z cenzurą)
-- test: (1) CPU: scalić kierunek ablacji AtomicChat do IQ3_S (requantyzacja „proj” jak WE2) albo LoRA w locie w llama.cpp; (2) Vast 5060 Ti: odmowy 0/5, wall, KLD, ctx 64k/128k; ok. 0,10 $
-- priorytet: średni (produkt)
-
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -72,6 +67,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-201 · Enigma 16 GB: Inkling GSQ-RCO IQ3_S bez cenzury (ablacja WE2 na IQ3_S) i długi kontekst na 5060 Ti
+- data: 2026-11-27 (z K-195: IQ3_S + DSpark 82,7 t/s, +26% nad przepisem Qwena, ale model z cenzurą)
+- test: (1) CPU: scalić kierunek ablacji AtomicChat do IQ3_S (requantyzacja „proj” jak WE2) albo LoRA w locie w llama.cpp; (2) Vast 5060 Ti: odmowy 0/5, wall, KLD, ctx 64k/128k; ok. 0,10 $
+- priorytet: średni (produkt)
+- **wynik 2026-11-27 17:40 (Vast 5060 Ti 180 W, host EPYC 7502 — wolny CPU, GPU ok. 60%, więc prędkości tylko wewnątrz biegu; upstream b12811):** LoRA AtomicChat (44 MB) w locie `--lora` działa na `inkling2_loop` (eksperci i embedding), bez requantyzacji. **Odmowy 3/5 → 0/5** (kontrola losowa tej samej wielkości 4/5); PPL 8,387 → 8,416 (+0,35%), KLD 0,0073 (kontrola 0,0038), top-1 96,2%. Długi kontekst z DSpark i KV q4_0: **131k mieści się w 14,4 GB**; prefill 60k 624 t/s, 120k 462 t/s; dekod 21–24 t/s na tym hoście. Wall (słaby host) 26,6/35,5 → 28,4/28,9. Koszt 0,045 $. **PASS**: Inkling IQ3_S bez cenzury + DSpark na 16 GB z 131k = kandydat na domyślny model Enigmy dla 5060 Ti; potwierdzić prędkość na hoście Ryzen (K-195: 82,7 / 79,3).
+- przeniesione 2026-11-27: PASS (do przepisu Enigmy)
 
 ### K-200 · Maya: natywny kernel WMMA dla uwagi dekodu z KV q4 (zamiast emulacji mma16816)
 - data: 2026-11-27 (z K-196: uwaga przy 90k ok. 25% pasma, ograniczenie obliczeniowe; dekod 2k 8,7 ms vs 90k 12,8 ms na token)
