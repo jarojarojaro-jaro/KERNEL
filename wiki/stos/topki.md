@@ -23,7 +23,7 @@ status: aktualne
 | RX 7900 XTX | Qwen3.8-27B Uncensored Q4_K_M (**ACTIVE**) | `~/llama-topka-k047` (qprep-spec + K-020 + K-012 `GGML_HIP_K012=1` + K-001c + K-006 THIN/PREFIX + K-047 `GGML_HIP_K047=1`), przełączniki `run-topka.sh`; wcześniej `~/llama-topka-k020`, `~/llama-topka` | [[REKORDY]] (wdrożone 2026-11-26), [[2026-11-09-wdrozenie-topka-q70]] |
 | RX 7900 XTX | Qwen3.8-27B UD-Q4_K_XL | to samo, `run-topka.sh qwen`, ctx 204 800 | j.w. |
 | RX 7900 XTX | Bonsai 2.5 27B Uncensored Q2_0 | topka-k157, MTP n2 | wall T=0,7 145,8 ([[bonsai-2-5-uncensored]]) |
-| RX 7900 XTX | Inkling 2 Mini Uncensored AD-Q4_K | Maya `maya-atomic.json` → `~/k134/bin-k158s/maya-ik2` (K-158g + K-185 + K-158s, 2026-11-26) | wall T=0 151,7, T=0,7 147,7 ([[inkling-2-mini]], [[REKORDY]]) |
+| RX 7900 XTX | Inkling 2 Mini Uncensored AD-Q4_K | Maya `maya-atomic.json` → `~/k134/bin-k200p/maya-ik2` + `IK2_K200=1` (K-158g + K-185 + K-158s + K-200, 2026-11-27) | wall T=0 152,0, T=0,7 149,2; 90k 105,6 ([[inkling-2-mini]], [[REKORDY]]) |
 | NVIDIA (3090, 5060 Ti, 3060, 4090, 5090…) | Qwen3.8-27B i inne | przepisy Enigmy per karta | [[final-recipes-nvidia]] |
 
 Modele bez pliku na dysku (LFM, Flint, Qwen3.6-35B) nie mają topki na XTX ([[2026-11-26-bez-pobierania-modeli]]).

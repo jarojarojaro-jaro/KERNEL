@@ -850,3 +850,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wyniki | nvq5 (0,13 $): Inkling IQ3_S na 5060 Ti 82,7 t/s (+26% nad przepisem Qwena), 3060 IQ2_S +55%; K-190 i K-197 odrzucone; K-201
 
 ## [2026-11-27] wyniki | K-196 paged KV w Mai: 0…+0,4% przy 32–128k, md5 identyczne → odrzucone; prawdziwa dźwignia natywny WMMA → K-200; K-199 fork vs upstream TG +14%; K-198 NO-GO
+
+## [2026-11-27] wdrożenie | K-200 Maya natywny WMMA uwagi: dekod 90k +30,7%, 32k +14,2%, 2k +6,7%, okna bitowo = dekod po tokenie, KL w podłodze, igły 5/5; jaroserverai: usunięte mainline + unc-nearest (38 GB, wolne 146 GB)

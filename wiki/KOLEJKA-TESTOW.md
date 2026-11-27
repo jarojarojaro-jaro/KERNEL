@@ -21,15 +21,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-200 · Maya: natywny kernel WMMA dla uwagi dekodu z KV q4 (zamiast emulacji mma16816)
-- data: 2026-11-27 (z K-196: uwaga przy 90k ok. 25% pasma, ograniczenie obliczeniowe; dekod 2k 8,7 ms vs 90k 12,8 ms na token)
-- zysk: jeśli uwaga 2–3× szybsza → ok. +15–20% dekodu przy 90k, +25% przy 128k; zmienia kolejność sum → bramka KL/top-1 + igły
-- test: mikrobench K158 przy P 2k/32k/90k i szerokościach 1/5/8, serwer 2k/32k/90k; ≤15 min; przygotowuje agent X200
-- priorytet: wysoki
-
-- **bieg 1, 2026-11-27 14:01 (`wt-k200` 37ca3c51, `IK2_K200=1`, natywne WMMA QK i PV, okno weryfikacji czyta KV raz):** czas jednej wizyty uwagi przy 90k: T=1 643 → 385 µs (×1,67), **T=5 1602 → 331 µs (×4,85)**, T=8 2393 → 498 µs (×4,80); przy 32k T=5 ×4,83. Test poprawności: T=1 i T=5 OK (błąd 1e-6…1e-4), **ścieżka dwóch kafli T=6–8 błędna** (max błąd 0,12–0,52) → reszta jobów pominięta. Poprawka w toku (agent X200).
-- **bieg 2, 2026-11-27 14:06–14:16 (0819d819, poprawka warunku `near` dla najwcześniejszego tokenu okna):** test 18/18 (błąd vs referencja double = błąd produkcji). Wizyta uwagi 90k: T=5 1624 → 332 µs (×4,9), T=8 ×4,8, T=1 ×1,64. K158 bench 98k: verify(5) 33,7 → 22,5 ms, plain 12,6 → 11,7. **Serwer: dekod 2k 122,9 → 140,0 (+14,0%), 32k 108,5 → 123,8 (+14,2%), 90k 80,8 → 96,9 (+19,9%)**. Igły 5/5 obie strony (md5 odpowiedzi identyczne). KL vs produkcja: 32k 0,0034, 90k 0,0027 (próg 1e-3 przekroczony), top-1 99,2% / 96,9%, trafność vs tekst 81,25 = 81,25 (32k), 64,1 vs 61,7 (90k). Podejrzane: akceptacja/krok 1,0 → 1,46 (2k), 0,158 → 0,925 (90k). Przed decyzją: podłoga KL (produkcja vs produkcja z innym podziałem) i wyjaśnienie skoku akceptacji (K-200b).
-- **K-200b 2026-11-27 14:25:** podłoga KL (produkcja z innym podziałem kluczy 13 vs 54, ta sama arytmetyka w innej kolejności): 32k 0,00278 ± 0,00064, 90k 0,00231 ± 0,00030, top-1 97,7% / 98,4% → wynik K200 z biegu 2 (0,0034 / 0,0027) jest w okolicy podłogi. Produkcja: okno weryfikacji = dekod po jednym tokenie bitowo (135/135), drafting nie zmienia odpowiedzi. K200 łamie tę własność (stąd inny tekst T=0 i część „wyższej akceptacji”: przy tańszej weryfikacji bramka częściej zgaduje; trafność draftów bez zmian, 61–71%). Poprawka e71c699d jeszcze nie bitowa (12/12 FAIL) → K-200c.
 ### K-201 · Enigma 16 GB: Inkling GSQ-RCO IQ3_S bez cenzury (ablacja WE2 na IQ3_S) i długi kontekst na 5060 Ti
 - data: 2026-11-27 (z K-195: IQ3_S + DSpark 82,7 t/s, +26% nad przepisem Qwena, ale model z cenzurą)
 - test: (1) CPU: scalić kierunek ablacji AtomicChat do IQ3_S (requantyzacja „proj” jak WE2) albo LoRA w locie w llama.cpp; (2) Vast 5060 Ti: odmowy 0/5, wall, KLD, ctx 64k/128k; ok. 0,10 $
@@ -86,11 +77,23 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## W toku
 
-- **Przy najbliższym włączeniu jaroserverai (polecenie JARO 2026-11-27 13:54), przed testami:** `rm -rf ~/models/inkling/mainline ~/models/nib/we2/unc-nearest.patch.gguf` (38 GB); potem K-196, K-199, K-198 (symulacja na logach K-158s). NVIDIA K-195, K-190, K-197: fala nvq5 w toku (agent NvWave5, budżet 0,45 $).
 
 (pusto)
 
 ## Zrobione
+
+### K-200 · Maya: natywny kernel WMMA dla uwagi dekodu z KV q4 (zamiast emulacji mma16816)
+- data: 2026-11-27 (z K-196: uwaga przy 90k ok. 25% pasma, ograniczenie obliczeniowe; dekod 2k 8,7 ms vs 90k 12,8 ms na token)
+- zysk: jeśli uwaga 2–3× szybsza → ok. +15–20% dekodu przy 90k, +25% przy 128k; zmienia kolejność sum → bramka KL/top-1 + igły
+- test: mikrobench K158 przy P 2k/32k/90k i szerokościach 1/5/8, serwer 2k/32k/90k; ≤15 min; przygotowuje agent X200
+- priorytet: wysoki
+
+- **bieg 1, 2026-11-27 14:01 (`wt-k200` 37ca3c51, `IK2_K200=1`, natywne WMMA QK i PV, okno weryfikacji czyta KV raz):** czas jednej wizyty uwagi przy 90k: T=1 643 → 385 µs (×1,67), **T=5 1602 → 331 µs (×4,85)**, T=8 2393 → 498 µs (×4,80); przy 32k T=5 ×4,83. Test poprawności: T=1 i T=5 OK (błąd 1e-6…1e-4), **ścieżka dwóch kafli T=6–8 błędna** (max błąd 0,12–0,52) → reszta jobów pominięta. Poprawka w toku (agent X200).
+- **bieg 2, 2026-11-27 14:06–14:16 (0819d819, poprawka warunku `near` dla najwcześniejszego tokenu okna):** test 18/18 (błąd vs referencja double = błąd produkcji). Wizyta uwagi 90k: T=5 1624 → 332 µs (×4,9), T=8 ×4,8, T=1 ×1,64. K158 bench 98k: verify(5) 33,7 → 22,5 ms, plain 12,6 → 11,7. **Serwer: dekod 2k 122,9 → 140,0 (+14,0%), 32k 108,5 → 123,8 (+14,2%), 90k 80,8 → 96,9 (+19,9%)**. Igły 5/5 obie strony (md5 odpowiedzi identyczne). KL vs produkcja: 32k 0,0034, 90k 0,0027 (próg 1e-3 przekroczony), top-1 99,2% / 96,9%, trafność vs tekst 81,25 = 81,25 (32k), 64,1 vs 61,7 (90k). Podejrzane: akceptacja/krok 1,0 → 1,46 (2k), 0,158 → 0,925 (90k). Przed decyzją: podłoga KL (produkcja vs produkcja z innym podziałem) i wyjaśnienie skoku akceptacji (K-200b).
+- **K-200b 2026-11-27 14:25:** podłoga KL (produkcja z innym podziałem kluczy 13 vs 54, ta sama arytmetyka w innej kolejności): 32k 0,00278 ± 0,00064, 90k 0,00231 ± 0,00030, top-1 97,7% / 98,4% → wynik K200 z biegu 2 (0,0034 / 0,0027) jest w okolicy podłogi. Produkcja: okno weryfikacji = dekod po jednym tokenie bitowo (135/135), drafting nie zmienia odpowiedzi. K200 łamie tę własność (stąd inny tekst T=0 i część „wyższej akceptacji”: przy tańszej weryfikacji bramka częściej zgaduje; trafność draftów bez zmian, 61–71%). Poprawka e71c699d jeszcze nie bitowa (12/12 FAIL) → K-200c.
+- **K-200c 2026-11-27 14:49–14:58 (186594e3, `IK2_K200=1`, wariant „exact”: krok, w którym token nie widzi wszystkich kluczy, liczony token po tokenie):** okna weryfikacji = dekod po jednym tokenie **bitowo** (24/24 przypadki; drafting włączony = wyłączony, 176/176 wierszy). Kernel uwagi 90k: T=1 653 → 292 µs (×2,24), T=5 1601 → 231 µs (×6,9), T=8 2368 → 427 µs (×5,5); przy 2k T=1 ×0,79 (wolniej, ale udział uwagi mały). Bramka KL vs podłoga (produkcja z innym podziałem kluczy): 32k dKLD +0,00028 (limit 0,00242) PASS, top-1 98,4% vs 97,7%; 90k dKLD +0,00068 (limit 0,00100) PASS, top-1 96,9% vs 98,4%. Igły 5/5 przy 64k i 90k. **Serwer: dekod 2k 122,9 → 131,1 (+6,7%), 32k 108,5 → 123,8 (+14,2%), 90k 80,8 → 105,6 (+30,7%)**; wall 2k 151,8/149,4 → 152,0/149,2 (bez zmian). Tekst T=0 inny niż produkcji (inna kolejność sum, jakość w podłodze).
+- **Wdrożone 2026-11-27 14:59** (`~/k134/maya-atomic.json` → `~/k134/bin-k200p/maya-ik2` + `IK2_K200=1`, kopia `maya-atomic.prev-k158s.json`); smoke wall 152,0 / 149,2.
+- przeniesione 2026-11-27: w produkcji
 
 ### K-195 · Enigma: Inkling GSQ-RCO IQ3_S / IQ2_S na kartach 12–16 GB (3060 12 GB, 5060 Ti 16 GB)
 - data: 2026-11-27 (z K-193: IQ3_S + DSpark = 12,9 GB VRAM na XTX, KLD 0,040 vs UD-Q4_K_XL)
