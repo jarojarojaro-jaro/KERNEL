@@ -32,6 +32,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-27; 1M × 9 KB = ok. 9,4 GB KV + 11,4 GB wag mieści się w 24 GB, z AD-Q4_K (17 GB) nie
 - wymaga: czytnik układu `inkling2_loop` i dekodery IQ1–IQ3/IQ4_NL ekspertów w Mai (project-maya #1219 to zrobił), 1–2 dni; jakość IQ3_S KLD 0,040 vs nasz AD 0,011 → zmiana pliku wag tylko decyzją JARO; bez cenzury przez LoRA AtomicChat (K-201)
 - priorytet: średni
+- **bieg 2026-11-27 21:30–22:06 (Maya `wt-k203` cafc3355: czytnik `inkling2_loop`, dekodery IQ1_S/IQ2_*/IQ3_S/IQ4_NL/Q2_0, macierze o mieszanych typach, ablacja AtomicChat):** testy 72/72; odmowy 5/5 → 0/5 z ablacją; **1M startuje** (drafter ograniczony `IK2_DRAFT_CTX=131072`), igły 5/5 przy 128k, dekod 51,6–55,5 t/s przy 128k, 44,5 t/s przy 360k (silnik żyje, szczyt 23,7 GiB). Wall: 67,8 / 65,4 t/s (dokładne typy), 98,1 / 97,2 (wszystko na Q8_0, `IK2_K203_REQ8`), produkcja AD 151,8 / 149,4. **Blokery produkcji:** KL Maya vs llama.cpp na tym samym pliku 0,149 (powinno być ~0), okno weryfikacji ≠ dekod po tokenie (0/3 wierszy bitowo). Diagnoza w toku (X203).
 ### K-204 · Enigma 5060 Ti 16 GB: Inkling IQ3_S bez cenzury przy 256k (K-201: 131k = 14,4 GB) na hoście Ryzen
 - data: 2026-11-27; ok. 0,05 $
 - priorytet: średni
