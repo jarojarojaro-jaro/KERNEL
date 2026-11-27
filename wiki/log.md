@@ -856,3 +856,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] eksperymenty | K-191 pomijanie bloków Qwena: +1…+3,5% prędkości, KLD 0,04–0,07 (za dużo) → negatywne; K-192 kierunek PL nie steruje językiem → negatywne
 
 ## [2026-11-27] wyniki | K-201 Inkling IQ3_S bez cenzury (LoRA w locie) na 5060 Ti: odmowy 0/5, PPL +0,35%, 131k w 14,4 GB → kandydat Enigmy 16 GB; Vast łącznie 1,23 z 1,50 $
+
+## [2026-11-27] wdrożenie | Maya kontekst 16k → 393 216 (384k: igły 5/5, 23,3 GiB, prompt 327 s, dekod 63–80 t/s); 448k OOM draftera; ISTA 1M w llama.cpp tylko bez draftera; K-203 Maya+IQ3_S w kolejce
