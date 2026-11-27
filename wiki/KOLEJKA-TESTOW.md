@@ -26,9 +26,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test: przenieść układ stronicowany z Tintero (ta sama linia Mai) za przełącznikiem, md5 T=0 = produkcja, lc 2k/32k/90k/131k; ≤12 min XTX
 - zysk: do +9% przy 131k (jeden bieg u autora), 0 przy krótkim; bezstratne, jeśli kolejność sum bez zmian
 - priorytet: wysoki
-### K-199 · Wiersz XTX w formacie dashboardu llama.cpp AMD (llama-bench pp512/tg128, FA on/off, 10 powtórzeń)
-- data: 2026-11-27; upstream build + nasz fork, Qwen3.8-27B Q4_K_M i Inkling UD-Q4_K_XL; ≤5 min XTX; publiczne porównanie z gfx1151/gfx1201
-- priorytet: średni
 ### K-197 · Enigma NVIDIA: drafter DSpine-b16 dla Qwen3.8-27B zamiast MTP n2
 - data: 2026-11-27 (akceptacja 5,9 kod / 8,5 rozumowanie na 5090; wagi tencent/Qwen3.8-27B-DSpine-b16)
 - test: Vast 3090/5060 Ti, silnik obsługujący DSpine (mkyt/qwen3-27b-5090 tylko SM120 → sprawdzić llama.cpp/vLLM), vs nasz fork MTP n2; po zgodzie na budżet
@@ -99,6 +96,12 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-199 · Wiersz XTX w formacie dashboardu llama.cpp AMD (llama-bench pp512/tg128, FA on/off, 10 powtórzeń)
+- data: 2026-11-27; upstream build + nasz fork, Qwen3.8-27B Q4_K_M i Inkling UD-Q4_K_XL; ≤5 min XTX; publiczne porównanie z gfx1151/gfx1201
+- priorytet: średni
+- **wynik 2026-11-27 13:17–13:24 (XTX, llama-bench pp512/tg128 -d 0 -r 10, PM4=0, bez spekulacji; `~/qwen-opt/k199/k199.md`):** Qwen Uncensored Q4_K_M: upstream b12803 PP512 956 / TG128 37,2 (FA on) → nasz fork k047 **1013 / 42,4 (+5,9% / +14,0%)**; UD-Q4_K_XL: 968 / 36,1 → **1025 / 41,0 (+5,9% / +13,7%)**. Inkling IQ3_S (upstream): 1789 / 52,6. Fork nie czyta nowego układu Inklinga (rc=1). To wiersz porównywalny z dashboardem HF (gfx1151/gfx1201); nasza produkcja ze spekulacją i PM4 daje 132–168 t/s w wall, ten format tego nie mierzy.
+- przeniesione 2026-11-27: zmierzone
 
 ### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
 - data: 2026-10-19 (21h)
