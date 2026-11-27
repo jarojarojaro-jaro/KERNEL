@@ -30,11 +30,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-26; eksperyment zmienia zachowanie modelu (decyzja JARO przed produkcją)
 - test: na CPU ranking bloków po normie wkładu do residuum; XTX ≤10 min: pominięcie 1/2/4 bloków MLP, KLD K-007 + wall
 - priorytet: niski
-### K-192 · Kierunek „po polsku” w wagach Inklinga (edycja kierunku, kontrola losową edycją)
-- data: 2026-11-26 (backlog edycji wag)
-- test: kierunek z różnicy aktywacji PL vs EN, ablacja/dodanie w Mai, pl wall + jakość, kontrola losowym kierunkiem; ≤10 min XTX; eksperyment do decyzji JARO
-- priorytet: niski
-
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -1315,6 +1310,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-192 · Kierunek „po polsku” w wagach Inklinga (edycja kierunku, kontrola losową edycją)
+- data: 2026-11-26 (backlog edycji wag)
+- test: kierunek z różnicy aktywacji PL vs EN, ablacja/dodanie w Mai, pl wall + jakość, kontrola losowym kierunkiem; ≤10 min XTX; eksperyment do decyzji JARO
+- priorytet: niski
+- **wynik 2026-11-27 16:39–16:53 (XTX, Maya `wt-k192` 4b497b01: zrzut stanu `IK2_HDUMP`, sterowanie `IK2_STEER`, ablacja przez `IK2_ABLATE`; kierunek PL − EN w wizycie 24 z 100 par):** kierunek dobrze rozróżnia języki (trafność 0,97 na odłożonych parach, |d| = 9,9% normy strumienia), ale **nie steruje językiem odpowiedzi**: dodanie ×0,5/×1/×2 → 0/20 odpowiedzi EN po polsku; odjęcie i ablacja → 20/20 PL nadal po polsku; diakrytyki 6,9–7,9% we wszystkich ramionach (kontrola losowa tak samo); prędkość PL 106–110 t/s bez zmian, akceptacja PL z ~76 draftów na ramię (szum). To cecha „wejście jest po polsku”, a język wyjścia ustala kontekst. KLD nie liczone (błąd skryptu; przy braku efektu niepotrzebne). **Wniosek: odrzucone**; ewentualny dalszy krok to kierunek „odpowiadaj po polsku” z par EN-prompt → PL-odpowiedź (inne dane).
+- przeniesione 2026-11-27: brak efektu
 
 ### K-196 · Maya: stronicowany KV przy długim kontekście (wzór Tintero `IK2_PAGED_KV`, XTX 131k +8,9%)
 - data: 2026-11-27 (zwiad; [[zwiad-2026-11-27]]); nasz punkt odniesienia: K-194 90k T=0 78,3 t/s
