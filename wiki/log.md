@@ -832,3 +832,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-26] lekcja + kolejka | lint wymaga „## Test u nas” (K-… albo „nie da się” z powodem) w research/ i llm/; przegląd dał K-189…K-192
 
 ## [2026-11-27] wyniki | K-188 rzadka uwaga bez treningu: kernel −30…−74% przy 96–192k, krok −7…−10%, KLD FAIL każdy budżet → KILL
+
+## [2026-11-27] wyniki | K-056b pl T=0 −6,8% powtórzone (inny tekst greedy); K-189 propose Inklinga 1,59 → 4,83 ms przy 98k (×3,05) → K-194

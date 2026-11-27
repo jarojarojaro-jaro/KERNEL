@@ -21,6 +21,12 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-194 · Maya: ograniczony kontekst draftera (`IK2_DRAFT_CTX`) przy długim kontekście
+- data: 2026-11-27 (z K-189: propose 1,59 → 4,83 ms przy 98k)
+- test: sweep 2k/4k/8k/16k/brak przy P=32k i 98k: propose ms, akceptacja i t/s na prompcie ~90k, md5 T=0 = bez zmiany, wall 2k bez straty; przygotowuje agent X194
+- zysk: ok. +6% dekodu przy 98k, 0 przy krótkim; bezstratne (zmienia tylko drafty)
+- priorytet: wysoki
+
 ### K-193 · Inkling GSQ-RCO IQ3_S (ISTA-DASLab, 3,5 bpw, 11,43 GB) vs nasze AD-Q4_K i Maya: prędkość, KLD, odmowy (link JARO 27.11)
 - źródło: https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF (README: IQ3_S 99,2% średniej bazy NVFP4/MXFP8: AIME25 98,33, GPQA-D 86,20, LCB v6 79,05; IQ2_S 8,98 GB, Q2_K_XL 9,79, IQ3_XXS 10,61; drafter DSpark Q8_0 0,4 GB w repo)
 - pobranie: na polecenie JARO 2026-11-27 02:46 do `~/models/inkling/gsq-rco/` (w tle)
@@ -28,10 +34,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - znaczenie: mniejszy plik = mniej bajtów na token (dekod), ale to inny kwant → produkcja tylko decyzją JARO; dla Enigmy kandydat na karty 12–16 GB (IQ2_S 8,98 GB).
 - priorytet: wysoki (polecenie JARO)
 
-### K-189 · Koszt draftu Inklinga (propose DSpark/Maya) względem długości kontekstu: 2k / 32k / 96k
-- data: 2026-11-26 (lekcja z DFly2: drafter czytający cache celu ma stały koszt; nasz draft ma własną uwagę po kontekście, `IK2_DRAFT_CTX`)
-- test: `IK2_K158_BENCH` przy P = 2048 / 32768 / 98304, propose(7) ms i udział w kroku; ≤10 min XTX. Jeśli propose przy 96k > 2× wartości przy 2k → projekt draftu z ograniczonym oknem albo czytaniem KV celu.
-- priorytet: średni
 ### K-190 · Enigma: pula slotów ekspertów MoE + 1 ekspert z wyprzedzeniem (wzór Strata/HF) dla MoE na kartach 12–16 GB
 - data: 2026-11-26 (HF moe-expert-streaming: Strata 82–88 vs llama.cpp `--fit` 63–64 t/s na A10G; nasze K-026: spekulacja z ekspertami na CPU −41…−62%)
 - test: Vast 5060 Ti 16 GB, Qwen3.6-35B-A3B albo Inkling, llama.cpp `--n-cpu-moe` vs `--moe-cache-mib` vs Strata `--expert-cache auto`, tg128 i z MTP; ≤15 min, ok. 0,05 $.
@@ -225,6 +227,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Zrobione
 
+### K-189 · Koszt draftu Inklinga (propose DSpark/Maya) względem długości kontekstu: 2k / 32k / 96k
+- data: 2026-11-26 (lekcja z DFly2: drafter czytający cache celu ma stały koszt; nasz draft ma własną uwagę po kontekście, `IK2_DRAFT_CTX`)
+- test: `IK2_K158_BENCH` przy P = 2048 / 32768 / 98304, propose(7) ms i udział w kroku; ≤10 min XTX. Jeśli propose przy 96k > 2× wartości przy 2k → projekt draftu z ograniczonym oknem albo czytaniem KV celu.
+- priorytet: średni
+- **wynik 2026-11-27 (XTX, Maya produkcja, K158 bench, mediany z 11):** propose(7) **1,59 ms (2k) → 2,63 (32k) → 4,83 ms (98k), ×3,05**; udział w kroku 5,3% → 7,0% → 9,2%; weryfikacja(8) 28,2 → 34,9 → 47,5 ms. FLAG: drafter z ograniczonym oknem kontekstu. Ciąg dalszy K-194 (`IK2_DRAFT_CTX` 2k–16k, tylko drafty, bezstratne z konstrukcji): spodziewane ok. −3 ms/krok przy 98k ≈ +6% dekodu.
+- przeniesione 2026-11-27: zmierzone → K-194
+
 ### K-056 · Rebase łatek topki na nowszy upstream (baza b11528 → llama.cpp v1.0.0 = b12359)
 - data: 2026-10-16, ostatnio 2026-11-07
 - źródło: [[2026-10-16-rebase-v070]], `R/68d-swieze-od-spolecznosci.md:14,18` (#31247 przesunie md5)
@@ -239,6 +248,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - **K-056 2026-11-26 13:46–14:40 (rebase topki na upstream 6792507b7, gałąź `k056-rebase` 884b33048, 49/49 plików + K-018/019/020, K-012, K-001, K-006; instalacja `~/qwen-opt/k056/inst`):** test-backend-ops (kształty produkcji): MUL_MAT K-quant 622 OK, MUL_MAT q8_0/q4_0/f16 1065 OK, FLASH_ATTN_EXT 1131 OK, reszta 2480 OK, **0 FAIL**; KLD vs produkcja **PASS** (mean 0,00779 vs podłoga 0,00771, top1 95,07% = podłoga); pierwszy bieg R padał na drafcie MTP (`set_embd` → `set_embd_state` w nowym API, naprawione). Wall R vs P: kod T=0 +2,9%, T=0,7 +2,6%, pl T=0 **−6,6% (FAIL)**, pl T=0,7 +4,3%, reszta ±1%; md5 T=0 inne (upstream zmienił konwencję sum q8_1), więc T=0 porównuje różne teksty. **Rebase działa i przechodzi bramkę jakości, ale nie wdrażamy** przed wyjaśnieniem pl T=0 (akceptacja MTP na innym tekście czy realny koszt) i powtórką ABBA ×2. Otwarte: odporność op powtórki GDN na NaN w pamięci (test upstream `rollback`).
 - przeniesione 2026-11-26: zrobione technicznie, wdrożenie wstrzymane (pl T=0 −6,6%)
 
+- **K-056b 2026-11-27 (powtórka ABBA, po poprawce MTP):** wynik powtarza się: kod +2,7%/+2,2%, pl T=0 **−6,8%** (80,4 → 74,9), pl T=0,7 +3,8%, reszta ±1,5%; md5 T=0 inne (inna konwencja sum q8_1 w upstream → inny tekst). Ponieważ pl T=0,7 jest szybszy, a T=0 wolniejszy, podejrzenie: inny tekst greedy po polsku z gorszą akceptacją MTP, nie wolniejszy kernel. Do sprawdzenia akceptacją per kategoria przed decyzją; nie wdrażamy.
 ### K-158 · Maya: mechanizmy DSpark z Nib (graf draftu, szerokość z pewności, top-k na GPU), żeby DSpark opłacał się przy T=0,7
 - data: 2026-11-25 ([[nib-chromadera]]: Nib T=0,7 130–151 t/s vs Maya 112,5 tym samym klientem; u nas DSpark przy T=0,7 −11%, K-139)
 - plan: `dspark_mtp.cpp:767-803` (graf draftu per długość), `server.cpp:2721` (szerokość = wiodące drafty z p>0,8), `kernels_mtp_verify.hip:155-345` (top-256 na GPU) przenieść do `ik2_draft.cu`/`ik2_main.cu`; parytet 11/11 + rep2 + wall.py
