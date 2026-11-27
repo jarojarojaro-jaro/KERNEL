@@ -39,44 +39,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test: kierunek z różnicy aktywacji PL vs EN, ablacja/dodanie w Mai, pl wall + jakość, kontrola losowym kierunkiem; ≤10 min XTX; eksperyment do decyzji JARO
 - priorytet: niski
 
-### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
-- data: 2026-11-19
-- źródło: [[2026-11-19-k118-nvidia-pelna-moc]]: n2 vs n4 T=1 3090 +7,9%, 3060 +4,3%, 5060 Ti +3,2% (K-114); T=0 +3,0…3,3%; 4080 SUPER bez różnicy
-- test: CPU: wpis w `app/engine/data/engines.json` (DRAFT_N per architektura: sm_86 i sm_120 → 2, sm_89 → 4), `bun test`; potwierdzenie na 1 karcie Vast z md5 T=0 vs n4 (spekulacja bezstratna, tekst może się różnić tylko numerycznie)
-- zysk: +3…8% dekodu dla użytkowników Enigmy z 30xx i 5060 Ti
-- ryzyko karty: brak
-- priorytet: wysoki (tanie, zmierzone na 3 kartach)
-- wynik 2026-11-20: zrobione po stronie CPU. W profilu `qwen38-kvq-mtp4` silnika `enigma-cuda-fork` doszło `mtp.nMaxByArch` (`app/engine/data/engines.json`: sm_86 → 2, sm_120 → 2, reszta, czyli sm_89, zostaje 4); `mtpArgs`/`enigmaConfig` biorą n po architekturze karty (`app/engine/src/server/engine.ts`, wywołanie w `optimize.ts`). Test w `app/engine/test/enigma-cuda.test.ts` (sm_86/sm_89/sm_120 → 2/4/2); `bun test` 208 pass, 0 fail; `tsc` czysty. Planer pamięci dalej liczy draft dla n 4 (bezpieczny zapas). Uwaga: RTX 5090 (też sm_120) mierzona była tylko z n 4, więc dostaje 2 bez pomiaru. Zostaje potwierdzenie md5 T=0 n2 vs n4 na 1 karcie Vast.
-
-- **2026-11-25 (L4, K-016):** n2 +6,9% i n3 +6,3% T=1 vs n4, kopia bez straty; brakuje 3090 i 5060 Ti (wynajem) przed zmianą domyślnej wartości Enigmy.
-- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** 5060 Ti T=1: n2 53,55, n3 52,51, n4 45,54 (−15%), n5 47,45; kopia: n3 198,8 (+14,6% vs n2 173,5). Enigma: n2 domyślnie zostaje, n3 jako profil kopii; 3090 w drugiej paczce nvq.
-- **nvq3 2026-11-26 (3090 Broadwell):** n2 69,0 / 60,0 / 257,5; n3 −2,5 / −3,9 / −17%; n4 −6,4 / −8,7 / +3,3% → n2 zostaje ([[2026-11-26-nvq3]]).
-### K-122 · llamAmpere v0.7 w trybie dokładnym vs nasz fork na pełnej mocy 3090, ten sam plik wag (łączyć z K-118 na jednej instancji)
-- data: 2026-11-18
-- źródło: [[llamampere]] (nagłówkowe 110+ t/s przy T=1 w trybie mb-MTP, czyli nie dokładnym; drafter DFlash2 ×3,4 po usunięciu podwójnego kroku); [[2026-11-17-k114-nvidia-sufit]]
-- hipoteza: w trybie dokładnym (`--no-spec-mb-mtp`, bez rzadkiej atencji, MTP) na UD-Q4_K_XL llamAmpere jest szybszy od forka (80 t/s) o ≥ 15%; różnica to narzut kroku draftu (K-116), a nie kernele głównego GEMV
-- test: jedna instancja 3090 z hostguardem (ta sama co K-118): wydanie v0.7 (binarka znver3 — host z AMD Zen3+, inaczej build z tagu) i fork `kvqleana`/`kvqlean`, UD-Q4_K_XL, spec_sweep T=0/T=1 ABBA, `nsys` jednego kroku w każdym; KLD vs wyjście bazowe na 1280 pozycjach
-- miara: t/s (fork → llamAmpere dokładny), ms kroku i ms/draft, KLD
-- zysk: wskazuje gotowe rozwiązanie dla K-116 (port do Enigmy NVIDIA); koszt ~$0,15 razem z K-118 [INFERENCE]
-- ryzyko karty: brak (wynajem)
-- priorytet: średni (czeka na kredyt)
-
-- **2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** tylko ramię forka (T=0 93,48, T=1 88,16); build llamAmpere v0.7 nie zdążył przed terminem; do powtórki z buildem przygotowanym przed wynajmem.
-- **nvq3 2026-11-26 (3090, Ryzen 5900X, 350/350 W):** fork T=0 87,6 / T=1 79,0 / kopia 270,5 vs llamAmpere v0.7 dokładny 70,1 / 74,9 / 102,8 → **hipoteza odrzucona, fork szybszy** ([[2026-11-26-nvq3]]).
-### K-113 · `bench.py` skill-io 1:1 na XTX, 5060 Ti i 3090 (ta sama konfiguracja) — pierwsza tabela między firmami z jednego harnessu
-- data: 2026-11-17
-- źródło: [[skill-io-skrypty]]; ich 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`); K-110 (część XTX)
-- hipoteza: na 3090 nasz fork (UD-Q4_K_XL) da ~80 t/s prozy przy ich panelu; porównanie z ich 96,2 (3 bpw = mniej bajtów, inny silnik) pokaże, ile z różnicy to bajty, a ile silnik
-- test: `bench.py run` z `config-existing-server.json` (T 0,6, c1 6 × 512, prefill 4k/16k, `--long` 65 536 z igłami), te same 3 serwery: topka (XTX), fork kvqlean (5060 Ti lokalnie, 3090 Vast); ≤ 10 min na kartę
-- miara: c1 mediana, prefill, TTFT, retrieval k/3 + % sufitu karty
-- zysk: porównywalne liczby dla Enigmy i publikacji; 0 t/s
-- ryzyko karty: brak
-- priorytet: średni
-- **bieg 2026-11-25 17:09 nieważny:** serwer testowy nie wstał (`Connection refused`), bo w tym czasie plik modelu Qwen był skasowany (`~/models/orca`, pobrany ponownie 18:06). Ponownie w kolejce 2026-11-25 19:25.
-
-- **wynik XTX 2026-11-25 21:35 (topka produkcji, port 18794):** skill-io bench.py: TTFT krótki 304,7 ms, dekod c1 145,4 t/s; długi 65 259 tok.: TTFT 83,2 s, prefill 784,8 t/s, dekod 118,7 t/s, igły 3/3. Część 5060 Ti / 3090 w paczce Vast nvq (2026-11-26).
-- **2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** część 5060 Ti nieudana: serwer OOM przy starcie (ctx za duży z MTP na 16 GB); do powtórki z mniejszym ctx.
-- **nvq3 2026-11-26:** 5060 Ti / 3090: c1 51,4 / 58,4 t/s, prefill 16k 711 / 811, 65k TTFT 103,5 / 101,5 s, igły 3/3 ([[2026-11-26-nvq3]]).
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -88,25 +50,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 - **2026-11-26 ocena:** KLD A3 vs U3 już jest (16e); brakuje ISTA IQ3_XXS-mtp i W3 na 5 korpusach (A40 ok. 1 h, ok. 0,6 $, pobranie BF16 54 GB na wynajętej maszynie) i jakości-mini (ok. 4 h na 3090, ok. 1,1 $). Wymaga budżetu.
 - **2026-11-26 wyjaśnienie dla JARO:** to nie test prędkości, tylko wybór pliku modelu, który Enigma poleca dla kart 12/16 GB (który kwant najmniej odbiega od pełnego modelu, KLD + krótki test jakości). Porównanie A3 vs U3 już jest (16e: A3 lepszy, KLD czat −12%, kod −23%); brakuje tylko ISTA IQ3_XXS-mtp i W3. Rekomendacja: odłożyć, dopóki Enigma nie oferuje tych plików.
-### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
-- data: 2026-10-19 (21h)
-- status: **czeka na decyzję**
-- źródło: [[KOLEJKA-TESTOW]], [[petla-rsi-f]], [[otwarte-decyzje-techniczne]] (`:21`)
-- test: XTX `GGML_HIP_PM4=0`, P0 ~20 min → 2 joby, P1 4 × 15–20 min
-- zysk: walidacja fabryki, 0 t/s
-- ryzyko karty: brak
-- priorytet: niski (proces)
-- 2026-11-24 14:37: pierwsze uruchomienie odrzucone przez fabrykę (port 18794 poza zakresem fabryki 18434–18499; skrypt poprawiony na 18450, uruchomione ponownie).
-- 2026-11-24 15:18: fabryka INVALID, bo zmieniona uprząż (`ext/spec_sweep.py` po audycie 19.11, `ext/fusion/greedy.sh`) bez wpisu w HARNESS.lock; zablokowana z powodem (ledger seq 11), test ponownie w kolejce 15:40.
-- 2026-11-24 16:08: fabryka VOID przez bramkę sprzętu H4: niepotwierdzony page fault z 2026-11-23 01:09 (proces strata-inkling, znany incydent K-134). Potwierdzenie (`factory rsi hw ack --reason …`) to według fabryki krok człowieka: **czeka na JARO**, potem jedno uruchomienie `K-060.jobs` (ok. 25 min).
-
-- **2026-11-26:** części CPU przechodzą (card check, harness seq 11, ledger 14 wierszy). P0 potrzebuje kroku człowieka: JARO uruchamia `cd ~/qwen-opt/factory && ./factory rsi hw ack --reason "K-134"`, potem `kq/K-060.jobs` (ok. 25 min karty).
-- **2026-11-26:** `factory rsi hw ack` wykonany przez Kernela na polecenie JARO („ty pusc”), ledger seq 14, nowych błędów 0; `kq/K-060.jobs` w kolejce.
-- **2026-11-26 bieg nieważny:** oba przebiegi P0 przekroczyły limit 880 s (rc 124) przy temperaturze 38–39 °C, czyli karta głównie stała (najpewniej skan H4 fabryki + start); do skrócenia przed powtórką.
-- **2026-11-26 przyczyna rc 124 i poprawka:** bramka H1 czekała do 15 min na `gpu-guard.sh`, który nie działał. Do tego kolejka trzyma `gpu.lock` i `quiet.lock` przez cały plik jobów, więc `flock` bloku fabryki zakleszczyłby się. Teraz `kq/K-060.sh` uruchamia strażnika i przepuszcza locki przez nakładkę `kq/k060-bin/flock` (tylko gdy kolejka trzyma je na fd 8/9). Watermark H4 przesunięto (ack, ledger seq 15, 0 nowych faultów), bo zalew `init_user_pages` w journalu jądra (11:29–11:43) wydłużał skan H4 do 60 s na blok.
-- **2026-11-26 P0 na k183e:** nowa karta `claims/2026-11-26-mmq-epi-0070-k183e.json` (ledger seq 17). Obie gałęzie używają tych samych binarek k183e, różni je tylko `GGML_HIP_MMQ_EPI` 0/1. Narzędzia są w `~/k060/k183e-inst`: llama-bench i test-backend-ops z `~/wt/k183e/build-hip`, libggml-hip identyczny z produkcją. Baza diffu to `a012922be` (e3ab5b9e3 + revert 0070). Dry-run G0 jest czysty poza ostrzeżeniami R29, więc najlepszy możliwy werdykt to NEEDS-HUMAN. Job: 1 runda ABBA, 8 bloków, 13 min karty. Przy 1 rundzie (2 pary) CI będzie szerokie, więc werdykt NULL jest bardzo prawdopodobny. P1 (playbook 0070 na `t-iq4xs-mmq` i `t-q6k-mmq`) wymaga najpierw CONFIRMED P0 i implementacji przez świeżych agentów, więc nie dziś.
-- **2026-11-26 12:47 bieg nieważny (rc 124):** nakładka flock się nie włączyła. Kolejka uruchamia job z zamkniętymi fd 8/9, a locki trzyma sam proces `run-jobs.sh`, więc test fd zwrócił 0 i pierwszy blok czekał na `gpu.lock` przez 750 s. Poprawka: skrypt szuka przodka `queue/run-jobs.sh` i sprawdza `flock -n` na obu plikach; wyjście fabryki jest teraz niebuforowane, ze znacznikami czasu. Plik jobów ma dwa niezależne pełne verify (fabryka nie wznawia przebiegu między jobami).
-- **K-060 P0 2026-11-26 13:53–14:06 (fabryka RSI-F na produkcji k183e, karta `claims/2026-11-26-mmq-epi-0070-k183e.json`, base = k183e z cofniętym 0070, cand = k183e, `GGML_HIP_MMQ_EPI` 0 vs 1):** werdykt fabryki w rejestrze (seq 18): **NEEDS-HUMAN, efekt pp4096 CI95 [+2,30%, +2,80%]**, A/A −0,009%, bramki poprawności (test-backend-ops MUL_MAT/MUL_MAT_ID q4_K/q5_K, md5 greedy) przeszły. Pilot P0 działa: pierwsza prawdziwa ścieżka „roszczenie → weryfikacja → wiersz w rejestrze” na produkcji. 0070 jest już domyślnie włączony w produkcji (`ggml_cuda_env_switch`: brak zmiennej = włączone), więc to potwierdzenie istniejącego zysku prefillu +2,5%, nie nowy zysk. P1 (playbook 0070 na IQ4_XS i Q6_K MMQ) wymaga osobnych agentów do napisania wariantów (dni). Naprawione po drodze: blokady kolejki przekazywane do fabryki, start gpu-guard, log bez bufora.
 ### K-067 · Kernel GDN chunked MMA w CUDA zintegrowany z cache i snapshotami (gałąź `orca-gdn2`)
 - data: 2026-10-21 (Orca)
 - źródło: sesja Orca (`O:1449-1462`: +10,5% pp2048, ale PPL nan; po poprawce 0%; `O:1791`)
@@ -116,17 +59,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - priorytet: niski (numeryka do naprawy)
 
 - **2026-11-26:** NaN naprawiony 2026-10-21 (`729b77311`); PPL 130k w drugiej próbie: kernel MMA czyta niezapisany bufor pominiętego GET_ROWS i zapisuje stan poza slotem cache; plan naprawy 3 kroki (2–3 h kodu), potem Colab L4 + 3090; wynik nie będzie bitowy (bramka KLD, decyzja K-007 pozwala).
-### K-070 · NVIDIA: soak termiczny 600 s przy fill 262k (E3) i sweep limitu mocy → perf/W na wynajętych kartach (E1)
-- data: 2026-11-07
-- status: E1 **czeka na decyzję** (zmienia limit mocy; czy zasada „karta fabrycznie” obejmuje karty z wynajmu); E3 otwarte
-- źródło: `R/67c-nvidia-backlog-testow.md:152,154`
-- test: E3 `stab soak_s=600` (10 min); E1 4 ramiona × ~3 min (`nvidia-smi -pl` 100/85/70/55% TDP), tylko wynajem
-- zysk: dane do „cichego trybu” Enigmy; 0 t/s
-- ryzyko karty: E1 zmiana mocy; E3 temperatury
-- priorytet: niski (produkt)
-
-- **wynik E3 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** fill 262k 531,4 s, soak 600 s 65,4 → 69,4 t/s (+0,7% dryf), maks. 75 °C, SM min. 1515 MHz, moc śr. 328 W: bez dławienia. E1 (sweep limitu mocy) poza zakresem (karta fabrycznie).
-- **nvq3 2026-11-26 E3 (5060 Ti, 190 709 tok.):** soak 600 s 29,5 → 30,5 t/s, dryf −0,1%, 101,6 W, 64 °C maks. → brak dławienia; E1 niemożliwe na Vast (`nvidia-smi -pl`: brak uprawnień) ([[2026-11-26-nvq3]]).
 ### K-072 · Nemotron 3.5 Bolt na NVIDIA: KLD fuzji `GGML_CUDA_TOPK_MOE_NP2`, `MMVQ_N1_IQ2`, kernel IQ2_XXS MMVQ, replay stanu Mamby
 - data: 2026-10-16 (raport 14 §10)
 - status: **czeka na decyzję** (model odłożony „na później”)
@@ -152,6 +84,70 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-060 · Pilot fabryki RSI-F: P0 (`./factory verify claims/2026-10-17-mmq-epi-0070.json`) i P1 (playbook 0070 na nowe cele)
+- data: 2026-10-19 (21h)
+- status: **czeka na decyzję**
+- źródło: [[KOLEJKA-TESTOW]], [[petla-rsi-f]], [[otwarte-decyzje-techniczne]] (`:21`)
+- test: XTX `GGML_HIP_PM4=0`, P0 ~20 min → 2 joby, P1 4 × 15–20 min
+- zysk: walidacja fabryki, 0 t/s
+- ryzyko karty: brak
+- priorytet: niski (proces)
+- 2026-11-24 14:37: pierwsze uruchomienie odrzucone przez fabrykę (port 18794 poza zakresem fabryki 18434–18499; skrypt poprawiony na 18450, uruchomione ponownie).
+- 2026-11-24 15:18: fabryka INVALID, bo zmieniona uprząż (`ext/spec_sweep.py` po audycie 19.11, `ext/fusion/greedy.sh`) bez wpisu w HARNESS.lock; zablokowana z powodem (ledger seq 11), test ponownie w kolejce 15:40.
+- 2026-11-24 16:08: fabryka VOID przez bramkę sprzętu H4: niepotwierdzony page fault z 2026-11-23 01:09 (proces strata-inkling, znany incydent K-134). Potwierdzenie (`factory rsi hw ack --reason …`) to według fabryki krok człowieka: **czeka na JARO**, potem jedno uruchomienie `K-060.jobs` (ok. 25 min).
+
+- **2026-11-26:** części CPU przechodzą (card check, harness seq 11, ledger 14 wierszy). P0 potrzebuje kroku człowieka: JARO uruchamia `cd ~/qwen-opt/factory && ./factory rsi hw ack --reason "K-134"`, potem `kq/K-060.jobs` (ok. 25 min karty).
+- **2026-11-26:** `factory rsi hw ack` wykonany przez Kernela na polecenie JARO („ty pusc”), ledger seq 14, nowych błędów 0; `kq/K-060.jobs` w kolejce.
+- **2026-11-26 bieg nieważny:** oba przebiegi P0 przekroczyły limit 880 s (rc 124) przy temperaturze 38–39 °C, czyli karta głównie stała (najpewniej skan H4 fabryki + start); do skrócenia przed powtórką.
+- **2026-11-26 przyczyna rc 124 i poprawka:** bramka H1 czekała do 15 min na `gpu-guard.sh`, który nie działał. Do tego kolejka trzyma `gpu.lock` i `quiet.lock` przez cały plik jobów, więc `flock` bloku fabryki zakleszczyłby się. Teraz `kq/K-060.sh` uruchamia strażnika i przepuszcza locki przez nakładkę `kq/k060-bin/flock` (tylko gdy kolejka trzyma je na fd 8/9). Watermark H4 przesunięto (ack, ledger seq 15, 0 nowych faultów), bo zalew `init_user_pages` w journalu jądra (11:29–11:43) wydłużał skan H4 do 60 s na blok.
+- **2026-11-26 P0 na k183e:** nowa karta `claims/2026-11-26-mmq-epi-0070-k183e.json` (ledger seq 17). Obie gałęzie używają tych samych binarek k183e, różni je tylko `GGML_HIP_MMQ_EPI` 0/1. Narzędzia są w `~/k060/k183e-inst`: llama-bench i test-backend-ops z `~/wt/k183e/build-hip`, libggml-hip identyczny z produkcją. Baza diffu to `a012922be` (e3ab5b9e3 + revert 0070). Dry-run G0 jest czysty poza ostrzeżeniami R29, więc najlepszy możliwy werdykt to NEEDS-HUMAN. Job: 1 runda ABBA, 8 bloków, 13 min karty. Przy 1 rundzie (2 pary) CI będzie szerokie, więc werdykt NULL jest bardzo prawdopodobny. P1 (playbook 0070 na `t-iq4xs-mmq` i `t-q6k-mmq`) wymaga najpierw CONFIRMED P0 i implementacji przez świeżych agentów, więc nie dziś.
+- **2026-11-26 12:47 bieg nieważny (rc 124):** nakładka flock się nie włączyła. Kolejka uruchamia job z zamkniętymi fd 8/9, a locki trzyma sam proces `run-jobs.sh`, więc test fd zwrócił 0 i pierwszy blok czekał na `gpu.lock` przez 750 s. Poprawka: skrypt szuka przodka `queue/run-jobs.sh` i sprawdza `flock -n` na obu plikach; wyjście fabryki jest teraz niebuforowane, ze znacznikami czasu. Plik jobów ma dwa niezależne pełne verify (fabryka nie wznawia przebiegu między jobami).
+- **K-060 P0 2026-11-26 13:53–14:06 (fabryka RSI-F na produkcji k183e, karta `claims/2026-11-26-mmq-epi-0070-k183e.json`, base = k183e z cofniętym 0070, cand = k183e, `GGML_HIP_MMQ_EPI` 0 vs 1):** werdykt fabryki w rejestrze (seq 18): **NEEDS-HUMAN, efekt pp4096 CI95 [+2,30%, +2,80%]**, A/A −0,009%, bramki poprawności (test-backend-ops MUL_MAT/MUL_MAT_ID q4_K/q5_K, md5 greedy) przeszły. Pilot P0 działa: pierwsza prawdziwa ścieżka „roszczenie → weryfikacja → wiersz w rejestrze” na produkcji. 0070 jest już domyślnie włączony w produkcji (`ggml_cuda_env_switch`: brak zmiennej = włączone), więc to potwierdzenie istniejącego zysku prefillu +2,5%, nie nowy zysk. P1 (playbook 0070 na IQ4_XS i Q6_K MMQ) wymaga osobnych agentów do napisania wariantów (dni). Naprawione po drodze: blokady kolejki przekazywane do fabryki, start gpu-guard, log bez bufora.
+- przeniesione 2026-11-27: P0 zrobione (NEEDS-HUMAN, CI +2,3…+2,8%, dwa werdykty); P1 wymaga kilkudniowej pracy agentów nad wariantami IQ4_XS/Q6_K MMQ
+
+### K-070 · NVIDIA: soak termiczny 600 s przy fill 262k (E3) i sweep limitu mocy → perf/W na wynajętych kartach (E1)
+- data: 2026-11-07
+- status: E1 **czeka na decyzję** (zmienia limit mocy; czy zasada „karta fabrycznie” obejmuje karty z wynajmu); E3 otwarte
+- źródło: `R/67c-nvidia-backlog-testow.md:152,154`
+- test: E3 `stab soak_s=600` (10 min); E1 4 ramiona × ~3 min (`nvidia-smi -pl` 100/85/70/55% TDP), tylko wynajem
+- zysk: dane do „cichego trybu” Enigmy; 0 t/s
+- ryzyko karty: E1 zmiana mocy; E3 temperatury
+- priorytet: niski (produkt)
+
+- **wynik E3 2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** fill 262k 531,4 s, soak 600 s 65,4 → 69,4 t/s (+0,7% dryf), maks. 75 °C, SM min. 1515 MHz, moc śr. 328 W: bez dławienia. E1 (sweep limitu mocy) poza zakresem (karta fabrycznie).
+- **nvq3 2026-11-26 E3 (5060 Ti, 190 709 tok.):** soak 600 s 29,5 → 30,5 t/s, dryf −0,1%, 101,6 W, 64 °C maks. → brak dławienia; E1 niemożliwe na Vast (`nvidia-smi -pl`: brak uprawnień) ([[2026-11-26-nvq3]]).
+- przeniesione 2026-11-27: E3 zrobione (bez dławienia), E1 niemożliwe na Vast
+
+### K-113 · `bench.py` skill-io 1:1 na XTX, 5060 Ti i 3090 (ta sama konfiguracja) — pierwsza tabela między firmami z jednego harnessu
+- data: 2026-11-17
+- źródło: [[skill-io-skrypty]]; ich 3090 Qwen3.8-27B EXL3 3 bpw + MTP 96,2 proza / 141,1 kod (`README.md:33`); K-110 (część XTX)
+- hipoteza: na 3090 nasz fork (UD-Q4_K_XL) da ~80 t/s prozy przy ich panelu; porównanie z ich 96,2 (3 bpw = mniej bajtów, inny silnik) pokaże, ile z różnicy to bajty, a ile silnik
+- test: `bench.py run` z `config-existing-server.json` (T 0,6, c1 6 × 512, prefill 4k/16k, `--long` 65 536 z igłami), te same 3 serwery: topka (XTX), fork kvqlean (5060 Ti lokalnie, 3090 Vast); ≤ 10 min na kartę
+- miara: c1 mediana, prefill, TTFT, retrieval k/3 + % sufitu karty
+- zysk: porównywalne liczby dla Enigmy i publikacji; 0 t/s
+- ryzyko karty: brak
+- priorytet: średni
+- **bieg 2026-11-25 17:09 nieważny:** serwer testowy nie wstał (`Connection refused`), bo w tym czasie plik modelu Qwen był skasowany (`~/models/orca`, pobrany ponownie 18:06). Ponownie w kolejce 2026-11-25 19:25.
+
+- **wynik XTX 2026-11-25 21:35 (topka produkcji, port 18794):** skill-io bench.py: TTFT krótki 304,7 ms, dekod c1 145,4 t/s; długi 65 259 tok.: TTFT 83,2 s, prefill 784,8 t/s, dekod 118,7 t/s, igły 3/3. Część 5060 Ti / 3090 w paczce Vast nvq (2026-11-26).
+- **2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** część 5060 Ti nieudana: serwer OOM przy starcie (ctx za duży z MTP na 16 GB); do powtórki z mniejszym ctx.
+- **nvq3 2026-11-26:** 5060 Ti / 3090: c1 51,4 / 58,4 t/s, prefill 16k 711 / 811, 65k TTFT 103,5 / 101,5 s, igły 3/3 ([[2026-11-26-nvq3]]).
+- przeniesione 2026-11-27: zmierzone 5060 Ti i 3090 (nvq3); XTX w K-113 XTX wcześniej
+
+### K-129 · Enigma NVIDIA: `DRAFT_N=2` zamiast 4 na Ampere i 5060 Ti (droga weryfikacja V(5))
+- data: 2026-11-19
+- źródło: [[2026-11-19-k118-nvidia-pelna-moc]]: n2 vs n4 T=1 3090 +7,9%, 3060 +4,3%, 5060 Ti +3,2% (K-114); T=0 +3,0…3,3%; 4080 SUPER bez różnicy
+- test: CPU: wpis w `app/engine/data/engines.json` (DRAFT_N per architektura: sm_86 i sm_120 → 2, sm_89 → 4), `bun test`; potwierdzenie na 1 karcie Vast z md5 T=0 vs n4 (spekulacja bezstratna, tekst może się różnić tylko numerycznie)
+- zysk: +3…8% dekodu dla użytkowników Enigmy z 30xx i 5060 Ti
+- ryzyko karty: brak
+- priorytet: wysoki (tanie, zmierzone na 3 kartach)
+- wynik 2026-11-20: zrobione po stronie CPU. W profilu `qwen38-kvq-mtp4` silnika `enigma-cuda-fork` doszło `mtp.nMaxByArch` (`app/engine/data/engines.json`: sm_86 → 2, sm_120 → 2, reszta, czyli sm_89, zostaje 4); `mtpArgs`/`enigmaConfig` biorą n po architekturze karty (`app/engine/src/server/engine.ts`, wywołanie w `optimize.ts`). Test w `app/engine/test/enigma-cuda.test.ts` (sm_86/sm_89/sm_120 → 2/4/2); `bun test` 208 pass, 0 fail; `tsc` czysty. Planer pamięci dalej liczy draft dla n 4 (bezpieczny zapas). Uwaga: RTX 5090 (też sm_120) mierzona była tylko z n 4, więc dostaje 2 bez pomiaru. Zostaje potwierdzenie md5 T=0 n2 vs n4 na 1 karcie Vast.
+
+- **2026-11-25 (L4, K-016):** n2 +6,9% i n3 +6,3% T=1 vs n4, kopia bez straty; brakuje 3090 i 5060 Ti (wynajem) przed zmianą domyślnej wartości Enigmy.
+- **wynik 2026-11-26 (Vast 5060 Ti nvq, [[2026-11-26-nvq-5060ti]]):** 5060 Ti T=1: n2 53,55, n3 52,51, n4 45,54 (−15%), n5 47,45; kopia: n3 198,8 (+14,6% vs n2 173,5). Enigma: n2 domyślnie zostaje, n3 jako profil kopii; 3090 w drugiej paczce nvq.
+- **nvq3 2026-11-26 (3090 Broadwell):** n2 69,0 / 60,0 / 257,5; n3 −2,5 / −3,9 / −17%; n4 −6,4 / −8,7 / +3,3% → n2 zostaje ([[2026-11-26-nvq3]]).
+- przeniesione 2026-11-27: n2 zostaje domyślne (nvq3)
 
 ### K-071 · qwen-warp: DFlash2 ≤ 64k na replayu agentowym (W2)
 - data: 2026-11-09
@@ -1297,6 +1293,20 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-122 · llamAmpere v0.7 w trybie dokładnym vs nasz fork na pełnej mocy 3090, ten sam plik wag (łączyć z K-118 na jednej instancji)
+- data: 2026-11-18
+- źródło: [[llamampere]] (nagłówkowe 110+ t/s przy T=1 w trybie mb-MTP, czyli nie dokładnym; drafter DFlash2 ×3,4 po usunięciu podwójnego kroku); [[2026-11-17-k114-nvidia-sufit]]
+- hipoteza: w trybie dokładnym (`--no-spec-mb-mtp`, bez rzadkiej atencji, MTP) na UD-Q4_K_XL llamAmpere jest szybszy od forka (80 t/s) o ≥ 15%; różnica to narzut kroku draftu (K-116), a nie kernele głównego GEMV
+- test: jedna instancja 3090 z hostguardem (ta sama co K-118): wydanie v0.7 (binarka znver3 — host z AMD Zen3+, inaczej build z tagu) i fork `kvqleana`/`kvqlean`, UD-Q4_K_XL, spec_sweep T=0/T=1 ABBA, `nsys` jednego kroku w każdym; KLD vs wyjście bazowe na 1280 pozycjach
+- miara: t/s (fork → llamAmpere dokładny), ms kroku i ms/draft, KLD
+- zysk: wskazuje gotowe rozwiązanie dla K-116 (port do Enigmy NVIDIA); koszt ~$0,15 razem z K-118 [INFERENCE]
+- ryzyko karty: brak (wynajem)
+- priorytet: średni (czeka na kredyt)
+
+- **2026-11-26 (Vast 3090 nvq, [[2026-11-26-nvq-3090]]):** tylko ramię forka (T=0 93,48, T=1 88,16); build llamAmpere v0.7 nie zdążył przed terminem; do powtórki z buildem przygotowanym przed wynajmem.
+- **nvq3 2026-11-26 (3090, Ryzen 5900X, 350/350 W):** fork T=0 87,6 / T=1 79,0 / kopia 270,5 vs llamAmpere v0.7 dokładny 70,1 / 74,9 / 102,8 → **hipoteza odrzucona, fork szybszy** ([[2026-11-26-nvq3]]).
+- przeniesione 2026-11-27: hipoteza odrzucona, fork szybszy (nvq3)
 
 ### K-066 · Pipeline kafli MMQ w stylu DeepGEMM / strojenie configu MMQ IQ4_XS (`mmq-config-ampere.cuh`) pod prefill CUDA
 - data: 2026-10-16 (15d), 2026-10-21 (Orca)
