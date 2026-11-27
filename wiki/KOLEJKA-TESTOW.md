@@ -21,6 +21,18 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-202 · Maya (Inkling) długi kontekst na XTX: z 16k do ok. 400–500k na obecnym modelu, bezstratnie
+- data: 2026-11-27 (pytanie JARO o duży kontekst); Inkling ma tylko 8 odwiedzin z pełną uwagą (warstwy 5, 11, 17, 23; 11 i 17 w pętli ×3), 8 głów KV × 128, reszta okno 1024 → KV q4_0 ok. 9 KB/token; produkcja ma `--max-context` 16384
+- test: serwer przy 131k / 262k / maks.: VRAM, prefill, dekod T=0 przy 128k/256k/maks., igły; przygotowuje agent X202
+- priorytet: wysoki (te same wagi, tylko ustawienie)
+### K-203 · Inkling GSQ-RCO IQ3_S (11,4 GB) w Mai: 1M kontekstu na XTX
+- data: 2026-11-27; 1M × 9 KB = ok. 9,4 GB KV + 11,4 GB wag mieści się w 24 GB, z AD-Q4_K (17 GB) nie
+- wymaga: czytnik układu `inkling2_loop` i dekodery IQ1–IQ3/IQ4_NL ekspertów w Mai (project-maya #1219 to zrobił), 1–2 dni; jakość IQ3_S KLD 0,040 vs nasz AD 0,011 → zmiana pliku wag tylko decyzją JARO; bez cenzury przez LoRA AtomicChat (K-201)
+- priorytet: średni
+### K-204 · Enigma 5060 Ti 16 GB: Inkling IQ3_S bez cenzury przy 256k (K-201: 131k = 14,4 GB) na hoście Ryzen
+- data: 2026-11-27; ok. 0,05 $
+- priorytet: średni
+
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
