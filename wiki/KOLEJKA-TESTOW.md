@@ -21,12 +21,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-193 · Inkling GSQ-RCO IQ3_S (ISTA-DASLab, 3,5 bpw, 11,43 GB) vs nasze AD-Q4_K i Maya: prędkość, KLD, odmowy (link JARO 27.11)
-- źródło: https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF (README: IQ3_S 99,2% średniej bazy NVFP4/MXFP8: AIME25 98,33, GPQA-D 86,20, LCB v6 79,05; IQ2_S 8,98 GB, Q2_K_XL 9,79, IQ3_XXS 10,61; drafter DSpark Q8_0 0,4 GB w repo)
-- pobranie: na polecenie JARO 2026-11-27 02:46 do `~/models/inkling/gsq-rco/` (w tle)
-- test: llama.cpp (upstream-inkling) IQ3_S vs AD-Q4_K, plain i z DSpark, wall 4 prompty × T=0/0,7; Maya produkcja jako odniesienie; KLD IQ3_S vs UD-Q4_K_XL; odmowy (IQ3_S to model z cenzurą). Przygotowuje agent XGsq.
-- znaczenie: mniejszy plik = mniej bajtów na token (dekod), ale to inny kwant → produkcja tylko decyzją JARO; dla Enigmy kandydat na karty 12–16 GB (IQ2_S 8,98 GB).
-- priorytet: wysoki (polecenie JARO)
+### K-195 · Enigma: Inkling GSQ-RCO IQ3_S / IQ2_S na kartach 12–16 GB (3060 12 GB, 5060 Ti 16 GB)
+- data: 2026-11-27 (z K-193: IQ3_S + DSpark = 12,9 GB VRAM na XTX, KLD 0,040 vs UD-Q4_K_XL)
+- test: Vast 3060 12 GB i 5060 Ti, upstream b12803+, IQ3_S i IQ2_S, plain i z DSpark, wall 4 prompty; porównać z Qwen3.8 w topce Enigmy dla tych kart; ok. 0,10 $
+- priorytet: średni (produkt)
 
 ### K-190 · Enigma: pula slotów ekspertów MoE + 1 ekspert z wyprzedzeniem (wzór Strata/HF) dla MoE na kartach 12–16 GB
 - data: 2026-11-26 (HF moe-expert-streaming: Strata 82–88 vs llama.cpp `--fit` 63–64 t/s na A10G; nasze K-026: spekulacja z ekspertami na CPU −41…−62%)
@@ -220,6 +218,25 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-193 · Inkling GSQ-RCO IQ3_S (ISTA-DASLab, 3,5 bpw, 11,43 GB) vs nasze AD-Q4_K i Maya: prędkość, KLD, odmowy (link JARO 27.11)
+- źródło: https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF (README: IQ3_S 99,2% średniej bazy NVFP4/MXFP8: AIME25 98,33, GPQA-D 86,20, LCB v6 79,05; IQ2_S 8,98 GB, Q2_K_XL 9,79, IQ3_XXS 10,61; drafter DSpark Q8_0 0,4 GB w repo)
+- pobranie: na polecenie JARO 2026-11-27 02:46 do `~/models/inkling/gsq-rco/` (w tle)
+- test: llama.cpp (upstream-inkling) IQ3_S vs AD-Q4_K, plain i z DSpark, wall 4 prompty × T=0/0,7; Maya produkcja jako odniesienie; KLD IQ3_S vs UD-Q4_K_XL; odmowy (IQ3_S to model z cenzurą). Przygotowuje agent XGsq.
+- znaczenie: mniejszy plik = mniej bajtów na token (dekod), ale to inny kwant → produkcja tylko decyzją JARO; dla Enigmy kandydat na karty 12–16 GB (IQ2_S 8,98 GB).
+- priorytet: wysoki (polecenie JARO)
+- **wynik 2026-11-27 02:25–02:33 (XTX, upstream llama.cpp b12803 `~/wt/kgsq`, wszystko na GPU, KV q4_0, wall 4 prompty × T=0/0,7):**
+  | wariant | VRAM | T=0 | T=0,7 | akceptacja DSpark |
+  |---|---|---|---|---|
+  | IQ3_S plain | 11,6 GB | 43,5 | 41,3 | – |
+  | AD-Q4_K plain | 17,1 GB | 38,1 | 33,4 | – |
+  | IQ3_S + DSpark (ISTA, n 3) | 12,9 GB | 77,5 | 71,3 | 0,26–0,56 |
+  | AD-Q4_K + DSpark | 18,5 GB | 62,5 | 65,1 | 0,27–0,53 |
+  | **Maya produkcja (AD-Q4_K)** | – | **146,0** | **148,2** | – |
+  - Jakość vs UD-Q4_K_XL (eksperci NVFP4 jak oryginał, 16×512 wiki): **IQ3_S KLD 0,0396, top-1 91,8%, PPL +2,7%**; AD-Q4_K KLD 0,0111, top-1 95,5%, PPL +0,9% → IQ3_S odbiega 3,6× bardziej. Odmowy IQ3_S 5/5 (model z cenzurą).
+  - **Werdykt:** na XTX zostaje Maya (2× szybsza niż llama.cpp z którymkolwiek plikiem); IQ3_S w tej samej ścieżce jest o 14–24% szybszy od AD-Q4_K (mniej bajtów), ale gorszy jakościowo i nie ładuje się w Mai (inny układ `inkling2_loop`, kwanty IQ1–IQ3). **Dla Enigmy:** IQ3_S mieści się z DSpark w 13 GB → kandydat na karty 12–16 GB (3060 12 GB, 5060 Ti) — do testu NVIDIA (K-195).
+  - Po drodze: nowy układ GGUF Inklinga (`inkling2_loop`, upstream od b12611) niezgodny z naszym forkiem i Mayą; `~/qwen-opt/kgsq/regguf.py` przebudowuje nasze AD/UD do nowego układu (`~/models/inkling/mainline/`, sha = HF).
+- przeniesione 2026-11-27: zmierzone; produkcja bez zmian
 
 ### K-189 · Koszt draftu Inklinga (propose DSpark/Maya) względem długości kontekstu: 2k / 32k / 96k
 - data: 2026-11-26 (lekcja z DFly2: drafter czytający cache celu ma stały koszt; nasz draft ma własną uwagę po kontekście, `IK2_DRAFT_CTX`)

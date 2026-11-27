@@ -836,3 +836,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wyniki | K-056b pl T=0 −6,8% powtórzone (inny tekst greedy); K-189 propose Inklinga 1,59 → 4,83 ms przy 98k (×3,05) → K-194
 
 ## [2026-11-27] wyniki | K-194 IK2_DRAFT_CTX: propose przy 98k 4,83 → 1,58 ms, ale dekod przy 90k bez zysku (akceptacja 0,24 → 0,16–0,20) → KILL
+
+## [2026-11-27] wyniki | K-193 Inkling GSQ-RCO IQ3_S: 11,6 GB, w llama.cpp +14–24% vs AD-Q4_K, KLD 0,040 (AD 0,011), Maya 146/148 zostaje; K-195 dla Enigmy 12–16 GB
