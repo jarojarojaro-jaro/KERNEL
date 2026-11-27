@@ -26,10 +26,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - test: (1) CPU: scalić kierunek ablacji AtomicChat do IQ3_S (requantyzacja „proj” jak WE2) albo LoRA w locie w llama.cpp; (2) Vast 5060 Ti: odmowy 0/5, wall, KLD, ctx 64k/128k; ok. 0,10 $
 - priorytet: średni (produkt)
 
-### K-191 · Ablacja podwarstw Qwena bez treningu (wzór Model Carving): KLD i dekod po pominięciu najmniej ważnych bloków
-- data: 2026-11-26; eksperyment zmienia zachowanie modelu (decyzja JARO przed produkcją)
-- test: na CPU ranking bloków po normie wkładu do residuum; XTX ≤10 min: pominięcie 1/2/4 bloków MLP, KLD K-007 + wall
-- priorytet: niski
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
 - status: **czeka na decyzję** (źródła danych i pobrania modeli do potwierdzenia, [[2026-11-09-decyzje-runda-69]])
@@ -1310,6 +1306,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-191 · Ablacja podwarstw Qwena bez treningu (wzór Model Carving): KLD i dekod po pominięciu najmniej ważnych bloków
+- data: 2026-11-26; eksperyment zmienia zachowanie modelu (decyzja JARO przed produkcją)
+- test: na CPU ranking bloków po normie wkładu do residuum; XTX ≤10 min: pominięcie 1/2/4 bloków MLP, KLD K-007 + wall
+- priorytet: niski
+- **wynik 2026-11-27 16:53–17:00 (XTX, `~/wt/k191` 9e30f41b3, `LLAMA_K191_SKIP`, KLD na 16×512 wiki vs produkcja):** ranking po normie wkładu (warstwy MLP 1, 12, 13, 15) bije losowe pominięcia tej samej liczby (KLD 0,041 / 0,051 / 0,066 dla 1/2/4 bloków vs losowe 0,096 / 0,123 / 0,134–0,233); ranking BI (warstwa 0) gorszy od normy. Prędkość idzie za bajtami: tg128 +0,9 / +1,45 / +3,5% (bajty 1,1 / 2,1 / 4,1%). Ale **jakość daleko za progiem** (KLD ≥ 0,041 przy progu 0,01; top-1 88–91% vs ≥ 95%), a w wall przy 4 blokach T=0,7 **−8,3%** (akceptacja MTP 0,497 → 0,480; inny tekst). Pominięcie jednej warstwy uwagi (15): KLD 0,018, top-1 93%, 0,37% bajtów. **Wniosek: bez treningu pomijanie bloków Qwena nie opłaca się** (zysk 1–3,5% przy dużej zmianie odpowiedzi); Model Carving działa, bo bramki uczy się podczas treningu.
+- przeniesione 2026-11-27: eksperyment negatywny
 
 ### K-192 · Kierunek „po polsku” w wagach Inklinga (edycja kierunku, kontrola losową edycją)
 - data: 2026-11-26 (backlog edycji wag)

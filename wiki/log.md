@@ -852,3 +852,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wyniki | K-196 paged KV w Mai: 0…+0,4% przy 32–128k, md5 identyczne → odrzucone; prawdziwa dźwignia natywny WMMA → K-200; K-199 fork vs upstream TG +14%; K-198 NO-GO
 
 ## [2026-11-27] wdrożenie | K-200 Maya natywny WMMA uwagi: dekod 90k +30,7%, 32k +14,2%, 2k +6,7%, okna bitowo = dekod po tokenie, KL w podłodze, igły 5/5; jaroserverai: usunięte mainline + unc-nearest (38 GB, wolne 146 GB)
+
+## [2026-11-27] eksperymenty | K-191 pomijanie bloków Qwena: +1…+3,5% prędkości, KLD 0,04–0,07 (za dużo) → negatywne; K-192 kierunek PL nie steruje językiem → negatywne
