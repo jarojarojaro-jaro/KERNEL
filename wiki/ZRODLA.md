@@ -560,6 +560,7 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 | https://x.com/bebuu_ai/status/2125832621964103788 (panel 2026-11-26) | 2026-11-26 | [[linki-2026-11-26-wieczor]] | gfx1170/1171 w commicie vLLM: obserwacja kart AMD | – | nowe wersje AngelSpec, PR #33073 |
 | https://x.com/yuvrajinfer/status/2125789600027484612 (panel 2026-11-26) | 2026-11-26 | [[linki-2026-11-26-wieczor]] | NVFP4 KV na H200: stratne dla nas, lekcja o kernelach 4-bit | – | nowe wersje AngelSpec, PR #33073 |
 | https://x.com/Aleph__Alpha/status/2125967904092938704?a=PBwNygEw6npygOg0V24&s=20 (panel 2026-11-26) | 2026-11-26 | [[yasa-rzadka-uwaga-kolibri]] | ten sam blog co alessio__serra; u nas uwaga to 14–25% kroku | – | kod YASA, wagi Kolibri 1.1 |
+| https://x.com/crazymlguy/status/2126097124312121637?a=uf7q5iDd8vxYprM1rEQ&s=46 (panel 2026-11-27) | 2026-11-27 | K-193 | ISTA-DASLab GSQ-RCO Inkling IQ3_S 11,43 GB, 99,2% średniej (AIME25 98,3 / GPQA-D 86,2 / LCB 79,1); pobrany na XTX, test w toku | – | KLD vs nasze AD-Q4_K, IQ2_S/Q2_K_XL dla kart 12 GB |
 
 ## Zwiad 2026-11-23 (raport product/research/watch/2026-11-23.md)
 

@@ -21,6 +21,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
+### K-193 · Inkling GSQ-RCO IQ3_S (ISTA-DASLab, 3,5 bpw, 11,43 GB) vs nasze AD-Q4_K i Maya: prędkość, KLD, odmowy (link JARO 27.11)
+- źródło: https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF (README: IQ3_S 99,2% średniej bazy NVFP4/MXFP8: AIME25 98,33, GPQA-D 86,20, LCB v6 79,05; IQ2_S 8,98 GB, Q2_K_XL 9,79, IQ3_XXS 10,61; drafter DSpark Q8_0 0,4 GB w repo)
+- pobranie: na polecenie JARO 2026-11-27 02:46 do `~/models/inkling/gsq-rco/` (w tle)
+- test: llama.cpp (upstream-inkling) IQ3_S vs AD-Q4_K, plain i z DSpark, wall 4 prompty × T=0/0,7; Maya produkcja jako odniesienie; KLD IQ3_S vs UD-Q4_K_XL; odmowy (IQ3_S to model z cenzurą). Przygotowuje agent XGsq.
+- znaczenie: mniejszy plik = mniej bajtów na token (dekod), ale to inny kwant → produkcja tylko decyzją JARO; dla Enigmy kandydat na karty 12–16 GB (IQ2_S 8,98 GB).
+- priorytet: wysoki (polecenie JARO)
+
 ### K-189 · Koszt draftu Inklinga (propose DSpark/Maya) względem długości kontekstu: 2k / 32k / 96k
 - data: 2026-11-26 (lekcja z DFly2: drafter czytający cache celu ma stały koszt; nasz draft ma własną uwagę po kontekście, `IK2_DRAFT_CTX`)
 - test: `IK2_K158_BENCH` przy P = 2048 / 32768 / 98304, propose(7) ms i udział w kroku; ≤10 min XTX. Jeśli propose przy 96k > 2× wartości przy 2k → projekt draftu z ograniczonym oknem albo czytaniem KV celu.
