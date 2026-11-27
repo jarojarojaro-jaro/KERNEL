@@ -860,3 +860,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wdrożenie | Maya kontekst 16k → 393 216 (384k: igły 5/5, 23,3 GiB, prompt 327 s, dekod 63–80 t/s); 448k OOM draftera; ISTA 1M w llama.cpp tylko bez draftera; K-203 Maya+IQ3_S w kolejce
 
 ## [2026-11-27] wdrożenie | Maya kontekst → 425 984 (420k: igły 5/5, 23,77 GiB, prompt 380 s)
+
+## [2026-11-27] topka | Inkling 1M na XTX: Maya + IQ3_S (K-203), KL 0,0019 vs llama.cpp, okna bitowe, wall 67,8, 128k 52–56, 360k 44,5; Maya AD 425 984 w produkcji
