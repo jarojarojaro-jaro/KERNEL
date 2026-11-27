@@ -584,6 +584,10 @@
       {
         "slug": "alesha-pro/maya-inkling-mini",
         "tier": "A"
+      },
+      {
+        "repo": "Papa-midnight-dev/qwen3-27b-5090-moonshot",
+        "tier": 2
       }
     ],
     "keywords": [
