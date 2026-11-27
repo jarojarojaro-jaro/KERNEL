@@ -840,3 +840,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wyniki | K-193 Inkling GSQ-RCO IQ3_S: 11,6 GB, w llama.cpp +14–24% vs AD-Q4_K, KLD 0,040 (AD 0,011), Maya 146/148 zostaje; K-195 dla Enigmy 12–16 GB
 
 ## [2026-11-27] wyniki | nvq4 (0,53 $): K-131 cp.async odrzucone (−3…−7%), K-112 3090 845 GB/s, K-014 narzut hosta 3–7% czatu, K-015 to inny tekst nie regresja, K-071 DFlash2 +5,2/+12,9%; budżet 1,05 z 1,50 $
+
+## [2026-11-27] vast | reaper: 2 instancje 5060 Ti nvq4 usunięte (FINISHED); wyniki już w testy/2026-11-27-nvq4
