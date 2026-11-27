@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (131)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (135)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (136)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (92)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
@@ -75,6 +75,7 @@ Audyt liczb: [[AUDYT]].
 
 - 2026-11-27 [[2026-11-27-nvq4|2026-11-27 Vast nvq4: dokończenie fali NVIDIA (K-131, K-112, K-014, K-015, K-071)]]
 - 2026-11-27 [[zwiad-2026-11-27|Zwiad 2026-11-27: Tintero v0.1.0, 663,9 t/s Qwena na 5090 (DSpine), oMLX +42% na Macu, AMD w dashboardzie llama.cpp]]
+- 2026-11-27 [[lekcja-sprzataj-po-tescie|Lekcja: pliki zrobione tylko na test kasuję zaraz po teście, a przegrane warianty po werdykcie]]
 - 2026-11-26 [[2026-11-26-we2-nib-scalona-ablacja|2026-11-26 WE2: odmowy wycięte na stałe w wagach Niba zamiast LoRA w locie]]
 - 2026-11-26 [[2026-11-26-we1-astra-stop-qwen|2026-11-26 WE1: Astra-Stop (rank-1 `</think>`) na Qwen3.8-27B Uncensored, XTX, LoRA w locie, skale 0 / 0,5 / 1 / 1,5]]
 - 2026-11-26 [[2026-11-26-nvq3|2026-11-26 Vast nvq3 (3090 ×2, 5060 Ti): K-122, K-071, K-129, K-070, K-124, K-113 — fala przerwana poleceniem JARO 16:25]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[edycja-wag-backlog-2026-11-26|Lista eksperymentów z edycją wag (2026-11-26)]]
 - 2026-11-26 [[cpu-arc-cache-rozumowania|CPU-ARC: rozwiązanie raz, potem tylko uruchamianie kodu na CPU]]
 - 2026-11-26 [[adapter-pod-omp-2026-11-26|Research: dotrenować nasze modele pod nasz harness (omp)?]]
-- 2026-11-26 [[szybsze-testowanie-2026-11-26|Szybsze testowanie: gdzie ucieka czas karty i co naprawione (2026-11-26)]]
 
-Razem 861 notatek. Wygenerowano 2026-11-27 przez `tools/wiki.py index`.
+Razem 862 notatek. Wygenerowano 2026-11-27 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

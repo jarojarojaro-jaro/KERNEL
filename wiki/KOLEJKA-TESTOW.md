@@ -98,6 +98,8 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## W toku
 
+- **Przy najbliższym włączeniu jaroserverai (polecenie JARO 2026-11-27 13:54), przed testami:** `rm -rf ~/models/inkling/mainline ~/models/nib/we2/unc-nearest.patch.gguf` (38 GB); potem K-196, K-199, K-198 (symulacja na logach K-158s). NVIDIA K-195, K-190, K-197: fala nvq5 w toku (agent NvWave5, budżet 0,45 $).
+
 (pusto)
 
 ## Zrobione
