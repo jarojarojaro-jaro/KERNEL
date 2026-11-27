@@ -30,6 +30,9 @@ stan: zwykle wyłączony; włącza JARO
 - Poza tymi czterema: Qwen3.6-35B-A3B Q8_0 35 GB i IQ4_XS 17 GB (`q36`, tylko test K-025), Qwen3.8-27B UD-Q4_K_XL 17 GB (wersja z cenzurą, porównania i przepisy Enigmy), Inkling-2-Mini UD-Q4_K_XL 17 GB (wersja z cenzurą), drobne: qwen-image 175 MB, kb 130 MB, orcacyber 60 MB. Razem ok. 86 GB do decyzji JARO.
 - Zabezpieczenie: `run-jobs.sh` nie startuje zadania przy wolnym miejscu < 70 GB (DISK GUARD, commit d73318b), `kol stan` pokazuje wolne miejsce.
 
+## Wyłączanie
+- Wyłącza się bez hasła wyłącznie dokładnym poleceniem `sudo -n /usr/bin/systemctl poweroff` (sudoers `jaro-poweroff`, NOPASSWD tylko dla tej ścieżki). `systemctl poweroff` bez sudo, `sudo poweroff` i `systemctl suspend` wymagają hasła (sprawdzone 2026-11-27). Przed wyłączeniem: pusta kolejka, `topka-stop.sh --now`, `sync`.
+
 ## Powiązane
 - [[stos/topki]] (topka każdego modelu, model czatu :8080 w `topki/xtx/ACTIVE`)
 - [[rx-7900-xtx]]

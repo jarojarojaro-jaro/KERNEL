@@ -842,3 +842,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wyniki | nvq4 (0,53 $): K-131 cp.async odrzucone (−3…−7%), K-112 3090 845 GB/s, K-014 narzut hosta 3–7% czatu, K-015 to inny tekst nie regresja, K-071 DFlash2 +5,2/+12,9%; budżet 1,05 z 1,50 $
 
 ## [2026-11-27] vast | reaper: 2 instancje 5060 Ti nvq4 usunięte (FINISHED); wyniki już w testy/2026-11-27-nvq4
+
+## [2026-11-27] serwis | jaroserverai wyłączony na polecenie JARO (sudo -n /usr/bin/systemctl poweroff, NOPASSWD)
