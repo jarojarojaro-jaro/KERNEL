@@ -834,3 +834,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] wyniki | K-188 rzadka uwaga bez treningu: kernel −30…−74% przy 96–192k, krok −7…−10%, KLD FAIL każdy budżet → KILL
 
 ## [2026-11-27] wyniki | K-056b pl T=0 −6,8% powtórzone (inny tekst greedy); K-189 propose Inklinga 1,59 → 4,83 ms przy 98k (×3,05) → K-194
+
+## [2026-11-27] wyniki | K-194 IK2_DRAFT_CTX: propose przy 98k 4,83 → 1,58 ms, ale dekod przy 90k bez zysku (akceptacja 0,24 → 0,16–0,20) → KILL

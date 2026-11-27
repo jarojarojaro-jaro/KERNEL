@@ -21,12 +21,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-194 · Maya: ograniczony kontekst draftera (`IK2_DRAFT_CTX`) przy długim kontekście
-- data: 2026-11-27 (z K-189: propose 1,59 → 4,83 ms przy 98k)
-- test: sweep 2k/4k/8k/16k/brak przy P=32k i 98k: propose ms, akceptacja i t/s na prompcie ~90k, md5 T=0 = bez zmiany, wall 2k bez straty; przygotowuje agent X194
-- zysk: ok. +6% dekodu przy 98k, 0 przy krótkim; bezstratne (zmienia tylko drafty)
-- priorytet: wysoki
-
 ### K-193 · Inkling GSQ-RCO IQ3_S (ISTA-DASLab, 3,5 bpw, 11,43 GB) vs nasze AD-Q4_K i Maya: prędkość, KLD, odmowy (link JARO 27.11)
 - źródło: https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF (README: IQ3_S 99,2% średniej bazy NVFP4/MXFP8: AIME25 98,33, GPQA-D 86,20, LCB v6 79,05; IQ2_S 8,98 GB, Q2_K_XL 9,79, IQ3_XXS 10,61; drafter DSpark Q8_0 0,4 GB w repo)
 - pobranie: na polecenie JARO 2026-11-27 02:46 do `~/models/inkling/gsq-rco/` (w tle)
@@ -1310,6 +1304,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-194 · Maya: ograniczony kontekst draftera (`IK2_DRAFT_CTX`) przy długim kontekście
+- data: 2026-11-27 (z K-189: propose 1,59 → 4,83 ms przy 98k)
+- test: sweep 2k/4k/8k/16k/brak przy P=32k i 98k: propose ms, akceptacja i t/s na prompcie ~90k, md5 T=0 = bez zmiany, wall 2k bez straty; przygotowuje agent X194
+- zysk: ok. +6% dekodu przy 98k, 0 przy krótkim; bezstratne (zmienia tylko drafty)
+- priorytet: wysoki
+- **wynik 2026-11-27 02:07–02:22 (XTX, Maya produkcja):** propose(7) przy 98k 4,83 → **1,58 ms** (2048) / 1,66 (4096), czyli koszt draftu znów jak przy 2k. **Ale dekod przy 90k bez zysku:** T=0 brak 78,3 t/s, 16k 76,3, 8k 76,9, 4k 74,9, 2k 77,1; T=0,7 77,3–80,3 (szum); akceptacja na krok spada z 0,243 do 0,16–0,20, bo drafter bez dalekiego kontekstu zgaduje gorzej. md5 T=0 identyczne wszędzie (bezstratne). Wall 2k: 150,8/148,9 → 151,6/149,4 (szum). **KILL**: przy 90k zgadywanie Inklinga i tak trafia rzadko (0,24 tokenu na krok vs 0,58 przy 2k), więc tańszy draft nic nie daje. Lekcja: przy długim kontekście ogranicza akceptacja, nie koszt draftu; kierunek na później: drafter trenowany na długim kontekście.
+- przeniesione 2026-11-27: KILL (brak zysku t/s)
 
 ### K-188 · Rzadka uwaga bez treningu przy długim kontekście (wybór stron KV jak Quest/YASA) w 16 warstwach pełnej uwagi Qwena
 - data: 2026-11-26 (YASA Kolibri 1.1, link JARO; [[yasa-rzadka-uwaga-kolibri]])
