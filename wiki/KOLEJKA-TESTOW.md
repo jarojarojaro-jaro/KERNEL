@@ -25,6 +25,7 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - data: 2026-11-27 (pytanie JARO o duży kontekst); Inkling ma tylko 8 odwiedzin z pełną uwagą (warstwy 5, 11, 17, 23; 11 i 17 w pętli ×3), 8 głów KV × 128, reszta okno 1024 → KV q4_0 ok. 9 KB/token; produkcja ma `--max-context` 16384
 - test: serwer przy 131k / 262k / maks.: VRAM, prefill, dekod T=0 przy 128k/256k/maks., igły; przygotowuje agent X202
 - priorytet: wysoki (te same wagi, tylko ustawienie)
+- **przygotowane 2026-11-27 (CPU, z kodu sprawdzania pamięci Mai):** z drafterem mieści się ok. **488k** (14 080 B/token = 9 216 KV + 4 864 uwaga draftera), bez draftera ok. 848k; powyżej 488k silnik po cichu wyłącza drafter. Prefill ≈ 2,93e-4·n + 1,45e-9·n² s: 128k ok. 61 s, 256k ok. 170 s, 487k ok. 8 min. Joby: `~/k134/k202a.jobs` (131k, 262k; 9–13 min), `~/k134/k202b.jobs` (maks.; 10–12 min); wynik `cat ~/k134/k202/summary-a.txt ~/k134/k202/summary-b.txt`.
 ### K-203 · Inkling GSQ-RCO IQ3_S (11,4 GB) w Mai: 1M kontekstu na XTX
 - data: 2026-11-27; 1M × 9 KB = ok. 9,4 GB KV + 11,4 GB wag mieści się w 24 GB, z AD-Q4_K (17 GB) nie
 - wymaga: czytnik układu `inkling2_loop` i dekodery IQ1–IQ3/IQ4_NL ekspertów w Mai (project-maya #1219 to zrobił), 1–2 dni; jakość IQ3_S KLD 0,040 vs nasz AD 0,011 → zmiana pliku wag tylko decyzją JARO; bez cenzury przez LoRA AtomicChat (K-201)
