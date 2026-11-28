@@ -69,6 +69,11 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 Optymalizacje na tej karcie ([[bilans-optymalizacji]]): [[fa-kv-kwantyzowane-cuda|kvq-mma (FA na KV q4_0/q8_0, CUDA)]] (przyjete, 5060 Ti tg@64k Qwen +24.6%, LFM +30.0%); [[pdl-mmvq-trigger|PDL trigger w MMVQ (CUDA sm_90+)]] (w-toku, niezmierzone (szacunek)).
 <!-- TABELE:END -->
 
+## Topki
+- Topka: Inkling 2 Mini GSQ-RCO IQ3_S bez cenzury z `--ablate-lora` + DSpark n2, ub 128, 262 144, **88,45 / 90,78 t/s** wall T=0 / T=0,7 (Ryzen 7 9700X, nasz build b12811 + k207-ablate f7040f25e, 2026-11-28, gotowa). Na tym samym hoście to +15,5% / +27,5% wobec LoRA.
+- Produkcja (strona, aplikacja na Linuksie): to samo z `--lora` na oficjalnym b12811, **66,45 / 61,97 t/s** (Ryzen 5 7600), prefill 32k 632 t/s.
+- Pełna tabela z komendami: [[TOPKI#RTX 5060 Ti|Topki RTX 5060 Ti]].
+
 ## Powiązane
 - [[karty/_hub|Karty]]
 - [[testy/2026-10-16-kampania-nvidia]]

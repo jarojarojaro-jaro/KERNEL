@@ -24,6 +24,9 @@ Ceny MI300X na rynku: Dev Cloud/DO $1.99/h, Vultr $1.75 (8×), RunPod $2.39, Hot
 
 Rekomendacja raportu 05: MI300X tylko z darmowego kredytu, do sprawdzenia wspólnego kodu HIP na CDNA3; użycie do tuningu produktu komercyjnego to szara strefa — zapytać AMD (otwarte pytanie: czy AMD da „partner access” do Radeonów, np. przez program ISV). Profilowanie w VM DO: „prawdopodobnie tak” [INFERENCE raportu].
 
+## Topki
+- Dev Cloud daje tylko MI300X: [[TOPKI#MI300X|Topki MI300X]] (brak pomiaru).
+
 ## Powiązane
 - [[mi300x]]
 - [[radeon-ai-pro-r9700]]

@@ -25,6 +25,9 @@ stan: w planie zakup
 
 Nasze łatki na tych platformach: z 70 przenoszą się tylko host i sampler (F1) oraz spekulacja na poziomie grafu (F2); reszta to nowa kampania na innym backendzie (raport 07).
 
+## Topki
+Brak pomiaru na obu platformach (2026-11-28); pomiar Maca jest w kolejce. [[TOPKI#Arc B580|Topki Arc B580]], [[TOPKI#Apple Mac (M4)|Topki Apple Mac (M4)]].
+
 ## Powiązane
 - [[karty/_hub|Karty]]
 - raport-05-chmura

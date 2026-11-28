@@ -21,6 +21,9 @@ stan: do wynajęcia, plan kampanii RDNA4
 - Dostępność: Hostkey (NL) bare metal €0.471/h, GigaGPU ~£199/mies. [INFERENCE raportu], AMD Radeon Test Drive (≤14 dni, bez komercji).
 - Budżet MVP (raport 05): 60 h Hostkey ≈ €28.
 
+## Topki
+- [[TOPKI#Radeon AI PRO R9700|Topki Radeon AI PRO R9700]]: brak topki, nasz pomiar: brak; obce: Qwen3.8-27B z DFlash2 111,6 t/s (hipfire), Inkling z DSpark 143,5 t/s (Lucebox, T=1).
+
 ## Powiązane
 - [[karty/_hub|Karty]]
 - [[rx-9070-xt]]

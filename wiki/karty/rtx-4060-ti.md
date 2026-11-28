@@ -46,6 +46,11 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 | Qwen3.8-27B [[qwen3-8-27b]] | mvs T' | **188.6 t/s** | UD-IQ4_XS | 2026-10-20 | [[raport-31-4060ti]] |
 <!-- TABELE:END -->
 
+## Topki
+- Topka i produkcja (Linux): Inkling 2 Mini GSQ-RCO IQ3_S + LoRA bez cenzury + DSpark n2, ub 128, 283 648, **48,58 / 48,99 t/s** wall T=0 / T=0,7 (b12811, 2026-11-27). Prefill 32k 497 t/s.
+- `--ablate-lora` (na 5060 Ti +15,5% wobec LoRA) jeszcze niezmierzone na tej karcie, w kolejce.
+- Pełna tabela z komendą startu: [[TOPKI#RTX 4060 Ti|Topki RTX 4060 Ti]].
+
 ## Powiązane
 - [[karty/_hub|karty]]
 - [[raport-29-4060ti]]

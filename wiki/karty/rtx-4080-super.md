@@ -31,6 +31,10 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 | Qwen3.8-27B [[qwen3-8-27b]] | prefill ~11k | **1862 t/s** | kvqlean | 2026-11-19 | [[2026-11-19-k118-nvidia-pelna-moc]] |
 <!-- TABELE:END -->
 
+## Topki
+- Brak pełnego stosu: fork kvqlean MTP n4 z Qwen3.8-27B GSQ IQ3_XXS-mtp daje 107,3 / 91,2 t/s T=0 / T=1, ale przy ctx 8 192 (K-118, 2026-11-19). Pełny kontekst i Inkling czekają w kolejce.
+- Tabela: [[TOPKI#RTX 4080 SUPER|Topki RTX 4080 SUPER]].
+
 ## Powiązane
 - [[2026-11-19-k118-nvidia-pelna-moc]]
 - [[rtx-3090]]

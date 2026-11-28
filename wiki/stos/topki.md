@@ -9,6 +9,8 @@ status: aktualne
 
 **Od 2026-11-26 każdy model ma własną topkę (build + przełączniki + kontekst) na każdej karcie, a czat :8080 na jaroserverai zawsze wstaje z modelem zapisanym w `~/qwen-opt/topki/xtx/ACTIVE`, niezależnie od tego, kto go podnosi (keeper, kolejka, restart, autostart). Wcześniej `topka-keeper.sh` startował `run-topka.sh qwen` (UD-Q4_K_XL z cenzurą), a `chat8080.sh restore` `uncensored` (JARO: „topka ma byc dla kazdego modelu a nie jedna topka”).**
 
+**Pełny rejestr topek wszystkich kart i modeli (komendy, liczby, status): [[TOPKI]].**
+
 ## Jak działa
 - `~/qwen-opt/topki/<karta>/<model>.sh`: jedno polecenie startu topki modelu w pierwszym planie, port z `PORT`, `TOPKA_CTX` do kontroli n_ctx.
 - `tools/topka-start.sh [model]`: domyślnie model z `ACTIVE`; zapisuje `/tmp/topka-8080.pid`. Jedyne wejście dla `topka-keeper.sh`, `chat8080.sh restore`, `topka-restart.sh` i autostartu z crontaba (`@reboot`).

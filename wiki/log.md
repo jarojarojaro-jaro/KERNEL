@@ -886,3 +886,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-28] test | K-209 odrzucone (NT na wagach MMVQ topki: weryfikacja −25,6%, dekod −6,9%); K-210 dokładne okna sufiksowe: bitowo OK, ale kopia/edycja −29…−41% → nie wdrożone
 
 ## [2026-11-28] lekcja | mierzymy i optymalizujemy z drafterem; bez draftera tylko wzorzec poprawności; K-211 przepisane na cel z drafterem (157 → 210)
+
+## [2026-11-28] update | TOPKI.md: 85 wierszy (12 produkcja, 18 gotowe, 55 bez pełnego stosu); platformy/: 11 playbooków + rodzaje modeli + 2 procedury; sekcje Topki na 15 stronach kart; K-212..K-234 pomiary pełnego stosu

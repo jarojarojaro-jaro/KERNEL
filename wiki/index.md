@@ -61,6 +61,7 @@ Audyt liczb: [[AUDYT]].
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (10)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
+- [[platformy/_hub|platformy]] — Playbook na dzień, w którym dostajemy sprzęt: build, sufit pasma, kolejność optymalizacji, testy, pułapki (14)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (134)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
@@ -78,16 +79,16 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-28 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-28 [[zwiad-2026-11-28|Zwiad 2026-11-28: G2GFAST 687,5 t/s (+3,6%), Maya na 3090 210 t/s to inne obciążenie, nib na RDNA4 przy 50% przepustowości]]
 - 2026-11-28 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
-- 2026-11-28 [[lekcja-mierz-z-drafterem|Lekcja: celem i wynikiem jest zawsze konfiguracja z drafterem, bez draftera tylko jako wzorzec poprawności]]
-- 2026-11-28 [[lekcja-fma-kontrakcja-bitowa-zgodnosc|Lekcja: bitowa zgodność kerneli wymaga wyłączenia kontrakcji FMA]]
-- 2026-11-28 [[2026-11-28-enigma-16gb-inkling|2026-11-28: Enigma 16 GB przechodzi na Inklinga IQ3_S bez cenzury (5060 Ti, 4060 Ti)]]
-- 2026-11-27 [[2026-11-27-nvq5|2026-11-27 Vast nvq5: Inkling GSQ-RCO na 12–16 GB (K-195), offload ekspertów (K-190), DSpine dla Qwena (K-197)]]
-- 2026-11-27 [[2026-11-27-nvq4|2026-11-27 Vast nvq4: dokończenie fali NVIDIA (K-131, K-112, K-014, K-015, K-071)]]
-- 2026-11-27 [[zwiad-2026-11-27|Zwiad 2026-11-27: Tintero v0.1.0, 663,9 t/s Qwena na 5090 (DSpine), oMLX +42% na Macu, AMD w dashboardzie llama.cpp]]
-- 2026-11-27 [[lekcja-sprzataj-po-tescie|Lekcja: pliki zrobione tylko na test kasuję zaraz po teście, a przegrane warianty po werdykcie]]
-- 2026-11-27 [[lekcja-maya-16k-kontekstu|Lekcja: Maya stała w produkcji i testach na 16k kontekstu, choć mieści ok. 488k]]
-- 2026-11-27 [[2026-11-27-zawsze-pelny-kontekst|2026-11-27: zawsze pełny kontekst — tyle, ile się mieści (słowa JARO)]]
-- 2026-11-26 [[2026-11-26-we2-nib-scalona-ablacja|2026-11-26 WE2: odmowy wycięte na stałe w wagach Niba zamiast LoRA w locie]]
+- 2026-11-28 [[rodzaje-modeli|Rodzaje modeli: kolejność pracy i nasze dowody]]
+- 2026-11-28 [[procedura-znany-model-nowa-karta|Procedura: znany model na nowej karcie]]
+- 2026-11-28 [[procedura-nowy-model-znana-karta|Procedura: nowy model na znanej karcie]]
+- 2026-11-28 [[nvidia-hopper-sm90|NVIDIA Hopper sm_90 (H100, H200): playbook topki]]
+- 2026-11-28 [[nvidia-blackwell-sm120|NVIDIA Blackwell sm_120 (RTX 5060 Ti, 5070, 5080, 5090): playbook topki]]
+- 2026-11-28 [[nvidia-blackwell-sm100|NVIDIA Blackwell sm_100 (B200, GB200): playbook topki]]
+- 2026-11-28 [[nvidia-ampere-sm86|NVIDIA Ampere sm_86 (RTX 3060, 3070, 3080, 3090): playbook topki]]
+- 2026-11-28 [[nvidia-ada-sm89|NVIDIA Ada sm_89 (RTX 4060 Ti, 4070, 4080 SUPER, 4090, L4): playbook topki]]
+- 2026-11-28 [[intel-arc-xe2|Intel Arc B580 i Xe2 (SYCL, Vulkan)]]
+- 2026-11-28 [[apple-silicon-mlx-metal|Apple Silicon (M1–M5): Metal w llama.cpp, MLX, oMLX]]
 
-Razem 871 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
+Razem 885 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

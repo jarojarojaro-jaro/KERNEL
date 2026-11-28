@@ -29,6 +29,9 @@ CZESCI: dict[str, dict] = {
     "stos": dict(typ="stos", tytul="Silnik i stos GPU", grupa="Sprzęt i stos", ikona="layers", kolor="#ff5f6d",
                  opis="Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury",
                  dawne=["rocm", "nvidia"]),
+    "platformy": dict(typ="platforma", tytul="Platformy: playbooki", grupa="Sprzęt i stos", ikona="chip", kolor="#ffb347",
+                      opis="Playbook na dzień, w którym dostajemy sprzęt: build, sufit pasma, kolejność optymalizacji, testy, pułapki",
+                      dawne=[]),
     "optymalizacje": dict(typ="optymalizacja", tytul="Speedupy i optymalizacje", grupa="Wyniki", ikona="zap",
                           kolor="#4ecdc4",
                           opis="Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód",
@@ -62,8 +65,8 @@ CZESCI: dict[str, dict] = {
 }
 
 # Pliki w korzeniu (rejestry, nie części): zostają na miejscu, linkują je huby części.
-KORZEN = {"KOLEJKA-TESTOW": "testy", "REKORDY": "testy", "ZRODLA": "research", "AUDYT": "", "KONWENCJE": "",
-          "log": "", "index": ""}
+KORZEN = {"KOLEJKA-TESTOW": "testy", "REKORDY": "testy", "TOPKI": "stos", "ZRODLA": "research", "AUDYT": "",
+          "KONWENCJE": "", "log": "", "index": ""}
 
 # Wartości pól tabel (frontmatter; jedna linia `klucz: wartość`, lista `wyniki:` jako punkty `  - …`).
 WERDYKTY = ("przyjete", "odrzucone", "w-toku")

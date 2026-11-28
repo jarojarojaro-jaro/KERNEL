@@ -17,6 +17,11 @@ stan: dostępny od 2026-11-22, 200 jednostek/mies.
 - **Próba operatora (2026-11-22):** T4, 29 s łącznie, 3,5 TFLOPS fp32, wyłączona.
 - **Do czego:** pomiary na NVIDIA (CUDA, fork NVIDIA, Inkling 2 Mini na L4 24 GB), gdy jaroserverai jest wyłączony.
 
+## Topki
+- L4: fork MTP n2 z Qwen3.8-27B GSQ IQ3_XXS-mtp, 204 800: dekod 37,50 / 29,98 / 25,03 t/s przy 1,7k / 94k / 199k, karta na limicie 72 W (2026-11-24). Kontekst nie jest maksymalny, więc to brak pełnego stosu. [[TOPKI#L4|Topki L4]]
+- T4: wydany fork pada (sm_75), upstream tg128 9,14 t/s. [[TOPKI#T4|Topki T4]]
+- A100, H100: brak pomiaru. [[TOPKI#A100|Topki A100]], [[TOPKI#H100|Topki H100]]
+
 ## Powiązane
 - [[jaroserverai]]
 - [[vast-ai]]

@@ -38,6 +38,16 @@ Karty spotkane tylko w cudzych pomiarach: **A40** (TensorFold #358: 27B za Xeone
 
 Przepisy na stronę: [[final-recipes-nvidia]]; kampania: [[2026-11-07-kampania-nvidia-vast]].
 
+## Topki
+Topki kart bez osobnej strony (2026-11-07, T1, pełny kontekst, silniki Enigmy „po publikacji archiwów”):
+- 5090: Qwen3.8-27B UD-Q6_K, fork kvqlean, 262 144, **148,57 t/s** ([[TOPKI#RTX 5090|Topki RTX 5090]]);
+- 4090: UD-Q4_K_XL, fork kvqlean, 262 144, **101,27** ([[TOPKI#RTX 4090|Topki RTX 4090]]);
+- 5080: Qwen3.8-27B GSQ, lean MTP n2, 217 088, **81,62**; Inkling niezmierzony ([[TOPKI#RTX 5080|Topki RTX 5080]]);
+- 4070: Bonsai PTQ1_0-mtp-lean, prism n2, 208 896, **94,73** ([[TOPKI#RTX 4070|Topki RTX 4070]]);
+- 2080 Ti: Bonsai PTQ1_0-mtp-lean, prism n2, 155 648, **77,96** ([[TOPKI#RTX 2080 Ti|Topki RTX 2080 Ti]]);
+- 3080, 3070: Qwen3.5-9B bez spekulacji, 85,20 / 66,90, czyli brak pełnego stosu ([[TOPKI#RTX 3080|Topki RTX 3080]], [[TOPKI#RTX 3070|Topki RTX 3070]]);
+- 4060 Ti: [[TOPKI#RTX 4060 Ti|Topki RTX 4060 Ti]]; 4070 Ti (tylko 36k): [[TOPKI#RTX 4070 Ti|Topki RTX 4070 Ti]]; 5070 niezmierzona: [[TOPKI#RTX 5070|Topki RTX 5070]].
+
 ## Powiązane
 - [[karty/_hub|Karty]]
 - [[rtx-3090]]

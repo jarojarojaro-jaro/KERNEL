@@ -20,6 +20,9 @@ stan: parametry do modeli kosztu
 
 Little's law (latencja DRAM ~600 ns `[ZAŁOŻENIE]`): każda karta potrzebuje ~5–8 KB w locie na SM/CU ([[lekcja-littles-law-gemv]]). Źródła: whitepaper Blackwell RTX tab. 1, Wikipedia RTX 50, fengwang (60 MB persist).
 
+## Topki
+Zmierzone topki tych kart, z komendami: [[TOPKI#RTX 3090|3090]], [[TOPKI#RTX 4090|4090]], [[TOPKI#RTX 5060 Ti|5060 Ti]], [[TOPKI#RTX 5090|5090]]. Pasmo z tej strony pozwala ocenić, ile do sufitu zostało ([[skill-io-sufity]]).
+
 ## Powiązane
 - [[sm-86-89-120]]
 - [[inne-karty-nvidia]]

@@ -31,6 +31,9 @@ Najlepszy wynik na metrykę z pól `wynik` notatek testów (tools/tabele.py, 202
 | Gyro-Coder [[gyro-coder]] | KLD do Q8_0 | **0.118 KLD** | C++, -c 2048 | 2026-10-24 | [[gyro-coder]] |
 <!-- TABELE:END -->
 
+## Topki
+- [[TOPKI#Strix Halo|Topki Strix Halo]]: brak topki, nasz pomiar: brak; obce: Qwen3.8-27B bez spekulacji 17,43 t/s przy 4k (lemonade, ROCm nightly).
+
 ## Powiązane
 - [[karty/_hub|Karty]]
 - [[rdna3-gfx1100]]
