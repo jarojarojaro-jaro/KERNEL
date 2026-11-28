@@ -40,6 +40,9 @@ Największy `-c`, który startuje (5060 Ti / 4060 Ti): DSpark ub 512 216 064 / 2
 - Procesor hosta waży więcej niż flagi: EPYC 7502 (K-201) 28,4 t/s, Ryzen 7600 66,5, 9900X 74,5. Bramka wykorzystania GPU w llama-bench (≥ 85%) odsiewa złe hosty.
 - vast-reaper zniszczył działającą instancję po jednym odczycie „offline” (strata 40 min pracy); stop budżetu zadziałał przy szacunku 0,457 $ przy faktycznych 0,40 $. `nvq3/state/STOP` ustawiony.
 
+## Instancje i koszt
+Trzy instancje K-204, razem 0,41 $ (kredyt 6,87 → 6,46). Pierwsza 5060 Ti (Ryzen 5 7600): reaper ją zniszczył po 40 min z powodem „offline, nie wystartowała”, choć pracowała. Wyniki do tego momentu (szukanie kontekstu, wall, baseline) są w `nvq3/results/qwenbench-nvq3-5060tie-11272300/`. Głębia i prefill powtórzone na drugiej 5060 Ti (Ryzen 9 9900X, `5060tie2-11272344`). 4060 Ti: skończona (FINISHED) po 62 min, wyniki w `nvq3/results/qwenbench-nvq3-4060tie-11272317/` i kopia reapera w `reaped/`. Po kampanii `vastai show instances` = 0.
+
 ## Na później
 - Przepis do strony Enigmy 16 GB tylko decyzją JARO (zmienia model).
 - Reaper: dwa kolejne odczyty „offline” przed zniszczeniem.
