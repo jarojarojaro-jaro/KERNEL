@@ -40,7 +40,7 @@ status: aktualne
   3. Fuzje GDN: pp2048 +2,4%.
   4. K-047, osobny kernel weryfikacji: +0,3–0,4% wall, md5 identyczne ([[REKORDY]]:276).
 - **Bramki:** okna weryfikacji bitowo = dekod, `test-backend-ops`.
-- **Co zabija:** adaptacyjna głębokość zmienia md5 greedy ([[bilans-optymalizacji]]).
+- **Co zabija:** adaptacyjna głębokość zmienia md5 greedy ([[bilans-optymalizacji]]). Spekulacja typem, którego llama.cpp nie ma w `need_n_rs_seq()` (`common/common.h`: tylko MTP, EAGLE3, DFlash, DSpark, DFlash2, Lilicorr): klasyczny `draft-simple` na hybrydzie GDN przełącza serwer w tryb checkpointów przez RAM hosta i daje ×0,41–0,60 zamiast przyspieszenia (issue #32776, [[linki-2026-11-28-gdn-spekulacja]]). Na GDN tylko MTP/DFlash/DSpark/DFlash2, nigdy `-md` z `draft-simple`.
 
 ## Ternary (Bonsai 2.5 27B, Q2_0 / PTQ1_0)
 - **Krok:** 5,99 GB wag, więc rosną udziały hosta, dekodu trytów i draftu.

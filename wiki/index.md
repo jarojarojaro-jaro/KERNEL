@@ -66,7 +66,7 @@ Audyt liczb: [[AUDYT]].
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (134)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (139)
-- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (93)
+- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (94)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (36)
@@ -78,6 +78,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-28 [[2026-11-27-k204-enigma-16gb-inkling|2026-11-27 K-204: Enigma 16 GB z Inklingiem IQ3_S bez cenzury i pełnym kontekstem (5060 Ti, 4060 Ti)]]
 - 2026-11-28 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-28 [[zwiad-2026-11-28|Zwiad 2026-11-28: G2GFAST 687,5 t/s (+3,6%), Maya na 3090 210 t/s to inne obciążenie, nib na RDNA4 przy 50% przepustowości]]
+- 2026-11-28 [[linki-2026-11-28-gdn-spekulacja|Linki 2026-11-28: spekulacja z drafterem na hybrydzie GDN ×0,41–0,60 (llama.cpp #32776) i DFly2 (delta)]]
 - 2026-11-28 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
 - 2026-11-28 [[rodzaje-modeli|Rodzaje modeli: kolejność pracy i nasze dowody]]
 - 2026-11-28 [[procedura-znany-model-nowa-karta|Procedura: znany model na nowej karcie]]
@@ -88,7 +89,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-28 [[nvidia-ampere-sm86|NVIDIA Ampere sm_86 (RTX 3060, 3070, 3080, 3090): playbook topki]]
 - 2026-11-28 [[nvidia-ada-sm89|NVIDIA Ada sm_89 (RTX 4060 Ti, 4070, 4080 SUPER, 4090, L4): playbook topki]]
 - 2026-11-28 [[intel-arc-xe2|Intel Arc B580 i Xe2 (SYCL, Vulkan)]]
-- 2026-11-28 [[apple-silicon-mlx-metal|Apple Silicon (M1–M5): Metal w llama.cpp, MLX, oMLX]]
 
-Razem 885 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
+Razem 886 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
