@@ -896,3 +896,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-28] test | XTX K-212..K-218: Inkling 1M igła 5/5 przy 512k (prefill 612), Bonsai igła 249k, Qwen fill 255k 491; TOPKI uzupełnione
 
 ## [2026-11-28] research | 5 linków (openset-llm Bonsai CPU, RustingStrata, Gemma 4 K=V, V100 OC, Cortheon): żadna topka się nie zmienia
+
+## [2026-11-28] research | 6 linków (Strata 0.2.23, flyx, AMD kernels HF, skill deep-research, Kumo, DFly2): bez zmiany topek; zasady skilla w instrukcji Gemini

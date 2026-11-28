@@ -66,7 +66,7 @@ Audyt liczb: [[AUDYT]].
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (134)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (139)
-- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (95)
+- [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (96)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
 - [[narzedzia/_hub|narzedzia]] — Nasze skrypty i narzędzia: pomiar, bramki, kolejka GPU, chmura, wiki (36)
@@ -79,6 +79,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-28 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-28 [[zwiad-2026-11-28|Zwiad 2026-11-28: G2GFAST 687,5 t/s (+3,6%), Maya na 3090 210 t/s to inne obciążenie, nib na RDNA4 przy 50% przepustowości]]
 - 2026-11-28 [[linki-2026-11-28-wieczor|Linki 2026-11-28 wieczór: Bonsai na CPU 19,7 t/s, Gemma 4 K=V, Cortheon, V100 OC, „matematyka LLM”]]
+- 2026-11-28 [[linki-2026-11-28-noc|Linki 2026-11-28 noc: Strata 0.2.23, flyx, AMD kernels na HF, skill deep-research, Kumo, DFly2]]
 - 2026-11-28 [[linki-2026-11-28-gdn-spekulacja|Linki 2026-11-28: spekulacja z drafterem na hybrydzie GDN ×0,41–0,60 (llama.cpp #32776) i DFly2 (delta)]]
 - 2026-11-28 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
 - 2026-11-28 [[rodzaje-modeli|Rodzaje modeli: kolejność pracy i nasze dowody]]
@@ -88,7 +89,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-28 [[nvidia-blackwell-sm120|NVIDIA Blackwell sm_120 (RTX 5060 Ti, 5070, 5080, 5090): playbook topki]]
 - 2026-11-28 [[nvidia-blackwell-sm100|NVIDIA Blackwell sm_100 (B200, GB200): playbook topki]]
 - 2026-11-28 [[nvidia-ampere-sm86|NVIDIA Ampere sm_86 (RTX 3060, 3070, 3080, 3090): playbook topki]]
-- 2026-11-28 [[nvidia-ada-sm89|NVIDIA Ada sm_89 (RTX 4060 Ti, 4070, 4080 SUPER, 4090, L4): playbook topki]]
 
-Razem 887 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
+Razem 888 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

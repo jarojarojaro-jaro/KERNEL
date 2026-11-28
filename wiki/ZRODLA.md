@@ -567,6 +567,12 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 | https://x.com/yuvrajinfer/status/2126365897665458530?a=NrbR6UYzwwzJunM_fhM&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-wieczor]] | Gemma 4 K=V nie bezstratne, nasze modele mają osobne V | – | – |
 | https://x.com/unbug/status/2126370816996815089?a=Tx59kQJrqLxDiC3meKU&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-wieczor]] | OC pamięci V100: wykluczone zasadą fabrycznych ustawień | – | – |
 | https://x.com/ashxhart/status/2126492522205655317?a=aDOoqZdmvlNtAvVFFlk&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-wieczor]] | Cortheon: test-time compute, bez przewagi nad best-of-4 | – | – |
+| https://x.com/coldniko/status/2126392295528284588?a=sKw6eCIWyj0v1k0Gw_s&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-noc]] | Strata 0.2.23: fast mode stratny; prefill IQ3_S w Mai słaby | – | – |
+| https://x.com/thisguyknowsai/status/2126269619321369081?a=ouyIbd2Nzi0bF2X_A7A&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-noc]] | Kumo: uczenie na grafach tabel, nie nasz temat | – | – |
+| https://x.com/agenticjay/status/2126333349799272874?a=nIW5m5ZhVRHF2CGET4U&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-noc]] | skill deep-research: zasady dopisane do sesji Gemini | – | – |
+| https://x.com/julien_c/status/2126301892955308187?a=-Br_qg_K-K8MWZNFZNw&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-noc]] | AMD kernels HF: robotyka MI355X, nic dla ggml | – | – |
+| https://x.com/crazymlguy/status/2126094563924459993?a=yTRLzFjIF-K7evEq2i8&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-noc]] | flyx: tylko NVIDIA, KV FP8 i StrataFlux stratne | – | – |
+| https://x.com/yuvrajinfer/status/2126228610142880132?a=QBRvBHGxDe2gHnCas6I&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-noc]] | DFly2 bez delty (rzadka uwaga z indekserem) | – | – |
 
 ## Zwiad 2026-11-23 (raport product/research/watch/2026-11-23.md)
 
