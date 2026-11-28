@@ -878,3 +878,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-28] test | K-207 ablacja zamiast LoRA w llama.cpp: +41% (EPYC 7402, stosunek), odmowy 0/5, KL na podłodze; 0,045 $
 
 ## [2026-11-28] zwiad | G2GFAST 687,5 (+3,6%, K-198 już ujemne), nib gfx1201 dekod 50% przepustowości, Maya 3090 210 = reasoning-v1 → K-208; compwatch: naprawiony KeyError slug, nasze += Inkling
+
+## [2026-11-28] kolejka | K-202, K-203 → Zrobione; nowa K-209 (loady nietemporalne w MMVQ Qwena)
