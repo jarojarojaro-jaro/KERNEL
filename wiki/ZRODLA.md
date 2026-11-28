@@ -562,11 +562,11 @@ Link od właściciela trafia tu sam (skrzynka, przed turą). Po analizie zamień
 | https://x.com/Aleph__Alpha/status/2125967904092938704?a=PBwNygEw6npygOg0V24&s=20 (panel 2026-11-26) | 2026-11-26 | [[yasa-rzadka-uwaga-kolibri]] | ten sam blog co alessio__serra; u nas uwaga to 14–25% kroku | – | kod YASA, wagi Kolibri 1.1 |
 | https://x.com/crazymlguy/status/2126097124312121637?a=uf7q5iDd8vxYprM1rEQ&s=46 (panel 2026-11-27) | 2026-11-27 | K-193 | ISTA-DASLab GSQ-RCO Inkling IQ3_S 11,43 GB, 99,2% średniej (AIME25 98,3 / GPQA-D 86,2 / LCB 79,1); XTX: +14–24% vs AD-Q4_K w llama.cpp, KLD 0,040 vs 0,011, Maya 2× szybsza; dla Enigmy 12–16 GB (K-195) | – | KLD vs nasze AD-Q4_K, IQ2_S/Q2_K_XL dla kart 12 GB |
 | https://github.com/ggml-org/llama.cpp/issues/32776 (panel 2026-11-28) | 2026-11-28 (komentarze do 26.11) | [[linki-2026-11-28-gdn-spekulacja]] | `draft-simple` na GDN ×0,41–0,60 przez checkpointy w RAM hosta; nasze MTP poza problemem | 4070 ×0,46, 3070 ×0,41; łatki ×1,56 | czy łatki cofania weszły do upstream |
-| https://x.com/av1dlive/status/2126652412937306310?a=kRps0xbOVZaWCH7_S20&s=46 (panel 2026-11-28) | 2026-11-28 | – | czeka na analizę | – | – |
-| https://x.com/swarogan/status/2126320172617109737?a=e2fEYSZanS7NSubvZnI&s=46 (panel 2026-11-28) | 2026-11-28 | – | czeka na analizę | – | – |
-| https://x.com/yuvrajinfer/status/2126365897665458530?a=NrbR6UYzwwzJunM_fhM&s=46 (panel 2026-11-28) | 2026-11-28 | – | czeka na analizę | – | – |
-| https://x.com/unbug/status/2126370816996815089?a=Tx59kQJrqLxDiC3meKU&s=46 (panel 2026-11-28) | 2026-11-28 | – | czeka na analizę | – | – |
-| https://x.com/ashxhart/status/2126492522205655317?a=aDOoqZdmvlNtAvVFFlk&s=46 (panel 2026-11-28) | 2026-11-28 | – | czeka na analizę | – | – |
+| https://x.com/av1dlive/status/2126652412937306310?a=kRps0xbOVZaWCH7_S20&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-wieczor]] | strona edukacyjna bez liczb; bzdura dla nas | – | – |
+| https://x.com/swarogan/status/2126320172617109737?a=e2fEYSZanS7NSubvZnI&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-wieczor]] | Bonsai CPU 19,67 t/s (MTP, nie bitowo); RustingStrata tylko przy MoE poza VRAM | – | – |
+| https://x.com/yuvrajinfer/status/2126365897665458530?a=NrbR6UYzwwzJunM_fhM&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-wieczor]] | Gemma 4 K=V nie bezstratne, nasze modele mają osobne V | – | – |
+| https://x.com/unbug/status/2126370816996815089?a=Tx59kQJrqLxDiC3meKU&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-wieczor]] | OC pamięci V100: wykluczone zasadą fabrycznych ustawień | – | – |
+| https://x.com/ashxhart/status/2126492522205655317?a=aDOoqZdmvlNtAvVFFlk&s=46 (panel 2026-11-28) | 2026-11-28 | [[linki-2026-11-28-wieczor]] | Cortheon: test-time compute, bez przewagi nad best-of-4 | – | – |
 
 ## Zwiad 2026-11-23 (raport product/research/watch/2026-11-23.md)
 
