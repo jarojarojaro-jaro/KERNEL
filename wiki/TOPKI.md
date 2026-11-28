@@ -46,6 +46,14 @@ Bez spekulacji (tylko porównawczo, nie topka): Qwen Uncensored tg128 42,4 vs up
 
 [^xtx-bonsai]: `~/qwen-opt/topki/xtx/bonsai.sh:5-14`: `TOPKA_CTX=262144`, `~/wt/topka-k157/build-hip/bin/llama-server`, env `GGML_HIP_K157_MMVF_THIN=0 GGML_HIP_PM4=1 GGML_HIP_PM4_WA=2 GGML_HIP_PM4_GUARD=1 HSA_USE_SVM=0 GGML_HIP_FA_D256_VAR=83 LLAMA_SPEC_LOOKUP=3 LLAMA_SPEC_LOOKUP_W=16 LLAMA_GPU_VERIFY=1 LLAMA_SPEC_COUPLED=1 LLAMA_SERVER_YIELD_FAST=2 GGML_HIP_PM4_MIN_DISPATCH=16 GGML_HIP_PM4_LAZY_EXEC=1 LLAMA_SERVER_CACHE_SHARE_MIN=1024`; `llama-server -m ~/models/bonsai25/Ternary-Bonsai-2.5-27B-Uncensored-Q2_0-mtp.gguf -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -c 262144 -np 1 --jinja --spec-type draft-mtp --spec-draft-n-max 2 -ctkd q4_0 -ctvd q4_0 --spec-draft-vocab ~/models/draft/draft_vocab_qwen38.txt --spec-draft-vocab-n 65536 --temp 0.7 --min-p 0`. Pomiar 145,8 szedł przez `~/qwen-opt/bonsai25/drafter-gate.sh:19,51` (ten sam build i ctx; czy z `MMVF_THIN=0`, nie sprawdzone).
 
+
+**Pomiary pełnego stosu 2026-11-28 wieczór (K-212..K-218, XTX, wyniki `~/qwen-opt/topki/k21x/res/summary-k21N.txt` na jaroserverai):**
+- Inkling AD-Q4_K (Maya, produkcyjna konfiguracja przy 557 056): wall 148,1–152,0 / 148,2–148,9; igła 5/5 przy 128k, prefill 128k 2074 t/s, dekod przy 128k 119,8 (odpowiedź) / 88,2 (dalej) (K-216).
+- Inkling IQ3_S 1M (Maya): igła 5/5 przy 128k i **512k**; prefill 128k 921 t/s, 512k 612 t/s (836 s); dekod przy 512k 63,1; kopia 90,6 t/s (okna sufiksowe nie działają w tej konfiguracji: bez draftera 89,5) (K-217).
+- Bonsai 2.5 (`bonsai.sh` dokładnie): wall 147,3 / 148,8, kopia mvs 447,6, edycja 405,0; igła 5/5 przy 249k, prefill 249k 479 t/s (519 s), dekod 89,7 (K-218).
+- Qwen Uncensored (k047): kopia mvs 436,0, edycja 432,9; wypełnienie 255k 491,0 t/s (519 s), dekod przy 255k 82,3 (K-214). LocalMaxxing reasoning-v1: MTP n4 145,8, n5 164,8 (różne md5, więc n5 nie jest bezstratnym zamiennikiem) (K-215).
+- Qwen UD-Q4_K_XL na silniku k047: wall 109,3–119,2 / 114,8–122,5, kopia 393–405 (duży rozrzut między biegami); n3 i n5 zmieniają md5 i nie są szybsze (K-212).
+
 ### RX 9070 XT
 
 RDNA4 gfx1201, 16 GB, 640 GB/s (`qwen-opt/skill-io/karty.json:64`). Nie mamy karty (zakup planowany); nasz stos nie ma kerneli WMMA gfx12 ani PM4 dla RDNA4. Wszystkie liczby niżej są obce.

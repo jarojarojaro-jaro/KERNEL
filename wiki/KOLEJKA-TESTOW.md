@@ -22,47 +22,11 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ## Czeka
 
 
-### K-212 · Qwen3.8-27B UD-Q4_K_XL na XTX: topka na silniku k047 i wall.py zamiast spec_sweep
-- data: 2026-11-28 (TOPKI: `qwen.sh` startuje `~/llama-topka` = topka-q70 3191b25f4, bez K-012/K-020/K-006/K-047; ostatni czat to spec_sweep T=1 120,58 z 2026-11-05, wall.py nigdy)
-- test: `PORT=18796 ROCM_DIR=~/llama-topka-k047 GGML_HIP_K047=1 GGML_HIP_K012=1 ~/qwen-opt/topki/xtx/qwen.sh` vs `qwen.sh` bez zmian, ABBA wall.py T=0/T=0,7 + md5 T=0 (harness `~/qwen-opt/k209/arm.sh`); ≤10 min XTX, 0 $
-- zysk: jedna liczba czatu z pełnym stosem dla UD; jeśli k047 ≥ topka-q70 → `qwen.sh` dostaje `ROCM_DIR` (Uncensored na tym silniku: +0,3…+0,4% po samym K-047)
-- priorytet: średni
-
 ### K-213 · Qwen3.8-27B UD-Q4_K_XL na XTX: pełny kontekst 262 144 z KV FA q4_0 bez kopii (K-022, −977 MiB)
 - data: 2026-11-28 (reguła JARO „zawsze pełny kontekst”; UD przy 262 144 miał zapas tylko 336 MiB, `REKORDY.md:167`; K-022 oszczędza 977 MiB bezstratnie, `KOLEJKA-TESTOW.md:618`)
 - test: fill 255k + soak na `qwen.sh` z `CTX=262144` na buildzie z K-022, szczyt VRAM, md5, dekod 255k; ≤10 min XTX, 0 $
 - zysk: kontekst 204 800 → 262 144 (+28%) dla UD
 - priorytet: średni
-
-### K-214 · Qwen3.8-27B Uncensored na XTX: kopia/kod i prefill na obecnej topce k047
-- data: 2026-11-28 (kopia `mvs` 434,8 i fill 255k 492,0 są z 2026-11-25, sprzed K-012 i K-047)
-- test: `copy_bench.py` `mvs`/`copy` T=0 + `fa-d256` fill 255k na `qwen-uncensored.sh` (port testowy), 2 przebiegi; ≤10 min XTX, 0 $
-- zysk: aktualne liczby kopii i prefillu w topce produkcyjnej (oczekiwana zmiana ±1% [INFERENCE])
-- priorytet: niski
-
-### K-215 · Qwen3.8-27B Uncensored na XTX: LocalMaxxing reasoning-v1 z drafterem (porównanie z Inklingiem 157,4)
-- data: 2026-11-28 (K-208 ma reasoning-v1 tylko dla Mai; Qwen ma wynik reasoning-v1 154,2 z DRAFT_N=5 na starym buildzie, `run-topka.sh:21-25`)
-- test: `~/k134/k208lmx.py` na `qwen-uncensored.sh` (port testowy), T=0, 320 tok., myślenie włączone, DRAFT_N=4 i 5, 1 rozgrzewka + 3 biegi; ≤10 min XTX, 0 $
-- zysk: ta sama liczba dla obu modeli ACTIVE; decyzja, czy DRAFT_N=5 w profilu reasoning
-- priorytet: niski
-
-### K-216 · Inkling AD-Q4_K (Maya) na XTX: wall.py T=0,7 i prefill 128k na bin-k207p przy 557 056
-- data: 2026-11-28 (wall T=0,7 149,0 zmierzony na bin-k207 przy 440 320; prefill 128k 2083 na bin-k200p; przy produkcyjnym 557 056 jest tylko wall T=0 153,9 z K-208)
-- test: `~/k134/k207wall.py` (T=0/T=0,7) + `k202srv.py` 128k (prefill, igły) na `inkling.sh`, port testowy; ≤10 min XTX, 0 $
-- zysk: wszystkie liczby topki z jednej binarki i jednej konfiguracji
-- priorytet: niski
-
-### K-217 · Inkling IQ3_S 1M (Maya) na XTX: kopia/kod (K-147 bench) i prefill 128k/512k
-- data: 2026-11-28 (topka `inkling-1m.sh` ma tylko wall 104,2 / 101,3 i dekod na głębokości; kopii i prefillu brak)
-- test: bench K-147 (`copy`, `edit`, `python_edit`, dokładność) + `k202srv.py` 128k i 512k na `inkling-1m.sh`; ≤10 min XTX (512k osobnym jobem), 0 $
-- zysk: pełny wiersz topki; porównanie z AD (copy 453,9)
-- priorytet: średni
-
-### K-218 · Bonsai 2.5 na XTX: wall.py na `bonsai.sh` dokładnie i prefill topka-k157
-- data: 2026-11-28 (145,8 zmierzone przez `drafter-gate.sh`, nie przez `bonsai.sh`; brak prefillu na topka-k157; copy_bench 446,4 przy innym ctx [INFERENCE])
-- test: wall.py T=0/T=0,7 + copy_bench `short`/`mvs` + fill 255k na `PORT=18796 ~/qwen-opt/topki/xtx/bonsai.sh`; ≤10 min XTX, 0 $
-- zysk: liczby topki z dokładnie tej komendy, którą wstaje :8080
-- priorytet: niski
 
 ### K-219 · Radeon AI PRO R9700 (Hostkey): pierwsza topka RDNA4, Qwen3.8-27B i Inkling 2 Mini
 - data: 2026-11-28 (nasz pomiar: brak; obce: Qwen hipfire + DFlash2 111,6, Lucebox 208,1 T=0; Inkling Lucebox + DSpark 143,5 T=1)
@@ -154,6 +118,48 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-218 · Bonsai 2.5 na XTX: wall.py na `bonsai.sh` dokładnie i prefill topka-k157
+- data: 2026-11-28 (145,8 zmierzone przez `drafter-gate.sh`, nie przez `bonsai.sh`; brak prefillu na topka-k157; copy_bench 446,4 przy innym ctx [INFERENCE])
+- test: wall.py T=0/T=0,7 + copy_bench `short`/`mvs` + fill 255k na `PORT=18796 ~/qwen-opt/topki/xtx/bonsai.sh`; ≤10 min XTX, 0 $
+- zysk: liczby topki z dokładnie tej komendy, którą wstaje :8080
+- priorytet: niski
+- **wynik 2026-11-28 wieczór:** wall 147,3 / 148,8, kopia 447,6, igła 5/5 przy 249k, prefill 479. Wpis w [[TOPKI]].
+
+### K-217 · Inkling IQ3_S 1M (Maya) na XTX: kopia/kod (K-147 bench) i prefill 128k/512k
+- data: 2026-11-28 (topka `inkling-1m.sh` ma tylko wall 104,2 / 101,3 i dekod na głębokości; kopii i prefillu brak)
+- test: bench K-147 (`copy`, `edit`, `python_edit`, dokładność) + `k202srv.py` 128k i 512k na `inkling-1m.sh`; ≤10 min XTX (512k osobnym jobem), 0 $
+- zysk: pełny wiersz topki; porównanie z AD (copy 453,9)
+- priorytet: średni
+- **wynik 2026-11-28 wieczór:** igła 5/5 przy 512k, prefill 128k 921 / 512k 612, kopia 90,6 (sufiks nie działa przy IQ3_S). Wpis w [[TOPKI]].
+
+### K-216 · Inkling AD-Q4_K (Maya) na XTX: wall.py T=0,7 i prefill 128k na bin-k207p przy 557 056
+- data: 2026-11-28 (wall T=0,7 149,0 zmierzony na bin-k207 przy 440 320; prefill 128k 2083 na bin-k200p; przy produkcyjnym 557 056 jest tylko wall T=0 153,9 z K-208)
+- test: `~/k134/k207wall.py` (T=0/T=0,7) + `k202srv.py` 128k (prefill, igły) na `inkling.sh`, port testowy; ≤10 min XTX, 0 $
+- zysk: wszystkie liczby topki z jednej binarki i jednej konfiguracji
+- priorytet: niski
+- **wynik 2026-11-28 wieczór:** wall 148–152 / 148–149 przy 557 056, prefill 128k 2074, igła 5/5. Wpis w [[TOPKI]].
+
+### K-215 · Qwen3.8-27B Uncensored na XTX: LocalMaxxing reasoning-v1 z drafterem (porównanie z Inklingiem 157,4)
+- data: 2026-11-28 (K-208 ma reasoning-v1 tylko dla Mai; Qwen ma wynik reasoning-v1 154,2 z DRAFT_N=5 na starym buildzie, `run-topka.sh:21-25`)
+- test: `~/k134/k208lmx.py` na `qwen-uncensored.sh` (port testowy), T=0, 320 tok., myślenie włączone, DRAFT_N=4 i 5, 1 rozgrzewka + 3 biegi; ≤10 min XTX, 0 $
+- zysk: ta sama liczba dla obu modeli ACTIVE; decyzja, czy DRAFT_N=5 w profilu reasoning
+- priorytet: niski
+- **wynik 2026-11-28 wieczór:** reasoning-v1 Qwen MTP n4 145,8 (n5 164,8, ale inne md5). Wpis w [[TOPKI]].
+
+### K-214 · Qwen3.8-27B Uncensored na XTX: kopia/kod i prefill na obecnej topce k047
+- data: 2026-11-28 (kopia `mvs` 434,8 i fill 255k 492,0 są z 2026-11-25, sprzed K-012 i K-047)
+- test: `copy_bench.py` `mvs`/`copy` T=0 + `fa-d256` fill 255k na `qwen-uncensored.sh` (port testowy), 2 przebiegi; ≤10 min XTX, 0 $
+- zysk: aktualne liczby kopii i prefillu w topce produkcyjnej (oczekiwana zmiana ±1% [INFERENCE])
+- priorytet: niski
+- **wynik 2026-11-28 wieczór:** kopia 436, edycja 433, wypełnienie 255k 491 t/s, dekod 255k 82,3. Wpis w [[TOPKI]].
+
+### K-212 · Qwen3.8-27B UD-Q4_K_XL na XTX: topka na silniku k047 i wall.py zamiast spec_sweep
+- data: 2026-11-28 (TOPKI: `qwen.sh` startuje `~/llama-topka` = topka-q70 3191b25f4, bez K-012/K-020/K-006/K-047; ostatni czat to spec_sweep T=1 120,58 z 2026-11-05, wall.py nigdy)
+- test: `PORT=18796 ROCM_DIR=~/llama-topka-k047 GGML_HIP_K047=1 GGML_HIP_K012=1 ~/qwen-opt/topki/xtx/qwen.sh` vs `qwen.sh` bez zmian, ABBA wall.py T=0/T=0,7 + md5 T=0 (harness `~/qwen-opt/k209/arm.sh`); ≤10 min XTX, 0 $
+- zysk: jedna liczba czatu z pełnym stosem dla UD; jeśli k047 ≥ topka-q70 → `qwen.sh` dostaje `ROCM_DIR` (Uncensored na tym silniku: +0,3…+0,4% po samym K-047)
+- priorytet: średni
+- **wynik 2026-11-28 wieczór:** Qwen UD na k047: 109–119 / 115–122, kopia 393–405; n3/n5 nie pomagają. Wpis w [[TOPKI]].
 
 ### K-232 · RTX 3080 / 3070 / 2080 Ti: spekulacja dla kart 8–11 GB
 - data: 2026-11-28; produkcja 3080 i 3070 bez spekulacji (Qwen3.5-9B 85,20 / 66,90); 2080 Ti ma prism (fork CUDA pada na sm_75)
