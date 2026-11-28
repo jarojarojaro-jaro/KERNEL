@@ -880,3 +880,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-28] zwiad | G2GFAST 687,5 (+3,6%, K-198 już ujemne), nib gfx1201 dekod 50% przepustowości, Maya 3090 210 = reasoning-v1 → K-208; compwatch: naprawiony KeyError slug, nasze += Inkling
 
 ## [2026-11-28] kolejka | K-202, K-203 → Zrobione; nowa K-209 (loady nietemporalne w MMVQ Qwena)
+
+## [2026-11-28] test | K-208 reasoning-v1 XTX 111/157 vs 3090 133/210; okna sufiksowe nie bitowe → K-210, luka dekodu → K-211; K-207 na Ryzenie 9700X: ablacja 88,45 t/s (+15–28% vs LoRA)

@@ -19,6 +19,9 @@ Warunki: RTX 5060 Ti na hoście EPYC 7402 (moc 160/180 W, pamięć 14 001 MHz, 4
 
 KL (wiki 16 × 255 tok., baza LoRA): ablacja 0,00865 (top1 95,8%), podłoga LoRA × 1,00001 0,00859 (96,1%), bez adaptera 0,0136. Przy sile LoRA × 8: ablacja 0,0176, bez adaptera 0,266.
 
+## Pomiar bezwzględny na Ryzenie (2026-11-28 17:05, 0,054 $)
+RTX 5060 Ti, host Ryzen 7 9700X (180/180 W, pamięć 14 001 MHz), ten sam przepis i plik binarny: **ablacja 88,45 / 90,78 t/s**, LoRA 76,58 / 71,22, bez adaptera 85,83 / 89,53; ablacja vs LoRA +15,5% / +27,5%, odmowy 0/5, 262 144 startuje we wszystkich ramionach (15,6 / 16 GB). Ten sam host vs EPYC 7402: 2,1–2,6× szybciej, choć llama-bench tg256 prawie równy (78,0 vs 74,9) — bramka llama-bench nie wykrywa wolnego procesora hosta.
+
 ## Mechanizm
 - `--ablate-lora PLIK` czyta ten sam plik LoRA rzędu 1 i zamiast mnożenia przez macierze robi `y -= s·r(r·y)` po wyjściu uwagi, po sumie ekspertów MoE i na wierszach embeddingu, w każdym przejściu pętli (to samo co `IK2_ABLATE` w Mai); trzy operacje ggml na miejsce.
 - LoRA jest wolna na MoE, bo jej ścieżka F32 przez wagi ekspertów (`mul_mat_id`) wymusza synchronizację strumienia i wyłącza grafy CUDA.
@@ -26,7 +29,8 @@ KL (wiki 16 × 255 tok., baza LoRA): ablacja 0,00865 (top1 95,8%), podłoga LoRA
 - Bramka tg256 nie łapie hostów wolnych na ścieżce serwera (EPYC 7402: 99% GPU w llama-bench, a dekod serwera z DSpark 2× wolniejszy niż na Ryzenie).
 
 ## Na później
-- Przepis Enigmy 16 GB z `--ablate-lora` zamiast `--lora` wymaga naszego builda (nie upstream) — decyzja JARO; pomiar bezwzględny na hoście Ryzen przed publikacją.
+- Przepis Enigmy 16 GB z `--ablate-lora` zamiast `--lora` wymaga naszego builda (nie upstream) — decyzja JARO (88,45 vs 66,45 t/s w K-204 na Ryzenie 7600, inny host).
+- RTX 5080: pierwszy pomiar Inklinga czeka na budżet ok. 0,15 $ (hosty 0,32–0,37 $/h).
 - Patch do upstream (ogólny, nie tylko Inkling).
 
 ## Test u nas

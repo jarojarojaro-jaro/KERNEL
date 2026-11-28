@@ -22,15 +22,23 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ## Czeka
 
 
+### K-210 · Maya: okna sufiksowe (`IK2_SUFFIX`, K-147) bitowo zgodne z dekodem po tokenie
+- data: 2026-11-28 (K-208b: okna sufiksowe weryfikowane ogólnym `forward()`, odpowiedź T=0 różni się od bez draftera w 3/4 promptów rozumowania)
+- test: weryfikacja okien sufiksowych przez dokładną ścieżkę okien (`fast_block`) albo dokładny batch; md5 reasoning-v1 = bez draftera, bench edycji/przepisywania K-147 prod vs nowa, wall ABBA; ≤12 min XTX
+- zysk: zgodność bitowa produkcji (reguła bezstratności) przy zachowaniu +14% edycji kodu
+- priorytet: wysoki
+
+### K-211 · Maya: dekod bez draftera na XTX 111 t/s vs 3090 133 (ta sama przepustowość pamięci)
+- data: 2026-11-28 (K-208: 0,83× przy 960 vs 936 GB/s; inny kwant UD-Q4_K_XL 17,6 GB vs nasz AD-Q4_K 16,5 GB, więc u nas mniej bajtów na token)
+- test: rozkład kroku bez draftera (bench K158 `plain`), GB/s na fazę vs sufit; profil rocprofv3 ekspertów i uwagi; porównanie z kernelami CUDA alesha-pro (ten sam silnik)
+- zysk: do +20% dekodu bez draftera, część przechodzi na wall z drafterem
+- priorytet: wysoki
+
 ### K-209 · Qwen topka na XTX: wagi w MMVQ czytane nietemporalnie (`__builtin_nontemporal_load`), wzór G2GFAST `ld.global.cs` i Mai `IK2_HIP_NT`
 - data: 2026-11-28 ([[zwiad-2026-11-28]]: G2GFAST krok GEMV −3,7…−7,5% bitowo na 5090; Maya runda 3 na XTX: wagi nietemporalne nie wypychają z cache wektorów wejścia)
 - test: build za przełącznikiem (CPU), md5 T=0 = produkcja, ABBA wall 8 kategorii + dekod 94k; ≤10 min XTX; decyzja tylko z pełnego modelu ([[lekcja-mikrobench-klamie]])
 - zysk: szacunek +2…+5% dekodu (MMVQ ~80% czasu kroku), bezstratnie
 - priorytet: średni
-
-### K-208 · Maya (Inkling) na obciążeniu LocalMaxxing reasoning-v1: porównanie z 3090 (133 bez draftera, 210 z DSpark)
-- Po co: jedyny bezpośredni punkt odniesienia dla naszej Mai na tym samym typie karty (3090 936 GB/s vs XTX 960); dziś mamy tylko własny wall z 4 krótkich promptów (152). Liczba do `config.json → nasze` w formacie LocalMaxxing.
-- Plan testu (5 min): prompt reasoning-v1 (295 tok., z losowym nonce), T=0, 320 tok., myślenie włączone, 1 rozgrzewka + 3 biegi; produkcja bez draftera vs z drafterem; t/s, akceptacja, tokeny na przebieg, zgodność tokenów z dekodem bez draftera.
 
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
@@ -78,6 +86,14 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-208 · Maya (Inkling) na obciążeniu LocalMaxxing reasoning-v1: porównanie z 3090 (133 bez draftera, 210 z DSpark)
+- Po co: jedyny bezpośredni punkt odniesienia dla naszej Mai na tym samym typie karty (3090 936 GB/s vs XTX 960); dziś mamy tylko własny wall z 4 krótkich promptów (152). Liczba do `config.json → nasze` w formacie LocalMaxxing.
+- Plan testu (5 min): prompt reasoning-v1 (295 tok., z losowym nonce), T=0, 320 tok., myślenie włączone, 1 rozgrzewka + 3 biegi; produkcja bez draftera vs z drafterem; t/s, akceptacja, tokeny na przebieg, zgodność tokenów z dekodem bez draftera.
+- **wynik 2026-11-28 16:10–16:24 (XTX, produkcja Maya bin-k207p, AD-Q4_K, reasoning-v1 276 tok. promptu, 320 wyj., T=0, myślenie):** bez draftera 111,3 t/s, z drafterem 157,4 (×1,41; akceptacja 70%, 3,37 tok./przebieg). RTX 3090 (alesha-pro, UD-Q4_K_XL, DSpark): 133,4 / 210,2 (×1,58). XTX/3090: bez draftera 0,83×, z drafterem 0,75× przy przepustowości 960 vs 936 GB/s. Wall 4 prompty: 111,8 / 153,9, md5 z drafterem = bez = produkcja K-207.
+- **Znalezisko:** na reasoning-v1 odpowiedź z drafterem różni się od bez draftera w 3 z 4 promptów. Przyczyna potwierdzona (K-208b): okna sufiksowe `IK2_SUFFIX` (K-147) weryfikowane ogólną ścieżką `forward()` zamiast bitowo dokładnego `fast_block`; z `IK2_SUFFIX=0` md5 = bez draftera, okna draftera 165/165 dokładne, a r1 nawet szybciej (159,4 vs 157,4). Naprawa → K-210.
+- Luka dekodu bez draftera wobec 3090 (111 vs 133 przy tej samej przepustowości) → K-211.
+
 
 ### K-203 · Inkling GSQ-RCO IQ3_S (11,4 GB) w Mai: 1M kontekstu na XTX
 - data: 2026-11-27; 1M × 9 KB = ok. 9,4 GB KV + 11,4 GB wag mieści się w 24 GB, z AD-Q4_K (17 GB) nie

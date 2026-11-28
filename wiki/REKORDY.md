@@ -303,3 +303,5 @@ FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s.
 | 5060 Ti / Inkling IQ3_S + LoRA + DSpark | wall przy pełnym kontekście | **66,45 / 61,97 t/s** przy 262 144 (było Qwen 32,5 przy 200 704) | 2026-11-27 | b12811 | [[2026-11-27-k204-enigma-16gb-inkling]] | nie (kandydat) |
 | 4060 Ti 16 GB / j.w. | j.w. | **48,58 / 48,99 t/s** przy 283 648 (było 23,9 przy 217 088) | 2026-11-27 | b12811 | j.w. | nie (kandydat) |
 | 5060 Ti / Inkling IQ3_S bez cenzury | ablacja vs LoRA (ten sam host, EPYC 7402) | **41,17 / 41,11 vs 29,17 / 28,64 t/s (+41% / +44%)** | 2026-11-28 | b12811 + k207-ablate f7040f25e | [[2026-11-28-k207-ablacja-zamiast-lora]] | nie (kandydat) |
+| 5060 Ti / Inkling IQ3_S bez cenzury | wall z `--ablate-lora`, Ryzen 7 9700X | **88,45 / 90,78 t/s** przy 262 144 (LoRA 76,58 / 71,22) | 2026-11-28 | b12811 + k207-ablate f7040f25e | [[2026-11-28-k207-ablacja-zamiast-lora]] | nie (kandydat) |
+| XTX / Inkling AD-Q4_K (Maya) | LocalMaxxing reasoning-v1 T=0 320 tok. | **157,4 t/s** (bez draftera 111,3) | 2026-11-28 | Maya bin-k207p | `KOLEJKA-TESTOW` K-208 | tak |
