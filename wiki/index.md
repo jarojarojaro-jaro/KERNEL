@@ -62,7 +62,7 @@ Audyt liczb: [[AUDYT]].
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
 - [[stos/_hub|stos]] — Nasz fork llama.cpp i gałęzie, ROCm/HIP/PM4/KFD, CUDA, sterowniki i architektury (40)
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
-- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (133)
+- [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (134)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
 - [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (138)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (92)
@@ -73,6 +73,7 @@ Audyt liczb: [[AUDYT]].
 
 ## Ostatnio aktualizowane
 
+- 2026-11-28 [[2026-11-28-k207-ablacja-zamiast-lora|2026-11-28 K-207: ablacja kierunku zamiast LoRA w llama.cpp (Inkling 2 Mini, 5060 Ti)]]
 - 2026-11-28 [[2026-11-27-k204-enigma-16gb-inkling|2026-11-27 K-204: Enigma 16 GB z Inklingiem IQ3_S bez cenzury i pełnym kontekstem (5060 Ti, 4060 Ti)]]
 - 2026-11-28 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-28 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[2026-11-26-we2-nib-scalona-ablacja|2026-11-26 WE2: odmowy wycięte na stałe w wagach Niba zamiast LoRA w locie]]
 - 2026-11-26 [[2026-11-26-we1-astra-stop-qwen|2026-11-26 WE1: Astra-Stop (rank-1 `</think>`) na Qwen3.8-27B Uncensored, XTX, LoRA w locie, skale 0 / 0,5 / 1 / 1,5]]
 - 2026-11-26 [[2026-11-26-nvq3|2026-11-26 Vast nvq3 (3090 ×2, 5060 Ti): K-122, K-071, K-129, K-070, K-124, K-113 — fala przerwana poleceniem JARO 16:25]]
-- 2026-11-26 [[2026-11-26-nvq2-3090-k071-k066|2026-11-26 Vast nvq2, RTX 3090 (pełna moc 350/350 W): K-071 qwen-warp vs fork i K-066 strojenie MMQ IQ4_XS]]
 
-Razem 868 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
+Razem 869 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

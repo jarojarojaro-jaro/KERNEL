@@ -21,10 +21,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 ## Czeka
 
-### K-207 · Enigma NVIDIA: ablacja kierunku (jak IK2_ABLATE w Mai) zamiast LoRA w czasie działania w llama.cpp
-- Po co: LoRA bez cenzury kosztuje 17–33% dekodu Inklinga na 16 GB (K-204: 5060 Ti 66,5 vs 79,6–83,2 bez LoRA). W Mai ten sam efekt daje rzut kierunku na resztę (KL i odmowy 0/5 zmierzone w K-203). Szacunek +15–30% na 5060 Ti / 4060 Ti, te same wagi.
-- Plan testu (Vast, ok. 0,05 $): odmowy 0/5, KL vs LoRA, wall 4 prompty × T=0/0,7 na 5060 Ti.
-
 
 ### K-202 · Maya (Inkling) długi kontekst na XTX: z 16k do ok. 400–500k na obecnym modelu, bezstratnie
 - data: 2026-11-27 (pytanie JARO o duży kontekst); Inkling ma tylko 8 odwiedzin z pełną uwagą (warstwy 5, 11, 17, 23; 11 i 17 w pętli ×3), 8 głów KV × 128, reszta okno 1024 → KV q4_0 ok. 9 KB/token; produkcja ma `--max-context` 16384
@@ -88,6 +84,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-207 · Enigma NVIDIA: ablacja kierunku (jak IK2_ABLATE w Mai) zamiast LoRA w czasie działania w llama.cpp
+- Po co: LoRA bez cenzury kosztuje 17–33% dekodu Inklinga na 16 GB (K-204: 5060 Ti 66,5 vs 79,6–83,2 bez LoRA). W Mai ten sam efekt daje rzut kierunku na resztę (KL i odmowy 0/5 zmierzone w K-203). Szacunek +15–30% na 5060 Ti / 4060 Ti, te same wagi.
+- Plan testu (Vast, ok. 0,05 $): odmowy 0/5, KL vs LoRA, wall 4 prompty × T=0/0,7 na 5060 Ti.
+
+
+- **wynik 2026-11-28 (0,045 $):** ablacja 29,2 → 41,2 t/s (+41%) wobec LoRA na tym samym hoście (EPYC 7402, tylko stosunek), odmowy 0/5, KL na podłodze szumu. Notatka [[2026-11-28-k207-ablacja-zamiast-lora]].
 
 ### K-206 · Maya IQ3_S: planarne kernele macierzy mieszanych bez straty (cel krok ≤ 11 ms)
 - Po co: Inkling 1M (K-203) robi 67 t/s, a te same wagi po stratnej konwersji do Q8_0 robią 94,5; cała różnica to macierze q k v / wyjście / głowica (4,33 vs 1,76 ms). Przepakowanie w ich własnym typie do układu planarnego, ta sama kolejność sum → bitowo zgodne. Szacunek +30% wall przy 1M.
