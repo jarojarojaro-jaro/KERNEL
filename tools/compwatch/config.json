@@ -202,6 +202,27 @@
   "nasze": [
     {
       "card": "XTX",
+      "model": "Inkling-2-Mini",
+      "tok": 152.0,
+      "metric": "wall 4 prompty x 300 tok., T=0, Maya + MTP drafter (K-185/K-200), AD-Q4_K, KV q4, ctx 557k",
+      "src": "wiki/REKORDY.md:280"
+    },
+    {
+      "card": "5060Ti",
+      "model": "Inkling-2-Mini",
+      "tok": 66.45,
+      "metric": "wall 4 prompty x 300 tok., T=0, b12811 IQ3_S + LoRA + DSpark n2, ctx 262144",
+      "src": "wiki/REKORDY.md:303"
+    },
+    {
+      "card": "4060Ti",
+      "model": "Inkling-2-Mini",
+      "tok": 48.58,
+      "metric": "wall 4 prompty x 300 tok., T=0, b12811 IQ3_S + LoRA + DSpark n2, ctx 283648",
+      "src": "wiki/REKORDY.md:304"
+    },
+    {
+      "card": "XTX",
       "model": "Qwen3.8-27B",
       "tok": 136.5,
       "metric": "long_ctx_bench 1.7k, T=0, 256 tok., sam MTP n=4, UD-Q4_K_XL, KV q4_0, licznik serwera",
@@ -586,8 +607,12 @@
         "tier": "A"
       },
       {
-        "repo": "Papa-midnight-dev/qwen3-27b-5090-moonshot",
-        "tier": 2
+        "slug": "Papa-midnight-dev/qwen3-27b-5090-moonshot",
+        "tier": "B"
+      },
+      {
+        "slug": "Papa-midnight-dev/qwen3-27b-5090-G2GFAST",
+        "tier": "B"
       }
     ],
     "keywords": [

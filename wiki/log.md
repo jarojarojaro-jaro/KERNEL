@@ -876,3 +876,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-28] wdrożenie | Maya AD kontekst 425 984 → 557 056 (bin-k207p, drafter na 131k, igły 5/5 przy 546k, wall bez zmian, md5 =)
 
 ## [2026-11-28] test | K-207 ablacja zamiast LoRA w llama.cpp: +41% (EPYC 7402, stosunek), odmowy 0/5, KL na podłodze; 0,045 $
+
+## [2026-11-28] zwiad | G2GFAST 687,5 (+3,6%, K-198 już ujemne), nib gfx1201 dekod 50% przepustowości, Maya 3090 210 = reasoning-v1 → K-208; compwatch: naprawiony KeyError slug, nasze += Inkling

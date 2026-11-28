@@ -19,7 +19,7 @@ Pełne raporty leżą w `product/research/`, `qwen-opt/research/` i `reports/`; 
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (92)
+## Notatki (93)
 
 - [[single-neuron-safety-2605-08513|arXiv 2605.08513 to nie InferenceX (praca o alignmencie)]] — Link arXiv 2605.08513 podany przez użytkownika jako praca o InferenceX to „A Single Neuron Is Sufficient to Bypass Safety Alignment in LLMs” (Kazemi, Chegini, Safi, 2026-05-08): wyłączenie jednego neuronu odmowy omija alignment, a wzmocnienie neuronu pojęcia wywołuje szkodliwe treści; 7 modeli z 2 rodzin, 1.7B–70B, bez treningu.
 - [[audyt-gemini-2026-11-19|Audyt Gemini całego repo KERNEL (2026-11-19): co było prawdą, co naprawione, co odrzucone]] — Bezpieczeństwo karty: oba główne zarzuty prawdziwe i naprawione tego samego dnia.
@@ -112,5 +112,6 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[zwiad-2026-11-19|Zwiad 2026-11-19: prefill przez drugą kartę (oMLX ×5,3 dla Qwen3.8-27B), sparowana weryfikacja draftów (TensorFold +24–29% na Macu), błąd EOG w rejekcji]] — Trzy rzeczy dla nas:
 - [[zwiad-2026-11-20|Zwiad 2026-11-20: błąd przywracania po odrzuconym drafcie w cache hybrydowym (ik_llama), weryfikacja kilku wierszy w oMLX, TensorRT-LLM 1.3 z Qwen3.5 MTP]] — Trzy rzeczy dla nas:
 - [[zwiad-2026-11-27|Zwiad 2026-11-27: Tintero v0.1.0, 663,9 t/s Qwena na 5090 (DSpine), oMLX +42% na Macu, AMD w dashboardzie llama.cpp]] — Najwięcej dla nas daje Tintero v0.1.0: na tej samej karcie (XTX) z Inklingiem stronicowany KV przyspiesza dekod przy 131k o 8,9% (65,1 vs 59,8 t/s, jeden bieg), a to dokładnie nasz słaby punkt z K-189/K-194 (90k: 78 t/s); kopiowanie bez draftera (271 vs 105 t/s) już mamy jako K-147 (404–452 t/s). 663,9 t/s Qwena na 5090 to NVFP4 + drafter DSpine z blokami do 16 tokenów (śr. akceptacja 8,52), bezstratny tylko w części.
+- [[zwiad-2026-11-28|Zwiad 2026-11-28: G2GFAST 687,5 t/s (+3,6%), Maya na 3090 210 t/s to inne obciążenie, nib na RDNA4 przy 50% przepustowości]] — Nic, co przyspieszyłoby nas dziś: 210,2 t/s Mai na 3090 to jeden prompt rozumowania z myśleniem (bez draftera na tej samej karcie 133,4, więc DSpark ×1,58), nieporównywalne z naszym wall 152 na XTX; G2GFAST dodał +3,6% łatkami, które już sprawdziliśmy (drzewo OPT, K-198: −3,3% u nas); nib na R9700 (gfx1201) używa WMMA RDNA4 tylko w prefillu, dekod 97,6 t/s = ok. 50% przepustowości pamięci, jak na XTX.
 - [[enigma-turbo-gemini-2026-11-20|„Enigma Turbo” od Gemini 4 Neon: README obiecuje silnik CUDA/HIP, a działa tylko wolny CPU i odpowiada bełkotem]] — Test 2026-11-20 na prawdziwym modelu Qwen3.5-0.8B Q4_K_M (ta sama architektura hybrydowa co nasz 27B): na pytanie „What is the capital of France?” Enigma Turbo odpowiada bełkotem z surowymi tokenami (`èĬ±ĠfaĠfaĠf… IMEIMEIME`, wykrywacz pętli zgłasza pętlę) w tempie 0,7 t/s. llama.cpp na tym samym pliku (CPU, 4 wątki): „Paris is the capital of France.” przy 60,9 t/s. Na karcie niczego nie uruchamiałem: jego kod GPU nie jest nigdzie wywoływany.
 <!-- AUTO:END -->

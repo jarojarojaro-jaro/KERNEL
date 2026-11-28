@@ -22,6 +22,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ## Czeka
 
 
+### K-208 · Maya (Inkling) na obciążeniu LocalMaxxing reasoning-v1: porównanie z 3090 (133 bez draftera, 210 z DSpark)
+- Po co: jedyny bezpośredni punkt odniesienia dla naszej Mai na tym samym typie karty (3090 936 GB/s vs XTX 960); dziś mamy tylko własny wall z 4 krótkich promptów (152). Liczba do `config.json → nasze` w formacie LocalMaxxing.
+- Plan testu (5 min): prompt reasoning-v1 (295 tok., z losowym nonce), T=0, 320 tok., myślenie włączone, 1 rozgrzewka + 3 biegi; produkcja bez draftera vs z drafterem; t/s, akceptacja, tokeny na przebieg, zgodność tokenów z dekodem bez draftera.
+
 ### K-202 · Maya (Inkling) długi kontekst na XTX: z 16k do ok. 400–500k na obecnym modelu, bezstratnie
 - data: 2026-11-27 (pytanie JARO o duży kontekst); Inkling ma tylko 8 odwiedzin z pełną uwagą (warstwy 5, 11, 17, 23; 11 i 17 w pętli ×3), 8 głów KV × 128, reszta okno 1024 → KV q4_0 ok. 9 KB/token; produkcja ma `--max-context` 16384
 - test: serwer przy 131k / 262k / maks.: VRAM, prefill, dekod T=0 przy 128k/256k/maks., igły; przygotowuje agent X202

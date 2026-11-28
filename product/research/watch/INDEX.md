@@ -18,3 +18,4 @@ Raporty dzienne `tools/compwatch/compwatch.py` (timer systemd 06:30, `nice`). Je
 - [2026-11-25](2026-11-25.md): 52 pozycji; top: mw00/project-maya wydanie v1.1.78 (2026-11-24): v1.1.78 (+1 wcześniejszych: v1.1.77)
 - [2026-11-26](2026-11-26.md): 48 pozycji; top: Niko1221/Strata wydanie v0.2.22 (2026-11-25): Strata 0.2.22
 - [2026-11-27](2026-11-27.md): 32 pozycji; top: mw00/project-maya wydanie v1.1.82 (2026-11-26): v1.1.82
+- [2026-11-28](2026-11-28.md): 8 pozycji; top: Nowy silnik w bazie: qwen3-27b-5090-g2gfast (Papa-midnight-dev/qwen3-27b-5090-G2GFAST) (RTX 5090 / Qwen3.8-27B) — 687.5 t/s · custom 0.8.1 + g2gfast patches · …
