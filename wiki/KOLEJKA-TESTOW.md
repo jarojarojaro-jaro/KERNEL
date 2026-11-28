@@ -25,9 +25,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - Po co: LoRA bez cenzury kosztuje 17–33% dekodu Inklinga na 16 GB (K-204: 5060 Ti 66,5 vs 79,6–83,2 bez LoRA). W Mai ten sam efekt daje rzut kierunku na resztę (KL i odmowy 0/5 zmierzone w K-203). Szacunek +15–30% na 5060 Ti / 4060 Ti, te same wagi.
 - Plan testu (Vast, ok. 0,05 $): odmowy 0/5, KL vs LoRA, wall 4 prompty × T=0/0,7 na 5060 Ti.
 
-### K-206 · Maya IQ3_S: planarne kernele macierzy mieszanych bez straty (cel krok ≤ 11 ms)
-- Po co: Inkling 1M (K-203) robi 67 t/s, a te same wagi po stratnej konwersji do Q8_0 robią 94,5; cała różnica to macierze q k v / wyjście / głowica (4,33 vs 1,76 ms). Przepakowanie w ich własnym typie do układu planarnego, ta sama kolejność sum → bitowo zgodne. Szacunek +30% wall przy 1M.
-- Plan testu (≤ 15 min): test bitowy, okna, ktime, bench 2048, wall 1M, KL f16 vs llama.cpp.
 
 ### K-202 · Maya (Inkling) długi kontekst na XTX: z 16k do ok. 400–500k na obecnym modelu, bezstratnie
 - data: 2026-11-27 (pytanie JARO o duży kontekst); Inkling ma tylko 8 odwiedzin z pełną uwagą (warstwy 5, 11, 17, 23; 11 i 17 w pętli ×3), 8 głów KV × 128, reszta okno 1024 → KV q4_0 ok. 9 KB/token; produkcja ma `--max-context` 16384
@@ -90,6 +87,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-206 · Maya IQ3_S: planarne kernele macierzy mieszanych bez straty (cel krok ≤ 11 ms)
+- Po co: Inkling 1M (K-203) robi 67 t/s, a te same wagi po stratnej konwersji do Q8_0 robią 94,5; cała różnica to macierze q k v / wyjście / głowica (4,33 vs 1,76 ms). Przepakowanie w ich własnym typie do układu planarnego, ta sama kolejność sum → bitowo zgodne. Szacunek +30% wall przy 1M.
+- Plan testu (≤ 15 min): test bitowy, okna, ktime, bench 2048, wall 1M, KL f16 vs llama.cpp.
+
+- **wynik 2026-11-27 23:39–00:02 (Maya `wt-k203` e03e1d4a):** części macierzy mieszanych przepakowane przy ładowaniu do układu planarnego w ich własnym typie (Q6_K, Q5_K, Q4_K, IQ4_XS, Q8_0, BF16), jeden wiersz na warp, sumy bez kontrakcji FMA (`#pragma clang fp contract(off)`, jawne `fmaf`) → planar = bloki bitowo, okna = dekod bitowo (127/127, 121/121), KL vs llama.cpp 0,0019 (bez zmian). Krok T=0 14,8 → 11,27 ms (Q8_0 stratny 10,93); q|k|v|r|gate 88,8 → 31,1 µs (505 GB/s). **Wall przy 1M: 67,8 / 65,4 → 104,2 / 101,3 t/s (+54% / +55%)**; 128k 51,6–55,5 → 73,0–75,6 (+38%); 360k 44,5 → 58,1 (+31%); igły 5/5 przy 128k, VRAM bez zmian (23,7 GiB). Szybciej niż stratne `IK2_K203_REQ8` (94,5). **Wdrożone: `bin-k203p` (stara: `bin-k203p-prev`), topka `inkling-1m.sh`.**
+- Lekcja: ta sama funkcja inline dawała różne bity w różnych instancjach, bo kompilator różnie łączył `a*b+c` w FMA; ścieżki, które mają się zgadzać bitowo, potrzebują wyłączonej kontrakcji i jawnych FMA.
 
 ### K-204 · Enigma 5060 Ti 16 GB: Inkling IQ3_S bez cenzury przy 256k (K-201: 131k = 14,4 GB) na hoście Ryzen
 - data: 2026-11-27; ok. 0,05 $

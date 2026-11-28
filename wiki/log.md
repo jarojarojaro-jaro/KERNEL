@@ -866,3 +866,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-27] K-203 | kernele IQ i mv_parts bitowo dokładne, wall 1M 67 bez zmian; rozkład kroku: macierze mieszane 3,4× wolniejsze od planarnego Q8 → K-206
 
 ## [2026-11-28] test | K-204 Enigma 16 GB Inkling IQ3_S: 5060 Ti +104% przy 262k, 4060 Ti +103% przy 283k, 0,41 $; K-207 (ablacja zamiast LoRA)
+
+## [2026-11-28] wdrożenie | K-206 Inkling 1M (Maya IQ3_S) wall 67,8 → 104,2 t/s (+54%) bez straty, 128k +38%, 360k +31%; lekcja o kontrakcji FMA
