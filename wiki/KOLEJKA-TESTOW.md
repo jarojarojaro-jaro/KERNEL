@@ -22,23 +22,11 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ## Czeka
 
 
-### K-210 · Maya: okna sufiksowe (`IK2_SUFFIX`, K-147) bitowo zgodne z dekodem po tokenie
-- data: 2026-11-28 (K-208b: okna sufiksowe weryfikowane ogólnym `forward()`, odpowiedź T=0 różni się od bez draftera w 3/4 promptów rozumowania)
-- test: weryfikacja okien sufiksowych przez dokładną ścieżkę okien (`fast_block`) albo dokładny batch; md5 reasoning-v1 = bez draftera, bench edycji/przepisywania K-147 prod vs nowa, wall ABBA; ≤12 min XTX
-- zysk: zgodność bitowa produkcji (reguła bezstratności) przy zachowaniu +14% edycji kodu
-- priorytet: wysoki
-
 ### K-211 · Maya: dekod bez draftera na XTX 111 t/s vs 3090 133 (ta sama przepustowość pamięci)
 - data: 2026-11-28 (K-208: 0,83× przy 960 vs 936 GB/s; inny kwant UD-Q4_K_XL 17,6 GB vs nasz AD-Q4_K 16,5 GB, więc u nas mniej bajtów na token)
 - test: rozkład kroku bez draftera (bench K158 `plain`), GB/s na fazę vs sufit; profil rocprofv3 ekspertów i uwagi; porównanie z kernelami CUDA alesha-pro (ten sam silnik)
 - zysk: do +20% dekodu bez draftera, część przechodzi na wall z drafterem
 - priorytet: wysoki
-
-### K-209 · Qwen topka na XTX: wagi w MMVQ czytane nietemporalnie (`__builtin_nontemporal_load`), wzór G2GFAST `ld.global.cs` i Mai `IK2_HIP_NT`
-- data: 2026-11-28 ([[zwiad-2026-11-28]]: G2GFAST krok GEMV −3,7…−7,5% bitowo na 5090; Maya runda 3 na XTX: wagi nietemporalne nie wypychają z cache wektorów wejścia)
-- test: build za przełącznikiem (CPU), md5 T=0 = produkcja, ABBA wall 8 kategorii + dekod 94k; ≤10 min XTX; decyzja tylko z pełnego modelu ([[lekcja-mikrobench-klamie]])
-- zysk: szacunek +2…+5% dekodu (MMVQ ~80% czasu kroku), bezstratnie
-- priorytet: średni
 
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD
 - data: 2026-10-18 (16e), zgoda na porównanie 2026-11-09
@@ -86,6 +74,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-210 · Maya: okna sufiksowe (`IK2_SUFFIX`, K-147) bitowo zgodne z dekodem po tokenie
+- data: 2026-11-28 (K-208b: okna sufiksowe weryfikowane ogólnym `forward()`, odpowiedź T=0 różni się od bez draftera w 3/4 promptów rozumowania)
+- test: weryfikacja okien sufiksowych przez dokładną ścieżkę okien (`fast_block`) albo dokładny batch; md5 reasoning-v1 = bez draftera, bench edycji/przepisywania K-147 prod vs nowa, wall ABBA; ≤12 min XTX
+- zysk: zgodność bitowa produkcji (reguła bezstratności) przy zachowaniu +14% edycji kodu
+- priorytet: wysoki
+- **wynik 2026-11-28 16:36–16:45 (XTX, `bin-k210` 38f2d687, okna sufiksowe przez `fast_block` po 8 wierszy):** bitowo dokładne (okna 2080/2080, reasoning-v1 md5 = bez draftera, wall md5 =), reasoning-v1 r1 157,5 → 159,0, rozgrzewka 146,2 → 165,1, wall bez zmian; **ale kopiowanie i edycja wolniej:** python_edit 387,6 → 263,4 (−32%), kopia 453,9 → 269,4 (−41%), edycja 377,2 → 267,8 (−29%) (bez sufiksu 242–249, bez draftera 107). **Nie wdrożone**: produkcja zostaje z szybszą ścieżką `forward()`; jej rozjazdy to remisy rzędu ulp (pierwsza różnica „, *3” vs „; *3”). Dalej: KL ścieżki sufiksowej vs dekod (bramka KLD, decyzja 2026-11-26) albo dokładny batchowy `forward()` dla okien ≥ 16.
 
 ### K-208 · Maya (Inkling) na obciążeniu LocalMaxxing reasoning-v1: porównanie z 3090 (133 bez draftera, 210 z DSpark)
 - Po co: jedyny bezpośredni punkt odniesienia dla naszej Mai na tym samym typie karty (3090 936 GB/s vs XTX 960); dziś mamy tylko własny wall z 4 krótkich promptów (152). Liczba do `config.json → nasze` w formacie LocalMaxxing.
@@ -1374,6 +1369,13 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 
 
 ## Odrzucone
+
+### K-209 · Qwen topka na XTX: wagi w MMVQ czytane nietemporalnie (`__builtin_nontemporal_load`), wzór G2GFAST `ld.global.cs` i Mai `IK2_HIP_NT`
+- data: 2026-11-28 ([[zwiad-2026-11-28]]: G2GFAST krok GEMV −3,7…−7,5% bitowo na 5090; Maya runda 3 na XTX: wagi nietemporalne nie wypychają z cache wektorów wejścia)
+- test: build za przełącznikiem (CPU), md5 T=0 = produkcja, ABBA wall 8 kategorii + dekod 94k; ≤10 min XTX; decyzja tylko z pełnego modelu ([[lekcja-mikrobench-klamie]])
+- zysk: szacunek +2…+5% dekodu (MMVQ ~80% czasu kroku), bezstratnie
+- priorytet: średni
+- **wynik 2026-11-28 16:26–16:46 (XTX, `~/llama-topka-k209` fca013f7e/bf3f4f91b, test-backend-ops 368/368, ISA: 105 par różnych tylko bitami cache, md5 T=0 identyczne):** wall −24…−26% we wszystkich 8 kategoriach (T=0 126,3 → 93,9). llama-bench: build bez przełącznika = produkcja (pp5 −0,1%, tg128 0,0%); `K209=1` pp5 −25,6%, tg128 −6,9%; tylko ścieżki 2–8 kolumn (`K209=2`) pp5 −25,6%, tg128 −0,8%. **Odrzucone:** na gfx1100 `slc` na wagach MMVQ spowalnia (inaczej niż `ld.global.cs` na sm_120 w G2GFAST); Maya zyskuje na NT, bo czyta wagi raz na krok i chroni małe wektory, a MMVQ w topce już ma `glc dlc` i potrzebuje L2 dla wierszy czytanych ponownie w weryfikacji.
 
 ### K-191 · Ablacja podwarstw Qwena bez treningu (wzór Model Carving): KLD i dekod po pominięciu najmniej ważnych bloków
 - data: 2026-11-26; eksperyment zmienia zachowanie modelu (decyzja JARO przed produkcją)
