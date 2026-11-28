@@ -298,7 +298,7 @@ FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s.
 
 | karta / model | metryka | wynik | data | silnik | źródło | w produkcji |
 |---|---|---|---|---|---|---|
-| XTX / Inkling 2 Mini AD-Q4_K (Maya) | kontekst z drafterem | **425 984** (420k: igły 5/5, prompt 380 s, dekod 73,6 / 62,6 t/s, VRAM 23,77 GiB) | 2026-11-27 | Maya bin-k200p | `KOLEJKA-TESTOW` K-202 | tak (`maya-atomic.json`) |
+| XTX / Inkling 2 Mini AD-Q4_K (Maya) | kontekst z drafterem | **557 056** (drafter ograniczony do 131k; 546k: igły 5/5, prompt 596 s, dekod 81,6 / 56,3 t/s, VRAM 23,70 GiB; wcześniej 425 984) | 2026-11-28 | Maya bin-k207p | `KOLEJKA-TESTOW` K-202 | tak (`maya-atomic.json`) |
 | XTX / Inkling 2 Mini GSQ IQ3_S bez cenzury (Maya) | kontekst | **1 048 576** (wall 104,2 / 101,3 po K-206, było 67,8; 128k 73–76; 360k 58,1; KL vs llama.cpp 0,0019) | 2026-11-28 | Maya bin-k203p (e03e1d4a) | `KOLEJKA-TESTOW` K-203 | topka `inkling-1m.sh` |
 | 5060 Ti / Inkling IQ3_S + LoRA + DSpark | wall przy pełnym kontekście | **66,45 / 61,97 t/s** przy 262 144 (było Qwen 32,5 przy 200 704) | 2026-11-27 | b12811 | [[2026-11-27-k204-enigma-16gb-inkling]] | nie (kandydat) |
 | 4060 Ti 16 GB / j.w. | j.w. | **48,58 / 48,99 t/s** przy 283 648 (było 23,9 przy 217 088) | 2026-11-27 | b12811 | j.w. | nie (kandydat) |

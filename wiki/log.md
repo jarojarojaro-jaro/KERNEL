@@ -872,3 +872,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-28] vast | reaper K-204: 5060 Ti zniszczona po 40 min mimo pracy (fałszywe offline), 4060 Ti FINISHED; wyniki w notatce K-204, 0 instancji
 
 ## [2026-11-28] decyzja | Enigma 16 GB: Inkling K-204 na stronie i w aplikacji (5060 Ti, 4060 Ti); 5080 zostaje na Qwenie
+
+## [2026-11-28] wdrożenie | Maya AD kontekst 425 984 → 557 056 (bin-k207p, drafter na 131k, igły 5/5 przy 546k, wall bez zmian, md5 =)
