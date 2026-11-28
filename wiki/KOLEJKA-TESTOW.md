@@ -22,10 +22,10 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 ## Czeka
 
 
-### K-211 · Maya: dekod bez draftera na XTX 111 t/s vs 3090 133 (ta sama przepustowość pamięci)
-- data: 2026-11-28 (K-208: 0,83× przy 960 vs 936 GB/s; inny kwant UD-Q4_K_XL 17,6 GB vs nasz AD-Q4_K 16,5 GB, więc u nas mniej bajtów na token)
-- test: rozkład kroku bez draftera (bench K158 `plain`), GB/s na fazę vs sufit; profil rocprofv3 ekspertów i uwagi; porównanie z kernelami CUDA alesha-pro (ten sam silnik)
-- zysk: do +20% dekodu bez draftera, część przechodzi na wall z drafterem
+### K-211 · Maya z drafterem na XTX 157 t/s vs 3090 210 t/s na tym samym prompcie rozumowania (reasoning-v1)
+- data: 2026-11-28 (K-208; 3090: alesha-pro DSpark, akceptacja 55%, 4,08 tok./przebieg, szerokość do 12; u nas MTP: 70%, 3,37 tok./przebieg, szerokość do 8); cel zawsze z drafterem ([[lekcja-mierz-z-drafterem]])
+- test: rozkład rundy z drafterem (koszt draftu, weryfikacji, akceptacja) vs ich DSpark; szersze okna (do 12) i ich bramka szerokości; ≤10 min XTX
+- zysk: do +34% (157 → 210) na rozumowaniu z drafterem
 - priorytet: wysoki
 
 ### K-030 · Enigma 12/16 GB: porównanie jakości kandydatów (AP-Q3_K_XL vs UD-Q3_K_XL na 16 GB, IQ3_XXS-mtp Swift W3 / ISTA na 12 GB) zestawem jakość-mini + KLD

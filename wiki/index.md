@@ -64,7 +64,7 @@ Audyt liczb: [[AUDYT]].
 - [[optymalizacje/_hub|optymalizacje]] — Jedna notatka na technikę, kernel albo łatkę: werdykt (przyjete, odrzucone, w-toku), zysk, dowód (99)
 - [[testy/_hub|testy]] — Eksperymenty i pomiary z datą (warunki, wynik, przyrost) i metoda pomiaru; kolejka w KOLEJKA-TESTOW (134)
 - [[metody/_hub|metody]] — Jak pracujemy: playbook, bramki poprawności, fabryka, dowód z profilu (30)
-- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (138)
+- [[lekcje/_hub|lekcje]] — Lekcje z błędów: objaw, przyczyna, jak robić poprawnie (139)
 - [[research/_hub|research]] — Raporty, zwiady i linki od właściciela z werdyktem; rejestr przebadanych źródeł w ZRODLA (93)
 - [[ekosystem/_hub|ekosystem]] — Cudze silniki i repozytoria, konkurencja, firmy i ludzie: jedna notatka na podmiot (116)
 - [[produkt/_hub|produkt]] — Enigma: plan produktu, strona, aplikacja, przepisy per klasa VRAM (29)
@@ -78,6 +78,7 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-28 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 - 2026-11-28 [[zwiad-2026-11-28|Zwiad 2026-11-28: G2GFAST 687,5 t/s (+3,6%), Maya na 3090 210 t/s to inne obciążenie, nib na RDNA4 przy 50% przepustowości]]
 - 2026-11-28 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
+- 2026-11-28 [[lekcja-mierz-z-drafterem|Lekcja: celem i wynikiem jest zawsze konfiguracja z drafterem, bez draftera tylko jako wzorzec poprawności]]
 - 2026-11-28 [[lekcja-fma-kontrakcja-bitowa-zgodnosc|Lekcja: bitowa zgodność kerneli wymaga wyłączenia kontrakcji FMA]]
 - 2026-11-28 [[2026-11-28-enigma-16gb-inkling|2026-11-28: Enigma 16 GB przechodzi na Inklinga IQ3_S bez cenzury (5060 Ti, 4060 Ti)]]
 - 2026-11-27 [[2026-11-27-nvq5|2026-11-27 Vast nvq5: Inkling GSQ-RCO na 12–16 GB (K-195), offload ekspertów (K-190), DSpine dla Qwena (K-197)]]
@@ -87,7 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-27 [[lekcja-maya-16k-kontekstu|Lekcja: Maya stała w produkcji i testach na 16k kontekstu, choć mieści ok. 488k]]
 - 2026-11-27 [[2026-11-27-zawsze-pelny-kontekst|2026-11-27: zawsze pełny kontekst — tyle, ile się mieści (słowa JARO)]]
 - 2026-11-26 [[2026-11-26-we2-nib-scalona-ablacja|2026-11-26 WE2: odmowy wycięte na stałe w wagach Niba zamiast LoRA w locie]]
-- 2026-11-26 [[2026-11-26-we1-astra-stop-qwen|2026-11-26 WE1: Astra-Stop (rank-1 `</think>`) na Qwen3.8-27B Uncensored, XTX, LoRA w locie, skale 0 / 0,5 / 1 / 1,5]]
 
-Razem 870 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
+Razem 871 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
 <!-- AUTO:END -->
