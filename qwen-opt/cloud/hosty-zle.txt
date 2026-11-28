@@ -18,3 +18,10 @@
 28725	2026-11-27	qwenbench-nvq3-4060tie-11272300	stuck in loading > 10 min
 158609	2026-11-27	RTX 4060 Ti	hostguard: power 130.00/165.00 W;
 154025	2026-11-28	qwenbench-nvq3-5060tia-11280330	SSH refuses the registered key (direct and proxy, twice; key attached)
+155064	2026-11-28	RTX 4080 SUPER	hostguard: power 200.00/320.00 W;
+158450	2026-11-28	qwenbench-nvq3-3080-11282124	SSH refuses the registered key (direct and proxy; last: Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
+Have fun!
+roo)
+147194	2026-11-28	qwenbench-nvq3-3070-11282136	SSH refuses the registered key (direct and proxy; last: Welcome to vast.ai. If authentication fails, try again after a few seconds, and double check your ssh key.
+Have fun!
+roo)

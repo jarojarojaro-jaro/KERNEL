@@ -890,3 +890,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-28] update | TOPKI.md: 85 wierszy (12 produkcja, 18 gotowe, 55 bez pełnego stosu); platformy/: 11 playbooków + rodzaje modeli + 2 procedury; sekcje Topki na 15 stronach kart; K-212..K-234 pomiary pełnego stosu
 
 ## [2026-11-28] research | #32776 (draft-simple na GDN ×0,41–0,60, nasze MTP poza problemem) + DFly2 bez delty; pułapka w rodzaje-modeli
+
+## [2026-11-28] test | Vast K-223..K-232: Inkling + DSpark + ablacja topką na 5090 (175,6 przy 819k), 4090 (126,4), 3090 (95,1), 5080 (138,7), 4080 S (119,4), 4060 Ti (71,9), 5070 (131,0), 3060 (59,6); 3080/2080 Ti Qwen3.5-9B MTP (134,1 / 92,3); 3,16 $ łącznie

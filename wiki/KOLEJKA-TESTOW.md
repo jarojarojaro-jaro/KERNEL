@@ -88,76 +88,6 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 - zysk: topki dla modeli z katalogu (np. LFM z lookupem: kopia 334,7 przy W8)
 - priorytet: niski (czeka na decyzję)
 
-### K-223 · RTX 5080: topka Inklinga (IQ3_S + `--ablate-lora` + DSpark n2, pełny kontekst)
-- data: 2026-11-28; Inkling na 5080 nigdy niezmierzony (`final-recipes-nvidia.md:37`), dziś 5080 ma Qwen GSQ lean 81,62 / produkcja 58,81
-- test: build b12811 + k207-ablate f7040f25e; szukanie maks. `-c` przy ub 128 (start od 262 144); wall 4 × 300 tok. T=0 / 0,7 w trzech ramionach (ablacja, LoRA, bez adaptera); igły 5/5 przy 95%; prefill 32k i fill; host z Ryzenem (bramka hosta: wall, nie tylko tg256)
-- koszt: 0,35 $/h × 0,6 h ≈ 0,2 $
-- zysk: nowa topka 16 GB klasy 5080; na 5060 Ti ten przepis dał 88,45 wobec Qwen lean 43,40 na tej samej karcie
-- priorytet: wysoki
-
-### K-224 · RTX 4060 Ti: `--ablate-lora` zamiast LoRA przy 283 648
-- data: 2026-11-28; produkcja 48,58 / 48,99 z LoRA; ablacja zmierzona tylko na 5060 Ti
-- test: ramiona ablacja / LoRA / bez adaptera na tym samym hoście, `-c 283648 -ub 128`, wall, odmowy 0/5, igły przy 95%, prefill 32k
-- koszt: 0,153 $/h × 0,7 h ≈ 0,11 $
-- zysk: na 5060 Ti +15,5% / +27,5% wobec LoRA (`2026-11-28-k207-ablacja-zamiast-lora.md:23`)
-- priorytet: wysoki
-
-### K-225 · RTX 5060 Ti: prefill, kopia i głębia topki z `--ablate-lora`
-- data: 2026-11-28; topka 88,45 / 90,78 ma tylko wall; prefill 632 i głębia pochodzą z ramienia LoRA (K-204)
-- test: Ryzen 7 9700X albo podobny; prefill 32k przy ub 128, fill do 95% + igły 5/5, dekod przy 64k / 128k / maks.; copy_bench (kopia i edycja kodu)
-- koszt: 0,137 $/h × 0,6 h ≈ 0,08 $
-- zysk: kompletny wiersz topki (prefill, kopia, długi kontekst); kopia i kod dziś to brak pomiaru
-- priorytet: średni
-
-### K-226 · RTX 3090: Inkling 2 Mini z pełnym stosem (DSpark + ablacja, pełny kontekst) vs topka Qwena
-- data: 2026-11-28; naszego pomiaru brak, obcy punkt UD-Q4_K_XL + DSpark 210,2 t/s (reasoning-v1, K-208); topka Qwena 79,97 T1
-- test: b12811 + k207-ablate, UD-Q4_K_XL (albo AD-Q4_K, jak w Mai) + DSpark Q8_0, KV q4_0, szukanie maks. `-c`; wall 4 prompty i T1 `spec_sweep` (porównanie z Qwenem tą samą metryką); przy okazji Qwen fork n2 vs n4 przy 262 144 (K-129)
-- koszt: 0,22 $/h × 1 h ≈ 0,22 $
-- zysk: możliwa nowa topka 24 GB; obcy punkt sugeruje ×2+ wobec Qwena [INFERENCE: inna metryka, prompt rozumowania]
-- priorytet: wysoki
-
-### K-227 · RTX 4090: Inkling 2 Mini z pełnym stosem
-- data: 2026-11-28; brak pomiaru; topka Qwena 101,27 T1
-- test: jak pozycja 3090, host 450 W albo zapisany limit mocy
-- koszt: 0,507 $/h × 1 h ≈ 0,5 $
-- zysk: topka 24 GB Ada
-- priorytet: średni (po 3090)
-
-### K-228 · RTX 5090: Inkling 2 Mini z pełnym stosem + prefill fork
-- data: 2026-11-28; brak pomiaru Inklinga; fork Qwena 148,57 bez prefillu z filla
-- test: Inkling UD-Q4_K_XL/AD-Q4_K + DSpark + ablacja, maks. `-c` (32 GB: także 1M jak Maya na XTX, K-203); prefill fill dla forka Qwena
-- koszt: 0,734 $/h × 1 h ≈ 0,75 $
-- zysk: topka 32 GB; brakujący prefill
-- priorytet: średni
-
-### K-229 · RTX 3060: Inkling IQ2_S + DSpark + ablacja przy maksymalnym kontekście
-- data: 2026-11-28; zmierzone tylko 16k (59,5 / 53,4) i z cenzurą; topka przy pełnym ctx to Bonsai prism 58,31
-- test: b12811 + k207-ablate, IQ2_S i IQ3_S, szukanie maks. `-c` przy ub 64/128 z DSpark, igły, wall, prefill; host 170 W
-- koszt: 0,08 $/h × 1 h ≈ 0,1 $
-- zysk: 12 GB: IQ2_S z DSpark przy 16k +78% wobec Bonsaia Q2_0; nie wiadomo, ile zostaje przy pełnym ctx
-- priorytet: wysoki
-
-### K-230 · RTX 4070 i RTX 5070: topka 12 GB (Inkling IQ2_S + DSpark vs Bonsai prism)
-- data: 2026-11-28; 4070 bez Inklinga, 5070 (Steam #1) nigdy niezmierzona (host odrzucony w K-118)
-- test: na każdej karcie Bonsai PTQ1_0-mtp-lean prism n2 przy maks. ctx i Inkling IQ2_S + DSpark + ablacja przy maks. ctx; wall i T1; fill
-- koszt: (0,176 + 0,294) $/h × 1 h ≈ 0,47 $
-- zysk: topka najpopularniejszej karty; 4070 dziś 94,73 (prism)
-- priorytet: wysoki (5070), średni (4070)
-
-### K-231 · RTX 4080 SUPER: pełny kontekst i Inkling
-- data: 2026-11-28; jedyny pomiar przy ctx 8 192 (107,3 T=0)
-- test: Qwen GSQ fork/lean przy maks. ctx (16 GB: ok. 217k jak 5080) + Inkling IQ3_S + DSpark + ablacja; fill, igły
-- koszt: stawka 4080 SUPER nieznana (K-118 łącznie 1,11 $ z 3 kartami i bezczynnością); szacunek ok. 0,3 $ [SZACUNEK]
-- zysk: pierwszy pełny stos tej karty
-- priorytet: niski
-
-### K-232 · RTX 3080 / 3070 / 2080 Ti: spekulacja dla kart 8–11 GB
-- data: 2026-11-28; produkcja 3080 i 3070 bez spekulacji (Qwen3.5-9B 85,20 / 66,90); 2080 Ti ma prism (fork CUDA pada na sm_75)
-- test: Qwen3.5-9B z MTP (jeśli plik ma głowicę) albo lookup `--spec-default` (L4: kopia ×7,4, czat 0%); Inkling IQ2_S + DSpark na 3080 i 2080 Ti (IQ2_S z DSpark 9,6 GB przy 16k); maks. ctx, fill
-- koszt: stawki nieznane (kampania 67c: 0,056–0,48 $/h); ok. 3 × 0,5 h × 0,15 $/h ≈ 0,25 $ [SZACUNEK]
-- zysk: pełny stos na trzech kartach, które dziś go nie mają
-- priorytet: średni
-
 ### K-233 · L4 (Colab): fork przy maksymalnym kontekście
 - data: 2026-11-28; zmierzone 204 800 przy 15,7 GB z 24 GB
 - test: fork MTP n2, Qwen GSQ IQ3_XXS-mtp i UD-Q4_K_XL przy 262 144; Inkling IQ3_S + DSpark + ablacja przy maks. ctx
@@ -224,6 +154,86 @@ Skróty: `R/` = `~/KERNEL/product/research/`, `Q/` = `~/KERNEL/qwen-opt/`. Rekor
 (pusto)
 
 ## Zrobione
+
+### K-232 · RTX 3080 / 3070 / 2080 Ti: spekulacja dla kart 8–11 GB
+- data: 2026-11-28; produkcja 3080 i 3070 bez spekulacji (Qwen3.5-9B 85,20 / 66,90); 2080 Ti ma prism (fork CUDA pada na sm_75)
+- test: Qwen3.5-9B z MTP (jeśli plik ma głowicę) albo lookup `--spec-default` (L4: kopia ×7,4, czat 0%); Inkling IQ2_S + DSpark na 3080 i 2080 Ti (IQ2_S z DSpark 9,6 GB przy 16k); maks. ctx, fill
+- koszt: stawki nieznane (kampania 67c: 0,056–0,48 $/h); ok. 3 × 0,5 h × 0,15 $/h ≈ 0,25 $ [SZACUNEK]
+- zysk: pełny stos na trzech kartach, które dziś go nie mają
+- priorytet: średni
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 3080 Qwen3.5-9B Q6_K MTP n2 + ngram 134,11 / 132,28 przy 114 688 (+57% vs 85,20); 2080 Ti Qwen3.5-9B MTP n2 92,27 / 89,69 przy 204 800; 3070: instancja nie wstała. Wpis w [[TOPKI]].
+
+### K-231 · RTX 4080 SUPER: pełny kontekst i Inkling
+- data: 2026-11-28; jedyny pomiar przy ctx 8 192 (107,3 T=0)
+- test: Qwen GSQ fork/lean przy maks. ctx (16 GB: ok. 217k jak 5080) + Inkling IQ3_S + DSpark + ablacja; fill, igły
+- koszt: stawka 4080 SUPER nieznana (K-118 łącznie 1,11 $ z 3 kartami i bezczynnością); szacunek ok. 0,3 $ [SZACUNEK]
+- zysk: pierwszy pełny stos tej karty
+- priorytet: niski
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 4080 SUPER Inkling IQ3_S + DSpark n3 + ablacja 119,36 / 109,05 przy 254 976 vs Qwen GSQ MTP 99,83 / 95,37. Wpis w [[TOPKI]].
+
+### K-230 · RTX 4070 i RTX 5070: topka 12 GB (Inkling IQ2_S + DSpark vs Bonsai prism)
+- data: 2026-11-28; 4070 bez Inklinga, 5070 (Steam #1) nigdy niezmierzona (host odrzucony w K-118)
+- test: na każdej karcie Bonsai PTQ1_0-mtp-lean prism n2 przy maks. ctx i Inkling IQ2_S + DSpark + ablacja przy maks. ctx; wall i T1; fill
+- koszt: (0,176 + 0,294) $/h × 1 h ≈ 0,47 $
+- zysk: topka najpopularniejszej karty; 4070 dziś 94,73 (prism)
+- priorytet: wysoki (5070), średni (4070)
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 5070 Inkling IQ2_S 130,97 / 127,42 przy 155 648 (igła 5/5); Bonsai prism 137,50 / 131,41 przy 208 896 bez igły; 4070: brak ofert. Wpis w [[TOPKI]].
+
+### K-229 · RTX 3060: Inkling IQ2_S + DSpark + ablacja przy maksymalnym kontekście
+- data: 2026-11-28; zmierzone tylko 16k (59,5 / 53,4) i z cenzurą; topka przy pełnym ctx to Bonsai prism 58,31
+- test: b12811 + k207-ablate, IQ2_S i IQ3_S, szukanie maks. `-c` przy ub 64/128 z DSpark, igły, wall, prefill; host 170 W
+- koszt: 0,08 $/h × 1 h ≈ 0,1 $
+- zysk: 12 GB: IQ2_S z DSpark przy 16k +78% wobec Bonsaia Q2_0; nie wiadomo, ile zostaje przy pełnym ctx
+- priorytet: wysoki
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 3060 Inkling IQ2_S + DSpark n2 + ablacja (ub 64) 59,57 / 60,97 przy 188 416 (igła 5/5); spekulacja nic nie daje na hoście Haswell. Wpis w [[TOPKI]].
+
+### K-228 · RTX 5090: Inkling 2 Mini z pełnym stosem + prefill fork
+- data: 2026-11-28; brak pomiaru Inklinga; fork Qwena 148,57 bez prefillu z filla
+- test: Inkling UD-Q4_K_XL/AD-Q4_K + DSpark + ablacja, maks. `-c` (32 GB: także 1M jak Maya na XTX, K-203); prefill fill dla forka Qwena
+- koszt: 0,734 $/h × 1 h ≈ 0,75 $
+- zysk: topka 32 GB; brakujący prefill
+- priorytet: średni
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 5090 Inkling UD-Q4_K_XL + DSpark n2 + ablacja 175,62 / 163,06 przy 819 200, igła 5/5 przy 776k (+18% vs fork 148,57); prefill forka nie zmierzony (OOM). Wpis w [[TOPKI]].
+
+### K-227 · RTX 4090: Inkling 2 Mini z pełnym stosem
+- data: 2026-11-28; brak pomiaru; topka Qwena 101,27 T1
+- test: jak pozycja 3090, host 450 W albo zapisany limit mocy
+- koszt: 0,507 $/h × 1 h ≈ 0,5 $
+- zysk: topka 24 GB Ada
+- priorytet: średni (po 3090)
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 4090 Inkling UD-Q4_K_XL + DSpark n3 + ablacja 126,43 / 103,56 przy 368 640 (+25% vs Qwen fork 101,27); fork OOM przy 262 144. Wpis w [[TOPKI]].
+
+### K-226 · RTX 3090: Inkling 2 Mini z pełnym stosem (DSpark + ablacja, pełny kontekst) vs topka Qwena
+- data: 2026-11-28; naszego pomiaru brak, obcy punkt UD-Q4_K_XL + DSpark 210,2 t/s (reasoning-v1, K-208); topka Qwena 79,97 T1
+- test: b12811 + k207-ablate, UD-Q4_K_XL (albo AD-Q4_K, jak w Mai) + DSpark Q8_0, KV q4_0, szukanie maks. `-c`; wall 4 prompty i T1 `spec_sweep` (porównanie z Qwenem tą samą metryką); przy okazji Qwen fork n2 vs n4 przy 262 144 (K-129)
+- koszt: 0,22 $/h × 1 h ≈ 0,22 $
+- zysk: możliwa nowa topka 24 GB; obcy punkt sugeruje ×2+ wobec Qwena [INFERENCE: inna metryka, prompt rozumowania]
+- priorytet: wysoki
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 3090 Inkling UD-Q4_K_XL + DSpark n2 + ablacja 95,09 / 84,40, igła 5/5 przy 344 064 (+19% vs Qwen fork 79,97); fork Qwena przy 262 144 OOM. Wpis w [[TOPKI]].
+
+### K-225 · RTX 5060 Ti: prefill, kopia i głębia topki z `--ablate-lora`
+- data: 2026-11-28; topka 88,45 / 90,78 ma tylko wall; prefill 632 i głębia pochodzą z ramienia LoRA (K-204)
+- test: Ryzen 7 9700X albo podobny; prefill 32k przy ub 128, fill do 95% + igły 5/5, dekod przy 64k / 128k / maks.; copy_bench (kopia i edycja kodu)
+- koszt: 0,137 $/h × 0,6 h ≈ 0,08 $
+- zysk: kompletny wiersz topki (prefill, kopia, długi kontekst); kopia i kod dziś to brak pomiaru
+- priorytet: średni
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 5060 Ti (Ryzen 5700X) 85,62 / 88,47, prefill 32k 722 (ub 128) / 939 (ub 256), copy 108; topka 88,45 (9700X) zostaje. Wpis w [[TOPKI]].
+
+### K-224 · RTX 4060 Ti: `--ablate-lora` zamiast LoRA przy 283 648
+- data: 2026-11-28; produkcja 48,58 / 48,99 z LoRA; ablacja zmierzona tylko na 5060 Ti
+- test: ramiona ablacja / LoRA / bez adaptera na tym samym hoście, `-c 283648 -ub 128`, wall, odmowy 0/5, igły przy 95%, prefill 32k
+- koszt: 0,153 $/h × 0,7 h ≈ 0,11 $
+- zysk: na 5060 Ti +15,5% / +27,5% wobec LoRA (`2026-11-28-k207-ablacja-zamiast-lora.md:23`)
+- priorytet: wysoki
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 4060 Ti ablacja 71,91 / 69,65 vs LoRA 49,09 / 50,13 (+46% / +39%) przy 262 144; 283 648 OOM ze spekulacją. Wpis w [[TOPKI]].
+
+### K-223 · RTX 5080: topka Inklinga (IQ3_S + `--ablate-lora` + DSpark n2, pełny kontekst)
+- data: 2026-11-28; Inkling na 5080 nigdy niezmierzony (`final-recipes-nvidia.md:37`), dziś 5080 ma Qwen GSQ lean 81,62 / produkcja 58,81
+- test: build b12811 + k207-ablate f7040f25e; szukanie maks. `-c` przy ub 128 (start od 262 144); wall 4 × 300 tok. T=0 / 0,7 w trzech ramionach (ablacja, LoRA, bez adaptera); igły 5/5 przy 95%; prefill 32k i fill; host z Ryzenem (bramka hosta: wall, nie tylko tg256)
+- koszt: 0,35 $/h × 0,6 h ≈ 0,2 $
+- zysk: nowa topka 16 GB klasy 5080; na 5060 Ti ten przepis dał 88,45 wobec Qwen lean 43,40 na tej samej karcie
+- priorytet: wysoki
+- **wynik 2026-11-28 wieczór (Vast, `qwen-opt/cloud/nvq3/results/TOPKI-NV-2026-11-28.md`):** 5080 Inkling IQ3_S 138,68 / 142,34 przy 247 808 (igła 5/5) vs Qwen GSQ MTP n3 127,12 / 117,70 na tym samym hoście. Wpis w [[TOPKI]].
 
 ### K-210 · Maya: okna sufiksowe (`IK2_SUFFIX`, K-147) bitowo zgodne z dekodem po tokenie
 - data: 2026-11-28 (K-208b: okna sufiksowe weryfikowane ogólnym `forward()`, odpowiedź T=0 różni się od bez draftera w 3/4 promptów rozumowania)

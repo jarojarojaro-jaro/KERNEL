@@ -61,6 +61,8 @@ status: aktualne
 - **Bramki:** md5 z drafterem = bez. K-208 złapał okna sufiksowe, które nie były bitowe. Do tego igły 5/5, odmowy 0/5, KL z ramieniem podłogi.
 - **Co zabija:** LoRA w locie (−17–33% dekodu), stratna konwersja Q8 (KL 0,013), KV draftera q4 (OOM na 1. zapytaniu), `--n-cpu-moe` ze spekulacją.
 
+- **Kontekst z DSpark w llama.cpp (K-223..K-232):** dopasowanie przy starcie nie jest bezpieczne — bufory draftera rosną przy pierwszym zapytaniu (4080 SUPER 271 360 przy 408 MiB wolnego, 4060 Ti 283 648: OOM). Produkcyjny `-c` co najmniej 16 384 poniżej maksimum ze startu albo ok. 600 MiB wolnego po rozgrzewce; zawsze igła przy 95%.
+
 ## Powiązane
 - [[procedura-nowy-model-znana-karta]]
 - [[procedura-znany-model-nowa-karta]]

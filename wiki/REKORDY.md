@@ -305,3 +305,12 @@ FUSE3 po poprawce r8: KLD 0,0022 (przed poprawką 4,68), tg64 48,7 → 61,6 t/s.
 | 5060 Ti / Inkling IQ3_S bez cenzury | ablacja vs LoRA (ten sam host, EPYC 7402) | **41,17 / 41,11 vs 29,17 / 28,64 t/s (+41% / +44%)** | 2026-11-28 | b12811 + k207-ablate f7040f25e | [[2026-11-28-k207-ablacja-zamiast-lora]] | nie (kandydat) |
 | 5060 Ti / Inkling IQ3_S bez cenzury | wall z `--ablate-lora`, Ryzen 7 9700X | **88,45 / 90,78 t/s** przy 262 144 (LoRA 76,58 / 71,22) | 2026-11-28 | b12811 + k207-ablate f7040f25e | [[2026-11-28-k207-ablacja-zamiast-lora]] | nie (kandydat) |
 | XTX / Inkling AD-Q4_K (Maya) | LocalMaxxing reasoning-v1 T=0 320 tok. | **157,4 t/s** (bez draftera 111,3) | 2026-11-28 | Maya bin-k207p | `KOLEJKA-TESTOW` K-208 | tak |
+| 5090 / Inkling UD-Q4_K_XL bez cenzury | wall z DSpark n2 + ablacja | **175,62 / 163,06 t/s** przy 819 200 (igła 5/5 przy 776k) | 2026-11-28 | b12811 + k207-ablate | `TOPKI-NV-2026-11-28.md` | nie (gotowa) |
+| 4090 / j.w. | j.w., DSpark n3 | **126,43 / 103,56 t/s** przy 368 640 | 2026-11-28 | j.w. | j.w. | nie |
+| 3090 / j.w. | j.w., DSpark n2 | **95,09 / 84,40 t/s** przy 344 064 | 2026-11-28 | j.w. | j.w. | nie |
+| 5080 / Inkling IQ3_S bez cenzury | j.w. | **138,68 / 142,34 t/s** przy 247 808 | 2026-11-28 | j.w. | j.w. | nie |
+| 4080 SUPER / Inkling IQ3_S | j.w., n3 | **119,36 / 109,05 t/s** przy 254 976 | 2026-11-28 | j.w. | j.w. | nie |
+| 4060 Ti / Inkling IQ3_S | j.w., ablacja | **71,91 / 69,65 t/s** przy 262 144 | 2026-11-28 | j.w. | j.w. | nie |
+| 5070 / Inkling IQ2_S | j.w. | **130,97 / 127,42 t/s** przy 155 648 | 2026-11-28 | j.w. | j.w. | nie |
+| 3080 / Qwen3.5-9B Q6_K MTP n2 + ngram | wall | **134,11 / 132,28 t/s** przy 114 688 | 2026-11-28 | j.w. | j.w. | nie |
+| 2080 Ti / Qwen3.5-9B Q6_K MTP n2 | wall | **92,27 / 89,69 t/s** przy 204 800 | 2026-11-28 | j.w. (sm_75) | j.w. | nie |
