@@ -56,7 +56,7 @@ Audyt liczb: [[AUDYT]].
 <!-- AUTO:START -->
 ## Kategorie
 
-- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (46)
+- [[decyzje/_hub|decyzje]] — Decyzje i korekty właściciela: wiążą i mają pierwszeństwo przed resztą wiki (47)
 - [[modele/_hub|modele]] — Jedna notatka na model (też drafter, kwant): rozmiar, kwant, gdzie działa, najlepsze wyniki (30)
 - [[llm/_hub|llm]] — Trening, dostrajanie, edycje wag i jakość modeli (poza optymalizacją silnika) (10)
 - [[karty/_hub|karty]] — Jedna notatka na kartę, maszynę albo dostawcę chmury: parametry, sufity, stan, najlepsze wyniki (21)
@@ -74,7 +74,10 @@ Audyt liczb: [[AUDYT]].
 ## Ostatnio aktualizowane
 
 - 2026-11-28 [[2026-11-27-k204-enigma-16gb-inkling|2026-11-27 K-204: Enigma 16 GB z Inklingiem IQ3_S bez cenzury i pełnym kontekstem (5060 Ti, 4060 Ti)]]
+- 2026-11-28 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
+- 2026-11-28 [[final-recipes-nvidia|Finalne przepisy NVIDIA per klasa VRAM (na stronę)]]
 - 2026-11-28 [[lekcja-fma-kontrakcja-bitowa-zgodnosc|Lekcja: bitowa zgodność kerneli wymaga wyłączenia kontrakcji FMA]]
+- 2026-11-28 [[2026-11-28-enigma-16gb-inkling|2026-11-28: Enigma 16 GB przechodzi na Inklinga IQ3_S bez cenzury (5060 Ti, 4060 Ti)]]
 - 2026-11-27 [[2026-11-27-nvq5|2026-11-27 Vast nvq5: Inkling GSQ-RCO na 12–16 GB (K-195), offload ekspertów (K-190), DSpine dla Qwena (K-197)]]
 - 2026-11-27 [[2026-11-27-nvq4|2026-11-27 Vast nvq4: dokończenie fali NVIDIA (K-131, K-112, K-014, K-015, K-071)]]
 - 2026-11-27 [[zwiad-2026-11-27|Zwiad 2026-11-27: Tintero v0.1.0, 663,9 t/s Qwena na 5090 (DSpine), oMLX +42% na Macu, AMD w dashboardzie llama.cpp]]
@@ -85,9 +88,6 @@ Audyt liczb: [[AUDYT]].
 - 2026-11-26 [[2026-11-26-we1-astra-stop-qwen|2026-11-26 WE1: Astra-Stop (rank-1 `</think>`) na Qwen3.8-27B Uncensored, XTX, LoRA w locie, skale 0 / 0,5 / 1 / 1,5]]
 - 2026-11-26 [[2026-11-26-nvq3|2026-11-26 Vast nvq3 (3090 ×2, 5060 Ti): K-122, K-071, K-129, K-070, K-124, K-113 — fala przerwana poleceniem JARO 16:25]]
 - 2026-11-26 [[2026-11-26-nvq2-3090-k071-k066|2026-11-26 Vast nvq2, RTX 3090 (pełna moc 350/350 W): K-071 qwen-warp vs fork i K-066 strojenie MMQ IQ4_XS]]
-- 2026-11-26 [[2026-11-26-nvq-5060ti|2026-11-26 Vast nvq, RTX 5060 Ti 16 GB (sm_120): K-115, K-015, K-063, K-112, K-004, K-016/K-129, K-113]]
-- 2026-11-26 [[2026-11-26-nvq-3090|2026-11-26 Vast nvq, RTX 3090 (370/370 W): K-115, K-070, K-131, K-122 (część), K-004 (część)]]
-- 2026-11-26 [[topki|Topki: najlepszy zmierzony wariant każdego modelu na każdej karcie]]
 
-Razem 867 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
+Razem 868 notatek. Wygenerowano 2026-11-28 przez `tools/wiki.py index`.
 <!-- AUTO:END -->

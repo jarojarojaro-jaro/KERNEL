@@ -129,7 +129,8 @@ export interface GgufArch {
   nEmbd: number;
   nVocab: number;
   ctxTrain: number;
-  /** Full-attention layers (cache grows with ctx) and their per-token K/V widths in elements. */
+  /** Full-attention layers (cache grows with ctx) and their per-token K/V widths in elements. Looped architectures
+   *  (inkling2_loop: layers loop.start…loop.end−1 run loop.count times, each pass with its own cache) count cache visits. */
   full: { layers: number; kvHeads: number; keyLen: number; valueLen: number };
   /** Sliding-window layers (cache = window + ubatch, rounded to 256). */
   swa: { layers: number; kvHeads: number; keyLen: number; valueLen: number; window: number };
@@ -170,6 +171,9 @@ export function ggufArch(h: GgufHeader): GgufArch {
   const swa = { layers: 0, kvHeads: 0, keyLen: 0, valueLen: 0, window };
   const headCountKv = g('attention.head_count_kv');
   const keyLenDefault = num(g('attention.key_length')) ?? (nHead ? nEmbd / nHead : 0);
+  const loopStart = num(g('loop.start')) ?? 0;
+  const loopEnd = num(g('loop.end')) ?? 0;
+  const loopCount = num(g('loop.count')) ?? 1;
   for (let l = 0; l < nLayer - nextn; l++) {
     const k = byName.get(`blk.${l}.attn_k.weight`);
     if (!k) continue; // recurrent / conv / linear-attention block
@@ -179,7 +183,7 @@ export function ggufArch(h: GgufHeader): GgufArch {
     const hkv = Array.isArray(headCountKv) ? Number(headCountKv[l] ?? 0) : num(headCountKv) ?? 0;
     const heads = hkv > 0 ? hkv : Math.max(1, Math.round(kDim / keyLenDefault));
     const target = isSwa(l) ? swa : full;
-    target.layers += 1;
+    target.layers += l >= loopStart && l < loopEnd ? loopCount : 1;
     target.kvHeads = heads;
     target.keyLen = kDim / heads;
     target.valueLen = vDim / heads;

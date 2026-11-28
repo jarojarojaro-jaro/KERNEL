@@ -59,6 +59,16 @@ const WHY: Record<string, Record<Lang, Render>> = {
 			return `Memory planned for MTP in the ${engine} engine (${n} tokens ahead); the optimisation measures it.`;
 		}
 	},
+	draft_engine: {
+		pl: (v) => {
+			const [engine, n] = split2(v);
+			return `Pamięć zaplanowana pod osobny model szkicujący (DSpark) w silniku ${engine} (${n} tokeny naprzód); optymalizacja go zmierzy.`;
+		},
+		en: (v) => {
+			const [engine, n] = split2(v);
+			return `Memory planned for a separate draft model (DSpark) in the ${engine} engine (${n} tokens ahead); the optimisation measures it.`;
+		}
+	},
 	mtp_no_memory: {
 		pl: () => 'Model ma głowicę MTP, ale przy tym kontekście brakuje pamięci na kontekst draftu (bez spekulacji MTP).',
 		en: () => 'The model has an MTP head, but its draft context does not fit at this context (no MTP speculation).'
@@ -177,6 +187,10 @@ const REJECTED: Record<string, Record<Lang, Render>> = {
 	needs_engine: {
 		pl: (v) => `Wymaga silnika ${v}, który nie jest dostępny dla tej karty albo nie jest jeszcze opublikowany.`,
 		en: (v) => `Needs the ${v} engine, which is not available for this GPU or not published yet.`
+	},
+	engine_not_measured: {
+		pl: (v) => `Działa w silniku ${v}, którego nie zmierzyliśmy jeszcze na tej karcie; oferujemy go tylko tam, gdzie go zmierzyliśmy.`,
+		en: (v) => `Runs in the ${v} engine, which we have not measured on this GPU yet; we offer it only where we measured it.`
 	},
 	too_slow_on_this_hw: {
 		pl: (v, l) => `Za wolny na tym sprzęcie: szacunek ok. ${tps(v, l)} t/s pisania (wymagamy co najmniej 8 t/s).`,

@@ -65,7 +65,7 @@ export interface BenchResult {
 
 export interface EngineConfig {
   engineId: string; modelPath: string; ctx: number; kvType: string; ub: number; b: number;
-  flashAttn: boolean; threads?: number; spec?: 'none' | 'mtp' | 'lookup'; extraArgs: string[]; env: Record<string, string>;
+  flashAttn: boolean; threads?: number; spec?: 'none' | 'mtp' | 'lookup' | 'draft'; extraArgs: string[]; env: Record<string, string>;
 }
 
 export interface Candidate {

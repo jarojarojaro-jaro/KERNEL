@@ -870,3 +870,5 @@ Raport product/research/watch/2026-11-25.md (sekcja „Analiza Kernela”): draf
 ## [2026-11-28] wdrożenie | K-206 Inkling 1M (Maya IQ3_S) wall 67,8 → 104,2 t/s (+54%) bez straty, 128k +38%, 360k +31%; lekcja o kontrakcji FMA
 
 ## [2026-11-28] vast | reaper K-204: 5060 Ti zniszczona po 40 min mimo pracy (fałszywe offline), 4060 Ti FINISHED; wyniki w notatce K-204, 0 instancji
+
+## [2026-11-28] decyzja | Enigma 16 GB: Inkling K-204 na stronie i w aplikacji (5060 Ti, 4060 Ti); 5080 zostaje na Qwenie

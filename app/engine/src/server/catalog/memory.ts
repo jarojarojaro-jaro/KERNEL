@@ -32,6 +32,10 @@
 //              (stock reserve with a quantized -ctkd would add F16 copies of all of it, so only lean passes -ctkd q4_0);
 //   growth   = the plain CUDA value with or without MTP (upstream +2…+28 MiB while the context fills: the F16 K/V copy
 //              lives in the compute buffer reserved at load).
+// A separate draft model (DSpark, engine profile `draft`): fixed MiB (drafter weights + buffers + the profile's LoRA) and a
+// draft KV per context token, both from the K-204 VRAM probes (2026-11-27, upstream b12811, Inkling 2 Mini IQ3_S, ub 128):
+// DSpark − plain = +744 / +720 MiB at no context (5060 Ti / 4060 Ti) and +4096 B per token on both (its one full-attention
+// layer, 8 × 256 in f16); the target counts its loop visits (inkling2_loop: 8 global + 40 sliding caches).
 import type { Backend, MemPlan } from '../../shared/types.ts';
 import type { CatalogModel, KvType, QuantFile } from './data.ts';
 
@@ -104,8 +108,20 @@ export interface MemConfig {
    *  the recurrent state (× STATE_SPEC) instead of a state copy per draft position, plus the reduced draft-vocab buffers
    *  (mtpExtraMiB). 4090 UD-Q4_K_XL 262144 / ub 256 / n 4 / q4_0 draft / lean / KVQ: −119 MiB at load, −168 at a full fill. */
   forkDraft?: boolean;
+  /** A separate draft model (DSpark) of the engine profile that runs the plan: its weights and fixed buffers plus a KV
+   *  cache that grows with the context (catalog/index.ts config). */
+  draft?: DraftModelMem;
   /** Tokens already in the context; the recommender plans for a full context (prompt = ctx). */
   prompt: number;
+}
+
+/** Memory of a separate draft model as its engine profile runs it (data/engines.json `profiles[].draft`), measured as the
+ *  difference to the same run without the drafter. */
+export interface DraftModelMem {
+  /** Draft weights, its fixed buffers and the profile's adapter files (LoRA), MiB. */
+  fixedMiB: number;
+  /** Draft KV cache per context token at the cache type the profile runs (upstream default f16), bytes. */
+  kvBytesPerToken: number;
 }
 
 export interface MemParts { weightsMiB: number; kvMiB: number; computeMiB: number; overheadMiB: number; totalMiB: number }
@@ -151,6 +167,10 @@ export function memParts(m: CatalogModel, q: QuantFile, c: MemConfig): MemParts 
     kv = kvBytes(m, c.ctx, c.kvType, c.ub, c.spec);
     compute += c.prompt * f16Layer * (spec ? g.spec : g.plain);
     if (spec) compute += perCtx + c.ub * ACT_DRAFT * a.nEmbd + (c.enigmaSpec ? a.mtpExtraMiB * MiB : 0);
+  }
+  if (c.draft) {
+    weights += c.draft.fixedMiB * MiB;
+    kv += c.ctx * c.draft.kvBytesPerToken;
   }
 
   const overhead = overheadMiB(c.backend, c.vramGiB) * MiB;

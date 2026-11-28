@@ -19,7 +19,7 @@ Gdy notatka w innym folderze przeczy decyzji, wygrywa decyzja (a notatkę trzeba
 Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 tools/wiki.py index`; nie edytuj jej ręcznie.
 
 <!-- AUTO:START -->
-## Notatki (46)
+## Notatki (47)
 
 - [[2026-10-12-rocm-domyslny|2026-10-12: ROCm stałym backendem]] — ROCm jest stałym backendem domyślnym; dalsze optymalizacje robimy pod HIP/ROCm, a Vulkan zostaje tylko jako opcja (`run-llm.sh … vulkan`).
 - [[2026-10-14-lfm-kv-q8|2026-10-14: LFM używa KV q8_0 (decyzja użytkownika)]] — Użytkownik zdecydował, że LFM2.5 działa z KV cache q8_0 (`run-llm.sh lfm`), mimo kosztu prędkości względem q4_0.
@@ -67,4 +67,5 @@ Wróć: [[index|Strona główna]]. Lista niżej jest generowana przez `python3 t
 - [[2026-11-26-eksperymenty-edycji-wag|2026-11-26: robimy dużo eksperymentów z edycją wag]] — JARO (2026-11-26 02:07), o skracaniu myślenia jednym kierunkiem i wpisaniu ablacji w plik Mai/Niba: „zrobmy duzo eksperymen tow z tym weight editing i wgl - to jest groundbreaking temat i musimy go analizowac jak sie da”.
 - [[2026-11-26-adapter-omp-odlozony|2026-11-26: trening własnego adaptera pod omp odkładamy]] — JARO (2026-11-26 01:54): „dobra odnosnie trenowania naszego adaptera to odpuszczamy narazie - ciezki temat”.
 - [[2026-11-27-zawsze-pelny-kontekst|2026-11-27: zawsze pełny kontekst — tyle, ile się mieści (słowa JARO)]] — JARO (2026-11-27 21:40): „Zawsze full ctx kurwa to była reguła — zawsze tyle contextu ile się mieści”; po tym, jak okazało się, że Maya (Inkling) w produkcji i we wszystkich testach od 21.11 stała na `--max-context 16384`.
+- [[2026-11-28-enigma-16gb-inkling|2026-11-28: Enigma 16 GB przechodzi na Inklinga IQ3_S bez cenzury (5060 Ti, 4060 Ti)]] — JARO (2026-11-28 02:38): „1-4 tak” — w tym punkt 4: zamiana modelu na stronie Enigmy 16 GB na Inklinga z K-204. 5060 Ti 66,5 t/s przy 262 144, 4060 Ti 48,6 przy 283 648 (+103–104% wobec Qwen3.8 IQ3_XXS na tym samym hoście); RTX 5080 zostaje na Qwenie do własnego pomiaru.
 <!-- AUTO:END -->

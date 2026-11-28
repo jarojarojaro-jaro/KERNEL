@@ -287,9 +287,9 @@
           "spec": "mtp",
           "b": 2048,
           "ub": 512,
-          "needs": [
-            "draftVocab"
-          ],
+          "needs": {
+            "draftVocab": "draft_vocab_qwen38.txt"
+          },
           "env": {
             "LD_LIBRARY_PATH": "{engineDir}/lib{pathSep}{rocmLib}",
             "LLAMA_SPEC_LOOKUP": "3",
@@ -346,7 +346,7 @@
           "spec": "none",
           "b": 2048,
           "ub": 2048,
-          "needs": [],
+          "needs": {},
           "env": {
             "LD_LIBRARY_PATH": "{engineDir}/lib{pathSep}{rocmLib}",
             "LLAMA_SPEC_LOOKUP": "0",
@@ -377,7 +377,7 @@
           "id": "generic",
           "match": "^(?!.*flint)",
           "spec": "none",
-          "needs": [],
+          "needs": {},
           "env": {
             "LD_LIBRARY_PATH": "{engineDir}/lib{pathSep}{rocmLib}",
             "LLAMA_SPEC_LOOKUP": "0",
@@ -445,7 +445,7 @@
           "id": "qwen38-gsq-mtp2-lean",
           "match": "GSQ-RCO-IQ3_XXS-mtp\\.gguf$",
           "spec": "mtp",
-          "needs": [],
+          "needs": {},
           "env": {},
           "args": [
             "--jinja"
@@ -501,7 +501,7 @@
           "id": "bonsai-ptq1-mtp2",
           "match": "Ternary-Bonsai-2-27B-PTQ1_0-mtp",
           "spec": "mtp",
-          "needs": [],
+          "needs": {},
           "env": {},
           "args": [
             "--jinja"
@@ -517,7 +517,7 @@
           "id": "bonsai-q2",
           "match": "Ternary-Bonsai-2-27B-Q2_0",
           "spec": "none",
-          "needs": [],
+          "needs": {},
           "env": {},
           "args": [
             "--jinja"
@@ -573,9 +573,9 @@
           "id": "qwen38-kvq-mtp4",
           "match": "qwen3\\.8-27b",
           "spec": "mtp",
-          "needs": [
-            "draftVocab"
-          ],
+          "needs": {
+            "draftVocab": "draft_vocab_qwen38.txt"
+          },
           "env": {
             "LLAMA_SPEC_LOOKUP": "3",
             "LLAMA_SPEC_LOOKUP_W": "16",
@@ -605,6 +605,97 @@
           },
           "maxCtx": 262144,
           "maxCtxSource": "campaign 67c, ub 256 (5090: 512), KV q4_0, MTP n 4, draft KV q4_0, KVQ=1: RTX 4090 UD-Q4_K_XL load 23732 MiB, full fill 261504 tokens peak 23852 MiB, 101.27 t/s T=1 (pinned upstream MTP n 3 at the same context: 76.4); RTX 5090 UD-Q6_K load 28126, fill peak 28232, 148.57 t/s (pin MTP n 3: 100.90)"
+        }
+      ]
+    },
+    {
+      "id": "enigma-cuda-inkling",
+      "kind": "enigma",
+      "label": "llama.cpp CUDA 12.8 b12811 (official build) with the Inkling 2 Mini uncensoring LoRA and DSpark drafter",
+      "version": "b12811",
+      "os": "linux",
+      "arch": "x64",
+      "backend": "cuda",
+      "envKey": "ENIGMA_CUDA_INKLING",
+      "distribution": "download",
+      "gpuArchs": [
+        "sm_89",
+        "sm_120"
+      ],
+      "features": [
+        "lookup"
+      ],
+      "planOnlyMeasured": true,
+      "assets": [
+        {
+          "name": "llama-b12811-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12811/llama-b12811-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 227322790,
+          "sha256": "4fb38499216e45e431a5b1aef8145be79e12a8522ce2fbb4246d8371fd4d8327"
+        },
+        {
+          "name": "cudart-llama-b12811-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "url": "https://github.com/ggml-org/llama.cpp/releases/download/b12811/cudart-llama-b12811-bin-ubuntu-cuda-12.8-x64.tar.gz",
+          "sizeBytes": 594379614,
+          "sha256": "0b1f43cbeb80ac8fd04d6a5f44c06738d0fc7b2f6b898e2a5e2dceaa308f02cf"
+        },
+        {
+          "name": "Inkling-2-Mini-Uncensored-LoRA.gguf",
+          "url": "https://huggingface.co/AtomicChat/Inkling-2-Mini-Uncensored-GGUF/resolve/c5667da36fe35da026fbee394d00547a921e98ab/Inkling-2-Mini-Uncensored-LoRA.gguf",
+          "sizeBytes": 43805184,
+          "sha256": "42914b85c874e7fe249e93f0ac6e8abf08dc0bdf32aa1ec46c72714e64808f12"
+        },
+        {
+          "name": "dspark-Inkling-2-Mini-Q8_0.gguf",
+          "url": "https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF/resolve/f0da1097633dd7c2f5733e4077cff861be122245/dspark-Inkling-2-Mini-Q8_0.gguf",
+          "sizeBytes": 404128576,
+          "sha256": "7cca0010feae71c25c8530b202e05fd9d1eae09f635ae4f5f31b9f20470e8c48"
+        }
+      ],
+      "note": "K-204 (2026-11-27): the Enigma 16 GB recipe for the RTX 5060 Ti and 4060 Ti, approved by the owner 2026-11-28. The official llama.cpp b12811 CUDA 12.8 build (the pinned upstream b11856 has no inkling2_loop) + its cudart, the AtomicChat rank-1 uncensoring LoRA (Apache-2.0, applied at run time with --lora: refusals 3/5 → 0/5, KLD 0.0073; it costs 17–33% of decode, K-207) and ISTA-DASLab's DSpark Q8_0 drafter (Apache-2.0); the two GGUF files are plain assets in <engine>/share. Planned only on cards with a measured configuration (catalog VERIFIED: 5060 Ti 262144, 4060 Ti 283648); the RTX 5080 was not measured with Inkling. The baseline runs the same build with the LoRA (baseArgs), so every arm serves the uncensored model.",
+      "profiles": [
+        {
+          "id": "inkling-unc-dspark2",
+          "match": "Inkling-2-Mini-GSQ-RCO-IQ3_S\\.gguf$",
+          "spec": "draft",
+          "b": 128,
+          "ub": 128,
+          "needs": {
+            "lora": "Inkling-2-Mini-Uncensored-LoRA.gguf",
+            "drafter": "dspark-Inkling-2-Mini-Q8_0.gguf"
+          },
+          "env": {},
+          "baseArgs": [
+            "--jinja",
+            "-fit",
+            "off",
+            "--lora",
+            "{lora}"
+          ],
+          "args": [
+            "--jinja",
+            "-fit",
+            "off",
+            "--lora",
+            "{lora}",
+            "-md",
+            "{drafter}",
+            "-ngld",
+            "99",
+            "--spec-type",
+            "draft-dspark",
+            "--spec-draft-n-max",
+            "2",
+            "--spec-draft-p-min",
+            "0"
+          ],
+          "draft": {
+            "nMax": 2,
+            "fixedMiB": 786,
+            "kvBytesPerToken": 4096
+          },
+          "maxCtx": 283648,
+          "maxCtxSource": "K-204 (2026-11-27), b12811, ub = b = 128, KV q4_0, draft KV f16 (a q4_0 draft KV needs more VRAM and failed on the first request at 270k): RTX 5060 Ti 262144 load 15634 MiB, peak 15698, 95% fill PASS, 66.45 / 61.97 t/s T=0 / 0.7 (plain with the LoRA 51.4); RTX 4060 Ti 283648 load 15923, peak 15955, 95% fill PASS, 48.58 / 48.99 t/s (plain 37.8). draft.fixedMiB = DSpark − plain at no context (744 MiB on the 5060 Ti) + the LoRA (42 MiB); kvBytesPerToken = the measured slope difference (17.334 − 13.428 MiB per 1k tokens)."
         }
       ]
     }

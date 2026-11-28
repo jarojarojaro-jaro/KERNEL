@@ -1,8 +1,9 @@
 // Our CUDA engines (data/engines.json): enigma-cuda-lean (upstream b12110 + lean MTP reserve: q4_0 draft KV),
-// enigma-cuda-prism (PrismML fork: PTQ1_0) and enigma-cuda-fork (cuda-topka2 + KVQ + lean reserve, Qwen3.8 MTP n 4).
-// Published 2026-11-07 as the GitHub release enigma-engines-cuda-2026-11-07 (jarojarojaro-jaro/KERNEL): the planner
-// uses them by default (the fork only on cards with a measured configuration); ENIGMA_ENGINE_DIR_<envKey> still
-// overrides the download with a local directory.
+// enigma-cuda-prism (PrismML fork: PTQ1_0), enigma-cuda-fork (cuda-topka2 + KVQ + lean reserve, Qwen3.8 MTP n 4) and
+// enigma-cuda-inkling (official b12811 + the Inkling uncensoring LoRA + DSpark drafter, K-204).
+// The first three were published 2026-11-07 as the GitHub release enigma-engines-cuda-2026-11-07 (jarojarojaro-jaro/KERNEL):
+// the planner uses them by default (the fork and inkling only on cards with a measured configuration);
+// ENIGMA_ENGINE_DIR_<envKey> still overrides the download with a local directory.
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test';
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -12,7 +13,8 @@ import { CATALOG } from '../src/server/catalog/data.ts';
 import { memParts } from '../src/server/catalog/memory.ts';
 import { recommend, replan } from '../src/server/catalog/index.ts';
 import {
-  baselineEngineForOption, engineAvailable, engineById, enigmaConfig, enigmaEngineFor, ensureEngine, type EngineEntry, type ResolvedEngine,
+  baselineConfig, baselineEngineForOption, engineAvailable, engineById, enigmaConfig, enigmaEngineFor, ensureEngine, serverArgs,
+  type EngineEntry, type ResolvedEngine,
 } from '../src/server/engine.ts';
 import { planCandidates } from '../src/server/optimize.ts';
 
@@ -41,7 +43,7 @@ const card = (name: string, mib: number, arch: string): Hw => ({
   gpus: [{ vendor: 'nvidia', name: `NVIDIA GeForce ${name}`, kind: 'discrete', vramGiB: Math.round((mib / 1024) * 10) / 10, backends: ['cuda', 'vulkan'], arch }],
   diskFreeGiB: 500, scannedAt: 0,
 });
-const SIXTEEN = [['RTX 4060 Ti', 16380, 'sm_89', 229376], ['RTX 5060 Ti', 16311, 'sm_120', 229376], ['RTX 5080', 16303, 'sm_120', 217088]] as const;
+const SIXTEEN = [['RTX 4060 Ti', 16380, 'sm_89', 283648], ['RTX 5060 Ti', 16311, 'sm_120', 262144]] as const;
 const TWELVE = [['RTX 2080 Ti', 11264, 'sm_75'], ['RTX 3060', 12288, 'sm_86'], ['RTX 4070', 12282, 'sm_89']] as const;
 const pickOf = (hw: Hw): Option => {
   const p = recommend(hw).pick;
@@ -109,22 +111,20 @@ describe('memory model: our engines\' MTP draft', () => {
 });
 
 describe('planner with our CUDA engines available', () => {
-  test('16 GB: Qwen3.8-27B GSQ IQ3_XXS + lean MTP n 2 at the measured context (4060 Ti / 5060 Ti 229376, 5080 217088)', () => {
+  test('16 GB: the 5080 keeps Qwen3.8-27B GSQ IQ3_XXS + lean MTP n 2 at the measured 217088 (no Inkling measurement there)', () => {
     withEngines();
-    for (const [name, mib, arch, ctx] of SIXTEEN) {
-      const hw = card(name, mib, arch);
-      const p = pickOf(hw);
-      expect(p).toMatchObject({ modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx, ub: 256, kvType: 'q4_0', mtpEngine: 'enigma-cuda-lean' });
-      expect(p.features).toContain('mtp');
-      expect(p.why).toContain('mtp_engine:enigma-cuda-lean/2');
-      expect(p.needsEngine).toBeUndefined();
-      expect(baselineEngineForOption(hw, p)?.id).toBe('upstream-linux-x64-cuda');
-      // stock upstream MTP (n 3, F16 draft KV) at that context does not fit: only the enigma candidate runs MTP
-      expect(replan(p, hw, { mtpEngine: null }).fits).toBe(false);
-      const cands = planCandidates(hw, p, resolved('upstream-linux-x64-cuda'));
-      expect(cands.find((c) => c.candidate.id === 'enigma')?.candidate.status).toBe('pending');
-      expect(cands.find((c) => c.candidate.id === 'mtp')?.candidate).toMatchObject({ status: 'rejected', reason: 'mtp_no_memory' });
-    }
+    const hw = card('RTX 5080', 16303, 'sm_120');
+    const p = pickOf(hw);
+    expect(p).toMatchObject({ modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx: 217088, ub: 256, kvType: 'q4_0', mtpEngine: 'enigma-cuda-lean' });
+    expect(p.features).toContain('mtp');
+    expect(p.why).toContain('mtp_engine:enigma-cuda-lean/2');
+    expect(p.needsEngine).toBeUndefined();
+    expect(baselineEngineForOption(hw, p)?.id).toBe('upstream-linux-x64-cuda');
+    // stock upstream MTP (n 3, F16 draft KV) at that context does not fit: only the enigma candidate runs MTP
+    expect(replan(p, hw, { mtpEngine: null }).fits).toBe(false);
+    const cands = planCandidates(hw, p, resolved('upstream-linux-x64-cuda'));
+    expect(cands.find((c) => c.candidate.id === 'enigma')?.candidate.status).toBe('pending');
+    expect(cands.find((c) => c.candidate.id === 'mtp')?.candidate).toMatchObject({ status: 'rejected', reason: 'mtp_no_memory' });
   });
 
   test('11/12 GB: Ternary Bonsai 2 PTQ1_0 + MTP n 2 on prism, baseline on prism too, ≤ the measured 229376', () => {
@@ -213,8 +213,9 @@ describe('enigma-cuda-fork (cuda-topka2 + KVQ + lean MTP reserve)', () => {
     const p = pickOf(hw);
     expect(p).toMatchObject({ quant: 'UD-Q4_K_XL', ctx: 262144, ub: 256, mtpEngine: 'enigma-cuda-fork' });
     expect(enigmaEngineFor(hw, p).entry?.id).toBe('enigma-cuda-fork');
-    // the 16 GB cards keep lean-upstream
-    for (const [name, mib, arch] of SIXTEEN) expect(pickOf(card(name, mib, arch)).mtpEngine).toBe('enigma-cuda-lean');
+    // the 16 GB cards keep their plans: Inkling on the 5060 Ti / 4060 Ti, lean-upstream on the 5080
+    for (const [name, mib, arch] of SIXTEEN) expect(pickOf(card(name, mib, arch)).modelId).toBe('inkling2-mini');
+    expect(pickOf(card('RTX 5080', 16303, 'sm_120')).mtpEngine).toBe('enigma-cuda-lean');
   });
 
   test('available: the 5090 plan runs on it at the measured 262144 / ub 512 (UD-Q6_K)', () => {
@@ -223,10 +224,14 @@ describe('enigma-cuda-fork (cuda-topka2 + KVQ + lean MTP reserve)', () => {
     expect(pickOf(hw)).toMatchObject({ quant: 'UD-Q6_K', ctx: 262144, ub: 512, mtpEngine: 'enigma-cuda-fork' });
   });
 
-  test('16 GB: lean-upstream (earlier in engines.json) wins over the fork, which is measured there only on the 5060 Ti', () => {
-    expect(pickOf(card('RTX 5060 Ti', 16311, 'sm_120'))).toMatchObject({ quant: 'GSQ-IQ3_XXS', ctx: 229376, mtpEngine: 'enigma-cuda-lean' });
-    expect(pickOf(card('RTX 4060 Ti', 16380, 'sm_89')).mtpEngine).toBe('enigma-cuda-lean');
-    expect(pickOf(card('RTX 5080', 16303, 'sm_120')).mtpEngine).toBe('enigma-cuda-lean');
+  test('16 GB: the Qwen3.8-27B GSQ plan uses lean-upstream (earlier in engines.json), not the fork measured there only on the 5060 Ti', () => {
+    const qwen = (hw: Hw): Option | null | undefined => {
+      const r = recommend(hw);
+      return [r.pick, ...r.alternatives].find((o) => o?.modelId === 'qwen38-27b');
+    };
+    expect(qwen(card('RTX 5060 Ti', 16311, 'sm_120'))).toMatchObject({ quant: 'GSQ-IQ3_XXS', ctx: 229376, mtpEngine: 'enigma-cuda-lean' });
+    expect(qwen(card('RTX 4060 Ti', 16380, 'sm_89'))?.mtpEngine).toBe('enigma-cuda-lean');
+    expect(qwen(card('RTX 5080', 16303, 'sm_120'))?.mtpEngine).toBe('enigma-cuda-lean');
   });
 
   test('2080 Ti: prism Bonsai PTQ1_0 MTP n 2 at the measured 155648 / ub 512', () => {
@@ -258,5 +263,87 @@ describe('enigma-cuda-fork (cuda-topka2 + KVQ + lean MTP reserve)', () => {
       if (prevHome === undefined) delete process.env.ENIGMA_HOME;
       else process.env.ENIGMA_HOME = prevHome;
     }
+  });
+});
+
+describe('enigma-cuda-inkling (K-204: official b12811 + uncensoring LoRA + DSpark, the 16 GB recipe of the 5060 Ti / 4060 Ti)', () => {
+  const LORA = 'Inkling-2-Mini-Uncensored-LoRA.gguf';
+  const DSPARK = 'dspark-Inkling-2-Mini-Q8_0.gguf';
+  const MODEL = '/m/Inkling-2-Mini-GSQ-RCO-IQ3_S.gguf';
+
+  test('engines.json: the official b12811 CUDA 12.8 build + cudart, the LoRA and the drafter from HF, all pinned with sha256', () => {
+    const e = engineById('enigma-cuda-inkling')!;
+    expect(e).toMatchObject({ kind: 'enigma', os: 'linux', arch: 'x64', backend: 'cuda', distribution: 'download', version: 'b12811', planOnlyMeasured: true });
+    expect(engineAvailable(e)).toBe(true);
+    expect(e.assets.map((a) => a.name)).toEqual([
+      'llama-b12811-bin-ubuntu-cuda-12.8-x64.tar.gz', 'cudart-llama-b12811-bin-ubuntu-cuda-12.8-x64.tar.gz', LORA, DSPARK,
+    ]);
+    for (const a of e.assets) expect(a.sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(e.assets[0]?.url).toBe('https://github.com/ggml-org/llama.cpp/releases/download/b12811/llama-b12811-bin-ubuntu-cuda-12.8-x64.tar.gz');
+    expect(e.assets[2]).toMatchObject({ sizeBytes: 43805184, sha256: '42914b85c874e7fe249e93f0ac6e8abf08dc0bdf32aa1ec46c72714e64808f12' });
+    expect(e.assets[2]?.url).toStartWith('https://huggingface.co/AtomicChat/Inkling-2-Mini-Uncensored-GGUF/resolve/');
+    expect(e.assets[3]?.url).toStartWith('https://huggingface.co/ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF/resolve/');
+  });
+
+  test('5060 Ti 262144 / 4060 Ti 283648: the pick, its memory within the measured peak, baseline and candidates on this engine', () => {
+    for (const [name, mib, arch, ctx] of SIXTEEN) {
+      const hw = card(name, mib, arch);
+      const p = pickOf(hw);
+      expect(p).toMatchObject({ modelId: 'inkling2-mini', quant: 'GSQ-IQ3_S', ctx, ub: 128, kvType: 'q4_0', needsEngine: 'enigma-cuda-inkling' });
+      expect(p.file).toMatchObject({ repo: 'ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF', path: 'Inkling-2-Mini-GSQ-RCO-IQ3_S.gguf', sizeBytes: 11425259648 });
+      expect(p.features).not.toContain('mtp');
+      expect(p.why).toEqual(expect.arrayContaining(['speed_measured:' + (name === 'RTX 5060 Ti' ? '51' : '38') + '/enigma-cuda-inkling',
+        'engine_required:enigma-cuda-inkling', 'draft_engine:enigma-cuda-inkling/2']));
+      // the plan carries the drafter: within 0.3 GiB under the measured nvidia-smi peak (15698 / 15955 MiB)
+      const peak = name === 'RTX 5060 Ti' ? 15698 : 15955;
+      expect(p.mem.totalGiB * 1024).toBeLessThan(peak);
+      expect(p.mem.totalGiB * 1024).toBeGreaterThan(peak - 300);
+      expect(baselineEngineForOption(hw, p)?.id).toBe('enigma-cuda-inkling');
+      expect(enigmaEngineFor(hw, p).entry?.id).toBe('enigma-cuda-inkling');
+      const cands = planCandidates(hw, p, resolved('enigma-cuda-inkling'));
+      expect(cands.find((c) => c.candidate.id === 'enigma')?.candidate.status).toBe('pending');
+      expect(cands.find((c) => c.candidate.id === 'mtp')?.candidate).toMatchObject({ status: 'rejected', reason: 'no_mtp_head' });
+      // with the drafter a larger ub does not fit at this context (measured: ub 256 OOM at 262144 on the 5060 Ti)
+      expect(cands.find((c) => c.candidate.id === 'ub-256')?.candidate.status).toBe('rejected');
+    }
+  });
+
+  test('a missing LoRA or drafter: no config, the baseline refuses to start without the LoRA', () => {
+    const hw = card('RTX 5060 Ti', 16311, 'sm_120');
+    const p = pickOf(hw);
+    const empty: ResolvedEngine = { ...resolved('enigma-cuda-inkling'), dir: join(dir, 'inkling-empty') };
+    expect(enigmaConfig(empty, p, MODEL).reason).toContain('lora (Inkling-2-Mini-Uncensored-LoRA.gguf)');
+    expect(() => baselineConfig(empty, p, MODEL, hw)).toThrow(/needs lora/);
+  });
+
+  test('the profile turns into the K-204 flags; the baseline serves the same uncensored model (LoRA, no drafter)', () => {
+    mkdirSync(join(dir, 'share'), { recursive: true });
+    for (const f of [LORA, DSPARK]) writeFileSync(join(dir, 'share', f), 'x');
+    const hw = card('RTX 5060 Ti', 16311, 'sm_120');
+    const p = pickOf(hw);
+    const engine = resolved('enigma-cuda-inkling');
+    const cfg = enigmaConfig(engine, p, MODEL, 'sm_120').config!;
+    expect(cfg).toMatchObject({ spec: 'draft', ctx: 262144, kvType: 'q4_0', ub: 128, b: 128, env: {} });
+    expect(cfg.extraArgs).toEqual([
+      '--jinja', '-fit', 'off', '--lora', join(dir, 'share', LORA), '-md', join(dir, 'share', DSPARK), '-ngld', '99',
+      '--spec-type', 'draft-dspark', '--spec-draft-n-max', '2', '--spec-draft-p-min', '0',
+    ]);
+    expect(serverArgs(engine, cfg, 8080, 'k').join(' ')).toContain(`-m ${MODEL} -c 262144 -ngl 999 -fa on -ctk q4_0 -ctv q4_0 -b 128 -ub 128 -np 1`);
+    const base = baselineConfig(engine, p, MODEL, hw);
+    expect(base).toMatchObject({ spec: 'none', ctx: 262144, ub: 128 });
+    expect(base.extraArgs).toEqual(['--jinja', '-fit', 'off', '--lora', join(dir, 'share', LORA)]);
+    // other models on other engines keep the plain baseline
+    const hw5080 = card('RTX 5080', 16303, 'sm_120');
+    expect(baselineConfig(resolved('upstream-linux-x64-cuda'), pickOf(hw5080), '/m/q.gguf', hw5080).extraArgs).toEqual(['--jinja']);
+  });
+
+  test('Windows, other 16 GB cards and the 5080: Inkling is not offered (Linux-only engine, planned only where measured)', () => {
+    const r5080 = recommend(card('RTX 5080', 16303, 'sm_120'));
+    expect([r5080.pick, ...r5080.alternatives].some((o) => o?.modelId === 'inkling2-mini')).toBe(false);
+    expect(r5080.rejected.some((x) => x.modelId === 'inkling2-mini')).toBe(true);
+    const r4080 = recommend(card('RTX 4080', 16376, 'sm_89'));
+    expect([r4080.pick, ...r4080.alternatives].some((o) => o?.modelId === 'inkling2-mini')).toBe(false);
+    const win = recommend({ ...card('RTX 5060 Ti', 16311, 'sm_120'), os: 'windows' });
+    expect([win.pick, ...win.alternatives].some((o) => o?.modelId === 'inkling2-mini')).toBe(false);
   });
 });

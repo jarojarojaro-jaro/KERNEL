@@ -135,11 +135,21 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   10 GB: MTP się nie mieści → `ctx_below_min`, zostaje Qwen3.5-9B Q6_K). `Option.needsEngine` = baseline na nim (why
   `engine_required:<id>`, `speed_measured:<t/s>/<id>`), `minUpstreamBuild` go nie dotyczy. Przy remisie wyniku
   (plain ≥ 60 t/s) wygrywa plan MTP.
+- Profil `spec: 'draft'` silnika, którego model potrzebuje (`inkling2-mini` → `enigma-cuda-inkling`: oficjalny b12811 +
+  LoRA bez cenzury AtomicChat + drafter DSpark Q8_0 ISTA, oba pliki jako zasoby silnika w `<silnik>/share`, K-204), to
+  plan bez MTP z pamięcią draftera z profilu (`draft: {nMax, fixedMiB, kvBytesPerToken}` → `MemConfig.draft`), przy `ub`
+  profilu i nie powyżej jego `maxCtx`; why `draft_engine:<id>/<n>`. Silnik z `planOnlyMeasured` jako silnik modelu: model
+  tylko na karcie z wpisem `VERIFIED` (inaczej rejected `engine_not_measured:<id>`): 5060 Ti 262144, 4060 Ti 283648 (ub
+  128); 5080 bez pomiaru Inklinga zostaje przy Qwen3.8-27B GSQ + lean. `baseArgs` profilu (LoRA) idą też do baseline'u,
+  więc każde ramię serwuje model bez cenzury. `needs` profilu = placeholder → nazwa pliku (szukany w `<silnik>/share`,
+  katalogu silnika i katalogach modeli).
 - Konfiguracje zmierzone end-to-end na danej karcie (`VERIFIED` w `catalog/index.ts`; upstream CUDA albo `engine` =
   nasz silnik, który ten plan uruchamia) zastępują szacunek dla tej karty × modelu × kwantu × silnika (mogą sięgać wyżej
   o ≤ 700 MiB ponad zapas i ograniczają kontekst z góry), z ich ub, KV q4_0 i trybem spekulacji; drugi tryb nie jest tam
   oferowany (np. upstream MTP na 16 GB: OOM przy pierwszym długim prompcie; MTP z `enigma-cuda-lean` to inny silnik).
   Lean (kampania 67c, MTP n 2, ubd 64, KV draftu q4_0, ub 256): 4060 Ti i 5060 Ti 229376, 5080 217088 (229376 padło).
+  Inkling (K-204, `enigma-cuda-inkling`, DSpark n 2, KV draftu f16, ub = b = 128): 5060 Ti 262144 (szczyt 15698 MiB),
+  4060 Ti 283648 (szczyt 15955 MiB).
 - Model z `defaultPick: false` (Gemma 4 12B, odrzucona przez użytkownika) nigdy nie jest `pick`, zostaje w alternatywach.
 - Bez karty z własną pamięcią (wszystkie `gpus[].kind === 'integrated'` albo brak GPU) maszyna jest „RAM-bound”:
   urządzenia = grafika zintegrowana × backend (Vulkan; ROCm tylko gfx1150/gfx1151) z budżetem min(`vramGiB + sharedGiB`,
@@ -154,7 +164,7 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   wynik wyższy o > 20% (szacunek / 1,2); na RAM-bound plan z < 3% wolnego budżetu × 0,8 (`tight_memory`).
 - `why[]` / `rejected[].reason` = kody `kod` albo `kod:wartość`: why — `quality_best`, `speed_measured:<t/s>[/<engineId>]`,
   `speed_estimated:<t/s>`, `mtp_head`, `mtp_no_memory` (plik ma głowicę MTP, ale kontekst draftu się nie mieści; opcja
-  bez 'mtp' w features), `engine_required:<engineId>`, `mtp_engine:<engineId>/<n>`, `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
+  bez 'mtp' w features), `engine_required:<engineId>`, `mtp_engine:<engineId>/<n>`, `draft_engine:<engineId>/<n>` (plan z osobnym drafterem profilu, DSpark), `moe_fast`, `ctx_model_max`, `ctx_memory_limit`, `kv_q8_0|kv_q4_0|kv_f16`,
   `ub512_for_ctx` (ub 512: osiąga min. kontekst albo daje ≥ 8% więcej; wolniejszy prefill, decode bez zmian),
   `unified_memory` (Apple), `windows_reserve`, `license_conditional:<id licencji z catalog.licenses>`, `tight_memory`; RAM-bound — `no_dgpu_ram`, `igpu_backend:<backend>`,
   `cpu_igpu_pool:<GiB>` (liczy CPU, bo model nie mieści się w pamięci grafiki zintegrowanej), `cpu_only`,
@@ -163,6 +173,7 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
   16–24 GB); rejected — `ctx_max_below_min:<ctxMax>`, `weights_too_big:<GiB>/<budżet GiB>`, `ctx_below_min:<max ctx>`,
   `engine_too_old:b<N>` (przypięty upstream w `data/engines.json` starszy niż build obsługujący model),
   `needs_engine:<engineId>` (plik uruchamia tylko nasz silnik, niedostępny dla tej karty albo nieopublikowany),
+  `engine_not_measured:<engineId>` (silnik modelu z `planOnlyMeasured` bez pomiaru na tej karcie),
   `too_slow_on_this_hw:<t/s>`. Przy kilku urządzeniach powód pochodzi z tego, które ma najwięcej pamięci.
 - `data/catalog.json` odświeża `ENIGMA_MODELS_DIR=~/models bun src/server/catalog/refresh.ts` (HF tree API + nagłówki
   lokalnych GGUF / `config.json`; nic nie pobiera poza JSON i nagłówkami).
@@ -170,8 +181,10 @@ interface AppState { phase:Phase; license:LicenseInfo|null; hw:Hw|null; recommen
 ## Zasady wyników (reguła użytkownika)
 Każdy wynik pokazywany jako **baseline → teraz → przyrost %**. Baseline = upstream llama.cpp (oficjalne wydanie) z
 konfiguracją dobraną przez nas tylko pod mieszczenie (ctx/KV/ub). Liczby tylko zmierzone na maszynie użytkownika.
-Wyjątek: plik, którego oficjalny llama.cpp nie uruchamia (`Option.needsEngine`, PTQ1_0 → fork PrismML): baseline =
-ten silnik w tej samej konfiguracji „tylko pod mieszczenie” (bez spekulacji), bo upstream daje na nim śmieci.
+Wyjątek: plik, którego oficjalny llama.cpp nie uruchamia (`Option.needsEngine`, PTQ1_0 → fork PrismML, Inkling
+`inkling2_loop` → oficjalny b12811 w `enigma-cuda-inkling`): baseline = ten silnik w tej samej konfiguracji „tylko pod
+mieszczenie” (bez spekulacji; z `baseArgs` profilu, np. LoRA bez cenzury Inklinga), bo przypięty upstream daje na nim
+śmieci albo go nie ładuje.
 
 ## Fork na RTX 3090 — rozstrzygnięte (kampania 67c)
 Zmierzone na dostarczanym silniku (`enigma-cuda-fork`, build przenośny): Qwen3.8-27B **UD-Q4_K_XL** 262144 / ub 256,

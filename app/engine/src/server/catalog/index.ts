@@ -7,7 +7,8 @@ import { CATALOG, type CatalogModel, type GpuSpec, type KvType, type QuantFile }
 import { memParts, memPlan, MTP_DRAFT_UB, MTP_N_MAX_DEFAULT, type MemConfig } from './memory.ts';
 import { decodeSpeed, matchGpu, MIN_DECODE_TPS, ramSpeed, score, type RamSpeed } from './score.ts';
 import {
-  engineAvailable, engineById, ENGINES, enigmaEnginesFor, profileMatch, type EngineEntry, type EngineProfile, type ProfileMtp,
+  engineAvailable, engineById, ENGINES, enigmaEnginesFor, profileMatch, type EngineEntry, type EngineProfile, type ProfileDraft,
+  type ProfileMtp,
 } from '../engine.ts';
 
 export { CATALOG } from './data.ts';
@@ -157,14 +158,26 @@ function mtpRun(entry: EngineEntry, m: CatalogModel, q: QuantFile): MtpRun | nul
   return { entry, profile, mtp: profile.mtp, lean: has('mtp-lean-reserve'), ctk: has('mtp-draft-kv-ctk'), fork: has('mtp-fork-draft') };
 }
 
+/** A plan run by a `spec: 'draft'` profile of the model's own engine: a separate draft model (DSpark) whose memory the
+ *  plan carries (profile `draft`), never above the profile's measured `maxCtx`, at the profile's ub when it fixes one. */
+interface DraftRun { entry: EngineEntry; profile: EngineProfile; draft: ProfileDraft }
+
+function draftRun(entry: EngineEntry | undefined, m: CatalogModel, q: QuantFile): DraftRun | null {
+  const profile = entry ? profileMatch(entry, m.id, q.path) : undefined;
+  return entry && profile?.spec === 'draft' && profile.draft ? { entry, profile, draft: profile.draft } : null;
+}
+
+/** A configuration of this engine × model × quant was measured on this card (VERIFIED). */
+const measuredHere = (engineId: string, m: CatalogModel, q: QuantFile, d: Device, os: Hw['os']): boolean =>
+  d.gpu !== null && VERIFIED.some((v) => v.engine === engineId && v.os === os && v.modelId === m.id && v.quant === q.quant && v.card.test(d.gpu!.name));
+
 /** The engine that runs this file's MTP plan on the device: an available engine of ours for this GPU with an MTP profile
  *  for it (only the model's own engine when it needs one; a `planOnlyMeasured` engine only with a VERIFIED entry for this
  *  card × model × quant); null = the baseline engine with the optimisation's default upstream MTP (optimize.ts specArgs). */
 function mtpRunFor(m: CatalogModel, q: QuantFile, d: Device, os: Hw['os']): MtpRun | null {
   for (const e of d.enigma) {
     if ((m.engine && e.id !== m.engine) || !engineAvailable(e)) continue;
-    if (e.planOnlyMeasured && !VERIFIED.some((v) => v.engine === e.id && v.os === os && v.modelId === m.id && v.quant === q.quant
-      && d.gpu !== null && v.card.test(d.gpu.name))) continue;
+    if (e.planOnlyMeasured && !measuredHere(e.id, m, q, d, os)) continue;
     const run = mtpRun(e, m, q);
     if (run) return run;
   }
@@ -172,12 +185,13 @@ function mtpRunFor(m: CatalogModel, q: QuantFile, d: Device, os: Hw['os']): MtpR
 }
 
 /** MTP plans size the draft as it will run: our engine's MTP profile, else the optimisation's MTP candidate (upstream
- *  defaults: f16 draft KV). */
-function config(d: Device, ctx: number, kvType: KvType, ub: number, spec: boolean, run: MtpRun | null): MemConfig {
+ *  defaults: f16 draft KV). A draft-model plan adds the drafter (`draft`). */
+function config(d: Device, ctx: number, kvType: KvType, ub: number, spec: boolean, run: MtpRun | null, draft: DraftRun | null = null): MemConfig {
   return {
     ctx, kvType, ub, backend: d.backend, vramGiB: d.vramGiB, spec, enigmaSpec: run ? false : d.forkMtp,
     mtpN: run?.mtp.nMax ?? MTP_N_MAX_DEFAULT, ubd: run ? (run.mtp.ubd ?? ub) : MTP_DRAFT_UB,
     draftKv: run?.ctk ? kvType : (run?.mtp.draftKv ?? 'f16'), leanReserve: run?.lean ?? false, forkDraft: run?.fork ?? false,
+    ...(draft ? { draft: draft.draft } : {}),
     prompt: ctx,
   };
 }
@@ -186,8 +200,8 @@ const freeMiB = (m: CatalogModel, q: QuantFile, d: Device, c: MemConfig): number
   d.budgetMiB - d.marginMiB - memParts(m, q, c).totalMiB;
 
 /** Largest context (multiple of 4096, or ctxMax itself) that fits; 0 when even 4096 does not. */
-function maxCtx(m: CatalogModel, q: QuantFile, d: Device, kvType: KvType, ub: number, spec: boolean, run: MtpRun | null): number {
-  const fits = (ctx: number): boolean => freeMiB(m, q, d, config(d, ctx, kvType, ub, spec, run)) >= 0;
+function maxCtx(m: CatalogModel, q: QuantFile, d: Device, kvType: KvType, ub: number, spec: boolean, run: MtpRun | null, draft: DraftRun | null): number {
+  const fits = (ctx: number): boolean => freeMiB(m, q, d, config(d, ctx, kvType, ub, spec, run, draft)) >= 0;
   if (fits(m.ctxMax)) return m.ctxMax;
   let lo = 0, hi = Math.floor((m.ctxMax - 1) / CTX_STEP); // in CTX_STEP units; lo = 0 means "nothing fits"
   while (lo < hi) {
@@ -250,6 +264,12 @@ const VERIFIED: { card: RegExp; os: Hw['os']; modelId: string; quant: string; ct
   // enigma-cuda-prism, Bonsai PTQ1_0-mtp-lean, MTP n 2 + ubd 64, ub 512: 2080 Ti 155 648 full fill, peak 10 151 MiB,
   // 77.96 t/s T=1 (n 1 reached 196 608, peak 10 701)
   { card: /RTX 2080 Ti/i, os: 'linux', modelId: 'bonsai2-27b-mtp', quant: 'PTQ1_0', ctx: 155648, ub: 512, spec: true, engine: 'enigma-cuda-prism' },
+  // enigma-cuda-inkling (official b12811 + AtomicChat uncensoring LoRA + ISTA DSpark Q8_0, n 2, p_min 0; ub = b = 128,
+  // KV q4_0, draft KV f16; K-204, 2026-11-27): 5060 Ti 262 144 load 15 634, peak 15 698 MiB, 95% fill (248 452-token
+  // prompt) PASS, 66.45 / 61.97 t/s T=0 / 0.7; 4060 Ti 283 648 load 15 923, peak 15 955 MiB, 95% fill (269 503) PASS,
+  // 48.58 / 48.99 t/s (300 032 failed to start). The RTX 5080 has no Inkling measurement: it keeps Qwen3.8-27B GSQ + lean.
+  { card: /RTX 5060 Ti/i, os: 'linux', modelId: 'inkling2-mini', quant: 'GSQ-IQ3_S', ctx: 262144, ub: 128, spec: false, engine: 'enigma-cuda-inkling' },
+  { card: /RTX 4060 Ti/i, os: 'linux', modelId: 'inkling2-mini', quant: 'GSQ-IQ3_S', ctx: 283648, ub: 128, spec: false, engine: 'enigma-cuda-inkling' },
 ];
 
 /** ub 1024 by default; a smaller one replaces it only when it reaches the minimum that 1024 misses or gives ≥ 8% more
@@ -258,20 +278,22 @@ const VERIFIED: { card: RegExp; os: Hw['os']; modelId: string; quant: string; ct
  *  Then the best KV type at that context. */
 const UB_CHOICES = [1024, 512, 256] as const;
 
-function plan(m: CatalogModel, q: QuantFile, d: Device, minCtx: number, spec: boolean, os: Hw['os'], run: MtpRun | null): Plan | { ctx: number } {
+function plan(m: CatalogModel, q: QuantFile, d: Device, minCtx: number, spec: boolean, os: Hw['os'], run: MtpRun | null, draft: DraftRun | null): Plan | { ctx: number } {
   const engine = run?.entry.id ?? m.engine;
-  // our engine's profile: never above the context it ran (its MTP flags size the draft)
-  const cap = run?.profile.maxCtx ?? Infinity;
+  // our engine's profile: never above the context it ran (its MTP flags / its drafter size the draft)
+  const cap = run?.profile.maxCtx ?? draft?.profile.maxCtx ?? Infinity;
   const measured = d.gpu && d.backend === 'cuda'
     ? VERIFIED.filter((v) => v.card.test(d.gpu!.name) && v.os === os && v.modelId === m.id && v.quant === q.quant && v.engine === engine && v.ctx <= cap)
     : [];
   if (measured.length > 0 && !measured.some((v) => v.spec === spec)) return { ctx: 0 };
   const verified = measured.filter((v) => v.spec === spec).sort((a, b) => b.ctx - a.ctx)[0];
-  if (verified && verified.ctx >= minCtx && freeMiB(m, q, d, config(d, verified.ctx, 'q4_0', verified.ub, spec, run)) >= -VERIFIED_SLACK_MIB) {
+  if (verified && verified.ctx >= minCtx && freeMiB(m, q, d, config(d, verified.ctx, 'q4_0', verified.ub, spec, run, draft)) >= -VERIFIED_SLACK_MIB) {
     return { ctx: verified.ctx, kvType: 'q4_0', ub: verified.ub, spec };
   }
   const limit = Math.min(verified?.ctx ?? Infinity, cap);
-  const fitsByUb = UB_CHOICES.map((ub) => ({ ub, ctx: Math.min(maxCtx(m, q, d, 'q4_0', ub, spec, run), limit) }));
+  // a draft profile that fixes its ub runs at that ub whatever the plan says (enigmaConfig): size the plan with it
+  const ubs = draft?.profile.ub ? [draft.profile.ub] : UB_CHOICES;
+  const fitsByUb = ubs.map((ub) => ({ ub, ctx: Math.min(maxCtx(m, q, d, 'q4_0', ub, spec, run, draft), limit) }));
   let chosen = fitsByUb[0]!;
   for (const c of fitsByUb.slice(1)) {
     if (chosen.ctx >= m.ctxMax) break;
@@ -280,8 +302,8 @@ function plan(m: CatalogModel, q: QuantFile, d: Device, minCtx: number, spec: bo
   const { ub, ctx } = chosen;
   if (ctx < minCtx) return { ctx: Math.max(...fitsByUb.map((c) => c.ctx)) };
   let kvType: KvType = 'q4_0';
-  if (freeMiB(m, q, d, config(d, ctx, 'f16', ub, spec, run)) >= F16_HEADROOM_MIB) kvType = 'f16';
-  else if (freeMiB(m, q, d, config(d, ctx, 'q8_0', ub, spec, run)) >= 0) kvType = 'q8_0';
+  if (freeMiB(m, q, d, config(d, ctx, 'f16', ub, spec, run, draft)) >= F16_HEADROOM_MIB) kvType = 'f16';
+  else if (freeMiB(m, q, d, config(d, ctx, 'q8_0', ub, spec, run, draft)) >= 0) kvType = 'q8_0';
   return { ctx, kvType, ub, spec };
 }
 
@@ -302,10 +324,12 @@ function gpuFaster(m: CatalogModel, s: RamSpeed): string | null {
 
 function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: number): Option | Rejection {
   const reject = (reason: string): Rejection => ({ modelId: m.id, quant: q.quant, reason });
+  const own = m.engine ? d.enigma.find((e) => e.id === m.engine) : undefined;
   if (m.engine) {
-    // files only our engine runs (PTQ1_0): offered where it is built for this GPU and available here
-    const own = d.enigma.find((e) => e.id === m.engine);
+    // files only our engine runs (PTQ1_0, inkling2_loop + LoRA + DSpark): offered where it is built for this GPU and
+    // available here; a `planOnlyMeasured` engine only on a card with a measured configuration of this file
     if (!own || !engineAvailable(own)) return reject(`needs_engine:${m.engine}`);
+    if (own.planOnlyMeasured && !measuredHere(own.id, m, q, d, hw.os)) return reject(`engine_not_measured:${m.engine}`);
   } else if (m.minUpstreamBuild > PINNED_BUILD) return reject(`engine_too_old:b${m.minUpstreamBuild}`);
   if (m.ctxMax < minCtx) return reject(`ctx_max_below_min:${m.ctxMax}`);
   const empty = memParts(m, q, config(d, 0, 'q4_0', 512, false, null));
@@ -322,11 +346,13 @@ function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: numb
   // plain plan may reach a larger context. Both are scored, the better one is offered; on a tie (plain already above
   // INTERACTIVE_TPS) the MTP plan, whose speed-up is real. The MTP plan is sized for the engine that runs it: our
   // engine's MTP profile for this file when one is available here, else upstream MTP. A file only our engine runs is
-  // offered only as that engine's MTP profile (what we measured), never as an unmeasured plain plan (10 GB 3080: none).
+  // offered only as that engine's MTP or draft-model profile (what we measured), never as an unmeasured plain plan
+  // (10 GB 3080: none). A draft-model profile (DSpark) plans without MTP, with the drafter's memory.
   const run = mtpCapable(m, d) ? mtpRunFor(m, q, d, hw.os) : null;
-  if (m.engine && !run) return reject(`needs_engine:${m.engine}`);
-  const specs = m.engine ? [true] : mtpCapable(m, d) ? [true, false] : [false];
-  const plans = specs.map((spec) => plan(m, q, d, minCtx, spec, hw.os, spec ? run : null));
+  const draft = run ? null : draftRun(own, m, q);
+  if (m.engine && !run && !draft) return reject(`needs_engine:${m.engine}`);
+  const specs = draft ? [false] : m.engine ? [true] : mtpCapable(m, d) ? [true, false] : [false];
+  const plans = specs.map((spec) => plan(m, q, d, minCtx, spec, hw.os, spec ? run : null, draft));
   const ok = plans.filter((p): p is Plan => 'kvType' in p);
   const best = ok.sort((a, b) => score(m, q, tps, b.spec) - score(m, q, tps, a.spec) || Number(b.spec) - Number(a.spec) || b.ctx - a.ctx)[0];
   if (!best) return reject(`ctx_below_min:${Math.max(...plans.map((p) => p.ctx))}`);
@@ -351,6 +377,7 @@ function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: numb
   if (spec) why.push('mtp_head');
   else if (mtpCapable(m, d)) why.push('mtp_no_memory'); // the file has an MTP head, its draft context does not fit
   if (mtpBy) why.push(`mtp_engine:${mtpBy.entry.id}/${mtpBy.mtp.nMax}`);
+  if (draft) why.push(`draft_engine:${draft.entry.id}/${draft.draft.nMax}`);
   if (!ram && m.kind === 'moe' && m.activeB <= 4) why.push('moe_fast');
   why.push(ctx === m.ctxMax ? 'ctx_model_max' : 'ctx_memory_limit', `kv_${kvType}`);
   if (ub === 512) why.push('ub512_for_ctx');
@@ -363,7 +390,7 @@ function evaluate(m: CatalogModel, q: QuantFile, d: Device, hw: Hw, minCtx: numb
   // Ranking: a speed we measured on this hardware class (this GPU; for RAM-bound machines our CPU run of the model)
   // beats an estimate unless the estimate's score is more than UNMEASURED_MARGIN higher; on RAM-bound machines a plan
   // that leaves under TIGHT_FREE of its budget free is demoted (the system and the user's programs share that RAM).
-  const mem = memPlan(m, q, config(d, ctx, kvType, ub, spec, mtpBy), d.budgetMiB / 1024);
+  const mem = memPlan(m, q, config(d, ctx, kvType, ub, spec, mtpBy, draft), d.budgetMiB / 1024);
   const measured = ram ? (m.ramMeasured?.length ?? 0) > 0 : gpuSpeed?.measured === true;
   const tight = ram !== null && mem.freeGiB < mem.budgetGiB * TIGHT_FREE;
   if (tight) why.push('tight_memory');
@@ -443,7 +470,7 @@ export interface PlanRequest {
 
 /** Memory plan of one model × quant on this machine in an explicit configuration (same margins as recommend). A
  *  configuration at or below one measured on this card with the same engine, ub, KV q4_0 and speculation mode fits
- *  within VERIFIED_SLACK_MIB, as in recommend. */
+ *  within VERIFIED_SLACK_MIB, as in recommend. A model whose own engine runs a draft-model profile carries the drafter. */
 export function planFor(hw: Hw, modelId: string, quant: string, r: PlanRequest): { mem: MemPlan; fits: boolean } {
   const m = CATALOG.models.find((x) => x.id === modelId);
   const q = m?.quants.find((x) => x.quant === quant);
@@ -453,7 +480,8 @@ export function planFor(hw: Hw, modelId: string, quant: string, r: PlanRequest):
   const engine = r.mtpEngine ? engineById(r.mtpEngine) : undefined;
   const spec = r.spec && m.arch.nextn.layers > 0;
   const run = engine && spec ? mtpRun(engine, m, q) : null;
-  const c = config(d, r.ctx, r.kvType, r.ub, spec, run);
+  const draft = run || !m.engine ? null : draftRun(engineById(m.engine), m, q);
+  const c = config(d, r.ctx, r.kvType, r.ub, spec, run, draft);
   const free = freeMiB(m, q, d, c);
   const engineId = run?.entry.id ?? m.engine;
   const measured = d.gpu !== null && d.backend === 'cuda' && r.kvType === 'q4_0' && VERIFIED.some((v) => v.card.test(d.gpu!.name)

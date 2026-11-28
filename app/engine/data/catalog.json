@@ -1735,6 +1735,85 @@
    ],
    "configRepo": "LiquidAI/LFM2.5-2.6B",
    "mtpInFile": false
+  },
+  {
+   "id": "inkling2-mini",
+   "name": "Inkling 2 Mini Uncensored",
+   "family": "Inkling",
+   "params": "26.4B-A3.4B",
+   "paramsB": 26.4,
+   "activeB": 5.4,
+   "kind": "moe",
+   "quality": 34,
+   "qualitySource": "[SZACUNEK] vendor (thinkingmachines.ai, 2026-11-20): Artificial Analysis Intelligence Index v5 20.1 = Qwen3.8-27B 20.1, so Qwen3.8-27B's AA v4.3.2 value (wiki modele/inkling-2-mini); activeB = 5.4B effective with the 3 core loops (3.4B per pass). GSQ-IQ3_S qualityFactor 0.9 [SZACUNEK]: ISTA reports 99.2% of the original's benchmark average; our K-193 KLD 0.040 to UD-Q4_K_XL (top-1 91.8%, PPL +2.7%) puts it between UD-Q3_K_XL (0.88) and UD-Q4_K_XL (0.965); the LoRA adds KLD 0.0073 (K-201)",
+   "license": "apache-2.0",
+   "ctxMax": 1048576,
+   "features": [
+    "tools",
+    "reasoning"
+   ],
+   "minUpstreamBuild": 12811,
+   "engineNote": "inkling2_loop (ISTA GSQ-RCO IQ3_S) is newer than the pinned upstream b11856: runs on enigma-cuda-inkling = the official b12811 CUDA build with AtomicChat's rank-1 uncensoring LoRA (Inkling-2-Mini-Uncensored-LoRA.gguf, Apache-2.0, --lora in every arm) and ISTA's DSpark Q8_0 drafter (K-204, owner approval 2026-11-28); offered only on the cards it was measured on (RTX 5060 Ti, 4060 Ti 16 GB, Linux)",
+   "engine": "enigma-cuda-inkling",
+   "arch": {
+    "source": "gguf:Inkling-2-Mini-GSQ-RCO-IQ3_S.gguf (header; loop 6-17 x 3 counted as cache visits: 8 global + 40 sliding)",
+    "arch": "inkling2_loop",
+    "nLayer": 24,
+    "nEmbd": 2304,
+    "nVocab": 201024,
+    "tiedEmbd": false,
+    "full": {
+     "layers": 8,
+     "kvHeads": 8,
+     "keyLen": 128,
+     "valueLen": 128
+    },
+    "swa": {
+     "layers": 40,
+     "kvHeads": 8,
+     "keyLen": 128,
+     "valueLen": 128,
+     "window": 1024
+    },
+    "nextn": {
+     "layers": 0,
+     "kvHeads": 0,
+     "keyLen": 0,
+     "valueLen": 0
+    },
+    "stateMiB": 3.66,
+    "mtpExtraMiB": 0
+   },
+   "quants": [
+    {
+     "quant": "GSQ-IQ3_S",
+     "repo": "ISTA-DASLab/Inkling-2-Mini-GSQ-RCO-GGUF",
+     "path": "Inkling-2-Mini-GSQ-RCO-IQ3_S.gguf",
+     "sizeBytes": 11425259648,
+     "sha256": "8a3515374c3cd9b65a1677b17e805bb1e32df8e98756e5f0d2fe1837d62aa4cb",
+     "hostEmbdBytes": 926318592,
+     "bTokGB": 2.34,
+     "qualityFactor": 0.9
+    }
+   ],
+   "measured": [
+    {
+     "gpu": "rtx-5060-ti-16",
+     "backend": "cuda",
+     "quant": "GSQ-IQ3_S",
+     "decodeTps": 51.4,
+     "source": "K-204 2026-11-27: official b12811 CUDA with the uncensoring LoRA (the baseline of enigma-cuda-inkling), no drafter, KV q4_0, ub 128, ctx 262144, wall median of 4 prompts x 300 tokens, T=0 51.39 / T=0.7 51.42 (Ryzen 5 7600 host)"
+    },
+    {
+     "gpu": "rtx-4060-ti-16",
+     "backend": "cuda",
+     "quant": "GSQ-IQ3_S",
+     "decodeTps": 37.8,
+     "source": "K-204 2026-11-27: official b12811 CUDA with the uncensoring LoRA (the baseline of enigma-cuda-inkling), no drafter, KV q4_0, ub 128, ctx 283648, wall median of 4 prompts x 300 tokens, T=0 37.80 / T=0.7 37.81 (Threadripper 2950X host)"
+    }
+   ],
+   "configRepo": "thinkingmachines/Inkling-2-Mini",
+   "mtpInFile": false
   }
  ]
 }

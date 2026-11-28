@@ -9,6 +9,7 @@ import { planFor, recommend, replan } from '../src/server/catalog/index.ts';
 import { ramSpeed } from '../src/server/catalog/score.ts';
 import { ggufArch, readGgufHeader } from '../src/server/catalog/gguf.ts';
 import type { Backend, Hw } from '../src/shared/types.ts';
+import { engineById, profileMatch } from '../src/server/engine.ts';
 
 const GIB_MIB = 1024;
 const machine = (k: string): Hw => {
@@ -51,11 +52,14 @@ describe('memory model vs our measurements (±0.4 GiB)', () => {
       const m = model(p.modelId);
       const q = m.quants.find((x) => x.quant === p.quant);
       if (!q) throw new Error(`${p.modelId} has no ${p.quant}`);
+      const draftEngine = 'draftEngine' in p && p.draftEngine ? engineById(p.draftEngine) : undefined;
+      const draft = draftEngine ? profileMatch(draftEngine, m.id, q.path)?.draft : undefined;
+      if (draftEngine && !draft) throw new Error(`${p.id}: ${p.draftEngine} has no draft profile for ${q.path}`);
       const r = memParts(m, q, {
         ctx: p.ctx, kvType: p.kvType as KvType, ub: p.ub, backend: p.backend as Backend, vramGiB: p.vramGiB,
         spec: p.spec, enigmaSpec: p.enigmaSpec, mtpN: p.mtpN ?? MTP_N_MAX_DEFAULT, ubd: p.ubd ?? p.ub, prompt: p.prompt,
         draftKv: ('draftKv' in p ? p.draftKv : 'f16') as KvType, leanReserve: 'leanReserve' in p && p.leanReserve === true,
-        forkDraft: 'forkDraft' in p && p.forkDraft === true,
+        forkDraft: 'forkDraft' in p && p.forkDraft === true, ...(draft ? { draft } : {}),
       });
       const used: number | undefined = 'usedMiB' in p ? p.usedMiB : undefined;
       const oom: number | undefined = 'oomAboveMiB' in p ? p.oomAboveMiB : undefined;
@@ -78,7 +82,7 @@ describe('recommend on typical machines', () => {
       expect(pick.ctx % 4096 === 0 || pick.ctx === pick.ctxMax).toBe(true);
       // headroom after the full-context plan: Linux 100 MiB, Windows 512 MiB, macOS 0; CUDA +200 MiB. A plan on our
       // engine is capped at the context measured with a full fill on that card, so only "fits" is required there.
-      const margin = pick.mtpEngine ? 0 : { linux: 100, windows: 512, macos: 0 }[hw.os] + (pick.backend === 'cuda' ? 200 : 0);
+      const margin = pick.mtpEngine || pick.needsEngine ? 0 : { linux: 100, windows: 512, macos: 0 }[hw.os] + (pick.backend === 'cuda' ? 200 : 0);
       expect(pick.mem.freeGiB * 1024).toBeGreaterThanOrEqual(margin - 10);
       expect(r.alternatives.length).toBeLessThanOrEqual(3);
       const ids = [pick.modelId, ...r.alternatives.map((a) => a.modelId)];
@@ -154,15 +158,23 @@ describe('recommend on typical machines', () => {
     expect(recommend(nvCard('RTX 4070', 12282, 'sm_89')).alternatives.some((a) => a.modelId === 'gemma4-12b')).toBe(true);
   });
 
-  test('16 GB: Qwen3.8-27B GSQ IQ3_XXS + lean MTP n 2 at the measured context (4060 Ti / 5060 Ti 229376, 5080 217088)', () => {
-    for (const [name, mib, arch, ctx] of [
-      ['RTX 4060 Ti', 16380, 'sm_89', 229376], ['RTX 5060 Ti', 16311, 'sm_120', 229376], ['RTX 5080', 16303, 'sm_120', 217088],
-    ] as const) {
-      const pick = recommend(nvCard(name, mib, arch)).pick;
-      expect(pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx, kvType: 'q4_0', ub: 256, backend: 'cuda', mtpEngine: 'enigma-cuda-lean' });
-      // stock upstream MTP OOMed at the first long prompt on these cards; MTP runs only on our lean engine
-      expect(pick?.features).toContain('mtp');
+  test('16 GB (K-204): Inkling 2 Mini IQ3_S + LoRA + DSpark on the 5060 Ti 262144 / 4060 Ti 283648; the 5080 keeps Qwen3.8-27B GSQ + lean MTP n 2', () => {
+    for (const [name, mib, arch, ctx] of [['RTX 4060 Ti', 16380, 'sm_89', 283648], ['RTX 5060 Ti', 16311, 'sm_120', 262144]] as const) {
+      const r = recommend(nvCard(name, mib, arch));
+      expect(r.pick).toMatchObject({ modelId: 'inkling2-mini', quant: 'GSQ-IQ3_S', ctx, kvType: 'q4_0', ub: 128, backend: 'cuda', needsEngine: 'enigma-cuda-inkling' });
+      expect(r.pick?.mtpEngine).toBeUndefined();
+      expect(r.pick?.why).toContain('draft_engine:enigma-cuda-inkling/2');
+      // the previous recipe stays the Qwen alternative (lean MTP n 2 at the measured 229376)
+      expect(r.alternatives.find((a) => a.modelId === 'qwen38-27b')).toMatchObject({ quant: 'GSQ-IQ3_XXS', ctx: 229376, ub: 256, mtpEngine: 'enigma-cuda-lean' });
+      // Windows: no Inkling engine (Linux-only, measured on Linux)
+      expect(recommend({ ...nvCard(name, mib, arch), os: 'windows' }).pick?.modelId).not.toBe('inkling2-mini');
     }
+    // not measured with Inkling on the 5080: not offered there
+    const r5080 = recommend(nvCard('RTX 5080', 16303, 'sm_120'));
+    expect(r5080.pick).toMatchObject({ modelId: 'qwen38-27b', quant: 'GSQ-IQ3_XXS', ctx: 217088, kvType: 'q4_0', ub: 256, backend: 'cuda', mtpEngine: 'enigma-cuda-lean' });
+    // stock upstream MTP OOMed at the first long prompt on these cards; MTP runs only on our lean engine
+    expect(r5080.pick?.features).toContain('mtp');
+    expect(r5080.alternatives.some((a) => a.modelId === 'inkling2-mini')).toBe(false);
   });
 
   test('12 GB: Ternary Bonsai 2 (Apache-2.0): PTQ1_0 + MTP on prism (Linux), Q2_0 on plain llama.cpp elsewhere', () => {
@@ -399,5 +411,24 @@ describe('GGUF header reader', () => {
     const a = ggufArch(h);
     expect(a).toMatchObject({ arch: 'qwen35', nLayer: 65, nextn: 1, nEmbd: 5120, ctxTrain: 262144 });
     expect(a.full).toEqual({ layers: 16, kvHeads: 4, keyLen: 256, valueLen: 256 });
+  });
+
+  test('looped architecture (inkling2_loop): layers 6–17 run 3 times, each pass with its own cache', () => {
+    const pattern = Array.from({ length: 24 }, (_, l) => l % 6 !== 5); // every 6th layer global
+    const kv = new Map<string, unknown>([
+      ['general.architecture', 'inkling2_loop'], ['inkling2_loop.block_count', 24], ['inkling2_loop.embedding_length', 2304],
+      ['inkling2_loop.attention.head_count', 24], ['inkling2_loop.attention.head_count_kv', Array(24).fill(8)],
+      ['inkling2_loop.attention.key_length', 128], ['inkling2_loop.attention.sliding_window', 1024],
+      ['inkling2_loop.attention.sliding_window_pattern', pattern], ['inkling2_loop.vocab_size', 201024],
+      ['inkling2_loop.loop.start', 6], ['inkling2_loop.loop.end', 18], ['inkling2_loop.loop.count', 3],
+    ]);
+    const tensors = Array.from({ length: 24 }, (_, l) => [
+      { name: `blk.${l}.attn_k.weight`, dims: [2304, 1024], type: 0 }, { name: `blk.${l}.attn_v.weight`, dims: [2304, 1024], type: 0 },
+    ]).flat();
+    const a = ggufArch({ version: 3, kv: kv as Parameters<typeof ggufArch>[0]['kv'], tensors, headerBytes: 0 });
+    // the catalog entry: 8 global + 40 sliding cache visits, 8 KV heads × 128
+    expect(a.full).toEqual({ layers: 8, kvHeads: 8, keyLen: 128, valueLen: 128 });
+    expect(a.swa).toEqual({ layers: 40, kvHeads: 8, keyLen: 128, valueLen: 128, window: 1024 });
+    expect(model('inkling2-mini').arch).toMatchObject({ full: a.full, swa: a.swa });
   });
 });

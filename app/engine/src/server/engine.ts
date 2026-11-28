@@ -11,6 +11,7 @@ import enginesData from '../../data/engines.json' with { type: 'json' };
 import { cachedHash, downloadFile, type TransferProgress } from './download.ts';
 import { errMsg, log } from './log.ts';
 import { expandHome, extraModelsDir, paths } from './paths.ts';
+import type { DraftModelMem } from './catalog/memory.ts';
 
 // ---- catalogue ----------------------------------------------------------------------------------------------------
 
@@ -29,21 +30,34 @@ export interface ProfileMtp {
   draftKv?: 'q4_0' | 'q8_0' | 'f16';
 }
 
+/** A separate draft model of an enigma profile (`spec: 'draft'`, e.g. DSpark via `-md` + `--spec-type draft-dspark`; the
+ *  flags are in the profile's args). The catalog planner adds its memory (DraftModelMem) to the plan. */
+export interface ProfileDraft extends DraftModelMem {
+  /** --spec-draft-n-max of the profile's args (shown in the plan's why code) */
+  nMax: number;
+}
+
 /** Model-specific settings of an enigma engine (args/env mirror the production launch scripts). */
 export interface EngineProfile {
   id: string;
   /** regex tested (case-insensitive) against `modelId` and the model file name */
   match: string;
-  spec: 'none' | 'mtp' | 'lookup';
+  spec: 'none' | 'mtp' | 'lookup' | 'draft';
   b?: number;
   ub?: number;
-  /** files the profile needs; resolved into placeholders (e.g. {draftVocab}) */
-  needs: string[];
+  /** files the profile needs: placeholder → file name, found next to the engine (`<engine>/share`, where plain
+   *  release assets land) or in the model directories; resolved into `{placeholder}` */
+  needs: Record<string, string>;
   env: Record<string, string>;
   args: string[];
+  /** Args of the baseline when this engine is the one the model needs (`Option.needsEngine`) and the model's files need
+   *  more than `--jinja` to be the model we offer (Inkling: the uncensoring LoRA); placeholders as in `args`. */
+  baseArgs?: string[];
   /** upstream-style MTP flags, appended by enigmaConfig (profiles with their own spec args leave it out) */
   mtp?: ProfileMtp;
-  /** largest context this profile ran end-to-end; the planner never plans its MTP above it */
+  /** the separate draft model of a `spec: 'draft'` profile (memory the planner adds) */
+  draft?: ProfileDraft;
+  /** largest context this profile ran end-to-end; the planner never plans its MTP/draft above it */
   maxCtx?: number;
   /** the measurement behind maxCtx (campaign, card, peak) */
   maxCtxSource?: string;
@@ -130,8 +144,8 @@ export function enigmaEngineFor(hw: Hw, option: Option): EnigmaChoice {
     const what = gpu ? `${gpu.name}${gpu.arch ? ` (${gpu.arch})` : ''}, ${option.backend}` : `CPU (${hw.os} ${hw.arch})`;
     return { entry: null, code: `no_enigma_engine:${platform}`, reason: `No Enigma-optimised engine for ${what} yet; the official llama.cpp engine is used.` };
   }
-  // an engine planned only where it was measured runs only for the plan that chose it
-  const withProfile = fits.filter((e) => profileFor(e, option) && (!e.planOnlyMeasured || option.mtpEngine === e.id));
+  // an engine planned only where it was measured runs only for the plan that chose it (its MTP, or the model needs it)
+  const withProfile = fits.filter((e) => profileFor(e, option) && (!e.planOnlyMeasured || option.mtpEngine === e.id || option.needsEngine === e.id));
   const entry = withProfile.find(engineAvailable) ?? withProfile[0];
   if (!entry) {
     return { entry: null, code: `enigma_no_profile:${option.modelId}`, reason: `The Enigma engine ${fits[0]!.id} has no profile for ${option.name}.` };
@@ -486,11 +500,20 @@ export function cpuThreads(hw: Hw | null): number {
   return Math.max(1, Math.min(avail, hw?.cpu.cores ?? avail));
 }
 
-/** Baseline: the official engine with only the settings needed to fit (ctx, KV type, ubatch). */
+/** Baseline: the official engine with only the settings needed to fit (ctx, KV type, ubatch). On the engine the model
+ *  needs, its profile's `baseArgs` (files that make the model the one offered, e.g. the uncensoring LoRA) replace
+ *  `--jinja`; a missing file throws. */
 export function baselineConfig(engine: ResolvedEngine, option: Option, modelPath: string, hw: Hw | null): EngineConfig {
+  const profile = option.needsEngine === engine.entry.id ? profileFor(engine.entry, option) : undefined;
+  let extraArgs = ['--jinja'];
+  if (profile?.baseArgs) {
+    const r = profileSub(profile, engine, option, modelPath);
+    if ('reason' in r) throw new Error(r.reason);
+    extraArgs = profile.baseArgs.map(r.sub);
+  }
   const cfg: EngineConfig = {
     engineId: engine.entry.id, modelPath, ctx: option.ctx, kvType: option.kvType, ub: option.ub, b: Math.max(2048, option.ub),
-    flashAttn: true, spec: 'none', extraArgs: ['--jinja'], env: {},
+    flashAttn: true, spec: 'none', extraArgs, env: {},
   };
   if (option.backend === 'cpu') cfg.threads = cpuThreads(hw);
   return cfg;
@@ -501,16 +524,27 @@ function rocmLib(): string {
   return candidates.find((c) => c && existsSync(c)) ?? '/opt/rocm/lib';
 }
 
-/** Files a profile needs, looked up next to the engine and in the model directories. */
-function resolveNeed(need: string, engine: ResolvedEngine, modelPath: string): string | null {
-  if (need === 'draftVocab') {
-    const name = 'draft_vocab_qwen38.txt';
-    const roots = [join(engine.dir, 'share'), engine.dir, dirname(modelPath), extraModelsDir(), paths().models].filter((d): d is string => !!d);
-    for (const r of roots) {
-      for (const p of [join(r, name), join(r, 'draft', name)]) if (existsSync(p)) return p;
-    }
+/** A file a profile needs, looked up next to the engine (`share/`: plain release assets) and in the model directories. */
+function resolveNeed(name: string, engine: ResolvedEngine, modelPath: string): string | null {
+  const roots = [join(engine.dir, 'share'), engine.dir, dirname(modelPath), extraModelsDir(), paths().models].filter((d): d is string => !!d);
+  for (const r of roots) {
+    for (const p of [join(r, name), join(r, 'draft', name)]) if (existsSync(p)) return p;
   }
   return null;
+}
+
+/** The placeholder substitution of a profile (engine paths, KV type, the files it needs), or why a file is missing. */
+function profileSub(profile: EngineProfile, engine: ResolvedEngine, option: Option, modelPath: string): { sub: (s: string) => string } | { reason: string } {
+  const vars: Record<string, string> = {
+    engineDir: engine.dir, rocmLib: rocmLib(), pathSep: delimiter, kv: option.kvType,
+    mtpCache: join(homedir(), '.cache', 'llama-mtp'), home: homedir(),
+  };
+  for (const [need, name] of Object.entries(profile.needs)) {
+    const p = resolveNeed(name, engine, modelPath);
+    if (!p) return { reason: `${profile.id} needs ${need} (${name}), not found next to the engine or the models` };
+    vars[need] = p;
+  }
+  return { sub: (s: string): string => s.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m) };
 }
 
 export interface EnigmaConfigResult { config: EngineConfig | null; reason: string }
@@ -519,16 +553,9 @@ export interface EnigmaConfigResult { config: EngineConfig | null; reason: strin
 export function enigmaConfig(engine: ResolvedEngine, option: Option, modelPath: string, gpuArch?: string): EnigmaConfigResult {
   const profile = profileFor(engine.entry, option);
   if (!profile) return { config: null, reason: `no profile for ${option.modelId}` };
-  const vars: Record<string, string> = {
-    engineDir: engine.dir, rocmLib: rocmLib(), pathSep: delimiter, kv: option.kvType,
-    mtpCache: join(homedir(), '.cache', 'llama-mtp'), home: homedir(),
-  };
-  for (const need of profile.needs) {
-    const p = resolveNeed(need, engine, modelPath);
-    if (!p) return { config: null, reason: `${profile.id} needs ${need}, not found next to the engine or the models` };
-    vars[need] = p;
-  }
-  const sub = (s: string): string => s.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
+  const r = profileSub(profile, engine, option, modelPath);
+  if ('reason' in r) return { config: null, reason: r.reason };
+  const { sub } = r;
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(profile.env)) env[k] = sub(v);
   if (env.LLAMA_MTP_REQUANT_CACHE) mkdirSync(env.LLAMA_MTP_REQUANT_CACHE, { recursive: true });

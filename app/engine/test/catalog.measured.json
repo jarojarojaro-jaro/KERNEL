@@ -1,6 +1,6 @@
 {
  "_meta": {
-  "note": "Measured VRAM (MiB) of llama-server on our cards; memory-model predictions must be within \u00b10.4 GiB (oom points: prediction above the limit). enigmaSpec = speculation in our engine (fork), else upstream MTP; mtpN / ubd = upstream --spec-draft-n-max / --spec-draft-n-ubatch (ubd = ub when the flag was not given); draftKv = the effective MTP draft cache type (absent: f16, upstream's default; -ctkd in our lean build, -ctk in the PrismML fork), leanReserve = our lean-reserve CUDA build. vramGiB = what the scan reports (nvidia-smi total, 0.1 GiB)."
+  "note": "Measured VRAM (MiB) of llama-server on our cards; memory-model predictions must be within \u00b10.4 GiB (oom points: prediction above the limit). enigmaSpec = speculation in our engine (fork), else upstream MTP; mtpN / ubd = upstream --spec-draft-n-max / --spec-draft-n-ubatch (ubd = ub when the flag was not given); draftKv = the effective MTP draft cache type (absent: f16, upstream's default; -ctkd in our lean build, -ctk in the PrismML fork), leanReserve = our lean-reserve CUDA build; draftEngine = data/engines.json engine whose draft-model profile (DSpark) ran with the point (its `draft` memory is added). vramGiB = what the scan reports (nvidia-smi total, 0.1 GiB)."
  },
  "points": [
   {
@@ -1295,6 +1295,45 @@
    "gpu": "rtx-5060-ti-16", "backend": "cuda", "vramGiB": 15.9, "modelId": "lfm25-24b-a2b", "quant": "Q4_K_M",
    "ctx": 131072, "kvType": "q8_0", "ub": 512, "spec": false, "enigmaSpec": false, "prompt": 130432, "usedMiB": 15820,
    "source": "campaign 67c (upstream CUDA, fully in VRAM; nvidia-smi peak of the full fill, 139.48 t/s T=1; fill depth ctx - 640 [INFERENCE])"
+  },
+  {
+   "id": "k204-5060ti-inkling-iq3s-262144-ub128-lora-plain-load",
+   "gpu": "rtx-5060-ti-16", "backend": "cuda", "vramGiB": 15.9, "modelId": "inkling2-mini", "quant": "GSQ-IQ3_S",
+   "ctx": 262144, "kvType": "q4_0", "ub": 128, "spec": false, "enigmaSpec": false, "prompt": 0, "usedMiB": 13866,
+   "source": "K-204 2026-11-27 (official b12811, --lora uncensoring LoRA, no drafter, -b 128; nvidia-smi after load, probe plain-ub128)"
+  },
+  {
+   "id": "k204-5060ti-inkling-iq3s-404480-ub128-lora-plain-load",
+   "gpu": "rtx-5060-ti-16", "backend": "cuda", "vramGiB": 15.9, "modelId": "inkling2-mini", "quant": "GSQ-IQ3_S",
+   "ctx": 404480, "kvType": "q4_0", "ub": 128, "spec": false, "enigmaSpec": false, "prompt": 0, "usedMiB": 15778,
+   "source": "K-204 2026-11-27 (official b12811, --lora, no drafter: the largest context that starts; nvidia-smi after load)"
+  },
+  {
+   "id": "k204-5060ti-inkling-iq3s-262144-ub128-lora-dspark2-load",
+   "gpu": "rtx-5060-ti-16", "backend": "cuda", "vramGiB": 15.9, "modelId": "inkling2-mini", "quant": "GSQ-IQ3_S",
+   "ctx": 262144, "kvType": "q4_0", "ub": 128, "spec": false, "enigmaSpec": false, "prompt": 0, "usedMiB": 15634,
+   "draftEngine": "enigma-cuda-inkling",
+   "source": "K-204 2026-11-27 (enigma-cuda-inkling profile: --lora + DSpark Q8_0 n 2, draft KV f16; nvidia-smi after load, probe ds-ub128-dkvf16)"
+  },
+  {
+   "id": "k204-5060ti-inkling-iq3s-262144-ub128-lora-dspark2-fill95",
+   "gpu": "rtx-5060-ti-16", "backend": "cuda", "vramGiB": 15.9, "modelId": "inkling2-mini", "quant": "GSQ-IQ3_S",
+   "ctx": 262144, "kvType": "q4_0", "ub": 128, "spec": false, "enigmaSpec": false, "prompt": 248452, "usedMiB": 15698,
+   "draftEngine": "enigma-cuda-inkling",
+   "source": "K-204 2026-11-27 (enigma-cuda-inkling profile; nvidia-smi peak, 95% fill + 700-token answer, needles 5/5)"
+  },
+  {
+   "id": "k204-4060ti-inkling-iq3s-283648-ub128-lora-plain-load",
+   "gpu": "rtx-4060-ti-16", "backend": "cuda", "vramGiB": 16, "modelId": "inkling2-mini", "quant": "GSQ-IQ3_S",
+   "ctx": 283648, "kvType": "q4_0", "ub": 128, "spec": false, "enigmaSpec": false, "prompt": 0, "usedMiB": 14117,
+   "source": "K-204 2026-11-27 (official b12811, --lora, no drafter, -b 128; nvidia-smi after load of the plain wall arm)"
+  },
+  {
+   "id": "k204-4060ti-inkling-iq3s-283648-ub128-lora-dspark2-fill95",
+   "gpu": "rtx-4060-ti-16", "backend": "cuda", "vramGiB": 16, "modelId": "inkling2-mini", "quant": "GSQ-IQ3_S",
+   "ctx": 283648, "kvType": "q4_0", "ub": 128, "spec": false, "enigmaSpec": false, "prompt": 269503, "usedMiB": 15955,
+   "draftEngine": "enigma-cuda-inkling",
+   "source": "K-204 2026-11-27 (enigma-cuda-inkling profile; nvidia-smi peak, 95% fill + 700-token answer, needles 5/5)"
   }
  ]
 }
